@@ -5,7 +5,7 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
-char* name = "/Users/ant/Desktop/RuC/tests/arrstruct.c";
+char* name = "../../../tests/arrstruct.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -54,11 +54,19 @@ int main()
     
     for (i=0; i<256; i++)
         hashtab[i] = 0;
-    output = fopen("/Users/ant/Desktop/RuC/tree.txt", "wt");
     
     // занесение ключевых слов в reprtab
     keywordsnum = 1;
-    input =  fopen("/Users/ant/Desktop/RuC/keywords.txt", "r");
+    
+    input =  fopen("../../../keywords.txt", "r");
+    if (input == NULL)
+    {
+        printf(" не найден файл %s\n", "keywords.txt");
+        exit(1);
+    }
+
+    output = fopen("../../../tree.txt", "wt");
+
     getnext();
     nextch();
     while (scan() != LEOF)
@@ -86,7 +94,7 @@ int main()
     lines[line+1] = charnum;
     tablesandtree();
     fclose(output);
-    output = fopen("/Users/ant/Desktop/RuC/codes.txt", "wt");
+    output = fopen("../../../codes.txt", "wt");
     
     codegen();
     
@@ -95,7 +103,7 @@ int main()
     fclose(input);
     fclose(output);
     
-    output = fopen("/Users/ant/Desktop/RuC/export.txt", "wt");
+    output = fopen("../../../export.txt", "wt");
     fprintf(output, "%i %i %i %i %i %i %i\n", pc, funcnum, id, rp, md, maxdisplg, wasmain);
     
     for (i=0; i<pc; i++)
