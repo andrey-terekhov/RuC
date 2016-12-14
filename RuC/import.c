@@ -39,7 +39,7 @@ int reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md;
 int mem[MAXMEMSIZE], pc, functions[FUNCSIZE], funcnum;
 int procd, iniprocs[INIPROSIZE], base = 0;
 float lf, rf;
-int N, bounds[100], d, i, from;
+int N, bounds[100], d, i, from, prtype;
 FILE *input;
 int i,r, n, flagstop = 1, entry, num;
 float lf, rf;
@@ -88,13 +88,13 @@ void printf_char(int wchar)
 void fprintf_char(FILE *f, int wchar)
 {    if (wchar<128)
     fprintf(f, "%c", wchar);
-else
-{
-    unsigned char first = (wchar >> 6) | /*0b11000000*/ 0xC0;
-    unsigned char second = (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
-    
-    fprintf(f, "%c%c", first, second);
-}
+    else
+    {
+        unsigned char first = (wchar >> 6) | /*0b11000000*/ 0xC0;
+        unsigned char second = (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
+
+        fprintf(f, "%c%c", first, second);
+    }
 }
 
 int getf_char()
@@ -102,7 +102,7 @@ int getf_char()
     // reads UTF-8
     
     unsigned char firstchar, secondchar;
-    if (scanf("%c", &firstchar) == EOF)
+    if (scanf(" %c", &firstchar) == EOF)
         return EOF;
     else
         if ((firstchar & /*0b11100000*/0xE0) == /*0b11000000*/0xC0)
@@ -120,7 +120,6 @@ void printident(int r)
     do
         printf_char(reprtab[r++]);
     while (reprtab[r] != 0);
-    printf(" ");
 }
 
 int dspl(int d)
@@ -161,7 +160,7 @@ void runtimeerr(int e, int i, int r)
     switch (e)
     {
         case index_out_of_range:
-            printf("индекс %i за пределами границ массива %i\n", i, r);
+            printf("индекс %i за пределами границ массива %i\n", i, r-1);
             break;
         case wrong_kop:
             printf("команду %i я пока не реализовал\n", i);
@@ -226,18 +225,22 @@ void prmem()
     
 }
 
-void auxprint(int beg, int t)
+void auxprint(int beg, int t, char before, char after)
 {
     float rf;
-    int i, r = mem[beg];
+    int r = mem[beg];
+    
+    if (before)
+        printf("%c", before);
+    
     if (t == LINT)
-        printf(" %i ", r);
+        printf("%i", r);
     else if (t == LCHAR)
         printf_char(r);
     else if (t == LFLOAT)
     {
         memcpy(&rf, &r, sizeof(int));
-        printf(" %f ", rf);
+        printf("%f", rf);
     }
     else if (t == LVOID)
         printf(" значения типа ПУСТО печатать нельзя\n");
@@ -246,28 +249,42 @@ void auxprint(int beg, int t)
     else if (modetab[t] == MARRAY)
     {
         int rr = r, i, type = modetab[t+1], d;
+        
         d = type > 0 && modetab[type] == MSTRUCT ? modetab[type+1] : 1;
-        for (i=0; i<mem[rr-1]; i++)
-            auxprint(rr + i * d, type);
+        
+        if (modetab[t+1] > 0)
+            for (i=0; i<mem[rr-1]; i++)
+                auxprint(rr + i * d, type, 0, '\n');
+        else
+            for (i=0; i<mem[rr-1]; i++)
+                auxprint(rr + i * d, type, 0, (type == LCHAR ? 0 : ' '));
     }
     else if (modetab[t] == MSTRUCT)
     {
         int cnt = modetab[t+2], i;
+        printf("{");
         for (i=2; i<=cnt; i+=2)
         {
             int type = modetab[t+i+1];
-            auxprint(beg, type);
+            if (type < 0)
+                auxprint(beg, type, (i == 2 ? 0 : ' '), (i == cnt ? 0 : ','));
+            else
+                auxprint(beg, type, '\n', '\n');
             beg += type > 0 && modetab[type] == MSTRUCT ? modetab[type+1] : 1;
         }
+        printf("}");
     }
     else
         printf(" значения типа ФУНКЦИЯ и указателей печатать нельзя\n");
+    
+    if (after)
+        printf("%c", after);
 }
 
 void auxget(int beg, int t)
 {
-    int r, i;
-//    printf("beg=%i t=%i\n", beg, t);
+    int r;
+//    printf("beg=%i t=%i\n", beg, t)
     if (t == LINT)
         scanf(" %i", &mem[beg]);
     else if (t == LCHAR)
@@ -430,20 +447,25 @@ void interpreter()
             {
                 int t = mem[pc++];
                 x -= t > 0 && modetab[t] == MSTRUCT ? modetab[t+1] : 1;
-                auxprint(x+1, t);
-                printf("\n");
+                auxprint(x+1, t, 0, '\n');
             }
                 break;
             case PRINTID:
                 i = mem[pc++];              // ссылка на identtab
+                prtype = identab[i+2];
                 printident(identab[i+1]);   // ссылка на reprtab
-                auxprint(dspl(identab[i+3]), identab[i+2]);
-                printf("\n");
+                
+                if (prtype > 0 && modetab[prtype] == MARRAY && modetab[prtype+1] > 0)
+                    auxprint(dspl(identab[i+3]), identab[i+2], '\n', '\n');
+                else
+                    auxprint(dspl(identab[i+3]), identab[i+2], ' ', '\n');
+                
                 break;
             case GETID:
                 i = mem[pc++];              // ссылка на identtab
-                printf("\n");
-                printident(identab[i+1]);
+                prtype = identab[i+2];
+                printident(identab[i+1]);   // ссылка на reprtab
+                printf(" ");
                 auxget(dspl(identab[i+3]), identab[i+2]);
                 break;
             case ABSIC:

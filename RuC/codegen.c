@@ -101,7 +101,7 @@ void finalop()
 
 void Expr_gen(int adfi)
 {
-    int flagprim = 1;
+    int flagprim = 1, eltype;
     while (flagprim)
     {
         switch (tree[tc++])
@@ -165,24 +165,18 @@ void Expr_gen(int adfi)
             }
                 break;
             case TSliceident:
-            {
-                int d;
+            {                        // параметры - смещение идента и тип элемента
                 tocode(LOAD);
                 tocode(tree[tc++]);
-              
-                d = tree[tc++];
-                Expr_gen(0);
-                tocode(SLICE);
-                tocode(d);
-            }
-                break;
+            }                        // продолжение в след case
             case TSlice:
-            {
-                int d = tree[tc++];
-				tocode(LAT);
+            {                        // параметр - тип элемента
+                eltype = tree[tc++];
 				Expr_gen(0);        
                 tocode(SLICE);
-                tocode(d);
+                tocode(eltype > 0 && modetab[eltype] == MSTRUCT ? modetab[eltype+1] : 1);
+                if (eltype > 0 && modetab[eltype] == MARRAY)
+                    tocode(LAT);
             }
                 break;
 			case TSelect:

@@ -442,17 +442,19 @@ void postexpr()
                 error(slice_not_from_array);
 
             elem_type = modetab[ansttype + 1];
-            d = is_struct(elem_type) ? modetab[elem_type+1] : 1;
  
             scaner();
             scaner();
 
             if (anst == IDENT)               // a[i]
+            {
                 tree[tc - 2] = TSliceident;
+                tree[tc - 1] = anstdispl;
+            }
             else                             //a[i][j]
                 totree(TSlice);
-            totree(d);
             
+            totree(elem_type);
             expr(0);
             index_check();                   // проверка, что индекс int или char
 
@@ -1018,6 +1020,7 @@ void statement()
 	else
 	{
 		blockflag = 1;
+        
 		switch (cur)
 		{
 		case PRINT:

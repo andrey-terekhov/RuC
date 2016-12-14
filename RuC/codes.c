@@ -143,14 +143,14 @@ void tablesandtree()
             }
                 break;
             case TSliceident:
-                fprintf(output, "TSliceident displ= %i ", tree[i++]);
-                fprintf(output, "d= %i\n", tree[i++]);
+                fprintf(output, "TSliceident displ= %i type= %i\n", tree[i], tree[i+1]);
+                i += 2;
                 break;
             case TSlice:
-                fprintf(output, "TSlice d= %i\n", tree[i++]);
+                fprintf(output, "TSlice elem_type= %i\n", tree[i++]);
                 break;
 			case TSelect:
-				fprintf(output, "TSelect %i\n", tree[i++]);
+				fprintf(output, "TSelect displ= %i\n", tree[i++]);
 				break;
                 case NOP:
                 fprintf(output, "NOP\n");
