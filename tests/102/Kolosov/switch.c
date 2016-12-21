@@ -24,7 +24,6 @@ void main ()
                 case 'д' :
                     B[ 4 ] ++;
                     break;
-                default : ;
             }
         }
     printid (B);

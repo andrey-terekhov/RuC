@@ -3,7 +3,8 @@ int i, ind;
 
 void main()
 {
-    for (i = 0; i < 10; i++)
+    max = A[0];
+    for (i = 1; i < 10; i++)
         if (A[ i ] > max)
         {
             max = A[ i ];

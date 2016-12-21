@@ -1,15 +1,7 @@
 float f (float x) 
 { 
     return sin (x); 
-} 
-
-int C (float x)                                        //функция округления
-{ 
-    int k = -1; 
-    while (k < x) 
-        k++;
-    return k; 
-} 
+}
 
 void main () 
 { 
@@ -23,7 +15,7 @@ void main ()
         a = i; 
         if ((a > -1)&&(a < 50))
         {
-            u = 50-C(a)-1; 
+            u = 50-round(a)-1;
             G[ i ][ u ]='@';
         }                                //заполняем экран графиком f
     } 

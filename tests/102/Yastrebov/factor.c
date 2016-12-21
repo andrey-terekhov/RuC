@@ -1,9 +1,8 @@
-int f(int x)
+int f(int n)
 {	
-	if(x>0) 
-		return x*f(x-1);
-	if(x==0)
-		return 1;	
+	if(n <= 0)
+        return 1;
+    return n * f(n-1);
 }
 
 

@@ -14,9 +14,9 @@ void main()
            for (i = p; i < N; i++)
                {
                 c = A[ i ][ p ];
-                B[ i ] = B[ i ] / c;
+                B[ i ] /= c;
                 for (j = p; j < N; j++)
-                      A[ i ][ j ] = A[ i ][ j ] / c;
+                      A[ i ][ j ] /= c;
                 }
              for (k = (p+1); k < N; k++)
                  {
@@ -29,7 +29,7 @@ void main()
      for (j = N-2; j > -1; j--)
          {
           for (i = N-1; i > j; i--)
-              A[ j ][ i ] = A[ j ][ i ]*X[ i ];
+              A[ j ][ i ] *= X[ i ];
           c = 0;
           for (k = N-1; k > j; k--)
               c += A[ j ][ k ];

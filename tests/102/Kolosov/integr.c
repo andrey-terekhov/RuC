@@ -13,6 +13,7 @@ void main()
     getid (b);
     n = 25;
     S0 = 1;
+    S = 0;
     while (abs (S - S0) > eps)
         {   
             float x1, x2, h;

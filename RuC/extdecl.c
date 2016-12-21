@@ -354,6 +354,17 @@ int find_field(int stype)                          // выдает смещен�
     return select_displ;
 }
 
+void selectend()
+{
+    while (next == DOT)
+        anstdispl += find_field(ansttype);
+    
+    totree(anstdispl);
+    if (is_array(ansttype))
+        totree(TAddrtoval);
+
+}
+
 void postexpr()
 {
 	int lid, leftansttype;
@@ -474,14 +485,10 @@ void postexpr()
                 tree[tc-2] = TIdenttoval;
                 anst = ADDR;
             }
-            totree(TSelect);          // может быть anst уже был ADDR, VAL не может быть адресом структуры
+            totree(TSelect);          // может быть, anst уже был ADDR, VAL не может быть адресом структуры
 
             anstdispl = find_field(ansttype = modetab[ansttype + 1]);
-            while (next == DOT)
-                anstdispl += find_field(ansttype);
-            
-            stackoperands[sopnd] = ansttype = ansttype;
-            totree(anstdispl);
+            selectend();
         }
         if (next == DOT)
 
@@ -497,9 +504,7 @@ void postexpr()
             {
                 totree(TSelect);
                 anstdispl = 0;
-                while (next == DOT)
-                    anstdispl += find_field(ansttype);
-                totree(anstdispl);
+                selectend();
             }
             else
                 error(get_field_not_from_struct_pointer1);
