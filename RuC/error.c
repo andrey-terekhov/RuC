@@ -69,7 +69,7 @@ void error(int ernum)
             printf("вообще-то я думал, что это предописание функции (нет идентификаторов-параметров), а тут тело функции\n");
             break;
         case wait_while_in_do_stmt:
-            printf("ждем ПОКА а операторе ЦИКЛ\n");
+            printf("ждем ПОКА в операторе ЦИКЛ\n");
             break;
         case no_semicolon_after_stmt:
             printf("нет ; после оператора\n");
