@@ -346,7 +346,7 @@ int find_field(int stype)                          // выдает смещен�
             break;
         }
         else
-            if (field_type < 0 || field_type >= sizeof(modetab)/ sizeof(modetab[0]))
+            if (field_type < 0)
             {
                 error(INTERNAL_COMPILER_ERROR);
             }
@@ -739,7 +739,7 @@ void exprassn(int level)
         if (leftanst == VAL)
             error(unassignable);
 
-        if (sopnd <= 0 || sopnd >= sizeof(stackoperands)/ sizeof(stackoperands[0]))
+        if (sopnd <= 0)
         {
             error(INTERNAL_COMPILER_ERROR);
         }
