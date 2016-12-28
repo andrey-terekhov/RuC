@@ -1,5 +1,7 @@
 cmake-build-*/
-/**/tree.txt
+/tree.txt
+/codes.txt
+/export.txt
 
 
 

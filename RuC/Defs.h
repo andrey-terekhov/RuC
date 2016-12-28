@@ -340,7 +340,7 @@
 #define TDeclarr    -337
 
 // Коды ошибок
-
+#define INTERNAL_COMPILER_ERROR            -1
 #define after_type_must_be_ident           201
 #define wait_right_sq_br                   202
 #define only_functions_may_have_type_VOID  203

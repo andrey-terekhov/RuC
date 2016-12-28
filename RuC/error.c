@@ -17,6 +17,10 @@ void error(int ernum)
     printf("\n");
     switch (ernum)
     {
+        case INTERNAL_COMPILER_ERROR:
+            printf("\x1b[93;41mОбнаружена странная внутренняя проблема РуСи, обратитесь за внешней помощью!\x1b[0m\n");
+            exit(-1);
+            break;
         case after_type_must_be_ident:
             printf("после символа типа должен быть идентификатор или * идентификатор\n");
             break;

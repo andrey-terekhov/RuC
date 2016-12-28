@@ -346,6 +346,10 @@ int find_field(int stype)                          // выдает смещен�
             break;
         }
         else
+            if (field_type < 0 || field_type >= sizeof(modetab)/ sizeof(modetab[0]))
+            {
+                error(INTERNAL_COMPILER_ERROR);
+            }
             select_displ += modetab[field_type] == MSTRUCT ? modetab[field_type + 1] : 1;
             // прибавляем к суммарному смещению длину поля
     }
@@ -734,6 +738,12 @@ void exprassn(int level)
        
         if (leftanst == VAL)
             error(unassignable);
+
+        if (sopnd <= 0 || sopnd >= sizeof(stackoperands)/ sizeof(stackoperands[0]))
+        {
+            error(INTERNAL_COMPILER_ERROR);
+        }
+
 		rtype = stackoperands[sopnd--];      // снимаем типы операндов со стека
 		ltype = stackoperands[sopnd];
         
