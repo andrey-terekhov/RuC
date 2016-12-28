@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "global_vars.h"
 extern void error(int type);
 extern void printf_char(int);

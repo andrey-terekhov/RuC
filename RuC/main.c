@@ -21,7 +21,14 @@ float numfloat;
 int line=0, charnum=1, cur, next, next1, num, numr, hash, repr, keywordsnum, wasstructdef = 0;
 int source[SOURCESIZE], lines[LINESSIZE];
 int nextchar, curchar, func_def;
-int hashtab[256], reprtab[MAXREPRTAB], rp = 1, identab[MAXIDENTAB], id = 2, modetab[MAXMODETAB], md = 1, startmode = 0;
+int hashtab[256] = {0, },
+    reprtab[MAXREPRTAB] = {0, },
+    rp = 1,
+    identab[MAXIDENTAB],
+    id = 2,
+    modetab[MAXMODETAB],
+    md = 1,
+    startmode = 0;
 int stack[100], stackop[100], stackoperands[100], ansttype,
     sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg=-1, displ=-2, maxdispl = 3, maxdisplg = 3, type,
     op = 0, inass = 0, firstdecl;
@@ -51,10 +58,7 @@ extern void ext_decl();
 int main()
 {
     int i;
-    
-    for (i=0; i<256; i++)
-        hashtab[i] = 0;
-    
+
     // занесение ключевых слов в reprtab
     keywordsnum = 1;
     
