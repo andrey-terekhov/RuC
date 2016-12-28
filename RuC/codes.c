@@ -627,32 +627,32 @@ void tablesandcode()
 			case COPY00:
 				fprintf(output, "COPY00 %i ", mem[i++]);          // displleft
 				fprintf(output, "%i ", mem[i++]);                 // displright
-				fprintf(output, "(%i)\n", mem[i++]);              // длина структуры
+				fprintf(output, "(%i)\n", mem[i++]);              // РґР»РёРЅР° СЃС‚СЂСѓРєС‚СѓСЂС‹
 				break;
 			case COPY01:
 				fprintf(output, "COPY01 %i      ", mem[i++]);     // displleft
-				fprintf(output, "(%i)\n", mem[i++]);              // длина структуры
+				fprintf(output, "(%i)\n", mem[i++]);              // РґР»РёРЅР° СЃС‚СЂСѓРєС‚СѓСЂС‹
 				break;
             case COPY10:
                 fprintf(output, "COPY10      %i ", mem[i++]);     // displright
-                fprintf(output, "(%i)\n", mem[i++]);              // длина структуры
+                fprintf(output, "(%i)\n", mem[i++]);              // РґР»РёРЅР° СЃС‚СЂСѓРєС‚СѓСЂС‹
                 break;
             case COPY11:
-                fprintf(output, "COPY11 %i\n", mem[i++]);         // длина структуры
+                fprintf(output, "COPY11 %i\n", mem[i++]);         // РґР»РёРЅР° СЃС‚СЂСѓРєС‚СѓСЂС‹
                 break;
             case COPY0ST:
                 fprintf(output, "COPY0ST %i ", mem[i++]);         // displright
-                fprintf(output, "(%i)\n", mem[i++]);              // длина структуры
+                fprintf(output, "(%i)\n", mem[i++]);              // РґР»РёРЅР° СЃС‚СЂСѓРєС‚СѓСЂС‹
                 break;
             case COPY1ST:
-                fprintf(output, "COPY1ST %i\n", mem[i++]);        // длина структуры
+                fprintf(output, "COPY1ST %i\n", mem[i++]);        // РґР»РёРЅР° СЃС‚СЂСѓРєС‚СѓСЂС‹
                 break;
             case COPY0STASS:
                 fprintf(output, "COPY0STASS %i ", mem[i++]);      // displleft
-                fprintf(output, "(%i)\n", mem[i++]);              // длина структуры
+                fprintf(output, "(%i)\n", mem[i++]);              // РґР»РёРЅР° СЃС‚СЂСѓРєС‚СѓСЂС‹
                 break;
             case COPY1STASS:
-                fprintf(output, "COPY1STASS %i\n", mem[i++]);     // длина структуры
+                fprintf(output, "COPY1STASS %i\n", mem[i++]);     // РґР»РёРЅР° СЃС‚СЂСѓРєС‚СѓСЂС‹
                 break;
 
 
