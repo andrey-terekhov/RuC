@@ -14,6 +14,7 @@
 #include <math.h>
 
 #include "Defs.h"
+extern int szof(int);
 
 #define I2CBUFFERSIZE 50
 
@@ -38,11 +39,10 @@ int l, g, x, iniproc, maxdisplg, wasmain;
 int reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md;
 int mem[MAXMEMSIZE], pc, functions[FUNCSIZE], funcnum;
 int procd, iniprocs[INIPROSIZE], base = 0;
-float lf, rf;
+double lf, rf;
 int N, bounds[100], d, i, from, prtype;
 FILE *input;
 int i,r, n, flagstop = 1, entry, num;
-float lf, rf;
 
 #ifdef ROBOT
 FILE *f1, *f2;   // файлы цифровых датчиков
@@ -227,7 +227,7 @@ void prmem()
 
 void auxprint(int beg, int t, char before, char after)
 {
-    float rf;
+    double rf;
     int r = mem[beg];
     
     if (before)
@@ -239,7 +239,7 @@ void auxprint(int beg, int t, char before, char after)
         printf_char(r);
     else if (t == LFLOAT)
     {
-        memcpy(&rf, &r, sizeof(int));
+        memcpy(&rf, &mem[beg], sizeof(double));
         printf("%f", rf);
     }
     else if (t == LVOID)
@@ -270,7 +270,7 @@ void auxprint(int beg, int t, char before, char after)
                 auxprint(beg, type, (i == 2 ? 0 : ' '), (i == cnt ? 0 : ','));
             else
                 auxprint(beg, type, '\n', '\n');
-            beg += type > 0 && modetab[type] == MSTRUCT ? modetab[type+1] : 1;
+            beg += szof(type);
         }
         printf("}");
     }
@@ -294,8 +294,8 @@ void auxget(int beg, int t)
     }
     else if (t == LFLOAT)
     {
-        scanf(" %f", &rf);
-        memcpy(&mem[beg], &rf, sizeof(int));
+        scanf(" %lf", &rf);
+        memcpy(&mem[beg], &rf, sizeof(long));
     }
     else if (t == LVOID)
         printf(" значения типа ПУСТО вводить нельзя\n");
@@ -316,7 +316,7 @@ void auxget(int beg, int t)
         {
             int type = modetab[t+i+1];
             auxget(beg, type);
-            beg += type > 0 && modetab[type] == MSTRUCT ? modetab[type+1] : 1;
+            beg += szof(type);
         }
     }
     else
@@ -383,12 +383,11 @@ int check_zero_int(int r)
     
 }
 
-float check_zero_float(float r)
+double check_zero_float(double r)
 {
     if (r == 0)
         runtimeerr(float_zero_devide, 0, 0);
     return r;
-    
 }
 
 void interpreter()
@@ -396,7 +395,7 @@ void interpreter()
     flagstop = 1;
     while (flagstop)
     {
-        memcpy(&rf, &mem[x], sizeof(num));
+        memcpy(&rf, &mem[x-1], sizeof(double));
         //        printf("pc=%i mem[pc]=%i rf=%f\n", pc, mem[pc], rf);
         
         switch (mem[pc++])
@@ -446,7 +445,7 @@ void interpreter()
             case PRINT:
             {
                 int t = mem[pc++];
-                x -= t > 0 && modetab[t] == MSTRUCT ? modetab[t+1] : 1;
+                x -= szof(t);
                 auxprint(x+1, t, 0, '\n');
             }
                 break;
@@ -473,50 +472,53 @@ void interpreter()
                 break;
             case ABSC:
                 rf = fabs(rf);
-                memcpy(&mem[x], &rf, sizeof(num));
+                memcpy(&mem[x-1], &rf, sizeof(double));
                 break;
             case SQRTC:
                 if (rf < 0)
                     runtimeerr(sqrt_from_negat, 0, 0);
-                rf = sqrtf(rf);
-                memcpy(&mem[x], &rf, sizeof(num));
+                rf = sqrt(rf);
+                memcpy(&mem[x-1], &rf, sizeof(double));
                 break;
             case EXPC:
-                rf = expf(rf);
-                memcpy(&mem[x], &rf, sizeof(num));
+                rf = exp(rf);
+                memcpy(&mem[x-1], &rf, sizeof(double));
                 break;
             case SINC:
-                rf = sinf(rf);
-                memcpy(&mem[x], &rf, sizeof(num));
+                rf = sin(rf);
+                memcpy(&mem[x-1], &rf, sizeof(double));
                 break;
             case COSC:
-                rf = cosf(rf);
-                memcpy(&mem[x], &rf, sizeof(num));
+                rf = cos(rf);
+                memcpy(&mem[x-1], &rf, sizeof(double));
                 break;
             case LOGC:
                 if (rf <= 0)
                     runtimeerr(log_from_negat, 0, 0);
-                rf = logf(rf);
-                memcpy(&mem[x], &rf, sizeof(num));
+                rf = log(rf);
+                memcpy(&mem[x-1], &rf, sizeof(double));
                 break;
             case LOG10C:
                 if (rf <= 0)
                     runtimeerr(log10_from_negat, 0, 0);
-                rf = log10f(rf);
-                memcpy(&mem[x], &rf, sizeof(num));
+                rf = log10(rf);
+                memcpy(&mem[x-1], &rf, sizeof(double));
                 break;
             case ASINC:
                 if (rf < -1 || rf > 1)
                     runtimeerr(wrong_asin, 0, 0);
-                rf = asinf(rf);
-                memcpy(&mem[x], &rf, sizeof(num));
+                rf = asin(rf);
+                memcpy(&mem[x-1], &rf, sizeof(double));
                 break;
             case RANDC:
-                rf = (float)rand() / RAND_MAX;
-                memcpy(&mem[++x], &rf, sizeof(num));
+                rf = (double)rand() / RAND_MAX;
+                memcpy(&mem[++x], &rf, sizeof(double));
                 break;
-             
-                case STRUCTWITHARR:
+            case ROUNDC:
+                mem[x] = (int)(rf+0.5);
+                break;
+                
+            case STRUCTWITHARR:
             {
                 int oldpc, oldbase = base, procnum;
                 base = dsp();
@@ -543,17 +545,28 @@ void interpreter()
                 flagstop = 1;
             }
                 break;
-            case ROUNDC:
-                mem[x] =(int)(rf+0.5);
-                break;
             case LI:
                 mem[++x] = mem[pc++];
+                break;
+            case LID:
+                memcpy(&mem[++x], &mem[pc++], sizeof(double));
+                ++x;
+                ++pc;
                 break;
             case LOAD:
                 mem[++x] = mem[dsp()];
                 break;
+            case LOADD:
+                memcpy(&mem[++x], &mem[dsp()], sizeof(double));
+                ++x;
+                break;
             case LAT:
                 mem[x] = mem[mem[x]];
+                break;
+            case LATD:
+                r = mem[x];
+                mem[x++] = mem[r];
+                mem[x] = mem[r+1];
                 break;
             case LA:
                 mem[++x] = dsp();
@@ -574,7 +587,7 @@ void interpreter()
                 mem[l+2] = pc;
                 pc = entry + 3;
                 break;
-            case _RETURN:
+            case RETURNVAL:
                 d = mem[pc++];
                 pc = mem[l+2];
                 r = l;
@@ -585,7 +598,7 @@ void interpreter()
                 for (i=0; i<d; i++)
                     mem[++x] = mem[++from];
                 break;
-            case RETURNV:
+            case RETURNVOID:
                 pc = mem[l+2];
                 x = l-1;
                 l = mem[l];
@@ -665,22 +678,27 @@ void interpreter()
                     mem[r++] = mem[from++];
                 break;
             case WIDEN:
-                rf = (float)mem[x];
-                memcpy(&mem[x], &rf, sizeof(num));
+                rf = (double)mem[x];
+                memcpy(&mem[x++], &rf, sizeof(double));
                 break;
             case WIDEN1:
-                rf = (float)mem[x-1];
-                memcpy(&mem[x-1], &rf, sizeof(num));
+                mem[x+1] = mem[x];
+                mem[x] = mem[x-1];
+                rf = (double)mem[x-2];
+                memcpy(&mem[x-2], &rf, sizeof(double));
+                ++x;
                 break;
             case _DOUBLE:
                 r = mem[x];
                 mem[++x] = r;
                 break;
+                
+                
             case ASS:
                 mem[dsp()] = mem[x];
                 break;
             case REMASS:
-                r = mem[dsp()] %= mem[x];
+                r = mem[dsp()] %= check_zero_int(mem[x]);
                 mem[x] = r;
                 break;
             case SHLASS:
@@ -719,11 +737,12 @@ void interpreter()
                 r = mem[dsp()] /= check_zero_int(mem[x]);
                 mem[x] = r;
                 break;
+                
             case ASSV:
                 mem[dsp()] = mem[x--];
                 break;
             case REMASSV:
-                mem[dsp()] %= mem[x--];
+                mem[dsp()] %= check_zero_int(mem[x--]);
                 break;
             case SHLASSV:
                 mem[dsp()] <<= mem[x--];
@@ -758,7 +777,7 @@ void interpreter()
                 mem[--x] = r;
                 break;
             case REMASSAT:
-                r = mem[mem[x-1]] %= mem[x];
+                r = mem[mem[x-1]] %= check_zero_int(mem[x]);
                 mem[--x] = r;
                 break;
             case SHLASSAT:
@@ -803,7 +822,7 @@ void interpreter()
                 x--;
                 break;
             case REMASSATV:
-                mem[mem[x-1]] %= mem[x];
+                mem[mem[x-1]] %= check_zero_int(mem[x]);
                 x--;
                 break;
             case SHLASSATV:
@@ -963,229 +982,261 @@ void interpreter()
             case UNMINUS:
                 mem[x] = -mem[x];
                 break;
-                
+ 
+            case ASSR:
+                mem[r=dsp()] = mem[x-1];
+                mem[r+1] = mem[x];
+                break;
             case PLUSASSR:
-                memcpy(&lf, &mem[i=dsp()], sizeof(num));
+                memcpy(&lf, &mem[i=dsp()], sizeof(double));
                 lf += rf;
-                memcpy(&mem[x], &lf, sizeof(num));
-                memcpy(&mem[i], &lf, sizeof(num));
+                memcpy(&mem[x-1], &lf, sizeof(double));
+                memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case MINUSASSR:
-                memcpy(&lf, &mem[i=dsp()], sizeof(num));
+                memcpy(&lf, &mem[i=dsp()], sizeof(double));
                 lf -= rf;
-                memcpy(&mem[x], &lf, sizeof(num));
-                memcpy(&mem[i], &lf, sizeof(num));
+                memcpy(&mem[x-1], &lf, sizeof(double));
+                memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case MULTASSR:
-                memcpy(&lf, &mem[i=dsp()], sizeof(num));
+                memcpy(&lf, &mem[i=dsp()], sizeof(double));
                 lf *= rf;
-                memcpy(&mem[x], &lf, sizeof(num));
-                memcpy(&mem[i], &lf, sizeof(num));
+                memcpy(&mem[x-1], &lf, sizeof(double));
+                memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case DIVASSR:
-                memcpy(&lf, &mem[i=dsp()], sizeof(num));
+                memcpy(&lf, &mem[i=dsp()], sizeof(double));
                 lf /= check_zero_float(rf);
-                memcpy(&mem[x], &lf, sizeof(num));
-                memcpy(&mem[i], &lf, sizeof(num));
+                memcpy(&mem[x-1], &lf, sizeof(double));
+                memcpy(&mem[i], &lf, sizeof(double));
                 break;
                 
+            case ASSATR:
+                r = mem[x-2];
+                mem[r] = mem[x-2] = mem[x-1];
+                mem[r+1] = mem[x-1] = mem[x];
+                x--;
+                break;
             case PLUSASSATR:
-                memcpy(&lf, &mem[i=mem[--x]], sizeof(num));
+                memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf += rf;
-                memcpy(&mem[x], &lf, sizeof(num));
-                memcpy(&mem[i], &lf, sizeof(num));
+                memcpy(&mem[x++], &lf, sizeof(double));
+                memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case MINUSASSATR:
-                memcpy(&lf, &mem[i=mem[--x]], sizeof(num));
+                memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf -= rf;
-                memcpy(&mem[x], &lf, sizeof(num));
-                memcpy(&mem[i], &lf, sizeof(num));
+                memcpy(&mem[x++], &lf, sizeof(double));
+                memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case MULTASSATR:
-                memcpy(&lf, &mem[i=mem[--x]], sizeof(num));
+                memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf *= rf;
-                memcpy(&mem[x], &lf, sizeof(num));
-                memcpy(&mem[i], &lf, sizeof(num));
+                memcpy(&mem[x++], &lf, sizeof(double));
+                memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case DIVASSATR:
-                memcpy(&lf, &mem[i=mem[--x]], sizeof(num));
+                memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf /= check_zero_float(rf);
-                memcpy(&mem[x], &lf, sizeof(num));
-                memcpy(&mem[i], &lf, sizeof(num));
+                memcpy(&mem[x++], &lf, sizeof(double));
+                memcpy(&mem[i], &lf, sizeof(double));
                 break;
-                
+ 
+            case ASSRV:
+                r = dsp();
+                mem[r+1] = mem[x--];
+                mem[r] = mem[x--];
+                break;
             case PLUSASSRV:
-                memcpy(&lf, &mem[i=dsp()], sizeof(num));
+                memcpy(&lf, &mem[i=dsp()], sizeof(double));
                 lf += rf;
-                memcpy(&mem[i], &lf, sizeof(num));
-                x--;
+                memcpy(&mem[i], &lf, sizeof(double));
+                x -= 2;
                 break;
             case MINUSASSRV:
-                memcpy(&lf, &mem[i=dsp()], sizeof(num));
+                memcpy(&lf, &mem[i=dsp()], sizeof(double));
                 lf -= rf;
-                memcpy(&mem[i], &lf, sizeof(num));
-                x--;
+                memcpy(&mem[i], &lf, sizeof(double));
+                x -= 2;
                 break;
             case MULTASSRV:
-                memcpy(&lf, &mem[i=dsp()], sizeof(num));
+                memcpy(&lf, &mem[i=dsp()], sizeof(double));
                 lf *= rf;
-                memcpy(&mem[i], &lf, sizeof(num));
-                x--;
+                memcpy(&mem[i], &lf, sizeof(double));
+                x -= 2;
                 break;
             case DIVASSRV:
-                memcpy(&lf, &mem[i=dsp()], sizeof(num));
+                memcpy(&lf, &mem[i=dsp()], sizeof(double));
                 lf /= check_zero_float(rf);
-                memcpy(&mem[i], &lf, sizeof(num));
-                x--;
+                memcpy(&mem[i], &lf, sizeof(double));
+                x -= 2;
                 break;
-                
+            
+            case ASSATRV:
+                r = mem[x-2];
+                mem[r+1] = mem[x--];
+                mem[r] = mem[x--];
+                break;
             case PLUSASSATRV:
-                memcpy(&lf, &mem[i=mem[--x]], sizeof(num));
+                memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf += rf;
-                memcpy(&mem[i], &lf, sizeof(num));
+                memcpy(&mem[i], &lf, sizeof(double));
+                --x;
                 break;
             case MINUSASSATRV:
-                memcpy(&lf, &mem[i=mem[--x]], sizeof(num));
+                memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf -= rf;
-                memcpy(&mem[i], &lf, sizeof(num));
+                memcpy(&mem[i], &lf, sizeof(double));
+                --x;
                 break;
             case MULTASSATRV:
-                memcpy(&lf, &mem[i=mem[--x]], sizeof(num));
+                memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf *= rf;
-                memcpy(&mem[i], &lf, sizeof(num));
+                memcpy(&mem[i], &lf, sizeof(double));
+                --x;
                 break;
             case DIVASSATRV:
-                memcpy(&lf, &mem[i=mem[--x]], sizeof(num));
+                memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf /= check_zero_float(rf);
-                memcpy(&mem[i], &lf, sizeof(num));
+                memcpy(&mem[i], &lf, sizeof(double));
+                --x;
                 break;
                 
             case EQEQR:
-                memcpy(&lf, &mem[--x], sizeof(num));
+                memcpy(&lf, &mem[x-=3], sizeof(double));
                 mem[x] = lf == rf;
                 break;
             case NOTEQR:
-                memcpy(&lf, &mem[--x], sizeof(num));
+                memcpy(&lf, &mem[x-=3], sizeof(double));
                 mem[x] = lf != rf;
                 break;
             case LLTR:
-                memcpy(&lf, &mem[--x], sizeof(num));
+                memcpy(&lf, &mem[x-=3], sizeof(double));
                 mem[x] = lf < rf;
                 break;
             case LGTR:
-                memcpy(&lf, &mem[--x], sizeof(num));
+                memcpy(&lf, &mem[x-=3], sizeof(double));
                 mem[x] = lf > rf;
                 break;
             case LLER:
-                memcpy(&lf, &mem[--x], sizeof(num));
+                memcpy(&lf, &mem[x-=3], sizeof(double));
                 mem[x] = lf <= rf;
                 break;
             case LGER:
-                memcpy(&lf, &mem[--x], sizeof(num));
+                memcpy(&lf, &mem[x-=3], sizeof(double));
                 mem[x] = lf >= rf;
                 break;
             case LPLUSR:
-                memcpy(&lf, &mem[--x], sizeof(num));
+                memcpy(&lf, &mem[x-=3], sizeof(double));
                 lf += rf;
-                memcpy(&mem[x], &lf, sizeof(num));
+                memcpy(&mem[x++], &lf, sizeof(double));
                 break;
             case LMINUSR:
-                memcpy(&lf, &mem[--x], sizeof(num));
+                memcpy(&lf, &mem[x-=3], sizeof(double));
                 lf -= rf;
-                memcpy(&mem[x], &lf, sizeof(num));
+                memcpy(&mem[x++], &lf, sizeof(double));
                 break;
             case LMULTR:
-                memcpy(&lf, &mem[--x], sizeof(num));
+                memcpy(&lf, &mem[x-=3], sizeof(double));
                 lf *= rf;
-                memcpy(&mem[x], &lf, sizeof(num));
+                memcpy(&mem[x++], &lf, sizeof(double));
                 break;
             case LDIVR:
-                memcpy(&lf, &mem[--x], sizeof(num));
+                memcpy(&lf, &mem[x-=3], sizeof(double));
                 lf /= check_zero_float(rf);
-                memcpy(&mem[x], &lf, sizeof(num));
+                memcpy(&mem[x++], &lf, sizeof(double));
                 break;
             case POSTINCR:
-                memcpy(&rf, &mem[i=dsp()], sizeof(num));
-                memcpy(&mem[++x], &rf, sizeof(num));
+                memcpy(&rf, &mem[i=dsp()], sizeof(double));
+                memcpy(&mem[x+1], &rf, sizeof(double));
+                x += 2;
                 ++rf;
-                memcpy(&mem[i], &rf, sizeof(num));
+                memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case POSTDECR:
-                memcpy(&rf, &mem[i=dsp()], sizeof(num));
-                memcpy(&mem[++x], &rf, sizeof(num));
+                memcpy(&rf, &mem[i=dsp()], sizeof(double));
+                memcpy(&mem[x+1], &rf, sizeof(double));
+                x += 2;
                 --rf;
-                memcpy(&mem[i], &rf, sizeof(num));
+                memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case INCR:
-                memcpy(&rf, &mem[i=dsp()], sizeof(num));
+                memcpy(&rf, &mem[i=dsp()], sizeof(double));
                 ++rf;
-                memcpy(&mem[++x], &rf, sizeof(num));
-                memcpy(&mem[i], &rf, sizeof(num));
+                memcpy(&mem[x+1], &rf, sizeof(double));
+                x += 2;
+                memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case DECR:
-                memcpy(&rf, &mem[i=dsp()], sizeof(num));
+                memcpy(&rf, &mem[i=dsp()], sizeof(double));
                 --rf;
-                memcpy(&mem[++x], &rf, sizeof(num));
-                memcpy(&mem[i], &rf, sizeof(num));
+                memcpy(&mem[x+1], &rf, sizeof(double));
+                x += 2;
+                memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case POSTINCATR:
-                memcpy(&rf, &mem[i=mem[x]], sizeof(num));
-                memcpy(&mem[++x], &rf, sizeof(num));
+                memcpy(&rf, &mem[i=mem[x]], sizeof(double));
+                memcpy(&mem[x+1], &rf, sizeof(double));
+                x+=2;
                 ++rf;
-                memcpy(&mem[i], &rf, sizeof(num));
+                memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case POSTDECATR:
-                memcpy(&rf, &mem[i=mem[x]], sizeof(num));
-                memcpy(&mem[++x], &rf, sizeof(num));
+                memcpy(&rf, &mem[i=mem[x]], sizeof(double));
+                memcpy(&mem[x+1], &rf, sizeof(double));
+                x+=2;
                 --rf;
-                memcpy(&mem[i], &rf, sizeof(num));
+                memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case INCATR:
-                memcpy(&rf, &mem[i=mem[x]], sizeof(num));
+                memcpy(&rf, &mem[i=mem[x]], sizeof(double));
                 ++rf;
-                memcpy(&mem[++x], &rf, sizeof(num));
-                memcpy(&mem[i], &rf, sizeof(num));
+                memcpy(&mem[x+1], &rf, sizeof(double));
+                x += 2;
+                memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case DECATR:
-                memcpy(&rf, &mem[i=mem[x]], sizeof(num));
+                memcpy(&rf, &mem[i=mem[x]], sizeof(double));
                 --rf;
-                memcpy(&mem[++x], &rf, sizeof(num));
-                memcpy(&mem[i], &rf, sizeof(num));
+                memcpy(&mem[x+1], &rf, sizeof(double));
+                x += 2;
+                memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case INCRV:
             case POSTINCRV:
-                memcpy(&rf, &mem[i=dsp()], sizeof(num));
+                memcpy(&rf, &mem[i=dsp()], sizeof(double));
                 ++rf;
-                memcpy(&mem[i], &rf, sizeof(num));
+                memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case DECRV:
             case POSTDECRV:
-                memcpy(&rf, &mem[i=dsp()], sizeof(num));
+                memcpy(&rf, &mem[i=dsp()], sizeof(double));
                 --rf;
-                memcpy(&mem[i], &rf, sizeof(num));
+                memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case INCATRV:
             case POSTINCATRV:
-                memcpy(&rf, &mem[i=mem[x--]], sizeof(num));
+                memcpy(&rf, &mem[i=mem[x--]], sizeof(double));
                 ++rf;
-                memcpy(&mem[i], &rf, sizeof(num));
+                memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case DECATRV:
             case POSTDECATRV:
-                memcpy(&rf, &mem[i=mem[x--]], sizeof(num));
+                memcpy(&rf, &mem[i=mem[x--]], sizeof(double));
                 --rf;
-                memcpy(&mem[i], &rf, sizeof(num));
+                memcpy(&mem[i], &rf, sizeof(double));
                 break;
                 
             case UNMINUSR:
                 rf = -rf;
-                memcpy(&mem[x], &rf, sizeof(num));
+                memcpy(&mem[x-1], &rf, sizeof(num));
                 break;
             case LNOT:
-                mem[x] = ~ mem[x];
+                mem[x] = ~mem[x];
                 break;
             case LOGNOT:
-                mem[x] = ! mem[x];
+                mem[x] = !mem[x];
                 break;
                 
             default:

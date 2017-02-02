@@ -6,6 +6,13 @@ extern int  nextch();
 extern int  scaner();
 extern void error(int e);
 
+int szof(int type)
+{
+    int r=(type == LFLOAT || type == LDOUBLE) ? 2 :
+    (type > 0 && modetab[type] == MSTRUCT) ? modetab[type + 1] : 1;
+    return r;
+}
+
 int is_row_of_char(int t)
 {
 	return t > 0 && modetab[t] == MARRAY && modetab[t + 1] == LCHAR;
@@ -31,6 +38,16 @@ int is_struct(int t)
 	return t > 0 && modetab[t] == MSTRUCT;
 }
 
+int is_float(int t)
+{
+    return t == LFLOAT || t == LDOUBLE;
+}
+
+int is_int(int t)
+{
+    return t == LINT || t == LLONG || t == LCHAR;
+}
+
 void mustbe(int what, int e)
 {
 	if (scaner() != what)
@@ -45,19 +62,22 @@ void totree(int op)
 void totreef(int op)
 {
 	tree[tc++] = op;
-	if (ansttype == LFLOAT && ((op >= PLUSASS && op <= DIVASS) || (op >= PLUSASSAT && op <= DIVASSAT) ||
-		(op >= EQEQ && op <= UNMINUS)))
+	if (ansttype == LFLOAT
+        && ((op >= ASS && op <= DIVASS)
+        || (op >= ASSAT && op <= DIVASSAT)
+		|| (op >= EQEQ && op <= UNMINUS)))
 		tree[tc - 1] += 50;
 }
 
-int getstatic()
+int getstatic(int type)
 {
-    displ += lg;            // смещение от l (полож) или от g (отриц), для структур потом выделим больше места
+    int olddispl = displ;
+    displ += lg * szof(type);            // lg - смещение от l (+1) или от g (-1)
     if (lg > 0)
         maxdispl = (displ > maxdispl) ? displ : maxdispl;
     else
         maxdisplg = -displ;
-    return displ;
+    return olddispl;
 }
 
 int toidentab(int f, int type)       // f=0, если не ф-ция, f=1, если метка, f=funcnum, если описание ф-ции,
@@ -83,7 +103,7 @@ int toidentab(int f, int type)       // f=0, если не ф-ция, f=1, ес�
 	identab[id + 1] = repr;                     // ссылка на представление
 	// дальше тип или ссылка на modetab (для функций и структур)
     
-	identab[id + 2] = type;              // тип -1 int, -2 char, -3 float
+	identab[id + 2] = type;              // тип -1 int, -2 char, -3 float -4 long -5 double
 	if (f == 1)                          // если тип > 0, то это ссылка на modetab
 	{
 		identab[id + 2] = 0;             // 0, если первым встретился goto, когда встретим метку, поставим 1
@@ -116,7 +136,7 @@ int toidentab(int f, int type)       // f=0, если не ф-ция, f=1, ес�
 		}
     }
 	else
-        identab[id + 3] = getstatic();
+        identab[id + 3] = getstatic(type);
  	id += 4;
 	return lastid;
 }
@@ -127,14 +147,15 @@ void binop(int op)
 	int ltype = stackoperands[sopnd];
 	if (is_pointer(ltype) || is_pointer(rtype))
 		error(operand_is_pointer);
-    if ((op == LOGOR || op == LOGAND || op == LOR || op == LEXOR || op == LAND || op == LSHL || op == LSHR || op == LREM) &&
-        (ltype == LFLOAT || rtype == LFLOAT))
+    if ((op == LOGOR || op == LOGAND || op == LOR || op == LEXOR || op == LAND
+         || op == LSHL || op == LSHR || op == LREM)
+         && (is_float(ltype) || is_float(rtype)))
         error(int_op_for_float);
-	if ((ltype == LINT || ltype == LCHAR) && rtype == LFLOAT)
+	if (is_int(ltype) && is_float(rtype))
 		totree(WIDEN1);
-	if ((rtype == LINT || rtype == LCHAR) && ltype == LFLOAT)
+	if (is_int(rtype) && is_float(ltype))
 		totree(WIDEN);
-	if (ltype == LFLOAT || rtype == LFLOAT)
+	if (is_float(ltype) || is_float(rtype))
 		ansttype = LFLOAT;
 	totreef(op);
 	if (op >= EQEQ && op <= LGE)
@@ -171,11 +192,11 @@ void toval()        // надо значение положить на стек,
     else
     {
         if (anst == IDENT)
-            tree[tc - 2] = TIdenttoval;
+            tree[tc - 2] = is_float(ansttype) ? TIdenttovald : TIdenttoval;
         
         if (!(is_array(ansttype) || is_pointer(ansttype)))
             if (anst == ADDR)
-                totree(TAddrtoval);
+                totree(is_float(ansttype) ? TAddrtovald : TAddrtoval);
         anst = VAL;
     }
 }
@@ -246,8 +267,17 @@ void primaryexpr()
 {
 	if (cur == NUMBER)
 	{
-		totree(TConst);                              // ansttype задается прямо в сканере
-		totree((ansttype == LFLOAT) ? numr : num);   // LINT, LCHAR, FLOAT
+        if (ansttype == LFLOAT)                     // ansttype задается прямо в сканере
+        {
+            totree(TConstd);
+            totree(numr.first);
+            totree(numr.second);
+        }
+        else
+        {
+            totree(TConst);
+            totree(num);                           // LINT, LCHAR
+        }
 		stackoperands[++sopnd] = ansttype;
 		//        printf("number sopnd=%i ansttype=%i\n", sopnd, ansttype);
 		anst = NUMBER;
@@ -285,6 +315,7 @@ void primaryexpr()
 	else if (cur < SLEEP)            // стандартная функция
 	{
 		int func = cur;
+        printf("primary func= %i\n", func);
 		mustbe(LEFTBR, no_leftbr_in_stand_func);
         if (func == RAND)
         {
@@ -298,20 +329,20 @@ void primaryexpr()
             if (func == GETDIGSENSOR || func == GETANSENSOR)
             {
                 notrobot = 0;
-                if (ansttype != LINT)
+                if (!is_int(ansttype))
                     error(param_setmotor_not_int);
                 totree(9500 - func);
             }
-            else if (func == ABS && ansttype == LINT)
+            else if (func == ABS && is_int(ansttype))
                     totree(ABSIC);
             else
             {
-                if (ansttype == LINT || ansttype == LCHAR)
+                if (is_int(ansttype))
                 {
                     totree(WIDEN);
                     ansttype = stackoperands[sopnd] = LFLOAT;
                 }
-                if (ansttype != LFLOAT)
+                if (!is_float(ansttype))
                     error(bad_param_in_stand_func);
                 totree(9500 - func);
                 if (func == ROUND)
@@ -326,7 +357,7 @@ void primaryexpr()
 
 void index_check()
 {
-	if (ansttype != LINT && ansttype != LCHAR)
+	if (!is_int(ansttype))
 		error(index_must_be_int);
 }
 
@@ -420,9 +451,9 @@ void postexpr()
                 if (mdj > 0 && mdj != ansttype)
                     error(diff_formal_param_type_and_actual);
 
-				if ((mdj == LINT || mdj == LCHAR) && ansttype == LFLOAT)
+				if (is_int(mdj) && is_float(ansttype))
 					error(float_instead_int);
-				if (mdj == LFLOAT && (ansttype == LINT || ansttype == LCHAR))
+				if (is_float(mdj) && is_int(ansttype))
 					insertwiden();
 
 				//                 printf("ansttype= %i mdj= %i\n", ansttype, mdj);
@@ -446,7 +477,7 @@ void postexpr()
     {
         while (next == LEFTSQBR) // вырезка из массива (возможно, многомерного)
         {
-            int elem_type, d;
+            int elem_type;
             if (was_func)
                 error(slice_from_func);
             if (modetab[ansttype] != MARRAY)       // вырезка не из массива
@@ -514,7 +545,7 @@ void postexpr()
 	if (next == INC || next == DEC) // a++, a--
 	{
         int op;
-		if (ansttype != LINT && ansttype != LCHAR && ansttype != LFLOAT)
+		if (!is_int(ansttype) && !is_float(ansttype))
 			error(wrong_operand);
 		if (anst != IDENT && anst != ADDR)
 			error(unassignable_inc);
@@ -650,7 +681,7 @@ void condexpr()
 		{
 			int thenref, elseref;
 			toval();
-			if (ansttype != LINT && ansttype != LCHAR)
+			if (!is_int(ansttype))
 				error(float_in_condition);
 			totree(TCondexpr);
 			thenref = tc++;
@@ -663,7 +694,7 @@ void condexpr()
 			if (!globtype)
 				globtype = ansttype;
 			sopnd--;
-			if (ansttype == LFLOAT)
+			if (is_float(ansttype))
 				globtype = LFLOAT;
 			else
 			{
@@ -678,7 +709,7 @@ void condexpr()
 		}
 		toval();
 		totree(TExprend);
-		if (ansttype == LFLOAT)
+		if (is_float(ansttype))
 			globtype = LFLOAT;
 		else
 		{
@@ -690,7 +721,7 @@ void condexpr()
 		{
 			r = tree[adif];
 			tree[adif] = TExprend;
-			tree[adif - 1] = globtype == LFLOAT ? WIDEN : NOP;
+			tree[adif - 1] = is_float(globtype) ? WIDEN : NOP;
 			adif = r;
 		}
 
@@ -708,8 +739,8 @@ void exprassnvoid()
     if (notcopy)
     {
         int t = tree[tc - 2] < 9000 ? tc - 3 : tc - 2;
-        if ((tree[t] >= ASS && tree[t] <= DIVASSAT) || (tree[t] >= POSTINC && tree[t] <= DECAT) ||
-            (tree[t] >= PLUSASSR && tree[t] <= DIVASSATR) || (tree[t] >= POSTINCR && tree[t] <= DECATR))
+        if ((tree[t] >= ASS  && tree[t] <= DIVASSAT)  || (tree[t] >= POSTINC  && tree[t] <= DECAT) ||
+            (tree[t] >= ASSR && tree[t] <= DIVASSATR) || (tree[t] >= POSTINCR && tree[t] <= DECATR))
             tree[t] += 200;
         --sopnd;
     }
@@ -766,10 +797,10 @@ void exprassn(int level)
 		{
             if (is_pointer(ltype) && opp != ASS)        // в указатель можно присваивать только с помощью =
                 error(wrong_struct_ass);
-			if ((ltype == LINT || ltype == LCHAR) && rtype == LFLOAT)
+			if (is_int(ltype) && is_float(rtype))
 				error(assmnt_float_to_int);
             
-			if ((rtype == LINT || rtype == LCHAR) && ltype == LFLOAT)
+			if (is_int(rtype) && is_float(ltype))
             {
 				totree(WIDEN);
                 ansttype = LFLOAT;
@@ -829,7 +860,7 @@ int arrdef(int t)                 // вызывается при описани�
             scaner();
             unarexpr();
             condexpr();
-            if (ansttype != LCHAR && ansttype != LINT)
+            if (!is_int(ansttype))
                 error(array_size_must_be_int);
             totree(TExprend);
             sopnd--;
@@ -854,9 +885,9 @@ int inition(int decl_type)
         sopnd--;
         if (decl_type < 0)
         {
-            if ((decl_type == LINT || decl_type == LCHAR) && ansttype == LFLOAT)
+            if (is_int(decl_type) && is_float(ansttype))
                 error(init_int_by_float);
-            if (decl_type == LFLOAT && ansttype != LFLOAT)
+            if (is_float(decl_type) && is_int(ansttype))
                 insertwiden();
         }
         else if (decl_type != ansttype)
@@ -931,26 +962,12 @@ void decl_id(int decl_type)    // вызывается из block и extdecl, т
     arrdim = 0;                // arrdim - размерность (0-скаляр), д.б. столько выражений-границ
     elem_type = decl_type;
     
-    if (is_struct(decl_type) && next != LEFTSQBR)
-    {
-        if (lg > 0)
-        {
-            displ += (modetab[decl_type+1] - 1);
-            maxdispl = (displ > maxdispl) ? displ : maxdispl;
-        }
-        else
-        {
-            displ -= (modetab[decl_type+1] - 1);
-            maxdisplg = -displ;
-        }
-    }
-    
     if (next == LEFTSQBR)                                    // это определение массива (может быть многомерным)
     {
         int adN;
         totree(TDeclarr);
         adN = tc++;
-        elem_len = is_struct(decl_type) ? modetab[decl_type+1] : 1;
+        elem_len = szof(decl_type);
         decl_type = identab[oldid + 2] = arrdef(decl_type);  // Меняем тип (увеличиваем размерность массива)
         tree[adN] = arrdim;
     }
@@ -984,7 +1001,7 @@ void statement()
 	int flagsemicol = 1, oldwasdefault = wasdefault, oldinswitch = inswitch;
 	wasdefault = 0;
 	scaner();
-	if ((cur == LINT || cur == LCHAR || cur == LFLOAT || cur == LVOID || cur == LSTRUCT) && blockflag)
+	if ((is_int(cur) || is_float(cur) || cur == LVOID || cur == LSTRUCT) && blockflag)
 		error(decl_after_strmt);
 	if (cur == BEGIN)
 	{
@@ -1256,14 +1273,14 @@ void statement()
 						{
 							if (ftype != LVOID)
 								error(no_ret_in_func);
-							totree(TReturn);
+							totree(TReturnvoid);
 						}
 						else
 						{
 							if (ftype == LVOID)
 								error(notvoidret_in_void_func);
 							totree(TReturnval);
-                            totree(ftype > 0 && modetab[ftype] == MSTRUCT ? modetab[ftype+1] : 1);
+                            totree(szof(ftype));
                             scaner();
 							expr(1);
 							sopnd--;
@@ -1401,8 +1418,8 @@ int gettype()
     // возвращает отрицательное число(базовый тип), положительное (ссылка на modetab) или 0, если типа не было
     
     was_struct_with_arr = 0;
-	if ((type = cur) == LINT || type == LFLOAT || type == LCHAR || type == LVOID)
-		return(type);
+	if (is_int(type = cur) || is_float(type) || type == LVOID)
+        return(cur == LLONG ? LINT : cur == LDOUBLE ? LFLOAT : type);
 	else if (type == LSTRUCT)
 	{
 		if (next == BEGIN)             // struct {
@@ -1463,7 +1480,7 @@ void block(int b)
 	}
 	blockflag = 0;
 
-	while (next == LINT || next == LCHAR || next == LFLOAT || next == LSTRUCT)
+	while (is_int(next) || is_float(next) || next == LSTRUCT)
 	{
         int repeat = 1;
 		scaner();
@@ -1525,7 +1542,7 @@ void function_definition()
 	ftype = modetab[functype + 1];
 	n = modetab[functype + 2];
 	wasret = 0;
-	displ = 2;
+	displ = 3;
 	maxdispl = 3;
 	lg = 1;
 	if ((pred = identab[lastid]) > 1)            // был прототип
@@ -1540,11 +1557,7 @@ void function_definition()
 		type = modetab[functype + i + 3];
 		repr = functions[fn + i + 1];
 		if (repr > 0)
-        {
 			toidentab(0, type);
-            if (is_struct(type))
-                maxdispl = displ += (modetab[type+1] - 1);
-        }
 		else
 		{
 			repr = -repr;
@@ -1559,10 +1572,10 @@ void function_definition()
     
 	block(0);
     
-//	if (ftype == LVOID && tree[tc - 1] != TReturn)
+//	if (ftype == LVOID && tree[tc - 1] != TReturnvoid)
 //	{
 		tc--;
-		totree(TReturn);
+		totree(TReturnvoid);
 		totree(TEnd);
 //	}
 	if (ftype != LVOID && !wasret)
@@ -1598,7 +1611,7 @@ int func_declarator(int level, int func_d, int firstdecl)
 
 	while (repeat)
 	{
-		if (cur == LINT || cur == LCHAR || cur == LFLOAT || cur == LSTRUCT)
+		if (is_int(cur) || is_float(cur) || cur == LSTRUCT)
 		{
 			maybe_fun = 0;    // м.б. параметр-ф-ция? 0 - ничего не было, 1 - была *, 2 - была [
 			ident = 0;        // = 0 - не было идента, 1 - был статический идент, 2 - был идент-параметр-функция

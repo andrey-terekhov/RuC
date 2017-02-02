@@ -58,7 +58,7 @@ void tablesandtree()
         switch (tree[i++])
         {
             case TFuncdef:
-                fprintf(output, "TFuncdef %i %i\n", tree[i], tree[i+1]);
+                fprintf(output, "TFuncdef funcn= %i maxdispl= %i\n", tree[i], tree[i+1]);
 				i += 2;
                 break;
             case TDeclarr:
@@ -108,7 +108,7 @@ void tablesandtree()
             case TContinue:
                 fprintf(output, "TContinue\n");
                 break;
-            case TReturn:
+            case TReturnvoid:
                 fprintf(output, "TReturn\n");
                 break;
             case TReturnval:
@@ -123,7 +123,10 @@ void tablesandtree()
             case TIdenttoval:
                 fprintf(output, "TIdenttoval %i\n", tree[i++]);
                 break;
-                case TFunidtoval:
+            case TIdenttovald:
+                fprintf(output, "TIdenttovald %i\n", tree[i++]);
+                break;
+            case TFunidtoval:
                 fprintf(output, "TFunidtoval %i\n", tree[i++]);
                 break;
             case TIdenttoaddr:
@@ -132,14 +135,20 @@ void tablesandtree()
             case TAddrtoval:
                 fprintf(output, "TAddrtoval\n");
                 break;
+            case TAddrtovald:
+                fprintf(output, "TAddrtovald\n");
+                break;
             case TExprend:
                 fprintf(output, "TExprend\n");
                 break;
             case TConst:
+                fprintf(output, "TConst %i\n", tree[i++]);
+                break;
+            case TConstd:
             {
-                int t = tree[i++];
-                memcpy(&numfloat, &t, 4);
-                fprintf(output, "TConst %i %f\n", t, numfloat);
+                memcpy(&numdouble, &tree[i], sizeof(double));
+                i += 2;
+                fprintf(output, "TConstd %f\n", numdouble);
             }
                 break;
             case TSliceident:
@@ -252,16 +261,13 @@ void tablesandcode()
         switch (mem[i++])
         {
             case PRINT:
-                fprintf(output, "PRINT ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "PRINT %i\n", mem[i++]);
                 break;
             case PRINTID:
-                fprintf(output, "PRINTID ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "PRINTID %i\n", mem[i++]);
                 break;
             case GETID:
-                fprintf(output, "GETID ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "GETID %i\n", mem[i++]);
                 break;
             case SETMOTOR:
                 fprintf(output, "SETMOTOR\n");
@@ -309,7 +315,7 @@ void tablesandcode()
                 fprintf(output, "ROUND\n");
                 break;
              
-                case STRUCTWITHARR:
+            case STRUCTWITHARR:
                 fprintf(output, "STRUCTWITHARR displ= %i ", mem[i++]);
                 fprintf(output, "iniproc= %i\n", mem[i++]);
                 break;
@@ -324,20 +330,27 @@ void tablesandcode()
                 fprintf(output, "NOP\n");
                 break;
             case LI:
-                fprintf(output, "LI ");
-                memcpy(&numfloat, &mem[i], sizeof(int));
-                fprintf(output, "%i %f\n", mem[i++], numfloat);
+                fprintf(output, "LI %i\n", mem[i++]);
+                break;
+            case LID:
+                memcpy(&numdouble, &mem[i], sizeof(double));
+                i += 2;
+                fprintf(output, "LID %f\n", numdouble);
                 break;
             case LOAD:
-                fprintf(output, "LOAD ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "LOAD %i\n", mem[i++]);
+                break;
+            case LOADD:
+                fprintf(output, "LOADD %i\n", mem[i++]);
                 break;
             case LAT:
                 fprintf(output,"L@\n");
                 break;
+            case LATD:
+                fprintf(output,"L@f\n");
+                break;
             case LA:
-                fprintf(output, "LA ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "LA %i\n", mem[i++]);
                 break;
                 
             case LOGOR:
@@ -347,15 +360,13 @@ void tablesandcode()
                 fprintf(output, "&&\n");
                 break;
             case ORASS:
-                fprintf(output, "|= ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "|= %i\n", mem[i++]);
                 break;
             case ORASSAT:
                 fprintf(output, "|=@\n");
                 break;
             case ORASSV:
-                fprintf(output, "|=V ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "|=V %i\n", mem[i++]);
                 break;
             case ORASSATV:
                 fprintf(output, "|=@V\n");
@@ -364,15 +375,13 @@ void tablesandcode()
                 fprintf(output, "|\n");
                 break;
             case EXORASS:
-                fprintf(output, "^= ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "^= %i\n", mem[i++]);
                 break;
             case EXORASSAT:
                 fprintf(output, "^=@\n");
                 break;
             case EXORASSV:
-                fprintf(output, "^=V ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "^=V %i\n", mem[i++]);
                 break;
             case EXORASSATV:
                 fprintf(output, "^=@V\n");
@@ -381,15 +390,13 @@ void tablesandcode()
                 fprintf(output, "^\n");
                 break;
             case ANDASS:
-                fprintf(output, "&= ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "&= %i\n", mem[i++]);
                 break;
             case ANDASSAT:
                 fprintf(output, "&=@\n");
                 break;
             case ANDASSV:
-                fprintf(output, "&=V ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "&=V %i\n", mem[i++]);
                 break;
             case ANDASSATV:
                 fprintf(output, "&=@V\n");
@@ -436,15 +443,13 @@ void tablesandcode()
                 break;
                 
             case SHRASS:
-                fprintf(output, ">>= ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, ">>= %i\n", mem[i++]);
                 break;
             case SHRASSAT:
                 fprintf(output, ">>=@\n");
                 break;
             case SHRASSV:
-                fprintf(output, ">>=V ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, ">>=V %i\n", mem[i++]);
                 break;
             case SHRASSATV:
                 fprintf(output, ">>=@V\n");
@@ -453,15 +458,13 @@ void tablesandcode()
                 fprintf(output, ">>\n");
                 break;
             case SHLASS:
-                fprintf(output, "<<= ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "<<= %i\n", mem[i++]);
                 break;
             case SHLASSAT:
                 fprintf(output, "<<=@\n");
                 break;
             case SHLASSV:
-                fprintf(output, "<<=V ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "<<=V %i\n", mem[i++]);
                 break;
             case SHLASSATV:
                 fprintf(output, "<<=@V\n");
@@ -469,85 +472,76 @@ void tablesandcode()
             case LSHL:
                 fprintf(output, "<<\n");
                 break;
+                
             case ASS:
-                fprintf(output, "= ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "= %i\n", mem[i++]);
                 break;
             case ASSAT:
                 fprintf(output, "=@\n");
                 break;
             case ASSV:
-                fprintf(output, "=V ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "=V %i\n", mem[i++]);
                 break;
             case ASSATV:
                 fprintf(output, "=@V\n");
                 break;
              
             case PLUSASS:
-                fprintf(output, "+= ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "+= %i\n", mem[i++]);
                 break;
             case PLUSASSAT:
                 fprintf(output, "+=@\n");
                 break;
             case PLUSASSV:
-                fprintf(output, "+=V ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "+=V %i\n", mem[i++]);
                 break;
             case PLUSASSATV:
                 fprintf(output, "+=@V\n");
                 break;
-
             case LPLUS:
                 fprintf(output, "+\n");
                 break;
+                
             case MINUSASS:
-                fprintf(output, "-= ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "-= %i\n", mem[i++]);
                 break;
             case MINUSASSAT:
                 fprintf(output, "-=@\n");
                 break;
             case MINUSASSV:
-                fprintf(output, "-=V ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "-=V %i\n", mem[i++]);
                 break;
             case MINUSASSATV:
                 fprintf(output, "-=@V\n");
                 break;
-
             case LMINUS:
                 fprintf(output, "-\n");
                 break;
+                
             case MULTASS:
-                fprintf(output, "*= ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "*= %i\n", mem[i++]);
                 break;
             case MULTASSAT:
                 fprintf(output, "*=@\n");
                 break;
             case MULTASSV:
-                fprintf(output, "*=V ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "*=V %i\n", mem[i++]);
                 break;
             case MULTASSATV:
                 fprintf(output, "*=@V\n");
                 break;
-
             case LMULT:
                 fprintf(output, "*\n");
                 break;
+                
             case DIVASS:
-                fprintf(output, "/= ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "/= %i\n", mem[i++]);
                 break;
             case DIVASSAT:
                 fprintf(output, "/=@\n");
                 break;
             case DIVASSV:
-                fprintf(output, "/=V ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "/=V %i\n", mem[i++]);
                 break;
             case DIVASSATV:
                 fprintf(output, "/=@V\n");
@@ -555,17 +549,28 @@ void tablesandcode()
             case LDIV:
                 fprintf(output, "/\n");
                 break;
+            
+            case ASSR:
+                fprintf(output, "=f %i\n", mem[i++]);
+                break;
+            case ASSRV:
+                fprintf(output, "=fV %i\n", mem[i++]);
+                break;
+            case ASSATR:
+                fprintf(output, "=@f\n");
+                break;
+            case ASSATRV:
+                fprintf(output, "=@fV\n");
+                break;
                 
             case PLUSASSR:
-                fprintf(output, "+=f ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "+=f %i\n", mem[i++]);
                 break;
             case PLUSASSATR:
                 fprintf(output, "+=@f\n");
                 break;
             case PLUSASSRV:
-                fprintf(output, "+=fV ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "+=fV %i\n", mem[i++]);
                 break;
             case PLUSASSATRV:
                 fprintf(output, "+=@fV\n");
@@ -574,15 +579,13 @@ void tablesandcode()
                 fprintf(output, "+f\n");
                 break;
             case MINUSASSR:
-                fprintf(output, "-=f ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "-=f %i\n", mem[i++]);
                 break;
             case MINUSASSATR:
                 fprintf(output, "-=@f\n");
                 break;
             case MINUSASSRV:
-                fprintf(output, "-=fV ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "-=fV %i\n", mem[i++]);
                 break;
             case MINUSASSATRV:
                 fprintf(output, "-=@fV\n");
@@ -591,15 +594,13 @@ void tablesandcode()
                 fprintf(output, "-f\n");
                 break;
             case MULTASSR:
-                fprintf(output, "*=f ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "*=f %i\n", mem[i++]);
                 break;
             case MULTASSATR:
                 fprintf(output, "*=@f\n");
                 break;
             case MULTASSRV:
-                fprintf(output, "*=fV ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "*=fV %i\n", mem[i++]);
                 break;
             case MULTASSATRV:
                 fprintf(output, "*=@fV\n");
@@ -608,15 +609,13 @@ void tablesandcode()
                 fprintf(output, "*f\n");
                 break;
             case DIVASSR:
-                fprintf(output, "/=f ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "/=f %i\n", mem[i++]);
                 break;
             case DIVASSATR:
                 fprintf(output, "/=@f\n");
                 break;
             case DIVASSRV:
-                fprintf(output, "/=fV ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "/=fV %i\n", mem[i++]);
                 break;
             case DIVASSATRV:
                 fprintf(output, "/=@fV\n");
@@ -627,45 +626,43 @@ void tablesandcode()
 			case COPY00:
 				fprintf(output, "COPY00 %i ", mem[i++]);          // displleft
 				fprintf(output, "%i ", mem[i++]);                 // displright
-				fprintf(output, "(%i)\n", mem[i++]);              // длина структуры
+				fprintf(output, "(%i)\n", mem[i++]);              // length
 				break;
 			case COPY01:
 				fprintf(output, "COPY01 %i      ", mem[i++]);     // displleft
-				fprintf(output, "(%i)\n", mem[i++]);              // длина структуры
+				fprintf(output, "(%i)\n", mem[i++]);              // length
 				break;
             case COPY10:
                 fprintf(output, "COPY10      %i ", mem[i++]);     // displright
-                fprintf(output, "(%i)\n", mem[i++]);              // длина структуры
+                fprintf(output, "(%i)\n", mem[i++]);              // length
                 break;
             case COPY11:
-                fprintf(output, "COPY11 %i\n", mem[i++]);         // длина структуры
+                fprintf(output, "COPY11 %i\n", mem[i++]);         // length
                 break;
             case COPY0ST:
                 fprintf(output, "COPY0ST %i ", mem[i++]);         // displright
-                fprintf(output, "(%i)\n", mem[i++]);              // длина структуры
+                fprintf(output, "(%i)\n", mem[i++]);              // length
                 break;
             case COPY1ST:
-                fprintf(output, "COPY1ST %i\n", mem[i++]);        // длина структуры
+                fprintf(output, "COPY1ST %i\n", mem[i++]);        // length
                 break;
             case COPY0STASS:
                 fprintf(output, "COPY0STASS %i ", mem[i++]);      // displleft
-                fprintf(output, "(%i)\n", mem[i++]);              // длина структуры
+                fprintf(output, "(%i)\n", mem[i++]);              // length
                 break;
             case COPY1STASS:
-                fprintf(output, "COPY1STASS %i\n", mem[i++]);     // длина структуры
+                fprintf(output, "COPY1STASS %i\n", mem[i++]);     // length
                 break;
 
 
             case REMASS:
-                fprintf(output, "%%= ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "%%= %i\n", mem[i++]);
                 break;
             case REMASSAT:
                 fprintf(output, "%%=@\n");
                 break;
             case REMASSV:
-                fprintf(output, "%%=V ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "%%=V %i\n", mem[i++]);
                 break;
             case REMASSATV:
                 fprintf(output, "%%=@V\n");
@@ -684,22 +681,19 @@ void tablesandcode()
             case STOP:
                 fprintf(output, "STOP\n");
                 break;
-            case _RETURN:
-                fprintf(output, "RETURN ");
-                fprintf(output, "%i\n", mem[i++]);
+            case RETURNVAL:
+                fprintf(output, "RETURNVAL %i\n", mem[i++]);
                 break;
-            case RETURNV:
-                fprintf(output, "RETURNV\n");
+            case RETURNVOID:
+                fprintf(output, "RETURNVOID\n");
                 break;
             case B:
-                fprintf(output, "B ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "B %i\n", mem[i++]);
                 break;
             case STRING:
             {
                 int j, n;
-                fprintf(output,"STRING ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output,"STRING %i\n", mem[i++]);
                 fprintf(output, "n=%i\n", n = mem[i++]);
                 for (j=0; j<n; j++)
                     fprintf(output, "%c\n", mem[i++]);
@@ -708,12 +702,10 @@ void tablesandcode()
             }
                 break;
             case BE0:
-                fprintf(output, "BE0 ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "BE0 %i\n", mem[i++]);
                 break;
             case BNE0:
-                fprintf(output, "BNE0 ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "BNE0 %i\n", mem[i++]);
                 break;
             case SLICE:
                 fprintf(output, "SLICE d= %i\n", mem[i++]);
@@ -741,20 +733,16 @@ void tablesandcode()
                 fprintf(output, "DOUBLE\n");
                 break;
             case INC:
-                fprintf(output, "INC ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "INC %i\n", mem[i++]);
                 break;
             case DEC:
-                fprintf(output, "DEC ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "DEC %i\n", mem[i++]);
                 break;
             case POSTINC:
-                fprintf(output, "POSTINC ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "POSTINC %i\n", mem[i++]);
                 break;
             case POSTDEC:
-                fprintf(output, "POSTDEC ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "POSTDEC %i\n", mem[i++]);
                 break;
             case INCAT:
                 fprintf(output, "INC@\n");
@@ -769,20 +757,16 @@ void tablesandcode()
                 fprintf(output, "POSTDEC@\n");
                 break;
             case INCR:
-                fprintf(output, "INCf ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "INCf %i\n", mem[i++]);
                 break;
             case DECR:
-                fprintf(output, "DECf ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "DECf %i\n", mem[i++]);
                 break;
             case POSTINCR:
-                fprintf(output, "POSTINCf ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "POSTINCf %i\n", mem[i++]);
                 break;
             case POSTDECR:
-                fprintf(output, "POSTDECf ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "POSTDECf %i\n", mem[i++]);
                 break;
             case INCATR:
                 fprintf(output, "INC@f\n");
@@ -797,20 +781,16 @@ void tablesandcode()
                 fprintf(output, "POSTDEC@f\n");
                 break;
             case INCV:
-                fprintf(output, "INCV ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "INCV %i\n", mem[i++]);
                 break;
             case DECV:
-                fprintf(output, "DECV ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "DECV %i\n", mem[i++]);
                 break;
             case POSTINCV:
-                fprintf(output, "POSTINCV ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "POSTINCV %i\n", mem[i++]);
                 break;
             case POSTDECV:
-                fprintf(output, "POSTDECV ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "POSTDECV %i\n", mem[i++]);
                 break;
             case INCATV:
                 fprintf(output, "INC@V\n");
@@ -825,20 +805,16 @@ void tablesandcode()
                 fprintf(output, "POSTDEC@V\n");
                 break;
             case INCRV:
-                fprintf(output, "INCfV ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "INCfV %i\n", mem[i++]);
                 break;
             case DECRV:
-                fprintf(output, "DECfV");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "DECfV %i\n", mem[i++]);
                 break;
             case POSTINCRV:
-                fprintf(output, "POSTINCfV ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "POSTINCfV %i\n", mem[i++]);
                 break;
             case POSTDECRV:
-                fprintf(output, "POSTDECfV ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "POSTDECfV %i\n", mem[i++]);
                 break;
             case INCATRV:
                 fprintf(output, "INC@fV\n");
@@ -867,9 +843,8 @@ void tablesandcode()
                 break;
                 
             case FUNCBEG:
-                fprintf(output, "FUNCBEG ");
-                fprintf(output, "%i ", mem[i++]);
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(output, "FUNCBEG maxdispl= %i ", mem[i++]);
+                fprintf(output, "pc= %i\n", mem[i++]);
                 break;
                 
                 

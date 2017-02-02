@@ -10,7 +10,7 @@ extern void error(int err);
 
 void tocode(int c)
 {
- // printf("tocode tc=%i pc %i) %i\n", tc, pc, c);
+//    printf("tocode tc=%i pc %i) %i\n", tc, pc, c);
     mem[pc++] = c;
 }
 
@@ -87,9 +87,9 @@ void finalop()
             else if (c == COPY1STASS)
                 tocode(tree[tc++]);   // длина
 
-            else if((c >= ASS && c <= DIVASS) || (c >= ASSV && c <= DIVASSV) ||
-                    (c >= PLUSASSR && c <= DIVASSR) || (c >= PLUSASSRV && c <= DIVASSRV) ||
-                    (c >= POSTINC && c <= DEC) || (c >= POSTINCV && c <= DECV) ||
+            else if((c >= ASS && c <= DIVASS)    || (c >= ASSV && c <= DIVASSV) ||
+                    (c >= ASSR && c <= DIVASSR)  || (c >= ASSRV && c <= DIVASSRV) ||
+                    (c >= POSTINC && c <= DEC)   || (c >= POSTINCV && c <= DECV) ||
                     (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))
             {
                 tocode(tree[tc++]);
@@ -107,18 +107,13 @@ void Expr_gen(int adfi)
         switch (tree[tc++])
         {
             case TIdent:
-            {
                 anstdispl = tree[tc++];
-            }
                 break;
             case TIdenttoaddr:
-            {
                 tocode(LA);
                 tocode(anstdispl = tree[tc++]);
-            }
                 break;
             case TFunidtoval:
-            {
                 anstdispl = tree[tc++];
                 if (anstdispl > 0)
                 {
@@ -130,24 +125,29 @@ void Expr_gen(int adfi)
                     tocode(LOAD);
                     tocode(-anstdispl);
                 }
-            }
                 break;
             case TIdenttoval:
-            {
                 tocode(LOAD);
                 tocode(tree[tc++]);
-            }
+                break;
+            case TIdenttovald:
+                tocode(LOADD);
+                tocode(tree[tc++]);
                 break;
             case TAddrtoval:
-            {
                 tocode(LAT);
-            }
+                break;
+            case TAddrtovald:
+                tocode(LATD);
                 break;
             case TConst:
-            {
                 tocode(LI);
                 tocode(tree[tc++]);
-            }
+                break;
+            case TConstd:
+                tocode(LID);
+                tocode(tree[tc++]);
+                tocode(tree[tc++]);
                 break;
             case TString:
             {
@@ -165,31 +165,23 @@ void Expr_gen(int adfi)
             }
                 break;
             case TSliceident:
-            {                        // параметры - смещение идента и тип элемента
-                tocode(LOAD);
-                tocode(tree[tc++]);
-            }                        // продолжение в след case
-            case TSlice:
-            {                        // параметр - тип элемента
+                tocode(LOAD);        // параметры - смещение идента и тип элемента
+                tocode(tree[tc++]);  // продолжение в след case
+            case TSlice:             // параметр - тип элемента
                 eltype = tree[tc++];
 				Expr_gen(0);        
                 tocode(SLICE);
                 tocode(eltype > 0 && modetab[eltype] == MSTRUCT ? modetab[eltype+1] : 1);
                 if (eltype > 0 && modetab[eltype] == MARRAY)
                     tocode(LAT);
-            }
                 break;
 			case TSelect:
-			{
 				tocode(SELECT);                // SELECT field_displ
 				tocode(tree[tc++]);
-			}
 				break;
             case TPrint:
-            {
                 tocode(PRINT);
                 tocode(tree[tc++]);  // type
-            }
                 break;
             case TCall1:
             {
@@ -200,10 +192,8 @@ void Expr_gen(int adfi)
             }
                 break;
             case TCall2:
-            {
                 tocode(CALL2);
                 tocode(identab[tree[tc++]+3]);
-            }
                 break;
 
             default:
@@ -434,16 +424,16 @@ void Stmt_gen()
             adcont = pc++;
         }
             break;
-        case TReturn:
+        case TReturnvoid:
         {
-            tocode(RETURNV);
+            tocode(RETURNVOID);
         }
             break;
         case TReturnval:
         {
             int d = tree[tc++];
             Expr_gen(0);
-            tocode(_RETURN);
+            tocode(RETURNVAL);
             tocode(d);
         }
             break;
@@ -474,7 +464,7 @@ void Declid_gen()
     element_len, all = tree[tc++], iniproc = tree[tc++];
     int i;
 
-    element_len = telem > 0 && modetab[telem] == MSTRUCT ? modetab[telem+1] : 1;
+    element_len = telem == LFLOAT ? 2 :telem > 0 && modetab[telem] == MSTRUCT ? modetab[telem+1] : 1;
     if (N == 0)                    // обычная переменная int a; или struct point p;
 	{
         if (iniproc)
@@ -495,7 +485,7 @@ void Declid_gen()
             else
             {
                 Expr_gen(0);
-                tocode(ASSV);
+                tocode(telem == LFLOAT ? ASSRV : ASSV);
             }
             tocode(olddispl);
 		}

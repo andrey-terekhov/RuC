@@ -29,53 +29,53 @@
 
 // Лексемы операций языка С
 
-#define ASS        9001
-#define REMASS     9002
-#define SHLASS     9003
-#define SHRASS     9004
-#define ANDASS     9005
-#define EXORASS    9006
-#define ORASS      9007
+#define REMASS     9001
+#define SHLASS     9002
+#define SHRASS     9003
+#define ANDASS     9004
+#define EXORASS    9005
+#define ORASS      9006
 
+#define ASS        9007
 #define PLUSASS    9008
 #define MINUSASS   9009
 #define MULTASS    9010
 #define DIVASS     9011
 
-#define ASSAT      9012   // эти 22 операции с присваиванием оставляют значение на стеке
-#define REMASSAT   9013
-#define SHLASSAT   9014
-#define SHRASSAT   9015
-#define ANDASSAT   9016
-#define EXORASSAT  9017
-#define ORASSAT    9018
+#define REMASSAT   9012     // эти 22 операции с присваиванием оставляют значение на стеке
+#define SHLASSAT   9013
+#define SHRASSAT   9014
+#define ANDASSAT   9015
+#define EXORASSAT  9016
+#define ORASSAT    9017
 
+#define ASSAT      9018
 #define PLUSASSAT  9019
 #define MINUSASSAT 9020
 #define MULTASSAT  9021
 #define DIVASSAT   9022
 
-#define ASSV       9201
-#define REMASSV    9202
-#define SHLASSV    9203
-#define SHRASSV    9204
-#define ANDASSV    9205
-#define EXORASSV   9206
-#define ORASSV     9207
+#define REMASSV    9201
+#define SHLASSV    9202
+#define SHRASSV    9203
+#define ANDASSV    9204
+#define EXORASSV   9205
+#define ORASSV     9206
 
+#define ASSV       9207
 #define PLUSASSV   9208
 #define MINUSASSV  9209
 #define MULTASSV   9210
 #define DIVASSV    9211
 
-#define ASSATV     9212   // а эти 22 операции с присваиванием не оставляют значение на стеке
-#define REMASSATV  9213
-#define SHLASSATV  9214
-#define SHRASSATV  9215
-#define ANDASSATV  9216
-#define EXORASSATV 9217
-#define ORASSATV   9218
+#define REMASSATV  9212   // а эти 22 операции с присваиванием не оставляют значение на стеке
+#define SHLASSATV  9213
+#define SHRASSATV  9214
+#define ANDASSATV  9215
+#define EXORASSATV 9216
+#define ORASSATV   9217
 
+#define ASSATV     9218
 #define PLUSASSATV 9219
 #define MINUSASSATV 9220
 #define MULTASSATV 9221
@@ -125,21 +125,25 @@
 #define LOGNOT     9053
 
 
+#define ASSR       9057
 #define PLUSASSR   9058
 #define MINUSASSR  9059
 #define MULTASSR   9060
 #define DIVASSR    9061
 
+#define ASSATR     9068
 #define PLUSASSATR 9069
 #define MINUSASSATR 9070
 #define MULTASSATR 9071
 #define DIVASSATR  9072
 
+#define ASSRV      9257
 #define PLUSASSRV  9258
 #define MINUSASSRV 9259
 #define MULTASSRV  9260
 #define DIVASSRV   9261
 
+#define ASSATRV      9268
 #define PLUSASSATRV  9269
 #define MINUSASSATRV 9270
 #define MULTASSATRV  9271
@@ -177,31 +181,32 @@
 
 // Коды операций виртуальной машины, кроме операций C
 
-//#define DECX    9451
-//#define PLUSSEL 9452       // добавление смещения к адресу структуры, получается адрес поля
 #define NOP     9453
 #define DEFARR  9454
 #define LI      9455
-#define LOAD    9456
-#define LAT     9457       // это L@
-#define STOP    9458
-#define SELECT  9459       // операнд - смещение, которое эта команда добавит к верхушке стека
-#define FUNCBEG 9460       // обозначает начало кода функции
-#define LA      9461
-#define CALL1   9462
-#define CALL2   9463
-#define _RETURN 9464
-#define RETURNV 9465
-#define B       9466
-#define BE0     9467
-#define BNE0    9468
-#define SLICE   9469
-#define ARRINIT 9470
-#define WIDEN   9471
-#define WIDEN1  9472
-#define _DOUBLE 9473
-#define STRUCTINIT 9474
-#define STRUCTWITHARR 9475
+#define LID     9456
+#define LOAD    9457
+#define LOADD   9458
+#define LAT     9459       // это L@, т.е. адрес ячейки на вершине стека заменить ее значением
+#define LATD    9460       // на вершине стека адрес вещественного значения, которое надо положить на стек
+#define STOP    9461
+#define SELECT  9462       // операнд - смещение, которое эта команда добавит к верхушке стека
+#define FUNCBEG 9463       // обозначает начало кода функции
+#define LA      9464
+#define CALL1   9465
+#define CALL2   9466
+#define RETURNVAL  9467
+#define RETURNVOID 9468
+#define B       9469
+#define BE0     9470
+#define BNE0    9471
+#define SLICE   9472
+#define ARRINIT 9473
+#define WIDEN   9474
+#define WIDEN1  9475
+#define _DOUBLE 9476
+#define STRUCTINIT    9477
+#define STRUCTWITHARR 9478
 
 #define COPY00   9300
 #define COPY01   9301
@@ -216,18 +221,18 @@
 // Коды операций стандартных функций
 
 #define ABSIC     9525
-#define GETDIGSENSORC 9526
-#define GETANSENSORC  9527
-#define ABSC      9528
-#define SQRTC     9529
-#define EXPC      9530
-#define SINC      9531
-#define COSC      9532
-#define LOGC      9533
-#define LOG10C    9534
-#define ASINC     9535
-#define RANDC     9536
-#define ROUNDC    9537
+#define GETDIGSENSORC 9528
+#define GETANSENSORC  9529
+#define ABSC      9530
+#define SQRTC     9531
+#define EXPC      9532
+#define SINC      9533
+#define COSC      9534
+#define LOGC      9535
+#define LOG10C    9536
+#define ASINC     9537
+#define RANDC     9538
+#define ROUNDC    9539
 
 
 // Лексемы
@@ -258,45 +263,48 @@
 
 // Ключевые слова
 
-#define LMAIN   0
-#define LINT   -1
-#define LCHAR  -2
-#define LFLOAT -3
-#define LVOID  -4
+#define LMAIN      0
+#define LINT      -1
+#define LCHAR     -2
+#define LFLOAT    -3
+#define LLONG     -4
+#define LDOUBLE   -5
+#define LVOID     -6
 
-#define LBREAK -5
-#define LCASE  -6
-#define LCONTINUE -7
-#define LDEFAULT  -8
-#define LDO    -9
-#define LELSE  -10
-#define LENUM  -11
-#define LSTRUCT -12
-#define LTYPEDEF -13
-#define LFOR   -14
-#define LGOTO  -15
-#define LIF    -16
-#define LRETURN -17
-#define LSIZEOF -18
-#define LSWITCH -19
-#define LWHILE  -20
-#define PRINTID -21
-#define PRINT   -22
-#define GETID   -23
-#define SETMOTOR  -24
-#define SLEEP     -25     // до этого места операторы, а затем функции
-#define GETDIGSENSOR -26
-#define GETANSENSOR -27
-#define ABS      -28
-#define SQRT     -29
-#define EXP      -30
-#define SIN      -31
-#define COS      -32
-#define LOG      -33
-#define LOG10    -34
-#define ASIN     -35
-#define RAND     -36
-#define ROUND    -37
+#define LBREAK    -7
+#define LCASE     -8
+#define LCONTINUE -9
+#define LDEFAULT  -10
+#define LDO       -11
+#define LELSE     -12
+#define LENUM     -13
+#define LSTRUCT   -14
+#define LTYPEDEF  -15
+#define LFOR      -16
+#define LGOTO     -17
+#define LIF       -18
+#define LRETURN   -19
+#define LSIZEOF   -20
+#define LSWITCH   -21
+#define LWHILE    -22
+#define PRINTID   -23
+#define PRINT     -24
+#define GETID     -25
+#define SETMOTOR  -26
+#define SLEEP     -27     // до этого места операторы, а затем функции
+
+#define GETDIGSENSOR -28
+#define GETANSENSOR -29
+#define ABS       -30
+#define SQRT      -31
+#define EXP       -32
+#define SIN       -33
+#define COS       -34
+#define LOG       -35
+#define LOG10     -36
+#define ASIN      -37
+#define RAND      -38
+#define ROUND     -39
 
 
 // Узлы дерева
@@ -325,7 +333,7 @@
 #define TDefault    -322
 #define TBreak      -323
 #define TContinue   -324
-#define TReturn     -325
+#define TReturnvoid -325
 #define TReturnval  -326
 #define TGoto       -327
 #define TLabel      -328
@@ -338,6 +346,9 @@
 #define TStructbeg  -335
 #define TStructend  -336
 #define TDeclarr    -337
+#define TConstd     -338
+#define TIdenttovald -339
+#define TAddrtovald  -340
 
 // Коды ошибок
 
@@ -471,4 +482,7 @@
 #define predef_but_notdef                  327
 #define print_without_br                   328
 
+//  коды предупреждений
+
+#define too_long_int                       400
 #endif

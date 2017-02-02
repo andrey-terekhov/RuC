@@ -9,8 +9,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
+#include <math.h>
+
 #include "global_vars.h"
-extern void error(int type);
+extern void error(int);
+extern void warning(int);
 extern void printf_char(int);
 
 int getnext()
@@ -477,40 +481,42 @@ int scan()
         case '8':
         case '9':
         {
-            int flag = 1;
-            float k;
+            int flagint = 1, flagtoolong = 0;
+            double k;
             num = 0;
+            numdouble = 0.0;
             while (digit())
             {
+                numdouble = numdouble * 10 + (curchar-'0');
+                if (numdouble > (double) INT_MAX)
+                {
+                    flagtoolong = 1;
+                    flagint = 0;
+                }
                 num = num * 10 + (curchar-'0');
                 nextch();
-                flag = 0;
             }
-            if (curchar != '.' && !ispower())
-            {
-                ansttype = LINT;
-                return NUMBER;
-            }
+            
             if (curchar == '.')
             {
+                flagint = 0;
                 nextch();
-                if (!digit() && flag)
-                    error(must_be_digit_after_dot);
+                k = 0.1;
+                while (digit())
+                {
+                    numdouble += (curchar-'0') * k;
+                    k *=0.1;
+                    nextch();
+                }
             }
-            k = 0.1;
-            numfloat = num;
-            while (digit())
-            {
-                numfloat += (curchar-'0') * k;
-                k *=0.1;
-                nextch();
-            }
+            
             if (ispower())
             {
-                int d = 0, k = 1;
+                int d = 0, k = 1, i;
                 nextch();
                 if (curchar == '-')
                 {
+                    flagint = 0;
                     nextch();
                     k = -1;
                 }
@@ -523,10 +529,24 @@ int scan()
                     d = d * 10 + curchar-'0';
                     nextch();
                 }
-                numfloat *= pow(10,k*d);
+                if (flagint)
+                    for (i=1; i<=d; i++)
+                        num *= 10;
+                numdouble *= pow(10,k*d);
             }
-            ansttype = LFLOAT;
-            memcpy(&numr,&numfloat, sizeof(num));
+            
+            if (flagint)
+            {
+                ansttype = LINT;
+                return NUMBER;
+            }
+            else
+            {
+                if (flagtoolong)
+                    warning(too_long_int);
+                ansttype = LFLOAT;
+            }
+            memcpy(&numr, &numdouble, sizeof(double));
             return NUMBER;
         }
             

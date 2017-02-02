@@ -2,6 +2,8 @@ MAIN main ГЛАВНАЯ главная
 INT int ЦЕЛ цел
 CHAR char ЛИТЕРА литера
 FLOAT float ВЕЩ вещ
+LONG long ДЛИН длин
+DOUBLE double ДВОЙНОЙ двойной
 VOID void ПУСТО пусто
 BREAK break ВЫХОД выход
 CASE case СЛУЧАЙ случай

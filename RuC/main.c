@@ -5,7 +5,7 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
-char* name = "../../../tests/bad Misha/print exper.c";
+char* name = "../../../tests/00test.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -17,13 +17,14 @@ char* name = "../../../tests/bad Misha/print exper.c";
 // Определение глобальных переменных
 
 FILE *input, *output;
-float numfloat;
-int line=0, charnum=1, cur, next, next1, num, numr, hash, repr, keywordsnum, wasstructdef = 0;
+double numdouble;
+int line=0, charnum=1, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef = 0;
+struct {int first; int second;} numr;
 int source[SOURCESIZE], lines[LINESSIZE];
 int nextchar, curchar, func_def;
 int hashtab[256], reprtab[MAXREPRTAB], rp = 1, identab[MAXIDENTAB], id = 2, modetab[MAXMODETAB], md = 1, startmode = 0;
 int stack[100], stackop[100], stackoperands[100], ansttype,
-    sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg=-1, displ=-2, maxdispl = 3, maxdisplg = 3, type,
+    sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg=-1, displ=-3, maxdispl = 3, maxdisplg = 3, type,
     op = 0, inass = 0, firstdecl;
 int iniprocs[INIPROSIZE], procd = 1, arrdim, arrelemlen, was_struct_with_arr;
 int instring = 0, inswitch = 0, inloop = 0, lexstr[MAXSTRINGL+1];

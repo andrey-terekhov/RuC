@@ -6,6 +6,25 @@ extern void tablesandtree();
 extern void printf_char(int wchar);
 extern void printident(int r);
 
+void warning(ernum)
+{
+    int i;
+    printf("line %i) ", line);
+    for (i=lines[line]; i<charnum; i++)
+        printf_char(source[i]);
+    printf("\n");
+
+    switch (ernum)
+    {
+        case too_long_int:
+            printf("слишком большая целая константа, преобразована в ДЛИН (DOUBLE)\n");
+            break;
+            
+        default:
+            break;
+    }
+}
+
 void error(int ernum)
 {
     int i;
@@ -13,7 +32,6 @@ void error(int ernum)
     printf("line %i) ", line);
     for (i=lines[line]; i<charnum; i++)
         printf_char(source[i]);
-
     printf("\n");
     switch (ernum)
     {

@@ -16,8 +16,9 @@
 extern FILE *input;
 extern FILE *output;
 
-extern float numfloat;
-extern int line, charnum, cur, next, next1, num, numr, hash, repr, keywordsnum, wasstructdef;
+extern double numdouble;
+extern int line, charnum, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef;
+extern struct {int first; int second;} numr;
 extern int source[SOURCESIZE], lines[LINESSIZE];
 
 extern int nextchar, curchar, func_def;
