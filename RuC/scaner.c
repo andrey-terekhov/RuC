@@ -395,8 +395,8 @@ int scan()
         }
         case '\"':
         {
-            instring = 1;
             int n = 0;
+            instring = 1;
             nextch();
             while (curchar != '\"' && n < MAXSTRINGL)
             {
