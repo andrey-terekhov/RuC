@@ -532,7 +532,7 @@ int scan()
                 if (flagint)
                     for (i=1; i<=d; i++)
                         num *= 10;
-                numdouble *= pow(10,k*d);
+                numdouble *= pow(10.0,k*d);
             }
             
             if (flagint)

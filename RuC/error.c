@@ -6,14 +6,8 @@ extern void tablesandtree();
 extern void printf_char(int wchar);
 extern void printident(int r);
 
-void warning(ernum)
+void warning(int ernum)
 {
-    int i;
-    printf("line %i) ", line);
-    for (i=lines[line]; i<charnum; i++)
-        printf_char(source[i]);
-    printf("\n");
-
     switch (ernum)
     {
         case too_long_int:
