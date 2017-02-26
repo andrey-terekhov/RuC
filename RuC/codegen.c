@@ -7,6 +7,7 @@
 #include "global_vars.h"
 
 extern void error(int err);
+extern int szof(int);
 
 void tocode(int c)
 {
@@ -87,7 +88,7 @@ void finalop()
             else if (c == COPY1STASS)
                 tocode(tree[tc++]);   // длина
 
-            else if((c >= ASS && c <= DIVASS)    || (c >= ASSV && c <= DIVASSV) ||
+            else if((c >= REMASS && c <= DIVASS)    || (c >= REMASSV && c <= DIVASSV) ||
                     (c >= ASSR && c <= DIVASSR)  || (c >= ASSRV && c <= DIVASSRV) ||
                     (c >= POSTINC && c <= DEC)   || (c >= POSTINCV && c <= DECV) ||
                     (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))
@@ -171,7 +172,7 @@ void Expr_gen(int adfi)
                 eltype = tree[tc++];
 				Expr_gen(0);        
                 tocode(SLICE);
-                tocode(eltype > 0 && modetab[eltype] == MSTRUCT ? modetab[eltype+1] : 1);
+                tocode(szof(eltype));
                 if (eltype > 0 && modetab[eltype] == MARRAY)
                     tocode(LAT);
                 break;

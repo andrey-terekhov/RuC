@@ -5,7 +5,7 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
-char* name = "../../../tests/00test.c";
+char* name = "../../../tests/bubble.c";
 
 #include <stdio.h>
 #include <string.h>

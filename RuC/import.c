@@ -250,7 +250,7 @@ void auxprint(int beg, int t, char before, char after)
     {
         int rr = r, i, type = modetab[t+1], d;
         
-        d = type > 0 && modetab[type] == MSTRUCT ? modetab[type+1] : 1;
+        d = szof(type);
         
         if (modetab[t+1] > 0)
             for (i=0; i<mem[rr-1]; i++)
@@ -295,7 +295,7 @@ void auxget(int beg, int t)
     else if (t == LFLOAT)
     {
         scanf(" %lf", &rf);
-        memcpy(&mem[beg], &rf, sizeof(long));
+        memcpy(&mem[beg], &rf, sizeof(double));
     }
     else if (t == LVOID)
         printf(" значения типа ПУСТО вводить нельзя\n");
@@ -304,7 +304,7 @@ void auxget(int beg, int t)
     else if (modetab[t] == MARRAY)
     {
         int rr = r, i, type = modetab[t+1], d;
-        d = type > 0 && modetab[type] == MSTRUCT ? modetab[type+1] : 1;
+        d = szof(type);
         rr = mem[beg];
         for (i=0; i<mem[rr-1]; i++)
             auxget(rr + i * d, type);
@@ -367,10 +367,16 @@ void genarr(int N, int curdim, int d, int adr, int procnum, int oldpc)
 void rec_init_arr(int where, int N, int d)
 {
     int b = mem[where-1], i, j;
+//    double f;
+//      printf("rec_init_arr where= %i from= %i b= %i N= %i d= %i\n", where, from, b, N, d);
     for (i=0; i<b; i++)
         if (N == 1)
+        {
             for (j=0; j<d; j++)
                 mem[where++] = mem[from++];
+//            memcpy(&f, &mem[from-2], sizeof(double));
+//            printf("f= %f\n", f);
+        }
         else
             rec_init_arr(mem[where++], N-1, d);
 }
@@ -513,6 +519,7 @@ void interpreter()
             case RANDC:
                 rf = (double)rand() / RAND_MAX;
                 memcpy(&mem[++x], &rf, sizeof(double));
+                ++x;
                 break;
             case ROUNDC:
                 mem[x] = (int)(rf+0.5);
@@ -663,10 +670,12 @@ void interpreter()
                 mem[x] = r + i * d;
                 break;
             case ARRINIT:
-                N = mem[pc++];   // N - размерность
-                d = mem[pc++];   // d
-                x -= mem[pc++];  // сколько всего элементов
+                N = mem[pc++];       // N - размерность
+                d = mem[pc++];       // d
+                x -= mem[pc++] * d;  // сколько всего значений
                 from = x + 1;
+//                memcpy(&lf, &mem[from], sizeof(double));
+//                printf("lf= %f\n", lf);
                 rec_init_arr(mem[dsp()], N, d);
                 break;
             case STRUCTINIT:
@@ -1021,25 +1030,25 @@ void interpreter()
             case PLUSASSATR:
                 memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf += rf;
-                memcpy(&mem[x++], &lf, sizeof(double));
+                memcpy(&mem[++x], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case MINUSASSATR:
                 memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf -= rf;
-                memcpy(&mem[x++], &lf, sizeof(double));
+                memcpy(&mem[++x], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case MULTASSATR:
                 memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf *= rf;
-                memcpy(&mem[x++], &lf, sizeof(double));
+                memcpy(&mem[++x], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case DIVASSATR:
                 memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf /= check_zero_float(rf);
-                memcpy(&mem[x++], &lf, sizeof(double));
+                memcpy(&mem[++x], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
                 break;
  

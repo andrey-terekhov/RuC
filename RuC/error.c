@@ -430,6 +430,12 @@ void error(int ernum)
         case print_without_br:
             printf("операнд оператора печати должен быть в круглых скобках ()\n");
             break;
+        case select_not_from_struct:
+            printf("выборка поля . не из структуры\n");
+            break;
+        case select_from_func_value:
+            printf("В РуСи структуру-значение функции можно только присвоить или передать параметром\n");
+            break;
             
             
         default: ;

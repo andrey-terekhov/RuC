@@ -193,7 +193,7 @@ void toval()        // надо значение положить на стек,
     {
         if (anst == IDENT)
             tree[tc - 2] = is_float(ansttype) ? TIdenttovald : TIdenttoval;
-        
+
         if (!(is_array(ansttype) || is_pointer(ansttype)))
             if (anst == ADDR)
                 totree(is_float(ansttype) ? TAddrtovald : TAddrtoval);
@@ -263,6 +263,8 @@ int newdecl(int type, int elemtype)
     return check_duplicates();
 }
 
+void exprval();
+
 void primaryexpr()
 {
 	if (cur == NUMBER)
@@ -315,7 +317,6 @@ void primaryexpr()
 	else if (cur < SLEEP)            // стандартная функция
 	{
 		int func = cur;
-        printf("primary func= %i\n", func);
 		mustbe(LEFTBR, no_leftbr_in_stand_func);
         if (func == RAND)
         {
@@ -326,6 +327,8 @@ void primaryexpr()
         {
             scaner();
             expr(1);
+            toval();
+            
             if (func == GETDIGSENSOR || func == GETANSENSOR)
             {
                 notrobot = 0;
@@ -391,7 +394,7 @@ void selectend()
         anstdispl += find_field(ansttype);
     
     totree(anstdispl);
-    if (is_array(ansttype))
+    if (is_array(ansttype) || is_pointer(ansttype))
         totree(TAddrtoval);
 
 }
@@ -401,7 +404,6 @@ void postexpr()
 	int lid, leftansttype;
     int was_func = 0;
 
-	primaryexpr();
 	lid = lastid;
 	leftansttype = ansttype;
 
@@ -445,7 +447,8 @@ void postexpr()
 			else
 			{
                 inass = 0;
-				exprassn(0);
+				exprassn(1);
+                toval();
                 totree(TExprend);
                 
                 if (mdj > 0 && mdj != ansttype)
@@ -472,7 +475,7 @@ void postexpr()
         if (is_struct(ansttype))
             x -= modetab[ansttype+1] - 1;
 	}
-
+ 
     while (next == LEFTSQBR || next == ARROW || next == DOT)
     {
         while (next == LEFTSQBR) // вырезка из массива (возможно, многомерного)
@@ -497,7 +500,7 @@ void postexpr()
                 totree(TSlice);
             
             totree(elem_type);
-            expr(0);
+            exprval();
             index_check();                   // проверка, что индекс int или char
 
             mustbe(RIGHTSQBR, no_rightsqbr_in_slice);
@@ -506,17 +509,18 @@ void postexpr()
             anst = ADDR;
         }
 
-        while (next == ARROW)  // это выборка поля из указателя на структуру, если больше одной точки подряд - схлопываем в 1 select
+        while (next == ARROW)  // это выборка поля из указателя на структуру, если после ->
+                               // больше одной точки подряд, схлопываем в 1 select
         {                      // перед выборкой мог быть вызов функции или вырезка элемента массива
+            
             if (modetab[ansttype] != MPOINT || modetab[modetab[ansttype + 1]] != MSTRUCT)
                 error(get_field_not_from_struct_pointer);
             
             if (anst == IDENT)
-            {
                 tree[tc-2] = TIdenttoval;
-                anst = ADDR;
-            }
-            totree(TSelect);          // может быть, anst уже был ADDR, VAL не может быть адресом структуры
+            anst = ADDR;
+                                      // pointer  мог быть значением функции (VAL) или, может быть,
+            totree(TSelect);          // anst уже был ADDR, т.е. адрес теперь уже всегда на верхушке стека
 
             anstdispl = find_field(ansttype = modetab[ansttype + 1]);
             selectend();
@@ -524,6 +528,11 @@ void postexpr()
         if (next == DOT)
 
         {
+            if (ansttype < 0 || modetab[ansttype] != MSTRUCT)
+                error(select_not_from_struct);
+            if (anst == VAL)    // структура - значение функции
+                error(select_from_func_value);
+            
             if (anst == IDENT)
             {
                 int globid = anstdispl < 0 ? -1 : 1;
@@ -531,22 +540,20 @@ void postexpr()
                     anstdispl += globid * find_field(ansttype);
                 tree[tc-1] = anstdispl;
             }
-            else if (anst == ADDR)
+            else     // ADDR
             {
                 totree(TSelect);
                 anstdispl = 0;
                 selectend();
             }
-            else
-                error(get_field_not_from_struct_pointer1);
         }
     }
-    
 	if (next == INC || next == DEC) // a++, a--
 	{
         int op;
 		if (!is_int(ansttype) && !is_float(ansttype))
 			error(wrong_operand);
+
 		if (anst != IDENT && anst != ADDR)
 			error(unassignable_inc);
 		op = (next == INC) ? POSTINC : POSTDEC;
@@ -563,64 +570,67 @@ void postexpr()
 void unarexpr()
 {
     int op = cur;
-	if (cur == LNOT || cur == LOGNOT || cur == LPLUS || cur == LMINUS || cur == LAND || cur == LMULT)
+	if (cur == LNOT || cur == LOGNOT || cur == LPLUS || cur == LMINUS || cur == LAND || cur == LMULT ||
+        cur == INC  || cur == DEC)
 	{
-		scaner();
-		if (op == LAND || op == LMULT)
-		{
-			postexpr();
-			if (op == LAND)
-			{
-				if (anst == VAL)
-					error(wrong_addr);
+        if (cur == INC || cur == DEC)
+        {
+            scaner();
+            unarexpr();
+            if (anst != IDENT && anst != ADDR)
+                error(unassignable_inc);
+            if (anst == ADDR)
+                op += 4;
+            totreef(op);
+            if (anst == IDENT)
+                totree(identab[lastid+3]);
+            anst = VAL;
+        }
+        else
+        {
+            scaner();
+            unarexpr();
+
+            if (op == LAND)
+            {
+                if (anst == VAL)
+                    error(wrong_addr);
                 
-				if (anst == IDENT)
-					tree[tc-2] = TIdenttoaddr;
+                if (anst == IDENT)
+                    tree[tc-2] = TIdenttoaddr;
                 
-				stackoperands[sopnd] = ansttype = newdecl(MPOINT, ansttype);
+                stackoperands[sopnd] = ansttype = newdecl(MPOINT, ansttype);
                 anst = VAL;
-			}
-			else
-			{
-				if (!is_pointer(ansttype))
-					error(aster_not_for_pointer);
-                
+            }
+            else if (op == LMULT)
+            {
+                if (!is_pointer(ansttype))
+                    error(aster_not_for_pointer);
+
                 if (anst == IDENT)
                     tree[tc-2] = TIdenttoval;      // *p
                 
-				stackoperands[sopnd] = ansttype = modetab[ansttype + 1];
+                stackoperands[sopnd] = ansttype = modetab[ansttype + 1];
                 anst = ADDR;
-			}
-		}
-		else
-		{
-			unarexpr();
-			if ((op == LNOT || op == LOGNOT) && ansttype == LFLOAT)
-				error(int_op_for_float);
-			else if (op == LMINUS)
-				totreef(UNMINUS);
-			else if (op == LPLUS)
-				;
-			else
-				totree(op);
-			anst = VAL;
-		}
-	}
-	else if (cur == INC || cur == DEC)
-	{
-		scaner();
-		postexpr();
-		if (anst != IDENT && anst != ADDR)
-			error(unassignable_inc);
-		if (anst == ADDR)
-			op += 4;
-		totreef(op);
-		if (anst == IDENT)
-			totree(identab[lastid+3]);
-		anst = VAL;
-	}
-	else
-		postexpr();
+            }
+            else
+            {
+                if ((op == LNOT || op == LOGNOT) && ansttype == LFLOAT)
+                    error(int_op_for_float);
+                else if (op == LMINUS)
+                    totreef(UNMINUS);
+                else if (op == LPLUS)
+                    ;
+                else
+                    totree(op);
+                anst = VAL;
+            }
+        }
+    }
+    else
+        primaryexpr();
+    
+    postexpr();
     stackoperands[sopnd] = ansttype;
 }
 
@@ -628,8 +638,8 @@ void exprinbrkts(int er)
 {
 	mustbe(LEFTBR, er);
 	scaner();
-	expr(0);
-	mustbe(RIGHTBR, er);
+    exprval();
+    mustbe(RIGHTBR, er);
 }
 
 int prio(int op)   // возвращает 0, если не операция
@@ -690,7 +700,7 @@ void condexpr()
 			scaner();
 			sopnd--;
 			tree[thenref] = tc;
-			expr(0);                  // then
+			exprval();                  // then
 			if (!globtype)
 				globtype = ansttype;
 			sopnd--;
@@ -728,10 +738,7 @@ void condexpr()
 		stackoperands[sopnd] = ansttype = globtype;
 	}
 	else
-	{
-		toval();
 		stackoperands[sopnd] = ansttype;
-	}
 }
 
 void exprassnvoid()
@@ -800,6 +807,7 @@ void exprassn(int level)
 			if (is_int(ltype) && is_float(rtype))
 				error(assmnt_float_to_int);
             
+            toval();
 			if (is_int(rtype) && is_float(ltype))
             {
 				totree(WIDEN);
@@ -834,6 +842,13 @@ void expr(int level)
         totree(TExprend);
 }
 
+void exprval()
+{
+    expr(1);
+    toval();
+    totree(TExprend);
+}
+
 int arrdef(int t)                 // вызывается при описании массивов и структур из массивов сразу после idorpnt
 {
     emptyarrdef = 2;              // == 2, если первый раз, == 1, если были пустые скобки [], == 0, если был [N]
@@ -860,6 +875,7 @@ int arrdef(int t)                 // вызывается при описани�
             scaner();
             unarexpr();
             condexpr();
+            toval();
             if (!is_int(ansttype))
                 error(array_size_must_be_int);
             totree(TExprend);
@@ -879,7 +895,8 @@ int inition(int decl_type)
     if (decl_type < 0 || is_pointer(decl_type))  // Обработка для базовых типов и указателей
     {
         scaner();
-        exprassn(0);
+        exprassn(1);
+        toval();
         totree(TExprend);
 // съедаем выражение, его значение будет на стеке
         sopnd--;
@@ -1086,12 +1103,12 @@ void statement()
 						 notrobot = 0;
 						 mustbe(LEFTBR, no_leftbr_in_setmotor);
 						 scaner();
-						 expr(0);
+						 exprval();
 						 if (ansttype != LINT)
 							 error(param_setmotor_not_int);
 						 mustbe(COMMA, no_comma_in_setmotor);
 						 scaner();
-						 expr(0);
+						 exprval();
 						 if (ansttype != LINT)
 							 error(param_setmotor_not_int);
 						 sopnd -= 2;
@@ -1104,7 +1121,7 @@ void statement()
 					  notrobot = 0;
 					  mustbe(LEFTBR, no_leftbr_in_sleep);
 					  scaner();
-					  expr(0);
+					  exprval();
 					  if (ansttype != LINT)
 						  error(param_setmotor_not_int);
 					  sopnd--;
@@ -1129,6 +1146,7 @@ void statement()
 					  scaner();
 					  unarexpr();
 					  condexpr();
+                      toval();
 					  totree(TExprend);
 					  if (ansttype == LFLOAT)
 						  error(float_in_switch);
@@ -1199,7 +1217,7 @@ void statement()
 					 else
 					 {
 						 tree[condref] = tc;
-						 expr(0);
+						 exprval();
 						 sopnd--;
 						 mustbe(SEMICOLON, no_semicolon_in_for);
 						 sopnd--;
@@ -1283,6 +1301,7 @@ void statement()
                             totree(szof(ftype));
                             scaner();
 							expr(1);
+                            toval();
 							sopnd--;
 							if (ftype == LFLOAT && ansttype == LINT)
 								totree(WIDEN);
@@ -1301,7 +1320,8 @@ void statement()
 						sopnd--;
 						scaner();
 						block(-1);
-                        flagsemicol = 0;						wasdefault = 0;
+                        flagsemicol = 0;
+                        wasdefault = 0;
 						inswitch = oldinswitch;
 		}
 			break;

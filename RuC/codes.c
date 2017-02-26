@@ -690,7 +690,7 @@ void tablesandcode()
             case B:
                 fprintf(output, "B %i\n", mem[i++]);
                 break;
-            case STRING:
+/*            case STRING:
             {
                 int j, n;
                 fprintf(output,"STRING %i\n", mem[i++]);
@@ -701,6 +701,7 @@ void tablesandcode()
                 break;
             }
                 break;
+ */
             case BE0:
                 fprintf(output, "BE0 %i\n", mem[i++]);
                 break;
@@ -849,7 +850,7 @@ void tablesandcode()
                 
                 
             default:
-                fprintf(output, "%i\n", mem[i-1]);
+                fprintf(output, "%i %c\n", mem[i-1], mem[i-1]);
                 break;
         }
     }

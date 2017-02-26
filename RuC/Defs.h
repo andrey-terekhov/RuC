@@ -481,6 +481,8 @@
 #define not_decl                           326
 #define predef_but_notdef                  327
 #define print_without_br                   328
+#define select_not_from_struct             329
+#define select_from_func_value             330
 
 //  коды предупреждений
 
