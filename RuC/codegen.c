@@ -100,9 +100,9 @@ void finalop()
 
 }
 
-void Expr_gen(int adfi)
+int Expr_gen(int adfi)
 {
-    int flagprim = 1, eltype;
+    int flagprim = 1, eltype, wasstring = 0;
     while (flagprim)
     {
         switch (tree[tc++])
@@ -163,6 +163,7 @@ void Expr_gen(int adfi)
                 
                 mem[res-1] = n;
                 mem[res-2] = pc;
+                wasstring = 1;
             }
                 break;
             case TSliceident:
@@ -224,7 +225,7 @@ void Expr_gen(int adfi)
                     ad = r;
                 }
             if (adfi)
-                return;
+                return 0;
         }
         finalop();
         
@@ -234,6 +235,7 @@ void Expr_gen(int adfi)
              flagprim = 0;
         }
     }
+    return wasstring;
 }
 
 void compstmt_gen();
@@ -462,10 +464,11 @@ void Stmt_gen()
 void Declid_gen()
 {
 	int olddispl = tree[tc++], telem = tree[tc++], N = tree[tc++],
-    element_len, all = tree[tc++], iniproc = tree[tc++];
+    element_len, all = tree[tc++], iniproc = tree[tc++]; // all - общее кол-во слов и в структуре, и в массиве
+
     int i;
 
-    element_len = telem == LFLOAT ? 2 :telem > 0 && modetab[telem] == MSTRUCT ? modetab[telem+1] : 1;
+    element_len = szof(telem);
     if (N == 0)                    // обычная переменная int a; или struct point p;
 	{
         if (iniproc)
@@ -478,17 +481,20 @@ void Declid_gen()
 		{
             if (telem > 0 && modetab[telem] == MSTRUCT)
             {
-                for (i=0; i < element_len; i++)
+                do
                     Expr_gen(0);
-                tocode(STRUCTINIT);
-                tocode(modetab[telem+1]);
+                while (tree[tc] != TENDINIT);
+                tc++;
+                tocode(COPY0STASS);
+                tocode(olddispl);
+                tocode(all);       // общее кол-во слов
             }
             else
             {
                 Expr_gen(0);
                 tocode(telem == LFLOAT ? ASSRV : ASSV);
+                tocode(olddispl);
             }
-            tocode(olddispl);
 		}
 	}
 	else                                // Обработка массива int a[N1]...[NN] =
@@ -501,15 +507,26 @@ void Declid_gen()
         
         if (all)                        // all - общее количество выражений в инициализации
             {
-                for (i = 0; i<all; i++)
-                    Expr_gen(0);
-                tocode(ARRINIT);        // ARRINIT N d all displ
-                tocode(abs(N));
-                tocode(element_len);
-                tocode(all);
-                tocode(olddispl);
-
+                int wasstring = 0;
+                do
+                    wasstring = Expr_gen(0);
+                while (tree[tc] != TENDINIT);
+                tc++;
+                if (wasstring)
+                {
+                    tocode(STRINGINIT);    // на стеке адрес 0-го элемента строки
+                    tocode(olddispl);
                 }
+                else
+                {
+                    tocode(ARRINIT);        // ARRINIT N d all displ
+                    tocode(abs(N));
+                    tocode(element_len);
+                    tocode(all);
+                    tocode(olddispl);
+                }
+
+            }
 	}
 }
 

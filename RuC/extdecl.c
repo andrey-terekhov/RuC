@@ -8,9 +8,8 @@ extern void error(int e);
 
 int szof(int type)
 {
-    int r=(type == LFLOAT || type == LDOUBLE) ? 2 :
+    return type == LFLOAT ? 2 :
     (type > 0 && modetab[type] == MSTRUCT) ? modetab[type + 1] : 1;
-    return r;
 }
 
 int is_row_of_char(int t)
@@ -380,7 +379,7 @@ int find_field(int stype)                          // выдает смещен�
             break;
         }
         else
-            select_displ += modetab[field_type] == MSTRUCT ? modetab[field_type + 1] : 1;
+            select_displ += szof(field_type);
             // прибавляем к суммарному смещению длину поля
     }
     if (flag)
@@ -615,6 +614,7 @@ void unarexpr()
             }
             else
             {
+                toval();
                 if ((op == LNOT || op == LOGNOT) && ansttype == LFLOAT)
                     error(int_op_for_float);
                 else if (op == LMINUS)
@@ -673,11 +673,15 @@ void subexpr()
 		binop(stackop[--sp]);
 }
 
+int intopassn(int next)
+{
+   return
+    next == REMASS || next == SHLASS || next == SHRASS || next == ANDASS || next == EXORASS || next == ORASS;
+}
 int opassn()
 {
 	return
-    (next == ASS || next == MULTASS || next == DIVASS || next == REMASS || next == PLUSASS || next == MINUSASS
-     || next == SHLASS || next == SHRASS || next == ANDASS || next == EXORASS || next == ORASS)
+    (next == ASS || next == MULTASS || next == DIVASS || next == PLUSASS || next == MINUSASS || intopassn(next))
     ? op = next : 0;
 }
 
@@ -741,6 +745,109 @@ void condexpr()
 		stackoperands[sopnd] = ansttype;
 }
 
+int struct_init(int);
+
+int inition(int decl_type)
+{
+    int all = szof(decl_type);
+    if (decl_type < 0 || is_pointer(decl_type) ||  // Обработка для базовых типов и указателей
+        (is_array(decl_type) && modetab[decl_type+1] == LCHAR))         // это строка
+    {
+        exprassn(1);
+        toval();
+        totree(TExprend);
+        // съедаем выражение, его значение будет на стеке
+        sopnd--;
+        if (is_int(decl_type) && is_float(ansttype))
+            error(init_int_by_float);
+        if (is_float(decl_type) && is_int(ansttype))
+            insertwiden();
+        else if (decl_type != ansttype)
+            error(error_in_initialization);
+        if (structdispl < 0 )
+            structdispl -= all;
+        else
+            structdispl += all;
+    }
+    else if (is_struct(decl_type) && cur == BEGIN)
+        all = struct_init(decl_type);
+    else
+        error(wrong_init);
+    return all;
+}
+
+int struct_init(int decl_type)   // сейчас modetab[decl_type] равен MSTRUCT
+{
+    int next_field = decl_type + 3, num_fields = 0, all = 0;
+    if (cur != BEGIN)
+        error(arr_init_must_start_from_BEGIN);
+    do
+    {
+        scaner();
+        all += inition(modetab[next_field]);
+        next_field += 2;
+        num_fields += 2;
+        if (num_fields < modetab[decl_type+2])
+        {
+            if (next == COMMA)        //аргументы идут через запятую, заканчиваются }
+                scaner();
+            else
+                error(no_comma_in_init_list);
+        }
+    }
+    while (num_fields < modetab[decl_type+2]);
+    
+    if (next != END)
+        error(wait_end);
+    scaner();
+    return all;
+}
+
+int array_init(int decl_type)                    // сейчас modetab[decl_type] равен MARRAY
+{
+    int elem_type = modetab[decl_type+1], all = 0;
+    if (cur == STRING)
+    {
+        inition(decl_type);
+        return 1;
+    }
+    if (cur != BEGIN)
+        error(arr_init_must_start_from_BEGIN);
+
+    if (is_array(elem_type))
+    {
+        do
+        {
+            scaner();
+            all += array_init(elem_type);
+        }
+        while (scaner() == COMMA);
+        if (cur != END)
+            error(wait_end);
+    }
+    else
+    {
+        do
+        {
+            scaner();
+            all += inition(elem_type);
+        }
+        while (scaner() == COMMA);
+        if (cur != END)
+            error(wait_end);
+    }
+    return all;
+}
+
+void initializer(int type)
+{    if (is_struct(type))
+        struct_init(type);
+    else
+        error(init_not_struct);
+    stackoperands[++sopnd] = ansttype = type;
+    anst = VAL;
+}
+
 void exprassnvoid()
 {
     if (notcopy)
@@ -755,15 +862,20 @@ void exprassnvoid()
 
 void exprassn(int level)
 {
-    int leftanst, leftanstdispl, ltype, rtype;
+    int leftanst, leftanstdispl, ltype, rtype, lnext;
     notcopy = 1;
-	unarexpr();
+    if (cur == BEGIN)
+        initializer(leftansttype);
+    else
+        unarexpr();
 
 	leftanst = anst;
     leftanstdispl = anstdispl;
+    leftansttype = ansttype;
     if (opassn())
     {
         int opp = op;
+        lnext = next;
         inass = 1;
         scaner();
         scaner();
@@ -774,6 +886,9 @@ void exprassn(int level)
             error(unassignable);
 		rtype = stackoperands[sopnd--];      // снимаем типы операндов со стека
 		ltype = stackoperands[sopnd];
+        
+        if (intopassn(lnext) && (is_float(ltype) || is_float(rtype)))
+        error(int_op_for_float);
         
         if (is_array(ltype))                 // присваивать массив в массив в си нельзя
             error(array_assigment);
@@ -804,6 +919,7 @@ void exprassn(int level)
 		{
             if (is_pointer(ltype) && opp != ASS)        // в указатель можно присваивать только с помощью =
                 error(wrong_struct_ass);
+            
 			if (is_int(ltype) && is_float(rtype))
 				error(assmnt_float_to_int);
             
@@ -813,7 +929,9 @@ void exprassn(int level)
 				totree(WIDEN);
                 ansttype = LFLOAT;
             }
-		
+            if (is_pointer(ltype) && is_pointer(rtype) && ltype != rtype)// проверка нужна только для указателей
+                error(type_missmatch);
+
             if (leftanst == ADDR)
                 opp += 11;
             totreef(opp);
@@ -824,7 +942,7 @@ void exprassn(int level)
         stackoperands[sopnd] = ansttype = ltype; // тип результата - на стек
 	}
 	else
-		condexpr();    // condexpr учитывает тот факт, что начало выражения в виде unarexpr уже выкушано
+        condexpr();    // condexpr учитывает тот факт, что начало выражения в виде unarexpr уже выкушано
 }
 
 void expr(int level)
@@ -887,88 +1005,6 @@ int arrdef(int t)                 // вызывается при описани�
     return t;
 }
 
-int struct_init(int);
-
-int inition(int decl_type)
-{
-    int all = 1;
-    if (decl_type < 0 || is_pointer(decl_type))  // Обработка для базовых типов и указателей
-    {
-        scaner();
-        exprassn(1);
-        toval();
-        totree(TExprend);
-// съедаем выражение, его значение будет на стеке
-        sopnd--;
-        if (decl_type < 0)
-        {
-            if (is_int(decl_type) && is_float(ansttype))
-                error(init_int_by_float);
-            if (is_float(decl_type) && is_int(ansttype))
-                insertwiden();
-        }
-        else if (decl_type != ansttype)
-                error(error_in_initialization);
-        if (structdispl < 0 )
-            structdispl--;
-        else
-            structdispl++;
-    }
-    else if (is_struct(decl_type) && next == BEGIN)
-            all = struct_init(decl_type);
-         else
-            error(wrong_init);
-    return all;
-}
-
-int struct_init(int decl_type)   // сейчас modetab[decl_type] равен MSTRUCT
-{
-	int next_field = decl_type + 3, num_fields = 0, all = 0;
-	mustbe(BEGIN, arr_init_must_start_from_BEGIN);
-    
-    do
-	{
-        all += inition(modetab[next_field]);
-        next_field += 2;
-        num_fields += 2;
-        if (num_fields < modetab[decl_type+2])
-        {
-            if (next == COMMA)        //аргументы идут через запятую, заканчиваются }
-                scaner();
-            else
-                error(no_comma_in_init_list);
-        }
-    }
-    while (num_fields < modetab[decl_type+2]);
-
-    if (next != END)
-        error(wait_end);
-	scaner();
-    return all;
-}
-
-int array_init(int decl_type, int N)                    // сейчас modetab[decl_type] равен MARRAY
-{
-    int elem_type = modetab[decl_type+1], all = 0;
-    mustbe(BEGIN, arr_init_must_start_from_BEGIN);
-    if (N > 1)
-    {
-        do
-            all += array_init(elem_type, N-1);
-        while (scaner() == COMMA);
-        if (cur != END)
-            error(wait_end);
-    }
-    else
-    {
-        do
-            all += inition(elem_type);
-        while (scaner() == COMMA);
-        if (cur != END)
-            error(wait_end);
-    }
-    return all;
-}
 
 void decl_id(int decl_type)    // вызывается из block и extdecl, только эта процедура реально отводит память
 {                              // если встретятся массивы (прямо или в структурах), их размеры уже будут в стеке
@@ -998,14 +1034,17 @@ void decl_id(int decl_type)    // вызывается из block и extdecl, т
     if (next == ASS)
     {
         scaner();
-
+        scaner();
         if (is_array(decl_type))          // инициализация массива
-            tree[all] = array_init(decl_type, arrdim);
+            tree[all] = array_init(decl_type);
         else
         {
             structdispl = identab[oldid+3];
             tree[all] = inition(decl_type);
         }
+        if (is_struct(decl_type) || is_array(decl_type))
+            totree(TENDINIT);
+
     }
 }
 
@@ -1399,7 +1438,7 @@ int struct_decl_list()
         loc_modetab[locmd++] = t;
         loc_modetab[locmd++] = repr;
         field_count++;
-        curdispl += is_struct(t) ? modetab[t+1] : 1;
+        curdispl += szof(t);
 
 		if (scaner() != SEMICOLON)
 			error(no_semicomma_in_struct);

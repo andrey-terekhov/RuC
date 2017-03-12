@@ -79,6 +79,10 @@ void tablesandtree()
             case TEnd:
                 fprintf(output, "TEnd\n");
                 break;
+            case TENDINIT:
+                fprintf(output, "TEndinit\n");
+                break;
+
             case TIf:
                 fprintf(output, "TIf %i %i\n", tree[i], tree[i+1]);
 				i += 2;
@@ -714,15 +718,14 @@ void tablesandcode()
 			case SELECT:
 				fprintf(output, "SELECT field_displ= %i\n", mem[i++]);
 				break;
+            case STRINGINIT:
+                fprintf(output, "STRINGINIT displ= %i\n", mem[i++]);
+                break;
             case ARRINIT:
                 fprintf(output, "ARRINIT N= %i ", mem[i++]);
                 fprintf(output, "d= %i ", mem[i++]);
                 fprintf(output, "all= %i ", mem[i++]);
                 fprintf(output, "displ= %i\n", mem[i++]);
-                break;
-            case STRUCTINIT:
-                fprintf(output, "STRUCTINIT all= %i displ= %i\n", mem[i], mem[i+1]);
-				i += 2;
                 break;
             case WIDEN:
                 fprintf(output, "WIDEN\n");

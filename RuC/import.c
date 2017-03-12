@@ -34,6 +34,7 @@ extern int szof(int);
 #define log_from_negat      14
 #define log10_from_negat    15
 #define wrong_asin          16
+#define wrong_string_init   17
 
 int l, g, x, iniproc, maxdisplg, wasmain;
 int reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md;
@@ -168,6 +169,9 @@ void runtimeerr(int e, int i, int r)
         case wrong_arr_init:
             printf("массив с %i элементами инициализируется %i значениями\n", i, r);
             break;
+        case wrong_string_init:
+            printf("строковая переменная с %i элементами инициализируется строкой с %i литерами\n", i, r);
+            break;
         case wrong_motor_num:
             printf("номер силового мотора %i, а должен быть от 1 до 4\n", i);
             break;
@@ -249,7 +253,6 @@ void auxprint(int beg, int t, char before, char after)
     else if (modetab[t] == MARRAY)
     {
         int rr = r, i, type = modetab[t+1], d;
-        
         d = szof(type);
         
         if (modetab[t+1] > 0)
@@ -367,15 +370,11 @@ void genarr(int N, int curdim, int d, int adr, int procnum, int oldpc)
 void rec_init_arr(int where, int N, int d)
 {
     int b = mem[where-1], i, j;
-//    double f;
-//      printf("rec_init_arr where= %i from= %i b= %i N= %i d= %i\n", where, from, b, N, d);
     for (i=0; i<b; i++)
         if (N == 1)
         {
             for (j=0; j<d; j++)
                 mem[where++] = mem[from++];
-//            memcpy(&f, &mem[from-2], sizeof(double));
-//            printf("f= %f\n", f);
         }
         else
             rec_init_arr(mem[where++], N-1, d);
@@ -461,9 +460,9 @@ void interpreter()
                 printident(identab[i+1]);   // ссылка на reprtab
                 
                 if (prtype > 0 && modetab[prtype] == MARRAY && modetab[prtype+1] > 0)
-                    auxprint(dspl(identab[i+3]), identab[i+2], '\n', '\n');
+                    auxprint(dspl(identab[i+3]), prtype, '\n', '\n');
                 else
-                    auxprint(dspl(identab[i+3]), identab[i+2], ' ', '\n');
+                    auxprint(dspl(identab[i+3]), prtype, ' ', '\n');
                 
                 break;
             case GETID:
@@ -648,8 +647,7 @@ void interpreter()
                 pc += 2;
                 break;
             case COPY1ST:
-                r = mem[x--];
-                copyST(r, mem[pc++]);
+                copyST(mem[x--], mem[pc++]);
                 break;
             case COPY0STASS:
                 copySTASS(dspl(mem[pc]), mem[pc+1]);
@@ -663,28 +661,28 @@ void interpreter()
                 
             case SLICE:
                 d = mem[pc++];
-                i = mem[x--];     // index
-                r = mem[x];       // array
+                i = mem[x--];        // index
+                r = mem[x];          // array
                 if (i < 0 || i >= mem[r-1])
                     runtimeerr(index_out_of_range, i, mem[r-1]);
                 mem[x] = r + i * d;
                 break;
+            case STRINGINIT:
+                r = mem[dspl(mem[pc++])];
+                N = mem[r-1];
+                from = mem[x--];
+                d = mem[from-1];     // d - кол-во литер в строке-инициаторе
+                if (N != d)
+                    runtimeerr(wrong_string_init, N, d);
+                for (i=0; i<N; i++)
+                    mem[r+i] = mem[from+i];
+                break;
             case ARRINIT:
                 N = mem[pc++];       // N - размерность
                 d = mem[pc++];       // d
-                x -= mem[pc++] * d;  // сколько всего значений
+                x -= mem[pc++];      // сколько всего слов во всех элементах инициализации
                 from = x + 1;
-//                memcpy(&lf, &mem[from], sizeof(double));
-//                printf("lf= %f\n", lf);
                 rec_init_arr(mem[dsp()], N, d);
-                break;
-            case STRUCTINIT:
-                d=mem[pc++];     // сколько всего значений во всех полях
-                x -= d;
-                from = x + 1;
-                r = dsp();       // адрес структуры в статике
-                for (i=0; i<d; i++)
-                    mem[r++] = mem[from++];
                 break;
             case WIDEN:
                 rf = (double)mem[x];

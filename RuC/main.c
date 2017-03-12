@@ -5,7 +5,7 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
-char* name = "../../../tests/bubble.c";
+char* name = /*"/Users/ant/Desktop/RuCRegr/defstest/COPY00_9300.c"; */      "../../../tests/stanfunc.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -33,7 +33,7 @@ int tree[MAXTREESIZE], tc=0, mem[MAXMEMSIZE], pc=0, functions[FUNCSIZE], funcnum
 int adcont, adbreak, adcase;
 int predef[FUNCSIZE], prdf = -1, emptyarrdef;
 int gotost[1000], pgotost;
-int anst, anstdispl, ansttype;              // anst = VAL  - значение на стеке
+int anst, anstdispl, ansttype, leftansttype= -1;     // anst = VAL  - значение на стеке
 int g, l, x, iniproc;                                // anst = ADDR - на стеке адрес значения
                                             // anst = IDENT- значение в статике, в anstdisl смещение от l или g
                                             // в ansttype всегда тип возвращаемого значения

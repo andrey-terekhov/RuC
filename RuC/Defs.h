@@ -201,11 +201,11 @@
 #define BE0     9470
 #define BNE0    9471
 #define SLICE   9472
-#define ARRINIT 9473
-#define WIDEN   9474
-#define WIDEN1  9475
-#define _DOUBLE 9476
-#define STRUCTINIT    9477
+#define WIDEN   9473
+#define WIDEN1  9474
+#define _DOUBLE 9475
+#define STRINGINIT    9476
+#define ARRINIT       9477
 #define STRUCTWITHARR 9478
 
 #define COPY00   9300
@@ -349,6 +349,7 @@
 #define TConstd     -338
 #define TIdenttovald -339
 #define TAddrtovald  -340
+#define TENDINIT     -341
 
 // Коды ошибок
 
@@ -483,6 +484,7 @@
 #define print_without_br                   328
 #define select_not_from_struct             329
 #define select_from_func_value             330
+#define init_not_struct                    331
 
 //  коды предупреждений
 

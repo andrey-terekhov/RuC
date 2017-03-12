@@ -34,7 +34,7 @@ extern int instring, inswitch, inloop, lexstr[MAXSTRINGL+1];
 extern int predef[FUNCSIZE], prdf, emptyarrdef;
 extern int pc, g, l, x;
 extern int gotost[], pgotost;
-extern int anst, anstdispl, ansttype;
+extern int anst, anstdispl, ansttype, leftansttype;
 // anst = VAL  - значение на стеке
 // anst = ADDR - на стеке адрес значения
 // anst = IDENT- значение в статике, в anstdisl смещение отl или g
