@@ -4,10 +4,10 @@ void main()
 {
     int c=4;
     b = 5 + a - c + a;
-    printid(b);
+    printid(b);       // 5
     b = a+= c;
-    printid(a);
-    printid(b);
+    printid(a);       // 6
+    printid(b);       // 6
     a = a*b + c/2;
-    printid(a);
+    printid(a);       // 38
 }

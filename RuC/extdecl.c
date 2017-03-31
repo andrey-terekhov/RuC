@@ -140,8 +140,9 @@ int toidentab(int f, int type)       // f=0, если не ф-ция, f=1, ес�
 	return lastid;
 }
 
-void binop(int op)
+void binop(int sp)
 {
+    int op = stackop[sp];
 	int rtype = stackoperands[sopnd--];
 	int ltype = stackoperands[sopnd];
 	if (is_pointer(ltype) || is_pointer(rtype))
@@ -156,7 +157,13 @@ void binop(int op)
 		totree(WIDEN);
 	if (is_float(ltype) || is_float(rtype))
 		ansttype = LFLOAT;
-	totreef(op);
+    if (op == LOGOR || op == LOGAND)
+    {
+        totree(op);
+        tree[stacklog[sp]] = tc++;
+    }
+    else
+        totreef(op);
 	if (op >= EQEQ && op <= LGE)
 		ansttype = LINT;
 	stackoperands[sopnd] = ansttype;
@@ -311,7 +318,7 @@ void primaryexpr()
 		expr(1);
 		mustbe(RIGHTBR, wait_rightbr_in_primary);
 		while (sp > oldsp)
-			binop(stackop[--sp]);
+			binop(--sp);
 	}
 	else if (cur < SLEEP)            // стандартная функция
 	{
@@ -653,15 +660,22 @@ int prio(int op)   // возвращает 0, если не операция
 
 void subexpr()
 {
-	int p, oldsp = sp, wasop = 0;
+	int p, oldsp = sp, wasop = 0, ad = 0;
 	while ((p = prio(next)))
 	{
 		wasop = 1;
 		toval();
 		while (sp > oldsp && stack[sp - 1] >= p)
-			binop(stackop[--sp]);
+			binop(--sp);
+
+        if (p <= 2)
+        {
+            totree(p == 1 ? ADLOGOR : ADLOGAND);
+            ad = tc++;
+        }
 
 		stack[sp] = p;
+        stacklog[sp] = ad;
 		stackop[sp++] = next;
 		scaner();
 		scaner();
@@ -670,7 +684,7 @@ void subexpr()
 	if (wasop)
 		toval();
 	while (sp > oldsp)
-		binop(stackop[--sp]);
+		binop(--sp);
 }
 
 int intopassn(int next)

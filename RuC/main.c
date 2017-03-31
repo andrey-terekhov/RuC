@@ -5,7 +5,7 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
-char* name = /*"/Users/ant/Desktop/RuCRegr/defstest/COPY00_9300.c"; */      "../../../tests/stanfunc.c";
+char* name = /*"/Users/ant/Desktop/RuCRegr/defstest/COPY00_9300.c";*/  "../../../tests/4test.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -23,14 +23,14 @@ struct {int first; int second;} numr;
 int source[SOURCESIZE], lines[LINESSIZE];
 int nextchar, curchar, func_def;
 int hashtab[256], reprtab[MAXREPRTAB], rp = 1, identab[MAXIDENTAB], id = 2, modetab[MAXMODETAB], md = 1, startmode = 0;
-int stack[100], stackop[100], stackoperands[100], ansttype,
+int stack[100], stackop[100], stackoperands[100], stacklog[100], ansttype,
     sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg=-1, displ=-3, maxdispl = 3, maxdisplg = 3, type,
     op = 0, inass = 0, firstdecl;
 int iniprocs[INIPROSIZE], procd = 1, arrdim, arrelemlen, was_struct_with_arr;
 int instring = 0, inswitch = 0, inloop = 0, lexstr[MAXSTRINGL+1];
 int tree[MAXTREESIZE], tc=0, mem[MAXMEMSIZE], pc=0, functions[FUNCSIZE], funcnum = 2, functype, kw = 0, blockflag = 1,
     entry, wasmain = 0, wasret, wasdefault, notcopy, structdispl, notrobot = 1;
-int adcont, adbreak, adcase;
+int adcont, adbreak, adcase, adandor;
 int predef[FUNCSIZE], prdf = -1, emptyarrdef;
 int gotost[1000], pgotost;
 int anst, anstdispl, ansttype, leftansttype= -1;     // anst = VAL  - значение на стеке

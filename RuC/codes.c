@@ -82,7 +82,6 @@ void tablesandtree()
             case TENDINIT:
                 fprintf(output, "TEndinit\n");
                 break;
-
             case TIf:
                 fprintf(output, "TIf %i %i\n", tree[i], tree[i+1]);
 				i += 2;
@@ -149,11 +148,9 @@ void tablesandtree()
                 fprintf(output, "TConst %i\n", tree[i++]);
                 break;
             case TConstd:
-            {
                 memcpy(&numdouble, &tree[i], sizeof(double));
                 i += 2;
                 fprintf(output, "TConstd %f\n", numdouble);
-            }
                 break;
             case TSliceident:
                 fprintf(output, "TSliceident displ= %i type= %i\n", tree[i], tree[i+1]);
@@ -165,8 +162,14 @@ void tablesandtree()
 			case TSelect:
 				fprintf(output, "TSelect displ= %i\n", tree[i++]);
 				break;
-                case NOP:
+            case NOP:
                 fprintf(output, "NOP\n");
+                break;
+            case ADLOGAND:
+                fprintf(output, "ADLOGAND addr= %i\n", tree[i++]);
+                break;
+            case ADLOGOR:
+                fprintf(output, "ADLOGOR addr= %i\n", tree[i++]);
                 break;
             case COPY00:
                 fprintf(output, "COPY00 %i ", tree[i++]);     // displleft

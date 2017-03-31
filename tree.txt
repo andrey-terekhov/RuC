@@ -1,39 +1,36 @@
 
 source
-line 1) float a;
-line 2) int b;
-line 3) void main()
-line 4) {
-line 5)     a = sin(3.14/2);
-line 6)     printid(a);
-line 7)     a = cos(0);
-line 8)     printid(a);
-line 9)     a = sqrt(1.e2);
-line 10)     printid(a);
-line 11)     a = abs(-2.72);
-line 12)     printid(a);
-line 13)     a = abs(-3);
-line 14)     printid(a);
-line 15)     /* sin(3.14/2)=1, cos(0)=1, sqrt(1.e2)=10, abs(-2.72)=2.72, abs(-3)=3 */
-line 16)     
-line 17) }
-line 18) 
+line 1) 
+line 2) void main()
+line 3) {
+line 4)     int a, b, c;
+line 5)     c = a && b || c;
+line 6)     c = a || b && c;
+line 7) }
+line 8) 
+line 9) 
+line 10) 
 
 identab
-id 2) 1
-id 3) 1335
-id 4) -3
-id 5) -3
+id 2) 0
+id 3) 8
+id 4) 2
+id 5) 2
 
 id 6) 1
-id 7) 1339
+id 7) 1335
 id 8) -1
-id 9) -5
+id 9) 3
 
-id 10) 0
-id 11) 8
-id 12) 2
-id 13) 2
+id 10) 1
+id 11) 1339
+id 12) -1
+id 13) 4
+
+id 14) 1
+id 15) 1343
+id 16) -1
+id 17) 5
 
 
 modetab
@@ -43,51 +40,36 @@ md 2) 1001
 md 3) -6
 md 4) 0
 
-tc 0) TDeclid displ= -3 elem_type= -3 N= 0 all= 0 iniproc= 0
-tc 6) TDeclid displ= -5 elem_type= -1 N= 0 all= 0 iniproc= 0
-tc 12) TFuncdef funcn= 10 maxdispl= 4
-tc 15) TBegin
-tc 16) TIdent -3
-tc 18) TConstd 3.140000
-tc 21) TConst 2
-tc 23) TOper 9473
-tc 24) TOper 9090
-tc 25) TOper 9533
-tc 26) TOper 9257
-tc 27) TOper -3
-tc 28) TExprend
-tc 29) TPrintid 2
-tc 31) TIdent -3
-tc 33) TConst 0
-tc 35) TOper 9473
-tc 36) TOper 9534
-tc 37) TOper 9257
-tc 38) TOper -3
-tc 39) TExprend
-tc 40) TPrintid 2
-tc 42) TIdent -3
-tc 44) TConstd 100.000000
-tc 47) TOper 9531
-tc 48) TOper 9257
-tc 49) TOper -3
-tc 50) TExprend
-tc 51) TPrintid 2
-tc 53) TIdent -3
-tc 55) TConstd 2.720000
-tc 58) TOper 9099
-tc 59) TOper 9530
-tc 60) TOper 9257
-tc 61) TOper -3
-tc 62) TExprend
-tc 63) TPrintid 2
-tc 65) TIdent -3
-tc 67) TConst 3
-tc 69) TOper 9049
-tc 70) TOper 9525
-tc 71) TOper 9473
-tc 72) TOper 9257
-tc 73) TOper -3
-tc 74) TExprend
-tc 75) TPrintid 2
-tc 77) TReturn
-tc 78) TEnd
+tc 0) TFuncdef funcn= 2 maxdispl= 7
+tc 3) TBegin
+tc 4) TDeclid displ= 3 elem_type= -1 N= 0 all= 0 iniproc= 0
+tc 10) TDeclid displ= 4 elem_type= -1 N= 0 all= 0 iniproc= 0
+tc 16) TDeclid displ= 5 elem_type= -1 N= 0 all= 0 iniproc= 0
+tc 22) TIdent 5
+tc 24) TIdenttoval 3
+tc 26) ADLOGAND addr= 31
+tc 28) TIdenttoval 4
+tc 30) TOper 9029
+tc 31) TOper 0
+tc 32) ADLOGOR addr= 37
+tc 34) TIdenttoval 5
+tc 36) TOper 9030
+tc 37) TOper 0
+tc 38) TOper 9207
+tc 39) TOper 5
+tc 40) TExprend
+tc 41) TIdent 5
+tc 43) TIdenttoval 3
+tc 45) ADLOGOR addr= 56
+tc 47) TIdenttoval 4
+tc 49) ADLOGAND addr= 54
+tc 51) TIdenttoval 5
+tc 53) TOper 9029
+tc 54) TOper 0
+tc 55) TOper 9030
+tc 56) TOper 0
+tc 57) TOper 9207
+tc 58) TOper 5
+tc 59) TExprend
+tc 60) TReturn
+tc 61) TEnd

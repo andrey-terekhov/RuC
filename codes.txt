@@ -1,23 +1,15 @@
 
 source
-line 1) float a;
-line 2) int b;
-line 3) void main()
-line 4) {
-line 5)     a = sin(3.14/2);
-line 6)     printid(a);
-line 7)     a = cos(0);
-line 8)     printid(a);
-line 9)     a = sqrt(1.e2);
-line 10)     printid(a);
-line 11)     a = abs(-2.72);
-line 12)     printid(a);
-line 13)     a = abs(-3);
-line 14)     printid(a);
-line 15)     /* sin(3.14/2)=1, cos(0)=1, sqrt(1.e2)=10, abs(-2.72)=2.72, abs(-3)=3 */
-line 16)     
-line 17) }
-line 18) 
+line 1) 
+line 2) void main()
+line 3) {
+line 4)     int a, b, c;
+line 5)     c = a && b || c;
+line 6)     c = a || b && c;
+line 7) }
+line 8) 
+line 9) 
+line 10) 
 
 functions
 fun 1) 0
@@ -28,35 +20,28 @@ iniprocs
 inipr 1) 0
 
 mem
-pc 0) FUNCBEG maxdispl= 4 pc= 50
-pc 3) LID 3.140000
-pc 6) LI 2
-pc 8) WIDEN
-pc 9) /f
-pc 10) SIN
-pc 11) =fV -3
-pc 13) PRINTID 2
-pc 15) LI 0
-pc 17) WIDEN
-pc 18) COS
-pc 19) =fV -3
-pc 21) PRINTID 2
-pc 23) LID 100.000000
-pc 26) SQRT
-pc 27) =fV -3
-pc 29) PRINTID 2
-pc 31) LID 2.720000
-pc 34) UNMINUSf
-pc 35) ABS
-pc 36) =fV -3
-pc 38) PRINTID 2
-pc 40) LI 3
-pc 42) UNMINUS
-pc 43) ABSI
-pc 44) WIDEN
-pc 45) =fV -3
-pc 47) PRINTID 2
-pc 49) RETURNVOID
-pc 50) CALL1
-pc 51) CALL2 2
-pc 53) STOP
+pc 0) FUNCBEG maxdispl= 7 pc= 36
+pc 3) LOAD 3
+pc 5) DOUBLE
+pc 6) BE0 11
+pc 8) LOAD 4
+pc 10) &&
+pc 11) DOUBLE
+pc 12) BNE0 17
+pc 14) LOAD 5
+pc 16) ||
+pc 17) =V 5
+pc 19) LOAD 3
+pc 21) DOUBLE
+pc 22) BNE0 33
+pc 24) LOAD 4
+pc 26) DOUBLE
+pc 27) BE0 32
+pc 29) LOAD 5
+pc 31) &&
+pc 32) ||
+pc 33) =V 5
+pc 35) RETURNVOID
+pc 36) CALL1
+pc 37) CALL2 2
+pc 39) STOP

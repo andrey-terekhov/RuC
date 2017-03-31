@@ -5,5 +5,5 @@ void main()
     int c=4;
 //    {int b = a+= c; c^=7;printid(c);}
     b = (4 + a + c) % a;
-    printid(b);
+    printid(b);       // 0
 }

@@ -53,47 +53,64 @@ void finalop()
         tc++;
         if (c != NOP)
         {
-            tocode(c);
-			if (c == COPY00)
+            if (c == ADLOGOR)
             {
-                tocode(tree[tc++]);   // d1
-                tocode(tree[tc++]);   // d2
-				tocode(tree[tc++]);   // длина
+                tocode(_DOUBLE);
+                tocode(BNE0);
+                tree[tree[tc++]] = pc++;
             }
-            else if (c == COPY01)
+            else if (c == ADLOGAND)
             {
-                tocode(tree[tc++]);   // d1
-                tocode(tree[tc++]);   // длина
+                tocode(_DOUBLE);
+                tocode(BE0);
+                tree[tree[tc++]] = pc++;
             }
-            else if (c == COPY10)
+            else
             {
-                tocode(tree[tc++]);   // d2
-                tocode(tree[tc++]);   // длина
-            }
-            else if (c == COPY11)
-                tocode(-tree[tc++]);  // длина
-            else if (c == COPY0ST)
-            {
-                tocode(tree[tc++]);   // d1
-                tocode(tree[tc++]);   // длина
-            }
-            else if (c == COPY1ST)
-                tocode(tree[tc++]);   // длина
-            
-            else if (c == COPY0STASS)
-            {
-                tocode(tree[tc++]);   // d1
-                tocode(tree[tc++]);   // длина
-            }
-            else if (c == COPY1STASS)
-                tocode(tree[tc++]);   // длина
+                tocode(c);
+                if (c == LOGOR || c == LOGAND)
+                mem[tree[tc++]] = pc;
+                if (c == COPY00)
+                {
+                    tocode(tree[tc++]);   // d1
+                    tocode(tree[tc++]);   // d2
+                    tocode(tree[tc++]);   // длина
+                }
+                else if (c == COPY01)
+                {
+                    tocode(tree[tc++]);   // d1
+                    tocode(tree[tc++]);   // длина
+                }
+                else if (c == COPY10)
+                {
+                    tocode(tree[tc++]);   // d2
+                    tocode(tree[tc++]);   // длина
+                }
+                else if (c == COPY11)
+                    tocode(-tree[tc++]);  // длина
+                else if (c == COPY0ST)
+                {
+                    tocode(tree[tc++]);   // d1
+                    tocode(tree[tc++]);   // длина
+                }
+                else if (c == COPY1ST)
+                    tocode(tree[tc++]);   // длина
+                
+                else if (c == COPY0STASS)
+                {
+                    tocode(tree[tc++]);   // d1
+                    tocode(tree[tc++]);   // длина
+                }
+                else if (c == COPY1STASS)
+                    tocode(tree[tc++]);   // длина
 
-            else if((c >= REMASS && c <= DIVASS)    || (c >= REMASSV && c <= DIVASSV) ||
-                    (c >= ASSR && c <= DIVASSR)  || (c >= ASSRV && c <= DIVASSRV) ||
-                    (c >= POSTINC && c <= DEC)   || (c >= POSTINCV && c <= DECV) ||
-                    (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))
-            {
-                tocode(tree[tc++]);
+                else if((c >= REMASS && c <= DIVASS)    || (c >= REMASSV && c <= DIVASSV) ||
+                        (c >= ASSR && c <= DIVASSR)  || (c >= ASSRV && c <= DIVASSRV) ||
+                        (c >= POSTINC && c <= DEC)   || (c >= POSTINCV && c <= DECV) ||
+                        (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))
+                    {
+                        tocode(tree[tc++]);
+                    }
             }
         }
     }

@@ -3,5 +3,5 @@ int i=2;
 void main()
 {
 b[i] -= b[1]+=i;
-    printid(b);
+    printid(b);   // 7 10 -1
 }

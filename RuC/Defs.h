@@ -207,6 +207,8 @@
 #define STRINGINIT    9476
 #define ARRINIT       9477
 #define STRUCTWITHARR 9478
+#define ADLOGAND      9479
+#define ADLOGOR       9480
 
 #define COPY00   9300
 #define COPY01   9301

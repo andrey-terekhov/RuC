@@ -24,12 +24,12 @@ extern int source[SOURCESIZE], lines[LINESSIZE];
 extern int nextchar, curchar, func_def;
 extern int hashtab[256], reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md, startmode,
     functions[], funcnum,
-    stack[100], stackop[100], stackoperands[100], ansttype,
+    stack[100], stackop[100], stackoperands[100], stacklog[100], ansttype,
     sp, sopnd, aux, lastid, curid, lg, displ, maxdispl, maxdisplg, type, op, inass, firstdecl;
 extern int iniprocs[INIPROSIZE], procd, arrdim, arrelemlen, was_struct_with_arr;
 extern int mem[MAXMEMSIZE], tree[MAXTREESIZE], tc, functions[FUNCSIZE], funcnum, functype, kw, blockflag,
            entry, wasmain, wasret, wasdefault, wasslice, notcopy, structdispl, notrobot;
-extern int adcont, adbreak, adcase;
+extern int adcont, adbreak, adcase, adandor;
 extern int instring, inswitch, inloop, lexstr[MAXSTRINGL+1];
 extern int predef[FUNCSIZE], prdf, emptyarrdef;
 extern int pc, g, l, x;
