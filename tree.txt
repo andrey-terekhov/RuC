@@ -1,75 +1,446 @@
 
 source
-line 1) 
-line 2) void main()
-line 3) {
-line 4)     int a, b, c;
-line 5)     c = a && b || c;
-line 6)     c = a || b && c;
-line 7) }
-line 8) 
-line 9) 
-line 10) 
+line 1) struct oper { char code; int prio;};
+line 2) struct oper operations [4] = {{ '*', 8 }, { '/', 8 }, {'+', 7 }, {'-', 7}};
+line 3) int digit (char c) 
+line 4) {
+line 5) 	return '0'<=c && c<='9';
+line 6) }
+line 7) int letter( char c)
+line 8) {
+line 9) 	return 'a'<=c && c<='z';
+line 10) } 
+line 11) int opnum( char c)
+line 12) {
+line 13) 	return c == '*' ? 0 : c == '/' ? 1 : c == '+' ? 2 : c == '-' ? 3 : -1;
+line 14) }
+line 15) void main ()
+line 16) {
+line 17) 	char formula[ 5 ], res[ 10 ],  c;
+line 18) 	int sp = -1, i, rp = -1, p;
+line 19) 	struct oper stack[5];
+line 20) 	getid (formula);
+line 21) 	printid (formula);
+line 22) 	for (i=0; i<5; i++)
+line 23) 	{
+line 24) 		c = formula [i];
+line 25) 		if (letter (c) || digit(c)) 
+line 26) 			res[++rp] = c;
+line 27) 		else if ( (p = opnum (c)) <0)
+line 28) 		{
+line 29) 			print ( "bad symbol\n");
+line 30) 			//goto badend;
+line 31) 		}
+line 32) 		else 
+line 33) 		{
+line 34) 			int prio = operations [p].prio, j;
+line 35) 			while ( sp>=0 && stack[sp].prio >= prio)
+line 36) 				res[++rp] = stack [sp--].code;
+line 37) 			stack[++sp] = { operations[p].code, prio };
+line 38) 		}
+line 39) 	}
+line 40) 	//badend:;
+line 41)     while (sp >= 0)
+line 42)     {
+line 43)         res[++rp] = stack[sp--].code;
+line 44)     }
+line 45)     printid(res);
+line 46) }
+line 47) 
+line 48) 
 
 identab
-id 2) 0
-id 3) 8
+id 2) 1
+id 3) 1335
 id 4) 2
-id 5) 2
+id 5) 1000
 
 id 6) 1
-id 7) 1335
-id 8) -1
-id 9) 3
+id 7) 1356
+id 8) 10
+id 9) -3
 
 id 10) 1
-id 11) 1339
-id 12) -1
-id 13) 4
+id 11) 1369
+id 12) 13
+id 13) 2
 
 id 14) 1
-id 15) 1343
-id 16) -1
-id 17) 5
+id 15) 1377
+id 16) -2
+id 17) 3
+
+id 18) 1
+id 19) 1381
+id 20) 13
+id 21) 4
+
+id 22) 1
+id 23) 1377
+id 24) -2
+id 25) 3
+
+id 26) 1
+id 27) 1390
+id 28) 13
+id 29) 6
+
+id 30) 1
+id 31) 1377
+id 32) -2
+id 33) 3
+
+id 34) 0
+id 35) 8
+id 36) 18
+id 37) 8
+
+id 38) 1
+id 39) 1398
+id 40) 22
+id 41) 3
+
+id 42) 1
+id 43) 1408
+id 44) 22
+id 45) 4
+
+id 46) 1
+id 47) 1377
+id 48) -2
+id 49) 5
+
+id 50) 1
+id 51) 1414
+id 52) -1
+id 53) 6
+
+id 54) 1
+id 55) 1419
+id 56) -1
+id 57) 7
+
+id 58) 1
+id 59) 1423
+id 60) -1
+id 61) 8
+
+id 62) 1
+id 63) 1428
+id 64) -1
+id 65) 9
+
+id 66) 1
+id 67) 1432
+id 68) 10
+id 69) 10
+
+id 70) 1
+id 71) 1349
+id 72) -1
+id 73) 12
+
+id 74) 1
+id 75) 1440
+id 76) -1
+id 77) 13
 
 
 modetab
 md 0) 0
 md 1) 0
-md 2) 1001
-md 3) -6
-md 4) 0
+md 2) 1002
+md 3) 2
+md 4) 4
+md 5) -2
+md 6) 1342
+md 7) -1
+md 8) 1349
+md 9) 1
+md 10) 1003
+md 11) 2
+md 12) 9
+md 13) 1001
+md 14) -1
+md 15) 1
+md 16) -2
+md 17) 12
+md 18) 1001
+md 19) -6
+md 20) 0
+md 21) 17
+md 22) 1003
+md 23) -2
 
-tc 0) TFuncdef funcn= 2 maxdispl= 7
-tc 3) TBegin
-tc 4) TDeclid displ= 3 elem_type= -1 N= 0 all= 0 iniproc= 0
-tc 10) TDeclid displ= 4 elem_type= -1 N= 0 all= 0 iniproc= 0
-tc 16) TDeclid displ= 5 elem_type= -1 N= 0 all= 0 iniproc= 0
-tc 22) TIdent 5
-tc 24) TIdenttoval 3
-tc 26) ADLOGAND addr= 31
-tc 28) TIdenttoval 4
-tc 30) TOper 9029
-tc 31) TOper 0
-tc 32) ADLOGOR addr= 37
-tc 34) TIdenttoval 5
-tc 36) TOper 9030
-tc 37) TOper 0
-tc 38) TOper 9207
-tc 39) TOper 5
-tc 40) TExprend
-tc 41) TIdent 5
-tc 43) TIdenttoval 3
-tc 45) ADLOGOR addr= 56
-tc 47) TIdenttoval 4
-tc 49) ADLOGAND addr= 54
-tc 51) TIdenttoval 5
-tc 53) TOper 9029
-tc 54) TOper 0
-tc 55) TOper 9030
-tc 56) TOper 0
-tc 57) TOper 9207
-tc 58) TOper 5
-tc 59) TExprend
-tc 60) TReturn
-tc 61) TEnd
+tc 0) NOP
+tc 1) NOP
+tc 2) TDeclarr N= 1
+tc 4) TConst 4
+tc 6) TExprend
+tc 7) TDeclid displ= -3 elem_type= 2 N= 1 all= 8 iniproc= 0
+tc 13) TConst 42
+tc 15) TExprend
+tc 16) TConst 8
+tc 18) TExprend
+tc 19) TConst 47
+tc 21) TExprend
+tc 22) TConst 8
+tc 24) TExprend
+tc 25) TConst 43
+tc 27) TExprend
+tc 28) TConst 7
+tc 30) TExprend
+tc 31) TConst 45
+tc 33) TExprend
+tc 34) TConst 7
+tc 36) TExprend
+tc 37) TEndinit
+tc 38) TFuncdef funcn= 10 maxdispl= 5
+tc 41) TBegin
+tc 42) TReturnval 1
+tc 44) TConst 48
+tc 46) TIdenttoval 3
+tc 48) TOper 9035
+tc 49) ADLOGAND addr= 57
+tc 51) TIdenttoval 3
+tc 53) TConst 57
+tc 55) TOper 9035
+tc 56) TOper 9029
+tc 57) TOper 0
+tc 58) TExprend
+tc 59) TReturn
+tc 60) TEnd
+tc 61) TFuncdef funcn= 18 maxdispl= 5
+tc 64) TBegin
+tc 65) TReturnval 1
+tc 67) TConst 97
+tc 69) TIdenttoval 3
+tc 71) TOper 9035
+tc 72) ADLOGAND addr= 80
+tc 74) TIdenttoval 3
+tc 76) TConst 122
+tc 78) TOper 9035
+tc 79) TOper 9029
+tc 80) TOper 0
+tc 81) TExprend
+tc 82) TReturn
+tc 83) TEnd
+tc 84) TFuncdef funcn= 26 maxdispl= 5
+tc 87) TBegin
+tc 88) TReturnval 1
+tc 90) TIdenttoval 3
+tc 92) TConst 42
+tc 94) TOper 9031
+tc 95) TCondexpr 98 102
+tc 98) TConst 0
+tc 100) NOP
+tc 101) TExprend
+tc 102) TIdenttoval 3
+tc 104) TConst 47
+tc 106) TOper 9031
+tc 107) TCondexpr 110 114
+tc 110) TConst 1
+tc 112) NOP
+tc 113) TExprend
+tc 114) TIdenttoval 3
+tc 116) TConst 43
+tc 118) TOper 9031
+tc 119) TCondexpr 122 126
+tc 122) TConst 2
+tc 124) NOP
+tc 125) TExprend
+tc 126) TIdenttoval 3
+tc 128) TConst 45
+tc 130) TOper 9031
+tc 131) TCondexpr 134 138
+tc 134) TConst 3
+tc 136) NOP
+tc 137) TExprend
+tc 138) TConst 1
+tc 140) TOper 9049
+tc 141) NOP
+tc 142) TExprend
+tc 143) TExprend
+tc 144) TReturn
+tc 145) TEnd
+tc 146) TFuncdef funcn= 34 maxdispl= 15
+tc 149) TBegin
+tc 150) TDeclarr N= 1
+tc 152) TConst 5
+tc 154) TExprend
+tc 155) TDeclid displ= 3 elem_type= -2 N= 1 all= 0 iniproc= 0
+tc 161) TDeclarr N= 1
+tc 163) TConst 10
+tc 165) TExprend
+tc 166) TDeclid displ= 4 elem_type= -2 N= 1 all= 0 iniproc= 0
+tc 172) TDeclid displ= 5 elem_type= -2 N= 0 all= 0 iniproc= 0
+tc 178) TDeclid displ= 6 elem_type= -1 N= 0 all= 1 iniproc= 0
+tc 184) TConst 1
+tc 186) TOper 9049
+tc 187) TExprend
+tc 188) TDeclid displ= 7 elem_type= -1 N= 0 all= 0 iniproc= 0
+tc 194) TDeclid displ= 8 elem_type= -1 N= 0 all= 1 iniproc= 0
+tc 200) TConst 1
+tc 202) TOper 9049
+tc 203) TExprend
+tc 204) TDeclid displ= 9 elem_type= -1 N= 0 all= 0 iniproc= 0
+tc 210) TDeclarr N= 1
+tc 212) TConst 5
+tc 214) TExprend
+tc 215) TDeclid displ= 10 elem_type= 2 N= 1 all= 0 iniproc= 0
+tc 221) TGetid 38
+tc 223) TPrintid 38
+tc 225) TFor 230 237 243 248
+tc 230) TIdent 7
+tc 232) TConst 0
+tc 234) TOper 9207
+tc 235) TOper 7
+tc 236) TExprend
+tc 237) TIdenttoval 7
+tc 239) TConst 5
+tc 241) TOper 9033
+tc 242) TExprend
+tc 243) TIdent 7
+tc 245) TOper 9241
+tc 246) TOper 7
+tc 247) TExprend
+tc 248) TBegin
+tc 249) TIdent 5
+tc 251) TSliceident displ= 3 type= -2
+tc 254) TIdenttoval 7
+tc 256) TExprend
+tc 257) TAddrtoval
+tc 258) TOper 9207
+tc 259) TOper 5
+tc 260) TExprend
+tc 261) TIf 287 299
+tc 264) TIdent 4
+tc 266) TCall1 1
+tc 268) TIdenttoval 5
+tc 270) TExprend
+tc 271) TCall2 18
+tc 273) ADLOGOR addr= 285
+tc 275) TIdent 2
+tc 277) TCall1 1
+tc 279) TIdenttoval 5
+tc 281) TExprend
+tc 282) TCall2 10
+tc 284) TOper 9030
+tc 285) TOper 0
+tc 286) TExprend
+tc 287) TSliceident displ= 4 type= -2
+tc 290) TIdent 8
+tc 292) TOper 9043
+tc 293) TOper 8
+tc 294) TExprend
+tc 295) TIdenttoval 5
+tc 297) TOper 9218
+tc 298) TExprend
+tc 299) TIf 319 337
+tc 302) TIdent 9
+tc 304) TIdent 6
+tc 306) TCall1 1
+tc 308) TIdenttoval 5
+tc 310) TExprend
+tc 311) TCall2 26
+tc 313) TOper 9007
+tc 314) TOper 9
+tc 315) TConst 0
+tc 317) TOper 9033
+tc 318) TExprend
+tc 319) TBegin
+tc 320) TOper -302
+tc 321) TOper 98
+tc 322) TOper 97
+tc 323) TOper 100
+tc 324) TOper 32
+tc 325) TOper 115
+tc 326) TOper 121
+tc 327) TOper 109
+tc 328) TOper 98
+tc 329) TOper 111
+tc 330) TOper 108
+tc 331) TOper 10
+tc 332) TOper 0
+tc 333) TPrint 22
+tc 335) TExprend
+tc 336) TEnd
+tc 337) TBegin
+tc 338) TDeclid displ= 12 elem_type= -1 N= 0 all= 1 iniproc= 0
+tc 344) TSliceident displ= -3 type= 2
+tc 347) TIdenttoval 9
+tc 349) TExprend
+tc 350) TSelect displ= 1
+tc 352) TAddrtoval
+tc 353) TExprend
+tc 354) TDeclid displ= 13 elem_type= -1 N= 0 all= 0 iniproc= 0
+tc 360) TWhile 384
+tc 362) TIdenttoval 6
+tc 364) TConst 0
+tc 366) TOper 9036
+tc 367) ADLOGAND addr= 382
+tc 369) TSliceident displ= 10 type= 2
+tc 372) TIdenttoval 6
+tc 374) TExprend
+tc 375) TSelect displ= 1
+tc 377) TAddrtoval
+tc 378) TIdenttoval 12
+tc 380) TOper 9036
+tc 381) TOper 9029
+tc 382) TOper 0
+tc 383) TExprend
+tc 384) TSliceident displ= 4 type= -2
+tc 387) TIdent 8
+tc 389) TOper 9043
+tc 390) TOper 8
+tc 391) TExprend
+tc 392) TSliceident displ= 10 type= 2
+tc 395) TIdent 6
+tc 397) TOper 9042
+tc 398) TOper 6
+tc 399) TExprend
+tc 400) TSelect displ= 0
+tc 402) TAddrtoval
+tc 403) TOper 9218
+tc 404) TExprend
+tc 405) TSliceident displ= 10 type= 2
+tc 408) TIdent 6
+tc 410) TOper 9043
+tc 411) TOper 6
+tc 412) TExprend
+tc 413) TSliceident displ= -3 type= 2
+tc 416) TIdenttoval 9
+tc 418) TExprend
+tc 419) TSelect displ= 0
+tc 421) TAddrtoval
+tc 422) TExprend
+tc 423) TIdenttoval 12
+tc 425) TExprend
+tc 426) COPY1STASS (2)
+tc 428) TExprend
+tc 429) TEnd
+tc 430) TEnd
+tc 431) TWhile 439
+tc 433) TIdenttoval 6
+tc 435) TConst 0
+tc 437) TOper 9036
+tc 438) TExprend
+tc 439) TBegin
+tc 440) TSliceident displ= 4 type= -2
+tc 443) TIdent 8
+tc 445) TOper 9043
+tc 446) TOper 8
+tc 447) TExprend
+tc 448) TSliceident displ= 10 type= 2
+tc 451) TIdent 6
+tc 453) TOper 9042
+tc 454) TOper 6
+tc 455) TExprend
+tc 456) TSelect displ= 0
+tc 458) TAddrtoval
+tc 459) TOper 9218
+tc 460) TExprend
+tc 461) TEnd
+tc 462) TPrintid 42
+tc 464) TReturn
+tc 465) TEnd

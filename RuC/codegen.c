@@ -69,8 +69,8 @@ void finalop()
             {
                 tocode(c);
                 if (c == LOGOR || c == LOGAND)
-                mem[tree[tc++]] = pc;
-                if (c == COPY00)
+                    mem[tree[tc++]] = pc;
+                else if (c == COPY00)
                 {
                     tocode(tree[tc++]);   // d1
                     tocode(tree[tc++]);   // d2
@@ -117,7 +117,7 @@ void finalop()
 
 }
 
-int Expr_gen(int adfi)
+int Expr_gen(int incond)
 {
     int flagprim = 1, eltype, wasstring = 0;
     while (flagprim)
@@ -188,7 +188,7 @@ int Expr_gen(int adfi)
                 tocode(tree[tc++]);  // продолжение в след case
             case TSlice:             // параметр - тип элемента
                 eltype = tree[tc++];
-				Expr_gen(0);        
+				Expr_gen(0);
                 tocode(SLICE);
                 tocode(szof(eltype));
                 if (eltype > 0 && modetab[eltype] == MARRAY)
@@ -220,32 +220,39 @@ int Expr_gen(int adfi)
         }
         
         finalop();
+        
         if (tree[tc] == TCondexpr)
         {
-            int adelse, ad;
-            int thenref = tree[++tc];
-            int elseref = tree[++tc];
-            tc++;
-            tocode(BE0);
-            adelse = pc++;
-            Expr_gen(0);              // then
-            tocode(B);
-            ad = pc;
-            mem[pc++] = adfi;
-            mem[adelse] = pc;
-            Expr_gen(pc-1);           // else или cond
-            if (tree[tc] != TCondexpr)
+            if (incond)
+                return wasstring;
+            else
+            {
+                int adelse, ad = 0;
+                //int thenref = tree[++tc];
+                //int elseref = tree[++tc];
+                do
+                {
+                    tc += 3;
+                    tocode(BE0);
+                    adelse = pc++;
+                    Expr_gen(0);              // then
+                    tocode(B);
+                    mem[pc] = ad;
+                    ad = pc;
+                    mem[adelse] = ++pc;
+                    Expr_gen(1);              // else или cond
+                }
+                while  (tree[tc] == TCondexpr);
                 while (ad)
                 {
                     int r = mem[ad];
                     mem[ad] = pc;
                     ad = r;
                 }
-            if (adfi)
-                return 0;
+            }
+            
+            finalop();
         }
-        finalop();
-        
         if (tree[tc] == TExprend)
         {
              tc++;
@@ -302,8 +309,9 @@ void Stmt_gen()
             break;
         case TWhile:
         {
-            int doref = tree[tc++];
+            //int doref = tree[tc++];
             int oldbreak = adbreak, oldcont = adcont, ad = pc;
+            tc++;
             adcont = ad;
             Expr_gen(0);
             tocode(BE0);

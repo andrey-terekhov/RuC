@@ -103,6 +103,7 @@ int getf_char()
     // reads UTF-8
     
     unsigned char firstchar, secondchar;
+    
     if (scanf(" %c", &firstchar) == EOF)
         return EOF;
     else
@@ -149,10 +150,10 @@ void copyST(int from, int l)
 
 void copySTASS(int where, int l)
 {
-    int i, oldx = x -= l;
+    int i;
+    x -= l;
     for (i=0; i<l; i++)
-        mem[where+i] = mem[++x];
-    x = oldx;
+        mem[where+i] = mem[x+i+1];
 }
 
 
@@ -286,14 +287,12 @@ void auxprint(int beg, int t, char before, char after)
 
 void auxget(int beg, int t)
 {
-    int r;
-//    printf("beg=%i t=%i\n", beg, t)
+//     printf("beg=%i t=%i\n", beg, t);
     if (t == LINT)
         scanf(" %i", &mem[beg]);
     else if (t == LCHAR)
     {
         mem[beg] = getf_char();
-//        printf("\n");
     }
     else if (t == LFLOAT)
     {
@@ -306,9 +305,8 @@ void auxget(int beg, int t)
     // здесь t уже точно положительный
     else if (modetab[t] == MARRAY)
     {
-        int rr = r, i, type = modetab[t+1], d;
+        int rr = mem[beg], i, type = modetab[t+1], d;
         d = szof(type);
-        rr = mem[beg];
         for (i=0; i<mem[rr-1]; i++)
             auxget(rr + i * d, type);
     }
@@ -469,8 +467,8 @@ void interpreter()
                 i = mem[pc++];              // ссылка на identtab
                 prtype = identab[i+2];
                 printident(identab[i+1]);   // ссылка на reprtab
-                printf(" ");
-                auxget(dspl(identab[i+3]), identab[i+2]);
+                printf("\n");
+                auxget(dspl(identab[i+3]), prtype);
                 break;
             case ABSIC:
                 mem[x] = abs(mem[x]);
@@ -654,8 +652,8 @@ void interpreter()
                 pc += 2;
                 break;
             case COPY1STASS:
-                r = mem[x-1];
-                copySTASS(r, mem[pc++]);
+                d = mem[pc++];
+                copySTASS(mem[x-d], d);
                 x--;
                 break;
                 

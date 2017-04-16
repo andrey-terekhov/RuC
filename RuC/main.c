@@ -5,7 +5,8 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
-char* name = /*"/Users/ant/Desktop/RuCRegr/defstest/COPY00_9300.c";*/  "../../../tests/4test.c";
+char* name = /*"/Users/ant/Desktop/RuCRegr/defstest/COPY00_9300.c";*/
+             "../../../tests/102.2/Dina/topol.c";
 
 #include <stdio.h>
 #include <string.h>
