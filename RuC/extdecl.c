@@ -320,9 +320,37 @@ void primaryexpr()
 		while (sp > oldsp)
 			binop(--sp);
 	}
-	else if (cur < SLEEP)            // стандартная функция
+	else if (cur <= SETMOTOR)            // стандартная функция
 	{
 		int func = cur;
+        if (cur <= TMSGSEND)
+        {                                // процедуры управления параллельными нитями
+            if (cur == TMSGRECEIVE)
+                ansttype = stackoperands[++sopnd] = LINT;     //не было параметра,  выдали 1 результат
+            else
+            {                      // TMSGSEND, TJOIN, TSLEEP, TSEMCREATE, TSEMWAIT, TSEMPOST
+                scaner();          // у этих процедур 1 параметр
+                expr(1);
+                toval();
+                if (!is_int(ansttype))
+                    error(param_threads_not_int);
+                if (cur == TMSGSEND)
+                {                   // у этой процедуры 2 параметра
+                    scaner();
+                    exprassn(1);
+                    toval();
+                    if (!is_int(ansttype))
+                        error(param_threads_not_int);
+                    ansttype = stackoperands[--sopnd] = LINT; //съели 2 параметра, выдали 1 результат
+                }
+                else if (cur == TSEMCREATE)
+                    ansttype = stackoperands[sopnd] = LINT;   //съели 1 параметр,  выдали 1 результат
+                else
+                    --sopnd;                                  //съели 1 параметр,  не выдали результата
+            }
+            
+            totree(9500-cur);
+        }
 		mustbe(LEFTBR, no_leftbr_in_stand_func);
         if (func == RAND)
         {
@@ -332,14 +360,24 @@ void primaryexpr()
         else
         {
             scaner();
-            expr(1);
+            exprassn(1);
             toval();
+            totree(TExprend);
             
-            if (func == GETDIGSENSOR || func == GETANSENSOR)
+            if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR)
             {
                 notrobot = 0;
                 if (!is_int(ansttype))
                     error(param_setmotor_not_int);
+                if (func == SETMOTOR)
+                {
+                    mustbe(COMMA, no_comma_in_setmotor);
+                    scaner();
+                    expr(1);
+                    toval();
+                    if (!is_int(ansttype))
+                        error(param_setmotor_not_int);
+                }
                 totree(9500 - func);
             }
             else if (func == ABS && is_int(ansttype))
@@ -1083,6 +1121,15 @@ void statement()
         totree(NOP);
 		flagsemicol = 0;
     }
+    else if (cur == TCREATE)
+    {
+        totree(TCREATE);
+        do
+            statement();
+        while (next != TEXIT);
+        totree(scaner());
+        flagsemicol = 0;
+    }
 	else if (cur == IDENT && next == COLON)
 	{
 		int id, i, flag = 1;
@@ -1149,37 +1196,6 @@ void statement()
 					  totree(TGetid);
 					  totree(lastid);
 					  mustbe(RIGHTBR, no_rightbr_in_printid);
-            break;
-		}
-		case SETMOTOR:
-		{
-						 notrobot = 0;
-						 mustbe(LEFTBR, no_leftbr_in_setmotor);
-						 scaner();
-						 exprval();
-						 if (ansttype != LINT)
-							 error(param_setmotor_not_int);
-						 mustbe(COMMA, no_comma_in_setmotor);
-						 scaner();
-						 exprval();
-						 if (ansttype != LINT)
-							 error(param_setmotor_not_int);
-						 sopnd -= 2;
-						 totree(SETMOTOR);
-						 mustbe(RIGHTBR, no_rightbr_in_setmotor);
-            break;
-		}
-		case SLEEP:
-		{
-					  notrobot = 0;
-					  mustbe(LEFTBR, no_leftbr_in_sleep);
-					  scaner();
-					  exprval();
-					  if (ansttype != LINT)
-						  error(param_setmotor_not_int);
-					  sopnd--;
-					  totree(SLEEP);
-					  mustbe(RIGHTBR, no_rightbr_in_sleep);
             break;
 		}
 		case LBREAK:

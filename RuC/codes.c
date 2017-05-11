@@ -229,8 +229,34 @@ void tablesandtree()
             case SETMOTOR:
                 fprintf(output, "Setmotor\n");
                 break;
-            case SLEEP:
-                fprintf(output, "Sleep\n");
+            case TCREATE:
+                fprintf(output, "TCREATE\n");
+                break;
+            case TMSGSEND:
+                fprintf(output, "TMSGSEND\n");
+                break;
+            case TEXIT:
+                fprintf(output, "TEXIT\n");
+                break;
+            case TMSGRECEIVE:
+                fprintf(output, "TMSGRECEIVE\n");
+                break;
+            case TJOIN:
+                fprintf(output, "TJOIN\n");
+                break;
+            case TSLEEP:
+                fprintf(output, "TSLEEP\n");
+                break;
+            case TSEMCREATE:
+                fprintf(output, "TSEMCREATE\n");
+                break;
+            case TSEMWAIT:
+                fprintf(output, "TSEMWAIT\n");
+                break;
+            case TSEMPOST:
+                fprintf(output, "TSEMPOST\n");
+                break;
+
 
             default:
                 fprintf(output, "TOper %i\n", tree[i-1]);
@@ -279,15 +305,39 @@ void tablesandcode()
             case SETMOTOR:
                 fprintf(output, "SETMOTOR\n");
                 break;
-            case SLEEP:
-                fprintf(output, "SLEEP\n");
-                break;
             case GETDIGSENSORC:
                 fprintf(output, "GETDIGSENSOR\n");
                 break;
             case GETANSENSORC:
                 fprintf(output, "GETANSENSOR\n");
+            case CREATEC:
+                fprintf(output, "TCREATE %i \n", mem[i++]);
                 break;
+            case MSGSENDC:
+                fprintf(output, "TMSGSEND\n");
+                break;
+            case EXITC:
+                fprintf(output, "TEXIT\n");
+                break;
+            case MSGRECEIVEC:
+                fprintf(output, "TMSGRECEIVE\n");
+                break;
+            case JOINC:
+                fprintf(output, "TJOIN\n");
+                break;
+            case SLEEPC:
+                fprintf(output, "TSLEEP\n");
+                break;
+            case SEMCREATEC:
+                fprintf(output, "TSEMCREATE\n");
+                break;
+            case SEMWAITC:
+                fprintf(output, "TSEMWAIT\n");
+                break;
+            case SEMPOSTC:
+                fprintf(output, "TSEMPOST\n");
+                break;
+
             case ABSC:
                 fprintf(output, "ABS\n");
                 break;

@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+//#include <ruthreads>
 
 #include "Defs.h"
 extern int szof(int);
@@ -36,14 +37,12 @@ extern int szof(int);
 #define wrong_asin          16
 #define wrong_string_init   17
 
-int l, g, x, iniproc, maxdisplg, wasmain;
+int g, iniproc, maxdisplg, wasmain;
 int reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md;
-int mem[MAXMEMSIZE], pc, functions[FUNCSIZE], funcnum;
+int mem[MAXMEMSIZE], functions[FUNCSIZE], funcnum;
+int threads[NUMOFTHREADS], curthread, upcurthread;
 int procd, iniprocs[INIPROSIZE], base = 0;
-double lf, rf;
-int N, bounds[100], d, i, from, prtype;
 FILE *input;
-int i,r, n, flagstop = 1, entry, num;
 
 #ifdef ROBOT
 FILE *f1, *f2;   // файлы цифровых датчиков
@@ -116,47 +115,6 @@ int getf_char()
             return firstchar;
 }
 
-void printident(int r)
-{
-    r += 2;
-    do
-        printf_char(reprtab[r++]);
-    while (reprtab[r] != 0);
-}
-
-int dspl(int d)
-{
-    return d < 0 ? g - d : l + d;
-}
-
-int dsp()
-{
-    return dspl(mem[pc++]);
-}
-
-void copy(int where, int from, int l)
-{
-    int i;
-    for (i=0; i<l; i++)
-        mem[where+i] =  mem[from+i];
-}
-
-void copyST(int from, int l)
-{
-    int i;
-    for (i=0; i<l; i++)
-        mem[++x] =  mem[from+i];
-}
-
-void copySTASS(int where, int l)
-{
-    int i;
-    x -= l;
-    for (i=0; i<l; i++)
-        mem[where+i] = mem[x+i+1];
-}
-
-
 void runtimeerr(int e, int i, int r)
 {
     switch (e)
@@ -201,16 +159,16 @@ void runtimeerr(int e, int i, int r)
             printf("переполнение памяти, скорее всего, нет выхода из рекурсии\n");
             break;
         case sqrt_from_negat:
-            printf("попытка вычисления квадратного корня из отрицательного числа %f\n", rf);
+            printf("попытка вычисления квадратного корня из отрицательного числа %\n");
             break;
         case log_from_negat:
-            printf("попытка вычисления натурального логарифма из 0 или отрицательного числа%f\n", rf);
+            printf("попытка вычисления натурального логарифма из 0 или отрицательного числа\n");
             break;
         case log10_from_negat:
-            printf("попытка вычисления десятичного логарифма из 0 или отрицательного числа%f\n", rf);
+            printf("попытка вычисления десятичного логарифма из 0 или отрицательного числа\n");
             break;
         case wrong_asin:
-            printf("аргумент арксинуса должен быть в отрезке [-1, 1], а тут %f\n", rf);
+            printf("аргумент арксинуса должен быть в отрезке [-1, 1]\n");
             break;
             
             
@@ -219,7 +177,7 @@ void runtimeerr(int e, int i, int r)
     }
     exit(3);
 }
-
+/*
 void prmem()
 {
     int i;
@@ -229,7 +187,7 @@ void prmem()
     printf("\n");
     
 }
-
+*/
 void auxprint(int beg, int t, char before, char after)
 {
     double rf;
@@ -287,6 +245,7 @@ void auxprint(int beg, int t, char before, char after)
 
 void auxget(int beg, int t)
 {
+    double rf;
 //     printf("beg=%i t=%i\n", beg, t);
     if (t == LINT)
         scanf(" %i", &mem[beg]);
@@ -321,36 +280,33 @@ void auxget(int beg, int t)
         }
     }
     else
-        printf(" значения типа ФУНКЦИЯ и указателей печатать нельзя\n");
-
+        printf(" значения типа ФУНКЦИЯ и указателей вводить нельзя\n");
 }
 
-void interpreter();
+void interpreter(int);
 
-void genarr(int N, int curdim, int d, int adr, int procnum, int oldpc)
+void genarr(int N, int curdim, int d, int adr, int procnum, int *x, int *pc, int bounds[])
 {
-    int c0, i, curb = bounds[curdim];
-//    mem[++x] = curdim < N ? 1 : d;
-    mem[++x] = curb;
-    c0 = ++x;
+    int c0, i, curb = bounds[curdim], oldpc = *pc;
+    mem[++(*x)] = curb;
+    c0 = ++(*x);
 
-    x += curb * (curdim < N ? 1 : d) - 1;
-    
-    if (x >= MAXMEMSIZE)
+    *x += curb * (curdim < N ? 1 : d) - 1;
+    if (*x >= upcurthread)
         runtimeerr(mem_overflow, 0, 0);
     
     if(curdim == N)
     {
         if (procnum)
         {
-            int curx = x, oldbase = base;
+            int curx = *x, oldbase = base;
             for (i=c0; i<=curx; i+=d)
             {
-                pc = procnum;   // вычисление границ очередного массива в структуре
+                *pc = procnum;   // вычисление границ очередного массива в структуре
                 base = i;
-                interpreter();
+                interpreter(0);
             }
-            pc = oldpc;
+            *pc = oldpc;
             base = oldbase;
         }
     }
@@ -358,14 +314,14 @@ void genarr(int N, int curdim, int d, int adr, int procnum, int oldpc)
     {
         for (i=0; i < curb; i++)
         {
-            genarr(N, curdim + 1, d, c0 + i, procnum, oldpc);
+            genarr(N, curdim + 1, d, c0 + i, procnum, x, pc, bounds);
         }
     }
     mem[adr] = c0;
 }
 
 
-void rec_init_arr(int where, int N, int d)
+void rec_init_arr(int where, int from, int N, int d)
 {
     int b = mem[where-1], i, j;
     for (i=0; i<b; i++)
@@ -375,7 +331,7 @@ void rec_init_arr(int where, int N, int d)
                 mem[where++] = mem[from++];
         }
         else
-            rec_init_arr(mem[where++], N-1, d);
+            rec_init_arr(mem[where++], from, N-1, d);
 }
 
 int check_zero_int(int r)
@@ -393,21 +349,79 @@ double check_zero_float(double r)
     return r;
 }
 
-void interpreter()
+int dsp(int di, int l)
 {
+    return di < 0 ? g - di : l + di;
+}
+
+void interpreter(int numthr)
+{
+    int l, x, pc, cur0;
+    int *curth;
+    int N, bounds[100], d,from, prtype;
+    int i,r, flagstop = 1, entry, num, di, di1, len;
+    double lf, rf;
+    int membeg = threads[numthr];
+    l = mem[membeg+1];
+    x = mem[membeg+2];
+    pc = mem[membeg+3];
+
     flagstop = 1;
     while (flagstop)
     {
         memcpy(&rf, &mem[x-1], sizeof(double));
-        //        printf("pc=%i mem[pc]=%i rf=%f\n", pc, mem[pc], rf);
+            //    printf("pc=%i mem[pc]=%i rf=%f\n", pc, mem[pc], rf);
         
         switch (mem[pc++])
         {
             case STOP:
                 flagstop = 0;
                 break;
+                
+            case CREATEC:
+                numthr = mem[pc++];
+                threads[numthr] = cur0 = MAXMEMTHREAD * numthr;
+                upcurthread = cur0 + MAXMEMTHREAD;
+                mem[cur0] = numthr;
+                mem[cur0+1] = cur0 + 4;    // l
+                mem[cur0+2] = cur0 + 6;    // x
+                mem[cur0+3] = pc;
+                mem[cur0+4] = g;
+                mem[cur0+5] = 0;
+                mem[cur0+6] = 0;
+                r = t_create(interpreter, curth);
+                if (r != numthr)
+                    printf("bad t_create %i %i\n", r, numthr);
+                break;
+            case JOINC:
+                t_join(mem[x--]);
+                break;
+            case SLEEPC:
+                t_sleep(mem[x--]);
+                break;
+            case EXITC:
+                t_exit();
+                break;
+            case SEMCREATEC:
+                mem[x] = t_sem_create(mem[x]);
+                break;
+            case SEMPOSTC:
+                t_sem_post(mem[x--]);
+                break;
+            case SEMWAITC:
+                t_sem_wait(mem[x--]);
+                break;
+            case MSGRECEIVEC:
+                mem[++x] = * t_msg_receive();
+                break;
+            case MSGSENDC:
+                r = mem[x--];
+                t_msg_send(mem[x--], &r);
+                break;
+                
     #ifdef ROBOT
-            case SETMOTOR:
+
+            case SETMOTORC:
                 r = mem[x--];
                 n = mem[x--];
                 if (n < 1 || n > 4)
@@ -419,7 +433,8 @@ void interpreter()
                 snprintf(i2ccommand, I2CBUFFERSIZE, "i2cset -y 2 0x48 0x%x 0x%x b", 0x14 + n - 1, r);
                 system(i2ccommand);
                 break;
-            case CGETDIGSENSOR:
+                
+            case GETDIGSENSORC:
                 n = mem[x];
                 if (n < 1 || n > 2)
                     runtimeerr(wrong_digsensor_num, n, 0);
@@ -429,7 +444,8 @@ void interpreter()
                     fscanf(f2, "%i", &i);
                 mem[x] = i;
                 break;
-            case CGETANSENSOR:
+                
+            case GETANSENSORC:
                 n = mem[x];
                 if (n < 1 || n > 6)
                     runtimeerr(wrong_ansensor_num, n, 0);
@@ -437,9 +453,6 @@ void interpreter()
                 printf("i2cget -y 2 0x48 0x%x\n", 0x26 - n);
                 snprintf(i2ccommand, I2CBUFFERSIZE, "i2cget -y 2 0x48 0x%x", 0x26 - n);
                 mem[x] = rungetcommand(i2ccommand);
-                break;
-            case SLEEP:
-                sleep(mem[x--]);
                 break;
     #endif
             case FUNCBEG:
@@ -455,20 +468,25 @@ void interpreter()
             case PRINTID:
                 i = mem[pc++];              // ссылка на identtab
                 prtype = identab[i+2];
-                printident(identab[i+1]);   // ссылка на reprtab
+                r = identab[i+1] + 2;       // ссылка на reprtab
+                do
+                    printf_char(reprtab[r++]);
+                while (reprtab[r] != 0);
                 
                 if (prtype > 0 && modetab[prtype] == MARRAY && modetab[prtype+1] > 0)
-                    auxprint(dspl(identab[i+3]), prtype, '\n', '\n');
+                    auxprint(dsp(identab[i+3], l), prtype, '\n', '\n');
                 else
-                    auxprint(dspl(identab[i+3]), prtype, ' ', '\n');
-                
+                    auxprint(dsp(identab[i+3], l), prtype, ' ', '\n');
                 break;
             case GETID:
                 i = mem[pc++];              // ссылка на identtab
                 prtype = identab[i+2];
-                printident(identab[i+1]);   // ссылка на reprtab
+                r = identab[i+1] + 2;       // ссылка на reprtab
+                do
+                    printf_char(reprtab[r++]);
+                while (reprtab[r] != 0);
                 printf("\n");
-                auxget(dspl(identab[i+3]), prtype);
+                auxget(dsp(identab[i+3], l), prtype);
                 break;
             case ABSIC:
                 mem[x] = abs(mem[x]);
@@ -525,11 +543,11 @@ void interpreter()
             case STRUCTWITHARR:
             {
                 int oldpc, oldbase = base, procnum;
-                base = dsp();
+                base = (di = mem[pc++], di<0) ? g-di : l+di;
                 procnum = mem[pc++];
                 oldpc = pc;
                 pc = procnum;
-                interpreter();
+                interpreter(0);
                 pc = oldpc;
                 base = oldbase;
                 flagstop = 1;
@@ -545,7 +563,7 @@ void interpreter()
                     if ((bounds[i] = mem[x--]) <= 0)
                         runtimeerr(wrong_number_of_elems, 0, bounds[i]);
                 
-                genarr(abs(N), 1, d, N > 0 ? dspl(curdsp) : base + curdsp, proc, pc);
+    genarr(abs(N), 1, d, N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp, proc, &x, &pc, bounds);
                 flagstop = 1;
             }
                 break;
@@ -558,10 +576,10 @@ void interpreter()
                 ++pc;
                 break;
             case LOAD:
-                mem[++x] = mem[dsp()];
+                mem[++x] = mem[dsp(mem[pc++], l)];
                 break;
             case LOADD:
-                memcpy(&mem[++x], &mem[dsp()], sizeof(double));
+                memcpy(&mem[++x], &mem[dsp(mem[pc++], l)], sizeof(double));
                 ++x;
                 break;
             case LAT:
@@ -573,7 +591,7 @@ void interpreter()
                 mem[x] = mem[r+1];
                 break;
             case LA:
-                mem[++x] = dsp();
+                mem[++x] = dsp(mem[pc++], l);
                 break;
             case CALL1:
                 mem[l+1] = ++x;
@@ -586,7 +604,7 @@ void interpreter()
                 entry = functions[i > 0 ? i : mem[l-i]];
                 l = mem[l+1];
                 x = l + mem[entry+1] - 1;
-                if (x >= MAXMEMSIZE)
+                if (x >= upcurthread)
                     runtimeerr(mem_overflow, 0, 0);
                 mem[l+2] = pc;
                 pc = entry + 3;
@@ -625,36 +643,59 @@ void interpreter()
                 mem[x] += mem[pc++];   // ident displ
                 break;
             case COPY00:
-                copy(dspl(mem[pc]), dspl(mem[pc+1]), mem[pc+2]);
-                pc += 3;
+                di = dsp(mem[pc++], l);
+                di1 = dsp(mem[pc++], l);
+                len = mem[pc++];
+                for (i=0; i<len; i++)
+                    mem[di+i] =  mem[di1+i];
                 break;
             case COPY01:
-                copy(dspl(mem[pc]), mem[x--], mem[pc+1]);
-                pc +=2;
+                di = dsp(mem[pc++], l);
+                len = mem[pc++];
+                di1 = mem[x--];
+                for (i=0; i<len; i++)
+                    mem[di+i] =  mem[di1+i];
                 break;
             case COPY10:
-                copy(mem[x--], dspl(mem[pc]), mem[pc+1]);
-                pc += 2;
+                di =  mem[x--];
+                di1 = dsp(mem[pc++], l);
+                len = mem[pc++];
+                for (i=0; i<len; i++)
+                    mem[di+i] =  mem[di1+i];
                 break;
             case COPY11:
-                r = mem[x--];
-                copy(mem[x--], r, mem[pc++]);
+                di1 = mem[x--];
+                di =  mem[x--];
+                len = mem[pc++];
+                for (i=0; i<len; i++)
+                    mem[di+i] =  mem[di1+i];
                 break;
             case COPY0ST:
-                copyST(dspl(mem[pc]), mem[pc+1]);
-                pc += 2;
+                di = dsp(mem[pc++], l);
+                len = mem[pc++];
+                for (i=0; i<len; i++)
+                    mem[++x] =  mem[di+i];
+
                 break;
             case COPY1ST:
-                copyST(mem[x--], mem[pc++]);
+                di = mem[x--];
+                len = mem[pc++];
+                for (i=0; i<len; i++)
+                    mem[++x] =  mem[di+i];
                 break;
             case COPY0STASS:
-                copySTASS(dspl(mem[pc]), mem[pc+1]);
-                pc += 2;
+                di = dsp(mem[pc++], l);
+                len = mem[pc++];
+                x -= len;
+                for (i=0; i<len; i++)
+                    mem[di+i] = mem[x+i+1];
                 break;
             case COPY1STASS:
-                d = mem[pc++];
-                copySTASS(mem[x-d], d);
-                x--;
+                len = mem[pc++];
+                x -= len;
+                di = mem[x--];
+                for (i=0; i<len; i++)
+                    mem[di+i] = mem[x+i+2];
                 break;
                 
             case SLICE:
@@ -666,7 +707,8 @@ void interpreter()
                 mem[x] = r + i * d;
                 break;
             case STRINGINIT:
-                r = mem[dspl(mem[pc++])];
+                di = mem[pc++];
+                r = mem[di < 0 ? g - di : l + di];
                 N = mem[r-1];
                 from = mem[x--];
                 d = mem[from-1];     // d - кол-во литер в строке-инициаторе
@@ -680,7 +722,7 @@ void interpreter()
                 d = mem[pc++];       // d
                 x -= mem[pc++];      // сколько всего слов во всех элементах инициализации
                 from = x + 1;
-                rec_init_arr(mem[dsp()], N, d);
+                rec_init_arr(mem[dsp(mem[pc++], l)], from, N, d);
                 break;
             case WIDEN:
                 rf = (double)mem[x];
@@ -700,81 +742,81 @@ void interpreter()
                 
                 
             case ASS:
-                mem[dsp()] = mem[x];
+                mem[dsp(mem[pc++], l)] = mem[x];
                 break;
             case REMASS:
-                r = mem[dsp()] %= check_zero_int(mem[x]);
+                r = mem[dsp(mem[pc++], l)] %= check_zero_int(mem[x]);
                 mem[x] = r;
                 break;
             case SHLASS:
-                r = mem[dsp()] <<= mem[x];
+                r = mem[dsp(mem[pc++], l)] <<= mem[x];
                 mem[x] = r;
                 break;
             case SHRASS:
-                r = mem[dsp()] >>= mem[x];
+                r = mem[dsp(mem[pc++], l)] >>= mem[x];
                 mem[x] = r;
                 break;
             case ANDASS:
-                r = mem[dsp()] &= mem[x];
+                r = mem[dsp(mem[pc++], l)] &= mem[x];
                 mem[x] = r;
                 break;
             case EXORASS:
-                r = mem[dsp()] ^= mem[x];
+                r = mem[dsp(mem[pc++], l)] ^= mem[x];
                 mem[x] = r;
                 break;
             case ORASS:
-                r = mem[dsp()] |= mem[x];
+                r = mem[dsp(mem[pc++], l)] |= mem[x];
                 mem[x] = r;
                 break;
             case PLUSASS:
-                r = mem[dsp()] += mem[x];
+                r = mem[dsp(mem[pc++], l)] += mem[x];
                 mem[x] = r;
                 break;
             case MINUSASS:
-                r = mem[dsp()] -= mem[x];
+                r = mem[dsp(mem[pc++], l)] -= mem[x];
                 mem[x] = r;
                 break;
             case MULTASS:
-                r = mem[dsp()] *= mem[x];
+                r = mem[dsp(mem[pc++], l)] *= mem[x];
                 mem[x] = r;
                 break;
             case DIVASS:
-                r = mem[dsp()] /= check_zero_int(mem[x]);
+                r = mem[dsp(mem[pc++], l)] /= check_zero_int(mem[x]);
                 mem[x] = r;
                 break;
                 
             case ASSV:
-                mem[dsp()] = mem[x--];
+                mem[dsp(mem[pc++], l)] = mem[x--];
                 break;
             case REMASSV:
-                mem[dsp()] %= check_zero_int(mem[x--]);
+                mem[dsp(mem[pc++], l)] %= check_zero_int(mem[x--]);
                 break;
             case SHLASSV:
-                mem[dsp()] <<= mem[x--];
+                mem[dsp(mem[pc++], l)] <<= mem[x--];
                 break;
             case SHRASSV:
-                mem[dsp()] >>= mem[x--];
+                mem[dsp(mem[pc++], l)] >>= mem[x--];
                 break;
             case ANDASSV:
-                mem[dsp()] &= mem[x--];
+                mem[dsp(mem[pc++], l)] &= mem[x--];
                 break;
             case EXORASSV:
-                mem[dsp()] ^= mem[x--];
+                mem[dsp(mem[pc++], l)] ^= mem[x--];
                 break;
             case ORASSV:
-                mem[dsp()] |= mem[x--];
+                mem[dsp(mem[pc++], l)] |= mem[x--];
                 break;
             case PLUSASSV:
-                mem[dsp()] += mem[x--];
+                mem[dsp(mem[pc++], l)] += mem[x--];
                 break;
             case MINUSASSV:
-                mem[dsp()] -= mem[x--];
+                mem[dsp(mem[pc++], l)] -= mem[x--];
                 break;
             case MULTASSV:
-                mem[dsp()] *= mem[x--];
+                mem[dsp(mem[pc++], l)] *= mem[x--];
                 break;
             case DIVASSV:
-                mem[dsp()] /= check_zero_int(mem[x--]);
+                mem[dsp(mem[pc++], l)] /= check_zero_int(mem[x--]);
                 break;
                 
             case ASSAT:
@@ -940,18 +982,18 @@ void interpreter()
                 x--;
                 break;
             case POSTINC:
-                mem[++x] = mem[r=dsp()];
+                mem[++x] = mem[r=dsp(mem[pc++], l)];
                 mem[r]++;
                 break;
             case POSTDEC:
-                mem[++x] = mem[r=dsp()];
+                mem[++x] = mem[r=dsp(mem[pc++], l)];
                 mem[r]--;
                 break;
             case INC:
-                mem[++x] = ++mem[dsp()];
+                mem[++x] = ++mem[dsp(mem[pc++], l)];
                 break;
             case DEC:
-                mem[++x] = --mem[dsp()];
+                mem[++x] = --mem[dsp(mem[pc++], l)];
                 break;
             case POSTINCAT:
                 mem[x] = mem[r=mem[x]];
@@ -969,11 +1011,11 @@ void interpreter()
                 break;
             case INCV:
             case POSTINCV:
-                mem[dsp()]++;
+                mem[dsp(mem[pc++], l)]++;
                 break;
             case DECV:
             case POSTDECV:
-                mem[dsp()]--;
+                mem[dsp(mem[pc++], l)]--;
                 break;
             case INCATV:
             case POSTINCATV:
@@ -989,29 +1031,29 @@ void interpreter()
                 break;
  
             case ASSR:
-                mem[r=dsp()] = mem[x-1];
+                mem[r=dsp(mem[pc++], l)] = mem[x-1];
                 mem[r+1] = mem[x];
                 break;
             case PLUSASSR:
-                memcpy(&lf, &mem[i=dsp()], sizeof(double));
+                memcpy(&lf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 lf += rf;
                 memcpy(&mem[x-1], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case MINUSASSR:
-                memcpy(&lf, &mem[i=dsp()], sizeof(double));
+                memcpy(&lf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 lf -= rf;
                 memcpy(&mem[x-1], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case MULTASSR:
-                memcpy(&lf, &mem[i=dsp()], sizeof(double));
+                memcpy(&lf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 lf *= rf;
                 memcpy(&mem[x-1], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case DIVASSR:
-                memcpy(&lf, &mem[i=dsp()], sizeof(double));
+                memcpy(&lf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 lf /= check_zero_float(rf);
                 memcpy(&mem[x-1], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
@@ -1049,30 +1091,30 @@ void interpreter()
                 break;
  
             case ASSRV:
-                r = dsp();
+                r = dsp(mem[pc++], l);
                 mem[r+1] = mem[x--];
                 mem[r] = mem[x--];
                 break;
             case PLUSASSRV:
-                memcpy(&lf, &mem[i=dsp()], sizeof(double));
+                memcpy(&lf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 lf += rf;
                 memcpy(&mem[i], &lf, sizeof(double));
                 x -= 2;
                 break;
             case MINUSASSRV:
-                memcpy(&lf, &mem[i=dsp()], sizeof(double));
+                memcpy(&lf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 lf -= rf;
                 memcpy(&mem[i], &lf, sizeof(double));
                 x -= 2;
                 break;
             case MULTASSRV:
-                memcpy(&lf, &mem[i=dsp()], sizeof(double));
+                memcpy(&lf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 lf *= rf;
                 memcpy(&mem[i], &lf, sizeof(double));
                 x -= 2;
                 break;
             case DIVASSRV:
-                memcpy(&lf, &mem[i=dsp()], sizeof(double));
+                memcpy(&lf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 lf /= check_zero_float(rf);
                 memcpy(&mem[i], &lf, sizeof(double));
                 x -= 2;
@@ -1153,28 +1195,28 @@ void interpreter()
                 memcpy(&mem[x++], &lf, sizeof(double));
                 break;
             case POSTINCR:
-                memcpy(&rf, &mem[i=dsp()], sizeof(double));
+                memcpy(&rf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 memcpy(&mem[x+1], &rf, sizeof(double));
                 x += 2;
                 ++rf;
                 memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case POSTDECR:
-                memcpy(&rf, &mem[i=dsp()], sizeof(double));
+                memcpy(&rf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 memcpy(&mem[x+1], &rf, sizeof(double));
                 x += 2;
                 --rf;
                 memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case INCR:
-                memcpy(&rf, &mem[i=dsp()], sizeof(double));
+                memcpy(&rf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 ++rf;
                 memcpy(&mem[x+1], &rf, sizeof(double));
                 x += 2;
                 memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case DECR:
-                memcpy(&rf, &mem[i=dsp()], sizeof(double));
+                memcpy(&rf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 --rf;
                 memcpy(&mem[x+1], &rf, sizeof(double));
                 x += 2;
@@ -1210,13 +1252,13 @@ void interpreter()
                 break;
             case INCRV:
             case POSTINCRV:
-                memcpy(&rf, &mem[i=dsp()], sizeof(double));
+                memcpy(&rf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 ++rf;
                 memcpy(&mem[i], &rf, sizeof(double));
                 break;
             case DECRV:
             case POSTDECRV:
-                memcpy(&rf, &mem[i=dsp()], sizeof(double));
+                memcpy(&rf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
                 --rf;
                 memcpy(&mem[i], &rf, sizeof(double));
                 break;
@@ -1252,6 +1294,7 @@ void interpreter()
 
 void import()
 {
+    int i, l, pc, x;
     
 #ifdef ROBOT
     f1 = fopen(JD1, "r");                       // файлы цифровых датчиков
@@ -1285,14 +1328,21 @@ void import()
     fclose(input);
     
     l = g = pc;
+    threads[0] = 0;
+    upcurthread = MAXMEMTHREAD;
     mem[g] = mem[g+1] = 0;
     x = g + maxdisplg;
-    pc = 0;
-    
-    interpreter();
+    pc = 4;
+    mem[1] = l;
+    mem[2] = x;
+    mem[3] = pc;
+//    t_initAll();
+//    mem[0] = curthread = t_create(interpreter, curth);
+//    t_destroyAll();
+    mem[0] = curthread = 0;                // номер нити главной программы 0
+    interpreter(0);
     
 #ifdef ROBOT
-    printf("111");
     system("i2cset -y 2 0x48 0x10 0 w");   // отключение силовых моторов
     system("i2cset -y 2 0x48 0x11 0 w");
     system("i2cset -y 2 0x48 0x12 0 w");

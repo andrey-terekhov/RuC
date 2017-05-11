@@ -38,4 +38,14 @@ LOG10 log10 ЛОГ10 лог10
 ASIN asin АСИН асин
 RAND rand СЛУЧ случ
 ROUND round ОКРУГЛ округл
+T_CREATE t_create Т_СОЗДАТЬ т_создать
+T_MSG_SEND t_msg_send Т_ПОСЛАТЬ т_послать
+T_EXIT t_exit Т_КОНЕЦ т_конец
+T_MSG_RECEIVE t_msg_receiive Т_ПОЛУЧИТЬ т_получить
+T_JOIN t_join Т_ПРИСОЕД т_присоед
+T_SLEEP t_sleep Т_СПАТЬ т_спать
+T_SEM_CREATE t_sem_create Т_СОЗДАТЬ_СЕМ т_создать_сем
+T_SEM_WAIT t_sem_wait Т_ВНИЗ_СЕМ т_вниз_сем
+T_SEM_POST t_sem_post Т_ВВЕРХ_СЕМ т_вверх_сем
+
 

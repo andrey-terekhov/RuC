@@ -4,7 +4,14 @@
 extern void tablesandtree();
 #include "global_vars.h"
 extern void printf_char(int wchar);
-extern void printident(int r);
+void printident(int r)
+{
+    r += 2;                      // ссылка на reprtab
+    do
+        printf_char(reprtab[r++]);
+    while (reprtab[r] != 0);
+
+}
 
 void warning(int ernum)
 {
@@ -439,7 +446,9 @@ void error(int ernum)
         case init_not_struct:
             printf("в РуСи только структуре можно присвоить или передать параметром запись {,,,}\n");
             break;
-            
+        case param_threads_not_int:
+            printf("процедуры, управляющие параллельными нитями, могут иметь только целые параметры\n");
+            break;
             
         default: ;
     }

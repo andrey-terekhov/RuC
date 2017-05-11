@@ -8,18 +8,21 @@
 
 #ifndef RuC_Defs_h
 #define RuC_Defs_h
+#include <pthread.h>
 
-#define MAXREPRTAB 10000
-#define MAXIDENTAB 10000
-#define MAXMEMSIZE 10000
-#define MAXTREESIZE 10000
-#define MAXMODETAB 10000
-#define MAXBOUNDS  1000
-#define FUNCSIZE   1000
-#define SOURCESIZE 10000
-#define LINESSIZE  3000
-#define MAXSTRINGL 128
-#define INIPROSIZE 1000
+#define MAXREPRTAB   10000
+#define MAXIDENTAB   10000
+#define MAXMEMSIZE   100000
+#define MAXTREESIZE  10000
+#define MAXMODETAB   10000
+#define MAXBOUNDS    1000
+#define FUNCSIZE     1000
+#define SOURCESIZE   10000
+#define LINESSIZE    3000
+#define MAXSTRINGL   128
+#define INIPROSIZE   1000
+#define NUMOFTHREADS 10
+#define MAXMEMTHREAD MAXMEMSIZE/NUMOFTHREADS 
 
 // modetab 
 #define MFUNCTION 1001
@@ -223,6 +226,7 @@
 // Коды операций стандартных функций
 
 #define ABSIC     9525
+#define SETMOTORC 9526
 #define GETDIGSENSORC 9528
 #define GETANSENSORC  9529
 #define ABSC      9530
@@ -235,6 +239,16 @@
 #define ASINC     9537
 #define RANDC     9538
 #define ROUNDC    9539
+#define CREATEC   9540
+#define MSGSENDC  9541
+#define EXITC     9542
+#define MSGRECEIVEC 9543
+#define JOINC     9544
+#define SLEEPC    9545
+#define SEMCREATEC  9546
+#define SEMWAITC  9547
+#define SEMPOSTC  9548
+
 
 
 // Лексемы
@@ -293,10 +307,9 @@
 #define PRINT     -24
 #define GETID     -25
 #define SETMOTOR  -26
-#define SLEEP     -27     // до этого места операторы, а затем функции
 
 #define GETDIGSENSOR -28
-#define GETANSENSOR -29
+#define GETANSENSOR  -29
 #define ABS       -30
 #define SQRT      -31
 #define EXP       -32
@@ -307,6 +320,15 @@
 #define ASIN      -37
 #define RAND      -38
 #define ROUND     -39
+#define TCREATE   -40
+#define TMSGSEND  -41
+#define TEXIT     -42
+#define TMSGRECEIVE -43
+#define TJOIN     -44
+#define TSLEEP    -45
+#define TSEMCREATE  -46
+#define TSEMWAIT  -47
+#define TSEMPOST  -48
 
 
 // Узлы дерева
@@ -487,6 +509,7 @@
 #define select_not_from_struct             329
 #define select_from_func_value             330
 #define init_not_struct                    331
+#define param_threads_not_int              332
 
 //  коды предупреждений
 

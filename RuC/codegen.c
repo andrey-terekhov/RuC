@@ -9,6 +9,8 @@
 extern void error(int err);
 extern int szof(int);
 
+int curth = 0;
+
 void tocode(int c)
 {
 //    printf("tocode tc=%i pc %i) %i\n", tc, pc, c);
@@ -271,6 +273,15 @@ void Stmt_gen()
         case NOP:
             break;
             
+        case TCREATE:
+            tocode(CREATEC);
+            tocode(++curth);
+            break;
+            
+        case TEXIT:
+            tocode(EXITC);
+            break;
+            
         case TStructbeg:
             tocode(B);
             tocode(0);
@@ -284,12 +295,11 @@ void Stmt_gen()
             mem[iniprocs[numproc]-1] = pc;
         }
             break;
-
+            
         case TBegin:
-        {
             compstmt_gen();
-        }
             break;
+            
         case TIf:
         {
             int thenref = tree[tc++], elseref = tree[tc++], ad;
@@ -477,6 +487,11 @@ void Stmt_gen()
             tocode(tree[tc++]);  // ссылка в identtab
         }
             break;
+        case SETMOTOR:
+            Expr_gen(0);
+            Expr_gen(0);
+            tocode(SETMOTORC);
+            break;
         default:
         {
             tc--;
@@ -490,8 +505,6 @@ void Declid_gen()
 {
 	int olddispl = tree[tc++], telem = tree[tc++], N = tree[tc++],
     element_len, all = tree[tc++], iniproc = tree[tc++]; // all - общее кол-во слов и в структуре, и в массиве
-
-    int i;
 
     element_len = szof(telem);
     if (N == 0)                    // обычная переменная int a; или struct point p;
