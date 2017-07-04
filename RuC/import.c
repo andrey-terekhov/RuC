@@ -374,11 +374,11 @@ void interpreter(int numthr)
         
         switch (mem[pc++])
         {
-/*
+
             case STOP:
                 flagstop = 0;
                 break;
-                
+/*                
             case CREATEC:
                 numthr = mem[pc++];
                 threads[numthr] = cur0 = MAXMEMTHREAD * numthr;
@@ -1307,7 +1307,7 @@ void import()
     system("i2cset -y 2 0x48 0x13 0x1000 w");
 #endif
     
-    input = fopen("../../../export.txt", "r");
+    input = fopen("export.txt", "r");
     
     fscanf(input, "%i %i %i %i %i %i %i\n", &pc, &funcnum, &id, &rp, &md, &maxdisplg, &wasmain);
 
