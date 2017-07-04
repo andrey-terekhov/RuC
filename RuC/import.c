@@ -374,6 +374,7 @@ void interpreter(int numthr)
         
         switch (mem[pc++])
         {
+/*
             case STOP:
                 flagstop = 0;
                 break;
@@ -412,13 +413,13 @@ void interpreter(int numthr)
                 t_sem_wait(mem[x--]);
                 break;
             case MSGRECEIVEC:
-                mem[++x] = * t_msg_receive();
+                mem[++x] = t_msg_receive();
                 break;
             case MSGSENDC:
                 r = mem[x--];
                 t_msg_send(mem[x--], &r);
                 break;
-                
+*/                
     #ifdef ROBOT
 
             case SETMOTORC:
