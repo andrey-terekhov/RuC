@@ -6,7 +6,7 @@
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
 char* name = /*"/Users/ant/Desktop/RuCRegr/defstest/COPY00_9300.c";*/
-             "../../../tests/threads.c";
+             "tests/test.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -60,14 +60,14 @@ int main()
     // занесение ключевых слов в reprtab
     keywordsnum = 1;
     
-    input =  fopen("../../../keywords.txt", "r");
+    input =  fopen("keywords.txt", "r");
     if (input == NULL)
     {
         printf(" не найден файл %s\n", "keywords.txt");
         exit(1);
     }
 
-    output = fopen("../../../tree.txt", "wt");
+    output = fopen("tree.txt", "wt");
 
     getnext();
     nextch();
@@ -96,7 +96,7 @@ int main()
     lines[line+1] = charnum;
     tablesandtree();
     fclose(output);
-    output = fopen("../../../codes.txt", "wt");
+    output = fopen("codes.txt", "wt");
     
     codegen();
     
@@ -105,7 +105,7 @@ int main()
     fclose(input);
     fclose(output);
     
-    output = fopen("../../../export.txt", "wt");
+    output = fopen("export.txt", "wt");
     fprintf(output, "%i %i %i %i %i %i %i\n", pc, funcnum, id, rp, md, maxdisplg, wasmain);
     
     for (i=0; i<pc; i++)

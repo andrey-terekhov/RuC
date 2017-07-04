@@ -1,48 +1,21 @@
 
 source
-line 1) int white = 100, black = 62;
-line 2) void main()
-line 3) {
-line 4)     int value = black, r;
-line 5)     setmotor(3, 50);
-line 6)     t_create
-line 7)     r = 1;
-line 8)     printid(r);
-line 9)     t_exit
-line 10)     print(0);
-line 11)     t_create
-line 12)     r = 2;
-line 13)     printid(r);
-line 14)     t_exit
-line 15)     print(10);
-line 16) }
-line 17) 
+line 1) пусто главная()
+line 2) {
+line 3)     int a=3;
+line 4)     print(++a);
+line 5) }
 
 identab
-id 2) 1
-id 3) 1778
-id 4) -1
-id 5) -3
+id 2) 0
+id 3) 25
+id 4) 2
+id 5) 2
 
 id 6) 1
-id 7) 1786
+id 7) 1778
 id 8) -1
-id 9) -4
-
-id 10) 0
-id 11) 8
-id 12) 2
-id 13) 2
-
-id 14) 1
-id 15) 1794
-id 16) -1
-id 17) 3
-
-id 18) 1
-id 19) 1802
-id 20) -1
-id 21) 4
+id 9) 3
 
 
 modetab
@@ -52,44 +25,15 @@ md 2) 1001
 md 3) -6
 md 4) 0
 
-tc 0) TDeclid displ= -3 elem_type= -1 N= 0 all= 1 iniproc= 0
-tc 6) TConst 100
-tc 8) TExprend
-tc 9) TDeclid displ= -4 elem_type= -1 N= 0 all= 1 iniproc= 0
-tc 15) TConst 62
-tc 17) TExprend
-tc 18) TFuncdef funcn= 10 maxdispl= 6
-tc 21) TBegin
-tc 22) TDeclid displ= 3 elem_type= -1 N= 0 all= 1 iniproc= 0
-tc 28) TIdenttoval -4
-tc 30) TExprend
-tc 31) TDeclid displ= 4 elem_type= -1 N= 0 all= 0 iniproc= 0
-tc 37) TConst 3
-tc 39) TExprend
-tc 40) TConst 50
-tc 42) TOper 9526
-tc 43) TExprend
-tc 44) TCREATE
-tc 45) TIdent 4
-tc 47) TConst 1
-tc 49) TOper 9207
-tc 50) TOper 4
-tc 51) TExprend
-tc 52) TPrintid 18
-tc 54) TEXIT
-tc 55) TConst 0
-tc 57) TPrint -1
-tc 59) TExprend
-tc 60) TCREATE
-tc 61) TIdent 4
-tc 63) TConst 2
-tc 65) TOper 9207
-tc 66) TOper 4
-tc 67) TExprend
-tc 68) TPrintid 18
-tc 70) TEXIT
-tc 71) TConst 10
-tc 73) TPrint -1
-tc 75) TExprend
-tc 76) TReturn
-tc 77) TEnd
+tc 0) TFuncdef funcn= 2 maxdispl= 5
+tc 3) TBegin
+tc 4) TDeclid displ= 3 elem_type= -1 N= 0 all= 1 iniproc= 0
+tc 10) TConst 3
+tc 12) TExprend
+tc 13) TIdent 3
+tc 15) TOper 9043
+tc 16) TOper 3
+tc 17) TPrint -1
+tc 19) TExprend
+tc 20) TReturn
+tc 21) TEnd
