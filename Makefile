@@ -1,4 +1,4 @@
-TARGET = ruc
+TARGET = ruc.out
 SRC = RuC/codegen.c RuC/codes.c RuC/error.c RuC/extdecl.c RuC/import.c RuC/main.c RuC/scaner.c
 CFLAGS = -lm
 
