@@ -5,8 +5,6 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
-char* name = /*"/Users/ant/Desktop/RuCRegr/defstest/COPY00_9300.c";*/
-             "tests/test.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -50,7 +48,7 @@ extern void error(int ernum);
 extern void codegen();
 extern void ext_decl();
 
-int main()
+int main(int argc, const char * argv[])
 {
     int i;
     
@@ -75,6 +73,12 @@ int main()
         ;
     fclose(input);
     
+     if (argc < 2) {
+        printf(" не указан входной файл\n");
+        exit(1);
+    }
+
+    const char * name = argv[1];
     input =  fopen(name, "r");
     if (input == NULL)
     {
