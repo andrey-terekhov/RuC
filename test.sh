@@ -13,7 +13,7 @@ fi
 
 for i in `find ./tests -name *.c`
 do
-    timeout 1 ./ruc.out $i >/dev/null 2>/dev/null
+    out=`timeout 1 ./ruc.out $i >/dev/null 2>/dev/null`
     
     case $? in
         0)
@@ -33,6 +33,6 @@ rm tree.txt codes.txt export.txt >/dev/null 2>/dev/null
 rm ruc.out >/dev/null 2>/dev/null
 
 
-echo "pass = $pass, fail = $fail, timeout = $timeout"
+echo " pass = $pass, fail = $fail, timeout = $timeout"
 
 exit 0
