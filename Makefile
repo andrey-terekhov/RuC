@@ -1,6 +1,6 @@
-TARGET = ruc.out
+TARGET = ruc
 SRC = RuC/codegen.c RuC/codes.c RuC/error.c RuC/extdecl.c RuC/import.c RuC/main.c RuC/scaner.c
-CFLAGS = -lm
+CFLAGS = -lm -DROBOTS
 
 .PHONY:	 all clean
 
