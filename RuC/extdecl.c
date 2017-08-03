@@ -1104,6 +1104,8 @@ void decl_id(int decl_type)    // вызывается из block и extdecl, т
 void block(int b);
 // если b=1, то это просто блок, b=-1 - блок в switch, иначе (b=0) - это блок функции
 
+void create();
+
 void statement()
 {
 	int flagsemicol = 1, oldwasdefault = wasdefault, oldinswitch = inswitch;
@@ -1116,6 +1118,12 @@ void statement()
 		flagsemicol = 0;
 		block(1);
 	}
+    else if (cur == TCREATE)
+    {
+        flagsemicol = 0;
+        create();
+    }
+
 	else if (cur == SEMICOLON)
     {
         totree(NOP);
@@ -1620,6 +1628,62 @@ void block(int b)
 	lg = oldlg;
 	totree(TEnd);
 }
+
+void create()
+{
+    int notended = 1, i, olddispl = displ, oldlg = lg, firstdecl;
+    totree(TCREATE);
+    curid = id;
+    blockflag = 0;
+    
+    while (is_int(next) || is_float(next) || next == LSTRUCT)
+    {
+        int repeat = 1;
+        scaner();
+        firstdecl = gettype();
+        if (wasstructdef && next == SEMICOLON)
+        {
+            scaner();
+            continue;
+            
+        }
+        do
+        {
+            decl_id(idorpnt(after_type_must_be_ident, firstdecl));
+            if (next == COMMA)
+                scaner();
+            else if (next == SEMICOLON)
+            {
+                scaner();
+                repeat = 0;
+            }
+            else
+                error(def_must_end_with_semicomma);
+        }
+        while (repeat);
+    }
+    
+    // кончились описания, пошли операторы до texit
+    
+    do
+    {
+        if (next == TEXIT)
+        {
+            scaner();
+            notended = 0;
+        }
+        else
+            statement();
+    }
+    while (notended);
+    
+    for (i = id - 4; i >= curid; i -= 4)
+        reprtab[identab[i + 1] + 1] = identab[i];
+    displ = olddispl;
+    lg = oldlg;
+    totree(TEXIT);
+}
+
 
 
 void function_definition()

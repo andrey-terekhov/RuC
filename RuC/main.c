@@ -6,7 +6,7 @@
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
 char* name = /*"/Users/ant/Desktop/RuCRegr/defstest/COPY00_9300.c";*/
-             "../../../tests/threads.c";
+             "../../../tests/Sveta/2 aug4.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -40,6 +40,8 @@ int g, l, x, iniproc;                                     // anst = ADDR - на 
                                                           // в ansttype всегда тип возвращаемого значения
 // если значение указателя, адрес массива или строки лежит на верхушке стека, то это VAL, а не ADDR
 
+extern void preprocess_file();
+
 extern void tablesandcode();
 extern void tablesandtree();
 extern void import();
@@ -66,39 +68,55 @@ int main()
         printf(" не найден файл %s\n", "keywords.txt");
         exit(1);
     }
-
-    output = fopen("../../../tree.txt", "wt");
-
     getnext();
     nextch();
-    while (scan() != LEOF)
+    while (scan() != LEOF)   // чтение ключевых слов
         ;
     fclose(input);
     
-    input =  fopen(name, "r");
+/*    input  = fopen(name, "r");        //   исходный текст
+    output = fopen("../../../macro.txt", "wt");
+
     if (input == NULL)
     {
         printf(" не найден файл %s\n", name);
         exit(1);
     }
+ */
     modetab[1] = 0;
     keywordsnum = 0;
     lines[line = 1] = 1;
     charnum = 1;
     kw = 1;
     tc = 0;
-    getnext();
+/*    getnext();
     nextch();
     next = scan();
     
-    ext_decl();
+    preprocess_file();                //   макрогенерация
+    
+    fclose(output);
+    fclose(input);
+    
+    return 0;
+
+    input  = fopen("../../../macro.txt", "r");
+ */
+    input = fopen(name, "r");
+    output = fopen("../../../tree.txt", "wt");
+    
+    getnext();
+    nextch();
+    next = scan();
+
+    ext_decl();                       //   генерация дерева
     
     lines[line+1] = charnum;
     tablesandtree();
     fclose(output);
     output = fopen("../../../codes.txt", "wt");
     
-    codegen();
+    codegen();                         //   генерация кода
     
     tablesandcode();
     

@@ -25,7 +25,6 @@ PRINTID printid ПЕЧАТЬИД печатьид
 PRINT print ПЕЧАТЬ печать
 GETID getid ЧИТАТЬИД читатьид
 SETMOTOR setmotor МОТОР мотор
-SLEEP sleep СПАТЬ спать
 GETDIGSENSOR getdigsensor ЦИФРДАТЧИК цифрдатчик
 GETANSENSOR getansensor АНАЛОГДАТЧИК аналогдатчик
 ABS abs АБС абс
@@ -38,14 +37,21 @@ LOG10 log10 ЛОГ10 лог10
 ASIN asin АСИН асин
 RAND rand СЛУЧ случ
 ROUND round ОКРУГЛ округл
-T_CREATE t_create Т_СОЗДАТЬ т_создать
-T_MSG_SEND t_msg_send Т_ПОСЛАТЬ т_послать
-T_EXIT t_exit Т_КОНЕЦ т_конец
-T_MSG_RECEIVE t_msg_receiive Т_ПОЛУЧИТЬ т_получить
-T_JOIN t_join Т_ПРИСОЕД т_присоед
-T_SLEEP t_sleep Т_СПАТЬ т_спать
-T_SEM_CREATE t_sem_create Т_СОЗДАТЬ_СЕМ т_создать_сем
-T_SEM_WAIT t_sem_wait Т_ВНИЗ_СЕМ т_вниз_сем
-T_SEM_POST t_sem_post Т_ВВЕРХ_СЕМ т_вверх_сем
-
+T_CREATE t_create Н_СОЗДАТЬ н_создать
+T_MSG_SEND t_msg_send Н_ПОСЛАТЬ н_послать
+T_EXIT t_exit Н_КОНЕЦ н_конец
+T_MSG_RECEIVE t_msg_receiive Н_ПОЛУЧИТЬ н_получить
+T_JOIN t_join Н_ПРИСОЕД н_присоед
+T_SLEEP t_sleep Н_СПАТЬ н_спать
+T_SEM_CREATE t_sem_create Н_СОЗДАТЬ_СЕМ н_создать_сем
+T_SEM_WAIT t_sem_wait Н_ВНИЗ_СЕМ н_вниз_сем
+T_SEM_POST t_sem_post Н_ВВЕРХ_СЕМ н_вверх_сем
+#DEFINE #define #ОПРЕД #опред
+#IFDEF #ifdef #ЕСЛИБЫЛ #еслибыл
+#IFNDEF #ifndef #ЕСЛИНЕБЫЛ #еслинебыл
+#IF #if #ЕСЛИ #если 
+#ELIF #elif #ИНЕСЛИ #инесли
+#ENDIF #endif #КОНЕСЛИ #конесли
+#ELSE #else #ИНАЧЕ #иначе
+#DEFINED() #defined
 

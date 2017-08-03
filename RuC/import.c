@@ -12,7 +12,661 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-//#include <ruthreads>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h> //sleep Linux
+#include <errno.h> //error Linux
+#include <stdio.h> //perror Linux
+
+#ifndef _REENTRANT
+#define _REENTRANT
+#endif
+
+#define __COUNT_TH_CONTAINER_DEFAULT 8
+#define __COUNT_SEM_CONTAINER_DEFAULT 8
+#define TRUE 1
+#define FALSE 0
+
+// Я исхожу из того, что нумерация нитей процедурой t_create начинается с 1 и идет последовательно
+// в соответствии с порядком вызовов этой процудуры, главная программа имеет номер 0. Если стандарт POSIX
+// этого не обеспечивает, это должен сделать Саша Головань.
+
+// Память mem, как обычно, начинается с кода всей программы, включая нити, затем идут глобальные данные,
+// затем куски для стеков и массивов гланой программы и нитей, каждый кусок имеет размер MAXMEMTHREAD.
+
+// Поскольку и при запуске главной прграммы, и при запуске любой нити процудура t_create получает в качестве
+// параметра одну и ту же процедуру interpreter, важно, чтобы при начале работы программы или нити были
+// правильно установлены l, x и pc, причем все важные переменные были локальными, тогда дальше все
+// переключения между нитями будут заботой ОС.
+
+// Есть глобальный массив threads, i-ый элемент которого указывает на начало куска i-ой нити.
+// Каждый кусок начинается с шапки, где хранятся l, x и pc, которые нужно установить в момент старта нити.
+
+struct message{int numTh; int inf;} msg;
+// numTh при посылке сообщения говорит куда, при приеме - откуда
+
+int t_create(void(*func)(int), int arg);
+int t_createDetached(void* (*func)(void *), void *arg);  // пока не буду
+
+void t_exit();
+
+void t_join(int numTh);    // пока не буду
+int t_getNum();            // пока не буду
+void t_sleep(int miliseconds);
+
+int t_sem_create(int level);
+void t_sem_wait(int numSem);
+void t_sem_post(int numSem);
+
+void t_msg_send(struct message msg);
+struct message t_msg_receive();
+
+// void* t_seize(void* (*func)(void *), void *arg);  // пока не буду
+
+int __countTh = 1;
+int __countThContainer = __COUNT_TH_CONTAINER_DEFAULT;
+
+struct __msgList
+{
+    void *msg;
+    struct __msgList *next;
+};
+struct __threadInfo
+{
+    pthread_t th;
+    int isDetach;
+    
+    pthread_cond_t cond;
+    pthread_mutex_t lock;
+    struct __msgList *head;
+    struct __msgList *tail;
+};
+struct __threadInfo *__threads;
+int __countSem = 0;
+int __countSemContainer = __COUNT_SEM_CONTAINER_DEFAULT;
+
+sem_t *__sems;
+pthread_rwlock_t __lock_t_create;
+pthread_rwlock_t __lock_t_sem_create;
+pthread_mutex_t __lock_t_seize;
+int t_initAll()
+{
+    __threads = (struct __threadInfo *)malloc(__COUNT_TH_CONTAINER_DEFAULT * sizeof *__threads);
+    if (!__threads)
+    {
+        perror("t_initAll : Threads contrainer memory allocation failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    __sems = (sem_t *)malloc(__COUNT_SEM_CONTAINER_DEFAULT * sizeof *__sems);
+    if (!__sems)
+    {
+        perror("t_initAll : Semaphores contrainer memory allocation failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    int res = pthread_rwlock_init(&__lock_t_create, NULL);
+    if (res != 0)
+    {
+        perror("t_initAll : pthread_rwlock_init of __lock_t_create failed");
+        exit(EXIT_FAILURE);
+    }
+    __threads[0].th = pthread_self();
+    __threads[0].isDetach = TRUE;
+    
+    res = pthread_cond_init(&(__threads[0].cond), NULL);
+    if (res != 0)
+    {
+        perror("t_initAll : pthread_cond_init of __threads[0].cond failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    res = pthread_mutex_init(&(__threads[0].lock), NULL);
+    if (res != 0)
+    {
+        perror("t_initAll : pthread_mutex_init of __threads[0].lock failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    __threads[0].head = NULL;
+    __threads[0].tail = NULL;
+    res = pthread_rwlock_init(&__lock_t_sem_create, NULL);
+    if (res != 0)
+    {
+        perror("t_initAll : pthread_rwlock_init of __lock_t_sem_create failed");
+        exit(EXIT_FAILURE);
+    }
+    pthread_mutexattr_t seize_attr;
+    
+    res = pthread_mutexattr_init(&seize_attr);
+    if (res != 0)
+    {
+        perror("t_initAll : pthread_mutexattr_init of seize_attr failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    res = pthread_mutexattr_settype(&seize_attr, PTHREAD_MUTEX_RECURSIVE);
+    if (res != 0)
+    {
+        perror("t_initAll : pthread_mutexattr_settype of seize_attr failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    res = pthread_mutex_init(&__lock_t_seize, &seize_attr);
+    if (res != 0)
+    {
+        perror("t_initAll : pthread_mutex_init of __lock_t_seize and seize_attr failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    res = pthread_mutexattr_destroy(&seize_attr);
+    if (res != 0)
+    {
+        perror("t_initAll : pthread_mutexattr_destroy of seize_attr failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    return 0;
+}
+
+void t_destroyAll();
+int __t_create(pthread_attr_t *attr, void(*func)(int), int arg, int isDetach)
+{
+    int res = pthread_rwlock_wrlock(&__lock_t_create);
+    if (res != 0)
+    {
+        perror("__t_create : pthread_rwlock_wrlock of __lock_t_create failed");
+        exit(EXIT_FAILURE);
+    }
+    pthread_t th;
+    
+    res = pthread_create(&th, attr, func, arg);
+    if (res != 0)
+    {
+        perror("t_create : Thread creation failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    if (attr)
+    {
+        res = pthread_attr_destroy(attr);
+        if(res != 0)
+        {
+            perror("t_create : Thread attribute destroy failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+    if (__countTh >= __countThContainer)
+    {
+        struct __threadInfo * treadsEx = (struct __threadInfo *)realloc(__threads, 2 * __countThContainer * sizeof *__threads);
+        if (treadsEx)
+        {
+            __countThContainer *= 2;
+            __threads = treadsEx;
+        }
+        else
+        {
+            free(__threads);
+            
+            perror("t_create : Threads contrainer memory reallocation failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    __threads[__countTh].th = th;
+    __threads[__countTh].isDetach = isDetach;
+    
+    res = pthread_cond_init(&(__threads[__countTh].cond), NULL);
+    if (res != 0)
+    {
+        perror("__t_create : pthread_cond_init of __threads[__countTh].cond failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    res = pthread_mutex_init(&(__threads[__countTh].lock), NULL);
+    if (res != 0)
+    {
+        perror("__t_create : pthread_mutex_init of __threads[__countTh].lock failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    __threads[__countTh].head = NULL;
+    __threads[__countTh].tail = NULL;
+    
+    int retVal = __countTh++;
+    
+    res = pthread_rwlock_unlock(&__lock_t_create);
+    if (res != 0)
+    {
+        perror("__t_create : pthread_rwlock_unlock of __lock_t_create failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    return retVal;
+}
+int t_create(void(*func)(int), int arg)
+{
+    return __t_create(NULL, func, arg, FALSE);
+}
+int t_createDetached(void* (*func)(void *), void *arg)
+{
+    pthread_attr_t attr;
+    
+    int res = pthread_attr_init(&attr);
+    if (res != 0)
+    {
+        perror("t_createDetached : Attribute creation failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    res = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    if (res != 0)
+    {
+        perror("t_createDetached : Setting detached attribute failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    return __t_create(&attr, func, arg, TRUE);
+}
+
+void t_exit()
+{
+    pthread_exit(NULL);
+}
+void t_join(int numTh)
+{
+    int res = pthread_rwlock_rdlock(&__lock_t_create);
+    if (res != 0)
+    {
+        perror("t_join : pthread_rwlock_rdlock of __lock_t_create failed");
+        exit(EXIT_FAILURE);
+    }
+    if (numTh > 0 && numTh < __countTh)
+    {
+        if (!__threads[numTh].isDetach)
+        {
+            pthread_t th = __threads[numTh].th;
+            
+            res = pthread_rwlock_unlock(&__lock_t_create);
+            if (res != 0)
+            {
+                perror("t_join : pthread_rwlock_unlock of __lock_t_create failed");
+                exit(EXIT_FAILURE);
+            }
+            
+            res = pthread_join(th, NULL);
+            if (res != 0)
+            {
+                perror("t_join : Thread join failed");
+                exit(EXIT_FAILURE);
+            }
+        }
+        else
+        {
+            perror("t_join : Thread join failed - thread is detached");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    {
+        perror("t_join : Thread join failed - number of thread is out of range");
+        exit(EXIT_FAILURE);
+    }
+}
+
+int t_getThNum()
+{
+    int res = pthread_rwlock_rdlock(&__lock_t_create);
+    if (res != 0)
+    {
+        perror("t_getThNum : pthread_rwlock_rdlock of __lock_t_create failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    pthread_t th = pthread_self();
+    int index = -1;
+    
+    for (int i = 0; i < __countTh; i++)
+    {
+        if (pthread_equal(th, __threads[i].th))
+        {
+            index = i;
+        }
+    }
+    
+    if (index != -1)
+    {
+        res = pthread_rwlock_unlock(&__lock_t_create);
+        if (res != 0)
+        {
+            perror("t_getThNum : pthread_rwlock_unlock of __lock_t_create failed");
+            exit(EXIT_FAILURE);
+        }
+        
+        return index;
+    }
+    
+    perror("t_getThNum : Thread is not registered");
+    exit(EXIT_FAILURE);
+}
+
+void t_sleep(int seconds)
+{
+    sleep(seconds);       // я хочу miliseconds ?
+}
+
+int t_sem_create(int level)
+{
+    int res = pthread_rwlock_wrlock(&__lock_t_sem_create);
+    if (res != 0)
+    {
+        perror("t_sem_create : pthread_rwlock_wrlock of __lock_t_sem_create failed");
+        exit(EXIT_FAILURE);
+    }
+    sem_t sem;
+    
+    res = sem_init(&sem, 0, level);
+    if (res != 0)
+    {
+        perror("t_sem_create : Semaphore initilization failed");
+        exit(EXIT_FAILURE);
+    }
+    if (__countSem >= __countSemContainer)
+    {
+        sem_t * semsEx = (sem_t *)realloc(__sems, 2 * __countSemContainer * sizeof *__sems);
+        if (semsEx)
+        {
+            __countSemContainer *= 2;
+            __sems = semsEx;
+        }
+        else
+        {
+            free(__sems);
+            
+            perror("t_sem_create : Semafors contrainer memory reallocation failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+    __sems[__countSem] = sem;
+    
+    int retVal = __countSem++;
+    
+    res = pthread_rwlock_unlock(&__lock_t_sem_create);
+    if (res != 0)
+    {
+        perror("t_sem_create : pthread_rwlock_unlock of __lock_t_sem_create failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    return retVal;
+}
+
+void t_sem_wait(int numSem)
+{
+    int res = pthread_rwlock_rdlock(&__lock_t_sem_create);
+    if (res != 0)
+    {
+        perror("t_sem_wait : pthread_rwlock_rdlock of __lock_t_sem_create failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    if (numSem >= 0 && numSem < __countSem)
+    {
+        sem_t sem = __sems[numSem];
+        
+        res = pthread_rwlock_unlock(&__lock_t_sem_create);
+        if (res != 0)
+        {
+            perror("t_sem_wait : pthread_rwlock_unlock of __lock_t_sem_create failed");
+            exit(EXIT_FAILURE);
+        }
+        
+        int res = sem_wait(&sem);
+        if (res != 0)
+        {
+            perror("t_sem_wait : Semaphore wait failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    {
+        perror("t_sem_wait : Semaphore wait failed - number of semaphore is out of range");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void t_sem_post(int numSem)
+{
+    int res = pthread_rwlock_rdlock(&__lock_t_sem_create);
+    if (res != 0)
+    {
+        perror("t_sem_post : pthread_rwlock_rdlock of __lock_t_sem_create failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    if (numSem >= 0 && numSem < __countSem)
+    {
+        sem_t sem = __sems[numSem];
+        
+        res = pthread_rwlock_unlock(&__lock_t_sem_create);
+        if (res != 0)
+        {
+            perror("t_sem_post : pthread_rwlock_unlock of __lock_t_sem_create failed");
+            exit(EXIT_FAILURE);
+        }
+        
+        int res = sem_post(&sem);
+        if (res != 0)
+        {
+            perror("t_sem_post : Semaphore post failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    {
+        perror("t_sem_post : Semaphore post failed - number of semaphore is out of range");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void t_msg_send(struct message msg)
+{
+    int res = pthread_rwlock_rdlock(&__lock_t_create);
+    if (res != 0)
+    {
+        perror("t_msg_send : pthread_rwlock_rdlock of __lock_t_create failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    if (msg.numTh > 0 && msg.numTh < __countTh)
+    {
+        struct __threadInfo *th_info = &(__threads[msg.numTh]);
+        
+        res = pthread_rwlock_unlock(&__lock_t_create);
+        if (res != 0)
+        {
+            perror("t_msg_send : pthread_rwlock_unlock of __lock_t_create failed");
+            exit(EXIT_FAILURE);
+        }
+        res = pthread_mutex_lock(&(th_info->lock));
+        if (res != 0)
+        {
+            perror("t_msg_send : pthread_mutex_lock of th_info.lock failed");
+            exit(EXIT_FAILURE);
+        }
+        struct __msgList *next = (struct __msgList *)malloc(sizeof *next);
+//        next->msg = msg;
+        next->next = NULL;
+        
+        if (th_info->head)
+        {
+            th_info->tail->next = next;
+            th_info->tail = next;
+        }
+        else
+        {
+            th_info->head = next;
+            th_info->tail = next;
+            
+            res = pthread_cond_signal(&(th_info->cond));
+            if (res != 0)
+            {
+                perror("t_msg_send : pthread_cond_signal of th_info.cond failed");
+                exit(EXIT_FAILURE);
+            }
+        }
+        res = pthread_mutex_unlock(&(th_info->lock));
+        if (res != 0)
+        {
+            perror("t_msg_send : pthread_mutex_unlock of th_info.lock failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    {
+        perror("t_msg_send : Message send failed - number of thread is out of range");
+        exit(EXIT_FAILURE);
+    }
+}
+
+struct message t_msg_receive()
+{
+    struct message mes;      //  временное решение
+    int res = pthread_rwlock_rdlock(&__lock_t_create);
+    if (res != 0)
+    {
+        perror("t_msg_recieve : pthread_rwlock_rdlock of __lock_t_create failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    int numTh = t_getThNum();
+    struct __threadInfo *th_info = &(__threads[numTh]);
+    
+    res = pthread_rwlock_unlock(&__lock_t_create);
+    if (res != 0)
+    {
+        perror("t_msg_recieve : pthread_rwlock_unlock of __lock_t_create failed");
+        exit(EXIT_FAILURE);
+    }
+    res = pthread_mutex_lock(&(th_info->lock));
+    if (res != 0)
+    {
+        perror("t_msg_recieve : pthread_mutex_lock of th_info.lock failed");
+        exit(EXIT_FAILURE);
+    }
+    if (!th_info->head)
+    {
+        res = pthread_cond_wait(&(th_info->cond), &(th_info->lock));
+        if (res != 0)
+        {
+            perror("t_msg_recieve : pthread_cond_wait of th_info.cond and th_info.lock failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+    struct __msgList *exHead = th_info->head;
+    void *msg = exHead->msg;
+    th_info->head = exHead->next;
+    
+    if (!th_info->head)
+    {
+        th_info->tail = NULL;
+    }
+    
+    free(exHead);
+    res = pthread_mutex_unlock(&(th_info->lock));
+    if (res != 0)
+    {
+        perror("t_msg_recieve : pthread_mutex_unlock of th_info.lock failed");
+        exit(EXIT_FAILURE);
+    }
+    
+//    return msg;
+    return mes;
+}
+
+void* t_seize(void* (*func)(void *), void *arg)
+{
+    int res = pthread_mutex_lock(&__lock_t_seize);
+    if (res != 0)
+    {
+        perror("t_seize : pthread_mutex_lock of __lock_t_seize failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    void *ret = func(arg);
+    
+    res = pthread_mutex_unlock(&__lock_t_seize);
+    if (res != 0)
+    {
+        perror("t_seize : pthread_mutex_unlock of __lock_t_seize failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    return ret;
+}
+
+void t_destroyAll()
+{
+    int res;
+    
+    for (int i = 0; i < __countTh; i++)
+    {
+        res = pthread_cond_destroy(&(__threads[i].cond));
+        if (res != 0)
+        {
+            perror("t_destroyAll : pthread_cond_destroy of __threads[i].cond failed");
+            exit(EXIT_FAILURE);
+        }
+        res = pthread_mutex_destroy(&(__threads[i].lock));
+        if (res != 0)
+        {
+            perror("t_destroyAll : pthread_mutex_destroy of __threads[i].lock failed");
+            exit(EXIT_FAILURE);
+        }
+        
+        struct __msgList *msg = __threads[i].head;
+        __threads[i].head = NULL;
+        __threads[i].tail = NULL;
+        while (msg)
+        {
+            struct __msgList *exMsg = msg;
+            msg = msg->next;
+            free(exMsg);
+        }
+    }
+    free(__threads);
+    for (int i = 0; i < __countSem; i++)
+    {
+        res = sem_destroy(&(__sems[i]));
+        if (res != 0)
+        {
+            perror("t_destroyAll : sem_destroy of __sems[i] failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+    free(__sems);
+    res = pthread_rwlock_destroy(&__lock_t_create);
+    if (res != 0)
+    {
+        perror("t_destroyAll : pthread_rwlock_destroy of __lock_t_create failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    res = pthread_rwlock_destroy(&__lock_t_sem_create);
+    if (res != 0)
+    {
+        perror("t_destroyAll : pthread_rwlock_destroy of __lock_t_sem_create failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    res = pthread_mutex_destroy(&__lock_t_seize);
+    if (res != 0)
+    {
+        perror("t_destroyAll : pthread_mutex_destroy of __lock_t_seize failed");
+        exit(EXIT_FAILURE);
+    }
+}
 
 #include "Defs.h"
 extern int szof(int);
@@ -40,7 +694,7 @@ extern int szof(int);
 int g, iniproc, maxdisplg, wasmain;
 int reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md;
 int mem[MAXMEMSIZE], functions[FUNCSIZE], funcnum;
-int threads[NUMOFTHREADS], curthread, upcurthread;
+int threads[NUMOFTHREADS]; //, curthread, upcurthread;
 int procd, iniprocs[INIPROSIZE], base = 0;
 FILE *input;
 
@@ -159,7 +813,7 @@ void runtimeerr(int e, int i, int r)
             printf("переполнение памяти, скорее всего, нет выхода из рекурсии\n");
             break;
         case sqrt_from_negat:
-            printf("попытка вычисления квадратного корня из отрицательного числа %\n");
+            printf("попытка вычисления квадратного корня из отрицательного числа \n");
             break;
         case log_from_negat:
             printf("попытка вычисления натурального логарифма из 0 или отрицательного числа\n");
@@ -203,7 +857,7 @@ void auxprint(int beg, int t, char before, char after)
     else if (t == LFLOAT)
     {
         memcpy(&rf, &mem[beg], sizeof(double));
-        printf("%f", rf);
+        printf("%lf", rf);
     }
     else if (t == LVOID)
         printf(" значения типа ПУСТО печатать нельзя\n");
@@ -285,14 +939,14 @@ void auxget(int beg, int t)
 
 void interpreter(int);
 
-void genarr(int N, int curdim, int d, int adr, int procnum, int *x, int *pc, int bounds[])
+void genarr(int N, int curdim, int d, int adr, int procnum, int *x, int *pc, int bounds[], int numTh)
 {
     int c0, i, curb = bounds[curdim], oldpc = *pc;
     mem[++(*x)] = curb;
     c0 = ++(*x);
 
     *x += curb * (curdim < N ? 1 : d) - 1;
-    if (*x >= upcurthread)
+    if (*x >= threads[numTh] + MAXMEMTHREAD)
         runtimeerr(mem_overflow, 0, 0);
     
     if(curdim == N)
@@ -314,7 +968,7 @@ void genarr(int N, int curdim, int d, int adr, int procnum, int *x, int *pc, int
     {
         for (i=0; i < curb; i++)
         {
-            genarr(N, curdim + 1, d, c0 + i, procnum, x, pc, bounds);
+            genarr(N, curdim + 1, d, c0 + i, procnum, x, pc, bounds, numTh);
         }
     }
     mem[adr] = c0;
@@ -354,14 +1008,13 @@ int dsp(int di, int l)
     return di < 0 ? g - di : l + di;
 }
 
-void interpreter(int numthr)
+void interpreter(int numTh)
 {
-    int l, x, pc, cur0;
-    int *curth;
+    int l, x, pc;
     int N, bounds[100], d,from, prtype;
-    int i,r, flagstop = 1, entry, num, di, di1, len;
+    int i,r, flagstop = 1, entry, di, di1, len;
     double lf, rf;
-    int membeg = threads[numthr];
+    int membeg = threads[numTh];
     l = mem[membeg+1];
     x = mem[membeg+2];
     pc = mem[membeg+3];
@@ -377,48 +1030,65 @@ void interpreter(int numthr)
             case STOP:
                 flagstop = 0;
                 break;
-                
+
             case CREATEC:
-                numthr = mem[pc++];
-                threads[numthr] = cur0 = MAXMEMTHREAD * numthr;
-                upcurthread = cur0 + MAXMEMTHREAD;
-                mem[cur0] = numthr;
-                mem[cur0+1] = cur0 + 4;    // l
+            {
+                int numTh = mem[pc++], cur0;
+                threads[numTh] = cur0 = MAXMEMTHREAD * numTh;
+                mem[cur0] = numTh;         // кажется, это не нужно
+                mem[cur0+1] = cur0 + 4;    // l начала нити
                 mem[cur0+2] = cur0 + 6;    // x
-                mem[cur0+3] = pc;
+                mem[cur0+3] = pc;          // pc первой команды нити
                 mem[cur0+4] = g;
                 mem[cur0+5] = 0;
                 mem[cur0+6] = 0;
-                r = t_create(interpreter, curth);
-                if (r != numthr)
-                    printf("bad t_create %i %i\n", r, numthr);
+                r = t_create(interpreter, numTh);
+                if (r != numTh)
+                    printf("bad t_create %i %i\n", r, numTh);
+            }
                 break;
+ 
             case JOINC:
                 t_join(mem[x--]);
                 break;
+ 
             case SLEEPC:
                 t_sleep(mem[x--]);
                 break;
+ 
             case EXITC:
                 t_exit();
                 break;
+ 
             case SEMCREATEC:
                 mem[x] = t_sem_create(mem[x]);
                 break;
+ 
             case SEMPOSTC:
                 t_sem_post(mem[x--]);
                 break;
+ 
             case SEMWAITC:
                 t_sem_wait(mem[x--]);
                 break;
+ 
             case MSGRECEIVEC:
-                mem[++x] = * t_msg_receive();
+            {
+                struct message m = t_msg_receive();
+                mem[++x] = m.numTh;
+                mem[++x] = m.inf;
+            }
                 break;
+ 
             case MSGSENDC:
-                r = mem[x--];
-                t_msg_send(mem[x--], &r);
+            {
+                struct message m;
+                m.inf = mem[x--];
+                m.numTh = mem[x--];
+                t_msg_send(m);
+            }
                 break;
-                
+               
     #ifdef ROBOT
 
             case SETMOTORC:
@@ -537,7 +1207,7 @@ void interpreter(int numthr)
                 ++x;
                 break;
             case ROUNDC:
-                mem[x] = (int)(rf+0.5);
+                mem[--x] = (int)(rf+0.5);
                 break;
                 
             case STRUCTWITHARR:
@@ -562,8 +1232,7 @@ void interpreter(int numthr)
                 for (i=abs(N); i>0; i--)
                     if ((bounds[i] = mem[x--]) <= 0)
                         runtimeerr(wrong_number_of_elems, 0, bounds[i]);
-                
-    genarr(abs(N), 1, d, N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp, proc, &x, &pc, bounds);
+genarr(abs(N),1,d,N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp, proc, &x, &pc, bounds, numTh);
                 flagstop = 1;
             }
                 break;
@@ -604,7 +1273,7 @@ void interpreter(int numthr)
                 entry = functions[i > 0 ? i : mem[l-i]];
                 l = mem[l+1];
                 x = l + mem[entry+1] - 1;
-                if (x >= upcurthread)
+                if (x >= threads[numTh] + MAXMEMTHREAD)
                     runtimeerr(mem_overflow, 0, 0);
                 mem[l+2] = pc;
                 pc = entry + 3;
@@ -1068,25 +1737,25 @@ void interpreter(int numthr)
             case PLUSASSATR:
                 memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf += rf;
-                memcpy(&mem[++x], &lf, sizeof(double));
+                memcpy(&mem[x++], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case MINUSASSATR:
                 memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf -= rf;
-                memcpy(&mem[++x], &lf, sizeof(double));
+                memcpy(&mem[x++], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case MULTASSATR:
                 memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf *= rf;
-                memcpy(&mem[++x], &lf, sizeof(double));
+                memcpy(&mem[x++], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
                 break;
             case DIVASSATR:
                 memcpy(&lf, &mem[i=mem[x-=2]], sizeof(double));
                 lf /= check_zero_float(rf);
-                memcpy(&mem[++x], &lf, sizeof(double));
+                memcpy(&mem[x++], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
                 break;
  
@@ -1094,6 +1763,7 @@ void interpreter(int numthr)
                 r = dsp(mem[pc++], l);
                 mem[r+1] = mem[x--];
                 mem[r] = mem[x--];
+                memcpy(&lf, &mem[r], sizeof(double));
                 break;
             case PLUSASSRV:
                 memcpy(&lf, &mem[i=dsp(mem[pc++], l)], sizeof(double));
@@ -1277,7 +1947,7 @@ void interpreter(int numthr)
                 
             case UNMINUSR:
                 rf = -rf;
-                memcpy(&mem[x-1], &rf, sizeof(num));
+                memcpy(&mem[x-1], &rf, sizeof(double));
                 break;
             case LNOT:
                 mem[x] = ~mem[x];
@@ -1328,18 +1998,18 @@ void import()
     fclose(input);
     
     l = g = pc;
-    threads[0] = 0;
-    upcurthread = MAXMEMTHREAD;
     mem[g] = mem[g+1] = 0;
     x = g + maxdisplg;
     pc = 4;
-    mem[1] = l;
-    mem[2] = x;
-    mem[3] = pc;
-//    t_initAll();
-//    mem[0] = curthread = t_create(interpreter, curth);
-//    t_destroyAll();
-    mem[0] = curthread = 0;                // номер нити главной программы 0
+    
+    threads[0] = x;
+    mem[x+1] = l;
+    mem[x+2] = x;
+    mem[x+3] = pc;
+/*    t_initAll();
+    t_create(interpreter, 0);   // номер нити главной программы 0
+    t_destroyAll();
+ */
     interpreter(0);
     
 #ifdef ROBOT

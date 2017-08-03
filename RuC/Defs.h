@@ -227,27 +227,27 @@
 
 #define ABSIC     9525
 #define SETMOTORC 9526
-#define GETDIGSENSORC 9528
-#define GETANSENSORC  9529
-#define ABSC      9530
-#define SQRTC     9531
-#define EXPC      9532
-#define SINC      9533
-#define COSC      9534
-#define LOGC      9535
-#define LOG10C    9536
-#define ASINC     9537
-#define RANDC     9538
-#define ROUNDC    9539
-#define CREATEC   9540
-#define MSGSENDC  9541
-#define EXITC     9542
-#define MSGRECEIVEC 9543
-#define JOINC     9544
-#define SLEEPC    9545
-#define SEMCREATEC  9546
-#define SEMWAITC  9547
-#define SEMPOSTC  9548
+#define GETDIGSENSORC 9527
+#define GETANSENSORC  9528
+#define ABSC      9529
+#define SQRTC     9530
+#define EXPC      9531
+#define SINC      9532
+#define COSC      9533
+#define LOGC      9534
+#define LOG10C    9535
+#define ASINC     9536
+#define RANDC     9537
+#define ROUNDC    9538
+#define CREATEC   9539
+#define MSGSENDC  9540
+#define EXITC     9541
+#define MSGRECEIVEC 9542
+#define JOINC     9543
+#define SLEEPC    9544
+#define SEMCREATEC  9545
+#define SEMWAITC  9546
+#define SEMPOSTC  9547
 
 
 
@@ -308,28 +308,37 @@
 #define GETID     -25
 #define SETMOTOR  -26
 
-#define GETDIGSENSOR -28
-#define GETANSENSOR  -29
-#define ABS       -30
-#define SQRT      -31
-#define EXP       -32
-#define SIN       -33
-#define COS       -34
-#define LOG       -35
-#define LOG10     -36
-#define ASIN      -37
-#define RAND      -38
-#define ROUND     -39
-#define TCREATE   -40
-#define TMSGSEND  -41
-#define TEXIT     -42
-#define TMSGRECEIVE -43
-#define TJOIN     -44
-#define TSLEEP    -45
-#define TSEMCREATE  -46
-#define TSEMWAIT  -47
-#define TSEMPOST  -48
+#define STANDARD_FUNC_START -27
 
+#define GETDIGSENSOR -27
+#define GETANSENSOR  -28
+#define ABS       -29
+#define SQRT      -30
+#define EXP       -31
+#define SIN       -32
+#define COS       -33
+#define LOG       -34
+#define LOG10     -35
+#define ASIN      -36
+#define RAND      -37
+#define ROUND     -38
+#define TCREATE   -39
+#define TMSGSEND  -40
+#define TEXIT     -41
+#define TMSGRECEIVE -42
+#define TJOIN     -43
+#define TSLEEP    -44
+#define TSEMCREATE  -45
+#define TSEMWAIT  -46
+#define TSEMPOST  -47
+#define SH_DEFINE     -48   // #define
+#define SH_IFDEF      -49   // #ifdef
+#define SH_IFNDEF     -50   // #ifndef
+#define SH_IF         -51   // #if
+#define SH_ELIF       -52   // #elif
+#define SH_ENDIF      -53   // #endif
+#define SH_ELSE       -54   // #else
+#define LDEFINED      -55   // defined()
 
 // Узлы дерева
 #define TIdent      -300
@@ -510,6 +519,16 @@
 #define select_from_func_value             330
 #define init_not_struct                    331
 #define param_threads_not_int              332
+
+#define else_after_elif                    333
+#define sh_if_not_found                    334
+#define no_ident_after_define              335
+#define endif_not_found                    336
+#define macro_params_not_found             337
+#define wait_ident_after_comma_in_macro_params 338
+#define wait_rightbr_in_macro_params       339
+#define params_count_not_equals_in_macro   340
+
 
 //  коды предупреждений
 
