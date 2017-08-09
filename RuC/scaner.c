@@ -551,12 +551,21 @@ int scan()
         }
             
         default:
-            if (letter())
+            if (letter() || curchar == '#')
             {
                 int oldrepr, r;
                 oldrepr = rp;
                 rp+=2;
                 hash = 0;
+                
+                // решетка на 1 месте -- значит, ключевое слово препроцессора
+                if (curchar == '#')
+                {
+                    hash += curchar;
+                    reprtab[rp++] = curchar;
+                    nextch();
+                }
+
                 do
                 {
                     

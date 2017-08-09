@@ -449,6 +449,34 @@ void error(int ernum)
         case param_threads_not_int:
             printf("процедуры, управляющие параллельными нитями, могут иметь только целые параметры\n");
             break;
+        case param_send_not_1:
+            printf("параметр процедуры t_msg_send должен иметь тип mtssage\n");
+            break;
+           
+        case else_after_elif:
+            printf("ошибка препроцессора: #elif после #else\n");
+            break;
+        case sh_if_not_found:
+            printf("ошибка препроцессора: встречено ключевое слово #elif или #else или #endif, но не было #if(или #ifdef)\n");
+            break;
+        case no_ident_after_define:
+            printf("ошибка препроцессора: не найден идентификатор после #define\n");
+            break;
+        case endif_not_found:
+            printf("ошибка препроцессора: не найден #endif\n");
+            break;
+        case macro_params_not_found:
+            printf("ошибка препроцессора: не найдены параметры для макроподстановки\n");
+            break;
+        case wait_ident_after_comma_in_macro_params:
+            printf("ошибка препроцессора: ожидается идент после запятой в параметрах макроподстановки\n");
+            break;
+        case wait_rightbr_in_macro_params:
+            printf("ошибка препроцессора: ожидается закрывающая скобка в параметрах макроподстановки\n");
+            break;
+        case params_count_not_equals_in_macro:
+            printf("ошибка препроцессора: количество параметров в макроподстановке не совпадает с заданным\n");
+            break;
             
         default: ;
     }

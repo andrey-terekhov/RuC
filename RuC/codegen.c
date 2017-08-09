@@ -4,6 +4,7 @@
 //  Created by Andrey Terekhov on 3/10/15.
 //  Copyright (c) 2015 Andrey Terekhov. All rights reserved.
 //
+#include <stdlib.h>
 #include "global_vars.h"
 
 extern void error(int err);
@@ -273,12 +274,12 @@ void Stmt_gen()
         case NOP:
             break;
             
-        case TCREATE:
+        case CREATEC:
             tocode(CREATEC);
-            tocode(++curth);
+            tocode(tree[tc++]);
             break;
             
-        case TEXIT:
+        case EXITC:
             tocode(EXITC);
             break;
             

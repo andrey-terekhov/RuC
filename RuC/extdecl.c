@@ -320,39 +320,46 @@ void primaryexpr()
 		while (sp > oldsp)
 			binop(--sp);
 	}
-	else if (cur <= SETMOTOR)            // стандартная функция
+	else if (cur <= STANDARD_FUNC_START)            // стандартная функция
 	{
-		int func = cur;
-        if (cur <= TMSGSEND)
+        int func = cur;
+        if (scaner() != LEFTBR)
+            error(no_leftbr_in_stand_func);
+        if (func <= TMSGSEND  && func >= TGETNUM)
         {                                // процедуры управления параллельными нитями
-            if (cur == TMSGRECEIVE)
-                ansttype = stackoperands[++sopnd] = LINT;     //не было параметра,  выдали 1 результат
+            if (func == TMSGRECEIVE || func == TGETNUM)
+            {
+                anst = VAL;
+                ansttype = stackoperands[++sopnd] = func == TGETNUM ? LINT : 2; // 2 - это ссылка на message
+                                   //не было параметра,  выдали 1 результат
+            }
             else
             {                      // TMSGSEND, TJOIN, TSLEEP, TSEMCREATE, TSEMWAIT, TSEMPOST
                 scaner();          // у этих процедур 1 параметр
-                expr(1);
+
+                leftansttype = func == TMSGSEND ? 2 : LINT;
+                exprassn(1);
                 toval();
-                if (!is_int(ansttype))
-                    error(param_threads_not_int);
-                if (cur == TMSGSEND)
-                {                   // у этой процедуры 2 параметра
-                    scaner();
-                    exprassn(1);
-                    toval();
-                    if (!is_int(ansttype))
-                        error(param_threads_not_int);
-                    ansttype = stackoperands[--sopnd] = LINT; //съели 2 параметра, выдали 1 результат
+
+                if (func == TMSGSEND)
+                {
+                   if (ansttype != 2)  // 2 - это аргумент типа struct{int numTh; int inf;}
+                    error(param_send_not_1);
+                    stackoperands[sopnd] = ansttype = 10; // 10 - это void t_msg_send(message m)
                 }
-                else if (cur == TSEMCREATE)
-                    ansttype = stackoperands[sopnd] = LINT;   //съели 1 параметр,  выдали 1 результат
                 else
-                    --sopnd;                                  //съели 1 параметр,  не выдали результата
+                {
+                    if (!is_int(ansttype))
+                    error(param_threads_not_int);
+                    if (func == TSEMCREATE)
+                        ansttype = stackoperands[sopnd] = LINT;       // съели 1 параметр, выдали int
+                    else
+                        --sopnd;                               // съели 1 параметр, не выдали результата
+                }
             }
-            
-            totree(9500-cur);
+            totree(9500-func);
         }
-		mustbe(LEFTBR, no_leftbr_in_stand_func);
-        if (func == RAND)
+        else if (func == RAND)
         {
             totree(RANDC);
             ansttype = stackoperands[++sopnd] = LFLOAT;
@@ -362,8 +369,7 @@ void primaryexpr()
             scaner();
             exprassn(1);
             toval();
-            totree(TExprend);
-            
+           
             if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR)
             {
                 notrobot = 0;
@@ -373,7 +379,7 @@ void primaryexpr()
                 {
                     mustbe(COMMA, no_comma_in_setmotor);
                     scaner();
-                    expr(1);
+                    exprassn(1);
                     toval();
                     if (!is_int(ansttype))
                         error(param_setmotor_not_int);
@@ -892,7 +898,8 @@ int array_init(int decl_type)                    // сейчас modetab[decl_ty
 }
 
 void initializer(int type)
-{    if (is_struct(type))
+{
+    if (is_struct(type))
         struct_init(type);
     else
         error(init_not_struct);
@@ -951,7 +958,7 @@ void exprassn(int level)
 				error(type_missmatch);
             if (opp != ASS)                   // в структуру можно присваивать только с помощью =
                 error(wrong_struct_ass);
-
+            
             if (anst == VAL)
                 opp = leftanst == IDENT ? COPY0STASS : COPY1STASS;
             else
@@ -1102,7 +1109,7 @@ void decl_id(int decl_type)    // вызывается из block и extdecl, т
 
 
 void block(int b);
-// если b=1, то это просто блок, b=-1 - блок в switch, иначе (b=0) - это блок функции
+// если b=1, то это просто блок, b=2 - блок нити, b=-1 - блок в switch, иначе (b=0) - это блок функции
 
 void statement()
 {
@@ -1116,19 +1123,18 @@ void statement()
 		flagsemicol = 0;
 		block(1);
 	}
+    else if (cur == TCREATE)
+    {
+        totree(CREATEC);
+        totree(++global_numTh);
+        flagsemicol = 0;
+        block(2);
+        totree(EXITC);
+    }
 	else if (cur == SEMICOLON)
     {
         totree(NOP);
 		flagsemicol = 0;
-    }
-    else if (cur == TCREATE)
-    {
-        totree(TCREATE);
-        do
-            statement();
-        while (next != TEXIT);
-        totree(scaner());
-        flagsemicol = 0;
     }
 	else if (cur == IDENT && next == COLON)
 	{
@@ -1555,7 +1561,7 @@ int gettype()
 }
 
 void block(int b)
-// если b=1, то это просто блок, b=-1 - блок в switch, иначе (b=0) - это блок функции
+// если b=1, то это просто блок, b=2 - блок нити, b=-1 - блок в switch, иначе (b=0) - это блок функции
 
 {
 	int oldinswitch = inswitch;
@@ -1600,7 +1606,7 @@ void block(int b)
 
 	do
 	{
-		if (next == END)
+        if (b == 2  ? next == TEXIT : next == END)
 		{
 			scaner();
 			notended = 0;
@@ -1620,7 +1626,6 @@ void block(int b)
 	lg = oldlg;
 	totree(TEnd);
 }
-
 
 void function_definition()
 {
