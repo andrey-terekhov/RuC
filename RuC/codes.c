@@ -226,36 +226,40 @@ void tablesandtree()
             case TGetid:
                 fprintf(output, "TGetid %i\n", tree[i++]);
                 break;
-            case SETMOTOR:
+            case SETMOTORC:
                 fprintf(output, "Setmotor\n");
                 break;
-            case TCREATE:
-                fprintf(output, "TCREATE\n");
+            case CREATEC:
+                fprintf(output, "TCREATE %i\n", tree[i++]);
                 break;
-            case TMSGSEND:
+            case MSGSENDC:
                 fprintf(output, "TMSGSEND\n");
                 break;
-            case TEXIT:
+            case EXITC:
                 fprintf(output, "TEXIT\n");
                 break;
-            case TMSGRECEIVE:
+            case MSGRECEIVEC:
                 fprintf(output, "TMSGRECEIVE\n");
                 break;
-            case TJOIN:
+            case JOINC:
                 fprintf(output, "TJOIN\n");
                 break;
-            case TSLEEP:
+            case SLEEPC:
                 fprintf(output, "TSLEEP\n");
                 break;
-            case TSEMCREATE:
+            case SEMCREATEC:
                 fprintf(output, "TSEMCREATE\n");
                 break;
-            case TSEMWAIT:
+            case SEMWAITC:
                 fprintf(output, "TSEMWAIT\n");
                 break;
-            case TSEMPOST:
+            case SEMPOSTC:
                 fprintf(output, "TSEMPOST\n");
                 break;
+            case GETNUMC:
+                fprintf(output, "GETNUM\n");
+                break;
+
 
 
             default:
@@ -302,7 +306,7 @@ void tablesandcode()
             case GETID:
                 fprintf(output, "GETID %i\n", mem[i++]);
                 break;
-            case SETMOTOR:
+            case SETMOTORC:
                 fprintf(output, "SETMOTOR\n");
                 break;
             case GETDIGSENSORC:
@@ -336,6 +340,9 @@ void tablesandcode()
                 break;
             case SEMPOSTC:
                 fprintf(output, "TSEMPOST\n");
+                break;
+            case GETNUMC:
+                fprintf(output, "GETNUM\n");
                 break;
 
             case ABSC:

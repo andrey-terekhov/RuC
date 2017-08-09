@@ -23,7 +23,7 @@ extern int source[SOURCESIZE], lines[LINESSIZE];
 
 extern int nextchar, curchar, func_def;
 extern int hashtab[256], reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md, startmode,
-    functions[], funcnum,
+    global_numTh, functions[], funcnum,
     stack[100], stackop[100], stackoperands[100], stacklog[100], ansttype,
     sp, sopnd, aux, lastid, curid, lg, displ, maxdispl, maxdisplg, type, op, inass, firstdecl;
 extern int iniprocs[INIPROSIZE], procd, arrdim, arrelemlen, was_struct_with_arr;

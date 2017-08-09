@@ -226,28 +226,31 @@
 // Коды операций стандартных функций
 
 #define ABSIC     9525
-#define SETMOTORC 9526
-#define GETDIGSENSORC 9527
-#define GETANSENSORC  9528
-#define ABSC      9529
-#define SQRTC     9530
-#define EXPC      9531
-#define SINC      9532
-#define COSC      9533
-#define LOGC      9534
-#define LOG10C    9535
-#define ASINC     9536
-#define RANDC     9537
-#define ROUNDC    9538
-#define CREATEC   9539
-#define MSGSENDC  9540
-#define EXITC     9541
+#define CREATEC   9526
+#define EXITC     9527
+
+#define SETMOTORC 9528
+#define GETDIGSENSORC 9529
+#define GETANSENSORC  9530
+#define ABSC      9531
+#define SQRTC     9532
+#define EXPC      9533
+#define SINC      9534
+#define COSC      9535
+#define LOGC      9536
+#define LOG10C    9537
+#define ASINC     9538
+#define RANDC     9539
+#define ROUNDC    9540
+
+#define MSGSENDC  9541
 #define MSGRECEIVEC 9542
 #define JOINC     9543
 #define SLEEPC    9544
 #define SEMCREATEC  9545
 #define SEMWAITC  9546
 #define SEMPOSTC  9547
+#define GETNUMC   9548
 
 
 
@@ -306,39 +309,41 @@
 #define PRINTID   -23
 #define PRINT     -24
 #define GETID     -25
-#define SETMOTOR  -26
+#define TCREATE   -26
+#define TEXIT     -27
 
-#define STANDARD_FUNC_START -27
+#define STANDARD_FUNC_START -28
+#define SETMOTOR  -28
+#define GETDIGSENSOR -29
+#define GETANSENSOR  -30
 
-#define GETDIGSENSOR -27
-#define GETANSENSOR  -28
-#define ABS       -29
-#define SQRT      -30
-#define EXP       -31
-#define SIN       -32
-#define COS       -33
-#define LOG       -34
-#define LOG10     -35
-#define ASIN      -36
-#define RAND      -37
-#define ROUND     -38
-#define TCREATE   -39
-#define TMSGSEND  -40
-#define TEXIT     -41
+#define ABS       -31
+#define SQRT      -32
+#define EXP       -33
+#define SIN       -34
+#define COS       -35
+#define LOG       -36
+#define LOG10     -37
+#define ASIN      -38
+#define RAND      -39
+#define ROUND     -40
+
+#define TMSGSEND  -41
 #define TMSGRECEIVE -42
 #define TJOIN     -43
 #define TSLEEP    -44
 #define TSEMCREATE  -45
 #define TSEMWAIT  -46
 #define TSEMPOST  -47
-#define SH_DEFINE     -48   // #define
-#define SH_IFDEF      -49   // #ifdef
-#define SH_IFNDEF     -50   // #ifndef
-#define SH_IF         -51   // #if
-#define SH_ELIF       -52   // #elif
-#define SH_ENDIF      -53   // #endif
-#define SH_ELSE       -54   // #else
-#define LDEFINED      -55   // defined()
+#define TGETNUM   -48
+#define SH_DEFINE     -49   // #define
+#define SH_IFDEF      -50   // #ifdef
+#define SH_IFNDEF     -51   // #ifndef
+#define SH_IF         -52   // #if
+#define SH_ELIF       -53   // #elif
+#define SH_ENDIF      -54   // #endif
+#define SH_ELSE       -55   // #else
+#define LDEFINED      -56   // defined()
 
 // Узлы дерева
 #define TIdent      -300
@@ -528,6 +533,7 @@
 #define wait_ident_after_comma_in_macro_params 338
 #define wait_rightbr_in_macro_params       339
 #define params_count_not_equals_in_macro   340
+#define param_send_not_1                   341
 
 
 //  коды предупреждений

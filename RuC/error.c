@@ -449,6 +449,9 @@ void error(int ernum)
         case param_threads_not_int:
             printf("процедуры, управляющие параллельными нитями, могут иметь только целые параметры\n");
             break;
+        case param_send_not_1:
+            printf("параметр процедуры t_msg_send должен иметь тип mtssage\n");
+            break;
            
         case else_after_elif:
             printf("ошибка препроцессора: #elif после #else\n");

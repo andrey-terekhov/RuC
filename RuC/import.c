@@ -181,7 +181,7 @@ int __t_create(pthread_attr_t *attr, void(*func)(int), int arg, int isDetach)
     }
     pthread_t th;
     
-    res = pthread_create(&th, attr, func, arg);
+    res = pthread_create(&th, attr, func, (void*) arg);
     if (res != 0)
     {
         perror("t_create : Thread creation failed");
@@ -1034,7 +1034,7 @@ void interpreter(int numTh)
             case CREATEC:
             {
                 int numTh = mem[pc++], cur0;
-                threads[numTh] = cur0 = MAXMEMTHREAD * numTh;
+                threads[numTh] = cur0 = threads[numTh-1] + MAXMEMTHREAD;
                 mem[cur0] = numTh;         // кажется, это не нужно
                 mem[cur0+1] = cur0 + 4;    // l начала нити
                 mem[cur0+2] = cur0 + 6;    // x

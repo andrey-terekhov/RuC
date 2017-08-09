@@ -274,12 +274,12 @@ void Stmt_gen()
         case NOP:
             break;
             
-        case TCREATE:
+        case CREATEC:
             tocode(CREATEC);
-            tocode(++curth);
+            tocode(tree[tc++]);
             break;
             
-        case TEXIT:
+        case EXITC:
             tocode(EXITC);
             break;
             
