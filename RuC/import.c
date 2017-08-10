@@ -370,8 +370,7 @@ void interpreter(int numthr)
     while (flagstop)
     {
         memcpy(&rf, &mem[x-1], sizeof(double));
-                printf("pc=%i mem[pc]=%i rf=%f\n", pc, mem[pc], rf);
-        sleep(1);
+            //    printf("pc=%i mem[pc]=%i rf=%f\n", pc, mem[pc], rf);
         
         switch (mem[pc++])
         {
