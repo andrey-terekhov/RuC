@@ -46,7 +46,7 @@
 struct message{int numTh; int inf;} msg;
 // numTh при посылке сообщения говорит куда, при приеме - откуда
 
-int t_create(void(*func)(int), int arg);
+/*int t_create(void(*func)(int), int arg);
 int t_createDetached(void* (*func)(void *), void *arg);  // пока не буду
 
 void t_exit();
@@ -666,7 +666,7 @@ void t_destroyAll()
         perror("t_destroyAll : pthread_mutex_destroy of __lock_t_seize failed");
         exit(EXIT_FAILURE);
     }
-}
+}*/
 
 #include "Defs.h"
 extern int szof(int);
@@ -1027,11 +1027,12 @@ void interpreter(int numTh)
         
         switch (mem[pc++])
         {
+
             case STOP:
                 flagstop = 0;
                 break;
-
-            case CREATEC:
+                
+/*            case CREATEC:
             {
                 int numTh = mem[pc++], cur0;
                 threads[numTh] = cur0 = threads[numTh-1] + MAXMEMTHREAD;
@@ -1087,8 +1088,8 @@ void interpreter(int numTh)
                 m.numTh = mem[x--];
                 t_msg_send(m);
             }
-                break;
-               
+                break;*/
+
     #ifdef ROBOT
 
             case SETMOTORC:
@@ -1976,7 +1977,7 @@ void import()
     system("i2cset -y 2 0x48 0x13 0x1000 w");
 #endif
     
-    input = fopen("../../../export.txt", "r");
+    input = fopen("export.txt", "r");
     
     fscanf(input, "%i %i %i %i %i %i %i\n", &pc, &funcnum, &id, &rp, &md, &maxdisplg, &wasmain);
 

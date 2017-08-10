@@ -55,4 +55,3 @@ T_GET_NUM t_get_num Н_НОМЕР_НИТИ н_номер_нити
 #ENDIF #endif #КОНЕСЛИ #конесли
 #ELSE #else #ИНАЧЕ #иначе
 #DEFINED() #defined
-
