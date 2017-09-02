@@ -308,42 +308,43 @@
 #define LWHILE    -22
 #define PRINTID   -23
 #define PRINT     -24
-#define GETID     -25
-#define TCREATE   -26
-#define TEXIT     -27
+#define PRINTF    -25
+#define GETID     -26
+#define TCREATE   -27
+#define TEXIT     -28
 
-#define STANDARD_FUNC_START -28
-#define SETMOTOR  -28
-#define GETDIGSENSOR -29
-#define GETANSENSOR  -30
+#define STANDARD_FUNC_START -29
+#define SETMOTOR  -29
+#define GETDIGSENSOR -30
+#define GETANSENSOR  -31
 
-#define ABS       -31
-#define SQRT      -32
-#define EXP       -33
-#define SIN       -34
-#define COS       -35
-#define LOG       -36
-#define LOG10     -37
-#define ASIN      -38
-#define RAND      -39
-#define ROUND     -40
+#define ABS       -32
+#define SQRT      -33
+#define EXP       -34
+#define SIN       -35
+#define COS       -36
+#define LOG       -37
+#define LOG10     -38
+#define ASIN      -39
+#define RAND      -40
+#define ROUND     -41
 
-#define TMSGSEND  -41
-#define TMSGRECEIVE -42
-#define TJOIN     -43
-#define TSLEEP    -44
-#define TSEMCREATE  -45
-#define TSEMWAIT  -46
-#define TSEMPOST  -47
-#define TGETNUM   -48
-#define SH_DEFINE     -49   // #define
-#define SH_IFDEF      -50   // #ifdef
-#define SH_IFNDEF     -51   // #ifndef
-#define SH_IF         -52   // #if
-#define SH_ELIF       -53   // #elif
-#define SH_ENDIF      -54   // #endif
-#define SH_ELSE       -55   // #else
-#define LDEFINED      -56   // defined()
+#define TMSGSEND  -42
+#define TMSGRECEIVE -43
+#define TJOIN     -44
+#define TSLEEP    -45
+#define TSEMCREATE  -46
+#define TSEMWAIT  -47
+#define TSEMPOST  -48
+#define TGETNUM   -49
+#define SH_DEFINE     -50   // #define
+#define SH_IFDEF      -51   // #ifdef
+#define SH_IFNDEF     -52   // #ifndef
+#define SH_IF         -53   // #if
+#define SH_ELIF       -54   // #elif
+#define SH_ENDIF      -55   // #endif
+#define SH_ELSE       -56   // #else
+#define LDEFINED      -57   // defined()
 
 // Узлы дерева
 #define TIdent      -300
@@ -377,17 +378,18 @@
 #define TLabel      -328
 #define TPrint      -329
 #define TPrintid    -330
-#define TGetid      -331
-#define TIdenttoaddr -332
-#define TSelect     -333
-#define TFunidtoval -334
-#define TStructbeg  -335
-#define TStructend  -336
-#define TDeclarr    -337
-#define TConstd     -338
-#define TIdenttovald -339
-#define TAddrtovald  -340
-#define TENDINIT     -341
+#define TPrintf     -331
+#define TGetid      -332
+#define TIdenttoaddr -333
+#define TSelect     -334
+#define TFunidtoval -335
+#define TStructbeg  -336
+#define TStructend  -337
+#define TDeclarr    -338
+#define TConstd     -339
+#define TIdenttovald -340
+#define TAddrtovald  -341
+#define TENDINIT     -342
 
 // Коды ошибок
 

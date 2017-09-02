@@ -223,6 +223,9 @@ void tablesandtree()
             case TPrintid:
                 fprintf(output, "TPrintid %i\n", tree[i++]);
                 break;
+            case TPrintf:
+                fprintf(output, "TPrintf\n");
+                break;
             case TGetid:
                 fprintf(output, "TGetid %i\n", tree[i++]);
                 break;

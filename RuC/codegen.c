@@ -482,6 +482,11 @@ void Stmt_gen()
             tocode(tree[tc++]);  // ссылка в identtab
         }
             break;
+        case TPrintf:
+        {
+            tocode(PRINTF);
+        }
+            break;
         case TGetid:
         {
             tocode(GETID);

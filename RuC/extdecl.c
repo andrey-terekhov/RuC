@@ -1192,6 +1192,15 @@ void statement()
 						mustbe(RIGHTBR, no_rightbr_in_printid);
 		}
 			break;
+
+        case PRINTF:
+        {
+            mustbe(LEFTBR, no_leftbr_in_printid);
+            totree(TPrintf);
+            mustbe(RIGHTBR, no_rightbr_in_printid);
+        }
+            break;
+
 		case GETID:
 		{
 					  mustbe(LEFTBR, no_leftbr_in_printid);
