@@ -5,7 +5,7 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
-char* name = "../test.c";
+char* name = "../stringprint.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -38,6 +38,8 @@ int g, l, x, iniproc;                                     // anst = ADDR - на 
                                                           // anst = IDENT- значение в статике, в anstdisl смещение от l или g
                                                           // в ansttype всегда тип возвращаемого значения
 // если значение указателя, адрес массива или строки лежит на верхушке стека, то это VAL, а не ADDR
+
+int bad_placeholder = 0;
 
 extern void preprocess_file();
 

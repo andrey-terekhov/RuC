@@ -485,6 +485,7 @@ void Stmt_gen()
         case TPrintf:
         {
             tocode(PRINTF);
+            tocode(tree[tc++]);  // общий размекр того, что надо вывести
         }
             break;
         case TGetid:

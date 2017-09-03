@@ -6,6 +6,50 @@ extern int  nextch();
 extern int  scaner();
 extern void error(int e);
 
+
+int evaluate_params(int formatstr[], int formattypes[])
+{
+    int numofparams = 0;
+    int i = 0;
+    do
+    {
+        if (formatstr[i] == '%')
+        {
+            switch (formatstr[++i])
+            {
+                case 'i':
+                case 'ц':
+                    formattypes[numofparams++] = LINT;
+                    break;
+
+                case 'c':
+                case 'с':
+                    formattypes[numofparams++] = LCHAR;
+                    break;
+
+                case 'f':
+                case 'в':
+                    formattypes[numofparams++] = LFLOAT;
+                    break;
+
+                case '%':
+                    break;
+
+                case 0:
+                    error(printf_no_format_placeholder);
+                    break;
+                default:
+                    bad_placeholder = formatstr[i];
+                    error(printf_unknown_format_placeholder);
+                    break;
+            }
+        }
+    } while (formatstr[i++]);
+
+    return numofparams;
+}
+
+
 int szof(int type)
 {
     return type == LFLOAT ? 2 :
@@ -290,7 +334,7 @@ void primaryexpr()
 		//        printf("number sopnd=%i ansttype=%i\n", sopnd, ansttype);
 		anst = NUMBER;
 	}
-	else if (cur == STRING)
+    else if (cur == STRING)
 	{
 		int i = 0;
 		ansttype = newdecl(MARRAY, LCHAR); // теперь пишем ansttype в анализаторе, а не в сканере
@@ -947,7 +991,7 @@ void exprassn(int level)
 		ltype = stackoperands[sopnd];
         
         if (intopassn(lnext) && (is_float(ltype) || is_float(rtype)))
-        error(int_op_for_float);
+            error(int_op_for_float);
         
         if (is_array(ltype))                 // присваивать массив в массив в си нельзя
             error(array_assigment);
@@ -1023,7 +1067,7 @@ void exprval()
 {
     expr(1);
     toval();
-    totree(TExprend);
+    totree(TExprend) ;
 }
 
 int arrdef(int t)                 // вызывается при описании массивов и структур из массивов сразу после idorpnt
@@ -1195,9 +1239,56 @@ void statement()
 
         case PRINTF:
         {
-            mustbe(LEFTBR, no_leftbr_in_printid);
+            int formatstr[MAXSTRINGL];
+            int formattypes[MAXPRINTFPARAMS];
+            int paramnum = 0;
+            int sumsize = 0;
+            int i = 0;
+
+            mustbe(LEFTBR, no_leftbr_in_printf);
+            if (next != STRING)
+                error(wrong_first_printf_param);
+
+            do
+                formatstr[i] = lexstr[i];
+            while (lexstr[i++]);
+
+            paramnum = evaluate_params(formatstr, formattypes);
+
+            scaner();  //выкушиваем форматную строку
+
+            for (i = 0; scaner() == COMMA; i++)
+            {
+                scaner();
+
+                exprassn(1);
+                toval();
+                totree(TExprend);
+
+                if (formattypes[i] == LFLOAT && ansttype == LINT)
+                    insertwiden();
+                else if (formattypes[i] != ansttype)
+                    error(wrong_printf_param_type);
+
+                sumsize += szof(formattypes[i]);
+                --sopnd;
+            }
+
+            if (i != paramnum)
+                error(wrong_printf_param_number);
+
+            totree(TString);
+
+            i = 0;
+            do
+                totree(formatstr[i]);
+            while (formatstr[i++]);
+            totree(TExprend);
+
             totree(TPrintf);
-            mustbe(RIGHTBR, no_rightbr_in_printid);
+            totree(sumsize);
+            if (cur != RIGHTBR)
+                error(no_rightbr_in_printf);
         }
             break;
 
@@ -1575,7 +1666,7 @@ void block(int b)
 {
 	int oldinswitch = inswitch;
 	int notended = 1, i, olddispl, oldlg = lg, firstdecl;
-	inswitch = b < 0;
+    inswitch = b < 0;
 	totree(TBegin);
 	if (b)
 	{

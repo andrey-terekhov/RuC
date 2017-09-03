@@ -224,7 +224,7 @@ void tablesandtree()
                 fprintf(output, "TPrintid %i\n", tree[i++]);
                 break;
             case TPrintf:
-                fprintf(output, "TPrintf\n");
+                fprintf(output, "TPrintf %i\n", tree[i++]);
                 break;
             case TGetid:
                 fprintf(output, "TGetid %i\n", tree[i++]);
@@ -305,6 +305,9 @@ void tablesandcode()
                 break;
             case PRINTID:
                 fprintf(output, "PRINTID %i\n", mem[i++]);
+                break;
+            case PRINTF:
+                fprintf(output, "PRINTF %i\n", mem[i++]);
                 break;
             case GETID:
                 fprintf(output, "GETID %i\n", mem[i++]);

@@ -23,6 +23,7 @@
 #define INIPROSIZE   1000
 #define NUMOFTHREADS 10
 #define MAXMEMTHREAD MAXMEMSIZE/NUMOFTHREADS 
+#define MAXPRINTFPARAMS 20
 
 // modetab 
 #define MFUNCTION 1001
@@ -537,6 +538,13 @@
 #define params_count_not_equals_in_macro   340
 #define param_send_not_1                   341
 
+#define no_leftbr_in_printf                342
+#define no_rightbr_in_printf               343
+#define wrong_first_printf_param           344
+#define wrong_printf_param_type            345
+#define wrong_printf_param_number          346
+#define printf_no_format_placeholder       347
+#define printf_unknown_format_placeholder  348
 
 //  коды предупреждений
 
