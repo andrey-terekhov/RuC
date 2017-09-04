@@ -37,23 +37,24 @@ extern int szof(int);
 
 #define I2CBUFFERSIZE 50
 
-#define index_out_of_range  1
-#define wrong_kop           2
-#define wrong_arr_init      3
-#define wrong_motor_num     4
-#define wrong_motor_pow     5
-#define wrong_digsensor_num 6
-#define wrong_ansensor_num  7
-#define wrong_robot_com     8
+#define index_out_of_range    1
+#define wrong_kop             2
+#define wrong_arr_init        3
+#define wrong_motor_num       4
+#define wrong_motor_pow       5
+#define wrong_digsensor_num   6
+#define wrong_ansensor_num    7
+#define wrong_robot_com       8
 #define wrong_number_of_elems 9
-#define zero_devide         10
-#define float_zero_devide   11
-#define mem_overflow        12
-#define sqrt_from_negat     13
-#define log_from_negat      14
-#define log10_from_negat    15
-#define wrong_asin          16
-#define wrong_string_init   17
+#define zero_devide          10
+#define float_zero_devide    11
+#define mem_overflow         12
+#define sqrt_from_negat      13
+#define log_from_negat       14
+#define log10_from_negat     15
+#define wrong_asin           16
+#define wrong_string_init    17
+#define printf_runtime_crash 18
 
 int g, iniproc, maxdisplg, wasmain;
 int reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md;
@@ -189,7 +190,9 @@ void runtimeerr(int e, int i, int r)
             printf("аргумент арксинуса должен быть в отрезке [-1, 1]\n");
             break;
             
-            
+        case printf_runtime_crash:
+            printf("странно, printf не работает на этапе исполнения; ошибка коммпилятора");
+            break;
         default:
             break;
     }
@@ -206,6 +209,46 @@ void prmem()
     
 }
 */
+
+void auxprintf(int strbeg, int databeg)
+{
+    int i, curdata = databeg + 1;
+    for (i = strbeg; mem[i] != 0; ++i)
+    {
+        if (mem[i] == '%')
+        {
+            switch (mem[++i])
+            {
+                case 'i':
+                case 1094:  // ц
+                    printf("%i", mem[curdata++]);
+                    break;
+
+                case 'c':
+                case 1083:  // л
+                    printf_char(mem[curdata++]);
+                    break;
+
+                case 'f':
+                case 1074:  // в
+                    printf("%lf", *((double*) (&mem[curdata])));
+                    curdata += 2;
+                    break;
+
+                case '%':
+                    printf("%%");
+                    break;
+
+                default:
+
+                    break;
+            }
+        }
+        else
+            printf_char(mem[i]);
+    }
+}
+
 void auxprint(int beg, int t, char before, char after)
 {
     double rf;
@@ -232,7 +275,7 @@ void auxprint(int beg, int t, char before, char after)
         int rr = r, i, type = modetab[t+1], d;
         d = szof(type);
         
-        if (modetab[t+1] > 0)
+        if (type > 0)
             for (i=0; i<mem[rr-1]; i++)
                 auxprint(rr + i * d, type, 0, '\n');
         else
@@ -386,7 +429,7 @@ void* interpreter(void* pcPnt)
     l = cur0 + 1;
     x = cur0 + 3;
     
-    printf("interpreter session numTh=%i l=%i x=%i pc=%i\n", numTh, l, x, pc);
+    //printf("interpreter session numTh=%i l=%i x=%i pc=%i\n", numTh, l, x, pc);
     
     flagstop = 1;
     while (flagstop)
@@ -394,7 +437,7 @@ void* interpreter(void* pcPnt)
         memcpy(&rf, &mem[x-1], sizeof(double));
             //    printf("pc=%i mem[pc]=%i rf=%f\n", pc, mem[pc], rf);
         
-        printf("running th #%i, cmd=%i\n", t_getThNum(), mem[pc]);
+        //printf("running th #%i, cmd=%i\n", t_getThNum(), mem[pc]);
         switch (mem[pc++])
         {
             case STOP:
@@ -521,6 +564,20 @@ void* interpreter(void* pcPnt)
                 else
                     auxprint(dsp(identab[i+3], l), prtype, ' ', '\n');
                 break;
+
+            /* Ожидает указатель на форматную строку на верхушке стека
+             * Принимает единственным параметром суммарный размер того, что нужно напечатать
+             * Проверок на типы не делает, этим занимался компилятор
+             * Если захотим передавать динамически формируемые строки, нужно будет откуда-то брать весь набор типов печатаемого
+             */
+            case PRINTF:
+            {
+                int sumsize = mem[pc++];
+                int strbeg = mem[x--];
+
+                auxprintf(strbeg, x -= sumsize);
+            }
+                break;
             case GETID:
                 i = mem[pc++];              // ссылка на identtab
                 prtype = identab[i+2];
@@ -610,9 +667,6 @@ genarr(abs(N),1,d,N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp
             }
                 break;
             case LI:
-                if (pc == 8 || pc == 7) {
-                    printf("LI l = %i x = %i pc = %i\n", l, x, pc);
-                }
                 mem[++x] = mem[pc++];
                 break;
             case LID:

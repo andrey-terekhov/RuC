@@ -39,4 +39,6 @@ extern int anst, anstdispl, ansttype, leftansttype;
 // anst = IDENT- значение в статике, в anstdisl смещение отl или g
 // в ansttype всегда тип возвращаемого значения (сейчас только LINT или LFLOAT)
 
+extern int bad_placeholder;
+
 #endif

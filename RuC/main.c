@@ -5,8 +5,9 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
+
 char* name = /*"/Users/ant/Desktop/RuCRegr/defstest/COPY00_9300.c";*/
-             "../../../tests/Golovan/simplethreads.c";
+             "../../../tests/bad Misha/printf.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -40,6 +41,8 @@ int g, l, x, iniproc;                                     // anst = ADDR - на 
                                                           // в ansttype всегда тип возвращаемого значения
 // если значение указателя, адрес массива или строки лежит на верхушке стека, то это VAL, а не ADDR
 
+int bad_placeholder = 0;
+
 extern void preprocess_file();
 
 extern void tablesandcode();
@@ -72,7 +75,7 @@ int toreprtab(char str[])
 int main()
 {
     int i;
-    
+
     for (i=0; i<256; i++)
         hashtab[i] = 0;
     
@@ -138,6 +141,11 @@ int main()
     input  = fopen("../../../macro.txt", "r");
  */
     input = fopen(name, "r");
+    if (input == NULL)
+    {
+        printf("файл %s не найден\n", name);
+    }
+
     output = fopen("../../../tree.txt", "wt");
     
     getnext();

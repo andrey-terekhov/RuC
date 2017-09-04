@@ -22,8 +22,8 @@
 #define MAXSTRINGL   128
 #define INIPROSIZE   1000
 #define NUMOFTHREADS 10
-#define MAXMEMTHREAD (MAXMEMSIZE/NUMOFTHREADS)
-//#define NULL         0
+#define MAXMEMTHREAD MAXMEMSIZE/NUMOFTHREADS 
+#define MAXPRINTFPARAMS 20
 
 // modetab 
 #define MFUNCTION 1001
@@ -311,45 +311,46 @@
 #define LWHILE    -22
 #define PRINTID   -23
 #define PRINT     -24
-#define GETID     -25
-#define TCREATEDIRECT -26
-#define TEXITDIRECT -27
+#define PRINTF    -25
+#define GETID     -26
+#define TCREATEDIRECT -27
+#define TEXITDIRECT -28
 
-#define STANDARD_FUNC_START -28
-#define SETMOTOR  -28
-#define GETDIGSENSOR -29
-#define GETANSENSOR  -30
+#define STANDARD_FUNC_START -29
+#define SETMOTOR  -29
+#define GETDIGSENSOR -30
+#define GETANSENSOR  -31
 
-#define ABS       -31
-#define SQRT      -32
-#define EXP       -33
-#define SIN       -34
-#define COS       -35
-#define LOG       -36
-#define LOG10     -37
-#define ASIN      -38
-#define RAND      -39
-#define ROUND     -40
+#define ABS       -32
+#define SQRT      -33
+#define EXP       -34
+#define SIN       -35
+#define COS       -36
+#define LOG       -37
+#define LOG10     -38
+#define ASIN      -39
+#define RAND      -40
+#define ROUND     -41
 
-#define TMSGSEND  -41
-#define TMSGRECEIVE -42
-#define TJOIN     -43
-#define TSLEEP    -44
-#define TSEMCREATE  -45
-#define TSEMWAIT  -46
-#define TSEMPOST  -47
-#define TCREATE   -48
-#define TINIT     -49
-#define TDESTROY  -50
-#define TEXIT     -51
-#define TGETNUM   -52
-#define SH_DEFINE     -53   // #define
-#define SH_IFDEF      -54   // #ifdef
-#define SH_IFNDEF     -55   // #ifndef
-#define SH_IF         -56   // #if
-#define SH_ELIF       -57   // #elif
-#define SH_ENDIF      -58   // #endif
-#define SH_ELSE       -59   // #else
+#define TMSGSEND  -42
+#define TMSGRECEIVE -43
+#define TJOIN     -44
+#define TSLEEP    -45
+#define TSEMCREATE  -46
+#define TSEMWAIT  -47
+#define TSEMPOST  -48
+#define TCREATE   -49
+#define TINIT     -50
+#define TDESTROY  -51
+#define TEXIT     -52
+#define TGETNUM   -53
+#define SH_DEFINE     -54   // #define
+#define SH_IFDEF      -55   // #ifdef
+#define SH_IFNDEF     -56   // #ifndef
+#define SH_IF         -57   // #if
+#define SH_ELIF       -58   // #elif
+#define SH_ENDIF      -59   // #endif
+#define SH_ELSE       -60   // #else
 
 #define LVOIDASTER    -150
 
@@ -385,17 +386,18 @@
 #define TLabel      -328
 #define TPrint      -329
 #define TPrintid    -330
-#define TGetid      -331
-#define TIdenttoaddr -332
-#define TSelect     -333
-#define TFunidtoval -334
-#define TStructbeg  -335
-#define TStructend  -336
-#define TDeclarr    -337
-#define TConstd     -338
-#define TIdenttovald -339
-#define TAddrtovald  -340
-#define TENDINIT     -341
+#define TPrintf     -331
+#define TGetid      -332
+#define TIdenttoaddr -333
+#define TSelect     -334
+#define TFunidtoval -335
+#define TStructbeg  -336
+#define TStructend  -337
+#define TDeclarr    -338
+#define TConstd     -339
+#define TIdenttovald -340
+#define TAddrtovald  -341
+#define TENDINIT     -342
 
 // Коды ошибок
 
@@ -544,6 +546,13 @@
 #define wrong_arg_in_send                  341
 #define wrong_arg_in_create                342
 
+#define no_leftbr_in_printf                343
+#define no_rightbr_in_printf               344
+#define wrong_first_printf_param           345
+#define wrong_printf_param_type            346
+#define wrong_printf_param_number          347
+#define printf_no_format_placeholder       348
+#define printf_unknown_format_placeholder  349
 
 //  коды предупреждений
 

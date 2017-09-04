@@ -23,6 +23,7 @@ SWITCH switch ВЫБОР выбор
 WHILE while ПОКА пока
 PRINTID printid ПЕЧАТЬИД печатьид
 PRINT print ПЕЧАТЬ печать
+PRINTF printf ПЕЧАТЬФ печатьф
 GETID getid ЧИТАТЬИД читатьид
 T_CREATE_DIRECT t_create_direct Н_СОЗДАТЬ_НЕПОСР н_создать_непоср
 T_EXIT_DIRECT t_exit_direct Н_КОНЕЦ_НЕПОСР н_конец_непоср
@@ -59,4 +60,5 @@ T_GETNUM t_getnum Н_НОМЕР_НИТИ н_номер_нити
 #ELIF #elif #ИНЕСЛИ #инесли
 #ENDIF #endif #КОНЕСЛИ #конесли
 #ELSE #else #ИНАЧЕ #иначе
+
 
