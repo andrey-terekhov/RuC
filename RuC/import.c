@@ -14,7 +14,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "threads.h"
+#include "th_static.h"
 
 
 // Я исхожу из того, что нумерация нитей процедурой t_create начинается с 1 и идет последовательно
@@ -31,9 +31,6 @@
 
 // Есть глобальный массив threads, i-ый элемент которого указывает на начало куска i-ой нити.
 // Каждый кусок начинается с шапки, где хранятся l, x и pc, которые нужно установить в момент старта нити.
-
-struct message msg;
-// numTh при посылке сообщения говорит куда, при приеме - откуда
 
 #include "Defs.h"
 extern int szof(int);
@@ -304,7 +301,7 @@ void auxget(int beg, int t)
         printf(" значения типа ФУНКЦИЯ и указателей вводить нельзя\n");
 }
 
-void interpreter(int);
+void* interpreter(void*);
 
 void genarr(int N, int curdim, int d, int adr, int procnum, int *x, int *pc, int bounds[], int numTh)
 {
@@ -325,7 +322,7 @@ void genarr(int N, int curdim, int d, int adr, int procnum, int *x, int *pc, int
             {
                 *pc = procnum;   // вычисление границ очередного массива в структуре
                 base = i;
-                interpreter(0);
+                interpreter((void*) &mem[threads[numTh]]);
             }
             *pc = oldpc;
             base = oldbase;
@@ -375,44 +372,43 @@ int dsp(int di, int l)
     return di < 0 ? g - di : l + di;
 }
 
-void interpreter(int numTh)
+void* interpreter(void* pcPnt)
 {
-    int l, x, pc;
-    int N, bounds[100], d,from, prtype;
+    int l, x, pc = *((int*) pcPnt), numTh = t_getThNum();
+    int N, bounds[100], d,from, prtype, cur0;
     int i,r, flagstop = 1, entry, di, di1, len;
     double lf, rf;
-    int membeg = threads[numTh];
-    l = mem[membeg+1];
-    x = mem[membeg+2];
-    pc = mem[membeg+3];
-
+    threads[numTh] = cur0 = (numTh == 0 ? g : threads[numTh-1] + MAXMEMTHREAD);
+    // область нити начинается с номера нити, потом идут 3 служебных слова процедуры
+    mem[cur0] = numTh;
+    mem[cur0+1] = 0;
+    mem[cur0+2] = 0;
+    l = cur0 + 1;
+    x = cur0 + 3;
+    
+    printf("interpreter session numTh=%i l=%i x=%i pc=%i\n", numTh, l, x, pc);
+    
     flagstop = 1;
     while (flagstop)
     {
         memcpy(&rf, &mem[x-1], sizeof(double));
             //    printf("pc=%i mem[pc]=%i rf=%f\n", pc, mem[pc], rf);
         
+        printf("running th #%i, cmd=%i\n", t_getThNum(), mem[pc]);
         switch (mem[pc++])
         {
             case STOP:
                 flagstop = 0;
                 break;
 
+            case CREATEDIRECTC:
+               t_create(interpreter, (void*)&pc);
+                break;
             case CREATEC:
-            {
-                int numTh = mem[pc++], cur0;
-                threads[numTh] = cur0 = threads[numTh-1] + MAXMEMTHREAD;
-                mem[cur0] = numTh;         // кажется, это не нужно
-                mem[cur0+1] = cur0 + 4;    // l начала нити
-                mem[cur0+2] = cur0 + 6;    // x
-                mem[cur0+3] = pc;          // pc первой команды нити
-                mem[cur0+4] = g;
-                mem[cur0+5] = 0;
-                mem[cur0+6] = 0;
-                r = t_create(interpreter, numTh);
-                if (r != numTh)
-                    printf("bad t_create %i %i\n", r, numTh);
-            }
+                i = mem[x];
+                entry = functions[i > 0 ? i : mem[l-i]];
+                pc = entry + 3;
+                t_create(interpreter, (void*)&pc);
                 break;
  
             case JOINC:
@@ -422,8 +418,10 @@ void interpreter(int numTh)
             case SLEEPC:
                 t_sleep(mem[x--]);
                 break;
- 
+                
+            case EXITDIRECTC:
             case EXITC:
+                printf("found exitc thread = %i\n", t_getThNum());
                 t_exit();
                 break;
  
@@ -438,19 +436,27 @@ void interpreter(int numTh)
             case SEMWAITC:
                 t_sem_wait(mem[x--]);
                 break;
- 
+            
+            case INITC:
+                t_init();
+                break;
+                
+            case DESTROYC:
+                t_destroy();
+                break;
+                
             case MSGRECEIVEC:
             {
-                struct message m = t_msg_receive();
+                struct msg_info m = t_msg_receive();
                 mem[++x] = m.numTh;
-                mem[++x] = m.inf;
+                mem[++x] = m.data;
             }
                 break;
  
             case MSGSENDC:
             {
-                struct message m;
-                m.inf = mem[x--];
+                struct msg_info m;
+                m.data = mem[x--];
                 m.numTh = mem[x--];
                 t_msg_send(m);
             }
@@ -584,7 +590,7 @@ void interpreter(int numTh)
                 procnum = mem[pc++];
                 oldpc = pc;
                 pc = procnum;
-                interpreter(0);
+                interpreter((void*) &mem[threads[numTh]]);
                 pc = oldpc;
                 base = oldbase;
                 flagstop = 1;
@@ -604,6 +610,9 @@ genarr(abs(N),1,d,N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp
             }
                 break;
             case LI:
+                if (pc == 8 || pc == 7) {
+                    printf("LI l = %i x = %i pc = %i\n", l, x, pc);
+                }
                 mem[++x] = mem[pc++];
                 break;
             case LID:
@@ -1327,6 +1336,8 @@ genarr(abs(N),1,d,N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp
                 runtimeerr(wrong_kop, mem[pc-1], 0);
         }
     }
+    
+    return NULL;
 }
 
 void import()
@@ -1368,16 +1379,11 @@ void import()
     mem[g] = mem[g+1] = 0;
     x = g + maxdisplg;
     pc = 4;
-    
-    threads[0] = x;
-    mem[x+1] = l;
-    mem[x+2] = x;
-    mem[x+3] = pc;
-/*    t_initAll();
-    t_create(interpreter, 0);   // номер нити главной программы 0
-    t_destroyAll();
- */
-    interpreter(0);
+    t_init();
+    interpreter(&pc);                      // номер нити главной программы 0
+    t_destroy();
+ 
+//    interpreter((void*) &mem[threads[0]]);
     
 #ifdef ROBOT
     system("i2cset -y 2 0x48 0x10 0 w");   // отключение силовых моторов

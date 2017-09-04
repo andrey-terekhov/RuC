@@ -230,13 +230,19 @@ void tablesandtree()
                 fprintf(output, "Setmotor\n");
                 break;
             case CREATEC:
-                fprintf(output, "TCREATE %i\n", tree[i++]);
+                fprintf(output, "TCREATE\n");
                 break;
-            case MSGSENDC:
-                fprintf(output, "TMSGSEND\n");
+            case CREATEDIRECTC:
+                fprintf(output, "TCREATEDIRECT\n");
                 break;
             case EXITC:
                 fprintf(output, "TEXIT\n");
+                break;
+            case EXITDIRECTC:
+                fprintf(output, "TEXITDIRECT\n");
+                break;
+            case MSGSENDC:
+                fprintf(output, "TMSGSEND\n");
                 break;
             case MSGRECEIVEC:
                 fprintf(output, "TMSGRECEIVE\n");
@@ -255,6 +261,12 @@ void tablesandtree()
                 break;
             case SEMPOSTC:
                 fprintf(output, "TSEMPOST\n");
+                break;
+            case INITC:
+                fprintf(output, "INITC\n");
+                break;
+            case DESTROYC:
+                fprintf(output, "DESTROYC\n");
                 break;
             case GETNUMC:
                 fprintf(output, "GETNUM\n");
@@ -315,13 +327,19 @@ void tablesandcode()
             case GETANSENSORC:
                 fprintf(output, "GETANSENSOR\n");
             case CREATEC:
-                fprintf(output, "TCREATE %i \n", mem[i++]);
+                fprintf(output, "TCREATE\n");
+                break;
+            case CREATEDIRECTC:
+                fprintf(output, "TCREATEDIRECT\n");
                 break;
             case MSGSENDC:
                 fprintf(output, "TMSGSEND\n");
                 break;
             case EXITC:
                 fprintf(output, "TEXIT\n");
+                break;
+            case EXITDIRECTC:
+                fprintf(output, "TEXITDIRECT\n");
                 break;
             case MSGRECEIVEC:
                 fprintf(output, "TMSGRECEIVE\n");
@@ -340,6 +358,12 @@ void tablesandcode()
                 break;
             case SEMPOSTC:
                 fprintf(output, "TSEMPOST\n");
+                break;
+            case TINIT:
+                fprintf(output, "TINIT\n");
+                break;
+            case TDESTROY:
+                fprintf(output, "TDESTROY\n");
                 break;
             case GETNUMC:
                 fprintf(output, "GETNUM\n");

@@ -6,7 +6,7 @@
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
 char* name = /*"/Users/ant/Desktop/RuCRegr/defstest/COPY00_9300.c";*/
-             "../../../tests/3test.c";
+             "../../../tests/Golovan/simplethreads.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -23,7 +23,7 @@ int line=0, charnum=1, cur, next, next1, num, hash, repr, keywordsnum, wasstruct
 struct {int first; int second;} numr;
 int source[SOURCESIZE], lines[LINESSIZE];
 int nextchar, curchar, func_def;
-int hashtab[256], reprtab[MAXREPRTAB], rp = 1, identab[MAXIDENTAB], id = 2, modetab[MAXMODETAB], md = 1, startmode = 1, global_numTh = 0;
+int hashtab[256], reprtab[MAXREPRTAB], rp = 1, identab[MAXIDENTAB], id = 2, modetab[MAXMODETAB], md = 1, startmode = 1;
 int stack[100], stackop[100], stackoperands[100], stacklog[100], ansttype,
     sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg=-1, displ=-3, maxdispl = 3, maxdisplg = 3, type,
     op = 0, inass = 0, firstdecl;
@@ -106,13 +106,19 @@ int main()
     modetab[4] = 4;
     modetab[5] = modetab[7] = LINT;
     modetab[6] = toreprtab("numTh");
-    modetab[8] = toreprtab("inf");
-    modetab[9] = 1;               // занесение в modetab описателя struct{int numTh; int inf;}
+    modetab[8] = toreprtab("data");
+    modetab[9] = 1;                // занесение в modetab описателя struct{int numTh; int inf;}
     modetab[10] = MFUNCTION;
     modetab[11] = LVOID;
     modetab[12] = 1;
     modetab[13] = 2;
-    modetab[14] = md = 9;          // занесение в modetab описателя  функции void t_msg_send(message m)
+    modetab[14] = 9;               // занесение в modetab описателя  функции void t_msg_send(struct msg_info m)
+    modetab[15] = MFUNCTION;
+    modetab[16] = LVOIDASTER;
+    modetab[17] = 1;
+    modetab[18] = LVOIDASTER;
+    modetab[19] = startmode = 14;  // занесение в modetab описателя  функции void* interpreter(void* n)
+    md = 19;
     keywordsnum = 0;
     lines[line = 1] = 1;
     charnum = 1;

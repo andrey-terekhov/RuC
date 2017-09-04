@@ -22,7 +22,8 @@
 #define MAXSTRINGL   128
 #define INIPROSIZE   1000
 #define NUMOFTHREADS 10
-#define MAXMEMTHREAD MAXMEMSIZE/NUMOFTHREADS 
+#define MAXMEMTHREAD (MAXMEMSIZE/NUMOFTHREADS)
+//#define NULL         0
 
 // modetab 
 #define MFUNCTION 1001
@@ -226,8 +227,8 @@
 // Коды операций стандартных функций
 
 #define ABSIC     9525
-#define CREATEC   9526
-#define EXITC     9527
+#define CREATEDIRECTC 9526
+#define EXITDIRECTC   9527
 
 #define SETMOTORC 9528
 #define GETDIGSENSORC 9529
@@ -250,9 +251,11 @@
 #define SEMCREATEC  9545
 #define SEMWAITC  9546
 #define SEMPOSTC  9547
-#define GETNUMC   9548
-
-
+#define CREATEC   9548
+#define INITC     9549
+#define DESTROYC  9550
+#define EXITC     9551
+#define GETNUMC   9552
 
 // Лексемы
 
@@ -309,8 +312,8 @@
 #define PRINTID   -23
 #define PRINT     -24
 #define GETID     -25
-#define TCREATE   -26
-#define TEXIT     -27
+#define TCREATEDIRECT -26
+#define TEXITDIRECT -27
 
 #define STANDARD_FUNC_START -28
 #define SETMOTOR  -28
@@ -335,15 +338,20 @@
 #define TSEMCREATE  -45
 #define TSEMWAIT  -46
 #define TSEMPOST  -47
-#define TGETNUM   -48
-#define SH_DEFINE     -49   // #define
-#define SH_IFDEF      -50   // #ifdef
-#define SH_IFNDEF     -51   // #ifndef
-#define SH_IF         -52   // #if
-#define SH_ELIF       -53   // #elif
-#define SH_ENDIF      -54   // #endif
-#define SH_ELSE       -55   // #else
-#define LDEFINED      -56   // defined()
+#define TCREATE   -48
+#define TINIT     -49
+#define TDESTROY  -50
+#define TEXIT     -51
+#define TGETNUM   -52
+#define SH_DEFINE     -53   // #define
+#define SH_IFDEF      -54   // #ifdef
+#define SH_IFNDEF     -55   // #ifndef
+#define SH_IF         -56   // #if
+#define SH_ELIF       -57   // #elif
+#define SH_ENDIF      -58   // #endif
+#define SH_ELSE       -59   // #else
+
+#define LVOIDASTER    -150
 
 // Узлы дерева
 #define TIdent      -300
@@ -533,7 +541,8 @@
 #define wait_ident_after_comma_in_macro_params 338
 #define wait_rightbr_in_macro_params       339
 #define params_count_not_equals_in_macro   340
-#define param_send_not_1                   341
+#define wrong_arg_in_send                  341
+#define wrong_arg_in_create                342
 
 
 //  коды предупреждений

@@ -81,7 +81,7 @@ int getstatic(int type)
 
 int toidentab(int f, int type)       // f=0, если не ф-ция, f=1, если метка, f=funcnum, если описание ф-ции,
 {                                    // f=-1, если ф-ция-параметр, f>=1000, если это описание типа
-//    printf("\n repr %i rtab[repr] %i rtab[repr+1] %i rtab[repr+2] %i\n", repr, reprtab[repr], reprtab[repr+1], reprtab[repr+2]);
+//    printf("\n f= %i repr %i rtab[repr] %i rtab[repr+1] %i rtab[repr+2] %i\n", f, repr, reprtab[repr], reprtab[repr+1], reprtab[repr+2]);
 	int pred;
 	lastid = id;
 	if (reprtab[repr + 1] == 0)                  // это может быть только MAIN
@@ -327,34 +327,65 @@ void primaryexpr()
             error(no_leftbr_in_stand_func);
         if (func <= TMSGSEND  && func >= TGETNUM)
         {                                // процедуры управления параллельными нитями
-            if (func == TMSGRECEIVE || func == TGETNUM)
+            if (func == TINIT || func == TDESTROY || func == TEXIT)
+                ;                                            // void()
+            else if (func == TMSGRECEIVE || func == TGETNUM) // getnum int()   msgreceive msg_info()
             {
                 anst = VAL;
-                ansttype = stackoperands[++sopnd] = func == TGETNUM ? LINT : 2; // 2 - это ссылка на message
-                                   //не было параметра,  выдали 1 результат
+                ansttype = stackoperands[++sopnd] = func == TGETNUM ? LINT : 2; // 2 - это ссылка на msg_info
+                            //не было параметра,  выдали 1 результат
             }
             else
-            {                      // TMSGSEND, TJOIN, TSLEEP, TSEMCREATE, TSEMWAIT, TSEMPOST
-                scaner();          // у этих процедур 1 параметр
-
-                leftansttype = func == TMSGSEND ? 2 : LINT;
-                exprassn(1);
-                toval();
-
-                if (func == TMSGSEND)
+            {               // MSGSEND void(msg_info)  CREATE int(void*(*func)(void*))
+                            // SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
+                scaner();   // у этих процедур 1 параметр
+                
+                if (func == TCREATE)
                 {
-                   if (ansttype != 2)  // 2 - это аргумент типа struct{int numTh; int inf;}
-                    error(param_send_not_1);
-                    stackoperands[sopnd] = ansttype = 10; // 10 - это void t_msg_send(message m)
+                    int dn;
+                    if (cur != IDENT)
+                        error(act_param_not_ident);
+                    applid();
+                    if (identab[lastid+2] != 15) // 15 - это первый аргумент типа void* (void*)
+                        error(wrong_arg_in_create);
+                    mustbe(COMMA, no_comma_in_param_list);
+                    
+                    stackoperands[--sopnd] = ansttype = LINT;
+                    dn = identab[lastid+3];
+                    if (dn < 0)
+                    {
+                        totree(TIdenttoval);
+                        totree(-dn);
+                    }
+                    else
+                    {
+                        totree(TConst);
+                        totree(dn);
+                    }
+                    scaner();  // второй параметр процедуры t_create должен быть 0
+                    totree(TExprend);
                 }
                 else
                 {
-                    if (!is_int(ansttype))
-                    error(param_threads_not_int);
-                    if (func == TSEMCREATE)
-                        ansttype = stackoperands[sopnd] = LINT;       // съели 1 параметр, выдали int
+    //                leftansttype = func == TCREATE || func == TSEMCREATE ? LINT : LVOID;
+                    exprassn(1);
+                    toval();
+
+                    if (func == TMSGSEND)
+                    {
+                       if (ansttype != 2)   // 2 - это аргумент типа msg_info (struct{int numTh; int data;})
+                          error(wrong_arg_in_send);
+                       --sopnd;
+                    }
                     else
-                        --sopnd;                               // съели 1 параметр, не выдали результата
+                    {
+                        if (!is_int(ansttype))
+                        error(param_threads_not_int);
+                        if (func == TSEMCREATE)
+                            ansttype = stackoperands[sopnd] = LINT; // съели 1 параметр, выдали int
+                        else
+                            --sopnd;                                // съели 1 параметр, не выдали результата
+                    }
                 }
             }
             totree(9500-func);
@@ -1123,10 +1154,9 @@ void statement()
 		flagsemicol = 0;
 		block(1);
 	}
-    else if (cur == TCREATE)
+    else if (cur == TCREATEDIRECT)
     {
-        totree(CREATEC);
-        totree(++global_numTh);
+        totree(CREATEDIRECTC);
         flagsemicol = 0;
         block(2);
         totree(EXITC);
@@ -1370,19 +1400,24 @@ void statement()
 						}
 						else
 						{
-							if (ftype == LVOID)
-								error(notvoidret_in_void_func);
-							totree(TReturnval);
-                            totree(szof(ftype));
-                            scaner();
-							expr(1);
-                            toval();
-							sopnd--;
-							if (ftype == LFLOAT && ansttype == LINT)
-								totree(WIDEN);
-							else if (ftype != ansttype)
-								error(bad_type_in_ret);
-                            totree(TExprend);
+                            if (ftype == LVOIDASTER)
+                                flagsemicol = 0;
+                            else
+                            {
+                                if (ftype == LVOID)
+                                    error(notvoidret_in_void_func);
+                                totree(TReturnval);
+                                totree(szof(ftype));
+                                scaner();
+                                expr(1);
+                                toval();
+                                sopnd--;
+                                if (ftype == LFLOAT && ansttype == LINT)
+                                    totree(WIDEN);
+                                else if (ftype != ansttype)
+                                    error(bad_type_in_ret);
+                                totree(TExprend);
+                            }
 						}
 		}
 			break;
@@ -1429,10 +1464,7 @@ void statement()
 int idorpnt(int e, int t)
 {
 	if (next == LMULT)
-	{
-		scaner();
-        t = newdecl(MPOINT, t);
-    }
+        t = t == LVOID ? scaner(), LVOIDASTER : newdecl(MPOINT, t);
     mustbe(IDENT, e);
     return t;
 }
@@ -1575,7 +1607,7 @@ void block(int b)
 	}
 	blockflag = 0;
 
-	while (is_int(next) || is_float(next) || next == LSTRUCT)
+	while (is_int(next) || is_float(next) || next == LSTRUCT || next == LVOID)
 	{
         int repeat = 1;
 		scaner();
@@ -1705,7 +1737,7 @@ int func_declarator(int level, int func_d, int firstdecl)
 
 	while (repeat)
 	{
-		if (is_int(cur) || is_float(cur) || cur == LSTRUCT)
+		if (cur == LVOID || is_int(cur) || is_float(cur) || cur == LSTRUCT)
 		{
 			maybe_fun = 0;    // м.б. параметр-ф-ция? 0 - ничего не было, 1 - была *, 2 - была [
 			ident = 0;        // = 0 - не было идента, 1 - был статический идент, 2 - был идент-параметр-функция
@@ -1714,7 +1746,7 @@ int func_declarator(int level, int func_d, int firstdecl)
             if (next == LMULT)
             {
                 scaner();
-                type = newdecl(MPOINT, type);
+                type = type == LVOID ? LVOIDASTER : newdecl(MPOINT, type);
             }
 			if (level)
 			{
@@ -1845,7 +1877,7 @@ void ext_decl()
             if (next == LMULT)
             {
                 scaner();
-                type = newdecl(MPOINT, firstdecl);
+                type = firstdecl == LVOID ? LVOIDASTER : newdecl(MPOINT, firstdecl);
             }
             mustbe(IDENT, after_type_must_be_ident);
 
@@ -1854,11 +1886,11 @@ void ext_decl()
 
 			if (next == LEFTBR)                // определение или предописание функции
 			{
-				int oldfuncnum = funcnum++;
+				int oldfuncnum = funcnum++, firsttype = type;
 				funrepr = repr;
 				scaner();
 				scaner();
-				type = func_declarator(first, 3, firstdecl);  // выкушает все параметры до ) включительно
+				type = func_declarator(first, 3, firsttype);  // выкушает все параметры до ) включительно
 				if (next == BEGIN)
 				{
 					if (func_def == 0)

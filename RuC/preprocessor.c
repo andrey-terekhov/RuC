@@ -306,14 +306,6 @@ int check_condition()
     }
     else if (cur == SH_IF || cur == SH_ELIF)
     {
-        if (next == LDEFINED) // #if defined(k)
-        {
-            sc();
-            must(LEFTBR, 1);
-            res = is_defined();
-            sc();
-            must(RIGHTBR, 1);
-        }
     }
     return res;
 }
