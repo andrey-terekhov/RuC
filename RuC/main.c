@@ -5,7 +5,7 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
-char* name = "../stringprint.c";
+char* name = "../tests/bad Misha/badstack.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -73,7 +73,7 @@ int toreprtab(char str[])
 int main()
 {
     int i;
-    
+
     for (i=0; i<256; i++)
         hashtab[i] = 0;
     
@@ -133,6 +133,11 @@ int main()
     input  = fopen("../../../macro.txt", "r");
  */
     input = fopen(name, "r");
+    if (input == NULL)
+    {
+        printf("файл %s не найден\n", name);
+    }
+
     output = fopen("../tree.txt", "wt");
     
     getnext();

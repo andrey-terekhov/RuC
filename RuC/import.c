@@ -223,17 +223,17 @@ void auxprintf(int strbeg, int databeg)
             switch (mem[++i])
             {
                 case 'i':
-                case 'ц':
+                case 1094:  // ц
                     printf("%i", mem[curdata++]);
                     break;
 
                 case 'c':
-                case 'с':
+                case 1083:  // л
                     printf_char(mem[curdata++]);
                     break;
 
                 case 'f':
-                case 'в':
+                case 1074:  // в
                     printf("%lf", *((double*) (&mem[curdata])));
                     curdata += 2;
                     break;

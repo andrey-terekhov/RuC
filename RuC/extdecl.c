@@ -18,17 +18,17 @@ int evaluate_params(int formatstr[], int formattypes[])
             switch (formatstr[++i])
             {
                 case 'i':
-                case 'ц':
+                case 1094:   // 'ц'
                     formattypes[numofparams++] = LINT;
                     break;
 
                 case 'c':
-                case 'с':
+                case 1083:   // л
                     formattypes[numofparams++] = LCHAR;
                     break;
 
                 case 'f':
-                case 'в':
+                case 1074:   // в
                     formattypes[numofparams++] = LFLOAT;
                     break;
 
@@ -1067,7 +1067,7 @@ void exprval()
 {
     expr(1);
     toval();
-    totree(TExprend) ;
+    totree(TExprend);
 }
 
 int arrdef(int t)                 // вызывается при описании массивов и структур из массивов сразу после idorpnt
@@ -1259,6 +1259,9 @@ void statement()
 
             for (i = 0; scaner() == COMMA; i++)
             {
+                if (i >= paramnum)
+                    error(wrong_printf_param_number);
+
                 scaner();
 
                 exprassn(1);
