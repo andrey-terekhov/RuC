@@ -314,6 +314,7 @@ int newdecl(int type, int elemtype)
 }
 
 void exprval();
+void unarexpr();
 
 void primaryexpr()
 {
@@ -357,12 +358,27 @@ void primaryexpr()
 	}
 	else if (cur == LEFTBR)
 	{
-		int oldsp = sp;
-		scaner();
-		expr(1);
-		mustbe(RIGHTBR, wait_rightbr_in_primary);
-		while (sp > oldsp)
-			binop(--sp);
+        if (next == LVOID)
+        {
+            scaner();
+            mustbe(LMULT, no_mult_in_cast);
+            unarexpr();
+            if (!is_pointer(ansttype))
+                error(not_pointer_in_cast);
+            mustbe(RIGHTBR, no_rightbr_in_cast);
+            toval();
+//            totree(CASTC);
+            totree(TExprend);
+        }
+        else
+        {
+            int oldsp = sp;
+            scaner();
+            expr(1);
+            mustbe(RIGHTBR, wait_rightbr_in_primary);
+            while (sp > oldsp)
+                binop(--sp);
+        }
 	}
 	else if (cur <= STANDARD_FUNC_START)            // стандартная функция
 	{
@@ -768,6 +784,16 @@ void exprinbrkts(int er)
     mustbe(RIGHTBR, er);
 }
 
+void exprassnval();
+
+void exprassninbrkts(int er)
+{
+    mustbe(LEFTBR, er);
+    scaner();
+    exprassnval();
+    mustbe(RIGHTBR, er);
+}
+
 int prio(int op)   // возвращает 0, если не операция
 {
 	return  op == LOGOR ? 1 : op == LOGAND ? 2 : op == LOR ? 3 : op == LEXOR ? 4 : op == LAND ? 5 :
@@ -984,20 +1010,17 @@ void initializer(int type)
 
 void exprassnvoid()
 {
-    if (notcopy)
-    {
-        int t = tree[tc - 2] < 9000 ? tc - 3 : tc - 2;
-        if ((tree[t] >= ASS  && tree[t] <= DIVASSAT)  || (tree[t] >= POSTINC  && tree[t] <= DECAT) ||
-            (tree[t] >= ASSR && tree[t] <= DIVASSATR) || (tree[t] >= POSTINCR && tree[t] <= DECATR))
-            tree[t] += 200;
-        --sopnd;
-    }
+    int t = tree[tc-4] == COPY10 ? tc - 4 : tree[tc - 2] < 9000 ? tc - 3 : tc - 2;
+    if ((tree[t] >= ASS  && tree[t] <= DIVASSAT)  || (tree[t] >= POSTINC  && tree[t] <= DECAT) ||
+        (tree[t] >= ASSR && tree[t] <= DIVASSATR) || (tree[t] >= POSTINCR && tree[t] <= DECATR) ||
+        tree[t] == COPY10 || tree[t] == COPY11 || tree[t] == COPY1STASS)
+        tree[t] += 200;
+    --sopnd;
 }
 
 void exprassn(int level)
 {
     int leftanst, leftanstdispl, ltype, rtype, lnext;
-    notcopy = 1;
     if (cur == BEGIN)
         initializer(leftansttype);
     else
@@ -1037,9 +1060,10 @@ void exprassn(int level)
             if (anst == VAL)
                 opp = leftanst == IDENT ? COPY0STASS : COPY1STASS;
             else
+            {
                 opp = leftanst == IDENT ? anst == IDENT ? COPY00 : COPY01
                                         : anst == IDENT ? COPY10 : COPY11;
-            notcopy = 0;
+            }
             totree(opp);
             if (leftanst == IDENT)
                 totree(leftanstdispl);       // displleft
@@ -1100,6 +1124,14 @@ void exprval()
     toval();
     totree(TExprend);
 }
+
+void exprassnval()
+{
+    exprassn(1);
+    toval();
+    totree(TExprend);
+}
+
 
 int arrdef(int t)                 // вызывается при описании массивов и структур из массивов сразу после idorpnt
 {
@@ -1244,7 +1276,7 @@ void statement()
 		{
 		case PRINT:
 		{
- 					  exprinbrkts(print_without_br);
+ 					  exprassninbrkts(print_without_br);
                       tc--;
                       totree(TPrint);
 					  totree(ansttype);
@@ -1567,7 +1599,10 @@ void statement()
 int idorpnt(int e, int t)
 {
 	if (next == LMULT)
-        t = t == LVOID ? scaner(), LVOIDASTER : newdecl(MPOINT, t);
+    {
+        scaner();
+        t = t == LVOID ? LVOIDASTER : newdecl(MPOINT, t);
+    }
     mustbe(IDENT, e);
     return t;
 }

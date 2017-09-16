@@ -220,42 +220,47 @@
 #define COPY11   9303
 #define COPY0ST  9304
 #define COPY1ST  9305
-#define COPY0STASS 9306
-#define COPY1STASS 9307
+#define COPY0STASS  9306
+#define COPY1STASS  9307
+#define COPY10V  9502
+#define COPY11V  9503
+#define COPY1STASSV 9507
 
 
 // Коды операций стандартных функций
 
 #define ABSIC     9525
-#define CREATEDIRECTC 9526
-#define EXITDIRECTC   9527
+#define CASTC     9526
 
-#define SETMOTORC 9528
-#define GETDIGSENSORC 9529
-#define GETANSENSORC  9530
-#define ABSC      9531
-#define SQRTC     9532
-#define EXPC      9533
-#define SINC      9534
-#define COSC      9535
-#define LOGC      9536
-#define LOG10C    9537
-#define ASINC     9538
-#define RANDC     9539
-#define ROUNDC    9540
+#define CREATEDIRECTC 9528
+#define EXITDIRECTC   9529
 
-#define MSGSENDC  9541
-#define MSGRECEIVEC 9542
-#define JOINC     9543
-#define SLEEPC    9544
-#define SEMCREATEC  9545
-#define SEMWAITC  9546
-#define SEMPOSTC  9547
-#define CREATEC   9548
-#define INITC     9549
-#define DESTROYC  9550
-#define EXITC     9551
-#define GETNUMC   9552
+#define SETMOTORC 9530
+#define GETDIGSENSORC 9531
+#define GETANSENSORC  9532
+#define ABSC      9533
+#define SQRTC     9534
+#define EXPC      9535
+#define SINC      9536
+#define COSC      9537
+#define LOGC      9538
+#define LOG10C    9539
+#define ASINC     9540
+#define RANDC     9541
+#define ROUNDC    9542
+
+#define MSGSENDC  9543
+#define MSGRECEIVEC 9544
+#define JOINC     9545
+#define SLEEPC    9546
+#define SEMCREATEC  9547
+#define SEMWAITC  9548
+#define SEMPOSTC  9549
+#define CREATEC   9550
+#define INITC     9551
+#define DESTROYC  9552
+#define EXITC     9553
+#define GETNUMC   9554
 
 // Лексемы
 
@@ -312,45 +317,46 @@
 #define PRINTID   -23
 #define PRINT     -24
 #define PRINTF    -25
-#define GETID     -26
-#define TCREATEDIRECT -27
-#define TEXITDIRECT -28
+#define SCANF     -26
+#define GETID     -27
+#define TCREATEDIRECT -28
+#define TEXITDIRECT -29
 
-#define STANDARD_FUNC_START -29
-#define SETMOTOR  -29
-#define GETDIGSENSOR -30
-#define GETANSENSOR  -31
+#define STANDARD_FUNC_START -30
+#define SETMOTOR  -30
+#define GETDIGSENSOR -31
+#define GETANSENSOR  -32
 
-#define ABS       -32
-#define SQRT      -33
-#define EXP       -34
-#define SIN       -35
-#define COS       -36
-#define LOG       -37
-#define LOG10     -38
-#define ASIN      -39
-#define RAND      -40
-#define ROUND     -41
+#define ABS       -33
+#define SQRT      -34
+#define EXP       -35
+#define SIN       -36
+#define COS       -37
+#define LOG       -38
+#define LOG10     -39
+#define ASIN      -40
+#define RAND      -41
+#define ROUND     -42
 
-#define TMSGSEND  -42
-#define TMSGRECEIVE -43
-#define TJOIN     -44
-#define TSLEEP    -45
-#define TSEMCREATE  -46
-#define TSEMWAIT  -47
-#define TSEMPOST  -48
-#define TCREATE   -49
-#define TINIT     -50
-#define TDESTROY  -51
-#define TEXIT     -52
-#define TGETNUM   -53
-#define SH_DEFINE     -54   // #define
-#define SH_IFDEF      -55   // #ifdef
-#define SH_IFNDEF     -56   // #ifndef
-#define SH_IF         -57   // #if
-#define SH_ELIF       -58   // #elif
-#define SH_ENDIF      -59   // #endif
-#define SH_ELSE       -60   // #else
+#define TMSGSEND  -43
+#define TMSGRECEIVE -44
+#define TJOIN     -45
+#define TSLEEP    -46
+#define TSEMCREATE  -47
+#define TSEMWAIT  -48
+#define TSEMPOST  -49
+#define TCREATE   -50
+#define TINIT     -51
+#define TDESTROY  -52
+#define TEXIT     -53
+#define TGETNUM   -54
+#define SH_DEFINE     -55   // #define
+#define SH_IFDEF      -56   // #ifdef
+#define SH_IFNDEF     -57   // #ifndef
+#define SH_IF         -58   // #if
+#define SH_ELIF       -59   // #elif
+#define SH_ENDIF      -60   // #endif
+#define SH_ELSE       -61   // #else
 
 #define LVOIDASTER    -150
 
@@ -553,6 +559,9 @@
 #define wrong_printf_param_number          347
 #define printf_no_format_placeholder       348
 #define printf_unknown_format_placeholder  349
+#define no_mult_in_cast                    350
+#define no_rightbr_in_cast                 351
+#define not_pointer_in_cast                352
 
 //  коды предупреждений
 

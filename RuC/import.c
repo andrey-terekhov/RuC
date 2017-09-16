@@ -68,6 +68,12 @@ FILE *f1, *f2;   // файлы цифровых датчиков
 const char* JD1 = "/sys/devices/platform/da850_trik/sensor_d1";
 const char* JD2 = "/sys/devices/platform/da850_trik/sensor_d2";
 
+int szof(int type)
+{
+    return type == LFLOAT ? 2 :
+    (type > 0 && modetab[type] == MSTRUCT) ? modetab[type + 1] : 1;
+}
+
 int rungetcommand(const char *command)
 {
     FILE *fp;
@@ -346,55 +352,6 @@ void auxget(int beg, int t)
 
 void* interpreter(void*);
 
-void genarr(int N, int curdim, int d, int adr, int procnum, int *x, int *pc, int bounds[], int numTh)
-{
-    int c0, i, curb = bounds[curdim], oldpc = *pc;
-    mem[++(*x)] = curb;
-    c0 = ++(*x);
-
-    *x += curb * (curdim < N ? 1 : d) - 1;
-    if (*x >= threads[numTh] + MAXMEMTHREAD)
-        runtimeerr(mem_overflow, 0, 0);
-    
-    if(curdim == N)
-    {
-        if (procnum)
-        {
-            int curx = *x, oldbase = base;
-            for (i=c0; i<=curx; i+=d)
-            {
-                *pc = procnum;   // вычисление границ очередного массива в структуре
-                base = i;
-                interpreter((void*) &mem[threads[numTh]]);
-            }
-            *pc = oldpc;
-            base = oldbase;
-        }
-    }
-    else
-    {
-        for (i=0; i < curb; i++)
-        {
-            genarr(N, curdim + 1, d, c0 + i, procnum, x, pc, bounds, numTh);
-        }
-    }
-    mem[adr] = c0;
-}
-
-
-void rec_init_arr(int where, int from, int N, int d)
-{
-    int b = mem[where-1], i, j;
-    for (i=0; i<b; i++)
-        if (N == 1)
-        {
-            for (j=0; j<d; j++)
-                mem[where++] = mem[from++];
-        }
-        else
-            rec_init_arr(mem[where++], from, N-1, d);
-}
-
 int check_zero_int(int r)
 {
     if (r == 0)
@@ -421,15 +378,13 @@ void* interpreter(void* pcPnt)
     int N, bounds[100], d,from, prtype, cur0;
     int i,r, flagstop = 1, entry, di, di1, len;
     double lf, rf;
-    threads[numTh] = cur0 = (numTh == 0 ? g : threads[numTh-1] + MAXMEMTHREAD);
+    threads[numTh] = cur0 = (numTh == 0 ? threads[0] : threads[numTh-1] + MAXMEMTHREAD);
     // область нити начинается с номера нити, потом идут 3 служебных слова процедуры
     mem[cur0] = numTh;
-    mem[cur0+1] = 0;
-    mem[cur0+2] = 0;
-    l = cur0 + 1;
-    x = cur0 + 3;
+    l = mem[cur0+1];
+    x = mem[cur0+2]+3;
     
-    //printf("interpreter session numTh=%i l=%i x=%i pc=%i\n", numTh, l, x, pc);
+//    printf("interpreter session numTh=%i l=%i x=%i pc=%i\n", numTh, l, x, pc);
     
     flagstop = 1;
     while (flagstop)
@@ -442,16 +397,19 @@ void* interpreter(void* pcPnt)
         {
             case STOP:
                 flagstop = 0;
+                threads[numTh+2] = x;
                 break;
 
             case CREATEDIRECTC:
                t_create(interpreter, (void*)&pc);
+                flagstop = 1;
                 break;
             case CREATEC:
                 i = mem[x];
                 entry = functions[i > 0 ? i : mem[l-i]];
                 pc = entry + 3;
                 t_create(interpreter, (void*)&pc);
+                flagstop = 1;
                 break;
  
             case JOINC:
@@ -637,7 +595,7 @@ void* interpreter(void* pcPnt)
                 ++x;
                 break;
             case ROUNDC:
-                mem[--x] = (int)(rf+0.5);
+                mem[--x] = rf < 0 ? (int)(rf-0.5) : (int)(rf+0.5);
                 break;
                 
             case STRUCTWITHARR:
@@ -647,23 +605,93 @@ void* interpreter(void* pcPnt)
                 procnum = mem[pc++];
                 oldpc = pc;
                 pc = procnum;
-                interpreter((void*) &mem[threads[numTh]]);
+//                mem[threads[numTh]+1] = l;
+                mem[threads[numTh]+2] = x;
+                interpreter((void*) &pc);
+                x = threads[numTh+2];
                 pc = oldpc;
                 base = oldbase;
                 flagstop = 1;
-            }
+           }
                 break;
             case DEFARR:      // N, d, displ, proc     на стеке N1, N2, ... , NN
             {
-                int N = mem[pc++];
-                int d = mem[pc++];
+                int N =      mem[pc++];
+                int d =      mem[pc++];
                 int curdsp = mem[pc++];
-                int proc = mem[pc++];
+                int proc =   mem[pc++];
+                int stackC0[10], stacki[10], i, curdim = 1;
+                
                 for (i=abs(N); i>0; i--)
                     if ((bounds[i] = mem[x--]) <= 0)
                         runtimeerr(wrong_number_of_elems, 0, bounds[i]);
-genarr(abs(N),1,d,N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp, proc, &x, &pc, bounds, numTh);
-                flagstop = 1;
+                stacki[1] = 0;
+                
+                mem[++x] = bounds[1];
+                mem[N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp] = stackC0[1] = x + 1;
+                N = abs(N);
+                x += bounds[1] * (curdim < N ? 1 : d);
+                
+                if (x >= threads[numTh] + MAXMEMTHREAD)
+                    runtimeerr(mem_overflow, 0, 0);
+                if (N == 1)
+                {
+                    if (proc)
+                    {
+                        int curx = x, oldbase = base, oldpc = pc, i;
+                        for (i=stackC0[1]; i<=curx; i+=d)
+                        {
+                            pc = proc;   // вычисление границ очередного массива в структуре
+                            base = i;
+                            mem[threads[numTh]+2] = x;
+                            interpreter((void*) &pc);
+                            flagstop = 1;
+                            x = threads[numTh+2];
+                        }
+                        pc = oldpc;
+                        base = oldbase;
+                    }
+                }
+                else
+                {
+              lab1: do
+                    {
+                // go down
+                        mem[++x] = bounds[curdim+1];
+                        mem[stackC0[curdim] + stacki[curdim]++] = stackC0[curdim+1] = x + 1;
+                        x += bounds[curdim+1] * (curdim == N-1 ? d : 1);
+                        
+                        if (x >= threads[numTh] + MAXMEMTHREAD)
+                            runtimeerr(mem_overflow, 0, 0);
+                        ++curdim;
+                        stacki[curdim] = 0;
+                    }
+                    while (curdim < N);
+                // построена очередная вертикаль подмассивов
+                   
+                    if (proc)
+                    {
+                        int curx = x, oldbase = base, oldpc = pc, i;
+                        for (i=stackC0[curdim]; i<=curx; i+=d)
+                        {
+                            pc = proc;   // вычисление границ очередного массива в структуре
+                            base = i;
+                            mem[threads[numTh]+2] = x;
+                            interpreter((void*) &pc);
+                            flagstop = 1;
+                            x = threads[numTh+2];
+                        }
+                        pc = oldpc;
+                        base = oldbase;
+                    }
+                // go right
+                    --curdim;
+                    if (stacki[curdim] < bounds[curdim])
+                        goto lab1;
+                // go up
+                    if (curdim-- != N-1)
+                        goto lab1;
+                }
             }
                 break;
             case LI:
@@ -756,6 +784,13 @@ genarr(abs(N),1,d,N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp
                     mem[di+i] =  mem[di1+i];
                 break;
             case COPY10:
+                di =  mem[x];
+                di1 = dsp(mem[pc++], l);
+                len = mem[pc++];
+                for (i=0; i<len; i++)
+                    mem[di+i] =  mem[di1+i];
+                break;
+            case COPY10V:
                 di =  mem[x--];
                 di1 = dsp(mem[pc++], l);
                 len = mem[pc++];
@@ -763,6 +798,13 @@ genarr(abs(N),1,d,N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp
                     mem[di+i] =  mem[di1+i];
                 break;
             case COPY11:
+                di1 = mem[x--];
+                di =  mem[x];
+                len = mem[pc++];
+                for (i=0; i<len; i++)
+                    mem[di+i] =  mem[di1+i];
+                break;
+            case COPY11V:
                 di1 = mem[x--];
                 di =  mem[x--];
                 len = mem[pc++];
@@ -790,6 +832,13 @@ genarr(abs(N),1,d,N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp
                     mem[di+i] = mem[x+i+1];
                 break;
             case COPY1STASS:
+                len = mem[pc++];
+                x -= len;
+                di = mem[x];
+                for (i=0; i<len; i++)
+                    mem[di+i] = mem[x+i+1];
+                break;
+            case COPY1STASSV:
                 len = mem[pc++];
                 x -= len;
                 di = mem[x--];
@@ -821,7 +870,51 @@ genarr(abs(N),1,d,N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp
                 d = mem[pc++];       // d
                 x -= mem[pc++];      // сколько всего слов во всех элементах инициализации
                 from = x + 1;
-                rec_init_arr(mem[dsp(mem[pc++], l)], from, N, d);
+            {
+                int stA[10], stN[10], sti[10], stpnt = 1, i, j;
+                stA[1] = mem[dsp(mem[pc++], l)];
+                stN[1] = mem[stA[1]-1];
+                for (i=2; i<10; ++i)
+                    sti[i] = 0;
+                sti[1] = -1;
+                if (N == 1)
+                {
+                    for (i=0; i<stN[1]; i+=d)
+                        for (j=0; j<d; j++)
+                            mem[stA[stpnt]+i+j] = mem[from++];
+                }
+                else
+                {
+            goright:
+                    if (stpnt == 1 && sti[1] == stN[1]-1)
+                        goto labexit;
+                    else /* if (++sti[stpnt] < stN[stpnt]) */
+                    {
+                        if (++sti[stpnt] == stN[stpnt])
+                        {
+                            --stpnt;
+                            goto goright;
+                        }
+                        stA[stpnt] += sti[stpnt];
+                    }
+            godown: while (stpnt < N)
+                    {
+                        stA[stpnt+1] = mem[stA[stpnt]];
+                        sti[++stpnt] = 0;
+                        stN[stpnt] = mem[stA[stpnt]-1];
+
+                    }
+                for (i=0; i<stN[stpnt]; i+=d)
+                        for (j=0; j<d; j++)
+                        {
+                            mem[stA[stpnt]+i+j] = mem[from++];
+                        }
+                if (N > 1)
+                    --stpnt;
+                goto goright;
+                }
+            labexit:;
+            }
                 break;
             case WIDEN:
                 rf = (double)mem[x];
@@ -1431,14 +1524,14 @@ void import()
     
     l = g = pc;
     mem[g] = mem[g+1] = 0;
-    x = g + maxdisplg;
+    threads[0] = x = g + maxdisplg;
+    mem[x+1] = l;
+    mem[x+2] = x;
     pc = 4;
     t_init();
     interpreter(&pc);                      // номер нити главной программы 0
     t_destroy();
  
-//    interpreter((void*) &mem[threads[0]]);
-    
 #ifdef ROBOT
     system("i2cset -y 2 0x48 0x10 0 w");   // отключение силовых моторов
     system("i2cset -y 2 0x48 0x11 0 w");
