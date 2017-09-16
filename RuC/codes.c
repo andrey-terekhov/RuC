@@ -730,9 +730,17 @@ void tablesandcode()
                 fprintf(output, "COPY10      %i ", mem[i++]);     // displright
                 fprintf(output, "(%i)\n", mem[i++]);              // length
                 break;
+            case COPY10V:
+                fprintf(output, "COPY10V %i ", mem[i++]);         // displright
+                fprintf(output, "(%i)\n", mem[i++]);              // length
+                break;
             case COPY11:
                 fprintf(output, "COPY11 %i\n", mem[i++]);         // length
                 break;
+            case COPY11V:
+                fprintf(output, "COPY11V %i\n", mem[i++]);         // length
+                break;
+
             case COPY0ST:
                 fprintf(output, "COPY0ST %i ", mem[i++]);         // displright
                 fprintf(output, "(%i)\n", mem[i++]);              // length
@@ -747,7 +755,9 @@ void tablesandcode()
             case COPY1STASS:
                 fprintf(output, "COPY1STASS %i\n", mem[i++]);     // length
                 break;
-
+            case COPY1STASSV:
+                fprintf(output, "COPY1STASSV %i\n", mem[i++]);    // length
+                break;
 
             case REMASS:
                 fprintf(output, "%%= %i\n", mem[i++]);

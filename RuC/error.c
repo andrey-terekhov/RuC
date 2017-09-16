@@ -497,12 +497,23 @@ void error(int ernum)
             printf("Кодичество параметров printf/печатьф не соответствует количеству спецификаторов\n");
             break;
         case printf_no_format_placeholder:
-            printf("В printf/печатьф нет спецификатора типа после '%'\n");
+            printf("В printf/печатьф нет спецификатора типа после '%%'\n");
             break;
         case printf_unknown_format_placeholder:
             printf("В printf/печатьф неизвестный спецификатор типа '");
             printf_char(bad_placeholder);
             printf("'\n");
+            break;
+        case no_mult_in_cast:
+            printf("нет * в cast (приведении)\n");
+            break;
+        case no_rightbr_in_cast:
+            printf("нет ) в cast (приведении)\n");
+            break;
+        case not_pointer_in_cast:
+            printf("cast (приведение) может быть применено только к указателю\n");
+            break;
+            
         default: ;
     }
     exit(2);
