@@ -7,7 +7,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 char* name = /*"/Users/ant/Desktop/RuCRegr/defstest/COPY00_9300.c";*/
-             "../../../tests/Misha/badprint.c";
+             "../../../tests/Golovan/dining_philosophers.c";
 
 #include <stdio.h>
 #include <string.h>
