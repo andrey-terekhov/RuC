@@ -449,10 +449,13 @@ void error(int ernum)
         case param_threads_not_int:
             printf("процедуры, управляющие параллельными нитями, могут иметь только целые параметры\n");
             break;
-        case param_send_not_1:
-            printf("параметр процедуры t_msg_send должен иметь тип mtssage\n");
+        case wrong_arg_in_send:
+            printf("неправильный тип аргумента в процедуре t_msg_send, должен иметь тип msg_info\n");
             break;
-           
+        case wrong_arg_in_create:
+            printf("неправильный тип аргумента в процедуре t_create, должен иметь тип void*(void*)\n");
+            break;
+            
         case else_after_elif:
             printf("ошибка препроцессора: #elif после #else\n");
             break;
@@ -476,6 +479,39 @@ void error(int ernum)
             break;
         case params_count_not_equals_in_macro:
             printf("ошибка препроцессора: количество параметров в макроподстановке не совпадает с заданным\n");
+            break;
+
+        case no_leftbr_in_printf:
+            printf("Не хватает левой скобки в printf/печатьф\n");
+            break;
+        case no_rightbr_in_printf:
+            printf("Не хватает правой скобки в printf/печатьф\n");
+            break;
+        case wrong_first_printf_param:
+            printf("Первым параметром в printf/печатьф должна быть константная форматная строка\n");
+            break;
+        case wrong_printf_param_type:
+            printf("Тип параметра printf/печатьф не соответствует спецификатору\n");
+            break;
+        case wrong_printf_param_number:
+            printf("Кодичество параметров printf/печатьф не соответствует количеству спецификаторов\n");
+            break;
+        case printf_no_format_placeholder:
+            printf("В printf/печатьф нет спецификатора типа после '%%'\n");
+            break;
+        case printf_unknown_format_placeholder:
+            printf("В printf/печатьф неизвестный спецификатор типа '");
+            printf_char(bad_placeholder);
+            printf("'\n");
+            break;
+        case no_mult_in_cast:
+            printf("нет * в cast (приведении)\n");
+            break;
+        case no_rightbr_in_cast:
+            printf("нет ) в cast (приведении)\n");
+            break;
+        case not_pointer_in_cast:
+            printf("cast (приведение) может быть применено только к указателю\n");
             break;
             
         default: ;

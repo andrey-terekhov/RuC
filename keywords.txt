@@ -23,9 +23,11 @@ SWITCH switch ВЫБОР выбор
 WHILE while ПОКА пока
 PRINTID printid ПЕЧАТЬИД печатьид
 PRINT print ПЕЧАТЬ печать
+PRINTF printf ПЕЧАТЬФ печатьф
+SCANF scanf ЧИТАТЬФ читатьф 
 GETID getid ЧИТАТЬИД читатьид
-T_CREATE t_create Н_СОЗДАТЬ н_создать
-T_EXIT t_exit Н_КОНЕЦ н_конец
+T_CREATE_DIRECT t_create_direct Н_СОЗДАТЬ_НЕПОСР н_создать_непоср
+T_EXIT_DIRECT t_exit_direct Н_КОНЕЦ_НЕПОСР н_конец_непоср
 SETMOTOR setmotor МОТОР мотор
 GETDIGSENSOR getdigsensor ЦИФРДАТЧИК цифрдатчик
 GETANSENSOR getansensor АНАЛОГДАТЧИК аналогдатчик
@@ -39,6 +41,7 @@ LOG10 log10 ЛОГ10 лог10
 ASIN asin АСИН асин
 RAND rand СЛУЧ случ
 ROUND round ОКРУГЛ округл
+
 T_MSG_SEND t_msg_send Н_ПОСЛАТЬ н_послать
 T_MSG_RECEIVE t_msg_receive Н_ПОЛУЧИТЬ н_получить
 T_JOIN t_join Н_ПРИСОЕД н_присоед
@@ -46,7 +49,11 @@ T_SLEEP t_sleep Н_СПАТЬ н_спать
 T_SEM_CREATE t_sem_create Н_СОЗДАТЬ_СЕМ н_создать_сем
 T_SEM_WAIT t_sem_wait Н_ВНИЗ_СЕМ н_вниз_сем
 T_SEM_POST t_sem_post Н_ВВЕРХ_СЕМ н_вверх_сем
-T_GET_NUM t_get_num Н_НОМЕР_НИТИ н_номер_нити
+T_CREATE t_create Н_СОЗДАТЬ н_создать
+T_INIT t_init Н_НАЧАТЬ н_начать
+T_DESTROY t_destroy Н_ЗАКОНЧИТЬ н_закончить
+T_EXIT t_exit Н_КОНЕЦ н_конец
+T_GETNUM t_getnum Н_НОМЕР_НИТИ н_номер_нити
 #DEFINE #define #ОПРЕД #опред
 #IFDEF #ifdef #ЕСЛИБЫЛ #еслибыл
 #IFNDEF #ifndef #ЕСЛИНЕБЫЛ #еслинебыл
@@ -54,4 +61,3 @@ T_GET_NUM t_get_num Н_НОМЕР_НИТИ н_номер_нити
 #ELIF #elif #ИНЕСЛИ #инесли
 #ENDIF #endif #КОНЕСЛИ #конесли
 #ELSE #else #ИНАЧЕ #иначе
-#DEFINED() #defined
