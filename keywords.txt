@@ -61,5 +61,3 @@ T_GETNUM t_getnum Н_НОМЕР_НИТИ н_номер_нити
 #ELIF #elif #ИНЕСЛИ #инесли
 #ENDIF #endif #КОНЕСЛИ #конесли
 #ELSE #else #ИНАЧЕ #иначе
-
-
