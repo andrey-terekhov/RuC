@@ -223,6 +223,9 @@ void tablesandtree()
             case TPrintid:
                 fprintf(output, "TPrintid %i\n", tree[i++]);
                 break;
+            case TPrintf:
+                fprintf(output, "TPrintf %i\n", tree[i++]);
+                break;
             case TGetid:
                 fprintf(output, "TGetid %i\n", tree[i++]);
                 break;
@@ -230,13 +233,19 @@ void tablesandtree()
                 fprintf(output, "Setmotor\n");
                 break;
             case CREATEC:
-                fprintf(output, "TCREATE %i\n", tree[i++]);
+                fprintf(output, "TCREATE\n");
                 break;
-            case MSGSENDC:
-                fprintf(output, "TMSGSEND\n");
+            case CREATEDIRECTC:
+                fprintf(output, "TCREATEDIRECT\n");
                 break;
             case EXITC:
                 fprintf(output, "TEXIT\n");
+                break;
+            case EXITDIRECTC:
+                fprintf(output, "TEXITDIRECT\n");
+                break;
+            case MSGSENDC:
+                fprintf(output, "TMSGSEND\n");
                 break;
             case MSGRECEIVEC:
                 fprintf(output, "TMSGRECEIVE\n");
@@ -255,6 +264,12 @@ void tablesandtree()
                 break;
             case SEMPOSTC:
                 fprintf(output, "TSEMPOST\n");
+                break;
+            case INITC:
+                fprintf(output, "INITC\n");
+                break;
+            case DESTROYC:
+                fprintf(output, "DESTROYC\n");
                 break;
             case GETNUMC:
                 fprintf(output, "GETNUM\n");
@@ -303,6 +318,9 @@ void tablesandcode()
             case PRINTID:
                 fprintf(output, "PRINTID %i\n", mem[i++]);
                 break;
+            case PRINTF:
+                fprintf(output, "PRINTF %i\n", mem[i++]);
+                break;
             case GETID:
                 fprintf(output, "GETID %i\n", mem[i++]);
                 break;
@@ -315,13 +333,19 @@ void tablesandcode()
             case GETANSENSORC:
                 fprintf(output, "GETANSENSOR\n");
             case CREATEC:
-                fprintf(output, "TCREATE %i \n", mem[i++]);
+                fprintf(output, "TCREATE\n");
+                break;
+            case CREATEDIRECTC:
+                fprintf(output, "TCREATEDIRECT\n");
                 break;
             case MSGSENDC:
                 fprintf(output, "TMSGSEND\n");
                 break;
             case EXITC:
                 fprintf(output, "TEXIT\n");
+                break;
+            case EXITDIRECTC:
+                fprintf(output, "TEXITDIRECT\n");
                 break;
             case MSGRECEIVEC:
                 fprintf(output, "TMSGRECEIVE\n");
@@ -340,6 +364,12 @@ void tablesandcode()
                 break;
             case SEMPOSTC:
                 fprintf(output, "TSEMPOST\n");
+                break;
+            case TINIT:
+                fprintf(output, "TINIT\n");
+                break;
+            case TDESTROY:
+                fprintf(output, "TDESTROY\n");
                 break;
             case GETNUMC:
                 fprintf(output, "GETNUM\n");
@@ -700,9 +730,17 @@ void tablesandcode()
                 fprintf(output, "COPY10      %i ", mem[i++]);     // displright
                 fprintf(output, "(%i)\n", mem[i++]);              // length
                 break;
+            case COPY10V:
+                fprintf(output, "COPY10V %i ", mem[i++]);         // displright
+                fprintf(output, "(%i)\n", mem[i++]);              // length
+                break;
             case COPY11:
                 fprintf(output, "COPY11 %i\n", mem[i++]);         // length
                 break;
+            case COPY11V:
+                fprintf(output, "COPY11V %i\n", mem[i++]);         // length
+                break;
+
             case COPY0ST:
                 fprintf(output, "COPY0ST %i ", mem[i++]);         // displright
                 fprintf(output, "(%i)\n", mem[i++]);              // length
@@ -717,7 +755,9 @@ void tablesandcode()
             case COPY1STASS:
                 fprintf(output, "COPY1STASS %i\n", mem[i++]);     // length
                 break;
-
+            case COPY1STASSV:
+                fprintf(output, "COPY1STASSV %i\n", mem[i++]);    // length
+                break;
 
             case REMASS:
                 fprintf(output, "%%= %i\n", mem[i++]);

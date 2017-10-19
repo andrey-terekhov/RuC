@@ -23,6 +23,7 @@
 #define INIPROSIZE   1000
 #define NUMOFTHREADS 10
 #define MAXMEMTHREAD MAXMEMSIZE/NUMOFTHREADS 
+#define MAXPRINTFPARAMS 20
 
 // modetab 
 #define MFUNCTION 1001
@@ -219,40 +220,47 @@
 #define COPY11   9303
 #define COPY0ST  9304
 #define COPY1ST  9305
-#define COPY0STASS 9306
-#define COPY1STASS 9307
+#define COPY0STASS  9306
+#define COPY1STASS  9307
+#define COPY10V  9502
+#define COPY11V  9503
+#define COPY1STASSV 9507
 
 
 // Коды операций стандартных функций
 
 #define ABSIC     9525
-#define CREATEC   9526
-#define EXITC     9527
+#define CASTC     9526
 
-#define SETMOTORC 9528
-#define GETDIGSENSORC 9529
-#define GETANSENSORC  9530
-#define ABSC      9531
-#define SQRTC     9532
-#define EXPC      9533
-#define SINC      9534
-#define COSC      9535
-#define LOGC      9536
-#define LOG10C    9537
-#define ASINC     9538
-#define RANDC     9539
-#define ROUNDC    9540
+#define CREATEDIRECTC 9528
+#define EXITDIRECTC   9529
 
-#define MSGSENDC  9541
-#define MSGRECEIVEC 9542
-#define JOINC     9543
-#define SLEEPC    9544
-#define SEMCREATEC  9545
-#define SEMWAITC  9546
-#define SEMPOSTC  9547
-#define GETNUMC   9548
+#define SETMOTORC 9530
+#define GETDIGSENSORC 9531
+#define GETANSENSORC  9532
+#define ABSC      9533
+#define SQRTC     9534
+#define EXPC      9535
+#define SINC      9536
+#define COSC      9537
+#define LOGC      9538
+#define LOG10C    9539
+#define ASINC     9540
+#define RANDC     9541
+#define ROUNDC    9542
 
-
+#define MSGSENDC  9543
+#define MSGRECEIVEC 9544
+#define JOINC     9545
+#define SLEEPC    9546
+#define SEMCREATEC  9547
+#define SEMWAITC  9548
+#define SEMPOSTC  9549
+#define CREATEC   9550
+#define INITC     9551
+#define DESTROYC  9552
+#define EXITC     9553
+#define GETNUMC   9554
 
 // Лексемы
 
@@ -308,42 +316,49 @@
 #define LWHILE    -22
 #define PRINTID   -23
 #define PRINT     -24
-#define GETID     -25
-#define TCREATE   -26
-#define TEXIT     -27
+#define PRINTF    -25
+#define SCANF     -26
+#define GETID     -27
+#define TCREATEDIRECT -28
+#define TEXITDIRECT -29
 
-#define STANDARD_FUNC_START -28
-#define SETMOTOR  -28
-#define GETDIGSENSOR -29
-#define GETANSENSOR  -30
+#define STANDARD_FUNC_START -30
+#define SETMOTOR  -30
+#define GETDIGSENSOR -31
+#define GETANSENSOR  -32
 
-#define ABS       -31
-#define SQRT      -32
-#define EXP       -33
-#define SIN       -34
-#define COS       -35
-#define LOG       -36
-#define LOG10     -37
-#define ASIN      -38
-#define RAND      -39
-#define ROUND     -40
+#define ABS       -33
+#define SQRT      -34
+#define EXP       -35
+#define SIN       -36
+#define COS       -37
+#define LOG       -38
+#define LOG10     -39
+#define ASIN      -40
+#define RAND      -41
+#define ROUND     -42
 
-#define TMSGSEND  -41
-#define TMSGRECEIVE -42
-#define TJOIN     -43
-#define TSLEEP    -44
-#define TSEMCREATE  -45
-#define TSEMWAIT  -46
-#define TSEMPOST  -47
-#define TGETNUM   -48
-#define SH_DEFINE     -49   // #define
-#define SH_IFDEF      -50   // #ifdef
-#define SH_IFNDEF     -51   // #ifndef
-#define SH_IF         -52   // #if
-#define SH_ELIF       -53   // #elif
-#define SH_ENDIF      -54   // #endif
-#define SH_ELSE       -55   // #else
-#define LDEFINED      -56   // defined()
+#define TMSGSEND  -43
+#define TMSGRECEIVE -44
+#define TJOIN     -45
+#define TSLEEP    -46
+#define TSEMCREATE  -47
+#define TSEMWAIT  -48
+#define TSEMPOST  -49
+#define TCREATE   -50
+#define TINIT     -51
+#define TDESTROY  -52
+#define TEXIT     -53
+#define TGETNUM   -54
+#define SH_DEFINE     -55   // #define
+#define SH_IFDEF      -56   // #ifdef
+#define SH_IFNDEF     -57   // #ifndef
+#define SH_IF         -58   // #if
+#define SH_ELIF       -59   // #elif
+#define SH_ENDIF      -60   // #endif
+#define SH_ELSE       -61   // #else
+
+#define LVOIDASTER    -150
 
 // Узлы дерева
 #define TIdent      -300
@@ -377,17 +392,18 @@
 #define TLabel      -328
 #define TPrint      -329
 #define TPrintid    -330
-#define TGetid      -331
-#define TIdenttoaddr -332
-#define TSelect     -333
-#define TFunidtoval -334
-#define TStructbeg  -335
-#define TStructend  -336
-#define TDeclarr    -337
-#define TConstd     -338
-#define TIdenttovald -339
-#define TAddrtovald  -340
-#define TENDINIT     -341
+#define TPrintf     -331
+#define TGetid      -332
+#define TIdenttoaddr -333
+#define TSelect     -334
+#define TFunidtoval -335
+#define TStructbeg  -336
+#define TStructend  -337
+#define TDeclarr    -338
+#define TConstd     -339
+#define TIdenttovald -340
+#define TAddrtovald  -341
+#define TENDINIT     -342
 
 // Коды ошибок
 
@@ -533,8 +549,19 @@
 #define wait_ident_after_comma_in_macro_params 338
 #define wait_rightbr_in_macro_params       339
 #define params_count_not_equals_in_macro   340
-#define param_send_not_1                   341
+#define wrong_arg_in_send                  341
+#define wrong_arg_in_create                342
 
+#define no_leftbr_in_printf                343
+#define no_rightbr_in_printf               344
+#define wrong_first_printf_param           345
+#define wrong_printf_param_type            346
+#define wrong_printf_param_number          347
+#define printf_no_format_placeholder       348
+#define printf_unknown_format_placeholder  349
+#define no_mult_in_cast                    350
+#define no_rightbr_in_cast                 351
+#define not_pointer_in_cast                352
 
 //  коды предупреждений
 
