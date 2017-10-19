@@ -39,7 +39,7 @@ pthread_rwlock_t __lock_t_sem_create;
 //void perror(const char *str);
 
 #pragma region INIT
-void t_init()
+/*void t_init()
 {
 #pragma region LOCK_T_CREATE
     int res = pthread_rwlock_init(&__lock_t_create, NULL);
@@ -582,3 +582,4 @@ void t_destroy()
 #pragma endregion
 }
 #pragma endregion
+*/
