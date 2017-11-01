@@ -415,7 +415,7 @@ int scan()
                 else
                     flag = 0;
             }
-            printf("11 %i %c %i %c\n", curchar, curchar, nextchar, nextchar);
+//            printf("11 %i %c %i %c\n", curchar, curchar, nextchar, nextchar);
 
             lexstr[n] = 0;
             instring = 0;

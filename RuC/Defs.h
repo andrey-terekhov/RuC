@@ -238,29 +238,30 @@
 #define SETMOTORC 9530
 #define GETDIGSENSORC 9531
 #define GETANSENSORC  9532
-#define ABSC      9533
-#define SQRTC     9534
-#define EXPC      9535
-#define SINC      9536
-#define COSC      9537
-#define LOGC      9538
-#define LOG10C    9539
-#define ASINC     9540
-#define RANDC     9541
-#define ROUNDC    9542
+#define VOLTAGEC      9533
+#define ABSC      9534
+#define SQRTC     9535
+#define EXPC      9536
+#define SINC      9537
+#define COSC      9538
+#define LOGC      9539
+#define LOG10C    9540
+#define ASINC     9541
+#define RANDC     9542
+#define ROUNDC    9543
 
-#define MSGSENDC  9543
-#define MSGRECEIVEC 9544
-#define JOINC     9545
-#define SLEEPC    9546
-#define SEMCREATEC  9547
-#define SEMWAITC  9548
-#define SEMPOSTC  9549
-#define CREATEC   9550
-#define INITC     9551
-#define DESTROYC  9552
-#define EXITC     9553
-#define GETNUMC   9554
+#define MSGSENDC  9544
+#define MSGRECEIVEC 9545
+#define JOINC     9546
+#define SLEEPC    9547
+#define SEMCREATEC  9548
+#define SEMWAITC  9549
+#define SEMPOSTC  9550
+#define CREATEC   9551
+#define INITC     9552
+#define DESTROYC  9553
+#define EXITC     9554
+#define GETNUMC   9555
 
 // Лексемы
 
@@ -326,37 +327,39 @@
 #define SETMOTOR  -30
 #define GETDIGSENSOR -31
 #define GETANSENSOR  -32
+#define VOLTAGE      -33
 
-#define ABS       -33
-#define SQRT      -34
-#define EXP       -35
-#define SIN       -36
-#define COS       -37
-#define LOG       -38
-#define LOG10     -39
-#define ASIN      -40
-#define RAND      -41
-#define ROUND     -42
+#define ABS       -34
+#define SQRT      -35
+#define EXP       -36
+#define SIN       -37
+#define COS       -38
+#define LOG       -39
+#define LOG10     -40
+#define ASIN      -41
+#define RAND      -42
+#define ROUND     -43
 
-#define TMSGSEND  -43
-#define TMSGRECEIVE -44
-#define TJOIN     -45
-#define TSLEEP    -46
-#define TSEMCREATE  -47
-#define TSEMWAIT  -48
-#define TSEMPOST  -49
-#define TCREATE   -50
-#define TINIT     -51
-#define TDESTROY  -52
-#define TEXIT     -53
-#define TGETNUM   -54
-#define SH_DEFINE     -55   // #define
-#define SH_IFDEF      -56   // #ifdef
-#define SH_IFNDEF     -57   // #ifndef
-#define SH_IF         -58   // #if
-#define SH_ELIF       -59   // #elif
-#define SH_ENDIF      -60   // #endif
-#define SH_ELSE       -61   // #else
+#define TMSGSEND  -44
+#define TMSGRECEIVE -45
+#define TJOIN     -46
+#define TSLEEP    -47
+#define TSEMCREATE  -48
+#define TSEMWAIT  -49
+#define TSEMPOST  -50
+#define TCREATE   -51
+#define TINIT     -52
+#define TDESTROY  -53
+#define TEXIT     -54
+#define TGETNUM   -55
+
+#define SH_DEFINE     -56   // #define
+#define SH_IFDEF      -57   // #ifdef
+#define SH_IFNDEF     -58   // #ifndef
+#define SH_IF         -59   // #if
+#define SH_ELIF       -60   // #elif
+#define SH_ENDIF      -61   // #endif
+#define SH_ELSE       -62   // #else
 
 #define LVOIDASTER    -150
 

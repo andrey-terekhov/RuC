@@ -378,6 +378,7 @@ void* interpreter(void* pcPnt)
     int N, bounds[100], d,from, prtype, cur0;
     int i,r, flagstop = 1, entry, di, di1, len;
     double lf, rf;
+    printf("numTh = %i\n", numTh);
     threads[numTh] = cur0 = (numTh == 0 ? threads[0] : threads[numTh-1] + MAXMEMTHREAD);
     // область нити начинается с номера нити, потом идут 3 служебных слова процедуры
     mem[cur0] = numTh;
@@ -390,9 +391,9 @@ void* interpreter(void* pcPnt)
     while (flagstop)
     {
         memcpy(&rf, &mem[x-1], sizeof(double));
-            //    printf("pc=%i mem[pc]=%i rf=%f\n", pc, mem[pc], rf);
+        printf("pc=%i mem[pc]=%i\n", pc, mem[pc]);
         
-        //printf("running th #%i, cmd=%i\n", t_getThNum(), mem[pc]);
+        printf("running th #%i\n", t_getThNum());
         switch (mem[pc++])
         {
             case STOP:
@@ -405,7 +406,7 @@ void* interpreter(void* pcPnt)
                 flagstop = 1;
                 break;
             case CREATEC:
-                i = mem[x];
+                i = mem[x--];
                 entry = functions[i > 0 ? i : mem[l-i]];
                 pc = entry + 3;
                 t_create(interpreter, (void*)&pc);

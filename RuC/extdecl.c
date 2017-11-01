@@ -461,20 +461,18 @@ void primaryexpr()
             exprassn(1);
             toval();
            
-            if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR)
+            // GETDIGSENSOR и GETANSENSOR int (int port, ???)  SETMOTOR и VOLTAGE void (int port, ???)
+            if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR || func == VOLTAGE)
             {
                 notrobot = 0;
                 if (!is_int(ansttype))
                     error(param_setmotor_not_int);
-                if (func == SETMOTOR)
-                {
-                    mustbe(COMMA, no_comma_in_setmotor);
-                    scaner();
-                    exprassn(1);
-                    toval();
-                    if (!is_int(ansttype))
-                        error(param_setmotor_not_int);
-                }
+                mustbe(COMMA, no_comma_in_setmotor);
+                scaner();
+                exprassn(1);
+                toval();
+                if (!is_int(ansttype))
+                    error(param_setmotor_not_int);
                 totree(9500 - func);
             }
             else if (func == ABS && is_int(ansttype))
@@ -1220,7 +1218,7 @@ void block(int b);
 
 void statement()
 {
-	int flagsemicol = 1, oldwasdefault = wasdefault, oldinswitch = inswitch;
+	int flagsemicol = 1, oldwasdefault = wasdefault, oldinswitch = inswitch, oldinloop = inloop;
 	wasdefault = 0;
 	scaner();
 	if ((is_int(cur) || is_float(cur) || cur == LVOID || cur == LSTRUCT) && blockflag)
@@ -1430,14 +1428,12 @@ void statement()
 					}
 					else
 						error(wait_while_in_do_stmt);
-					inloop = 0;
 		}
 			break;
 		case LFOR:
 		{
 					 int fromref, condref, incrref, stmtref;
 					 mustbe(LEFTBR, no_leftbr_in_for);
-					 inloop = 1;
 					 totree(TFor);
 					 fromref = tc++;
 					 condref = tc++;
@@ -1473,8 +1469,8 @@ void statement()
 					 }
 					 flagsemicol = 0;
 					 tree[stmtref] = tc;
+                     inloop = 1;
 					 statement();
-					 inloop = 0;
 		}
 			break;
 		case LGOTO:
@@ -1564,11 +1560,11 @@ void statement()
 							error(float_in_switch);
 						sopnd--;
 						scaner();
+                        inswitch = 1;
 						block(-1);
                         flagsemicol = 0;
                         wasdefault = 0;
-						inswitch = oldinswitch;
-		}
+        }
 			break;
 		case LWHILE:
 		{
@@ -1581,7 +1577,6 @@ void statement()
 					   sopnd--;
 					   tree[doref] = tc;
 					   statement();
-					   inloop = 0;
 		}
 			break;
 		default:
@@ -1594,6 +1589,7 @@ void statement()
 		error(no_semicolon_after_stmt);
 	wasdefault = oldwasdefault;
 	inswitch = oldinswitch;
+    inloop = oldinloop;
 }
 
 int idorpnt(int e, int t)

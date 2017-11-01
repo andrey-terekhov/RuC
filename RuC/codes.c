@@ -332,6 +332,10 @@ void tablesandcode()
                 break;
             case GETANSENSORC:
                 fprintf(output, "GETANSENSOR\n");
+                break;
+            case VOLTAGEC:
+                fprintf(output, "SETVOLTAGE\n");
+                break;
             case CREATEC:
                 fprintf(output, "TCREATE\n");
                 break;
