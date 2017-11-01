@@ -378,7 +378,6 @@ void* interpreter(void* pcPnt)
     int N, bounds[100], d,from, prtype, cur0;
     int i,r, flagstop = 1, entry, di, di1, len;
     double lf, rf;
-    printf("numTh = %i\n", numTh);
     threads[numTh] = cur0 = (numTh == 0 ? threads[0] : threads[numTh-1] + MAXMEMTHREAD);
     // область нити начинается с номера нити, потом идут 3 служебных слова процедуры
     mem[cur0] = numTh;

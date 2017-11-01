@@ -262,7 +262,6 @@
 #define DESTROYC  9553
 #define EXITC     9554
 #define GETNUMC   9555
-
 // Лексемы
 
 #define COMMA     100
