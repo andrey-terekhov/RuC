@@ -31,7 +31,7 @@ T_EXIT_DIRECT t_exit_direct Н_КОНЕЦ_НЕПОСР н_конец_непос�
 SETMOTOR setmotor МОТОР мотор
 GETDIGSENSOR getdigsensor ЦИФРДАТЧИК цифрдатчик
 GETANSENSOR getansensor АНАЛОГДАТЧИК аналогдатчик
-VOLTAGE voltage НАПРЯЖЕНИЕ напряжение
+SETVOLTAGE setvoltage УСТНАПРЯЖЕНИЕ устнапряжение
 ABS abs АБС абс
 SQRT sqrt КВКОР квкор
 EXP exp ЭКСП эксп
