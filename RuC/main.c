@@ -6,7 +6,7 @@
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
 
-char* name = "../../../tests/roboterr.c";
+const char * name = "../../../tests/roboterr.c";
              /*"../../../tests/Golovan/dining_philosophers.c";*/
 
 
@@ -73,7 +73,7 @@ int toreprtab(char str[])
     return hashtab[hash] = oldrepr;
 }
 
-int main()
+int main(int argc, const char * argv[])
 {
     int i;
 
@@ -83,7 +83,7 @@ int main()
     // занесение ключевых слов в reprtab
     keywordsnum = 1;
     
-    input =  fopen("../../../keywords.txt", "r");
+    input =  fopen("keywords.txt", "r");
     if (input == NULL)
     {
         printf(" не найден файл %s\n", "keywords.txt");
@@ -96,7 +96,7 @@ int main()
     fclose(input);
     
 /*    input  = fopen(name, "r");        //   исходный текст
-    output = fopen("../../../macro.txt", "wt");
+    output = fopen("macro.txt", "wt");
 
     if (input == NULL)
     {
@@ -139,15 +139,21 @@ int main()
     
     return 0;
 
-    input  = fopen("../../../macro.txt", "r");
+    input  = fopen("macro.txt", "r");
  */
-    input = fopen(name, "r");
+    
+    if (argc < 2) {
+        input = fopen(name, "r");
+    } else {
+        input = fopen(argv[1], "r");
+    }
+    
     if (input == NULL)
     {
         printf("файл %s не найден\n", name);
     }
 
-    output = fopen("../../../tree.txt", "wt");
+    output = fopen("tree.txt", "wt");
     
     getnext();
     nextch();
@@ -158,7 +164,7 @@ int main()
     lines[line+1] = charnum;
     tablesandtree();
     fclose(output);
-    output = fopen("../../../codes.txt", "wt");
+    output = fopen("codes.txt", "wt");
     
     codegen();                         //   генерация кода
     
@@ -167,7 +173,7 @@ int main()
     fclose(input);
     fclose(output);
     
-    output = fopen("../../../export.txt", "wt");
+    output = fopen("export.txt", "wt");
     fprintf(output, "%i %i %i %i %i %i %i\n", pc, funcnum, id, rp, md, maxdisplg, wasmain);
     
     for (i=0; i<pc; i++)

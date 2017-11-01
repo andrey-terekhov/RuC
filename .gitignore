@@ -1,0 +1,10 @@
+*.txt
+*.doc
+*.docx
+*.xcodeproj/
+
+Build/
+DerivedData/
+ruc
+
+!keywords.txt
