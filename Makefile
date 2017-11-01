@@ -1,13 +1,20 @@
-TARGET = ruc
-SRC = RuC/codegen.c RuC/codes.c RuC/error.c RuC/extdecl.c RuC/import.c RuC/main.c RuC/preprocessor.c RuC/scaner.c RuC/threads.c
-CFLAGS = -lm -lpthread -DROBOTS
+CC=gcc
+CFLAGS=-c -Wall -DROBOTS
+LDFLAGS=
+LIBS=-lm -lpthread
 
-.PHONY:	 all clean
+SRCDIR=RuC
+OBJDIR=obj
 
-all: clean $(TARGET)
+SOURCES=$(wildcard $(SRCDIR)/*.c)
+OBJECTS=$(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SOURCES))
+EXEC=ruc
 
-$(TARGET): $(SRC)
-	gcc -o $@ $^ $(CFLAGS)
+all: $(SOURCES) $(EXEC)
 
-clean:
-	rm -rf $(TARGET)
+$(EXEC): $(OBJECTS)
+	$(CC) $(LDFLAGS) $(OBJECTS) -o $@ $(LIBS)
+
+$(OBJECTS): $(OBJDIR)/%.o: $(SRCDIR)/%.c
+	mkdir -p $(OBJDIR)
+	$(CC) $(CFLAGS) -o $@ $^
