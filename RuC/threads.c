@@ -6,6 +6,9 @@
 #include <semaphore.h>
 #include "th_static.h"
 
+#define TRUE 1
+#define FALSE 0
+
 #ifndef _REENTRANT
 #define _REENTRANT
 #endif
@@ -242,9 +245,9 @@ int t_getThNum()
 #pragma endregion
     
     pthread_t th = pthread_self();
-    int index = -1;
+    int index = -1, i;
     
-    for (int i = 0; i < __countTh; i++)
+    for (i = 0; i < __countTh; i++)
     {
         if (pthread_equal(th, __threads[i].th))
         { index = i; }
@@ -528,10 +531,10 @@ struct msg_info t_msg_receive()
 
 void t_destroy()
 {
-    int res;
+    int res, i;
     
 #pragma region THREAD_TABLE
-    for (int i = 0; i < __countTh; i++)
+    for (i = 0; i < __countTh; i++)
     {
 #pragma region PTHREAD_COND
         res = pthread_cond_destroy(&(__threads[i].cond));
@@ -554,7 +557,7 @@ void t_destroy()
 #pragma endregion
     
 #pragma region SEM_TABLE
-    for (int i = 0; i < __countSem; i++)
+    for (i = 0; i < __countSem; i++)
     {
         res = sem_destroy(&(__sems[i]));
         if (res != 0)
