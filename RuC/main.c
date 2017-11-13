@@ -197,7 +197,7 @@ int main(int argc, const char * argv[])
     
     fclose(output);
    
-    if (notrobot)
+    if (notrobot && (argc < 2))
         import();
     
     return 0;
