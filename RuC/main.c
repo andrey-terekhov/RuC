@@ -15,6 +15,8 @@ const char * name = "../../../tests/roboterr.c";
 #include <wchar.h>
 #include <stdlib.h>
 
+#include "import.h"
+
 #include "Defs.h"
 
 /* Названия файлов ввода/вывода */
@@ -58,7 +60,6 @@ extern void preprocess_file();
 
 extern void tablesandcode();
 extern void tablesandtree();
-extern void import(const char *filename);
 extern int  getnext();
 extern int  nextch();
 extern int  scan();
