@@ -79,12 +79,12 @@ int rungetcommand(const char *command)
     FILE *fp;
     int x = -1;
     char path[100] = {'\0'};
-    
+
     /* Open the command for reading. */
     fp = popen(command, "r");
     if (fp == NULL)
         runtimeerr(wrong_robot_com, 0,0);
-    
+
     /* Read the output a line at a time - output it. */
     while (fgets(path, sizeof(path)-1, fp) != NULL)
     {
@@ -125,9 +125,9 @@ void fprintf_char(FILE *f, int wchar)
 int getf_char()
 {
     // reads UTF-8
-    
+
     unsigned char firstchar, secondchar;
-    
+
     if (scanf(" %c", &firstchar) == EOF)
         return EOF;
     else
@@ -195,7 +195,7 @@ void runtimeerr(int e, int i, int r)
         case wrong_asin:
             printf("аргумент арксинуса должен быть в отрезке [-1, 1]\n");
             break;
-            
+
         case printf_runtime_crash:
             printf("странно, printf не работает на этапе исполнения; ошибка коммпилятора");
             break;
@@ -212,7 +212,7 @@ void prmem()
     for (i=g; i<=x; i++)
         printf("%i ) %i\n",i, mem[i]);
     printf("\n");
-    
+
 }
 */
 
@@ -259,10 +259,10 @@ void auxprint(int beg, int t, char before, char after)
 {
     double rf;
     int r = mem[beg];
-    
+
     if (before)
         printf("%c", before);
-    
+
     if (t == LINT)
         printf("%i", r);
     else if (t == LCHAR)
@@ -274,13 +274,13 @@ void auxprint(int beg, int t, char before, char after)
     }
     else if (t == LVOID)
         printf(" значения типа ПУСТО печатать нельзя\n");
-    
+
     // здесь t уже точно положительный
     else if (modetab[t] == MARRAY)
     {
         int rr = r, i, type = modetab[t+1], d;
         d = szof(type);
-        
+
         if (type > 0)
             for (i=0; i<mem[rr-1]; i++)
                 auxprint(rr + i * d, type, 0, '\n');
@@ -305,7 +305,7 @@ void auxprint(int beg, int t, char before, char after)
     }
     else
         printf(" значения типа ФУНКЦИЯ и указателей печатать нельзя\n");
-    
+
     if (after)
         printf("%c", after);
 }
@@ -327,7 +327,7 @@ void auxget(int beg, int t)
     }
     else if (t == LVOID)
         printf(" значения типа ПУСТО вводить нельзя\n");
-    
+
     // здесь t уже точно положительный
     else if (modetab[t] == MARRAY)
     {
@@ -357,7 +357,7 @@ int check_zero_int(int r)
     if (r == 0)
         runtimeerr(zero_devide, 0, 0);
     return r;
-    
+
 }
 
 double check_zero_float(double r)
@@ -383,15 +383,15 @@ void* interpreter(void* pcPnt)
     mem[cur0] = numTh;
     l = mem[cur0+1];
     x = mem[cur0+2]+3;
-    
+
 //    printf("interpreter session numTh=%i l=%i x=%i pc=%i\n", numTh, l, x, pc);
-    
+
     flagstop = 1;
     while (flagstop)
     {
         memcpy(&rf, &mem[x-1], sizeof(double));
         printf("pc=%i mem[pc]=%i\n", pc, mem[pc]);
-        
+
         printf("running th #%i\n", t_getThNum());
         switch (mem[pc++])
         {
@@ -411,41 +411,41 @@ void* interpreter(void* pcPnt)
                 t_create(interpreter, (void*)&pc);
                 flagstop = 1;
                 break;
- 
+
             case JOINC:
                 t_join(mem[x--]);
                 break;
- 
+
             case SLEEPC:
                 t_sleep(mem[x--]);
                 break;
-                
+
             case EXITDIRECTC:
             case EXITC:
                 printf("found exitc thread = %i\n", t_getThNum());
                 t_exit();
                 break;
- 
+
             case SEMCREATEC:
                 mem[x] = t_sem_create(mem[x]);
                 break;
- 
+
             case SEMPOSTC:
                 t_sem_post(mem[x--]);
                 break;
- 
+
             case SEMWAITC:
                 t_sem_wait(mem[x--]);
                 break;
-            
+
             case INITC:
                 t_init();
                 break;
-                
+
             case DESTROYC:
                 t_destroy();
                 break;
-                
+
             case MSGRECEIVEC:
             {
                 struct msg_info m = t_msg_receive();
@@ -453,7 +453,7 @@ void* interpreter(void* pcPnt)
                 mem[++x] = m.data;
             }
                 break;
- 
+
             case MSGSENDC:
             {
                 struct msg_info m;
@@ -462,7 +462,7 @@ void* interpreter(void* pcPnt)
                 t_msg_send(m);
             }
                 break;
-               
+
     #ifdef ROBOT
 
             case SETMOTORC:
@@ -477,7 +477,7 @@ void* interpreter(void* pcPnt)
                 snprintf(i2ccommand, I2CBUFFERSIZE, "i2cset -y 2 0x48 0x%x 0x%x b", 0x14 + n - 1, r);
                 system(i2ccommand);
                 break;
-                
+
             case GETDIGSENSORC:
                 n = mem[x];
                 if (n < 1 || n > 2)
@@ -488,7 +488,7 @@ void* interpreter(void* pcPnt)
                     fscanf(f2, "%i", &i);
                 mem[x] = i;
                 break;
-                
+
             case GETANSENSORC:
                 n = mem[x];
                 if (n < 1 || n > 6)
@@ -516,7 +516,7 @@ void* interpreter(void* pcPnt)
                 do
                     printf_char(reprtab[r++]);
                 while (reprtab[r] != 0);
-                
+
                 if (prtype > 0 && modetab[prtype] == MARRAY && modetab[prtype+1] > 0)
                     auxprint(dsp(identab[i+3], l), prtype, '\n', '\n');
                 else
@@ -597,7 +597,7 @@ void* interpreter(void* pcPnt)
             case ROUNDC:
                 mem[--x] = rf < 0 ? (int)(rf-0.5) : (int)(rf+0.5);
                 break;
-                
+
             case STRUCTWITHARR:
             {
                 int oldpc, oldbase = base, procnum;
@@ -621,17 +621,17 @@ void* interpreter(void* pcPnt)
                 int curdsp = mem[pc++];
                 int proc =   mem[pc++];
                 int stackC0[10], stacki[10], i, curdim = 1;
-                
+
                 for (i=abs(N); i>0; i--)
                     if ((bounds[i] = mem[x--]) <= 0)
                         runtimeerr(wrong_number_of_elems, 0, bounds[i]);
                 stacki[1] = 0;
-                
+
                 mem[++x] = bounds[1];
                 mem[N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp] = stackC0[1] = x + 1;
                 N = abs(N);
                 x += bounds[1] * (curdim < N ? 1 : d);
-                
+
                 if (x >= threads[numTh] + MAXMEMTHREAD)
                     runtimeerr(mem_overflow, 0, 0);
                 if (N == 1)
@@ -660,7 +660,7 @@ void* interpreter(void* pcPnt)
                         mem[++x] = bounds[curdim+1];
                         mem[stackC0[curdim] + stacki[curdim]++] = stackC0[curdim+1] = x + 1;
                         x += bounds[curdim+1] * (curdim == N-1 ? d : 1);
-                        
+
                         if (x >= threads[numTh] + MAXMEMTHREAD)
                             runtimeerr(mem_overflow, 0, 0);
                         ++curdim;
@@ -668,7 +668,7 @@ void* interpreter(void* pcPnt)
                     }
                     while (curdim < N);
                 // построена очередная вертикаль подмассивов
-                   
+
                     if (proc)
                     {
                         int curx = x, oldbase = base, oldpc = pc, i;
@@ -845,7 +845,7 @@ void* interpreter(void* pcPnt)
                 for (i=0; i<len; i++)
                     mem[di+i] = mem[x+i+2];
                 break;
-                
+
             case SLICE:
                 d = mem[pc++];
                 i = mem[x--];        // index
@@ -931,8 +931,8 @@ void* interpreter(void* pcPnt)
                 r = mem[x];
                 mem[++x] = r;
                 break;
-                
-                
+
+
             case ASS:
                 mem[dsp(mem[pc++], l)] = mem[x];
                 break;
@@ -976,7 +976,7 @@ void* interpreter(void* pcPnt)
                 r = mem[dsp(mem[pc++], l)] /= check_zero_int(mem[x]);
                 mem[x] = r;
                 break;
-                
+
             case ASSV:
                 mem[dsp(mem[pc++], l)] = mem[x--];
                 break;
@@ -1010,7 +1010,7 @@ void* interpreter(void* pcPnt)
             case DIVASSV:
                 mem[dsp(mem[pc++], l)] /= check_zero_int(mem[x--]);
                 break;
-                
+
             case ASSAT:
                 r = mem[mem[x-1]] = mem[x];
                 mem[--x] = r;
@@ -1055,7 +1055,7 @@ void* interpreter(void* pcPnt)
                 r = mem[mem[x-1]] /= check_zero_int(mem[x]);
                 mem[--x] = r;
                 break;
-                
+
             case ASSATV:
                 mem[mem[x-1]] = mem[x];
                 x--;
@@ -1100,7 +1100,7 @@ void* interpreter(void* pcPnt)
                 mem[mem[x-1]] /= check_zero_int(mem[x]);
                 x--;
                 break;
-                
+
             case LOGOR:
                 mem[x-1] = mem[x-1] || mem[x];
                 x--;
@@ -1217,11 +1217,11 @@ void* interpreter(void* pcPnt)
             case POSTDECATV:
                 mem[mem[x--]]--;
                 break;
-                
+
             case UNMINUS:
                 mem[x] = -mem[x];
                 break;
- 
+
             case ASSR:
                 mem[r=dsp(mem[pc++], l)] = mem[x-1];
                 mem[r+1] = mem[x];
@@ -1250,7 +1250,7 @@ void* interpreter(void* pcPnt)
                 memcpy(&mem[x-1], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
                 break;
-                
+
             case ASSATR:
                 r = mem[x-2];
                 mem[r] = mem[x-2] = mem[x-1];
@@ -1281,7 +1281,7 @@ void* interpreter(void* pcPnt)
                 memcpy(&mem[x++], &lf, sizeof(double));
                 memcpy(&mem[i], &lf, sizeof(double));
                 break;
- 
+
             case ASSRV:
                 r = dsp(mem[pc++], l);
                 mem[r+1] = mem[x--];
@@ -1312,7 +1312,7 @@ void* interpreter(void* pcPnt)
                 memcpy(&mem[i], &lf, sizeof(double));
                 x -= 2;
                 break;
-            
+
             case ASSATRV:
                 r = mem[x-2];
                 mem[r+1] = mem[x--];
@@ -1342,7 +1342,7 @@ void* interpreter(void* pcPnt)
                 memcpy(&mem[i], &lf, sizeof(double));
                 --x;
                 break;
-                
+
             case EQEQR:
                 memcpy(&lf, &mem[x-=3], sizeof(double));
                 mem[x] = lf == rf;
@@ -1467,7 +1467,7 @@ void* interpreter(void* pcPnt)
                 --rf;
                 memcpy(&mem[i], &rf, sizeof(double));
                 break;
-                
+
             case UNMINUSR:
                 rf = -rf;
                 memcpy(&mem[x-1], &rf, sizeof(double));
@@ -1478,19 +1478,19 @@ void* interpreter(void* pcPnt)
             case LOGNOT:
                 mem[x] = !mem[x];
                 break;
-                
+
             default:
                 runtimeerr(wrong_kop, mem[pc-1], 0);
         }
     }
-    
+
     return NULL;
 }
 
-void import()
+void import(const char *filename)
 {
     int i, l, pc, x;
-    
+
 #ifdef ROBOT
     f1 = fopen(JD1, "r");                       // файлы цифровых датчиков
     f2 = fopen(JD2, "r");
@@ -1500,28 +1500,28 @@ void import()
     system("i2cset -y 2 0x48 0x12 0x1000 w");
     system("i2cset -y 2 0x48 0x13 0x1000 w");
 #endif
-    
-    input = fopen("export.txt", "r");
-    
+
+    input = fopen(filename, "r");
+
     fscanf(input, "%i %i %i %i %i %i %i\n", &pc, &funcnum, &id, &rp, &md, &maxdisplg, &wasmain);
 
     for (i=0; i<pc; i++)
         fscanf(input, "%i ", &mem[i]);
-    
+
     for (i=0; i<funcnum; i++)
         fscanf(input, "%i ", &functions[i]);
-    
+
     for (i=0; i<id; i++)
         fscanf(input, "%i ", &identab[i]);
-    
+
     for (i=0; i<rp; i++)
         fscanf(input, "%i ", &reprtab[i]);
-    
+
     for (i=0; i<md; i++)
         fscanf(input, "%i ", &modetab[i]);
-    
+
     fclose(input);
-    
+
     l = g = pc;
     mem[g] = mem[g+1] = 0;
     threads[0] = x = g + maxdisplg;
@@ -1531,7 +1531,7 @@ void import()
     t_init();
     interpreter(&pc);                      // номер нити главной программы 0
     t_destroy();
- 
+
 #ifdef ROBOT
     system("i2cset -y 2 0x48 0x10 0 w");   // отключение силовых моторов
     system("i2cset -y 2 0x48 0x11 0 w");
@@ -1540,6 +1540,6 @@ void import()
     fclose(f1);
     fclose(f2);
 #endif
-    
-    
+
+
 }
