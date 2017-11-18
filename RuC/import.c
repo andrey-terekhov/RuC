@@ -145,65 +145,66 @@ void runtimeerr(int e, int i, int r)
     switch (e)
     {
         case index_out_of_range:
-            printf("индекс %i за пределами границ массива %i\n", i, r-1);
+            fprintf(stderr, "индекс %i за пределами границ массива %i\n", i, r-1);
             break;
         case wrong_kop:
-            printf("команду %i я пока не реализовал\n", i);
+            fprintf(stderr, "команду %i я пока не реализовал\n", i);
             break;
         case wrong_arr_init:
-            printf("массив с %i элементами инициализируется %i значениями\n", i, r);
+            fprintf(stderr, "массив с %i элементами инициализируется %i значениями\n", i, r);
             break;
         case wrong_string_init:
-            printf("строковая переменная с %i элементами инициализируется строкой с %i литерами\n", i, r);
+            fprintf(stderr, "строковая переменная с %i элементами инициализируется строкой с %i литерами\n", i, r);
             break;
         case wrong_motor_num:
-            printf("номер силового мотора %i, а должен быть от 1 до 4\n", i);
+            fprintf(stderr, "номер силового мотора %i, а должен быть от 1 до 4\n", i);
             break;
         case wrong_motor_pow:
-            printf("задаваемая мощность мотора %i равна %i, а должна быть от -100 до 100\n", i, r);
+            fprintf(stderr, "задаваемая мощность мотора %i равна %i, а должна быть от -100 до 100\n", i, r);
             break;
         case wrong_digsensor_num:
-            printf("номер цифрового сенсора %i, а должен быть 1 или 2\n", i);
+            fprintf(stderr, "номер цифрового сенсора %i, а должен быть 1 или 2\n", i);
             break;
         case wrong_ansensor_num:
-            printf("номер аналогового сенсора %i, а должен быть от 1 до 6\n", i);
+            fprintf(stderr, "номер аналогового сенсора %i, а должен быть от 1 до 6\n", i);
             break;
         case wrong_robot_com:
-            printf("робот не может исполнить команду\n");
+            fprintf(stderr, "робот не может исполнить команду\n");
             break;
         case wrong_number_of_elems:
-            printf("количество элементов в массиве по каждому измерению должно быть положительным, а тут %i\n", r);
+            fprintf(stderr, "количество элементов в массиве по каждому измерению должно быть положительным, а тут %i\n", r);
             break;
         case zero_devide:
-            printf("целое деление на 0\n");
+            fprintf(stderr, "целое деление на 0\n");
             break;
         case float_zero_devide:
-            printf("вещественное деление на 0\n");
+            fprintf(stderr, "вещественное деление на 0\n");
             break;
         case mem_overflow:
-            printf("переполнение памяти, скорее всего, нет выхода из рекурсии\n");
+            fprintf(stderr, "переполнение памяти, скорее всего, нет выхода из рекурсии\n");
             break;
         case sqrt_from_negat:
-            printf("попытка вычисления квадратного корня из отрицательного числа \n");
+            fprintf(stderr, "попытка вычисления квадратного корня из отрицательного числа \n");
             break;
         case log_from_negat:
-            printf("попытка вычисления натурального логарифма из 0 или отрицательного числа\n");
+            fprintf(stderr, "попытка вычисления натурального логарифма из 0 или отрицательного числа\n");
             break;
         case log10_from_negat:
-            printf("попытка вычисления десятичного логарифма из 0 или отрицательного числа\n");
+            fprintf(stderr, "попытка вычисления десятичного логарифма из 0 или отрицательного числа\n");
             break;
         case wrong_asin:
-            printf("аргумент арксинуса должен быть в отрезке [-1, 1]\n");
+            fprintf(stderr, "аргумент арксинуса должен быть в отрезке [-1, 1]\n");
             break;
 
         case printf_runtime_crash:
-            printf("странно, printf не работает на этапе исполнения; ошибка коммпилятора");
+            fprintf(stderr, "странно, printf не работает на этапе исполнения; ошибка коммпилятора");
             break;
         default:
             break;
     }
     exit(3);
 }
+
 /*
 void prmem()
 {
@@ -273,7 +274,7 @@ void auxprint(int beg, int t, char before, char after)
         printf("%lf", rf);
     }
     else if (t == LVOID)
-        printf(" значения типа ПУСТО печатать нельзя\n");
+        fprintf(stderr, " значения типа ПУСТО печатать нельзя\n");
 
     // здесь t уже точно положительный
     else if (modetab[t] == MARRAY)
@@ -304,7 +305,7 @@ void auxprint(int beg, int t, char before, char after)
         printf("}");
     }
     else
-        printf(" значения типа ФУНКЦИЯ и указателей печатать нельзя\n");
+        fprintf(stderr, " значения типа ФУНКЦИЯ и указателей печатать нельзя\n");
 
     if (after)
         printf("%c", after);
@@ -326,7 +327,7 @@ void auxget(int beg, int t)
         memcpy(&mem[beg], &rf, sizeof(double));
     }
     else if (t == LVOID)
-        printf(" значения типа ПУСТО вводить нельзя\n");
+        fprintf(stderr, " значения типа ПУСТО вводить нельзя\n");
 
     // здесь t уже точно положительный
     else if (modetab[t] == MARRAY)
@@ -347,7 +348,7 @@ void auxget(int beg, int t)
         }
     }
     else
-        printf(" значения типа ФУНКЦИЯ и указателей вводить нельзя\n");
+        fprintf(stderr, " значения типа ФУНКЦИЯ и указателей вводить нельзя\n");
 }
 
 void* interpreter(void*);

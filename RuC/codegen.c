@@ -655,8 +655,9 @@ void codegen()
                 
             default:
             {
-                printf("что-то не то\n");
-                printf("tc=%i tree[tc-2]=%i tree[tc-1]=%i\n", tc, tree[tc-2], tree[tc-1]);
+                fprintf(stderr, "что-то не то\n");
+                fprintf(stderr, "tc=%i tree[tc-2]=%i tree[tc-1]=%i\n",
+                        tc, tree[tc-2], tree[tc-1]);
             }
         }
     }
