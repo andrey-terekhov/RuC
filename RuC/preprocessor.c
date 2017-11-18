@@ -8,7 +8,7 @@
 #include <string.h>
 #include "global_vars.h"
 
-extern int scaner();
+extern int scanner();
 extern int error(int);
 
 int sc();
@@ -470,7 +470,7 @@ int sc()
     }
 
     old_char = charnum - 1;
-    return scaner();
+    return scanner();
 }
 
 void must(int what, int e)

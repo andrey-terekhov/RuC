@@ -3,7 +3,7 @@
 
 extern int  getnext();
 extern int  nextch();
-extern int  scaner();
+extern int  scanner();
 extern void error(int e);
 
 
@@ -93,7 +93,7 @@ int is_int(int t)
 
 void mustbe(int what, int e)
 {
-	if (scaner() != what)
+	if (scanner() != what)
 		error(e);
 }
 
@@ -360,7 +360,7 @@ void primaryexpr()
 	{
         if (next == LVOID)
         {
-            scaner();
+            scanner();
             mustbe(LMULT, no_mult_in_cast);
             unarexpr();
             if (!is_pointer(ansttype))
@@ -373,7 +373,7 @@ void primaryexpr()
         else
         {
             int oldsp = sp;
-            scaner();
+            scanner();
             expr(1);
             mustbe(RIGHTBR, wait_rightbr_in_primary);
             while (sp > oldsp)
@@ -383,7 +383,7 @@ void primaryexpr()
 	else if (cur <= STANDARD_FUNC_START)            // стандартная функция
 	{
         int func = cur;
-        if (scaner() != LEFTBR)
+        if (scanner() != LEFTBR)
             error(no_leftbr_in_stand_func);
         if (func <= TMSGSEND  && func >= TGETNUM)
         {                                // процедуры управления параллельными нитями
@@ -398,7 +398,7 @@ void primaryexpr()
             else
             {               // MSGSEND void(msg_info)  CREATE int(void*(*func)(void*))
                             // SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
-                scaner();   // у этих процедур 1 параметр
+                scanner();   // у этих процедур 1 параметр
                 
                 if (func == TCREATE)
                 {
@@ -422,7 +422,7 @@ void primaryexpr()
                         totree(TConst);
                         totree(dn);
                     }
-                    scaner();  // второй параметр процедуры t_create должен быть 0
+                    scanner();  // второй параметр процедуры t_create должен быть 0
                     totree(TExprend);
                 }
                 else
@@ -457,7 +457,7 @@ void primaryexpr()
         }
         else
         {
-            scaner();
+            scanner();
             exprassn(1);
             toval();
            
@@ -468,7 +468,7 @@ void primaryexpr()
                 if (!is_int(ansttype))
                     error(param_setmotor_not_int);
                 mustbe(COMMA, no_comma_in_setmotor);
-                scaner();
+                scanner();
                 exprassn(1);
                 toval();
                 if (!is_int(ansttype))
@@ -506,7 +506,7 @@ void index_check()
 int find_field(int stype)                          // выдает смещение до найденного поля или ошибку
 {
     int i, flag = 1, select_displ = 0;
-    scaner();
+    scanner();
     mustbe(IDENT, after_dot_must_be_ident);
     
     for (i = 0; i < modetab[stype+2]; i+=2)        // тут хранится удвоенное n
@@ -550,7 +550,7 @@ void postexpr()
 	{
 		int i, j, n, dn, oldinass = inass;
         was_func = 1;
-		scaner();
+		scanner();
 		if (!is_function(leftansttype))
 			error(call_not_from_function);
 
@@ -562,7 +562,7 @@ void postexpr()
 		for (i = 0; i<n; i++)          // фактические параметры
 		{
 			int mdj = modetab[j];      // это вид формального параметра, в ansttype будет вид фактического параметра
-			scaner();
+			scanner();
 			if (is_function(mdj)) // фактическим параметром должна быть функция, в С - это только идентификатор
 			{
                 if (cur != IDENT)
@@ -601,7 +601,7 @@ void postexpr()
 				//                 printf("ansttype= %i mdj= %i\n", ansttype, mdj);
 				--sopnd;
 			}
-			if (i < n - 1 && scaner() != COMMA)
+			if (i < n - 1 && scanner() != COMMA)
 				error(no_comma_in_act_params);
 			j++;
 		}
@@ -627,8 +627,8 @@ void postexpr()
 
             elem_type = modetab[ansttype + 1];
  
-            scaner();
-            scaner();
+            scanner();
+            scanner();
 
             if (anst == IDENT)               // a[i]
             {
@@ -698,7 +698,7 @@ void postexpr()
 		op = (next == INC) ? POSTINC : POSTDEC;
 		if (anst == ADDR)
 			op += 4;
-		scaner();
+		scanner();
 		totreef(op);
 		if (anst == IDENT)
 			totree(identab[lid+3]);
@@ -714,7 +714,7 @@ void unarexpr()
 	{
         if (cur == INC || cur == DEC)
         {
-            scaner();
+            scanner();
             unarexpr();
             if (anst != IDENT && anst != ADDR)
                 error(unassignable_inc);
@@ -727,7 +727,7 @@ void unarexpr()
         }
         else
         {
-            scaner();
+            scanner();
             unarexpr();
 
             if (op == LAND)
@@ -777,7 +777,7 @@ void unarexpr()
 void exprinbrkts(int er)
 {
 	mustbe(LEFTBR, er);
-	scaner();
+	scanner();
     exprval();
     mustbe(RIGHTBR, er);
 }
@@ -787,7 +787,7 @@ void exprassnval();
 void exprassninbrkts(int er)
 {
     mustbe(LEFTBR, er);
-    scaner();
+    scanner();
     exprassnval();
     mustbe(RIGHTBR, er);
 }
@@ -820,8 +820,8 @@ void subexpr()
 		stack[sp] = p;
         stacklog[sp] = ad;
 		stackop[sp++] = next;
-		scaner();
-		scaner();
+		scanner();
+		scanner();
 		unarexpr();
 	}
 	if (wasop)
@@ -857,8 +857,8 @@ void condexpr()
 			totree(TCondexpr);
 			thenref = tc++;
 			elseref = tc++;
-			scaner();
-			scaner();
+			scanner();
+			scanner();
 			sopnd--;
 			tree[thenref] = tc;
 			exprval();                  // then
@@ -873,7 +873,7 @@ void condexpr()
 				adif = tc++;
 			}
 			mustbe(COLON, no_colon_in_cond_expr);
-			scaner();
+			scanner();
 			tree[elseref] = tc;
 			unarexpr();
 			subexpr();   // logORexpr();        else or elif
@@ -940,14 +940,14 @@ int struct_init(int decl_type)   // сейчас modetab[decl_type] равен M
         error(arr_init_must_start_from_BEGIN);
     do
     {
-        scaner();
+        scanner();
         all += inition(modetab[next_field]);
         next_field += 2;
         num_fields += 2;
         if (num_fields < modetab[decl_type+2])
         {
             if (next == COMMA)        //аргументы идут через запятую, заканчиваются }
-                scaner();
+                scanner();
             else
                 error(no_comma_in_init_list);
         }
@@ -956,7 +956,7 @@ int struct_init(int decl_type)   // сейчас modetab[decl_type] равен M
     
     if (next != END)
         error(wait_end);
-    scaner();
+    scanner();
     return all;
 }
 
@@ -975,10 +975,10 @@ int array_init(int decl_type)                    // сейчас modetab[decl_ty
     {
         do
         {
-            scaner();
+            scanner();
             all += array_init(elem_type);
         }
-        while (scaner() == COMMA);
+        while (scanner() == COMMA);
         if (cur != END)
             error(wait_end);
     }
@@ -986,10 +986,10 @@ int array_init(int decl_type)                    // сейчас modetab[decl_ty
     {
         do
         {
-            scaner();
+            scanner();
             all += inition(elem_type);
         }
-        while (scaner() == COMMA);
+        while (scanner() == COMMA);
         if (cur != END)
             error(wait_end);
     }
@@ -1032,8 +1032,8 @@ void exprassn(int level)
         int opp = op;
         lnext = next;
         inass = 1;
-        scaner();
-        scaner();
+        scanner();
+        scanner();
         exprassn(level + 1);
         inass = 0;
        
@@ -1108,8 +1108,8 @@ void expr(int level)
 	{
 		exprassnvoid();
 		sopnd--;
-		scaner();
-		scaner();
+		scanner();
+		scanner();
 		exprassn(level);
 	}
     if (level == 0)
@@ -1141,7 +1141,7 @@ int arrdef(int t)                 // вызывается при описани�
     while (next == LEFTSQBR)      // это определение массива (может быть многомерным)
     {
         arrdim++;
-        scaner();
+        scanner();
         if (next == RIGHTSQBR)
         {
             if (emptyarrdef == 2)
@@ -1154,7 +1154,7 @@ int arrdef(int t)                 // вызывается при описани�
             if (emptyarrdef == 1)
                 error(empty_init);
             emptyarrdef = 0;
-            scaner();
+            scanner();
             unarexpr();
             condexpr();
             toval();
@@ -1197,8 +1197,8 @@ void decl_id(int decl_type)    // вызывается из block и extdecl, т
     
     if (next == ASS)
     {
-        scaner();
-        scaner();
+        scanner();
+        scanner();
         if (is_array(decl_type))          // инициализация массива
             tree[all] = array_init(decl_type);
         else
@@ -1220,7 +1220,7 @@ void statement()
 {
 	int flagsemicol = 1, oldwasdefault = wasdefault, oldinswitch = inswitch, oldinloop = inloop;
 	wasdefault = 0;
-	scaner();
+	scanner();
 	if ((is_int(cur) || is_float(cur) || cur == LVOID || cur == LSTRUCT) && blockflag)
 		error(decl_after_strmt);
 	if (cur == BEGIN)
@@ -1263,7 +1263,7 @@ void statement()
 		}
 		identab[id + 2] = 1;
 
-		scaner();
+		scanner();
 		statement();
 	}
 	else
@@ -1315,14 +1315,14 @@ void statement()
 
             paramnum = evaluate_params(formatstr, formattypes);
 
-            scaner();  //выкушиваем форматную строку
+            scanner();  //выкушиваем форматную строку
 
-            for (i = 0; scaner() == COMMA; i++)
+            for (i = 0; scanner() == COMMA; i++)
             {
                 if (i >= paramnum)
                     error(wrong_printf_param_number);
 
-                scaner();
+                scanner();
 
                 exprassn(1);
                 toval();
@@ -1381,7 +1381,7 @@ void statement()
 					  if (wasdefault)
 						  error(case_after_default);
                       totree(TCase);
-					  scaner();
+					  scanner();
 					  unarexpr();
 					  condexpr();
                       toval();
@@ -1421,7 +1421,7 @@ void statement()
 					statement();
 					if (next == LWHILE)
 					{
-						scaner();
+						scanner();
 						tree[condref] = tc;
 						exprinbrkts(cond_must_be_in_brkts);
 						sopnd--;
@@ -1439,7 +1439,7 @@ void statement()
 					 condref = tc++;
 					 incrref = tc++;
 					 stmtref = tc++;
-					 if (scaner() == SEMICOLON)             // init
+					 if (scanner() == SEMICOLON)             // init
 						 tree[fromref] = 0;
 					 else
 					 {
@@ -1448,7 +1448,7 @@ void statement()
 						 exprassnvoid();
 						 mustbe(SEMICOLON, no_semicolon_in_for);
 					 }
-					 if (scaner() == SEMICOLON)             // cond
+					 if (scanner() == SEMICOLON)             // cond
 						 tree[condref] = 0;
 					 else
 					 {
@@ -1458,7 +1458,7 @@ void statement()
 						 mustbe(SEMICOLON, no_semicolon_in_for);
 						 sopnd--;
 					 }
-					 if (scaner() == RIGHTBR)              // incr
+					 if (scanner() == RIGHTBR)              // incr
 						 tree[incrref] = 0;
 					 else
 					 {
@@ -1511,7 +1511,7 @@ void statement()
 					statement();
 					if (next == LELSE)
 					{
-						scaner();
+						scanner();
 						tree[elseref] = tc;
 						statement();
 					}
@@ -1539,7 +1539,7 @@ void statement()
                                     error(notvoidret_in_void_func);
                                 totree(TReturnval);
                                 totree(szof(ftype));
-                                scaner();
+                                scanner();
                                 expr(1);
                                 toval();
                                 sopnd--;
@@ -1559,7 +1559,7 @@ void statement()
 						if (ansttype != LCHAR && ansttype != LINT)
 							error(float_in_switch);
 						sopnd--;
-						scaner();
+						scanner();
                         inswitch = 1;
 						block(-1);
                         flagsemicol = 0;
@@ -1585,7 +1585,7 @@ void statement()
         exprassnvoid();
 		}
 	}
-	if (flagsemicol && scaner() != SEMICOLON)
+	if (flagsemicol && scanner() != SEMICOLON)
 		error(no_semicolon_after_stmt);
 	wasdefault = oldwasdefault;
 	inswitch = oldinswitch;
@@ -1596,7 +1596,7 @@ int idorpnt(int e, int t)
 {
 	if (next == LMULT)
     {
-        scaner();
+        scanner();
         t = t == LVOID ? LVOIDASTER : newdecl(MPOINT, t);
     }
     mustbe(IDENT, e);
@@ -1614,8 +1614,8 @@ int struct_decl_list()
     totree(TStructbeg);
     tree[tc++] = 0;           // тут будет номер иниц процедуры
 
-    scaner();
-    scaner();
+    scanner();
+    scanner();
     
     do
 	{
@@ -1642,11 +1642,11 @@ int struct_decl_list()
         field_count++;
         curdispl += szof(t);
 
-		if (scaner() != SEMICOLON)
+		if (scanner() != SEMICOLON)
 			error(no_semicomma_in_struct);
 
 	}
-    while (scaner() != END);
+    while (scanner() != END);
     
     if (wasarr)
     {
@@ -1688,7 +1688,7 @@ int gettype()
 		else if (next == IDENT)
 		{
 			int l = reprtab[repr + 1];
-			scaner();
+			scanner();
 			if (next == BEGIN)         // struct key {
 			{
                 // если такое описание уже было, то это ошибка - повторное описание
@@ -1744,11 +1744,11 @@ void block(int b)
 	while (is_int(next) || is_float(next) || next == LSTRUCT || next == LVOID)
 	{
         int repeat = 1;
-		scaner();
+		scanner();
 		firstdecl = gettype();
 		if (wasstructdef && next == SEMICOLON)
 		{
-			scaner();
+			scanner();
 			continue;
 
 		}
@@ -1756,10 +1756,10 @@ void block(int b)
 		{
 			decl_id(idorpnt(after_type_must_be_ident, firstdecl));
 			if (next == COMMA)
-				scaner();
+				scanner();
 			else if (next == SEMICOLON)
 			{
-				scaner();
+				scanner();
 				repeat = 0;
 			}
 			else
@@ -1774,7 +1774,7 @@ void block(int b)
 	{
         if (b == 2  ? next == TEXIT : next == END)
 		{
-			scaner();
+			scanner();
 			notended = 0;
 		}
 		else
@@ -1879,14 +1879,14 @@ int func_declarator(int level, int func_d, int firstdecl)
 			type = gettype();
             if (next == LMULT)
             {
-                scaner();
+                scanner();
                 type = type == LVOID ? LVOIDASTER : newdecl(MPOINT, type);
             }
 			if (level)
 			{
 				if (next == IDENT)
 				{
-					scaner();
+					scanner();
 					ident = 1;
 					functions[funcnum++] = repr;
 				}
@@ -1903,7 +1903,7 @@ int func_declarator(int level, int func_d, int firstdecl)
                 
 				while (next == LEFTSQBR)
 				{
-					scaner();
+					scanner();
 					mustbe(RIGHTSQBR, wait_right_sq_br);
 					type = newdecl(MARRAY, type);
 				}
@@ -1923,13 +1923,13 @@ int func_declarator(int level, int func_d, int firstdecl)
 
 			if (next == LEFTBR)
 			{
-				scaner();
+				scanner();
 				mustbe(LMULT, wrong_fun_as_param);
 				if (next == IDENT)
 				{
 					if (level)
 					{
-						scaner();
+						scanner();
 						if (ident == 0)
 							ident = 2;
 						else
@@ -1941,7 +1941,7 @@ int func_declarator(int level, int func_d, int firstdecl)
 				}
 				mustbe(RIGHTBR, no_right_br_in_paramfun);
 				mustbe(LEFTBR, wrong_fun_as_param);
-				scaner();
+				scanner();
 				if (maybe_fun == 1)
 					error(aster_before_func);
 				else if (maybe_fun == 2)
@@ -1958,9 +1958,9 @@ int func_declarator(int level, int func_d, int firstdecl)
 			else if (func_d == 1 && ident == 0)
 				error(wait_definition);
 
-			if (scaner() == COMMA)
+			if (scanner() == COMMA)
 			{
-				scaner();
+				scanner();
 			}
 			else
 			if (cur == RIGHTBR)
@@ -1992,11 +1992,11 @@ void ext_decl()
 	{
 		int repeat = 1, funrepr, first = 1;
 		wasstructdef = 0;
-		scaner();
+		scanner();
 		firstdecl = gettype();
 		if (wasstructdef && next == SEMICOLON)
 		{                                      // struct point {float x, y;};
-			scaner();
+			scanner();
 			continue;
 		}
 
@@ -2010,7 +2010,7 @@ void ext_decl()
             type = firstdecl;
             if (next == LMULT)
             {
-                scaner();
+                scanner();
                 type = firstdecl == LVOID ? LVOIDASTER : newdecl(MPOINT, firstdecl);
             }
             mustbe(IDENT, after_type_must_be_ident);
@@ -2022,8 +2022,8 @@ void ext_decl()
 			{
 				int oldfuncnum = funcnum++, firsttype = type;
 				funrepr = repr;
-				scaner();
-				scaner();
+				scanner();
+				scanner();
 				type = func_declarator(first, 3, firsttype);  // выкушает все параметры до ) включительно
 				if (next == BEGIN)
 				{
@@ -2039,7 +2039,7 @@ void ext_decl()
 
 				if (next == BEGIN)
 				{
-					scaner();
+					scanner();
 					if (func_def == 2)
 						error(func_decl_req_params);
 
@@ -2063,12 +2063,12 @@ void ext_decl()
             
 			if (next == COMMA)
 			{
-				scaner();
+				scanner();
 				first = 0;
 			}
 			else if (next == SEMICOLON)
 			{
-				scaner();
+				scanner();
 				repeat = 0;
 			}
 			else

@@ -617,7 +617,7 @@ int scan()
     }
 }
 
-int scaner()
+int scanner()
 {
     cur = next;
     next = scan();
