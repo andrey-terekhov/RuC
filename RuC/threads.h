@@ -11,25 +11,76 @@ typedef struct msg_info
     int data;
 } msg_info;
 
-typedef void* (*thread_func)(void *);
+/** Prototype for thread callback */
+typedef void* (*thread_func)(void *arg);
 
-void t_init();
-void t_destroy();
+/* Thread library initializer/deinitializer */
+extern void t_init();
+extern void t_destroy();
 
-int t_create(thread_func func, void *arg);
-int t_createDetached(thread_func func);
+/**
+ * Create thread and start its execution.
+ *
+ * @param func Thread routine.
+ * @param arg  Argument to pass to @p func.
+ *
+ * @return Thread ID.
+ */
+extern int t_create(thread_func func, void *arg);
+/**
+ * Create thread in detached state.
+ *
+ * @param func Thread routine.
+ *
+ * @return Thread ID.
+ */
+extern int t_createDetached(thread_func func);
 
-void t_exit();
-void t_join(int numTh);
-int t_getThNum();
-void t_sleep(int miliseconds);
+/**
+ * Terminate calling thread immediately.
+ */
+extern void t_exit();
 
-int t_sem_create(int level);
-void t_sem_wait(int numSem);
-void t_sem_post(int numSem);
+/**
+ * Wait until thread execution completes.
+ *
+ * @param thread Thread ID
+ */
+extern void t_join(int thread_id);
 
-void t_msg_send(struct msg_info msg);
-struct msg_info t_msg_receive();
+/**
+ * Get current thread ID.
+ *
+ * @return Thread ID.
+ */
+extern int  t_getThNum();
 
+/**
+ * Make current thread sleep for specified number of milliseconds.
+ *
+ * @param time_ms Sleep time in milliseconds.
+ */
+extern void t_sleep(int time_ms);
+
+/* Semaphore functions */
+extern int  t_sem_create(int level);
+extern void t_sem_wait(int numSem);
+extern void t_sem_post(int numSem);
+
+/**
+ * Send specific message to common thread pipe.
+ *
+ * @param msg Message to send
+ * @remark Target thread ID is within the @p msg.
+ */
+extern void     t_msg_send(msg_info msg);
+
+/**
+ * Receive a message for current thread. Blocks execution until the message
+ * appears.
+ *
+ * @return Received msg_info object.
+ */
+extern msg_info t_msg_receive();
 
 #endif

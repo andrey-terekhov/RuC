@@ -4,9 +4,8 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include "threads.h"
-
-#define TRUE 1
-#define FALSE 0
+#include "error.h"
+#include "common.h"
 
 #ifndef _REENTRANT
 #define _REENTRANT
@@ -51,8 +50,7 @@ void t_init()
     int res = pthread_rwlock_init(&lock_t_create, NULL);
     if (res != 0)
     {
-        perror("t_init : pthread_rwlock_init of lock_t_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE, "pthread_rwlock_init of lock_t_create failed");
     }
 #pragma endregion
 
@@ -63,15 +61,13 @@ void t_init()
     res = pthread_cond_init(&threads[0].cond, NULL);
     if (res != 0)
     {
-        perror("t_init : pthread_cond_init of threads[0].cond failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE, "pthread_cond_init of threads[0].cond failed");
     }
 
     res = pthread_mutex_init(&threads[0].lock, NULL);
     if (res != 0)
     {
-        perror("t_init : pthread_mutex_init of threads[0].lock failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE, "pthread_mutex_init of threads[0].lock failed");
     }
 #pragma endregion
 
@@ -79,8 +75,8 @@ void t_init()
     res = pthread_rwlock_init(&lock_t_sem_create, NULL);
     if (res != 0)
     {
-        perror("t_init : pthread_rwlock_init of lock_t_sem_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_rwlock_init of lock_t_sem_create failed");
     }
 #pragma endregion
 }
@@ -97,8 +93,7 @@ __t_create(pthread_attr_t *attr,
     int res = pthread_rwlock_wrlock(&lock_t_create);
     if (res != 0)
     {
-        perror("__t_create : pthread_rwlock_wrlock of lock_t_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE, "pthread_rwlock_wrlock of lock_t_create failed");
     }
 #pragma endregion
 
@@ -108,8 +103,7 @@ __t_create(pthread_attr_t *attr,
     res = pthread_create(&th, attr, func, arg);
     if (res != 0)
     {
-        perror("t_create : Thread creation failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE, "Thread creation failed");
     }
 
     if (attr)
@@ -117,8 +111,7 @@ __t_create(pthread_attr_t *attr,
         res = pthread_attr_destroy(attr);
         if(res != 0)
         {
-            perror("t_create : Thread attribute destroy failed");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE, "Thread attribute destroy failed");
         }
     }
 #pragma endregion
@@ -126,8 +119,7 @@ __t_create(pthread_attr_t *attr,
 #pragma region STORE_DESCRIPTOR
     if (threadCount >= TH_MAX_THREAD_COUNT)
     {
-        perror("t_create : Trying to create too much threads");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE, "Trying to create too much threads");
     }
 
 #pragma region INIT_THREAD_INFO
@@ -137,15 +129,15 @@ __t_create(pthread_attr_t *attr,
     res = pthread_cond_init(&(threads[threadCount].cond), NULL);
     if (res != 0)
     {
-        perror("__t_create : pthread_cond_init of threads[threadCount].cond failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_cond_init of threads[threadCount].cond failed");
     }
 
     res = pthread_mutex_init(&(threads[threadCount].lock), NULL);
     if (res != 0)
     {
-        perror("__t_create : pthread_mutex_init of threads[threadCount].lock failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_mutex_init of threads[threadCount].lock failed");
     }
 
     threads[threadCount].countMsg = 0;
@@ -159,8 +151,7 @@ __t_create(pthread_attr_t *attr,
     res = pthread_rwlock_unlock(&lock_t_create);
     if (res != 0)
     {
-        perror("__t_create : pthread_rwlock_unlock of lock_t_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE, "pthread_rwlock_unlock of lock_t_create failed");
     }
 #pragma endregion
 
@@ -181,15 +172,15 @@ t_createDetached(thread_func func)
     int res = pthread_attr_init(&attr);
     if (res != 0)
     {
-        perror("t_createDetached : Attribute creation failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "Attribute creation failed");
     }
 
     res = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     if (res != 0)
     {
-        perror("t_createDetached : Setting detached attribute failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "Setting detached attribute failed");
     }
 
     return __t_create(&attr, func, NULL, TRUE);
@@ -208,8 +199,7 @@ t_join(int numTh)
     int res = pthread_rwlock_rdlock(&lock_t_create);
     if (res != 0)
     {
-        perror("t_join : pthread_rwlock_rdlock of lock_t_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE, "pthread_rwlock_rdlock of lock_t_create failed");
     }
 #pragma endregion
 
@@ -223,28 +213,26 @@ t_join(int numTh)
             res = pthread_rwlock_unlock(&lock_t_create);
             if (res != 0)
             {
-                perror("t_join : pthread_rwlock_unlock of lock_t_create failed");
-                exit(EXIT_FAILURE);
+                exit_err(EXIT_FAILURE,
+                         "pthread_rwlock_unlock of lock_t_create failed");
             }
 #pragma endregion
 
             res = pthread_join(th, NULL);
             if (res != 0)
             {
-                perror("t_join : Thread join failed");
-                exit(EXIT_FAILURE);
+                exit_err(EXIT_FAILURE, "Thread join failed");
             }
         }
         else
         {
-            perror("t_join : Thread join failed - thread is detached");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE, "Thread join failed - thread is detached");
         }
     }
     else
     {
-        perror("t_join : Thread join failed - number of thread is out of range");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "Thread join failed - number of thread is out of range");
     }
 }
 
@@ -254,8 +242,7 @@ int t_getThNum()
     int res = pthread_rwlock_rdlock(&lock_t_create);
     if (res != 0)
     {
-        perror("t_getThNum : pthread_rwlock_rdlock of lock_t_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE, "pthread_rwlock_rdlock of lock_t_create failed");
     }
 #pragma endregion
 
@@ -274,16 +261,15 @@ int t_getThNum()
         res = pthread_rwlock_unlock(&lock_t_create);
         if (res != 0)
         {
-            perror("t_getThNum : pthread_rwlock_unlock of lock_t_create failed");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE,
+                     "pthread_rwlock_unlock of lock_t_create failed");
         }
 #pragma endregion
 
         return index;
     }
 
-    perror("t_getThNum : Thread is not registered");
-    exit(EXIT_FAILURE);
+    exit_err(EXIT_FAILURE, "Thread is not registered");
 }
 
 void
@@ -300,8 +286,8 @@ t_sem_create(int level)
     int res = pthread_rwlock_wrlock(&lock_t_sem_create);
     if (res != 0)
     {
-        perror("t_sem_create : pthread_rwlock_wrlock of lock_t_sem_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_rwlock_wrlock of lock_t_sem_create failed");
     }
 #pragma endregion
 
@@ -311,16 +297,14 @@ t_sem_create(int level)
     res = sem_init(&sem, 0, level);
     if (res != 0)
     {
-        perror("t_sem_create : Semaphore initilization failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE, "Semaphore initilization failed");
     }
 #pragma endregion
 
 #pragma region STORE_SEMAPHORE
     if (semaphoreCount >= TH_MAX_SEMAPHORE_COUNT)
     {
-        perror("t_create : Trying to create too much semaphores");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE, "Trying to create too much semaphores");
     }
     semaphores[semaphoreCount] = sem;
 #pragma endregion
@@ -331,8 +315,8 @@ t_sem_create(int level)
     res = pthread_rwlock_unlock(&lock_t_sem_create);
     if (res != 0)
     {
-        perror("t_sem_create : pthread_rwlock_unlock of lock_t_sem_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_rwlock_unlock of lock_t_sem_create failed");
     }
 #pragma endregion
 
@@ -346,8 +330,8 @@ t_sem_wait(int numSem)
     int res = pthread_rwlock_rdlock(&lock_t_sem_create);
     if (res != 0)
     {
-        perror("t_sem_wait : pthread_rwlock_rdlock of lock_t_sem_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_rwlock_rdlock of lock_t_sem_create failed");
     }
 #pragma endregion
 
@@ -359,22 +343,22 @@ t_sem_wait(int numSem)
         res = pthread_rwlock_unlock(&lock_t_sem_create);
         if (res != 0)
         {
-            perror("t_sem_wait : pthread_rwlock_unlock of lock_t_sem_create failed");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE,
+                     "pthread_rwlock_unlock of lock_t_sem_create failed");
         }
 #pragma endregion
 
         int res = sem_wait(&sem);
         if (res != 0)
         {
-            perror("t_sem_wait : Semaphore wait failed");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE,
+                     "Semaphore wait failed");
         }
     }
     else
     {
-        perror("t_sem_wait : Semaphore wait failed - number of semaphore is out of range");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "Semaphore wait failed - number of semaphore is out of range");
     }
 }
 
@@ -385,8 +369,8 @@ t_sem_post(int numSem)
     int res = pthread_rwlock_rdlock(&lock_t_sem_create);
     if (res != 0)
     {
-        perror("t_sem_post : pthread_rwlock_rdlock of lock_t_sem_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_rwlock_rdlock of lock_t_sem_create failed");
     }
 #pragma endregion
 
@@ -397,22 +381,21 @@ t_sem_post(int numSem)
         res = pthread_rwlock_unlock(&lock_t_sem_create);
         if (res != 0)
         {
-            perror("t_sem_post : pthread_rwlock_unlock of lock_t_sem_create failed");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE,
+                     "pthread_rwlock_unlock of lock_t_sem_create failed");
         }
 #pragma endregion
 
         int res = sem_post(&sem);
         if (res != 0)
         {
-            perror("t_sem_post : Semaphore post failed");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE, "Semaphore post failed");
         }
     }
     else
     {
-        perror("t_sem_post : Semaphore post failed - number of semaphore is out of range");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "Semaphore post failed - number of semaphore is out of range");
     }
 }
 
@@ -423,8 +406,8 @@ t_msg_send(msg_info msg)
     int res = pthread_rwlock_rdlock(&lock_t_create);
     if (res != 0)
     {
-        perror("t_msg_send : pthread_rwlock_rdlock of lock_t_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_rwlock_rdlock of lock_t_create failed");
     }
 #pragma endregion
 
@@ -436,8 +419,8 @@ t_msg_send(msg_info msg)
         res = pthread_rwlock_unlock(&lock_t_create);
         if (res != 0)
         {
-            perror("t_msg_send : pthread_rwlock_unlock of lock_t_create failed");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE,
+                     "pthread_rwlock_unlock of lock_t_create failed");
         }
 #pragma endregion
 
@@ -445,16 +428,15 @@ t_msg_send(msg_info msg)
         res = pthread_mutex_lock(&(th_info->lock));
         if (res != 0)
         {
-            perror("t_msg_send : pthread_mutex_lock of th_info.lock failed");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE,
+                     "pthread_mutex_lock of th_info.lock failed");
         }
 #pragma endregion
 
 #pragma region ADD_MSG_TO_LIST
         if (th_info->countMsg >= TH_MAX_THREAD_MSG_COUNT)
         {
-            perror("t_msg_send : Trying to send too much messages");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE, "Trying to send too many messages");
         }
         th_info->msgs[th_info->countMsg].numTh = t_getThNum();
         th_info->msgs[th_info->countMsg++].data = msg.data;
@@ -466,8 +448,8 @@ t_msg_send(msg_info msg)
             res = pthread_cond_signal(&(th_info->cond));
             if (res != 0)
             {
-                perror("t_msg_send : pthread_cond_signal of th_info.cond failed");
-                exit(EXIT_FAILURE);
+                exit_err(EXIT_FAILURE,
+                         "pthread_cond_signal of th_info.cond failed");
             }
             //printf("SEND HERE AND\n");
 #pragma endregion
@@ -478,15 +460,15 @@ t_msg_send(msg_info msg)
         res = pthread_mutex_unlock(&(th_info->lock));
         if (res != 0)
         {
-            perror("t_msg_send : pthread_mutex_unlock of th_info.lock failed");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE,
+                     "pthread_mutex_unlock of th_info.lock failed");
         }
 #pragma endregion
     }
     else
     {
-        perror("t_msg_send : Message send failed - number of thread is out of range");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "Message send failed - number of thread is out of range");
     }
     //printf("SENDED NUMTH=%d, DATA=%d\n", msg.numTh, msg.data);
 }
@@ -498,8 +480,8 @@ t_msg_receive()
     int res = pthread_rwlock_rdlock(&lock_t_create);
     if (res != 0)
     {
-        perror("t_msg_recieve : pthread_rwlock_rdlock of lock_t_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_rwlock_rdlock of lock_t_create failed");
     }
 #pragma endregion
 
@@ -510,8 +492,8 @@ t_msg_receive()
     res = pthread_rwlock_unlock(&lock_t_create);
     if (res != 0)
     {
-        perror("t_msg_recieve : pthread_rwlock_unlock of lock_t_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_rwlock_unlock of lock_t_create failed");
     }
 #pragma endregion
 
@@ -519,8 +501,8 @@ t_msg_receive()
     res = pthread_mutex_lock(&(th_info->lock));
     if (res != 0)
     {
-        perror("t_msg_recieve : pthread_mutex_lock of th_info.lock failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_mutex_lock of th_info.lock failed");
     }
 #pragma endregion
 
@@ -528,11 +510,11 @@ t_msg_receive()
     if (th_info->countMsg == 0)
     {
         //printf("RECV HERE\n");
-        res = pthread_cond_wait(&(th_info->cond), &(th_info->lock));
+        res = pthread_cond_wait(&th_info->cond, &th_info->lock);
         if (res != 0)
         {
-            perror("t_msg_recieve : pthread_cond_wait of th_info.cond and th_info.lock failed");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE,
+                "pthread_cond_wait of th_info.cond and th_info.lock failed");
         }
         //printf("RECV HERE AND\n");
     }
@@ -546,8 +528,8 @@ t_msg_receive()
     res = pthread_mutex_unlock(&(th_info->lock));
     if (res != 0)
     {
-        perror("t_msg_recieve : pthread_mutex_unlock of th_info.lock failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_mutex_unlock of th_info.lock failed");
     }
 #pragma endregion
 
@@ -566,8 +548,8 @@ t_destroy()
         res = pthread_cond_destroy(&(threads[i].cond));
         if (res != 0)
         {
-            perror("t_destroy : pthread_cond_destroy of threads[i].cond failed");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE,
+                     "pthread_cond_destroy of threads[i].cond failed");
         }
 #pragma endregion
 
@@ -575,8 +557,8 @@ t_destroy()
         res = pthread_mutex_destroy(&(threads[i].lock));
         if (res != 0)
         {
-            perror("t_destroy : pthread_mutex_destroy of threads[i].lock failed");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE,
+                     "pthread_mutex_destroy of threads[i].lock failed");
         }
 #pragma endregion
     }
@@ -588,8 +570,7 @@ t_destroy()
         res = sem_destroy(&(semaphores[i]));
         if (res != 0)
         {
-            perror("t_destroy : sem_destroy of semaphores[i] failed");
-            exit(EXIT_FAILURE);
+            exit_err(EXIT_FAILURE, "sem_destroy of semaphores[i] failed");
         }
     }
 #pragma endregion
@@ -598,15 +579,15 @@ t_destroy()
     res = pthread_rwlock_destroy(&lock_t_create);
     if (res != 0)
     {
-        perror("t_destroy : pthread_rwlock_destroy of lock_t_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_rwlock_destroy of lock_t_create failed");
     }
 
     res = pthread_rwlock_destroy(&lock_t_sem_create);
     if (res != 0)
     {
-        perror("t_destroy : pthread_rwlock_destroy of lock_t_sem_create failed");
-        exit(EXIT_FAILURE);
+        exit_err(EXIT_FAILURE,
+                 "pthread_rwlock_destroy of lock_t_sem_create failed");
     }
 #pragma endregion
 }
