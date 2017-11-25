@@ -14,7 +14,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "th_static.h"
+#include "threads.h"
 
 
 // Я исхожу из того, что нумерация нитей процедурой t_create начинается с 1 и идет последовательно

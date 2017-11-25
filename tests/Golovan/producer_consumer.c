@@ -2,7 +2,7 @@
 #include <stdint.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
-#include "th_static.h"
+#include "threads.h"
 #define BUF_SIZE 10
 #define COUNT_PRODUCE 30
 

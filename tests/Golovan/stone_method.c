@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
-#include "th_static.h"
+#include "threads.h"
 #define N 8
 #define Q 3
 
