@@ -1,4 +1,4 @@
-//  RuC2A
+//  RuC
 //
 //  Created by Andrey Terekhov on 24/Apr/16.
 //  Copyright (c) 2015 Andrey Terekhov. All rights reserved.
@@ -6,7 +6,7 @@
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
 
-const char * name = "../../../tests/Golovan/dining_philosophers.c";
+const char * name = "../../../tests/Fadeev.c";
              /*"../../../tests/Golovan/dining_philosophers.c";*/
 
 
@@ -29,7 +29,7 @@ int hashtab[256], reprtab[MAXREPRTAB], rp = 1, identab[MAXIDENTAB], id = 2, mode
 int stack[100], stackop[100], stackoperands[100], stacklog[100], ansttype,
     sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg=-1, displ=-3, maxdispl = 3, maxdisplg = 3, type,
     op = 0, inass = 0, firstdecl;
-int iniprocs[INIPROSIZE], procd = 1, arrdim, arrelemlen, was_struct_with_arr;
+int iniprocs[INIPROSIZE], procd = 1, arrdim, arrelemlen, was_struct_with_arr, usual;
 int instring = 0, inswitch = 0, inloop = 0, lexstr[MAXSTRINGL+1];
 int tree[MAXTREESIZE], tc=0, mem[MAXMEMSIZE], pc=4, functions[FUNCSIZE], funcnum = 2, functype, kw = 0, blockflag = 1,
     entry, wasmain = 0, wasret, wasdefault, structdispl, notrobot = 1;

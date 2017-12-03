@@ -14,7 +14,7 @@ int curth = 0;
 
 void tocode(int c)
 {
-//    printf("tocode tc=%i pc %i) %i\n", tc, pc, c);
+// printf("tocode tc=%i pc %i) %i\n", tc, pc, c);
     mem[pc++] = c;
 }
 
@@ -120,6 +120,8 @@ void finalop()
 
 }
 
+void Declid_gen();
+
 int Expr_gen(int incond)
 {
     int flagprim = 1, eltype, wasstring = 0;
@@ -133,19 +135,6 @@ int Expr_gen(int incond)
             case TIdenttoaddr:
                 tocode(LA);
                 tocode(anstdispl = tree[tc++]);
-                break;
-            case TFunidtoval:
-                anstdispl = tree[tc++];
-                if (anstdispl > 0)
-                {
-                    tocode(LI);
-                    tocode(anstdispl);
-                }
-                else
-                {
-                    tocode(LOAD);
-                    tocode(-anstdispl);
-                }
                 break;
             case TIdenttoval:
                 tocode(LOAD);
@@ -184,6 +173,18 @@ int Expr_gen(int incond)
                 mem[res-1] = n;
                 mem[res-2] = pc;
                 wasstring = 1;
+            }
+                break;
+            case TDeclid:
+                Declid_gen();
+                break;
+            case TBeginit:
+            {
+                int n = tree[tc++], i;
+                tocode(BEGINIT);
+                tocode(n);
+                for (i=0; i<n; i++)
+                    Expr_gen(0);
             }
                 break;
             case TSliceident:
@@ -509,10 +510,16 @@ void Stmt_gen()
 
 void Declid_gen()
 {
-	int olddispl = tree[tc++], telem = tree[tc++], N = tree[tc++],
-    element_len, all = tree[tc++], iniproc = tree[tc++]; // all - общее кол-во слов и в структуре, и в массиве
-
+	int olddispl = tree[tc++], telem = tree[tc++], N = tree[tc++], element_len,
+    all = tree[tc++], iniproc = tree[tc++], usual = tree[tc++], instruct = tree[tc++];
+    // all - общее кол-во слов в структуре
+    //  для массивов есть еще usual // == 0 с пустыми границами,
+                                    // == 1 без пустых границ,
+                                // all == 0 нет инициализатора,
+                                // all == 1 есть инициализатор
+                                // all == 2 есть инициализатор только из строк
     element_len = szof(telem);
+    
     if (N == 0)                    // обычная переменная int a; или struct point p;
 	{
         if (iniproc)
@@ -527,7 +534,7 @@ void Declid_gen()
             {
                 do
                     Expr_gen(0);
-                while (tree[tc] != TENDINIT);
+                while (tree[tc] != TEndinit);
                 tc++;
                 tocode(COPY0STASS);
                 tocode(olddispl);
@@ -543,33 +550,24 @@ void Declid_gen()
 	}
 	else                                // Обработка массива int a[N1]...[NN] =
 	{
-		tocode(DEFARR);                 // DEFARR N, d, displ, iniproc     N1...NN уже лежат на стеке
-        tocode(N);
+		tocode(DEFARR);                 // DEFARR N, d, displ, iniproc, usual     N1...NN уже лежат на стеке
+        tocode(all == 0 ? N : abs(N)-1);
         tocode(element_len);
 		tocode(olddispl);
         tocode(iniprocs[iniproc]);
+        tocode(usual);
+        tocode(all);
+        tocode(instruct);
         
-        if (all)                        // all - общее количество выражений в инициализации
+        if (all)                        // all == 1, если есть инициализация массива
             {
-                int wasstring = 0;
-                do
-                    wasstring = Expr_gen(0);
-                while (tree[tc] != TENDINIT);
-                tc++;
-                if (wasstring)
-                {
-                    tocode(STRINGINIT);    // на стеке адрес 0-го элемента строки
-                    tocode(olddispl);
-                }
-                else
-                {
-                    tocode(ARRINIT);        // ARRINIT N d all displ
-                    tocode(abs(N));
-                    tocode(element_len);
-                    tocode(all);
-                    tocode(olddispl);
-                }
-
+                Expr_gen(0);
+                tocode(ARRINIT);        // ARRINIT N d all displ usual
+                tocode(abs(N));
+                tocode(element_len);
+                tocode(olddispl);
+                tocode(usual);             // == 0 с пустыми границами
+                                           // == 1 без пустых границ и без иниц
             }
 	}
 }

@@ -1,4 +1,6 @@
-int main() {
+void main() {
 	char s[] = "asdf";
-	return 0;
+    char s2[2][] = {"ad", "qwer"};
+    printid(s);
+    printid(s2);
 }

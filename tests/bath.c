@@ -3,7 +3,7 @@ int tmin = 30, tmax = 60;             // градусов
 int P = 100, k = 3;                   // P - стандартная мощность мотора, k - коэффициент управляющего воздействия
 void main()
 {
-    t_create                          // 1 - нить регулярного опроса датчика температуры
+    t_create_direct                          // 1 - нить регулярного опроса датчика температуры
     while (1)
     {
         int val = getdigsensor(heater, 1);   // это датчик нагрева
@@ -12,7 +12,7 @@ void main()
     }
     t_exit
 
-    t_create                          // 2 - нить регулярного опроса датчиков расхода воды s1 и s2
+    t_create_direct                          // 2 - нить регулярного опроса датчиков расхода воды s1 и s2
     while (1)
     {
         int val = getdigsensor(debit1, 2);
@@ -24,7 +24,7 @@ void main()
     }
     t_exit
 
-    t_create                          // 3 - нить нагрева
+    t_create_direct                          // 3 - нить нагрева
     struct msg_info{int numTh; int data;} msg;
     while (1)
     {
@@ -37,7 +37,7 @@ void main()
     }
     t_exit
 
-    t_create                          // 4 измерение циркуляции воды
+    t_create_direct                          // 4 измерение циркуляции воды
     struct message{int numTh; int data;} msg;
     int s1, s2, U;
     while (1)

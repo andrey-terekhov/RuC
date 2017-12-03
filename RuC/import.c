@@ -55,12 +55,13 @@ extern int szof(int);
 #define wrong_asin           16
 #define wrong_string_init    17
 #define printf_runtime_crash 18
+#define init_err             19
 
 int g, iniproc, maxdisplg, wasmain;
 int reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md;
 int mem[MAXMEMSIZE], functions[FUNCSIZE], funcnum;
 int threads[NUMOFTHREADS]; //, curthread, upcurthread;
-int procd, iniprocs[INIPROSIZE], base = 0;
+int procd, iniprocs[INIPROSIZE], base = 0, adinit, NN;
 FILE *input;
 
 #ifdef ROBOT
@@ -199,8 +200,12 @@ void runtimeerr(int e, int i, int r)
         case printf_runtime_crash:
             printf("странно, printf не работает на этапе исполнения; ошибка коммпилятора");
             break;
-        default:
+        case init_err:
+        printf("количество элементов инициализации %i не совпадает с количеством элементов %i массива\n", i, r);
             break;
+            
+        default:
+            ;
     }
     exit(3);
 }
@@ -390,9 +395,8 @@ void* interpreter(void* pcPnt)
     while (flagstop)
     {
         memcpy(&rf, &mem[x-1], sizeof(double));
-        printf("pc=%i mem[pc]=%i\n", pc, mem[pc]);
-        
-        printf("running th #%i\n", t_getThNum());
+//        printf("pc=%i mem[pc]=%i\n", pc, mem[pc]);
+//        printf("running th #%i\n", t_getThNum());
         switch (mem[pc++])
         {
             case STOP:
@@ -616,84 +620,179 @@ void* interpreter(void* pcPnt)
                 break;
             case DEFARR:      // N, d, displ, proc     на стеке N1, N2, ... , NN
             {
-                int N =      mem[pc++];
-                int d =      mem[pc++];
+                int N      = mem[pc++];
+                int d      = mem[pc++];
                 int curdsp = mem[pc++];
-                int proc =   mem[pc++];
+                int proc   = mem[pc++];
+                int usual  = mem[pc++];
+                int all    = mem[pc++];
+                int instruct = mem[pc++];
+                                        
                 int stackC0[10], stacki[10], i, curdim = 1;
-                
-                for (i=abs(N); i>0; i--)
+                if (usual >= 2)
+                    usual -= 2;
+                NN = mem[x];    // будет использоваться в ARRINIT только при usual=1
+                for (i = usual && all ? N+1 : N; i>0; i--)
                     if ((bounds[i] = mem[x--]) <= 0)
                         runtimeerr(wrong_number_of_elems, 0, bounds[i]);
-                stacki[1] = 0;
+                if (N > 0)
+                {
+                    stacki[1] = 0;
+                    mem[++x] = bounds[1];
+                    mem[instruct ? base + curdsp : dsp(curdsp, l)] = stackC0[1] = x + 1;
+                    x += bounds[1] * (curdim < abs(N) ? 1 : d);
+                    
+                    if (x >= threads[numTh] + MAXMEMTHREAD)
+                        runtimeerr(mem_overflow, 0, 0);
+                    if (N == 1)
+                    {
+                        if (proc)
+                        {
+                            int curx = x, oldbase = base, oldpc = pc, i;
+                            for (i=stackC0[1]; i<=curx; i+=d)
+                            {
+                                pc = proc;   // вычисление границ очередного массива в структуре
+                                base = i;
+                                mem[threads[numTh]+2] = x;
+                                interpreter((void*) &pc);
+                                flagstop = 1;
+                                x = threads[numTh+2];
+                            }
+                            pc = oldpc;
+                            base = oldbase;
+                        }
+                    }
+                    else
+                    {
+                  lab1: do
+                        {
+                    // go down
+                            mem[++x] = bounds[curdim+1];
+                            mem[stackC0[curdim] + stacki[curdim]++] = stackC0[curdim+1] = x + 1;
+                            x += bounds[curdim+1] * (curdim == N-1 ? d : 1);
+                            
+                            if (x >= threads[numTh] + MAXMEMTHREAD)
+                                runtimeerr(mem_overflow, 0, 0);
+                            ++curdim;
+                            stacki[curdim] = 0;
+                        }
+                        while (curdim < N);
+                    // построена очередная вертикаль подмассивов
+                       
+                        if (proc)
+                        {
+                            int curx = x, oldbase = base, oldpc = pc, i;
+                            for (i=stackC0[curdim]; i<=curx; i+=d)
+                            {
+                                pc = proc;   // вычисление границ очередного массива в структуре
+                                base = i;
+                                mem[threads[numTh]+2] = x;
+                                interpreter((void*) &pc);
+                                flagstop = 1;
+                                x = threads[numTh+2];
+                            }
+                            pc = oldpc;
+                            base = oldbase;
+                        }
+                    // go right
+                        --curdim;
+                        if (stacki[curdim] < bounds[curdim])
+                            goto lab1;
+                    // go up
+                        if (curdim-- != N-1)
+                            goto lab1;
+                    }
+                }
+                adinit = x+1; // при usual == 1 использоваться не будет
+            }
+                break;
+            case BEGINIT:
+                mem[++x] = mem[pc++];
+                break;
+            case STRINGINIT:
+                di = mem[pc++];
+                r = mem[di < 0 ? g - di : l + di];
+                N = mem[r-1];
+                from = mem[x--];
+                d = mem[from-1];     // d - кол-во литер в строке-инициаторе
+                if (N != d)
+                    runtimeerr(wrong_string_init, N, d);
+                for (i=0; i<N; i++)
+                    mem[r+i] = mem[from+i];
+                break;
+            case ARRINIT:
+                N = mem[pc++];        // N - размерность
+                d = mem[pc++];        // d - шаг
                 
-                mem[++x] = bounds[1];
-                mem[N > 0 ? (curdsp < 0 ? g - curdsp : l + curdsp) : base + curdsp] = stackC0[1] = x + 1;
-                N = abs(N);
-                x += bounds[1] * (curdim < N ? 1 : d);
-                
-                if (x >= threads[numTh] + MAXMEMTHREAD)
-                    runtimeerr(mem_overflow, 0, 0);
+            {
+                int add = dsp(mem[pc++], l);
+                int usual = mem[pc++];
+                int onlystrings = usual >= 2 ? usual -= 2, 1 : 0;
+                int stA[10], stN[10], sti[10], stpnt = 1, oldx = adinit;
                 if (N == 1)
                 {
-                    if (proc)
+                    if (onlystrings)
+                        mem[add] = mem[x--];
+                    else
                     {
-                        int curx = x, oldbase = base, oldpc = pc, i;
-                        for (i=stackC0[1]; i<=curx; i+=d)
-                        {
-                            pc = proc;   // вычисление границ очередного массива в структуре
-                            base = i;
-                            mem[threads[numTh]+2] = x;
-                            interpreter((void*) &pc);
-                            flagstop = 1;
-                            x = threads[numTh+2];
-                        }
-                        pc = oldpc;
-                        base = oldbase;
+                        mem[add] = adinit + 1;
+
+                        if (usual && mem[adinit] != NN)  // здесь usual == 1, если == 0, проверка не нужна
+                            runtimeerr(init_err, mem[adinit], NN);
+                        adinit += mem[adinit] * d + 1;
                     }
                 }
                 else
                 {
-              lab1: do
+                    stA[1] = mem[add];                   // массив самого верхнего уровня
+                    stN[1] = mem[stA[1]-1];
+                    sti[1] = 0;
+                    if (mem[adinit] != stN[1])
+                        runtimeerr(init_err, mem[adinit], stN[1]);
+                    adinit++;
+                    do
                     {
-                // go down
-                        mem[++x] = bounds[curdim+1];
-                        mem[stackC0[curdim] + stacki[curdim]++] = stackC0[curdim+1] = x + 1;
-                        x += bounds[curdim+1] * (curdim == N-1 ? d : 1);
                         
-                        if (x >= threads[numTh] + MAXMEMTHREAD)
-                            runtimeerr(mem_overflow, 0, 0);
-                        ++curdim;
-                        stacki[curdim] = 0;
-                    }
-                    while (curdim < N);
-                // построена очередная вертикаль подмассивов
-                   
-                    if (proc)
-                    {
-                        int curx = x, oldbase = base, oldpc = pc, i;
-                        for (i=stackC0[curdim]; i<=curx; i+=d)
+                        while (stpnt < N-1)
                         {
-                            pc = proc;   // вычисление границ очередного массива в структуре
-                            base = i;
-                            mem[threads[numTh]+2] = x;
-                            interpreter((void*) &pc);
-                            flagstop = 1;
-                            x = threads[numTh+2];
+                            stA[stpnt+1] = mem[stA[stpnt]];
+                            sti[++stpnt] = 0;
+                            stN[stpnt] = mem[stA[stpnt]-1];
+                            if (mem[adinit] != stN[stpnt])
+                                runtimeerr(init_err, mem[adinit], stN[stpnt]);
+                            adinit++;
                         }
-                        pc = oldpc;
-                        base = oldbase;
+                        
+                        do
+                        {
+                            if (onlystrings)
+                            {
+                                mem[stA[stpnt] + sti[stpnt]] = mem[++oldx];
+                                if (usual && mem[mem[oldx-1] -1] != NN)
+                                    runtimeerr(init_err, mem[adinit], NN);
+                            }
+                            else
+                            {
+                                if (usual && mem[adinit] != NN)
+                                runtimeerr(init_err, mem[adinit], NN);
+                                mem[stA[stpnt] + sti[stpnt]] = adinit + 1;
+                                adinit += mem[adinit] * d + 1;
+                            }
+                        }
+                        while (++sti[stpnt] < stN[stpnt]);
+                        if (stpnt > 1)
+                        {
+                            sti[stpnt] = 0;
+                            stpnt--;
+                            stA[stpnt] += ++sti[stpnt];
+                        }
                     }
-                // go right
-                    --curdim;
-                    if (stacki[curdim] < bounds[curdim])
-                        goto lab1;
-                // go up
-                    if (curdim-- != N-1)
-                        goto lab1;
+                    while (stpnt != 1 || sti[1] != stN[1]);
                 }
+                x = adinit - 1;
             }
                 break;
+
             case LI:
                 mem[++x] = mem[pc++];
                 break;
@@ -854,68 +953,6 @@ void* interpreter(void* pcPnt)
                     runtimeerr(index_out_of_range, i, mem[r-1]);
                 mem[x] = r + i * d;
                 break;
-            case STRINGINIT:
-                di = mem[pc++];
-                r = mem[di < 0 ? g - di : l + di];
-                N = mem[r-1];
-                from = mem[x--];
-                d = mem[from-1];     // d - кол-во литер в строке-инициаторе
-                if (N != d)
-                    runtimeerr(wrong_string_init, N, d);
-                for (i=0; i<N; i++)
-                    mem[r+i] = mem[from+i];
-                break;
-            case ARRINIT:
-                N = mem[pc++];       // N - размерность
-                d = mem[pc++];       // d
-                x -= mem[pc++];      // сколько всего слов во всех элементах инициализации
-                from = x + 1;
-            {
-                int stA[10], stN[10], sti[10], stpnt = 1, i, j;
-                stA[1] = mem[dsp(mem[pc++], l)];
-                stN[1] = mem[stA[1]-1];
-                for (i=2; i<10; ++i)
-                    sti[i] = 0;
-                sti[1] = -1;
-                if (N == 1)
-                {
-                    for (i=0; i<stN[1]; i+=d)
-                        for (j=0; j<d; j++)
-                            mem[stA[stpnt]+i+j] = mem[from++];
-                }
-                else
-                {
-            goright:
-                    if (stpnt == 1 && sti[1] == stN[1]-1)
-                        goto labexit;
-                    else /* if (++sti[stpnt] < stN[stpnt]) */
-                    {
-                        if (++sti[stpnt] == stN[stpnt])
-                        {
-                            --stpnt;
-                            goto goright;
-                        }
-                        stA[stpnt] += sti[stpnt];
-                    }
-            godown: while (stpnt < N)
-                    {
-                        stA[stpnt+1] = mem[stA[stpnt]];
-                        sti[++stpnt] = 0;
-                        stN[stpnt] = mem[stA[stpnt]-1];
-
-                    }
-                for (i=0; i<stN[stpnt]; i+=d)
-                        for (j=0; j<d; j++)
-                        {
-                            mem[stA[stpnt]+i+j] = mem[from++];
-                        }
-                if (N > 1)
-                    --stpnt;
-                goto goright;
-                }
-            labexit:;
-            }
-                break;
             case WIDEN:
                 rf = (double)mem[x];
                 memcpy(&mem[x++], &rf, sizeof(double));
@@ -931,7 +968,6 @@ void* interpreter(void* pcPnt)
                 r = mem[x];
                 mem[++x] = r;
                 break;
-                
                 
             case ASS:
                 mem[dsp(mem[pc++], l)] = mem[x];

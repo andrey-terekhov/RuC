@@ -65,9 +65,12 @@ void tablesandtree()
                 fprintf(output, "TDeclarr N= %i\n", tree[i++]);
                 break;
             case TDeclid:
-                fprintf(output, "TDeclid displ= %i elem_type= %i N= %i all= %i iniproc= %i\n",
-                        tree[i], tree[i+1], tree[i+2], tree[i+3], tree[i+4]);
-				i += 5;
+                fprintf(output, "TDeclid displ= %i eltype= %i N= %i all= %i iniproc= %i, usual= %i instuct= %i\n",
+                        tree[i], tree[i+1], tree[i+2], tree[i+3], tree[i+4], tree[i+5], tree[i+6]);
+				i += 7;
+                break;
+            case TString:
+                fprintf(output, "TString\n");
                 break;
             case TCondexpr:
                 fprintf(output, "TCondexpr %i %i\n", tree[i], tree[i+1]);
@@ -79,7 +82,10 @@ void tablesandtree()
             case TEnd:
                 fprintf(output, "TEnd\n");
                 break;
-            case TENDINIT:
+            case TBeginit:
+                fprintf(output, "TBeginit n= %i\n", tree[i++]);
+                break;
+            case TEndinit:
                 fprintf(output, "TEndinit\n");
                 break;
             case TIf:
@@ -412,17 +418,31 @@ void tablesandcode()
             case ROUNDC:
                 fprintf(output, "ROUND\n");
                 break;
-             
+            
+            case BEGINIT:
+                fprintf(output, "BEGINIT n= %i\n", mem[i++]);
+                break;
             case STRUCTWITHARR:
                 fprintf(output, "STRUCTWITHARR displ= %i ", mem[i++]);
                 fprintf(output, "iniproc= %i\n", mem[i++]);
                 break;
             case DEFARR:
-                fprintf(output, "DEFARR ");
-                fprintf(output, "N= %i ", mem[i++]);           // N
+                fprintf(output, "DEFARR N= %i ", mem[i++]);    // N
 				fprintf(output, "elem_len= %i ", mem[i++]);    // elem length
 				fprintf(output, "displ= %i ", mem[i++]);       // displ
-                fprintf(output, "iniproc= %i\n", mem[i++]);    // iniproc
+                fprintf(output, "iniproc= %i ", mem[i++]);     // iniproc
+                fprintf(output, "usual= %i ", mem[i++]);       // usual
+                fprintf(output, "all= %i ", mem[i++]);         // all
+                fprintf(output, "instruct= %i\n", mem[i++]);   // instruct
+                break;
+            case STRINGINIT:
+                fprintf(output, "STRINGINIT displ= %i\n", mem[i++]);
+                break;
+            case ARRINIT:
+                fprintf(output, "ARRINIT N= %i ", mem[i++]);
+                fprintf(output, "elem_len= %i ", mem[i++]);
+                fprintf(output, "displ= %i ", mem[i++]);
+                fprintf(output, "usual= %i\n", mem[i++]);
                 break;
             case NOP:
                 fprintf(output, "NOP\n");
@@ -822,15 +842,6 @@ void tablesandcode()
 			case SELECT:
 				fprintf(output, "SELECT field_displ= %i\n", mem[i++]);
 				break;
-            case STRINGINIT:
-                fprintf(output, "STRINGINIT displ= %i\n", mem[i++]);
-                break;
-            case ARRINIT:
-                fprintf(output, "ARRINIT N= %i ", mem[i++]);
-                fprintf(output, "d= %i ", mem[i++]);
-                fprintf(output, "all= %i ", mem[i++]);
-                fprintf(output, "displ= %i\n", mem[i++]);
-                break;
             case WIDEN:
                 fprintf(output, "WIDEN\n");
                 break;

@@ -213,6 +213,7 @@
 #define STRUCTWITHARR 9478
 #define ADLOGAND      9479
 #define ADLOGOR       9480
+#define BEGINIT       9481
 
 #define COPY00   9300
 #define COPY01   9301
@@ -404,8 +405,9 @@
 #define TDeclarr    -338
 #define TConstd     -339
 #define TIdenttovald -340
-#define TAddrtovald  -341
-#define TENDINIT     -342
+#define TAddrtovald -341
+#define TBeginit    -342
+#define TEndinit    -343
 
 // Коды ошибок
 
@@ -564,6 +566,11 @@
 #define no_mult_in_cast                    350
 #define no_rightbr_in_cast                 351
 #define not_pointer_in_cast                352
+#define empty_bound_without_init           353
+#define begin_with_notarray                354
+#define string_and_notstring               355
+#define wrong_init_in_actparam             356
+#define no_comma_or_end                    357
 
 //  коды предупреждений
 
