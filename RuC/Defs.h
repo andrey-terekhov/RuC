@@ -561,9 +561,11 @@
 #define wrong_printf_param_number          347
 #define printf_no_format_placeholder       348
 #define printf_unknown_format_placeholder  349
-#define no_mult_in_cast                    350
-#define no_rightbr_in_cast                 351
-#define not_pointer_in_cast                352
+#define too_many_printf_params             350
+
+#define no_mult_in_cast                    351
+#define no_rightbr_in_cast                 352
+#define not_pointer_in_cast                353
 
 //  коды предупреждений
 

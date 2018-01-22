@@ -6,7 +6,7 @@ extern int  scaner();
 extern void error(int e);
 
 
-int evaluate_params(int formatstr[], int formattypes[])
+int evaluate_params(int formatstr[], int formattypes[], int placeholders[])
 {
     int numofparams = 0;
     int i = 0;
@@ -14,7 +14,14 @@ int evaluate_params(int formatstr[], int formattypes[])
     {
         if (formatstr[i] == '%')
         {
-            switch (formatstr[++i])
+            if (formatstr[++i] != '%') {
+                if (numofparams == MAXPRINTFPARAMS) {
+                    error(too_many_printf_params);
+                }
+
+                placeholders[numofparams] = formatstr[i];
+            }
+            switch (formatstr[i]) // Если добавляется новый спецификатор -- не забить внести его в switch в bad_printf_placeholder
             {
                 case 'i':
                 case 1094:   // 'ц'
@@ -43,7 +50,7 @@ int evaluate_params(int formatstr[], int formattypes[])
                     error(printf_no_format_placeholder);
                     break;
                 default:
-                    bad_placeholder = formatstr[i];
+                    bad_printf_placeholder = formatstr[i];
                     error(printf_unknown_format_placeholder);
                     break;
             }
@@ -1305,6 +1312,7 @@ void statement()
         {
             int formatstr[MAXSTRINGL];
             int formattypes[MAXPRINTFPARAMS];
+            int placeholders[MAXPRINTFPARAMS];
             int paramnum = 0;
             int sumsize = 0;
             int i = 0;
@@ -1317,7 +1325,7 @@ void statement()
                 formatstr[i] = lexstr[i];
             while (lexstr[i++]);
 
-            paramnum = evaluate_params(formatstr, formattypes);
+            paramnum = evaluate_params(formatstr, formattypes, placeholders);
 
             scaner();  //выкушиваем форматную строку
 
@@ -1334,12 +1342,17 @@ void statement()
 
                 if (formattypes[i] == LFLOAT && ansttype == LINT)
                     insertwiden();
-                else if (formattypes[i] != ansttype)
+                else if (formattypes[i] != ansttype) {
+                    bad_printf_placeholder = placeholders[i];
                     error(wrong_printf_param_type);
+                }
 
                 sumsize += szof(formattypes[i]);
                 --sopnd;
             }
+
+            if (cur != RIGHTBR)
+                error(no_rightbr_in_printf);
 
             if (i != paramnum)
                 error(wrong_printf_param_number);
@@ -1354,8 +1367,6 @@ void statement()
 
             totree(TPrintf);
             totree(sumsize);
-            if (cur != RIGHTBR)
-                error(no_rightbr_in_printf);
         }
             break;
 

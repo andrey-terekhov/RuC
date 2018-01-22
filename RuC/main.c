@@ -6,7 +6,7 @@
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
 
-const char * name = "../tests/printf/printstrrus.c";
+const char * name = "../tests/printf/badstrinit.c";
              /*"../../../tests/Golovan/dining_philosophers.c";*/
 
 
@@ -42,7 +42,7 @@ int g, l, x, iniproc;                                     // anst = ADDR - на 
                                                           // в ansttype всегда тип возвращаемого значения
 // если значение указателя, адрес массива или строки лежит на верхушке стека, то это VAL, а не ADDR
 
-int bad_placeholder = 0;
+int bad_printf_placeholder = 0;
 
 extern void preprocess_file();
 
