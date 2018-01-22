@@ -13,7 +13,6 @@
 #define _REENTRANT
 #endif
 
-#pragma region THREADS
 struct __threadInfo
 {
     pthread_t th;
@@ -27,33 +26,23 @@ struct __threadInfo
 
 int __countTh = 1;
 struct __threadInfo __threads[__COUNT_TH];
-#pragma endregion
 
-#pragma region SEMAPHORES
 int __countSem = 0;
-sem_t __sems[__COUNT_SEM];
-#pragma endregion
-
-#pragma region LOCKS
+// sem_t __sems[__COUNT_SEM];
+sem_t *__sems[__COUNT_SEM];
 pthread_rwlock_t __lock_t_create;
 pthread_rwlock_t __lock_t_sem_create;
-#pragma endregion
 
 //void perror(const char *str);
 
-#pragma region INIT
 void t_init()
 {
-#pragma region LOCK_T_CREATE
     int res = pthread_rwlock_init(&__lock_t_create, NULL);
     if (res != 0)
     {
         perror("t_init : pthread_rwlock_init of __lock_t_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
-#pragma region MAIN_THREAD
     __threads[0].th = pthread_self();
     __threads[0].isDetach = TRUE;
     
@@ -70,33 +59,24 @@ void t_init()
         perror("t_init : pthread_mutex_init of __threads[0].lock failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
-#pragma region LOCK_T_SEM_CREATE
     res = pthread_rwlock_init(&__lock_t_sem_create, NULL);
     if (res != 0)
     {
         perror("t_init : pthread_rwlock_init of __lock_t_sem_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
 }
-#pragma endregion
 
-#pragma region REALIZATION
 int __t_create(pthread_attr_t *attr, void* (*func)(void *), void *arg, int isDetach)
 {
-#pragma region WRITE_LOCK_THREAD_TABLE
+    pthread_t th;
+    int retVal;
     int res = pthread_rwlock_wrlock(&__lock_t_create);
     if (res != 0)
     {
         perror("__t_create : pthread_rwlock_wrlock of __lock_t_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
-#pragma region CREATE_THREAD
-    pthread_t th;
     
     res = pthread_create(&th, attr, func, arg);
     if (res != 0)
@@ -114,16 +94,12 @@ int __t_create(pthread_attr_t *attr, void* (*func)(void *), void *arg, int isDet
             exit(EXIT_FAILURE);
         }
     }
-#pragma endregion
-    
-#pragma region STORE_DESCRIPTOR
     if (__countTh >= __COUNT_TH)
     {
         perror("t_create : Trying to create too much threads");
         exit(EXIT_FAILURE);
     }
     
-#pragma region INIT_THREAD_INFO
     __threads[__countTh].th = th;
     __threads[__countTh].isDetach = isDetach;
     
@@ -142,27 +118,22 @@ int __t_create(pthread_attr_t *attr, void* (*func)(void *), void *arg, int isDet
     }
     
     __threads[__countTh].countMsg = 0;
-#pragma endregion
+    retVal = __countTh++;
     
-#pragma endregion
-    
-    int retVal = __countTh++;
-    
-#pragma region UNLOCK_THREAD_TABLE
     res = pthread_rwlock_unlock(&__lock_t_create);
     if (res != 0)
     {
         perror("__t_create : pthread_rwlock_unlock of __lock_t_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
     return retVal;
 }
-int t_create(void* (*func)(void *), void *arg)
+
+int t_create_inner(void* (*func)(void *), void *arg)
 {
     return __t_create(NULL, func, arg, FALSE);
 }
+
 int t_createDetached(void* (*func)(void *))
 {
     pthread_attr_t attr;
@@ -188,16 +159,15 @@ void t_exit()
 {
     pthread_exit(NULL);
 }
+
 void t_join(int numTh)
 {
-#pragma region READ_LOCK_THREAD_TABLE
     int res = pthread_rwlock_rdlock(&__lock_t_create);
     if (res != 0)
     {
         perror("t_join : pthread_rwlock_rdlock of __lock_t_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
     
     if (numTh > 0 && numTh < __countTh)
     {
@@ -205,14 +175,12 @@ void t_join(int numTh)
         {
             pthread_t th = __threads[numTh].th;
             
-#pragma region UNLOCK_THREAD_TABLE
             res = pthread_rwlock_unlock(&__lock_t_create);
             if (res != 0)
             {
                 perror("t_join : pthread_rwlock_unlock of __lock_t_create failed");
                 exit(EXIT_FAILURE);
             }
-#pragma endregion
             
             res = pthread_join(th, NULL);
             if (res != 0)
@@ -233,43 +201,44 @@ void t_join(int numTh)
         exit(EXIT_FAILURE);
     }
 }
+
 int t_getThNum()
 {
-#pragma region READ_LOCK_THREAD_TABLE
+    pthread_t th;
+    int index, i;
     int res = pthread_rwlock_rdlock(&__lock_t_create);
     if (res != 0)
     {
         perror("t_getThNum : pthread_rwlock_rdlock of __lock_t_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
     
-    pthread_t th = pthread_self();
-    int index = -1, i;
+    th = pthread_self();
+    index = -1;
     
     for (i = 0; i < __countTh; i++)
     {
         if (pthread_equal(th, __threads[i].th))
-        { index = i; }
+        {   index = i;
+            break;
+        }
     }
     
     if (index != -1)
     {
-#pragma region UNLOCK_THREAD_TABLE
         res = pthread_rwlock_unlock(&__lock_t_create);
         if (res != 0)
         {
             perror("t_getThNum : pthread_rwlock_unlock of __lock_t_create failed");
             exit(EXIT_FAILURE);
         }
-#pragma endregion
         
         return index;
     }
-    
     perror("t_getThNum : Thread is not registered");
     exit(EXIT_FAILURE);
 }
+
 void t_sleep(int miliseconds)
 {
     //Sleep(seconds * 1000);
@@ -278,73 +247,59 @@ void t_sleep(int miliseconds)
 
 int t_sem_create(int level)
 {
-#pragma region WRITE_LOCK_SEM_TABLE
-    int res = pthread_rwlock_wrlock(&__lock_t_sem_create);
+    int res = pthread_rwlock_wrlock(&__lock_t_sem_create), retVal;
+    sem_t *sem;
+    char csem[10];
     if (res != 0)
     {
         perror("t_sem_create : pthread_rwlock_wrlock of __lock_t_sem_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
-#pragma region CREATE_SEMAPHORE
-    sem_t sem;
-    
-    res = sem_init(&sem, 0, level);
-    if (res != 0)
+    sprintf(csem, "%d", __countSem);
+    sem_unlink(csem);
+    sem = sem_open(csem, O_CREAT, S_IRUSR | S_IWUSR, level);
+    if (sem == SEM_FAILED)
     {
         perror("t_sem_create : Semaphore initilization failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
-#pragma region STORE_SEMAPHORE
     if (__countSem >= __COUNT_SEM)
     {
         perror("t_create : Trying to create too much semaphores");
         exit(EXIT_FAILURE);
     }
     __sems[__countSem] = sem;
-#pragma endregion
+    retVal = __countSem++;
     
-    int retVal = __countSem++;
-    
-#pragma region UNLOCK_SEM_TABLE
     res = pthread_rwlock_unlock(&__lock_t_sem_create);
     if (res != 0)
     {
         perror("t_sem_create : pthread_rwlock_unlock of __lock_t_sem_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
     return retVal;
 }
+
 void t_sem_wait(int numSem)
 {
-#pragma region READ_LOCK_SEM_TABLE
     int res = pthread_rwlock_rdlock(&__lock_t_sem_create);
+//    printf("t_sem_wait numSem= %i __countSem=  %i\n", numSem, __countSem);
     if (res != 0)
     {
         perror("t_sem_wait : pthread_rwlock_rdlock of __lock_t_sem_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
     if (numSem >= 0 && numSem < __countSem)
     {
-        sem_t sem = __sems[numSem];
+        sem_t *sem = __sems[numSem];
         
-#pragma region UNLOCK_SEM_TABLE
         res = pthread_rwlock_unlock(&__lock_t_sem_create);
         if (res != 0)
         {
             perror("t_sem_wait : pthread_rwlock_unlock of __lock_t_sem_create failed");
             exit(EXIT_FAILURE);
         }
-#pragma endregion
-        
-        int res = sem_wait(&sem);
+        res = sem_wait(sem);
         if (res != 0)
         {
             perror("t_sem_wait : Semaphore wait failed");
@@ -353,34 +308,30 @@ void t_sem_wait(int numSem)
     }
     else
     {
-        perror("t_sem_wait : Semaphore wait failed - number of semaphore is out of range");
+        perror("t_sem_wait : Semaphore wait failed - semaphore number is out of range");
         exit(EXIT_FAILURE);
     }
 }
+
 void t_sem_post(int numSem)
 {
-#pragma region READ_LOCK_SEM_TABLE
     int res = pthread_rwlock_rdlock(&__lock_t_sem_create);
     if (res != 0)
     {
         perror("t_sem_post : pthread_rwlock_rdlock of __lock_t_sem_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
     if (numSem >= 0 && numSem < __countSem)
     {
-        sem_t sem = __sems[numSem];
-#pragma region UNLOCK_SEM_TABLE
+        sem_t *sem = __sems[numSem];
         res = pthread_rwlock_unlock(&__lock_t_sem_create);
         if (res != 0)
         {
             perror("t_sem_post : pthread_rwlock_unlock of __lock_t_sem_create failed");
             exit(EXIT_FAILURE);
         }
-#pragma endregion
         
-        int res = sem_post(&sem);
+        res = sem_post(sem);
         if (res != 0)
         {
             perror("t_sem_post : Semaphore post failed");
@@ -396,38 +347,28 @@ void t_sem_post(int numSem)
 
 void t_msg_send(struct msg_info msg)
 {
-#pragma region READ_LOCK_THREAD_TABLE
     int res = pthread_rwlock_rdlock(&__lock_t_create);
     if (res != 0)
     {
         perror("t_msg_send : pthread_rwlock_rdlock of __lock_t_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
     if (msg.numTh >= 0 && msg.numTh < __countTh)
     {
         struct __threadInfo *th_info = &(__threads[msg.numTh]);
         
-#pragma region UNLOCK_THREAD_TABLE
         res = pthread_rwlock_unlock(&__lock_t_create);
         if (res != 0)
         {
             perror("t_msg_send : pthread_rwlock_unlock of __lock_t_create failed");
             exit(EXIT_FAILURE);
         }
-#pragma endregion
-        
-#pragma region LOCK_THREAD_INFO
         res = pthread_mutex_lock(&(th_info->lock));
         if (res != 0)
         {
             perror("t_msg_send : pthread_mutex_lock of th_info.lock failed");
             exit(EXIT_FAILURE);
         }
-#pragma endregion
-        
-#pragma region ADD_MSG_TO_LIST
         if (th_info->countMsg >= __COUNT_MSGS_FOR_TH)
         {
             perror("t_msg_send : Trying to send too much messages");
@@ -438,94 +379,66 @@ void t_msg_send(struct msg_info msg)
         
         if (th_info->countMsg == 1)
         {
-#pragma region SIGNAL
-            //printf("SEND HERE\n");
             res = pthread_cond_signal(&(th_info->cond));
             if (res != 0)
             {
                 perror("t_msg_send : pthread_cond_signal of th_info.cond failed");
                 exit(EXIT_FAILURE);
             }
-            //printf("SEND HERE AND\n");
-#pragma endregion
         }
-#pragma endregion
-        
-#pragma region UNLOCK_THREAD_INFO
         res = pthread_mutex_unlock(&(th_info->lock));
         if (res != 0)
         {
             perror("t_msg_send : pthread_mutex_unlock of th_info.lock failed");
             exit(EXIT_FAILURE);
         }
-#pragma endregion
     }
     else
     {
         perror("t_msg_send : Message send failed - number of thread is out of range");
         exit(EXIT_FAILURE);
     }
-    //printf("SENDED NUMTH=%d, DATA=%d\n", msg.numTh, msg.data);
 }
 struct msg_info t_msg_receive()
 {
-#pragma region READ_LOCK_THREAD_TABLE
-    int res = pthread_rwlock_rdlock(&__lock_t_create);
+    int res = pthread_rwlock_rdlock(&__lock_t_create), numTh;
+    struct msg_info msg;
     if (res != 0)
     {
         perror("t_msg_recieve : pthread_rwlock_rdlock of __lock_t_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
-    int numTh = t_getThNum();
+    numTh = t_getThNum();
     struct __threadInfo *th_info = &(__threads[numTh]);
     
-#pragma region UNLOCK_THREAD_TABLE
     res = pthread_rwlock_unlock(&__lock_t_create);
     if (res != 0)
     {
         perror("t_msg_recieve : pthread_rwlock_unlock of __lock_t_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
-#pragma region LOCK_THREAD_INFO_LOCK
     res = pthread_mutex_lock(&(th_info->lock));
     if (res != 0)
     {
         perror("t_msg_recieve : pthread_mutex_lock of th_info.lock failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
-#pragma region WAIT_FOR_SIGNAL
     if (th_info->countMsg == 0)
     {
-        //printf("RECV HERE\n");
         res = pthread_cond_wait(&(th_info->cond), &(th_info->lock));
         if (res != 0)
         {
             perror("t_msg_recieve : pthread_cond_wait of th_info.cond and th_info.lock failed");
             exit(EXIT_FAILURE);
         }
-        //printf("RECV HERE AND\n");
     }
-#pragma endregion
-    
-#pragma region GET_MSG_FROM_LIST
-    struct msg_info msg = th_info->msgs[--th_info->countMsg];
-#pragma endregion
-    
-#pragma region UNLOCK_THREAD_INFO
+    msg = th_info->msgs[--th_info->countMsg];
     res = pthread_mutex_unlock(&(th_info->lock));
     if (res != 0)
     {
         perror("t_msg_recieve : pthread_mutex_unlock of th_info.lock failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
-    
     return msg;
 }
 
@@ -533,42 +446,31 @@ void t_destroy()
 {
     int res, i;
     
-#pragma region THREAD_TABLE
     for (i = 0; i < __countTh; i++)
     {
-#pragma region PTHREAD_COND
         res = pthread_cond_destroy(&(__threads[i].cond));
         if (res != 0)
         {
             perror("t_destroy : pthread_cond_destroy of __threads[i].cond failed");
             exit(EXIT_FAILURE);
         }
-#pragma endregion
-        
-#pragma region PTHREAD_MUTEX
         res = pthread_mutex_destroy(&(__threads[i].lock));
         if (res != 0)
         {
             perror("t_destroy : pthread_mutex_destroy of __threads[i].lock failed");
             exit(EXIT_FAILURE);
         }
-#pragma endregion
     }
-#pragma endregion
-    
-#pragma region SEM_TABLE
     for (i = 0; i < __countSem; i++)
     {
-        res = sem_destroy(&(__sems[i]));
+//        res = sem_destroy(&(__sems[i]));
+        res = sem_close(__sems[i]);
         if (res != 0)
         {
             perror("t_destroy : sem_destroy of __sems[i] failed");
             exit(EXIT_FAILURE);
         }
     }
-#pragma endregion
-    
-#pragma region LOCKS
     res = pthread_rwlock_destroy(&__lock_t_create);
     if (res != 0)
     {
@@ -582,6 +484,5 @@ void t_destroy()
         perror("t_destroy : pthread_rwlock_destroy of __lock_t_sem_create failed");
         exit(EXIT_FAILURE);
     }
-#pragma endregion
 }
-#pragma endregion
+

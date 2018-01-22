@@ -4,19 +4,17 @@
 #define __COUNT_MSGS_FOR_TH 4
 #pragma endregion
 
-#pragma region MSG_INFO
 struct msg_info
 {
 	int numTh;
 	int data;
 };
-#pragma endregion
-
-#pragma region INTERFACE
 void t_init();
 void t_destroy();
 
-int t_create(void* (*func)(void*), void *arg);
+int t_create_inner(void* (*func)(void*), void *arg);
+int t_create(void* (*func)(void*));
+
 int t_createDetached(void* (*func)(void*));
 
 void t_exit();
@@ -30,4 +28,4 @@ void t_sem_post(int numSem);
 
 void t_msg_send(struct msg_info msg);
 struct msg_info t_msg_receive();
-#pragma endregion
+

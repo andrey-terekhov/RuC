@@ -107,7 +107,7 @@ void finalop()
                 else if (c == COPY1STASS || c== COPY1STASSV)
                     tocode(tree[tc++]);   // длина
 
-                else if((c >= REMASS && c <= DIVASS)    || (c >= REMASSV && c <= DIVASSV) ||
+                else if((c >= REMASS && c <= DIVASS) || (c >= REMASSV && c <= DIVASSV) ||
                         (c >= ASSR && c <= DIVASSR)  || (c >= ASSRV && c <= DIVASSRV) ||
                         (c >= POSTINC && c <= DEC)   || (c >= POSTINCV && c <= DECV) ||
                         (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))

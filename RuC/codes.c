@@ -278,7 +278,7 @@ void tablesandtree()
                 fprintf(output, "DESTROYC\n");
                 break;
             case GETNUMC:
-                fprintf(output, "GETNUM\n");
+                fprintf(output, "GETNUMC\n");
                 break;
 
 

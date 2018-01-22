@@ -406,11 +406,10 @@ void primaryexpr()
                     if (cur != IDENT)
                         error(act_param_not_ident);
                     applid();
-                    if (identab[lastid+2] != 15) // 15 - это первый аргумент типа void* (void*)
+                    if (identab[lastid+2] != 15) // 15 - это аргумент типа void* (void*)
                         error(wrong_arg_in_create);
-                    mustbe(COMMA, no_comma_in_param_list);
                     
-                    stackoperands[--sopnd] = ansttype = LINT;
+                    stackoperands[sopnd] = ansttype = LINT;
                     dn = identab[lastid+3];
                     if (dn < 0)
                     {
@@ -422,12 +421,10 @@ void primaryexpr()
                         totree(TConst);
                         totree(dn);
                     }
-                    scaner();  // второй параметр процедуры t_create должен быть 0
-                    totree(TExprend);
+                    anst = VAL;
                 }
                 else
                 {
-    //                leftansttype = func == TCREATE || func == TSEMCREATE ? LINT : LVOID;
                     exprassn(1);
                     toval();
 
@@ -442,7 +439,7 @@ void primaryexpr()
                         if (!is_int(ansttype))
                         error(param_threads_not_int);
                         if (func == TSEMCREATE)
-                            ansttype = stackoperands[sopnd] = LINT; // съели 1 параметр, выдали int
+                            anst = VAL, ansttype = stackoperands[sopnd] = LINT; // съели 1 параметр, выдали int
                         else
                             --sopnd;                                // съели 1 параметр, не выдали результата
                     }
@@ -577,7 +574,7 @@ void postexpr()
 
 	if (next == LEFTBR)                // вызов функции
 	{
-		int i, j, n, dn, oldinass = inass, d;
+		int i, j, n, dn, oldinass = inass;
         was_func = 1;
 		scaner();
 		if (!is_function(leftansttyp))
@@ -629,26 +626,6 @@ void postexpr()
                     if (cur != END)
                         error(no_comma_or_end);
                     totree(TExprend);
-/*                    int adusual;
-                    d = getstatic(mdj);
-                    totree(TIdenttoval);
-                    totree(d);
-
-                    totree(TDeclid);
-                    totree(d);                // displ
-                    totree(modetab[mdj+1]);   // elem_type
-                    totree(Norder(mdj));      // N
-                    totree(1);                // all
-                    totree(0);                // proc
-                    totree(adusual = 0);      // usual
-                    totree(0);                // instruct
-                    
-                    onlystrings = 2;
-                    array_init(mdj);
-                    if (onlystrings == 1)
-                        tree[adusual] = usual + 2;  // только из строк: 2 - без границ, 3 - с границами
-                    totree(TExprend);
- */
                 }
                 else
                 {
@@ -1162,6 +1139,7 @@ void array_init(int decl_type)                   // сейчас modetab[decl_ty
     {
         if (cur == STRING)
         {
+//            printf("cur= %i next= %i\n", cur, next);
             if (onlystrings == 0)
                 error(string_and_notstring);
             if (onlystrings == 2)
