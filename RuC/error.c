@@ -482,28 +482,59 @@ void error(int ernum)
             break;
 
         case no_leftbr_in_printf:
-            printf("Не хватает левой скобки в printf/печатьф\n");
+            printf("Не хватает открывающей скобки в printf/печатьф\n");
             break;
         case no_rightbr_in_printf:
-            printf("Не хватает правой скобки в printf/печатьф\n");
+            printf("Не хватает закрывающей скобки в printf/печатьф\n");
             break;
         case wrong_first_printf_param:
             printf("Первым параметром в printf/печатьф должна быть константная форматная строка\n");
             break;
         case wrong_printf_param_type:
-            printf("Тип параметра printf/печатьф не соответствует спецификатору\n");
+            printf("Тип параметра printf/печатьф не соответствует спецификатору: %%");
+            printf_char(bad_printf_placeholder);
+            switch (bad_printf_placeholder)
+            {
+                case 'i':
+                case 1094:   // 'ц'
+                    printf(" ожидает целое число\n");
+                    break;
+
+                case 'c':
+                    printf(" (англ.)");
+                case 1083:   // л
+                    printf(" ожидает литеру\n");
+                    break;
+
+                case 'f':
+                case 1074:   // в
+                    printf(" ожидает вещественное число\n");
+                    break;
+
+                case 1089:   // с
+                    printf(" (русск.)");
+                case 's':
+                    printf(" ожидает строку\n");
+                    break;
+                default:
+                    printf(" -- неизвестный спецификатор");
+            }
             break;
         case wrong_printf_param_number:
-            printf("Кодичество параметров printf/печатьф не соответствует количеству спецификаторов\n");
+            printf("Количество параметров printf/печатьф не соответствует количеству спецификаторов\n");
             break;
         case printf_no_format_placeholder:
             printf("В printf/печатьф нет спецификатора типа после '%%'\n");
             break;
         case printf_unknown_format_placeholder:
-            printf("В printf/печатьф неизвестный спецификатор типа '");
-            printf_char(bad_placeholder);
-            printf("'\n");
+            printf("В printf/печатьф неизвестный спецификатор типа %%");
+            printf_char(bad_printf_placeholder);
+            printf("\n");
             break;
+        case too_many_printf_params:
+            printf("Максимально в printf/печатьф можно выводить %i значений\n", MAXPRINTFPARAMS);
+            break;
+
         case no_mult_in_cast:
             printf("нет * в cast (приведении)\n");
             break;
@@ -529,7 +560,6 @@ void error(int ernum)
             printf("в инициализаторе ожидали , или }\n");
             break;
 
-            
         default: ;
     }
     exit(2);

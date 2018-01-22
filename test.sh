@@ -42,6 +42,7 @@ done
 
 
 rm tree.txt codes.txt export.txt >/dev/null 2>/dev/null
+rm -r obj >/dev/null 2>/dev/null
 rm ruc >/dev/null 2>/dev/null
 
 

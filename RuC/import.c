@@ -226,8 +226,8 @@ void prmem()
 
 void auxprintf(int strbeg, int databeg)
 {
-    int i, curdata;
-    curdata = databeg + 1;
+
+    int i, j, curdata = databeg + 1;
     for (i = strbeg; mem[i] != 0; ++i)
     {
         if (mem[i] == '%')
@@ -248,6 +248,13 @@ void auxprintf(int strbeg, int databeg)
                 case 1074:  // в
                     printf("%lf", *((double*) (&mem[curdata])));
                     curdata += 2;
+                    break;
+
+                case 's':
+                case 1089:   // с
+                    for (j = mem[curdata]; j - mem[curdata] < mem[mem[curdata] - 1]; ++j)
+                        printf_char(mem[j]);
+                    curdata++;
                     break;
 
                 case '%':
@@ -401,7 +408,9 @@ void* interpreter(void* pcPnt)
     while (flagstop)
     {
         memcpy(&rf, &mem[x-1], sizeof(double));
-//        printf("pc=%i mem[pc]=%i\n", pc, mem[pc]);
+        //printf("pc=%i mem[pc]=%i\n", pc, mem[pc]);
+        //printf("running th #%i\n", t_getThNum());
+
         switch (mem[pc++])
         {
             case STOP:

@@ -4,6 +4,8 @@
 #define __COUNT_MSGS_FOR_TH 4
 #pragma endregion
 
+#include <fcntl.h>
+
 struct msg_info
 {
 	int numTh;

@@ -1,4 +1,3 @@
-
 #include "global_vars.h"
 
 extern int  getnext();
@@ -7,7 +6,7 @@ extern int  scaner();
 extern void error(int e);
 int onlystrings;
 
-int evaluate_params(int formatstr[], int formattypes[])
+int evaluate_params(int formatstr[], int formattypes[], int placeholders[])
 {
     int numofparams = 0;
     int i = 0;
@@ -15,7 +14,14 @@ int evaluate_params(int formatstr[], int formattypes[])
     {
         if (formatstr[i] == '%')
         {
-            switch (formatstr[++i])
+            if (formatstr[++i] != '%') {
+                if (numofparams == MAXPRINTFPARAMS) {
+                    error(too_many_printf_params);
+                }
+
+                placeholders[numofparams] = formatstr[i];
+            }
+            switch (formatstr[i]) // Если добавляется новый спецификатор -- не забить внести его в switch в bad_printf_placeholder
             {
                 case 'i':
                 case 1094:   // 'ц'
@@ -31,7 +37,12 @@ int evaluate_params(int formatstr[], int formattypes[])
                 case 1074:   // в
                     formattypes[numofparams++] = LFLOAT;
                     break;
-
+                
+                case 's':
+                case 1089:   // с
+                    formattypes[numofparams++] = newdecl(MARRAY, LCHAR);
+                    break;
+                    
                 case '%':
                     break;
 
@@ -39,7 +50,7 @@ int evaluate_params(int formatstr[], int formattypes[])
                     error(printf_no_format_placeholder);
                     break;
                 default:
-                    bad_placeholder = formatstr[i];
+                    bad_printf_placeholder = formatstr[i];
                     error(printf_unknown_format_placeholder);
                     break;
             }
@@ -229,7 +240,7 @@ void toval()        // надо значение положить на стек,
         {
             if (anst == IDENT)
             {
-                tc -=2;
+                tc -= 2;
                 totree(COPY0ST);
                 totree(anstdispl);
             }
@@ -1375,59 +1386,63 @@ void statement()
 
             case PRINTF:
             {
-                int formatstr[MAXSTRINGL];
-                int formattypes[MAXPRINTFPARAMS];
-                int paramnum = 0;
-                int sumsize = 0;
-                int i = 0;
+                        int formatstr[MAXSTRINGL];
+                        int formattypes[MAXPRINTFPARAMS];
+                        int placeholders[MAXPRINTFPARAMS];
+                        int paramnum = 0;
+                        int sumsize = 0;
+                        int i = 0;
 
-                mustbe(LEFTBR, no_leftbr_in_printf);
-                if (next != STRING)
-                    error(wrong_first_printf_param);
+                        mustbe(LEFTBR, no_leftbr_in_printf);
+                        if (next != STRING)
+                            error(wrong_first_printf_param);
 
-                do
-                    formatstr[i] = lexstr[i];
-                while (lexstr[i++]);
+                        do
+                            formatstr[i] = lexstr[i];
+                        while (lexstr[i++]);
 
-                paramnum = evaluate_params(formatstr, formattypes);
+                        paramnum = evaluate_params(formatstr, formattypes, placeholders);
 
-                scaner();  //выкушиваем форматную строку
+                        scaner();  //выкушиваем форматную строку
 
-                for (i = 0; scaner() == COMMA; i++)
-                {
-                    if (i >= paramnum)
-                        error(wrong_printf_param_number);
+                        for (i = 0; scaner() == COMMA; i++)
+                        {
+                            if (i >= paramnum)
+                                error(wrong_printf_param_number);
 
-                    scaner();
+                            scaner();
 
-                    exprassn(1);
-                    toval();
-                    totree(TExprend);
+                            exprassn(1);
+                            toval();
+                            totree(TExprend);
 
-                    if (formattypes[i] == LFLOAT && ansttype == LINT)
-                        insertwiden();
-                    else if (formattypes[i] != ansttype)
-                        error(wrong_printf_param_type);
+                            if (formattypes[i] == LFLOAT && ansttype == LINT)
+                                insertwiden();
+                            else if (formattypes[i] != ansttype) {
+                                bad_printf_placeholder = placeholders[i];
+                                error(wrong_printf_param_type);
+                            }
 
-                    sumsize += szof(formattypes[i]);
-                    --sopnd;
-                }
+                            sumsize += szof(formattypes[i]);
+                            --sopnd;
+                        }
 
-                if (i != paramnum)
-                    error(wrong_printf_param_number);
+                        if (cur != RIGHTBR)
+                            error(no_rightbr_in_printf);
 
-                totree(TString);
+                        if (i != paramnum)
+                            error(wrong_printf_param_number);
 
-                i = 0;
-                do
-                    totree(formatstr[i]);
-                while (formatstr[i++]);
-                totree(TExprend);
+                        totree(TString);
 
-                totree(TPrintf);
-                totree(sumsize);
-                if (cur != RIGHTBR)
-                    error(no_rightbr_in_printf);
+                        i = 0;
+                        do
+                            totree(formatstr[i]);
+                        while (formatstr[i++]);
+                        totree(TExprend);
+
+                        totree(TPrintf);
+                        totree(sumsize);
             }
                 break;
 
