@@ -1,4 +1,3 @@
-
 #include "global_vars.h"
 
 extern int  getnext();
@@ -31,7 +30,12 @@ int evaluate_params(int formatstr[], int formattypes[])
                 case 1074:   // в
                     formattypes[numofparams++] = LFLOAT;
                     break;
-
+                
+                case 's':
+                case 1089:   // с
+                    formattypes[numofparams++] = newdecl(MARRAY, LCHAR);
+                    break;
+                    
                 case '%':
                     break;
 
@@ -229,7 +233,7 @@ void toval()        // надо значение положить на стек,
         {
             if (anst == IDENT)
             {
-                tc -=2;
+                tc -= 2;
                 totree(COPY0ST);
                 totree(anstdispl);
             }
