@@ -58,7 +58,7 @@ extern int szof(int);
 #define printf_runtime_crash 18
 #define init_err             19
 
-int g, iniproc, maxdisplg, wasmain;
+int g, xx, iniproc, maxdisplg, wasmain;
 int reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md;
 int mem[MAXMEMSIZE], functions[FUNCSIZE], funcnum;
 int threads[NUMOFTHREADS]; //, curthread, upcurthread;
@@ -383,19 +383,30 @@ int dsp(int di, int l)
 
 void* interpreter(void* pcPnt)
 {
-    int l, x, pc = *((int*) pcPnt), numTh = t_getThNum();
-    int N, bounds[100], d,from, prtype, cur0;
+    int l, x, origpc = *((int*) pcPnt), numTh = t_getThNum();
+    int N, bounds[100], d,from, prtype, cur0, pc = abs(origpc);
     int i,r, flagstop = 1, entry, di, di1, len;
     double lf, rf;
     
-    if (numTh)
+    if (origpc > 0)
     {
-        threads[numTh] = cur0 = numTh * MAXMEMTHREAD;
-        // область нити начинается с номера нити
-        mem[cur0] = numTh;
-        l = cur0 + 1;
-        x = l + mem[pc-2];  // l + maxdispl
-        mem[l+2] = -1;
+        if (numTh)
+        {
+            threads[numTh] = cur0 = numTh * MAXMEMTHREAD;
+            l = mem[threads[numTh]] = threads[numTh] + 2;
+            x = mem[threads[numTh]] = l + mem[pc-2];           // l + maxdispl
+            mem[l+2] = -1;
+        }
+        else
+        {
+            l = threads[0] + 2;
+            x = mem[threads[0]+1];
+        }
+    }
+    else
+    {
+        l = mem[threads[numTh]];
+        x = mem[threads[numTh]+1];
     }
     flagstop = 1;
     while (flagstop)
@@ -406,6 +417,7 @@ void* interpreter(void* pcPnt)
         {
             case STOP:
                 flagstop = 0;
+                xx = x;
                 break;
 
             case CREATEDIRECTC:
@@ -627,9 +639,10 @@ void* interpreter(void* pcPnt)
                 base = dsp(mem[pc++], l);
                 procnum = mem[pc++];
                 oldpc = pc;
-                pc = procnum;
-                mem[threads[numTh]+2] = x;
+                pc = -procnum;
+                mem[threads[numTh]+1] = x;
                 interpreter((void*) &pc);
+                x = xx;
                 pc = oldpc;
                 base = oldbase;
                 flagstop = 1;
@@ -661,6 +674,7 @@ void* interpreter(void* pcPnt)
                     
                     if (x >= threads[numTh] + MAXMEMTHREAD)
                         runtimeerr(mem_overflow, 0, 0);
+
                     if (N == 1)
                     {
                         if (proc)
@@ -668,12 +682,12 @@ void* interpreter(void* pcPnt)
                             int curx = x, oldbase = base, oldpc = pc, i;
                             for (i=stackC0[1]; i<=curx; i+=d)
                             {
-                                pc = proc;   // вычисление границ очередного массива в структуре
+                                pc = -proc;   // вычисление границ очередного массива в структуре
                                 base = i;
-                                mem[threads[numTh]+2] = x;
+                                mem[threads[numTh]+1] = x;
                                 interpreter((void*) &pc);
                                 flagstop = 1;
-                                x = threads[numTh+2];
+                                x = xx;
                             }
                             pc = oldpc;
                             base = oldbase;
@@ -703,10 +717,10 @@ void* interpreter(void* pcPnt)
                             {
                                 pc = proc;   // вычисление границ очередного массива в структуре
                                 base = i;
-                                mem[threads[numTh]+2] = x;
+                                mem[threads[numTh]+1] = x;
                                 interpreter((void*) &pc);
                                 flagstop = 1;
-                                x = threads[numTh+2];
+                                x = xx;
                             }
                             pc = oldpc;
                             base = oldbase;
@@ -1584,10 +1598,10 @@ void import()
     
     fclose(input);
     
-    l = g = pc;
+    threads[0] = pc;
+    mem[pc] = g = pc + 2;       // это l
     mem[g] = mem[g+1] = 0;
-    threads[0] = x = g + maxdisplg;
-    mem[x] = 0;      // номер нити
+    mem[pc+1] = g + maxdisplg;  // это x
     pc = 4;
     
     sem_unlink(sem_print);

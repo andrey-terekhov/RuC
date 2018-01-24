@@ -6,8 +6,8 @@
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
 
-const char * name =  "../../../tests/Misha/badstrinit.c"; 
-/* "../../../tests/Golovan/dining_philosophers.c"; */
+const char * name =  /* "../../../tests/arrays.c"; */
+ "../../../tests/Golovan/dining_philosophers.c"; 
 
 
 #include <stdio.h>
