@@ -6,6 +6,53 @@ extern int  scaner();
 extern void error(int e);
 int onlystrings;
 
+int modeeq(int first_mode, int second_mode)
+{
+    int n, i, flag = 1, mode;
+    if (modetab[first_mode] != modetab[second_mode])
+        return 0;
+    
+    mode = modetab[first_mode];
+    // определяем, сколько полей надо сравнивать для различных типов записей
+    n = mode == MSTRUCT || mode == MFUNCTION ? 2 + modetab[first_mode + 2] : 1;
+    
+    for (i = 1; i <= n && flag; i++)
+        flag = modetab[first_mode + i] == modetab[second_mode + i];
+    
+    return flag;
+}
+
+int check_duplicates()
+{
+    // проверяет, имеется ли в modetab только что внесенный тип.
+    // если да, то возвращает ссылку на старую запись, иначе - на новую.
+    
+    int old = modetab[startmode];
+    
+    while (old)
+    {
+        if (modeeq(startmode + 1, old + 1))
+        {
+            md = startmode;
+            startmode = modetab[startmode];
+            return old + 1;
+        }
+        else
+            old = modetab[old];
+    }
+    return startmode + 1;
+}
+
+int newdecl(int type, int elemtype)
+{
+    modetab[md] = startmode;
+    startmode = md++ ;
+    modetab[md++] = type;
+    modetab[md++] = elemtype;        // ссылка на элемент
+    
+    return check_duplicates();
+}
+
 int evaluate_params(int formatstr[], int formattypes[], int placeholders[])
 {
     int numofparams = 0;
@@ -276,53 +323,6 @@ void applid()
 		error(ident_is_not_declared);
 }
 
-int modeeq(int first_mode, int second_mode)
-{
-    int n, i, flag = 1, mode;
-    if (modetab[first_mode] != modetab[second_mode])
-        return 0;
-    
-    mode = modetab[first_mode];
-    // определяем, сколько полей надо сравнивать для различных типов записей
-    n = mode == MSTRUCT || mode == MFUNCTION ? 2 + modetab[first_mode + 2] : 1;
-    
-    for (i = 1; i <= n && flag; i++)
-        flag = modetab[first_mode + i] == modetab[second_mode + i];
-    
-    return flag;
-}
-
-
-int check_duplicates()
-{
-    // проверяет, имеется ли в modetab только что внесенный тип.
-    // если да, то возвращает ссылку на старую запись, иначе - на новую.
-    
-    int old = modetab[startmode];
-    
-    while (old)
-    {
-        if (modeeq(startmode + 1, old + 1))
-        {
-            md = startmode;
-            startmode = modetab[startmode];
-            return old + 1;
-        }
-        else
-            old = modetab[old];
-    }
-    return startmode + 1;
-}
-
-int newdecl(int type, int elemtype)
-{
-    modetab[md] = startmode;
-    startmode = md++ ;
-    modetab[md++] = type;
-    modetab[md++] = elemtype;        // ссылка на элемент
-
-    return check_duplicates();
-}
 
 void exprval();
 void unarexpr();
@@ -469,7 +469,7 @@ void primaryexpr()
             exprassn(1);
             toval();
            
-            // GETDIGSENSOR и GETANSENSOR int (int port, ???)  SETMOTOR и VOLTAGE void (int port, ???)
+               // GETDIGSENSOR int(int port, int pins[]), GETANSENSOR int (int port, int pin)  SETMOTOR и VOLTAGE void (int port, int volt)
             if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR || func == VOLTAGE)
             {
                 notrobot = 0;
@@ -488,10 +488,13 @@ void primaryexpr()
                             error(wrong_init_in_actparam);
                     }
                     while (scaner() == COMMA);
+                    
                     totree(0);
                     if (cur != END)
                         error(no_comma_or_end);
-                    totree(TExprend);
+//                    totree(TExprend);
+                    --sopnd;
+                    anst = VAL;
                 }
                 else
                 {
@@ -499,8 +502,16 @@ void primaryexpr()
                     toval();
                     if (!is_int(ansttype))
                         error(param_setmotor_not_int);
+                    if (func == SETMOTOR || func == VOLTAGE)
+                        sopnd -= 2;
+                    else
+                        --sopnd, anst = VAL;
                 }
                 totree(9500 - func);
+                if (func == SETMOTOR || func == VOLTAGE)
+                    sopnd-=2;
+                else
+                    anst = VAL, --sopnd;
             }
             else if (func == ABS && is_int(ansttype))
                     totree(ABSIC);

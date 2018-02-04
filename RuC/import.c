@@ -5,8 +5,8 @@
 //  Copyright (c) 2014 Andrey Terekhov. All rights reserved.
 //
 
-//#define ROBOT 1
-//#include <unistd.h>
+//#define ROBOT
+#include <unistd.h>
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdlib.h>
 #include <stdio.h>
@@ -66,83 +66,6 @@ int procd, iniprocs[INIPROSIZE], base = 0, adinit, NN;
 FILE *input;
 char sem_print[] = "sem_print", sem_debug[] = "sem_debug";
 sem_t *sempr, *semdeb;
-
-#ifdef ROBOT
-FILE *f1, *f2;   // файлы цифровых датчиков
-const char* JD1 = "/sys/devices/platform/da850_trik/sensor_d1";
-const char* JD2 = "/sys/devices/platform/da850_trik/sensor_d2";
-
-int szof(int type)
-{
-    return type == LFLOAT ? 2 :
-    (type > 0 && modetab[type] == MSTRUCT) ? modetab[type + 1] : 1;
-}
-
-int rungetcommand(const char *command)
-{
-    FILE *fp;
-    int x = -1;
-    char path[100] = {'\0'};
-    
-    /* Open the command for reading. */
-    fp = popen(command, "r");
-    if (fp == NULL)
-        runtimeerr(wrong_robot_com, 0,0);
-    
-    /* Read the output a line at a time - output it. */
-    while (fgets(path, sizeof(path)-1, fp) != NULL)
-    {
-        x = strtol(path, NULL, 16);
-        printf("[%s] %d\n", path, x);
-    }
-    pclose(fp);
-    return x;                   // ??????
-}
-
-#endif
-
-void printf_char(int wchar)
-{
-    if (wchar<128)
-        printf("%c", wchar);
-    else
-    {
-        unsigned char first = (wchar >> 6) | /*0b11000000*/ 0xC0;
-        unsigned char second = (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
-
-        printf("%c%c", first, second);
-    }
-}
-
-void fprintf_char(FILE *f, int wchar)
-{    if (wchar<128)
-    fprintf(f, "%c", wchar);
-    else
-    {
-        unsigned char first = (wchar >> 6) | /*0b11000000*/ 0xC0;
-        unsigned char second = (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
-
-        fprintf(f, "%c%c", first, second);
-    }
-}
-
-int getf_char()
-{
-    // reads UTF-8
-    
-    unsigned char firstchar, secondchar;
-    
-    if (scanf(" %c", &firstchar) == EOF)
-        return EOF;
-    else
-        if ((firstchar & /*0b11100000*/0xE0) == /*0b11000000*/0xC0)
-        {
-            scanf("%c", &secondchar);
-            return ((int)(firstchar & /*0b11111*/0x1F)) << 6 | (secondchar & /*0b111111*/0x3F);
-        }
-        else
-            return firstchar;
-}
 
 void runtimeerr(int e, int i, int r)
 {
@@ -204,7 +127,7 @@ void runtimeerr(int e, int i, int r)
             printf("странно, printf не работает на этапе исполнения; ошибка коммпилятора");
             break;
         case init_err:
-        printf("количество элементов инициализации %i не совпадает с количеством элементов %i массива\n", i, r);
+            printf("количество элементов инициализации %i не совпадает с количеством элементов %i массива\n", i, r);
             break;
             
         default:
@@ -212,6 +135,78 @@ void runtimeerr(int e, int i, int r)
     }
     exit(3);
 }
+
+#ifdef ROBOT
+FILE *f1, *f2;   // файлы цифровых датчиков
+const char* JD1 = "/sys/devices/platform/da850_trik/sensor_d1";
+const char* JD2 = "/sys/devices/platform/da850_trik/sensor_d2";
+
+int rungetcommand(const char *command)
+{
+    FILE *fp;
+    long x = -1;
+    char path[100] = {'\0'};
+    
+    /* Open the command for reading. */
+    fp = popen(command, "r");
+    if (fp == NULL)
+        runtimeerr(wrong_robot_com, 0,0);
+    
+    /* Read the output a line at a time - output it. */
+    while (fgets(path, sizeof(path)-1, fp) != NULL)
+    {
+        x = strtol(path, NULL, 16);
+        printf("[%s] %ld\n", path, x);
+    }
+    pclose(fp);
+    return x;                   // ??????
+}
+
+#endif
+
+void printf_char(int wchar)
+{
+    if (wchar<128)
+        printf("%c", wchar);
+    else
+    {
+        unsigned char first = (wchar >> 6) | /*0b11000000*/ 0xC0;
+        unsigned char second = (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
+
+        printf("%c%c", first, second);
+    }
+}
+
+void fprintf_char(FILE *f, int wchar)
+{    if (wchar<128)
+    fprintf(f, "%c", wchar);
+    else
+    {
+        unsigned char first = (wchar >> 6) | /*0b11000000*/ 0xC0;
+        unsigned char second = (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
+
+        fprintf(f, "%c%c", first, second);
+    }
+}
+
+int getf_char()
+{
+    // reads UTF-8
+    
+    unsigned char firstchar, secondchar;
+    
+    if (scanf(" %c", &firstchar) == EOF)
+        return EOF;
+    else
+        if ((firstchar & /*0b11100000*/0xE0) == /*0b11000000*/0xC0)
+        {
+            scanf("%c", &secondchar);
+            return ((int)(firstchar & /*0b11111*/0x1F)) << 6 | (secondchar & /*0b111111*/0x3F);
+        }
+        else
+            return firstchar;
+}
+
 /*
 void prmem()
 {
@@ -501,6 +496,8 @@ void* interpreter(void* pcPnt)
     #ifdef ROBOT
 
             case SETMOTORC:
+            {
+                int n, r;
                 r = mem[x--];
                 n = mem[x--];
                 if (n < 1 || n > 4)
@@ -511,10 +508,12 @@ void* interpreter(void* pcPnt)
                 printf("i2cset -y 2 0x48 0x%x 0x%x b\n", 0x14 + n - 1, r);
                 snprintf(i2ccommand, I2CBUFFERSIZE, "i2cset -y 2 0x48 0x%x 0x%x b", 0x14 + n - 1, r);
                 system(i2ccommand);
+            }
                 break;
                 
             case GETDIGSENSORC:
-                n = mem[x];
+            {
+                int n = mem[x];
                 if (n < 1 || n > 2)
                     runtimeerr(wrong_digsensor_num, n, 0);
                 if (n == 1)
@@ -522,16 +521,19 @@ void* interpreter(void* pcPnt)
                 else
                     fscanf(f2, "%i", &i);
                 mem[x] = i;
+            }
                 break;
                 
             case GETANSENSORC:
-                n = mem[x];
+            {
+                int n = mem[x];
                 if (n < 1 || n > 6)
                     runtimeerr(wrong_ansensor_num, n, 0);
                 memset(i2ccommand, '\0', I2CBUFFERSIZE);
                 printf("i2cget -y 2 0x48 0x%x\n", 0x26 - n);
                 snprintf(i2ccommand, I2CBUFFERSIZE, "i2cget -y 2 0x48 0x%x", 0x26 - n);
                 mem[x] = rungetcommand(i2ccommand);
+            }
                 break;
     #endif
             case FUNCBEG:

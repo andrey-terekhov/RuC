@@ -206,16 +206,16 @@ void error(int ernum)
             printf("должна быть цифра после e\n");
             break;
         case no_leftbr_in_setmotor:
-            printf("в команде ПУСКМОТОРА нет(\n");
+            printf("в команде управления роботом нет(\n");
             break;
         case no_rightbr_in_setmotor:
-            printf("в команде ПУСКМОТОРА нет)\n");
+            printf("в команде управления роботом нет)\n");
             break;
         case no_comma_in_setmotor:
-            printf("в команде ПУСКМОТОРА после первого параметра нет ,\n");
+            printf("в команде управления роботом после первого параметра нет ,\n");
             break;
         case param_setmotor_not_int:
-            printf("в командах ПУСКМОТОРА, СПАТЬ, ЦИФРДАТЧИК и АНАЛОГДАТЧИК параметры должны быть целыми\n");
+            printf("в командах МОТОР, УСТНАПРЯЖЕНИЕ, ЦИФРДАТЧИК и АНАЛОГДАТЧИК параметры должны быть целыми\n");
             break;
         case no_leftbr_in_sleep:
             printf("в команде СПАТЬ нет(\n");
