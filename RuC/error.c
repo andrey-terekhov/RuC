@@ -559,6 +559,12 @@ void error(int ernum)
         case no_comma_or_end:
             printf("в инициализаторе ожидали , или }\n");
             break;
+        case no_ident_in_define:
+            printf("после #ОПРЕД (#DEFINE) должен идти идентификатор\n");
+            break;
+        case not_int_in_define:
+            printf("сейчас в #DEFINE может быть только целое число\n");
+            break;
 
         default: ;
     }

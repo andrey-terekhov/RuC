@@ -573,6 +573,8 @@
 #define string_and_notstring               356
 #define wrong_init_in_actparam             357
 #define no_comma_or_end                    358
+#define no_ident_in_define                 359
+#define not_int_in_define                  360
 
 //  коды предупреждений
 

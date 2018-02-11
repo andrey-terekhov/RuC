@@ -181,63 +181,71 @@ int getstatic(int type)
     return olddispl;
 }
 
-int toidentab(int f, int type)       // f = 0, если не ф-ция, f=1, если метка, f=funcnum, если описание ф-ции,
-{                                    // f= -1, если ф-ция-параметр, f>=1000, если это описание типа
+int toidentab(int f, int type)       // f =  0, если не ф-ция, f=1, если метка, f=funcnum, если описание ф-ции,
+{                                    // f = -1, если ф-ция-параметр, f>=1000, если это описание типа
+                                     // f = -2, #define
 //    printf("\n f= %i repr %i rtab[repr] %i rtab[repr+1] %i rtab[repr+2] %i\n", f, repr, reprtab[repr], reprtab[repr+1], reprtab[repr+2]);
 	int pred;
 	lastid = id;
-	if (reprtab[repr + 1] == 0)                  // это может быть только MAIN
+	if (reprtab[repr + 1] == 0)             // это может быть только MAIN
 	{
 		if (wasmain)
 			error(more_than_1_main);
 		wasmain = id;
 	}
 	pred = identab[id] = reprtab[repr + 1]; // ссылка на описание с таким же представлением в предыдущем блоке
-	if (pred)                                    // pred == 0 только для main, эту ссылку портить нельзя
-		reprtab[repr + 1] = id;                  // ссылка на текущее описание с этим представлением (это в reprtab)
+	if (pred)                               // pred == 0 только для main, эту ссылку портить нельзя
+		reprtab[repr + 1] = id;             // ссылка на текущее описание с этим представлением (это в reprtab)
 
-	if (f != 1 && pred >= curid)                // один  и тот же идент м.б. переменной и меткой
+	if (f != 1 && pred >= curid)            // один  и тот же идент м.б. переменной и меткой
         
         if (func_def == 3 ? 1 : identab[pred + 1] > 0 ? 1 : func_def == 1 ? 0 : 1)
             error(repeated_decl);  // только определение функции может иметь 2 описания, т.е. иметь предописание
 
-	identab[id + 1] = repr;                     // ссылка на представление
-	// дальше тип или ссылка на modetab (для функций и структур)
-    
-	identab[id + 2] = type;              // тип -1 int, -2 char, -3 float -4 long -5 double
-	if (f == 1)                          // если тип > 0, то это ссылка на modetab
-	{
-		identab[id + 2] = 0;             // 0, если первым встретился goto, когда встретим метку, поставим 1
-		identab[id + 3] = 0;             // при генерации кода когда встретим метку, поставим pc
-	}
-	else if (f >= 1000)
-		identab[id + 3] = f;             // это описание типа, если f > 1000, то f-1000 - это номер иниц проц
-	else if (f)
+	identab[id + 1] = repr;                 // ссылка на представление
+    if (f == -2)                            // #define
     {
-		if (f < 0)
-        {
-			identab[id + 3] = -(displ++);
-            maxdispl = displ;
-        }
-		else                          // identtab[lastid+3] - номер функции, если < 0, то это функция-параметр
-		{
-			identab[id + 3] = f;
-			if (func_def == 2)
-            {
-				identab[lastid + 1] *= -1;    //это предописание
-                predef[++prdf] = repr;
-            }
-            else
-            {
-                int i;
-                for (i=0; i<=prdf; i++)
-                    if (predef[i] == repr)
-                        predef[i] = 0;
-            }
-		}
+        identab[id+2] = 1;
+        identab[id+3] = type;               // это целое число, определенное по #define
     }
-	else
-        identab[id + 3] = getstatic(type);
+    else
+    {
+                                             // дальше тип или ссылка на modetab (для функций и структур)
+        identab[id + 2] = type;              // тип -1 int, -2 char, -3 float, -4 long, -5 double,
+        if (f == 1)                          // если тип > 0, то это ссылка на modetab
+        {
+            identab[id + 2] = 0;             // 0, если первым встретился goto, когда встретим метку, поставим 1
+            identab[id + 3] = 0;             // при генерации кода когда встретим метку, поставим pc
+        }
+        else if (f >= 1000)
+            identab[id + 3] = f;             // это описание типа, если f > 1000, то f-1000 - это номер иниц проц
+        else if (f)
+        {
+            if (f < 0)
+            {
+                identab[id + 3] = -(displ++);
+                maxdispl = displ;
+            }
+            else                          // identtab[lastid+3] - номер функции, если < 0, то это функция-параметр
+            {
+                identab[id + 3] = f;
+                if (func_def == 2)
+                {
+                    identab[lastid + 1] *= -1;    //это предописание
+                    predef[++prdf] = repr;
+                }
+                else
+                {
+                    int i;
+                    for (i=0; i<=prdf; i++)
+                        if (predef[i] == repr)
+                            predef[i] = 0;
+                }
+            }
+        }
+        else
+            identab[id + 3] = getstatic(type);
+    }
  	id += 4;
 	return lastid;
 }
@@ -362,10 +370,18 @@ void primaryexpr()
 	else if (cur == IDENT)
 	{
 		applid();
-		totree(TIdent);
-		totree(anstdispl = identab[lastid+3]);
-		stackoperands[++sopnd] = ansttype = identab[lastid + 2];
-		anst = IDENT;
+        if (identab[lastid+2] == 1)                  // #define
+        {
+            totree(TConst);
+            totree(identab[lastid+3]);
+        }
+        else
+        {
+            totree(TIdent);
+            totree(anstdispl = identab[lastid+3]);
+            stackoperands[++sopnd] = ansttype = identab[lastid + 2];
+            anst = IDENT;
+        }
 	}
 	else if (cur == LEFTBR)
 	{
@@ -2122,6 +2138,14 @@ void ext_decl()
 		int repeat = 1, funrepr, first = 1;
 		wasstructdef = 0;
 		scaner();
+        if (cur == SH_DEFINE)
+        {
+            mustbe(IDENT, no_ident_in_define);
+            if (scaner() != NUMBER || ansttype != LINT)
+                error(not_int_in_define);
+            toidentab(-2, num);
+            continue;
+        }
 		firstdecl = gettype();
 		if (wasstructdef && next == SEMICOLON)
 		{                                      // struct point {float x, y;};
