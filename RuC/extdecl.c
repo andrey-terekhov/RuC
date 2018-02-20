@@ -335,6 +335,30 @@ void applid()
 void exprval();
 void unarexpr();
 
+void actstring()
+{
+    totree(TString);
+    do
+    {
+        if (scaner() == IDENT)
+        {
+            applid();
+            if (identab[lastid+2] == 1)
+                cur = NUMBER, ansttype = LINT, num = identab[lastid+3];
+        }
+        if (cur == NUMBER && ansttype == LINT)
+            totree(num);
+        else
+            error(wrong_init_in_actparam);
+    }
+    while (scaner() == COMMA);
+    
+    totree(0);
+    if (cur != END)
+        error(no_comma_or_end);
+    anst = VAL;
+}
+
 void primaryexpr()
 {
 	if (cur == NUMBER)
@@ -494,24 +518,7 @@ void primaryexpr()
                 mustbe(COMMA, no_comma_in_setmotor);
                 scaner();
                 if (func == GETDIGSENSOR && cur == BEGIN)
-                {
-                    totree(TString);
-                    do
-                    {
-                        if (scaner() == NUMBER && ansttype == LINT)
-                            totree(num);
-                        else
-                            error(wrong_init_in_actparam);
-                    }
-                    while (scaner() == COMMA);
-                    
-                    totree(0);
-                    if (cur != END)
-                        error(no_comma_or_end);
-//                    totree(TExprend);
-                    --sopnd;
-                    anst = VAL;
-                }
+                    actstring();
                 else
                 {
                     exprassn(1);
@@ -650,21 +657,7 @@ void postexpr()
 			else
 			{
                 if (cur == BEGIN && is_array(mdj))
-                {
-                    totree(TString);
-                    do
-                    {
-                        if (scaner() == NUMBER && ansttype == LINT)
-                            totree(num);
-                        else
-                            error(wrong_init_in_actparam);
-                    }
-                    while (scaner() == COMMA);
-                    totree(0);
-                    if (cur != END)
-                        error(no_comma_or_end);
-                    totree(TExprend);
-                }
+                    actstring(), totree(TExprend);
                 else
                 {
                     inass = 0;
@@ -2135,15 +2128,17 @@ void ext_decl()
     int i;
 	do            // top level описания переменных и функций до конца файла
 	{
-		int repeat = 1, funrepr, first = 1;
+		int repeat = 1, funrepr, first = 1, k = 1;
 		wasstructdef = 0;
 		scaner();
         if (cur == SH_DEFINE)
         {
             mustbe(IDENT, no_ident_in_define);
-            if (scaner() != NUMBER || ansttype != LINT)
+            if (scaner() == LMINUS)
+                scaner(), k = -1;
+            if (cur != NUMBER || ansttype != LINT)
                 error(not_int_in_define);
-            toidentab(-2, num);
+            toidentab(-2, k * num);
             continue;
         }
 		firstdecl = gettype();

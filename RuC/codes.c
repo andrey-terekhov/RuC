@@ -435,9 +435,6 @@ void tablesandcode()
                 fprintf(output, "all= %i ", mem[i++]);         // all
                 fprintf(output, "instruct= %i\n", mem[i++]);   // instruct
                 break;
-            case STRINGINIT:
-                fprintf(output, "STRINGINIT displ= %i\n", mem[i++]);
-                break;
             case ARRINIT:
                 fprintf(output, "ARRINIT N= %i ", mem[i++]);
                 fprintf(output, "elem_len= %i ", mem[i++]);
@@ -818,18 +815,6 @@ void tablesandcode()
             case B:
                 fprintf(output, "B %i\n", mem[i++]);
                 break;
-/*            case STRING:
-            {
-                int j, n;
-                fprintf(output,"STRING %i\n", mem[i++]);
-                fprintf(output, "n=%i\n", n = mem[i++]);
-                for (j=0; j<n; j++)
-                    fprintf(output, "%c\n", mem[i++]);
-                fprintf(output,"%i\n", mem[i++]);
-                break;
-            }
-                break;
- */
             case BE0:
                 fprintf(output, "BE0 %i\n", mem[i++]);
                 break;
@@ -969,7 +954,6 @@ void tablesandcode()
                 
             default:
                 fprintf(output, "%i %c\n", mem[i-1], mem[i-1]);
-                break;
         }
     }
     
