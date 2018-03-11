@@ -14,7 +14,7 @@ int curth = 0;
 
 void tocode(int c)
 {
-// printf("tocode tc=%i pc %i) %i\n", tc, pc, c);
+//  printf("tocode tc=%i pc %i) %i\n", tc, pc, c);
     mem[pc++] = c;
 }
 
@@ -161,15 +161,14 @@ int Expr_gen(int incond)
                 break;
             case TString:
             {
-                int n = -1, res;
+                int n = tree[tc++], res,i;
                 tocode(LI);
                 tocode(res = pc+4);
                 tocode(B);
                 pc += 2;
-                do
-                    n++, tocode(tree[tc]);
-                while (tree[tc++]);
-                
+                for (i=0; i<n; i++)
+                    tocode(tree[tc++]);
+                tocode(0);
                 mem[res-1] = n;
                 mem[res-2] = pc;
                 wasstring = 1;
@@ -485,7 +484,7 @@ void Stmt_gen()
         case TPrintf:
         {
             tocode(PRINTF);
-            tocode(tree[tc++]);  // общий размекр того, что надо вывести
+            tocode(tree[tc++]);  // общий размер того, что надо вывести
         }
             break;
         case TGetid:

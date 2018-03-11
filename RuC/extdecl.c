@@ -337,7 +337,9 @@ void unarexpr();
 
 void actstring()
 {
+    int n = 0, adn;
     totree(TString);
+    adn = tc++;
     do
     {
         if (scaner() == IDENT)
@@ -350,10 +352,11 @@ void actstring()
             totree(num);
         else
             error(wrong_init_in_actparam);
+        ++n;
     }
     while (scaner() == COMMA);
     
-    totree(0);
+    tree[adn] = n;
     if (cur != END)
         error(no_comma_or_end);
     anst = VAL;
@@ -380,13 +383,13 @@ void primaryexpr()
 	}
     else if (cur == STRING)
 	{
-		int i = 0;
+		int i;
 		ansttype = newdecl(MARRAY, LCHAR); // теперь пишем ansttype в анализаторе, а не в сканере
 		totree(TString);
+        totree(num);
         
-		do
+        for (i=0; i<num; i++)
             totree(lexstr[i]);
-		while (lexstr[i++]);
         
 		stackoperands[++sopnd] = ansttype;           // ROWOFCHAR
 		anst = VAL;
@@ -397,7 +400,9 @@ void primaryexpr()
         if (identab[lastid+2] == 1)                  // #define
         {
             totree(TConst);
-            totree(identab[lastid+3]);
+            totree(num = identab[lastid+3]);
+            anst = NUMBER;
+            ansttype = LINT;
         }
         else
         {
@@ -517,8 +522,11 @@ void primaryexpr()
                     error(param_setmotor_not_int);
                 mustbe(COMMA, no_comma_in_setmotor);
                 scaner();
-                if (func == GETDIGSENSOR && cur == BEGIN)
-                    actstring();
+                if (func == GETDIGSENSOR)
+                    if (cur == BEGIN)
+                        sopnd--, actstring();
+                    else
+                        error(getdigsensorerr);
                 else
                 {
                     exprassn(1);

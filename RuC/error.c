@@ -563,7 +563,10 @@ void error(int ernum)
             printf("после #ОПРЕД (#DEFINE) должен идти идентификатор\n");
             break;
         case not_int_in_define:
-            printf("сейчас в #DEFINE может быть только целое число\n");
+            printf("сейчас в #DEFINE может быть только целое число со знаком\n");
+            break;
+        case getdigsensorerr:
+            printf("вторым параметром GETDIGSENSOR должна быть явная запись массива из целых констант\n");
             break;
 
         default: ;

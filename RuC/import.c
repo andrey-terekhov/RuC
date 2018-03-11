@@ -1576,7 +1576,7 @@ void* interpreter(void* pcPnt)
 
 void import()
 {
-    int i, l, pc, x;
+    int i, pc;
     
 #ifdef ROBOT
     f1 = fopen(JD1, "r");                       // файлы цифровых датчиков

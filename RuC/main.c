@@ -7,7 +7,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 
-const char * name = "../../../tests/Fadeev.c"; 
+const char * name = "../../../tests/Fadeev/import_2.c";
              /* "../../../tests/Golovan/dining_philosophers.c"; */
 
 #include <stdio.h>

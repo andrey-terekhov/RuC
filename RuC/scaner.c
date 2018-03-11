@@ -415,9 +415,8 @@ int scan()
                 else
                     flag = 0;
             }
-//            printf("11 %i %c %i %c\n", curchar, curchar, nextchar, nextchar);
 
-            lexstr[n] = 0;
+            num = --n;
             instring = 0;
             return STRING;
         }
@@ -570,13 +569,14 @@ int scan()
                 hash = 0;
                 
                 // решетка на 1 месте -- значит, ключевое слово препроцессора
+/*
                 if (curchar == '#')
                 {
                     hash += curchar;
                     reprtab[rp++] = curchar;
                     nextch();
                 }
-
+*/
                 do
                 {
                     
