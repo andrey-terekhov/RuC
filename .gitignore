@@ -5,6 +5,7 @@
 *.xcodeproj/
 
 Build/
+!Build/Products/Debug/keywords.txt
 DerivedData/
 ruc
 
