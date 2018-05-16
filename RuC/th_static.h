@@ -1,5 +1,5 @@
 #pragma region CONSTANTS
-#define __COUNT_TH 16
+#define __COUNT_TH 10
 #define __COUNT_SEM 16
 #define __COUNT_MSGS_FOR_TH 4
 #pragma endregion

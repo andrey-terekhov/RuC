@@ -281,7 +281,7 @@ void auxprint(int beg, int t, char before, char after)
     else if (t == LFLOAT)
     {
         memcpy(&rf, &mem[beg], sizeof(double));
-        printf("%lf", rf);
+        printf("%20.15f", rf);
     }
     else if (t == LVOID)
         printf(" значения типа ПУСТО печатать нельзя\n");
