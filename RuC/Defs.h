@@ -251,18 +251,20 @@
 #define RANDC     9542
 #define ROUNDC    9543
 
-#define MSGSENDC  9544
-#define MSGRECEIVEC 9545
-#define JOINC     9546
-#define SLEEPC    9547
-#define SEMCREATEC  9548
-#define SEMWAITC  9549
-#define SEMPOSTC  9550
-#define CREATEC   9551
-#define INITC     9552
-#define DESTROYC  9553
-#define EXITC     9554
-#define GETNUMC   9555
+#define STRNCPY  9544
+
+#define MSGSENDC  9545
+#define MSGRECEIVEC 9546
+#define JOINC     9547
+#define SLEEPC    9548
+#define SEMCREATEC  9549
+#define SEMWAITC  9550
+#define SEMPOSTC  9551
+#define CREATEC   9552
+#define INITC     9553
+#define DESTROYC  9554
+#define EXITC     9555
+#define GETNUMC   9556
 // Лексемы
 
 #define COMMA     100

@@ -1,4 +1,4 @@
-MAIN main ГЛАВНАЯ главная 
+﻿MAIN main ГЛАВНАЯ главная 
 INT int ЦЕЛ цел
 CHAR char ЛИТЕРА литера
 FLOAT float ВЕЩ вещ
@@ -42,6 +42,7 @@ LOG10 log10 ЛОГ10 лог10
 ASIN asin АСИН асин
 RAND rand СЛУЧ случ
 ROUND round ОКРУГЛ округл
+STRCNCPY strcncpy КОПИР_Н_СИМВ копир_н_симв
 
 T_MSG_SEND t_msg_send Н_ПОСЛАТЬ н_послать
 T_MSG_RECEIVE t_msg_receive Н_ПОЛУЧИТЬ н_получить

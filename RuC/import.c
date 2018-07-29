@@ -389,7 +389,9 @@ void* interpreter(void* pcPnt)
     int l, x, origpc = *((int*) pcPnt), numTh = t_getThNum();
     int N, bounds[100], d,from, prtype, cur0, pc = abs(origpc);
     int i,r, flagstop = 1, entry, di, di1, len;
+    int num, str100, str200;
     double lf, rf;
+
     
     if (origpc > 0)
     {
@@ -644,6 +646,16 @@ void* interpreter(void* pcPnt)
             case ROUNDC:
                 mem[--x] = rf < 0 ? (int)(rf-0.5) : (int)(rf+0.5);
                 break;
+            case STRNCPY:
+                num = mem[x--];
+                str200 = mem[x--];
+                str100 = mem[x];
+                printf("num = %d; str100 = %d;", num, str100);
+                printf("str200 = %d;\n", str200);
+                printf("adres: num = %d; str100 = %d;", &num, &str100);
+                printf("str200 = %d;\n",  &str200);
+                printf("adres: num = %d; s str100 = %s;", &num, &str100);
+                printf("s str200 = %s; \n", &str200);
                 
             case STRUCTWITHARR:
             {
