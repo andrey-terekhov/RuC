@@ -1,11 +1,12 @@
 *.o
+*.bat
+*.exe
 *.txt
 *.doc
 *.docx
 *.xcodeproj/
 
 Build/
-!Build/Products/Debug/keywords.txt
 DerivedData/
 ruc
 
