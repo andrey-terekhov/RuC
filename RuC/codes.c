@@ -418,6 +418,31 @@ void tablesandcode()
             case ROUNDC:
                 fprintf(output, "ROUND\n");
                 break;
+
+            case STRCPYC:
+                fprintf(output, "STRCPY\n");
+                break;
+            case STRNCPYC:
+                fprintf(output, "STRNCPY\n");
+                break;
+            case STRCATC:
+                fprintf(output, "STRCAT\n");
+                break;
+            case STRNCATC:
+                fprintf(output, "STRNCAT\n");
+                break;
+            case STRCMPC:
+                fprintf(output, "STRCMP\n");
+                break;
+            case STRNCMPC:
+                fprintf(output, "STRNCMP\n");
+                break;
+            case STRSTRC:
+                fprintf(output, "STRSTR\n");
+                break;
+            case STRLENC:
+                fprintf(output, "STRLENC\n");
+                break;
             
             case BEGINIT:
                 fprintf(output, "BEGINIT n= %i\n", mem[i++]);
