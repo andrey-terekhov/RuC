@@ -547,6 +547,51 @@ void primaryexpr()
                 else
                     anst = VAL, --sopnd;
             }
+            /*else if (func == STRNCPY)
+            {
+                if (!is_int(ansttype))
+                    error(wrong_param_list);
+                mustbe(COMMA, no_comma_in_param_list);
+                scaner();
+                //if (func == GETDIGSENSOR)
+                    if (cur == BEGIN)
+                        sopnd -= 2, actstring();
+                    else
+                        error(wrong_param_list);
+                /*else
+                {*/
+                    /*exprassn(1);
+                    toval();
+                    if (!is_int(ansttype))
+                        error(wrong_param_list);*/
+                 /*
+                mustbe(COMMA, no_comma_in_param_list);
+                scaner();
+                exprassn(1);
+                   toval();
+                if (!is_int(ansttype))
+                    error(wrong_param_list);
+
+
+                    mustbe(COMMA, no_comma_in_param_list);
+                scaner();
+                exprassn(1);
+                   toval();
+                if (!is_int(ansttype))
+                    error(wrong_param_list);
+                
+                
+                    //if (func == SETMOTOR || func == VOLTAGE)
+                        //sopnd -= 2;
+                    //else
+                        //--sopnd, anst = VAL;
+                //}
+                totree(9500 - func);
+                //if (func == SETMOTOR || func == VOLTAGE)
+                    sopnd-=2;
+                //else
+                    //anst = VAL, --sopnd;
+            }*/
             else if (func == ABS && is_int(ansttype))
                     totree(ABSIC);
             else

@@ -1,6 +1,7 @@
 *.o
 *.dll
 *.exe
+*.bat
 *.zip
 *.txt
 *.pdf
@@ -11,7 +12,6 @@
 *.xcodeproj/
 
 Build/
-!Build/Products/Debug/keywords.txt
 DerivedData/
 ruc
 
