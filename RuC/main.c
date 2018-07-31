@@ -8,7 +8,7 @@
 
 
 const char * name = /* "../../../tests/Misha/wrong.c"; */
-             "../../../tests/Golovan/dining_philosophers.c";
+             "../../../tests/Golovan/dining_philosophers.c"; 
 
 #include <stdio.h>
 #include <string.h>
@@ -21,11 +21,9 @@ const char * name = /* "../../../tests/Misha/wrong.c"; */
 
 FILE *input, *output;
 double numdouble;
-int line=0, charnum=1, mline=0, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef = 0;// +
-int m_charnum=1;
+int line=0, charnum=1, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef = 0;
 struct {int first; int second;} numr;
 int source[SOURCESIZE], lines[LINESSIZE];
-int before_source[SOURCESIZE], mlines[LINESSIZE], m_conect_lines[LINESSIZE];
 int nextchar, curchar, func_def;
 int hashtab[256], reprtab[MAXREPRTAB], rp = 1, identab[MAXIDENTAB], id = 2,
     modetab[MAXMODETAB], md = 1, startmode = 1;
@@ -98,7 +96,7 @@ int main(int argc, const char * argv[])
         ;
     fclose(input);
     
-    input  = fopen(name, "r");        //   исходный текст
+/*    input  = fopen(name, "r");        //   исходный текст
     output = fopen("macro.txt", "wt");
 
     if (input == NULL)
@@ -106,7 +104,7 @@ int main(int argc, const char * argv[])
         printf(" не найден файл %s\n", name);
         exit(1);
     }
- 
+ */
     modetab[1] = 0;
     modetab[2] = MSTRUCT;
     modetab[3] = 2;
@@ -131,24 +129,25 @@ int main(int argc, const char * argv[])
     charnum = 1;
     kw = 1;
     tc = 0;
-    /*getnext();
+/*    getnext();
     nextch();
-    next = scan();*/
+    next = scan(); 
     
     preprocess_file();                //   макрогенерация
     
     fclose(output);
     fclose(input);
     
+    return 0;
 
     input  = fopen("macro.txt", "r");
- 
+ */
     
-    /*if (argc < 2) {
+    if (argc < 2) {
         input = fopen(name, "r");
     } else {
         input = fopen(argv[1], "r");
-    }*/
+    }
     
     if (input == NULL)
     {
@@ -156,15 +155,13 @@ int main(int argc, const char * argv[])
     }
 
     output = fopen("tree.txt", "wt");
-
-    printf("Сканирование\n");
-
+    
     getnext();
     nextch();
     next = scan();
 
     ext_decl();                       //   генерация дерева
-    return 0;
+    
     lines[line+1] = charnum;
     tablesandtree();
     fclose(output);

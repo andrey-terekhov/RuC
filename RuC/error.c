@@ -3,10 +3,7 @@
 
 extern void tablesandtree();
 #include "global_vars.h"
-
 extern void printf_char(int wchar);
-extern void show_macro();
-
 void printident(int r)
 {
     r += 2;                      // ссылка на reprtab
@@ -31,21 +28,12 @@ void warning(int ernum)
 
 void error(int ernum)
 {
-    int i, j;
-  //tablesandtree();
-    printf("error\n");
-    //printf("line - 1=%d, mline=%d, carnum = %d, lines[line]=%d, lines[line+1]=%d \n", line-1,m_conect_lines[line-1],charnum,lines[line],lines[line+1]);
-    if(lines[line]==charnum)
-    {
-        line--;
-    }
-    for(j = 1; j<m_conect_lines[line];j++)
-    {
-        printf("line %i) ", j);
-        for (i=mlines[j]; i<mlines[j+1]; i++)
-            printf_char(before_source[i]);
-    }
-    show_macro();
+    int i;
+    tablesandtree();
+    printf("line %i) ", line);
+    for (i=lines[line]; i<charnum; i++)
+        printf_char(source[i]);
+    printf("\n");
     switch (ernum)
     {
         case after_type_must_be_ident:

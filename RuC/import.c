@@ -14,7 +14,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <semaphore.h>
-#include <sys/stat.h>
 
 #include "th_static.h"
 
