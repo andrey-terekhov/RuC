@@ -7,8 +7,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 
-const char * name = "../../../tests/printstring.c";
-           /*   "../../../tests/Golovan/dining_philosophers.c"; */
+const char * name = /* "../../../tests/Misha/wrong.c"; */
+             "../../../tests/Golovan/dining_philosophers.c"; 
 
 #include <stdio.h>
 #include <string.h>
