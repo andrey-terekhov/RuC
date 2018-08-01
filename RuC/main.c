@@ -7,8 +7,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 
-const char * name = /* "../../../tests/Misha/wrong.c"; */
-             "../../../tests/Golovan/dining_philosophers.c"; 
+const char * name =  "../../../tests/Fadeev/thread.c"; 
+            /* "../../../tests/Golovan/dining_philosophers.c"; */
 
 #include <stdio.h>
 #include <string.h>
@@ -202,5 +202,5 @@ int main(int argc, const char * argv[])
         import();
     
     return 0;
-	}
+}
 

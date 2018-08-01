@@ -997,6 +997,14 @@ void* interpreter(void* pcPnt)
                 for (i=0; i<len; i++)
                     mem[di+i] = mem[x+i+2];
                 break;
+            case COPYST:
+                di = mem[pc++];
+                len = mem[pc++];
+                x -= mem[pc++] + 1;
+                for (i=0; i<len; i++)
+                    mem[x+i] = mem[x+i+di];
+                x += len-1;
+                break;
                 
             case SLICE:
                 d = mem[pc++];

@@ -484,6 +484,7 @@ void primaryexpr()
                 }
                 else
                 {
+                    leftansttype = 2;
                     exprassn(1);
                     toval();
 
@@ -756,9 +757,17 @@ void postexpr()
             if (ansttype < 0 || modetab[ansttype] != MSTRUCT)
                 error(select_not_from_struct);
             if (anst == VAL)    // структура - значение функции
-                error(select_from_func_value);
-            
-            if (anst == IDENT)
+            {
+                int len1 = szof(ansttype);
+                anstdispl = 0;
+                while (next == DOT)
+                    anstdispl += find_field(ansttype);
+                totree(COPYST);
+                totree(anstdispl);
+                totree(szof(ansttype));
+                totree(len1);
+            }
+            else if (anst == IDENT)
             {
                 int globid = anstdispl < 0 ? -1 : 1;
                 while (next == DOT)
