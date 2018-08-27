@@ -669,38 +669,38 @@ void* interpreter(void* pcPnt)
                 num = mem[x--];
                 str2 = mem[x--];
                 str1 = mem[x--];
-                //strncpy(&srt1, &str2, num);
+                strncpy(&srt1, &str2, num);
                 break;
             case STRCATC:
                 str2 = mem[x--];
                 str1 = mem[x--];
-               // strcat(&srt1, &str2);
+                strcat(&srt1, &str2);
                 break;
             case STRNCATC:
                 num = mem[x--];
                 str2 = mem[x--];
                 str1 = mem[x--];
-               // strncat(&srt1, &str2, num);
+                strncat(&srt1, &str2, num);
                 break;
             case STRCMPC:
                 str2 = mem[x--];
                 str1 = mem[x--];
-               // strcmp(&srt1, &str2);
+                strcmp(&srt1, &str2);
                 break;
             case STRNCMPC:
                 num = mem[x--];
                 str2 = mem[x--];
                 str1 = mem[x--];
-                //strncat(&srt1, &str2, num);
+                strncat(&srt1, &str2, num);
                 break;
             case STRSTRC:
                 str2 = mem[x--];
                 str1 = mem[x];
-               // mem[x] = strstr(&srt1, &str2);
+                mem[x] = strstr(&srt1, &str2);
                 break;
             case STRLENC:
                 str1 = mem[x];
-               // mem[x] = strlen(&str1);
+                mem[x] = strlen(&str1);
                 break;
             case STRUCTWITHARR:
             {

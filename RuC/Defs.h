@@ -349,14 +349,14 @@
 #define RAND      -42
 #define ROUND     -43
 
-#define STRCPY    44
-#define STRNCPY   45
-#define STRCAT    46
-#define STRNCAT   47
-#define STRCMP    48
-#define STRNCMP   49
-#define STRSTR    50
-#define STRLEN    51
+#define STRCPY    -44
+#define STRNCPY   -45
+#define STRCAT    -46
+#define STRNCAT   -47
+#define STRCMP    -48
+#define STRNCMP   -49
+#define STRSTR    -50
+#define STRLEN    -51
 
 
 #define TMSGSEND   -52
