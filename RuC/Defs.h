@@ -251,18 +251,27 @@
 #define RANDC     9542
 #define ROUNDC    9543
 
-#define MSGSENDC  9544
-#define MSGRECEIVEC 9545
-#define JOINC     9546
-#define SLEEPC    9547
-#define SEMCREATEC  9548
-#define SEMWAITC  9549
-#define SEMPOSTC  9550
-#define CREATEC   9551
-#define INITC     9552
-#define DESTROYC  9553
-#define EXITC     9554
-#define GETNUMC   9555
+#define STRCPYC   9544
+#define STRNCPYC  9545
+#define STRCATC   9546
+#define STRNCATC  9547
+#define STRCMPC   9548
+#define STRNCMPC  9549
+#define STRSTRC   9550
+#define STRLENC   9551
+
+#define MSGSENDC  9552
+#define MSGRECEIVEC 9553
+#define JOINC     9554
+#define SLEEPC    9555
+#define SEMCREATEC  9556
+#define SEMWAITC  9557
+#define SEMPOSTC  9558
+#define CREATEC   9559
+#define INITC     9560
+#define DESTROYC  9561
+#define EXITC     9562
+#define GETNUMC   9563
 // Лексемы
 
 #define COMMA     100
@@ -340,26 +349,36 @@
 #define RAND      -42
 #define ROUND     -43
 
-#define TMSGSEND  -44
-#define TMSGRECEIVE -45
-#define TJOIN     -46
-#define TSLEEP    -47
-#define TSEMCREATE  -48
-#define TSEMWAIT  -49
-#define TSEMPOST  -50
-#define TCREATE   -51
-#define TINIT     -52
-#define TDESTROY  -53
-#define TEXIT     -54
-#define TGETNUM   -55
+#define STRCPY    -44
+#define STRNCPY   -45
+#define STRCAT    -46
+#define STRNCAT   -47
+#define STRCMP    -48
+#define STRNCMP   -49
+#define STRSTR    -50
+#define STRLEN    -51
 
-#define SH_DEFINE     -56   // #define
-#define SH_IFDEF      -57   // #ifdef
-#define SH_IFNDEF     -58   // #ifndef
-#define SH_IF         -59   // #if
-#define SH_ELIF       -60   // #elif
-#define SH_ENDIF      -61   // #endif
-#define SH_ELSE       -62   // #else
+
+#define TMSGSEND   -52
+#define TMSGRECEIVE -53
+#define TJOIN      -54
+#define TSLEEP     -55
+#define TSEMCREATE -56
+#define TSEMWAIT   -57
+#define TSEMPOST   -58
+#define TCREATE    -59
+#define TINIT      -60
+#define TDESTROY   -61
+#define TEXIT      -62
+#define TGETNUM    -63
+
+#define SH_DEFINE     -64   // #define
+#define SH_IFDEF      -65   // #ifdef
+#define SH_IFNDEF     -66   // #ifndef
+#define SH_IF         -67   // #if
+#define SH_ELIF       -68   // #elif
+#define SH_ENDIF      -69   // #endif
+#define SH_ELSE       -70   // #else
 
 #define LVOIDASTER    -150
 
