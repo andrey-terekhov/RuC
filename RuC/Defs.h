@@ -231,7 +231,7 @@
 
 // Коды операций стандартных функций
 
-#define ABSIC     9525
+#define ABSIC     9651
 #define CASTC     9526
 
 #define CREATEDIRECTC 9528
@@ -363,6 +363,7 @@
 #define SH_ELSE       -62   // #else
 
 #define LVOIDASTER    -150
+#define ABSI          -151
 
 // Узлы дерева
 #define TIdent      -300
@@ -577,6 +578,9 @@
 #define no_ident_in_define                 359
 #define not_int_in_define                  360
 #define getdigsensorerr                    361
+
+#define not_string_in_stanfunc             382
+#define not_int_in_stanfunc                363
 
 //  коды предупреждений
 
