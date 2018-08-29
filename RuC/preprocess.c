@@ -19,7 +19,6 @@ int mlastrp = -1;
 int mp = 3;
 int msp = 0;
 int ifln = 0;
-
 int mcl;
 
 extern void endofline();
@@ -116,7 +115,7 @@ void show_macro()
     {
     printf_char1(str1[k]);
     }
-    if(flag = 0)
+    if(flag == 0)
     {
       printf("В строке есть макрозамена, строка после макрогенерации:\nline) ");
         for (int k = lines[line]; k < charnum;k++)
@@ -719,6 +718,7 @@ int check_if(int type_if)
             return 1 - flag;
         }
     }
+    return 0;
 }
 
 void end_line()
