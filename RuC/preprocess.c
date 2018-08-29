@@ -117,7 +117,7 @@ void show_macro()
     {
     printf_char1(str1[k]);
     }
-    if(flag = 0)
+    if(flag == 0)
     {
       printf("В строке есть макрозамена, строка после макрогенерации:\nline) ");
         for ( k = lines[line]; k < charnum;k++)
@@ -459,7 +459,6 @@ void from_functionident(int r)
 
     int finish = functionident[r1];
     int newfi = functionident[r1 + 1];
-    int i;
     int flag = 1;
     msp = 0;
     while(macrofunction[newfi] != '\n' ) 
