@@ -14,6 +14,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <semaphore.h>
+#include <sys/stat.h>
 
 #include "th_static.h"
 
@@ -66,6 +67,7 @@ int procd, iniprocs[INIPROSIZE], base = 0, adinit, NN;
 FILE *input;
 char sem_print[] = "sem_print", sem_debug[] = "sem_debug";
 sem_t *sempr, *semdeb;
+int str1, str2;
 
 void runtimeerr(int e, int i, int r)
 {
@@ -388,7 +390,9 @@ void* interpreter(void* pcPnt)
     int l, x, origpc = *((int*) pcPnt), numTh = t_getThNum();
     int N, bounds[100], d,from, prtype, cur0, pc = abs(origpc);
     int i,r, flagstop = 1, entry, di, di1, len;
+    int num, str1, str2;
     double lf, rf;
+
     
     if (origpc > 0)
     {
@@ -643,7 +647,49 @@ void* interpreter(void* pcPnt)
             case ROUNDC:
                 mem[--x] = rf < 0 ? (int)(rf-0.5) : (int)(rf+0.5);
                 break;
-                
+                break;
+            case STRCPYC:
+                str2 = mem[x--];
+                str1 = mem[x--];
+               // strcpy(&str1,&str2);
+                break;
+            case STRNCPYC:
+                num = mem[x--];
+                str2 = mem[x--];
+                str1 = mem[x--];
+                strncpy((char*)&str1, (char*)&str2, num);
+                break;
+            case STRCATC:
+                str2 = mem[x--];
+                str1 = mem[x--];
+                strcat((char*)&str1, (char*)&str2);
+                break;
+            case STRNCATC:
+                num = mem[x--];
+                str2 = mem[x--];
+                str1 = mem[x--];
+                strncat((char*)&str1, (char*)&str2, num);
+                break;
+            case STRCMPC:
+                str2 = mem[x--];
+                str1 = mem[x--];
+                strcmp((char*)&str1, (char*)&str2);
+                break;
+            case STRNCMPC:
+                num = mem[x--];
+                str2 = mem[x--];
+                str1 = mem[x--];
+                strncat((char*)&str1, (char*)&str2, num);
+                break;
+            case STRSTRC:
+                str2 = mem[x--];
+                str1 = mem[x];
+                mem[x] = (int)strstr((char*)&str1, (char*)&str2);
+                break;
+            case STRLENC:
+                str1 = mem[x];
+                mem[x] = (int)strlen((char*)&str1);
+                break;
             case STRUCTWITHARR:
             {
                 int oldpc, oldbase = base, procnum;
@@ -995,6 +1041,14 @@ void* interpreter(void* pcPnt)
                 di = mem[x--];
                 for (i=0; i<len; i++)
                     mem[di+i] = mem[x+i+2];
+                break;
+            case COPYST:
+                di = mem[pc++];
+                len = mem[pc++];
+                x -= mem[pc++] + 1;
+                for (i=0; i<len; i++)
+                    mem[x+i] = mem[x+i+di];
+                x += len-1;
                 break;
                 
             case SLICE:

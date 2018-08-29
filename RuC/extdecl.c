@@ -365,6 +365,14 @@ void actstring()
     anst = VAL;
 }
 
+void mustbestring()
+{
+    exprassn(1);
+    toval();
+    if (! (ansttype > 0 && modetab[ansttype] == MARRAY && modetab[modetab[ansttype+1]] == LCHAR) )
+        error(not_string_in_stanfunc);
+}
+
 void primaryexpr()
 {
 	if (cur == NUMBER)
@@ -444,7 +452,24 @@ void primaryexpr()
         int func = cur;
         if (scaner() != LEFTBR)
             error(no_leftbr_in_stand_func);
-        if (func <= TMSGSEND  && func >= TGETNUM)
+/*        if (func <= STRCPY && func >= STRLEN)     // функции работы со строками
+        {
+            mustbestring();
+            if (func != STRLEN)
+            {
+                mustbe(COMMA, no_comma_in_act_params);
+                mustbestring();
+                if (func == STRNCPY || func == STRNCAT || func == STRNCMP)
+                {
+                    mustbe(COMMA, no_comma_in_act_params);
+                    exprassn(1);
+                    toval();
+                    if (! is_int(ansttype))
+                        error(not_int_in_stanfunc);
+                }
+            }
+        }
+        else */ if (func <= TMSGSEND  && func >= TGETNUM)
         {                                // процедуры управления параллельными нитями
             if (func == TINIT || func == TDESTROY || func == TEXIT)
                 ;                                            // void()
@@ -484,6 +509,7 @@ void primaryexpr()
                 }
                 else
                 {
+                    leftansttype = 2;
                     exprassn(1);
                     toval();
 
@@ -504,13 +530,9 @@ void primaryexpr()
                     }
                 }
             }
-            totree(9500-func);
         }
         else if (func == RAND)
-        {
-            totree(RANDC);
             ansttype = stackoperands[++sopnd] = LFLOAT;
-        }
         else
         {
             scaner();
@@ -541,14 +563,13 @@ void primaryexpr()
                     else
                         --sopnd, anst = VAL;
                 }
-                totree(9500 - func);
                 if (func == SETMOTOR || func == VOLTAGE)
                     sopnd-=2;
                 else
                     anst = VAL, --sopnd;
             }
             else if (func == ABS && is_int(ansttype))
-                    totree(ABSIC);
+                    func = ABSI;
             else
             {
                 if (is_int(ansttype))
@@ -558,11 +579,11 @@ void primaryexpr()
                 }
                 if (!is_float(ansttype))
                     error(bad_param_in_stand_func);
-                totree(9500 - func);
                 if (func == ROUND)
                     ansttype = stackoperands[sopnd] = LINT;
             }
         }
+        totree(9500-func);
 		mustbe(RIGHTBR, no_rightbr_in_stand_func);
 	}
 	else
@@ -756,9 +777,17 @@ void postexpr()
             if (ansttype < 0 || modetab[ansttype] != MSTRUCT)
                 error(select_not_from_struct);
             if (anst == VAL)    // структура - значение функции
-                error(select_from_func_value);
-            
-            if (anst == IDENT)
+            {
+                int len1 = szof(ansttype);
+                anstdispl = 0;
+                while (next == DOT)
+                    anstdispl += find_field(ansttype);
+                totree(COPYST);
+                totree(anstdispl);
+                totree(szof(ansttype));
+                totree(len1);
+            }
+            else if (anst == IDENT)
             {
                 int globid = anstdispl < 0 ? -1 : 1;
                 while (next == DOT)

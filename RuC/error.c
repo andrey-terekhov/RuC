@@ -568,6 +568,12 @@ void error(int ernum)
         case getdigsensorerr:
             printf("вторым параметром GETDIGSENSOR должна быть явная запись массива из целых констант\n");
             break;
+        case not_string_in_stanfunc:
+            printf("в операции над строками после параметра нет , \n");
+            break;
+        case not_int_in_stanfunc:
+            printf("в этой операции над строками последний параметр должен иметь тип ЦЕЛ\n");
+            break;
 
         default: ;
     }

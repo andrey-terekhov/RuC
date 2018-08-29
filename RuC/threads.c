@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <sys/stat.h>
 #include "th_static.h"
 
 #define TRUE 1
