@@ -80,6 +80,7 @@ void show_macro()
     char str1[50];
     char str2[50];
     int j = 0;
+    int k;
     int flag=1;
     int i = 0;
     while(i1 != charnum)
@@ -111,20 +112,20 @@ void show_macro()
 
     printf("Line %i) ", m_conect_lines[line]);
 
-    for (int k = 1; k < j;k++)
+    for (k = 1; k < j;k++)
     {
     printf_char1(str1[k]);
     }
     if(flag == 0)
     {
       printf("В строке есть макрозамена, строка после макрогенерации:\nline) ");
-        for (int k = lines[line]; k < charnum;k++)
+        for ( k = lines[line]; k < charnum;k++)
         {
         printf_char1(source[k]);
         }                  
     }
 }
-//123  
+
 int mletter(int r)
 {
     return (macrofunction[r] >= 'A' && macrofunction[r] <= 'Z') || (macrofunction[r] >='a' && macrofunction[r] <= 'z') 
@@ -152,6 +153,7 @@ int mequal(int str[], int j)
 
 void m_nextch()
 {
+    int j;
     
     onemore();
     if (curchar == EOF)
@@ -169,8 +171,8 @@ void m_nextch()
         mlines[mline+1] = m_charnum;
         if (kw)
         {
-            printf("line %i) ", mline-1);
-            for (int j=mlines[mline-1]; j<mlines[mline]; j++)
+            printf("Line %i) ", mline-1);
+            for ( j=mlines[mline-1]; j<mlines[mline]; j++)
                 if (before_source[j] != EOF)
                     printf_char1(before_source[j]);
         }
@@ -193,9 +195,10 @@ void m_fprintf(int a)
 
 void to_macrotext(char chang[], int oldrepr)
 {
+    int i;
    // printf ("to_macrotext\n");
     macrotext[mp++] = oldrepr;
-    for(int i = 0; chang[i] != 0; i++)
+    for( i = 0; chang[i] != 0; i++)
     {
         macrotext[mp++] = chang[i];
     }
@@ -206,13 +209,14 @@ void macro_reprtab(char str[],char chang [])
 {
     //printf ("macro_reprtab str = %s; chang = %s; ",str, chang);
     int oldrepr = rp;
-    int r;
+    int r,i;
+
 
     mlastrp = oldrepr;
     hash = 0;
     rp += 2;
 
-    for(int i=0; str[i] != 0; i++)
+    for( i=0; str[i] != 0; i++)
     {
         hash += str[i];
         reprtab[rp++] = str[i];
@@ -241,6 +245,7 @@ void macro_reprtab(char str[],char chang [])
 
 void from_macrotext(char str[])
 { 
+    int i;
     //printf("from_macrotext, %s\n", str);
     msp = 0;
     int r = faind_ident(str);
@@ -268,7 +273,7 @@ void from_macrotext(char str[])
         return;
     }
     
-    for(int i = 0; str[i] != 0; i++)
+    for( i = 0; str[i] != 0; i++)
     {
         mstring[msp++] = str[i];
         //m_fprintf(str[i]);
@@ -441,6 +446,7 @@ void to_functionident ()
 
 void from_functionident(int r)
 {
+    int i,kp,cp;
     int r1 = r + 2;
     int str[30];
 
@@ -452,7 +458,6 @@ void from_functionident(int r)
 
     int finish = functionident[r1];
     int newfi = functionident[r1 + 1];
-    int i;
     int flag = 1;
     msp = 0;
     while(macrofunction[newfi] != '\n' ) 
@@ -461,7 +466,7 @@ void from_functionident(int r)
         if(mletter(newfi))
         {
             flag = 1;
-            for (int i = 0; i < 30; i++)
+            for ( i = 0; i < 30; i++)
             {
                 str[i] = 0;
             }
@@ -472,12 +477,12 @@ void from_functionident(int r)
                 str[i++] = macrofunction[newfi++];
             }
             //printf(" str = %s ",str);
-            for(int kp = r1 + 2; kp < finish; )
+            for( kp = r1 + 2; kp < finish; )
             {
                // printf(" equale = %d ",mequal(str, kp + 1));
                 if (mequal(str, kp + 1))
                 {
-                    for(int cp = functionident[kp]; fchange[cp] != '\n'; cp++)
+                    for( cp = functionident[kp]; fchange[cp] != '\n'; cp++)
                     {
                         mstring[msp++] = fchange[cp];
                         //m_fprintf(fchange[cp]); 
@@ -490,7 +495,7 @@ void from_functionident(int r)
             }
             if (flag == 1)
             {
-                for(int i = 0; str[i] != 0; i++)
+                for( i = 0; str[i] != 0; i++)
                 {
                    mstring[msp++] = str[i]; 
                 }
@@ -509,6 +514,7 @@ void from_functionident(int r)
 
 void create_chenge(int r1)
 {
+    int i;
     int r = r1 + 2;
     int cp = 1;
     functionident[r] = cp;
@@ -541,7 +547,7 @@ void create_chenge(int r1)
                 if(letter())
                 {
                     m_ident();
-                    for(int i = 0; i < msp; i++)
+                    for(i = 0; i < msp; i++)
                     {
                         fchange[cp++] =  mstring[i];
                     }
@@ -566,6 +572,7 @@ void create_chenge(int r1)
 
 void r_macrofunction()
 {
+    int j;
     int olderfip = fip++;
     functionident[fip++] = mfp;
 
@@ -586,7 +593,7 @@ void r_macrofunction()
         if (letter())
         {
             m_ident();
-            for (int j = 0; j < msp; j++)
+            for ( j = 0; j < msp; j++)
             {
                 macrofunction[mfp++] =  mstring[j];  
             }
@@ -664,10 +671,10 @@ void m_ident()
 int faind_ident(char str[])
 {
     int fpr = rp;
-    int r;
+    int i, r;
     hash = 0;
     fpr += 2;
-    for(int i = 0; str[i] != 0; i++)
+    for( i = 0; str[i] != 0; i++)
     {
         hash += str[i];
         reprtab[fpr++] = str[i];
@@ -689,12 +696,13 @@ int faind_ident(char str[])
 
 int check_if(int type_if)
 {
+
     int flag = 0;
     char str[30] = {"\0"};
 
     if(type_if == SH_IF )
     {
-    return 0;
+        return 0;
     }
     else if (type_if == SH_IFDEF || type_if == SH_IFNDEF)
     {
@@ -703,7 +711,7 @@ int check_if(int type_if)
         {
         str[i++] = curchar;
         m_nextch();
-        // printf ("Mc str = %s\n",str);
+        printf ("Mc str = %s\n",str);
         }
         if( faind_ident(str))
         {
@@ -745,6 +753,7 @@ void folse_if ()
     {
         if (curchar == '#')
         {
+            printf("T31\n");
             fl_cur = macro_keywords();
             if(fl_cur == SH_ENDIF)
             {
@@ -755,10 +764,13 @@ void folse_if ()
                 folse_if();
             } 
         }
-        //printf("folse if c %c \n",curchar);
+        else
+        {
         m_nextch();
+        //printf("folse if c %c \n",curchar);
+        }
     }
-    printf("if не закончился\n");
+    printf("if не закончился1\n");
     exit (10);       
 }
 
@@ -779,9 +791,12 @@ int m_folse()
                 folse_if();
             } 
         }
-        m_nextch();
+        else
+        {
+            m_nextch();
+        }
     }
-    printf("if не закончился\n");
+    printf("if не закончился2\n");
     exit (10);      
 }
 
@@ -791,9 +806,13 @@ void m_true(int type_if)
     {
        // printf ("c %c; ",curchar);
         macroscan();
-        if (cur == SH_ELSE || cur == SH_ELIF || cur == SH_ENDIF)
+        if (cur == SH_ELSE || cur == SH_ELIF )
         {
             break;
+        }
+        if(cur == SH_ENDIF)
+        {
+            return;
         }
     }
 
@@ -809,7 +828,7 @@ void m_true(int type_if)
 }
 
 void m_if(int type_if)
-{
+{ 
     int flag = check_if(type_if);// начало (if)
     end_line();
     if(flag)
@@ -819,10 +838,10 @@ void m_if(int type_if)
     }
     else
     {
-        cur = m_folse();// 
+        cur = m_folse();
     }
 
-    if (type_if == SH_IF) // середина (else if)
+    /*if (type_if == SH_IF) // середина (else if)
     {
         while (cur == SH_ELIF)
         {
@@ -844,11 +863,11 @@ void m_if(int type_if)
     {
         printf("Неправильное макрослово\n");
         exit (10);
-    }
+    }*/
 
-    if (cur = SH_ELSE)// конец (else)
+    if (cur == SH_ELSE)// конец (else)
     {
-        end_line();
+        cur = 0;
         m_true(type_if);
         return;
     }
@@ -856,6 +875,7 @@ void m_if(int type_if)
 
 void macroscan()
 {  
+    int j;
    // printf ("Макроскан\n");
     switch(curchar)
     {
@@ -879,6 +899,7 @@ void macroscan()
             }
             else if (cur == SH_ELSE || cur == SH_ELIF || cur == SH_ENDIF)
             {
+                printf ("T11\n");
                 return;
             }
             else
@@ -893,7 +914,7 @@ void macroscan()
             if(letter())
             {
                 m_ident();
-                for (int j = 0; j < msp; j++)
+                for ( j = 0; j < msp; j++)
                 {
                    m_fprintf(mstring[j]);  
                 }
@@ -913,7 +934,7 @@ void macroscan()
 
 void preprocess_file()
 {
-    int i = 0;
+    
     mfirstrp = rp;
 
     getnext();
@@ -930,7 +951,7 @@ void preprocess_file()
 
     while (curchar != EOF )
     {
-       // printf ("c %c; ",curchar);
+        //printf ("c %c; ",curchar);
         macroscan();
     }
     
