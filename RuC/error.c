@@ -31,7 +31,7 @@ void warning(int ernum)
 
 void error(int ernum)
 {
-    int i;
+    int i, j; 
   //tablesandtree();
     printf("error\n");
     //printf("line - 1=%d, mline=%d, carnum = %d, lines[line]=%d, lines[line+1]=%d \n", line-1,m_conect_lines[line-1],charnum,lines[line],lines[line+1]);
@@ -39,10 +39,11 @@ void error(int ernum)
     {
         line--;
     }
-    for(int j = 1; j<m_conect_lines[line];j++)
+    for(j = 1; j < m_conect_lines[line]; j++)
     {
         printf("line %i) ", j);
-        for (i=mlines[j]; i<mlines[j+1]; i++)
+
+        for ( i = mlines[j]; i < mlines[j+1]; i++)
             printf_char(before_source[i]);
     }
     show_macro();

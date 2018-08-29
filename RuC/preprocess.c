@@ -125,7 +125,7 @@ void show_macro()
         }                  
     }
 }
-//123  
+
 int mletter(int r)
 {
     return (macrofunction[r] >= 'A' && macrofunction[r] <= 'Z') || (macrofunction[r] >='a' && macrofunction[r] <= 'z') 
@@ -170,7 +170,7 @@ void m_nextch()
         mlines[mline+1] = m_charnum;
         if (kw)
         {
-            printf("line %i) ", mline-1);
+            printf("Line %i) ", mline-1);
             for (int j=mlines[mline-1]; j<mlines[mline]; j++)
                 if (before_source[j] != EOF)
                     printf_char1(before_source[j]);
@@ -690,12 +690,13 @@ int faind_ident(char str[])
 
 int check_if(int type_if)
 {
+
     int flag = 0;
     char str[30] = {"\0"};
 
     if(type_if == SH_IF )
     {
-    return 0;
+        return 0;
     }
     else if (type_if == SH_IFDEF || type_if == SH_IFNDEF)
     {
@@ -704,7 +705,7 @@ int check_if(int type_if)
         {
         str[i++] = curchar;
         m_nextch();
-        // printf ("Mc str = %s\n",str);
+        printf ("Mc str = %s\n",str);
         }
         if( faind_ident(str))
         {
@@ -745,6 +746,7 @@ void folse_if ()
     {
         if (curchar == '#')
         {
+            printf("T31\n");
             fl_cur = macro_keywords();
             if(fl_cur == SH_ENDIF)
             {
@@ -755,10 +757,13 @@ void folse_if ()
                 folse_if();
             } 
         }
-        //printf("folse if c %c \n",curchar);
+        else
+        {
         m_nextch();
+        //printf("folse if c %c \n",curchar);
+        }
     }
-    printf("if не закончился\n");
+    printf("if не закончился1\n");
     exit (10);       
 }
 
@@ -779,9 +784,12 @@ int m_folse()
                 folse_if();
             } 
         }
-        m_nextch();
+        else
+        {
+            m_nextch();
+        }
     }
-    printf("if не закончился\n");
+    printf("if не закончился2\n");
     exit (10);      
 }
 
@@ -791,9 +799,13 @@ void m_true(int type_if)
     {
        // printf ("c %c; ",curchar);
         macroscan();
-        if (cur == SH_ELSE || cur == SH_ELIF || cur == SH_ENDIF)
+        if (cur == SH_ELSE || cur == SH_ELIF )
         {
             break;
+        }
+        if(cur == SH_ENDIF)
+        {
+            return;
         }
     }
 
@@ -809,7 +821,7 @@ void m_true(int type_if)
 }
 
 void m_if(int type_if)
-{
+{ 
     int flag = check_if(type_if);// начало (if)
     end_line();
     if(flag)
@@ -819,10 +831,10 @@ void m_if(int type_if)
     }
     else
     {
-        cur = m_folse();// 
+        cur = m_folse();
     }
 
-    if (type_if == SH_IF) // середина (else if)
+    /*if (type_if == SH_IF) // середина (else if)
     {
         while (cur == SH_ELIF)
         {
@@ -844,11 +856,11 @@ void m_if(int type_if)
     {
         printf("Неправильное макрослово\n");
         exit (10);
-    }
+    }*/
 
     if (cur = SH_ELSE)// конец (else)
     {
-        end_line();
+        cur = 0;
         m_true(type_if);
         return;
     }
@@ -879,6 +891,7 @@ void macroscan()
             }
             else if (cur == SH_ELSE || cur == SH_ELIF || cur == SH_ENDIF)
             {
+                printf ("T11\n");
                 return;
             }
             else
@@ -930,7 +943,7 @@ void preprocess_file()
 
     while (curchar != EOF )
     {
-       // printf ("c %c; ",curchar);
+        //printf ("c %c; ",curchar);
         macroscan();
     }
     

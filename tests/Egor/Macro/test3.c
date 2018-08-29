@@ -8,6 +8,11 @@ void main()
 int a = s(E, 6, 10);
 int b = k(1, k(3, 4));
 int c = l(11, 12);
+printid(a);
+printid(b);
+printid(c);
+c = s(a, b, c);
+printid(c);
 }
 
 

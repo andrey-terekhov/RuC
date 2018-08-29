@@ -2,11 +2,12 @@
 #ifdef a
   #define abc -7
 #else
-  #define abc  10
+  #define abc -4
 #endif
 void main()
 {
-  abc;
+ int n = abc;
+ printid(n);
 }
 
 

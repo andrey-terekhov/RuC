@@ -646,61 +646,48 @@ void* interpreter(void* pcPnt)
             case ROUNDC:
                 mem[--x] = rf < 0 ? (int)(rf-0.5) : (int)(rf+0.5);
                 break;
-           /* case STRNCPYC:
-                str1 = mem[x--];
-                num = mem[x--];
-                //printf("num = %d; str200 = %d; str100 = %d; str10 = %d", num, str200, str100, str10);
-                printf("num = %i; string = ",num);
-                for(int k = 0; k<mem[str100-1]; k++)
-                    printf( "%c",mem[str100+k]);
-                printf("num = %d; str100 = %d;", num, str100);
-                printf("str200 = %d;\n", str200);
-                printf("adres: num = %d; str100 = %d;", &num, &str100);
-                printf("str200 = %d;\n",  &str200);
-                printf("adres: num = %d; s str100 = %s;", &num, &str100);
-                printf("s str200 = %s; \n", &str200);*/
-                break; 
+
             case STRCPYC:
                 str2 = mem[x--];
                 str1 = mem[x--];
-               // strcpy(&str1,&str2);
+                strcat((char*)&str1, (char*)&str2);
                 break;
             case STRNCPYC:
                 num = mem[x--];
                 str2 = mem[x--];
                 str1 = mem[x--];
-                strncpy(&srt1, &str2, num);
+                strncpy((char*)&str1, (char*)&str2, num);
                 break;
             case STRCATC:
                 str2 = mem[x--];
                 str1 = mem[x--];
-                strcat(&srt1, &str2);
+                strcat((char*)&str1, (char*)&str2);
                 break;
             case STRNCATC:
                 num = mem[x--];
                 str2 = mem[x--];
                 str1 = mem[x--];
-                strncat(&srt1, &str2, num);
+                strncat((char*)&str1, (char*)&str2, num);
                 break;
             case STRCMPC:
                 str2 = mem[x--];
                 str1 = mem[x--];
-                strcmp(&srt1, &str2);
+                strcmp((char*)&str1, (char*)&str2);
                 break;
             case STRNCMPC:
                 num = mem[x--];
                 str2 = mem[x--];
                 str1 = mem[x--];
-                strncat(&srt1, &str2, num);
+                strncat((char*)&str1, (char*)&str2, num);
                 break;
             case STRSTRC:
                 str2 = mem[x--];
                 str1 = mem[x];
-                mem[x] = strstr(&srt1, &str2);
+                mem[x] = (int)strstr((char*)&str1, (char*)&str2);
                 break;
             case STRLENC:
                 str1 = mem[x];
-                mem[x] = strlen(&str1);
+                mem[x] = (int)strlen((char*)&str1);
                 break;
             case STRUCTWITHARR:
             {
