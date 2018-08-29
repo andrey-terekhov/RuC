@@ -53,22 +53,24 @@ int newdecl(int type, int elemtype)
     return check_duplicates();
 }
 
-int evaluate_params(int formatstr[], int formattypes[], int placeholders[])
+int evaluate_params(int num, int formatstr[], int formattypes[], int placeholders[])
 {
     int numofparams = 0;
-    int i = 0;
-    do
+    int i = 0, fsi;
+//           for (i=0; i<num; i++)
+//           printf("%c %i\n", formatstr[i], formatstr[i]);
+    for (i=0; i<num; i++)
     {
         if (formatstr[i] == '%')
         {
-            if (formatstr[++i] != '%') {
-                if (numofparams == MAXPRINTFPARAMS) {
+            if (fsi = formatstr[++i], fsi != '%')
+            {
+                if (numofparams == MAXPRINTFPARAMS)
                     error(too_many_printf_params);
-                }
 
-                placeholders[numofparams] = formatstr[i];
+                placeholders[numofparams] = fsi;
             }
-            switch (formatstr[i]) // Если добавляется новый спецификатор -- не забить внести его в switch в bad_printf_placeholder
+            switch (fsi) // Если добавляется новый спецификатор -- не забыть внести его в switch в bad_printf_placeholder
             {
                 case 'i':
                 case 1094:   // 'ц'
@@ -96,13 +98,14 @@ int evaluate_params(int formatstr[], int formattypes[], int placeholders[])
                 case 0:
                     error(printf_no_format_placeholder);
                     break;
+                    
                 default:
-                    bad_printf_placeholder = formatstr[i];
+                    bad_printf_placeholder = fsi;
                     error(printf_unknown_format_placeholder);
                     break;
             }
         }
-    } while (formatstr[i++]);
+    }
 
     return numofparams;
 }
@@ -481,6 +484,7 @@ void primaryexpr()
                 }
                 else
                 {
+                    leftansttype = 2;
                     exprassn(1);
                     toval();
 
@@ -753,9 +757,17 @@ void postexpr()
             if (ansttype < 0 || modetab[ansttype] != MSTRUCT)
                 error(select_not_from_struct);
             if (anst == VAL)    // структура - значение функции
-                error(select_from_func_value);
-            
-            if (anst == IDENT)
+            {
+                int len1 = szof(ansttype);
+                anstdispl = 0;
+                while (next == DOT)
+                    anstdispl += find_field(ansttype);
+                totree(COPYST);
+                totree(anstdispl);
+                totree(szof(ansttype));
+                totree(len1);
+            }
+            else if (anst == IDENT)
             {
                 int globid = anstdispl < 0 ? -1 : 1;
                 while (next == DOT)
@@ -1419,20 +1431,18 @@ void statement()
                         int placeholders[MAXPRINTFPARAMS];
                         int paramnum = 0;
                         int sumsize = 0;
-                        int i = 0;
+                        int i = 0, fnum;
 
                         mustbe(LEFTBR, no_leftbr_in_printf);
-                        if (next != STRING)
+                        if (scaner() != STRING)                  //выкушиваем форматную строку
                             error(wrong_first_printf_param);
 
-                        do
+                        for (i=0; i<num; i++)
                             formatstr[i] = lexstr[i];
-                        while (lexstr[i++]);
+                        formatstr[num] = 0;
 
-                        paramnum = evaluate_params(formatstr, formattypes, placeholders);
-
-                        scaner();  //выкушиваем форматную строку
-
+                        paramnum = evaluate_params(fnum = num, formatstr, formattypes, placeholders);
+                
                         for (i = 0; scaner() == COMMA; i++)
                         {
                             if (i >= paramnum)
@@ -1462,11 +1472,10 @@ void statement()
                             error(wrong_printf_param_number);
 
                         totree(TString);
+                        totree(fnum);
 
-                        i = 0;
-                        do
+                        for(i = 0; i<fnum; i++)
                             totree(formatstr[i]);
-                        while (formatstr[i++]);
                         totree(TExprend);
 
                         totree(TPrintf);

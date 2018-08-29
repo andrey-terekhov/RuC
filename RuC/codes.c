@@ -207,6 +207,11 @@ void tablesandtree()
             case COPY1STASS:
                 fprintf(output, "COPY1STASS (%i)\n", tree[i++]);// length
                 break;
+            case COPYST:
+                fprintf(output, "COPYST %i ", tree[i++]);       // displ
+                fprintf(output, "(%i)", tree[i++]);             // length
+                fprintf(output, "(%i)\n", tree[i++]);           // length1
+                break;
 
             case TCall1:
                 fprintf(output, "TCall1 %i\n", tree[i++]);
@@ -340,7 +345,7 @@ void tablesandcode()
                 fprintf(output, "GETANSENSOR\n");
                 break;
             case VOLTAGEC:
-                fprintf(output, "SETVOLTAGE\n");
+                fprintf(output, "VOLTAGE\n");
                 break;
             case CREATEC:
                 fprintf(output, "TCREATE\n");
@@ -450,7 +455,7 @@ void tablesandcode()
             case LID:
                 memcpy(&numdouble, &mem[i], sizeof(double));
                 i += 2;
-                fprintf(output, "LID %f\n", numdouble);
+                fprintf(output, "LID %.15f\n", numdouble);
                 break;
             case LOAD:
                 fprintf(output, "LOAD %i\n", mem[i++]);
@@ -778,6 +783,11 @@ void tablesandcode()
                 break;
             case COPY1STASSV:
                 fprintf(output, "COPY1STASSV %i\n", mem[i++]);    // length
+                break;
+            case COPYST:
+                fprintf(output, "COPYST %i ", mem[i++]);          // displ
+                fprintf(output, "(%i)", mem[i++]);                // length
+                fprintf(output, "(%i)\n", mem[i++]);              // length1
                 break;
 
             case REMASS:

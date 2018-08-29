@@ -223,6 +223,7 @@
 #define COPY1ST  9305
 #define COPY0STASS  9306
 #define COPY1STASS  9307
+#define COPYST   9308
 #define COPY10V  9502
 #define COPY11V  9503
 #define COPY1STASSV 9507

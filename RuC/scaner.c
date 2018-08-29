@@ -404,6 +404,7 @@ int scan()
                 {
                     next_string_elem();
                     lexstr[n++] = num;
+//                    printf("n= %i %c %i\n", n-1, num, num);
                 }
                 if (n == MAXSTRINGL)
                     error(too_long_string);
@@ -416,7 +417,7 @@ int scan()
                     flag = 0;
             }
 
-            num = --n;
+            num = n;
             instring = 0;
             return STRING;
         }
@@ -569,14 +570,6 @@ int scan()
                 hash = 0;
                 
                 // решетка на 1 месте -- значит, ключевое слово препроцессора
-/*
-                if (curchar == '#')
-                {
-                    hash += curchar;
-                    reprtab[rp++] = curchar;
-                    nextch();
-                }
-*/
                 do
                 {
                     

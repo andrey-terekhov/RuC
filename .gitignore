@@ -1,7 +1,13 @@
 *.o
+*.dll
+*.exe
+*.zip
 *.txt
+*.pdf
 *.doc
 *.docx
+*.jpg
+*.jpeg
 *.xcodeproj/
 
 Build/

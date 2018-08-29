@@ -282,7 +282,7 @@ void auxprint(int beg, int t, char before, char after)
     else if (t == LFLOAT)
     {
         memcpy(&rf, &mem[beg], sizeof(double));
-        printf("%lf", rf);
+        printf("%20.15f", rf);
     }
     else if (t == LVOID)
         printf(" значения типа ПУСТО печатать нельзя\n");
@@ -996,6 +996,14 @@ void* interpreter(void* pcPnt)
                 di = mem[x--];
                 for (i=0; i<len; i++)
                     mem[di+i] = mem[x+i+2];
+                break;
+            case COPYST:
+                di = mem[pc++];
+                len = mem[pc++];
+                x -= mem[pc++] + 1;
+                for (i=0; i<len; i++)
+                    mem[x+i] = mem[x+i+di];
+                x += len-1;
                 break;
                 
             case SLICE:

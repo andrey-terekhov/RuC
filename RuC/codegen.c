@@ -73,7 +73,7 @@ void finalop()
                 tocode(c);
                 if (c == LOGOR || c == LOGAND)
                     mem[tree[tc++]] = pc;
-                else if (c == COPY00)
+                else if (c == COPY00 || c == COPYST)
                 {
                     tocode(tree[tc++]);   // d1
                     tocode(tree[tc++]);   // d2
