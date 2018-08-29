@@ -600,6 +600,7 @@
 
 #define not_string_in_stanfunc             382
 #define not_int_in_stanfunc                363
+#define no_comma_in_act_params_stanfunc    364
 
 //  коды предупреждений
 

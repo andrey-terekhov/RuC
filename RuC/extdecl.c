@@ -367,9 +367,10 @@ void actstring()
 
 void mustbestring()
 {
+    scaner();
     exprassn(1);
     toval();
-    if (! (ansttype > 0 && modetab[ansttype] == MARRAY && modetab[modetab[ansttype+1]] == LCHAR) )
+    if (! (ansttype > 0 && modetab[ansttype] == MARRAY && modetab[ansttype+1] == LCHAR) )
         error(not_string_in_stanfunc);
 }
 
@@ -452,16 +453,17 @@ void primaryexpr()
         int func = cur;
         if (scaner() != LEFTBR)
             error(no_leftbr_in_stand_func);
-/*        if (func <= STRCPY && func >= STRLEN)     // функции работы со строками
+        if (func <= STRCPY && func >= STRLEN)     // функции работы со строками
         {
             mustbestring();
             if (func != STRLEN)
             {
-                mustbe(COMMA, no_comma_in_act_params);
+                mustbe(COMMA, no_comma_in_act_params_stanfunc);
                 mustbestring();
                 if (func == STRNCPY || func == STRNCAT || func == STRNCMP)
                 {
                     mustbe(COMMA, no_comma_in_act_params);
+                    scaner();
                     exprassn(1);
                     toval();
                     if (! is_int(ansttype))
@@ -469,7 +471,7 @@ void primaryexpr()
                 }
             }
         }
-        else */ if (func <= TMSGSEND  && func >= TGETNUM)
+        else if (func <= TMSGSEND  && func >= TGETNUM)
         {                                // процедуры управления параллельными нитями
             if (func == TINIT || func == TDESTROY || func == TEXIT)
                 ;                                            // void()
