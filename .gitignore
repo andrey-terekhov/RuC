@@ -1,6 +1,7 @@
 *.o
 *.dll
 *.exe
+*.bat
 *.zip
 *.txt
 *.pdf
@@ -14,4 +15,5 @@ Build/
 DerivedData/
 ruc
 
+!RuC/
 !keywords.txt

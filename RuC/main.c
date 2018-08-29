@@ -7,8 +7,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 
-const char * name = /* "../../../tests/stanfunc.c"; */
-            "../../../tests/Egor/test.c";
+const char * name = "tests/Egor/Macro/test3.c";
+//"../../../tests/Fadeev/import_2.c";
+             /* "../../../tests/Golovan/dining_philosophers.c"; */
 
 #include <stdio.h>
 #include <string.h>
@@ -130,13 +131,14 @@ int main(int argc, const char * argv[])
     charnum = 1;
     kw = 1;
     tc = 0;
-    
+
     preprocess_file();                //   макрогенерация
     
     fclose(output);
     fclose(input);
     
     input  = fopen("macro.txt", "r");
+
     
     if (input == NULL)
     {
@@ -150,7 +152,7 @@ int main(int argc, const char * argv[])
     next = scan();
 
     ext_decl();                       //   генерация дерева
-    
+
     lines[line+1] = charnum;
     tablesandtree();
     fclose(output);

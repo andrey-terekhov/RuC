@@ -647,11 +647,11 @@ void* interpreter(void* pcPnt)
             case ROUNDC:
                 mem[--x] = rf < 0 ? (int)(rf-0.5) : (int)(rf+0.5);
                 break;
-                break;
+
             case STRCPYC:
                 str2 = mem[x--];
                 str1 = mem[x--];
-               // strcpy(&str1,&str2);
+                strcat((char*)&str1, (char*)&str2);
                 break;
             case STRNCPYC:
                 num = mem[x--];
