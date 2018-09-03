@@ -12,6 +12,7 @@
 
 Build/
 DerivedData/
-ruc
+bin/
+obj/
 
 !keywords.txt

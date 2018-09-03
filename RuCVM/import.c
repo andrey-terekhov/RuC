@@ -17,7 +17,7 @@
 #include <sys/stat.h>
 
 #include "th_static.h"
-
+#include "util.h"
 
 // Я исхожу из того, что нумерация нитей процедурой t_create начинается с 1 и идет последовательно
 // в соответствии с порядком вызовов этой процудуры, главная программа имеет номер 0. Если стандарт POSIX
@@ -35,7 +35,6 @@
 // Каждый кусок начинается с шапки, где хранятся l, x и pc, которые нужно установить в момент старта нити.
 
 #include "Defs.h"
-extern int szof(int);
 
 #define I2CBUFFERSIZE 50
 
@@ -67,6 +66,13 @@ int procd, iniprocs[INIPROSIZE], base = 0, adinit, NN;
 FILE *input;
 char sem_print[] = "sem_print", sem_debug[] = "sem_debug";
 sem_t *sempr, *semdeb;
+
+
+int szof(int type)
+{
+    return modetab[type] == MARRAY ? 1 : type == LFLOAT ? 2 :
+    (type > 0 && modetab[type] == MSTRUCT) ? modetab[type + 1] : 1;
+}
 
 void runtimeerr(int e, int i, int r)
 {
@@ -164,49 +170,6 @@ int rungetcommand(const char *command)
 }
 
 #endif
-
-void printf_char(int wchar)
-{
-    if (wchar<128)
-        printf("%c", wchar);
-    else
-    {
-        unsigned char first = (wchar >> 6) | /*0b11000000*/ 0xC0;
-        unsigned char second = (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
-
-        printf("%c%c", first, second);
-    }
-}
-
-void fprintf_char(FILE *f, int wchar)
-{    if (wchar<128)
-    fprintf(f, "%c", wchar);
-    else
-    {
-        unsigned char first = (wchar >> 6) | /*0b11000000*/ 0xC0;
-        unsigned char second = (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
-
-        fprintf(f, "%c%c", first, second);
-    }
-}
-
-int getf_char()
-{
-    // reads UTF-8
-    
-    unsigned char firstchar, secondchar;
-    
-    if (scanf(" %c", &firstchar) == EOF)
-        return EOF;
-    else
-        if ((firstchar & /*0b11100000*/0xE0) == /*0b11000000*/0xC0)
-        {
-            scanf("%c", &secondchar);
-            return ((int)(firstchar & /*0b11111*/0x1F)) << 6 | (secondchar & /*0b111111*/0x3F);
-        }
-        else
-            return firstchar;
-}
 
 /*
 void prmem()
@@ -1640,4 +1603,10 @@ void import()
 #endif
     
     
+}
+
+int main() 
+{
+    import();
+    return 0;
 }

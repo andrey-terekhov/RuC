@@ -7,8 +7,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 
-const char * name =  "../../../tests/Fadeev/thread.c"; 
-            /* "../../../tests/Golovan/dining_philosophers.c"; */
+char * name =  "tests/sum.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -96,15 +95,20 @@ int main(int argc, const char * argv[])
         ;
     fclose(input);
     
-/*    input  = fopen(name, "r");        //   исходный текст
-    output = fopen("macro.txt", "wt");
+    if (argc == 2) 
+        name = argv[1];
+    else if (argc != 1) {
+        printf("wrong usage of ruc!");
+    }
+
+    input  = fopen(name, "r");          //   исходный текст
 
     if (input == NULL)
     {
         printf(" не найден файл %s\n", name);
         exit(1);
     }
- */
+
     modetab[1] = 0;
     modetab[2] = MSTRUCT;
     modetab[3] = 2;
@@ -198,9 +202,6 @@ int main(int argc, const char * argv[])
     
     fclose(output);
    
-    if (notrobot && (argc < 2))
-        import();
-    
     return 0;
 }
 
