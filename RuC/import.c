@@ -67,7 +67,7 @@ int procd, iniprocs[INIPROSIZE], base = 0, adinit, NN;
 FILE *input;
 char sem_print[] = "sem_print", sem_debug[] = "sem_debug";
 sem_t *sempr, *semdeb;
-int str1, str2;
+
 
 void runtimeerr(int e, int i, int r)
 {
@@ -323,10 +323,11 @@ void auxprint(int beg, int t, char before, char after)
         printf("%c", after);
 }
 
+
 void auxget(int beg, int t)
 {
     double rf;
-//     printf("beg=%i t=%i\n", beg, t);
+ //     printf("beg=%i t=%i\n", beg, t);
     if (t == LINT)
         scanf(" %i", &mem[beg]);
     else if (t == LCHAR)
@@ -390,7 +391,9 @@ void* interpreter(void* pcPnt)
     int l, x, origpc = *((int*) pcPnt), numTh = t_getThNum();
     int N, bounds[100], d,from, prtype, cur0, pc = abs(origpc);
     int i,r, flagstop = 1, entry, di, di1, len;
-    int num, str1, str2;
+    int num,t;
+    int str1;
+    int str2;
     double lf, rf;
 
     
@@ -648,26 +651,39 @@ void* interpreter(void* pcPnt)
                 mem[--x] = rf < 0 ? (int)(rf-0.5) : (int)(rf+0.5);
                 break;
 
-            case STRCPYC:
-                str2 = mem[x--];
-                str1 = mem[x--];
-                strcat((char*)&str1, (char*)&str2);
+           /* case STRCPYC:
+                for(int i=0;i<10;i++)
+                     printf("modetab[mem[pc+i-5]]=%i, mem[x+i = %i] = %i,%c, mem[pc+i-5 = %i] = %i\n",modetab[mem[pc+i-5]],x+i,mem[x+i],mem[x+i],pc+i-5,mem[pc+i-5]);
+               // exit(2);
+                x -= szof(t);
+                //str1 = giv_string(x+1,t);
+                t = mem[pc++];
+                x -= szof(t);
+                //str2 = giv_string(x+1,t);
+                printf("s1 = %s, s2 = %s\n", str1,str2);
+                //exit(2);
                 break;
             case STRNCPYC:
                 num = mem[x--];
                 str2 = mem[x--];
                 str1 = mem[x--];
-                strncpy((char*)&str1, (char*)&str2, num);
+                
+                printf("str1 = %i, str2 = %i, n = %i\n", str1,str2,num);
+                for(i=str1;i<mem[str1-1]+str1;i++)
+                printf("mem[i]= %i mem[i]=%c\n",mem[i],mem[i]);
+                //exit(10);
+                //strncpy((char*)&str1, (char*)&str2, num);
+
                 break;
-            case STRCATC:
-                str2 = mem[x--];
-                str1 = mem[x--];
+           /* case STRCATC:
+                &str2 = mem[x--];
+                &str1 = mem[x--];
                 strcat((char*)&str1, (char*)&str2);
                 break;
             case STRNCATC:
                 num = mem[x--];
-                str2 = mem[x--];
-                str1 = mem[x--];
+                &str2 = mem[x--];
+                &str1 = mem[x--];
                 strncat((char*)&str1, (char*)&str2, num);
                 break;
             case STRCMPC:
@@ -689,7 +705,7 @@ void* interpreter(void* pcPnt)
             case STRLENC:
                 str1 = mem[x];
                 mem[x] = (int)strlen((char*)&str1);
-                break;
+                break;*/
             case STRUCTWITHARR:
             {
                 int oldpc, oldbase = base, procnum;
@@ -1632,7 +1648,7 @@ void import()
 {
     int i, pc;
     
-#ifdef ROBOT
+ #ifdef ROBOT
     f1 = fopen(JD1, "r");                       // файлы цифровых датчиков
     f2 = fopen(JD2, "r");
     printf("stage 1\n");
@@ -1640,7 +1656,7 @@ void import()
     system("i2cset -y 2 0x48 0x11 0x1000 w");
     system("i2cset -y 2 0x48 0x12 0x1000 w");
     system("i2cset -y 2 0x48 0x13 0x1000 w");
-#endif
+ #endif
     
     input = fopen("export.txt", "r");
     
@@ -1675,14 +1691,14 @@ void import()
     interpreter(&pc);                      // номер нити главной программы 0
     t_destroy();
  
-#ifdef ROBOT
+ #ifdef ROBOT
     system("i2cset -y 2 0x48 0x10 0 w");   // отключение силовых моторов
     system("i2cset -y 2 0x48 0x11 0 w");
     system("i2cset -y 2 0x48 0x12 0 w");
     system("i2cset -y 2 0x48 0x13 0 w");
     fclose(f1);
     fclose(f2);
-#endif
+ #endif
     
     
 }

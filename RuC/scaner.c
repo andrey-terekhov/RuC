@@ -53,11 +53,14 @@ void onemore()
 
 void endofline()
 {
+    if(prep_flag == 1)
+    {
     int j;
     printf("line %i) ", line-1);
     for (j=lines[line-1]; j<lines[line]; j++)
         if (source[j] != EOF)
             printf_char(source[j]);
+    }
 }
 
 void endnl()
