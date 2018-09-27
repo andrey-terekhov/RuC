@@ -602,6 +602,23 @@
 #define not_int_in_stanfunc                363
 #define no_comma_in_act_params_stanfunc    364
 
+#define after_preproces_words_mast_be_spase 365
+#define after_ident_mast_be_spase          366
+#define ident_begins_with_leters           367
+#define mast_be_endif                      368
+#define dont_elif                          369
+#define preproces_wods_not_exist           370
+#define not_enough_param                   371
+#define functionid_begins_with_leters      372
+#define after_functionid_mact_be_coma      373
+#define stalpe                             374
+#define not_relis_if                       375
+#define befor_endif                        376
+#define repeat_ident                       377
+#define not_enough_param2                  378
+#define not_end_fail_preprocess            379
+#define scob_not_clous                     380
+
 //  коды предупреждений
 
 #define too_long_int                       400

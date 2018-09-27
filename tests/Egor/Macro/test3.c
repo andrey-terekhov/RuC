@@ -12,7 +12,5 @@ printid(a);
 printid(b);
 printid(c);
 c = s(a, b, c);
-printid(c);
-}
-
-
+printid(c); 
+} 
