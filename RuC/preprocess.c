@@ -8,7 +8,7 @@
 
 
 int macrotext [MAXREPRTAB];
-char mstring[100];
+char mstring[50];
 int macrofunction [MAXREPRTAB];
 int functionident [MAXREPRTAB];
 char fchange [50]; 
@@ -20,121 +20,105 @@ int mp = 3;
 int msp = 0;
 int ifln = 0;
 int mcl;
+int checkif = 0;
+int flag_show_macro = 0;
+int arg = 0;
 
-extern void endofline();
-extern void endnl();
 extern int getnext();
-extern void onemore();
 extern int letter();
 extern int digit();
 extern int equal();
-//extern void printf_char(int wchar);
+extern void printf_char(int wchar);
+extern void m_error(int ernum);
+
 
 int mletter(int r);
 int mdigit(int r);
 int mequal(int str[], int j);
 
-void to_macrotext(char chang[], int oldrepr);
+void mend_line();
+void m_nextch();
+void m_fprintf(int a);
+
+void to_macrotext(char chang[], int oldrepr);//
 void macro_reprtab(char str[],char chang []);
 void from_macrotext(char str[]);
-int macro_keywords();
-void relis_define();
+int macro_keywords();//12
+void relis_define();//2
 
 void toreprtab_f(char str[]);
-void to_functionident ();
+void to_functionident (); //4
+int scob(int cp);//6
 void from_functionident(int r);
-void create_chenge(int r1);
-void r_macrofunction();
+void create_chenge(int r1);//11
+void r_macrofunction();//3
 
-void r_coment();
-void m_ident();
+void m_ident();//5
 int faind_ident(char str[]);
-void end_line();
 
-int check_if(int type_if);
-void folse_if ();
-int m_folse();
+int check_if(int type_if);//10
+void end_line();//9
+void folse_if ();//8
+int m_folse();//7
 void m_true(int type_if);
 void m_if(int type_if);
 
-void macroscan();
-void preprocess_file();
-
-void printf_char1(int wchar)
-{
-    if (wchar<128)
-        printf("%c", wchar);
-    else
-    {
-        unsigned char first = (wchar >> 6) | /*0b11000000*/ 0xC0;
-        unsigned char second = (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
-
-        printf("%c%c", first, second);
-    }
-}
+void macroscan();//1,17
+void preprocess_file();//18
 
 void show_macro()
 {
-    int i1 = lines[line-1];
-    int i2 = mlines[m_conect_lines[line-1]];
+    int i1 = lines[line];
     char str1[50];
-    char str2[50];
     int j = 0;
     int k;
     int flag=1;
-    int i = 0;
-    while(i1 != charnum)
+    arg = mlines[m_conect_lines[line]];
+
+    flag_show_macro = 1;
+    while(i1 < charnum)
     {
-        if(source[i1] == before_source[i2])
+        if(source[i1] == before_source[arg])
         {
-            str1[j++]=before_source[i2];
+            str1[j++]=before_source[arg];
             i1++;
-            i2++;
+            arg++;
         }
         else
         {
             flag=0;
-
-            while((before_source[i2] >= 'A' && before_source[i2] <= 'Z') || (before_source[i2] >='a' && before_source[i2] <= 'z') 
-             || before_source[i2] == '_' || (before_source[i2] >= 0x410/*А */ && before_source[i2] <= 0x44F /*'я'*/) ||
-              before_source[i2] >='0' && before_source[i2] <= '9')
-            {
-                i = 0;
-                str2[i++] = before_source[i2];
-                str1[j++] = before_source[i2];
-                i2++;
-            }
-            from_macrotext(str2);
+            curchar = before_source[arg];
+            m_ident();
 
             i1 += msp;
         }
     }
 
-    printf("Line %i) ", m_conect_lines[line]);
+    printf("line %i) ", m_conect_lines[line]);
 
     for (k = 1; k < j;k++)
     {
-    printf_char1(str1[k]);
+    printf_char(str1[k]);
     }
     if(flag == 0)
     {
       printf("В строке есть макрозамена, строка после макрогенерации:\nline) ");
-        for ( k = lines[line]; k < charnum;k++)
+        for ( k = lines[line-1]; k < charnum;k++)
         {
-        printf_char1(source[k]);
+        printf_char(source[k]);
         }                  
     }
 }
 
 int mletter(int r)
 {
-    return (macrofunction[r] >= 'A' && macrofunction[r] <= 'Z') || (macrofunction[r] >='a' && macrofunction[r] <= 'z') 
-    || macrofunction[r] == '_' || (macrofunction[r] >= 0x410/*А */ && macrofunction[r] <= 0x44F /*'я'*/);
+    return (r >= 'A' && r <= 'Z') || (r >='a' && r <= 'z') 
+    || r == '_' || (r >= 0x410/*А */ && r <= 0x44F /*'я'*/);
 }
 
 int mdigit(int r)
 {
-    return macrofunction[r] >='0' && macrofunction[r] <= '9';
+    return r >='0' && r <= '9';
 }
 
 int mequal(int str[], int j)
@@ -150,23 +134,11 @@ int mequal(int str[], int j)
     return 0;
 }
 
-
-void m_nextch()
+void mend_line()
 {
     int j;
-    
-    onemore();
-    if (curchar == EOF)
-    {
-        mlines[++mline] = m_charnum;
-        mlines[mline+1] = m_charnum;
-        return;
-    }  
-
-    before_source[m_charnum++] = curchar;
-        
-    if (curchar == '\n')
-    {
+    if (flag_show_macro == 0)
+   {
         mlines[++mline] = m_charnum;
         mlines[mline+1] = m_charnum;
         if (kw)
@@ -174,8 +146,105 @@ void m_nextch()
             printf("Line %i) ", mline-1);
             for ( j=mlines[mline-1]; j<mlines[mline]; j++)
                 if (before_source[j] != EOF)
-                    printf_char1(before_source[j]);
+                    printf_char(before_source[j]);
+        } 
+   }
+
+        return;
+}
+
+void monemore()
+{
+    if(flag_show_macro == 0)
+    {
+        curchar = nextchar;
+        nextchar = getnext();
+        before_source[m_charnum++] = curchar;
+    }
+    else
+    {
+    curchar = before_source[arg++];
+    }
+
+    if (curchar == EOF)
+    {
+        mend_line();
+        printf("\n");
+        return;
+    } 
+
+    //before_source[m_charnum++] = curchar; 
+
+}
+
+void m_nextch(int i)
+{
+    // printf(" %i ",i);
+    monemore();
+
+    if (curchar == '/' && nextchar == '/')
+    {
+        if(i>13)
+        {
+            m_fprintf(curchar);
         }
+        do
+        {
+            monemore();
+            if(i>13)
+            {
+                m_fprintf(curchar);
+            }
+        }
+        while (curchar != '\n');
+        
+        mend_line();
+        return;
+    }
+
+    if (curchar == '/' && nextchar == '*')
+    {
+        if(i>13)
+        {
+            m_fprintf(curchar);
+        }
+    
+        monemore();
+        if(i>13)
+        {
+            m_fprintf(curchar);
+        }
+        do
+        {
+            monemore();
+            if(i>13)
+            {
+                m_fprintf(curchar);
+            }
+            
+            if (curchar == EOF)
+            {
+                mend_line();
+                printf("\n");
+                m_error(comm_not_ended);
+            }
+            if (curchar == '\n')
+                mend_line();
+        }
+        while (curchar != '*' || nextchar != '/');
+        
+        monemore();
+        if(i>13)
+        {
+            m_fprintf(curchar);
+        }
+        curchar = ' ';
+        return;
+    }
+        
+    if (curchar == '\n')
+    {
+     mend_line();
     }
     return;
 }
@@ -185,7 +254,7 @@ void m_fprintf(int a)
     if(a == '\n')
     {
     m_conect_lines[mcl++] = mline-1;
-   // printf("mline%i) ", mcl)
+    //printf("m_c_line[%i]=%i) ", mcl-1,m_conect_lines[mcl-1]);
     }
    // printf("%c", a);
     fprintf(output, "%c", a);
@@ -229,14 +298,7 @@ void macro_reprtab(char str[],char chang [])
     r = hashtab[hash];
     while(r != 0)
     {
-        if(equal(r, oldrepr))
-        {
-            //error(stping_befor_use_for_cange);
-        }
-        else
-        {
             r = reprtab[r];
-        }
     }
     to_macrotext(chang, oldrepr);
     hashtab[hash] = oldrepr;
@@ -294,19 +356,18 @@ int macro_keywords()
     {                 
     hash += curchar;
     reprtab[rp++] = curchar;
-    m_nextch();
+    m_nextch(12);
     //printf ("c %c; ",curchar);
     }
     while(letter() || digit());
 
     if (curchar != ' ' && curchar != '\n' && curchar != '\t')
     {
-        printf("Неправильное ключевое слово, далее должен идти символ ' 'или'\\n'или'\\t' \n");
-        exit (10);
+        m_error(after_ident_mast_be_spase);
     }
     else
     {
-      m_nextch();
+      m_nextch(12);
     }
                 
     hash &= 255;
@@ -344,7 +405,12 @@ void relis_define()
         while(letter() || digit())
         {
             str[i++] = curchar;
-            m_nextch();
+            m_nextch(2);
+        }
+        
+        if (faind_ident(str) != 0)
+        {
+            m_error(repeat_ident);
         }
 
         if (curchar == '(')
@@ -352,35 +418,36 @@ void relis_define()
 
             toreprtab_f(str);
             //printf("замена на функцию\n");
-            m_nextch();
-            r_macrofunction ();
+            m_nextch(2);
+            r_macrofunction();
             return;
         }
         else if(curchar != ' ')
         {
-            m_nextch();
-            printf("плохой символ1\n %c %i\n", curchar, curchar);
-            exit(10);
+            m_error(after_ident_mast_be_spase);
         }
         else
         {
             //printf("макрозамена\n");
-            m_nextch();
+            m_nextch(2);
             i=0;
             char chang [30] = {"\0"};
             while(curchar != '\n')
             {
                 chang[i++] = curchar;
-                m_nextch();
+                m_nextch(2);
+                if(curchar == EOF)
+                {
+                    m_error(not_end_fail_preprocess);
+                }
             }
             macro_reprtab(str, chang);
             return;
         }
     }
     else
-    {
-        printf("плохой символ2 %c %i\n", curchar, curchar);
-        exit(10); 
+    { 
+        m_error(ident_begins_with_leters);
     }
 }
 
@@ -409,38 +476,44 @@ void to_functionident ()
 {
     while(curchar != ')')
     {
-        fip++;
-        if (letter())
-        {
-            while(letter() || digit())
-            {
-                functionident[fip++] = curchar;
+        char str[30]="\0";                             //reportab
+        int i=0;                                       //   \/
+        fip++;                                     //funcid 5[] -> конец = 13
+        if (letter())                              //       6[] -> macrofunc
+        {                                          //       7[] -> fcang 
+            i = 0;                                 //       8[a]
+            while(letter() || digit())             //       9[0]
+            {                                      //      10[] -> fcang
+                functionident[fip++] = curchar;    //      11[b] 
+                str[i++] = curchar;                //      12[0]
                // printf("'%c'",curchar);
-                m_nextch();
+                m_nextch(4);
+            }
+            if (faind_ident(str) != 0)
+            {
+                m_error(repeat_ident);
             }
             functionident[fip++] = 0;    
         }
         else 
         {
-            printf("Фунция неправильно написана1");
-            exit(10);
+            m_error(functionid_begins_with_leters);
         }
 
         if(curchar == ',' && nextchar == ' ')
         {
-            m_nextch();
-            m_nextch(); 
+            m_nextch(4);
+            m_nextch(4); 
            // printf("',' ' '");  
         }
         else if (curchar != ')')
         {
-            printf("Фунция неправильно написана2");
-            exit(10);
+            m_error(after_functionid_mact_be_coma);
         }
     }
 
    // printf("\n");
-    m_nextch();
+    m_nextch(4);
     return; 
 }
 
@@ -463,7 +536,7 @@ void from_functionident(int r)
     while(macrofunction[newfi] != '\n' ) 
     {
         //printf(" !%c! ",macrofunction[newfi]);
-        if(mletter(newfi))
+        if(mletter(macrofunction[newfi]))
         {
             flag = 1;
             for ( i = 0; i < 30; i++)
@@ -471,7 +544,7 @@ void from_functionident(int r)
                 str[i] = 0;
             }
             i = 0;
-            while(mletter(newfi) || mdigit(newfi))
+            while(mletter(macrofunction[newfi]) || mdigit(macrofunction[newfi]))
             {
                 //printf(" &%c& ",macrofunction[newfi]);
                 str[i++] = macrofunction[newfi++];
@@ -512,61 +585,114 @@ void from_functionident(int r)
 
 }
 
+int scob(int cp)
+{
+    int i;
+    fchange[cp++] = curchar;
+    m_nextch(6);
+    while(curchar != EOF)
+    {
+        if(letter())
+        {
+            m_ident();
+            for(i = 0; i < msp; i++)
+            {
+               fchange[cp++] =  mstring[i];
+            }
+        }
+        else if(curchar == '(')
+        {
+            cp = scob(cp);
+        }
+        else
+        {
+            fchange[cp++] = curchar;
+            m_nextch(6);
+            if(curchar != ')')
+            {
+                fchange[cp++] = curchar;
+                m_nextch(6);
+                 return cp;
+            }
+        }
+    }
+    m_error(scob_not_clous);
+    return cp;
+}
 void create_chenge(int r1)
 {
     int i;
     int r = r1 + 2;
     int cp = 1;
     functionident[r] = cp;
-    //printf("1 fi[r1 = %d] ='%d' ",r1, functionident[r1]);
+    //for(int q=0;q+r1<functionident[r1];q++);
+    //printf("r1 = %i, fi[r1+q = %i] ='%d'\n ",r1, r1+q, functionident[r1+q]);
     if(curchar == '(')
     { 
-        m_nextch();
-        while(curchar != ')')
+        m_nextch(11);
+        while(curchar != EOF)
         {
-            if (curchar == ',')
+
+            if(letter())
             {
-                m_nextch();
-                m_nextch();
+                m_ident();
+                for(i = 0; i < msp; i++)
+                {
+                    fchange[cp++] =  mstring[i];
+                }
+            }
+            else if(curchar == '(')
+            {
+                cp = scob(cp);
+            }
+            else if(curchar != ')' && curchar != ',')
+            {
+            fchange[cp++] = curchar;
+            //printf("'%c'",curchar);
+            m_nextch(11);
+            }
+            else
+            {
+               m_error(not_enough_param); 
+            }
+
+            if (curchar == ',' || curchar == ')')
+            {
                 for(; functionident[r] != 0; r++);
+
                 if(r < functionident[r1])
                 {
                     fchange[cp++] = '\n';
                     r++;
+                }
+                else
+                {
+                    m_error(not_enough_param);
+                }
+
+                if(curchar == ',')
+                {
                     functionident[r] =cp;
-                    //printf(" fi[%d] ='%c' ",r, functionident[r]);
+                    m_nextch(11);
                 }
                 else
                 {
-                    printf("У этой функции меньше параметров");
-                    exit(10);
-                }
-            }
-            else
-            {
-                if(letter())
-                {
-                    m_ident();
-                    for(i = 0; i < msp; i++)
+                    if(r != functionident[r1])
                     {
-                        fchange[cp++] =  mstring[i];
+                        m_error(not_enough_param2);
+
                     }
-                }
-                else
-                {
-                fchange[cp++] = curchar;
-                //printf("'%c'",curchar);
-                m_nextch();
+                    m_nextch(11);
+                    return;
                 }
             }
+            
         }
-        m_nextch();
-        fchange[cp++] = '\n';
+        m_error(scob_not_clous);
     } 
     else
     {
-        printf("Неверное использование функций");
-        exit(10);
+        m_error(stalpe);
     }
 }
 
@@ -578,7 +704,7 @@ void r_macrofunction()
 
    // printf("'%c'\n",curchar);
     to_functionident ();
-    m_nextch();
+    m_nextch(3);
     functionident[olderfip] = fip;
 
     /*printf("functionident r0=%d  r1='%d'\n",olderfip ,functionident[olderfip]);
@@ -602,7 +728,12 @@ void r_macrofunction()
         else
         {
         macrofunction [mfp++] = curchar;
-        m_nextch();
+        m_nextch(3);
+        }
+
+        if(curchar == EOF)
+        {
+            m_error(not_end_fail_preprocess);
         }
 
     }
@@ -610,58 +741,15 @@ void r_macrofunction()
     return;
 }
 
-void r_coment()
-{
-
-    m_fprintf(curchar);
-    m_nextch(); 
-    if (curchar == '/')
-    {
-        m_fprintf(curchar);
-
-        while (curchar != '\n')
-        {
-            m_nextch();
-            m_fprintf(curchar);
-            if (curchar == EOF)
-            {
-            return;
-            }
-        }
-        return;
-    }
-    
-    else if (curchar == '*')
-    {
-        do
-        {
-            m_fprintf(curchar);
-            m_nextch();
-            if (curchar == EOF)
-            {
-                return;
-            }   
-        }
-        while(curchar != '*' || nextchar != '/');
-        m_fprintf(curchar);
-        m_nextch();
-        m_fprintf(curchar);
-        m_nextch();
-
-        return;
-    }
-  
-}
 
 void m_ident()
 {
     int i = 0;
-    char str[30] = {"\0"};
+    char str[50] = {"\0"};
     while(letter() || digit())
     {
         str[i++] = curchar;
-        m_nextch();
-        // printf ("Mc str = %s\n",str);
+        m_nextch(5);
     }
     from_macrotext(str);
 
@@ -702,7 +790,7 @@ int check_if(int type_if)
 
     if(type_if == SH_IF )
     {
-        return 0;
+        m_error(not_relis_if);
     }
     else if (type_if == SH_IFDEF || type_if == SH_IFNDEF)
     {
@@ -710,8 +798,7 @@ int check_if(int type_if)
         while(letter() || digit())
         {
         str[i++] = curchar;
-        m_nextch();
-        printf ("Mc str = %s\n",str);
+        m_nextch(10);
         }
         if( faind_ident(str))
         {
@@ -735,15 +822,14 @@ void end_line()
     {
         if(curchar == ' ' || curchar == '\t')
         {
-            m_nextch();
+            m_nextch(9);
         }
         else
         {
-        printf("плохой символ %c %i\n", curchar, curchar);
-        exit (10);
+            m_error(after_preproces_words_mast_be_spase);
         }
     }
-    m_nextch();
+    m_nextch(9);
 }
 
 void folse_if ()
@@ -753,25 +839,29 @@ void folse_if ()
     {
         if (curchar == '#')
         {
-            printf("T31\n");
             fl_cur = macro_keywords();
             if(fl_cur == SH_ENDIF)
             {
+                checkif--;
+                if(checkif == -1)
+                {
+                    m_error(befor_endif);
+                }
                 return;
             }
             if(fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
             {
+                checkif++;
                 folse_if();
             } 
         }
         else
         {
-        m_nextch();
+        m_nextch(8);
         //printf("folse if c %c \n",curchar);
         }
-    }
-    printf("if не закончился1\n");
-    exit (10);       
+    } 
+    m_error(mast_be_endif);      
 }
 
 int m_folse()
@@ -793,11 +883,10 @@ int m_folse()
         }
         else
         {
-            m_nextch();
+            m_nextch(7);
         }
-    }
-    printf("if не закончился2\n");
-    exit (10);      
+    }  
+    m_error(mast_be_endif);    
 }
 
 void m_true(int type_if)
@@ -812,14 +901,18 @@ void m_true(int type_if)
         }
         if(cur == SH_ENDIF)
         {
+            checkif--;
+            if(checkif == -1)
+            {
+                m_error(befor_endif);
+            }
             return;
         }
     }
 
     if(type_if != SH_IF && cur == SH_ELIF)
     {
-        printf("Неправильное макрослово true\n");
-        exit (10);
+        m_error(dont_elif);
     }
     
     folse_if();
@@ -829,6 +922,8 @@ void m_true(int type_if)
 
 void m_if(int type_if)
 { 
+    checkif++;
+    printf("check_if = %i",checkif);
     int flag = check_if(type_if);// начало (if)
     end_line();
     if(flag)
@@ -871,12 +966,21 @@ void m_if(int type_if)
         m_true(type_if);
         return;
     }
+
+    if(cur == SH_ENDIF)
+    {
+        checkif--;
+        if(checkif == -1)
+        {
+            m_error(befor_endif);
+        }
+    }
 }
 
 void macroscan()
 {  
     int j;
-   // printf ("Макроскан\n");
+    //printf ("Макроскан\n");
     switch(curchar)
     {
         case EOF:
@@ -884,11 +988,12 @@ void macroscan()
 
         case '#':
             cur = macro_keywords ();
+            prep_flag = 1;
 
             if(cur == SH_DEFINE )
             {
                 relis_define();
-                m_nextch();
+                m_nextch(1);
                 return;
             }
 
@@ -899,17 +1004,12 @@ void macroscan()
             }
             else if (cur == SH_ELSE || cur == SH_ELIF || cur == SH_ENDIF)
             {
-                printf ("T11\n");
                 return;
             }
             else
             {
-            printf("Неправильное макрослово\n");
-            exit (10);
+            m_error(preproces_wods_not_exist);
             }
-        case '/':
-            r_coment();
-            return;
         default:
             if(letter())
             {
@@ -923,7 +1023,7 @@ void macroscan()
             else
             {
                 m_fprintf(curchar);
-                m_nextch();
+                m_nextch(17);
 
                 return;
             }
@@ -938,7 +1038,7 @@ void preprocess_file()
     mfirstrp = rp;
 
     getnext();
-    m_nextch();
+    m_nextch(18);
 
     if (curchar == EOF)
     {
@@ -954,5 +1054,6 @@ void preprocess_file()
         //printf ("c %c; ",curchar);
         macroscan();
     }
+    m_conect_lines[mcl++] = mline-1;
     
 }

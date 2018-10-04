@@ -35,7 +35,7 @@ int stack[100], stackop[100], stackoperands[100], stacklog[100], ansttype,
 int iniprocs[INIPROSIZE], procd = 1, arrdim, arrelemlen, was_struct_with_arr, usual;
 int instring = 0, inswitch = 0, inloop = 0, lexstr[MAXSTRINGL+1];
 int tree[MAXTREESIZE], tc=0, mem[MAXMEMSIZE], pc=4, functions[FUNCSIZE], funcnum = 2, functype, kw = 0, blockflag = 1,
-    entry, wasmain = 0, wasret, wasdefault, structdispl, notrobot = 1;
+    entry, wasmain = 0, wasret, wasdefault, structdispl, notrobot = 1, prep_flag = 0;
 int adcont, adbreak, adcase, adandor;
 int predef[FUNCSIZE], prdf = -1, emptyarrdef;
 int gotost[1000], pgotost;
@@ -132,6 +132,7 @@ int main(int argc, const char * argv[])
     kw = 1;
     tc = 0;
 
+    printf("\nИсходный текст:\n \n");
     preprocess_file();                //   макрогенерация
     
     fclose(output);
@@ -143,6 +144,10 @@ int main(int argc, const char * argv[])
     if (input == NULL)
     {
         printf("файл %s не найден\n", name);
+    }
+    if(prep_flag == 1)
+    {
+    printf("\nТекст после препроцесора:\n \n");
     }
 
     output = fopen("tree.txt", "wt");
