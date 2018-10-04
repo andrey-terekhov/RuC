@@ -43,14 +43,14 @@ ASIN asin АСИН асин
 RAND rand СЛУЧ случ
 ROUND round ОКРУГЛ округл
 
-STRCPY ctrcpy КОПИР_СТРОКУ копир_строку
-STRNCPY ctrncpy КОПИР_Н_СИМВ копир_н_симв
-STRCAT ctrcat КОНКАТ_СТРОКИ конкат_строки
-STRNCAT ctrncat КОНКАТ_Н_СИМВ конкат_н_симв
-STRCMP ctrcmp СРАВН_СТРОК сравн_строк
-STRNCMP ctrncmp СРАВН_Н_СИМВ сравн_н_симв
-STRSTR ctrstr НАЧ_ПОДСТРОК нач_подстрок
-STRLEN ctrstr ДЛИНА длина
+STRCPY strcpy КОПИР_СТРОКУ копир_строку
+STRNCPY strncpy КОПИР_Н_СИМВ копир_н_симв
+STRCAT strcat КОНКАТ_СТРОКИ конкат_строки
+STRNCAT strncat КОНКАТ_Н_СИМВ конкат_н_симв
+STRCMP strcmp СРАВН_СТРОК сравн_строк
+STRNCMP strncmp СРАВН_Н_СИМВ сравн_н_симв
+STRSTR strstr НАЧ_ПОДСТРОК нач_подстрок
+STRLEN strlen ДЛИНА длина
 
 T_MSG_SEND t_msg_send Н_ПОСЛАТЬ н_послать
 T_MSG_RECEIVE t_msg_receive Н_ПОЛУЧИТЬ н_получить

@@ -564,8 +564,7 @@ int scan()
         default:
             if (letter() || curchar == '#')
             {
-                int oldrepr, r;
-                oldrepr = rp;
+                int oldrepr = rp, r;
                 rp+=2;
                 hash = 0;
                 
