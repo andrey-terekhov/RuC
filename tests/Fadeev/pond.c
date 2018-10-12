@@ -1,18 +1,3 @@
-#define RED_COLOR 0
-#define GREEN_COLOR 1
-#define BLUE_COLOR 2
-#define X_COMPASS 3
-#define Y_COMPASS 4
-#define Z_COMPASS 5
-#define FI_COMPASS 6
-
-#define LINE 7
-#define FLAME 8
-#define INFARED 9
-#define SOUND 10
-#define TOUCH 11
-#define ULTRASONIC 12
-#define TEMPERATURE 13
 #define WATER 14
 #define SOIL 15
 #define FLOW 16
@@ -31,14 +16,7 @@
 #define D14 14
 #define D15 15
 #define D16 16
-#define D17 17
-#define D18 18
-#define D19 19
-#define D21 21
-#define D22 22
-#define D23 23
-
-float pi = 3.141592653589793;
+#define TEMPERATURE 20
 
 int U;
 int k;
