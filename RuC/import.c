@@ -1047,11 +1047,6 @@ void* interpreter(void* pcPnt)
             case LAT:
                 mem[x] = mem[mem[x]];
                 break;
-            case LATD:
-                r = mem[x];
-                mem[x++] = mem[r];
-                mem[x] = mem[r+1];
-                break;
             case LA:
                 mem[++x] = dsp(mem[pc++], l);
                 break;
