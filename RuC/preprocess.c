@@ -96,7 +96,7 @@ void show_macro()
 
     printf("line %i) ", m_conect_lines[line]);
 
-    for (k = 1; k < j;k++)
+    for (k = 1; k < j; k++)
     {
     printf_char(str1[k]);
     }
@@ -363,7 +363,7 @@ int macro_keywords()
 
     if (curchar != ' ' && curchar != '\n' && curchar != '\t')
     {
-        m_error(after_ident_mast_be_spase);
+        m_error(after_ident_must_be_space);
     }
     else
     {
@@ -424,7 +424,7 @@ void relis_define()
         }
         else if(curchar != ' ')
         {
-            m_error(after_ident_mast_be_spase);
+            m_error(after_ident_must_be_space);
         }
         else
         {
@@ -447,7 +447,7 @@ void relis_define()
     }
     else
     { 
-        m_error(ident_begins_with_leters);
+        m_error(ident_begins_with_letters);
     }
 }
 
@@ -497,7 +497,7 @@ void to_functionident ()
         }
         else 
         {
-            m_error(functionid_begins_with_leters);
+            m_error(functionid_begins_with_letters);
         }
 
         if(curchar == ',' && nextchar == ' ')
@@ -508,7 +508,7 @@ void to_functionident ()
         }
         else if (curchar != ')')
         {
-            m_error(after_functionid_mact_be_coma);
+            m_error(after_functionid_must_be_comma);
         }
     }
 
@@ -826,7 +826,7 @@ void end_line()
         }
         else
         {
-            m_error(after_preproces_words_mast_be_spase);
+            m_error(after_preproces_words_must_be_space);
         }
     }
     m_nextch(9);
@@ -861,7 +861,7 @@ void folse_if ()
         //printf("folse if c %c \n",curchar);
         }
     } 
-    m_error(mast_be_endif);      
+    m_error(must_be_endif);
 }
 
 int m_folse()
@@ -886,7 +886,8 @@ int m_folse()
             m_nextch(7);
         }
     }  
-    m_error(mast_be_endif);    
+    m_error(must_be_endif);
+    return 1;
 }
 
 void m_true(int type_if)
@@ -923,7 +924,7 @@ void m_true(int type_if)
 void m_if(int type_if)
 { 
     checkif++;
-    printf("check_if = %i",checkif);
+    //printf("check_if = %i",checkif);
     int flag = check_if(type_if);// начало (if)
     end_line();
     if(flag)
@@ -1008,7 +1009,7 @@ void macroscan()
             }
             else
             {
-            m_error(preproces_wods_not_exist);
+            m_error(preproces_words_not_exist);
             }
         default:
             if(letter())
@@ -1042,9 +1043,9 @@ void preprocess_file()
 
     if (curchar == EOF)
     {
-        printf ("Фаил не найден");
+        printf ("Файл не найден");
     }
-   // printf ("Фаил найден\n");
+   // printf ("Файл найден\n");
     mlines[mline = 1] = 1;
     charnum = 1;
     mcl = 1;

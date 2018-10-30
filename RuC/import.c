@@ -390,8 +390,9 @@ void* interpreter(void* pcPnt)
 {
     int l, x, origpc = *((int*) pcPnt), numTh = t_getThNum();
     int N, bounds[100], d,from, prtype, cur0, pc = abs(origpc);
-    int i,r, flagstop = 1, entry, di, di1, len;
+    int i, j, r, flagstop = 1, entry, di, di1, len;
     int num,t;
+    int a_str1;
     int str1;
     int str2;
     double lf, rf;
@@ -651,61 +652,185 @@ void* interpreter(void* pcPnt)
                 mem[--x] = rf < 0 ? (int)(rf-0.5) : (int)(rf+0.5);
                 break;
 
-           /* case STRCPYC:
-                for(int i=0;i<10;i++)
-                     printf("modetab[mem[pc+i-5]]=%i, mem[x+i = %i] = %i,%c, mem[pc+i-5 = %i] = %i\n",modetab[mem[pc+i-5]],x+i,mem[x+i],mem[x+i],pc+i-5,mem[pc+i-5]);
-               // exit(2);
-                x -= szof(t);
-                //str1 = giv_string(x+1,t);
-                t = mem[pc++];
-                x -= szof(t);
-                //str2 = giv_string(x+1,t);
-                printf("s1 = %s, s2 = %s\n", str1,str2);
-                //exit(2);
+            case STRCPYC:
+                str2 = mem[x--];
+                a_str1 = mem[x--];
+                mem[a_str1] = str2;
                 break;
             case STRNCPYC:
                 num = mem[x--];
                 str2 = mem[x--];
-                str1 = mem[x--];
-                
-                printf("str1 = %i, str2 = %i, n = %i\n", str1,str2,num);
-                for(i=str1;i<mem[str1-1]+str1;i++)
-                printf("mem[i]= %i mem[i]=%c\n",mem[i],mem[i]);
-                //exit(10);
-                //strncpy((char*)&str1, (char*)&str2, num);
+                a_str1 = mem[x--];
+                if(num > mem[str2-1])
+                exit(2);// erorr
+                if(num <= mem[mem[a_str1]-1])
+                {
+                    a_str1 = mem[a_str1];
+                    mem[a_str1 - 1]= num;
+                    num += a_str1;
+                    while(a_str1 < num)
+                        mem[a_str1++] = mem[str2++];
+                    
+                }
+                mem[x++] = num;
+                mem[a_str1] = x;
 
+                num += x;
+                while(x < num)
+                    mem[x++] = mem[str2++];
+                x--;
                 break;
-           /* case STRCATC:
-                &str2 = mem[x--];
-                &str1 = mem[x--];
-                strcat((char*)&str1, (char*)&str2);
+            case STRCATC:
+                str2 = mem[x--];
+                a_str1 = mem[x--];
+                str1 = mem[a_str1];
+
+                mem[x++] = mem[str2-1] + mem[mem[a_str1]-1];
+                mem[a_str1] = x;
+                a_str1 = mem[a_str1];
+
+                num = x + mem[str1-1];
+                while(x < num)
+                    mem[x++] = mem[str1++];
+
+                num = x + mem[str2-1];
+                while(x < num)
+                    mem[x++] = mem[str2++];
+                x--;
+             
                 break;
             case STRNCATC:
                 num = mem[x--];
-                &str2 = mem[x--];
-                &str1 = mem[x--];
-                strncat((char*)&str1, (char*)&str2, num);
+                str2 = mem[x--];
+                a_str1 = mem[x--];
+                str1 = mem[a_str1];
+
+                mem[x++] = num + mem[mem[a_str1]-1];
+                mem[a_str1] = x;
+                a_str1 = mem[a_str1];
+
+                i = x + mem[str1-1];
+                while(x < i)
+                    mem[x++] = mem[str1++];
+
+                num += x;
+                while(x < num)
+                    mem[x++] = mem[str2++];
+                x--;
                 break;
             case STRCMPC:
                 str2 = mem[x--];
-                str1 = mem[x--];
-                strcmp((char*)&str1, (char*)&str2);
+                a_str1 = mem[x];
+                if(mem[a_str1-1] < mem[str2-1])
+                {
+                    mem[x] = 1;
+                    break;
+                }
+                else if(mem[a_str1-1] > mem[str2-1])
+                {
+                    mem[x] = -1;
+                    break;
+                }
+                else
+                {
+                    for(i = 0; i < mem[str2-1]; i++)
+                    {
+                        if(mem[a_str1+i] < mem[str2+i]) 
+                        {
+                            mem[x] = 1;
+                            break;
+                        }
+                        else if(mem[a_str1+i] > mem[str2+i])
+                        {
+                            mem[x] = -1;
+                        break;
+                        }
+                    }
+                    if(i == mem[str2-1] )
+                    {
+                        mem[x] = 0;
+                    }
+                }
                 break;
             case STRNCMPC:
                 num = mem[x--];
                 str2 = mem[x--];
-                str1 = mem[x--];
-                strncat((char*)&str1, (char*)&str2, num);
+                a_str1 = mem[x];
+
+                if(mem[a_str1-1] < mem[str2-1] && mem[a_str1-1] < num )
+                {
+                    mem[x] = 1;
+                    break;
+                }
+                else if(mem[a_str1-1] > mem[str2-1] && mem[str2-1] < num)
+                {
+                    mem[x] = -1;
+                    break;
+                }
+                else
+                {
+                    for(i = 0; i < num; i++)
+                    {
+                        if(i == mem[a_str1-1] && i == mem[str2-1]  )
+                        {
+                            mem[x] = 0;
+                            break;
+                        }
+                    
+                        if(mem[a_str1+i] < mem[str2+i])
+                        {
+                            mem[x] = 1;
+                            break;
+                        }
+                        if(mem[a_str1+i] > mem[str2+i])
+                        {
+                            mem[x] = -1;
+                            break;
+                        }
+                    }
+                    if( i == num)
+                        mem[x] = 0;
+                }
                 break;
             case STRSTRC:
+            {
+                int j, flag = 0;
                 str2 = mem[x--];
-                str1 = mem[x];
-                mem[x] = (int)strstr((char*)&str1, (char*)&str2);
+                a_str1 = mem[x];
+                for(i = 0; i < mem[a_str1-1] - mem[str2-1]; i++)
+                {
+                    if(mem[str2] == mem[a_str1 + i])
+                    {
+                        for(j = 0; j < mem[str2-1]; j++)
+                        {
+                            if(mem[str2 + j] != mem[a_str1 + i + j])
+                            {
+                                flag = 1;
+                                break;
+                            }
+                        }
+                        if (flag == 0)
+                        {
+                            mem[x] = i+1;
+                            break;
+                        }
+                        flag = 0;
+                    }
+
+                }
+                if( i >= mem[a_str1-1] - mem[str2-1] )
+                {
+        
+                    mem[x] = -1;
+                    break;
+                }
+
                 break;
+            }
             case STRLENC:
-                str1 = mem[x];
-                mem[x] = (int)strlen((char*)&str1);
-                break;*/
+                a_str1 = mem[x];
+                mem[x] = mem[a_str1-1];
+                break;
             case STRUCTWITHARR:
             {
                 int oldpc, oldbase = base, procnum;

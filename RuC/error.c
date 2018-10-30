@@ -591,8 +591,13 @@ void error(int ernum)
         case not_int_in_stanfunc:
             printf("в этой операции над строками последний параметр должен иметь тип ЦЕЛ\n");
             break;
+        case not_point_string_in_stanfunc:
+            printf("в этой операции над строками первый параметр должен быть указателем на строку\n");
+            break;
 
-        default: ;
+
+        default:
+            printf("этот код ошибки я прозевал\n");
     }
     exit(2);
 }
@@ -607,31 +612,31 @@ void m_error(int ernum)
     printf("\n");
     switch (ernum)
     {
-        case after_preproces_words_mast_be_spase:
+        case after_preproces_words_must_be_space:
             printf("Неправильное ключевое слово препроцесора, далее должен идти символ ' 'или'\\n'или'\\t' \n");
             break;
-        case after_ident_mast_be_spase:
+        case after_ident_must_be_space:
             printf("После индефикатора должен идти ' ' \n");
             break;
-        case ident_begins_with_leters:
+        case ident_begins_with_letters:
             printf("Индификатор должен начинатся с буквы \n");
             break;
-        case mast_be_endif:
+        case must_be_endif:
             printf("Условный оператор препроцесора должен заканчиватся '#ENDIF' \n");
             break;
         case dont_elif:
             printf("В этом типе условного оператора не может использоваться '#ELIF' \n");
             break;
-        case preproces_wods_not_exist:
+        case preproces_words_not_exist:
             printf("В препроцесоре не сушетвует написаной команды\n");
             break;
         case not_enough_param:
             printf("У этой функции меньше параметров\n");
             break;
-        case functionid_begins_with_leters:
+        case functionid_begins_with_letters:
             printf("Индификатор функция должн начинаться с буквы\n");
             break;
-        case after_functionid_mact_be_coma:
+        case after_functionid_must_be_comma:
             printf("После индификатора в функции должны быть ')' или ','потом ' ' \n");
             break;
         case stalpe:
@@ -641,7 +646,7 @@ void m_error(int ernum)
             printf("if ещё не реализован");
             break;
         case befor_endif:
-            printf("перед '#ENDIF' должен стоят условный оператор препроцесора\n");
+            printf("перед '#ENDIF' должен стоять условный оператор препроцесора\n");
             break;
         case repeat_ident:
             printf("этот индификатор препроцесора уже используется.\n");
@@ -653,10 +658,10 @@ void m_error(int ernum)
             printf("У этой функции больше параметров\n");
             break;
         case not_end_fail_preprocess:
-            printf("Фаил не может отканчиваться даной командой препроцесора\n");
+            printf("Фаил не может оканчиваться данной командой препроцесора\n");
             break;
         case scob_not_clous:
-            printf("Количество открытывающих скобок не соотвецтвует числу закрывающих\n");
+            printf("Количество открывающих скобок не соотвеcтвует числу закрывающих\n");
             break;
         default: ;
     }
