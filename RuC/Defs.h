@@ -385,6 +385,7 @@
 #define ABSI          -151
 
 // Узлы дерева
+
 #define TIdent      -300
 #define TConst      -301
 #define TString     -302
