@@ -5,7 +5,6 @@ void main()
     int n;
     printid(s1);
     printid(s2);
-    n = STRSTR(&s1, s2);
+    n = STRSTR(s1, s2);
     printid(n);
-
 }

@@ -1,9 +1,11 @@
 void main()
 {
-    char s1[] = "abc";
-    char s2[] = "defg";
+    int i;
+    char s1[] = "aqwertyui";
+    char s2[] = "bwerty";
     printid(s1);
     printid(s2);
-    STRCAT(&s1, s2);
+    strcat(&s1,s2);
     printid(s1);
+    
 }
