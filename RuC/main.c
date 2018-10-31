@@ -6,10 +6,9 @@
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
 
-
-
 const char * name = "tests/Egor/String/strcmp.c"; 
 //"tests/Egor/Macro/test4.c";
+
 //"../../../tests/Fadeev/import_2.c";
              /* "../../../tests/Golovan/dining_philosophers.c"; */
 

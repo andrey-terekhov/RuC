@@ -385,6 +385,7 @@
 #define ABSI          -151
 
 // Узлы дерева
+
 #define TIdent      -300
 #define TConst      -301
 #define TString     -302
@@ -598,19 +599,19 @@
 #define not_int_in_define                  360
 #define getdigsensorerr                    361
 
-#define not_string_in_stanfunc             382
+#define not_string_in_stanfunc             362
 #define not_int_in_stanfunc                363
 #define no_comma_in_act_params_stanfunc    364
+#define not_point_string_in_stanfunc       365
 
-#define after_preproces_words_mast_be_spase 365
-#define after_ident_mast_be_spase          366
-#define ident_begins_with_leters           367
-#define mast_be_endif                      368
+#define after_ident_must_be_space          366
+#define ident_begins_with_letters          367
+#define must_be_endif                      368
 #define dont_elif                          369
-#define preproces_wods_not_exist           370
+#define preproces_words_not_exist          370
 #define not_enough_param                   371
-#define functionid_begins_with_leters      372
-#define after_functionid_mact_be_coma      373
+#define functionid_begins_with_letters     372
+#define after_functionid_must_be_comma     373
 #define stalpe                             374
 #define not_relis_if                       375
 #define befor_endif                        376
@@ -618,6 +619,8 @@
 #define not_enough_param2                  378
 #define not_end_fail_preprocess            379
 #define scob_not_clous                     380
+#define after_preproces_words_must_be_space 381
+
 
 //  коды предупреждений
 
