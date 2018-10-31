@@ -393,6 +393,7 @@ void* interpreter(void* pcPnt)
     int i, j, r, flagstop = 1, entry, di, di1, len;
     int num,t;
     int a_str1;
+    int str1;
     int str2;
     double lf, rf;
 
@@ -678,51 +679,43 @@ void* interpreter(void* pcPnt)
                 while(x < num)
                     mem[x++] = mem[str2++];
                 x--;
-                
-                if(0)
-                {
-                printf("str1 = %i, str2 = %i, n = %i x = i% \n", a_str1,str2,num, x);
-                //a_str1 = mem[a_str1];
-                printf("str1 = %i",a_str1);
-                for(i=1;i<100;i++)
-                printf("mem[%i]= %i, '%c'\n",i, mem[i],mem[i]);
-                //exit(10);
-                }
-
                 break;
             case STRCATC:
                 str2 = mem[x--];
                 a_str1 = mem[x--];
+                str1 = mem[a_str1];
 
                 mem[x++] = mem[str2-1] + mem[mem[a_str1]-1];
                 mem[a_str1] = x;
                 a_str1 = mem[a_str1];
 
-                num = x + mem[a_str1-1];
+                num = x + mem[str1-1];
                 while(x < num)
-                    mem[x++] = mem[a_str1++];
+                    mem[x++] = mem[str1++];
 
                 num = x + mem[str2-1];
                 while(x < num)
-                    mem[x++] = mem[a_str1++];
+                    mem[x++] = mem[str2++];
                 x--;
+             
                 break;
             case STRNCATC:
                 num = mem[x--];
                 str2 = mem[x--];
                 a_str1 = mem[x--];
+                str1 = mem[a_str1];
 
                 mem[x++] = num + mem[mem[a_str1]-1];
                 mem[a_str1] = x;
                 a_str1 = mem[a_str1];
 
-                i = x + mem[a_str1-1];
+                i = x + mem[str1-1];
                 while(x < i)
-                    mem[x++] = mem[a_str1++];
+                    mem[x++] = mem[str1++];
 
                 num += x;
                 while(x < num)
-                    mem[x++] = mem[a_str1++];
+                    mem[x++] = mem[str2++];
                 x--;
                 break;
             case STRCMPC:

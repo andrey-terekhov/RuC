@@ -6,5 +6,4 @@ void main()
     printid(s2);
     STRNCPY(&s1,"dfgh",3);
     print(s1);
-
 }
