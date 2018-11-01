@@ -1,4 +1,4 @@
-//  RuC
+﻿//  RuC
 //
 //  Created by Andrey Terekhov on 24/Apr/16.
 //  Copyright (c) 2015 Andrey Terekhov. All rights reserved.
@@ -6,8 +6,9 @@
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 #define _CRT_SECURE_NO_WARNINGS
 
+const char * name = "../../../tests/Egor/Macro/test4.c"; 
+//"tests/Egor/Macro/test4.c";
 
-const char * name =  "../../../tests/Egor/Macro/test4.c";
 //"../../../tests/Fadeev/import_2.c";
              /* "../../../tests/Golovan/dining_philosophers.c"; */
 
