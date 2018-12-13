@@ -1,4 +1,4 @@
-MAIN main ГЛАВНАЯ главная 
+=MAIN main ГЛАВНАЯ главная 
 INT int ЦЕЛ цел
 CHAR char ЛИТЕРА литера
 FLOAT float ВЕЩ вещ
@@ -72,5 +72,14 @@ T_GETNUM t_getnum Н_НОМЕР_НИТИ н_номер_нити
 #ELIF #elif #ИНЕСЛИ #инесли
 #ENDIF #endif #КОНЕСЛИ #конесли
 #ELSE #else #ИНАЧЕ #иначе
+
+WIFI_CONNECT wifi_connect WIFI_ПОДКЛЮЧИТЬ wifi_подключить
+BLYNK_AUTHORIZATION blynk_authorization BLYNK_АВТОРИЗАЦИЯ blynk_авторизация
+BLYNK_SEND blynk_send BLYNK_ПОСЛАТЬ blynk_послать
+BLYNK_RECEIVE blynk_receive BLYNK_ПОЛУЧИТЬ blynk_получить
+BLYNK_NOTIFICATION blynk_notification BLYNK_УВЕДОМЛЕНИЕ blynk_уведомление
+BLYNK_PROPERTY blynk_property BLYNK_СВОЙСТВО blynk_свойство
+BLYNK_LCD blynk_lcd BLYNK_ДИСПЛЕЙ blynk_дисплей
+BLYNK_TERMINAL blynk_terminal BLYNK_ТЕРМИНАЛ blynk_терминал
 
 

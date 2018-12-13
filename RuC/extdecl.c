@@ -370,6 +370,7 @@ void mustbestring()
     scaner();
     exprassn(1);
     toval();
+    sopnd--;
     if (! (ansttype > 0 && modetab[ansttype] == MARRAY && modetab[ansttype+1] == LCHAR) )
         error(not_string_in_stanfunc);
 }
@@ -379,9 +380,20 @@ void mustbepointstring()
     scaner();
     exprassn(1);
     toval();
+    sopnd--;
     if (! (ansttype > 0 && modetab[ansttype] == MPOINT && is_array(modetab[ansttype+1])
            && modetab[modetab[ansttype+1]+1] == LCHAR) )
         error(not_point_string_in_stanfunc);
+}
+
+void mustbeint()
+{
+    scaner();
+    exprassn(1);
+    toval();
+    sopnd--;
+    if (ansttype != LINT)
+        error(not_int_in_stanfunc);
 }
 
 void primaryexpr()
@@ -469,25 +481,62 @@ void primaryexpr()
                 mustbepointstring();
             else
                 mustbestring();
-            sopnd--;
             if (func != STRLEN)
             {
                 mustbe(COMMA, no_comma_in_act_params_stanfunc);
                 mustbestring();
-                sopnd--;
                 if (func == STRNCPY || func == STRNCAT || func == STRNCMP)
                 {
-                    mustbe(COMMA, no_comma_in_act_params);
-                    scaner();
-                    exprassn(1);
-                    toval();
-                    sopnd--;
-                    if (! is_int(ansttype))
-                        error(not_int_in_stanfunc);
+                    mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                    mustbeint();
                 }
             }
                 if (func < STRNCAT)
                     stackoperands[++sopnd] = ansttype = LINT;
+        }
+        else if (func >= BLYNK_TERMINAL && func <= WIFI_CONNECT)   // функции Фадеева
+        {
+            notrobot = 0;
+            if (func == WIFI_CONNECT || func == BLYNK_AUTORIZATION ||
+                func == BLYNK_NOTIFICATION)
+            {
+                mustbestring();
+                if (func == WIFI_CONNECT)
+                {
+                    mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                    mustbestring();
+                }
+            }
+            else
+            {
+                mustbeint();
+                if (func != BLYNK_RECEIVE)
+                {
+                    mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                    if (func == BLYNK_TERMINAL)
+                        mustbestring();
+                    else if (func == BLYNK_SEND)
+                        mustbeint();
+                    else if (func == BLYNK_PROPERTY)
+                    {
+                        mustbestring();
+                        mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                        mustbestring();
+                    }
+                    else    // BLYNK_LCD
+                    {
+                        mustbeint();
+                        mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                        mustbeint();
+                        mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                        mustbestring();
+                    }
+                }
+                else
+                {
+                    stackoperands[++sopnd] = ansttype = LINT;
+                }
+            }
         }
         else if (func <= TMSGSEND  && func >= TGETNUM)
         {                                // процедуры управления параллельными нитями
@@ -844,7 +893,8 @@ void postexpr()
 void unarexpr()
 {
     int op = cur;
-	if (cur == LNOT || cur == LOGNOT || cur == LPLUS || cur == LMINUS || cur == LAND || cur == LMULT ||
+	if (cur == LNOT || cur == LOGNOT || cur == LPLUS || cur == LMINUS ||
+        cur == LAND || cur == LMULT ||
         cur == INC  || cur == DEC)
 	{
         if (cur == INC || cur == DEC)
@@ -871,7 +921,7 @@ void unarexpr()
                     error(wrong_addr);
                 
                 if (anst == IDENT)
-                    tree[tc-2] = TIdenttoaddr;
+                    tree[tc-2] = TIdenttoaddr;   // &a
                 
                 stackoperands[sopnd] = ansttype = newdecl(MPOINT, ansttype);
                 anst = VAL;
@@ -1074,6 +1124,7 @@ int struct_init(int decl_type)   // сейчас modetab[decl_type] равен M
     int next_field = decl_type + 3, num_fields = 0, all = 0;
     if (cur != BEGIN)
         error(arr_init_must_start_from_BEGIN);
+    totree(TStructinit);
     do
     {
         scaner();
@@ -1100,9 +1151,10 @@ int struct_init(int decl_type)   // сейчас modetab[decl_type] равен M
 void exprassnvoid()
 {
     int t = tree[tc-4] == COPY10 ? tc - 4 : tree[tc - 2] < 9000 ? tc - 3 : tc - 2;
-    if ((tree[t] >= ASS  && tree[t] <= DIVASSAT)  || (tree[t] >= POSTINC  && tree[t] <= DECAT) ||
-        (tree[t] >= ASSR && tree[t] <= DIVASSATR) || (tree[t] >= POSTINCR && tree[t] <= DECATR) ||
-        tree[t] == COPY10 || tree[t] == COPY11 || tree[t] == COPY1STASS)
+    int tt = tree[t];
+    if ((tt >= ASS  && tt <= DIVASSAT)  || (tt >= POSTINC  && tt <= DECAT) ||
+        (tt >= ASSR && tt <= DIVASSATR) || (tt >= POSTINCR && tt <= DECATR) ||
+        tt == COPY10 || tt == COPY11 || tt == COPY1STASS)
         tree[t] += 200;
     --sopnd;
 }
@@ -1582,15 +1634,12 @@ void statement()
                 break;
             case LDO:
             {
-                        int condref;
                         inloop = 1;
                         totree(TDo);
-                        condref = tc++;
                         statement();
                         if (next == LWHILE)
                         {
                             scaner();
-                            tree[condref] = tc;
                             exprinbrkts(cond_must_be_in_brkts);
                             sopnd--;
                         }
@@ -1668,13 +1717,11 @@ void statement()
                 break;
             case LIF:
             {
-                        int thenref, elseref;
+                        int elseref;
                         totree(TIf);
-                        thenref = tc++;
                         elseref = tc++;
                         flagsemicol = 0;
                         exprinbrkts(cond_must_be_in_brkts);
-                        tree[thenref] = tc;
                         sopnd--;
                         statement();
                         if (next == LELSE)
@@ -1736,14 +1783,11 @@ void statement()
                 break;
             case LWHILE:
             {
-                           int doref;
                            inloop = 1;
                            totree(TWhile);
-                           doref = tc++;
                            flagsemicol = 0;
                            exprinbrkts(cond_must_be_in_brkts);
                            sopnd--;
-                           tree[doref] = tc;
                            statement();
             }
                 break;
@@ -1787,7 +1831,6 @@ int struct_decl_list()
     do
 	{
 		t = elem_type = idorpnt(wait_ident_after_semicomma_in_struct, gettype());
-
         if (next == LEFTSQBR)
         {
             int adN, all;
@@ -1827,26 +1870,23 @@ int struct_decl_list()
 */              }
                 if (is_struct(t))
                     totree(TEndinit);
-            }
-
-        }
+            }                         // конец ASS
+        
+        }                             // конец LEFTSQBR
         loc_modetab[locmd++] = t;
         loc_modetab[locmd++] = repr;
         field_count++;
         curdispl += szof(t);
-
 		if (scaner() != SEMICOLON)
 			error(no_semicomma_in_struct);
-
 	}
     while (scaner() != END);
-    
+
     if (wasarr)
     {
         totree(TStructend);
         totree(tstrbeg);
         tree[tstrbeg+1] = was_struct_with_arr = procd++;
-        
     }
     else
     {
@@ -1861,7 +1901,6 @@ int struct_decl_list()
     startmode = md++;
 	for (i = 0; i < locmd; i++)
 		modetab[md++] = loc_modetab[i];
-
 	return check_duplicates();
 }
 
@@ -2287,4 +2326,5 @@ void ext_decl()
     for (i=0; i<=prdf; i++)
         if (predef[i])
             error(predef_but_notdef);
+    totree(TEnd);
 }

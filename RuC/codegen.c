@@ -14,7 +14,7 @@ int curth = 0;
 
 void tocode(int c)
 {
-//  printf("tocode tc=%i pc %i) %i\n", tc, pc, c);
+//    printf("tocode tc=%i pc %i) %i\n", tc, pc, c);
     mem[pc++] = c;
 }
 
@@ -90,7 +90,7 @@ void finalop()
                     tocode(tree[tc++]);   // длина
                 }
                 else if (c == COPY11 || c == COPY11V)
-                    tocode(-tree[tc++]);  // длина
+                    tocode(tree[tc++]);   // длина
                 else if (c == COPY0ST)
                 {
                     tocode(tree[tc++]);   // d1
@@ -168,7 +168,6 @@ int Expr_gen(int incond)
                 pc += 2;
                 for (i=0; i<n; i++)
                     tocode(tree[tc++]);
-                tocode(0);
                 mem[res-1] = n;
                 mem[res-2] = pc;
                 wasstring = 1;
@@ -302,7 +301,7 @@ void Stmt_gen()
             
         case TIf:
         {
-            int thenref = tree[tc++], elseref = tree[tc++], ad;
+            int elseref = tree[tc++], ad;
             Expr_gen(0);
             tocode(BE0);
             ad = pc++;
@@ -319,7 +318,6 @@ void Stmt_gen()
             break;
         case TWhile:
         {
-            //int doref = tree[tc++];
             int oldbreak = adbreak, oldcont = adcont, ad = pc;
             tc++;
             adcont = ad;
@@ -338,7 +336,6 @@ void Stmt_gen()
             break;
         case TDo:
         {
-            int condref = tree[tc++];
             int oldbreak = adbreak, oldcont = adcont, ad = pc;
             adcont = adbreak = 0;
             Stmt_gen();
@@ -606,6 +603,8 @@ void codegen()
     {
         switch (tree[tc++])
         {
+            case TEnd:
+                break;
             case TFuncdef:
             {
                 int identref = tree[tc++], maxdispl = tree[tc++];

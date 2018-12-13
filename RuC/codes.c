@@ -85,18 +85,21 @@ void tablesandtree()
             case TBeginit:
                 fprintf(output, "TBeginit n= %i\n", tree[i++]);
                 break;
+            case TStructinit:
+                fprintf(output, "TStructinit n= %i\n", tree[i++]);
+                break;
+
             case TEndinit:
                 fprintf(output, "TEndinit\n");
                 break;
             case TIf:
-                fprintf(output, "TIf %i %i\n", tree[i], tree[i+1]);
-				i += 2;
+                fprintf(output, "TIf %i\n", tree[i++]);
                 break;
             case TWhile:
-                fprintf(output, "TWhile %i\n", tree[i++]);
+                fprintf(output, "TWhile\n");
                 break;
             case TDo:
-                fprintf(output, "TDo %i\n", tree[i++]);
+                fprintf(output, "TDo\n");
                 break;
             case TFor:
                 fprintf(output, "TFor %i %i %i %i\n", tree[i], tree[i+1], tree[i+2], tree[i+3]);

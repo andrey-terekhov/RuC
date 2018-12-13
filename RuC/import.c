@@ -390,8 +390,8 @@ void* interpreter(void* pcPnt)
 {
     int l, x, origpc = *((int*) pcPnt), numTh = t_getThNum();
     int N, bounds[100], d,from, prtype, cur0, pc = abs(origpc);
-    int i, j, r, flagstop = 1, entry, di, di1, len;
-    int num,t;
+    int i, r, flagstop = 1, entry, di, di1, len;
+    int num;
     int a_str1;
     int str1;
     int str2;
@@ -1039,6 +1039,10 @@ void* interpreter(void* pcPnt)
                 break;
             case LAT:
                 mem[x] = mem[mem[x]];
+                break;
+            case LATD:
+                memcpy(&rf, &mem[mem[x]], sizeof(double));
+                memcpy(&mem[x++], &rf, sizeof(double));
                 break;
             case LA:
                 mem[++x] = dsp(mem[pc++], l);

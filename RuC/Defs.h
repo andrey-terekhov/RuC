@@ -72,7 +72,7 @@
 #define MULTASSV   9210
 #define DIVASSV    9211
 
-#define REMASSATV  9212   // а эти 22 операции с присваиванием не оставляют значение на стеке
+#define REMASSATV  9212 // а эти 22 операции с присваиванием не оставляют значение на стеке
 #define SHLASSATV  9213
 #define SHRASSATV  9214
 #define ANDASSATV  9215
@@ -102,7 +102,7 @@
 #define LGE        9036
 #define LPLUS      9037
 #define LMINUS     9038
-#define LMULT      9039    // у этих 27 команд есть такие же с плавающей зпт
+#define LMULT      9039    // у этих 9 команд есть такие же с плавающей зпт
 #define LDIV       9040
 
 #define POSTINC    9041
@@ -273,6 +273,7 @@
 #define DESTROYC  9561
 #define EXITC     9562
 #define GETNUMC   9563
+
 // Лексемы
 
 #define COMMA     100
@@ -381,6 +382,15 @@
 #define SH_ENDIF      -69   // #endif
 #define SH_ELSE       -70   // #else
 
+#define WIFI_CONNECT  -71
+#define BLYNK_AUTORIZATION -72
+#define BLYNK_SEND    -73
+#define BLYNK_RECEIVE -74
+#define BLYNK_NOTIFICATION -75
+#define BLYNK_PROPERTY     -76
+#define BLYNK_LCD     -77
+#define BLYNK_TERMINAL     -78
+
 #define LVOIDASTER    -150
 #define ABSI          -151
 
@@ -397,7 +407,7 @@
 #define TCall2      -308
 #define TFuncdef    -309
 #define TDeclid     -310
-#define TInit       -311
+#define TStructinit -311
 #define TExprend    -312
 #define TCondexpr   -313
 #define TBegin      -314
