@@ -51,16 +51,16 @@ void toreprtab_f(char str[]);
 void to_functionident (); //4
 int scob(int cp);//6
 void from_functionident(int r);
-void create_chenge(int r1);//11
+void create_change(int r1);//11
 void r_macrofunction();//3
 
 void m_ident();//5
-int faind_ident(char str[]);
+int find_ident(char str[]);
 
 int check_if(int type_if);//10
 void end_line();//9
-void folse_if ();//8
-int m_folse();//7
+void false_if ();//8
+int m_false();//7
 void m_true(int type_if);
 void m_if(int type_if);
 
@@ -300,7 +300,7 @@ void from_macrotext(char str[])
     int i;
 
     msp = 0;
-    int r = faind_ident(str);
+    int r = find_ident(str);
 
     if(r)
     {
@@ -385,7 +385,7 @@ void relis_define()
             m_nextch(2);
         }
         
-        if (faind_ident(str) != 0)
+        if (find_ident(str) != 0)
         {
             m_error(repeat_ident);
         }
@@ -451,7 +451,7 @@ void to_functionident ()
 {
     while(curchar != ')')
     {
-        char str[30]="\0";                             //reportab
+        char str[30]="\0";                             //reprtab
         int i=0;                                       //   \/
         fip++;                                     //funcid 5[] -> конец = 13
         if (letter())                              //       6[] -> macrofunc
@@ -463,7 +463,7 @@ void to_functionident ()
                 str[i++] = curchar;                //      12[0]
                 m_nextch(4);
             }
-            if (faind_ident(str) != 0)
+            if (find_ident(str) != 0)
             {
                 m_error(repeat_ident);
             }
@@ -497,7 +497,7 @@ void from_functionident(int r)
     for(; reprtab[r1] !=  0; r1++);
     r1++;
     r1 = reprtab[r1];
-    create_chenge(r1);
+    create_change(r1);
 
     int finish = functionident[r1];
     int newfi = functionident[r1 + 1];
@@ -582,7 +582,7 @@ int scob(int cp)
     m_error(scob_not_clous);
     return cp;
 }
-void create_chenge(int r1)
+void create_change(int r1)
 {
     int i;
     int r = r1 + 2;
@@ -709,7 +709,7 @@ void m_ident()
     return;
 }
 
-int faind_ident(char str[])
+int find_ident(char str[])
 {
     int fpr = rp;
     int i, r;
@@ -752,7 +752,7 @@ int check_if(int type_if)
         str[i++] = curchar;
         m_nextch(10);
         }
-        if( faind_ident(str))
+        if( find_ident(str))
         {
             flag = 1;
         }
@@ -784,7 +784,7 @@ void end_line()
     m_nextch(9);
 }
 
-void folse_if ()
+void false_if ()
 {
     int fl_cur;
    while(curchar != EOF)
@@ -804,7 +804,7 @@ void folse_if ()
             if(fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
             {
                 checkif++;
-                folse_if();
+                false_if();
             } 
         }
         else
@@ -815,7 +815,7 @@ void folse_if ()
     m_error(must_be_endif);
 }
 
-int m_folse()
+int m_false()
 {
     int fl_cur = cur;
     while(curchar != EOF)
@@ -829,7 +829,7 @@ int m_folse()
             }
             if(fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
             {
-                folse_if();
+                false_if();
             } 
         }
         else
@@ -866,7 +866,7 @@ void m_true(int type_if)
         m_error(dont_elif);
     }
     
-    folse_if();
+    false_if();
     return;
 }
 
@@ -882,7 +882,7 @@ void m_if(int type_if)
     }
     else
     {
-        cur = m_folse();
+        cur = m_false();
     }
 
     /*if (type_if == SH_IF) // середина (else if)
@@ -990,12 +990,6 @@ void preprocess_file()
 
     getnext();
     m_nextch(18);
-
-    if (curchar == EOF)
-    {
-        printf ("Фаил не найден");
-    }
-
     while (curchar != EOF )
     {
         macroscan();
