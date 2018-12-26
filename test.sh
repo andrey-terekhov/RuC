@@ -16,7 +16,7 @@ fi
 
 for code in ./tests/*.c ./tests/*/*.c ./tests/*/*/*.c
 do
-    out=`timeout $wait_for ./ruc $code >/dev/null 2>/dev/null`
+    out=`timeout $wait_for ./ruc-compiler $code >/dev/null 2>/dev/null`
     
     case $? in
         0)
@@ -52,4 +52,15 @@ fi
 
 echo " pass = $pass, fail = $fail, timeout = $timeout"
 
-exit 0
+
+if ! [ $pass -eq 0 ] ; then
+    exit 0
+fi
+
+if ! [ $fail -ge 0 ] ; then
+    if ! [ $timeout -ge 0 ] ; then
+        exit 0
+    fi
+fi
+
+exit 1

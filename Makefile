@@ -8,7 +8,7 @@ OBJDIR=obj
 
 SOURCES=$(wildcard $(SRCDIR)/*.c)
 OBJECTS=$(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SOURCES))
-EXEC=ruc
+EXEC=ruc-compiler
 
 all: $(SOURCES) $(EXEC)
 
