@@ -105,12 +105,21 @@ int main(int argc, const char * argv[])
         ;
     fclose(input);
     
-    input  = fopen(name, "r");          //   исходный текст
+    if (argc < 2) {
+        input = fopen(name, "r");          //   исходный текст
+    } else {
+        input = fopen(argv[1], "r");
+    }
     output = fopen("macro.txt", "wt");
 
     if (input == NULL)
     {
-        printf(" не найден файл %s\n", name);
+        if (argc < 2) {
+            printf(" не найден файл %s\n", name);
+        } else {
+            printf(" не найден файл %s\n", argv[1]);
+        }
+        
         exit(1);
     }
  
@@ -154,7 +163,7 @@ int main(int argc, const char * argv[])
     }
     if(prep_flag == 1)
     {
-    printf("\nТекст после препроцесора:\n \n");
+        printf("\nТекст после препроцесора:\n \n");
     }
 
     output = fopen("tree.txt", "wt");
