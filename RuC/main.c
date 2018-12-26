@@ -12,7 +12,7 @@
 const char * name = //"../../../tests/00test.c";
 //"tests/Egor/Macro/test4.c";
 
-"../../../tests/Fadeev/blynk.c";
+"../../../tests/Fadeev/gyro.c";
              /* "../../../tests/Golovan/dining_philosophers.c"; */
 
 #include <stdio.h>

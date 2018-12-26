@@ -954,17 +954,17 @@ void* interpreter(void* pcPnt)
                 d = mem[pc++];        // d - шаг
                 
             {
-                int add = dsp(mem[pc++], l);
+                int addr = dsp(mem[pc++], l);
                 int usual = mem[pc++];
                 int onlystrings = usual >= 2 ? usual -= 2, 1 : 0;
                 int stA[10], stN[10], sti[10], stpnt = 1, oldx = adinit;
                 if (N == 1)
                 {
                     if (onlystrings)
-                        mem[add] = mem[x--];
+                        mem[addr] = mem[x--];
                     else
                     {
-                        mem[add] = adinit + 1;
+                        mem[addr] = adinit + 1;
 
                         if (usual && mem[adinit] != NN)  // здесь usual == 1, если == 0, проверка не нужна
                             runtimeerr(init_err, mem[adinit], NN);
@@ -973,7 +973,7 @@ void* interpreter(void* pcPnt)
                 }
                 else
                 {
-                    stA[1] = mem[add];                   // массив самого верхнего уровня
+                    stA[1] = mem[addr];                   // массив самого верхнего уровня
                     stN[1] = mem[stA[1]-1];
                     sti[1] = 0;
                     if (mem[adinit] != stN[1])

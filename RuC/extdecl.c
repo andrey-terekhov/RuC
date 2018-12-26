@@ -214,8 +214,9 @@ int toidentab(int f, int type)       // f =  0, если не ф-ция, f=1, е
     else
     {
                                              // дальше тип или ссылка на modetab (для функций и структур)
-        identab[id + 2] = type;              // тип -1 int, -2 char, -3 float, -4 long, -5 double,
-        if (f == 1)                          // если тип > 0, то это ссылка на modetab
+        identab[id + 2] = type;       // тип -1 int, -2 char, -3 float, -4 long, -5 double,
+                                      // если тип > 0, то это ссылка на modetab   
+        if (f == 1)
         {
             identab[id + 2] = 0;             // 0, если первым встретился goto, когда встретим метку, поставим 1
             identab[id + 3] = 0;             // при генерации кода когда встретим метку, поставим pc
@@ -1698,8 +1699,10 @@ void statement()
                           for (i = 0; flag && i < pgotost - 1; i += 2)
                               flag = identab[gotost[i] + 1] != repr;
                           if (flag)
-                          {                                 // первый раз встретился переход на метку, которой не было, в этом случае
-                              totree(-toidentab(1, 0));        // ссылка на identtab, стоящая после TGoto, будет отрицательной
+                          {
+            // первый раз встретился переход на метку, которой не было, в этом случае
+            // ссылка на identtab, стоящая после TGoto, будет отрицательной
+                              totree(-toidentab(1, 0));
                               gotost[pgotost++] = lastid;
                           }
                           else
@@ -1945,13 +1948,11 @@ int gettype()
 	}
     else if (cur == IDENT)
     {
-        int l = reprtab[repr+1];
-        if (l == 1)
-            error(ident_is_not_declared);
-        if (identab[l+3] < 1000)
+        applid();
+        if (identab[lastid+3] < 1000)
             error(ident_not_type);
-        was_struct_with_arr = identab[l+3] - 1000;
-        return identab[l+2];
+        was_struct_with_arr = identab[lastid+3] - 1000;
+        return identab[lastid+2];
     }
     else
         error(not_decl);

@@ -2,7 +2,7 @@
 void main()
 {
     int a=9, *b, e = 1;
-    float c = 3.14, *d;
+//    float c = 3.14, *d;
     b = &a;
     print(*b); // 9
     (*b)++;
@@ -10,13 +10,13 @@ void main()
     ++*b;
     print(*b); // 11
     
-    d = &c;
+/*    d = &c;
     print(*d); // 3.14
     (*d)++;
     print(*d); // 4.14
     ++*d;
     print(*d); // 5.14
-
+*/
     a = ++e + ++e;
     printid(a);
     printid(e); // 3

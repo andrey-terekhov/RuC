@@ -319,7 +319,6 @@ void Stmt_gen()
         case TWhile:
         {
             int oldbreak = adbreak, oldcont = adcont, ad = pc;
-            tc++;
             adcont = ad;
             Expr_gen(0);
             tocode(BE0);
