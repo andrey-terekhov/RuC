@@ -17,3 +17,6 @@ ruc-compiler
 
 !RuC/
 !keywords.txt
+!CMakeLists.txt
+
+.DS_Store
