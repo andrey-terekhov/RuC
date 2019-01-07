@@ -9,11 +9,12 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-const char * name = //"../../../tests/00test.c";
+const char * name = //"../../../tests/test61f.c";
 //"tests/Egor/Macro/test4.c";
 
-"../../../tests/Fadeev/gyro.c";
-             /* "../../../tests/Golovan/dining_philosophers.c"; */
+//"../../../tests/Fadeev/gyro.c";
+
+"../../../tests/Golovan/dining_philosophers.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -40,7 +41,7 @@ int iniprocs[INIPROSIZE], procd = 1, arrdim, arrelemlen, was_struct_with_arr, us
 int instring = 0, inswitch = 0, inloop = 0, lexstr[MAXSTRINGL+1];
 int tree[MAXTREESIZE], tc=0, mtree[MAXTREESIZE], mtc=0,
     mem[MAXMEMSIZE], pc=4, functions[FUNCSIZE], funcnum = 2, functype, kw = 0, blockflag = 1,
-    entry, wasmain = 0, wasret, wasdefault, structdispl, notrobot = 1, prep_flag = 0;
+    entry, wasmain = 0, wasret, wasdefault, notrobot = 1, prep_flag = 0;
 int adcont, adbreak, adcase, adandor;
 int predef[FUNCSIZE], prdf = -1, emptyarrdef;
 int gotost[1000], pgotost;

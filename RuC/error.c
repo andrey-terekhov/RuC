@@ -116,7 +116,10 @@ void error(int ernum)
             printf("\n");
             break;
         case arr_init_must_start_from_BEGIN:
-            printf("инициализация массива или структуры должна начинаться со {\n");
+            printf("инициализация массива должна начинаться со {\n");
+            break;
+        case struct_init_must_start_from_BEGIN:
+            printf("инициализация структуры должна начинаться со {\n");
             break;
         case no_comma_in_init_list:
             printf("между элементами инициализации массива или структуры должна быть ,\n");

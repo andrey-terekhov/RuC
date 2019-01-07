@@ -29,7 +29,7 @@ extern int hashtab[256], reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modet
 extern int iniprocs[INIPROSIZE], procd, arrdim, arrelemlen, was_struct_with_arr, usual;
 extern int mem[MAXMEMSIZE], tree[MAXTREESIZE], tc, mtree[MAXTREESIZE], mtc,
            functions[FUNCSIZE], funcnum, functype, kw, blockflag,
-           entry, wasmain, wasret, wasdefault, wasslice, structdispl, notrobot, prep_flag;
+           entry, wasmain, wasret, wasdefault, wasslice, notrobot, prep_flag;
 extern int adcont, adbreak, adcase, adandor;
 extern int instring, inswitch, inloop, lexstr[MAXSTRINGL+1];
 extern int predef[FUNCSIZE], prdf;

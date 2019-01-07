@@ -1,6 +1,6 @@
 float a;
 int b;
-main()
+void main()
 {
     a = 1.;
     printid(a);

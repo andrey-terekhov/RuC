@@ -8,23 +8,23 @@ void main ()
     for (i=0;i<10;i++)
         switch (A[i])
     {
-            case 'а':
+            case 'a':
                 B[0]++;
             break;
             
-            case 'б':
+            case 'b':
                 B[1]++;
             break;
             
-            case 'в':
+            case 'c':
                 B[2]++;
             break;
             
-            case 'г':
+            case 'd':
                 B[3]++;
             break;
             
-            case 'д':
+            case 'e':
                 B[4]++;
             break;
     }

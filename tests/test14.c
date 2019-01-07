@@ -1,5 +1,5 @@
 int a,   b;
-void main()
+int main()
 {
     switch (a)
     {
