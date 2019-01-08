@@ -1,6 +1,8 @@
 #!/bin/bash
 
 full_out=$1
+
+output_time=0.1
 wait_for=1
 
 pass=0
@@ -21,19 +23,22 @@ do
     case $? in
         0)
             if ! [[ -z $full_out ]] ; then
-                echo " build passing : $code"
+                sleep $output_time
+                echo -e "\e[1;32m build passing \e[1;39m: $code"
             fi
             let pass++
             ;;
         124)
             if ! [[ -z $full_out ]] ; then
-                echo " build timeout : $code"
+                sleep $output_time
+                echo -e "\e[1;34m build timeout \e[1;39m: $code"
             fi
             let timeout++
             ;;
         *)
             if ! [[ -z $full_out ]] ; then
-                echo " build failing : $code"
+                sleep $output_time
+                echo -e "\e[1;31m build failing \e[1;39m: $code"
             fi
             let fail++
             ;;
@@ -50,7 +55,7 @@ if ! [[ -z $full_out ]] ; then
     echo
 fi
 
-echo " pass = $pass, fail = $fail, timeout = $timeout"
+echo -e "\e[1;39m pass = $pass, fail = $fail, timeout = $timeout"
 
 
 if ! [ $pass -eq 0 ] ; then
