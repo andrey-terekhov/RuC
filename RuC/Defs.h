@@ -214,20 +214,17 @@
 #define ADLOGAND      9479
 #define ADLOGOR       9480
 #define BEGINIT       9481
+//#define STRUCTINIT    9482
 
-#define COPY00   9300
-#define COPY01   9301
-#define COPY10   9302
-#define COPY11   9303
-#define COPY0ST  9304
-#define COPY1ST  9305
-#define COPY0STASS  9306
-#define COPY1STASS  9307
-#define COPYST   9308
-#define COPY10V  9502
-#define COPY11V  9503
-#define COPY1STASSV 9507
-
+#define COPY00   9300    // d1, d2, l
+#define COPY01   9301    // d1,     l
+#define COPY10   9302    //     d2, l
+#define COPY11   9303    //         l
+#define COPY0ST  9304    // d1      l   to stack
+#define COPY1ST  9305    //         l   to stack
+#define COPY0STASS  9306 // d1,     l   from stack
+#define COPY1STASS  9307 //         l   from stack
+#define COPYST   9308    // d1, d2, l   структура - значение функции
 
 // Коды операций стандартных функций
 
@@ -407,7 +404,7 @@
 #define TCall2      -308
 #define TFuncdef    -309
 #define TDeclid     -310
-#define TStructinit -311
+
 #define TExprend    -312
 #define TCondexpr   -313
 #define TBegin      -314
@@ -439,7 +436,7 @@
 #define TIdenttovald -340
 #define TAddrtovald -341
 #define TBeginit    -342
-#define TEndinit    -343
+#define TStructinit -343
 
 // Коды ошибок
 
@@ -630,6 +627,7 @@
 #define not_end_fail_preprocess            379
 #define scob_not_clous                     380
 #define after_preproces_words_must_be_space 381
+#define struct_init_must_start_from_BEGIN  382
 
 
 //  коды предупреждений

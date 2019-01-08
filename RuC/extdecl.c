@@ -1088,12 +1088,10 @@ void condexpr()
 		stackoperands[sopnd] = ansttype;
 }
 
-int struct_init(int);
+void struct_init(int);
 
-int inition(int decl_type)
+void inition(int decl_type)
 {
-    int all = szof(decl_type);
-    
     if (decl_type < 0 || is_pointer(decl_type) ||                   // Обработка для базовых типов, указателей
         (is_array(decl_type) && modetab[decl_type+1] == LCHAR))     // или строк
     {
@@ -1108,65 +1106,67 @@ int inition(int decl_type)
             insertwiden();
         else if (decl_type != ansttype)
             error(error_in_initialization);
-        if (structdispl < 0 )
-            structdispl -= all;
-        else
-            structdispl += all;
     }
     else if (cur == BEGIN)
-        all = struct_init(decl_type);
+        struct_init(decl_type);
     else
         error(wrong_init);
-    return all;
 }
 
-int struct_init(int decl_type)   // сейчас modetab[decl_type] равен MSTRUCT
+void struct_init(int decl_type)   // сейчас modetab[decl_type] равен MSTRUCT
 {
-    int next_field = decl_type + 3, num_fields = 0, all = 0;
+    int next_field = decl_type + 3, i, nf = modetab[decl_type+2] / 2;
     if (cur != BEGIN)
-        error(arr_init_must_start_from_BEGIN);
+        error(struct_init_must_start_from_BEGIN);
     totree(TStructinit);
-    do
+    totree(nf);
+    for (i=0; i<nf; i++)
     {
         scaner();
-        all += inition(modetab[next_field]);
+        inition(modetab[next_field]);
         next_field += 2;
-        num_fields += 2;
-        if (num_fields < modetab[decl_type+2])
+        if (i != nf-1)
         {
-            if (next == COMMA)        // поля инициализации идут через запятую, заканчиваются }
+            if (next == COMMA)   // поля инициализации идут через запятую, заканчиваются }
                 scaner();
             else
                 error(no_comma_in_init_list);
         }
     }
-    while (num_fields < modetab[decl_type+2]);
     
-    if (next != END)
+    if (next == END)
+        totree(TExprend);
+    else
         error(wait_end);
     scaner();
-    return all;
+    leftansttype = decl_type;
 }
 
 
 void exprassnvoid()
 {
-    int t = tree[tc-4] == COPY10 ? tc - 4 : tree[tc - 2] < 9000 ? tc - 3 : tc - 2;
+    int t = tree[tc - 2] < 9000 ? tc - 3 : tc - 2;
     int tt = tree[t];
     if ((tt >= ASS  && tt <= DIVASSAT)  || (tt >= POSTINC  && tt <= DECAT) ||
-        (tt >= ASSR && tt <= DIVASSATR) || (tt >= POSTINCR && tt <= DECATR) ||
-        tt == COPY10 || tt == COPY11 || tt == COPY1STASS)
+        (tt >= ASSR && tt <= DIVASSATR) || (tt >= POSTINCR && tt <= DECATR) )
         tree[t] += 200;
     --sopnd;
 }
-
-void initializer(int);
 
 void exprassn(int level)
 {
     int leftanst, leftanstdispl, ltype, rtype, lnext;
     if (cur == BEGIN)
-        initializer(leftansttype);
+    {
+        if (is_struct(leftansttype))
+            struct_init(leftansttype);
+//        else if (is_array(leftansttype)) //пока в RuC присваивать массивы нельзя
+//        array_init(leftansttype);
+        else
+            error(init_not_struct);
+        stackoperands[++sopnd] = ansttype = leftansttype;
+        anst = VAL;
+    }
     else
         unarexpr();
 
@@ -1283,7 +1283,6 @@ void array_init(int decl_type)                   // сейчас modetab[decl_ty
     {
         if (cur == STRING)
         {
-//            printf("cur= %i next= %i\n", cur, next);
             if (onlystrings == 0)
                 error(string_and_notstring);
             if (onlystrings == 2)
@@ -1331,18 +1330,6 @@ void array_init(int decl_type)                   // сейчас modetab[decl_ty
     }
 }
 
-void initializer(int type)
-{
-    if (is_struct(type))
-        struct_init(type);
-    else if (is_array(type))
-        array_init(type);
-    else
-        error(init_not_struct);
-    stackoperands[++sopnd] = ansttype = type;
-    anst = VAL;
-}
-
 int arrdef(int t)                    // вызывается при описании массивов и структур из массивов сразу после idorpnt
 {
     arrdim = 0;
@@ -1383,7 +1370,7 @@ void decl_id(int decl_type)    // вызывается из block и extdecl, т
 {                              // если встретятся массивы (прямо или в структурах), их размеры уже будут в стеке
     int oldid = toidentab(0, decl_type),
     elem_len, elem_type,
-    all, adN;                  // all - место в дереве, где будет общее количество выражений в инициализации, для                массивов - только признак (1) наличия инициализации
+    all, adN;                  // all - место в дереве, где будет общее количество выражений в инициализации, для массивов - только признак (1) наличия инициализации
     usual = 1;
     arrdim = 0;                // arrdim - размерность (0-скаляр), д.б. столько выражений-границ
     elem_type = decl_type;
@@ -1411,10 +1398,10 @@ void decl_id(int decl_type)    // вызывается из block и extdecl, т
     {
         scaner();
         scaner();
+        tree[all] = szof(decl_type);
         if (is_array(decl_type))          // инициализация массива
         {
             onlystrings = 2;
-            tree[all] = 1;
             if (!usual)
                 tree[adN]--;              // это уменьшение N в Declarr
             array_init(decl_type);
@@ -1424,11 +1411,8 @@ void decl_id(int decl_type)    // вызывается из block и extdecl, т
         }
         else
         {
-            structdispl = identab[oldid+3];
-            tree[all] = inition(decl_type);
+            inition(decl_type);
         }
-        if (is_struct(decl_type))
-            totree(TEndinit);
     }
 }
 
@@ -1871,10 +1855,7 @@ int struct_decl_list()
 /*                    structdispl = identab[oldid+3];
                     tree[all] = inition(t);
 */              }
-                if (is_struct(t))
-                    totree(TEndinit);
             }                         // конец ASS
-        
         }                             // конец LEFTSQBR
         loc_modetab[locmd++] = t;
         loc_modetab[locmd++] = repr;

@@ -357,12 +357,12 @@ int munarexpr()
     }
     else if (t == TStructinit)
     {
+        int i, n;
         mcopy();
+        n =  mcopy();
         flag = n1;
-        do
+        for (i=0; i<n; i++)
             mexpr();
-        while (tree[tc] != TEndinit);
-        mcopy();
     }
     else if (t == TIdent || t == TIdenttoval ||  t == TAddrtoval ||
              t == TIdenttovald || t == TIdenttoaddr || t == TConst)
@@ -415,11 +415,11 @@ void init()
     }
     else if (t == TStructinit)
     {
+        int i, n;
         mcopy();
-        do
+        n = mcopy();
+        for (i=0; i<n; i++)
             mexpr();
-        while (tree[tc] != TEndinit);
-        mcopy();
     }
     else
         mexpr();

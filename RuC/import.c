@@ -938,6 +938,9 @@ void* interpreter(void* pcPnt)
             case BEGINIT:
                 mem[++x] = mem[pc++];
                 break;
+//            case STRUCTINIT:
+//                pc++;
+//                break;
             case STRINGINIT:
                 di = mem[pc++];
                 r = mem[di < 0 ? g - di : l + di];
@@ -1121,13 +1124,6 @@ void* interpreter(void* pcPnt)
                     mem[di+i] =  mem[di1+i];
                 break;
             case COPY10:
-                di =  mem[x];
-                di1 = dsp(mem[pc++], l);
-                len = mem[pc++];
-                for (i=0; i<len; i++)
-                    mem[di+i] =  mem[di1+i];
-                break;
-            case COPY10V:
                 di =  mem[x--];
                 di1 = dsp(mem[pc++], l);
                 len = mem[pc++];
@@ -1135,13 +1131,6 @@ void* interpreter(void* pcPnt)
                     mem[di+i] =  mem[di1+i];
                 break;
             case COPY11:
-                di1 = mem[x--];
-                di =  mem[x];
-                len = mem[pc++];
-                for (i=0; i<len; i++)
-                    mem[di+i] =  mem[di1+i];
-                break;
-            case COPY11V:
                 di1 = mem[x--];
                 di =  mem[x--];
                 len = mem[pc++];
@@ -1171,21 +1160,14 @@ void* interpreter(void* pcPnt)
             case COPY1STASS:
                 len = mem[pc++];
                 x -= len;
-                di = mem[x];
-                for (i=0; i<len; i++)
-                    mem[di+i] = mem[x+i+1];
-                break;
-            case COPY1STASSV:
-                len = mem[pc++];
-                x -= len;
                 di = mem[x--];
                 for (i=0; i<len; i++)
                     mem[di+i] = mem[x+i+2];
                 break;
             case COPYST:
-                di = mem[pc++];
-                len = mem[pc++];
-                x -= mem[pc++] + 1;
+                di = mem[pc++];      // смещ поля
+                len = mem[pc++];     // длина поля
+                x -= mem[pc++] + 1;  // длина всей структуры
                 for (i=0; i<len; i++)
                     mem[x+i] = mem[x+i+di];
                 x += len-1;
