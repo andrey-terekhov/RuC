@@ -9,12 +9,14 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-const char * name = //"../../../tests/test61f.c";
-//"tests/Egor/Macro/test4.c";
+const char * name =
+//"../../../tests/testmi.c";
 
-//"../../../tests/Fadeev/gyro.c";
+//"../../../tests/Egor/Macro/test5.c";
 
-"../../../tests/Golovan/dining_philosophers.c";
+"../../../tests/Fadeev/Signal.c";
+
+//"../../../tests/Golovan/dining_philosophers.c";
 
 #include <stdio.h>
 #include <string.h>

@@ -597,6 +597,9 @@ void error(int ernum)
         case not_point_string_in_stanfunc:
             printf("в этой операции над строками первый параметр должен быть указателем на строку\n");
             break;
+        case not_rowofint_in_stanfunc:
+            printf("в этой операции этот параметр должен иметь тип массив целых\n");
+            break;
 
 
         default:

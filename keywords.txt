@@ -1,4 +1,4 @@
-=MAIN main ГЛАВНАЯ главная 
+MAIN main ГЛАВНАЯ главная 
 INT int ЦЕЛ цел
 CHAR char ЛИТЕРА литера
 FLOAT float ВЕЩ вещ
@@ -81,5 +81,6 @@ BLYNK_NOTIFICATION blynk_notification BLYNK_УВЕДОМЛЕНИЕ blynk_уве�
 BLYNK_PROPERTY blynk_property BLYNK_СВОЙСТВО blynk_свойство
 BLYNK_LCD blynk_lcd BLYNK_ДИСПЛЕЙ blynk_дисплей
 BLYNK_TERMINAL blynk_terminal BLYNK_ТЕРМИНАЛ blynk_терминал
+SETSIGNAL setsignal СИГНАЛ сигнал
 
 

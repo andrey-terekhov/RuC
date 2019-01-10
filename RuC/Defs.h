@@ -387,6 +387,7 @@
 #define BLYNK_PROPERTY     -76
 #define BLYNK_LCD     -77
 #define BLYNK_TERMINAL     -78
+#define SETSIGNAL     -79
 
 #define LVOIDASTER    -150
 #define ABSI          -151
@@ -628,6 +629,7 @@
 #define scob_not_clous                     380
 #define after_preproces_words_must_be_space 381
 #define struct_init_must_start_from_BEGIN  382
+#define not_rowofint_in_stanfunc           383
 
 
 //  коды предупреждений

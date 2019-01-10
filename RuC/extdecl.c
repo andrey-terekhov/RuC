@@ -346,13 +346,14 @@ void actstring()
     adn = tc++;
     do
     {
-        if (scaner() == IDENT)
+/*        if (scaner() == IDENT)
         {
             applid();
             if (identab[lastid+2] == 1)
                 cur = NUMBER, ansttype = LINT, num = identab[lastid+3];
         }
-        if (cur == NUMBER && ansttype == LINT)
+ */
+        if (scaner() == NUMBER && ansttype == LINT)
             totree(num);
         else
             error(wrong_init_in_actparam);
@@ -363,6 +364,7 @@ void actstring()
     tree[adn] = n;
     if (cur != END)
         error(no_comma_or_end);
+    ansttype = newdecl(MARRAY, LINT);
     anst = VAL;
 }
 
@@ -397,6 +399,21 @@ void mustbeint()
         error(not_int_in_stanfunc);
 }
 
+void mustberowofint()
+{
+    scaner();
+    if (cur == BEGIN)
+        actstring(), totree(TExprend);
+    else
+    {
+        exprassn(1);
+        toval();
+        sopnd--;
+    }
+    if (! (ansttype > 0 && modetab[ansttype] == MARRAY && modetab[ansttype+1] == LINT) )
+    error(not_rowofint_in_stanfunc);
+}
+
 void primaryexpr()
 {
 	if (cur == NUMBER)
@@ -419,7 +436,7 @@ void primaryexpr()
     else if (cur == STRING)
 	{
 		int i;
-		ansttype = newdecl(MARRAY, LCHAR); // теперь пишем ansttype в анализаторе, а не в сканере
+        ansttype = newdecl(MARRAY, LCHAR); // теперь пишем ansttype в анализаторе, а не в сканере
 		totree(TString);
         totree(num);
         
@@ -432,7 +449,7 @@ void primaryexpr()
 	else if (cur == IDENT)
 	{
 		applid();
-        if (identab[lastid+2] == 1)                  // #define
+/*        if (identab[lastid+2] == 1)                  // #define
         {
             totree(TConst);
             totree(num = identab[lastid+3]);
@@ -440,6 +457,7 @@ void primaryexpr()
             ansttype = LINT;
         }
         else
+ */
         {
             totree(TIdent);
             totree(anstdispl = identab[lastid+3]);
@@ -495,10 +513,18 @@ void primaryexpr()
                 if (func < STRNCAT)
                     stackoperands[++sopnd] = ansttype = LINT;
         }
-        else if (func >= BLYNK_TERMINAL && func <= WIFI_CONNECT)   // функции Фадеева
+        else if (func >= SETSIGNAL && func <= WIFI_CONNECT)   // функции Фадеева
         {
             notrobot = 0;
-            if (func == WIFI_CONNECT || func == BLYNK_AUTORIZATION ||
+            if (func == SETSIGNAL)
+            {
+                mustbeint();
+                mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                mustberowofint();
+                mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                mustberowofint();
+            }
+            else if (func == WIFI_CONNECT || func == BLYNK_AUTORIZATION ||
                 func == BLYNK_NOTIFICATION)
             {
                 mustbestring();
@@ -2206,10 +2232,10 @@ void ext_decl()
     int i;
 	do            // top level описания переменных и функций до конца файла
 	{
-		int repeat = 1, funrepr, first = 1, k = 1;
+		int repeat = 1, funrepr, first = 1;
 		wasstructdef = 0;
 		scaner();
-        if (cur == SH_DEFINE)
+/*        if (cur == SH_DEFINE)
         {
             mustbe(IDENT, no_ident_in_define);
             if (scaner() == LMINUS)
@@ -2219,6 +2245,7 @@ void ext_decl()
             toidentab(-2, k * num);
             continue;
         }
+ */
 		firstdecl = gettype();
 		if (wasstructdef && next == SEMICOLON)
 		{                                      // struct point {float x, y;};
