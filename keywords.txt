@@ -82,5 +82,3 @@ BLYNK_PROPERTY blynk_property BLYNK_СВОЙСТВО blynk_свойство
 BLYNK_LCD blynk_lcd BLYNK_ДИСПЛЕЙ blynk_дисплей
 BLYNK_TERMINAL blynk_terminal BLYNK_ТЕРМИНАЛ blynk_терминал
 SETSIGNAL setsignal СИГНАЛ сигнал
-
-
