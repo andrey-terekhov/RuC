@@ -85,18 +85,17 @@ void tablesandtree()
             case TBeginit:
                 fprintf(output, "TBeginit n= %i\n", tree[i++]);
                 break;
-            case TEndinit:
-                fprintf(output, "TEndinit\n");
+            case TStructinit:
+                fprintf(output, "TStructinit n= %i\n", tree[i++]);
                 break;
-            case TIf:
-                fprintf(output, "TIf %i %i\n", tree[i], tree[i+1]);
-				i += 2;
+             case TIf:
+                fprintf(output, "TIf %i\n", tree[i++]);
                 break;
             case TWhile:
-                fprintf(output, "TWhile %i\n", tree[i++]);
+                fprintf(output, "TWhile\n");
                 break;
             case TDo:
-                fprintf(output, "TDo %i\n", tree[i++]);
+                fprintf(output, "TDo\n");
                 break;
             case TFor:
                 fprintf(output, "TFor %i %i %i %i\n", tree[i], tree[i+1], tree[i+2], tree[i+3]);
@@ -471,6 +470,9 @@ void tablesandcode()
                 fprintf(output, "displ= %i ", mem[i++]);
                 fprintf(output, "usual= %i\n", mem[i++]);
                 break;
+//            case STRUCTINIT:
+//                fprintf(output, "STRUCTINIT N= %i ", mem[i++]);
+//            break;
             case NOP:
                 fprintf(output, "NOP\n");
                 break;
@@ -781,17 +783,9 @@ void tablesandcode()
                 fprintf(output, "COPY10      %i ", mem[i++]);     // displright
                 fprintf(output, "(%i)\n", mem[i++]);              // length
                 break;
-            case COPY10V:
-                fprintf(output, "COPY10V %i ", mem[i++]);         // displright
-                fprintf(output, "(%i)\n", mem[i++]);              // length
-                break;
             case COPY11:
                 fprintf(output, "COPY11 %i\n", mem[i++]);         // length
                 break;
-            case COPY11V:
-                fprintf(output, "COPY11V %i\n", mem[i++]);         // length
-                break;
-
             case COPY0ST:
                 fprintf(output, "COPY0ST %i ", mem[i++]);         // displright
                 fprintf(output, "(%i)\n", mem[i++]);              // length
@@ -805,9 +799,6 @@ void tablesandcode()
                 break;
             case COPY1STASS:
                 fprintf(output, "COPY1STASS %i\n", mem[i++]);     // length
-                break;
-            case COPY1STASSV:
-                fprintf(output, "COPY1STASSV %i\n", mem[i++]);    // length
                 break;
             case COPYST:
                 fprintf(output, "COPYST %i ", mem[i++]);          // displ

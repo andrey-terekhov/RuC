@@ -8,7 +8,7 @@ void main()
             break;
         case 2:
             a = 2;
-            return a;
+            return;
         case 3:
             a = 3;
     }

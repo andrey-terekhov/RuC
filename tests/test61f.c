@@ -1,7 +1,14 @@
+char t, f[4];
 float a, b[3];
 int c, d[4];
-main()
+void main()
 {
+    getid(t);
+    printid(t);
+    
+    getid(f);
+    printid(f);
+    
     getid(a);
     printid(a);
     

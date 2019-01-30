@@ -451,7 +451,7 @@ int scan()
         case '~':
         {
             nextch();
-            return LNOT;
+            return LNOT;  // поразрядное отрицание
         }
         case '{':
         {

@@ -116,7 +116,10 @@ void error(int ernum)
             printf("\n");
             break;
         case arr_init_must_start_from_BEGIN:
-            printf("инициализация массива или структуры должна начинаться со {\n");
+            printf("инициализация массива должна начинаться со {\n");
+            break;
+        case struct_init_must_start_from_BEGIN:
+            printf("инициализация структуры должна начинаться со {\n");
             break;
         case no_comma_in_init_list:
             printf("между элементами инициализации массива или структуры должна быть ,\n");
@@ -589,10 +592,13 @@ void error(int ernum)
             printf("в операции над строками параметр не строка\n");
             break;
         case not_int_in_stanfunc:
-            printf("в этой операции над строками последний параметр должен иметь тип ЦЕЛ\n");
+            printf("в этой операции этот параметр должен иметь тип ЦЕЛ\n");
             break;
         case not_point_string_in_stanfunc:
             printf("в этой операции над строками первый параметр должен быть указателем на строку\n");
+            break;
+        case not_rowofint_in_stanfunc:
+            printf("в этой операции этот параметр должен иметь тип массив целых\n");
             break;
 
 
@@ -613,52 +619,52 @@ void m_error(int ernum)
     switch (ernum)
     {
         case after_preproces_words_must_be_space:
-            printf("Неправильное ключевое слово препроцесора, далее должен идти символ ' 'или'\\n'или'\\t' \n");
+            printf("Неправильное ключевое слово препроцессора, далее должен идти символ ' 'или'\\n'или'\\t' \n");
             break;
         case after_ident_must_be_space:
-            printf("После индефикатора должен идти ' ' \n");
+            printf("После индентификатора должен идти ' ' \n");
             break;
         case ident_begins_with_letters:
-            printf("Индификатор должен начинатся с буквы \n");
+            printf("Идентификатор должен начинаться с буквы \n");
             break;
         case must_be_endif:
-            printf("Условный оператор препроцесора должен заканчиватся '#ENDIF' \n");
+            printf("Условный оператор препроцессора должен заканчиваться '#ENDIF' \n");
             break;
         case dont_elif:
             printf("В этом типе условного оператора не может использоваться '#ELIF' \n");
             break;
         case preproces_words_not_exist:
-            printf("В препроцесоре не сушетвует написаной команды\n");
+            printf("В препроцессоре не сущетвует написанной команды\n");
             break;
         case not_enough_param:
             printf("У этой функции меньше параметров\n");
             break;
         case functionid_begins_with_letters:
-            printf("Индификатор функция должн начинаться с буквы\n");
+            printf("Идентификатор функции должн начинаться с буквы\n");
             break;
         case after_functionid_must_be_comma:
-            printf("После индификатора в функции должны быть ')' или ','потом ' ' \n");
+            printf("После идентификатора в функции должны быть ')' или ',' потом ' ' \n");
             break;
         case stalpe:
-            printf("в функции аргументы должны быть описаны через запятую, в скобках\n");
+            printf("В функции аргументы должны быть описаны через запятую, в скобках\n");
             break;
         case not_relis_if:
             printf("if ещё не реализован");
             break;
         case befor_endif:
-            printf("перед '#ENDIF' должен стоять условный оператор препроцесора\n");
+            printf("Перед '#ENDIF' должен стоять условный оператор препроцессора\n");
             break;
         case repeat_ident:
-            printf("этот индификатор препроцесора уже используется.\n");
+            printf("Этот идентификатор препроцессора уже используется.\n");
             break;
         case comm_not_ended:
-            printf("комментарий, начавшийся с /* , не закрыт\n");
+            printf("Комментарий, начавшийся с /* , не закрыт\n");
             break;
         case not_enough_param2:
             printf("У этой функции больше параметров\n");
             break;
         case not_end_fail_preprocess:
-            printf("Фаил не может оканчиваться данной командой препроцесора\n");
+            printf("Фаил не может оканчиваться данной командой препроцессора\n");
             break;
         case scob_not_clous:
             printf("Количество открывающих скобок не соотвеcтвует числу закрывающих\n");
