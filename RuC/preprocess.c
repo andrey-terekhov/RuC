@@ -970,20 +970,20 @@ void macroscan()
 
         case '\'':
                 m_fprintf(curchar);
-                m_nextch(17);
+                m_nextch(171);
                 m_fprintf(curchar);
-                m_nextch(17);
+                m_nextch(171);
                 m_fprintf(curchar);
-                m_nextch(17);
+                m_nextch(171);
                 return;
 
         case '\"':
                 m_fprintf(curchar);
-                m_nextch(17);
-            while(curchar != '\"' || curchar != EOF)
+                m_nextch(172);
+            while(curchar != '\"' && curchar != EOF)
             {
                 m_fprintf(curchar);
-                m_nextch(17);
+                m_nextch(172);
             }
             return;
         default:
@@ -999,7 +999,7 @@ void macroscan()
             else
             {
                 m_fprintf(curchar);
-                m_nextch(17);
+                m_nextch(173);
                 return;
             }
 
