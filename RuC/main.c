@@ -12,9 +12,9 @@
 const char * name =
 //"../../../tests/testmi.c";
 
-"tests/Egor/Macro/test4.c";
+//"tests/Egor/Macro/test4.c";
 
-//"../../../tests/Fadeev/Signal.c";
+"tests/Fadeev/blynk.c";
 
 //"../../../tests/Golovan/dining_philosophers.c";
 

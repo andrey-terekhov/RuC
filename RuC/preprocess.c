@@ -176,7 +176,7 @@ void monemore()
 
 void m_nextch(int i)
 {
-    //printf(" i = %d curcar = %c curcar = %i\n", i, curchar, curchar);
+    printf(" i = %d curcar = %c curcar = %i\n", i, curchar, curchar);
     monemore();
 
     if (curchar == '/' && nextchar == '/')
@@ -971,8 +971,14 @@ void macroscan()
         case '\'':
                 m_fprintf(curchar);
                 m_nextch(171);
+                if(curchar == '\\')
+                {
+                    m_fprintf(curchar);
+                    m_nextch(171); 
+                }
                 m_fprintf(curchar);
                 m_nextch(171);
+                
                 m_fprintf(curchar);
                 m_nextch(171);
                 return;
@@ -982,9 +988,16 @@ void macroscan()
                 m_nextch(172);
             while(curchar != '\"' && curchar != EOF)
             {
+                if(curchar == '\\')
+                {
+                    m_fprintf(curchar);
+                    m_nextch(172);  
+                }
                 m_fprintf(curchar);
                 m_nextch(172);
             }
+            m_fprintf(curchar);
+            m_nextch(172);
             return;
         default:
             if(letter())
