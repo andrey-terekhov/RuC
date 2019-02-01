@@ -975,6 +975,7 @@ void macroscan()
                 m_nextch(17);
                 m_fprintf(curchar);
                 m_nextch(17);
+                return;
 
         case '\"':
                 m_fprintf(curchar);
@@ -984,7 +985,7 @@ void macroscan()
                 m_fprintf(curchar);
                 m_nextch(17);
             }
-
+            return;
         default:
             if(letter())
             {
