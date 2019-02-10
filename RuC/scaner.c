@@ -11,6 +11,7 @@
 #include <string.h>
 #include <limits.h>
 #include <math.h>
+#include <unistd.h>
 
 #include "global_vars.h"
 extern void error(int);
@@ -58,6 +59,7 @@ void endofline()
     for (j=lines[line-1]; j<lines[line]; j++)
         if (source[j] != EOF)
             printf_char(source[j]);
+    fflush(stdout);
 }
 
 void endnl()

@@ -510,6 +510,7 @@ void* interpreter(void* pcPnt)
                 t = mem[pc++];
                 x -= szof(t);
                 auxprint(x+1, t, 0, '\n');
+                fflush(stdout);
                 sem_post(sempr);
             }
                 break;
@@ -526,6 +527,7 @@ void* interpreter(void* pcPnt)
                     auxprint(dsp(identab[i+3], l), prtype, '\n', '\n');
                 else
                     auxprint(dsp(identab[i+3], l), prtype, ' ', '\n');
+                fflush(stdout);
                 sem_post(sempr);
                 break;
 
@@ -541,6 +543,7 @@ void* interpreter(void* pcPnt)
                 sumsize = mem[pc++];
                 strbeg = mem[x--];
                 auxprintf(strbeg, x -= sumsize);
+                fflush(stdout);
                 sem_post(sempr);
             }
                 break;
@@ -552,7 +555,9 @@ void* interpreter(void* pcPnt)
                 do
                     printf_char(reprtab[r++]);
                 while (reprtab[r] != 0);
-                printf("\n");
+                printf(" ");
+                fflush(stdout);
+
                 auxget(dsp(identab[i+3], l), prtype);
                 sem_post(sempr);
                 break;

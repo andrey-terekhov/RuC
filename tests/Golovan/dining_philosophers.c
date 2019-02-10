@@ -1,5 +1,5 @@
 int COUNT_PHILOSOPHERS = 5;
-int COUNT_EATING = 42;
+int COUNT_EATING = 10;
 
  char names[5][] =
 {

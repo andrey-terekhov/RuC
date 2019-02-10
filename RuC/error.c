@@ -34,6 +34,7 @@ void error(int ernum)
     for (i=lines[line]; i<charnum; i++)
         printf_char(source[i]);
     printf("\n");
+    printf("ошибка: ");
     switch (ernum)
     {
         case after_type_must_be_ident:
