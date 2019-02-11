@@ -25,7 +25,8 @@
 #define MAXMEMTHREAD MAXMEMSIZE/NUMOFTHREADS 
 #define MAXPRINTFPARAMS 20
 
-// modetab 
+// modetab
+
 #define MFUNCTION 1001
 #define MSTRUCT   1002
 #define MARRAY    1003
@@ -653,6 +654,7 @@
 #define ori      13        // ori rt, rs, imm      rt = rs | ZeroImm
 #define xori     14        // xori rt, rs, imm     rt = rs ^ ZeroImm
 #define lui      15        // lui rt, imm          rt = {imm, 16'b0}
+#define li      115        // li rt, imm(32),      это псевдокоманда (lui + ori)
 #define mul      28        // mul rd, rs, rt       rd = rs * rt
 #define lw       35        // lw rt, imm(rs)       rt = [Address]
 #define sw       43        // sw rt, imm(rs)       [Address] = rt
@@ -674,7 +676,7 @@
 #define xor      98        // xor rd, rs, rt       rd = ts ^ rt
 #define nor      99        // nor rd, rs, rt       rd = ~(rs | rt)
 #define slt     102        // slt rd, rs, rt       rd = rs < rt ? 1 : 0
-#define sltu    103        // slt rd, rs, rt       rd = rs < rt ? 1 : 0      unsigned
+#define sltu    103        // sltu rd, rs, rt      rd = rs < rt ? 1 : 0      unsigned
 
 
 #endif

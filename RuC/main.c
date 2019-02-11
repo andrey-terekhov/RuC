@@ -5,16 +5,18 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 
-//#define MIPS 1
+#define MIPS 1
 
 #define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-//"../../../tests/testmi.c";
+"../../../tests/test10.c";
+
+//"../../../tests/mips/0test.c";
 
 //"../../../tests/Egor/Macro/test5.c";
 
-"../../../tests/Fadeev/Signal.c";
+//"../../../tests/Fadeev/Signal.c";
 
 //"../../../tests/Golovan/dining_philosophers.c";
 
@@ -44,7 +46,7 @@ int instring = 0, inswitch = 0, inloop = 0, lexstr[MAXSTRINGL+1];
 int tree[MAXTREESIZE], tc=0, mtree[MAXTREESIZE], mtc=0,
     mem[MAXMEMSIZE], pc=4, functions[FUNCSIZE], funcnum = 2, functype, kw = 0, blockflag = 1,
     entry, wasmain = 0, wasret, wasdefault, notrobot = 1, prep_flag = 0;
-int adcont, adbreak, adcase, adandor;
+int adcont, adbreak, adcase, adandor, switchreg;
 int predef[FUNCSIZE], prdf = -1, emptyarrdef;
 int gotost[1000], pgotost;
 int anst, anstdispl, ansttype, leftansttype = -1;         // anst = VAL  - значение на стеке
