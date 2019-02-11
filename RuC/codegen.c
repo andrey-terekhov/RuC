@@ -217,11 +217,9 @@ int Expr_gen(int incond)
             else
             {
                 int adelse, ad = 0;
-                //int thenref = tree[++tc];
-                //int elseref = tree[++tc];
                 do
                 {
-                    tc += 3;
+                    tc++;
                     tocode(BE0);
                     adelse = pc++;
                     Expr_gen(0);              // then
@@ -232,6 +230,7 @@ int Expr_gen(int incond)
                     Expr_gen(1);              // else или cond
                 }
                 while  (tree[tc] == TCondexpr);
+                
                 while (ad)
                 {
                     int r = mem[ad];

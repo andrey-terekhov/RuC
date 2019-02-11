@@ -18,25 +18,16 @@ int mcopy()
 
 int munop(int t)
 {
-/*    return t == LNOT || t == LOGNOT || t == LAND || t == LMULT ||
-    t == WIDEN || t == WIDEN1 || t == TAddrtoval || t == TAddrtovald ? 1
-    : (t >= POSTINC && t <= DEC) || (t >= POSTINCV && t <= DECV) || t == TPrint ? 2
-    : (t >= POSTINCAT && t <= DECAT) || (t >= POSTINCATV && t <= DECATV) || t == UNMINUS ? 1
-    : (t >= POSTINCR && t <= DECR) || (t >= POSTINCRV && t <= DECRV) ? 2
-    : (t >= POSTINCATR && t <= DECATR) || (t >= POSTINCATRV && t <= DECATRV) || t == UNMINUSR ? 1
-    : 0;
-}
-*/
     switch (t)
     {
         case LNOT:
-        case LOGNOT:
         case LAND:
-        case WIDEN:
-        case WIDEN1:
-        case _DOUBLE:
-        case TAddrtoval:
-        case TAddrtovald:
+        case LOR:
+        case LEXOR:
+        case LOGNOT:
+        case LOGAND:
+        case LOGOR:
+            
         case POSTINCAT:
         case POSTDECAT:
         case INCAT:
@@ -46,6 +37,10 @@ int munop(int t)
         case INCATV:
         case DECATV:
         case UNMINUS:
+            
+        case WIDEN:
+        case WIDEN1:
+
         case POSTINCATR:
         case POSTDECATR:
         case INCATR:
@@ -57,7 +52,45 @@ int munop(int t)
         case UNMINUSR:
             
             return 1;
+        
+        case REMASS:
+        case SHLASS:
+        case SHRASS:
+        case ANDASS:
+        case EXORASS:
+        case ORASS:
             
+        case REMASSV:
+        case SHLASSV:
+        case SHRASSV:
+        case ANDASSV:
+        case EXORASSV:
+        case ORASSV:
+            
+        case ASS:
+        case PLUSASS:
+        case MINUSASS:
+        case MULTASS:
+        case DIVASS:
+            
+        case ASSV:
+        case PLUSASSV:
+        case MINUSASSV:
+        case MULTASSV:
+        case DIVASSV:
+            
+        case ASSR:
+        case PLUSASSR:
+        case MINUSASSR:
+        case MULTASSR:
+        case DIVASSR:
+            
+        case ASSRV:
+        case PLUSASSRV:
+        case MINUSASSRV:
+        case MULTASSRV:
+        case DIVASSRV:
+
         case POSTINC:
         case POSTDEC:
         case INC:
@@ -75,9 +108,11 @@ int munop(int t)
         case POSTDECRV:
         case INCRV:
         case DECRV:
+            
             return 2;
             
         default:
+            
             return 0;
     }
 }
@@ -129,7 +164,7 @@ int mbinop(int t)
         case LGE:
         case LPLUS:
         case LMINUS:
-        case LMULT:    // у этих 10 команд есть такие же с плавающей зпт
+        case LMULT:
         case LDIV:
             
         case EQEQR:
@@ -155,48 +190,9 @@ int mbinop(int t)
         case MULTASSATRV:
         case DIVASSATRV:
 
+            op += 1000;
             return 1;
             
-        case REMASS:
-        case SHLASS:
-        case SHRASS:
-        case ANDASS:
-        case EXORASS:
-        case ORASS:
-            
-        case REMASSV:
-        case SHLASSV:
-        case SHRASSV:
-        case ANDASSV:
-        case EXORASSV:
-        case ORASSV:
-            
-        case ASS:
-        case PLUSASS:
-        case MINUSASS:
-        case MULTASS:
-        case DIVASS:
-            
-        case ASSV:
-        case PLUSASSV:
-        case MINUSASSV:
-        case MULTASSV:
-        case DIVASSV:
-
-        case ASSR:
-        case PLUSASSR:
-        case MINUSASSR:
-        case MULTASSR:
-        case DIVASSR:
-            
-        case ASSRV:
-        case PLUSASSRV:
-        case MINUSASSRV:
-        case MULTASSRV:
-        case DIVASSRV:
-
-            return 2;
-
         default:
             return 0;
     }
@@ -298,19 +294,27 @@ void permute(int n1)
     mtc += opnd;
 }
 
-int munarexpr()
+int operand()
 {
-    int i, n1, flag = 0;
+    int i, n1;
     t = tree[tc];
-    n1 = tc;
-//  printf("munarexpr tc= %i t= %i\n", tc, t);
 //    if (t < -343 || t > -300)
 //        printf("\nсбой tree tc= %i tree[tc]= %i\n", tc, tree[tc]);
+    
+//    printf("operand or operation tc= %i t= %i\n", tc, t);
+    if (tree[tc] == NOP)
+        mcopy();
+    if (tree[tc] == TIdent)
+    {
+        mcopy();
+        mcopy();
+    }
+    n1 = tc;
+    t = tree[tc];
     if (t == TString)
     {
         mcopy();
         int nstr = mcopy();
-        flag = n1;
         for (i=0; i<nstr; i++)
             mcopy();
     }
@@ -318,7 +322,6 @@ int munarexpr()
     {
         mcopy();
         mcopy();
-        flag = n1;
         if (t == TSliceident)
         {
             mcopy();
@@ -340,7 +343,6 @@ int munarexpr()
         int npar;
         mcopy();
         npar = mcopy();
-        flag = n1;
         for (i=0; i<npar; i++)
             mexpr(0);
         mcopy();          // CALL2
@@ -351,7 +353,6 @@ int munarexpr()
         int n;
         mcopy();
         n = mcopy();
-        flag = n1;
         for (i=0; i<n; i++)
             mexpr();
     }
@@ -360,46 +361,58 @@ int munarexpr()
         int i, n;
         mcopy();
         n =  mcopy();
-        flag = n1;
         for (i=0; i<n; i++)
             mexpr();
     }
-    else if (t == TIdent || t == TIdenttoval ||  t == TAddrtoval ||
-             t == TIdenttovald || t == TIdenttoaddr || t == TConst)
+    else if (t == TIdenttoval || t == TIdenttovald || t == TIdenttoaddr ||
+             t == TAddrtoval  || t == TConst)
     {
         mcopy();
-        flag = n1;
         mcopy();
     }
     else if (t == TConstd || t == TSliceident)
     {
         mcopy();
-        flag = n1;
         mcopy();
         mcopy();
     }
-//    printf("munarexpr tc= %i tree[tc]= %i opnd= %i\n", tc, tree[tc], munop(tree[tc]));
-    while ((op = tree[tc], opnd = munop(op)))
-        permute(n1);
-    if (tree[tc] == TExprend)
-        mcopy();
-    return flag;
+    else
+        n1 = 0;
+
+    return n1;
 }
 
 void mexpr()
 {
-    stack[++sp] = munarexpr();
-
-    while ((stack[++sp] = munarexpr()))
-        ;
-    --sp;
-    while ((op = tree[tc], opnd = mbinop(op)))
+    while (1)
     {
-//    printf("mexpr1 tc= %i op= %i opnd= %i sp= %i stack[sp-1]= %i\n", tc, op, opnd, sp, stack[sp-1]);
-        permute(stack[--sp]);
+        while ( (stack[++sp] = operand()) )
+//        printf("sp= %i stack[sp]= %i\n", sp, stack[sp]);
+        --sp;
+    
+        if (tree[tc] == NOP)
+            mcopy();
+        op = tree[tc];
+        if (op == TExprend)
+        {
+            mcopy();
+            --sp;
+        }
+        else if ( (opnd = munop(op)) )
+            permute(stack[sp]);
+        else if ( (opnd = mbinop(op)) )
+            permute(stack[--sp]);
+        else if ((op = tree[tc]) == TCondexpr)
+        {
+//            printf("Cond tc= %i sp= %i\n", tc, sp);
+            opnd = 1;
+            permute(stack[sp]);
+            mexpr();
+            mexpr();
+        }
+        else
+            break;
     }
-    if (tree[tc] == TExprend)
-        mcopy();
 }
     
 void init()
@@ -490,5 +503,4 @@ void mipsopt()
     output = fopen("mtree.txt", "wt");
     tablesandtree();
     fclose(output);
-    exit(0);
 }

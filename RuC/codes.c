@@ -73,8 +73,7 @@ void tablesandtree()
                 fprintf(output, "TString n= %i\n", tree[i++]);
                 break;
             case TCondexpr:
-                fprintf(output, "TCondexpr %i %i\n", tree[i], tree[i+1]);
-				i += 2;
+                fprintf(output, "TCondexpr\n");
                 break;
             case TBegin:
                 fprintf(output, "TBegin\n");

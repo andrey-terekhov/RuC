@@ -1062,17 +1062,13 @@ void condexpr()
 	{
 		while (next == QUEST)
 		{
-			int thenref, elseref;
 			toval();
 			if (!is_int(ansttype))
 				error(float_in_condition);
 			totree(TCondexpr);
-			thenref = tc++;
-			elseref = tc++;
 			scaner();
 			scaner();
 			sopnd--;
-			tree[thenref] = tc;
 			exprval();                  // then
 			if (!globtype)
 				globtype = ansttype;
@@ -1086,7 +1082,6 @@ void condexpr()
 			}
 			mustbe(COLON, no_colon_in_cond_expr);
 			scaner();
-			tree[elseref] = tc;
 			unarexpr();
 			subexpr();   // logORexpr();        else or elif
 		}
@@ -1217,14 +1212,14 @@ void exprassn(int level)
         if (intopassn(lnext) && (is_float(ltype) || is_float(rtype)))
             error(int_op_for_float);
         
-        if (is_array(ltype))                 // присваивать массив в массив в си нельзя
+        if (is_array(ltype))            // присваивать массив в массив в си нельзя
             error(array_assigment);
         
-        if (is_struct(ltype))                // присваивание в структуру
+        if (is_struct(ltype))           // присваивание в структуру
         {
-			if (ltype != rtype)              // типы должны быть равны
+			if (ltype != rtype)         // типы должны быть равны
 				error(type_missmatch);
-            if (opp != ASS)                   // в структуру можно присваивать только с помощью =
+            if (opp != ASS)             // в структуру можно присваивать только с помощью =
                 error(wrong_struct_ass);
             
             if (anst == VAL)
@@ -2093,7 +2088,7 @@ void function_definition()
 			error(label_not_declared);
 	}
 	curid = 2;                                 // все функции описываются на одном уровне
-	tree[pred] = maxdispl + 1;
+    tree[pred] = maxdispl;    // + 1;?
 	lg = -1;
     displ = olddispl;
 }
