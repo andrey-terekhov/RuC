@@ -156,16 +156,16 @@ int mbinop(int t)
         case LOGAND:
         case LOGOR:
             
+        case LPLUS:
+        case LMINUS:
+        case LMULT:
+        case LDIV:
         case EQEQ:
         case NOTEQ:
         case LLT:
         case LGT:
         case LLE:
         case LGE:
-        case LPLUS:
-        case LMINUS:
-        case LMULT:
-        case LDIV:
             
         case EQEQR:
         case NOTEQR:
@@ -284,7 +284,7 @@ void mstatement()
 void permute(int n1)
 {
     int i, oldopnd = tree[tc+1];
-//    printf("permute n1= %i tc= %i op= %i opnd=%i\n", n1, tc, op, opnd);
+    printf("permute n1= %i tc= %i op= %i opnd=%i\n", n1, tc, op, opnd);
     for (i=tc+opnd-1; i>n1+opnd-1; i--)
         mtree[i] = mtree[i-opnd];
     mtree[n1] = op;
@@ -296,7 +296,7 @@ void permute(int n1)
 
 int operand()
 {
-    int i, n1;
+    int i, n1, flag = 1;
     t = tree[tc];
 //    if (t < -343 || t > -300)
 //        printf("\nсбой tree tc= %i tree[tc]= %i\n", tc, tree[tc]);
@@ -377,9 +377,9 @@ int operand()
         mcopy();
     }
     else
-        n1 = 0;
+        flag = 0;
 
-    return n1;
+    return flag ? n1 : 0;
 }
 
 void mexpr()
@@ -387,7 +387,7 @@ void mexpr()
     while (1)
     {
         while ( (stack[++sp] = operand()) )
-//        printf("sp= %i stack[sp]= %i\n", sp, stack[sp]);
+        printf("sp= %i stack[sp]= %i\n", sp, stack[sp]);
         --sp;
     
         if (tree[tc] == NOP)
@@ -404,7 +404,7 @@ void mexpr()
             permute(stack[--sp]);
         else if ((op = tree[tc]) == TCondexpr)
         {
-//            printf("Cond tc= %i sp= %i\n", tc, sp);
+            printf("Cond tc= %i sp= %i\n", tc, sp);
             opnd = 1;
             permute(stack[sp]);
             mexpr();
@@ -493,14 +493,8 @@ void mblock()
 
 void mipsopt()
 {
-    int i;
     sp = -1;
     tc = 0;
     mtc = 0;
     mblock();
-    for (i=0; i<mtc; i++)
-        tree[i] = mtree[i];
-    output = fopen("mtree.txt", "wt");
-    tablesandtree();
-    fclose(output);
 }

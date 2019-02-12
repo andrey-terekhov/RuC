@@ -5,7 +5,7 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 
-#define MIPS 1
+//#define MIPS 1
 
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -66,7 +66,6 @@ extern int  getnext();
 extern int  nextch();
 extern int  scan();
 extern void error(int ernum);
-extern void codegen();
 extern void mipsopt();
 extern void mipsgen();
 extern void ext_decl();
@@ -108,7 +107,7 @@ int main(int argc, const char * argv[])
     nextch();
     while (scan() != LEOF)   // чтение ключевых слов
         ;
-    fclose(input);
+    fclose(input);           // закрытие файла ключевых слов
     
     if (argc < 2) {
         input = fopen(name, "r");          //   исходный текст
@@ -155,11 +154,11 @@ int main(int argc, const char * argv[])
 
     printf("\nИсходный текст:\n \n");
     preprocess_file();                //   макрогенерация
+
+    fclose(input);                    // исходный файл до макрогенерации
+    fclose(output);                   // исходный файл после макрогенерации
     
-    fclose(output);
-    fclose(input);
-    
-    input  = fopen("macro.txt", "r");
+    input  = fopen("macro.txt", "r"); // исходный файл после макрогенерации
 
     
     if (input == NULL)
@@ -171,58 +170,33 @@ int main(int argc, const char * argv[])
         printf("\nТекст после препроцесора:\n \n");
     }
 
-    output = fopen("tree.txt", "wt");
+    output = fopen("tree.txt", "wt"); // файл с деревом до mipsopt
     
     getnext();
     nextch();
     next = scan();
 
-    ext_decl();                       //   генерация дерева
+    ext_decl();                       // генерация дерева
 
     lines[line+1] = charnum;
-    tablesandtree();
-    fclose(output);
-    output = fopen("codes.txt", "wt");
+//    tablesandtree();
+    fclose(output);                   // файл с деревом до mipsopt
     
-#ifdef MIPS
     mipsopt();
-    mipsgen();
-#else
-    codegen();                         //   генерация кода
-#endif
     
-    tablesandcode();
+    for (i=0; i<mtc; i++)
+        tree[i] = mtree[i];
+
+    output = fopen("mtree.txt", "wt");
+    tc = mtc;
+    tablesandtree();
+    fclose(output);                   // файл с деревом после mipsopt
+
+    mipsgen();                        //
     
     fclose(input);
-    fclose(output);
     
-    output = fopen("export.txt", "wt");
-    fprintf(output, "%i %i %i %i %i %i %i\n", pc, funcnum, id, rp, md, maxdisplg, wasmain);
-    
-    for (i=0; i<pc; i++)
-        fprintf(output, "%i ", mem[i]);
-    fprintf(output, "\n");
-    
-    for (i=0; i<funcnum; i++)
-        fprintf(output, "%i ", functions[i]);
-    fprintf(output, "\n");
-    
-    for (i=0; i<id; i++)
-        fprintf(output, "%i ", identab[i]);
-    fprintf(output, "\n");
-    
-    for (i=0; i<rp; i++)
-        fprintf(output, "%i ", reprtab[i]);
-    
-    for (i=0; i<md; i++)
-        fprintf(output, "%i ", modetab[i]);
-    fprintf(output, "\n");
-    
-    fclose(output);
    
-    if (notrobot && (argc < 2))
-        import();
-    
     return 0;
 }
 

@@ -255,11 +255,14 @@ void MBin_operation(int c)
                 num *= leftnum;
             case LDIV:
                 num = leftnum / num;
-        
                 break;
-                
-            default:
-                break;
+            case EQEQ:
+            case NOTEQ:
+            case LLT:
+            case LGT:
+            case LLE:
+            case LGE:
+
         }
     }
     else if (leftanst == CONST && manst == AREG)
@@ -309,6 +312,14 @@ void MBin_operation(int c)
                 break;
             case LDIV:
                 break;
+                
+            case EQEQ:
+            case NOTEQ:
+            case LLT:
+            case LGT:
+            case LLE:
+            case LGE:
+
         }
     }
     if (leftanst == AREG && manst == AREG)
@@ -342,6 +353,14 @@ void MBin_operation(int c)
                 break;
             case LDIV:
                 break;
+                
+            case EQEQ:
+            case NOTEQ:
+            case LLT:
+            case LGT:
+            case LLE:
+            case LGE:
+
         }
     }
 }
@@ -353,8 +372,8 @@ void MExpr_gen(int br)
     if (c < 9000)
         MPrimary();
     else if (c > 10000)
-        MBin_operation(c -= 1000); // бинарная операция
-    else                           // унарная  операция
+        MBin_operation(c -= 1000); // бинарная операция (два вычислимых операнда)
+    else                           // унарная  операция (один вычислимый операнд)
     {
         switch (c)
         {
@@ -562,7 +581,7 @@ void mfinalop()
             }
             else
             {
-                tocode(c);
+//                tocode(c);
                 if (c == LOGOR || c == LOGAND)
                     tocodeL("log", tree[tc++]);
 /*                else if (c == COPY00 || c == COPYST)
@@ -732,8 +751,8 @@ void MPrimary()
                     tocodeB(lw, t0, 0, t0);
                 break;
             case TSelect:
-                tocode(SELECT);                // SELECT field_displ
-                tocode(tree[tc++]);
+//                tocode(SELECT);                // SELECT field_displ
+//                tocode(tree[tc++]);
                 break;
             case TPrint:
                 tocodeI(addi, a0, d0, tree[tc++]);
@@ -755,7 +774,7 @@ void MPrimary()
             case TCall2:
                 tocodeJ(jal, "FUNC", identab[tree[tc++]+3]);
                 break;
-            case NOP:
+            case TExprend:
                 tc++;
                 flagprim = 0;
             default:
@@ -763,41 +782,6 @@ void MPrimary()
         }
     }
 }
-/*
-        mfinalop();
-        
-        if (tree[tc] == TCondexpr)
-        {
-            if (incond)
-                return wasstring;
-            else
-            {
-                tc++;
-                do
-                {
-                    int labelse = labnum++, labend;
-                    labend = labnum++;
-                    tocodeJEQ(beq, condtoreg(), d0, " else", labelse);
-                    MExpr_gen(0);
-                    tocodeJ(jump, "end", labend);
-                tocodeL("else", labelse);
-                    MExpr_gen(1);
-                tocodeL("end", labend);
-                }
-                while  (tree[tc] == TCondexpr);
-            }
-            
-            mfinalop();
-        }
-        if (tree[tc] == TExprend)
-        {
-            tc++;
-            flagprim = 0;
-        }
-    }
-    return wasstring;
-}
-*/
 void MStmt_gen();
 
 void mcompstmt_gen()
@@ -820,10 +804,8 @@ void mcompstmt_gen()
                     tocodeB(sw, t0, bdispl, gp);
                     bdispl += 4;
                 }
-
                 break;
             }
-                
             case TDeclid:
                 tc++;
                 MDeclid_gen();
@@ -839,7 +821,7 @@ void mcompstmt_gen()
 
 void MStmt_gen()
 {
-    int r, oldmbox = mbox, oldbdispl = bdispl, oldbreg = breg;
+    int r;
     switch (tree[tc++])
     {
         case NOP:
@@ -884,8 +866,8 @@ void MStmt_gen()
                 MStmt_gen();
             }
             else
-                tocodeL("else", labelse);
-                tocodeL("end", labend);
+            tocodeL("else", labelse);
+            tocodeL("end", labend);
         }
             break;
         case TWhile:
@@ -1039,9 +1021,6 @@ void MStmt_gen()
         }
             break;
     }
-    mbox = oldmbox;
-    bdispl = oldbdispl;
-    breg = oldbreg;
 }
 
 void MDeclid_gen()
