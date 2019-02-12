@@ -17,8 +17,6 @@
 		EDCB458F1DDF4B9C0030AE24 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45881DDF4B9C0030AE24 /* main.c */; };
 		EDCB45901DDF4B9C0030AE24 /* scaner.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45891DDF4B9C0030AE24 /* scaner.c */; };
 		EDE8849E1F3C8CDE00DAE9F0 /* threads.c in Sources */ = {isa = PBXBuildFile; fileRef = EDE8849D1F3C8CDE00DAE9F0 /* threads.c */; };
-		EDF614F72212D19B00A75753 /* import.c in Sources */ = {isa = PBXBuildFile; fileRef = EDF614F52212D19A00A75753 /* import.c */; };
-		EDF614F82212D19B00A75753 /* codegen.c in Sources */ = {isa = PBXBuildFile; fileRef = EDF614F62212D19B00A75753 /* codegen.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -49,8 +47,6 @@
 		EDCB45891DDF4B9C0030AE24 /* scaner.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = scaner.c; sourceTree = "<group>"; };
 		EDE8849D1F3C8CDE00DAE9F0 /* threads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = threads.c; sourceTree = "<group>"; };
 		EDE8849F1F499DA300DAE9F0 /* th_static.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = th_static.h; sourceTree = "<group>"; };
-		EDF614F52212D19A00A75753 /* import.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = import.c; sourceTree = "<group>"; };
-		EDF614F62212D19B00A75753 /* codegen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = codegen.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,8 +82,6 @@
 			children = (
 				ED6E611F221311DC00363321 /* mipsgen.c */,
 				ED6E6120221311DC00363321 /* mipsopt.c */,
-				EDF614F62212D19B00A75753 /* codegen.c */,
-				EDF614F52212D19A00A75753 /* import.c */,
 				EDC2DE3821357B1C0056585C /* preprocess.c */,
 				EDE8849F1F499DA300DAE9F0 /* th_static.h */,
 				EDCB45821DDF4B9C0030AE24 /* codes.c */,
@@ -161,7 +155,6 @@
 			files = (
 				EDCB458C1DDF4B9C0030AE24 /* error.c in Sources */,
 				EDCB458B1DDF4B9C0030AE24 /* codes.c in Sources */,
-				EDF614F72212D19B00A75753 /* import.c in Sources */,
 				EDCB458F1DDF4B9C0030AE24 /* main.c in Sources */,
 				EDCB45901DDF4B9C0030AE24 /* scaner.c in Sources */,
 				ED6E6122221311DC00363321 /* mipsopt.c in Sources */,
@@ -169,7 +162,6 @@
 				EDCB458D1DDF4B9C0030AE24 /* extdecl.c in Sources */,
 				ED6E6121221311DC00363321 /* mipsgen.c in Sources */,
 				EDE8849E1F3C8CDE00DAE9F0 /* threads.c in Sources */,
-				EDF614F82212D19B00A75753 /* codegen.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
