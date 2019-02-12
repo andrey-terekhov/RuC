@@ -5,8 +5,6 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 
-#define MIPS 1
-
 #define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
@@ -184,12 +182,7 @@ int main(int argc, const char * argv[])
     fclose(output);
     output = fopen("codes.txt", "wt");
     
-#ifdef MIPS
-    mipsopt();
-    mipsgen();
-#else
     codegen();                         //   генерация кода
-#endif
     
     tablesandcode();
     
