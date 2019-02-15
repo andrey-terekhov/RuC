@@ -2,6 +2,7 @@
 #include "face_util.h"
 #include "messages_window.h"
 
+#include <errno.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
