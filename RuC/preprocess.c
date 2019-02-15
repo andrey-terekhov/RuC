@@ -176,7 +176,7 @@ void monemore()
 
 void m_nextch(int i)
 {
-    printf(" i = %d curcar = %c curcar = %i\n", i, curchar, curchar);
+    //printf(" i = %d curcar = %c curcar = %i\n", i, curchar, curchar);
     monemore();
 
     if (curchar == '/' && nextchar == '/')

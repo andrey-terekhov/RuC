@@ -8,7 +8,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-"../../../tests/test10.c";
+"tests/bubblerus.c";
 
 //"../../../tests/mips/0test.c";
 
@@ -151,7 +151,6 @@ int main(int argc, const char * argv[])
     fclose(input);
     
     input  = fopen("macro.txt", "r");
-
     
     if (input == NULL)
     {

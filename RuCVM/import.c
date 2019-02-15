@@ -1733,6 +1733,12 @@ void import()
     
     input = fopen("export.txt", "r");
     
+    if (!input)
+    {
+        printf("export.txt not found\n");
+        return;
+    }
+    
     fscanf(input, "%i %i %i %i %i %i %i\n", &pc, &funcnum, &id, &rp, &md, &maxdisplg, &wasmain);
 
     for (i=0; i<pc; i++)
