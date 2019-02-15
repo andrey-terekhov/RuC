@@ -18,7 +18,7 @@ fi
 
 for code in ./tests/*.c ./tests/*/*.c ./tests/*/*/*.c
 do
-    out=`timeout $wait_for ./ruc-compiler $code >/dev/null 2>/dev/null`
+    out=`timeout $wait_for ./bin/ruc $code >/dev/null 2>/dev/null`
     
     case $? in
         0)
