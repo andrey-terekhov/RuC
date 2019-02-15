@@ -9,9 +9,9 @@
 
 // запросы
 #define BREG   1     // in breg destination
-#define BF     2     // free, в adispl и areg ответ, если breg > 0, то используется этот
-                     // регистр, иначе один из несохраняемых (чаще всего t0)
-#define BC     3     // for conditions  BC > 0 BTRUE BC < 0 BFALSE
+#define BF     2     // free, ответ м.б. AREG в areg или CONST (num < 32768), кроме INCAT...
+#define BC     3     // for conditions  BC > 0 B on TRUE BC < 0 B on FALSE
+                     // на метку elselab
 
 // ответы
 #define AMEM  1      // in adispl and areg address
@@ -20,7 +20,7 @@
 
 int mbox,  bdispl, breg;
 int manst, adispl, areg;
-int labnum = 1;
+int labnum = 1, elselab;
 
 // унарные операции LNOT, LOGNOT, -, ++, --, TIdenttoval(*), TIdenttoaddr(&)
 // LNOT nor rd, rs, d0    LOGNOT slti rt, rs, 1   - sub rd, d0, rt
@@ -211,17 +211,18 @@ void mdsp(int displ)
 
 void MPrimary();
 
-void MBin_operation(int c)
+void MBin_operation(int c)      // бинарная операция (два вычислимых операнда)
 {
-    int br = getreg(), leftanst, leftdispl, leftreg, leftnum, oldbreg = breg;
+    int br = getreg(), leftanst, leftdispl, leftreg, leftnum, oldbreg = breg, rl, rr;
     mbox = BF;
-    breg = br;
     MExpr_gen(br);
     leftanst = manst;
     leftdispl = adispl;
     leftreg = areg;
     leftnum = num;
+    rl = manst == AREG ? areg : t0;
     MExpr_gen(t0);
+    rr = manst == AREG ? areg : t1;
     if (leftanst == CONST && manst == CONST)
     {
         switch (c)
@@ -257,13 +258,28 @@ void MBin_operation(int c)
                 num = leftnum / num;
                 break;
             case EQEQ:
+                num = leftnum == num;
+                break;
             case NOTEQ:
+                num = leftnum != num;
+                break;
             case LLT:
+                num = leftnum < num;
+                break;
             case LGT:
+                num = leftnum > num;
+                break;
             case LLE:
+                num = leftnum <= num;
+                break;
             case LGE:
-
+                num = leftnum >= num;
+                break;
         }
+        tocodeI(addi, t0, d0, num);
+        manst = AREG;
+        areg = t0;
+        return;
     }
     else if (leftanst == CONST && manst == AREG)
     {
@@ -280,7 +296,6 @@ void MBin_operation(int c)
         r = leftnum;
         leftnum = num;
         num = r;
-
     }
     if (leftanst == AREG && manst == CONST)
     {
@@ -288,27 +303,29 @@ void MBin_operation(int c)
         {
             case LREM:
             case LSHL:
-                tocodeI(sll, oldbreg, areg, num);
+                tocodeSLR(sll, br, areg, num);
                 break;
             case LSHR:
-                tocodeI(sra, oldbreg, areg, num);
+                tocodeSLR(sra, br, areg, num);
                 break;
             case LAND:
-                tocodeI(andi, oldbreg, areg, num);
+                tocodeI(andi, br, areg, num);
                 break;
             case LEXOR:
-                tocodeI(xori, oldbreg, areg, num);
+                tocodeI(xori, br, areg, num);
                 break;
             case LOR:
-                tocodeI(ori, oldbreg, areg, num);
+                tocodeI(ori, br, areg, num);
                 break;
             case LPLUS:
-                tocodeI(addi, oldbreg, areg, num);
+                tocodeI(addi, br, areg, num);
                 break;
             case LMINUS:
-                tocodeI(addi, oldbreg, areg, -num);
+                tocodeI(addi, br, areg, -num);
                 break;
             case LMULT:
+                tocodeI(addi, t0, d0, num);
+                tocodeR(mul, br, areg, t0);
                 break;
             case LDIV:
                 break;
@@ -373,8 +390,8 @@ void MExpr_gen(int br)
         MPrimary();
     else if (c > 10000)
         MBin_operation(c -= 1000); // бинарная операция (два вычислимых операнда)
-    else                           // унарная  операция (один вычислимый операнд)
-    {
+    else
+    {                              // унарная  операция (один вычислимый операнд)
         switch (c)
         {
             case REMASS:
@@ -403,162 +420,143 @@ void MExpr_gen(int br)
             case MULTASSV:
             case DIVASSV:
             {
-                int ad, ar, flag = 1;
+                int ad, ar, flag = 1, r;
                 mdsp(tree[tc++]);
                 ad = adispl;
                 ar = areg;
                 mbox = BF;
-                breg = t0;
                 MExpr_gen(t0);
+                r = manst == AREG ? areg : t1;
                 
                 if (c == ASS || c == ASSV)
                 {
-                    if (manst == CONST)
-                    {
-                        if (abs(num) < 32768)
-                            tocodeI(addi, t0, d0, num);
-                        else
-                            tocodeLI(li, t0, num);
-                    }
+                    if (manst == CONST)   // здесь уже точно num < 32768
+                        tocodeI(addi, r = t1, d0, num);
+                    tocodeB(sw, r, ad, ar);
                 }
                 else
                 {
                     tocodeB(lw, t0, ad, ar);
                     if (manst == CONST)
                     {
-                        if (abs(num) < 32768)
+                        if (c == SHLASS || c == SHLASSV)
+                            tocodeSLR(sll, t0, t0, num);
+                        else if (c == SHRASS || c == SHRASSV)
+                            tocodeSLR(sra, t0, t0, num);
+                        else if (c == ANDASS || c == ANDASSV)
+                            tocodeI(andi, t0, t0, num);
+                        else if (c == ORASS || c == ORASSV)
+                            tocodeI(ori, t0, t0, num);
+                        else if (c == EXORASS|| c == EXORASSV)
+                            tocodeI(xori, t0, t0, num);
+                        else if (c == PLUSASS|| c == PLUSASSV)
+                            tocodeI(addi, t0, t0, num);
+                        else if (c == MINUSASS|| c == MINUSASSV)
+                            tocodeI(addi, t0, t0, -num);
+                        flag = 0;
+                        if (c == MULTASS || c == MULTASSV)
                         {
-                            if (c == SHLASS || c == SHLASSV)
-                                tocodeSLR(sll, t0, t0, num);
-                            else if (c == SHRASS || c == SHRASSV)
-                                tocodeSLR(sra, t0, t0, num);
-                            else if (c == ANDASS || c == ANDASSV)
-                                tocodeI(andi, t0, t0, num);
-                            else if (c == ORASS || c == ORASSV)
-                                tocodeI(ori, t0, t0, num);
-                            else if (c == EXORASS|| c == EXORASSV)
-                                tocodeI(xori, t0, t0, num);
-                            else if (c == PLUSASS|| c == PLUSASSV)
-                                tocodeI(addi, t0, t0, num);
-                            else if (c == MINUSASS|| c == MINUSASSV)
-                                tocodeI(addi, t0, t0, -num);
-                            flag = 0;
-                            if (c == MULTASS || c == MULTASSV)
-                            {
-                                tocodeI(addi, t1, d0, num);
-                                flag = 1;
-                            }
+                            tocodeI(addi, r = t1, d0, num);
+                            flag = 1;
                         }
-                        else
-                            tocodeLI(li, t1, num);
                     }
                 }
                 if (flag)
-                {
+                {                          // здесь второй операнд - это регистр r
                     if (c == SHLASS || c == SHLASSV)
-                        tocodeR(sllv, t0, t0, t1);
+                        tocodeR(sllv, t0, t0, r);
                     else if (c == SHRASS || c == SHRASSV)
-                        tocodeSLR(srav, t0, t0, t1);
+                        tocodeSLR(srav, t0, t0, r);
                     else if (c == ANDASS || c == ANDASSV)
-                        tocodeR(and, t0, t0, t1);
+                        tocodeR(and, t0, t0, r);
                     else if (c == ORASS || c == ORASSV)
-                        tocodeR(or, t0, t0, t1);
+                        tocodeR(or, t0, t0, r);
                     else if (c == EXORASS|| c == EXORASSV)
-                        tocodeR(xor, t0, t0, t1);
+                        tocodeR(xor, t0, t0, r);
                     else if (c == PLUSASS|| c == PLUSASSV)
-                        tocodeR(addi, t0, t0, t1);
+                        tocodeR(addi, t0, t0, r);
                     else if (c == MINUSASS|| c == MINUSASSV)
-                        tocodeR(sub, t0, t0, t1);
+                        tocodeR(sub, t0, t0, r);
                     else if (c == MULTASS|| c == MULTASSV)
-                        tocodeR(mul, t0, t0, t1);
+                        tocodeR(mul, t0, t0, r);
+                    tocodeB(sw, t0, ad, ar);
                 }
-                tocodeB(sw, t0, ad, ar);
+                areg = t0;
             }
                 break;
-                
             case POSTINC:
             case INC:
             case POSTINCV:
             case INCV:
-            {
                 mdsp(tree[tc++]);
                 tocodeB(lw, t0, adispl, areg);
                 tocodeI(addi, t1, t0, 1);
                 tocodeB(sw, t1, adispl, areg);
-                manst = AREG;
                 areg = c == INC || c == INCV ? t1 : t0;
-            }
                 break;
             case POSTDEC:
             case DEC:
             case POSTDECV:
             case DECV:
-            {
                 mdsp(tree[tc++]);
                 tocodeB(lw, t0, adispl, areg);
                 tocodeI(addi, t1, t0, -1);
                 tocodeB(sw, t1, adispl, areg);
-                manst = AREG;
-                areg = c == INC || c == INCV ? t1 : t0;
-
-            }
+                areg = c == DEC || c == DECV ? t1 : t0;
                 break;
             case POSTINCAT:
             case INCAT:
             case POSTINCATV:
             case INCATV:
-            {
                 mbox = BF;
-                breg = t0;
                 MExpr_gen(t0);   // здесь точно будет manst == AMEM
                 tocodeB(lw, t0, adispl, areg);
                 tocodeI(addi, t1, t0, 1);
                 tocodeB(sw, t1, adispl, areg);
-                manst = AREG;
-                areg = c == INC || c == INCV ? t1 : t0;
-            }
+                areg = c == INCAT || c == INCATV ? t1 : t0;
                 break;
             case POSTDECAT:
             case DECAT:
             case POSTDECATV:
             case DECATV:
-            {
                 mbox = BF;
-                breg = t0;
                 MExpr_gen(t0);   // здесь точно будет manst == AMEM
                 tocodeB(lw, t0, adispl, areg);
                 tocodeI(addi, t1, t0, -1);
                 tocodeB(sw, t1, adispl, areg);
-                manst = AREG;
-                areg = c == INC || c == INCV ? t1 : t0;
-            }
+                areg = c == DEC || c == DECV ? t1 : t0;
                 break;
             case LNOT:  // поразрядное отрицание:
             case LOGNOT:
             case UNMINUS:
-
-            case LAND:
-            case LOR:
-            case LEXOR:
-            case LOGAND:
-            case LOGOR:
-            case LREM:
-            case LSHL:
-            case LSHR:
-                
-            case EQEQ:
-            case NOTEQ:
-            case LLT:
-            case LGT:
-            case LLE:
-            case LGE:
-            case LPLUS:
-            case LMINUS:
-            case LMULT:
-            case LDIV:
-                
-            default:
-                break;
+            {
+                int r = mbox == BREG ? breg : t0;
+                mbox = BF;
+                MExpr_gen(t0);
+                if (manst == CONST)
+                {
+                    if (c == LNOT)
+                        num = ~num;
+                    else if (c == LOGNOT)
+                        num = !num;
+                    else                 // UNMINUS
+                        num = -num;
+                    tocodeI(addi, r, d0, num);
+                }
+                else                     // AMEM или AREG
+                {
+                    if (manst == AMEM)
+                        tocodeB(lw, r, adispl, areg);
+                    if (c == LNOT)
+                        tocodeR(nor, r, r, d0);
+                    else if (c == LOGNOT)
+                        tocodeI(slti, r, r, 1);
+                    else                 // UNMINUS
+                        tocodeR(sub, r, d0, r);
+                }
+                areg = r;
+            }
+        manst = AREG;
         }
     }
 }
