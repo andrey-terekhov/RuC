@@ -56,7 +56,7 @@ $(RUC_VM): $(VM_OBJECTS) $(UTIL_OBJECTS)
 	mkdir -p $(BINDIR)
 	$(CC) $(DBFLAGS) $(LDFLAGS) $(VM_OBJECTS) $(UTIL_OBJECTS) -o $(BINDIR)/$@ $(LIBS)
 
-$(UI): $(UI_OBJECTS)
+$(UI): fltk $(UI_OBJECTS)
 	mkdir -p $(BINDIR)
 	$(CXX) $(DBFLAGS) $(UI_OBJECTS) $(CXXLDFLAGS) -o $(BINDIR)/$@
 
@@ -75,6 +75,9 @@ $(VM_OBJECTS): $(VM_OBJDIR)/%.o: $(VM_SRCDIR)/%.c
 $(UI_OBJECTS): $(UI_OBJDIR)/%.o: $(UI_SRCDIR)/%.cpp
 	mkdir -p $(UI_OBJDIR)
 	$(CXX) $(DBFLAGS) $(CXXFLAGS) -o $@ $^
+
+fltk:
+	cd $(FLTK_DIR) && $(MAKE)
 
 clear:
 	rm -r $(BINDIR) $(OBJDIR)

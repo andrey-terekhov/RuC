@@ -37,11 +37,11 @@ Face_Window::Face_Window(int width, int height)
     menu_bar.add("Файл/Открыть", "^o", cb_File_Open, this);
     menu_bar.add("Файл/Сохранить", "^s", cb_File_Save, this);
     menu_bar.add("Файл/Сохранить как", "^S", cb_File_Save_As, this);
-    menu_bar.add("РуСи/Собрать", FL_F + 7, cb_Compile, this);
-    menu_bar.add("РуСи/Запустить", FL_F + 5, cb_Run, this);
-    menu_bar.add("РуСи/Собрать и запустить", FL_F + 6, cb_Compile_and_Run,
+    menu_bar.add("Собрать", FL_F + 7, cb_Compile, this);
+    menu_bar.add("Запустить", FL_F + 5, cb_Run, this);
+    menu_bar.add("Собрать и запустить", FL_F + 6, cb_Compile_and_Run,
                  this);
-    menu_bar.add("РуСи/Прервать", FL_CTRL + 'a', cb_Abort, this);
+    menu_bar.add("Прервать", FL_CTRL + 'a', cb_Abort, this);
 
     // menu_bar.add("Помощь", 0, cb_Help, this);
     menu_bar.add("Выход", FL_Escape, cb_Quit, this);

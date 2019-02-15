@@ -12,6 +12,7 @@ int main()
             a[i+1]=t;
          }
    printid(a);    // 1 2 3 4 5
+   
+   
    return 0;
 }
-a
