@@ -12,10 +12,6 @@ const char * name =
 
 //"../../../tests/mips/0test.c";
 
-//"tests/Egor/Macro/test4.c";
-
-//"../../../tests/Golovan/dining_philosophers.c";
-
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
@@ -123,7 +119,6 @@ int main(int argc, const char * argv[])
         
         exit(1);
     }
- 
     modetab[1] = 0;
     modetab[2] = MSTRUCT;
     modetab[3] = 2;
@@ -211,9 +206,6 @@ int main(int argc, const char * argv[])
     
     fclose(output);
    
-    if (notrobot && (argc < 2))
-        import();
-    
     return 0;
 }
 
