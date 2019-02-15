@@ -4,10 +4,15 @@
 //  Copyright (c) 2015 Andrey Terekhov. All rights reserved.
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
+
 #define _CRT_SECURE_NO_WARNINGS
 
+const char * name =
+"../../../tests/test10.c";
 
-char * name =  "tests/sum.c";
+//"../../../tests/mips/0test.c";
+
+//"../../../tests/Egor/Macro/test5.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -20,9 +25,10 @@ char * name =  "tests/sum.c";
 
 FILE *input, *output;
 double numdouble;
-int line=0, charnum=1, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef = 0;
+int line=0, mline = 0, charnum=1, m_charnum = 1, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef = 0;
 struct {int first; int second;} numr;
 int source[SOURCESIZE], lines[LINESSIZE];
+int before_source[SOURCESIZE], mlines[LINESSIZE], m_conect_lines[LINESSIZE];
 int nextchar, curchar, func_def;
 int hashtab[256], reprtab[MAXREPRTAB], rp = 1, identab[MAXIDENTAB], id = 2,
     modetab[MAXMODETAB], md = 1, startmode = 1;
@@ -31,9 +37,10 @@ int stack[100], stackop[100], stackoperands[100], stacklog[100], ansttype,
     op = 0, inass = 0, firstdecl;
 int iniprocs[INIPROSIZE], procd = 1, arrdim, arrelemlen, was_struct_with_arr, usual;
 int instring = 0, inswitch = 0, inloop = 0, lexstr[MAXSTRINGL+1];
-int tree[MAXTREESIZE], tc=0, mem[MAXMEMSIZE], pc=4, functions[FUNCSIZE], funcnum = 2, functype, kw = 0, blockflag = 1,
-    entry, wasmain = 0, wasret, wasdefault, structdispl, notrobot = 1;
-int adcont, adbreak, adcase, adandor;
+int tree[MAXTREESIZE], tc=0, mtree[MAXTREESIZE], mtc=0,
+    mem[MAXMEMSIZE], pc=4, functions[FUNCSIZE], funcnum = 2, functype, kw = 0, blockflag = 1,
+    entry, wasmain = 0, wasret, wasdefault, notrobot = 1, prep_flag = 0;
+int adcont, adbreak, adcase, adandor, switchreg;
 int predef[FUNCSIZE], prdf = -1, emptyarrdef;
 int gotost[1000], pgotost;
 int anst, anstdispl, ansttype, leftansttype = -1;         // anst = VAL  - значение на стеке
@@ -54,6 +61,8 @@ extern int  nextch();
 extern int  scan();
 extern void error(int ernum);
 extern void codegen();
+extern void mipsopt();
+extern void mipsgen();
 extern void ext_decl();
 
 int toreprtab(char str[])
@@ -95,20 +104,23 @@ int main(int argc, const char * argv[])
         ;
     fclose(input);
     
-    if (argc == 2) 
-        name = argv[1];
-    else if (argc != 1) {
-        printf("wrong usage of ruc!");
+    if (argc < 2) {
+        input = fopen(name, "r");          //   исходный текст
+    } else {
+        input = fopen(argv[1], "r");
     }
-
-    input  = fopen(name, "r");          //   исходный текст
+    output = fopen("macro.txt", "wt");
 
     if (input == NULL)
     {
-        printf(" не найден файл %s\n", name);
+        if (argc < 2) {
+            printf(" не найден файл %s\n", name);
+        } else {
+            printf(" не найден файл %s\n", argv[1]);
+        }
+        
         exit(1);
     }
-
     modetab[1] = 0;
     modetab[2] = MSTRUCT;
     modetab[3] = 2;
@@ -133,29 +145,23 @@ int main(int argc, const char * argv[])
     charnum = 1;
     kw = 1;
     tc = 0;
-/*    getnext();
-    nextch();
-    next = scan(); 
-    
+
+    printf("\nИсходный текст:\n \n");
     preprocess_file();                //   макрогенерация
     
     fclose(output);
     fclose(input);
     
-    return 0;
-
     input  = fopen("macro.txt", "r");
- */
-    
-    if (argc < 2) {
-        input = fopen(name, "r");
-    } else {
-        input = fopen(argv[1], "r");
-    }
+
     
     if (input == NULL)
     {
         printf("файл %s не найден\n", name);
+    }
+    if(prep_flag == 1)
+    {
+        printf("\nТекст после препроцесора:\n \n");
     }
 
     output = fopen("tree.txt", "wt");
@@ -165,7 +171,7 @@ int main(int argc, const char * argv[])
     next = scan();
 
     ext_decl();                       //   генерация дерева
-    
+
     lines[line+1] = charnum;
     tablesandtree();
     fclose(output);

@@ -285,10 +285,11 @@ void auxprint(int beg, int t, char before, char after)
         printf("%c", after);
 }
 
+
 void auxget(int beg, int t)
 {
     double rf;
-//     printf("beg=%i t=%i\n", beg, t);
+ //     printf("beg=%i t=%i\n", beg, t);
     if (t == LINT)
         scanf(" %i", &mem[beg]);
     else if (t == LCHAR)
@@ -351,8 +352,13 @@ void* interpreter(void* pcPnt)
 {
     int l, x, origpc = *((int*) pcPnt), numTh = t_getThNum();
     int N, bounds[100], d,from, prtype, cur0, pc = abs(origpc);
-    int i,r, flagstop = 1, entry, di, di1, len;
+    int i, r, flagstop = 1, entry, di, di1, len;
+    int num;
+    int a_str1;
+    int str1;
+    int str2;
     double lf, rf;
+
     
     if (origpc > 0)
     {
@@ -612,7 +618,186 @@ void* interpreter(void* pcPnt)
             case ROUNDC:
                 mem[--x] = rf < 0 ? (int)(rf-0.5) : (int)(rf+0.5);
                 break;
-                
+
+            case STRCPYC:
+                str2 = mem[x--];
+                a_str1 = mem[x--];
+                mem[a_str1] = str2;
+                break;
+            case STRNCPYC:
+                num = mem[x--];
+                str2 = mem[x--];
+                a_str1 = mem[x--];
+                if(num > mem[str2-1])
+                exit(2);// erorr
+                if(num <= mem[mem[a_str1]-1])
+                {
+                    a_str1 = mem[a_str1];
+                    mem[a_str1 - 1]= num;
+                    num += a_str1;
+                    while(a_str1 < num)
+                        mem[a_str1++] = mem[str2++];
+                    
+                }
+                mem[x++] = num;
+                mem[a_str1] = x;
+
+                num += x;
+                while(x < num)
+                    mem[x++] = mem[str2++];
+                x--;
+                break;
+            case STRCATC:
+                str2 = mem[x--];
+                a_str1 = mem[x--];
+                str1 = mem[a_str1];
+
+                mem[x++] = mem[str2-1] + mem[mem[a_str1]-1];
+                mem[a_str1] = x;
+                a_str1 = mem[a_str1];
+
+                num = x + mem[str1-1];
+                while(x < num)
+                    mem[x++] = mem[str1++];
+
+                num = x + mem[str2-1];
+                while(x < num)
+                    mem[x++] = mem[str2++];
+                x--;
+             
+                break;
+            case STRNCATC:
+                num = mem[x--];
+                str2 = mem[x--];
+                a_str1 = mem[x--];
+                str1 = mem[a_str1];
+
+                mem[x++] = num + mem[mem[a_str1]-1];
+                mem[a_str1] = x;
+                a_str1 = mem[a_str1];
+
+                i = x + mem[str1-1];
+                while(x < i)
+                    mem[x++] = mem[str1++];
+
+                num += x;
+                while(x < num)
+                    mem[x++] = mem[str2++];
+                x--;
+                break;
+            case STRCMPC:
+                str2 = mem[x--];
+                a_str1 = mem[x];
+                if(mem[a_str1-1] < mem[str2-1])
+                {
+                    mem[x] = 1;
+                    break;
+                }
+                else if(mem[a_str1-1] > mem[str2-1])
+                {
+                    mem[x] = -1;
+                    break;
+                }
+                else
+                {
+                    for(i = 0; i < mem[str2-1]; i++)
+                    {
+                        if(mem[a_str1+i] < mem[str2+i]) 
+                        {
+                            mem[x] = 1;
+                            break;
+                        }
+                        else if(mem[a_str1+i] > mem[str2+i])
+                        {
+                            mem[x] = -1;
+                        break;
+                        }
+                    }
+                    if(i == mem[str2-1] )
+                    {
+                        mem[x] = 0;
+                    }
+                }
+                break;
+            case STRNCMPC:
+                num = mem[x--];
+                str2 = mem[x--];
+                a_str1 = mem[x];
+
+                if(mem[a_str1-1] < mem[str2-1] && mem[a_str1-1] < num )
+                {
+                    mem[x] = 1;
+                    break;
+                }
+                else if(mem[a_str1-1] > mem[str2-1] && mem[str2-1] < num)
+                {
+                    mem[x] = -1;
+                    break;
+                }
+                else
+                {
+                    for(i = 0; i < num; i++)
+                    {
+                        if(i == mem[a_str1-1] && i == mem[str2-1]  )
+                        {
+                            mem[x] = 0;
+                            break;
+                        }
+                    
+                        if(mem[a_str1+i] < mem[str2+i])
+                        {
+                            mem[x] = 1;
+                            break;
+                        }
+                        if(mem[a_str1+i] > mem[str2+i])
+                        {
+                            mem[x] = -1;
+                            break;
+                        }
+                    }
+                    if( i == num)
+                        mem[x] = 0;
+                }
+                break;
+            case STRSTRC:
+            {
+                int j, flag = 0;
+                str2 = mem[x--];
+                a_str1 = mem[x];
+                for(i = 0; i < mem[a_str1-1] - mem[str2-1]; i++)
+                {
+                    if(mem[str2] == mem[a_str1 + i])
+                    {
+                        for(j = 0; j < mem[str2-1]; j++)
+                        {
+                            if(mem[str2 + j] != mem[a_str1 + i + j])
+                            {
+                                flag = 1;
+                                break;
+                            }
+                        }
+                        if (flag == 0)
+                        {
+                            mem[x] = i+1;
+                            break;
+                        }
+                        flag = 0;
+                    }
+
+                }
+                if( i >= mem[a_str1-1] - mem[str2-1] )
+                {
+        
+                    mem[x] = -1;
+                    break;
+                }
+
+                break;
+            }
+            case STRLENC:
+                a_str1 = mem[x];
+                mem[x] = mem[a_str1-1];
+                break;
             case STRUCTWITHARR:
             {
                 int oldpc, oldbase = base, procnum;
@@ -720,6 +905,9 @@ void* interpreter(void* pcPnt)
             case BEGINIT:
                 mem[++x] = mem[pc++];
                 break;
+//            case STRUCTINIT:
+//                pc++;
+//                break;
             case STRINGINIT:
                 di = mem[pc++];
                 r = mem[di < 0 ? g - di : l + di];
@@ -736,17 +924,17 @@ void* interpreter(void* pcPnt)
                 d = mem[pc++];        // d - шаг
                 
             {
-                int add = dsp(mem[pc++], l);
+                int addr = dsp(mem[pc++], l);
                 int usual = mem[pc++];
                 int onlystrings = usual >= 2 ? usual -= 2, 1 : 0;
                 int stA[10], stN[10], sti[10], stpnt = 1, oldx = adinit;
                 if (N == 1)
                 {
                     if (onlystrings)
-                        mem[add] = mem[x--];
+                        mem[addr] = mem[x--];
                     else
                     {
-                        mem[add] = adinit + 1;
+                        mem[addr] = adinit + 1;
 
                         if (usual && mem[adinit] != NN)  // здесь usual == 1, если == 0, проверка не нужна
                             runtimeerr(init_err, mem[adinit], NN);
@@ -755,7 +943,7 @@ void* interpreter(void* pcPnt)
                 }
                 else
                 {
-                    stA[1] = mem[add];                   // массив самого верхнего уровня
+                    stA[1] = mem[addr];                   // массив самого верхнего уровня
                     stN[1] = mem[stA[1]-1];
                     sti[1] = 0;
                     if (mem[adinit] != stN[1])
@@ -823,9 +1011,8 @@ void* interpreter(void* pcPnt)
                 mem[x] = mem[mem[x]];
                 break;
             case LATD:
-                r = mem[x];
-                mem[x++] = mem[r];
-                mem[x] = mem[r+1];
+                memcpy(&rf, &mem[mem[x]], sizeof(double));
+                memcpy(&mem[x++], &rf, sizeof(double));
                 break;
             case LA:
                 mem[++x] = dsp(mem[pc++], l);
@@ -904,13 +1091,6 @@ void* interpreter(void* pcPnt)
                     mem[di+i] =  mem[di1+i];
                 break;
             case COPY10:
-                di =  mem[x];
-                di1 = dsp(mem[pc++], l);
-                len = mem[pc++];
-                for (i=0; i<len; i++)
-                    mem[di+i] =  mem[di1+i];
-                break;
-            case COPY10V:
                 di =  mem[x--];
                 di1 = dsp(mem[pc++], l);
                 len = mem[pc++];
@@ -918,13 +1098,6 @@ void* interpreter(void* pcPnt)
                     mem[di+i] =  mem[di1+i];
                 break;
             case COPY11:
-                di1 = mem[x--];
-                di =  mem[x];
-                len = mem[pc++];
-                for (i=0; i<len; i++)
-                    mem[di+i] =  mem[di1+i];
-                break;
-            case COPY11V:
                 di1 = mem[x--];
                 di =  mem[x--];
                 len = mem[pc++];
@@ -954,21 +1127,14 @@ void* interpreter(void* pcPnt)
             case COPY1STASS:
                 len = mem[pc++];
                 x -= len;
-                di = mem[x];
-                for (i=0; i<len; i++)
-                    mem[di+i] = mem[x+i+1];
-                break;
-            case COPY1STASSV:
-                len = mem[pc++];
-                x -= len;
                 di = mem[x--];
                 for (i=0; i<len; i++)
                     mem[di+i] = mem[x+i+2];
                 break;
             case COPYST:
-                di = mem[pc++];
-                len = mem[pc++];
-                x -= mem[pc++] + 1;
+                di = mem[pc++];      // смещ поля
+                len = mem[pc++];     // длина поля
+                x -= mem[pc++] + 1;  // длина всей структуры
                 for (i=0; i<len; i++)
                     mem[x+i] = mem[x+i+di];
                 x += len-1;
@@ -1555,7 +1721,7 @@ void import()
 {
     int i, pc;
     
-#ifdef ROBOT
+ #ifdef ROBOT
     f1 = fopen(JD1, "r");                       // файлы цифровых датчиков
     f2 = fopen(JD2, "r");
     printf("stage 1\n");
@@ -1563,7 +1729,7 @@ void import()
     system("i2cset -y 2 0x48 0x11 0x1000 w");
     system("i2cset -y 2 0x48 0x12 0x1000 w");
     system("i2cset -y 2 0x48 0x13 0x1000 w");
-#endif
+ #endif
     
     input = fopen("export.txt", "r");
     
@@ -1598,14 +1764,14 @@ void import()
     interpreter(&pc);                      // номер нити главной программы 0
     t_destroy();
  
-#ifdef ROBOT
+ #ifdef ROBOT
     system("i2cset -y 2 0x48 0x10 0 w");   // отключение силовых моторов
     system("i2cset -y 2 0x48 0x11 0 w");
     system("i2cset -y 2 0x48 0x12 0 w");
     system("i2cset -y 2 0x48 0x13 0 w");
     fclose(f1);
     fclose(f2);
-#endif
+ #endif
     
     
 }

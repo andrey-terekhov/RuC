@@ -1,6 +1,6 @@
 int j=-2, i=j, a=2*i-j;
 void f();
-int main()
+void main()
 {
     for(i=0; i<=10; i+=2)
     {

@@ -73,8 +73,7 @@ void tablesandtree()
                 fprintf(output, "TString n= %i\n", tree[i++]);
                 break;
             case TCondexpr:
-                fprintf(output, "TCondexpr %i %i\n", tree[i], tree[i+1]);
-				i += 2;
+                fprintf(output, "TCondexpr\n");
                 break;
             case TBegin:
                 fprintf(output, "TBegin\n");
@@ -85,18 +84,17 @@ void tablesandtree()
             case TBeginit:
                 fprintf(output, "TBeginit n= %i\n", tree[i++]);
                 break;
-            case TEndinit:
-                fprintf(output, "TEndinit\n");
+            case TStructinit:
+                fprintf(output, "TStructinit n= %i\n", tree[i++]);
                 break;
-            case TIf:
-                fprintf(output, "TIf %i %i\n", tree[i], tree[i+1]);
-				i += 2;
+             case TIf:
+                fprintf(output, "TIf %i\n", tree[i++]);
                 break;
             case TWhile:
-                fprintf(output, "TWhile %i\n", tree[i++]);
+                fprintf(output, "TWhile\n");
                 break;
             case TDo:
-                fprintf(output, "TDo %i\n", tree[i++]);
+                fprintf(output, "TDo\n");
                 break;
             case TFor:
                 fprintf(output, "TFor %i %i %i %i\n", tree[i], tree[i+1], tree[i+2], tree[i+3]);
@@ -423,6 +421,31 @@ void tablesandcode()
             case ROUNDC:
                 fprintf(output, "ROUND\n");
                 break;
+
+            case STRCPYC:
+                fprintf(output, "STRCPY\n");
+                break;
+            case STRNCPYC:
+                fprintf(output, "STRNCPY\n");
+                break;
+            case STRCATC:
+                fprintf(output, "STRCAT\n");
+                break;
+            case STRNCATC:
+                fprintf(output, "STRNCAT\n");
+                break;
+            case STRCMPC:
+                fprintf(output, "STRCMP\n");
+                break;
+            case STRNCMPC:
+                fprintf(output, "STRNCMP\n");
+                break;
+            case STRSTRC:
+                fprintf(output, "STRSTR\n");
+                break;
+            case STRLENC:
+                fprintf(output, "STRLENC\n");
+                break;
             
             case BEGINIT:
                 fprintf(output, "BEGINIT n= %i\n", mem[i++]);
@@ -446,6 +469,9 @@ void tablesandcode()
                 fprintf(output, "displ= %i ", mem[i++]);
                 fprintf(output, "usual= %i\n", mem[i++]);
                 break;
+//            case STRUCTINIT:
+//                fprintf(output, "STRUCTINIT N= %i ", mem[i++]);
+//            break;
             case NOP:
                 fprintf(output, "NOP\n");
                 break;
@@ -756,17 +782,9 @@ void tablesandcode()
                 fprintf(output, "COPY10      %i ", mem[i++]);     // displright
                 fprintf(output, "(%i)\n", mem[i++]);              // length
                 break;
-            case COPY10V:
-                fprintf(output, "COPY10V %i ", mem[i++]);         // displright
-                fprintf(output, "(%i)\n", mem[i++]);              // length
-                break;
             case COPY11:
                 fprintf(output, "COPY11 %i\n", mem[i++]);         // length
                 break;
-            case COPY11V:
-                fprintf(output, "COPY11V %i\n", mem[i++]);         // length
-                break;
-
             case COPY0ST:
                 fprintf(output, "COPY0ST %i ", mem[i++]);         // displright
                 fprintf(output, "(%i)\n", mem[i++]);              // length
@@ -780,9 +798,6 @@ void tablesandcode()
                 break;
             case COPY1STASS:
                 fprintf(output, "COPY1STASS %i\n", mem[i++]);     // length
-                break;
-            case COPY1STASSV:
-                fprintf(output, "COPY1STASSV %i\n", mem[i++]);    // length
                 break;
             case COPYST:
                 fprintf(output, "COPYST %i ", mem[i++]);          // displ

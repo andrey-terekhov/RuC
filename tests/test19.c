@@ -1,11 +1,14 @@
 void MAIN()
 {
     char a ='a';
+    char b[] = "\t1";
+    int i;
     printid(a);
     a = '\n';
     printid(a);
-    a ='\t';
-    printid(a);
+    strcat(&b, "bc");
+    printid(b);
     a = '\0';
-    printid(a);
+    i = a;
+    printid(i);
 }

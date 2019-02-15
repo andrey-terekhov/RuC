@@ -79,34 +79,14 @@ void finalop()
                     tocode(tree[tc++]);   // d2
                     tocode(tree[tc++]);   // длина
                 }
-                else if (c == COPY01)
+                else if (c == COPY01 || c == COPY10 || c == COPY0ST || c== COPY0STASS)
                 {
                     tocode(tree[tc++]);   // d1
                     tocode(tree[tc++]);   // длина
                 }
-                else if (c == COPY10 || c == COPY10V)
-                {
-                    tocode(tree[tc++]);   // d2
-                    tocode(tree[tc++]);   // длина
-                }
-                else if (c == COPY11 || c == COPY11V)
-                    tocode(-tree[tc++]);  // длина
-                else if (c == COPY0ST)
-                {
-                    tocode(tree[tc++]);   // d1
-                    tocode(tree[tc++]);   // длина
-                }
-                else if (c == COPY1ST)
+                else if (c == COPY11 || c == COPY1ST || c == COPY1STASS)
                     tocode(tree[tc++]);   // длина
                 
-                else if (c == COPY0STASS)
-                {
-                    tocode(tree[tc++]);   // d1
-                    tocode(tree[tc++]);   // длина
-                }
-                else if (c == COPY1STASS || c== COPY1STASSV)
-                    tocode(tree[tc++]);   // длина
-
                 else if((c >= REMASS && c <= DIVASS) || (c >= REMASSV && c <= DIVASSV) ||
                         (c >= ASSR && c <= DIVASSR)  || (c >= ASSRV && c <= DIVASSRV) ||
                         (c >= POSTINC && c <= DEC)   || (c >= POSTINCV && c <= DECV) ||
@@ -168,7 +148,6 @@ int Expr_gen(int incond)
                 pc += 2;
                 for (i=0; i<n; i++)
                     tocode(tree[tc++]);
-                tocode(0);
                 mem[res-1] = n;
                 mem[res-2] = pc;
                 wasstring = 1;
@@ -184,6 +163,13 @@ int Expr_gen(int incond)
                 tocode(n);
                 for (i=0; i<n; i++)
                     Expr_gen(0);
+            }
+                break;
+            case TStructinit:
+            {
+                int n = tree[tc++], i;
+                for (i=0; i<n; i++)
+                Expr_gen(0);
             }
                 break;
             case TSliceident:
@@ -231,11 +217,9 @@ int Expr_gen(int incond)
             else
             {
                 int adelse, ad = 0;
-                //int thenref = tree[++tc];
-                //int elseref = tree[++tc];
                 do
                 {
-                    tc += 3;
+                    tc++;
                     tocode(BE0);
                     adelse = pc++;
                     Expr_gen(0);              // then
@@ -246,6 +230,7 @@ int Expr_gen(int incond)
                     Expr_gen(1);              // else или cond
                 }
                 while  (tree[tc] == TCondexpr);
+                
                 while (ad)
                 {
                     int r = mem[ad];
@@ -302,7 +287,7 @@ void Stmt_gen()
             
         case TIf:
         {
-            int thenref = tree[tc++], elseref = tree[tc++], ad;
+            int elseref = tree[tc++], ad;
             Expr_gen(0);
             tocode(BE0);
             ad = pc++;
@@ -319,9 +304,7 @@ void Stmt_gen()
             break;
         case TWhile:
         {
-            //int doref = tree[tc++];
             int oldbreak = adbreak, oldcont = adcont, ad = pc;
-            tc++;
             adcont = ad;
             Expr_gen(0);
             tocode(BE0);
@@ -338,7 +321,6 @@ void Stmt_gen()
             break;
         case TDo:
         {
-            int condref = tree[tc++];
             int oldbreak = adbreak, oldcont = adcont, ad = pc;
             adcont = adbreak = 0;
             Stmt_gen();
@@ -507,6 +489,21 @@ void Stmt_gen()
     }
 }
 
+void Struct_init_gen()
+{
+    int i, n;
+    if (tree[tc] == TStructinit)
+    {
+        tc++;
+        n = tree[tc++];
+        for (i=0; i<n; i++)
+            Struct_init_gen();
+        tc++;                   // TExprend
+    }
+    else
+        Expr_gen(0);
+}
+
 void Declid_gen()
 {
 	int olddispl = tree[tc++], telem = tree[tc++], N = tree[tc++], element_len,
@@ -531,10 +528,7 @@ void Declid_gen()
 		{
             if (telem > 0 && modetab[telem] == MSTRUCT)
             {
-                do
-                    Expr_gen(0);
-                while (tree[tc] != TEndinit);
-                tc++;
+                Struct_init_gen();
                 tocode(COPY0STASS);
                 tocode(olddispl);
                 tocode(all);       // общее кол-во слов
@@ -606,6 +600,8 @@ void codegen()
     {
         switch (tree[tc++])
         {
+            case TEnd:
+                break;
             case TFuncdef:
             {
                 int identref = tree[tc++], maxdispl = tree[tc++];

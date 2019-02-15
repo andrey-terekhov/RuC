@@ -1,6 +1,7 @@
 *.o
 *.dll
 *.exe
+*.bat
 *.zip
 *.txt
 *.pdf
@@ -14,5 +15,8 @@ Build/
 DerivedData/
 bin/
 obj/
+ruc-compiler
 
+!RuC/
 !keywords.txt
+!RuC.xcodeproj/project.pbxproj

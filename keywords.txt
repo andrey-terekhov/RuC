@@ -43,6 +43,15 @@ ASIN asin АСИН асин
 RAND rand СЛУЧ случ
 ROUND round ОКРУГЛ округл
 
+STRCPY strcpy КОПИР_СТРОКУ копир_строку
+STRNCPY strncpy КОПИР_Н_СИМВ копир_н_симв
+STRCAT strcat КОНКАТ_СТРОКИ конкат_строки
+STRNCAT strncat КОНКАТ_Н_СИМВ конкат_н_симв
+STRCMP strcmp СРАВН_СТРОК сравн_строк
+STRNCMP strncmp СРАВН_Н_СИМВ сравн_н_симв
+STRSTR strstr НАЧ_ПОДСТРОК нач_подстрок
+STRLEN strlen ДЛИНА длина
+
 T_MSG_SEND t_msg_send Н_ПОСЛАТЬ н_послать
 T_MSG_RECEIVE t_msg_receive Н_ПОЛУЧИТЬ н_получить
 T_JOIN t_join Н_ПРИСОЕД н_присоед
@@ -64,4 +73,12 @@ T_GETNUM t_getnum Н_НОМЕР_НИТИ н_номер_нити
 #ENDIF #endif #КОНЕСЛИ #конесли
 #ELSE #else #ИНАЧЕ #иначе
 
-
+WIFI_CONNECT wifi_connect WIFI_ПОДКЛЮЧИТЬ wifi_подключить
+BLYNK_AUTHORIZATION blynk_authorization BLYNK_АВТОРИЗАЦИЯ blynk_авторизация
+BLYNK_SEND blynk_send BLYNK_ПОСЛАТЬ blynk_послать
+BLYNK_RECEIVE blynk_receive BLYNK_ПОЛУЧИТЬ blynk_получить
+BLYNK_NOTIFICATION blynk_notification BLYNK_УВЕДОМЛЕНИЕ blynk_уведомление
+BLYNK_PROPERTY blynk_property BLYNK_СВОЙСТВО blynk_свойство
+BLYNK_LCD blynk_lcd BLYNK_ДИСПЛЕЙ blynk_дисплей
+BLYNK_TERMINAL blynk_terminal BLYNK_ТЕРМИНАЛ blynk_терминал
+SETSIGNAL setsignal СИГНАЛ сигнал

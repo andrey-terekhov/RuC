@@ -1,5 +1,5 @@
 int a,b;
-void main()
+int main()
 {
     do
     {
@@ -23,7 +23,7 @@ void main()
     while (!a)
     {continue;
         break;
-        return;
+        return 0;
         continue;
         a&=b;
     }

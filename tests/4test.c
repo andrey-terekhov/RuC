@@ -1,9 +1,9 @@
 
 void main()
 {
-    int a, b, c;
-    c = a && b || c;
-    c = a || b && c;
+    float a=3.14, b=2.72, c;
+    c = a+b;
+    printid(c);
 }
 
 
