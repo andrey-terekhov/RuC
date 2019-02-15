@@ -37,7 +37,7 @@
 		ED6E6120221311DC00363321 /* mipsopt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mipsopt.c; sourceTree = "<group>"; };
 		ED9101951FAA0CF50089A8A4 /* keywords.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = keywords.txt; sourceTree = "<group>"; };
 		EDC2DE3821357B1C0056585C /* preprocess.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = preprocess.c; sourceTree = "<group>"; };
-		EDCB45771DDF4ACF0030AE24 /* RuC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RuC; sourceTree = BUILT_PRODUCTS_DIR; };
+		EDCB45771DDF4ACF0030AE24 /* ruc */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ruc; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDCB45821DDF4B9C0030AE24 /* codes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = codes.c; sourceTree = "<group>"; };
 		EDCB45831DDF4B9C0030AE24 /* Defs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Defs.h; sourceTree = "<group>"; };
 		EDCB45841DDF4B9C0030AE24 /* error.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = error.c; sourceTree = "<group>"; };
@@ -72,7 +72,7 @@
 		EDCB45781DDF4ACF0030AE24 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				EDCB45771DDF4ACF0030AE24 /* RuC */,
+				EDCB45771DDF4ACF0030AE24 /* ruc */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -113,7 +113,7 @@
 			);
 			name = RuC;
 			productName = RuC;
-			productReference = EDCB45771DDF4ACF0030AE24 /* RuC */;
+			productReference = EDCB45771DDF4ACF0030AE24 /* ruc */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -258,9 +258,10 @@
 		EDCB457F1DDF4ACF0030AE24 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CONFIGURATION_BUILD_DIR = "$(SRCROOT)/bin";
 				GCC_NO_COMMON_BLOCKS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = ruc;
 			};
 			name = Debug;
 		};
@@ -269,7 +270,7 @@
 			buildSettings = {
 				GCC_NO_COMMON_BLOCKS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = ruc;
 			};
 			name = Release;
 		};

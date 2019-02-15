@@ -335,7 +335,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
             case LLT:
             case LGT:
             case LLE:
-            case LGE:
+            case LGE:; //FIXME
 
         }
     }
@@ -376,7 +376,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
             case LLT:
             case LGT:
             case LLE:
-            case LGE:
+            case LGE:; //FIXME
 
         }
     }
