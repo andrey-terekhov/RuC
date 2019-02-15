@@ -8,7 +8,7 @@ void main()
     blynk_notification("str5");
     blynk_send(22, 33);
     message = blynk_receive(44);
-    blynk_property(66, "str6", "str7");
+    blynk_property(66, "color", "#000000");
     blynk_lcd(77, 88, 99, "str8");
 }
     

@@ -12,8 +12,6 @@ const char * name =
 
 //"../../../tests/mips/0test.c";
 
-//"../../../tests/Egor/Macro/test5.c";
-
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
