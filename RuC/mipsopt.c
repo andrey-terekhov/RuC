@@ -12,7 +12,7 @@ int t, op, opnd;
 
 int mcopy()
 {
-//    printf("tc= %i tree[tc]= %i\n", tc, tree[tc]);
+ //   printf("tc= %i tree[tc]= %i\n", tc, tree[tc]);
     return mtree[mtc++] = tree[tc++];
 }
 
@@ -21,13 +21,7 @@ int munop(int t)
     switch (t)
     {
         case LNOT:
-        case LAND:
-        case LOR:
-        case LEXOR:
         case LOGNOT:
-        case LOGAND:
-        case LOGOR:
-            
         case POSTINCAT:
         case POSTDECAT:
         case INCAT:
@@ -284,7 +278,7 @@ void mstatement()
 void permute(int n1)
 {
     int i, oldopnd = tree[tc+1];
-    printf("permute n1= %i tc= %i op= %i opnd=%i\n", n1, tc, op, opnd);
+    printf("permute sp= %i n1= %i tc= %i op= %i opnd=%i\n", sp, n1, tc, op, opnd);
     for (i=tc+opnd-1; i>n1+opnd-1; i--)
         mtree[i] = mtree[i-opnd];
     mtree[n1] = op;
@@ -324,6 +318,7 @@ int operand()
         mcopy();
         if (t == TSliceident)
         {
+            mcopy();
             mcopy();
             mcopy();
             mexpr();
@@ -384,10 +379,13 @@ int operand()
 
 void mexpr()
 {
+    int wasopnd = 0;
     while (1)
     {
-        while ( (stack[++sp] = operand()) )
-        printf("sp= %i stack[sp]= %i\n", sp, stack[sp]);
+        while ( (stack[++sp] = operand()) > 0 ? wasopnd = 1, 1 : 0 )
+        {
+            printf("sp= %i stack[sp]= %i\n", sp, stack[sp]);
+        }
         --sp;
     
         if (tree[tc] == NOP)
@@ -396,7 +394,9 @@ void mexpr()
         if (op == TExprend)
         {
             mcopy();
-            --sp;
+            if (wasopnd)
+                wasopnd = 0, --sp;
+            break;
         }
         else if ( (opnd = munop(op)) )
             permute(stack[sp]);
@@ -404,7 +404,7 @@ void mexpr()
             permute(stack[--sp]);
         else if ((op = tree[tc]) == TCondexpr)
         {
-            printf("Cond tc= %i sp= %i\n", tc, sp);
+//            printf("Cond tc= %i sp= %i\n", tc, sp);
             opnd = 1;
             permute(stack[sp]);
             mexpr();

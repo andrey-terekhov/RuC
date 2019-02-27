@@ -639,7 +639,8 @@
 
 // коды команд MIPS
 
-#define bltz      1        // bltz rs, label   if rs < 0    bgez rs, label   if rs>= 0
+#define bltz      1        // bltz rs, label   if rs < 0
+#define bgez     34        // bgez rs, label ???  if rs>= 0 отличаются по rt
 #define jump      2        // j label
 #define jal       3        // jal label
 #define beq       4        // beq rs, rt, label    if rs == rt
@@ -654,7 +655,10 @@
 #define ori      13        // ori rt, rs, imm      rt = rs | ZeroImm
 #define xori     14        // xori rt, rs, imm     rt = rs ^ ZeroImm
 #define lui      15        // lui rt, imm          rt = {imm, 16'b0}
-#define li      115        // li rt, imm(32),      это псевдокоманда (lui + ori)
+#define li       25        // li rt, imm(32),  ???    это псевдокоманда (lui + ori)
+#define mfhi     16        // mfhi rs              rs = hi                   move from
+#define mflo     18        // mflo rs              rs = lo                   move from
+#define div      26        // div rs, rt           rs / rt  частное в lo, остаток в hi
 #define mul      28        // mul rd, rs, rt       rd = rs * rt
 #define lw       35        // lw rt, imm(rs)       rt = [Address]
 #define sw       43        // sw rt, imm(rs)       [Address] = rt
@@ -677,6 +681,5 @@
 #define nor      99        // nor rd, rs, rt       rd = ~(rs | rt)
 #define slt     102        // slt rd, rs, rt       rd = rs < rt ? 1 : 0
 #define sltu    103        // sltu rd, rs, rt      rd = rs < rt ? 1 : 0      unsigned
-
 
 #endif

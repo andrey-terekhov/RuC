@@ -5,14 +5,12 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 
-//#define MIPS 1
-
 #define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-"../../../tests/test10.c";
+//"tests/test10.c";
 
-//"../../../tests/mips/0test.c";
+"tests/mips/test4.c";
 
 //"../../../tests/Egor/Macro/test5.c";
 
@@ -179,7 +177,7 @@ int main(int argc, const char * argv[])
     ext_decl();                       // генерация дерева
 
     lines[line+1] = charnum;
-//    tablesandtree();
+    tablesandtree();
     fclose(output);                   // файл с деревом до mipsopt
     
     mipsopt();
