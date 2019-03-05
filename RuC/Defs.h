@@ -639,8 +639,8 @@
 
 // коды команд MIPS
 
+#define bgez      0        // bgez rs, label   if rs>= 0 отличаются по rt
 #define bltz      1        // bltz rs, label   if rs < 0
-#define bgez     34        // bgez rs, label ???  if rs>= 0 отличаются по rt
 #define jump      2        // j label
 #define jal       3        // jal label
 #define beq       4        // beq rs, rt, label    if rs == rt

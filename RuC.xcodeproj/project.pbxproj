@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		ED39C260222E6107005E7385 /* scaner.c in Sources */ = {isa = PBXBuildFile; fileRef = ED39C25F222E6107005E7385 /* scaner.c */; };
 		ED6E6121221311DC00363321 /* mipsgen.c in Sources */ = {isa = PBXBuildFile; fileRef = ED6E611F221311DC00363321 /* mipsgen.c */; };
 		ED6E6122221311DC00363321 /* mipsopt.c in Sources */ = {isa = PBXBuildFile; fileRef = ED6E6120221311DC00363321 /* mipsopt.c */; };
 		ED9101961FAA0CF60089A8A4 /* keywords.txt in CopyFiles */ = {isa = PBXBuildFile; fileRef = ED9101951FAA0CF50089A8A4 /* keywords.txt */; };
@@ -15,7 +16,6 @@
 		EDCB458C1DDF4B9C0030AE24 /* error.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45841DDF4B9C0030AE24 /* error.c */; };
 		EDCB458D1DDF4B9C0030AE24 /* extdecl.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45851DDF4B9C0030AE24 /* extdecl.c */; };
 		EDCB458F1DDF4B9C0030AE24 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45881DDF4B9C0030AE24 /* main.c */; };
-		EDCB45901DDF4B9C0030AE24 /* scaner.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45891DDF4B9C0030AE24 /* scaner.c */; };
 		EDE8849E1F3C8CDE00DAE9F0 /* threads.c in Sources */ = {isa = PBXBuildFile; fileRef = EDE8849D1F3C8CDE00DAE9F0 /* threads.c */; };
 /* End PBXBuildFile section */
 
@@ -33,6 +33,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		ED39C25F222E6107005E7385 /* scaner.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = scaner.c; sourceTree = "<group>"; };
 		ED6E611F221311DC00363321 /* mipsgen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mipsgen.c; sourceTree = "<group>"; };
 		ED6E6120221311DC00363321 /* mipsopt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mipsopt.c; sourceTree = "<group>"; };
 		ED9101951FAA0CF50089A8A4 /* keywords.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = keywords.txt; sourceTree = "<group>"; };
@@ -44,7 +45,6 @@
 		EDCB45851DDF4B9C0030AE24 /* extdecl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = extdecl.c; sourceTree = "<group>"; };
 		EDCB45861DDF4B9C0030AE24 /* global_vars.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = global_vars.h; sourceTree = "<group>"; };
 		EDCB45881DDF4B9C0030AE24 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
-		EDCB45891DDF4B9C0030AE24 /* scaner.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = scaner.c; sourceTree = "<group>"; };
 		EDE8849D1F3C8CDE00DAE9F0 /* threads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = threads.c; sourceTree = "<group>"; };
 		EDE8849F1F499DA300DAE9F0 /* th_static.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = th_static.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -86,10 +86,10 @@
 				EDE8849F1F499DA300DAE9F0 /* th_static.h */,
 				EDCB45821DDF4B9C0030AE24 /* codes.c */,
 				EDCB45831DDF4B9C0030AE24 /* Defs.h */,
-				EDCB45891DDF4B9C0030AE24 /* scaner.c */,
 				EDCB45841DDF4B9C0030AE24 /* error.c */,
 				EDCB45861DDF4B9C0030AE24 /* global_vars.h */,
 				EDCB45851DDF4B9C0030AE24 /* extdecl.c */,
+				ED39C25F222E6107005E7385 /* scaner.c */,
 				EDE8849D1F3C8CDE00DAE9F0 /* threads.c */,
 				EDCB45881DDF4B9C0030AE24 /* main.c */,
 			);
@@ -156,8 +156,8 @@
 				EDCB458C1DDF4B9C0030AE24 /* error.c in Sources */,
 				EDCB458B1DDF4B9C0030AE24 /* codes.c in Sources */,
 				EDCB458F1DDF4B9C0030AE24 /* main.c in Sources */,
-				EDCB45901DDF4B9C0030AE24 /* scaner.c in Sources */,
 				ED6E6122221311DC00363321 /* mipsopt.c in Sources */,
+				ED39C260222E6107005E7385 /* scaner.c in Sources */,
 				EDC2DE3921357B1C0056585C /* preprocess.c in Sources */,
 				EDCB458D1DDF4B9C0030AE24 /* extdecl.c in Sources */,
 				ED6E6121221311DC00363321 /* mipsgen.c in Sources */,

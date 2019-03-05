@@ -147,8 +147,6 @@ int mbinop(int t)
         case LAND:
         case LEXOR:
         case LOR:
-        case LOGAND:
-        case LOGOR:
             
         case LPLUS:
         case LMINUS:
@@ -183,9 +181,13 @@ int mbinop(int t)
         case MINUSASSATRV:
         case MULTASSATRV:
         case DIVASSATRV:
-
             op += 1000;
             return 1;
+            
+        case LOGAND:
+        case LOGOR:
+            op += 1000;
+            return 2;
             
         default:
             return 0;
@@ -278,7 +280,7 @@ void mstatement()
 void permute(int n1)
 {
     int i, oldopnd = tree[tc+1];
-    printf("permute sp= %i n1= %i tc= %i op= %i opnd=%i\n", sp, n1, tc, op, opnd);
+//    printf("permute sp= %i n1= %i tc= %i op= %i opnd=%i\n", sp, n1, tc, op, opnd);
     for (i=tc+opnd-1; i>n1+opnd-1; i--)
         mtree[i] = mtree[i-opnd];
     mtree[n1] = op;
@@ -292,13 +294,9 @@ int operand()
 {
     int i, n1, flag = 1;
     t = tree[tc];
-//    if (t < -343 || t > -300)
-//        printf("\nсбой tree tc= %i tree[tc]= %i\n", tc, tree[tc]);
-    
-//    printf("operand or operation tc= %i t= %i\n", tc, t);
     if (tree[tc] == NOP)
         mcopy();
-    if (tree[tc] == TIdent)
+    if (tree[tc] == TIdent || tree[tc] == ADLOGOR || tree[tc] == ADLOGAND)
     {
         mcopy();
         mcopy();
@@ -318,8 +316,6 @@ int operand()
         mcopy();
         if (t == TSliceident)
         {
-            mcopy();
-            mcopy();
             mcopy();
             mexpr();
         }
@@ -365,7 +361,7 @@ int operand()
         mcopy();
         mcopy();
     }
-    else if (t == TConstd || t == TSliceident)
+    else if (t == TConstd)
     {
         mcopy();
         mcopy();
@@ -382,12 +378,12 @@ void mexpr()
     int wasopnd = 0;
     while (1)
     {
-        while ( (stack[++sp] = operand()) > 0 ? wasopnd = 1, 1 : 0 )
+        while ( (stack[++sp] = operand() ) )
         {
-            printf("sp= %i stack[sp]= %i\n", sp, stack[sp]);
+            wasopnd = 1;
+//            printf("sp= %i stack[sp]= %i\n", sp, stack[sp]);
         }
-        --sp;
-    
+        sp--;
         if (tree[tc] == NOP)
             mcopy();
         op = tree[tc];

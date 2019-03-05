@@ -10,7 +10,7 @@
 const char * name =
 //"tests/test10.c";
 
-"tests/mips/test4.c";
+"tests/mips/test6.c";
 
 //"../../../tests/Egor/Macro/test5.c";
 
@@ -190,9 +190,12 @@ int main(int argc, const char * argv[])
     tablesandtree();
     fclose(output);                   // файл с деревом после mipsopt
 
-    mipsgen();                        //
+    output = fopen("mcode.s", "wt");
+
+    mipsgen();                       
     
     fclose(input);
+    fclose(output);
     
    
     return 0;
