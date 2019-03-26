@@ -14,7 +14,10 @@
 
 Build/
 DerivedData/
+bin/
+obj/
 ruc-compiler
 
 !RuC/
 !keywords.txt
+!RuC.xcodeproj/project.pbxproj

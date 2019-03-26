@@ -30,7 +30,7 @@ extern int iniprocs[INIPROSIZE], procd, arrdim, arrelemlen, was_struct_with_arr,
 extern int mem[MAXMEMSIZE], tree[MAXTREESIZE], tc, mtree[MAXTREESIZE], mtc,
            functions[FUNCSIZE], funcnum, functype, kw, blockflag,
            entry, wasmain, wasret, wasdefault, wasslice, notrobot, prep_flag;
-extern int adcont, adbreak, adcase, adandor;
+extern int adcont, adbreak, adcase, adandor, switchreg;
 extern int instring, inswitch, inloop, lexstr[MAXSTRINGL+1];
 extern int predef[FUNCSIZE], prdf;
 extern int pc, g, l, x;
