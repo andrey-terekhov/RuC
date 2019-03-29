@@ -21,7 +21,7 @@
 
 int mbox, breg, elselab;
 int manst, adispl, areg;
-int labnum = 1, elselab, flagBC;
+int labnum = 1, stringnum = 1, elselab, flagBC;
 
 // унарные операции LNOT, LOGNOT, -, ++, --, TIdenttoval(*), TIdenttoaddr(&)
 // LNOT nor rd, rs, d0    LOGNOT slti rt, rs, 1   - sub rd, d0, rt
@@ -30,7 +30,7 @@ int labnum = 1, elselab, flagBC;
 extern void error(int err);
 extern int szof(int);
 
-int d0 = 0, at = 1, v0 = 2, v1 = 3, a0 = 4, a1 = 5, a2 = 6, a3 = 7,
+int pc = 32, d0 = 0, at = 1, v0 = 2, v1 = 3, a0 = 4, a1 = 5, a2 = 6, a3 = 7,
     t0 = 8, t1 = 9, t2 = 10, t9 = 25, s0 = 16, gp = 28, stp = 29, s8 = 30, ra =  31;
 
 char *mcodes[] =
@@ -51,7 +51,7 @@ char *regs[] =
 {/* 0 */ "$0",  "$at", "$v0", "$v1", "$a0", "$a1", "$a2", "$a3", "$t0", "$t1",
 /* 10 */ "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$s0", "$s1", "$s2", "$s3",
 /* 20 */ "$s4", "$s5", "$s6", "$s7", "$t8", "$t9", "$k0", "$k1", "$gp", "$sp",
-/* 30 */ "$s8", "$ra"
+/* 30 */ "$s8", "$ra", "pc"
 };
 
 int tregs[] =
@@ -86,7 +86,29 @@ void merror(int type)
             break;
     }
 }
-
+/*
+int szof(int mode)
+{
+    if (mode > 0)
+    {
+        int el = modetab[mode], len = 0, i;
+        if (el == MARRAY || el == MPOINT)
+            return 4;
+        else             //  MSTRUCT
+        {
+            for (i=0; i < modetab[mode+2]; i+=2)
+                len += szof(modetab[mode+i+3]);
+            return len;
+        }
+    }
+    else if (mode == LCHAR)
+        return 1;
+    else if (mode == LLONG || mode == LDOUBLE)
+        return 8;
+    else
+        return 4;        // LINT и LDOUBLE
+}
+*/
 int nextreg = 16;
 
 int getreg()
@@ -1009,22 +1031,29 @@ void MPrimary()
                 tocode(tree[tc++]);
                 tocode(tree[tc++]);
                 break;
- 
+*/
             case TString:
             {
-                int n = tree[tc++], res,i;
-                tocode(LI);
-                tocode(res = pc+4);
-                tocode(B);
-                pc += 2;
+                int n = tree[tc++], i,
+                rez = mbox == BREG || mbox == BREGF ? breg : t0;
+                tocodeJ(jump, "STRING", stringnum);
+                printf("%i\n", n);
+                fprintf(output, "%i\n", n);
+                tocodeR(add, rez, d0, pc);
+                printf("%c", '\"');
+                fprintf(output, "%c", '\"');
                 for (i=0; i<n; i++)
-                    tocode(tree[tc++]);
-                mem[res-1] = n;
-                mem[res-2] = pc;
-                wasstring = 1;
+                {
+                    printf("%c", tree[tc]);
+                    fprintf(output, "%c", tree[tc++]);
+                }
+                printf("%c\n", '\"');
+                fprintf(output, "%c\n", '\"');
+                tocodeL("STRING", stringnum++);
+//                wasstring = 1;
             }
                 break;
-*/
+
             case TDeclid:
                 MDeclid_gen();
                 break;
@@ -1044,11 +1073,14 @@ void MPrimary()
                 tocodeB(lw, a0, adispl, areg); // продолжение в след case
             case TSlice:                       // параметр - тип элемента
                 eltype = tree[tc++];
-                mbox = BREG;                   // a0 - C0
-                breg = a1;                     // a1 - index
+                mbox = BREG;                   // a0 - это C0
+                breg = a1;                     // a1 - это index
                 MExpr_gen();
                 d = szof(eltype);
-                tocodeI(addi, a2, d0, 4*d);      // a2 - d
+                if (eltype == LCHAR)
+                    tocodeI(addi, a2, d0, d);  // a2 - это d
+                else
+                    tocodeI(addi, a2, d0, 4*d);// a2 - это d
                 tocodeJ(jal, "SLICE", 1);      // t0 - адрес i-го элемента
  
                 if (eltype > 0 && modetab[eltype] == MARRAY)
@@ -1062,11 +1094,14 @@ void MPrimary()
 //                tocode(tree[tc++]);
                 break;
             case TPrint:
-                tocodeI(addi, a0, d0, tree[tc++]);
+            {
+                int type = tree[tc++];
                 mbox = BREG;
-                breg = a1;
+                breg = a0;
                 MExpr_gen();
+                tocodeI(addi, a1, d0, type);
                 tocodeJ(jal, "PRINT", 1);
+            }
                 break;
             case TCall1:
             {

@@ -164,7 +164,7 @@ void next_string_elem()
 
 int letter()
 {
-    return (curchar >= 'A' && curchar <= 'Z') || (curchar >='a' && curchar <= 'z') || curchar == '_' ||
+    return (curchar >= 'A' && curchar <= 'Z') || (curchar >='a' && curchar <= 'z') || curchar == '_' || curchar == '#' ||
     (curchar >= 0x410/*А */ && curchar <= 0x44F /*'я'*/);
 }
 
@@ -565,13 +565,12 @@ int scan()
         }
             
         default:
-            if (letter() || curchar == '#')
+            if (letter())
             {
                 int oldrepr = rp, r;
-                rp+=2;
+                rp += 2;
                 hash = 0;
                 
-                // решетка на 1 месте -- значит, ключевое слово препроцессора
                 do
                 {
                     

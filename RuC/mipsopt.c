@@ -12,7 +12,7 @@ int t, op, opnd;
 
 int mcopy()
 {
- //   printf("tc= %i tree[tc]= %i\n", tc, tree[tc]);
+//    printf("tc= %i tree[tc]= %i\n", tc, tree[tc]);
     return mtree[mtc++] = tree[tc++];
 }
 
@@ -303,7 +303,9 @@ int operand()
     }
     n1 = tc;
     t = tree[tc];
-    if (t == TString)
+    if (t == TAddrtoval)
+        mcopy();
+    else if (t == TString)
     {
         mcopy();
         int nstr = mcopy();
@@ -313,11 +315,11 @@ int operand()
     else if (t == TSliceident || t == TSelect)
     {
         mcopy();
-        mcopy();
+        mcopy();             // displ
         if (t == TSliceident)
         {
-            mcopy();
-            mexpr();
+            mcopy();         // type
+            mexpr();         // index
         }
         while (tree[tc] == TSlice || t == TSelect)
         {
@@ -355,8 +357,7 @@ int operand()
         for (i=0; i<n; i++)
             mexpr();
     }
-    else if (t == TIdenttoval || t == TIdenttovald || t == TIdenttoaddr ||
-             t == TAddrtoval  || t == TConst)
+    else if (t == TIdenttoval || t == TIdenttovald || t == TIdenttoaddr || t == TConst)
     {
         mcopy();
         mcopy();
