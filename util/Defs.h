@@ -390,6 +390,13 @@
 #define BLYNK_TERMINAL     -78
 #define SETSIGNAL     -79
 
+#define LINE          -80
+#define RECTANGLE     -81
+#define FILL          -82
+#define CLEAR         -83
+#define DRAW_STRING   -84
+#define DRAW_NUMBER   -85
+
 #define LVOIDASTER    -150
 #define ABSI          -151
 
@@ -631,6 +638,7 @@
 #define after_preproces_words_must_be_space 381
 #define struct_init_must_start_from_BEGIN  382
 #define not_rowofint_in_stanfunc           383
+#define not_float_in_stanfunc              384
 
 
 //  коды предупреждений

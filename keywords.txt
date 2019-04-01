@@ -82,3 +82,9 @@ BLYNK_PROPERTY blynk_property BLYNK_СВОЙСТВО blynk_свойство
 BLYNK_LCD blynk_lcd BLYNK_ДИСПЛЕЙ blynk_дисплей
 BLYNK_TERMINAL blynk_terminal BLYNK_ТЕРМИНАЛ blynk_терминал
 SETSIGNAL setsignal СИГНАЛ сигнал
+LINE line ЛИНИЯ линия
+RECTANGLE rectangle ПРЯМОУГОЛЬНИК прямоугольник
+FILL fill ЗАПОЛНИТЬ заполнить
+CLEAR clear ОЧИСТИТЬ очистить
+DRAW_STRING draw_string НАРИСОВАТЬ_СТРОКУ нарисовать_строку
+DRAW_NUMBER draw_number НАРИСОВАТЬ_ЧИСЛО нарисовать_число

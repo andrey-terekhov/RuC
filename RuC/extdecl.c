@@ -513,10 +513,49 @@ void primaryexpr()
                 if (func < STRNCAT)
                     stackoperands[++sopnd] = ansttype = LINT;
         }
-        else if (func >= SETSIGNAL && func <= WIFI_CONNECT)   // функции Фадеева
+        else if (func >= DRAW_NUMBER && func <= WIFI_CONNECT)   // функции Фадеева
         {
             notrobot = 0;
-            if (func == SETSIGNAL)
+            if (func == CLEAR)
+                ;
+            else if (func == LINE || func == RECTANGLE || func == FILL)
+            {
+                mustbeint();
+                mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                mustbeint();
+                mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                mustbeint();
+                mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                mustbeint();
+                mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                mustbeint();
+                if (func == RECTANGLE)
+                {
+                    mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                    mustbeint();
+                }
+            }
+            else if (func == DRAW_NUMBER || func == DRAW_STRING)
+            {
+                mustbeint();
+                mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                mustbeint();
+                mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                if (func == DRAW_STRING)
+                    mustbestring();
+                else    // DRAW_NUMBER
+                {
+                    scaner();
+                    exprassn(1);
+                    toval();
+                    sopnd--;
+                    if (is_int(ansttype))
+                        totree(WIDEN);
+                    else if (ansttype != LFLOAT)
+                        error(not_float_in_stanfunc);
+                }
+            }
+            else if (func == SETSIGNAL)
             {
                 mustbeint();
                 mustbe(COMMA, no_comma_in_act_params_stanfunc);

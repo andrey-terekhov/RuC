@@ -8,8 +8,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-"tests/bubblerus.c";
-
+//"tests/Egor/string/strcat.c";
+"tests/Fadeev/draw.c";
 //"../../../tests/mips/0test.c";
 
 #include <stdio.h>
