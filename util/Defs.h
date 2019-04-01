@@ -396,6 +396,7 @@
 #define CLEAR         -83
 #define DRAW_STRING   -84
 #define DRAW_NUMBER   -85
+#define ICON          -86
 
 #define LVOIDASTER    -150
 #define ABSI          -151

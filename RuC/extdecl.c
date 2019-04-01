@@ -513,26 +513,29 @@ void primaryexpr()
                 if (func < STRNCAT)
                     stackoperands[++sopnd] = ansttype = LINT;
         }
-        else if (func >= DRAW_NUMBER && func <= WIFI_CONNECT)   // функции Фадеева
+        else if (func >= ICON && func <= WIFI_CONNECT)   // функции Фадеева
         {
             notrobot = 0;
             if (func == CLEAR)
                 ;
-            else if (func == LINE || func == RECTANGLE || func == FILL)
+            else if (func == LINE || func == RECTANGLE || func == FILL || func == ICON)
             {
                 mustbeint();
                 mustbe(COMMA, no_comma_in_act_params_stanfunc);
                 mustbeint();
                 mustbe(COMMA, no_comma_in_act_params_stanfunc);
                 mustbeint();
-                mustbe(COMMA, no_comma_in_act_params_stanfunc);
-                mustbeint();
-                mustbe(COMMA, no_comma_in_act_params_stanfunc);
-                mustbeint();
-                if (func == RECTANGLE)
+                if (func != ICON)
                 {
                     mustbe(COMMA, no_comma_in_act_params_stanfunc);
                     mustbeint();
+                    mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                    mustbeint();
+                    if (func == RECTANGLE)
+                    {
+                        mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                        mustbeint();
+                    }
                 }
             }
             else if (func == DRAW_NUMBER || func == DRAW_STRING)
