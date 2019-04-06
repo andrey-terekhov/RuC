@@ -388,15 +388,16 @@
 #define BLYNK_PROPERTY     -76
 #define BLYNK_LCD     -77
 #define BLYNK_TERMINAL     -78
-#define SETSIGNAL     -79
 
-#define LINE          -80
-#define RECTANGLE     -81
-#define FILL          -82
-#define CLEAR         -83
-#define DRAW_STRING   -84
-#define DRAW_NUMBER   -85
-#define ICON          -86
+#define SETSIGNAL     -79
+#define PIXEL         -80
+#define LINE          -81
+#define RECTANGLE     -82
+#define ELLIPS        -83
+#define CLEAR         -84
+#define DRAW_STRING   -85
+#define DRAW_NUMBER   -86
+#define ICON          -87
 
 #define LVOIDASTER    -150
 #define ABSI          -151
