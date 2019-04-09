@@ -353,7 +353,7 @@ void actstring()
                 cur = NUMBER, ansttype = LINT, num = identab[lastid+3];
         }
  */
-        if (scaner() == NUMBER && ansttype == LINT)
+        if (scaner() == NUMBER && (ansttype == LINT || ansttype == LCHAR))
             totree(num);
         else
             error(wrong_init_in_actparam);
@@ -395,7 +395,7 @@ void mustbeint()
     exprassn(1);
     toval();
     sopnd--;
-    if (ansttype != LINT)
+    if (ansttype != LINT && ansttype != LCHAR)
         error(not_int_in_stanfunc);
 }
 
@@ -410,7 +410,8 @@ void mustberowofint()
         toval();
         sopnd--;
     }
-    if (! (ansttype > 0 && modetab[ansttype] == MARRAY && modetab[ansttype+1] == LINT) )
+    if (! (ansttype > 0 && modetab[ansttype] == MARRAY &&
+           (modetab[ansttype+1] == LINT || modetab[ansttype+1] == LCHAR) ))
     error(not_rowofint_in_stanfunc);
 }
 

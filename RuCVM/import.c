@@ -936,7 +936,8 @@ void* interpreter(void* pcPnt)
                     {
                         mem[addr] = adinit + 1;
 
-                        if (usual && mem[adinit] != NN)  // здесь usual == 1, если == 0, проверка не нужна
+                        if (usual && mem[adinit] != NN)  // здесь usual == 1,
+                                                // если usual == 0, проверка не нужна
                             runtimeerr(init_err, mem[adinit], NN);
                         adinit += mem[adinit] * d + 1;
                     }

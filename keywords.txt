@@ -86,7 +86,7 @@ SETSIGNAL setsignal СИГНАЛ сигнал
 PIXEL pixel ПИКСЕЛЬ пиксель
 LINE line ЛИНИЯ линия
 RECTANGLE rectangle ПРЯМОУГОЛЬНИК прямоугольник
-ELLIPS ellips ЭЛЛИПС эллипс
+ELLIPSE ellipse ЭЛЛИПС эллипс
 CLEAR clear ОЧИСТИТЬ очистить
 DRAW_STRING draw_string НАРИСОВАТЬ_СТРОКУ нарисовать_строку
 DRAW_NUMBER draw_number НАРИСОВАТЬ_ЧИСЛО нарисовать_число
