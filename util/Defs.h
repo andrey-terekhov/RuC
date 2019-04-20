@@ -271,6 +271,25 @@
 #define DESTROYC  9561
 #define EXITC     9562
 #define GETNUMC   9563
+#define WIFI_CONNECTC        9571
+#define BLYNK_AUTHORIZATIONC 9572
+#define BLYNK_SENDC          9573
+#define BLYNK_RECEIVEC       9574
+#define BLYNK_NOTIFICATIONC  9575
+#define BLYNK_PROPERTYC      9576
+#define BLYNK_LCDC           9577
+#define BLYNK_TERMINALC      9578
+
+#define SETSIGNALC           9579
+#define PIXELC               9580
+#define LINEC                9581
+#define RECTANGLEC           9582
+#define ELLIPSEC             9583
+#define CLEARC               9584
+#define DRAW_STRINGC         9585
+#define DRAW_NUMBERC         9586
+#define ICONC                9587
+
 
 // Лексемы
 
