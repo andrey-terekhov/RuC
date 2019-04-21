@@ -532,8 +532,11 @@ void primaryexpr()
                     mustbeint();
                     mustbe(COMMA, no_comma_in_act_params_stanfunc);
                     mustbeint();
-                    mustbe(COMMA, no_comma_in_act_params_stanfunc);
-                    mustbeint();
+                    if (func != LINE)
+                    {
+                        mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                        mustbeint();
+                    }
                 }
                 else if (func == ICON || func == PIXEL)
                 {

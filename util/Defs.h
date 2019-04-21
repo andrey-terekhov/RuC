@@ -432,7 +432,7 @@
 #define TAddrtoval  -306
 #define TCall1      -307
 #define TCall2      -308
-#define TFuncdef    -30
+#define TFuncdef    -309
 #define TDeclid     -310
 
 #define TExprend    -312
