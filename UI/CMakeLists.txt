@@ -20,9 +20,12 @@ set_target_properties(ruc-ui
 
 target_link_libraries(ruc-ui PRIVATE ruc-util)
 if(FLTK_IMPORTED)
-	message("fltk imported")
-	target_link_libraries(ruc-ui PRIVATE fltk)
-	target_include_directories(ruc-ui PRIVATE ${FLTK_INCLUDEDIR})
+	# FIXME: this is an overkill, fix ASAP
+	get_target_property(FLTK_BINARY_DIR fltk BINARY_DIR)
+	get_target_property(FLTK_SOURCE_DIR fltk SOURCE_DIR)
+	message("fltk imported from ${FLTK_SOURCE_DIR} / ${FLTK_BINARY_DIR}")
+	target_link_libraries(ruc-ui PUBLIC fltk)
+	target_include_directories(ruc-ui PRIVATE ${FLTK_SOURCE_DIR}/.. ${FLTK_BINARY_DIR}/..)
 else()
 	message("fltk system-wide")
 	find_package (FLTK REQUIRED)
