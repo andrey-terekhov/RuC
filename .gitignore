@@ -23,3 +23,5 @@ ruc-compiler
 !CMakeLists.txt
 
 .DS_Store
+build
+
