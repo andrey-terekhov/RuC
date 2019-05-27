@@ -4,13 +4,13 @@ project(ruc)
 
 set(CMAKE_C_STANDARD 11)
 
-file (GLOB SOURCE_FILES "*.c")
+file(GLOB SOURCE_FILES "*.c")
 add_executable(ruc ${SOURCE_FILES})
 
 if(MSVC)
-  target_compile_options(ruc PRIVATE /W4 /WX)
+    target_compile_options(ruc PRIVATE /W4 /WX)
 else()
-  target_compile_options(ruc PRIVATE -Wall -Wextra)
+    target_compile_options(ruc PRIVATE -Wall -Wextra)
 endif()
 
 # Put the keywords.txt file near the driver

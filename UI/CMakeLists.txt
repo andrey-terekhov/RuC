@@ -2,13 +2,13 @@ cmake_minimum_required(VERSION 3.0.0)
 
 project(ruc-ui)
 
-file (GLOB SOURCE_FILES "*.cpp")
+file(GLOB SOURCE_FILES "*.cpp")
 add_executable(ruc-ui ${SOURCE_FILES})
 
 if(MSVC)
-  target_compile_options(ruc-ui PRIVATE /W4 /WX)
+  	target_compile_options(ruc-ui PRIVATE /W4 /WX)
 else()
-  target_compile_options(ruc-ui PRIVATE -Wall -Wextra)
+  	target_compile_options(ruc-ui PRIVATE -Wall -Wextra)
 endif()
 
 set_target_properties(ruc-ui

@@ -4,15 +4,15 @@ project(ruc-vm)
 
 set(CMAKE_C_STANDARD 11)
 
-file (GLOB SOURCE_FILES "*.c")
+file(GLOB SOURCE_FILES "*.c")
 add_executable(ruc-vm ${SOURCE_FILES})
 
 find_package (Threads REQUIRED)
 
 if(MSVC)
-  target_compile_options(ruc-vm PRIVATE /W4 /WX)
+  	target_compile_options(ruc-vm PRIVATE /W4 /WX)
 else()
-  target_compile_options(ruc-vm PRIVATE -Wall -Wextra)
+  	target_compile_options(ruc-vm PRIVATE -Wall -Wextra)
 endif()
 
 target_link_libraries(ruc-vm ruc-util m ${CMAKE_THREAD_LIBS_INIT})
