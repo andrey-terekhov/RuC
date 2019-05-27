@@ -19,8 +19,4 @@ matrix:
       dist: xenial
 
 script:
-  - mkdir Build && cd Build
-  - cmake $ENABLE_SANITIZERS ..
-  - make
-  - make test
-
+  - test.sh -out
