@@ -25,16 +25,3 @@ set_target_properties(ruc
     RUNTIME_OUTPUT_DIRECTORY "${RUC_BINARY_DIR}"
 )
 
-enable_testing()
-
-set(TEST_TIMEOUT 1)
-
-file(GLOB TEST_INPUTS "${TEST_INPUTS_DIR}/*.c"
-                      "${TEST_INPUTS_DIR}/*/*.c"
-                      "${TEST_INPUTS_DIR}/*/*/*.c")
-
-foreach(TEST_INPUT ${TEST_INPUTS})
-    add_test(NAME ${TEST_INPUT}
-             COMMAND "ruc" ${TEST_INPUT})
-    set_tests_properties(${TEST_INPUT} PROPERTIES TIMEOUT ${TEST_TIMEOUT})
-endforeach(TEST_INPUT)
