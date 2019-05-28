@@ -6,6 +6,9 @@ git:
 
 language: c
 
+env:
+  - DEBUG_TEST_SCRIPT=1
+
 matrix:
   include:
     - name: "Running tests on macOS"
@@ -19,4 +22,4 @@ matrix:
       dist: xenial
 
 script:
-  - DEBUG=1 ./test.sh -out
+  - ./test.sh -out
