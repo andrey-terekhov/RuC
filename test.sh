@@ -46,7 +46,7 @@ do
             if ! [[ -z $full_out ]] ; then
                 sleep $output_time
                 echo -e "\e[1;31m build failing \e[1;39m: $code"
-                if [ "${DEBUG_TEST_SCRIPT:-1}" == "1" ] ; then
+                if [ "${DEBUG_TEST_SCRIPT:-0}" == "1" ] ; then
                     echo "Output:"
                     cat out.txt
                 fi
