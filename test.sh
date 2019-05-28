@@ -22,7 +22,8 @@ RUC=./ruc
 
 for code in ${test_dir}/*.c ${test_dir}/*/*.c ${test_dir}/*/*/*.c
 do
-    out=`timeout $wait_for ${RUC} $code >/dev/null 2>/dev/null`
+    rm -f out.txt
+    out=`timeout $wait_for ${RUC} $code >out.txt 2>out.txt`
 
     case $? in
         0)
@@ -43,11 +44,17 @@ do
             if ! [[ -z $full_out ]] ; then
                 sleep $output_time
                 echo -e "\e[1;31m build failing \e[1;39m: $code"
+                if [ "${DEBUG}" == "1" ] ; then
+                    echo "Output:"
+                    cat out.txt
+                fi
             fi
             let fail++
             ;;
     esac
 done
+
+rm -f out.txt
 
 if ! [[ -z $full_out ]] ; then
     echo

@@ -19,4 +19,4 @@ matrix:
       dist: xenial
 
 script:
-  - ./test.sh -out
+  - DEBUG=1 ./test.sh -out
