@@ -6,9 +6,6 @@ git:
 
 language: c
 
-env:
-  - DEBUG_TEST_SCRIPT=1
-
 matrix:
   include:
     - name: "Running tests on macOS"
