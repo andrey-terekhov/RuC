@@ -20,10 +20,12 @@ fi
 cd bin
 RUC=./ruc
 
+function internal_timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+
 for code in ${test_dir}/*.c ${test_dir}/*/*.c ${test_dir}/*/*/*.c
 do
     rm -f out.txt
-    out=`timeout $wait_for ${RUC} $code >out.txt 2>out.txt`
+    out=`internal_timeout $wait_for ${RUC} $code >out.txt 2>out.txt`
 
     case $? in
         0)
