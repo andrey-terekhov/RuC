@@ -31,21 +31,21 @@ do
         0)
             if ! [[ -z $full_out ]] ; then
                 sleep $output_time
-                echo -e "\e[1;32m build passing \e[1;39m: $code"
+                echo -e "\x1B[1;32m build passing \x1B[1;39m: $code"
             fi
             let pass++
             ;;
         124)
             if ! [[ -z $full_out ]] ; then
                 sleep $output_time
-                echo -e "\e[1;34m build timeout \e[1;39m: $code"
+                echo -e "\x1B[1;34m build timeout \x1B[1;39m: $code"
             fi
             let timeout++
             ;;
         *)
             if ! [[ -z $full_out ]] ; then
                 sleep $output_time
-                echo -e "\e[1;31m build failing \e[1;39m: $code"
+                echo -e "\x1B[1;31m build failing \x1B[1;39m: $code"
                 if [ "${DEBUG_TEST_SCRIPT:-0}" == "1" ] ; then
                     echo "Output:"
                     cat out.txt
@@ -62,7 +62,7 @@ if ! [[ -z $full_out ]] ; then
     echo
 fi
 
-echo -e "\e[1;39m pass = $pass, fail = $fail, timeout = $timeout"
+echo -e "\x1B[1;39m pass = $pass, fail = $fail, timeout = $timeout"
 
 if ! [ $pass -eq 0 ] ; then
     exit 0
