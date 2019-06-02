@@ -1,11 +1,22 @@
 notifications:
-    email: false
+  email: false
 
 git:
-    depth: 1
+  depth: 1
 
 language: c
-compiler: gcc
+
+matrix:
+  include:
+    - name: "Running tests on macOS"
+      os: osx
+      osx_image: xcode10.1
+      # Beacause of https://stackoverflow.com/questions/50024731/ld-unrecognized-option-push-state-no-as-needed
+      # we don't enable sanitizers on gcc
+      env: ENABLE_SANITIZERS="-DENABLE_SANITIZERS=1"
+    - name: "Running tests on Ubuntu 16.04"
+      os: linux
+      dist: xenial
 
 script:
-    - ./test.sh -out
+  - ./test.sh -out
