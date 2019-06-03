@@ -8,7 +8,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-//"tests/test10.c";
+//"tests/test.c";
 
 "tests/mips/test7.c";
 
@@ -145,13 +145,13 @@ int main(int argc, const char * argv[])
     kw = 1;
     tc = 0;
 
-    printf("\nИсходный текст:\n \n");
-    preprocess_file();                //   макрогенерация
+//    printf("\nИсходный текст:\n \n");
+//    preprocess_file();                //   макрогенерация
 
-    fclose(input);                    // исходный файл до макрогенерации
-    fclose(output);                   // исходный файл после макрогенерации
+//    fclose(input);                    // исходный файл до макрогенерации
+//    fclose(output);                   // исходный файл после макрогенерации
     
-    input  = fopen("macro.txt", "r"); // исходный файл после макрогенерации
+    input  = fopen(/*"macro.txt"*/name, "r"); // исходный файл после макрогенерации
 
     
     if (input == NULL)
