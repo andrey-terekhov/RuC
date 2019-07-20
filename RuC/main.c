@@ -16,6 +16,7 @@ const char *name =
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <wchar.h>
 #include "Defs.h"
@@ -53,9 +54,24 @@ ext_decl(ruc_context *context);
 int
 main(int argc, const char *argv[])
 {
+    char macro_path[] = "/tmp/macroXXXXXX";
+    char tree_path[] = "/tmp/treeXXXXXX";
+    char codes_path[] = "/tmp/codesXXXXXX";
+
     ruc_context context;
 
     ruc_context_init(&context);
+
+    mktemp(macro_path);
+    mktemp(tree_path);
+    mktemp(codes_path);
+    if (strlen(macro_path) == 0 ||
+        strlen(tree_path) == 0 ||
+        strlen(codes_path) == 0)
+    {
+        fprintf(stderr, " ошибка при создании временного файла\n");
+        exit(1);
+    }
 
     read_keywords(&context, "keywords.txt");
 
@@ -63,7 +79,7 @@ main(int argc, const char *argv[])
     ruc_context_attach_io(&context, argc > 1 ? argv[1] : name, IO_TYPE_INPUT);
 
     // Препроцессинг в файл macro.txt
-    ruc_context_attach_io(&context, "macro.txt", IO_TYPE_OUTPUT);
+    ruc_context_attach_io(&context, macro_path, IO_TYPE_OUTPUT);
     init_modetab(&context);
 
     printf("\nИсходный текст:\n \n");
@@ -73,11 +89,15 @@ main(int argc, const char *argv[])
     ruc_context_detach_io(&context, IO_TYPE_OUTPUT);
     ruc_context_detach_io(&context, IO_TYPE_INPUT);
 
-    ruc_context_attach_io(&context, "macro.txt", IO_TYPE_INPUT);
-    output_tables_and_tree(&context, "tree.txt");
-    output_codes(&context, "codes.txt");
+    ruc_context_attach_io(&context, macro_path, IO_TYPE_INPUT);
+    output_tables_and_tree(&context, tree_path);
+    output_codes(&context, codes_path);
     output_export(&context, "export.txt");
     ruc_context_detach_io(&context, IO_TYPE_INPUT);
 
+    /* Will be left for debugging in case of failure */
+    unlink(macro_path);
+    unlink(tree_path);
+    unlink(codes_path);
     return 0;
 }
