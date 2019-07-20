@@ -16,6 +16,7 @@ typedef enum ruc_io_type
 // Определение глобальных переменных
 typedef struct ruc_context
 {
+    const char *output_file;    /** Output file */
     FILE * input;
     FILE * output;
     double numdouble;

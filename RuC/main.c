@@ -15,6 +15,7 @@ const char *name =
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -51,53 +52,89 @@ mipsgen(ruc_context *context);
 extern void
 ext_decl(ruc_context *context);
 
+static void
+process_user_requests(ruc_context *context,
+                      int argc,
+                      const char *argv[])
+{
+    int i;
+    bool enough_files = false;
+
+    for (i = 1; i < argc; ++i)
+    {
+        if (strcmp(argv[i], "-o") == 0)
+        {
+            if ((i + 1) >= argc)
+                fprintf(stderr, " не указан выходной файл\n");
+
+            /* Output file */
+            context->output_file = argv[i + 1];
+            i++;
+        }
+        else if (!enough_files)
+        {
+            /* Regular file */
+            char macro_path[] = "/tmp/macroXXXXXX";
+            char tree_path[] = "/tmp/treeXXXXXX";
+            char codes_path[] = "/tmp/codesXXXXXX";
+
+            mktemp(macro_path);
+            mktemp(tree_path);
+            mktemp(codes_path);
+            if (strlen(macro_path) == 0 ||
+                strlen(tree_path) == 0 ||
+                strlen(codes_path) == 0)
+            {
+                fprintf(stderr, " ошибка при создании временного файла\n");
+                exit(1);
+            }
+
+            // Открытие исходного текста
+            ruc_context_attach_io(context, argv[i], IO_TYPE_INPUT);
+
+            // Препроцессинг в файл macro.txt
+            ruc_context_attach_io(context, macro_path, IO_TYPE_OUTPUT);
+
+            printf("\nИсходный текст:\n \n");
+
+            preprocess_file(context); //   макрогенерация
+
+            ruc_context_detach_io(context, IO_TYPE_OUTPUT);
+            ruc_context_detach_io(context, IO_TYPE_INPUT);
+
+            ruc_context_attach_io(context, macro_path, IO_TYPE_INPUT);
+            output_tables_and_tree(context, tree_path);
+            output_codes(context, codes_path);
+            ruc_context_detach_io(context, IO_TYPE_INPUT);
+
+            /* Will be left for debugging in case of failure */
+            unlink(tree_path);
+            unlink(codes_path);
+            unlink(macro_path);
+            enough_files = true;
+        }
+        else
+        {
+            fprintf(stderr, " лимит исходных файлов\n");
+            break;
+        }
+    }
+
+    output_export(context,
+        context->output_file != NULL ? context->output_file : "export.txt");
+}
+
 int
 main(int argc, const char *argv[])
 {
-    char macro_path[] = "/tmp/macroXXXXXX";
-    char tree_path[] = "/tmp/treeXXXXXX";
-    char codes_path[] = "/tmp/codesXXXXXX";
-
     ruc_context context;
 
     ruc_context_init(&context);
 
-    mktemp(macro_path);
-    mktemp(tree_path);
-    mktemp(codes_path);
-    if (strlen(macro_path) == 0 ||
-        strlen(tree_path) == 0 ||
-        strlen(codes_path) == 0)
-    {
-        fprintf(stderr, " ошибка при создании временного файла\n");
-        exit(1);
-    }
-
     read_keywords(&context, "keywords.txt");
 
-    // Открытие исходного текста
-    ruc_context_attach_io(&context, argc > 1 ? argv[1] : name, IO_TYPE_INPUT);
-
-    // Препроцессинг в файл macro.txt
-    ruc_context_attach_io(&context, macro_path, IO_TYPE_OUTPUT);
     init_modetab(&context);
 
-    printf("\nИсходный текст:\n \n");
-
-    preprocess_file(&context); //   макрогенерация
-
-    ruc_context_detach_io(&context, IO_TYPE_OUTPUT);
-    ruc_context_detach_io(&context, IO_TYPE_INPUT);
-
-    ruc_context_attach_io(&context, macro_path, IO_TYPE_INPUT);
-    output_tables_and_tree(&context, tree_path);
-    output_codes(&context, codes_path);
-    output_export(&context, "export.txt");
-    ruc_context_detach_io(&context, IO_TYPE_INPUT);
-
-    /* Will be left for debugging in case of failure */
-    unlink(macro_path);
-    unlink(tree_path);
-    unlink(codes_path);
+    process_user_requests(&context, argc, argv);
     return 0;
 }
