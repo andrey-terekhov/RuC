@@ -12,7 +12,11 @@
 #define RuC_global_vars_h
 
 #include "Defs.h"
+#include "context.h"
 
+#define UNUSED(x) (void)(x)
+
+#if 0
 extern FILE *input;
 extern FILE *output;
 
@@ -42,5 +46,6 @@ extern int anst, anstdispl, ansttype, leftansttype;
 // в ansttype всегда тип возвращаемого значения (сейчас только LINT или LFLOAT)
 
 extern int bad_printf_placeholder;
+#endif
 
 #endif

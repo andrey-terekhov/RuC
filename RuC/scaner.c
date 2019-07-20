@@ -18,199 +18,199 @@ extern void error(int);
 extern void warning(int);
 extern void printf_char(int);
 
-int getnext()
+int getnext(ruc_context *context)
 {
     // reads UTF-8
 
     unsigned char firstchar, secondchar;
-    if (fscanf(input, "%c", &firstchar) == EOF)
+    if (fscanf(context->input, "%c", &firstchar) == EOF)
         return EOF;
     else
     {
         if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
         {
-            fscanf(input, "%c", &secondchar);
+            fscanf(context->input, "%c", &secondchar);
 
-            nextchar = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 |
+            context->nextchar = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 |
                        (secondchar & /*0b111111*/ 0x3F);
         }
         else
-            nextchar = firstchar;
-        if (nextchar == 13 /* cr */)
-            getnext();
+            context->nextchar = firstchar;
+        if (context->nextchar == 13 /* cr */)
+            getnext(context);
         //                if(kw)
-        //                    printf("nextchar %c %i\n", nextchar, nextchar);
+        //                    printf("context->nextchar %c %i\n", context->nextchar, context->nextchar);
     }
 
-    return nextchar;
+    return context->nextchar;
 }
 
-void onemore()
+void onemore(ruc_context *context)
 {
-    curchar = nextchar;
-    nextchar = getnext();
+    context->curchar = context->nextchar;
+    context->nextchar = getnext(context);
     //    if (kw)
-    //        printf("curchar =%c %i nextchar=%c %i\n", curchar, curchar,
-    //        nextchar, nextchar);
+    //        printf("context->curchar =%c %i context->nextchar=%c %i\n", context->curchar, context->curchar,
+    //        context->nextchar, context->nextchar);
 }
 
-void endofline()
+void endofline(ruc_context *context)
 {
-    if (prep_flag == 1)
+    if (context->prep_flag == 1)
     {
         int j;
-        printf("line %i) ", line - 1);
-        for (j = lines[line - 1]; j < lines[line]; j++)
-            if (source[j] != EOF)
-                printf_char(source[j]);
+        printf("line %i) ", context->line - 1);
+        for (j = context->lines[context->line - 1]; j < context->lines[context->line]; j++)
+            if (context->source[j] != EOF)
+                printf_char(context->source[j]);
         fflush(stdout);
     }
 }
 
-void endnl()
+void endnl(ruc_context *context)
 {
-    lines[++line] = charnum;
-    lines[line + 1] = charnum;
-    if (kw)
+    context->lines[++context->line] = context->charnum;
+    context->lines[context->line + 1] = context->charnum;
+    if (context->kw)
     {
-        endofline();
+        endofline(context);
     }
 }
 
-void nextch()
+void nextch(ruc_context *context)
 {
-    onemore();
-    if (curchar == EOF)
+    onemore(context);
+    if (context->curchar == EOF)
     {
-        onemore();
-        lines[++line] = charnum;
-        lines[line + 1] = charnum;
-        if (kw)
+        onemore(context);
+        context->lines[++context->line] = context->charnum;
+        context->lines[context->line + 1] = context->charnum;
+        if (context->kw)
         {
-            endofline();
+            endofline(context);
             printf("\n");
         }
         return;
     }
 
-    source[charnum++] = curchar;
-    if (instring)
+    context->source[context->charnum++] = context->curchar;
+    if (context->instring)
         return;
 
-    if (curchar == '/' && nextchar == '/')
+    if (context->curchar == '/' && context->nextchar == '/')
     {
         do
         {
-            onemore();
-            source[charnum++] = curchar;
-            if (curchar == EOF)
+            onemore(context);
+            context->source[context->charnum++] = context->curchar;
+            if (context->curchar == EOF)
             {
-                endnl();
+                endnl(context);
                 printf("\n");
                 return;
             }
-        } while (curchar != '\n');
+        } while (context->curchar != '\n');
 
-        endnl();
+        endnl(context);
         return;
     }
 
-    if (curchar == '/' && nextchar == '*')
+    if (context->curchar == '/' && context->nextchar == '*')
     {
-        onemore();
-        source[charnum++] =
-            curchar; // надо сразу выесть /*, чтобы не попасть на /*/
+        onemore(context);
+        context->source[context->charnum++] =
+            context->curchar; // надо сразу выесть /*, чтобы не попасть на /*/
         do
         {
-            onemore();
-            source[charnum++] = curchar;
-            if (curchar == EOF)
+            onemore(context);
+            context->source[context->charnum++] = context->curchar;
+            if (context->curchar == EOF)
             {
-                endnl();
+                endnl(context);
                 printf("\n");
                 error(comm_not_ended);
             }
-            if (curchar == '\n')
-                endnl();
-        } while (curchar != '*' || nextchar != '/');
+            if (context->curchar == '\n')
+                endnl(context);
+        } while (context->curchar != '*' || context->nextchar != '/');
 
-        onemore();
-        source[charnum++] = curchar;
-        curchar = ' ';
+        onemore(context);
+        context->source[context->charnum++] = context->curchar;
+        context->curchar = ' ';
         return;
     }
-    if (curchar == '\n')
-        endnl();
+    if (context->curchar == '\n')
+        endnl(context);
     return;
 }
 
-void next_string_elem()
+void next_string_elem(ruc_context *context)
 {
-    num = curchar;
-    if (curchar == '\\')
+    context->num = context->curchar;
+    if (context->curchar == '\\')
     {
-        nextch();
-        if (curchar == 'n' || curchar == 1085 /* 'н' */)
-            num = 10;
-        else if (curchar == 't' || curchar == 1090 /* 'т' */)
-            num = 9;
-        else if (curchar == '0')
-            num = 0;
-        else if (curchar != '\'' && curchar != '\\' && curchar != '\"')
+        nextch(context);
+        if (context->curchar == 'n' || context->curchar == 1085 /* 'н' */)
+            context->num = 10;
+        else if (context->curchar == 't' || context->curchar == 1090 /* 'т' */)
+            context->num = 9;
+        else if (context->curchar == '0')
+            context->num = 0;
+        else if (context->curchar != '\'' && context->curchar != '\\' && context->curchar != '\"')
             error(bad_escape_sym);
         else
-            num = curchar;
+            context->num = context->curchar;
     }
-    nextch();
+    nextch(context);
 }
 
-int letter()
+int letter(ruc_context *context)
 {
-    return (curchar >= 'A' && curchar <= 'Z') ||
-           (curchar >= 'a' && curchar <= 'z') || curchar == '_' ||
-           (curchar >= 0x410 /*А */ && curchar <= 0x44F /*'я'*/);
+    return (context->curchar >= 'A' && context->curchar <= 'Z') ||
+           (context->curchar >= 'a' && context->curchar <= 'z') || context->curchar == '_' ||
+           (context->curchar >= 0x410 /*А */ && context->curchar <= 0x44F /*'я'*/);
 }
 
-int digit() { return curchar >= '0' && curchar <= '9'; }
+int digit(ruc_context *context) { return context->curchar >= '0' && context->curchar <= '9'; }
 
-int ispower()
+int ispower(ruc_context *context)
 {
-    return curchar == 'e' ||
-           curchar ==
-               'E'; // || curchar == 'е' || curchar == 'Е') // это русские е и Е
+    return context->curchar == 'e' ||
+           context->curchar ==
+               'E'; // || context->curchar == 'е' || context->curchar == 'Е') // это русские е и Е
 }
 
-int equal(int i, int j)
+int equal(ruc_context *context, int i, int j)
 {
     ++i;
     ++j;
-    while (reprtab[++i] == reprtab[++j])
-        if (reprtab[i] == 0 && reprtab[j] == 0)
+    while (context->reprtab[++i] == context->reprtab[++j])
+        if (context->reprtab[i] == 0 && context->reprtab[j] == 0)
             return 1;
     return 0;
 }
 
-int scan()
+int scan(ruc_context *context)
 {
     int cr;
-    while (curchar == ' ' || curchar == '\t' || curchar == '\n')
-        nextch();
-    //    printf("scan curchar=%c %i\n", curchar, curchar);
-    switch (curchar)
+    while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
+        nextch(context);
+    //    printf("scan context->curchar=%c %i\n", context->curchar, context->curchar);
+    switch (context->curchar)
     {
     case EOF:
         return LEOF;
     case ',':
     {
-        nextch();
+        nextch(context);
         return COMMA;
     }
 
     case '=':
-        nextch();
-        if (curchar == '=')
+        nextch(context);
+        if (context->curchar == '=')
         {
-            nextch();
+            nextch(context);
             cr = EQEQ;
         }
         else
@@ -218,10 +218,10 @@ int scan()
         return cr;
 
     case '*':
-        nextch();
-        if (curchar == '=')
+        nextch(context);
+        if (context->curchar == '=')
         {
-            nextch();
+            nextch(context);
             cr = MULTASS;
         }
         else
@@ -229,10 +229,10 @@ int scan()
         return cr;
 
     case '/':
-        nextch();
-        if (curchar == '=')
+        nextch(context);
+        if (context->curchar == '=')
         {
-            nextch();
+            nextch(context);
             cr = DIVASS;
         }
         else
@@ -240,10 +240,10 @@ int scan()
         return cr;
 
     case '%':
-        nextch();
-        if (curchar == '=')
+        nextch(context);
+        if (context->curchar == '=')
         {
-            nextch();
+            nextch(context);
             cr = REMASS;
         }
         else
@@ -251,15 +251,15 @@ int scan()
         return cr;
 
     case '+':
-        nextch();
-        if (curchar == '=')
+        nextch(context);
+        if (context->curchar == '=')
         {
-            nextch();
+            nextch(context);
             cr = PLUSASS;
         }
-        else if (curchar == '+')
+        else if (context->curchar == '+')
         {
-            nextch();
+            nextch(context);
             cr = INC;
         }
         else
@@ -267,20 +267,20 @@ int scan()
         return cr;
 
     case '-':
-        nextch();
-        if (curchar == '=')
+        nextch(context);
+        if (context->curchar == '=')
         {
-            nextch();
+            nextch(context);
             cr = MINUSASS;
         }
-        else if (curchar == '-')
+        else if (context->curchar == '-')
         {
-            nextch();
+            nextch(context);
             cr = DEC;
         }
-        else if (curchar == '>')
+        else if (context->curchar == '>')
         {
-            nextch();
+            nextch(context);
             cr = ARROW;
         }
         else
@@ -288,21 +288,21 @@ int scan()
         return cr;
 
     case '<':
-        nextch();
-        if (curchar == '<')
+        nextch(context);
+        if (context->curchar == '<')
         {
-            nextch();
-            if (curchar == '=')
+            nextch(context);
+            if (context->curchar == '=')
             {
-                nextch();
+                nextch(context);
                 cr = SHLASS;
             }
             else
                 cr = LSHL;
         }
-        else if (curchar == '=')
+        else if (context->curchar == '=')
         {
-            nextch();
+            nextch(context);
             cr = LLE;
         }
         else
@@ -311,21 +311,21 @@ int scan()
         return cr;
 
     case '>':
-        nextch();
-        if (curchar == '>')
+        nextch(context);
+        if (context->curchar == '>')
         {
-            nextch();
-            if (curchar == '=')
+            nextch(context);
+            if (context->curchar == '=')
             {
-                nextch();
+                nextch(context);
                 cr = SHRASS;
             }
             else
                 cr = LSHR;
         }
-        else if (curchar == '=')
+        else if (context->curchar == '=')
         {
-            nextch();
+            nextch(context);
             cr = LGE;
         }
         else
@@ -333,15 +333,15 @@ int scan()
         return cr;
 
     case '&':
-        nextch();
-        if (curchar == '=')
+        nextch(context);
+        if (context->curchar == '=')
         {
-            nextch();
+            nextch(context);
             cr = ANDASS;
         }
-        else if (curchar == '&')
+        else if (context->curchar == '&')
         {
-            nextch();
+            nextch(context);
             cr = LOGAND;
         }
         else
@@ -349,10 +349,10 @@ int scan()
         return cr;
 
     case '^':
-        nextch();
-        if (curchar == '=')
+        nextch(context);
+        if (context->curchar == '=')
         {
-            nextch();
+            nextch(context);
             cr = EXORASS;
         }
         else
@@ -360,15 +360,15 @@ int scan()
         return cr;
 
     case '|':
-        nextch();
-        if (curchar == '=')
+        nextch(context);
+        if (context->curchar == '=')
         {
-            nextch();
+            nextch(context);
             cr = ORASS;
         }
-        else if (curchar == '|')
+        else if (context->curchar == '|')
         {
-            nextch();
+            nextch(context);
             cr = LOGOR;
         }
         else
@@ -376,10 +376,10 @@ int scan()
         return cr;
 
     case '!':
-        nextch();
-        if (curchar == '=')
+        nextch(context);
+        if (context->curchar == '=')
         {
-            nextch();
+            nextch(context);
             cr = NOTEQ;
         }
         else
@@ -387,102 +387,102 @@ int scan()
         return cr;
     case '\'':
     {
-        instring = 1;
-        nextch();
-        next_string_elem();
-        if (curchar != '\'')
+        context->instring = 1;
+        nextch(context);
+        next_string_elem(context);
+        if (context->curchar != '\'')
             error(no_right_apost);
-        nextch();
-        instring = 0;
-        ansttype = LCHAR;
+        nextch(context);
+        context->instring = 0;
+        context->ansttype = LCHAR;
         return NUMBER;
     }
     case '\"':
     {
         int n = 0, flag = 1;
-        instring = 1;
-        nextch();
+        context->instring = 1;
+        nextch(context);
         while (flag)
         {
-            while (curchar != '\"' && n < MAXSTRINGL)
+            while (context->curchar != '\"' && n < MAXSTRINGL)
             {
-                next_string_elem();
-                lexstr[n++] = num;
-                //                    printf("n= %i %c %i\n", n-1, num, num);
+                next_string_elem(context);
+                context->lexstr[n++] = context->num;
+                //                    printf("n= %i %c %i\n", n-1, context->num, context->num);
             }
             if (n == MAXSTRINGL)
                 error(too_long_string);
-            nextch();
-            while (curchar == ' ' || curchar == '\t' || curchar == '\n')
-                nextch();
-            if (curchar == '\"')
-                nextch();
+            nextch(context);
+            while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
+                nextch(context);
+            if (context->curchar == '\"')
+                nextch(context);
             else
                 flag = 0;
         }
 
-        num = n;
-        instring = 0;
+        context->num = n;
+        context->instring = 0;
         return STRING;
     }
     case '(':
     {
-        nextch();
+        nextch(context);
         return LEFTBR;
     }
 
     case ')':
     {
-        nextch();
+        nextch(context);
         return RIGHTBR;
     }
 
     case '[':
     {
-        nextch();
+        nextch(context);
         return LEFTSQBR;
     }
 
     case ']':
     {
-        nextch();
+        nextch(context);
         return RIGHTSQBR;
     }
 
     case '~':
     {
-        nextch();
+        nextch(context);
         return LNOT; // поразрядное отрицание
     }
     case '{':
     {
-        nextch();
+        nextch(context);
         return BEGIN;
     }
     case '}':
     {
-        nextch();
+        nextch(context);
         return END;
     }
     case ';':
     {
-        nextch();
+        nextch(context);
         return SEMICOLON;
     }
     case '?':
     {
-        nextch();
+        nextch(context);
         return QUEST;
     }
     case ':':
     {
-        nextch();
+        nextch(context);
         return COLON;
     }
     case '.':
-        if (nextchar < '0' || nextchar > '9')
+        if (context->nextchar < '0' || context->nextchar > '9')
         {
-            nextch();
+            nextch(context);
             return DOT;
         }
     case '0':
@@ -498,128 +498,128 @@ int scan()
     {
         int flagint = 1, flagtoolong = 0;
         double k;
-        num = 0;
-        numdouble = 0.0;
-        while (digit())
+        context->num = 0;
+        context->numdouble = 0.0;
+        while (digit(context))
         {
-            numdouble = numdouble * 10 + (curchar - '0');
-            if (numdouble > (double)INT_MAX)
+            context->numdouble = context->numdouble * 10 + (context->curchar - '0');
+            if (context->numdouble > (double)INT_MAX)
             {
                 flagtoolong = 1;
                 flagint = 0;
             }
-            num = num * 10 + (curchar - '0');
-            nextch();
+            context->num = context->num * 10 + (context->curchar - '0');
+            nextch(context);
         }
 
-        if (curchar == '.')
+        if (context->curchar == '.')
         {
             flagint = 0;
-            nextch();
+            nextch(context);
             k = 0.1;
-            while (digit())
+            while (digit(context))
             {
-                numdouble += (curchar - '0') * k;
+                context->numdouble += (context->curchar - '0') * k;
                 k *= 0.1;
-                nextch();
+                nextch(context);
             }
         }
 
-        if (ispower())
+        if (ispower(context))
         {
             int d = 0, k = 1, i;
-            nextch();
-            if (curchar == '-')
+            nextch(context);
+            if (context->curchar == '-')
             {
                 flagint = 0;
-                nextch();
+                nextch(context);
                 k = -1;
             }
-            else if (curchar == '+')
-                nextch();
-            if (!digit())
+            else if (context->curchar == '+')
+                nextch(context);
+            if (!digit(context))
                 error(must_be_digit_after_exp);
-            while (digit())
+            while (digit(context))
             {
-                d = d * 10 + curchar - '0';
-                nextch();
+                d = d * 10 + context->curchar - '0';
+                nextch(context);
             }
             if (flagint)
                 for (i = 1; i <= d; i++)
-                    num *= 10;
-            numdouble *= pow(10.0, k * d);
+                    context->num *= 10;
+            context->numdouble *= pow(10.0, k * d);
         }
 
         if (flagint)
         {
-            ansttype = LINT;
+            context->ansttype = LINT;
             return NUMBER;
         }
         else
         {
             if (flagtoolong)
                 warning(too_long_int);
-            ansttype = LFLOAT;
+            context->ansttype = LFLOAT;
         }
-        memcpy(&numr, &numdouble, sizeof(double));
+        memcpy(&context->numr, &context->numdouble, sizeof(double));
         return NUMBER;
     }
 
     default:
-        if (letter() || curchar == '#')
+        if (letter(context) || context->curchar == '#')
         {
-            int oldrepr = rp, r;
-            rp += 2;
-            hash = 0;
+            int oldrepr = context->rp, r;
+            context->rp += 2;
+            context->hash = 0;
 
             // решетка на 1 месте -- значит, ключевое слово препроцессора
             do
             {
 
-                hash += curchar;
-                reprtab[rp++] = curchar;
-                nextch();
-            } while (letter() || digit());
+                context->hash += context->curchar;
+                context->reprtab[context->rp++] = context->curchar;
+                nextch(context);
+            } while (letter(context) || digit(context));
 
-            hash &= 255;
-            reprtab[rp++] = 0;
-            r = hashtab[hash];
+            context->hash &= 255;
+            context->reprtab[context->rp++] = 0;
+            r = context->hashtab[context->hash];
             if (r)
             {
                 do
                 {
-                    if (equal(r, oldrepr))
+                    if (equal(context, r, oldrepr))
                     {
-                        rp = oldrepr;
-                        return (reprtab[r + 1] < 0) ? reprtab[r + 1]
-                                                    : (repr = r, IDENT);
+                        context->rp = oldrepr;
+                        return (context->reprtab[r + 1] < 0) ? context->reprtab[r + 1]
+                                                    : (context->repr = r, IDENT);
                     }
                     else
-                        r = reprtab[r];
+                        r = context->reprtab[r];
                 } while (r);
             }
-            reprtab[oldrepr] = hashtab[hash];
-            repr = hashtab[hash] = oldrepr;
-            reprtab[repr + 1] = (keywordsnum)
-                                    ? -((++keywordsnum - 2) / 4)
+            context->reprtab[oldrepr] = context->hashtab[context->hash];
+            context->repr = context->hashtab[context->hash] = oldrepr;
+            context->reprtab[context->repr + 1] = (context->keywordsnum)
+                                    ? -((++context->keywordsnum - 2) / 4)
                                     : 1; // 0 - только MAIN, < 0 - ключевые
                                          // слова, 1 - обычные иденты
             return IDENT;
         }
         else
         {
-            printf("плохой символ %c %i\n", curchar, curchar);
-            nextch();
+            printf("плохой символ %c %i\n", context->curchar, context->curchar);
+            nextch(context);
             exit(10);
         }
     }
 }
 
-int scaner()
+int scaner(ruc_context *context)
 {
-    cur = next;
-    next = scan();
+    context->cur = context->next;
+    context->next = scan(context);
     //    if(kw)
-    //        printf("scaner cur %i next %i repr %i\n", cur, next, repr);
-    return cur;
+    //        printf("scaner context->cur %i context->next %i repr %i\n", context->cur, context->next, repr);
+    return context->cur;
 }

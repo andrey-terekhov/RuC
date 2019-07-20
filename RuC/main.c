@@ -19,107 +19,78 @@ const char * name =
 #include <stdlib.h>
 #include <errno.h>
 #include "Defs.h"
+#include "context.h"
 
-// Определение глобальных переменных
+extern void preprocess_file(ruc_context *context);
 
-FILE *input, *output;
-double numdouble;
-int line=0, mline = 0, charnum=1, m_charnum = 1, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef = 0;
-struct {int first; int second;} numr;
-int source[SOURCESIZE], lines[LINESSIZE];
-int before_source[SOURCESIZE], mlines[LINESSIZE], m_conect_lines[LINESSIZE];
-int nextchar, curchar, func_def;
-int hashtab[256], reprtab[MAXREPRTAB], rp = 1, identab[MAXIDENTAB], id = 2,
-    modetab[MAXMODETAB], md = 1, startmode = 1;
-int stack[100], stackop[100], stackoperands[100], stacklog[100], ansttype,
-    sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg=-1, displ=-3, maxdispl = 3, maxdisplg = 3, type,
-    op = 0, inass = 0, firstdecl;
-int iniprocs[INIPROSIZE], procd = 1, arrdim, arrelemlen, was_struct_with_arr, usual;
-int instring = 0, inswitch = 0, inloop = 0, lexstr[MAXSTRINGL+1];
-int tree[MAXTREESIZE], tc=0, mtree[MAXTREESIZE], mtc=0,
-    mem[MAXMEMSIZE], pc=4, functions[FUNCSIZE], funcnum = 2, functype, kw = 0, blockflag = 1,
-    entry, wasmain = 0, wasret, wasdefault, notrobot = 1, prep_flag = 0;
-int adcont, adbreak, adcase, adandor, switchreg;
-int predef[FUNCSIZE], prdf = -1, emptyarrdef;
-int gotost[1000], pgotost;
-int anst, anstdispl, ansttype, leftansttype = -1;         // anst = VAL  - значение на стеке
-int g, l, x, iniproc;                                     // anst = ADDR - на стеке адрес значения
-                                                          // anst = IDENT- значение в статике, в anstdisl смещение от l или g
-                                                          // в ansttype всегда тип возвращаемого значения
-// если значение указателя, адрес массива или строки лежит на верхушке стека, то это VAL, а не ADDR
+extern void tablesandcode(ruc_context *context);
+extern void tablesandtree(ruc_context *context);
+extern void import(ruc_context *context);
+extern int  getnext(ruc_context *context);
+extern int  nextch(ruc_context *context);
+extern int  scan(ruc_context *context);
+extern void error(ruc_context *context, int ernum);
+extern void codegen(ruc_context *context);
+extern void mipsopt(ruc_context *context);
+extern void mipsgen(ruc_context *context);
+extern void ext_decl(ruc_context *context);
 
-int bad_printf_placeholder = 0;
-
-extern void preprocess_file();
-
-extern void tablesandcode();
-extern void tablesandtree();
-extern void import();
-extern int  getnext();
-extern int  nextch();
-extern int  scan();
-extern void error(int ernum);
-extern void codegen();
-extern void mipsopt();
-extern void mipsgen();
-extern void ext_decl();
-
-int toreprtab(char str[])
+int toreprtab(ruc_context *context, char str[])
 {
-    int i, oldrepr = rp;
-    hash = 0;
-    rp += 2;
+    int i, oldrepr = context->rp;
+    context->hash = 0;
+    context->rp += 2;
     for (i=0; str[i] != 0; i++)
     {
-        hash += str[i];
-        reprtab[rp++] = str[i];
+        context->hash += str[i];
+        context->reprtab[context->rp++] = str[i];
     }
-    hash &= 255;
-    reprtab[rp++] = 0;
-    reprtab[oldrepr] = hashtab[hash] ;
-    reprtab[oldrepr+1] = 1;
-    return hashtab[hash] = oldrepr;
+    context->hash &= 255;
+    context->reprtab[context->rp++] = 0;
+    context->reprtab[oldrepr] = context->hashtab[context->hash] ;
+    context->reprtab[oldrepr+1] = 1;
+    return context->hashtab[context->hash] = oldrepr;
 }
 
 /* Первичная инициализация глобальных объектов */
-void init()
+void init(ruc_context *context)
 {
-    memset(hashtab, 0, sizeof(hashtab));
+    memset(context->hashtab, 0, sizeof(context->hashtab));
 }
 
 /* Инициализация modetab */
 void
-init_modetab()
+init_modetab(ruc_context *context)
 {
     // занесение в modetab описателя struct {int numTh; int inf; }
-    modetab[1] = 0;
-    modetab[2] = MSTRUCT;
-    modetab[3] = 2;
-    modetab[4] = 4;
-    modetab[5] = modetab[7] = LINT;
-    modetab[6] = toreprtab("numTh");
-    modetab[8] = toreprtab("data");
+    context->modetab[1] = 0;
+    context->modetab[2] = MSTRUCT;
+    context->modetab[3] = 2;
+    context->modetab[4] = 4;
+    context->modetab[5] = context->modetab[7] = LINT;
+    context->modetab[6] = toreprtab(context, "numTh");
+    context->modetab[8] = toreprtab(context, "data");
 
     // занесение в modetab описателя функции void t_msg_send(struct msg_info m)
-    modetab[9] = 1;
-    modetab[10] = MFUNCTION;
-    modetab[11] = LVOID;
-    modetab[12] = 1;
-    modetab[13] = 2;
+    context->modetab[9] = 1;
+    context->modetab[10] = MFUNCTION;
+    context->modetab[11] = LVOID;
+    context->modetab[12] = 1;
+    context->modetab[13] = 2;
 
     // занесение в modetab описателя функции void* interpreter(void* n)
-    modetab[14] = 9;
-    modetab[15] = MFUNCTION;
-    modetab[16] = LVOIDASTER;
-    modetab[17] = 1;
-    modetab[18] = LVOIDASTER;
-    modetab[19] = startmode = 14;
-    md = 19;
-    keywordsnum = 0;
-    lines[line = 1] = 1;
-    charnum = 1;
-    kw = 1;
-    tc = 0;
+    context->modetab[14] = 9;
+    context->modetab[15] = MFUNCTION;
+    context->modetab[16] = LVOIDASTER;
+    context->modetab[17] = 1;
+    context->modetab[18] = LVOIDASTER;
+    context->modetab[19] = context->startmode = 14;
+    context->md = 19;
+    context->keywordsnum = 0;
+    context->lines[context->line = 1] = 1;
+    context->charnum = 1;
+    context->kw = 1;
+    context->tc = 0;
 }
 
 typedef enum ruc_io_type {
@@ -128,14 +99,14 @@ typedef enum ruc_io_type {
 } ruc_io_type;
 
 static FILE **
-io_type2file(ruc_io_type type)
+io_type2file(ruc_context *context, ruc_io_type type)
 {
     switch (type)
     {
         case IO_TYPE_INPUT:
-            return &input;
+            return &context->input;
         case IO_TYPE_OUTPUT:
-            return &output;
+            return &context->output;
         default:
             return NULL;
     }
@@ -155,10 +126,10 @@ io_type2access_mask(ruc_io_type type)
 }
 
 void
-attach_io(const char *path, ruc_io_type type)
+attach_io(ruc_context *context, const char *path, ruc_io_type type)
 {
     FILE *f = fopen(path, io_type2access_mask(type));
-    FILE **target = io_type2file(type);
+    FILE **target = io_type2file(context, type);
 
     if (f == NULL)
     {
@@ -173,9 +144,9 @@ attach_io(const char *path, ruc_io_type type)
 }
 
 void
-detach_io(ruc_io_type type)
+detach_io(ruc_context *context, ruc_io_type type)
 {
-    FILE **f = io_type2file(type);
+    FILE **f = io_type2file(context, type);
 
     if (*f != NULL)
         fclose(*f);
@@ -185,101 +156,112 @@ detach_io(ruc_io_type type)
 
 /* Занесение ключевых слов в reprtab */
 void
-read_keywords(const char *path)
+read_keywords(ruc_context *context, const char *path)
 {
-    attach_io(path, IO_TYPE_INPUT);
+    attach_io(context, path, IO_TYPE_INPUT);
 
-    keywordsnum = 1;
-    getnext();
-    nextch();
-    while (scan() != LEOF)   // чтение ключевых слов
+    context->keywordsnum = 1;
+    getnext(context);
+    nextch(context);
+    while (scan(context) != LEOF)   // чтение ключевых слов
         ;
 
-    detach_io(IO_TYPE_INPUT);
+    detach_io(context, IO_TYPE_INPUT);
 }
 
 /* Вывод таблиц и дерева */
 void
-output_tables_and_tree(const char *path)
+output_tables_and_tree(ruc_context *context, const char *path)
 {
-    attach_io(path, IO_TYPE_OUTPUT);
+    attach_io(context, path, IO_TYPE_OUTPUT);
 
-    getnext();
-    nextch();
-    next = scan();
+    getnext(context);
+    nextch(context);
+    context->next = scan(context);
 
-    ext_decl();                       //   генерация дерева
+    ext_decl(context);                       //   генерация дерева
 
-    lines[line + 1] = charnum;
-    tablesandtree();
-    detach_io(IO_TYPE_OUTPUT);
+    context->lines[context->line + 1] = context->charnum;
+    tablesandtree(context);
+    detach_io(context, IO_TYPE_OUTPUT);
 }
 
 /* Генерация кодов */
 void
-output_codes(const char *path)
+output_codes(ruc_context *context, const char *path)
 {
-    attach_io(path, IO_TYPE_OUTPUT);
-    codegen();
-    tablesandcode();
-    detach_io(IO_TYPE_OUTPUT);
+    attach_io(context, path, IO_TYPE_OUTPUT);
+    codegen(context);
+    tablesandcode(context);
+    detach_io(context, IO_TYPE_OUTPUT);
 }
 
 /* Вывод таблиц в файл */
 void
-output_export(const char *path)
+output_export(ruc_context *context, const char *path)
 {
     int i;
 
-    attach_io(path, IO_TYPE_OUTPUT);
-    fprintf(output, "%i %i %i %i %i %i %i\n", pc, funcnum, id, rp, md, maxdisplg, wasmain);
+    attach_io(context, path, IO_TYPE_OUTPUT);
+    fprintf(context->output, "%i %i %i %i %i %i %i\n",
+            context->pc,
+            context->funcnum,
+            context->id,
+            context->rp,
+            context->md,
+            context->maxdisplg,
+            context->wasmain);
 
-    for (i=0; i<pc; i++)
-        fprintf(output, "%i ", mem[i]);
-    fprintf(output, "\n");
+    for (i = 0; i < context->pc; i++)
+        fprintf(context->output, "%i ", context->mem[i]);
+    fprintf(context->output, "\n");
 
-    for (i=0; i<funcnum; i++)
-        fprintf(output, "%i ", functions[i]);
-    fprintf(output, "\n");
+    for (i = 0; i < context->funcnum; i++)
+        fprintf(context->output, "%i ", context->functions[i]);
+    fprintf(context->output, "\n");
 
-    for (i=0; i<id; i++)
-        fprintf(output, "%i ", identab[i]);
-    fprintf(output, "\n");
+    for (i = 0; i < context->id; i++)
+        fprintf(context->output, "%i ", context->identab[i]);
+    fprintf(context->output, "\n");
 
-    for (i=0; i<rp; i++)
-        fprintf(output, "%i ", reprtab[i]);
+    for (i = 0; i < context->rp; i++)
+        fprintf(context->output, "%i ", context->reprtab[i]);
 
-    for (i=0; i<md; i++)
-        fprintf(output, "%i ", modetab[i]);
-    fprintf(output, "\n");
+    for (i = 0; i < context->md; i++)
+        fprintf(context->output, "%i ", context->modetab[i]);
+    fprintf(context->output, "\n");
 
-    detach_io(IO_TYPE_OUTPUT);
+    detach_io(context, IO_TYPE_OUTPUT);
 }
 
 int main(int argc, const char * argv[])
 {
-    init();
-    read_keywords("keywords.txt");
+    ruc_context context;
+
+    ruc_context_init(&context);
+
+    init(&context);
+    read_keywords(&context, "keywords.txt");
 
     // Открытие исходного текста
-    attach_io(argc > 1 ? argv[1] : name, IO_TYPE_INPUT);
+    attach_io(&context, argc > 1 ? argv[1] : name, IO_TYPE_INPUT);
 
     // Препроцессинг в файл macro.txt
-    attach_io("macro.txt", IO_TYPE_OUTPUT);
-    init_modetab();
+    attach_io(&context, "macro.txt", IO_TYPE_OUTPUT);
+    init_modetab(&context);
 
     printf("\nИсходный текст:\n \n");
-    preprocess_file();                //   макрогенерация
 
-    detach_io(IO_TYPE_OUTPUT);
-    detach_io(IO_TYPE_INPUT);
+    preprocess_file(&context);                //   макрогенерация
 
-    attach_io("macro.txt", IO_TYPE_INPUT);
-    output_tables_and_tree("tree.txt");
-    output_codes("codes.txt");
-    output_export("export.txt");
+    detach_io(&context, IO_TYPE_OUTPUT);
+    detach_io(&context, IO_TYPE_INPUT);
 
-    detach_io(IO_TYPE_INPUT);
+    attach_io(&context, "macro.txt", IO_TYPE_INPUT);
+    output_tables_and_tree(&context, "tree.txt");
+    output_codes(&context, "codes.txt");
+    output_export(&context, "export.txt");
+    detach_io(&context, IO_TYPE_INPUT);
 
     return 0;
 }

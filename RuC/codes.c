@@ -13,972 +13,972 @@
 
 extern void fprintf_char(FILE *f, int wchar);
 
-void tablesandtree()
+void tablesandtree(ruc_context *context)
 {
     int i=0, j;
     
-    fprintf(output, "\n%s\n", "source");
-    for (i=1; i<line; i++)
+    fprintf(context->output, "\n%s\n", "source");
+    for (i=1; i<context->line; i++)
     {
-        fprintf(output, "line %i) ", i);
-        for (j=lines[i]; j<lines[i+1]; j++)
+        fprintf(context->output, "line %i) ", i);
+        for (j=context->lines[i]; j<context->lines[i+1]; j++)
         {
-            fprintf_char(output, source[j]);
+            fprintf_char(context->output, context->source[j]);
         }
     }
-    fprintf(output, "\n");
+    fprintf(context->output, "\n");
     
-    fprintf(output, "\n%s\n", "identab");
+    fprintf(context->output, "\n%s\n", "identab");
     i = 2;
-    while (i < id)
+    while (i < context->id)
     {
         for (j=0; j<4; j++)
-            fprintf(output, "id %i) %i\n", i +j, identab[i+j]);
-        fprintf(output, "\n");
+            fprintf(context->output, "id %i) %i\n", i +j, context->identab[i+j]);
+        fprintf(context->output, "\n");
         i +=4;
     }
 /*
-	fprintf(output, "\n%s\n", "repr");
+	fprintf(context->output, "\n%s\n", "repr");
 	for (i = 1206; i <= rp; i++)
-		fprintf(output, "rp %i) %i\n", i, reprtab[i]);
+		fprintf(context->output, "rp %i) %i\n", i, reprtab[i]);
  */
-    fprintf(output, "\n%s\n", "modetab");
-    for (i=0; i<md; i++)
-        fprintf(output, "md %i) %i\n", i, modetab[i]);
+    fprintf(context->output, "\n%s\n", "modetab");
+    for (i=0; i<context->md; i++)
+        fprintf(context->output, "md %i) %i\n", i, context->modetab[i]);
 /*
-    fprintf(output, "\n%s\n", "tree");
+    fprintf(context->output, "\n%s\n", "tree");
     for (i=0; i<=tc; i++)
-        fprintf(output, "tc %i) %i\n", i, tree[i]);
+        fprintf(context->output, "tc %i) %i\n", i, context->tree[i]);
 */
-    fprintf(output, "\n");
+    fprintf(context->output, "\n");
     i = 0;
-    while (i < tc)
+    while (i < context->tc)
     {
-        fprintf(output, "tc %i) ", i);
-        switch (tree[i++])
+        fprintf(context->output, "tc %i) ", i);
+        switch (context->tree[i++])
         {
             case TFuncdef:
-                fprintf(output, "TFuncdef funcn= %i maxdispl= %i\n", tree[i], tree[i+1]);
+                fprintf(context->output, "TFuncdef funcn= %i maxdispl= %i\n", context->tree[i], context->tree[i+1]);
 				i += 2;
                 break;
             case TDeclarr:
-                fprintf(output, "TDeclarr N= %i\n", tree[i++]);
+                fprintf(context->output, "TDeclarr N= %i\n", context->tree[i++]);
                 break;
             case TDeclid:
-                fprintf(output, "TDeclid displ= %i eltype= %i N= %i all= %i iniproc= %i, usual= %i instuct= %i\n",
-                        tree[i], tree[i+1], tree[i+2], tree[i+3], tree[i+4], tree[i+5], tree[i+6]);
+                fprintf(context->output, "TDeclid displ= %i eltype= %i N= %i all= %i iniproc= %i, usual= %i instuct= %i\n",
+                        context->tree[i], context->tree[i+1], context->tree[i+2], context->tree[i+3], context->tree[i+4], context->tree[i+5], context->tree[i+6]);
 				i += 7;
                 break;
             case TString:
-                fprintf(output, "TString n= %i\n", tree[i++]);
+                fprintf(context->output, "TString n= %i\n", context->tree[i++]);
                 break;
             case TCondexpr:
-                fprintf(output, "TCondexpr\n");
+                fprintf(context->output, "TCondexpr\n");
                 break;
             case TBegin:
-                fprintf(output, "TBegin\n");
+                fprintf(context->output, "TBegin\n");
                 break;
             case TEnd:
-                fprintf(output, "TEnd\n");
+                fprintf(context->output, "TEnd\n");
                 break;
             case TBeginit:
-                fprintf(output, "TBeginit n= %i\n", tree[i++]);
+                fprintf(context->output, "TBeginit n= %i\n", context->tree[i++]);
                 break;
             case TStructinit:
-                fprintf(output, "TStructinit n= %i\n", tree[i++]);
+                fprintf(context->output, "TStructinit n= %i\n", context->tree[i++]);
                 break;
              case TIf:
-                fprintf(output, "TIf %i\n", tree[i++]);
+                fprintf(context->output, "TIf %i\n", context->tree[i++]);
                 break;
             case TWhile:
-                fprintf(output, "TWhile\n");
+                fprintf(context->output, "TWhile\n");
                 break;
             case TDo:
-                fprintf(output, "TDo\n");
+                fprintf(context->output, "TDo\n");
                 break;
             case TFor:
-                fprintf(output, "TFor %i %i %i %i\n", tree[i], tree[i+1], tree[i+2], tree[i+3]);
+                fprintf(context->output, "TFor %i %i %i %i\n", context->tree[i], context->tree[i+1], context->tree[i+2], context->tree[i+3]);
 				i += 4;
                 break;
             case TSwitch:
-                fprintf(output, "TSwitch\n");
+                fprintf(context->output, "TSwitch\n");
                 break;
             case TCase:
-                fprintf(output, "TCase\n");
+                fprintf(context->output, "TCase\n");
                 break;
             case TDefault:
-                fprintf(output, "TDefault\n");
+                fprintf(context->output, "TDefault\n");
                 break;
             case TBreak:
-                fprintf(output, "TBreak\n");
+                fprintf(context->output, "TBreak\n");
                 break;
             case TContinue:
-                fprintf(output, "TContinue\n");
+                fprintf(context->output, "TContinue\n");
                 break;
             case TReturnvoid:
-                fprintf(output, "TReturn\n");
+                fprintf(context->output, "TReturn\n");
                 break;
             case TReturnval:
-                fprintf(output, "TReturnval %i\n", tree[i++]);
+                fprintf(context->output, "TReturnval %i\n", context->tree[i++]);
                 break;
             case TGoto:
-                fprintf(output, "TGoto %i\n", tree[i++]);
+                fprintf(context->output, "TGoto %i\n", context->tree[i++]);
                 break;
             case TIdent:
-                fprintf(output, "TIdent %i\n", tree[i++]);
+                fprintf(context->output, "TIdent %i\n", context->tree[i++]);
                 break;
             case TIdenttoval:
-                fprintf(output, "TIdenttoval %i\n", tree[i++]);
+                fprintf(context->output, "TIdenttoval %i\n", context->tree[i++]);
                 break;
             case TIdenttovald:
-                fprintf(output, "TIdenttovald %i\n", tree[i++]);
+                fprintf(context->output, "TIdenttovald %i\n", context->tree[i++]);
                 break;
             case TFunidtoval:
-                fprintf(output, "TFunidtoval %i\n", tree[i++]);
+                fprintf(context->output, "TFunidtoval %i\n", context->tree[i++]);
                 break;
             case TIdenttoaddr:
-                fprintf(output, "TIdenttoaddr %i\n", tree[i++]);
+                fprintf(context->output, "TIdenttoaddr %i\n", context->tree[i++]);
                 break;
             case TAddrtoval:
-                fprintf(output, "TAddrtoval\n");
+                fprintf(context->output, "TAddrtoval\n");
                 break;
             case TAddrtovald:
-                fprintf(output, "TAddrtovald\n");
+                fprintf(context->output, "TAddrtovald\n");
                 break;
             case TExprend:
-                fprintf(output, "TExprend\n");
+                fprintf(context->output, "TExprend\n");
                 break;
             case TConst:
-                fprintf(output, "TConst %i\n", tree[i++]);
+                fprintf(context->output, "TConst %i\n", context->tree[i++]);
                 break;
             case TConstd:
-                memcpy(&numdouble, &tree[i], sizeof(double));
+                memcpy(&context->numdouble, &context->tree[i], sizeof(double));
                 i += 2;
-                fprintf(output, "TConstd %f\n", numdouble);
+                fprintf(context->output, "TConstd %f\n", context->numdouble);
                 break;
             case TSliceident:
-                fprintf(output, "TSliceident displ= %i type= %i\n", tree[i], tree[i+1]);
+                fprintf(context->output, "TSliceident displ= %i type= %i\n", context->tree[i], context->tree[i+1]);
                 i += 2;
                 break;
             case TSlice:
-                fprintf(output, "TSlice elem_type= %i\n", tree[i++]);
+                fprintf(context->output, "TSlice elem_type= %i\n", context->tree[i++]);
                 break;
 			case TSelect:
-				fprintf(output, "TSelect displ= %i\n", tree[i++]);
+				fprintf(context->output, "TSelect displ= %i\n", context->tree[i++]);
 				break;
             case NOP:
-                fprintf(output, "NOP\n");
+                fprintf(context->output, "NOP\n");
                 break;
             case ADLOGAND:
-                fprintf(output, "ADLOGAND addr= %i\n", tree[i++]);
+                fprintf(context->output, "ADLOGAND addr= %i\n", context->tree[i++]);
                 break;
             case ADLOGOR:
-                fprintf(output, "ADLOGOR addr= %i\n", tree[i++]);
+                fprintf(context->output, "ADLOGOR addr= %i\n", context->tree[i++]);
                 break;
             case COPY00:
-                fprintf(output, "COPY00 %i ", tree[i++]);     // displleft
-                fprintf(output, "%i ", tree[i++]);            // displright
-                fprintf(output, "(%i)\n", tree[i++]);         // length
+                fprintf(context->output, "COPY00 %i ", context->tree[i++]);     // displleft
+                fprintf(context->output, "%i ", context->tree[i++]);            // displright
+                fprintf(context->output, "(%i)\n", context->tree[i++]);         // length
                 break;
             case COPY01:
-                fprintf(output, "COPY01 %i ", tree[i++]);     // displleft
-                fprintf(output, "(%i)\n", tree[i++]);         // length
+                fprintf(context->output, "COPY01 %i ", context->tree[i++]);     // displleft
+                fprintf(context->output, "(%i)\n", context->tree[i++]);         // length
                 break;
             case COPY10:
-                fprintf(output, "COPY10 %i ", tree[i++]);     // displright
-                fprintf(output, "(%i)\n", tree[i++]);         // length
+                fprintf(context->output, "COPY10 %i ", context->tree[i++]);     // displright
+                fprintf(context->output, "(%i)\n", context->tree[i++]);         // length
                 break;
             case COPY11:
-                fprintf(output, "COPY11 %i\n", tree[i++]);     // length
+                fprintf(context->output, "COPY11 %i\n", context->tree[i++]);     // length
                 break;
             case COPY0ST:
-                fprintf(output, "COPY0ST %i ", tree[i++]);     // displleft
-                fprintf(output, "(%i)\n", tree[i++]);          // length
+                fprintf(context->output, "COPY0ST %i ", context->tree[i++]);     // displleft
+                fprintf(context->output, "(%i)\n", context->tree[i++]);          // length
                 break;
             case COPY1ST:
-                fprintf(output, "COPY1ST (%i)\n", tree[i++]);  // length
+                fprintf(context->output, "COPY1ST (%i)\n", context->tree[i++]);  // length
                 break;
             case COPY0STASS:
-                fprintf(output, "COPY0STASS %i ", tree[i++]);  // displleft
-                fprintf(output, "(%i)\n", tree[i++]);          // length
+                fprintf(context->output, "COPY0STASS %i ", context->tree[i++]);  // displleft
+                fprintf(context->output, "(%i)\n", context->tree[i++]);          // length
                 break;
             case COPY1STASS:
-                fprintf(output, "COPY1STASS (%i)\n", tree[i++]);// length
+                fprintf(context->output, "COPY1STASS (%i)\n", context->tree[i++]);// length
                 break;
             case COPYST:
-                fprintf(output, "COPYST %i ", tree[i++]);       // displ
-                fprintf(output, "(%i)", tree[i++]);             // length
-                fprintf(output, "(%i)\n", tree[i++]);           // length1
+                fprintf(context->output, "COPYST %i ", context->tree[i++]);       // displ
+                fprintf(context->output, "(%i)", context->tree[i++]);             // length
+                fprintf(context->output, "(%i)\n", context->tree[i++]);           // length1
                 break;
 
             case TCall1:
-                fprintf(output, "TCall1 %i\n", tree[i++]);
+                fprintf(context->output, "TCall1 %i\n", context->tree[i++]);
                 break;
             case TCall2:
-                fprintf(output, "TCall2 %i\n", tree[i++]);
+                fprintf(context->output, "TCall2 %i\n", context->tree[i++]);
                 break;
             case TLabel:
-                fprintf(output, "TLabel %i\n", tree[i++]);
+                fprintf(context->output, "TLabel %i\n", context->tree[i++]);
                 break;
             case TStructbeg:
-                fprintf(output, "TStructbeg %i\n", tree[i++]);
+                fprintf(context->output, "TStructbeg %i\n", context->tree[i++]);
                 break;
             case TStructend:
-                fprintf(output, "TStructend %i\n", tree[i++]);
+                fprintf(context->output, "TStructend %i\n", context->tree[i++]);
                 break;
             case TPrint:
-                fprintf(output, "TPrint %i\n", tree[i++]);
+                fprintf(context->output, "TPrint %i\n", context->tree[i++]);
                 break;
             case TPrintid:
-                fprintf(output, "TPrintid %i\n", tree[i++]);
+                fprintf(context->output, "TPrintid %i\n", context->tree[i++]);
                 break;
             case TPrintf:
-                fprintf(output, "TPrintf %i\n", tree[i++]);
+                fprintf(context->output, "TPrintf %i\n", context->tree[i++]);
                 break;
             case TGetid:
-                fprintf(output, "TGetid %i\n", tree[i++]);
+                fprintf(context->output, "TGetid %i\n", context->tree[i++]);
                 break;
             case SETMOTORC:
-                fprintf(output, "Setmotor\n");
+                fprintf(context->output, "Setmotor\n");
                 break;
             case CREATEC:
-                fprintf(output, "TCREATE\n");
+                fprintf(context->output, "TCREATE\n");
                 break;
             case CREATEDIRECTC:
-                fprintf(output, "TCREATEDIRECT\n");
+                fprintf(context->output, "TCREATEDIRECT\n");
                 break;
             case EXITC:
-                fprintf(output, "TEXIT\n");
+                fprintf(context->output, "TEXIT\n");
                 break;
             case EXITDIRECTC:
-                fprintf(output, "TEXITDIRECT\n");
+                fprintf(context->output, "TEXITDIRECT\n");
                 break;
             case MSGSENDC:
-                fprintf(output, "TMSGSEND\n");
+                fprintf(context->output, "TMSGSEND\n");
                 break;
             case MSGRECEIVEC:
-                fprintf(output, "TMSGRECEIVE\n");
+                fprintf(context->output, "TMSGRECEIVE\n");
                 break;
             case JOINC:
-                fprintf(output, "TJOIN\n");
+                fprintf(context->output, "TJOIN\n");
                 break;
             case SLEEPC:
-                fprintf(output, "TSLEEP\n");
+                fprintf(context->output, "TSLEEP\n");
                 break;
             case SEMCREATEC:
-                fprintf(output, "TSEMCREATE\n");
+                fprintf(context->output, "TSEMCREATE\n");
                 break;
             case SEMWAITC:
-                fprintf(output, "TSEMWAIT\n");
+                fprintf(context->output, "TSEMWAIT\n");
                 break;
             case SEMPOSTC:
-                fprintf(output, "TSEMPOST\n");
+                fprintf(context->output, "TSEMPOST\n");
                 break;
             case INITC:
-                fprintf(output, "INITC\n");
+                fprintf(context->output, "INITC\n");
                 break;
             case DESTROYC:
-                fprintf(output, "DESTROYC\n");
+                fprintf(context->output, "DESTROYC\n");
                 break;
             case GETNUMC:
-                fprintf(output, "GETNUMC\n");
+                fprintf(context->output, "GETNUMC\n");
                 break;
 
 
 
             default:
-                fprintf(output, "TOper %i\n", tree[i-1]);
+                fprintf(context->output, "TOper %i\n", context->tree[i-1]);
         }
     }
 }
 
-void tablesandcode()
+void tablesandcode(ruc_context *context)
 {
     int i=0, j;
     
-    fprintf(output, "\n%s\n", "source");
-    for (i=1; i<line; i++)
+    fprintf(context->output, "\n%s\n", "source");
+    for (i = 1; i < context->line; i++)
     {
-        fprintf(output, "line %i) ", i);
-        for (j=lines[i]; j<lines[i+1]; j++)
+        fprintf(context->output, "line %i) ", i);
+        for (j=context->lines[i]; j<context->lines[i+1]; j++)
         {
-            fprintf_char(output, source[j]);
+            fprintf_char(context->output, context->source[j]);
         }
     }
     
-    fprintf(output, "\n\n%s\n", "functions");
-    for (i=1; i<=funcnum; i++)
-        fprintf(output, "fun %i) %i\n", i, functions[i]);
+    fprintf(context->output, "\n\n%s\n", "functions");
+    for (i = 1; i <= context->funcnum; i++)
+        fprintf(context->output, "fun %i) %i\n", i, context->functions[i]);
     
-    fprintf(output, "\n%s\n", "iniprocs");
-    for (i=1; i<=procd; i++)
-        fprintf(output, "inipr %i) %i\n", i, iniprocs[i]);
+    fprintf(context->output, "\n%s\n", "iniprocs");
+    for (i = 1; i <= context->procd; i++)
+        fprintf(context->output, "inipr %i) %i\n", i, context->iniprocs[i]);
     
-    fprintf(output, "\n%s\n", "mem");
+    fprintf(context->output, "\n%s\n", "mem");
     i = 0;
-    while (i < pc)
+    while (i < context->pc)
     {
-        fprintf(output, "pc %i) ", i);
-        switch (mem[i++])
+        fprintf(context->output, "pc %i) ", i);
+        switch (context->mem[i++])
         {
             case PRINT:
-                fprintf(output, "PRINT %i\n", mem[i++]);
+                fprintf(context->output, "PRINT %i\n", context->mem[i++]);
                 break;
             case PRINTID:
-                fprintf(output, "PRINTID %i\n", mem[i++]);
+                fprintf(context->output, "PRINTID %i\n", context->mem[i++]);
                 break;
             case PRINTF:
-                fprintf(output, "PRINTF %i\n", mem[i++]);
+                fprintf(context->output, "PRINTF %i\n", context->mem[i++]);
                 break;
             case GETID:
-                fprintf(output, "GETID %i\n", mem[i++]);
+                fprintf(context->output, "GETID %i\n", context->mem[i++]);
                 break;
             case SETMOTORC:
-                fprintf(output, "SETMOTOR\n");
+                fprintf(context->output, "SETMOTOR\n");
                 break;
             case GETDIGSENSORC:
-                fprintf(output, "GETDIGSENSOR\n");
+                fprintf(context->output, "GETDIGSENSOR\n");
                 break;
             case GETANSENSORC:
-                fprintf(output, "GETANSENSOR\n");
+                fprintf(context->output, "GETANSENSOR\n");
                 break;
             case VOLTAGEC:
-                fprintf(output, "VOLTAGE\n");
+                fprintf(context->output, "VOLTAGE\n");
                 break;
             case CREATEC:
-                fprintf(output, "TCREATE\n");
+                fprintf(context->output, "TCREATE\n");
                 break;
             case CREATEDIRECTC:
-                fprintf(output, "TCREATEDIRECT\n");
+                fprintf(context->output, "TCREATEDIRECT\n");
                 break;
             case MSGSENDC:
-                fprintf(output, "TMSGSEND\n");
+                fprintf(context->output, "TMSGSEND\n");
                 break;
             case EXITC:
-                fprintf(output, "TEXIT\n");
+                fprintf(context->output, "TEXIT\n");
                 break;
             case EXITDIRECTC:
-                fprintf(output, "TEXITDIRECT\n");
+                fprintf(context->output, "TEXITDIRECT\n");
                 break;
             case MSGRECEIVEC:
-                fprintf(output, "TMSGRECEIVE\n");
+                fprintf(context->output, "TMSGRECEIVE\n");
                 break;
             case JOINC:
-                fprintf(output, "TJOIN\n");
+                fprintf(context->output, "TJOIN\n");
                 break;
             case SLEEPC:
-                fprintf(output, "TSLEEP\n");
+                fprintf(context->output, "TSLEEP\n");
                 break;
             case SEMCREATEC:
-                fprintf(output, "TSEMCREATE\n");
+                fprintf(context->output, "TSEMCREATE\n");
                 break;
             case SEMWAITC:
-                fprintf(output, "TSEMWAIT\n");
+                fprintf(context->output, "TSEMWAIT\n");
                 break;
             case SEMPOSTC:
-                fprintf(output, "TSEMPOST\n");
+                fprintf(context->output, "TSEMPOST\n");
                 break;
             case TINIT:
-                fprintf(output, "TINIT\n");
+                fprintf(context->output, "TINIT\n");
                 break;
             case TDESTROY:
-                fprintf(output, "TDESTROY\n");
+                fprintf(context->output, "TDESTROY\n");
                 break;
             case GETNUMC:
-                fprintf(output, "GETNUM\n");
+                fprintf(context->output, "GETNUM\n");
                 break;
 
             case ABSC:
-                fprintf(output, "ABS\n");
+                fprintf(context->output, "ABS\n");
                 break;
             case ABSIC:
-                fprintf(output, "ABSI\n");
+                fprintf(context->output, "ABSI\n");
                 break;
             case SQRTC:
-                fprintf(output, "SQRT\n");
+                fprintf(context->output, "SQRT\n");
                 break;
             case EXPC:
-                fprintf(output, "EXP\n");
+                fprintf(context->output, "EXP\n");
                 break;
             case SINC:
-                fprintf(output, "SIN\n");
+                fprintf(context->output, "SIN\n");
                 break;
             case COSC:
-                fprintf(output, "COS\n");
+                fprintf(context->output, "COS\n");
                 break;
             case LOGC:
-                fprintf(output, "LOG\n");
+                fprintf(context->output, "LOG\n");
                 break;
             case LOG10C:
-                fprintf(output, "LOG10\n");
+                fprintf(context->output, "LOG10\n");
                 break;
             case ASINC:
-                fprintf(output, "ASIN\n");
+                fprintf(context->output, "ASIN\n");
                 break;
             case RANDC:
-                fprintf(output, "RAND\n");
+                fprintf(context->output, "RAND\n");
                 break;
             case ROUNDC:
-                fprintf(output, "ROUND\n");
+                fprintf(context->output, "ROUND\n");
                 break;
 
             case STRCPYC:
-                fprintf(output, "STRCPY\n");
+                fprintf(context->output, "STRCPY\n");
                 break;
             case STRNCPYC:
-                fprintf(output, "STRNCPY\n");
+                fprintf(context->output, "STRNCPY\n");
                 break;
             case STRCATC:
-                fprintf(output, "STRCAT\n");
+                fprintf(context->output, "STRCAT\n");
                 break;
             case STRNCATC:
-                fprintf(output, "STRNCAT\n");
+                fprintf(context->output, "STRNCAT\n");
                 break;
             case STRCMPC:
-                fprintf(output, "STRCMP\n");
+                fprintf(context->output, "STRCMP\n");
                 break;
             case STRNCMPC:
-                fprintf(output, "STRNCMP\n");
+                fprintf(context->output, "STRNCMP\n");
                 break;
             case STRSTRC:
-                fprintf(output, "STRSTR\n");
+                fprintf(context->output, "STRSTR\n");
                 break;
             case STRLENC:
-                fprintf(output, "STRLENC\n");
+                fprintf(context->output, "STRLENC\n");
                 break;
             
             case BEGINIT:
-                fprintf(output, "BEGINIT n= %i\n", mem[i++]);
+                fprintf(context->output, "BEGINIT n= %i\n", context->mem[i++]);
                 break;
             case STRUCTWITHARR:
-                fprintf(output, "STRUCTWITHARR displ= %i ", mem[i++]);
-                fprintf(output, "iniproc= %i\n", mem[i++]);
+                fprintf(context->output, "STRUCTWITHARR displ= %i ", context->mem[i++]);
+                fprintf(context->output, "iniproc= %i\n", context->mem[i++]);
                 break;
             case DEFARR:
-                fprintf(output, "DEFARR N= %i ", mem[i++]);    // N
-				fprintf(output, "elem_len= %i ", mem[i++]);    // elem length
-				fprintf(output, "displ= %i ", mem[i++]);       // displ
-                fprintf(output, "iniproc= %i ", mem[i++]);     // iniproc
-                fprintf(output, "usual= %i ", mem[i++]);       // usual
-                fprintf(output, "all= %i ", mem[i++]);         // all
-                fprintf(output, "instruct= %i\n", mem[i++]);   // instruct
+                fprintf(context->output, "DEFARR N= %i ", context->mem[i++]);    // N
+				fprintf(context->output, "elem_len= %i ", context->mem[i++]);    // elem length
+				fprintf(context->output, "displ= %i ", context->mem[i++]);       // displ
+                fprintf(context->output, "iniproc= %i ", context->mem[i++]);     // iniproc
+                fprintf(context->output, "usual= %i ", context->mem[i++]);       // usual
+                fprintf(context->output, "all= %i ", context->mem[i++]);         // all
+                fprintf(context->output, "instruct= %i\n", context->mem[i++]);   // instruct
                 break;
             case ARRINIT:
-                fprintf(output, "ARRINIT N= %i ", mem[i++]);
-                fprintf(output, "elem_len= %i ", mem[i++]);
-                fprintf(output, "displ= %i ", mem[i++]);
-                fprintf(output, "usual= %i\n", mem[i++]);
+                fprintf(context->output, "ARRINIT N= %i ", context->mem[i++]);
+                fprintf(context->output, "elem_len= %i ", context->mem[i++]);
+                fprintf(context->output, "displ= %i ", context->mem[i++]);
+                fprintf(context->output, "usual= %i\n", context->mem[i++]);
                 break;
 //            case STRUCTINIT:
-//                fprintf(output, "STRUCTINIT N= %i ", mem[i++]);
+//                fprintf(context->output, "STRUCTINIT N= %i ", context->mem[i++]);
 //            break;
             case NOP:
-                fprintf(output, "NOP\n");
+                fprintf(context->output, "NOP\n");
                 break;
             case LI:
-                fprintf(output, "LI %i\n", mem[i++]);
+                fprintf(context->output, "LI %i\n", context->mem[i++]);
                 break;
             case LID:
-                memcpy(&numdouble, &mem[i], sizeof(double));
+                memcpy(&context->numdouble, &context->mem[i], sizeof(double));
                 i += 2;
-                fprintf(output, "LID %.15f\n", numdouble);
+                fprintf(context->output, "LID %.15f\n", context->numdouble);
                 break;
             case LOAD:
-                fprintf(output, "LOAD %i\n", mem[i++]);
+                fprintf(context->output, "LOAD %i\n", context->mem[i++]);
                 break;
             case LOADD:
-                fprintf(output, "LOADD %i\n", mem[i++]);
+                fprintf(context->output, "LOADD %i\n", context->mem[i++]);
                 break;
             case LAT:
-                fprintf(output,"L@\n");
+                fprintf(context->output, "L@\n");
                 break;
             case LATD:
-                fprintf(output,"L@f\n");
+                fprintf(context->output, "L@f\n");
                 break;
             case LA:
-                fprintf(output, "LA %i\n", mem[i++]);
+                fprintf(context->output, "LA %i\n", context->mem[i++]);
                 break;
                 
             case LOGOR:
-                fprintf(output, "||\n");
+                fprintf(context->output, "||\n");
                 break;
             case LOGAND:
-                fprintf(output, "&&\n");
+                fprintf(context->output, "&&\n");
                 break;
             case ORASS:
-                fprintf(output, "|= %i\n", mem[i++]);
+                fprintf(context->output, "|= %i\n", context->mem[i++]);
                 break;
             case ORASSAT:
-                fprintf(output, "|=@\n");
+                fprintf(context->output, "|=@\n");
                 break;
             case ORASSV:
-                fprintf(output, "|=V %i\n", mem[i++]);
+                fprintf(context->output, "|=V %i\n", context->mem[i++]);
                 break;
             case ORASSATV:
-                fprintf(output, "|=@V\n");
+                fprintf(context->output, "|=@V\n");
                 break;
             case LOR:
-                fprintf(output, "|\n");
+                fprintf(context->output, "|\n");
                 break;
             case EXORASS:
-                fprintf(output, "^= %i\n", mem[i++]);
+                fprintf(context->output, "^= %i\n", context->mem[i++]);
                 break;
             case EXORASSAT:
-                fprintf(output, "^=@\n");
+                fprintf(context->output, "^=@\n");
                 break;
             case EXORASSV:
-                fprintf(output, "^=V %i\n", mem[i++]);
+                fprintf(context->output, "^=V %i\n", context->mem[i++]);
                 break;
             case EXORASSATV:
-                fprintf(output, "^=@V\n");
+                fprintf(context->output, "^=@V\n");
                 break;
             case LEXOR:
-                fprintf(output, "^\n");
+                fprintf(context->output, "^\n");
                 break;
             case ANDASS:
-                fprintf(output, "&= %i\n", mem[i++]);
+                fprintf(context->output, "&= %i\n", context->mem[i++]);
                 break;
             case ANDASSAT:
-                fprintf(output, "&=@\n");
+                fprintf(context->output, "&=@\n");
                 break;
             case ANDASSV:
-                fprintf(output, "&=V %i\n", mem[i++]);
+                fprintf(context->output, "&=V %i\n", context->mem[i++]);
                 break;
             case ANDASSATV:
-                fprintf(output, "&=@V\n");
+                fprintf(context->output, "&=@V\n");
                 break;
             case LAND:
-                fprintf(output, "&\n");
+                fprintf(context->output, "&\n");
                 break;
                 
             case EQEQ:
-                fprintf(output, "==\n");
+                fprintf(context->output, "==\n");
                 break;
             case NOTEQ:
-                fprintf(output, "!=\n");
+                fprintf(context->output, "!=\n");
                 break;
             case LLT:
-                fprintf(output, "<\n");
+                fprintf(context->output, "<\n");
                 break;
             case LGT:
-                fprintf(output, ">\n");
+                fprintf(context->output, ">\n");
                 break;
             case LLE:
-                fprintf(output, "<=\n");
+                fprintf(context->output, "<=\n");
                 break;
             case LGE:
-                fprintf(output, ">=\n");
+                fprintf(context->output, ">=\n");
                 break;
             case EQEQR:
-                fprintf(output, "==f\n");
+                fprintf(context->output, "==f\n");
                 break;
             case NOTEQR:
-                fprintf(output, "!=f\n");
+                fprintf(context->output, "!=f\n");
                 break;
             case LLTR:
-                fprintf(output, "<f\n");
+                fprintf(context->output, "<f\n");
                 break;
             case LGTR:
-                fprintf(output, ">f\n");
+                fprintf(context->output, ">f\n");
                 break;
             case LLER:
-                fprintf(output, "<=f\n");
+                fprintf(context->output, "<=f\n");
                 break;
             case LGER:
-                fprintf(output, ">=f\n");
+                fprintf(context->output, ">=f\n");
                 break;
                 
             case SHRASS:
-                fprintf(output, ">>= %i\n", mem[i++]);
+                fprintf(context->output, ">>= %i\n", context->mem[i++]);
                 break;
             case SHRASSAT:
-                fprintf(output, ">>=@\n");
+                fprintf(context->output, ">>=@\n");
                 break;
             case SHRASSV:
-                fprintf(output, ">>=V %i\n", mem[i++]);
+                fprintf(context->output, ">>=V %i\n", context->mem[i++]);
                 break;
             case SHRASSATV:
-                fprintf(output, ">>=@V\n");
+                fprintf(context->output, ">>=@V\n");
                 break;
             case LSHR:
-                fprintf(output, ">>\n");
+                fprintf(context->output, ">>\n");
                 break;
             case SHLASS:
-                fprintf(output, "<<= %i\n", mem[i++]);
+                fprintf(context->output, "<<= %i\n", context->mem[i++]);
                 break;
             case SHLASSAT:
-                fprintf(output, "<<=@\n");
+                fprintf(context->output, "<<=@\n");
                 break;
             case SHLASSV:
-                fprintf(output, "<<=V %i\n", mem[i++]);
+                fprintf(context->output, "<<=V %i\n", context->mem[i++]);
                 break;
             case SHLASSATV:
-                fprintf(output, "<<=@V\n");
+                fprintf(context->output, "<<=@V\n");
                 break;
             case LSHL:
-                fprintf(output, "<<\n");
+                fprintf(context->output, "<<\n");
                 break;
                 
             case ASS:
-                fprintf(output, "= %i\n", mem[i++]);
+                fprintf(context->output, "= %i\n", context->mem[i++]);
                 break;
             case ASSAT:
-                fprintf(output, "=@\n");
+                fprintf(context->output, "=@\n");
                 break;
             case ASSV:
-                fprintf(output, "=V %i\n", mem[i++]);
+                fprintf(context->output, "=V %i\n", context->mem[i++]);
                 break;
             case ASSATV:
-                fprintf(output, "=@V\n");
+                fprintf(context->output, "=@V\n");
                 break;
              
             case PLUSASS:
-                fprintf(output, "+= %i\n", mem[i++]);
+                fprintf(context->output, "+= %i\n", context->mem[i++]);
                 break;
             case PLUSASSAT:
-                fprintf(output, "+=@\n");
+                fprintf(context->output, "+=@\n");
                 break;
             case PLUSASSV:
-                fprintf(output, "+=V %i\n", mem[i++]);
+                fprintf(context->output, "+=V %i\n", context->mem[i++]);
                 break;
             case PLUSASSATV:
-                fprintf(output, "+=@V\n");
+                fprintf(context->output, "+=@V\n");
                 break;
             case LPLUS:
-                fprintf(output, "+\n");
+                fprintf(context->output, "+\n");
                 break;
                 
             case MINUSASS:
-                fprintf(output, "-= %i\n", mem[i++]);
+                fprintf(context->output, "-= %i\n", context->mem[i++]);
                 break;
             case MINUSASSAT:
-                fprintf(output, "-=@\n");
+                fprintf(context->output, "-=@\n");
                 break;
             case MINUSASSV:
-                fprintf(output, "-=V %i\n", mem[i++]);
+                fprintf(context->output, "-=V %i\n", context->mem[i++]);
                 break;
             case MINUSASSATV:
-                fprintf(output, "-=@V\n");
+                fprintf(context->output, "-=@V\n");
                 break;
             case LMINUS:
-                fprintf(output, "-\n");
+                fprintf(context->output, "-\n");
                 break;
                 
             case MULTASS:
-                fprintf(output, "*= %i\n", mem[i++]);
+                fprintf(context->output, "*= %i\n", context->mem[i++]);
                 break;
             case MULTASSAT:
-                fprintf(output, "*=@\n");
+                fprintf(context->output, "*=@\n");
                 break;
             case MULTASSV:
-                fprintf(output, "*=V %i\n", mem[i++]);
+                fprintf(context->output, "*=V %i\n", context->mem[i++]);
                 break;
             case MULTASSATV:
-                fprintf(output, "*=@V\n");
+                fprintf(context->output, "*=@V\n");
                 break;
             case LMULT:
-                fprintf(output, "*\n");
+                fprintf(context->output, "*\n");
                 break;
                 
             case DIVASS:
-                fprintf(output, "/= %i\n", mem[i++]);
+                fprintf(context->output, "/= %i\n", context->mem[i++]);
                 break;
             case DIVASSAT:
-                fprintf(output, "/=@\n");
+                fprintf(context->output, "/=@\n");
                 break;
             case DIVASSV:
-                fprintf(output, "/=V %i\n", mem[i++]);
+                fprintf(context->output, "/=V %i\n", context->mem[i++]);
                 break;
             case DIVASSATV:
-                fprintf(output, "/=@V\n");
+                fprintf(context->output, "/=@V\n");
                 break;
             case LDIV:
-                fprintf(output, "/\n");
+                fprintf(context->output, "/\n");
                 break;
             
             case ASSR:
-                fprintf(output, "=f %i\n", mem[i++]);
+                fprintf(context->output, "=f %i\n", context->mem[i++]);
                 break;
             case ASSRV:
-                fprintf(output, "=fV %i\n", mem[i++]);
+                fprintf(context->output, "=fV %i\n", context->mem[i++]);
                 break;
             case ASSATR:
-                fprintf(output, "=@f\n");
+                fprintf(context->output, "=@f\n");
                 break;
             case ASSATRV:
-                fprintf(output, "=@fV\n");
+                fprintf(context->output, "=@fV\n");
                 break;
                 
             case PLUSASSR:
-                fprintf(output, "+=f %i\n", mem[i++]);
+                fprintf(context->output, "+=f %i\n", context->mem[i++]);
                 break;
             case PLUSASSATR:
-                fprintf(output, "+=@f\n");
+                fprintf(context->output, "+=@f\n");
                 break;
             case PLUSASSRV:
-                fprintf(output, "+=fV %i\n", mem[i++]);
+                fprintf(context->output, "+=fV %i\n", context->mem[i++]);
                 break;
             case PLUSASSATRV:
-                fprintf(output, "+=@fV\n");
+                fprintf(context->output, "+=@fV\n");
                 break;
             case LPLUSR:
-                fprintf(output, "+f\n");
+                fprintf(context->output, "+f\n");
                 break;
             case MINUSASSR:
-                fprintf(output, "-=f %i\n", mem[i++]);
+                fprintf(context->output, "-=f %i\n", context->mem[i++]);
                 break;
             case MINUSASSATR:
-                fprintf(output, "-=@f\n");
+                fprintf(context->output, "-=@f\n");
                 break;
             case MINUSASSRV:
-                fprintf(output, "-=fV %i\n", mem[i++]);
+                fprintf(context->output, "-=fV %i\n", context->mem[i++]);
                 break;
             case MINUSASSATRV:
-                fprintf(output, "-=@fV\n");
+                fprintf(context->output, "-=@fV\n");
                 break;
             case LMINUSR:
-                fprintf(output, "-f\n");
+                fprintf(context->output, "-f\n");
                 break;
             case MULTASSR:
-                fprintf(output, "*=f %i\n", mem[i++]);
+                fprintf(context->output, "*=f %i\n", context->mem[i++]);
                 break;
             case MULTASSATR:
-                fprintf(output, "*=@f\n");
+                fprintf(context->output, "*=@f\n");
                 break;
             case MULTASSRV:
-                fprintf(output, "*=fV %i\n", mem[i++]);
+                fprintf(context->output, "*=fV %i\n", context->mem[i++]);
                 break;
             case MULTASSATRV:
-                fprintf(output, "*=@fV\n");
+                fprintf(context->output, "*=@fV\n");
                 break;
             case LMULTR:
-                fprintf(output, "*f\n");
+                fprintf(context->output, "*f\n");
                 break;
             case DIVASSR:
-                fprintf(output, "/=f %i\n", mem[i++]);
+                fprintf(context->output, "/=f %i\n", context->mem[i++]);
                 break;
             case DIVASSATR:
-                fprintf(output, "/=@f\n");
+                fprintf(context->output, "/=@f\n");
                 break;
             case DIVASSRV:
-                fprintf(output, "/=fV %i\n", mem[i++]);
+                fprintf(context->output, "/=fV %i\n", context->mem[i++]);
                 break;
             case DIVASSATRV:
-                fprintf(output, "/=@fV\n");
+                fprintf(context->output, "/=@fV\n");
                 break;
             case LDIVR:
-                fprintf(output, "/f\n");
+                fprintf(context->output, "/f\n");
                 break;
 			case COPY00:
-				fprintf(output, "COPY00 %i ", mem[i++]);          // displleft
-				fprintf(output, "%i ", mem[i++]);                 // displright
-				fprintf(output, "(%i)\n", mem[i++]);              // length
+				fprintf(context->output, "COPY00 %i ", context->mem[i++]);          // displleft
+				fprintf(context->output, "%i ", context->mem[i++]);                 // displright
+				fprintf(context->output, "(%i)\n", context->mem[i++]);              // length
 				break;
 			case COPY01:
-				fprintf(output, "COPY01 %i      ", mem[i++]);     // displleft
-				fprintf(output, "(%i)\n", mem[i++]);              // length
+				fprintf(context->output, "COPY01 %i      ", context->mem[i++]);     // displleft
+				fprintf(context->output, "(%i)\n", context->mem[i++]);              // length
 				break;
             case COPY10:
-                fprintf(output, "COPY10      %i ", mem[i++]);     // displright
-                fprintf(output, "(%i)\n", mem[i++]);              // length
+                fprintf(context->output, "COPY10      %i ", context->mem[i++]);     // displright
+                fprintf(context->output, "(%i)\n", context->mem[i++]);              // length
                 break;
             case COPY11:
-                fprintf(output, "COPY11 %i\n", mem[i++]);         // length
+                fprintf(context->output, "COPY11 %i\n", context->mem[i++]);         // length
                 break;
             case COPY0ST:
-                fprintf(output, "COPY0ST %i ", mem[i++]);         // displright
-                fprintf(output, "(%i)\n", mem[i++]);              // length
+                fprintf(context->output, "COPY0ST %i ", context->mem[i++]);         // displright
+                fprintf(context->output, "(%i)\n", context->mem[i++]);              // length
                 break;
             case COPY1ST:
-                fprintf(output, "COPY1ST %i\n", mem[i++]);        // length
+                fprintf(context->output, "COPY1ST %i\n", context->mem[i++]);        // length
                 break;
             case COPY0STASS:
-                fprintf(output, "COPY0STASS %i ", mem[i++]);      // displleft
-                fprintf(output, "(%i)\n", mem[i++]);              // length
+                fprintf(context->output, "COPY0STASS %i ", context->mem[i++]);      // displleft
+                fprintf(context->output, "(%i)\n", context->mem[i++]);              // length
                 break;
             case COPY1STASS:
-                fprintf(output, "COPY1STASS %i\n", mem[i++]);     // length
+                fprintf(context->output, "COPY1STASS %i\n", context->mem[i++]);     // length
                 break;
             case COPYST:
-                fprintf(output, "COPYST %i ", mem[i++]);          // displ
-                fprintf(output, "(%i)", mem[i++]);                // length
-                fprintf(output, "(%i)\n", mem[i++]);              // length1
+                fprintf(context->output, "COPYST %i ", context->mem[i++]);          // displ
+                fprintf(context->output, "(%i)", context->mem[i++]);                // length
+                fprintf(context->output, "(%i)\n", context->mem[i++]);              // length1
                 break;
 
             case REMASS:
-                fprintf(output, "%%= %i\n", mem[i++]);
+                fprintf(context->output, "%%= %i\n", context->mem[i++]);
                 break;
             case REMASSAT:
-                fprintf(output, "%%=@\n");
+                fprintf(context->output, "%%=@\n");
                 break;
             case REMASSV:
-                fprintf(output, "%%=V %i\n", mem[i++]);
+                fprintf(context->output, "%%=V %i\n", context->mem[i++]);
                 break;
             case REMASSATV:
-                fprintf(output, "%%=@V\n");
+                fprintf(context->output, "%%=@V\n");
                 break;
             case LREM:
-                fprintf(output, "%%\n");
+                fprintf(context->output, "%%\n");
                 break;
                 
             case CALL1:
-                fprintf(output, "CALL1\n");
+                fprintf(context->output, "CALL1\n");
                 break;
             case CALL2:
-                fprintf(output, "CALL2 ");
-                fprintf(output, "%i\n", mem[i++]);
+                fprintf(context->output, "CALL2 ");
+                fprintf(context->output, "%i\n", context->mem[i++]);
                 break;
             case STOP:
-                fprintf(output, "STOP\n");
+                fprintf(context->output, "STOP\n");
                 break;
             case RETURNVAL:
-                fprintf(output, "RETURNVAL %i\n", mem[i++]);
+                fprintf(context->output, "RETURNVAL %i\n", context->mem[i++]);
                 break;
             case RETURNVOID:
-                fprintf(output, "RETURNVOID\n");
+                fprintf(context->output, "RETURNVOID\n");
                 break;
             case B:
-                fprintf(output, "B %i\n", mem[i++]);
+                fprintf(context->output, "B %i\n", context->mem[i++]);
                 break;
             case BE0:
-                fprintf(output, "BE0 %i\n", mem[i++]);
+                fprintf(context->output, "BE0 %i\n", context->mem[i++]);
                 break;
             case BNE0:
-                fprintf(output, "BNE0 %i\n", mem[i++]);
+                fprintf(context->output, "BNE0 %i\n", context->mem[i++]);
                 break;
             case SLICE:
-                fprintf(output, "SLICE d= %i\n", mem[i++]);
+                fprintf(context->output, "SLICE d= %i\n", context->mem[i++]);
                 break;
 			case SELECT:
-				fprintf(output, "SELECT field_displ= %i\n", mem[i++]);
+				fprintf(context->output, "SELECT field_displ= %i\n", context->mem[i++]);
 				break;
             case WIDEN:
-                fprintf(output, "WIDEN\n");
+                fprintf(context->output, "WIDEN\n");
                 break;
             case WIDEN1:
-                fprintf(output, "WIDEN1\n");
+                fprintf(context->output, "WIDEN1\n");
                 break;
             case _DOUBLE:
-                fprintf(output, "DOUBLE\n");
+                fprintf(context->output, "DOUBLE\n");
                 break;
             case INC:
-                fprintf(output, "INC %i\n", mem[i++]);
+                fprintf(context->output, "INC %i\n", context->mem[i++]);
                 break;
             case DEC:
-                fprintf(output, "DEC %i\n", mem[i++]);
+                fprintf(context->output, "DEC %i\n", context->mem[i++]);
                 break;
             case POSTINC:
-                fprintf(output, "POSTINC %i\n", mem[i++]);
+                fprintf(context->output, "POSTINC %i\n", context->mem[i++]);
                 break;
             case POSTDEC:
-                fprintf(output, "POSTDEC %i\n", mem[i++]);
+                fprintf(context->output, "POSTDEC %i\n", context->mem[i++]);
                 break;
             case INCAT:
-                fprintf(output, "INC@\n");
+                fprintf(context->output, "INC@\n");
                 break;
             case DECAT:
-                fprintf(output, "DEC@\n");
+                fprintf(context->output, "DEC@\n");
                 break;
             case POSTINCAT:
-                fprintf(output, "POSTINC@\n");
+                fprintf(context->output, "POSTINC@\n");
                 break;
             case POSTDECAT:
-                fprintf(output, "POSTDEC@\n");
+                fprintf(context->output, "POSTDEC@\n");
                 break;
             case INCR:
-                fprintf(output, "INCf %i\n", mem[i++]);
+                fprintf(context->output, "INCf %i\n", context->mem[i++]);
                 break;
             case DECR:
-                fprintf(output, "DECf %i\n", mem[i++]);
+                fprintf(context->output, "DECf %i\n", context->mem[i++]);
                 break;
             case POSTINCR:
-                fprintf(output, "POSTINCf %i\n", mem[i++]);
+                fprintf(context->output, "POSTINCf %i\n", context->mem[i++]);
                 break;
             case POSTDECR:
-                fprintf(output, "POSTDECf %i\n", mem[i++]);
+                fprintf(context->output, "POSTDECf %i\n", context->mem[i++]);
                 break;
             case INCATR:
-                fprintf(output, "INC@f\n");
+                fprintf(context->output, "INC@f\n");
                 break;
             case DECATR:
-                fprintf(output, "DEC@f\n");
+                fprintf(context->output, "DEC@f\n");
                 break;
             case POSTINCATR:
-                fprintf(output, "POSTINC@f\n");
+                fprintf(context->output, "POSTINC@f\n");
                 break;
             case POSTDECATR:
-                fprintf(output, "POSTDEC@f\n");
+                fprintf(context->output, "POSTDEC@f\n");
                 break;
             case INCV:
-                fprintf(output, "INCV %i\n", mem[i++]);
+                fprintf(context->output, "INCV %i\n", context->mem[i++]);
                 break;
             case DECV:
-                fprintf(output, "DECV %i\n", mem[i++]);
+                fprintf(context->output, "DECV %i\n", context->mem[i++]);
                 break;
             case POSTINCV:
-                fprintf(output, "POSTINCV %i\n", mem[i++]);
+                fprintf(context->output, "POSTINCV %i\n", context->mem[i++]);
                 break;
             case POSTDECV:
-                fprintf(output, "POSTDECV %i\n", mem[i++]);
+                fprintf(context->output, "POSTDECV %i\n", context->mem[i++]);
                 break;
             case INCATV:
-                fprintf(output, "INC@V\n");
+                fprintf(context->output, "INC@V\n");
                 break;
             case DECATV:
-                fprintf(output, "DEC@V\n");
+                fprintf(context->output, "DEC@V\n");
                 break;
             case POSTINCATV:
-                fprintf(output, "POSTINC@V\n");
+                fprintf(context->output, "POSTINC@V\n");
                 break;
             case POSTDECATV:
-                fprintf(output, "POSTDEC@V\n");
+                fprintf(context->output, "POSTDEC@V\n");
                 break;
             case INCRV:
-                fprintf(output, "INCfV %i\n", mem[i++]);
+                fprintf(context->output, "INCfV %i\n", context->mem[i++]);
                 break;
             case DECRV:
-                fprintf(output, "DECfV %i\n", mem[i++]);
+                fprintf(context->output, "DECfV %i\n", context->mem[i++]);
                 break;
             case POSTINCRV:
-                fprintf(output, "POSTINCfV %i\n", mem[i++]);
+                fprintf(context->output, "POSTINCfV %i\n", context->mem[i++]);
                 break;
             case POSTDECRV:
-                fprintf(output, "POSTDECfV %i\n", mem[i++]);
+                fprintf(context->output, "POSTDECfV %i\n", context->mem[i++]);
                 break;
             case INCATRV:
-                fprintf(output, "INC@fV\n");
+                fprintf(context->output, "INC@fV\n");
                 break;
             case DECATRV:
-                fprintf(output, "DEC@fV\n");
+                fprintf(context->output, "DEC@fV\n");
                 break;
             case POSTINCATRV:
-                fprintf(output, "POSTINC@fV\n");
+                fprintf(context->output, "POSTINC@fV\n");
                 break;
             case POSTDECATRV:
-                fprintf(output, "POSTDEC@fV\n");
+                fprintf(context->output, "POSTDEC@fV\n");
                 break;
 
             case LNOT:
-                fprintf(output, "BITNOT\n");
+                fprintf(context->output, "BITNOT\n");
                 break;
             case LOGNOT:
-                fprintf(output, "NOT\n");
+                fprintf(context->output, "NOT\n");
                 break;
             case UNMINUS:
-                fprintf(output, "UNMINUS\n");
+                fprintf(context->output, "UNMINUS\n");
                 break;
             case UNMINUSR:
-                fprintf(output, "UNMINUSf\n");
+                fprintf(context->output, "UNMINUSf\n");
                 break;
                 
             case FUNCBEG:
-                fprintf(output, "FUNCBEG maxdispl= %i ", mem[i++]);
-                fprintf(output, "pc= %i\n", mem[i++]);
+                fprintf(context->output, "FUNCBEG maxdispl= %i ", context->mem[i++]);
+                fprintf(context->output, "pc= %i\n", context->mem[i++]);
                 break;
                 
                 
             default:
-                fprintf(output, "%i\n", mem[i-1]);
+                fprintf(context->output, "%i\n", context->mem[i-1]);
         }
     }
     

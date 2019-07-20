@@ -2,16 +2,16 @@
 #include <stdlib.h>
 #include "global_vars.h"
 
-extern void tablesandtree();
+extern void tablesandtree(ruc_context *context);
 
-extern void show_macro();
+extern void show_macro(ruc_context *context);
 extern void printf_char(int wchar);
-void printident(int r)
+void printident(ruc_context *context, int r)
 {
-    r += 2;                      // ссылка на reprtab
+    r += 2;                      // ссылка на context->reprtab
     do
-        printf_char(reprtab[r++]);
-    while (reprtab[r] != 0);
+        printf_char(context->reprtab[r++]);
+    while (context->reprtab[r] != 0);
 
 }
 
@@ -28,25 +28,25 @@ void warning(int ernum)
     }
 }
 
-void error(int ernum)
+void error(ruc_context *context, int ernum)
 {
     int i, j; 
   //tablesandtree();
     printf("\n Oшибка :\n \n");
-    if(lines[line]==charnum)
+    if(context->lines[context->line]==context->charnum)
     {
-        line--;
+        context->line--;
     }
     //printf("line - 1=%d, mline=%d, co[carnum-1=%d] = 1%c1, lines[line]=%d, lines[line+1]=%d \n", line-1,m_conect_lines[line-1],charnum-1,source[charnum-1], lines[line],lines[line+1]);
-    charnum--;
-    for(j = 1; j < m_conect_lines[line]; j++)
+    context->charnum--;
+    for(j = 1; j < context->m_conect_lines[context->line]; j++)
     {
         printf("line %i) ", j);
 
-        for ( i = mlines[j]; i < mlines[j+1]; i++)
-            printf_char(before_source[i]);
+        for ( i = context->mlines[j]; i < context->mlines[j+1]; i++)
+            printf_char(context->before_source[i]);
     }
-    show_macro();
+    show_macro(context);
     printf("\n");
     printf("ошибка: ");
     switch (ernum)
@@ -113,7 +113,7 @@ void error(int ernum)
             break;
         case repeated_decl:
             printf("повторное описание идентификатора ");
-            printident(repr);
+            printident(context, context->repr);
             printf("\n");
             break;
         case arr_init_must_start_from_BEGIN:
@@ -127,7 +127,7 @@ void error(int ernum)
             break;
         case ident_is_not_declared:
             printf("не описан идентификатор ");
-            printident(repr);
+            printident(context, context->repr);
             printf("\n");
             break;
         case no_rightsqbr_in_slice:
@@ -332,19 +332,19 @@ void error(int ernum)
             printf("оператор ПРОДОЛЖИТЬ не в цикле\n");
             break;
         case not_primary:
-            printf("первичное не  может начинаться с лексемы %i\n", cur);
+            printf("первичное не  может начинаться с лексемы %i\n", context->cur);
             break;
         case wrong_operand:
             printf("операнд операции может иметь только тип ЦЕЛ, ЛИТ или ВЕЩ\n");
             break;
         case label_not_declared:
-            printf("в строке %i переход на неописанную метку ", hash);
-            printident(repr);
+            printf("в строке %i переход на неописанную метку ", context->hash);
+            printident(context, context->repr);
             printf("\n");
             break;
         case repeated_label:
             printf("повторное описание метки ");
-            printident(repr);
+            printident(context, context->repr);
             printf("\n");
             break;
         case wrong_pnt_assn:
@@ -407,7 +407,7 @@ void error(int ernum)
             break;
         case no_field:
             printf("нет такого поля ");
-            printident(repr);
+            printident(context, context->repr);
             printf(" в структуре");
             printf("\n");
             break;
@@ -415,7 +415,7 @@ void error(int ernum)
             printf("вырезка элемента из массива, выданного функцией, а функции не могут выдавать массивы\n");
             break;
         case bad_toval:
-            printf("странный toval ansttype=%i\n", ansttype);
+            printf("странный toval ansttype=%i\n", context->ansttype);
             break;
         case wait_end:
             printf("в инициализации структуры здесь ожидалась правая фигурная скобка }\n");
@@ -449,7 +449,7 @@ void error(int ernum)
             break;
         case predef_but_notdef:
             printf("функция ");
-            printident(repr);
+            printident(context, context->repr);
             printf(" была предопределена, но не описана\n");
             break;
         case print_without_br:
@@ -510,8 +510,8 @@ void error(int ernum)
             break;
         case wrong_printf_param_type:
             printf("Тип параметра printf/печатьф не соответствует спецификатору: %%");
-            printf_char(bad_printf_placeholder);
-            switch (bad_printf_placeholder)
+            printf_char(context->bad_printf_placeholder);
+            switch (context->bad_printf_placeholder)
             {
                 case 'i':
                 case 1094:   // 'ц'
@@ -546,7 +546,7 @@ void error(int ernum)
             break;
         case printf_unknown_format_placeholder:
             printf("В printf/печатьф неизвестный спецификатор типа %%");
-            printf_char(bad_printf_placeholder);
+            printf_char(context->bad_printf_placeholder);
             printf("\n");
             break;
         case too_many_printf_params:
@@ -612,13 +612,13 @@ void error(int ernum)
     exit(2);
 }
 
-void m_error(int ernum)
+void m_error(ruc_context *context, int ernum)
 {
     int i;
 //    tablesandtree();
-    printf("line %i) ", mline);
-    for (i = mlines[mline]; i < m_charnum; i++)
-        printf_char(before_source[i]);
+    printf("line %i) ", context->mline);
+    for (i = context->mlines[context->mline]; i < context->m_charnum; i++)
+        printf_char(context->before_source[i]);
     printf("\n");
     switch (ernum)
     {
