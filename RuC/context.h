@@ -4,6 +4,15 @@
 #include <stdio.h>
 #include "Defs.h"
 
+/**
+ * Input/Output pipe type
+ */
+typedef enum ruc_io_type
+{
+    IO_TYPE_INPUT, /**< Input pipe */
+    IO_TYPE_OUTPUT, /**< Output pipe */
+} ruc_io_type;
+
 // Определение глобальных переменных
 typedef struct ruc_context
 {
@@ -140,5 +149,24 @@ typedef struct ruc_context
  */
 extern void
 ruc_context_init(ruc_context *context);
+
+/**
+ * Attach input to a specific input/output pipe
+ *
+ * @param context   RuC context
+ * @param path      Path to file
+ * @param type      IO type
+ */
+extern void
+ruc_context_attach_io(ruc_context *context, const char *path, ruc_io_type type);
+
+/**
+ * Detach file from a specific input/output pipe
+ *
+ * @param context   RuC context
+ * @param type      IO type
+ */
+extern void
+ruc_context_detach_io(ruc_context *context, ruc_io_type type);
 
 #endif
