@@ -7,6 +7,8 @@ set(RUC_KEYWORDS_FILE ${PROJECT_SOURCE_DIR}/keywords.txt)
 set(TEST_INPUTS_DIR ${PROJECT_SOURCE_DIR}/tests)
 set(RUC_BINARY_DIR ${CMAKE_BINARY_DIR}/bin)
 
+add_compile_options(-Werror=return-type -g)
+
 # add RuC
 add_subdirectory(RuC)
 
