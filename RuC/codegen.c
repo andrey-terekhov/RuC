@@ -688,8 +688,8 @@ codegen(ruc_context *context)
             default:
             {
                 printf("что-то не то\n");
-                printf("context->tc=%i context->tree[context->tc-2]=%i "
-                       "context->tree[context->tc-1]=%i\n",
+                printf("tc=%i tree[tc-2]=%i "
+                       "tree[tc-1]=%i\n",
                        context->tc, context->tree[context->tc - 2],
                        context->tree[context->tc - 1]);
             }

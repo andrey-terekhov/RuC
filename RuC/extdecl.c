@@ -1776,12 +1776,12 @@ statement(ruc_context *context)
         else
         {
             id = context->gotost[i - 2];
-            context->repr = context->identab[context->id + 1];
+            context->repr = context->identab[id + 1];
             if (context->gotost[i - 1] < 0)
                 error(context, repeated_label);
             totree(context, id);
         }
-        context->identab[context->id + 2] = 1;
+        context->identab[id + 2] = 1;
 
         scaner(context);
         statement(context);
@@ -2013,7 +2013,7 @@ statement(ruc_context *context)
                 else
                 {
                     int id = context->gotost[i - 2];
-                    if (context->gotost[context->id + 1] < 0) // метка уже была
+                    if (context->gotost[id + 1] < 0) // метка уже была
                     {
                         totree(context, id);
                         break;

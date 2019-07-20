@@ -113,7 +113,7 @@ show_macro(ruc_context *context)
         }
     }
 
-    printf("context->line %i) ", context->m_conect_lines[context->line]);
+    printf("line %i) ", context->m_conect_lines[context->line]);
 
     for (k = 0; k < j; k++)
     {
