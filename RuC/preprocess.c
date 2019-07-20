@@ -1,55 +1,89 @@
+#include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
-#include <math.h>
 
 #include "global_vars.h"
 
-extern int getnext(ruc_context *);
-extern int letter(ruc_context *);
-extern int digit(ruc_context *);
-extern int equal(ruc_context *, int, int);
-extern void printf_char();
-extern void fprintf_char();
-extern void m_error(ruc_context *context, int errnum);
+extern int
+getnext(ruc_context *);
+extern int
+letter(ruc_context *);
+extern int
+digit(ruc_context *);
+extern int
+equal(ruc_context *, int, int);
+extern void
+printf_char();
+extern void
+fprintf_char();
+extern void
+m_error(ruc_context *context, int errnum);
 
 
-int mletter(ruc_context *context, int r);
-int mdigit(ruc_context *context, int r);
-int mequal(ruc_context *context, int str[], int j);
+int
+mletter(ruc_context *context, int r);
+int
+mdigit(ruc_context *context, int r);
+int
+mequal(ruc_context *context, int str[], int j);
 
-void mend_line(ruc_context *context);
-void m_nextch(ruc_context *context, int i);
-void m_fprintf(ruc_context *context, int a);
+void
+mend_line(ruc_context *context);
+void
+m_nextch(ruc_context *context, int i);
+void
+m_fprintf(ruc_context *context, int a);
 
-void to_macrotext(ruc_context *, char chang[], int oldrepr);//
-void macro_reprtab(ruc_context *, char chang []);
-void from_macrotext(ruc_context *);//5
-int macro_keywords(ruc_context *);//12
-void relis_define(ruc_context *);//2
+void
+to_macrotext(ruc_context *, char chang[], int oldrepr); //
+void
+macro_reprtab(ruc_context *, char chang[]);
+void
+from_macrotext(ruc_context *); // 5
+int
+macro_keywords(ruc_context *); // 12
+void
+relis_define(ruc_context *); // 2
 
-void toreprtab_f(ruc_context *);
-void to_functionident (ruc_context *); //4
-int scob(ruc_context *, int cp);//6
-void from_functionident(ruc_context *, int r);
-void create_change(ruc_context *, int r1);//11
-void r_macrofunction(ruc_context *);//3
+void
+toreprtab_f(ruc_context *);
+void
+to_functionident(ruc_context *); // 4
+int
+scob(ruc_context *, int cp); // 6
+void
+from_functionident(ruc_context *, int r);
+void
+create_change(ruc_context *, int r1); // 11
+void
+r_macrofunction(ruc_context *); // 3
 
-//void m_ident();//5
-int find_ident(ruc_context *);
+// void m_ident();//5
+int
+find_ident(ruc_context *);
 
-int check_if(ruc_context *, int type_if);//10
-void end_line(ruc_context *);//9
-void false_if (ruc_context *);//8
-int m_false(ruc_context *);//7
-void m_true(ruc_context *, int type_if);
-void m_if(ruc_context *, int type_if);
+int
+check_if(ruc_context *, int type_if); // 10
+void
+end_line(ruc_context *); // 9
+void
+false_if(ruc_context *); // 8
+int
+m_false(ruc_context *); // 7
+void
+m_true(ruc_context *, int type_if);
+void
+m_if(ruc_context *, int type_if);
 
-void macroscan(ruc_context *context);//1,17
-void preprocess_file(ruc_context *context);//18
+void
+macroscan(ruc_context *context); // 1,17
+void
+preprocess_file(ruc_context *context); // 18
 
-void show_macro(ruc_context *context)
+void
+show_macro(ruc_context *context)
 {
     int i1 = context->lines[context->line];
     int str1[50];
@@ -59,12 +93,13 @@ void show_macro(ruc_context *context)
     context->arg = context->mlines[context->m_conect_lines[context->line]];
 
     context->flag_show_macro = 1;
-    while(i1 < context->charnum)
+    while (i1 < context->charnum)
     {
-        //printf("\nbe[context->arg= %i] = %i, so[i1] = %i",context->arg, context->before_source[context->arg],context->source[i1] );
-        if(context->source[i1] == context->before_source[context->arg])
+        // printf("\nbe[context->arg= %i] = %i, so[i1] = %i",context->arg,
+        // context->before_source[context->arg],context->source[i1] );
+        if (context->source[i1] == context->before_source[context->arg])
         {
-            str1[j++]=context->before_source[context->arg];
+            str1[j++] = context->before_source[context->arg];
             i1++;
             context->arg++;
         }
@@ -80,36 +115,41 @@ void show_macro(ruc_context *context)
 
     printf("context->line %i) ", context->m_conect_lines[context->line]);
 
-    for (k = 0 ; k < j; k++)
+    for (k = 0; k < j; k++)
     {
         printf_char(str1[k]);
     }
-    if(flag == 0)
+    if (flag == 0)
     {
-      printf("\n В строке есть макрозамена, строка после макрогенерации:\nline %i)",context->m_conect_lines[context->line]);
-        for ( k = context->lines[context->line-1]; k < context->charnum;k++)
+        printf("\n В строке есть макрозамена, строка после "
+               "макрогенерации:\nline %i)",
+               context->m_conect_lines[context->line]);
+        for (k = context->lines[context->line - 1]; k < context->charnum; k++)
         {
-        printf_char(context->source[k]);
+            printf_char(context->source[k]);
         }
     }
 }
 
-int mletter(ruc_context *context, int r)
+int
+mletter(ruc_context *context, int r)
 {
     UNUSED(context);
-    return (r >= 'A' && r <= 'Z') || (r >='a' && r <= 'z') 
-    || r == '_' || (r >= 0x410/*А */ && r <= 0x44F /*'я'*/);
+    return (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') || r == '_' ||
+        (r >= 0x410 /*А */ && r <= 0x44F /*'я'*/);
 }
 
-int mdigit(ruc_context *context, int r)
+int
+mdigit(ruc_context *context, int r)
 {
     UNUSED(context);
-    return r >='0' && r <= '9';
+    return r >= '0' && r <= '9';
 }
 
-int mequal(ruc_context *context, int str[], int j)
+int
+mequal(ruc_context *context, int str[], int j)
 {
-    int i = 0 ;  
+    int i = 0;
     while (str[i++] == context->functionident[j++])
     {
         if (str[i] == 0 && context->functionident[j] == 0)
@@ -118,28 +158,31 @@ int mequal(ruc_context *context, int str[], int j)
     return 0;
 }
 
-void mend_line(ruc_context *context)
+void
+mend_line(ruc_context *context)
 {
     int j;
     if (context->flag_show_macro == 0)
-   {
+    {
         context->mlines[++context->mline] = context->m_charnum;
-        context->mlines[context->mline+1] = context->m_charnum;
+        context->mlines[context->mline + 1] = context->m_charnum;
         if (context->kw)
         {
-            printf("Line %i) ", context->mline-1);
-            for ( j=context->mlines[context->mline-1]; j<context->mlines[context->mline]; j++)
+            printf("Line %i) ", context->mline - 1);
+            for (j = context->mlines[context->mline - 1];
+                 j < context->mlines[context->mline]; j++)
                 if (context->before_source[j] != EOF)
                     printf_char(context->before_source[j]);
-        } 
-   }
+        }
+    }
 
     return;
 }
 
-void monemore(ruc_context *context)
+void
+monemore(ruc_context *context)
 {
-    if(context->flag_show_macro == 0)
+    if (context->flag_show_macro == 0)
     {
         context->curchar = context->nextchar;
         context->nextchar = getnext(context);
@@ -158,51 +201,52 @@ void monemore(ruc_context *context)
     }
 }
 
-void m_nextch(ruc_context *context, int i)
+void
+m_nextch(ruc_context *context, int i)
 {
-    //printf(" i = %d curcar = %c curcar = %i\n", i, context->curchar, context->curchar);
+    // printf(" i = %d curcar = %c curcar = %i\n", i, context->curchar,
+    // context->curchar);
     monemore(context);
 
     if (context->curchar == '/' && context->nextchar == '/')
     {
-        if(i>13)
+        if (i > 13)
         {
             m_fprintf(context, context->curchar);
         }
         do
         {
             monemore(context);
-            if(i>13)
+            if (i > 13)
             {
                 m_fprintf(context, context->curchar);
             }
-        }
-        while (context->curchar != '\n');
-        
+        } while (context->curchar != '\n');
+
         mend_line(context);
         return;
     }
 
     if (context->curchar == '/' && context->nextchar == '*')
     {
-        if(i>13)
+        if (i > 13)
         {
             m_fprintf(context, context->curchar);
         }
-    
+
         monemore(context);
-        if(i>13)
+        if (i > 13)
         {
             m_fprintf(context, context->curchar);
         }
         do
         {
             monemore(context);
-            if(i>13)
+            if (i > 13)
             {
                 m_fprintf(context, context->curchar);
             }
-            
+
             if (context->curchar == EOF)
             {
                 mend_line(context);
@@ -211,58 +255,60 @@ void m_nextch(ruc_context *context, int i)
             }
             if (context->curchar == '\n')
                 mend_line(context);
-        }
-        while (context->curchar != '*' || context->nextchar != '/');
-        
+        } while (context->curchar != '*' || context->nextchar != '/');
+
         monemore(context);
-        if(i>13)
+        if (i > 13)
         {
             m_fprintf(context, context->curchar);
         }
         context->curchar = ' ';
         return;
     }
-        
+
     if (context->curchar == '\n')
     {
-     mend_line(context);
+        mend_line(context);
     }
     return;
 }
 
-void m_fprintf(ruc_context *context, int a)
+void
+m_fprintf(ruc_context *context, int a)
 {
-    if(a == '\n')
+    if (a == '\n')
     {
-    context->m_conect_lines[context->mcl++] = context->mline-1;
+        context->m_conect_lines[context->mcl++] = context->mline - 1;
     }
     fprintf_char(context->output, a);
 
     return;
 }
 
-void to_macrotext(ruc_context *context, char chang[], int oldrepr)
+void
+to_macrotext(ruc_context *context, char chang[], int oldrepr)
 {
     int i;
     context->macrotext[context->mp++] = oldrepr;
-    for( i = 0; chang[i] != 0; i++)
+    for (i = 0; chang[i] != 0; i++)
     {
         context->macrotext[context->mp++] = chang[i];
     }
     context->macrotext[context->mp++] = 0;
 }
 
-void macro_reprtab(ruc_context *context, char chang [])
+void
+macro_reprtab(ruc_context *context, char chang[])
 {
     int oldrepr = context->rp;
-    int r,i;
+    int r, i;
 
 
     context->mlastrp = oldrepr;
     context->hash = 0;
     context->rp += 2;
 
-    for( i=0; i<context->msp; i++)
+    for (i = 0; i < context->msp; i++)
     {
         context->hash += context->mstring[i];
         context->reprtab[context->rp++] = context->mstring[i];
@@ -270,33 +316,34 @@ void macro_reprtab(ruc_context *context, char chang [])
     context->msp = 0;
     context->hash &= 255;
     context->reprtab[context->rp++] = 0;
-    context->reprtab[oldrepr] = context->hashtab[context->hash] ;
-    context->reprtab[oldrepr+1] = context->mp;
+    context->reprtab[oldrepr] = context->hashtab[context->hash];
+    context->reprtab[oldrepr + 1] = context->mp;
 
     r = context->hashtab[context->hash];
-    while(r != 0)
+    while (r != 0)
     {
-            r = context->reprtab[r];
+        r = context->reprtab[r];
     }
     to_macrotext(context, chang, oldrepr);
     context->hashtab[context->hash] = oldrepr;
 }
 
-void from_macrotext(ruc_context *context)
-{ 
+void
+from_macrotext(ruc_context *context)
+{
     int r;
     context->msp = 0;
-    
-    while(letter(context) || digit(context))
+
+    while (letter(context) || digit(context))
     {
         context->mstring[context->msp++] = context->curchar;
         m_nextch(context, 5);
     }
- 
-    r = find_ident(context);
-    //printf("r = %d\n", r);
 
-    if(r)
+    r = find_ident(context);
+    // printf("r = %d\n", r);
+
+    if (r)
     {
         context->msp = 0;
         if (context->reprtab[r + 1] == 2)
@@ -307,73 +354,74 @@ void from_macrotext(ruc_context *context)
 
         r = context->reprtab[r + 1] + 1;
 
-        for( ; context->macrotext[r] != 0; r++)
+        for (; context->macrotext[r] != 0; r++)
         {
             context->mstring[context->msp++] = context->macrotext[r];
         }
     }
-    
+
     return;
 }
 
-int macro_keywords(ruc_context *context) 
+int
+macro_keywords(ruc_context *context)
 {
     int oldrepr = context->rp;
     int r = 0;
 
-    context->rp+=2;
+    context->rp += 2;
     context->hash = 0;
-                
-    do
-    {                 
-    context->hash += context->curchar;
-    context->reprtab[context->rp++] = context->curchar;
-    m_nextch(context, 12);
-    }
-    while(letter(context) || digit(context));
 
-    if (context->curchar != ' ' && context->curchar != '\n' && context->curchar != '\t')
+    do
+    {
+        context->hash += context->curchar;
+        context->reprtab[context->rp++] = context->curchar;
+        m_nextch(context, 12);
+    } while (letter(context) || digit(context));
+
+    if (context->curchar != ' ' && context->curchar != '\n' &&
+        context->curchar != '\t')
     {
         m_error(context, after_ident_must_be_space);
     }
     else
     {
-      m_nextch(context, 12);
+        m_nextch(context, 12);
     }
-                
+
     context->hash &= 255;
     context->reprtab[context->rp++] = 0;
     r = context->hashtab[context->hash];
-    if(r)
+    if (r)
     {
-      do
+        do
         {
-        if(equal(context, r, oldrepr))
-        {
-            context->rp = oldrepr;
-            return(context->reprtab[r+1] < 0)
-                ? context->reprtab[r+1]
-                : (context->repr = r, IDENT);
-        }
-        else
-        r = context->reprtab[r];
-        }
-        while(r);
+            if (equal(context, r, oldrepr))
+            {
+                context->rp = oldrepr;
+                return (context->reprtab[r + 1] < 0)
+                    ? context->reprtab[r + 1]
+                    : (context->repr = r, IDENT);
+            }
+            else
+                r = context->reprtab[r];
+        } while (r);
     }
     return 0;
 }
 
-void relis_define(ruc_context *context)
+void
+relis_define(ruc_context *context)
 {
 
     if (letter(context))
-    { 
+    {
         context->msp = 0;
-        while(letter(context) || digit(context))
+        while (letter(context) || digit(context))
         {
             context->mstring[context->msp++] = context->curchar;
             m_nextch(context, 2);
-        } 
+        }
 
         if (find_ident(context) != 0)
         {
@@ -381,14 +429,14 @@ void relis_define(ruc_context *context)
         }
 
         if (context->curchar == '(')
-        { 
-            //printf("str = %s\n", mstring);
+        {
+            // printf("str = %s\n", mstring);
             toreprtab_f(context);
             m_nextch(context, 2);
             r_macrofunction(context);
             return;
         }
-        else if(context->curchar != ' ')
+        else if (context->curchar != ' ')
         {
             m_error(context, after_ident_must_be_space);
         }
@@ -396,12 +444,12 @@ void relis_define(ruc_context *context)
         {
             int i = 0;
             m_nextch(context, 2);
-            char chang [30] = {"\0"};
-            while(context->curchar != '\n')
+            char chang[30] = { "\0" };
+            while (context->curchar != '\n')
             {
                 chang[i++] = context->curchar;
                 m_nextch(context, 2);
-                if(context->curchar == EOF)
+                if (context->curchar == EOF)
                 {
                     m_error(context, not_end_fail_preprocess);
                 }
@@ -411,20 +459,21 @@ void relis_define(ruc_context *context)
         }
     }
     else
-    { 
+    {
         m_error(context, ident_begins_with_letters);
     }
 }
 
-void toreprtab_f(ruc_context *context)
+void
+toreprtab_f(ruc_context *context)
 {
     int i;
     int oldrepr = context->rp;
     context->mlastrp = oldrepr;
-    //printf("r = %i\n", oldrepr);
+    // printf("r = %i\n", oldrepr);
     context->hash = 0;
     context->rp += 2;
-    for (i=0; i<context->msp; i++)
+    for (i = 0; i < context->msp; i++)
     {
         context->hash += context->mstring[i];
         context->reprtab[context->rp++] = context->mstring[i];
@@ -434,42 +483,45 @@ void toreprtab_f(ruc_context *context)
     context->reprtab[context->rp++] = 0;
     context->reprtab[context->rp++] = context->fip;
     context->reprtab[context->rp++] = 0;
-    context->reprtab[oldrepr] = context->hashtab[context->hash] ;
-    context->reprtab[oldrepr+1] = 2;
+    context->reprtab[oldrepr] = context->hashtab[context->hash];
+    context->reprtab[oldrepr + 1] = 2;
     context->hashtab[context->hash] = oldrepr;
 }
 
-void to_functionident(ruc_context *context)
+void
+to_functionident(ruc_context *context)
 {
-    while(context->curchar != ')')
+    while (context->curchar != ')')
     {
-                                                      //reportab
-        context->msp = 0;                                       //   \/
-        context->fip++;                                     //funcid 5[] -> конец = 13
-        if (letter(context))                              //       6[] -> macrofunc
-        {                                          //       7[] -> fcang 
-                                                   //       8[a]
-            while(letter(context) || digit(context))             //       9[0]
-            {                                      //      10[] -> fcang
-                context->functionident[context->fip++] = context->curchar;    //      11[b] 
-                context->mstring[context->msp++] = context->curchar;                //      12[0]
+        // reportab
+        context->msp = 0; //   \/
+        context->fip++; // funcid 5[] -> конец = 13
+        if (letter(context)) //       6[] -> macrofunc
+        { //       7[] -> fcang
+          //       8[a]
+            while (letter(context) || digit(context)) //       9[0]
+            { //      10[] -> fcang
+                context->functionident[context->fip++] =
+                    context->curchar; //      11[b]
+                context->mstring[context->msp++] =
+                    context->curchar; //      12[0]
                 m_nextch(context, 4);
             }
             if (find_ident(context) != 0)
             {
                 m_error(context, repeat_ident);
             }
-            context->functionident[context->fip++] = 0;    
+            context->functionident[context->fip++] = 0;
         }
-        else 
+        else
         {
             m_error(context, functionid_begins_with_letters);
         }
         context->msp = 0;
-        if(context->curchar == ',' && context->nextchar == ' ')
+        if (context->curchar == ',' && context->nextchar == ' ')
         {
             m_nextch(context, 4);
-            m_nextch(context, 4);   
+            m_nextch(context, 4);
         }
         else if (context->curchar != ')')
         {
@@ -477,16 +529,18 @@ void to_functionident(ruc_context *context)
         }
     }
     m_nextch(context, 4);
-    return; 
+    return;
 }
 
-void from_functionident(ruc_context *context, int r)
+void
+from_functionident(ruc_context *context, int r)
 {
-    int i,kp,cp;
+    int i, kp, cp;
     int r1 = r + 2;
     int str[30];
 
-    for(; context->reprtab[r1] !=  0; r1++);
+    for (; context->reprtab[r1] != 0; r1++)
+        ;
     r1++;
     r1 = context->reprtab[r1];
     create_change(context, r1);
@@ -495,67 +549,69 @@ void from_functionident(ruc_context *context, int r)
     int newfi = context->functionident[r1 + 1];
     int flag = 1;
     context->msp = 0;
-    while(context->macrofunction[newfi] != '\n' ) 
+    while (context->macrofunction[newfi] != '\n')
     {
-        if(mletter(context, context->macrofunction[newfi]))
+        if (mletter(context, context->macrofunction[newfi]))
         {
             flag = 1;
-            for ( i = 0; i < 30; i++)
+            for (i = 0; i < 30; i++)
             {
                 str[i] = 0;
             }
             i = 0;
-            while(mletter(context, context->macrofunction[newfi]) || mdigit(context, context->macrofunction[newfi]))
+            while (mletter(context, context->macrofunction[newfi]) ||
+                   mdigit(context, context->macrofunction[newfi]))
             {
                 str[i++] = context->macrofunction[newfi++];
             }
-            for( kp = r1 + 2; kp < finish; )
+            for (kp = r1 + 2; kp < finish;)
             {
                 if (mequal(context, str, kp + 1))
                 {
-                    for( cp = context->functionident[kp]; context->fchange[cp] != '\n'; cp++)
+                    for (cp = context->functionident[kp];
+                         context->fchange[cp] != '\n'; cp++)
                     {
                         context->mstring[context->msp++] = context->fchange[cp];
                     }
                     flag = 0;
-                    break;   
+                    break;
                 }
-                while(context->functionident[kp++] != 0);
+                while (context->functionident[kp++] != 0)
+                    ;
             }
             if (flag == 1)
             {
-                for( i = 0; str[i] != 0; i++)
+                for (i = 0; str[i] != 0; i++)
                 {
-                   context->mstring[context->msp++] = str[i]; 
+                    context->mstring[context->msp++] = str[i];
                 }
             }
         }
         else
         {
-       context->mstring[context->msp++] = context->macrofunction[newfi];
-        newfi++;
+            context->mstring[context->msp++] = context->macrofunction[newfi];
+            newfi++;
         }
     }
-   
-
 }
 
-int scob(ruc_context *context, int cp)
+int
+scob(ruc_context *context, int cp)
 {
     int i;
     context->fchange[cp++] = context->curchar;
     m_nextch(context, 6);
-    while(context->curchar != EOF)
+    while (context->curchar != EOF)
     {
-        if(letter(context))
+        if (letter(context))
         {
             from_macrotext(context);
-            for(i = 0; i < context->msp; i++)
+            for (i = 0; i < context->msp; i++)
             {
-               context->fchange[cp++] =  context->mstring[i];
+                context->fchange[cp++] = context->mstring[i];
             }
         }
-        else if(context->curchar == '(')
+        else if (context->curchar == '(')
         {
             cp = scob(context, cp);
         }
@@ -563,11 +619,11 @@ int scob(ruc_context *context, int cp)
         {
             context->fchange[cp++] = context->curchar;
             m_nextch(context, 6);
-            if(context->curchar != ')')
+            if (context->curchar != ')')
             {
                 context->fchange[cp++] = context->curchar;
                 m_nextch(context, 6);
-                 return cp;
+                return cp;
             }
         }
     }
@@ -575,45 +631,47 @@ int scob(ruc_context *context, int cp)
     return cp;
 }
 
-void create_change(ruc_context *context, int r1)
+void
+create_change(ruc_context *context, int r1)
 {
     int i;
     int r = r1 + 2;
     int cp = 1;
     context->functionident[r] = cp;
-    if(context->curchar == '(')
-    { 
+    if (context->curchar == '(')
+    {
         m_nextch(context, 11);
-        while(context->curchar != EOF)
+        while (context->curchar != EOF)
         {
 
-            if(letter(context))
+            if (letter(context))
             {
                 from_macrotext(context);
-                for(i = 0; i < context->msp; i++)
+                for (i = 0; i < context->msp; i++)
                 {
-                    context->fchange[cp++] =  context->mstring[i];
+                    context->fchange[cp++] = context->mstring[i];
                 }
             }
-            else if(context->curchar == '(')
+            else if (context->curchar == '(')
             {
                 cp = scob(context, cp);
             }
-            else if(context->curchar != ')' && context->curchar != ',')
+            else if (context->curchar != ')' && context->curchar != ',')
             {
-            context->fchange[cp++] = context->curchar;
-            m_nextch(context, 11);
+                context->fchange[cp++] = context->curchar;
+                m_nextch(context, 11);
             }
             else
             {
-               m_error(context, not_enough_param); 
+                m_error(context, not_enough_param);
             }
 
             if (context->curchar == ',' || context->curchar == ')')
             {
-                for(; context->functionident[r] != 0; r++);
+                for (; context->functionident[r] != 0; r++)
+                    ;
 
-                if(r < context->functionident[r1])
+                if (r < context->functionident[r1])
                 {
                     context->fchange[cp++] = '\n';
                     r++;
@@ -623,33 +681,32 @@ void create_change(ruc_context *context, int r1)
                     m_error(context, not_enough_param);
                 }
 
-                if(context->curchar == ',')
+                if (context->curchar == ',')
                 {
-                    context->functionident[r] =cp;
+                    context->functionident[r] = cp;
                     m_nextch(context, 11);
                 }
                 else
                 {
-                    if(r != context->functionident[r1])
+                    if (r != context->functionident[r1])
                     {
                         m_error(context, not_enough_param2);
-
                     }
                     m_nextch(context, 11);
                     return;
                 }
             }
-            
         }
         m_error(context, scob_not_clous);
-    } 
+    }
     else
     {
         m_error(context, stalpe);
     }
 }
 
-void r_macrofunction(ruc_context *context)
+void
+r_macrofunction(ruc_context *context)
 {
     int j;
     int olderfip = context->fip++;
@@ -659,31 +716,30 @@ void r_macrofunction(ruc_context *context)
     m_nextch(context, 3);
     context->functionident[olderfip] = context->fip;
 
-    while(context->curchar != '\n')
+    while (context->curchar != '\n')
     {
-    
+
         if (letter(context))
         {
             from_macrotext(context);
-            for ( j = 0; j < context->msp; j++)
+            for (j = 0; j < context->msp; j++)
             {
-                context->macrofunction[context->mfp++] =  context->mstring[j];  
+                context->macrofunction[context->mfp++] = context->mstring[j];
             }
             context->msp = 0;
         }
         else
         {
-        context->macrofunction [context->mfp++] = context->curchar;
-        m_nextch(context, 3);
+            context->macrofunction[context->mfp++] = context->curchar;
+            m_nextch(context, 3);
         }
 
-        if(context->curchar == EOF)
+        if (context->curchar == EOF)
         {
             m_error(context, not_end_fail_preprocess);
         }
-
     }
-    context->macrofunction [context->mfp++] = '\n';
+    context->macrofunction[context->mfp++] = '\n';
     return;
 }
 
@@ -691,7 +747,7 @@ void r_macrofunction(ruc_context *context)
 /*void m_ident()
 {
     context->msp = 0;
-    
+
     while(letter(context) || digit(context))
     {
         context->mstring[context->msp++] = context->curchar;
@@ -702,13 +758,14 @@ void r_macrofunction(ruc_context *context)
     return;
 }*/
 
-int find_ident(ruc_context *context)
+int
+find_ident(ruc_context *context)
 {
     int fpr = context->rp;
     int i, r;
     context->hash = 0;
     fpr += 2;
-    for( i = 0; i <context->msp; i++)
+    for (i = 0; i < context->msp; i++)
     {
         context->hash += context->mstring[i];
         context->reprtab[fpr++] = context->mstring[i];
@@ -716,39 +773,41 @@ int find_ident(ruc_context *context)
     context->reprtab[fpr++] = 0;
     context->hash &= 255;
     r = context->hashtab[context->hash];
-    while(r)
+    while (r)
     {
-        if(r >= context->mfirstrp && r<=context->mlastrp && equal(context, r, context->rp) )
+        if (r >= context->mfirstrp && r <= context->mlastrp &&
+            equal(context, r, context->rp))
         {
-           return r;
+            return r;
         }
-            r = context->reprtab[r];        
+        r = context->reprtab[r];
     }
     return 0;
 }
 
-int check_if(ruc_context *context, int type_if)
+int
+check_if(ruc_context *context, int type_if)
 {
 
     int flag = 0;
 
-    if(type_if == SH_IF )
+    if (type_if == SH_IF)
     {
         m_error(context, not_relis_if);
     }
     else if (type_if == SH_IFDEF || type_if == SH_IFNDEF)
     {
         context->msp = 0;
-        while(letter(context) || digit(context))
+        while (letter(context) || digit(context))
         {
-        context->mstring[context->msp++] = context->curchar;
-        m_nextch(context, 10);
+            context->mstring[context->msp++] = context->curchar;
+            m_nextch(context, 10);
         }
-        if( find_ident(context))
+        if (find_ident(context))
         {
             flag = 1;
         }
-        if(type_if == SH_IFDEF)
+        if (type_if == SH_IFDEF)
         {
             return flag;
         }
@@ -760,11 +819,12 @@ int check_if(ruc_context *context, int type_if)
     return 0;
 }
 
-void end_line(ruc_context *context)
+void
+end_line(ruc_context *context)
 {
-    while(context->curchar != '\n')
+    while (context->curchar != '\n')
     {
-        if(context->curchar == ' ' || context->curchar == '\t')
+        if (context->curchar == ' ' || context->curchar == '\t')
         {
             m_nextch(context, 9);
         }
@@ -776,76 +836,79 @@ void end_line(ruc_context *context)
     m_nextch(context, 9);
 }
 
-void false_if (ruc_context *context)
+void
+false_if(ruc_context *context)
 {
     int fl_cur;
-   while(context->curchar != EOF)
+    while (context->curchar != EOF)
     {
         if (context->curchar == '#')
         {
             fl_cur = macro_keywords(context);
-            if(fl_cur == SH_ENDIF)
+            if (fl_cur == SH_ENDIF)
             {
                 context->checkif--;
-                if(context->checkif == -1)
+                if (context->checkif == -1)
                 {
                     m_error(context, befor_endif);
                 }
                 return;
             }
-            if(fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
+            if (fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
             {
                 context->checkif++;
                 false_if(context);
-            } 
+            }
         }
         else
         {
-        m_nextch(context, 8);
+            m_nextch(context, 8);
         }
-    } 
+    }
     m_error(context, must_be_endif);
 }
 
-int m_false(ruc_context *context)
+int
+m_false(ruc_context *context)
 {
     int fl_cur = context->cur;
-    while(context->curchar != EOF)
+    while (context->curchar != EOF)
     {
         if (context->curchar == '#')
         {
             fl_cur = macro_keywords(context);
-            if(fl_cur == SH_ELSE || fl_cur == SH_ELIF || fl_cur == SH_ENDIF)
+            if (fl_cur == SH_ELSE || fl_cur == SH_ELIF || fl_cur == SH_ENDIF)
             {
                 return fl_cur;
             }
-            if(fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
+            if (fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
             {
                 false_if(context);
-            } 
+            }
         }
         else
         {
             m_nextch(context, 7);
         }
-    }  
+    }
     m_error(context, must_be_endif);
     return 1;
 }
 
-void m_true(ruc_context *context, int type_if)
+void
+m_true(ruc_context *context, int type_if)
 {
-   while (context->curchar != EOF )
+    while (context->curchar != EOF)
     {
         macroscan(context);
-        if (context->cur == SH_ELSE || context->cur == SH_ELIF )
+        if (context->cur == SH_ELSE || context->cur == SH_ELIF)
         {
             break;
         }
-        if(context->cur == SH_ENDIF)
+        if (context->cur == SH_ENDIF)
         {
             context->checkif--;
-            if(context->checkif == -1)
+            if (context->checkif == -1)
             {
                 m_error(context, befor_endif);
             }
@@ -853,21 +916,22 @@ void m_true(ruc_context *context, int type_if)
         }
     }
 
-    if(type_if != SH_IF && context->cur == SH_ELIF)
+    if (type_if != SH_IF && context->cur == SH_ELIF)
     {
         m_error(context, dont_elif);
     }
-    
+
     false_if(context);
     return;
 }
 
-void m_if(ruc_context *context, int type_if)
-{ 
+void
+m_if(ruc_context *context, int type_if)
+{
     context->checkif++;
-    int flag = check_if(context, type_if);// начало (if)
+    int flag = check_if(context, type_if); // начало (if)
     end_line(context);
-    if(flag)
+    if (flag)
     {
         m_true(context, type_if);
         return;
@@ -901,83 +965,86 @@ void m_if(ruc_context *context, int type_if)
         exit (10);
     }*/
 
-    if (context->cur == SH_ELSE)// конец (else)
+    if (context->cur == SH_ELSE) // конец (else)
     {
         context->cur = 0;
         m_true(context, type_if);
         return;
     }
 
-    if(context->cur == SH_ENDIF)
+    if (context->cur == SH_ENDIF)
     {
         context->checkif--;
-        if(context->checkif == -1)
+        if (context->checkif == -1)
         {
             m_error(context, befor_endif);
         }
     }
 }
 
-void macroscan(ruc_context *context)
-{  
+void
+macroscan(ruc_context *context)
+{
     int j;
-    switch(context->curchar)
+    switch (context->curchar)
     {
         case EOF:
-            return ;
+            return;
 
         case '#':
-            context->cur = macro_keywords (context);
+            context->cur = macro_keywords(context);
             context->prep_flag = 1;
             printf("flag");
-            if(context->cur == SH_DEFINE )
+            if (context->cur == SH_DEFINE)
             {
                 relis_define(context);
                 m_nextch(context, 1);
                 return;
             }
 
-            else if(context->cur == SH_IF || context->cur == SH_IFDEF || context->cur == SH_IFNDEF)
+            else if (context->cur == SH_IF || context->cur == SH_IFDEF ||
+                     context->cur == SH_IFNDEF)
             {
                 m_if(context, context->cur);
                 return;
             }
-            else if (context->cur == SH_ELSE || context->cur == SH_ELIF || context->cur == SH_ENDIF)
+            else if (context->cur == SH_ELSE || context->cur == SH_ELIF ||
+                     context->cur == SH_ENDIF)
             {
                 return;
             }
             else
             {
-            m_fprintf(context, context->curchar);
-            m_nextch(context, 17);
-            return;
-            m_error(context, preproces_words_not_exist);
+                m_fprintf(context, context->curchar);
+                m_nextch(context, 17);
+                return;
+                m_error(context, preproces_words_not_exist);
             }
 
         case '\'':
+            m_fprintf(context, context->curchar);
+            m_nextch(context, 171);
+            if (context->curchar == '\\')
+            {
                 m_fprintf(context, context->curchar);
                 m_nextch(context, 171);
-                if(context->curchar == '\\')
-                {
-                    m_fprintf(context, context->curchar);
-                    m_nextch(context, 171); 
-                }
-                m_fprintf(context, context->curchar);
-                m_nextch(context, 171);
-                
-                m_fprintf(context, context->curchar);
-                m_nextch(context, 171);
-                return;
+            }
+            m_fprintf(context, context->curchar);
+            m_nextch(context, 171);
+
+            m_fprintf(context, context->curchar);
+            m_nextch(context, 171);
+            return;
 
         case '\"':
-                m_fprintf(context, context->curchar);
-                m_nextch(context, 172);
-            while(context->curchar != '\"' && context->curchar != EOF)
+            m_fprintf(context, context->curchar);
+            m_nextch(context, 172);
+            while (context->curchar != '\"' && context->curchar != EOF)
             {
-                if(context->curchar == '\\')
+                if (context->curchar == '\\')
                 {
                     m_fprintf(context, context->curchar);
-                    m_nextch(context, 172);  
+                    m_nextch(context, 172);
                 }
                 m_fprintf(context, context->curchar);
                 m_nextch(context, 172);
@@ -986,12 +1053,12 @@ void macroscan(ruc_context *context)
             m_nextch(context, 172);
             return;
         default:
-            if(letter(context))
+            if (letter(context))
             {
                 from_macrotext(context);
-                for ( j = 0; j < context->msp; j++)
+                for (j = 0; j < context->msp; j++)
                 {
-                   m_fprintf(context, context->mstring[j]);  
+                    m_fprintf(context, context->mstring[j]);
                 }
                 return;
             }
@@ -1001,12 +1068,12 @@ void macroscan(ruc_context *context)
                 m_nextch(context, 173);
                 return;
             }
-
     }
 }
 
 
-void preprocess_file(ruc_context *context)
+void
+preprocess_file(ruc_context *context)
 {
     context->mfirstrp = context->rp;
     context->mlines[context->mline = 1] = 1;
@@ -1015,10 +1082,9 @@ void preprocess_file(ruc_context *context)
 
     getnext(context);
     m_nextch(context, 18);
-    while (context->curchar != EOF )
+    while (context->curchar != EOF)
     {
         macroscan(context);
     }
-    context->m_conect_lines[context->mcl++] = context->mline-1;
+    context->m_conect_lines[context->mcl++] = context->mline - 1;
 }
-

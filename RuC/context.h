@@ -5,23 +5,25 @@
 #include "Defs.h"
 
 // Определение глобальных переменных
-typedef struct ruc_context {
-    FILE       *input;
-    FILE       *output;
-    double      numdouble;
-    int         line;
-    int         mline;
-    int         charnum;
-    int         m_charnum;
-    int         cur;
-    int         next;
-    int         next1;
-    int         num;
-    int         hash;
-    int         repr;
-    int         keywordsnum;
-    int         wasstructdef;
-    struct {
+typedef struct ruc_context
+{
+    FILE * input;
+    FILE * output;
+    double numdouble;
+    int    line;
+    int    mline;
+    int    charnum;
+    int    m_charnum;
+    int    cur;
+    int    next;
+    int    next1;
+    int    num;
+    int    hash;
+    int    repr;
+    int    keywordsnum;
+    int    wasstructdef;
+    struct
+    {
         int first;
         int second;
     } numr;
@@ -67,7 +69,7 @@ typedef struct ruc_context {
     int instring;
     int inswitch;
     int inloop;
-    int lexstr[MAXSTRINGL+1];
+    int lexstr[MAXSTRINGL + 1];
     int tree[MAXTREESIZE];
     int tc;
     int mtree[MAXTREESIZE];
@@ -98,16 +100,16 @@ typedef struct ruc_context {
     int anst;
     int anstdispl;
     int ansttype;
-    int leftansttype;   // anst = VAL  - значение на стеке
+    int leftansttype; // anst = VAL  - значение на стеке
     int g;
     int l;
     int x;
-    int iniproc;        // anst = ADDR - на стеке адрес значения
-                        // anst = IDENT- значение в статике,
-                        // в anstdisl смещение от l или g
-                        // в ansttype всегда тип возвращаемого значения
-                        // если значение указателя, адрес массива или строки
-                        //лежит на верхушке стека, то это VAL, а не ADDR
+    int iniproc; // anst = ADDR - на стеке адрес значения
+                 // anst = IDENT- значение в статике,
+                 // в anstdisl смещение от l или g
+                 // в ansttype всегда тип возвращаемого значения
+                 // если значение указателя, адрес массива или строки
+                 //лежит на верхушке стека, то это VAL, а не ADDR
     int bad_printf_placeholder;
     int onlystrings;
 
@@ -136,6 +138,7 @@ typedef struct ruc_context {
  *
  * @param context Uninitialized RuC context
  */
-extern void ruc_context_init(ruc_context *context);
+extern void
+ruc_context_init(ruc_context *context);
 
 #endif

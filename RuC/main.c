@@ -7,53 +7,67 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-const char * name =
-//"tests/Egor/string/strcat.c";
-"tests/Fadeev/draw.c";
+const char *name =
+    //"tests/Egor/string/strcat.c";
+    "tests/Fadeev/draw.c";
 //"tests/arrstruct1.c";
 //"../../../tests/mips/0test.c";
 
+#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
-#include <stdlib.h>
-#include <errno.h>
 #include "Defs.h"
 #include "context.h"
 
-extern void preprocess_file(ruc_context *context);
+extern void
+preprocess_file(ruc_context *context);
 
-extern void tablesandcode(ruc_context *context);
-extern void tablesandtree(ruc_context *context);
-extern void import(ruc_context *context);
-extern int  getnext(ruc_context *context);
-extern int  nextch(ruc_context *context);
-extern int  scan(ruc_context *context);
-extern void error(ruc_context *context, int ernum);
-extern void codegen(ruc_context *context);
-extern void mipsopt(ruc_context *context);
-extern void mipsgen(ruc_context *context);
-extern void ext_decl(ruc_context *context);
+extern void
+tablesandcode(ruc_context *context);
+extern void
+tablesandtree(ruc_context *context);
+extern void
+import(ruc_context *context);
+extern int
+getnext(ruc_context *context);
+extern int
+nextch(ruc_context *context);
+extern int
+scan(ruc_context *context);
+extern void
+error(ruc_context *context, int ernum);
+extern void
+codegen(ruc_context *context);
+extern void
+mipsopt(ruc_context *context);
+extern void
+mipsgen(ruc_context *context);
+extern void
+ext_decl(ruc_context *context);
 
-int toreprtab(ruc_context *context, char str[])
+int
+toreprtab(ruc_context *context, char str[])
 {
     int i, oldrepr = context->rp;
     context->hash = 0;
     context->rp += 2;
-    for (i=0; str[i] != 0; i++)
+    for (i = 0; str[i] != 0; i++)
     {
         context->hash += str[i];
         context->reprtab[context->rp++] = str[i];
     }
     context->hash &= 255;
     context->reprtab[context->rp++] = 0;
-    context->reprtab[oldrepr] = context->hashtab[context->hash] ;
-    context->reprtab[oldrepr+1] = 1;
+    context->reprtab[oldrepr] = context->hashtab[context->hash];
+    context->reprtab[oldrepr + 1] = 1;
     return context->hashtab[context->hash] = oldrepr;
 }
 
 /* Первичная инициализация глобальных объектов */
-void init(ruc_context *context)
+void
+init(ruc_context *context)
 {
     memset(context->hashtab, 0, sizeof(context->hashtab));
 }
@@ -93,7 +107,8 @@ init_modetab(ruc_context *context)
     context->tc = 0;
 }
 
-typedef enum ruc_io_type {
+typedef enum ruc_io_type
+{
     IO_TYPE_INPUT,
     IO_TYPE_OUTPUT,
 } ruc_io_type;
@@ -128,7 +143,7 @@ io_type2access_mask(ruc_io_type type)
 void
 attach_io(ruc_context *context, const char *path, ruc_io_type type)
 {
-    FILE *f = fopen(path, io_type2access_mask(type));
+    FILE * f = fopen(path, io_type2access_mask(type));
     FILE **target = io_type2file(context, type);
 
     if (f == NULL)
@@ -163,7 +178,7 @@ read_keywords(ruc_context *context, const char *path)
     context->keywordsnum = 1;
     getnext(context);
     nextch(context);
-    while (scan(context) != LEOF)   // чтение ключевых слов
+    while (scan(context) != LEOF) // чтение ключевых слов
         ;
 
     detach_io(context, IO_TYPE_INPUT);
@@ -179,7 +194,7 @@ output_tables_and_tree(ruc_context *context, const char *path)
     nextch(context);
     context->next = scan(context);
 
-    ext_decl(context);                       //   генерация дерева
+    ext_decl(context); //   генерация дерева
 
     context->lines[context->line + 1] = context->charnum;
     tablesandtree(context);
@@ -203,14 +218,9 @@ output_export(ruc_context *context, const char *path)
     int i;
 
     attach_io(context, path, IO_TYPE_OUTPUT);
-    fprintf(context->output, "%i %i %i %i %i %i %i\n",
-            context->pc,
-            context->funcnum,
-            context->id,
-            context->rp,
-            context->md,
-            context->maxdisplg,
-            context->wasmain);
+    fprintf(context->output, "%i %i %i %i %i %i %i\n", context->pc,
+            context->funcnum, context->id, context->rp, context->md,
+            context->maxdisplg, context->wasmain);
 
     for (i = 0; i < context->pc; i++)
         fprintf(context->output, "%i ", context->mem[i]);
@@ -234,7 +244,8 @@ output_export(ruc_context *context, const char *path)
     detach_io(context, IO_TYPE_OUTPUT);
 }
 
-int main(int argc, const char * argv[])
+int
+main(int argc, const char *argv[])
 {
     ruc_context context;
 
@@ -252,7 +263,7 @@ int main(int argc, const char * argv[])
 
     printf("\nИсходный текст:\n \n");
 
-    preprocess_file(&context);                //   макрогенерация
+    preprocess_file(&context); //   макрогенерация
 
     detach_io(&context, IO_TYPE_OUTPUT);
     detach_io(&context, IO_TYPE_INPUT);
@@ -265,4 +276,3 @@ int main(int argc, const char * argv[])
 
     return 0;
 }
-

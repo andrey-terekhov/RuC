@@ -11,45 +11,48 @@
 
 #include "global_vars.h"
 
-extern void fprintf_char(FILE *f, int wchar);
+extern void
+fprintf_char(FILE *f, int wchar);
 
-void tablesandtree(ruc_context *context)
+void
+tablesandtree(ruc_context *context)
 {
-    int i=0, j;
-    
+    int i = 0, j;
+
     fprintf(context->output, "\n%s\n", "source");
-    for (i=1; i<context->line; i++)
+    for (i = 1; i < context->line; i++)
     {
         fprintf(context->output, "line %i) ", i);
-        for (j=context->lines[i]; j<context->lines[i+1]; j++)
+        for (j = context->lines[i]; j < context->lines[i + 1]; j++)
         {
             fprintf_char(context->output, context->source[j]);
         }
     }
     fprintf(context->output, "\n");
-    
+
     fprintf(context->output, "\n%s\n", "identab");
     i = 2;
     while (i < context->id)
     {
-        for (j=0; j<4; j++)
-            fprintf(context->output, "id %i) %i\n", i +j, context->identab[i+j]);
+        for (j = 0; j < 4; j++)
+            fprintf(context->output, "id %i) %i\n", i + j,
+                    context->identab[i + j]);
         fprintf(context->output, "\n");
-        i +=4;
+        i += 4;
     }
-/*
-	fprintf(context->output, "\n%s\n", "repr");
-	for (i = 1206; i <= rp; i++)
-		fprintf(context->output, "rp %i) %i\n", i, reprtab[i]);
- */
+    /*
+        fprintf(context->output, "\n%s\n", "repr");
+        for (i = 1206; i <= rp; i++)
+            fprintf(context->output, "rp %i) %i\n", i, reprtab[i]);
+     */
     fprintf(context->output, "\n%s\n", "modetab");
-    for (i=0; i<context->md; i++)
+    for (i = 0; i < context->md; i++)
         fprintf(context->output, "md %i) %i\n", i, context->modetab[i]);
-/*
-    fprintf(context->output, "\n%s\n", "tree");
-    for (i=0; i<=tc; i++)
-        fprintf(context->output, "tc %i) %i\n", i, context->tree[i]);
-*/
+    /*
+        fprintf(context->output, "\n%s\n", "tree");
+        for (i=0; i<=tc; i++)
+            fprintf(context->output, "tc %i) %i\n", i, context->tree[i]);
+    */
     fprintf(context->output, "\n");
     i = 0;
     while (i < context->tc)
@@ -58,16 +61,23 @@ void tablesandtree(ruc_context *context)
         switch (context->tree[i++])
         {
             case TFuncdef:
-                fprintf(context->output, "TFuncdef funcn= %i maxdispl= %i\n", context->tree[i], context->tree[i+1]);
-				i += 2;
+                fprintf(context->output, "TFuncdef funcn= %i maxdispl= %i\n",
+                        context->tree[i], context->tree[i + 1]);
+                i += 2;
                 break;
             case TDeclarr:
-                fprintf(context->output, "TDeclarr N= %i\n", context->tree[i++]);
+                fprintf(context->output, "TDeclarr N= %i\n",
+                        context->tree[i++]);
                 break;
             case TDeclid:
-                fprintf(context->output, "TDeclid displ= %i eltype= %i N= %i all= %i iniproc= %i, usual= %i instuct= %i\n",
-                        context->tree[i], context->tree[i+1], context->tree[i+2], context->tree[i+3], context->tree[i+4], context->tree[i+5], context->tree[i+6]);
-				i += 7;
+                fprintf(context->output,
+                        "TDeclid displ= %i eltype= %i N= %i all= %i iniproc= "
+                        "%i, usual= %i instuct= %i\n",
+                        context->tree[i], context->tree[i + 1],
+                        context->tree[i + 2], context->tree[i + 3],
+                        context->tree[i + 4], context->tree[i + 5],
+                        context->tree[i + 6]);
+                i += 7;
                 break;
             case TString:
                 fprintf(context->output, "TString n= %i\n", context->tree[i++]);
@@ -82,12 +92,14 @@ void tablesandtree(ruc_context *context)
                 fprintf(context->output, "TEnd\n");
                 break;
             case TBeginit:
-                fprintf(context->output, "TBeginit n= %i\n", context->tree[i++]);
+                fprintf(context->output, "TBeginit n= %i\n",
+                        context->tree[i++]);
                 break;
             case TStructinit:
-                fprintf(context->output, "TStructinit n= %i\n", context->tree[i++]);
+                fprintf(context->output, "TStructinit n= %i\n",
+                        context->tree[i++]);
                 break;
-             case TIf:
+            case TIf:
                 fprintf(context->output, "TIf %i\n", context->tree[i++]);
                 break;
             case TWhile:
@@ -97,8 +109,10 @@ void tablesandtree(ruc_context *context)
                 fprintf(context->output, "TDo\n");
                 break;
             case TFor:
-                fprintf(context->output, "TFor %i %i %i %i\n", context->tree[i], context->tree[i+1], context->tree[i+2], context->tree[i+3]);
-				i += 4;
+                fprintf(context->output, "TFor %i %i %i %i\n", context->tree[i],
+                        context->tree[i + 1], context->tree[i + 2],
+                        context->tree[i + 3]);
+                i += 4;
                 break;
             case TSwitch:
                 fprintf(context->output, "TSwitch\n");
@@ -128,16 +142,20 @@ void tablesandtree(ruc_context *context)
                 fprintf(context->output, "TIdent %i\n", context->tree[i++]);
                 break;
             case TIdenttoval:
-                fprintf(context->output, "TIdenttoval %i\n", context->tree[i++]);
+                fprintf(context->output, "TIdenttoval %i\n",
+                        context->tree[i++]);
                 break;
             case TIdenttovald:
-                fprintf(context->output, "TIdenttovald %i\n", context->tree[i++]);
+                fprintf(context->output, "TIdenttovald %i\n",
+                        context->tree[i++]);
                 break;
             case TFunidtoval:
-                fprintf(context->output, "TFunidtoval %i\n", context->tree[i++]);
+                fprintf(context->output, "TFunidtoval %i\n",
+                        context->tree[i++]);
                 break;
             case TIdenttoaddr:
-                fprintf(context->output, "TIdenttoaddr %i\n", context->tree[i++]);
+                fprintf(context->output, "TIdenttoaddr %i\n",
+                        context->tree[i++]);
                 break;
             case TAddrtoval:
                 fprintf(context->output, "TAddrtoval\n");
@@ -157,58 +175,79 @@ void tablesandtree(ruc_context *context)
                 fprintf(context->output, "TConstd %f\n", context->numdouble);
                 break;
             case TSliceident:
-                fprintf(context->output, "TSliceident displ= %i type= %i\n", context->tree[i], context->tree[i+1]);
+                fprintf(context->output, "TSliceident displ= %i type= %i\n",
+                        context->tree[i], context->tree[i + 1]);
                 i += 2;
                 break;
             case TSlice:
-                fprintf(context->output, "TSlice elem_type= %i\n", context->tree[i++]);
+                fprintf(context->output, "TSlice elem_type= %i\n",
+                        context->tree[i++]);
                 break;
-			case TSelect:
-				fprintf(context->output, "TSelect displ= %i\n", context->tree[i++]);
-				break;
+            case TSelect:
+                fprintf(context->output, "TSelect displ= %i\n",
+                        context->tree[i++]);
+                break;
             case NOP:
                 fprintf(context->output, "NOP\n");
                 break;
             case ADLOGAND:
-                fprintf(context->output, "ADLOGAND addr= %i\n", context->tree[i++]);
+                fprintf(context->output, "ADLOGAND addr= %i\n",
+                        context->tree[i++]);
                 break;
             case ADLOGOR:
-                fprintf(context->output, "ADLOGOR addr= %i\n", context->tree[i++]);
+                fprintf(context->output, "ADLOGOR addr= %i\n",
+                        context->tree[i++]);
                 break;
             case COPY00:
-                fprintf(context->output, "COPY00 %i ", context->tree[i++]);     // displleft
-                fprintf(context->output, "%i ", context->tree[i++]);            // displright
-                fprintf(context->output, "(%i)\n", context->tree[i++]);         // length
+                fprintf(context->output, "COPY00 %i ",
+                        context->tree[i++]); // displleft
+                fprintf(context->output, "%i ",
+                        context->tree[i++]); // displright
+                fprintf(context->output, "(%i)\n",
+                        context->tree[i++]); // length
                 break;
             case COPY01:
-                fprintf(context->output, "COPY01 %i ", context->tree[i++]);     // displleft
-                fprintf(context->output, "(%i)\n", context->tree[i++]);         // length
+                fprintf(context->output, "COPY01 %i ",
+                        context->tree[i++]); // displleft
+                fprintf(context->output, "(%i)\n",
+                        context->tree[i++]); // length
                 break;
             case COPY10:
-                fprintf(context->output, "COPY10 %i ", context->tree[i++]);     // displright
-                fprintf(context->output, "(%i)\n", context->tree[i++]);         // length
+                fprintf(context->output, "COPY10 %i ",
+                        context->tree[i++]); // displright
+                fprintf(context->output, "(%i)\n",
+                        context->tree[i++]); // length
                 break;
             case COPY11:
-                fprintf(context->output, "COPY11 %i\n", context->tree[i++]);     // length
+                fprintf(context->output, "COPY11 %i\n",
+                        context->tree[i++]); // length
                 break;
             case COPY0ST:
-                fprintf(context->output, "COPY0ST %i ", context->tree[i++]);     // displleft
-                fprintf(context->output, "(%i)\n", context->tree[i++]);          // length
+                fprintf(context->output, "COPY0ST %i ",
+                        context->tree[i++]); // displleft
+                fprintf(context->output, "(%i)\n",
+                        context->tree[i++]); // length
                 break;
             case COPY1ST:
-                fprintf(context->output, "COPY1ST (%i)\n", context->tree[i++]);  // length
+                fprintf(context->output, "COPY1ST (%i)\n",
+                        context->tree[i++]); // length
                 break;
             case COPY0STASS:
-                fprintf(context->output, "COPY0STASS %i ", context->tree[i++]);  // displleft
-                fprintf(context->output, "(%i)\n", context->tree[i++]);          // length
+                fprintf(context->output, "COPY0STASS %i ",
+                        context->tree[i++]); // displleft
+                fprintf(context->output, "(%i)\n",
+                        context->tree[i++]); // length
                 break;
             case COPY1STASS:
-                fprintf(context->output, "COPY1STASS (%i)\n", context->tree[i++]);// length
+                fprintf(context->output, "COPY1STASS (%i)\n",
+                        context->tree[i++]); // length
                 break;
             case COPYST:
-                fprintf(context->output, "COPYST %i ", context->tree[i++]);       // displ
-                fprintf(context->output, "(%i)", context->tree[i++]);             // length
-                fprintf(context->output, "(%i)\n", context->tree[i++]);           // length1
+                fprintf(context->output, "COPYST %i ",
+                        context->tree[i++]); // displ
+                fprintf(context->output, "(%i)", context->tree[i++]); // length
+                fprintf(context->output, "(%i)\n",
+                        context->tree[i++]); // length1
                 break;
 
             case TCall1:
@@ -285,35 +324,35 @@ void tablesandtree(ruc_context *context)
                 break;
 
 
-
             default:
-                fprintf(context->output, "TOper %i\n", context->tree[i-1]);
+                fprintf(context->output, "TOper %i\n", context->tree[i - 1]);
         }
     }
 }
 
-void tablesandcode(ruc_context *context)
+void
+tablesandcode(ruc_context *context)
 {
-    int i=0, j;
-    
+    int i = 0, j;
+
     fprintf(context->output, "\n%s\n", "source");
     for (i = 1; i < context->line; i++)
     {
         fprintf(context->output, "line %i) ", i);
-        for (j=context->lines[i]; j<context->lines[i+1]; j++)
+        for (j = context->lines[i]; j < context->lines[i + 1]; j++)
         {
             fprintf_char(context->output, context->source[j]);
         }
     }
-    
+
     fprintf(context->output, "\n\n%s\n", "functions");
     for (i = 1; i <= context->funcnum; i++)
         fprintf(context->output, "fun %i) %i\n", i, context->functions[i]);
-    
+
     fprintf(context->output, "\n%s\n", "iniprocs");
     for (i = 1; i <= context->procd; i++)
         fprintf(context->output, "inipr %i) %i\n", i, context->iniprocs[i]);
-    
+
     fprintf(context->output, "\n%s\n", "mem");
     i = 0;
     while (i < context->pc)
@@ -446,22 +485,29 @@ void tablesandcode(ruc_context *context)
             case STRLENC:
                 fprintf(context->output, "STRLENC\n");
                 break;
-            
+
             case BEGINIT:
                 fprintf(context->output, "BEGINIT n= %i\n", context->mem[i++]);
                 break;
             case STRUCTWITHARR:
-                fprintf(context->output, "STRUCTWITHARR displ= %i ", context->mem[i++]);
+                fprintf(context->output, "STRUCTWITHARR displ= %i ",
+                        context->mem[i++]);
                 fprintf(context->output, "iniproc= %i\n", context->mem[i++]);
                 break;
             case DEFARR:
-                fprintf(context->output, "DEFARR N= %i ", context->mem[i++]);    // N
-				fprintf(context->output, "elem_len= %i ", context->mem[i++]);    // elem length
-				fprintf(context->output, "displ= %i ", context->mem[i++]);       // displ
-                fprintf(context->output, "iniproc= %i ", context->mem[i++]);     // iniproc
-                fprintf(context->output, "usual= %i ", context->mem[i++]);       // usual
-                fprintf(context->output, "all= %i ", context->mem[i++]);         // all
-                fprintf(context->output, "instruct= %i\n", context->mem[i++]);   // instruct
+                fprintf(context->output, "DEFARR N= %i ",
+                        context->mem[i++]); // N
+                fprintf(context->output, "elem_len= %i ",
+                        context->mem[i++]); // elem length
+                fprintf(context->output, "displ= %i ",
+                        context->mem[i++]); // displ
+                fprintf(context->output, "iniproc= %i ",
+                        context->mem[i++]); // iniproc
+                fprintf(context->output, "usual= %i ",
+                        context->mem[i++]); // usual
+                fprintf(context->output, "all= %i ", context->mem[i++]); // all
+                fprintf(context->output, "instruct= %i\n",
+                        context->mem[i++]); // instruct
                 break;
             case ARRINIT:
                 fprintf(context->output, "ARRINIT N= %i ", context->mem[i++]);
@@ -469,9 +515,10 @@ void tablesandcode(ruc_context *context)
                 fprintf(context->output, "displ= %i ", context->mem[i++]);
                 fprintf(context->output, "usual= %i\n", context->mem[i++]);
                 break;
-//            case STRUCTINIT:
-//                fprintf(context->output, "STRUCTINIT N= %i ", context->mem[i++]);
-//            break;
+                //            case STRUCTINIT:
+                //                fprintf(context->output, "STRUCTINIT N= %i ",
+                //                context->mem[i++]);
+                //            break;
             case NOP:
                 fprintf(context->output, "NOP\n");
                 break;
@@ -498,7 +545,7 @@ void tablesandcode(ruc_context *context)
             case LA:
                 fprintf(context->output, "LA %i\n", context->mem[i++]);
                 break;
-                
+
             case LOGOR:
                 fprintf(context->output, "||\n");
                 break;
@@ -550,7 +597,7 @@ void tablesandcode(ruc_context *context)
             case LAND:
                 fprintf(context->output, "&\n");
                 break;
-                
+
             case EQEQ:
                 fprintf(context->output, "==\n");
                 break;
@@ -587,7 +634,7 @@ void tablesandcode(ruc_context *context)
             case LGER:
                 fprintf(context->output, ">=f\n");
                 break;
-                
+
             case SHRASS:
                 fprintf(context->output, ">>= %i\n", context->mem[i++]);
                 break;
@@ -618,7 +665,7 @@ void tablesandcode(ruc_context *context)
             case LSHL:
                 fprintf(context->output, "<<\n");
                 break;
-                
+
             case ASS:
                 fprintf(context->output, "= %i\n", context->mem[i++]);
                 break;
@@ -631,7 +678,7 @@ void tablesandcode(ruc_context *context)
             case ASSATV:
                 fprintf(context->output, "=@V\n");
                 break;
-             
+
             case PLUSASS:
                 fprintf(context->output, "+= %i\n", context->mem[i++]);
                 break;
@@ -647,7 +694,7 @@ void tablesandcode(ruc_context *context)
             case LPLUS:
                 fprintf(context->output, "+\n");
                 break;
-                
+
             case MINUSASS:
                 fprintf(context->output, "-= %i\n", context->mem[i++]);
                 break;
@@ -663,7 +710,7 @@ void tablesandcode(ruc_context *context)
             case LMINUS:
                 fprintf(context->output, "-\n");
                 break;
-                
+
             case MULTASS:
                 fprintf(context->output, "*= %i\n", context->mem[i++]);
                 break;
@@ -679,7 +726,7 @@ void tablesandcode(ruc_context *context)
             case LMULT:
                 fprintf(context->output, "*\n");
                 break;
-                
+
             case DIVASS:
                 fprintf(context->output, "/= %i\n", context->mem[i++]);
                 break;
@@ -695,7 +742,7 @@ void tablesandcode(ruc_context *context)
             case LDIV:
                 fprintf(context->output, "/\n");
                 break;
-            
+
             case ASSR:
                 fprintf(context->output, "=f %i\n", context->mem[i++]);
                 break;
@@ -708,7 +755,7 @@ void tablesandcode(ruc_context *context)
             case ASSATRV:
                 fprintf(context->output, "=@fV\n");
                 break;
-                
+
             case PLUSASSR:
                 fprintf(context->output, "+=f %i\n", context->mem[i++]);
                 break;
@@ -769,40 +816,51 @@ void tablesandcode(ruc_context *context)
             case LDIVR:
                 fprintf(context->output, "/f\n");
                 break;
-			case COPY00:
-				fprintf(context->output, "COPY00 %i ", context->mem[i++]);          // displleft
-				fprintf(context->output, "%i ", context->mem[i++]);                 // displright
-				fprintf(context->output, "(%i)\n", context->mem[i++]);              // length
-				break;
-			case COPY01:
-				fprintf(context->output, "COPY01 %i      ", context->mem[i++]);     // displleft
-				fprintf(context->output, "(%i)\n", context->mem[i++]);              // length
-				break;
+            case COPY00:
+                fprintf(context->output, "COPY00 %i ",
+                        context->mem[i++]); // displleft
+                fprintf(context->output, "%i ",
+                        context->mem[i++]); // displright
+                fprintf(context->output, "(%i)\n", context->mem[i++]); // length
+                break;
+            case COPY01:
+                fprintf(context->output, "COPY01 %i      ",
+                        context->mem[i++]); // displleft
+                fprintf(context->output, "(%i)\n", context->mem[i++]); // length
+                break;
             case COPY10:
-                fprintf(context->output, "COPY10      %i ", context->mem[i++]);     // displright
-                fprintf(context->output, "(%i)\n", context->mem[i++]);              // length
+                fprintf(context->output, "COPY10      %i ",
+                        context->mem[i++]); // displright
+                fprintf(context->output, "(%i)\n", context->mem[i++]); // length
                 break;
             case COPY11:
-                fprintf(context->output, "COPY11 %i\n", context->mem[i++]);         // length
+                fprintf(context->output, "COPY11 %i\n",
+                        context->mem[i++]); // length
                 break;
             case COPY0ST:
-                fprintf(context->output, "COPY0ST %i ", context->mem[i++]);         // displright
-                fprintf(context->output, "(%i)\n", context->mem[i++]);              // length
+                fprintf(context->output, "COPY0ST %i ",
+                        context->mem[i++]); // displright
+                fprintf(context->output, "(%i)\n", context->mem[i++]); // length
                 break;
             case COPY1ST:
-                fprintf(context->output, "COPY1ST %i\n", context->mem[i++]);        // length
+                fprintf(context->output, "COPY1ST %i\n",
+                        context->mem[i++]); // length
                 break;
             case COPY0STASS:
-                fprintf(context->output, "COPY0STASS %i ", context->mem[i++]);      // displleft
-                fprintf(context->output, "(%i)\n", context->mem[i++]);              // length
+                fprintf(context->output, "COPY0STASS %i ",
+                        context->mem[i++]); // displleft
+                fprintf(context->output, "(%i)\n", context->mem[i++]); // length
                 break;
             case COPY1STASS:
-                fprintf(context->output, "COPY1STASS %i\n", context->mem[i++]);     // length
+                fprintf(context->output, "COPY1STASS %i\n",
+                        context->mem[i++]); // length
                 break;
             case COPYST:
-                fprintf(context->output, "COPYST %i ", context->mem[i++]);          // displ
-                fprintf(context->output, "(%i)", context->mem[i++]);                // length
-                fprintf(context->output, "(%i)\n", context->mem[i++]);              // length1
+                fprintf(context->output, "COPYST %i ",
+                        context->mem[i++]); // displ
+                fprintf(context->output, "(%i)", context->mem[i++]); // length
+                fprintf(context->output, "(%i)\n",
+                        context->mem[i++]); // length1
                 break;
 
             case REMASS:
@@ -820,7 +878,7 @@ void tablesandcode(ruc_context *context)
             case LREM:
                 fprintf(context->output, "%%\n");
                 break;
-                
+
             case CALL1:
                 fprintf(context->output, "CALL1\n");
                 break;
@@ -849,9 +907,10 @@ void tablesandcode(ruc_context *context)
             case SLICE:
                 fprintf(context->output, "SLICE d= %i\n", context->mem[i++]);
                 break;
-			case SELECT:
-				fprintf(context->output, "SELECT field_displ= %i\n", context->mem[i++]);
-				break;
+            case SELECT:
+                fprintf(context->output, "SELECT field_displ= %i\n",
+                        context->mem[i++]);
+                break;
             case WIDEN:
                 fprintf(context->output, "WIDEN\n");
                 break;
@@ -970,16 +1029,16 @@ void tablesandcode(ruc_context *context)
             case UNMINUSR:
                 fprintf(context->output, "UNMINUSf\n");
                 break;
-                
+
             case FUNCBEG:
-                fprintf(context->output, "FUNCBEG maxdispl= %i ", context->mem[i++]);
+                fprintf(context->output, "FUNCBEG maxdispl= %i ",
+                        context->mem[i++]);
                 fprintf(context->output, "pc= %i\n", context->mem[i++]);
                 break;
-                
-                
+
+
             default:
-                fprintf(context->output, "%i\n", context->mem[i-1]);
+                fprintf(context->output, "%i\n", context->mem[i - 1]);
         }
     }
-    
 }
