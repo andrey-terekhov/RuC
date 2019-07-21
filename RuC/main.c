@@ -61,6 +61,8 @@ process_user_requests(ruc_context *context, int argc, const char *argv[])
         }
         else if (!enough_files)
         {
+            char *macro_processed;
+
 #ifndef FILE_DEBUG
             /* Regular file */
             char macro_path[] = "/tmp/macroXXXXXX";
@@ -86,23 +88,25 @@ process_user_requests(ruc_context *context, int argc, const char *argv[])
             ruc_context_attach_io(context, argv[i], IO_TYPE_INPUT,
                                   IO_SOURCE_FILE);
 
-            // Препроцессинг в файл macro.txt
-            ruc_context_attach_io(context, macro_path, IO_TYPE_OUTPUT,
-                                  IO_SOURCE_FILE);
+            // Препроцессинг в массив
+            ruc_context_attach_io(context, "", IO_TYPE_OUTPUT,
+                                  IO_SOURCE_MEM);
 
             printf("\nИсходный текст:\n \n");
 
             preprocess_file(context); //   макрогенерация
+            macro_processed = context->output_options.ptr;
 
             ruc_context_detach_io(context, IO_TYPE_OUTPUT);
             ruc_context_detach_io(context, IO_TYPE_INPUT);
 
-            ruc_context_attach_io(context, macro_path, IO_TYPE_INPUT,
-                                  IO_SOURCE_FILE);
+            ruc_context_attach_io(context, macro_processed, IO_TYPE_INPUT,
+                                  IO_SOURCE_MEM);
             output_tables_and_tree(context, tree_path);
             output_codes(context, codes_path);
             ruc_context_detach_io(context, IO_TYPE_INPUT);
 
+            free(macro_processed);
             /* Will be left for debugging in case of failure */
 #ifndef FILE_DEBUG
             unlink(tree_path);
