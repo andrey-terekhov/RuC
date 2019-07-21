@@ -17,9 +17,10 @@
 /** File-based printer */
 int
 printer_file_fprintf(universal_printer_options *opts,
-                     const char *fmt, va_list args)
+                     const char *               fmt,
+                     va_list                    args)
 {
-    int     ret;
+    int ret;
 
     ret = vfprintf(opts->output, fmt, args);
 

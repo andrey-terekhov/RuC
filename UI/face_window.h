@@ -1,13 +1,13 @@
 #pragma once
 
-#include "face_defaults.h"
-#include "messages_window.h"
-#include "io_editor.h"
 #include "code_editor.h"
+#include "face_defaults.h"
+#include "io_editor.h"
+#include "messages_window.h"
 
 #include <cstdio>
-#include <string>
 #include <set>
+#include <string>
 
 #include <FL/Fl.H>
 #include <FL/Fl_Browser.H>
@@ -42,15 +42,15 @@ private:
     void mess(const char *message);
     void run_compiler();
     void run_vm();
-    
-    Fl_Menu_Bar menu_bar;
-    Code_Editor code_editor;
+
+    Fl_Menu_Bar     menu_bar;
+    Code_Editor     code_editor;
     Messages_Window messages_window;
-    Io_Editor io_editor;
+    Io_Editor       io_editor;
 
     const static std::string def_fname;
-    std::string cur_fname = def_fname;
-    std::string cur_directory = "~";
+    std::string              cur_fname = def_fname;
+    std::string              cur_directory = "~";
 
     pid_t compiler;
     pid_t vm;

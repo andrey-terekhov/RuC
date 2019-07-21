@@ -2,18 +2,19 @@
 #define RUC_UNISCANNER_H
 
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "io.h"
 
 /** Options of universal scanner */
-typedef struct universal_scanner_options {
-    ruc_io_source source;        /** Data source */
-    FILE *      input;              /** Input file (in case of file source) */
-    char *      ptr;                /** Data pointer (in case of memory
-                                        source) */
-    int         pos;                /** Position to data within @p ptr */
-    void *      opaque;             /** Scanner's opaque data */
+typedef struct universal_scanner_options
+{
+    ruc_io_source source; /** Data source */
+    FILE *        input; /** Input file (in case of file source) */
+    char *        ptr; /** Data pointer (in case of memory
+                           source) */
+    int   pos; /** Position to data within @p ptr */
+    void *opaque; /** Scanner's opaque data */
 } universal_scanner_options;
 
 /**
@@ -26,10 +27,11 @@ typedef struct universal_scanner_options {
 typedef int (*io_getnext_t)(universal_scanner_options *opts);
 
 /** Scanner description */
-typedef struct scanner_desc {
-    ruc_io_source   source;     /** Data source supported by scanner */
-    io_getnext_t    getnext;    /** The pointer to a function scanning the
-                                    input from the context */
+typedef struct scanner_desc
+{
+    ruc_io_source source; /** Data source supported by scanner */
+    io_getnext_t  getnext; /** The pointer to a function scanning the
+                               input from the context */
 } scanner_desc;
 
 /**
@@ -67,6 +69,6 @@ extern bool scanner_attach_file(universal_scanner_options *opts, FILE *file);
  * @return @c true on success, @c false on failure
  */
 extern bool scanner_attach_buffer(universal_scanner_options *opts,
-                                  const char *ptr);
+                                  const char *               ptr);
 
 #endif

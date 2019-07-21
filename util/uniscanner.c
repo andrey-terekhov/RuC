@@ -1,11 +1,11 @@
 #define _CRT_SECURE_NO_WARNINGS
+#include "uniscanner.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "uniscanner.h"
 
 extern scanner_desc scanner_mem;
 extern scanner_desc scanner_file;

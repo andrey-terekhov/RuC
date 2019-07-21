@@ -17,11 +17,12 @@
 /** Memory-based printer */
 static int
 printer_mem_fprintf(universal_printer_options *opts,
-                    const char *fmt, va_list args)
+                    const char *               fmt,
+                    va_list                    args)
 {
     char    buf[200] = { '\0' };
-    char   *buf_to_use = buf;
-    char   *allocated = NULL;
+    char *  buf_to_use = buf;
+    char *  allocated = NULL;
     int     ret;
     va_list args2;
     va_list args3;

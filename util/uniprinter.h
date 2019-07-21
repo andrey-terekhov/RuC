@@ -2,18 +2,19 @@
 #define RUC_UNIPRINTER_H
 
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "io.h"
 
 /** Options of universal printer */
-typedef struct universal_printer_options {
-    ruc_io_source   source;
-    FILE *          output;
-    char *          ptr;
-    int             pos;
-    int             size;
-    void *          opaque;
+typedef struct universal_printer_options
+{
+    ruc_io_source source;
+    FILE *        output;
+    char *        ptr;
+    int           pos;
+    int           size;
+    void *        opaque;
 } universal_printer_options;
 
 /**
@@ -26,13 +27,15 @@ typedef struct universal_printer_options {
  * @return printf()-like return value
  */
 typedef int (*io_printf_t)(universal_printer_options *opts,
-                           const char *fmt, va_list args);
+                           const char *               fmt,
+                           va_list                    args);
 
 /** Printer description */
-typedef struct printer_desc {
-    ruc_io_source   source;     /** Data source supported by printer */
-    io_printf_t     printf;     /** The pointer to a function printing to data
-                                    destination */
+typedef struct printer_desc
+{
+    ruc_io_source source; /** Data source supported by printer */
+    io_printf_t   printf; /** The pointer to a function printing to data
+                              destination */
 } printer_desc;
 
 /**
@@ -51,7 +54,8 @@ extern void printer_init(universal_printer_options *opts);
  * @return printf-like return value
  */
 extern int printer_printf(universal_printer_options *opts,
-                          const char *fmt, ...);
+                          const char *               fmt,
+                          ...);
 
 /**
  * Universal function for printing (wide) characters

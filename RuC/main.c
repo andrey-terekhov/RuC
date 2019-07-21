@@ -89,8 +89,7 @@ process_user_requests(ruc_context *context, int argc, const char *argv[])
                                   IO_SOURCE_FILE);
 
             // Препроцессинг в массив
-            ruc_context_attach_io(context, "", IO_TYPE_OUTPUT,
-                                  IO_SOURCE_MEM);
+            ruc_context_attach_io(context, "", IO_TYPE_OUTPUT, IO_SOURCE_MEM);
 
             printf("\nИсходный текст:\n \n");
 

@@ -1,11 +1,11 @@
 #define _CRT_SECURE_NO_WARNINGS
+#include "uniprinter.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "uniprinter.h"
 
 extern printer_desc printer_mem;
 extern printer_desc printer_file;
@@ -44,8 +44,7 @@ printer_printf(universal_printer_options *opts, const char *fmt, ...)
         opts->opaque = *tmp;
     }
 
-    ret = ((printer_desc *)opts->opaque)
-        ->printf(opts, fmt, args);
+    ret = ((printer_desc *)opts->opaque)->printf(opts, fmt, args);
     va_end(args);
 
     return ret;
@@ -62,7 +61,8 @@ printer_printchar(universal_printer_options *opts, int wchar)
     else
     {
         unsigned char first = (wchar >> 6) | /*0b11000000*/ 0xC0;
-        unsigned char second = (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
+        unsigned char second =
+            (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
 
         return printer_printf(opts, "%c%c", first, second);
     }

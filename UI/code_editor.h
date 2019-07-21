@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
 #include <FL/Fl_Text_Editor.H>
+#include <string>
 
 class Code_Editor : public Fl_Text_Editor
 {
@@ -15,9 +15,13 @@ public:
     bool was_changed();
 
 private:
-    static void modify_cb(int pos, int nins, int ndel, int nrestyled,
-                            const char *c_del, void *userinf);
+    static void modify_cb(int         pos,
+                          int         nins,
+                          int         ndel,
+                          int         nrestyled,
+                          const char *c_del,
+                          void *      userinf);
 
-    bool changed;
+    bool           changed;
     Fl_Text_Buffer buff;
 };

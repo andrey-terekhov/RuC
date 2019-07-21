@@ -1,8 +1,8 @@
 #pragma once
 
-#include "messages_window.h"
 #include <FL/Fl_Text_Editor.H>
 #include <string>
+#include "messages_window.h"
 
 class Face_Window;
 
@@ -28,12 +28,16 @@ private:
         MODIFYING
     };
 
-    static void modify_cb(int pos, int nins, int ndel, int nrestyled,
-                             const char *c_del, void *io_editor_voided);
+    static void modify_cb(int         pos,
+                          int         nins,
+                          int         ndel,
+                          int         nrestyled,
+                          const char *c_del,
+                          void *      io_editor_voided);
 
     int io_block = 0; // before this position nothing can be changed in io
-    Fl_Text_Buffer buff;
-    State state;
+    Fl_Text_Buffer   buff;
+    State            state;
     Messages_Window *messages_window;
-    FILE *stream;
+    FILE *           stream;
 };

@@ -36,20 +36,14 @@ io_mem_getnext(universal_scanner_options *opts)
         return EOF;
 
     /* We must find the symbol because we already did in sscanf() call */
-    opts->pos +=
-        find_symbol(&opts->ptr[opts->pos],
-                    firstchar) + 1;
+    opts->pos += find_symbol(&opts->ptr[opts->pos], firstchar) + 1;
 
     if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
     {
-        if (sscanf(&opts->ptr[opts->pos],
-                   "%c",
-                   &secondchar) != 1)
+        if (sscanf(&opts->ptr[opts->pos], "%c", &secondchar) != 1)
             return EOF;
 
-        opts->pos +=
-            find_symbol(&opts->ptr[opts->pos],
-                        secondchar) + 1;
+        opts->pos += find_symbol(&opts->ptr[opts->pos], secondchar) + 1;
 
         ret = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 |
             (secondchar & /*0b111111*/ 0x3F);
