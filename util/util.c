@@ -7,7 +7,7 @@
 
 #include "util.h"
 
-void printf_char(int wchar)
+void _obsolete_printf_char(int wchar)
 {
     if (wchar<128)
         printf("%c", wchar);
@@ -20,7 +20,7 @@ void printf_char(int wchar)
     }
 }
 
-void fprintf_char(FILE *f, int wchar)
+void _obsolete_fprintf_char(FILE *f, int wchar)
 {    if (wchar<128)
     fprintf(f, "%c", wchar);
     else
@@ -32,7 +32,7 @@ void fprintf_char(FILE *f, int wchar)
     }
 }
 
-int getf_char()
+int _obsolete_getf_char()
 {
     // reads UTF-8
     
