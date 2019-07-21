@@ -10,6 +10,8 @@
 #define RuC_Defs_h
 #include <pthread.h>
 
+#define UNUSED(x) (void)(x)
+
 #define MAXREPRTAB 10000
 #define MAXIDENTAB 10000
 #define MAXMEMSIZE 1000000
