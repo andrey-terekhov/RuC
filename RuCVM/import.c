@@ -9,7 +9,6 @@
 #include <unistd.h>
 #define _CRT_SECURE_NO_WARNINGS
 #include <math.h>
-#include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +16,7 @@
 
 #include "th_static.h"
 #include "util.h"
+#include "context.h"
 
 // Я исхожу из того, что нумерация нитей процедурой t_create начинается с 1 и
 // идет последовательно в соответствии с порядком вызовов этой процудуры,
@@ -33,7 +33,7 @@
 // l, x и pc, причем все важные переменные были локальными, тогда дальше все
 // переключения между нитями будут заботой ОС.
 
-// Есть глобальный массив threads, i-ый элемент которого указывает на начало
+// Есть глобальный массив context->threads, i-ый элемент которого указывает на начало
 // куска i-ой нити. Каждый кусок начинается с шапки, где хранятся l, x и pc,
 // которые нужно установить в момент старта нити.
 
@@ -61,27 +61,20 @@
 #define printf_runtime_crash 18
 #define init_err 19
 
-int   g, xx, iniproc, maxdisplg, wasmain;
-int   reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md;
-int   mem[MAXMEMSIZE], functions[FUNCSIZE], funcnum;
-int   threads[NUMOFTHREADS]; //, curthread, upcurthread;
-int   procd, iniprocs[INIPROSIZE], base = 0, adinit, NN;
-FILE *input;
-char  sem_print[] = "sem_print", sem_debug[] = "sem_debug";
-sem_t *sempr, *semdeb;
-
+char sem_print[] = "sem_print",
+     sem_debug[] = "sem_debug";
 
 int
-szof(int type)
+szof(ruc_vm_context *context, int type)
 {
-    return modetab[type] == MARRAY ? 1
+    return context->modetab[type] == MARRAY ? 1
                                    : type == LFLOAT
             ? 2
-            : (type > 0 && modetab[type] == MSTRUCT) ? modetab[type + 1] : 1;
+            : (type > 0 && context->modetab[type] == MSTRUCT) ? context->modetab[type + 1] : 1;
 }
 
 void
-runtimeerr(int e, int i, int r)
+runtimeerr(ruc_vm_context *context, int e, int i, int r)
 {
     switch (e)
     {
@@ -170,7 +163,7 @@ const char *JD1 = "/sys/devices/platform/da850_trik/sensor_d1";
 const char *JD2 = "/sys/devices/platform/da850_trik/sensor_d2";
 
 int
-rungetcommand(const char *command)
+rungetcommand(ruc_vm_context *context, const char *command)
 {
     FILE *fp;
     long  x = -1;
@@ -179,7 +172,7 @@ rungetcommand(const char *command)
     /* Open the command for reading. */
     fp = popen(command, "r");
     if (fp == NULL)
-        runtimeerr(wrong_robot_com, 0, 0);
+        runtimeerr(context, wrong_robot_com, 0, 0);
 
     /* Read the output a line at a time - output it. */
     while (fgets(path, sizeof(path) - 1, fp) != NULL)
@@ -198,45 +191,45 @@ void prmem()
 {
     int i;
     printf("mem=\n");
-    for (i=g; i<=x; i++)
-        printf("%i ) %i\n",i, mem[i]);
+    for (i=context->g; i<=x; i++)
+        printf("%i ) %i\n",i, context->mem[i]);
     printf("\n");
 
 }
 */
 
 void
-auxprintf(int strbeg, int databeg)
+auxprintf(ruc_vm_context *context, int strbeg, int databeg)
 {
 
     int i, j, curdata = databeg + 1;
-    for (i = strbeg; mem[i] != 0; ++i)
+    for (i = strbeg; context->mem[i] != 0; ++i)
     {
-        if (mem[i] == '%')
+        if (context->mem[i] == '%')
         {
-            switch (mem[++i])
+            switch (context->mem[++i])
             {
                 case 'i':
                 case 1094: // ц
-                    printf("%i", mem[curdata++]);
+                    printf("%i", context->mem[curdata++]);
                     break;
 
                 case 'c':
                 case 1083: // л
-                    _obsolete_printf_char(mem[curdata++]);
+                    _obsolete_printf_char(context->mem[curdata++]);
                     break;
 
                 case 'f':
                 case 1074: // в
-                    printf("%lf", *((double *)(&mem[curdata])));
+                    printf("%lf", *((double *)(&context->mem[curdata])));
                     curdata += 2;
                     break;
 
                 case 's':
                 case 1089: // с
-                    for (j = mem[curdata];
-                         j - mem[curdata] < mem[mem[curdata] - 1]; ++j)
-                        _obsolete_printf_char(mem[j]);
+                    for (j = context->mem[curdata];
+                         j - context->mem[curdata] < context->mem[context->mem[curdata] - 1]; ++j)
+                        _obsolete_printf_char(context->mem[j]);
                     curdata++;
                     break;
 
@@ -250,16 +243,16 @@ auxprintf(int strbeg, int databeg)
             }
         }
         else
-            _obsolete_printf_char(mem[i]);
+            _obsolete_printf_char(context->mem[i]);
     }
 }
 
 void
-auxprint(int beg, int t, char before, char after)
+auxprint(ruc_vm_context *context, int beg, int t, char before, char after)
 {
     double rf;
     int    r;
-    r = mem[beg];
+    r = context->mem[beg];
     if (before)
         printf("%c", before);
 
@@ -269,37 +262,37 @@ auxprint(int beg, int t, char before, char after)
         _obsolete_printf_char(r);
     else if (t == LFLOAT)
     {
-        memcpy(&rf, &mem[beg], sizeof(double));
+        memcpy(&rf, &context->mem[beg], sizeof(double));
         printf("%20.15f", rf);
     }
     else if (t == LVOID)
         printf(" значения типа ПУСТО печатать нельзя\n");
 
     // здесь t уже точно положительный
-    else if (modetab[t] == MARRAY)
+    else if (context->modetab[t] == MARRAY)
     {
-        int rr = r, i, type = modetab[t + 1], d;
-        d = szof(type);
+        int rr = r, i, type = context->modetab[t + 1], d;
+        d = szof(context, type);
 
         if (type > 0)
-            for (i = 0; i < mem[rr - 1]; i++)
-                auxprint(rr + i * d, type, 0, '\n');
+            for (i = 0; i < context->mem[rr - 1]; i++)
+                auxprint(context, rr + i * d, type, 0, '\n');
         else
-            for (i = 0; i < mem[rr - 1]; i++)
-                auxprint(rr + i * d, type, 0, (type == LCHAR ? 0 : ' '));
+            for (i = 0; i < context->mem[rr - 1]; i++)
+                auxprint(context, rr + i * d, type, 0, (type == LCHAR ? 0 : ' '));
     }
-    else if (modetab[t] == MSTRUCT)
+    else if (context->modetab[t] == MSTRUCT)
     {
-        int cnt = modetab[t + 2], i;
+        int cnt = context->modetab[t + 2], i;
         printf("{");
         for (i = 2; i <= cnt; i += 2)
         {
-            int type = modetab[t + i + 1];
+            int type = context->modetab[t + i + 1];
             if (type < 0)
-                auxprint(beg, type, (i == 2 ? 0 : ' '), (i == cnt ? 0 : ','));
+                auxprint(context, beg, type, (i == 2 ? 0 : ' '), (i == cnt ? 0 : ','));
             else
-                auxprint(beg, type, '\n', '\n');
-            beg += szof(type);
+                auxprint(context, beg, type, '\n', '\n');
+            beg += szof(context, type);
         }
         printf("}");
     }
@@ -312,40 +305,40 @@ auxprint(int beg, int t, char before, char after)
 
 
 void
-auxget(int beg, int t)
+auxget(ruc_vm_context *context, int beg, int t)
 {
     double rf;
     //     printf("beg=%i t=%i\n", beg, t);
     if (t == LINT)
-        scanf(" %i", &mem[beg]);
+        scanf(" %i", &context->mem[beg]);
     else if (t == LCHAR)
     {
-        mem[beg] = _obsolete_getf_char();
+        context->mem[beg] = _obsolete_getf_char();
     }
     else if (t == LFLOAT)
     {
         scanf(" %lf", &rf);
-        memcpy(&mem[beg], &rf, sizeof(double));
+        memcpy(&context->mem[beg], &rf, sizeof(double));
     }
     else if (t == LVOID)
         printf(" значения типа ПУСТО вводить нельзя\n");
 
     // здесь t уже точно положительный
-    else if (modetab[t] == MARRAY)
+    else if (context->modetab[t] == MARRAY)
     {
-        int rr = mem[beg], i, type = modetab[t + 1], d;
-        d = szof(type);
-        for (i = 0; i < mem[rr - 1]; i++)
-            auxget(rr + i * d, type);
+        int rr = context->mem[beg], i, type = context->modetab[t + 1], d;
+        d = szof(context, type);
+        for (i = 0; i < context->mem[rr - 1]; i++)
+            auxget(context, rr + i * d, type);
     }
-    else if (modetab[t] == MSTRUCT)
+    else if (context->modetab[t] == MSTRUCT)
     {
-        int cnt = modetab[t + 2], i;
+        int cnt = context->modetab[t + 2], i;
         for (i = 2; i <= cnt; i += 2)
         {
-            int type = modetab[t + i + 1];
-            auxget(beg, type);
-            beg += szof(type);
+            int type = context->modetab[t + i + 1];
+            auxget(context, beg, type);
+            beg += szof(context, type);
         }
     }
     else
@@ -355,31 +348,42 @@ auxget(int beg, int t)
 void *interpreter(void *);
 
 int
-check_zero_int(int r)
+check_zero_int(ruc_vm_context *context, int r)
 {
     if (r == 0)
-        runtimeerr(zero_devide, 0, 0);
+        runtimeerr(context, zero_devide, 0, 0);
     return r;
 }
 
 double
-check_zero_float(double r)
+check_zero_float(ruc_vm_context *context, double r)
 {
     if (r == 0)
-        runtimeerr(float_zero_devide, 0, 0);
+        runtimeerr(context, float_zero_devide, 0, 0);
     return r;
 }
 
 int
-dsp(int di, int l)
+dsp(ruc_vm_context *context, int di, int l)
 {
-    return di < 0 ? g - di : l + di;
+    return di < 0 ? context->g - di : l + di;
 }
 
 void *
-interpreter(void *pcPnt)
+invoke_interpreter(ruc_vm_context *context, void *arg)
 {
-    int    l, x, origpc = *((int *)pcPnt), numTh = t_getThNum();
+    ruc_vm_thread_arg tharg;
+    tharg.context = context;
+    tharg.arg = arg;
+    return interpreter(&tharg);
+}
+
+void *
+interpreter(void *thread_arg)
+{
+    ruc_vm_thread_arg *arg = (ruc_vm_thread_arg *)thread_arg;
+    ruc_vm_context *context = arg->context;
+    int    l, x, origpc = *((int*) arg->arg), numTh = t_getThNum(context);
     int    N, bounds[100], d, from, prtype, cur0, pc = abs(origpc);
     int    i, r, flagstop = 1, entry, di, di1, len;
     int    num;
@@ -393,103 +397,106 @@ interpreter(void *pcPnt)
     {
         if (numTh)
         {
-            threads[numTh] = cur0 = numTh * MAXMEMTHREAD;
-            l = mem[threads[numTh]] = threads[numTh] + 2;
-            x = mem[threads[numTh]] = l + mem[pc - 2]; // l + maxdispl
-            mem[l + 2] = -1;
+            context->threads[numTh] = cur0 = numTh * MAXMEMTHREAD;
+            l = context->mem[context->threads[numTh]] = context->threads[numTh] + 2;
+            x = context->mem[context->threads[numTh]] = l + context->mem[pc - 2]; // l + maxdispl
+            context->mem[l + 2] = -1;
         }
         else
         {
-            l = threads[0] + 2;
-            x = mem[threads[0] + 1];
+            l = context->threads[0] + 2;
+            x = context->mem[context->threads[0] + 1];
         }
     }
     else
     {
-        l = mem[threads[numTh]];
-        x = mem[threads[numTh] + 1];
+        l = context->mem[context->threads[numTh]];
+        x = context->mem[context->threads[numTh] + 1];
     }
     flagstop = 1;
     while (flagstop)
     {
-        memcpy(&rf, &mem[x - 1], sizeof(double));
-        // printf("pc=%i mem[pc]=%i\n", pc, mem[pc]);
+        memcpy(&rf, &context->mem[x - 1], sizeof(double));
+        // printf("pc=%i context->mem[pc]=%i\n", pc, context->mem[pc]);
         // printf("running th #%i\n", t_getThNum());
 
-        switch (mem[pc++])
+        switch (context->mem[pc++])
         {
             case STOP:
                 flagstop = 0;
-                xx = x;
+                context->xx = x;
                 break;
 
             case CREATEDIRECTC:
+            {
                 i = pc;
-                mem[++x] = t_create_inner(interpreter, (void *)&i);
-                break;
 
+                context->mem[++x] = t_create_inner(context, interpreter, (void*)&i);
+                break;
+            }
             case CREATEC:
             {
                 int i;
-                i = mem[x];
-                entry = functions[i > 0 ? i : mem[l - i]];
+
+                i = context->mem[x];
+                entry = context->functions[i > 0 ? i : context->mem[l - i]];
                 i = entry + 3; // новый pc
-                mem[x] = t_create_inner(interpreter, (void *)&i);
+                context->mem[x] = t_create_inner(context, interpreter, (void*)&i);
             }
             break;
 
             case JOINC:
-                t_join(mem[x--]);
+                t_join(context, context->mem[x--]);
                 break;
 
             case SLEEPC:
-                t_sleep(mem[x--]);
+                t_sleep(context, context->mem[x--]);
                 break;
 
             case EXITDIRECTC:
             case EXITC:
-                t_exit();
+                t_exit(context);
                 break;
 
             case SEMCREATEC:
-                mem[x] = t_sem_create(mem[x]);
+                context->mem[x] = t_sem_create(context, context->mem[x]);
                 break;
 
             case SEMPOSTC:
-                t_sem_post(mem[x--]);
+                t_sem_post(context, context->mem[x--]);
                 break;
 
             case SEMWAITC:
-                t_sem_wait(mem[x--]);
+                t_sem_wait(context, context->mem[x--]);
                 break;
 
             case INITC:
-                t_init();
+                t_init(context);
                 break;
 
             case DESTROYC:
-                t_destroy();
+                t_destroy(context);
                 break;
 
             case MSGRECEIVEC:
             {
-                struct msg_info m = t_msg_receive();
-                mem[++x] = m.numTh;
-                mem[++x] = m.data;
+                struct msg_info m = t_msg_receive(context);
+                context->mem[++x] = m.numTh;
+                context->mem[++x] = m.data;
             }
             break;
 
             case MSGSENDC:
             {
                 struct msg_info m;
-                m.data = mem[x--];
-                m.numTh = mem[x--];
-                t_msg_send(m);
+                m.data = context->mem[x--];
+                m.numTh = context->mem[x--];
+                t_msg_send(context, m);
             }
             break;
 
             case GETNUMC:
-                mem[++x] = numTh;
+                context->mem[++x] = numTh;
                 break;
 
             case WIFI_CONNECTC:
@@ -533,12 +540,12 @@ interpreter(void *pcPnt)
             case SETMOTORC:
             {
                 int n, r;
-                r = mem[x--];
-                n = mem[x--];
+                r = context->mem[x--];
+                n = context->mem[x--];
                 if (n < 1 || n > 4)
-                    runtimeerr(wrong_motor_num, n, 0);
+                    runtimeerr(context, wrong_motor_num, n, 0);
                 if (r < -100 || r > 100)
-                    runtimeerr(wrong_motor_pow, n, r);
+                    runtimeerr(context, wrong_motor_pow, n, r);
                 memset(i2ccommand, '\0', I2CBUFFERSIZE);
                 printf("i2cset -y 2 0x48 0x%x 0x%x b\n", 0x14 + n - 1, r);
                 snprintf(i2ccommand, I2CBUFFERSIZE,
@@ -549,60 +556,60 @@ interpreter(void *pcPnt)
 
             case GETDIGSENSORC:
             {
-                int n = mem[x];
+                int n = context->mem[x];
                 if (n < 1 || n > 2)
-                    runtimeerr(wrong_digsensor_num, n, 0);
+                    runtimeerr(context, wrong_digsensor_num, n, 0);
                 if (n == 1)
                     fscanf(f1, "%i", &i);
                 else
                     fscanf(f2, "%i", &i);
-                mem[x] = i;
+                context->mem[x] = i;
             }
             break;
 
             case GETANSENSORC:
             {
-                int n = mem[x];
+                int n = context->mem[x];
                 if (n < 1 || n > 6)
-                    runtimeerr(wrong_ansensor_num, n, 0);
+                    runtimeerr(context, wrong_ansensor_num, n, 0);
                 memset(i2ccommand, '\0', I2CBUFFERSIZE);
                 printf("i2cget -y 2 0x48 0x%x\n", 0x26 - n);
                 snprintf(i2ccommand, I2CBUFFERSIZE, "i2cget -y 2 0x48 0x%x",
                          0x26 - n);
-                mem[x] = rungetcommand(i2ccommand);
+                context->mem[x] = rungetcommand(context, i2ccommand);
             }
             break;
 #endif
             case FUNCBEG:
-                pc = mem[pc + 1];
+                pc = context->mem[pc + 1];
                 break;
             case PRINT:
             {
                 int t;
-                sem_wait(sempr);
-                t = mem[pc++];
-                x -= szof(t);
-                auxprint(x + 1, t, 0, '\n');
+                sem_wait(context->sempr);
+                t = context->mem[pc++];
+                x -= szof(context, t);
+                auxprint(context, x + 1, t, 0, '\n');
                 fflush(stdout);
-                sem_post(sempr);
+                sem_post(context->sempr);
             }
             break;
             case PRINTID:
-                sem_wait(sempr);
-                i = mem[pc++]; // ссылка на identtab
-                prtype = identab[i + 2];
-                r = identab[i + 1] + 2; // ссылка на reprtab
+                sem_wait(context->sempr);
+                i = context->mem[pc++]; // ссылка на identtab
+                prtype = context->identab[i + 2];
+                r = context->identab[i + 1] + 2; // ссылка на reprtab
                 do
-                    _obsolete_printf_char(reprtab[r++]);
-                while (reprtab[r] != 0);
+                    _obsolete_printf_char(context->reprtab[r++]);
+                while (context->reprtab[r] != 0);
 
-                if (prtype > 0 && modetab[prtype] == MARRAY &&
-                    modetab[prtype + 1] > 0)
-                    auxprint(dsp(identab[i + 3], l), prtype, '\n', '\n');
+                if (prtype > 0 && context->modetab[prtype] == MARRAY &&
+                    context->modetab[prtype + 1] > 0)
+                    auxprint(context, dsp(context, context->identab[i + 3], l), prtype, '\n', '\n');
                 else
-                    auxprint(dsp(identab[i + 3], l), prtype, ' ', '\n');
+                    auxprint(context, dsp(context, context->identab[i + 3], l), prtype, ' ', '\n');
                 fflush(stdout);
-                sem_post(sempr);
+                sem_post(context->sempr);
                 break;
 
             /* Ожидает указатель на форматную строку на верхушке стека
@@ -614,231 +621,231 @@ interpreter(void *pcPnt)
             case PRINTF:
             {
                 int sumsize, strbeg;
-                sem_wait(sempr);
-                sumsize = mem[pc++];
-                strbeg = mem[x--];
-                auxprintf(strbeg, x -= sumsize);
+                sem_wait(context->sempr);
+                sumsize = context->mem[pc++];
+                strbeg = context->mem[x--];
+                auxprintf(context, strbeg, x -= sumsize);
                 fflush(stdout);
-                sem_post(sempr);
+                sem_post(context->sempr);
             }
             break;
             case GETID:
-                sem_wait(sempr);
-                i = mem[pc++]; // ссылка на identtab
-                prtype = identab[i + 2];
-                r = identab[i + 1] + 2; // ссылка на reprtab
+                sem_wait(context->sempr);
+                i = context->mem[pc++]; // ссылка на identtab
+                prtype = context->identab[i + 2];
+                r = context->identab[i + 1] + 2; // ссылка на reprtab
                 do
-                    _obsolete_printf_char(reprtab[r++]);
-                while (reprtab[r] != 0);
+                    _obsolete_printf_char(context->reprtab[r++]);
+                while (context->reprtab[r] != 0);
                 printf(" ");
                 fflush(stdout);
 
-                auxget(dsp(identab[i + 3], l), prtype);
-                sem_post(sempr);
+                auxget(context, dsp(context, context->identab[i + 3], l), prtype);
+                sem_post(context->sempr);
                 break;
             case ABSIC:
-                mem[x] = abs(mem[x]);
+                context->mem[x] = abs(context->mem[x]);
                 break;
             case ABSC:
                 rf = fabs(rf);
-                memcpy(&mem[x - 1], &rf, sizeof(double));
+                memcpy(&context->mem[x - 1], &rf, sizeof(double));
                 break;
             case SQRTC:
                 if (rf < 0)
-                    runtimeerr(sqrt_from_negat, 0, 0);
+                    runtimeerr(context, sqrt_from_negat, 0, 0);
                 rf = sqrt(rf);
-                memcpy(&mem[x - 1], &rf, sizeof(double));
+                memcpy(&context->mem[x - 1], &rf, sizeof(double));
                 break;
             case EXPC:
                 rf = exp(rf);
-                memcpy(&mem[x - 1], &rf, sizeof(double));
+                memcpy(&context->mem[x - 1], &rf, sizeof(double));
                 break;
             case SINC:
                 rf = sin(rf);
-                memcpy(&mem[x - 1], &rf, sizeof(double));
+                memcpy(&context->mem[x - 1], &rf, sizeof(double));
                 break;
             case COSC:
                 rf = cos(rf);
-                memcpy(&mem[x - 1], &rf, sizeof(double));
+                memcpy(&context->mem[x - 1], &rf, sizeof(double));
                 break;
             case LOGC:
                 if (rf <= 0)
-                    runtimeerr(log_from_negat, 0, 0);
+                    runtimeerr(context, log_from_negat, 0, 0);
                 rf = log(rf);
-                memcpy(&mem[x - 1], &rf, sizeof(double));
+                memcpy(&context->mem[x - 1], &rf, sizeof(double));
                 break;
             case LOG10C:
                 if (rf <= 0)
-                    runtimeerr(log10_from_negat, 0, 0);
+                    runtimeerr(context, log10_from_negat, 0, 0);
                 rf = log10(rf);
-                memcpy(&mem[x - 1], &rf, sizeof(double));
+                memcpy(&context->mem[x - 1], &rf, sizeof(double));
                 break;
             case ASINC:
                 if (rf < -1 || rf > 1)
-                    runtimeerr(wrong_asin, 0, 0);
+                    runtimeerr(context, wrong_asin, 0, 0);
                 rf = asin(rf);
-                memcpy(&mem[x - 1], &rf, sizeof(double));
+                memcpy(&context->mem[x - 1], &rf, sizeof(double));
                 break;
             case RANDC:
                 rf = (double)rand() / RAND_MAX;
-                memcpy(&mem[++x], &rf, sizeof(double));
+                memcpy(&context->mem[++x], &rf, sizeof(double));
                 ++x;
                 break;
             case ROUNDC:
-                mem[--x] = rf < 0 ? (int)(rf - 0.5) : (int)(rf + 0.5);
+                context->mem[--x] = rf < 0 ? (int)(rf - 0.5) : (int)(rf + 0.5);
                 break;
 
             case STRCPYC:
-                str2 = mem[x--];
-                a_str1 = mem[x--];
-                mem[a_str1] = str2;
+                str2 = context->mem[x--];
+                a_str1 = context->mem[x--];
+                context->mem[a_str1] = str2;
                 break;
             case STRNCPYC:
-                num = mem[x--];
-                str2 = mem[x--];
-                a_str1 = mem[x--];
-                if (num > mem[str2 - 1])
+                num = context->mem[x--];
+                str2 = context->mem[x--];
+                a_str1 = context->mem[x--];
+                if (num > context->mem[str2 - 1])
                     exit(2); // erorr
-                if (num <= mem[mem[a_str1] - 1])
+                if (num <= context->mem[context->mem[a_str1] - 1])
                 {
-                    a_str1 = mem[a_str1];
-                    mem[a_str1 - 1] = num;
+                    a_str1 = context->mem[a_str1];
+                    context->mem[a_str1 - 1] = num;
                     num += a_str1;
                     while (a_str1 < num)
-                        mem[a_str1++] = mem[str2++];
+                        context->mem[a_str1++] = context->mem[str2++];
                 }
-                mem[x++] = num;
-                mem[a_str1] = x;
+                context->mem[x++] = num;
+                context->mem[a_str1] = x;
 
                 num += x;
                 while (x < num)
-                    mem[x++] = mem[str2++];
+                    context->mem[x++] = context->mem[str2++];
                 x--;
                 break;
             case STRCATC:
-                str2 = mem[x--];
-                a_str1 = mem[x--];
-                str1 = mem[a_str1];
+                str2 = context->mem[x--];
+                a_str1 = context->mem[x--];
+                str1 = context->mem[a_str1];
 
-                mem[x++] = mem[str2 - 1] + mem[mem[a_str1] - 1];
-                mem[a_str1] = x;
-                a_str1 = mem[a_str1];
+                context->mem[x++] = context->mem[str2 - 1] + context->mem[context->mem[a_str1] - 1];
+                context->mem[a_str1] = x;
+                a_str1 = context->mem[a_str1];
 
-                num = x + mem[str1 - 1];
+                num = x + context->mem[str1 - 1];
                 while (x < num)
-                    mem[x++] = mem[str1++];
+                    context->mem[x++] = context->mem[str1++];
 
-                num = x + mem[str2 - 1];
+                num = x + context->mem[str2 - 1];
                 while (x < num)
-                    mem[x++] = mem[str2++];
+                    context->mem[x++] = context->mem[str2++];
                 x--;
 
                 break;
             case STRNCATC:
-                num = mem[x--];
-                str2 = mem[x--];
-                a_str1 = mem[x--];
-                str1 = mem[a_str1];
+                num = context->mem[x--];
+                str2 = context->mem[x--];
+                a_str1 = context->mem[x--];
+                str1 = context->mem[a_str1];
 
-                mem[x++] = num + mem[mem[a_str1] - 1];
-                mem[a_str1] = x;
-                a_str1 = mem[a_str1];
+                context->mem[x++] = num + context->mem[context->mem[a_str1] - 1];
+                context->mem[a_str1] = x;
+                a_str1 = context->mem[a_str1];
 
-                i = x + mem[str1 - 1];
+                i = x + context->mem[str1 - 1];
                 while (x < i)
-                    mem[x++] = mem[str1++];
+                    context->mem[x++] = context->mem[str1++];
 
                 num += x;
                 while (x < num)
-                    mem[x++] = mem[str2++];
+                    context->mem[x++] = context->mem[str2++];
                 x--;
                 break;
             case STRCMPC:
-                str2 = mem[x--];
-                a_str1 = mem[x];
-                if (mem[a_str1 - 1] < mem[str2 - 1])
+                str2 = context->mem[x--];
+                a_str1 = context->mem[x];
+                if (context->mem[a_str1 - 1] < context->mem[str2 - 1])
                 {
-                    mem[x] = 1;
+                    context->mem[x] = 1;
                     break;
                 }
-                else if (mem[a_str1 - 1] > mem[str2 - 1])
+                else if (context->mem[a_str1 - 1] > context->mem[str2 - 1])
                 {
-                    mem[x] = -1;
+                    context->mem[x] = -1;
                     break;
                 }
                 else
                 {
-                    for (i = 0; i < mem[str2 - 1]; i++)
+                    for (i = 0; i < context->mem[str2 - 1]; i++)
                     {
-                        if (mem[a_str1 + i] < mem[str2 + i])
+                        if (context->mem[a_str1 + i] < context->mem[str2 + i])
                         {
-                            mem[x] = 1;
+                            context->mem[x] = 1;
                             break;
                         }
-                        else if (mem[a_str1 + i] > mem[str2 + i])
+                        else if (context->mem[a_str1 + i] > context->mem[str2 + i])
                         {
-                            mem[x] = -1;
+                            context->mem[x] = -1;
                             break;
                         }
                     }
-                    if (i == mem[str2 - 1])
+                    if (i == context->mem[str2 - 1])
                     {
-                        mem[x] = 0;
+                        context->mem[x] = 0;
                     }
                 }
                 break;
             case STRNCMPC:
-                num = mem[x--];
-                str2 = mem[x--];
-                a_str1 = mem[x];
+                num = context->mem[x--];
+                str2 = context->mem[x--];
+                a_str1 = context->mem[x];
 
-                if (mem[a_str1 - 1] < mem[str2 - 1] && mem[a_str1 - 1] < num)
+                if (context->mem[a_str1 - 1] < context->mem[str2 - 1] && context->mem[a_str1 - 1] < num)
                 {
-                    mem[x] = 1;
+                    context->mem[x] = 1;
                     break;
                 }
-                else if (mem[a_str1 - 1] > mem[str2 - 1] && mem[str2 - 1] < num)
+                else if (context->mem[a_str1 - 1] > context->mem[str2 - 1] && context->mem[str2 - 1] < num)
                 {
-                    mem[x] = -1;
+                    context->mem[x] = -1;
                     break;
                 }
                 else
                 {
                     for (i = 0; i < num; i++)
                     {
-                        if (i == mem[a_str1 - 1] && i == mem[str2 - 1])
+                        if (i == context->mem[a_str1 - 1] && i == context->mem[str2 - 1])
                         {
-                            mem[x] = 0;
+                            context->mem[x] = 0;
                             break;
                         }
 
-                        if (mem[a_str1 + i] < mem[str2 + i])
+                        if (context->mem[a_str1 + i] < context->mem[str2 + i])
                         {
-                            mem[x] = 1;
+                            context->mem[x] = 1;
                             break;
                         }
-                        if (mem[a_str1 + i] > mem[str2 + i])
+                        if (context->mem[a_str1 + i] > context->mem[str2 + i])
                         {
-                            mem[x] = -1;
+                            context->mem[x] = -1;
                             break;
                         }
                     }
                     if (i == num)
-                        mem[x] = 0;
+                        context->mem[x] = 0;
                 }
                 break;
             case STRSTRC:
             {
                 int j, flag = 0;
-                str2 = mem[x--];
-                a_str1 = mem[x];
-                for (i = 0; i < mem[a_str1 - 1] - mem[str2 - 1]; i++)
+                str2 = context->mem[x--];
+                a_str1 = context->mem[x];
+                for (i = 0; i < context->mem[a_str1 - 1] - context->mem[str2 - 1]; i++)
                 {
-                    if (mem[str2] == mem[a_str1 + i])
+                    if (context->mem[str2] == context->mem[a_str1 + i])
                     {
-                        for (j = 0; j < mem[str2 - 1]; j++)
+                        for (j = 0; j < context->mem[str2 - 1]; j++)
                         {
-                            if (mem[str2 + j] != mem[a_str1 + i + j])
+                            if (context->mem[str2 + j] != context->mem[a_str1 + i + j])
                             {
                                 flag = 1;
                                 break;
@@ -846,86 +853,86 @@ interpreter(void *pcPnt)
                         }
                         if (flag == 0)
                         {
-                            mem[x] = i + 1;
+                            context->mem[x] = i + 1;
                             break;
                         }
                         flag = 0;
                     }
                 }
-                if (i >= mem[a_str1 - 1] - mem[str2 - 1])
+                if (i >= context->mem[a_str1 - 1] - context->mem[str2 - 1])
                 {
 
-                    mem[x] = -1;
+                    context->mem[x] = -1;
                     break;
                 }
 
                 break;
             }
             case STRLENC:
-                a_str1 = mem[x];
-                mem[x] = mem[a_str1 - 1];
+                a_str1 = context->mem[x];
+                context->mem[x] = context->mem[a_str1 - 1];
                 break;
             case STRUCTWITHARR:
             {
-                int oldpc, oldbase = base, procnum;
-                base = dsp(mem[pc++], l);
-                procnum = mem[pc++];
+                int oldpc, oldbase = context->base, procnum;
+                context->base = dsp(context, context->mem[pc++], l);
+                procnum = context->mem[pc++];
                 oldpc = pc;
                 pc = -procnum;
-                mem[threads[numTh] + 1] = x;
-                interpreter((void *)&pc);
-                x = xx;
+                context->mem[context->threads[numTh] + 1] = x;
+                invoke_interpreter(context, (void *)&pc);
+                x = context->xx;
                 pc = oldpc;
-                base = oldbase;
+                context->base = oldbase;
                 flagstop = 1;
             }
             break;
-            case DEFARR: // N, d, displ, proc     на стеке N1, N2, ... , NN
+            case DEFARR: // N, d, displ, proc     на стеке N1, N2, ... , context->NN
             {
-                int N = mem[pc++];
-                int d = mem[pc++];
-                int curdsp = mem[pc++];
-                int proc = mem[pc++];
-                int usual = mem[pc++];
-                int all = mem[pc++];
-                int instruct = mem[pc++];
+                int N = context->mem[pc++];
+                int d = context->mem[pc++];
+                int curdsp = context->mem[pc++];
+                int proc = context->mem[pc++];
+                int usual = context->mem[pc++];
+                int all = context->mem[pc++];
+                int instruct = context->mem[pc++];
 
                 int stackC0[10], stacki[10], i, curdim = 1;
                 if (usual >= 2)
                     usual -= 2;
-                NN =
-                    mem[x]; // будет использоваться в ARRINIT только при usual=1
+                context->NN =
+                    context->mem[x]; // будет использоваться в ARRINIT только при usual=1
                 for (i = usual && all ? N + 1 : N; i > 0; i--)
-                    if ((bounds[i] = mem[x--]) <= 0)
-                        runtimeerr(wrong_number_of_elems, 0, bounds[i]);
+                    if ((bounds[i] = context->mem[x--]) <= 0)
+                        runtimeerr(context, wrong_number_of_elems, 0, bounds[i]);
                 if (N > 0)
                 {
                     stacki[1] = 0;
-                    mem[++x] = bounds[1];
-                    mem[instruct ? base + curdsp : dsp(curdsp, l)] =
+                    context->mem[++x] = bounds[1];
+                    context->mem[instruct ? context->base + curdsp : dsp(context, curdsp, l)] =
                         stackC0[1] = x + 1;
                     x += bounds[1] * (curdim < abs(N) ? 1 : d);
 
-                    if (x >= threads[numTh] + MAXMEMTHREAD)
-                        runtimeerr(mem_overflow, 0, 0);
+                    if (x >= context->threads[numTh] + MAXMEMTHREAD)
+                        runtimeerr(context, mem_overflow, 0, 0);
 
                     if (N == 1)
                     {
                         if (proc)
                         {
-                            int curx = x, oldbase = base, oldpc = pc, i;
+                            int curx = x, oldbase = context->base, oldpc = pc, i;
                             for (i = stackC0[1]; i <= curx; i += d)
                             {
                                 pc = -proc; // вычисление границ очередного
                                             // массива в структуре
-                                base = i;
-                                mem[threads[numTh] + 1] = x;
-                                interpreter((void *)&pc);
+                                context->base = i;
+                                context->mem[context->threads[numTh] + 1] = x;
+                                invoke_interpreter(context, (void *)&pc);
                                 flagstop = 1;
-                                x = xx;
+                                x = context->xx;
                             }
                             pc = oldpc;
-                            base = oldbase;
+                            context->base = oldbase;
                         }
                     }
                     else
@@ -935,14 +942,14 @@ interpreter(void *pcPnt)
                             do
                             {
                                 // go down
-                                mem[++x] = bounds[curdim + 1];
-                                mem[stackC0[curdim] + stacki[curdim]++] =
+                                context->mem[++x] = bounds[curdim + 1];
+                                context->mem[stackC0[curdim] + stacki[curdim]++] =
                                     stackC0[curdim + 1] = x + 1;
                                 x += bounds[curdim + 1] *
                                     (curdim == N - 1 ? d : 1);
 
-                                if (x >= threads[numTh] + MAXMEMTHREAD)
-                                    runtimeerr(mem_overflow, 0, 0);
+                                if (x >= context->threads[numTh] + MAXMEMTHREAD)
+                                    runtimeerr(context, mem_overflow, 0, 0);
                                 ++curdim;
                                 stacki[curdim] = 0;
                             } while (curdim < N);
@@ -950,19 +957,19 @@ interpreter(void *pcPnt)
 
                             if (proc)
                             {
-                                int curx = x, oldbase = base, oldpc = pc, i;
+                                int curx = x, oldbase = context->base, oldpc = pc, i;
                                 for (i = stackC0[curdim]; i <= curx; i += d)
                                 {
                                     pc = proc; // вычисление границ очередного
                                                // массива в структуре
-                                    base = i;
-                                    mem[threads[numTh] + 1] = x;
-                                    interpreter((void *)&pc);
+                                    context->base = i;
+                                    context->mem[context->threads[numTh] + 1] = x;
+                                    invoke_interpreter(context, (void *)&pc);
                                     flagstop = 1;
-                                    x = xx;
+                                    x = context->xx;
                                 }
                                 pc = oldpc;
-                                base = oldbase;
+                                context->base = oldbase;
                             }
                             // go right
                             --curdim;
@@ -971,87 +978,87 @@ interpreter(void *pcPnt)
                                      : /*up*/ curdim-- != N - 1);
                     }
                 }
-                adinit = x + 1; // при usual == 1 использоваться не будет
+                context->adinit = x + 1; // при usual == 1 использоваться не будет
             }
             break;
             case BEGINIT:
-                mem[++x] = mem[pc++];
+                context->mem[++x] = context->mem[pc++];
                 break;
                 //            case STRUCTINIT:
                 //                pc++;
                 //                break;
             case STRINGINIT:
-                di = mem[pc++];
-                r = mem[di < 0 ? g - di : l + di];
-                N = mem[r - 1];
-                from = mem[x--];
-                d = mem[from - 1]; // d - кол-во литер в строке-инициаторе
+                di = context->mem[pc++];
+                r = context->mem[di < 0 ? context->g - di : l + di];
+                N = context->mem[r - 1];
+                from = context->mem[x--];
+                d = context->mem[from - 1]; // d - кол-во литер в строке-инициаторе
                 if (N != d)
-                    runtimeerr(wrong_string_init, N, d);
+                    runtimeerr(context, wrong_string_init, N, d);
                 for (i = 0; i < N; i++)
-                    mem[r + i] = mem[from + i];
+                    context->mem[r + i] = context->mem[from + i];
                 break;
             case ARRINIT:
-                N = mem[pc++]; // N - размерность
-                d = mem[pc++]; // d - шаг
+                N = context->mem[pc++]; // N - размерность
+                d = context->mem[pc++]; // d - шаг
 
                 {
-                    int addr = dsp(mem[pc++], l);
-                    int usual = mem[pc++];
+                    int addr = dsp(context, context->mem[pc++], l);
+                    int usual = context->mem[pc++];
                     int onlystrings = usual >= 2 ? usual -= 2, 1 : 0;
-                    int stA[10], stN[10], sti[10], stpnt = 1, oldx = adinit;
+                    int stA[10], stN[10], sti[10], stpnt = 1, oldx = context->adinit;
                     if (N == 1)
                     {
                         if (onlystrings)
-                            mem[addr] = mem[x--];
+                            context->mem[addr] = context->mem[x--];
                         else
                         {
-                            mem[addr] = adinit + 1;
+                            context->mem[addr] = context->adinit + 1;
 
                             if (usual &&
-                                mem[adinit] !=
-                                    NN) // здесь usual == 1,
+                                context->mem[context->adinit] !=
+                                    context->NN) // здесь usual == 1,
                                         // если usual == 0, проверка не нужна
-                                runtimeerr(init_err, mem[adinit], NN);
-                            adinit += mem[adinit] * d + 1;
+                                runtimeerr(context, init_err, context->mem[context->adinit], context->NN);
+                            context->adinit += context->mem[context->adinit] * d + 1;
                         }
                     }
                     else
                     {
-                        stA[1] = mem[addr]; // массив самого верхнего уровня
-                        stN[1] = mem[stA[1] - 1];
+                        stA[1] = context->mem[addr]; // массив самого верхнего уровня
+                        stN[1] = context->mem[stA[1] - 1];
                         sti[1] = 0;
-                        if (mem[adinit] != stN[1])
-                            runtimeerr(init_err, mem[adinit], stN[1]);
-                        adinit++;
+                        if (context->mem[context->adinit] != stN[1])
+                            runtimeerr(context, init_err, context->mem[context->adinit], stN[1]);
+                        context->adinit++;
                         do
                         {
 
                             while (stpnt < N - 1)
                             {
-                                stA[stpnt + 1] = mem[stA[stpnt]];
+                                stA[stpnt + 1] = context->mem[stA[stpnt]];
                                 sti[++stpnt] = 0;
-                                stN[stpnt] = mem[stA[stpnt] - 1];
-                                if (mem[adinit] != stN[stpnt])
-                                    runtimeerr(init_err, mem[adinit],
+                                stN[stpnt] = context->mem[stA[stpnt] - 1];
+                                if (context->mem[context->adinit] != stN[stpnt])
+                                    runtimeerr(context, init_err, context->mem[context->adinit],
                                                stN[stpnt]);
-                                adinit++;
+                                context->adinit++;
                             }
 
                             do
                             {
                                 if (onlystrings)
                                 {
-                                    mem[stA[stpnt] + sti[stpnt]] = mem[++oldx];
-                                    if (usual && mem[mem[oldx - 1] - 1] != NN)
-                                        runtimeerr(init_err, mem[adinit], NN);
+                                    context->mem[stA[stpnt] + sti[stpnt]] = context->mem[++oldx];
+                                    if (usual && context->mem[context->mem[oldx - 1] - 1] != context->NN)
+                                        runtimeerr(context, init_err, context->mem[context->adinit], context->NN);
                                 }
                                 else
                                 {
-                                    if (usual && mem[adinit] != NN)
-                                        runtimeerr(init_err, mem[adinit], NN);
-                                    mem[stA[stpnt] + sti[stpnt]] = adinit + 1;
-                                    adinit += mem[adinit] * d + 1;
+                                    if (usual && context->mem[context->adinit] != context->NN)
+                                        runtimeerr(context, init_err, context->mem[context->adinit], context->NN);
+                                    context->mem[stA[stpnt] + sti[stpnt]] = context->adinit + 1;
+                                    context->adinit += context->mem[context->adinit] * d + 1;
                                 }
                             } while (++sti[stpnt] < stN[stpnt]);
                             if (stpnt > 1)
@@ -1062,738 +1069,739 @@ interpreter(void *pcPnt)
                             }
                         } while (stpnt != 1 || sti[1] != stN[1]);
                     }
-                    x = adinit - 1;
+                    x = context->adinit - 1;
                 }
                 break;
 
             case LI:
-                mem[++x] = mem[pc++];
+                context->mem[++x] = context->mem[pc++];
                 break;
             case LID:
-                memcpy(&mem[++x], &mem[pc++], sizeof(double));
+                memcpy(&context->mem[++x], &context->mem[pc++], sizeof(double));
                 ++x;
                 ++pc;
                 break;
             case LOAD:
-                mem[++x] = mem[dsp(mem[pc++], l)];
+                context->mem[++x] = context->mem[dsp(context, context->mem[pc++], l)];
                 break;
             case LOADD:
-                memcpy(&mem[++x], &mem[dsp(mem[pc++], l)], sizeof(double));
+                memcpy(&context->mem[++x], &context->mem[dsp(context, context->mem[pc++], l)], sizeof(double));
                 ++x;
                 break;
             case LAT:
-                mem[x] = mem[mem[x]];
+                context->mem[x] = context->mem[context->mem[x]];
                 break;
             case LATD:
-                memcpy(&rf, &mem[mem[x]], sizeof(double));
-                memcpy(&mem[x++], &rf, sizeof(double));
+                memcpy(&rf, &context->mem[context->mem[x]], sizeof(double));
+                memcpy(&context->mem[x++], &rf, sizeof(double));
                 break;
             case LA:
-                mem[++x] = dsp(mem[pc++], l);
+                context->mem[++x] = dsp(context, context->mem[pc++], l);
                 break;
             case CALL1:
-                mem[l + 1] = ++x;
-                mem[x++] = l;
-                mem[x++] = 0; // следующая статика
-                mem[x] = 0; // pc в момент вызова
+                context->mem[l + 1] = ++x;
+                context->mem[x++] = l;
+                context->mem[x++] = 0; // следующая статика
+                context->mem[x] = 0; // pc в момент вызова
                 break;
             case CALL2:
-                i = mem[pc++];
-                entry = functions[i > 0 ? i : mem[l - i]];
-                l = mem[l + 1];
-                x = l + mem[entry + 1] - 1;
-                if (x >= threads[numTh] + MAXMEMTHREAD)
-                    runtimeerr(mem_overflow, 0, 0);
-                mem[l + 2] = pc;
+                i = context->mem[pc++];
+                entry = context->functions[i > 0 ? i : context->mem[l - i]];
+                l = context->mem[l + 1];
+                x = l + context->mem[entry + 1] - 1;
+                if (x >= context->threads[numTh] + MAXMEMTHREAD)
+                    runtimeerr(context, mem_overflow, 0, 0);
+                context->mem[l + 2] = pc;
                 pc = entry + 3;
                 break;
             case RETURNVAL:
-                d = mem[pc++];
-                pc = mem[l + 2];
+                d = context->mem[pc++];
+                pc = context->mem[l + 2];
                 if (pc == -1) // конец нити
                     flagstop = 0;
                 else
                 {
                     r = l;
-                    l = mem[l];
-                    mem[l + 1] = 0;
+                    l = context->mem[l];
+                    context->mem[l + 1] = 0;
                     from = x - d;
                     x = r - 1;
                     for (i = 0; i < d; i++)
-                        mem[++x] = mem[++from];
+                        context->mem[++x] = context->mem[++from];
                 }
                 break;
             case RETURNVOID:
-                pc = mem[l + 2];
+                pc = context->mem[l + 2];
                 if (pc == -1) // конец нити
                     flagstop = 0;
                 else
                 {
                     x = l - 1;
-                    l = mem[l];
-                    mem[l + 1] = 0;
+                    l = context->mem[l];
+                    context->mem[l + 1] = 0;
                 }
                 break;
             case NOP:;
                 break;
             case B:
             case STRING:
-                pc = mem[pc];
+                pc = context->mem[pc];
                 break;
             case BE0:
-                pc = (mem[x--]) ? pc + 1 : mem[pc];
+                pc = (context->mem[x--]) ? pc + 1 : context->mem[pc];
                 break;
             case BNE0:
-                pc = (mem[x--]) ? mem[pc] : pc + 1;
+                pc = (context->mem[x--]) ? context->mem[pc] : pc + 1;
                 break;
             case SELECT:
-                mem[x] += mem[pc++]; // ident displ
+                context->mem[x] += context->mem[pc++]; // ident displ
                 break;
             case COPY00:
-                di = dsp(mem[pc++], l);
-                di1 = dsp(mem[pc++], l);
-                len = mem[pc++];
+                di = dsp(context, context->mem[pc++], l);
+                di1 = dsp(context, context->mem[pc++], l);
+                len = context->mem[pc++];
                 for (i = 0; i < len; i++)
-                    mem[di + i] = mem[di1 + i];
+                    context->mem[di + i] = context->mem[di1 + i];
                 break;
             case COPY01:
-                di = dsp(mem[pc++], l);
-                len = mem[pc++];
-                di1 = mem[x--];
+                di = dsp(context, context->mem[pc++], l);
+                len = context->mem[pc++];
+                di1 = context->mem[x--];
                 for (i = 0; i < len; i++)
-                    mem[di + i] = mem[di1 + i];
+                    context->mem[di + i] = context->mem[di1 + i];
                 break;
             case COPY10:
-                di = mem[x--];
-                di1 = dsp(mem[pc++], l);
-                len = mem[pc++];
+                di = context->mem[x--];
+                di1 = dsp(context, context->mem[pc++], l);
+                len = context->mem[pc++];
                 for (i = 0; i < len; i++)
-                    mem[di + i] = mem[di1 + i];
+                    context->mem[di + i] = context->mem[di1 + i];
                 break;
             case COPY11:
-                di1 = mem[x--];
-                di = mem[x--];
-                len = mem[pc++];
+                di1 = context->mem[x--];
+                di = context->mem[x--];
+                len = context->mem[pc++];
                 for (i = 0; i < len; i++)
-                    mem[di + i] = mem[di1 + i];
+                    context->mem[di + i] = context->mem[di1 + i];
                 break;
             case COPY0ST:
-                di = dsp(mem[pc++], l);
-                len = mem[pc++];
+                di = dsp(context, context->mem[pc++], l);
+                len = context->mem[pc++];
                 for (i = 0; i < len; i++)
-                    mem[++x] = mem[di + i];
+                    context->mem[++x] = context->mem[di + i];
 
                 break;
             case COPY1ST:
-                di = mem[x--];
-                len = mem[pc++];
+                di = context->mem[x--];
+                len = context->mem[pc++];
                 for (i = 0; i < len; i++)
-                    mem[++x] = mem[di + i];
+                    context->mem[++x] = context->mem[di + i];
                 break;
             case COPY0STASS:
-                di = dsp(mem[pc++], l);
-                len = mem[pc++];
+                di = dsp(context, context->mem[pc++], l);
+                len = context->mem[pc++];
                 x -= len;
                 for (i = 0; i < len; i++)
-                    mem[di + i] = mem[x + i + 1];
+                    context->mem[di + i] = context->mem[x + i + 1];
                 break;
             case COPY1STASS:
-                len = mem[pc++];
+                len = context->mem[pc++];
                 x -= len;
-                di = mem[x--];
+                di = context->mem[x--];
                 for (i = 0; i < len; i++)
-                    mem[di + i] = mem[x + i + 2];
+                    context->mem[di + i] = context->mem[x + i + 2];
                 break;
             case COPYST:
-                di = mem[pc++]; // смещ поля
-                len = mem[pc++]; // длина поля
-                x -= mem[pc++] + 1; // длина всей структуры
+                di = context->mem[pc++]; // смещ поля
+                len = context->mem[pc++]; // длина поля
+                x -= context->mem[pc++] + 1; // длина всей структуры
                 for (i = 0; i < len; i++)
-                    mem[x + i] = mem[x + i + di];
+                    context->mem[x + i] = context->mem[x + i + di];
                 x += len - 1;
                 break;
 
             case SLICE:
-                d = mem[pc++];
-                i = mem[x--]; // index
-                r = mem[x]; // array
-                if (i < 0 || i >= mem[r - 1])
-                    runtimeerr(index_out_of_range, i, mem[r - 1]);
-                mem[x] = r + i * d;
+                d = context->mem[pc++];
+                i = context->mem[x--]; // index
+                r = context->mem[x]; // array
+                if (i < 0 || i >= context->mem[r - 1])
+                    runtimeerr(context, index_out_of_range, i, context->mem[r - 1]);
+                context->mem[x] = r + i * d;
                 break;
             case WIDEN:
-                rf = (double)mem[x];
-                memcpy(&mem[x++], &rf, sizeof(double));
+                rf = (double)context->mem[x];
+                memcpy(&context->mem[x++], &rf, sizeof(double));
                 break;
             case WIDEN1:
-                mem[x + 1] = mem[x];
-                mem[x] = mem[x - 1];
-                rf = (double)mem[x - 2];
-                memcpy(&mem[x - 2], &rf, sizeof(double));
+                context->mem[x + 1] = context->mem[x];
+                context->mem[x] = context->mem[x - 1];
+                rf = (double)context->mem[x - 2];
+                memcpy(&context->mem[x - 2], &rf, sizeof(double));
                 ++x;
                 break;
             case _DOUBLE:
-                r = mem[x];
-                mem[++x] = r;
+                r = context->mem[x];
+                context->mem[++x] = r;
                 break;
 
             case ASS:
-                mem[dsp(mem[pc++], l)] = mem[x];
+                context->mem[dsp(context, context->mem[pc++], l)] = context->mem[x];
                 break;
             case REMASS:
-                r = mem[dsp(mem[pc++], l)] %= check_zero_int(mem[x]);
-                mem[x] = r;
+                r = context->mem[dsp(context, context->mem[pc++], l)] %= check_zero_int(context, context->mem[x]);
+                context->mem[x] = r;
                 break;
             case SHLASS:
-                r = mem[dsp(mem[pc++], l)] <<= mem[x];
-                mem[x] = r;
+                r = context->mem[dsp(context, context->mem[pc++], l)] <<= context->mem[x];
+                context->mem[x] = r;
                 break;
             case SHRASS:
-                r = mem[dsp(mem[pc++], l)] >>= mem[x];
-                mem[x] = r;
+                r = context->mem[dsp(context, context->mem[pc++], l)] >>= context->mem[x];
+                context->mem[x] = r;
                 break;
             case ANDASS:
-                r = mem[dsp(mem[pc++], l)] &= mem[x];
-                mem[x] = r;
+                r = context->mem[dsp(context, context->mem[pc++], l)] &= context->mem[x];
+                context->mem[x] = r;
                 break;
             case EXORASS:
-                r = mem[dsp(mem[pc++], l)] ^= mem[x];
-                mem[x] = r;
+                r = context->mem[dsp(context, context->mem[pc++], l)] ^= context->mem[x];
+                context->mem[x] = r;
                 break;
             case ORASS:
-                r = mem[dsp(mem[pc++], l)] |= mem[x];
-                mem[x] = r;
+                r = context->mem[dsp(context, context->mem[pc++], l)] |= context->mem[x];
+                context->mem[x] = r;
                 break;
             case PLUSASS:
-                r = mem[dsp(mem[pc++], l)] += mem[x];
-                mem[x] = r;
+                r = context->mem[dsp(context, context->mem[pc++], l)] += context->mem[x];
+                context->mem[x] = r;
                 break;
             case MINUSASS:
-                r = mem[dsp(mem[pc++], l)] -= mem[x];
-                mem[x] = r;
+                r = context->mem[dsp(context, context->mem[pc++], l)] -= context->mem[x];
+                context->mem[x] = r;
                 break;
             case MULTASS:
-                r = mem[dsp(mem[pc++], l)] *= mem[x];
-                mem[x] = r;
+                r = context->mem[dsp(context, context->mem[pc++], l)] *= context->mem[x];
+                context->mem[x] = r;
                 break;
             case DIVASS:
-                r = mem[dsp(mem[pc++], l)] /= check_zero_int(mem[x]);
-                mem[x] = r;
+                r = context->mem[dsp(context, context->mem[pc++], l)] /= check_zero_int(context, context->mem[x]);
+                context->mem[x] = r;
                 break;
 
             case ASSV:
-                mem[dsp(mem[pc++], l)] = mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] = context->mem[x--];
                 break;
             case REMASSV:
-                mem[dsp(mem[pc++], l)] %= check_zero_int(mem[x--]);
+                context->mem[dsp(context, context->mem[pc++], l)] %= check_zero_int(context, context->mem[x--]);
                 break;
             case SHLASSV:
-                mem[dsp(mem[pc++], l)] <<= mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] <<= context->mem[x--];
                 break;
             case SHRASSV:
-                mem[dsp(mem[pc++], l)] >>= mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] >>= context->mem[x--];
                 break;
             case ANDASSV:
-                mem[dsp(mem[pc++], l)] &= mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] &= context->mem[x--];
                 break;
             case EXORASSV:
-                mem[dsp(mem[pc++], l)] ^= mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] ^= context->mem[x--];
                 break;
             case ORASSV:
-                mem[dsp(mem[pc++], l)] |= mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] |= context->mem[x--];
                 break;
             case PLUSASSV:
-                mem[dsp(mem[pc++], l)] += mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] += context->mem[x--];
                 break;
             case MINUSASSV:
-                mem[dsp(mem[pc++], l)] -= mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] -= context->mem[x--];
                 break;
             case MULTASSV:
-                mem[dsp(mem[pc++], l)] *= mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] *= context->mem[x--];
                 break;
             case DIVASSV:
-                mem[dsp(mem[pc++], l)] /= check_zero_int(mem[x--]);
+                context->mem[dsp(context, context->mem[pc++], l)] /= check_zero_int(context, context->mem[x--]);
                 break;
 
             case ASSAT:
-                r = mem[mem[x - 1]] = mem[x];
-                mem[--x] = r;
+                r = context->mem[context->mem[x - 1]] = context->mem[x];
+                context->mem[--x] = r;
                 break;
             case REMASSAT:
-                r = mem[mem[x - 1]] %= check_zero_int(mem[x]);
-                mem[--x] = r;
+                r = context->mem[context->mem[x - 1]] %= check_zero_int(context, context->mem[x]);
+                context->mem[--x] = r;
                 break;
             case SHLASSAT:
-                r = mem[mem[x - 1]] <<= mem[x];
-                mem[--x] = r;
+                r = context->mem[context->mem[x - 1]] <<= context->mem[x];
+                context->mem[--x] = r;
                 break;
             case SHRASSAT:
-                r = mem[mem[x - 1]] >>= mem[x];
-                mem[--x] = r;
+                r = context->mem[context->mem[x - 1]] >>= context->mem[x];
+                context->mem[--x] = r;
                 break;
             case ANDASSAT:
-                r = mem[mem[x - 1]] &= mem[x];
-                mem[--x] = r;
+                r = context->mem[context->mem[x - 1]] &= context->mem[x];
+                context->mem[--x] = r;
                 break;
             case EXORASSAT:
-                r = mem[mem[x - 1]] ^= mem[x];
-                mem[--x] = r;
+                r = context->mem[context->mem[x - 1]] ^= context->mem[x];
+                context->mem[--x] = r;
                 break;
             case ORASSAT:
-                r = mem[mem[x - 1]] |= mem[x];
-                mem[--x] = r;
+                r = context->mem[context->mem[x - 1]] |= context->mem[x];
+                context->mem[--x] = r;
                 break;
             case PLUSASSAT:
-                r = mem[mem[x - 1]] += mem[x];
-                mem[--x] = r;
+                r = context->mem[context->mem[x - 1]] += context->mem[x];
+                context->mem[--x] = r;
                 break;
             case MINUSASSAT:
-                r = mem[mem[x - 1]] -= mem[x];
-                mem[--x] = r;
+                r = context->mem[context->mem[x - 1]] -= context->mem[x];
+                context->mem[--x] = r;
                 break;
             case MULTASSAT:
-                r = mem[mem[x - 1]] *= mem[x];
-                mem[--x] = r;
+                r = context->mem[context->mem[x - 1]] *= context->mem[x];
+                context->mem[--x] = r;
                 break;
             case DIVASSAT:
-                r = mem[mem[x - 1]] /= check_zero_int(mem[x]);
-                mem[--x] = r;
+                r = context->mem[context->mem[x - 1]] /= check_zero_int(context, context->mem[x]);
+                context->mem[--x] = r;
                 break;
 
             case ASSATV:
-                mem[mem[x - 1]] = mem[x];
+                context->mem[context->mem[x - 1]] = context->mem[x];
                 x--;
                 break;
             case REMASSATV:
-                mem[mem[x - 1]] %= check_zero_int(mem[x]);
+                context->mem[context->mem[x - 1]] %= check_zero_int(context, context->mem[x]);
                 x--;
                 break;
             case SHLASSATV:
-                mem[mem[x - 1]] <<= mem[x];
+                context->mem[context->mem[x - 1]] <<= context->mem[x];
                 x--;
                 break;
             case SHRASSATV:
-                mem[mem[x - 1]] >>= mem[x];
+                context->mem[context->mem[x - 1]] >>= context->mem[x];
                 x--;
                 break;
             case ANDASSATV:
-                mem[mem[x - 1]] &= mem[x];
+                context->mem[context->mem[x - 1]] &= context->mem[x];
                 x--;
                 break;
             case EXORASSATV:
-                mem[mem[x - 1]] ^= mem[x];
+                context->mem[context->mem[x - 1]] ^= context->mem[x];
                 x--;
                 break;
             case ORASSATV:
-                mem[mem[x - 1]] |= mem[x];
+                context->mem[context->mem[x - 1]] |= context->mem[x];
                 x--;
                 break;
             case PLUSASSATV:
-                mem[mem[x - 1]] += mem[x];
+                context->mem[context->mem[x - 1]] += context->mem[x];
                 x--;
                 break;
             case MINUSASSATV:
-                mem[mem[x - 1]] -= mem[x];
+                context->mem[context->mem[x - 1]] -= context->mem[x];
                 x--;
                 break;
             case MULTASSATV:
-                mem[mem[x - 1]] *= mem[x];
+                context->mem[context->mem[x - 1]] *= context->mem[x];
                 x--;
                 break;
             case DIVASSATV:
-                mem[mem[x - 1]] /= check_zero_int(mem[x]);
+                context->mem[context->mem[x - 1]] /= check_zero_int(context, context->mem[x]);
                 x--;
                 break;
 
             case LOGOR:
-                mem[x - 1] = mem[x - 1] || mem[x];
+                context->mem[x - 1] = context->mem[x - 1] || context->mem[x];
                 x--;
                 break;
             case LOGAND:
-                mem[x - 1] = mem[x - 1] && mem[x];
+                context->mem[x - 1] = context->mem[x - 1] && context->mem[x];
                 x--;
                 break;
             case LOR:
-                mem[x - 1] |= mem[x];
+                context->mem[x - 1] |= context->mem[x];
                 x--;
                 break;
             case LEXOR:
-                mem[x - 1] ^= mem[x];
+                context->mem[x - 1] ^= context->mem[x];
                 x--;
                 break;
             case LAND:
-                mem[x - 1] &= mem[x];
+                context->mem[x - 1] &= context->mem[x];
                 x--;
                 break;
             case LSHR:
-                mem[x - 1] >>= mem[x];
+                context->mem[x - 1] >>= context->mem[x];
                 x--;
                 break;
             case LSHL:
-                mem[x - 1] <<= mem[x];
+                context->mem[x - 1] <<= context->mem[x];
                 x--;
                 break;
             case LREM:
-                mem[x - 1] %= mem[x];
+                context->mem[x - 1] %= context->mem[x];
                 x--;
                 break;
             case EQEQ:
-                mem[x - 1] = mem[x - 1] == mem[x];
+                context->mem[x - 1] = context->mem[x - 1] == context->mem[x];
                 x--;
                 break;
             case NOTEQ:
-                mem[x - 1] = mem[x - 1] != mem[x];
+                context->mem[x - 1] = context->mem[x - 1] != context->mem[x];
                 x--;
                 break;
             case LLT:
-                mem[x - 1] = mem[x - 1] < mem[x];
+                context->mem[x - 1] = context->mem[x - 1] < context->mem[x];
                 x--;
                 break;
             case LGT:
-                mem[x - 1] = mem[x - 1] > mem[x];
+                context->mem[x - 1] = context->mem[x - 1] > context->mem[x];
                 x--;
                 break;
             case LLE:
-                mem[x - 1] = mem[x - 1] <= mem[x];
+                context->mem[x - 1] = context->mem[x - 1] <= context->mem[x];
                 x--;
                 break;
             case LGE:
-                mem[x - 1] = mem[x - 1] >= mem[x];
+                context->mem[x - 1] = context->mem[x - 1] >= context->mem[x];
                 x--;
                 break;
             case LPLUS:
-                mem[x - 1] += mem[x];
+                context->mem[x - 1] += context->mem[x];
                 x--;
                 break;
             case LMINUS:
-                mem[x - 1] -= mem[x];
+                context->mem[x - 1] -= context->mem[x];
                 x--;
                 break;
             case LMULT:
-                mem[x - 1] *= mem[x];
+                context->mem[x - 1] *= context->mem[x];
                 x--;
                 break;
             case LDIV:
-                mem[x - 1] /= check_zero_int(mem[x]);
+                context->mem[x - 1] /= check_zero_int(context, context->mem[x]);
                 x--;
                 break;
             case POSTINC:
-                mem[++x] = mem[r = dsp(mem[pc++], l)];
-                mem[r]++;
+                context->mem[++x] = context->mem[r = dsp(context, context->mem[pc++], l)];
+                context->mem[r]++;
                 break;
             case POSTDEC:
-                mem[++x] = mem[r = dsp(mem[pc++], l)];
-                mem[r]--;
+                context->mem[++x] = context->mem[r = dsp(context, context->mem[pc++], l)];
+                context->mem[r]--;
                 break;
             case INC:
-                mem[++x] = ++mem[dsp(mem[pc++], l)];
+                context->mem[++x] = ++context->mem[dsp(context, context->mem[pc++], l)];
                 break;
             case DEC:
-                mem[++x] = --mem[dsp(mem[pc++], l)];
+                context->mem[++x] = --context->mem[dsp(context, context->mem[pc++], l)];
                 break;
             case POSTINCAT:
-                mem[x] = mem[r = mem[x]];
-                mem[r]++;
+                context->mem[x] = context->mem[r = context->mem[x]];
+                context->mem[r]++;
                 break;
             case POSTDECAT:
-                mem[x] = mem[r = mem[x]];
-                mem[r]--;
+                context->mem[x] = context->mem[r = context->mem[x]];
+                context->mem[r]--;
                 break;
             case INCAT:
-                mem[x] = ++mem[mem[x]];
+                context->mem[x] = ++context->mem[context->mem[x]];
                 break;
             case DECAT:
-                mem[x] = --mem[mem[x]];
+                context->mem[x] = --context->mem[context->mem[x]];
                 break;
             case INCV:
             case POSTINCV:
-                mem[dsp(mem[pc++], l)]++;
+                context->mem[dsp(context, context->mem[pc++], l)]++;
                 break;
             case DECV:
             case POSTDECV:
-                mem[dsp(mem[pc++], l)]--;
+                context->mem[dsp(context, context->mem[pc++], l)]--;
                 break;
             case INCATV:
             case POSTINCATV:
-                mem[mem[x--]]++;
+                context->mem[context->mem[x--]]++;
                 break;
             case DECATV:
             case POSTDECATV:
-                mem[mem[x--]]--;
+                context->mem[context->mem[x--]]--;
                 break;
 
             case UNMINUS:
-                mem[x] = -mem[x];
+                context->mem[x] = -context->mem[x];
                 break;
 
             case ASSR:
-                mem[r = dsp(mem[pc++], l)] = mem[x - 1];
-                mem[r + 1] = mem[x];
+                context->mem[r = dsp(context, context->mem[pc++], l)] = context->mem[x - 1];
+                context->mem[r + 1] = context->mem[x];
                 break;
             case PLUSASSR:
-                memcpy(&lf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
+                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
                 lf += rf;
-                memcpy(&mem[x - 1], &lf, sizeof(double));
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&context->mem[x - 1], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
             case MINUSASSR:
-                memcpy(&lf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
+                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
                 lf -= rf;
-                memcpy(&mem[x - 1], &lf, sizeof(double));
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&context->mem[x - 1], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
             case MULTASSR:
-                memcpy(&lf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
+                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
                 lf *= rf;
-                memcpy(&mem[x - 1], &lf, sizeof(double));
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&context->mem[x - 1], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
             case DIVASSR:
-                memcpy(&lf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
-                lf /= check_zero_float(rf);
-                memcpy(&mem[x - 1], &lf, sizeof(double));
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                lf /= check_zero_float(context, rf);
+                memcpy(&context->mem[x - 1], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
 
             case ASSATR:
-                r = mem[x - 2];
-                mem[r] = mem[x - 2] = mem[x - 1];
-                mem[r + 1] = mem[x - 1] = mem[x];
+                r = context->mem[x - 2];
+                context->mem[r] = context->mem[x - 2] = context->mem[x - 1];
+                context->mem[r + 1] = context->mem[x - 1] = context->mem[x];
                 x--;
                 break;
             case PLUSASSATR:
-                memcpy(&lf, &mem[i = mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
                 lf += rf;
-                memcpy(&mem[x++], &lf, sizeof(double));
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&context->mem[x++], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
             case MINUSASSATR:
-                memcpy(&lf, &mem[i = mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
                 lf -= rf;
-                memcpy(&mem[x++], &lf, sizeof(double));
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&context->mem[x++], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
             case MULTASSATR:
-                memcpy(&lf, &mem[i = mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
                 lf *= rf;
-                memcpy(&mem[x++], &lf, sizeof(double));
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&context->mem[x++], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
             case DIVASSATR:
-                memcpy(&lf, &mem[i = mem[x -= 2]], sizeof(double));
-                lf /= check_zero_float(rf);
-                memcpy(&mem[x++], &lf, sizeof(double));
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
+                lf /= check_zero_float(context, rf);
+                memcpy(&context->mem[x++], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
 
             case ASSRV:
-                r = dsp(mem[pc++], l);
-                mem[r + 1] = mem[x--];
-                mem[r] = mem[x--];
-                memcpy(&lf, &mem[r], sizeof(double));
+                r = dsp(context, context->mem[pc++], l);
+                context->mem[r + 1] = context->mem[x--];
+                context->mem[r] = context->mem[x--];
+                memcpy(&lf, &context->mem[r], sizeof(double));
                 break;
             case PLUSASSRV:
-                memcpy(&lf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
+                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
                 lf += rf;
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 x -= 2;
                 break;
             case MINUSASSRV:
-                memcpy(&lf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
+                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
                 lf -= rf;
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 x -= 2;
                 break;
             case MULTASSRV:
-                memcpy(&lf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
+                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
                 lf *= rf;
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 x -= 2;
                 break;
             case DIVASSRV:
-                memcpy(&lf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
-                lf /= check_zero_float(rf);
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                lf /= check_zero_float(context, rf);
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 x -= 2;
                 break;
 
             case ASSATRV:
-                r = mem[x - 2];
-                mem[r + 1] = mem[x--];
-                mem[r] = mem[x--];
+                r = context->mem[x - 2];
+                context->mem[r + 1] = context->mem[x--];
+                context->mem[r] = context->mem[x--];
                 break;
             case PLUSASSATRV:
-                memcpy(&lf, &mem[i = mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
                 lf += rf;
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 --x;
                 break;
             case MINUSASSATRV:
-                memcpy(&lf, &mem[i = mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
                 lf -= rf;
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 --x;
                 break;
             case MULTASSATRV:
-                memcpy(&lf, &mem[i = mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
                 lf *= rf;
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 --x;
                 break;
             case DIVASSATRV:
-                memcpy(&lf, &mem[i = mem[x -= 2]], sizeof(double));
-                lf /= check_zero_float(rf);
-                memcpy(&mem[i], &lf, sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
+                lf /= check_zero_float(context, rf);
+                memcpy(&context->mem[i], &lf, sizeof(double));
                 --x;
                 break;
 
             case EQEQR:
-                memcpy(&lf, &mem[x -= 3], sizeof(double));
-                mem[x] = lf == rf;
+                memcpy(&lf, &context->mem[x -= 3], sizeof(double));
+                context->mem[x] = lf == rf;
                 break;
             case NOTEQR:
-                memcpy(&lf, &mem[x -= 3], sizeof(double));
-                mem[x] = lf != rf;
+                memcpy(&lf, &context->mem[x -= 3], sizeof(double));
+                context->mem[x] = lf != rf;
                 break;
             case LLTR:
-                memcpy(&lf, &mem[x -= 3], sizeof(double));
-                mem[x] = lf < rf;
+                memcpy(&lf, &context->mem[x -= 3], sizeof(double));
+                context->mem[x] = lf < rf;
                 break;
             case LGTR:
-                memcpy(&lf, &mem[x -= 3], sizeof(double));
-                mem[x] = lf > rf;
+                memcpy(&lf, &context->mem[x -= 3], sizeof(double));
+                context->mem[x] = lf > rf;
                 break;
             case LLER:
-                memcpy(&lf, &mem[x -= 3], sizeof(double));
-                mem[x] = lf <= rf;
+                memcpy(&lf, &context->mem[x -= 3], sizeof(double));
+                context->mem[x] = lf <= rf;
                 break;
             case LGER:
-                memcpy(&lf, &mem[x -= 3], sizeof(double));
-                mem[x] = lf >= rf;
+                memcpy(&lf, &context->mem[x -= 3], sizeof(double));
+                context->mem[x] = lf >= rf;
                 break;
             case LPLUSR:
-                memcpy(&lf, &mem[x -= 3], sizeof(double));
+                memcpy(&lf, &context->mem[x -= 3], sizeof(double));
                 lf += rf;
-                memcpy(&mem[x++], &lf, sizeof(double));
+                memcpy(&context->mem[x++], &lf, sizeof(double));
                 break;
             case LMINUSR:
-                memcpy(&lf, &mem[x -= 3], sizeof(double));
+                memcpy(&lf, &context->mem[x -= 3], sizeof(double));
                 lf -= rf;
-                memcpy(&mem[x++], &lf, sizeof(double));
+                memcpy(&context->mem[x++], &lf, sizeof(double));
                 break;
             case LMULTR:
-                memcpy(&lf, &mem[x -= 3], sizeof(double));
+                memcpy(&lf, &context->mem[x -= 3], sizeof(double));
                 lf *= rf;
-                memcpy(&mem[x++], &lf, sizeof(double));
+                memcpy(&context->mem[x++], &lf, sizeof(double));
                 break;
             case LDIVR:
-                memcpy(&lf, &mem[x -= 3], sizeof(double));
-                lf /= check_zero_float(rf);
-                memcpy(&mem[x++], &lf, sizeof(double));
+                memcpy(&lf, &context->mem[x -= 3], sizeof(double));
+                lf /= check_zero_float(context, rf);
+                memcpy(&context->mem[x++], &lf, sizeof(double));
                 break;
             case POSTINCR:
-                memcpy(&rf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
-                memcpy(&mem[x + 1], &rf, sizeof(double));
+                memcpy(&rf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&context->mem[x + 1], &rf, sizeof(double));
                 x += 2;
                 ++rf;
-                memcpy(&mem[i], &rf, sizeof(double));
+                memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case POSTDECR:
-                memcpy(&rf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
-                memcpy(&mem[x + 1], &rf, sizeof(double));
+                memcpy(&rf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&context->mem[x + 1], &rf, sizeof(double));
                 x += 2;
                 --rf;
-                memcpy(&mem[i], &rf, sizeof(double));
+                memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case INCR:
-                memcpy(&rf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
+                memcpy(&rf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
                 ++rf;
-                memcpy(&mem[x + 1], &rf, sizeof(double));
+                memcpy(&context->mem[x + 1], &rf, sizeof(double));
                 x += 2;
-                memcpy(&mem[i], &rf, sizeof(double));
+                memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case DECR:
-                memcpy(&rf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
+                memcpy(&rf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
                 --rf;
-                memcpy(&mem[x + 1], &rf, sizeof(double));
+                memcpy(&context->mem[x + 1], &rf, sizeof(double));
                 x += 2;
-                memcpy(&mem[i], &rf, sizeof(double));
+                memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case POSTINCATR:
-                memcpy(&rf, &mem[i = mem[x]], sizeof(double));
-                memcpy(&mem[x + 1], &rf, sizeof(double));
+                memcpy(&rf, &context->mem[i = context->mem[x]], sizeof(double));
+                memcpy(&context->mem[x + 1], &rf, sizeof(double));
                 x += 2;
                 ++rf;
-                memcpy(&mem[i], &rf, sizeof(double));
+                memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case POSTDECATR:
-                memcpy(&rf, &mem[i = mem[x]], sizeof(double));
-                memcpy(&mem[x + 1], &rf, sizeof(double));
+                memcpy(&rf, &context->mem[i = context->mem[x]], sizeof(double));
+                memcpy(&context->mem[x + 1], &rf, sizeof(double));
                 x += 2;
                 --rf;
-                memcpy(&mem[i], &rf, sizeof(double));
+                memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case INCATR:
-                memcpy(&rf, &mem[i = mem[x]], sizeof(double));
+                memcpy(&rf, &context->mem[i = context->mem[x]], sizeof(double));
                 ++rf;
-                memcpy(&mem[x + 1], &rf, sizeof(double));
+                memcpy(&context->mem[x + 1], &rf, sizeof(double));
                 x += 2;
-                memcpy(&mem[i], &rf, sizeof(double));
+                memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case DECATR:
-                memcpy(&rf, &mem[i = mem[x]], sizeof(double));
+                memcpy(&rf, &context->mem[i = context->mem[x]], sizeof(double));
                 --rf;
-                memcpy(&mem[x + 1], &rf, sizeof(double));
+                memcpy(&context->mem[x + 1], &rf, sizeof(double));
                 x += 2;
-                memcpy(&mem[i], &rf, sizeof(double));
+                memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case INCRV:
             case POSTINCRV:
-                memcpy(&rf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
+                memcpy(&rf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
                 ++rf;
-                memcpy(&mem[i], &rf, sizeof(double));
+                memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case DECRV:
             case POSTDECRV:
-                memcpy(&rf, &mem[i = dsp(mem[pc++], l)], sizeof(double));
+                memcpy(&rf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
                 --rf;
-                memcpy(&mem[i], &rf, sizeof(double));
+                memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case INCATRV:
             case POSTINCATRV:
-                memcpy(&rf, &mem[i = mem[x--]], sizeof(double));
+                memcpy(&rf, &context->mem[i = context->mem[x--]], sizeof(double));
                 ++rf;
-                memcpy(&mem[i], &rf, sizeof(double));
+                memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case DECATRV:
             case POSTDECATRV:
-                memcpy(&rf, &mem[i = mem[x--]], sizeof(double));
+                memcpy(&rf, &context->mem[i = context->mem[x--]], sizeof(double));
                 --rf;
-                memcpy(&mem[i], &rf, sizeof(double));
+                memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
 
             case UNMINUSR:
                 rf = -rf;
-                memcpy(&mem[x - 1], &rf, sizeof(double));
+                memcpy(&context->mem[x - 1], &rf, sizeof(double));
                 break;
             case LNOT:
-                mem[x] = ~mem[x];
+                context->mem[x] = ~context->mem[x];
                 break;
             case LOGNOT:
-                mem[x] = !mem[x];
+                context->mem[x] = !context->mem[x];
                 break;
 
             default:
-                runtimeerr(wrong_kop, mem[pc - 1], numTh);
+                runtimeerr(context, wrong_kop, context->mem[pc - 1], numTh);
         }
     }
     return NULL;
 }
 
 void
-import()
+import(ruc_vm_context *context, const char *path)
 {
     int i, pc;
+    FILE *input;
 
 #ifdef ROBOT
     f1 = fopen(JD1, "r"); // файлы цифровых датчиков
@@ -1805,45 +1813,44 @@ import()
     system("i2cset -y 2 0x48 0x13 0x1000 w");
 #endif
 
-    input = fopen("export.txt", "r");
-
-    if (!input)
+    input = fopen(path, "r");
+    if (input == NULL)
     {
         printf("export.txt not found\n");
         return;
     }
 
-    fscanf(input, "%i %i %i %i %i %i %i\n", &pc, &funcnum, &id, &rp, &md,
-           &maxdisplg, &wasmain);
+    fscanf(input, "%i %i %i %i %i %i %i\n", &pc, &context->funcnum, &context->id, &context->rp, &context->md,
+           &context->maxdisplg, &context->wasmain);
 
     for (i = 0; i < pc; i++)
-        fscanf(input, "%i ", &mem[i]);
+        fscanf(input, "%i ", &context->mem[i]);
 
-    for (i = 0; i < funcnum; i++)
-        fscanf(input, "%i ", &functions[i]);
+    for (i = 0; i < context->funcnum; i++)
+        fscanf(input, "%i ", &context->functions[i]);
 
-    for (i = 0; i < id; i++)
-        fscanf(input, "%i ", &identab[i]);
+    for (i = 0; i < context->id; i++)
+        fscanf(input, "%i ", &context->identab[i]);
 
-    for (i = 0; i < rp; i++)
-        fscanf(input, "%i ", &reprtab[i]);
+    for (i = 0; i < context->rp; i++)
+        fscanf(input, "%i ", &context->reprtab[i]);
 
-    for (i = 0; i < md; i++)
-        fscanf(input, "%i ", &modetab[i]);
+    for (i = 0; i < context->md; i++)
+        fscanf(input, "%i ", &context->modetab[i]);
 
     fclose(input);
 
-    threads[0] = pc;
-    mem[pc] = g = pc + 2; // это l
-    mem[g] = mem[g + 1] = 0;
-    mem[pc + 1] = g + maxdisplg; // это x
+    context->threads[0] = pc;
+    context->mem[pc] = context->g = pc + 2; // это l
+    context->mem[context->g] = context->mem[context->g + 1] = 0;
+    context->mem[pc + 1] = context->g + context->maxdisplg; // это x
     pc = 4;
 
     sem_unlink(sem_print);
-    sempr = sem_open(sem_print, O_CREAT, S_IRUSR | S_IWUSR, 1);
-    t_init();
-    interpreter(&pc); // номер нити главной программы 0
-    t_destroy();
+    context->sempr = sem_open(sem_print, O_CREAT, S_IRUSR | S_IWUSR, 1);
+    t_init(context);
+    invoke_interpreter(context, &pc); // номер нити главной программы 0
+    t_destroy(context);
 
 #ifdef ROBOT
     system("i2cset -y 2 0x48 0x10 0 w"); // отключение силовых моторов
@@ -1855,9 +1862,25 @@ import()
 #endif
 }
 
-int
-main()
+static void
+process_user_requests(ruc_vm_context *context, int argc, const char *argv[])
 {
-    import();
+    int  i;
+
+    for (i = 1; i < argc; ++i)
+    {
+        import(context, argv[i]);
+    }
+}
+
+
+int
+main(int argc, const char *argv[])
+{
+    ruc_vm_context context;
+
+    ruc_vm_context_init(&context);
+
+    process_user_requests(&context, argc, argv);
     return 0;
 }
