@@ -11,7 +11,7 @@ printident(ruc_context *context, int r)
 {
     r += 2; // ссылка на context->reprtab
     do
-        printer_printchar(&context->err_options, &context->reprtab[r++]);
+        printer_printchar(&context->err_options, context->reprtab[r++]);
     while (context->reprtab[r] != 0);
 }
 
