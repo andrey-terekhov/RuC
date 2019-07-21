@@ -11,7 +11,7 @@ AllowShortCaseLabelsOnASingleLine: 'false'
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: 'false'
 AllowShortLoopsOnASingleLine: 'false'
-AlwaysBreakAfterDefinitionReturnType: All
+AlwaysBreakAfterReturnType: TopLevelDefinitions
 BinPackArguments: 'true'
 BinPackParameters: 'false'
 BreakBeforeBinaryOperators: None
@@ -21,10 +21,6 @@ BreakConstructorInitializers: AfterColon
 ColumnLimit: '80'
 ContinuationIndentWidth: '4'
 IncludeCategories:
-  - Regex:      '\"core\.hpp\"'
-    Priority:   0
-  - Regex:      '\"module.hpp\"'
-    Priority:   1
   - Regex:      <.*>
     Priority:   2
   - Regex:      \"(?!.*\/).*\"
