@@ -12,39 +12,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "uniscanner.h"
 
 #include "global_vars.h"
-extern void error(int);
-extern void warning(int);
-extern void printf_char(int);
+extern void error(ruc_context *error, int);
+extern void warning(ruc_context *context, int);
 
 int
 getnext(ruc_context *context)
 {
-    // reads UTF-8
-
-    unsigned char firstchar, secondchar;
-    if (fscanf(context->input, "%c", &firstchar) == EOF)
-        return EOF;
-    else
-    {
-        if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
-        {
-            fscanf(context->input, "%c", &secondchar);
-
-            context->nextchar = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 |
-                (secondchar & /*0b111111*/ 0x3F);
-        }
-        else
-            context->nextchar = firstchar;
-        if (context->nextchar == 13 /* cr */)
-            getnext(context);
-        //                if(kw)
-        //                    printf("context->nextchar %c %i\n",
-        //                    context->nextchar, context->nextchar);
-    }
-
-    return context->nextchar;
+    int ret = scanner_getnext(&context->input_options);
+    context->nextchar = ret;
+    return ret;
 }
 
 void
@@ -64,11 +43,11 @@ endofline(ruc_context *context)
     if (context->prep_flag == 1)
     {
         int j;
-        printf("line %i) ", context->line - 1);
+        printer_printf(&context->output_options, "line %i) ", context->line - 1);
         for (j = context->lines[context->line - 1];
              j < context->lines[context->line]; j++)
             if (context->source[j] != EOF)
-                printf_char(context->source[j]);
+                printer_printchar(&context->output_options, context->source[j]);
         fflush(stdout);
     }
 }
@@ -96,7 +75,7 @@ nextch(ruc_context *context)
         if (context->kw)
         {
             endofline(context);
-            printf("\n");
+            printer_printf(&context->output_options, "\n");
         }
         return;
     }
@@ -114,7 +93,7 @@ nextch(ruc_context *context)
             if (context->curchar == EOF)
             {
                 endnl(context);
-                printf("\n");
+                printer_printf(&context->output_options, "\n");
                 return;
             }
         } while (context->curchar != '\n');
@@ -135,8 +114,8 @@ nextch(ruc_context *context)
             if (context->curchar == EOF)
             {
                 endnl(context);
-                printf("\n");
-                error(comm_not_ended);
+                printer_printf(&context->output_options, "\n");
+                error(context, comm_not_ended);
             }
             if (context->curchar == '\n')
                 endnl(context);
@@ -167,7 +146,7 @@ next_string_elem(ruc_context *context)
             context->num = 0;
         else if (context->curchar != '\'' && context->curchar != '\\' &&
                  context->curchar != '\"')
-            error(bad_escape_sym);
+            error(context, bad_escape_sym);
         else
             context->num = context->curchar;
     }
@@ -221,7 +200,9 @@ scan(ruc_context *context)
     switch (context->curchar)
     {
         case EOF:
+        {
             return LEOF;
+        }
         case ',':
         {
             nextch(context);
@@ -413,7 +394,7 @@ scan(ruc_context *context)
             nextch(context);
             next_string_elem(context);
             if (context->curchar != '\'')
-                error(no_right_apost);
+                error(context, no_right_apost);
             nextch(context);
             context->instring = 0;
             context->ansttype = LCHAR;
@@ -434,7 +415,7 @@ scan(ruc_context *context)
                     //                    context->num, context->num);
                 }
                 if (n == MAXSTRINGL)
-                    error(too_long_string);
+                    error(context, too_long_string);
                 nextch(context);
                 while (context->curchar == ' ' || context->curchar == '\t' ||
                        context->curchar == '\n')
@@ -563,7 +544,7 @@ scan(ruc_context *context)
                 else if (context->curchar == '+')
                     nextch(context);
                 if (!digit(context))
-                    error(must_be_digit_after_exp);
+                    error(context, must_be_digit_after_exp);
                 while (digit(context))
                 {
                     d = d * 10 + context->curchar - '0';
@@ -583,7 +564,7 @@ scan(ruc_context *context)
             else
             {
                 if (flagtoolong)
-                    warning(too_long_int);
+                    warning(context, too_long_int);
                 context->ansttype = LFLOAT;
             }
             memcpy(&context->numr, &context->numdouble, sizeof(double));
@@ -634,8 +615,9 @@ scan(ruc_context *context)
             }
             else
             {
-                printf("плохой символ %c %i\n", context->curchar,
-                       context->curchar);
+                printer_printf(&context->err_options,
+                    "плохой символ %c %i\n", context->curchar,
+                    context->curchar);
                 nextch(context);
                 exit(10);
             }

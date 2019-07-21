@@ -10,8 +10,6 @@ extern int  getnext(ruc_context *);
 extern int  letter(ruc_context *);
 extern int  digit(ruc_context *);
 extern int  equal(ruc_context *, int, int);
-extern void printf_char();
-extern void fprintf_char();
 extern void m_error(ruc_context *context, int errnum);
 
 
@@ -80,20 +78,22 @@ show_macro(ruc_context *context)
         }
     }
 
-    printf("line %i) ", context->m_conect_lines[context->line]);
+    printer_printf(&context->miscout_options, "line %i) ",
+        context->m_conect_lines[context->line]);
 
     for (k = 0; k < j; k++)
     {
-        printf_char(str1[k]);
+        printer_printchar(&context->miscout_options, str1[k]);
     }
     if (flag == 0)
     {
-        printf("\n В строке есть макрозамена, строка после "
-               "макрогенерации:\nline %i)",
-               context->m_conect_lines[context->line]);
+        printer_printf(&context->miscout_options,
+            "\n В строке есть макрозамена, строка после "
+            "макрогенерации:\nline %i)",
+            context->m_conect_lines[context->line]);
         for (k = context->lines[context->line - 1]; k < context->charnum; k++)
         {
-            printf_char(context->source[k]);
+            printer_printchar(&context->miscout_options, context->source[k]);
         }
     }
 }
@@ -135,11 +135,11 @@ mend_line(ruc_context *context)
         context->mlines[context->mline + 1] = context->m_charnum;
         if (context->kw)
         {
-            printf("Line %i) ", context->mline - 1);
+            printer_printf(&context->miscout_options, "Line %i) ", context->mline - 1);
             for (j = context->mlines[context->mline - 1];
                  j < context->mlines[context->mline]; j++)
                 if (context->before_source[j] != EOF)
-                    printf_char(context->before_source[j]);
+                    printer_printchar(&context->miscout_options, context->before_source[j]);
         }
     }
 
@@ -163,7 +163,7 @@ monemore(ruc_context *context)
     if (context->curchar == EOF)
     {
         mend_line(context);
-        printf("\n");
+        printer_printf(&context->miscout_options, "\n");
         return;
     }
 }
@@ -247,7 +247,8 @@ m_fprintf(ruc_context *context, int a)
     {
         context->m_conect_lines[context->mcl++] = context->mline - 1;
     }
-    fprintf_char(context->output, a);
+    printer_printchar(&context->output_options, a);
+    //_obsolete_fprintf_char(context->output_options.output, a);
 
     return;
 }
@@ -961,7 +962,7 @@ macroscan(ruc_context *context)
         case '#':
             context->cur = macro_keywords(context);
             context->prep_flag = 1;
-            printf("flag");
+            printer_printf(&context->miscout_options, "flag");
             if (context->cur == SH_DEFINE)
             {
                 relis_define(context);

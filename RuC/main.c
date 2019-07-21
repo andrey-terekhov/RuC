@@ -40,6 +40,8 @@ extern void mipsopt(ruc_context *context);
 extern void mipsgen(ruc_context *context);
 extern void ext_decl(ruc_context *context);
 
+//#define FILE_DEBUG
+
 static void
 process_user_requests(ruc_context *context, int argc, const char *argv[])
 {
@@ -59,6 +61,7 @@ process_user_requests(ruc_context *context, int argc, const char *argv[])
         }
         else if (!enough_files)
         {
+#ifndef FILE_DEBUG
             /* Regular file */
             char macro_path[] = "/tmp/macroXXXXXX";
             char tree_path[] = "/tmp/treeXXXXXX";
@@ -67,6 +70,11 @@ process_user_requests(ruc_context *context, int argc, const char *argv[])
             mktemp(macro_path);
             mktemp(tree_path);
             mktemp(codes_path);
+#else
+            char macro_path[] = "macro.txt";
+            char tree_path[] = "tree.txt";
+            char codes_path[] = "codes.txt";
+#endif
             if (strlen(macro_path) == 0 || strlen(tree_path) == 0 ||
                 strlen(codes_path) == 0)
             {
@@ -75,10 +83,10 @@ process_user_requests(ruc_context *context, int argc, const char *argv[])
             }
 
             // Открытие исходного текста
-            ruc_context_attach_io(context, argv[i], IO_TYPE_INPUT);
+            ruc_context_attach_io(context, argv[i], IO_TYPE_INPUT, IO_SOURCE_FILE);
 
             // Препроцессинг в файл macro.txt
-            ruc_context_attach_io(context, macro_path, IO_TYPE_OUTPUT);
+            ruc_context_attach_io(context, macro_path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
 
             printf("\nИсходный текст:\n \n");
 
@@ -87,15 +95,17 @@ process_user_requests(ruc_context *context, int argc, const char *argv[])
             ruc_context_detach_io(context, IO_TYPE_OUTPUT);
             ruc_context_detach_io(context, IO_TYPE_INPUT);
 
-            ruc_context_attach_io(context, macro_path, IO_TYPE_INPUT);
+            ruc_context_attach_io(context, macro_path, IO_TYPE_INPUT, IO_SOURCE_FILE);
             output_tables_and_tree(context, tree_path);
             output_codes(context, codes_path);
             ruc_context_detach_io(context, IO_TYPE_INPUT);
 
             /* Will be left for debugging in case of failure */
+#ifndef FILE_DEBUG
             unlink(tree_path);
             unlink(codes_path);
             unlink(macro_path);
+#endif
             enough_files = true;
         }
         else
@@ -116,6 +126,8 @@ main(int argc, const char *argv[])
     ruc_context context;
 
     ruc_context_init(&context);
+    ruc_context_attach_io(&context, ":stderr", IO_TYPE_ERROR, IO_SOURCE_FILE);
+    ruc_context_attach_io(&context, ":stdout", IO_TYPE_MISC, IO_SOURCE_FILE);
 
     read_keywords(&context, "keywords.txt");
 

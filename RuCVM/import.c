@@ -200,7 +200,7 @@ void auxprintf(int strbeg, int databeg)
 
                 case 'c':
                 case 1083:  // л
-                    printf_char(mem[curdata++]);
+                    _obsolete_printf_char(mem[curdata++]);
                     break;
 
                 case 'f':
@@ -212,7 +212,7 @@ void auxprintf(int strbeg, int databeg)
                 case 's':
                 case 1089:   // с
                     for (j = mem[curdata]; j - mem[curdata] < mem[mem[curdata] - 1]; ++j)
-                        printf_char(mem[j]);
+                        _obsolete_printf_char(mem[j]);
                     curdata++;
                     break;
 
@@ -226,7 +226,7 @@ void auxprintf(int strbeg, int databeg)
             }
         }
         else
-            printf_char(mem[i]);
+            _obsolete_printf_char(mem[i]);
     }
 }
 
@@ -241,7 +241,7 @@ void auxprint(int beg, int t, char before, char after)
     if (t == LINT)
         printf("%i", r);
     else if (t == LCHAR)
-        printf_char(r);
+        _obsolete_printf_char(r);
     else if (t == LFLOAT)
     {
         memcpy(&rf, &mem[beg], sizeof(double));
@@ -294,7 +294,7 @@ void auxget(int beg, int t)
         scanf(" %i", &mem[beg]);
     else if (t == LCHAR)
     {
-        mem[beg] = getf_char();
+        mem[beg] = _obsolete_getf_char();
     }
     else if (t == LFLOAT)
     {
@@ -562,7 +562,7 @@ void* interpreter(void* pcPnt)
                 prtype = identab[i+2];
                 r = identab[i+1] + 2;       // ссылка на reprtab
                 do
-                    printf_char(reprtab[r++]);
+                    _obsolete_printf_char(reprtab[r++]);
                 while (reprtab[r] != 0);
                 
                 if (prtype > 0 && modetab[prtype] == MARRAY && modetab[prtype+1] > 0)
@@ -595,7 +595,7 @@ void* interpreter(void* pcPnt)
                 prtype = identab[i+2];
                 r = identab[i+1] + 2;       // ссылка на reprtab
                 do
-                    printf_char(reprtab[r++]);
+                    _obsolete_printf_char(reprtab[r++]);
                 while (reprtab[r] != 0);
                 printf(" ");
                 fflush(stdout);

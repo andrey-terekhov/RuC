@@ -4,21 +4,19 @@
 #include <stdio.h>
 #include "Defs.h"
 
-/**
- * Input/Output pipe type
- */
-typedef enum ruc_io_type
-{
-    IO_TYPE_INPUT, /**< Input pipe */
-    IO_TYPE_OUTPUT, /**< Output pipe */
-} ruc_io_type;
+#include "uniprinter.h"
+#include "uniscanner.h"
 
 // Определение глобальных переменных
 typedef struct ruc_context
 {
     const char *output_file; /** Output file */
-    FILE *      input;
-    FILE *      output;
+
+    universal_scanner_options input_options;
+    universal_printer_options output_options;
+    universal_printer_options err_options;
+    universal_printer_options miscout_options;
+
     double      numdouble;
     int         line;
     int         mline;
@@ -154,12 +152,15 @@ extern void ruc_context_init(ruc_context *context);
  * Attach input to a specific input/output pipe
  *
  * @param context   RuC context
- * @param path      Path to file
+ * @param ptr       Context-specific data, e.g. path to file or a pointer to
+ *                  data
  * @param type      IO type
+ * @param source    Data source
  */
 extern void ruc_context_attach_io(ruc_context *context,
-                                  const char * path,
-                                  ruc_io_type  type);
+                                  const char * ptr,
+                                  ruc_io_type  type,
+                                  ruc_io_source source);
 
 /**
  * Detach file from a specific input/output pipe
