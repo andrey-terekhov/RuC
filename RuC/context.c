@@ -119,21 +119,22 @@ io_get_file(const char *ptr, const char *mask)
 
 /* See description in context.h */
 void
-ruc_context_attach_io(ruc_context *context, const char *ptr, ruc_io_type type,
+ruc_context_attach_io(ruc_context * context,
+                      const char *  ptr,
+                      ruc_io_type   type,
                       ruc_io_source source)
 {
     void *opts = io_type2opts(context, type);
 
     if (source == IO_SOURCE_FILE)
     {
-        FILE * f = io_get_file(ptr, io_type2access_mask(type));
+        FILE *f = io_get_file(ptr, io_type2access_mask(type));
 
         if (f == NULL)
         {
             if (io_type_is_output(type))
             {
-                printf(" ошибка открытия файла %s: %s\n", ptr,
-                       strerror(errno));
+                printf(" ошибка открытия файла %s: %s\n", ptr, strerror(errno));
             }
             else
             {

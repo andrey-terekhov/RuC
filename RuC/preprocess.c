@@ -79,7 +79,7 @@ show_macro(ruc_context *context)
     }
 
     printer_printf(&context->miscout_options, "line %i) ",
-        context->m_conect_lines[context->line]);
+                   context->m_conect_lines[context->line]);
 
     for (k = 0; k < j; k++)
     {
@@ -88,9 +88,9 @@ show_macro(ruc_context *context)
     if (flag == 0)
     {
         printer_printf(&context->miscout_options,
-            "\n В строке есть макрозамена, строка после "
-            "макрогенерации:\nline %i)",
-            context->m_conect_lines[context->line]);
+                       "\n В строке есть макрозамена, строка после "
+                       "макрогенерации:\nline %i)",
+                       context->m_conect_lines[context->line]);
         for (k = context->lines[context->line - 1]; k < context->charnum; k++)
         {
             printer_printchar(&context->miscout_options, context->source[k]);
@@ -135,11 +135,13 @@ mend_line(ruc_context *context)
         context->mlines[context->mline + 1] = context->m_charnum;
         if (context->kw)
         {
-            printer_printf(&context->miscout_options, "Line %i) ", context->mline - 1);
+            printer_printf(&context->miscout_options, "Line %i) ",
+                           context->mline - 1);
             for (j = context->mlines[context->mline - 1];
                  j < context->mlines[context->mline]; j++)
                 if (context->before_source[j] != EOF)
-                    printer_printchar(&context->miscout_options, context->before_source[j]);
+                    printer_printchar(&context->miscout_options,
+                                      context->before_source[j]);
         }
     }
 

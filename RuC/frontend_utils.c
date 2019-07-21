@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "global_vars.h"
-#include "scanner.h"
 #include "keywords.h"
+#include "scanner.h"
 
 /* Занесение ключевых слов в reprtab */
 void
@@ -67,9 +67,9 @@ output_export(ruc_context *context, const char *path)
     int i;
 
     ruc_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
-    printer_printf(&context->output_options, "%i %i %i %i %i %i %i\n", context->pc,
-            context->funcnum, context->id, context->rp, context->md,
-            context->maxdisplg, context->wasmain);
+    printer_printf(&context->output_options, "%i %i %i %i %i %i %i\n",
+                   context->pc, context->funcnum, context->id, context->rp,
+                   context->md, context->maxdisplg, context->wasmain);
 
     for (i = 0; i < context->pc; i++)
         printer_printf(&context->output_options, "%i ", context->mem[i]);

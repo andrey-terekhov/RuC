@@ -83,10 +83,12 @@ process_user_requests(ruc_context *context, int argc, const char *argv[])
             }
 
             // Открытие исходного текста
-            ruc_context_attach_io(context, argv[i], IO_TYPE_INPUT, IO_SOURCE_FILE);
+            ruc_context_attach_io(context, argv[i], IO_TYPE_INPUT,
+                                  IO_SOURCE_FILE);
 
             // Препроцессинг в файл macro.txt
-            ruc_context_attach_io(context, macro_path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
+            ruc_context_attach_io(context, macro_path, IO_TYPE_OUTPUT,
+                                  IO_SOURCE_FILE);
 
             printf("\nИсходный текст:\n \n");
 
@@ -95,7 +97,8 @@ process_user_requests(ruc_context *context, int argc, const char *argv[])
             ruc_context_detach_io(context, IO_TYPE_OUTPUT);
             ruc_context_detach_io(context, IO_TYPE_INPUT);
 
-            ruc_context_attach_io(context, macro_path, IO_TYPE_INPUT, IO_SOURCE_FILE);
+            ruc_context_attach_io(context, macro_path, IO_TYPE_INPUT,
+                                  IO_SOURCE_FILE);
             output_tables_and_tree(context, tree_path);
             output_codes(context, codes_path);
             ruc_context_detach_io(context, IO_TYPE_INPUT);

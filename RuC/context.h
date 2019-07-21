@@ -17,19 +17,19 @@ typedef struct ruc_context
     universal_printer_options err_options;
     universal_printer_options miscout_options;
 
-    double      numdouble;
-    int         line;
-    int         mline;
-    int         charnum;
-    int         m_charnum;
-    int         cur;
-    int         next;
-    int         next1;
-    int         num;
-    int         hash;
-    int         repr;
-    int         keywordsnum;
-    int         wasstructdef;
+    double numdouble;
+    int    line;
+    int    mline;
+    int    charnum;
+    int    m_charnum;
+    int    cur;
+    int    next;
+    int    next1;
+    int    num;
+    int    hash;
+    int    repr;
+    int    keywordsnum;
+    int    wasstructdef;
     struct
     {
         int first;
@@ -157,9 +157,9 @@ extern void ruc_context_init(ruc_context *context);
  * @param type      IO type
  * @param source    Data source
  */
-extern void ruc_context_attach_io(ruc_context *context,
-                                  const char * ptr,
-                                  ruc_io_type  type,
+extern void ruc_context_attach_io(ruc_context * context,
+                                  const char *  ptr,
+                                  ruc_io_type   type,
                                   ruc_io_source source);
 
 /**

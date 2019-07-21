@@ -43,7 +43,8 @@ endofline(ruc_context *context)
     if (context->prep_flag == 1)
     {
         int j;
-        printer_printf(&context->output_options, "line %i) ", context->line - 1);
+        printer_printf(&context->output_options, "line %i) ",
+                       context->line - 1);
         for (j = context->lines[context->line - 1];
              j < context->lines[context->line]; j++)
             if (context->source[j] != EOF)
@@ -615,9 +616,8 @@ scan(ruc_context *context)
             }
             else
             {
-                printer_printf(&context->err_options,
-                    "плохой символ %c %i\n", context->curchar,
-                    context->curchar);
+                printer_printf(&context->err_options, "плохой символ %c %i\n",
+                               context->curchar, context->curchar);
                 nextch(context);
                 exit(10);
             }
