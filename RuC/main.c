@@ -14,11 +14,11 @@ const char *name =
 //"../../../tests/mips/0test.c";
 
 #include <errno.h>
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 #include <wchar.h>
 #include "Defs.h"
 #include "context.h"
@@ -26,38 +26,24 @@ const char *name =
 #include "frontend_utils.h"
 #include "tables.h"
 
-extern void
-preprocess_file(ruc_context *context);
+extern void preprocess_file(ruc_context *context);
 
-extern void
-tablesandcode(ruc_context *context);
-extern void
-tablesandtree(ruc_context *context);
-extern void
-import(ruc_context *context);
-extern int
-getnext(ruc_context *context);
-extern int
-nextch(ruc_context *context);
-extern int
-scan(ruc_context *context);
-extern void
-error(ruc_context *context, int ernum);
-extern void
-codegen(ruc_context *context);
-extern void
-mipsopt(ruc_context *context);
-extern void
-mipsgen(ruc_context *context);
-extern void
-ext_decl(ruc_context *context);
+extern void tablesandcode(ruc_context *context);
+extern void tablesandtree(ruc_context *context);
+extern void import(ruc_context *context);
+extern int  getnext(ruc_context *context);
+extern int  nextch(ruc_context *context);
+extern int  scan(ruc_context *context);
+extern void error(ruc_context *context, int ernum);
+extern void codegen(ruc_context *context);
+extern void mipsopt(ruc_context *context);
+extern void mipsgen(ruc_context *context);
+extern void ext_decl(ruc_context *context);
 
 static void
-process_user_requests(ruc_context *context,
-                      int argc,
-                      const char *argv[])
+process_user_requests(ruc_context *context, int argc, const char *argv[])
 {
-    int i;
+    int  i;
     bool enough_files = false;
 
     for (i = 1; i < argc; ++i)
@@ -81,8 +67,7 @@ process_user_requests(ruc_context *context,
             mktemp(macro_path);
             mktemp(tree_path);
             mktemp(codes_path);
-            if (strlen(macro_path) == 0 ||
-                strlen(tree_path) == 0 ||
+            if (strlen(macro_path) == 0 || strlen(tree_path) == 0 ||
                 strlen(codes_path) == 0)
             {
                 fprintf(stderr, " ошибка при создании временного файла\n");
@@ -121,7 +106,8 @@ process_user_requests(ruc_context *context,
     }
 
     output_export(context,
-        context->output_file != NULL ? context->output_file : "export.txt");
+                  context->output_file != NULL ? context->output_file
+                                               : "export.txt");
 }
 
 int

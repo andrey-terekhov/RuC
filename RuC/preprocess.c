@@ -6,81 +6,48 @@
 
 #include "global_vars.h"
 
-extern int
-getnext(ruc_context *);
-extern int
-letter(ruc_context *);
-extern int
-digit(ruc_context *);
-extern int
-equal(ruc_context *, int, int);
-extern void
-printf_char();
-extern void
-fprintf_char();
-extern void
-m_error(ruc_context *context, int errnum);
+extern int  getnext(ruc_context *);
+extern int  letter(ruc_context *);
+extern int  digit(ruc_context *);
+extern int  equal(ruc_context *, int, int);
+extern void printf_char();
+extern void fprintf_char();
+extern void m_error(ruc_context *context, int errnum);
 
 
-int
-mletter(ruc_context *context, int r);
-int
-mdigit(ruc_context *context, int r);
-int
-mequal(ruc_context *context, int str[], int j);
+int mletter(ruc_context *context, int r);
+int mdigit(ruc_context *context, int r);
+int mequal(ruc_context *context, int str[], int j);
 
-void
-mend_line(ruc_context *context);
-void
-m_nextch(ruc_context *context, int i);
-void
-m_fprintf(ruc_context *context, int a);
+void mend_line(ruc_context *context);
+void m_nextch(ruc_context *context, int i);
+void m_fprintf(ruc_context *context, int a);
 
-void
-to_macrotext(ruc_context *, char chang[], int oldrepr); //
-void
-macro_reprtab(ruc_context *, char chang[]);
-void
-from_macrotext(ruc_context *); // 5
-int
-macro_keywords(ruc_context *); // 12
-void
-relis_define(ruc_context *); // 2
+void to_macrotext(ruc_context *, char chang[], int oldrepr); //
+void macro_reprtab(ruc_context *, char chang[]);
+void from_macrotext(ruc_context *); // 5
+int  macro_keywords(ruc_context *); // 12
+void relis_define(ruc_context *); // 2
 
-void
-toreprtab_f(ruc_context *);
-void
-to_functionident(ruc_context *); // 4
-int
-scob(ruc_context *, int cp); // 6
-void
-from_functionident(ruc_context *, int r);
-void
-create_change(ruc_context *, int r1); // 11
-void
-r_macrofunction(ruc_context *); // 3
+void toreprtab_f(ruc_context *);
+void to_functionident(ruc_context *); // 4
+int  scob(ruc_context *, int cp); // 6
+void from_functionident(ruc_context *, int r);
+void create_change(ruc_context *, int r1); // 11
+void r_macrofunction(ruc_context *); // 3
 
 // void m_ident();//5
-int
-find_ident(ruc_context *);
+int find_ident(ruc_context *);
 
-int
-check_if(ruc_context *, int type_if); // 10
-void
-end_line(ruc_context *); // 9
-void
-false_if(ruc_context *); // 8
-int
-m_false(ruc_context *); // 7
-void
-m_true(ruc_context *, int type_if);
-void
-m_if(ruc_context *, int type_if);
+int  check_if(ruc_context *, int type_if); // 10
+void end_line(ruc_context *); // 9
+void false_if(ruc_context *); // 8
+int  m_false(ruc_context *); // 7
+void m_true(ruc_context *, int type_if);
+void m_if(ruc_context *, int type_if);
 
-void
-macroscan(ruc_context *context); // 1,17
-void
-preprocess_file(ruc_context *context); // 18
+void macroscan(ruc_context *context); // 1,17
+void preprocess_file(ruc_context *context); // 18
 
 void
 show_macro(ruc_context *context)

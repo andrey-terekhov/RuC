@@ -7,8 +7,7 @@
  * @param context   RuC context
  * @param path      Target file path
  */
-void
-read_keywords(ruc_context *context, const char *path);
+void read_keywords(ruc_context *context, const char *path);
 
 /**
  * Print tables and tree to a file specified by @p path
@@ -16,8 +15,7 @@ read_keywords(ruc_context *context, const char *path);
  * @param context   RuC context
  * @param path      Target file
  */
-void
-output_tables_and_tree(ruc_context *context, const char *path);
+void output_tables_and_tree(ruc_context *context, const char *path);
 
 /**
  * Print codes to a file specified by @p path
@@ -25,8 +23,7 @@ output_tables_and_tree(ruc_context *context, const char *path);
  * @param context   RuC context
  * @param path      Target file
  */
-void
-output_codes(ruc_context *context, const char *path);
+void output_codes(ruc_context *context, const char *path);
 
 /**
  * Print export tables to a file specified by @p path
@@ -34,7 +31,6 @@ output_codes(ruc_context *context, const char *path);
  * @param context   RuC context
  * @param path      Target file
  */
-void
-output_export(ruc_context *context, const char *path);
+void output_export(ruc_context *context, const char *path);
 
 #endif

@@ -11,8 +11,7 @@
 
 #include "global_vars.h"
 
-extern void
-fprintf_char(FILE *f, int wchar);
+extern void fprintf_char(FILE *f, int wchar);
 
 void
 tablesandtree(ruc_context *context)

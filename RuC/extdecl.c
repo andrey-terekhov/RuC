@@ -1,13 +1,9 @@
 #include "global_vars.h"
 
-extern int
-getnext();
-extern int
-nextch();
-extern int
-scaner(ruc_context *);
-extern void
-error(ruc_context *, int e);
+extern int  getnext();
+extern int  nextch();
+extern int  scaner(ruc_context *);
+extern void error(ruc_context *, int e);
 
 int
 modeeq(ruc_context *context, int first_mode, int second_mode)
@@ -221,11 +217,10 @@ getstatic(ruc_context *context, int type)
     return olddispl;
 }
 
-int
-toidentab(ruc_context *context,
-          int          f,
-          int          type) // f =  0, если не ф-ция, f=1, если метка, f=funcnum, если
-                    // описание ф-ции,
+int toidentab(ruc_context *context,
+              int          f,
+              int type) // f =  0, если не ф-ция, f=1, если метка, f=funcnum,
+                        // если описание ф-ции,
 { // f = -1, если ф-ция-параметр, f>=1000, если это описание типа
   // f = -2, #define
     //    printf("\n f= %i context->repr %i rtab[context->repr] %i
@@ -353,15 +348,12 @@ binop(ruc_context *context, int sp)
     context->anst = VAL;
 }
 
-void
-expr(ruc_context *context, int level);
+void expr(ruc_context *context, int level);
 
-void
-exprassn(ruc_context *context, int);
+void exprassn(ruc_context *context, int);
 
-void
-toval(ruc_context *context) // надо значение положить на стек, например, чтобы
-                            // передать параметром
+void toval(ruc_context *context) // надо значение положить на стек, например,
+                                 // чтобы передать параметром
 {
     if (context->anst == VAL || context->anst == NUMBER)
         ;
@@ -415,10 +407,8 @@ applid(ruc_context *context)
 }
 
 
-void
-exprval(ruc_context *context);
-void
-unarexpr(ruc_context *context);
+void exprval(ruc_context *context);
+void unarexpr(ruc_context *context);
 
 void
 actstring(ruc_context *context)
@@ -868,9 +858,8 @@ index_check(ruc_context *context)
         error(context, index_must_be_int);
 }
 
-int
-find_field(ruc_context *context,
-           int          stype) // выдает смещение до найденного поля или ошибку
+int find_field(ruc_context *context,
+               int          stype) // выдает смещение до найденного поля или ошибку
 {
     int i, flag = 1, select_displ = 0;
     scaner(context);
@@ -908,8 +897,7 @@ selectend(ruc_context *context)
         totree(context, TAddrtoval);
 }
 
-int
-Norder(ruc_context *context, int t) // вычислить размерность массива
+int Norder(ruc_context *context, int t) // вычислить размерность массива
 {
     int n = 1;
     while ((t = context->modetab[t + 1]) > 0)
@@ -917,8 +905,7 @@ Norder(ruc_context *context, int t) // вычислить размерность
     return n;
 }
 
-void
-array_init(ruc_context *context, int t);
+void array_init(ruc_context *context, int t);
 
 void
 postexpr(ruc_context *context)
@@ -1206,8 +1193,7 @@ exprinbrkts(ruc_context *context, int er)
     mustbe(context, RIGHTBR, er);
 }
 
-void
-exprassnval(ruc_context *context);
+void exprassnval(ruc_context *context);
 
 void
 exprassninbrkts(ruc_context *context, int er)
@@ -1218,8 +1204,7 @@ exprassninbrkts(ruc_context *context, int er)
     mustbe(context, RIGHTBR, er);
 }
 
-int
-prio(ruc_context *context, int op) // возвращает 0, если не операция
+int prio(ruc_context *context, int op) // возвращает 0, если не операция
 {
     UNUSED(context);
     return op == LOGOR ? 1
@@ -1354,8 +1339,7 @@ condexpr(ruc_context *context)
         context->stackoperands[context->sopnd] = context->ansttype;
 }
 
-void
-struct_init(ruc_context *context, int);
+void struct_init(ruc_context *context, int);
 
 void
 inition(ruc_context *context, int decl_type)
@@ -1384,9 +1368,9 @@ inition(ruc_context *context, int decl_type)
         error(context, wrong_init);
 }
 
-void
-struct_init(ruc_context *context,
-            int decl_type) // сейчас context->modetab[decl_type] равен MSTRUCT
+void struct_init(
+    ruc_context *context,
+    int decl_type) // сейчас context->modetab[decl_type] равен MSTRUCT
 {
     int next_field = decl_type + 3, i, nf = context->modetab[decl_type + 2] / 2;
     if (context->cur != BEGIN)
@@ -1567,9 +1551,9 @@ exprassnval(ruc_context *context)
     totree(context, TExprend);
 }
 
-void
-array_init(ruc_context *context,
-           int decl_type) // сейчас context->modetab[decl_type] равен MARRAY
+void array_init(
+    ruc_context *context,
+    int decl_type) // сейчас context->modetab[decl_type] равен MARRAY
 {
     int ad, all = 0;
     if (is_array(context, decl_type))
@@ -1621,9 +1605,9 @@ array_init(ruc_context *context,
     }
 }
 
-int
-arrdef(ruc_context *context, int t) // вызывается при описании массивов и
-                                    // структур из массивов сразу после idorpnt
+int arrdef(ruc_context *context,
+           int t) // вызывается при описании массивов и
+                  // структур из массивов сразу после idorpnt
 {
     context->arrdim = 0;
     context->usual = 1; // описание массива без пустых границ
@@ -1665,10 +1649,9 @@ arrdef(ruc_context *context, int t) // вызывается при описан�
 }
 
 
-void
-decl_id(ruc_context *context,
-        int          decl_type) // вызывается из block и extdecl, только эта процедура
-                       // реально отводит память
+void decl_id(ruc_context *context,
+             int decl_type) // вызывается из block и extdecl, только эта
+                            // процедура реально отводит память
 { // если встретятся массивы (прямо или в структурах), их размеры уже будут в
   // стеке
     int oldid = toidentab(context, 0, decl_type), elem_type, all,
@@ -1725,8 +1708,7 @@ decl_id(ruc_context *context,
 }
 
 
-void
-block(ruc_context *context, int b);
+void block(ruc_context *context, int b);
 // если b=1, то это просто блок, b=2 - блок нити, b=-1 - блок в switch, иначе
 // (b=0) - это блок функции
 
@@ -2123,8 +2105,7 @@ idorpnt(ruc_context *context, int e, int t)
     return t;
 }
 
-int
-gettype(ruc_context *context);
+int gettype(ruc_context *context);
 
 int
 struct_decl_list(ruc_context *context)

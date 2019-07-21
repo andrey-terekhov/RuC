@@ -7,10 +7,8 @@
 #include <stdlib.h>
 #include "global_vars.h"
 
-extern void
-error(ruc_context *context, int err);
-extern int
-szof(ruc_context *context, int);
+extern void error(ruc_context *context, int err);
+extern int  szof(ruc_context *context, int);
 
 int curth = 0;
 
@@ -113,8 +111,7 @@ finalop(ruc_context *context)
     }
 }
 
-void
-Declid_gen(ruc_context *context);
+void Declid_gen(ruc_context *context);
 
 int
 Expr_gen(ruc_context *context, int incond)
@@ -268,8 +265,7 @@ Expr_gen(ruc_context *context, int incond)
     return wasstring;
 }
 
-void
-compstmt_gen(ruc_context *context);
+void compstmt_gen(ruc_context *context);
 
 void
 Stmt_gen(ruc_context *context)

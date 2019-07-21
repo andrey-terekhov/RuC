@@ -14,12 +14,9 @@
 #include <unistd.h>
 
 #include "global_vars.h"
-extern void
-error(int);
-extern void
-warning(int);
-extern void
-printf_char(int);
+extern void error(int);
+extern void warning(int);
+extern void printf_char(int);
 
 int
 getnext(ruc_context *context)

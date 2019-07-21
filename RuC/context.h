@@ -16,22 +16,22 @@ typedef enum ruc_io_type
 // Определение глобальных переменных
 typedef struct ruc_context
 {
-    const char *output_file;    /** Output file */
-    FILE * input;
-    FILE * output;
-    double numdouble;
-    int    line;
-    int    mline;
-    int    charnum;
-    int    m_charnum;
-    int    cur;
-    int    next;
-    int    next1;
-    int    num;
-    int    hash;
-    int    repr;
-    int    keywordsnum;
-    int    wasstructdef;
+    const char *output_file; /** Output file */
+    FILE *      input;
+    FILE *      output;
+    double      numdouble;
+    int         line;
+    int         mline;
+    int         charnum;
+    int         m_charnum;
+    int         cur;
+    int         next;
+    int         next1;
+    int         num;
+    int         hash;
+    int         repr;
+    int         keywordsnum;
+    int         wasstructdef;
     struct
     {
         int first;
@@ -148,8 +148,7 @@ typedef struct ruc_context
  *
  * @param context Uninitialized RuC context
  */
-extern void
-ruc_context_init(ruc_context *context);
+extern void ruc_context_init(ruc_context *context);
 
 /**
  * Attach input to a specific input/output pipe
@@ -158,8 +157,9 @@ ruc_context_init(ruc_context *context);
  * @param path      Path to file
  * @param type      IO type
  */
-extern void
-ruc_context_attach_io(ruc_context *context, const char *path, ruc_io_type type);
+extern void ruc_context_attach_io(ruc_context *context,
+                                  const char * path,
+                                  ruc_io_type  type);
 
 /**
  * Detach file from a specific input/output pipe
@@ -167,7 +167,6 @@ ruc_context_attach_io(ruc_context *context, const char *path, ruc_io_type type);
  * @param context   RuC context
  * @param type      IO type
  */
-extern void
-ruc_context_detach_io(ruc_context *context, ruc_io_type type);
+extern void ruc_context_detach_io(ruc_context *context, ruc_io_type type);
 
 #endif

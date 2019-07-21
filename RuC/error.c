@@ -2,13 +2,10 @@
 #include <stdlib.h>
 #include "global_vars.h"
 
-extern void
-tablesandtree(ruc_context *context);
+extern void tablesandtree(ruc_context *context);
 
-extern void
-show_macro(ruc_context *context);
-extern void
-printf_char(int wchar);
+extern void show_macro(ruc_context *context);
+extern void printf_char(int wchar);
 void
 printident(ruc_context *context, int r)
 {

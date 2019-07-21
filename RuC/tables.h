@@ -9,15 +9,13 @@
  *
  * @return FIXME
  */
-extern int
-toreprtab(ruc_context *context, char str[]);
+extern int toreprtab(ruc_context *context, char str[]);
 
 /**
  * Mode table initialization
  *
  * @param context   RuC context
  */
-void
-init_modetab(ruc_context *context);
+void init_modetab(ruc_context *context);
 
 #endif
