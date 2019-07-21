@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "th_static.h"
 #include "context.h"
+#include "th_static.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -26,7 +26,8 @@ t_init(ruc_vm_context *context)
     int res = pthread_rwlock_init(&context->__lock_t_create, NULL);
     if (res != 0)
     {
-        perror("t_init : pthread_rwlock_init of context->__lock_t_create failed");
+        perror(
+            "t_init : pthread_rwlock_init of context->__lock_t_create failed");
         exit(EXIT_FAILURE);
     }
     context->__threads[0].th = pthread_self();
@@ -35,34 +36,41 @@ t_init(ruc_vm_context *context)
     res = pthread_cond_init(&(context->__threads[0].cond), NULL);
     if (res != 0)
     {
-        perror("t_init : pthread_cond_init of context->__threads[0].cond failed");
+        perror(
+            "t_init : pthread_cond_init of context->__threads[0].cond failed");
         exit(EXIT_FAILURE);
     }
 
     res = pthread_mutex_init(&(context->__threads[0].lock), NULL);
     if (res != 0)
     {
-        perror("t_init : pthread_mutex_init of context->__threads[0].lock failed");
+        perror(
+            "t_init : pthread_mutex_init of context->__threads[0].lock failed");
         exit(EXIT_FAILURE);
     }
     res = pthread_rwlock_init(&context->__lock_t_sem_create, NULL);
     if (res != 0)
     {
-        perror("t_init : pthread_rwlock_init of context->__lock_t_sem_create failed");
+        perror("t_init : pthread_rwlock_init of context->__lock_t_sem_create "
+               "failed");
         exit(EXIT_FAILURE);
     }
 }
 
 int
 __t_create(ruc_vm_context *context,
-           pthread_attr_t *attr, void *(*func)(void *), void *arg, int isDetach)
+           pthread_attr_t *attr,
+           void *(*func)(void *),
+           void *arg,
+           int   isDetach)
 {
     pthread_t th;
     int       retVal;
     int       res = pthread_rwlock_wrlock(&context->__lock_t_create);
     if (res != 0)
     {
-        perror("__t_create : pthread_rwlock_wrlock of context->__lock_t_create failed");
+        perror("__t_create : pthread_rwlock_wrlock of context->__lock_t_create "
+               "failed");
         exit(EXIT_FAILURE);
     }
 
@@ -95,18 +103,22 @@ __t_create(ruc_vm_context *context,
     context->__threads[context->__countTh].th = th;
     context->__threads[context->__countTh].isDetach = isDetach;
 
-    res = pthread_cond_init(&(context->__threads[context->__countTh].cond), NULL);
+    res =
+        pthread_cond_init(&(context->__threads[context->__countTh].cond), NULL);
     if (res != 0)
     {
-        perror("__t_create : pthread_cond_init of context->__threads[context->__countTh].cond "
+        perror("__t_create : pthread_cond_init of "
+               "context->__threads[context->__countTh].cond "
                "failed");
         exit(EXIT_FAILURE);
     }
 
-    res = pthread_mutex_init(&(context->__threads[context->__countTh].lock), NULL);
+    res = pthread_mutex_init(&(context->__threads[context->__countTh].lock),
+                             NULL);
     if (res != 0)
     {
-        perror("__t_create : pthread_mutex_init of context->__threads[context->__countTh].lock "
+        perror("__t_create : pthread_mutex_init of "
+               "context->__threads[context->__countTh].lock "
                "failed");
         exit(EXIT_FAILURE);
     }
@@ -117,7 +129,8 @@ __t_create(ruc_vm_context *context,
     res = pthread_rwlock_unlock(&context->__lock_t_create);
     if (res != 0)
     {
-        perror("__t_create : pthread_rwlock_unlock of context->__lock_t_create failed");
+        perror("__t_create : pthread_rwlock_unlock of context->__lock_t_create "
+               "failed");
         exit(EXIT_FAILURE);
     }
     return retVal;
@@ -164,7 +177,8 @@ t_join(ruc_vm_context *context, int numTh)
     int res = pthread_rwlock_rdlock(&context->__lock_t_create);
     if (res != 0)
     {
-        perror("t_join : pthread_rwlock_rdlock of context->__lock_t_create failed");
+        perror("t_join : pthread_rwlock_rdlock of context->__lock_t_create "
+               "failed");
         exit(EXIT_FAILURE);
     }
 
@@ -177,8 +191,8 @@ t_join(ruc_vm_context *context, int numTh)
             res = pthread_rwlock_unlock(&context->__lock_t_create);
             if (res != 0)
             {
-                perror(
-                    "t_join : pthread_rwlock_unlock of context->__lock_t_create failed");
+                perror("t_join : pthread_rwlock_unlock of "
+                       "context->__lock_t_create failed");
                 exit(EXIT_FAILURE);
             }
 
@@ -211,7 +225,8 @@ t_getThNum(ruc_vm_context *context)
     int       res = pthread_rwlock_rdlock(&context->__lock_t_create);
     if (res != 0)
     {
-        perror("t_getThNum : pthread_rwlock_rdlock of context->__lock_t_create failed");
+        perror("t_getThNum : pthread_rwlock_rdlock of context->__lock_t_create "
+               "failed");
         exit(EXIT_FAILURE);
     }
 
@@ -232,8 +247,8 @@ t_getThNum(ruc_vm_context *context)
         res = pthread_rwlock_unlock(&context->__lock_t_create);
         if (res != 0)
         {
-            perror(
-                "t_getThNum : pthread_rwlock_unlock of context->__lock_t_create failed");
+            perror("t_getThNum : pthread_rwlock_unlock of "
+                   "context->__lock_t_create failed");
             exit(EXIT_FAILURE);
         }
 
@@ -260,7 +275,8 @@ t_sem_create(ruc_vm_context *context, int level)
     char   csem[10];
     if (res != 0)
     {
-        perror("t_sem_create : pthread_rwlock_wrlock of context->__lock_t_sem_create "
+        perror("t_sem_create : pthread_rwlock_wrlock of "
+               "context->__lock_t_sem_create "
                "failed");
         exit(EXIT_FAILURE);
     }
@@ -283,7 +299,8 @@ t_sem_create(ruc_vm_context *context, int level)
     res = pthread_rwlock_unlock(&context->__lock_t_sem_create);
     if (res != 0)
     {
-        perror("t_sem_create : pthread_rwlock_unlock of context->__lock_t_sem_create "
+        perror("t_sem_create : pthread_rwlock_unlock of "
+               "context->__lock_t_sem_create "
                "failed");
         exit(EXIT_FAILURE);
     }
@@ -294,11 +311,12 @@ void
 t_sem_wait(ruc_vm_context *context, int numSem)
 {
     int res = pthread_rwlock_rdlock(&context->__lock_t_sem_create);
-    //    printf("t_sem_wait numSem= %i context->__countSem=  %i\n", numSem, context->__countSem);
+    //    printf("t_sem_wait numSem= %i context->__countSem=  %i\n", numSem,
+    //    context->__countSem);
     if (res != 0)
     {
-        perror(
-            "t_sem_wait : pthread_rwlock_rdlock of context->__lock_t_sem_create failed");
+        perror("t_sem_wait : pthread_rwlock_rdlock of "
+               "context->__lock_t_sem_create failed");
         exit(EXIT_FAILURE);
     }
     if (numSem >= 0 && numSem < context->__countSem)
@@ -308,7 +326,8 @@ t_sem_wait(ruc_vm_context *context, int numSem)
         res = pthread_rwlock_unlock(&context->__lock_t_sem_create);
         if (res != 0)
         {
-            perror("t_sem_wait : pthread_rwlock_unlock of context->__lock_t_sem_create "
+            perror("t_sem_wait : pthread_rwlock_unlock of "
+                   "context->__lock_t_sem_create "
                    "failed");
             exit(EXIT_FAILURE);
         }
@@ -333,8 +352,8 @@ t_sem_post(ruc_vm_context *context, int numSem)
     int res = pthread_rwlock_rdlock(&context->__lock_t_sem_create);
     if (res != 0)
     {
-        perror(
-            "t_sem_post : pthread_rwlock_rdlock of context->__lock_t_sem_create failed");
+        perror("t_sem_post : pthread_rwlock_rdlock of "
+               "context->__lock_t_sem_create failed");
         exit(EXIT_FAILURE);
     }
     if (numSem >= 0 && numSem < context->__countSem)
@@ -343,7 +362,8 @@ t_sem_post(ruc_vm_context *context, int numSem)
         res = pthread_rwlock_unlock(&context->__lock_t_sem_create);
         if (res != 0)
         {
-            perror("t_sem_post : pthread_rwlock_unlock of context->__lock_t_sem_create "
+            perror("t_sem_post : pthread_rwlock_unlock of "
+                   "context->__lock_t_sem_create "
                    "failed");
             exit(EXIT_FAILURE);
         }
@@ -369,7 +389,8 @@ t_msg_send(ruc_vm_context *context, struct msg_info msg)
     int res = pthread_rwlock_rdlock(&context->__lock_t_create);
     if (res != 0)
     {
-        perror("t_msg_send : pthread_rwlock_rdlock of context->__lock_t_create failed");
+        perror("t_msg_send : pthread_rwlock_rdlock of context->__lock_t_create "
+               "failed");
         exit(EXIT_FAILURE);
     }
     if (msg.numTh >= 0 && msg.numTh < context->__countTh)
@@ -379,8 +400,8 @@ t_msg_send(ruc_vm_context *context, struct msg_info msg)
         res = pthread_rwlock_unlock(&context->__lock_t_create);
         if (res != 0)
         {
-            perror(
-                "t_msg_send : pthread_rwlock_unlock of context->__lock_t_create failed");
+            perror("t_msg_send : pthread_rwlock_unlock of "
+                   "context->__lock_t_create failed");
             exit(EXIT_FAILURE);
         }
         res = pthread_mutex_lock(&(th_info->lock));
@@ -424,12 +445,12 @@ t_msg_send(ruc_vm_context *context, struct msg_info msg)
 struct msg_info
 t_msg_receive(ruc_vm_context *context)
 {
-    int             res = pthread_rwlock_rdlock(&context->__lock_t_create), numTh;
+    int res = pthread_rwlock_rdlock(&context->__lock_t_create), numTh;
     struct msg_info msg;
     if (res != 0)
     {
-        perror(
-            "t_msg_recieve : pthread_rwlock_rdlock of context->__lock_t_create failed");
+        perror("t_msg_recieve : pthread_rwlock_rdlock of "
+               "context->__lock_t_create failed");
         exit(EXIT_FAILURE);
     }
     numTh = t_getThNum(context);
@@ -438,8 +459,8 @@ t_msg_receive(ruc_vm_context *context)
     res = pthread_rwlock_unlock(&context->__lock_t_create);
     if (res != 0)
     {
-        perror(
-            "t_msg_recieve : pthread_rwlock_unlock of context->__lock_t_create failed");
+        perror("t_msg_recieve : pthread_rwlock_unlock of "
+               "context->__lock_t_create failed");
         exit(EXIT_FAILURE);
     }
     res = pthread_mutex_lock(&(th_info->lock));
@@ -478,14 +499,15 @@ t_destroy(ruc_vm_context *context)
         res = pthread_cond_destroy(&(context->__threads[i].cond));
         if (res != 0)
         {
-            perror(
-                "t_destroy : pthread_cond_destroy of context->__threads[i].cond failed");
+            perror("t_destroy : pthread_cond_destroy of "
+                   "context->__threads[i].cond failed");
             exit(EXIT_FAILURE);
         }
         res = pthread_mutex_destroy(&(context->__threads[i].lock));
         if (res != 0)
         {
-            perror("t_destroy : pthread_mutex_destroy of context->__threads[i].lock "
+            perror("t_destroy : pthread_mutex_destroy of "
+                   "context->__threads[i].lock "
                    "failed");
             exit(EXIT_FAILURE);
         }
@@ -503,15 +525,16 @@ t_destroy(ruc_vm_context *context)
     res = pthread_rwlock_destroy(&context->__lock_t_create);
     if (res != 0)
     {
-        perror("t_destroy : pthread_rwlock_destroy of context->__lock_t_create failed");
+        perror("t_destroy : pthread_rwlock_destroy of context->__lock_t_create "
+               "failed");
         exit(EXIT_FAILURE);
     }
 
     res = pthread_rwlock_destroy(&context->__lock_t_sem_create);
     if (res != 0)
     {
-        perror(
-            "t_destroy : pthread_rwlock_destroy of context->__lock_t_sem_create failed");
+        perror("t_destroy : pthread_rwlock_destroy of "
+               "context->__lock_t_sem_create failed");
         exit(EXIT_FAILURE);
     }
 }

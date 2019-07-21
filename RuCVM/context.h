@@ -1,14 +1,14 @@
 #ifndef RUC_VM_CONTEXT_H
 #define RUC_VM_CONTEXT_H
 
-#include <stdio.h>
 #include <semaphore.h>
+#include <stdio.h>
 
 #include "Defs.h"
 
+#include "th_static.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
-#include "th_static.h"
 
 struct ruc_vm_context;
 typedef struct ruc_vm_context ruc_vm_context;
@@ -16,7 +16,7 @@ typedef struct ruc_vm_context ruc_vm_context;
 typedef struct ruc_vm_thread_arg
 {
     ruc_vm_context *context;
-    void           *arg;
+    void *          arg;
 } ruc_vm_thread_arg;
 
 // Определение глобальных переменных
@@ -48,13 +48,13 @@ typedef struct ruc_vm_context
     sem_t *                   sempr, *semdeb;
 
     /* Threads */
-    int                 __countTh;
-    ruc_thread_info     __threads[__COUNT_TH];
+    int             __countTh;
+    ruc_thread_info __threads[__COUNT_TH];
 
-    int                 __countSem;
-    sem_t *             __sems[__COUNT_SEM];
-    pthread_rwlock_t    __lock_t_create;
-    pthread_rwlock_t    __lock_t_sem_create;
+    int              __countSem;
+    sem_t *          __sems[__COUNT_SEM];
+    pthread_rwlock_t __lock_t_create;
+    pthread_rwlock_t __lock_t_sem_create;
 } ruc_vm_context;
 
 /**

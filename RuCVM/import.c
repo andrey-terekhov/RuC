@@ -14,9 +14,9 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "context.h"
 #include "th_static.h"
 #include "util.h"
-#include "context.h"
 
 // Я исхожу из того, что нумерация нитей процедурой t_create начинается с 1 и
 // идет последовательно в соответствии с порядком вызовов этой процудуры,
@@ -33,9 +33,9 @@
 // l, x и pc, причем все важные переменные были локальными, тогда дальше все
 // переключения между нитями будут заботой ОС.
 
-// Есть глобальный массив context->threads, i-ый элемент которого указывает на начало
-// куска i-ой нити. Каждый кусок начинается с шапки, где хранятся l, x и pc,
-// которые нужно установить в момент старта нити.
+// Есть глобальный массив context->threads, i-ый элемент которого указывает на
+// начало куска i-ой нити. Каждый кусок начинается с шапки, где хранятся l, x и
+// pc, которые нужно установить в момент старта нити.
 
 #include "Defs.h"
 
@@ -61,16 +61,17 @@
 #define printf_runtime_crash 18
 #define init_err 19
 
-char sem_print[] = "sem_print",
-     sem_debug[] = "sem_debug";
+char sem_print[] = "sem_print", sem_debug[] = "sem_debug";
 
 int
 szof(ruc_vm_context *context, int type)
 {
-    return context->modetab[type] == MARRAY ? 1
-                                   : type == LFLOAT
-            ? 2
-            : (type > 0 && context->modetab[type] == MSTRUCT) ? context->modetab[type + 1] : 1;
+    return context->modetab[type] == MARRAY
+        ? 1
+        : type == LFLOAT ? 2
+                         : (type > 0 && context->modetab[type] == MSTRUCT)
+                ? context->modetab[type + 1]
+                : 1;
 }
 
 void
@@ -227,8 +228,9 @@ auxprintf(ruc_vm_context *context, int strbeg, int databeg)
 
                 case 's':
                 case 1089: // с
-                    for (j = context->mem[curdata];
-                         j - context->mem[curdata] < context->mem[context->mem[curdata] - 1]; ++j)
+                    for (j = context->mem[curdata]; j - context->mem[curdata] <
+                         context->mem[context->mem[curdata] - 1];
+                         ++j)
                         _obsolete_printf_char(context->mem[j]);
                     curdata++;
                     break;
@@ -279,7 +281,8 @@ auxprint(ruc_vm_context *context, int beg, int t, char before, char after)
                 auxprint(context, rr + i * d, type, 0, '\n');
         else
             for (i = 0; i < context->mem[rr - 1]; i++)
-                auxprint(context, rr + i * d, type, 0, (type == LCHAR ? 0 : ' '));
+                auxprint(context, rr + i * d, type, 0,
+                         (type == LCHAR ? 0 : ' '));
     }
     else if (context->modetab[t] == MSTRUCT)
     {
@@ -289,7 +292,8 @@ auxprint(ruc_vm_context *context, int beg, int t, char before, char after)
         {
             int type = context->modetab[t + i + 1];
             if (type < 0)
-                auxprint(context, beg, type, (i == 2 ? 0 : ' '), (i == cnt ? 0 : ','));
+                auxprint(context, beg, type, (i == 2 ? 0 : ' '),
+                         (i == cnt ? 0 : ','));
             else
                 auxprint(context, beg, type, '\n', '\n');
             beg += szof(context, type);
@@ -382,8 +386,8 @@ void *
 interpreter(void *thread_arg)
 {
     ruc_vm_thread_arg *arg = (ruc_vm_thread_arg *)thread_arg;
-    ruc_vm_context *context = arg->context;
-    int    l, x, origpc = *((int*) arg->arg), numTh = t_getThNum(context);
+    ruc_vm_context *   context = arg->context;
+    int    l, x, origpc = *((int *)arg->arg), numTh = t_getThNum(context);
     int    N, bounds[100], d, from, prtype, cur0, pc = abs(origpc);
     int    i, r, flagstop = 1, entry, di, di1, len;
     int    num;
@@ -398,8 +402,10 @@ interpreter(void *thread_arg)
         if (numTh)
         {
             context->threads[numTh] = cur0 = numTh * MAXMEMTHREAD;
-            l = context->mem[context->threads[numTh]] = context->threads[numTh] + 2;
-            x = context->mem[context->threads[numTh]] = l + context->mem[pc - 2]; // l + maxdispl
+            l = context->mem[context->threads[numTh]] =
+                context->threads[numTh] + 2;
+            x = context->mem[context->threads[numTh]] =
+                l + context->mem[pc - 2]; // l + maxdispl
             context->mem[l + 2] = -1;
         }
         else
@@ -431,7 +437,8 @@ interpreter(void *thread_arg)
             {
                 i = pc;
 
-                context->mem[++x] = t_create_inner(context, interpreter, (void*)&i);
+                context->mem[++x] =
+                    t_create_inner(context, interpreter, (void *)&i);
                 break;
             }
             case CREATEC:
@@ -441,7 +448,8 @@ interpreter(void *thread_arg)
                 i = context->mem[x];
                 entry = context->functions[i > 0 ? i : context->mem[l - i]];
                 i = entry + 3; // новый pc
-                context->mem[x] = t_create_inner(context, interpreter, (void*)&i);
+                context->mem[x] =
+                    t_create_inner(context, interpreter, (void *)&i);
             }
             break;
 
@@ -605,9 +613,11 @@ interpreter(void *thread_arg)
 
                 if (prtype > 0 && context->modetab[prtype] == MARRAY &&
                     context->modetab[prtype + 1] > 0)
-                    auxprint(context, dsp(context, context->identab[i + 3], l), prtype, '\n', '\n');
+                    auxprint(context, dsp(context, context->identab[i + 3], l),
+                             prtype, '\n', '\n');
                 else
-                    auxprint(context, dsp(context, context->identab[i + 3], l), prtype, ' ', '\n');
+                    auxprint(context, dsp(context, context->identab[i + 3], l),
+                             prtype, ' ', '\n');
                 fflush(stdout);
                 sem_post(context->sempr);
                 break;
@@ -640,7 +650,8 @@ interpreter(void *thread_arg)
                 printf(" ");
                 fflush(stdout);
 
-                auxget(context, dsp(context, context->identab[i + 3], l), prtype);
+                auxget(context, dsp(context, context->identab[i + 3], l),
+                       prtype);
                 sem_post(context->sempr);
                 break;
             case ABSIC:
@@ -727,7 +738,8 @@ interpreter(void *thread_arg)
                 a_str1 = context->mem[x--];
                 str1 = context->mem[a_str1];
 
-                context->mem[x++] = context->mem[str2 - 1] + context->mem[context->mem[a_str1] - 1];
+                context->mem[x++] = context->mem[str2 - 1] +
+                    context->mem[context->mem[a_str1] - 1];
                 context->mem[a_str1] = x;
                 a_str1 = context->mem[a_str1];
 
@@ -747,7 +759,8 @@ interpreter(void *thread_arg)
                 a_str1 = context->mem[x--];
                 str1 = context->mem[a_str1];
 
-                context->mem[x++] = num + context->mem[context->mem[a_str1] - 1];
+                context->mem[x++] =
+                    num + context->mem[context->mem[a_str1] - 1];
                 context->mem[a_str1] = x;
                 a_str1 = context->mem[a_str1];
 
@@ -782,7 +795,8 @@ interpreter(void *thread_arg)
                             context->mem[x] = 1;
                             break;
                         }
-                        else if (context->mem[a_str1 + i] > context->mem[str2 + i])
+                        else if (context->mem[a_str1 + i] >
+                                 context->mem[str2 + i])
                         {
                             context->mem[x] = -1;
                             break;
@@ -799,12 +813,14 @@ interpreter(void *thread_arg)
                 str2 = context->mem[x--];
                 a_str1 = context->mem[x];
 
-                if (context->mem[a_str1 - 1] < context->mem[str2 - 1] && context->mem[a_str1 - 1] < num)
+                if (context->mem[a_str1 - 1] < context->mem[str2 - 1] &&
+                    context->mem[a_str1 - 1] < num)
                 {
                     context->mem[x] = 1;
                     break;
                 }
-                else if (context->mem[a_str1 - 1] > context->mem[str2 - 1] && context->mem[str2 - 1] < num)
+                else if (context->mem[a_str1 - 1] > context->mem[str2 - 1] &&
+                         context->mem[str2 - 1] < num)
                 {
                     context->mem[x] = -1;
                     break;
@@ -813,7 +829,8 @@ interpreter(void *thread_arg)
                 {
                     for (i = 0; i < num; i++)
                     {
-                        if (i == context->mem[a_str1 - 1] && i == context->mem[str2 - 1])
+                        if (i == context->mem[a_str1 - 1] &&
+                            i == context->mem[str2 - 1])
                         {
                             context->mem[x] = 0;
                             break;
@@ -839,13 +856,15 @@ interpreter(void *thread_arg)
                 int j, flag = 0;
                 str2 = context->mem[x--];
                 a_str1 = context->mem[x];
-                for (i = 0; i < context->mem[a_str1 - 1] - context->mem[str2 - 1]; i++)
+                for (i = 0;
+                     i < context->mem[a_str1 - 1] - context->mem[str2 - 1]; i++)
                 {
                     if (context->mem[str2] == context->mem[a_str1 + i])
                     {
                         for (j = 0; j < context->mem[str2 - 1]; j++)
                         {
-                            if (context->mem[str2 + j] != context->mem[a_str1 + i + j])
+                            if (context->mem[str2 + j] !=
+                                context->mem[a_str1 + i + j])
                             {
                                 flag = 1;
                                 break;
@@ -887,7 +906,8 @@ interpreter(void *thread_arg)
                 flagstop = 1;
             }
             break;
-            case DEFARR: // N, d, displ, proc     на стеке N1, N2, ... , context->NN
+            case DEFARR: // N, d, displ, proc     на стеке N1, N2, ... ,
+                         // context->NN
             {
                 int N = context->mem[pc++];
                 int d = context->mem[pc++];
@@ -900,16 +920,18 @@ interpreter(void *thread_arg)
                 int stackC0[10], stacki[10], i, curdim = 1;
                 if (usual >= 2)
                     usual -= 2;
-                context->NN =
-                    context->mem[x]; // будет использоваться в ARRINIT только при usual=1
+                context->NN = context->mem[x]; // будет использоваться в ARRINIT
+                                               // только при usual=1
                 for (i = usual && all ? N + 1 : N; i > 0; i--)
                     if ((bounds[i] = context->mem[x--]) <= 0)
-                        runtimeerr(context, wrong_number_of_elems, 0, bounds[i]);
+                        runtimeerr(context, wrong_number_of_elems, 0,
+                                   bounds[i]);
                 if (N > 0)
                 {
                     stacki[1] = 0;
                     context->mem[++x] = bounds[1];
-                    context->mem[instruct ? context->base + curdsp : dsp(context, curdsp, l)] =
+                    context->mem[instruct ? context->base + curdsp
+                                          : dsp(context, curdsp, l)] =
                         stackC0[1] = x + 1;
                     x += bounds[1] * (curdim < abs(N) ? 1 : d);
 
@@ -920,7 +942,8 @@ interpreter(void *thread_arg)
                     {
                         if (proc)
                         {
-                            int curx = x, oldbase = context->base, oldpc = pc, i;
+                            int curx = x, oldbase = context->base, oldpc = pc,
+                                i;
                             for (i = stackC0[1]; i <= curx; i += d)
                             {
                                 pc = -proc; // вычисление границ очередного
@@ -943,7 +966,8 @@ interpreter(void *thread_arg)
                             {
                                 // go down
                                 context->mem[++x] = bounds[curdim + 1];
-                                context->mem[stackC0[curdim] + stacki[curdim]++] =
+                                context
+                                    ->mem[stackC0[curdim] + stacki[curdim]++] =
                                     stackC0[curdim + 1] = x + 1;
                                 x += bounds[curdim + 1] *
                                     (curdim == N - 1 ? d : 1);
@@ -957,13 +981,15 @@ interpreter(void *thread_arg)
 
                             if (proc)
                             {
-                                int curx = x, oldbase = context->base, oldpc = pc, i;
+                                int curx = x, oldbase = context->base,
+                                    oldpc = pc, i;
                                 for (i = stackC0[curdim]; i <= curx; i += d)
                                 {
                                     pc = proc; // вычисление границ очередного
                                                // массива в структуре
                                     context->base = i;
-                                    context->mem[context->threads[numTh] + 1] = x;
+                                    context->mem[context->threads[numTh] + 1] =
+                                        x;
                                     invoke_interpreter(context, (void *)&pc);
                                     flagstop = 1;
                                     x = context->xx;
@@ -978,7 +1004,8 @@ interpreter(void *thread_arg)
                                      : /*up*/ curdim-- != N - 1);
                     }
                 }
-                context->adinit = x + 1; // при usual == 1 использоваться не будет
+                context->adinit =
+                    x + 1; // при usual == 1 использоваться не будет
             }
             break;
             case BEGINIT:
@@ -992,7 +1019,8 @@ interpreter(void *thread_arg)
                 r = context->mem[di < 0 ? context->g - di : l + di];
                 N = context->mem[r - 1];
                 from = context->mem[x--];
-                d = context->mem[from - 1]; // d - кол-во литер в строке-инициаторе
+                d = context
+                        ->mem[from - 1]; // d - кол-во литер в строке-инициаторе
                 if (N != d)
                     runtimeerr(context, wrong_string_init, N, d);
                 for (i = 0; i < N; i++)
@@ -1006,7 +1034,8 @@ interpreter(void *thread_arg)
                     int addr = dsp(context, context->mem[pc++], l);
                     int usual = context->mem[pc++];
                     int onlystrings = usual >= 2 ? usual -= 2, 1 : 0;
-                    int stA[10], stN[10], sti[10], stpnt = 1, oldx = context->adinit;
+                    int stA[10], stN[10], sti[10], stpnt = 1,
+                                                   oldx = context->adinit;
                     if (N == 1)
                     {
                         if (onlystrings)
@@ -1018,18 +1047,24 @@ interpreter(void *thread_arg)
                             if (usual &&
                                 context->mem[context->adinit] !=
                                     context->NN) // здесь usual == 1,
-                                        // если usual == 0, проверка не нужна
-                                runtimeerr(context, init_err, context->mem[context->adinit], context->NN);
-                            context->adinit += context->mem[context->adinit] * d + 1;
+                                                 // если usual == 0, проверка не
+                                                 // нужна
+                                runtimeerr(context, init_err,
+                                           context->mem[context->adinit],
+                                           context->NN);
+                            context->adinit +=
+                                context->mem[context->adinit] * d + 1;
                         }
                     }
                     else
                     {
-                        stA[1] = context->mem[addr]; // массив самого верхнего уровня
+                        stA[1] =
+                            context->mem[addr]; // массив самого верхнего уровня
                         stN[1] = context->mem[stA[1] - 1];
                         sti[1] = 0;
                         if (context->mem[context->adinit] != stN[1])
-                            runtimeerr(context, init_err, context->mem[context->adinit], stN[1]);
+                            runtimeerr(context, init_err,
+                                       context->mem[context->adinit], stN[1]);
                         context->adinit++;
                         do
                         {
@@ -1040,7 +1075,8 @@ interpreter(void *thread_arg)
                                 sti[++stpnt] = 0;
                                 stN[stpnt] = context->mem[stA[stpnt] - 1];
                                 if (context->mem[context->adinit] != stN[stpnt])
-                                    runtimeerr(context, init_err, context->mem[context->adinit],
+                                    runtimeerr(context, init_err,
+                                               context->mem[context->adinit],
                                                stN[stpnt]);
                                 context->adinit++;
                             }
@@ -1049,16 +1085,29 @@ interpreter(void *thread_arg)
                             {
                                 if (onlystrings)
                                 {
-                                    context->mem[stA[stpnt] + sti[stpnt]] = context->mem[++oldx];
-                                    if (usual && context->mem[context->mem[oldx - 1] - 1] != context->NN)
-                                        runtimeerr(context, init_err, context->mem[context->adinit], context->NN);
+                                    context->mem[stA[stpnt] + sti[stpnt]] =
+                                        context->mem[++oldx];
+                                    if (usual &&
+                                        context->mem[context->mem[oldx - 1] -
+                                                     1] != context->NN)
+                                        runtimeerr(
+                                            context, init_err,
+                                            context->mem[context->adinit],
+                                            context->NN);
                                 }
                                 else
                                 {
-                                    if (usual && context->mem[context->adinit] != context->NN)
-                                        runtimeerr(context, init_err, context->mem[context->adinit], context->NN);
-                                    context->mem[stA[stpnt] + sti[stpnt]] = context->adinit + 1;
-                                    context->adinit += context->mem[context->adinit] * d + 1;
+                                    if (usual &&
+                                        context->mem[context->adinit] !=
+                                            context->NN)
+                                        runtimeerr(
+                                            context, init_err,
+                                            context->mem[context->adinit],
+                                            context->NN);
+                                    context->mem[stA[stpnt] + sti[stpnt]] =
+                                        context->adinit + 1;
+                                    context->adinit +=
+                                        context->mem[context->adinit] * d + 1;
                                 }
                             } while (++sti[stpnt] < stN[stpnt]);
                             if (stpnt > 1)
@@ -1082,10 +1131,13 @@ interpreter(void *thread_arg)
                 ++pc;
                 break;
             case LOAD:
-                context->mem[++x] = context->mem[dsp(context, context->mem[pc++], l)];
+                context->mem[++x] =
+                    context->mem[dsp(context, context->mem[pc++], l)];
                 break;
             case LOADD:
-                memcpy(&context->mem[++x], &context->mem[dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&context->mem[++x],
+                       &context->mem[dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 ++x;
                 break;
             case LAT:
@@ -1225,7 +1277,8 @@ interpreter(void *thread_arg)
                 i = context->mem[x--]; // index
                 r = context->mem[x]; // array
                 if (i < 0 || i >= context->mem[r - 1])
-                    runtimeerr(context, index_out_of_range, i, context->mem[r - 1]);
+                    runtimeerr(context, index_out_of_range, i,
+                               context->mem[r - 1]);
                 context->mem[x] = r + i * d;
                 break;
             case WIDEN:
@@ -1245,81 +1298,103 @@ interpreter(void *thread_arg)
                 break;
 
             case ASS:
-                context->mem[dsp(context, context->mem[pc++], l)] = context->mem[x];
+                context->mem[dsp(context, context->mem[pc++], l)] =
+                    context->mem[x];
                 break;
             case REMASS:
-                r = context->mem[dsp(context, context->mem[pc++], l)] %= check_zero_int(context, context->mem[x]);
+                r = context->mem[dsp(context, context->mem[pc++], l)] %=
+                    check_zero_int(context, context->mem[x]);
                 context->mem[x] = r;
                 break;
             case SHLASS:
-                r = context->mem[dsp(context, context->mem[pc++], l)] <<= context->mem[x];
+                r = context->mem[dsp(context, context->mem[pc++], l)] <<=
+                    context->mem[x];
                 context->mem[x] = r;
                 break;
             case SHRASS:
-                r = context->mem[dsp(context, context->mem[pc++], l)] >>= context->mem[x];
+                r = context->mem[dsp(context, context->mem[pc++], l)] >>=
+                    context->mem[x];
                 context->mem[x] = r;
                 break;
             case ANDASS:
-                r = context->mem[dsp(context, context->mem[pc++], l)] &= context->mem[x];
+                r = context->mem[dsp(context, context->mem[pc++], l)] &=
+                    context->mem[x];
                 context->mem[x] = r;
                 break;
             case EXORASS:
-                r = context->mem[dsp(context, context->mem[pc++], l)] ^= context->mem[x];
+                r = context->mem[dsp(context, context->mem[pc++], l)] ^=
+                    context->mem[x];
                 context->mem[x] = r;
                 break;
             case ORASS:
-                r = context->mem[dsp(context, context->mem[pc++], l)] |= context->mem[x];
+                r = context->mem[dsp(context, context->mem[pc++], l)] |=
+                    context->mem[x];
                 context->mem[x] = r;
                 break;
             case PLUSASS:
-                r = context->mem[dsp(context, context->mem[pc++], l)] += context->mem[x];
+                r = context->mem[dsp(context, context->mem[pc++], l)] +=
+                    context->mem[x];
                 context->mem[x] = r;
                 break;
             case MINUSASS:
-                r = context->mem[dsp(context, context->mem[pc++], l)] -= context->mem[x];
+                r = context->mem[dsp(context, context->mem[pc++], l)] -=
+                    context->mem[x];
                 context->mem[x] = r;
                 break;
             case MULTASS:
-                r = context->mem[dsp(context, context->mem[pc++], l)] *= context->mem[x];
+                r = context->mem[dsp(context, context->mem[pc++], l)] *=
+                    context->mem[x];
                 context->mem[x] = r;
                 break;
             case DIVASS:
-                r = context->mem[dsp(context, context->mem[pc++], l)] /= check_zero_int(context, context->mem[x]);
+                r = context->mem[dsp(context, context->mem[pc++], l)] /=
+                    check_zero_int(context, context->mem[x]);
                 context->mem[x] = r;
                 break;
 
             case ASSV:
-                context->mem[dsp(context, context->mem[pc++], l)] = context->mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] =
+                    context->mem[x--];
                 break;
             case REMASSV:
-                context->mem[dsp(context, context->mem[pc++], l)] %= check_zero_int(context, context->mem[x--]);
+                context->mem[dsp(context, context->mem[pc++], l)] %=
+                    check_zero_int(context, context->mem[x--]);
                 break;
             case SHLASSV:
-                context->mem[dsp(context, context->mem[pc++], l)] <<= context->mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] <<=
+                    context->mem[x--];
                 break;
             case SHRASSV:
-                context->mem[dsp(context, context->mem[pc++], l)] >>= context->mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] >>=
+                    context->mem[x--];
                 break;
             case ANDASSV:
-                context->mem[dsp(context, context->mem[pc++], l)] &= context->mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] &=
+                    context->mem[x--];
                 break;
             case EXORASSV:
-                context->mem[dsp(context, context->mem[pc++], l)] ^= context->mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] ^=
+                    context->mem[x--];
                 break;
             case ORASSV:
-                context->mem[dsp(context, context->mem[pc++], l)] |= context->mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] |=
+                    context->mem[x--];
                 break;
             case PLUSASSV:
-                context->mem[dsp(context, context->mem[pc++], l)] += context->mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] +=
+                    context->mem[x--];
                 break;
             case MINUSASSV:
-                context->mem[dsp(context, context->mem[pc++], l)] -= context->mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] -=
+                    context->mem[x--];
                 break;
             case MULTASSV:
-                context->mem[dsp(context, context->mem[pc++], l)] *= context->mem[x--];
+                context->mem[dsp(context, context->mem[pc++], l)] *=
+                    context->mem[x--];
                 break;
             case DIVASSV:
-                context->mem[dsp(context, context->mem[pc++], l)] /= check_zero_int(context, context->mem[x--]);
+                context->mem[dsp(context, context->mem[pc++], l)] /=
+                    check_zero_int(context, context->mem[x--]);
                 break;
 
             case ASSAT:
@@ -1327,7 +1402,8 @@ interpreter(void *thread_arg)
                 context->mem[--x] = r;
                 break;
             case REMASSAT:
-                r = context->mem[context->mem[x - 1]] %= check_zero_int(context, context->mem[x]);
+                r = context->mem[context->mem[x - 1]] %=
+                    check_zero_int(context, context->mem[x]);
                 context->mem[--x] = r;
                 break;
             case SHLASSAT:
@@ -1363,7 +1439,8 @@ interpreter(void *thread_arg)
                 context->mem[--x] = r;
                 break;
             case DIVASSAT:
-                r = context->mem[context->mem[x - 1]] /= check_zero_int(context, context->mem[x]);
+                r = context->mem[context->mem[x - 1]] /=
+                    check_zero_int(context, context->mem[x]);
                 context->mem[--x] = r;
                 break;
 
@@ -1372,7 +1449,8 @@ interpreter(void *thread_arg)
                 x--;
                 break;
             case REMASSATV:
-                context->mem[context->mem[x - 1]] %= check_zero_int(context, context->mem[x]);
+                context->mem[context->mem[x - 1]] %=
+                    check_zero_int(context, context->mem[x]);
                 x--;
                 break;
             case SHLASSATV:
@@ -1408,7 +1486,8 @@ interpreter(void *thread_arg)
                 x--;
                 break;
             case DIVASSATV:
-                context->mem[context->mem[x - 1]] /= check_zero_int(context, context->mem[x]);
+                context->mem[context->mem[x - 1]] /=
+                    check_zero_int(context, context->mem[x]);
                 x--;
                 break;
 
@@ -1485,18 +1564,22 @@ interpreter(void *thread_arg)
                 x--;
                 break;
             case POSTINC:
-                context->mem[++x] = context->mem[r = dsp(context, context->mem[pc++], l)];
+                context->mem[++x] =
+                    context->mem[r = dsp(context, context->mem[pc++], l)];
                 context->mem[r]++;
                 break;
             case POSTDEC:
-                context->mem[++x] = context->mem[r = dsp(context, context->mem[pc++], l)];
+                context->mem[++x] =
+                    context->mem[r = dsp(context, context->mem[pc++], l)];
                 context->mem[r]--;
                 break;
             case INC:
-                context->mem[++x] = ++context->mem[dsp(context, context->mem[pc++], l)];
+                context->mem[++x] =
+                    ++context->mem[dsp(context, context->mem[pc++], l)];
                 break;
             case DEC:
-                context->mem[++x] = --context->mem[dsp(context, context->mem[pc++], l)];
+                context->mem[++x] =
+                    --context->mem[dsp(context, context->mem[pc++], l)];
                 break;
             case POSTINCAT:
                 context->mem[x] = context->mem[r = context->mem[x]];
@@ -1534,29 +1617,38 @@ interpreter(void *thread_arg)
                 break;
 
             case ASSR:
-                context->mem[r = dsp(context, context->mem[pc++], l)] = context->mem[x - 1];
+                context->mem[r = dsp(context, context->mem[pc++], l)] =
+                    context->mem[x - 1];
                 context->mem[r + 1] = context->mem[x];
                 break;
             case PLUSASSR:
-                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&lf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 lf += rf;
                 memcpy(&context->mem[x - 1], &lf, sizeof(double));
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
             case MINUSASSR:
-                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&lf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 lf -= rf;
                 memcpy(&context->mem[x - 1], &lf, sizeof(double));
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
             case MULTASSR:
-                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&lf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 lf *= rf;
                 memcpy(&context->mem[x - 1], &lf, sizeof(double));
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
             case DIVASSR:
-                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&lf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 lf /= check_zero_float(context, rf);
                 memcpy(&context->mem[x - 1], &lf, sizeof(double));
                 memcpy(&context->mem[i], &lf, sizeof(double));
@@ -1569,25 +1661,29 @@ interpreter(void *thread_arg)
                 x--;
                 break;
             case PLUSASSATR:
-                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]],
+                       sizeof(double));
                 lf += rf;
                 memcpy(&context->mem[x++], &lf, sizeof(double));
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
             case MINUSASSATR:
-                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]],
+                       sizeof(double));
                 lf -= rf;
                 memcpy(&context->mem[x++], &lf, sizeof(double));
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
             case MULTASSATR:
-                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]],
+                       sizeof(double));
                 lf *= rf;
                 memcpy(&context->mem[x++], &lf, sizeof(double));
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 break;
             case DIVASSATR:
-                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]],
+                       sizeof(double));
                 lf /= check_zero_float(context, rf);
                 memcpy(&context->mem[x++], &lf, sizeof(double));
                 memcpy(&context->mem[i], &lf, sizeof(double));
@@ -1600,25 +1696,33 @@ interpreter(void *thread_arg)
                 memcpy(&lf, &context->mem[r], sizeof(double));
                 break;
             case PLUSASSRV:
-                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&lf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 lf += rf;
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 x -= 2;
                 break;
             case MINUSASSRV:
-                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&lf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 lf -= rf;
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 x -= 2;
                 break;
             case MULTASSRV:
-                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&lf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 lf *= rf;
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 x -= 2;
                 break;
             case DIVASSRV:
-                memcpy(&lf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&lf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 lf /= check_zero_float(context, rf);
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 x -= 2;
@@ -1630,25 +1734,29 @@ interpreter(void *thread_arg)
                 context->mem[r] = context->mem[x--];
                 break;
             case PLUSASSATRV:
-                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]],
+                       sizeof(double));
                 lf += rf;
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 --x;
                 break;
             case MINUSASSATRV:
-                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]],
+                       sizeof(double));
                 lf -= rf;
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 --x;
                 break;
             case MULTASSATRV:
-                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]],
+                       sizeof(double));
                 lf *= rf;
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 --x;
                 break;
             case DIVASSATRV:
-                memcpy(&lf, &context->mem[i = context->mem[x -= 2]], sizeof(double));
+                memcpy(&lf, &context->mem[i = context->mem[x -= 2]],
+                       sizeof(double));
                 lf /= check_zero_float(context, rf);
                 memcpy(&context->mem[i], &lf, sizeof(double));
                 --x;
@@ -1699,28 +1807,36 @@ interpreter(void *thread_arg)
                 memcpy(&context->mem[x++], &lf, sizeof(double));
                 break;
             case POSTINCR:
-                memcpy(&rf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&rf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 memcpy(&context->mem[x + 1], &rf, sizeof(double));
                 x += 2;
                 ++rf;
                 memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case POSTDECR:
-                memcpy(&rf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&rf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 memcpy(&context->mem[x + 1], &rf, sizeof(double));
                 x += 2;
                 --rf;
                 memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case INCR:
-                memcpy(&rf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&rf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 ++rf;
                 memcpy(&context->mem[x + 1], &rf, sizeof(double));
                 x += 2;
                 memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case DECR:
-                memcpy(&rf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&rf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 --rf;
                 memcpy(&context->mem[x + 1], &rf, sizeof(double));
                 x += 2;
@@ -1756,25 +1872,31 @@ interpreter(void *thread_arg)
                 break;
             case INCRV:
             case POSTINCRV:
-                memcpy(&rf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&rf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 ++rf;
                 memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case DECRV:
             case POSTDECRV:
-                memcpy(&rf, &context->mem[i = dsp(context, context->mem[pc++], l)], sizeof(double));
+                memcpy(&rf,
+                       &context->mem[i = dsp(context, context->mem[pc++], l)],
+                       sizeof(double));
                 --rf;
                 memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case INCATRV:
             case POSTINCATRV:
-                memcpy(&rf, &context->mem[i = context->mem[x--]], sizeof(double));
+                memcpy(&rf, &context->mem[i = context->mem[x--]],
+                       sizeof(double));
                 ++rf;
                 memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
             case DECATRV:
             case POSTDECATRV:
-                memcpy(&rf, &context->mem[i = context->mem[x--]], sizeof(double));
+                memcpy(&rf, &context->mem[i = context->mem[x--]],
+                       sizeof(double));
                 --rf;
                 memcpy(&context->mem[i], &rf, sizeof(double));
                 break;
@@ -1800,7 +1922,7 @@ interpreter(void *thread_arg)
 void
 import(ruc_vm_context *context, const char *path)
 {
-    int i, pc;
+    int   i, pc;
     FILE *input;
 
 #ifdef ROBOT
@@ -1820,8 +1942,9 @@ import(ruc_vm_context *context, const char *path)
         return;
     }
 
-    fscanf(input, "%i %i %i %i %i %i %i\n", &pc, &context->funcnum, &context->id, &context->rp, &context->md,
-           &context->maxdisplg, &context->wasmain);
+    fscanf(input, "%i %i %i %i %i %i %i\n", &pc, &context->funcnum,
+           &context->id, &context->rp, &context->md, &context->maxdisplg,
+           &context->wasmain);
 
     for (i = 0; i < pc; i++)
         fscanf(input, "%i ", &context->mem[i]);
@@ -1865,7 +1988,7 @@ import(ruc_vm_context *context, const char *path)
 static void
 process_user_requests(ruc_vm_context *context, int argc, const char *argv[])
 {
-    int  i;
+    int i;
 
     for (i = 1; i < argc; ++i)
     {
