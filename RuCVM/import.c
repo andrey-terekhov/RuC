@@ -1990,6 +1990,9 @@ process_user_requests(ruc_vm_context *context, int argc, const char *argv[])
 {
     int i;
 
+    if (argc == 1)
+        import(context, "export.txt");
+
     for (i = 1; i < argc; ++i)
     {
         import(context, argv[i]);
