@@ -88,6 +88,7 @@ printer_attach_buffer(universal_printer_options *opts, size_t size)
     opts->source = IO_SOURCE_MEM;
     opts->output = NULL;
     opts->ptr = malloc(size);
+    memset(opts->ptr, 0, size);
     opts->pos = 0;
     opts->size = size;
     opts->opaque = NULL;

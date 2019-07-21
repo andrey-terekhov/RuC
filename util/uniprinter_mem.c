@@ -19,10 +19,15 @@ static int
 printer_mem_fprintf(universal_printer_options *opts,
                     const char *fmt, va_list args)
 {
-    char    buf[20];
+    char    buf[200] = { '\0' };
     char   *buf_to_use = buf;
     char   *allocated = NULL;
     int     ret;
+    va_list args2;
+    va_list args3;
+
+    va_copy(args2, args);
+    va_copy(args3, args);
 
     ret = vsnprintf(buf, sizeof(buf), fmt, args);
     if (ret < 0)
@@ -31,13 +36,13 @@ printer_mem_fprintf(universal_printer_options *opts,
     if ((size_t)ret >= sizeof(buf))
     {
         allocated = malloc(ret);
-        ret = vsnprintf(allocated, ret, fmt, args);
+        ret = vsnprintf(allocated, ret, fmt, args2);
         if (ret < 0)
             return ret;
         buf_to_use = allocated;
     }
 
-    if (opts->size >= (opts->pos + ret + 1))
+    if (opts->size < (opts->pos + ret + 1))
     {
         int new_size = (opts->size * 2) > (opts->pos + ret + 1)
             ? (opts->size * 2)
@@ -54,7 +59,7 @@ printer_mem_fprintf(universal_printer_options *opts,
         opts->size = new_size;
     }
 
-    ret = vsnprintf(buf_to_use, ret, fmt, args);
+    ret = vsnprintf(buf_to_use, ret + 1, fmt, args3);
     if (ret >= 0)
     {
         memcpy(&opts->ptr[opts->pos], buf_to_use, ret);
