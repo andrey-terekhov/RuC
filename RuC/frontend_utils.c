@@ -1,3 +1,8 @@
+#if defined(__APPLE__) || defined(__linux__)
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
+
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -6,6 +11,20 @@
 #include "global_vars.h"
 #include "keywords.h"
 #include "scanner.h"
+
+/* Make executable actually executable on best-effort basis (if possible) */
+static void
+make_executable(const char *path)
+{
+    struct stat stat_buf;
+
+#if defined(__APPLE__) || defined(__linux__)
+    if (stat(path, &stat_buf) != 0)
+        return;
+
+    chmod(path, stat_buf.st_mode | S_IXUSR);
+#endif
+}
 
 /* Занесение ключевых слов в reprtab */
 void
@@ -93,4 +112,6 @@ output_export(ruc_context *context, const char *path)
     printer_printf(&context->output_options, "\n");
 
     ruc_context_detach_io(context, IO_TYPE_OUTPUT);
+
+    make_executable(path);
 }
