@@ -1938,6 +1938,7 @@ interpreter(void *thread_arg)
 void
 import(ruc_vm_context *context, const char *path)
 {
+    char  firstline[100];
     int   i, pc;
     FILE *input;
 
@@ -1956,6 +1957,13 @@ import(ruc_vm_context *context, const char *path)
     {
         printer_printf(&context->error_options, "export.txt not found\n");
         return;
+    }
+
+    /* Check shebang, get back to start if there are none */
+    if (fgets(firstline, sizeof(firstline), input) != firstline ||
+        strncmp(firstline, "#!", 2) != 0)
+    {
+        fseek(input, 0, SEEK_SET);
     }
 
     fscanf(input, "%i %i %i %i %i %i %i\n", &pc, &context->funcnum,

@@ -67,6 +67,8 @@ output_export(ruc_context *context, const char *path)
     int i;
 
     ruc_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
+    printer_printf(&context->output_options, "#!/usr/bin/ruc-vm\n");
+
     printer_printf(&context->output_options, "%i %i %i %i %i %i %i\n",
                    context->pc, context->funcnum, context->id, context->rp,
                    context->md, context->maxdisplg, context->wasmain);
