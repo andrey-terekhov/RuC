@@ -23,16 +23,16 @@ const char *name =
 #include "Defs.h"
 #include "context.h"
 
+#include "error.h"
 #include "frontend_utils.h"
 #include "tables.h"
-#include "error.h"
 
-extern void preprocess_file(ruc_context *context);
+extern void preprocess_file(compiler_context *context);
 
 //#define FILE_DEBUG
 
 static void
-process_user_requests(ruc_context *context, int argc, const char *argv[])
+process_user_requests(compiler_context *context, int argc, const char *argv[])
 {
     int  i;
     bool enough_files = false;
@@ -74,25 +74,26 @@ process_user_requests(ruc_context *context, int argc, const char *argv[])
             }
 
             // Открытие исходного текста
-            ruc_context_attach_io(context, argv[i], IO_TYPE_INPUT,
-                                  IO_SOURCE_FILE);
+            compiler_context_attach_io(context, argv[i], IO_TYPE_INPUT,
+                                       IO_SOURCE_FILE);
 
             // Препроцессинг в массив
-            ruc_context_attach_io(context, "", IO_TYPE_OUTPUT, IO_SOURCE_MEM);
+            compiler_context_attach_io(context, "", IO_TYPE_OUTPUT,
+                                       IO_SOURCE_MEM);
 
             printf("\nИсходный текст:\n \n");
 
             preprocess_file(context); //   макрогенерация
             macro_processed = context->output_options.ptr;
 
-            ruc_context_detach_io(context, IO_TYPE_OUTPUT);
-            ruc_context_detach_io(context, IO_TYPE_INPUT);
+            compiler_context_detach_io(context, IO_TYPE_OUTPUT);
+            compiler_context_detach_io(context, IO_TYPE_INPUT);
 
-            ruc_context_attach_io(context, macro_processed, IO_TYPE_INPUT,
-                                  IO_SOURCE_MEM);
+            compiler_context_attach_io(context, macro_processed, IO_TYPE_INPUT,
+                                       IO_SOURCE_MEM);
             output_tables_and_tree(context, tree_path);
             output_codes(context, codes_path);
-            ruc_context_detach_io(context, IO_TYPE_INPUT);
+            compiler_context_detach_io(context, IO_TYPE_INPUT);
 
             free(macro_processed);
             /* Will be left for debugging in case of failure */
@@ -118,11 +119,13 @@ process_user_requests(ruc_context *context, int argc, const char *argv[])
 int
 main(int argc, const char *argv[])
 {
-    ruc_context context;
+    compiler_context context;
 
-    ruc_context_init(&context);
-    ruc_context_attach_io(&context, ":stderr", IO_TYPE_ERROR, IO_SOURCE_FILE);
-    ruc_context_attach_io(&context, ":stdout", IO_TYPE_MISC, IO_SOURCE_FILE);
+    compiler_context_init(&context);
+    compiler_context_attach_io(&context, ":stderr", IO_TYPE_ERROR,
+                               IO_SOURCE_FILE);
+    compiler_context_attach_io(&context, ":stdout", IO_TYPE_MISC,
+                               IO_SOURCE_FILE);
 
     read_keywords(&context);
 

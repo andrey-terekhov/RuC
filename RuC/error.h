@@ -9,7 +9,7 @@
  * @param context Compiler cocntext
  * @param errnum  Error number
  */
-extern void warning(ruc_context *context, int errnum);
+extern void warning(compiler_context *context, int errnum);
 
 /**
  * Emit an error for some problem
@@ -17,7 +17,7 @@ extern void warning(ruc_context *context, int errnum);
  * @param context Compiler cocntext
  * @param errnum  Error number
  */
-extern void error(ruc_context *context, int errnum);
+extern void error(compiler_context *context, int errnum);
 
 /**
  * Emit preprocessor error
@@ -25,6 +25,6 @@ extern void error(ruc_context *context, int errnum);
  * @param context Compiler conteext
  * @param errnum  Error number
  */
-void m_error(ruc_context *context, int errnum);
+void m_error(compiler_context *context, int errnum);
 
 #endif

@@ -1,6 +1,6 @@
 #if defined(__APPLE__) || defined(__linux__)
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #endif
 
 #include <limits.h>
@@ -28,7 +28,7 @@ make_executable(const char *path)
 
 /* Занесение ключевых слов в reprtab */
 void
-read_keywords(ruc_context *context)
+read_keywords(compiler_context *context)
 {
     char *keywords = malloc(keywords_txt_len + 1);
     if (keywords == NULL)
@@ -38,7 +38,7 @@ read_keywords(ruc_context *context)
     memcpy(keywords, keywords_txt, keywords_txt_len);
     keywords[keywords_txt_len] = '\0';
 
-    ruc_context_attach_io(context, keywords, IO_TYPE_INPUT, IO_SOURCE_MEM);
+    compiler_context_attach_io(context, keywords, IO_TYPE_INPUT, IO_SOURCE_MEM);
 
     context->keywordsnum = 1;
     getnext(context);
@@ -48,15 +48,15 @@ read_keywords(ruc_context *context)
         ;
     }
 
-    ruc_context_detach_io(context, IO_TYPE_INPUT);
+    compiler_context_detach_io(context, IO_TYPE_INPUT);
     free(keywords);
 }
 
 /* Вывод таблиц и дерева */
 void
-output_tables_and_tree(ruc_context *context, const char *path)
+output_tables_and_tree(compiler_context *context, const char *path)
 {
-    ruc_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
+    compiler_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
 
     getnext(context);
     nextch(context);
@@ -66,26 +66,26 @@ output_tables_and_tree(ruc_context *context, const char *path)
 
     context->lines[context->line + 1] = context->charnum;
     tablesandtree(context);
-    ruc_context_detach_io(context, IO_TYPE_OUTPUT);
+    compiler_context_detach_io(context, IO_TYPE_OUTPUT);
 }
 
 /* Генерация кодов */
 void
-output_codes(ruc_context *context, const char *path)
+output_codes(compiler_context *context, const char *path)
 {
-    ruc_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
+    compiler_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
     codegen(context);
     tablesandcode(context);
-    ruc_context_detach_io(context, IO_TYPE_OUTPUT);
+    compiler_context_detach_io(context, IO_TYPE_OUTPUT);
 }
 
 /* Вывод таблиц в файл */
 void
-output_export(ruc_context *context, const char *path)
+output_export(compiler_context *context, const char *path)
 {
     int i;
 
-    ruc_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
+    compiler_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
     printer_printf(&context->output_options, "#!/usr/bin/ruc-vm\n");
 
     printer_printf(&context->output_options, "%i %i %i %i %i %i %i\n",
@@ -111,7 +111,7 @@ output_export(ruc_context *context, const char *path)
         printer_printf(&context->output_options, "%i ", context->modetab[i]);
     printer_printf(&context->output_options, "\n");
 
-    ruc_context_detach_io(context, IO_TYPE_OUTPUT);
+    compiler_context_detach_io(context, IO_TYPE_OUTPUT);
 
     make_executable(path);
 }

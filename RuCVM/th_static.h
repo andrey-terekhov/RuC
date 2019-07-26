@@ -29,27 +29,27 @@ typedef struct ruc_thread_info
 
 #include "context.h"
 
-struct ruc_vm_context;
-typedef struct ruc_vm_context ruc_vm_context;
+struct vm_context;
+typedef struct vm_context vm_context;
 
-void t_init(ruc_vm_context *);
-void t_destroy(ruc_vm_context *);
+void t_init(vm_context *);
+void t_destroy(vm_context *);
 
-int t_create_inner(ruc_vm_context *, void *(*func)(void *), void *arg);
-int t_create(ruc_vm_context *, void *(*func)(void *));
+int t_create_inner(vm_context *, void *(*func)(void *), void *arg);
+int t_create(vm_context *, void *(*func)(void *));
 
-int t_createDetached(ruc_vm_context *, void *(*func)(void *));
+int t_createDetached(vm_context *, void *(*func)(void *));
 
-void t_exit(ruc_vm_context *);
-void t_join(ruc_vm_context *, int numTh);
-int  t_getThNum(ruc_vm_context *);
-void t_sleep(ruc_vm_context *, int miliseconds);
+void t_exit(vm_context *);
+void t_join(vm_context *, int numTh);
+int  t_getThNum(vm_context *);
+void t_sleep(vm_context *, int miliseconds);
 
-int  t_sem_create(ruc_vm_context *, int level);
-void t_sem_wait(ruc_vm_context *, int numSem);
-void t_sem_post(ruc_vm_context *, int numSem);
+int  t_sem_create(vm_context *, int level);
+void t_sem_wait(vm_context *, int numSem);
+void t_sem_post(vm_context *, int numSem);
 
-void            t_msg_send(ruc_vm_context *, struct msg_info msg);
-struct msg_info t_msg_receive(ruc_vm_context *);
+void            t_msg_send(vm_context *, struct msg_info msg);
+struct msg_info t_msg_receive(vm_context *);
 
 #endif

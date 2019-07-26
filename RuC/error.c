@@ -2,12 +2,12 @@
 #include <stdlib.h>
 #include "global_vars.h"
 
-extern void tablesandtree(ruc_context *context);
+extern void tablesandtree(compiler_context *context);
 
-extern void show_macro(ruc_context *context);
+extern void show_macro(compiler_context *context);
 
 void
-printident(ruc_context *context, int r)
+printident(compiler_context *context, int r)
 {
     r += 2; // ссылка на context->reprtab
     do
@@ -16,7 +16,7 @@ printident(ruc_context *context, int r)
 }
 
 void
-warning(ruc_context *context, int ernum)
+warning(compiler_context *context, int ernum)
 {
     switch (ernum)
     {
@@ -33,7 +33,7 @@ warning(ruc_context *context, int ernum)
 }
 
 void
-error(ruc_context *context, int ernum)
+error(compiler_context *context, int ernum)
 {
     int i, j;
     // tablesandtree();
@@ -916,7 +916,7 @@ error(ruc_context *context, int ernum)
 }
 
 void
-m_error(ruc_context *context, int ernum)
+m_error(compiler_context *context, int ernum)
 {
     int i;
     //    tablesandtree();

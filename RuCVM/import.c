@@ -63,7 +63,7 @@
 char sem_print[] = "sem_print", sem_debug[] = "sem_debug";
 
 int
-szof(ruc_vm_context *context, int type)
+szof(vm_context *context, int type)
 {
     return context->modetab[type] == MARRAY
         ? 1
@@ -74,82 +74,112 @@ szof(ruc_vm_context *context, int type)
 }
 
 void
-runtimeerr(ruc_vm_context *context, int e, int i, int r)
+runtimeerr(vm_context *context, int e, int i, int r)
 {
     switch (e)
     {
         case index_out_of_range:
-            printer_printf(&context->error_options, "индекс %i за пределами границ массива %i\n", i, r - 1);
+            printer_printf(&context->error_options,
+                           "индекс %i за пределами границ массива %i\n", i,
+                           r - 1);
             break;
         case wrong_kop:
-            printer_printf(&context->error_options, "команду %i я пока не реализовал; номер нити = %i\n", i, r);
+            printer_printf(&context->error_options,
+                           "команду %i я пока не реализовал; номер нити = %i\n",
+                           i, r);
             break;
         case wrong_arr_init:
-            printer_printf(&context->error_options, "массив с %i элементами инициализируется %i значениями\n", i,
-                   r);
+            printer_printf(
+                &context->error_options,
+                "массив с %i элементами инициализируется %i значениями\n", i,
+                r);
             break;
         case wrong_string_init:
-            printer_printf(&context->error_options, "строковая переменная с %i элементами инициализируется "
-                   "строкой с %i литерами\n",
-                   i, r);
+            printer_printf(
+                &context->error_options,
+                "строковая переменная с %i элементами инициализируется "
+                "строкой с %i литерами\n",
+                i, r);
             break;
         case wrong_motor_num:
-            printer_printf(&context->error_options, "номер силового мотора %i, а должен быть от 1 до 4\n", i);
+            printer_printf(
+                &context->error_options,
+                "номер силового мотора %i, а должен быть от 1 до 4\n", i);
             break;
         case wrong_motor_pow:
-            printer_printf(&context->error_options, "задаваемая мощность мотора %i равна %i, а должна быть от "
-                   "-100 до 100\n",
-                   i, r);
+            printer_printf(
+                &context->error_options,
+                "задаваемая мощность мотора %i равна %i, а должна быть от "
+                "-100 до 100\n",
+                i, r);
             break;
         case wrong_digsensor_num:
-            printer_printf(&context->error_options, "номер цифрового сенсора %i, а должен быть 1 или 2\n", i);
+            printer_printf(
+                &context->error_options,
+                "номер цифрового сенсора %i, а должен быть 1 или 2\n", i);
             break;
         case wrong_ansensor_num:
-            printer_printf(&context->error_options, "номер аналогового сенсора %i, а должен быть от 1 до 6\n",
-                   i);
+            printer_printf(
+                &context->error_options,
+                "номер аналогового сенсора %i, а должен быть от 1 до 6\n", i);
             break;
         case wrong_robot_com:
-            printer_printf(&context->error_options, "робот не может исполнить команду\n");
+            printer_printf(&context->error_options,
+                           "робот не может исполнить команду\n");
             break;
         case wrong_number_of_elems:
-            printer_printf(&context->error_options, "количество элементов в массиве по каждому измерению должно "
-                   "быть положительным, а тут %i\n",
-                   r);
+            printer_printf(
+                &context->error_options,
+                "количество элементов в массиве по каждому измерению должно "
+                "быть положительным, а тут %i\n",
+                r);
             break;
         case zero_devide:
             printer_printf(&context->error_options, "целое деление на 0\n");
             break;
         case float_zero_devide:
-            printer_printf(&context->error_options, "вещественное деление на 0\n");
+            printer_printf(&context->error_options,
+                           "вещественное деление на 0\n");
             break;
         case mem_overflow:
-            printer_printf(&context->error_options, 
+            printer_printf(
+                &context->error_options,
                 "переполнение памяти, скорее всего, нет выхода из рекурсии\n");
             break;
         case sqrt_from_negat:
-            printer_printf(&context->error_options, "попытка вычисления квадратного корня из отрицательного "
-                   "числа \n");
+            printer_printf(
+                &context->error_options,
+                "попытка вычисления квадратного корня из отрицательного "
+                "числа \n");
             break;
         case log_from_negat:
-            printer_printf(&context->error_options, "попытка вычисления натурального логарифма из 0 или "
-                   "отрицательного числа\n");
+            printer_printf(&context->error_options,
+                           "попытка вычисления натурального логарифма из 0 или "
+                           "отрицательного числа\n");
             break;
         case log10_from_negat:
-            printer_printf(&context->error_options, "попытка вычисления десятичного логарифма из 0 или "
-                   "отрицательного числа\n");
+            printer_printf(&context->error_options,
+                           "попытка вычисления десятичного логарифма из 0 или "
+                           "отрицательного числа\n");
             break;
         case wrong_asin:
-            printer_printf(&context->error_options, "аргумент арксинуса должен быть в отрезке [-1, 1]\n");
+            printer_printf(
+                &context->error_options,
+                "аргумент арксинуса должен быть в отрезке [-1, 1]\n");
             break;
 
         case printf_runtime_crash:
-            printer_printf(&context->error_options, "странно, printf не работает на этапе исполнения; ошибка "
-                   "коммпилятора");
+            printer_printf(
+                &context->error_options,
+                "странно, printf не работает на этапе исполнения; ошибка "
+                "коммпилятора");
             break;
         case init_err:
-            printer_printf(&context->error_options, "количество элементов инициализации %i не совпадает с "
-                   "количеством элементов %i массива\n",
-                   i, r);
+            printer_printf(
+                &context->error_options,
+                "количество элементов инициализации %i не совпадает с "
+                "количеством элементов %i массива\n",
+                i, r);
             break;
 
         default:;
@@ -164,7 +194,7 @@ const char *JD1 = "/sys/devices/platform/da850_trik/sensor_d1";
 const char *JD2 = "/sys/devices/platform/da850_trik/sensor_d2";
 
 int
-rungetcommand(ruc_vm_context *context, const char *command)
+rungetcommand(vm_context *context, const char *command)
 {
     FILE *fp;
     long  x = -1;
@@ -200,7 +230,7 @@ void prmem()
 */
 
 void
-auxprintf(ruc_vm_context *context, int strbeg, int databeg)
+auxprintf(vm_context *context, int strbeg, int databeg)
 {
 
     int i, j, curdata = databeg + 1;
@@ -212,17 +242,20 @@ auxprintf(ruc_vm_context *context, int strbeg, int databeg)
             {
                 case 'i':
                 case 1094: // ц
-                    printer_printf(&context->output_options, "%i", context->mem[curdata++]);
+                    printer_printf(&context->output_options, "%i",
+                                   context->mem[curdata++]);
                     break;
 
                 case 'c':
                 case 1083: // л
-                    printer_printchar(&context->output_options, context->mem[curdata++]);
+                    printer_printchar(&context->output_options,
+                                      context->mem[curdata++]);
                     break;
 
                 case 'f':
                 case 1074: // в
-                    printer_printf(&context->output_options, "%lf", *((double *)(&context->mem[curdata])));
+                    printer_printf(&context->output_options, "%lf",
+                                   *((double *)(&context->mem[curdata])));
                     curdata += 2;
                     break;
 
@@ -231,7 +264,8 @@ auxprintf(ruc_vm_context *context, int strbeg, int databeg)
                     for (j = context->mem[curdata]; j - context->mem[curdata] <
                          context->mem[context->mem[curdata] - 1];
                          ++j)
-                        printer_printchar(&context->output_options, context->mem[j]);
+                        printer_printchar(&context->output_options,
+                                          context->mem[j]);
                     curdata++;
                     break;
 
@@ -252,7 +286,7 @@ auxprintf(ruc_vm_context *context, int strbeg, int databeg)
 }
 
 void
-auxprint(ruc_vm_context *context, int beg, int t, char before, char after)
+auxprint(vm_context *context, int beg, int t, char before, char after)
 {
     double rf;
     int    r;
@@ -277,7 +311,8 @@ auxprint(ruc_vm_context *context, int beg, int t, char before, char after)
     }
     else if (t == LVOID)
     {
-        printer_printf(&context->error_options, " значения типа ПУСТО печатать нельзя\n");
+        printer_printf(&context->error_options,
+                       " значения типа ПУСТО печатать нельзя\n");
     }
 
     // здесь t уже точно положительный
@@ -312,7 +347,8 @@ auxprint(ruc_vm_context *context, int beg, int t, char before, char after)
     }
     else
     {
-        printer_printf(&context->error_options, " значения типа ФУНКЦИЯ и указателей печатать нельзя\n");
+        printer_printf(&context->error_options,
+                       " значения типа ФУНКЦИЯ и указателей печатать нельзя\n");
     }
 
     if (after)
@@ -321,7 +357,7 @@ auxprint(ruc_vm_context *context, int beg, int t, char before, char after)
 
 
 void
-auxget(ruc_vm_context *context, int beg, int t)
+auxget(vm_context *context, int beg, int t)
 {
     double rf;
     //     printf("beg=%i t=%i\n", beg, t);
@@ -340,7 +376,8 @@ auxget(ruc_vm_context *context, int beg, int t)
     }
     else if (t == LVOID)
     {
-        printer_printf(&context->error_options, " значения типа ПУСТО вводить нельзя\n");
+        printer_printf(&context->error_options,
+                       " значения типа ПУСТО вводить нельзя\n");
     }
 
     // здесь t уже точно положительный
@@ -362,13 +399,14 @@ auxget(ruc_vm_context *context, int beg, int t)
         }
     }
     else
-        printer_printf(&context->error_options, " значения типа ФУНКЦИЯ и указателей вводить нельзя\n");
+        printer_printf(&context->error_options,
+                       " значения типа ФУНКЦИЯ и указателей вводить нельзя\n");
 }
 
 void *interpreter(void *);
 
 int
-check_zero_int(ruc_vm_context *context, int r)
+check_zero_int(vm_context *context, int r)
 {
     if (r == 0)
         runtimeerr(context, zero_devide, 0, 0);
@@ -376,7 +414,7 @@ check_zero_int(ruc_vm_context *context, int r)
 }
 
 double
-check_zero_float(ruc_vm_context *context, double r)
+check_zero_float(vm_context *context, double r)
 {
     if (r == 0)
         runtimeerr(context, float_zero_devide, 0, 0);
@@ -384,13 +422,13 @@ check_zero_float(ruc_vm_context *context, double r)
 }
 
 int
-dsp(ruc_vm_context *context, int di, int l)
+dsp(vm_context *context, int di, int l)
 {
     return di < 0 ? context->g - di : l + di;
 }
 
 void *
-invoke_interpreter(ruc_vm_context *context, void *arg)
+invoke_interpreter(vm_context *context, void *arg)
 {
     ruc_vm_thread_arg tharg;
     tharg.context = context;
@@ -402,7 +440,7 @@ void *
 interpreter(void *thread_arg)
 {
     ruc_vm_thread_arg *arg = (ruc_vm_thread_arg *)thread_arg;
-    ruc_vm_context *   context = arg->context;
+    vm_context *       context = arg->context;
     int    l, x, origpc = *((int *)arg->arg), numTh = t_getThNum(context);
     int    N, bounds[100], d, from, prtype, cur0, pc = abs(origpc);
     int    i, r, flagstop = 1, entry, di, di1, len;
@@ -571,7 +609,9 @@ interpreter(void *thread_arg)
                 if (r < -100 || r > 100)
                     runtimeerr(context, wrong_motor_pow, n, r);
                 memset(i2ccommand, '\0', I2CBUFFERSIZE);
-                printer_printf(&context->output_options, "i2cset -y 2 0x48 0x%x 0x%x b\n", 0x14 + n - 1, r);
+                printer_printf(&context->output_options,
+                               "i2cset -y 2 0x48 0x%x 0x%x b\n", 0x14 + n - 1,
+                               r);
                 snprintf(i2ccommand, I2CBUFFERSIZE,
                          "i2cset -y 2 0x48 0x%x 0x%x b", 0x14 + n - 1, r);
                 system(i2ccommand);
@@ -597,7 +637,8 @@ interpreter(void *thread_arg)
                 if (n < 1 || n > 6)
                     runtimeerr(context, wrong_ansensor_num, n, 0);
                 memset(i2ccommand, '\0', I2CBUFFERSIZE);
-                printer_printf(&context->output_options, "i2cget -y 2 0x48 0x%x\n", 0x26 - n);
+                printer_printf(&context->output_options,
+                               "i2cget -y 2 0x48 0x%x\n", 0x26 - n);
                 snprintf(i2ccommand, I2CBUFFERSIZE, "i2cget -y 2 0x48 0x%x",
                          0x26 - n);
                 context->mem[x] = rungetcommand(context, i2ccommand);
@@ -624,7 +665,8 @@ interpreter(void *thread_arg)
                 prtype = context->identab[i + 2];
                 r = context->identab[i + 1] + 2; // ссылка на reprtab
                 do
-                    printer_printchar(&context->output_options, context->reprtab[r++]);
+                    printer_printchar(&context->output_options,
+                                      context->reprtab[r++]);
                 while (context->reprtab[r] != 0);
 
                 if (prtype > 0 && context->modetab[prtype] == MARRAY &&
@@ -661,7 +703,8 @@ interpreter(void *thread_arg)
                 prtype = context->identab[i + 2];
                 r = context->identab[i + 1] + 2; // ссылка на reprtab
                 do
-                    printer_printchar(&context->output_options, context->reprtab[r++]);
+                    printer_printchar(&context->output_options,
+                                      context->reprtab[r++]);
                 while (context->reprtab[r] != 0);
                 printer_printf(&context->output_options, " ");
                 fflush(stdout);
@@ -1936,7 +1979,7 @@ interpreter(void *thread_arg)
 }
 
 void
-import(ruc_vm_context *context, const char *path)
+import(vm_context *context, const char *path)
 {
     char  firstline[100];
     int   i, pc;
@@ -2010,7 +2053,7 @@ import(ruc_vm_context *context, const char *path)
 }
 
 static void
-process_user_requests(ruc_vm_context *context, int argc, const char *argv[])
+process_user_requests(vm_context *context, int argc, const char *argv[])
 {
     int i;
 
@@ -2027,9 +2070,9 @@ process_user_requests(ruc_vm_context *context, int argc, const char *argv[])
 int
 main(int argc, const char *argv[])
 {
-    ruc_vm_context context;
+    vm_context context;
 
-    ruc_vm_context_init(&context);
+    vm_context_init(&context);
 
     scanner_attach_file(&context.input_options, stdin);
     printer_attach_file(&context.output_options, stdout);

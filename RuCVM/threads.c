@@ -21,7 +21,7 @@
 // void perror(const char *str);
 
 void
-t_init(ruc_vm_context *context)
+t_init(vm_context *context)
 {
     int res = pthread_rwlock_init(&context->__lock_t_create, NULL);
     if (res != 0)
@@ -58,7 +58,7 @@ t_init(ruc_vm_context *context)
 }
 
 int
-__t_create(ruc_vm_context *context,
+__t_create(vm_context *    context,
            pthread_attr_t *attr,
            void *(*func)(void *),
            void *arg,
@@ -137,13 +137,13 @@ __t_create(ruc_vm_context *context,
 }
 
 int
-t_create_inner(ruc_vm_context *context, void *(*func)(void *), void *arg)
+t_create_inner(vm_context *context, void *(*func)(void *), void *arg)
 {
     return __t_create(context, NULL, func, arg, FALSE);
 }
 
 int
-t_createDetached(ruc_vm_context *context, void *(*func)(void *))
+t_createDetached(vm_context *context, void *(*func)(void *))
 {
     pthread_attr_t attr;
 
@@ -165,14 +165,14 @@ t_createDetached(ruc_vm_context *context, void *(*func)(void *))
 }
 
 void
-t_exit(ruc_vm_context *context)
+t_exit(vm_context *context)
 {
     UNUSED(context);
     pthread_exit(NULL);
 }
 
 void
-t_join(ruc_vm_context *context, int numTh)
+t_join(vm_context *context, int numTh)
 {
     int res = pthread_rwlock_rdlock(&context->__lock_t_create);
     if (res != 0)
@@ -218,7 +218,7 @@ t_join(ruc_vm_context *context, int numTh)
 }
 
 int
-t_getThNum(ruc_vm_context *context)
+t_getThNum(vm_context *context)
 {
     pthread_t th;
     int       index, i;
@@ -259,7 +259,7 @@ t_getThNum(ruc_vm_context *context)
 }
 
 void
-t_sleep(ruc_vm_context *context, int miliseconds)
+t_sleep(vm_context *context, int miliseconds)
 {
     UNUSED(context);
 
@@ -268,7 +268,7 @@ t_sleep(ruc_vm_context *context, int miliseconds)
 }
 
 int
-t_sem_create(ruc_vm_context *context, int level)
+t_sem_create(vm_context *context, int level)
 {
     int    res = pthread_rwlock_wrlock(&context->__lock_t_sem_create), retVal;
     sem_t *sem;
@@ -308,7 +308,7 @@ t_sem_create(ruc_vm_context *context, int level)
 }
 
 void
-t_sem_wait(ruc_vm_context *context, int numSem)
+t_sem_wait(vm_context *context, int numSem)
 {
     int res = pthread_rwlock_rdlock(&context->__lock_t_sem_create);
     //    printf("t_sem_wait numSem= %i context->__countSem=  %i\n", numSem,
@@ -347,7 +347,7 @@ t_sem_wait(ruc_vm_context *context, int numSem)
 }
 
 void
-t_sem_post(ruc_vm_context *context, int numSem)
+t_sem_post(vm_context *context, int numSem)
 {
     int res = pthread_rwlock_rdlock(&context->__lock_t_sem_create);
     if (res != 0)
@@ -384,7 +384,7 @@ t_sem_post(ruc_vm_context *context, int numSem)
 }
 
 void
-t_msg_send(ruc_vm_context *context, struct msg_info msg)
+t_msg_send(vm_context *context, struct msg_info msg)
 {
     int res = pthread_rwlock_rdlock(&context->__lock_t_create);
     if (res != 0)
@@ -443,7 +443,7 @@ t_msg_send(ruc_vm_context *context, struct msg_info msg)
     }
 }
 struct msg_info
-t_msg_receive(ruc_vm_context *context)
+t_msg_receive(vm_context *context)
 {
     int res = pthread_rwlock_rdlock(&context->__lock_t_create), numTh;
     struct msg_info msg;
@@ -490,7 +490,7 @@ t_msg_receive(ruc_vm_context *context)
 }
 
 void
-t_destroy(ruc_vm_context *context)
+t_destroy(vm_context *context)
 {
     int res, i;
 

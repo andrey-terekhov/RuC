@@ -12,12 +12,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "uniscanner.h"
 #include "error.h"
 #include "global_vars.h"
+#include "uniscanner.h"
 
 int
-getnext(ruc_context *context)
+getnext(compiler_context *context)
 {
     int ret = scanner_getnext(&context->input_options);
     context->nextchar = ret;
@@ -25,7 +25,7 @@ getnext(ruc_context *context)
 }
 
 void
-onemore(ruc_context *context)
+onemore(compiler_context *context)
 {
     context->curchar = context->nextchar;
     context->nextchar = getnext(context);
@@ -36,7 +36,7 @@ onemore(ruc_context *context)
 }
 
 void
-endofline(ruc_context *context)
+endofline(compiler_context *context)
 {
     if (context->prep_flag == 1)
     {
@@ -52,7 +52,7 @@ endofline(ruc_context *context)
 }
 
 void
-endnl(ruc_context *context)
+endnl(compiler_context *context)
 {
     context->lines[++context->line] = context->charnum;
     context->lines[context->line + 1] = context->charnum;
@@ -63,7 +63,7 @@ endnl(ruc_context *context)
 }
 
 void
-nextch(ruc_context *context)
+nextch(compiler_context *context)
 {
     onemore(context);
     if (context->curchar == EOF)
@@ -131,7 +131,7 @@ nextch(ruc_context *context)
 }
 
 void
-next_string_elem(ruc_context *context)
+next_string_elem(compiler_context *context)
 {
     context->num = context->curchar;
     if (context->curchar == '\\')
@@ -153,7 +153,7 @@ next_string_elem(ruc_context *context)
 }
 
 int
-letter(ruc_context *context)
+letter(compiler_context *context)
 {
     return (context->curchar >= 'A' && context->curchar <= 'Z') ||
         (context->curchar >= 'a' && context->curchar <= 'z') ||
@@ -162,13 +162,13 @@ letter(ruc_context *context)
 }
 
 int
-digit(ruc_context *context)
+digit(compiler_context *context)
 {
     return context->curchar >= '0' && context->curchar <= '9';
 }
 
 int
-ispower(ruc_context *context)
+ispower(compiler_context *context)
 {
     return context->curchar == 'e' ||
         context->curchar ==
@@ -177,7 +177,7 @@ ispower(ruc_context *context)
 }
 
 int
-equal(ruc_context *context, int i, int j)
+equal(compiler_context *context, int i, int j)
 {
     ++i;
     ++j;
@@ -188,7 +188,7 @@ equal(ruc_context *context, int i, int j)
 }
 
 int
-scan(ruc_context *context)
+scan(compiler_context *context)
 {
     int cr;
     while (context->curchar == ' ' || context->curchar == '\t' ||
@@ -623,7 +623,7 @@ scan(ruc_context *context)
 }
 
 int
-scaner(ruc_context *context)
+scaner(compiler_context *context)
 {
     context->cur = context->next;
     context->next = scan(context);

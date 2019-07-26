@@ -37,7 +37,6 @@ scanner_prepare(universal_scanner_options *opts)
 
         opts->opaque = *tmp;
     }
-
 }
 int
 scanner_getnext(universal_scanner_options *opts)

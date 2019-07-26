@@ -8,9 +8,9 @@
 #define DEFAULT_OUTBUF_SIZE (1024)
 
 void
-ruc_context_init(ruc_context *context)
+compiler_context_init(compiler_context *context)
 {
-    memset(context, 0, sizeof(ruc_context));
+    memset(context, 0, sizeof(compiler_context));
     scanner_init(&context->input_options);
     printer_init(&context->output_options);
     printer_init(&context->err_options);
@@ -57,7 +57,7 @@ io_type_is_output(ruc_io_type type)
 
 /** Get type-specific options */
 static void *
-io_type2opts(ruc_context *context, ruc_io_type type)
+io_type2opts(compiler_context *context, ruc_io_type type)
 {
     switch (type)
     {
@@ -78,7 +78,7 @@ io_type2opts(ruc_context *context, ruc_io_type type)
  * Get FILE for a specific IO type
  */
 static FILE **
-io_type2file(ruc_context *context, ruc_io_type type)
+io_type2file(compiler_context *context, ruc_io_type type)
 {
     switch (type)
     {
@@ -119,10 +119,10 @@ io_get_file(const char *ptr, const char *mask)
 
 /* See description in context.h */
 void
-ruc_context_attach_io(ruc_context * context,
-                      const char *  ptr,
-                      ruc_io_type   type,
-                      ruc_io_source source)
+compiler_context_attach_io(compiler_context *context,
+                           const char *      ptr,
+                           ruc_io_type       type,
+                           ruc_io_source     source)
 {
     void *opts = io_type2opts(context, type);
 
@@ -159,7 +159,7 @@ ruc_context_attach_io(ruc_context * context,
 
 /* See description in context.h */
 void
-ruc_context_detach_io(ruc_context *context, ruc_io_type type)
+compiler_context_detach_io(compiler_context *context, ruc_io_type type)
 {
     if (type == IO_TYPE_OUTPUT ||
         context->input_options.source == IO_SOURCE_FILE)

@@ -7,7 +7,7 @@
 #include "global_vars.h"
 
 int
-toreprtab(ruc_context *context, char str[])
+toreprtab(compiler_context *context, char str[])
 {
     int i, oldrepr = context->rp;
     context->hash = 0;
@@ -26,7 +26,7 @@ toreprtab(ruc_context *context, char str[])
 
 /* Инициализация modetab */
 void
-init_modetab(ruc_context *context)
+init_modetab(compiler_context *context)
 {
     // занесение в modetab описателя struct {int numTh; int inf; }
     context->modetab[1] = 0;

@@ -5,12 +5,12 @@
 //  Copyright (c) 2015 Andrey Terekhov. All rights reserved.
 //
 #include <stdlib.h>
-#include "global_vars.h"
 #include "error.h"
 #include "extdecl.h"
+#include "global_vars.h"
 
 void
-tocode(ruc_context *context, int c)
+tocode(compiler_context *context, int c)
 {
     //  printf("tocode context->tc=%i context->pc %i) %i\n", context->tc,
     //  context->pc, c);
@@ -18,7 +18,7 @@ tocode(ruc_context *context, int c)
 }
 
 void
-adbreakend(ruc_context *context)
+adbreakend(compiler_context *context)
 {
     while (context->adbreak)
     {
@@ -29,7 +29,7 @@ adbreakend(ruc_context *context)
 }
 
 void
-adcontbeg(ruc_context *context, int ad)
+adcontbeg(compiler_context *context, int ad)
 {
     while (context->adcont != ad)
     {
@@ -40,7 +40,7 @@ adcontbeg(ruc_context *context, int ad)
 }
 
 void
-adcontend(ruc_context *context)
+adcontend(compiler_context *context)
 {
     while (context->adcont != 0)
     {
@@ -51,7 +51,7 @@ adcontend(ruc_context *context)
 }
 
 void
-finalop(ruc_context *context)
+finalop(compiler_context *context)
 {
     int c;
 
@@ -108,10 +108,10 @@ finalop(ruc_context *context)
     }
 }
 
-void Declid_gen(ruc_context *context);
+void Declid_gen(compiler_context *context);
 
 int
-Expr_gen(ruc_context *context, int incond)
+Expr_gen(compiler_context *context, int incond)
 {
     int flagprim = 1, eltype, wasstring = 0;
     while (flagprim)
@@ -262,10 +262,10 @@ Expr_gen(ruc_context *context, int incond)
     return wasstring;
 }
 
-void compstmt_gen(ruc_context *context);
+void compstmt_gen(compiler_context *context);
 
 void
-Stmt_gen(ruc_context *context)
+Stmt_gen(compiler_context *context)
 {
     switch (context->tree[context->tc++])
     {
@@ -512,7 +512,7 @@ Stmt_gen(ruc_context *context)
 }
 
 void
-Struct_init_gen(ruc_context *context)
+Struct_init_gen(compiler_context *context)
 {
     int i, n;
     if (context->tree[context->tc] == TStructinit)
@@ -528,7 +528,7 @@ Struct_init_gen(ruc_context *context)
 }
 
 void
-Declid_gen(ruc_context *context)
+Declid_gen(compiler_context *context)
 {
     int olddispl = context->tree[context->tc++],
         telem = context->tree[context->tc++], N = context->tree[context->tc++],
@@ -595,7 +595,7 @@ Declid_gen(ruc_context *context)
 }
 
 void
-compstmt_gen(ruc_context *context)
+compstmt_gen(compiler_context *context)
 {
     while (context->tree[context->tc] != TEnd)
     {
@@ -623,7 +623,7 @@ compstmt_gen(ruc_context *context)
     context->tc++;
 }
 void
-codegen(ruc_context *context)
+codegen(compiler_context *context)
 {
     int treesize = context->tc;
     context->tc = 0;

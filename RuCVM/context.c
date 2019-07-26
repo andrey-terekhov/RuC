@@ -7,9 +7,9 @@
 #include "uniprinter.h"
 
 void
-ruc_vm_context_init(ruc_vm_context *context)
+vm_context_init(vm_context *context)
 {
-    memset(context, 0, sizeof(ruc_vm_context));
+    memset(context, 0, sizeof(vm_context));
 
     scanner_init(&context->input_options);
     printer_init(&context->output_options);

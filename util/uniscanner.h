@@ -35,8 +35,9 @@ typedef int (*io_getnext_t)(universal_scanner_options *opts);
  *
  * @return scanf()-like result
  */
-typedef int (*io_scanf_t)(universal_scanner_options *opts, const char *fmt,
-                         va_list args);
+typedef int (*io_scanf_t)(universal_scanner_options *opts,
+                          const char *               fmt,
+                          va_list                    args);
 
 /** Scanner description */
 typedef struct scanner_desc
@@ -44,7 +45,7 @@ typedef struct scanner_desc
     ruc_io_source source; /** Data source supported by scanner */
     io_getnext_t  getnext; /** The pointer to a function scanning the
                                input from the context */
-    io_scanf_t    scanf;    /** the pointer to a scanf-like function */
+    io_scanf_t scanf; /** the pointer to a scanf-like function */
 } scanner_desc;
 
 /**

@@ -7,6 +7,6 @@
  *
  * @param context Compiler context
  */
-extern void preprocess_file(ruc_context *context);
+extern void preprocess_file(compiler_context *context);
 
 #endif

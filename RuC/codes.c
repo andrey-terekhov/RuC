@@ -12,7 +12,7 @@
 #include "global_vars.h"
 
 void
-tablesandtree(ruc_context *context)
+tablesandtree(compiler_context *context)
 {
     int i = 0, j;
 
@@ -352,7 +352,7 @@ tablesandtree(ruc_context *context)
 }
 
 void
-tablesandcode(ruc_context *context)
+tablesandcode(compiler_context *context)
 {
     int i = 0, j;
 

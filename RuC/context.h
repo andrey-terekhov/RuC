@@ -1,5 +1,5 @@
-#ifndef RUC_CONTEXT_H
-#define RUC_CONTEXT_H
+#ifndef compiler_context_H
+#define compiler_context_H
 
 #include <stdio.h>
 #include "Defs.h"
@@ -8,7 +8,7 @@
 #include "uniscanner.h"
 
 // Определение глобальных переменных
-typedef struct ruc_context
+typedef struct compiler_context
 {
     const char *output_file; /** Output file */
 
@@ -139,14 +139,14 @@ typedef struct ruc_context
     int checkif;
     int flag_show_macro;
     int arg;
-} ruc_context;
+} compiler_context;
 
 /**
  * Initialize RuC context
  *
  * @param context Uninitialized RuC context
  */
-extern void ruc_context_init(ruc_context *context);
+extern void compiler_context_init(compiler_context *context);
 
 /**
  * Attach input to a specific input/output pipe
@@ -157,10 +157,10 @@ extern void ruc_context_init(ruc_context *context);
  * @param type      IO type
  * @param source    Data source
  */
-extern void ruc_context_attach_io(ruc_context * context,
-                                  const char *  ptr,
-                                  ruc_io_type   type,
-                                  ruc_io_source source);
+extern void compiler_context_attach_io(compiler_context *context,
+                                       const char *      ptr,
+                                       ruc_io_type       type,
+                                       ruc_io_source     source);
 
 /**
  * Detach file from a specific input/output pipe
@@ -168,6 +168,7 @@ extern void ruc_context_attach_io(ruc_context * context,
  * @param context   RuC context
  * @param type      IO type
  */
-extern void ruc_context_detach_io(ruc_context *context, ruc_io_type type);
+extern void compiler_context_detach_io(compiler_context *context,
+                                       ruc_io_type       type);
 
 #endif
