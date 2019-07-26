@@ -25,20 +25,9 @@ const char *name =
 
 #include "frontend_utils.h"
 #include "tables.h"
+#include "error.h"
 
 extern void preprocess_file(ruc_context *context);
-
-extern void tablesandcode(ruc_context *context);
-extern void tablesandtree(ruc_context *context);
-extern void import(ruc_context *context);
-extern int  getnext(ruc_context *context);
-extern int  nextch(ruc_context *context);
-extern int  scan(ruc_context *context);
-extern void error(ruc_context *context, int ernum);
-extern void codegen(ruc_context *context);
-extern void mipsopt(ruc_context *context);
-extern void mipsgen(ruc_context *context);
-extern void ext_decl(ruc_context *context);
 
 //#define FILE_DEBUG
 

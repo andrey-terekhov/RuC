@@ -5,13 +5,9 @@
 #include <string.h>
 
 #include "global_vars.h"
+#include "scanner.h"
 
-extern int  getnext(ruc_context *);
-extern int  letter(ruc_context *);
-extern int  digit(ruc_context *);
-extern int  equal(ruc_context *, int, int);
 extern void m_error(ruc_context *context, int errnum);
-
 
 int mletter(ruc_context *context, int r);
 int mdigit(ruc_context *context, int r);

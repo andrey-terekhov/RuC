@@ -13,10 +13,8 @@
 #include <string.h>
 #include <unistd.h>
 #include "uniscanner.h"
-
+#include "error.h"
 #include "global_vars.h"
-extern void error(ruc_context *error, int);
-extern void warning(ruc_context *context, int);
 
 int
 getnext(ruc_context *context)

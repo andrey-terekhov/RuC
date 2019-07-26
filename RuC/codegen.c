@@ -6,9 +6,8 @@
 //
 #include <stdlib.h>
 #include "global_vars.h"
-
-extern void error(ruc_context *context, int err);
-extern int  szof(ruc_context *context, int);
+#include "error.h"
+#include "ext_decl.h"
 
 int curth = 0;
 

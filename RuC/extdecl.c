@@ -1,9 +1,6 @@
 #include "global_vars.h"
-
-extern int  getnext();
-extern int  nextch();
-extern int  scaner(ruc_context *);
-extern void error(ruc_context *, int e);
+#include "error.h"
+#include "scanner.h"
 
 int
 modeeq(ruc_context *context, int first_mode, int second_mode)

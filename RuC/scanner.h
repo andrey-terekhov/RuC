@@ -6,5 +6,8 @@ extern int  scan(ruc_context *context);
 extern int  getnext(ruc_context *context);
 extern int  scaner(ruc_context *context);
 extern void nextch(ruc_context *context);
+extern int  letter(ruc_context *);
+extern int  digit(ruc_context *);
+extern int  equal(ruc_context *, int, int);
 
 #endif
