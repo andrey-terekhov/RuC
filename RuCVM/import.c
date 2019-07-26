@@ -16,7 +16,6 @@
 
 #include "context.h"
 #include "th_static.h"
-#include "util.h"
 
 // Я исхожу из того, что нумерация нитей процедурой t_create начинается с 1 и
 // идет последовательно в соответствии с порядком вызовов этой процудуры,
@@ -80,75 +79,75 @@ runtimeerr(ruc_vm_context *context, int e, int i, int r)
     switch (e)
     {
         case index_out_of_range:
-            printf("индекс %i за пределами границ массива %i\n", i, r - 1);
+            printer_printf(&context->error_options, "индекс %i за пределами границ массива %i\n", i, r - 1);
             break;
         case wrong_kop:
-            printf("команду %i я пока не реализовал; номер нити = %i\n", i, r);
+            printer_printf(&context->error_options, "команду %i я пока не реализовал; номер нити = %i\n", i, r);
             break;
         case wrong_arr_init:
-            printf("массив с %i элементами инициализируется %i значениями\n", i,
+            printer_printf(&context->error_options, "массив с %i элементами инициализируется %i значениями\n", i,
                    r);
             break;
         case wrong_string_init:
-            printf("строковая переменная с %i элементами инициализируется "
+            printer_printf(&context->error_options, "строковая переменная с %i элементами инициализируется "
                    "строкой с %i литерами\n",
                    i, r);
             break;
         case wrong_motor_num:
-            printf("номер силового мотора %i, а должен быть от 1 до 4\n", i);
+            printer_printf(&context->error_options, "номер силового мотора %i, а должен быть от 1 до 4\n", i);
             break;
         case wrong_motor_pow:
-            printf("задаваемая мощность мотора %i равна %i, а должна быть от "
+            printer_printf(&context->error_options, "задаваемая мощность мотора %i равна %i, а должна быть от "
                    "-100 до 100\n",
                    i, r);
             break;
         case wrong_digsensor_num:
-            printf("номер цифрового сенсора %i, а должен быть 1 или 2\n", i);
+            printer_printf(&context->error_options, "номер цифрового сенсора %i, а должен быть 1 или 2\n", i);
             break;
         case wrong_ansensor_num:
-            printf("номер аналогового сенсора %i, а должен быть от 1 до 6\n",
+            printer_printf(&context->error_options, "номер аналогового сенсора %i, а должен быть от 1 до 6\n",
                    i);
             break;
         case wrong_robot_com:
-            printf("робот не может исполнить команду\n");
+            printer_printf(&context->error_options, "робот не может исполнить команду\n");
             break;
         case wrong_number_of_elems:
-            printf("количество элементов в массиве по каждому измерению должно "
+            printer_printf(&context->error_options, "количество элементов в массиве по каждому измерению должно "
                    "быть положительным, а тут %i\n",
                    r);
             break;
         case zero_devide:
-            printf("целое деление на 0\n");
+            printer_printf(&context->error_options, "целое деление на 0\n");
             break;
         case float_zero_devide:
-            printf("вещественное деление на 0\n");
+            printer_printf(&context->error_options, "вещественное деление на 0\n");
             break;
         case mem_overflow:
-            printf(
+            printer_printf(&context->error_options, 
                 "переполнение памяти, скорее всего, нет выхода из рекурсии\n");
             break;
         case sqrt_from_negat:
-            printf("попытка вычисления квадратного корня из отрицательного "
+            printer_printf(&context->error_options, "попытка вычисления квадратного корня из отрицательного "
                    "числа \n");
             break;
         case log_from_negat:
-            printf("попытка вычисления натурального логарифма из 0 или "
+            printer_printf(&context->error_options, "попытка вычисления натурального логарифма из 0 или "
                    "отрицательного числа\n");
             break;
         case log10_from_negat:
-            printf("попытка вычисления десятичного логарифма из 0 или "
+            printer_printf(&context->error_options, "попытка вычисления десятичного логарифма из 0 или "
                    "отрицательного числа\n");
             break;
         case wrong_asin:
-            printf("аргумент арксинуса должен быть в отрезке [-1, 1]\n");
+            printer_printf(&context->error_options, "аргумент арксинуса должен быть в отрезке [-1, 1]\n");
             break;
 
         case printf_runtime_crash:
-            printf("странно, printf не работает на этапе исполнения; ошибка "
+            printer_printf(&context->error_options, "странно, printf не работает на этапе исполнения; ошибка "
                    "коммпилятора");
             break;
         case init_err:
-            printf("количество элементов инициализации %i не совпадает с "
+            printer_printf(&context->error_options, "количество элементов инициализации %i не совпадает с "
                    "количеством элементов %i массива\n",
                    i, r);
             break;
@@ -157,6 +156,7 @@ runtimeerr(ruc_vm_context *context, int e, int i, int r)
     }
     exit(3);
 }
+
 
 #ifdef ROBOT
 FILE *      f1, *f2; // файлы цифровых датчиков
@@ -179,7 +179,7 @@ rungetcommand(ruc_vm_context *context, const char *command)
     while (fgets(path, sizeof(path) - 1, fp) != NULL)
     {
         x = strtol(path, NULL, 16);
-        printf("[%s] %ld\n", path, x);
+        printer_printf(&context->output_options, "[%s] %ld\n", path, x);
     }
     pclose(fp);
     return x; // ??????
@@ -212,17 +212,17 @@ auxprintf(ruc_vm_context *context, int strbeg, int databeg)
             {
                 case 'i':
                 case 1094: // ц
-                    printf("%i", context->mem[curdata++]);
+                    printer_printf(&context->output_options, "%i", context->mem[curdata++]);
                     break;
 
                 case 'c':
                 case 1083: // л
-                    _obsolete_printf_char(context->mem[curdata++]);
+                    printer_printchar(&context->output_options, context->mem[curdata++]);
                     break;
 
                 case 'f':
                 case 1074: // в
-                    printf("%lf", *((double *)(&context->mem[curdata])));
+                    printer_printf(&context->output_options, "%lf", *((double *)(&context->mem[curdata])));
                     curdata += 2;
                     break;
 
@@ -231,12 +231,12 @@ auxprintf(ruc_vm_context *context, int strbeg, int databeg)
                     for (j = context->mem[curdata]; j - context->mem[curdata] <
                          context->mem[context->mem[curdata] - 1];
                          ++j)
-                        _obsolete_printf_char(context->mem[j]);
+                        printer_printchar(&context->output_options, context->mem[j]);
                     curdata++;
                     break;
 
                 case '%':
-                    printf("%%");
+                    printer_printf(&context->output_options, "%%");
                     break;
 
                 default:
@@ -245,7 +245,9 @@ auxprintf(ruc_vm_context *context, int strbeg, int databeg)
             }
         }
         else
-            _obsolete_printf_char(context->mem[i]);
+        {
+            printer_printchar(&context->output_options, context->mem[i]);
+        }
     }
 }
 
@@ -256,19 +258,27 @@ auxprint(ruc_vm_context *context, int beg, int t, char before, char after)
     int    r;
     r = context->mem[beg];
     if (before)
-        printf("%c", before);
+    {
+        printer_printf(&context->output_options, "%c", before);
+    }
 
     if (t == LINT)
-        printf("%i", r);
+    {
+        printer_printf(&context->output_options, "%i", r);
+    }
     else if (t == LCHAR)
-        _obsolete_printf_char(r);
+    {
+        printer_printchar(&context->output_options, r);
+    }
     else if (t == LFLOAT)
     {
         memcpy(&rf, &context->mem[beg], sizeof(double));
-        printf("%20.15f", rf);
+        printer_printf(&context->output_options, "%20.15f", rf);
     }
     else if (t == LVOID)
-        printf(" значения типа ПУСТО печатать нельзя\n");
+    {
+        printer_printf(&context->error_options, " значения типа ПУСТО печатать нельзя\n");
+    }
 
     // здесь t уже точно положительный
     else if (context->modetab[t] == MARRAY)
@@ -287,7 +297,7 @@ auxprint(ruc_vm_context *context, int beg, int t, char before, char after)
     else if (context->modetab[t] == MSTRUCT)
     {
         int cnt = context->modetab[t + 2], i;
-        printf("{");
+        printer_printf(&context->output_options, "{");
         for (i = 2; i <= cnt; i += 2)
         {
             int type = context->modetab[t + i + 1];
@@ -298,13 +308,15 @@ auxprint(ruc_vm_context *context, int beg, int t, char before, char after)
                 auxprint(context, beg, type, '\n', '\n');
             beg += szof(context, type);
         }
-        printf("}");
+        printer_printf(&context->output_options, "}");
     }
     else
-        printf(" значения типа ФУНКЦИЯ и указателей печатать нельзя\n");
+    {
+        printer_printf(&context->error_options, " значения типа ФУНКЦИЯ и указателей печатать нельзя\n");
+    }
 
     if (after)
-        printf("%c", after);
+        printer_printf(&context->output_options, "%c", after);
 }
 
 
@@ -314,18 +326,22 @@ auxget(ruc_vm_context *context, int beg, int t)
     double rf;
     //     printf("beg=%i t=%i\n", beg, t);
     if (t == LINT)
-        scanf(" %i", &context->mem[beg]);
+    {
+        scanner_scanf(&context->input_options, " %i", &context->mem[beg]);
+    }
     else if (t == LCHAR)
     {
-        context->mem[beg] = _obsolete_getf_char();
+        context->mem[beg] = scanner_getnext(&context->input_options);
     }
     else if (t == LFLOAT)
     {
-        scanf(" %lf", &rf);
+        scanner_scanf(&context->input_options, " %lf", &rf);
         memcpy(&context->mem[beg], &rf, sizeof(double));
     }
     else if (t == LVOID)
-        printf(" значения типа ПУСТО вводить нельзя\n");
+    {
+        printer_printf(&context->error_options, " значения типа ПУСТО вводить нельзя\n");
+    }
 
     // здесь t уже точно положительный
     else if (context->modetab[t] == MARRAY)
@@ -346,7 +362,7 @@ auxget(ruc_vm_context *context, int beg, int t)
         }
     }
     else
-        printf(" значения типа ФУНКЦИЯ и указателей вводить нельзя\n");
+        printer_printf(&context->error_options, " значения типа ФУНКЦИЯ и указателей вводить нельзя\n");
 }
 
 void *interpreter(void *);
@@ -555,7 +571,7 @@ interpreter(void *thread_arg)
                 if (r < -100 || r > 100)
                     runtimeerr(context, wrong_motor_pow, n, r);
                 memset(i2ccommand, '\0', I2CBUFFERSIZE);
-                printf("i2cset -y 2 0x48 0x%x 0x%x b\n", 0x14 + n - 1, r);
+                printer_printf(&context->output_options, "i2cset -y 2 0x48 0x%x 0x%x b\n", 0x14 + n - 1, r);
                 snprintf(i2ccommand, I2CBUFFERSIZE,
                          "i2cset -y 2 0x48 0x%x 0x%x b", 0x14 + n - 1, r);
                 system(i2ccommand);
@@ -581,7 +597,7 @@ interpreter(void *thread_arg)
                 if (n < 1 || n > 6)
                     runtimeerr(context, wrong_ansensor_num, n, 0);
                 memset(i2ccommand, '\0', I2CBUFFERSIZE);
-                printf("i2cget -y 2 0x48 0x%x\n", 0x26 - n);
+                printer_printf(&context->output_options, "i2cget -y 2 0x48 0x%x\n", 0x26 - n);
                 snprintf(i2ccommand, I2CBUFFERSIZE, "i2cget -y 2 0x48 0x%x",
                          0x26 - n);
                 context->mem[x] = rungetcommand(context, i2ccommand);
@@ -608,7 +624,7 @@ interpreter(void *thread_arg)
                 prtype = context->identab[i + 2];
                 r = context->identab[i + 1] + 2; // ссылка на reprtab
                 do
-                    _obsolete_printf_char(context->reprtab[r++]);
+                    printer_printchar(&context->output_options, context->reprtab[r++]);
                 while (context->reprtab[r] != 0);
 
                 if (prtype > 0 && context->modetab[prtype] == MARRAY &&
@@ -645,9 +661,9 @@ interpreter(void *thread_arg)
                 prtype = context->identab[i + 2];
                 r = context->identab[i + 1] + 2; // ссылка на reprtab
                 do
-                    _obsolete_printf_char(context->reprtab[r++]);
+                    printer_printchar(&context->output_options, context->reprtab[r++]);
                 while (context->reprtab[r] != 0);
-                printf(" ");
+                printer_printf(&context->output_options, " ");
                 fflush(stdout);
 
                 auxget(context, dsp(context, context->identab[i + 3], l),
@@ -1928,7 +1944,7 @@ import(ruc_vm_context *context, const char *path)
 #ifdef ROBOT
     f1 = fopen(JD1, "r"); // файлы цифровых датчиков
     f2 = fopen(JD2, "r");
-    printf("stage 1\n");
+    printer_printf(&context->output_options, "stage 1\n");
     system("i2cset -y 2 0x48 0x10 0x1000 w"); // инициализация силовых моторов
     system("i2cset -y 2 0x48 0x11 0x1000 w");
     system("i2cset -y 2 0x48 0x12 0x1000 w");
@@ -1938,7 +1954,7 @@ import(ruc_vm_context *context, const char *path)
     input = fopen(path, "r");
     if (input == NULL)
     {
-        printf("export.txt not found\n");
+        printer_printf(&context->error_options, "export.txt not found\n");
         return;
     }
 
@@ -2007,6 +2023,10 @@ main(int argc, const char *argv[])
 
     ruc_vm_context_init(&context);
 
+    scanner_attach_file(&context.input_options, stdin);
+    printer_attach_file(&context.output_options, stdout);
+    printer_attach_file(&context.error_options, stderr);
+    printer_attach_file(&context.miscout_options, stderr);
     process_user_requests(&context, argc, argv);
     return 0;
 }

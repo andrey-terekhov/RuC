@@ -50,4 +50,10 @@ io_file_getnext(universal_scanner_options *opts)
     return ret;
 }
 
-scanner_desc scanner_file = { IO_SOURCE_FILE, io_file_getnext };
+int
+io_file_scanf(universal_scanner_options *opts, const char *fmt, va_list args)
+{
+    return vfscanf(opts->input, fmt, args);
+}
+
+scanner_desc scanner_file = { IO_SOURCE_FILE, io_file_getnext, io_file_scanf };

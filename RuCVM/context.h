@@ -45,6 +45,8 @@ typedef struct ruc_vm_context
     int                       NN;
     universal_scanner_options input_options;
     universal_printer_options output_options;
+    universal_printer_options error_options;
+    universal_printer_options miscout_options;
     sem_t *                   sempr, *semdeb;
 
     /* Threads */

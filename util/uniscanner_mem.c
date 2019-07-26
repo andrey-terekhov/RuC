@@ -13,6 +13,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "uniscanner.h"
+#include "Defs.h"
 
 /* Find a symbol in a buffer */
 static int
@@ -31,19 +32,20 @@ io_mem_getnext(universal_scanner_options *opts)
 {
     unsigned char firstchar, secondchar;
     int           ret;
+    int           pos;
 
-    if (sscanf(&opts->ptr[opts->pos], "%c", &firstchar) != 1)
+    if (sscanf(&opts->ptr[opts->pos], "%c%n", &firstchar, &pos) != 1)
         return EOF;
 
     /* We must find the symbol because we already did in sscanf() call */
-    opts->pos += find_symbol(&opts->ptr[opts->pos], firstchar) + 1;
+    opts->pos += pos;
 
     if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
     {
-        if (sscanf(&opts->ptr[opts->pos], "%c", &secondchar) != 1)
+        if (sscanf(&opts->ptr[opts->pos], "%c%n", &secondchar, &pos) != 1)
             return EOF;
 
-        opts->pos += find_symbol(&opts->ptr[opts->pos], secondchar) + 1;
+        opts->pos += pos;
 
         ret = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 |
             (secondchar & /*0b111111*/ 0x3F);
@@ -59,4 +61,15 @@ io_mem_getnext(universal_scanner_options *opts)
     return ret;
 }
 
-scanner_desc scanner_mem = { IO_SOURCE_MEM, io_mem_getnext };
+int
+io_mem_scanf(universal_scanner_options *opts, const char *fmt, va_list args)
+{
+    UNUSED(opts);
+    UNUSED(fmt);
+    UNUSED(args);
+
+    fprintf(stderr, "mem scanf not implemented\n");
+    exit(4);
+}
+
+scanner_desc scanner_mem = { IO_SOURCE_MEM, io_mem_getnext, io_mem_scanf };

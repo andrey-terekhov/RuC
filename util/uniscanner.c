@@ -19,8 +19,8 @@ scanner_init(universal_scanner_options *opts)
     opts->source = IO_SOURCE_FILE;
 }
 
-int
-scanner_getnext(universal_scanner_options *opts)
+static void
+scanner_prepare(universal_scanner_options *opts)
 {
     if (opts->opaque == NULL)
     {
@@ -38,9 +38,28 @@ scanner_getnext(universal_scanner_options *opts)
         opts->opaque = *tmp;
     }
 
+}
+int
+scanner_getnext(universal_scanner_options *opts)
+{
+    scanner_prepare(opts);
     return ((scanner_desc *)opts->opaque)->getnext(opts);
 }
 
+int
+scanner_scanf(universal_scanner_options *opts, const char *fmt, ...)
+{
+    int     ret;
+    va_list args;
+
+    va_start(fmt, args);
+
+    scanner_prepare(opts);
+    ret = ((scanner_desc *)opts->opaque)->scanf(opts, fmt, args);
+    va_end(args);
+
+    return ret;
+}
 
 /* See description in uniscanner.h */
 bool

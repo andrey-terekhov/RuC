@@ -26,12 +26,25 @@ typedef struct universal_scanner_options
  */
 typedef int (*io_getnext_t)(universal_scanner_options *opts);
 
+/**
+ * Prototype for a scanf-like function
+ *
+ * @param opts Scanner options
+ * @param fmt  Format string
+ * @param args List of arguments
+ *
+ * @return scanf()-like result
+ */
+typedef int (*io_scanf_t)(universal_scanner_options *opts, const char *fmt,
+                         va_list args);
+
 /** Scanner description */
 typedef struct scanner_desc
 {
     ruc_io_source source; /** Data source supported by scanner */
     io_getnext_t  getnext; /** The pointer to a function scanning the
                                input from the context */
+    io_scanf_t    scanf;    /** the pointer to a scanf-like function */
 } scanner_desc;
 
 /**
@@ -49,6 +62,15 @@ extern void scanner_init(universal_scanner_options *opts);
  * @return Read symbol
  */
 extern int scanner_getnext(universal_scanner_options *opts);
+
+/**
+ * scanf() for the uniscanner stream
+ *
+ * @param opts Scanner context
+ *
+ * @return scanf()-like return value
+ */
+extern int scanner_scanf(universal_scanner_options *opts, const char *fmt, ...);
 
 /**
  * Attach file to scanner
