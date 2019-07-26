@@ -7,9 +7,7 @@
 #include <stdlib.h>
 #include "global_vars.h"
 #include "error.h"
-#include "ext_decl.h"
-
-int curth = 0;
+#include "extdecl.h"
 
 void
 tocode(ruc_context *context, int c)

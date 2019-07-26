@@ -6,8 +6,7 @@
 
 #include "global_vars.h"
 #include "scanner.h"
-
-extern void m_error(ruc_context *context, int errnum);
+#include "error.h"
 
 int mletter(ruc_context *context, int r);
 int mdigit(ruc_context *context, int r);
