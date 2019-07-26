@@ -8,38 +8,39 @@
 #include "scanner.h"
 #include "error.h"
 
-int mletter(ruc_context *context, int r);
-int mdigit(ruc_context *context, int r);
-int mequal(ruc_context *context, int str[], int j);
+/* Forward declarations */
+static int mletter(ruc_context *context, int r);
+static int mdigit(ruc_context *context, int r);
+static int mequal(ruc_context *context, int str[], int j);
 
-void mend_line(ruc_context *context);
-void m_nextch(ruc_context *context, int i);
-void m_fprintf(ruc_context *context, int a);
+static void mend_line(ruc_context *context);
+static void m_nextch(ruc_context *context, int i);
+static void m_fprintf(ruc_context *context, int a);
 
-void to_macrotext(ruc_context *, char chang[], int oldrepr); //
-void macro_reprtab(ruc_context *, char chang[]);
-void from_macrotext(ruc_context *); // 5
-int  macro_keywords(ruc_context *); // 12
-void relis_define(ruc_context *); // 2
+static void to_macrotext(ruc_context *, char chang[], int oldrepr); //
+static void macro_reprtab(ruc_context *, char chang[]);
+static void from_macrotext(ruc_context *); // 5
+static int  macro_keywords(ruc_context *); // 12
+static void relis_define(ruc_context *); // 2
 
-void toreprtab_f(ruc_context *);
-void to_functionident(ruc_context *); // 4
-int  scob(ruc_context *, int cp); // 6
-void from_functionident(ruc_context *, int r);
-void create_change(ruc_context *, int r1); // 11
-void r_macrofunction(ruc_context *); // 3
+static void toreprtab_f(ruc_context *);
+static void to_functionident(ruc_context *); // 4
+static int  scob(ruc_context *, int cp); // 6
+static void from_functionident(ruc_context *, int r);
+static void create_change(ruc_context *, int r1); // 11
+static void r_macrofunction(ruc_context *); // 3
 
 // void m_ident();//5
-int find_ident(ruc_context *);
+static int find_ident(ruc_context *);
 
-int  check_if(ruc_context *, int type_if); // 10
-void end_line(ruc_context *); // 9
-void false_if(ruc_context *); // 8
-int  m_false(ruc_context *); // 7
-void m_true(ruc_context *, int type_if);
-void m_if(ruc_context *, int type_if);
+static int  check_if(ruc_context *, int type_if); // 10
+static void end_line(ruc_context *); // 9
+static void false_if(ruc_context *); // 8
+static int  m_false(ruc_context *); // 7
+static void m_true(ruc_context *, int type_if);
+static void m_if(ruc_context *, int type_if);
 
-void macroscan(ruc_context *context); // 1,17
+static void macroscan(ruc_context *context); // 1,17
 void preprocess_file(ruc_context *context); // 18
 
 void
@@ -93,7 +94,7 @@ show_macro(ruc_context *context)
     }
 }
 
-int
+static int
 mletter(ruc_context *context, int r)
 {
     UNUSED(context);
@@ -101,14 +102,14 @@ mletter(ruc_context *context, int r)
         (r >= 0x410 /*А */ && r <= 0x44F /*'я'*/);
 }
 
-int
+static int
 mdigit(ruc_context *context, int r)
 {
     UNUSED(context);
     return r >= '0' && r <= '9';
 }
 
-int
+static int
 mequal(ruc_context *context, int str[], int j)
 {
     int i = 0;
@@ -120,7 +121,7 @@ mequal(ruc_context *context, int str[], int j)
     return 0;
 }
 
-void
+static void
 mend_line(ruc_context *context)
 {
     int j;
@@ -143,7 +144,7 @@ mend_line(ruc_context *context)
     return;
 }
 
-void
+static void
 monemore(ruc_context *context)
 {
     if (context->flag_show_macro == 0)
@@ -165,7 +166,7 @@ monemore(ruc_context *context)
     }
 }
 
-void
+static void
 m_nextch(ruc_context *context, int i)
 {
     // printf(" i = %d curcar = %c curcar = %i\n", i, context->curchar,
@@ -237,7 +238,7 @@ m_nextch(ruc_context *context, int i)
     return;
 }
 
-void
+static void
 m_fprintf(ruc_context *context, int a)
 {
     if (a == '\n')
@@ -250,7 +251,7 @@ m_fprintf(ruc_context *context, int a)
     return;
 }
 
-void
+static void
 to_macrotext(ruc_context *context, char chang[], int oldrepr)
 {
     int i;
@@ -262,7 +263,7 @@ to_macrotext(ruc_context *context, char chang[], int oldrepr)
     context->macrotext[context->mp++] = 0;
 }
 
-void
+static void
 macro_reprtab(ruc_context *context, char chang[])
 {
     int oldrepr = context->rp;
@@ -293,7 +294,7 @@ macro_reprtab(ruc_context *context, char chang[])
     context->hashtab[context->hash] = oldrepr;
 }
 
-void
+static void
 from_macrotext(ruc_context *context)
 {
     int r;
@@ -328,7 +329,7 @@ from_macrotext(ruc_context *context)
     return;
 }
 
-int
+static int
 macro_keywords(ruc_context *context)
 {
     int oldrepr = context->rp;
@@ -375,7 +376,7 @@ macro_keywords(ruc_context *context)
     return 0;
 }
 
-void
+static void
 relis_define(ruc_context *context)
 {
 
@@ -429,7 +430,7 @@ relis_define(ruc_context *context)
     }
 }
 
-void
+static void
 toreprtab_f(ruc_context *context)
 {
     int i;
@@ -453,7 +454,7 @@ toreprtab_f(ruc_context *context)
     context->hashtab[context->hash] = oldrepr;
 }
 
-void
+static void
 to_functionident(ruc_context *context)
 {
     while (context->curchar != ')')
@@ -497,7 +498,7 @@ to_functionident(ruc_context *context)
     return;
 }
 
-void
+static void
 from_functionident(ruc_context *context, int r)
 {
     int i, kp, cp;
@@ -560,7 +561,7 @@ from_functionident(ruc_context *context, int r)
     }
 }
 
-int
+static int
 scob(ruc_context *context, int cp)
 {
     int i;
@@ -596,7 +597,7 @@ scob(ruc_context *context, int cp)
     return cp;
 }
 
-void
+static void
 create_change(ruc_context *context, int r1)
 {
     int i;
@@ -670,7 +671,7 @@ create_change(ruc_context *context, int r1)
     }
 }
 
-void
+static void
 r_macrofunction(ruc_context *context)
 {
     int j;
@@ -723,7 +724,7 @@ r_macrofunction(ruc_context *context)
     return;
 }*/
 
-int
+static int
 find_ident(ruc_context *context)
 {
     int fpr = context->rp;
@@ -750,7 +751,7 @@ find_ident(ruc_context *context)
     return 0;
 }
 
-int
+static int
 check_if(ruc_context *context, int type_if)
 {
 
@@ -784,7 +785,7 @@ check_if(ruc_context *context, int type_if)
     return 0;
 }
 
-void
+static void
 end_line(ruc_context *context)
 {
     while (context->curchar != '\n')
@@ -801,7 +802,7 @@ end_line(ruc_context *context)
     m_nextch(context, 9);
 }
 
-void
+static void
 false_if(ruc_context *context)
 {
     int fl_cur;
@@ -833,7 +834,7 @@ false_if(ruc_context *context)
     m_error(context, must_be_endif);
 }
 
-int
+static int
 m_false(ruc_context *context)
 {
     int fl_cur = context->cur;
@@ -860,7 +861,7 @@ m_false(ruc_context *context)
     return 1;
 }
 
-void
+static void
 m_true(ruc_context *context, int type_if)
 {
     while (context->curchar != EOF)
@@ -890,7 +891,7 @@ m_true(ruc_context *context, int type_if)
     return;
 }
 
-void
+static void
 m_if(ruc_context *context, int type_if)
 {
     context->checkif++;
@@ -947,7 +948,7 @@ m_if(ruc_context *context, int type_if)
     }
 }
 
-void
+static void
 macroscan(ruc_context *context)
 {
     int j;
@@ -1035,7 +1036,6 @@ macroscan(ruc_context *context)
             }
     }
 }
-
 
 void
 preprocess_file(ruc_context *context)
