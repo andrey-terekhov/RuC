@@ -124,7 +124,7 @@ main(int argc, const char *argv[])
     ruc_context_attach_io(&context, ":stderr", IO_TYPE_ERROR, IO_SOURCE_FILE);
     ruc_context_attach_io(&context, ":stdout", IO_TYPE_MISC, IO_SOURCE_FILE);
 
-    read_keywords(&context, "keywords.txt");
+    read_keywords(&context);
 
     init_modetab(&context);
 

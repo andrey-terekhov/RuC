@@ -2,12 +2,11 @@
 #define RUC_FRONTEND_UTILS_H
 
 /**
- * Read keywords file specified by @p path
+ * Read keywords from input context
  *
  * @param context   RuC context
- * @param path      Target file path
  */
-void read_keywords(ruc_context *context, const char *path);
+void read_keywords(ruc_context *context);
 
 /**
  * Print tables and tree to a file specified by @p path

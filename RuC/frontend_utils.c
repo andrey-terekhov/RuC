@@ -28,7 +28,7 @@ make_executable(const char *path)
 
 /* Занесение ключевых слов в reprtab */
 void
-read_keywords(ruc_context *context, const char *path)
+read_keywords(ruc_context *context)
 {
     char *keywords = malloc(keywords_txt_len + 1);
     if (keywords == NULL)
