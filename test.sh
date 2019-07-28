@@ -1,6 +1,6 @@
 #!/bin/bash
 set -ueo pipefail
-test_dir=$PWD/tests
+test_dir=tests
 full_out=${1:-}
 
 output_time=0.1
@@ -15,7 +15,7 @@ RUC=./ruc
 
 function internal_timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }
 [[ -e "$RUC" ]]
-for code in "${test_dir}"/*.c "${test_dir}"/*/*.c "${test_dir}"/*/*/*.c
+for code in $(find "${test_dir}" -name "*.c")
 do
     RC=0
     internal_timeout $wait_for ${RUC} "$code" &>out.txt || RC=$?
