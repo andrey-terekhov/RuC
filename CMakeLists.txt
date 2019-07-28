@@ -17,6 +17,7 @@ add_subdirectory(RuCVM)
 add_subdirectory(util)
 
 if(FLTK_IMPORTED)
+set(OPTION_BUILD_EXAMPLES OFF)
 add_subdirectory(thirdparty/fltk)
 endif()
 
