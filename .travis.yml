@@ -10,6 +10,7 @@ addons:
     packages:
     - ninja-build
     - shellcheck
+    - build-essential
   homebrew:
     update: true
     packages:
