@@ -83,7 +83,7 @@ scanner_scanf(universal_scanner_options *opts, const char *fmt, ...)
     int     ret;
     va_list args;
 
-    va_start(fmt, args);
+    va_start(args, fmt);
 
     scanner_prepare(opts);
     ret = ((scanner_desc *)opts->opaque)->scanf(opts, fmt, args);
