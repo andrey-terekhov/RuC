@@ -6,8 +6,7 @@ Yet another compiler from Russian version of C into virtual machine.
 ## Building
 After you download the repository, you might need to initialize submodules (fltk):
 ```
-$ git submodule init
-$ git submodule update
+$ git submodule update --init
 ```
 
 In order to build the RuC compiler you need CMake (at least 3.0.0). CMake is a tool that can generate Makefiles as well as IDE projects (MSVS solutions, CLion and Xcode projects), regardless of the platform or the compiler.
@@ -18,7 +17,7 @@ CMake can be installed via [Homebrew](http://brew.sh) on macOS:
 $ brew install cmake
 ```
 
-And via apt on Linux:
+And via apt on Debian based (Ubuntu, Mint, ElementaryOS, …) GNU/Linux:
 
 ```
 $ sudo apt-get -y install cmake
@@ -34,7 +33,7 @@ $ cd Build
 $ cmake ..
 ```
 
-This will generate a Makefike, so you can use the standard routine:
+This will generate a Makefile, so you can use the standard routine:
 
 ```
 $ make
@@ -53,7 +52,7 @@ where `<generator>` is the name of the generator to use. To see the list of the 
 $ cmake --help
 ```
 
-For example, to generate an Xcode project on macOS, use this command:
+For example, to generate an Xcode project on macOS:
 
 ```
 $ cmake .. -G Xcode
