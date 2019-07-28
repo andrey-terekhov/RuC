@@ -1,6 +1,7 @@
 notifications:
   email: false
-language: minimal
+language: c
+cache: ccache
 
 git:
   depth: 1
@@ -11,20 +12,26 @@ addons:
     - ninja-build
     - shellcheck
     - build-essential
-  homebrew:
-    update: true
-    packages:
-    - cmake
-    - ninja
+# This feature is broken, requires `update: true`, which takes too long (6 minutes)
+#  homebrew:
+#    update: true
+#    packages:
+#    - cmake
+#    - ninja
+#    - ccache
 matrix:
   include:
     - name: "Running tests on macOS"
       os: osx
-      language: c
       # Beacause of https://stackoverflow.com/questions/50024731/ld-unrecognized-option-push-state-no-as-needed
       # we don't enable sanitizers on gcc
     - name: "Running tests on GNU/Linux (Ubuntu)"
       os: linux
+
+install:
+  - export PATH="/usr/local/opt/ccache/libexec:$PATH"
+    # use old-school `brew install` until addons feature is fixed
+  - if [[ $TRAVIS_OS_NAME == osx ]] ; then brew install cmake ninja ccache ; fi
 
 script:
   - 'if shellcheck --version &> /dev/null ; then shellcheck -S style ./test.sh ; fi'
