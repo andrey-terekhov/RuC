@@ -15,7 +15,7 @@ RUC=./ruc
 
 function internal_timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }
 [[ -e "$RUC" ]]
-for code in $(find "${test_dir}" -name "*.c")
+while read -r code
 do
     RC=0
     internal_timeout $wait_for ${RUC} "$code" &>out.txt || RC=$?
@@ -46,8 +46,7 @@ do
 	    (( ++fail ))
             ;;
 esac
-done
-
+done < <(find "${test_dir}" -name "*.c")
 rm -f out.txt
 
 if [[ -n $full_out ]] ; then

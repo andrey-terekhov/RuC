@@ -36,7 +36,7 @@ install:
 script:
   - 'if shellcheck --version &> /dev/null ; then shellcheck -S style ./test.sh ; fi'
   - mkdir -p build
-  - ( pushd build && cmake -G Ninja -DFLTK_IMPORTED=ON .. )
+  - ( pushd build && cmake -G Ninja -DFLTK_IMPORTED=ON -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -pthread" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" -DCMAKE_MODULE_LINKER_FLAGS="-fsanitize=address,undefined" --verbose .. )
   - ninja -C build all
   - ninja -C build test || true
   - ./test.sh -out
