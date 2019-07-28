@@ -31,7 +31,7 @@ file(GLOB TEST_INPUTS "${TEST_INPUTS_DIR}/*.c"
 
 foreach(TEST_INPUT ${TEST_INPUTS})
     add_test(NAME ${TEST_INPUT}
-             COMMAND "./ruc" ${TEST_INPUT}
+             COMMAND env ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 ./ruc ${TEST_INPUT}
              WORKING_DIRECTORY "${RUC_BINARY_DIR}")
     set_tests_properties(${TEST_INPUT} PROPERTIES TIMEOUT ${TEST_TIMEOUT})
 endforeach(TEST_INPUT)
