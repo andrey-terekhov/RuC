@@ -46,6 +46,20 @@ typedef struct printer_desc
 extern void printer_init(universal_printer_options *opts);
 
 /**
+ * Deinitialize printer
+ *
+ * @param opts Printer context
+ */
+extern void printer_deinit(universal_printer_options *opts);
+
+/**
+ * Close current printer stream
+ *
+ * @param opts Printer context
+ */
+extern void printer_close(universal_printer_options *opts);
+
+/**
  * Universal function for printing data to some output
  *
  * @param opts Universal printer options

@@ -7,6 +7,7 @@
 
 #define DEFAULT_OUTBUF_SIZE (1024)
 
+/* See description in context.h */
 void
 compiler_context_init(compiler_context *context)
 {
@@ -42,6 +43,16 @@ compiler_context_init(compiler_context *context)
     context->mp = 3;
 }
 
+/* See description in context.h */
+void
+compiler_context_deinit(compiler_context *context)
+{
+    scanner_deinit(&context->input_options);
+    printer_deinit(&context->output_options);
+    printer_deinit(&context->err_options);
+    printer_deinit(&context->miscout_options);
+}
+
 /** Is I/O an actual output? */
 static bool
 io_type_is_output(ruc_io_type type)
@@ -69,25 +80,6 @@ io_type2opts(compiler_context *context, ruc_io_type type)
             return &context->err_options;
         case IO_TYPE_MISC:
             return &context->miscout_options;
-        default:
-            return NULL;
-    }
-}
-
-/**
- * Get FILE for a specific IO type
- */
-static FILE **
-io_type2file(compiler_context *context, ruc_io_type type)
-{
-    switch (type)
-    {
-        case IO_TYPE_INPUT:
-            return &context->input_options.input;
-        case IO_TYPE_OUTPUT:
-            return &context->output_options.output;
-        case IO_TYPE_ERROR:
-            return &context->err_options.output;
         default:
             return NULL;
     }
@@ -161,18 +153,14 @@ compiler_context_attach_io(compiler_context *context,
 void
 compiler_context_detach_io(compiler_context *context, ruc_io_type type)
 {
-    if (type == IO_TYPE_OUTPUT ||
-        context->input_options.source == IO_SOURCE_FILE)
-    {
-        FILE **f = io_type2file(context, type);
+    void *opts = io_type2opts(context, type);
 
-        if (*f != NULL)
-            fclose(*f);
-        *f = NULL;
+    if (io_type_is_output(type))
+    {
+        printer_close(opts);
     }
     else
     {
-        context->input_options.ptr = NULL;
-        context->input_options.pos = -1;
+        scanner_close(opts);
     }
 }

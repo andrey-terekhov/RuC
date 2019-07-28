@@ -66,4 +66,11 @@ typedef struct vm_context
  */
 extern void vm_context_init(vm_context *context);
 
+/**
+ * Deinitialize RuC VM context
+ *
+ * @param context Initialized RuC context
+ */
+extern void vm_context_deinit(vm_context *context);
+
 #endif

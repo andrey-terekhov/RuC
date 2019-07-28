@@ -49,7 +49,6 @@ read_keywords(compiler_context *context)
     }
 
     compiler_context_detach_io(context, IO_TYPE_INPUT);
-    free(keywords);
 }
 
 /* Вывод таблиц и дерева */

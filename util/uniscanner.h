@@ -56,6 +56,20 @@ typedef struct scanner_desc
 extern void scanner_init(universal_scanner_options *opts);
 
 /**
+ * Deinitialize scanner
+ *
+ * @param opts Scanner context
+ */
+extern void scanner_deinit(universal_scanner_options *opts);
+
+/**
+ * Close current scanner context
+ *
+ * @param opts Scanner context
+ */
+extern void scanner_close(universal_scanner_options *opts);
+
+/**
  * Get a next symbol from input stream
  *
  * @param opts Scanner context

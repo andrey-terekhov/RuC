@@ -21,6 +21,31 @@ printer_init(universal_printer_options *opts)
 }
 
 /* See description in uniprinter.h */
+void
+printer_deinit(universal_printer_options *opts)
+{
+    printer_close(opts);
+}
+
+/* See description in uniprinter.h */
+void
+printer_close(universal_printer_options *opts)
+{
+    if (opts->output != NULL)
+    {
+        fclose(opts->output);
+        opts->output = NULL;
+    }
+
+    free(opts->ptr);
+    opts->ptr = NULL;
+
+    opts->pos = 0;
+    opts->size = 0;
+    opts->opaque = NULL;
+}
+
+/* See description in uniprinter.h */
 int
 printer_printf(universal_printer_options *opts, const char *fmt, ...)
 {

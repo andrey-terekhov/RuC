@@ -2079,5 +2079,7 @@ main(int argc, const char *argv[])
     printer_attach_file(&context.error_options, stderr);
     printer_attach_file(&context.miscout_options, stderr);
     process_user_requests(&context, argc, argv);
+
+    vm_context_deinit(&context);
     return 0;
 }

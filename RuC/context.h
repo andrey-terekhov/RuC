@@ -149,6 +149,13 @@ typedef struct compiler_context
 extern void compiler_context_init(compiler_context *context);
 
 /**
+ * Deinitialize RuC ontext
+ *
+ * @param context Initialized RuC context
+ */
+extern void compiler_context_deinit(compiler_context *context);
+
+/**
  * Attach input to a specific input/output pipe
  *
  * @param context   RuC context

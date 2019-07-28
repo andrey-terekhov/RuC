@@ -6,6 +6,7 @@
 #include <wchar.h>
 #include "uniprinter.h"
 
+/* See descriptino in context.h */
 void
 vm_context_init(vm_context *context)
 {
@@ -16,4 +17,14 @@ vm_context_init(vm_context *context)
     printer_init(&context->error_options);
     printer_init(&context->miscout_options);
     context->__countTh = 1;
+}
+
+/* See descriptino in context.h */
+void
+vm_context_deinit(vm_context *context)
+{
+    scanner_deinit(&context->input_options);
+    printer_deinit(&context->output_options);
+    printer_deinit(&context->error_options);
+    printer_deinit(&context->miscout_options);
 }

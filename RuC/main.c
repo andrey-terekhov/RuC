@@ -84,7 +84,14 @@ process_user_requests(compiler_context *context, int argc, const char *argv[])
             printf("\nИсходный текст:\n \n");
 
             preprocess_file(context); //   макрогенерация
-            macro_processed = context->output_options.ptr;
+            macro_processed = strdup(context->output_options.ptr);
+            if (macro_processed == NULL)
+            {
+                fprintf(stderr,
+                        " ошибка выделения памяти для "
+                        "макрогенератора\n");
+                exit(1);
+            }
 
             compiler_context_detach_io(context, IO_TYPE_OUTPUT);
             compiler_context_detach_io(context, IO_TYPE_INPUT);
@@ -95,7 +102,6 @@ process_user_requests(compiler_context *context, int argc, const char *argv[])
             output_codes(context, codes_path);
             compiler_context_detach_io(context, IO_TYPE_INPUT);
 
-            free(macro_processed);
             /* Will be left for debugging in case of failure */
 #ifndef FILE_DEBUG
             unlink(tree_path);
@@ -132,5 +138,7 @@ main(int argc, const char *argv[])
     init_modetab(&context);
 
     process_user_requests(&context, argc, argv);
+
+    compiler_context_deinit(&context);
     return 0;
 }
