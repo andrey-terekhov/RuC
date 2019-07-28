@@ -1,6 +1,6 @@
 #!/bin/bash
 set -ueo pipefail
-test_dir=tests
+test_dir=$PWD/tests
 full_out=${1:-}
 
 output_time=0.1
