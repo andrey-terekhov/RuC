@@ -25,7 +25,7 @@ add_subdirectory(util)
 
 
 if(FLTK_IMPORTED)
-add_subdirectory(thirdparty/fltk)
+include(thirdparty/fltk.cmake)
 endif()
 
 # add UI
