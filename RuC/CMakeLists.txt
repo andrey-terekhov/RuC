@@ -25,3 +25,7 @@ set_target_properties(ruc
     RUNTIME_OUTPUT_DIRECTORY "${RUC_BINARY_DIR}"
 )
 
+if(ANALYSIS_ENABLED)
+    target_compile_definitions(ruc PRIVATE ANALYSIS_ENABLED)
+    target_link_libraries(ruc aspsimple)
+endif()
