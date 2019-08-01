@@ -143,20 +143,27 @@ process_user_requests(compiler_context *context, int argc, const char *argv[])
 int
 main(int argc, const char *argv[])
 {
-    compiler_context context;
+    compiler_context *context = malloc(sizeof(compiler_context));
 
-    compiler_context_init(&context);
-    compiler_context_attach_io(&context, ":stderr", IO_TYPE_ERROR,
+    if (context == NULL)
+    {
+        fprintf(stderr, " ошибка выделения памяти под контекст\n");
+        exit(1);
+    }
+
+    compiler_context_init(context);
+    compiler_context_attach_io(context, ":stderr", IO_TYPE_ERROR,
                                IO_SOURCE_FILE);
-    compiler_context_attach_io(&context, ":stdout", IO_TYPE_MISC,
+    compiler_context_attach_io(context, ":stdout", IO_TYPE_MISC,
                                IO_SOURCE_FILE);
 
-    read_keywords(&context);
+    read_keywords(context);
 
-    init_modetab(&context);
+    init_modetab(context);
 
-    process_user_requests(&context, argc, argv);
+    process_user_requests(context, argc, argv);
 
-    compiler_context_deinit(&context);
+    compiler_context_deinit(context);
+    free(context);
     return 0;
 }
