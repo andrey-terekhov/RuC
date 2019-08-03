@@ -6,12 +6,13 @@
 
 #include "global_vars.h"
 
+#define STRIGSIZE 70
 
 int macrotext [MAXREPRTAB];
-int mstring[50];
+int mstring[STRIGSIZE];
 int macrofunction [MAXREPRTAB];
 int functionident [MAXREPRTAB];
-int fchange [50]; 
+int fchange [STRIGSIZE]; 
 int fip = 1;
 int mfp = 1;
 int mfirstrp = -1; // начало и конец макрослов в reprtab
@@ -70,7 +71,7 @@ void preprocess_file();//18
 void show_macro()
 {
     int i1 = lines[line];
-    int str1[50];
+    int str1[STRIGSIZE];
     int j = 0;
     int k;
     int flag = 1;
@@ -90,7 +91,7 @@ void show_macro()
         {
             flag = 0;
             curchar = before_source[arg];
-            from_macrotext();
+            from_macrotext()
 
             i1 += msp;
         }
@@ -257,7 +258,7 @@ void m_fprintf(int a)
     return;
 }
 
-void to_macrotext(char chang[], int oldrepr)
+void to_macrotext(int chang[], int oldrepr)
 {
     int i;
     macrotext[mp++] = oldrepr;
@@ -268,7 +269,7 @@ void to_macrotext(char chang[], int oldrepr)
     macrotext[mp++] = 0;
 }
 
-void macro_reprtab(char chang [])
+void macro_reprtab(int chang [])
 {
     int oldrepr = rp;
     int r,i;
@@ -410,7 +411,7 @@ void relis_define()
         {
             int i = 0;
             m_nextch(2);
-            char chang [30] = {"\0"};
+            int chang [STRIGSIZE];
             while(curchar != '\n')
             {
                 chang[i++] = curchar;
@@ -419,7 +420,14 @@ void relis_define()
                 {
                     m_error(not_end_fail_preprocess);
                 }
+
+                if (curchar == '\\')
+                {
+                    m_nextch(2);
+                    end_line()
+                }
             }
+            chang[i++] = 0;
             macro_reprtab(chang);
             return;
         }
@@ -498,7 +506,7 @@ void from_functionident(int r)
 {
     int i,kp,cp;
     int r1 = r + 2;
-    int str[30];
+    int str[STRIGSIZE];
 
     for(; reprtab[r1] !=  0; r1++);
     r1++;
@@ -514,7 +522,7 @@ void from_functionident(int r)
         if(mletter(macrofunction[newfi]))
         {
             flag = 1;
-            for ( i = 0; i < 30; i++)
+            for ( i = 0; i < STRIGSIZE; i++)
             {
                 str[i] = 0;
             }
@@ -695,6 +703,13 @@ void r_macrofunction()
         {
             m_error(not_end_fail_preprocess);
         }
+
+        if (curchar == '\\')
+        {
+            m_nextch(2);
+            end_line()
+        }
+        
 
     }
     macrofunction [mfp++] = '\n';
@@ -891,7 +906,7 @@ void m_if(int type_if)
         cur = m_false();
     }
 
-    /*if (type_if == SH_IF) // середина (else if)
+    /*if (type_if == SH_IF) // 
     {
         while (cur == SH_ELIF)
         {
@@ -915,7 +930,7 @@ void m_if(int type_if)
         exit (10);
     }*/
 
-    if (cur == SH_ELSE)// конец (else)
+    if (cur == SH_ELSE)// 
     {
         cur = 0;
         m_true(type_if);
@@ -943,7 +958,6 @@ void macroscan()
         case '#':
             cur = macro_keywords ();
             prep_flag = 1;
-            printf("flag");
             if(cur == SH_DEFINE )
             {
                 relis_define();
@@ -970,37 +984,37 @@ void macroscan()
 
         case '\'':
                 m_fprintf(curchar);
-                m_nextch(171);
+                m_nextch(17);
                 if(curchar == '\\')
                 {
                     m_fprintf(curchar);
-                    m_nextch(171); 
+                    m_nextch(17); 
                 }
                 m_fprintf(curchar);
-                m_nextch(171);
+                m_nextch(17);
                 
                 m_fprintf(curchar);
-                m_nextch(171);
+                m_nextch(17);
                 return;
 
         case '\"':
                 m_fprintf(curchar);
-                m_nextch(172);
+                m_nextch(17);
             while(curchar != '\"' && curchar != EOF)
             {
                 if(curchar == '\\')
                 {
                     m_fprintf(curchar);
-                    m_nextch(172);  
+                    m_nextch(17);  
                 }
                 m_fprintf(curchar);
-                m_nextch(172);
+                m_nextch(17);
             }
             m_fprintf(curchar);
-            m_nextch(172);
+            m_nextch(17);
             return;
         default:
-            if(letter())
+            if(letter() && prep_flag == 1)
             {
                 from_macrotext();
                 for ( j = 0; j < msp; j++)
@@ -1012,7 +1026,7 @@ void macroscan()
             else
             {
                 m_fprintf(curchar);
-                m_nextch(173);
+                m_nextch(17);
                 return;
             }
 
