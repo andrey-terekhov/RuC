@@ -7,49 +7,67 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		ED9101961FAA0CF60089A8A4 /* keywords.txt in CopyFiles */ = {isa = PBXBuildFile; fileRef = ED9101951FAA0CF50089A8A4 /* keywords.txt */; };
+		ED6E61412216F32E00363321 /* threads.c in Sources */ = {isa = PBXBuildFile; fileRef = ED6E61332216F1FA00363321 /* threads.c */; };
+		ED6E61422216F32E00363321 /* import.c in Sources */ = {isa = PBXBuildFile; fileRef = ED6E61322216F1FA00363321 /* import.c */; };
+		ED6E61472216F51C00363321 /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = ED6E61452216F51C00363321 /* util.c */; };
+		ED6E61482216F51C00363321 /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = ED6E61452216F51C00363321 /* util.c */; };
 		EDC2DE3921357B1C0056585C /* preprocess.c in Sources */ = {isa = PBXBuildFile; fileRef = EDC2DE3821357B1C0056585C /* preprocess.c */; };
 		EDCB458B1DDF4B9C0030AE24 /* codes.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45821DDF4B9C0030AE24 /* codes.c */; };
 		EDCB458C1DDF4B9C0030AE24 /* error.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45841DDF4B9C0030AE24 /* error.c */; };
 		EDCB458D1DDF4B9C0030AE24 /* extdecl.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45851DDF4B9C0030AE24 /* extdecl.c */; };
 		EDCB458F1DDF4B9C0030AE24 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45881DDF4B9C0030AE24 /* main.c */; };
 		EDCB45901DDF4B9C0030AE24 /* scaner.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45891DDF4B9C0030AE24 /* scaner.c */; };
-		EDE8849E1F3C8CDE00DAE9F0 /* threads.c in Sources */ = {isa = PBXBuildFile; fileRef = EDE8849D1F3C8CDE00DAE9F0 /* threads.c */; };
-		EDF614F72212D19B00A75753 /* import.c in Sources */ = {isa = PBXBuildFile; fileRef = EDF614F52212D19A00A75753 /* import.c */; };
 		EDF614F82212D19B00A75753 /* codegen.c in Sources */ = {isa = PBXBuildFile; fileRef = EDF614F62212D19B00A75753 /* codegen.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		ED6E61382216F2BD00363321 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 		EDCB45751DDF4ACF0030AE24 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 12;
 			dstPath = "";
 			dstSubfolderSpec = 16;
 			files = (
-				ED9101961FAA0CF60089A8A4 /* keywords.txt in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		ED9101951FAA0CF50089A8A4 /* keywords.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = keywords.txt; sourceTree = "<group>"; };
+		ED6E61312216F1FA00363321 /* th_static.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = th_static.h; path = RuCVM/th_static.h; sourceTree = SOURCE_ROOT; };
+		ED6E61322216F1FA00363321 /* import.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = import.c; path = RuCVM/import.c; sourceTree = SOURCE_ROOT; };
+		ED6E61332216F1FA00363321 /* threads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = threads.c; path = RuCVM/threads.c; sourceTree = SOURCE_ROOT; };
+		ED6E613A2216F2BD00363321 /* rucvm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = rucvm; sourceTree = BUILT_PRODUCTS_DIR; };
+		ED6E61442216F51C00363321 /* Defs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Defs.h; path = util/Defs.h; sourceTree = SOURCE_ROOT; };
+		ED6E61452216F51C00363321 /* util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = util.c; path = util/util.c; sourceTree = SOURCE_ROOT; };
+		ED6E61462216F51C00363321 /* util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = util.h; path = util/util.h; sourceTree = SOURCE_ROOT; };
 		EDC2DE3821357B1C0056585C /* preprocess.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = preprocess.c; sourceTree = "<group>"; };
-		EDCB45771DDF4ACF0030AE24 /* RuC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RuC; sourceTree = BUILT_PRODUCTS_DIR; };
+		EDCB45771DDF4ACF0030AE24 /* ruc */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ruc; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDCB45821DDF4B9C0030AE24 /* codes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = codes.c; sourceTree = "<group>"; };
-		EDCB45831DDF4B9C0030AE24 /* Defs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Defs.h; sourceTree = "<group>"; };
 		EDCB45841DDF4B9C0030AE24 /* error.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = error.c; sourceTree = "<group>"; };
 		EDCB45851DDF4B9C0030AE24 /* extdecl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = extdecl.c; sourceTree = "<group>"; };
 		EDCB45861DDF4B9C0030AE24 /* global_vars.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = global_vars.h; sourceTree = "<group>"; };
 		EDCB45881DDF4B9C0030AE24 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		EDCB45891DDF4B9C0030AE24 /* scaner.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = scaner.c; sourceTree = "<group>"; };
-		EDE8849D1F3C8CDE00DAE9F0 /* threads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = threads.c; sourceTree = "<group>"; };
-		EDE8849F1F499DA300DAE9F0 /* th_static.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = th_static.h; sourceTree = "<group>"; };
-		EDF614F52212D19A00A75753 /* import.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = import.c; sourceTree = "<group>"; };
 		EDF614F62212D19B00A75753 /* codegen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = codegen.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		ED6E61372216F2BD00363321 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EDCB45741DDF4ACF0030AE24 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -60,11 +78,32 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		ED6E612A2216EC4100363321 /* util */ = {
+			isa = PBXGroup;
+			children = (
+				ED6E61442216F51C00363321 /* Defs.h */,
+				ED6E61452216F51C00363321 /* util.c */,
+				ED6E61462216F51C00363321 /* util.h */,
+			);
+			path = util;
+			sourceTree = "<group>";
+		};
+		ED6E613B2216F2BE00363321 /* RuCVM */ = {
+			isa = PBXGroup;
+			children = (
+				ED6E61322216F1FA00363321 /* import.c */,
+				ED6E61312216F1FA00363321 /* th_static.h */,
+				ED6E61332216F1FA00363321 /* threads.c */,
+			);
+			path = RuCVM;
+			sourceTree = "<group>";
+		};
 		EDCB456E1DDF4ACF0030AE24 = {
 			isa = PBXGroup;
 			children = (
-				ED9101951FAA0CF50089A8A4 /* keywords.txt */,
+				ED6E612A2216EC4100363321 /* util */,
 				EDCB45791DDF4ACF0030AE24 /* RuC */,
+				ED6E613B2216F2BE00363321 /* RuCVM */,
 				EDCB45781DDF4ACF0030AE24 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -72,7 +111,8 @@
 		EDCB45781DDF4ACF0030AE24 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				EDCB45771DDF4ACF0030AE24 /* RuC */,
+				EDCB45771DDF4ACF0030AE24 /* ruc */,
+				ED6E613A2216F2BD00363321 /* rucvm */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -81,16 +121,12 @@
 			isa = PBXGroup;
 			children = (
 				EDF614F62212D19B00A75753 /* codegen.c */,
-				EDF614F52212D19A00A75753 /* import.c */,
 				EDC2DE3821357B1C0056585C /* preprocess.c */,
-				EDE8849F1F499DA300DAE9F0 /* th_static.h */,
 				EDCB45821DDF4B9C0030AE24 /* codes.c */,
-				EDCB45831DDF4B9C0030AE24 /* Defs.h */,
 				EDCB45891DDF4B9C0030AE24 /* scaner.c */,
 				EDCB45841DDF4B9C0030AE24 /* error.c */,
 				EDCB45861DDF4B9C0030AE24 /* global_vars.h */,
 				EDCB45851DDF4B9C0030AE24 /* extdecl.c */,
-				EDE8849D1F3C8CDE00DAE9F0 /* threads.c */,
 				EDCB45881DDF4B9C0030AE24 /* main.c */,
 			);
 			path = RuC;
@@ -99,6 +135,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		ED6E61392216F2BD00363321 /* RuCVM */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ED6E613E2216F2BE00363321 /* Build configuration list for PBXNativeTarget "RuCVM" */;
+			buildPhases = (
+				ED6E61362216F2BD00363321 /* Sources */,
+				ED6E61372216F2BD00363321 /* Frameworks */,
+				ED6E61382216F2BD00363321 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RuCVM;
+			productName = RuCVM;
+			productReference = ED6E613A2216F2BD00363321 /* rucvm */;
+			productType = "com.apple.product-type.tool";
+		};
 		EDCB45761DDF4ACF0030AE24 /* RuC */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = EDCB457E1DDF4ACF0030AE24 /* Build configuration list for PBXNativeTarget "RuC" */;
@@ -113,7 +166,7 @@
 			);
 			name = RuC;
 			productName = RuC;
-			productReference = EDCB45771DDF4ACF0030AE24 /* RuC */;
+			productReference = EDCB45771DDF4ACF0030AE24 /* ruc */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -125,6 +178,10 @@
 				LastUpgradeCheck = 0810;
 				ORGANIZATIONNAME = "SE chair";
 				TargetAttributes = {
+					ED6E61392216F2BD00363321 = {
+						CreatedOnToolsVersion = 10.1;
+						ProvisioningStyle = Automatic;
+					};
 					EDCB45761DDF4ACF0030AE24 = {
 						CreatedOnToolsVersion = 8.1;
 						ProvisioningStyle = Automatic;
@@ -144,23 +201,33 @@
 			projectRoot = "";
 			targets = (
 				EDCB45761DDF4ACF0030AE24 /* RuC */,
+				ED6E61392216F2BD00363321 /* RuCVM */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
+		ED6E61362216F2BD00363321 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ED6E61422216F32E00363321 /* import.c in Sources */,
+				ED6E61412216F32E00363321 /* threads.c in Sources */,
+				ED6E61482216F51C00363321 /* util.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EDCB45731DDF4ACF0030AE24 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				EDCB458C1DDF4B9C0030AE24 /* error.c in Sources */,
 				EDCB458B1DDF4B9C0030AE24 /* codes.c in Sources */,
-				EDF614F72212D19B00A75753 /* import.c in Sources */,
 				EDCB458F1DDF4B9C0030AE24 /* main.c in Sources */,
 				EDCB45901DDF4B9C0030AE24 /* scaner.c in Sources */,
 				EDC2DE3921357B1C0056585C /* preprocess.c in Sources */,
+				ED6E61472216F51C00363321 /* util.c in Sources */,
 				EDCB458D1DDF4B9C0030AE24 /* extdecl.c in Sources */,
-				EDE8849E1F3C8CDE00DAE9F0 /* threads.c in Sources */,
 				EDF614F82212D19B00A75753 /* codegen.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -168,6 +235,55 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		ED6E613F2216F2BE00363321 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = rucvm;
+			};
+			name = Debug;
+		};
+		ED6E61402216F2BE00363321 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = rucvm;
+			};
+			name = Release;
+		};
 		EDCB457C1DDF4ACF0030AE24 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -190,6 +306,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "-";
+				CONFIGURATION_BUILD_DIR = "$(SRCROOT)/bin";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -208,6 +325,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INCLUDED_SOURCE_FILE_NAMES = "";
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -249,6 +367,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INCLUDED_SOURCE_FILE_NAMES = "";
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
@@ -259,8 +378,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GCC_NO_COMMON_BLOCKS = NO;
+				INCLUDED_SOURCE_FILE_NAMES = "";
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = ruc;
 			};
 			name = Debug;
 		};
@@ -268,14 +388,24 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GCC_NO_COMMON_BLOCKS = NO;
+				INCLUDED_SOURCE_FILE_NAMES = "";
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = ruc;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		ED6E613E2216F2BE00363321 /* Build configuration list for PBXNativeTarget "RuCVM" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ED6E613F2216F2BE00363321 /* Debug */,
+				ED6E61402216F2BE00363321 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		EDCB45721DDF4ACF0030AE24 /* Build configuration list for PBXProject "RuC" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

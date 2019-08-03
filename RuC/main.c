@@ -8,8 +8,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-"../../../tests/test10.c";
-
+//"tests/Egor/string.c";
+//"tests/Fadeev/thread_i2c.c";
+"tests/test.c";
 //"../../../tests/mips/0test.c";
 
 #include <stdio.h>
@@ -43,6 +44,7 @@ int predef[FUNCSIZE], prdf = -1, emptyarrdef;
 int gotost[1000], pgotost;
 int anst, anstdispl, ansttype, leftansttype = -1;         // anst = VAL  - значение на стеке
 int g, l, x, iniproc;                                     // anst = ADDR - на стеке адрес значения
+                                                          // anst = NUMBER - ответ является константой
                                                           // anst = IDENT- значение в статике, в anstdisl смещение от l или g
                                                           // в ansttype всегда тип возвращаемого значения
 // если значение указателя, адрес массива или строки лежит на верхушке стека, то это VAL, а не ADDR
@@ -151,7 +153,6 @@ int main(int argc, const char * argv[])
     fclose(input);
     
     input  = fopen("macro.txt", "r");
-
     
     if (input == NULL)
     {

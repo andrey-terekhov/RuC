@@ -463,6 +463,42 @@ void* interpreter(void* pcPnt)
                 mem[++x] = numTh;
                 break;
                
+            case WIFI_CONNECTC:
+                break;
+            case BLYNK_AUTHORIZATIONC:
+                break;
+            case BLYNK_SENDC:
+                break;
+            case BLYNK_RECEIVEC:
+                break;
+            case BLYNK_NOTIFICATIONC:
+                break;
+            case BLYNK_PROPERTYC:
+                break;
+            case BLYNK_LCDC:
+                break;
+            case BLYNK_TERMINALC:
+                break;
+                
+            case SETSIGNALC:
+                break;
+            case PIXELC:
+                break;
+            case LINEC:
+                break;
+            case RECTANGLEC:
+                break;
+            case ELLIPSEC:
+                break;
+            case CLEARC:
+                break;
+            case DRAW_STRINGC:
+                break;
+            case DRAW_NUMBERC:
+                break;
+            case ICONC:
+                break;
+
     #ifdef ROBOT
 
             case SETMOTORC:
@@ -860,43 +896,42 @@ void* interpreter(void* pcPnt)
                     }
                     else
                     {
-                  lab1: do
+                        do
                         {
-                    // go down
-                            mem[++x] = bounds[curdim+1];
-                            mem[stackC0[curdim] + stacki[curdim]++] = stackC0[curdim+1] = x + 1;
-                            x += bounds[curdim+1] * (curdim == N-1 ? d : 1);
-                            
-                            if (x >= threads[numTh] + MAXMEMTHREAD)
-                                runtimeerr(mem_overflow, 0, 0);
-                            ++curdim;
-                            stacki[curdim] = 0;
-                        }
-                        while (curdim < N);
+                            do
+                            {
+                        // go down
+                                mem[++x] = bounds[curdim+1];
+                                mem[stackC0[curdim] + stacki[curdim]++] = stackC0[curdim+1] = x + 1;
+                                x += bounds[curdim+1] * (curdim == N-1 ? d : 1);
+                                
+                                if (x >= threads[numTh] + MAXMEMTHREAD)
+                                    runtimeerr(mem_overflow, 0, 0);
+                                ++curdim;
+                                stacki[curdim] = 0;
+                            }
+                            while (curdim < N);
                     // построена очередная вертикаль подмассивов
                        
-                        if (proc)
-                        {
-                            int curx = x, oldbase = base, oldpc = pc, i;
-                            for (i=stackC0[curdim]; i<=curx; i+=d)
+                            if (proc)
                             {
-                                pc = proc;   // вычисление границ очередного массива в структуре
-                                base = i;
-                                mem[threads[numTh]+1] = x;
-                                interpreter((void*) &pc);
-                                flagstop = 1;
-                                x = xx;
+                                int curx = x, oldbase = base, oldpc = pc, i;
+                                for (i=stackC0[curdim]; i<=curx; i+=d)
+                                {
+                                    pc = proc;   // вычисление границ очередного массива в структуре
+                                    base = i;
+                                    mem[threads[numTh]+1] = x;
+                                    interpreter((void*) &pc);
+                                    flagstop = 1;
+                                    x = xx;
+                                }
+                                pc = oldpc;
+                                base = oldbase;
                             }
-                            pc = oldpc;
-                            base = oldbase;
-                        }
                     // go right
-                        --curdim;
-                        if (stacki[curdim] < bounds[curdim])
-                            goto lab1;
-                    // go up
-                        if (curdim-- != N-1)
-                            goto lab1;
+                            --curdim;
+                        }
+                        while (stacki[curdim] < bounds[curdim] ? 1 : /*up*/curdim-- != N-1);
                     }
                 }
                 adinit = x+1; // при usual == 1 использоваться не будет
@@ -936,7 +971,8 @@ void* interpreter(void* pcPnt)
                     {
                         mem[addr] = adinit + 1;
 
-                        if (usual && mem[adinit] != NN)  // здесь usual == 1, если == 0, проверка не нужна
+                        if (usual && mem[adinit] != NN)  // здесь usual == 1,
+                                                // если usual == 0, проверка не нужна
                             runtimeerr(init_err, mem[adinit], NN);
                         adinit += mem[adinit] * d + 1;
                     }
@@ -1732,6 +1768,12 @@ void import()
  #endif
     
     input = fopen("export.txt", "r");
+    
+    if (!input)
+    {
+        printf("export.txt not found\n");
+        return;
+    }
     
     fscanf(input, "%i %i %i %i %i %i %i\n", &pc, &funcnum, &id, &rp, &md, &maxdisplg, &wasmain);
 

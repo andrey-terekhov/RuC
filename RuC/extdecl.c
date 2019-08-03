@@ -353,7 +353,7 @@ void actstring()
                 cur = NUMBER, ansttype = LINT, num = identab[lastid+3];
         }
  */
-        if (scaner() == NUMBER && ansttype == LINT)
+        if (scaner() == NUMBER && (ansttype == LINT || ansttype == LCHAR))
             totree(num);
         else
             error(wrong_init_in_actparam);
@@ -395,7 +395,7 @@ void mustbeint()
     exprassn(1);
     toval();
     sopnd--;
-    if (ansttype != LINT)
+    if (ansttype != LINT && ansttype != LCHAR)
         error(not_int_in_stanfunc);
 }
 
@@ -410,7 +410,8 @@ void mustberowofint()
         toval();
         sopnd--;
     }
-    if (! (ansttype > 0 && modetab[ansttype] == MARRAY && modetab[ansttype+1] == LINT) )
+    if (! (ansttype > 0 && modetab[ansttype] == MARRAY &&
+           (modetab[ansttype+1] == LINT || modetab[ansttype+1] == LCHAR) ))
     error(not_rowofint_in_stanfunc);
 }
 
@@ -513,10 +514,63 @@ void primaryexpr()
                 if (func < STRNCAT)
                     stackoperands[++sopnd] = ansttype = LINT;
         }
-        else if (func >= SETSIGNAL && func <= WIFI_CONNECT)   // функции Фадеева
+        else if (func >= ICON && func <= WIFI_CONNECT)   // функции Фадеева
         {
             notrobot = 0;
-            if (func == SETSIGNAL)
+            if (func <= PIXEL && func >= ICON)
+            {
+                mustberowofint();
+                if (func != CLEAR)
+                    mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                
+                if (func == LINE || func == RECTANGLE || func == ELLIPS)
+                {
+                    mustbeint();
+                    mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                    mustbeint();
+                    mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                    mustbeint();
+                    mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                    mustbeint();
+                    if (func != LINE)
+                    {
+                        mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                        mustbeint();
+                    }
+                }
+                else if (func == ICON || func == PIXEL)
+                {
+                    mustbeint();
+                    mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                    mustbeint();
+                    if (func == ICON)
+                    {
+                        mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                        mustbeint();
+                    }
+                }
+                else if (func == DRAW_NUMBER || func == DRAW_STRING)
+                {
+                    mustbeint();
+                    mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                    mustbeint();
+                    mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                    if (func == DRAW_STRING)
+                        mustbestring();
+                    else    // DRAW_NUMBER
+                    {
+                        scaner();
+                        exprassn(1);
+                        toval();
+                        sopnd--;
+                        if (is_int(ansttype))
+                            totree(WIDEN);
+                        else if (ansttype != LFLOAT)
+                            error(not_float_in_stanfunc);
+                    }
+                }
+            }
+            else if (func == SETSIGNAL)
             {
                 mustbeint();
                 mustbe(COMMA, no_comma_in_act_params_stanfunc);

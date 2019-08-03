@@ -978,7 +978,7 @@ void tablesandcode()
                 
                 
             default:
-                fprintf(output, "%i %c\n", mem[i-1], mem[i-1]);
+                fprintf(output, "%i\n", mem[i-1]);
         }
     }
     

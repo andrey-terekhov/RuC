@@ -595,6 +595,9 @@ void error(int ernum)
         case not_int_in_stanfunc:
             printf("в этой операции этот параметр должен иметь тип ЦЕЛ\n");
             break;
+        case not_float_in_stanfunc:
+            printf("в этой операции этот параметр должен иметь тип ВЕЩ\n");
+            break;
         case not_point_string_in_stanfunc:
             printf("в этой операции над строками первый параметр должен быть указателем на строку\n");
             break;

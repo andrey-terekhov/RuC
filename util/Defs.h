@@ -271,6 +271,25 @@
 #define DESTROYC  9561
 #define EXITC     9562
 #define GETNUMC   9563
+#define WIFI_CONNECTC        9571
+#define BLYNK_AUTHORIZATIONC 9572
+#define BLYNK_SENDC          9573
+#define BLYNK_RECEIVEC       9574
+#define BLYNK_NOTIFICATIONC  9575
+#define BLYNK_PROPERTYC      9576
+#define BLYNK_LCDC           9577
+#define BLYNK_TERMINALC      9578
+
+#define SETSIGNALC           9579
+#define PIXELC               9580
+#define LINEC                9581
+#define RECTANGLEC           9582
+#define ELLIPSEC             9583
+#define CLEARC               9584
+#define DRAW_STRINGC         9585
+#define DRAW_NUMBERC         9586
+#define ICONC                9587
+
 
 // Лексемы
 
@@ -388,7 +407,16 @@
 #define BLYNK_PROPERTY     -76
 #define BLYNK_LCD     -77
 #define BLYNK_TERMINAL     -78
+
 #define SETSIGNAL     -79
+#define PIXEL         -80
+#define LINE          -81
+#define RECTANGLE     -82
+#define ELLIPS        -83
+#define CLEAR         -84
+#define DRAW_STRING   -85
+#define DRAW_NUMBER   -86
+#define ICON          -87
 
 #define LVOIDASTER    -150
 #define ABSI          -151
@@ -631,6 +659,7 @@
 #define after_preproces_words_must_be_space 381
 #define struct_init_must_start_from_BEGIN  382
 #define not_rowofint_in_stanfunc           383
+#define not_float_in_stanfunc              384
 
 
 //  коды предупреждений

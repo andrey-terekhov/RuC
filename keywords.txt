@@ -81,4 +81,13 @@ BLYNK_NOTIFICATION blynk_notification BLYNK_УВЕДОМЛЕНИЕ blynk_уве�
 BLYNK_PROPERTY blynk_property BLYNK_СВОЙСТВО blynk_свойство
 BLYNK_LCD blynk_lcd BLYNK_ДИСПЛЕЙ blynk_дисплей
 BLYNK_TERMINAL blynk_terminal BLYNK_ТЕРМИНАЛ blynk_терминал
+
 SETSIGNAL setsignal СИГНАЛ сигнал
+PIXEL pixel ПИКСЕЛЬ пиксель
+LINE line ЛИНИЯ линия
+RECTANGLE rectangle ПРЯМОУГОЛЬНИК прямоугольник
+ELLIPSE ellipse ЭЛЛИПС эллипс
+CLEAR clear ОЧИСТИТЬ очистить
+DRAW_STRING draw_string НАРИСОВАТЬ_СТРОКУ нарисовать_строку
+DRAW_NUMBER draw_number НАРИСОВАТЬ_ЧИСЛО нарисовать_число
+ICON icon ИКОНКА иконка
