@@ -42,8 +42,8 @@ void mend_line();
 void m_nextch();
 void m_fprintf(int a);
 
-void to_macrotext(char chang[], int oldrepr);//
-void macro_reprtab(char chang []);
+void to_macrotext(int chang[], int oldrepr);//
+void macro_reprtab(int chang []);
 void from_macrotext();//5
 int macro_keywords();//12
 void relis_define();//2
@@ -91,7 +91,7 @@ void show_macro()
         {
             flag = 0;
             curchar = before_source[arg];
-            from_macrotext()
+            from_macrotext();
 
             i1 += msp;
         }
@@ -424,7 +424,7 @@ void relis_define()
                 if (curchar == '\\')
                 {
                     m_nextch(2);
-                    end_line()
+                    end_line();
                 }
             }
             chang[i++] = 0;
@@ -707,10 +707,8 @@ void r_macrofunction()
         if (curchar == '\\')
         {
             m_nextch(2);
-            end_line()
+            end_line();
         }
-        
-
     }
     macrofunction [mfp++] = '\n';
     return;
