@@ -70,6 +70,7 @@ void t_init()
 
 int __t_create(pthread_attr_t *attr, void* (*func)(void *), void *arg, int isDetach)
 {
+    printf("__t_create(pthread_attr_t, void*, void*, int)\n");
     pthread_t th;
     int retVal;
     int res = pthread_rwlock_wrlock(&__lock_t_create);
@@ -132,11 +133,13 @@ int __t_create(pthread_attr_t *attr, void* (*func)(void *), void *arg, int isDet
 
 int t_create_inner(void* (*func)(void *), void *arg)
 {
+    printf("t_create_inner(void*, void*)\n");
     return __t_create(NULL, func, arg, FALSE);
 }
 
 int t_createDetached(void* (*func)(void *))
 {
+    printf("t_createDetached(void*)\n");
     pthread_attr_t attr;
     
     int res = pthread_attr_init(&attr);
@@ -158,11 +161,13 @@ int t_createDetached(void* (*func)(void *))
 
 void t_exit()
 {
+    printf("t_exit()\n");
     pthread_exit(NULL);
 }
 
 void t_join(int numTh)
 {
+    printf("t_join(int)\n");
     int res = pthread_rwlock_rdlock(&__lock_t_create);
     if (res != 0)
     {
@@ -242,12 +247,14 @@ int t_getThNum()
 
 void t_sleep(int miliseconds)
 {
+    printf("t_sleep(int)\n");
     //Sleep(seconds * 1000);
     usleep(miliseconds * 1000);
 }
 
 int t_sem_create(int level)
 {
+    printf("t_sem_create(int)\n");
     int res = pthread_rwlock_wrlock(&__lock_t_sem_create), retVal;
     sem_t *sem;
     char csem[10];
@@ -283,6 +290,7 @@ int t_sem_create(int level)
 
 void t_sem_wait(int numSem)
 {
+    printf("t_sem_wait(int)\n");
     int res = pthread_rwlock_rdlock(&__lock_t_sem_create);
 //    printf("t_sem_wait numSem= %i __countSem=  %i\n", numSem, __countSem);
     if (res != 0)
@@ -316,6 +324,7 @@ void t_sem_wait(int numSem)
 
 void t_sem_post(int numSem)
 {
+    printf("t_sem_post(int)\n");
     int res = pthread_rwlock_rdlock(&__lock_t_sem_create);
     if (res != 0)
     {
@@ -348,6 +357,7 @@ void t_sem_post(int numSem)
 
 void t_msg_send(struct msg_info msg)
 {
+    printf("t_msg_send(struct msg_info)\n");
     int res = pthread_rwlock_rdlock(&__lock_t_create);
     if (res != 0)
     {
@@ -402,6 +412,7 @@ void t_msg_send(struct msg_info msg)
 }
 struct msg_info t_msg_receive()
 {
+    printf("t_msg_receive()\n");
     int res = pthread_rwlock_rdlock(&__lock_t_create), numTh;
     struct msg_info msg;
     if (res != 0)
