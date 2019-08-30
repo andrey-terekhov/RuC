@@ -1919,7 +1919,7 @@ int gettype()
     
     was_struct_with_arr = 0;
 	if (is_int(type = cur) || is_float(type) || type == LVOID)
-        return(cur == LLONG ? LINT : cur == LDOUBLE ? LFLOAT : type);
+        return(cur == LLONG ? LINT : type);
 	else if (type == LSTRUCT)
 	{
 		if (next == BEGIN)             // struct {
