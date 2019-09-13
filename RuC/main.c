@@ -8,9 +8,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-"tests/Egor/Macro/test3.c";
+//"tests/Egor/Macro/test3.c";
 //"tests/Fadeev/thread_i3c.c";
-//"tests/structs.c";
+"tests/matrix.c";
 //"../../../tests/mips/0test.c";
 
 #include <stdio.h>

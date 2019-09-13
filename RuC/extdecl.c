@@ -2182,7 +2182,7 @@ int func_declarator(int level, int func_d, int firstdecl)
 	loc_modetab[1] = firstdecl;
 	loc_modetab[2] = 0;
 	locmd = 3;
-
+    
 	while (repeat)
 	{
 		if (cur == LVOID || is_int(cur) || is_float(cur) || cur == LSTRUCT)
