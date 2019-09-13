@@ -113,7 +113,7 @@ int evaluate_params(int num, int formatstr[], int formattypes[], int placeholder
 
 int szof(int type)
 {
-    return next == LEFTSQBR ? 1 : type == LFLOAT || type == LLONG ? 2 :
+    return next == LEFTSQBR ? 1 :
     (type > 0 && modetab[type] == MSTRUCT) ? modetab[type + 1] : 1;
 }
 
