@@ -1346,47 +1346,47 @@ void* interpreter(void* pcPnt)
                 
             case ASSATV:
                 mem[mem[x-1]] = mem[x];
-                x--;
+                x -= 2;
                 break;
             case REMASSATV:
                 mem[mem[x-1]] %= check_zero_int(mem[x]);
-                x--;
+                x -= 2;
                 break;
             case SHLASSATV:
                 mem[mem[x-1]] <<= mem[x];
-                x--;
+                x -= 2;
                 break;
             case SHRASSATV:
                 mem[mem[x-1]] >>= mem[x];
-                x--;
+                x -= 2;
                 break;
             case ANDASSATV:
                 mem[mem[x-1]] &= mem[x];
-                x--;
+                x -= 2;
                 break;
             case EXORASSATV:
                 mem[mem[x-1]] ^= mem[x];
-                x--;
+                x -= 2;
                 break;
             case ORASSATV:
                 mem[mem[x-1]] |= mem[x];
-                x--;
+                x -= 2;
                 break;
             case PLUSASSATV:
                 mem[mem[x-1]] += mem[x];
-                x--;
+                x -= 2;
                 break;
             case MINUSASSATV:
                 mem[mem[x-1]] -= mem[x];
-                x--;
+                x -= 2;
                 break;
             case MULTASSATV:
                 mem[mem[x-1]] *= mem[x];
-                x--;
+                x -= 2;
                 break;
             case DIVASSATV:
                 mem[mem[x-1]] /= check_zero_int(mem[x]);
-                x--;
+                x -= 2;
                 break;
                 
             case LOGOR:

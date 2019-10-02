@@ -9,8 +9,8 @@
 
 const char * name =
 //"tests/Egor/Macro/test3.c";
-//"tests/Fadeev/thread_i3c.c";
-"tests/matrix.c";
+"tests/Fadeev/x.c";
+//"tests/matrix.c";
 //"../../../tests/mips/0test.c";
 
 #include <stdio.h>
