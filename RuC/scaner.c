@@ -593,7 +593,7 @@ int scan()
                             return (reprtab[r+1] < 0) ? reprtab[r+1] : (repr = r, IDENT);
                         }
                         else
-                            r = reprtab[r];
+                            r = abs(reprtab[r]);
                     }
                     while (r);
                 }

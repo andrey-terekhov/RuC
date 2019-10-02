@@ -12,7 +12,7 @@ int t, op, opnd;
 
 int mcopy()
 {
-//    printf("tc= %i tree[tc]= %i\n", tc, tree[tc]);
+ //   printf("tc= %i tree[tc]= %i\n", tc, tree[tc]);
     return mtree[mtc++] = tree[tc++];
 }
 
@@ -235,11 +235,12 @@ void mstatement()
             break;
         case TFor:
         {
-            int fromref, condref, incrref;
+            int fromref, condref, incrref, statemref;
             mcopy();
             fromref = mcopy();
             condref = mcopy();
             incrref = mcopy();
+            statemref = mcopy();
             if (fromref)
                 mexpr();
             if (condref)
@@ -392,13 +393,17 @@ void mexpr()
         {
             mcopy();
             if (wasopnd)
-                wasopnd = 0, --sp;
+                --sp;
             break;
         }
         else if ( (opnd = munop(op)) )
-            permute(stack[sp]);
+                if (wasopnd)
+                    permute(stack[sp]);
+                else
+                    mcopy(), mcopy();
         else if ( (opnd = mbinop(op)) )
-            permute(stack[--sp]);
+                permute(stack[--sp]);
+        
         else if ((op = tree[tc]) == TCondexpr)
         {
 //            printf("Cond tc= %i sp= %i\n", tc, sp);

@@ -8,7 +8,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-"tests/book.c";
+"tests/for1.c";
 
 //tests/mips/test01.c";
 
@@ -29,7 +29,8 @@ const char * name =
 
 FILE *input, *output;
 double numdouble;
-int line=0, mline = 0, charnum=1, m_charnum = 1, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef = 0;
+int line=0, mline = 0, charnum=1, m_charnum = 1, cur, next, next1, num, hash, repr, keywordsnum,
+    wasstructdef = 0;
 struct {int first; int second;} numr;
 int source[SOURCESIZE], lines[LINESSIZE];
 int before_source[SOURCESIZE], mlines[LINESSIZE], m_conect_lines[LINESSIZE];
@@ -46,7 +47,7 @@ int tree[MAXTREESIZE], tc=0, mtree[MAXTREESIZE], mtc=0,
     blockflag = 1, entry, wasmain = 0, wasret, wasdefault, notrobot = 1, prep_flag = 0;
 int adcont, adbreak, adcase, adandor, switchreg;
 int predef[FUNCSIZE], prdf = -1, emptyarrdef;
-int gotost[1000], pgotost;
+int gotost[1000], pgotost, forfor;
 int anst, anstdispl, ansttype, leftansttype = -1;   
 
 int bad_printf_placeholder = 0;
@@ -145,11 +146,11 @@ int main(int argc, const char * argv[])
     kw = 1;
     tc = 0;
 
-//    printf("\nИсходный текст:\n \n");
-//    preprocess_file();                //   макрогенерация
-
-//    fclose(input);                    // исходный файл до макрогенерации
-//    fclose(output);                   // исходный файл после макрогенерации
+    printf("\nИсходный текст:\n \n");
+    preprocess_file();                //   макрогенерация
+    
+    fclose(input);                    // исходный файл до макрогенерации
+    fclose(output);                   // исходный файл после макрогенерации
     
     input  = fopen(/*"macro.txt"*/name, "r"); // исходный файл после макрогенерации
 

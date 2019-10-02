@@ -416,6 +416,7 @@ void mustberowofint()
 
 void primaryexpr()
 {
+    forfor = -1;
 	if (cur == NUMBER)
 	{
         if (ansttype == LFLOAT)                     // ansttype задается прямо в сканере
@@ -449,19 +450,12 @@ void primaryexpr()
 	else if (cur == IDENT)
 	{
 		applid();
-/*        if (identab[lastid+2] == 1)                  // #define
-        {
-            totree(TConst);
-            totree(num = identab[lastid+3]);
-            anst = NUMBER;
-            ansttype = LINT;
-        }
-        else
- */
         {
             totree(TIdent);
-            totree(anstdispl = identab[lastid+3]);
+            forfor = lastid;
+            totree(lastid);
             stackoperands[++sopnd] = ansttype = identab[lastid + 2];
+            anstdispl = identab[lastid + 3];
             anst = IDENT;
         }
 	}
@@ -749,6 +743,7 @@ void postexpr()
 	{
 		int i, j, n, dn, oldinass = inass;
         was_func = 1;
+        forfor = -1;
 		scaner();
 		if (!is_function(leftansttyp))
 			error(call_not_from_function);
@@ -822,6 +817,7 @@ void postexpr()
  
     while (next == LEFTSQBR || next == ARROW || next == DOT)
     {
+        forfor = 0;
         while (next == LEFTSQBR) // вырезка из массива (возможно, многомерного)
         {
             int elem_type;
@@ -914,7 +910,7 @@ void postexpr()
 		scaner();
 		totreef(op);
 		if (anst == IDENT)
-			totree(identab[lid+3]);
+			totree(lid);
 		anst = VAL;
 	}
 }
@@ -926,6 +922,7 @@ void unarexpr()
         cur == LAND || cur == LMULT ||
         cur == INC  || cur == DEC)
 	{
+        forfor = -1;
         if (cur == INC || cur == DEC)
         {
             scaner();
@@ -936,7 +933,7 @@ void unarexpr()
                 op += 4;
             totreef(op);
             if (anst == IDENT)
-                totree(identab[lastid+3]);
+                totree(lastid);
             anst = VAL;
         }
         else
@@ -1168,7 +1165,7 @@ void struct_init(int decl_type)   // сейчас modetab[decl_type] равен 
 
 void exprassnvoid()
 {
-    int t = tree[tc - 2] < 9000 ? tc - 3 : tc - 2;
+    int t = tree[tc-2] < 9000 ? tc - 3 : tc - 2;
     int tt = tree[t];
     if ((tt >= ASS  && tt <= DIVASSAT)  || (tt >= POSTINC  && tt <= DECAT) ||
         (tt >= ASSR && tt <= DIVASSATR) || (tt >= POSTINCR && tt <= DECATR) )
@@ -1178,7 +1175,7 @@ void exprassnvoid()
 
 void exprassn(int level)
 {
-    int leftanst, leftanstdispl, ltype, rtype, lnext;
+    int leftanst, leftanstdispl, ltype, rtype, lnext, leftid;
     if (cur == BEGIN)
     {
         if (is_struct(leftansttype))
@@ -1193,6 +1190,7 @@ void exprassn(int level)
     else
         unarexpr();
 
+    leftid = forfor;
 	leftanst = anst;
     leftanstdispl = anstdispl;
     leftansttype = ansttype;
@@ -1261,7 +1259,7 @@ void exprassn(int level)
                 opp += 11;
             totreef(opp);
             if (leftanst == IDENT)
-                totree(anstdispl = leftanstdispl);
+                forfor = leftid, totree(leftid);
             anst = VAL;
         }
         stackoperands[sopnd] = ansttype = ltype; // тип результата - на стек
@@ -1668,9 +1666,9 @@ void statement()
                              tree[fromref] = 0;
                          else
                          {
-                             tree[fromref] = tc;
                              expr(0);
                              exprassnvoid();
+                             tree[fromref] = forfor;
                              mustbe(SEMICOLON, no_semicolon_in_for);
                          }
                          if (scaner() == SEMICOLON)             // cond

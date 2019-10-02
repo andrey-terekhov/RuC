@@ -658,7 +658,7 @@
 #define li       25        // li rt, imm(32),  ???    это псевдокоманда (lui + ori)
 #define mfhi     16        // mfhi rs              rs = hi                   move from
 #define mflo     18        // mflo rs              rs = lo                   move from
-#define div      26        // div rs, rt           rs / rt  частное в lo, остаток в hi
+#define divc     26        // div rs, rt           rs / rt  частное в lo, остаток в hi
 #define mul      28        // mul rd, rs, rt       rd = rs * rt
 #define lw       35        // lw rt, imm(rs)       rt = [Address]
 #define sw       43        // sw rt, imm(rs)       [Address] = rt
