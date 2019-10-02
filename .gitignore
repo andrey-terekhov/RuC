@@ -3,6 +3,7 @@
 *.exe
 *.bat
 *.zip
+*.s
 *.txt
 *.pdf
 *.doc
@@ -11,6 +12,7 @@
 *.jpeg
 *.xcodeproj/
 
+bin/
 Build/
 DerivedData/
 ruc-compiler
