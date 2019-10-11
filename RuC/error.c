@@ -625,7 +625,7 @@ void m_error(int ernum)
     switch (ernum)
     {
         case after_preproces_words_must_be_space:
-            printf("Неправильное ключевое слово препроцессора, далее должен идти символ ' 'или'\\n'или'\\t' \n");
+            printf("Неправильное использование ключевого слово препроцессора, далее должен идти символ ' 'или'\\n'или'\\t' \n");
             break;
         case after_ident_must_be_space:
             printf("После индентификатора должен идти ' ' \n");
