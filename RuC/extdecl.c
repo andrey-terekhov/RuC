@@ -389,6 +389,16 @@ void mustbepointstring()
         error(not_point_string_in_stanfunc);
 }
 
+void mustberow()
+{
+    scaner();
+    exprassn(1);
+    toval();
+    sopnd--;
+    if ( !(ansttype > 0 && modetab[ansttype] == MARRAY))
+        error(not_array_in_stanfunc);
+}
+
 void mustbeint()
 {
     scaner();
@@ -618,6 +628,13 @@ void primaryexpr()
                     stackoperands[++sopnd] = ansttype = LINT;
                 }
             }
+        }
+        else if (func == UPB)
+        {
+            mustbeint();
+            mustbe(COMMA, no_comma_in_act_params_stanfunc);
+            mustberow();
+            stackoperands[++sopnd] = ansttype = LINT;
         }
         else if (func <= TMSGSEND  && func >= TGETNUM)
         {                                // процедуры управления параллельными нитями
@@ -1566,12 +1583,16 @@ void statement()
             case PRINTID:
             {
                             mustbe(LEFTBR, no_leftbr_in_printid);
+                        do
+                        {
                             mustbe(IDENT, no_ident_in_printid);
                             lastid = reprtab[repr + 1];
                             if (lastid == 1)
                                 error(ident_is_not_declared);
                             totree(TPrintid);
                             totree(lastid);
+                        }
+                        while (next == COMMA ? scaner(), 1 : 0);
                             mustbe(RIGHTBR, no_rightbr_in_printid);
             }
                 break;
@@ -1638,12 +1659,16 @@ void statement()
             case GETID:
             {
                           mustbe(LEFTBR, no_leftbr_in_printid);
+                        do
+                        {
                           mustbe(IDENT, no_ident_in_printid);
                           lastid = reprtab[repr + 1];
                           if (lastid == 1)
                               error(ident_is_not_declared);
                           totree(TGetid);
                           totree(lastid);
+                        }
+                        while (next == COMMA ? scaner(), 1 : 0);
                           mustbe(RIGHTBR, no_rightbr_in_printid);
             }
                 break;
@@ -2157,7 +2182,7 @@ int func_declarator(int level, int func_d, int firstdecl)
 	loc_modetab[1] = firstdecl;
 	loc_modetab[2] = 0;
 	locmd = 3;
-
+    
 	while (repeat)
 	{
 		if (cur == LVOID || is_int(cur) || is_float(cur) || cur == LSTRUCT)

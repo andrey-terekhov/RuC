@@ -604,7 +604,9 @@ void error(int ernum)
         case not_rowofint_in_stanfunc:
             printf("в этой операции этот параметр должен иметь тип массив целых\n");
             break;
-
+        case not_array_in_stanfunc:
+            printf("в этой операции этот параметр должен иметь тип массив\n");
+            break;
 
         default:
             printf("этот код ошибки я прозевал\n");

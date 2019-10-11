@@ -481,6 +481,17 @@ void* interpreter(void* pcPnt)
                 break;
                 
             case SETSIGNALC:
+            {
+                int array_prt_2 = mem[x--];
+                int array_prt = mem[x--];
+                int sensortype = mem[x--];
+                
+                if (sensortype == 0) {
+                    printf("setsignal(RELAY, { %d, %d }, %d, %d, %d, %d)\n", (&mem[array_prt])[0], (&mem[array_prt])[1], (&mem[array_prt_2])[0], (&mem[array_prt_2])[1], (&mem[array_prt_2])[2], (&mem[array_prt_2])[3]);
+                } else {
+                    printf("setsignal(LED, { %d, %d }, %d, %d, %d, %d, %d, %d, %d)\n", (&mem[array_prt])[0], (&mem[array_prt])[1], (&mem[array_prt_2])[0], (&mem[array_prt_2])[1], (&mem[array_prt_2])[2], (&mem[array_prt_2])[3], (&mem[array_prt_2])[4], (&mem[array_prt_2])[5], (&mem[array_prt_2])[6]);
+                }
+            }
                 break;
             case PIXELC:
                 break;
@@ -540,6 +551,9 @@ void* interpreter(void* pcPnt)
                 snprintf(i2ccommand, I2CBUFFERSIZE, "i2cget -y 2 0x48 0x%x", 0x26 - n);
                 mem[x] = rungetcommand(i2ccommand);
             }
+                break;
+    #else
+            case GETDIGSENSORC:
                 break;
     #endif
             case FUNCBEG:
@@ -1109,6 +1123,13 @@ void* interpreter(void* pcPnt)
             case BNE0:
                 pc = (mem[x--]) ? mem[pc] : pc + 1;
                 break;
+            case UPBC:
+                from = mem[x--];
+                N = mem[x];
+                for (i=0; i < N; i++)
+                    from = mem[from];
+                mem[x] = mem[from-1];
+                break;
             case SELECT:
                 mem[x] += mem[pc++];   // ident displ
                 break;
@@ -1325,47 +1346,47 @@ void* interpreter(void* pcPnt)
                 
             case ASSATV:
                 mem[mem[x-1]] = mem[x];
-                x--;
+                x -= 2;
                 break;
             case REMASSATV:
                 mem[mem[x-1]] %= check_zero_int(mem[x]);
-                x--;
+                x -= 2;
                 break;
             case SHLASSATV:
                 mem[mem[x-1]] <<= mem[x];
-                x--;
+                x -= 2;
                 break;
             case SHRASSATV:
                 mem[mem[x-1]] >>= mem[x];
-                x--;
+                x -= 2;
                 break;
             case ANDASSATV:
                 mem[mem[x-1]] &= mem[x];
-                x--;
+                x -= 2;
                 break;
             case EXORASSATV:
                 mem[mem[x-1]] ^= mem[x];
-                x--;
+                x -= 2;
                 break;
             case ORASSATV:
                 mem[mem[x-1]] |= mem[x];
-                x--;
+                x -= 2;
                 break;
             case PLUSASSATV:
                 mem[mem[x-1]] += mem[x];
-                x--;
+                x -= 2;
                 break;
             case MINUSASSATV:
                 mem[mem[x-1]] -= mem[x];
-                x--;
+                x -= 2;
                 break;
             case MULTASSATV:
                 mem[mem[x-1]] *= mem[x];
-                x--;
+                x -= 2;
                 break;
             case DIVASSATV:
                 mem[mem[x-1]] /= check_zero_int(mem[x]);
-                x--;
+                x -= 2;
                 break;
                 
             case LOGOR:

@@ -4,6 +4,7 @@
 *.exe
 *.bat
 *.zip
+*.s
 *.txt
 *.pdf
 *.doc
