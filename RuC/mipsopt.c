@@ -444,7 +444,7 @@ void mblock()
     int i, n, all;
     do
     {
-        switch (t = tree[tc])
+        switch (tree[tc])
         {
             case TFuncdef:
             {
@@ -491,6 +491,7 @@ void mblock()
         }
     }
     while (tree[tc] != TEnd);
+    mcopy();
 }
 
 void mipsopt()

@@ -8,11 +8,11 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-"tests/for1.c";
+//"tests/for1.c";
 
-//tests/mips/test01.c";
+"tests/mips/test1.c";
 
-//"../../../tests/Egor/Macro/test5.c";
+//"../../../tests/Egor/Macro/for.c";
 
 //"../../../tests/Fadeev/Signal.c";
 

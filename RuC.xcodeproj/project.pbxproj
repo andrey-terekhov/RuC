@@ -36,11 +36,11 @@
 		ED39C25F222E6107005E7385 /* scaner.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = scaner.c; sourceTree = "<group>"; };
 		ED6E611F221311DC00363321 /* mipsgen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mipsgen.c; sourceTree = "<group>"; };
 		ED6E6120221311DC00363321 /* mipsopt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mipsopt.c; sourceTree = "<group>"; };
+		ED70946E2350BC0500FACB6D /* Defs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Defs.h; sourceTree = "<group>"; };
 		ED9101951FAA0CF50089A8A4 /* keywords.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = keywords.txt; sourceTree = "<group>"; };
 		EDC2DE3821357B1C0056585C /* preprocess.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = preprocess.c; sourceTree = "<group>"; };
 		EDCB45771DDF4ACF0030AE24 /* ruc */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ruc; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDCB45821DDF4B9C0030AE24 /* codes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = codes.c; sourceTree = "<group>"; };
-		EDCB45831DDF4B9C0030AE24 /* Defs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Defs.h; sourceTree = "<group>"; };
 		EDCB45841DDF4B9C0030AE24 /* error.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = error.c; sourceTree = "<group>"; };
 		EDCB45851DDF4B9C0030AE24 /* extdecl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = extdecl.c; sourceTree = "<group>"; };
 		EDCB45861DDF4B9C0030AE24 /* global_vars.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = global_vars.h; sourceTree = "<group>"; };
@@ -85,11 +85,11 @@
 				EDC2DE3821357B1C0056585C /* preprocess.c */,
 				EDE8849F1F499DA300DAE9F0 /* th_static.h */,
 				EDCB45821DDF4B9C0030AE24 /* codes.c */,
-				EDCB45831DDF4B9C0030AE24 /* Defs.h */,
+				ED39C25F222E6107005E7385 /* scaner.c */,
 				EDCB45841DDF4B9C0030AE24 /* error.c */,
 				EDCB45861DDF4B9C0030AE24 /* global_vars.h */,
 				EDCB45851DDF4B9C0030AE24 /* extdecl.c */,
-				ED39C25F222E6107005E7385 /* scaner.c */,
+				ED70946E2350BC0500FACB6D /* Defs.h */,
 				EDE8849D1F3C8CDE00DAE9F0 /* threads.c */,
 				EDCB45881DDF4B9C0030AE24 /* main.c */,
 			);
@@ -136,6 +136,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = EDCB456E1DDF4ACF0030AE24;
