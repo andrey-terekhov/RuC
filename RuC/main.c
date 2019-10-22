@@ -10,7 +10,7 @@
 const char * name =
 //"tests/for1.c";
 
-"tests/mips/for.c";
+"tests/mips/test01.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
@@ -47,7 +47,7 @@ int tree[MAXTREESIZE], tc=0, mtree[MAXTREESIZE], mtc=0,
     blockflag = 1, entry, wasmain = 0, wasret, wasdefault, notrobot = 1, prep_flag = 0;
 int adcont, adbreak, adcase, adandor, switchreg;
 int predef[FUNCSIZE], prdf = -1, emptyarrdef;
-int gotost[1000], pgotost, forfor;
+int gotost[1000], pgotost, forfor, regis;
 int anst, anstdispl, ansttype, leftansttype = -1;   
 
 int bad_printf_placeholder = 0;

@@ -63,7 +63,6 @@
 		EDCB456E1DDF4ACF0030AE24 = {
 			isa = PBXGroup;
 			children = (
-				ED9101951FAA0CF50089A8A4 /* keywords.txt */,
 				EDCB45791DDF4ACF0030AE24 /* RuC */,
 				EDCB45781DDF4ACF0030AE24 /* Products */,
 			);
@@ -80,6 +79,7 @@
 		EDCB45791DDF4ACF0030AE24 /* RuC */ = {
 			isa = PBXGroup;
 			children = (
+				ED9101951FAA0CF50089A8A4 /* keywords.txt */,
 				ED6E611F221311DC00363321 /* mipsgen.c */,
 				ED6E6120221311DC00363321 /* mipsopt.c */,
 				EDC2DE3821357B1C0056585C /* preprocess.c */,

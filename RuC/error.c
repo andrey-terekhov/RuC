@@ -600,6 +600,9 @@ void error(int ernum)
         case not_rowofint_in_stanfunc:
             printf("в этой операции этот параметр должен иметь тип массив целых\n");
             break;
+        case wrong_register:
+            printf("регистровой может быть только целая или вещественная переменная\n");
+            break;
 
 
         default:

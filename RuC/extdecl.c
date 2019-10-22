@@ -1,4 +1,6 @@
 #include "global_vars.h"
+#include <stdlib.h>
+
 
 extern int  getnext();
 extern int  nextch();
@@ -197,7 +199,9 @@ int toidentab(int f, int type)       // f =  0, если не ф-ция, f=1, е
 		wasmain = id;
 	}
 	pred = identab[id] = reprtab[repr + 1]; // ссылка на описание с таким же представлением в предыдущем блоке
-	if (pred)                               // pred == 0 только для main, эту ссылку портить нельзя
+    if (regis)
+        identab[id] = -identab[id];
+ 	if (pred)                               // pred == 0 только для main, эту ссылку портить нельзя
 		reprtab[repr + 1] = id;             // ссылка на текущее описание с этим представлением (это в reprtab)
 
 	if (f != 1 && pred >= curid)            // один  и тот же идент м.б. переменной и меткой
@@ -1916,7 +1920,15 @@ int gettype()
     // возвращает отрицательное число(базовый тип), положительное (ссылка на modetab) или 0, если типа не было
     
     was_struct_with_arr = 0;
-	if (is_int(type = cur) || is_float(type) || type == LVOID)
+    if (cur == REGR)
+    {
+        scaner();
+        regis = 1;
+        if (!is_int(type = cur) && !is_float(type))
+            error(wrong_register);
+    }
+    
+	if (is_int(type = cur) || is_float(type)|| type == LVOID)
         return(cur == LLONG ? LINT : type);
 	else if (type == LSTRUCT)
 	{
@@ -1975,8 +1987,10 @@ void block(int b)
 		curid = id;
 	}
 	blockflag = 0;
+    regis = 0;
 
-	while (is_int(next) || is_float(next) || next == LSTRUCT || next == LVOID)
+    while ((next == REGR ? (scaner(), regis = 1) : 1 ) ?
+        is_int(next) || is_float(next) || next == LSTRUCT || next == LVOID : 0)
 	{
         int repeat = 1;
 		scaner();
@@ -1995,7 +2009,7 @@ void block(int b)
 			else if (next == SEMICOLON)
 			{
 				scaner();
-				repeat = 0;
+				regis = repeat = 0;
 			}
 			else
 				error(def_must_end_with_semicomma);
@@ -2020,7 +2034,7 @@ void block(int b)
 	if (b)
 	{
 		for (i = id - 4; i >= curid; i -= 4)
-            reprtab[identab[i + 1] + 1] = identab[i];
+            reprtab[identab[i + 1] + 1] = abs(identab[i]);
 		displ = olddispl;
 	}
 	inswitch = oldinswitch;
@@ -2230,17 +2244,7 @@ void ext_decl()
 		int repeat = 1, funrepr, first = 1;
 		wasstructdef = 0;
 		scaner();
-/*        if (cur == SH_DEFINE)
-        {
-            mustbe(IDENT, no_ident_in_define);
-            if (scaner() == LMINUS)
-                scaner(), k = -1;
-            if (cur != NUMBER || ansttype != LINT)
-                error(not_int_in_define);
-            toidentab(-2, k * num);
-            continue;
-        }
- */
+        regis = 0;
 		firstdecl = gettype();
 		if (wasstructdef && next == SEMICOLON)
 		{                                      // struct point {float x, y;};
