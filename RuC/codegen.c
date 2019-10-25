@@ -352,7 +352,7 @@ void Stmt_gen()
             }
             incrtc = tc;
             tc = stmtref;
-            Stmt_gen();             //  ???? был 0
+            Stmt_gen();            
             if (incrref)
             {
                 endtc = tc;
