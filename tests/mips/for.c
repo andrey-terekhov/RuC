@@ -1,4 +1,6 @@
-int i, a[5];
+register int i;
+register float r;
+int a[5];
 int f(int i)
 {
     return i;

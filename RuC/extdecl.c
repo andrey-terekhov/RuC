@@ -188,7 +188,6 @@ int getstatic(int type)
 
 int toidentab(int f, int type)       // f =  0, если не ф-ция, f=1, если метка, f=funcnum, если описание ф-ции,
 {                                    // f = -1, если ф-ция-параметр, f>=1000, если это описание типа
-                                     // f = -2, #define
 //    printf("\n f= %i repr %i rtab[repr] %i rtab[repr+1] %i rtab[repr+2] %i\n", f, repr, reprtab[repr], reprtab[repr+1], reprtab[repr+2]);
 	int pred;
 	lastid = id;
@@ -201,10 +200,10 @@ int toidentab(int f, int type)       // f =  0, если не ф-ция, f=1, е
 	pred = identab[id] = reprtab[repr + 1]; // ссылка на описание с таким же представлением в предыдущем блоке
     if (regis)
         identab[id] = -identab[id];
- 	if (pred)                               // pred == 0 только для main, эту ссылку портить нельзя
+ 	if (pred)                    // pred == 0 только для main, эту ссылку портить нельзя
 		reprtab[repr + 1] = id;             // ссылка на текущее описание с этим представлением (это в reprtab)
 
-	if (f != 1 && pred >= curid)            // один  и тот же идент м.б. переменной и меткой
+	if (f != 1 && pred >= curid) // один  и тот же идент м.б. переменной и меткой
         
         if (func_def == 3 ? 1 : identab[pred + 1] > 0 ? 1 : func_def == 1 ? 0 : 1)
             error(repeated_decl);  // только определение функции может иметь 2 описания, т.е. иметь предописание
@@ -234,7 +233,7 @@ int toidentab(int f, int type)       // f =  0, если не ф-ция, f=1, е
                 identab[id + 3] = -(displ++);
                 maxdispl = displ;
             }
-            else                          // identtab[lastid+3] - номер функции, если < 0, то это функция-параметр
+            else  //identtab[lastid+3]номер функции, если < 0, то это функция-параметр
             {
                 identab[id + 3] = f;
                 if (func_def == 2)
@@ -1411,7 +1410,7 @@ void decl_id(int decl_type)    // вызывается из block и extdecl, т
             error(empty_bound_without_init);
     }
     totree(TDeclid);
-    totree(identab[oldid+3]);   // displ
+    totree(oldid);              // ссылка на identab
     totree(elem_type);          // elem_type
     totree(arrdim);             // N
     tree[all = tc++] = 0;       // all
