@@ -69,8 +69,9 @@ int sregs[] =
 };
 
 #define too_many_sregs    1
-#define too_many_params   2
-#define dim_greater_5     3
+#define too_many_sregsf   2
+#define too_many_params   3
+#define dim_greater_5     4
 
 void merror(int type)
 {
@@ -78,6 +79,9 @@ void merror(int type)
     {
         case too_many_sregs:
             printf("кончились регистры s0-s7\n");
+            break;
+        case too_many_sregsf:
+            printf("кончились регистры fs0-fs10\n");
             break;
         case too_many_params:
             printf("пока количество параметров ограничено 4\n");
@@ -113,7 +117,7 @@ int szof(int mode)
         return 4;        // LINT и LDOUBLE
 }
 */
-int nextreg = 16;
+int nextreg = 16, nextregf = 20;
 
 int getreg()
 {
@@ -121,6 +125,14 @@ int getreg()
         merror(too_many_sregs);
     return nextreg++;
 }
+
+int getregf()
+{
+    if (nextregf == 32)
+        merror(too_many_sregsf);
+    return nextregf++;
+}
+
 
 void freereg(int r)
 {
@@ -1527,7 +1539,7 @@ void MStmt_gen()
 
 void MDeclid_gen()
 {
-    int olddispl = tree[tc++], telem = tree[tc++], N = tree[tc++], element_len,
+    int oldid = tree[tc++], telem = tree[tc++], N = tree[tc++], element_len,
     all = tree[tc++], iniproc = tree[tc++], usual = tree[tc++], instruct = tree[tc++];
     // all - общее кол-во слов в структуре
     //  для массивов есть еще usual
@@ -1536,10 +1548,18 @@ void MDeclid_gen()
     // all == 0 нет инициализатора,
     // all == 1 есть инициализатор
     // all == 2 есть инициализатор только из строк
+    int olddispl = identab[oldid+3];
     element_len = szof(telem);
     
     if (N == 0)                    // обычная переменная int a; или struct point p;
     {
+        if (identab[oldid] < 0)    // регистровая переменная
+        {
+            if (telem == LINT || telem == LLONG)
+                identab[oldid+3] = getreg();
+            else if (telem == LFLOAT || telem == LDOUBLE)
+                identab[oldid+3] = getregf();
+        }
 /*        if (iniproc)
         {
             tocode(STRUCTWITHARR);

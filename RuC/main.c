@@ -10,7 +10,7 @@
 const char * name =
 //"tests/for1.c";
 
-"tests/mips/test01.c";
+"tests/mips/for.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
