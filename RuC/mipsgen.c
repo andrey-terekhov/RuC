@@ -276,9 +276,9 @@ void MASSExpr(int c, int leftanst, int leftdispl, int leftreg)
     }
     else                                 // не чистое присваивание
     {
-        int flag = 0, rez = leftanst == AREG ? leftreg : mbox <= 2 ? breg : t1,     opnd;
+        int flag = 0, rez = leftanst == AREG ? leftreg : mbox <= 2 ? breg : t0,     opnd;
         if( leftanst == AMEM)
-            tocodeB(lw, opnd = rez, leftdispl, leftreg);
+            tocodeB(lw, opnd = (rez == t0 ? t1 : rez), leftdispl, leftreg);
         else
         {
             opnd = leftreg;
@@ -289,19 +289,19 @@ void MASSExpr(int c, int leftanst, int leftdispl, int leftreg)
         if (manst == CONST)
         {
             if (c == SHLASS || c == SHLASSV || c == SHLASSAT || c == SHLASSATV)
-                tocodeSLR(sll, t0, opnd, num);
+                tocodeSLR(sll, rez, opnd, num);
             else if (c == SHRASS || c == SHRASSV || c == SHRASSAT || c == SHRASSATV)
-                tocodeSLR(sra, t0, opnd, num);
+                tocodeSLR(sra, rez, opnd, num);
             else if (c == ANDASS || c == ANDASSV ||c == ANDASSAT || c == ANDASSATV)
-                tocodeI(andi, t0, opnd, num);
+                tocodeI(andi, rez, opnd, num);
             else if (c == ORASS || c == ORASSV || c == ORASSAT || c == ORASSATV)
-                tocodeI(ori, t0, opnd, num);
+                tocodeI(ori, rez, opnd, num);
             else if (c == EXORASS|| c == EXORASSV || c == EXORASSAT || c == EXORASSATV)
-                tocodeI(xori, t0, opnd, num);
+                tocodeI(xori, rez, opnd, num);
             else if (c == PLUSASS|| c == PLUSASSV || c == PLUSASSAT || c == PLUSASSATV)
-                tocodeI(addi, t0, opnd, num);
+                tocodeI(addi, rez, opnd, num);
             else if (c == MINUSASS|| c == MINUSASSV || c == MINUSASSAT || c == MINUSASSATV)
-                tocodeI(addi, t0, opnd, -num);
+                tocodeI(addi, rez, opnd, -num);
             else if (c == MULTASS || c == MULTASSV || c == MULTASSAT || c == MULTASSATV ||
                      c == DIVASS || c == DIVASSV || c == DIVASSAT || c == DIVASSATV ||
                      c == REMASS || c == REMASSV || c == REMASSAT || c == REMASSATV)
@@ -312,42 +312,42 @@ void MASSExpr(int c, int leftanst, int leftdispl, int leftreg)
         }
         
         if (manst == AREG || flag)
-        {                          // здесь второй операнд - это регистр t0
-            int aregt9 = flag == 1 ? t9 : t0;
+        {                          // здесь второй операнд - это регистр areg
+            int aregt9 = flag == 1 ? t9 : areg;
             if (c == SHLASS || c == SHLASSV || c == SHLASSAT || c == SHLASSATV)
-                tocodeR(sllv, t0, opnd, t0);
+                tocodeR(sllv, rez, opnd, areg);
             else if (c == SHRASS || c == SHRASSV || c == SHRASSAT || c == SHRASSATV)
-                tocodeSLR(srav, t0, opnd, areg);
+                tocodeSLR(srav, rez, opnd, areg);
             else if (c == ANDASS || c == ANDASSV ||c == ANDASSAT || c == ANDASSATV)
-                tocodeR(and, t0, opnd, areg);
+                tocodeR(and, rez, opnd, areg);
             else if (c == ORASS || c == ORASSV || c == ORASSAT || c == ORASSATV)
-                tocodeR(or, t0, opnd, areg);
+                tocodeR(or, rez, opnd, areg);
             else if (c == EXORASS|| c == EXORASSV || c == EXORASSAT || c == EXORASSATV)
-                tocodeR(xor, t0, opnd, areg);
+                tocodeR(xor, rez, opnd, areg);
             else if (c == PLUSASS|| c == PLUSASSV || c == PLUSASSAT || c == PLUSASSATV)
-                tocodeR(add, t0, opnd, areg);
+                tocodeR(add, rez, opnd, areg);
             else if (c == MINUSASS|| c == MINUSASSV || c == MINUSASSAT || c == MINUSASSATV)
-                tocodeR(sub, t0, opnd, areg);
+                tocodeR(sub, rez, opnd, areg);
             else if (c == MULTASS|| c == MULTASSV || c == MULTASSAT || c == MULTASSATV)
-                tocodeR(mul, t0, opnd, aregt9);
+                tocodeR(mul, rez, opnd, aregt9);
             else if (c == DIVASS || c == DIVASSV || c == DIVASSAT || c == DIVASSATV)
             {
                 tocodeD(divc, opnd, aregt9);
-                tocodeMF(mflo, t0);
+                tocodeMF(mflo, rez);
             }
             else if (c == REMASS || c == REMASSV || c == REMASSAT || c == REMASSATV)
             {
                 tocodeD(divc, opnd, aregt9);
-                tocodeMF(mfhi, t0);
+                tocodeMF(mfhi, rez);
             }
             
         }
  
-        areg = t0;
+        areg = rez;
 //    if (mbox <= 2 && breg != t0)
 //            tocodemove(areg = breg, t0);
     if (leftanst == AMEM)
-        tocodeB(sw, t0, leftdispl, leftreg);
+        tocodeB(sw, rez, leftdispl, leftreg);
 
     manst = AREG;
     }
@@ -1411,17 +1411,11 @@ void MStmt_gen()
             int fromref = tree[tc++], condref = tree[tc++], incrref = tree[tc++],
             stmtref = tree[tc++];
             int oldbreak = adbreak, oldcont = adcont, incrtc, endtc;
-            int r = getreg();
-            int idfrom = identab[fromref], idfrom3 = identab[fromref+3];
             if (fromref)
-            {
-                identab[fromref] *= -1;
-                identab[fromref+3] = r;
                 MExpr_gen();         // init
-            }
             adbreak = elselab = labnum++;
             adcont  = labnum++;
-            tocodeL("CONT", adcont);
+        tocodeL("BEGLOOP", adcont);
             if (condref)
             {
                 mbox = -BC;
@@ -1435,21 +1429,21 @@ void MStmt_gen()
                 MStmt_gen();         // statement
                 endtc = tc;
                 tc = incrtc;
+            tocodeL("CONT", adcont);
                 MExpr_gen();         // incr
                 tc = endtc;
             }
             else
+            {
                 MStmt_gen();         // statement
-            tocodeJ(jump, "CONT", adcont);
+            tocodeL("CONT", adcont);
+            }
+            tocodeJ(jump, "BEGLOOP", adcont);
         tocodeL("end", adbreak);
         tocodeL("ELSE", adbreak);
 
             adbreak = oldbreak;
             adcont = oldcont;
-            if (fromref)
-                mdsp(idfrom3), tocodeB(sw, r, adispl, areg);
-            identab[fromref] = idfrom;
-            identab[fromref+3] = idfrom3;
         }
             break;
         case TGoto:
