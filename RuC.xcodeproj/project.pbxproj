@@ -64,6 +64,7 @@
 			isa = PBXGroup;
 			children = (
 				EDCB45791DDF4ACF0030AE24 /* RuC */,
+				EDE8849D1F3C8CDE00DAE9F0 /* threads.c */,
 				EDCB45781DDF4ACF0030AE24 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,7 +91,6 @@
 				EDCB45861DDF4B9C0030AE24 /* global_vars.h */,
 				EDCB45851DDF4B9C0030AE24 /* extdecl.c */,
 				ED70946E2350BC0500FACB6D /* Defs.h */,
-				EDE8849D1F3C8CDE00DAE9F0 /* threads.c */,
 				EDCB45881DDF4B9C0030AE24 /* main.c */,
 			);
 			path = RuC;
