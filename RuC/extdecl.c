@@ -768,7 +768,6 @@ int find_field(int stype)                          // выдает смещен�
     int i, flag = 1, select_displ = 0;
     scaner();
     mustbe(IDENT, after_dot_must_be_ident);
-    
     for (i = 0; i < modetab[stype+2]; i+=2)        // тут хранится удвоенное n
     {
         int field_type = modetab[stype+3 + i];
@@ -939,8 +938,11 @@ void postexpr()
             selectend();
         }
         if (next == DOT)
-
         {
+//            int i;
+//            for (i=3800; i < 3850; ++i)
+//                printf("%i) reprtab[i]= %i %c\n", i, reprtab[i], reprtab[i]);
+            
             if (ansttype < 0 || modetab[ansttype] != MSTRUCT)
                 error(select_not_from_struct);
             if (anst == VAL)    // структура - значение функции
@@ -2007,12 +2009,15 @@ int gettype()
 			scaner();
 			if (next == BEGIN)         // struct key {
 			{
+                int i;
                 // если такое описание уже было, то это ошибка - повторное описание
  				int lid;
 				wasstructdef = 1;      // это  определение типа (может быть, без описания переменных)
 				toidentab(1000, 0);
  				lid = lastid;
 				identab[lid + 2] = struct_decl_list();
+                for (i=20; i<35; ++i)
+                    printf("gettype %i) %i\n", i, modetab[i]);
                 identab[lid + 3] = 1000 + was_struct_with_arr;
                 return identab[lid+2];
 			}

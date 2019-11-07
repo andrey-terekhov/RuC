@@ -1,5 +1,5 @@
-int a,b;
-int main()
+int a,b,i;
+void main()
 {
     do
     {
@@ -7,7 +7,7 @@ int main()
         {
             continue;
             a=1;
-            return 0;
+            return;
             a = -11;
         }
         else
@@ -23,8 +23,25 @@ int main()
     while (!a)
     {continue;
         break;
-        return 0;
+        return;
         continue;
         a&=b;
+    }
+ 
+    for (i=0; i<5; ++i)
+    {
+        a = b;
+        continue;
+        break;
+        continue;
+        b = a;
+    }
+    for (i=0; i<5;)
+    {
+        a = b;
+        break;
+        continue;
+        break;
+        b = a;
     }
 }

@@ -336,13 +336,14 @@ void Stmt_gen()
         case TFor:
         {
             int fromref = tree[tc++], condref = tree[tc++], incrref = tree[tc++], stmtref = tree[tc++];
-            int oldbreak = adbreak, oldcont = adcont, ad = pc, incrtc, endtc;
+            int oldbreak = adbreak, oldcont = adcont, incrtc, endtc;
+            int initad;
             if (fromref)
             {
                 Expr_gen(0);         // init
             }
-            adbreak = 0;
-            adcont = ad = pc;
+            initad = pc;
+            adcont = adbreak = 0;
             if (condref)
             {
                 Expr_gen(0);         // cond
@@ -352,7 +353,8 @@ void Stmt_gen()
             }
             incrtc = tc;
             tc = stmtref;
-            Stmt_gen();            
+            Stmt_gen();
+            adcontend();
             if (incrref)
             {
                 endtc = tc;
@@ -360,9 +362,8 @@ void Stmt_gen()
                 Expr_gen(0);         // incr
                 tc = endtc;
             }
-            adcontbeg(ad);
             tocode(B);
-            tocode(ad);
+            tocode(initad);
             adbreakend();
             adbreak = oldbreak;
             adcont = oldcont;

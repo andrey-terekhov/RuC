@@ -619,7 +619,7 @@ int scaner()
 {
     cur = next;
     next = scan();
-    //    if(kw)
-    //        printf("scaner cur %i next %i repr %i\n", cur, next, repr);
+//        if(kw)
+//            printf("scaner cur %i next %i repr %i\n", cur, next, repr);
     return cur;
 }
