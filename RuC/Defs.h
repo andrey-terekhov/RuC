@@ -684,4 +684,19 @@
 #define slt     102        // slt rd, rs, rt       rd = rs < rt ? 1 : 0
 #define sltu    103        // sltu rd, rs, rt      rd = rs < rt ? 1 : 0      unsigned
 
+//вещественные числа
+#define add_d   110
+#define sub_d   111
+#define mul_d   112
+#define div_d   113
+#define li_d    120
+#define sdc1    125
+#define ldc1    126
+#define mtc1_d  127
+#define bc1t    128
+#define bc1f    129
+#define c_seq_d 130
+#define c_lt_d  131
+#define c_le_d  132
+
 #endif
