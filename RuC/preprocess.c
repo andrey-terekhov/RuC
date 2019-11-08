@@ -34,37 +34,37 @@ extern void fprintf_char();
 extern void m_error();
 
 
-int mletter(int r);
-int mdigit(int r);
-int mequal(int str[], int j);
+int mletter();
+int mdigit();
+int mequal();
 
 void mend_line();
 void m_nextch();
 void monemore();
-void m_fprintf(int a);
+void m_fprintf();
 
-void to_macrotext(int chang[], int oldrepr);//
-void macro_reprtab(int chang []);
+void to_macrotext();//
+void macro_reprtab();
 void from_macrotext();//5
 int macro_keywords();//12
 void relis_define();//2
 
 void toreprtab_f();
 void to_functionident (); //4
-int scob(int cp);//6
-void from_functionident(int r);
-void create_change(int r1);//11
+int scob();//6
+void from_functionident();
+void create_change();//11
 void r_macrofunction();//3
 
 //void m_ident();//5
 int find_ident();
 
-int check_if(int type_if);//10
+int check_if();//10
 void end_line_space();//9
 void false_if ();//8
 int m_false();//7
-void m_true(int type_if);
-void m_if(int type_if);
+void m_true();
+void m_if();
 
 void macroscan();//1,17
 void preprocess_file();//18
@@ -353,6 +353,7 @@ int find_ident()
  int to_reprtab()
  {
     int i;
+    int r;
     int oldrepr = rp;
 
     mlastrp = oldrepr;
