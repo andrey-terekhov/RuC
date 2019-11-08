@@ -1919,7 +1919,9 @@ int struct_decl_list()
     
     do
 	{
+        int fieldrepr;
 		t = elem_type = idorpnt(wait_ident_after_semicomma_in_struct, gettype());
+        fieldrepr = repr;
         if (next == LEFTSQBR)
         {
             int adN, all;
@@ -1960,7 +1962,7 @@ int struct_decl_list()
             }                         // конец ASS
         }                             // конец LEFTSQBR
         loc_modetab[locmd++] = t;
-        loc_modetab[locmd++] = repr;
+        loc_modetab[locmd++] = fieldrepr;
         field_count++;
         curdispl += szof(t);
 		if (scaner() != SEMICOLON)
@@ -2016,8 +2018,6 @@ int gettype()
 				toidentab(1000, 0);
  				lid = lastid;
 				identab[lid + 2] = struct_decl_list();
-                for (i=20; i<35; ++i)
-                    printf("gettype %i) %i\n", i, modetab[i]);
                 identab[lid + 3] = 1000 + was_struct_with_arr;
                 return identab[lid+2];
 			}
