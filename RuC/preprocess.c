@@ -364,13 +364,11 @@ int find_ident()
     {
         hash += curchar;
         reprtab[rp++] = curchar;
-        nextch();
+        m_nextch(2);
     } while (letter() || digit());
 
     hash &= 255;
     reprtab[rp++] = 0;
-    reprtab[oldrepr] = hashtab[hash];
-    hashtab[hash] = oldrepr;
 
     r = hashtab[hash];
     while(r)
