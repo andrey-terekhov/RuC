@@ -34,36 +34,37 @@ extern void fprintf_char();
 extern void m_error();
 
 
-int mletter(int r);
-int mdigit(int r);
-int mequal(int str[], int j);
+int mletter();
+int mdigit();
+int mequal();
 
 void mend_line();
 void m_nextch();
-void m_fprintf(int a);
+void monemore();
+void m_fprintf();
 
-void to_macrotext(int chang[], int oldrepr);//
-void macro_reprtab(int chang []);
+void to_macrotext();//
+void macro_reprtab();
 void from_macrotext();//5
 int macro_keywords();//12
 void relis_define();//2
 
 void toreprtab_f();
 void to_functionident (); //4
-int scob(int cp);//6
-void from_functionident(int r);
-void create_change(int r1);//11
+int scob();//6
+void from_functionident();
+void create_change();//11
 void r_macrofunction();//3
 
 //void m_ident();//5
 int find_ident();
 
-int check_if(int type_if);//10
-void end_line();//9
+int check_if();//10
+void end_line_space();//9
 void false_if ();//8
 int m_false();//7
-void m_true(int type_if);
-void m_if(int type_if);
+void m_true();
+void m_if();
 
 void macroscan();//1,17
 void preprocess_file();//18
@@ -113,19 +114,20 @@ void show_macro()
     }
 }
 
-int mletter(int r)
-{
+//простые
+ int mletter(int r)
+ {
     return (r >= 'A' && r <= 'Z') || (r >='a' && r <= 'z') 
     || r == '_' || (r >= 0x410/*А */ && r <= 0x44F /*'я'*/);
-}
+ }
 
-int mdigit(int r)
-{
+ int mdigit(int r)
+ {
     return r >='0' && r <= '9';
-}
+ }
 
-int mequal(int str[], int j)
-{
+ int mequal(int str[], int j)
+ {
     int i = 0 ;  
     while (str[i++] == functionident[j++])
     {
@@ -133,10 +135,12 @@ int mequal(int str[], int j)
             return 1;
     }
     return 0;
-}
+ }
+//
 
-void mend_line()
-{
+// обработка символов
+ void mend_line()
+ {
     int j;
     if (flag_show_macro == 0)
    {
@@ -152,10 +156,10 @@ void mend_line()
    }
 
     return;
-}
+ }
 
-void monemore()
-{
+ void monemore()
+ {
     if(flag_show_macro == 0)
     {
         curchar = nextchar;
@@ -173,10 +177,10 @@ void monemore()
         printf("\n");
         return;
     } 
-}
+ }
 
-void m_nextch(int i)
-{
+ void m_nextch(int i)
+ {
     //printf(" i = %d curcar = %c curcar = %i\n", i, curchar, curchar);
     monemore();
 
@@ -245,10 +249,10 @@ void m_nextch(int i)
      mend_line();
     }
     return;
-}
+ }
 
-void m_fprintf(int a)
-{
+ void m_fprintf(int a)
+ {
     if(a == '\n')
     {
     m_conect_lines[mcl++] = mline-1;
@@ -256,85 +260,53 @@ void m_fprintf(int a)
     fprintf_char(output, a);
 
     return;
-}
+ }
 
-void to_macrotext(int chang[], int oldrepr)
-{
-    int i;
-    macrotext[mp++] = oldrepr;
-    for( i = 0; chang[i] != 0; i++)
+ void end_line_space()
+ {
+    while(curchar != '\n')
     {
-        macrotext[mp++] = chang[i];
+        if(curchar == ' ' || curchar == '\t')
+        {
+            m_nextch(9);
+        }
+        else
+        {
+            m_error(after_preproces_words_must_be_space);
+        }
     }
-    macrotext[mp++] = 0;
-}
+    m_nextch(9);
+ }
+//
 
-void macro_reprtab(int chang [])
+int find_ident()
 {
-    int oldrepr = rp;
-    int r,i;
-
-
-    mlastrp = oldrepr;
+    int fpr = rp;
+    int i, r;
     hash = 0;
-    rp += 2;
-
-    for( i=0; i<msp; i++)
+    fpr += 2;
+    for( i = 0; i <msp; i++)
     {
         hash += mstring[i];
-        reprtab[rp++] = mstring[i];
+        reprtab[fpr++] = mstring[i];
     }
-    msp = 0;
+    reprtab[fpr++] = 0;
     hash &= 255;
-    reprtab[rp++] = 0;
-    reprtab[oldrepr] = hashtab[hash] ;
-    reprtab[oldrepr+1] = mp;
-
     r = hashtab[hash];
-    while(r != 0)
+    while(r)
     {
-            r = reprtab[r];
+        if(r >= mfirstrp && r<=mlastrp && equal(r, rp) )
+        {
+           return r;
+        }
+            r = reprtab[r];        
     }
-    to_macrotext(chang, oldrepr);
-    hashtab[hash] = oldrepr;
+    return 0;
 }
 
-void from_macrotext()
-{ 
-    int r;
-    msp = 0;
-    
-    while(letter() || digit())
-    {
-        mstring[msp++] = curchar;
-        m_nextch(5);
-    }
- 
-    r = find_ident();
-    //printf("r = %d\n", r);
-
-    if(r)
-    {
-        msp = 0;
-        if (reprtab[r + 1] == 2)
-        {
-            from_functionident(r);
-            return;
-        }
-
-        r = reprtab[r + 1] + 1;
-
-        for( ; macrotext[r] != 0; r++)
-        {
-            mstring[msp++] = macrotext[r];
-        }
-    }
-    
-    return;
-}
-
-int macro_keywords() 
-{
+//define
+ int macro_keywords() 
+ {
     int oldrepr = rp;
     int r = 0;
 
@@ -376,31 +348,124 @@ int macro_keywords()
         while(r);
     }
     return 0;
-}
+ }
 
-void relis_define()
-{
+ int to_reprtab()
+ {
+    int i;
+    int r;
+    int oldrepr = rp;
+
+    mlastrp = oldrepr;
+    hash = 0;
+    rp += 2;
+
+    do
+    {
+        hash += curchar;
+        reprtab[rp++] = curchar;
+        m_nextch(2);
+    } while (letter() || digit());
+
+    hash &= 255;
+    reprtab[rp++] = 0;
+
+    r = hashtab[hash];
+    while(r)
+    {
+        if (equal(r, oldrepr))
+        {
+           m_error(repeat_ident);
+        }
+
+        r = reprtab[r];        
+    }
+
+    reprtab[oldrepr] = hashtab[hash];
+    hashtab[hash] = oldrepr;
+
+    return oldrepr;
+ }
+
+ void to_macrotext(int oldrepr)
+ {
+
+    m_nextch(2);
+
+    macrotext[mp++] = oldrepr;
+
+    while(curchar != '\n')
+    {
+        macrotext[mp++] = curchar;
+        m_nextch(2);
+
+        if(curchar == EOF)
+        {
+            m_error(not_end_fail_preprocess);
+        }
+
+        if (curchar == '\\')
+        {
+            m_nextch(2);
+            end_line_space();
+        }
+    }
+
+    macrotext[mp++] = 0;
+ }
+
+ void from_macrotext()
+ { 
+    int r;
+    msp = 0;
+    
+    while(letter() || digit())
+    {
+        mstring[msp++] = curchar;
+        m_nextch(5);
+    }
+ 
+    r = find_ident();
+    //printf("r = %d\n", r);
+
+    if(r)
+    {
+        msp = 0;
+        if (reprtab[r + 1] == 2)
+        {
+            from_functionident(r);
+            return;
+        }
+
+        r = reprtab[r + 1] + 1;
+
+        for( ; macrotext[r] != 0; r++)
+        {
+            mstring[msp++] = macrotext[r];
+        }
+    }
+    
+    return;
+ }
+
+ void relis_define()
+ {
 
     if (letter())
     { 
-        msp = 0;
-        while(letter() || digit())
-        {
-            mstring[msp++] = curchar;
-            m_nextch(2);
-        } 
+        int oldrepr = to_reprtab();
 
-        if (find_ident() != 0)
-        {
-            m_error(repeat_ident);
-        }
+        msp = 0;
 
         if (curchar == '(')
         { 
-            //printf("str = %s\n", mstring);
-            toreprtab_f();
+            reprtab[oldrepr+1] = 2;
+            reprtab[rp++] = fip;
+            reprtab[rp++] = 0;
+    
             m_nextch(2);
             r_macrofunction();
+
             return;
         }
         else if(curchar != ' ')
@@ -409,26 +474,9 @@ void relis_define()
         }
         else
         {
-            int i = 0;
-            m_nextch(2);
-            int chang [STRIGSIZE];
-            while(curchar != '\n')
-            {
-                chang[i++] = curchar;
-                m_nextch(2);
-                if(curchar == EOF)
-                {
-                    m_error(not_end_fail_preprocess);
-                }
+            reprtab[oldrepr+1] = mp;
+            to_macrotext(oldrepr); 
 
-                if (curchar == '\\')
-                {
-                    m_nextch(2);
-                    end_line();
-                }
-            }
-            chang[i++] = 0;
-            macro_reprtab(chang);
             return;
         }
     }
@@ -436,33 +484,12 @@ void relis_define()
     { 
         m_error(ident_begins_with_letters);
     }
-}
+ }
+//
 
-void toreprtab_f()
-{
-    int i;
-    int oldrepr = rp;
-    mlastrp = oldrepr;
-    //printf("r = %i\n", oldrepr);
-    hash = 0;
-    rp += 2;
-    for (i=0; i<msp; i++)
-    {
-        hash += mstring[i];
-        reprtab[rp++] = mstring[i];
-    }
-
-    hash &= 255;
-    reprtab[rp++] = 0;
-    reprtab[rp++] = fip;
-    reprtab[rp++] = 0;
-    reprtab[oldrepr] = hashtab[hash] ;
-    reprtab[oldrepr+1] = 2;
-    hashtab[hash] = oldrepr;
-}
-
-void to_functionident()
-{
+//define c параметрами
+ void to_functionident()
+ {
     while(curchar != ')')
     {
                                                       //reportab
@@ -500,10 +527,10 @@ void to_functionident()
     }
     m_nextch(4);
     return; 
-}
+ }
 
-void from_functionident(int r)
-{
+ void from_functionident(int r)
+ {
     int i,kp,cp;
     int r1 = r + 2;
     int str[STRIGSIZE];
@@ -560,10 +587,10 @@ void from_functionident(int r)
     }
    
 
-}
+ }
 
-int scob(int cp)
-{
+ int scob(int cp)
+ {
     int i;
     fchange[cp++] = curchar;
     m_nextch(6);
@@ -595,10 +622,10 @@ int scob(int cp)
     }
     m_error(scob_not_clous);
     return cp;
-}
+ }
 
-void create_change(int r1)
-{
+ void create_change(int r1)
+ {
     int i;
     int r = r1 + 2;
     int cp = 1;
@@ -669,10 +696,10 @@ void create_change(int r1)
     {
         m_error(stalpe);
     }
-}
+ }
 
-void r_macrofunction()
-{
+ void r_macrofunction()
+ {
     int j;
     int olderfip = fip++;
     functionident[fip++] = mfp;
@@ -707,55 +734,17 @@ void r_macrofunction()
         if (curchar == '\\')
         {
             m_nextch(2);
-            end_line();
+            end_line_space();
         }
     }
     macrofunction [mfp++] = '\n';
     return;
-}
+ }
+//
 
-
-/*void m_ident()
-{
-    msp = 0;
-    
-    while(letter() || digit())
-    {
-        mstring[msp++] = curchar;
-        m_nextch(5);
-    }
-    from_macrotext();
-
-    return;
-}*/
-
-int find_ident()
-{
-    int fpr = rp;
-    int i, r;
-    hash = 0;
-    fpr += 2;
-    for( i = 0; i <msp; i++)
-    {
-        hash += mstring[i];
-        reprtab[fpr++] = mstring[i];
-    }
-    reprtab[fpr++] = 0;
-    hash &= 255;
-    r = hashtab[hash];
-    while(r)
-    {
-        if(r >= mfirstrp && r<=mlastrp && equal(r, rp) )
-        {
-           return r;
-        }
-            r = reprtab[r];        
-    }
-    return 0;
-}
-
-int check_if(int type_if)
-{
+//if
+ int check_if(int type_if)
+ {
 
     int flag = 0;
 
@@ -785,26 +774,10 @@ int check_if(int type_if)
         }
     }
     return 0;
-}
+ }
 
-void end_line()
-{
-    while(curchar != '\n')
-    {
-        if(curchar == ' ' || curchar == '\t')
-        {
-            m_nextch(9);
-        }
-        else
-        {
-            m_error(after_preproces_words_must_be_space);
-        }
-    }
-    m_nextch(9);
-}
-
-void false_if ()
-{
+ void false_if ()
+ {
     int fl_cur;
    while(curchar != EOF)
     {
@@ -832,10 +805,10 @@ void false_if ()
         }
     } 
     m_error(must_be_endif);
-}
+ }
 
-int m_false()
-{
+ int m_false()
+ {
     int fl_cur = cur;
     while(curchar != EOF)
     {
@@ -858,10 +831,10 @@ int m_false()
     }  
     m_error(must_be_endif);
     return 1;
-}
+ }
 
-void m_true(int type_if)
-{
+ void m_true(int type_if)
+ {
    while (curchar != EOF )
     {
         macroscan();
@@ -887,13 +860,13 @@ void m_true(int type_if)
     
     false_if();
     return;
-}
+ }
 
-void m_if(int type_if)
-{ 
+ void m_if(int type_if)
+ { 
     checkif++;
     int flag = check_if(type_if);// начало (if)
-    end_line();
+    end_line_space();
     if(flag)
     {
         m_true(type_if);
@@ -909,7 +882,7 @@ void m_if(int type_if)
         while (cur == SH_ELIF)
         {
             flag = check_if(type_if);
-            end_line();
+            end_line_space();
             if(flag)
             {
                 m_true(type_if);
@@ -943,7 +916,8 @@ void m_if(int type_if)
             m_error(befor_endif);
         }
     }
-}
+ }
+//
 
 void macroscan()
 {  
