@@ -10,10 +10,13 @@
 
 int macrotext [MAXREPRTAB];
 int mstring[STRIGSIZE];
-int macrofunction [MAXREPRTAB];
-int functionident [MAXREPRTAB];
-int fchange [STRIGSIZE]; 
-int fip = 1;
+int fstring[STRIGSIZE];
+int fchange[STRIGSIZE*2];
+int localstack[STRIGSIZE];
+int lsp = 0;
+int cp = 0;
+int fip = 0;
+int fsp = 0;
 int mfp = 1;
 int mfirstrp = -1; // начало и конец макрослов в reprtab
 int mlastrp = -1;
@@ -24,6 +27,7 @@ int mcl;
 int checkif = 0;
 int flag_show_macro = 0;
 int arg = 0;
+int flag_from_macrotext = 1; // ??? временно
 
 extern int getnext();
 extern int letter();
@@ -50,8 +54,8 @@ int macro_keywords();//12
 void relis_define();//2
 
 void toreprtab_f();
-void to_functionident (); //4
-int scob();//6
+int to_functionident (); //4
+void scob();//6
 void from_functionident();
 void create_change();//11
 void r_macrofunction();//3
@@ -126,14 +130,25 @@ void show_macro()
     return r >='0' && r <= '9';
  }
 
- int mequal(int str[], int j)
+ int mequal(int a)
  {
-    int i = 0 ;  
-    while (str[i++] == functionident[j++])
+    int i = 0;
+    int n = 1;  
+    int j = 0;
+    while (j < fip)
     {
-        if (str[i] == 0 && functionident[j] == 0)
-            return 1;
+        while (i < msp && mstring[a + i++] == fstring[j++]) {
+            if (a + i == msp && fstring[j] == 0)
+            {
+                return n;
+            }
+        }
+        n++;
+        i = 0;
+        if (fstring[j++] != 0)
+            while (fstring[j++] != 0);    
     }
+
     return 0;
  }
 //
@@ -258,7 +273,6 @@ void show_macro()
     m_conect_lines[mcl++] = mline-1;
     }
     fprintf_char(output, a);
-
     return;
  }
 
@@ -350,7 +364,7 @@ int find_ident()
     return 0;
  }
 
- int to_reprtab()
+ void to_reprtab()
  {
     int i;
     int r;
@@ -380,19 +394,18 @@ int find_ident()
 
         r = reprtab[r];        
     }
-
+    
     reprtab[oldrepr] = hashtab[hash];
+    reprtab[oldrepr + 1] = mp;
     hashtab[hash] = oldrepr;
-
-    return oldrepr;
  }
 
- void to_macrotext(int oldrepr)
+ void to_macrotext()
  {
 
     m_nextch(2);
 
-    macrotext[mp++] = oldrepr;
+    macrotext[mp++] = 1;
 
     while(curchar != '\n')
     {
@@ -411,35 +424,39 @@ int find_ident()
         }
     }
 
-    macrotext[mp++] = 0;
+    macrotext[mp++] = '\n';
  }
 
  void from_macrotext()
  { 
     int r;
-    msp = 0;
-    
-    while(letter() || digit())
-    {
-        mstring[msp++] = curchar;
-        m_nextch(5);
-    }
- 
-    r = find_ident();
-    //printf("r = %d\n", r);
 
+    if(flag_from_macrotext)
+    { 
+        msp = 0;
+    
+        while(letter() || digit())
+        {
+            mstring[msp++] = curchar;
+            m_nextch(5);
+        }
+    }
+    flag_from_macrotext = 1;
+    r = find_ident();
+    
     if(r)
     {
+        int t = reprtab[r + 1];
         msp = 0;
-        if (reprtab[r + 1] == 2)
+        if (macrotext[t] == 2)
         {
-            from_functionident(r);
+            from_functionident(t);
             return;
         }
 
         r = reprtab[r + 1] + 1;
 
-        for( ; macrotext[r] != 0; r++)
+        for( ; macrotext[r] != '\n'; r++)
         {
             mstring[msp++] = macrotext[r];
         }
@@ -450,65 +467,54 @@ int find_ident()
 
  void relis_define()
  {
-
-    if (letter())
-    { 
-        int oldrepr = to_reprtab();
-
-        msp = 0;
-
-        if (curchar == '(')
-        { 
-            reprtab[oldrepr+1] = 2;
-            reprtab[rp++] = fip;
-            reprtab[rp++] = 0;
-    
-            m_nextch(2);
-            r_macrofunction();
-
-            return;
-        }
-        else if(curchar != ' ')
-        {
-            m_error(after_ident_must_be_space);
-        }
-        else
-        {
-            reprtab[oldrepr+1] = mp;
-            to_macrotext(oldrepr); 
-
-            return;
-        }
-    }
-    else
+    if (letter() == 0) 
     { 
         m_error(ident_begins_with_letters);
     }
+
+    to_reprtab();
+
+    msp = 0;
+
+    if (curchar == '(')
+    { 
+        m_nextch(2);
+        r_macrofunction();
+    }
+    else if(curchar != ' ')
+    {
+        m_error(after_ident_must_be_space);
+    }
+    else
+    {
+        to_macrotext();   
+    }
+
+    return; 
  }
 //
 
 //define c параметрами
- void to_functionident()
+ int to_functionident()
  {
+    int num = 0;
+    fip = 0;
     while(curchar != ')')
-    {
-                                                      //reportab
-        msp = 0;                                       //   \/
-        fip++;                                     //funcid 5[] -> конец = 13
-        if (letter())                              //       6[] -> macrofunc
-        {                                          //       7[] -> fcang 
-                                                   //       8[a]
-            while(letter() || digit())             //       9[0]
-            {                                      //      10[] -> fcang
-                functionident[fip++] = curchar;    //      11[b] 
-                mstring[msp++] = curchar;                //      12[0]
+    { 
+        msp = 0; 
+        if (letter()) 
+        {
+            while(letter() || digit())
+            {
+                fstring[fip++] = curchar;
+                mstring[msp++] = curchar;
                 m_nextch(4);
             }
             if (find_ident() != 0)
             {
                 m_error(repeat_ident);
             }
-            functionident[fip++] = 0;    
+            fstring[fip++] = 0;    
         }
         else 
         {
@@ -518,7 +524,8 @@ int find_ident()
         if(curchar == ',' && nextchar == ' ')
         {
             m_nextch(4);
-            m_nextch(4);   
+            m_nextch(4); 
+            num++;  
         }
         else if (curchar != ')')
         {
@@ -526,70 +533,39 @@ int find_ident()
         }
     }
     m_nextch(4);
-    return; 
+    return num; 
  }
 
- void from_functionident(int r)
+ void from_functionident(int t)
  {
-    int i,kp,cp;
-    int r1 = r + 2;
-    int str[STRIGSIZE];
-
-    for(; reprtab[r1] !=  0; r1++);
-    r1++;
-    r1 = reprtab[r1];
-    create_change(r1);
-
-    int finish = functionident[r1];
-    int newfi = functionident[r1 + 1];
+    int i =  t + 2;
     int flag = 1;
+
+    create_change(macrotext[t + 1]);
+
     msp = 0;
-    while(macrofunction[newfi] != '\n' ) 
+    while(macrotext[i] != '\n' ) 
     {
-        if(mletter(macrofunction[newfi]))
-        {
-            flag = 1;
-            for ( i = 0; i < STRIGSIZE; i++)
+        if(macrotext[i] == -1)
+        { 
+            i++;
+            int locp = localstack[macrotext[i] + lsp];
+            i++;
+            for(;fchange[locp] != '\n'; locp++)
             {
-                str[i] = 0;
+                mstring[msp++] = fchange[locp];
             }
-            i = 0;
-            while(mletter(macrofunction[newfi]) || mdigit(macrofunction[newfi]))
-            {
-                str[i++] = macrofunction[newfi++];
-            }
-            for( kp = r1 + 2; kp < finish; )
-            {
-                if (mequal(str, kp + 1))
-                {
-                    for( cp = functionident[kp]; fchange[cp] != '\n'; cp++)
-                    {
-                        mstring[msp++] = fchange[cp];
-                    }
-                    flag = 0;
-                    break;   
-                }
-                while(functionident[kp++] != 0);
-            }
-            if (flag == 1)
-            {
-                for( i = 0; str[i] != 0; i++)
-                {
-                   mstring[msp++] = str[i]; 
-                }
-            }
+            
         }
         else
         {
-       mstring[msp++] = macrofunction[newfi];
-        newfi++;
+            mstring[msp++] = macrotext[i++];
         }
     }
-   
-
+    cp = 0;
  }
 
- int scob(int cp)
+ void scob()
  {
     int i;
     fchange[cp++] = curchar;
@@ -598,15 +574,18 @@ int find_ident()
     {
         if(letter())
         {
+            int oldcp = cp;
             from_macrotext();
+            cp = oldcp;
+
             for(i = 0; i < msp; i++)
             {
-               fchange[cp++] =  mstring[i];
+                fchange[cp++] =  mstring[i];
             }
         }
         else if(curchar == '(')
         {
-            cp = scob(cp);
+            scob;
         }
         else
         {
@@ -616,113 +595,163 @@ int find_ident()
             {
                 fchange[cp++] = curchar;
                 m_nextch(6);
-                 return cp;
+
+                return;
             }
         }
     }
     m_error(scob_not_clous);
-    return cp;
+    return;
  }
 
- void create_change(int r1)
+ void create_change(int n)
  {
     int i;
-    int r = r1 + 2;
-    int cp = 1;
-    functionident[r] = cp;
-    if(curchar == '(')
-    { 
-        m_nextch(11);
-        while(curchar != EOF)
+    int num = 0;
+    int oldlsp = lsp;
+    localstack[num + lsp] = cp;
+
+    if(curchar != '(')
+    {
+        m_error(stalpe);
+    } 
+
+    m_nextch(11);
+    while(curchar != EOF)
+    {
+        if(letter())
         {
+            int oldcp = cp;
+            lsp = num + 1;
+            from_macrotext();
+            lsp = oldlsp;
+            cp = oldcp;
+            for(i = 0; i < msp; i++)
+            {
+                fchange[cp++] =  mstring[i];
+            }
+        }
+        else if(curchar == '(')
+        {
+            scob();
+        }
+        else if(curchar != ')' && curchar != ',')
+        {
+        fchange[cp++] = curchar;
+        m_nextch(11);
+        }
+        else
+        {
+            m_error(not_enough_param); // не та ошибка ????
+        }
 
-            if(letter())
-            {
-                from_macrotext();
-                for(i = 0; i < msp; i++)
-                {
-                    fchange[cp++] =  mstring[i];
-                }
-            }
-            else if(curchar == '(')
-            {
-                cp = scob(cp);
-            }
-            else if(curchar != ')' && curchar != ',')
-            {
-            fchange[cp++] = curchar;
-            m_nextch(11);
-            }
-            else
-            {
-               m_error(not_enough_param); 
-            }
-
-            if (curchar == ',' || curchar == ')')
-            {
-                for(; functionident[r] != 0; r++);
-
-                if(r < functionident[r1])
-                {
-                    fchange[cp++] = '\n';
-                    r++;
-                }
-                else
+        if (curchar == ',' || curchar == ')')
+        {
+            fchange[cp++] = '\n';
+            if(curchar == ',')
+            {   
+                num++;
+                localstack[num + lsp] = cp;
+                if(num > n)
                 {
                     m_error(not_enough_param);
                 }
 
-                if(curchar == ',')
-                {
-                    functionident[r] =cp;
+                m_nextch(11);
+                if(curchar == ' ')
                     m_nextch(11);
-                }
-                else
-                {
-                    if(r != functionident[r1])
-                    {
-                        m_error(not_enough_param2);
-
-                    }
-                    m_nextch(11);
-                    return;
-                }
             }
-            
-        }
-        m_error(scob_not_clous);
+            else
+            {
+                if(num != n)
+                {
+                    m_error(not_enough_param2);
+
+                }
+                m_nextch(11);
+
+                return;
+            }
+        }       
+    }
+    m_error(scob_not_clous);    
+ }
+
+ void funktionleter()
+ {
+    int n;
+    int i;
+    msp = 0;
+    while(letter() || digit())
+    {
+        mstring[msp++] = curchar;
+        m_nextch(5);
+    } 
+    if((n = mequal(0)) != 0)
+    {
+        macrotext[mp++] = -1;
+        macrotext[mp++] = n-1;
     } 
     else
     {
-        m_error(stalpe);
+        int i = 0;
+        flag_from_macrotext = 0;
+        from_macrotext(); // не совсем ????
+        flag_from_macrotext = 1;
+
+        while(i < msp)
+        {    
+            if(mletter(mstring[i]) || mdigit(mstring[i]))
+            {
+                int oldmsp = msp;
+                int k = 0;
+                while(i < oldmsp && (mletter(mstring[i]) || mdigit(mstring[i])))
+                {
+                    mstring[msp++] = mstring[i];
+                    i++;
+                } 
+
+                if((n = mequal(oldmsp)) != 0)
+                {
+                    macrotext[mp++] = -1;
+                    macrotext[mp++] = n-1;
+                }
+                else
+                {
+                    for(int k = oldmsp; k < msp; k++)
+                    {
+                        macrotext[mp++] = mstring[k];
+                    }
+                }
+                msp = oldmsp;   
+            }
+            else
+            {
+                macrotext[mp++] = mstring[i++]; 
+            }
+        }  
     }
+    msp = 0;  
  }
 
  void r_macrofunction()
  {
     int j;
-    int olderfip = fip++;
-    functionident[fip++] = mfp;
 
-    to_functionident();
+    macrotext[mp++] = 2;
+    macrotext[mp++] = to_functionident();
     m_nextch(3);
-    functionident[olderfip] = fip;
 
     while(curchar != '\n')
     {
-    
+        ///printf("c1 = %c\n", curchar);
         if (letter())
-        {
-            from_macrotext();
-            for ( j = 0; j < msp; j++)
-            {
-                macrofunction[mfp++] =  mstring[j];  
-            }
-            msp = 0;
+        {    
+            funktionleter();
         }
         else
         {
-        macrofunction [mfp++] = curchar;
+        macrotext[mp++] = curchar;
         m_nextch(3);
         }
 
@@ -733,11 +762,11 @@ int find_ident()
 
         if (curchar == '\\')
         {
-            m_nextch(2);
+            m_nextch(3);
             end_line_space();
         }
     }
-    macrofunction [mfp++] = '\n';
+    macrotext[mp++] = '\n';
     return;
  }
 //
