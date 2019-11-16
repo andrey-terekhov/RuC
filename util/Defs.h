@@ -400,26 +400,35 @@
 #define SH_ELIF       -68   // #elif
 #define SH_ENDIF      -69   // #endif
 #define SH_ELSE       -70   // #else
+#define SH_MACRO      -71
+#define SH_ENDM       -72
+#define SH_WHILE      -73
+#define SH_ENDW       -74
+#define SH_SET        -75
+#define SH_UNDEF      -76
+#define SH_FOR        -77
+#define SH_ENDF       -78
+#define SH_EVAL       -79
 
-#define WIFI_CONNECT  -71
-#define BLYNK_AUTORIZATION -72
-#define BLYNK_SEND    -73
-#define BLYNK_RECEIVE -74
-#define BLYNK_NOTIFICATION -75
-#define BLYNK_PROPERTY     -76
-#define BLYNK_LCD     -77
-#define BLYNK_TERMINAL     -78
+#define WIFI_CONNECT  -80
+#define BLYNK_AUTORIZATION -81
+#define BLYNK_SEND    -82
+#define BLYNK_RECEIVE -83
+#define BLYNK_NOTIFICATION -84
+#define BLYNK_PROPERTY     -85
+#define BLYNK_LCD     -86
+#define BLYNK_TERMINAL     -87
 
-#define SETSIGNAL     -79
-#define PIXEL         -80
-#define LINE          -81
-#define RECTANGLE     -82
-#define ELLIPS        -83
-#define CLEAR         -84
-#define DRAW_STRING   -85
-#define DRAW_NUMBER   -86
-#define ICON          -87
-#define UPB           -88
+#define SETSIGNAL     -88
+#define PIXEL         -89
+#define LINE          -90
+#define RECTANGLE     -91
+#define ELLIPS        -92
+#define CLEAR         -93
+#define DRAW_STRING   -94
+#define DRAW_NUMBER   -95
+#define ICON          -96
+#define UPB           -97
 
 #define LVOIDASTER    -150
 #define ABSI          -151

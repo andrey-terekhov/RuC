@@ -70,8 +70,17 @@ T_GETNUM t_getnum Н_НОМЕР_НИТИ н_номер_нити
 #IFNDEF #ifndef #ЕСЛИНЕБЫЛ #еслинебыл
 #IF #if #ЕСЛИ #если 
 #ELIF #elif #ИНЕСЛИ #инесли
-#ENDIF #endif #КОНЕСЛИ #конесли
+#ENDIF #endif #КОНЕЦЕСЛИ #конецесли
 #ELSE #else #ИНАЧЕ #иначе
+#MACRO #macro #МАКРО #макро
+#ENDM #endm #КОНЕЦМ #конецм
+#WHILE #while #ПОКА #пока
+#ENDW #endw #КОНЕЦП #конецп
+#SET #set #ПЕРЕОПРЕД #переопред
+#UNDEF #undef #ОТМЕНАОПРЕД #отменаопред
+#FOR #for #ДЛЯ #для
+#ENDF #endf #КОНЕЦД #конецд
+#EVAL #eval #ВЫЧИСЛЕНИЕ #вычисление
 
 WIFI_CONNECT wifi_connect WIFI_ПОДКЛЮЧИТЬ wifi_подключить
 BLYNK_AUTHORIZATION blynk_authorization BLYNK_АВТОРИЗАЦИЯ blynk_авторизация
