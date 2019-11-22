@@ -1478,7 +1478,6 @@ void show_macro()
  { 
     checkif++;
     int flag = if_check(type_if);// начало (if)
-    space_end_line();
     if(flag)
     {
         if_true(type_if);
