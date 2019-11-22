@@ -8,7 +8,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-"tests/Egor/Macro/test_function1.c";
+"tests/Egor/Macro/test_eval2.c";
 //"tests/Mishatest.c";
 //"tests/matrix.c";
 //"../../../tests/mips/0test.c";
