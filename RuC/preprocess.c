@@ -38,6 +38,10 @@ int mclp = 1;
 int checkif = 0;
 int flagint = 1;
 
+int nextp = 0;
+int nextch_type = 5;
+int nextch_stop = 0;
+
 extern int getnext();
 extern int letter();
 extern int digit();
@@ -55,6 +59,7 @@ void show_macro()
     int k;
     int flag = 1;
     int arg = mlines[m_conect_lines[line]];
+    nextch_type = 1;
 
     while(i1 < charnum)
     {
@@ -68,10 +73,9 @@ void show_macro()
         else
         {
             flag = 0;
-            curchar = before_source[arg];
-            //s_collect_mident(before_source, arg);
+            nextp = arg;
             define_get_from_macrotext();
-
+            arg = nextp;
             i1 += msp;
         }
     }
@@ -139,14 +143,12 @@ void show_macro()
    
     mlines[++mline] = m_charnum;
     mlines[mline+1] = m_charnum;
-    if (kw)
-    {
-        printf("Line %i) ", mline-1);
-        for ( j=mlines[mline-1]; j<mlines[mline]; j++)
-            if (before_source[j] != EOF)
-                printf_char(before_source[j]);
-    } 
-   
+
+    printf("Line %i) ", mline-1);
+    for ( j=mlines[mline-1]; j<mlines[mline]; j++)
+        if (before_source[j] != EOF)
+            printf_char(before_source[j]);
+
     return;
  }
 
@@ -172,55 +174,39 @@ void show_macro()
     m_conect_lines[mclp++] = mline-1;
     }
     fprintf_char(output, a);
- //   printf_char(a);
- //   printf(" %d \n", a);
+  //   printf_char(a);
+  //   printf(" %d \n", a);
     return;
  }
 
- void m_nextch(int i)
+ void m_fprintf_com()
  {
-    //printf(" i = %d curcar = %c curcar = %i\n", i, curchar, curchar);
-    m_onemore();
+    if(nextch_type != 17)
+    {
+        m_fprintf(curchar);
+    }
+ }
 
+ void m_coment_skip()
+ {
     if (curchar == '/' && nextchar == '/')
     {
-        if(i>13)
-        {
-            m_fprintf(curchar);
-        }
         do
         {
+            m_fprintf_com();
             m_onemore();
-            if(i>13)
-            {
-                m_fprintf(curchar);
-            }
         }
         while (curchar != '\n');
-        
-        m_end_line();
-        return;
     }
-
     if (curchar == '/' && nextchar == '*')
     {
-        if(i>13)
-        {
-            m_fprintf(curchar);
-        }
-    
+        m_fprintf_com();
         m_onemore();
-        if(i>13)
-        {
-            m_fprintf(curchar);
-        }
+        m_fprintf_com();
         do
         {
             m_onemore();
-            if(i>13)
-            {
-                m_fprintf(curchar);
-            }
+            m_fprintf_com();
             
             if (curchar == EOF)
             {
@@ -228,23 +214,51 @@ void show_macro()
                 printf("\n");
                 m_error(comm_not_ended);
             }
-            if (curchar == '\n')
-                m_end_line();
         }
         while (curchar != '*' || nextchar != '/');
         
         m_onemore();
-        if(i>13)
-        {
-            m_fprintf(curchar);
-        }
+        m_fprintf_com();
         curchar = ' ';
-        return;
-    }
-        
-    if (curchar == '\n')
+    }  
+ }
+ 
+
+ void m_nextch()
+ {
+    //printf(" i = %d curcar = %c curcar = %i\n", nextch_type, curchar, curchar);
+
+    if(nextch_type < 3)
     {
-     m_end_line();
+        if(nextch_type == 1)
+        {
+            curchar = before_source[nextp++];
+            nextchar = before_source[nextp];
+            return;
+        }
+        else if(nextch_type == 2 && nextp < msp)
+        {
+            curchar = mstring[nextp++];
+            nextchar = mstring[nextp];
+            return;
+        }
+        else
+        {
+            nextch_stop = 1;
+            curchar = ' ';
+        }
+    }    
+    else
+    {
+    
+        nextp = 0;
+        m_onemore();
+        printf(" i = %d curcar = %c curcar = %i\n", nextch_type, curchar, curchar);
+        m_coment_skip();    
+        if (curchar == '\n')
+        {
+            m_end_line();
+        }
     }
     return;
  }
@@ -257,21 +271,21 @@ void show_macro()
     {
         if(curchar == ' ' || curchar == '\t')
         {
-            m_nextch(9);
+            m_nextch();
         }
         else
         {
             m_error(after_preproces_words_must_be_space);
         }
     }
-    m_nextch(9);
+    m_nextch();
  }
 
  void space_skip()
  {
     while(curchar == ' ' || curchar == '\t')
         {
-            m_nextch(9);
+            m_nextch();
         }
  }
 //
@@ -283,25 +297,25 @@ void show_macro()
     int n = 1;
     fsp = oldfsp;
     fstring[fsp++] = curchar;
-    m_nextch(5);
+    m_nextch();
     while (curchar != EOF)
     {
         if(curchar == '(')
         {
             n++;
             fstring[fsp++] = curchar;
-            m_nextch(5);
+            m_nextch();
         }
         else if (curchar == ')')
         {
             n--;
             fstring[fsp++] = curchar;
-            m_nextch(5);
+            m_nextch();
         }
         else
         {
             fstring[fsp++] = curchar;
-            m_nextch(5);
+            m_nextch();
         }
         
         if(n == 0)
@@ -358,7 +372,7 @@ void show_macro()
     while(letter() || digit())
     {
         mstring[msp++] = curchar;
-        m_nextch(5);
+        m_nextch();
     }
 
     if(curchar == '(')
@@ -400,7 +414,7 @@ void show_macro()
     while(letter() || digit())
     {
         mstring[msp++] = curchar;
-        m_nextch(5);
+        m_nextch();
     }
 
     return;
@@ -444,7 +458,7 @@ void show_macro()
     {                 
     hash += curchar;
     reprtab[rp++] = curchar;
-    m_nextch(10);
+    m_nextch();
     }
     while(letter() || digit());
 
@@ -454,7 +468,7 @@ void show_macro()
     }
     else if(curchar != '(')
     {
-      m_nextch(10);
+      m_nextch();
     }
                 
     hash &= 255;
@@ -490,7 +504,7 @@ void show_macro()
     {                 
     hash += str[i];
     reprtab[rp++] = str[i++];
-    m_nextch(12);
+    m_nextch();
     }
     while(letter() || digit());
                 
@@ -617,7 +631,7 @@ void show_macro()
     if(curchar == '-')
     {
         d = -1;
-        m_nextch(11);
+        m_nextch();
     } 
 
     while (digit())
@@ -629,35 +643,35 @@ void show_macro()
             flagint = 0;
         }
         num = num * 10 + (curchar - '0');
-        m_nextch(11);// если выйдит за рамки
+        m_nextch();// если выйдит за рамки
     }
 
     if (curchar == '.')
     {
         flagint = 0;
-        m_nextch(11);
+        m_nextch();
         k = 0.1;
         while (digit())
         {
             numdouble += (curchar - '0') * k;
             k *= 0.1;
-            m_nextch(11);
+            m_nextch();
         }
     }
 
     if (ispower())
     {
         int d = 0, k = 1, i;
-        m_nextch(11);
+        m_nextch();
         if (curchar == '-')
         {
             flagint = 0;
-            m_nextch(11);
+            m_nextch();
             k = -1;
         }
         else if (curchar == '+')
         {
-            m_nextch(11);
+            m_nextch();
         }
 
         //if (!digit())
@@ -668,7 +682,7 @@ void show_macro()
         while (digit())
         {
             d = d * 10 + curchar - '0';
-            m_nextch(11);
+            m_nextch();
         }
         if (flagint)
         {
@@ -697,8 +711,8 @@ void show_macro()
         case '|':
                 if(nextchar == '|')
                 {
-                    m_nextch(12);
-                    m_nextch(12);
+                    m_nextch();
+                    m_nextch();
                     return c;
                 }
                 else
@@ -708,8 +722,8 @@ void show_macro()
         case '&':
                 if(nextchar == '&')
                 {
-                    m_nextch(12);
-                    m_nextch(12);
+                    m_nextch();
+                    m_nextch();
                     return c;
                 }
                 else
@@ -722,7 +736,7 @@ void show_macro()
         case '/':
         case '%':
         case '(':
-            m_nextch(12);
+            m_nextch();
             return c;
         default:
             return 0;
@@ -812,10 +826,6 @@ void show_macro()
                 l = csp;
         }
         csp = l+1;
-         for(int k = 0; k < csp; k++)
-        {
-            printf("str[%d] = %d,%c.\n", k, cstring[k], cstring[k]);
-        }
     }
  }
 
@@ -829,7 +839,7 @@ void show_macro()
     int operation[10];
 
     operation[op++] = '(';
-    m_nextch(11);
+    m_nextch();
 
     while(curchar != '\n')
     {
@@ -840,7 +850,27 @@ void show_macro()
             stack[i] = get_digit();
             int_flag = flagint && int_flag;
             i++;
+        } 
+        else if (letter())
+        {
+            int oldcurchar;
+            int oldnextchar;
+            
+            define_get_from_macrotext();
+
+            oldcurchar = curchar;
+            oldnextchar = nextchar;
+            nextch_type = 2;
+
+            stack[i] = get_digit();
+            int_flag = flagint && int_flag;
+            i++;
+
+            nextch_type = 5;
+            curchar = oldcurchar;
+            nextchar = oldnextchar;
         }
+        
 
         space_skip();
 
@@ -865,7 +895,7 @@ void show_macro()
                 i--;
             }
             op--;
-            m_nextch(11);
+            m_nextch();
             if(op == 0)
             {
                 double_to_string(stack[0], int_flag); 
@@ -891,7 +921,7 @@ void show_macro()
  {
     int i;
     fchange[cp++] = curchar;
-    m_nextch(5);
+    m_nextch();
     while(curchar != EOF)
     {
         if(letter())
@@ -915,17 +945,17 @@ void show_macro()
         else if(curchar == '(')
         {
             fchange[cp++] = curchar;
-            m_nextch(5);
+            m_nextch();
             function_scob_collect();
         }
         else
         {
             fchange[cp++] = curchar;
-            m_nextch(5);
+            m_nextch();
             if(curchar != ')')
             {
                 fchange[cp++] = curchar;
-                m_nextch(5);
+                m_nextch();
 
                 return;
             }
@@ -940,7 +970,7 @@ void show_macro()
     int i;
     int num = 0;
     fchange[cp++] = curchar;
-    m_nextch(5);
+    m_nextch();
     localstack[num + lsp] = cp;
 
     if(curchar == ')')
@@ -974,13 +1004,13 @@ void show_macro()
         else if(curchar == '(')
         {
             fchange[cp++] = curchar;
-            m_nextch(5);
+            m_nextch();
             function_scob_collect();
         }
         else if(curchar != ')' && curchar != ',')
         {
             fchange[cp++] = curchar;
-            m_nextch(5);
+            m_nextch();
         }
         else
         {
@@ -998,9 +1028,9 @@ void show_macro()
                 m_error(not_enough_param);
             }
 
-            m_nextch(5);
+            m_nextch();
             if(curchar == ' ')
-                m_nextch(5);
+                m_nextch();
         }    
         else if (curchar == ')')
         {
@@ -1009,7 +1039,7 @@ void show_macro()
             {
                 m_error(not_enough_param2);
             }
-            m_nextch(5);
+            m_nextch();
             //fsp = oldfsp;
             return;
         }       
@@ -1112,7 +1142,7 @@ void show_macro()
             {
                 cstring[csp++] = curchar;
                 mstring[msp++] = curchar;
-                m_nextch(4);
+                m_nextch();
             }
             if (macro_find_ident() != 0)
             {
@@ -1127,7 +1157,7 @@ void show_macro()
         msp = 0;
         if(curchar == ',')
         {
-            m_nextch(4);
+            m_nextch();
             space_skip();
             num++;  
         }
@@ -1136,7 +1166,7 @@ void show_macro()
             m_error(after_functionid_must_be_comma);
         }
     }
-    m_nextch(4);
+    m_nextch();
     return num; 
  }
 
@@ -1146,7 +1176,7 @@ void show_macro()
 
     macrotext[mp++] = 2;
     macrotext[mp++] = to_functionident();
-    m_nextch(3);
+    m_nextch();
 
     while(curchar != '\n')
     {
@@ -1158,7 +1188,7 @@ void show_macro()
         else
         {
         macrotext[mp++] = curchar;
-        m_nextch(3);
+        m_nextch();
         }
 
         if(curchar == EOF)
@@ -1168,7 +1198,7 @@ void show_macro()
 
         if (curchar == '\\')
         {
-            m_nextch(3);
+            m_nextch();
             space_end_line();
         }
     }
@@ -1220,7 +1250,7 @@ void show_macro()
     {
         hash += curchar;
         reprtab[rp++] = curchar;
-        m_nextch(2);
+        m_nextch();
     } while (letter() || digit());
 
     hash &= 255;
@@ -1266,12 +1296,12 @@ void show_macro()
 
         if (curchar == '\\')
         {
-            m_nextch(2);
+            m_nextch();
             space_end_line();
         }
 
         macrotext[mp++] = curchar;
-        m_nextch(2);
+        m_nextch();
     }
 
     macrotext[mp++] = '\n';
@@ -1290,7 +1320,7 @@ void show_macro()
 
     if (curchar == '(')
     { 
-        m_nextch(2);
+        m_nextch();
         function_add_to_macrotext();
     }
     else if(curchar != ' ')
@@ -1318,7 +1348,7 @@ void show_macro()
     while(curchar != '\n')
     {
         ifgstring[p++] = curchar;
-        m_nextch(10);
+        m_nextch();
     }
 
     while(gifp != p)
@@ -1371,7 +1401,7 @@ void show_macro()
         while(letter() || digit())
         {
             mstring[msp++] = curchar;
-            m_nextch(10);
+            m_nextch();
         }
         if( macro_find_ident())
         {
@@ -1417,7 +1447,7 @@ void show_macro()
         }
         else
         {
-        m_nextch(8);
+        m_nextch();
         }
     } 
     m_error(must_be_endif);
@@ -1442,7 +1472,7 @@ void show_macro()
         }
         else
         {
-            m_nextch(7);
+            m_nextch();
         }
     }  
     m_error(must_be_endif);
@@ -1535,7 +1565,7 @@ void show_macro()
 //
 
 //основные(preprocess)
- void preprocess_scan()
+ void preprocess_scan()//17
  {  
     int j;
     switch(curchar)
@@ -1549,7 +1579,7 @@ void show_macro()
             if(cur == SH_DEFINE )
             {
                 define_relis();
-                m_nextch(1);
+                m_nextch();
                 return;
             }
 
@@ -1565,41 +1595,41 @@ void show_macro()
             else
             {
             m_fprintf(curchar);
-            m_nextch(17);
+            m_nextch();
             //m_error(preproces_words_not_exist); ???
             return;
             }
 
         case '\'':
                 m_fprintf(curchar);
-                m_nextch(17);
+                m_nextch();
                 if(curchar == '\\')
                 {
                     m_fprintf(curchar);
-                    m_nextch(17); 
+                    m_nextch(); 
                 }
                 m_fprintf(curchar);
-                m_nextch(17);
+                m_nextch();
                 
                 m_fprintf(curchar);
-                m_nextch(17);
+                m_nextch();
                 return;
 
         case '\"':
                 m_fprintf(curchar);
-                m_nextch(17);
+                m_nextch();
             while(curchar != '\"' && curchar != EOF)
             {
                 if(curchar == '\\')
                 {
                     m_fprintf(curchar);
-                    m_nextch(17);  
+                    m_nextch();  
                 }
                 m_fprintf(curchar);
-                m_nextch(17);
+                m_nextch();
             }
             m_fprintf(curchar);
-            m_nextch(17);
+            m_nextch();
             return;
         default:
             if(letter() && prep_flag == 1)
@@ -1615,7 +1645,7 @@ void show_macro()
             else
             {
                 m_fprintf(curchar);
-                m_nextch(17);
+                m_nextch();
                 return;
             }
 
@@ -1631,7 +1661,7 @@ void show_macro()
     charnum = 1;
 
     getnext();
-    m_nextch(18);
+    m_nextch();
     while (curchar != EOF )
     {
         preprocess_scan();
@@ -1643,9 +1673,17 @@ void show_macro()
 /*  
  for(int k = 0; k < fsp; k++)
     {
-        ///printf("str[%d] = %d,%c.\n", k, fstring[k], fstring[k]);
+        printf("str[%d] = %d,%c.\n", k, fstring[k], fstring[k]);
     }
 
     printf("1")
+
+            oldcurchar = curchar;
+            oldnextchar = nextchar;
+            nextch_type = 2;
+            ///
+            nextch_type = 5;
+            curchar = oldcurchar;
+            nextchar = oldnextchar;
 */
 
