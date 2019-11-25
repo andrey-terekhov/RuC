@@ -790,28 +790,32 @@ void show_macro()
 
  void double_to_string(double x, int int_flag)
  {
-    char s[20];
-    int l;
+    char s[30];
     if(int_flag)
     {
         sprintf(s,"%f",x);
-        for(l = 0; l < 20; l++)
-            if(s[l] == '.')
-            {
-                s[l] = '\0';
-                break;
-            }
-            
+        for(csp = 0; csp < 20; csp++)
+        {
+            cstring[csp] = s[csp];
+            if(s[csp] == '.')
+                return;
+        }    
     }
     else
     {
-        sprintf(s,"%.10lf",x);
-    }
-    
-    l = strlen(s);
-    for(csp = 0; csp < l; csp++)
-    {
-        cstring[csp] = s[csp];
+        int l;
+        sprintf(s,"%.15lf",x);
+        for(csp = 0; csp < 20; csp++)
+        {
+            cstring[csp] = s[csp];
+            if(s[csp] != '0' && m_digit(s[csp]))
+                l = csp;
+        }
+        csp = l+1;
+         for(int k = 0; k < csp; k++)
+        {
+            printf("str[%d] = %d,%c.\n", k, cstring[k], cstring[k]);
+        }
     }
  }
 
@@ -842,7 +846,7 @@ void show_macro()
 
         if((c = check_opiration()))
         { 
-            while(op != 0 && get_prior(operation[op-1]) > get_prior(c))
+            while(op != 0 && get_prior(c) != 0 && get_prior(operation[op-1]) >= get_prior(c))
             {
                 stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op-1], int_flag);
                 op--;
