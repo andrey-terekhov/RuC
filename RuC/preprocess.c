@@ -263,27 +263,22 @@ void show_macro()
 
  void m_nextch()
  {
-    //printf(" i = %d curcar = %c curcar = %i\n", nextch_type, curchar, curchar);
-
     if(nextch_type < 3)
     {
         if(nextch_type == 1)
         {
             curchar = before_source[nextp++];
             nextchar = before_source[nextp];
-            return;
         }
         else if(nextch_type == 2 && nextp < msp)
         {
             curchar = mstring[nextp++];
             nextchar = mstring[nextp];
-            return;
         }
         else if(nextch_type == 3 && nextp < csp)
         {
             curchar = cstring[nextp++];
             nextchar = cstring[nextp];
-            return;
         }
         else
         {
@@ -299,6 +294,8 @@ void show_macro()
             m_end_line();
         }
     }
+    //printf(" i = %d curcar = %c curcar = %i\n", nextch_type, curchar, curchar);
+
     return;
  }
 //
@@ -574,90 +571,7 @@ void show_macro()
 
 //
 
-/* /eval
- void eval_relis()
-  {
-    int count = 0;
-    csp = 0;
-
-    if (cur != SH_EVAL)
-    { 
-        int r = rp;
-        while (reprtab[r] != 0)
-        {
-            cstring[csp++] = reprtab[r++];
-        }
-        
-        return;
-    }
-
-    //if(curchar != '(') ошибка
-
-    while(count != -1)
-    {
-        if (letter())
-        {
-            from_macrotext();
-            for ( j = 0; j < msp; j++)
-            {
-                cstring[csp++] =  mstring[j];  
-            }
-            msp = 0;
-        }
-        else if(curchar == '(')
-        {
-            count++;
-            cstring[csp++] =  curchar;
-        }
-        else if(curchar == ')')
-        {
-            count--;
-            cstring[csp++] =  curchar;
-        }
-        else //curchar == '\n' ошибка
-        {
-            cstring[csp++] =  curchar;
-        }
-    }
-  }
-
-  double take_digit()
-  {
-    int j;
-    csp = 0;
-    if(digit() || ifgstring[gifp] == '-')
-    {
-        do 
-        {
-            cstring[csp++] = ifgstring[gifp++];
-
-        } while (m_digit(ifgstring[gifp]) || '.' ||m_ispower(ifgstring[gifp]));
-    }
-    else if(m_letter(ifgstring[gifp]))
-    {
-        gifp = s_collect_mident(ifgstring, gifp);
-        from_macrotext();
-        for (j = 0; j < msp; j++)
-        {
-           cstring[csp++] = mstring[j];  
-        }
-    }
-    else
-    {
-        gifp = macro_keywords_eval(ifgstring, gifp);
-        //if(ifgstring[j] != '(') ошибка
-        eval_relis()
-    }
-
-    while (ifgstring[j] == ' '||ifgstring[j] == '\t')
-    {
-        j++;
-    }
-
-    return get_digit(0);   
-  }
- /*/
-
+//eval
  double get_digit()
  {
     int flagtoolong = 0;
@@ -895,8 +809,7 @@ void show_macro()
     while(curchar != '\n')
     {
         space_skip();
-
-        if(digit() || curchar == '-')
+        if(digit() || curchar == '-' && m_digit(nextchar))
         {
             stack[i++] = get_digit();
             int_flag = flagint && int_flag;
@@ -1385,7 +1298,6 @@ void show_macro()
 //
 
 //if
-
  int if_check(int type_if)
  {
     int flag = 0;
