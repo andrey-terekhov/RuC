@@ -1,4 +1,6 @@
-#define s #eval(10 / 3.0) 
+#define A 10
+#define sum(a,b) a + b
+#define s #eval( sum(A, A) / 3.0) 
 
 void main()
 {

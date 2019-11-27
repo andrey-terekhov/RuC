@@ -16,7 +16,7 @@ if ! make >/dev/null 2>/dev/null ; then
 fi
 
 
-for code in ./tests/*.c ./tests/*/*.c ./tests/*/*/*.c
+for code in ./tests/*.c ./tests/*/*.c ./tests/*/*/*.c  ./tests/*/*/*/*.c
 do
     out=`timeout $wait_for ./bin/ruc $code >/dev/null 2>/dev/null`
     

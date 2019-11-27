@@ -7,6 +7,7 @@
 #include "global_vars.h"
 
 #define STRIGSIZE 70
+#define DIP 4
 
 int macrotext [MAXREPRTAB];
 int mp = 0;
@@ -42,6 +43,12 @@ int nextp = 0;
 int nextch_type = 5;
 int nextch_stop = 0;
 
+int oldcurchar[DIP];
+int oldnextchar[DIP];
+int oldnextch_type[DIP];
+int oldnextp[DIP];
+int dipp;
+
 extern int getnext();
 extern int letter();
 extern int digit();
@@ -58,24 +65,23 @@ void show_macro()
     int j = 0;
     int k;
     int flag = 1;
-    int arg = mlines[m_conect_lines[line]];
-    nextch_type = 1;
+    nextp = mlines[m_conect_lines[line]];
+    m_change_nextch_type(1);
+
 
     while(i1 < charnum)
     {
         //printf("\nbe[arg= %i] = %i, so[i1] = %i",arg, before_source[arg],source[i1] );
-        if(source[i1] == before_source[arg])
+        if(source[i1] == curchar)
         {
-            str1[j++]=before_source[arg];
+            str1[j++] = curchar;
+            m_nextch();
             i1++;
-            arg++;
         }
         else
         {
             flag = 0;
-            nextp = arg;
             define_get_from_macrotext();
-            arg = nextp;
             i1 += msp;
         }
     }
@@ -97,6 +103,36 @@ void show_macro()
 }
 
 //простые (m)
+
+ void m_change_nextch_type(int type)
+ {
+    if (type != 1)
+    {
+        oldcurchar[dipp] = curchar;
+        oldnextchar[dipp] = nextchar;
+        oldnextch_type[dipp] = nextch_type;
+        oldnextp[dipp] = nextp;
+        nextp = 0;
+        dipp++;
+    }
+    else
+    {
+        dipp = 0;
+    }
+    
+
+    nextch_type = type;
+    m_nextch();
+ }
+
+ void m_old_nextch_type()
+ {
+    dipp--;
+    curchar = oldcurchar[dipp];
+    nextchar = oldnextchar[dipp];
+    nextch_type = oldnextch_type[dipp];
+    nextp = oldnextp[dipp];
+ }
  int m_letter(int r)
  {
     return (r >= 'A' && r <= 'Z') || (r >='a' && r <= 'z') 
@@ -244,16 +280,12 @@ void show_macro()
         }
         else
         {
-            nextch_stop = 1;
-            curchar = ' ';
+            m_old_nextch_type();
         }
     }    
     else
     {
-    
-        nextp = 0;
         m_onemore();
-        printf(" i = %d curcar = %c curcar = %i\n", nextch_type, curchar, curchar);
         m_coment_skip();    
         if (curchar == '\n')
         {
@@ -818,7 +850,7 @@ void show_macro()
     else
     {
         int l;
-        sprintf(s,"%.15lf",x);
+        sprintf(s,"%.14lf",x);
         for(csp = 0; csp < 20; csp++)
         {
             cstring[csp] = s[csp];
@@ -847,34 +879,16 @@ void show_macro()
 
         if(digit() || curchar == '-')
         {
-            stack[i] = get_digit();
+            stack[i++] = get_digit();
             int_flag = flagint && int_flag;
-            i++;
         } 
-        else if (letter())
+        else if (letter() && nextch_type != 2)
         {
-            int oldcurchar;
-            int oldnextchar;
-            
+            collect_mident();
             define_get_from_macrotext();
-
-            oldcurchar = curchar;
-            oldnextchar = nextchar;
-            nextch_type = 2;
-
-            stack[i] = get_digit();
-            int_flag = flagint && int_flag;
-            i++;
-
-            nextch_type = 5;
-            curchar = oldcurchar;
-            nextchar = oldnextchar;
+            m_change_nextch_type(2);
         }
-        
-
-        space_skip();
-
-        if((c = check_opiration()))
+        else if((c = check_opiration()))
         { 
             while(op != 0 && get_prior(c) != 0 && get_prior(operation[op-1]) >= get_prior(c))
             {
@@ -882,7 +896,6 @@ void show_macro()
                 op--;
                 i--;
             }
-
             operation[op++] = c;   
         }
         else if(curchar == ')')   
@@ -1565,7 +1578,7 @@ void show_macro()
 //
 
 //основные(preprocess)
- void preprocess_scan()//17
+ void preprocess_scan()
  {  
     int j;
     switch(curchar)
@@ -1676,7 +1689,7 @@ void show_macro()
         printf("str[%d] = %d,%c.\n", k, fstring[k], fstring[k]);
     }
 
-    printf("1")
+    printf("1\n");
 
             oldcurchar = curchar;
             oldnextchar = nextchar;

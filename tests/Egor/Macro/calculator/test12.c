@@ -1,4 +1,5 @@
-#define s #eval(10 / 3.0) 
+#define A 10
+#define s #eval(A / 3.0) 
 
 void main()
 {
