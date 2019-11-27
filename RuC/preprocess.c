@@ -28,9 +28,12 @@ int lsp = 0;
 int cstring[STRIGSIZE];
 int csp = 0;
 
-int ifgstring[STRIGSIZE];
-int gifp = 0;
-//int oldgifp = 0;
+int ifstring[STRIGSIZE];
+int ifsp = 0;
+
+int wstring[STRIGSIZE];
+int wsp;
+
 
 int mfirstrp = -1; // начало и конец макрослов в reprtab
 int mlastrp = -1;
@@ -40,7 +43,7 @@ int checkif = 0;
 int flagint = 1;
 
 int nextp = 0;
-int nextch_type = 5;
+int nextch_type = 0;
 int nextch_stop = 0;
 
 int oldcurchar[DIP];
@@ -263,7 +266,7 @@ void show_macro()
 
  void m_nextch()
  {
-    if(nextch_type < 3)
+    if(nextch_type != 0 && nextch_type < 3 )
     {
         if(nextch_type == 1)
         {
@@ -279,6 +282,16 @@ void show_macro()
         {
             curchar = cstring[nextp++];
             nextchar = cstring[nextp];
+        }
+        else if(nextch_type == 4 && nextp < ifsp)
+        {
+            curchar = ifstring[nextp++];
+            nextchar = ifstring[nextp];
+        }
+        else if(nextch_type == 5 && nextp < wsp)
+        {
+            curchar = wstring[nextp++];
+            nextchar = wstring[nextp];
         }
         else
         {
@@ -486,15 +499,17 @@ void show_macro()
  {
     int oldrepr = rp;
     int r = 0;
+    int n = 0;
 
     rp+=2;
     hash = 0;
                 
     do
     {                 
-    hash += curchar;
-    reprtab[rp++] = curchar;
-    m_nextch();
+        hash += curchar;
+        reprtab[rp++] = curchar;
+        n++;
+        m_nextch();
     }
     while(letter() || digit());
 
@@ -525,6 +540,7 @@ void show_macro()
         while(r);
     }
     rp = oldrepr;
+    reprtab[rp] = n;
     return 0;
  }
 
@@ -1419,10 +1435,11 @@ void show_macro()
     return;
  }
 
- void if_relis(int type_if)
+ void if_relis()
  { 
-    checkif++;
+    int type_if = cur;
     int flag = if_check(type_if);// начало (if)
+    checkif++;
     if(flag)
     {
         if_true(type_if);
@@ -1475,6 +1492,80 @@ void show_macro()
  }
 //
 
+//while
+ void while_collect()
+ {
+    int oldwsp = wsp;
+    wstring[wsp++] = -1;
+    wstring[wsp++] = ifsp;
+    wsp++;
+
+    while (curchar != '\n')
+    {
+        ifstring[ifsp++] = curchar;
+        m_nextch();
+    }
+    ifstring[ifsp++] ='\n';
+
+    while (curchar != EOF)
+    {
+        if(curchar = '#')
+        {
+            cur = macro_keywords();
+            if(cur == SH_WHILE)
+            {
+                while_collect();
+            }
+            else if(cur == SH_ENDW)
+            {
+                wstring[oldwsp+2] = nextp;
+                cur = 0;
+                return;
+            }
+            else
+            {
+                int i = 0;
+                for(i = 0; i < reprtab[rp]; i++)
+                wstring[wsp++] = reprtab[rp + 2 + i];
+            }    
+        }
+        wstring[wsp++] = curchar;
+        m_nextch();
+    }  //ошибка 
+ }
+
+ void while_relis()
+ { 
+    int oldnextp = nextp;
+    int end = wstring[oldnextp+2];   
+    while(wstring[oldnextp] == -1)
+    {
+        m_nextch();
+        m_change_nextch_type(4);//if
+        nextp = wstring[nextp];
+        calculator(1);
+        m_change_nextch_type(5);//while
+        if(cstring[0] = 0)
+        {
+            nextp = end;
+            return;
+        }
+
+        m_nextch();
+        while (nextp != end)
+        {
+            if(curchar = -1)
+                while_relis();
+            else
+            {
+                preprocess_scan();
+            }    
+        }
+        nextp = oldnextp;
+    }
+ }
+//
+
 //основные(preprocess)
  void preprocess_scan()
  {  
@@ -1487,49 +1578,41 @@ void show_macro()
         case '#':
             cur = macro_keywords ();
             prep_flag = 1;
-            if(cur == SH_DEFINE )
+            switch(cur)
             {
-                define_relis();
-                m_nextch();
-                return;
+                case SH_DEFINE: 
+                    define_relis();
+                    m_nextch();
+                    return;
+                case SH_IF:
+                case SH_IFDEF:
+                case SH_IFNDEF:
+                    if_relis();
+                    return;
+                case SH_ELSE:
+                case SH_ELIF: 
+                case SH_ENDIF:
+                    return;
+                case SH_WHILE:
+                    wsp = 0;
+                    ifsp = 0;
+                    while_collect();
+                    m_change_nextch_type(5);//while
+                    while_relis();
+                    return;
+                default:
+                    m_nextch();
+                    for(j = 0; j < reprtab[rp]; j++)
+                        m_fprintf(reprtab[rp + 2 + j]);
+                    return;
             }
-
-            else if(cur == SH_IF || cur == SH_IFDEF || cur == SH_IFNDEF)
-            {
-                if_relis(cur);
-                return;
-            }
-            else if (cur == SH_ELSE || cur == SH_ELIF || cur == SH_ENDIF)
-            {
-                return;
-            }
-            else
-            {
-            m_fprintf(curchar);
-            m_nextch();
-            //m_error(preproces_words_not_exist); ???
-            return;
-            }
-
         case '\'':
-                m_fprintf(curchar);
-                m_nextch();
-                if(curchar == '\\')
-                {
-                    m_fprintf(curchar);
-                    m_nextch(); 
-                }
-                m_fprintf(curchar);
-                m_nextch();
-                
-                m_fprintf(curchar);
-                m_nextch();
-                return;
-
         case '\"':
+        {
+            int c = curchar;
                 m_fprintf(curchar);
                 m_nextch();
-            while(curchar != '\"' && curchar != EOF)
+            while(curchar != c && curchar != EOF)
             {
                 if(curchar == '\\')
                 {
@@ -1542,12 +1625,13 @@ void show_macro()
             m_fprintf(curchar);
             m_nextch();
             return;
+        }
         default:
             if(letter() && prep_flag == 1)
             {
                 collect_mident();
                 define_get_from_macrotext();
-                for ( j = 0; j < msp; j++)
+                for(j = 0; j < msp; j++)
                 {
                    m_fprintf(mstring[j]);  
                 }
@@ -1559,7 +1643,6 @@ void show_macro()
                 m_nextch();
                 return;
             }
-
     }
  }
 
