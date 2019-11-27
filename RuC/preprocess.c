@@ -7,7 +7,7 @@
 #include "global_vars.h"
 
 #define STRIGSIZE 70
-#define DIP 4
+#define DIP 5
 
 int macrotext [MAXREPRTAB];
 int mp = 0;
@@ -133,6 +133,7 @@ void show_macro()
     nextch_type = oldnextch_type[dipp];
     nextp = oldnextp[dipp];
  }
+
  int m_letter(int r)
  {
     return (r >= 'A' && r <= 'Z') || (r >='a' && r <= 'z') 
@@ -276,6 +277,12 @@ void show_macro()
         {
             curchar = mstring[nextp++];
             nextchar = mstring[nextp];
+            return;
+        }
+        else if(nextch_type == 3 && nextp < csp)
+        {
+            curchar = cstring[nextp++];
+            nextchar = cstring[nextp];
             return;
         }
         else
@@ -612,7 +619,6 @@ void show_macro()
             cstring[csp++] =  curchar;
         }
     }
-   calculator(); 
   }
 
   double take_digit()
@@ -738,41 +744,39 @@ void show_macro()
  int check_opiration()
  {
     int c = curchar;
-    switch(c)
+    if(c == '|' || c == '&' || c == '='||c == '!')
     {
-        case '|':
-                if(nextchar == '|')
-                {
-                    m_nextch();
-                    m_nextch();
-                    return c;
-                }
-                else
-                {
-                    return 0;
-                }
-        case '&':
-                if(nextchar == '&')
-                {
-                    m_nextch();
-                    m_nextch();
-                    return c;
-                }
-                else
-                {
-                    return 0;
-                }
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '%':
-        case '(':
+        if(nextchar == c && (c != '!'  || nextchar == '='))
+        {
+            m_nextch();
             m_nextch();
             return c;
-        default:
+        }
+        else
+        {
             return 0;
+        }
     }
+    else if(c == '>' && nextchar == '=')
+    {
+        m_nextch();
+        m_nextch();
+        return 'b';   
+    }
+    else if(c == '>' && nextchar == '=')
+    {
+        m_nextch();
+        m_nextch();
+        return 's';   
+    }
+    else if (c == '>' || c == '<' || c == '+'||c == '-'||c == '*'||c == '/'||c == '%'||c == '(')
+    {
+        m_nextch();
+        return c;
+    }
+    else
+        return 0;
+    
  }
 
  int get_prior(int r)
@@ -785,19 +789,22 @@ void show_macro()
             return 1;
         case '&':
             return 2;
+        case '<':
+        case '>':
+        case 's':
+        case 'b':
+        case '=':
+        case '!':
+            return 3;
         case '+':
-            return 3;
         case '-':
-            return 3;
+            return 4;
         case '*':
-            return 4;
         case '/':
-            return 4;
         case '%':
-            return 4;
+            return 5;
         default:
             return -1;
-        //ошибка
     }
  }
 
@@ -805,6 +812,18 @@ void show_macro()
  {
     switch(r)
     {
+        case '<':
+            return x < y;
+        case '>':
+            return x > y;
+        case 's':
+            return x <= y;
+        case 'b':
+            return x >= y;
+        case '=':
+            return x == y;
+        case '!':
+            return x != y;
         case '&':
             return x && y;
         case '|':
@@ -818,7 +837,7 @@ void show_macro()
         case '/':
                 if(int_flag)
                 {
-                   return (int)x / (int)y;// нужно ли ???
+                   return (int)x / (int)y;
                 }
                 else
                 {
@@ -861,7 +880,7 @@ void show_macro()
     }
  }
 
- void calculator()
+ void calculator(int if_flag)
  {
     int i = 0; 
     int op = 0;
@@ -888,9 +907,18 @@ void show_macro()
             define_get_from_macrotext();
             m_change_nextch_type(2);
         }
+        else if (curchar == '#' && if_flag)
+        {
+            cur = macro_keywords();
+            if(cur == SH_EVAL && curchar == '(')// ошибка
+                calculator(0);
+            m_change_nextch_type(3);
+        }
         else if((c = check_opiration()))
         { 
-            while(op != 0 && get_prior(c) != 0 && get_prior(operation[op-1]) >= get_prior(c))
+            int n = get_prior(c); 
+            //if (n != 0 && (( if_flag && n > 3 || !if_flag && n <=3) ошибка
+            while(op != 0 && n != 0 && get_prior(operation[op-1]) >= n)
             {
                 stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op-1], int_flag);
                 op--;
@@ -909,7 +937,7 @@ void show_macro()
             }
             op--;
             m_nextch();
-            if(op == 0)
+            if(op == 0 && !if_flag)
             {
                 double_to_string(stack[0], int_flag); 
                 return;
@@ -917,15 +945,21 @@ void show_macro()
         }//else ошибка
     }
 
-    while (op > 0)
+    if (flagint)
     {
-        //if(i < 2) ошибка
-        stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op-1], int_flag);
-        op--;
-        i--;
-    }
-    
-    double_to_string(stack[0], int_flag); 
+        csp = 0;
+        while (op > 0)
+        {
+            //if(i < 2) ошибка
+            stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op-1], int_flag);
+            op--;
+            i--;
+        }
+        if(stack[0] == 0)
+            cstring[0] = 0;
+        else
+            cstring[0] = 1;      
+    }// ошибка
  }
 //
 
@@ -1300,7 +1334,7 @@ void show_macro()
         {
             cur = macro_keywords();
             if(cur == SH_EVAL && curchar == '(')// ошибка
-                calculator();
+                calculator(0);
             for(int i = 0; i < csp; i++)
             {
                 macrotext[mp++] = cstring[i];
@@ -1351,54 +1385,6 @@ void show_macro()
 //
 
 //if
- /*int if_count ()
- {
-    int iflstring[STRIGSIZE];
-    int iflsp;
-    int p = 0;
-    //oldgifp = gifp;
-    //int j = oldgifp;
-    while(curchar != '\n')
-    {
-        ifgstring[p++] = curchar;
-        m_nextch();
-    }
-
-    while(gifp != p)
-    {
-        if(ifgstring[gifp] == ')' || ifgstring[gifp] == '(')
-        {
-            iflstring[iflsp++] = ifgstring[gifp];
-            gifp++;
-
-        }
-        else if(mdigit(ifgstring[gifp]) || mletter(ifgstring[gifp]) || ifgstring[gifp] == '#'|| ifgstring[gifp] == '-')
-        {
-            double x,y, type_co;
-            x = take_digit();
-            type_co = type_co();
-            y = take_digit();
-            iflstring[iflsp++] = comparison(x, y, type_co);
-        }
-        else if(ifgstring[gifp] == ' '||ifgstring[gifp] == '\t')
-        {
-            gifp++;
-        }
-        else //ошибка
-        {
-           return 0; 
-        }  
-    } 
-    csp = 0;
-    for(csp = 0; csp < iflsp; csp++)
-    {
-        csring[csp] = iflstring[csp]
-    }
-    csp++;
-
-    calculator();
-    return cstring[0];
- }*/
 
  int if_check(int type_if)
  {
@@ -1406,9 +1392,10 @@ void show_macro()
 
     if(type_if == SH_IF )
     {
-        return 0;//if_count();
+       calculator(1);
+       return cstring[0];
     }
-    else if (type_if == SH_IFDEF || type_if == SH_IFNDEF)
+    else
     {
         msp = 0;
         while(letter() || digit())
@@ -1416,7 +1403,7 @@ void show_macro()
             mstring[msp++] = curchar;
             m_nextch();
         }
-        if( macro_find_ident())
+        if(macro_find_ident())
         {
             flag = 1;
         }
@@ -1432,7 +1419,6 @@ void show_macro()
             return 1 - flag;
         }
     }
-    return 0;
  }
 
  void if_end()
