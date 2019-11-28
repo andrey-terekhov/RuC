@@ -1150,7 +1150,7 @@ void show_macro()
  {
     int j;
 
-    macrotext[mp++] = 2;
+    macrotext[mp++] = 0;
     macrotext[mp++] = to_functionident();
     m_nextch();
 
@@ -1160,6 +1160,21 @@ void show_macro()
         if (letter())
         {    
             funktionleter();
+        }
+        else if(curchar == '#')
+        {
+            cur = macro_keywords();
+            if(cur == SH_EVAL && curchar == '(')
+            {
+                calculator(0);
+                for(j = 0; j < csp; j++)
+                    macrotext[mp++] = cstring[j];
+            }
+            else
+            {
+                for(j = 0; j < reprtab[rp]; j++)
+                    m_fprintf(reprtab[rp + 2 + j]);
+            }
         }
         else
         {
@@ -1193,7 +1208,7 @@ void show_macro()
     {
         int t = reprtab[r + 1];
         msp = 0;
-        if (macrotext[t] == 2)
+        if (macrotext[t] == 0)
         {
             function_get_from_macrotext(t);
             return;
@@ -1250,7 +1265,9 @@ void show_macro()
 
  void define_add_to_macrotext()
  {
-    macrotext[mp++] = 1;
+    int n = 5;
+    int oldmp = mp++;
+    int j;
 
     while(curchar != '\n')
     {
@@ -1258,29 +1275,37 @@ void show_macro()
         {
             m_error(not_end_fail_preprocess);
         }
-
-        if(curchar == '#')
+        else if(curchar == '#')
         {
             cur = macro_keywords();
-            if(cur == SH_EVAL && curchar == '(')// ошибка
-                calculator(0);
-            for(int i = 0; i < csp; i++)
+            if(cur == SH_EVAL && curchar == '(')
             {
-                macrotext[mp++] = cstring[i];
+                calculator(0);
+                for(j = 0; j < csp; j++)
+                    macrotext[mp++] = cstring[j];
+            }
+            else
+            {
+                for(j = 0; j < reprtab[rp]; j++)
+                    macrotext[mp++] = reprtab[rp + 2 + j];
             }
         }
-
-        if (curchar == '\\')
+        else if(curchar == '\\')
         {
             m_nextch();
             space_end_line();
         }
-
-        macrotext[mp++] = curchar;
-        m_nextch();
+        else
+        {
+         macrotext[mp++] = curchar;
+         m_nextch();   
+        }
     }
 
-    macrotext[mp++] = '\n';
+    for(j = 0; j < n; j++)
+        macrotext[mp++] = '\n';
+    
+    macrotext[oldmp] = mp - oldmp;
  }
 
  void define_relis()
@@ -1566,6 +1591,88 @@ void show_macro()
  }
 //
 
+void set_long(int lmp)
+{
+    int n = macrotext[lmp];
+    int i = 0;
+    for(i = 0; i < n; i++)
+    {
+        macrotext[mp++] = macrotext[lmp + i];
+    }
+}
+
+void set_relis()
+ {
+    collect_mident();
+
+    int r = macro_find_ident();
+    int lmp = reprtab[r + 1];
+    int n = macrotext[lmp];
+    int oldmp = lmp;
+    int flag = 1;
+    int j;
+    //if(!r) ошибка
+    
+    oldmp = lmp;
+    n = macrotext[lmp];
+
+    while(curchar != '\n')
+    {
+        if(curchar == EOF)
+        {
+            m_error(not_end_fail_preprocess);
+        }
+        else if(curchar == '#')
+        {
+            cur = macro_keywords();
+            if(cur == SH_EVAL && curchar == '(')
+            {
+                calculator(0);
+                for(j = 0; j < csp; j++)
+                {
+                    macrotext[lmp++] = cstring[j];
+                    if(lmp - oldmp == n)
+                        break;
+                }
+            }
+            else
+            {
+                for(j = 0; j < reprtab[rp]; j++)
+                {
+                    macrotext[lmp++] = reprtab[rp + 2 + j];
+                    if(lmp - oldmp == n)
+                        break;
+                }
+            }
+        }
+        else if (curchar == '\\')
+        {
+            m_nextch();
+            space_end_line();
+        }
+        else
+        {
+            macrotext[lmp++] = curchar;
+            m_nextch();
+        }
+
+        if(lmp - oldmp == n && flag)
+        {
+            flag = 0;
+            reprtab[r+1] = mp;
+            set_long(oldmp);
+            lmp = mp;
+            oldmp = lmp;
+        }
+
+    }
+    if(!flag)
+    {
+        mp = lmp;
+        macrotext[oldmp] = mp - oldmp;
+    }
+ }
+
 //основные(preprocess)
  void preprocess_scan()
  {  
@@ -1588,6 +1695,9 @@ void show_macro()
                 case SH_IFDEF:
                 case SH_IFNDEF:
                     if_relis();
+                    return;
+                case SH_SET:
+                    set_relis();
                     return;
                 case SH_ELSE:
                 case SH_ELIF: 
