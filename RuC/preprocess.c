@@ -98,7 +98,7 @@ void show_macro()
     if(flag == 0)
     {
       printf("\n В строке есть макрозамена, строка после макрогенерации:\nline %i)",m_conect_lines[line]);
-        for ( k = lines[line-1]; k < charnum;k++)
+        for ( k = lines[line - 1]; k < charnum;k++)
         {
         printf_char(source[k]);
         }                  
@@ -184,8 +184,8 @@ void show_macro()
     mlines[++mline] = m_charnum;
     mlines[mline+1] = m_charnum;
 
-    printf("Line %i) ", mline-1);
-    for ( j=mlines[mline-1]; j<mlines[mline]; j++)
+    printf("Line %i) ", mline - 1);
+    for ( j=mlines[mline - 1]; j<mlines[mline]; j++)
         if (before_source[j] != EOF)
             printf_char(before_source[j]);
 
@@ -207,21 +207,22 @@ void show_macro()
     } 
  }
 
-  void m_fprintf(int a)
- {
+ void m_fprintf(int a)
+ { 
     if(a == '\n')
     {
-    m_conect_lines[mclp++] = mline-1;
+        m_conect_lines[mclp++] = mline - 1;
     }
     fprintf_char(output, a);
-  //   printf_char(a);
-  //   printf(" %d \n", a);
+    //printf_char(a);
+    //printf(" %d ", a);
+    //printf(" t = %d n = %d\n", nextch_type, nextp);
     return;
  }
 
  void m_fprintf_com()
  {
-    if(nextch_type != 17)
+    if(nextch_type == 17)
     {
         m_fprintf(curchar);
     }
@@ -266,7 +267,7 @@ void show_macro()
 
  void m_nextch()
  {
-    if(nextch_type != 0 && nextch_type < 3 )
+    if(nextch_type != 0 && nextch_type < 10)
     {
         if(nextch_type == 1)
         {
@@ -307,7 +308,7 @@ void show_macro()
             m_end_line();
         }
     }
-    //printf(" i = %d curcar = %c curcar = %i\n", nextch_type, curchar, curchar);
+    //printf(" i = %d curcar = %c curcar = %i n = %d\n", nextch_type, curchar, curchar, nextp);
 
     return;
  }
@@ -532,6 +533,7 @@ void show_macro()
         if(equal(r, oldrepr))
         {
             rp = oldrepr;
+            reprtab[rp] = n;
             return(reprtab[r+1] < 0) ? reprtab[r+1] : 0;
         }
         else
@@ -676,7 +678,7 @@ void show_macro()
     int c = curchar;
     if(c == '|' || c == '&' || c == '='||c == '!')
     {
-        if(nextchar == c && (c != '!'  || nextchar == '='))
+        if((nextchar == c && c != '!') || (c == '!'  && nextchar == '='))
         {
             m_nextch();
             m_nextch();
@@ -820,11 +822,12 @@ void show_macro()
     int operation[10];
 
     operation[op++] = '(';
-    m_nextch();
-
+    if(!if_flag)
+        m_nextch();
     while(curchar != '\n')
     {
         space_skip();
+
         if(digit() || curchar == '-' && m_digit(nextchar))
         {
             stack[i++] = get_digit();
@@ -832,9 +835,12 @@ void show_macro()
         } 
         else if (letter() && nextch_type != 2)
         {
+            //printf("2 i = %d curcar = %c curcar = %i n = %d\n", nextch_type, curchar, curchar, nextp);
             collect_mident();
+            //printf("3 i = %d curcar = %c curcar = %i n = %d\n", nextch_type, curchar, curchar, nextp);
             define_get_from_macrotext();
             m_change_nextch_type(2);
+            //printf("4 i = %d curcar = %c curcar = %i n = %d ms = %d\n", nextch_type, curchar, curchar, nextp, mstring[nextp-1]);
         }
         else if (curchar == '#' && if_flag)
         {
@@ -847,9 +853,9 @@ void show_macro()
         { 
             int n = get_prior(c); 
             //if (n != 0 && (( if_flag && n > 3 || !if_flag && n <=3) ошибка
-            while(op != 0 && n != 0 && get_prior(operation[op-1]) >= n)
+            while(op != 0 && n != 0 && get_prior(operation[op - 1]) >= n)
             {
-                stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op-1], int_flag);
+                stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag);
                 op--;
                 i--;
             }
@@ -857,10 +863,10 @@ void show_macro()
         }
         else if(curchar == ')')   
         { 
-            while(operation[op-1] != '(')
+            while(operation[op - 1] != '(')
             {
                 //if(i < 2 ||op == 0) ошибка
-                stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op-1], int_flag);
+                stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag);
                 op--;
                 i--;
             }
@@ -871,10 +877,11 @@ void show_macro()
                 double_to_string(stack[0], int_flag); 
                 return;
             }
-        }//else ошибка
+        } 
+        else if (curchar != '\n')exit(1);
     }
 
-    if (flagint)
+    if (if_flag)
     {
         csp = 0;
         while (op > 0)
@@ -1200,10 +1207,9 @@ void show_macro()
 
 //define
  void define_get_from_macrotext()
- { 
+ {   
     int r = macro_find_ident();
     int j;
-    
     if(r)
     {
         int t = reprtab[r + 1];
@@ -1216,7 +1222,6 @@ void show_macro()
         else
         {
             t++;
-
             for( ; macrotext[t] != '\n'; t++)
             {
                 mstring[msp++] = macrotext[t];
@@ -1306,6 +1311,10 @@ void show_macro()
         macrotext[mp++] = '\n';
     
     macrotext[oldmp] = mp - oldmp;
+
+    printf("mmm\n");
+    for(j = 0; j < macrotext[oldmp] - 5; j++)
+      printf("%c",macrotext[oldmp+1+j]);
  }
 
  void define_relis()
@@ -1521,7 +1530,7 @@ void show_macro()
  void while_collect()
  {
     int oldwsp = wsp;
-    wstring[wsp++] = -1;
+    wstring[wsp++] = -2;
     wstring[wsp++] = ifsp;
     wsp++;
 
@@ -1531,10 +1540,10 @@ void show_macro()
         m_nextch();
     }
     ifstring[ifsp++] ='\n';
-
+    m_nextch();
     while (curchar != EOF)
     {
-        if(curchar = '#')
+        if(curchar == '#')
         {
             cur = macro_keywords();
             if(cur == SH_WHILE)
@@ -1543,7 +1552,7 @@ void show_macro()
             }
             else if(cur == SH_ENDW)
             {
-                wstring[oldwsp+2] = nextp;
+                wstring[oldwsp+2] = wsp - oldwsp;
                 cur = 0;
                 return;
             }
@@ -1551,57 +1560,69 @@ void show_macro()
             {
                 int i = 0;
                 for(i = 0; i < reprtab[rp]; i++)
-                wstring[wsp++] = reprtab[rp + 2 + i];
+                    wstring[wsp++] = reprtab[rp + 2 + i];
+                
+                if(cur != SH_EVAL)
+                    wstring[wsp++] = ' ';
+
             }    
         }
         wstring[wsp++] = curchar;
         m_nextch();
-    }  //ошибка 
+    }  //ошибка   
  }
 
  void while_relis()
  { 
-    int oldnextp = nextp;
-    int end = wstring[oldnextp+2];   
-    while(wstring[oldnextp] == -1)
+    int oldernextp = nextp;
+    int end = wstring[oldernextp+2];  
+    cur = 0; 
+    while(wstring[oldernextp] == -2)
     {
         m_nextch();
-        m_change_nextch_type(4);//if
+        m_change_nextch_type(4);
         nextp = wstring[nextp];
+        m_nextch();
         calculator(1);
-        m_change_nextch_type(5);//while
-        if(cstring[0] = 0)
+        m_old_nextch_type();
+        if(cstring[0] == 0)
         {
             nextp = end;
+            m_nextch();
             return;
         }
-
         m_nextch();
+        m_nextch();
+        m_nextch();
+        space_skip();
         while (nextp != end)
         {
-            if(curchar = -1)
+            if(curchar == -2)
+            {
                 while_relis();
+            }
             else
             {
                 preprocess_scan();
             }    
         }
-        nextp = oldnextp;
+        nextp = oldernextp;
     }
  }
 //
 
-void set_long(int lmp)
-{
+// set
+ void set_long(int lmp)
+ {
     int n = macrotext[lmp];
     int i = 0;
     for(i = 0; i < n; i++)
     {
         macrotext[mp++] = macrotext[lmp + i];
     }
-}
+ }
 
-void set_relis()
+ void set_relis()
  {
     collect_mident();
 
@@ -1672,6 +1693,7 @@ void set_relis()
         macrotext[oldmp] = mp - oldmp;
     }
  }
+//
 
 //основные(preprocess)
  void preprocess_scan()
@@ -1708,6 +1730,7 @@ void set_relis()
                     ifsp = 0;
                     while_collect();
                     m_change_nextch_type(5);//while
+                    nextp = 0;
                     while_relis();
                     return;
                 default:
