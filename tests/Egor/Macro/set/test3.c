@@ -1,16 +1,9 @@
-//#define a 1
-#ifdef a
-  #define abc -7
-#else
-  #define abc -4
-  #ifdef abc
-    //ertyui
-  #endif
-#endif
+#define a 1
+#set a 2112345678
 void main()
 {
- int n = abc;
- printid(n);
+  a;
 }
+
 
 

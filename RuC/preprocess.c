@@ -10,7 +10,7 @@
 #define DIP 5
 
 int macrotext [MAXREPRTAB];
-int mp = 0;
+int mp = 1;
 
 int mstring[STRIGSIZE];
 int msp = 0;
@@ -338,124 +338,28 @@ void show_macro()
             m_nextch();
         }
  }
-//
 
-/* /работа сo строками
-
- void collect_scob()
+ void space_skip_str()
  {
-    int n = 1;
-    fsp = oldfsp;
-    fstring[fsp++] = curchar;
+    int c = curchar;
+    m_fprintf(curchar);
     m_nextch();
-    while (curchar != EOF)
+
+    while(curchar != c && curchar != EOF)
     {
-        if(curchar == '(')
+        if(curchar == '\\')
         {
-            n++;
-            fstring[fsp++] = curchar;
-            m_nextch();
+            m_fprintf(curchar);
+            m_nextch();  
         }
-        else if (curchar == ')')
-        {
-            n--;
-            fstring[fsp++] = curchar;
-            m_nextch();
-        }
-        else
-        {
-            fstring[fsp++] = curchar;
-            m_nextch();
-        }
-        
-        if(n == 0)
-        {
-            define_get_from_macrotext();
-
-            return;
-        } 
-    }
-    m_error(scob_not_clous);
-
-    return;
- }
-
- int s_collect_scob(int str[], int i)
- {
-    int n = 1;
-    fsp = oldfsp;
-    fstring[fsp++] = str[i++];
-
-    while (str[i] != EOF)
-    {
-        if(str[i] == '(')
-        {
-            n++;
-            fstring[fsp++] = str[i++];
-        }
-        else if (str[i] == ')')
-        {
-            n--;
-            fstring[fsp++] = str[i++];
-        }
-        else
-        {
-            fstring[fsp++] = str[i++];
-        }
-        
-        if(n == 0)
-        {
-            define_get_from_macrotext();
-
-            return i;
-        } 
-    }
-    m_error(scob_not_clous);
-
-    return i;
- }
-
- void collect_mident()
- {
-    msp = 0;
-    
-    while(letter() || digit())
-    {
-        mstring[msp++] = curchar;
+        m_fprintf(curchar);
         m_nextch();
     }
-
-    if(curchar == '(')
-    {
-      collect_scob();
-    }
-    else
-    {
-        define_get_from_macrotext();
-    }
-
+    m_fprintf(curchar);
+    m_nextch();
     return;
  }
-
- int s_collect_mident(int str[], int i)
- {
-    msp = 0;
-    while(m_letter(str[i]) || m_digit(str[i]))
-    {
-        mstring[msp++] = str[i++];
-    }
-    if(str[i] == '(')
-    {
-      i = s_collect_scob(str, i);
-    }
-    else
-    {
-        define_get_from_macrotext();
-    }
-
-    return i;
- }
-/*/
+//
 
  void collect_mident()
  {
@@ -489,7 +393,7 @@ void show_macro()
     {
         if(r >= mfirstrp && r<=mlastrp && equal(r, rp) )
         {
-           return r;
+           return (macrotext[reprtab[r+1]] >= 0) ? r : 0;
         }
             r = reprtab[r];        
     }
@@ -545,47 +449,6 @@ void show_macro()
     reprtab[rp] = n;
     return 0;
  }
-
- /*int macro_keywords_eval(int str[], int i)
- {
-    int oldrepr = rp;
-    int r = 0;
-
-    rp+=2;
-    hash = 0;
-                
-    do
-    {                 
-    hash += str[i];
-    reprtab[rp++] = str[i++];
-    m_nextch();
-    }
-    while(letter() || digit());
-                
-    hash &= 255;
-    reprtab[rp++] = 0;
-    r = hashtab[hash];
-    if(r)
-    {
-        do
-        {
-        if(equal(r, oldrepr))
-        {
-            rp = oldrepr;
-            if(reprtab[r+1] < 0)
-                cur = reprtab[r+1];
-            else 
-                cur = 0;
-            return i;
-        }
-        else
-        r = reprtab[r];
-        }
-        while(r);
-    }
-    rp = oldrepr;
-    return i;
- }*/
 
 //
 
@@ -1209,7 +1072,6 @@ void show_macro()
  void define_get_from_macrotext()
  {   
     int r = macro_find_ident();
-    int j;
     if(r)
     {
         int t = reprtab[r + 1];
@@ -1232,7 +1094,7 @@ void show_macro()
     return;
  }
 
- void define_add_to_reprtab()
+ int define_add_to_reprtab()
  {
     int i;
     int r;
@@ -1257,22 +1119,42 @@ void show_macro()
     {
         if (equal(r, oldrepr))
         {
-           m_error(repeat_ident);
+            if(macrotext[reprtab[r+1]] == -1)
+            {
+                rp = oldrepr;
+                return r;
+            }
+            else
+            {
+                m_error(repeat_ident);
+            }
         }
-
         r = reprtab[r];        
     }
     
     reprtab[oldrepr] = hashtab[hash];
     reprtab[oldrepr + 1] = mp;
     hashtab[hash] = oldrepr;
+    return 0;
  }
 
- void define_add_to_macrotext()
+ void define_add_to_macrotext(int r)
  {
-    int n = 5;
-    int oldmp = mp++;
-    int j;
+    int lmp, n, oldmp, j, flag = 1;
+
+    if(!r)
+    { 
+        flag = 0;
+        lmp = mp;
+        n = -5;
+    }
+    else//else if(!r) ошибка
+    {
+        lmp = reprtab[r + 1];
+        n = macrotext[lmp];
+        m_nextch();
+    }
+    oldmp = lmp++;
 
     while(curchar != '\n')
     {
@@ -1287,44 +1169,64 @@ void show_macro()
             {
                 calculator(0);
                 for(j = 0; j < csp; j++)
-                    macrotext[mp++] = cstring[j];
+                {
+                    macrotext[lmp++] = cstring[j];
+                    if(flag && lmp - oldmp == n)
+                        break;
+                }
             }
             else
             {
                 for(j = 0; j < reprtab[rp]; j++)
-                    macrotext[mp++] = reprtab[rp + 2 + j];
+                {
+                    macrotext[lmp++] = reprtab[rp + 2 + j];
+                    if(flag && lmp - oldmp == n)
+                        break;
+                }
             }
         }
-        else if(curchar == '\\')
+        else if (curchar == '\\')
         {
             m_nextch();
             space_end_line();
         }
         else
         {
-         macrotext[mp++] = curchar;
-         m_nextch();   
+            macrotext[lmp++] = curchar;
+            m_nextch();
         }
+
+        if(flag && lmp - oldmp == n)
+        {
+            int k = oldmp;
+            flag = 0;
+            reprtab[r+1] = mp;
+            oldmp = mp;
+            set_long(k);
+            lmp = mp;
+            n = -1;
+        }
+
     }
 
-    for(j = 0; j < n; j++)
-        macrotext[mp++] = '\n';
-    
-    macrotext[oldmp] = mp - oldmp;
-
-    printf("mmm\n");
-    for(j = 0; j < macrotext[oldmp] - 5; j++)
-      printf("%c",macrotext[oldmp+1+j]);
+    if(!flag)
+    {
+        mp = lmp;
+        macrotext[oldmp] = mp - oldmp;
+        for(; n < 0; n++)
+            macrotext[mp++] = '\n';
+    }
  }
 
  void define_relis()
  {
+    int r;
     if (letter() == 0) 
     { 
         m_error(ident_begins_with_letters);
     }
 
-    define_add_to_reprtab();
+    r = define_add_to_reprtab();
 
     msp = 0;
 
@@ -1340,7 +1242,7 @@ void show_macro()
     else
     {
         space_skip();
-        define_add_to_macrotext();   
+        define_add_to_macrotext(r);   
     }
 
     return; 
@@ -1621,81 +1523,50 @@ void show_macro()
         macrotext[mp++] = macrotext[lmp + i];
     }
  }
-
- void set_relis()
- {
-    collect_mident();
-
-    int r = macro_find_ident();
-    int lmp = reprtab[r + 1];
-    int n = macrotext[lmp];
-    int oldmp = lmp;
-    int flag = 1;
-    int j;
-    //if(!r) ошибка
-    
-    oldmp = lmp;
-    n = macrotext[lmp];
-
-    while(curchar != '\n')
-    {
-        if(curchar == EOF)
-        {
-            m_error(not_end_fail_preprocess);
-        }
-        else if(curchar == '#')
-        {
-            cur = macro_keywords();
-            if(cur == SH_EVAL && curchar == '(')
-            {
-                calculator(0);
-                for(j = 0; j < csp; j++)
-                {
-                    macrotext[lmp++] = cstring[j];
-                    if(lmp - oldmp == n)
-                        break;
-                }
-            }
-            else
-            {
-                for(j = 0; j < reprtab[rp]; j++)
-                {
-                    macrotext[lmp++] = reprtab[rp + 2 + j];
-                    if(lmp - oldmp == n)
-                        break;
-                }
-            }
-        }
-        else if (curchar == '\\')
-        {
-            m_nextch();
-            space_end_line();
-        }
-        else
-        {
-            macrotext[lmp++] = curchar;
-            m_nextch();
-        }
-
-        if(lmp - oldmp == n && flag)
-        {
-            flag = 0;
-            reprtab[r+1] = mp;
-            set_long(oldmp);
-            lmp = mp;
-            oldmp = lmp;
-        }
-
-    }
-    if(!flag)
-    {
-        mp = lmp;
-        macrotext[oldmp] = mp - oldmp;
-    }
- }
 //
 
 //основные(preprocess)
+ void preprocess_words()
+ { 
+    int j;
+    switch(cur)
+    {
+        case SH_DEFINE: 
+            define_relis();
+            m_nextch();
+            return;
+        case SH_UNDEF:
+            collect_mident();
+            macrotext[reprtab[macro_find_ident()+1]] = -1;
+        case SH_IF:
+        case SH_IFDEF:
+        case SH_IFNDEF:
+            if_relis();
+            return;
+        case SH_SET:
+            collect_mident();
+            define_add_to_macrotext(macro_find_ident());
+            return;
+        case SH_ELSE:
+        case SH_ELIF: 
+        case SH_ENDIF:
+            return;
+        case SH_WHILE:
+            wsp = 0;
+            ifsp = 0;
+            while_collect();
+            m_change_nextch_type(5);//while
+            nextp = 0;
+            while_relis();
+            return;
+        default:
+            m_nextch();
+            for(j = 0; j < reprtab[rp]; j++)
+                m_fprintf(reprtab[rp + 2 + j]);
+            return;
+    }
+ }
+
  void preprocess_scan()
  {  
     int j;
@@ -1707,58 +1578,12 @@ void show_macro()
         case '#':
             cur = macro_keywords ();
             prep_flag = 1;
-            switch(cur)
-            {
-                case SH_DEFINE: 
-                    define_relis();
-                    m_nextch();
-                    return;
-                case SH_IF:
-                case SH_IFDEF:
-                case SH_IFNDEF:
-                    if_relis();
-                    return;
-                case SH_SET:
-                    set_relis();
-                    return;
-                case SH_ELSE:
-                case SH_ELIF: 
-                case SH_ENDIF:
-                    return;
-                case SH_WHILE:
-                    wsp = 0;
-                    ifsp = 0;
-                    while_collect();
-                    m_change_nextch_type(5);//while
-                    nextp = 0;
-                    while_relis();
-                    return;
-                default:
-                    m_nextch();
-                    for(j = 0; j < reprtab[rp]; j++)
-                        m_fprintf(reprtab[rp + 2 + j]);
-                    return;
-            }
+            preprocess_words();
+            return;    
         case '\'':
         case '\"':
-        {
-            int c = curchar;
-                m_fprintf(curchar);
-                m_nextch();
-            while(curchar != c && curchar != EOF)
-            {
-                if(curchar == '\\')
-                {
-                    m_fprintf(curchar);
-                    m_nextch();  
-                }
-                m_fprintf(curchar);
-                m_nextch();
-            }
-            m_fprintf(curchar);
-            m_nextch();
+            space_skip_str();
             return;
-        }
         default:
             if(letter() && prep_flag == 1)
             {
