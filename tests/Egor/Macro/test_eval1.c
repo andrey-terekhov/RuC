@@ -20,8 +20,8 @@ out ans(int(15));
 #define concat(a,b) a@b
 #define R(i,j) concat(r,concat(i,concat(x,j)))
 #define A(i,j) concat(a,concat(i,concat(x,j)))
-#define IN(i)  concat(in,i)
-#define S(i)  concat(s,i)
+#define IN(i) concat(in,i)// побел перед concat
+#define S(i) concat(s,i)
 
 data JT, JK, JD, J, II: uint(10),
 irot, layer: uint(4),
@@ -37,7 +37,7 @@ bram: [0..B: uint(10)][0..1023: uint(10)]int(15)
 loopbody
 #set j #eval(j+1)
 #endw
-//!!!!#undef j нету
+#undef j 
 #endm
 
 loopj(MM, macroIN)
@@ -46,15 +46,15 @@ loopj(N, macroS)
 // определяем регистры Rij, считаем, что они содержат числа со знаком с 4 знаками после запятой
 #define i 0
 #while i < N
-#set j 0
+#define j 0
 #while j < MiN
 , R(i,j)
 #set j #eval(j+1)
 #endw
-//#undef j
+#undef j
 #set i #eval(i+1)
 #endw
-//#undef i
+#undef i
 
 : int(15);
 #define macroS0 | S(j):=0 
@@ -98,7 +98,7 @@ R(i,j):=IN(j) |
 #undef i
 #set j #eval(j+1)
 #endw
-#undef j//!!!!
+#undef j
 
 #define macroShift IN(j):=IN(#eval(MiN+j)) |
 
@@ -118,10 +118,10 @@ loopj(#eval(MM-MiN), macroShift)
 loopbody
 #set i #eval(i+1)
 #endw
-//#undef i
+#undef i
 #set j #eval(j+1)
 #endw
-//#undef j
+#undef j
 #endm
 
 // читаем MiN коэффициентов в каждом нейроне
@@ -146,16 +146,16 @@ irot:= irot + 1 | J:=J + 1;
 
 #set i #eval(i+1)                                      
 #endw
-//#undef i
+#undef i
 #set j #eval(j+2*step)
 #endw
 skip;
-//#undef j
+#undef j
 #set step #eval(2*step)
 #set c #eval(c+1)
 #endw
-//#undef c
-//#undef step
+#undef c
+#undef step
 #define macroSUM S(j):= S(j) + R(j,0) |
 loopj(N, macroSUM)
 skip
@@ -174,7 +174,7 @@ fi in
 IN(i):=s |
 #set i #eval(i+1)
 #endw
-//#undef i
+#undef i
 layer:= layer + 1
 done;
 JD:=0 | inform ans(S(0))
