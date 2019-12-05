@@ -60,7 +60,7 @@ loopj(N, macroS)
 #define macroS0 | S(j):=0 
 init
 {
-JT:=0 | JK:=0 | JD:=0 | II:=0 | J:=0 | irot:=0 | layer:=0
+JT:=0 | JK:=0 | JD:=0 | II:=0 | J:=0 | irot:=0 | layer:=1//ошибка
 loopj(N, macroS0)
 }
 
@@ -100,15 +100,16 @@ R(i,j):=IN(j) |
 #endw
 #undef j
 
-#define macroShift IN(j):=IN(#eval(MiN+j)) |
+#macro macroShift() IN(j):=IN(#eval(MiN+j)) |#endm // раньше было не хорошо
 
 loopj(#eval(MM-MiN), macroShift)
-#define readbram A(i,j) = bram[#eval(j*N+i)][J] |
+#macro readbram() A(i,j) = bram[#eval(j*N+i)][J] |#endm
 
-#define multk  R(i,j) := mult(R(i,j), A(i,j)) |
+//#define multk  R(i,j) := mult(R(i,j), A(i,j)) |
 
 #define mult(a,b) let x = sext(a,30) * sext(b,30) in x{29} || x{4:17}
 
+#define multk  R(i,j) := mult(R(i,j), A(i,j)) |
 
 #macro loopij(loopbody)
 #define j 0
@@ -129,7 +130,7 @@ loopij(readbram)
 skip;
 // умножаем на коэффициенты все входы всех нейронов слоя
 loopij(multk)
-irot:= irot + 1 | J:=J + 1;
+first:=0 |irot:= irot + 1 | J:=J + 1;//ошибка
 
 // суммируем произведения по всем входам внутри каждого нейрона
 #define step 1
