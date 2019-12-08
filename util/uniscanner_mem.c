@@ -33,8 +33,13 @@ io_mem_getnext(universal_scanner_options *opts)
     unsigned char firstchar, secondchar;
     int           ret;
     int           pos;
+    int           result;
 
-    if (sscanf(&opts->ptr[opts->pos], "%c%n", &firstchar, &pos) != 1)
+    if (opts->ptr[opts->pos] == '\0')
+        return EOF;
+
+    result = sscanf(&opts->ptr[opts->pos], "%c%n", &firstchar, &pos);
+    if (result != 1 || result == EOF)
         return EOF;
 
     /* We must find the symbol because we already did in sscanf() call */
@@ -42,7 +47,8 @@ io_mem_getnext(universal_scanner_options *opts)
 
     if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
     {
-        if (sscanf(&opts->ptr[opts->pos], "%c%n", &secondchar, &pos) != 1)
+        result = sscanf(&opts->ptr[opts->pos], "%c%n", &secondchar, &pos);
+        if (result != 1 || result == EOF)
             return EOF;
 
         opts->pos += pos;
