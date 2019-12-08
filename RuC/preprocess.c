@@ -81,6 +81,7 @@ show_macro(compiler_context *context)
     {
         printer_printchar(&context->miscout_options, str1[k]);
     }
+
     if (flag == 0)
     {
         printer_printf(&context->miscout_options,
@@ -266,29 +267,33 @@ to_macrotext(compiler_context *context, char chang[], int oldrepr)
 static void
 macro_reprtab(compiler_context *context, char chang[])
 {
-    int oldrepr = context->rp;
+    int oldrepr = REPRTAB_LEN;
     int r, i;
-
 
     context->mlastrp = oldrepr;
     context->hash = 0;
-    context->rp += 2;
+    compiler_table_expand(&context->reprtab, 2);
+    REPRTAB_LEN += 2;
 
     for (i = 0; i < context->msp; i++)
     {
         context->hash += context->mstring[i];
-        context->reprtab[context->rp++] = context->mstring[i];
+        compiler_table_expand(&context->reprtab, 1);
+        REPRTAB[REPRTAB_LEN++] = context->mstring[i];
     }
     context->msp = 0;
     context->hash &= 255;
-    context->reprtab[context->rp++] = 0;
-    context->reprtab[oldrepr] = context->hashtab[context->hash];
-    context->reprtab[oldrepr + 1] = context->mp;
+    compiler_table_expand(&context->reprtab, 1);
+    REPRTAB[REPRTAB_LEN++] = 0;
+    compiler_table_ensure_allocated(&context->reprtab, oldrepr + 1);
+    REPRTAB[oldrepr] = context->hashtab[context->hash];
+    REPRTAB[oldrepr + 1] = context->mp;
 
     r = context->hashtab[context->hash];
     while (r != 0)
     {
-        r = context->reprtab[r];
+        compiler_table_ensure_allocated(&context->reprtab, r);
+        r = REPRTAB[r];
     }
     to_macrotext(context, chang, oldrepr);
     context->hashtab[context->hash] = oldrepr;
@@ -312,13 +317,14 @@ from_macrotext(compiler_context *context)
     if (r)
     {
         context->msp = 0;
-        if (context->reprtab[r + 1] == 2)
+        compiler_table_ensure_allocated(&context->reprtab, r + 1);
+        if (REPRTAB[r + 1] == 2)
         {
             from_functionident(context, r);
             return;
         }
 
-        r = context->reprtab[r + 1] + 1;
+        r = REPRTAB[r + 1] + 1;
 
         for (; context->macrotext[r] != 0; r++)
         {
@@ -332,16 +338,18 @@ from_macrotext(compiler_context *context)
 static int
 macro_keywords(compiler_context *context)
 {
-    int oldrepr = context->rp;
+    int oldrepr = REPRTAB_LEN;
     int r = 0;
 
-    context->rp += 2;
+    compiler_table_expand(&context->reprtab, 2);
+    REPRTAB_LEN += 2;
     context->hash = 0;
 
     do
     {
+        compiler_table_expand(&context->reprtab, 1);
         context->hash += context->curchar;
-        context->reprtab[context->rp++] = context->curchar;
+        REPRTAB[REPRTAB_LEN++] = context->curchar;
         m_nextch(context, 12);
     } while (letter(context) || digit(context));
 
@@ -356,7 +364,8 @@ macro_keywords(compiler_context *context)
     }
 
     context->hash &= 255;
-    context->reprtab[context->rp++] = 0;
+    compiler_table_expand(&context->reprtab, 1);
+    REPRTAB[REPRTAB_LEN++] = 0;
     r = context->hashtab[context->hash];
     if (r)
     {
@@ -364,13 +373,17 @@ macro_keywords(compiler_context *context)
         {
             if (equal(context, r, oldrepr))
             {
-                context->rp = oldrepr;
-                return (context->reprtab[r + 1] < 0)
-                    ? context->reprtab[r + 1]
-                    : (context->repr = r, IDENT);
+                REPRTAB_LEN = oldrepr;
+                compiler_table_ensure_allocated(&context->reprtab, r + 1);
+                return (REPRTAB[r + 1] < 0)
+                    ? REPRTAB[r + 1]
+                    : (REPRTAB_POS = r, IDENT);
             }
             else
-                r = context->reprtab[r];
+            {
+                compiler_table_ensure_allocated(&context->reprtab, r);
+                r = REPRTAB[r];
+            }
         } while (r);
     }
     return 0;
@@ -434,23 +447,27 @@ static void
 toreprtab_f(compiler_context *context)
 {
     int i;
-    int oldrepr = context->rp;
+    int oldrepr = REPRTAB_LEN;
     context->mlastrp = oldrepr;
     // printf("r = %i\n", oldrepr);
     context->hash = 0;
-    context->rp += 2;
+    compiler_table_expand(&context->reprtab, 2);
+    REPRTAB_LEN += 2;
     for (i = 0; i < context->msp; i++)
     {
         context->hash += context->mstring[i];
-        context->reprtab[context->rp++] = context->mstring[i];
+        compiler_table_expand(&context->reprtab, 1);
+        REPRTAB[REPRTAB_LEN++] = context->mstring[i];
     }
 
     context->hash &= 255;
-    context->reprtab[context->rp++] = 0;
-    context->reprtab[context->rp++] = context->fip;
-    context->reprtab[context->rp++] = 0;
-    context->reprtab[oldrepr] = context->hashtab[context->hash];
-    context->reprtab[oldrepr + 1] = 2;
+    compiler_table_expand(&context->reprtab, 3);
+    REPRTAB[REPRTAB_LEN++] = 0;
+    REPRTAB[REPRTAB_LEN++] = context->fip;
+    REPRTAB[REPRTAB_LEN++] = 0;
+    compiler_table_ensure_allocated(&context->reprtab, oldrepr + 1);
+    REPRTAB[oldrepr] = context->hashtab[context->hash];
+    REPRTAB[oldrepr + 1] = 2;
     context->hashtab[context->hash] = oldrepr;
 }
 
@@ -505,10 +522,16 @@ from_functionident(compiler_context *context, int r)
     int r1 = r + 2;
     int str[30];
 
-    for (; context->reprtab[r1] != 0; r1++)
-        ;
+    compiler_table_ensure_allocated(&context->reprtab, r1);
+    /* Assuming it is allocated */
+    for (; REPRTAB[r1] != 0; r1++)
+    {
+        compiler_table_ensure_allocated(&context->reprtab, r1 + 1);
+    }
+
     r1++;
-    r1 = context->reprtab[r1];
+    r1 = REPRTAB[r1];
+    compiler_table_ensure_allocated(&context->reprtab, r1);
     create_change(context, r1);
 
     int finish = context->functionident[r1];
@@ -727,26 +750,30 @@ r_macrofunction(compiler_context *context)
 static int
 find_ident(compiler_context *context)
 {
-    int fpr = context->rp;
+    int fpr = REPRTAB_LEN;
     int i, r;
     context->hash = 0;
     fpr += 2;
     for (i = 0; i < context->msp; i++)
     {
         context->hash += context->mstring[i];
-        context->reprtab[fpr++] = context->mstring[i];
+        compiler_table_ensure_allocated(&context->reprtab, fpr + 1);
+        REPRTAB[fpr++] = context->mstring[i];
     }
-    context->reprtab[fpr++] = 0;
+    compiler_table_ensure_allocated(&context->reprtab, fpr + 1);
+    REPRTAB[fpr++] = 0;
     context->hash &= 255;
     r = context->hashtab[context->hash];
     while (r)
     {
+        compiler_table_ensure_allocated(&context->reprtab, r);
         if (r >= context->mfirstrp && r <= context->mlastrp &&
-            equal(context, r, context->rp))
+            equal(context, r, REPRTAB_LEN))
         {
             return r;
         }
-        r = context->reprtab[r];
+
+        r = REPRTAB[r];
     }
     return 0;
 }
@@ -1040,7 +1067,7 @@ macroscan(compiler_context *context)
 void
 preprocess_file(compiler_context *context)
 {
-    context->mfirstrp = context->rp;
+    context->mfirstrp = REPRTAB_LEN;
     context->mlines[context->mline = 1] = 1;
     context->charnum = 1;
     context->mcl = 1;

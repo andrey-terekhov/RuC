@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#include <math.h>
 #include "global_vars.h"
 
 #define DEFAULT_OUTBUF_SIZE (1024)
@@ -16,9 +17,11 @@ compiler_context_init(compiler_context *context)
     printer_init(&context->output_options);
     printer_init(&context->err_options);
     printer_init(&context->miscout_options);
+    compiler_table_init(&context->reprtab);
+
     context->charnum = 1;
     context->m_charnum = 1;
-    context->rp = 1;
+    REPRTAB_LEN = 1;
     context->id = 2;
     context->md = 1;
     context->startmode = 1;
@@ -164,3 +167,46 @@ compiler_context_detach_io(compiler_context *context, ruc_io_type type)
         scanner_close(opts);
     }
 }
+
+/* See description in context.h */
+void
+compiler_table_init(compiler_table *table)
+{
+    table->table = malloc(COMPILER_TABLE_SIZE_DEFAULT * sizeof(int));
+    if (table->table == NULL)
+        exit(1); // need a better way to stop!
+    table->pos = 0;
+    table->len = 0;
+    table->size = COMPILER_TABLE_SIZE_DEFAULT;
+    memset(table->table, 0, COMPILER_TABLE_SIZE_DEFAULT * sizeof(int));
+}
+
+/* See description in context.h */
+int
+compiler_table_ensure_allocated(compiler_table *table, int pos)
+{
+    if (unlikely(pos >= table->size))
+    {
+        int     size =
+            (table->size * 2 > (pos + COMPILER_TABLE_INCREMENT_MIN))
+            ? (table->size * 2) : (pos + COMPILER_TABLE_INCREMENT_MIN);
+        int    *buf = realloc(table->table, sizeof(int) * size);
+
+        if (buf == NULL)
+            exit(1);
+
+        memset(&buf[table->size], 0, size - table->size);
+        table->table = buf;
+        table->size = size;
+    }
+
+    return table->size;
+}
+
+/* See description in context.h */
+int
+compiler_table_expand(compiler_table *table, int len)
+{
+    return compiler_table_ensure_allocated(table, table->len + len);
+}
+

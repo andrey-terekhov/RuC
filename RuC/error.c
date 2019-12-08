@@ -11,8 +11,8 @@ printident(compiler_context *context, int r)
 {
     r += 2; // ссылка на context->reprtab
     do
-        printer_printchar(&context->err_options, context->reprtab[r++]);
-    while (context->reprtab[r] != 0);
+        printer_printchar(&context->err_options, REPRTAB[r++]);
+    while (REPRTAB[r] != 0);
 }
 
 void
@@ -149,7 +149,7 @@ error(compiler_context *context, int ernum)
         case repeated_decl:
             printer_printf(&context->err_options,
                            "повторное описание идентификатора ");
-            printident(context, context->repr);
+            printident(context, REPRTAB_POS);
             printer_printf(&context->err_options, "\n");
             break;
         case arr_init_must_start_from_BEGIN:
@@ -168,7 +168,7 @@ error(compiler_context *context, int ernum)
             break;
         case ident_is_not_declared:
             printer_printf(&context->err_options, "не описан идентификатор ");
-            printident(context, context->repr);
+            printident(context, REPRTAB_POS);
             printer_printf(&context->err_options, "\n");
             break;
         case no_rightsqbr_in_slice:
@@ -494,12 +494,12 @@ error(compiler_context *context, int ernum)
             printer_printf(&context->err_options,
                            "в строке %i переход на неописанную метку ",
                            context->hash);
-            printident(context, context->repr);
+            printident(context, REPRTAB_POS);
             printer_printf(&context->err_options, "\n");
             break;
         case repeated_label:
             printer_printf(&context->err_options, "повторное описание метки ");
-            printident(context, context->repr);
+            printident(context, REPRTAB_POS);
             printer_printf(&context->err_options, "\n");
             break;
         case wrong_pnt_assn:
@@ -591,7 +591,7 @@ error(compiler_context *context, int ernum)
             break;
         case no_field:
             printer_printf(&context->err_options, "нет такого поля ");
-            printident(context, context->repr);
+            printident(context, REPRTAB_POS);
             printer_printf(&context->err_options, " в структуре");
             printer_printf(&context->err_options, "\n");
             break;
@@ -658,7 +658,7 @@ error(compiler_context *context, int ernum)
             break;
         case predef_but_notdef:
             printer_printf(&context->err_options, "функция ");
-            printident(context, context->repr);
+            printident(context, REPRTAB_POS);
             printer_printf(&context->err_options,
                            " была предопределена, но не описана\n");
             break;

@@ -181,9 +181,12 @@ equal(compiler_context *context, int i, int j)
 {
     ++i;
     ++j;
-    while (context->reprtab[++i] == context->reprtab[++j])
-        if (context->reprtab[i] == 0 && context->reprtab[j] == 0)
+    /* Assuming allocated */
+    while (REPRTAB[++i] == REPRTAB[++j])
+    {
+        if (REPRTAB[i] == 0 && REPRTAB[j] == 0)
             return 1;
+    }
     return 0;
 }
 
@@ -573,21 +576,23 @@ scan(compiler_context *context)
         default:
             if (letter(context) || context->curchar == '#')
             {
-                int oldrepr = context->rp, r;
-                context->rp += 2;
+                int oldrepr = REPRTAB_LEN, r;
+                compiler_table_expand(&context->reprtab, 2);
+                REPRTAB_LEN += 2;
                 context->hash = 0;
 
                 // решетка на 1 месте -- значит, ключевое слово препроцессора
                 do
                 {
-
                     context->hash += context->curchar;
-                    context->reprtab[context->rp++] = context->curchar;
+                    compiler_table_expand(&context->reprtab, 1);
+                    REPRTAB[REPRTAB_LEN++] = context->curchar;
                     nextch(context);
                 } while (letter(context) || digit(context));
 
                 context->hash &= 255;
-                context->reprtab[context->rp++] = 0;
+                compiler_table_expand(&context->reprtab, 1);
+                REPRTAB[REPRTAB_LEN++] = 0;
                 r = context->hashtab[context->hash];
                 if (r)
                 {
@@ -595,18 +600,27 @@ scan(compiler_context *context)
                     {
                         if (equal(context, r, oldrepr))
                         {
-                            context->rp = oldrepr;
-                            return (context->reprtab[r + 1] < 0)
-                                ? context->reprtab[r + 1]
-                                : (context->repr = r, IDENT);
+                            REPRTAB_LEN = oldrepr;
+                            compiler_table_ensure_allocated(&context->reprtab,
+                                                            r + 1);
+                            return (REPRTAB[r + 1] < 0)
+                                ? REPRTAB[r + 1]
+                                : (REPRTAB_POS = r, IDENT);
                         }
                         else
-                            r = context->reprtab[r];
+                        {
+                            compiler_table_ensure_allocated(&context->reprtab,
+                                                            r);
+                            r = REPRTAB[r];
+                        }
                     } while (r);
                 }
-                context->reprtab[oldrepr] = context->hashtab[context->hash];
-                context->repr = context->hashtab[context->hash] = oldrepr;
-                context->reprtab[context->repr + 1] = (context->keywordsnum)
+
+                compiler_table_ensure_allocated(&context->reprtab, oldrepr);
+                REPRTAB[oldrepr] = context->hashtab[context->hash];
+                REPRTAB_POS = context->hashtab[context->hash] = oldrepr;
+                compiler_table_expand(&context->reprtab, 1);
+                REPRTAB[REPRTAB_POS + 1] = (context->keywordsnum)
                     ? -((++context->keywordsnum - 2) / 4)
                     : 1; // 0 - только MAIN, < 0 - ключевые
                          // слова, 1 - обычные иденты

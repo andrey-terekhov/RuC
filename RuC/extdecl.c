@@ -225,21 +225,26 @@ int toidentab(compiler_context *context,
     //    context->repr, context->reprtab[context->repr],
     //    context->reprtab[context->repr+1], context->reprtab[context->repr+2]);
     int pred;
+
+    compiler_table_expand(&context->reprtab, 1);
+
     context->lastid = context->id;
-    if (context->reprtab[context->repr + 1] == 0) // это может быть только MAIN
+    if (REPRTAB[REPRTAB_POS + 1] == 0) // это может быть только MAIN
     {
         if (context->wasmain)
             error(context, more_than_1_main);
         context->wasmain = context->id;
     }
-    pred = context->identab[context->id] =
-        context
-            ->reprtab[context->repr + 1]; // ссылка на описание с таким же
-                                          // представлением в предыдущем блоке
+
+    // ссылка на описание с таким же
+    // представлением в предыдущем блоке
+    pred = context->identab[context->id] = REPRTAB[REPRTAB_POS + 1];
     if (pred) // pred == 0 только для main, эту ссылку портить нельзя
-        context->reprtab[context->repr + 1] =
-            context->id; // ссылка на текущее описание с этим представлением
-                         // (это в reprtab)
+    {
+        // ссылка на текущее описание с этим представлением
+        // (это в reprtab)
+        REPRTAB[REPRTAB_POS + 1] = context->id;
+    }
 
     if (f != 1 &&
         pred >= context->curid) // один  и тот же идент м.б. переменной и меткой
@@ -252,8 +257,7 @@ int toidentab(compiler_context *context,
                   repeated_decl); // только определение функции может иметь 2
                                   // описания, т.е. иметь предописание
 
-    context->identab[context->id + 1] =
-        context->repr; // ссылка на представление
+    context->identab[context->id + 1] = REPRTAB_POS;// ссылка на представление
     if (f == -2) // #define
     {
         context->identab[context->id + 2] = 1;
@@ -293,13 +297,13 @@ int toidentab(compiler_context *context,
                 {
                     context->identab[context->lastid + 1] *=
                         -1; //это предописание
-                    context->predef[++context->prdf] = context->repr;
+                    context->predef[++context->prdf] = REPRTAB_POS;
                 }
                 else
                 {
                     int i;
                     for (i = 0; i <= context->prdf; i++)
-                        if (context->predef[i] == context->repr)
+                        if (context->predef[i] == REPRTAB_POS)
                             context->predef[i] = 0;
                 }
             }
@@ -398,7 +402,8 @@ insertwiden(compiler_context *context)
 void
 applid(compiler_context *context)
 {
-    context->lastid = context->reprtab[context->repr + 1];
+    compiler_table_expand(&context->reprtab, 1);
+    context->lastid = REPRTAB[REPRTAB_POS + 1];
     if (context->lastid == 1)
         error(context, ident_is_not_declared);
 }
@@ -866,7 +871,7 @@ int find_field(compiler_context *context,
          i += 2) // тут хранится удвоенное n
     {
         int field_type = context->modetab[stype + 3 + i];
-        if (context->modetab[stype + 4 + i] == context->repr)
+        if (context->modetab[stype + 4 + i] == REPRTAB_POS)
         {
             context->stackoperands[context->sopnd] = context->ansttype =
                 field_type;
@@ -1743,7 +1748,7 @@ statement(compiler_context *context)
         flagsemicol = 0;
         totree(context, TLabel);
         for (i = 0; flag && i < context->pgotost - 1; i += 2)
-            flag = context->identab[context->gotost[i] + 1] != context->repr;
+            flag = context->identab[context->gotost[i] + 1] != REPRTAB_POS;
         if (flag)
         {
             totree(context, id = toidentab(context, 1, 0));
@@ -1755,7 +1760,7 @@ statement(compiler_context *context)
         else
         {
             id = context->gotost[i - 2];
-            context->repr = context->identab[id + 1];
+            REPRTAB_POS = context->identab[id + 1];
             if (context->gotost[i - 1] < 0)
                 error(context, repeated_label);
             totree(context, id);
@@ -1787,7 +1792,8 @@ statement(compiler_context *context)
             {
                 mustbe(context, LEFTBR, no_leftbr_in_printid);
                 mustbe(context, IDENT, no_ident_in_printid);
-                context->lastid = context->reprtab[context->repr + 1];
+                compiler_table_expand(&context->reprtab, 1);
+                context->lastid = REPRTAB[REPRTAB_POS + 1];
                 if (context->lastid == 1)
                     error(context, ident_is_not_declared);
                 totree(context, TPrintid);
@@ -1860,9 +1866,11 @@ statement(compiler_context *context)
 
             case GETID:
             {
+                compiler_table_expand(&context->reprtab, 1);
+
                 mustbe(context, LEFTBR, no_leftbr_in_printid);
                 mustbe(context, IDENT, no_ident_in_printid);
-                context->lastid = context->reprtab[context->repr + 1];
+                context->lastid = REPRTAB[REPRTAB_POS + 1];
                 if (context->lastid == 1)
                     error(context, ident_is_not_declared);
                 totree(context, TGetid);
@@ -1979,8 +1987,10 @@ statement(compiler_context *context)
                 mustbe(context, IDENT, no_ident_after_goto);
                 totree(context, TGoto);
                 for (i = 0; flag && i < context->pgotost - 1; i += 2)
+                {
                     flag = context->identab[context->gotost[i] + 1] !=
-                        context->repr;
+                        REPRTAB_POS;
+                }
                 if (flag)
                 {
                     // первый раз встретился переход на метку, которой не было,
@@ -2164,7 +2174,7 @@ struct_decl_list(compiler_context *context)
             } // конец ASS
         } // конец LEFTSQBR
         loc_modetab[locmd++] = t;
-        loc_modetab[locmd++] = context->repr;
+        loc_modetab[locmd++] = REPRTAB_POS;
         field_count++;
         curdispl += szof(context, t);
         if (scaner(context) != SEMICOLON)
@@ -2214,7 +2224,10 @@ gettype(compiler_context *context)
             return (struct_decl_list(context));
         else if (context->next == IDENT)
         {
-            int l = context->reprtab[context->repr + 1];
+            int l;
+
+            compiler_table_expand(&context->reprtab, 1);
+            l = REPRTAB[REPRTAB_POS + 1];
             scaner(context);
             if (context->next == BEGIN) // struct key {
             {
@@ -2314,7 +2327,11 @@ block(compiler_context *context, int b)
     if (b)
     {
         for (i = context->id - 4; i >= context->curid; i -= 4)
-            context->reprtab[context->identab[i + 1] + 1] = context->identab[i];
+        {
+            compiler_table_ensure_allocated(&context->reprtab,
+                                            context->identab[i + 1] + 1);
+            REPRTAB[context->identab[i + 1] + 1] = context->identab[i];
+        }
         context->displ = olddispl;
     }
     context->inswitch = oldinswitch;
@@ -2326,7 +2343,7 @@ void
 function_definition(compiler_context *context)
 {
     int fn = context->identab[context->lastid + 3], i, pred,
-        oldrepr = context->repr, ftype, n, fid = context->lastid;
+        oldrepr = REPRTAB_POS, ftype, n, fid = context->lastid;
     int olddispl = context->displ;
     context->pgotost = 0;
     context->functype = context->identab[context->lastid + 2];
@@ -2346,12 +2363,14 @@ function_definition(compiler_context *context)
     for (i = 0; i < n; i++)
     {
         context->type = context->modetab[context->functype + i + 3];
-        context->repr = context->functions[fn + i + 1];
-        if (context->repr > 0)
+        REPRTAB_POS = context->functions[fn + i + 1];
+        if (REPRTAB_POS > 0)
+        {
             toidentab(context, 0, context->type);
+        }
         else
         {
-            context->repr = -context->repr;
+            REPRTAB_POS = -REPRTAB_POS;
             toidentab(context, -1, context->type);
         }
     }
@@ -2359,7 +2378,7 @@ function_definition(compiler_context *context)
     totree(context, TFuncdef);
     totree(context, fid);
     pred = context->tc++;
-    context->repr = oldrepr;
+    REPRTAB_POS = oldrepr;
 
     block(context, 0);
 
@@ -2372,11 +2391,15 @@ function_definition(compiler_context *context)
     if (ftype != LVOID && !context->wasret)
         error(context, no_ret_in_func);
     for (i = context->id - 4; i >= context->curid; i -= 4)
-        context->reprtab[context->identab[i + 1] + 1] = context->identab[i];
+    {
+        compiler_table_ensure_allocated(&context->reprtab,
+                                        context->identab[i + 1] + 1);
+        REPRTAB[context->identab[i + 1] + 1] = context->identab[i];
+    }
 
     for (i = 0; i < context->pgotost - 1; i += 2)
     {
-        context->repr = context->identab[context->gotost[i] + 1];
+        REPRTAB_POS = context->identab[context->gotost[i] + 1];
         context->hash = context->gotost[i + 1];
         if (context->hash < 0)
             context->hash = -context->hash;
@@ -2428,7 +2451,7 @@ func_declarator(compiler_context *context, int level, int func_d, int firstdecl)
                 {
                     scaner(context);
                     ident = 1;
-                    context->functions[context->funcnum++] = context->repr;
+                    context->functions[context->funcnum++] = REPRTAB_POS;
                 }
             }
             else if (context->next == IDENT)
@@ -2475,7 +2498,7 @@ func_declarator(compiler_context *context, int level, int func_d, int firstdecl)
                             ident = 2;
                         else
                             error(context, two_idents_for_1_declarer);
-                        context->functions[context->funcnum++] = -context->repr;
+                        context->functions[context->funcnum++] = -REPRTAB_POS;
                     }
                     else
                         error(context, ident_in_declarator);
@@ -2576,7 +2599,7 @@ ext_decl(compiler_context *context)
             if (context->next == LEFTBR) // определение или предописание функции
             {
                 int oldfuncnum = context->funcnum++, firsttype = context->type;
-                funrepr = context->repr;
+                funrepr = REPRTAB_POS;
                 scaner(context);
                 scaner(context);
                 context->type = func_declarator(
@@ -2591,7 +2614,7 @@ ext_decl(compiler_context *context)
                     context->func_def = 2;
                 // теперь я точно знаю, это определение ф-ции или предописание
                 // (context->func_def=1 или 2)
-                context->repr = funrepr;
+                REPRTAB_POS = funrepr;
 
                 toidentab(context, oldfuncnum, context->type);
 

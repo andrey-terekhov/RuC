@@ -7,6 +7,23 @@
 #include "uniprinter.h"
 #include "uniscanner.h"
 
+#define COMPILER_TABLE_SIZE_DEFAULT (100)
+#define COMPILER_TABLE_INCREMENT_MIN (100)
+
+#define REPRTAB (context->reprtab.table)
+#define REPRTAB_POS (context->reprtab.pos)
+#define REPRTAB_LEN (context->reprtab.len)
+
+/**
+ * A designated compiler table
+ */
+typedef struct compiler_table {
+    int    *table;      /** Actual table */
+    int     len;        /** Length of a useful part of table */
+    int     pos;        /** A position in a table */
+    int     size;       /** Total size of a table */
+} compiler_table;
+
 // Определение глобальных переменных
 typedef struct compiler_context
 {
@@ -27,7 +44,6 @@ typedef struct compiler_context
     int    next1;
     int    num;
     int    hash;
-    int    repr;
     int    keywordsnum;
     int    wasstructdef;
     struct
@@ -44,8 +60,6 @@ typedef struct compiler_context
     int curchar;
     int func_def;
     int hashtab[256];
-    int reprtab[MAXREPRTAB];
-    int rp;
     int identab[MAXIDENTAB];
     int id;
     int modetab[MAXMODETAB];
@@ -139,6 +153,8 @@ typedef struct compiler_context
     int checkif;
     int flag_show_macro;
     int arg;
+
+    compiler_table reprtab;
 } compiler_context;
 
 /**
@@ -177,5 +193,32 @@ extern void compiler_context_attach_io(compiler_context *context,
  */
 extern void compiler_context_detach_io(compiler_context *context,
                                        ruc_io_type       type);
+
+/**
+ * Initialize compiler table
+ *
+ * @param table     Target compiler table
+ */
+extern void compiler_table_init(compiler_table *table);
+
+/**
+ * Ensure that specific offset is allocated in a table
+ *
+ * @param table     Target compiler table
+ * @param pos       Target position
+ *
+ * @return Table size
+ */
+extern int compiler_table_ensure_allocated(compiler_table *table, int pos);
+
+/**
+ * Expand compiler table
+ *
+ * @param table     Target compiler table
+ * @param len       Requested length
+ *
+ * @return New size
+ */
+extern int compiler_table_expand(compiler_table *table, int len);
 
 #endif

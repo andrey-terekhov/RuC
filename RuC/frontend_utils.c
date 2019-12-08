@@ -88,7 +88,7 @@ output_export(compiler_context *context, const char *path)
     printer_printf(&context->output_options, "#!/usr/bin/ruc-vm\n");
 
     printer_printf(&context->output_options, "%i %i %i %i %i %i %i\n",
-                   context->pc, context->funcnum, context->id, context->rp,
+                   context->pc, context->funcnum, context->id, REPRTAB_LEN,
                    context->md, context->maxdisplg, context->wasmain);
 
     for (i = 0; i < context->pc; i++)
@@ -103,8 +103,8 @@ output_export(compiler_context *context, const char *path)
         printer_printf(&context->output_options, "%i ", context->identab[i]);
     printer_printf(&context->output_options, "\n");
 
-    for (i = 0; i < context->rp; i++)
-        printer_printf(&context->output_options, "%i ", context->reprtab[i]);
+    for (i = 0; i < REPRTAB_LEN; i++)
+        printer_printf(&context->output_options, "%i ", REPRTAB[i]);
 
     for (i = 0; i < context->md; i++)
         printer_printf(&context->output_options, "%i ", context->modetab[i]);
