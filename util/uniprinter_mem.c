@@ -56,6 +56,7 @@ printer_mem_fprintf(universal_printer_options *opts,
             return -1;
         }
 
+        memset(&reallocated[opts->size], 0, new_size - opts->size);
         opts->ptr = reallocated;
         opts->size = new_size;
     }
