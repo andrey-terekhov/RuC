@@ -8,7 +8,6 @@
 
 #ifndef RuC_Defs_h
 #define RuC_Defs_h
-#include <pthread.h>
 
 #define MAXREPRTAB   10000
 #define MAXIDENTAB   10000
