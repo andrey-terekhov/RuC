@@ -8,4 +8,4 @@ language: c
 compiler: gcc
 
 script:
-  - ./test.sh -out
+  - ./scripts/test.sh -out
