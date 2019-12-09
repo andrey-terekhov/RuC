@@ -94,3 +94,6 @@ DerivedData/
 .DS_Store
 .AppleDouble
 .LSOverride
+
+# RuC
+!keywords.txt
