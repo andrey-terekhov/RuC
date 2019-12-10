@@ -13,7 +13,7 @@ const char *name =
 //"tests/arrstruct1.c";
 //"../../../tests/mips/0test.c";
 
-#include "Defs.h"
+#include "defs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
