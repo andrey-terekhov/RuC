@@ -14,43 +14,41 @@
  *	limitations under the License.
  */
 
+#ifndef H_GLOBAL
+#define H_GLOBAL
+
 #include <stdio.h>
-
-#ifndef RuC_global_vars_h
-#define RuC_global_vars_h
-
 #include "defs.h"
 
-extern FILE *input;
-extern FILE *output;
 
-extern double numdouble;
-extern int line, mline, charnum, m_charnum, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef;
-extern struct
+struct
 {
 	int first;
 	int second;
 } numr;
+
+extern FILE *input, *output;
+
+extern double numdouble;
+extern int line, mline, charnum, m_charnum, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef;
+
 extern int source[SOURCESIZE], lines[LINESSIZE];
 extern int before_source[SOURCESIZE], mlines[LINESSIZE], m_conect_lines[LINESSIZE];
-
 extern int nextchar, curchar, func_def;
-extern int hashtab[256], reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md, startmode,
-	functions[], funcnum, stack[100], stackop[100], stackoperands[100], stacklog[100], ansttype, sp, sopnd, aux, lastid,
-	curid, lg, displ, maxdispl, maxdisplg, type, op, inass, firstdecl;
+extern int hashtab[256], reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md, startmode;
+extern int stack[100], stackop[100], stackoperands[100], stacklog[100],
+			sp, sopnd, aux, lastid, curid, lg, displ, maxdispl, maxdisplg, type, op,
+			inass, firstdecl;
 extern int iniprocs[INIPROSIZE], procd, arrdim, arrelemlen, was_struct_with_arr, usual;
-extern int mem[MAXMEMSIZE], tree[MAXTREESIZE], tc, mtree[MAXTREESIZE], mtc, functions[FUNCSIZE], funcnum, functype, kw,
-	blockflag, entry, wasmain, wasret, wasdefault, wasslice, notrobot, prep_flag;
-extern int adcont, adbreak, adcase, adandor, switchreg;
 extern int instring, inswitch, inloop, lexstr[MAXSTRINGL + 1];
-extern int predef[FUNCSIZE], prdf;
-extern int pc, g, l, x;
-extern int gotost[], pgotost;
+extern int tree[MAXTREESIZE], tc, mtree[MAXTREESIZE], mtc, mem[MAXMEMSIZE], pc, functions[FUNCSIZE], funcnum,
+		functype, kw, blockflag, entry, wasmain, wasret, wasdefault, notrobot, prep_flag;
+extern int adcont, adbreak, adcase, adandor, switchreg;
+extern int predef[FUNCSIZE], prdf, emptyarrdef;
+extern int gotost[1000], pgotost;
+
 extern int anst, anstdispl, ansttype, leftansttype;
-// anst = VAL  - значение на стеке
-// anst = ADDR - на стеке адрес значения
-// anst = IDENT- значение в статике, в anstdisl смещение отl или g
-// в ansttype всегда тип возвращаемого значения (сейчас только LINT или LFLOAT)
+extern int g, l, x, iniproc;
 
 extern int bad_printf_placeholder;
 
