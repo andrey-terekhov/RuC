@@ -16,11 +16,12 @@
 
 #include "global.h"
 #include <stdlib.h>
+#include "errors.h"
+#include "extdecl.h"
 
-extern void error(int err);
-extern int szof(int);
 
 int curth = 0;
+
 
 void tocode(int c)
 {

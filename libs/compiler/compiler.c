@@ -21,23 +21,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#include "codegen.h"
+#include "codes.h"
 #include "defs.h"
+#include "errors.h"
+#include "extdecl.h"
 #include "global.h"
-
-
-extern void preprocess_file();
-
-extern void tablesandcode();
-extern void tablesandtree();
-extern void import();
-extern int getnext();
-extern int nextch();
-extern int scan();
-extern void error(int ernum);
-extern void codegen();
-extern void mipsopt();
-extern void mipsgen();
-extern void ext_decl();
+#include "preprocess.h"
+#include "scaner.h"
 
 
 int toreprtab(char str[])

@@ -17,8 +17,8 @@
 #include "global.h"
 #include <stdio.h>
 #include <string.h>
+#include "utils.h"
 
-extern void fprintf_char(FILE *f, int wchar);
 
 void tablesandtree()
 {

@@ -20,6 +20,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "errors.h"
+#include "scaner.h"
+#include "utils.h"
 
 
 int macrotext[MAXREPRTAB];
@@ -38,14 +41,6 @@ int mcl;
 int checkif = 0;
 int flag_show_macro = 0;
 int arg = 0;
-
-extern int getnext();
-extern int letter();
-extern int digit();
-extern int equal();
-extern void printf_char();
-extern void fprintf_char();
-extern void m_error();
 
 
 int mletter(int r);

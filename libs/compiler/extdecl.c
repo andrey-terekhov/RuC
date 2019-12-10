@@ -14,13 +14,13 @@
  *	limitations under the License.
  */
 
+#include "errors.h"
 #include "global.h"
+#include "scaner.h"
 
-extern int getnext();
-extern int nextch();
-extern int scaner();
-extern void error(int e);
+
 int onlystrings;
+
 
 int modeeq(int first_mode, int second_mode)
 {

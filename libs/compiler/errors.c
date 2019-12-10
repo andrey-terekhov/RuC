@@ -17,11 +17,11 @@
 #include "global.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "codes.h"
+#include "preprocess.h"
+#include "utils.h"
 
-extern void tablesandtree();
 
-extern void show_macro();
-extern void printf_char(int wchar);
 void printident(int r)
 {
 	r += 2; // ссылка на reprtab

@@ -22,9 +22,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-extern void error(int);
-extern void warning(int);
-extern void printf_char(int);
+#include "errors.h"
+#include "utils.h"
+
 
 int getnext()
 {
