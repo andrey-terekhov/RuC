@@ -257,7 +257,7 @@ int toidentab(compiler_context *context,
                   repeated_decl); // только определение функции может иметь 2
                                   // описания, т.е. иметь предописание
 
-    context->identab[context->id + 1] = REPRTAB_POS;// ссылка на представление
+    context->identab[context->id + 1] = REPRTAB_POS; // ссылка на представление
     if (f == -2) // #define
     {
         context->identab[context->id + 2] = 1;
@@ -1988,8 +1988,8 @@ statement(compiler_context *context)
                 totree(context, TGoto);
                 for (i = 0; flag && i < context->pgotost - 1; i += 2)
                 {
-                    flag = context->identab[context->gotost[i] + 1] !=
-                        REPRTAB_POS;
+                    flag =
+                        context->identab[context->gotost[i] + 1] != REPRTAB_POS;
                 }
                 if (flag)
                 {

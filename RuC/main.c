@@ -38,10 +38,11 @@ extern void preprocess_file(compiler_context *context);
 //#define FILE_DEBUG
 
 #ifdef ANALYSIS_ENABLED
-void report_cb(asp_report *report)
+void
+report_cb(asp_report *report)
 {
     fprintf(stderr, "%s:%d:%d: %s: %s\n", report->file, report->line,
-        report->column, report->rule_id, report->explanation);
+            report->column, report->rule_id, report->explanation);
 }
 #endif
 
@@ -125,7 +126,7 @@ process_user_requests(compiler_context *context, int argc, const char *argv[])
             enough_files = true;
 #ifdef ANALYSIS_ENABLED
             asp_simple_invoke_singlefile(ASP_HOST, ASP_PORT, argv[i],
-                ASP_LANGUAGE_RUC, report_cb);
+                                         ASP_LANGUAGE_RUC, report_cb);
 #endif
         }
         else

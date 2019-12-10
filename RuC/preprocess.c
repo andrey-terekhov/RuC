@@ -375,9 +375,8 @@ macro_keywords(compiler_context *context)
             {
                 REPRTAB_LEN = oldrepr;
                 compiler_table_ensure_allocated(&context->reprtab, r + 1);
-                return (REPRTAB[r + 1] < 0)
-                    ? REPRTAB[r + 1]
-                    : (REPRTAB_POS = r, IDENT);
+                return (REPRTAB[r + 1] < 0) ? REPRTAB[r + 1]
+                                            : (REPRTAB_POS = r, IDENT);
             }
             else
             {
