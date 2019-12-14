@@ -14,13 +14,14 @@
  *	limitations under the License.
  */
 
-#include "global.h"
+#include "preprocess.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "errors.h"
+#include "global.h"
 #include "scaner.h"
 #include "utils.h"
 

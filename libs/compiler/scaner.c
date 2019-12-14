@@ -15,14 +15,20 @@
  */
 
 #define _CRT_SECURE_NO_WARNINGS
-#include "global.h"
+
+#include "scaner.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+
+#ifndef _MSC_VER
+	#include <unistd.h>
+#endif
+
 #include "errors.h"
+#include "global.h"
 #include "utils.h"
 
 

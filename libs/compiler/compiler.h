@@ -18,6 +18,10 @@
 #define H_COMPILER
 
 
+#ifdef _MSC_VER
+__declspec(dllexport) void compile(const char *code);
+#else
 void compile(const char *code);
+#endif
 
 #endif

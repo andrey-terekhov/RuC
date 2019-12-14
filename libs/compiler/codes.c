@@ -14,9 +14,10 @@
  *	limitations under the License.
  */
 
-#include "global.h"
+#include "codes.h"
 #include <stdio.h>
 #include <string.h>
+#include "global.h"
 #include "utils.h"
 
 

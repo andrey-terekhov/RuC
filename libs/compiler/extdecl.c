@@ -14,6 +14,7 @@
  *	limitations under the License.
  */
 
+#include "extdecl.h"
 #include "errors.h"
 #include "global.h"
 #include "scaner.h"

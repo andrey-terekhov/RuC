@@ -14,10 +14,11 @@
  *	limitations under the License.
  */
 
-#include "global.h"
+#include "codegen.h"
 #include <stdlib.h>
 #include "errors.h"
 #include "extdecl.h"
+#include "global.h"
 
 
 int curth = 0;

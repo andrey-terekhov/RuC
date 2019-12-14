@@ -14,8 +14,8 @@ $ sudo apt-get -y install cmake clang-tidy clang-format-9
 
 Для конфигурирования и сборки репозитория воспользуйтесь следующими командами:
 ```
-$ mkdir -p build && cd build && cmake .. && cd ..
-$ cmake --build build
+$ mkdir build && cd build && cmake .. && cd ..
+$ cmake --build build --config Release
 ```
 
 Так как в сборке используется CMake, имеется возможность генерации проекта для IDE, например Xcode:
