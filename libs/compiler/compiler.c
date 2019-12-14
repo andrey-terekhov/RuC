@@ -50,7 +50,11 @@ int toreprtab(char str[])
 	return hashtab[hash] = oldrepr;
 }
 
+#ifdef _MSC_VER
+__declspec(dllexport) void compile(const char *code)
+#else
 void compile(const char *code)
+#endif
 {
 	int i;
 
