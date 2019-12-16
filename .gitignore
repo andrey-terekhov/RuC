@@ -25,4 +25,4 @@ ruc-compiler
 .DS_Store
 build
 *.sublime-workspace
-
+tmp-run*.sh

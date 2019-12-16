@@ -11,975 +11,1135 @@
 
 #include "global_vars.h"
 
-extern void fprintf_char(FILE *f, int wchar);
-
-void tablesandtree()
+void
+tablesandtree(compiler_context *context)
 {
-    int i=0, j;
-    
-    fprintf(output, "\n%s\n", "source");
-    for (i=1; i<line; i++)
+    int i = 0, j;
+
+    printer_printf(&context->output_options, "\n%s\n", "source");
+    for (i = 1; i < context->line; i++)
     {
-        fprintf(output, "line %i) ", i);
-        for (j=lines[i]; j<lines[i+1]; j++)
+        printer_printf(&context->output_options, "line %i) ", i);
+        for (j = context->lines[i]; j < context->lines[i + 1]; j++)
         {
-            fprintf_char(output, source[j]);
+            printer_printchar(&context->output_options, context->source[j]);
         }
     }
-    fprintf(output, "\n");
-    
-    fprintf(output, "\n%s\n", "identab");
+    printer_printf(&context->output_options, "\n");
+
+    printer_printf(&context->output_options, "\n%s\n", "identab");
     i = 2;
-    while (i < id)
+    while (i < context->id)
     {
-        for (j=0; j<4; j++)
-            fprintf(output, "id %i) %i\n", i +j, identab[i+j]);
-        fprintf(output, "\n");
-        i +=4;
+        for (j = 0; j < 4; j++)
+            printer_printf(&context->output_options, "id %i) %i\n", i + j,
+                           context->identab[i + j]);
+        printer_printf(&context->output_options, "\n");
+        i += 4;
     }
-/*
-	fprintf(output, "\n%s\n", "repr");
-	for (i = 1206; i <= rp; i++)
-		fprintf(output, "rp %i) %i\n", i, reprtab[i]);
- */
-    fprintf(output, "\n%s\n", "modetab");
-    for (i=0; i<md; i++)
-        fprintf(output, "md %i) %i\n", i, modetab[i]);
-/*
-    fprintf(output, "\n%s\n", "tree");
-    for (i=0; i<=tc; i++)
-        fprintf(output, "tc %i) %i\n", i, tree[i]);
-*/
-    fprintf(output, "\n");
+    /*
+        printer_printf(&context->output_options, "\n%s\n", "repr");
+        for (i = 1206; i <= rp; i++)
+            printer_printf(&context->output_options, "rp %i) %i\n", i,
+       reprtab[i]);
+     */
+    printer_printf(&context->output_options, "\n%s\n", "modetab");
+    for (i = 0; i < context->md; i++)
+        printer_printf(&context->output_options, "md %i) %i\n", i,
+                       context->modetab[i]);
+    /*
+        printer_printf(&context->output_options, "\n%s\n", "tree");
+        for (i=0; i<=tc; i++)
+            printer_printf(&context->output_options, "tc %i) %i\n", i,
+       context->tree[i]);
+    */
+    printer_printf(&context->output_options, "\n");
     i = 0;
-    while (i < tc)
+    while (i < context->tc)
     {
-        fprintf(output, "tc %i) ", i);
-        switch (tree[i++])
+        printer_printf(&context->output_options, "tc %i) ", i);
+        switch (context->tree[i++])
         {
             case TFuncdef:
-                fprintf(output, "TFuncdef funcn= %i maxdispl= %i\n", tree[i], tree[i+1]);
-				i += 2;
+                printer_printf(&context->output_options,
+                               "TFuncdef funcn= %i maxdispl= %i\n",
+                               context->tree[i], context->tree[i + 1]);
+                i += 2;
                 break;
             case TDeclarr:
-                fprintf(output, "TDeclarr N= %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TDeclarr N= %i\n",
+                               context->tree[i++]);
                 break;
             case TDeclid:
-                fprintf(output, "TDeclid displ= %i eltype= %i N= %i all= %i iniproc= %i, usual= %i instuct= %i\n",
-                        tree[i], tree[i+1], tree[i+2], tree[i+3], tree[i+4], tree[i+5], tree[i+6]);
-				i += 7;
+                printer_printf(
+                    &context->output_options,
+                    "TDeclid displ= %i eltype= %i N= %i all= %i iniproc= "
+                    "%i, usual= %i instuct= %i\n",
+                    context->tree[i], context->tree[i + 1],
+                    context->tree[i + 2], context->tree[i + 3],
+                    context->tree[i + 4], context->tree[i + 5],
+                    context->tree[i + 6]);
+                i += 7;
                 break;
             case TString:
-                fprintf(output, "TString n= %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TString n= %i\n",
+                               context->tree[i++]);
                 break;
             case TCondexpr:
-                fprintf(output, "TCondexpr\n");
+                printer_printf(&context->output_options, "TCondexpr\n");
                 break;
             case TBegin:
-                fprintf(output, "TBegin\n");
+                printer_printf(&context->output_options, "TBegin\n");
                 break;
             case TEnd:
-                fprintf(output, "TEnd\n");
+                printer_printf(&context->output_options, "TEnd\n");
                 break;
             case TBeginit:
-                fprintf(output, "TBeginit n= %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TBeginit n= %i\n",
+                               context->tree[i++]);
                 break;
             case TStructinit:
-                fprintf(output, "TStructinit n= %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TStructinit n= %i\n",
+                               context->tree[i++]);
                 break;
-             case TIf:
-                fprintf(output, "TIf %i\n", tree[i++]);
+            case TIf:
+                printer_printf(&context->output_options, "TIf %i\n",
+                               context->tree[i++]);
                 break;
             case TWhile:
-                fprintf(output, "TWhile\n");
+                printer_printf(&context->output_options, "TWhile\n");
                 break;
             case TDo:
-                fprintf(output, "TDo\n");
+                printer_printf(&context->output_options, "TDo\n");
                 break;
             case TFor:
-                fprintf(output, "TFor %i %i %i %i\n", tree[i], tree[i+1], tree[i+2], tree[i+3]);
-				i += 4;
+                printer_printf(&context->output_options, "TFor %i %i %i %i\n",
+                               context->tree[i], context->tree[i + 1],
+                               context->tree[i + 2], context->tree[i + 3]);
+                i += 4;
                 break;
             case TSwitch:
-                fprintf(output, "TSwitch\n");
+                printer_printf(&context->output_options, "TSwitch\n");
                 break;
             case TCase:
-                fprintf(output, "TCase\n");
+                printer_printf(&context->output_options, "TCase\n");
                 break;
             case TDefault:
-                fprintf(output, "TDefault\n");
+                printer_printf(&context->output_options, "TDefault\n");
                 break;
             case TBreak:
-                fprintf(output, "TBreak\n");
+                printer_printf(&context->output_options, "TBreak\n");
                 break;
             case TContinue:
-                fprintf(output, "TContinue\n");
+                printer_printf(&context->output_options, "TContinue\n");
                 break;
             case TReturnvoid:
-                fprintf(output, "TReturn\n");
+                printer_printf(&context->output_options, "TReturn\n");
                 break;
             case TReturnval:
-                fprintf(output, "TReturnval %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TReturnval %i\n",
+                               context->tree[i++]);
                 break;
             case TGoto:
-                fprintf(output, "TGoto %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TGoto %i\n",
+                               context->tree[i++]);
                 break;
             case TIdent:
-                fprintf(output, "TIdent %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TIdent %i\n",
+                               context->tree[i++]);
                 break;
             case TIdenttoval:
-                fprintf(output, "TIdenttoval %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TIdenttoval %i\n",
+                               context->tree[i++]);
                 break;
             case TIdenttovald:
-                fprintf(output, "TIdenttovald %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TIdenttovald %i\n",
+                               context->tree[i++]);
                 break;
             case TFunidtoval:
-                fprintf(output, "TFunidtoval %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TFunidtoval %i\n",
+                               context->tree[i++]);
                 break;
             case TIdenttoaddr:
-                fprintf(output, "TIdenttoaddr %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TIdenttoaddr %i\n",
+                               context->tree[i++]);
                 break;
             case TAddrtoval:
-                fprintf(output, "TAddrtoval\n");
+                printer_printf(&context->output_options, "TAddrtoval\n");
                 break;
             case TAddrtovald:
-                fprintf(output, "TAddrtovald\n");
+                printer_printf(&context->output_options, "TAddrtovald\n");
                 break;
             case TExprend:
-                fprintf(output, "TExprend\n");
+                printer_printf(&context->output_options, "TExprend\n");
                 break;
             case TConst:
-                fprintf(output, "TConst %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TConst %i\n",
+                               context->tree[i++]);
                 break;
             case TConstd:
-                memcpy(&numdouble, &tree[i], sizeof(double));
+                memcpy(&context->numdouble, &context->tree[i], sizeof(double));
                 i += 2;
-                fprintf(output, "TConstd %f\n", numdouble);
+                printer_printf(&context->output_options, "TConstd %f\n",
+                               context->numdouble);
                 break;
             case TSliceident:
-                fprintf(output, "TSliceident displ= %i type= %i\n", tree[i], tree[i+1]);
+                printer_printf(&context->output_options,
+                               "TSliceident displ= %i type= %i\n",
+                               context->tree[i], context->tree[i + 1]);
                 i += 2;
                 break;
             case TSlice:
-                fprintf(output, "TSlice elem_type= %i\n", tree[i++]);
+                printer_printf(&context->output_options,
+                               "TSlice elem_type= %i\n", context->tree[i++]);
                 break;
-			case TSelect:
-				fprintf(output, "TSelect displ= %i\n", tree[i++]);
-				break;
+            case TSelect:
+                printer_printf(&context->output_options, "TSelect displ= %i\n",
+                               context->tree[i++]);
+                break;
             case NOP:
-                fprintf(output, "NOP\n");
+                printer_printf(&context->output_options, "NOP\n");
                 break;
             case ADLOGAND:
-                fprintf(output, "ADLOGAND addr= %i\n", tree[i++]);
+                printer_printf(&context->output_options, "ADLOGAND addr= %i\n",
+                               context->tree[i++]);
                 break;
             case ADLOGOR:
-                fprintf(output, "ADLOGOR addr= %i\n", tree[i++]);
+                printer_printf(&context->output_options, "ADLOGOR addr= %i\n",
+                               context->tree[i++]);
                 break;
             case COPY00:
-                fprintf(output, "COPY00 %i ", tree[i++]);     // displleft
-                fprintf(output, "%i ", tree[i++]);            // displright
-                fprintf(output, "(%i)\n", tree[i++]);         // length
+                printer_printf(&context->output_options, "COPY00 %i ",
+                               context->tree[i++]); // displleft
+                printer_printf(&context->output_options, "%i ",
+                               context->tree[i++]); // displright
+                printer_printf(&context->output_options, "(%i)\n",
+                               context->tree[i++]); // length
                 break;
             case COPY01:
-                fprintf(output, "COPY01 %i ", tree[i++]);     // displleft
-                fprintf(output, "(%i)\n", tree[i++]);         // length
+                printer_printf(&context->output_options, "COPY01 %i ",
+                               context->tree[i++]); // displleft
+                printer_printf(&context->output_options, "(%i)\n",
+                               context->tree[i++]); // length
                 break;
             case COPY10:
-                fprintf(output, "COPY10 %i ", tree[i++]);     // displright
-                fprintf(output, "(%i)\n", tree[i++]);         // length
+                printer_printf(&context->output_options, "COPY10 %i ",
+                               context->tree[i++]); // displright
+                printer_printf(&context->output_options, "(%i)\n",
+                               context->tree[i++]); // length
                 break;
             case COPY11:
-                fprintf(output, "COPY11 %i\n", tree[i++]);     // length
+                printer_printf(&context->output_options, "COPY11 %i\n",
+                               context->tree[i++]); // length
                 break;
             case COPY0ST:
-                fprintf(output, "COPY0ST %i ", tree[i++]);     // displleft
-                fprintf(output, "(%i)\n", tree[i++]);          // length
+                printer_printf(&context->output_options, "COPY0ST %i ",
+                               context->tree[i++]); // displleft
+                printer_printf(&context->output_options, "(%i)\n",
+                               context->tree[i++]); // length
                 break;
             case COPY1ST:
-                fprintf(output, "COPY1ST (%i)\n", tree[i++]);  // length
+                printer_printf(&context->output_options, "COPY1ST (%i)\n",
+                               context->tree[i++]); // length
                 break;
             case COPY0STASS:
-                fprintf(output, "COPY0STASS %i ", tree[i++]);  // displleft
-                fprintf(output, "(%i)\n", tree[i++]);          // length
+                printer_printf(&context->output_options, "COPY0STASS %i ",
+                               context->tree[i++]); // displleft
+                printer_printf(&context->output_options, "(%i)\n",
+                               context->tree[i++]); // length
                 break;
             case COPY1STASS:
-                fprintf(output, "COPY1STASS (%i)\n", tree[i++]);// length
+                printer_printf(&context->output_options, "COPY1STASS (%i)\n",
+                               context->tree[i++]); // length
                 break;
             case COPYST:
-                fprintf(output, "COPYST %i ", tree[i++]);       // displ
-                fprintf(output, "(%i)", tree[i++]);             // length
-                fprintf(output, "(%i)\n", tree[i++]);           // length1
+                printer_printf(&context->output_options, "COPYST %i ",
+                               context->tree[i++]); // displ
+                printer_printf(&context->output_options, "(%i)",
+                               context->tree[i++]); // length
+                printer_printf(&context->output_options, "(%i)\n",
+                               context->tree[i++]); // length1
                 break;
 
             case TCall1:
-                fprintf(output, "TCall1 %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TCall1 %i\n",
+                               context->tree[i++]);
                 break;
             case TCall2:
-                fprintf(output, "TCall2 %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TCall2 %i\n",
+                               context->tree[i++]);
                 break;
             case TLabel:
-                fprintf(output, "TLabel %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TLabel %i\n",
+                               context->tree[i++]);
                 break;
             case TStructbeg:
-                fprintf(output, "TStructbeg %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TStructbeg %i\n",
+                               context->tree[i++]);
                 break;
             case TStructend:
-                fprintf(output, "TStructend %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TStructend %i\n",
+                               context->tree[i++]);
                 break;
             case TPrint:
-                fprintf(output, "TPrint %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TPrint %i\n",
+                               context->tree[i++]);
                 break;
             case TPrintid:
-                fprintf(output, "TPrintid %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TPrintid %i\n",
+                               context->tree[i++]);
                 break;
             case TPrintf:
-                fprintf(output, "TPrintf %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TPrintf %i\n",
+                               context->tree[i++]);
                 break;
             case TGetid:
-                fprintf(output, "TGetid %i\n", tree[i++]);
+                printer_printf(&context->output_options, "TGetid %i\n",
+                               context->tree[i++]);
                 break;
             case SETMOTORC:
-                fprintf(output, "Setmotor\n");
+                printer_printf(&context->output_options, "Setmotor\n");
                 break;
             case CREATEC:
-                fprintf(output, "TCREATE\n");
+                printer_printf(&context->output_options, "TCREATE\n");
                 break;
             case CREATEDIRECTC:
-                fprintf(output, "TCREATEDIRECT\n");
+                printer_printf(&context->output_options, "TCREATEDIRECT\n");
                 break;
             case EXITC:
-                fprintf(output, "TEXIT\n");
+                printer_printf(&context->output_options, "TEXIT\n");
                 break;
             case EXITDIRECTC:
-                fprintf(output, "TEXITDIRECT\n");
+                printer_printf(&context->output_options, "TEXITDIRECT\n");
                 break;
             case MSGSENDC:
-                fprintf(output, "TMSGSEND\n");
+                printer_printf(&context->output_options, "TMSGSEND\n");
                 break;
             case MSGRECEIVEC:
-                fprintf(output, "TMSGRECEIVE\n");
+                printer_printf(&context->output_options, "TMSGRECEIVE\n");
                 break;
             case JOINC:
-                fprintf(output, "TJOIN\n");
+                printer_printf(&context->output_options, "TJOIN\n");
                 break;
             case SLEEPC:
-                fprintf(output, "TSLEEP\n");
+                printer_printf(&context->output_options, "TSLEEP\n");
                 break;
             case SEMCREATEC:
-                fprintf(output, "TSEMCREATE\n");
+                printer_printf(&context->output_options, "TSEMCREATE\n");
                 break;
             case SEMWAITC:
-                fprintf(output, "TSEMWAIT\n");
+                printer_printf(&context->output_options, "TSEMWAIT\n");
                 break;
             case SEMPOSTC:
-                fprintf(output, "TSEMPOST\n");
+                printer_printf(&context->output_options, "TSEMPOST\n");
                 break;
             case INITC:
-                fprintf(output, "INITC\n");
+                printer_printf(&context->output_options, "INITC\n");
                 break;
             case DESTROYC:
-                fprintf(output, "DESTROYC\n");
+                printer_printf(&context->output_options, "DESTROYC\n");
                 break;
             case GETNUMC:
-                fprintf(output, "GETNUMC\n");
+                printer_printf(&context->output_options, "GETNUMC\n");
                 break;
-
 
 
             default:
-                fprintf(output, "TOper %i\n", tree[i-1]);
+                printer_printf(&context->output_options, "TOper %i\n",
+                               context->tree[i - 1]);
         }
     }
 }
 
-void tablesandcode()
+void
+tablesandcode(compiler_context *context)
 {
-    int i=0, j;
-    
-    fprintf(output, "\n%s\n", "source");
-    for (i=1; i<line; i++)
+    int i = 0, j;
+
+    printer_printf(&context->output_options, "\n%s\n", "source");
+    for (i = 1; i < context->line; i++)
     {
-        fprintf(output, "line %i) ", i);
-        for (j=lines[i]; j<lines[i+1]; j++)
+        printer_printf(&context->output_options, "line %i) ", i);
+        for (j = context->lines[i]; j < context->lines[i + 1]; j++)
         {
-            fprintf_char(output, source[j]);
+            printer_printchar(&context->output_options, context->source[j]);
         }
     }
-    
-    fprintf(output, "\n\n%s\n", "functions");
-    for (i=1; i<=funcnum; i++)
-        fprintf(output, "fun %i) %i\n", i, functions[i]);
-    
-    fprintf(output, "\n%s\n", "iniprocs");
-    for (i=1; i<=procd; i++)
-        fprintf(output, "inipr %i) %i\n", i, iniprocs[i]);
-    
-    fprintf(output, "\n%s\n", "mem");
+
+    printer_printf(&context->output_options, "\n\n%s\n", "functions");
+    for (i = 1; i <= context->funcnum; i++)
+        printer_printf(&context->output_options, "fun %i) %i\n", i,
+                       context->functions[i]);
+
+    printer_printf(&context->output_options, "\n%s\n", "iniprocs");
+    for (i = 1; i <= context->procd; i++)
+        printer_printf(&context->output_options, "inipr %i) %i\n", i,
+                       context->iniprocs[i]);
+
+    printer_printf(&context->output_options, "\n%s\n", "mem");
     i = 0;
-    while (i < pc)
+    while (i < context->pc)
     {
-        fprintf(output, "pc %i) ", i);
-        switch (mem[i++])
+        printer_printf(&context->output_options, "pc %i) ", i);
+        switch (context->mem[i++])
         {
             case PRINT:
-                fprintf(output, "PRINT %i\n", mem[i++]);
+                printer_printf(&context->output_options, "PRINT %i\n",
+                               context->mem[i++]);
                 break;
             case PRINTID:
-                fprintf(output, "PRINTID %i\n", mem[i++]);
+                printer_printf(&context->output_options, "PRINTID %i\n",
+                               context->mem[i++]);
                 break;
             case PRINTF:
-                fprintf(output, "PRINTF %i\n", mem[i++]);
+                printer_printf(&context->output_options, "PRINTF %i\n",
+                               context->mem[i++]);
                 break;
             case GETID:
-                fprintf(output, "GETID %i\n", mem[i++]);
+                printer_printf(&context->output_options, "GETID %i\n",
+                               context->mem[i++]);
                 break;
             case SETMOTORC:
-                fprintf(output, "SETMOTOR\n");
+                printer_printf(&context->output_options, "SETMOTOR\n");
                 break;
             case GETDIGSENSORC:
-                fprintf(output, "GETDIGSENSOR\n");
+                printer_printf(&context->output_options, "GETDIGSENSOR\n");
                 break;
             case GETANSENSORC:
-                fprintf(output, "GETANSENSOR\n");
+                printer_printf(&context->output_options, "GETANSENSOR\n");
                 break;
             case VOLTAGEC:
-                fprintf(output, "VOLTAGE\n");
+                printer_printf(&context->output_options, "VOLTAGE\n");
                 break;
             case CREATEC:
-                fprintf(output, "TCREATE\n");
+                printer_printf(&context->output_options, "TCREATE\n");
                 break;
             case CREATEDIRECTC:
-                fprintf(output, "TCREATEDIRECT\n");
+                printer_printf(&context->output_options, "TCREATEDIRECT\n");
                 break;
             case MSGSENDC:
-                fprintf(output, "TMSGSEND\n");
+                printer_printf(&context->output_options, "TMSGSEND\n");
                 break;
             case EXITC:
-                fprintf(output, "TEXIT\n");
+                printer_printf(&context->output_options, "TEXIT\n");
                 break;
             case EXITDIRECTC:
-                fprintf(output, "TEXITDIRECT\n");
+                printer_printf(&context->output_options, "TEXITDIRECT\n");
                 break;
             case MSGRECEIVEC:
-                fprintf(output, "TMSGRECEIVE\n");
+                printer_printf(&context->output_options, "TMSGRECEIVE\n");
                 break;
             case JOINC:
-                fprintf(output, "TJOIN\n");
+                printer_printf(&context->output_options, "TJOIN\n");
                 break;
             case SLEEPC:
-                fprintf(output, "TSLEEP\n");
+                printer_printf(&context->output_options, "TSLEEP\n");
                 break;
             case SEMCREATEC:
-                fprintf(output, "TSEMCREATE\n");
+                printer_printf(&context->output_options, "TSEMCREATE\n");
                 break;
             case SEMWAITC:
-                fprintf(output, "TSEMWAIT\n");
+                printer_printf(&context->output_options, "TSEMWAIT\n");
                 break;
             case SEMPOSTC:
-                fprintf(output, "TSEMPOST\n");
+                printer_printf(&context->output_options, "TSEMPOST\n");
                 break;
             case TINIT:
-                fprintf(output, "TINIT\n");
+                printer_printf(&context->output_options, "TINIT\n");
                 break;
             case TDESTROY:
-                fprintf(output, "TDESTROY\n");
+                printer_printf(&context->output_options, "TDESTROY\n");
                 break;
             case GETNUMC:
-                fprintf(output, "GETNUM\n");
+                printer_printf(&context->output_options, "GETNUM\n");
                 break;
 
             case ABSC:
-                fprintf(output, "ABS\n");
+                printer_printf(&context->output_options, "ABS\n");
                 break;
             case ABSIC:
-                fprintf(output, "ABSI\n");
+                printer_printf(&context->output_options, "ABSI\n");
                 break;
             case SQRTC:
-                fprintf(output, "SQRT\n");
+                printer_printf(&context->output_options, "SQRT\n");
                 break;
             case EXPC:
-                fprintf(output, "EXP\n");
+                printer_printf(&context->output_options, "EXP\n");
                 break;
             case SINC:
-                fprintf(output, "SIN\n");
+                printer_printf(&context->output_options, "SIN\n");
                 break;
             case COSC:
-                fprintf(output, "COS\n");
+                printer_printf(&context->output_options, "COS\n");
                 break;
             case LOGC:
-                fprintf(output, "LOG\n");
+                printer_printf(&context->output_options, "LOG\n");
                 break;
             case LOG10C:
-                fprintf(output, "LOG10\n");
+                printer_printf(&context->output_options, "LOG10\n");
                 break;
             case ASINC:
-                fprintf(output, "ASIN\n");
+                printer_printf(&context->output_options, "ASIN\n");
                 break;
             case RANDC:
-                fprintf(output, "RAND\n");
+                printer_printf(&context->output_options, "RAND\n");
                 break;
             case ROUNDC:
-                fprintf(output, "ROUND\n");
+                printer_printf(&context->output_options, "ROUND\n");
                 break;
 
             case STRCPYC:
-                fprintf(output, "STRCPY\n");
+                printer_printf(&context->output_options, "STRCPY\n");
                 break;
             case STRNCPYC:
-                fprintf(output, "STRNCPY\n");
+                printer_printf(&context->output_options, "STRNCPY\n");
                 break;
             case STRCATC:
-                fprintf(output, "STRCAT\n");
+                printer_printf(&context->output_options, "STRCAT\n");
                 break;
             case STRNCATC:
-                fprintf(output, "STRNCAT\n");
+                printer_printf(&context->output_options, "STRNCAT\n");
                 break;
             case STRCMPC:
-                fprintf(output, "STRCMP\n");
+                printer_printf(&context->output_options, "STRCMP\n");
                 break;
             case STRNCMPC:
-                fprintf(output, "STRNCMP\n");
+                printer_printf(&context->output_options, "STRNCMP\n");
                 break;
             case STRSTRC:
-                fprintf(output, "STRSTR\n");
+                printer_printf(&context->output_options, "STRSTR\n");
                 break;
             case STRLENC:
-                fprintf(output, "STRLENC\n");
+                printer_printf(&context->output_options, "STRLENC\n");
                 break;
-            
+
             case BEGINIT:
-                fprintf(output, "BEGINIT n= %i\n", mem[i++]);
+                printer_printf(&context->output_options, "BEGINIT n= %i\n",
+                               context->mem[i++]);
                 break;
             case STRUCTWITHARR:
-                fprintf(output, "STRUCTWITHARR displ= %i ", mem[i++]);
-                fprintf(output, "iniproc= %i\n", mem[i++]);
+                printer_printf(&context->output_options,
+                               "STRUCTWITHARR displ= %i ", context->mem[i++]);
+                printer_printf(&context->output_options, "iniproc= %i\n",
+                               context->mem[i++]);
                 break;
             case DEFARR:
-                fprintf(output, "DEFARR N= %i ", mem[i++]);    // N
-				fprintf(output, "elem_len= %i ", mem[i++]);    // elem length
-				fprintf(output, "displ= %i ", mem[i++]);       // displ
-                fprintf(output, "iniproc= %i ", mem[i++]);     // iniproc
-                fprintf(output, "usual= %i ", mem[i++]);       // usual
-                fprintf(output, "all= %i ", mem[i++]);         // all
-                fprintf(output, "instruct= %i\n", mem[i++]);   // instruct
+                printer_printf(&context->output_options, "DEFARR N= %i ",
+                               context->mem[i++]); // N
+                printer_printf(&context->output_options, "elem_len= %i ",
+                               context->mem[i++]); // elem length
+                printer_printf(&context->output_options, "displ= %i ",
+                               context->mem[i++]); // displ
+                printer_printf(&context->output_options, "iniproc= %i ",
+                               context->mem[i++]); // iniproc
+                printer_printf(&context->output_options, "usual= %i ",
+                               context->mem[i++]); // usual
+                printer_printf(&context->output_options, "all= %i ",
+                               context->mem[i++]); // all
+                printer_printf(&context->output_options, "instruct= %i\n",
+                               context->mem[i++]); // instruct
                 break;
             case ARRINIT:
-                fprintf(output, "ARRINIT N= %i ", mem[i++]);
-                fprintf(output, "elem_len= %i ", mem[i++]);
-                fprintf(output, "displ= %i ", mem[i++]);
-                fprintf(output, "usual= %i\n", mem[i++]);
+                printer_printf(&context->output_options, "ARRINIT N= %i ",
+                               context->mem[i++]);
+                printer_printf(&context->output_options, "elem_len= %i ",
+                               context->mem[i++]);
+                printer_printf(&context->output_options, "displ= %i ",
+                               context->mem[i++]);
+                printer_printf(&context->output_options, "usual= %i\n",
+                               context->mem[i++]);
                 break;
-//            case STRUCTINIT:
-//                fprintf(output, "STRUCTINIT N= %i ", mem[i++]);
-//            break;
+                //            case STRUCTINIT:
+                //                printer_printf(&context->output_options,
+                //                "STRUCTINIT N= %i ", context->mem[i++]);
+                //            break;
             case NOP:
-                fprintf(output, "NOP\n");
+                printer_printf(&context->output_options, "NOP\n");
                 break;
             case LI:
-                fprintf(output, "LI %i\n", mem[i++]);
+                printer_printf(&context->output_options, "LI %i\n",
+                               context->mem[i++]);
                 break;
             case LID:
-                memcpy(&numdouble, &mem[i], sizeof(double));
+                memcpy(&context->numdouble, &context->mem[i], sizeof(double));
                 i += 2;
-                fprintf(output, "LID %.15f\n", numdouble);
+                printer_printf(&context->output_options, "LID %.15f\n",
+                               context->numdouble);
                 break;
             case LOAD:
-                fprintf(output, "LOAD %i\n", mem[i++]);
+                printer_printf(&context->output_options, "LOAD %i\n",
+                               context->mem[i++]);
                 break;
             case LOADD:
-                fprintf(output, "LOADD %i\n", mem[i++]);
+                printer_printf(&context->output_options, "LOADD %i\n",
+                               context->mem[i++]);
                 break;
             case LAT:
-                fprintf(output,"L@\n");
+                printer_printf(&context->output_options, "L@\n");
                 break;
             case LATD:
-                fprintf(output,"L@f\n");
+                printer_printf(&context->output_options, "L@f\n");
                 break;
             case LA:
-                fprintf(output, "LA %i\n", mem[i++]);
+                printer_printf(&context->output_options, "LA %i\n",
+                               context->mem[i++]);
                 break;
-                
+
             case LOGOR:
-                fprintf(output, "||\n");
+                printer_printf(&context->output_options, "||\n");
                 break;
             case LOGAND:
-                fprintf(output, "&&\n");
+                printer_printf(&context->output_options, "&&\n");
                 break;
             case ORASS:
-                fprintf(output, "|= %i\n", mem[i++]);
+                printer_printf(&context->output_options, "|= %i\n",
+                               context->mem[i++]);
                 break;
             case ORASSAT:
-                fprintf(output, "|=@\n");
+                printer_printf(&context->output_options, "|=@\n");
                 break;
             case ORASSV:
-                fprintf(output, "|=V %i\n", mem[i++]);
+                printer_printf(&context->output_options, "|=V %i\n",
+                               context->mem[i++]);
                 break;
             case ORASSATV:
-                fprintf(output, "|=@V\n");
+                printer_printf(&context->output_options, "|=@V\n");
                 break;
             case LOR:
-                fprintf(output, "|\n");
+                printer_printf(&context->output_options, "|\n");
                 break;
             case EXORASS:
-                fprintf(output, "^= %i\n", mem[i++]);
+                printer_printf(&context->output_options, "^= %i\n",
+                               context->mem[i++]);
                 break;
             case EXORASSAT:
-                fprintf(output, "^=@\n");
+                printer_printf(&context->output_options, "^=@\n");
                 break;
             case EXORASSV:
-                fprintf(output, "^=V %i\n", mem[i++]);
+                printer_printf(&context->output_options, "^=V %i\n",
+                               context->mem[i++]);
                 break;
             case EXORASSATV:
-                fprintf(output, "^=@V\n");
+                printer_printf(&context->output_options, "^=@V\n");
                 break;
             case LEXOR:
-                fprintf(output, "^\n");
+                printer_printf(&context->output_options, "^\n");
                 break;
             case ANDASS:
-                fprintf(output, "&= %i\n", mem[i++]);
+                printer_printf(&context->output_options, "&= %i\n",
+                               context->mem[i++]);
                 break;
             case ANDASSAT:
-                fprintf(output, "&=@\n");
+                printer_printf(&context->output_options, "&=@\n");
                 break;
             case ANDASSV:
-                fprintf(output, "&=V %i\n", mem[i++]);
+                printer_printf(&context->output_options, "&=V %i\n",
+                               context->mem[i++]);
                 break;
             case ANDASSATV:
-                fprintf(output, "&=@V\n");
+                printer_printf(&context->output_options, "&=@V\n");
                 break;
             case LAND:
-                fprintf(output, "&\n");
+                printer_printf(&context->output_options, "&\n");
                 break;
-                
+
             case EQEQ:
-                fprintf(output, "==\n");
+                printer_printf(&context->output_options, "==\n");
                 break;
             case NOTEQ:
-                fprintf(output, "!=\n");
+                printer_printf(&context->output_options, "!=\n");
                 break;
             case LLT:
-                fprintf(output, "<\n");
+                printer_printf(&context->output_options, "<\n");
                 break;
             case LGT:
-                fprintf(output, ">\n");
+                printer_printf(&context->output_options, ">\n");
                 break;
             case LLE:
-                fprintf(output, "<=\n");
+                printer_printf(&context->output_options, "<=\n");
                 break;
             case LGE:
-                fprintf(output, ">=\n");
+                printer_printf(&context->output_options, ">=\n");
                 break;
             case EQEQR:
-                fprintf(output, "==f\n");
+                printer_printf(&context->output_options, "==f\n");
                 break;
             case NOTEQR:
-                fprintf(output, "!=f\n");
+                printer_printf(&context->output_options, "!=f\n");
                 break;
             case LLTR:
-                fprintf(output, "<f\n");
+                printer_printf(&context->output_options, "<f\n");
                 break;
             case LGTR:
-                fprintf(output, ">f\n");
+                printer_printf(&context->output_options, ">f\n");
                 break;
             case LLER:
-                fprintf(output, "<=f\n");
+                printer_printf(&context->output_options, "<=f\n");
                 break;
             case LGER:
-                fprintf(output, ">=f\n");
+                printer_printf(&context->output_options, ">=f\n");
                 break;
-                
+
             case SHRASS:
-                fprintf(output, ">>= %i\n", mem[i++]);
+                printer_printf(&context->output_options, ">>= %i\n",
+                               context->mem[i++]);
                 break;
             case SHRASSAT:
-                fprintf(output, ">>=@\n");
+                printer_printf(&context->output_options, ">>=@\n");
                 break;
             case SHRASSV:
-                fprintf(output, ">>=V %i\n", mem[i++]);
+                printer_printf(&context->output_options, ">>=V %i\n",
+                               context->mem[i++]);
                 break;
             case SHRASSATV:
-                fprintf(output, ">>=@V\n");
+                printer_printf(&context->output_options, ">>=@V\n");
                 break;
             case LSHR:
-                fprintf(output, ">>\n");
+                printer_printf(&context->output_options, ">>\n");
                 break;
             case SHLASS:
-                fprintf(output, "<<= %i\n", mem[i++]);
+                printer_printf(&context->output_options, "<<= %i\n",
+                               context->mem[i++]);
                 break;
             case SHLASSAT:
-                fprintf(output, "<<=@\n");
+                printer_printf(&context->output_options, "<<=@\n");
                 break;
             case SHLASSV:
-                fprintf(output, "<<=V %i\n", mem[i++]);
+                printer_printf(&context->output_options, "<<=V %i\n",
+                               context->mem[i++]);
                 break;
             case SHLASSATV:
-                fprintf(output, "<<=@V\n");
+                printer_printf(&context->output_options, "<<=@V\n");
                 break;
             case LSHL:
-                fprintf(output, "<<\n");
+                printer_printf(&context->output_options, "<<\n");
                 break;
-                
+
             case ASS:
-                fprintf(output, "= %i\n", mem[i++]);
+                printer_printf(&context->output_options, "= %i\n",
+                               context->mem[i++]);
                 break;
             case ASSAT:
-                fprintf(output, "=@\n");
+                printer_printf(&context->output_options, "=@\n");
                 break;
             case ASSV:
-                fprintf(output, "=V %i\n", mem[i++]);
+                printer_printf(&context->output_options, "=V %i\n",
+                               context->mem[i++]);
                 break;
             case ASSATV:
-                fprintf(output, "=@V\n");
+                printer_printf(&context->output_options, "=@V\n");
                 break;
-             
+
             case PLUSASS:
-                fprintf(output, "+= %i\n", mem[i++]);
+                printer_printf(&context->output_options, "+= %i\n",
+                               context->mem[i++]);
                 break;
             case PLUSASSAT:
-                fprintf(output, "+=@\n");
+                printer_printf(&context->output_options, "+=@\n");
                 break;
             case PLUSASSV:
-                fprintf(output, "+=V %i\n", mem[i++]);
+                printer_printf(&context->output_options, "+=V %i\n",
+                               context->mem[i++]);
                 break;
             case PLUSASSATV:
-                fprintf(output, "+=@V\n");
+                printer_printf(&context->output_options, "+=@V\n");
                 break;
             case LPLUS:
-                fprintf(output, "+\n");
+                printer_printf(&context->output_options, "+\n");
                 break;
-                
+
             case MINUSASS:
-                fprintf(output, "-= %i\n", mem[i++]);
+                printer_printf(&context->output_options, "-= %i\n",
+                               context->mem[i++]);
                 break;
             case MINUSASSAT:
-                fprintf(output, "-=@\n");
+                printer_printf(&context->output_options, "-=@\n");
                 break;
             case MINUSASSV:
-                fprintf(output, "-=V %i\n", mem[i++]);
+                printer_printf(&context->output_options, "-=V %i\n",
+                               context->mem[i++]);
                 break;
             case MINUSASSATV:
-                fprintf(output, "-=@V\n");
+                printer_printf(&context->output_options, "-=@V\n");
                 break;
             case LMINUS:
-                fprintf(output, "-\n");
+                printer_printf(&context->output_options, "-\n");
                 break;
-                
+
             case MULTASS:
-                fprintf(output, "*= %i\n", mem[i++]);
+                printer_printf(&context->output_options, "*= %i\n",
+                               context->mem[i++]);
                 break;
             case MULTASSAT:
-                fprintf(output, "*=@\n");
+                printer_printf(&context->output_options, "*=@\n");
                 break;
             case MULTASSV:
-                fprintf(output, "*=V %i\n", mem[i++]);
+                printer_printf(&context->output_options, "*=V %i\n",
+                               context->mem[i++]);
                 break;
             case MULTASSATV:
-                fprintf(output, "*=@V\n");
+                printer_printf(&context->output_options, "*=@V\n");
                 break;
             case LMULT:
-                fprintf(output, "*\n");
+                printer_printf(&context->output_options, "*\n");
                 break;
-                
+
             case DIVASS:
-                fprintf(output, "/= %i\n", mem[i++]);
+                printer_printf(&context->output_options, "/= %i\n",
+                               context->mem[i++]);
                 break;
             case DIVASSAT:
-                fprintf(output, "/=@\n");
+                printer_printf(&context->output_options, "/=@\n");
                 break;
             case DIVASSV:
-                fprintf(output, "/=V %i\n", mem[i++]);
+                printer_printf(&context->output_options, "/=V %i\n",
+                               context->mem[i++]);
                 break;
             case DIVASSATV:
-                fprintf(output, "/=@V\n");
+                printer_printf(&context->output_options, "/=@V\n");
                 break;
             case LDIV:
-                fprintf(output, "/\n");
+                printer_printf(&context->output_options, "/\n");
                 break;
-            
+
             case ASSR:
-                fprintf(output, "=f %i\n", mem[i++]);
+                printer_printf(&context->output_options, "=f %i\n",
+                               context->mem[i++]);
                 break;
             case ASSRV:
-                fprintf(output, "=fV %i\n", mem[i++]);
+                printer_printf(&context->output_options, "=fV %i\n",
+                               context->mem[i++]);
                 break;
             case ASSATR:
-                fprintf(output, "=@f\n");
+                printer_printf(&context->output_options, "=@f\n");
                 break;
             case ASSATRV:
-                fprintf(output, "=@fV\n");
+                printer_printf(&context->output_options, "=@fV\n");
                 break;
-                
+
             case PLUSASSR:
-                fprintf(output, "+=f %i\n", mem[i++]);
+                printer_printf(&context->output_options, "+=f %i\n",
+                               context->mem[i++]);
                 break;
             case PLUSASSATR:
-                fprintf(output, "+=@f\n");
+                printer_printf(&context->output_options, "+=@f\n");
                 break;
             case PLUSASSRV:
-                fprintf(output, "+=fV %i\n", mem[i++]);
+                printer_printf(&context->output_options, "+=fV %i\n",
+                               context->mem[i++]);
                 break;
             case PLUSASSATRV:
-                fprintf(output, "+=@fV\n");
+                printer_printf(&context->output_options, "+=@fV\n");
                 break;
             case LPLUSR:
-                fprintf(output, "+f\n");
+                printer_printf(&context->output_options, "+f\n");
                 break;
             case MINUSASSR:
-                fprintf(output, "-=f %i\n", mem[i++]);
+                printer_printf(&context->output_options, "-=f %i\n",
+                               context->mem[i++]);
                 break;
             case MINUSASSATR:
-                fprintf(output, "-=@f\n");
+                printer_printf(&context->output_options, "-=@f\n");
                 break;
             case MINUSASSRV:
-                fprintf(output, "-=fV %i\n", mem[i++]);
+                printer_printf(&context->output_options, "-=fV %i\n",
+                               context->mem[i++]);
                 break;
             case MINUSASSATRV:
-                fprintf(output, "-=@fV\n");
+                printer_printf(&context->output_options, "-=@fV\n");
                 break;
             case LMINUSR:
-                fprintf(output, "-f\n");
+                printer_printf(&context->output_options, "-f\n");
                 break;
             case MULTASSR:
-                fprintf(output, "*=f %i\n", mem[i++]);
+                printer_printf(&context->output_options, "*=f %i\n",
+                               context->mem[i++]);
                 break;
             case MULTASSATR:
-                fprintf(output, "*=@f\n");
+                printer_printf(&context->output_options, "*=@f\n");
                 break;
             case MULTASSRV:
-                fprintf(output, "*=fV %i\n", mem[i++]);
+                printer_printf(&context->output_options, "*=fV %i\n",
+                               context->mem[i++]);
                 break;
             case MULTASSATRV:
-                fprintf(output, "*=@fV\n");
+                printer_printf(&context->output_options, "*=@fV\n");
                 break;
             case LMULTR:
-                fprintf(output, "*f\n");
+                printer_printf(&context->output_options, "*f\n");
                 break;
             case DIVASSR:
-                fprintf(output, "/=f %i\n", mem[i++]);
+                printer_printf(&context->output_options, "/=f %i\n",
+                               context->mem[i++]);
                 break;
             case DIVASSATR:
-                fprintf(output, "/=@f\n");
+                printer_printf(&context->output_options, "/=@f\n");
                 break;
             case DIVASSRV:
-                fprintf(output, "/=fV %i\n", mem[i++]);
+                printer_printf(&context->output_options, "/=fV %i\n",
+                               context->mem[i++]);
                 break;
             case DIVASSATRV:
-                fprintf(output, "/=@fV\n");
+                printer_printf(&context->output_options, "/=@fV\n");
                 break;
             case LDIVR:
-                fprintf(output, "/f\n");
+                printer_printf(&context->output_options, "/f\n");
                 break;
-			case COPY00:
-				fprintf(output, "COPY00 %i ", mem[i++]);          // displleft
-				fprintf(output, "%i ", mem[i++]);                 // displright
-				fprintf(output, "(%i)\n", mem[i++]);              // length
-				break;
-			case COPY01:
-				fprintf(output, "COPY01 %i      ", mem[i++]);     // displleft
-				fprintf(output, "(%i)\n", mem[i++]);              // length
-				break;
+            case COPY00:
+                printer_printf(&context->output_options, "COPY00 %i ",
+                               context->mem[i++]); // displleft
+                printer_printf(&context->output_options, "%i ",
+                               context->mem[i++]); // displright
+                printer_printf(&context->output_options, "(%i)\n",
+                               context->mem[i++]); // length
+                break;
+            case COPY01:
+                printer_printf(&context->output_options, "COPY01 %i      ",
+                               context->mem[i++]); // displleft
+                printer_printf(&context->output_options, "(%i)\n",
+                               context->mem[i++]); // length
+                break;
             case COPY10:
-                fprintf(output, "COPY10      %i ", mem[i++]);     // displright
-                fprintf(output, "(%i)\n", mem[i++]);              // length
+                printer_printf(&context->output_options, "COPY10      %i ",
+                               context->mem[i++]); // displright
+                printer_printf(&context->output_options, "(%i)\n",
+                               context->mem[i++]); // length
                 break;
             case COPY11:
-                fprintf(output, "COPY11 %i\n", mem[i++]);         // length
+                printer_printf(&context->output_options, "COPY11 %i\n",
+                               context->mem[i++]); // length
                 break;
             case COPY0ST:
-                fprintf(output, "COPY0ST %i ", mem[i++]);         // displright
-                fprintf(output, "(%i)\n", mem[i++]);              // length
+                printer_printf(&context->output_options, "COPY0ST %i ",
+                               context->mem[i++]); // displright
+                printer_printf(&context->output_options, "(%i)\n",
+                               context->mem[i++]); // length
                 break;
             case COPY1ST:
-                fprintf(output, "COPY1ST %i\n", mem[i++]);        // length
+                printer_printf(&context->output_options, "COPY1ST %i\n",
+                               context->mem[i++]); // length
                 break;
             case COPY0STASS:
-                fprintf(output, "COPY0STASS %i ", mem[i++]);      // displleft
-                fprintf(output, "(%i)\n", mem[i++]);              // length
+                printer_printf(&context->output_options, "COPY0STASS %i ",
+                               context->mem[i++]); // displleft
+                printer_printf(&context->output_options, "(%i)\n",
+                               context->mem[i++]); // length
                 break;
             case COPY1STASS:
-                fprintf(output, "COPY1STASS %i\n", mem[i++]);     // length
+                printer_printf(&context->output_options, "COPY1STASS %i\n",
+                               context->mem[i++]); // length
                 break;
             case COPYST:
-                fprintf(output, "COPYST %i ", mem[i++]);          // displ
-                fprintf(output, "(%i)", mem[i++]);                // length
-                fprintf(output, "(%i)\n", mem[i++]);              // length1
+                printer_printf(&context->output_options, "COPYST %i ",
+                               context->mem[i++]); // displ
+                printer_printf(&context->output_options, "(%i)",
+                               context->mem[i++]); // length
+                printer_printf(&context->output_options, "(%i)\n",
+                               context->mem[i++]); // length1
                 break;
 
             case REMASS:
-                fprintf(output, "%%= %i\n", mem[i++]);
+                printer_printf(&context->output_options, "%%= %i\n",
+                               context->mem[i++]);
                 break;
             case REMASSAT:
-                fprintf(output, "%%=@\n");
+                printer_printf(&context->output_options, "%%=@\n");
                 break;
             case REMASSV:
-                fprintf(output, "%%=V %i\n", mem[i++]);
+                printer_printf(&context->output_options, "%%=V %i\n",
+                               context->mem[i++]);
                 break;
             case REMASSATV:
-                fprintf(output, "%%=@V\n");
+                printer_printf(&context->output_options, "%%=@V\n");
                 break;
             case LREM:
-                fprintf(output, "%%\n");
+                printer_printf(&context->output_options, "%%\n");
                 break;
-                
+
             case CALL1:
-                fprintf(output, "CALL1\n");
+                printer_printf(&context->output_options, "CALL1\n");
                 break;
             case CALL2:
-                fprintf(output, "CALL2 ");
-                fprintf(output, "%i\n", mem[i++]);
+                printer_printf(&context->output_options, "CALL2 ");
+                printer_printf(&context->output_options, "%i\n",
+                               context->mem[i++]);
                 break;
             case STOP:
-                fprintf(output, "STOP\n");
+                printer_printf(&context->output_options, "STOP\n");
                 break;
             case RETURNVAL:
-                fprintf(output, "RETURNVAL %i\n", mem[i++]);
+                printer_printf(&context->output_options, "RETURNVAL %i\n",
+                               context->mem[i++]);
                 break;
             case RETURNVOID:
-                fprintf(output, "RETURNVOID\n");
+                printer_printf(&context->output_options, "RETURNVOID\n");
                 break;
             case B:
-                fprintf(output, "B %i\n", mem[i++]);
+                printer_printf(&context->output_options, "B %i\n",
+                               context->mem[i++]);
                 break;
             case BE0:
-                fprintf(output, "BE0 %i\n", mem[i++]);
+                printer_printf(&context->output_options, "BE0 %i\n",
+                               context->mem[i++]);
                 break;
             case BNE0:
-                fprintf(output, "BNE0 %i\n", mem[i++]);
+                printer_printf(&context->output_options, "BNE0 %i\n",
+                               context->mem[i++]);
                 break;
             case SLICE:
-                fprintf(output, "SLICE d= %i\n", mem[i++]);
+                printer_printf(&context->output_options, "SLICE d= %i\n",
+                               context->mem[i++]);
                 break;
-			case SELECT:
-				fprintf(output, "SELECT field_displ= %i\n", mem[i++]);
-				break;
+            case SELECT:
+                printer_printf(&context->output_options,
+                               "SELECT field_displ= %i\n", context->mem[i++]);
+                break;
             case WIDEN:
-                fprintf(output, "WIDEN\n");
+                printer_printf(&context->output_options, "WIDEN\n");
                 break;
             case WIDEN1:
-                fprintf(output, "WIDEN1\n");
+                printer_printf(&context->output_options, "WIDEN1\n");
                 break;
             case _DOUBLE:
-                fprintf(output, "DOUBLE\n");
+                printer_printf(&context->output_options, "DOUBLE\n");
                 break;
             case INC:
-                fprintf(output, "INC %i\n", mem[i++]);
+                printer_printf(&context->output_options, "INC %i\n",
+                               context->mem[i++]);
                 break;
             case DEC:
-                fprintf(output, "DEC %i\n", mem[i++]);
+                printer_printf(&context->output_options, "DEC %i\n",
+                               context->mem[i++]);
                 break;
             case POSTINC:
-                fprintf(output, "POSTINC %i\n", mem[i++]);
+                printer_printf(&context->output_options, "POSTINC %i\n",
+                               context->mem[i++]);
                 break;
             case POSTDEC:
-                fprintf(output, "POSTDEC %i\n", mem[i++]);
+                printer_printf(&context->output_options, "POSTDEC %i\n",
+                               context->mem[i++]);
                 break;
             case INCAT:
-                fprintf(output, "INC@\n");
+                printer_printf(&context->output_options, "INC@\n");
                 break;
             case DECAT:
-                fprintf(output, "DEC@\n");
+                printer_printf(&context->output_options, "DEC@\n");
                 break;
             case POSTINCAT:
-                fprintf(output, "POSTINC@\n");
+                printer_printf(&context->output_options, "POSTINC@\n");
                 break;
             case POSTDECAT:
-                fprintf(output, "POSTDEC@\n");
+                printer_printf(&context->output_options, "POSTDEC@\n");
                 break;
             case INCR:
-                fprintf(output, "INCf %i\n", mem[i++]);
+                printer_printf(&context->output_options, "INCf %i\n",
+                               context->mem[i++]);
                 break;
             case DECR:
-                fprintf(output, "DECf %i\n", mem[i++]);
+                printer_printf(&context->output_options, "DECf %i\n",
+                               context->mem[i++]);
                 break;
             case POSTINCR:
-                fprintf(output, "POSTINCf %i\n", mem[i++]);
+                printer_printf(&context->output_options, "POSTINCf %i\n",
+                               context->mem[i++]);
                 break;
             case POSTDECR:
-                fprintf(output, "POSTDECf %i\n", mem[i++]);
+                printer_printf(&context->output_options, "POSTDECf %i\n",
+                               context->mem[i++]);
                 break;
             case INCATR:
-                fprintf(output, "INC@f\n");
+                printer_printf(&context->output_options, "INC@f\n");
                 break;
             case DECATR:
-                fprintf(output, "DEC@f\n");
+                printer_printf(&context->output_options, "DEC@f\n");
                 break;
             case POSTINCATR:
-                fprintf(output, "POSTINC@f\n");
+                printer_printf(&context->output_options, "POSTINC@f\n");
                 break;
             case POSTDECATR:
-                fprintf(output, "POSTDEC@f\n");
+                printer_printf(&context->output_options, "POSTDEC@f\n");
                 break;
             case INCV:
-                fprintf(output, "INCV %i\n", mem[i++]);
+                printer_printf(&context->output_options, "INCV %i\n",
+                               context->mem[i++]);
                 break;
             case DECV:
-                fprintf(output, "DECV %i\n", mem[i++]);
+                printer_printf(&context->output_options, "DECV %i\n",
+                               context->mem[i++]);
                 break;
             case POSTINCV:
-                fprintf(output, "POSTINCV %i\n", mem[i++]);
+                printer_printf(&context->output_options, "POSTINCV %i\n",
+                               context->mem[i++]);
                 break;
             case POSTDECV:
-                fprintf(output, "POSTDECV %i\n", mem[i++]);
+                printer_printf(&context->output_options, "POSTDECV %i\n",
+                               context->mem[i++]);
                 break;
             case INCATV:
-                fprintf(output, "INC@V\n");
+                printer_printf(&context->output_options, "INC@V\n");
                 break;
             case DECATV:
-                fprintf(output, "DEC@V\n");
+                printer_printf(&context->output_options, "DEC@V\n");
                 break;
             case POSTINCATV:
-                fprintf(output, "POSTINC@V\n");
+                printer_printf(&context->output_options, "POSTINC@V\n");
                 break;
             case POSTDECATV:
-                fprintf(output, "POSTDEC@V\n");
+                printer_printf(&context->output_options, "POSTDEC@V\n");
                 break;
             case INCRV:
-                fprintf(output, "INCfV %i\n", mem[i++]);
+                printer_printf(&context->output_options, "INCfV %i\n",
+                               context->mem[i++]);
                 break;
             case DECRV:
-                fprintf(output, "DECfV %i\n", mem[i++]);
+                printer_printf(&context->output_options, "DECfV %i\n",
+                               context->mem[i++]);
                 break;
             case POSTINCRV:
-                fprintf(output, "POSTINCfV %i\n", mem[i++]);
+                printer_printf(&context->output_options, "POSTINCfV %i\n",
+                               context->mem[i++]);
                 break;
             case POSTDECRV:
-                fprintf(output, "POSTDECfV %i\n", mem[i++]);
+                printer_printf(&context->output_options, "POSTDECfV %i\n",
+                               context->mem[i++]);
                 break;
             case INCATRV:
-                fprintf(output, "INC@fV\n");
+                printer_printf(&context->output_options, "INC@fV\n");
                 break;
             case DECATRV:
-                fprintf(output, "DEC@fV\n");
+                printer_printf(&context->output_options, "DEC@fV\n");
                 break;
             case POSTINCATRV:
-                fprintf(output, "POSTINC@fV\n");
+                printer_printf(&context->output_options, "POSTINC@fV\n");
                 break;
             case POSTDECATRV:
-                fprintf(output, "POSTDEC@fV\n");
+                printer_printf(&context->output_options, "POSTDEC@fV\n");
                 break;
 
             case LNOT:
-                fprintf(output, "BITNOT\n");
+                printer_printf(&context->output_options, "BITNOT\n");
                 break;
             case LOGNOT:
-                fprintf(output, "NOT\n");
+                printer_printf(&context->output_options, "NOT\n");
                 break;
             case UNMINUS:
-                fprintf(output, "UNMINUS\n");
+                printer_printf(&context->output_options, "UNMINUS\n");
                 break;
             case UNMINUSR:
-                fprintf(output, "UNMINUSf\n");
+                printer_printf(&context->output_options, "UNMINUSf\n");
                 break;
-                
+
             case FUNCBEG:
-                fprintf(output, "FUNCBEG maxdispl= %i ", mem[i++]);
-                fprintf(output, "pc= %i\n", mem[i++]);
+                printer_printf(&context->output_options,
+                               "FUNCBEG maxdispl= %i ", context->mem[i++]);
+                printer_printf(&context->output_options, "pc= %i\n",
+                               context->mem[i++]);
                 break;
-                
-                
+
+
             default:
-                fprintf(output, "%i\n", mem[i-1]);
+                printer_printf(&context->output_options, "%i\n",
+                               context->mem[i - 1]);
         }
     }
-    
 }

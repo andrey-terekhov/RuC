@@ -1,11 +1,18 @@
 cmake_minimum_required(VERSION 3.0.0)
 
 option(FLTK_IMPORTED "Import FLTK from git or use system-wide library" ON)
+option(ANALYSIS_ENABLED "Enable static analysis of input files" OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(RUC_KEYWORDS_FILE ${PROJECT_SOURCE_DIR}/keywords.txt)
 set(TEST_INPUTS_DIR ${PROJECT_SOURCE_DIR}/tests)
 set(RUC_BINARY_DIR ${CMAKE_BINARY_DIR}/bin)
+
+add_compile_options(-Werror=return-type -g)
+
+if(ANALYSIS_ENABLED)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/aspsimple.cmake)
+endif()
 
 # add RuC
 add_subdirectory(RuC)
@@ -16,8 +23,9 @@ add_subdirectory(RuCVM)
 # add utils
 add_subdirectory(util)
 
+
 if(FLTK_IMPORTED)
-add_subdirectory(thirdparty/fltk)
+include(thirdparty/fltk.cmake)
 endif()
 
 # add UI

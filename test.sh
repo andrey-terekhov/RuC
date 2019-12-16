@@ -11,9 +11,13 @@ timeout=0
 
 mkdir -p build
 cd build
-cmake ..
-if ! make >/dev/null 2>/dev/null ; then
-    make
+build_frontend="make"
+build_with=""
+command -v ninja && build_frontend="ninja" && built_with="-GNinja"
+cmake ${build_with} ..
+
+if ! ${build_frontend} >/dev/null 2>/dev/null ; then
+    ${build_frontend}
     exit 1
 fi
 

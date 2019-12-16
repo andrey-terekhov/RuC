@@ -7,205 +7,163 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-const char * name =
-//"tests/Egor/string/strcat.c";
-"tests/Fadeev/draw.c";
+const char *name =
+    //"tests/Egor/string/strcat.c";
+    "tests/Fadeev/draw.c";
 //"tests/arrstruct1.c";
 //"../../../tests/mips/0test.c";
 
+#include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
-#include <string.h>
-#include <wchar.h>
 #include <stdlib.h>
-
+#include <string.h>
+#include <unistd.h>
+#include <wchar.h>
 #include "Defs.h"
+#include "context.h"
 
-// Определение глобальных переменных
+#include "error.h"
+#include "frontend_utils.h"
+#include "tables.h"
 
-FILE *input, *output;
-double numdouble;
-int line=0, mline = 0, charnum=1, m_charnum = 1, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef = 0;
-struct {int first; int second;} numr;
-int source[SOURCESIZE], lines[LINESSIZE];
-int before_source[SOURCESIZE], mlines[LINESSIZE], m_conect_lines[LINESSIZE];
-int nextchar, curchar, func_def;
-int hashtab[256], reprtab[MAXREPRTAB], rp = 1, identab[MAXIDENTAB], id = 2,
-    modetab[MAXMODETAB], md = 1, startmode = 1;
-int stack[100], stackop[100], stackoperands[100], stacklog[100], ansttype,
-    sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg=-1, displ=-3, maxdispl = 3, maxdisplg = 3, type,
-    op = 0, inass = 0, firstdecl;
-int iniprocs[INIPROSIZE], procd = 1, arrdim, arrelemlen, was_struct_with_arr, usual;
-int instring = 0, inswitch = 0, inloop = 0, lexstr[MAXSTRINGL+1];
-int tree[MAXTREESIZE], tc=0, mtree[MAXTREESIZE], mtc=0,
-    mem[MAXMEMSIZE], pc=4, functions[FUNCSIZE], funcnum = 2, functype, kw = 0, blockflag = 1,
-    entry, wasmain = 0, wasret, wasdefault, notrobot = 1, prep_flag = 0;
-int adcont, adbreak, adcase, adandor, switchreg;
-int predef[FUNCSIZE], prdf = -1, emptyarrdef;
-int gotost[1000], pgotost;
-int anst, anstdispl, ansttype, leftansttype = -1;         // anst = VAL  - значение на стеке
-int g, l, x, iniproc;                                     // anst = ADDR - на стеке адрес значения
-                                                          // anst = IDENT- значение в статике, в anstdisl смещение от l или g
-                                                          // в ansttype всегда тип возвращаемого значения
-// если значение указателя, адрес массива или строки лежит на верхушке стека, то это VAL, а не ADDR
+#ifdef ANALYSIS_ENABLED
+#include "asp/asp_simple.h"
+#define ASP_HOST "localhost"
+#define ASP_PORT (5500)
+#endif
 
-int bad_printf_placeholder = 0;
+extern void preprocess_file(compiler_context *context);
 
-extern void preprocess_file();
+//#define FILE_DEBUG
 
-extern void tablesandcode();
-extern void tablesandtree();
-extern void import();
-extern int  getnext();
-extern int  nextch();
-extern int  scan();
-extern void error(int ernum);
-extern void codegen();
-extern void mipsopt();
-extern void mipsgen();
-extern void ext_decl();
-
-int toreprtab(char str[])
+#ifdef ANALYSIS_ENABLED
+void report_cb(asp_report *report)
 {
-    int i, oldrepr = rp;
-    hash = 0;
-    rp += 2;
-    for (i=0; str[i] != 0; i++)
+    fprintf(stderr, "%s:%d:%d: %s: %s\n", report->file, report->line,
+        report->column, report->rule_id, report->explanation);
+}
+#endif
+
+static void
+process_user_requests(compiler_context *context, int argc, const char *argv[])
+{
+    int  i;
+    bool enough_files = false;
+
+    for (i = 1; i < argc; ++i)
     {
-        hash += str[i];
-        reprtab[rp++] = str[i];
+        if (strcmp(argv[i], "-o") == 0)
+        {
+            if ((i + 1) >= argc)
+                fprintf(stderr, " не указан выходной файл\n");
+
+            /* Output file */
+            context->output_file = argv[i + 1];
+            i++;
+        }
+        else if (!enough_files)
+        {
+            char *macro_processed;
+
+#ifndef FILE_DEBUG
+            /* Regular file */
+            char macro_path[] = "/tmp/macroXXXXXX";
+            char tree_path[] = "/tmp/treeXXXXXX";
+            char codes_path[] = "/tmp/codesXXXXXX";
+
+            mktemp(macro_path);
+            mktemp(tree_path);
+            mktemp(codes_path);
+#else
+            char macro_path[] = "macro.txt";
+            char tree_path[] = "tree.txt";
+            char codes_path[] = "codes.txt";
+#endif
+            if (strlen(macro_path) == 0 || strlen(tree_path) == 0 ||
+                strlen(codes_path) == 0)
+            {
+                fprintf(stderr, " ошибка при создании временного файла\n");
+                exit(1);
+            }
+
+            // Открытие исходного текста
+            compiler_context_attach_io(context, argv[i], IO_TYPE_INPUT,
+                                       IO_SOURCE_FILE);
+
+            // Препроцессинг в массив
+            compiler_context_attach_io(context, "", IO_TYPE_OUTPUT,
+                                       IO_SOURCE_MEM);
+
+            printf("\nИсходный текст:\n \n");
+
+            preprocess_file(context); //   макрогенерация
+            macro_processed = strdup(context->output_options.ptr);
+            if (macro_processed == NULL)
+            {
+                fprintf(stderr,
+                        " ошибка выделения памяти для "
+                        "макрогенератора\n");
+                exit(1);
+            }
+
+            compiler_context_detach_io(context, IO_TYPE_OUTPUT);
+            compiler_context_detach_io(context, IO_TYPE_INPUT);
+
+            compiler_context_attach_io(context, macro_processed, IO_TYPE_INPUT,
+                                       IO_SOURCE_MEM);
+            output_tables_and_tree(context, tree_path);
+            output_codes(context, codes_path);
+            compiler_context_detach_io(context, IO_TYPE_INPUT);
+
+            /* Will be left for debugging in case of failure */
+#ifndef FILE_DEBUG
+            unlink(tree_path);
+            unlink(codes_path);
+            unlink(macro_path);
+#endif
+            enough_files = true;
+#ifdef ANALYSIS_ENABLED
+            asp_simple_invoke_singlefile(ASP_HOST, ASP_PORT, argv[i],
+                ASP_LANGUAGE_RUC, report_cb);
+#endif
+        }
+        else
+        {
+            fprintf(stderr, " лимит исходных файлов\n");
+            break;
+        }
     }
-    hash &= 255;
-    reprtab[rp++] = 0;
-    reprtab[oldrepr] = hashtab[hash] ;
-    reprtab[oldrepr+1] = 1;
-    return hashtab[hash] = oldrepr;
+
+    output_export(context,
+                  context->output_file != NULL ? context->output_file
+                                               : "export.txt");
 }
 
-int main(int argc, const char * argv[])
+int
+main(int argc, const char *argv[])
 {
-    int i;
+    compiler_context *context = malloc(sizeof(compiler_context));
 
-    for (i=0; i<256; i++)
-        hashtab[i] = 0;
-    
-    // занесение ключевых слов в reprtab
-    keywordsnum = 1;
-    
-    input =  fopen("keywords.txt", "r");
-    if (input == NULL)
+    if (context == NULL)
     {
-        printf(" не найден файл %s\n", "keywords.txt");
+        fprintf(stderr, " ошибка выделения памяти под контекст\n");
         exit(1);
     }
-    getnext();
-    nextch();
-    while (scan() != LEOF)   // чтение ключевых слов
-        ;
-    fclose(input);
-    
-    if (argc < 2) {
-        input = fopen(name, "r");          //   исходный текст
-    } else {
-        input = fopen(argv[1], "r");
-    }
-    output = fopen("macro.txt", "wt");
 
-    if (input == NULL)
-    {
-        if (argc < 2) {
-            printf(" не найден файл %s\n", name);
-        } else {
-            printf(" не найден файл %s\n", argv[1]);
-        }
-        
-        exit(1);
-    }
-    modetab[1] = 0;
-    modetab[2] = MSTRUCT;
-    modetab[3] = 2;
-    modetab[4] = 4;
-    modetab[5] = modetab[7] = LINT;
-    modetab[6] = toreprtab("numTh");
-    modetab[8] = toreprtab("data");
-    modetab[9] = 1;                // занесение в modetab описателя struct{int numTh; int inf;}
-    modetab[10] = MFUNCTION;
-    modetab[11] = LVOID;
-    modetab[12] = 1;
-    modetab[13] = 2;
-    modetab[14] = 9;               // занесение в modetab описателя  функции void t_msg_send(struct msg_info m)
-    modetab[15] = MFUNCTION;
-    modetab[16] = LVOIDASTER;
-    modetab[17] = 1;
-    modetab[18] = LVOIDASTER;
-    modetab[19] = startmode = 14;  // занесение в modetab описателя  функции void* interpreter(void* n)
-    md = 19;
-    keywordsnum = 0;
-    lines[line = 1] = 1;
-    charnum = 1;
-    kw = 1;
-    tc = 0;
+    compiler_context_init(context);
+    compiler_context_attach_io(context, ":stderr", IO_TYPE_ERROR,
+                               IO_SOURCE_FILE);
+    compiler_context_attach_io(context, ":stdout", IO_TYPE_MISC,
+                               IO_SOURCE_FILE);
 
-    printf("\nИсходный текст:\n \n");
-    preprocess_file();                //   макрогенерация
-    
-    fclose(output);
-    fclose(input);
-    
-    input  = fopen("macro.txt", "r");
-    
-    if (input == NULL)
-    {
-        printf("файл %s не найден\n", name);
-    }
-    if(prep_flag == 1)
-    {
-        printf("\nТекст после препроцесора:\n \n");
-    }
+    read_keywords(context);
 
-    output = fopen("tree.txt", "wt");
-    
-    getnext();
-    nextch();
-    next = scan();
+    init_modetab(context);
 
-    ext_decl();                       //   генерация дерева
+    process_user_requests(context, argc, argv);
 
-    lines[line+1] = charnum;
-    tablesandtree();
-    fclose(output);
-    output = fopen("codes.txt", "wt");
-    
-    codegen();                         //   генерация кода
-    
-    tablesandcode();
-    
-    fclose(input);
-    fclose(output);
-    
-    output = fopen("export.txt", "wt");
-    fprintf(output, "%i %i %i %i %i %i %i\n", pc, funcnum, id, rp, md, maxdisplg, wasmain);
-    
-    for (i=0; i<pc; i++)
-        fprintf(output, "%i ", mem[i]);
-    fprintf(output, "\n");
-    
-    for (i=0; i<funcnum; i++)
-        fprintf(output, "%i ", functions[i]);
-    fprintf(output, "\n");
-    
-    for (i=0; i<id; i++)
-        fprintf(output, "%i ", identab[i]);
-    fprintf(output, "\n");
-    
-    for (i=0; i<rp; i++)
-        fprintf(output, "%i ", reprtab[i]);
-    
-    for (i=0; i<md; i++)
-        fprintf(output, "%i ", modetab[i]);
-    fprintf(output, "\n");
-    
-    fclose(output);
-   
+    compiler_context_deinit(context);
+    free(context);
     return 0;
 }
-

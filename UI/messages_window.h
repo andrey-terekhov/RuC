@@ -25,11 +25,15 @@ private:
         WRITING
     };
 
-    static void modify_cb(int pos, int nins, int ndel, int nrestyled,
-                          const char *c_del, void *userinf);
+    static void modify_cb(int         pos,
+                          int         nins,
+                          int         ndel,
+                          int         nrestyled,
+                          const char *c_del,
+                          void *      userinf);
 
     Fl_Text_Buffer buff;
-    Face_Window *win;
+    Face_Window *  win;
 
     State state;
 };
