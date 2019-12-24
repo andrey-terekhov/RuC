@@ -163,6 +163,7 @@ void mustbe(int what, int e)
 void totree(int op)
 {
 	tree[tc++] = op;
+//    printf("tc= %i, trtee[tc]= %i\n", tc-1, tree[tc-1]);
 }
 
 void totreef(int op)
@@ -754,7 +755,7 @@ void postexpr()
 		n = modetab[leftansttyp + 2]; // берем количество аргументов функции
 
 		totree(TCall1);
-		totree(n);
+        totree(leftansttyp);
 		j = leftansttyp + 3;
 		for (i = 0; i<n; i++)          // фактические параметры
 		{
@@ -1747,36 +1748,36 @@ void statement()
                 break;
             case LRETURN:
             {
-                            int ftype = modetab[functype + 1];
-                            wasret = 1;
-                            if (next == SEMICOLON)
-                            {
-                                if (ftype != LVOID)
-                                    error(no_ret_in_func);
-                                totree(TReturnvoid);
-                            }
-                            else
-                            {
-                                if (ftype == LVOIDASTER)
-                                    flagsemicol = 0;
-                                else
-                                {
-                                    if (ftype == LVOID)
-                                        error(notvoidret_in_void_func);
-                                    totree(TReturnval);
-                                    totree(szof(ftype));
-                                    scaner();
-                                    expr(1);
-                                    toval();
-                                    sopnd--;
-                                    if (ftype == LFLOAT && ansttype == LINT)
-                                        totree(WIDEN);
-                                    else if (ftype != ansttype)
-                                        error(bad_type_in_ret);
-                                    totree(TExprend);
-                                }
-                            }
-            }
+                    int ftype = modetab[functype + 1];
+                    wasret = 1;
+                    if (next == SEMICOLON)
+                    {
+                        if (ftype != LVOID)
+                            error(no_ret_in_func);
+                        totree(TReturnvoid);
+                    }
+                    else
+                    {
+                    if (ftype == LVOIDASTER)
+                        flagsemicol = 0;
+                    else
+                    {
+                        if (ftype == LVOID)
+                            error(notvoidret_in_void_func);
+                        totree(TReturnval);
+                        totree(ftype);
+                        scaner();
+                        expr(1);
+                        toval();
+                        sopnd--;
+                        if (ftype == LFLOAT && (ansttype == LINT || ansttype == LCHAR))
+                            totree(WIDEN);
+                        else if (ftype != ansttype)
+                            error(bad_type_in_ret);
+                        totree(TExprend);
+                    }
+                    }
+        }
                 break;
             case LSWITCH:
             {
@@ -2080,14 +2081,15 @@ void function_definition()
     
 	block(0);
     
-//	if (ftype == LVOID && tree[tc - 1] != TReturnvoid)
-//	{
+	if (ftype == LVOID)
+	{
 		tc--;
 		totree(TReturnvoid);
 		totree(TEnd);
-//	}
+    }
 	if (ftype != LVOID && !wasret)
 		error(no_ret_in_func);
+    
 	for (i = id - 4; i >= curid; i -= 4)
         reprtab[identab[i + 1] + 1] = identab[i];
 
@@ -2100,7 +2102,7 @@ void function_definition()
 		if (!identab[gotost[i] + 2])
 			error(label_not_declared);
 	}
-	curid = 2;                                 // все функции описываются на одном уровне
+	curid = 2;                            // все функции описываются на одном уровне
     tree[pred] = maxdispl;    // + 1;?
 	lg = -1;
     displ = olddispl;
@@ -2266,7 +2268,7 @@ void ext_decl()
             }
             mustbe(IDENT, after_type_must_be_ident);
 
-			if (next == LEFTBR)                // определение или предописание функции
+			if (next == LEFTBR)             // определение или предописание функции
 			{
 				int oldfuncnum = funcnum++, firsttype = type;
 				funrepr = repr;

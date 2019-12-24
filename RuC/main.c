@@ -8,7 +8,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-//"tests/for1.c";
+//"tests/float.c";
 
 "tests/mips/float.c";
 
@@ -29,9 +29,8 @@ const char * name =
 
 FILE *input, *output;
 double numdouble;
-int line=0, mline = 0, charnum=1, m_charnum = 1, cur, next, next1, num, hash, repr, keywordsnum,
-    wasstructdef = 0;
-struct {int first; int second;} numr;
+int line=0, mline = 0, charnum=1, m_charnum = 1, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef = 0;
+ struct {int first; int second;} numr;
 int source[SOURCESIZE], lines[LINESSIZE];
 int before_source[SOURCESIZE], mlines[LINESSIZE], m_conect_lines[LINESSIZE];
 int nextchar, curchar, func_def;

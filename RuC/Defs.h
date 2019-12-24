@@ -47,7 +47,7 @@
 #define MULTASS    9010
 #define DIVASS     9011
 
-#define REMASSAT   9012     // эти 22 операции с присваиванием оставляют значение на стеке
+#define REMASSAT   9012     // эти 22 операции с присваив. оставляют значение на стеке
 #define SHLASSAT   9013
 #define SHRASSAT   9014
 #define ANDASSAT   9015
@@ -103,7 +103,7 @@
 #define LGE        9036
 #define LPLUS      9037
 #define LMINUS     9038
-#define LMULT      9039    // у этих 9 команд есть такие же с плавающей зпт
+#define LMULT      9039    // у этих 10 команд есть такие же с плавающей зпт
 #define LDIV       9040
 
 #define POSTINC    9041
@@ -685,18 +685,21 @@
 #define sltu    103        // sltu rd, rs, rt      rd = rs < rt ? 1 : 0      unsigned
 
 //вещественные числа
-#define add_d   110
-#define sub_d   111
-#define mul_d   112
-#define div_d   113
-#define li_d    120
-#define sdc1    125
-#define ldc1    126
-#define mtc1_d  127
+#define add_s   110
+#define sub_s   111
+#define mul_s   112
+#define div_s   113
+#define abs_s   114
+#define neg_s   115
+#define li_s    120
+#define lwc1    125
+#define swc1    126
+#define mtc1_s  127   // ?
 #define bc1t    128
 #define bc1f    129
-#define c_seq_d 130
-#define c_lt_d  131
-#define c_le_d  132
+#define c_seq_s 130
+#define c_lt_s  131
+#define c_le_s  132
+#define cvt_s_w 133
 
 #endif

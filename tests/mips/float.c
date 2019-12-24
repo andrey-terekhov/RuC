@@ -1,4 +1,3 @@
-
 void main()
 {
     	float a = 5.1, b = 6.3, c = 2.3;

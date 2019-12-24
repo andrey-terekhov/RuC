@@ -31,7 +31,9 @@ int munop(int t)
         case INCATV:
         case DECATV:
         case UNMINUS:
-            
+         
+        case TAddrtoval:
+        case TAddrtovald:
         case WIDEN:
         case WIDEN1:
 
@@ -46,7 +48,7 @@ int munop(int t)
         case UNMINUSR:
             
             return 1;
-        
+            
         case REMASS:
         case SHLASS:
         case SHRASS:
@@ -304,9 +306,7 @@ int operand()
     }
     n1 = tc;
     t = tree[tc];
-    if (t == TAddrtoval)
-        mcopy();
-    else if (t == TString)
+    if (t == TString)
     {
         mcopy();
         int nstr = mcopy();
@@ -398,7 +398,10 @@ void mexpr()
         }
         else if ( (opnd = munop(op)) )
                 if (wasopnd)
-                    permute(stack[sp]);
+                    if (op == WIDEN1)
+                        permute(stack[sp-1]);
+                    else
+                        permute(stack[sp]);
                 else
                     mcopy(), mcopy();
         else if ( (opnd = mbinop(op)) )
