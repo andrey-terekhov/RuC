@@ -5,12 +5,12 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 
-#define _CRT_SECURE_NO_WARNINGS
+//#define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
 //"tests/float.c";
 
-"tests/mips/float.c";
+"tests/mips/test10.c";
 
 //"../../../tests/Egor/Macro/for.c";
 

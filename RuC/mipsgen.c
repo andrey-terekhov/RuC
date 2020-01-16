@@ -17,9 +17,9 @@
     // В качестве левого операнда могут использоваться только сохраняемые регистры,
     // в том числе и те, которые применяются для адресации
 #define BF     3     // свободный запрос на правый операнд
-#define BC     4     // for conditions, если  BC > 0 on TRUE, BC < 0 on FALSE
-                     // goto на метку elselab
-#define BV     5     // значение не нужно
+#define BCF    4     // goto на метку elselab по false
+#define BCT    5     // goto на метку elselab по true
+#define BV     6     // значение не нужно
 
 // ответы
 #define AREG  1      // in areg register number
@@ -439,7 +439,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
 {
     int oldbox = mbox, oldreg = breg, oldelselab = elselab;
     int leftanst, leftdispl, leftreg, leftnum, rightanst;
-    int rez, lopnd, ropnd, flagreal = 2, flagreg = 0, labend = labnum++;
+    int rez, lopnd, ropnd, flagreal = 2, flagreg = 0;
 //    printf("bin form tc= %i mbox= %i manst= %i\n", tc, mbox, manst);
     switch (c)
     {
@@ -533,32 +533,31 @@ void MBin_operation(int c)      // бинарная операция (два в�
     }
 
     flagBC = 1;
-    if (abs(mbox) == BC)
+    if (mbox == BCF || mbox == BCT)
     {
-        int oldbox = mbox, thenlab = labnum++;
+        int thenlab = labnum++;
         if (c == LOGAND || c == LOGOR)
         {
-            if (c == LOGAND)       // левое выражение
+            tc++;
+            if (c == LOGAND)
             {
-                if (mbox < 0)
-                    MExpr_gen();
+                if (mbox == BCF)
+                    MExpr_gen();       // левое выражение
                 else
                 {
-                    int oldelselab = elselab;
                     elselab = thenlab;
-                    mbox = -BC;
+                    mbox = BCF;
                     MExpr_gen();
                     elselab = oldelselab;
                 }
             }
-            else  // LOGOR         // левое выражение
+            else  // LOGOR
             {
-                if (mbox < 0)
+                if (mbox == BCF)
                 {
-                    int oldelselab = elselab;
                     elselab = thenlab;
-                    mbox = BC;
-                    MExpr_gen();
+                    mbox = BCT;
+                    MExpr_gen();          // левое выражение
                     elselab = oldelselab;
                 }
                 else
@@ -569,7 +568,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 tc += 2;
 
             MExpr_gen();           // правое выражение
-        tocodeL("THEN", thenlab);
+        tocodeL("ELSE", thenlab);
             flagBC = 0;
             return;
         }
@@ -582,19 +581,15 @@ void MBin_operation(int c)      // бинарная операция (два в�
             case LGTR:
             case LLER:
             case LGER:
-            case LPLUSR:
-            case LMINUSR:
-            case LMULTR:
-            case LDIVR:
                 flagreal = 1;
                 break;
             default:
                 flagreal = 0;
         }
-    }
+    
         rez = mbox <= BREGF ?  breg :
         (mbox = BREGF, flagreg = 1,
-         breg = flagreal == 1 ? getregf() : (flagreal = 0, getreg()));
+         breg = flagreal ? getregf() : getreg());
         lopnd = breg;
         MExpr_gen();                                        // левый операнд
         if (manst == AREG)
@@ -619,8 +614,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 freereg(lopnd);
         }
         rightanst = manst;
-        ropnd = areg;           // правый операнд может быть только регистром и константой
-        
+        ropnd = areg;      // правый операнд может быть только регистром или константой
 
         mbox = oldbox; breg = oldreg; elselab = oldelselab;
     
@@ -631,7 +625,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 if (leftanst == CONST && manst == CONST)
                 {
                     tocodeI(addi, t1, d0, leftnum == num ? 1 : 0);
-                    tocodeJC(oldbox < 0 ? blez : bgtz, t1, "ELSE", elselab);
+                    tocodeJC( mbox == BCF ? blez : bgtz, t1, "ELSE", elselab);
                     flagBC = 0;
                     return;
                 }
@@ -639,26 +633,30 @@ void MBin_operation(int c)      // бинарная операция (два в�
                     tocodeI(addi, lopnd, d0, leftnum);
                 else if (leftanst == AREG && manst == CONST)
                     tocodeI(addi, lopnd, d0, num);
+                
                 // leftanst == AREG && anst == AREG
                 if (c == EQEQ)
-                    tocodeJEQ(oldbox < 0 ? bne : beq, lopnd, ropnd, "ELSE", elselab);
+                    tocodeJEQ(mbox == BCF ? bne : beq, lopnd, ropnd, "ELSE", elselab);
                 else
-                    tocodeJEQ(oldbox > 0 ? bne : beq, lopnd, ropnd, "ELSE", elselab);
+                    tocodeJEQ(mbox == BCF ? beq : bne, lopnd, ropnd, "ELSE", elselab);
                 flagBC = 0;
                 return;
+                
             case EQEQR:
             case NOTEQR:
-                if (c == EQEQR) {
+                if (c == EQEQR)
+                {
                 	tocodeCondF(c_seq_s, lopnd, ropnd);
-                	tocodeCondFlagF(oldbox < 0 ? bc1f : bc1t, "ELSE", elselab);
+                	tocodeCondFlagF(mbox == BCF ? bc1f : bc1t, "ELSE", elselab);
                 }
                 else
                 {
                 	tocodeCondF(c_seq_s, lopnd, ropnd);
-                	tocodeCondFlagF(oldbox > 0 ? bc1f : bc1t, "ELSE", elselab);
+                	tocodeCondFlagF(mbox ==BCF ? bc1t : bc1f, "ELSE", elselab);
                 }
                 flagBC = 0;
                 return;
+                
             case LLT:
             case LGT:
             case LLE:
@@ -670,7 +668,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
                             c == LGT ? leftnum > num ? 1 : 0 :
                             c == LLE ? leftnum <= num ? 1 : 0 :
                                        leftnum >= num ? 1 : 0);
-                    tocodeJC(oldbox < 0 ? blez : bgtz, t1, "ELSE", elselab);
+                    tocodeJC(mbox == BCF ? blez : bgtz, t1, "ELSE", elselab);
                     flagBC = 0;
                     return;
                 }
@@ -678,31 +676,34 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 {
                     tocodeI(addi, t1, ropnd, -leftnum);
                     if (c == LLT)
-                        tocodeJC(oldbox < 0 ? blez : bgtz, t1, "ELSE", elselab);
+                        tocodeJC(mbox == BCF ? blez : bgtz, t1, "ELSE", elselab);
                     else if (c == LGT)
-                        tocodeJC(oldbox < 0 ? bgez : bltz, t1, "ELSE", elselab);
+                        tocodeJC(mbox == BCF ? bgez : bltz, t1, "ELSE", elselab);
                     else if (c == LLE)
-                        tocodeJC(oldbox < 0 ? bltz : bgez, t1, "ELSE", elselab);
+                        tocodeJC(mbox == BCF ? bltz : bgez, t1, "ELSE", elselab);
                     else
-                        tocodeJC(oldbox < 0 ? bgtz : blez, t1, "ELSE", elselab);
+                        tocodeJC(mbox == BCF ? bgtz : blez, t1, "ELSE", elselab);
                     flagBC = 0;
                     return;
                 }
+                
                 if (leftanst == AREG && manst == CONST)
                     tocodeI(addi, t1, lopnd, -num);
-                else                       // leftanst == AREG && anst == AREG
+                else
+                    // leftanst == AREG && anst == AREG
                     tocodeR(sub, t1, lopnd, ropnd);
 
                     if (c == LLT)
-                        tocodeJC(oldbox < 0 ? bgez : bltz, t1, "ELSE", elselab);
+                        tocodeJC(mbox == BCF ? bgez : bltz, t1, "ELSE", elselab);
                     else if (c == LGT)
-                        tocodeJC(oldbox < 0 ? blez : bgtz, t1, "ELSE", elselab);
+                        tocodeJC(mbox == BCF ? blez : bgtz, t1, "ELSE", elselab);
                     else if (c == LLE)
-                        tocodeJC(oldbox < 0 ? bgtz : blez, t1, "ELSE", elselab);
+                        tocodeJC(mbox == BCF ? bgtz : blez, t1, "ELSE", elselab);
                     else
-                        tocodeJC(oldbox < 0 ? bltz : bgez, t1, "ELSE", elselab);
+                        tocodeJC(mbox == BCF ? bltz : bgez, t1, "ELSE", elselab);
                 flagBC = 0;
                 return;
+                
             case LLTR:
             case LGTR:
             case LLER:
@@ -710,27 +711,112 @@ void MBin_operation(int c)      // бинарная операция (два в�
             	if (c == LLTR)
             	{
                     tocodeCondF(c_lt_s, lopnd, ropnd);
-                    tocodeCondFlagF(oldbox < 0 ? bc1f : bc1t, "ELSE", elselab);
+                    tocodeCondFlagF(mbox == BCF ? bc1f : bc1t, "ELSE", elselab);
                 }
                 else if (c == LGTR)
                 {
                     tocodeCondF(c_le_s, lopnd, ropnd);
-                    tocodeCondFlagF(oldbox > 0 ? bc1f : bc1t, "ELSE", elselab);
+                    tocodeCondFlagF(mbox == BCF ? bc1t : bc1f, "ELSE", elselab);
                 }
                 else if (c == LLER)
                 {
                     tocodeCondF(c_le_s, lopnd, ropnd);
-                    tocodeCondFlagF(oldbox < 0 ? bc1f : bc1t, "ELSE", elselab);
+                    tocodeCondFlagF(mbox == BCF ? bc1f : bc1t, "ELSE", elselab);
                 }
                 else
                 {
                     tocodeCondF(c_lt_s, lopnd, ropnd);
-                    tocodeCondFlagF(oldbox > 0 ? bc1f : bc1t, "ELSE", elselab);
+                    tocodeCondFlagF(mbox == BCF ? bc1t : bc1f, "ELSE", elselab);
                 }
                 flagBC = 0;
                 return;
         }
+    }             // конец mbox == ВС
     
+    switch (c)
+    {
+        case EQEQR:
+        case NOTEQR:
+        case LLTR:
+        case LGTR:
+        case LLER:
+        case LGER:
+        case LPLUSR:
+        case LMINUSR:
+        case LMULTR:
+        case LDIVR:
+            flagreal = 1;
+            break;
+        default:
+            flagreal = 0;
+    }
+
+    rez = mbox <= BREGF ?  breg :
+    (mbox = BREGF, flagreg = 1,
+     breg = flagreal ? getregf() : getreg());
+    
+    if (c == LOGAND || c == LOGOR)
+    {
+        int oldbox = mbox, oldelselab = elselab;
+        tc++;
+        elselab = labnum++;
+        if (c == LOGAND)
+        {
+            tocodeI(addi, rez, d0, 0);
+            mbox = BCF;
+            MExpr_gen();
+            if (tree[tc] == ADLOGAND || tree[tc] == ADLOGOR)
+                tc += 2;
+            MExpr_gen();
+            tocodeI(addi, rez, d0, 1);
+        }
+        else        //  if (c == LOGOR)
+        {
+            tocodeI(addi, rez, d0, 1);
+            mbox = BCT;
+            MExpr_gen();
+            if (tree[tc] == ADLOGAND || tree[tc] == ADLOGOR)
+                tc += 2;
+            MExpr_gen();
+            tocodeI(addi, rez, d0, 0);
+        }
+        tocodeL("ELSE", elselab);
+        if (flagreg)
+            freereg(rez);
+        mbox = oldbox; elselab = oldelselab;
+        manst = AREG;
+        areg = rez;
+        return;
+    }
+    
+    lopnd = breg;
+    MExpr_gen();                                        // левый операнд
+    if (manst == AREG)
+    {
+        lopnd = areg;
+        if (mbox ==  BREGF)
+            rez = areg;
+    }
+    leftanst = manst;
+    leftdispl = adispl;
+    leftreg = areg;
+    leftnum = num;
+
+    mbox = BF;
+    MExpr_gen();                                        // правый операнд
+    
+    if (flagreg)
+    {
+        if (flagreal)
+            freeregf(lopnd);
+        else
+            freereg(lopnd);
+    }
+    rightanst = manst;
+    ropnd = areg;      // правый операнд может быть только регистром или константой
+
+    mbox = oldbox; breg = oldreg; elselab = oldelselab;
+
     manst = AREG;
     areg = rez;
     if (leftanst == CONST && rightanst == CONST)
@@ -788,7 +874,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
         }
       
         if (abs(num) < 32768)
-            if (oldbox == BREG)
+            if (mbox == BREG)
                 tocodeI(addi, rez, d0, num);
             else
                 manst = CONST;
@@ -865,6 +951,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
             case LMINUS:
                 tocodeI(addi, rez, ropnd, -leftnum);
                 tocodeR(sub, rez, d0, rez);
+                return;
         }
     }
     
@@ -992,8 +1079,8 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 return;
             case EQEQR:
             	tocodeCondF(c_seq_s, lopnd, ropnd);
-            	log_real = 0;
-            	return;
+            	log_real = 1;
+            	break;
             case NOTEQ:
                 tocodeI(addi, rez, d0, 1);
                 tocodeJEQimm(bne, lopnd, ropnd, 1);
@@ -1001,42 +1088,50 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 return;
             case NOTEQR:
             	tocodeCondF(c_seq_s, lopnd, ropnd);
-            	log_real = 1;
-            	return;
+            	log_real = 0;
+            	break;
             case LLT:
                 tocodeR(slt, rez, lopnd, ropnd);
                 return;
             case LLTR:
             	tocodeCondF(c_lt_s, lopnd, ropnd);
-            	log_real = 0;
-            	return;
+            	log_real = 1;
+            	break;
             case LGT:
                 tocodeR(slt, rez, ropnd, lopnd);
                 return;
             case LGTR:
             	tocodeCondF(c_le_s, lopnd, ropnd);
-            	log_real = 1;
-            	return;
+            	log_real = 0;
+            	break;
             case LLE:
                 tocodeR(slt, rez, ropnd, lopnd);
                 tocodeI(xori, rez, rez, 1);
                 return;
             case LLER:
             	tocodeCondF(c_le_s, lopnd, ropnd);
-            	log_real = 0;
-            	return;
+            	log_real = 1;
+            	break;
             case LGE:
                 tocodeR(slt, rez, lopnd, ropnd);
                 tocodeI(xori, rez, rez, 1);
                 return;
             case LGER:
             	tocodeCondF(c_lt_s, lopnd, ropnd);
-            	log_real = 1;
-            	return;
+            	log_real = 0;
         }
+        tocodeI(addi, rez, d0, 1);
+        tocodeCondFlagF(log_real ? bc1t : bc1f, "ELSE", labnum);
+        tocodeI(addi, rez, d0, 0);
+    tocodeL("ELSE", labnum++);
     }
 }
 
+void BCend()
+{
+    if (mbox == BCF || mbox == BCT)
+        tocodeJEQ(mbox == BCF ? beq : bne, areg, d0, "ELSE", elselab);
+}
 
 void MUnar_expr(int c)
 {
@@ -1150,8 +1245,7 @@ void MUnar_expr(int c)
             
             if (identab[idf] < 0)
             {
-                mbox = BREG;
-                breg = identab[idf + 3];
+                mbox = BF;
                 MExpr_gen();              // правый операнд
                 mbox = oldbox, breg = oldreg, elselab = oldelselab;
                 MASSExpr(c, AREG, 0, identab[idf + 3]);
@@ -1245,6 +1339,7 @@ void MUnar_expr(int c)
              tocodeB(lw, rez, 0, areg);
              manst = AREG;
              areg = rez;
+             BCend();
              break;
               
           case TAddrtovald:
@@ -1272,14 +1367,20 @@ void MUnar_expr(int c)
         case WIDEN1:
             mbox = BF;
             MExpr_gen();
-            opnd = t0;
+            rez = oldbox <= 2 ? oldreg : ft0;
             if (manst == CONST)
-                tocodeI(addi, opnd, d0, num);
-            else if (manst == AMEM)
-                tocodeB(lw, opnd, adispl, areg);
-            else         // manst == AREG
-                opnd = areg;
-            tocodeMOVE(cvt_s_w, areg = oldbox <= 2 ? oldreg : ft0, opnd);
+            {
+                numdouble = num;
+                tocodeLI_S(li_s, areg = rez, numdouble);
+            }
+            else
+            {
+                if (manst == AMEM)
+                    tocodeB(lw, opnd = t0, adispl, areg);
+                else         // manst == AREG
+                    opnd = areg;
+                tocodeMOVE(cvt_s_w, areg = rez, opnd);
+            }
             manst = AREG;
             break;
 
@@ -1327,8 +1428,8 @@ void MUnar_expr(int c)
 void MExpr_gen()
 {
     int c = tree[tc++];
-    if (abs(mbox) == BC && c == LOGNOT)
-        mbox = -mbox;
+    if ((mbox == BCF || mbox == BCT) && c == LOGNOT)
+        mbox = mbox == BCF ? BCT : BCF;
     if (c == TIdent)
         tc++, c = tree[tc++];
     
@@ -1341,16 +1442,7 @@ void MExpr_gen()
     if (tree[tc] == NOP)
         tc++;
     if (tree[tc] == TExprend)
-    {
         tc++;
-        if (abs(mbox) == BC && flagBC)
-        {
-            if (manst == CONST && ((mbox > 0&&num != 0) || (mbox < 0&&num == 0)))
-                tocodeJ(jump, "ELSE", elselab);
-            else
-                tocodeJEQ(mbox < 0 ? beq : bne, areg, d0, "ELSE", elselab);
-        }
-    }
 }
 
 /*                else if (c == COPY00 || c == COPYST)
@@ -1414,7 +1506,7 @@ void MPrimary()
                 int labend, curelse = elselab = labnum++;
                 int oldbox = mbox, oldreg = breg, oldelselab = elselab;
                 labend = labnum++;
-                mbox = -BC;
+                mbox = BCF;
                 MExpr_gen();
                 mbox = oldbox;
                 MExpr_gen();
@@ -1454,6 +1546,7 @@ void MPrimary()
 //                  printf("idtoval adispl= %i areg= %i manst= %i\n", adispl, areg, manst);
                 }
                 manst = AREG;
+                BCend();
             }
                 break;
             case TIdenttovald:
@@ -1487,6 +1580,16 @@ void MPrimary()
                 {
                     tocodeI(addi, areg = breg, d0, num);
                     manst = AREG;
+                }
+                if (mbox == BCF || mbox == BCT)
+                {
+                    if (manst == CONST)
+                    {
+                        if ((mbox == BCT && num != 0) || (mbox == BCF && num == 0))
+                               tocodeJ(jump, "ELSE", elselab);
+                    }
+                    else
+                        tocodeJEQ(mbox == BCF ? beq : bne, areg, d0, "ELSE", elselab);
                 }
                 break;
             case TConstd:
@@ -1606,10 +1709,13 @@ void MPrimary()
                         areg = fv0;
                 }
                 else
+                {
                     if (mbox <= BREGF)
                         tocodemove(areg = breg, v0);
                     else
                         areg = v0;
+                    BCend();
+                }
             }
                 break;
                 
@@ -1653,6 +1759,7 @@ void mcompstmt_gen()
                 break;
             case TDeclarr:
             {
+                tc++;
                 MDeclarr();
                 break;
             }
@@ -1708,7 +1815,7 @@ void MStmt_gen()
         {
             int elseref = tree[tc++], curelse = elselab = labnum++, labend;
             labend = labnum++;
-            mbox = -BC;
+            mbox = BCF;
             MExpr_gen();
             MStmt_gen();
             if (elseref)
@@ -1728,7 +1835,7 @@ void MStmt_gen()
             adcont  = labnum++;
             elselab = adbreak = labnum++;
         tocodeL("CONT", adcont);
-            mbox = -BC;
+            mbox = BCF;
             MExpr_gen();
             MStmt_gen();
             tocodeJ(jump, "CONT", adcont);
@@ -1747,7 +1854,7 @@ void MStmt_gen()
         tocodeL("ELSE", labbeg);
             MStmt_gen();
         tocodeL("CONT", adcont);
-            mbox = BC;
+            mbox = BCT;
             MExpr_gen();
         tocodeL("END", adbreak);
             adbreak = oldbreak;
@@ -1767,7 +1874,7 @@ void MStmt_gen()
         tocodeL("BEGLOOP", adcont);
             if (condref)
             {
-                mbox = -BC;
+                mbox = BCF;
                 MExpr_gen();         // cond
             }
             if (incrref)
@@ -1926,13 +2033,21 @@ void MDeclid_gen()
                 int oldbox = mbox, oldreg = breg, oldelselab = elselab;
                 int flagfloat = 0;
                 mbox = BREG;
-                breg = telem == LFLOAT || telem == LDOUBLE ? flagfloat = 1, ft0 : t0;
-                MExpr_gen();
-                mdsp(olddispl);
-                if (flagfloat)
-                	tocodeB(swc1, ft0, adispl, areg);
+                if (identab[oldid] < 0)    // регистровая переменная
+                {
+                    breg = identab[oldid+3];
+                    MExpr_gen();
+                }
                 else
-                	tocodeB(sw, t0, adispl, areg);
+                {
+                breg = telem == LFLOAT || telem == LDOUBLE ? flagfloat = 1, ft0 : t0;
+                    MExpr_gen();
+                    mdsp(olddispl);
+                    if (flagfloat)
+                        tocodeB(swc1, ft0, adispl, areg);
+                    else
+                        tocodeB(sw, t0, adispl, areg);
+                }
                 mbox = oldbox; breg = oldreg; elselab = oldelselab;
 
              /*   tocode(telem == LFLOAT ? ASSRV : ASSV);
@@ -2026,9 +2141,8 @@ tocodeL("START", 0);
                 printf("\n");
                 fprintf(output, "\n");
             tocodeL("FUNCEND", identref);
-                tocodeB(lw, ra, maxdispl + 36, stp);
-                tocodeI(addi, stp, stp, maxdispl + 56);
-                tocodemove(fp, stp);
+                tocodeB(lw, ra, maxdispl + 36, fp);
+                tocodeI(addi, stp, fp, maxdispl + 56);
                 tocodeJR(jr, ra);
             tocodeL("NEXT", identref);
             }
@@ -2083,6 +2197,7 @@ tocodeL("SLICE", 0);               // a0 = C0,  a1 = index, a2 = d
     tocodeR(mul, t0, a1, a2);      // t0 = index * d
     tocodeR(add, v0, t0, a0);      // v0 = C0 + t0
     tocodeJR(jr, ra);              // v0 - адрес i-го элемента
+    
 tocodeL("SLICE1", 0);              // a0 = C0,  a1 = index, d == 1
     tocodeB(lw, t0, -4, a0);       // t0 = N
     tocodeJCimm(bltz, a1, 3);      // if (index < 0 err
@@ -2092,6 +2207,7 @@ tocodeL("SLICE1", 0);              // a0 = C0,  a1 = index, d == 1
     tocodeJ(jal, "ERR", 0);
     tocodeR(add, v0, a1, a0);      // v0 = C0 + index
     tocodeJR(jr, ra);              // v0 - адрес i-го элемента
+    
 tocodeL("SLICE4", 0);               // a0 = C0,  a1 = index, d == 4
     tocodeB(lw, t0, -4, a0);       // t0 = N
     tocodeJCimm(bltz, a1, 3);      // if (index < 0 err

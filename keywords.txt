@@ -26,7 +26,7 @@ PRINT print ПЕЧАТЬ печать
 PRINTF printf ПЕЧАТЬФ печатьф
 SCANF scanf ЧИТАТЬФ читатьф 
 GETID getid ЧИТАТЬИД читатьид
-T_CREATE_DIRECT t_create_direct Н_СОЗДАТЬ_НЕПОСР н_создать_непоср
+T_CREATE_DIRECT t_creat_direct Н_СОЗДАТЬ_НЕПОСР н_создать_непоср
 T_EXIT_DIRECT t_exit_direct Н_КОНЕЦ_НЕПОСР н_конец_непоср
 SETMOTOR setmotor МОТОР мотор
 GETDIGSENSOR getdigsensor ЦИФРДАТЧИК цифрдатчик
@@ -83,3 +83,4 @@ BLYNK_LCD blynk_lcd BLYNK_ДИСПЛЕЙ blynk_дисплей
 BLYNK_TERMINAL blynk_terminal BLYNK_ТЕРМИНАЛ blynk_терминал
 SETSIGNAL setsignal СИГНАЛ сигнал
 REGISTER register РЕГИСТР регистр
+UPB upb КОЛ_ВО кол_во
