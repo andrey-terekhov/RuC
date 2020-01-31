@@ -909,12 +909,14 @@ void* interpreter(void* pcPnt)
                         }
                     }
                     else
+                    while (curdim != 0)
                     {
-                        do
+                        while (stacki[curdim] < bounds[curdim])
                         {
+                        // next elem
                             do
                             {
-                        // go down
+                            // go down
                                 mem[++x] = bounds[curdim+1];
                                 mem[stackC0[curdim] + stacki[curdim]++] = stackC0[curdim+1] = x + 1;
                                 x += bounds[curdim+1] * (curdim == N-1 ? d : 1);
@@ -925,7 +927,7 @@ void* interpreter(void* pcPnt)
                                 stacki[curdim] = 0;
                             }
                             while (curdim < N);
-                    // построена очередная вертикаль подмассивов
+                            // построена очередная вертикаль подмассивов
                        
                             if (proc)
                             {
@@ -945,7 +947,7 @@ void* interpreter(void* pcPnt)
                     // go right
                             --curdim;
                         }
-                        while (stacki[curdim] < bounds[curdim] ? 1 : /*up*/curdim-- != N-1);
+                        --curdim;
                     }
                 }
                 adinit = x+1; // при usual == 1 использоваться не будет
