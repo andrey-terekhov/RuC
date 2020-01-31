@@ -500,7 +500,7 @@ void primaryexpr()
                 binop(--sp);
         }
 	}
-	else if (cur <= STANDARD_FUNC_START)            // стандартная функция
+	else if (cur <= STANDARD_FUNC_START)          // стандартная функция
 	{
         int func = cur;
         if (scaner() != LEFTBR)
@@ -629,7 +629,7 @@ void primaryexpr()
                 }
             }
         }
-        else if (func == UPB)
+        else if (func == UPB)           // UPB
         {
             mustbeint();
             mustbe(COMMA, no_comma_in_act_params_stanfunc);
