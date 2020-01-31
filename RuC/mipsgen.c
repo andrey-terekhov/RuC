@@ -2114,25 +2114,36 @@ tocodeL("START", 0);
                 break;
             case TFuncdef:
             {
-                int i, n, md, id, r = a0;
+                int i, n, ftype, id, a0i = a0, a0f = fa0;
                 identref =  tree[tc++];
-                md = identab[identref+2];
+                ftype = identab[identref+2];
                 n = modetab[md+2];
                 id = identref + 4;
-                for (i=0; i<n; ++i)
-                {
-                    md = identab[id+2];
-                    if (md < 0 && md >= -5)
+                    for (i=0; i < n; i++)
+                    {
+                        int ptype = modetab[ftype+3+i];
                         identab[id] = -identab[id];
-                    identab[id+3] = r++;
+                        if (ptype == LFLOAT || ptype == LDOUBLE)
+                        {
+                            identab[id] = a0f++;
+                            if (a0f == 44)
+                                merror(too_many_params);
+                        }
+                        else
+                        {     // параметры массивы и структуры передаются адресом
+                            identab[id] = a0i++;
+                            if (a0i == 8)
+                                merror(too_many_params);
+                        }
                     id += 4;
                 }
                 tocodeJ(jump, "NEXT", identref);
             tocodeL("FUNC", identab[identref+3]);
                 maxdispl = (tree[tc++] - 3) * 4;
                 tocodeI(addi, stp, stp, -maxdispl - 56);
+                tocodeB(sw, fp, 0, stp);
                 tocodemove(fp, stp);
-                tocodeB(sw, ra, maxdispl + 36, fp);
+                tocodeB(sw, ra, 4, fp);
                 printf("\n");
                 fprintf(output, "\n");
                 
@@ -2141,8 +2152,9 @@ tocodeL("START", 0);
                 printf("\n");
                 fprintf(output, "\n");
             tocodeL("FUNCEND", identref);
-                tocodeB(lw, ra, maxdispl + 36, fp);
+                tocodeB(lw, ra, 4, fp);
                 tocodeI(addi, stp, fp, maxdispl + 56);
+                tocodeB(lw, fp, 0, fp);
                 tocodeJR(jr, ra);
             tocodeL("NEXT", identref);
             }
