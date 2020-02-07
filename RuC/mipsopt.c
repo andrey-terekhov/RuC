@@ -96,6 +96,7 @@ int munop(int t)
         case INCV:
         case DECV:
         case TPrint:
+        case TPrintf:
         case POSTINCR:
         case POSTDECR:
         case INCR:
@@ -273,7 +274,6 @@ void mstatement()
             mcopy();
             mcopy();
             break;
-        case TPrintf:
 
         default:
             mexpr();
@@ -383,7 +383,7 @@ void mexpr()
         while ( (stack[++sp] = operand() ) )
         {
             wasopnd = 1;
-//            printf("sp= %i stack[sp]= %i\n", sp, stack[sp]);
+            printf("sp= %i stack[sp]= %i\n", sp, stack[sp]);
         }
         sp--;
         if (tree[tc] == NOP)
@@ -400,6 +400,8 @@ void mexpr()
                 if (wasopnd)
                     if (op == WIDEN1)
                         permute(stack[sp-1]);
+                    else if (op == TPrintf)
+                        permute(stack[sp -= tree[tc+1]]);
                     else
                         permute(stack[sp]);
                 else

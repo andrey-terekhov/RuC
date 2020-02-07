@@ -1601,23 +1601,36 @@ void MPrimary()
                 break;
             case TString:
             {
-                int n = tree[tc++], i,
-                rez = mbox == BREG || mbox == BREGF ? breg : t0;
-                tocodeJ(jump, "STRING", stringnum);
-                printf("%i\n", n);
-                fprintf(output, "%i\n", n);
-                tocodeR(add, rez, d0, pc);
-                printf("%c", '\"');
-                fprintf(output, "%c", '\"');
+                int n = tree[tc++], i;
+                printf("\t.rdata\n\t.align 2\n");
+                fprintf(output, "\t.rdata\n\t.align 2\n");
+                printf("\t.word %i\n", n);
+                fprintf(output, "\t.word %i\n", n);
+            tocodeL("STRING", stringnum);
+                printf("\t.ascii \"");
+                fprintf(output, "\t.ascii \"");
                 for (i=0; i<n; i++)
                 {
-                    printf("%c", tree[tc]);
-                    fprintf(output, "%c", tree[tc++]);
+                    char c = tree[tc];
+                    if (c == '\n')
+                    {
+                        tc++;
+                        printf("%s", "\\n");
+                        fprintf(output, "%s", "\\n");
+                    }
+                    else
+                    {
+                        printf("%c", c);
+                        fprintf(output, "%c", tree[tc++]);
+                    }
                 }
-                printf("%c\n", '\"');
-                fprintf(output, "%c\n", '\"');
-                tocodeL("STRING", stringnum++);
-//                wasstring = 1;
+                printf("\\0\"\n\t.text\n");
+                fprintf(output, "\\0\"\n\t.text\n");
+                rez = mbox <= BREGF ? breg : t0;
+                printf("\tlui $t1, %%hi(STRING%i)\n", stringnum);
+                fprintf(output, "\tlui $t1, %%hi(STRING%i)\n", stringnum);
+                printf("\taddui %s, $t1, %%lo(STRING%i)\n", regs[rez], stringnum);
+                fprintf(output, "\taddui %s, $t1, %%lo(STRING%i)\n", regs[rez], stringnum);
             }
                 break;
 
@@ -1961,12 +1974,22 @@ void MStmt_gen()
             tocode(tree[tc++]);  // ссылка в identtab
         }
             break;
+ */
         case TPrintf:
         {
-            tocode(PRINTF);
-            tocode(tree[tc++]);  // общий размер того, что надо вывести
+ //           tocode(PRINTF);
+            tc++;  // общий размер того, что надо вывести
+            mbox = BREG;
+            breg = a1;
+            MExpr_gen();
+            breg = a0;
+            MExpr_gen();
+            printf("\tlw $t9, %%call16(printf)($gp)\n");
+            fprintf(output, "\tlw $t9, %%call16(printf)($gp)\n");
+            tocodeJR(jalr, t9);
         }
             break;
+/*
         case TGetid:
         {
             tocode(GETID);

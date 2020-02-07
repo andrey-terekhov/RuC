@@ -1516,12 +1516,16 @@ void statement()
             case PRINTID:
             {
                             mustbe(LEFTBR, no_leftbr_in_printid);
+                do
+                {
                             mustbe(IDENT, no_ident_in_printid);
                             lastid = reprtab[repr + 1];
                             if (lastid == 1)
                                 error(ident_is_not_declared);
                             totree(TPrintid);
                             totree(lastid);
+                }
+                while (next == COMMA ? scaner(), 1 : 0);
                             mustbe(RIGHTBR, no_rightbr_in_printid);
             }
                 break;
@@ -1554,7 +1558,7 @@ void statement()
 
                             exprassn(1);
                             toval();
-                            totree(TExprend);
+//                            totree(TExprend);
 
                             if (formattypes[i] == LFLOAT && ansttype == LINT)
                                 insertwiden();
@@ -1578,7 +1582,7 @@ void statement()
 
                         for(i = 0; i<fnum; i++)
                             totree(formatstr[i]);
-                        totree(TExprend);
+//                        totree(TExprend);
 
                         totree(TPrintf);
                         totree(sumsize);
@@ -1588,12 +1592,16 @@ void statement()
             case GETID:
             {
                           mustbe(LEFTBR, no_leftbr_in_printid);
-                          mustbe(IDENT, no_ident_in_printid);
+                do
+                {
+                    mustbe(IDENT, no_ident_in_printid);
                           lastid = reprtab[repr + 1];
                           if (lastid == 1)
                               error(ident_is_not_declared);
                           totree(TGetid);
                           totree(lastid);
+                }
+                while (next == COMMA ? scaner(), 1 : 0);
                           mustbe(RIGHTBR, no_rightbr_in_printid);
             }
                 break;

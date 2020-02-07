@@ -10,7 +10,7 @@
 const char * name =
 //"tests/float.c";
 
-"tests/mips/test10.c";
+"tests/mips/print.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
@@ -186,6 +186,11 @@ int main(int argc, const char * argv[])
     fclose(output);                   // файл с деревом после mipsopt
 
     output = fopen("mcode.s", "wt");
+    printf("\t.file \"%s\"\n", name);
+    fprintf(output, "\t.file \"%s\"\n", name);
+    printf("\t.text\n");
+    fprintf(output, "\t.text\n");
+
 
     mipsgen();                       
     
