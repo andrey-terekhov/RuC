@@ -43,10 +43,12 @@ int toreprtab(char str[])
 		hash += str[i];
 		reprtab[rp++] = str[i];
 	}
+
 	hash &= 255;
 	reprtab[rp++] = 0;
 	reprtab[oldrepr] = hashtab[hash];
 	reprtab[oldrepr + 1] = 1;
+
 	return hashtab[hash] = oldrepr;
 }
 
@@ -72,12 +74,13 @@ void compile(const char *code)
 		printf(" не найден файл %s\n", "keywords.txt");
 		exit(1);
 	}
+
 	getnext();
 	nextch();
-	while (scan() != LEOF);		// чтение ключевых слов
+	while (scan() != LEOF);				// чтение ключевых слов
 	fclose(input);
 
-	input = fopen(code, "r");	// исходный текст
+	input = fopen(code, "r");			// исходный текст
 	output = fopen("macro.txt", "wt");
 
 	if (input == NULL)
@@ -85,6 +88,7 @@ void compile(const char *code)
 		printf(" не найден файл %s\n", code);
 		exit(1);
 	}
+
 	modetab[1] = 0;
 	modetab[2] = MSTRUCT;
 	modetab[3] = 2;
@@ -92,17 +96,17 @@ void compile(const char *code)
 	modetab[5] = modetab[7] = LINT;
 	modetab[6] = toreprtab("numTh");
 	modetab[8] = toreprtab("data");
-	modetab[9] = 1;					// занесение в modetab описателя struct{int numTh; int inf;}
+	modetab[9] = 1;						// занесение в modetab описателя struct{int numTh; int inf;}
 	modetab[10] = MFUNCTION;
 	modetab[11] = LVOID;
 	modetab[12] = 1;
 	modetab[13] = 2;
-	modetab[14] = 9;				// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
+	modetab[14] = 9;					// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
 	modetab[15] = MFUNCTION;
 	modetab[16] = LVOIDASTER;
 	modetab[17] = 1;
 	modetab[18] = LVOIDASTER;
-	modetab[19] = startmode = 14;	// занесение в modetab описателя функции void* interpreter(void* n)
+	modetab[19] = startmode = 14;		// занесение в modetab описателя функции void* interpreter(void* n)
 	md = 19;
 	keywordsnum = 0;
 	lines[line = 1] = 1;
@@ -111,7 +115,7 @@ void compile(const char *code)
 	tc = 0;
 
 	printf("\nИсходный текст:\n \n");
-	preprocess_file();	// макрогенерация
+	preprocess_file();					// макрогенерация
 
 	fclose(output);
 	fclose(input);
@@ -133,14 +137,14 @@ void compile(const char *code)
 	nextch();
 	next = scan();
 
-	ext_decl();			// генерация дерева
+	ext_decl();							// генерация дерева
 
 	lines[line + 1] = charnum;
 	tablesandtree();
 	fclose(output);
 	output = fopen("codes.txt", "wt");
 
-	codegen();			// генерация кода
+	codegen();							// генерация кода
 
 	tablesandcode();
 

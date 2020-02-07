@@ -12,10 +12,10 @@ add_executable(${PROJECT_NAME} ${SRC})
 
 
 if(MSVC)
-	file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/src/keywords.txt" DESTINATION  "${CMAKE_BINARY_DIR}/Debug")
-	file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/src/keywords.txt" DESTINATION  "${CMAKE_BINARY_DIR}/Release")
+	file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/src/keywords.txt" DESTINATION "${CMAKE_BINARY_DIR}/Debug")
+	file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/src/keywords.txt" DESTINATION "${CMAKE_BINARY_DIR}/Release")
 else()
-	file(COPY "${CMAKE_SOURCE_DIR}/src/keywords.txt" DESTINATION  ${CMAKE_BINARY_DIR})
+	file(COPY "${CMAKE_SOURCE_DIR}/src/keywords.txt" DESTINATION ${CMAKE_BINARY_DIR})
 endif()
 
 

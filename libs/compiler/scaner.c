@@ -24,7 +24,7 @@
 #include <string.h>
 
 #ifndef _MSC_VER
-	#include <unistd.h>
+#include <unistd.h>
 #endif
 
 #include "errors.h"
@@ -38,6 +38,7 @@ int getnext()
 
 	unsigned char firstchar;
 	unsigned char secondchar;
+
 	if (fscanf(input, "%c", &firstchar) == EOF)
 	{
 		return EOF;
@@ -54,12 +55,18 @@ int getnext()
 		{
 			nextchar = firstchar;
 		}
+
 		if (nextchar == 13 /* cr */)
 		{
 			getnext();
 		}
-		//                if(kw)
-		//                    printf("nextchar %c %i\n", nextchar, nextchar);
+
+		/*
+			if(kw)
+			{
+				printf("nextchar %c %i\n", nextchar, nextchar);
+			}
+		*/
 	}
 
 	return nextchar;
@@ -69,9 +76,14 @@ void onemore()
 {
 	curchar = nextchar;
 	nextchar = getnext();
-	//    if (kw)
-	//        printf("curchar =%c %i nextchar=%c %i\n", curchar, curchar,
-	//        nextchar, nextchar);
+
+	/*
+		if (kw)
+		{
+			printf("curchar =%c %i nextchar=%c %i\n", curchar, curchar,
+			nextchar, nextchar);
+		}
+	*/
 }
 
 void endofline()
@@ -79,7 +91,9 @@ void endofline()
 	if (prep_flag == 1)
 	{
 		int j;
+
 		printf("line %i) ", line - 1);
+
 		for (j = lines[line - 1]; j < lines[line]; j++)
 		{
 			if (source[j] != EOF)
@@ -95,6 +109,7 @@ void endnl()
 {
 	lines[++line] = charnum;
 	lines[line + 1] = charnum;
+
 	if (kw)
 	{
 		endofline();
@@ -109,11 +124,13 @@ void nextch()
 		onemore();
 		lines[++line] = charnum;
 		lines[line + 1] = charnum;
+
 		if (kw)
 		{
 			endofline();
 			printf("\n");
 		}
+
 		return;
 	}
 
@@ -129,6 +146,7 @@ void nextch()
 		{
 			onemore();
 			source[charnum++] = curchar;
+
 			if (curchar == EOF)
 			{
 				endnl();
@@ -144,17 +162,19 @@ void nextch()
 	if (curchar == '/' && nextchar == '*')
 	{
 		onemore();
-		source[charnum++] = curchar; // надо сразу выесть /*, чтобы не попасть на /*/
+		source[charnum++] = curchar;	// надо сразу выесть /*, чтобы не попасть на /*/
 		do
 		{
 			onemore();
 			source[charnum++] = curchar;
+
 			if (curchar == EOF)
 			{
 				endnl();
 				printf("\n");
 				error(comm_not_ended);
 			}
+
 			if (curchar == '\n')
 			{
 				endnl();
@@ -164,12 +184,15 @@ void nextch()
 		onemore();
 		source[charnum++] = curchar;
 		curchar = ' ';
+
 		return;
 	}
+
 	if (curchar == '\n')
 	{
 		endnl();
 	}
+
 	return;
 }
 
@@ -179,11 +202,12 @@ void next_string_elem()
 	if (curchar == '\\')
 	{
 		nextch();
-		if (curchar == 'n' || curchar == 1085 /* 'н' */)
+
+		if (curchar == 'n' || curchar == 1085 /*'н'*/)
 		{
 			num = 10;
 		}
-		else if (curchar == 't' || curchar == 1090 /* 'т' */)
+		else if (curchar == 't' || curchar == 1090 /*'т'*/)
 		{
 			num = 9;
 		}
@@ -200,13 +224,14 @@ void next_string_elem()
 			num = curchar;
 		}
 	}
+
 	nextch();
 }
 
 int letter()
 {
 	return (curchar >= 'A' && curchar <= 'Z') || (curchar >= 'a' && curchar <= 'z') || curchar == '_' ||
-		   (curchar >= 0x410 /*А */ && curchar <= 0x44F /*'я'*/);
+		(curchar >= 0x410 /*'А'*/ && curchar <= 0x44F /*'я'*/);
 }
 
 int digit()
@@ -216,13 +241,14 @@ int digit()
 
 int ispower()
 {
-	return curchar == 'e' || curchar == 'E'; // || curchar == 'е' || curchar == 'Е') // это русские е и Е
+	return curchar == 'e' || curchar == 'E';	// || curchar == 'е' || curchar == 'Е')	// это русские е и Е
 }
 
 int equal(int i, int j)
 {
 	++i;
 	++j;
+
 	while (reprtab[++i] == reprtab[++j])
 	{
 		if (reprtab[i] == 0 && reprtab[j] == 0)
@@ -230,17 +256,20 @@ int equal(int i, int j)
 			return 1;
 		}
 	}
+
 	return 0;
 }
 
 int scan()
 {
 	int cr;
+
 	while (curchar == ' ' || curchar == '\t' || curchar == '\n')
 	{
 		nextch();
 	}
-	//    printf("scan curchar=%c %i\n", curchar, curchar);
+
+	// printf("scan curchar=%c %i\n", curchar, curchar);
 	switch (curchar)
 	{
 		case EOF:
@@ -252,7 +281,9 @@ int scan()
 		}
 
 		case '=':
+		{
 			nextch();
+
 			if (curchar == '=')
 			{
 				nextch();
@@ -262,10 +293,14 @@ int scan()
 			{
 				cr = ASS;
 			}
+
 			return cr;
+		}
 
 		case '*':
+		{
 			nextch();
+
 			if (curchar == '=')
 			{
 				nextch();
@@ -275,10 +310,14 @@ int scan()
 			{
 				cr = LMULT;
 			}
+
 			return cr;
+		}
 
 		case '/':
+		{
 			nextch();
+
 			if (curchar == '=')
 			{
 				nextch();
@@ -288,10 +327,14 @@ int scan()
 			{
 				cr = LDIV;
 			}
+
 			return cr;
+		}
 
 		case '%':
+		{
 			nextch();
+
 			if (curchar == '=')
 			{
 				nextch();
@@ -301,10 +344,14 @@ int scan()
 			{
 				cr = LREM;
 			}
+
 			return cr;
+		}
 
 		case '+':
+		{
 			nextch();
+
 			if (curchar == '=')
 			{
 				nextch();
@@ -319,10 +366,14 @@ int scan()
 			{
 				cr = LPLUS;
 			}
+
 			return cr;
+		}
 
 		case '-':
+		{
 			nextch();
+
 			if (curchar == '=')
 			{
 				nextch();
@@ -342,10 +393,14 @@ int scan()
 			{
 				cr = LMINUS;
 			}
+
 			return cr;
+		}
 
 		case '<':
+		{
 			nextch();
+
 			if (curchar == '<')
 			{
 				nextch();
@@ -370,12 +425,16 @@ int scan()
 			}
 
 			return cr;
+		}
 
 		case '>':
+		{
 			nextch();
+
 			if (curchar == '>')
 			{
 				nextch();
+
 				if (curchar == '=')
 				{
 					nextch();
@@ -395,10 +454,14 @@ int scan()
 			{
 				cr = LGT;
 			}
+
 			return cr;
+		}
 
 		case '&':
+		{
 			nextch();
+
 			if (curchar == '=')
 			{
 				nextch();
@@ -413,10 +476,14 @@ int scan()
 			{
 				cr = LAND;
 			}
+
 			return cr;
+		}
 
 		case '^':
+		{
 			nextch();
+
 			if (curchar == '=')
 			{
 				nextch();
@@ -426,10 +493,14 @@ int scan()
 			{
 				cr = LEXOR;
 			}
+
 			return cr;
+		}
 
 		case '|':
+		{
 			nextch();
+
 			if (curchar == '=')
 			{
 				nextch();
@@ -444,10 +515,14 @@ int scan()
 			{
 				cr = LOR;
 			}
+
 			return cr;
+		}
 
 		case '!':
+		{
 			nextch();
+
 			if (curchar == '=')
 			{
 				nextch();
@@ -457,25 +532,33 @@ int scan()
 			{
 				cr = LOGNOT;
 			}
+
 			return cr;
+		}
+
 		case '\'':
 		{
 			instring = 1;
 			nextch();
 			next_string_elem();
+
 			if (curchar != '\'')
 			{
 				error(no_right_apost);
 			}
+
 			nextch();
 			instring = 0;
 			ansttype = LCHAR;
+
 			return NUMBER;
 		}
+
 		case '\"':
 		{
 			int n = 0;
 			int flag = 1;
+
 			instring = 1;
 			nextch();
 			while (flag)
@@ -484,17 +567,20 @@ int scan()
 				{
 					next_string_elem();
 					lexstr[n++] = num;
-					//                    printf("n= %i %c %i\n", n-1, num, num);
+					// printf("n= %i %c %i\n", n-1, num, num);
 				}
+
 				if (n == MAXSTRINGL)
 				{
 					error(too_long_string);
 				}
+
 				nextch();
 				while (curchar == ' ' || curchar == '\t' || curchar == '\n')
 				{
 					nextch();
 				}
+
 				if (curchar == '\"')
 				{
 					nextch();
@@ -509,6 +595,7 @@ int scan()
 			instring = 0;
 			return STRING;
 		}
+
 		case '(':
 		{
 			nextch();
@@ -536,7 +623,7 @@ int scan()
 		case '~':
 		{
 			nextch();
-			return LNOT; // поразрядное отрицание
+			return LNOT;	// поразрядное отрицание
 		}
 		case '{':
 		{
@@ -583,6 +670,7 @@ int scan()
 			int flagint = 1;
 			int flagtoolong = 0;
 			double k;
+
 			num = 0;
 			numdouble = 0.0;
 			while (digit())
@@ -593,6 +681,7 @@ int scan()
 					flagtoolong = 1;
 					flagint = 0;
 				}
+
 				num = num * 10 + (curchar - '0');
 				nextch();
 			}
@@ -602,6 +691,7 @@ int scan()
 				flagint = 0;
 				nextch();
 				k = 0.1;
+
 				while (digit())
 				{
 					numdouble += (curchar - '0') * k;
@@ -615,6 +705,7 @@ int scan()
 				int d = 0;
 				int k = 1;
 				int i;
+
 				nextch();
 				if (curchar == '-')
 				{
@@ -626,15 +717,18 @@ int scan()
 				{
 					nextch();
 				}
+
 				if (!digit())
 				{
 					error(must_be_digit_after_exp);
 				}
+
 				while (digit())
 				{
 					d = d * 10 + curchar - '0';
 					nextch();
 				}
+
 				if (flagint)
 				{
 					for (i = 1; i <= d; i++)
@@ -658,11 +752,13 @@ int scan()
 				}
 				ansttype = LFLOAT;
 			}
+
 			memcpy(&numr, &numdouble, sizeof(double));
 			return NUMBER;
 		}
 
 		default:
+		{
 			if (letter() || curchar == '#')
 			{
 				int oldrepr = rp;
@@ -696,10 +792,14 @@ int scan()
 						}
 					} while (r);
 				}
+
 				reprtab[oldrepr] = hashtab[hash];
 				repr = hashtab[hash] = oldrepr;
-				reprtab[repr + 1] = (keywordsnum) ? -((++keywordsnum - 2) / 4) : 1; // 0 - только MAIN, < 0 - ключевые
-																					// слова, 1 - обычные иденты
+				reprtab[repr + 1] = (keywordsnum) ? -((++keywordsnum - 2) / 4) : 1;
+					// == 0 - только MAIN,
+					// <  0 - ключевые слова,
+					// == 1 - обычные иденты
+
 				return IDENT;
 			}
 			else
@@ -708,6 +808,7 @@ int scan()
 				nextch();
 				exit(10);
 			}
+		}
 	}
 }
 
@@ -715,7 +816,13 @@ int scaner()
 {
 	cur = next;
 	next = scan();
-	//    if(kw)
-	//        printf("scaner cur %i next %i repr %i\n", cur, next, repr);
+
+	/*
+		if(kw)
+		{
+			printf("scaner cur %i next %i repr %i\n", cur, next, repr);
+		}
+	*/
+
 	return cur;
 }

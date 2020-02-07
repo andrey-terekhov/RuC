@@ -36,13 +36,12 @@ extern int source[SOURCESIZE], lines[LINESSIZE];
 extern int before_source[SOURCESIZE], mlines[LINESSIZE], m_conect_lines[LINESSIZE];
 extern int nextchar, curchar, func_def;
 extern int hashtab[256], reprtab[MAXREPRTAB], rp, identab[MAXIDENTAB], id, modetab[MAXMODETAB], md, startmode;
-extern int stack[100], stackop[100], stackoperands[100], stacklog[100],
-			sp, sopnd, aux, lastid, curid, lg, displ, maxdispl, maxdisplg, type, op,
-			inass, firstdecl;
+extern int stack[100], stackop[100], stackoperands[100], stacklog[100], sp, sopnd, aux, lastid, curid, lg, displ,
+	maxdispl, maxdisplg, type, op, inass, firstdecl;
 extern int iniprocs[INIPROSIZE], procd, arrdim, arrelemlen, was_struct_with_arr, usual;
 extern int instring, inswitch, inloop, lexstr[MAXSTRINGL + 1];
-extern int tree[MAXTREESIZE], tc, mtree[MAXTREESIZE], mtc, mem[MAXMEMSIZE], pc, functions[FUNCSIZE], funcnum,
-		functype, kw, blockflag, entry, wasmain, wasret, wasdefault, notrobot, prep_flag;
+extern int tree[MAXTREESIZE], tc, mtree[MAXTREESIZE], mtc, mem[MAXMEMSIZE], pc, functions[FUNCSIZE], funcnum, functype,
+	kw, blockflag, entry, wasmain, wasret, wasdefault, notrobot, prep_flag;
 extern int adcont, adbreak, adcase, adandor, switchreg;
 extern int predef[FUNCSIZE], prdf, emptyarrdef;
 extern int gotost[1000], pgotost;

@@ -24,9 +24,12 @@
 int curth = 0;
 
 
+void Declid_gen();
+
+
 void tocode(int c)
 {
-	//  printf("tocode tc=%i pc %i) %i\n", tc, pc, c);
+	// printf("tocode tc=%i pc %i) %i\n", tc, pc, c);
 	mem[pc++] = c;
 }
 
@@ -89,22 +92,22 @@ void finalop()
 				}
 				else if (c == COPY00 || c == COPYST)
 				{
-					tocode(tree[tc++]); // d1
-					tocode(tree[tc++]); // d2
-					tocode(tree[tc++]); // длина
+					tocode(tree[tc++]);	// d1
+					tocode(tree[tc++]);	// d2
+					tocode(tree[tc++]);	// длина
 				}
 				else if (c == COPY01 || c == COPY10 || c == COPY0ST || c == COPY0STASS)
 				{
-					tocode(tree[tc++]); // d1
-					tocode(tree[tc++]); // длина
+					tocode(tree[tc++]);	// d1
+					tocode(tree[tc++]);	// длина
 				}
 				else if (c == COPY11 || c == COPY1ST || c == COPY1STASS)
 				{
-					tocode(tree[tc++]); // длина
+					tocode(tree[tc++]);	// длина
 				}
 				else if ((c >= REMASS && c <= DIVASS) || (c >= REMASSV && c <= DIVASSV) ||
-						 (c >= ASSR && c <= DIVASSR) || (c >= ASSRV && c <= DIVASSRV) || (c >= POSTINC && c <= DEC) ||
-						 (c >= POSTINCV && c <= DECV) || (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))
+						(c >= ASSR && c <= DIVASSR) || (c >= ASSRV && c <= DIVASSRV) || (c >= POSTINC && c <= DEC) ||
+						(c >= POSTINCV && c <= DECV) || (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))
 				{
 					tocode(tree[tc++]);
 				}
@@ -113,13 +116,12 @@ void finalop()
 	}
 }
 
-void Declid_gen();
-
 int Expr_gen(int incond)
 {
 	int flagprim = 1;
 	int eltype;
 	int wasstring = 0;
+
 	while (flagprim)
 	{
 		switch (tree[tc++])
@@ -128,16 +130,22 @@ int Expr_gen(int incond)
 				anstdispl = tree[tc++];
 				break;
 			case TIdenttoaddr:
+			{
 				tocode(LA);
 				tocode(anstdispl = tree[tc++]);
+			}
 				break;
 			case TIdenttoval:
+			{
 				tocode(LOAD);
 				tocode(tree[tc++]);
+			}
 				break;
 			case TIdenttovald:
+			{
 				tocode(LOADD);
 				tocode(tree[tc++]);
+			}
 				break;
 			case TAddrtoval:
 				tocode(LAT);
@@ -146,32 +154,39 @@ int Expr_gen(int incond)
 				tocode(LATD);
 				break;
 			case TConst:
+			{
 				tocode(LI);
 				tocode(tree[tc++]);
+			}
 				break;
 			case TConstd:
+			{
 				tocode(LID);
 				tocode(tree[tc++]);
 				tocode(tree[tc++]);
+			}
 				break;
 			case TString:
 			{
 				int n = tree[tc++];
 				int res;
 				int i;
+
 				tocode(LI);
 				tocode(res = pc + 4);
 				tocode(B);
+
 				pc += 2;
 				for (i = 0; i < n; i++)
 				{
 					tocode(tree[tc++]);
 				}
+
 				mem[res - 1] = n;
 				mem[res - 2] = pc;
 				wasstring = 1;
 			}
-			break;
+				break;
 			case TDeclid:
 				Declid_gen();
 				break;
@@ -179,14 +194,16 @@ int Expr_gen(int incond)
 			{
 				int n = tree[tc++];
 				int i;
+
 				tocode(BEGINIT);
 				tocode(n);
+
 				for (i = 0; i < n; i++)
 				{
 					Expr_gen(0);
 				}
 			}
-			break;
+				break;
 			case TStructinit:
 			{
 				int n = tree[tc++];
@@ -196,42 +213,56 @@ int Expr_gen(int incond)
 					Expr_gen(0);
 				}
 			}
-			break;
+				break;
 			case TSliceident:
+			{
 				tocode(LOAD);		// параметры - смещение идента и тип элемента
-				tocode(tree[tc++]); // продолжение в след case
+				tocode(tree[tc++]);	// продолжение в след case
+			}
 			case TSlice:			// параметр - тип элемента
+			{
 				eltype = tree[tc++];
 				Expr_gen(0);
+
 				tocode(SLICE);
 				tocode(szof(eltype));
+
 				if (eltype > 0 && modetab[eltype] == MARRAY)
 				{
 					tocode(LAT);
 				}
+			}
 				break;
 			case TSelect:
-				tocode(SELECT); // SELECT field_displ
+			{
+				tocode(SELECT);		// SELECT field_displ
 				tocode(tree[tc++]);
+			}
 				break;
 			case TPrint:
+			{
 				tocode(PRINT);
-				tocode(tree[tc++]); // type
+				tocode(tree[tc++]);	// type
+			}
 				break;
 			case TCall1:
 			{
 				int i;
 				int n = tree[tc++];
+
 				tocode(CALL1);
+
 				for (i = 0; i < n; i++)
 				{
 					Expr_gen(0);
 				}
 			}
-			break;
+				break;
 			case TCall2:
+			{
 				tocode(CALL2);
 				tocode(identab[tree[tc++] + 3]);
+			}
 				break;
 
 			default:
@@ -255,12 +286,12 @@ int Expr_gen(int incond)
 					tc++;
 					tocode(BE0);
 					adelse = pc++;
-					Expr_gen(0); // then
+					Expr_gen(0);	// then
 					tocode(B);
 					mem[pc] = ad;
 					ad = pc;
 					mem[adelse] = ++pc;
-					Expr_gen(1); // else или cond
+					Expr_gen(1);	// else или cond
 				} while (tree[tc] == TCondexpr);
 
 				while (ad)
@@ -273,12 +304,14 @@ int Expr_gen(int incond)
 
 			finalop();
 		}
+
 		if (tree[tc] == TExprend)
 		{
 			tc++;
 			flagprim = 0;
 		}
 	}
+
 	return wasstring;
 }
 
@@ -300,9 +333,11 @@ void Stmt_gen()
 			break;
 
 		case TStructbeg:
+		{
 			tocode(B);
 			tocode(0);
 			iniprocs[tree[tc++]] = pc;
+		}
 			break;
 
 		case TStructend:
@@ -311,7 +346,7 @@ void Stmt_gen()
 			tocode(STOP);
 			mem[iniprocs[numproc] - 1] = pc;
 		}
-		break;
+			break;
 
 		case TBegin:
 			compstmt_gen();
@@ -321,10 +356,12 @@ void Stmt_gen()
 		{
 			int elseref = tree[tc++];
 			int ad;
+
 			Expr_gen(0);
 			tocode(BE0);
 			ad = pc++;
 			Stmt_gen();
+
 			if (elseref)
 			{
 				mem[ad] = pc + 2;
@@ -332,14 +369,16 @@ void Stmt_gen()
 				ad = pc++;
 				Stmt_gen();
 			}
+
 			mem[ad] = pc;
 		}
-		break;
+			break;
 		case TWhile:
 		{
 			int oldbreak = adbreak;
 			int oldcont = adcont;
 			int ad = pc;
+
 			adcont = ad;
 			Expr_gen(0);
 			tocode(BE0);
@@ -353,12 +392,13 @@ void Stmt_gen()
 			adbreak = oldbreak;
 			adcont = oldcont;
 		}
-		break;
+			break;
 		case TDo:
 		{
 			int oldbreak = adbreak;
 			int oldcont = adcont;
 			int ad = pc;
+
 			adcont = adbreak = 0;
 			Stmt_gen();
 			adcontend();
@@ -369,7 +409,7 @@ void Stmt_gen()
 			adbreak = oldbreak;
 			adcont = oldcont;
 		}
-		break;
+			break;
 		case TFor:
 		{
 			int fromref = tree[tc++];
@@ -381,29 +421,35 @@ void Stmt_gen()
 			int ad = pc;
 			int incrtc;
 			int endtc;
+
 			if (fromref)
 			{
-				Expr_gen(0); // init
+				Expr_gen(0);	// init
 			}
+
 			adbreak = 0;
 			adcont = ad = pc;
+
 			if (condref)
 			{
-				Expr_gen(0); // cond
+				Expr_gen(0);	// cond
 				tocode(BE0);
 				mem[pc] = 0;
 				adbreak = pc++;
 			}
+
 			incrtc = tc;
 			tc = stmtref;
-			Stmt_gen(); //  ???? был 0
+			Stmt_gen();			// ???? был 0
+
 			if (incrref)
 			{
 				endtc = tc;
 				tc = incrtc;
-				Expr_gen(0); // incr
+				Expr_gen(0);	// incr
 				tc = endtc;
 			}
+
 			adcontbeg(ad);
 			tocode(B);
 			tocode(ad);
@@ -411,31 +457,34 @@ void Stmt_gen()
 			adbreak = oldbreak;
 			adcont = oldcont;
 		}
-		break;
+			break;
 		case TGoto:
 		{
 			int id1 = tree[tc++];
 			int a;
 			int id = id1 > 0 ? id1 : -id1;
+
 			tocode(B);
-			if ((a = identab[id + 3]) > 0)
-			{ // метка уже описана
+
+			if ((a = identab[id + 3]) > 0)	// метка уже описана
+			{
 				tocode(a);
 			}
-			else // метка еще не описана
+			else							// метка еще не описана
 			{
 				identab[id + 3] = -pc;
-				tocode(id1 < 0 ? 0 : a); // первый раз встретился переход на еще не описанную метку или нет
+				tocode(id1 < 0 ? 0 : a);	// первый раз встретился переход на еще не описанную метку или нет
 			}
 		}
-		break;
+			break;
 		case TLabel:
 		{
 			int id = tree[tc++];
 			int a;
-			if ((a = identab[id + 3]) < 0)
-			{			  // были переходы на метку
-				while (a) // проставить ссылку на метку во всех ранних переходах
+
+			if ((a = identab[id + 3]) < 0)	// были переходы на метку
+			{
+				while (a)					// проставить ссылку на метку во всех ранних переходах
 				{
 					int r = mem[-a];
 					mem[-a] = pc;
@@ -444,30 +493,34 @@ void Stmt_gen()
 			}
 			identab[id + 3] = pc;
 		}
-		break;
+			break;
 		case TSwitch:
 		{
 			int oldbreak = adbreak;
 			int oldcase = adcase;
+
 			adbreak = 0;
 			adcase = 0;
 			Expr_gen(0);
 			Stmt_gen();
+
 			if (adcase > 0)
 			{
 				mem[adcase] = pc;
 			}
+
 			adcase = oldcase;
 			adbreakend();
 			adbreak = oldbreak;
 		}
-		break;
+			break;
 		case TCase:
 		{
 			if (adcase)
 			{
 				mem[adcase] = pc;
 			}
+
 			tocode(_DOUBLE);
 			Expr_gen(0);
 			tocode(EQEQ);
@@ -475,17 +528,18 @@ void Stmt_gen()
 			adcase = pc++;
 			Stmt_gen();
 		}
-		break;
+			break;
 		case TDefault:
 		{
 			if (adcase)
 			{
 				mem[adcase] = pc;
 			}
+
 			adcase = 0;
 			Stmt_gen();
 		}
-		break;
+			break;
 
 		case TBreak:
 		{
@@ -493,56 +547,60 @@ void Stmt_gen()
 			mem[pc] = adbreak;
 			adbreak = pc++;
 		}
-		break;
+			break;
 		case TContinue:
 		{
 			tocode(B);
 			mem[pc] = adcont;
 			adcont = pc++;
 		}
-		break;
+			break;
 		case TReturnvoid:
 		{
 			tocode(RETURNVOID);
 		}
-		break;
+			break;
 		case TReturnval:
 		{
 			int d = tree[tc++];
+
 			Expr_gen(0);
 			tocode(RETURNVAL);
 			tocode(d);
 		}
-		break;
+			break;
 		case TPrintid:
 		{
 			tocode(PRINTID);
-			tocode(tree[tc++]); // ссылка в identtab
+			tocode(tree[tc++]);	// ссылка в identtab
 		}
-		break;
+			break;
 		case TPrintf:
 		{
 			tocode(PRINTF);
-			tocode(tree[tc++]); // общий размер того, что надо вывести
+			tocode(tree[tc++]);	// общий размер того, что надо вывести
 		}
-		break;
+			break;
 		case TGetid:
 		{
 			tocode(GETID);
-			tocode(tree[tc++]); // ссылка в identtab
+			tocode(tree[tc++]);	// ссылка в identtab
 		}
-		break;
+			break;
 		case SETMOTOR:
+		{
 			Expr_gen(0);
 			Expr_gen(0);
 			tocode(SETMOTORC);
+		}
 			break;
+
 		default:
 		{
 			tc--;
 			Expr_gen(0);
 		}
-		break;
+			break;
 	}
 }
 
@@ -550,15 +608,17 @@ void Struct_init_gen()
 {
 	int i;
 	int n;
+
 	if (tree[tc] == TStructinit)
 	{
 		tc++;
 		n = tree[tc++];
+
 		for (i = 0; i < n; i++)
 		{
 			Struct_init_gen();
 		}
-		tc++; // TExprend
+		tc++;	// TExprend
 	}
 	else
 	{
@@ -572,19 +632,19 @@ void Declid_gen()
 	int telem = tree[tc++];
 	int N = tree[tc++];
 	int element_len;
-	int all = tree[tc++];
+	int all = tree[tc++];		// all - общее кол-во слов в структуре
+								// all == 0 нет инициализатора,
+								// all == 1 есть инициализатор,
+								// all == 2 есть инициализатор только из строк
 	int iniproc = tree[tc++];
-	int usual = tree[tc++];
+	int usual = tree[tc++];		// для массивов есть еще usual
+								// == 0 с пустыми границами,
+								// == 1 без пустых границ
 	int instruct = tree[tc++];
-	// all - общее кол-во слов в структуре
-	//  для массивов есть еще usual // == 0 с пустыми границами,
-	// == 1 без пустых границ,
-	// all == 0 нет инициализатора,
-	// all == 1 есть инициализатор
-	// all == 2 есть инициализатор только из строк
+
 	element_len = szof(telem);
 
-	if (N == 0) // обычная переменная int a; или struct point p;
+	if (N == 0)	// обычная переменная int a; или struct point p;
 	{
 		if (iniproc)
 		{
@@ -592,14 +652,14 @@ void Declid_gen()
 			tocode(olddispl);
 			tocode(iniprocs[iniproc]);
 		}
-		if (all) // int a = или struct{} a =
+		if (all)	// int a = или struct{} a =
 		{
 			if (telem > 0 && modetab[telem] == MSTRUCT)
 			{
 				Struct_init_gen();
 				tocode(COPY0STASS);
 				tocode(olddispl);
-				tocode(all); // общее кол-во слов
+				tocode(all);	// общее кол-во слов
 			}
 			else
 			{
@@ -609,9 +669,9 @@ void Declid_gen()
 			}
 		}
 	}
-	else // Обработка массива int a[N1]...[NN] =
+	else	// Обработка массива int a[N1]...[NN] =
 	{
-		tocode(DEFARR); // DEFARR N, d, displ, iniproc, usual     N1...NN уже лежат на стеке
+		tocode(DEFARR);	// DEFARR N, d, displ, iniproc, usual		N1...NN уже лежат на стеке
 		tocode(all == 0 ? N : abs(N) - 1);
 		tocode(element_len);
 		tocode(olddispl);
@@ -620,15 +680,15 @@ void Declid_gen()
 		tocode(all);
 		tocode(instruct);
 
-		if (all) // all == 1, если есть инициализация массива
+		if (all)	// all == 1, если есть инициализация массива
 		{
 			Expr_gen(0);
-			tocode(ARRINIT); // ARRINIT N d all displ usual
+			tocode(ARRINIT);	// ARRINIT N d all displ usual
 			tocode(abs(N));
 			tocode(element_len);
 			tocode(olddispl);
-			tocode(usual); // == 0 с пустыми границами
-						   // == 1 без пустых границ и без иниц
+			tocode(usual);	// == 0 с пустыми границами
+							// == 1 без пустых границ и без инициализации
 		}
 	}
 }
@@ -643,18 +703,22 @@ void compstmt_gen()
 			{
 				int i;
 				int N;
+
 				tc++;
 				N = tree[tc++];
+
 				for (i = 0; i < N; i++)
 				{
 					Expr_gen(0);
 				}
-				break;
 			}
+				break;
 
 			case TDeclid:
+			{
 				tc++;
 				Declid_gen();
+			}
 				break;
 
 			default:
@@ -663,10 +727,12 @@ void compstmt_gen()
 	}
 	tc++;
 }
+
 void codegen()
 {
 	int treesize = tc;
 	tc = 0;
+
 	while (tc < treesize)
 	{
 		switch (tree[tc++])
@@ -679,26 +745,28 @@ void codegen()
 				int maxdispl = tree[tc++];
 				int fn = identab[identref + 3];
 				int pred;
+
 				functions[fn] = pc;
 				tocode(FUNCBEG);
 				tocode(maxdispl);
 				pred = pc++;
-				tc++; // TBegin
+				tc++;	// TBegin
 				compstmt_gen();
 				mem[pred] = pc;
 			}
-			break;
+				break;
 
 			case TDeclarr:
 			{
 				int i;
 				int N = tree[tc++];
+
 				for (i = 0; i < N; i++)
 				{
 					Expr_gen(0);
 				}
-				break;
 			}
+				break;
 
 			case TDeclid:
 				Declid_gen();
@@ -708,9 +776,11 @@ void codegen()
 				break;
 
 			case TStructbeg:
+			{
 				tocode(B);
 				tocode(0);
 				iniprocs[tree[tc++]] = pc;
+			}
 				break;
 
 			case TStructend:
@@ -719,7 +789,7 @@ void codegen()
 				tocode(STOP);
 				mem[iniprocs[numproc] - 1] = pc;
 			}
-			break;
+				break;
 
 
 			default:
@@ -734,6 +804,7 @@ void codegen()
 	{
 		error(no_main_in_program);
 	}
+
 	tocode(CALL1);
 	tocode(CALL2);
 	tocode(identab[wasmain + 3]);

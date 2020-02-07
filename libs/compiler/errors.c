@@ -25,7 +25,7 @@
 
 void printident(int r)
 {
-	r += 2; // ссылка на reprtab
+	r += 2;	// ссылка на reprtab
 	do
 	{
 		printf_char(reprtab[r++]);
@@ -49,15 +49,20 @@ void error(int ernum)
 {
 	int i;
 	int j;
+
 	// tablesandtree();
 	printf("\n Oшибка :\n \n");
 	if (lines[line] == charnum)
 	{
 		line--;
 	}
-	// printf("line - 1=%d, mline=%d, co[carnum-1=%d] = 1%c1, lines[line]=%d, lines[line+1]=%d \n",
-	// line-1,m_conect_lines[line-1],charnum-1,source[charnum-1], lines[line],lines[line+1]);
+
+	/*
+		printf("line - 1=%d, mline=%d, co[carnum-1=%d] = 1%c1, lines[line]=%d, lines[line+1]=%d \n",
+			line-1,m_conect_lines[line-1],charnum-1,source[charnum-1], lines[line],lines[line+1]);
+	*/
 	charnum--;
+
 	for (j = 1; j < m_conect_lines[line]; j++)
 	{
 		printf("line %i) ", j);
@@ -68,6 +73,7 @@ void error(int ernum)
 		}
 	}
 	show_macro();
+
 	printf("\n");
 	printf("ошибка: ");
 	switch (ernum)
@@ -122,7 +128,7 @@ void error(int ernum)
 			break;
 		case func_decl_req_params:
 			printf("вообще-то я думал, что это предописание функции (нет идентификаторов-параметров), а тут тело "
-				   "функции\n");
+					"функции\n");
 			break;
 		case wait_while_in_do_stmt:
 			printf("ждем ПОКА в операторе ЦИКЛ\n");
@@ -134,9 +140,11 @@ void error(int ernum)
 			printf("условие должно быть в ()\n");
 			break;
 		case repeated_decl:
+		{
 			printf("повторное описание идентификатора ");
 			printident(repr);
 			printf("\n");
+		}
 			break;
 		case arr_init_must_start_from_BEGIN:
 			printf("инициализация массива должна начинаться со {\n");
@@ -148,9 +156,11 @@ void error(int ernum)
 			printf("между элементами инициализации массива или структуры должна быть ,\n");
 			break;
 		case ident_is_not_declared:
+		{
 			printf("не описан идентификатор ");
 			printident(repr);
 			printf("\n");
+		}
 			break;
 		case no_rightsqbr_in_slice:
 			printf("не хватает ] в вырезке элемента массива\n");
@@ -190,7 +200,7 @@ void error(int ernum)
 			break;
 		case not_assignable:
 			printf("слева от присваивания или операции с присваиванием может быть только переменная или элемент "
-				   "массива\n");
+					"массива\n");
 			break;
 		case func_not_in_call:
 			printf("функция может быть использована только в вызове\n");
@@ -265,10 +275,10 @@ void error(int ernum)
 			printf("в команде СПАТЬ нет)\n");
 			break;
 		case no_leftbr_in_stand_func:
-			printf("в вызове  стандартной функции нет (\n");
+			printf("в вызове стандартной функции нет (\n");
 			break;
 		case no_rightbr_in_stand_func:
-			printf("в вызове  стандартной функции нет )\n");
+			printf("в вызове стандартной функции нет )\n");
 			break;
 		case bad_param_in_stand_func:
 			printf("параметры стандартных функций могут быть только целыми и вещественными\n");
@@ -313,7 +323,7 @@ void error(int ernum)
 			printf("нет ) в функции, передаваемой параметром в другую функцию\n");
 			break;
 		case no_ident_in_paramfun:
-			printf("нет идентификатора в  параметре определения функции\n");
+			printf("нет идентификатора в параметре определения функции\n");
 			break;
 		case par_type_void_with_nofun:
 			printf("в параметре функции тип пусто может быть только у параметра-функции\n");
@@ -355,20 +365,24 @@ void error(int ernum)
 			printf("оператор ПРОДОЛЖИТЬ не в цикле\n");
 			break;
 		case not_primary:
-			printf("первичное не  может начинаться с лексемы %i\n", cur);
+			printf("первичное не может начинаться с лексемы %i\n", cur);
 			break;
 		case wrong_operand:
 			printf("операнд операции может иметь только тип ЦЕЛ, ЛИТ или ВЕЩ\n");
 			break;
 		case label_not_declared:
+		{
 			printf("в строке %i переход на неописанную метку ", hash);
 			printident(repr);
 			printf("\n");
+		}
 			break;
 		case repeated_label:
+		{
 			printf("повторное описание метки ");
 			printident(repr);
 			printf("\n");
+		}
 			break;
 		case wrong_pnt_assn:
 			printf("в присваивании указателей не совпадают типы\n");
@@ -429,10 +443,12 @@ void error(int ernum)
 			printf("в инициализации массива элементов больше, чем в массиве\n");
 			break;
 		case no_field:
+		{
 			printf("нет такого поля ");
 			printident(repr);
 			printf(" в структуре");
 			printf("\n");
+		}
 			break;
 		case slice_from_func:
 			printf("вырезка элемента из массива, выданного функцией, а функции не могут выдавать массивы\n");
@@ -471,9 +487,11 @@ void error(int ernum)
 			printf("здесь должен быть тип (стандартный или описанный пользователем)\n");
 			break;
 		case predef_but_notdef:
+		{
 			printf("функция ");
 			printident(repr);
 			printf(" была предопределена, но не описана\n");
+		}
 			break;
 		case print_without_br:
 			printf("операнд оператора печати должен быть в круглых скобках ()\n");
@@ -502,7 +520,7 @@ void error(int ernum)
 			break;
 		case sh_if_not_found:
 			printf("ошибка препроцессора: встречено ключевое слово #elif или #else или #endif, но не было #if(или "
-				   "#ifdef)\n");
+					"#ifdef)\n");
 			break;
 		case no_ident_after_define:
 			printf("ошибка препроцессора: не найден идентификатор после #define\n");
@@ -533,27 +551,28 @@ void error(int ernum)
 			printf("Первым параметром в printf/печатьф должна быть константная форматная строка\n");
 			break;
 		case wrong_printf_param_type:
+		{
 			printf("Тип параметра printf/печатьф не соответствует спецификатору: %%");
 			printf_char(bad_printf_placeholder);
 			switch (bad_printf_placeholder)
 			{
 				case 'i':
-				case 1094: // 'ц'
+				case 1094:	// 'ц'
 					printf(" ожидает целое число\n");
 					break;
 
 				case 'c':
 					printf(" (англ.)");
-				case 1083: // л
+				case 1083:	// л
 					printf(" ожидает литеру\n");
 					break;
 
 				case 'f':
-				case 1074: // в
+				case 1074:	// в
 					printf(" ожидает вещественное число\n");
 					break;
 
-				case 1089: // с
+				case 1089:	// с
 					printf(" (русск.)");
 				case 's':
 					printf(" ожидает строку\n");
@@ -561,6 +580,7 @@ void error(int ernum)
 				default:
 					printf(" -- неизвестный спецификатор");
 			}
+		}
 			break;
 		case wrong_printf_param_number:
 			printf("Количество параметров printf/печатьф не соответствует количеству спецификаторов\n");
@@ -569,9 +589,11 @@ void error(int ernum)
 			printf("В printf/печатьф нет спецификатора типа после '%%'\n");
 			break;
 		case printf_unknown_format_placeholder:
+		{
 			printf("В printf/печатьф неизвестный спецификатор типа %%");
 			printf_char(bad_printf_placeholder);
 			printf("\n");
+		}
 			break;
 		case too_many_printf_params:
 			printf("Максимально в printf/печатьф можно выводить %i значений\n", MAXPRINTFPARAMS);
@@ -629,22 +651,24 @@ void error(int ernum)
 			printf("в этой операции этот параметр должен иметь тип массив целых\n");
 			break;
 
-
 		default:
 			printf("этот код ошибки я прозевал\n");
 	}
+
 	exit(2);
 }
 
 void m_error(int ernum)
 {
 	int i;
-	//    tablesandtree();
+
+	// tablesandtree();
 	printf("line %i) ", mline);
 	for (i = mlines[mline]; i < m_charnum; i++)
 	{
 		printf_char(before_source[i]);
 	}
+
 	printf("\n");
 	switch (ernum)
 	{
@@ -701,5 +725,6 @@ void m_error(int ernum)
 			break;
 		default:;
 	}
+
 	exit(2);
 }

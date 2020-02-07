@@ -48,21 +48,29 @@ void tablesandtree()
 		fprintf(output, "\n");
 		i += 4;
 	}
+
 	/*
 		fprintf(output, "\n%s\n", "repr");
 		for (i = 1206; i <= rp; i++)
+		{
 			fprintf(output, "rp %i) %i\n", i, reprtab[i]);
-	 */
+		}
+	*/
+
 	fprintf(output, "\n%s\n", "modetab");
 	for (i = 0; i < md; i++)
 	{
 		fprintf(output, "md %i) %i\n", i, modetab[i]);
 	}
+
 	/*
 		fprintf(output, "\n%s\n", "tree");
-		for (i=0; i<=tc; i++)
+		for (i = 0; i <= tc; i++)
+		{
 			fprintf(output, "tc %i) %i\n", i, tree[i]);
+		}
 	*/
+
 	fprintf(output, "\n");
 	i = 0;
 	while (i < tc)
@@ -71,16 +79,20 @@ void tablesandtree()
 		switch (tree[i++])
 		{
 			case TFuncdef:
+			{
 				fprintf(output, "TFuncdef funcn= %i maxdispl= %i\n", tree[i], tree[i + 1]);
 				i += 2;
+			}
 				break;
 			case TDeclarr:
 				fprintf(output, "TDeclarr N= %i\n", tree[i++]);
 				break;
 			case TDeclid:
+			{
 				fprintf(output, "TDeclid displ= %i eltype= %i N= %i all= %i iniproc= %i, usual= %i instuct= %i\n",
 						tree[i], tree[i + 1], tree[i + 2], tree[i + 3], tree[i + 4], tree[i + 5], tree[i + 6]);
 				i += 7;
+			}
 				break;
 			case TString:
 				fprintf(output, "TString n= %i\n", tree[i++]);
@@ -110,8 +122,10 @@ void tablesandtree()
 				fprintf(output, "TDo\n");
 				break;
 			case TFor:
+			{
 				fprintf(output, "TFor %i %i %i %i\n", tree[i], tree[i + 1], tree[i + 2], tree[i + 3]);
 				i += 4;
+			}
 				break;
 			case TSwitch:
 				fprintf(output, "TSwitch\n");
@@ -165,13 +179,17 @@ void tablesandtree()
 				fprintf(output, "TConst %i\n", tree[i++]);
 				break;
 			case TConstd:
+			{
 				memcpy(&numdouble, &tree[i], sizeof(double));
 				i += 2;
 				fprintf(output, "TConstd %f\n", numdouble);
+			}
 				break;
 			case TSliceident:
+			{
 				fprintf(output, "TSliceident displ= %i type= %i\n", tree[i], tree[i + 1]);
 				i += 2;
+			}
 				break;
 			case TSlice:
 				fprintf(output, "TSlice elem_type= %i\n", tree[i++]);
@@ -189,39 +207,51 @@ void tablesandtree()
 				fprintf(output, "ADLOGOR addr= %i\n", tree[i++]);
 				break;
 			case COPY00:
-				fprintf(output, "COPY00 %i ", tree[i++]); // displleft
-				fprintf(output, "%i ", tree[i++]);		  // displright
-				fprintf(output, "(%i)\n", tree[i++]);	  // length
+			{
+				fprintf(output, "COPY00 %i ", tree[i++]);			// displleft
+				fprintf(output, "%i ", tree[i++]);					// displright
+				fprintf(output, "(%i)\n", tree[i++]);				// length
+			}
 				break;
 			case COPY01:
-				fprintf(output, "COPY01 %i ", tree[i++]); // displleft
-				fprintf(output, "(%i)\n", tree[i++]);	  // length
+			{
+				fprintf(output, "COPY01 %i ", tree[i++]);			// displleft
+				fprintf(output, "(%i)\n", tree[i++]);				// length
+			}
 				break;
 			case COPY10:
-				fprintf(output, "COPY10 %i ", tree[i++]); // displright
-				fprintf(output, "(%i)\n", tree[i++]);	  // length
+			{
+				fprintf(output, "COPY10 %i ", tree[i++]);			// displright
+				fprintf(output, "(%i)\n", tree[i++]);				// length
+			}
 				break;
 			case COPY11:
-				fprintf(output, "COPY11 %i\n", tree[i++]); // length
+				fprintf(output, "COPY11 %i\n", tree[i++]);			// length
 				break;
 			case COPY0ST:
-				fprintf(output, "COPY0ST %i ", tree[i++]); // displleft
-				fprintf(output, "(%i)\n", tree[i++]);	   // length
+			{
+				fprintf(output, "COPY0ST %i ", tree[i++]);			// displleft
+				fprintf(output, "(%i)\n", tree[i++]);				// length
+			}
 				break;
 			case COPY1ST:
-				fprintf(output, "COPY1ST (%i)\n", tree[i++]); // length
+				fprintf(output, "COPY1ST (%i)\n", tree[i++]);		// length
 				break;
 			case COPY0STASS:
-				fprintf(output, "COPY0STASS %i ", tree[i++]); // displleft
-				fprintf(output, "(%i)\n", tree[i++]);		  // length
+			{
+				fprintf(output, "COPY0STASS %i ", tree[i++]);		// displleft
+				fprintf(output, "(%i)\n", tree[i++]);				// length
+			}
 				break;
 			case COPY1STASS:
-				fprintf(output, "COPY1STASS (%i)\n", tree[i++]); // length
+				fprintf(output, "COPY1STASS (%i)\n", tree[i++]);	// length
 				break;
 			case COPYST:
-				fprintf(output, "COPYST %i ", tree[i++]); // displ
-				fprintf(output, "(%i)", tree[i++]);		  // length
-				fprintf(output, "(%i)\n", tree[i++]);	  // length1
+			{
+				fprintf(output, "COPYST %i ", tree[i++]);			// displ
+				fprintf(output, "(%i)", tree[i++]);					// length
+				fprintf(output, "(%i)\n", tree[i++]);				// length1
+			}
 				break;
 
 			case TCall1:
@@ -296,7 +326,6 @@ void tablesandtree()
 			case GETNUMC:
 				fprintf(output, "GETNUMC\n");
 				break;
-
 
 			default:
 				fprintf(output, "TOper %i\n", tree[i - 1]);
@@ -468,27 +497,35 @@ void tablesandcode()
 				fprintf(output, "BEGINIT n= %i\n", mem[i++]);
 				break;
 			case STRUCTWITHARR:
+			{
 				fprintf(output, "STRUCTWITHARR displ= %i ", mem[i++]);
 				fprintf(output, "iniproc= %i\n", mem[i++]);
+			}
 				break;
 			case DEFARR:
-				fprintf(output, "DEFARR N= %i ", mem[i++]);	 // N
-				fprintf(output, "elem_len= %i ", mem[i++]);	 // elem length
-				fprintf(output, "displ= %i ", mem[i++]);	 // displ
-				fprintf(output, "iniproc= %i ", mem[i++]);	 // iniproc
-				fprintf(output, "usual= %i ", mem[i++]);	 // usual
-				fprintf(output, "all= %i ", mem[i++]);		 // all
-				fprintf(output, "instruct= %i\n", mem[i++]); // instruct
+			{
+				fprintf(output, "DEFARR N= %i ", mem[i++]);		// N
+				fprintf(output, "elem_len= %i ", mem[i++]);		// elem length
+				fprintf(output, "displ= %i ", mem[i++]);		// displ
+				fprintf(output, "iniproc= %i ", mem[i++]);		// iniproc
+				fprintf(output, "usual= %i ", mem[i++]);		// usual
+				fprintf(output, "all= %i ", mem[i++]);			// all
+				fprintf(output, "instruct= %i\n", mem[i++]);	// instruct
+			}
 				break;
 			case ARRINIT:
+			{
 				fprintf(output, "ARRINIT N= %i ", mem[i++]);
 				fprintf(output, "elem_len= %i ", mem[i++]);
 				fprintf(output, "displ= %i ", mem[i++]);
 				fprintf(output, "usual= %i\n", mem[i++]);
+			}
 				break;
-				//            case STRUCTINIT:
-				//                fprintf(output, "STRUCTINIT N= %i ", mem[i++]);
-				//            break;
+			/*
+				case STRUCTINIT:
+					fprintf(output, "STRUCTINIT N= %i ", mem[i++]);
+					break;
+			*/
 			case NOP:
 				fprintf(output, "NOP\n");
 				break;
@@ -496,9 +533,11 @@ void tablesandcode()
 				fprintf(output, "LI %i\n", mem[i++]);
 				break;
 			case LID:
+			{
 				memcpy(&numdouble, &mem[i], sizeof(double));
 				i += 2;
 				fprintf(output, "LID %.15f\n", numdouble);
+			}
 				break;
 			case LOAD:
 				fprintf(output, "LOAD %i\n", mem[i++]);
@@ -787,39 +826,51 @@ void tablesandcode()
 				fprintf(output, "/f\n");
 				break;
 			case COPY00:
-				fprintf(output, "COPY00 %i ", mem[i++]); // displleft
-				fprintf(output, "%i ", mem[i++]);		 // displright
-				fprintf(output, "(%i)\n", mem[i++]);	 // length
+			{
+				fprintf(output, "COPY00 %i ", mem[i++]);		// displleft
+				fprintf(output, "%i ", mem[i++]);				// displright
+				fprintf(output, "(%i)\n", mem[i++]);			// length
+			}
 				break;
 			case COPY01:
-				fprintf(output, "COPY01 %i      ", mem[i++]); // displleft
-				fprintf(output, "(%i)\n", mem[i++]);		  // length
+			{
+				fprintf(output, "COPY01 %i      ", mem[i++]);	// displleft
+				fprintf(output, "(%i)\n", mem[i++]);			// length
+			}
 				break;
 			case COPY10:
-				fprintf(output, "COPY10      %i ", mem[i++]); // displright
-				fprintf(output, "(%i)\n", mem[i++]);		  // length
+			{
+				fprintf(output, "COPY10      %i ", mem[i++]);	// displright
+				fprintf(output, "(%i)\n", mem[i++]);			// length
+			}
 				break;
 			case COPY11:
-				fprintf(output, "COPY11 %i\n", mem[i++]); // length
+				fprintf(output, "COPY11 %i\n", mem[i++]);		// length
 				break;
 			case COPY0ST:
-				fprintf(output, "COPY0ST %i ", mem[i++]); // displright
-				fprintf(output, "(%i)\n", mem[i++]);	  // length
+			{
+				fprintf(output, "COPY0ST %i ", mem[i++]);		// displright
+				fprintf(output, "(%i)\n", mem[i++]);			// length
+			}
 				break;
 			case COPY1ST:
-				fprintf(output, "COPY1ST %i\n", mem[i++]); // length
+				fprintf(output, "COPY1ST %i\n", mem[i++]);		// length
 				break;
 			case COPY0STASS:
-				fprintf(output, "COPY0STASS %i ", mem[i++]); // displleft
-				fprintf(output, "(%i)\n", mem[i++]);		 // length
+			{
+				fprintf(output, "COPY0STASS %i ", mem[i++]);	// displleft
+				fprintf(output, "(%i)\n", mem[i++]);			// length
+			}
 				break;
 			case COPY1STASS:
-				fprintf(output, "COPY1STASS %i\n", mem[i++]); // length
+				fprintf(output, "COPY1STASS %i\n", mem[i++]);	// length
 				break;
 			case COPYST:
-				fprintf(output, "COPYST %i ", mem[i++]); // displ
-				fprintf(output, "(%i)", mem[i++]);		 // length
-				fprintf(output, "(%i)\n", mem[i++]);	 // length1
+			{
+				fprintf(output, "COPYST %i ", mem[i++]);		// displ
+				fprintf(output, "(%i)", mem[i++]);				// length
+				fprintf(output, "(%i)\n", mem[i++]);			// length1
+			}
 				break;
 
 			case REMASS:
@@ -842,8 +893,10 @@ void tablesandcode()
 				fprintf(output, "CALL1\n");
 				break;
 			case CALL2:
+			{
 				fprintf(output, "CALL2 ");
 				fprintf(output, "%i\n", mem[i++]);
+			}
 				break;
 			case STOP:
 				fprintf(output, "STOP\n");
@@ -989,10 +1042,11 @@ void tablesandcode()
 				break;
 
 			case FUNCBEG:
+			{
 				fprintf(output, "FUNCBEG maxdispl= %i ", mem[i++]);
 				fprintf(output, "pc= %i\n", mem[i++]);
+			}
 				break;
-
 
 			default:
 				fprintf(output, "%i\n", mem[i - 1]);
