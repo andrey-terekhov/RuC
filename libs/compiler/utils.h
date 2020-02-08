@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2018 Andrey Terekhov, Mikhail Terekhov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,25 +14,17 @@
  *	limitations under the License.
  */
 
-#include "compiler.h"
+#ifndef H_UTILS
+#define H_UTILS
+
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <stdio.h>
+#include <stdlib.h>
 
 
-const char *name = "../tests/arrays2.c";
-	// "../tests/Egor/Macro/test3.c";
-	// "../tests/Mishatest.c";
-	// "../tests/mips/0test.c";
+void printf_char(int wchar);
+void fprintf_char(FILE *f, int wchar);
+int getf_char();
 
-
-int main(int argc, const char *argv[])
-{
-	if (argc < 2)
-	{
-		compile(name);
-	}
-	else
-	{
-		compile(argv[1]);
-	}
-
-	return 0;
-}
+#endif

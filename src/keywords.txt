@@ -1,4 +1,4 @@
-MAIN main ГЛАВНАЯ главная 
+MAIN main ГЛАВНАЯ главная
 INT int ЦЕЛ цел
 CHAR char ЛИТЕРА литера
 FLOAT float ВЕЩ вещ
@@ -24,7 +24,7 @@ WHILE while ПОКА пока
 PRINTID printid ПЕЧАТЬИД печатьид
 PRINT print ПЕЧАТЬ печать
 PRINTF printf ПЕЧАТЬФ печатьф
-SCANF scanf ЧИТАТЬФ читатьф 
+SCANF scanf ЧИТАТЬФ читатьф
 GETID getid ЧИТАТЬИД читатьид
 T_CREATE_DIRECT t_create_direct Н_СОЗДАТЬ_НЕПОСР н_создать_непоср
 T_EXIT_DIRECT t_exit_direct Н_КОНЕЦ_НЕПОСР н_конец_непоср
@@ -68,7 +68,7 @@ T_GETNUM t_getnum Н_НОМЕР_НИТИ н_номер_нити
 #DEFINE #define #ОПРЕД #опред
 #IFDEF #ifdef #ЕСЛИБЫЛ #еслибыл
 #IFNDEF #ifndef #ЕСЛИНЕБЫЛ #еслинебыл
-#IF #if #ЕСЛИ #если 
+#IF #if #ЕСЛИ #если
 #ELIF #elif #ИНЕСЛИ #инесли
 #ENDIF #endif #КОНЕСЛИ #конесли
 #ELSE #else #ИНАЧЕ #иначе

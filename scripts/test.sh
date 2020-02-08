@@ -16,7 +16,7 @@ build()
 {
 	cd `dirname $0`/..
 	mkdir -p build && cd build && cmake ..
-	if ! cmake --build . ; then
+	if ! cmake --build . --config Release ; then
 		exit 1
 	fi
 
