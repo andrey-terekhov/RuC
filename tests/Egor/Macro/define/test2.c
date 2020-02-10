@@ -10,6 +10,5 @@
 #define macroS ,S(j)
 void main()
 {
- IN(t);
- A(1, 2); 
+
 } 

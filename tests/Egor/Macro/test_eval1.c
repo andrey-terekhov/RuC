@@ -1,4 +1,4 @@
-//!!!!=====// Virtex VLX240T 240,000 лог ячеек; 768 DSP48 (умножение с накоплением); 832 BRAM по 2 кбайта
+=====// Virtex VLX240T 240,000 лог ячеек; 768 DSP48 (умножение с накоплением); 832 BRAM по 2 кбайта
 using bincompl;
 process Neuronet =
 begin
@@ -17,10 +17,10 @@ out ans(int(15));
 #endif                                                         
 #define MM #eval(rot*MiN)
 -- M N MM MiN logMiN rot
-#define concat(a,b) a@b
+#define concat(a,b) a@b//!!!!
 #define R(i,j) concat(r,concat(i,concat(x,j)))
 #define A(i,j) concat(a,concat(i,concat(x,j)))
-#define IN(i) concat(in,i)// побел перед concat
+#define IN(i) concat(in,i)////!!!! побел перед concat
 #define S(i) concat(s,i)
 
 data JT, JK, JD, J, II: uint(10),
@@ -28,7 +28,7 @@ irot, layer: uint(4),
 tab: [0..15:uint(4)]int(15), 
 bram: [0..B: uint(10)][0..1023: uint(10)]int(15)
 
-#define macroIN ,IN(j)
+#define macroIN ,IN(j)//!!!!
 #define macroS ,S(j)
 
 #macro loopj(M,loopbody)
@@ -60,7 +60,7 @@ loopj(N, macroS)
 #define macroS0 | S(j):=0 
 init
 {
-JT:=0 | JK:=0 | JD:=0 | II:=0 | J:=0 | irot:=0 | layer:=1//ошибка
+JT:=0 | JK:=0 | JD:=0 | II:=0 | J:=0 | irot:=0 | layer:=1//!!!!ошибка
 loopj(N, macroS0)
 }
 
@@ -100,16 +100,16 @@ R(i,j):=IN(j) |
 #endw
 #undef j
 
-#macro macroShift() IN(j):=IN(#eval(MiN+j)) |#endm // раньше было не хорошо
-
+#macro macroShift() IN(j):=IN(#eval(MiN+j)) |#endm //!!!! раньше было не хорошо
+ 
 loopj(#eval(MM-MiN), macroShift)
-#macro readbram() A(i,j) = bram[#eval(j*N+i)][J] |#endm
+#macro readbram() A(i,j) = bram[#eval(j*N+i)][J] |#endm//!!!!
 
 //#define multk  R(i,j) := mult(R(i,j), A(i,j)) |
 
 #define mult(a,b) let x = sext(a,30) * sext(b,30) in x{29} || x{4:17}
 
-#define multk  R(i,j) := mult(R(i,j), A(i,j)) |
+#define multk  R(i,j) := mult(R(i,j), A(i,j)) |//!!!!
 
 #macro loopij(loopbody)
 #define j 0
@@ -179,4 +179,4 @@ IN(i):=s |
 layer:= layer + 1
 done;
 JD:=0 | inform ans(S(0))
-end;
+end;//!!!!

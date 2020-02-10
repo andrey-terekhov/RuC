@@ -4,7 +4,6 @@
 
 extern void tablesandtree();
 
-extern void show_macro();
 extern void printf_char(int wchar);
 void printident(int r)
 {
@@ -13,6 +12,35 @@ void printident(int r)
         printf_char(reprtab[r++]);
     while (reprtab[r] != 0);
 
+}
+
+void show_macro()
+{
+    int i = lines[line], j = mlines[m_conect_lines[line]];
+    int flag = 1;
+    printf("line %i) ", line);
+    for(; i < charnum; i++)
+    {
+        printf_char(source[i]);
+        if(flag && source[i] == before_source[j])
+        {
+            j++;
+        }
+        else
+        {
+            flag = 0;
+        }
+    }
+
+    if(flag == 0)
+    {
+      printf("\n\n В строке есть макрозамена, строка до макрогенерации:\nline %i)",m_conect_lines[line]);
+        for (j = mlines[m_conect_lines[line]]; j < mlines[m_conect_lines[line] + 1]; j++)
+        {
+        printf_char(before_source[j]);
+        }   
+    printf("\n");             
+    }
 }
 
 void warning(int ernum)
@@ -33,22 +61,14 @@ void error(int ernum)
     int i, j; 
   //tablesandtree();
     printf("\n Oшибка :\n \n");
-    if(lines[line]==charnum)
+    if(lines[line] == charnum)
     {
         line--;
     }
     //printf("line - 1=%d, mline=%d, co[carnum-1=%d] = 1%c1, lines[line]=%d, lines[line+1]=%d \n", line-1,m_conect_lines[line-1],charnum-1,source[charnum-1], lines[line],lines[line+1]);
     charnum--;
-    for(j = 1; j < m_conect_lines[line]; j++)
-    {
-        printf("line %i) ", j);
-
-        for ( i = mlines[j]; i < mlines[j+1]; i++)
-            printf_char(before_source[i]);
-    }
     show_macro();
-    printf("\n");
-    printf("ошибка: ");
+    printf(" Тип ошибки: ");
     switch (ernum)
     {
         case after_type_must_be_ident:

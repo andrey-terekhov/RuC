@@ -8,8 +8,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-//"tests/Egor/Macro/define/test4.c";
-"tests/Egor/Macro/test_eval1.c";
+"tests/Egor/Macro/error/test4.c";
+//"tests/Egor/Macro/test_eval1.c";
 //"tests/Mishatest.c";
 //"tests/matrix.c";
 //"../../../tests/mips/0test.c";
@@ -147,7 +147,7 @@ int main(int argc, const char * argv[])
     kw = 1;
     tc = 0;
 
-    printf("\nИсходный текст:\n \n");
+    printf("\n Исходный текст:\n \n");
     preprocess_file();                //   макрогенерация
     
     fclose(output);
@@ -161,7 +161,7 @@ int main(int argc, const char * argv[])
     }
     if(prep_flag == 1)
     {
-        printf("\nТекст после препроцесора:\n \n");
+        printf("\n Текст после препроцесора:\n \n");
     }
 
     output = fopen("tree.txt", "wt");

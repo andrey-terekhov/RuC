@@ -80,55 +80,40 @@ extern void m_error();
 void a_erorr(int i)
 {
     printf("не реализованная ошибка № %d\n", i);
-      for(int k = 0; k < mp; k++)
+      //for(int k = 0; k < mp; k++)
             {
-                printf("macrotext[%d] = |%d|%c|\n", k, macrotext[k], macrotext[k]);
+            //    printf("macrotext[%d] = |%d|%c|\n", k, macrotext[k], macrotext[k]);
             }
         exit(1);
 }
 
-void show_macro()
+/*void show_macro()
 {
-    int i1 = lines[line];
-    int str1[STRIGSIZE];
-    int j = 0;
-    int k;
+    int i, j = mlines[m_conect_lines[line]];
     int flag = 1;
-    dipp = 0;
-    m_change_nextch_type(SOURSTYPE, mlines[m_conect_lines[line]]);
-
-
-    while(i1 < charnum)
+    printf("line %i) ", j);
+    for(i = lines[line]; i < charnum; i++)
     {
-        //printf("\nbe[arg= %i] = %i, so[i1] = %i",arg, before_source[arg],source[i1] );
-        if(source[i1] == curchar)
+        printf_char(source[i]);
+        if(flag && source[i] == before_source[j])
         {
-            str1[j++] = curchar;
-            m_nextch();
-            i1++;
+            j++;
         }
         else
         {
             flag = 0;
-            define_get_from_macrotext(collect_mident());
         }
     }
 
-    printf("line %i) ", m_conect_lines[line]);
-
-    for (k = 0 ; k < j; k++)
-    {
-    printf_char(str1[k]);
-    }
     if(flag == 0)
     {
-      printf("\n В строке есть макрозамена, строка после макрогенерации:\nline %i)",m_conect_lines[line]);
-        for ( k = lines[line - 1]; k < charnum;k++)
+      printf("\n В строке есть макрозамена, строка до макрогенерации:\nline %i)",m_conect_lines[line]);
+        for (j = mlines[m_conect_lines[line]]; j < mlines[m_conect_lines[line] + 1]; j++)
         {
-        printf_char(source[k]);
+        printf_char(before_source[j]);
         }                  
     }
-}
+}*/
 
 //простые (m)
 
@@ -226,14 +211,7 @@ void show_macro()
     mlines[mline+1] = m_charnum;
 
     printf("Line %i) ", mline - 1);
-    if(mline - 1 <-1)
-    {
-        //for(int k = 0; k < mp+1; k++)
-           {
-            //    printf("macrotext[%d] = %d,%c.\n", k, macrotext[k], macrotext[k]);
-            }
-        exit(1);
-    }
+
     for ( j=mlines[mline - 1]; j<mlines[mline]; j++)
         if (before_source[j] != EOF)
             printf_char(before_source[j]);
@@ -285,6 +263,10 @@ void show_macro()
         {
             m_fprintf_com();
             m_onemore();
+            if (curchar == EOF)
+            {
+                return;
+            }
         }
         while (curchar != '\n');
     }
@@ -384,7 +366,7 @@ void show_macro()
             m_end_line();
         }
     }
-    printf(" i = %d curcar = %c curcar = %i n = %d\n", nextch_type, curchar, curchar, nextp);
+    //printf(" i = %d curcar = %c curcar = %i n = %d\n", nextch_type, curchar, curchar, nextp);
 
     return;
  }
@@ -451,18 +433,15 @@ void show_macro()
     }
     mstring[msp] = MACROEND;
     hash &= 255;
-    //printf("nas = %d\n\n\n",hash);
     r = hashtab[hash];
     while(r)
     {
-        //printf("m[r = %d]  --------", reprtab[r+1]);
         if(r >= mfirstrp && r<=mlastrp && mf_equal(r) )
         {
            return (macrotext[reprtab[r+1]] != MACROUNDEF) ? r : 0;
         }
         r = reprtab[r];        
     }
-    //printf("m[r = %d] = %d --------", r,reprtab[r+1]);
     return 0;
  }
 
@@ -787,7 +766,7 @@ void show_macro()
                 a_erorr(1);
             m_change_nextch_type(CTYPE, 0);
         }
-        else if(opration_flag && (c = check_opiration()))
+        else if((opration_flag|| curchar == '(') && (c = check_opiration()))
         { 
             int n = get_prior(c); 
             opration_flag = 0;
@@ -849,57 +828,45 @@ void show_macro()
  void function_scob_collect(int t, int num)
  {
     int i;
-    printf("function_scob_collect cp = %d\n",cp);
     while(curchar != EOF)
     {
-        //printf("6-------------------\n");
         if(letter())
         {
             int r = collect_mident();
             if(r)
             {
                 int oldcp1 = cp;
-                printf(" ----1cp = %d old = %d \n", cp, oldcp1);
                 int oldlsp = lsp;
                 int locfchange[STRIGSIZE];
                 int lcp = 0;
                 int ldip;
                 lsp += num;
-                //printf("lsp = %d\n" ,lsp);
                 define_get_from_macrotext(r);
-                printf(" ----2cp = %d old = %d \n", cp, oldcp1);
                 ldip = dipp;
                 if(nextch_type == FTYPE)
                     ldip--;
-                printf(" ----3cp = %d old = %d \n", cp, oldcp1);
                 while(dipp >= ldip)// 1 переход потому что есть префиксная замена 
                 {
                     locfchange[lcp++] = curchar;
-                    printf(" ----6cp = %d old = %d \n", cp, oldcp1);
                     m_nextch();
                 }
-                printf(" ----4cp = %d old = %d \n", cp, oldcp1);
                 lsp = oldlsp;
                 cp = oldcp1;
-                printf(" ----5cp = %d old = %d \n", cp, oldcp1);
                 for (i = 0; i < lcp; i++)
                 {
                     fchange[cp++] = locfchange[i];  
-                    //printf("fchange[%d] = %c,%d\n" ,cp-1,fchange[cp-1],fchange[cp-1]);
                 } 
             }
             else
                 for(i = 0; i < msp; i++)
                  {
                     fchange[cp++] = mstring[i];  
-                    //printf("fchange[%d] = %c,%d\n" ,cp-1,fchange[cp-1],fchange[cp-1]);
                 } 
                     
         }
         else if(curchar == '(')
         {
             fchange[cp++] = curchar;
-            //printf("fchange[%d] = %c,%d\n" ,cp-1,fchange[cp-1],fchange[cp-1]);
             m_nextch();
             function_scob_collect(0, num);
         }
@@ -908,7 +875,6 @@ void show_macro()
             if(t == 0)
             {
                 fchange[cp++] = curchar;
-               // printf("fchange[%d] = %c,%d\n" ,cp-1,fchange[cp-1],fchange[cp-1]);
                 m_nextch();
             }
             return;
@@ -930,12 +896,10 @@ void show_macro()
         else
         {
             fchange[cp++] = curchar;
-            //printf("fchange[%d] = %c,%d\n" ,cp-1,fchange[cp-1],fchange[cp-1]);
             m_nextch();
         }
     }
     m_error(scob_not_clous);
-    //    m_error(not_enough_param); // не та ошибка ????
     return;
  }
 
@@ -944,7 +908,7 @@ void show_macro()
     int i;
     int num = 0;
     m_nextch();
-    printf("function_stack_create n = %d\n", n);
+    //printf("function_stack_create n = %d\n", n);
     localstack[num + lsp] = cp;        
 
     if(curchar == ')')
@@ -952,9 +916,7 @@ void show_macro()
     
     while(curchar != ')')
     {
-        printf("1\n");
         function_scob_collect(1, num);
-        printf("2\n");
         fchange[cp++] = CANGEEND;
  
         if (curchar == ',')
@@ -969,16 +931,11 @@ void show_macro()
         }    
         else if (curchar == ')')
         {
-            printf("3\n");
             if(num != n)
                 m_error(not_enough_param2);    
             m_nextch();
-             for(int k = 0; k < cp; k++)
-            {
-                printf(" fchange[%d] = %d,%c.\n", k, fchange[k], fchange[k]);
-            }
+            
             cp = localstack[lsp];
-            printf(" cp = %d \n", cp);
             return;
         }       
     }
@@ -1556,9 +1513,7 @@ void show_macro()
         case SH_UNDEF:
         {
             int k;   
-            printf("SH_UNDEF \n");
             macrotext[reprtab[(k = collect_mident())+1]] = MACROUNDEF;
-            printf("SH_UNDEF c=%c\n", reprtab[k+2]);
             return;
         }
         case SH_IF:
