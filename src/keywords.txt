@@ -91,3 +91,4 @@ CLEAR clear ОЧИСТИТЬ очистить
 DRAW_STRING draw_string НАРИСОВАТЬ_СТРОКУ нарисовать_строку
 DRAW_NUMBER draw_number НАРИСОВАТЬ_ЧИСЛО нарисовать_число
 ICON icon ИКОНКА иконка
+UPB upb КОЛ_ВО кол_во

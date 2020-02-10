@@ -19,16 +19,17 @@
 
 #define MAXREPRTAB								10000
 #define MAXIDENTAB								10000
-#define MAXMEMSIZE								1000000
 #define MAXTREESIZE								10000
-#define MAXMODETAB								10000
-#define MAXBOUNDS								1000
-#define FUNCSIZE								1000
+#define MAXMODETAB								1000
+#define MAXBOUNDS								100
+#define FUNCSIZE								100
 #define SOURCESIZE								10000
-#define LINESSIZE								3000
+#define LINESSIZE								300
 #define MAXSTRINGL								128
-#define INIPROSIZE								1000
-#define NUMOFTHREADS							10
+#define INIPROSIZE								100
+
+#define MAXMEMSIZE								100000
+#define NUMOFTHREADS							5
 #define MAXMEMTHREAD							MAXMEMSIZE / NUMOFTHREADS
 #define MAXPRINTFPARAMS							20
 
@@ -300,6 +301,7 @@
 #define DRAW_STRINGC							9585
 #define DRAW_NUMBERC							9586
 #define ICONC									9587
+#define UPBC									9588
 
 
 // Лексемы
@@ -430,6 +432,7 @@
 #define DRAW_STRING								-85
 #define DRAW_NUMBER								-86
 #define ICON									-87
+#define UPB										-88
 
 #define LVOIDASTER								-150
 #define ABSI									-151
@@ -675,6 +678,7 @@
 #define struct_init_must_start_from_BEGIN		382
 #define not_rowofint_in_stanfunc				383
 #define not_float_in_stanfunc					384
+#define not_array_in_stanfunc					385
 
 
 // коды предупреждений

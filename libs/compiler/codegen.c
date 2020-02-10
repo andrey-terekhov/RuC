@@ -418,17 +418,17 @@ void Stmt_gen()
 			int stmtref = tree[tc++];
 			int oldbreak = adbreak;
 			int oldcont = adcont;
-			int ad = pc;
 			int incrtc;
 			int endtc;
+			int initad;
 
 			if (fromref)
 			{
 				Expr_gen(0);	// init
 			}
 
-			adbreak = 0;
-			adcont = ad = pc;
+			initad = pc;
+			adcont = adbreak = 0;
 
 			if (condref)
 			{
@@ -440,7 +440,8 @@ void Stmt_gen()
 
 			incrtc = tc;
 			tc = stmtref;
-			Stmt_gen();			// ???? был 0
+			Stmt_gen();
+			adcontend();
 
 			if (incrref)
 			{
@@ -450,9 +451,8 @@ void Stmt_gen()
 				tc = endtc;
 			}
 
-			adcontbeg(ad);
 			tocode(B);
-			tocode(ad);
+			tocode(initad);
 			adbreakend();
 			adbreak = oldbreak;
 			adcont = oldcont;

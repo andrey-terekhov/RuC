@@ -650,6 +650,9 @@ void error(int ernum)
 		case not_rowofint_in_stanfunc:
 			printf("в этой операции этот параметр должен иметь тип массив целых\n");
 			break;
+		case not_array_in_stanfunc:
+			printf("в этой операции этот параметр должен иметь тип массив\n");
+			break;
 
 		default:
 			printf("этот код ошибки я прозевал\n");
@@ -673,7 +676,7 @@ void m_error(int ernum)
 	switch (ernum)
 	{
 		case after_preproces_words_must_be_space:
-			printf("Неправильное ключевое слово препроцессора, далее должен идти символ ' 'или'\\n'или'\\t' \n");
+			printf("Неправильное использование ключевого слово препроцессора, далее должен идти символ ' 'или'\\n'или'\\t' \n");
 			break;
 		case after_ident_must_be_space:
 			printf("После индентификатора должен идти ' ' \n");
@@ -709,7 +712,7 @@ void m_error(int ernum)
 			printf("Перед '#ENDIF' должен стоять условный оператор препроцессора\n");
 			break;
 		case repeat_ident:
-			printf("Этот идентификатор препроцессора уже используется.\n");
+			printf("Этот идентификатор препроцессора уже используется\n");
 			break;
 		case comm_not_ended:
 			printf("Комментарий, начавшийся с /* , не закрыт\n");

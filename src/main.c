@@ -17,9 +17,9 @@
 #include "compiler.h"
 
 
-const char *name = "../tests/Fadeev/pond.c";
-	// "../tests/Egor/string/strcat.c";
-	// "../tests/arrstruct1.c";
+const char *name = "../tests/arrays.c";
+	// "../tests/Egor/Macro/test3.c";
+	// "../tests/Mishatest.c";
 	// "../tests/mips/0test.c";
 
 

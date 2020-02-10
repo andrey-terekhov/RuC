@@ -512,6 +512,19 @@ void mustbepointstring()
 	}
 }
 
+void mustberow()
+{
+	scaner();
+	exprassn(1);
+	toval();
+	sopnd--;
+
+	if (!(ansttype > 0 && modetab[ansttype] == MARRAY))
+	{
+		error(not_array_in_stanfunc);
+	}
+}
+
 void mustbeint()
 {
 	scaner();
@@ -792,6 +805,13 @@ void primaryexpr()
 					stackoperands[++sopnd] = ansttype = LINT;
 				}
 			}
+		}
+		else if (func == UPB)	// UPB
+		{
+			mustbeint();
+			mustbe(COMMA, no_comma_in_act_params_stanfunc);
+			mustberow();
+			stackoperands[++sopnd] = ansttype = LINT;
 		}
 		else if (func <= TMSGSEND && func >= TGETNUM)	// процедуры управления параллельными нитями
 		{
@@ -1210,6 +1230,14 @@ void postexpr()
 
 		if (next == DOT)
 		{
+			/*
+				int i;
+				for (i = 3800; i < 3850; ++i)
+				{
+					printf("%i) reprtab[i]= %i %c\n", i, reprtab[i], reprtab[i]);
+				}
+			*/
+
 			if (ansttype < 0 || modetab[ansttype] != MSTRUCT)
 			{
 				error(select_not_from_struct);
@@ -2106,16 +2134,19 @@ void statement()
 			case PRINTID:
 			{
 				mustbe(LEFTBR, no_leftbr_in_printid);
-				mustbe(IDENT, no_ident_in_printid);
-				lastid = reprtab[repr + 1];
+				do
+				{				
+					mustbe(IDENT, no_ident_in_printid);
+					lastid = reprtab[repr + 1];
 
-				if (lastid == 1)
-				{
-					error(ident_is_not_declared);
-				}
+					if (lastid == 1)
+					{
+						error(ident_is_not_declared);
+					}
 
-				totree(TPrintid);
-				totree(lastid);
+					totree(TPrintid);
+					totree(lastid);
+				} while (next == COMMA ? scaner(), 1 : 0);
 				mustbe(RIGHTBR, no_rightbr_in_printid);
 			}
 				break;
@@ -2198,16 +2229,19 @@ void statement()
 			case GETID:
 			{
 				mustbe(LEFTBR, no_leftbr_in_printid);
-				mustbe(IDENT, no_ident_in_printid);
-				lastid = reprtab[repr + 1];
-
-				if (lastid == 1)
+				do
 				{
-					error(ident_is_not_declared);
-				}
+					mustbe(IDENT, no_ident_in_printid);
+					lastid = reprtab[repr + 1];
 
-				totree(TGetid);
-				totree(lastid);
+					if (lastid == 1)
+					{
+						error(ident_is_not_declared);
+					}
+
+					totree(TGetid);
+					totree(lastid);
+				} while (next == COMMA ? scaner(), 1 : 0);
 				mustbe(RIGHTBR, no_rightbr_in_printid);
 			}
 				break;
@@ -2531,7 +2565,10 @@ int struct_decl_list()
 
 	do
 	{
+		int fieldrepr;
+
 		t = elem_type = idorpnt(wait_ident_after_semicomma_in_struct, gettype());
+		fieldrepr = repr;
 
 		if (next == LEFTSQBR)
 		{
@@ -2585,7 +2622,7 @@ int struct_decl_list()
 		}			// конец LEFTSQBR
 
 		loc_modetab[locmd++] = t;
-		loc_modetab[locmd++] = repr;
+		loc_modetab[locmd++] = fieldrepr;
 		field_count++;
 		curdispl += szof(t);
 
@@ -2644,6 +2681,7 @@ int gettype()
 			if (next == BEGIN)	// struct key {
 			{
 				// если такое описание уже было, то это ошибка - повторное описание
+				int i;
 				int lid;
 
 				wasstructdef = 1;	// это определение типа (может быть, без описания переменных)

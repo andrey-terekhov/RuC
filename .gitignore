@@ -83,6 +83,9 @@ _deps
 xcuserdata/
 build/
 DerivedData/
+Debug/
+Release/
+*.build
 *.moved-aside
 *.pbxuser
 *.mode1v3
