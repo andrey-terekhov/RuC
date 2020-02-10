@@ -2227,7 +2227,7 @@ tocodeL("SLICE", 0);               // a0 = C0,  a1 = index, a2 = d
     tocodeJCimm(bltz, a1, 3);      // if (index < 0 err
     tocodeR(sub, t1, a1, t0);
     tocodeJCimm(bltz, t1, 2);      // if (index - N < 0) ok
-    tocodeR(addi, a0, d0, t0);     // a0 = N, a1 = index
+    tocodeR(add, a0, d0, t0);     // a0 = N, a1 = index
     tocodeJ(jal, "ERR", 0);
     tocodeR(mul, t0, a1, a2);      // t0 = index * d
     tocodeR(add, v0, t0, a0);      // v0 = C0 + t0
@@ -2238,7 +2238,7 @@ tocodeL("SLICE1", 0);              // a0 = C0,  a1 = index, d == 1
     tocodeJCimm(bltz, a1, 3);      // if (index < 0 err
     tocodeR(sub, t1, a1, t0);
     tocodeJCimm(bltz, t1, 2);      // if (index - N < 0) ok
-    tocodeR(addi, a0, d0, t0);     // a0 = N, a1 = index
+    tocodeR(add, a0, d0, t0);     // a0 = N, a1 = index
     tocodeJ(jal, "ERR", 0);
     tocodeR(add, v0, a1, a0);      // v0 = C0 + index
     tocodeJR(jr, ra);              // v0 - адрес i-го элемента
@@ -2248,7 +2248,7 @@ tocodeL("SLICE4", 0);               // a0 = C0,  a1 = index, d == 4
     tocodeJCimm(bltz, a1, 3);      // if (index < 0 err
     tocodeR(sub, t1, a1, t0);
     tocodeJCimm(bltz, t1, 2);      // if (index - N < 0) ok
-    tocodeR(addi, a0, d0, t0);     // a0 = N, a1 = index
+    tocodeR(add, a0, d0, t0);     // a0 = N, a1 = index
     tocodeJ(jal, "ERR", 0);
     tocodeSLR(sll, t0, a1, 2);     // t0 = index * 4
     tocodeR(add, v0, t0, a0);      // v0 = C0 + t0
