@@ -30,13 +30,13 @@ make_executable(const char *path)
 void
 read_keywords(compiler_context *context)
 {
-    char *keywords = malloc(keywords_txt_len + 1);
+    int   len = strlen(keywords_txt);
+    char *keywords = malloc(len + 1);
+
     if (keywords == NULL)
         exit(-1);
 
-    /* Add null symbol to keywords */
-    memcpy(keywords, keywords_txt, keywords_txt_len);
-    keywords[keywords_txt_len] = '\0';
+    memcpy(keywords, keywords_txt, len + 1);
 
     compiler_context_attach_io(context, keywords, IO_TYPE_INPUT, IO_SOURCE_MEM);
 
