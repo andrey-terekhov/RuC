@@ -1,4 +1,4 @@
-int a,b;
+int a,b,i;
 void main()
 {
     do
@@ -7,7 +7,7 @@ void main()
         {
             continue;
             a=1;
-            return 0;
+            return;
             a = -11;
         }
         else
@@ -26,5 +26,22 @@ void main()
         return;
         continue;
         a&=b;
+    }
+ 
+    for (i=0; i<5; ++i)
+    {
+        a = b;
+        continue;
+        break;
+        continue;
+        b = a;
+    }
+    for (i=0; i<5;)
+    {
+        a = b;
+        break;
+        continue;
+        break;
+        b = a;
     }
 }
