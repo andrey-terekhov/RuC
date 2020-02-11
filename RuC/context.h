@@ -17,11 +17,12 @@
 /**
  * A designated compiler table
  */
-typedef struct compiler_table {
-    int    *table;      /** Actual table */
-    int     len;        /** Length of a useful part of table */
-    int     pos;        /** A position in a table */
-    int     size;       /** Total size of a table */
+typedef struct compiler_table
+{
+    int *table; /** Actual table */
+    int  len; /** Length of a useful part of table */
+    int  pos; /** A position in a table */
+    int  size; /** Total size of a table */
 } compiler_table;
 
 // Определение глобальных переменных

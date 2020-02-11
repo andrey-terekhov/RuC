@@ -1,9 +1,9 @@
 #include <errno.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
-#include <math.h>
 #include "global_vars.h"
 
 #define DEFAULT_OUTBUF_SIZE (1024)
@@ -187,10 +187,10 @@ compiler_table_ensure_allocated(compiler_table *table, int pos)
 {
     if (unlikely(pos >= table->size))
     {
-        int     size =
-            (table->size * 2 > (pos + COMPILER_TABLE_INCREMENT_MIN))
-            ? (table->size * 2) : (pos + COMPILER_TABLE_INCREMENT_MIN);
-        int    *buf = realloc(table->table, sizeof(int) * size);
+        int size = (table->size * 2 > (pos + COMPILER_TABLE_INCREMENT_MIN))
+            ? (table->size * 2)
+            : (pos + COMPILER_TABLE_INCREMENT_MIN);
+        int *buf = realloc(table->table, sizeof(int) * size);
 
         if (buf == NULL)
             exit(1);
@@ -209,4 +209,3 @@ compiler_table_expand(compiler_table *table, int len)
 {
     return compiler_table_ensure_allocated(table, table->len + len);
 }
-
