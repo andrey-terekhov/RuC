@@ -1,0 +1,10 @@
+---
+Checks:          'readability-braces-around-statements,readability-isolate-declaration'
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+AnalyzeTemporaryDtors: false
+FormatStyle:     none
+CheckOptions:
+  - key:             readability-braces-around-statements.ShortStatementLines
+    value:           '0'
+...

@@ -1,11 +1,11 @@
 notifications:
-    email: false
+  email: false
 
 git:
-    depth: 1
+  depth: 1
 
 language: c
 compiler: gcc
 
 script:
-    - ./test.sh -out
+  - ./scripts/test.sh -out
