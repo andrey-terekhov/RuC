@@ -14,12 +14,35 @@
  *	limitations under the License.
  */
 #pragma once
+#include "context.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int szof(compiler_context *context, int type);
+/**
+ * Emit a warning for some problem
+ *
+ * @param context Compiler cocntext
+ * @param errnum  Error number
+ */
+void warning(compiler_context *context, int errnum);
+
+/**
+ * Emit an error for some problem
+ *
+ * @param context Compiler cocntext
+ * @param errnum  Error number
+ */
+void error(compiler_context *context, int errnum);
+
+/**
+ * Emit preprocessor error
+ *
+ * @param context Compiler conteext
+ * @param errnum  Error number
+ */
+void m_error(compiler_context *context, int errnum);
 
 #ifdef __cplusplus
 } /* extern "C" */

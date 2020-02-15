@@ -6,6 +6,7 @@
 //  Copyright (c) 2014 Andrey Terekhov. All rights reserved.
 //
 
+#include "codes.h"
 #include <stdio.h>
 #include <string.h>
 

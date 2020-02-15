@@ -13,8 +13,9 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+#include "codegen.h"
 #include <stdlib.h>
-#include "error.h"
+#include "errors.h"
 #include "extdecl.h"
 #include "global.h"
 

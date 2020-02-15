@@ -7,17 +7,17 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-#include <errno.h>
-#include <stdbool.h>
+#include "compiler.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <wchar.h>
+#include "codegen.h"
+#include "codes.h"
 #include "defs.h"
 #include "context.h"
 
-#include "error.h"
+#include "errors.h"
 #include "frontend_utils.h"
 #include "tables.h"
 

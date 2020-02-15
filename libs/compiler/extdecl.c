@@ -1,4 +1,4 @@
-#include "error.h"
+#include "errors.h"
 #include "global.h"
 #include "scanner.h"
 
