@@ -1,7 +1,4 @@
-*.o
-*.gch
-*.dll
-*.exe
+# User files
 *.bat
 *.zip
 *.txt
@@ -10,19 +7,100 @@
 *.docx
 *.jpg
 *.jpeg
-*.xcodeproj/
 
-Build/
-DerivedData/
-bin/
-obj/
-ruc-compiler
+# Prerequisites
+*.d
 
-!RuC/
-!keywords.txt
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# CMake
 !CMakeLists.txt
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
 
+## VSCode
+.vscode/*
+*.code-workspace
+
+## Xcode
+xcuserdata/
+build/
+DerivedData/
+Debug/
+Release/
+*.build
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcodeproj
+
+# macOS
 .DS_Store
-build
+.AppleDouble
+.LSOverride
+
+# RuC
+!keywords.txt
+
+# Sublim workspace files
 *.sublime-workspace
 tmp-run*.sh
