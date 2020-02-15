@@ -91,4 +91,5 @@ char keywords_txt[] =
     "CLEAR clear ОЧИСТИТЬ очистить\n"
     "DRAW_STRING draw_string НАРИСОВАТЬ_СТРОКУ нарисовать_строку\n"
     "DRAW_NUMBER draw_number НАРИСОВАТЬ_ЧИСЛО нарисовать_число\n"
-    "ICON icon ИКОНКА иконка\n";
+    "ICON icon ИКОНКА иконка\n"
+    "UPB upb КОЛ_ВО кол_во\n";
