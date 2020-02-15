@@ -14,7 +14,7 @@
             "RuC":
             {
                 "workingdir": "${project_path:.}",
-                "commandline": "gdb --interpreter=mi -ex \"set exec-wrapper ./tools/exec_wrapper.sh ruc ./build/bin/ruc\" ./build/bin/ruc"
+                "commandline": "gdb --interpreter=mi -ex \"set exec-wrapper ./scripts/exec_wrapper.sh ruc ./build/ruc\" ./build/ruc"
             },
         }
 	},

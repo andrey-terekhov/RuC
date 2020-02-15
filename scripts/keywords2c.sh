@@ -1,7 +1,7 @@
 #!/bin/bash
 # Pass keywords.txt data to keywords.c
-keywords_file="RuC/keywords.c"
-keywords_source="keywords.txt"
+keywords_file="libs/compiler/keywords.c"
+keywords_source="src/keywords.txt"
 
 # Back off if script is running not from project root
 if [ ! -f "${keywords_file}" ] || [ ! -f "${keywords_source}" ] ; then
