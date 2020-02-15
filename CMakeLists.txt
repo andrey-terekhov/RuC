@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.0.0)
 option(ANALYSIS_ENABLED "Enable static analysis of input files" OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(RUC_KEYWORDS_FILE ${PROJECT_SOURCE_DIR}/keywords.txt)
 set(TEST_INPUTS_DIR ${PROJECT_SOURCE_DIR}/tests)
 set(RUC_BINARY_DIR ${CMAKE_BINARY_DIR}/bin)
 
@@ -13,11 +12,11 @@ if(ANALYSIS_ENABLED)
     include(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/aspsimple.cmake)
 endif()
 
-# add RuC
-add_subdirectory(RuC)
+# Add libraries
+add_subdirectory(libs)
 
-# add utils
-add_subdirectory(util)
+# Add frontend
+add_subdirectory(src)
 
 enable_testing()
 set(TEST_TIMEOUT 1)
