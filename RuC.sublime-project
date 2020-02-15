@@ -16,11 +16,6 @@
                 "workingdir": "${project_path:.}",
                 "commandline": "gdb --interpreter=mi -ex \"set exec-wrapper ./tools/exec_wrapper.sh ruc ./build/bin/ruc\" ./build/bin/ruc"
             },
-            "RuC-VM":
-            {
-                "workingdir": "${project_path:.}",
-                "commandline": "gdb --interpreter=mi -ex \"set exec-wrapper ./tools/exec_wrapper.sh ruc-vm ./build/bin/ruc-vm\" ./build/bin/ruc-vm"
-            },
         }
 	},
 	"folders":
