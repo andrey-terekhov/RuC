@@ -12,8 +12,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "Defs.h"
 #include "uniscanner.h"
+
+#define UNUSED(x) (void)(x)
 
 /* Find a symbol in a buffer */
 static int

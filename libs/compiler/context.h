@@ -2,7 +2,7 @@
 #define compiler_context_H
 
 #include <stdio.h>
-#include "Defs.h"
+#include "defs.h"
 
 #include "uniprinter.h"
 #include "uniscanner.h"

@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "global_vars.h"
+#include "global.h"
 #include "keywords.h"
 #include "scanner.h"
 

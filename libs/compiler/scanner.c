@@ -13,7 +13,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "error.h"
-#include "global_vars.h"
+#include "global.h"
 #include "uniscanner.h"
 
 int

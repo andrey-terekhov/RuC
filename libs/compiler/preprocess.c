@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "error.h"
-#include "global_vars.h"
+#include "global.h"
 #include "scanner.h"
 
 /* Forward declarations */

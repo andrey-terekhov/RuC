@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "global_vars.h"
+#include "global.h"
 
 extern void tablesandtree(compiler_context *context);
 

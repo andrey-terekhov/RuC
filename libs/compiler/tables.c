@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "global_vars.h"
+#include "global.h"
 
 int
 toreprtab(compiler_context *context, char str[])

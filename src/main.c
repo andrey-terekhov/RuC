@@ -20,7 +20,7 @@ const char *name =
 #include <string.h>
 #include <unistd.h>
 #include <wchar.h>
-#include "Defs.h"
+#include "defs.h"
 #include "context.h"
 
 #include "error.h"

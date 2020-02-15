@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "global_vars.h"
+#include "global.h"
 
 void
 tablesandtree(compiler_context *context)
