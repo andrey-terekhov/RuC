@@ -14,6 +14,7 @@
  *	limitations under the License.
  */
 #pragma once
+#include "context.h"
 
 #ifdef __cplusplus
 extern "C" {
