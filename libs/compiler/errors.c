@@ -1,10 +1,24 @@
+/*
+ *	Copyright 2016 Andrey Terekhov
+ *
+ *	Licensed under the Apache License, Version 2.0 (the "License");
+ *	you may not use this file except in compliance with the License.
+ *	You may obtain a copy of the License at
+ *
+ *		http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *	Unless required by applicable law or agreed to in writing, software
+ *	distributed under the License is distributed on an "AS IS" BASIS,
+ *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *	See the License for the specific language governing permissions and
+ *	limitations under the License.
+ */
+#include "errors.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "codes.h"
 #include "global.h"
-
-extern void tablesandtree(compiler_context *context);
-
-extern void show_macro(compiler_context *context);
+#include "preprocess.h"
 
 void
 printident(compiler_context *context, int r)
@@ -932,7 +946,7 @@ m_error(compiler_context *context, int ernum)
         case after_preproces_words_must_be_space:
             printer_printf(
                 &context->err_options,
-                "Неправильное ключевое слово препроцессора, далее должен "
+                "Неправильное использование ключевого слова препроцессора, далее должен "
                 "идти символ ' 'или'\\n'или'\\t' \n");
             break;
         case after_ident_must_be_space:
