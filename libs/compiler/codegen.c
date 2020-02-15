@@ -19,6 +19,9 @@
 #include "extdecl.h"
 #include "global.h"
 
+void Declid_gen(compiler_context *context);
+void compstmt_gen(compiler_context *context);
+
 void
 tocode(compiler_context *context, int c)
 {
@@ -100,8 +103,9 @@ finalop(compiler_context *context)
                     tocode(context, context->tree[context->tc++]); // длина
                 }
                 else if (c == COPY11 || c == COPY1ST || c == COPY1STASS)
+                {
                     tocode(context, context->tree[context->tc++]); // длина
-
+                }
                 else if ((c >= REMASS && c <= DIVASS) ||
                          (c >= REMASSV && c <= DIVASSV) ||
                          (c >= ASSR && c <= DIVASSR) ||
@@ -118,12 +122,13 @@ finalop(compiler_context *context)
     }
 }
 
-void Declid_gen(compiler_context *context);
-
 int
 Expr_gen(compiler_context *context, int incond)
 {
-    int flagprim = 1, eltype, wasstring = 0;
+    int flagprim = 1;
+	int eltype;
+	int wasstring = 0;
+
     while (flagprim)
     {
         switch (context->tree[context->tc++])
@@ -178,7 +183,9 @@ Expr_gen(compiler_context *context, int incond)
                 break;
             case TBeginit:
             {
-                int n = context->tree[context->tc++], i;
+                int n = context->tree[context->tc++];
+                int i;
+
                 tocode(context, BEGINIT);
                 tocode(context, n);
                 for (i = 0; i < n; i++)
@@ -236,10 +243,13 @@ Expr_gen(compiler_context *context, int incond)
         if (context->tree[context->tc] == TCondexpr)
         {
             if (incond)
+            {
                 return wasstring;
+            }
             else
             {
-                int adelse, ad = 0;
+                int adelse;
+				int ad = 0;
                 do
                 {
                     context->tc++;
@@ -271,8 +281,6 @@ Expr_gen(compiler_context *context, int incond)
     }
     return wasstring;
 }
-
-void compstmt_gen(compiler_context *context);
 
 void
 Stmt_gen(compiler_context *context)
@@ -327,8 +335,10 @@ Stmt_gen(compiler_context *context)
         break;
         case TWhile:
         {
-            int oldbreak = context->adbreak, oldcont = context->adcont,
-                ad = context->pc;
+            int oldbreak = context->adbreak;
+            int oldcont = context->adcont;
+            int ad = context->pc;
+
             context->adcont = ad;
             Expr_gen(context, 0);
             tocode(context, BE0);
@@ -345,8 +355,10 @@ Stmt_gen(compiler_context *context)
         break;
         case TDo:
         {
-            int oldbreak = context->adbreak, oldcont = context->adcont,
-                ad = context->pc;
+            int oldbreak = context->adbreak;
+            int oldcont = context->adcont;
+            int ad = context->pc;
+
             context->adcont = context->adbreak = 0;
             Stmt_gen(context);
             adcontend(context);
@@ -360,18 +372,24 @@ Stmt_gen(compiler_context *context)
         break;
         case TFor:
         {
-            int fromref = context->tree[context->tc++],
-                condref = context->tree[context->tc++],
-                incrref = context->tree[context->tc++],
-                stmtref = context->tree[context->tc++];
-            int oldbreak = context->adbreak, oldcont = context->adcont,
-                ad = context->pc, incrtc, endtc;
+            int fromref = context->tree[context->tc++];
+            int condref = context->tree[context->tc++];
+            int incrref = context->tree[context->tc++];
+            int stmtref = context->tree[context->tc++];
+            int oldbreak = context->adbreak;
+            int oldcont = context->adcont;
+            int incrtc;
+            int endtc;
+            int initad;
+
             if (fromref)
             {
                 Expr_gen(context, 0); // init
             }
-            context->adbreak = 0;
-            context->adcont = ad = context->pc;
+
+            initad = context->pc;
+            context->adcont = context->adbreak = 0;
+
             if (condref)
             {
                 Expr_gen(context, 0); // cond
@@ -382,6 +400,8 @@ Stmt_gen(compiler_context *context)
             incrtc = context->tc;
             context->tc = stmtref;
             Stmt_gen(context); //  ???? был 0
+            adcontend(context);
+
             if (incrref)
             {
                 endtc = context->tc;
@@ -389,9 +409,9 @@ Stmt_gen(compiler_context *context)
                 Expr_gen(context, 0); // incr
                 context->tc = endtc;
             }
-            adcontbeg(context, ad);
+
             tocode(context, B);
-            tocode(context, ad);
+            tocode(context, initad);
             adbreakend(context);
             context->adbreak = oldbreak;
             context->adcont = oldcont;
@@ -399,11 +419,15 @@ Stmt_gen(compiler_context *context)
         break;
         case TGoto:
         {
-            int id1 = context->tree[context->tc++], a;
+            int id1 = context->tree[context->tc++];
+            int a;
             int id = id1 > 0 ? id1 : -id1;
+
             tocode(context, B);
             if ((a = context->identab[id + 3]) > 0) // метка уже описана
+            {
                 tocode(context, a);
+            }
             else // метка еще не описана
             {
                 context->identab[id + 3] = -context->pc;
@@ -417,18 +441,22 @@ Stmt_gen(compiler_context *context)
         {
             int id = context->tree[context->tc++], a;
             if ((a = context->identab[id + 3]) < 0) // были переходы на метку
+            {
                 while (a) // проставить ссылку на метку во всех ранних переходах
                 {
                     int r = context->mem[-a];
                     context->mem[-a] = context->pc;
                     a = r;
                 }
+            }
             context->identab[id + 3] = context->pc;
         }
         break;
         case TSwitch:
         {
-            int oldbreak = context->adbreak, oldcase = context->adcase;
+            int oldbreak = context->adbreak;
+            int oldcase = context->adcase;
+
             context->adbreak = 0;
             context->adcase = 0;
             Expr_gen(context, 0);
@@ -524,7 +552,9 @@ Stmt_gen(compiler_context *context)
 void
 Struct_init_gen(compiler_context *context)
 {
-    int i, n;
+    int i;
+    int n;
+
     if (context->tree[context->tc] == TStructinit)
     {
         context->tc++;
@@ -534,18 +564,22 @@ Struct_init_gen(compiler_context *context)
         context->tc++; // TExprend
     }
     else
+    {
         Expr_gen(context, 0);
+    }
 }
 
 void
 Declid_gen(compiler_context *context)
 {
-    int olddispl = context->tree[context->tc++],
-        telem = context->tree[context->tc++], N = context->tree[context->tc++],
-        element_len, all = context->tree[context->tc++],
-        iniproc = context->tree[context->tc++],
-        usual = context->tree[context->tc++],
-        instruct = context->tree[context->tc++];
+    int olddispl = context->tree[context->tc++];
+    int telem = context->tree[context->tc++];
+    int N = context->tree[context->tc++];
+    int element_len;
+    int all = context->tree[context->tc++];
+    int iniproc = context->tree[context->tc++];
+    int usual = context->tree[context->tc++];
+    int instruct = context->tree[context->tc++];
     // all - общее кол-во слов в структуре
     //  для массивов есть еще usual // == 0 с пустыми границами,
     // == 1 без пустых границ,
@@ -636,7 +670,9 @@ void
 codegen(compiler_context *context)
 {
     int treesize = context->tc;
+
     context->tc = 0;
+
     while (context->tc < treesize)
     {
         switch (context->tree[context->tc++])
@@ -645,9 +681,11 @@ codegen(compiler_context *context)
                 break;
             case TFuncdef:
             {
-                int identref = context->tree[context->tc++],
-                    maxdispl = context->tree[context->tc++];
-                int fn = context->identab[identref + 3], pred;
+                int identref = context->tree[context->tc++];
+                int maxdispl = context->tree[context->tc++];
+                int fn = context->identab[identref + 3];
+                int pred;
+
                 context->functions[fn] = context->pc;
                 tocode(context, FUNCBEG);
                 tocode(context, maxdispl);
@@ -660,7 +698,8 @@ codegen(compiler_context *context)
 
             case TDeclarr:
             {
-                int i, N = context->tree[context->tc++];
+                int i;
+                int N = context->tree[context->tc++];
                 for (i = 0; i < N; i++)
                     Expr_gen(context, 0);
                 break;
