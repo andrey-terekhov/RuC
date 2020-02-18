@@ -34,9 +34,9 @@
 static void
 make_executable(const char *path)
 {
+#if defined(__APPLE__) || defined(__linux__)
     struct stat stat_buf;
 
-#if defined(__APPLE__) || defined(__linux__)
     if (stat(path, &stat_buf) != 0)
         return;
 
