@@ -2123,8 +2123,8 @@ void mipsgen()
 tocodeL("START", 0);
     tocodeB(sw, stp, -32768, gp);
     tocodeB(sw, ra, 0, stp);
-    printf("\n");
-    fprintf(output, "\n");
+    printf("\n\t.globl\tmain\n");
+    fprintf(output, "\n\t.globl\tmain\n");
 
 //    tocodeI(addi, stp, stp, -4);
 //    tocodemove(s8, stp);
@@ -2162,6 +2162,11 @@ tocodeL("START", 0);
                 }
                 tocodeJ(jump, "NEXT", identref);
             tocodeL("FUNC", identab[identref+3]);
+                if (identref == wasmain)
+                {
+                    printf("\t.ent\tmain\n\t.type\tmain, @function\nmain:\n");
+                    fprintf(output, "\t.ent\tmain\n\t.type\tmain, @function\nmain:\n");
+                }
                 maxdispl = (tree[tc++] - 3) * 4;
                 tocodeI(addi, stp, stp, -maxdispl - 56);
                 tocodeB(sw, fp, 0, stp);
@@ -2179,6 +2184,11 @@ tocodeL("START", 0);
                 tocodeI(addi, stp, fp, maxdispl + 56);
                 tocodeB(lw, fp, 0, fp);
                 tocodeJR(jr, ra);
+                if (identref == wasmain)
+                {
+                    printf("\t.end\tmain\n\t.size\tmain, .-main\n");
+                    fprintf(output, "\t.end\tmain\n\t.size\tmain, .-main\n");
+                }
             tocodeL("NEXT", identref);
             }
                 break;
