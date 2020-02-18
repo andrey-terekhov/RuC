@@ -48,8 +48,8 @@ make_executable(const char *path)
 void
 read_keywords(compiler_context *context)
 {
-    int   len = strlen(keywords_txt);
-    char *keywords = malloc(len + 1);
+    size_t  len = strlen(keywords_txt);
+    char   *keywords = malloc(len + 1);
 
     if (keywords == NULL)
         exit(-1);
