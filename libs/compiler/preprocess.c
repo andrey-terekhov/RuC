@@ -1,3 +1,20 @@
+/*
+ *	Copyright 2018 Andrey Terekhov, Egor Anikin
+ *
+ *	Licensed under the Apache License, Version 2.0 (the "License");
+ *	you may not use this file except in compliance with the License.
+ *	You may obtain a copy of the License at
+ *
+ *		http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *	Unless required by applicable law or agreed to in writing, software
+ *	distributed under the License is distributed on an "AS IS" BASIS,
+ *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *	See the License for the specific language governing permissions and
+ *	limitations under the License.
+ */
+
+#include "preprocess.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -8,6 +25,8 @@
 #include "global.h"
 #include "scanner.h"
 
+#define STRIGSIZE 70
+
 /* Forward declarations */
 static int mletter(compiler_context *context, int r);
 static int mdigit(compiler_context *context, int r);
@@ -17,7 +36,7 @@ static void mend_line(compiler_context *context);
 static void m_nextch(compiler_context *context, int i);
 static void m_fprintf(compiler_context *context, int a);
 
-static void to_macrotext(compiler_context *, char chang[], int oldrepr); //
+static void to_macrotext(compiler_context *, int oldrepr); //
 static void macro_reprtab(compiler_context *, char chang[]);
 static void from_macrotext(compiler_context *); // 5
 static int  macro_keywords(compiler_context *); // 12
@@ -47,10 +66,11 @@ void
 show_macro(compiler_context *context)
 {
     int i1 = context->lines[context->line];
-    int str1[50];
+    int str1[STRIGSIZE];
     int j = 0;
     int k;
     int flag = 1;
+
     context->arg = context->mlines[context->m_conect_lines[context->line]];
 
     context->flag_show_macro = 1;
@@ -126,10 +146,12 @@ static void
 mend_line(compiler_context *context)
 {
     int j;
+
     if (context->flag_show_macro == 0)
     {
         context->mlines[++context->mline] = context->m_charnum;
         context->mlines[context->mline + 1] = context->m_charnum;
+
         if (context->kw)
         {
             printer_printf(&context->miscout_options, "Line %i) ",
@@ -253,86 +275,53 @@ m_fprintf(compiler_context *context, int a)
 }
 
 static void
-to_macrotext(compiler_context *context, char chang[], int oldrepr)
+end_line_space(compiler_context *context)
 {
-    int i;
-    context->macrotext[context->mp++] = oldrepr;
-    for (i = 0; chang[i] != 0; i++)
+    while (context->curchar != '\n')
     {
-        context->macrotext[context->mp++] = chang[i];
+        if (context->curchar == ' ' || context->curchar == '\t')
+        {
+            m_nextch(context, 9);
+        }
+        else
+        {
+            m_error(context, after_preproces_words_must_be_space);
+        }
     }
-    context->macrotext[context->mp++] = 0;
+    m_nextch(context, 9);
 }
 
-static void
-macro_reprtab(compiler_context *context, char chang[])
+static int
+find_ident(compiler_context *context)
 {
-    int oldrepr = REPRTAB_LEN;
-    int r, i;
+    int fpr = REPRTAB_LEN;
+	int i;
+	int r;
 
-    context->mlastrp = oldrepr;
     context->hash = 0;
-    compiler_table_expand(&context->reprtab, 2);
-    REPRTAB_LEN += 2;
-
+    fpr += 2;
     for (i = 0; i < context->msp; i++)
     {
         context->hash += context->mstring[i];
-        compiler_table_expand(&context->reprtab, 1);
-        REPRTAB[REPRTAB_LEN++] = context->mstring[i];
+        compiler_table_ensure_allocated(&context->reprtab, fpr + 1);
+        REPRTAB[fpr++] = context->mstring[i];
     }
-    context->msp = 0;
+    compiler_table_ensure_allocated(&context->reprtab, fpr + 1);
+    REPRTAB[fpr++] = 0;
     context->hash &= 255;
-    compiler_table_expand(&context->reprtab, 1);
-    REPRTAB[REPRTAB_LEN++] = 0;
-    compiler_table_ensure_allocated(&context->reprtab, oldrepr + 1);
-    REPRTAB[oldrepr] = context->hashtab[context->hash];
-    REPRTAB[oldrepr + 1] = context->mp;
-
     r = context->hashtab[context->hash];
-    while (r != 0)
+    while (r)
     {
         compiler_table_ensure_allocated(&context->reprtab, r);
+        if (r >= context->mfirstrp && r <= context->mlastrp &&
+            equal(context, r, REPRTAB_LEN))
+        {
+            return r;
+        }
+
         r = REPRTAB[r];
     }
-    to_macrotext(context, chang, oldrepr);
-    context->hashtab[context->hash] = oldrepr;
-}
-
-static void
-from_macrotext(compiler_context *context)
-{
-    int r;
-    context->msp = 0;
-
-    while (letter(context) || digit(context))
-    {
-        context->mstring[context->msp++] = context->curchar;
-        m_nextch(context, 5);
-    }
-
-    r = find_ident(context);
-    // printf("r = %d\n", r);
-
-    if (r)
-    {
-        context->msp = 0;
-        compiler_table_ensure_allocated(&context->reprtab, r + 1);
-        if (REPRTAB[r + 1] == 2)
-        {
-            from_functionident(context, r);
-            return;
-        }
-
-        r = REPRTAB[r + 1] + 1;
-
-        for (; context->macrotext[r] != 0; r++)
-        {
-            context->mstring[context->msp++] = context->macrotext[r];
-        }
-    }
-
-    return;
+    return 0;
 }
 
 static int
@@ -388,30 +377,129 @@ macro_keywords(compiler_context *context)
     return 0;
 }
 
+static int
+to_reprtab(compiler_context *context)
+{
+    int i;
+    int r;
+    int oldrepr = REPRTAB_LEN;
+
+    context->mlastrp = oldrepr;
+    context->hash = 0;
+    compiler_table_expand(&context->reprtab, 2);
+    REPRTAB_LEN += 2;
+    do
+	{
+		context->hash += context->curchar;
+        compiler_table_expand(&context->reprtab, 1);
+		REPRTAB[REPRTAB_LEN++] = context->curchar;
+		m_nextch(context, 2);
+	} while (letter(context) || digit(context));
+
+    context->hash &= 255;
+    compiler_table_expand(&context->reprtab, 1);
+    REPRTAB[REPRTAB_LEN++] = 0;
+
+    r = context->hashtab[context->hash];
+	while (r)
+	{
+		if (equal(context, r, oldrepr))
+		{
+			m_error(context, repeat_ident);
+		}
+
+		r = REPRTAB[r];
+	}
+
+    REPRTAB[oldrepr] = context->hashtab[context->hash];
+    context->hashtab[context->hash] = oldrepr;
+
+    return oldrepr;
+}
+
+static void
+to_macrotext(compiler_context *context, int oldrepr)
+{
+    m_nextch(context, 2);
+
+    context->macrotext[context->mp++] = oldrepr;
+
+    while (context->curchar != '\n')
+	{
+		context->macrotext[context->mp++] = context->curchar;
+		m_nextch(context, 2);
+
+		if (context->curchar == EOF)
+		{
+			m_error(context, not_end_fail_preprocess);
+		}
+
+		if (context->curchar == '\\')
+		{
+			m_nextch(context, 2);
+			end_line_space(context);
+		}
+	}
+
+	context->macrotext[context->mp++] = 0;
+}
+
+static void
+from_macrotext(compiler_context *context)
+{
+    int r;
+
+    context->msp = 0;
+
+    while (letter(context) || digit(context))
+    {
+        context->mstring[context->msp++] = context->curchar;
+        m_nextch(context, 5);
+    }
+
+    r = find_ident(context);
+    // printf("r = %d\n", r);
+
+    if (r)
+    {
+        context->msp = 0;
+        compiler_table_ensure_allocated(&context->reprtab, r + 1);
+        if (REPRTAB[r + 1] == 2)
+        {
+            from_functionident(context, r);
+            return;
+        }
+
+        r = REPRTAB[r + 1] + 1;
+
+        for (; context->macrotext[r] != 0; r++)
+        {
+            context->mstring[context->msp++] = context->macrotext[r];
+        }
+    }
+
+    return;
+}
+
 static void
 relis_define(compiler_context *context)
 {
 
     if (letter(context))
     {
-        context->msp = 0;
-        while (letter(context) || digit(context))
-        {
-            context->mstring[context->msp++] = context->curchar;
-            m_nextch(context, 2);
-        }
+        int oldrepr = to_reprtab(context);
 
-        if (find_ident(context) != 0)
-        {
-            m_error(context, repeat_ident);
-        }
+        context->msp = 0;
 
         if (context->curchar == '(')
         {
-            // printf("str = %s\n", mstring);
-            toreprtab_f(context);
-            m_nextch(context, 2);
-            r_macrofunction(context);
+            REPRTAB[oldrepr + 1] = 2;
+            compiler_table_ensure_allocated(&context->reprtab, REPRTAB_LEN + 2);
+			REPRTAB[REPRTAB_LEN++] = context->fip;
+			REPRTAB[REPRTAB_LEN++] = 0;
+
+			m_nextch(context, 2);
+			r_macrofunction(context);
             return;
         }
         else if (context->curchar != ' ')
@@ -420,19 +508,9 @@ relis_define(compiler_context *context)
         }
         else
         {
-            int i = 0;
-            m_nextch(context, 2);
-            char chang[30] = { "\0" };
-            while (context->curchar != '\n')
-            {
-                chang[i++] = context->curchar;
-                m_nextch(context, 2);
-                if (context->curchar == EOF)
-                {
-                    m_error(context, not_end_fail_preprocess);
-                }
-            }
-            macro_reprtab(context, chang);
+            REPRTAB[oldrepr + 1] = context->mp;
+            to_macrotext(context, oldrepr);
+
             return;
         }
     }
@@ -443,46 +521,27 @@ relis_define(compiler_context *context)
 }
 
 static void
-toreprtab_f(compiler_context *context)
-{
-    int i;
-    int oldrepr = REPRTAB_LEN;
-    context->mlastrp = oldrepr;
-    // printf("r = %i\n", oldrepr);
-    context->hash = 0;
-    compiler_table_expand(&context->reprtab, 2);
-    REPRTAB_LEN += 2;
-    for (i = 0; i < context->msp; i++)
-    {
-        context->hash += context->mstring[i];
-        compiler_table_expand(&context->reprtab, 1);
-        REPRTAB[REPRTAB_LEN++] = context->mstring[i];
-    }
-
-    context->hash &= 255;
-    compiler_table_expand(&context->reprtab, 3);
-    REPRTAB[REPRTAB_LEN++] = 0;
-    REPRTAB[REPRTAB_LEN++] = context->fip;
-    REPRTAB[REPRTAB_LEN++] = 0;
-    compiler_table_ensure_allocated(&context->reprtab, oldrepr + 1);
-    REPRTAB[oldrepr] = context->hashtab[context->hash];
-    REPRTAB[oldrepr + 1] = 2;
-    context->hashtab[context->hash] = oldrepr;
-}
-
-static void
-to_functionident(compiler_context *context)
+to_functionident(compiler_context *context) // define c параметрами
 {
     while (context->curchar != ')')
     {
-        // reportab
-        context->msp = 0; //   \/
-        context->fip++; // funcid 5[] -> конец = 13
-        if (letter(context)) //       6[] -> macrofunc
-        { //       7[] -> fcang
-          //       8[a]
-            while (letter(context) || digit(context)) //       9[0]
-            { //      10[] -> fcang
+		//     reportab
+		//        \/
+		// funcid 5[] -> конец = 13
+		//        6[] -> macrofunc
+		//        7[] -> fcang
+		//        8[a]
+		//        9[0]
+		//       10[] -> fcang
+		//       11[b]
+		//       12[0]
+
+        context->msp = 0;
+        context->fip++;
+        if (letter(context))
+        {
+            while (letter(context) || digit(context))
+            {
                 context->functionident[context->fip++] =
                     context->curchar; //      11[b]
                 context->mstring[context->msp++] =
@@ -517,9 +576,14 @@ to_functionident(compiler_context *context)
 static void
 from_functionident(compiler_context *context, int r)
 {
-    int i, kp, cp;
+    int i;
+    int kp;
+    int cp;
     int r1 = r + 2;
-    int str[30];
+    int str[STRIGSIZE];
+    int finish;
+    int newfi;
+    int flag;
 
     compiler_table_ensure_allocated(&context->reprtab, r1);
     /* Assuming it is allocated */
@@ -533,16 +597,17 @@ from_functionident(compiler_context *context, int r)
     compiler_table_ensure_allocated(&context->reprtab, r1);
     create_change(context, r1);
 
-    int finish = context->functionident[r1];
-    int newfi = context->functionident[r1 + 1];
-    int flag = 1;
+    finish = context->functionident[r1];
+    newfi = context->functionident[r1 + 1];
+    flag = 1;
+
     context->msp = 0;
     while (context->macrofunction[newfi] != '\n')
     {
         if (mletter(context, context->macrofunction[newfi]))
         {
             flag = 1;
-            for (i = 0; i < 30; i++)
+            for (i = 0; i < STRIGSIZE; i++)
             {
                 str[i] = 0;
             }
@@ -587,8 +652,10 @@ static int
 scob(compiler_context *context, int cp)
 {
     int i;
+
     context->fchange[cp++] = context->curchar;
     m_nextch(context, 6);
+
     while (context->curchar != EOF)
     {
         if (letter(context))
@@ -611,6 +678,7 @@ scob(compiler_context *context, int cp)
             {
                 context->fchange[cp++] = context->curchar;
                 m_nextch(context, 6);
+
                 return cp;
             }
         }
@@ -625,6 +693,7 @@ create_change(compiler_context *context, int r1)
     int i;
     int r = r1 + 2;
     int cp = 1;
+
     context->functionident[r] = cp;
     if (context->curchar == '(')
     {
@@ -698,6 +767,7 @@ r_macrofunction(compiler_context *context)
 {
     int j;
     int olderfip = context->fip++;
+
     context->functionident[context->fip++] = context->mfp;
 
     to_functionident(context);
@@ -731,52 +801,6 @@ r_macrofunction(compiler_context *context)
     return;
 }
 
-
-/*void m_ident()
-{
-    context->msp = 0;
-
-    while(letter(context) || digit(context))
-    {
-        context->mstring[context->msp++] = context->curchar;
-        m_nextch(context, 5);
-    }
-    from_macrotext(context);
-
-    return;
-}*/
-
-static int
-find_ident(compiler_context *context)
-{
-    int fpr = REPRTAB_LEN;
-    int i, r;
-    context->hash = 0;
-    fpr += 2;
-    for (i = 0; i < context->msp; i++)
-    {
-        context->hash += context->mstring[i];
-        compiler_table_ensure_allocated(&context->reprtab, fpr + 1);
-        REPRTAB[fpr++] = context->mstring[i];
-    }
-    compiler_table_ensure_allocated(&context->reprtab, fpr + 1);
-    REPRTAB[fpr++] = 0;
-    context->hash &= 255;
-    r = context->hashtab[context->hash];
-    while (r)
-    {
-        compiler_table_ensure_allocated(&context->reprtab, r);
-        if (r >= context->mfirstrp && r <= context->mlastrp &&
-            equal(context, r, REPRTAB_LEN))
-        {
-            return r;
-        }
-
-        r = REPRTAB[r];
-    }
-    return 0;
-}
-
 static int
 check_if(compiler_context *context, int type_if)
 {
@@ -795,6 +819,7 @@ check_if(compiler_context *context, int type_if)
             context->mstring[context->msp++] = context->curchar;
             m_nextch(context, 10);
         }
+
         if (find_ident(context))
         {
             flag = 1;
@@ -811,27 +836,12 @@ check_if(compiler_context *context, int type_if)
     return 0;
 }
 
-static void
-end_line(compiler_context *context)
-{
-    while (context->curchar != '\n')
-    {
-        if (context->curchar == ' ' || context->curchar == '\t')
-        {
-            m_nextch(context, 9);
-        }
-        else
-        {
-            m_error(context, after_preproces_words_must_be_space);
-        }
-    }
-    m_nextch(context, 9);
-}
 
 static void
 false_if(compiler_context *context)
 {
     int fl_cur;
+
     while (context->curchar != EOF)
     {
         if (context->curchar == '#')
@@ -864,6 +874,7 @@ static int
 m_false(compiler_context *context)
 {
     int fl_cur = context->cur;
+
     while (context->curchar != EOF)
     {
         if (context->curchar == '#')
@@ -920,9 +931,11 @@ m_true(compiler_context *context, int type_if)
 static void
 m_if(compiler_context *context, int type_if)
 {
+    int flag;
+
     context->checkif++;
-    int flag = check_if(context, type_if); // начало (if)
-    end_line(context);
+    flag = check_if(context, type_if); // начало (if)
+    end_line_space(context);
     if (flag)
     {
         m_true(context, type_if);
@@ -938,7 +951,7 @@ m_if(compiler_context *context, int type_if)
         while (context->cur == SH_ELIF)
         {
             flag = check_if(type_if);
-            end_line();
+            end_line_space(context);
             if(flag)
             {
                 m_true(context, type_if);
@@ -978,6 +991,7 @@ static void
 macroscan(compiler_context *context)
 {
     int j;
+
     switch (context->curchar)
     {
         case EOF:
@@ -986,14 +1000,13 @@ macroscan(compiler_context *context)
         case '#':
             context->cur = macro_keywords(context);
             context->prep_flag = 1;
-            printer_printf(&context->miscout_options, "flag");
+
             if (context->cur == SH_DEFINE)
             {
                 relis_define(context);
                 m_nextch(context, 1);
                 return;
             }
-
             else if (context->cur == SH_IF || context->cur == SH_IFDEF ||
                      context->cur == SH_IFNDEF)
             {
@@ -1015,37 +1028,37 @@ macroscan(compiler_context *context)
 
         case '\'':
             m_fprintf(context, context->curchar);
-            m_nextch(context, 171);
+            m_nextch(context, 17);
             if (context->curchar == '\\')
             {
                 m_fprintf(context, context->curchar);
-                m_nextch(context, 171);
+                m_nextch(context, 17);
             }
             m_fprintf(context, context->curchar);
-            m_nextch(context, 171);
+            m_nextch(context, 17);
 
             m_fprintf(context, context->curchar);
-            m_nextch(context, 171);
+            m_nextch(context, 17);
             return;
 
         case '\"':
             m_fprintf(context, context->curchar);
-            m_nextch(context, 172);
+            m_nextch(context, 17);
             while (context->curchar != '\"' && context->curchar != EOF)
             {
                 if (context->curchar == '\\')
                 {
                     m_fprintf(context, context->curchar);
-                    m_nextch(context, 172);
+                    m_nextch(context, 17);
                 }
                 m_fprintf(context, context->curchar);
-                m_nextch(context, 172);
+                m_nextch(context, 17);
             }
             m_fprintf(context, context->curchar);
-            m_nextch(context, 172);
+            m_nextch(context, 17);
             return;
         default:
-            if (letter(context))
+            if (letter(context) && context->prep_flag == 1)
             {
                 from_macrotext(context);
                 for (j = 0; j < context->msp; j++)
@@ -1057,7 +1070,7 @@ macroscan(compiler_context *context)
             else
             {
                 m_fprintf(context, context->curchar);
-                m_nextch(context, 173);
+                m_nextch(context, 17);
                 return;
             }
     }
