@@ -52,7 +52,7 @@ printer_mem_fprintf(universal_printer_options *opts,
 
     if (opts->size < (opts->pos + ret + 1))
     {
-        int new_size = (opts->size * 2) > (opts->pos + ret + 1)
+        size_t new_size = (opts->size * 2) > (opts->pos + ret + 1)
             ? (opts->size * 2)
             : (opts->pos + ret + 1);
         char *reallocated = realloc(opts->ptr, new_size);

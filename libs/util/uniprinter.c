@@ -99,9 +99,11 @@ printer_printchar(universal_printer_options *opts, int wchar)
     }
     else
     {
-        unsigned char first = (wchar >> 6) | /*0b11000000*/ 0xC0;
-        unsigned char second =
-            (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
+        // FIXME: weirdness is above any expectations
+        unsigned char first = (unsigned char)
+            ((wchar >> 6) | /*0b11000000*/ 0xC0);
+        unsigned char second = (unsigned char)
+            ((wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80);
 
         return printer_printf(opts, "%c%c", first, second);
     }

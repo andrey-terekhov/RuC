@@ -30,8 +30,8 @@ typedef struct universal_printer_options
     ruc_io_source source;
     FILE *        output;
     char *        ptr;
-    int           pos;
-    int           size;
+    size_t        pos;
+    size_t        size;
     void *        opaque;
 } universal_printer_options;
 
