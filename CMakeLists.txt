@@ -6,8 +6,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(TEST_INPUTS_DIR ${PROJECT_SOURCE_DIR}/tests)
 set(RUC_BINARY_DIR ${CMAKE_BINARY_DIR}/bin)
 
-if(NOT MSVC)
-add_compile_options(-Werror=return-type -g)
+if(MSVC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+else()
+    add_compile_options(-Werror=return-type -g)
 endif()
 
 if(ANALYSIS_ENABLED)

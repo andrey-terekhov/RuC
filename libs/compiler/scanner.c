@@ -14,7 +14,6 @@
  *	limitations under the License.
  */
 
-#define _CRT_SECURE_NO_WARNINGS
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>

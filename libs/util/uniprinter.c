@@ -13,7 +13,6 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
-#define _CRT_SECURE_NO_WARNINGS
 #include "uniprinter.h"
 #include <limits.h>
 #include <math.h>
