@@ -71,15 +71,15 @@ process_user_requests(compiler_context *context, int argc, const char *argv[])
         {
             char *macro_processed;
 
-#ifndef FILE_DEBUG
+#if !defined(FILE_DEBUG) && !defined(_MSC_VER)
             /* Regular file */
             char macro_path[] = "/tmp/macroXXXXXX";
             char tree_path[] = "/tmp/treeXXXXXX";
             char codes_path[] = "/tmp/codesXXXXXX";
 
-            mktemp(macro_path);
-            mktemp(tree_path);
-            mktemp(codes_path);
+            mkstemp(macro_path);
+            mkstemp(tree_path);
+            mkstemp(codes_path);
 #else
             char macro_path[] = "macro.txt";
             char tree_path[] = "tree.txt";
@@ -122,7 +122,7 @@ process_user_requests(compiler_context *context, int argc, const char *argv[])
             compiler_context_detach_io(context, IO_TYPE_INPUT);
 
             /* Will be left for debugging in case of failure */
-#ifndef FILE_DEBUG
+#if !defined(FILE_DEBUG) && !defined(_MSC_VER)
             unlink(tree_path);
             unlink(codes_path);
             unlink(macro_path);
