@@ -26,6 +26,9 @@
 #include "global.h"
 #include "keywords.h"
 #include "scanner.h"
+#include "extdecl.h"
+#include "codegen.h"
+#include "codes.h"
 
 /* Make executable actually executable on best-effort basis (if possible) */
 static void
