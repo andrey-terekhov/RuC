@@ -6,7 +6,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(TEST_INPUTS_DIR ${PROJECT_SOURCE_DIR}/tests)
 set(RUC_BINARY_DIR ${CMAKE_BINARY_DIR}/bin)
 
+if(NOT MSVC)
 add_compile_options(-Werror=return-type -g)
+endif()
 
 if(ANALYSIS_ENABLED)
     include(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/aspsimple.cmake)
