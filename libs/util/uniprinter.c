@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 extern printer_desc printer_mem;
 extern printer_desc printer_file;

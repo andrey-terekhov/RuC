@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 extern scanner_desc scanner_mem;
 extern scanner_desc scanner_file;
