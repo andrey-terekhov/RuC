@@ -13,14 +13,27 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+#pragma once
 
-#ifndef H_COMPILER
-#define H_COMPILER
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-
+/**
+ * Compile RuC files set as compiler arguments
+ *
+ * @param argc Number of arguments
+ * @param argv String arguments to compiler, starting with the name of
+ *             compiler executable
+ *
+ * @return Status code
+ */
 #ifdef _MSC_VER
 __declspec(dllexport)
 #endif
 int compile(int argc, const char *argv[]);
 
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
+

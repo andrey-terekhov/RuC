@@ -1,10 +1,28 @@
-#ifndef RUC_UNISCANNER_H
-#define RUC_UNISCANNER_H
+/*
+ *	Copyright 2019 Andrey Terekhov
+ *
+ *	Licensed under the Apache License, Version 2.0 (the "License");
+ *	you may not use this file except in compliance with the License.
+ *	You may obtain a copy of the License at
+ *
+ *		http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *	Unless required by applicable law or agreed to in writing, software
+ *	distributed under the License is distributed on an "AS IS" BASIS,
+ *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *	See the License for the specific language governing permissions and
+ *	limitations under the License.
+ */
+#pragma once
 
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include "io.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /** Options of universal scanner */
 typedef struct universal_scanner_options
@@ -53,21 +71,21 @@ typedef struct scanner_desc
  *
  * @param opts Scanner context
  */
-extern void scanner_init(universal_scanner_options *opts);
+void scanner_init(universal_scanner_options *opts);
 
 /**
  * Deinitialize scanner
  *
  * @param opts Scanner context
  */
-extern void scanner_deinit(universal_scanner_options *opts);
+void scanner_deinit(universal_scanner_options *opts);
 
 /**
  * Close current scanner context
  *
  * @param opts Scanner context
  */
-extern void scanner_close(universal_scanner_options *opts);
+void scanner_close(universal_scanner_options *opts);
 
 /**
  * Get a next symbol from input stream
@@ -76,7 +94,7 @@ extern void scanner_close(universal_scanner_options *opts);
  *
  * @return Read symbol
  */
-extern int scanner_getnext(universal_scanner_options *opts);
+int scanner_getnext(universal_scanner_options *opts);
 
 /**
  * scanf() for the uniscanner stream
@@ -85,7 +103,7 @@ extern int scanner_getnext(universal_scanner_options *opts);
  *
  * @return scanf()-like return value
  */
-extern int scanner_scanf(universal_scanner_options *opts, const char *fmt, ...);
+int scanner_scanf(universal_scanner_options *opts, const char *fmt, ...);
 
 /**
  * Attach file to scanner
@@ -95,7 +113,7 @@ extern int scanner_scanf(universal_scanner_options *opts, const char *fmt, ...);
  *
  * @return @c true on success, @c false on failure
  */
-extern bool scanner_attach_file(universal_scanner_options *opts, FILE *file);
+bool scanner_attach_file(universal_scanner_options *opts, FILE *file);
 
 /**
  * Attach buffer to scanner
@@ -105,7 +123,10 @@ extern bool scanner_attach_file(universal_scanner_options *opts, FILE *file);
  *
  * @return @c true on success, @c false on failure
  */
-extern bool scanner_attach_buffer(universal_scanner_options *opts,
-                                  const char *               ptr);
+bool scanner_attach_buffer(universal_scanner_options *opts,
+                           const char *               ptr);
 
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
+

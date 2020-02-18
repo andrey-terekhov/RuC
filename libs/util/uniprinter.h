@@ -1,10 +1,28 @@
-#ifndef RUC_UNIPRINTER_H
-#define RUC_UNIPRINTER_H
+/*
+ *	Copyright 2019 Andrey Terekhov
+ *
+ *	Licensed under the Apache License, Version 2.0 (the "License");
+ *	you may not use this file except in compliance with the License.
+ *	You may obtain a copy of the License at
+ *
+ *		http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *	Unless required by applicable law or agreed to in writing, software
+ *	distributed under the License is distributed on an "AS IS" BASIS,
+ *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *	See the License for the specific language governing permissions and
+ *	limitations under the License.
+ */
+#pragma once
 
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include "io.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /** Options of universal printer */
 typedef struct universal_printer_options
@@ -43,21 +61,21 @@ typedef struct printer_desc
  *
  * @param opts Printer context
  */
-extern void printer_init(universal_printer_options *opts);
+void printer_init(universal_printer_options *opts);
 
 /**
  * Deinitialize printer
  *
  * @param opts Printer context
  */
-extern void printer_deinit(universal_printer_options *opts);
+void printer_deinit(universal_printer_options *opts);
 
 /**
  * Close current printer stream
  *
  * @param opts Printer context
  */
-extern void printer_close(universal_printer_options *opts);
+void printer_close(universal_printer_options *opts);
 
 /**
  * Universal function for printing data to some output
@@ -67,9 +85,9 @@ extern void printer_close(universal_printer_options *opts);
  *
  * @return printf-like return value
  */
-extern int printer_printf(universal_printer_options *opts,
-                          const char *               fmt,
-                          ...);
+int printer_printf(universal_printer_options *opts,
+                   const char *               fmt,
+                   ...);
 
 /**
  * Universal function for printing (wide) characters
@@ -79,7 +97,7 @@ extern int printer_printf(universal_printer_options *opts,
  *
  * @return printf-like return value
  */
-extern int printer_printchar(universal_printer_options *opts, int wchar);
+int printer_printchar(universal_printer_options *opts, int wchar);
 
 /**
  * Attach file to printer
@@ -89,7 +107,7 @@ extern int printer_printchar(universal_printer_options *opts, int wchar);
  *
  * @return @c true on success, @c false on failure
  */
-extern bool printer_attach_file(universal_printer_options *opts, FILE *file);
+bool printer_attach_file(universal_printer_options *opts, FILE *file);
 
 /**
  * Attach buffer to printer
@@ -99,6 +117,9 @@ extern bool printer_attach_file(universal_printer_options *opts, FILE *file);
  *
  * @return @c true on success, @c false on failure
  */
-extern bool printer_attach_buffer(universal_printer_options *opts, size_t size);
+bool printer_attach_buffer(universal_printer_options *opts, size_t size);
 
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
+
