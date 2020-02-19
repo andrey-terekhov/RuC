@@ -18,22 +18,22 @@
 
 
 static const char *name = "../tests/arrays.c";
-    // "../tests/Egor/Macro/test3.c";
-    // "../tests/Mishatest.c";
-    // "../tests/mips/0test.c";
+// "../tests/Egor/Macro/test3.c";
+// "../tests/Mishatest.c";
+// "../tests/mips/0test.c";
 
 
 int main(int argc, const char *argv[])
 {
-    if (argc < 2)
-    {
-        const char *tmp_argv[2] = { argv[0], name };
-        compile(2, tmp_argv);
-    }
-    else
-    {
-        compile(argc, argv);
-    }
+	if (argc < 2)
+	{
+		const char *tmp_argv[2] = { argv[0], name };
+		compile(2, tmp_argv);
+	}
+	else
+	{
+		compile(argc, argv);
+	}
 
-    return 0;
+	return 0;
 }

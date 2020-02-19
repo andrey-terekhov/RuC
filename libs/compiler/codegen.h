@@ -17,12 +17,12 @@
 #include "context.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-void codegen(compiler_context *context);
+	void codegen(compiler_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-

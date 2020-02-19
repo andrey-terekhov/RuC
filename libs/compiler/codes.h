@@ -17,13 +17,13 @@
 #include "context.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-void tablesandcode(compiler_context *context);
-void tablesandtree(compiler_context *context);
+	void tablesandcode(compiler_context *context);
+	void tablesandtree(compiler_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-

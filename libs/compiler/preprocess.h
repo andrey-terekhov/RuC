@@ -17,20 +17,20 @@
 #include "context.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-/**
- * Preprocess a file from input context and put preprocessed content to output
- * context
- *
- * @param context Compiler context
- */
-void preprocess_file(compiler_context *context);
+	/**
+	 * Preprocess a file from input context and put preprocessed content to output
+	 * context
+	 *
+	 * @param context Compiler context
+	 */
+	void preprocess_file(compiler_context *context);
 
-void show_macro(compiler_context *context);
+	void show_macro(compiler_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-

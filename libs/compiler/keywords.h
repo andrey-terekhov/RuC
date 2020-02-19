@@ -16,12 +16,12 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern char keywords_txt[];
+	extern char keywords_txt[];
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-

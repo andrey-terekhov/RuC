@@ -17,27 +17,27 @@
 #include "context.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-/**
- * Save up a string array to reprtab
- *
- * @param context   RuC context
- * @param str       Target string
- *
- * @return FIXME
- */
-int toreprtab(compiler_context *context, char str[]);
+	/**
+	 * Save up a string array to reprtab
+	 *
+	 * @param context   RuC context
+	 * @param str       Target string
+	 *
+	 * @return FIXME
+	 */
+	int toreprtab(compiler_context *context, char str[]);
 
-/**
- * Mode table initialization
- *
- * @param context   RuC context
- */
-void init_modetab(compiler_context *context);
+	/**
+	 * Mode table initialization
+	 *
+	 * @param context   RuC context
+	 */
+	void init_modetab(compiler_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-

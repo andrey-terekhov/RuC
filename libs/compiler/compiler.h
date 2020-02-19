@@ -16,7 +16,8 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /**
@@ -29,11 +30,10 @@ extern "C" {
  * @return Status code
  */
 #ifdef _MSC_VER
-__declspec(dllexport)
+	__declspec(dllexport)
 #endif
-int compile(int argc, const char *argv[]);
+		int compile(int argc, const char *argv[]);
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
