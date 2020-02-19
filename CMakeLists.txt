@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 
+project(ruc)
+
 option(ANALYSIS_ENABLED "Enable static analysis of input files" OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
