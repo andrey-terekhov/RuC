@@ -173,69 +173,68 @@ typedef struct compiler_context
 
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-	/**
-	 * Initialize RuC context
-	 *
-	 * @param context Uninitialized RuC context
-	 */
-	void compiler_context_init(compiler_context *context);
+/**
+ * Initialize RuC context
+ *
+ * @param context Uninitialized RuC context
+ */
+void compiler_context_init(compiler_context *context);
 
-	/**
-	 * Deinitialize RuC ontext
-	 *
-	 * @param context Initialized RuC context
-	 */
-	void compiler_context_deinit(compiler_context *context);
+/**
+ * Deinitialize RuC ontext
+ *
+ * @param context Initialized RuC context
+ */
+void compiler_context_deinit(compiler_context *context);
 
-	/**
-	 * Attach input to a specific input/output pipe
-	 *
-	 * @param context   RuC context
-	 * @param ptr       Context-specific data, e.g. path to file or a pointer to
-	 *                  data
-	 * @param type      IO type
-	 * @param source    Data source
-	 */
-	void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_io_type type, ruc_io_source source);
+/**
+ * Attach input to a specific input/output pipe
+ *
+ * @param context   RuC context
+ * @param ptr       Context-specific data, e.g. path to file or a pointer to
+ *                  data
+ * @param type      IO type
+ * @param source    Data source
+ */
+void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_io_type type, ruc_io_source source);
 
-	/**
-	 * Detach file from a specific input/output pipe
-	 *
-	 * @param context   RuC context
-	 * @param type      IO type
-	 */
-	void compiler_context_detach_io(compiler_context *context, ruc_io_type type);
+/**
+ * Detach file from a specific input/output pipe
+ *
+ * @param context   RuC context
+ * @param type      IO type
+ */
+void compiler_context_detach_io(compiler_context *context, ruc_io_type type);
 
-	/**
-	 * Initialize compiler table
-	 *
-	 * @param table     Target compiler table
-	 */
-	void compiler_table_init(compiler_table *table);
+/**
+ * Initialize compiler table
+ *
+ * @param table     Target compiler table
+ */
+void compiler_table_init(compiler_table *table);
 
-	/**
-	 * Ensure that specific offset is allocated in a table
-	 *
-	 * @param table     Target compiler table
-	 * @param pos       Target position
-	 *
-	 * @return Table size
-	 */
-	int compiler_table_ensure_allocated(compiler_table *table, int pos);
+/**
+ * Ensure that specific offset is allocated in a table
+ *
+ * @param table     Target compiler table
+ * @param pos       Target position
+ *
+ * @return Table size
+ */
+int compiler_table_ensure_allocated(compiler_table *table, int pos);
 
-	/**
-	 * Expand compiler table
-	 *
-	 * @param table     Target compiler table
-	 * @param len       Requested length
-	 *
-	 * @return New size
-	 */
-	int compiler_table_expand(compiler_table *table, int len);
+/**
+ * Expand compiler table
+ *
+ * @param table     Target compiler table
+ * @param len       Requested length
+ *
+ * @return New size
+ */
+int compiler_table_expand(compiler_table *table, int len);
 
 #ifdef __cplusplus
 } /* extern "C" */

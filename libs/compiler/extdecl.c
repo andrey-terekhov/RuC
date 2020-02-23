@@ -1741,8 +1741,8 @@ void statement(compiler_context *context)
 		if (flag)
 		{
 			totree(context, id = toidentab(context, 1, 0));
-			context->gotost[context->pgotost++] = id; // это определение метки, если она встретилась до переходов
-													  // на нее
+			context->gotost[context->pgotost++] = id; // это определение метки, если она встретилась до
+													  // переходов на нее
 			context->gotost[context->pgotost++] = -context->line;
 		}
 		else
