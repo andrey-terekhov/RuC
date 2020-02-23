@@ -36,6 +36,8 @@ static int printer_mem_fprintf(universal_printer_options *opts, const char *fmt,
 	ret = vsnprintf(buf, sizeof(buf), fmt, args);
 	if (ret < 0)
 	{
+		va_end(args2);
+		va_end(args3);
 		return ret;
 	}
 
@@ -45,6 +47,9 @@ static int printer_mem_fprintf(universal_printer_options *opts, const char *fmt,
 		ret = vsnprintf(allocated, ret, fmt, args2);
 		if (ret < 0)
 		{
+			free(allocated);
+			va_end(args2);
+			va_end(args3);
 			return ret;
 		}
 		buf_to_use = allocated;
@@ -57,6 +62,8 @@ static int printer_mem_fprintf(universal_printer_options *opts, const char *fmt,
 
 		if (reallocated == NULL)
 		{
+			va_end(args2);
+			va_end(args3);
 			free(allocated);
 			return -1;
 		}
@@ -74,6 +81,8 @@ static int printer_mem_fprintf(universal_printer_options *opts, const char *fmt,
 	}
 
 	free(allocated);
+	va_end(args2);
+	va_end(args3);
 	return ret;
 }
 
