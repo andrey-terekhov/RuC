@@ -101,6 +101,6 @@ Release/
 # RuC
 !keywords.txt
 
-# Sublim workspace files
+# Sublime workspace files
 *.sublime-workspace
 tmp-run*.sh
