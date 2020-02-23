@@ -16,6 +16,7 @@
 #pragma once
 
 #include "io.h"
+#include "util_internal.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -69,21 +70,21 @@ typedef struct scanner_desc
  *
  * @param opts Scanner context
  */
-void scanner_init(universal_scanner_options *opts);
+UTIL_EXPORTED void scanner_init(universal_scanner_options *opts);
 
 /**
  * Deinitialize scanner
  *
  * @param opts Scanner context
  */
-void scanner_deinit(universal_scanner_options *opts);
+UTIL_EXPORTED void scanner_deinit(universal_scanner_options *opts);
 
 /**
  * Close current scanner context
  *
  * @param opts Scanner context
  */
-void scanner_close(universal_scanner_options *opts);
+UTIL_EXPORTED void scanner_close(universal_scanner_options *opts);
 
 /**
  * Get a next symbol from input stream
@@ -92,7 +93,7 @@ void scanner_close(universal_scanner_options *opts);
  *
  * @return Read symbol
  */
-int scanner_getnext(universal_scanner_options *opts);
+UTIL_EXPORTED int scanner_getnext(universal_scanner_options *opts);
 
 /**
  * scanf() for the uniscanner stream
@@ -101,7 +102,7 @@ int scanner_getnext(universal_scanner_options *opts);
  *
  * @return scanf()-like return value
  */
-int scanner_scanf(universal_scanner_options *opts, const char *fmt, ...);
+UTIL_EXPORTED int scanner_scanf(universal_scanner_options *opts, const char *fmt, ...);
 
 /**
  * Attach file to scanner
@@ -111,7 +112,7 @@ int scanner_scanf(universal_scanner_options *opts, const char *fmt, ...);
  *
  * @return @c true on success, @c false on failure
  */
-bool scanner_attach_file(universal_scanner_options *opts, FILE *file);
+UTIL_EXPORTED bool scanner_attach_file(universal_scanner_options *opts, FILE *file);
 
 /**
  * Attach buffer to scanner
@@ -121,7 +122,7 @@ bool scanner_attach_file(universal_scanner_options *opts, FILE *file);
  *
  * @return @c true on success, @c false on failure
  */
-bool scanner_attach_buffer(universal_scanner_options *opts, const char *ptr);
+UTIL_EXPORTED bool scanner_attach_buffer(universal_scanner_options *opts, const char *ptr);
 
 #ifdef __cplusplus
 } /* extern "C" */

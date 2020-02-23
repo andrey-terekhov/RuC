@@ -5,7 +5,7 @@ project(compiler-util)
 set(CMAKE_C_STANDARD 11)
 
 file(GLOB SOURCE_FILES "*.c")
-add_library(${PROJECT_NAME} ${SOURCE_FILES})
+add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 
 if(MSVC)
   	target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
