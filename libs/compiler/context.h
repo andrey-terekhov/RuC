@@ -1,5 +1,19 @@
-#ifndef compiler_context_H
-#define compiler_context_H
+/*
+ *  Copyright 2019 Andrey Terekhov
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+#pragma once
 
 #include "defs.h"
 #include "uniprinter.h"
@@ -157,65 +171,72 @@ typedef struct compiler_context
 	compiler_table reprtab;
 } compiler_context;
 
-/**
- * Initialize RuC context
- *
- * @param context Uninitialized RuC context
- */
-extern void compiler_context_init(compiler_context *context);
 
-/**
- * Deinitialize RuC ontext
- *
- * @param context Initialized RuC context
- */
-extern void compiler_context_deinit(compiler_context *context);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-/**
- * Attach input to a specific input/output pipe
- *
- * @param context   RuC context
- * @param ptr       Context-specific data, e.g. path to file or a pointer to
- *                  data
- * @param type      IO type
- * @param source    Data source
- */
-extern void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_io_type type,
-									   ruc_io_source source);
+	/**
+	 * Initialize RuC context
+	 *
+	 * @param context Uninitialized RuC context
+	 */
+	void compiler_context_init(compiler_context *context);
 
-/**
- * Detach file from a specific input/output pipe
- *
- * @param context   RuC context
- * @param type      IO type
- */
-extern void compiler_context_detach_io(compiler_context *context, ruc_io_type type);
+	/**
+	 * Deinitialize RuC ontext
+	 *
+	 * @param context Initialized RuC context
+	 */
+	void compiler_context_deinit(compiler_context *context);
 
-/**
- * Initialize compiler table
- *
- * @param table     Target compiler table
- */
-extern void compiler_table_init(compiler_table *table);
+	/**
+	 * Attach input to a specific input/output pipe
+	 *
+	 * @param context   RuC context
+	 * @param ptr       Context-specific data, e.g. path to file or a pointer to
+	 *                  data
+	 * @param type      IO type
+	 * @param source    Data source
+	 */
+	void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_io_type type, ruc_io_source source);
 
-/**
- * Ensure that specific offset is allocated in a table
- *
- * @param table     Target compiler table
- * @param pos       Target position
- *
- * @return Table size
- */
-extern int compiler_table_ensure_allocated(compiler_table *table, int pos);
+	/**
+	 * Detach file from a specific input/output pipe
+	 *
+	 * @param context   RuC context
+	 * @param type      IO type
+	 */
+	void compiler_context_detach_io(compiler_context *context, ruc_io_type type);
 
-/**
- * Expand compiler table
- *
- * @param table     Target compiler table
- * @param len       Requested length
- *
- * @return New size
- */
-extern int compiler_table_expand(compiler_table *table, int len);
+	/**
+	 * Initialize compiler table
+	 *
+	 * @param table     Target compiler table
+	 */
+	void compiler_table_init(compiler_table *table);
 
+	/**
+	 * Ensure that specific offset is allocated in a table
+	 *
+	 * @param table     Target compiler table
+	 * @param pos       Target position
+	 *
+	 * @return Table size
+	 */
+	int compiler_table_ensure_allocated(compiler_table *table, int pos);
+
+	/**
+	 * Expand compiler table
+	 *
+	 * @param table     Target compiler table
+	 * @param len       Requested length
+	 *
+	 * @return New size
+	 */
+	int compiler_table_expand(compiler_table *table, int len);
+
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
