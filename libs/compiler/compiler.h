@@ -16,8 +16,13 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
+#endif
+
+#ifdef _MSC_VER
+#define COMPILER_EXPORTED __declspec(dllexport)
+#else
+#define COMPILER_EXPORTED
 #endif
 
 /**
@@ -29,10 +34,9 @@ extern "C"
  *
  * @return Status code
  */
-#ifdef _MSC_VER
-	__declspec(dllexport)
-#endif
-		int compile(int argc, const char *argv[]);
+COMPILER_EXPORTED int compile(int argc, const char *argv[]);
+
+#undef COMPILER_EXPORTED
 
 #ifdef __cplusplus
 } /* extern "C" */
