@@ -11,14 +11,6 @@ file(GLOB SRC "*.c")
 
 add_executable(${PROJECT_NAME} ${SRC})
 
-
-if(MSVC)
-	file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/keywords.txt" DESTINATION "${CMAKE_BINARY_DIR}/Debug")
-	file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/keywords.txt" DESTINATION "${CMAKE_BINARY_DIR}/Release")
-else()
-	file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/keywords.txt" DESTINATION ${CMAKE_BINARY_DIR})
-endif()
-
 target_link_libraries(${PROJECT_NAME} compiler compiler-util)
 
 if(ANALYSIS_ENABLED)
