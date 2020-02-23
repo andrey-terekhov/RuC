@@ -13,8 +13,10 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 #include "compiler.h"
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 
 static const char *name = "../tests/arrays.c";
@@ -27,12 +29,33 @@ int main(int argc, const char *argv[])
 {
 	if (argc < 2)
 	{
-		const char *tmp_argv[2] = { argv[0], name };
-		compile(2, tmp_argv);
+		compiler_compile(name);
 	}
 	else
 	{
-		compile(argc, argv);
+		compiler_workspace *ws;
+
+		ws = compiler_get_workspace(argc, argv);
+		if (ws == NULL)
+		{
+			fprintf(stderr, " failed to create a workspace\n");
+			exit(1);
+		}
+
+		if (ws->error.code != COMPILER_WS_EOK)
+		{
+			char *str;
+
+			str = compiler_workspace_error2str(&ws->error);
+			fprintf(stderr, "error: %s", str != NULL ? str : "Unknown workspace error");
+			free(str);
+
+			compiler_workspace_free(ws);
+			exit(1);
+		}
+
+		compiler_workspace_compile(ws);
+		compiler_workspace_free(ws);
 	}
 
 	return 0;

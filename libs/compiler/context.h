@@ -41,8 +41,6 @@ typedef struct compiler_table
 // Определение глобальных переменных
 typedef struct compiler_context
 {
-	const char *output_file; /** Output file */
-
 	universal_scanner_options input_options;
 	universal_printer_options output_options;
 	universal_printer_options err_options;
