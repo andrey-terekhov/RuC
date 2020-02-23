@@ -37,7 +37,9 @@ static void make_executable(const char *path)
 	struct stat stat_buf;
 
 	if (stat(path, &stat_buf) != 0)
+	{
 		return;
+	}
 
 	chmod(path, stat_buf.st_mode | S_IXUSR);
 #endif
@@ -50,7 +52,9 @@ void read_keywords(compiler_context *context)
 	char *keywords = malloc(len + 1);
 
 	if (keywords == NULL)
+	{
 		exit(-1);
+	}
 
 	memcpy(keywords, keywords_txt, len + 1);
 
@@ -104,22 +108,32 @@ void output_export(compiler_context *context, const char *path)
 				   REPRTAB_LEN, context->md, context->maxdisplg, context->wasmain);
 
 	for (i = 0; i < context->pc; i++)
+	{
 		printer_printf(&context->output_options, "%i ", context->mem[i]);
+	}
 	printer_printf(&context->output_options, "\n");
 
 	for (i = 0; i < context->funcnum; i++)
+	{
 		printer_printf(&context->output_options, "%i ", context->functions[i]);
+	}
 	printer_printf(&context->output_options, "\n");
 
 	for (i = 0; i < context->id; i++)
+	{
 		printer_printf(&context->output_options, "%i ", context->identab[i]);
+	}
 	printer_printf(&context->output_options, "\n");
 
 	for (i = 0; i < REPRTAB_LEN; i++)
+	{
 		printer_printf(&context->output_options, "%i ", REPRTAB[i]);
+	}
 
 	for (i = 0; i < context->md; i++)
+	{
 		printer_printf(&context->output_options, "%i ", context->modetab[i]);
+	}
 	printer_printf(&context->output_options, "\n");
 
 	compiler_context_detach_io(context, IO_TYPE_OUTPUT);

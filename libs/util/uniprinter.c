@@ -67,7 +67,9 @@ int printer_printf(universal_printer_options *opts, const char *fmt, ...)
 		printer_desc **tmp = printers;
 
 		while (*tmp != NULL && (*tmp)->source != opts->source)
+		{
 			tmp++;
+		}
 
 		if (*tmp == NULL)
 		{

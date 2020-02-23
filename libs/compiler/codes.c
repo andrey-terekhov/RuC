@@ -21,7 +21,8 @@
 
 void tablesandtree(compiler_context *context)
 {
-	int i = 0, j;
+	int i = 0;
+	int j;
 
 	printer_printf(&context->output_options, "\n%s\n", "source");
 	for (i = 1; i < context->line; i++)
@@ -39,7 +40,9 @@ void tablesandtree(compiler_context *context)
 	while (i < context->id)
 	{
 		for (j = 0; j < 4; j++)
+		{
 			printer_printf(&context->output_options, "id %i) %i\n", i + j, context->identab[i + j]);
+		}
 		printer_printf(&context->output_options, "\n");
 		i += 4;
 	}
@@ -51,7 +54,9 @@ void tablesandtree(compiler_context *context)
 	 */
 	printer_printf(&context->output_options, "\n%s\n", "modetab");
 	for (i = 0; i < context->md; i++)
+	{
 		printer_printf(&context->output_options, "md %i) %i\n", i, context->modetab[i]);
+	}
 	/*
 		printer_printf(&context->output_options, "\n%s\n", "tree");
 		for (i=0; i<=tc; i++)
@@ -324,7 +329,8 @@ void tablesandtree(compiler_context *context)
 
 void tablesandcode(compiler_context *context)
 {
-	int i = 0, j;
+	int i = 0;
+	int j;
 
 	printer_printf(&context->output_options, "\n%s\n", "source");
 	for (i = 1; i < context->line; i++)
@@ -338,11 +344,15 @@ void tablesandcode(compiler_context *context)
 
 	printer_printf(&context->output_options, "\n\n%s\n", "functions");
 	for (i = 1; i <= context->funcnum; i++)
+	{
 		printer_printf(&context->output_options, "fun %i) %i\n", i, context->functions[i]);
+	}
 
 	printer_printf(&context->output_options, "\n%s\n", "iniprocs");
 	for (i = 1; i <= context->procd; i++)
+	{
 		printer_printf(&context->output_options, "inipr %i) %i\n", i, context->iniprocs[i]);
+	}
 
 	printer_printf(&context->output_options, "\n%s\n", "mem");
 	i = 0;

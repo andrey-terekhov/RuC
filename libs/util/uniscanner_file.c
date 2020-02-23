@@ -23,7 +23,8 @@
 int io_file_getnext(universal_scanner_options *opts)
 {
 	// reads UTF-8
-	unsigned char firstchar, secondchar;
+	unsigned char firstchar;
+	unsigned char secondchar;
 	int ret = EOF;
 	int retval;
 
@@ -48,7 +49,9 @@ int io_file_getnext(universal_scanner_options *opts)
 			ret = firstchar;
 		}
 		if (ret == '\r')
+		{
 			ret = io_file_getnext(opts);
+		}
 	}
 
 	return ret;

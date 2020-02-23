@@ -24,8 +24,9 @@ void printident(compiler_context *context, int r)
 {
 	r += 2; // ссылка на context->reprtab
 	do
+	{
 		printer_printchar(&context->err_options, REPRTAB[r++]);
-	while (REPRTAB[r] != 0);
+	} while (REPRTAB[r] != 0);
 }
 
 void warning(compiler_context *context, int ernum)
@@ -44,7 +45,9 @@ void warning(compiler_context *context, int ernum)
 
 void error(compiler_context *context, int ernum)
 {
-	int i, j;
+	int i;
+	int j;
+
 	// tablesandtree();
 	printer_printf(&context->err_options, "\n Oшибка :\n \n");
 	if (context->lines[context->line] == context->charnum)
@@ -61,7 +64,9 @@ void error(compiler_context *context, int ernum)
 		printer_printf(&context->err_options, "line %i) ", j);
 
 		for (i = context->mlines[j]; i < context->mlines[j + 1]; i++)
+		{
 			printer_printchar(&context->err_options, context->before_source[i]);
+		}
 	}
 	show_macro(context);
 	printer_printf(&context->err_options, "\n");
@@ -688,10 +693,13 @@ void error(compiler_context *context, int ernum)
 void m_error(compiler_context *context, int ernum)
 {
 	int i;
+
 	//    tablesandtree();
 	printer_printf(&context->err_options, "line %i) ", context->mline);
 	for (i = context->mlines[context->mline]; i < context->m_charnum; i++)
+	{
 		printer_printchar(&context->err_options, context->before_source[i]);
+	}
 	printer_printf(&context->err_options, "\n");
 	switch (ernum)
 	{

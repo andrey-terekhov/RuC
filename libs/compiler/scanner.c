@@ -47,8 +47,12 @@ void endofline(compiler_context *context)
 		int j;
 		printer_printf(&context->output_options, "line %i) ", context->line - 1);
 		for (j = context->lines[context->line - 1]; j < context->lines[context->line]; j++)
+		{
 			if (context->source[j] != EOF)
+			{
 				printer_printchar(&context->output_options, context->source[j]);
+			}
+		}
 		fflush(stdout);
 	}
 }
@@ -81,7 +85,9 @@ void nextch(compiler_context *context)
 
 	context->source[context->charnum++] = context->curchar;
 	if (context->instring)
+	{
 		return;
+	}
 
 	if (context->curchar == '/' && context->nextchar == '/')
 	{
@@ -116,7 +122,9 @@ void nextch(compiler_context *context)
 				error(context, comm_not_ended);
 			}
 			if (context->curchar == '\n')
+			{
 				endnl(context);
+			}
 		} while (context->curchar != '*' || context->nextchar != '/');
 
 		onemore(context);
@@ -125,7 +133,9 @@ void nextch(compiler_context *context)
 		return;
 	}
 	if (context->curchar == '\n')
+	{
 		endnl(context);
+	}
 	return;
 }
 
@@ -136,15 +146,25 @@ void next_string_elem(compiler_context *context)
 	{
 		nextch(context);
 		if (context->curchar == 'n' || context->curchar == 1085 /* 'н' */)
+		{
 			context->num = 10;
+		}
 		else if (context->curchar == 't' || context->curchar == 1090 /* 'т' */)
+		{
 			context->num = 9;
+		}
 		else if (context->curchar == '0')
+		{
 			context->num = 0;
+		}
 		else if (context->curchar != '\'' && context->curchar != '\\' && context->curchar != '\"')
+		{
 			error(context, bad_escape_sym);
+		}
 		else
+		{
 			context->num = context->curchar;
+		}
 	}
 	nextch(context);
 }
@@ -175,7 +195,9 @@ int equal(compiler_context *context, int i, int j)
 	while (REPRTAB[++i] == REPRTAB[++j])
 	{
 		if (REPRTAB[i] == 0 && REPRTAB[j] == 0)
+		{
 			return 1;
+		}
 	}
 	return 0;
 }
@@ -184,7 +206,9 @@ int scan(compiler_context *context)
 {
 	int cr;
 	while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
+	{
 		nextch(context);
+	}
 	//    printf("scan context->curchar=%c %i\n", context->curchar,
 	//    context->curchar);
 	switch (context->curchar)
@@ -207,7 +231,9 @@ int scan(compiler_context *context)
 				cr = EQEQ;
 			}
 			else
+			{
 				cr = ASS;
+			}
 			return cr;
 
 		case '*':
@@ -218,7 +244,9 @@ int scan(compiler_context *context)
 				cr = MULTASS;
 			}
 			else
+			{
 				cr = LMULT;
+			}
 			return cr;
 
 		case '/':
@@ -229,7 +257,9 @@ int scan(compiler_context *context)
 				cr = DIVASS;
 			}
 			else
+			{
 				cr = LDIV;
+			}
 			return cr;
 
 		case '%':
@@ -240,7 +270,9 @@ int scan(compiler_context *context)
 				cr = REMASS;
 			}
 			else
+			{
 				cr = LREM;
+			}
 			return cr;
 
 		case '+':
@@ -256,7 +288,9 @@ int scan(compiler_context *context)
 				cr = INC;
 			}
 			else
+			{
 				cr = LPLUS;
+			}
 			return cr;
 
 		case '-':
@@ -277,7 +311,9 @@ int scan(compiler_context *context)
 				cr = ARROW;
 			}
 			else
+			{
 				cr = LMINUS;
+			}
 			return cr;
 
 		case '<':
@@ -291,7 +327,9 @@ int scan(compiler_context *context)
 					cr = SHLASS;
 				}
 				else
+				{
 					cr = LSHL;
+				}
 			}
 			else if (context->curchar == '=')
 			{
@@ -299,7 +337,9 @@ int scan(compiler_context *context)
 				cr = LLE;
 			}
 			else
+			{
 				cr = LLT;
+			}
 
 			return cr;
 
@@ -314,7 +354,9 @@ int scan(compiler_context *context)
 					cr = SHRASS;
 				}
 				else
+				{
 					cr = LSHR;
+				}
 			}
 			else if (context->curchar == '=')
 			{
@@ -322,7 +364,9 @@ int scan(compiler_context *context)
 				cr = LGE;
 			}
 			else
+			{
 				cr = LGT;
+			}
 			return cr;
 
 		case '&':
@@ -338,7 +382,9 @@ int scan(compiler_context *context)
 				cr = LOGAND;
 			}
 			else
+			{
 				cr = LAND;
+			}
 			return cr;
 
 		case '^':
@@ -349,7 +395,9 @@ int scan(compiler_context *context)
 				cr = EXORASS;
 			}
 			else
+			{
 				cr = LEXOR;
+			}
 			return cr;
 
 		case '|':
@@ -365,7 +413,9 @@ int scan(compiler_context *context)
 				cr = LOGOR;
 			}
 			else
+			{
 				cr = LOR;
+			}
 			return cr;
 
 		case '!':
@@ -376,7 +426,9 @@ int scan(compiler_context *context)
 				cr = NOTEQ;
 			}
 			else
+			{
 				cr = LOGNOT;
+			}
 			return cr;
 		case '\'':
 		{
@@ -384,7 +436,9 @@ int scan(compiler_context *context)
 			nextch(context);
 			next_string_elem(context);
 			if (context->curchar != '\'')
+			{
 				error(context, no_right_apost);
+			}
 			nextch(context);
 			context->instring = 0;
 			context->ansttype = LCHAR;
@@ -392,7 +446,8 @@ int scan(compiler_context *context)
 		}
 		case '\"':
 		{
-			int n = 0, flag = 1;
+			int n = 0;
+			int flag = 1;
 			context->instring = 1;
 			nextch(context);
 			while (flag)
@@ -405,14 +460,22 @@ int scan(compiler_context *context)
 					//                    context->num, context->num);
 				}
 				if (n == MAXSTRINGL)
+				{
 					error(context, too_long_string);
+				}
 				nextch(context);
 				while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
+				{
 					nextch(context);
+				}
 				if (context->curchar == '\"')
+				{
 					nextch(context);
+				}
 				else
+				{
 					flag = 0;
+				}
 			}
 
 			context->num = n;
@@ -490,7 +553,8 @@ int scan(compiler_context *context)
 		case '8':
 		case '9':
 		{
-			int flagint = 1, flagtoolong = 0;
+			int flagint = 1;
+			int flagtoolong = 0;
 			double k;
 			context->num = 0;
 			context->numdouble = 0.0;
@@ -521,7 +585,9 @@ int scan(compiler_context *context)
 
 			if (ispower(context))
 			{
-				int d = 0, k = 1, i;
+				int d = 0;
+				int k = 1;
+				int i;
 				nextch(context);
 				if (context->curchar == '-')
 				{
@@ -530,17 +596,25 @@ int scan(compiler_context *context)
 					k = -1;
 				}
 				else if (context->curchar == '+')
+				{
 					nextch(context);
+				}
 				if (!digit(context))
+				{
 					error(context, must_be_digit_after_exp);
+				}
 				while (digit(context))
 				{
 					d = d * 10 + context->curchar - '0';
 					nextch(context);
 				}
 				if (flagint)
+				{
 					for (i = 1; i <= d; i++)
+					{
 						context->num *= 10;
+					}
+				}
 				context->numdouble *= pow(10.0, k * d);
 			}
 
@@ -552,7 +626,9 @@ int scan(compiler_context *context)
 			else
 			{
 				if (flagtoolong)
+				{
 					warning(context, too_long_int);
+				}
 				context->ansttype = LFLOAT;
 			}
 			memcpy(&context->numr, &context->numdouble, sizeof(double));
@@ -562,7 +638,8 @@ int scan(compiler_context *context)
 		default:
 			if (letter(context) || context->curchar == '#')
 			{
-				int oldrepr = REPRTAB_LEN, r;
+				int oldrepr = REPRTAB_LEN;
+				int r;
 				compiler_table_expand(&context->reprtab, 2);
 				REPRTAB_LEN += 2;
 				context->hash = 0;

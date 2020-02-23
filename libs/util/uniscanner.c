@@ -65,7 +65,9 @@ static void scanner_prepare(universal_scanner_options *opts)
 		scanner_desc **tmp = scanners;
 
 		while (*tmp != NULL && (*tmp)->source != opts->source)
+		{
 			tmp++;
+		}
 
 		if (*tmp == NULL)
 		{

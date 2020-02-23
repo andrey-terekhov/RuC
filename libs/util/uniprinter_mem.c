@@ -35,14 +35,18 @@ static int printer_mem_fprintf(universal_printer_options *opts, const char *fmt,
 
 	ret = vsnprintf(buf, sizeof(buf), fmt, args);
 	if (ret < 0)
+	{
 		return ret;
+	}
 
 	if ((size_t)ret >= sizeof(buf))
 	{
 		allocated = malloc(ret);
 		ret = vsnprintf(allocated, ret, fmt, args2);
 		if (ret < 0)
+		{
 			return ret;
+		}
 		buf_to_use = allocated;
 	}
 

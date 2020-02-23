@@ -130,7 +130,9 @@ static int mequal(compiler_context *context, int str[], int j)
 	while (str[i++] == context->functionident[j++])
 	{
 		if (str[i] == 0 && context->functionident[j] == 0)
+		{
 			return 1;
+		}
 	}
 	return 0;
 }
@@ -148,8 +150,12 @@ static void mend_line(compiler_context *context)
 		{
 			printer_printf(&context->miscout_options, "Line %i) ", context->mline - 1);
 			for (j = context->mlines[context->mline - 1]; j < context->mlines[context->mline]; j++)
+			{
 				if (context->before_source[j] != EOF)
+				{
 					printer_printchar(&context->miscout_options, context->before_source[j]);
+				}
+			}
 		}
 	}
 
@@ -229,7 +235,9 @@ static void m_nextch(compiler_context *context, int i)
 				m_error(context, comm_not_ended);
 			}
 			if (context->curchar == '\n')
+			{
 				mend_line(context);
+			}
 		} while (context->curchar != '*' || context->nextchar != '/');
 
 		monemore(context);
@@ -599,7 +607,9 @@ static void from_functionident(compiler_context *context, int r)
 					break;
 				}
 				while (context->functionident[kp++] != 0)
+				{
 					;
+				}
 			}
 			if (flag == 1)
 			{
@@ -692,7 +702,9 @@ static void create_change(compiler_context *context, int r1)
 			if (context->curchar == ',' || context->curchar == ')')
 			{
 				for (; context->functionident[r] != 0; r++)
+				{
 					;
+				}
 
 				if (r < context->functionident[r1])
 				{

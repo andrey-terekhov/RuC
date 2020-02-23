@@ -23,7 +23,8 @@
 
 int toreprtab(compiler_context *context, char str[])
 {
-	int i, oldrepr = REPRTAB_LEN;
+	int i;
+	int oldrepr = REPRTAB_LEN;
 	context->hash = 0;
 	compiler_table_expand(&context->reprtab, 2);
 	REPRTAB_LEN += 2;

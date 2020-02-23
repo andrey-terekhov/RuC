@@ -98,11 +98,17 @@ static const char *io_type2access_mask(ruc_io_type type)
 static FILE *io_get_file(const char *ptr, const char *mask)
 {
 	if (strcmp(ptr, ":stderr") == 0)
+	{
 		return stderr;
+	}
 	else if (strcmp(ptr, ":stdout") == 0)
+	{
 		return stdout;
+	}
 	else if (strcmp(ptr, ":stdin") == 0)
+	{
 		return stdin;
+	}
 	return fopen(ptr, mask);
 }
 
@@ -129,16 +135,24 @@ void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_
 		}
 
 		if (io_type_is_output(type))
+		{
 			printer_attach_file(opts, f);
+		}
 		else
+		{
 			scanner_attach_file(opts, f);
+		}
 	}
 	else
 	{
 		if (io_type_is_output(type))
+		{
 			printer_attach_buffer(opts, DEFAULT_OUTBUF_SIZE);
+		}
 		else
+		{
 			scanner_attach_buffer(opts, ptr);
+		}
 	}
 }
 
@@ -162,7 +176,9 @@ void compiler_table_init(compiler_table *table)
 {
 	table->table = malloc(COMPILER_TABLE_SIZE_DEFAULT * sizeof(int));
 	if (table->table == NULL)
+	{
 		exit(1); // need a better way to stop!
+	}
 	table->pos = 0;
 	table->len = 0;
 	table->size = COMPILER_TABLE_SIZE_DEFAULT;
@@ -179,7 +195,9 @@ int compiler_table_ensure_allocated(compiler_table *table, int pos)
 		int *buf = realloc(table->table, sizeof(int) * size);
 
 		if (buf == NULL)
+		{
 			exit(1);
+		}
 
 		memset(&buf[table->size], 0, size - table->size);
 		table->table = buf;
