@@ -6,7 +6,10 @@ option(ANALYSIS_ENABLED "Enable static analysis of input files" OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(TEST_INPUTS_DIR ${PROJECT_SOURCE_DIR}/tests)
-set(RUC_BINARY_DIR ${CMAKE_BINARY_DIR}/bin)
+
+# Put all libraries to one folder
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -33,6 +36,6 @@ file(GLOB TEST_INPUTS "${TEST_INPUTS_DIR}/*.c"
 foreach(TEST_INPUT ${TEST_INPUTS})
     add_test(NAME ${TEST_INPUT}
              COMMAND "./ruc" ${TEST_INPUT}
-             WORKING_DIRECTORY "${RUC_BINARY_DIR}")
+             WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
     set_tests_properties(${TEST_INPUT} PROPERTIES TIMEOUT ${TEST_TIMEOUT})
 endforeach(TEST_INPUT)
