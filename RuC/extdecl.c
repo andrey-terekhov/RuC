@@ -84,6 +84,8 @@ int evaluate_params(int num, int formatstr[], int formattypes[], int placeholder
                     formattypes[numofparams++] = LCHAR;
                     break;
 
+                
+                case 'd':
                 case 'f':
                 case 1074:   // в
                     formattypes[numofparams++] = LFLOAT;

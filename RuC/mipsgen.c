@@ -64,8 +64,8 @@ char *regs[] =
 /* 10 */ "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$s0", "$s1", "$s2", "$s3",
 /* 20 */ "$s4", "$s5", "$s6", "$s7", "$t8", "$t9", "$k0", "$k1", "$gp", "$sp",
 /* 30 */ "$fp", "$ra", "pc", "",
-/* 34 */ "$fv0", "$fv1", "$ft0", "$ft1", "$ft2", "$ft3", "$ft4", "$ft5", "$fa0", "$fa1",
-/* 44 */ "$fs0", "$fs1", "$fs2", "$fs3", "$fs4", "$fs5"
+/* 34 */ "$f0", "$f2", "$f4", "$f6", "$f8", "$f10", "$f16", "$f18", "$f12", "$f14",
+/* 44 */ "$f20", "$f22", "$f24", "$f26", "$f28", "$f30"
 };
 
 int savereg(int r)
@@ -217,14 +217,14 @@ void tocodeSLR(int op, int rd, int rt, int shamt)  // sll rd, rt, shamt    srl s
 
 void tocodeJ(int op, char type[], int label)  // j label   jal label
 {
-    printf("\t%s %s%i\n", mcodes[op], type, label);
-    fprintf(output, "\t%s %s%i\n", mcodes[op], type, label);
+    printf("\t%s %s%i\n\tnop\n", mcodes[op], type, label);
+    fprintf(output, "\t%s %s%i\n\tnop\n", mcodes[op], type, label);
 }
 
 void tocodeJR(int op, int rs)   // jr rs    jalr rs
 {
-    printf("\t%s %s\n", mcodes[op], regs[rs]);
-    fprintf(output, "\t%s %s\n", mcodes[op], regs[rs]);
+    printf("\t%s %s\n\tnop\n", mcodes[op], regs[rs]);
+    fprintf(output, "\t%s %s\n\tnop\n", mcodes[op], regs[rs]);
 }
 
 void tocodeJC(int op, int rs, char type[], int label)  // bltz rs, label    bgez blez bgtz
@@ -297,12 +297,12 @@ void mdsp(int displ)
     if (displ < 0)
     {
         areg = gp;
-        adispl = -(32768 + 4 * (displ - 3));  // в глоб данных первые 5 слов bounds + слово
-    }                                         // сохранения возврата
+        adispl = -(32768 + 4 * (displ - 3));  // в глоб данных первые 6 слов bounds
+    }
     else
     {
         areg = fp;
-        adispl = 4 * (displ - 3);
+        adispl = 4 * (displ - 3 + 20);
     }
 }
 
@@ -426,8 +426,11 @@ void MASSExpr(int c, int leftanst, int leftdispl, int leftreg)
         }
  
         areg = rez;
-    if (leftanst == AREG && mbox <= 2 && leftreg != breg)
-        tocodemove(areg = breg, leftreg);
+    if (leftanst == AREG)
+    {
+        if (mbox <= 2 && leftreg != breg)
+            tocodemove(areg = breg, leftreg);
+    }
     else   //  if (leftanst == AMEM)
         tocodeB(sw, rez, leftdispl, leftreg);
 
@@ -1624,13 +1627,13 @@ void MPrimary()
                         fprintf(output, "%c", tree[tc++]);
                     }
                 }
-                printf("\\0\"\n\t.text\n");
-                fprintf(output, "\\0\"\n\t.text\n");
+                printf("\\0\"\n\t.text\n\t.align 2\n");
+                fprintf(output, "\\0\"\n\t.text\n\t.align 2\n");
                 rez = mbox <= BREGF ? breg : t0;
                 printf("\tlui $t1, %%hi(STRING%i)\n", stringnum);
                 fprintf(output, "\tlui $t1, %%hi(STRING%i)\n", stringnum);
-                printf("\taddui %s, $t1, %%lo(STRING%i)\n", regs[rez], stringnum);
-                fprintf(output, "\taddui %s, $t1, %%lo(STRING%i)\n", regs[rez], stringnum);
+                printf("\taddiu %s, $t1, %%lo(STRING%i)\n", regs[rez], stringnum);
+                fprintf(output, "\taddiu %s, $t1, %%lo(STRING%i)\n", regs[rez], stringnum++);
             }
                 break;
 
@@ -1967,14 +1970,72 @@ void MStmt_gen()
         case TReturnvoid:
             tocodeJ(jump, "FUNCEND", identref);
             break;
-/*
         case TPrintid:
         {
-            tocode(PRINTID);
-            tocode(tree[tc++]);  // ссылка в identtab
+            int i, r, t, flagint = 1;
+            i = tree[tc++];                // ссылка на identtab
+            t = identab[i + 2];            // тип
+            r = identab[i + 1] + 2;        // ссылка на reprtab
+            
+            printf("\t.rdata\n\t.align 2\n");
+            fprintf(output, "\t.rdata\n\t.align 2\n");
+        tocodeL("STRING", stringnum);
+            printf("\t.ascii \"");
+            fprintf(output, "\t.ascii \"");
+
+            do
+            {
+                printf("%c", reprtab[r]);
+                fprintf(output, "%c", reprtab[r++]);
+            }
+            while (reprtab[r] != 0);
+
+            printf("%s", "=\%");
+            fprintf(output, "%s", "=\%");
+
+            if (t == LINT)
+            {
+                printf("%c", 'i');
+                fprintf(output, "%c", 'i');
+            }
+            else if (t == LCHAR)
+            {
+                printf("%c", 'c');
+                fprintf(output, "%c", 'c');
+            }
+            else if (t == LFLOAT)
+            {
+                flagint = 0;
+                printf("%c", 'd');
+                fprintf(output, "%c", 'd');
+            }
+            
+            printf("%s", "\\n\0\t.text\n");
+            fprintf(output, "%s", "\\n\0\t.text\n");
+            printf("\\0\"\n\t.text\n\t.align 2\n");
+            fprintf(output, "\\0\"\n\t.text\n\t.align 2\n");
+            printf("\tlui $t1, %%hi(STRING%i)\n", stringnum);
+            fprintf(output, "\tlui $t1, %%hi(STRING%i)\n", stringnum);
+            printf("\taddiu, $a0 $t1, %%lo(STRING%i)\n", stringnum);
+            fprintf(output, "\taddiu $a0, $t1, %%lo(STRING%i)\n", stringnum++);
+            
+            if (identab[i] < 0)
+            {
+                areg = identab[i+3];
+                if (a1 != areg)
+                    tocodemove(a1, areg), areg = a1;
+            }
+            else
+            {
+                mdsp(identab[i+3]);
+                tocodeB(lw, a1, adispl, areg);
+                areg = a1;
+            }
+
+            printf("\tjal printf\n\tnop\n");
+            fprintf(output, "\tjal printf\n\tnop\n");
         }
             break;
- */
         case TPrintf:
         {
  //           tocode(PRINTF);
@@ -1984,9 +2045,8 @@ void MStmt_gen()
             MExpr_gen();
             breg = a0;
             MExpr_gen();
-            printf("\tlw $t9, %%call16(printf)($gp)\n");
-            fprintf(output, "\tlw $t9, %%call16(printf)($gp)\n");
-            tocodeJR(jalr, t9);
+            printf("\tjal printf\n\tnop\n");
+            fprintf(output, "\tjal printf\n\tnop\n");
         }
             break;
 /*
@@ -2120,15 +2180,13 @@ void mipsgen()
     if (wasmain == 0)
         error(no_main_in_program);
 
-tocodeL("START", 0);
-    tocodeB(sw, stp, -32768, gp);
-    tocodeB(sw, ra, 0, stp);
-    printf("\n\t.globl\tmain\n");
     fprintf(output, "\n\t.globl\tmain\n");
+    fprintf(output, "\t.ent\tmain\n\t.type\tmain, @function\nmain:\n");
 
-//    tocodeI(addi, stp, stp, -4);
-//    tocodemove(s8, stp);
- 
+    tocodemove(fp, stp);
+    tocodeI(addi, stp, stp, -4);
+    tocodeB(sw, ra, 0, stp);
+
     while (tc < treesize)
     {
         switch (tree[tc++])
@@ -2140,7 +2198,7 @@ tocodeL("START", 0);
                 int i, n, ftype, id, a0i = a0, a0f = fa0;
                 identref =  tree[tc++];
                 ftype = identab[identref+2];
-                n = modetab[md+2];
+                n = modetab[ftype+2];
                 id = identref + 4;
                     for (i=0; i < n; i++)
                     {
@@ -2148,13 +2206,13 @@ tocodeL("START", 0);
                         identab[id] = -identab[id];
                         if (ptype == LFLOAT || ptype == LDOUBLE)
                         {
-                            identab[id] = a0f++;
+                            identab[id+3] = a0f++;
                             if (a0f == 44)
                                 merror(too_many_params);
                         }
                         else
                         {     // параметры массивы и структуры передаются адресом
-                            identab[id] = a0i++;
+                            identab[id+3] = a0i++;
                             if (a0i == 8)
                                 merror(too_many_params);
                         }
@@ -2162,16 +2220,11 @@ tocodeL("START", 0);
                 }
                 tocodeJ(jump, "NEXT", identref);
             tocodeL("FUNC", identab[identref+3]);
-                if (identref == wasmain)
-                {
-                    printf("\t.ent\tmain\n\t.type\tmain, @function\nmain:\n");
-                    fprintf(output, "\t.ent\tmain\n\t.type\tmain, @function\nmain:\n");
-                }
                 maxdispl = (tree[tc++] - 3) * 4;
-                tocodeI(addi, stp, stp, -maxdispl - 56);
-                tocodeB(sw, fp, 0, stp);
+                tocodeI(addi, stp, stp, -maxdispl - 80);
+                tocodeB(sw, fp, 20, stp);
                 tocodemove(fp, stp);
-                tocodeB(sw, ra, 4, fp);
+                tocodeB(sw, ra, 16, fp);
                 printf("\n");
                 fprintf(output, "\n");
                 
@@ -2180,16 +2233,11 @@ tocodeL("START", 0);
                 printf("\n");
                 fprintf(output, "\n");
             tocodeL("FUNCEND", identref);
-                tocodeB(lw, ra, 4, fp);
-                tocodeI(addi, stp, fp, maxdispl + 56);
-                tocodeB(lw, fp, 0, fp);
+                tocodeB(lw, ra, 16, fp);
+                tocodeI(addi, stp, fp, maxdispl + 80);
+                tocodeB(lw, fp, 20, fp);
                 tocodeJR(jr, ra);
-                if (identref == wasmain)
-                {
-                    printf("\t.end\tmain\n\t.size\tmain, .-main\n");
-                    fprintf(output, "\t.end\tmain\n\t.size\tmain, .-main\n");
-                }
-            tocodeL("NEXT", identref);
+        tocodeL("NEXT", identref);
             }
                 break;
             case TDeclarr:
@@ -2228,38 +2276,52 @@ tocodeL("START", 0);
         }
     }
     tocodeJ(jal,"FUNC",identab[wasmain+3]);
-    tocodeB(lw, stp, -32768, gp);
-    tocodeB(lw, ra, 0, stp);
+    
+    tocodemove(stp, fp);
+    tocodeB(lw, ra, -4, stp);
     tocodeJR(jr, ra);
+    fprintf(output, "\t.end\tmain\n\t.size\tmain, .-main\n");
 
 tocodeL("SLICE", 0);               // a0 = C0,  a1 = index, a2 = d
     tocodeB(lw, t0, -4, a0);       // t0 = N
-    tocodeJCimm(bltz, a1, 3);      // if (index < 0 err
+    tocodeJC(bltz, a1, "SLICE01", 0);      // if (index < 0 err
     tocodeR(sub, t1, a1, t0);
-    tocodeJCimm(bltz, t1, 2);      // if (index - N < 0) ok
+    tocodeJC(bltz, t1, "SLICE02", 0);      // if (index - N < 0) ok
+    
+tocodeL("SLICE01", 0);
     tocodeR(add, a0, d0, t0);     // a0 = N, a1 = index
     tocodeJ(jal, "ERR", 0);
+    
+tocodeL("SLICE02", 0);
     tocodeR(mul, t0, a1, a2);      // t0 = index * d
     tocodeR(add, v0, t0, a0);      // v0 = C0 + t0
     tocodeJR(jr, ra);              // v0 - адрес i-го элемента
     
 tocodeL("SLICE1", 0);              // a0 = C0,  a1 = index, d == 1
     tocodeB(lw, t0, -4, a0);       // t0 = N
-    tocodeJCimm(bltz, a1, 3);      // if (index < 0 err
+    tocodeJC(bltz, a1, "SLICE11", 0);      // if (index < 0 err
     tocodeR(sub, t1, a1, t0);
-    tocodeJCimm(bltz, t1, 2);      // if (index - N < 0) ok
+    tocodeJC(bltz, t1, "SLICE12", 0);      // if (index - N < 0) ok
+    
+tocodeL("SLICE11", 0);
     tocodeR(add, a0, d0, t0);     // a0 = N, a1 = index
     tocodeJ(jal, "ERR", 0);
+    
+tocodeL("SLICE12", 0);
     tocodeR(add, v0, a1, a0);      // v0 = C0 + index
     tocodeJR(jr, ra);              // v0 - адрес i-го элемента
     
 tocodeL("SLICE4", 0);               // a0 = C0,  a1 = index, d == 4
     tocodeB(lw, t0, -4, a0);       // t0 = N
-    tocodeJCimm(bltz, a1, 3);      // if (index < 0 err
+    tocodeJC(bltz, a1, "SLICE41", 0);      // if (index < 0 err
     tocodeR(sub, t1, a1, t0);
-    tocodeJCimm(bltz, t1, 2);      // if (index - N < 0) ok
+    tocodeJC(bltz, t1, "SLICE42", 0);      // if (index - N < 0) ok
+    
+tocodeL("SLICE41", 0);
     tocodeR(add, a0, d0, t0);     // a0 = N, a1 = index
     tocodeJ(jal, "ERR", 0);
+    
+tocodeL("SLICE42", 0);
     tocodeSLR(sll, t0, a1, 2);     // t0 = index * 4
     tocodeR(add, v0, t0, a0);      // v0 = C0 + t0
     tocodeJR(jr, ra);              // v0 - адрес i-го элемента

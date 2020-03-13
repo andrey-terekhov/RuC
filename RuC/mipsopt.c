@@ -383,7 +383,7 @@ void mexpr()
         while ( (stack[++sp] = operand() ) )
         {
             wasopnd = 1;
-            printf("sp= %i stack[sp]= %i\n", sp, stack[sp]);
+//            printf("sp= %i stack[sp]= %i\n", sp, stack[sp]);
         }
         sp--;
         if (tree[tc] == NOP)

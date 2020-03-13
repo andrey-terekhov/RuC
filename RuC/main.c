@@ -10,7 +10,7 @@
 const char * name =
 //"tests/float.c";
 
-"tests/mips/print.c";
+"tests/mips/printf.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
@@ -186,11 +186,13 @@ int main(int argc, const char * argv[])
     fclose(output);                   // файл с деревом после mipsopt
 
     output = fopen("mcode.s", "wt");
+    
     printf("\t.file \"%s\"\n", name);
-    fprintf(output, "\t.file \"%s\"\n", name);
-    printf("\t.text\n");
-    fprintf(output, "\t.text\n");
-
+    fprintf(output, "\t.file 1 \"%s\"\n", name);
+    
+    fprintf(output, "\t.section .mdebug.abi32\n\t.previous\n\t.nan\tlegacy\n");
+    fprintf(output, "\t.module fp=xx\n\t.module nooddspreg\n\t.abicalls\n");
+    fprintf(output, "\t.option pic0\n\t.text\n\t.align 2\n");
 
     mipsgen();                       
     
