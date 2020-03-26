@@ -1,5 +1,5 @@
 /*
- *	Copyright 2018 Andrey Terekhov, Mikhail Terekhov
+ *	Copyright 2019 Andrey Terekhov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -13,18 +13,21 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
-
-#ifndef H_UTILS
-#define H_UTILS
-
-#define _CRT_SECURE_NO_WARNINGS
-
+#include "uniprinter.h"
+#include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+/** File-based printer */
+int printer_file_fprintf(universal_printer_options *opts, const char *fmt, va_list args)
+{
+	int ret;
 
-void printf_char(int wchar);
-void fprintf_char(FILE *f, int wchar);
-int getf_char();
+	ret = vfprintf(opts->output, fmt, args);
 
-#endif
+	return ret;
+}
+
+printer_desc printer_file = { IO_SOURCE_FILE, printer_file_fprintf };

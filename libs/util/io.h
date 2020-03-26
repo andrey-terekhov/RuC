@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2019 Andrey Terekhov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,15 +14,20 @@
  *	limitations under the License.
  */
 #pragma once
-#include "context.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/**
+ * Input/Output pipe type
+ */
+typedef enum ruc_io_type
+{
+	IO_TYPE_INPUT,	/** Input pipe */
+	IO_TYPE_OUTPUT, /** Output pipe */
+	IO_TYPE_ERROR,	/** Error pipe */
+	IO_TYPE_MISC,	/** Misc output pipe */
+} ruc_io_type;
 
-void ext_decl(compiler_context *context);
-int szof(compiler_context *context, int type);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
+typedef enum ruc_io_source
+{
+	IO_SOURCE_FILE, /** File-based input/output */
+	IO_SOURCE_MEM,	/** Buffer-based input/output */
+} ruc_io_source;

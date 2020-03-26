@@ -13,12 +13,23 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+#pragma once
+#include "context.h"
 
-#ifndef H_PREPROCESS
-#define H_PREPROCESS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+/**
+ * Preprocess a file from input context and put preprocessed content to output
+ * context
+ *
+ * @param context Compiler context
+ */
+void preprocess_file(compiler_context *context);
 
-void preprocess_file();
-void show_macro();
+void show_macro(compiler_context *context);
 
+#ifdef __cplusplus
+} /* extern "C" */
 #endif

@@ -24,13 +24,22 @@ build()
 	test_dir=../tests
 }
 
+internal_timeout()
+{
+	which timeout
+	if [ "$?" == "0" ] ; then
+		timeout $@
+	else
+		perl -e 'alarm shift; exec @ARGV' "$@";
+	fi
+}
+
 test()
 {
 	for code in ${test_dir}/*.c ${test_dir}/*/*.c ${test_dir}/*/*/*.c
 	do
-		out=`timeout $wait_for ${ruc_compiler} $code >/dev/null 2>/dev/null`
-
-		case $? in
+		out=`internal_timeout $wait_for ${ruc_compiler} $code >/dev/null 2>/dev/null`
+		case "$?" in
 			0)
 				if ! [[ -z $full_out ]] ; then
 					sleep $output_time
@@ -38,7 +47,7 @@ test()
 				fi
 				let pass++
 				;;
-			124)
+			124|142)
 				if ! [[ -z $full_out ]] ; then
 					sleep $output_time
 					echo -e "\x1B[1;34m build timeout \x1B[1;39m: $code"

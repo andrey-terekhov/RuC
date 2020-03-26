@@ -20,8 +20,14 @@
 extern "C" {
 #endif
 
-void ext_decl(compiler_context *context);
-int szof(compiler_context *context, int type);
+void onemore(compiler_context *context);
+int scan(compiler_context *context);
+int getnext(compiler_context *context);
+int scaner(compiler_context *context);
+void nextch(compiler_context *context);
+int letter(compiler_context *);
+int digit(compiler_context *);
+int equal(compiler_context *, int, int);
 
 #ifdef __cplusplus
 } /* extern "C" */

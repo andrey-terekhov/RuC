@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2019 Andrey Terekhov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,14 +14,12 @@
  *	limitations under the License.
  */
 #pragma once
-#include "context.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void ext_decl(compiler_context *context);
-int szof(compiler_context *context, int type);
+extern char keywords_txt[];
 
 #ifdef __cplusplus
 } /* extern "C" */
