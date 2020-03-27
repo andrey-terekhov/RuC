@@ -436,10 +436,12 @@
 #define TStructend  -337
 #define TDeclarr    -338
 #define TConstd     -339
-#define TIdenttovald -340
-#define TAddrtovald -341
-#define TBeginit    -342
-#define TStructinit -343
+#define TConstc     -340
+#define TIdenttovalc -341
+#define TIdenttovald -342
+#define TAddrtovald -343
+#define TBeginit    -344
+#define TStructinit -345
 
 // Коды ошибок
 
@@ -662,7 +664,9 @@
 #define mflo     18        // mflo rs              rs = lo                   move from
 #define divc     26        // div rs, rt           rs / rt  частное в lo, остаток в hi
 #define mul      28        // mul rd, rs, rt       rd = rs * rt
+#define lb       32        // lb rt, imm(rs)       rt = [Address] байт с расширением знака
 #define lw       35        // lw rt, imm(rs)       rt = [Address]
+#define sb       40        // sb rt, imm(rs)       [Address] = rt байт
 #define sw       43        // sw rt, imm(rs)       [Address] = rt
 
 #define sll      60        // sll rd, rt, shamt    rd = rt << shsmt

@@ -33,7 +33,7 @@ extern int mem[MAXMEMSIZE], tree[MAXTREESIZE], tc, mtree[MAXTREESIZE], mtc,
 extern int adcont, adbreak, adcase, adandor, switchreg;
 extern int instring, inswitch, inloop, lexstr[MAXSTRINGL+1];
 extern int predef[FUNCSIZE], prdf;
-extern int gotost[], pgotost, forfor, regis;
+extern int gotost[], pgotost, regis;
 extern int anst, anstdispl, ansttype, leftansttype;
 
 extern int bad_printf_placeholder;

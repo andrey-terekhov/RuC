@@ -109,7 +109,7 @@ void tablesandtree()
                 fprintf(output, "TDeclarr N= %i\n", tree[i++]);
                 break;
             case TDeclid:
-                fprintf(output, "TDeclid displ= %i eltype= %i N= %i all= %i iniproc= %i, usual= %i instuct= %i\n",
+                fprintf(output, "TDeclid ident= %i eltype= %i N= %i all= %i iniproc= %i, usual= %i instuct= %i\n",
                         tree[i], tree[i+1], tree[i+2], tree[i+3], tree[i+4], tree[i+5], tree[i+6]);
 				i += 7;
                 break;
@@ -174,6 +174,9 @@ void tablesandtree()
             case TIdenttoval:
                 fprintf(output, "TIdenttoval %i\n", tree[i++]);
                 break;
+            case TIdenttovalc:
+                fprintf(output, "TIdenttovalc %i\n", tree[i++]);
+                break;
             case TIdenttovald:
                 fprintf(output, "TIdenttovald %i\n", tree[i++]);
                 break;
@@ -194,6 +197,9 @@ void tablesandtree()
                 break;
             case TConst:
                 fprintf(output, "TConst %i\n", tree[i++]);
+                break;
+            case TConstc:
+                fprintf(output, "TConstc %c\n", tree[i++]);
                 break;
             case TConstd:
                 memcpy(&numdouble, &tree[i], sizeof(double));

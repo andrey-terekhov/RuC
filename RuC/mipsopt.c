@@ -358,7 +358,8 @@ int operand()
         for (i=0; i<n; i++)
             mexpr();
     }
-    else if (t == TIdenttoval || t == TIdenttovald || t == TIdenttoaddr || t == TConst)
+    else if (t == TIdenttoval || t == TIdenttovald || t == TIdenttovalc ||
+             t == TIdenttoaddr || t == TConst || t == TConstc)
     {
         mcopy();
         mcopy();
@@ -400,8 +401,8 @@ void mexpr()
                 if (wasopnd)
                     if (op == WIDEN1)
                         permute(stack[sp-1]);
-                    else if (op == TPrintf)
-                        permute(stack[sp -= tree[tc+1]]);
+//                    else if (op == TPrintf)
+//                        permute(stack[sp -= tree[tc+1]]);
                     else
                         permute(stack[sp]);
                 else

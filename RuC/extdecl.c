@@ -5,6 +5,8 @@
 extern int  getnext();
 extern int  nextch();
 extern int  scaner();
+extern int  alignm(int);
+extern int  szof(int);
 extern void error(int e);
 int onlystrings;
 
@@ -117,8 +119,8 @@ int evaluate_params(int num, int formatstr[], int formattypes[], int placeholder
 
 int szof(int type)
 {
-    return next == LEFTSQBR ? 1 :
-    (type > 0 && modetab[type] == MSTRUCT) ? modetab[type + 1] : 1;
+    return type == LDOUBLE ? 8 : type == LCHAR ? 1 : next == LEFTSQBR ? 4 :
+    (type > 0 && modetab[type] == MSTRUCT) ? modetab[type + 1] : 4;
 }
 
 int is_row_of_char(int t)
@@ -178,10 +180,23 @@ void totreef(int op)
 		tree[tc - 1] += 50;
 }
 
+int alignm(int type)
+{
+    if (type == LDOUBLE)
+        return 8;
+    else if (type == LCHAR)
+        return 1;
+    else if (type > 0 && modetab[type] == MSTRUCT)
+        return alignm(modetab[type+3]);
+    else
+        return 4;
+}
+
 int getstatic(int type)
 {
-    int olddispl = displ;
-    displ += lg * szof(type);            // lg - смещение от l (+1) или от g (-1)
+    int al = alignm(type), olddispl;        // displ < 0 для глобальных переменных
+    olddispl = lg*(displ+al-1)/al*al;
+    displ = olddispl + lg * szof(type);            // lg - смещение от l (+1) или от g (-1)
     if (lg > 0)
         maxdispl = (displ > maxdispl) ? displ : maxdispl;
     else
@@ -318,7 +333,8 @@ void toval()        // надо значение положить на стек,
     else
     {
         if (anst == IDENT)
-            tree[tc - 2] = is_float(ansttype) ? TIdenttovald : TIdenttoval;
+            tree[tc - 2] = ansttype  == LCHAR ? TIdenttovalc :
+                is_float(ansttype) ? TIdenttovald : TIdenttoval;
 
         if (!(is_array(ansttype) || is_pointer(ansttype)))
             if (anst == ADDR)
@@ -422,19 +438,23 @@ void mustberowofint()
 
 void primaryexpr()
 {
-    forfor = -1;
 	if (cur == NUMBER)
 	{
-        if (ansttype == LFLOAT)                     // ansttype задается прямо в сканере
+        if (ansttype == LFLOAT || ansttype == LDOUBLE)   // ansttype задается прямо в сканере
         {
             totree(TConstd);
             totree(numr.first);
             totree(numr.second);
         }
+        else if (ansttype == LCHAR)
+        {
+            totree(TConstc);
+            totree(num);                           // LCHAR
+        }
         else
         {
             totree(TConst);
-            totree(num);                           // LINT, LCHAR
+            totree(num);                           // LINT
         }
 		stackoperands[++sopnd] = ansttype;
 		//        printf("number sopnd=%i ansttype=%i\n", sopnd, ansttype);
@@ -458,7 +478,6 @@ void primaryexpr()
 		applid();
         {
             totree(TIdent);
-            forfor = lastid;
             totree(lastid);
             stackoperands[++sopnd] = ansttype = identab[lastid + 2];
             anstdispl = identab[lastid + 3];
@@ -692,15 +711,17 @@ void index_check()
 		error(index_must_be_int);
 }
 
-int find_field(int stype)                          // выдает смещение до найденного поля или ошибку
+int find_field(int stype)                  // выдает смещение до найденного поля или ошибку
 {
-    int i, flag = 1, select_displ = 0;
+    int i, flag = 1, select_displ = 0, al;
     scaner();
     mustbe(IDENT, after_dot_must_be_ident);
     
     for (i = 0; i < modetab[stype+2]; i+=2)        // тут хранится удвоенное n
     {
-        int field_type = modetab[stype+3 + i];
+        int field_type = modetab[stype + 3 + i];
+        al = alignm(field_type);
+        select_displ = (select_displ+al-1)/al*al;
         if (modetab[stype+4 + i] == repr)
         {
             stackoperands[sopnd] = ansttype = field_type;
@@ -749,11 +770,11 @@ void postexpr()
 	{
 		int i, j, n, dn, oldinass = inass;
         was_func = 1;
-        forfor = -1;
 		scaner();
 		if (!is_function(leftansttyp))
 			error(call_not_from_function);
 
+        tc -= 2;
 		n = modetab[leftansttyp + 2]; // берем количество аргументов функции
 
 		totree(TCall1);
@@ -815,15 +836,10 @@ void postexpr()
 		totree(lid);
 		stackoperands[sopnd] = ansttype = modetab[leftansttyp+1];
 		anst = VAL;
-/*        if (is_struct(ansttype))
-            x -= modetab[ansttype+1] - 1;
-*/
-        // это кусок интерпретатора, тут ему не место
 	}
  
     while (next == LEFTSQBR || next == ARROW || next == DOT)
     {
-        forfor = 0;
         while (next == LEFTSQBR) // вырезка из массива (возможно, многомерного)
         {
             int elem_type;
@@ -865,8 +881,8 @@ void postexpr()
             if (anst == IDENT)
                 tree[tc-2] = TIdenttoval;
             anst = ADDR;
-                                      // pointer  мог быть значением функции (VAL) или, может быть,
-            totree(TSelect);          // anst уже был ADDR, т.е. адрес теперь уже всегда на верхушке стека
+                             // pointer  мог быть значением функции (VAL) или, может быть,
+            totree(TSelect); // anst уже был ADDR, т.е. адрес теперь уже всегда на верхушке стека
 
             anstdispl = find_field(ansttype = modetab[ansttype + 1]);
             selectend();
@@ -928,7 +944,6 @@ void unarexpr()
         cur == LAND || cur == LMULT ||
         cur == INC  || cur == DEC)
 	{
-        forfor = -1;
         if (cur == INC || cur == DEC)
         {
             scaner();
@@ -1196,7 +1211,7 @@ void exprassn(int level)
     else
         unarexpr();
 
-    leftid = forfor;
+    leftid = lastid;
 	leftanst = anst;
     leftanstdispl = anstdispl;
     leftansttype = ansttype;
@@ -1265,7 +1280,7 @@ void exprassn(int level)
                 opp += 11;
             totreef(opp);
             if (leftanst == IDENT)
-                forfor = leftid, totree(leftid);
+                totree(leftid);
             anst = VAL;
         }
         stackoperands[sopnd] = ansttype = ltype; // тип результата - на стек
@@ -1550,6 +1565,17 @@ void statement()
                         formatstr[num] = 0;
 
                         paramnum = evaluate_params(fnum = num, formatstr, formattypes, placeholders);
+                        
+                        totree(TPrintf);
+                        totree(sumsize);
+
+                
+                        totree(TString);
+                        totree(fnum);
+
+                        for(i = 0; i<fnum; i++)
+                            totree(formatstr[i]);
+
                 
                         for (i = 0; scaner() == COMMA; i++)
                         {
@@ -1579,15 +1605,8 @@ void statement()
                         if (i != paramnum)
                             error(wrong_printf_param_number);
 
-                        totree(TString);
-                        totree(fnum);
-
-                        for(i = 0; i<fnum; i++)
-                            totree(formatstr[i]);
 //                        totree(TExprend);
 
-                        totree(TPrintf);
-                        totree(sumsize);
             }
                 break;
 
@@ -1682,7 +1701,6 @@ void statement()
                          {
                              expr(0);
                              exprassnvoid();
-                             tree[fromref] = forfor;
                              mustbe(SEMICOLON, no_semicolon_in_for);
                          }
                          if (scaner() == SEMICOLON)             // cond
@@ -1841,7 +1859,7 @@ int gettype();
 int struct_decl_list()
 {
 	int field_count = 0, i, t, elem_type, curdispl = 0, wasarr = 0, tstrbeg;
-    int loc_modetab[100], locmd = 3;
+    int loc_modetab[100], locmd = 3, al;
     loc_modetab[0] = MSTRUCT;
     tstrbeg = tc;
     totree(TStructbeg);
@@ -1895,7 +1913,10 @@ int struct_decl_list()
         loc_modetab[locmd++] = t;
         loc_modetab[locmd++] = repr;
         field_count++;
-        curdispl += szof(t);
+        al = alignm(t);
+        curdispl = (curdispl+al-1)/al*al;   // выравнивание
+        curdispl += szof(t);                // прибавление длины поля
+
 		if (scaner() != SEMICOLON)
 			error(no_semicomma_in_struct);
 	}
@@ -1915,6 +1936,8 @@ int struct_decl_list()
 
 	loc_modetab[1] = curdispl;                       // тут длина структуры
 	loc_modetab[2] = field_count * 2;
+    
+    // меняем поля местами - double вперед, char в конец
     
     modetab[md] = startmode;
     startmode = md++;
@@ -2061,8 +2084,8 @@ void function_definition()
 	ftype = modetab[functype + 1];
 	n = modetab[functype + 2];
 	wasret = 0;
-	displ = 3;
-	maxdispl = 3;
+	displ = 0;
+	maxdispl = 0;
 	lg = 1;
 	if ((pred = identab[lastid]) > 1)            // был прототип
     {

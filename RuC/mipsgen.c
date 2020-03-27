@@ -10,9 +10,9 @@
 
 // запросы
 #define BREG   1     // загрузить в breg
-#define BREGF  2     // запрос на левый операнд, могут ответить
-    // CONST, тогда делать ничего не надо, могут ответить
-    // AMEM, тогда надо загрузить в breg, могут ответить
+#define BREGF  2     // запрос на левый операнд,     могут ответить
+    // CONST, тогда делать ничего не надо,           могут ответить
+    // AMEM, тогда надо загрузить в breg,            могут ответить
     // AREG, если areg - сохраняемый регистр, то ничего не делать, иначе в breg
     // В качестве левого операнда могут использоваться только сохраняемые регистры,
     // в том числе и те, которые применяются для адресации
@@ -24,11 +24,13 @@
 // ответы
 #define AREG  1      // in areg register number
 #define AMEM  2      // in adispl and areg address
-#define CONST 3      // in num int const
+#define CONST 3      // in num int or char const
+
+#define DISPL0 80
 
 int mbox, breg, elselab;
 int manst, adispl, areg;
-int labnum = 1, stringnum = 1, elselab, flagBC, identref;
+int labnum = 1, stringnum = 1, elselab, flagBC, identref, structdispl;
 int log_real = 2;
 // унарные операции LNOT, LOGNOT, -, ++, --, TIdenttoval(*), TIdenttoaddr(&)
 // LNOT nor rd, rs, d0    LOGNOT slti rt, rs, 1   - sub rd, d0, rt
@@ -36,18 +38,19 @@ int log_real = 2;
 // ++ lw rt, adispl(areg) addi rt, rt, 1 sw rt, adispl(areg)
 extern void error(int err);
 extern int szof(int);
+extern int alignm(int);
 
 int pc = 32, d0 = 0, at = 1, v0 = 2,  v1 = 3,  a0 = 4,   a1 = 5, a2 = 6, a3 = 7,
                             fv0 = 34, fv1 =35, fa0 = 42, fa1 = 43,
     t0 = 8, t1 = 9, t2 = 10, t9 = 25, s0 = 16, gp = 28, stp = 29, fp = 30, ra =  31,
-   ft0 = 36,ft1 = 37,                fs0 = 44, opnd = 43;
+   ft0 = 36, ft1 = 37,                fs0 = 44;  // opnd = 43;
 
 char *mcodes[] =
 {/* 0 */ "bgez", "bltz", "j", "jal", "beq", "bne", "blez", "bgtz", "addi", "addiu",
 /* 10 */ "slti", "sltiu", "andi", "ori", "xori", "lui", "mfhi", "", "mflo", "",
 /* 20 */ "", "", "", "", "", "li", "div", "", "mul", "",
-/* 30 */ "", "", "", "", "", "lw", "", "", "", "",
-/* 40 */ "", "", "", "sw", "", "", "", "", "", "",
+/* 30 */ "", "", "lb", "", "", "lw", "", "", "", "",
+/* 40 */ "sb", "", "", "sw", "", "", "", "", "", "",
 /* 50 */ "", "", "", "", "", "", "", "", "", "",
 /* 60 */ "sll", "", "srl", "sra", "sllv", "", "srlv", "srav", "jr", "jalr",
 /* 70 */ "", "", "", "", "", "", "", "", "", "",
@@ -64,7 +67,7 @@ char *regs[] =
 /* 10 */ "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$s0", "$s1", "$s2", "$s3",
 /* 20 */ "$s4", "$s5", "$s6", "$s7", "$t8", "$t9", "$k0", "$k1", "$gp", "$sp",
 /* 30 */ "$fp", "$ra", "pc", "",
-/* 34 */ "$f0", "$f2", "$f4", "$f6", "$f8", "$f10", "$f16", "$f18", "$f12", "$f14",
+/* 34 */ "$f0", "$f2", "$f4", "$f6", "$f8", "$f10", "$f12", "$f14", "$f16", "$f18",
 /* 44 */ "$f20", "$f22", "$f24", "$f26", "$f28", "$f30"
 };
 
@@ -123,29 +126,7 @@ void merror(int type)
             break;
     }
 }
-/*
-int szof(int mode)
-{
-    if (mode > 0)
-    {
-        int el = modetab[mode], len = 0, i;
-        if (el == MARRAY || el == MPOINT)
-            return 4;
-        else             //  MSTRUCT
-        {
-            for (i=0; i < modetab[mode+2]; i+=2)
-                len += szof(modetab[mode+i+3]);
-            return len;
-        }
-    }
-    else if (mode == LCHAR)
-        return 1;
-    else if (mode == LLONG || mode == LDOUBLE)
-        return 8;
-    else
-        return 4;        // LINT и LDOUBLE
-}
-*/
+
 int nextreg = 16, nextregf = 44;
 
 int getreg()
@@ -205,8 +186,16 @@ void tocodeLI_S(int op, int rt, double imm)  // li_s rt, imm
 
 void tocodemove(int rd, int rs)  // move rd, rs
 {
-    printf("\tmove %s, %s\n", regs[rd], regs[rs]);
-    fprintf(output, "\tmove %s, %s\n", regs[rd], regs[rs]);
+    if (rd >= 34)
+    {
+        printf("\tmov.s %s, %s\n", regs[rd], regs[rs]);
+        fprintf(output, "\tmov.s %s, %s\n", regs[rd], regs[rs]);
+    }
+    else
+    {
+        printf("\tmove %s, %s\n", regs[rd], regs[rs]);
+        fprintf(output, "\tmove %s, %s\n", regs[rd], regs[rs]);
+    }
 }
 
 void tocodeSLR(int op, int rd, int rt, int shamt)  // sll rd, rt, shamt    srl sra
@@ -297,12 +286,12 @@ void mdsp(int displ)
     if (displ < 0)
     {
         areg = gp;
-        adispl = -(32768 + 4 * (displ - 3));  // в глоб данных первые 6 слов bounds
+        adispl = -(32768 + displ);  // в глоб данных первые 6 слов bounds
     }
     else
     {
         areg = fp;
-        adispl = 4 * (displ - 3 + 20);
+        adispl = displ + DISPL0;
     }
 }
 
@@ -1532,6 +1521,7 @@ void MPrimary()
                 areg = rez;
                 break;
             case TIdenttoval:
+            case TIdenttovalc:
             {
                 int idp = tree[tc++];
                 if (identab[idp] < 0)
@@ -1544,7 +1534,7 @@ void MPrimary()
                 {
                     mdsp(identab[idp+3]);
                     rez = mbox <= BREGF ? breg : t0;
-                    tocodeB(lw, rez, adispl, areg);
+                    tocodeB(tree[tc-2] == TIdenttoval ? lw : lb, rez, adispl, areg);
                     areg = rez;
 //                  printf("idtoval adispl= %i areg= %i manst= %i\n", adispl, areg, manst);
                 }
@@ -1595,6 +1585,27 @@ void MPrimary()
                         tocodeJEQ(mbox == BCF ? beq : bne, areg, d0, "ELSE", elselab);
                 }
                 break;
+                
+                case TConstc:
+                    manst = CONST;
+                    num = tree[tc++];
+                    if (mbox == BREG)
+                    {
+                        tocodeI(addi, areg = breg, d0, num);
+                        manst = AREG;
+                    }
+                    if (mbox == BCF || mbox == BCT)
+                    {
+                        if (manst == CONST)
+                        {
+                            if ((mbox == BCT && num != 0) || (mbox == BCF && num == 0))
+                                   tocodeJ(jump, "ELSE", elselab);
+                        }
+                        else
+                            tocodeJEQ(mbox == BCF ? beq : bne, areg, d0, "ELSE", elselab);
+                    }
+                    break;
+
             case TConstd:
             	areg = mbox <= 2 ? breg : ft0;
                 memcpy(&numdouble, &tree[tc], sizeof(double));
@@ -2000,14 +2011,15 @@ void MStmt_gen()
             }
             else if (t == LCHAR)
             {
+                flagint = 2;
                 printf("%c", 'c');
                 fprintf(output, "%c", 'c');
             }
             else if (t == LFLOAT)
             {
                 flagint = 0;
-                printf("%c", 'd');
-                fprintf(output, "%c", 'd');
+                printf("%c", 'f');
+                fprintf(output, "%c", 'f');
             }
             
             printf("%s", "\\n\0\t.text\n");
@@ -2019,34 +2031,103 @@ void MStmt_gen()
             printf("\taddiu, $a0 $t1, %%lo(STRING%i)\n", stringnum);
             fprintf(output, "\taddiu $a0, $t1, %%lo(STRING%i)\n", stringnum++);
             
+            r = flagint ? a1 : ft0;
             if (identab[i] < 0)
             {
                 areg = identab[i+3];
-                if (a1 != areg)
-                    tocodemove(a1, areg), areg = a1;
+                if (r != areg)
+                    tocodemove(r, areg);
+                if (flagint == 0)
+                    fprintf(output, "\tcvt.d.s $f4,$f4\n\tmfc1\t$5,$f4\n\tmfhc1\t$6,$f4\n");
             }
             else
             {
                 mdsp(identab[i+3]);
-                tocodeB(lw, a1, adispl, areg);
-                areg = a1;
+                tocodeB(flagint == 0 ? lwc1 : flagint == 1 ? lw : lb, r, adispl, areg);
+                if (flagint == 0)
+                    fprintf(output, "\tcvt.d.s $f4,$f4\n\tmfc1\t$5,$f4\n\tmfhc1\t$6,$f4\n");
             }
-
             printf("\tjal printf\n\tnop\n");
             fprintf(output, "\tjal printf\n\tnop\n");
         }
             break;
         case TPrintf:
         {
- //           tocode(PRINTF);
             tc++;  // общий размер того, что надо вывести
-            mbox = BREG;
-            breg = a1;
-            MExpr_gen();
-            breg = a0;
-            MExpr_gen();
-            printf("\tjal printf\n\tnop\n");
-            fprintf(output, "\tjal printf\n\tnop\n");
+            tc++;
+
+            int n = tree[tc++], i, old_stringnum = stringnum, counter = 0;
+            char var[100];
+            printf("\t.rdata\n\t.align 2\n");
+            fprintf(output, "\t.rdata\n\t.align 2\n");
+            printf("\t.word %i\n", n);
+            fprintf(output, "\t.word %i\n", n);
+        tocodeL("STRING", stringnum);
+            printf("\t.ascii \"");
+            fprintf(output, "\t.ascii \"");
+            for (i=0; i<n; i++)
+            {
+                char c = tree[tc];
+                if (c == '\n')
+                {
+                    tc++;
+                    printf("%s", "\\n");
+                    fprintf(output, "%s", "\\n");
+                }
+                else
+                {
+                    if (c == '%')
+                    {
+                        printf("%c", c);
+                        fprintf(output, "%c", tree[tc++]);
+                        i++;
+                        c = tree[tc];
+                        var[counter++] = c;
+                        printf("%c", c);
+                        fprintf(output, "%c", tree[tc++]);
+                        printf("\\0\"\n");
+                        fprintf(output, "\\0\"\n");
+                        stringnum++;
+                    tocodeL("STRING", stringnum);
+                        printf("\t.ascii \"");
+                        fprintf(output, "\t.ascii \"");
+
+                    }
+                    else
+                    {
+                        printf("%c", c);
+                        fprintf(output, "%c", tree[tc++]);
+                    }
+                }
+            }
+            stringnum++;
+            printf("\\0\"\n\t.text\n\t.align 2\n");
+            fprintf(output, "\\0\"\n\t.text\n\t.align 2\n");
+            
+            for (i = 0; i < stringnum - old_stringnum; i++)
+            {
+                printf("\tlui $t1, %%hi(STRING%i)\n", old_stringnum + i);
+                fprintf(output, "\tlui $t1, %%hi(STRING%i)\n", old_stringnum + i);
+                printf("\taddiu %s, $t1, %%lo(STRING%i)\n", regs[a0], old_stringnum + i);
+                fprintf(output, "\taddiu %s, $t1, %%lo(STRING%i)\n", regs[a0], old_stringnum + i);
+                if (i < counter)
+                {
+                    mbox = BREG;
+                    if (var[i] == 'f')
+                    {
+                        breg = ft0;
+                        MExpr_gen();
+                        fprintf(output, "\tcvt.d.s $f4,$f4\n\tmfc1\t$5,$f4\n\tmfhc1\t$6,$f4\n");
+                    }
+                    else
+                    {
+                        breg = a1;
+                        MExpr_gen();
+                    }
+                }
+                printf("\tjal printf\n\tnop\n");
+                fprintf(output, "\tjal printf\n\tnop\n");
+            }
         }
             break;
 /*
@@ -2070,6 +2151,35 @@ void MStmt_gen()
     }
 }
 
+void Struct_init_gen(int t)
+{
+    int i,n;
+    if (tree[tc] == TStructinit)
+    {         // в это время modetab[t] == MSTRUCT
+        t++;
+        tc++;
+        n = tree[tc++];
+        for (i = 0; i < n; i++)
+            Struct_init_gen(modetab[t+=2]);
+        tc++;    // TExprend
+    }
+    else
+    {
+        int al = alignm(t);
+        structdispl = (structdispl+al-1)/al*al;
+        int flagint = 1;
+        mbox = BREG;
+        breg = t == LFLOAT ? flagint = 0, ft0 : t0;
+        if (t == LCHAR)
+            flagint = 2;
+        MExpr_gen();
+        mdsp(structdispl);
+        tocodeB(flagint == 0 ? swc1 : flagint == 1 ? sw : sb,
+                breg, adispl, areg);
+        structdispl += szof(t);
+    }
+}
+
 void MDeclid_gen()
 {
     int oldid = tree[tc++], telem = tree[tc++], N = tree[tc++], element_len,
@@ -2088,9 +2198,10 @@ void MDeclid_gen()
     {
         if (identab[oldid] < 0)    // регистровая переменная
         {
-            if (telem == LINT || telem == LLONG)
+            if (telem == LINT || telem == LLONG || telem == LCHAR ||
+                (telem > 0 && modetab[telem] == MPOINT))
                 identab[oldid+3] = getreg();
-            else if (telem == LFLOAT || telem == LDOUBLE)
+            else if (telem == LFLOAT)        // LDOUBLE пока нет
                 identab[oldid+3] = getregf();
         }
 /*        if (iniproc)
@@ -2102,19 +2213,14 @@ void MDeclid_gen()
         if (all)                   // int a = или struct{} a =
         {
             if (telem > 0 && modetab[telem] == MSTRUCT)
-            {/*
-                do
-                    Expr_gen(0);
-                while (tree[tc] != TEndinit);
-                tc++;
-                tocode(COPY0STASS);
-                tocode(olddispl);
-                tocode(all);       // общее кол-во слов   */
+            {
+                structdispl = olddispl;
+                Struct_init_gen(telem);
             }
             else
             {
                 int oldbox = mbox, oldreg = breg, oldelselab = elselab;
-                int flagfloat = 0;
+                int flagint = 1;
                 mbox = BREG;
                 if (identab[oldid] < 0)    // регистровая переменная
                 {
@@ -2123,18 +2229,15 @@ void MDeclid_gen()
                 }
                 else
                 {
-                breg = telem == LFLOAT || telem == LDOUBLE ? flagfloat = 1, ft0 : t0;
+                    breg = telem == LFLOAT ? flagint = 0, ft0 : t0;
+                    if (telem == LCHAR)
+                        flagint = 2;
                     MExpr_gen();
                     mdsp(olddispl);
-                    if (flagfloat)
-                        tocodeB(swc1, ft0, adispl, areg);
-                    else
-                        tocodeB(sw, t0, adispl, areg);
+                    tocodeB(flagint == 0 ? swc1 : flagint == 1 ? sw : sb,
+                            breg, adispl, areg);
                 }
                 mbox = oldbox; breg = oldreg; elselab = oldelselab;
-
-             /*   tocode(telem == LFLOAT ? ASSRV : ASSV);
-                tocode(olddispl);  */
             }
         }
     }
@@ -2216,12 +2319,12 @@ void mipsgen()
                             if (a0i == 8)
                                 merror(too_many_params);
                         }
-                    id += 4;
-                }
+                        id += 4;
+                    }
                 tocodeJ(jump, "NEXT", identref);
             tocodeL("FUNC", identab[identref+3]);
-                maxdispl = (tree[tc++] - 3) * 4;
-                tocodeI(addi, stp, stp, -maxdispl - 80);
+                maxdispl = (tree[tc++] + 7) / 8 * 8;
+                tocodeI(addi, stp, stp, -maxdispl - DISPL0);
                 tocodeB(sw, fp, 20, stp);
                 tocodemove(fp, stp);
                 tocodeB(sw, ra, 16, fp);
@@ -2234,10 +2337,10 @@ void mipsgen()
                 fprintf(output, "\n");
             tocodeL("FUNCEND", identref);
                 tocodeB(lw, ra, 16, fp);
-                tocodeI(addi, stp, fp, maxdispl + 80);
+                tocodeI(addi, stp, fp, maxdispl + DISPL0);
                 tocodeB(lw, fp, 20, fp);
                 tocodeJR(jr, ra);
-        tocodeL("NEXT", identref);
+            tocodeL("NEXT", identref);
             }
                 break;
             case TDeclarr:

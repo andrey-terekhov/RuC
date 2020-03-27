@@ -8,9 +8,9 @@
 //#define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-//"tests/float.c";
+//"tests/forf.c";
 
-"tests/mips/printf.c";
+"tests/mips/test4.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
@@ -37,8 +37,8 @@ int nextchar, curchar, func_def;
 int hashtab[256], reprtab[MAXREPRTAB], rp = 1, identab[MAXIDENTAB], id = 2,
     modetab[MAXMODETAB], md = 1, startmode = 1;
 int stack[100], stackop[100], stackoperands[100], stacklog[100], ansttype,
-    sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg=-1, displ=-3, maxdispl = 3,
-    maxdisplg = 3, type, op = 0, inass = 0, firstdecl;
+    sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg = -1, displ = 8, maxdispl,
+    maxdisplg, type, op = 0, inass = 0, firstdecl;
 int iniprocs[INIPROSIZE], procd = 1, arrdim, arrelemlen, was_struct_with_arr, usual;
 int instring = 0, inswitch = 0, inloop = 0, lexstr[MAXSTRINGL+1];
 int tree[MAXTREESIZE], tc=0, mtree[MAXTREESIZE], mtc=0,
@@ -46,7 +46,7 @@ int tree[MAXTREESIZE], tc=0, mtree[MAXTREESIZE], mtc=0,
     blockflag = 1, entry, wasmain = 0, wasret, wasdefault, notrobot = 1, prep_flag = 0;
 int adcont, adbreak, adcase, adandor, switchreg;
 int predef[FUNCSIZE], prdf = -1, emptyarrdef;
-int gotost[1000], pgotost, forfor, regis;
+int gotost[1000], pgotost, regis;
 int anst, anstdispl, ansttype, leftansttype = -1;   
 
 int bad_printf_placeholder = 0;

@@ -3,7 +3,11 @@ void main()
     int i = 0;
     char s[] = "abc";
     while (i < 3)
-        print(s[i]);
+    {
+        printf("%c",s[i]);
+        i++;
+    }
+    printf("\n");
 }
 
 
