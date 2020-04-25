@@ -450,6 +450,7 @@ void actstring()
 {
 	int n = 0;
 	int adn;
+    int flagfloat = 0;
 	totree(TString);
 	adn = tc++;
 	do
@@ -465,8 +466,10 @@ void actstring()
 			}
 		*/
 
-		if (scaner() == NUMBER && (ansttype == LINT || ansttype == LCHAR))
+		if (scaner() == NUMBER &&
+            (ansttype == LINT || ansttype == LCHAR || ansttype ==LFLOAT))
 		{
+            flagfloat |= ansttype == LFLOAT;
 			totree(num);
 		}
 		else
@@ -481,7 +484,7 @@ void actstring()
 	{
 		error(no_comma_or_end);
 	}
-	ansttype = newdecl(MARRAY, LINT);
+    ansttype = newdecl(MARRAY, flagfloat ? LFLOAT : LINT);
 	anst = VAL;
 }
 
@@ -551,6 +554,11 @@ void mustberowofint()
 		exprassn(1);
 		toval();
 		sopnd--;
+        if (ansttype == LINT || ansttype == LCHAR)
+        {
+            totree(ROWING);
+            ansttype = newdecl(MARRAY, LINT);
+        }
 	}
 
 	if (!(ansttype > 0 && modetab[ansttype] == MARRAY &&
@@ -558,6 +566,33 @@ void mustberowofint()
 	{
 		error(not_rowofint_in_stanfunc);
 	}
+}
+
+void mustberowoffloat()
+{
+    scaner();
+
+    if (cur == BEGIN)
+    {
+        actstring(), totree(TExprend);
+    }
+    else
+    {
+        exprassn(1);
+        toval();
+        sopnd--;
+        if (ansttype == LFLOAT)
+        {
+            totree(ROWINGD);
+            ansttype = newdecl(MARRAY, LFLOAT);
+        }
+    }
+
+    if (!(ansttype > 0 && modetab[ansttype] == MARRAY &&
+        modetab[ansttype + 1] == LFLOAT))
+    {
+        error(not_rowoffloat_in_stanfunc);
+    }
 }
 
 void primaryexpr()
@@ -685,6 +720,23 @@ void primaryexpr()
 				stackoperands[++sopnd] = ansttype = LINT;
 			}
 		}
+        else if (func >= RECEIVE_STRING && func <= SEND_INT)
+        {
+            notrobot = 0;                               // новые функции Фадеева
+            mustbeint();
+            if (func == SEND_INT || func == SEND_STRING)
+            {
+                mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                mustberowofint();
+            }
+            else if (func == SEND_FLOAT)
+            {
+                mustbe(COMMA, no_comma_in_act_params_stanfunc);
+                mustberowoffloat();
+            }
+            else
+                ;
+        }
 		else if (func >= ICON && func <= WIFI_CONNECT)	// функции Фадеева
 		{
 			notrobot = 0;

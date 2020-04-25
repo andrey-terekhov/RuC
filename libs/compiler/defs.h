@@ -226,7 +226,9 @@
 #define ADLOGAND								9479
 #define ADLOGOR									9480
 #define BEGINIT									9481
-//#define STRUCTINIT							9482
+#define ROWING                                  9482
+#define ROWINGD                                 9483
+
 
 #define COPY00									9300	// d1, d2, l
 #define COPY01									9301	// d1, l
@@ -433,6 +435,13 @@
 #define DRAW_NUMBER								-86
 #define ICON									-87
 #define UPB										-88
+#define SEND_INT                                -89
+#define SEND_FLOAT                              -90
+#define SEND_STRING                             -91
+#define RECEIVE_INT                             -92
+#define RECEIVE_FLOAT                           -93
+#define RECEIVE_STRING                          -94
+
 
 #define LVOIDASTER								-150
 #define ABSI									-151
@@ -677,9 +686,10 @@
 #define after_preproces_words_must_be_space		381
 #define struct_init_must_start_from_BEGIN		382
 #define not_rowofint_in_stanfunc				383
-#define not_float_in_stanfunc					384
-#define not_array_in_stanfunc					385
+#define not_rowoffloat_in_stanfunc              384
 
+#define not_float_in_stanfunc					385
+#define not_array_in_stanfunc					386
 
 // коды предупреждений
 
