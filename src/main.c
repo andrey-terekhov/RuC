@@ -14,16 +14,16 @@
  *	limitations under the License.
  */
 
+#include "compiler.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "compiler.h"
 
 
 static const char *name = "../tests/arrays.c";
-	// "../tests/Egor/Macro/test3.c";
-	// "../tests/Mishatest.c";
-	// "../tests/mips/0test.c";
+// "../tests/Egor/Macro/test3.c";
+// "../tests/Mishatest.c";
+// "../tests/mips/0test.c";
 
 
 int main(int argc, const char *argv[])

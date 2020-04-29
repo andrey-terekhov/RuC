@@ -1,9 +1,25 @@
 #!/bin/sh
-binary="clang-format-9"
-which "${binary}" > /dev/null
+
+# Needed clang clang-format clang-format-9 clang-tidy
+
+clang_tidy="clang-tidy"
+clang_format="clang-format-9"
+
+which $clang_format >/dev/null 2>/dev/null
 if [ "$?" != "0" ] ; then
-	binary="clang-format"
+	clang_format="clang-format"
 fi
 
-find libs -iname *.c -o -iname *.h | xargs "${binary}" -i -style=file
-find src -iname *.c -o -iname *.h | xargs "${binary}" -i -style=file
+# Enter to root dir
+cd `dirname $0`/..
+
+
+# Set checking files
+headers="libs/*/*.h"
+sources="src/*.c libs/*/*.c"
+
+# TO-DO auto include directory `-Ipath_to_dir`
+directories="-Ilibs/util -Ilibs/compiler"
+
+$clang_format -i $sources $headers
+$clang_tidy -fix-errors $sources -- $directories
