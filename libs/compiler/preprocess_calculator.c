@@ -373,7 +373,7 @@ void calculator(int if_flag, preprocess_context *context, compiler_context *c_co
 
 			if (op == 0 && !if_flag)
 			{
-				double_to_string(stack[0], int_flag[0], context, c_context);
+				double_to_string(stack[0], int_flag[0], context);
 				return;
 			}
 		}

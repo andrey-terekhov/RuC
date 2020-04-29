@@ -28,7 +28,7 @@
 #include "preprocess_error.h" 
 
 
-void define_get_from_macrotext(int r, preprocess_context *context);
+ void define_get_from_macrotext(int r, preprocess_context *context, compiler_context *c_context);
 
 int m_equal(preprocess_context *context)
 {

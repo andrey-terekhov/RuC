@@ -49,7 +49,6 @@ void open_file(preprocess_context *context, compiler_context *c_context)
 {
 	char file_way[100];
 	int i = 0;
-	int k;
 
 	while (context->way[i] != '\0')
 	{
