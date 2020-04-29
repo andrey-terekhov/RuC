@@ -13,12 +13,16 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+#pragma once
+#include "context.h"
 
-#ifndef H_CODES
-#define H_CODES
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+void tablesandcode(compiler_context *context);
+void tablesandtree(compiler_context *context);
 
-void tablesandcode();
-void tablesandtree();
-
+#ifdef __cplusplus
+} /* extern "C" */
 #endif

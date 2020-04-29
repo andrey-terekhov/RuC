@@ -13,12 +13,16 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+#pragma once
+#include "context.h"
 
-#ifndef H_EXTDECL
-#define H_EXTDECL
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+void ext_decl(compiler_context *context);
+int szof(compiler_context *context, int type);
 
-void ext_decl();
-int szof(int type);
-
+#ifdef __cplusplus
+} /* extern "C" */
 #endif

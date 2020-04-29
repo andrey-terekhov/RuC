@@ -13,175 +13,316 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
-
-#define _CRT_SECURE_NO_WARNINGS
-
 #include "compiler.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#ifdef __linux__
+#include <unistd.h>
+#endif
 #include "codegen.h"
 #include "codes.h"
+#include "context.h"
 #include "defs.h"
 #include "errors.h"
-#include "extdecl.h"
-#include "global.h"
-#include "preprocess.h"
-#include "scaner.h"
+#include "frontend_utils.h"
+#include "tables.h"
+#include"preprocess.h"
 
+#ifdef ANALYSIS_ENABLED
+#include "asp/asp_simple.h"
+#define ASP_HOST "localhost"
+#define ASP_PORT (5500)
+#endif
 
-int toreprtab(char str[])
+//#define FILE_DEBUG
+
+#ifdef ANALYSIS_ENABLED
+void report_cb(asp_report *report)
 {
-	int i;
-	int oldrepr = rp;
-	hash = 0;
-	rp += 2;
+	fprintf(stderr, "%s:%d:%d: %s: %s\n", report->file, report->line, report->column, report->rule_id,
+			report->explanation);
+}
+#endif
 
-	for (i = 0; str[i] != 0; i++)
+static void process_user_requests(compiler_context *context, compiler_workspace *workspace)
+{
+	compiler_workspace_file *file;
+
+	file = workspace->files;
+	while (file != NULL)
 	{
-		hash += str[i];
-		reprtab[rp++] = str[i];
+		char *macro_processed;
+
+#if !defined(FILE_DEBUG) && !defined(_MSC_VER)
+		/* Regular file */
+		char macro_path[] = "/tmp/macroXXXXXX";
+		char tree_path[] = "/tmp/treeXXXXXX";
+		char codes_path[] = "/tmp/codesXXXXXX";
+
+		mkstemp(macro_path);
+		mkstemp(tree_path);
+		mkstemp(codes_path);
+#else
+		char macro_path[] = "macro.txt";
+		char tree_path[] = "tree.txt";
+		char codes_path[] = "codes.txt";
+#endif
+		if (strlen(macro_path) == 0 || strlen(tree_path) == 0 || strlen(codes_path) == 0)
+		{
+			fprintf(stderr, " ошибка при создании временного файла\n");
+			exit(1);
+		}
+
+		// Открытие исходного текста
+		compiler_context_attach_io(context, file->path, IO_TYPE_INPUT, IO_SOURCE_FILE);
+
+		// Препроцессинг в массив
+		compiler_context_attach_io(context, "", IO_TYPE_OUTPUT, IO_SOURCE_MEM);
+
+		printf("\nИсходный текст:\n \n");
+
+		preprocess_file(context, file->path); //   макрогенерация
+		macro_processed = strdup(context->output_options.ptr);
+		if (macro_processed == NULL)
+		{
+			fprintf(stderr, " ошибка выделения памяти для "
+							"макрогенератора\n");
+			exit(1);
+		}
+
+		compiler_context_detach_io(context, IO_TYPE_OUTPUT);
+		compiler_context_detach_io(context, IO_TYPE_INPUT);
+
+		compiler_context_attach_io(context, macro_processed, IO_TYPE_INPUT, IO_SOURCE_MEM);
+		output_tables_and_tree(context, tree_path);
+		output_codes(context, codes_path);
+		compiler_context_detach_io(context, IO_TYPE_INPUT);
+
+		/* Will be left for debugging in case of failure */
+#if !defined(FILE_DEBUG) && !defined(_MSC_VER)
+		unlink(tree_path);
+		unlink(codes_path);
+		unlink(macro_path);
+#endif
+#ifdef ANALYSIS_ENABLED
+		asp_simple_invoke_singlefile(ASP_HOST, ASP_PORT, argv[i], ASP_LANGUAGE_RUC, report_cb);
+#endif
+
+		/* FIXME: support more than one file */
+		break;
 	}
 
-	hash &= 255;
-	reprtab[rp++] = 0;
-	reprtab[oldrepr] = hashtab[hash];
-	reprtab[oldrepr + 1] = 1;
-
-	return hashtab[hash] = oldrepr;
+	output_export(context, workspace->output_file != NULL ? workspace->output_file : "export.txt");
 }
 
-#ifdef _MSC_VER
-__declspec(dllexport) void compile(const char *code)
-#else
-void compile(const char *code)
-#endif
+/* See description in compiler.h */
+compiler_workspace *compiler_workspace_create()
 {
+	return calloc(1, sizeof(compiler_workspace));
+}
+
+/* See description in compiler.h */
+void compiler_workspace_free(compiler_workspace *workspace)
+{
+	compiler_workspace_file *file;
+
+	if (workspace == NULL)
+	{
+		return;
+	}
+
+	/* Free up files */
+	file = workspace->files;
+	while (file != NULL)
+	{
+		compiler_workspace_file *next = file->next;
+
+		free(file->path);
+		free(file);
+		file = next;
+	}
+
+	/* Free up the rest of workspace */
+	free(workspace->output_file);
+	free(workspace);
+}
+
+/* See description in compiler.h */
+compiler_workspace_file *compiler_workspace_add_file(compiler_workspace *workspace, const char *path)
+{
+	compiler_workspace_file *file;
+	compiler_workspace_file *tmp;
+
+	file = calloc(1, sizeof(compiler_workspace_file));
+	if (file == NULL)
+	{
+		return NULL;
+	}
+
+	file->path = strdup(path);
+
+	/* Find the tail file */
+	tmp = workspace->files;
+	while (tmp != NULL && tmp->next != NULL)
+	{
+		tmp = tmp->next;
+	}
+
+	/* Actually put it to the tail */
+	if (tmp != NULL)
+	{
+		tmp->next = file;
+	}
+	else
+	{
+		workspace->files = file;
+	}
+
+	return file;
+}
+
+/* See description in compiler.h */
+char *compiler_workspace_error2str(compiler_workspace_error *error)
+{
+	char *str = NULL;
+
+	if (error == NULL)
+	{
+		return NULL;
+	}
+
+	switch (error->code)
+	{
+		case COMPILER_WS_ENOOUTPUT:
+		{
+			/*
+			 * See, even though the string is static, we leave this API
+			 * open for improvements, hence the strdup()/free()
+			 */
+			str = strdup("Output file is not set");
+			break;
+		}
+		case COMPILER_WS_EFILEADD:
+		{
+			str = strdup("Error adding input file");
+			break;
+		}
+		case COMPILER_WS_ENOINPUT:
+		{
+			str = strdup("No input files");
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+
+	return str;
+}
+
+/* See description in compiler.h */
+compiler_workspace *compiler_get_workspace(int argc, const char *argv[])
+{
+	compiler_workspace *ws;
 	int i;
 
-	for (i = 0; i < 256; i++)
+	ws = compiler_workspace_create();
+	if (ws == NULL)
 	{
-		hashtab[i] = 0;
+		return NULL;
 	}
 
-	// занесение ключевых слов в reprtab
-	keywordsnum = 1;
-
-	input = fopen("keywords.txt", "r");
-	if (input == NULL)
+	for (i = 1; i < argc; ++i)
 	{
-		printf(" не найден файл %s\n", "keywords.txt");
-		exit(1);
+		if (strcmp(argv[i], "-o") == 0)
+		{
+			if ((i + 1) >= argc)
+			{
+				ws->error.code = COMPILER_WS_ENOOUTPUT;
+				break;
+			}
+
+			/* Output file */
+			ws->output_file = strdup(argv[i + 1]);
+			i++;
+		}
+		else
+		{
+			if (compiler_workspace_add_file(ws, argv[i]) == NULL)
+			{
+				ws->error.code = COMPILER_WS_EFILEADD;
+				break;
+			}
+		}
 	}
 
-	getnext();
-	nextch();
-	while (scan() != LEOF);				// чтение ключевых слов
-	fclose(input);
-
-	input = fopen(code, "r");			// исходный текст
-	output = fopen("macro.txt", "wt");
-
-	if (input == NULL)
+	if (ws->files == NULL)
 	{
-		printf(" не найден файл %s\n", code);
-		exit(1);
+		ws->error.code = COMPILER_WS_ENOINPUT;
 	}
 
-	modetab[1] = 0;
-	modetab[2] = MSTRUCT;
-	modetab[3] = 2;
-	modetab[4] = 4;
-	modetab[5] = modetab[7] = LINT;
-	modetab[6] = toreprtab("numTh");
-	modetab[8] = toreprtab("data");
-	modetab[9] = 1;						// занесение в modetab описателя struct{int numTh; int inf;}
-	modetab[10] = MFUNCTION;
-	modetab[11] = LVOID;
-	modetab[12] = 1;
-	modetab[13] = 2;
-	modetab[14] = 9;					// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
-	modetab[15] = MFUNCTION;
-	modetab[16] = LVOIDASTER;
-	modetab[17] = 1;
-	modetab[18] = LVOIDASTER;
-	modetab[19] = startmode = 14;		// занесение в modetab описателя функции void* interpreter(void* n)
-	md = 19;
-	keywordsnum = 0;
-	lines[line = 1] = 1;
-	charnum = 1;
-	kw = 1;
-	tc = 0;
+	return ws;
+}
 
-	printf("\n Исходный текст:\n \n");
-	preprocess_file();					// макрогенерация
+/**
+ * Compile RuC files set as compiler arguments
+ *
+ * @param argc Number of arguments
+ * @param argv String arguments to compiler, starting with the name of
+ *             compiler executable
+ *
+ * @return Status code
+ */
+COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
+{
+	compiler_context *context = malloc(sizeof(compiler_context));
 
-	fclose(output);
-	fclose(input);
-
-	input = fopen("macro.txt", "r");
-
-	if (input == NULL)
+	if (context == NULL)
 	{
-		printf(" файл %s не найден\n", "macro.txt");
-	}
-	if (prep_flag == 1)
-	{
-		printf("\n Текст после препроцесора:\n \n");
+		fprintf(stderr, " ошибка выделения памяти под контекст\n");
+		return 1;
 	}
 
-	output = fopen("tree.txt", "wt");
+	compiler_context_init(context);
+	compiler_context_attach_io(context, ":stderr", IO_TYPE_ERROR, IO_SOURCE_FILE);
+	compiler_context_attach_io(context, ":stdout", IO_TYPE_MISC, IO_SOURCE_FILE);
 
-	getnext();
-	nextch();
-	next = scan();
+	read_keywords(context);
 
-	ext_decl();							// генерация дерева
+	init_modetab(context);
 
-	lines[line + 1] = charnum;
-	tablesandtree();
-	fclose(output);
-	output = fopen("codes.txt", "wt");
+	process_user_requests(context, workspace);
 
-	codegen();							// генерация кода
+	compiler_context_deinit(context);
+	free(context);
+	return 0;
+}
 
-	tablesandcode();
+/* See description in compiler.h */
+COMPILER_EXPORTED int compiler_compile(const char *path)
+{
+	int ret;
+	compiler_workspace *ws;
 
-	fclose(input);
-	fclose(output);
-
-	output = fopen("export.txt", "wt");
-	fprintf(output, "%i %i %i %i %i %i %i\n", pc, funcnum, id, rp, md, maxdisplg, wasmain);
-
-	for (i = 0; i < pc; i++)
+	ws = compiler_workspace_create();
+	if (ws == NULL)
 	{
-		fprintf(output, "%i ", mem[i]);
-	}
-	fprintf(output, "\n");
-
-	for (i = 0; i < funcnum; i++)
-	{
-		fprintf(output, "%i ", functions[i]);
-	}
-	fprintf(output, "\n");
-
-	for (i = 0; i < id; i++)
-	{
-		fprintf(output, "%i ", identab[i]);
-	}
-	fprintf(output, "\n");
-
-	for (i = 0; i < rp; i++)
-	{
-		fprintf(output, "%i ", reprtab[i]);
+		/* Failed to create workspace */
+		return 1;
 	}
 
-	for (i = 0; i < md; i++)
+	if (compiler_workspace_add_file(ws, path) == NULL)
 	{
-		fprintf(output, "%i ", modetab[i]);
+		/* Failed to add file to workspace */
+		compiler_workspace_free(ws);
+		return 1;
 	}
-	fprintf(output, "\n");
 
-	fclose(output);
+	ret = compiler_workspace_compile(ws);
+	compiler_workspace_free(ws);
+
+	return ret;
 }

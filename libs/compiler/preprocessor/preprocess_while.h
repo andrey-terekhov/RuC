@@ -1,5 +1,5 @@
 /*
- *	Copyright 2018 Andrey Terekhov, Mikhail Terekhov
+ *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -13,18 +13,8 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+#include "preprocess_global.h"
+#include "../context.h"
 
-#ifndef H_UTILS
-#define H_UTILS
-
-#define _CRT_SECURE_NO_WARNINGS
-
-#include <stdio.h>
-#include <stdlib.h>
-
-
-void printf_char(int wchar);
-void fprintf_char(FILE *f, int wchar);
-int getf_char();
-
-#endif
+void while_collect(preprocess_context *context, compiler_context *c_context);
+void while_relis(preprocess_context *context, compiler_context *c_context);
