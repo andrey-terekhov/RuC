@@ -13,97 +13,76 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
-
 #include "extdecl.h"
 #include "errors.h"
 #include "global.h"
-#include "scaner.h"
+#include "scanner.h"
 
+void exprassnval(compiler_context *);
 
-int onlystrings;
-
-
-void array_init(int t);
-void block(int b);
-void expr(int level);
-void exprassn(int);
-void exprassnval();
-void exprval();
-int gettype();
-void struct_init(int);
-void unarexpr();
-
-
-int modeeq(int first_mode, int second_mode)
+int modeeq(compiler_context *context, int first_mode, int second_mode)
 {
 	int n;
 	int i;
 	int flag = 1;
 	int mode;
-
-	if (modetab[first_mode] != modetab[second_mode])
+	if (context->modetab[first_mode] != context->modetab[second_mode])
 	{
 		return 0;
 	}
 
-	mode = modetab[first_mode];
+	mode = context->modetab[first_mode];
 	// определяем, сколько полей надо сравнивать для различных типов записей
-	n = mode == MSTRUCT || mode == MFUNCTION ? 2 + modetab[first_mode + 2] : 1;
+	n = mode == MSTRUCT || mode == MFUNCTION ? 2 + context->modetab[first_mode + 2] : 1;
 
 	for (i = 1; i <= n && flag; i++)
 	{
-		flag = modetab[first_mode + i] == modetab[second_mode + i];
+		flag = context->modetab[first_mode + i] == context->modetab[second_mode + i];
 	}
 
 	return flag;
 }
 
-int check_duplicates()
+int check_duplicates(compiler_context *context)
 {
-	// проверяет, имеется ли в modetab только что внесенный тип
-	// если да, то возвращает ссылку на старую запись, иначе - на новую
+	// проверяет, имеется ли в modetab только что внесенный тип.
+	// если да, то возвращает ссылку на старую запись, иначе - на новую.
 
-	int old = modetab[startmode];
+	int old = context->modetab[context->startmode];
 
 	while (old)
 	{
-		if (modeeq(startmode + 1, old + 1))
+		if (modeeq(context, context->startmode + 1, old + 1))
 		{
-			md = startmode;
-			startmode = modetab[startmode];
+			context->md = context->startmode;
+			context->startmode = context->modetab[context->startmode];
 			return old + 1;
 		}
 		else
 		{
-			old = modetab[old];
+			old = context->modetab[old];
 		}
 	}
-	return startmode + 1;
+	return context->startmode + 1;
 }
 
-int newdecl(int type, int elemtype)
+int newdecl(compiler_context *context, int type, int elemtype)
 {
-	modetab[md] = startmode;
-	startmode = md++;
-	modetab[md++] = type;
-	modetab[md++] = elemtype;	// ссылка на элемент
+	context->modetab[context->md] = context->startmode;
+	context->startmode = context->md++;
+	context->modetab[context->md++] = type;
+	context->modetab[context->md++] = elemtype; // ссылка на элемент
 
-	return check_duplicates();
+	return check_duplicates(context);
 }
 
-int evaluate_params(int num, int formatstr[], int formattypes[], int placeholders[])
+int evaluate_params(compiler_context *context, int num, int formatstr[], int formattypes[], int placeholders[])
 {
 	int numofparams = 0;
 	int i = 0;
 	int fsi;
-
-	/*
-		for (i=0; i<num; i++)
-		{
-			printf("%c %i\n", formatstr[i], formatstr[i]);
-		}
-	*/
-
+	//           for (i=0; i<num; i++)
+	//           printf("%c %i\n", formatstr[i], formatstr[i]);
 	for (i = 0; i < num; i++)
 	{
 		if (formatstr[i] == '%')
@@ -112,47 +91,44 @@ int evaluate_params(int num, int formatstr[], int formattypes[], int placeholder
 			{
 				if (numofparams == MAXPRINTFPARAMS)
 				{
-					error(too_many_printf_params);
+					error(context, too_many_printf_params);
 				}
 
 				placeholders[numofparams] = fsi;
 			}
-
-			switch (fsi)	// Если добавляется новый спецификатор -
-							// - не забыть внести его в switch в bad_printf_placeholder
+			switch (fsi) // Если добавляется новый спецификатор -- не забыть
+						 // внести его в switch в bad_printf_placeholder
 			{
 				case 'i':
-				case 1094:	// 'ц'
+				case 1094: // 'ц'
 					formattypes[numofparams++] = LINT;
 					break;
 
 				case 'c':
-				case 1083:	// л
+				case 1083: // л
 					formattypes[numofparams++] = LCHAR;
 					break;
 
 				case 'f':
-				case 1074:	// в
+				case 1074: // в
 					formattypes[numofparams++] = LFLOAT;
 					break;
 
 				case 's':
-				case 1089:	// с
-					formattypes[numofparams++] = newdecl(MARRAY, LCHAR);
+				case 1089: // с
+					formattypes[numofparams++] = newdecl(context, MARRAY, LCHAR);
 					break;
 
 				case '%':
 					break;
 
 				case 0:
-					error(printf_no_format_placeholder);
+					error(context, printf_no_format_placeholder);
 					break;
 
 				default:
-				{
-					bad_printf_placeholder = fsi;
-					error(printf_unknown_format_placeholder);
-				}
+					context->bad_printf_placeholder = fsi;
+					error(context, printf_unknown_format_placeholder);
 					break;
 			}
 		}
@@ -161,168 +137,180 @@ int evaluate_params(int num, int formatstr[], int formattypes[], int placeholder
 	return numofparams;
 }
 
-int szof(int type)
+
+int szof(compiler_context *context, int type)
 {
-	return next == LEFTSQBR ? 1 : type == LFLOAT ? 2 : (type > 0 && modetab[type] == MSTRUCT) ? modetab[type + 1] : 1;
+	return context->next == LEFTSQBR
+			   ? 1
+			   : type == LFLOAT ? 2 : (type > 0 && context->modetab[type] == MSTRUCT) ? context->modetab[type + 1] : 1;
 }
 
-int is_row_of_char(int t)
+int is_row_of_char(compiler_context *context, int t)
 {
-	return t > 0 && modetab[t] == MARRAY && modetab[t + 1] == LCHAR;
+	return t > 0 && context->modetab[t] == MARRAY && context->modetab[t + 1] == LCHAR;
 }
 
-int is_function(int t)
+int is_function(compiler_context *context, int t)
 {
-	return t > 0 && modetab[t] == MFUNCTION;
+	return t > 0 && context->modetab[t] == MFUNCTION;
 }
 
-int is_array(int t)
+int is_array(compiler_context *context, int t)
 {
-	return t > 0 && modetab[t] == MARRAY;
+	return t > 0 && context->modetab[t] == MARRAY;
 }
 
-int is_pointer(int t)
+int is_pointer(compiler_context *context, int t)
 {
-	return t > 0 && modetab[t] == MPOINT;
+	return t > 0 && context->modetab[t] == MPOINT;
 }
 
-int is_struct(int t)
+int is_struct(compiler_context *context, int t)
 {
-	return t > 0 && modetab[t] == MSTRUCT;
+	return t > 0 && context->modetab[t] == MSTRUCT;
 }
 
-int is_float(int t)
+int is_float(compiler_context *context, int t)
 {
+	UNUSED(context);
 	return t == LFLOAT || t == LDOUBLE;
 }
 
-int is_int(int t)
+int is_int(compiler_context *context, int t)
 {
+	UNUSED(context);
 	return t == LINT || t == LLONG || t == LCHAR;
 }
 
-void mustbe(int what, int e)
+void mustbe(compiler_context *context, int what, int e)
 {
-	if (scaner() != what)
+	if (scaner(context) != what)
 	{
-		error(e);
+		error(context, e);
 	}
 }
 
-void totree(int op)
+void totree(compiler_context *context, int op)
 {
-	tree[tc++] = op;
+	context->tree[context->tc++] = op;
 }
 
-void totreef(int op)
+void totreef(compiler_context *context, int op)
 {
-	tree[tc++] = op;
-
-	if (ansttype == LFLOAT &&
+	context->tree[context->tc++] = op;
+	if (context->ansttype == LFLOAT &&
 		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
 	{
-		tree[tc - 1] += 50;
+		context->tree[context->tc - 1] += 50;
 	}
 }
 
-int getstatic(int type)
+int getstatic(compiler_context *context, int type)
 {
-	int olddispl = displ;
-	displ += lg * szof(type);	// lg - смещение от l (+1) или от g (-1)
-
-	if (lg > 0)
+	int olddispl = context->displ;
+	context->displ += context->lg * szof(context, type); // lg - смещение от l (+1) или от g (-1)
+	if (context->lg > 0)
 	{
-		maxdispl = (displ > maxdispl) ? displ : maxdispl;
+		context->maxdispl = (context->displ > context->maxdispl) ? context->displ : context->maxdispl;
 	}
 	else
 	{
-		maxdisplg = -displ;
+		context->maxdisplg = -context->displ;
 	}
-
 	return olddispl;
 }
 
-int toidentab(int f, int type)
-{
-	// f ==       0, если не ф-ция,
-	// f ==       1, если метка,
-	// f == funcnum, если описание ф-ции,
-	// f ==      -1, если ф-ция-параметр,
-	// f >=    1000, если это описание типа,
-	// f ==      -2, если #define
-
-	// printf("\n f= %i repr %i rtab[repr] %i rtab[repr+1] %i rtab[repr+2] %i\n", f, repr, reprtab[repr],
-	// reprtab[repr+1], reprtab[repr+2]);
-
+int toidentab(compiler_context *context, int f,
+			  int type) // f =  0, если не ф-ция, f=1, если метка, f=funcnum,
+						// если описание ф-ции,
+{ // f = -1, если ф-ция-параметр, f>=1000, если это описание типа
+  // f = -2, #define
+	//    printf("\n f= %i context->repr %i rtab[context->repr] %i
+	//    rtab[context->repr+1] %i rtab[context->repr+2] %i\n", f,
+	//    context->repr, context->reprtab[context->repr],
+	//    context->reprtab[context->repr+1], context->reprtab[context->repr+2]);
 	int pred;
 
-	lastid = id;
-	if (reprtab[repr + 1] == 0)				// это может быть только MAIN
+	compiler_table_expand(&context->reprtab, 1);
+
+	context->lastid = context->id;
+	if (REPRTAB[REPRTAB_POS + 1] == 0) // это может быть только MAIN
 	{
-		if (wasmain)
+		if (context->wasmain)
 		{
-			error(more_than_1_main);
+			error(context, more_than_1_main);
 		}
-		wasmain = id;
+		context->wasmain = context->id;
 	}
 
-	pred = identab[id] = reprtab[repr + 1];	// ссылка на описание с таким же представлением в предыдущем блоке
-	if (pred)								// pred == 0 только для main, эту ссылку портить нельзя
+	// ссылка на описание с таким же
+	// представлением в предыдущем блоке
+	pred = context->identab[context->id] = REPRTAB[REPRTAB_POS + 1];
+	if (pred) // pred == 0 только для main, эту ссылку портить нельзя
 	{
-		reprtab[repr + 1] = id;				// ссылка на текущее описание с этим представлением (это в reprtab)
+		// ссылка на текущее описание с этим представлением
+		// (это в reprtab)
+		REPRTAB[REPRTAB_POS + 1] = context->id;
 	}
 
-	if (f != 1 && pred >= curid)			// один и тот же идент м.б. переменной и меткой
-	{
-		if (func_def == 3 ? 1 : identab[pred + 1] > 0 ? 1 : func_def == 1 ? 0 : 1)
+	if (f != 1 && pred >= context->curid)
+	{ // один  и тот же идент м.б. переменной и меткой
+
+		if (context->func_def == 3 ? 1 : context->identab[pred + 1] > 0 ? 1 : context->func_def == 1 ? 0 : 1)
 		{
-			error(repeated_decl);	// только определение функции может иметь 2 описания, т.е. иметь предописание
+			error(context,
+				  repeated_decl); // только определение функции может иметь 2
+								  // описания, т.е. иметь предописание
 		}
 	}
 
-	identab[id + 1] = repr;			// ссылка на представление
-	if (f == -2)					// #define
+	context->identab[context->id + 1] = REPRTAB_POS; // ссылка на представление
+	if (f == -2)									 // #define
 	{
-		identab[id + 2] = 1;
-		identab[id + 3] = type;		// это целое число, определенное по #define
+		context->identab[context->id + 2] = 1;
+		context->identab[context->id + 3] = type; // это целое число, определенное по #define
 	}
-	else							// дальше тип или ссылка на modetab (для функций и структур)
+	else
 	{
-		identab[id + 2] = type;		// тип -1 int, -2 char, -3 float, -4 long, -5 double,
-									// если тип > 0, то это ссылка на modetab
-
+		// дальше тип или ссылка на modetab (для функций и структур)
+		context->identab[context->id + 2] = type; // тип -1 int, -2 char, -3 float, -4 long, -5 double,
+												  // если тип > 0, то это ссылка на modetab
 		if (f == 1)
 		{
-			identab[id + 2] = 0;	// 0, если первым встретился goto, когда встретим метку, поставим 1
-			identab[id + 3] = 0;	// при генерации кода когда встретим метку, поставим pc
+			context->identab[context->id + 2] = 0; // 0, если первым встретился goto, когда встретим метку,
+												   // поставим 1
+			context->identab[context->id + 3] = 0; // при генерации кода когда встретим метку, поставим pc
 		}
 		else if (f >= 1000)
 		{
-			identab[id + 3] = f;	// это описание типа, если f > 1000, то f-1000 - это номер иниц проц
+			context->identab[context->id + 3] = f; // это описание типа, если f > 1000, то f-1000 - это номер
+												   // иниц проц
 		}
 		else if (f)
 		{
 			if (f < 0)
 			{
-				identab[id + 3] = -(displ++);
-				maxdispl = displ;
+				context->identab[context->id + 3] = -(context->displ++);
+				context->maxdispl = context->displ;
 			}
-			else	// identtab[lastid+3] - номер функции, если < 0, то это функция-параметр
+			else // identtab[context->lastid+3] - номер функции, если < 0, то
+				 // это функция-параметр
 			{
-				identab[id + 3] = f;
-				if (func_def == 2)
+				context->identab[context->id + 3] = f;
+				if (context->func_def == 2)
 				{
-					identab[lastid + 1] *= -1;	// это предописание
-					predef[++prdf] = repr;
+					context->identab[context->lastid + 1] *= -1; //это предописание
+					context->predef[++context->prdf] = REPRTAB_POS;
 				}
 				else
 				{
 					int i;
-					for (i = 0; i <= prdf; i++)
+
+					for (i = 0; i <= context->prdf; i++)
 					{
-						if (predef[i] == repr)
+						if (context->predef[i] == REPRTAB_POS)
 						{
-							predef[i] = 0;
+							context->predef[i] = 0;
 						}
 					}
 				}
@@ -330,1359 +318,1315 @@ int toidentab(int f, int type)
 		}
 		else
 		{
-			identab[id + 3] = getstatic(type);
+			context->identab[context->id + 3] = getstatic(context, type);
 		}
 	}
-	id += 4;
-
-	return lastid;
+	context->id += 4;
+	return context->lastid;
 }
 
-void binop(int sp)
+void binop(compiler_context *context, int sp)
 {
-	int op = stackop[sp];
-	int rtype = stackoperands[sopnd--];
-	int ltype = stackoperands[sopnd];
+	int op = context->stackop[sp];
+	int rtype = context->stackoperands[context->sopnd--];
+	int ltype = context->stackoperands[context->sopnd];
 
-	if (is_pointer(ltype) || is_pointer(rtype))
+	if (is_pointer(context, ltype) || is_pointer(context, rtype))
 	{
-		error(operand_is_pointer);
+		error(context, operand_is_pointer);
 	}
-
 	if ((op == LOGOR || op == LOGAND || op == LOR || op == LEXOR || op == LAND || op == LSHL || op == LSHR ||
-		op == LREM) && (is_float(ltype) || is_float(rtype)))
+		 op == LREM) &&
+		(is_float(context, ltype) || is_float(context, rtype)))
 	{
-		error(int_op_for_float);
+		error(context, int_op_for_float);
 	}
-
-	if (is_int(ltype) && is_float(rtype))
+	if (is_int(context, ltype) && is_float(context, rtype))
 	{
-		totree(WIDEN1);
+		totree(context, WIDEN1);
 	}
-
-	if (is_int(rtype) && is_float(ltype))
+	if (is_int(context, rtype) && is_float(context, ltype))
 	{
-		totree(WIDEN);
+		totree(context, WIDEN);
 	}
-
-	if (is_float(ltype) || is_float(rtype))
+	if (is_float(context, ltype) || is_float(context, rtype))
 	{
-		ansttype = LFLOAT;
+		context->ansttype = LFLOAT;
 	}
-
 	if (op == LOGOR || op == LOGAND)
 	{
-		totree(op);
-		tree[stacklog[sp]] = tc++;
+		totree(context, op);
+		context->tree[context->stacklog[sp]] = context->tc++;
 	}
 	else
 	{
-		totreef(op);
+		totreef(context, op);
 	}
-
 	if (op >= EQEQ && op <= LGE)
 	{
-		ansttype = LINT;
+		context->ansttype = LINT;
 	}
-
-	stackoperands[sopnd] = ansttype;
-	// printf("binop sopnd=%i ltype=%i rtype=%i ansttype=%i\n", sopnd, ltype, rtype, ansttype);
-	anst = VAL;
+	context->stackoperands[context->sopnd] = context->ansttype;
+	//    printf("binop context->sopnd=%i ltype=%i rtype=%i
+	//    context->ansttype=%i\n", context->sopnd, ltype, rtype,
+	//    context->ansttype);
+	context->anst = VAL;
 }
 
-void toval()	// надо значение положить на стек, например, чтобы передать параметром
-{
-	if (anst == VAL || anst == NUMBER);
-	else if (is_struct(ansttype))
-	{
-		if (!inass)
-		{
-			if (anst == IDENT)
-			{
-				tc -= 2;
-				totree(COPY0ST);
-				totree(anstdispl);
-			}
-			else	// тут может быть только ADDR
-			{
-				totree(COPY1ST);
-			}
+void expr(compiler_context *context, int level);
 
-			totree(modetab[ansttype + 1]);
-			anst = VAL;
+void exprassn(compiler_context *context, int);
+
+void toval(compiler_context *context) // надо значение положить на стек,
+									  // например, чтобы передать параметром
+{
+	if (context->anst == VAL || context->anst == NUMBER)
+	{
+		;
+	}
+	else if (is_struct(context, context->ansttype))
+	{
+		if (!context->inass)
+		{
+			if (context->anst == IDENT)
+			{
+				context->tc -= 2;
+				totree(context, COPY0ST);
+				totree(context, context->anstdispl);
+			}
+			else // тут может быть только ADDR
+			{
+				totree(context, COPY1ST);
+			}
+			totree(context, context->modetab[context->ansttype + 1]);
+			context->anst = VAL;
 		}
 	}
 	else
 	{
-		if (anst == IDENT)
+		if (context->anst == IDENT)
 		{
-			tree[tc - 2] = is_float(ansttype) ? TIdenttovald : TIdenttoval;
+			context->tree[context->tc - 2] = is_float(context, context->ansttype) ? TIdenttovald : TIdenttoval;
 		}
 
-		if (!(is_array(ansttype) || is_pointer(ansttype)))
+		if (!(is_array(context, context->ansttype) || is_pointer(context, context->ansttype)))
 		{
-			if (anst == ADDR)
+			if (context->anst == ADDR)
 			{
-				totree(is_float(ansttype) ? TAddrtovald : TAddrtoval);
+				totree(context, is_float(context, context->ansttype) ? TAddrtovald : TAddrtoval);
 			}
 		}
-		anst = VAL;
+		context->anst = VAL;
 	}
 }
 
-void insertwiden()
+void insertwiden(compiler_context *context)
 {
-	tc--;
-	totree(WIDEN);
-	totree(TExprend);
+	context->tc--;
+	totree(context, WIDEN);
+	totree(context, TExprend);
 }
 
-void applid()
+void applid(compiler_context *context)
 {
-	lastid = reprtab[repr + 1];
-	if (lastid == 1)
+	compiler_table_expand(&context->reprtab, 1);
+	context->lastid = REPRTAB[REPRTAB_POS + 1];
+	if (context->lastid == 1)
 	{
-		error(ident_is_not_declared);
+		error(context, ident_is_not_declared);
 	}
 }
 
-void actstring()
+
+void exprval(compiler_context *context);
+void unarexpr(compiler_context *context);
+
+void actstring(compiler_context *context)
 {
 	int n = 0;
 	int adn;
-	totree(TString);
-	adn = tc++;
+
+	totree(context, TString);
+	adn = context->tc++;
 	do
 	{
-		/*
-			if (scaner() == IDENT)
-			{
-				applid();
-				if (identab[lastid+2] == 1)
+		/*        if (scaner(context) == IDENT)
 				{
-					cur = NUMBER, ansttype = LINT, num = identab[lastid+3];
+					applid(context);
+					if (context->identab[context->lastid+2] == 1)
+						context->cur = NUMBER, context->ansttype = LINT, num =
+		   context->identab[context->lastid+3];
 				}
-			}
-		*/
-
-		if (scaner() == NUMBER && (ansttype == LINT || ansttype == LCHAR))
+		 */
+		if (scaner(context) == NUMBER && (context->ansttype == LINT || context->ansttype == LCHAR))
 		{
-			totree(num);
+			totree(context, context->num);
 		}
 		else
 		{
-			error(wrong_init_in_actparam);
+			error(context, wrong_init_in_actparam);
 		}
 		++n;
-	} while (scaner() == COMMA);
+	} while (scaner(context) == COMMA);
 
-	tree[adn] = n;
-	if (cur != END)
+	context->tree[adn] = n;
+	if (context->cur != END)
 	{
-		error(no_comma_or_end);
+		error(context, no_comma_or_end);
 	}
-	ansttype = newdecl(MARRAY, LINT);
-	anst = VAL;
+	context->ansttype = newdecl(context, MARRAY, LINT);
+	context->anst = VAL;
 }
 
-void mustbestring()
+void mustbestring(compiler_context *context)
 {
-	scaner();
-	exprassn(1);
-	toval();
-	sopnd--;
-
-	if (!(ansttype > 0 && modetab[ansttype] == MARRAY && modetab[ansttype + 1] == LCHAR))
+	scaner(context);
+	exprassn(context, 1);
+	toval(context);
+	context->sopnd--;
+	if (!(context->ansttype > 0 && context->modetab[context->ansttype] == MARRAY &&
+		  context->modetab[context->ansttype + 1] == LCHAR))
 	{
-		error(not_string_in_stanfunc);
-	}
-}
-
-void mustbepointstring()
-{
-	scaner();
-	exprassn(1);
-	toval();
-	sopnd--;
-
-	if (!(ansttype > 0 && modetab[ansttype] == MPOINT && is_array(modetab[ansttype + 1]) &&
-		modetab[modetab[ansttype + 1] + 1] == LCHAR))
-	{
-		error(not_point_string_in_stanfunc);
+		error(context, not_string_in_stanfunc);
 	}
 }
 
-void mustberow()
+void mustbepointstring(compiler_context *context)
 {
-	scaner();
-	exprassn(1);
-	toval();
-	sopnd--;
-
-	if (!(ansttype > 0 && modetab[ansttype] == MARRAY))
+	scaner(context);
+	exprassn(context, 1);
+	toval(context);
+	context->sopnd--;
+	if (!(context->ansttype > 0 && context->modetab[context->ansttype] == MPOINT &&
+		  is_array(context, context->modetab[context->ansttype + 1]) &&
+		  context->modetab[context->modetab[context->ansttype + 1] + 1] == LCHAR))
 	{
-		error(not_array_in_stanfunc);
+		error(context, not_point_string_in_stanfunc);
 	}
 }
 
-void mustbeint()
+void mustberow(compiler_context *context)
 {
-	scaner();
-	exprassn(1);
-	toval();
-	sopnd--;
+	scaner(context);
+	exprassn(context, 1);
+	toval(context);
+	context->sopnd--;
 
-	if (ansttype != LINT && ansttype != LCHAR)
+	if (!(context->ansttype > 0 && context->modetab[context->ansttype] == MARRAY))
 	{
-		error(not_int_in_stanfunc);
+		error(context, not_array_in_stanfunc);
 	}
 }
 
-void mustberowofint()
+void mustbeint(compiler_context *context)
 {
-	scaner();
-
-	if (cur == BEGIN)
+	scaner(context);
+	exprassn(context, 1);
+	toval(context);
+	context->sopnd--;
+	if (context->ansttype != LINT && context->ansttype != LCHAR)
 	{
-		actstring(), totree(TExprend);
+		error(context, not_int_in_stanfunc);
+	}
+}
+
+void mustberowofint(compiler_context *context)
+{
+	scaner(context);
+	if (context->cur == BEGIN)
+	{
+		actstring(context), totree(context, TExprend);
 	}
 	else
 	{
-		exprassn(1);
-		toval();
-		sopnd--;
+		exprassn(context, 1);
+		toval(context);
+		context->sopnd--;
 	}
-
-	if (!(ansttype > 0 && modetab[ansttype] == MARRAY &&
-		(modetab[ansttype + 1] == LINT || modetab[ansttype + 1] == LCHAR)))
+	if (!(context->ansttype > 0 && context->modetab[context->ansttype] == MARRAY &&
+		  (context->modetab[context->ansttype + 1] == LINT || context->modetab[context->ansttype + 1] == LCHAR)))
 	{
-		error(not_rowofint_in_stanfunc);
+		error(context, not_rowofint_in_stanfunc);
 	}
 }
 
-void primaryexpr()
+void primaryexpr(compiler_context *context)
 {
-	if (cur == NUMBER)
+	if (context->cur == NUMBER)
 	{
-		if (ansttype == LFLOAT)	// ansttype задается прямо в сканере
+		if (context->ansttype == LFLOAT) // context->ansttype задается прямо в сканере
 		{
-			totree(TConstd);
-			totree(numr.first);
-			totree(numr.second);
+			totree(context, TConstd);
+			totree(context, context->numr.first);
+			totree(context, context->numr.second);
 		}
 		else
 		{
-			totree(TConst);
-			totree(num);		// LINT, LCHAR
+			totree(context, TConst);
+			totree(context, context->num); // LINT, LCHAR
 		}
-
-		stackoperands[++sopnd] = ansttype;
-		// printf("number sopnd=%i ansttype=%i\n", sopnd, ansttype);
-		anst = NUMBER;
+		context->stackoperands[++context->sopnd] = context->ansttype;
+		//        printf("number context->sopnd=%i context->ansttype=%i\n",
+		//        context->sopnd, context->ansttype);
+		context->anst = NUMBER;
 	}
-	else if (cur == STRING)
+	else if (context->cur == STRING)
 	{
 		int i;
 
-		ansttype = newdecl(MARRAY, LCHAR);	// теперь пишем ansttype в анализаторе, а не в сканере
-		totree(TString);
-		totree(num);
+		context->ansttype = newdecl(context, MARRAY, LCHAR); // теперь пишем context->ansttype в
+															 // анализаторе, а не в сканере
+		totree(context, TString);
+		totree(context, context->num);
 
-		for (i = 0; i < num; i++)
+		for (i = 0; i < context->num; i++)
 		{
-			totree(lexstr[i]);
+			totree(context, context->lexstr[i]);
 		}
 
-		stackoperands[++sopnd] = ansttype;	// ROWOFCHAR
-		anst = VAL;
+		context->stackoperands[++context->sopnd] = context->ansttype; // ROWOFCHAR
+		context->anst = VAL;
 	}
-	else if (cur == IDENT)
+	else if (context->cur == IDENT)
 	{
-		applid();
-		/*
-			if (identab[lastid+2] == 1)			// #define
-			{
-				totree(TConst);
-				totree(num = identab[lastid+3]);
-				anst = NUMBER;
-				ansttype = LINT;
-			}
-			else
-		*/
+		applid(context);
+		/*        if (context->identab[context->lastid+2] == 1) // #define
+				{
+					totree(context, TConst);
+					totree(context, num = context->identab[context->lastid+3]);
+					context->anst = NUMBER;
+					context->ansttype = LINT;
+				}
+				else
+		 */
 		{
-			totree(TIdent);
-			totree(anstdispl = identab[lastid + 3]);
-			stackoperands[++sopnd] = ansttype = identab[lastid + 2];
-			anst = IDENT;
+			totree(context, TIdent);
+			totree(context, context->anstdispl = context->identab[context->lastid + 3]);
+			context->stackoperands[++context->sopnd] = context->ansttype = context->identab[context->lastid + 2];
+			context->anst = IDENT;
 		}
 	}
-	else if (cur == LEFTBR)
+	else if (context->cur == LEFTBR)
 	{
-		if (next == LVOID)
+		if (context->next == LVOID)
 		{
-			scaner();
-			mustbe(LMULT, no_mult_in_cast);
-			unarexpr();
-
-			if (!is_pointer(ansttype))
+			scaner(context);
+			mustbe(context, LMULT, no_mult_in_cast);
+			unarexpr(context);
+			if (!is_pointer(context, context->ansttype))
 			{
-				error(not_pointer_in_cast);
+				error(context, not_pointer_in_cast);
 			}
-
-			mustbe(RIGHTBR, no_rightbr_in_cast);
-			toval();
-			// totree(CASTC);
-			totree(TExprend);
+			mustbe(context, RIGHTBR, no_rightbr_in_cast);
+			toval(context);
+			//            totree(context, CASTC);
+			totree(context, TExprend);
 		}
 		else
 		{
-			int oldsp = sp;
-
-			scaner();
-			expr(1);
-			mustbe(RIGHTBR, wait_rightbr_in_primary);
-
-			while (sp > oldsp)
+			int oldsp = context->sp;
+			scaner(context);
+			expr(context, 1);
+			mustbe(context, RIGHTBR, wait_rightbr_in_primary);
+			while (context->sp > oldsp)
 			{
-				binop(--sp);
+				binop(context, --context->sp);
 			}
 		}
 	}
-	else if (cur <= STANDARD_FUNC_START)		// стандартная функция
+	else if (context->cur <= STANDARD_FUNC_START) // стандартная функция
 	{
-		int func = cur;
+		int func = context->cur;
 
-		if (scaner() != LEFTBR)
+		if (scaner(context) != LEFTBR)
 		{
-			error(no_leftbr_in_stand_func);
+			error(context, no_leftbr_in_stand_func);
 		}
-
-		if (func <= STRCPY && func >= STRLEN)	// функции работы со строками
+		if (func <= STRCPY && func >= STRLEN) // функции работы со строками
 		{
 			if (func >= STRNCAT)
 			{
-				mustbepointstring();
+				mustbepointstring(context);
 			}
 			else
 			{
-				mustbestring();
+				mustbestring(context);
 			}
-
 			if (func != STRLEN)
 			{
-				mustbe(COMMA, no_comma_in_act_params_stanfunc);
-				mustbestring();
-
+				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+				mustbestring(context);
 				if (func == STRNCPY || func == STRNCAT || func == STRNCMP)
 				{
-					mustbe(COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint();
+					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(context);
 				}
 			}
-
 			if (func < STRNCAT)
 			{
-				stackoperands[++sopnd] = ansttype = LINT;
+				context->stackoperands[++context->sopnd] = context->ansttype = LINT;
 			}
 		}
-		else if (func >= ICON && func <= WIFI_CONNECT)	// функции Фадеева
+		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
 		{
-			notrobot = 0;
+			context->notrobot = 0;
 			if (func <= PIXEL && func >= ICON)
 			{
-				mustberowofint();
+				mustberowofint(context);
 				if (func != CLEAR)
 				{
-					mustbe(COMMA, no_comma_in_act_params_stanfunc);
+					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
 				}
 
 				if (func == LINE || func == RECTANGLE || func == ELLIPS)
 				{
-					mustbeint();
-					mustbe(COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint();
-					mustbe(COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint();
-					mustbe(COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint();
-
+					mustbeint(context);
+					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(context);
+					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(context);
+					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(context);
 					if (func != LINE)
 					{
-						mustbe(COMMA, no_comma_in_act_params_stanfunc);
-						mustbeint();
+						mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+						mustbeint(context);
 					}
 				}
 				else if (func == ICON || func == PIXEL)
 				{
-					mustbeint();
-					mustbe(COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint();
-
+					mustbeint(context);
+					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(context);
 					if (func == ICON)
 					{
-						mustbe(COMMA, no_comma_in_act_params_stanfunc);
-						mustbeint();
+						mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+						mustbeint(context);
 					}
 				}
 				else if (func == DRAW_NUMBER || func == DRAW_STRING)
 				{
-					mustbeint();
-					mustbe(COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint();
-					mustbe(COMMA, no_comma_in_act_params_stanfunc);
-
+					mustbeint(context);
+					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(context);
+					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
 					if (func == DRAW_STRING)
 					{
-						mustbestring();
+						mustbestring(context);
 					}
-					else	// DRAW_NUMBER
+					else // DRAW_NUMBER
 					{
-						scaner();
-						exprassn(1);
-						toval();
-						sopnd--;
-						if (is_int(ansttype))
+						scaner(context);
+						exprassn(context, 1);
+						toval(context);
+						context->sopnd--;
+						if (is_int(context, context->ansttype))
 						{
-							totree(WIDEN);
+							totree(context, WIDEN);
 						}
-						else if (ansttype != LFLOAT)
+						else if (context->ansttype != LFLOAT)
 						{
-							error(not_float_in_stanfunc);
+							error(context, not_float_in_stanfunc);
 						}
 					}
 				}
 			}
 			else if (func == SETSIGNAL)
 			{
-				mustbeint();
-				mustbe(COMMA, no_comma_in_act_params_stanfunc);
-				mustberowofint();
-				mustbe(COMMA, no_comma_in_act_params_stanfunc);
-				mustberowofint();
+				mustbeint(context);
+				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+				mustberowofint(context);
+				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+				mustberowofint(context);
 			}
 			else if (func == WIFI_CONNECT || func == BLYNK_AUTORIZATION || func == BLYNK_NOTIFICATION)
 			{
-				mustbestring();
-
+				mustbestring(context);
 				if (func == WIFI_CONNECT)
 				{
-					mustbe(COMMA, no_comma_in_act_params_stanfunc);
-					mustbestring();
+					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+					mustbestring(context);
 				}
 			}
 			else
 			{
-				mustbeint();
-
+				mustbeint(context);
 				if (func != BLYNK_RECEIVE)
 				{
-					mustbe(COMMA, no_comma_in_act_params_stanfunc);
+					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
 					if (func == BLYNK_TERMINAL)
 					{
-						mustbestring();
+						mustbestring(context);
 					}
 					else if (func == BLYNK_SEND)
 					{
-						mustbeint();
+						mustbeint(context);
 					}
 					else if (func == BLYNK_PROPERTY)
 					{
-						mustbestring();
-						mustbe(COMMA, no_comma_in_act_params_stanfunc);
-						mustbestring();
+						mustbestring(context);
+						mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+						mustbestring(context);
 					}
-					else	// BLYNK_LCD
+					else // BLYNK_LCD
 					{
-						mustbeint();
-						mustbe(COMMA, no_comma_in_act_params_stanfunc);
-						mustbeint();
-						mustbe(COMMA, no_comma_in_act_params_stanfunc);
-						mustbestring();
+						mustbeint(context);
+						mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+						mustbeint(context);
+						mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+						mustbestring(context);
 					}
 				}
 				else
 				{
-					stackoperands[++sopnd] = ansttype = LINT;
+					context->stackoperands[++context->sopnd] = context->ansttype = LINT;
 				}
 			}
 		}
-		else if (func == UPB)	// UPB
+		else if (func == UPB) // UPB
 		{
-			mustbeint();
-			mustbe(COMMA, no_comma_in_act_params_stanfunc);
-			mustberow();
-			stackoperands[++sopnd] = ansttype = LINT;
+			mustbeint(context);
+			mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+			mustberow(context);
+			context->stackoperands[++context->sopnd] = context->ansttype = LINT;
 		}
-		else if (func <= TMSGSEND && func >= TGETNUM)	// процедуры управления параллельными нитями
-		{
-			if (func == TINIT || func == TDESTROY || func == TEXIT);	// void()
-			else if (func == TMSGRECEIVE || func == TGETNUM)			// getnum int()		msgreceive msg_info()
+		else if (func <= TMSGSEND && func >= TGETNUM)
+		{ // процедуры управления параллельными нитями
+			if (func == TINIT || func == TDESTROY || func == TEXIT)
 			{
-				anst = VAL;
-				ansttype = stackoperands[++sopnd] = func == TGETNUM ? LINT : 2;
-					// 2 - это ссылка на msg_info
-					// не было параметра, выдали 1 результат
+				; // void()
 			}
-			else	// MSGSEND void(msg_info)		CREATE int(void*(*func)(void*))
-					// SEMCREATE int(int)		JOIN, SLEEP, SEMWAIT, SEMPOST void(int)
+			else if (func == TMSGRECEIVE || func == TGETNUM) // getnum int()   msgreceive msg_info()
 			{
-				scaner();	// у этих процедур 1 параметр
+				context->anst = VAL;
+				context->ansttype = context->stackoperands[++context->sopnd] =
+					func == TGETNUM ? LINT : 2; // 2 - это ссылка на msg_info
+												//не было параметра,  выдали 1 результат
+			}
+			else
+			{					 // MSGSEND void(msg_info)  CREATE int(void*(*func)(void*))
+								 // SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
+				scaner(context); // у этих процедур 1 параметр
 
 				if (func == TCREATE)
 				{
 					int dn;
 
-					if (cur != IDENT)
+					if (context->cur != IDENT)
 					{
-						error(act_param_not_ident);
+						error(context, act_param_not_ident);
+					}
+					applid(context);
+					if (context->identab[context->lastid + 2] != 15)
+					{ // 15 - это аргумент типа void* (void*)
+						error(context, wrong_arg_in_create);
 					}
 
-					applid();
-
-					if (identab[lastid + 2] != 15)	// 15 - это аргумент типа void* (void*)
-					{
-						error(wrong_arg_in_create);
-					}
-
-					stackoperands[sopnd] = ansttype = LINT;
-					dn = identab[lastid + 3];
-
+					context->stackoperands[context->sopnd] = context->ansttype = LINT;
+					dn = context->identab[context->lastid + 3];
 					if (dn < 0)
 					{
-						totree(TIdenttoval);
-						totree(-dn);
+						totree(context, TIdenttoval);
+						totree(context, -dn);
 					}
 					else
 					{
-						totree(TConst);
-						totree(dn);
+						totree(context, TConst);
+						totree(context, dn);
 					}
-					anst = VAL;
+					context->anst = VAL;
 				}
 				else
 				{
-					leftansttype = 2;
-					exprassn(1);
-					toval();
+					context->leftansttype = 2;
+					exprassn(context, 1);
+					toval(context);
 
 					if (func == TMSGSEND)
 					{
-						if (ansttype != 2)	// 2 - это аргумент типа msg_info (struct{int numTh; int data;})
-						{
-							error(wrong_arg_in_send);
+						if (context->ansttype != 2)
+						{ // 2 - это аргумент типа msg_info (struct{int
+							// numTh; int data;})
+							error(context, wrong_arg_in_send);
 						}
-						--sopnd;
+						--context->sopnd;
 					}
 					else
 					{
-						if (!is_int(ansttype))
+						if (!is_int(context, context->ansttype))
 						{
-							error(param_threads_not_int);
+							error(context, param_threads_not_int);
 						}
 						if (func == TSEMCREATE)
 						{
-							anst = VAL, ansttype = stackoperands[sopnd] = LINT;	// съели 1 параметр, выдали int
+							context->anst = VAL,
+							context->ansttype = context->stackoperands[context->sopnd] =
+								LINT; // съели 1 параметр, выдали int
 						}
 						else
 						{
-							--sopnd;	// съели 1 параметр, не выдали результата
+							--context->sopnd; // съели 1 параметр, не выдали
 						}
+						// результата
 					}
 				}
 			}
 		}
 		else if (func == RAND)
 		{
-			ansttype = stackoperands[++sopnd] = LFLOAT;
+			context->ansttype = context->stackoperands[++context->sopnd] = LFLOAT;
 		}
 		else
 		{
-			scaner();
-			exprassn(1);
-			toval();
+			scaner(context);
+			exprassn(context, 1);
+			toval(context);
 
-			// GETDIGSENSOR int(int port, int pins[]), GETANSENSOR int (int port, int pin)
-			// SETMOTOR и VOLTAGE void (int port, int volt)
+			// GETDIGSENSOR int(int port, int pins[]), GETANSENSOR int (int
+			// port, int pin)  SETMOTOR и VOLTAGE void (int port, int volt)
 			if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR || func == VOLTAGE)
 			{
-				notrobot = 0;
-				if (!is_int(ansttype))
+				context->notrobot = 0;
+				if (!is_int(context, context->ansttype))
 				{
-					error(param_setmotor_not_int);
+					error(context, param_setmotor_not_int);
 				}
-
-				mustbe(COMMA, no_comma_in_setmotor);
-				scaner();
-
+				mustbe(context, COMMA, no_comma_in_setmotor);
+				scaner(context);
 				if (func == GETDIGSENSOR)
 				{
-					if (cur == BEGIN)
+					if (context->cur == BEGIN)
 					{
-						sopnd--, actstring();
+						context->sopnd--, actstring(context);
 					}
 					else
 					{
-						error(getdigsensorerr);
+						error(context, getdigsensorerr);
 					}
 				}
 				else
 				{
-					exprassn(1);
-					toval();
-
-					if (!is_int(ansttype))
+					exprassn(context, 1);
+					toval(context);
+					if (!is_int(context, context->ansttype))
 					{
-						error(param_setmotor_not_int);
+						error(context, param_setmotor_not_int);
 					}
 					if (func == SETMOTOR || func == VOLTAGE)
 					{
-						sopnd -= 2;
+						context->sopnd -= 2;
 					}
 					else
 					{
-						--sopnd, anst = VAL;
+						--context->sopnd, context->anst = VAL;
 					}
 				}
-
 				if (func == SETMOTOR || func == VOLTAGE)
 				{
-					sopnd -= 2;
+					context->sopnd -= 2;
 				}
 				else
 				{
-					anst = VAL, --sopnd;
+					context->anst = VAL, --context->sopnd;
 				}
 			}
-			else if (func == ABS && is_int(ansttype))
+			else if (func == ABS && is_int(context, context->ansttype))
 			{
 				func = ABSI;
 			}
 			else
 			{
-				if (is_int(ansttype))
+				if (is_int(context, context->ansttype))
 				{
-					totree(WIDEN);
-					ansttype = stackoperands[sopnd] = LFLOAT;
+					totree(context, WIDEN);
+					context->ansttype = context->stackoperands[context->sopnd] = LFLOAT;
 				}
-
-				if (!is_float(ansttype))
+				if (!is_float(context, context->ansttype))
 				{
-					error(bad_param_in_stand_func);
+					error(context, bad_param_in_stand_func);
 				}
-
 				if (func == ROUND)
 				{
-					ansttype = stackoperands[sopnd] = LINT;
+					context->ansttype = context->stackoperands[context->sopnd] = LINT;
 				}
 			}
 		}
-		totree(9500 - func);
-		mustbe(RIGHTBR, no_rightbr_in_stand_func);
+		totree(context, 9500 - func);
+		mustbe(context, RIGHTBR, no_rightbr_in_stand_func);
 	}
 	else
 	{
-		error(not_primary);
+		error(context, not_primary);
 	}
 }
 
-void index_check()
+void index_check(compiler_context *context)
 {
-	if (!is_int(ansttype))
+	if (!is_int(context, context->ansttype))
 	{
-		error(index_must_be_int);
+		error(context, index_must_be_int);
 	}
 }
 
-int find_field(int stype)	// выдает смещение до найденного поля или ошибку
+int find_field(compiler_context *context,
+			   int stype) // выдает смещение до найденного поля или ошибку
 {
 	int i;
 	int flag = 1;
 	int select_displ = 0;
 
-	scaner();
-	mustbe(IDENT, after_dot_must_be_ident);
+	scaner(context);
+	mustbe(context, IDENT, after_dot_must_be_ident);
 
-	for (i = 0; i < modetab[stype + 2]; i += 2)	// тут хранится удвоенное n
+	for (i = 0; i < context->modetab[stype + 2]; i += 2) // тут хранится удвоенное n
 	{
-		int field_type = modetab[stype + 3 + i];
+		int field_type = context->modetab[stype + 3 + i];
 
-		if (modetab[stype + 4 + i] == repr)
+		if (context->modetab[stype + 4 + i] == REPRTAB_POS)
 		{
-			stackoperands[sopnd] = ansttype = field_type;
+			context->stackoperands[context->sopnd] = context->ansttype = field_type;
 			flag = 0;
 			break;
 		}
 		else
 		{
-			select_displ += szof(field_type);
+			select_displ += szof(context, field_type);
 		}
 		// прибавляем к суммарному смещению длину поля
 	}
-
 	if (flag)
 	{
-		error(no_field);
+		error(context, no_field);
 	}
-
 	return select_displ;
 }
 
-void selectend()
+void selectend(compiler_context *context)
 {
-	while (next == DOT)
+	while (context->next == DOT)
 	{
-		anstdispl += find_field(ansttype);
+		context->anstdispl += find_field(context, context->ansttype);
 	}
 
-	totree(anstdispl);
-	if (is_array(ansttype) || is_pointer(ansttype))
+	totree(context, context->anstdispl);
+	if (is_array(context, context->ansttype) || is_pointer(context, context->ansttype))
 	{
-		totree(TAddrtoval);
+		totree(context, TAddrtoval);
 	}
 }
 
-int Norder(int t)	// вычислить размерность массива
+int Norder(compiler_context *context, int t) // вычислить размерность массива
 {
 	int n = 1;
-
-	while ((t = modetab[t + 1]) > 0)
+	while ((t = context->modetab[t + 1]) > 0)
 	{
 		n++;
 	}
-
 	return n;
 }
 
-void postexpr()
+void array_init(compiler_context *context, int t);
+
+void postexpr(compiler_context *context)
 {
 	int lid;
 	int leftansttyp;
 	int was_func = 0;
 
-	lid = lastid;
-	leftansttyp = ansttype;
+	lid = context->lastid;
+	leftansttyp = context->ansttype;
 
-	if (next == LEFTBR)	// вызов функции
+	if (context->next == LEFTBR) // вызов функции
 	{
 		int i;
 		int j;
 		int n;
 		int dn;
-		int oldinass = inass;
+		int oldinass = context->inass;
 
 		was_func = 1;
-		scaner();
-
-		if (!is_function(leftansttyp))
+		scaner(context);
+		if (!is_function(context, leftansttyp))
 		{
-			error(call_not_from_function);
+			error(context, call_not_from_function);
 		}
 
-		n = modetab[leftansttyp + 2];	// берем количество аргументов функции
+		n = context->modetab[leftansttyp + 2]; // берем количество аргументов функции
 
-		totree(TCall1);
-		totree(n);
+		totree(context, TCall1);
+		totree(context, n);
 		j = leftansttyp + 3;
-
-		for (i = 0; i < n; i++)			// фактические параметры
+		for (i = 0; i < n; i++) // фактические параметры
 		{
-			int mdj = leftansttype = modetab[j];
-				// это вид формального параметра, в ansttype будет вид фактического параметра
-			scaner();
-
-			if (is_function(mdj))		// фактическим параметром должна быть функция, в С - это только идентификатор
+			int mdj = context->leftansttype = context->modetab[j]; // это вид формального параметра, в
+																   // context->ansttype будет вид фактического
+																   // параметра
+			scaner(context);
+			if (is_function(context,
+							mdj)) // фактическим параметром должна быть функция,
+								  // в С - это только идентификатор
 			{
-				if (cur != IDENT)
+				if (context->cur != IDENT)
 				{
-					error(act_param_not_ident);
+					error(context, act_param_not_ident);
 				}
-				applid();
-
-				if (identab[lastid + 2] != mdj)
+				applid(context);
+				if (context->identab[context->lastid + 2] != mdj)
 				{
-					error(diff_formal_param_type_and_actual);
+					error(context, diff_formal_param_type_and_actual);
 				}
-				dn = identab[lastid + 3];
-
+				dn = context->identab[context->lastid + 3];
 				if (dn < 0)
 				{
-					totree(TIdenttoval);
-					totree(-dn);
+					totree(context, TIdenttoval);
+					totree(context, -dn);
 				}
 				else
 				{
-					totree(TConst);
-					totree(dn);
+					totree(context, TConst);
+					totree(context, dn);
 				}
-				totree(TExprend);
+				totree(context, TExprend);
 			}
 			else
 			{
-				if (cur == BEGIN && is_array(mdj))
+				if (context->cur == BEGIN && is_array(context, mdj))
 				{
-					actstring(), totree(TExprend);
+					actstring(context), totree(context, TExprend);
 				}
 				else
 				{
-					inass = 0;
-					exprassn(1);
-					toval();
-					totree(TExprend);
+					context->inass = 0;
+					exprassn(context, 1);
+					toval(context);
+					totree(context, TExprend);
 
-					if (mdj > 0 && mdj != ansttype)
+					if (mdj > 0 && mdj != context->ansttype)
 					{
-						error(diff_formal_param_type_and_actual);
+						error(context, diff_formal_param_type_and_actual);
 					}
 
-					if (is_int(mdj) && is_float(ansttype))
+					if (is_int(context, mdj) && is_float(context, context->ansttype))
 					{
-						error(float_instead_int);
+						error(context, float_instead_int);
 					}
 
-					if (is_float(mdj) && is_int(ansttype))
+					if (is_float(context, mdj) && is_int(context, context->ansttype))
 					{
-						insertwiden();
+						insertwiden(context);
 					}
-					--sopnd;
+					--context->sopnd;
 				}
 			}
-			if (i < n - 1 && scaner() != COMMA)
+			if (i < n - 1 && scaner(context) != COMMA)
 			{
-				error(no_comma_in_act_params);
+				error(context, no_comma_in_act_params);
 			}
 			j++;
 		}
-
-		inass = oldinass;
-		mustbe(RIGHTBR, wrong_number_of_params);
-		totree(TCall2);
-		totree(lid);
-		stackoperands[sopnd] = ansttype = modetab[leftansttyp + 1];
-		anst = VAL;
-
-		if (is_struct(ansttype))
+		context->inass = oldinass;
+		mustbe(context, RIGHTBR, wrong_number_of_params);
+		totree(context, TCall2);
+		totree(context, lid);
+		context->stackoperands[context->sopnd] = context->ansttype = context->modetab[leftansttyp + 1];
+		context->anst = VAL;
+		if (is_struct(context, context->ansttype))
 		{
-			x -= modetab[ansttype + 1] - 1;
+			context->x -= context->modetab[context->ansttype + 1] - 1;
 		}
 	}
 
-	while (next == LEFTSQBR || next == ARROW || next == DOT)
+	while (context->next == LEFTSQBR || context->next == ARROW || context->next == DOT)
 	{
-		while (next == LEFTSQBR)	// вырезка из массива (возможно, многомерного)
+		while (context->next == LEFTSQBR) // вырезка из массива (возможно, многомерного)
 		{
 			int elem_type;
-
 			if (was_func)
 			{
-				error(slice_from_func);
+				error(context, slice_from_func);
 			}
-
-			if (modetab[ansttype] != MARRAY)		// вырезка не из массива
+			if (context->modetab[context->ansttype] != MARRAY) // вырезка не из массива
 			{
-				error(slice_not_from_array);
+				error(context, slice_not_from_array);
 			}
 
-			elem_type = modetab[ansttype + 1];
+			elem_type = context->modetab[context->ansttype + 1];
 
-			scaner();
-			scaner();
+			scaner(context);
+			scaner(context);
 
-			if (anst == IDENT)						// a[i]
+			if (context->anst == IDENT) // a[i]
 			{
-				tree[tc - 2] = TSliceident;
-				tree[tc - 1] = anstdispl;
+				context->tree[context->tc - 2] = TSliceident;
+				context->tree[context->tc - 1] = context->anstdispl;
 			}
-			else									// a[i][j]
+			else // a[i][j]
 			{
-				totree(TSlice);
+				totree(context, TSlice);
 			}
 
-			totree(elem_type);
-			exprval();
-			index_check();							// проверка, что индекс int или char
+			totree(context, elem_type);
+			exprval(context);
+			index_check(context); // проверка, что индекс int или char
 
-			mustbe(RIGHTSQBR, no_rightsqbr_in_slice);
+			mustbe(context, RIGHTSQBR, no_rightsqbr_in_slice);
 
-			stackoperands[--sopnd] = ansttype = elem_type;
-			anst = ADDR;
+			context->stackoperands[--context->sopnd] = context->ansttype = elem_type;
+			context->anst = ADDR;
 		}
 
-		while (next == ARROW)
-			// это выборка поля из указателя на структуру, если после ->
-			// больше одной точки подряд, схлопываем в 1 select
-			// перед выборкой мог быть вызов функции или вырезка элемента массива
-		{
-			if (modetab[ansttype] != MPOINT || modetab[modetab[ansttype + 1]] != MSTRUCT)
+		while (context->next == ARROW) // это выборка поля из указателя на структуру, если после
+									   // -> больше одной точки подряд, схлопываем в 1 select
+		{ // перед выборкой мог быть вызов функции или вырезка элемента массива
+
+			if (context->modetab[context->ansttype] != MPOINT ||
+				context->modetab[context->modetab[context->ansttype + 1]] != MSTRUCT)
 			{
-				error(get_field_not_from_struct_pointer);
+				error(context, get_field_not_from_struct_pointer);
 			}
 
-			if (anst == IDENT)
+			if (context->anst == IDENT)
 			{
-				tree[tc - 2] = TIdenttoval;
+				context->tree[context->tc - 2] = TIdenttoval;
 			}
-			anst = ADDR;		// pointer мог быть значением функции (VAL) или, может быть,
-			totree(TSelect);	// anst уже был ADDR, т.е. адрес теперь уже всегда на верхушке стека
+			context->anst = ADDR;
+			// pointer  мог быть значением функции (VAL) или, может быть,
+			totree(context, TSelect); // context->anst уже был ADDR, т.е. адрес
+									  // теперь уже всегда на верхушке стека
 
-			anstdispl = find_field(ansttype = modetab[ansttype + 1]);
-			selectend();
+			context->anstdispl = find_field(context, context->ansttype = context->modetab[context->ansttype + 1]);
+			selectend(context);
 		}
+		if (context->next == DOT)
 
-		if (next == DOT)
 		{
-			/*
-				int i;
-				for (i = 3800; i < 3850; ++i)
-				{
-					printf("%i) reprtab[i]= %i %c\n", i, reprtab[i], reprtab[i]);
-				}
-			*/
-
-			if (ansttype < 0 || modetab[ansttype] != MSTRUCT)
+			if (context->ansttype < 0 || context->modetab[context->ansttype] != MSTRUCT)
 			{
-				error(select_not_from_struct);
+				error(context, select_not_from_struct);
 			}
-
-			if (anst == VAL)	// структура - значение функции
+			if (context->anst == VAL) // структура - значение функции
 			{
-				int len1 = szof(ansttype);
-
-				anstdispl = 0;
-				while (next == DOT)
+				int len1 = szof(context, context->ansttype);
+				context->anstdispl = 0;
+				while (context->next == DOT)
 				{
-					anstdispl += find_field(ansttype);
+					context->anstdispl += find_field(context, context->ansttype);
 				}
-
-				totree(COPYST);
-				totree(anstdispl);
-				totree(szof(ansttype));
-				totree(len1);
+				totree(context, COPYST);
+				totree(context, context->anstdispl);
+				totree(context, szof(context, context->ansttype));
+				totree(context, len1);
 			}
-			else if (anst == IDENT)
+			else if (context->anst == IDENT)
 			{
-				int globid = anstdispl < 0 ? -1 : 1;
-
-				while (next == DOT)
+				int globid = context->anstdispl < 0 ? -1 : 1;
+				while (context->next == DOT)
 				{
-					anstdispl += globid * find_field(ansttype);
+					context->anstdispl += globid * find_field(context, context->ansttype);
 				}
-
-				tree[tc - 1] = anstdispl;
+				context->tree[context->tc - 1] = context->anstdispl;
 			}
-			else	// ADDR
+			else // ADDR
 			{
-				totree(TSelect);
-				anstdispl = 0;
-				selectend();
+				totree(context, TSelect);
+				context->anstdispl = 0;
+				selectend(context);
 			}
 		}
 	}
-
-	if (next == INC || next == DEC)	// a++, a--
+	if (context->next == INC || context->next == DEC) // a++, a--
 	{
 		int op;
 
-		if (!is_int(ansttype) && !is_float(ansttype))
+		if (!is_int(context, context->ansttype) && !is_float(context, context->ansttype))
 		{
-			error(wrong_operand);
+			error(context, wrong_operand);
 		}
 
-		if (anst != IDENT && anst != ADDR)
+		if (context->anst != IDENT && context->anst != ADDR)
 		{
-			error(unassignable_inc);
+			error(context, unassignable_inc);
 		}
-
-		op = (next == INC) ? POSTINC : POSTDEC;
-		if (anst == ADDR)
+		op = (context->next == INC) ? POSTINC : POSTDEC;
+		if (context->anst == ADDR)
 		{
 			op += 4;
 		}
-		scaner();
-		totreef(op);
-
-		if (anst == IDENT)
+		scaner(context);
+		totreef(context, op);
+		if (context->anst == IDENT)
 		{
-			totree(identab[lid + 3]);
+			totree(context, context->identab[lid + 3]);
 		}
-		anst = VAL;
+		context->anst = VAL;
 	}
 }
 
-void unarexpr()
+void unarexpr(compiler_context *context)
 {
-	int op = cur;
-
-	if (cur == LNOT || cur == LOGNOT || cur == LPLUS || cur == LMINUS || cur == LAND || cur == LMULT || cur == INC ||
-		cur == DEC)
+	int op = context->cur;
+	if (context->cur == LNOT || context->cur == LOGNOT || context->cur == LPLUS || context->cur == LMINUS ||
+		context->cur == LAND || context->cur == LMULT || context->cur == INC || context->cur == DEC)
 	{
-		if (cur == INC || cur == DEC)
+		if (context->cur == INC || context->cur == DEC)
 		{
-			scaner();
-			unarexpr();
-
-			if (anst != IDENT && anst != ADDR)
+			scaner(context);
+			unarexpr(context);
+			if (context->anst != IDENT && context->anst != ADDR)
 			{
-				error(unassignable_inc);
+				error(context, unassignable_inc);
 			}
-
-			if (anst == ADDR)
+			if (context->anst == ADDR)
 			{
 				op += 4;
 			}
-			totreef(op);
-
-			if (anst == IDENT)
+			totreef(context, op);
+			if (context->anst == IDENT)
 			{
-				totree(identab[lastid + 3]);
+				totree(context, context->identab[context->lastid + 3]);
 			}
-			anst = VAL;
+			context->anst = VAL;
 		}
 		else
 		{
-			scaner();
-			unarexpr();
+			scaner(context);
+			unarexpr(context);
 
 			if (op == LAND)
 			{
-				if (anst == VAL)
+				if (context->anst == VAL)
 				{
-					error(wrong_addr);
+					error(context, wrong_addr);
 				}
 
-				if (anst == IDENT)
+				if (context->anst == IDENT)
 				{
-					tree[tc - 2] = TIdenttoaddr;	// &a
+					context->tree[context->tc - 2] = TIdenttoaddr; // &a
 				}
 
-				stackoperands[sopnd] = ansttype = newdecl(MPOINT, ansttype);
-				anst = VAL;
+				context->stackoperands[context->sopnd] = context->ansttype =
+					newdecl(context, MPOINT, context->ansttype);
+				context->anst = VAL;
 			}
 			else if (op == LMULT)
 			{
-				if (!is_pointer(ansttype))
+				if (!is_pointer(context, context->ansttype))
 				{
-					error(aster_not_for_pointer);
+					error(context, aster_not_for_pointer);
 				}
 
-				if (anst == IDENT)
+				if (context->anst == IDENT)
 				{
-					tree[tc - 2] = TIdenttoval;		// *p
+					context->tree[context->tc - 2] = TIdenttoval; // *p
 				}
 
-				stackoperands[sopnd] = ansttype = modetab[ansttype + 1];
-				anst = ADDR;
+				context->stackoperands[context->sopnd] = context->ansttype = context->modetab[context->ansttype + 1];
+				context->anst = ADDR;
 			}
 			else
 			{
-				toval();
-
-				if ((op == LNOT || op == LOGNOT) && ansttype == LFLOAT)
+				toval(context);
+				if ((op == LNOT || op == LOGNOT) && context->ansttype == LFLOAT)
 				{
-					error(int_op_for_float);
+					error(context, int_op_for_float);
 				}
 				else if (op == LMINUS)
 				{
-					totreef(UNMINUS);
+					totreef(context, UNMINUS);
 				}
-				else if (op == LPLUS);
+				else if (op == LPLUS)
+				{
+					;
+				}
 				else
 				{
-					totree(op);
+					totree(context, op);
 				}
-				anst = VAL;
+				context->anst = VAL;
 			}
 		}
 	}
 	else
 	{
-		primaryexpr();
+		primaryexpr(context);
 	}
 
-	postexpr();
-	stackoperands[sopnd] = ansttype;
+	postexpr(context);
+	context->stackoperands[context->sopnd] = context->ansttype;
 }
 
-void exprinbrkts(int er)
+void exprinbrkts(compiler_context *context, int er)
 {
-	mustbe(LEFTBR, er);
-	scaner();
-	exprval();
-	mustbe(RIGHTBR, er);
+	mustbe(context, LEFTBR, er);
+	scaner(context);
+	exprval(context);
+	mustbe(context, RIGHTBR, er);
 }
 
-void exprassninbrkts(int er)
+void exprassninbrkts(compiler_context *context, int er)
 {
-	mustbe(LEFTBR, er);
-	scaner();
-	exprassnval();
-	mustbe(RIGHTBR, er);
+	mustbe(context, LEFTBR, er);
+	scaner(context);
+	exprassnval(context);
+	mustbe(context, RIGHTBR, er);
 }
 
-int prio(int op)	// возвращает 0, если не операция
+int prio(compiler_context *context, int op) // возвращает 0, если не операция
 {
+	UNUSED(context);
 	return op == LOGOR
-				? 1
-				: op == LOGAND
-					? 2
-					: op == LOR
-						? 3
-						: op == LEXOR
-							? 4
-							: op == LAND
-								? 5
-								: op == EQEQ
-									? 6
-									: op == NOTEQ
-										? 6
-										: op == LLT
-											? 7
-											: op == LGT
-												? 7
-												: op == LLE
-													? 7
-													: op == LGE
-														? 7
-														: op == LSHL
-															? 8
-															: op == LSHR
-																? 8
-																: op == LPLUS
-																	? 9
-																	: op == LMINUS
-																		? 9
-																		: op == LMULT
-																			? 10
-																			: op == LDIV
-																				? 10
-																				: op == LREM
-																					? 10
-																					: 0;
+			   ? 1
+			   : op == LOGAND
+					 ? 2
+					 : op == LOR
+						   ? 3
+						   : op == LEXOR
+								 ? 4
+								 : op == LAND
+									   ? 5
+									   : op == EQEQ
+											 ? 6
+											 : op == NOTEQ
+												   ? 6
+												   : op == LLT
+														 ? 7
+														 : op == LGT
+															   ? 7
+															   : op == LLE
+																	 ? 7
+																	 : op == LGE
+																		   ? 7
+																		   : op == LSHL
+																				 ? 8
+																				 : op == LSHR
+																					   ? 8
+																					   : op == LPLUS
+																							 ? 9
+																							 : op == LMINUS
+																								   ? 9
+																								   : op == LMULT
+																										 ? 10
+																										 : op == LDIV
+																											   ? 10
+																											   : op == LREM
+																													 ? 10
+																													 : 0;
 }
 
-void subexpr()
+void subexpr(compiler_context *context)
 {
 	int p;
-	int oldsp = sp;
+	int oldsp = context->sp;
 	int wasop = 0;
 	int ad = 0;
 
-	while ((p = prio(next)))
+	while ((p = prio(context, context->next)))
 	{
 		wasop = 1;
-		toval();
-
-		while (sp > oldsp && stack[sp - 1] >= p)
+		toval(context);
+		while (context->sp > oldsp && context->stack[context->sp - 1] >= p)
 		{
-			binop(--sp);
+			binop(context, --context->sp);
 		}
 
 		if (p <= 2)
 		{
-			totree(p == 1 ? ADLOGOR : ADLOGAND);
-			ad = tc++;
+			totree(context, p == 1 ? ADLOGOR : ADLOGAND);
+			ad = context->tc++;
 		}
 
-		stack[sp] = p;
-		stacklog[sp] = ad;
-		stackop[sp++] = next;
-		scaner();
-		scaner();
-		unarexpr();
+		context->stack[context->sp] = p;
+		context->stacklog[context->sp] = ad;
+		context->stackop[context->sp++] = context->next;
+		scaner(context);
+		scaner(context);
+		unarexpr(context);
 	}
-
 	if (wasop)
 	{
-		toval();
+		toval(context);
 	}
-
-	while (sp > oldsp)
+	while (context->sp > oldsp)
 	{
-		binop(--sp);
+		binop(context, --context->sp);
 	}
 }
 
-int intopassn(int next)
+int intopassn(compiler_context *context, int next)
 {
+	UNUSED(context);
 	return next == REMASS || next == SHLASS || next == SHRASS || next == ANDASS || next == EXORASS || next == ORASS;
 }
-
-int opassn()
+int opassn(compiler_context *context)
 {
-	return (next == ASS || next == MULTASS || next == DIVASS || next == PLUSASS || next == MINUSASS || intopassn(next))
-				? op = next
-				: 0;
+	return (context->next == ASS || context->next == MULTASS || context->next == DIVASS || context->next == PLUSASS ||
+			context->next == MINUSASS || intopassn(context, context->next))
+			   ? context->op = context->next
+			   : 0;
 }
 
-void condexpr()
+void condexpr(compiler_context *context)
 {
 	int globtype = 0;
 	int adif = 0;
 	int r;
 
-	subexpr();	// logORexpr();
-	if (next == QUEST)
+	subexpr(context); // logORexpr();
+	if (context->next == QUEST)
 	{
-		while (next == QUEST)
+		while (context->next == QUEST)
 		{
-			toval();
-
-			if (!is_int(ansttype))
+			toval(context);
+			if (!is_int(context, context->ansttype))
 			{
-				error(float_in_condition);
+				error(context, float_in_condition);
 			}
-
-			totree(TCondexpr);
-			scaner();
-			scaner();
-			sopnd--;
-			exprval();	// then
-
+			totree(context, TCondexpr);
+			scaner(context);
+			scaner(context);
+			context->sopnd--;
+			exprval(context); // then
 			if (!globtype)
 			{
-				globtype = ansttype;
+				globtype = context->ansttype;
 			}
-			sopnd--;
-
-			if (is_float(ansttype))
+			context->sopnd--;
+			if (is_float(context, context->ansttype))
 			{
 				globtype = LFLOAT;
 			}
 			else
 			{
-				tree[tc] = adif;
-				adif = tc++;
+				context->tree[context->tc] = adif;
+				adif = context->tc++;
 			}
-
-			mustbe(COLON, no_colon_in_cond_expr);
-			scaner();
-			unarexpr();
-			subexpr();	// logORexpr();		else or elif
+			mustbe(context, COLON, no_colon_in_cond_expr);
+			scaner(context);
+			unarexpr(context);
+			subexpr(context); // logORexpr();        else or elif
 		}
-
-		toval();
-		totree(TExprend);
-
-		if (is_float(ansttype))
+		toval(context);
+		totree(context, TExprend);
+		if (is_float(context, context->ansttype))
 		{
 			globtype = LFLOAT;
 		}
 		else
 		{
-			tree[tc] = adif;
-			adif = tc++;
+			context->tree[context->tc] = adif;
+			adif = context->tc++;
 		}
 
 		while (adif != 0)
 		{
-			r = tree[adif];
-			tree[adif] = TExprend;
-			tree[adif - 1] = is_float(globtype) ? WIDEN : NOP;
+			r = context->tree[adif];
+			context->tree[adif] = TExprend;
+			context->tree[adif - 1] = is_float(context, globtype) ? WIDEN : NOP;
 			adif = r;
 		}
 
-		stackoperands[sopnd] = ansttype = globtype;
+		context->stackoperands[context->sopnd] = context->ansttype = globtype;
 	}
 	else
 	{
-		stackoperands[sopnd] = ansttype;
+		context->stackoperands[context->sopnd] = context->ansttype;
 	}
 }
 
-void inition(int decl_type)
+void struct_init(compiler_context *context, int);
+
+void inition(compiler_context *context, int decl_type)
 {
-	if (decl_type < 0 || is_pointer(decl_type) ||					// Обработка для базовых типов, указателей
-		(is_array(decl_type) && modetab[decl_type + 1] == LCHAR))	// или строк
+	if (decl_type < 0 ||
+		is_pointer(context,
+				   decl_type) || // Обработка для базовых типов, указателей
+		(is_array(context, decl_type) && context->modetab[decl_type + 1] == LCHAR)) // или строк
 	{
-		exprassn(1);
-		toval();
-		totree(TExprend);
+		exprassn(context, 1);
+		toval(context);
+		totree(context, TExprend);
 		// съедаем выражение, его значение будет на стеке
-		sopnd--;
-
-		if (is_int(decl_type) && is_float(ansttype))
+		context->sopnd--;
+		if (is_int(context, decl_type) && is_float(context, context->ansttype))
 		{
-			error(init_int_by_float);
+			error(context, init_int_by_float);
 		}
-
-		if (is_float(decl_type) && is_int(ansttype))
+		if (is_float(context, decl_type) && is_int(context, context->ansttype))
 		{
-			insertwiden();
+			insertwiden(context);
 		}
-		else if (decl_type != ansttype)
+		else if (decl_type != context->ansttype)
 		{
-			error(error_in_initialization);
+			error(context, error_in_initialization);
 		}
 	}
-	else if (cur == BEGIN)
+	else if (context->cur == BEGIN)
 	{
-		struct_init(decl_type);
+		struct_init(context, decl_type);
 	}
 	else
 	{
-		error(wrong_init);
+		error(context, wrong_init);
 	}
 }
 
-void struct_init(int decl_type)	// сейчас modetab[decl_type] равен MSTRUCT
+void struct_init(compiler_context *context,
+				 int decl_type) // сейчас context->modetab[decl_type] равен MSTRUCT
 {
 	int next_field = decl_type + 3;
 	int i;
-	int nf = modetab[decl_type + 2] / 2;
+	int nf = context->modetab[decl_type + 2] / 2;
 
-	if (cur != BEGIN)
+	if (context->cur != BEGIN)
 	{
-		error(struct_init_must_start_from_BEGIN);
+		error(context, struct_init_must_start_from_BEGIN);
 	}
-	totree(TStructinit);
-	totree(nf);
-
+	totree(context, TStructinit);
+	totree(context, nf);
 	for (i = 0; i < nf; i++)
 	{
-		scaner();
-		inition(modetab[next_field]);
+		scaner(context);
+		inition(context, context->modetab[next_field]);
 		next_field += 2;
-
 		if (i != nf - 1)
 		{
-			if (next == COMMA)	// поля инициализации идут через запятую, заканчиваются }
+			if (context->next == COMMA) // поля инициализации идут через запятую, заканчиваются }
 			{
-				scaner();
+				scaner(context);
 			}
 			else
 			{
-				error(no_comma_in_init_list);
+				error(context, no_comma_in_init_list);
 			}
 		}
 	}
 
-	if (next == END)
+	if (context->next == END)
 	{
-		totree(TExprend);
+		totree(context, TExprend);
 	}
 	else
 	{
-		error(wait_end);
+		error(context, wait_end);
 	}
-
-	scaner();
-	leftansttype = decl_type;
+	scaner(context);
+	context->leftansttype = decl_type;
 }
 
 
-void exprassnvoid()
+void exprassnvoid(compiler_context *context)
 {
-	int t = tree[tc - 2] < 9000 ? tc - 3 : tc - 2;
-	int tt = tree[t];
-
+	int t = context->tree[context->tc - 2] < 9000 ? context->tc - 3 : context->tc - 2;
+	int tt = context->tree[t];
 	if ((tt >= ASS && tt <= DIVASSAT) || (tt >= POSTINC && tt <= DECAT) || (tt >= ASSR && tt <= DIVASSATR) ||
 		(tt >= POSTINCR && tt <= DECATR))
 	{
-		tree[t] += 200;
+		context->tree[t] += 200;
 	}
-	--sopnd;
+	--context->sopnd;
 }
 
-void exprassn(int level)
+void exprassn(compiler_context *context, int level)
 {
 	int leftanst;
 	int leftanstdispl;
@@ -1690,466 +1634,449 @@ void exprassn(int level)
 	int rtype;
 	int lnext;
 
-	if (cur == BEGIN)
+	if (context->cur == BEGIN)
 	{
-		if (is_struct(leftansttype))
+		if (is_struct(context, context->leftansttype))
 		{
-			struct_init(leftansttype);
+			struct_init(context, context->leftansttype);
 		}
-		/*
-			else if (is_array(leftansttype))	//пока в RuC присваивать массивы нельзя
-			{
-				array_init(leftansttype);
-			}
-		*/
+		//        else if (is_array(context, context->leftansttype)) //пока в
+		//        RuC присваивать массивы нельзя array_init(context,
+		//        context->leftansttype);
 		else
 		{
-			error(init_not_struct);
+			error(context, init_not_struct);
 		}
-
-		stackoperands[++sopnd] = ansttype = leftansttype;
-		anst = VAL;
+		context->stackoperands[++context->sopnd] = context->ansttype = context->leftansttype;
+		context->anst = VAL;
 	}
 	else
 	{
-		unarexpr();
+		unarexpr(context);
 	}
 
-	leftanst = anst;
-	leftanstdispl = anstdispl;
-	leftansttype = ansttype;
-	if (opassn())
+	leftanst = context->anst;
+	leftanstdispl = context->anstdispl;
+	context->leftansttype = context->ansttype;
+	if (opassn(context))
 	{
-		int opp = op;
-
-		lnext = next;
-		inass = 1;
-		scaner();
-		scaner();
-		exprassn(level + 1);
-		inass = 0;
+		int opp = context->op;
+		lnext = context->next;
+		context->inass = 1;
+		scaner(context);
+		scaner(context);
+		exprassn(context, level + 1);
+		context->inass = 0;
 
 		if (leftanst == VAL)
 		{
-			error(unassignable);
+			error(context, unassignable);
 		}
-		rtype = stackoperands[sopnd--];	// снимаем типы операндов со стека
-		ltype = stackoperands[sopnd];
+		rtype = context->stackoperands[context->sopnd--]; // снимаем типы
+														  // операндов со стека
+		ltype = context->stackoperands[context->sopnd];
 
-		if (intopassn(lnext) && (is_float(ltype) || is_float(rtype)))
+		if (intopassn(context, lnext) && (is_float(context, ltype) || is_float(context, rtype)))
 		{
-			error(int_op_for_float);
-		}
-
-		if (is_array(ltype))			// присваивать массив в массив в си нельзя
-		{
-			error(array_assigment);
+			error(context, int_op_for_float);
 		}
 
-		if (is_struct(ltype))			// присваивание в структуру
+		if (is_array(context, ltype))
+		{ // присваивать массив в массив в си нельзя
+			error(context, array_assigment);
+		}
+
+		if (is_struct(context, ltype)) // присваивание в структуру
 		{
-			if (ltype != rtype)			// типы должны быть равны
-			{
-				error(type_missmatch);
+			if (ltype != rtype)
+			{ // типы должны быть равны
+				error(context, type_missmatch);
+			}
+			if (opp != ASS)
+			{ // в структуру можно присваивать только с помощью =
+				error(context, wrong_struct_ass);
 			}
 
-			if (opp != ASS)				// в структуру можно присваивать только с помощью =
-			{
-				error(wrong_struct_ass);
-			}
-
-			if (anst == VAL)
+			if (context->anst == VAL)
 			{
 				opp = leftanst == IDENT ? COPY0STASS : COPY1STASS;
 			}
 			else
 			{
-				opp = leftanst == IDENT ? anst == IDENT ? COPY00 : COPY01 : anst == IDENT ? COPY10 : COPY11;
+				opp = leftanst == IDENT ? context->anst == IDENT ? COPY00 : COPY01
+										: context->anst == IDENT ? COPY10 : COPY11;
 			}
-			totree(opp);
-
+			totree(context, opp);
 			if (leftanst == IDENT)
 			{
-				totree(leftanstdispl);	// displleft
+				totree(context, leftanstdispl); // displleft
 			}
-
-			if (anst == IDENT)
+			if (context->anst == IDENT)
 			{
-				totree(anstdispl);		// displright
+				totree(context, context->anstdispl); // displright
 			}
-			totree(modetab[ltype + 1]);	// длина
-			anst = leftanst;
-			anstdispl = leftanstdispl;
+			totree(context, context->modetab[ltype + 1]); // длина
+			context->anst = leftanst;
+			context->anstdispl = leftanstdispl;
 		}
-		else	// оба операнда базового типа или указатели
+		else // оба операнда базового типа или указатели
 		{
-			if (is_pointer(ltype) && opp != ASS)	// в указатель можно присваивать только с помощью =
-			{
-				error(wrong_struct_ass);
+			if (is_pointer(context, ltype) && opp != ASS)
+			{ // в указатель можно присваивать только с помощью =
+				error(context, wrong_struct_ass);
 			}
 
-			if (is_int(ltype) && is_float(rtype))
+			if (is_int(context, ltype) && is_float(context, rtype))
 			{
-				error(assmnt_float_to_int);
+				error(context, assmnt_float_to_int);
 			}
 
-			toval();
-			if (is_int(rtype) && is_float(ltype))
+			toval(context);
+			if (is_int(context, rtype) && is_float(context, ltype))
 			{
-				totree(WIDEN);
-				ansttype = LFLOAT;
+				totree(context, WIDEN);
+				context->ansttype = LFLOAT;
 			}
-
-			if (is_pointer(ltype) && is_pointer(rtype) && ltype != rtype)	// проверка нужна только для указателей
-			{
-				error(type_missmatch);
+			if (is_pointer(context, ltype) && is_pointer(context, rtype) && ltype != rtype)
+			{ // проверка нужна только для указателей
+				error(context, type_missmatch);
 			}
 
 			if (leftanst == ADDR)
 			{
 				opp += 11;
 			}
-			totreef(opp);
-
+			totreef(context, opp);
 			if (leftanst == IDENT)
 			{
-				totree(anstdispl = leftanstdispl);
+				totree(context, context->anstdispl = leftanstdispl);
 			}
-			anst = VAL;
+			context->anst = VAL;
 		}
-		stackoperands[sopnd] = ansttype = ltype;	// тип результата - на стек
+		context->stackoperands[context->sopnd] = context->ansttype = ltype; // тип результата - на стек
 	}
 	else
 	{
-		condexpr();	// condexpr учитывает тот факт, что начало выражения в виде unarexpr уже выкушано
+		condexpr(context); // condexpr учитывает тот факт, что начало выражения
 	}
+	// в виде unarexpr уже выкушано
 }
 
-void expr(int level)
+void expr(compiler_context *context, int level)
 {
-	exprassn(level);
-
-	while (next == COMMA)
+	exprassn(context, level);
+	while (context->next == COMMA)
 	{
-		exprassnvoid();
-		sopnd--;
-		scaner();
-		scaner();
-		exprassn(level);
+		exprassnvoid(context);
+		context->sopnd--;
+		scaner(context);
+		scaner(context);
+		exprassn(context, level);
 	}
-
 	if (level == 0)
 	{
-		totree(TExprend);
+		totree(context, TExprend);
 	}
 }
 
-void exprval()
+void exprval(compiler_context *context)
 {
-	expr(1);
-	toval();
-	totree(TExprend);
+	expr(context, 1);
+	toval(context);
+	totree(context, TExprend);
 }
 
-void exprassnval()
+void exprassnval(compiler_context *context)
 {
-	exprassn(1);
-	toval();
-	totree(TExprend);
+	exprassn(context, 1);
+	toval(context);
+	totree(context, TExprend);
 }
 
-void array_init(int decl_type)	// сейчас modetab[decl_type] равен MARRAY
+void array_init(compiler_context *context,
+				int decl_type) // сейчас context->modetab[decl_type] равен MARRAY
 {
 	int ad;
 	int all = 0;
 
-	if (is_array(decl_type))
+	if (is_array(context, decl_type))
 	{
-		if (cur == STRING)
+		if (context->cur == STRING)
 		{
-			if (onlystrings == 0)
+			if (context->onlystrings == 0)
 			{
-				error(string_and_notstring);
+				error(context, string_and_notstring);
 			}
-
-			if (onlystrings == 2)
+			if (context->onlystrings == 2)
 			{
-				onlystrings = 1;
+				context->onlystrings = 1;
 			}
-
-			primaryexpr();
-			totree(TExprend);
+			primaryexpr(context);
+			totree(context, TExprend);
 		}
-		else if (cur == BEGIN)
+		else if (context->cur == BEGIN)
 		{
-			totree(TBeginit);
-			ad = tc++;
-
+			totree(context, TBeginit);
+			ad = context->tc++;
 			do
 			{
-				scaner();
+				scaner(context);
 				all++;
-				array_init(modetab[decl_type + 1]);
-			} while (scaner() == COMMA);
+				array_init(context, context->modetab[decl_type + 1]);
+			} while (scaner(context) == COMMA);
 
-			if (cur == END)
+			if (context->cur == END)
 			{
-				tree[ad] = all;
-				totree(TExprend);
+				context->tree[ad] = all;
+				totree(context, TExprend);
 			}
 			else
 			{
-				error(wait_end);
+				error(context, wait_end);
 			}
 		}
 		else
 		{
-			error(arr_init_must_start_from_BEGIN);
+			error(context, arr_init_must_start_from_BEGIN);
 		}
 	}
-	else if (cur == BEGIN)
+	else if (context->cur == BEGIN)
 	{
-		if (is_struct(decl_type))
+		if (is_struct(context, decl_type))
 		{
-			struct_init(decl_type);
+			struct_init(context, decl_type);
 		}
 		else
 		{
-			error(begin_with_notarray);
+			error(context, begin_with_notarray);
 		}
 	}
-	else if (onlystrings == 1)
+	else if (context->onlystrings == 1)
 	{
-		error(string_and_notstring);
+		error(context, string_and_notstring);
 	}
 	else
 	{
-		inition(decl_type);
-		onlystrings = 0;
+		inition(context, decl_type);
+		context->onlystrings = 0;
 	}
 }
 
-int arrdef(int t)	// вызывается при описании массивов и структур из массивов сразу после idorpnt
+int arrdef(compiler_context *context,
+		   int t) // вызывается при описании массивов и
+				  // структур из массивов сразу после idorpnt
 {
-	arrdim = 0;
-	usual = 1;		// описание массива без пустых границ
-	if (is_pointer(t))
+	context->arrdim = 0;
+	context->usual = 1; // описание массива без пустых границ
+	if (is_pointer(context, t))
 	{
-		error(pnt_before_array);
+		error(context, pnt_before_array);
 	}
 
-	while (next == LEFTSQBR)	// это определение массива (может быть многомерным)
+	while (context->next == LEFTSQBR) // это определение массива (может быть многомерным)
 	{
-		arrdim++;
-		scaner();
-
-		if (next == RIGHTSQBR)
+		context->arrdim++;
+		scaner(context);
+		if (context->next == RIGHTSQBR)
 		{
-			scaner();
-			if (next == LEFTSQBR)	// int a[][]={{1,2,3}, {4,5,6}} - нельзя;
-			{
-				error(empty_init);	// границы определять по инициализации можно только по последнему изм.
+			scaner(context);
+			if (context->next == LEFTSQBR)
+			{ // int a[][]={{1,2,3}, {4,5,6}} - нельзя;
+				error(context,
+					  empty_init); // границы определять по инициализации можно
 			}
-			usual = 0;
+			// только по последнему изм.
+			context->usual = 0;
 		}
 		else
 		{
-			scaner();
-			unarexpr();
-			condexpr();
-			toval();
-
-			if (!is_int(ansttype))
+			scaner(context);
+			unarexpr(context);
+			condexpr(context);
+			toval(context);
+			if (!is_int(context, context->ansttype))
 			{
-				error(array_size_must_be_int);
+				error(context, array_size_must_be_int);
 			}
-
-			totree(TExprend);
-			sopnd--;
-			mustbe(RIGHTSQBR, wait_right_sq_br);
+			totree(context, TExprend);
+			context->sopnd--;
+			mustbe(context, RIGHTSQBR, wait_right_sq_br);
 		}
-		t = newdecl(MARRAY, t);		// Меняем тип в identtab (увеличиваем размерность массива)
+		t = newdecl(context, MARRAY,
+					t); // Меняем тип в identtab (увеличиваем размерность массива)
 	}
 	return t;
 }
 
 
-void decl_id(int decl_type)
+void decl_id(compiler_context *context,
+			 int decl_type) // вызывается из block и extdecl, только эта
+							// процедура реально отводит память
 {
-	// вызывается из block и extdecl, только эта процедура реально отводит память
-	// если встретятся массивы (прямо или в структурах), их размеры уже будут в стеке
-
-	int oldid = toidentab(0, decl_type);
+	// если встретятся массивы (прямо или в структурах), их размеры уже будут в
+	// стеке
+	int oldid = toidentab(context, 0, decl_type);
 	int elem_len;
 	int elem_type;
-	int all;	// all - место в дереве, где будет общее количество выражений в инициализации, для массивов - только
-				// признак (1) наличия инициализации
+	int all; // all - место в дереве, где будет общее количество выражений в инициализации, для массивов - только
+			 // признак (1) наличия инициализации
 	int adN;
 
-	usual = 1;
-	arrdim = 0;	// arrdim - размерность (0-скаляр), д.б. столько выражений-границ
+	context->usual = 1;
+	context->arrdim = 0; // arrdim - размерность (0-скаляр), д.б. столько выражений-границ
 	elem_type = decl_type;
 
-	if (next == LEFTSQBR)	// это определение массива (может быть многомерным)
+	if (context->next == LEFTSQBR) // это определение массива (может быть многомерным)
 	{
-		totree(TDeclarr);
-		adN = tc++;
-		elem_len = szof(decl_type);
-		decl_type = identab[oldid + 2] = arrdef(decl_type);	// Меняем тип (увеличиваем размерность массива)
-		tree[adN] = arrdim;
-
-		if (!usual && next != ASS)
+		totree(context, TDeclarr);
+		adN = context->tc++;
+		decl_type = context->identab[oldid + 2] =
+			arrdef(context, decl_type); // Меняем тип (увеличиваем размерность массива)
+		context->tree[adN] = context->arrdim;
+		if (!context->usual && context->next != ASS)
 		{
-			error(empty_bound_without_init);
+			error(context, empty_bound_without_init);
 		}
 	}
+	totree(context, TDeclid);
+	totree(context, context->identab[oldid + 3]);													  // displ
+	totree(context, elem_type);																		  // elem_type
+	totree(context, context->arrdim);																  // N
+	context->tree[all = context->tc++] = 0;															  // all
+	context->tree[context->tc++] = is_pointer(context, decl_type) ? 0 : context->was_struct_with_arr; // proc
+	totree(context, context->usual);																  // context->usual
+	totree(context, 0); // массив не в структуре
 
-	totree(TDeclid);
-	totree(identab[oldid + 3]);										// displ
-	totree(elem_type);												// elem_type
-	totree(arrdim);													// N
-	tree[all = tc++] = 0;											// all
-	tree[tc++] = is_pointer(decl_type) ? 0 : was_struct_with_arr;	// proc
-	totree(usual);													// usual
-	totree(0);														// массив не в структуре
-
-	if (next == ASS)
+	if (context->next == ASS)
 	{
-		scaner();
-		scaner();
-		tree[all] = szof(decl_type);
-
-		if (is_array(decl_type))			// инициализация массива
+		scaner(context);
+		scaner(context);
+		context->tree[all] = szof(context, decl_type);
+		if (is_array(context, decl_type)) // инициализация массива
 		{
-			onlystrings = 2;
-
-			if (!usual)
+			context->onlystrings = 2;
+			if (!context->usual)
 			{
-				tree[adN]--;				// это уменьшение N в Declarr
+				context->tree[adN]--; // это уменьшение N в Declarr
 			}
-
-			array_init(decl_type);
-
-			if (onlystrings == 1)
+			array_init(context, decl_type);
+			if (context->onlystrings == 1)
 			{
-				tree[all + 2] = usual + 2;	// только из строк 2 - без границ, 3 - с границами
+				context->tree[all + 2] = context->usual + 2; // только из строк 2 - без границ, 3 - с границами
 			}
 		}
 		else
 		{
-			inition(decl_type);
+			inition(context, decl_type);
 		}
 	}
 }
 
-void statement()
+
+void block(compiler_context *context, int b);
+// если b=1, то это просто блок, b=2 - блок нити, b=-1 - блок в switch, иначе
+// (b=0) - это блок функции
+
+void statement(compiler_context *context)
 {
 	int flagsemicol = 1;
-	int oldwasdefault = wasdefault;
-	int oldinswitch = inswitch;
-	int oldinloop = inloop;
+	int oldwasdefault = context->wasdefault;
+	int oldinswitch = context->inswitch;
+	int oldinloop = context->inloop;
 
-	wasdefault = 0;
-	scaner();
-
-	if ((is_int(cur) || is_float(cur) || cur == LVOID || cur == LSTRUCT) && blockflag)
+	context->wasdefault = 0;
+	scaner(context);
+	if ((is_int(context, context->cur) || is_float(context, context->cur) || context->cur == LVOID ||
+		 context->cur == LSTRUCT) &&
+		context->blockflag)
 	{
-		error(decl_after_strmt);
+		error(context, decl_after_strmt);
 	}
-
-	if (cur == BEGIN)
+	if (context->cur == BEGIN)
 	{
 		flagsemicol = 0;
-		block(1);
+		block(context, 1);
 	}
-	else if (cur == TCREATEDIRECT)
+	else if (context->cur == TCREATEDIRECT)
 	{
-		totree(CREATEDIRECTC);
+		totree(context, CREATEDIRECTC);
 		flagsemicol = 0;
-		block(2);
-		totree(EXITC);
+		block(context, 2);
+		totree(context, EXITC);
 	}
-	else if (cur == SEMICOLON)
+	else if (context->cur == SEMICOLON)
 	{
-		totree(NOP);
+		totree(context, NOP);
 		flagsemicol = 0;
 	}
-	else if (cur == IDENT && next == COLON)
+	else if (context->cur == IDENT && context->next == COLON)
 	{
 		int id;
 		int i;
 		int flag = 1;
-
 		flagsemicol = 0;
-		totree(TLabel);
-
-		for (i = 0; flag && i < pgotost - 1; i += 2)
+		totree(context, TLabel);
+		for (i = 0; flag && i < context->pgotost - 1; i += 2)
 		{
-			flag = identab[gotost[i] + 1] != repr;
+			flag = context->identab[context->gotost[i] + 1] != REPRTAB_POS;
 		}
-
 		if (flag)
 		{
-			totree(id = toidentab(1, 0));
-			gotost[pgotost++] = id;			// это определение метки, если она встретилась до переходов на нее
-			gotost[pgotost++] = -line;
+			totree(context, id = toidentab(context, 1, 0));
+			context->gotost[context->pgotost++] = id; // это определение метки, если она встретилась до
+													  // переходов на нее
+			context->gotost[context->pgotost++] = -context->line;
 		}
 		else
 		{
-			id = gotost[i - 2];
-			repr = identab[id + 1];
-
-			if (gotost[i - 1] < 0)
+			id = context->gotost[i - 2];
+			REPRTAB_POS = context->identab[id + 1];
+			if (context->gotost[i - 1] < 0)
 			{
-				error(repeated_label);
+				error(context, repeated_label);
 			}
-			totree(id);
+			totree(context, id);
 		}
-		identab[id + 2] = 1;
+		context->identab[id + 2] = 1;
 
-		scaner();
-		statement();
+		scaner(context);
+		statement(context);
 	}
 	else
 	{
-		blockflag = 1;
+		context->blockflag = 1;
 
-		switch (cur)
+		switch (context->cur)
 		{
 			case PRINT:
 			{
-				exprassninbrkts(print_without_br);
-				tc--;
-				totree(TPrint);
-				totree(ansttype);
-				totree(TExprend);
-
-				if (is_pointer(ansttype))
+				exprassninbrkts(context, print_without_br);
+				context->tc--;
+				totree(context, TPrint);
+				totree(context, context->ansttype);
+				totree(context, TExprend);
+				if (is_pointer(context, context->ansttype))
 				{
-					error(pointer_in_print);
+					error(context, pointer_in_print);
 				}
-				sopnd--;
+				context->sopnd--;
 			}
-				break;
+			break;
 			case PRINTID:
 			{
-				mustbe(LEFTBR, no_leftbr_in_printid);
-				do
-				{				
-					mustbe(IDENT, no_ident_in_printid);
-					lastid = reprtab[repr + 1];
-
-					if (lastid == 1)
-					{
-						error(ident_is_not_declared);
-					}
-
-					totree(TPrintid);
-					totree(lastid);
-				} while (next == COMMA ? scaner(), 1 : 0);
-				mustbe(RIGHTBR, no_rightbr_in_printid);
+				mustbe(context, LEFTBR, no_leftbr_in_printid);
+				mustbe(context, IDENT, no_ident_in_printid);
+				compiler_table_expand(&context->reprtab, 1);
+				context->lastid = REPRTAB[REPRTAB_POS + 1];
+				if (context->lastid == 1)
+				{
+					error(context, ident_is_not_declared);
+				}
+				totree(context, TPrintid);
+				totree(context, context->lastid);
+				mustbe(context, RIGHTBR, no_rightbr_in_printid);
 			}
-				break;
+			break;
 
 			case PRINTF:
 			{
@@ -2161,296 +2088,276 @@ void statement()
 				int i = 0;
 				int fnum;
 
-				mustbe(LEFTBR, no_leftbr_in_printf);
-				if (scaner() != STRING)	//выкушиваем форматную строку
-				{
-					error(wrong_first_printf_param);
+				mustbe(context, LEFTBR, no_leftbr_in_printf);
+				if (scaner(context) != STRING)
+				{ //выкушиваем форматную строку
+					error(context, wrong_first_printf_param);
 				}
 
-				for (i = 0; i < num; i++)
+				for (i = 0; i < context->num; i++)
 				{
-					formatstr[i] = lexstr[i];
+					formatstr[i] = context->lexstr[i];
 				}
-				formatstr[num] = 0;
+				formatstr[context->num] = 0;
 
-				paramnum = evaluate_params(fnum = num, formatstr, formattypes, placeholders);
+				paramnum = evaluate_params(context, fnum = context->num, formatstr, formattypes, placeholders);
 
-				for (i = 0; scaner() == COMMA; i++)
+				for (i = 0; scaner(context) == COMMA; i++)
 				{
 					if (i >= paramnum)
 					{
-						error(wrong_printf_param_number);
+						error(context, wrong_printf_param_number);
 					}
 
-					scaner();
+					scaner(context);
 
-					exprassn(1);
-					toval();
-					totree(TExprend);
+					exprassn(context, 1);
+					toval(context);
+					totree(context, TExprend);
 
-					if (formattypes[i] == LFLOAT && ansttype == LINT)
+					if (formattypes[i] == LFLOAT && context->ansttype == LINT)
 					{
-						insertwiden();
+						insertwiden(context);
 					}
-					else if (formattypes[i] != ansttype)
+					else if (formattypes[i] != context->ansttype)
 					{
-						bad_printf_placeholder = placeholders[i];
-						error(wrong_printf_param_type);
+						context->bad_printf_placeholder = placeholders[i];
+						error(context, wrong_printf_param_type);
 					}
 
-					sumsize += szof(formattypes[i]);
-					--sopnd;
+					sumsize += szof(context, formattypes[i]);
+					--context->sopnd;
 				}
 
-				if (cur != RIGHTBR)
+				if (context->cur != RIGHTBR)
 				{
-					error(no_rightbr_in_printf);
+					error(context, no_rightbr_in_printf);
 				}
 
 				if (i != paramnum)
 				{
-					error(wrong_printf_param_number);
+					error(context, wrong_printf_param_number);
 				}
 
-				totree(TString);
-				totree(fnum);
+				totree(context, TString);
+				totree(context, fnum);
 
 				for (i = 0; i < fnum; i++)
 				{
-					totree(formatstr[i]);
+					totree(context, formatstr[i]);
 				}
-				totree(TExprend);
+				totree(context, TExprend);
 
-				totree(TPrintf);
-				totree(sumsize);
+				totree(context, TPrintf);
+				totree(context, sumsize);
 			}
-				break;
+			break;
 
 			case GETID:
 			{
-				mustbe(LEFTBR, no_leftbr_in_printid);
-				do
+				compiler_table_expand(&context->reprtab, 1);
+
+				mustbe(context, LEFTBR, no_leftbr_in_printid);
+				mustbe(context, IDENT, no_ident_in_printid);
+				context->lastid = REPRTAB[REPRTAB_POS + 1];
+				if (context->lastid == 1)
 				{
-					mustbe(IDENT, no_ident_in_printid);
-					lastid = reprtab[repr + 1];
-
-					if (lastid == 1)
-					{
-						error(ident_is_not_declared);
-					}
-
-					totree(TGetid);
-					totree(lastid);
-				} while (next == COMMA ? scaner(), 1 : 0);
-				mustbe(RIGHTBR, no_rightbr_in_printid);
+					error(context, ident_is_not_declared);
+				}
+				totree(context, TGetid);
+				totree(context, context->lastid);
+				mustbe(context, RIGHTBR, no_rightbr_in_printid);
 			}
-				break;
+			break;
 			case LBREAK:
 			{
-				if (!(inloop || inswitch))
+				if (!(context->inloop || context->inswitch))
 				{
-					error(break_not_in_loop_or_switch);
+					error(context, break_not_in_loop_or_switch);
 				}
-				totree(TBreak);
+				totree(context, TBreak);
 			}
-				break;
+			break;
 			case LCASE:
 			{
-				if (!inswitch)
+				if (!context->inswitch)
 				{
-					error(case_or_default_not_in_switch);
+					error(context, case_or_default_not_in_switch);
 				}
-
-				if (wasdefault)
+				if (context->wasdefault)
 				{
-					error(case_after_default);
+					error(context, case_after_default);
 				}
-
-				totree(TCase);
-				scaner();
-				unarexpr();
-				condexpr();
-				toval();
-				totree(TExprend);
-
-				if (ansttype == LFLOAT)
+				totree(context, TCase);
+				scaner(context);
+				unarexpr(context);
+				condexpr(context);
+				toval(context);
+				totree(context, TExprend);
+				if (context->ansttype == LFLOAT)
 				{
-					error(float_in_switch);
+					error(context, float_in_switch);
 				}
-
-				sopnd--;
-				mustbe(COLON, no_colon_in_case);
+				context->sopnd--;
+				mustbe(context, COLON, no_colon_in_case);
 				flagsemicol = 0;
-				statement();
+				statement(context);
 			}
-				break;
+			break;
 			case LCONTINUE:
 			{
-				if (!inloop)
+				if (!context->inloop)
 				{
-					error(continue_not_in_loop);
+					error(context, continue_not_in_loop);
 				}
-				totree(TContinue);
+				totree(context, TContinue);
 			}
-				break;
+			break;
 			case LDEFAULT:
 			{
-				if (!inswitch)
+				if (!context->inswitch)
 				{
-					error(case_or_default_not_in_switch);
+					error(context, case_or_default_not_in_switch);
 				}
-
-				mustbe(COLON, no_colon_in_case);
-				wasdefault = 1;
+				mustbe(context, COLON, no_colon_in_case);
+				context->wasdefault = 1;
 				flagsemicol = 0;
-				totree(TDefault);
-				statement();
+				totree(context, TDefault);
+				statement(context);
 			}
-				break;
+			break;
 			case LDO:
 			{
-				inloop = 1;
-				totree(TDo);
-				statement();
-
-				if (next == LWHILE)
+				context->inloop = 1;
+				totree(context, TDo);
+				statement(context);
+				if (context->next == LWHILE)
 				{
-					scaner();
-					exprinbrkts(cond_must_be_in_brkts);
-					sopnd--;
+					scaner(context);
+					exprinbrkts(context, cond_must_be_in_brkts);
+					context->sopnd--;
 				}
 				else
 				{
-					error(wait_while_in_do_stmt);
+					error(context, wait_while_in_do_stmt);
 				}
 			}
-				break;
+			break;
 			case LFOR:
 			{
 				int fromref;
 				int condref;
 				int incrref;
 				int stmtref;
-
-				mustbe(LEFTBR, no_leftbr_in_for);
-				totree(TFor);
-				fromref = tc++;
-				condref = tc++;
-				incrref = tc++;
-				stmtref = tc++;
-
-				if (scaner() == SEMICOLON)	// init
-				{
-					tree[fromref] = 0;
+				mustbe(context, LEFTBR, no_leftbr_in_for);
+				totree(context, TFor);
+				fromref = context->tc++;
+				condref = context->tc++;
+				incrref = context->tc++;
+				stmtref = context->tc++;
+				if (scaner(context) == SEMICOLON)
+				{ // init
+					context->tree[fromref] = 0;
 				}
 				else
 				{
-					tree[fromref] = tc;
-					expr(0);
-					exprassnvoid();
-					mustbe(SEMICOLON, no_semicolon_in_for);
+					context->tree[fromref] = context->tc;
+					expr(context, 0);
+					exprassnvoid(context);
+					mustbe(context, SEMICOLON, no_semicolon_in_for);
 				}
-
-				if (scaner() == SEMICOLON)	// cond
-				{
-					tree[condref] = 0;
-				}
-				else
-				{
-					tree[condref] = tc;
-					exprval();
-					sopnd--;
-					mustbe(SEMICOLON, no_semicolon_in_for);
-					sopnd--;
-				}
-
-				if (scaner() == RIGHTBR)	// incr
-				{
-					tree[incrref] = 0;
+				if (scaner(context) == SEMICOLON)
+				{ // cond
+					context->tree[condref] = 0;
 				}
 				else
 				{
-					tree[incrref] = tc;
-					expr(0);
-					exprassnvoid();
-					mustbe(RIGHTBR, no_rightbr_in_for);
+					context->tree[condref] = context->tc;
+					exprval(context);
+					context->sopnd--;
+					mustbe(context, SEMICOLON, no_semicolon_in_for);
+					context->sopnd--;
 				}
-
+				if (scaner(context) == RIGHTBR)
+				{ // incr
+					context->tree[incrref] = 0;
+				}
+				else
+				{
+					context->tree[incrref] = context->tc;
+					expr(context, 0);
+					exprassnvoid(context);
+					mustbe(context, RIGHTBR, no_rightbr_in_for);
+				}
 				flagsemicol = 0;
-				tree[stmtref] = tc;
-				inloop = 1;
-				statement();
+				context->tree[stmtref] = context->tc;
+				context->inloop = 1;
+				statement(context);
 			}
-				break;
+			break;
 			case LGOTO:
 			{
 				int i;
 				int flag = 1;
-
-				mustbe(IDENT, no_ident_after_goto);
-				totree(TGoto);
-
-				for (i = 0; flag && i < pgotost - 1; i += 2)
+				mustbe(context, IDENT, no_ident_after_goto);
+				totree(context, TGoto);
+				for (i = 0; flag && i < context->pgotost - 1; i += 2)
 				{
-					flag = identab[gotost[i] + 1] != repr;
+					flag = context->identab[context->gotost[i] + 1] != REPRTAB_POS;
 				}
-
 				if (flag)
 				{
-					// первый раз встретился переход на метку, которой не было, в этом случае
-					// ссылка на identtab, стоящая после TGoto, будет отрицательной
-					totree(-toidentab(1, 0));
-					gotost[pgotost++] = lastid;
+					// первый раз встретился переход на метку, которой не было,
+					// в этом случае ссылка на identtab, стоящая после TGoto,
+					// будет отрицательной
+					totree(context, -toidentab(context, 1, 0));
+					context->gotost[context->pgotost++] = context->lastid;
 				}
 				else
 				{
-					int id = gotost[i - 2];
-
-					if (gotost[id + 1] < 0)	// метка уже была
+					int id = context->gotost[i - 2];
+					if (context->gotost[id + 1] < 0) // метка уже была
 					{
-						totree(id);
+						totree(context, id);
 						break;
 					}
-					totree(gotost[pgotost++] = id);
+					totree(context, context->gotost[context->pgotost++] = id);
 				}
-				gotost[pgotost++] = line;
+				context->gotost[context->pgotost++] = context->line;
 			}
-				break;
+			break;
 			case LIF:
 			{
 				int elseref;
-
-				totree(TIf);
-				elseref = tc++;
+				totree(context, TIf);
+				elseref = context->tc++;
 				flagsemicol = 0;
-				exprinbrkts(cond_must_be_in_brkts);
-				sopnd--;
-				statement();
-
-				if (next == LELSE)
+				exprinbrkts(context, cond_must_be_in_brkts);
+				context->sopnd--;
+				statement(context);
+				if (context->next == LELSE)
 				{
-					scaner();
-					tree[elseref] = tc;
-					statement();
+					scaner(context);
+					context->tree[elseref] = context->tc;
+					statement(context);
 				}
 				else
 				{
-					tree[elseref] = 0;
+					context->tree[elseref] = 0;
 				}
 			}
-				break;
+			break;
 			case LRETURN:
 			{
-				int ftype = modetab[functype + 1];
-
-				wasret = 1;
-				if (next == SEMICOLON)
+				int ftype = context->modetab[context->functype + 1];
+				context->wasret = 1;
+				if (context->next == SEMICOLON)
 				{
 					if (ftype != LVOID)
 					{
-						error(no_ret_in_func);
+						error(context, no_ret_in_func);
 					}
-					totree(TReturnvoid);
+					totree(context, TReturnvoid);
 				}
 				else
 				{
@@ -2462,88 +2369,81 @@ void statement()
 					{
 						if (ftype == LVOID)
 						{
-							error(notvoidret_in_void_func);
+							error(context, notvoidret_in_void_func);
 						}
-
-						totree(TReturnval);
-						totree(szof(ftype));
-						scaner();
-						expr(1);
-						toval();
-						sopnd--;
-
-						if (ftype == LFLOAT && ansttype == LINT)
+						totree(context, TReturnval);
+						totree(context, szof(context, ftype));
+						scaner(context);
+						expr(context, 1);
+						toval(context);
+						context->sopnd--;
+						if (ftype == LFLOAT && context->ansttype == LINT)
 						{
-							totree(WIDEN);
+							totree(context, WIDEN);
 						}
-						else if (ftype != ansttype)
+						else if (ftype != context->ansttype)
 						{
-							error(bad_type_in_ret);
+							error(context, bad_type_in_ret);
 						}
-						totree(TExprend);
+						totree(context, TExprend);
 					}
 				}
 			}
-				break;
+			break;
 			case LSWITCH:
 			{
-				totree(TSwitch);
-				exprinbrkts(cond_must_be_in_brkts);
-
-				if (ansttype != LCHAR && ansttype != LINT)
+				totree(context, TSwitch);
+				exprinbrkts(context, cond_must_be_in_brkts);
+				if (context->ansttype != LCHAR && context->ansttype != LINT)
 				{
-					error(float_in_switch);
+					error(context, float_in_switch);
 				}
-
-				sopnd--;
-				scaner();
-				inswitch = 1;
-				block(-1);
+				context->sopnd--;
+				scaner(context);
+				context->inswitch = 1;
+				block(context, -1);
 				flagsemicol = 0;
-				wasdefault = 0;
+				context->wasdefault = 0;
 			}
-				break;
+			break;
 			case LWHILE:
 			{
-				inloop = 1;
-				totree(TWhile);
+				context->inloop = 1;
+				totree(context, TWhile);
 				flagsemicol = 0;
-				exprinbrkts(cond_must_be_in_brkts);
-				sopnd--;
-				statement();
+				exprinbrkts(context, cond_must_be_in_brkts);
+				context->sopnd--;
+				statement(context);
 			}
-				break;
+			break;
 			default:
-			{
-				expr(0);
-				exprassnvoid();
-			}
+				expr(context, 0);
+				exprassnvoid(context);
 		}
 	}
-
-	if (flagsemicol && scaner() != SEMICOLON)
+	if (flagsemicol && scaner(context) != SEMICOLON)
 	{
-		error(no_semicolon_after_stmt);
+		error(context, no_semicolon_after_stmt);
 	}
-
-	wasdefault = oldwasdefault;
-	inswitch = oldinswitch;
-	inloop = oldinloop;
+	context->wasdefault = oldwasdefault;
+	context->inswitch = oldinswitch;
+	context->inloop = oldinloop;
 }
 
-int idorpnt(int e, int t)
+int idorpnt(compiler_context *context, int e, int t)
 {
-	if (next == LMULT)
+	if (context->next == LMULT)
 	{
-		scaner();
-		t = t == LVOID ? LVOIDASTER : newdecl(MPOINT, t);
+		scaner(context);
+		t = t == LVOID ? LVOIDASTER : newdecl(context, MPOINT, t);
 	}
-
-	mustbe(IDENT, e);
+	mustbe(context, IDENT, e);
 	return t;
 }
 
-int struct_decl_list()
+int gettype(compiler_context *context);
+
+int struct_decl_list(compiler_context *context)
 {
 	int field_count = 0;
 	int i;
@@ -2556,230 +2456,212 @@ int struct_decl_list()
 	int locmd = 3;
 
 	loc_modetab[0] = MSTRUCT;
-	tstrbeg = tc;
-	totree(TStructbeg);
-	tree[tc++] = 0;		// тут будет номер иниц процедуры
+	tstrbeg = context->tc;
+	totree(context, TStructbeg);
+	context->tree[context->tc++] = 0; // тут будет номер иниц процедуры
 
-	scaner();
-	scaner();
+	scaner(context);
+	scaner(context);
 
 	do
 	{
-		int fieldrepr;
-
-		t = elem_type = idorpnt(wait_ident_after_semicomma_in_struct, gettype());
-		fieldrepr = repr;
-
-		if (next == LEFTSQBR)
+		t = elem_type = idorpnt(context, wait_ident_after_semicomma_in_struct, gettype(context));
+		if (context->next == LEFTSQBR)
 		{
 			int adN;
 			int all;
+			totree(context, TDeclarr);
+			adN = context->tc++;
+			t = arrdef(context,
+					   elem_type); // Меняем тип (увеличиваем размерность массива)
+			context->tree[adN] = context->arrdim;
 
-			totree(TDeclarr);
-			adN = tc++;
-			t = arrdef(elem_type);	// Меняем тип (увеличиваем размерность массива)
-			tree[adN] = arrdim;
-
-			totree(TDeclid);
-			totree(curdispl);
-			totree(elem_type);
-			totree(arrdim);						// N
-			tree[all = tc++] = 0;				// all
-			tree[tc++] = was_struct_with_arr;	// proc
-			totree(usual);						// usual
-			totree(1);							// признак, что массив в структуре
+			totree(context, TDeclid);
+			totree(context, curdispl);
+			totree(context, elem_type);
+			totree(context, context->arrdim);							 // N
+			context->tree[all = context->tc++] = 0;						 // all
+			context->tree[context->tc++] = context->was_struct_with_arr; // proc
+			totree(context, context->usual);							 // context->usual
+			totree(context, 1); // признак, что массив в структуре
 			wasarr = 1;
-
-			if (next == ASS)
+			if (context->next == ASS)
 			{
-				scaner();
-				scaner();
-
-				if (is_array(t))		// инициализация массива
+				scaner(context);
+				scaner(context);
+				if (is_array(context, t)) // инициализация массива
 				{
-					onlystrings = 2;
-					tree[all] = 1;
-
-					if (!usual)
+					context->onlystrings = 2;
+					context->tree[all] = 1;
+					if (!context->usual)
 					{
-						tree[adN]--;	// это уменьшение N в Declarr
+						context->tree[adN]--; // это уменьшение N в Declarr
 					}
-					array_init(t);
-
-					if (onlystrings == 1)
+					array_init(context, t);
+					if (context->onlystrings == 1)
 					{
-						tree[all + 2] = usual + 2;	// только из строк 2 - без границ, 3 - с границами
+						context->tree[all + 2] = context->usual + 2; // только из строк 2 - без
 					}
+					// границ, 3 - с границами
 				}
 				else
 				{
-					/*
-						structdispl = identab[oldid+3];
-						tree[all] = inition(t);
-					*/
-				}
-			}		// конец ASS
-		}			// конец LEFTSQBR
-
+/*                    structdispl = context->identab[oldid+3];
+                    context->tree[all] = inition(context, t);
+*/              }
+			} // конец ASS
+		}	  // конец LEFTSQBR
 		loc_modetab[locmd++] = t;
-		loc_modetab[locmd++] = fieldrepr;
+		loc_modetab[locmd++] = REPRTAB_POS;
 		field_count++;
-		curdispl += szof(t);
-
-		if (scaner() != SEMICOLON)
+		curdispl += szof(context, t);
+		if (scaner(context) != SEMICOLON)
 		{
-			error(no_semicomma_in_struct);
+			error(context, no_semicomma_in_struct);
 		}
-	} while (scaner() != END);
+	} while (scaner(context) != END);
 
 	if (wasarr)
 	{
-		totree(TStructend);
-		totree(tstrbeg);
-		tree[tstrbeg + 1] = was_struct_with_arr = procd++;
+		totree(context, TStructend);
+		totree(context, tstrbeg);
+		context->tree[tstrbeg + 1] = context->was_struct_with_arr = context->procd++;
 	}
 	else
 	{
-		tree[tstrbeg] = NOP;
-		tree[tstrbeg + 1] = NOP;
+		context->tree[tstrbeg] = NOP;
+		context->tree[tstrbeg + 1] = NOP;
 	}
 
-	loc_modetab[1] = curdispl;			// тут длина структуры
+	loc_modetab[1] = curdispl; // тут длина структуры
 	loc_modetab[2] = field_count * 2;
 
-	modetab[md] = startmode;
-	startmode = md++;
+	context->modetab[context->md] = context->startmode;
+	context->startmode = context->md++;
 	for (i = 0; i < locmd; i++)
 	{
-		modetab[md++] = loc_modetab[i];
+		context->modetab[context->md++] = loc_modetab[i];
 	}
-
-	return check_duplicates();
+	return check_duplicates(context);
 }
 
-int gettype()
+int gettype(compiler_context *context)
 {
-	// gettype() выедает тип (кроме верхних массивов и указателей)
+	// gettype(context) выедает тип (кроме верхних массивов и указателей)
 	// при этом, если такого типа нет в modetab, тип туда заносится;
-	// возвращает отрицательное число(базовый тип), положительное (ссылка на modetab) или 0, если типа не было
+	// возвращает отрицательное число(базовый тип), положительное (ссылка на
+	// modetab) или 0, если типа не было
 
-	was_struct_with_arr = 0;
-	if (is_int(type = cur) || is_float(type) || type == LVOID)
+	context->was_struct_with_arr = 0;
+	if (is_int(context, context->type = context->cur) || is_float(context, context->type) || context->type == LVOID)
 	{
-		return (cur == LLONG ? LINT : cur == LDOUBLE ? LFLOAT : type);
+		return (context->cur == LLONG ? LINT : context->cur == LDOUBLE ? LFLOAT : context->type);
 	}
-	else if (type == LSTRUCT)
+	else if (context->type == LSTRUCT)
 	{
-		if (next == BEGIN)		// struct {
-		{
-			return (struct_decl_list());
+		if (context->next == BEGIN)
+		{ // struct {
+			return (struct_decl_list(context));
 		}
-		else if (next == IDENT)
+		else if (context->next == IDENT)
 		{
-			int l = reprtab[repr + 1];
-			scaner();
-			if (next == BEGIN)	// struct key {
+			int l;
+
+			compiler_table_expand(&context->reprtab, 1);
+			l = REPRTAB[REPRTAB_POS + 1];
+			scaner(context);
+			if (context->next == BEGIN) // struct key {
 			{
-				// если такое описание уже было, то это ошибка - повторное описание
-				int i;
+				// если такое описание уже было, то это ошибка - повторное
+				// описание
 				int lid;
-
-				wasstructdef = 1;	// это определение типа (может быть, без описания переменных)
-				toidentab(1000, 0);
-				lid = lastid;
-				identab[lid + 2] = struct_decl_list();
-				identab[lid + 3] = 1000 + was_struct_with_arr;
-
-				return identab[lid + 2];
+				context->wasstructdef = 1; // это  определение типа (может быть,
+										   // без описания переменных)
+				toidentab(context, 1000, 0);
+				lid = context->lastid;
+				context->identab[lid + 2] = struct_decl_list(context);
+				context->identab[lid + 3] = 1000 + context->was_struct_with_arr;
+				return context->identab[lid + 2];
 			}
-			else				// struct key это применение типа
-			{
+			else
+			{ // struct key это применение типа
 				if (l == 1)
 				{
-					error(ident_is_not_declared);
+					error(context, ident_is_not_declared);
 				}
-
-				was_struct_with_arr = identab[l + 3] - 1000;
-				return (identab[l + 2]);
+				context->was_struct_with_arr = context->identab[l + 3] - 1000;
+				return (context->identab[l + 2]);
 			}
 		}
 		else
 		{
-			error(wrong_struct);
+			error(context, wrong_struct);
 		}
 	}
-	else if (cur == IDENT)
+	else if (context->cur == IDENT)
 	{
-		applid();
-
-		if (identab[lastid + 3] < 1000)
+		applid(context);
+		if (context->identab[context->lastid + 3] < 1000)
 		{
-			error(ident_not_type);
+			error(context, ident_not_type);
 		}
-
-		was_struct_with_arr = identab[lastid + 3] - 1000;
-		return identab[lastid + 2];
+		context->was_struct_with_arr = context->identab[context->lastid + 3] - 1000;
+		return context->identab[context->lastid + 2];
 	}
 	else
 	{
-		error(not_decl);
+		error(context, not_decl);
 	}
 	return 0;
 }
 
-void block(int b)
-{
-	// если   b ==  1  - то это просто блок,
-	//        b ==  2  - блок нити,
-	//        b == -1  - блок в switch,
-	// иначе (b ==  0) - это блок функции
+void block(compiler_context *context, int b)
+// если b=1, то это просто блок, b=2 - блок нити, b=-1 - блок в switch, иначе
+// (b=0) - это блок функции
 
-	int oldinswitch = inswitch;
+{
+	int oldinswitch = context->inswitch;
 	int notended = 1;
 	int i;
 	int olddispl;
-	int oldlg = lg;
+	int oldlg = context->lg;
 	int firstdecl;
 
-	inswitch = b < 0;
-	totree(TBegin);
-
+	context->inswitch = b < 0;
+	totree(context, TBegin);
 	if (b)
 	{
-		olddispl = displ;
-		curid = id;
+		olddispl = context->displ;
+		context->curid = context->id;
 	}
-	blockflag = 0;
+	context->blockflag = 0;
 
-	while (is_int(next) || is_float(next) || next == LSTRUCT || next == LVOID)
+	while (is_int(context, context->next) || is_float(context, context->next) || context->next == LSTRUCT ||
+		   context->next == LVOID)
 	{
 		int repeat = 1;
-
-		scaner();
-		firstdecl = gettype();
-
-		if (wasstructdef && next == SEMICOLON)
+		scaner(context);
+		firstdecl = gettype(context);
+		if (context->wasstructdef && context->next == SEMICOLON)
 		{
-			scaner();
+			scaner(context);
 			continue;
 		}
-
 		do
 		{
-			decl_id(idorpnt(after_type_must_be_ident, firstdecl));
-
-			if (next == COMMA)
+			decl_id(context, idorpnt(context, after_type_must_be_ident, firstdecl));
+			if (context->next == COMMA)
 			{
-				scaner();
+				scaner(context);
 			}
-			else if (next == SEMICOLON)
+			else if (context->next == SEMICOLON)
 			{
-				scaner();
+				scaner(context);
 				repeat = 0;
 			}
 			else
 			{
-				error(def_must_end_with_semicomma);
+				error(context, def_must_end_with_semicomma);
 			}
 		} while (repeat);
 	}
@@ -2788,126 +2670,120 @@ void block(int b)
 
 	do
 	{
-		if (b == 2 ? next == TEXIT : next == END)
+		if (b == 2 ? context->next == TEXIT : context->next == END)
 		{
-			scaner();
+			scaner(context);
 			notended = 0;
 		}
 		else
 		{
-			statement();
+			statement(context);
 		}
 	} while (notended);
 
 	if (b)
 	{
-		for (i = id - 4; i >= curid; i -= 4)
+		for (i = context->id - 4; i >= context->curid; i -= 4)
 		{
-			reprtab[identab[i + 1] + 1] = identab[i];
+			compiler_table_ensure_allocated(&context->reprtab, context->identab[i + 1] + 1);
+			REPRTAB[context->identab[i + 1] + 1] = context->identab[i];
 		}
-		displ = olddispl;
+		context->displ = olddispl;
 	}
-	inswitch = oldinswitch;
-	lg = oldlg;
-	totree(TEnd);
+	context->inswitch = oldinswitch;
+	context->lg = oldlg;
+	totree(context, TEnd);
 }
 
-void function_definition()
+void function_definition(compiler_context *context)
 {
-	int fn = identab[lastid + 3];
+	int fn = context->identab[context->lastid + 3];
 	int i;
 	int pred;
-	int oldrepr = repr;
+	int oldrepr = REPRTAB_POS;
 	int ftype;
 	int n;
-	int fid = lastid;
-	int olddispl = displ;
+	int fid = context->lastid;
+	int olddispl = context->displ;
 
-	pgotost = 0;
-	functype = identab[lastid + 2];
-	ftype = modetab[functype + 1];
-	n = modetab[functype + 2];
-	wasret = 0;
-	displ = 3;
-	maxdispl = 3;
-	lg = 1;
-
-	if ((pred = identab[lastid]) > 1)			// был прототип
+	context->pgotost = 0;
+	context->functype = context->identab[context->lastid + 2];
+	ftype = context->modetab[context->functype + 1];
+	n = context->modetab[context->functype + 2];
+	context->wasret = 0;
+	context->displ = 3;
+	context->maxdispl = 3;
+	context->lg = 1;
+	if ((pred = context->identab[context->lastid]) > 1) // был прототип
 	{
-		if (functype != identab[pred + 2])
+		if (context->functype != context->identab[pred + 2])
 		{
-			error(decl_and_def_have_diff_type);
+			error(context, decl_and_def_have_diff_type);
 		}
-		identab[pred + 3] = fn;
+		context->identab[pred + 3] = fn;
 	}
-	curid = id;
-
+	context->curid = context->id;
 	for (i = 0; i < n; i++)
 	{
-		type = modetab[functype + i + 3];
-		repr = functions[fn + i + 1];
-		if (repr > 0)
+		context->type = context->modetab[context->functype + i + 3];
+		REPRTAB_POS = context->functions[fn + i + 1];
+		if (REPRTAB_POS > 0)
 		{
-			toidentab(0, type);
+			toidentab(context, 0, context->type);
 		}
 		else
 		{
-			repr = -repr;
-			toidentab(-1, type);
+			REPRTAB_POS = -REPRTAB_POS;
+			toidentab(context, -1, context->type);
 		}
 	}
+	context->functions[fn] = context->tc;
+	totree(context, TFuncdef);
+	totree(context, fid);
+	pred = context->tc++;
+	REPRTAB_POS = oldrepr;
 
-	functions[fn] = tc;
-	totree(TFuncdef);
-	totree(fid);
-	pred = tc++;
-	repr = oldrepr;
+	block(context, 0);
 
-	block(0);
-
-	// if (ftype == LVOID && tree[tc - 1] != TReturnvoid)
-	// {
-	tc--;
-	totree(TReturnvoid);
-	totree(TEnd);
-	// }
-
-	if (ftype != LVOID && !wasret)
+	//  if (ftype == LVOID && context->tree[context->tc - 1] != TReturnvoid)
+	//  {
+	context->tc--;
+	totree(context, TReturnvoid);
+	totree(context, TEnd);
+	//  }
+	if (ftype != LVOID && !context->wasret)
 	{
-		error(no_ret_in_func);
+		error(context, no_ret_in_func);
+	}
+	for (i = context->id - 4; i >= context->curid; i -= 4)
+	{
+		compiler_table_ensure_allocated(&context->reprtab, context->identab[i + 1] + 1);
+		REPRTAB[context->identab[i + 1] + 1] = context->identab[i];
 	}
 
-	for (i = id - 4; i >= curid; i -= 4)
+	for (i = 0; i < context->pgotost - 1; i += 2)
 	{
-		reprtab[identab[i + 1] + 1] = identab[i];
-	}
-
-	for (i = 0; i < pgotost - 1; i += 2)
-	{
-		repr = identab[gotost[i] + 1];
-		hash = gotost[i + 1];
-
-		if (hash < 0)
+		REPRTAB_POS = context->identab[context->gotost[i] + 1];
+		context->hash = context->gotost[i + 1];
+		if (context->hash < 0)
 		{
-			hash = -hash;
+			context->hash = -context->hash;
 		}
-
-		if (!identab[gotost[i] + 2])
+		if (!context->identab[context->gotost[i] + 2])
 		{
-			error(label_not_declared);
+			error(context, label_not_declared);
 		}
 	}
-
-	curid = 2;				// все функции описываются на одном уровне
-	tree[pred] = maxdispl;	// + 1; ?
-	lg = -1;
-	displ = olddispl;
+	context->curid = 2; // все функции описываются на одном уровне
+	context->tree[pred] = context->maxdispl; // + 1;?
+	context->lg = -1;
+	context->displ = olddispl;
 }
 
-int func_declarator(int level, int func_d, int firstdecl)
+int func_declarator(compiler_context *context, int level, int func_d, int firstdecl)
 {
-	// на 1 уровне это может быть определением функции или предописанием, на остальных уровнях
-	// - только декларатором (без идентов)
+	// на 1 уровне это может быть определением функции или предописанием, на
+	// остальных уровнях - только декларатором (без идентов)
 
 	int loc_modetab[100];
 	int locmd;
@@ -2926,314 +2802,283 @@ int func_declarator(int level, int func_d, int firstdecl)
 
 	while (repeat)
 	{
-		if (cur == LVOID || is_int(cur) || is_float(cur) || cur == LSTRUCT)
+		if (context->cur == LVOID || is_int(context, context->cur) || is_float(context, context->cur) ||
+			context->cur == LSTRUCT)
 		{
-			maybe_fun = 0;	// м.б. параметр-ф-ция?
-							// 0 - ничего не было,
-							// 1 - была *,
-							// 2 - была [
-
-			ident = 0;		// = 0 - не было идента,
-							// 1 - был статический идент,
-							// 2 - был идент-параметр-функция
-
+			maybe_fun = 0; // м.б. параметр-ф-ция? 0 - ничего не было, 1 - была
+						   // *, 2 - была [
+			ident = 0;	   // = 0 - не было идента, 1 - был статический идент, 2 -
+						   // был идент-параметр-функция
 			wastype = 1;
-			type = gettype();
-
-			if (next == LMULT)
+			context->type = gettype(context);
+			if (context->next == LMULT)
 			{
 				maybe_fun = 1;
-				scaner();
-				type = type == LVOID ? LVOIDASTER : newdecl(MPOINT, type);
+				scaner(context);
+				context->type = context->type == LVOID ? LVOIDASTER : newdecl(context, MPOINT, context->type);
 			}
-
 			if (level)
 			{
-				if (next == IDENT)
+				if (context->next == IDENT)
 				{
-					scaner();
+					scaner(context);
 					ident = 1;
-					functions[funcnum++] = repr;
+					context->functions[context->funcnum++] = REPRTAB_POS;
 				}
 			}
-			else if (next == IDENT)
+			else if (context->next == IDENT)
 			{
-				error(ident_in_declarator);
+				error(context, ident_in_declarator);
 			}
 
-			if (next == LEFTSQBR)
+			if (context->next == LEFTSQBR)
 			{
 				maybe_fun = 2;
 
-				if (is_pointer(type) && ident == 0)
+				if (is_pointer(context, context->type) && ident == 0)
 				{
-					error(aster_with_row);
+					error(context, aster_with_row);
 				}
 
-				while (next == LEFTSQBR)
+				while (context->next == LEFTSQBR)
 				{
-					scaner();
-					mustbe(RIGHTSQBR, wait_right_sq_br);
-					type = newdecl(MARRAY, type);
+					scaner(context);
+					mustbe(context, RIGHTSQBR, wait_right_sq_br);
+					context->type = newdecl(context, MARRAY, context->type);
 				}
 			}
 		}
-
-		if (cur == LVOID)
+		if (context->cur == LVOID)
 		{
-			type = LVOID;
+			context->type = LVOID;
 			wastype = 1;
-
-			if (next != LEFTBR)
+			if (context->next != LEFTBR)
 			{
-				error(par_type_void_with_nofun);
+				error(context, par_type_void_with_nofun);
 			}
 		}
 
 		if (wastype)
 		{
 			numpar++;
-			loc_modetab[locmd++] = type;
+			loc_modetab[locmd++] = context->type;
 
-			if (next == LEFTBR)
+			if (context->next == LEFTBR)
 			{
-				scaner();
-				mustbe(LMULT, wrong_fun_as_param);
-
-				if (next == IDENT)
+				scaner(context);
+				mustbe(context, LMULT, wrong_fun_as_param);
+				if (context->next == IDENT)
 				{
 					if (level)
 					{
-						scaner();
-
+						scaner(context);
 						if (ident == 0)
 						{
 							ident = 2;
 						}
 						else
 						{
-							error(two_idents_for_1_declarer);
+							error(context, two_idents_for_1_declarer);
 						}
-						functions[funcnum++] = -repr;
+						context->functions[context->funcnum++] = -REPRTAB_POS;
 					}
 					else
 					{
-						error(ident_in_declarator);
+						error(context, ident_in_declarator);
 					}
 				}
-
-				mustbe(RIGHTBR, no_right_br_in_paramfun);
-				mustbe(LEFTBR, wrong_fun_as_param);
-				scaner();
-
+				mustbe(context, RIGHTBR, no_right_br_in_paramfun);
+				mustbe(context, LEFTBR, wrong_fun_as_param);
+				scaner(context);
 				if (maybe_fun == 1)
 				{
-					error(aster_before_func);
+					error(context, aster_before_func);
 				}
 				else if (maybe_fun == 2)
 				{
-					error(array_before_func);
+					error(context, array_before_func);
 				}
 
-				old = func_def;
-				loc_modetab[locmd - 1] = func_declarator(0, 2, type);
-				func_def = old;
+				old = context->func_def;
+				loc_modetab[locmd - 1] = func_declarator(context, 0, 2, context->type);
+				context->func_def = old;
 			}
-
 			if (func_d == 3)
 			{
 				func_d = ident > 0 ? 1 : 2;
 			}
 			else if (func_d == 2 && ident > 0)
 			{
-				error(wait_declarator);
+				error(context, wait_declarator);
 			}
 			else if (func_d == 1 && ident == 0)
 			{
-				error(wait_definition);
+				error(context, wait_definition);
 			}
 
-			if (scaner() == COMMA)
+			if (scaner(context) == COMMA)
 			{
-				scaner();
+				scaner(context);
 			}
-			else if (cur == RIGHTBR)
+			else if (context->cur == RIGHTBR)
 			{
 				repeat = 0;
 			}
 		}
-		else if (cur == RIGHTBR)
+		else if (context->cur == RIGHTBR)
 		{
 			repeat = 0;
 			func_d = 0;
 		}
 		else
 		{
-			error(wrong_param_list);
+			error(context, wrong_param_list);
 		}
 	}
-	func_def = func_d;
+	context->func_def = func_d;
 	loc_modetab[2] = numpar;
 
-	modetab[md] = startmode;
-	startmode = md++;
+	context->modetab[context->md] = context->startmode;
+	context->startmode = context->md++;
 	for (i = 0; i < numpar + 3; i++)
 	{
-		modetab[md++] = loc_modetab[i];
+		context->modetab[context->md++] = loc_modetab[i];
 	}
 
-	return check_duplicates();
+	return check_duplicates(context);
 }
 
-void ext_decl()
+void ext_decl(compiler_context *context)
 {
 	int i;
-	do		// top level описания переменных и функций до конца файла
+	do // top level описания переменных и функций до конца файла
 	{
 		int repeat = 1;
 		int funrepr;
 		int first = 1;
-
-		wasstructdef = 0;
-		scaner();
-
-		/*
-			if (cur == SH_DEFINE)
-			{
-				mustbe(IDENT, no_ident_in_define);
-
-				if (scaner() == LMINUS)
+		context->wasstructdef = 0;
+		scaner(context);
+		/*        if (context->cur == SH_DEFINE)
 				{
-					scaner(), k = -1;
+					mustbe(context, IDENT, no_ident_in_define);
+					if (scaner(context) == LMINUS)
+						scaner(context), k = -1;
+					if (context->cur != NUMBER || context->ansttype != LINT)
+						error(context, not_int_in_define);
+					toidentab(-2, k * num);
+					continue;
 				}
-
-				if (cur != NUMBER || ansttype != LINT)
-				{
-					error(not_int_in_define);
-				}
-
-				toidentab(-2, k * num);
-				continue;
-			}
-		*/
-
-		firstdecl = gettype();
-		if (wasstructdef && next == SEMICOLON)	// struct point {float x, y;};
-		{
-			scaner();
+		 */
+		context->firstdecl = gettype(context);
+		if (context->wasstructdef && context->next == SEMICOLON)
+		{ // struct point {float x, y;};
+			scaner(context);
 			continue;
 		}
 
-		func_def = 3;	// func_def = 0 - (),
-						// 1 - определение функции,
-						// 2 - это предописание,
-						// 3 - не знаем или вообще не функция
+		context->func_def = 3; // context->func_def = 0 - (), 1 - определение функции, 2 - это
+							   // предописание, 3 - не знаем или вообще не функция
 
-		/*
-			if (firstdecl == 0)
-			{
-				firstdecl = LINT;
-			}
-		*/
+		//      if (firstdecl == 0)
+		//          firstdecl = LINT;
 
-		do	// описываемые объекты через ',' определение функции может быть только одно, никаких ','
+		do // описываемые объекты через ',' определение функции может быть
+		   // только одно, никаких ','
 		{
-			type = firstdecl;
-			if (next == LMULT)
+			context->type = context->firstdecl;
+			if (context->next == LMULT)
 			{
-				scaner();
-				type = firstdecl == LVOID ? LVOIDASTER : newdecl(MPOINT, firstdecl);
+				scaner(context);
+				context->type = context->firstdecl == LVOID ? LVOIDASTER : newdecl(context, MPOINT, context->firstdecl);
 			}
-			mustbe(IDENT, after_type_must_be_ident);
+			mustbe(context, IDENT, after_type_must_be_ident);
 
-			if (next == LEFTBR)	// определение или предописание функции
+			if (context->next == LEFTBR) // определение или предописание функции
 			{
-				int oldfuncnum = funcnum++;
-				int firsttype = type;
-
-				funrepr = repr;
-				scaner();
-				scaner();
-				type = func_declarator(first, 3, firsttype);	// выкушает все параметры до ) включительно
-
-				if (next == BEGIN)
+				int oldfuncnum = context->funcnum++;
+				int firsttype = context->type;
+				funrepr = REPRTAB_POS;
+				scaner(context);
+				scaner(context);
+				context->type = func_declarator(context, first, 3,
+												firsttype); // выкушает все параметры до ) включительно
+				if (context->next == BEGIN)
 				{
-					if (func_def == 0)
+					if (context->func_def == 0)
 					{
-						func_def = 1;
+						context->func_def = 1;
 					}
 				}
-				else if (func_def == 0)
+				else if (context->func_def == 0)
 				{
-					func_def = 2;
+					context->func_def = 2;
 				}
-				// теперь я точно знаю, это определение ф-ции или предописание (func_def = 1 или 2)
-				repr = funrepr;
+				// теперь я точно знаю, это определение ф-ции или предописание
+				// (context->func_def=1 или 2)
+				REPRTAB_POS = funrepr;
 
-				toidentab(oldfuncnum, type);
+				toidentab(context, oldfuncnum, context->type);
 
-				if (next == BEGIN)
+				if (context->next == BEGIN)
 				{
-					scaner();
-					if (func_def == 2)
+					scaner(context);
+					if (context->func_def == 2)
 					{
-						error(func_decl_req_params);
+						error(context, func_decl_req_params);
 					}
 
-					function_definition();
+					function_definition(context);
 					goto ex;
 				}
 				else
 				{
-					if (func_def == 1)
+					if (context->func_def == 1)
 					{
-						error(function_has_no_body);
+						error(context, function_has_no_body);
 					}
 				}
 			}
-			else if (firstdecl == LVOID)
+			else if (context->firstdecl == LVOID)
 			{
-				error(only_functions_may_have_type_VOID);
+				error(context, only_functions_may_have_type_VOID);
 			}
 
 			// описания идентов-не-функций
 
-			if (func_def == 3)
+			if (context->func_def == 3)
 			{
-				decl_id(type);
+				decl_id(context, context->type);
 			}
 
-			if (next == COMMA)
+			if (context->next == COMMA)
 			{
-				scaner();
+				scaner(context);
 				first = 0;
 			}
-			else if (next == SEMICOLON)
+			else if (context->next == SEMICOLON)
 			{
-				scaner();
+				scaner(context);
 				repeat = 0;
 			}
 			else
 			{
-				error(def_must_end_with_semicomma);
+				error(context, def_must_end_with_semicomma);
 			}
 		} while (repeat);
 
-		ex:;
-	} while (next != LEOF);
+	ex:;
+	} while (context->next != LEOF);
 
-	if (wasmain == 0)
+	if (context->wasmain == 0)
 	{
-		error(no_main_in_program);
+		error(context, no_main_in_program);
 	}
-
-	for (i = 0; i <= prdf; i++)
+	for (i = 0; i <= context->prdf; i++)
 	{
-		if (predef[i])
+		if (context->predef[i])
 		{
-			error(predef_but_notdef);
+			error(context, predef_but_notdef);
 		}
 	}
-
-	totree(TEnd);
+	totree(context, TEnd);
 }

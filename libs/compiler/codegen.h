@@ -13,11 +13,15 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+#pragma once
+#include "context.h"
 
-#ifndef H_CODEGEN
-#define H_CODEGEN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+void codegen(compiler_context *context);
 
-void codegen();
-
+#ifdef __cplusplus
+} /* extern "C" */
 #endif

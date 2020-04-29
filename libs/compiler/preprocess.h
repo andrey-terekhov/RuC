@@ -14,10 +14,19 @@
  *	limitations under the License.
  */
 
-#ifndef H_PREPROCESS
-#define H_PREPROCESS
+#pragma once
+#include "context.h"
+#include "preprocess_global.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
-void preprocess_file();
 
+void preprocess_file(compiler_context *c_context, const char *code);
+void preprocess_scan(preprocess_context *context, compiler_context *c_context);
+
+
+#ifdef __cplusplus
+} /* extern "C" */
 #endif

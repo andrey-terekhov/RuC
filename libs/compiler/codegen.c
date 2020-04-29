@@ -1,122 +1,119 @@
 /*
- *	Copyright 2015 Andrey Terekhov
+ *  Copyright 2015 Andrey Terekhov
  *
- *	Licensed under the Apache License, Version 2.0 (the "License");
- *	you may not use this file except in compliance with the License.
- *	You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *		http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *	Unless required by applicable law or agreed to in writing, software
- *	distributed under the License is distributed on an "AS IS" BASIS,
- *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *	See the License for the specific language governing permissions and
- *	limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
-
 #include "codegen.h"
-#include <stdlib.h>
 #include "errors.h"
 #include "extdecl.h"
 #include "global.h"
+#include <stdlib.h>
 
+void Declid_gen(compiler_context *context);
+void compstmt_gen(compiler_context *context);
 
-int curth = 0;
-
-
-void Declid_gen();
-
-
-void tocode(int c)
+void tocode(compiler_context *context, int c)
 {
-	// printf("tocode tc=%i pc %i) %i\n", tc, pc, c);
-	mem[pc++] = c;
+	//  printf("tocode context->tc=%i context->pc %i) %i\n", context->tc,
+	//  context->pc, c);
+	context->mem[context->pc++] = c;
 }
 
-void adbreakend()
+void adbreakend(compiler_context *context)
 {
-	while (adbreak)
+	while (context->adbreak)
 	{
-		int r = mem[adbreak];
-		mem[adbreak] = pc;
-		adbreak = r;
+		int r = context->mem[context->adbreak];
+		context->mem[context->adbreak] = context->pc;
+		context->adbreak = r;
 	}
 }
 
-void adcontbeg(int ad)
+void adcontbeg(compiler_context *context, int ad)
 {
-	while (adcont != ad)
+	while (context->adcont != ad)
 	{
-		int r = mem[adcont];
-		mem[adcont] = ad;
-		adcont = r;
+		int r = context->mem[context->adcont];
+		context->mem[context->adcont] = ad;
+		context->adcont = r;
 	}
 }
 
-void adcontend()
+void adcontend(compiler_context *context)
 {
-	while (adcont != 0)
+	while (context->adcont != 0)
 	{
-		int r = mem[adcont];
-		mem[adcont] = pc;
-		adcont = r;
+		int r = context->mem[context->adcont];
+		context->mem[context->adcont] = context->pc;
+		context->adcont = r;
 	}
 }
 
-void finalop()
+void finalop(compiler_context *context)
 {
 	int c;
-	while ((c = tree[tc]) > 9000)
+
+	while ((c = context->tree[context->tc]) > 9000)
 	{
-		tc++;
+		context->tc++;
 		if (c != NOP)
 		{
 			if (c == ADLOGOR)
 			{
-				tocode(_DOUBLE);
-				tocode(BNE0);
-				tree[tree[tc++]] = pc++;
+				tocode(context, _DOUBLE);
+				tocode(context, BNE0);
+				context->tree[context->tree[context->tc++]] = context->pc++;
 			}
 			else if (c == ADLOGAND)
 			{
-				tocode(_DOUBLE);
-				tocode(BE0);
-				tree[tree[tc++]] = pc++;
+				tocode(context, _DOUBLE);
+				tocode(context, BE0);
+				context->tree[context->tree[context->tc++]] = context->pc++;
 			}
 			else
 			{
-				tocode(c);
+				tocode(context, c);
 				if (c == LOGOR || c == LOGAND)
 				{
-					mem[tree[tc++]] = pc;
+					context->mem[context->tree[context->tc++]] = context->pc;
 				}
 				else if (c == COPY00 || c == COPYST)
 				{
-					tocode(tree[tc++]);	// d1
-					tocode(tree[tc++]);	// d2
-					tocode(tree[tc++]);	// длина
+					tocode(context, context->tree[context->tc++]); // d1
+					tocode(context, context->tree[context->tc++]); // d2
+					tocode(context, context->tree[context->tc++]); // длина
 				}
 				else if (c == COPY01 || c == COPY10 || c == COPY0ST || c == COPY0STASS)
 				{
-					tocode(tree[tc++]);	// d1
-					tocode(tree[tc++]);	// длина
+					tocode(context, context->tree[context->tc++]); // d1
+					tocode(context, context->tree[context->tc++]); // длина
 				}
 				else if (c == COPY11 || c == COPY1ST || c == COPY1STASS)
 				{
-					tocode(tree[tc++]);	// длина
+					tocode(context, context->tree[context->tc++]); // длина
 				}
 				else if ((c >= REMASS && c <= DIVASS) || (c >= REMASSV && c <= DIVASSV) ||
-						(c >= ASSR && c <= DIVASSR) || (c >= ASSRV && c <= DIVASSRV) || (c >= POSTINC && c <= DEC) ||
-						(c >= POSTINCV && c <= DECV) || (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))
+						 (c >= ASSR && c <= DIVASSR) || (c >= ASSRV && c <= DIVASSRV) || (c >= POSTINC && c <= DEC) ||
+						 (c >= POSTINCV && c <= DECV) || (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))
 				{
-					tocode(tree[tc++]);
+					tocode(context, context->tree[context->tc++]);
 				}
 			}
 		}
 	}
 }
 
-int Expr_gen(int incond)
+int Expr_gen(compiler_context *context, int incond)
 {
 	int flagprim = 1;
 	int eltype;
@@ -124,154 +121,161 @@ int Expr_gen(int incond)
 
 	while (flagprim)
 	{
-		switch (tree[tc++])
+		switch (context->tree[context->tc++])
 		{
 			case TIdent:
-				anstdispl = tree[tc++];
+			{
+				context->anstdispl = context->tree[context->tc++];
 				break;
+			}
 			case TIdenttoaddr:
 			{
-				tocode(LA);
-				tocode(anstdispl = tree[tc++]);
-			}
+				tocode(context, LA);
+				tocode(context, context->anstdispl = context->tree[context->tc++]);
 				break;
+			}
 			case TIdenttoval:
 			{
-				tocode(LOAD);
-				tocode(tree[tc++]);
-			}
+				tocode(context, LOAD);
+				tocode(context, context->tree[context->tc++]);
 				break;
+			}
 			case TIdenttovald:
 			{
-				tocode(LOADD);
-				tocode(tree[tc++]);
+				tocode(context, LOADD);
+				tocode(context, context->tree[context->tc++]);
+				break;
 			}
-				break;
 			case TAddrtoval:
-				tocode(LAT);
+			{
+				tocode(context, LAT);
 				break;
+			}
 			case TAddrtovald:
-				tocode(LATD);
+			{
+				tocode(context, LATD);
 				break;
+			}
 			case TConst:
 			{
-				tocode(LI);
-				tocode(tree[tc++]);
-			}
+				tocode(context, LI);
+				tocode(context, context->tree[context->tc++]);
 				break;
+			}
 			case TConstd:
 			{
-				tocode(LID);
-				tocode(tree[tc++]);
-				tocode(tree[tc++]);
-			}
+				tocode(context, LID);
+				tocode(context, context->tree[context->tc++]);
+				tocode(context, context->tree[context->tc++]);
 				break;
+			}
 			case TString:
 			{
-				int n = tree[tc++];
+				int n = context->tree[context->tc++];
 				int res;
 				int i;
 
-				tocode(LI);
-				tocode(res = pc + 4);
-				tocode(B);
-
-				pc += 2;
+				tocode(context, LI);
+				tocode(context, res = context->pc + 4);
+				tocode(context, B);
+				context->pc += 2;
 				for (i = 0; i < n; i++)
 				{
-					tocode(tree[tc++]);
+					tocode(context, context->tree[context->tc++]);
 				}
-
-				mem[res - 1] = n;
-				mem[res - 2] = pc;
+				context->mem[res - 1] = n;
+				context->mem[res - 2] = context->pc;
 				wasstring = 1;
+				break;
 			}
-				break;
 			case TDeclid:
-				Declid_gen();
+			{
+				Declid_gen(context);
 				break;
+			}
 			case TBeginit:
 			{
-				int n = tree[tc++];
+				int n = context->tree[context->tc++];
 				int i;
 
-				tocode(BEGINIT);
-				tocode(n);
-
+				tocode(context, BEGINIT);
+				tocode(context, n);
 				for (i = 0; i < n; i++)
 				{
-					Expr_gen(0);
+					Expr_gen(context, 0);
 				}
-			}
 				break;
+			}
 			case TStructinit:
 			{
-				int n = tree[tc++];
+				int n = context->tree[context->tc++];
 				int i;
+
 				for (i = 0; i < n; i++)
 				{
-					Expr_gen(0);
+					Expr_gen(context, 0);
 				}
-			}
 				break;
+			}
 			case TSliceident:
 			{
-				tocode(LOAD);		// параметры - смещение идента и тип элемента
-				tocode(tree[tc++]);	// продолжение в след case
+				tocode(context,
+					   LOAD); // параметры - смещение идента и тип элемента
+				tocode(context,
+					   context->tree[context->tc++]); // продолжение в след case
 			}
-			case TSlice:			// параметр - тип элемента
+			case TSlice: // параметр - тип элемента
 			{
-				eltype = tree[tc++];
-				Expr_gen(0);
-
-				tocode(SLICE);
-				tocode(szof(eltype));
-
-				if (eltype > 0 && modetab[eltype] == MARRAY)
+				eltype = context->tree[context->tc++];
+				Expr_gen(context, 0);
+				tocode(context, SLICE);
+				tocode(context, szof(context, eltype));
+				if (eltype > 0 && context->modetab[eltype] == MARRAY)
 				{
-					tocode(LAT);
+					tocode(context, LAT);
 				}
-			}
 				break;
+			}
 			case TSelect:
 			{
-				tocode(SELECT);		// SELECT field_displ
-				tocode(tree[tc++]);
-			}
+				tocode(context, SELECT); // SELECT field_displ
+				tocode(context, context->tree[context->tc++]);
 				break;
+			}
 			case TPrint:
 			{
-				tocode(PRINT);
-				tocode(tree[tc++]);	// type
-			}
+				tocode(context, PRINT);
+				tocode(context, context->tree[context->tc++]); // type
 				break;
+			}
 			case TCall1:
 			{
 				int i;
-				int n = tree[tc++];
+				int n = context->tree[context->tc++];
 
-				tocode(CALL1);
-
+				tocode(context, CALL1);
 				for (i = 0; i < n; i++)
 				{
-					Expr_gen(0);
+					Expr_gen(context, 0);
 				}
-			}
 				break;
+			}
 			case TCall2:
 			{
-				tocode(CALL2);
-				tocode(identab[tree[tc++] + 3]);
-			}
+				tocode(context, CALL2);
+				tocode(context, context->identab[context->tree[context->tc++] + 3]);
 				break;
-
+			}
 			default:
-				tc--;
+			{
+				context->tc--;
+				break;
+			}
 		}
 
-		finalop();
+		finalop(context);
 
-		if (tree[tc] == TCondexpr)
+		if (context->tree[context->tc] == TCondexpr)
 		{
 			if (incond)
 			{
@@ -283,530 +287,521 @@ int Expr_gen(int incond)
 				int ad = 0;
 				do
 				{
-					tc++;
-					tocode(BE0);
-					adelse = pc++;
-					Expr_gen(0);	// then
-					tocode(B);
-					mem[pc] = ad;
-					ad = pc;
-					mem[adelse] = ++pc;
-					Expr_gen(1);	// else или cond
-				} while (tree[tc] == TCondexpr);
+					context->tc++;
+					tocode(context, BE0);
+					adelse = context->pc++;
+					Expr_gen(context, 0); // then
+					tocode(context, B);
+					context->mem[context->pc] = ad;
+					ad = context->pc;
+					context->mem[adelse] = ++context->pc;
+					Expr_gen(context, 1); // else или cond
+				} while (context->tree[context->tc] == TCondexpr);
 
 				while (ad)
 				{
-					int r = mem[ad];
-					mem[ad] = pc;
+					int r = context->mem[ad];
+					context->mem[ad] = context->pc;
 					ad = r;
 				}
 			}
 
-			finalop();
+			finalop(context);
 		}
-
-		if (tree[tc] == TExprend)
+		if (context->tree[context->tc] == TExprend)
 		{
-			tc++;
+			context->tc++;
 			flagprim = 0;
 		}
 	}
-
 	return wasstring;
 }
 
-void compstmt_gen();
-
-void Stmt_gen()
+void Stmt_gen(compiler_context *context)
 {
-	switch (tree[tc++])
+	switch (context->tree[context->tc++])
 	{
 		case NOP:
+		{
 			break;
-
+		}
 		case CREATEDIRECTC:
-			tocode(CREATEDIRECTC);
+		{
+			tocode(context, CREATEDIRECTC);
 			break;
-
+		}
 		case EXITC:
-			tocode(EXITC);
+		{
+			tocode(context, EXITC);
 			break;
-
+		}
 		case TStructbeg:
 		{
-			tocode(B);
-			tocode(0);
-			iniprocs[tree[tc++]] = pc;
-		}
+			tocode(context, B);
+			tocode(context, 0);
+			context->iniprocs[context->tree[context->tc++]] = context->pc;
 			break;
-
+		}
 		case TStructend:
 		{
-			int numproc = tree[tree[tc++] + 1];
-			tocode(STOP);
-			mem[iniprocs[numproc] - 1] = pc;
-		}
-			break;
+			int numproc = context->tree[context->tree[context->tc++] + 1];
 
+			tocode(context, STOP);
+			context->mem[context->iniprocs[numproc] - 1] = context->pc;
+			break;
+		}
 		case TBegin:
-			compstmt_gen();
+			compstmt_gen(context);
 			break;
 
 		case TIf:
 		{
-			int elseref = tree[tc++];
+			int elseref = context->tree[context->tc++];
 			int ad;
 
-			Expr_gen(0);
-			tocode(BE0);
-			ad = pc++;
-			Stmt_gen();
-
+			Expr_gen(context, 0);
+			tocode(context, BE0);
+			ad = context->pc++;
+			Stmt_gen(context);
 			if (elseref)
 			{
-				mem[ad] = pc + 2;
-				tocode(B);
-				ad = pc++;
-				Stmt_gen();
+				context->mem[ad] = context->pc + 2;
+				tocode(context, B);
+				ad = context->pc++;
+				Stmt_gen(context);
 			}
-
-			mem[ad] = pc;
-		}
+			context->mem[ad] = context->pc;
 			break;
+		}
 		case TWhile:
 		{
-			int oldbreak = adbreak;
-			int oldcont = adcont;
-			int ad = pc;
+			int oldbreak = context->adbreak;
+			int oldcont = context->adcont;
+			int ad = context->pc;
 
-			adcont = ad;
-			Expr_gen(0);
-			tocode(BE0);
-			mem[pc] = 0;
-			adbreak = pc++;
-			Stmt_gen();
-			adcontbeg(ad);
-			tocode(B);
-			tocode(ad);
-			adbreakend();
-			adbreak = oldbreak;
-			adcont = oldcont;
-		}
+			context->adcont = ad;
+			Expr_gen(context, 0);
+			tocode(context, BE0);
+			context->mem[context->pc] = 0;
+			context->adbreak = context->pc++;
+			Stmt_gen(context);
+			adcontbeg(context, ad);
+			tocode(context, B);
+			tocode(context, ad);
+			adbreakend(context);
+			context->adbreak = oldbreak;
+			context->adcont = oldcont;
 			break;
+		}
 		case TDo:
 		{
-			int oldbreak = adbreak;
-			int oldcont = adcont;
-			int ad = pc;
+			int oldbreak = context->adbreak;
+			int oldcont = context->adcont;
+			int ad = context->pc;
 
-			adcont = adbreak = 0;
-			Stmt_gen();
-			adcontend();
-			Expr_gen(0);
-			tocode(BNE0);
-			tocode(ad);
-			adbreakend();
-			adbreak = oldbreak;
-			adcont = oldcont;
-		}
+			context->adcont = context->adbreak = 0;
+			Stmt_gen(context);
+			adcontend(context);
+			Expr_gen(context, 0);
+			tocode(context, BNE0);
+			tocode(context, ad);
+			adbreakend(context);
+			context->adbreak = oldbreak;
+			context->adcont = oldcont;
 			break;
+		}
 		case TFor:
 		{
-			int fromref = tree[tc++];
-			int condref = tree[tc++];
-			int incrref = tree[tc++];
-			int stmtref = tree[tc++];
-			int oldbreak = adbreak;
-			int oldcont = adcont;
+			int fromref = context->tree[context->tc++];
+			int condref = context->tree[context->tc++];
+			int incrref = context->tree[context->tc++];
+			int stmtref = context->tree[context->tc++];
+			int oldbreak = context->adbreak;
+			int oldcont = context->adcont;
 			int incrtc;
 			int endtc;
 			int initad;
 
 			if (fromref)
 			{
-				Expr_gen(0);	// init
+				Expr_gen(context, 0); // init
 			}
 
-			initad = pc;
-			adcont = adbreak = 0;
+			initad = context->pc;
+			context->adcont = context->adbreak = 0;
 
 			if (condref)
 			{
-				Expr_gen(0);	// cond
-				tocode(BE0);
-				mem[pc] = 0;
-				adbreak = pc++;
+				Expr_gen(context, 0); // cond
+				tocode(context, BE0);
+				context->mem[context->pc] = 0;
+				context->adbreak = context->pc++;
 			}
-
-			incrtc = tc;
-			tc = stmtref;
-			Stmt_gen();
-			adcontend();
+			incrtc = context->tc;
+			context->tc = stmtref;
+			Stmt_gen(context); //  ???? был 0
+			adcontend(context);
 
 			if (incrref)
 			{
-				endtc = tc;
-				tc = incrtc;
-				Expr_gen(0);	// incr
-				tc = endtc;
+				endtc = context->tc;
+				context->tc = incrtc;
+				Expr_gen(context, 0); // incr
+				context->tc = endtc;
 			}
 
-			tocode(B);
-			tocode(initad);
-			adbreakend();
-			adbreak = oldbreak;
-			adcont = oldcont;
-		}
+			tocode(context, B);
+			tocode(context, initad);
+			adbreakend(context);
+			context->adbreak = oldbreak;
+			context->adcont = oldcont;
 			break;
+		}
 		case TGoto:
 		{
-			int id1 = tree[tc++];
+			int id1 = context->tree[context->tc++];
 			int a;
 			int id = id1 > 0 ? id1 : -id1;
 
-			tocode(B);
-
-			if ((a = identab[id + 3]) > 0)	// метка уже описана
+			tocode(context, B);
+			if ((a = context->identab[id + 3]) > 0) // метка уже описана
 			{
-				tocode(a);
+				tocode(context, a);
 			}
-			else							// метка еще не описана
+			else // метка еще не описана
 			{
-				identab[id + 3] = -pc;
-				tocode(id1 < 0 ? 0 : a);	// первый раз встретился переход на еще не описанную метку или нет
+				context->identab[id + 3] = -context->pc;
+				tocode(context,
+					   id1 < 0 ? 0 : a); // первый раз встретился переход на еще
+										 // не описанную метку или нет
 			}
-		}
 			break;
+		}
 		case TLabel:
 		{
-			int id = tree[tc++];
+			int id = context->tree[context->tc++];
 			int a;
 
-			if ((a = identab[id + 3]) < 0)	// были переходы на метку
+			if ((a = context->identab[id + 3]) < 0) // были переходы на метку
 			{
-				while (a)					// проставить ссылку на метку во всех ранних переходах
+				while (a) // проставить ссылку на метку во всех ранних переходах
 				{
-					int r = mem[-a];
-					mem[-a] = pc;
+					int r = context->mem[-a];
+					context->mem[-a] = context->pc;
 					a = r;
 				}
 			}
-			identab[id + 3] = pc;
-		}
+			context->identab[id + 3] = context->pc;
 			break;
+		}
 		case TSwitch:
 		{
-			int oldbreak = adbreak;
-			int oldcase = adcase;
+			int oldbreak = context->adbreak;
+			int oldcase = context->adcase;
 
-			adbreak = 0;
-			adcase = 0;
-			Expr_gen(0);
-			Stmt_gen();
-
-			if (adcase > 0)
+			context->adbreak = 0;
+			context->adcase = 0;
+			Expr_gen(context, 0);
+			Stmt_gen(context);
+			if (context->adcase > 0)
 			{
-				mem[adcase] = pc;
+				context->mem[context->adcase] = context->pc;
 			}
-
-			adcase = oldcase;
-			adbreakend();
-			adbreak = oldbreak;
-		}
+			context->adcase = oldcase;
+			adbreakend(context);
+			context->adbreak = oldbreak;
 			break;
+		}
 		case TCase:
 		{
-			if (adcase)
+			if (context->adcase)
 			{
-				mem[adcase] = pc;
+				context->mem[context->adcase] = context->pc;
 			}
-
-			tocode(_DOUBLE);
-			Expr_gen(0);
-			tocode(EQEQ);
-			tocode(BE0);
-			adcase = pc++;
-			Stmt_gen();
-		}
+			tocode(context, _DOUBLE);
+			Expr_gen(context, 0);
+			tocode(context, EQEQ);
+			tocode(context, BE0);
+			context->adcase = context->pc++;
+			Stmt_gen(context);
 			break;
+		}
 		case TDefault:
 		{
-			if (adcase)
+			if (context->adcase)
 			{
-				mem[adcase] = pc;
+				context->mem[context->adcase] = context->pc;
 			}
-
-			adcase = 0;
-			Stmt_gen();
-		}
+			context->adcase = 0;
+			Stmt_gen(context);
 			break;
-
+		}
 		case TBreak:
 		{
-			tocode(B);
-			mem[pc] = adbreak;
-			adbreak = pc++;
-		}
+			tocode(context, B);
+			context->mem[context->pc] = context->adbreak;
+			context->adbreak = context->pc++;
 			break;
+		}
 		case TContinue:
 		{
-			tocode(B);
-			mem[pc] = adcont;
-			adcont = pc++;
-		}
+			tocode(context, B);
+			context->mem[context->pc] = context->adcont;
+			context->adcont = context->pc++;
 			break;
+		}
 		case TReturnvoid:
 		{
-			tocode(RETURNVOID);
-		}
+			tocode(context, RETURNVOID);
 			break;
+		}
 		case TReturnval:
 		{
-			int d = tree[tc++];
+			int d = context->tree[context->tc++];
 
-			Expr_gen(0);
-			tocode(RETURNVAL);
-			tocode(d);
-		}
+			Expr_gen(context, 0);
+			tocode(context, RETURNVAL);
+			tocode(context, d);
 			break;
+		}
 		case TPrintid:
 		{
-			tocode(PRINTID);
-			tocode(tree[tc++]);	// ссылка в identtab
-		}
+			tocode(context, PRINTID);
+			tocode(context, context->tree[context->tc++]); // ссылка в identtab
 			break;
+		}
 		case TPrintf:
 		{
-			tocode(PRINTF);
-			tocode(tree[tc++]);	// общий размер того, что надо вывести
-		}
+			tocode(context, PRINTF);
+			tocode(context, context->tree[context->tc++]); // общий размер того,
+														   // что надо вывести
 			break;
+		}
 		case TGetid:
 		{
-			tocode(GETID);
-			tocode(tree[tc++]);	// ссылка в identtab
-		}
+			tocode(context, GETID);
+			tocode(context, context->tree[context->tc++]); // ссылка в identtab
 			break;
+		}
 		case SETMOTOR:
 		{
-			Expr_gen(0);
-			Expr_gen(0);
-			tocode(SETMOTORC);
-		}
+			Expr_gen(context, 0);
+			Expr_gen(context, 0);
+			tocode(context, SETMOTORC);
 			break;
-
+		}
 		default:
 		{
-			tc--;
-			Expr_gen(0);
-		}
+			context->tc--;
+			Expr_gen(context, 0);
 			break;
+		}
 	}
 }
 
-void Struct_init_gen()
+void Struct_init_gen(compiler_context *context)
 {
 	int i;
 	int n;
 
-	if (tree[tc] == TStructinit)
+	if (context->tree[context->tc] == TStructinit)
 	{
-		tc++;
-		n = tree[tc++];
-
+		context->tc++;
+		n = context->tree[context->tc++];
 		for (i = 0; i < n; i++)
 		{
-			Struct_init_gen();
+			Struct_init_gen(context);
 		}
-		tc++;	// TExprend
+		context->tc++; // TExprend
 	}
 	else
 	{
-		Expr_gen(0);
+		Expr_gen(context, 0);
 	}
 }
 
-void Declid_gen()
+void Declid_gen(compiler_context *context)
 {
-	int olddispl = tree[tc++];
-	int telem = tree[tc++];
-	int N = tree[tc++];
+	int olddispl = context->tree[context->tc++];
+	int telem = context->tree[context->tc++];
+	int N = context->tree[context->tc++];
 	int element_len;
-	int all = tree[tc++];		// all - общее кол-во слов в структуре
-								// all == 0 нет инициализатора,
-								// all == 1 есть инициализатор,
-								// all == 2 есть инициализатор только из строк
-	int iniproc = tree[tc++];
-	int usual = tree[tc++];		// для массивов есть еще usual
-								// == 0 с пустыми границами,
-								// == 1 без пустых границ
-	int instruct = tree[tc++];
+	int all = context->tree[context->tc++];
+	int iniproc = context->tree[context->tc++];
+	int usual = context->tree[context->tc++];
+	int instruct = context->tree[context->tc++];
+	// all - общее кол-во слов в структуре
+	//  для массивов есть еще usual // == 0 с пустыми границами,
+	// == 1 без пустых границ,
+	// all == 0 нет инициализатора,
+	// all == 1 есть инициализатор
+	// all == 2 есть инициализатор только из строк
+	element_len = szof(context, telem);
 
-	element_len = szof(telem);
-
-	if (N == 0)	// обычная переменная int a; или struct point p;
+	if (N == 0) // обычная переменная int a; или struct point p;
 	{
 		if (iniproc)
 		{
-			tocode(STRUCTWITHARR);
-			tocode(olddispl);
-			tocode(iniprocs[iniproc]);
+			tocode(context, STRUCTWITHARR);
+			tocode(context, olddispl);
+			tocode(context, context->iniprocs[iniproc]);
 		}
-		if (all)	// int a = или struct{} a =
+		if (all) // int a = или struct{} a =
 		{
-			if (telem > 0 && modetab[telem] == MSTRUCT)
+			if (telem > 0 && context->modetab[telem] == MSTRUCT)
 			{
-				Struct_init_gen();
-				tocode(COPY0STASS);
-				tocode(olddispl);
-				tocode(all);	// общее кол-во слов
+				Struct_init_gen(context);
+				tocode(context, COPY0STASS);
+				tocode(context, olddispl);
+				tocode(context, all); // общее кол-во слов
 			}
 			else
 			{
-				Expr_gen(0);
-				tocode(telem == LFLOAT ? ASSRV : ASSV);
-				tocode(olddispl);
+				Expr_gen(context, 0);
+				tocode(context, telem == LFLOAT ? ASSRV : ASSV);
+				tocode(context, olddispl);
 			}
 		}
 	}
-	else	// Обработка массива int a[N1]...[NN] =
+	else // Обработка массива int a[N1]...[NN] =
 	{
-		tocode(DEFARR);	// DEFARR N, d, displ, iniproc, usual		N1...NN уже лежат на стеке
-		tocode(all == 0 ? N : abs(N) - 1);
-		tocode(element_len);
-		tocode(olddispl);
-		tocode(iniprocs[iniproc]);
-		tocode(usual);
-		tocode(all);
-		tocode(instruct);
+		tocode(context, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN
+								 // уже лежат на стеке
+		tocode(context, all == 0 ? N : abs(N) - 1);
+		tocode(context, element_len);
+		tocode(context, olddispl);
+		tocode(context, context->iniprocs[iniproc]);
+		tocode(context, usual);
+		tocode(context, all);
+		tocode(context, instruct);
 
-		if (all)	// all == 1, если есть инициализация массива
+		if (all) // all == 1, если есть инициализация массива
 		{
-			Expr_gen(0);
-			tocode(ARRINIT);	// ARRINIT N d all displ usual
-			tocode(abs(N));
-			tocode(element_len);
-			tocode(olddispl);
-			tocode(usual);	// == 0 с пустыми границами
-							// == 1 без пустых границ и без инициализации
+			Expr_gen(context, 0);
+			tocode(context, ARRINIT); // ARRINIT N d all displ usual
+			tocode(context, abs(N));
+			tocode(context, element_len);
+			tocode(context, olddispl);
+			tocode(context, usual); // == 0 с пустыми границами
+									// == 1 без пустых границ и без иниц
 		}
 	}
 }
 
-void compstmt_gen()
+void compstmt_gen(compiler_context *context)
 {
-	while (tree[tc] != TEnd)
+	while (context->tree[context->tc] != TEnd)
 	{
-		switch (tree[tc])
+		switch (context->tree[context->tc])
 		{
 			case TDeclarr:
 			{
 				int i;
 				int N;
 
-				tc++;
-				N = tree[tc++];
-
+				context->tc++;
+				N = context->tree[context->tc++];
 				for (i = 0; i < N; i++)
 				{
-					Expr_gen(0);
+					Expr_gen(context, 0);
 				}
-			}
 				break;
-
+			}
 			case TDeclid:
 			{
-				tc++;
-				Declid_gen();
-			}
+				context->tc++;
+				Declid_gen(context);
 				break;
-
+			}
 			default:
-				Stmt_gen();
+			{
+				Stmt_gen(context);
+				break;
+			}
 		}
 	}
-	tc++;
+	context->tc++;
 }
-
-void codegen()
+void codegen(compiler_context *context)
 {
-	int treesize = tc;
-	tc = 0;
+	int treesize = context->tc;
 
-	while (tc < treesize)
+	context->tc = 0;
+
+	while (context->tc < treesize)
 	{
-		switch (tree[tc++])
+		switch (context->tree[context->tc++])
 		{
 			case TEnd:
 				break;
 			case TFuncdef:
 			{
-				int identref = tree[tc++];
-				int maxdispl = tree[tc++];
-				int fn = identab[identref + 3];
+				int identref = context->tree[context->tc++];
+				int maxdispl = context->tree[context->tc++];
+				int fn = context->identab[identref + 3];
 				int pred;
 
-				functions[fn] = pc;
-				tocode(FUNCBEG);
-				tocode(maxdispl);
-				pred = pc++;
-				tc++;	// TBegin
-				compstmt_gen();
-				mem[pred] = pc;
-			}
+				context->functions[fn] = context->pc;
+				tocode(context, FUNCBEG);
+				tocode(context, maxdispl);
+				pred = context->pc++;
+				context->tc++; // TBegin
+				compstmt_gen(context);
+				context->mem[pred] = context->pc;
 				break;
-
+			}
 			case TDeclarr:
 			{
 				int i;
-				int N = tree[tc++];
+				int N = context->tree[context->tc++];
 
 				for (i = 0; i < N; i++)
 				{
-					Expr_gen(0);
+					Expr_gen(context, 0);
 				}
+				break;
 			}
-				break;
-
 			case TDeclid:
-				Declid_gen();
+			{
+				Declid_gen(context);
 				break;
-
+			}
 			case NOP:
+			{
 				break;
-
+			}
 			case TStructbeg:
 			{
-				tocode(B);
-				tocode(0);
-				iniprocs[tree[tc++]] = pc;
-			}
+				tocode(context, B);
+				tocode(context, 0);
+				context->iniprocs[context->tree[context->tc++]] = context->pc;
 				break;
-
+			}
 			case TStructend:
 			{
-				int numproc = tree[tree[tc++] + 1];
-				tocode(STOP);
-				mem[iniprocs[numproc] - 1] = pc;
-			}
+				int numproc = context->tree[context->tree[context->tc++] + 1];
+
+				tocode(context, STOP);
+				context->mem[context->iniprocs[numproc] - 1] = context->pc;
 				break;
-
-
+			}
 			default:
 			{
 				printf("что-то не то\n");
-				printf("tc=%i tree[tc-2]=%i tree[tc-1]=%i\n", tc, tree[tc - 2], tree[tc - 1]);
+				printf("tc=%i tree[tc-2]=%i "
+					   "tree[tc-1]=%i\n",
+					   context->tc, context->tree[context->tc - 2], context->tree[context->tc - 1]);
+				break;
 			}
 		}
 	}
 
-	if (wasmain == 0)
+	if (context->wasmain == 0)
 	{
-		error(no_main_in_program);
+		error(context, no_main_in_program);
 	}
-
-	tocode(CALL1);
-	tocode(CALL2);
-	tocode(identab[wasmain + 3]);
-	tocode(STOP);
+	tocode(context, CALL1);
+	tocode(context, CALL2);
+	tocode(context, context->identab[context->wasmain + 3]);
+	tocode(context, STOP);
 }
