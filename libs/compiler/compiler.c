@@ -320,9 +320,8 @@ COMPILER_EXPORTED int compiler_compile(const char *path)
 		compiler_workspace_free(ws);
 		return 1;
 	}
-
 	ret = compiler_workspace_compile(ws);
-	compiler_workspace_free(ws);
+
 
 	return ret;
 }
