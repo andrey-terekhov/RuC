@@ -1,28 +1,29 @@
 /*
- *  Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ *	Licensed under the Apache License, Version 2.0 (the "License");
+ *	you may not use this file except in compliance with the License.
+ *	You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *		http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ *	Unless required by applicable law or agreed to in writing, software
+ *	distributed under the License is distributed on an "AS IS" BASIS,
+ *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *	See the License for the specific language governing permissions and
+ *	limitations under the License.
  */
-#include "compiler.h"
+
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "compiler.h"
 
 
 static const char *name = "../tests/arrays.c";
-// "../tests/Egor/Macro/test3.c";
-// "../tests/Mishatest.c";
-// "../tests/mips/0test.c";
+	// "../tests/Egor/Macro/test3.c";
+	// "../tests/Mishatest.c";
+	// "../tests/mips/0test.c";
 
 
 int main(int argc, const char *argv[])
@@ -39,7 +40,7 @@ int main(int argc, const char *argv[])
 		if (ws == NULL)
 		{
 			fprintf(stderr, " failed to create a workspace\n");
-			exit(1);
+			return 1;
 		}
 
 		if (ws->error.code != COMPILER_WS_EOK)
@@ -51,7 +52,7 @@ int main(int argc, const char *argv[])
 			free(str);
 
 			compiler_workspace_free(ws);
-			exit(1);
+			return 1;
 		}
 
 		compiler_workspace_compile(ws);
