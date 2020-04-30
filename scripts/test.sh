@@ -36,7 +36,7 @@ internal_timeout()
 
 test()
 {
-	for code in ${test_dir}/*.c ${test_dir}/*/*.c ${test_dir}/*/*/*.c
+	for code in ${test_dir}/*.c ${test_dir}/*/*.c ${test_dir}/*/*/*.c ${test_dir}/*/*/*/*.c
 	do
 		out=`internal_timeout $wait_for ${ruc_compiler} $code >/dev/null 2>/dev/null`
 		case "$?" in
