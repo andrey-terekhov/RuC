@@ -17,7 +17,7 @@
 #pragma once
 
 #include "io.h"
-#include "util_internal.h"
+#include "utils_internal.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -71,21 +71,21 @@ typedef struct scanner_desc
  *
  *	@param	opts	Scanner context
  */
-UTIL_EXPORTED void scanner_init(universal_scanner_options *opts);
+UTILS_EXPORTED void scanner_init(universal_scanner_options *opts);
 
 /**
  *	Deinitialize scanner
  *
  *	@param	opts	Scanner context
  */
-UTIL_EXPORTED void scanner_deinit(universal_scanner_options *opts);
+UTILS_EXPORTED void scanner_deinit(universal_scanner_options *opts);
 
 /**
  *	Close current scanner context
  *
  *	@param	opts	Scanner context
  */
-UTIL_EXPORTED void scanner_close(universal_scanner_options *opts);
+UTILS_EXPORTED void scanner_close(universal_scanner_options *opts);
 
 /**
  *	Get a next symbol from input stream
@@ -94,7 +94,7 @@ UTIL_EXPORTED void scanner_close(universal_scanner_options *opts);
  *
  *	@return	Read symbol
  */
-UTIL_EXPORTED int scanner_getnext(universal_scanner_options *opts);
+UTILS_EXPORTED int scanner_getnext(universal_scanner_options *opts);
 
 /**
  *	scanf() for the uniscanner stream
@@ -103,7 +103,7 @@ UTIL_EXPORTED int scanner_getnext(universal_scanner_options *opts);
  *
  *	@return	scanf()-like return value
  */
-UTIL_EXPORTED int scanner_scanf(universal_scanner_options *opts, const char *fmt, ...);
+UTILS_EXPORTED int scanner_scanf(universal_scanner_options *opts, const char *fmt, ...);
 
 /**
  *	Attach file to scanner
@@ -113,7 +113,7 @@ UTIL_EXPORTED int scanner_scanf(universal_scanner_options *opts, const char *fmt
  *
  *	@return	@c true on success, @c false on failure
  */
-UTIL_EXPORTED bool scanner_attach_file(universal_scanner_options *opts, FILE *file);
+UTILS_EXPORTED bool scanner_attach_file(universal_scanner_options *opts, FILE *file);
 
 /**
  *	Attach buffer to scanner
@@ -123,7 +123,7 @@ UTIL_EXPORTED bool scanner_attach_file(universal_scanner_options *opts, FILE *fi
  *
  *	@return	@c true on success, @c false on failure
  */
-UTIL_EXPORTED bool scanner_attach_buffer(universal_scanner_options *opts, const char *ptr);
+UTILS_EXPORTED bool scanner_attach_buffer(universal_scanner_options *opts, const char *ptr);
 
 #ifdef __cplusplus
 } /* extern "C" */

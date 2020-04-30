@@ -17,7 +17,7 @@
 #pragma once
 
 #include "io.h"
-#include "util_internal.h"
+#include "utils_internal.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -62,21 +62,21 @@ typedef struct printer_desc
  *
  *	@param	opts	Printer context
  */
-UTIL_EXPORTED void printer_init(universal_printer_options *opts);
+UTILS_EXPORTED void printer_init(universal_printer_options *opts);
 
 /**
  *	Deinitialize printer
  *
  *	@param	opts	Printer context
  */
-UTIL_EXPORTED void printer_deinit(universal_printer_options *opts);
+UTILS_EXPORTED void printer_deinit(universal_printer_options *opts);
 
 /**
  *	Close current printer stream
  *
  *	@param	opts	Printer context
  */
-UTIL_EXPORTED void printer_close(universal_printer_options *opts);
+UTILS_EXPORTED void printer_close(universal_printer_options *opts);
 
 /**
  *	Universal function for printing data to some output
@@ -86,7 +86,7 @@ UTIL_EXPORTED void printer_close(universal_printer_options *opts);
  *
  *	@return	printf-like return value
  */
-UTIL_EXPORTED int printer_printf(universal_printer_options *opts, const char *fmt, ...);
+UTILS_EXPORTED int printer_printf(universal_printer_options *opts, const char *fmt, ...);
 
 /**
  *	Universal function for printing (wide) characters
@@ -96,7 +96,7 @@ UTIL_EXPORTED int printer_printf(universal_printer_options *opts, const char *fm
  *
  *	@return	printf-like return value
  */
-UTIL_EXPORTED int printer_printchar(universal_printer_options *opts, int wchar);
+UTILS_EXPORTED int printer_printchar(universal_printer_options *opts, int wchar);
 
 /**
  *	Attach file to printer
@@ -106,7 +106,7 @@ UTIL_EXPORTED int printer_printchar(universal_printer_options *opts, int wchar);
  *
  *	@return	@c true on success, @c false on failure
  */
-UTIL_EXPORTED bool printer_attach_file(universal_printer_options *opts, FILE *file);
+UTILS_EXPORTED bool printer_attach_file(universal_printer_options *opts, FILE *file);
 
 /**
  *	Attach buffer to printer
@@ -116,7 +116,7 @@ UTIL_EXPORTED bool printer_attach_file(universal_printer_options *opts, FILE *fi
  *
  *	@return	@c true on success, @c false on failure
  */
-UTIL_EXPORTED bool printer_attach_buffer(universal_printer_options *opts, size_t size);
+UTILS_EXPORTED bool printer_attach_buffer(universal_printer_options *opts, size_t size);
 
 #ifdef __cplusplus
 } /* extern "C" */
