@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2019 Andrey Terekhov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,36 +16,41 @@
 
 #pragma once
 
-#include "context.h"
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- *	Emit a warning for some problem
+ *	Read keywords from input context
  *
- *	@param	context	Compiler cocntext
- *	@param	errnum	Error number
+ *	@param	context	RuC context
  */
-void warning(compiler_context *context, int errnum);
+void read_keywords(compiler_context *context);
 
 /**
- *	Emit an error for some problem
+ *	Print tables and tree to a file specified by @p path
  *
- *	@param	context	Compiler cocntext
- *	@param	errnum	Error number
+ *	@param	context	RuC context
+ *	@param	path	Target file
  */
-void error(compiler_context *context, int errnum);
+void output_tables_and_tree(compiler_context *context, const char *path);
 
 /**
- *	Emit preprocessor error
+ *	Print codes to a file specified by @p path
  *
- *	@param	context	Compiler conteext
- *	@param	errnum	Error number
+ *	@param	context	RuC context
+ *	@param	path	Target file
  */
-void m_error(compiler_context *context, int errnum);
+void output_codes(compiler_context *context, const char *path);
+
+/**
+ *	Print export tables to a file specified by @p path
+ *
+ *	@param	context	RuC context
+ *	@param	path	Target file
+ */
+void output_export(compiler_context *context, const char *path);
 
 #ifdef __cplusplus
 } /* extern "C" */

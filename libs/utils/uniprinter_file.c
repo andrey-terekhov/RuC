@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2019 Andrey Terekhov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,25 +14,22 @@
  *	limitations under the License.
  */
 
-#pragma once
+#include "uniprinter.h"
+#include <limits.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "context.h"
 
+/** File-based printer */
+int printer_file_fprintf(universal_printer_options *opts, const char *fmt, va_list args)
+{
+	int ret;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+	ret = vfprintf(opts->output, fmt, args);
 
-/**
- *	Preprocess a file from input context and put preprocessed content to output
- *	context
- *
- *	@param	context	Compiler context
- */
-void preprocess_file(compiler_context *context);
+	return ret;
+}
 
-void show_macro(compiler_context *context);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
+printer_desc printer_file = { IO_SOURCE_FILE, printer_file_fprintf };

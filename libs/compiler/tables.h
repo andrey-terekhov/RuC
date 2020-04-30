@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2019 Andrey Terekhov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -24,28 +24,21 @@ extern "C" {
 #endif
 
 /**
- *	Emit a warning for some problem
+ *	Save up a string array to reprtab
  *
- *	@param	context	Compiler cocntext
- *	@param	errnum	Error number
+ *	@param	context	RuC context
+ *	@param	str		Target string
+ *
+ *	@return	FIXME
  */
-void warning(compiler_context *context, int errnum);
+int toreprtab(compiler_context *context, char str[]);
 
 /**
- *	Emit an error for some problem
+ *	Mode table initialization
  *
- *	@param	context	Compiler cocntext
- *	@param	errnum	Error number
+ *	@param	context	RuC context
  */
-void error(compiler_context *context, int errnum);
-
-/**
- *	Emit preprocessor error
- *
- *	@param	context	Compiler conteext
- *	@param	errnum	Error number
- */
-void m_error(compiler_context *context, int errnum);
+void init_modetab(compiler_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

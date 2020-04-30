@@ -23,29 +23,14 @@
 extern "C" {
 #endif
 
-/**
- *	Emit a warning for some problem
- *
- *	@param	context	Compiler cocntext
- *	@param	errnum	Error number
- */
-void warning(compiler_context *context, int errnum);
-
-/**
- *	Emit an error for some problem
- *
- *	@param	context	Compiler cocntext
- *	@param	errnum	Error number
- */
-void error(compiler_context *context, int errnum);
-
-/**
- *	Emit preprocessor error
- *
- *	@param	context	Compiler conteext
- *	@param	errnum	Error number
- */
-void m_error(compiler_context *context, int errnum);
+void onemore(compiler_context *context);
+int scan(compiler_context *context);
+int getnext(compiler_context *context);
+int scaner(compiler_context *context);
+void nextch(compiler_context *context);
+int letter(compiler_context *);
+int digit(compiler_context *);
+int equal(compiler_context *, int, int);
 
 #ifdef __cplusplus
 } /* extern "C" */
