@@ -14,6 +14,8 @@
  *	limitations under the License.
  */
 
+#pragma once
+
 #include "preprocess_global.h"
 #include "context.h"
 void calculator(int if_flag, preprocess_context *context, compiler_context *c_context);

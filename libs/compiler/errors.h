@@ -13,26 +13,29 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+
 #pragma once
+
 #include "context.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * Emit a warning for some problem
+ *	Emit a warning for some problem
  *
- * @param context Compiler cocntext
- * @param errnum  Error number
+ *	@param	context	Compiler cocntext
+ *	@param	errnum	Error number
  */
 void warning(compiler_context *context, int errnum);
 
 /**
- * Emit an error for some problem
+ *	Emit an error for some problem
  *
- * @param context Compiler cocntext
- * @param errnum  Error number
+ *	@param	context	Compiler cocntext
+ *	@param	errnum	Error number
  */
 void error(compiler_context *context, int errnum);
 

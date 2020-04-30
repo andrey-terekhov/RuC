@@ -27,6 +27,7 @@
 #include "preprocess_utils.h"
 #include "preprocess_error.h" 
 #include "preprocess_calculator.h"
+#include "context.h"
 
 
 void while_collect(preprocess_context *context, compiler_context *c_context)

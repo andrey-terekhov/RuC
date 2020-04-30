@@ -27,6 +27,7 @@
 #include "preprocess_utils.h"  
 #include "preprocess_error.h"
 #include "preprocess_nextch.h"
+#include "context.h"
 
 
 void open_file_c(char file_way[], int i, preprocess_context *context)

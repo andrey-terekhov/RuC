@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 int getnext(compiler_context *context)
 {
 	int ret = scanner_getnext(&context->input_options);
@@ -34,10 +35,10 @@ void onemore(compiler_context *context)
 {
 	context->curchar = context->nextchar;
 	context->nextchar = getnext(context);
-	//    if (kw)
-	//        printf("context->curchar =%c %i context->nextchar=%c %i\n",
-	//        context->curchar, context->curchar, context->nextchar,
-	//        context->nextchar);
+	//	if (kw)
+	//		printf("context->curchar =%c %i context->nextchar=%c %i\n",
+	//		context->curchar, context->curchar, context->nextchar,
+	//		context->nextchar);
 }
 
 void endofline(compiler_context *context)
@@ -209,8 +210,8 @@ int scan(compiler_context *context)
 	{
 		nextch(context);
 	}
-	//    printf("scan context->curchar=%c %i\n", context->curchar,
-	//    context->curchar);
+	// printf("scan context->curchar=%c %i\n", context->curchar,
+	// context->curchar);
 	switch (context->curchar)
 	{
 		case EOF:
@@ -456,8 +457,8 @@ int scan(compiler_context *context)
 				{
 					next_string_elem(context);
 					context->lexstr[n++] = context->num;
-					//                    printf("n= %i %c %i\n", n-1,
-					//                    context->num, context->num);
+					// printf("n= %i %c %i\n", n-1,
+					// context->num, context->num);
 				}
 				if (n == MAXSTRINGL)
 				{
@@ -697,8 +698,8 @@ int scaner(compiler_context *context)
 {
 	context->cur = context->next;
 	context->next = scan(context);
-	//    if(kw)
-	//        printf("scaner context->cur %i context->next %i repr %i\n",
-	//        context->cur, context->next, repr);
+	//	if(kw)
+	//		printf("scaner context->cur %i context->next %i repr %i\n",
+	//		context->cur, context->next, repr);
 	return context->cur;
 }

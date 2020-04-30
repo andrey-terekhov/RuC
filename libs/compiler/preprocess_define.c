@@ -26,6 +26,7 @@
 #include "preprocess_calculator.h"
 #include "preprocess_utils.h"
 #include "preprocess_error.h" 
+#include "context.h"
 
 
  void define_get_from_macrotext(int r, preprocess_context *context, compiler_context *c_context);

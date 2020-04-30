@@ -15,12 +15,12 @@
  */
 
 #pragma once
+
 #include "context.h"
 #include "preprocess_global.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 
 void preprocess_file(compiler_context *c_context, const char *code);

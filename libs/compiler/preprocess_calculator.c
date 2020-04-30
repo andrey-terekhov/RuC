@@ -26,13 +26,14 @@
 #include "preprocess_utils.h"  
 #include "preprocess_error.h"
 #include "preprocess_nextch.h"
+#include "context.h"
 
 
 int flagint = 1;
 
 int is_power(preprocess_context *context)
 {
-	return context->curchar == 'e' || context->curchar == 'E' || context->curchar == (int)'е' || context->curchar == (int)'Е';	// это русские е и Е
+	return context->curchar == 'e' || context->curchar == 'E'; //|| context->curchar == (int)'е' || context->curchar == (int)'Е';	// это русские е и Е
 }
 
 int m_digit(int r)

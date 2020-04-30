@@ -27,6 +27,7 @@
 #include "preprocess_error.h"
 #include "preprocess_nextch.h"
 #include "preprocess.h"
+#include "context.h"
 
 int checkif = 0;
 

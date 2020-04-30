@@ -13,12 +13,14 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+
 #include "uniprinter.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 
 /** File-based printer */
 int printer_file_fprintf(universal_printer_options *opts, const char *fmt, va_list args)

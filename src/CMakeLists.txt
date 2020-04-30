@@ -11,9 +11,10 @@ file(GLOB SRC "*.c")
 
 add_executable(${PROJECT_NAME} ${SRC})
 
-target_link_libraries(${PROJECT_NAME} compiler compiler-util)
+target_link_libraries(${PROJECT_NAME} compiler utils)
+
 
 if(ANALYSIS_ENABLED)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE ANALYSIS_ENABLED)
-    target_link_libraries(${PROJECT_NAME} aspsimple)
+	target_compile_definitions(${PROJECT_NAME} PRIVATE ANALYSIS_ENABLED)
+	target_link_libraries(${PROJECT_NAME} aspsimple)
 endif()

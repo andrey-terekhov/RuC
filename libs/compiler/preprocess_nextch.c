@@ -24,8 +24,7 @@
 #include "preprocess_utils.h"
 #include "preprocess_global.h"
 #include "preprocess_error.h"
-
-
+#include "context.h"
 
 
 void m_nextch(preprocess_context *context, compiler_context *c_context);

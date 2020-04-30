@@ -13,27 +13,30 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+
 #pragma once
+
 #include "context.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * Save up a string array to reprtab
+ *	Save up a string array to reprtab
  *
- * @param context   RuC context
- * @param str       Target string
+ *	@param	context	RuC context
+ *	@param	str		Target string
  *
- * @return FIXME
+ *	@return	FIXME
  */
 int toreprtab(compiler_context *context, char str[]);
 
 /**
- * Mode table initialization
+ *	Mode table initialization
  *
- * @param context   RuC context
+ *	@param	context	RuC context
  */
 void init_modetab(compiler_context *context);
 

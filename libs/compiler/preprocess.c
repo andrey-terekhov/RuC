@@ -33,6 +33,7 @@
 #include "preprocess_nextch.h"
 #include "preprocess_utils.h"
 #include "preprocess_include.h"
+#include "context.h"
 
 #define MACRODEBAG 0
 

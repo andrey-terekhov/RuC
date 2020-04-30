@@ -1,3 +1,0 @@
-Attention!
-This file is no longer needed, the actual keyword set is in
-libs/compiler/keywords.c

@@ -14,6 +14,8 @@
  *	limitations under the License.
  */
 
+#pragma once
+
 #include "context.h"
 
 void a_erorr(int i);

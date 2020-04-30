@@ -13,40 +13,42 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+
 #pragma once
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * Read keywords from input context
+ *	Read keywords from input context
  *
- * @param context   RuC context
+ *	@param	context	RuC context
  */
 void read_keywords(compiler_context *context);
 
 /**
- * Print tables and tree to a file specified by @p path
+ *	Print tables and tree to a file specified by @p path
  *
- * @param context   RuC context
- * @param path      Target file
+ *	@param	context	RuC context
+ *	@param	path	Target file
  */
 void output_tables_and_tree(compiler_context *context, const char *path);
 
 /**
- * Print codes to a file specified by @p path
+ *	Print codes to a file specified by @p path
  *
- * @param context   RuC context
- * @param path      Target file
+ *	@param	context	RuC context
+ *	@param	path	Target file
  */
 void output_codes(compiler_context *context, const char *path);
 
 /**
- * Print export tables to a file specified by @p path
+ *	Print export tables to a file specified by @p path
  *
- * @param context   RuC context
- * @param path      Target file
+ *	@param	context	RuC context
+ *	@param	path	Target file
  */
 void output_export(compiler_context *context, const char *path);
 

@@ -13,30 +13,33 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+
 #include "compiler.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <wchar.h>
-#ifdef __linux__
-#include <unistd.h>
-#endif
 #include "codegen.h"
 #include "codes.h"
 #include "context.h"
 #include "defs.h"
 #include "errors.h"
 #include "frontend_utils.h"
+#include "preprocess.h"
 #include "tables.h"
-#include"preprocess.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <wchar.h>
+
+#ifdef __linux__
+	#include <unistd.h>
+#endif
 
 #ifdef ANALYSIS_ENABLED
-#include "asp/asp_simple.h"
-#define ASP_HOST "localhost"
-#define ASP_PORT (5500)
+	#include "asp/asp_simple.h"
+	#define ASP_HOST "localhost"
+	#define ASP_PORT (5500)
 #endif
 
 //#define FILE_DEBUG
+
 
 #ifdef ANALYSIS_ENABLED
 void report_cb(asp_report *report)
@@ -83,7 +86,7 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 		printf("\nИсходный текст:\n \n");
 
-		preprocess_file(context, file->path); //   макрогенерация
+		preprocess_file(context, file->path); // макрогенерация
 		macro_processed = strdup(context->output_options.ptr);
 		if (macro_processed == NULL)
 		{
@@ -117,13 +120,11 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 	output_export(context, workspace->output_file != NULL ? workspace->output_file : "export.txt");
 }
 
-/* See description in compiler.h */
 compiler_workspace *compiler_workspace_create()
 {
 	return calloc(1, sizeof(compiler_workspace));
 }
 
-/* See description in compiler.h */
 void compiler_workspace_free(compiler_workspace *workspace)
 {
 	compiler_workspace_file *file;
@@ -149,7 +150,6 @@ void compiler_workspace_free(compiler_workspace *workspace)
 	free(workspace);
 }
 
-/* See description in compiler.h */
 compiler_workspace_file *compiler_workspace_add_file(compiler_workspace *workspace, const char *path)
 {
 	compiler_workspace_file *file;
@@ -183,7 +183,6 @@ compiler_workspace_file *compiler_workspace_add_file(compiler_workspace *workspa
 	return file;
 }
 
-/* See description in compiler.h */
 char *compiler_workspace_error2str(compiler_workspace_error *error)
 {
 	char *str = NULL;
@@ -223,7 +222,6 @@ char *compiler_workspace_error2str(compiler_workspace_error *error)
 	return str;
 }
 
-/* See description in compiler.h */
 compiler_workspace *compiler_get_workspace(int argc, const char *argv[])
 {
 	compiler_workspace *ws;
@@ -267,15 +265,6 @@ compiler_workspace *compiler_get_workspace(int argc, const char *argv[])
 	return ws;
 }
 
-/**
- * Compile RuC files set as compiler arguments
- *
- * @param argc Number of arguments
- * @param argv String arguments to compiler, starting with the name of
- *             compiler executable
- *
- * @return Status code
- */
 COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 {
 	compiler_context *context = malloc(sizeof(compiler_context));
@@ -301,7 +290,6 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 	return 0;
 }
 
-/* See description in compiler.h */
 COMPILER_EXPORTED int compiler_compile(const char *path)
 {
 	int ret;
@@ -320,8 +308,9 @@ COMPILER_EXPORTED int compiler_compile(const char *path)
 		compiler_workspace_free(ws);
 		return 1;
 	}
-	ret = compiler_workspace_compile(ws);
 
+	ret = compiler_workspace_compile(ws);
+	compiler_workspace_free(ws);
 
 	return ret;
 }

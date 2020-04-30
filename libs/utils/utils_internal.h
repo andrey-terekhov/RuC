@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov
+ *	Copyright 2020 Andrey Terekhov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -17,12 +17,8 @@
 #pragma once
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-extern char keywords_txt[];
-
-#ifdef __cplusplus
-} /* extern "C" */
+#ifdef _MSC_VER
+	#define UTILS_EXPORTED __declspec(dllexport)
+#else
+	#define UTILS_EXPORTED
 #endif

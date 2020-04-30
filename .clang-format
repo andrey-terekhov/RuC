@@ -22,6 +22,7 @@ ColumnLimit: '120'
 Cpp11BracedListStyle: 'false'
 IncludeBlocks: Merge
 IndentCaseLabels: 'true'
+IndentPPDirectives: BeforeHash
 IndentWidth: '4'
 KeepEmptyLinesAtTheStartOfBlocks: 'false'
 Language: Cpp

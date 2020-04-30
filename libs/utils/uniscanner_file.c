@@ -13,12 +13,14 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+
 #include "uniscanner.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 
 int io_file_getnext(universal_scanner_options *opts)
 {

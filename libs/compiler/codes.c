@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
+
 void tablesandtree(compiler_context *context)
 {
 	int i = 0;
@@ -36,6 +37,7 @@ void tablesandtree(compiler_context *context)
 	printer_printf(&context->output_options, "\n");
 
 	printer_printf(&context->output_options, "\n%s\n", "identab");
+
 	i = 2;
 	while (i < context->id)
 	{
@@ -50,8 +52,8 @@ void tablesandtree(compiler_context *context)
 		printer_printf(&context->output_options, "\n%s\n", "repr");
 		for (i = 1206; i <= rp; i++)
 			printer_printf(&context->output_options, "rp %i) %i\n", i,
-	   reprtab[i]);
-	 */
+			reprtab[i]);
+	*/
 	printer_printf(&context->output_options, "\n%s\n", "modetab");
 	for (i = 0; i < context->md; i++)
 	{
@@ -61,9 +63,10 @@ void tablesandtree(compiler_context *context)
 		printer_printf(&context->output_options, "\n%s\n", "tree");
 		for (i=0; i<=tc; i++)
 			printer_printf(&context->output_options, "tc %i) %i\n", i,
-	   context->tree[i]);
+			context->tree[i]);
 	*/
 	printer_printf(&context->output_options, "\n");
+
 	i = 0;
 	while (i < context->tc)
 	{
@@ -516,10 +519,10 @@ void tablesandcode(compiler_context *context)
 				printer_printf(&context->output_options, "displ= %i ", context->mem[i++]);
 				printer_printf(&context->output_options, "usual= %i\n", context->mem[i++]);
 				break;
-				//            case STRUCTINIT:
-				//                printer_printf(&context->output_options,
-				//                "STRUCTINIT N= %i ", context->mem[i++]);
-				//            break;
+			//	case STRUCTINIT:
+			//		printer_printf(&context->output_options,
+			//		"STRUCTINIT N= %i ", context->mem[i++]);
+			//		break;
 			case NOP:
 				printer_printf(&context->output_options, "NOP\n");
 				break;

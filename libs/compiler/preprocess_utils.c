@@ -24,6 +24,7 @@
 #include "preprocess_defs.h"
 #include "preprocess_nextch.h"
 #include "preprocess_error.h"
+#include "context.h"
 
 int equal_reprtab(int i, int j, preprocess_context *context)
 {
