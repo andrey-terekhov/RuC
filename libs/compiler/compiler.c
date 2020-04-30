@@ -20,7 +20,7 @@
 #include <string.h>
 #include <wchar.h>
 #ifdef __linux__
-#include <unistd.h>
+	#include <unistd.h>
 #endif
 #include "codegen.h"
 #include "codes.h"
@@ -31,9 +31,9 @@
 #include "tables.h"
 
 #ifdef ANALYSIS_ENABLED
-#include "asp/asp_simple.h"
-#define ASP_HOST "localhost"
-#define ASP_PORT (5500)
+	#include "asp/asp_simple.h"
+	#define ASP_HOST "localhost"
+	#define ASP_PORT (5500)
 #endif
 
 extern void preprocess_file(compiler_context *context);

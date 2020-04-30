@@ -21,9 +21,9 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
-#define COMPILER_EXPORTED __declspec(dllexport)
+	#define COMPILER_EXPORTED __declspec(dllexport)
 #else
-#define COMPILER_EXPORTED
+	#define COMPILER_EXPORTED
 #endif
 
 /**

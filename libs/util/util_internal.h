@@ -17,7 +17,7 @@
 #pragma once
 
 #ifdef _MSC_VER
-#define UTIL_EXPORTED __declspec(dllexport)
+	#define UTIL_EXPORTED __declspec(dllexport)
 #else
-#define UTIL_EXPORTED
+	#define UTIL_EXPORTED
 #endif
