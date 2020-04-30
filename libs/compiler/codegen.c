@@ -20,13 +20,15 @@
 #include "global.h"
 #include <stdlib.h>
 
+
 void Declid_gen(compiler_context *context);
 void compstmt_gen(compiler_context *context);
 
+
 void tocode(compiler_context *context, int c)
 {
-	//  printf("tocode context->tc=%i context->pc %i) %i\n", context->tc,
-	//  context->pc, c);
+	// printf("tocode context->tc=%i context->pc %i) %i\n", context->tc,
+	// context->pc, c);
 	context->mem[context->pc++] = c;
 }
 
@@ -440,7 +442,7 @@ void Stmt_gen(compiler_context *context)
 			}
 			incrtc = context->tc;
 			context->tc = stmtref;
-			Stmt_gen(context); //  ???? был 0
+			Stmt_gen(context); // ???? был 0
 			adcontend(context);
 
 			if (incrref)
@@ -632,7 +634,7 @@ void Declid_gen(compiler_context *context)
 	int usual = context->tree[context->tc++];
 	int instruct = context->tree[context->tc++];
 	// all - общее кол-во слов в структуре
-	//  для массивов есть еще usual // == 0 с пустыми границами,
+	// для массивов есть еще usual // == 0 с пустыми границами,
 	// == 1 без пустых границ,
 	// all == 0 нет инициализатора,
 	// all == 1 есть инициализатор
@@ -723,6 +725,7 @@ void compstmt_gen(compiler_context *context)
 	}
 	context->tc++;
 }
+
 void codegen(compiler_context *context)
 {
 	int treesize = context->tc;

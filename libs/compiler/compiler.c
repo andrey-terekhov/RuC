@@ -88,7 +88,7 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 		printf("\nИсходный текст:\n \n");
 
-		preprocess_file(context); //   макрогенерация
+		preprocess_file(context); // макрогенерация
 		macro_processed = strdup(context->output_options.ptr);
 		if (macro_processed == NULL)
 		{

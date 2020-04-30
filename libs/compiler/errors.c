@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 void printident(compiler_context *context, int r)
 {
 	r += 2; // ссылка на context->reprtab
@@ -695,13 +696,14 @@ void m_error(compiler_context *context, int ernum)
 {
 	int i;
 
-	//    tablesandtree();
+	// tablesandtree();
 	printer_printf(&context->err_options, "line %i) ", context->mline);
 	for (i = context->mlines[context->mline]; i < context->m_charnum; i++)
 	{
 		printer_printchar(&context->err_options, context->before_source[i]);
 	}
 	printer_printf(&context->err_options, "\n");
+
 	switch (ernum)
 	{
 		case after_preproces_words_must_be_space:

@@ -80,7 +80,7 @@ void output_tables_and_tree(compiler_context *context, const char *path)
 	nextch(context);
 	context->next = scan(context);
 
-	ext_decl(context); //   генерация дерева
+	ext_decl(context); // генерация дерева
 
 	context->lines[context->line + 1] = context->charnum;
 	tablesandtree(context);

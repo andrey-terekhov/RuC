@@ -21,12 +21,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 int toreprtab(compiler_context *context, char str[])
 {
 	int i;
 	int oldrepr = REPRTAB_LEN;
+
 	context->hash = 0;
 	compiler_table_expand(&context->reprtab, 2);
+
 	REPRTAB_LEN += 2;
 	for (i = 0; str[i] != 0; i++)
 	{
@@ -36,14 +39,16 @@ int toreprtab(compiler_context *context, char str[])
 	}
 	context->hash &= 255;
 	compiler_table_expand(&context->reprtab, 1);
+
 	REPRTAB[REPRTAB_LEN++] = 0;
 	compiler_table_ensure_allocated(&context->reprtab, oldrepr + 1);
+
 	REPRTAB[oldrepr] = context->hashtab[context->hash];
 	REPRTAB[oldrepr + 1] = 1;
 	return context->hashtab[context->hash] = oldrepr;
 }
 
-/* Инициализация modetab */
+/** Инициализация modetab */
 void init_modetab(compiler_context *context)
 {
 	// занесение в modetab описателя struct {int numTh; int inf; }

@@ -24,7 +24,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 #define STRIGSIZE 70
+
 
 /* Forward declarations */
 static int mletter(compiler_context *context, int r);
@@ -48,7 +50,7 @@ static void from_functionident(compiler_context *, int r);
 static void create_change(compiler_context *, int r1); // 11
 static void r_macrofunction(compiler_context *);	   // 3
 
-// void m_ident();//5
+// void m_ident();	//5
 static int find_ident(compiler_context *);
 
 static int check_if(compiler_context *, int type_if); // 10
@@ -60,6 +62,7 @@ static void m_if(compiler_context *, int type_if);
 
 static void macroscan(compiler_context *context); // 1,17
 void preprocess_file(compiler_context *context);  // 18
+
 
 void show_macro(compiler_context *context)
 {
@@ -263,7 +266,7 @@ static void m_fprintf(compiler_context *context, int a)
 		context->m_conect_lines[context->mcl++] = context->mline - 1;
 	}
 	printer_printchar(&context->output_options, a);
-	//_obsolete_fprintf_char(context->output_options.output, a);
+	// _obsolete_fprintf_char(context->output_options.output, a);
 
 	return;
 }
@@ -524,8 +527,8 @@ static void to_functionident(compiler_context *context) // define c параме
 		{
 			while (letter(context) || digit(context))
 			{
-				context->functionident[context->fip++] = context->curchar; //      11[b]
-				context->mstring[context->msp++] = context->curchar;	   //      12[0]
+				context->functionident[context->fip++] = context->curchar; // 11[b]
+				context->mstring[context->msp++] = context->curchar;	   // 12[0]
 				m_nextch(context, 4);
 			}
 			if (find_ident(context) != 0)
@@ -809,7 +812,6 @@ static int check_if(compiler_context *context, int type_if)
 	}
 	return 0;
 }
-
 
 static void false_if(compiler_context *context)
 {
