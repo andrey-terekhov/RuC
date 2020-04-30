@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 int io_file_getnext(universal_scanner_options *opts)
 {
 	// reads UTF-8

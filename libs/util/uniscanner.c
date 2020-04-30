@@ -21,25 +21,25 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 extern scanner_desc scanner_mem;
 extern scanner_desc scanner_file;
 
+
 scanner_desc *scanners[] = { &scanner_file, &scanner_mem, NULL };
 
-/* See description in uniscanner.h */
+
 void scanner_init(universal_scanner_options *opts)
 {
 	memset(opts, 0, sizeof(universal_scanner_options));
 	opts->source = IO_SOURCE_FILE;
 }
 
-/* See description in uniscanner.h */
 void scanner_deinit(universal_scanner_options *opts)
 {
 	scanner_close(opts);
 }
 
-/* See description in uniscanner.h */
 void scanner_close(universal_scanner_options *opts)
 {
 	if (opts->input != NULL)
@@ -58,7 +58,6 @@ void scanner_close(universal_scanner_options *opts)
 	opts->opaque = NULL;
 }
 
-/* See description in uniscanner.h */
 static void scanner_prepare(universal_scanner_options *opts)
 {
 	if (opts->opaque == NULL)
@@ -80,14 +79,12 @@ static void scanner_prepare(universal_scanner_options *opts)
 	}
 }
 
-/* See description in uniscanner.h */
 int scanner_getnext(universal_scanner_options *opts)
 {
 	scanner_prepare(opts);
 	return ((scanner_desc *)opts->opaque)->getnext(opts);
 }
 
-/* See description in uniscanner.h */
 int scanner_scanf(universal_scanner_options *opts, const char *fmt, ...)
 {
 	int ret;
@@ -102,7 +99,6 @@ int scanner_scanf(universal_scanner_options *opts, const char *fmt, ...)
 	return ret;
 }
 
-/* See description in uniscanner.h */
 bool scanner_attach_file(universal_scanner_options *opts, FILE *f)
 {
 	opts->source = IO_SOURCE_FILE;
@@ -113,7 +109,6 @@ bool scanner_attach_file(universal_scanner_options *opts, FILE *f)
 	return true;
 }
 
-/* See description in uniscanner.h */
 bool scanner_attach_buffer(universal_scanner_options *opts, const char *ptr)
 {
 	opts->source = IO_SOURCE_MEM;

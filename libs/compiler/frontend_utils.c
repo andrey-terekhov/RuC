@@ -14,11 +14,6 @@
  *	limitations under the License.
  */
 
-#if defined(__APPLE__) || defined(__linux__)
-	#include <sys/stat.h>
-	#include <sys/types.h>
-#endif
-
 #include "codegen.h"
 #include "codes.h"
 #include "extdecl.h"
@@ -31,7 +26,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Make executable actually executable on best-effort basis (if possible) */
+#if defined(__APPLE__) || defined(__linux__)
+	#include <sys/stat.h>
+	#include <sys/types.h>
+#endif
+
+
+/** Make executable actually executable on best-effort basis (if possible) */
 static void make_executable(const char *path)
 {
 #if defined(__APPLE__) || defined(__linux__)
@@ -46,7 +47,7 @@ static void make_executable(const char *path)
 #endif
 }
 
-/* Занесение ключевых слов в reprtab */
+/** Занесение ключевых слов в reprtab */
 void read_keywords(compiler_context *context)
 {
 	size_t len = strlen(keywords_txt);
@@ -64,15 +65,13 @@ void read_keywords(compiler_context *context)
 	context->keywordsnum = 1;
 	getnext(context);
 	nextch(context);
-	while (scan(context) != LEOF) // чтение ключевых слов
-	{
-		;
-	}
+	while (scan(context) != LEOF)
+		; // чтение ключевых слов
 
 	compiler_context_detach_io(context, IO_TYPE_INPUT);
 }
 
-/* Вывод таблиц и дерева */
+/** Вывод таблиц и дерева */
 void output_tables_and_tree(compiler_context *context, const char *path)
 {
 	compiler_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
@@ -88,7 +87,7 @@ void output_tables_and_tree(compiler_context *context, const char *path)
 	compiler_context_detach_io(context, IO_TYPE_OUTPUT);
 }
 
-/* Генерация кодов */
+/** Генерация кодов */
 void output_codes(compiler_context *context, const char *path)
 {
 	compiler_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
@@ -97,7 +96,7 @@ void output_codes(compiler_context *context, const char *path)
 	compiler_context_detach_io(context, IO_TYPE_OUTPUT);
 }
 
-/* Вывод таблиц в файл */
+/** Вывод таблиц в файл */
 void output_export(compiler_context *context, const char *path)
 {
 	int i;

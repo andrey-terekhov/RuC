@@ -21,22 +21,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 #define UNUSED(x) (void)(x)
 
-#if 0
-/* Find a symbol in a buffer */
-static int
-find_symbol(const char *buffer, unsigned char symbol)
-{
-    const char *tmp = strchr(buffer, symbol);
-    if (tmp == NULL)
-        return -1;
 
-    return tmp - buffer;
+#if 0
+/** Find a symbol in a buffer */
+static int find_symbol(const char *buffer, unsigned char symbol)
+{
+	const char *tmp = strchr(buffer, symbol);
+	if (tmp == NULL)
+		return -1;
+
+	return tmp - buffer;
 }
 #endif
 
-/* In-memory UTF8 scanner */
+/** In-memory UTF8 scanner */
 int io_mem_getnext(universal_scanner_options *opts)
 {
 	unsigned char firstchar;
