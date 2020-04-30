@@ -19,7 +19,7 @@ headers="libs/*/*.h"
 sources="src/*.c libs/*/*.c"
 
 # TO-DO auto include directory `-Ipath_to_dir`
-directories="-Ilibs/util -Ilibs/compiler"
+directories="-Ilibs/utils -Ilibs/compiler"
 
 $clang_format -i $sources $headers
 $clang_tidy -fix-errors $sources -- $directories

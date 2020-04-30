@@ -609,10 +609,7 @@ static void from_functionident(compiler_context *context, int r)
 					flag = 0;
 					break;
 				}
-				while (context->functionident[kp++] != 0)
-				{
-					;
-				}
+				while (context->functionident[kp++] != 0);
 			}
 			if (flag == 1)
 			{
@@ -704,10 +701,7 @@ static void create_change(compiler_context *context, int r1)
 
 			if (context->curchar == ',' || context->curchar == ')')
 			{
-				for (; context->functionident[r] != 0; r++)
-				{
-					;
-				}
+				for (; context->functionident[r] != 0; r++);
 
 				if (r < context->functionident[r1])
 				{

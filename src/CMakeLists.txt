@@ -11,7 +11,7 @@ file(GLOB SRC "*.c")
 
 add_executable(${PROJECT_NAME} ${SRC})
 
-target_link_libraries(${PROJECT_NAME} compiler util)
+target_link_libraries(${PROJECT_NAME} compiler utils)
 
 
 if(ANALYSIS_ENABLED)

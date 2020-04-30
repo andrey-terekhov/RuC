@@ -271,10 +271,8 @@ int toidentab(compiler_context *context, int f, int type)
 		REPRTAB[REPRTAB_POS + 1] = context->id;
 	}
 
-	if (f != 1 && pred >= context->curid)
+	if (f != 1 && pred >= context->curid) // один  и тот же идент м.б. переменной и меткой
 	{
-		// один  и тот же идент м.б. переменной и меткой
-
 		if (context->func_def == 3 ? 1 : context->identab[pred + 1] > 0 ? 1 : context->func_def == 1 ? 0 : 1)
 		{
 			error(context, repeated_decl);
@@ -289,9 +287,8 @@ int toidentab(compiler_context *context, int f, int type)
 		context->identab[context->id + 2] = 1;
 		context->identab[context->id + 3] = type; // это целое число, определенное по #define
 	}
-	else
+	else // дальше тип или ссылка на modetab (для функций и структур)
 	{
-		// дальше тип или ссылка на modetab (для функций и структур)
 		context->identab[context->id + 2] = type; // тип -1 int, -2 char, -3 float, -4 long, -5 double,
 												  // если тип > 0, то это ссылка на modetab
 		if (f == 1)
@@ -467,14 +464,15 @@ void actstring(compiler_context *context)
 	adn = context->tc++;
 	do
 	{
-		/*        if (scaner(context) == IDENT)
-				{
-					applid(context);
-					if (context->identab[context->lastid+2] == 1)
-						context->cur = NUMBER, context->ansttype = LINT, num =
-		   context->identab[context->lastid+3];
-				}
-		 */
+		/*
+			if (scaner(context) == IDENT)
+			{
+				applid(context);
+				if (context->identab[context->lastid+2] == 1)
+					context->cur = NUMBER, context->ansttype = LINT, num =
+				context->identab[context->lastid+3];
+			}
+		*/
 		if (scaner(context) == NUMBER && (context->ansttype == LINT || context->ansttype == LCHAR))
 		{
 			totree(context, context->num);
@@ -607,15 +605,16 @@ void primaryexpr(compiler_context *context)
 	else if (context->cur == IDENT)
 	{
 		applid(context);
-		/*        if (context->identab[context->lastid+2] == 1) // #define
-				{
-					totree(context, TConst);
-					totree(context, num = context->identab[context->lastid+3]);
-					context->anst = NUMBER;
-					context->ansttype = LINT;
-				}
-				else
-		 */
+		/*
+			if (context->identab[context->lastid+2] == 1) // #define
+			{
+				totree(context, TConst);
+				totree(context, num = context->identab[context->lastid+3]);
+				context->anst = NUMBER;
+				context->ansttype = LINT;
+			}
+			else
+		*/
 		{
 			totree(context, TIdent);
 			totree(context, context->anstdispl = context->identab[context->lastid + 3]);
@@ -807,10 +806,8 @@ void primaryexpr(compiler_context *context)
 			mustberow(context);
 			context->stackoperands[++context->sopnd] = context->ansttype = LINT;
 		}
-		else if (func <= TMSGSEND && func >= TGETNUM)
+		else if (func <= TMSGSEND && func >= TGETNUM) // процедуры управления параллельными нитями
 		{
-			// процедуры управления параллельными нитями
-
 			if (func == TINIT || func == TDESTROY || func == TEXIT)
 			{
 				; // void()
@@ -838,9 +835,8 @@ void primaryexpr(compiler_context *context)
 						error(context, act_param_not_ident);
 					}
 					applid(context);
-					if (context->identab[context->lastid + 2] != 15)
+					if (context->identab[context->lastid + 2] != 15) // 15 - это аргумент типа void* (void*)
 					{
-						// 15 - это аргумент типа void* (void*)
 						error(context, wrong_arg_in_create);
 					}
 
@@ -866,9 +862,8 @@ void primaryexpr(compiler_context *context)
 
 					if (func == TMSGSEND)
 					{
-						if (context->ansttype != 2)
+						if (context->ansttype != 2) // 2 - это аргумент типа msg_info (struct{int numTh; int data;})
 						{
-							// 2 - это аргумент типа msg_info (struct{int numTh; int data;})
 							error(context, wrong_arg_in_send);
 						}
 						--context->sopnd;
@@ -1708,22 +1703,19 @@ void exprassn(compiler_context *context, int level)
 			error(context, int_op_for_float);
 		}
 
-		if (is_array(context, ltype))
+		if (is_array(context, ltype)) // присваивать массив в массив в си нельзя
 		{
-			// присваивать массив в массив в си нельзя
 			error(context, array_assigment);
 		}
 
 		if (is_struct(context, ltype)) // присваивание в структуру
 		{
-			if (ltype != rtype)
+			if (ltype != rtype) // типы должны быть равны
 			{
-				// типы должны быть равны
 				error(context, type_missmatch);
 			}
-			if (opp != ASS)
+			if (opp != ASS) // в структуру можно присваивать только с помощью =
 			{
-				// в структуру можно присваивать только с помощью =
 				error(context, wrong_struct_ass);
 			}
 
@@ -1751,9 +1743,8 @@ void exprassn(compiler_context *context, int level)
 		}
 		else // оба операнда базового типа или указатели
 		{
-			if (is_pointer(context, ltype) && opp != ASS)
+			if (is_pointer(context, ltype) && opp != ASS) // в указатель можно присваивать только с помощью =
 			{
-				// в указатель можно присваивать только с помощью =
 				error(context, wrong_struct_ass);
 			}
 
@@ -1913,9 +1904,8 @@ int arrdef(compiler_context *context, int t)
 		if (context->next == RIGHTSQBR)
 		{
 			scaner(context);
-			if (context->next == LEFTSQBR)
+			if (context->next == LEFTSQBR) // int a[][]={{1,2,3}, {4,5,6}} - нельзя;
 			{
-				// int a[][]={{1,2,3}, {4,5,6}} - нельзя;
 				error(context, empty_init); // границы определять по инициализации можно
 			}
 			// только по последнему изм.
@@ -2114,9 +2104,8 @@ void statement(compiler_context *context)
 				int fnum;
 
 				mustbe(context, LEFTBR, no_leftbr_in_printf);
-				if (scaner(context) != STRING)
+				if (scaner(context) != STRING) // выкушиваем форматную строку
 				{
-					// выкушиваем форматную строку
 					error(context, wrong_first_printf_param);
 				}
 
@@ -2281,9 +2270,8 @@ void statement(compiler_context *context)
 				condref = context->tc++;
 				incrref = context->tc++;
 				stmtref = context->tc++;
-				if (scaner(context) == SEMICOLON)
+				if (scaner(context) == SEMICOLON) // init
 				{
-					// init
 					context->tree[fromref] = 0;
 				}
 				else
@@ -2293,9 +2281,8 @@ void statement(compiler_context *context)
 					exprassnvoid(context);
 					mustbe(context, SEMICOLON, no_semicolon_in_for);
 				}
-				if (scaner(context) == SEMICOLON)
+				if (scaner(context) == SEMICOLON) // cond
 				{
-					// cond
 					context->tree[condref] = 0;
 				}
 				else
@@ -2306,9 +2293,8 @@ void statement(compiler_context *context)
 					mustbe(context, SEMICOLON, no_semicolon_in_for);
 					context->sopnd--;
 				}
-				if (scaner(context) == RIGHTBR)
+				if (scaner(context) == RIGHTBR) // incr
 				{
-					// incr
 					context->tree[incrref] = 0;
 				}
 				else
@@ -2598,8 +2584,7 @@ int gettype(compiler_context *context)
 			scaner(context);
 			if (context->next == BEGIN) // struct key {
 			{
-				// если такое описание уже было, то это ошибка - повторное
-				// описание
+				// если такое описание уже было, то это ошибка - повторное описание
 				int lid;
 				context->wasstructdef = 1; // это  определение типа (может быть,
 										   // без описания переменных)
@@ -2990,21 +2975,21 @@ void ext_decl(compiler_context *context)
 		int first = 1;
 		context->wasstructdef = 0;
 		scaner(context);
-		/*        if (context->cur == SH_DEFINE)
-				{
-					mustbe(context, IDENT, no_ident_in_define);
-					if (scaner(context) == LMINUS)
-						scaner(context), k = -1;
-					if (context->cur != NUMBER || context->ansttype != LINT)
-						error(context, not_int_in_define);
-					toidentab(-2, k * num);
-					continue;
-				}
-		 */
+		/*
+			if (context->cur == SH_DEFINE)
+			{
+				mustbe(context, IDENT, no_ident_in_define);
+				if (scaner(context) == LMINUS)
+					scaner(context), k = -1;
+				if (context->cur != NUMBER || context->ansttype != LINT)
+					error(context, not_int_in_define);
+				toidentab(-2, k * num);
+				continue;
+			}
+		*/
 		context->firstdecl = gettype(context);
-		if (context->wasstructdef && context->next == SEMICOLON)
+		if (context->wasstructdef && context->next == SEMICOLON) // struct point {float x, y;};
 		{
-			// struct point {float x, y;};
 			scaner(context);
 			continue;
 		}
