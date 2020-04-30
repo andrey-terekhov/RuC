@@ -14,7 +14,7 @@
  *	limitations under the License.
  */
 
-#include "preprocess_include.h"
+#include "include.h"
 #include <wchar.h>
 #include <limits.h>
 #include <math.h>
@@ -22,11 +22,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "preprocess.h"
-#include "preprocess_global.h"
-#include "preprocess_defs.h"
-#include "preprocess_utils.h"  
-#include "preprocess_error.h"
-#include "preprocess_nextch.h"
+#include "context_var.h"
+#include "constants.h"
+#include "preprocessor_utils.h"  
+#include "preprocessor_error.h"
+#include "file.h"
 #include "context.h"
 
 

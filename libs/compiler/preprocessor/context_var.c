@@ -14,9 +14,9 @@
  *	limitations under the License.
  */
 
-#include "preprocess_global.h"
+#include "context_var.h"
 #include <stdio.h>
-#include "preprocess_defs.h"
+#include "constants.h"
 
 // Определение глобальных переменных
 

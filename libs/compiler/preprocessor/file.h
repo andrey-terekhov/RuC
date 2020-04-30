@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "preprocess_global.h"
+#include "context_var.h"
 #include "context.h"
 
 void m_change_nextch_type(int type, int p, preprocess_context *context, compiler_context *c_context);

@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include "preprocess_global.h"
+#include "context_var.h"
 #include "context.h"
 
-void while_collect(preprocess_context *context, compiler_context *c_context);
-void while_relis(preprocess_context *context, compiler_context *c_context);
+void if_relis(preprocess_context *context, compiler_context *c_context);

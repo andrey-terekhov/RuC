@@ -17,7 +17,7 @@
 #pragma once
 
 #include <stdio.h>
-#include "preprocess_defs.h"
+#include "constants.h"
 
 #ifdef _MSC_VER
 #define COMPILER_EXPORTED __declspec(dllexport)

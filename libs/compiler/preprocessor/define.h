@@ -13,17 +13,11 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
-
 #pragma once
 
-#include "preprocess_global.h"
+#include "context_var.h"
 #include "context.h"
 
-int equal_reprtab(int i, int j, preprocess_context *context);
-int macro_keywords(preprocess_context *context, compiler_context *c_context);
-int collect_mident(preprocess_context *context, compiler_context *c_context);
-void space_end_line(preprocess_context *context, compiler_context *c_context);
-void space_skip(preprocess_context *context, compiler_context *c_context);
-void space_skip_str(preprocess_context *context, compiler_context *c_context);
-int is_letter(preprocess_context *context);
-int is_digit(preprocess_context *context);
+void define_get_from_macrotext(int r, preprocess_context *context, compiler_context *c_context);
+void define_relis(preprocess_context *context, compiler_context *c_context);
+void set_relis(preprocess_context *context, compiler_context *c_context);

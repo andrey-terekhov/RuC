@@ -16,7 +16,17 @@
 
 #pragma once
 
-#include "preprocess_global.h"
 #include "context.h"
+#include "context_var.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void include_relis(preprocess_context *context, compiler_context *c_context);
+
+void preprocess_file(compiler_context *c_context, const char *code);
+void preprocess_scan(preprocess_context *context, compiler_context *c_context);
+
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

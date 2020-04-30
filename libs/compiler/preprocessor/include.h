@@ -13,11 +13,10 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+
 #pragma once
 
-#include "preprocess_global.h"
+#include "context_var.h"
 #include "context.h"
 
-void define_get_from_macrotext(int r, preprocess_context *context, compiler_context *c_context);
-void define_relis(preprocess_context *context, compiler_context *c_context);
-void set_relis(preprocess_context *context, compiler_context *c_context);
+void include_relis(preprocess_context *context, compiler_context *c_context);

@@ -14,16 +14,16 @@
  *	limitations under the License.
  */
 
-#include "preprocess_utils.h" 
+#include "preprocessor_utils.h" 
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "preprocess_global.h"
-#include "preprocess_defs.h"
-#include "preprocess_nextch.h"
-#include "preprocess_error.h"
+#include "context_var.h"
+#include "constants.h"
+#include "file.h"
+#include "preprocessor_error.h"
 #include "context.h"
 
 int equal_reprtab(int i, int j, preprocess_context *context)

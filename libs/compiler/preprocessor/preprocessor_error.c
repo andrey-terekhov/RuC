@@ -14,14 +14,14 @@
  *	limitations under the License.
  */
 
-#include "preprocess_error.h"
+#include "preprocessor_error.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "preprocess_defs.h"
-#include "preprocess_global.h"
+#include "constants.h"
+#include "context_var.h"
 #include "context.h"
 
 

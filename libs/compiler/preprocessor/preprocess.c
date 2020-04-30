@@ -21,18 +21,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "preprocess_while.h"
-#include "preprocess_global.h"
-#include "preprocess_defs.h"
-#include "preprocess_error.h"
-#include "preprocess_nextch.h"
+#include "while.h"
+#include "context_var.h"
+#include "constants.h"
+#include "preprocessor_error.h"
+#include "file.h"
 #include "errors.h"
-#include "preprocess_define.h"
-#include "preprocess_if.h"
-#include "preprocess_calculator.h"
-#include "preprocess_nextch.h"
-#include "preprocess_utils.h"
-#include "preprocess_include.h"
+#include "define.h"
+#include "if.h"
+#include "calculator.h"
+#include "file.h"
+#include "preprocessor_utils.h"
+#include "include.h"
 #include "context.h"
 
 #define MACRODEBAG 0

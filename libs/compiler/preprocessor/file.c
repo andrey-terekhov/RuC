@@ -14,16 +14,16 @@
  *	limitations under the License.
  */
 
-#include "preprocess_nextch.h"
+#include "file.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "preprocess_defs.h"
-#include "preprocess_utils.h"
-#include "preprocess_global.h"
-#include "preprocess_error.h"
+#include "constants.h"
+#include "preprocessor_utils.h"
+#include "context_var.h"
+#include "preprocessor_error.h"
 #include "context.h"
 
 

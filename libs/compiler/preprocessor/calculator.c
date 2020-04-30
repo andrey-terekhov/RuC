@@ -14,18 +14,18 @@
  *	limitations under the License.
  */
 
-#include "preprocess_calculator.h"
+#include "calculator.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "preprocess_global.h"
-#include "preprocess_define.h"
-#include "preprocess_defs.h"
-#include "preprocess_utils.h"  
-#include "preprocess_error.h"
-#include "preprocess_nextch.h"
+#include "global.h"
+#include "define.h"
+#include "defs.h"
+#include "preprocessor_utils.h"  
+#include "preprocessor_error.h"
+#include "file.h"
 #include "context.h"
 
 
