@@ -19,7 +19,7 @@
 #include "context.h"
 #include "context_var.h"
 #include "file.h"
-#include "preprocess.h"
+#include "preprocessor.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
 #include <limits.h>
