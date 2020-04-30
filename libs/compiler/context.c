@@ -6,9 +6,10 @@
 #include <string.h>
 #include <wchar.h>
 
+
 #define DEFAULT_OUTBUF_SIZE (1024)
 
-/* See description in context.h */
+
 void compiler_context_init(compiler_context *context)
 {
 	memset(context, 0, sizeof(compiler_context));
@@ -45,7 +46,6 @@ void compiler_context_init(compiler_context *context)
 	context->mp = 3;
 }
 
-/* See description in context.h */
 void compiler_context_deinit(compiler_context *context)
 {
 	scanner_deinit(&context->input_options);
@@ -84,17 +84,13 @@ static void *io_type2opts(compiler_context *context, ruc_io_type type)
 	}
 }
 
-/**
- * Get access mask for a specific IO type
- */
+/** Get access mask for a specific IO type */
 static const char *io_type2access_mask(ruc_io_type type)
 {
 	return io_type_is_output(type) ? "wt" : "r";
 }
 
-/**
- * Open file with specific mask taking standard files into account
- */
+/** Open file with specific mask taking standard files into account */
 static FILE *io_get_file(const char *ptr, const char *mask)
 {
 	if (strcmp(ptr, ":stderr") == 0)
@@ -112,7 +108,6 @@ static FILE *io_get_file(const char *ptr, const char *mask)
 	return fopen(ptr, mask);
 }
 
-/* See description in context.h */
 void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_io_type type, ruc_io_source source)
 {
 	void *opts = io_type2opts(context, type);
@@ -156,7 +151,6 @@ void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_
 	}
 }
 
-/* See description in context.h */
 void compiler_context_detach_io(compiler_context *context, ruc_io_type type)
 {
 	void *opts = io_type2opts(context, type);
@@ -171,7 +165,6 @@ void compiler_context_detach_io(compiler_context *context, ruc_io_type type)
 	}
 }
 
-/* See description in context.h */
 void compiler_table_init(compiler_table *table)
 {
 	table->table = malloc(COMPILER_TABLE_SIZE_DEFAULT * sizeof(int));
@@ -185,7 +178,6 @@ void compiler_table_init(compiler_table *table)
 	memset(table->table, 0, COMPILER_TABLE_SIZE_DEFAULT * sizeof(int));
 }
 
-/* See description in context.h */
 int compiler_table_ensure_allocated(compiler_table *table, int pos)
 {
 	if (unlikely(pos >= table->size))
@@ -207,7 +199,6 @@ int compiler_table_ensure_allocated(compiler_table *table, int pos)
 	return table->size;
 }
 
-/* See description in context.h */
 int compiler_table_expand(compiler_table *table, int len)
 {
 	return compiler_table_ensure_allocated(table, table->len + len);

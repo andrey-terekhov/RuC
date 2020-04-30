@@ -22,6 +22,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -38,13 +39,13 @@ typedef struct universal_printer_options
 } universal_printer_options;
 
 /**
- * Prototype for a function printing to a context
+ *	Prototype for a function printing to a context
  *
- * @param opts      Printer options
- * @param fmt       String format
- * @param args      Variadic argument list
+ *	@param	opts	Printer options
+ *	@param	fmt		String format
+ *	@param	args	Variadic argument list
  *
- * @return printf()-like return value
+ *	@return	printf()-like return value
  */
 typedef int (*io_printf_t)(universal_printer_options *opts, const char *fmt, va_list args);
 
@@ -52,68 +53,68 @@ typedef int (*io_printf_t)(universal_printer_options *opts, const char *fmt, va_
 typedef struct printer_desc
 {
 	ruc_io_source source; /** Data source supported by printer */
-	io_printf_t printf;	  /** The pointer to a function printing to data
-							  destination */
+	io_printf_t printf;	  /** The pointer to a function printing to data destination */
 } printer_desc;
 
+
 /**
- * Initialize printer
+ *	Initialize printer
  *
- * @param opts Printer context
+ *	@param	opts	Printer context
  */
 UTIL_EXPORTED void printer_init(universal_printer_options *opts);
 
 /**
- * Deinitialize printer
+ *	Deinitialize printer
  *
- * @param opts Printer context
+ *	@param	opts	Printer context
  */
 UTIL_EXPORTED void printer_deinit(universal_printer_options *opts);
 
 /**
- * Close current printer stream
+ *	Close current printer stream
  *
- * @param opts Printer context
+ *	@param	opts	Printer context
  */
 UTIL_EXPORTED void printer_close(universal_printer_options *opts);
 
 /**
- * Universal function for printing data to some output
+ *	Universal function for printing data to some output
  *
- * @param opts Universal printer options
- * @param fmt  String format
+ *	@param	opts	Universal printer options
+ *	@param	fmt		String format
  *
- * @return printf-like return value
+ *	@return	printf-like return value
  */
 UTIL_EXPORTED int printer_printf(universal_printer_options *opts, const char *fmt, ...);
 
 /**
- * Universal function for printing (wide) characters
+ *	Universal function for printing (wide) characters
  *
- * @param opts  Universal printer options
- * @param wchar Symbol
+ *	@param	opts	Universal printer options
+ *	@param	wchar	Symbol
  *
- * @return printf-like return value
+ *	@return	printf-like return value
  */
 UTIL_EXPORTED int printer_printchar(universal_printer_options *opts, int wchar);
 
 /**
- * Attach file to printer
+ *	Attach file to printer
  *
- * @param opts  Universal printer options
- * @param file  Target file
+ *	@param	opts	Universal printer options
+ *	@param	file	Target file
  *
- * @return @c true on success, @c false on failure
+ *	@return	@c true on success, @c false on failure
  */
 UTIL_EXPORTED bool printer_attach_file(universal_printer_options *opts, FILE *file);
 
 /**
- * Attach buffer to printer
+ *	Attach buffer to printer
  *
- * @param opts  Universal printer options
- * @param size  Buffer size
+ *	@param	opts	Universal printer options
+ *	@param	size	Buffer size
  *
- * @return @c true on success, @c false on failure
+ *	@return	@c true on success, @c false on failure
  */
 UTIL_EXPORTED bool printer_attach_buffer(universal_printer_options *opts, size_t size);
 

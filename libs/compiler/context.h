@@ -21,6 +21,7 @@
 #include "uniscanner.h"
 #include <stdio.h>
 
+
 #define COMPILER_TABLE_SIZE_DEFAULT	 (100)
 #define COMPILER_TABLE_INCREMENT_MIN (100)
 
@@ -28,9 +29,12 @@
 #define REPRTAB_POS (context->reprtab.pos)
 #define REPRTAB_LEN (context->reprtab.len)
 
-/**
- * A designated compiler table
- */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** A designated compiler table */
 typedef struct compiler_table
 {
 	int *table; /** Actual table */
@@ -148,7 +152,6 @@ typedef struct compiler_context
 	int bad_printf_placeholder;
 	int onlystrings;
 
-
 	/* Preprocessor flags */
 	int macrotext[MAXREPRTAB];
 	int mstring[50];
@@ -171,67 +174,62 @@ typedef struct compiler_context
 } compiler_context;
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
- * Initialize RuC context
+ *	Initialize RuC context
  *
- * @param context Uninitialized RuC context
+ *	@param	context	Uninitialized RuC context
  */
 void compiler_context_init(compiler_context *context);
 
 /**
- * Deinitialize RuC ontext
+ *	Deinitialize RuC ontext
  *
- * @param context Initialized RuC context
+ *	@param	context	Initialized RuC context
  */
 void compiler_context_deinit(compiler_context *context);
 
 /**
- * Attach input to a specific input/output pipe
+ *	Attach input to a specific input/output pipe
  *
- * @param context   RuC context
- * @param ptr       Context-specific data, e.g. path to file or a pointer to
- *                  data
- * @param type      IO type
- * @param source    Data source
+ *	@param	context	RuC context
+ *	@param	ptr		Context-specific data, e.g. path to file or a pointer to data
+ *	@param	type	IO type
+ *	@param	source	Data source
  */
 void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_io_type type, ruc_io_source source);
 
 /**
- * Detach file from a specific input/output pipe
+ *	Detach file from a specific input/output pipe
  *
- * @param context   RuC context
- * @param type      IO type
+ *	@param	context	RuC context
+ *	@param	type	IO type
  */
 void compiler_context_detach_io(compiler_context *context, ruc_io_type type);
 
 /**
- * Initialize compiler table
+ *	Initialize compiler table
  *
- * @param table     Target compiler table
+ *	@param	table	Target compiler table
  */
 void compiler_table_init(compiler_table *table);
 
 /**
- * Ensure that specific offset is allocated in a table
+ *	Ensure that specific offset is allocated in a table
  *
- * @param table     Target compiler table
- * @param pos       Target position
+ *	@param	table	Target compiler table
+ *	@param	pos		Target position
  *
- * @return Table size
+ *	@return	Table size
  */
 int compiler_table_ensure_allocated(compiler_table *table, int pos);
 
 /**
- * Expand compiler table
+ *	Expand compiler table
  *
- * @param table     Target compiler table
- * @param len       Requested length
+ *	@param	table	Target compiler table
+ *	@param	len		Requested length
  *
- * @return New size
+ *	@return	New size
  */
 int compiler_table_expand(compiler_table *table, int len);
 

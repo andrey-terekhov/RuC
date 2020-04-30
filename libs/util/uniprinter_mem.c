@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 /** Memory-based printer */
 static int printer_mem_fprintf(universal_printer_options *opts, const char *fmt, va_list args)
 {
