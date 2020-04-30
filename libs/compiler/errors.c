@@ -67,11 +67,12 @@ void show_macro(compiler_context *context)
 
 	if (flag == 0)
 	{
-		printf("\n\n В строке есть макрозамена, строка до макрогенерации:\nline %i)", context->m_conect_lines[context->line]);
+		printf("\n\n В строке есть макрозамена, строка до макрогенерации:\nline %i)",
+			   context->m_conect_lines[context->line]);
 		for (j = context->mlines[context->m_conect_lines[context->line]];
-			j < context->mlines[context->m_conect_lines[context->line] + 1]; j++)
+			 j < context->mlines[context->m_conect_lines[context->line] + 1]; j++)
 		{
-			printer_printchar(&context->miscout_options,context->before_source[j]);
+			printer_printchar(&context->miscout_options, context->before_source[j]);
 		}
 		printf("\n");
 	}

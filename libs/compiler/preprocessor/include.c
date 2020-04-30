@@ -1,5 +1,5 @@
 /*
- *	Copyright 2018 Andrey Terekhov, Egor Anikin
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -15,25 +15,25 @@
  */
 
 #include "include.h"
-#include <wchar.h>
+#include "constants.h"
+#include "context.h"
+#include "context_var.h"
+#include "file.h"
+#include "preprocess.h"
+#include "preprocessor_error.h"
+#include "preprocessor_utils.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "preprocess.h"
-#include "context_var.h"
-#include "constants.h"
-#include "preprocessor_utils.h"  
-#include "preprocessor_error.h"
-#include "file.h"
-#include "context.h"
+#include <wchar.h>
 
 
 void open_file_c(char file_way[], int i, preprocess_context *context)
 {
-	//file_way[i-1] == 'c';
-	if(1)//!find_reportab())
+	// file_way[i-1] == 'c';
+	if (1) // (!find_reportab())
 	{
 		return;
 	}
@@ -45,7 +45,6 @@ void open_file_c(char file_way[], int i, preprocess_context *context)
 	}
 }
 
-
 void open_file(preprocess_context *context, compiler_context *c_context)
 {
 	char file_way[100];
@@ -55,7 +54,7 @@ void open_file(preprocess_context *context, compiler_context *c_context)
 	{
 		file_way[i] = context->way[i];
 		i++;
-	}	
+	}
 
 	while (context->curchar != '\"')
 	{
@@ -68,7 +67,7 @@ void open_file(preprocess_context *context, compiler_context *c_context)
 		{
 			m_nextch(context, c_context);
 			m_nextch(context, c_context);
-			if (file_way[i] != '/') 
+			if (file_way[i] != '/')
 			{
 				i--;
 			}
@@ -77,7 +76,7 @@ void open_file(preprocess_context *context, compiler_context *c_context)
 				i--;
 			}
 
-			if(context->curchar == '/')
+			if (context->curchar == '/')
 			{
 				m_nextch(context, c_context);
 			}
@@ -86,15 +85,14 @@ void open_file(preprocess_context *context, compiler_context *c_context)
 				a_erorr(1);
 			}
 		}
-		else 
+		else
 		{
-		file_way[i++] = context->curchar;
-		m_nextch(context, c_context);
+			file_way[i++] = context->curchar;
+			m_nextch(context, c_context);
 		}
 	}
 	file_way[i++] = '\0';
 
-	
 
 	context->input_stak[context->inp_p++] = fopen(file_way, "r");
 	if (context->input_stak[context->inp_p - 1] == NULL)
@@ -103,9 +101,9 @@ void open_file(preprocess_context *context, compiler_context *c_context)
 		exit(1);
 	}
 
-	if(file_way[i-2] == 'h' && file_way[i-3] == '.')
+	if (file_way[i - 2] == 'h' && file_way[i - 3] == '.')
 	{
-	open_file_c(file_way, i, context);
+		open_file_c(file_way, i, context);
 	}
 }
 
@@ -118,7 +116,7 @@ void file_read(preprocess_context *context, compiler_context *c_context)
 	m_fprintf('\n', context, c_context);
 	m_fprintf('\n', context, c_context);
 	fclose(context->input_stak[context->inp_file]);
-	context->inp_p--; 
+	context->inp_p--;
 	context->inp_file--;
 	m_nextch(context, c_context);
 	m_nextch(context, c_context);
@@ -131,9 +129,9 @@ void include_relis(preprocess_context *context, compiler_context *c_context)
 	{
 		a_erorr(1);
 	}
-	if(context->inp_p >= 20)
+	if (context->inp_p >= 20)
 	{
-		a_erorr(1);// переполнение или цыкл
+		a_erorr(1); // переполнение или цыкл
 	}
 	m_nextch(context, c_context);
 
@@ -146,15 +144,13 @@ void include_relis(preprocess_context *context, compiler_context *c_context)
 
 	// деректива лайн begin
 
-	if(old_inp_p + 2 == context->inp_p)
+	if (old_inp_p + 2 == context->inp_p)
 	{
-		
 		file_read(context, c_context);
 		// деректива лайн end
-
 	}
 
-	if(old_inp_p + 1 == context->inp_p)
+	if (old_inp_p + 1 == context->inp_p)
 	{
 		file_read(context, c_context);
 	}

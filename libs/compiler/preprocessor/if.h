@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,7 +16,16 @@
 
 #pragma once
 
-#include "context_var.h"
 #include "context.h"
+#include "context_var.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void if_relis(preprocess_context *context, compiler_context *c_context);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

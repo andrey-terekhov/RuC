@@ -1,5 +1,5 @@
 /*
- *	Copyright 2018 Andrey Terekhov, Egor Anikin
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -15,21 +15,22 @@
  */
 
 #include "define.h"
+#include "calculator.h"
+#include "constants.h"
+#include "context.h"
+#include "context_var.h"
+#include "file.h"
+#include "preprocessor_error.h"
+#include "preprocessor_utils.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "context_var.h"
-#include "constants.h"
-#include "file.h"
-#include "calculator.h"
-#include "preprocessor_utils.h"
-#include "preprocessor_error.h" 
-#include "context.h"
 
 
 void define_get_from_macrotext(int r, preprocess_context *context, compiler_context *c_context);
+
 
 int m_equal(preprocess_context *context)
 {
@@ -51,17 +52,19 @@ int m_equal(preprocess_context *context)
 		i = 0;
 		if (context->cstring[j++] != 0)
 		{
-			while (context->cstring[j++] != 0);
+			while (context->cstring[j++] != 0)
+			{
+				;
+			}
 		}
 	}
 
 	return 0;
 }
 
-
 // define c параметрами (function)
- void function_scob_collect(int t, int num, preprocess_context *context, compiler_context *c_context)
- {
+void function_scob_collect(int t, int num, preprocess_context *context, compiler_context *c_context)
+{
 	int i;
 
 	while (context->curchar != EOF)
@@ -87,7 +90,7 @@ int m_equal(preprocess_context *context)
 					ldip--;
 				}
 
-				while (get_dipp(context) >= ldip)	// 1 переход потому что есть префиксная замена
+				while (get_dipp(context) >= ldip) // 1 переход потому что есть префиксная замена
 				{
 					locfchange[lcp++] = context->curchar;
 					m_nextch(context, c_context);
@@ -150,10 +153,10 @@ int m_equal(preprocess_context *context)
 		}
 	}
 	m_error(scob_not_clous, c_context);
- }
+}
 
- void function_stack_create(int n, preprocess_context *context, compiler_context *c_context)
- {
+void function_stack_create(int n, preprocess_context *context, compiler_context *c_context)
+{
 	int num = 0;
 
 	m_nextch(context, c_context);
@@ -200,10 +203,10 @@ int m_equal(preprocess_context *context)
 	}
 
 	m_error(scob_not_clous, c_context);
- }
+}
 
- void funktionleter(int flag_macro, preprocess_context *context, compiler_context *c_context)
- {
+void funktionleter(int flag_macro, preprocess_context *context, compiler_context *c_context)
+{
 	int n = 0;
 	int i = 0;
 
@@ -229,10 +232,10 @@ int m_equal(preprocess_context *context)
 			context->macrotext[context->mp++] = context->mstring[i];
 		}
 	}
- }
+}
 
- int to_functionident(preprocess_context *context, compiler_context *c_context)
- {
+int to_functionident(preprocess_context *context, compiler_context *c_context)
+{
 	int num = 0;
 	context->csp = 0;
 
@@ -272,10 +275,10 @@ int m_equal(preprocess_context *context)
 	// printf("-to_functionident = %d\n", num);
 	m_nextch(context, c_context);
 	return num;
- }
+}
 
- void function_add_to_macrotext(preprocess_context *context, compiler_context *c_context)
- {
+void function_add_to_macrotext(preprocess_context *context, compiler_context *c_context)
+{
 	int j;
 	int flag_macro = 0;
 	int empty = 0;
@@ -353,12 +356,12 @@ int m_equal(preprocess_context *context)
 	}
 
 	context->macrotext[context->mp++] = MACROEND;
- }
+}
 //
 
 // define
- void define_get_from_macrotext(int r, preprocess_context *context, compiler_context *c_context)
- {
+void define_get_from_macrotext(int r, preprocess_context *context, compiler_context *c_context)
+{
 	int t = context->reprtab[r + 1];
 
 	if (r)
@@ -379,10 +382,10 @@ int m_equal(preprocess_context *context)
 	{
 		m_error(ident_not_exist, c_context);
 	}
- }
+}
 
- int define_add_to_reprtab(preprocess_context *context, compiler_context *c_context)
- {
+int define_add_to_reprtab(preprocess_context *context, compiler_context *c_context)
+{
 	int r;
 	int oldrepr = context->rp;
 	context->mlastrp = oldrepr;
@@ -421,10 +424,10 @@ int m_equal(preprocess_context *context)
 	context->reprtab[oldrepr + 1] = context->mp;
 	context->hashtab[hash] = oldrepr;
 	return 0;
- }
+}
 
- void define_add_to_macrotext(int r, preprocess_context *context, compiler_context *c_context)
- {
+void define_add_to_macrotext(int r, preprocess_context *context, compiler_context *c_context)
+{
 	int j;
 	int lmp = context->mp;
 
@@ -494,10 +497,10 @@ int m_equal(preprocess_context *context)
 	}
 	context->macrotext[context->mp++] = MACROEND;
 	context->reprtab[r + 1] = lmp;
- }
+}
 
- void define_relis(preprocess_context *context, compiler_context *c_context)
- {
+void define_relis(preprocess_context *context, compiler_context *c_context)
+{
 	int r;
 
 	if (!is_letter(context))
@@ -524,10 +527,10 @@ int m_equal(preprocess_context *context)
 		define_add_to_macrotext(r, context, c_context);
 	}
 	m_nextch(context, c_context);
- }
+}
 
-  void set_relis(preprocess_context *context, compiler_context *c_context)
-  {
+void set_relis(preprocess_context *context, compiler_context *c_context)
+{
 	int j;
 
 	space_skip(context, c_context);
@@ -539,7 +542,7 @@ int m_equal(preprocess_context *context)
 
 	j = collect_mident(context, c_context);
 
-	if(context->macrotext[context->reprtab[j + 1]] == MACROFUNCTION)
+	if (context->macrotext[context->reprtab[j + 1]] == MACROFUNCTION)
 	{
 		m_error(functions_cannot_be_changed, c_context);
 	}
@@ -552,7 +555,5 @@ int m_equal(preprocess_context *context)
 	space_skip(context, c_context);
 
 	define_add_to_macrotext(j, context, c_context);
-
-	
-  }
+}
 //

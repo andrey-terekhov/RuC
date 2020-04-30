@@ -15,16 +15,14 @@
  */
 
 #include "preprocessor_error.h"
+#include "constants.h"
+#include "context.h"
+#include "context_var.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "constants.h"
-#include "context_var.h"
-#include "context.h"
-
-
 
 
 void printf_character(int wchar)
@@ -45,7 +43,7 @@ void printf_character(int wchar)
 void a_erorr(int i)
 {
 	printf("не реализованная ошибка № %d\n", i);
-	
+
 	exit(2);
 }
 

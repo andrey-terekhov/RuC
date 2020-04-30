@@ -14,17 +14,18 @@
  *	limitations under the License.
  */
 
-#include "preprocessor_utils.h" 
+#include "preprocessor_utils.h"
+#include "constants.h"
+#include "context.h"
+#include "context_var.h"
+#include "file.h"
+#include "preprocessor_error.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "context_var.h"
-#include "constants.h"
-#include "file.h"
-#include "preprocessor_error.h"
-#include "context.h"
+
 
 int equal_reprtab(int i, int j, preprocess_context *context)
 {
@@ -44,8 +45,9 @@ int equal_reprtab(int i, int j, preprocess_context *context)
 
 int is_letter(preprocess_context *context)
 {
-	return (context->curchar >= 'A' && context->curchar <= 'Z') || (context->curchar >= 'a' && context->curchar <= 'z') || context->curchar == '_' ||
-		(context->curchar >= 0x410 /*'А'*/ && context->curchar <= 0x44F /*'я'*/);
+	return (context->curchar >= 'A' && context->curchar <= 'Z') ||
+		   (context->curchar >= 'a' && context->curchar <= 'z') || context->curchar == '_' ||
+		   (context->curchar >= 0x410 /*'А'*/ && context->curchar <= 0x44F /*'я'*/);
 }
 
 int is_digit(preprocess_context *context)
@@ -69,7 +71,8 @@ int macro_keywords(preprocess_context *context, compiler_context *c_context)
 		m_nextch(context, c_context);
 	} while (is_letter(context) || is_digit(context));
 
-	if (context->curchar != '\n' && context->curchar != ' ' && context->curchar != '\t' && context->curchar != '(' && context->curchar != '\"')
+	if (context->curchar != '\n' && context->curchar != ' ' && context->curchar != '\t' && context->curchar != '(' &&
+		context->curchar != '\"')
 	{
 		m_error(after_ident_must_be_space, c_context);
 	}
@@ -116,7 +119,6 @@ int mf_equal(int i, preprocess_context *context)
 	return 0;
 }
 
-
 int collect_mident(preprocess_context *context, compiler_context *c_context)
 {
 	int r;
@@ -146,7 +148,6 @@ int collect_mident(preprocess_context *context, compiler_context *c_context)
 
 	return 0;
 }
-
 
 void space_end_line(preprocess_context *context, compiler_context *c_context)
 {

@@ -65,7 +65,10 @@ void read_keywords(compiler_context *context)
 	context->keywordsnum = 1;
 	getnext(context);
 	nextch(context);
-	while (scan(context) != LEOF); // чтение ключевых слов
+	while (scan(context) != LEOF)
+	{
+		; // чтение ключевых слов
+	}
 
 	compiler_context_detach_io(context, IO_TYPE_INPUT);
 }

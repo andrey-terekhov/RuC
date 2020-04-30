@@ -21,5 +21,5 @@ sources="src/*.c libs/*/*.c libs/*/*/*.c"
 # TO-DO auto include directory `-Ipath_to_dir`
 directories="-Ilibs/utils -Ilibs/compiler/preprocessor -Ilibs/compiler"
 
-$clang_format -i $sources $headers
 $clang_tidy -fix-errors $sources -- $directories
+$clang_format -i $sources $headers

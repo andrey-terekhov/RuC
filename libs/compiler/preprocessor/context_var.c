@@ -1,5 +1,5 @@
 /*
- *	Copyright 2014 Andrey Terekhov
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -15,30 +15,30 @@
  */
 
 #include "context_var.h"
-#include <stdio.h>
 #include "constants.h"
+#include <stdio.h>
+
 
 // Определение глобальных переменных
-
 void preprocess_context_init(preprocess_context *context)
 {
 	memset(context, 0, sizeof(preprocess_context));
-	context -> rp = 0;
-	context -> inp_file = 0;
-	context -> inp_p = 0;
-	context -> rp = 1;
-	context -> mp = 1;
-	context -> oldmp = 1;
-	context -> msp = 0;
-	context -> cp = 0;
-	context -> lsp = 0;
-	context -> csp = 0;
-	context -> ifsp = 0;
-	context -> wsp;
-	context -> mfirstrp = -1;			
-	context -> mlastrp = -1;
-	context -> mclp = 1;
-	context -> nextch_type = 0;
-	context -> nextp = 0;
-	context -> dipp = 0;
-} 
+	context->rp = 0;
+	context->inp_file = 0;
+	context->inp_p = 0;
+	context->rp = 1;
+	context->mp = 1;
+	context->oldmp = 1;
+	context->msp = 0;
+	context->cp = 0;
+	context->lsp = 0;
+	context->csp = 0;
+	context->ifsp = 0;
+	context->wsp;
+	context->mfirstrp = -1;
+	context->mlastrp = -1;
+	context->mclp = 1;
+	context->nextch_type = 0;
+	context->nextp = 0;
+	context->dipp = 0;
+}

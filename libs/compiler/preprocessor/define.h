@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -13,11 +13,21 @@
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
+
 #pragma once
 
-#include "context_var.h"
 #include "context.h"
+#include "context_var.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void define_get_from_macrotext(int r, preprocess_context *context, compiler_context *c_context);
 void define_relis(preprocess_context *context, compiler_context *c_context);
 void set_relis(preprocess_context *context, compiler_context *c_context);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

@@ -1,5 +1,5 @@
 /*
- *	Copyright 2018 Andrey Terekhov, Egor Anikin
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -15,19 +15,20 @@
  */
 
 #include "file.h"
+#include "constants.h"
+#include "context.h"
+#include "context_var.h"
+#include "preprocessor_error.h"
+#include "preprocessor_utils.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "constants.h"
-#include "preprocessor_utils.h"
-#include "context_var.h"
-#include "preprocessor_error.h"
-#include "context.h"
 
 
 void m_nextch(preprocess_context *context, compiler_context *c_context);
+
 
 int get_next_char(preprocess_context *context)
 {
@@ -64,7 +65,6 @@ int get_dipp(preprocess_context *context)
 	return context->dipp;
 }
 
-
 void m_change_nextch_type(int type, int p, preprocess_context *context, compiler_context *c_context)
 {
 	if (type != SOURSTYPE)
@@ -72,7 +72,7 @@ void m_change_nextch_type(int type, int p, preprocess_context *context, compiler
 		context->oldcurchar[context->dipp] = context->curchar;
 		context->oldnextchar[context->dipp] = context->nextchar;
 		context->oldnextch_type[context->dipp] = context->nextch_type;
-		context->oldnextp[context->dipp] =context -> nextp;
+		context->oldnextp[context->dipp] = context->nextp;
 		context->nextp = p;
 		context->dipp++;
 	}
@@ -135,9 +135,9 @@ void m_fprintf(int a, preprocess_context *context, compiler_context *c_context)
 	}
 
 	printer_printchar(&c_context->output_options, a);
-	//printf_character(a);
-	//printf(" %d ", a);
-	//printf(" t = %d n = %d\n", nextch_type,context -> nextp);
+	// printf_character(a);
+	// printf(" %d ", a);
+	// printf(" t = %d n = %d\n", nextch_type,context -> nextp);
 }
 
 void m_coment_skip(preprocess_context *context, compiler_context *c_context)
@@ -146,7 +146,7 @@ void m_coment_skip(preprocess_context *context, compiler_context *c_context)
 	{
 		do
 		{
-			//m_fprintf_com();
+			// m_fprintf_com();
 			m_onemore(context, c_context);
 
 			if (context->curchar == EOF)
@@ -158,14 +158,14 @@ void m_coment_skip(preprocess_context *context, compiler_context *c_context)
 
 	if (context->curchar == '/' && context->nextchar == '*')
 	{
-		//m_fprintf_com();
+		// m_fprintf_com();
 		m_onemore(context, c_context);
-		//m_fprintf_com();
+		// m_fprintf_com();
 
 		do
 		{
 			m_onemore(context, c_context);
-			//m_fprintf_com();
+			// m_fprintf_com();
 
 			if (context->curchar == EOF)
 			{
@@ -176,7 +176,7 @@ void m_coment_skip(preprocess_context *context, compiler_context *c_context)
 		} while (context->curchar != '*' || context->nextchar != '/');
 
 		m_onemore(context, c_context);
-		//m_fprintf_com();
+		// m_fprintf_com();
 		context->curchar = ' ';
 	}
 }
@@ -221,7 +221,8 @@ void m_nextch(preprocess_context *context, compiler_context *c_context)
 		{
 			context->curchar = context->macrotext[context->nextp++];
 			context->nextchar = context->macrotext[context->nextp];
-			// printf(" i = %d curcar = %c curcar = %i n = %d\n", nextch_type, context->curchar, context->curchar,context -> nextp);
+			// printf(" i = %d curcar = %c curcar = %i n = %d\n", nextch_type, context->curchar,
+			// context->curchar,context -> nextp);
 
 			if (context->curchar == MACROCANGE)
 			{
@@ -259,5 +260,6 @@ void m_nextch(preprocess_context *context, compiler_context *c_context)
 		}
 	}
 
-	//printf(" i = %d curcar = %c curcar = %i n = %d f = %d\n", nextch_type, context->curchar, context->curchar,context -> nextp, inp_file);
+	//	printf(" i = %d curcar = %c curcar = %i n = %d f = %d\n", nextch_type,
+	//		context->curchar, context->curchar, context-> nextp, inp_file);
 }

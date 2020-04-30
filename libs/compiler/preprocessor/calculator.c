@@ -1,5 +1,5 @@
 /*
- *	Copyright 2018 Andrey Terekhov, Egor Anikin
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -15,25 +15,28 @@
  */
 
 #include "calculator.h"
+#include "context.h"
+#include "define.h"
+#include "defs.h"
+#include "file.h"
+#include "global.h"
+#include "preprocessor_error.h"
+#include "preprocessor_utils.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "global.h"
-#include "define.h"
-#include "defs.h"
-#include "preprocessor_utils.h"  
-#include "preprocessor_error.h"
-#include "file.h"
-#include "context.h"
 
 
 int flagint = 1;
 
+
 int is_power(preprocess_context *context)
 {
-	return context->curchar == 'e' || context->curchar == 'E'; //|| context->curchar == (int)'е' || context->curchar == (int)'Е';	// это русские е и Е
+	return context->curchar == 'e' ||
+		   context->curchar ==
+			   'E'; // || context->curchar == (int)'е' || context->curchar == (int)'Е';	// это русские е и Е
 }
 
 int m_digit(int r)
@@ -58,12 +61,12 @@ double get_digit(preprocess_context *context, compiler_context *c_context)
 	while (is_digit(context))
 	{
 		numdouble = numdouble * 10 + (context->curchar - '0');
-		if (numdouble > (double) INT_MAX)
+		if (numdouble > (double)INT_MAX)
 		{
 			m_error(too_many_nuber, c_context);
 		}
 		num = num * 10 + (context->curchar - '0');
-		m_nextch(context, c_context); 
+		m_nextch(context, c_context);
 	}
 
 	if (context->curchar == '.')
@@ -98,12 +101,12 @@ double get_digit(preprocess_context *context, compiler_context *c_context)
 			m_nextch(context, c_context);
 		}
 
-		
+
 		if (!is_digit(context))
 		{
-			m_error(must_be_digit_after_exp1, c_context);	
+			m_error(must_be_digit_after_exp1, c_context);
 		}
-		
+
 
 		while (is_digit(context))
 		{
@@ -114,7 +117,9 @@ double get_digit(preprocess_context *context, compiler_context *c_context)
 		if (flagint)
 		{
 			for (i = 1; i <= d; i++)
+			{
 				num *= 10;
+			}
 		}
 
 		numdouble *= pow(10.0, k * d);
@@ -228,7 +233,7 @@ double relis_opiration(double x, double y, int r, int int_flag)
 		case '/':
 			if (int_flag)
 			{
-				return (int) x / (int) y;
+				return (int)x / (int)y;
 			}
 			else
 			{
@@ -237,7 +242,7 @@ double relis_opiration(double x, double y, int r, int int_flag)
 		case '%':
 			if (int_flag)
 			{
-				return (int) x % (int) y;
+				return (int)x % (int)y;
 			}
 		default:
 			return 0;
@@ -299,7 +304,7 @@ void calculator(int if_flag, preprocess_context *context, compiler_context *c_co
 	{
 		space_skip(context, c_context);
 
-		if ((is_digit(context) || context->curchar == '-' && m_digit(context->nextchar)) && !opration_flag)
+		if ((is_digit(context) || (context->curchar == '-' && m_digit(context->nextchar))) && !opration_flag)
 		{
 			opration_flag = 1;
 			stack[i] = get_digit(context, c_context);
@@ -341,7 +346,7 @@ void calculator(int if_flag, preprocess_context *context, compiler_context *c_co
 			{
 				m_error(not_arithmetic_operations, c_context);
 			}
-			if (n != 0 &&  !if_flag && n <= 3)
+			if (n != 0 && !if_flag && n <= 3)
 			{
 				m_error(not_logical_operations, c_context);
 			}
@@ -414,4 +419,3 @@ void calculator(int if_flag, preprocess_context *context, compiler_context *c_co
 		a_erorr(5);
 	}
 }
-

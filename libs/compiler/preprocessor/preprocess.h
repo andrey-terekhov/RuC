@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2018 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -18,14 +18,14 @@
 
 #include "context.h"
 #include "context_var.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
 void preprocess_file(compiler_context *c_context, const char *code);
 void preprocess_scan(preprocess_context *context, compiler_context *c_context);
-
 
 #ifdef __cplusplus
 } /* extern "C" */

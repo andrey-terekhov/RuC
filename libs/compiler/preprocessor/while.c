@@ -1,5 +1,5 @@
 /*
- *	Copyright 2018 Andrey Terekhov, Egor Anikin
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -15,19 +15,19 @@
  */
 
 #include "while.h"
+#include "calculator.h"
+#include "constants.h"
+#include "context.h"
+#include "context_var.h"
+#include "file.h"
+#include "preprocess.h"
+#include "preprocessor_error.h"
+#include "preprocessor_utils.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "context_var.h"
-#include "constants.h"
-#include "file.h"
-#include "preprocess.h"
-#include "preprocessor_utils.h"
-#include "preprocessor_error.h" 
-#include "calculator.h"
-#include "context.h"
 
 
 void while_collect(preprocess_context *context, compiler_context *c_context)
@@ -81,15 +81,15 @@ void while_collect(preprocess_context *context, compiler_context *c_context)
 
 void while_relis(preprocess_context *context, compiler_context *c_context)
 {
-	int oldernextp =context-> nextp;
+	int oldernextp = context->nextp;
 	int end = context->wstring[oldernextp + 2];
 
 	context->cur = 0;
 	while (context->wstring[oldernextp] == WHILEBEGIN)
 	{
 		m_nextch(context, c_context);
-		m_change_nextch_type(IFTYPE, context->wstring[context->nextp],context, c_context);
-		calculator(1,context, c_context);
+		m_change_nextch_type(IFTYPE, context->wstring[context->nextp], context, c_context);
+		calculator(1, context, c_context);
 		m_old_nextch_type(context);
 
 

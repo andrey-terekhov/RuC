@@ -1,5 +1,5 @@
 /*
- *	Copyright 2014 Andrey Terekhov
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,15 +16,13 @@
 
 #pragma once
 
-#include <stdio.h>
 #include "constants.h"
+#include <stdio.h>
 
-#ifdef _MSC_VER
-#define COMPILER_EXPORTED __declspec(dllexport)
-#else
-#define COMPILER_EXPORTED
+
+#ifdef __cplusplus
+extern "C" {
 #endif
-
 
 typedef struct preprocess_context
 {
@@ -58,7 +56,7 @@ typedef struct preprocess_context
 	int wstring[STRIGSIZE * 5];
 	int wsp;
 
-	int mfirstrp;		
+	int mfirstrp;
 	int mlastrp;
 
 	int mclp;
@@ -76,13 +74,9 @@ typedef struct preprocess_context
 	int dipp;
 } preprocess_context;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 void preprocess_context_init(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-

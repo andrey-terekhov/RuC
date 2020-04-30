@@ -1,5 +1,5 @@
 /*
- *	Copyright 2018 Andrey Terekhov, Egor Anikin
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -15,21 +15,23 @@
  */
 
 #include "if.h"
+#include "calculator.h"
+#include "constants.h"
+#include "context.h"
+#include "context_var.h"
+#include "file.h"
+#include "preprocess.h"
+#include "preprocessor_error.h"
+#include "preprocessor_utils.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "context_var.h"
-#include "constants.h"
-#include "preprocessor_utils.h" 
-#include "calculator.h" 
-#include "preprocessor_error.h"
-#include "file.h"
-#include "preprocess.h"
-#include "context.h"
+
 
 int checkif = 0;
+
 
 int if_check(int type_if, preprocess_context *context, compiler_context *c_context)
 {
@@ -162,7 +164,7 @@ void if_true(int type_if, preprocess_context *context, compiler_context *c_conte
 void if_relis(preprocess_context *context, compiler_context *c_context)
 {
 	int type_if = context->cur;
-	int flag = if_check(type_if, context, c_context);	// начало (if)
+	int flag = if_check(type_if, context, c_context); // начало (if)
 
 	checkif++;
 	if (flag)

@@ -15,25 +15,25 @@
  */
 
 #include "preprocess.h"
-#include <wchar.h>
+#include "calculator.h"
+#include "constants.h"
+#include "context.h"
+#include "context_var.h"
+#include "define.h"
+#include "errors.h"
+#include "file.h"
+#include "if.h"
+#include "include.h"
+#include "preprocessor_error.h"
+#include "preprocessor_utils.h"
+#include "while.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "while.h"
-#include "context_var.h"
-#include "constants.h"
-#include "preprocessor_error.h"
-#include "file.h"
-#include "errors.h"
-#include "define.h"
-#include "if.h"
-#include "calculator.h"
-#include "file.h"
-#include "preprocessor_utils.h"
-#include "include.h"
-#include "context.h"
+#include <wchar.h>
+
 
 #define MACRODEBAG 0
 
@@ -86,7 +86,6 @@ void add_keywods(preprocess_context *context)
 	to_reprtab_full("#EVAL", "#eval", "#ВЫЧИСЛЕНИЕ", "#вычисление", SH_EVAL, context);
 	to_reprtab_full("#INCLUDE", "#include", "#ДОБАВИТЬ", "#ДОБАВИТЬ", SH_INCLUDE, context);
 }
-
 
 void preprocess_words(preprocess_context *context, compiler_context *c_context)
 {
@@ -197,7 +196,7 @@ void preprocess_scan(preprocess_context *context, compiler_context *c_context)
 		}
 		case '@':
 		{
-			m_nextch(context, c_context);			
+			m_nextch(context, c_context);
 			return;
 		}
 		default:
@@ -219,7 +218,7 @@ void preprocess_scan(preprocess_context *context, compiler_context *c_context)
 				}
 			}
 			else
-			{	
+			{
 				m_fprintf(context->curchar, context, c_context);
 				m_nextch(context, c_context);
 			}
@@ -241,21 +240,21 @@ void open_main_file(const char *code, preprocess_context *context)
 	i++;
 	context->way[i] = '\0';
 	i++;
-	
-	context->input_stak[context->inp_p++] = fopen(context->way, "r");			// исходный текст
-	//context->input_stak[context->inp_p] = fopen("../../tests/00test.c", "r");
+
+	context->input_stak[context->inp_p++] = fopen(context->way, "r"); // исходный текст
+	// context->input_stak[context->inp_p] = fopen("../../tests/00test.c", "r");
 	if (context->input_stak[context->inp_file] == NULL)
 	{
 		printf(" не найден файл %s\n", context->way);
 		exit(1);
 	}
-	
+
 
 	while (code[i] != '/')
 	{
 		i--;
 	}
-	context->way[i+1] = '\0';
+	context->way[i + 1] = '\0';
 }
 
 void preprocess_file(compiler_context *c_context, const char *code)
@@ -265,7 +264,7 @@ void preprocess_file(compiler_context *c_context, const char *code)
 	preprocess_context *context = malloc(sizeof(preprocess_context));
 	preprocess_context_init(context);
 	open_main_file(code, context);
-	for(int i = 0; i < HASH; i++)
+	for (int i = 0; i < HASH; i++)
 	{
 		context->hashtab[i] = 0;
 	}
@@ -280,9 +279,9 @@ void preprocess_file(compiler_context *c_context, const char *code)
 	}
 	c_context->m_conect_lines[context->mclp++] = c_context->mline - 1;
 
-	if(MACRODEBAG)
+	if (MACRODEBAG)
 	{
-		char* macro_processed = strdup(c_context->output_options.ptr);
+		char *macro_processed = strdup(c_context->output_options.ptr);
 		printf("%s\n", macro_processed);
 	}
 }
