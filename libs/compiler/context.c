@@ -54,12 +54,6 @@ void compiler_context_init(compiler_context *context)
 	context->notrobot = 1;
 	context->prdf = -1;
 	context->leftansttype = -1;
-
-	context->fip = 1;
-	context->mfp = 1;
-	context->mfirstrp = -1;
-	context->mlastrp = -1;
-	context->mp = 3;
 }
 
 void compiler_context_deinit(compiler_context *context)

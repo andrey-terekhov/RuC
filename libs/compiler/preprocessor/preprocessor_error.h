@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2018 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -23,21 +23,10 @@
 extern "C" {
 #endif
 
-/**
- *	Emit a warning for some problem
- *
- *	@param	context	Compiler cocntext
- *	@param	errnum	Error number
- */
-void warning(compiler_context *context, int errnum);
+void a_erorr(int i);
+void m_error(int ernum, compiler_context *c_context);
 
-/**
- *	Emit an error for some problem
- *
- *	@param	context	Compiler cocntext
- *	@param	errnum	Error number
- */
-void error(compiler_context *context, int errnum);
+void printf_character(int wchar);
 
 #ifdef __cplusplus
 } /* extern "C" */

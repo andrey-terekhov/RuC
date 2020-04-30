@@ -21,6 +21,7 @@
 #include "defs.h"
 #include "errors.h"
 #include "frontend_utils.h"
+#include "preprocessor.h"
 #include "tables.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,9 +39,6 @@
 #endif
 
 //#define FILE_DEBUG
-
-
-extern void preprocess_file(compiler_context *context);
 
 
 #ifdef ANALYSIS_ENABLED
@@ -88,7 +86,7 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 		printf("\nИсходный текст:\n \n");
 
-		preprocess_file(context); // макрогенерация
+		preprocess_file(context, file->path); // макрогенерация
 		macro_processed = strdup(context->output_options.ptr);
 		if (macro_processed == NULL)
 		{

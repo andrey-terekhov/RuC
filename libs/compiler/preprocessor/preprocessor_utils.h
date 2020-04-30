@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2018 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -17,27 +17,23 @@
 #pragma once
 
 #include "context.h"
+#include "context_var.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- *	Emit a warning for some problem
- *
- *	@param	context	Compiler cocntext
- *	@param	errnum	Error number
- */
-void warning(compiler_context *context, int errnum);
+int equal_reprtab(int i, int j, preprocess_context *context);
+int macro_keywords(preprocess_context *context, compiler_context *c_context);
+int collect_mident(preprocess_context *context, compiler_context *c_context);
 
-/**
- *	Emit an error for some problem
- *
- *	@param	context	Compiler cocntext
- *	@param	errnum	Error number
- */
-void error(compiler_context *context, int errnum);
+void space_end_line(preprocess_context *context, compiler_context *c_context);
+void space_skip(preprocess_context *context, compiler_context *c_context);
+void space_skip_str(preprocess_context *context, compiler_context *c_context);
+
+int is_letter(preprocess_context *context);
+int is_digit(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */
