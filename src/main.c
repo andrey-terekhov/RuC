@@ -17,8 +17,7 @@
 #include "compiler.h"
 
 
-const char *name = "../tests/stanfunc0.c";
-	// "../tests/Egor/Macro/test3.c";
+const char *name = "../tests/Egor/Macro/test3.c";
 	// "../tests/Mishatest.c";
 	// "../tests/mips/0test.c";
 
