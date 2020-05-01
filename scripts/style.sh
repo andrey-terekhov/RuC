@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Needed clang clang-format clang-format-9 clang-tidy
+
+clang_tidy="clang-tidy"
+clang_format="clang-format-9"
+
+which $clang_format >/dev/null 2>/dev/null
+if [ "$?" != "0" ] ; then
+	clang_format="clang-format"
+fi
+
+# Enter to root dir
+cd `dirname $0`/..
+
+
+# Set checking files
+headers="libs/*/*.h libs/*/*/*.h"
+sources="src/*.c libs/*/*.c libs/*/*/*.c"
+
+# TO-DO auto include directory `-Ipath_to_dir`
+directories="-Ilibs/utils -Ilibs/compiler/preprocessor -Ilibs/compiler"
+
+$clang_tidy -fix-errors $sources -- $directories
+$clang_format -i $sources $headers

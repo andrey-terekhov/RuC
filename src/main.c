@@ -15,23 +15,48 @@
  */
 
 #include "compiler.h"
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 
 const char *name = "../tests/stanfunc0.c";
-	// "../tests/Egor/Macro/test3.c";
-	// "../tests/Mishatest.c";
-	// "../tests/mips/0test.c";
+// "../tests/Egor/Macro/test3.c";
+// "../tests/Mishatest.c";
+// "../tests/mips/0test.c";
 
 
 int main(int argc, const char *argv[])
 {
 	if (argc < 2)
 	{
-		compile(name);
+		compiler_compile(name);
 	}
 	else
 	{
-		compile(argv[1]);
+		compiler_workspace *ws;
+
+		ws = compiler_get_workspace(argc, argv);
+		if (ws == NULL)
+		{
+			fprintf(stderr, " failed to create a workspace\n");
+			return 1;
+		}
+
+		if (ws->error.code != COMPILER_WS_EOK)
+		{
+			char *str;
+
+			str = compiler_workspace_error2str(&ws->error);
+			fprintf(stderr, "error: %s", str != NULL ? str : "Unknown workspace error");
+			free(str);
+
+			compiler_workspace_free(ws);
+			return 1;
+		}
+
+		compiler_workspace_compile(ws);
+		compiler_workspace_free(ws);
 	}
 
 	return 0;

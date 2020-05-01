@@ -14,10 +14,17 @@
  *	limitations under the License.
  */
 
-#ifndef H_CODEGEN
-#define H_CODEGEN
+#pragma once
+
+#include "context.h"
 
 
-void codegen();
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+void codegen(compiler_context *context);
+
+#ifdef __cplusplus
+} /* extern "C" */
 #endif

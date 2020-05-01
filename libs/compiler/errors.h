@@ -14,13 +14,31 @@
  *	limitations under the License.
  */
 
-#ifndef H_ERRORS
-#define H_ERRORS
+#pragma once
+
+#include "context.h"
 
 
-void error(int ernum);
-void m_error(int ernum);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void warning(int ernum);
+/**
+ *	Emit a warning for some problem
+ *
+ *	@param	context	Compiler cocntext
+ *	@param	errnum	Error number
+ */
+void warning(compiler_context *context, int errnum);
 
+/**
+ *	Emit an error for some problem
+ *
+ *	@param	context	Compiler cocntext
+ *	@param	errnum	Error number
+ */
+void error(compiler_context *context, int errnum);
+
+#ifdef __cplusplus
+} /* extern "C" */
 #endif

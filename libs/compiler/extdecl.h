@@ -14,11 +14,18 @@
  *	limitations under the License.
  */
 
-#ifndef H_EXTDECL
-#define H_EXTDECL
+#pragma once
+
+#include "context.h"
 
 
-void ext_decl();
-int szof(int type);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+void ext_decl(compiler_context *context);
+int szof(compiler_context *context, int type);
+
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
