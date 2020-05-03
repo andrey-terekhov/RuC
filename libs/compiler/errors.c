@@ -17,7 +17,6 @@
 #include "errors.h"
 #include "codes.h"
 #include "global.h"
-#include "preprocess.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -42,6 +41,40 @@ void warning(compiler_context *context, int ernum)
 
 		default:
 			break;
+	}
+}
+
+void show_macro(compiler_context *context)
+{
+	int i = context->lines[context->line];
+	int j = context->mlines[context->m_conect_lines[context->line]];
+	int flag = 1;
+
+	printf("line %i) ", context->line);
+	for (; i < context->charnum; i++)
+	{
+		printer_printchar(&context->miscout_options, context->source[i]);
+
+		if (flag && context->source[i] == context->before_source[j])
+		{
+			j++;
+		}
+		else
+		{
+			flag = 0;
+		}
+	}
+
+	if (flag == 0)
+	{
+		printf("\n\n В строке есть макрозамена, строка до макрогенерации:\nline %i)",
+			   context->m_conect_lines[context->line]);
+		for (j = context->mlines[context->m_conect_lines[context->line]];
+			 j < context->mlines[context->m_conect_lines[context->line] + 1]; j++)
+		{
+			printer_printchar(&context->miscout_options, context->before_source[j]);
+		}
+		printf("\n");
 	}
 }
 
@@ -683,89 +716,14 @@ void error(compiler_context *context, int ernum)
 			printer_printf(&context->err_options, "в этой операции этот параметр должен иметь тип массив "
 												  "целых\n");
 			break;
+		case not_rowoffloat_in_stanfunc:
+			printf("в этой операции этот параметр должен иметь тип массив вещ\n");
+			break;
 		case not_array_in_stanfunc:
 			printer_printf(&context->err_options, "в этой операции этот параметр должен иметь тип массив\n");
 			break;
 		default:
 			printer_printf(&context->err_options, "этот код ошибки я прозевал\n");
-	}
-	exit(2);
-}
-
-void m_error(compiler_context *context, int ernum)
-{
-	int i;
-
-	// tablesandtree();
-	printer_printf(&context->err_options, "line %i) ", context->mline);
-	for (i = context->mlines[context->mline]; i < context->m_charnum; i++)
-	{
-		printer_printchar(&context->err_options, context->before_source[i]);
-	}
-	printer_printf(&context->err_options, "\n");
-
-	switch (ernum)
-	{
-		case after_preproces_words_must_be_space:
-			printer_printf(&context->err_options,
-						   "Неправильное использование ключевого слова препроцессора, далее должен "
-						   "идти символ ' 'или'\\n'или'\\t' \n");
-			break;
-		case after_ident_must_be_space:
-			printer_printf(&context->err_options, "После индентификатора должен идти ' ' \n");
-			break;
-		case ident_begins_with_letters:
-			printer_printf(&context->err_options, "Идентификатор должен начинаться с буквы \n");
-			break;
-		case must_be_endif:
-			printer_printf(&context->err_options, "Условный оператор препроцессора должен заканчиваться "
-												  "'#ENDIF' \n");
-			break;
-		case dont_elif:
-			printer_printf(&context->err_options, "В этом типе условного оператора не может использоваться "
-												  "'#ELIF' \n");
-			break;
-		case preproces_words_not_exist:
-			printer_printf(&context->err_options, "В препроцессоре не сущетвует написанной команды\n");
-			break;
-		case not_enough_param:
-			printer_printf(&context->err_options, "У этой функции меньше параметров\n");
-			break;
-		case functionid_begins_with_letters:
-			printer_printf(&context->err_options, "Идентификатор функции должн начинаться с буквы\n");
-			break;
-		case after_functionid_must_be_comma:
-			printer_printf(&context->err_options, "После идентификатора в функции должны быть ')' или ',' "
-												  "потом ' ' \n");
-			break;
-		case stalpe:
-			printer_printf(&context->err_options, "В функции аргументы должны быть описаны через запятую, в "
-												  "скобках\n");
-			break;
-		case not_relis_if:
-			printer_printf(&context->err_options, "if ещё не реализован");
-			break;
-		case befor_endif:
-			printer_printf(&context->err_options, "Перед '#ENDIF' должен стоять условный оператор "
-												  "препроцессора\n");
-			break;
-		case repeat_ident:
-			printer_printf(&context->err_options, "Этот идентификатор препроцессора уже используется.\n");
-			break;
-		case comm_not_ended:
-			printer_printf(&context->err_options, "Комментарий, начавшийся с /* , не закрыт\n");
-			break;
-		case not_enough_param2:
-			printer_printf(&context->err_options, "У этой функции больше параметров\n");
-			break;
-		case not_end_fail_preprocess:
-			printer_printf(&context->err_options, "Фаил не может оканчиваться данной командой препроцессора\n");
-			break;
-		case scob_not_clous:
-			printer_printf(&context->err_options, "Количество открывающих скобок не соотвеcтвует числу "
-												  "закрывающих\n");
-			break;
-		default:;
 	}
 	exit(2);
 }

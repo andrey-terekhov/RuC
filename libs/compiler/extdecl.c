@@ -459,7 +459,7 @@ void actstring(compiler_context *context)
 {
 	int n = 0;
 	int adn;
-
+	int flagfloat = 0;
 	totree(context, TString);
 	adn = context->tc++;
 	do
@@ -473,8 +473,11 @@ void actstring(compiler_context *context)
 				context->identab[context->lastid+3];
 			}
 		*/
-		if (scaner(context) == NUMBER && (context->ansttype == LINT || context->ansttype == LCHAR))
+
+		if (scaner(context) == NUMBER &&
+			(context->ansttype == LINT || context->ansttype == LCHAR || context->ansttype == LFLOAT))
 		{
+			flagfloat |= context->ansttype == LFLOAT;
 			totree(context, context->num);
 		}
 		else
@@ -489,7 +492,7 @@ void actstring(compiler_context *context)
 	{
 		error(context, no_comma_or_end);
 	}
-	context->ansttype = newdecl(context, MARRAY, LINT);
+	context->ansttype = newdecl(context, MARRAY, flagfloat ? LFLOAT : LINT);
 	context->anst = VAL;
 }
 
@@ -557,11 +560,43 @@ void mustberowofint(compiler_context *context)
 		exprassn(context, 1);
 		toval(context);
 		context->sopnd--;
+		if (context->ansttype == LINT || context->ansttype == LCHAR)
+		{
+			totree(context, ROWING);
+			context->ansttype = newdecl(context, MARRAY, LINT);
+		}
 	}
 	if (!(context->ansttype > 0 && context->modetab[context->ansttype] == MARRAY &&
 		  (context->modetab[context->ansttype + 1] == LINT || context->modetab[context->ansttype + 1] == LCHAR)))
 	{
 		error(context, not_rowofint_in_stanfunc);
+	}
+}
+
+void mustberowoffloat(compiler_context *context)
+{
+	scaner(context);
+
+	if (context->cur == BEGIN)
+	{
+		actstring(context), totree(context, TExprend);
+	}
+	else
+	{
+		exprassn(context, 1);
+		toval(context);
+		context->sopnd--;
+		if (context->ansttype == LFLOAT)
+		{
+			totree(context, ROWINGD);
+			context->ansttype = newdecl(context, MARRAY, LFLOAT);
+		}
+	}
+
+	if (!(context->ansttype > 0 && context->modetab[context->ansttype] == MARRAY &&
+		  context->modetab[context->ansttype + 1] == LFLOAT))
+	{
+		error(context, not_rowoffloat_in_stanfunc);
 	}
 }
 
@@ -681,6 +716,25 @@ void primaryexpr(compiler_context *context)
 			if (func < STRNCAT)
 			{
 				context->stackoperands[++context->sopnd] = context->ansttype = LINT;
+			}
+		}
+		else if (func >= RECEIVE_STRING && func <= SEND_INT)
+		{
+			context->notrobot = 0; // новые функции Фадеева
+			mustbeint(context);
+			if (func == SEND_INT || func == SEND_STRING)
+			{
+				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+				mustberowofint(context);
+			}
+			else if (func == SEND_FLOAT)
+			{
+				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+				mustberowoffloat(context);
+			}
+			else
+			{
+				;
 			}
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева

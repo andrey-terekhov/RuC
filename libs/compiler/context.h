@@ -152,24 +152,6 @@ typedef struct compiler_context
 	int bad_printf_placeholder;
 	int onlystrings;
 
-	/* Preprocessor flags */
-	int macrotext[MAXREPRTAB];
-	int mstring[50];
-	int macrofunction[MAXREPRTAB];
-	int functionident[MAXREPRTAB];
-	int fchange[50];
-	int fip;
-	int mfp;
-	int mfirstrp; // начало и конец макрослов в reprtab
-	int mlastrp;
-	int mp;
-	int msp;
-	int ifln;
-	int mcl;
-	int checkif;
-	int flag_show_macro;
-	int arg;
-
 	compiler_table reprtab;
 } compiler_context;
 
