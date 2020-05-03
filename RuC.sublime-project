@@ -1,0 +1,35 @@
+{
+	"settings":
+	{
+		"auto_complete": true,
+		"ecc_flags_sources": [
+			{"file": "compile_commands.json", "search_in": "${project_path}/build"},
+		],
+		"auto_indent": true,
+		"translate_tabs_to_spaces": false,
+		"rulers": [80],
+		"sublimegdb_executables":
+		{
+			"RuC":
+			{
+				"workingdir": "${project_path:.}",
+				"commandline": "gdb --interpreter=mi -ex \"set exec-wrapper ./scripts/exec_wrapper.sh ruc ./build/ruc\" ./build/ruc"
+			},
+		}
+	},
+	"folders":
+	[
+		{
+			"path": "."
+		}
+	],
+	"build_systems":
+	[
+		{
+			"name": "RuC build",
+			"cmd": ["sh -c 'mkdir -p build && cd build  && cmake -GNinja .. && ninja'"],
+			"shell": true,
+			"working_dir": "${project_path:${folder}}",
+		}
+	]
+}

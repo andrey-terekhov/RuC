@@ -76,7 +76,7 @@ CTestTestfile.cmake
 _deps
 
 ## VSCode
-.vscode/*
+*/.vscode/*
 *.code-workspace
 
 ## Xcode
@@ -100,3 +100,7 @@ Release/
 
 # RuC
 !keywords.txt
+
+# Sublime workspace files
+*.sublime-workspace
+tmp-run*.sh

@@ -14,11 +14,18 @@
  *	limitations under the License.
  */
 
-#ifndef H_CODES
-#define H_CODES
+#pragma once
+
+#include "context.h"
 
 
-void tablesandcode();
-void tablesandtree();
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+void tablesandcode(compiler_context *context);
+void tablesandtree(compiler_context *context);
+
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
