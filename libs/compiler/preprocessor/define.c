@@ -388,7 +388,6 @@ int define_add_to_reprtab(preprocess_context *context, compiler_context *c_conte
 {
 	int r;
 	int oldrepr = context->rp;
-	context->mlastrp = oldrepr;
 	int hash = 0;
 	context->rp += 2;
 
@@ -496,7 +495,11 @@ void define_add_to_macrotext(int r, preprocess_context *context, compiler_contex
 		context->mp--;
 	}
 	context->macrotext[context->mp++] = MACROEND;
-	context->reprtab[r + 1] = lmp;
+
+	if(r)
+	{
+		context->reprtab[r + 1] = lmp;
+	}
 }
 
 void define_relis(preprocess_context *context, compiler_context *c_context)

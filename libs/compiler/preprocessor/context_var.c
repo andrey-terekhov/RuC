@@ -24,7 +24,7 @@
 void preprocess_context_init(preprocess_context *context)
 {
 	memset(context, 0, sizeof(preprocess_context));
-	context->rp = 0;
+	context->rp = 1;
 	context->inp_file = 0;
 	context->inp_p = 0;
 	context->rp = 1;
@@ -37,7 +37,6 @@ void preprocess_context_init(preprocess_context *context)
 	context->ifsp = 0;
 	context->wsp;
 	context->mfirstrp = -1;
-	context->mlastrp = -1;
 	context->mclp = 1;
 	context->nextch_type = 0;
 	context->nextp = 0;

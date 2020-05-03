@@ -138,7 +138,7 @@ int collect_mident(preprocess_context *context, compiler_context *c_context)
 
 	while (r)
 	{
-		if (r >= context->mfirstrp && r <= context->mlastrp && mf_equal(r, context))
+		if (r >= context->mfirstrp && mf_equal(r, context))
 		{
 			return (context->macrotext[context->reprtab[r + 1]] != MACROUNDEF) ? r : 0;
 		}

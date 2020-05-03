@@ -57,7 +57,6 @@ typedef struct preprocess_context
 	int wsp;
 
 	int mfirstrp;
-	int mlastrp;
 
 	int mclp;
 
