@@ -1,6 +1,6 @@
 float a;
 int b;
-char c;
+char c= '?';
 void main()
 {
     send_int_to_robot(1,{1,2});

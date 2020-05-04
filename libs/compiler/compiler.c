@@ -38,7 +38,7 @@
 	#define ASP_PORT (5500)
 #endif
 
-//#define FILE_DEBUG
+#define FILE_DEBUG
 
 
 #ifdef ANALYSIS_ENABLED

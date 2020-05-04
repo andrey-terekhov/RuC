@@ -455,12 +455,11 @@ void applid(compiler_context *context)
 void exprval(compiler_context *context);
 void unarexpr(compiler_context *context);
 
-void actstring(compiler_context *context)
+void actstring(int type, compiler_context *context)
 {
 	int n = 0;
 	int adn;
-	int flagfloat = 0;
-	totree(context, TString);
+    totree(context, type == LFLOAT ? TStringd : TString);
 	adn = context->tc++;
 	do
 	{
@@ -474,11 +473,17 @@ void actstring(compiler_context *context)
 			}
 		*/
 
-		if (scaner(context) == NUMBER &&
-			(context->ansttype == LINT || context->ansttype == LCHAR || context->ansttype == LFLOAT))
+		if (scaner(context) == NUMBER)
 		{
-			flagfloat |= context->ansttype == LFLOAT;
-			totree(context, context->num);
+            if (type == LFLOAT)
+            {
+                totree(context, context->numr.first);
+                totree(context, context->numr.second);
+            }
+            else
+            {
+                totree(context, context->num);
+            }
 		}
 		else
 		{
@@ -492,7 +497,7 @@ void actstring(compiler_context *context)
 	{
 		error(context, no_comma_or_end);
 	}
-	context->ansttype = newdecl(context, MARRAY, flagfloat ? LFLOAT : LINT);
+	context->ansttype = newdecl(context, MARRAY, type);
 	context->anst = VAL;
 }
 
@@ -553,7 +558,7 @@ void mustberowofint(compiler_context *context)
 	scaner(context);
 	if (context->cur == BEGIN)
 	{
-		actstring(context), totree(context, TExprend);
+		actstring(LINT, context), totree(context, TExprend);
 	}
 	else
 	{
@@ -579,7 +584,7 @@ void mustberowoffloat(compiler_context *context)
 
 	if (context->cur == BEGIN)
 	{
-		actstring(context), totree(context, TExprend);
+		actstring(LFLOAT, context), totree(context, TExprend);
 	}
 	else
 	{
@@ -969,7 +974,7 @@ void primaryexpr(compiler_context *context)
 				{
 					if (context->cur == BEGIN)
 					{
-						context->sopnd--, actstring(context);
+						context->sopnd--, actstring(LINT, context);
 					}
 					else
 					{
@@ -1167,7 +1172,7 @@ void postexpr(compiler_context *context)
 			{
 				if (context->cur == BEGIN && is_array(context, mdj))
 				{
-					actstring(context), totree(context, TExprend);
+					actstring(mdj, context), totree(context, TExprend);
 				}
 				else
 				{
