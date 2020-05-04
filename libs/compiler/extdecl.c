@@ -459,7 +459,7 @@ void actstring(int type, compiler_context *context)
 {
 	int n = 0;
 	int adn;
-    totree(context, type == LFLOAT ? TStringd : TString);
+	totree(context, type == LFLOAT ? TStringd : TString);
 	adn = context->tc++;
 	do
 	{
@@ -475,15 +475,15 @@ void actstring(int type, compiler_context *context)
 
 		if (scaner(context) == NUMBER)
 		{
-            if (type == LFLOAT)
-            {
-                totree(context, context->numr.first);
-                totree(context, context->numr.second);
-            }
-            else
-            {
-                totree(context, context->num);
-            }
+			if (type == LFLOAT)
+			{
+				totree(context, context->numr.first);
+				totree(context, context->numr.second);
+			}
+			else
+			{
+				totree(context, context->num);
+			}
 		}
 		else
 		{
@@ -739,7 +739,8 @@ void primaryexpr(compiler_context *context)
 			}
 			else
 			{
-				;
+				context->stackoperands[++context->sopnd] = context->ansttype =
+					func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : newdecl(context, MARRAY, LCHAR);
 			}
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева

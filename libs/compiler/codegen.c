@@ -121,7 +121,7 @@ int Expr_gen(compiler_context *context, int incond)
 	int flagprim = 1;
 	int eltype;
 	int wasstring = 0;
-    int op;
+	int op;
 
 	while (flagprim)
 	{
@@ -174,7 +174,7 @@ int Expr_gen(compiler_context *context, int incond)
 				break;
 			}
 			case TString:
-            case TStringd:
+			case TStringd:
 			{
 				int n = context->tree[context->tc++];
 				int res;
@@ -186,15 +186,15 @@ int Expr_gen(compiler_context *context, int incond)
 				context->pc += 2;
 				for (i = 0; i < n; i++)
 				{
-                    if (op == TString)
-                    {
-                        tocode(context, context->tree[context->tc++]);
-                    }
-                    else
-                    {
-                        tocode(context, context->tree[context->tc++]);
-                        tocode(context, context->tree[context->tc++]);
-                    }
+					if (op == TString)
+					{
+						tocode(context, context->tree[context->tc++]);
+					}
+					else
+					{
+						tocode(context, context->tree[context->tc++]);
+						tocode(context, context->tree[context->tc++]);
+					}
 				}
 				context->mem[res - 1] = n;
 				context->mem[res - 2] = context->pc;
