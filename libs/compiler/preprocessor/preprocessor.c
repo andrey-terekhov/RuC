@@ -20,7 +20,6 @@
 #include "context.h"
 #include "context_var.h"
 #include "define.h"
-#include "errors.h"
 #include "file.h"
 #include "if.h"
 #include "include.h"
@@ -270,6 +269,7 @@ void preprocess_file(compiler_context *c_context, const char *code)
 	}
 
 	add_keywods(context);
+
 	context->mfirstrp = context->rp;
 	get_next_char(context);
 	m_nextch(context, c_context);
@@ -292,18 +292,22 @@ void preprocess_file(compiler_context *c_context, const char *code)
 		printf("str[%d] = %d,%c.\n", k, fstring[k], fstring[k]);
 	}
 
-	printf("1\n");
+	printf("!!!!!!!!!!!!!!1\n");
 
-	for (int k = 0; k < mp; k++)
+	for (int k = 0; k < context->mp; k++)
 	{
-		printf("macrotext[%d] = %d,%c.\n", k, macrotext[k], macrotext[k]);
+		printf("context->macrotext[%d] = %d,%c.\n", k, context->macrotext[k], context->macrotext[k]);
 	}
-	for (int k = 0; k < cp; k++)
+	for (int k = context->mfirstrp; k < context->mfirstrp + 20; k++)
 	{
-		printf("localstack[%d] = %d,%c.\n", k, localstack[k], localstack[k]);
+		printf("str[%d] = %d,%c.\n", k, context->reprtab[k], context->reprtab[k]);
 	}
 	for (int k = 0; k < cp; k++)
 	{
 		printf(" fchange[%d] = %d,%c.\n", k, fchange[k], fchange[k]);
 	}
+
+	/Egor/Macro/test_eval1.c
+	/Egor/Macro/calculator/test1.c
+	/Fadeev/import.c
 */
