@@ -307,7 +307,7 @@ void preprocess_file(compiler_context *c_context, const char *code)
 		printf(" fchange[%d] = %d,%c.\n", k, fchange[k], fchange[k]);
 	}
 
-	/Egor/Macro/test_eval1.c 
-	/Egor/Macro/calculator/test1.c 
+	/Egor/Macro/test_eval1.c
+	/Egor/Macro/calculator/test1.c
 	/Fadeev/import.c
 */

@@ -260,6 +260,6 @@ void m_nextch(preprocess_context *context, compiler_context *c_context)
 		}
 	}
 
-		//printf(" i = %d curcar = %c curcar = %i n = %d f = %d\n", context->nextch_type,
-			//context->curchar, context->curchar, context->nextp, context->inp_file);
+	//	printf(" i = %d curcar = %c curcar = %i n = %d f = %d\n", context->nextch_type,
+	//		context->curchar, context->curchar, context->nextp, context->inp_file);
 }
