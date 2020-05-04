@@ -739,7 +739,9 @@ void primaryexpr(compiler_context *context)
 			}
 			else
 			{
-				;
+                context->stackoperands[++context->sopnd] = context->ansttype =
+                func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT :
+                newdecl(context, MARRAY, LCHAR);
 			}
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
