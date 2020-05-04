@@ -32,6 +32,7 @@
 #define MAXMEMTHREAD	MAXMEMSIZE / NUMOFTHREADS
 #define MAXPRINTFPARAMS 20
 
+
 // modetab
 
 #define MFUNCTION 1001
@@ -292,16 +293,22 @@
 #define BLYNK_LCDC			 9577
 #define BLYNK_TERMINALC		 9578
 
-#define SETSIGNALC	 9579
-#define PIXELC		 9580
-#define LINEC		 9581
-#define RECTANGLEC	 9582
-#define ELLIPSEC	 9583
-#define CLEARC		 9584
-#define DRAW_STRINGC 9585
-#define DRAW_NUMBERC 9586
-#define ICONC		 9587
-#define UPBC		 9588
+#define SETSIGNALC		9579
+#define PIXELC			9580
+#define LINEC			9581
+#define RECTANGLEC		9582
+#define ELLIPSEC		9583
+#define CLEARC			9584
+#define DRAW_STRINGC	9585
+#define DRAW_NUMBERC	9586
+#define ICONC			9587
+#define UPBC			9588
+#define SEND_INTC		9589
+#define SEND_FLOATC		9590
+#define SEND_STRINGC	9591
+#define RECEIVE_INTC	9592
+#define RECEIVE_FLOATC	9593
+#define RECEIVE_STRINGC 9594
 
 
 // Лексемы
