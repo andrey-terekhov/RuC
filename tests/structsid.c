@@ -1,10 +1,10 @@
 void main()
 {
     int i, j;
-    struct line {struct point {int x; int y;} p1,p2;} *l1,
+    struct lines {struct point {int x; int y;} p1; struct point p2;} *l1,
     l3[1] = {{{15,16}, {17, 18}}};
     
-    struct line s4 = {{10,11}, {12,13}};
+    struct lines s4 = {{10,11}, {12,13}};
     
     int a[3] = {1, 2, 3},
     c[2][3] =  {{1,2,3}, {4, 5, 6}};

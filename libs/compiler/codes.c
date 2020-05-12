@@ -102,7 +102,7 @@ void tablesandtree(compiler_context *context)
 				break;
             case TStringd:
                 printer_printf(&context->output_options,
-                               "TStringd n= %i\n", context->tree[i++]);
+                               "TStringd n= %i\n", n = context->tree[i++]);
                 for (j=0; j<n; ++j)
                 {
                     memcpy(&d, &context->tree[i], sizeof(double));
