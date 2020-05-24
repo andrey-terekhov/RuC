@@ -17,6 +17,7 @@ extern FILE *input;
 extern FILE *output;
 
 extern double numdouble;
+extern float numf;
 extern int line, mline, charnum, m_charnum, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef;
 extern struct {int first; int second;} numr;
 extern int source[SOURCESIZE], lines[LINESSIZE];

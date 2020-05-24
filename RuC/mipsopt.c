@@ -12,7 +12,7 @@ int t, op, opnd;
 
 int mcopy()
 {
- //   printf("tc= %i tree[tc]= %i\n", tc, tree[tc]);
+//    printf("tc= %i tree[tc]= %i\n", tc, tree[tc]);
     return mtree[mtc++] = tree[tc++];
 }
 
@@ -20,93 +20,50 @@ int munop(int t)
 {
     switch (t)
     {
-        case LNOT:
-        case LOGNOT:
+        case POSTINC:
+        case POSTDEC:
+        case INC:
+        case DEC:
+            
+        case POSTINCR:
+        case POSTDECR:
+        case INCR:
+        case DECR:
+
         case POSTINCAT:
         case POSTDECAT:
         case INCAT:
         case DECAT:
-        case POSTINCATV:
-        case POSTDECATV:
-        case INCATV:
-        case DECATV:
-        case UNMINUS:
-         
-        case TAddrtoval:
-        case TAddrtovald:
-        case WIDEN:
-        case WIDEN1:
 
         case POSTINCATR:
         case POSTDECATR:
         case INCATR:
         case DECATR:
-        case POSTINCATRV:
-        case POSTDECATRV:
-        case INCATRV:
-        case DECATRV:
+
+        case LNOT:
+        case LOGNOT:
+        case UNMINUS:
         case UNMINUSR:
+         
+        case TAddrtoval:
+        case TAddrtovalc:
+        case TAddrtovalf:
+        case WIDEN:
+        case WIDEN1:
             
             return 1;
-            
-        case REMASS:
-        case SHLASS:
-        case SHRASS:
-        case ANDASS:
-        case EXORASS:
-        case ORASS:
-            
-        case REMASSV:
-        case SHLASSV:
-        case SHRASSV:
-        case ANDASSV:
-        case EXORASSV:
-        case ORASSV:
-            
-        case ASS:
-        case PLUSASS:
-        case MINUSASS:
-        case MULTASS:
-        case DIVASS:
-            
-        case ASSV:
-        case PLUSASSV:
-        case MINUSASSV:
-        case MULTASSV:
-        case DIVASSV:
-            
-        case ASSR:
-        case PLUSASSR:
-        case MINUSASSR:
-        case MULTASSR:
-        case DIVASSR:
-            
-        case ASSRV:
-        case PLUSASSRV:
-        case MINUSASSRV:
-        case MULTASSRV:
-        case DIVASSRV:
 
-        case POSTINC:
-        case POSTDEC:
-        case INC:
-        case DEC:
-        case POSTINCV:
-        case POSTDECV:
-        case INCV:
-        case DECV:
+
         case TPrint:
         case TPrintf:
-        case POSTINCR:
-        case POSTDECR:
-        case INCR:
-        case DECR:
-        case POSTINCRV:
-        case POSTDECRV:
-        case INCRV:
-        case DECRV:
-            
             return 2;
+            
+        case COPY01:
+        case COPY10:
+        case COPY0STASS:
+        case COPY0ST:
+            
+            return 3;
             
         default:
             
@@ -118,6 +75,32 @@ int mbinop(int t)
 {
     switch (t)
     {
+            
+        case LOGAND:
+        case LOGOR:
+            
+            op += 1000;
+            return 2;
+            
+        case REMASS:
+        case SHLASS:
+        case SHRASS:
+        case ANDASS:
+        case EXORASS:
+        case ORASS:
+            
+        case ASS:
+        case PLUSASS:
+        case MINUSASS:
+        case MULTASS:
+        case DIVASS:
+            
+        case ASSR:
+        case PLUSASSR:
+        case MINUSASSR:
+        case MULTASSR:
+        case DIVASSR:
+
         case REMASSAT:
         case SHLASSAT:
         case SHRASSAT:
@@ -130,19 +113,12 @@ int mbinop(int t)
         case MINUSASSAT:
         case MULTASSAT:
         case DIVASSAT:
-            
-        case REMASSATV:
-        case SHLASSATV:
-        case SHRASSATV:
-        case ANDASSATV:
-        case EXORASSATV:
-        case ORASSATV:
-            
-        case ASSATV:
-        case PLUSASSATV:
-        case MINUSASSATV:
-        case MULTASSATV:
-        case DIVASSATV:
+
+        case ASSATR:
+        case PLUSASSATR:
+        case MINUSASSATR:
+        case MULTASSATR:
+        case DIVASSATR:
 
         case LREM:
         case LSHL:
@@ -173,24 +149,16 @@ int mbinop(int t)
         case LMULTR:    
         case LDIVR:
             
-        case ASSATR:
-        case PLUSASSATR:
-        case MINUSASSATR:
-        case MULTASSATR:
-        case DIVASSATR:
+        case COPY11:
+        case COPY1STASS:
+        case COPY1ST:
             
-        case ASSATRV:
-        case PLUSASSATRV:
-        case MINUSASSATRV:
-        case MULTASSATRV:
-        case DIVASSATRV:
             op += 1000;
             return 1;
             
-        case LOGAND:
-        case LOGOR:
+        case COPY00:
             op += 1000;
-            return 2;
+            return 4;
             
         default:
             return 0;
@@ -231,6 +199,8 @@ void mstatement()
             mexpr();
             mstatement();
             break;
+        case TDefault:
+            mcopy();
         case TDo:
             mcopy();
             mstatement();
@@ -273,8 +243,13 @@ void mstatement()
         case TGetid:
             mcopy();
             mcopy();
+            do
+            {
+                t = mcopy();
+            }while (t != 0);
+            
             break;
-
+           
         default:
             mexpr();
     }
@@ -282,13 +257,24 @@ void mstatement()
 
 void permute(int n1)
 {
-    int i, oldopnd = tree[tc+1];
+    int i, oldopnd1 = tree[tc+1], oldopnd2 = tree[tc+2], oldopnd3 = tree[tc+3];
 //    printf("permute sp= %i n1= %i tc= %i op= %i opnd=%i\n", sp, n1, tc, op, opnd);
     for (i=tc+opnd-1; i>n1+opnd-1; i--)
         mtree[i] = mtree[i-opnd];
     mtree[n1] = op;
     if (opnd == 2)
-        mtree[n1+1] = oldopnd;
+        mtree[n1+1] = oldopnd1;
+    if (opnd == 3)
+    {
+        mtree[n1+1] = oldopnd1;
+        mtree[n1+2] = oldopnd2;
+    }
+    else if (opnd == 4)
+    {
+        mtree[n1+1] = oldopnd1;
+        mtree[n1+2] = oldopnd2;
+        mtree[n1+3] = oldopnd3;
+    }
     tc  += opnd;
     mtc += opnd;
 }
@@ -299,21 +285,26 @@ int operand()
     t = tree[tc];
     if (tree[tc] == NOP)
         mcopy();
-    if (tree[tc] == TIdent || tree[tc] == ADLOGOR || tree[tc] == ADLOGAND)
+    if (tree[tc] == ADLOGOR || tree[tc] == ADLOGAND)
     {
         mcopy();
         mcopy();
     }
     n1 = tc;
     t = tree[tc];
-    if (t == TString)
+    if (t == TIdent)
+    {
+        mcopy();
+        mcopy();
+    }
+    else if (t == TString || t == TStringf)
     {
         mcopy();
         int nstr = mcopy();
         for (i=0; i<nstr; i++)
             mcopy();
     }
-    else if (t == TSliceident || t == TSelect)
+    else if (t == TSliceident/* || t == TSelect */)
     {
         mcopy();
         mcopy();             // displ
@@ -322,7 +313,7 @@ int operand()
             mcopy();         // type
             mexpr();         // index
         }
-        while (tree[tc] == TSlice || t == TSelect)
+        while ((t = tree[tc]) == TSlice /*|| t == TSelect*/)
         {
             mcopy();
             if (t == TSlice)
@@ -358,13 +349,15 @@ int operand()
         for (i=0; i<n; i++)
             mexpr();
     }
-    else if (t == TIdenttoval || t == TIdenttovald || t == TIdenttovalc ||
-             t == TIdenttoaddr || t == TConst || t == TConstc)
+    else if (t == TIdenttoval || t == TIdenttovalc || t == TIdenttovalf ||
+             t == TIdenttoaddr || t == TConst || t == TConstc || t == TConstf ||
+             t == TSelect || t== TSelectc || t == TSelectf || t == TSelectd ||
+             t == TDYNSelect)
     {
         mcopy();
         mcopy();
     }
-    else if (t == TConstd)
+    else if (t == TConstd || t == TIdenttovald)
     {
         mcopy();
         mcopy();
@@ -449,8 +442,7 @@ void mblock()
 {
     int i, n, all;
     do
-    {
-        switch (tree[tc])
+    {        switch (tree[tc])
         {
             case TFuncdef:
             {

@@ -16,7 +16,6 @@
 		EDCB458C1DDF4B9C0030AE24 /* error.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45841DDF4B9C0030AE24 /* error.c */; };
 		EDCB458D1DDF4B9C0030AE24 /* extdecl.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45851DDF4B9C0030AE24 /* extdecl.c */; };
 		EDCB458F1DDF4B9C0030AE24 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45881DDF4B9C0030AE24 /* main.c */; };
-		EDE8849E1F3C8CDE00DAE9F0 /* threads.c in Sources */ = {isa = PBXBuildFile; fileRef = EDE8849D1F3C8CDE00DAE9F0 /* threads.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -45,7 +44,6 @@
 		EDCB45851DDF4B9C0030AE24 /* extdecl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = extdecl.c; sourceTree = "<group>"; };
 		EDCB45861DDF4B9C0030AE24 /* global_vars.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = global_vars.h; sourceTree = "<group>"; };
 		EDCB45881DDF4B9C0030AE24 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
-		EDE8849D1F3C8CDE00DAE9F0 /* threads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = threads.c; sourceTree = "<group>"; };
 		EDE8849F1F499DA300DAE9F0 /* th_static.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = th_static.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -64,7 +62,6 @@
 			isa = PBXGroup;
 			children = (
 				EDCB45791DDF4ACF0030AE24 /* RuC */,
-				EDE8849D1F3C8CDE00DAE9F0 /* threads.c */,
 				EDCB45781DDF4ACF0030AE24 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -87,8 +84,8 @@
 				EDE8849F1F499DA300DAE9F0 /* th_static.h */,
 				EDCB45821DDF4B9C0030AE24 /* codes.c */,
 				ED39C25F222E6107005E7385 /* scaner.c */,
-				EDCB45841DDF4B9C0030AE24 /* error.c */,
 				EDCB45861DDF4B9C0030AE24 /* global_vars.h */,
+				EDCB45841DDF4B9C0030AE24 /* error.c */,
 				EDCB45851DDF4B9C0030AE24 /* extdecl.c */,
 				ED70946E2350BC0500FACB6D /* Defs.h */,
 				EDCB45881DDF4B9C0030AE24 /* main.c */,
@@ -162,7 +159,6 @@
 				EDC2DE3921357B1C0056585C /* preprocess.c in Sources */,
 				EDCB458D1DDF4B9C0030AE24 /* extdecl.c in Sources */,
 				ED6E6121221311DC00363321 /* mipsgen.c in Sources */,
-				EDE8849E1F3C8CDE00DAE9F0 /* threads.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

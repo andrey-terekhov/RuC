@@ -32,7 +32,7 @@ void error(int ernum)
 {
     int i, j; 
   //tablesandtree();
-    printf("\n Oшибка :\n \n");
+    printf("\n Oшибка :\n%i \n", ernum);
     if(lines[line]==charnum)
     {
         line--;
@@ -600,8 +600,14 @@ void error(int ernum)
         case not_rowofint_in_stanfunc:
             printf("в этой операции этот параметр должен иметь тип массив целых\n");
             break;
+        case not_rowoffloat_in_stanfunc:
+            printf("в этой операции этот параметр должен иметь тип массив вещественных\n");
+            break;
         case wrong_register:
             printf("регистровой может быть только целая или вещественная переменная\n");
+            break;
+        case wrong_postexpr:
+            printf("postexpr должно начинаться с идентификатора\n");
             break;
 
 

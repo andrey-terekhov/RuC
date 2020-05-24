@@ -14,7 +14,7 @@ void main()
         a[i] += f(i)+3;
         printf("%f\n", a[i]);    // 5 7 9
         c = c * d;
-        printid(c);  // 6 18 54 162
+        printf("%i\n", c);  // 6 18 54 162
     }
 }
 

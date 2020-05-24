@@ -1,6 +1,6 @@
 #include "global_vars.h"
 #include <stdlib.h>
-
+#include <string.h>
 
 extern int  getnext();
 extern int  nextch();
@@ -185,7 +185,7 @@ int alignm(int type)
     if (type == LDOUBLE)
         return 8;
     else if (type == LCHAR)
-        return 1;
+        return 2;
     else if (type > 0 && modetab[type] == MSTRUCT)
         return alignm(modetab[type+3]);
     else
@@ -194,14 +194,19 @@ int alignm(int type)
 
 int getstatic(int type)
 {
-    int al = alignm(type), olddispl;        // displ < 0 для глобальных переменных
-    olddispl = lg*(displ+al-1)/al*al;
-    displ = olddispl + lg * szof(type);            // lg - смещение от l (+1) или от g (-1)
+    int al = alignm(type), d;        // displ < 0 для глобальных переменных
     if (lg > 0)
+    {
+        d = (displ+al-1)/al*al;
+        displ = d + szof(type);      // lg - смещение от l (+1) или от g (-1)
         maxdispl = (displ > maxdispl) ? displ : maxdispl;
+    }
     else
+    {
+        d = displ = (displ-al+1)/al*al - szof(type); 
         maxdisplg = -displ;
-    return olddispl;
+    }
+    return d;
 }
 
 int toidentab(int f, int type)       // f =  0, если не ф-ция, f=1, если метка, f=funcnum, если описание ф-ции,
@@ -312,9 +317,9 @@ void exprassn(int);
 
 void toval()        // надо значение положить на стек, например, чтобы передать параметром
 {
-    if (anst == VAL || anst == NUMBER)
+    if (anst == VAL || anst == NUMBER || is_struct(ansttype))
         ;
-    else if (is_struct(ansttype))
+/*    else if (is_struct(ansttype))
     {
         if (!inass)
         {
@@ -326,19 +331,22 @@ void toval()        // надо значение положить на стек,
             }
             else      // тут может быть только ADDR
                 totree(COPY1ST);
-            totree(modetab[ansttype+1]);
+            totree(ansttype);
             anst = VAL;
         }
     }
+ */
     else
     {
-        if (anst == IDENT)
-            tree[tc - 2] = ansttype  == LCHAR ? TIdenttovalc :
-                is_float(ansttype) ? TIdenttovald : TIdenttoval;
+        if (tree[tc-2] == TIdent)
+            tree[tc-2] =
+            ansttype  == LCHAR ? TIdenttovalc :
+            ansttype == LFLOAT ? TIdenttovalf : TIdenttoval;
 
         if (!(is_array(ansttype) || is_pointer(ansttype)))
             if (anst == ADDR)
-                totree(is_float(ansttype) ? TAddrtovald : TAddrtoval);
+                totree(is_float(ansttype) ? TAddrtovalf :
+                       ansttype == LCHAR ? TAddrtovalc : TAddrtoval);
         anst = VAL;
     }
 }
@@ -361,32 +369,35 @@ void applid()
 void exprval();
 void unarexpr();
 
-void actstring()
+void actstring(int type)
 {
-    int n = 0, adn;
-    totree(TString);
+    int n = 0;
+    int adn;
+    scaner();
+    totree(type == LFLOAT ? TStringf : type == LCHAR ? TStringc : TString);
     adn = tc++;
     do
     {
-/*        if (scaner() == IDENT)
+        exprassn(1);
+        if (tree[tc-2] == TConst || tree[tc-2] == TConstc || tree[tc-2] == TConstf)
         {
-            applid();
-            if (identab[lastid+2] == 1)
-                cur = NUMBER, ansttype = LINT, num = identab[lastid+3];
+            tree[tc-2] = tree[tc-1];
+            --tc;
         }
- */
-        if (scaner() == NUMBER && ansttype == LINT)
-            totree(num);
         else
+        {
             error(wrong_init_in_actparam);
+        }
+
         ++n;
-    }
-    while (scaner() == COMMA);
-    
+    } while (scaner() == COMMA ? scaner(), 1 : 0);
+
     tree[adn] = n;
     if (cur != END)
+    {
         error(no_comma_or_end);
-    ansttype = newdecl(MARRAY, LINT);
+    }
+    ansttype = newdecl(MARRAY, type);
     anst = VAL;
 }
 
@@ -423,39 +434,70 @@ void mustbeint()
 
 void mustberowofint()
 {
-    scaner();
     if (cur == BEGIN)
-        actstring(), totree(TExprend);
+    {
+        actstring(LINT), totree(TExprend);
+    }
     else
     {
         exprassn(1);
         toval();
         sopnd--;
+        if (ansttype == LINT || ansttype == LCHAR)
+        {
+            totree(ROWING);
+            ansttype = newdecl(MARRAY, LINT);
+        }
     }
-    if (! (ansttype > 0 && modetab[ansttype] == MARRAY && modetab[ansttype+1] == LINT) )
-    error(not_rowofint_in_stanfunc);
+    if (!(ansttype > 0 && modetab[ansttype] == MARRAY &&
+          (modetab[ansttype + 1] == LINT || modetab[ansttype + 1] == LCHAR)))
+    {
+        error(not_rowofint_in_stanfunc);
+    }
+}
+
+void mustberowoffloat()
+{
+    if (scaner() == BEGIN)
+    {
+        actstring(LFLOAT), totree(TExprend);
+    }
+    else
+    {
+        exprassn(1);
+        toval();
+        sopnd--;
+        if (ansttype == LFLOAT)
+        {
+            totree(ROWINGD);
+            ansttype = newdecl(MARRAY, LFLOAT);
+        }
+    }
+
+    if (!(ansttype > 0 && modetab[ansttype] == MARRAY &&
+          modetab[ansttype + 1] == LFLOAT))
+    {
+        error(not_rowoffloat_in_stanfunc);
+    }
 }
 
 void primaryexpr()
 {
 	if (cur == NUMBER)
 	{
-        if (ansttype == LFLOAT || ansttype == LDOUBLE)   // ansttype задается прямо в сканере
+        if (ansttype == LFLOAT /* || ansttype == LDOUBLE*/) // ansttype задается прямо в сканере
         {
-            totree(TConstd);
-            totree(numr.first);
-            totree(numr.second);
+            totree(TConstf);
         }
         else if (ansttype == LCHAR)
         {
             totree(TConstc);
-            totree(num);                           // LCHAR
         }
         else
         {
             totree(TConst);
-            totree(num);                           // LINT
         }
+        totree(num);
 		stackoperands[++sopnd] = ansttype;
 		//        printf("number sopnd=%i ansttype=%i\n", sopnd, ansttype);
 		anst = NUMBER;
@@ -641,7 +683,7 @@ void primaryexpr()
                         if (func == TSEMCREATE)
                             anst = VAL, ansttype = stackoperands[sopnd] = LINT; // съели 1 параметр, выдали int
                         else
-                            --sopnd;                                // съели 1 параметр, не выдали результата
+                            --sopnd;                // съели 1 параметр, не выдали результата
                     }
                 }
             }
@@ -664,7 +706,7 @@ void primaryexpr()
                 scaner();
                 if (func == GETDIGSENSOR)
                     if (cur == BEGIN)
-                        sopnd--, actstring();
+                        sopnd--, actstring(LINT);
                     else
                         error(getdigsensorerr);
                 else
@@ -722,7 +764,7 @@ int find_field(int stype)                  // выдает смещение до
         int field_type = modetab[stype + 3 + i];
         al = alignm(field_type);
         select_displ = (select_displ+al-1)/al*al;
-        if (modetab[stype+4 + i] == repr)
+        if (modetab[stype + 4 + i] == repr)
         {
             stackoperands[sopnd] = ansttype = field_type;
             flag = 0;
@@ -765,7 +807,19 @@ void postexpr()
 
 	lid = lastid;
 	leftansttyp = ansttype;
-
+    
+    if ((next == DOT || next == ARROW || next == LEFTBR) && anst != IDENT)
+        error(wrong_postexpr);
+    if (next == DOT)
+    {
+        if (ansttype < 0 || modetab[ansttype] != MSTRUCT)
+            error(select_not_from_struct);
+        while (next == DOT)
+            anstdispl += find_field(ansttype);
+        tree[tc-2] = ansttype == LCHAR ? TSelectc : ansttype == LFLOAT ? TSelectf :
+                     ansttype == LDOUBLE ? TSelectd : TSelect;
+        tree[tc-1] = anstdispl;
+    }
 	if (next == LEFTBR)                // вызов функции
 	{
 		int i, j, n, dn, oldinass = inass;
@@ -807,7 +861,7 @@ void postexpr()
 			else
 			{
                 if (cur == BEGIN && is_array(mdj))
-                    actstring(), totree(TExprend);
+                    actstring(modetab[mdj+1]), totree(TExprend);
                 else
                 {
                     inass = 0;
@@ -845,7 +899,7 @@ void postexpr()
             int elem_type;
             if (was_func)
                 error(slice_from_func);
-            if (modetab[ansttype] != MARRAY)       // вырезка не из массива
+            if (ansttype < 0 || modetab[ansttype] != MARRAY)   // вырезка не из массива
                 error(slice_not_from_array);
 
             elem_type = modetab[ansttype + 1];
@@ -873,7 +927,7 @@ void postexpr()
 
         while (next == ARROW)  // это выборка поля из указателя на структуру, если после ->
                                // больше одной точки подряд, схлопываем в 1 select
-        {                      // перед выборкой мог быть вызов функции или вырезка элемента массива
+        {                 // перед выборкой мог быть вызов функции или вырезка элемента массива
             
             if (modetab[ansttype] != MPOINT || modetab[modetab[ansttype + 1]] != MSTRUCT)
                 error(get_field_not_from_struct_pointer);
@@ -882,7 +936,7 @@ void postexpr()
                 tree[tc-2] = TIdenttoval;
             anst = ADDR;
                              // pointer  мог быть значением функции (VAL) или, может быть,
-            totree(TSelect); // anst уже был ADDR, т.е. адрес теперь уже всегда на верхушке стека
+            totree(TDYNSelect); // anst уже был ADDR, т.е. адрес теперь уже всегда на верхушке стека
 
             anstdispl = find_field(ansttype = modetab[ansttype + 1]);
             selectend();
@@ -903,16 +957,9 @@ void postexpr()
                 totree(szof(ansttype));
                 totree(len1);
             }
-            else if (anst == IDENT)
-            {
-                int globid = anstdispl < 0 ? -1 : 1;
-                while (next == DOT)
-                    anstdispl += globid * find_field(ansttype);
-                tree[tc-1] = anstdispl;
-            }
             else     // ADDR
             {
-                totree(TSelect);
+                totree(TDYNSelect);
                 anstdispl = 0;
                 selectend();
             }
@@ -931,8 +978,8 @@ void postexpr()
 			op += 4;
 		scaner();
 		totreef(op);
-		if (anst == IDENT)
-			totree(lid);
+//		if (anst == IDENT)
+//			totree(lid);
 		anst = VAL;
 	}
 }
@@ -953,8 +1000,8 @@ void unarexpr()
             if (anst == ADDR)
                 op += 4;
             totreef(op);
-            if (anst == IDENT)
-                totree(lastid);
+//            if (anst == IDENT)
+//                totree(lastid);
             anst = VAL;
         }
         else
@@ -990,7 +1037,20 @@ void unarexpr()
                 if ((op == LNOT || op == LOGNOT) && ansttype == LFLOAT)
                     error(int_op_for_float);
                 else if (op == LMINUS)
-                    totreef(UNMINUS);
+                {
+                    if (tree[tc-2] == TConst)
+                        tree[tc-1] *= -1;
+                    else if (tree[tc-2] == TConstf)
+                    {
+                        float d;
+                        memcpy(&d, &tree[tc-1], sizeof(float));
+                        d = -d;
+                        memcpy(&tree[tc-1], &d, sizeof(float));
+//                        printf("post d= %f\n", d);
+                    }
+                    else
+                        totreef(UNMINUS);
+                }
                 else if (op == LPLUS)
                     ;
                 else
@@ -1133,9 +1193,12 @@ void struct_init(int);
 
 void inition(int decl_type)
 {
-    if (decl_type < 0 || is_pointer(decl_type) ||                   // Обработка для базовых типов, указателей
-        (is_array(decl_type) && modetab[decl_type+1] == LCHAR))     // или строк
-    {
+    if (cur == BEGIN)      // это только для структур, массивы идут отдельно
+        struct_init(decl_type);
+
+    else if (decl_type < 0 || is_pointer(decl_type) || is_struct(decl_type) ||
+        (is_array(decl_type) && modetab[decl_type+1] == LCHAR))
+    {                 // Обработка для базовых типов, указателей, структур или строк
         exprassn(1);
         toval();
         totree(TExprend);
@@ -1148,8 +1211,6 @@ void inition(int decl_type)
         else if (decl_type != ansttype)
             error(error_in_initialization);
     }
-    else if (cur == BEGIN)
-        struct_init(decl_type);
     else
         error(wrong_init);
 }
@@ -1157,42 +1218,47 @@ void inition(int decl_type)
 void struct_init(int decl_type)   // сейчас modetab[decl_type] равен MSTRUCT
 {
     int next_field = decl_type + 3, i, nf = modetab[decl_type+2] / 2;
-    if (cur != BEGIN)
-        error(struct_init_must_start_from_BEGIN);
-    totree(TStructinit);
-    totree(nf);
-    for (i=0; i<nf; i++)
+    if (cur == BEGIN)
     {
-        scaner();
-        inition(modetab[next_field]);
-        next_field += 2;
-        if (i != nf-1)
+        totree(TStructinit);
+        totree(nf);
+        for (i=0; i<nf; i++)
         {
-            if (next == COMMA)   // поля инициализации идут через запятую, заканчиваются }
-                scaner();
-            else
-                error(no_comma_in_init_list);
+            scaner();
+            inition(modetab[next_field]);
+            next_field += 2;
+            if (i != nf-1)
+            {
+                if (next == COMMA)   // поля инициализации идут через запятую, заканчиваются }
+                    scaner();
+                else
+                    error(no_comma_in_init_list);
+            }
         }
+        
+        if (next == END)
+            totree(TExprend);
+        else
+            error(wait_end);
+        scaner();
     }
-    
-    if (next == END)
-        totree(TExprend);
     else
-        error(wait_end);
-    scaner();
+        inition(decl_type);
+    
     leftansttype = decl_type;
 }
 
 
 void exprassnvoid()
 {
-    int t = tree[tc-2] < 9000 ? tc - 3 : tc - 2;
+/*    int t = tree[tc-2] < 9000 ? tc - 3 : tc - 2;
     int tt = tree[t];
     if ((tt >= ASS  && tt <= DIVASSAT)  || (tt >= POSTINC  && tt <= DECAT) ||
         (tt >= ASSR && tt <= DIVASSATR) || (tt >= POSTINCR && tt <= DECATR) )
         tree[t] += 200;
+ */
     --sopnd;
-}
+ }
 
 void exprassn(int level)
 {
@@ -1255,7 +1321,7 @@ void exprassn(int level)
                 totree(leftanstdispl);       // displleft
             if (anst == IDENT)
                 totree(anstdispl);           // displright
-            totree(modetab[ltype + 1]);      // длина
+            totree(ltype);                   // тип
             anst = leftanst;
             anstdispl = leftanstdispl;
 		}
@@ -1279,8 +1345,8 @@ void exprassn(int level)
             if (leftanst == ADDR)
                 opp += 11;
             totreef(opp);
-            if (leftanst == IDENT)
-                totree(leftid);
+//            if (leftanst == IDENT)
+//                totree(leftid);
             anst = VAL;
         }
         stackoperands[sopnd] = ansttype = ltype; // тип результата - на стек
@@ -1372,7 +1438,7 @@ void array_init(int decl_type)                   // сейчас modetab[decl_ty
     }
 }
 
-int arrdef(int t)                    // вызывается при описании массивов и структур из массивов сразу после idorpnt
+int arrdef(int t) // вызывается при описании массивов и структур из массивов сразу после idorpnt
 {
     arrdim = 0;
     usual = 1;                        // описание массива без пустых границ
@@ -1413,11 +1479,10 @@ void decl_id(int decl_type)    // вызывается из block и extdecl, т
     int oldid = toidentab(0, decl_type),
     elem_len, elem_type,
     all, adN;                  // all - место в дереве, где будет общее количество выражений в инициализации, для массивов - только признак (1) наличия инициализации
-    usual = 1;
     arrdim = 0;                // arrdim - размерность (0-скаляр), д.б. столько выражений-границ
     elem_type = decl_type;
     
-    if (next == LEFTSQBR)                                    // это определение массива (может быть многомерным)
+    if (next == LEFTSQBR)      // это определение массива (может быть многомерным)
     {
         totree(TDeclarr);
         adN = tc++;
@@ -1448,7 +1513,7 @@ void decl_id(int decl_type)    // вызывается из block и extdecl, т
                 tree[adN]--;              // это уменьшение N в Declarr
             array_init(decl_type);
             if (onlystrings == 1)
-                tree[all+2] = usual + 2;  // только из строк 2 - без границ, 3 - с границами
+                tree[all+2] = usual + 2;  // только из строк: 2 - без границ, 3 - с границами
 
         }
         else
@@ -1532,18 +1597,27 @@ void statement()
                 break;
             case PRINTID:
             {
-                            mustbe(LEFTBR, no_leftbr_in_printid);
+                mustbe(LEFTBR, no_leftbr_in_printid);
                 do
                 {
-                            mustbe(IDENT, no_ident_in_printid);
-                            lastid = reprtab[repr + 1];
-                            if (lastid == 1)
-                                error(ident_is_not_declared);
-                            totree(TPrintid);
-                            totree(lastid);
+                    int r;
+                    mustbe(IDENT, no_ident_in_printid);
+                    lastid = reprtab[repr + 1];
+                    if (lastid == 1)
+                        error(ident_is_not_declared);
+                    totree(TPrintid);
+                    totree(lastid);
+                    r = identab[lastid+1] + 2;
+                    do
+                    {
+                        totree(reprtab[r++]);
+                    }
+                    while (reprtab[r] != 0);
+                    totree('=');
+                    totree('\0');
                 }
                 while (next == COMMA ? scaner(), 1 : 0);
-                            mustbe(RIGHTBR, no_rightbr_in_printid);
+                mustbe(RIGHTBR, no_rightbr_in_printid);
             }
                 break;
 
@@ -1590,7 +1664,7 @@ void statement()
 
                             if (formattypes[i] == LFLOAT && ansttype == LINT)
                                 insertwiden();
-                            else if (formattypes[i] != ansttype) {
+                            else if (formattypes[i] != ansttype && (formattypes[i] != LCHAR && ansttype != LINT) && (formattypes[i] != LINT && ansttype != LCHAR)) {
                                 bad_printf_placeholder = placeholders[i];
                                 error(wrong_printf_param_type);
                             }
@@ -1623,7 +1697,7 @@ void statement()
                           totree(lastid);
                 }
                 while (next == COMMA ? scaner(), 1 : 0);
-                          mustbe(RIGHTBR, no_rightbr_in_printid);
+                mustbe(RIGHTBR, no_rightbr_in_printid);
             }
                 break;
             case LBREAK:
@@ -1699,6 +1773,7 @@ void statement()
                              tree[fromref] = 0;
                          else
                          {
+                             tree[fromref] = tc;
                              expr(0);
                              exprassnvoid();
                              mustbe(SEMICOLON, no_semicolon_in_for);
@@ -1867,10 +1942,13 @@ int struct_decl_list()
 
     scaner();
     scaner();
+
     
     do
 	{
+        int oldrepr;
 		t = elem_type = idorpnt(wait_ident_after_semicomma_in_struct, gettype());
+        oldrepr = repr;
         if (next == LEFTSQBR)
         {
             int adN, all;
@@ -1911,7 +1989,7 @@ int struct_decl_list()
             }                         // конец ASS
         }                             // конец LEFTSQBR
         loc_modetab[locmd++] = t;
-        loc_modetab[locmd++] = repr;
+        loc_modetab[locmd++] = oldrepr;
         field_count++;
         al = alignm(t);
         curdispl = (curdispl+al-1)/al*al;   // выравнивание

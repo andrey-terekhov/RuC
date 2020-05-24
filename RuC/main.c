@@ -8,9 +8,9 @@
 //#define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-//"tests/forf.c";
+//"tests/Mishatest.c";
 
-"tests/mips/test4.c";
+"tests/mips/inc_dec.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
@@ -29,6 +29,7 @@ const char * name =
 
 FILE *input, *output;
 double numdouble;
+float numf;
 int line=0, mline = 0, charnum=1, m_charnum = 1, cur, next, next1, num, hash, repr, keywordsnum, wasstructdef = 0;
  struct {int first; int second;} numr;
 int source[SOURCESIZE], lines[LINESSIZE];
@@ -37,7 +38,7 @@ int nextchar, curchar, func_def;
 int hashtab[256], reprtab[MAXREPRTAB], rp = 1, identab[MAXIDENTAB], id = 2,
     modetab[MAXMODETAB], md = 1, startmode = 1;
 int stack[100], stackop[100], stackoperands[100], stacklog[100], ansttype,
-    sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg = -1, displ = 8, maxdispl,
+    sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg = -1, displ = 0, maxdispl,
     maxdisplg, type, op = 0, inass = 0, firstdecl;
 int iniprocs[INIPROSIZE], procd = 1, arrdim, arrelemlen, was_struct_with_arr, usual;
 int instring = 0, inswitch = 0, inloop = 0, lexstr[MAXSTRINGL+1];

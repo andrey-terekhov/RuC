@@ -47,7 +47,7 @@
 #define MULTASS    9010
 #define DIVASS     9011
 
-#define REMASSAT   9012     // эти 22 операции с присваив. оставляют значение на стеке
+#define REMASSAT   9012    
 #define SHLASSAT   9013
 #define SHRASSAT   9014
 #define ANDASSAT   9015
@@ -59,32 +59,6 @@
 #define MINUSASSAT 9020
 #define MULTASSAT  9021
 #define DIVASSAT   9022
-
-#define REMASSV    9201
-#define SHLASSV    9202
-#define SHRASSV    9203
-#define ANDASSV    9204
-#define EXORASSV   9205
-#define ORASSV     9206
-
-#define ASSV       9207
-#define PLUSASSV   9208
-#define MINUSASSV  9209
-#define MULTASSV   9210
-#define DIVASSV    9211
-
-#define REMASSATV  9212 // а эти 22 операции с присваиванием не оставляют значение на стеке
-#define SHLASSATV  9213
-#define SHRASSATV  9214
-#define ANDASSATV  9215
-#define EXORASSATV 9216
-#define ORASSATV   9217
-
-#define ASSATV     9218
-#define PLUSASSATV 9219
-#define MINUSASSATV 9220
-#define MULTASSATV 9221
-#define DIVASSATV  9222
 
 #define LREM       9023
 #define LSHL       9024
@@ -114,15 +88,6 @@
 #define POSTDECAT  9046
 #define INCAT      9047
 #define DECAT      9048
-#define POSTINCV   9241
-#define POSTDECV   9242
-#define INCV       9243
-#define DECV       9244
-#define POSTINCATV 9245
-#define POSTDECATV 9246
-#define INCATV     9247
-#define DECATV     9248
-
 
 #define UNMINUS    9049
 
@@ -141,18 +106,6 @@
 #define MINUSASSATR 9070
 #define MULTASSATR 9071
 #define DIVASSATR  9072
-
-#define ASSRV      9257
-#define PLUSASSRV  9258
-#define MINUSASSRV 9259
-#define MULTASSRV  9260
-#define DIVASSRV   9261
-
-#define ASSATRV      9268
-#define PLUSASSATRV  9269
-#define MINUSASSATRV 9270
-#define MULTASSATRV  9271
-#define DIVASSATRV   9272
 
 #define EQEQR     9081
 #define NOTEQR    9082
@@ -173,14 +126,6 @@
 #define POSTDECATR 9096
 #define INCATR     9097
 #define DECATR     9098
-#define POSTINCRV  9291
-#define POSTDECRV  9292
-#define INCRV      9293
-#define DECRV      9294
-#define POSTINCATRV 9295
-#define POSTDECATRV 9296
-#define INCATRV     9297
-#define DECATRV     9298
 
 #define UNMINUSR   9099
 
@@ -216,6 +161,14 @@
 #define ADLOGOR       9480
 #define BEGINIT       9481
 //#define STRUCTINIT    9482
+#define TAddrtoval    9483
+#define TAddrtovalc   9484
+#define TAddrtovalf   9485
+#define TAddrtovald   9486
+#define TPrint        9587
+#define ROWING        9488
+#define ROWINGD       9489
+
 
 #define COPY00   9300    // d1, d2, l
 #define COPY01   9301    // d1,     l
@@ -271,6 +224,7 @@
 #define DESTROYC  9561
 #define EXITC     9562
 #define GETNUMC   9563
+
 
 // Лексемы
 
@@ -399,15 +353,15 @@
 #define TIdent      -300
 #define TConst      -301
 #define TString     -302
-#define TSliceident -303
-#define TSlice      -304
-#define TIdenttoval -305
-#define TAddrtoval  -306
-#define TCall1      -307
-#define TCall2      -308
-#define TFuncdef    -309
-#define TDeclid     -310
-
+#define TStringc    -303
+#define TStringf    -304
+#define TSliceident -305
+#define TSlice      -306
+#define TIdenttoval -307
+#define TCall1      -308
+#define TCall2      -309
+#define TFuncdef    -310
+#define TDeclid     -311
 #define TExprend    -312
 #define TCondexpr   -313
 #define TBegin      -314
@@ -425,23 +379,30 @@
 #define TReturnval  -326
 #define TGoto       -327
 #define TLabel      -328
-#define TPrint      -329
+
 #define TPrintid    -330
 #define TPrintf     -331
 #define TGetid      -332
 #define TIdenttoaddr -333
-#define TSelect     -334
+#define TDYNSelect   -334
 #define TFunidtoval -335
 #define TStructbeg  -336
 #define TStructend  -337
 #define TDeclarr    -338
-#define TConstd     -339
-#define TConstc     -340
-#define TIdenttovalc -341
-#define TIdenttovald -342
-#define TAddrtovald -343
-#define TBeginit    -344
-#define TStructinit -345
+#define TConstc     -339
+#define TConstf     -340
+#define TConstd     -341
+#define TIdenttovalc -342
+#define TIdenttovalf -343
+#define TIdenttovald -344
+#define TBeginit    -348
+#define TStructinit -349
+#define TSelect     -350
+#define TSelectc    -351
+#define TSelectf    -352
+#define TSelectd    -353
+
+
 
 // Коды ошибок
 
@@ -634,12 +595,22 @@
 #define after_preproces_words_must_be_space 381
 #define struct_init_must_start_from_BEGIN  382
 #define not_rowofint_in_stanfunc           383
-#define wrong_register                     384
-
+#define not_rowoffloat_in_stanfunc         384
+#define wrong_register                     385
+#define wrong_postexpr                     386
 
 //  коды предупреждений
 
 #define too_long_int                       400
+
+//  коды динамических ошибок
+
+#define too_many_sregs    1
+#define too_many_sregsf   2
+#define too_many_params   3
+#define dim_greater_5     4
+#define wrong_index       5
+#define memory_overflow   6
 
 // коды команд MIPS
 
@@ -668,6 +639,8 @@
 #define lw       35        // lw rt, imm(rs)       rt = [Address]
 #define sb       40        // sb rt, imm(rs)       [Address] = rt байт
 #define sw       43        // sw rt, imm(rs)       [Address] = rt
+#define lhu      44        // lhu rt, imm(rs)
+#define sh       45        // sh rt, imm(rs)
 
 #define sll      60        // sll rd, rt, shamt    rd = rt << shsmt
 #define srl      62        // srl rd, rt, shamt    rd = rt >> shsmt
@@ -696,9 +669,10 @@
 #define abs_s   114
 #define neg_s   115
 #define li_s    120
+#define li_d    121
 #define lwc1    125
 #define swc1    126
-#define mtc1_s  127   // ?
+#define mtc1    127   
 #define bc1t    128
 #define bc1f    129
 #define c_seq_s 130

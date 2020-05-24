@@ -59,7 +59,8 @@ int getf_char()
 
 void tablesandtree()
 {
-    int i=0, j;
+    int i=0, j, n;
+    double d;
     
     fprintf(output, "\n%s\n", "source");
     for (i=1; i<line; i++)
@@ -115,6 +116,15 @@ void tablesandtree()
                 break;
             case TString:
                 fprintf(output, "TString n= %i\n", tree[i++]);
+                break;
+            case TStringf:
+                fprintf(output, "TStringf n= %i\n", n = tree[i++]);
+                for (j=0; j<n; ++j)
+                {
+                    memcpy(&d, &tree[i], sizeof(double));
+                    i += 2;
+                    fprintf(output, "%f\n", d);
+                }
                 break;
             case TCondexpr:
                 fprintf(output, "TCondexpr\n");
@@ -177,9 +187,19 @@ void tablesandtree()
             case TIdenttovalc:
                 fprintf(output, "TIdenttovalc %i\n", tree[i++]);
                 break;
-            case TIdenttovald:
-                fprintf(output, "TIdenttovald %i\n", tree[i++]);
+            case TIdenttovalf:
+                fprintf(output, "TIdenttovalf %i\n", tree[i++]);
                 break;
+            case TSelect:
+                fprintf(output, "TSelect %i\n", tree[i++]);
+                break;
+            case TSelectc:
+                fprintf(output, "TSelectc %i\n", tree[i++]);
+                break;
+            case TSelectf:
+                fprintf(output, "TSelectf %i\n", tree[i++]);
+                break;
+
             case TFunidtoval:
                 fprintf(output, "TFunidtoval %i\n", tree[i++]);
                 break;
@@ -189,8 +209,11 @@ void tablesandtree()
             case TAddrtoval:
                 fprintf(output, "TAddrtoval\n");
                 break;
-            case TAddrtovald:
-                fprintf(output, "TAddrtovald\n");
+            case TAddrtovalc:
+                fprintf(output, "TAddrtovalc\n");
+                break;
+            case TAddrtovalf:
+                fprintf(output, "TAddrtovalf\n");
                 break;
             case TExprend:
                 fprintf(output, "TExprend\n");
@@ -200,6 +223,10 @@ void tablesandtree()
                 break;
             case TConstc:
                 fprintf(output, "TConstc %c\n", tree[i++]);
+                break;
+            case TConstf:
+                memcpy(&numf, &tree[i++], sizeof(float));
+                fprintf(output, "TConstf %f\n", numf);
                 break;
             case TConstd:
                 memcpy(&numdouble, &tree[i], sizeof(double));
@@ -213,8 +240,8 @@ void tablesandtree()
             case TSlice:
                 fprintf(output, "TSlice elem_type= %i\n", tree[i++]);
                 break;
-			case TSelect:
-				fprintf(output, "TSelect displ= %i\n", tree[i++]);
+			case TDYNSelect:
+				fprintf(output, "TDYNSelect displ= %i\n", tree[i++]);
 				break;
             case NOP:
                 fprintf(output, "NOP\n");
@@ -228,32 +255,32 @@ void tablesandtree()
             case COPY00:
                 fprintf(output, "COPY00 %i ", tree[i++]);     // displleft
                 fprintf(output, "%i ", tree[i++]);            // displright
-                fprintf(output, "(%i)\n", tree[i++]);         // length
+                fprintf(output, "(%i)\n", tree[i++]);         // type
                 break;
             case COPY01:
                 fprintf(output, "COPY01 %i ", tree[i++]);     // displleft
-                fprintf(output, "(%i)\n", tree[i++]);         // length
+                fprintf(output, "(%i)\n", tree[i++]);         // type
                 break;
             case COPY10:
                 fprintf(output, "COPY10 %i ", tree[i++]);     // displright
-                fprintf(output, "(%i)\n", tree[i++]);         // length
+                fprintf(output, "(%i)\n", tree[i++]);         // type
                 break;
             case COPY11:
-                fprintf(output, "COPY11 %i\n", tree[i++]);     // length
+                fprintf(output, "COPY11 %i\n", tree[i++]);     // type
                 break;
             case COPY0ST:
                 fprintf(output, "COPY0ST %i ", tree[i++]);     // displleft
-                fprintf(output, "(%i)\n", tree[i++]);          // length
+                fprintf(output, "(%i)\n", tree[i++]);          // type
                 break;
             case COPY1ST:
-                fprintf(output, "COPY1ST (%i)\n", tree[i++]);  // length
+                fprintf(output, "COPY1ST (%i)\n", tree[i++]);  // type
                 break;
             case COPY0STASS:
                 fprintf(output, "COPY0STASS %i ", tree[i++]);  // displleft
-                fprintf(output, "(%i)\n", tree[i++]);          // length
+                fprintf(output, "(%i)\n", tree[i++]);          // type
                 break;
             case COPY1STASS:
-                fprintf(output, "COPY1STASS (%i)\n", tree[i++]);// length
+                fprintf(output, "COPY1STASS (%i)\n", tree[i++]);// type
                 break;
             case COPYST:
                 fprintf(output, "COPYST %i ", tree[i++]);       // displ

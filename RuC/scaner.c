@@ -560,7 +560,9 @@ int scan()
                     warning(too_long_int);
                 ansttype = LFLOAT;
             }
-            memcpy(&numr, &numdouble, sizeof(double));
+            numf = numdouble;
+//            printf("numf= %f\n", numf);
+            memcpy(&num, &numf, sizeof(float));
             return NUMBER;
         }
             
