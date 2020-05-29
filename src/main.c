@@ -20,7 +20,7 @@
 #include <stdlib.h>
 
 
-const char *name = "../tests/Fadeev/Fadeev.c";
+const char *name = "../tests/102/Pronyushkin/led.c";
 // "../tests/Egor/Macro/test3.c";
 // "../tests/0test1.c";
 // "../tests/mips/0test.c";
