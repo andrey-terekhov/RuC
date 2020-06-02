@@ -210,8 +210,7 @@ int scan(compiler_context *context)
 	{
 		nextch(context);
 	}
-	// printf("scan context->curchar=%c %i\n", context->curchar,
-	// context->curchar);
+	// printf("scan context->curchar=%c %i\n", context->curchar, context->curchar);
 	switch (context->curchar)
 	{
 		case EOF:
@@ -645,7 +644,6 @@ int scan(compiler_context *context)
 				REPRTAB_LEN += 2;
 				context->hash = 0;
 
-				// решетка на 1 месте -- значит, ключевое слово препроцессора
 				do
 				{
 					context->hash += context->curchar;
