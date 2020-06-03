@@ -34,7 +34,11 @@ int get_next_char(preprocess_context *context)
 {
 	unsigned char firstchar;
 	unsigned char secondchar;
-	if (fscanf(context->input_stak[context->inp_file], "%c", &firstchar) == EOF)
+	if (context->nextch_type != PREPROCESS_STRING && fscanf(context->input_stak[context->inp_p], "%c", &firstchar) == EOF)
+	{
+		return EOF;
+	}
+	else if (context->nextch_type == PREPROCESS_STRING && (firstchar = context->preprocess_string[context->strp++]) == '\0')
 	{
 		return EOF;
 	}
@@ -42,7 +46,15 @@ int get_next_char(preprocess_context *context)
 	{
 		if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
 		{
-			fscanf(context->input_stak[context->inp_file], "%c", &secondchar);
+			if (context->nextch_type != PREPROCESS_STRING)
+			{
+				fscanf(context->input_stak[context->inp_p], "%c", &secondchar);
+			}
+			else
+			{
+				secondchar = context->preprocess_string[context->strp++];
+			}
+			
 
 			context->nextchar = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 | (secondchar & /*0b111111*/ 0x3F);
 		}
@@ -260,6 +272,6 @@ void m_nextch(preprocess_context *context, compiler_context *c_context)
 		}
 	}
 
-		//printf(" i = %d curcar = %c curcar = %i n = %d f = %d\n", context->nextch_type,
-			//context->curchar, context->curchar, context->nextp, context->inp_file);
+//		printf(" t = %d curcar = %c curcar = %i n = %d f = %d\n", context->nextch_type,
+//			context->curchar, context->curchar, context->nextp, context->inp_p);
 }

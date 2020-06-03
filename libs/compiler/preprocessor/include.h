@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 void include_relis(preprocess_context *context, compiler_context *c_context);
+void m_fopen(preprocess_context *context, const char* file_way);
 
 #ifdef __cplusplus
 } /* extern "C" */

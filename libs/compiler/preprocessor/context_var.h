@@ -26,10 +26,12 @@ extern "C" {
 
 typedef struct preprocess_context
 {
-	FILE *input_stak[10];
+	FILE *input_stak[100];
 	int inp_file;
 	char way[80];
 	int inp_p;
+	int include_type;
+
 	int hashtab[256];
 	int reprtab[MAXTAB];
 	int rp;
@@ -40,6 +42,9 @@ typedef struct preprocess_context
 
 	int mstring[STRIGSIZE];
 	int msp;
+
+	char* preprocess_string;
+	int strp;
 
 	int fchange[STRIGSIZE * 3];
 	int cp;

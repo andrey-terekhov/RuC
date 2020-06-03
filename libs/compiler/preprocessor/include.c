@@ -30,19 +30,42 @@
 #include <wchar.h>
 
 
-void open_file_c(char file_way[], int i, preprocess_context *context)
+void m_fopen(preprocess_context *context, const char* file_way)
 {
-	// file_way[i-1] == 'c';
-	if (1) // (!find_reportab())
+	context->input_stak[++context->inp_file] = fopen(file_way, "r");
+	if (context->input_stak[context->inp_file] == NULL)
 	{
-		return;
+		printf(" не найден файл %s\n", file_way);
+		exit(1);
 	}
+}
 
-	context->input_stak[context->inp_p++] = fopen(file_way, "r");
-	if (context->input_stak[context->inp_p - 1] == NULL)
+void include_fopen(preprocess_context *context, const char* file_way)
+{
+	context->input_stak[++context->inp_p] = fopen(file_way, "r");
+	if (context->input_stak[context->inp_p] == NULL)
 	{
-		context->inp_p--;
+		printf(" не найден файл %s\n", file_way);
+		exit(1);
 	}
+}
+
+void file_read(preprocess_context *context, compiler_context *c_context)
+{
+	get_next_char(context);
+	m_nextch(context, c_context);
+	// деректива лайн begin
+	while (context->curchar != EOF)
+	{
+		preprocess_scan(context, c_context);
+	}
+	// деректива лайн end
+	m_fprintf('\n', context, c_context);
+	m_fprintf('\n', context, c_context);
+	fclose(context->input_stak[context->inp_p]);
+	context->inp_p--;
+	m_nextch(context, c_context);
+	m_nextch(context, c_context);
 }
 
 void open_file(preprocess_context *context, compiler_context *c_context)
@@ -93,34 +116,26 @@ void open_file(preprocess_context *context, compiler_context *c_context)
 	}
 	file_way[i++] = '\0';
 
-
-	context->input_stak[context->inp_p++] = fopen(file_way, "r");
-	if (context->input_stak[context->inp_p - 1] == NULL)
-	{
-		printf(" не найден файл %s\n", file_way);
-		exit(1);
-	}
+	include_fopen(context, file_way);
 
 	if (file_way[i - 2] == 'h' && file_way[i - 3] == '.')
 	{
-		open_file_c(file_way, i, context);
+		if(context->include_type = 1)
+		{
+			file_read(context, c_context);
+		}
+		else if (context->include_type = 2)
+		{
+			a_erorr(70);
+		}
 	}
+	else 
+	{
+		file_read(context, c_context);
+	}	
 }
 
-void file_read(preprocess_context *context, compiler_context *c_context)
-{
-	while (context->curchar != EOF)
-	{
-		preprocess_scan(context, c_context);
-	}
-	m_fprintf('\n', context, c_context);
-	m_fprintf('\n', context, c_context);
-	fclose(context->input_stak[context->inp_file]);
-	context->inp_p--;
-	context->inp_file--;
-	m_nextch(context, c_context);
-	m_nextch(context, c_context);
-}
+
 
 void include_relis(preprocess_context *context, compiler_context *c_context)
 {
@@ -136,27 +151,6 @@ void include_relis(preprocess_context *context, compiler_context *c_context)
 	m_nextch(context, c_context);
 
 	open_file(context, c_context);
-	m_nextch(context, c_context);
-
+	//m_nextch(context, c_context);
 	space_end_line(context, c_context);
-
-	context->inp_file = context->inp_p - 1;
-
-	// деректива лайн begin
-
-	if (old_inp_p + 2 == context->inp_p)
-	{
-		file_read(context, c_context);
-		// деректива лайн end
-	}
-
-	if (old_inp_p + 1 == context->inp_p)
-	{
-		file_read(context, c_context);
-	}
-
-	if (context->inp_p != old_inp_p)
-	{
-		a_erorr(1);
-	}
 }
