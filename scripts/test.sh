@@ -9,7 +9,7 @@ init()
 	do
 		case "$1" in
 			-h|--help)
-				echo -e "Usage: ./test.sh [KEY]..."
+				echo -e "Usage: ./${0##*/} [KEY]..."
 				echo -e "Keys:"
 				echo -e "\t-h, --help\tTo output help info"
 				echo -e "\t-s, --silence\tFor silence testing"
