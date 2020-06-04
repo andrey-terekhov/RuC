@@ -4,6 +4,7 @@ init()
 {
 	output_time=0.1
 	wait_for=1
+	vm_release=master
 
 	while ! [[ -z $1 ]]
 	do
@@ -14,6 +15,7 @@ init()
 				echo -e "\t-h, --help\tTo output help info"
 				echo -e "\t-s, --silence\tFor silence testing"
 				echo -e "\t-d, --debug\tSwitch on debug tracing"
+				echo -e "\t-v, --virtual\tSet RuC virtual machine release"
 				echo -e "\t-o, --output\tSet output printing time (default = 0.1)"
 				echo -e "\t-w, --wait\tSet waiting time for timeout result (default = 1)"
 				exit 0
@@ -25,6 +27,10 @@ init()
 				debug=$1
 				echo -e "In future..."
 				exit 0
+				;;
+			-v|--virtual)
+				vm_release=$2
+				shift
 				;;
 			-o|--output)
 				output_time=$2
@@ -43,6 +49,21 @@ init()
 	timeout=0
 }
 
+build_vm()
+{
+	rm -rf ruc-vm
+	git clone -b $vm_release --recursive https://github.com/andrey-terekhov/RuC-VM ruc-vm
+
+	cd ruc-vm
+	mkdir -p build && cd build && cmake ..
+	if ! cmake --build . --config Release ; then
+		exit 1
+	fi
+
+	cd ../..
+	ruc_interpreter=./ruc-vm/build/ruc-vm
+}
+
 build()
 {
 	cd `dirname $0`/..
@@ -52,7 +73,9 @@ build()
 	fi
 
 	ruc_compiler=./ruc
-	
+
+	build_vm
+
 	test_dir=../tests
 	error_dir=../tests/errors
 }
@@ -73,7 +96,6 @@ message_success()
 		echo -e "\x1B[1;32m $action success \x1B[1;39m: $code"
 		sleep $output_time
 	fi
-	let success++
 }
 
 message_timeout()
@@ -82,7 +104,6 @@ message_timeout()
 		echo -e "\x1B[1;34m $action timeout \x1B[1;39m: $code"
 		sleep $output_time
 	fi
-	let timeout++
 }
 
 message_failure()
@@ -91,7 +112,27 @@ message_failure()
 		echo -e "\x1B[1;31m $action failure \x1B[1;39m: $code"
 		sleep $output_time
 	fi
-	let failure++
+}
+
+execution()
+{
+	action="execution"
+	internal_timeout $wait_for $ruc_interpreter export.txt >/dev/null 2>/dev/null
+
+	case "$?" in
+		0)
+			message_success
+			let success++
+			;;
+		124|142)
+			message_timeout
+			let timeout++
+			;;
+		*)
+			message_failure
+			let failure++
+			;;
+	esac
 }
 
 test()
@@ -100,24 +141,29 @@ test()
 	for code in `find ${test_dir} -name *.c`
 	do
 		action="compiling"
-		out=`internal_timeout $wait_for $ruc_compiler $code >/dev/null 2>/dev/null`
+		internal_timeout $wait_for $ruc_compiler $code >/dev/null 2>/dev/null
 
 		case "$?" in
 			0)
 				if [[ $code == $error_dir/* ]] ; then
 					message_failure
+					let failure++
 				else
 					message_success
+					execution
 				fi
 				;;
 			124|142)
 				message_timeout
+				let timeout++
 				;;
 			*)
 				if [[ $code == $error_dir/* ]] ; then
 					message_success
+					let success++
 				else
 					message_failure
+					let failure++
 				fi
 				;;
 		esac
