@@ -25,8 +25,6 @@ init()
 				;;
 			-d|--debug)
 				debug=$1
-				echo -e "In future..."
-				exit 0
 				;;
 			-v|--virtual)
 				vm_release=$2
@@ -92,9 +90,11 @@ internal_timeout()
 
 message_success()
 {
-	if [[ -z $silence ]] ; then
-		echo -e "\x1B[1;32m $action success \x1B[1;39m: $code"
-		sleep $output_time
+	if [[ -z $debug ]] ; then
+		if [[ -z $silence ]] ; then
+			echo -e "\x1B[1;32m $action success \x1B[1;39m: $code"
+			sleep $output_time
+		fi
 	fi
 }
 
@@ -130,6 +130,10 @@ execution()
 			;;
 		*)
 			message_failure
+			if ! [[ -z $debug ]] ; then
+				$ruc_interpreter export.txt
+			fi
+
 			let failure++
 			;;
 	esac
@@ -163,6 +167,10 @@ test()
 					let success++
 				else
 					message_failure
+					if ! [[ -z $debug ]] ; then
+						$ruc_compiler $code
+					fi
+
 					let failure++
 				fi
 				;;
