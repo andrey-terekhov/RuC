@@ -24,11 +24,13 @@
 void preprocess_context_init(preprocess_context *context)
 {
 	memset(context, 0, sizeof(preprocess_context));
+	context->include_type = 0;
 	context->rp = 1;
 	context->inp_file = 0;
-	context->inp_p = 0;
+	context->inp_p = -1;
 	context->rp = 1;
 	context->mp = 1;
+	context->strp = 0;
 	context->oldmp = 1;
 	context->msp = 0;
 	context->cp = 0;

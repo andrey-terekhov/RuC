@@ -80,7 +80,6 @@ int macro_keywords(preprocess_context *context, compiler_context *c_context)
 	hash &= 255;
 	context->reprtab[context->rp++] = 0;
 	r = context->hashtab[hash];
-
 	if (r)
 	{
 		do
@@ -147,6 +146,41 @@ int collect_mident(preprocess_context *context, compiler_context *c_context)
 	}
 
 	return 0;
+}
+
+int find_file(preprocess_context *context, char *s)
+{
+	int oldrp = context->rp;
+	context->rp += 2;
+
+	int r;
+	int hash = 0;
+	int i = 0;
+
+	while (s[i] != '\0')
+	{
+		context->reprtab[context->rp++] = s[i];
+		hash += s[i];
+		i++;
+	}
+
+	hash &= 255;
+	r = context->hashtab[hash];
+
+	while (r)
+	{
+		if (context->reprtab[r + 1] == SH_FILE && equal_reprtab(r, oldrp, context))
+		{
+			return 0;
+		}
+
+		r = context->reprtab[r];
+	}
+
+	context->reprtab[oldrp] = context->hashtab[hash];
+	context->reprtab[oldrp + 1] = SH_FILE;
+	context->hashtab[hash] = oldrp;
+	return 1;
 }
 
 void space_end_line(preprocess_context *context, compiler_context *c_context)
