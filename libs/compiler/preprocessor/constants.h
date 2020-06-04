@@ -29,13 +29,14 @@
 #define MACROFUNCTION 0
 #define MACRODEF	  1
 
-#define SOURSTYPE 1
-#define MTYPE	  2
-#define CTYPE	  3
-#define IFTYPE	  4
-#define WHILETYPE 5
-#define FTYPE	  6
-#define TEXTTYPE  10
+#define SOURSTYPE		  1
+#define MTYPE			  2
+#define CTYPE			  3
+#define IFTYPE			  4
+#define WHILETYPE		  5
+#define FTYPE			  6
+#define TEXTTYPE		  10
+#define PREPROCESS_STRING 11
 
 
 // Ключевые слова
@@ -57,6 +58,7 @@
 #define SH_ENDF	   -78
 #define SH_EVAL	   -79
 #define SH_INCLUDE -80
+#define SH_FILE	   -81
 
 
 // Коды ошибок
