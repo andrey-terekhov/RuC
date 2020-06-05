@@ -17,6 +17,7 @@
 #pragma once
 
 #include "context.h"
+#include "context_var.h"
 
 
 #ifdef __cplusplus
@@ -24,7 +25,7 @@ extern "C" {
 #endif
 
 void a_erorr(int i);
-void m_error(int ernum, compiler_context *c_context);
+void m_error(int ernum, macro_long_string *s);
 
 void printf_character(int wchar);
 

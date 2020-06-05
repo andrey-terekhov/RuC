@@ -26,6 +26,7 @@
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
 #include "while.h"
+#include "frontend_utils.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -146,7 +147,7 @@ void preprocess_words(preprocess_context *context, compiler_context *c_context)
 			}
 			else
 			{
-				m_error(after_eval_must_be_ckob, c_context);
+				m_error(after_eval_must_be_ckob, &context->error_input);
 			}
 
 			m_change_nextch_type(CTYPE, 0, context, c_context);
@@ -421,16 +422,23 @@ void open_main_file(const char *code, preprocess_context *context)
 	context->way[i + 1] = '\0';
 }
 
-void preprocess_file(compiler_context *c_context, const char *code)
+void save_data(macro_long_string *s, control_string *c, compiler_context *c_context, preprocess_context *context)
 {
-	c_context->mlines[c_context->mline = 1] = 1;
-	c_context->charnum = 1;
+	control_string_pinter(c, context->control_bflag + 1, 1);
+	c_context->before_source = s->str;
+	c_context->before_source_p = s->p;
+	c_context->control_before = c->str_before;
+	c_context->control_after = c->str_after;
+}
+
+const char* preprocess_file(compiler_context *c_context, const char *code)
+{
 	preprocess_context *context = malloc(sizeof(preprocess_context));
 	preprocess_context_init(context);
 	
 
-	
-	
+	printer_attach_buffer(&context->output_options, 1024);
+
 	for (int i = 0; i < HASH; i++)
 	{
 		context->hashtab[i] = 0;
@@ -454,13 +462,15 @@ void preprocess_file(compiler_context *c_context, const char *code)
 
 
 	preprocess_c_file(context, c_context);
+	const char *macro_processed = strdup(context->output_options.ptr);
 	
-	c_context->m_conect_lines[context->mclp++] = c_context->mline - 1;
+	save_data(&context->error_input, &context->control, c_context, context);
+
 	if (MACRODEBAG)
 	{
-		char *macro_processed = strdup(c_context->output_options.ptr);
 		printf("%s\n", macro_processed);
 	}
+	return macro_processed;
 }
 
 /*

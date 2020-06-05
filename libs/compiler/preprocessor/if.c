@@ -79,7 +79,7 @@ void if_end(preprocess_context *context, compiler_context *c_context)
 				checkif--;
 				if (checkif < 0)
 				{
-					m_error(befor_endif, c_context);
+					m_error(befor_endif, &context->error_input);
 				}
 				return;
 			}
@@ -96,7 +96,7 @@ void if_end(preprocess_context *context, compiler_context *c_context)
 		}
 	}
 
-	m_error(must_be_endif, c_context);
+	m_error(must_be_endif, &context->error_input);
 }
 
 int if_false(preprocess_context *context, compiler_context *c_context)
@@ -126,7 +126,7 @@ int if_false(preprocess_context *context, compiler_context *c_context)
 		}
 	}
 
-	m_error(must_be_endif, c_context);
+	m_error(must_be_endif, &context->error_input);
 	return 1;
 }
 
@@ -146,7 +146,7 @@ void if_true(int type_if, preprocess_context *context, compiler_context *c_conte
 			checkif--;
 			if (checkif < 0)
 			{
-				m_error(befor_endif, c_context);
+				m_error(befor_endif, &context->error_input);
 			}
 
 			return;
@@ -155,7 +155,7 @@ void if_true(int type_if, preprocess_context *context, compiler_context *c_conte
 
 	if (type_if != SH_IF && context->cur == SH_ELIF)
 	{
-		m_error(dont_elif, c_context);
+		m_error(dont_elif, &context->error_input);
 	}
 
 	if_end(context, c_context);
@@ -213,7 +213,7 @@ void if_relis(preprocess_context *context, compiler_context *c_context)
 		checkif--;
 		if (checkif < 0)
 		{
-			m_error(befor_endif, c_context);
+			m_error(befor_endif, &context->error_input);
 		}
 	}
 }

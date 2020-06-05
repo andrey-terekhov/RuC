@@ -84,7 +84,6 @@ void output_tables_and_tree(compiler_context *context, const char *path)
 
 	ext_decl(context); // генерация дерева
 
-	context->lines[context->line + 1] = context->charnum;
 	tablesandtree(context);
 	compiler_context_detach_io(context, IO_TYPE_OUTPUT);
 }

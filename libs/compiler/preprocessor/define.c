@@ -152,7 +152,7 @@ void function_scob_collect(int t, int num, preprocess_context *context, compiler
 			m_nextch(context, c_context);
 		}
 	}
-	m_error(scob_not_clous, c_context);
+	m_error(scob_not_clous, &context->error_input);
 }
 
 void function_stack_create(int n, preprocess_context *context, compiler_context *c_context)
@@ -165,7 +165,7 @@ void function_stack_create(int n, preprocess_context *context, compiler_context 
 
 	if (context->curchar == ')')
 	{
-		m_error(stalpe, c_context);
+		m_error(stalpe, &context->error_input);
 	}
 
 	while (context->curchar != ')')
@@ -180,7 +180,7 @@ void function_stack_create(int n, preprocess_context *context, compiler_context 
 
 			if (num > n)
 			{
-				m_error(not_enough_param, c_context);
+				m_error(not_enough_param, &context->error_input);
 			}
 			m_nextch(context, c_context);
 
@@ -193,7 +193,7 @@ void function_stack_create(int n, preprocess_context *context, compiler_context 
 		{
 			if (num != n)
 			{
-				m_error(not_enough_param2, c_context);
+				m_error(not_enough_param2, &context->error_input);
 			}
 			m_nextch(context, c_context);
 
@@ -202,7 +202,7 @@ void function_stack_create(int n, preprocess_context *context, compiler_context 
 		}
 	}
 
-	m_error(scob_not_clous, c_context);
+	m_error(scob_not_clous, &context->error_input);
 }
 
 void funktionleter(int flag_macro, preprocess_context *context, compiler_context *c_context)
@@ -256,7 +256,7 @@ int to_functionident(preprocess_context *context, compiler_context *c_context)
 		}
 		else
 		{
-			m_error(functionid_begins_with_letters, c_context);
+			m_error(functionid_begins_with_letters, &context->error_input);
 		}
 
 		context->msp = 0;
@@ -268,7 +268,7 @@ int to_functionident(preprocess_context *context, compiler_context *c_context)
 		}
 		else if (context->curchar != ')')
 		{
-			m_error(after_functionid_must_be_comma, c_context);
+			m_error(after_functionid_must_be_comma, &context->error_input);
 		}
 	}
 
@@ -345,7 +345,7 @@ void function_add_to_macrotext(preprocess_context *context, compiler_context *c_
 
 		if (context->curchar == EOF)
 		{
-			m_error(not_end_fail_define, c_context);
+			m_error(not_end_fail_define, &context->error_input);
 		}
 
 		if (context->curchar == '\\')
@@ -380,7 +380,7 @@ void define_get_from_macrotext(int r, preprocess_context *context, compiler_cont
 	}
 	else
 	{
-		m_error(ident_not_exist, c_context);
+		m_error(ident_not_exist, &context->error_input);
 	}
 }
 
@@ -413,7 +413,7 @@ int define_add_to_reprtab(preprocess_context *context, compiler_context *c_conte
 			}
 			else
 			{
-				m_error(repeat_ident, c_context);
+				m_error(repeat_ident, &context->error_input);
 			}
 		}
 		r = context->reprtab[r];
@@ -435,7 +435,7 @@ void define_add_to_macrotext(int r, preprocess_context *context, compiler_contex
 	{
 		if (context->curchar == EOF)
 		{
-			m_error(not_end_fail_define, c_context);
+			m_error(not_end_fail_define, &context->error_input);
 		}
 		else if (context->curchar == '#')
 		{
@@ -444,7 +444,7 @@ void define_add_to_macrotext(int r, preprocess_context *context, compiler_contex
 			{
 				if (context->curchar != '(')
 				{
-					m_error(after_eval_must_be_ckob, c_context);
+					m_error(after_eval_must_be_ckob, &context->error_input);
 				}
 
 				calculator(0, context, c_context);
@@ -508,7 +508,7 @@ void define_relis(preprocess_context *context, compiler_context *c_context)
 
 	if (!is_letter(context))
 	{
-		m_error(ident_begins_with_letters1, c_context);
+		m_error(ident_begins_with_letters1, &context->error_input);
 	}
 
 	r = define_add_to_reprtab(context, c_context);
@@ -522,7 +522,7 @@ void define_relis(preprocess_context *context, compiler_context *c_context)
 	}
 	else if (context->curchar != ' ')
 	{
-		m_error(after_ident_must_be_space, c_context);
+		m_error(after_ident_must_be_space, &context->error_input);
 	}
 	else
 	{
@@ -540,18 +540,18 @@ void set_relis(preprocess_context *context, compiler_context *c_context)
 
 	if (!is_letter(context))
 	{
-		m_error(ident_begins_with_letters1, c_context);
+		m_error(ident_begins_with_letters1, &context->error_input);
 	}
 
 	j = collect_mident(context, c_context);
 
 	if (context->macrotext[context->reprtab[j + 1]] == MACROFUNCTION)
 	{
-		m_error(functions_cannot_be_changed, c_context);
+		m_error(functions_cannot_be_changed, &context->error_input);
 	}
 	else if (context->curchar != ' ')
 	{
-		m_error(after_ident_must_be_space, c_context);
+		m_error(after_ident_must_be_space, &context->error_input);
 	}
 
 	m_nextch(context, c_context);

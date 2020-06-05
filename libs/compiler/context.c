@@ -35,8 +35,8 @@ void compiler_context_init(compiler_context *context)
 	printer_init(&context->miscout_options);
 	compiler_table_init(&context->reprtab);
 
-	context->charnum = 1;
-	context->m_charnum = 1;
+	context->charnum = 0;
+	context->charnum_before = 0;
 	REPRTAB_LEN = 1;
 	context->id = 2;
 	context->md = 1;

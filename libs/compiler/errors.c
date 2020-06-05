@@ -17,6 +17,7 @@
 #include "errors.h"
 #include "codes.h"
 #include "global.h"
+#include "context_var.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -44,68 +45,94 @@ void warning(compiler_context *context, int ernum)
 	}
 }
 
-void show_macro(compiler_context *context)
+void show_macro(compiler_context *context, int k, int nwe_line)
 {
-	int i = context->lines[context->line];
-	int j = context->mlines[context->m_conect_lines[context->line]];
 	int flag = 1;
+	int i = k;
+	int j = 0;
 
-	printf("line %i) ", context->line);
-	for (; i < context->charnum; i++)
+	printf("line %i) ", nwe_line);
+	while (context->before_source[i] != '\n' && context->before_source[i] != EOF)
 	{
-		printer_printchar(&context->miscout_options, context->source[i]);
-
-		if (flag && context->source[i] == context->before_source[j])
+		printer_printchar(&context->err_options, context->before_source[i]);
+		if (flag && context->last_line[j] == context->before_source[i])
 		{
+			if(j == context->charnum)
+			{
+				break;
+			}
 			j++;
+			i++;
+
 		}
 		else
 		{
 			flag = 0;
+			i++;
 		}
 	}
 
 	if (flag == 0)
 	{
-		printf("\n\n В строке есть макрозамена, строка до макрогенерации:\nline %i)",
-			   context->m_conect_lines[context->line]);
-		for (j = context->mlines[context->m_conect_lines[context->line]];
-			 j < context->mlines[context->m_conect_lines[context->line] + 1]; j++)
+		printer_printf(&context->err_options, 
+			"\n\n В строке есть макрозамена, строка после макрогенерации:\nline %i)",context->line);
+		
+		for (j = 0; j < context->charnum; j++)
 		{
-			printer_printchar(&context->miscout_options, context->before_source[j]);
+			printer_printchar(&context->err_options, context->last_line[j]);
 		}
-		printf("\n");
+		printer_printf(&context->err_options,"\n");
 	}
 }
 
 void error(compiler_context *context, int ernum)
 {
-	int i;
+	int i = 0;
 	int j;
 
-	// tablesandtree();
 	printer_printf(&context->err_options, "\n Oшибка :\n \n");
-	if (context->lines[context->line] == context->charnum)
+	if (context->charnum == 0)
 	{
 		context->line--;
+		context->charnum = context->charnum_before;
 	}
-	// printer_printf(&context->err_options, "line - 1=%d, mline=%d,
-	// co[carnum-1=%d] = 1%c1, lines[line]=%d, lines[line+1]=%d \n",
-	// line-1,m_conect_lines[line-1],charnum-1,source[charnum-1],
-	// lines[line],lines[line+1]);
-	context->charnum--;
-	for (j = 1; j < context->m_conect_lines[context->line]; j++)
+	else
+	{
+		context->charnum--;
+	}
+	
+	int nwe_line = context->line;
+
+	/*for(int k = 0; k < 3; k++)
+	{
+		printf("b[%i] = %i, a[%i] = %i\n", k, context->control_before[k], k, context->control_after[k]);
+	}*/
+
+	while (context->control_before[i] < context->line)
+	{
+		nwe_line += context->control_after[i] - 1;
+		i++;
+	}
+	
+	i = 0;
+	for (j = 1; j < nwe_line; j++)
 	{
 		printer_printf(&context->err_options, "line %i) ", j);
 
-		for (i = context->mlines[j]; i < context->mlines[j + 1]; i++)
+		while (context->before_source[i] != '\n' && context->before_source[i] != EOF)		
 		{
 			printer_printchar(&context->err_options, context->before_source[i]);
+			i++;
 		}
+		printer_printf(&context->err_options, "\n");
+		i++;
 	}
-	show_macro(context);
+
+	show_macro(context, i, nwe_line);
+
 	printer_printf(&context->err_options, "\n");
-	printer_printf(&context->err_options, "ошибка: ");
+	printer_printf(&context->err_options, "тип ошибки: ");
+
 	switch (ernum)
 	{
 		case after_type_must_be_ident:

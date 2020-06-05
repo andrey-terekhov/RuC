@@ -53,9 +53,9 @@ typedef struct compiler_context
 
 	double numdouble;
 	int line;
-	int mline;
+	//int mline;
 	int charnum;
-	int m_charnum;
+	int charnum_before;
 	int cur;
 	int next;
 	int next1;
@@ -68,11 +68,16 @@ typedef struct compiler_context
 		int first;
 		int second;
 	} numr;
-	int source[SOURCESIZE];
-	int lines[LINESSIZE];
-	int before_source[SOURCESIZE];
-	int mlines[LINESSIZE];
-	int m_conect_lines[LINESSIZE];
+	//int source[SOURCESIZE];
+	//int lines[LINESSIZE];
+	//int before_source[SOURCESIZE];
+	//int mlines[LINESSIZE];
+	//int m_conect_lines[LINESSIZE];
+	const int* before_source;
+	int before_source_p;
+	const int* control_before;
+	const int* control_after;
+	int last_line[LINESSIZE*2];
 	int nextchar;
 	int curchar;
 	int func_def;

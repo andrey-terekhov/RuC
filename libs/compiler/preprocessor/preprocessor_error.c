@@ -47,18 +47,26 @@ void a_erorr(int i)
 	exit(2);
 }
 
-void m_error(int ernum, compiler_context *c_context)
+void m_error(int ernum, macro_long_string *s)
 {
 	int i;
+	int j;
 
-	// tablesandtree();
-	printf("line %i) ", c_context->mline);
-	for (i = c_context->mlines[c_context->mline]; i < c_context->m_charnum; i++)
+	printf("\n Ошибка при препроцесировании:\n \n");
+	printf("line 1) ");
+	for (i = 0; i < s->p; i++)
 	{
-		printf_character(c_context->before_source[i]);
+		printf_character(s->str[i]);
+		if(s->str[i] == '\n')
+		{
+			printf("line %i) ", j);
+			j++;
+		}
+
 	}
 
-	printf("\n");
+	printf("\n тип ошибки: ");
+
 	switch (ernum)
 	{
 		case after_preproces_words_must_be_space:

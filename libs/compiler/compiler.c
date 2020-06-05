@@ -79,15 +79,15 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 		}
 
 		// Открытие исходного текста
-		compiler_context_attach_io(context, file->path, IO_TYPE_INPUT, IO_SOURCE_FILE);
+		//compiler_context_attach_io(context, file->path, IO_TYPE_INPUT, IO_SOURCE_FILE);
 
 		// Препроцессинг в массив
-		compiler_context_attach_io(context, "", IO_TYPE_OUTPUT, IO_SOURCE_MEM);
+		//compiler_context_attach_io(context, "", IO_TYPE_OUTPUT, IO_SOURCE_MEM);
 
 		printf("\nИсходный текст:\n \n");
 
-		preprocess_file(context, file->path); // макрогенерация
-		macro_processed = strdup(context->output_options.ptr);
+		macro_processed = preprocess_file(context, file->path); // макрогенерация
+		//macro_processed = strdup(context->output_options.ptr);
 		if (macro_processed == NULL)
 		{
 			fprintf(stderr, " ошибка выделения памяти для "

@@ -63,7 +63,7 @@ double get_digit(preprocess_context *context, compiler_context *c_context)
 		numdouble = numdouble * 10 + (context->curchar - '0');
 		if (numdouble > (double)INT_MAX)
 		{
-			m_error(too_many_nuber, c_context);
+			m_error(too_many_nuber, &context->error_input);
 		}
 		num = num * 10 + (context->curchar - '0');
 		m_nextch(context, c_context);
@@ -104,7 +104,7 @@ double get_digit(preprocess_context *context, compiler_context *c_context)
 
 		if (!is_digit(context))
 		{
-			m_error(must_be_digit_after_exp1, c_context);
+			m_error(must_be_digit_after_exp1, &context->error_input);
 		}
 
 
@@ -333,9 +333,9 @@ void calculator(int if_flag, preprocess_context *context, compiler_context *c_co
 			}
 			else
 			{
-				m_error(after_eval_must_be_ckob, c_context);
+				m_error(after_eval_must_be_ckob, &context->error_input);
 			}
-			m_change_nextch_type(CTYPE, 0, context, c_context);
+			m_change_nextch_type(CTYPE, 0, context, &context->error_input);
 		}
 		else if ((opration_flag || context->curchar == '(') && (c = check_opiration(context, c_context)))
 		{
@@ -344,11 +344,11 @@ void calculator(int if_flag, preprocess_context *context, compiler_context *c_co
 
 			if (n != 0 && if_flag && n > 3)
 			{
-				m_error(not_arithmetic_operations, c_context);
+				m_error(not_arithmetic_operations, &context->error_input);
 			}
 			if (n != 0 && !if_flag && n <= 3)
 			{
-				m_error(not_logical_operations, c_context);
+				m_error(not_logical_operations, &context->error_input);
 			}
 
 			while (op != 0 && n != 0 && get_prior(operation[op - 1]) >= n)

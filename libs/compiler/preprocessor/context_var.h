@@ -17,12 +17,29 @@
 #pragma once
 
 #include "constants.h"
+#include "uniprinter.h"
+#include "uniscanner.h"
 #include <stdio.h>
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct macro_long_string
+{
+	int *str;
+	int p;
+	int size;
+} macro_long_string;
+
+typedef struct control_string
+{
+	int *str_before;
+	int *str_after;
+	int p;
+	int size;
+} control_string;
 
 typedef struct preprocess_context
 {
@@ -76,10 +93,24 @@ typedef struct preprocess_context
 	int oldnextch_type[DIP];
 	int oldnextp[DIP];
 	int dipp;
+
+	int line;
+	int control_aflag;
+	int control_bflag;
+
+	int temp_output;
+	macro_long_string error_input;
+	control_string control;
+
+	universal_printer_options output_options;
 } preprocess_context;
 
 
+
+
 void preprocess_context_init(preprocess_context *context);
+void long_string_pinter(macro_long_string *s, int a);
+void control_string_pinter(control_string *s, int before, int after);
 
 #ifdef __cplusplus
 } /* extern "C" */

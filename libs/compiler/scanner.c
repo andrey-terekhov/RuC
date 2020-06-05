@@ -43,7 +43,7 @@ void onemore(compiler_context *context)
 
 void endofline(compiler_context *context)
 {
-	if (context->prep_flag == 1)
+	/*if (context->prep_flag == 1)
 	{
 		int j;
 		printer_printf(&context->output_options, "line %i) ", context->line - 1);
@@ -55,84 +55,45 @@ void endofline(compiler_context *context)
 			}
 		}
 		fflush(stdout);
-	}
+	}*/
 }
 
 void endnl(compiler_context *context)
 {
-	context->lines[++context->line] = context->charnum;
+	if (context->kw)
+	{
+		++context->line;
+		context->charnum_before = context->charnum;
+		context->charnum = 0;
+	}
+	/*context->lines[++context->line] = context->charnum;
 	context->lines[context->line + 1] = context->charnum;
 	if (context->kw)
 	{
 		endofline(context);
-	}
+	}*/
 }
 
 void nextch(compiler_context *context)
 {
+	
 	onemore(context);
 	if (context->curchar == EOF)
 	{
 		onemore(context);
-		context->lines[++context->line] = context->charnum;
-		context->lines[context->line + 1] = context->charnum;
-		if (context->kw)
-		{
-			endofline(context);
-			printer_printf(&context->output_options, "\n");
-		}
+		endnl(context);
+		//printer_printf(&context->output_options, "\n");
 		return;
 	}
-
-	context->source[context->charnum++] = context->curchar;
+	if (context->kw)
+	{
+		context->last_line[context->charnum++] = context->curchar;
+	}
 	if (context->instring)
 	{
 		return;
 	}
 
-	if (context->curchar == '/' && context->nextchar == '/')
-	{
-		do
-		{
-			onemore(context);
-			context->source[context->charnum++] = context->curchar;
-			if (context->curchar == EOF)
-			{
-				endnl(context);
-				printer_printf(&context->output_options, "\n");
-				return;
-			}
-		} while (context->curchar != '\n');
-
-		endnl(context);
-		return;
-	}
-
-	if (context->curchar == '/' && context->nextchar == '*')
-	{
-		onemore(context);
-		context->source[context->charnum++] = context->curchar; // надо сразу выесть /*, чтобы не попасть на /*/
-		do
-		{
-			onemore(context);
-			context->source[context->charnum++] = context->curchar;
-			if (context->curchar == EOF)
-			{
-				endnl(context);
-				printer_printf(&context->output_options, "\n");
-				error(context, comm_not_ended);
-			}
-			if (context->curchar == '\n')
-			{
-				endnl(context);
-			}
-		} while (context->curchar != '*' || context->nextchar != '/');
-
-		onemore(context);
-		context->source[context->charnum++] = context->curchar;
-		context->curchar = ' ';
-		return;
-	}
 	if (context->curchar == '\n')
 	{
 		endnl(context);

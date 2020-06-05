@@ -74,7 +74,7 @@ int macro_keywords(preprocess_context *context, compiler_context *c_context)
 	if (context->curchar != '\n' && context->curchar != ' ' && context->curchar != '\t' && context->curchar != '(' &&
 		context->curchar != '\"')
 	{
-		m_error(after_ident_must_be_space, c_context);
+		m_error(after_ident_must_be_space, &context->error_input);
 	}
 
 	hash &= 255;
@@ -193,7 +193,7 @@ void space_end_line(preprocess_context *context, compiler_context *c_context)
 		}
 		else
 		{
-			m_error(after_preproces_words_must_be_space, c_context);
+			m_error(after_preproces_words_must_be_space, &context->error_input);
 		}
 	}
 	m_nextch(context, c_context);

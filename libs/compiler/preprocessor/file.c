@@ -108,33 +108,35 @@ void m_old_nextch_type(preprocess_context *context)
 	// printf("oldnextch_type = %d\n", nextch_type);
 }
 
-void m_end_line(compiler_context *c_context)
+
+
+void end_line(preprocess_context *context, macro_long_string *s)
 {
-	int j;
+	++context->line;
+	context->control_aflag++;
 
-	c_context->mlines[++c_context->mline] = c_context->m_charnum;
-	c_context->mlines[c_context->mline + 1] = c_context->m_charnum;
+	printf("Line %i) ", context->line - 1);
 
-	printf("Line %i) ", c_context->mline - 1);
-
-	for (j = c_context->mlines[c_context->mline - 1]; j < c_context->mlines[c_context->mline]; j++)
+	for (int j = context->temp_output; j < s->p; j++)
 	{
-		if (c_context->before_source[j] != EOF)
+		if (s->str[j] != EOF)
 		{
-			printf_character(c_context->before_source[j]);
+			printf_character(s->str[j]);
 		}
 	}
+	context->temp_output = s->p;
 }
 
 void m_onemore(preprocess_context *context, compiler_context *c_context)
 {
 	context->curchar = context->nextchar;
 	context->nextchar = get_next_char(context);
-	c_context->before_source[c_context->m_charnum++] = context->curchar;
+	//c_context->before_source[c_context->m_charnum++] = context->curchar;
+	long_string_pinter(&context->error_input, context->curchar);
 
 	if (context->curchar == EOF)
 	{
-		m_end_line(c_context);
+		end_line(context, &context->error_input);
 		printf("\n");
 	}
 }
@@ -143,10 +145,15 @@ void m_fprintf(int a, preprocess_context *context, compiler_context *c_context)
 {
 	if (a == '\n')
 	{
-		c_context->m_conect_lines[context->mclp++] = c_context->mline - 1;
+		context->control_bflag++;
+		if(context->control_aflag != 1)
+		{
+			control_string_pinter(&context->control, context->control_bflag, context->control_aflag); 
+		}
+		context->control_aflag = 0;
 	}
 
-	printer_printchar(&c_context->output_options, a);
+	printer_printchar(&context->output_options, a);
 	// printf_character(a);
 	// printf(" %d ", a);
 	// printf(" t = %d n = %d\n", nextch_type,context -> nextp);
@@ -178,12 +185,16 @@ void m_coment_skip(preprocess_context *context, compiler_context *c_context)
 		{
 			m_onemore(context, c_context);
 			// m_fprintf_com();
+			if (context->curchar == '\n')
+			{
+				end_line(context, &context->error_input);
+			}
 
 			if (context->curchar == EOF)
 			{
-				m_end_line(c_context);
+				end_line(context, &context->error_input);
 				printf("\n");
-				m_error(comm_not_ended, c_context);
+				m_error(comm_not_ended, &context->error_input);
 			}
 		} while (context->curchar != '*' || context->nextchar != '/');
 
@@ -268,7 +279,7 @@ void m_nextch(preprocess_context *context, compiler_context *c_context)
 
 		if (context->curchar == '\n')
 		{
-			m_end_line(c_context);
+			end_line(context, &context->error_input);
 		}
 	}
 
