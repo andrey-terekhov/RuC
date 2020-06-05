@@ -23,7 +23,7 @@
 
 #define DEFAULT_SIZE 10000
 
-macro_long_string_init(macro_long_string *s)
+void macro_long_string_init(macro_long_string *s)
 {
 	s->size = DEFAULT_SIZE;
 	s->p = 0;
@@ -31,7 +31,7 @@ macro_long_string_init(macro_long_string *s)
 	memset(s->str, 0, DEFAULT_SIZE * sizeof(int));
 }
 
-control_string_init(control_string *s)
+void control_string_init(control_string *s)
 {
 	s->size = DEFAULT_SIZE;
 	s->p = 0;
