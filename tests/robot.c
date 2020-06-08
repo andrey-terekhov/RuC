@@ -6,8 +6,8 @@ void main()
     setmotor(4, 50);
     while (value < white)
     {
-        value = getansensor(6);
-        sleep(1);
+        value = getansensor(6, 5);
+        t_sleep(1);
     }
     setmotor(3, 0);
     setmotor(4, 0);

@@ -4,7 +4,7 @@ int MAIN()
     int *p=&i;
     i=*p<<=2;
  
-    print("i ",*p);   
+    print(*p);   
     print(i);   
         
     return 0;

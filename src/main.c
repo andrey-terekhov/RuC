@@ -20,9 +20,11 @@
 #include <stdlib.h>
 
 
-const char *name = "../tests/102/Pronyushkin/led.c";
+const char *name = //"../tests/Fadeev/draw_real.c";
 // "../tests/Egor/Macro/test3.c";
-// "../tests/0test1.c";
+// "../tests/defstest/MULTASSATV_9221.c";
+//"../tests/defstest/SHLASSAT_9014.c";
+"../tests/Sveta/9461_Wescape.c";
 // "../tests/mips/0test.c";
 
 
