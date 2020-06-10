@@ -16,6 +16,7 @@
 
 #include "context_var.h"
 #include "constants.h"
+#include "macro_global_struct.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,20 +28,28 @@ void macro_long_string_init(macro_long_string *s)
 {
 	s->size = DEFAULT_SIZE;
 	s->p = 0;
-	s->str = malloc(DEFAULT_SIZE * sizeof(int));
-	memset(s->str, 0, DEFAULT_SIZE * sizeof(int));
+	s->str = malloc(s->size * sizeof(int));
+	memset(s->str, 0, s->size * sizeof(int));
 }
 
 void control_string_init(control_string *s)
 {
-	s->size = DEFAULT_SIZE;
+	s->size = 100;
 	s->p = 0;
-	s->str_before = malloc(DEFAULT_SIZE * sizeof(int));
-	s->str_after = malloc(DEFAULT_SIZE * sizeof(int));
-	memset(s->str_before, 0, DEFAULT_SIZE * sizeof(int));
-	memset(s->str_after, 0, DEFAULT_SIZE * sizeof(int));
+	s->str_before = malloc(s->size * sizeof(int));
+	s->str_after = malloc(s->size * sizeof(int));
+	memset(s->str_before, 0, s->size * sizeof(int));
+	memset(s->str_after, 0, s->size * sizeof(int));
 }
 
+void data_files_init(data_files *s)
+{
+	s->size = 10;
+	s->p = 0;
+	s->cur = -1;
+	s->files = malloc(s->size * sizeof(data_file));
+	memset(s->files, 0, s->size * sizeof(data_file));
+}
 
 // Определение глобальных переменных
 void preprocess_context_init(preprocess_context *context)
@@ -49,6 +58,7 @@ void preprocess_context_init(preprocess_context *context)
 	macro_long_string_init(&context->error_input);
 	control_string_init(&context->control);
 	printer_init(&context->output_options);
+	data_files_init(&context->files);
 	context->include_type = 0;
 	context->rp = 1;
 	context->inp_file = 0;
@@ -72,33 +82,4 @@ void preprocess_context_init(preprocess_context *context)
 	context->temp_output = 0;
 	context->control_aflag = 0;
 	context->control_bflag = 0;
-}
-
-void long_string_pinter(macro_long_string *s, int a)
-{
-	if(s->p == s->size - 1)
-	{
-		s->size *= 2;
-		int *reallocated = realloc(s->str, s->size * sizeof(int));
-		memset(&reallocated[s->size * sizeof(int)], 0, (s->size / 2) * sizeof(int));
-		s->str = reallocated;
-	} 
-	s->str[s->p++] = a;
-}
-
-void control_string_pinter(control_string *s, int before, int after)
-{
-	if(s->p == s->size - 1)
-	{
-		s->size *= 2;
-		int *reallocated_b = realloc(s->str_before, s->size * sizeof(int));
-		int *reallocated_a = realloc(s->str_after, s->size * sizeof(int));
-		memset(&reallocated_b[s->size * sizeof(int)], 0, (s->size / 2) * sizeof(int));
-		memset(&reallocated_a[s->size * sizeof(int)], 0, (s->size / 2) * sizeof(int));
-		s->str_before = reallocated_b;
-		s->str_after = reallocated_a;
-	} 
-	s->str_before[s->p] = before;
-	s->str_after[s->p] = after;
-	s->p++;
 }

@@ -34,7 +34,7 @@ void space_skip(preprocess_context *context, compiler_context *c_context);
 void space_skip_str(preprocess_context *context, compiler_context *c_context);
 
 int is_letter(preprocess_context *context);
-int is_digit(preprocess_context *context);
+int is_digit(int a);
 
 #ifdef __cplusplus
 } /* extern "C" */

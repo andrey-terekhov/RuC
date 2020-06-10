@@ -185,6 +185,10 @@ void preprocess_scan(preprocess_context *context, compiler_context *c_context)
 
 		case '#':
 		{
+			if (context->nextchar == '1' || context->nextchar == '2')
+			{
+				marcer_update(context);
+			}
 			context->cur = macro_keywords(context, c_context);
 			c_context->prep_flag = 1;
 			preprocess_words(context, c_context);
@@ -229,10 +233,8 @@ void preprocess_scan(preprocess_context *context, compiler_context *c_context)
 	}
 }
 
-/*void add_c_file_siple(preprocess_context *context, compiler_context *c_context)
+void add_c_file_siple(preprocess_context *context, compiler_context *c_context)
 {
-	printf("add t = %d curcar = %c curcar = %i n = %d f = %d\n", context->nextch_type,
-			context->curchar, context->curchar, context->nextp, context->inp_file);
 	while (context->curchar != EOF)
 	{
 		m_fprintf(context->curchar, context, c_context);
@@ -292,8 +294,24 @@ void add_c_file(preprocess_context *context, compiler_context *c_context)
 	}
 }
 
-void open_files(preprocess_context *context, compiler_context *c_context, int start)
+void open_files_config(const char *code, preprocess_context *context, compiler_context *c_context, int start)
 {	
+	m_fopen(context, context->way);
+	int k = start;
+	while (code[start] != '/')
+	{
+		start--;
+	}
+	char name[50];
+	for(int i = 0; i < k - start; i++)
+	{
+		name[i] = code[start + i];
+	}
+	start++;
+	context->way[start] = '\0';
+	data_files_pinter(&context->files, context->way, name);
+
+
 	char* way_temp = context->way;
 	int j = start;
 	get_next_char(context);
@@ -310,26 +328,63 @@ void open_files(preprocess_context *context, compiler_context *c_context, int st
 		if (find_file(context, way_temp))
 		{
 			m_fopen(context, way_temp);
+			add_c_file(context, c_context);
+			m_fprintf('\n', context, c_context);
+
+			fclose(context->input_stak[context->inp_file]);
+			context->inp_file--;
+
+			get_next_char(context);
+			m_nextch(context, c_context);
+
+			space_skip(context, c_context);
 		}
 		j = start;
 
+		
+	}
+}
+
+void open_files_parametr(const char *code, preprocess_context *context, compiler_context *c_context, int i)
+{
+	int j;
+	while (code[i] == ' ')
+	{
+		j = i;
+		while (code[j] != '/')
+		{
+			j--;
+		}
+		context->way[j] = '\0';
+		m_fopen(context, context->way);
 		add_c_file(context, c_context);
 		m_fprintf('\n', context, c_context);
 
 		fclose(context->input_stak[context->inp_file]);
 		context->inp_file--;
+		j = 0;	
 
-		get_next_char(context);
-		m_nextch(context, c_context);
-
-		space_skip(context, c_context);
+		while (code[i] != '.' || code[i + 1] != 'c' && 
+		code[i-2] != '.' || code[i - 1] != 't' || code[i] != 'x'|| code[i + 1] != 't')
+		{
+			context->way[j] = code[i];
+			i++;
+			j++;
+		}
+		context->way[i] = code[i];
+		i++;
+		context->way[i] = code[i];
+		i++;
+		context->way[i] = '\0';
+		i++;
 	}
 }
 
-void open_config(const char *code, preprocess_context *context, compiler_context *c_context)
+void open_files(const char *code, preprocess_context *context, compiler_context *c_context)
 {
 	int i = 0;
-	while (code[i-2] != '.' || code[i - 1] != 't' || code[i] != 'x'|| code[i + 1] != 't' ) 
+	while (code[i] != '.' || code[i + 1] != 'c' && 
+	code[i-2] != '.' || code[i - 1] != 't' || code[i] != 'x'|| code[i + 1] != 't')
 	{
 		context->way[i] = code[i];
 		i++;
@@ -340,17 +395,28 @@ void open_config(const char *code, preprocess_context *context, compiler_context
 	i++;
 	context->way[i] = '\0';
 	i++;
-	m_fopen(context, context->way);
+	if(context->way[i-2] == 'c')
+	{
+		open_config(code, context, c_context, i);
+	}
+	else
+	{
+		open_parametr_files(code, context, c_context, i);
+	}
+	
+
+	context->input_stak[++context->inp_p] = fopen(context->way, "r"); // исходный текст
+	if (context->input_stak[context->inp_p] == NULL)
+	{
+		printf(" не найден файл %s\n", context->way);
+		exit(1);
+	}
 
 	while (code[i] != '/')
 	{
 		i--;
 	}
-	i++;
-	context->way[i] = '\0';
-	open_files(context, c_context, i);
-	//context->input_stak[context->inp_p++] = fopen(context->way, "r"); // исходный текст
-	// context->input_stak[context->inp_p] = fopen("../../tests/00test.c", "r");
+	context->way[i + 1] = '\0';
 }
 
 void preprocess_h_file(preprocess_context *context, compiler_context *c_context)
@@ -376,7 +442,7 @@ void preprocess_h_file(preprocess_context *context, compiler_context *c_context)
 	}
 	context->inp_file = -1;
 	context->inp_p = 0;
-}*/
+}
 
 void preprocess_c_file(preprocess_context *context, compiler_context *c_context)
 {
@@ -390,36 +456,6 @@ void preprocess_c_file(preprocess_context *context, compiler_context *c_context)
 	{
 		preprocess_scan(context, c_context);
 	}		
-}
-
-void open_main_file(const char *code, preprocess_context *context)
-{
-	int i = 0;
-	while (code[i] != '.' || code[i + 1] != 'c')
-	{
-		context->way[i] = code[i];
-		i++;
-	}
-	context->way[i] = code[i];
-	i++;
-	context->way[i] = code[i];
-	i++;
-	context->way[i] = '\0';
-	i++;
-
-	context->input_stak[++context->inp_p] = fopen(context->way, "r"); // исходный текст
-	// context->input_stak[context->inp_p] = fopen("../../tests/00test.c", "r");
-	if (context->input_stak[context->inp_p] == NULL)
-	{
-		printf(" не найден файл %s\n", context->way);
-		exit(1);
-	}
-
-	while (code[i] != '/')
-	{
-		i--;
-	}
-	context->way[i + 1] = '\0';
 }
 
 void save_data(macro_long_string *s, control_string *c, compiler_context *c_context, preprocess_context *context)

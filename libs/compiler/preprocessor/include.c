@@ -22,6 +22,7 @@
 #include "preprocessor.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
+#include "macro_global_struct.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -29,8 +30,59 @@
 #include <string.h>
 #include <wchar.h>
 
+void print_marcer(int p, preprocess_context *context)
+{
+	m_fprintf('#',context);
+	m_fprintf('1',context);
+	int n = 1;
+	while(n*10 < p)
+	{
+		n *=10;
+	}
+	while(n != 1)
+	{
+		int c = p % n; 
+		c = (p - c)/n;
+		p -= c*n;
+		c += '0';
+		m_fprintf(c,context);
+		n /= 10;
+	}
+	m_fprintf(c,context);
+	m_fprintf('\n',context);
+}
 
-void m_fopen(preprocess_context *context, const char* file_way)
+void update_faile(data_file* faile)
+{
+	faile->start_control = control->p;
+	faile->pred = old_cur;
+	faile->start = context->output_options->p / sizeof(char);
+}
+
+void marcer_update(preprocess_context *context, control_string *control, data_files* failes)
+{
+	m_nextch();
+	if(context->curchar == '1')
+	{
+		m_nextch();
+		int c = context->curchar - '0'; 
+		while(is_digit(context->nextchar))
+		{	
+			m_nextch();
+			c = c*10 + context->curchar - '0';
+		}
+		m_nextch();
+
+		int old_cur = failes->cur;
+		failes->cur = c;
+		update_faile(&failes->failes[failes->cur])
+		if(curchar != '\n')
+			a_erorr
+
+	}
+}
+
+void m_fopen(preprocess_context *context,  char* file_way)
 {
 	context->input_stak[++context->inp_file] = fopen(file_way, "r");
 	if (context->input_stak[context->inp_file] == NULL)
@@ -38,6 +90,21 @@ void m_fopen(preprocess_context *context, const char* file_way)
 		printf(" не найден файл %s\n", file_way);
 		exit(1);
 	}
+	int k = strlen(file_way);
+	int j = k - 1;
+	while (file_way[j] != '/')
+	{
+		j--;
+	}
+	char name[50];
+	for(int i = 0; i < k - j; i++)
+	{
+		name[i] = file_way[j + i];
+	}
+	j++;
+	file_way[j] = '\0';
+	int p = data_files_pinter(&context->files, file_way, name);
+	print_marcer(p, context);
 }
 
 void include_fopen(preprocess_context *context, const char* file_way)

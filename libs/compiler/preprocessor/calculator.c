@@ -39,11 +39,6 @@ int is_power(preprocess_context *context)
 			   'E'; // || context->curchar == (int)'е' || context->curchar == (int)'Е';	// это русские е и Е
 }
 
-int m_digit(int r)
-{
-	return r >= '0' && r <= '9';
-}
-
 double get_digit(preprocess_context *context, compiler_context *c_context)
 {
 	double k;
@@ -58,7 +53,7 @@ double get_digit(preprocess_context *context, compiler_context *c_context)
 		m_nextch(context, c_context);
 	}
 
-	while (is_digit(context))
+	while (is_digit(context->curchar))
 	{
 		numdouble = numdouble * 10 + (context->curchar - '0');
 		if (numdouble > (double)INT_MAX)
@@ -75,7 +70,7 @@ double get_digit(preprocess_context *context, compiler_context *c_context)
 		m_nextch(context, c_context);
 		k = 0.1;
 
-		while (is_digit(context))
+		while (is_digit(context->curchar))
 		{
 			numdouble += (context->curchar - '0') * k;
 			k *= 0.1;
@@ -102,13 +97,13 @@ double get_digit(preprocess_context *context, compiler_context *c_context)
 		}
 
 
-		if (!is_digit(context))
+		if (!is_digit(context->curchar))
 		{
 			m_error(must_be_digit_after_exp1, &context->error_input);
 		}
 
 
-		while (is_digit(context))
+		while (is_digit(context->curchar))
 		{
 			d = d * 10 + context->curchar - '0';
 			m_nextch(context, c_context);
@@ -275,7 +270,7 @@ void double_to_string(double x, int int_flag, preprocess_context *context)
 		{
 			context->cstring[context->csp] = s[context->csp];
 
-			if (s[context->csp] != '0' && m_digit(s[context->csp]))
+			if (s[context->csp] != '0' && is_digit(s[context->csp]))
 			{
 				l = context->csp;
 			}
@@ -304,7 +299,7 @@ void calculator(int if_flag, preprocess_context *context, compiler_context *c_co
 	{
 		space_skip(context, c_context);
 
-		if ((is_digit(context) || (context->curchar == '-' && m_digit(context->nextchar))) && !opration_flag)
+		if ((is_digit(context->curchar) || (context->curchar == '-' && is_digit(context->nextchar))) && !opration_flag)
 		{
 			opration_flag = 1;
 			stack[i] = get_digit(context, c_context);

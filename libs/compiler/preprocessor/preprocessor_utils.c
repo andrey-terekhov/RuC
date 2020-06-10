@@ -50,9 +50,9 @@ int is_letter(preprocess_context *context)
 		   (context->curchar >= 0x410 /*'А'*/ && context->curchar <= 0x44F /*'я'*/);
 }
 
-int is_digit(preprocess_context *context)
+int is_digit(int a)
 {
-	return context->curchar >= '0' && context->curchar <= '9';
+	return a >= '0' && a <= '9';
 }
 
 int macro_keywords(preprocess_context *context, compiler_context *c_context)
@@ -69,7 +69,7 @@ int macro_keywords(preprocess_context *context, compiler_context *c_context)
 		context->reprtab[context->rp++] = context->curchar;
 		n++;
 		m_nextch(context, c_context);
-	} while (is_letter(context) || is_digit(context));
+	} while (is_letter(context) || is_digit(context->curchar));
 
 	if (context->curchar != '\n' && context->curchar != ' ' && context->curchar != '\t' && context->curchar != '(' &&
 		context->curchar != '\"')
@@ -124,7 +124,7 @@ int collect_mident(preprocess_context *context, compiler_context *c_context)
 	int hash = 0;
 	context->msp = 0;
 
-	while (is_letter(context) || is_digit(context))
+	while (is_letter(context) || is_digit(context->curchar))
 	{
 		context->mstring[context->msp++] = context->curchar;
 		hash += context->curchar;

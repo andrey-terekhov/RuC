@@ -247,7 +247,7 @@ int to_functionident(preprocess_context *context, compiler_context *c_context)
 
 		if (is_letter(context))
 		{
-			while (is_letter(context) || is_digit(context))
+			while (is_letter(context) || is_digit(context->curchar))
 			{
 				context->cstring[context->csp++] = context->curchar;
 				m_nextch(context, c_context);
@@ -396,7 +396,7 @@ int define_add_to_reprtab(preprocess_context *context, compiler_context *c_conte
 		hash += context->curchar;
 		context->reprtab[context->rp++] = context->curchar;
 		m_nextch(context, c_context);
-	} while (is_letter(context) || is_digit(context));
+	} while (is_letter(context) || is_digit(context->curchar));
 
 	hash &= 255;
 	context->reprtab[context->rp++] = 0;
