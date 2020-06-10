@@ -81,7 +81,7 @@ _deps
 
 ## Xcode
 xcuserdata/
-build/
+build*/
 DerivedData/
 Debug/
 Release/

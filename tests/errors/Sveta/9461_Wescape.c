@@ -1,8 +1,8 @@
 void main()
 {
     int i, j;
-    struct line {int *x; int *y;} *l1;
-   struct line l;
+    struct lines {int *x; int *y;} *l1;
+   struct lines l;
    
    
    int x = 20;

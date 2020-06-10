@@ -547,7 +547,6 @@ void mustbeint(compiler_context *context)
 
 void mustberowofint(compiler_context *context)
 {
-	scaner(context);
 	if (context->cur == BEGIN)
 	{
 		actstring(LINT, context), totree(context, TExprend);
@@ -967,7 +966,7 @@ void primaryexpr(compiler_context *context)
 					error(context, param_setmotor_not_int);
 				}
 				mustbe(context, COMMA, no_comma_in_setmotor);
-				//                scaner(context);
+				scaner(context);
 				if (func == GETDIGSENSOR)
 				{
 					mustberowofint(context);
