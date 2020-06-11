@@ -76,6 +76,9 @@ build()
 
 	test_dir=../tests
 	error_dir=../tests/errors
+	exec_dir=../tests/executable
+	
+	error_subdir=errors
 }
 
 internal_timeout()
@@ -116,27 +119,40 @@ message_failure()
 
 execution()
 {
-	action="execution"
-	internal_timeout $wait_for $ruc_interpreter export.txt >/dev/null 2>/dev/null
+	if [[ $code == $exec_dir/* ]] ; then
+		action="execution"
+		internal_timeout $wait_for $ruc_interpreter export.txt >/dev/null 2>/dev/null
 
-	case "$?" in
-		0)
-			message_success
-			let success++
-			;;
-		124|142)
-			message_timeout
-			let timeout++
-			;;
-		*)
-			message_failure
-			if ! [[ -z $debug ]] ; then
-				$ruc_interpreter export.txt
-			fi
+		case "$?" in
+			0)
+				if [[ $code == */$error_subdir/* ]] ; then
+					message_failure
+					let failure++
+				else
+					message_success
+					let success++
+				fi
+				;;
+			124|142)
+				message_timeout
+				let timeout++
+				;;
+			*)
 
-			let failure++
-			;;
-	esac
+				if [[ $code == */$error_subdir/* ]] ; then
+					message_success
+					let success++
+				else
+					message_failure
+					let failure++
+
+					if ! [[ -z $debug ]] ; then
+						$ruc_interpreter export.txt
+					fi
+				fi
+				;;
+		esac
+	fi
 }
 
 test()
@@ -167,11 +183,11 @@ test()
 					let success++
 				else
 					message_failure
+					let failure++
+
 					if ! [[ -z $debug ]] ; then
 						$ruc_compiler $code
 					fi
-
-					let failure++
 				fi
 				;;
 		esac
