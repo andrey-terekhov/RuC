@@ -69,7 +69,7 @@ typedef struct compiler_workspace
  *	@remark	This function wraps all workspace creation, propagation, compilation,
  *			and cleanup routines and gives a single result.
  */
-COMPILER_EXPORTED int compiler_compile(const char *path);
+COMPILER_EXPORTED int compiler_compile(const char *path, const char *argv[]);
 
 /**
  *	Create a workspace for compilation
@@ -118,7 +118,7 @@ COMPILER_EXPORTED compiler_workspace *compiler_get_workspace(int argc, const cha
  *
  *	@return	Status code
  */
-COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace);
+COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace, const char *argv[]);
 
 /**
  *	Retrieve a textual representation of workspace propagation error

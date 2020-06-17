@@ -55,7 +55,7 @@ int is_digit(int a)
 	return a >= '0' && a <= '9';
 }
 
-int macro_keywords(preprocess_context *context, compiler_context *c_context)
+int macro_keywords(preprocess_context *context)
 {
 	int oldrepr = context->rp;
 	int r = 0;
@@ -68,13 +68,13 @@ int macro_keywords(preprocess_context *context, compiler_context *c_context)
 		hash += context->curchar;
 		context->reprtab[context->rp++] = context->curchar;
 		n++;
-		m_nextch(context, c_context);
+		m_nextch(context);
 	} while (is_letter(context) || is_digit(context->curchar));
 
 	if (context->curchar != '\n' && context->curchar != ' ' && context->curchar != '\t' && context->curchar != '(' &&
 		context->curchar != '\"')
 	{
-		m_error(after_ident_must_be_space, &context->error_input);
+		m_error(after_ident_must_be_space, context);
 	}
 
 	hash &= 255;
@@ -118,7 +118,7 @@ int mf_equal(int i, preprocess_context *context)
 	return 0;
 }
 
-int collect_mident(preprocess_context *context, compiler_context *c_context)
+int collect_mident(preprocess_context *context)
 {
 	int r;
 	int hash = 0;
@@ -128,7 +128,7 @@ int collect_mident(preprocess_context *context, compiler_context *c_context)
 	{
 		context->mstring[context->msp++] = context->curchar;
 		hash += context->curchar;
-		m_nextch(context, c_context);
+		m_nextch(context);
 	}
 
 	context->mstring[context->msp] = MACROEND;
@@ -183,48 +183,48 @@ int find_file(preprocess_context *context, char* s)
 	return 1;
 }
 
-void space_end_line(preprocess_context *context, compiler_context *c_context)
+void space_end_line(preprocess_context *context)
 {
 	while (context->curchar != '\n')
 	{
 		if (context->curchar == ' ' || context->curchar == '\t')
 		{
-			m_nextch(context, c_context);
+			m_nextch(context);
 		}
 		else
 		{
-			m_error(after_preproces_words_must_be_space, &context->error_input);
+			m_error(after_preproces_words_must_be_space, context);
 		}
 	}
-	m_nextch(context, c_context);
+	m_nextch(context);
 }
 
-void space_skip(preprocess_context *context, compiler_context *c_context)
+void space_skip(preprocess_context *context)
 {
 	while (context->curchar == ' ' || context->curchar == '\t')
 	{
-		m_nextch(context, c_context);
+		m_nextch(context);
 	}
 }
 
-void space_skip_str(preprocess_context *context, compiler_context *c_context)
+void space_skip_str(preprocess_context *context)
 {
 	int c = context->curchar;
-	m_fprintf(context->curchar, context, c_context);
-	m_nextch(context, c_context);
+	m_fprintf(context->curchar, context);
+	m_nextch(context);
 
 	while (context->curchar != c && context->curchar != EOF)
 	{
 		if (context->curchar == '\\')
 		{
-			m_fprintf(context->curchar, context, c_context);
-			m_nextch(context, c_context);
+			m_fprintf(context->curchar, context);
+			m_nextch(context);
 		}
 
-		m_fprintf(context->curchar, context, c_context);
-		m_nextch(context, c_context);
+		m_fprintf(context->curchar, context);
+		m_nextch(context);
 	}
 
-	m_fprintf(context->curchar, context, c_context);
-	m_nextch(context, c_context);
+	m_fprintf(context->curchar, context);
+	m_nextch(context);
 }

@@ -14,6 +14,7 @@
  *	limitations under the License.
  */
 
+#include "context.h"
 #include "errors.h"
 #include "global.h"
 #include "uniscanner.h"
@@ -162,6 +163,60 @@ int equal(compiler_context *context, int i, int j)
 		}
 	}
 	return 0;
+}
+
+void marcer_update(compiler_context *context)
+{
+	data_files *files;
+	if(context->c_flag == 1)
+	{
+		files = &context->cfs; 
+	}
+	else
+	{
+		files = &context->hfs;
+	}
+	
+	nextch(context);
+
+	if(context->curchar == '1')
+	{
+		nextch(context);
+
+		int c = context->curchar - '0'; 
+		nextch(context);
+
+		while(digit(context))
+		{	
+			c = c*10 + context->curchar - '0';
+			nextch(context);
+		}
+
+		if(c == 0)
+		{
+			context->c_flag++;
+		}
+
+		files->cur = c;
+		if(files->cur != -1)
+		{
+			set_line(&files->files[files->cur], context->line);
+		}
+	}
+	else
+	{
+		nextch(context);
+		files->cur = get_pred_faile(&files->files[files->cur]);
+		if(files->cur != -1)
+		{
+			context->line = get_line(&files->files[files->cur]);
+		}
+		else
+		{
+			context->line = 0;
+		}
+		nextch(context);
+	}
 }
 
 int scan(compiler_context *context)
@@ -598,6 +653,11 @@ int scan(compiler_context *context)
 		}
 
 		default:
+			if(context->curchar == '#' && (context->nextchar == '1' || context->nextchar == '2'))
+			{
+				marcer_update(context);
+				return scan(context);
+			}
 			if (letter(context) || context->curchar == '#')
 			{
 				int oldrepr = REPRTAB_LEN;

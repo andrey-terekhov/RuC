@@ -24,8 +24,7 @@
 extern "C" {
 #endif
 
-void a_erorr(int i);
-void m_error(int ernum, macro_long_string *s);
+void m_error(int ernum, preprocess_context *context);
 
 void printf_character(int wchar);
 

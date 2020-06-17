@@ -19,6 +19,7 @@
 #include "defs.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
+#include "macro_global_struct.h"
 #include <stdio.h>
 
 
@@ -53,7 +54,6 @@ typedef struct compiler_context
 
 	double numdouble;
 	int line;
-	//int mline;
 	int charnum;
 	int charnum_before;
 	int cur;
@@ -67,16 +67,7 @@ typedef struct compiler_context
 	{
 		int first;
 		int second;
-	} numr;
-	//int source[SOURCESIZE];
-	//int lines[LINESSIZE];
-	//int before_source[SOURCESIZE];
-	//int mlines[LINESSIZE];
-	//int m_conect_lines[LINESSIZE];
-	const int* before_source;
-	int before_source_p;
-	const int* control_before;
-	const int* control_after;
+	} numr;	
 	int last_line[LINESSIZE*2];
 	int nextchar;
 	int curchar;
@@ -157,7 +148,11 @@ typedef struct compiler_context
 	int bad_printf_placeholder;
 	int onlystrings;
 
+	int c_flag;
+	data_files cfs;
+	data_files hfs;
 	compiler_table reprtab;
+
 } compiler_context;
 
 

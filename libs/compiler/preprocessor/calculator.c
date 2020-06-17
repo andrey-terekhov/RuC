@@ -39,7 +39,7 @@ int is_power(preprocess_context *context)
 			   'E'; // || context->curchar == (int)'е' || context->curchar == (int)'Е';	// это русские е и Е
 }
 
-double get_digit(preprocess_context *context, compiler_context *c_context)
+double get_digit(preprocess_context *context)
 {
 	double k;
 	int d = 1;
@@ -50,7 +50,7 @@ double get_digit(preprocess_context *context, compiler_context *c_context)
 	if (context->curchar == '-')
 	{
 		d = -1;
-		m_nextch(context, c_context);
+		m_nextch(context);
 	}
 
 	while (is_digit(context->curchar))
@@ -58,23 +58,23 @@ double get_digit(preprocess_context *context, compiler_context *c_context)
 		numdouble = numdouble * 10 + (context->curchar - '0');
 		if (numdouble > (double)INT_MAX)
 		{
-			m_error(too_many_nuber, &context->error_input);
+			m_error(too_many_nuber, context);
 		}
 		num = num * 10 + (context->curchar - '0');
-		m_nextch(context, c_context);
+		m_nextch(context);
 	}
 
 	if (context->curchar == '.')
 	{
 		flagint = 0;
-		m_nextch(context, c_context);
+		m_nextch(context);
 		k = 0.1;
 
 		while (is_digit(context->curchar))
 		{
 			numdouble += (context->curchar - '0') * k;
 			k *= 0.1;
-			m_nextch(context, c_context);
+			m_nextch(context);
 		}
 	}
 
@@ -84,29 +84,29 @@ double get_digit(preprocess_context *context, compiler_context *c_context)
 		int k = 1;
 		int i;
 
-		m_nextch(context, c_context);
+		m_nextch(context);
 		if (context->curchar == '-')
 		{
 			flagint = 0;
-			m_nextch(context, c_context);
+			m_nextch(context);
 			k = -1;
 		}
 		else if (context->curchar == '+')
 		{
-			m_nextch(context, c_context);
+			m_nextch(context);
 		}
 
 
 		if (!is_digit(context->curchar))
 		{
-			m_error(must_be_digit_after_exp1, &context->error_input);
+			m_error(must_be_digit_after_exp1, context);
 		}
 
 
 		while (is_digit(context->curchar))
 		{
 			d = d * 10 + context->curchar - '0';
-			m_nextch(context, c_context);
+			m_nextch(context);
 		}
 
 		if (flagint)
@@ -130,7 +130,7 @@ double get_digit(preprocess_context *context, compiler_context *c_context)
 	}
 }
 
-int check_opiration(preprocess_context *context, compiler_context *c_context)
+int check_opiration(preprocess_context *context)
 {
 	int c = context->curchar;
 
@@ -138,8 +138,8 @@ int check_opiration(preprocess_context *context, compiler_context *c_context)
 	{
 		if ((context->nextchar == c && c != '!') || (c == '!' && context->nextchar == '='))
 		{
-			m_nextch(context, c_context);
-			m_nextch(context, c_context);
+			m_nextch(context);
+			m_nextch(context);
 			return c;
 		}
 		else
@@ -149,19 +149,19 @@ int check_opiration(preprocess_context *context, compiler_context *c_context)
 	}
 	else if (c == '>' && context->nextchar == '=')
 	{
-		m_nextch(context, c_context);
-		m_nextch(context, c_context);
+		m_nextch(context);
+		m_nextch(context);
 		return 'b';
 	}
 	else if (c == '>' && context->nextchar == '=')
 	{
-		m_nextch(context, c_context);
-		m_nextch(context, c_context);
+		m_nextch(context);
+		m_nextch(context);
 		return 's';
 	}
 	else if (c == '>' || c == '<' || c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '(')
 	{
-		m_nextch(context, c_context);
+		m_nextch(context);
 		return c;
 	}
 	else
@@ -279,7 +279,7 @@ void double_to_string(double x, int int_flag, preprocess_context *context)
 	}
 }
 
-void calculator(int if_flag, preprocess_context *context, compiler_context *c_context)
+void calculator(int if_flag, preprocess_context *context)
 {
 	int i = 0;
 	int op = 0;
@@ -292,58 +292,58 @@ void calculator(int if_flag, preprocess_context *context, compiler_context *c_co
 	if (!if_flag)
 	{
 		operation[op++] = '(';
-		m_nextch(context, c_context);
+		m_nextch(context);
 	}
 
 	while (context->curchar != '\n')
 	{
-		space_skip(context, c_context);
+		space_skip(context);
 
 		if ((is_digit(context->curchar) || (context->curchar == '-' && is_digit(context->nextchar))) && !opration_flag)
 		{
 			opration_flag = 1;
-			stack[i] = get_digit(context, c_context);
+			stack[i] = get_digit(context);
 			int_flag[i++] = flagint;
 		}
 		else if (is_letter(context))
 		{
-			int r = collect_mident(context, c_context);
+			int r = collect_mident(context);
 
 			if (r)
 			{
-				define_get_from_macrotext(r, context, c_context);
+				define_get_from_macrotext(r, context);
 			}
 			else
 			{
-				a_erorr(-2);
+				m_error(1, context);
 			}
 		}
 		else if (context->curchar == '#' && if_flag)
 		{
-			context->cur = macro_keywords(context, c_context);
+			context->cur = macro_keywords(context);
 
 			if (context->cur == SH_EVAL && context->curchar == '(')
 			{
-				calculator(0, context, c_context);
+				calculator(0, context);
 			}
 			else
 			{
-				m_error(after_eval_must_be_ckob, &context->error_input);
+				m_error(after_eval_must_be_ckob, context);
 			}
-			m_change_nextch_type(CTYPE, 0, context, &context->error_input);
+			m_change_nextch_type(CTYPE, 0, context);
 		}
-		else if ((opration_flag || context->curchar == '(') && (c = check_opiration(context, c_context)))
+		else if ((opration_flag || context->curchar == '(') && (c = check_opiration(context)))
 		{
 			int n = get_prior(c);
 			opration_flag = 0;
 
 			if (n != 0 && if_flag && n > 3)
 			{
-				m_error(not_arithmetic_operations, &context->error_input);
+				m_error(not_arithmetic_operations, context);
 			}
 			if (n != 0 && !if_flag && n <= 3)
 			{
-				m_error(not_logical_operations, &context->error_input);
+				m_error(not_logical_operations, context);
 			}
 
 			while (op != 0 && n != 0 && get_prior(operation[op - 1]) >= n)
@@ -361,7 +361,7 @@ void calculator(int if_flag, preprocess_context *context, compiler_context *c_co
 			{
 				if (i < 2 || op == 0)
 				{
-					a_erorr(3);
+					m_error(2, context);
 				}
 
 				int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
@@ -370,7 +370,7 @@ void calculator(int if_flag, preprocess_context *context, compiler_context *c_co
 				i--;
 			}
 			op--;
-			m_nextch(context, c_context);
+			m_nextch(context);
 
 			if (op == 0 && !if_flag)
 			{
@@ -380,7 +380,7 @@ void calculator(int if_flag, preprocess_context *context, compiler_context *c_co
 		}
 		else if (context->curchar != '\n')
 		{
-			a_erorr(1);
+			m_error(3, context);
 		}
 	}
 
@@ -391,7 +391,7 @@ void calculator(int if_flag, preprocess_context *context, compiler_context *c_co
 		{
 			if (i < 2)
 			{
-				a_erorr(4);
+				m_error(4, context);
 			}
 
 			int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
@@ -411,6 +411,6 @@ void calculator(int if_flag, preprocess_context *context, compiler_context *c_co
 	}
 	else
 	{
-		a_erorr(5);
+		m_error(5, context);
 	}
 }

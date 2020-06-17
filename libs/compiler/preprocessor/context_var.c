@@ -28,19 +28,9 @@ void macro_long_string_init(macro_long_string *s)
 {
 	s->size = DEFAULT_SIZE;
 	s->p = 0;
-	s->str = malloc(s->size * sizeof(int));
-	memset(s->str, 0, s->size * sizeof(int));
+	s->str = NULL;
 }
 
-void control_string_init(control_string *s)
-{
-	s->size = 100;
-	s->p = 0;
-	s->str_before = malloc(s->size * sizeof(int));
-	s->str_after = malloc(s->size * sizeof(int));
-	memset(s->str_before, 0, s->size * sizeof(int));
-	memset(s->str_after, 0, s->size * sizeof(int));
-}
 
 void data_files_init(data_files *s)
 {
@@ -55,10 +45,10 @@ void data_files_init(data_files *s)
 void preprocess_context_init(preprocess_context *context)
 {
 	memset(context, 0, sizeof(preprocess_context));
-	macro_long_string_init(&context->error_input);
-	control_string_init(&context->control);
 	printer_init(&context->output_options);
-	data_files_init(&context->files);
+	data_files_init(&context->c_files);
+	data_files_init(&context->h_files);
+	macro_long_string_init(&context->befor_temp);
 	context->include_type = 0;
 	context->rp = 1;
 	context->inp_file = 0;
@@ -74,6 +64,7 @@ void preprocess_context_init(preprocess_context *context)
 	context->ifsp = 0;
 	context->wsp;
 	context->mfirstrp = -1;
+	context->prep_flag = 0;
 	context->mclp = 1;
 	context->nextch_type = 0;
 	context->nextp = 0;
@@ -82,4 +73,5 @@ void preprocess_context_init(preprocess_context *context)
 	context->temp_output = 0;
 	context->control_aflag = 0;
 	context->control_bflag = 0;
+	context->befor_temp_p = -1;
 }

@@ -30,7 +30,7 @@ int main(int argc, const char *argv[])
 {
 	if (argc < 2)
 	{
-		compiler_compile(name);
+		compiler_compile(name, argv);
 	}
 	else
 	{
@@ -55,7 +55,7 @@ int main(int argc, const char *argv[])
 			return 1;
 		}
 
-		compiler_workspace_compile(ws);
+		compiler_workspace_compile(ws, argv);
 		compiler_workspace_free(ws);
 	}
 

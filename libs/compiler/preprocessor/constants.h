@@ -29,7 +29,6 @@
 #define MACROFUNCTION 0
 #define MACRODEF	  1
 
-#define SOURSTYPE 			1
 #define MTYPE	  			2
 #define CTYPE	  			3
 #define IFTYPE	  			4

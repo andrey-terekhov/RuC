@@ -25,13 +25,13 @@ extern "C" {
 #endif
 
 int equal_reprtab(int i, int j, preprocess_context *context);
-int macro_keywords(preprocess_context *context, compiler_context *c_context);
-int collect_mident(preprocess_context *context, compiler_context *c_context);
+int macro_keywords(preprocess_context *context);
+int collect_mident(preprocess_context *context);
 int find_file(preprocess_context *context, char* s);
 
-void space_end_line(preprocess_context *context, compiler_context *c_context);
-void space_skip(preprocess_context *context, compiler_context *c_context);
-void space_skip_str(preprocess_context *context, compiler_context *c_context);
+void space_end_line(preprocess_context *context);
+void space_skip(preprocess_context *context);
+void space_skip_str(preprocess_context *context);
 
 int is_letter(preprocess_context *context);
 int is_digit(int a);

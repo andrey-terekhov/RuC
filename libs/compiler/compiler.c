@@ -49,7 +49,7 @@ void report_cb(asp_report *report)
 }
 #endif
 
-static void process_user_requests(compiler_context *context, compiler_workspace *workspace)
+static void process_user_requests(compiler_context *context, compiler_workspace *workspace, const char *argv[])
 {
 	compiler_workspace_file *file;
 
@@ -78,16 +78,11 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 			exit(1);
 		}
 
-		// Открытие исходного текста
-		//compiler_context_attach_io(context, file->path, IO_TYPE_INPUT, IO_SOURCE_FILE);
-
 		// Препроцессинг в массив
-		//compiler_context_attach_io(context, "", IO_TYPE_OUTPUT, IO_SOURCE_MEM);
 
 		printf("\nИсходный текст:\n \n");
 
-		macro_processed = preprocess_file(context, file->path); // макрогенерация
-		//macro_processed = strdup(context->output_options.ptr);
+		macro_processed = preprocess_file(context, argv); // макрогенерация
 		if (macro_processed == NULL)
 		{
 			fprintf(stderr, " ошибка выделения памяти для "
@@ -265,7 +260,7 @@ compiler_workspace *compiler_get_workspace(int argc, const char *argv[])
 	return ws;
 }
 
-COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
+COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace, const char *argv[])
 {
 	compiler_context *context = malloc(sizeof(compiler_context));
 
@@ -283,14 +278,14 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 
 	init_modetab(context);
 
-	process_user_requests(context, workspace);
+	process_user_requests(context, workspace, argv);
 
 	compiler_context_deinit(context);
 	free(context);
 	return 0;
 }
 
-COMPILER_EXPORTED int compiler_compile(const char *path)
+COMPILER_EXPORTED int compiler_compile(const char *path, const char *argv[])
 {
 	int ret;
 	compiler_workspace *ws;
@@ -309,7 +304,7 @@ COMPILER_EXPORTED int compiler_compile(const char *path)
 		return 1;
 	}
 
-	ret = compiler_workspace_compile(ws);
+	ret = compiler_workspace_compile(ws, argv);
 	compiler_workspace_free(ws);
 
 	return ret;

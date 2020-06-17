@@ -27,35 +27,23 @@
 #include <string.h>
 
 
-void m_nextch(preprocess_context *context, compiler_context *c_context);
+void m_nextch(preprocess_context *context);
 
 
 int get_next_char(preprocess_context *context)
 {
 	unsigned char firstchar;
 	unsigned char secondchar;
-	if (context->nextch_type != PREPROCESS_STRING && fscanf(context->input_stak[context->inp_p], "%c", &firstchar) == EOF)
+	if ( fscanf(context->curent_file, "%c", &firstchar) == EOF)
 	{
 		return EOF;
 	}
-	else if (context->nextch_type == PREPROCESS_STRING && (firstchar = context->preprocess_string[context->strp++]) == '\0')
-	{
-		return EOF;
-	}
+
 	else
 	{
 		if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
 		{
-			if (context->nextch_type != PREPROCESS_STRING)
-			{
-				fscanf(context->input_stak[context->inp_p], "%c", &secondchar);
-			}
-			else
-			{
-				secondchar = context->preprocess_string[context->strp++];
-			}
-			
-
+			fscanf(context->curent_file, "%c", &secondchar);
 			context->nextchar = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 | (secondchar & /*0b111111*/ 0x3F);
 		}
 		else
@@ -77,25 +65,19 @@ int get_dipp(preprocess_context *context)
 	return context->dipp;
 }
 
-void m_change_nextch_type(int type, int p, preprocess_context *context, compiler_context *c_context)
+void m_change_nextch_type(int type, int p, preprocess_context *context)
 {
-	if (type != SOURSTYPE)
-	{
-		context->oldcurchar[context->dipp] = context->curchar;
-		context->oldnextchar[context->dipp] = context->nextchar;
-		context->oldnextch_type[context->dipp] = context->nextch_type;
-		context->oldnextp[context->dipp] = context->nextp;
-		context->nextp = p;
-		context->dipp++;
-	}
-	else
-	{
-		context->dipp = 0;
-	}
+	context->oldcurchar[context->dipp] = context->curchar;
+	context->oldnextchar[context->dipp] = context->nextchar;
+	context->oldnextch_type[context->dipp] = context->nextch_type;
+	context->oldnextp[context->dipp] = context->nextp;
+	context->nextp = p;
+	context->dipp++;
+	
 
 	// printf("nextch_type\n");
 	context->nextch_type = type;
-	m_nextch(context, c_context);
+	m_nextch(context);
 }
 
 void m_old_nextch_type(preprocess_context *context)
@@ -108,47 +90,92 @@ void m_old_nextch_type(preprocess_context *context)
 	// printf("oldnextch_type = %d\n", nextch_type);
 }
 
+void control_string_pinter_e(control_string *s, int before, int after)
+{
+	if(s->p == s->size - 1)
+	{
+		s->size *= 2;
+		int *reallocated_b = realloc(s->str_before, s->size * sizeof(int));
+		int *reallocated_a = realloc(s->str_after, s->size * sizeof(int));
+		memset(&reallocated_b[s->size * sizeof(int)], 0, (s->size / 2) * sizeof(int));
+		memset(&reallocated_a[s->size * sizeof(int)], 0, (s->size / 2) * sizeof(int));
+		s->str_before = reallocated_b;
+		s->str_after = reallocated_a;
+	} 
+	s->str_before[s->p] = before;
+	s->str_after[s->p] = after;
+	s->p++;
+}
 
+void control_string_pinter(preprocess_context* context, int before, int after)
+{ 
+	data_file f;
+	if(context->h_flag == 0)
+	{
+		f = get_cur_faile(&context->c_files);
+	}
+	else
+	{
+		f = get_cur_faile(&context->h_files);
+	}
+
+	control_string cs = get_control(&f);
+	control_string_pinter_e(&cs, before, after);
+}
 
 void end_line(preprocess_context *context, macro_long_string *s)
 {
-	++context->line;
-	context->control_aflag++;
-
-	printf("Line %i) ", context->line - 1);
-
-	for (int j = context->temp_output; j < s->p; j++)
+	if(context->include_type > 0)
 	{
-		if (s->str[j] != EOF)
-		{
-			printf_character(s->str[j]);
-		}
+		context->control_aflag++;
 	}
-	context->temp_output = s->p;
+	if(context->FILE_flag)
+	{
+		printf("Line %i) ", context->line);
+		context->line++;
+
+		for (int j = context->temp_output; j < s->p; j++)
+		{
+			if (s->str[j] != EOF)
+			{
+				printf_character(s->str[j]);
+			}
+		}
+		context->temp_output = s->p;
+	}
 }
 
-void m_onemore(preprocess_context *context, compiler_context *c_context)
+void m_onemore(preprocess_context *context)
 {
 	context->curchar = context->nextchar;
-	context->nextchar = get_next_char(context);
-	//c_context->before_source[c_context->m_charnum++] = context->curchar;
-	long_string_pinter(&context->error_input, context->curchar);
-
-	if (context->curchar == EOF)
+	if(context->FILE_flag)
 	{
-		end_line(context, &context->error_input);
-		printf("\n");
+		context->nextchar = get_next_char(context);
+		long_string_pinter(&context->befor_temp, context->curchar);
+		
+		if (context->curchar == EOF)
+		{
+			end_line(context, &context->befor_temp);
+			context->control_aflag++;
+			printf("\n");
+		}
+	}
+	else
+	{
+		context->nextchar = context->curent_string[context->curent_p++];
 	}
 }
 
-void m_fprintf(int a, preprocess_context *context, compiler_context *c_context)
+
+/*void if_fprintf(int a, preprocess_context *context)
 {
+	if(context->include_type > 0)
 	if (a == '\n')
 	{
 		context->control_bflag++;
 		if(context->control_aflag != 1)
 		{
-			control_string_pinter(&context->control, context->control_bflag, context->control_aflag); 
+			control_string_pinter(context, context->control_bflag, context->control_aflag); 
 		}
 		context->control_aflag = 0;
 	}
@@ -157,16 +184,35 @@ void m_fprintf(int a, preprocess_context *context, compiler_context *c_context)
 	// printf_character(a);
 	// printf(" %d ", a);
 	// printf(" t = %d n = %d\n", nextch_type,context -> nextp);
+}*/
+
+
+void m_fprintf(int a, preprocess_context *context)
+{
+	if (a == '\n')
+	{
+		context->control_bflag++;
+		if(context->control_aflag != 1)
+		{
+			control_string_pinter(context, context->control_bflag, context->control_aflag); 
+		}
+		context->control_aflag = 0;
+	}
+
+	printer_printchar(&context->output_options, a);
+	//printf_character(a);
+	//printf(" %d \n", a);
+	// printf(" t = %d n = %d\n", nextch_type,context -> nextp);
 }
 
-void m_coment_skip(preprocess_context *context, compiler_context *c_context)
+void m_coment_skip(preprocess_context *context)
 {
 	if (context->curchar == '/' && context->nextchar == '/')
 	{
 		do
 		{
 			// m_fprintf_com();
-			m_onemore(context, c_context);
+			m_onemore(context);
 
 			if (context->curchar == EOF)
 			{
@@ -178,49 +224,46 @@ void m_coment_skip(preprocess_context *context, compiler_context *c_context)
 	if (context->curchar == '/' && context->nextchar == '*')
 	{
 		// m_fprintf_com();
-		m_onemore(context, c_context);
+		m_onemore(context);
 		// m_fprintf_com();
 
 		do
 		{
-			m_onemore(context, c_context);
+			m_onemore(context);
 			// m_fprintf_com();
 			if (context->curchar == '\n')
 			{
-				end_line(context, &context->error_input);
+				end_line(context, &context->befor_temp);
+				context->control_aflag++;
 			}
 
 			if (context->curchar == EOF)
 			{
-				end_line(context, &context->error_input);
+				end_line(context, &context->befor_temp);
+				context->control_aflag++;
 				printf("\n");
-				m_error(comm_not_ended, &context->error_input);
+				m_error(comm_not_ended, context);
 			}
 		} while (context->curchar != '*' || context->nextchar != '/');
 
-		m_onemore(context, c_context);
+		m_onemore(context);
 		// m_fprintf_com();
 		context->curchar = ' ';
 	}
 }
 
-void m_nextch_cange(preprocess_context *context, compiler_context *c_context)
+void m_nextch_cange(preprocess_context *context)
 {
-	m_nextch(context, c_context);
+	m_nextch(context);
 	// printf("2 lsp = %d context->curchar = %d l = %d\n",  lsp, context->curchar, context->curchar + lsp);
-	m_change_nextch_type(FTYPE, context->localstack[context->curchar + context->lsp], context, c_context);
+	m_change_nextch_type(FTYPE, context->localstack[context->curchar + context->lsp], context);
 }
 
-void m_nextch(preprocess_context *context, compiler_context *c_context)
+void m_nextch(preprocess_context *context)
 {
 	if (context->nextch_type != 0 && context->nextch_type <= TEXTTYPE)
 	{
-		if (context->nextch_type == SOURSTYPE)
-		{
-			context->curchar = c_context->before_source[context->nextp++];
-			context->nextchar = c_context->before_source[context->nextp];
-		}
-		else if (context->nextch_type == MTYPE && context->nextp < context->msp)
+		if (context->nextch_type == MTYPE && context->nextp < context->msp)
 		{
 			context->curchar = context->mstring[context->nextp++];
 			context->nextchar = context->mstring[context->nextp];
@@ -249,7 +292,7 @@ void m_nextch(preprocess_context *context, compiler_context *c_context)
 
 			if (context->curchar == MACROCANGE)
 			{
-				m_nextch_cange(context, c_context);
+				m_nextch_cange(context);
 			}
 			else if (context->curchar == MACROEND)
 			{
@@ -264,7 +307,7 @@ void m_nextch(preprocess_context *context, compiler_context *c_context)
 			if (context->curchar == CANGEEND)
 			{
 				m_old_nextch_type(context);
-				m_nextch(context, c_context);
+				m_nextch(context);
 			}
 		}
 		else
@@ -274,15 +317,17 @@ void m_nextch(preprocess_context *context, compiler_context *c_context)
 	}
 	else
 	{
-		m_onemore(context, c_context);
-		m_coment_skip(context, c_context);
+		m_onemore(context);
+		
+		m_coment_skip(context);
 
 		if (context->curchar == '\n')
 		{
-			end_line(context, &context->error_input);
+			end_line(context, &context->befor_temp);
+			context->control_aflag++;
 		}
 	}
 
-//		printf(" t = %d curcar = %c curcar = %i n = %d f = %d\n", context->nextch_type,
-//			context->curchar, context->curchar, context->nextp, context->inp_p);
+		//printf(" t = %d curcar = %c curcar = %i n = %d f = %d\n", context->nextch_type,
+			//context->curchar, context->curchar, context->nextp, context->inp_p);
 }

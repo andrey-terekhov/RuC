@@ -24,8 +24,8 @@
 extern "C" {
 #endif
 
-const char* preprocess_file(compiler_context *c_context, const char *code);
-void preprocess_scan(preprocess_context *context, compiler_context *c_context);
+const char* preprocess_file(compiler_context *c_context, const char *code[]);
+void preprocess_scan(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

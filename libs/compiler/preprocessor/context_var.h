@@ -29,7 +29,7 @@ extern "C" {
 
 typedef struct preprocess_context
 {
-	FILE *input_stak[10];
+	FILE* input_stak[10];
 	int inp_file;
 	char way[STRIGSIZE];
 	int inp_p;
@@ -46,7 +46,6 @@ typedef struct preprocess_context
 	int mstring[STRIGSIZE];
 	int msp;
 
-	char* preprocess_string;
 	int strp;
 
 	int fchange[STRIGSIZE * 3];
@@ -68,6 +67,8 @@ typedef struct preprocess_context
 
 	int mclp;
 
+	int prep_flag;
+
 	int curchar, nextchar;
 	int nextch_type;
 	int cur;
@@ -85,12 +86,21 @@ typedef struct preprocess_context
 	int control_bflag;
 
 	int temp_output;
-	macro_long_string error_input;
-	control_string control;
-	data_files files;
+	data_files c_files;
+	data_files h_files;
+	int h_flag;
+
+	int FILE_flag;
+	FILE* curent_file;
+	macro_long_string befor_temp;
+	int befor_temp_p;
+	int* curent_string;
+	int curent_p;
 
 	universal_printer_options output_options;
 } preprocess_context;
+
+void preprocess_context_init(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */
