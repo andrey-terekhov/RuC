@@ -547,7 +547,7 @@ void mustbeint(compiler_context *context)
 
 void mustberowofint(compiler_context *context)
 {
-	if (context->cur == BEGIN)
+	if (scaner(context) == BEGIN)
 	{
 		actstring(LINT, context), totree(context, TExprend);
 	}
@@ -719,11 +719,13 @@ void primaryexpr(compiler_context *context)
 			if (func == SEND_INT || func == SEND_STRING)
 			{
 				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+//                scaner(context);
 				mustberowofint(context);
 			}
 			else if (func == SEND_FLOAT)
 			{
 				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+//                scaner(context);
 				mustberowoffloat(context);
 			}
 			else
@@ -738,6 +740,7 @@ void primaryexpr(compiler_context *context)
 			context->notrobot = 0;
 			if (func <= PIXEL && func >= ICON)
 			{
+//                scaner(context);
 				mustberowofint(context);
 				if (func != CLEAR)
 				{
@@ -967,7 +970,7 @@ void primaryexpr(compiler_context *context)
 					error(context, param_setmotor_not_int);
 				}
 				mustbe(context, COMMA, no_comma_in_setmotor);
-                scaner(context);
+ //               scaner(context);
 				if (func == GETDIGSENSOR)
 				{
                     mustberowofint(context);
