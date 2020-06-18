@@ -970,14 +970,14 @@ void primaryexpr(compiler_context *context)
 					error(context, param_setmotor_not_int);
 				}
 				mustbe(context, COMMA, no_comma_in_setmotor);
- //               scaner(context);
-				if (func == GETDIGSENSOR)
+ 				if (func == GETDIGSENSOR)
 				{
                     mustberowofint(context);
                     context->ansttype = context->stackoperands[++context->sopnd] = LINT;
 				}
 				else
 				{
+                    scaner(context);
 					exprassn(context, 1);
 					toval(context);
 					if (!is_int(context, context->ansttype))

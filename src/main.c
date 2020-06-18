@@ -20,7 +20,7 @@
 #include <stdlib.h>
 
 
-const char *name = "../tests/stanfunc.c";
+const char *name = "../tests/Fadeev/threads.c";
 // "../tests/Egor/Macro/test3.c";
 // "../tests/defstest/MULTASSATV_9221.c";
 //"../tests/defstest/SHLASSAT_9014.c";
