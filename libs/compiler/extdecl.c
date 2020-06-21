@@ -992,7 +992,23 @@ void primaryexpr(compiler_context *context)
 						--context->sopnd, context->anst = VAL;
 					}
 				}
-			}
+            }
+            else if (func == ABS && is_int(context, context->ansttype))
+            {
+                func = ABSI;
+            }
+            else
+            {
+                if (is_int(context, context->ansttype))
+                {
+                    totree(context, WIDEN);
+                    context->ansttype = context->stackoperands[context->sopnd] = LFLOAT;
+                }
+                if (!is_float(context, context->ansttype))
+                {
+                    error(context, bad_param_in_stand_func);
+                }
+            }
 		}
 		totree(context, 9500 - func);
 		mustbe(context, RIGHTBR, no_rightbr_in_stand_func);
