@@ -2,9 +2,9 @@ float a;
 int b;
 void main()
 {
-    a = sin(3.14/2);
-    printid(a);
     a = cos(0);
+    printid(a);
+    a = sin(3.14/2);
     printid(a);
     a = sqrt(1.e2);
     printid(a);
