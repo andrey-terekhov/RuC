@@ -68,6 +68,7 @@ void preprocess_context_init(preprocess_context *context)
 	context->mclp = 1;
 	context->nextch_type = 0;
 	context->nextp = 0;
+	context->main_file = -1;
 	context->dipp = 0;
 	context->line = 1;
 	context->temp_output = 0;

@@ -68,6 +68,7 @@ void to_reprtab_full(char str1[], char str2[], char str3[], char str4[], int num
 
 void add_keywods(preprocess_context *context)
 {
+	to_reprtab_full("MAIN", "main", "ГЛАВНАЯ", "главная", SH_MAIN, context);
 	to_reprtab_full("#DEFINE", "#define", "#ОПРЕД", "#опред", SH_DEFINE, context);
 	to_reprtab_full("#IFDEF", "#ifdef", "#ЕСЛИБЫЛ", "#еслибыл", SH_IFDEF, context);
 	to_reprtab_full("#IFNDEF", "#ifndef", "#ЕСЛИНЕБЫЛ", "#еслинебыл", SH_IFNDEF, context);
@@ -238,6 +239,29 @@ void preprocess_scan(preprocess_context *context)
 	}
 }
 
+void swap(data_file *f1, data_file *f2)
+{
+	macro_long_string temp_s = f1->befor_sorse;
+	f1->befor_sorse = f2->befor_sorse;
+	f2->befor_sorse = temp_s;
+
+	int* temp_include_sorse = f1->include_sorse;
+	f1->include_sorse = f2->include_sorse;
+	f2->include_sorse= temp_include_sorse;
+
+	int temp_pred = f1->pred;
+	f1->pred = f2->pred;
+	f2->pred = temp_pred;
+
+	char* temp_way = f1->way;
+	f1->way = f2->way;
+	f2->way = temp_way;
+
+	char* temp_name = f1->name;
+	f1->name = f2->name;
+	f2->name = temp_name;
+}
+
 void add_c_file_siple(preprocess_context *context)
 {
 	include_sorse_set(&context->c_files, context->befor_temp_p, (&context->befor_temp)->p);
@@ -254,9 +278,23 @@ void add_c_file_siple(preprocess_context *context)
 	
 	context->temp_output = 0;
 	
+	while (context->curchar != EOF && context->main_file == -1)
+	{
+		if (context->curchar == 'm' || context->curchar == 'M' || 
+			context->curchar == 'г' || context->curchar == 'Г')
+		{
+			context->cur = macro_keywords(context);
+			if (context->cur == SH_MAIN)
+			{
+				context->main_file = (&context->c_files)->cur;
+			}
+		}
+		m_nextch(context);	
+	}
+
 	while (context->curchar != EOF)
 	{
-		m_nextch(context);
+		m_nextch(context);	
 	}
 }
 
@@ -368,7 +406,7 @@ void open_files_parametr(const char *codes[], preprocess_context *context, int i
 	int j;
 	char *code;
 	int k = 2;
-	printf("code[%i] = %s", 1, codes[1]);
+	//printf("code[%i] = %s\n", 1, codes[1]);
 
 	j = i;
 	context->way[j] = '\0';
@@ -481,7 +519,7 @@ void preprocess_h_file(preprocess_context *context, data_files* fs)
 void preprocess_c_file(preprocess_context *context, data_files* fs)
 {
 	fs->cur = 0; 
-
+	swap(&fs->files[context->main_file], &fs->files[fs->p - 1]);
 	while(fs->cur < fs->p)
 	{
 		context->curent_string = get_befor(&fs->files[fs->cur]);
@@ -494,12 +532,12 @@ void save_data(compiler_context *c_context, preprocess_context *context)
 {
 	c_context->cfs = context->c_files;
 	c_context->hfs = context->h_files;
-	c_context->c_flag = 0;
+	c_context->c_flag = -1;
 }
 
 const char* preprocess_file(compiler_context *c_context, const char *code[])
 {
-	printf("code  = %s", code[1]);
+	//printf("code  = %s\n", code[1]);
 	preprocess_context *context = malloc(sizeof(preprocess_context));
 	preprocess_context_init(context);
 	printer_attach_buffer(&context->output_options, 1024);

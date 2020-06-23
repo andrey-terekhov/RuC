@@ -40,6 +40,7 @@
 
 // Ключевые слова
 
+#define SH_MAIN  -63
 #define SH_DEFINE  -64
 #define SH_IFDEF   -65
 #define SH_IFNDEF  -66

@@ -109,18 +109,17 @@ void control_string_pinter_e(control_string *s, int before, int after)
 
 void control_string_pinter(preprocess_context* context, int before, int after)
 { 
-	data_file f;
+	control_string *cs;
 	if(context->h_flag == 0)
 	{
-		f = get_cur_faile(&context->c_files);
+		cs = &(&(&context->c_files)->files[(&context->c_files)->cur])->cs;
 	}
 	else
 	{
-		f = get_cur_faile(&context->h_files);
+		cs = &(&(&context->h_files)->files[(&context->h_files)->cur])->cs;
 	}
 
-	control_string cs = get_control(&f);
-	control_string_pinter_e(&cs, before, after);
+	control_string_pinter_e(cs, before, after);
 }
 
 void end_line(preprocess_context *context, macro_long_string *s)
@@ -156,7 +155,6 @@ void m_onemore(preprocess_context *context)
 		if (context->curchar == EOF)
 		{
 			end_line(context, &context->befor_temp);
-			context->control_aflag++;
 			printf("\n");
 		}
 	}
@@ -234,13 +232,11 @@ void m_coment_skip(preprocess_context *context)
 			if (context->curchar == '\n')
 			{
 				end_line(context, &context->befor_temp);
-				context->control_aflag++;
 			}
 
 			if (context->curchar == EOF)
 			{
 				end_line(context, &context->befor_temp);
-				context->control_aflag++;
 				printf("\n");
 				m_error(comm_not_ended, context);
 			}
@@ -324,7 +320,6 @@ void m_nextch(preprocess_context *context)
 		if (context->curchar == '\n')
 		{
 			end_line(context, &context->befor_temp);
-			context->control_aflag++;
 		}
 	}
 

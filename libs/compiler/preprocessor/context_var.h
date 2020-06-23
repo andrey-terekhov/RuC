@@ -74,7 +74,8 @@ typedef struct preprocess_context
 	int cur;
 
 	int nextp;
-
+	int main_file;
+	
 	int oldcurchar[DIP];
 	int oldnextchar[DIP];
 	int oldnextch_type[DIP];

@@ -108,7 +108,6 @@ int open_h_faile(preprocess_context *context,  char* file_way)
 		exit(1);
 	}
 	data_files_pinter(&context->h_files, file_way, f);
-
 	return (&context->c_files)->cur; 
 }
 
@@ -171,7 +170,7 @@ void open_file(preprocess_context *context, data_file *f)
 	char* file_way = malloc(STRIGSIZE * sizeof(char));
 	memset(file_way, 0, STRIGSIZE * sizeof(char));
 	file_way = f->way;
-	printf("2way = %s", f->way);
+	//printf("2way = %s\n", f->way);
 	
 	int i = strlen(f->way);
 	

@@ -87,7 +87,6 @@ void show_macro(compiler_context *context, int k, int nwe_line, int* s)
 void error(compiler_context *context, int ernum)
 {
 	int i = 0;
-	int j;
 	int k = 0;
 
 	data_file *f;
@@ -118,18 +117,15 @@ void error(compiler_context *context, int ernum)
 	int* control_before =(&f->cs)->str_before;
 	int* control_after = (&f->cs)->str_after;
 
-	/*for(int k = 0; k < 3; k++)
-	{
-		printf("b[%i] = %i, a[%i] = %i\n", k, context->control_before[k], k, context->control_after[k]);
-	}*/
-
-	while (control_before[i] < context->line)
+	while (control_before[i] < context->line + 1)
 	{
 		nwe_line += control_after[i] - 1;
 		i++;
 	}
+	nwe_line += 1;
 	
 	i = 0;
+	k = 0;
 
 	if( f->include_sorse[0] != '\0')
 	{
@@ -153,7 +149,7 @@ void error(compiler_context *context, int ernum)
 
 	i = 0;
 
-	for (j = 1; j < nwe_line + k; j++)
+	for (int j = 1; j < nwe_line + k; j++)
 	{
 		printer_printf(&context->err_options, "line %i) ", j + k);
 

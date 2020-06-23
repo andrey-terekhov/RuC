@@ -168,14 +168,6 @@ int equal(compiler_context *context, int i, int j)
 void marcer_update(compiler_context *context)
 {
 	data_files *files;
-	if(context->c_flag == 1)
-	{
-		files = &context->cfs; 
-	}
-	else
-	{
-		files = &context->hfs;
-	}
 	
 	nextch(context);
 
@@ -195,6 +187,14 @@ void marcer_update(compiler_context *context)
 		if(c == 0)
 		{
 			context->c_flag++;
+			if(context->c_flag == 1)
+			{
+				files = &context->cfs; 
+			}
+			else
+			{
+				files = &context->hfs;
+			}
 		}
 
 		files->cur = c;
@@ -205,6 +205,14 @@ void marcer_update(compiler_context *context)
 	}
 	else
 	{
+		if(context->c_flag == 1)
+		{
+			files = &context->cfs; 
+		}
+		else
+		{
+			files = &context->hfs;
+		}
 		nextch(context);
 		files->cur = get_pred_faile(&files->files[files->cur]);
 		if(files->cur != -1)

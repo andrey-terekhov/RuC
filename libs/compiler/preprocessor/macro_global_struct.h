@@ -52,7 +52,6 @@ typedef struct data_file
 	FILE* input;
 	int* include_sorse;
 	macro_long_string befor_sorse;
-
 } data_file;
 
 typedef struct data_files
