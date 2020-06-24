@@ -58,6 +58,7 @@ void m_error(int ernum, preprocess_context *context)
 	int p = get_long_string_p(&context->befor_temp); 
 
 	int j = 2;
+	//printf("ernum = %i", ernum);
 	printf("\n Ошибка при препроцесировании в файле: \"%s\"\n \n", name);
 	printf("line 1) ");
 

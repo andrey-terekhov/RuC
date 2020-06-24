@@ -328,6 +328,12 @@ void add_c_file(preprocess_context *context)
 					if (context->cur = SH_INCLUDE)
 					{
 						include_relis(context, &context->c_files);
+						if(context->h_flag)
+						{
+							context->h_flag = 0;
+							add_c_file_siple(context);
+							return;
+						}
 						break;
 					}
 					else
@@ -352,7 +358,7 @@ void add_c_file(preprocess_context *context)
 	}
 }
 
-void open_files_config(const char *code, preprocess_context *context, int start)
+/*void open_files_config(const char *code, preprocess_context *context, int start)
 {	
 	FILE* cofig = fopen(context->way, "r");
 	context->curent_file = cofig;
@@ -378,7 +384,7 @@ void open_files_config(const char *code, preprocess_context *context, int start)
 
 		if (find_file(context, way_temp))
 		{
-			int old_cur = open_c_faile(context, way_temp);
+			int old_cur = open_p_faile(context, way_temp);
 			context->line = 1;
 
 			cur_failes_next(&context->c_files, old_cur, context);
@@ -399,7 +405,7 @@ void open_files_config(const char *code, preprocess_context *context, int start)
 		space_skip(context);
 		j = start;	
 	}
-}
+}*/
 
 void open_files_parametr(const char *codes[], preprocess_context *context, int i)
 {
@@ -412,7 +418,7 @@ void open_files_parametr(const char *codes[], preprocess_context *context, int i
 	context->way[j] = '\0';
 	if (find_file(context, context->way))
 	{
-		int old_cur = open_c_faile(context, context->way);
+		int old_cur = open_p_faile(context, context->way);
 
 		cur_failes_next(&context->c_files, old_cur, context);
 		(&context->befor_temp)->str = (&(&context->c_files)->files[(&context->c_files)->cur])->include_sorse;
@@ -429,6 +435,24 @@ void open_files_parametr(const char *codes[], preprocess_context *context, int i
 	{
 		code = codes[k];
 		k++;
+		printf("cose = %s \n", code);
+		if(code[0] == '-' && code[1] == 'I')
+		{
+			i = 2;
+			int l = strlen(code);
+			context->include_ways[context->iwp] = malloc(l * sizeof(char));
+			memset(context->include_ways[context->iwp], 0, l * sizeof(char));
+
+			while (code[i] != '\0')
+			{
+				context->include_ways[context->iwp][i-2] = code[i];
+				i++;
+			}
+			context->iwp++;
+
+			continue;
+		}
+		
 		i = 0;
 		while (code[i] != '.' || code[i + 1] != 'c')
 		{
@@ -447,7 +471,7 @@ void open_files_parametr(const char *codes[], preprocess_context *context, int i
 
 		if (find_file(context, context->way))
 		{
-			int old_cur = open_c_faile(context, context->way);
+			int old_cur = open_p_faile(context, context->way);
 
 			cur_failes_next(&context->c_files, old_cur, context);
 			(&context->befor_temp)->str = (&(&context->c_files)->files[(&context->c_files)->cur])->include_sorse;
@@ -479,14 +503,14 @@ void open_files(const char *codes[], preprocess_context *context)
 	i++;
 	context->way[i] = '\0';
 	i++;
-	if(context->way[i-2] != 'c')
+	/*if(context->way[i-2] != 'c')
 	{
 		open_files_config(code, context, i);
 	}
 	else
-	{
-		open_files_parametr(codes, context, i);
-	}
+	{*/
+	open_files_parametr(codes, context, i);
+
 }
 
 void preprocess_h_file(preprocess_context *context, data_files* fs)

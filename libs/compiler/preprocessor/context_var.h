@@ -98,6 +98,9 @@ typedef struct preprocess_context
 	int* curent_string;
 	int curent_p;
 
+	char* include_ways[STRIGSIZE];
+	int iwp;
+
 	universal_printer_options output_options;
 } preprocess_context;
 
