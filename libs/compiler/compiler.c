@@ -80,7 +80,6 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 		// Препроцессинг в массив
 
-		printf("\nИсходный текст:\n \n");
 
 		macro_processed = preprocess_file(context, argv); // макрогенерация
 		if (macro_processed == NULL)

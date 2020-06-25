@@ -34,10 +34,6 @@
 #include <string.h>
 #include <wchar.h>
 
-
-#define MACRODEBAG 1
-
-
 void to_reprtab(char str[], int num, preprocess_context *context)
 {
 	int i;
@@ -413,19 +409,13 @@ void open_files_parametr(const char *codes[], preprocess_context *context)
 	int i = 0;
 	char *code;
 	int k = 1;
-	printf("code[1] = %s\n", codes[1]);
-	printf("code[2] = %s\n", codes[2]);
-	printf("code[3] = %s\n", codes[3]);
-	printf("code[4] = %s\n", codes[4]);
 	
 	while (codes[k] != NULL)
 	{
 		code = codes[k];
 		k++;
-		printf("cose = %s \n", code);
 		if(code[0] == '-' && code[1] == 'I')
 		{
-			printf(" путь 0c %s\n", code);
 			i = 2;
 			int l = strlen(code);
 			context->include_ways[context->iwp] = malloc(l * sizeof(char));
@@ -442,7 +432,6 @@ void open_files_parametr(const char *codes[], preprocess_context *context)
 				i++;
 			}
 			context->include_ways[context->iwp][i-2] = '\0';
-			printf(" путь 0i %s\n", context->include_ways[context->iwp]);
 			context->iwp++;
 			continue;
 		}
@@ -494,10 +483,6 @@ void preprocess_h_file(preprocess_context *context, data_files* fs)
 	while(fs->cur < fs->p)
 	{
 		context->curent_file = get_input(&fs->files[fs->cur]);
-		if (context->curent_file == NULL)
-		{
-			printf("1 не найден файл \n");
-		}
 
 		(&context->befor_temp)->str = (&(&fs->files[fs->cur])->befor_sorse)->str;
 		(&context->befor_temp)->p = 0;
@@ -534,7 +519,10 @@ void save_data(compiler_context *c_context, preprocess_context *context)
 
 const char* preprocess_file(compiler_context *c_context, const char *code[])
 {
-	//printf("code  = %s\n", code[1]);
+	if (MACRODEBAG)
+	{
+		printf("\nИсходный текст:\n \n");
+	}
 	preprocess_context *context = malloc(sizeof(preprocess_context));
 	preprocess_context_init(context);
 	printer_attach_buffer(&context->output_options, 1024);
@@ -559,7 +547,7 @@ const char* preprocess_file(compiler_context *c_context, const char *code[])
 	const char *macro_processed = strdup(context->output_options.ptr);
 	if (MACRODEBAG)
 	{
-		printf("$%s$\n", macro_processed);
+		printf("%s\n", macro_processed);
 	}
 	return macro_processed;
 }

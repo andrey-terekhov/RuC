@@ -128,7 +128,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 	{
 		context->control_aflag++;
 	}
-	if(context->FILE_flag)
+	if(context->FILE_flag && MACRODEBAG)
 	{
 		printf("Line %i) ", context->line);
 		context->line++;
@@ -141,6 +141,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 			}
 		}
 		context->temp_output = s->p;
+		printf("\n");
 	}
 }
 
@@ -155,7 +156,6 @@ void m_onemore(preprocess_context *context)
 		if (context->curchar == EOF)
 		{
 			end_line(context, &context->befor_temp);
-			printf("\n");
 		}
 	}
 	else
