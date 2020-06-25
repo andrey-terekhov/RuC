@@ -440,6 +440,8 @@
 #define RECEIVE_FLOAT  -93
 #define RECEIVE_STRING -94
 
+#define ASSERT         -95
+
 
 #define LVOIDASTER -150
 #define ABSI	   -151
