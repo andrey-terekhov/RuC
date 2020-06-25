@@ -140,12 +140,15 @@ int open_p_faile(preprocess_context *context,  char* file_way)
 int open_i_faile(preprocess_context *context,  char* temp_way, char* cur_way, int flag)
 {
 	char* file_way = gen_way(context, cur_way, temp_way);
+	printf(" путь 1 %s\n", file_way);
 	FILE* f = fopen(file_way, "r");
+
 	if (f == NULL)
 	{
 		for(int i = 0; i < context->iwp; i++)
 		{
 			file_way = gen_way(context, context->include_ways[i], temp_way);
+			printf(" путь 2 %s\n", file_way);
  			f = fopen(file_way, "r");
 			if(f != NULL)
 			{

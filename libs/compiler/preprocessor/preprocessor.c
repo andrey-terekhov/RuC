@@ -407,29 +407,16 @@ void add_c_file(preprocess_context *context)
 	}
 }*/
 
-void open_files_parametr(const char *codes[], preprocess_context *context, int i)
+void open_files_parametr(const char *codes[], preprocess_context *context)
 {
-	int j;
+	int j = 0;
+	int i = 0;
 	char *code;
-	int k = 2;
-	//printf("code[%i] = %s\n", 1, codes[1]);
-
-	j = i;
-	context->way[j] = '\0';
-	if (find_file(context, context->way))
-	{
-		int old_cur = open_p_faile(context, context->way);
-
-		cur_failes_next(&context->c_files, old_cur, context);
-		(&context->befor_temp)->str = (&(&context->c_files)->files[(&context->c_files)->cur])->include_sorse;
-		(&context->befor_temp)->p = 0;
-
-		add_c_file(context);
-
-		include_fclose(context);
-		set_old_cur(&context->c_files, old_cur, context);
-		(&context->befor_temp)->str = NULL;
-	}
+	int k = 1;
+	printf("code[1] = %s\n", codes[1]);
+	printf("code[2] = %s\n", codes[2]);
+	printf("code[3] = %s\n", codes[3]);
+	printf("code[4] = %s\n", codes[4]);
 	
 	while (codes[k] != NULL)
 	{
@@ -438,6 +425,7 @@ void open_files_parametr(const char *codes[], preprocess_context *context, int i
 		printf("cose = %s \n", code);
 		if(code[0] == '-' && code[1] == 'I')
 		{
+			printf(" путь 0c %s\n", code);
 			i = 2;
 			int l = strlen(code);
 			context->include_ways[context->iwp] = malloc(l * sizeof(char));
@@ -448,13 +436,19 @@ void open_files_parametr(const char *codes[], preprocess_context *context, int i
 				context->include_ways[context->iwp][i-2] = code[i];
 				i++;
 			}
+			if(context->include_ways[context->iwp][i-3] != '/')
+			{
+				context->include_ways[context->iwp][i-2] = '/';
+				i++;
+			}
+			context->include_ways[context->iwp][i-2] = '\0';
+			printf(" путь 0i %s\n", context->include_ways[context->iwp]);
 			context->iwp++;
-
 			continue;
 		}
 		
 		i = 0;
-		while (code[i] != '.' || code[i + 1] != 'c')
+		while (code[i] != '\0')
 		{
 			context->way[i] = code[i];
 			i++;
@@ -488,29 +482,8 @@ void open_files_parametr(const char *codes[], preprocess_context *context, int i
 
 void open_files(const char *codes[], preprocess_context *context)
 {
-	const char *code = codes[1];
-	int i = 0;
 	context->FILE_flag = 1;
-	while ((code[i] != '.' ||  code[i + 1] != 'c' ) &&
-	(code[i-2] != '.' || code[i - 1] != 't' || code[i] != 'x'|| code[i + 1] != 't'))
-	{
-		context->way[i] = code[i];
-		i++;
-	}
-	context->way[i] = code[i];
-	i++;
-	context->way[i] = code[i];
-	i++;
-	context->way[i] = '\0';
-	i++;
-	/*if(context->way[i-2] != 'c')
-	{
-		open_files_config(code, context, i);
-	}
-	else
-	{*/
-	open_files_parametr(codes, context, i);
-
+	open_files_parametr(codes, context);
 }
 
 void preprocess_h_file(preprocess_context *context, data_files* fs)
