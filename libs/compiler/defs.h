@@ -310,6 +310,8 @@
 #define RECEIVE_FLOATC	9593
 #define RECEIVE_STRINGC 9594
 
+#define ASSERTC 9595
+
 
 // Лексемы
 
@@ -447,7 +449,7 @@
 #define RECEIVE_FLOAT  -93
 #define RECEIVE_STRING -94
 
-#define ASSERT         -95
+#define ASSERT -95
 
 
 #define LVOIDASTER -150

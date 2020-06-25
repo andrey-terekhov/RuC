@@ -687,12 +687,12 @@ void primaryexpr(compiler_context *context)
 		{
 			error(context, no_leftbr_in_stand_func);
 		}
-        if (func == ASSERT)
-        {
-            mustbeint(context);
-            mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-            mustbestring(context);
-        }
+		if (func == ASSERT)
+		{
+			mustbeint(context);
+			mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+			mustbestring(context);
+		}
 		else if (func <= STRCPY && func >= STRLEN) // функции работы со строками
 		{
 			if (func >= STRNCAT)
