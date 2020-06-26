@@ -17,9 +17,9 @@
 #pragma once
 
 #include "constants.h"
+#include "macro_global_struct.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
-#include "macro_global_struct.h"
 #include <stdio.h>
 
 
@@ -29,7 +29,7 @@ extern "C" {
 
 typedef struct preprocess_context
 {
-	FILE* input_stak[10];
+	FILE *input_stak[10];
 	int inp_file;
 	char way[STRIGSIZE];
 	int inp_p;
@@ -75,7 +75,7 @@ typedef struct preprocess_context
 
 	int nextp;
 	int main_file;
-	
+
 	int oldcurchar[DIP];
 	int oldnextchar[DIP];
 	int oldnextch_type[DIP];
@@ -92,13 +92,13 @@ typedef struct preprocess_context
 	int h_flag;
 
 	int FILE_flag;
-	FILE* curent_file;
+	FILE *curent_file;
 	macro_long_string befor_temp;
 	int befor_temp_p;
-	int* curent_string;
+	int *curent_string;
 	int curent_p;
 
-	char* include_ways[STRIGSIZE];
+	char *include_ways[STRIGSIZE];
 	int iwp;
 
 	universal_printer_options output_options;

@@ -34,7 +34,7 @@ int get_next_char(preprocess_context *context)
 {
 	unsigned char firstchar;
 	unsigned char secondchar;
-	if ( fscanf(context->curent_file, "%c", &firstchar) == EOF)
+	if (fscanf(context->curent_file, "%c", &firstchar) == EOF)
 	{
 		return EOF;
 	}
@@ -73,7 +73,7 @@ void m_change_nextch_type(int type, int p, preprocess_context *context)
 	context->oldnextp[context->dipp] = context->nextp;
 	context->nextp = p;
 	context->dipp++;
-	
+
 
 	// printf("nextch_type\n");
 	context->nextch_type = type;
@@ -92,7 +92,7 @@ void m_old_nextch_type(preprocess_context *context)
 
 void control_string_pinter_e(control_string *s, int before, int after)
 {
-	if(s->p == s->size - 1)
+	if (s->p == s->size - 1)
 	{
 		s->size *= 2;
 		int *reallocated_b = realloc(s->str_before, s->size * sizeof(int));
@@ -101,16 +101,16 @@ void control_string_pinter_e(control_string *s, int before, int after)
 		memset(&reallocated_a[s->size * sizeof(int)], 0, (s->size / 2) * sizeof(int));
 		s->str_before = reallocated_b;
 		s->str_after = reallocated_a;
-	} 
+	}
 	s->str_before[s->p] = before;
 	s->str_after[s->p] = after;
 	s->p++;
 }
 
-void control_string_pinter(preprocess_context* context, int before, int after)
-{ 
+void control_string_pinter(preprocess_context *context, int before, int after)
+{
 	control_string *cs;
-	if(context->h_flag == 0)
+	if (context->h_flag == 0)
 	{
 		cs = &(&(&context->c_files)->files[(&context->c_files)->cur])->cs;
 	}
@@ -124,11 +124,11 @@ void control_string_pinter(preprocess_context* context, int before, int after)
 
 void end_line(preprocess_context *context, macro_long_string *s)
 {
-	if(context->include_type > 0)
+	if (context->include_type > 0)
 	{
 		context->control_aflag++;
 	}
-	if(context->FILE_flag && MACRODEBAG)
+	if (context->FILE_flag && MACRODEBAG)
 	{
 		printf("Line %i) ", context->line);
 		context->line++;
@@ -141,18 +141,18 @@ void end_line(preprocess_context *context, macro_long_string *s)
 			}
 		}
 		context->temp_output = s->p;
-		//printf("\n");
+		// printf("\n");
 	}
 }
 
 void m_onemore(preprocess_context *context)
 {
 	context->curchar = context->nextchar;
-	if(context->FILE_flag)
+	if (context->FILE_flag)
 	{
 		context->nextchar = get_next_char(context);
 		long_string_pinter(&context->befor_temp, context->curchar);
-		
+
 		if (context->curchar == EOF)
 		{
 			end_line(context, &context->befor_temp);
@@ -173,7 +173,7 @@ void m_onemore(preprocess_context *context)
 		context->control_bflag++;
 		if(context->control_aflag != 1)
 		{
-			control_string_pinter(context, context->control_bflag, context->control_aflag); 
+			control_string_pinter(context, context->control_bflag, context->control_aflag);
 		}
 		context->control_aflag = 0;
 	}
@@ -190,16 +190,16 @@ void m_fprintf(int a, preprocess_context *context)
 	if (a == '\n')
 	{
 		context->control_bflag++;
-		if(context->control_aflag != 1)
+		if (context->control_aflag != 1)
 		{
-			control_string_pinter(context, context->control_bflag, context->control_aflag); 
+			control_string_pinter(context, context->control_bflag, context->control_aflag);
 		}
 		context->control_aflag = 0;
 	}
 
 	printer_printchar(&context->output_options, a);
-	//printf_character(a);
-	//printf(" %d \n", a);
+	// printf_character(a);
+	// printf(" %d \n", a);
 	// printf(" t = %d n = %d\n", nextch_type,context -> nextp);
 }
 
@@ -314,7 +314,7 @@ void m_nextch(preprocess_context *context)
 	else
 	{
 		m_onemore(context);
-		
+
 		m_coment_skip(context);
 
 		if (context->curchar == '\n')
@@ -323,6 +323,6 @@ void m_nextch(preprocess_context *context)
 		}
 	}
 
-		//printf(" t = %d curcar = %c curcar = %i n = %d f = %d\n", context->nextch_type,
-			//context->curchar, context->curchar, context->nextp, context->inp_p);
+	// printf(" t = %d curcar = %c curcar = %i n = %d f = %d\n", context->nextch_type,
+	// context->curchar, context->curchar, context->nextp, context->inp_p);
 }

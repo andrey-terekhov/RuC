@@ -496,7 +496,7 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 	}
 	context->macrotext[context->mp++] = MACROEND;
 
-	if(r)
+	if (r)
 	{
 		context->reprtab[r + 1] = lmp;
 	}

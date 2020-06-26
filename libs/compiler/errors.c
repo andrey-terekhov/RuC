@@ -16,8 +16,8 @@
 
 #include "errors.h"
 #include "codes.h"
-#include "global.h"
 #include "context_var.h"
+#include "global.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -45,7 +45,7 @@ void warning(compiler_context *context, int ernum)
 	}
 }
 
-void show_macro(compiler_context *context, int k, int nwe_line, int* s)
+void show_macro(compiler_context *context, int k, int nwe_line, int *s)
 {
 	int flag = 1;
 	int i = k;
@@ -57,7 +57,7 @@ void show_macro(compiler_context *context, int k, int nwe_line, int* s)
 		printer_printchar(&context->err_options, s[i]);
 		if (flag && context->last_line[j] == s[i])
 		{
-			if(j == context->charnum)
+			if (j == context->charnum)
 			{
 				break;
 			}
@@ -73,14 +73,14 @@ void show_macro(compiler_context *context, int k, int nwe_line, int* s)
 
 	if (flag == 0)
 	{
-		printer_printf(&context->err_options, 
-			"\n\n В строке есть макрозамена, строка после макрогенерации:\nline %i)",context->line);
-		
+		printer_printf(&context->err_options, "\n\n В строке есть макрозамена, строка после макрогенерации:\nline %i)",
+					   context->line);
+
 		for (j = 0; j < context->charnum; j++)
 		{
 			printer_printchar(&context->err_options, context->last_line[j]);
 		}
-		printer_printf(&context->err_options,"\n");
+		printer_printf(&context->err_options, "\n");
 	}
 }
 
@@ -90,7 +90,7 @@ void error(compiler_context *context, int ernum)
 	int k = 0;
 
 	data_file *f;
-	if(context->c_flag)
+	if (context->c_flag)
 	{
 		f = &((&context->cfs)->files[(&context->cfs)->cur]);
 	}
@@ -99,8 +99,8 @@ void error(compiler_context *context, int ernum)
 		f = &((&context->cfs)->files[(&context->hfs)->cur]);
 	}
 
-	char* name = f->name;
-	int* s = (&f->befor_sorse)->str;
+	char *name = f->name;
+	int *s = (&f->befor_sorse)->str;
 
 	printer_printf(&context->err_options, "\n Oшибка в файле: \"%s\"\n \n", name);
 	if (context->charnum == 0)
@@ -112,10 +112,10 @@ void error(compiler_context *context, int ernum)
 	{
 		context->charnum--;
 	}
-	
+
 	int nwe_line = context->line;
-	int* control_before =(&f->cs)->str_before;
-	int* control_after = (&f->cs)->str_after;
+	int *control_before = (&f->cs)->str_before;
+	int *control_after = (&f->cs)->str_after;
 
 	while (control_before[i] < context->line + 1)
 	{
@@ -123,28 +123,28 @@ void error(compiler_context *context, int ernum)
 		i++;
 	}
 	nwe_line += 1;
-	
+
 	i = 0;
 	k = 0;
 
-	if( f->include_sorse[0] != '\0')
+	if (f->include_sorse[0] != '\0')
 	{
 		k++;
 
 		printer_printf(&context->err_options, "line %i) ", k);
 		k++;
 
-		int* s2  = f->include_sorse;
+		int *s2 = f->include_sorse;
 		while (s2[i] != '\0')
 		{
 			printer_printchar(&context->err_options, s2[i]);
-			if(s2[i] == '\n')
+			if (s2[i] == '\n')
 			{
 				printer_printf(&context->err_options, "line %i) ", k);
 				k++;
 			}
 			i++;
-		}	
+		}
 	}
 
 	i = 0;
@@ -153,7 +153,7 @@ void error(compiler_context *context, int ernum)
 	{
 		printer_printf(&context->err_options, "line %i) ", j + k);
 
-		while (s[i] != '\n' && s[i] != EOF)		
+		while (s[i] != '\n' && s[i] != EOF)
 		{
 			printer_printchar(&context->err_options, s[i]);
 			i++;

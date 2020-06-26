@@ -77,13 +77,12 @@ void endnl(compiler_context *context)
 
 void nextch(compiler_context *context)
 {
-	
 	onemore(context);
 	if (context->curchar == EOF)
 	{
 		onemore(context);
 		endnl(context);
-		//printer_printf(&context->output_options, "\n");
+		// printer_printf(&context->output_options, "\n");
 		return;
 	}
 	if (context->kw)
@@ -168,28 +167,28 @@ int equal(compiler_context *context, int i, int j)
 void marcer_update(compiler_context *context)
 {
 	data_files *files;
-	
+
 	nextch(context);
 
-	if(context->curchar == '1')
+	if (context->curchar == '1')
 	{
 		nextch(context);
 
-		int c = context->curchar - '0'; 
+		int c = context->curchar - '0';
 		nextch(context);
 
-		while(digit(context))
-		{	
-			c = c*10 + context->curchar - '0';
+		while (digit(context))
+		{
+			c = c * 10 + context->curchar - '0';
 			nextch(context);
 		}
 
-		if(c == 0)
+		if (c == 0)
 		{
 			context->c_flag++;
-			if(context->c_flag == 1)
+			if (context->c_flag == 1)
 			{
-				files = &context->cfs; 
+				files = &context->cfs;
 			}
 			else
 			{
@@ -198,16 +197,16 @@ void marcer_update(compiler_context *context)
 		}
 
 		files->cur = c;
-		if(files->cur != -1)
+		if (files->cur != -1)
 		{
 			set_line(&files->files[files->cur], context->line);
 		}
 	}
 	else
 	{
-		if(context->c_flag == 1)
+		if (context->c_flag == 1)
 		{
-			files = &context->cfs; 
+			files = &context->cfs;
 		}
 		else
 		{
@@ -215,7 +214,7 @@ void marcer_update(compiler_context *context)
 		}
 		nextch(context);
 		files->cur = get_pred_faile(&files->files[files->cur]);
-		if(files->cur != -1)
+		if (files->cur != -1)
 		{
 			context->line = get_line(&files->files[files->cur]);
 		}
@@ -661,7 +660,7 @@ int scan(compiler_context *context)
 		}
 
 		default:
-			if(context->curchar == '#' && (context->nextchar == '1' || context->nextchar == '2'))
+			if (context->curchar == '#' && (context->nextchar == '1' || context->nextchar == '2'))
 			{
 				marcer_update(context);
 				return scan(context);

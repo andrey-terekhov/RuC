@@ -19,10 +19,10 @@
 #include "context.h"
 #include "context_var.h"
 #include "file.h"
+#include "macro_global_struct.h"
 #include "preprocessor.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
-#include "macro_global_struct.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -56,21 +56,21 @@ void set_old_cur(data_files *fs, int old, preprocess_context *context)
 
 void print_marcer(int p, preprocess_context *context)
 {
-	m_fprintf('#',context);
-	m_fprintf('1',context);
+	m_fprintf('#', context);
+	m_fprintf('1', context);
 	int n = 1;
 	int c = 0;
-	while(n*10 < p)
+	while (n * 10 < p)
 	{
-		n *=10;
+		n *= 10;
 	}
-	while(n != 1)
+	while (n != 1)
 	{
 		c = p % n;
-		c = (p - c)/n;
-		p -= c*n;
+		c = (p - c) / n;
+		p -= c * n;
 		c += '0';
-		m_fprintf(c,context);
+		m_fprintf(c, context);
 		n /= 10;
 	}
 	p += '0';
@@ -81,23 +81,23 @@ void print_marcer(int p, preprocess_context *context)
 void print_end_marcer(preprocess_context *context)
 {
 	m_fprintf('\n', context);
-	m_fprintf('#',context);
-	m_fprintf('2',context);
+	m_fprintf('#', context);
+	m_fprintf('2', context);
 	m_fprintf('\n', context);
 }
 
-char* gen_way(preprocess_context* context, char* cur_way,  char* temp_way)
+char *gen_way(preprocess_context *context, char *cur_way, char *temp_way)
 {
-	char* file_way = malloc(STRIGSIZE * sizeof(char));
+	char *file_way = malloc(STRIGSIZE * sizeof(char));
 	memset(file_way, 0, STRIGSIZE * sizeof(char));
 
-	file_way = cur_way;	
+	file_way = cur_way;
 	int i = strlen(cur_way);
 	int j = 0;
 
 	while (temp_way[j] != '\0')
 	{
-		if (temp_way[j] == '.' && temp_way[j+1] == '.' && i != 0)
+		if (temp_way[j] == '.' && temp_way[j + 1] == '.' && i != 0)
 		{
 			j += 2;
 			if (file_way[i] != '/')
@@ -109,7 +109,7 @@ char* gen_way(preprocess_context* context, char* cur_way,  char* temp_way)
 				i--;
 			}
 
-			if (temp_way[j++]  != '/')
+			if (temp_way[j++] != '/')
 			{
 				m_error(24, context);
 			}
@@ -124,43 +124,42 @@ char* gen_way(preprocess_context* context, char* cur_way,  char* temp_way)
 	return file_way;
 }
 
-int open_p_faile(preprocess_context *context,  char* file_way)
+int open_p_faile(preprocess_context *context, char *file_way)
 {
 	context->curent_file = fopen(file_way, "r");
 	if (context->curent_file == NULL)
 	{
 		printf(" не найден файл %s\n", file_way);
 		exit(1);
-	}	
+	}
 	data_files_pinter(&context->c_files, file_way, NULL);
 
-	return (&context->c_files)->cur; 
+	return (&context->c_files)->cur;
 }
 
-int open_i_faile(preprocess_context *context,  char* temp_way, char* cur_way, int flag)
+int open_i_faile(preprocess_context *context, char *temp_way, char *cur_way, int flag)
 {
-	char* file_way = gen_way(context, cur_way, temp_way);
-	FILE* f = fopen(file_way, "r");
+	char *file_way = gen_way(context, cur_way, temp_way);
+	FILE *f = fopen(file_way, "r");
 
 	if (f == NULL)
 	{
-		for(int i = 0; i < context->iwp; i++)
+		for (int i = 0; i < context->iwp; i++)
 		{
 			file_way = gen_way(context, context->include_ways[i], temp_way);
- 			f = fopen(file_way, "r");
-			if(f != NULL)
+			f = fopen(file_way, "r");
+			if (f != NULL)
 			{
 				break;
-			} 
+			}
 		}
-		
 	}
 	if (f == NULL)
 	{
 		printf(" не найден файл %s\n", temp_way);
 		exit(1);
 	}
-	if(flag == 0)
+	if (flag == 0)
 	{
 		context->curent_file = f;
 		data_files_pinter(&context->c_files, file_way, NULL);
@@ -170,17 +169,17 @@ int open_i_faile(preprocess_context *context,  char* temp_way, char* cur_way, in
 	{
 		data_files_pinter(&context->h_files, file_way, f);
 		return (&context->h_files)->cur;
-	} 
+	}
 }
 
 void include_fclose(preprocess_context *context)
 {
 	fclose(context->curent_file);
 	context->curent_file = NULL;
-	context->line = 1;	
+	context->line = 1;
 }
 
-void begin_faile(preprocess_context* context, data_files* fs)
+void begin_faile(preprocess_context *context, data_files *fs)
 {
 	context->curent_file = get_input(&fs->files[fs->cur]);
 }
@@ -188,7 +187,7 @@ void begin_faile(preprocess_context* context, data_files* fs)
 void file_read(preprocess_context *context)
 {
 	int cur;
-	if(context->h_flag)
+	if (context->h_flag)
 	{
 		cur = get_cur_failes(&context->h_files);
 	}
@@ -196,9 +195,9 @@ void file_read(preprocess_context *context)
 	{
 		cur = get_cur_failes(&context->c_files);
 	}
-	
+
 	print_marcer(cur, context);
-	if(context->FILE_flag)
+	if (context->FILE_flag)
 	{
 		get_next_char(context);
 		m_nextch(context);
@@ -209,19 +208,19 @@ void file_read(preprocess_context *context)
 		m_nextch(context);
 		m_nextch(context);
 	}
-	
-	
+
+
 	while (context->curchar != EOF)
 	{
 		preprocess_scan(context);
 	}
-	
+
 	control_string_pinter(context, context->control_bflag + 1, 1);
 	context->control_bflag = 0;
 
 	print_end_marcer(context);
 
-	if(context->FILE_flag)
+	if (context->FILE_flag)
 	{
 		include_fclose(context);
 	}
@@ -230,7 +229,7 @@ void file_read(preprocess_context *context)
 void open_file(preprocess_context *context, data_file *f)
 {
 	int i = 0;
-	char* temp_way = malloc(STRIGSIZE * sizeof(char));
+	char *temp_way = malloc(STRIGSIZE * sizeof(char));
 	memset(temp_way, 0, STRIGSIZE * sizeof(char));
 
 	while (context->curchar != '\"')
@@ -243,7 +242,7 @@ void open_file(preprocess_context *context, data_file *f)
 		m_nextch(context);
 	}
 	temp_way[i++] = '\0';
-	
+
 	if (temp_way[i - 2] == 'h' && temp_way[i - 3] == '.')
 	{
 		if (context->include_type == 0)
@@ -251,31 +250,33 @@ void open_file(preprocess_context *context, data_file *f)
 			open_i_faile(context, temp_way, f->way, 1);
 			context->befor_temp_p = -1;
 		}
-		else if(context->include_type == 1)
+		else if (context->include_type == 1)
 		{
 			int old_cur = open_i_faile(context, temp_way, f->way, 1);
 
 			(&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->p = (&context->befor_temp)->p;
-			(&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->size = (&context->befor_temp)->size;
+			(&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->size =
+				(&context->befor_temp)->size;
 
 			cur_failes_next(&context->h_files, old_cur, context);
 			(&context->befor_temp)->str = (&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->str;
 			(&context->befor_temp)->p = 0;
-			
+
 			begin_faile(context, &context->h_files);
 			file_read(context);
 			set_old_cur(&context->h_files, old_cur, context);
 
 			(&context->befor_temp)->str = (&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->str;
 			(&context->befor_temp)->p = (&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->p;
-			(&context->befor_temp)->size = (&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->size;
+			(&context->befor_temp)->size =
+				(&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->size;
 		}
 		else
-		{ 
+		{
 			m_error(25, context);
 		}
 	}
-	else 
+	else
 	{
 		if (context->include_type != 0)
 		{
@@ -283,7 +284,8 @@ void open_file(preprocess_context *context, data_file *f)
 			int old_cur = open_i_faile(context, temp_way, f->way, 0);
 
 			(&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->p = (&context->befor_temp)->p;
-			(&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->size = (&context->befor_temp)->size;
+			(&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->size =
+				(&context->befor_temp)->size;
 
 			cur_failes_next(&context->c_files, old_cur, context);
 			(&context->befor_temp)->str = (&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->str;
@@ -295,36 +297,36 @@ void open_file(preprocess_context *context, data_file *f)
 
 			(&context->befor_temp)->str = (&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->str;
 			(&context->befor_temp)->p = (&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->p;
-			(&context->befor_temp)->size = (&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->size;
+			(&context->befor_temp)->size =
+				(&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->size;
 			context->FILE_flag = 0;
 		}
 		else
 		{
 			context->h_flag = 1;
 		}
-		
-	}	
+	}
 }
-
 
 
 void include_relis(preprocess_context *context, data_files *fs)
 {
 	space_skip(context);
-	
+
 	if (context->curchar != '\"')
 	{
 		m_error(26, context);
 	}
 	if (context->inp_p >= 20)
 	{
-		m_error(27, context);; // переполнение или цыкл
+		m_error(27, context);
+		; // переполнение или цыкл
 	}
 	m_nextch(context);
-	
+
 	open_file(context, &fs->files[fs->cur]);
 	m_nextch(context);
-	
+
 
 	space_end_line(context);
 }

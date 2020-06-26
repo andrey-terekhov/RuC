@@ -17,9 +17,9 @@
 #pragma once
 
 #include "defs.h"
+#include "macro_global_struct.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
-#include "macro_global_struct.h"
 #include <stdio.h>
 
 
@@ -67,8 +67,8 @@ typedef struct compiler_context
 	{
 		int first;
 		int second;
-	} numr;	
-	int last_line[LINESSIZE*2];
+	} numr;
+	int last_line[LINESSIZE * 2];
 	int nextchar;
 	int curchar;
 	int func_def;

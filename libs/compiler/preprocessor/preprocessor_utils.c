@@ -148,7 +148,7 @@ int collect_mident(preprocess_context *context)
 	return 0;
 }
 
-int find_file(preprocess_context *context, char* s)
+int find_file(preprocess_context *context, char *s)
 {
 	int oldrp = context->rp;
 	context->rp += 2;
@@ -169,7 +169,7 @@ int find_file(preprocess_context *context, char* s)
 
 	while (r)
 	{
-		if (context->reprtab[r+1] == SH_FILE && equal_reprtab(r,oldrp, context))
+		if (context->reprtab[r + 1] == SH_FILE && equal_reprtab(r, oldrp, context))
 		{
 			return 0;
 		}

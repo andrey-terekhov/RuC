@@ -44,7 +44,7 @@ void m_error(int ernum, preprocess_context *context)
 {
 	int i = 0;
 	data_file f;
-	if(context->h_flag)
+	if (context->h_flag)
 	{
 		f = get_cur_faile(&context->h_files);
 	}
@@ -53,40 +53,38 @@ void m_error(int ernum, preprocess_context *context)
 		f = get_cur_faile(&context->c_files);
 	}
 
-	char* name = get_faile_name(&f);
-	int* s = get_long_string(&context->befor_temp);
-	int p = get_long_string_p(&context->befor_temp); 
+	char *name = get_faile_name(&f);
+	int *s = get_long_string(&context->befor_temp);
+	int p = get_long_string_p(&context->befor_temp);
 
 	int j = 2;
-	//printf("ernum = %i", ernum);
+	// printf("ernum = %i", ernum);
 	printf("\n Ошибка при препроцесировании в файле: \"%s\"\n \n", name);
 	printf("line 1) ");
 
-	if( (&f)->include_sorse[0] != '\0')
+	if ((&f)->include_sorse[0] != '\0')
 	{
-		int* s2  = (&f)->include_sorse;
+		int *s2 = (&f)->include_sorse;
 		while (s2[i] != '\0')
 		{
 			printf_character(s[i]);
-			if(s2[i] == '\n')
+			if (s2[i] == '\n')
 			{
 				printf("line %i) ", j);
 				j++;
 			}
 			i++;
 		}
-		
 	}
-	
+
 	for (i = 0; i < p; i++)
 	{
 		printf_character(s[i]);
-		if(s[i] == '\n')
+		if (s[i] == '\n')
 		{
 			printf("line %i) ", j);
 			j++;
 		}
-
 	}
 
 	printf("\n тип ошибки: ");
@@ -166,7 +164,7 @@ void m_error(int ernum, preprocess_context *context)
 			printf("Внутри команды '#EVAL()' не должно быть логических операций\n");
 			break;
 		default:
-		printf("не реализованная ошибка № %d\n", ernum);
+			printf("не реализованная ошибка № %d\n", ernum);
 	}
 
 	exit(2);

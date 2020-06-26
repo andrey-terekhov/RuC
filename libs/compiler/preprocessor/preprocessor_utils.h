@@ -27,7 +27,7 @@ extern "C" {
 int equal_reprtab(int i, int j, preprocess_context *context);
 int macro_keywords(preprocess_context *context);
 int collect_mident(preprocess_context *context);
-int find_file(preprocess_context *context, char* s);
+int find_file(preprocess_context *context, char *s);
 
 void space_end_line(preprocess_context *context);
 void space_skip(preprocess_context *context);

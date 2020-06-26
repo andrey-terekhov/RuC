@@ -358,7 +358,7 @@ void tablesandcode(compiler_context *context)
 		}
 		i++;
 	}
-	
+
 	/*for (i = 1; i < context->line; i++)
 	{
 		printer_printf(&context->output_options, "line %i) ", i);

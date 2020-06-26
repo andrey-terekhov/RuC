@@ -16,16 +16,16 @@
 
 #pragma once
 
+#include "compiler.h"
 #include "context.h"
 #include "context_var.h"
-#include "compiler.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-const char* preprocess_file(compiler_context *c_context, compiler_workspace_file *code);
+const char *preprocess_file(compiler_context *c_context, compiler_workspace_file *code);
 void preprocess_scan(preprocess_context *context);
 
 #ifdef __cplusplus
