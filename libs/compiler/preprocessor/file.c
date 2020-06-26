@@ -141,7 +141,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 			}
 		}
 		context->temp_output = s->p;
-		printf("\n");
+		//printf("\n");
 	}
 }
 

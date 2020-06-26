@@ -96,7 +96,7 @@ void m_error(int ernum, preprocess_context *context)
 		case after_preproces_words_must_be_space:
 			printf("После комады препроцессора должен идти перенос строки\n");
 			break;
-		case after_ident_must_be_space:
+		case after_ident_must_be_space1:
 			printf("После индентификатора должен идти ' ' \n");
 			break;
 		case ident_begins_with_letters1:

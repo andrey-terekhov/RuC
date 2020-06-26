@@ -16,7 +16,7 @@
 
 #pragma once
 
-#define MACRODEBAG 1
+#define MACRODEBAG 0
 
 #define MAXTAB	  100000
 #define STRIGSIZE 256
@@ -65,7 +65,7 @@
 
 // Коды ошибок
 
-#define after_ident_must_be_space			366
+#define after_ident_must_be_space1			366
 #define ident_begins_with_s					367
 #define must_be_endif						368
 #define dont_elif							369

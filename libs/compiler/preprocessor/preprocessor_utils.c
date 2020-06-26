@@ -71,11 +71,11 @@ int macro_keywords(preprocess_context *context)
 		m_nextch(context);
 	} while (is_letter(context) || is_digit(context->curchar));
 
-	if (context->curchar != '\n' && context->curchar != ' ' && context->curchar != '\t' && context->curchar != '(' &&
+	/*if (context->curchar != '\n' && context->curchar != ' ' && context->curchar != '\t' && context->curchar != '(' &&
 		context->curchar != '\"')
 	{
 		m_error(after_ident_must_be_space, context);
-	}
+	}*/
 
 	hash &= 255;
 	context->reprtab[context->rp++] = 0;

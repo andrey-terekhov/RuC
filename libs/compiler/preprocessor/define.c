@@ -522,7 +522,7 @@ void define_relis(preprocess_context *context)
 	}
 	else if (context->curchar != ' ')
 	{
-		m_error(after_ident_must_be_space, context);
+		m_error(after_ident_must_be_space1, context);
 	}
 	else
 	{
@@ -551,7 +551,7 @@ void set_relis(preprocess_context *context)
 	}
 	else if (context->curchar != ' ')
 	{
-		m_error(after_ident_must_be_space, context);
+		m_error(after_ident_must_be_space1, context);
 	}
 
 	m_nextch(context);
