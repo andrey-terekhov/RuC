@@ -19,6 +19,7 @@
 #include "constants.h"
 #include "context.h"
 #include "context_var.h"
+#include "compiler.h"
 #include "define.h"
 #include "file.h"
 #include "if.h"
@@ -403,16 +404,15 @@ void add_c_file(preprocess_context *context)
 	}
 }*/
 
-void open_files_parametr(const char *codes[], preprocess_context *context)
+void open_files_parametr(compiler_workspace_file *codes, preprocess_context *context)
 {
 	int j = 0;
 	int i = 0;
 	char *code;
 	int k = 1;
-	
-	while (codes[k] != NULL)
+	while (codes != NULL)
 	{
-		code = codes[k];
+		code = codes->path;
 		k++;
 		if(code[0] == '-' && code[1] == 'I')
 		{
@@ -433,6 +433,7 @@ void open_files_parametr(const char *codes[], preprocess_context *context)
 			}
 			context->include_ways[context->iwp][i-2] = '\0';
 			context->iwp++;
+			codes = codes->next;
 			continue;
 		}
 		
@@ -466,10 +467,12 @@ void open_files_parametr(const char *codes[], preprocess_context *context)
 			set_old_cur(&context->c_files, old_cur, context);
 			(&context->befor_temp)->str = NULL;
 		}
+
+		codes = codes->next;
 	}
 }
 
-void open_files(const char *codes[], preprocess_context *context)
+void open_files(compiler_workspace_file *codes, preprocess_context *context)
 {
 	context->FILE_flag = 1;
 	open_files_parametr(codes, context);
@@ -517,7 +520,7 @@ void save_data(compiler_context *c_context, preprocess_context *context)
 	c_context->c_flag = -1;
 }
 
-const char* preprocess_file(compiler_context *c_context, const char *code[])
+const char* preprocess_file(compiler_context *c_context, compiler_workspace_file *code)
 {
 	if (MACRODEBAG)
 	{

@@ -49,7 +49,7 @@ void report_cb(asp_report *report)
 }
 #endif
 
-static void process_user_requests(compiler_context *context, compiler_workspace *workspace, const char *argv[])
+static void process_user_requests(compiler_context *context, compiler_workspace *workspace)
 {
 	compiler_workspace_file *file;
 
@@ -81,7 +81,7 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 		// Препроцессинг в массив
 
 
-		macro_processed = preprocess_file(context, argv); // макрогенерация
+		macro_processed = preprocess_file(context, workspace->files); // макрогенерация
 		if (macro_processed == NULL)
 		{
 			fprintf(stderr, " ошибка выделения памяти для "
@@ -116,7 +116,9 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 compiler_workspace *compiler_workspace_create()
 {
-	return calloc(1, sizeof(compiler_workspace));
+	compiler_workspace *temp = calloc(1, sizeof(compiler_workspace));
+	temp->files = NULL;
+	return temp;
 }
 
 void compiler_workspace_free(compiler_workspace *workspace)
@@ -155,6 +157,7 @@ compiler_workspace_file *compiler_workspace_add_file(compiler_workspace *workspa
 		return NULL;
 	}
 
+	file->next = NULL;
 	file->path = strdup(path);
 
 	/* Find the tail file */
@@ -259,7 +262,7 @@ compiler_workspace *compiler_get_workspace(int argc, const char *argv[])
 	return ws;
 }
 
-COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace, const char *argv[])
+COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 {
 	compiler_context *context = malloc(sizeof(compiler_context));
 
@@ -277,14 +280,14 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace, 
 
 	init_modetab(context);
 
-	process_user_requests(context, workspace, argv);
+	process_user_requests(context, workspace);
 
 	compiler_context_deinit(context);
 	free(context);
 	return 0;
 }
 
-COMPILER_EXPORTED int compiler_compile(const char *path, const char *argv[])
+COMPILER_EXPORTED int compiler_compile(const char *path)
 {
 	int ret;
 	compiler_workspace *ws;
@@ -303,7 +306,7 @@ COMPILER_EXPORTED int compiler_compile(const char *path, const char *argv[])
 		return 1;
 	}
 
-	ret = compiler_workspace_compile(ws, argv);
+	ret = compiler_workspace_compile(ws);
 	compiler_workspace_free(ws);
 
 	return ret;
