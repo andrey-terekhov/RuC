@@ -20,9 +20,11 @@
 #include <stdlib.h>
 
 
-const char *name = "../tests/stanfunc0.c";
+const char *name = "../tests/assert.c";
 // "../tests/Egor/Macro/test3.c";
-// "../tests/Mishatest.c";
+// "../tests/defstest/MULTASSATV_9221.c";
+//"../tests/defstest/SHLASSAT_9014.c";
+//"../tests/stanfunc0.c";
 // "../tests/mips/0test.c";
 
 
