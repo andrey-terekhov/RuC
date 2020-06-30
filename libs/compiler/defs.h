@@ -28,7 +28,7 @@
 #define INIPROSIZE	100
 
 #define MAXMEMSIZE		100000
-#define NUMOFTHREADS	5
+#define NUMOFTHREADS	10
 #define MAXMEMTHREAD	MAXMEMSIZE / NUMOFTHREADS
 #define MAXPRINTFPARAMS 20
 
@@ -310,6 +310,8 @@
 #define RECEIVE_FLOATC	9593
 #define RECEIVE_STRINGC 9594
 
+#define ASSERTC 9595
+
 
 // Лексемы
 
@@ -446,6 +448,8 @@
 #define RECEIVE_INT	   -92
 #define RECEIVE_FLOAT  -93
 #define RECEIVE_STRING -94
+
+#define ASSERT -95
 
 
 #define LVOIDASTER -150
