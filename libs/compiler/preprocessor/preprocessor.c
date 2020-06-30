@@ -276,7 +276,7 @@ void add_c_file_siple(preprocess_context *context)
 
 	while (context->curchar != EOF && context->main_file == -1)
 	{
-		if (context->curchar == 'm' || context->curchar == 'M' || context->curchar == 'г' || context->curchar == 'Г')
+		if (context->curchar == 'm' || context->curchar == 'M' || context->curchar == 0x413 || context->curchar == 0x433)
 		{
 			context->cur = macro_keywords(context);
 			if (context->cur == SH_MAIN)
@@ -314,8 +314,8 @@ void add_c_file(preprocess_context *context)
 			}
 			case '#':
 			{
-				if (context->nextchar == 'i' || context->nextchar == 'I' || context->nextchar == 'Д' ||
-					context->nextchar == 'д')
+				if (context->nextchar == 'i' || context->nextchar == 'I' || context->nextchar == 0x414 ||
+					context->nextchar == 0x434)
 				{
 					context->befor_temp_p = get_long_string_p(&context->befor_temp);
 					context->cur = macro_keywords(context);
