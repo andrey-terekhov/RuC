@@ -1,4 +1,4 @@
-#define s #eval(9 * 4.0)
+#define s #eval(9 / 4.0)
 
 void main()
 {

@@ -2,7 +2,7 @@
 
 void main()
 {
-  assert((s + 0.5)*(s + 0.5) < 0.01, "fail1");
+  assert((s + 0.05)*(s + 0.05) < 0.01, "fail1");
 }
 
 
