@@ -28,9 +28,10 @@
 #define INIPROSIZE	100
 
 #define MAXMEMSIZE		100000
-#define NUMOFTHREADS	5
+#define NUMOFTHREADS	10
 #define MAXMEMTHREAD	MAXMEMSIZE / NUMOFTHREADS
 #define MAXPRINTFPARAMS 20
+
 
 // modetab
 
@@ -292,16 +293,24 @@
 #define BLYNK_LCDC			 9577
 #define BLYNK_TERMINALC		 9578
 
-#define SETSIGNALC	 9579
-#define PIXELC		 9580
-#define LINEC		 9581
-#define RECTANGLEC	 9582
-#define ELLIPSEC	 9583
-#define CLEARC		 9584
-#define DRAW_STRINGC 9585
-#define DRAW_NUMBERC 9586
-#define ICONC		 9587
-#define UPBC		 9588
+#define SETSIGNALC		9579
+#define PIXELC			9580
+#define LINEC			9581
+#define RECTANGLEC		9582
+#define ELLIPSEC		9583
+#define CLEARC			9584
+#define DRAW_STRINGC	9585
+#define DRAW_NUMBERC	9586
+#define ICONC			9587
+#define UPBC			9588
+#define SEND_INTC		9589
+#define SEND_FLOATC		9590
+#define SEND_STRINGC	9591
+#define RECEIVE_INTC	9592
+#define RECEIVE_FLOATC	9593
+#define RECEIVE_STRINGC 9594
+
+#define ASSERTC 9595
 
 
 // Лексемы
@@ -440,6 +449,8 @@
 #define RECEIVE_FLOAT  -93
 #define RECEIVE_STRING -94
 
+#define ASSERT -95
+
 
 #define LVOIDASTER -150
 #define ABSI	   -151
@@ -447,18 +458,18 @@
 
 // Узлы дерева
 
-#define TIdent		-300
-#define TConst		-301
-#define TString		-302
-#define TSliceident -303
-#define TSlice		-304
-#define TIdenttoval -305
-#define TAddrtoval	-306
-#define TCall1		-307
-#define TCall2		-308
-#define TFuncdef	-309
-#define TDeclid		-310
-
+#define TIdent		 -300
+#define TConst		 -301
+#define TString		 -302
+#define TSliceident	 -303
+#define TSlice		 -304
+#define TIdenttoval	 -305
+#define TAddrtoval	 -306
+#define TCall1		 -307
+#define TCall2		 -308
+#define TFuncdef	 -309
+#define TDeclid		 -310
+#define TStringd	 -311
 #define TExprend	 -312
 #define TCondexpr	 -313
 #define TBegin		 -314
@@ -688,6 +699,7 @@
 
 #define not_float_in_stanfunc 385
 #define not_array_in_stanfunc 386
+
 
 // коды предупреждений
 

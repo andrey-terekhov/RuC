@@ -22,8 +22,10 @@
 
 void tablesandtree(compiler_context *context)
 {
-	int i = 1;
-	int j = 0;
+	int i;
+	int j;
+	int n;
+	double d;
 	/*int k = context->before_source_p;
 
 	printer_printf(&context->output_options, "\n%s\n", "source");
@@ -102,7 +104,20 @@ void tablesandtree(compiler_context *context)
 				i += 7;
 				break;
 			case TString:
-				printer_printf(&context->output_options, "TString n= %i\n", context->tree[i++]);
+				printer_printf(&context->output_options, "TString n= %i\n", n = context->tree[i++]);
+				for (j = 0; j < n; ++j)
+				{
+					printer_printf(&context->output_options, "%i\n", context->tree[i++]);
+				}
+				break;
+			case TStringd:
+				printer_printf(&context->output_options, "TStringd n= %i\n", context->tree[i++]);
+				for (j = 0; j < n; ++j)
+				{
+					memcpy(&d, &context->tree[i], sizeof(double));
+					i += 2;
+					printer_printf(&context->output_options, "%f\n", d);
+				}
 				break;
 			case TCondexpr:
 				printer_printf(&context->output_options, "TCondexpr\n");
