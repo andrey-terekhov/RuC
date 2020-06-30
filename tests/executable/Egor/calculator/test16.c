@@ -4,5 +4,5 @@
 
 void main()
 {
-	MiN;
+	assert(MiN == 3, "fail1");
 }

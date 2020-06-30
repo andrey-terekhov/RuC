@@ -103,9 +103,10 @@ void error(compiler_context *context, int ernum)
 	int *s = (&f->befor_sorse)->str;
 
 	printer_printf(&context->err_options, "\n Oшибка в файле: \"%s\"\n \n", name);
+	context->line--;
 	if (context->charnum == 0)
 	{
-		context->line--;
+		
 		context->charnum = context->charnum_before;
 	}
 	else
@@ -132,16 +133,19 @@ void error(compiler_context *context, int ernum)
 		k++;
 
 		printer_printf(&context->err_options, "line %i) ", k);
-		k++;
 
 		int *s2 = f->include_sorse;
 		while (s2[i] != '\0')
 		{
 			printer_printchar(&context->err_options, s2[i]);
-			if (s2[i] == '\n')
+			if (s2[i] == '\n' && s2[i+1] == '\0')
 			{
-				printer_printf(&context->err_options, "line %i) ", k);
+				break;
+			}
+			else if (s2[i] == '\n')
+			{
 				k++;
+				printer_printf(&context->err_options, "line %i) ", k);
 			}
 			i++;
 		}
@@ -149,7 +153,7 @@ void error(compiler_context *context, int ernum)
 
 	i = 0;
 
-	for (int j = 1; j < nwe_line + k; j++)
+	for (int j = 1; j < nwe_line; j++)
 	{
 		printer_printf(&context->err_options, "line %i) ", j + k);
 
