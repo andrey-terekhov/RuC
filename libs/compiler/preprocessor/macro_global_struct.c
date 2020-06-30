@@ -223,13 +223,13 @@ void set_incude_s(data_file *f, int temp_p, int p)
 	}
 	else
 	{
-		for (int i = 0; i < p - temp_p; i++)
+		for (int i = 0; i < p - temp_p + 1; i++)
 		{
-			str_b[i] = str_i[temp_p + i];
+			str_b[i] = str_i[temp_p + i - 1];
 		}
-		str_b[p - temp_p] = '\0';
+		str_b[p - temp_p + 1] = '\0';
 		str_i[temp_p] = '\0';
-		(&f->befor_sorse)->p = p - temp_p;
+		(&f->befor_sorse)->p = p - temp_p + 1;
 	}
 }
 

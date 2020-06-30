@@ -58,8 +58,11 @@ void m_error(int ernum, preprocess_context *context)
 	int p = get_long_string_p(&context->befor_temp);
 
 	int j = 2;
-	// printf("ernum = %i", ernum);
+	#if MACRODEBAG
+	printf("\n Ошибка №%i при препроцесировании в файле: \"%s\"\n \n", ernum, name);
+	#else
 	printf("\n Ошибка при препроцесировании в файле: \"%s\"\n \n", name);
+	#endif
 	printf("line 1) ");
 
 	if ((&f)->include_sorse[0] != '\0')

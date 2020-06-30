@@ -40,12 +40,29 @@ void to_reprtab(char str[], int num, preprocess_context *context)
 	int i;
 	int oldrepr = context->rp;
 	int hash = 0;
+	unsigned char firstchar;
+	unsigned char secondchar;
+	int p;
+	int c = 0;
 	context->rp += 2;
 
-	for (i = 0; str[i] != 0; i++)
-	{
-		hash += str[i];
-		context->reprtab[context->rp++] = str[i];
+	for (i = 0; str[i] != 0; i++)	
+	{	
+		sscanf(&str[i], "%c%n", &firstchar, &p);
+
+		if((firstchar  & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0) 
+		{
+			++i;
+			sscanf(&str[i], "%c%n", &secondchar, &p);
+			c = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 | (secondchar & /*0b111111*/ 0x3F);
+		}
+		else
+		{
+			c = firstchar;
+		}
+
+		hash += c;
+		context->reprtab[context->rp++] = c;
 	}
 
 	hash &= 255;
@@ -261,17 +278,9 @@ void swap(data_file *f1, data_file *f2)
 void add_c_file_siple(preprocess_context *context)
 {
 	include_sorse_set(&context->c_files, context->befor_temp_p, (&context->befor_temp)->p);
-	(&context->befor_temp)->str = (&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->str;
-	if (context->befor_temp_p != -1)
-	{
-		(&context->befor_temp)->p -= context->befor_temp_p;
-		context->befor_temp_p = -1;
-	}
-	else
-	{
-		(&context->befor_temp)->p = 1;
-	}
 
+	(&context->befor_temp)->str = (&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->str;
+	(&context->befor_temp)->p = (&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->p;
 	context->temp_output = 0;
 
 	while (context->curchar != EOF && context->main_file == -1)
@@ -319,7 +328,7 @@ void add_c_file(preprocess_context *context)
 				{
 					context->befor_temp_p = get_long_string_p(&context->befor_temp);
 					context->cur = macro_keywords(context);
-					if ((context->cur = SH_INCLUDE))
+					if ((context->cur == SH_INCLUDE))
 					{
 						include_relis(context, &context->c_files);
 						if (context->h_flag)
@@ -458,7 +467,7 @@ void open_files_parametr(compiler_workspace_file *codes, preprocess_context *con
 			(&context->befor_temp)->p = 0;
 
 			add_c_file(context);
-
+	
 			include_fclose(context);
 			set_old_cur(&context->c_files, old_cur, context);
 			(&context->befor_temp)->str = NULL;
@@ -500,10 +509,16 @@ void preprocess_h_file(preprocess_context *context, data_files *fs)
 void preprocess_c_file(preprocess_context *context, data_files *fs)
 {
 	fs->cur = 0;
-	swap(&fs->files[context->main_file], &fs->files[fs->p - 1]);
+	if(context->main_file != fs->p - 1)
+	{
+		swap(&fs->files[context->main_file], &fs->files[fs->p - 1]);
+	}
+	
 	while (fs->cur < fs->p)
 	{
-		context->curent_string = get_befor(&fs->files[fs->cur]);
+		context->curent_string = (&(&fs->files[fs->cur])->befor_sorse)->str;
+		context->curent_p = (&(&fs->files[fs->cur])->befor_sorse)->p;
+
 		file_read(context);
 		fs->cur++;
 	}
@@ -518,10 +533,9 @@ void save_data(compiler_context *c_context, preprocess_context *context)
 
 const char *preprocess_file(compiler_context *c_context, compiler_workspace_file *code)
 {
-	if (MACRODEBAG)
-	{
+	#if MACRODEBAG
 		printf("\nИсходный текст:\n \n");
-	}
+	#endif
 	preprocess_context *context = malloc(sizeof(preprocess_context));
 	preprocess_context_init(context);
 	printer_attach_buffer(&context->output_options, 1024);
@@ -538,16 +552,17 @@ const char *preprocess_file(compiler_context *c_context, compiler_workspace_file
 
 	open_files(code, context);
 
+
 	preprocess_h_file(context, &context->h_files);
 	preprocess_c_file(context, &context->c_files);
 
 	save_data(c_context, context);
 
 	const char *macro_processed = strdup(context->output_options.ptr);
-	if (MACRODEBAG)
-	{
-		printf("%s\n", macro_processed);
-	}
+	#if MACRODEBAG
+		printf("\n>\n%s<\n", macro_processed);
+	#endif
+
 	return macro_processed;
 }
 
