@@ -550,12 +550,16 @@ const char *preprocess_file(compiler_context *c_context, compiler_workspace_file
 	context->FILE_flag = 1;
 	context->mfirstrp = context->rp;
 
+	printf("!!!!!!!!!!!!!!1\n");
 	open_files(code, context);
 
-
+	printf("!!!!!!!!!!!!!!2\n");
 	preprocess_h_file(context, &context->h_files);
+
+	printf("!!!!!!!!!!!!!!3\n");
 	preprocess_c_file(context, &context->c_files);
 
+	printf("!!!!!!!!!!!!!!4\n");
 	save_data(c_context, context);
 
 	const char *macro_processed = strdup(context->output_options.ptr);
