@@ -411,6 +411,7 @@ void add_c_file(preprocess_context *context)
 
 void open_files_parametr(compiler_workspace_file *codes, preprocess_context *context)
 {
+	compiler_workspace_file *codes_temp = codes;
 	int j = 0;
 	int i = 0;
 	char *code;
@@ -418,7 +419,6 @@ void open_files_parametr(compiler_workspace_file *codes, preprocess_context *con
 	while (codes != NULL)
 	{
 		code = codes->path;
-		k++;
 		if (code[0] == '-' && code[1] == 'I')
 		{
 			i = 2;
@@ -441,6 +441,14 @@ void open_files_parametr(compiler_workspace_file *codes, preprocess_context *con
 			codes = codes->next;
 			continue;
 		}
+		codes = codes->next;
+	}
+
+	codes = codes_temp;
+
+	while (codes != NULL)
+	{
+		code = codes->path;
 
 		i = 0;
 		while (code[i] != '\0')
