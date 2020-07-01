@@ -129,7 +129,7 @@ int open_p_faile(preprocess_context *context, char *file_way)
 	context->curent_file = fopen(file_way, "r");
 	if (context->curent_file == NULL)
 	{
-		printf(" не найден файл %s\n", file_way);
+		printf("1 не найден файл %s\n", file_way);
 		exit(1);
 	}
 	data_files_pinter(&context->c_files, file_way, NULL);
@@ -156,7 +156,7 @@ int open_i_faile(preprocess_context *context, char *temp_way, char *cur_way, int
 	}
 	if (f == NULL)
 	{
-		printf(" не найден файл %s\n", temp_way);
+		printf("2 не найден файл %s\n", temp_way);
 		exit(1);
 	}
 	if (flag == 0)

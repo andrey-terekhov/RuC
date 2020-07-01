@@ -449,6 +449,11 @@ void open_files_parametr(compiler_workspace_file *codes, preprocess_context *con
 	while (codes != NULL)
 	{
 		code = codes->path;
+		if (code[0] == '-' && code[1] == 'I')
+		{
+			codes = codes->next;
+			continue;
+		}
 
 		i = 0;
 		while (code[i] != '\0')
