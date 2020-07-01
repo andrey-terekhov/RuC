@@ -16,7 +16,7 @@
 
 #pragma once
 
-#define MACRODEBAG 1
+#define MACRODEBAG 0
 
 #define MAXTAB	  100000
 #define STRIGSIZE 256

@@ -38,7 +38,6 @@ void data_files_init(data_files *s)
 	s->p = 0;
 	s->cur = -1;
 	s->files = malloc(s->size * sizeof(data_file));
-	memset(s->files, 0, s->size * sizeof(data_file));
 }
 
 // Определение глобальных переменных

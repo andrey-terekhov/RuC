@@ -36,10 +36,10 @@ void onemore(compiler_context *context)
 {
 	context->curchar = context->nextchar;
 	context->nextchar = getnext(context);
-	//	if (kw)
-	//		printf("context->curchar =%c %i context->nextchar=%c %i\n",
-	//		context->curchar, context->curchar, context->nextchar,
-	//		context->nextchar);
+		//if (context->kw)
+			//printf("context->curchar =%c %i context->nextchar=%c %i\n",
+			//context->curchar, context->curchar, context->nextchar,
+			//context->nextchar);
 }
 
 void endofline(compiler_context *context)
@@ -183,23 +183,25 @@ void marcer_update(compiler_context *context)
 			nextch(context);
 		}
 
+
 		if (c == 0)
 		{
 			context->c_flag++;
-			if (context->c_flag == 1)
-			{
-				files = &context->cfs;
-			}
-			else
-			{
-				files = &context->hfs;
-			}
+		}
+
+		if (context->c_flag == 1)
+		{
+			files = &context->cfs;
+		}
+		else
+		{
+			files = &context->hfs;
 		}
 
 		files->cur = c;
 		if (files->cur != -1)
 		{
-			set_line(&files->files[files->cur], context->line);
+			(files->files[files->cur]).line = context->line;
 		}
 	}
 	else
@@ -233,7 +235,7 @@ int scan(compiler_context *context)
 	{
 		nextch(context);
 	}
-	// printf("scan context->curchar=%c %i\n", context->curchar, context->curchar);
+	// printf("scan context->curchar = %c %i\n", context->curchar, context->curchar);
 	switch (context->curchar)
 	{
 		case EOF:
@@ -724,7 +726,7 @@ int scaner(compiler_context *context)
 {
 	context->cur = context->next;
 	context->next = scan(context);
-	//	if(kw)
+	//if(context->kw)
 	//		printf("scaner context->cur %i context->next %i repr %i\n",
 	//		context->cur, context->next, repr);
 	return context->cur;
