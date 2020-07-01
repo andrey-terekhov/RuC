@@ -79,6 +79,7 @@ build()
 	exec_dir=../tests/executable
 	
 	error_subdir=errors
+	include_subdir=include
 }
 
 internal_timeout()
@@ -95,7 +96,7 @@ message_success()
 {
 	if [[ -z $debug ]] ; then
 		if [[ -z $silence ]] ; then
-			echo -e "\x1B[1;32m $action success \x1B[1;39m: $code"
+			echo -e "\x1B[1;32m $action success \x1B[1;39m: $path"
 			sleep $output_time
 		fi
 	fi
@@ -104,7 +105,7 @@ message_success()
 message_timeout()
 {
 	if [[ -z $silence ]] ; then
-		echo -e "\x1B[1;34m $action timeout \x1B[1;39m: $code"
+		echo -e "\x1B[1;34m $action timeout \x1B[1;39m: $path"
 		sleep $output_time
 	fi
 }
@@ -112,20 +113,20 @@ message_timeout()
 message_failure()
 {
 	if [[ -z $silence ]] ; then
-		echo -e "\x1B[1;31m $action failure \x1B[1;39m: $code"
+		echo -e "\x1B[1;31m $action failure \x1B[1;39m: $path"
 		sleep $output_time
 	fi
 }
 
 execution()
 {
-	if [[ $code == $exec_dir/* ]] ; then
+	if [[ $path == $exec_dir/* ]] ; then
 		action="execution"
 		internal_timeout $wait_for $ruc_interpreter export.txt >/dev/null 2>/dev/null
 
 		case "$?" in
 			0)
-				if [[ $code == */$error_subdir/* ]] ; then
+				if [[ $path == */$error_subdir/* ]] ; then
 					message_failure
 					let failure++
 				else
@@ -139,7 +140,7 @@ execution()
 				;;
 			*)
 
-				if [[ $code == */$error_subdir/* ]] ; then
+				if [[ $path == */$error_subdir/* ]] ; then
 					message_success
 					let success++
 				else
@@ -155,44 +156,70 @@ execution()
 	fi
 }
 
+compiling()
+{
+	case "$?" in
+		0)
+			if [[ $path == $error_dir/* ]] ; then
+				message_failure
+				let failure++
+			else
+				message_success
+				execution
+			fi
+			;;
+		124|142)
+			message_timeout
+			let timeout++
+			;;
+		*)
+			if [[ $path == $error_dir/* ]] ; then
+				message_success
+				let success++
+			else
+				message_failure
+				let failure++
+
+				if ! [[ -z $debug ]] ; then
+					$ruc_compiler $sources
+				fi
+			fi
+			;;
+	esac
+}
+
 test()
 {
 	# Do not use names with spaces!
-	for code in `find ${test_dir} -name *.c`
+	for path in `find $test_dir -name *.c`
 	do
+		sources=$path
 		action="compiling"
-		internal_timeout $wait_for $ruc_compiler $code >/dev/null 2>/dev/null
 
-		case "$?" in
-			0)
-				if [[ $code == $error_dir/* ]] ; then
-					message_failure
-					let failure++
-				else
-					message_success
-					execution
-				fi
-				;;
-			124|142)
-				message_timeout
-				let timeout++
-				;;
-			*)
-				if [[ $code == $error_dir/* ]] ; then
-					message_success
-					let success++
-				else
-					message_failure
-					let failure++
-
-					if ! [[ -z $debug ]] ; then
-						$ruc_compiler $code
-					fi
-				fi
-				;;
-		esac
+		if [[ $path != */$include_subdir/* ]] ; then
+			internal_timeout $wait_for $ruc_compiler $sources >/dev/null 2>/dev/null
+			compiling
+		fi
 	done
 
+	for include in `find $test_dir -name $include_subdir -type d`
+	do
+		for path in `ls -d $include/*`
+		do
+			sources=`find $path -name *.c`
+
+			for subdir in `find $path -name *.h`
+			do
+				temp=`dirname $subdir`
+				sources="$sources -I$temp"
+			done
+
+			action="compiling"
+			
+			internal_timeout $wait_for $ruc_compiler $sources >/dev/null 2>/dev/null
+			compiling
+		done
+	done
 
 	if [[ -z $silence ]] ; then
 		echo
