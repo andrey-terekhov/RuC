@@ -187,6 +187,10 @@ test()
 
 					if ! [[ -z $debug ]] ; then
 						$ruc_compiler $code
+						while [[ $? == 0 ]]
+						do
+							$ruc_compiler $code
+						done
 					fi
 				fi
 				;;
