@@ -46,11 +46,11 @@ void to_reprtab(char str[], int num, preprocess_context *context)
 	int c = 0;
 	context->rp += 2;
 
-	for (i = 0; str[i] != 0; i++)	
-	{	
+	for (i = 0; str[i] != 0; i++)
+	{
 		sscanf(&str[i], "%c%n", &firstchar, &p);
 
-		if((firstchar  & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0) 
+		if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
 		{
 			++i;
 			sscanf(&str[i], "%c%n", &secondchar, &p);
@@ -285,7 +285,8 @@ void add_c_file_siple(preprocess_context *context)
 
 	while (context->curchar != EOF && context->main_file == -1)
 	{
-		if (context->curchar == 'm' || context->curchar == 'M' || context->curchar == 0x413 || context->curchar == 0x433)
+		if (context->curchar == 'm' || context->curchar == 'M' || context->curchar == 0x413 ||
+			context->curchar == 0x433)
 		{
 			context->cur = macro_keywords(context);
 			if (context->cur == SH_MAIN)
@@ -328,7 +329,7 @@ void add_c_file(preprocess_context *context)
 				{
 					context->befor_temp_p = get_long_string_p(&context->befor_temp);
 					context->cur = macro_keywords(context);
-					if ((context->cur == SH_INCLUDE))
+					if (context->cur = SH_INCLUDE)
 					{
 						include_relis(context, &context->c_files);
 						if (context->h_flag)
@@ -480,7 +481,7 @@ void open_files_parametr(compiler_workspace_file *codes, preprocess_context *con
 			(&context->befor_temp)->p = 0;
 
 			add_c_file(context);
-	
+
 			include_fclose(context);
 			set_old_cur(&context->c_files, old_cur, context);
 			(&context->befor_temp)->str = NULL;
@@ -520,11 +521,11 @@ void preprocess_h_file(preprocess_context *context, data_files *fs)
 void preprocess_c_file(preprocess_context *context, data_files *fs)
 {
 	fs->cur = 0;
-	if(context->main_file != fs->p - 1)
+	if (context->main_file != fs->p - 1)
 	{
 		swap(&fs->files[context->main_file], &fs->files[fs->p - 1]);
 	}
-	
+
 	while (fs->cur < fs->p)
 	{
 		context->curent_string = (&(&fs->files[fs->cur])->befor_sorse)->str;
@@ -544,9 +545,9 @@ void save_data(compiler_context *c_context, preprocess_context *context)
 
 const char *preprocess_file(compiler_context *c_context, compiler_workspace_file *code)
 {
-	#if MACRODEBAG
-		printf("\nИсходный текст:\n \n");
-	#endif
+#if MACRODEBAG
+	printf("\nИсходный текст:\n \n");
+#endif
 	preprocess_context *context = malloc(sizeof(preprocess_context));
 	preprocess_context_init(context);
 	printer_attach_buffer(&context->output_options, 1024);
@@ -571,9 +572,9 @@ const char *preprocess_file(compiler_context *c_context, compiler_workspace_file
 	save_data(c_context, context);
 
 	const char *macro_processed = strdup(context->output_options.ptr);
-	#if MACRODEBAG
-		printf("\n>\n%s<\n", macro_processed);
-	#endif
+#if MACRODEBAG
+	printf("\n>\n%s<\n", macro_processed);
+#endif
 
 	return macro_processed;
 }

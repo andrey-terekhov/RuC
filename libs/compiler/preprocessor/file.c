@@ -128,7 +128,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 	{
 		context->control_aflag++;
 	}
-	#if MACRODEBAG
+#if MACRODEBAG
 	if (context->FILE_flag)
 	{
 		printf("Line %i) ", context->line);
@@ -144,7 +144,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 		context->temp_output = s->p;
 		// printf("\n");
 	}
-	#endif
+#endif
 }
 
 void m_onemore(preprocess_context *context)
@@ -325,6 +325,6 @@ void m_nextch(preprocess_context *context)
 		}
 	}
 
-	//printf(" t = %d curcar = %c curcar = %i n = %d f = %d\n", context->nextch_type,
-		//context->curchar, context->curchar, context->nextp, context->inp_p);
+	// printf(" t = %d curcar = %c curcar = %i n = %d f = %d\n", context->nextch_type,
+	// context->curchar, context->curchar, context->nextp, context->inp_p);
 }

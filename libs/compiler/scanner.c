@@ -36,10 +36,10 @@ void onemore(compiler_context *context)
 {
 	context->curchar = context->nextchar;
 	context->nextchar = getnext(context);
-		//if (context->kw)
-			//printf("context->curchar =%c %i context->nextchar=%c %i\n",
-			//context->curchar, context->curchar, context->nextchar,
-			//context->nextchar);
+	// if (context->kw)
+	// printf("context->curchar =%c %i context->nextchar=%c %i\n",
+	// context->curchar, context->curchar, context->nextchar,
+	// context->nextchar);
 }
 
 void endofline(compiler_context *context)
@@ -726,7 +726,7 @@ int scaner(compiler_context *context)
 {
 	context->cur = context->next;
 	context->next = scan(context);
-	//if(context->kw)
+	// if(context->kw)
 	//		printf("scaner context->cur %i context->next %i repr %i\n",
 	//		context->cur, context->next, repr);
 	return context->cur;

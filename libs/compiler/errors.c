@@ -106,7 +106,6 @@ void error(compiler_context *context, int ernum)
 	context->line--;
 	if (context->charnum == 0)
 	{
-		
 		context->charnum = context->charnum_before;
 	}
 	else
@@ -138,7 +137,7 @@ void error(compiler_context *context, int ernum)
 		while (s2[i] != '\0')
 		{
 			printer_printchar(&context->err_options, s2[i]);
-			if (s2[i] == '\n' && s2[i+1] == '\0')
+			if (s2[i] == '\n' && s2[i + 1] == '\0')
 			{
 				break;
 			}
