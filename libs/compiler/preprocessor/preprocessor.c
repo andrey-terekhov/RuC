@@ -329,7 +329,7 @@ void add_c_file(preprocess_context *context)
 				{
 					context->befor_temp_p = get_long_string_p(&context->befor_temp);
 					context->cur = macro_keywords(context);
-					if (context->cur = SH_INCLUDE)
+					if (context->cur == SH_INCLUDE)
 					{
 						include_relis(context, &context->c_files);
 						if (context->h_flag)

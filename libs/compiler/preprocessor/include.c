@@ -320,7 +320,7 @@ void include_relis(preprocess_context *context, data_files *fs)
 	if (context->inp_p >= 20)
 	{
 		m_error(27, context);
-		; // переполнение или цыкл
+		 // переполнение или цыкл
 	}
 	m_nextch(context);
 
