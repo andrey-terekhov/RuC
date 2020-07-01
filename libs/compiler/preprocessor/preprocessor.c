@@ -497,8 +497,6 @@ void preprocess_h_file(preprocess_context *context, data_files *fs)
 		context->temp_output = 0;
 
 		file_read(context);
-
-		failes_cur_fclose(&context->h_files);
 		fs->cur++;
 	}
 
@@ -550,10 +548,11 @@ const char *preprocess_file(compiler_context *c_context, compiler_workspace_file
 	context->FILE_flag = 1;
 	context->mfirstrp = context->rp;
 
+
 	open_files(code, context);
 
-
 	preprocess_h_file(context, &context->h_files);
+
 	preprocess_c_file(context, &context->c_files);
 
 	save_data(c_context, context);
