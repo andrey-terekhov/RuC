@@ -105,7 +105,7 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 
 		macro_processed = preprocess_ruc_file(context, workspace); // макрогенерация
-		//printf("0befor = %i\n", (context->hfs.files[0]).befor_sorse->str[0]);
+		//printf("0befor = %i\n", (context->hfs.files[0]).before_source->str[0]);
 		if (macro_processed == NULL)
 		{
 			fprintf(stderr, " ошибка выделения памяти для "
@@ -122,10 +122,11 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 		compiler_context_detach_io(context, IO_TYPE_INPUT);
 
 
-		//printf("befor = %i\n", (context->cfs.files[2]).befor_sorse.str[0]);
+		//printf("befor = %i\n", (context->cfs.files[2]).before_source.str[0]);
+		printf("Before data_files_clear\n");
 		data_files_clear(&context->cfs);
 		data_files_clear(&context->hfs);
-		
+		printf("After data_files_clear\n");
 
 		/* Will be left for debugging in case of failure */
 #if !defined(FILE_DEBUG) && !defined(_MSC_VER)

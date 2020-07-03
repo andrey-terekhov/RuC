@@ -54,8 +54,8 @@ void m_error(int ernum, preprocess_context *context)
 	}
 
 	const char *name = f.name;
-	int *s = context->befor_temp->str;
-	int p = context->befor_temp->p;
+	int *s = context->before_temp->str;
+	int p = context->before_temp->p;
 
 	int j = 2;
 #if MACRODEBAG
@@ -65,9 +65,9 @@ void m_error(int ernum, preprocess_context *context)
 #endif
 	printf("line 1) ");
 
-	if ((&f)->include_sorse.str[0] != '\0')
+	if ((&f)->include_source.str[0] != '\0')
 	{
-		int *s2 = (&f)->include_sorse.str;
+		int *s2 = (&f)->include_source.str;
 		while (s2[i] != '\0')
 		{
 			printf_character(s[i]);
@@ -130,7 +130,7 @@ void m_error(int ernum, preprocess_context *context)
 		case not_relis_if:
 			printf("if ещё не реализован");
 			break;
-		case befor_endif:
+		case before_endif:
 			printf("Перед '#ENDIF' должен стоять условный оператор препроцессора\n");
 			break;
 		case repeat_ident:

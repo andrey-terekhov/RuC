@@ -231,6 +231,7 @@ void file_read(preprocess_context *context)
 		m_nextch(context);
 		m_nextch(context);
 	}
+	printf("\n2p = %i\n", context->headers->files[0].before_source.p);
 
 
 	while (context->curchar != EOF)
@@ -270,27 +271,27 @@ void open_file(preprocess_context *context, data_file *f)
 		if (context->include_type == 0)
 		{
 			open_i_faile(context, temp_way, f, 1);
-			context->befor_temp_p = -1;
+			context->before_temp_p = -1;
 		}
 		else if (context->include_type == 1)
 		{
 			int old_cur = open_i_faile(context, temp_way, f, 1);
 
-			context->headers->files[context->headers->cur].befor_sorse.p = context->befor_temp->p;
-			context->headers->files[context->headers->cur].befor_sorse.size = context->befor_temp->size;
+			context->headers->files[context->headers->cur].before_source.p = context->before_temp->p;
+			context->headers->files[context->headers->cur].before_source.size = context->before_temp->size;
 
 			cur_failes_next(context->headers, old_cur, context);
 
-			context->befor_temp->str = context->headers->files[context->headers->cur].befor_sorse.str;
-			context->befor_temp->p = 0;
+			context->before_temp->str = context->headers->files[context->headers->cur].before_source.str;
+			context->before_temp->p = 0;
 
 			begin_faile(context, context->headers);
 			file_read(context);
 			set_old_cur(context->headers, old_cur, context);
 
-			context->befor_temp->str = context->headers->files[context->headers->cur].befor_sorse.str;
-			context->befor_temp->p = context->headers->files[context->headers->cur].befor_sorse.p;
-			context->befor_temp->size = context->headers->files[context->headers->cur].befor_sorse.size;
+			context->before_temp->str = context->headers->files[context->headers->cur].before_source.str;
+			context->before_temp->p = context->headers->files[context->headers->cur].before_source.p;
+			context->before_temp->size = context->headers->files[context->headers->cur].before_source.size;
 		}
 		else
 		{
@@ -304,20 +305,20 @@ void open_file(preprocess_context *context, data_file *f)
 			context->FILE_flag = 1;
 			int old_cur = open_i_faile(context, temp_way, f, 0);
 
-			context->sources->files[context->sources->cur].befor_sorse.p = context->befor_temp->p;
-			context->sources->files[context->sources->cur].befor_sorse.size = context->befor_temp->size;
+			context->sources->files[context->sources->cur].before_source.p = context->before_temp->p;
+			context->sources->files[context->sources->cur].before_source.size = context->before_temp->size;
 
 			cur_failes_next(context->sources, old_cur, context);
-			context->befor_temp->str = context->sources->files[context->sources->cur].befor_sorse.str;
-			context->befor_temp->p = 0;
+			context->before_temp->str = context->sources->files[context->sources->cur].before_source.str;
+			context->before_temp->p = 0;
 
 			file_read(context);
 
 			set_old_cur(context->sources, old_cur, context);
 
-			context->befor_temp->str = context->sources->files[context->sources->cur].befor_sorse.str;
-			context->befor_temp->p = context->sources->files[context->sources->cur].befor_sorse.p;
-			context->befor_temp->size = context->sources->files[context->sources->cur].befor_sorse.size;
+			context->before_temp->str = context->sources->files[context->sources->cur].before_source.str;
+			context->before_temp->p = context->sources->files[context->sources->cur].before_source.p;
+			context->before_temp->size = context->sources->files[context->sources->cur].before_source.size;
 
 			context->FILE_flag = 0;
 		}

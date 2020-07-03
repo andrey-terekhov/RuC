@@ -42,14 +42,14 @@ typedef struct control_string
 
 typedef struct data_file
 {
-	const char *name;
+	char *name;
 	int p;
 	int pred;
 	int line;
 	control_string cs;
 	FILE *input;
-	macro_long_string include_sorse;
-	macro_long_string befor_sorse;
+	macro_long_string include_source;
+	macro_long_string before_source;
 } data_file;
 
 typedef struct data_files
@@ -65,7 +65,7 @@ void long_string_pinter(macro_long_string *s, int a);
 void data_files_pinter(data_files *s, const char *file_way, FILE *input);
 void macro_long_string_free(macro_long_string *s);
 void data_files_clear(data_files *fs);
-void include_sorse_set(data_files *fs, int temp_p, int p);
+void include_source_set(data_files *fs, int temp_p, int p);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

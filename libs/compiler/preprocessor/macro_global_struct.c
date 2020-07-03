@@ -36,6 +36,7 @@ void long_string_pinter(macro_long_string *s, int a)
 		{
 			s->size *= 2;
 			int *reallocated = realloc(s->str, s->size * sizeof(int));
+			printf("int *reallocated = realloc(s->str, s->size * sizeof(int));\n");
 			s->str = reallocated;
 		}
 		s->str[s->p++] = a;
@@ -44,6 +45,7 @@ void long_string_pinter(macro_long_string *s, int a)
 
 void macro_long_string_free(macro_long_string *s)
 {
+	printf("p = %i, size = %i\n", s->p, s->size);
 	free(s->str);
 }
 
@@ -52,28 +54,37 @@ void data_file_pinter(data_file *f, FILE *input)
 {
 	f->cs.p = 0;
 
-	macro_long_string_init(&f->befor_sorse);
-	macro_long_string_init(&f->include_sorse);
+	printf("data_file_pinter(%s, ...)\n", f->name);
+	macro_long_string_init(&f->before_source);
+	macro_long_string_init(&f->include_source);
 	
-	f->include_sorse.str[0] = 0;
+	f->include_source.str[0] = 0;
 	f->input = input;
 	f->pred = -1;
 }
 
 void data_file_free(data_file *f)
 {
-	macro_long_string_free(&f->befor_sorse);
-	macro_long_string_free(&f->include_sorse);
+	if (f->input != NULL)
+	{
+		free(f->name);
+	}
+
+	macro_long_string_free(&f->before_source);
+	printf("Betwen macro_long_string_free()\n");
+	macro_long_string_free(&f->include_source);
 }
 
 void data_files_clear(data_files *fs)
 {
 	for(int i = 0; i < fs->p; i++)
 	{
+		printf("data_file_free(%s)\n", fs->files[i].name);
 		data_file_free(&fs->files[i]);
 	}
 
 	free(fs->files);
+	printf("After free(fs->files)\n");
 }
 
 void data_files_init(data_files *s, int num)
@@ -93,17 +104,25 @@ void data_files_pinter(data_files *s, const char *file_way, FILE *input)
 		s->files = reallocated;
 	}
 	
-	s->files[s->p].name = file_way;
+	if (input == NULL)
+	{
+		s->files[s->p].name = file_way;
+	}
+	else
+	{
+		s->files[s->p].name = malloc((strlen(file_way) + 1) * sizeof(char));
+		strcpy(s->files[s->p].name, file_way);
+	}
 
 	data_file_pinter(&s->files[s->p], input);
 	s->p++;
 }
 
-void include_sorse_set(data_files *fs, int temp_p, int p)
+void include_source_set(data_files *fs, int temp_p, int p)
 {
 	data_file *f = &fs->files[fs->cur];
-	int *str_i = f->include_sorse.str;
-	int *str_b = f->befor_sorse.str;
+	int *str_i = f->include_source.str;
+	int *str_b = f->before_source.str;
 
 	if (temp_p == -1)
 	{
@@ -111,7 +130,7 @@ void include_sorse_set(data_files *fs, int temp_p, int p)
 		str_b[1] = '\0';
 		str_i[p - 1] = '\0';
 
-		f->befor_sorse.p = 1;
+		f->before_source.p = 1;
 	}
 	else
 	{
@@ -121,6 +140,6 @@ void include_sorse_set(data_files *fs, int temp_p, int p)
 		}
 		str_b[p - temp_p + 1] = '\0';
 		str_i[temp_p] = '\0';
-		f->befor_sorse.p = p - temp_p + 1;
+		f->before_source.p = p - temp_p + 1;
 	}
 }

@@ -79,7 +79,7 @@ void if_end(preprocess_context *context)
 				checkif--;
 				if (checkif < 0)
 				{
-					m_error(befor_endif, context);
+					m_error(before_endif, context);
 				}
 				return;
 			}
@@ -146,7 +146,7 @@ void if_true(int type_if, preprocess_context *context)
 			checkif--;
 			if (checkif < 0)
 			{
-				m_error(befor_endif, context);
+				m_error(before_endif, context);
 			}
 
 			return;
@@ -213,7 +213,7 @@ void if_relis(preprocess_context *context)
 		checkif--;
 		if (checkif < 0)
 		{
-			m_error(befor_endif, context);
+			m_error(before_endif, context);
 		}
 	}
 }

@@ -139,11 +139,11 @@ void m_onemore(preprocess_context *context)
 	if (context->FILE_flag)
 	{
 		context->nextchar = get_next_char(context);
-		long_string_pinter(context->befor_temp, context->curchar);
+		long_string_pinter(context->before_temp, context->curchar);
 
 		if (context->curchar == EOF)
 		{
-			end_line(context, context->befor_temp);
+			end_line(context, context->before_temp);
 		}
 	}
 	else
@@ -199,12 +199,12 @@ void m_coment_skip(preprocess_context *context)
 			// m_fprintf_com();
 			if (context->curchar == '\n')
 			{
-				end_line(context, context->befor_temp);
+				end_line(context, context->before_temp);
 			}
 
 			if (context->curchar == EOF)
 			{
-				end_line(context, context->befor_temp);
+				end_line(context, context->before_temp);
 				printf("\n");
 				m_error(comm_not_ended, context);
 			}
@@ -287,7 +287,7 @@ void m_nextch(preprocess_context *context)
 
 		if (context->curchar == '\n')
 		{
-			end_line(context, context->befor_temp);
+			end_line(context, context->before_temp);
 		}
 	}
 

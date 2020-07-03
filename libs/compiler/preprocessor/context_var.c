@@ -47,7 +47,7 @@ void preprocess_context_init(preprocess_context *context, data_files *sources, d
 	context->temp_output = 0;
 	context->control_aflag = 0;
 	context->control_bflag = 0;
-	context->befor_temp_p = -1;
+	context->before_temp_p = -1;
 	context->iwp = 0;
 	context->FILE_flag = 1;
 

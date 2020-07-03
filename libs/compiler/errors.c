@@ -100,7 +100,7 @@ void error(compiler_context *context, int ernum)
 	}
 
 	const char *name = f->name;
-	int *s = (f->befor_sorse).str;
+	int *s = (f->before_source).str;
 
 	printer_printf(&context->err_options, "\n Oшибка в файле: \"%s\"\n \n", name);
 	context->line--;
@@ -127,13 +127,13 @@ void error(compiler_context *context, int ernum)
 	i = 0;
 	k = 0;
 
-	if (f->include_sorse.str[0] != '\0')
+	if (f->include_source.str[0] != '\0')
 	{
 		k++;
 
 		printer_printf(&context->err_options, "line %i) ", k);
 
-		int *s2 = f->include_sorse.str;
+		int *s2 = f->include_source.str;
 		while (s2[i] != '\0')
 		{
 			printer_printchar(&context->err_options, s2[i]);
