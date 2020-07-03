@@ -226,7 +226,6 @@ void open_file(preprocess_context *context, data_file *f)
 {
 	int i = 0;
 	char temp_way [STRIGSIZE];
-	//memset(temp_way, 0, STRIGSIZE * sizeof(char));
 
 	while (context->curchar != '\"')
 	{

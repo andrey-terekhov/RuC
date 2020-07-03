@@ -23,7 +23,7 @@
 #define STRIGSIZE	256
 #define HASH		256
 #define DIP			10
-#define CONTROLSIZE 100
+#define CONTROLSIZE 250
 
 #define CANGEEND	  -6
 #define MACROEND	  -5

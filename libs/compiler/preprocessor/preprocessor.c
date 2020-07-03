@@ -258,17 +258,17 @@ void swap(data_file *f1, data_file *f2)
 	f1->befor_sorse = f2->befor_sorse;
 	f2->befor_sorse = temp_s;
 
-	int *temp_include_sorse = f1->include_sorse.str;
-	f1->include_sorse.str = f2->include_sorse.str;
-	f2->include_sorse.str = temp_include_sorse;
+	macro_long_string temp_include_sorse = f1->include_sorse;
+	f1->include_sorse = f2->include_sorse;
+	f2->include_sorse = temp_include_sorse;
 
 	int temp_pred = f1->pred;
 	f1->pred = f2->pred;
 	f2->pred = temp_pred;
 
-	char *temp_way = f1->way;
-	f1->way = f2->way;
-	f2->way = temp_way;
+	int temp_index = f1->last_slash_index;
+	f1->last_slash_index = f2->last_slash_index;
+	f2->last_slash_index = temp_index;
 
 	char *temp_name = f1->name;
 	f1->name = f2->name;
@@ -413,15 +413,18 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 
 void preprocess_h_file(preprocess_context *context)
 {
+	data_files *fs = context->headers;
+	fs->cur++;
+
 	context->h_flag = 1;
 	context->include_type = 1;
-	fs->cur++;
+
 	while (fs->cur < fs->p)
 	{
-		context->current_file = (fs->files[fs->cur]).input;
+		context->current_file = fs->files[fs->cur].input;
 
-		(context->befor_temp)->str = ((fs->files[fs->cur]).befor_sorse).str;
-		(context->befor_temp)->p = 0;
+		context->befor_temp->str = fs->files[fs->cur].befor_sorse.str;
+		context->befor_temp->p = 0;
 		context->temp_output = 0;
 
 		file_read(context);
@@ -434,7 +437,9 @@ void preprocess_h_file(preprocess_context *context)
 
 void preprocess_c_file(preprocess_context *context)
 {
+	data_files *fs = context->sources;
 	fs->cur = 0;
+
 	if (context->main_file != fs->p - 1)
 	{
 		swap(&fs->files[context->main_file], &fs->files[fs->p - 1]);
@@ -442,8 +447,8 @@ void preprocess_c_file(preprocess_context *context)
 
 	while (fs->cur < fs->p)
 	{
-		context->current_string = ((fs->files[fs->cur]).befor_sorse).str;
-		context->current_p = ((fs->files[fs->cur]).befor_sorse).p;
+		context->current_string = fs->files[fs->cur].befor_sorse.str;
+		context->current_p = fs->files[fs->cur].befor_sorse.p;
 
 		file_read(context);
 		fs->cur++;

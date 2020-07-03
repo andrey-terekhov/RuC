@@ -90,36 +90,22 @@ void m_old_nextch_type(preprocess_context *context)
 	// printf("oldnextch_type = %d\n", nextch_type);
 }
 
-void control_string_pinter_e(control_string *s, int before, int after)
-{
-	if (s->p == s->size - 1)
-	{
-		s->size *= 2;
-		int *reallocated_b = realloc(s->str_before, s->size * sizeof(int));
-		int *reallocated_a = realloc(s->str_after, s->size * sizeof(int));
-		//memset(&reallocated_b[s->size * sizeof(int)], 0, (s->size / 2) * sizeof(int));
-		//memset(&reallocated_a[s->size * sizeof(int)], 0, (s->size / 2) * sizeof(int));
-		s->str_before = reallocated_b;
-		s->str_after = reallocated_a;
-	}
-	s->str_before[s->p] = before;
-	s->str_after[s->p] = after;
-	s->p++;
-}
-
 void control_string_pinter(preprocess_context *context, int before, int after)
 {
 	control_string* cs;
+	
 	if (context->h_flag == 0)
 	{
-		cs = &((context->c_files).files[(context->c_files).cur]).cs;
+		cs = &context->sources->files[context->sources->cur].cs;
 	}
 	else
 	{
-		cs = &((context->h_files).files[(context->h_files).cur]).cs;
+		cs = &context->headers->files[context->headers->cur].cs;
 	}
 
-	control_string_pinter_e(cs, before, after);
+	cs->str_before[cs->p] = before;
+	cs->str_after[cs->p] = after;
+	cs->p++;
 }
 
 void end_line(preprocess_context *context, macro_long_string *s)
