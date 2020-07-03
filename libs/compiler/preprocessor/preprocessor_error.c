@@ -53,7 +53,7 @@ void m_error(int ernum, preprocess_context *context)
 		f = context->sources->files[context->sources->cur];
 	}
 
-	char *name = f.name;
+	const char *name = f.name;
 	int *s = context->befor_temp->str;
 	int p = context->befor_temp->p;
 

@@ -266,11 +266,7 @@ void swap(data_file *f1, data_file *f2)
 	f1->pred = f2->pred;
 	f2->pred = temp_pred;
 
-	int temp_index = f1->last_slash_index;
-	f1->last_slash_index = f2->last_slash_index;
-	f2->last_slash_index = temp_index;
-
-	char *temp_name = f1->name;
+	const char *temp_name = f1->name;
 	f1->name = f2->name;
 	f2->name = temp_name;
 }
@@ -361,12 +357,12 @@ void add_c_file(preprocess_context *context)
 	}
 }
 
-void open_files(preprocess_context *context, int number, char *codes[])
+void open_files(preprocess_context *context, int number, const char *codes[])
 {
-	char **ways = context->include_ways;
+	context->include_ways = malloc(number * sizeof(char *));
+	
+	const char **ways = context->include_ways;
 	int *iwp = &context->iwp;
-
-	ways = malloc(number * sizeof(char *));
 
 	for (int i = 0; i < number; i++)
 	{		
@@ -374,12 +370,14 @@ void open_files(preprocess_context *context, int number, char *codes[])
 		{
 			ways[*iwp] = &codes[i][2];
 
-			int length = strlen(ways[*iwp]);
+			/*int length = strlen(ways[*iwp]);
 			if (ways[*iwp][length - 1] == '/')
 			{
 				ways[*iwp][length - 1] = '\0';
-			}
+			}*/
 
+			//printf("\n include_ways[i] = %s\n", ways[*iwp]);
+			//printf("\n include_ways[i] = %s\n", context->include_ways[*iwp]);
 			context->iwp++;
 		}
 	}
@@ -455,7 +453,7 @@ void preprocess_c_file(preprocess_context *context)
 	}
 }
 
-char *preprocess_file(int argc, char *argv[], data_files *sources, data_files *headers)
+char *preprocess_file(int argc, const char *argv[], data_files *sources, data_files *headers)
 {
 #if MACRODEBAG
 	printf("\nИсходный текст:\n \n");

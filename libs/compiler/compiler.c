@@ -56,12 +56,13 @@ char *preprocess_ruc_file(compiler_context *context, compiler_workspace *workspa
 	data_files *headers = &context->hfs;
 
 	int argc = workspace->number_of_files;
-	char **argv = malloc(argc * sizeof(char *));
+	const char **argv = malloc(argc * sizeof(char *));
 
 	compiler_workspace_file *current = workspace->files;
 	for (int i = 0; i < argc; i++)
 	{
 		argv[i] = current->path;
+		printf("current->path = %s\n", current->path);
 		current = current->next;
 	}
 

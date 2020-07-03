@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 
-char *preprocess_file(int argc, char *argv[], data_files *sources, data_files *headers);
+char *preprocess_file(int argc, const char *argv[], data_files *sources, data_files *headers);
 void preprocess_scan(preprocess_context *context);
 
 #ifdef __cplusplus

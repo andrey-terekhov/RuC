@@ -119,7 +119,7 @@ void print_end_marcer(preprocess_context *context)
 	return file_way;
 }*/
 
-int open_p_faile(preprocess_context *context, char *file_way)
+int open_p_faile(preprocess_context *context, const char *file_way)
 {
 	context->current_file = fopen(file_way, "r");
 	if (context->current_file == NULL)
@@ -132,7 +132,7 @@ int open_p_faile(preprocess_context *context, char *file_way)
 	return context->sources->cur;
 }
 
-void gen_way(char *full, char *path, char *file, int is_slash)
+void gen_way(char *full, const char *path, const char *file, int is_slash)
 {
 	int size;
 
@@ -152,7 +152,7 @@ void gen_way(char *full, char *path, char *file, int is_slash)
 	memcpy(&full[size], file, file_size);
 	
 	full[size + file_size] = '\0';
-	printf(" path = %s\n file = %s\n full = %s\n", path, file, full);
+	printf("\n path = %s\n file = %s\n full = %s\n", path, file, full);
 }
 
 int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int flag)
@@ -166,6 +166,8 @@ int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int
 	{
 		for (int i = 0; i < context->iwp; i++)
 		{
+			printf(" temp_way = %s\n", temp_way);
+			printf("\n include_ways[i] = %s\n", context->include_ways[i]);
 			gen_way(file_way, context->include_ways[i], temp_way, 0);
 			f = fopen(file_way, "r");
 

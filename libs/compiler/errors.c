@@ -99,7 +99,7 @@ void error(compiler_context *context, int ernum)
 		f = &((context->cfs).files[(context->hfs).cur]);
 	}
 
-	char *name = f->name;
+	const char *name = f->name;
 	int *s = (f->befor_sorse).str;
 
 	printer_printf(&context->err_options, "\n Oшибка в файле: \"%s\"\n \n", name);

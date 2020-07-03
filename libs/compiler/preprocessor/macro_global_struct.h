@@ -42,8 +42,7 @@ typedef struct control_string
 
 typedef struct data_file
 {
-	char *name;
-	int last_slash_index;
+	const char *name;
 	int p;
 	int pred;
 	int line;
@@ -63,7 +62,7 @@ typedef struct data_files
 
 void data_files_init(data_files *s, int num);
 void long_string_pinter(macro_long_string *s, int a);
-void data_files_pinter(data_files *s, char *file_way, FILE *input);
+void data_files_pinter(data_files *s, const char *file_way, FILE *input);
 void macro_long_string_free(macro_long_string *s);
 void data_files_clear(data_files *fs);
 void include_sorse_set(data_files *fs, int temp_p, int p);

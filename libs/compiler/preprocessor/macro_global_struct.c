@@ -48,7 +48,7 @@ void macro_long_string_free(macro_long_string *s)
 }
 
 
-void data_file_pinter(data_file *f, char *way, FILE *input)
+void data_file_pinter(data_file *f, FILE *input)
 {
 	f->cs.p = 0;
 
@@ -84,22 +84,7 @@ void data_files_init(data_files *s, int num)
 	s->files = malloc(num * sizeof(data_file));
 }
 
-
-/*void set_name(data_file *f, const char *name)
-{
-	int i = 0;
-	int z = strlen(name) + 1;
-	f->name = malloc(z * sizeof(char));
-
-	while (name[i] != '\0')
-	{
-		f->name[i] = name[i];
-		i++;
-	}
-	f->name[i] = '\0';
-}*/
-
-void data_files_pinter(data_files *s, char *file_way, FILE *input)
+void data_files_pinter(data_files *s, const char *file_way, FILE *input)
 {
 	if (s->p == s->size)
 	{
@@ -108,11 +93,9 @@ void data_files_pinter(data_files *s, char *file_way, FILE *input)
 		s->files = reallocated;
 	}
 	
-	//set_name(&s->files[s->p], file_way);
 	s->files[s->p].name = file_way;
-	s->files[s->p].last_slash_index = strrchr(file_way, '/') - file_way;
 
-	data_file_pinter(&s->files[s->p], file_way, input);
+	data_file_pinter(&s->files[s->p], input);
 	s->p++;
 }
 

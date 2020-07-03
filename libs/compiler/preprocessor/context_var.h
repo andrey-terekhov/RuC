@@ -94,7 +94,7 @@ typedef struct preprocess_context
 	int *current_string;
 	int current_p;
 
-	char **include_ways;
+	const char **include_ways;
 	int iwp;
 
 	universal_printer_options output_options;
