@@ -122,8 +122,8 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 
 		//printf("befor = %i\n", (context->cfs.files[2]).befor_sorse.str[0]);
-		data_files_free(&context->cfs);
-		data_files_free(&context->hfs);
+		data_files_clear(&context->cfs);
+		data_files_clear(&context->hfs);
 		
 
 		/* Will be left for debugging in case of failure */

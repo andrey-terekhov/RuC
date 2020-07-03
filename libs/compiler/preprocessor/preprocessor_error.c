@@ -46,16 +46,16 @@ void m_error(int ernum, preprocess_context *context)
 	data_file f;
 	if (context->h_flag)
 	{
-		f = (context->h_files).files[(context->h_files).cur];
+		f = context->headers->files[context->headers->cur];
 	}
 	else
 	{
-		f = (context->c_files).files[(context->c_files).cur];
+		f = context->sources->files[context->sources->cur];
 	}
 
 	char *name = f.name;
-	int *s = (context->befor_temp)->str;
-	int p = (context->befor_temp)->p;
+	int *s = context->befor_temp->str;
+	int p = context->befor_temp->p;
 
 	int j = 2;
 #if MACRODEBAG

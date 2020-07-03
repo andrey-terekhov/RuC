@@ -81,7 +81,7 @@ void print_end_marcer(preprocess_context *context)
 	m_fprintf('\n', context);
 }
 
-char *gen_way(preprocess_context *context, char *cur_way, char *temp_way)
+/*char *gen_way(preprocess_context *context, char *cur_way, char *temp_way)
 {
 	char *file_way = malloc(STRIGSIZE * sizeof(char));
 	//memset(file_way, 0, STRIGSIZE * sizeof(char));
@@ -117,7 +117,7 @@ char *gen_way(preprocess_context *context, char *cur_way, char *temp_way)
 
 	file_way[i++] = '\0';
 	return file_way;
-}
+}*/
 
 int open_p_faile(preprocess_context *context, char *file_way)
 {
@@ -127,23 +127,48 @@ int open_p_faile(preprocess_context *context, char *file_way)
 		printf("1 не найден файл %s\n", file_way);
 		m_error(1, context);
 	}
-	data_files_pinter(&context->sources, file_way, NULL);
+	data_files_pinter(context->sources, file_way, NULL);
 
 	return context->sources->cur;
 }
 
-int open_i_faile(preprocess_context *context, char *temp_way, char *cur_way, int flag)
+void gen_way(char *full, char *path, char *file, int is_slash)
 {
-	char *file_way = gen_way(context, cur_way, temp_way);
+	int size;
+
+	if (is_slash)
+	{
+		size = strrchr(path, '/') - path;
+	}
+	else
+	{
+		size = strlen(path);
+	}
+	
+	memcpy(full, path, size);
+	full[size++] = '/';
+
+	int file_size = strlen(file);
+	memcpy(&full[size], file, file_size);
+	
+	full[size + file_size] = '\0';
+	printf(" path = %s\n file = %s\n full = %s\n", path, file, full);
+}
+
+int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int flag)
+{
+	char file_way[STRIGSIZE]; 
+
+	gen_way(file_way, fs->name, temp_way, 1);
 	FILE *f = fopen(file_way, "r");
-	printf("\ni open\n");
 
 	if (f == NULL)
 	{
 		for (int i = 0; i < context->iwp; i++)
 		{
-			file_way = gen_way(context, context->include_ways[i], temp_way);
+			gen_way(file_way, context->include_ways[i], temp_way, 0);
 			f = fopen(file_way, "r");
+
 			if (f != NULL)
 			{
 				break;
@@ -158,12 +183,12 @@ int open_i_faile(preprocess_context *context, char *temp_way, char *cur_way, int
 	if (flag == 0)
 	{
 		context->current_file = f;
-		data_files_pinter(&context->sources, file_way, NULL);
+		data_files_pinter(context->sources, file_way, NULL);
 		return context->sources->cur;
 	}
 	else
 	{
-		data_files_pinter(&context->headers, file_way, f);
+		data_files_pinter(context->headers, file_way, f);
 		return context->headers->cur;
 	}
 }
@@ -242,28 +267,28 @@ void open_file(preprocess_context *context, data_file *f)
 	{
 		if (context->include_type == 0)
 		{
-			open_i_faile(context, temp_way, f->way, 1);
+			open_i_faile(context, temp_way, f, 1);
 			context->befor_temp_p = -1;
 		}
 		else if (context->include_type == 1)
 		{
-			int old_cur = open_i_faile(context, temp_way, f->way, 1);
+			int old_cur = open_i_faile(context, temp_way, f, 1);
 
-			(((context->headers).files[(context->headers).cur]).befor_sorse).p = (context->befor_temp)->p;
-			(((context->headers).files[(context->headers).cur]).befor_sorse).size = (context->befor_temp)->size;
+			context->headers->files[context->headers->cur].befor_sorse.p = context->befor_temp->p;
+			context->headers->files[context->headers->cur].befor_sorse.size = context->befor_temp->size;
 
-			cur_failes_next(&context->headers, old_cur, context);
+			cur_failes_next(context->headers, old_cur, context);
 
-			(context->befor_temp)->str = (((context->headers).files[(context->headers).cur]).befor_sorse).str;
-			(context->befor_temp)->p = 0;
+			context->befor_temp->str = context->headers->files[context->headers->cur].befor_sorse.str;
+			context->befor_temp->p = 0;
 
-			begin_faile(context, &context->headers);
+			begin_faile(context, context->headers);
 			file_read(context);
-			set_old_cur(&context->headers, old_cur, context);
+			set_old_cur(context->headers, old_cur, context);
 
-			(context->befor_temp)->str = (((context->headers).files[(context->headers).cur]).befor_sorse).str;
-			(context->befor_temp)->p = (((context->headers).files[(context->headers).cur]).befor_sorse).p;
-			(context->befor_temp)->size = (((context->headers).files[(context->headers).cur]).befor_sorse).size;
+			context->befor_temp->str = context->headers->files[context->headers->cur].befor_sorse.str;
+			context->befor_temp->p = context->headers->files[context->headers->cur].befor_sorse.p;
+			context->befor_temp->size = context->headers->files[context->headers->cur].befor_sorse.size;
 		}
 		else
 		{
@@ -275,22 +300,22 @@ void open_file(preprocess_context *context, data_file *f)
 		if (context->include_type != 0)
 		{
 			context->FILE_flag = 1;
-			int old_cur = open_i_faile(context, temp_way, f->way, 0);
+			int old_cur = open_i_faile(context, temp_way, f, 0);
 
-			(((context->sources).files[(context->sources).cur]).befor_sorse).p = (context->befor_temp)->p;
-			(((context->sources).files[(context->sources).cur]).befor_sorse).size = (context->befor_temp)->size;
+			context->sources->files[context->sources->cur].befor_sorse.p = context->befor_temp->p;
+			context->sources->files[context->sources->cur].befor_sorse.size = context->befor_temp->size;
 
-			cur_failes_next(&context->sources, old_cur, context);
-			(context->befor_temp)->str = (((context->sources).files[(context->sources).cur]).befor_sorse).str;
-			(context->befor_temp)->p = 0;
+			cur_failes_next(context->sources, old_cur, context);
+			context->befor_temp->str = context->sources->files[context->sources->cur].befor_sorse.str;
+			context->befor_temp->p = 0;
 
 			file_read(context);
 
-			set_old_cur(&context->sources, old_cur, context);
+			set_old_cur(context->sources, old_cur, context);
 
-			(context->befor_temp)->str = (((context->sources).files[(context->sources).cur]).befor_sorse).str;
-			(context->befor_temp)->p = (((context->sources).files[(context->sources).cur]).befor_sorse).p;
-			(context->befor_temp)->size = (((context->sources).files[(context->sources).cur]).befor_sorse).size;
+			context->befor_temp->str = context->sources->files[context->sources->cur].befor_sorse.str;
+			context->befor_temp->p = context->sources->files[context->sources->cur].befor_sorse.p;
+			context->befor_temp->size = context->sources->files[context->sources->cur].befor_sorse.size;
 
 			context->FILE_flag = 0;
 		}
