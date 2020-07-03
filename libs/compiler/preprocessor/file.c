@@ -34,7 +34,7 @@ int get_next_char(preprocess_context *context)
 {
 	unsigned char firstchar;
 	unsigned char secondchar;
-	if (fscanf(context->curent_file, "%c", &firstchar) == EOF)
+	if (fscanf(context->current_file, "%c", &firstchar) == EOF)
 	{
 		return EOF;
 	}
@@ -43,7 +43,7 @@ int get_next_char(preprocess_context *context)
 	{
 		if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
 		{
-			fscanf(context->curent_file, "%c", &secondchar);
+			fscanf(context->current_file, "%c", &secondchar);
 			context->nextchar = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 | (secondchar & /*0b111111*/ 0x3F);
 		}
 		else
@@ -97,8 +97,8 @@ void control_string_pinter_e(control_string *s, int before, int after)
 		s->size *= 2;
 		int *reallocated_b = realloc(s->str_before, s->size * sizeof(int));
 		int *reallocated_a = realloc(s->str_after, s->size * sizeof(int));
-		memset(&reallocated_b[s->size * sizeof(int)], 0, (s->size / 2) * sizeof(int));
-		memset(&reallocated_a[s->size * sizeof(int)], 0, (s->size / 2) * sizeof(int));
+		//memset(&reallocated_b[s->size * sizeof(int)], 0, (s->size / 2) * sizeof(int));
+		//memset(&reallocated_a[s->size * sizeof(int)], 0, (s->size / 2) * sizeof(int));
 		s->str_before = reallocated_b;
 		s->str_after = reallocated_a;
 	}
@@ -109,14 +109,14 @@ void control_string_pinter_e(control_string *s, int before, int after)
 
 void control_string_pinter(preprocess_context *context, int before, int after)
 {
-	control_string *cs;
+	control_string* cs;
 	if (context->h_flag == 0)
 	{
-		cs = &(&(&context->c_files)->files[(&context->c_files)->cur])->cs;
+		cs = &((context->c_files).files[(context->c_files).cur]).cs;
 	}
 	else
 	{
-		cs = &(&(&context->h_files)->files[(&context->h_files)->cur])->cs;
+		cs = &((context->h_files).files[(context->h_files).cur]).cs;
 	}
 
 	control_string_pinter_e(cs, before, after);
@@ -153,38 +153,18 @@ void m_onemore(preprocess_context *context)
 	if (context->FILE_flag)
 	{
 		context->nextchar = get_next_char(context);
-		long_string_pinter(&context->befor_temp, context->curchar);
+		long_string_pinter(context->befor_temp, context->curchar);
 
 		if (context->curchar == EOF)
 		{
-			end_line(context, &context->befor_temp);
+			end_line(context, context->befor_temp);
 		}
 	}
 	else
 	{
-		context->nextchar = context->curent_string[context->curent_p++];
+		context->nextchar = context->current_string[context->current_p++];
 	}
 }
-
-
-/*void if_fprintf(int a, preprocess_context *context)
-{
-	if(context->include_type > 0)
-	if (a == '\n')
-	{
-		context->control_bflag++;
-		if(context->control_aflag != 1)
-		{
-			control_string_pinter(context, context->control_bflag, context->control_aflag);
-		}
-		context->control_aflag = 0;
-	}
-
-	printer_printchar(&context->output_options, a);
-	// printf_character(a);
-	// printf(" %d ", a);
-	// printf(" t = %d n = %d\n", nextch_type,context -> nextp);
-}*/
 
 
 void m_fprintf(int a, preprocess_context *context)
@@ -233,12 +213,12 @@ void m_coment_skip(preprocess_context *context)
 			// m_fprintf_com();
 			if (context->curchar == '\n')
 			{
-				end_line(context, &context->befor_temp);
+				end_line(context, context->befor_temp);
 			}
 
 			if (context->curchar == EOF)
 			{
-				end_line(context, &context->befor_temp);
+				end_line(context, context->befor_temp);
 				printf("\n");
 				m_error(comm_not_ended, context);
 			}
@@ -321,7 +301,7 @@ void m_nextch(preprocess_context *context)
 
 		if (context->curchar == '\n')
 		{
-			end_line(context, &context->befor_temp);
+			end_line(context, context->befor_temp);
 		}
 	}
 

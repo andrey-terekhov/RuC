@@ -54,6 +54,7 @@ void compiler_context_init(compiler_context *context)
 	context->notrobot = 1;
 	context->prdf = -1;
 	context->leftansttype = -1;
+	context->c_flag = -1;
 }
 
 void compiler_context_deinit(compiler_context *context)

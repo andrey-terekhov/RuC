@@ -21,82 +21,75 @@
 #include <string.h>
 
 
+void  macro_long_string_init(macro_long_string* s)
+{
+	s->size = LONGSTR;
+	s->p = 0;
+	s->str = malloc(s->size * sizeof(int));
+}
+
 void long_string_pinter(macro_long_string *s, int a)
 {
 	if (s->str != NULL)
 	{
-		if (s->p == s->size - 1)
+		if (s->p == s->size)
 		{
 			s->size *= 2;
 			int *reallocated = realloc(s->str, s->size * sizeof(int));
-			memset(&reallocated[s->size * sizeof(int)], 0, (s->size / 2) * sizeof(int));
 			s->str = reallocated;
 		}
 		s->str[s->p++] = a;
 	}
 }
 
-void macro_long_string_init1(macro_long_string *s)
+void macro_long_string_free(macro_long_string *s)
 {
-	s->size = 10000;
-	s->p = 0;
-	s->str = malloc(s->size * sizeof(int));
-	memset(s->str, 0, s->size * sizeof(int));
+	free(s->str);
 }
 
-char *get_faile_name(data_file *f)
-{
-	return f->name;
-}
-
-int *get_befor(data_file *f)
-{
-	return get_long_string(&f->befor_sorse);
-}
-
-void control_string_init(control_string *s)
-{
-	s->size = 100;
-	s->p = 0;
-	s->str_before = malloc(s->size * sizeof(int));
-	s->str_after = malloc(s->size * sizeof(int));
-	memset(s->str_before, 0, s->size * sizeof(int));
-	memset(s->str_after, 0, s->size * sizeof(int));
-}
 
 void data_file_pinter(data_file *f, char *way, FILE *input)
 {
-	int i = 0;
-	int z = strlen(way) + 1;
-	f->way = malloc(z * sizeof(char));
-	memset(f->way, 0, z * sizeof(char));
-	f->way = way;
+	f->cs.p = 0;
 
-	while (way[i] != '\0')
-	{
-		f->way[i] = way[i];
-		i++;
-	}
-	f->way[i] = '\0';
-
-	control_string_init(&f->cs);
-
-	macro_long_string_init1(&f->befor_sorse);
-
-	f->include_sorse = malloc(300 * sizeof(int));
-	memset(f->include_sorse, 0, 300 * sizeof(int));
-	f->include_sorse[0] = 0;
-
+	macro_long_string_init(&f->befor_sorse);
+	macro_long_string_init(&f->include_sorse);
+	
+	f->include_sorse.str[0] = 0;
 	f->input = input;
 	f->pred = -1;
 }
 
-void set_name(data_file *f, const char *name)
+void data_file_free(data_file *f)
+{
+	macro_long_string_free(&f->befor_sorse);
+	macro_long_string_free(&f->include_sorse);
+}
+
+void data_files_clear(data_files *fs)
+{
+	for(int i = 0; i < fs->p; i++)
+	{
+		data_file_free(&fs->files[i]);
+	}
+
+	free(fs->files);
+}
+
+void data_files_init(data_files *s, int num)
+{
+	s->size = num;
+	s->p = 0;
+	s->cur = -1;
+	s->files = malloc(num * sizeof(data_file));
+}
+
+
+/*void set_name(data_file *f, const char *name)
 {
 	int i = 0;
 	int z = strlen(name) + 1;
 	f->name = malloc(z * sizeof(char));
-	memset(f->name, 0, z * sizeof(char));
 
 	while (name[i] != '\0')
 	{
@@ -104,122 +97,38 @@ void set_name(data_file *f, const char *name)
 		i++;
 	}
 	f->name[i] = '\0';
-}
-
-int *get_control_befor(control_string *cs)
-{
-	return cs->str_before;
-}
-
-int *get_control_after(control_string *cs)
-{
-	return cs->str_after;
-}
+}*/
 
 void data_files_pinter(data_files *s, char *file_way, FILE *input)
 {
-	if (s->p == s->size - 1)
+	if (s->p == s->size)
 	{
 		s->size *= 2;
 		data_file *reallocated = realloc(s->files, s->size * sizeof(data_file));
-		memset(&reallocated[s->size * sizeof(data_file)], 0, (s->size / 2) * sizeof(data_file));
 		s->files = reallocated;
 	}
-	set_name(&s->files[s->p], file_way);
-	int k = strlen(file_way) - 1;
-	while (file_way[k] != '/')
-	{
-		k--;
-	}
-	k++;
-	file_way[k] = '\0';
+	
+	//set_name(&s->files[s->p], file_way);
+	s->files[s->p].name = file_way;
+	s->files[s->p].last_slash_index = strrchr(file_way, '/') - file_way;
+
 	data_file_pinter(&s->files[s->p], file_way, input);
 	s->p++;
 }
 
-void failes_cur_add(data_files *fs)
+void include_sorse_set(data_files *fs, int temp_p, int p)
 {
-	fs->cur++;
-}
+	data_file *f = &fs->files[fs->cur];
+	int *str_i = f->include_sorse.str;
+	int *str_b = f->befor_sorse.str;
 
-int get_pred_faile(data_file *s)
-{
-	return s->pred;
-}
-
-int get_line(data_file *s)
-{
-	return s->line;
-}
-
-void set_line(data_file *s, int n)
-{
-	s->line = n;
-}
-
-int get_faile_start(data_file *f)
-{
-	return f->p;
-}
-
-int get_cur_faile_start(data_files *fs)
-{
-	return get_faile_start(&fs->files[fs->cur]);
-}
-
-int *get_long_string(macro_long_string *s)
-{
-	return s->str;
-}
-
-int get_long_string_p(macro_long_string *s)
-{
-	return s->p;
-}
-
-control_string get_control(data_file *f)
-{
-	return f->cs;
-}
-
-FILE *get_input(data_file *f)
-{
-	return f->input;
-}
-
-
-data_file get_cur_faile(data_files *fs)
-{
-	return fs->files[fs->cur];
-}
-
-int get_cur_failes(data_files *fs)
-{
-	return fs->cur;
-}
-
-void failes_fclose(data_file *f)
-{
-	fclose(f->input);
-	f->input = NULL;
-}
-
-void failes_cur_fclose(data_files *fs)
-{
-	failes_fclose(&fs->files[fs->cur]);
-}
-
-void set_incude_s(data_file *f, int temp_p, int p)
-{
-	int *str_i = f->include_sorse;
-	int *str_b = (&f->befor_sorse)->str;
 	if (temp_p == -1)
 	{
 		str_b[0] = str_i[p - 1];
 		str_b[1] = '\0';
 		str_i[p - 1] = '\0';
 
-		(&f->befor_sorse)->p = 1;
+		f->befor_sorse.p = 1;
 	}
 	else
 	{
@@ -229,11 +138,6 @@ void set_incude_s(data_file *f, int temp_p, int p)
 		}
 		str_b[p - temp_p + 1] = '\0';
 		str_i[temp_p] = '\0';
-		(&f->befor_sorse)->p = p - temp_p + 1;
+		f->befor_sorse.p = p - temp_p + 1;
 	}
-}
-
-void include_sorse_set(data_files *fs, int temp_p, int p)
-{
-	set_incude_s(&fs->files[fs->cur], temp_p, p);
 }

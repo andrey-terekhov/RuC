@@ -21,37 +21,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-#define DEFAULT_SIZE 10000
-
-void macro_long_string_init(macro_long_string *s)
-{
-	s->size = DEFAULT_SIZE;
-	s->p = 0;
-	s->str = NULL;
-}
-
-
-void data_files_init(data_files *s)
-{
-	s->size = 10;
-	s->p = 0;
-	s->cur = -1;
-	s->files = malloc(s->size * sizeof(data_file));
-}
-
 // Определение глобальных переменных
-void preprocess_context_init(preprocess_context *context)
+void preprocess_context_init(preprocess_context *context, data_files *sources, data_files *headers)
 {
-	memset(context, 0, sizeof(preprocess_context));
 	printer_init(&context->output_options);
-	data_files_init(&context->c_files);
-	data_files_init(&context->h_files);
-	macro_long_string_init(&context->befor_temp);
 	context->include_type = 0;
-	context->rp = 1;
-	context->inp_file = 0;
-	context->inp_p = -1;
 	context->rp = 1;
 	context->mp = 1;
 	context->strp = 0;
@@ -75,4 +49,13 @@ void preprocess_context_init(preprocess_context *context)
 	context->control_bflag = 0;
 	context->befor_temp_p = -1;
 	context->iwp = 0;
+	context->FILE_flag = 1;
+
+	context->sources = sources;
+	context->headers = headers;
+
+	for (int i = 0; i < HASH; i++)
+	{
+		context->hashtab[i] = 0;
+	}
 }

@@ -16,8 +16,8 @@
 
 #include "errors.h"
 #include "codes.h"
-#include "context_var.h"
 #include "global.h"
+#include "macro_global_struct.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -92,15 +92,15 @@ void error(compiler_context *context, int ernum)
 	data_file *f;
 	if (context->c_flag)
 	{
-		f = &((&context->cfs)->files[(&context->cfs)->cur]);
+		f = &((context->cfs).files[(context->cfs).cur]);
 	}
 	else
 	{
-		f = &((&context->cfs)->files[(&context->hfs)->cur]);
+		f = &((context->cfs).files[(context->hfs).cur]);
 	}
 
 	char *name = f->name;
-	int *s = (&f->befor_sorse)->str;
+	int *s = (f->befor_sorse).str;
 
 	printer_printf(&context->err_options, "\n Oшибка в файле: \"%s\"\n \n", name);
 	context->line--;
@@ -114,8 +114,8 @@ void error(compiler_context *context, int ernum)
 	}
 
 	int nwe_line = context->line;
-	int *control_before = (&f->cs)->str_before;
-	int *control_after = (&f->cs)->str_after;
+	int *control_before = (f->cs).str_before;
+	int *control_after = (f->cs).str_after;
 
 	while (control_before[i] < context->line + 1)
 	{
@@ -127,13 +127,13 @@ void error(compiler_context *context, int ernum)
 	i = 0;
 	k = 0;
 
-	if (f->include_sorse[0] != '\0')
+	if (f->include_sorse.str[0] != '\0')
 	{
 		k++;
 
 		printer_printf(&context->err_options, "line %i) ", k);
 
-		int *s2 = f->include_sorse;
+		int *s2 = f->include_sorse.str;
 		while (s2[i] != '\0')
 		{
 			printer_printchar(&context->err_options, s2[i]);

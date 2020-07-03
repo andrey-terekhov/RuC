@@ -21,6 +21,7 @@
 #include "defs.h"
 #include "errors.h"
 #include "frontend_utils.h"
+#include "macro_global_struct.h"
 #include "preprocessor.h"
 #include "tables.h"
 #include <stdio.h>
@@ -48,6 +49,27 @@ void report_cb(asp_report *report)
 			report->explanation);
 }
 #endif
+
+char *preprocess_ruc_file(compiler_context *context, compiler_workspace *workspace)
+{
+	data_files *sources = &context->cfs;
+	data_files *headers = &context->hfs;
+
+	int argc = workspace->number_of_files;
+	char **argv = malloc(argc * sizeof(char *));
+
+	compiler_workspace_file *current = workspace->files;
+	for (int i = 0; i < argc; i++)
+	{
+		argv[i] = current->path;
+		current = current->next;
+	}
+
+	char *result = preprocess_file(argc, argv, sources, headers);
+	free(argv);
+	
+	return result;
+}
 
 static void process_user_requests(compiler_context *context, compiler_workspace *workspace)
 {
@@ -81,7 +103,8 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 		// Препроцессинг в массив
 
 
-		macro_processed = preprocess_file(context, workspace->files); // макрогенерация
+		macro_processed = preprocess_ruc_file(context, workspace); // макрогенерация
+		//printf("0befor = %i\n", (context->hfs.files[0]).befor_sorse->str[0]);
 		if (macro_processed == NULL)
 		{
 			fprintf(stderr, " ошибка выделения памяти для "
@@ -96,6 +119,12 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 		output_tables_and_tree(context, tree_path);
 		output_codes(context, codes_path);
 		compiler_context_detach_io(context, IO_TYPE_INPUT);
+
+
+		//printf("befor = %i\n", (context->cfs.files[2]).befor_sorse.str[0]);
+		data_files_free(&context->cfs);
+		data_files_free(&context->hfs);
+		
 
 		/* Will be left for debugging in case of failure */
 #if !defined(FILE_DEBUG) && !defined(_MSC_VER)
@@ -118,6 +147,7 @@ compiler_workspace *compiler_workspace_create()
 {
 	compiler_workspace *temp = calloc(1, sizeof(compiler_workspace));
 	temp->files = NULL;
+	temp->number_of_files = 0;
 	return temp;
 }
 
@@ -177,6 +207,7 @@ compiler_workspace_file *compiler_workspace_add_file(compiler_workspace *workspa
 		workspace->files = file;
 	}
 
+	workspace->number_of_files++;
 	return file;
 }
 

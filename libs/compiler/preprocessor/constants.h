@@ -18,10 +18,12 @@
 
 #define MACRODEBAG 1
 
-#define MAXTAB	  100000
-#define STRIGSIZE 256
-#define HASH	  256
-#define DIP		  10
+#define MAXTAB		100000
+#define LONGSTR		10000
+#define STRIGSIZE	256
+#define HASH		256
+#define DIP			10
+#define CONTROLSIZE 100
 
 #define CANGEEND	  -6
 #define MACROEND	  -5

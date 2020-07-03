@@ -18,6 +18,7 @@
 #include "errors.h"
 #include "global.h"
 #include "uniscanner.h"
+#include "macro_global_struct.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -215,10 +216,10 @@ void marcer_update(compiler_context *context)
 			files = &context->hfs;
 		}
 		nextch(context);
-		files->cur = get_pred_faile(&files->files[files->cur]);
+		files->cur = (files->files[files->cur]).pred;
 		if (files->cur != -1)
 		{
-			context->line = get_line(&files->files[files->cur]);
+			context->line = (files->files[files->cur]).line;
 		}
 		else
 		{

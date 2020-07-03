@@ -35,22 +35,21 @@ typedef struct macro_long_string
 
 typedef struct control_string
 {
-	int *str_before;
-	int *str_after;
+	int str_before[CONTROLSIZE];
+	int str_after[CONTROLSIZE];
 	int p;
-	int size;
 } control_string;
 
 typedef struct data_file
 {
-	char *way;
 	char *name;
+	int last_slash_index;
 	int p;
 	int pred;
 	int line;
 	control_string cs;
 	FILE *input;
-	int *include_sorse;
+	macro_long_string include_sorse;
 	macro_long_string befor_sorse;
 } data_file;
 
@@ -62,26 +61,12 @@ typedef struct data_files
 	int size;
 } data_files;
 
+void data_files_init(data_files *s, int num);
 void long_string_pinter(macro_long_string *s, int a);
 void data_files_pinter(data_files *s, char *file_way, FILE *input);
-void failes_cur_add(data_files *fs);
-int get_pred_faile(data_file *s);
-int get_cur_faile_start(data_files *fs);
-char *get_faile_name(data_file *f);
-int *get_befor(data_file *f);
-FILE *get_input(data_file *f);
-data_file get_cur_faile(data_files *fs);
-int get_cur_failes(data_files *fs);
-control_string get_control(data_file *f);
-void failes_cur_fclose(data_files *fs);
-int *get_long_string(macro_long_string *s);
-int get_long_string_p(macro_long_string *s);
-int get_line(data_file *s);
-void set_line(data_file *s, int n);
+void macro_long_string_free(macro_long_string *s);
+void data_files_clear(data_files *fs);
 void include_sorse_set(data_files *fs, int temp_p, int p);
-int *get_control_befor(control_string *cs);
-int *get_control_after(control_string *cs);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

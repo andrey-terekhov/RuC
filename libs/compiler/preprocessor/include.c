@@ -37,11 +37,6 @@ void update_faile(int old_cur, data_file *cur_f, data_file *old_f, preprocess_co
 	context->control_bflag = 0;
 }
 
-void returned_faile(data_file *cur_f, preprocess_context *context)
-{
-	context->control_bflag = cur_f->line;
-}
-
 void cur_failes_next(data_files *fs, int old_cur, preprocess_context *context)
 {
 	fs->cur = fs->p - 1;
@@ -51,7 +46,7 @@ void cur_failes_next(data_files *fs, int old_cur, preprocess_context *context)
 void set_old_cur(data_files *fs, int old, preprocess_context *context)
 {
 	fs->cur = old;
-	returned_faile(&fs->files[fs->cur], context);
+	context->control_bflag = fs->files[fs->cur].line;
 }
 
 void print_marcer(int p, preprocess_context *context)
@@ -89,7 +84,7 @@ void print_end_marcer(preprocess_context *context)
 char *gen_way(preprocess_context *context, char *cur_way, char *temp_way)
 {
 	char *file_way = malloc(STRIGSIZE * sizeof(char));
-	memset(file_way, 0, STRIGSIZE * sizeof(char));
+	//memset(file_way, 0, STRIGSIZE * sizeof(char));
 
 	file_way = cur_way;
 	int i = strlen(cur_way);
@@ -126,21 +121,22 @@ char *gen_way(preprocess_context *context, char *cur_way, char *temp_way)
 
 int open_p_faile(preprocess_context *context, char *file_way)
 {
-	context->curent_file = fopen(file_way, "r");
-	if (context->curent_file == NULL)
+	context->current_file = fopen(file_way, "r");
+	if (context->current_file == NULL)
 	{
 		printf("1 не найден файл %s\n", file_way);
-		exit(1);
+		m_error(1, context);
 	}
-	data_files_pinter(&context->c_files, file_way, NULL);
+	data_files_pinter(&context->sources, file_way, NULL);
 
-	return (&context->c_files)->cur;
+	return context->sources->cur;
 }
 
 int open_i_faile(preprocess_context *context, char *temp_way, char *cur_way, int flag)
 {
 	char *file_way = gen_way(context, cur_way, temp_way);
 	FILE *f = fopen(file_way, "r");
+	printf("\ni open\n");
 
 	if (f == NULL)
 	{
@@ -157,31 +153,31 @@ int open_i_faile(preprocess_context *context, char *temp_way, char *cur_way, int
 	if (f == NULL)
 	{
 		printf("2 не найден файл %s\n", temp_way);
-		exit(1);
+		m_error(1, context);
 	}
 	if (flag == 0)
 	{
-		context->curent_file = f;
-		data_files_pinter(&context->c_files, file_way, NULL);
-		return (&context->c_files)->cur;
+		context->current_file = f;
+		data_files_pinter(&context->sources, file_way, NULL);
+		return context->sources->cur;
 	}
 	else
 	{
-		data_files_pinter(&context->h_files, file_way, f);
-		return (&context->h_files)->cur;
+		data_files_pinter(&context->headers, file_way, f);
+		return context->headers->cur;
 	}
 }
 
 void include_fclose(preprocess_context *context)
 {
-	fclose(context->curent_file);
-	context->curent_file = NULL;
+	fclose(context->current_file);
+	context->current_file = NULL;
 	context->line = 1;
 }
 
 void begin_faile(preprocess_context *context, data_files *fs)
 {
-	context->curent_file = get_input(&fs->files[fs->cur]);
+	context->current_file = (fs->files[fs->cur]).input;
 }
 
 void file_read(preprocess_context *context)
@@ -189,11 +185,11 @@ void file_read(preprocess_context *context)
 	int cur;
 	if (context->h_flag)
 	{
-		cur = get_cur_failes(&context->h_files);
+		cur = context->headers->cur;
 	}
 	else
 	{
-		cur = get_cur_failes(&context->c_files);
+		cur = context->sources->cur;
 	}
 
 	print_marcer(cur, context);
@@ -204,7 +200,7 @@ void file_read(preprocess_context *context)
 	}
 	else
 	{
-		context->curent_p = 0;
+		context->current_p = 0;
 		m_nextch(context);
 		m_nextch(context);
 	}
@@ -229,8 +225,8 @@ void file_read(preprocess_context *context)
 void open_file(preprocess_context *context, data_file *f)
 {
 	int i = 0;
-	char *temp_way = malloc(STRIGSIZE * sizeof(char));
-	memset(temp_way, 0, STRIGSIZE * sizeof(char));
+	char temp_way [STRIGSIZE];
+	//memset(temp_way, 0, STRIGSIZE * sizeof(char));
 
 	while (context->curchar != '\"')
 	{
@@ -241,9 +237,9 @@ void open_file(preprocess_context *context, data_file *f)
 		temp_way[i++] = context->curchar;
 		m_nextch(context);
 	}
-	temp_way[i++] = '\0';
+	temp_way[i] = '\0';
 
-	if (temp_way[i - 2] == 'h' && temp_way[i - 3] == '.')
+	if (temp_way[i - 1] == 'h' && temp_way[i - 2] == '.')
 	{
 		if (context->include_type == 0)
 		{
@@ -254,22 +250,21 @@ void open_file(preprocess_context *context, data_file *f)
 		{
 			int old_cur = open_i_faile(context, temp_way, f->way, 1);
 
-			(&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->p = (&context->befor_temp)->p;
-			(&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->size =
-				(&context->befor_temp)->size;
+			(((context->headers).files[(context->headers).cur]).befor_sorse).p = (context->befor_temp)->p;
+			(((context->headers).files[(context->headers).cur]).befor_sorse).size = (context->befor_temp)->size;
 
-			cur_failes_next(&context->h_files, old_cur, context);
-			(&context->befor_temp)->str = (&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->str;
-			(&context->befor_temp)->p = 0;
+			cur_failes_next(&context->headers, old_cur, context);
 
-			begin_faile(context, &context->h_files);
+			(context->befor_temp)->str = (((context->headers).files[(context->headers).cur]).befor_sorse).str;
+			(context->befor_temp)->p = 0;
+
+			begin_faile(context, &context->headers);
 			file_read(context);
-			set_old_cur(&context->h_files, old_cur, context);
+			set_old_cur(&context->headers, old_cur, context);
 
-			(&context->befor_temp)->str = (&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->str;
-			(&context->befor_temp)->p = (&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->p;
-			(&context->befor_temp)->size =
-				(&(&(&context->h_files)->files[(&context->h_files)->cur])->befor_sorse)->size;
+			(context->befor_temp)->str = (((context->headers).files[(context->headers).cur]).befor_sorse).str;
+			(context->befor_temp)->p = (((context->headers).files[(context->headers).cur]).befor_sorse).p;
+			(context->befor_temp)->size = (((context->headers).files[(context->headers).cur]).befor_sorse).size;
 		}
 		else
 		{
@@ -283,22 +278,21 @@ void open_file(preprocess_context *context, data_file *f)
 			context->FILE_flag = 1;
 			int old_cur = open_i_faile(context, temp_way, f->way, 0);
 
-			(&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->p = (&context->befor_temp)->p;
-			(&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->size =
-				(&context->befor_temp)->size;
+			(((context->sources).files[(context->sources).cur]).befor_sorse).p = (context->befor_temp)->p;
+			(((context->sources).files[(context->sources).cur]).befor_sorse).size = (context->befor_temp)->size;
 
-			cur_failes_next(&context->c_files, old_cur, context);
-			(&context->befor_temp)->str = (&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->str;
-			(&context->befor_temp)->p = 0;
+			cur_failes_next(&context->sources, old_cur, context);
+			(context->befor_temp)->str = (((context->sources).files[(context->sources).cur]).befor_sorse).str;
+			(context->befor_temp)->p = 0;
 
 			file_read(context);
 
-			set_old_cur(&context->c_files, old_cur, context);
+			set_old_cur(&context->sources, old_cur, context);
 
-			(&context->befor_temp)->str = (&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->str;
-			(&context->befor_temp)->p = (&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->p;
-			(&context->befor_temp)->size =
-				(&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->size;
+			(context->befor_temp)->str = (((context->sources).files[(context->sources).cur]).befor_sorse).str;
+			(context->befor_temp)->p = (((context->sources).files[(context->sources).cur]).befor_sorse).p;
+			(context->befor_temp)->size = (((context->sources).files[(context->sources).cur]).befor_sorse).size;
+
 			context->FILE_flag = 0;
 		}
 		else
@@ -316,11 +310,6 @@ void include_relis(preprocess_context *context, data_files *fs)
 	if (context->curchar != '\"')
 	{
 		m_error(26, context);
-	}
-	if (context->inp_p >= 20)
-	{
-		m_error(27, context);
-		 // переполнение или цыкл
 	}
 	m_nextch(context);
 

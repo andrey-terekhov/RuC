@@ -124,11 +124,11 @@ void preprocess_words(preprocess_context *context)
 		{
 			if (!context->h_flag)
 			{
-				include_relis(context, &context->c_files);
+				include_relis(context, &context->sources);
 			}
 			else
 			{
-				include_relis(context, &context->h_files);
+				include_relis(context, &context->headers);
 			}
 
 			return;
@@ -258,9 +258,9 @@ void swap(data_file *f1, data_file *f2)
 	f1->befor_sorse = f2->befor_sorse;
 	f2->befor_sorse = temp_s;
 
-	int *temp_include_sorse = f1->include_sorse;
-	f1->include_sorse = f2->include_sorse;
-	f2->include_sorse = temp_include_sorse;
+	int *temp_include_sorse = f1->include_sorse.str;
+	f1->include_sorse.str = f2->include_sorse.str;
+	f2->include_sorse.str = temp_include_sorse;
 
 	int temp_pred = f1->pred;
 	f1->pred = f2->pred;
@@ -277,10 +277,10 @@ void swap(data_file *f1, data_file *f2)
 
 void add_c_file_siple(preprocess_context *context)
 {
-	include_sorse_set(&context->c_files, context->befor_temp_p, (&context->befor_temp)->p);
+	include_sorse_set(&context->sources, context->befor_temp_p, context->befor_temp->p);
 
-	(&context->befor_temp)->str = (&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->str;
-	(&context->befor_temp)->p = (&(&(&context->c_files)->files[(&context->c_files)->cur])->befor_sorse)->p;
+	context->befor_temp->str = context->sources->files[context->sources->cur].befor_sorse.str;
+	context->befor_temp->p = context->sources->files[context->sources->cur].befor_sorse.p;
 	context->temp_output = 0;
 
 	while (context->curchar != EOF && context->main_file == -1)
@@ -291,7 +291,7 @@ void add_c_file_siple(preprocess_context *context)
 			context->cur = macro_keywords(context);
 			if (context->cur == SH_MAIN)
 			{
-				context->main_file = (&context->c_files)->cur;
+				context->main_file = context->sources->cur;
 			}
 		}
 		m_nextch(context);
@@ -327,11 +327,11 @@ void add_c_file(preprocess_context *context)
 				if (context->nextchar == 'i' || context->nextchar == 'I' || context->nextchar == 0x414 ||
 					context->nextchar == 0x434)
 				{
-					context->befor_temp_p = get_long_string_p(&context->befor_temp);
+					context->befor_temp_p = (context->befor_temp)->p;
 					context->cur = macro_keywords(context);
 					if (context->cur == SH_INCLUDE)
 					{
-						include_relis(context, &context->c_files);
+						include_relis(context, &context->sources);
 						if (context->h_flag)
 						{
 							context->h_flag = 0;
@@ -361,153 +361,67 @@ void add_c_file(preprocess_context *context)
 	}
 }
 
-/*void open_files_config(const char *code, preprocess_context *context, int start)
+void open_files(preprocess_context *context, int number, const char *codes[])
 {
-	FILE* cofig = fopen(context->way, "r");
-	context->curent_file = cofig;
-	while (code[start] != '/')
-	{
-		start--;
-	}
-	start++;
-	context->way[start] = '\0';
+	char **ways = context->include_ways;
+	int *iwp = &context->iwp;
 
-	char* way_temp = context->way;
-	int j = start;
-	get_next_char(context);
-	m_nextch(context);
-	while(context->curchar != EOF)
-	{
-		while(way_temp[j-1] != 'c'|| way_temp[j-2] != '.')
+	ways = malloc(number * sizeof(char *));
+
+	for (int i = 0; i < number; i++)
+	{		
+		if (codes[i][0] == '-' && codes[i][1] == 'I')
 		{
-			way_temp[j++] = context->curchar;
-			m_nextch(context);
-		}
-		way_temp[j++] = '\0';
+			ways[*iwp] = &codes[i][2];
 
-		if (find_file(context, way_temp))
-		{
-			int old_cur = open_p_faile(context, way_temp);
-			context->line = 1;
-
-			cur_failes_next(&context->c_files, old_cur, context);
-			(&context->befor_temp)->str = (&(&context->c_files)->files[(&context->c_files)->cur])->include_sorse;
-			(&context->befor_temp)->p = 0;
-
-			add_c_file(context);
-
-			include_fclose(context);
-			set_old_cur(&context->c_files, old_cur, context);
-			(&context->befor_temp)->str = NULL;
-
-
-			context->curent_file = cofig;
-			get_next_char(context);
-			m_nextch(context);
-		}
-		space_skip(context);
-		j = start;
-	}
-}*/
-
-void open_files_parametr(compiler_workspace_file *codes, preprocess_context *context)
-{
-	compiler_workspace_file *codes_temp = codes;
-	int j = 0;
-	int i = 0;
-	char *code;
-	int k = 1;
-	while (codes != NULL)
-	{
-		code = codes->path;
-		if (code[0] == '-' && code[1] == 'I')
-		{
-			i = 2;
-			int l = strlen(code);
-			context->include_ways[context->iwp] = malloc(l * sizeof(char));
-			memset(context->include_ways[context->iwp], 0, l * sizeof(char));
-
-			while (code[i] != '\0')
+			int length = strlen(ways[*iwp]);
+			if (ways[*iwp][length - 1] == '/')
 			{
-				context->include_ways[context->iwp][i - 2] = code[i];
-				i++;
+				ways[*iwp][length - 1] = '\0';
 			}
-			if (context->include_ways[context->iwp][i - 3] != '/')
-			{
-				context->include_ways[context->iwp][i - 2] = '/';
-				i++;
-			}
-			context->include_ways[context->iwp][i - 2] = '\0';
+
 			context->iwp++;
-			codes = codes->next;
-			continue;
 		}
-		codes = codes->next;
 	}
 
-	codes = codes_temp;
 
-	while (codes != NULL)
+	data_files_init(&context->sources, number);
+	data_files_init(&context->headers, number);
+
+	for (int i = 0; i < number; i++)
 	{
-		code = codes->path;
-		if (code[0] == '-' && code[1] == 'I')
+		if (codes[i][0] == '-' && codes[i][1] == 'I')
 		{
-			codes = codes->next;
 			continue;
 		}
 
-		i = 0;
-		while (code[i] != '\0')
+		if (find_file(context, codes[i]))
 		{
-			context->way[i] = code[i];
-			i++;
-			j++;
-		}
-		context->way[i] = code[i];
-		i++;
-		context->way[i] = code[i];
-		i++;
-		context->way[i] = '\0';
-		i++;
-
-		context->way[j] = '\0';
-
-		if (find_file(context, context->way))
-		{
-			int old_cur = open_p_faile(context, context->way);
-
-			cur_failes_next(&context->c_files, old_cur, context);
-			(&context->befor_temp)->str = (&(&context->c_files)->files[(&context->c_files)->cur])->include_sorse;
-			(&context->befor_temp)->p = 0;
+			int old_cur = open_p_faile(context, codes[i]);
+			cur_failes_next(&context->sources, old_cur, context);
+			context->befor_temp = &context->sources->files[context->sources->cur].include_sorse;
+			context->befor_temp->p = 0;
 
 			add_c_file(context);
 
 			include_fclose(context);
-			set_old_cur(&context->c_files, old_cur, context);
-			(&context->befor_temp)->str = NULL;
+			set_old_cur(&context->sources, old_cur, context);
+			context->befor_temp->str = NULL;
 		}
-
-		codes = codes->next;
 	}
 }
 
-void open_files(compiler_workspace_file *codes, preprocess_context *context)
-{
-	context->FILE_flag = 1;
-	open_files_parametr(codes, context);
-}
-
-void preprocess_h_file(preprocess_context *context, data_files *fs)
+void preprocess_h_file(preprocess_context *context)
 {
 	context->h_flag = 1;
 	context->include_type = 1;
 	fs->cur++;
 	while (fs->cur < fs->p)
 	{
-		context->curent_file = get_input(&fs->files[fs->cur]);
+		context->current_file = (fs->files[fs->cur]).input;
 
-		(&context->befor_temp)->str = (&(&fs->files[fs->cur])->befor_sorse)->str;
-		(&context->befor_temp)->p = 0;
+		(context->befor_temp)->str = ((fs->files[fs->cur]).befor_sorse).str;
+		(context->befor_temp)->p = 0;
 		context->temp_output = 0;
 
 		file_read(context);
@@ -518,7 +432,7 @@ void preprocess_h_file(preprocess_context *context, data_files *fs)
 	context->FILE_flag = 0;
 }
 
-void preprocess_c_file(preprocess_context *context, data_files *fs)
+void preprocess_c_file(preprocess_context *context)
 {
 	fs->cur = 0;
 	if (context->main_file != fs->p - 1)
@@ -528,54 +442,45 @@ void preprocess_c_file(preprocess_context *context, data_files *fs)
 
 	while (fs->cur < fs->p)
 	{
-		context->curent_string = (&(&fs->files[fs->cur])->befor_sorse)->str;
-		context->curent_p = (&(&fs->files[fs->cur])->befor_sorse)->p;
+		context->current_string = ((fs->files[fs->cur]).befor_sorse).str;
+		context->current_p = ((fs->files[fs->cur]).befor_sorse).p;
 
 		file_read(context);
 		fs->cur++;
 	}
 }
 
-void save_data(compiler_context *c_context, preprocess_context *context)
-{
-	c_context->cfs = context->c_files;
-	c_context->hfs = context->h_files;
-	c_context->c_flag = -1;
-}
-
-const char *preprocess_file(compiler_context *c_context, compiler_workspace_file *code)
+const char *preprocess_file(int argc, const char *argv[], data_files *sources, data_files *headers)
 {
 #if MACRODEBAG
 	printf("\nИсходный текст:\n \n");
 #endif
-	preprocess_context *context = malloc(sizeof(preprocess_context));
-	preprocess_context_init(context);
-	printer_attach_buffer(&context->output_options, 1024);
+	preprocess_context context;
+	preprocess_context_init(&context, sources, headers);
+	printer_attach_buffer(&context.output_options, 1024);
 
-	for (int i = 0; i < HASH; i++)
-	{
-		context->hashtab[i] = 0;
-	}
-	add_keywods(context);
+	add_keywods(&context);
 
-	context->include_type = 0;
-	context->FILE_flag = 1;
-	context->mfirstrp = context->rp;
+	context.mfirstrp = context.rp;
 
 
-	open_files(code, context);
+	open_files(&context, argc, argv);
+	//printf("-4-befor = %i\n", (&context->headers.files[0])->befor_sorse->str[0]);
 
-	preprocess_h_file(context, &context->h_files);
+	preprocess_h_file(&context);
+	//printf("-3-befor = %i\n", (&context->headers.files[0])->befor_sorse->str[0]);
 
-	preprocess_c_file(context, &context->c_files);
+	preprocess_c_file(&context);
+	//("-2-befor = %i\n", (&context->headers.files[0])->befor_sorse->str[0]);
 
-	save_data(c_context, context);
+	context.befor_temp = NULL;
+	free(context.include_ways);
 
-	const char *macro_processed = strdup(context->output_options.ptr);
+	const char *macro_processed = &context.output_options.ptr;
+
 #if MACRODEBAG
 	printf("\n>\n%s<\n", macro_processed);
 #endif
-
 	return macro_processed;
 }
 
@@ -605,3 +510,53 @@ const char *preprocess_file(compiler_context *c_context, compiler_workspace_file
 	/Fadeev/import.c
 	/Egor/Macro/includ/cofig.txt
 */
+
+/*void open_files_config(const char *code, preprocess_context *context, int start)
+{
+	FILE* cofig = fopen(context->way, "r");
+	context->current_file = cofig;
+	while (code[start] != '/')
+	{
+		start--;
+	}
+	start++;
+	context->way[start] = '\0';
+
+	char* way_temp = context->way;
+	int j = start;
+	get_next_char(context);
+	m_nextch(context);
+	while(context->curchar != EOF)
+	{
+		while(way_temp[j-1] != 'c'|| way_temp[j-2] != '.')
+		{
+			way_temp[j++] = context->curchar;
+			m_nextch(context);
+		}
+		way_temp[j++] = '\0';
+
+		if (find_file(context, way_temp))
+		{
+			int old_cur = open_p_faile(context, way_temp);
+			context->line = 1;
+
+			cur_failes_next(context->sources, old_cur, context);
+			(context->befor_temp)->str = (&(context->sources)->files[(context->sources)->cur])->include_sorse;
+			(context->befor_temp)->p = 0;
+
+			add_c_file(context);
+
+			include_fclose(context);
+			set_old_cur(context->sources, old_cur, context);
+			(context->befor_temp)->str = NULL;
+
+
+			context->current_file = cofig;
+			get_next_char(context);
+			m_nextch(context);
+		}
+		space_skip(context);
+		j = start;
+	}
+}*/
+

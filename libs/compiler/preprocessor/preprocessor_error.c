@@ -46,16 +46,16 @@ void m_error(int ernum, preprocess_context *context)
 	data_file f;
 	if (context->h_flag)
 	{
-		f = get_cur_faile(&context->h_files);
+		f = (context->h_files).files[(context->h_files).cur];
 	}
 	else
 	{
-		f = get_cur_faile(&context->c_files);
+		f = (context->c_files).files[(context->c_files).cur];
 	}
 
-	char *name = get_faile_name(&f);
-	int *s = get_long_string(&context->befor_temp);
-	int p = get_long_string_p(&context->befor_temp);
+	char *name = f.name;
+	int *s = (context->befor_temp)->str;
+	int p = (context->befor_temp)->p;
 
 	int j = 2;
 #if MACRODEBAG
@@ -65,9 +65,9 @@ void m_error(int ernum, preprocess_context *context)
 #endif
 	printf("line 1) ");
 
-	if ((&f)->include_sorse[0] != '\0')
+	if ((&f)->include_sorse.str[0] != '\0')
 	{
-		int *s2 = (&f)->include_sorse;
+		int *s2 = (&f)->include_sorse.str;
 		while (s2[i] != '\0')
 		{
 			printf_character(s[i]);
