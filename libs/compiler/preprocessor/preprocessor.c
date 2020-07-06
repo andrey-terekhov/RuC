@@ -482,7 +482,7 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 	printf("\n");
 
 //#if MACRODEBAG
-	printf("\n>\n%s<\n", macro_processed);
+//	printf("\n>\n%s<\n", macro_processed);
 //#endif
 	return macro_processed;
 }
