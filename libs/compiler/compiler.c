@@ -62,7 +62,6 @@ char *preprocess_ruc_file(compiler_context *context, compiler_workspace *workspa
 	for (int i = 0; i < argc; i++)
 	{
 		argv[i] = current->path;
-		printf("current->path = %s\n", current->path);
 		current = current->next;
 	}
 
@@ -123,10 +122,8 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 
 		//printf("befor = %i\n", (context->cfs.files[2]).before_source.str[0]);
-		printf("Before data_files_clear\n");
 		data_files_clear(&context->cfs);
 		data_files_clear(&context->hfs);
-		printf("After data_files_clear\n");
 
 		/* Will be left for debugging in case of failure */
 #if !defined(FILE_DEBUG) && !defined(_MSC_VER)

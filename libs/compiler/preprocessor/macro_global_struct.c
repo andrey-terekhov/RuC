@@ -36,7 +36,6 @@ void long_string_pinter(macro_long_string *s, int a)
 		{
 			s->size *= 2;
 			int *reallocated = realloc(s->str, s->size * sizeof(int));
-			printf("int *reallocated = realloc(s->str, s->size * sizeof(int));\n");
 			s->str = reallocated;
 		}
 		s->str[s->p++] = a;
@@ -45,7 +44,6 @@ void long_string_pinter(macro_long_string *s, int a)
 
 void macro_long_string_free(macro_long_string *s)
 {
-	printf("p = %i, size = %i\n", s->p, s->size);
 	free(s->str);
 }
 
@@ -54,7 +52,6 @@ void data_file_pinter(data_file *f, FILE *input)
 {
 	f->cs.p = 0;
 
-	printf("data_file_pinter(%s, ...)\n", f->name);
 	macro_long_string_init(&f->before_source);
 	macro_long_string_init(&f->include_source);
 	
@@ -71,7 +68,6 @@ void data_file_free(data_file *f)
 	}
 
 	macro_long_string_free(&f->before_source);
-	printf("Betwen macro_long_string_free()\n");
 	macro_long_string_free(&f->include_source);
 }
 
@@ -79,12 +75,10 @@ void data_files_clear(data_files *fs)
 {
 	for(int i = 0; i < fs->p; i++)
 	{
-		printf("data_file_free(%s)\n", fs->files[i].name);
 		data_file_free(&fs->files[i]);
 	}
 
 	free(fs->files);
-	printf("After free(fs->files)\n");
 }
 
 void data_files_init(data_files *s, int num)

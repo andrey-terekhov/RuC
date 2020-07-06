@@ -424,7 +424,6 @@ void preprocess_h_file(preprocess_context *context)
 		context->before_temp = &fs->files[fs->cur].before_source;
 		context->before_temp->p = 0;
 		context->temp_output = 0;
-		printf("\n cur = %i, fs->p = %i\n", fs->cur , fs->p);
 		file_read(context);
 		fs->cur++;
 	}
@@ -455,7 +454,7 @@ void preprocess_c_file(preprocess_context *context)
 
 char *preprocess_file(int argc, const char *argv[], data_files *sources, data_files *headers)
 {
-#if MACRODEBAG
+#if MACRODEBAG  == 1
 	printf("\nИсходный текст:\n \n");
 #endif
 	preprocess_context context;
@@ -472,7 +471,6 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 
 	preprocess_h_file(&context);
 	//printf("-3-befor = %i\n", (&context->headers.files[0])->before_source->str[0]);
-	printf("\n0p = %i\n", context.headers->files[0].before_source.p);
 
 	preprocess_c_file(&context);
 	//("-2-befor = %i\n", (&context->headers.files[0])->before_source->str[0]);
@@ -482,7 +480,7 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 
 	char *macro_processed = context.output_options.ptr;
 
-#if MACRODEBAG
+#if MACRODEBAG  == 1
 	printf("\n>\n%s<\n", macro_processed);
 #endif
 	return macro_processed;

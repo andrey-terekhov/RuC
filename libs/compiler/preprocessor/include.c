@@ -124,7 +124,7 @@ int open_p_faile(preprocess_context *context, const char *file_way)
 	context->current_file = fopen(file_way, "r");
 	if (context->current_file == NULL)
 	{
-		printf("1 не найден файл %s\n", file_way);
+		//printf("не найден файл %s\n", file_way);
 		m_error(1, context);
 	}
 	data_files_pinter(context->sources, file_way, NULL);
@@ -152,7 +152,7 @@ void gen_way(char *full, const char *path, const char *file, int is_slash)
 	memcpy(&full[size], file, file_size);
 	
 	full[size + file_size] = '\0';
-	printf("\n path = %s\n file = %s\n full = %s\n", path, file, full);
+	//printf("\n path = %s\n file = %s\n full = %s\n", path, file, full);
 }
 
 int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int flag)
@@ -166,8 +166,6 @@ int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int
 	{
 		for (int i = 0; i < context->iwp; i++)
 		{
-			printf(" temp_way = %s\n", temp_way);
-			printf("\n include_ways[i] = %s\n", context->include_ways[i]);
 			gen_way(file_way, context->include_ways[i], temp_way, 0);
 			f = fopen(file_way, "r");
 
@@ -179,7 +177,7 @@ int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int
 	}
 	if (f == NULL)
 	{
-		printf("2 не найден файл %s\n", temp_way);
+		//printf(" не найден файл %s\n", temp_way);
 		m_error(1, context);
 	}
 	if (flag == 0)
@@ -231,7 +229,6 @@ void file_read(preprocess_context *context)
 		m_nextch(context);
 		m_nextch(context);
 	}
-	printf("\n2p = %i\n", context->headers->files[0].before_source.p);
 
 
 	while (context->curchar != EOF)

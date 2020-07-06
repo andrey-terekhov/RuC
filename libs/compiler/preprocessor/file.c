@@ -114,7 +114,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 	{
 		context->control_aflag++;
 	}
-#if MACRODEBAG
+#if MACRODEBAG == 1
 	if (context->FILE_flag)
 	{
 		printf("Line %i) ", context->line);
@@ -205,7 +205,7 @@ void m_coment_skip(preprocess_context *context)
 			if (context->curchar == EOF)
 			{
 				end_line(context, context->before_temp);
-				printf("\n");
+				//printf("\n");
 				m_error(comm_not_ended, context);
 			}
 		} while (context->curchar != '*' || context->nextchar != '/');
