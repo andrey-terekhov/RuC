@@ -114,11 +114,12 @@ void end_line(preprocess_context *context, macro_long_string *s)
 	{
 		context->control_aflag++;
 	}
-#if MACRODEBAG
 	if (context->FILE_flag)
 	{
-		printf("Line %i) ", context->line);
 		context->line++;
+#if MACRODEBAG
+		printf("Line %i) ", context->line);
+		
 
 		for (int j = context->temp_output; j < s->p; j++)
 		{
@@ -127,10 +128,11 @@ void end_line(preprocess_context *context, macro_long_string *s)
 				printf_character(s->str[j]);
 			}
 		}
+#endif
 		context->temp_output = s->p;
 		// printf("\n");
 	}
-#endif
+
 }
 
 void m_onemore(preprocess_context *context)
