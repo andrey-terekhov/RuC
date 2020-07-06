@@ -117,7 +117,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 	if (context->FILE_flag)
 	{
 		context->line++;
-#if MACRODEBAG
+//#if MACRODEBAG
 		//printf("Line %i) ", context->line);
 		
 
@@ -128,7 +128,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 				printf_character(s->str[j]);
 			}
 		}*/
-#endif
+//#endif
 		context->temp_output = s->p;
 		// printf("\n");
 	}

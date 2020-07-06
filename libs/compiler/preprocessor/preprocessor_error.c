@@ -58,11 +58,11 @@ void m_error(int ernum, preprocess_context *context)
 	int p = context->before_temp->p;
 
 	int j = 2;
-#if MACRODEBAG
+//#if MACRODEBAG
 	//printf("\n Ошибка №%i при препроцесировании в файле: \"%s\"\n \n", ernum, name);
-#else
-	printf("\n Ошибка при препроцесировании в файле: \"%s\"\n \n", name);
-#endif
+//#else
+//	printf("\n Ошибка при препроцесировании в файле: \"%s\"\n \n", name);
+//#endif
 	printf("\n Ошибка при препроцесировании в файле: \"%s\"\n \n", name);
 	printf("line 1) ");
 
