@@ -454,7 +454,7 @@ void preprocess_c_file(preprocess_context *context)
 
 char *preprocess_file(int argc, const char *argv[], data_files *sources, data_files *headers)
 {
-#if MACRODEBAG  == 1
+#if MACRODEBAG
 	printf("\nИсходный текст:\n \n");
 #endif
 	preprocess_context context;
@@ -479,8 +479,9 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 	free(context.include_ways);
 
 	char *macro_processed = context.output_options.ptr;
+	printf("\n");
 
-#if MACRODEBAG  == 1
+#if MACRODEBAG
 	printf("\n>\n%s<\n", macro_processed);
 #endif
 	return macro_processed;
