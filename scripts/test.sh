@@ -97,7 +97,7 @@ message_success()
 	if [[ -z $debug ]] ; then
 		if [[ -z $silence ]] ; then
 			echo -e "\x1B[1;32m $action success \x1B[1;39m: $path"
-			sleep $output_time
+			# sleep $output_time
 		fi
 	fi
 }
@@ -106,7 +106,7 @@ message_timeout()
 {
 	if [[ -z $silence ]] ; then
 		echo -e "\x1B[1;34m $action timeout \x1B[1;39m: $path"
-		sleep $output_time
+		# sleep $output_time
 	fi
 }
 
@@ -114,7 +114,7 @@ message_failure()
 {
 	if [[ -z $silence ]] ; then
 		echo -e "\x1B[1;31m $action failure \x1B[1;39m: $path"
-		sleep $output_time
+		# sleep $output_time
 	fi
 }
 

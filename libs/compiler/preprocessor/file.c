@@ -128,6 +128,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 				printf_character(s->str[j]);
 			}
 		}
+		printf("\n");
 #endif
 		context->temp_output = s->p;
 		// printf("\n");
@@ -207,7 +208,6 @@ void m_coment_skip(preprocess_context *context)
 			if (context->curchar == EOF)
 			{
 				end_line(context, context->before_temp);
-				printf("\n");
 				m_error(comm_not_ended, context);
 			}
 		} while (context->curchar != '*' || context->nextchar != '/');
