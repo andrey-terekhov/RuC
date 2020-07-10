@@ -274,9 +274,7 @@ void swap(data_file *f1, data_file *f2)
 void add_c_file_siple(preprocess_context *context)
 {
 	include_source_set(context->sources, context->before_temp_p, context->before_temp->p);
-
-	context->before_temp->str = context->sources->files[context->sources->cur].before_source.str;
-	context->before_temp->p = context->sources->files[context->sources->cur].before_source.p;
+	context->before_temp = &context->sources->files[context->sources->cur].before_source;
 	context->temp_output = 0;
 
 	while (context->curchar != EOF && context->main_file == -1)
@@ -303,7 +301,6 @@ void add_c_file(preprocess_context *context)
 {
 	get_next_char(context);
 	m_nextch(context);
-
 
 	while (context->curchar != EOF)
 	{
@@ -404,7 +401,6 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 
 			include_fclose(context);
 			set_old_cur(context->sources, old_cur, context);
-			context->before_temp->str = NULL;
 		}
 	}
 }
@@ -467,13 +463,11 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 
 
 	open_files(&context, argc, argv);
-	//printf("-4-befor = %i\n", (&context->headers.files[0])->before_source->str[0]);
+
 
 	preprocess_h_file(&context);
-	//printf("-3-befor = %i\n", (&context->headers.files[0])->before_source->str[0]);
 
 	preprocess_c_file(&context);
-	//("-2-befor = %i\n", (&context->headers.files[0])->before_source->str[0]);
 
 	context.before_temp = NULL;
 	free(context.include_ways);

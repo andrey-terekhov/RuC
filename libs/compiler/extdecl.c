@@ -2509,7 +2509,12 @@ void statement(compiler_context *context)
 	}
 	if (flagsemicol && scaner(context) != SEMICOLON)
 	{
-		error(context, no_semicolon_after_stmt);
+		printf("нет ; после оператора\n");
+		
+		//context->next = context->cur;
+		//context->cur = SEMICOLON;
+		//scaner(context)
+		//error(context, no_semicolon_after_stmt);
 	}
 	context->wasdefault = oldwasdefault;
 	context->inswitch = oldinswitch;
@@ -2747,7 +2752,10 @@ void block(compiler_context *context, int b)
 			}
 			else
 			{
-				error(context, def_must_end_with_semicomma);
+				printf("список описаний должен заканчиваться ;\n");				
+				context->cur = SEMICOLON;
+				repeat = 0;
+				// error(context, def_must_end_with_semicomma);
 			}
 		} while (repeat);
 	}

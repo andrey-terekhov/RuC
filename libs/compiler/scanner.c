@@ -37,10 +37,10 @@ void onemore(compiler_context *context)
 {
 	context->curchar = context->nextchar;
 	context->nextchar = getnext(context);
-	// if (context->kw)
-	// printf("context->curchar =%c %i context->nextchar=%c %i\n",
-	// context->curchar, context->curchar, context->nextchar,
-	// context->nextchar);
+	 if (0)//context->kw)
+	 printf("context->curchar =%c %i context->nextchar=%c %i\n",
+	 context->curchar, context->curchar, context->nextchar,
+	 context->nextchar);
 }
 
 void endofline(compiler_context *context)

@@ -51,7 +51,7 @@ void show_macro(compiler_context *context, int k, int nwe_line, int *s)
 	int i = k;
 	int j = 0;
 
-	printf("line %i) ", nwe_line);
+	printer_printf(&context->err_options, "line %i) ", nwe_line+1);
 	while (s[i] != '\n' && s[i] != EOF)
 	{
 		printer_printchar(&context->err_options, s[i]);
@@ -96,13 +96,13 @@ void error(compiler_context *context, int ernum)
 	}
 	else
 	{
-		f = &((context->cfs).files[(context->hfs).cur]);
+		f = &((context->hfs).files[(context->hfs).cur]);
 	}
 
 	const char *name = f->name;
 	int *s = (f->before_source).str;
 
-	printer_printf(&context->err_options, "\n Oшибка в файле: \"%s\"\n \n", name);
+	printer_printf(&context->err_options, "\n Oшибка в файле: \"%s\" № %i\n \n", name, ernum);
 	context->line--;
 	if (context->charnum == 0)
 	{
@@ -123,11 +123,9 @@ void error(compiler_context *context, int ernum)
 		i++;
 	}
 	nwe_line += 1;
-
 	i = 0;
 	k = 0;
-
-	if (f->include_source.str[0] != '\0')
+	if (f->include_source.str[0] != 0)
 	{
 		k++;
 

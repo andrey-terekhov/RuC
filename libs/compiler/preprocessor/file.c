@@ -128,7 +128,6 @@ void end_line(preprocess_context *context, macro_long_string *s)
 				printf_character(s->str[j]);
 			}
 		}
-		printf("\n");
 #endif
 		context->temp_output = s->p;
 		// printf("\n");

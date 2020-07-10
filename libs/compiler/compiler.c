@@ -68,6 +68,11 @@ char *preprocess_ruc_file(compiler_context *context, compiler_workspace *workspa
 	char *result = preprocess_file(argc, argv, sources, headers);
 	free(argv);
 	
+	if(context->hfs.p == 0)
+	{
+		context->c_flag++;
+	}
+	
 	return result;
 }
 
