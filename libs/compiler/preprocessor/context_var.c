@@ -54,6 +54,8 @@ void preprocess_context_init(preprocess_context *context, data_files *sources, d
 	context->sources = sources;
 	context->headers = headers;
 
+	context->before_temp = NULL;
+
 	for (int i = 0; i < HASH; i++)
 	{
 		context->hashtab[i] = 0;
