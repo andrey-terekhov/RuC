@@ -42,7 +42,6 @@ void printf_character(int wchar)
 
 void m_error(int ernum, preprocess_context *context)
 {
-
 	if (context->before_temp != NULL)
 	{
 		int i = 0;
