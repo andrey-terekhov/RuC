@@ -121,13 +121,13 @@ void end_line(preprocess_context *context, macro_long_string *s)
 		printf("Line %i) ", context->line);
 		
 
-		for (int j = context->temp_output; j < s->p; j++)
+		/*for (int j = context->temp_output; j < s->p; j++)
 		{
 			if (s->str[j] != EOF)
 			{
-				printf_character(s->str[j]);
-			}
-		}
+			//	printf_character(s->str[j]);
+			}/
+		}*/
 #endif
 		context->temp_output = s->p;
 		// printf("\n");
