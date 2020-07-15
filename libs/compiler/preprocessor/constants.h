@@ -16,7 +16,7 @@
 
 #pragma once
 
-#define MACRODEBAG1 1
+#define MACRODEBAG1 0
 
 #define MAXTAB		100000
 #define LONGSTR		10000
