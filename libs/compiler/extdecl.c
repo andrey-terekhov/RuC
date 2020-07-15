@@ -2548,22 +2548,14 @@ void statement(compiler_context *context)
 				exprassnvoid(context);
 		}
 	}
-	if (scaner(context) != SEMICOLON)
+	if (flagsemicol && scaner(context) != SEMICOLON)
 	{
-		if(flagsemicol)
-		{
 			printf("нет ; после оператора\n"); 
 			//error(context, no_semicolon_after_stmt);
 			context->buf_cur = context->next;
 			context->next = context->cur;
 			context->cur = SEMICOLON;
 			context->buf_flag++;
-			
-		}
-		else
-		{
-			error(context, no_semicolon_after_stmt);
-		}
 	}
 	context->wasdefault = oldwasdefault;
 	context->inswitch = oldinswitch;
