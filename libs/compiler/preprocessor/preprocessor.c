@@ -475,7 +475,7 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 	char *macro_processed = context.output_options.ptr;
 
 #if MACRODEBAG
-	printf("\n>\n%s<\n", macro_processed);
+	//printf("\n>\n%s<\n", macro_processed);
 #endif
 	return macro_processed;
 }
