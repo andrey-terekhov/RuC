@@ -453,7 +453,7 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 #if MACRODEBAG1
 	printf("\nИсходный текст:\n \n");
 #endif
-printf("\n");
+	fflush(stdout);
 	preprocess_context context;
 	preprocess_context_init(&context, sources, headers);
 	printer_attach_buffer(&context.output_options, 1024);
