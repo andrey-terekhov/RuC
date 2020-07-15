@@ -33,9 +33,6 @@ before_install:
     - eval "${MATRIX_EVAL}"
 
 script:
-<<<<<<< HEAD
-  - sudo apt-get install gdb
-=======
   - eval "${MATRIX_EVAL}"
   - export CC=gcc-7
   - export CXX=g++-7
@@ -43,7 +40,6 @@ script:
   - g++ --version
   - cmake --version
 #  - sudo apt-get install gdb
->>>>>>> 4f047ae1e4da9fb9ac03c4dc24e9e6299e3b535a
   - mkdir -p build && cd build && cmake ..
   - cmake --build . --config Debug
   - ./ruc ../tests/executable/floatsign.c
