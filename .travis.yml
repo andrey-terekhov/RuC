@@ -19,6 +19,8 @@ matrix:
       dist: xenial
 
 script:
+  - sudo apt-get install gdb
   - mkdir -p build && cd build && cmake ..
-  - cmake --build . --config Release
+  - cmake --build . --config Debug
   - ./ruc ../tests/executable/floatsign.c
+#  - gdb -ex run --args ./ruc ../tests/executable/floatsign.c

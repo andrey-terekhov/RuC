@@ -124,7 +124,7 @@ int open_p_faile(preprocess_context *context, const char *file_way)
 	context->current_file = fopen(file_way, "r");
 	if (context->current_file == NULL)
 	{
-		//printf("не найден файл %s\n", file_way);
+		printf("не найден файл %s\n", file_way);
 		m_error(1, context);
 	}
 	data_files_pinter(context->sources, file_way, NULL);
