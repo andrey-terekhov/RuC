@@ -19,4 +19,6 @@ matrix:
       dist: xenial
 
 script:
-  - ./scripts/test.sh -v v1.1 -d
+  - mkdir -p build && cd build && cmake ..
+  - cmake --build . --config Release
+  - ./ruc ../tests/executable/floatsign.c
