@@ -77,7 +77,7 @@
 #define after_functionid_must_be_comma		373
 #define stalpe								374
 #define not_relis_if						375
-#define before_endif							376
+#define before_endif						376
 #define repeat_ident						377
 #define not_enough_param2					378
 #define not_end_fail_define					379
@@ -91,3 +91,4 @@
 #define must_be_digit_after_exp1			387
 #define not_arithmetic_operations			389
 #define not_logical_operations				390
+#define comm_not_ended						391

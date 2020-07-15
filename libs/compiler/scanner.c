@@ -463,9 +463,13 @@ int scan(compiler_context *context)
 			next_string_elem(context);
 			if (context->curchar != '\'')
 			{
-				error(context, no_right_apost);
+				//error(context, no_right_apost);
+				printf("символьная константа не заканчивается символом '\n");
 			}
-			nextch(context);
+			else
+			{
+				nextch(context);
+			}
 			context->instring = 0;
 			context->ansttype = LCHAR;
 			return NUMBER;
@@ -726,7 +730,16 @@ int scan(compiler_context *context)
 int scaner(compiler_context *context)
 {
 	context->cur = context->next;
-	context->next = scan(context);
+	if(!context->buf_flag)
+	{
+		context->next = scan(context);
+	}
+	else
+	{
+		context->next = context->buf_cur;
+		context->buf_flag--;
+	}
+	
 	// if(context->kw)
 	//		printf("scaner context->cur %i context->next %i repr %i\n",
 	//		context->cur, context->next, repr);

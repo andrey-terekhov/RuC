@@ -148,6 +148,9 @@ typedef struct compiler_context
 	int bad_printf_placeholder;
 	int onlystrings;
 
+	int buf_flag;
+	int buf_cur;
+
 	int c_flag;
 	data_files cfs;
 	data_files hfs;
