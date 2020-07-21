@@ -60,11 +60,11 @@ void m_error(int ernum, preprocess_context *context)
 		int p = context->before_temp->p;
 
 		int j = 2;
-	//#if MACRODEBAG1
-	//	printf("\n Ошибка №%i при препроцесировании в файле: \"%s\"\n \n", ernum, name);
-	//#else
-	//	printf("\n Ошибка при препроцесировании в файле: \"%s\"\n \n", name);
-	//#endif
+	#if MACRODEBUG1
+		printf("\n Ошибка №%i при препроцесировании в файле: \"%s\"\n \n", ernum, name);
+	#else
+		printf("\n Ошибка при препроцесировании в файле: \"%s\"\n \n", name);
+	#endif
 		printf("line 1) ");
 
 		if ((&f)->include_source.str[0] != '\0')
