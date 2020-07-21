@@ -18,6 +18,7 @@
 #include "codes.h"
 #include "global.h"
 #include "macro_global_struct.h"
+#include "scanner.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -86,7 +87,15 @@ void show_macro(compiler_context *context, int k, int nwe_line, int *s)
 
 void error(compiler_context *context, int ernum)
 {
-	int i = 0;
+	context->error_flag = 1;
+	context->tc = context->temp_tc;
+	while(context->curchar != '\n' && context->curchar != EOF)
+	{
+		nextch(context); 
+	}
+	scaner(context);
+	scaner(context);
+	/*int i = 0;
 	int k = 0;
 
 	data_file *f;
@@ -166,7 +175,7 @@ void error(compiler_context *context, int ernum)
 	show_macro(context, i, nwe_line, s);
 
 	printer_printf(&context->err_options, "\n");
-	printer_printf(&context->err_options, "тип ошибки: ");
+	printer_printf(&context->err_options, "тип ошибки: ");*/
 
 	switch (ernum)
 	{
@@ -646,5 +655,5 @@ void error(compiler_context *context, int ernum)
 		default:
 			printer_printf(&context->err_options, "этот код ошибки я прозевал\n");
 	}
-	exit(2);
+	//exit(2);
 }

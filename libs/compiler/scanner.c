@@ -95,8 +95,9 @@ void nextch(compiler_context *context)
 		return;
 	}
 
-	if (context->curchar == '\n')
+	if (context->kw && context->curchar == '\n')
 	{
+		context->temp_tc = context->tc;
 		endnl(context);
 	}
 	return;
@@ -464,6 +465,7 @@ int scan(compiler_context *context)
 			if (context->curchar != '\'')
 			{
 				//error(context, no_right_apost);
+				context->error_flag = 1;
 				printf("символьная константа не заканчивается символом '\n");
 			}
 			else

@@ -56,6 +56,7 @@ void compiler_context_init(compiler_context *context)
 	context->leftansttype = -1;
 	context->c_flag = -1;
 	context->buf_flag = 0;
+	context->error_flag = 0;
 }
 
 void compiler_context_deinit(compiler_context *context)

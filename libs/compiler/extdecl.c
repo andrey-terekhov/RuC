@@ -208,6 +208,7 @@ void mustbe(compiler_context *context, int what, int e)
 	if(context->next != what)
 	{
 		printf("Ошибка номер %i\n", e);
+		context->error_flag = 1;
 		//error(context, e);
 		context->cur = what;
 	}
@@ -698,6 +699,7 @@ void primaryexpr(compiler_context *context)
 		{
 			//error(context, no_leftbr_in_stand_func);
 			printf("в вызове  стандартной функции нет (\n");
+			context->error_flag = 1;
 			context->buf_cur = context->next;
 			context->next = context->cur;
 			context->cur = LEFTBR;
@@ -1934,6 +1936,7 @@ void array_init(compiler_context *context, int decl_type)
 			{
 				//error(context, arr_init_must_start_from_BEGIN);
 				printf("инициализация массива должна начинаться со {\n");
+				context->error_flag = 1;
 				context->buf_cur = context->next;
 				context->next = context->cur;
 				context->cur = BEGIN;
@@ -2185,6 +2188,10 @@ void statement(compiler_context *context)
 					if (context->lastid == 1)
 					{
 						error(context, ident_is_not_declared);
+						context->wasdefault = oldwasdefault;
+						context->inswitch = oldinswitch;
+						context->inloop = oldinloop;
+						return;
 					}
 					totree(context, TPrintid);
 					totree(context, context->lastid);
@@ -2248,6 +2255,7 @@ void statement(compiler_context *context)
 				{
 					//error(context, no_rightbr_in_printf);
 					printf("Не хватает закрывающей скобки в printf/печатьф\n");
+					context->error_flag = 1;
 					context->buf_cur = context->next;
 					context->next = context->cur;
 					context->cur = RIGHTBR;
@@ -2364,6 +2372,7 @@ void statement(compiler_context *context)
 				{
 					printf("ждем ПОКА в операторе ЦИКЛ\n");
 					//error(context, wait_while_in_do_stmt);
+					context->error_flag = 1;
 					context->cur = LWHILE;
 					exprinbrkts(context, cond_must_be_in_brkts);
 					context->sopnd--;
@@ -2552,6 +2561,7 @@ void statement(compiler_context *context)
 	{
 			printf("нет ; после оператора\n"); 
 			//error(context, no_semicolon_after_stmt);
+			context->error_flag = 1;
 			context->buf_cur = context->next;
 			context->next = context->cur;
 			context->cur = SEMICOLON;
@@ -2650,6 +2660,7 @@ int struct_decl_list(compiler_context *context)
 		{
 			//error(context, no_semicomma_in_struct);
 			printf("описание поля структуры должно заканчиваться ;\n");
+			context->error_flag = 1;
 			context->buf_cur = context->next;
 			context->next = context->cur;
 			context->cur = BEGIN;
@@ -2798,7 +2809,8 @@ void block(compiler_context *context, int b)
 			}
 			else
 			{
-				printf("список описаний должен заканчиваться ;\n");				
+				printf("список описаний должен заканчиваться ;\n");
+				context->error_flag = 1;				
 				context->cur = SEMICOLON;
 				repeat = 0;
 				//error(context, def_must_end_with_semicomma);
@@ -3078,6 +3090,7 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 		{
 			printf("неправильный список параметров\n");
 			//error(context, wrong_param_list);
+			context->error_flag = 1;
 			context->buf_cur = context->next;
 			context->next = context->cur;
 			context->cur = RIGHTBR;
@@ -3102,6 +3115,7 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 void ext_decl(compiler_context *context)
 {
 	int i;
+	context->temp_tc = context->tc;
 	do // top level описания переменных и функций до конца файла
 	{
 		int repeat = 1;
@@ -3207,6 +3221,7 @@ void ext_decl(compiler_context *context)
 			else
 			{
 				//error(context, def_must_end_with_semicomma);
+				context->error_flag = 1;
 				context->cur = SEMICOLON;
 				repeat = 0;
 
