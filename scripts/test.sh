@@ -181,7 +181,6 @@ compiling()
 				let failure++
 
 				if ! [[ -z $debug ]] ; then
-					echo "$ruc_compiler $sources"
 					$ruc_compiler $sources
 				fi
 			fi

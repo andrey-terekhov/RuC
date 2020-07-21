@@ -117,7 +117,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 	if (context->FILE_flag)
 	{
 		context->line++;
-#if MACRODEBUG1
+#if MACRODEBUG
 		printf("Line %i) ", context->line);
 		
 

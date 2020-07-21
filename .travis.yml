@@ -17,30 +17,6 @@ matrix:
     - name: "Ubuntu 16.04"
       os: linux
       dist: xenial
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - travis-ci/sqlite3
-          packages:
-            - gcc-7
-            - g++-7
-            - sqlite3
-      env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
-
-before_install:
-    - eval "${MATRIX_EVAL}"
 
 script:
-  - eval "${MATRIX_EVAL}"
-  - export CC=gcc-7
-  - export CXX=g++-7
-  - gcc --version
-  - g++ --version
-  - cmake --version
-#  - sudo apt-get install gdb
-  - mkdir -p build && cd build && cmake ..
-  - cmake --build . --config Debug
-  - ./ruc ../tests/executable/floatsign.c
-#  - gdb -ex run --args ./ruc ../tests/executable/floatsign.c
+  - ./scripts/test.sh -v v1.1
