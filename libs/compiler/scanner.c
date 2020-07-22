@@ -233,8 +233,13 @@ void marcer_update(compiler_context *context)
 int scan(compiler_context *context)
 {
 	int cr;
+	context->new_line_flag = 0;
 	while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
 	{
+		if(context->curchar == '\n')
+		{
+			context->new_line_flag = 1;
+		}
 		nextch(context);
 	}
 	// printf("scan context->curchar = %c %i\n", context->curchar, context->curchar);

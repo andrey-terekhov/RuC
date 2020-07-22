@@ -152,6 +152,7 @@ typedef struct compiler_context
 	int buf_cur;
 	int temp_tc;
 	int error_flag;
+	int new_line_flag;
 
 	int c_flag;
 	data_files cfs;
