@@ -2,5 +2,5 @@
 
 void main()
 {
- s;//0
+ assert(s == 0, "fail1");
 }

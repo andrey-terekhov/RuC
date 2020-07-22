@@ -40,31 +40,67 @@ void printf_character(int wchar)
 	}
 }
 
-void a_erorr(int i)
+void m_error(int ernum, preprocess_context *context)
 {
-	printf("не реализованная ошибка № %d\n", i);
-
-	exit(2);
-}
-
-void m_error(int ernum, compiler_context *c_context)
-{
-	int i;
-
-	// tablesandtree();
-	printf("line %i) ", c_context->mline);
-	for (i = c_context->mlines[c_context->mline]; i < c_context->m_charnum; i++)
+	if (context->before_temp != NULL)
 	{
-		printf_character(c_context->before_source[i]);
+		int i = 0;
+		data_file f;
+		if (context->h_flag)
+		{
+			f = context->headers->files[context->headers->cur];
+		}
+		else
+		{
+			f = context->sources->files[context->sources->cur];
+		}
+
+		const char *name = f.name;
+		int *s = context->before_temp->str;
+		int p = context->before_temp->p;
+
+		int j = 2;
+	#if MACRODEBUG
+		printf("\n Ошибка №%i при препроцесировании в файле: \"%s\"\n \n", ernum, name);
+	#else
+		printf("\n Ошибка при препроцесировании в файле: \"%s\"\n \n", name);
+	#endif
+		printf("line 1) ");
+
+		if ((&f)->include_source.str[0] != '\0')
+		{
+			int *s2 = (&f)->include_source.str;
+			while (s2[i] != '\0')
+			{
+				printf_character(s[i]);
+				if (s2[i] == '\n')
+				{
+					printf("line %i) ", j);
+					j++;
+				}
+				i++;
+			}
+		}
+
+		for (i = 0; i < p; i++)
+		{
+			printf_character(s[i]);
+			if (s[i] == '\n')
+			{
+				printf("line %i) ", j);
+				j++;
+			}
+		}
 	}
 
-	printf("\n");
+	printf("\n тип ошибки: ");
+
 	switch (ernum)
 	{
 		case after_preproces_words_must_be_space:
 			printf("После комады препроцессора должен идти перенос строки\n");
 			break;
-		case after_ident_must_be_space:
+		case after_ident_must_be_space1:
 			printf("После индентификатора должен идти ' ' \n");
 			break;
 		case ident_begins_with_letters1:
@@ -97,7 +133,7 @@ void m_error(int ernum, compiler_context *c_context)
 		case not_relis_if:
 			printf("if ещё не реализован");
 			break;
-		case befor_endif:
+		case before_endif:
 			printf("Перед '#ENDIF' должен стоять условный оператор препроцессора\n");
 			break;
 		case repeat_ident:
@@ -133,7 +169,8 @@ void m_error(int ernum, compiler_context *c_context)
 		case not_logical_operations:
 			printf("Внутри команды '#EVAL()' не должно быть логических операций\n");
 			break;
-		default:;
+		default:
+			printf("не реализованная ошибка № %d\n", ernum);
 	}
 
 	exit(2);

@@ -6,12 +6,14 @@
 
 void main()
 {
-int a = s(E, 6, 10);
-int b = k(1, k(3, 4));
-int c = l(11, 12);
-printid(a);
-printid(b);
-printid(c);
-c = s(a, b, c);
-printid(c); 
+	int a = s(E, 6, 10);
+	int b = k(1, k(3, 4));
+	int c = l(11, 12);
+
+	assert(a == 5, "fail1");
+	assert(b == 8, "fail2");
+	assert(c == 34, "fail3");
+
+	c = s(a, b, c);
+	assert(c == -21, "fail4"); 
 } 

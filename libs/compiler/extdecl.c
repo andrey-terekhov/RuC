@@ -200,9 +200,22 @@ int is_int(compiler_context *context, int t)
 
 void mustbe(compiler_context *context, int what, int e)
 {
-	if (scaner(context) != what)
+	/*if (scaner(context) != what)
 	{
 		error(context, e);
+	}*/
+
+	if(context->next != what)
+	{
+		printf("Ошибка номер %i\n", e);
+		context->cur = what;
+
+		//error(context, e);
+		exit(2);
+	}
+	else
+	{
+		scaner(context);
 	}
 }
 
@@ -685,7 +698,14 @@ void primaryexpr(compiler_context *context)
 
 		if (scaner(context) != LEFTBR)
 		{
-			error(context, no_leftbr_in_stand_func);
+			printf("в вызове  стандартной функции нет (\n");
+			context->buf_cur = context->next;
+			context->next = context->cur;
+			context->cur = LEFTBR;
+			context->buf_flag++;
+
+			//error(context, no_leftbr_in_stand_func);
+			exit(2);
 		}
 		if (func == ASSERT)
 		{
@@ -1664,6 +1684,11 @@ void struct_init(compiler_context *context, int decl_type)
 	if (context->cur != BEGIN)
 	{
 		error(context, struct_init_must_start_from_BEGIN);
+		printf("инициализация структуры должна начинаться со {\n");
+		context->buf_cur = context->next;
+		context->next = context->cur;
+		context->cur = BEGIN;
+		context->buf_flag++;
 	}
 	totree(context, TStructinit);
 	totree(context, nf);
@@ -1681,6 +1706,10 @@ void struct_init(compiler_context *context, int decl_type)
 			else
 			{
 				error(context, no_comma_in_init_list);
+				printf("между элементами инициализации массива или структуры "
+												  "должна быть ,\n");
+				context->next = context->cur;
+				context->cur = COMMA;
 			}
 		}
 	}
@@ -1688,12 +1717,14 @@ void struct_init(compiler_context *context, int decl_type)
 	if (context->next == END)
 	{
 		totree(context, TExprend);
+		scaner(context);
 	}
 	else
 	{
 		error(context, wait_end);
+		printf("в инициализации структуры здесь ожидалась правая фигурная скобка }\n");
+		context->cur = END;
 	}
-	scaner(context);
 	context->leftansttype = decl_type;
 }
 
@@ -1901,8 +1932,19 @@ void array_init(compiler_context *context, int decl_type)
 			primaryexpr(context);
 			totree(context, TExprend);
 		}
-		else if (context->cur == BEGIN)
+		else 
 		{
+			if (context->cur != BEGIN)
+			{
+				printf("инициализация массива должна начинаться со {\n");
+				context->buf_cur = context->next;
+				context->next = context->cur;
+				context->cur = BEGIN;
+				context->buf_flag++;
+
+				//error(context, arr_init_must_start_from_BEGIN);
+				exit(2);
+			}
 			totree(context, TBeginit);
 			ad = context->tc++;
 			do
@@ -1921,10 +1963,6 @@ void array_init(compiler_context *context, int decl_type)
 			{
 				error(context, wait_end);
 			}
-		}
-		else
-		{
-			error(context, arr_init_must_start_from_BEGIN);
 		}
 	}
 	else if (context->cur == BEGIN)
@@ -2214,7 +2252,14 @@ void statement(compiler_context *context)
 
 				if (context->cur != RIGHTBR)
 				{
-					error(context, no_rightbr_in_printf);
+					printf("Не хватает закрывающей скобки в printf/печатьф\n");
+					context->buf_cur = context->next;
+					context->next = context->cur;
+					context->cur = RIGHTBR;
+					context->buf_flag++;
+
+					//error(context, no_rightbr_in_printf);
+					exit(2);
 				}
 
 				if (i != paramnum)
@@ -2325,7 +2370,14 @@ void statement(compiler_context *context)
 				}
 				else
 				{
-					error(context, wait_while_in_do_stmt);
+					printf("ждем ПОКА в операторе ЦИКЛ\n");
+					context->cur = LWHILE;
+
+					//error(context, wait_while_in_do_stmt);
+					exit(2);
+					
+					exprinbrkts(context, cond_must_be_in_brkts);
+					context->sopnd--;
 				}
 			}
 			break;
@@ -2509,7 +2561,14 @@ void statement(compiler_context *context)
 	}
 	if (flagsemicol && scaner(context) != SEMICOLON)
 	{
-		error(context, no_semicolon_after_stmt);
+			printf("нет ; после оператора\n"); 
+			context->buf_cur = context->next;
+			context->next = context->cur;
+			context->cur = SEMICOLON;
+			context->buf_flag++;
+
+			//error(context, no_semicolon_after_stmt);
+			exit(2);
 	}
 	context->wasdefault = oldwasdefault;
 	context->inswitch = oldinswitch;
@@ -2602,7 +2661,15 @@ int struct_decl_list(compiler_context *context)
 		curdispl += szof(context, t);
 		if (scaner(context) != SEMICOLON)
 		{
-			error(context, no_semicomma_in_struct);
+			
+			printf("описание поля структуры должно заканчиваться ;\n");
+			context->buf_cur = context->next;
+			context->next = context->cur;
+			context->cur = BEGIN;
+			context->buf_flag++;
+
+			//error(context, no_semicomma_in_struct);
+			exit(2);
 		}
 	} while (scaner(context) != END);
 
@@ -2747,7 +2814,13 @@ void block(compiler_context *context, int b)
 			}
 			else
 			{
-				error(context, def_must_end_with_semicomma);
+				printf("список описаний должен заканчиваться ;\n");				
+				context->cur = SEMICOLON;
+				repeat = 0;
+
+				
+				//error(context, def_must_end_with_semicomma);
+				exit(2);
 			}
 		} while (repeat);
 	}
@@ -3022,7 +3095,17 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 		}
 		else
 		{
-			error(context, wrong_param_list);
+			printf("неправильный список параметров\n");
+
+			context->buf_cur = context->next;
+			context->next = context->cur;
+			context->cur = RIGHTBR;
+			context->buf_flag++;
+			repeat = 0;
+			func_d = 0;
+
+			//error(context, wrong_param_list);
+			exit(2);
 		}
 	}
 	context->func_def = func_d;
@@ -3048,18 +3131,7 @@ void ext_decl(compiler_context *context)
 		int first = 1;
 		context->wasstructdef = 0;
 		scaner(context);
-		/*
-			if (context->cur == SH_DEFINE)
-			{
-				mustbe(context, IDENT, no_ident_in_define);
-				if (scaner(context) == LMINUS)
-					scaner(context), k = -1;
-				if (context->cur != NUMBER || context->ansttype != LINT)
-					error(context, not_int_in_define);
-				toidentab(-2, k * num);
-				continue;
-			}
-		*/
+
 		context->firstdecl = gettype(context);
 		if (context->wasstructdef && context->next == SEMICOLON) // struct point {float x, y;};
 		{
@@ -3156,7 +3228,12 @@ void ext_decl(compiler_context *context)
 			}
 			else
 			{
-				error(context, def_must_end_with_semicomma);
+				context->cur = SEMICOLON;
+				repeat = 0;
+
+				
+				//error(context, def_must_end_with_semicomma);
+				exit(2);
 			}
 		} while (repeat);
 
@@ -3176,3 +3253,10 @@ void ext_decl(compiler_context *context)
 	}
 	totree(context, TEnd);
 }
+/*
+				printf(
+				context->buf_cur = context->next;
+				context->next = context->cur;
+				context->cur = BEGIN;
+				context->buf_flag++;
+*/

@@ -16,18 +16,16 @@
 
 #include "context_var.h"
 #include "constants.h"
+#include "macro_global_struct.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-
 // Определение глобальных переменных
-void preprocess_context_init(preprocess_context *context)
+void preprocess_context_init(preprocess_context *context, data_files *sources, data_files *headers)
 {
-	memset(context, 0, sizeof(preprocess_context));
+	printer_init(&context->output_options);
 	context->include_type = 0;
-	context->rp = 1;
-	context->inp_file = 0;
-	context->inp_p = -1;
 	context->rp = 1;
 	context->mp = 1;
 	context->strp = 0;
@@ -39,8 +37,27 @@ void preprocess_context_init(preprocess_context *context)
 	context->ifsp = 0;
 	context->wsp;
 	context->mfirstrp = -1;
+	context->prep_flag = 0;
 	context->mclp = 1;
 	context->nextch_type = 0;
 	context->nextp = 0;
+	context->main_file = -1;
 	context->dipp = 0;
+	context->line = 1;
+	context->temp_output = 0;
+	context->control_aflag = 0;
+	context->control_bflag = 0;
+	context->before_temp_p = -1;
+	context->iwp = 0;
+	context->FILE_flag = 1;
+
+	context->sources = sources;
+	context->headers = headers;
+
+	context->before_temp = NULL;
+
+	for (int i = 0; i < HASH; i++)
+	{
+		context->hashtab[i] = 0;
+	}
 }

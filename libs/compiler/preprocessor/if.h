@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-void if_relis(preprocess_context *context, compiler_context *c_context);
+void if_relis(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

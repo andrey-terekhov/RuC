@@ -14,9 +14,11 @@
  *	limitations under the License.
  */
 
+#include "context.h"
 #include "errors.h"
 #include "global.h"
 #include "uniscanner.h"
+#include "macro_global_struct.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -35,15 +37,15 @@ void onemore(compiler_context *context)
 {
 	context->curchar = context->nextchar;
 	context->nextchar = getnext(context);
-	//	if (kw)
-	//		printf("context->curchar =%c %i context->nextchar=%c %i\n",
-	//		context->curchar, context->curchar, context->nextchar,
-	//		context->nextchar);
+	 if (0)//context->kw)
+	 printf("context->curchar =%c %i context->nextchar=%c %i\n",
+	 context->curchar, context->curchar, context->nextchar,
+	 context->nextchar);
 }
 
 void endofline(compiler_context *context)
 {
-	if (context->prep_flag == 1)
+	/*if (context->prep_flag == 1)
 	{
 		int j;
 		printer_printf(&context->output_options, "line %i) ", context->line - 1);
@@ -55,17 +57,23 @@ void endofline(compiler_context *context)
 			}
 		}
 		fflush(stdout);
-	}
+	}*/
 }
 
 void endnl(compiler_context *context)
 {
-	context->lines[++context->line] = context->charnum;
+	if (context->kw)
+	{
+		++context->line;
+		context->charnum_before = context->charnum;
+		context->charnum = 0;
+	}
+	/*context->lines[++context->line] = context->charnum;
 	context->lines[context->line + 1] = context->charnum;
 	if (context->kw)
 	{
 		endofline(context);
-	}
+	}*/
 }
 
 void nextch(compiler_context *context)
@@ -74,65 +82,19 @@ void nextch(compiler_context *context)
 	if (context->curchar == EOF)
 	{
 		onemore(context);
-		context->lines[++context->line] = context->charnum;
-		context->lines[context->line + 1] = context->charnum;
-		if (context->kw)
-		{
-			endofline(context);
-			printer_printf(&context->output_options, "\n");
-		}
+		endnl(context);
+		// printer_printf(&context->output_options, "\n");
 		return;
 	}
-
-	context->source[context->charnum++] = context->curchar;
+	if (context->kw)
+	{
+		context->last_line[context->charnum++] = context->curchar;
+	}
 	if (context->instring)
 	{
 		return;
 	}
 
-	if (context->curchar == '/' && context->nextchar == '/')
-	{
-		do
-		{
-			onemore(context);
-			context->source[context->charnum++] = context->curchar;
-			if (context->curchar == EOF)
-			{
-				endnl(context);
-				printer_printf(&context->output_options, "\n");
-				return;
-			}
-		} while (context->curchar != '\n');
-
-		endnl(context);
-		return;
-	}
-
-	if (context->curchar == '/' && context->nextchar == '*')
-	{
-		onemore(context);
-		context->source[context->charnum++] = context->curchar; // надо сразу выесть /*, чтобы не попасть на /*/
-		do
-		{
-			onemore(context);
-			context->source[context->charnum++] = context->curchar;
-			if (context->curchar == EOF)
-			{
-				endnl(context);
-				printer_printf(&context->output_options, "\n");
-				error(context, comm_not_ended);
-			}
-			if (context->curchar == '\n')
-			{
-				endnl(context);
-			}
-		} while (context->curchar != '*' || context->nextchar != '/');
-
-		onemore(context);
-		context->source[context->charnum++] = context->curchar;
-		context->curchar = ' ';
-		return;
-	}
 	if (context->curchar == '\n')
 	{
 		endnl(context);
@@ -203,6 +165,70 @@ int equal(compiler_context *context, int i, int j)
 	return 0;
 }
 
+void marcer_update(compiler_context *context)
+{
+	data_files *files;
+
+	nextch(context);
+
+	if (context->curchar == '1')
+	{
+		nextch(context);
+
+		int c = context->curchar - '0';
+		nextch(context);
+
+		while (digit(context))
+		{
+			c = c * 10 + context->curchar - '0';
+			nextch(context);
+		}
+
+
+		if (c == 0)
+		{
+			context->c_flag++;
+		}
+
+		if (context->c_flag == 1)
+		{
+			files = &context->cfs;
+		}
+		else
+		{
+			files = &context->hfs;
+		}
+
+		files->cur = c;
+		if (files->cur != -1)
+		{
+			(files->files[files->cur]).line = context->line;
+		}
+	}
+	else
+	{
+		if (context->c_flag == 1)
+		{
+			files = &context->cfs;
+		}
+		else
+		{
+			files = &context->hfs;
+		}
+		nextch(context);
+		files->cur = (files->files[files->cur]).pred;
+		if (files->cur != -1)
+		{
+			context->line = (files->files[files->cur]).line;
+		}
+		else
+		{
+			context->line = 0;
+		}
+		nextch(context);
+	}
+}
+
 int scan(compiler_context *context)
 {
 	int cr;
@@ -210,7 +236,7 @@ int scan(compiler_context *context)
 	{
 		nextch(context);
 	}
-	// printf("scan context->curchar=%c %i\n", context->curchar, context->curchar);
+	// printf("scan context->curchar = %c %i\n", context->curchar, context->curchar);
 	switch (context->curchar)
 	{
 		case EOF:
@@ -437,9 +463,15 @@ int scan(compiler_context *context)
 			next_string_elem(context);
 			if (context->curchar != '\'')
 			{
-				error(context, no_right_apost);
+				printf("символьная константа не заканчивается символом '\n");
+				
+				//error(context, no_right_apost);
+				exit(2);
 			}
-			nextch(context);
+			else
+			{
+				nextch(context);
+			}
 			context->instring = 0;
 			context->ansttype = LCHAR;
 			return NUMBER;
@@ -636,6 +668,11 @@ int scan(compiler_context *context)
 		}
 
 		default:
+			if (context->curchar == '#' && (context->nextchar == '1' || context->nextchar == '2'))
+			{
+				marcer_update(context);
+				return scan(context);
+			}
 			if (letter(context) || context->curchar == '#')
 			{
 				int oldrepr = REPRTAB_LEN;
@@ -695,8 +732,17 @@ int scan(compiler_context *context)
 int scaner(compiler_context *context)
 {
 	context->cur = context->next;
-	context->next = scan(context);
-	//	if(kw)
+	if(!context->buf_flag)
+	{
+		context->next = scan(context);
+	}
+	else
+	{
+		context->next = context->buf_cur;
+		context->buf_flag--;
+	}
+	
+	// if(context->kw)
 	//		printf("scaner context->cur %i context->next %i repr %i\n",
 	//		context->cur, context->next, repr);
 	return context->cur;

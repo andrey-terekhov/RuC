@@ -21,6 +21,7 @@
 #include "defs.h"
 #include "errors.h"
 #include "frontend_utils.h"
+#include "macro_global_struct.h"
 #include "preprocessor.h"
 #include "tables.h"
 #include <stdio.h>
@@ -48,6 +49,32 @@ void report_cb(asp_report *report)
 			report->explanation);
 }
 #endif
+
+char *preprocess_ruc_file(compiler_context *context, compiler_workspace *workspace)
+{
+	data_files *sources = &context->cfs;
+	data_files *headers = &context->hfs;
+
+	int argc = workspace->number_of_files;
+	const char **argv = malloc(argc * sizeof(char *));
+
+	compiler_workspace_file *current = workspace->files;
+	for (int i = 0; i < argc; i++)
+	{
+		argv[i] = current->path;
+		current = current->next;
+	}
+
+	char *result = preprocess_file(argc, argv, sources, headers);
+	free(argv);
+	
+	if(context->hfs.p == 0)
+	{
+		context->c_flag++;
+	}
+	
+	return result;
+}
 
 static void process_user_requests(compiler_context *context, compiler_workspace *workspace)
 {
@@ -78,16 +105,11 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 			exit(1);
 		}
 
-		// Открытие исходного текста
-		compiler_context_attach_io(context, file->path, IO_TYPE_INPUT, IO_SOURCE_FILE);
-
 		// Препроцессинг в массив
-		compiler_context_attach_io(context, "", IO_TYPE_OUTPUT, IO_SOURCE_MEM);
 
-		printf("\nИсходный текст:\n \n");
 
-		preprocess_file(context, file->path); // макрогенерация
-		macro_processed = strdup(context->output_options.ptr);
+		macro_processed = preprocess_ruc_file(context, workspace); // макрогенерация
+		//printf("0befor = %i\n", (context->hfs.files[0]).before_source->str[0]);
 		if (macro_processed == NULL)
 		{
 			fprintf(stderr, " ошибка выделения памяти для "
@@ -102,6 +124,11 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 		output_tables_and_tree(context, tree_path);
 		output_codes(context, codes_path);
 		compiler_context_detach_io(context, IO_TYPE_INPUT);
+
+
+		//printf("befor = %i\n", (context->cfs.files[2]).before_source.str[0]);
+		data_files_clear(&context->cfs);
+		data_files_clear(&context->hfs);
 
 		/* Will be left for debugging in case of failure */
 #if !defined(FILE_DEBUG) && !defined(_MSC_VER)
@@ -122,7 +149,10 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 compiler_workspace *compiler_workspace_create()
 {
-	return calloc(1, sizeof(compiler_workspace));
+	compiler_workspace *temp = calloc(1, sizeof(compiler_workspace));
+	temp->files = NULL;
+	temp->number_of_files = 0;
+	return temp;
 }
 
 void compiler_workspace_free(compiler_workspace *workspace)
@@ -161,6 +191,7 @@ compiler_workspace_file *compiler_workspace_add_file(compiler_workspace *workspa
 		return NULL;
 	}
 
+	file->next = NULL;
 	file->path = strdup(path);
 
 	/* Find the tail file */
@@ -180,6 +211,7 @@ compiler_workspace_file *compiler_workspace_add_file(compiler_workspace *workspa
 		workspace->files = file;
 	}
 
+	workspace->number_of_files++;
 	return file;
 }
 

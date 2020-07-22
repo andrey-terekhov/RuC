@@ -22,13 +22,25 @@
 
 void tablesandtree(compiler_context *context)
 {
-	int i = 0;
+	int i;
 	int j;
 	int n;
 	double d;
+	/*int k = context->before_source_p;
 
 	printer_printf(&context->output_options, "\n%s\n", "source");
-	for (i = 1; i < context->line; i++)
+
+	while (j < k)
+	{
+		printer_printf(&context->output_options, "line %i) ", i);
+		while (j < k && context->before_source[j] != '\n')
+		{
+			printer_printchar(&context->output_options, context->before_source[j]);
+			j++;
+		}
+		i++;
+	}
+	/*for (i = 1; i < context->line; i++)
 	{
 		printer_printf(&context->output_options, "line %i) ", i);
 		for (j = context->lines[i]; j < context->lines[i + 1]; j++)
@@ -36,7 +48,7 @@ void tablesandtree(compiler_context *context)
 			printer_printchar(&context->output_options, context->source[j]);
 		}
 	}
-	printer_printf(&context->output_options, "\n");
+	printer_printf(&context->output_options, "\n");*/
 
 	printer_printf(&context->output_options, "\n%s\n", "identab");
 
@@ -347,18 +359,29 @@ void tablesandtree(compiler_context *context)
 
 void tablesandcode(compiler_context *context)
 {
-	int i = 0;
-	int j;
-
+	int i = 1;
+	int j = 0;
+	/*int k = context->before_source_p;
 	printer_printf(&context->output_options, "\n%s\n", "source");
-	for (i = 1; i < context->line; i++)
+	while (j < k)
+	{
+		printer_printf(&context->output_options, "line %i) ", i);
+		while (j < k && context->before_source[j] != '\n')
+		{
+			printer_printchar(&context->output_options, context->before_source[j]);
+			j++;
+		}
+		i++;
+	}
+
+	/*for (i = 1; i < context->line; i++)
 	{
 		printer_printf(&context->output_options, "line %i) ", i);
 		for (j = context->lines[i]; j < context->lines[i + 1]; j++)
 		{
 			printer_printchar(&context->output_options, context->source[j]);
 		}
-	}
+	}*/
 
 	printer_printf(&context->output_options, "\n\n%s\n", "functions");
 	for (i = 1; i <= context->funcnum; i++)

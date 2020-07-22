@@ -2,7 +2,7 @@
 
 void main()
 {
- s;//2
+ assert(s == 2, "fail1");
 }
 
 

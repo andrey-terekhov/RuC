@@ -4,7 +4,7 @@
 #endif
 void main()
 {
-  abc;
+  assert(abc == -7, "fail1");
 }
 
 

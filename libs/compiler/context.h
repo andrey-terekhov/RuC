@@ -17,6 +17,7 @@
 #pragma once
 
 #include "defs.h"
+#include "macro_global_struct.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
 #include <stdio.h>
@@ -53,9 +54,8 @@ typedef struct compiler_context
 
 	double numdouble;
 	int line;
-	int mline;
 	int charnum;
-	int m_charnum;
+	int charnum_before;
 	int cur;
 	int next;
 	int next1;
@@ -68,11 +68,7 @@ typedef struct compiler_context
 		int first;
 		int second;
 	} numr;
-	int source[SOURCESIZE];
-	int lines[LINESSIZE];
-	int before_source[SOURCESIZE];
-	int mlines[LINESSIZE];
-	int m_conect_lines[LINESSIZE];
+	int last_line[LINESSIZE * 2];
 	int nextchar;
 	int curchar;
 	int func_def;
@@ -152,7 +148,14 @@ typedef struct compiler_context
 	int bad_printf_placeholder;
 	int onlystrings;
 
+	int buf_flag;
+	int buf_cur;
+
+	int c_flag;
+	data_files cfs;
+	data_files hfs;
 	compiler_table reprtab;
+
 } compiler_context;
 
 

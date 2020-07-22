@@ -510,18 +510,8 @@
 #define wait_right_sq_br					 202
 #define only_functions_may_have_type_VOID	 203
 #define decl_and_def_have_diff_type			 204
-#define decl_must_start_from_ident_or_decl	 205
-#define no_comma_in_param_list				 206
 #define wrong_param_list					 207
-#define no_comma_in_type_list				 208
-#define wrong_type_list						 209
-#define func_def_must_be_first				 210
-#define func_def_must_have_param_list		 211
 #define def_must_end_with_semicomma			 212
-#define func_and_protot_have_dif_num_params	 213
-#define param_types_are_dif					 214
-#define wait_ident_after_comma_in_decl		 215
-#define wait_rightbr_in_call				 216
 #define func_decl_req_params				 217
 #define wait_while_in_do_stmt				 218
 #define no_semicolon_after_stmt				 219
@@ -531,7 +521,6 @@
 #define no_comma_in_init_list				 223
 #define ident_is_not_declared				 224
 #define no_rightsqbr_in_slice				 225
-#define void_in_expr						 226
 #define index_must_be_int					 227
 #define slice_not_from_array				 228
 #define call_not_from_function				 229
@@ -542,8 +531,6 @@
 #define unassignable_inc					 234
 #define wrong_addr							 235
 #define no_colon_in_cond_expr				 236
-#define not_assignable						 237
-#define func_not_in_call					 238
 #define no_colon_in_case					 239
 #define case_after_default					 240
 #define no_ident_after_goto					 241
@@ -559,13 +546,8 @@
 #define no_ident_in_printid					 251
 #define float_in_switch						 252
 #define init_int_by_float					 253
-#define must_be_digit_after_dot				 254
-#define no_leftbr_in_setmotor				 255
-#define no_rightbr_in_setmotor				 256
 #define no_comma_in_setmotor				 257
 #define param_setmotor_not_int				 258
-#define no_leftbr_in_sleep					 259
-#define no_rightbr_in_sleep					 260
 #define no_leftbr_in_stand_func				 261
 #define no_rightbr_in_stand_func			 262
 #define bad_param_in_stand_func				 263
@@ -576,14 +558,12 @@
 #define no_right_apost						 268
 #define decl_after_strmt					 269
 #define too_long_string						 270
-#define no_ident_after_aster				 271
 #define aster_before_func					 272
 #define aster_not_for_pointer				 273
 #define aster_with_row						 274
 #define float_in_condition					 275
 #define wrong_fun_as_param					 276
 #define no_right_br_in_paramfun				 277
-#define no_ident_in_paramfun				 278
 #define par_type_void_with_nofun			 279
 #define ident_in_declarator					 280
 #define array_before_func					 281
@@ -591,7 +571,6 @@
 #define wait_declarator						 283
 #define two_idents_for_1_declarer			 284
 #define function_has_no_body				 285
-#define declarator_in_call					 286
 #define diff_formal_param_type_and_actual	 287
 #define case_or_default_not_in_switch		 288
 #define break_not_in_loop_or_switch			 289
@@ -601,25 +580,16 @@
 #define must_be_digit_after_exp				 293
 #define label_not_declared					 294
 #define repeated_label						 295
-#define wrong_pnt_assn						 296
-#define comm_not_ended						 297
 #define operand_is_pointer					 298
 #define pointer_in_print					 299
 #define wrong_struct						 300
 #define after_dot_must_be_ident				 301
-#define field_not_found						 302
-#define get_field_not_from_struct			 303
 #define get_field_not_from_struct_pointer	 304
-#define get_field_not_from_struct_pointer1	 399
-#define error_in_array_initialization		 305
 #define error_in_initialization				 306
 #define type_missmatch						 307
 #define array_assigment						 308
 #define wrong_struct_ass					 309
-#define not_enough_expr						 310
 #define wrong_init							 311
-#define wrong_array_init					 312
-#define too_many_elems						 313
 #define no_field							 314
 #define slice_from_func						 315
 #define bad_toval							 316
@@ -636,18 +606,9 @@
 #define predef_but_notdef					 327
 #define print_without_br					 328
 #define select_not_from_struct				 329
-#define select_from_func_value				 330
 #define init_not_struct						 331
 #define param_threads_not_int				 332
 
-#define else_after_elif						   333
-#define sh_if_not_found						   334
-#define no_ident_after_define				   335
-#define endif_not_found						   336
-#define macro_params_not_found				   337
-#define wait_ident_after_comma_in_macro_params 338
-#define wait_rightbr_in_macro_params		   339
-#define params_count_not_equals_in_macro	   340
 #define wrong_arg_in_send					   341
 #define wrong_arg_in_create					   342
 
@@ -668,9 +629,6 @@
 #define string_and_notstring	 356
 #define wrong_init_in_actparam	 357
 #define no_comma_or_end			 358
-#define no_ident_in_define		 359
-#define not_int_in_define		 360
-#define getdigsensorerr			 361
 
 #define not_string_in_stanfunc			362
 #define not_int_in_stanfunc				363
@@ -687,7 +645,7 @@
 #define after_functionid_must_be_comma		373
 #define stalpe								374
 #define not_relis_if						375
-#define befor_endif							376
+#define before_endif							376
 #define repeat_ident						377
 #define not_enough_param2					378
 #define not_end_fail_preprocess				379
