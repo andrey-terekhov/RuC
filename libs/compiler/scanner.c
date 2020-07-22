@@ -463,8 +463,10 @@ int scan(compiler_context *context)
 			next_string_elem(context);
 			if (context->curchar != '\'')
 			{
-				//error(context, no_right_apost);
 				printf("символьная константа не заканчивается символом '\n");
+				
+				//error(context, no_right_apost);
+				exit(2);
 			}
 			else
 			{
