@@ -813,6 +813,8 @@ void codegen(compiler_context *context)
 	if (context->wasmain == 0)
 	{
 		error(context, no_main_in_program);
+		context->error_flag2 = 1;
+		return;//1
 	}
 	tocode(context, CALL1);
 	tocode(context, CALL2);

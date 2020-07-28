@@ -32,7 +32,16 @@ int main(int argc, const char *argv[])
 {
 	if (argc < 2)
 	{
-		compiler_compile(name);
+		if (!compiler_compile(name))
+		{
+			printf("Корректное завершение");
+			return 0;
+		}
+		else
+		{
+			printf("Ошибка");
+			return 1;
+		}
 	}
 	else
 	{
@@ -56,10 +65,17 @@ int main(int argc, const char *argv[])
 			compiler_workspace_free(ws);
 			return 1;
 		}
-
-		compiler_workspace_compile(ws);
+		int k = compiler_workspace_compile(ws);
 		compiler_workspace_free(ws);
+		if(!k)
+		{
+			printf("Корректное завершение");
+			return 0;
+		}
+		else
+		{
+			printf("Ошибка");
+			return 1;
+		}
 	}
-
-	return 0;
 }

@@ -302,7 +302,7 @@ compiler_workspace *compiler_get_workspace(int argc, const char *argv[])
 COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 {
 	compiler_context *context = malloc(sizeof(compiler_context));
-
+	int k = 0;
 	if (context == NULL)
 	{
 		fprintf(stderr, " ошибка выделения памяти под контекст\n");
@@ -319,9 +319,13 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 
 	process_user_requests(context, workspace);
 
+	if(context->error_flag2 != 0 || context->error_flag != 0)
+	{
+		k = 1;
+	}
 	compiler_context_deinit(context);
 	free(context);
-	return 0;
+	return k;
 }
 
 COMPILER_EXPORTED int compiler_compile(const char *path)

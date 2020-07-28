@@ -89,16 +89,23 @@ void error(compiler_context *context, int ernum)
 {
 	context->error_flag = 1;
 	context->tc = context->temp_tc;
-	if(!context->new_line_flag)
+	if(!context->new_line_flag && context->curchar != EOF)
 	{
 		while(context->curchar != '\n' && context->curchar != EOF)
 		{
 			nextch(context); 
 		}
-		scaner(context);
+		
+		if(context->curchar != EOF)
+		{
+			scaner(context);
+		}
 	}
 	
-	scaner(context);
+	if(context->curchar != EOF)
+	{
+		scaner(context);
+	}
 	/*int i = 0;
 	int k = 0;
 

@@ -56,8 +56,8 @@ void endofline(compiler_context *context)
 				printer_printchar(&context->output_options, context->source[j]);
 			}
 		}
-		fflush(stdout);
 	}*/
+	//fflush(stdout);
 }
 
 void endnl(compiler_context *context)
@@ -124,6 +124,7 @@ void next_string_elem(compiler_context *context)
 		else if (context->curchar != '\'' && context->curchar != '\\' && context->curchar != '\"')
 		{
 			error(context, bad_escape_sym);
+			context->error_flag2 = 1;
 		}
 		else
 		{
@@ -499,6 +500,7 @@ int scan(compiler_context *context)
 				if (n == MAXSTRINGL)
 				{
 					error(context, too_long_string);
+					context->error_flag2 = 1;
 				}
 				nextch(context);
 				while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
@@ -639,6 +641,7 @@ int scan(compiler_context *context)
 				if (!digit(context))
 				{
 					error(context, must_be_digit_after_exp);
+					context->error_flag2 = 1;
 				}
 				while (digit(context))
 				{
