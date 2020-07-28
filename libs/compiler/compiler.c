@@ -121,11 +121,9 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 		compiler_context_attach_io(context, macro_processed, IO_TYPE_INPUT, IO_SOURCE_MEM);
 		output_tables_and_tree(context, tree_path);
-		output_codes(context, codes_path);
-		if(context->error_flag)
+		if(!context->error_flag && !context->error_flag)
 		{
-			printf("exit\n");
-			exit(2);
+			output_codes(context, codes_path);
 		}
 		compiler_context_detach_io(context, IO_TYPE_INPUT);
 

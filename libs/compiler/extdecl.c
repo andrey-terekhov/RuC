@@ -3778,10 +3778,6 @@ void ext_decl(compiler_context *context)
 
 		do // описываемые объекты через ',' определение функции может быть только одно, никаких ','
 		{
-			if(context->error_flag2)
-			{
-				return;//1
-			}
 			context->type = context->firstdecl;
 			if (context->next == LMULT)
 			{
@@ -3885,7 +3881,11 @@ void ext_decl(compiler_context *context)
 			}
 		} while (repeat);
 
-	ex:;
+		ex:;
+		if(context->error_flag2)
+		{
+			return;//1
+		}
 	} while (context->next != LEOF);
 
 	if (context->wasmain == 0)
