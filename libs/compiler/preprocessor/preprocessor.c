@@ -452,8 +452,6 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 {
 #if MACRODEBUG
 	printf("\nИсходный текст:\n \n");
-#else
-	printf("\n");
 #endif
 
 	preprocess_context context;

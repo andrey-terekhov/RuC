@@ -320,6 +320,8 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 	int ret = get_exit_code(context);
 	compiler_context_deinit(context);
 	free(context);
+
+	printf(" "); // Not working without using printf
 	return ret;
 }
 

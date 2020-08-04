@@ -46,13 +46,13 @@ void warning(compiler_context *context, int ernum)
 	}
 }
 
-void show_macro(compiler_context *context, int k, int nwe_line, int *s)
+void show_macro(compiler_context *context, int k, int new_line, int *s)
 {
 	int flag = 1;
 	int i = k;
 	int j = 0;
 
-	printer_printf(&context->err_options, "line %i) ", nwe_line + 1);
+	printer_printf(&context->err_options, "line %i) ", new_line + 1);
 	while (s[i] != '\n' && s[i] != EOF)
 	{
 		printer_printchar(&context->err_options, s[i]);
@@ -83,6 +83,22 @@ void show_macro(compiler_context *context, int k, int nwe_line, int *s)
 		}
 		printer_printf(&context->err_options, "\n");
 	}
+}
+
+void print_error_location(compiler_context *context)
+{
+	data_file *file;
+
+	if (context->c_flag)
+	{
+		file = &((context->cfs).files[(context->cfs).cur]);
+	}
+	else
+	{
+		file = &((context->hfs).files[(context->hfs).cur]);
+	}
+
+	printer_printf(&context->err_options, "\x1B[1;39m%s:\x1B[0m ", file->name);
 }
 
 void error(compiler_context *context, int ernum)
@@ -133,16 +149,16 @@ void error(compiler_context *context, int ernum)
 		context->charnum--;
 	}
 
-	int nwe_line = context->line;
+	int new_line = context->line;
 	int *control_before = (f->cs).str_before;
 	int *control_after = (f->cs).str_after;
 
 	while (control_before[i] < context->line + 1)
 	{
-		nwe_line += control_after[i] - 1;
+		new_line += control_after[i] - 1;
 		i++;
 	}
-	nwe_line += 1;
+	new_line += 1;
 	i = 0;
 	k = 0;
 	if (f->include_source.str[0] != 0)
@@ -170,7 +186,7 @@ void error(compiler_context *context, int ernum)
 
 	i = 0;
 
-	for (int j = 1; j < nwe_line; j++)
+	for (int j = 1; j < new_line; j++)
 	{
 		printer_printf(&context->err_options, "line %i) ", j + k);
 
@@ -183,9 +199,10 @@ void error(compiler_context *context, int ernum)
 		i++;
 	}
 
-	show_macro(context, i, nwe_line, s);
+	show_macro(context, i, new_line, s);
 	*/
-	printer_printf(&context->err_options, "\x1B[1;31m ошибка:\x1B[0m ");
+	print_error_location(context);
+	printer_printf(&context->err_options, "\x1B[1;31mошибка:\x1B[0m ");
 
 	switch (ernum)
 	{
