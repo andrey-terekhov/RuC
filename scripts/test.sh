@@ -175,17 +175,15 @@ compiling()
 			let timeout++
 			;;
 		*)
-			if [[ $path == $error_dir/* ]] ; then
-				message_success
-				let success++
-			else
-				message_failure
-				let failure++
+			temp=$?
+			message_failure
+			let failure++
 
-				if ! [[ -z $debug ]] ; then
-					cat $log
-				fi
+			if ! [[ -z $debug ]] ; then
+				cat $log
 			fi
+
+			echo -e "\x1B[1;31mThe command \"$ruc_compiler $sources &>$log\" exited with $temp.\x1B[1;39m\n"
 			;;
 	esac
 }
