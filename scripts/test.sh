@@ -140,8 +140,17 @@ execution()
 				message_timeout
 				let timeout++
 				;;
-			*)
+			139)
+				# Segmentation fault
 
+				message_failure
+				let failure++
+
+				if ! [[ -z $debug ]] ; then
+					cat $log
+				fi
+				;;
+			*)
 				if [[ $path == */$error_subdir/* ]] ; then
 					message_success
 					let success++
@@ -174,16 +183,28 @@ compiling()
 			message_timeout
 			let timeout++
 			;;
-		*)
-			temp=$?
+		139)
+			# Segmentation fault
+
 			message_failure
 			let failure++
 
 			if ! [[ -z $debug ]] ; then
 				cat $log
 			fi
+			;;
+		*)
+			if [[ $path == $error_dir/* ]] ; then
+				message_success
+				let success++
+			else
+				message_failure
+				let failure++
 
-			echo -e "\x1B[1;31mThe command \"$ruc_compiler $sources &>$log\" exited with $temp.\x1B[1;39m\n"
+				if ! [[ -z $debug ]] ; then
+					cat $log
+				fi
+			fi
 			;;
 	esac
 }
