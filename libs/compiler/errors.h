@@ -26,7 +26,7 @@ extern "C" {
 /**
  *	Emit a warning for some problem
  *
- *	@param	context	Compiler cocntext
+ *	@param	context	Compiler context
  *	@param	errnum	Error number
  */
 void warning(compiler_context *context, int errnum);
@@ -34,7 +34,7 @@ void warning(compiler_context *context, int errnum);
 /**
  *	Emit an error for some problem
  *
- *	@param	context	Compiler cocntext
+ *	@param	context	Compiler context
  *	@param	errnum	Error number
  */
 void error(compiler_context *context, int errnum);
