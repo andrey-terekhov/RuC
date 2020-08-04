@@ -52,7 +52,7 @@ void show_macro(compiler_context *context, int k, int nwe_line, int *s)
 	int i = k;
 	int j = 0;
 
-	printer_printf(&context->err_options, "line %i) ", nwe_line+1);
+	printer_printf(&context->err_options, "line %i) ", nwe_line + 1);
 	while (s[i] != '\n' && s[i] != EOF)
 	{
 		printer_printchar(&context->err_options, s[i]);
@@ -89,20 +89,20 @@ void error(compiler_context *context, int ernum)
 {
 	context->error_flag = 1;
 	context->tc = context->temp_tc;
-	if(!context->new_line_flag && context->curchar != EOF)
+	if (!context->new_line_flag && context->curchar != EOF)
 	{
-		while(context->curchar != '\n' && context->curchar != EOF)
+		while (context->curchar != '\n' && context->curchar != EOF)
 		{
-			nextch(context); 
+			nextch(context);
 		}
-		
-		if(context->curchar != EOF)
+
+		if (context->curchar != EOF)
 		{
 			scaner(context);
 		}
 	}
-	
-	if(context->curchar != EOF)
+
+	if (context->curchar != EOF)
 	{
 		scaner(context);
 	}
@@ -189,11 +189,11 @@ void error(compiler_context *context, int ernum)
 
 	switch (ernum)
 	{
-		case after_type_must_be_ident://OK--
+		case after_type_must_be_ident: // OK--
 			printer_printf(&context->err_options, "после символа типа должен быть идентификатор или * "
 												  "идентификатор\n");
 			break;
-		case wait_right_sq_br: //OK/2
+		case wait_right_sq_br: // OK/2
 			printer_printf(&context->err_options, "ожидалась ]\n");
 			break;
 		case only_functions_may_have_type_VOID:
@@ -202,23 +202,23 @@ void error(compiler_context *context, int ernum)
 		case decl_and_def_have_diff_type:
 			printer_printf(&context->err_options, "прототип функции и ее описание имеют разные типы\n");
 			break;
-		case wrong_param_list://ОК??
+		case wrong_param_list: //ОК??
 			printer_printf(&context->err_options, "неправильный список параметров\n");
 			break;
-		case def_must_end_with_semicomma://OK/1
+		case def_must_end_with_semicomma: // OK/1
 			printer_printf(&context->err_options, "список описаний должен заканчиваться ;\n");
 			break;
 		case func_decl_req_params:
 			printer_printf(&context->err_options, "вообще-то я думал, что это предописание функции (нет "
 												  "идентификаторов-параметров), а тут тело функции\n");
 			break;
-		case wait_while_in_do_stmt://ОК/14
+		case wait_while_in_do_stmt: //ОК/14
 			printer_printf(&context->err_options, "ждем ПОКА в операторе ЦИКЛ\n");
 			break;
-		case no_semicolon_after_stmt://OK/15
+		case no_semicolon_after_stmt: // OK/15
 			printer_printf(&context->err_options, "нет ; после оператора\n");
 			break;
-		case cond_must_be_in_brkts://OK/3
+		case cond_must_be_in_brkts: // OK/3
 			printer_printf(&context->err_options, "условие должно быть в ()\n");
 			break;
 		case repeated_decl:
@@ -226,13 +226,13 @@ void error(compiler_context *context, int ernum)
 			printident(context, REPRTAB_POS);
 			printer_printf(&context->err_options, "\n");
 			break;
-		case arr_init_must_start_from_BEGIN://OK/16
+		case arr_init_must_start_from_BEGIN: // OK/16
 			printer_printf(&context->err_options, "инициализация массива должна начинаться со {\n");
 			break;
-		case struct_init_must_start_from_BEGIN://OK?+
+		case struct_init_must_start_from_BEGIN: // OK?+
 			printer_printf(&context->err_options, "инициализация структуры должна начинаться со {\n");
 			break;
-		case no_comma_in_init_list://OK??
+		case no_comma_in_init_list: // OK??
 			printer_printf(&context->err_options, "между элементами инициализации массива или структуры "
 												  "должна быть ,\n");
 			break;
@@ -241,7 +241,7 @@ void error(compiler_context *context, int ernum)
 			printident(context, REPRTAB_POS);
 			printer_printf(&context->err_options, "\n");
 			break;
-		case no_rightsqbr_in_slice://OK/4
+		case no_rightsqbr_in_slice: // OK/4
 			printer_printf(&context->err_options, "не хватает ] в вырезке элемента массива\n");
 			break;
 		case index_must_be_int:
@@ -253,16 +253,16 @@ void error(compiler_context *context, int ernum)
 		case call_not_from_function:
 			printer_printf(&context->err_options, "попытка вызова не функции\n");
 			break;
-		case no_comma_in_act_params://OO/5
+		case no_comma_in_act_params: // OO/5
 			printer_printf(&context->err_options, "после фактического параметра должна быть ,\n");
 			break;
 		case float_instead_int:
 			printer_printf(&context->err_options, "формальный параметр имеет тип ЦЕЛ, а фактический - ВЕЩ\n");
 			break;
-		case wrong_number_of_params://OK--
+		case wrong_number_of_params: // OK--
 			printer_printf(&context->err_options, "неправильное количество фактических параметров\n");
 			break;
-		case wait_rightbr_in_primary: //OK/6
+		case wait_rightbr_in_primary: // OK/6
 			printer_printf(&context->err_options, "не хватает ) в первичном выражении\n");
 			break;
 		case unassignable_inc:
@@ -271,10 +271,10 @@ void error(compiler_context *context, int ernum)
 		case wrong_addr:
 			printer_printf(&context->err_options, "операция получения адреса & применима только к переменным\n");
 			break;
-		case no_colon_in_cond_expr://OK/7
+		case no_colon_in_cond_expr: // OK/7
 			printer_printf(&context->err_options, "нет : в условном выражении\n");
 			break;
-		case no_colon_in_case://OK/8
+		case no_colon_in_case: // OK/8
 			printer_printf(&context->err_options, "после выражения в выборе нет :\n");
 			break;
 		case case_after_default:
@@ -283,13 +283,13 @@ void error(compiler_context *context, int ernum)
 		case no_ident_after_goto:
 			printer_printf(&context->err_options, "после goto должна быть метка, т.е. идентификатор\n");
 			break;
-		case no_leftbr_in_for://OK/9
+		case no_leftbr_in_for: // OK/9
 			printer_printf(&context->err_options, "в операторе цикла ДЛЯ нет (\n");
 			break;
-		case no_semicolon_in_for://OK/10
+		case no_semicolon_in_for: // OK/10
 			printer_printf(&context->err_options, "в операторе цикла ДЛЯ нет ;\n");
 			break;
-		case no_rightbr_in_for://ОК/11
+		case no_rightbr_in_for: //ОК/11
 			printer_printf(&context->err_options, "в операторе цикла ДЛЯ нет )\n");
 			break;
 		case int_op_for_float:
@@ -305,13 +305,13 @@ void error(compiler_context *context, int ernum)
 		case no_main_in_program:
 			printer_printf(&context->err_options, "в каждой программе должна быть ГЛАВНАЯ функция\n");
 			break;
-		case no_leftbr_in_printid://OK/12
+		case no_leftbr_in_printid: // OK/12
 			printer_printf(&context->err_options, "в колманде ПЕЧАТЬИД или ЧИТАТЬИД нет (\n");
 			break;
-		case no_rightbr_in_printid://OK/13
+		case no_rightbr_in_printid: // OK/13
 			printer_printf(&context->err_options, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет )\n");
 			break;
-		case no_ident_in_printid://OK--
+		case no_ident_in_printid: // OK--
 			printer_printf(&context->err_options, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора\n");
 			break;
 		case float_in_switch:
@@ -325,17 +325,17 @@ void error(compiler_context *context, int ernum)
 		case must_be_digit_after_exp:
 			printer_printf(&context->err_options, "должна быть цифра после e\n");
 			break;
-		case no_comma_in_setmotor://OK
+		case no_comma_in_setmotor: // OK
 			printer_printf(&context->err_options, "в команде управления роботом после первого параметра нет ,\n");
 			break;
 		case param_setmotor_not_int:
 			printer_printf(&context->err_options, "в командах МОТОР, УСТНАПРЯЖЕНИЕ, ЦИФРДАТЧИК и АНАЛОГДАТЧИК "
 												  "параметры должны быть целыми\n");
 			break;
-		case no_leftbr_in_stand_func://OK??
+		case no_leftbr_in_stand_func: // OK??
 			printer_printf(&context->err_options, "в вызове стандартной функции нет (\n");
 			break;
-		case no_rightbr_in_stand_func://OK
+		case no_rightbr_in_stand_func: // OK
 			printer_printf(&context->err_options, "в вызове стандартной функции нет )\n");
 			break;
 		case bad_param_in_stand_func:
@@ -357,7 +357,7 @@ void error(compiler_context *context, int ernum)
 		case bad_escape_sym:
 			printer_printf(&context->err_options, "неизвестный служебный символ\n");
 			break;
-		case no_right_apost://OK?+
+		case no_right_apost: // OK?+
 			printer_printf(&context->err_options, "символьная константа не заканчивается символом '\n");
 			break;
 		case decl_after_strmt:
@@ -375,11 +375,11 @@ void error(compiler_context *context, int ernum)
 		case aster_with_row:
 			printer_printf(&context->err_options, "операцию * нельзя применять к массивам\n");
 			break;
-		case wrong_fun_as_param://OK--
+		case wrong_fun_as_param: // OK--
 			printer_printf(&context->err_options, "неправильная запись функции, передаваемой параметром в "
 												  "другую функцию\n");
 			break;
-		case no_right_br_in_paramfun://OK
+		case no_right_br_in_paramfun: // OK
 			printer_printf(&context->err_options, "нет ) в функции, передаваемой параметром в другую функцию\n");
 			break;
 		case par_type_void_with_nofun:
@@ -449,7 +449,7 @@ void error(compiler_context *context, int ernum)
 		case wrong_struct:
 			printer_printf(&context->err_options, "неправильное описание структуры\n");
 			break;
-		case after_dot_must_be_ident://OK--
+		case after_dot_must_be_ident: // OK--
 			printer_printf(&context->err_options, "после . или -> должен быть идентификатор-имя поля "
 												  "структуры\n");
 			break;
@@ -487,7 +487,7 @@ void error(compiler_context *context, int ernum)
 		case bad_toval:
 			printer_printf(&context->err_options, "странный toval ansttype=%i\n", context->ansttype);
 			break;
-		case wait_end://OK?+
+		case wait_end: // OK?+
 			printer_printf(&context->err_options, "в инициализации структуры здесь ожидалась правая фигурная "
 												  "скобка }\n");
 			break;
@@ -505,10 +505,10 @@ void error(compiler_context *context, int ernum)
 		case array_size_must_be_int:
 			printer_printf(&context->err_options, "размер массива может иметь тип только ЦЕЛ или ЛИТЕРА\n");
 			break;
-		case no_semicomma_in_struct://OK?+
+		case no_semicomma_in_struct: // OK?+
 			printer_printf(&context->err_options, "описание поля структуры должно заканчиваться ;\n");
 			break;
-		case wait_ident_after_semicomma_in_struct://OK--
+		case wait_ident_after_semicomma_in_struct: // OK--
 			printer_printf(&context->err_options, "в структуре после типа поля должен идти идентификатор поля\n");
 			break;
 		case empty_init:
@@ -528,7 +528,7 @@ void error(compiler_context *context, int ernum)
 			printident(context, REPRTAB_POS);
 			printer_printf(&context->err_options, " была предопределена, но не описана\n");
 			break;
-		case print_without_br://OK
+		case print_without_br: // OK
 			printer_printf(&context->err_options, "операнд оператора печати должен быть в круглых скобках ()\n");
 			break;
 		case select_not_from_struct:
@@ -551,7 +551,7 @@ void error(compiler_context *context, int ernum)
 												  "иметь тип void*(void*)\n");
 			break;
 
-		case no_leftbr_in_printf://OK
+		case no_leftbr_in_printf: // OK
 			printer_printf(&context->err_options, "Не хватает открывающей скобки в printf/печатьф\n");
 			break;
 		case no_rightbr_in_printf:
@@ -609,10 +609,10 @@ void error(compiler_context *context, int ernum)
 						   MAXPRINTFPARAMS);
 			break;
 
-		case no_mult_in_cast: //OK
+		case no_mult_in_cast: // OK
 			printer_printf(&context->err_options, "нет * в cast (приведении)\n");
 			break;
-		case no_rightbr_in_cast://OK
+		case no_rightbr_in_cast: // OK
 			printer_printf(&context->err_options, "нет ) в cast (приведении)\n");
 			break;
 		case not_pointer_in_cast:
@@ -636,7 +636,7 @@ void error(compiler_context *context, int ernum)
 		case no_comma_or_end:
 			printer_printf(&context->err_options, "в инициализаторе ожидали , или }\n");
 			break;
-		case no_comma_in_act_params_stanfunc://OK
+		case no_comma_in_act_params_stanfunc: // OK
 			printer_printf(&context->err_options, "в операции над строками после параметра нет , \n");
 			break;
 		case not_string_in_stanfunc:
@@ -665,7 +665,7 @@ void error(compiler_context *context, int ernum)
 		default:
 			printer_printf(&context->err_options, "этот код ошибки я прозевал\n");
 	}
-	//exit(2);
+	// exit(2);
 }
 
 void set_errors_output(compiler_context *context, char *path)

@@ -17,8 +17,8 @@
 #include "context.h"
 #include "errors.h"
 #include "global.h"
-#include "uniscanner.h"
 #include "macro_global_struct.h"
+#include "uniscanner.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -37,10 +37,11 @@ void onemore(compiler_context *context)
 {
 	context->curchar = context->nextchar;
 	context->nextchar = getnext(context);
-	 if (0)//context->kw)
-	 printf("context->curchar =%c %i context->nextchar=%c %i\n",
-	 context->curchar, context->curchar, context->nextchar,
-	 context->nextchar);
+	if (0)
+	{ // context->kw)
+		printf("context->curchar =%c %i context->nextchar=%c %i\n", context->curchar, context->curchar,
+			   context->nextchar, context->nextchar);
+	}
 }
 
 void endofline(compiler_context *context)
@@ -57,7 +58,7 @@ void endofline(compiler_context *context)
 			}
 		}
 	}*/
-	//fflush(stdout);
+	// fflush(stdout);
 }
 
 void endnl(compiler_context *context)
@@ -237,7 +238,7 @@ int scan(compiler_context *context)
 	context->new_line_flag = 0;
 	while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
 	{
-		if(context->curchar == '\n')
+		if (context->curchar == '\n')
 		{
 			context->new_line_flag = 1;
 		}
@@ -470,7 +471,7 @@ int scan(compiler_context *context)
 			next_string_elem(context);
 			if (context->curchar != '\'')
 			{
-				//error(context, no_right_apost);
+				// error(context, no_right_apost);
 				context->error_flag = 1;
 				printf("символьная константа не заканчивается символом '\n");
 			}
@@ -740,7 +741,7 @@ int scan(compiler_context *context)
 int scaner(compiler_context *context)
 {
 	context->cur = context->next;
-	if(!context->buf_flag)
+	if (!context->buf_flag)
 	{
 		context->next = scan(context);
 	}
@@ -749,7 +750,7 @@ int scaner(compiler_context *context)
 		context->next = context->buf_cur;
 		context->buf_flag--;
 	}
-	
+
 	// if(context->kw)
 	//		printf("scaner context->cur %i context->next %i repr %i\n",
 	//		context->cur, context->next, repr);

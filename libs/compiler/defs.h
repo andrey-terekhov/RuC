@@ -609,8 +609,8 @@
 #define init_not_struct						 331
 #define param_threads_not_int				 332
 
-#define wrong_arg_in_send					   341
-#define wrong_arg_in_create					   342
+#define wrong_arg_in_send	341
+#define wrong_arg_in_create 342
 
 #define no_leftbr_in_printf				  343
 #define no_rightbr_in_printf			  344
@@ -645,7 +645,7 @@
 #define after_functionid_must_be_comma		373
 #define stalpe								374
 #define not_relis_if						375
-#define before_endif							376
+#define before_endif						376
 #define repeat_ident						377
 #define not_enough_param2					378
 #define not_end_fail_preprocess				379

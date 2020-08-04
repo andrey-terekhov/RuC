@@ -92,8 +92,8 @@ void m_old_nextch_type(preprocess_context *context)
 
 void control_string_pinter(preprocess_context *context, int before, int after)
 {
-	control_string* cs;
-	
+	control_string *cs;
+
 	if (context->h_flag == 0)
 	{
 		cs = &context->sources->files[context->sources->cur].cs;
@@ -119,7 +119,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 		context->line++;
 #if MACRODEBUG
 		printf("Line %i) ", context->line);
-		
+
 
 		for (int j = context->temp_output; j < s->p; j++)
 		{
@@ -131,9 +131,8 @@ void end_line(preprocess_context *context, macro_long_string *s)
 
 		printf("\n");
 #endif
-		context->temp_output = s->p; 
+		context->temp_output = s->p;
 	}
-
 }
 
 void m_onemore(preprocess_context *context)
