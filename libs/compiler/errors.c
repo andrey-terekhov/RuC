@@ -184,9 +184,8 @@ void error(compiler_context *context, int ernum)
 	}
 
 	show_macro(context, i, nwe_line, s);
-
-	printer_printf(&context->err_options, "\n");
-	printer_printf(&context->err_options, "тип ошибки: ");*/
+	*/
+	printer_printf(&context->err_options, "\x1B[1;31m ошибка:\x1B[0m ");
 
 	switch (ernum)
 	{
@@ -334,10 +333,10 @@ void error(compiler_context *context, int ernum)
 												  "параметры должны быть целыми\n");
 			break;
 		case no_leftbr_in_stand_func://OK??
-			printer_printf(&context->err_options, "в вызове  стандартной функции нет (\n");
+			printer_printf(&context->err_options, "в вызове стандартной функции нет (\n");
 			break;
 		case no_rightbr_in_stand_func://OK
-			printer_printf(&context->err_options, "в вызове  стандартной функции нет )\n");
+			printer_printf(&context->err_options, "в вызове стандартной функции нет )\n");
 			break;
 		case bad_param_in_stand_func:
 			printer_printf(&context->err_options, "параметры стандартных функций могут быть только целыми и "
@@ -426,7 +425,7 @@ void error(compiler_context *context, int ernum)
 			printer_printf(&context->err_options, "оператор ПРОДОЛЖИТЬ не в цикле\n");
 			break;
 		case not_primary:
-			printer_printf(&context->err_options, "первичное не  может начинаться с лексемы %i\n", context->cur);
+			printer_printf(&context->err_options, "первичное не может начинаться с лексемы %i\n", context->cur);
 			break;
 		case wrong_operand:
 			printer_printf(&context->err_options, "операнд операции может иметь только тип ЦЕЛ, ЛИТ или ВЕЩ\n");
@@ -658,7 +657,7 @@ void error(compiler_context *context, int ernum)
 												  "целых\n");
 			break;
 		case not_rowoffloat_in_stanfunc:
-			printf("в этой операции этот параметр должен иметь тип массив вещ\n");
+			printer_printf(&context->err_options, "в этой операции этот параметр должен иметь тип массив вещ\n");
 			break;
 		case not_array_in_stanfunc:
 			printer_printf(&context->err_options, "в этой операции этот параметр должен иметь тип массив\n");
@@ -667,4 +666,15 @@ void error(compiler_context *context, int ernum)
 			printer_printf(&context->err_options, "этот код ошибки я прозевал\n");
 	}
 	//exit(2);
+}
+
+void set_errors_output(compiler_context *context, char *path)
+{
+	compiler_context_detach_io(context, IO_TYPE_ERROR);
+	compiler_context_attach_io(context, path, IO_TYPE_ERROR, IO_SOURCE_FILE);
+}
+
+int get_exit_code(compiler_context *context)
+{
+	return context->error_flag2 != 0 || context->error_flag != 0;
 }

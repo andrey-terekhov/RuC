@@ -39,6 +39,23 @@ void warning(compiler_context *context, int errnum);
  */
 void error(compiler_context *context, int errnum);
 
+/**
+ *	Set errors output file
+ *
+ *	@param	context	Compiler context
+ *	@param	path	Path to file
+ */
+void set_errors_output(compiler_context *context, char *path);
+
+/**
+ *	Return program output code
+ *
+ *	@param	context	Compiler context
+ *
+ *	@return	Program exit code
+ */
+int get_exit_code(compiler_context *context);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
