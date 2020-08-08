@@ -46,6 +46,7 @@ typedef struct data_file
 	int p;
 	int pred;
 	int line;
+	int include_line;
 	control_string cs;
 	FILE *input;
 	macro_long_string include_source;

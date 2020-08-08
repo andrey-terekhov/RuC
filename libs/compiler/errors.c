@@ -106,7 +106,9 @@ void error(compiler_context *context, int ernum)
 	{
 		scaner(context);
 	}
-	/*int i = 0;
+
+
+	int i = 0;
 	int k = 0;
 
 	data_file *f;
@@ -122,7 +124,7 @@ void error(compiler_context *context, int ernum)
 	const char *name = f->name;
 	int *s = (f->before_source).str;
 
-	printer_printf(&context->err_options, "\n Oшибка в файле: \"%s\" № %i\n \n", name, ernum);
+	//printer_printf(&context->err_options, "\n Oшибка в файле: \"%s\" № %i\n \n", name, ernum);
 	context->line--;
 	if (context->charnum == 0)
 	{
@@ -142,7 +144,12 @@ void error(compiler_context *context, int ernum)
 		nwe_line += control_after[i] - 1;
 		i++;
 	}
-	nwe_line += 1;
+	//!!! const char *name - имя файла 
+	//!!! int *s - большой текст
+	//!!! int nwe_line - номер реальной строки в большом тексте (s)
+	int num_line = nwe_line + f->include_line;//!!! - номер строки (цифра которую вывести в сообщении) 
+
+	/*
 	i = 0;
 	k = 0;
 	if (f->include_source.str[0] != 0)

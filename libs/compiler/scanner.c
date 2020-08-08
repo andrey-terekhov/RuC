@@ -732,7 +732,7 @@ int scan(compiler_context *context)
 			{
 				printer_printf(&context->err_options, "плохой символ %c %i\n", context->curchar, context->curchar);
 				nextch(context);
-				exit(10);
+				context->error_flag2 = 1;
 			}
 	}
 }

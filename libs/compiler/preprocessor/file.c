@@ -116,7 +116,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 	}
 	if (context->FILE_flag)
 	{
-		context->line++;
+		context->line++;//!!
 #if MACRODEBUG
 		printf("Line %i) ", context->line);
 		
@@ -149,9 +149,14 @@ void m_onemore(preprocess_context *context)
 			end_line(context, context->before_temp);
 		}
 	}
-	else
+	else if (context->current_string != NULL)
 	{
 		context->nextchar = context->current_string[context->current_p++];
+	}
+	else
+	{
+		printf("file.c m_onemore not current_string");
+		context->nextchar = EOF;
 	}
 }
 
