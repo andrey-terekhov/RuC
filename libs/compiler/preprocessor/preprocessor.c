@@ -276,7 +276,7 @@ void add_c_file_siple(preprocess_context *context)
 	include_source_set(context->sources, context->before_temp_p, context->before_temp->p);
 	context->before_temp = &context->sources->files[context->sources->cur].before_source;
 	context->temp_output = 0;
-	context->sources->files[context->sources->cur].include_line = context->line;
+	context->sources->files[context->sources->cur].include_line = context->line - 1;
 	context->sources->files[context->sources->cur].cs.p = 0;
 	context->control_aflag = 0;
 	context->control_bflag = 0; 

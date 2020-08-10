@@ -46,13 +46,13 @@ void warning(compiler_context *context, int ernum)
 	}
 }
 
-void show_macro(compiler_context *context, int k, int nwe_line, int *s)
+void show_macro(compiler_context *context, int k, int nwe_line, int *s, int num)
 {
 	int flag = 1;
 	int i = k;
 	int j = 0;
 
-	printer_printf(&context->err_options, "line %i) ", nwe_line+1);
+	printer_printf(&context->err_options, "line %i) ", nwe_line + num);
 	while (s[i] != '\n' && s[i] != EOF)
 	{
 		printer_printchar(&context->err_options, s[i]);
@@ -87,27 +87,6 @@ void show_macro(compiler_context *context, int k, int nwe_line, int *s)
 
 void error(compiler_context *context, int ernum)
 {
-	context->error_flag = 1;
-	context->tc = context->temp_tc;
-	if(!context->new_line_flag && context->curchar != EOF)
-	{
-		while(context->curchar != '\n' && context->curchar != EOF)
-		{
-			nextch(context); 
-		}
-		
-		if(context->curchar != EOF)
-		{
-			scaner(context);
-		}
-	}
-	
-	if(context->curchar != EOF)
-	{
-		scaner(context);
-	}
-
-
 	int i = 0;
 	int k = 0;
 
@@ -144,13 +123,14 @@ void error(compiler_context *context, int ernum)
 		nwe_line += control_after[i] - 1;
 		i++;
 	}
+	nwe_line += 1;
 	//!!! const char *name - имя файла 
 	//!!! int *s - большой текст
 	//!!! int nwe_line - номер реальной строки в большом тексте (s)
-	int num_line = nwe_line + f->include_line;//!!! - номер строки (цифра которую вывести в сообщении) 
+	//int num_line = nwe_line + f->include_line;//!!! - номер строки (цифра которую вывести в сообщении) 
 
-	/*
-	i = 0;
+	
+	/*i = 0;
 	k = 0;
 	if (f->include_source.str[0] != 0)
 	{
@@ -179,7 +159,7 @@ void error(compiler_context *context, int ernum)
 
 	for (int j = 1; j < nwe_line; j++)
 	{
-		printer_printf(&context->err_options, "line %i) ", j + k);
+		printer_printf(&context->err_options, "line %i) ", j + f->include_line);
 
 		while (s[i] != '\n' && s[i] != EOF)
 		{
@@ -190,10 +170,29 @@ void error(compiler_context *context, int ernum)
 		i++;
 	}
 
-	show_macro(context, i, nwe_line, s);
-
+	show_macro(context, i, nwe_line, s, f->include_line);
+	*/
+	context->error_flag = 1;
+	context->tc = context->temp_tc;
+	if(!context->new_line_flag && context->curchar != EOF)
+	{
+		while(context->curchar != '\n' && context->curchar != EOF)
+		{
+			nextch(context); 
+		}
+		
+		if(context->curchar != EOF)
+		{
+			scaner(context);
+		}
+	}
+	
+	if(context->curchar != EOF)
+	{
+		scaner(context);
+	}
 	printer_printf(&context->err_options, "\n");
-	printer_printf(&context->err_options, "тип ошибки: ");*/
+	printer_printf(&context->err_options, "тип ошибки: ");
 
 	switch (ernum)
 	{
