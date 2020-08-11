@@ -219,7 +219,10 @@ void marcer_update(compiler_context *context)
 			files = &context->hfs;
 		}
 		nextch(context);
-		files->cur = (files->files[files->cur]).pred;
+		if((files->files[files->cur]).pred != -1)
+		{
+			files->cur = (files->files[files->cur]).pred;
+		}
 		if (files->cur != -1)
 		{
 			context->line = (files->files[files->cur]).line;
