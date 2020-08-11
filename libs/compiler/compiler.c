@@ -67,12 +67,12 @@ char *preprocess_ruc_file(compiler_context *context, compiler_workspace *workspa
 
 	char *result = preprocess_file(argc, argv, sources, headers);
 	free(argv);
-	
-	if(context->hfs.p == 0)
+
+	if (context->hfs.p == 0)
 	{
 		context->c_flag++;
 	}
-	
+
 	return result;
 }
 
@@ -121,7 +121,7 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 		compiler_context_attach_io(context, macro_processed, IO_TYPE_INPUT, IO_SOURCE_MEM);
 		output_tables_and_tree(context, tree_path);
-		if(!context->error_flag && !context->error_flag)
+		if (!context->error_flag && !context->error_flag)
 		{
 			output_codes(context, codes_path);
 		}
@@ -300,7 +300,7 @@ compiler_workspace *compiler_get_workspace(int argc, const char *argv[])
 COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 {
 	compiler_context *context = malloc(sizeof(compiler_context));
-	int k = 0;
+
 	if (context == NULL)
 	{
 		fprintf(stderr, " ошибка выделения памяти под контекст\n");
@@ -317,13 +317,12 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 
 	process_user_requests(context, workspace);
 
-	if(context->error_flag2 != 0 || context->error_flag != 0)
-	{
-		k = 1;
-	}
+	int ret = get_exit_code(context);
 	compiler_context_deinit(context);
 	free(context);
-	return k;
+
+	printf(" "); // Not working without using printf
+	return ret;
 }
 
 COMPILER_EXPORTED int compiler_compile(const char *path)

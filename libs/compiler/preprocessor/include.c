@@ -144,20 +144,20 @@ void gen_way(char *full, const char *path, const char *file, int is_slash)
 	{
 		size = strlen(path);
 	}
-	
+
 	memcpy(full, path, size);
 	full[size++] = '/';
 
 	int file_size = strlen(file);
 	memcpy(&full[size], file, file_size);
-	
+
 	full[size + file_size] = '\0';
-	//printf("\n path = %s\n file = %s\n full = %s\n", path, file, full);
+	// printf("\n path = %s\n file = %s\n full = %s\n", path, file, full);
 }
 
 int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int flag)
 {
-	char file_way[STRIGSIZE]; 
+	char file_way[STRIGSIZE];
 
 	gen_way(file_way, fs->name, temp_way, 1);
 	FILE *f = fopen(file_way, "r");
@@ -177,7 +177,7 @@ int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int
 	}
 	if (f == NULL)
 	{
-		//printf(" не найден файл %s\n", temp_way);
+		// printf(" не найден файл %s\n", temp_way);
 		m_error(1, context);
 	}
 	if (flag == 0)
@@ -250,7 +250,7 @@ void file_read(preprocess_context *context)
 void open_file(preprocess_context *context, data_file *f)
 {
 	int i = 0;
-	char temp_way [STRIGSIZE];
+	char temp_way[STRIGSIZE];
 
 	while (context->curchar != '\"')
 	{
