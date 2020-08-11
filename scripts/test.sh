@@ -45,6 +45,8 @@ init()
 	success=0
 	failure=0
 	timeout=0
+
+	log=tmp
 }
 
 build_vm()
@@ -122,7 +124,7 @@ execution()
 {
 	if [[ $path == $exec_dir/* ]] ; then
 		action="execution"
-		internal_timeout $wait_for $ruc_interpreter export.txt >/dev/null 2>/dev/null
+		internal_timeout $wait_for $ruc_interpreter export.txt &>$log
 
 		case "$?" in
 			0)
@@ -138,8 +140,17 @@ execution()
 				message_timeout
 				let timeout++
 				;;
-			*)
+			139)
+				# Segmentation fault
 
+				message_failure
+				let failure++
+
+				if ! [[ -z $debug ]] ; then
+					cat $log
+				fi
+				;;
+			*)
 				if [[ $path == */$error_subdir/* ]] ; then
 					message_success
 					let success++
@@ -148,7 +159,7 @@ execution()
 					let failure++
 
 					if ! [[ -z $debug ]] ; then
-						$ruc_interpreter export.txt
+						cat $log
 					fi
 				fi
 				;;
@@ -172,6 +183,16 @@ compiling()
 			message_timeout
 			let timeout++
 			;;
+		139)
+			# Segmentation fault
+
+			message_failure
+			let failure++
+
+			if ! [[ -z $debug ]] ; then
+				cat $log
+			fi
+			;;
 		*)
 			if [[ $path == $error_dir/* ]] ; then
 				message_success
@@ -181,7 +202,7 @@ compiling()
 				let failure++
 
 				if ! [[ -z $debug ]] ; then
-					$ruc_compiler $sources
+					cat $log
 				fi
 			fi
 			;;
@@ -197,7 +218,7 @@ test()
 		action="compiling"
 
 		if [[ $path != */$include_subdir/* ]] ; then
-			internal_timeout $wait_for $ruc_compiler $sources >/dev/null 2>/dev/null
+			internal_timeout $wait_for $ruc_compiler $sources &>$log
 			compiling
 		fi
 	done
@@ -216,7 +237,7 @@ test()
 
 			action="compiling"
 
-			internal_timeout $wait_for $ruc_compiler $sources >/dev/null 2>/dev/null
+			internal_timeout $wait_for $ruc_compiler $sources &>$log
 			compiling
 		done
 	done
@@ -226,6 +247,7 @@ test()
 	fi
 
 	echo -e "\x1B[1;39m success = $success, failure = $failure, timeout = $timeout"
+	rm $log
 }
 
 main()
