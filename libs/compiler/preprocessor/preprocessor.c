@@ -279,7 +279,7 @@ void add_c_file_siple(preprocess_context *context)
 	context->sources->files[context->sources->cur].include_line = context->line - 1;
 	context->sources->files[context->sources->cur].cs.p = 0;
 	context->control_aflag = 0;
-	context->control_bflag = 0; 
+	context->control_bflag = 0;
 	
 	while (context->curchar != EOF && context->main_file == -1)
 	{
@@ -437,7 +437,7 @@ void preprocess_c_file(preprocess_context *context)
 	data_files *fs = context->sources;
 	fs->cur = 0;
 
-	if (context->main_file != fs->p - 1)
+	if (context->main_file != fs->p - 1 && context->main_file != -1)
 	{
 		swap(&fs->files[context->main_file], &fs->files[fs->p - 1]);
 	}
