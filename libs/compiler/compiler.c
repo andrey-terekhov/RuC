@@ -107,7 +107,7 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 		// Препроцессинг в массив
 
-
+		printf("!!!!!!!!!!!!!!1\n");
 		macro_processed = preprocess_ruc_file(context, workspace); // макрогенерация
 		if (macro_processed == NULL)
 		{

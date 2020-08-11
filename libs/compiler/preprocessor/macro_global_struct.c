@@ -51,6 +51,7 @@ void macro_long_string_free(macro_long_string *s)
 void data_file_pinter(data_file *f, FILE *input)
 {
 	f->cs.p = 0;
+	f->include_line = -1;
 
 	macro_long_string_init(&f->before_source);
 	macro_long_string_init(&f->include_source);

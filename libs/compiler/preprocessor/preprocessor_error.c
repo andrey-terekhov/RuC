@@ -56,8 +56,6 @@ void m_error(int ernum, preprocess_context *context)
 		}
 
 		const char *name = f.name;
-		int *s = context->before_temp->str;
-		int p = context->before_temp->p;
 
 		int j = 2;
 #if MACRODEBUG
@@ -69,11 +67,11 @@ void m_error(int ernum, preprocess_context *context)
 
 		if ((&f)->include_source.str[0] != '\0')
 		{
-			int *s2 = (&f)->include_source.str;
-			while (s2[i] != '\0')
+			int *s = (&f)->include_source.str;
+			while (s[i] != '\0')
 			{
 				printf_character(s[i]);
-				if (s2[i] == '\n')
+				if (s[i] == '\n')
 				{
 					printf("line %i) ", j);
 					j++;
@@ -82,13 +80,19 @@ void m_error(int ernum, preprocess_context *context)
 			}
 		}
 
-		for (i = 0; i < p; i++)
+		if(f.include_line != -1)
 		{
-			printf_character(s[i]);
-			if (s[i] == '\n')
+			int *s = context->before_temp->str;
+			int p = context->before_temp->p;
+			for (i = 0; i < p; i++)
 			{
-				printf("line %i) ", j);
-				j++;
+				
+				printf_character(s[i]);
+				if (s[i] == '\n')
+				{
+					printf("line %i) ", j);
+					j++;
+				}
 			}
 		}
 	}
