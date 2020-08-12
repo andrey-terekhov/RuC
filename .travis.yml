@@ -19,7 +19,7 @@ matrix:
       dist: xenial
 
 install:
-  - sudo apt-get -y install gdb
+  - sudo apt-get install gdb
 
 script:
 #  - ./scripts/test.sh -v v1.1 
