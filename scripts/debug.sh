@@ -29,19 +29,19 @@ main()
 	build
 	gdbinit
 
-	gdb -x $init --args $ruc $1 &>$log
-	while [[ $? == 0 ]]
-	do
-		gdb -x $init --args $ruc $1 &>$log
-	done
+	gdb -x $init --args $ruc $1 #&>$log
+	#while [[ $? != 139 ]]
+	#do
+	#	gdb -x $init --args $ruc $1 &>$log
+	#	echo "[Inferior 1 exited with code $?]"
+	#done
 
-	code=$?
-	cat $log
+	#cat $log
 
 	rm $init
-	rm $log
+	#rm $log
 
-	exit $code
+	exit 139
 }
 
 main $@
