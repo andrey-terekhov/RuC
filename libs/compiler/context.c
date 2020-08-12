@@ -59,6 +59,11 @@ void compiler_context_init(compiler_context *context)
 	context->error_flag = 0;
 	context->error_flag2 = 0;
 	context->new_line_flag = 0;
+	context->line = 1;
+	context->charnum = 0;
+	context->charnum_before = 0;
+	context->buf_cur = 0;
+	context->temp_tc = 0;
 }
 
 void compiler_context_deinit(compiler_context *context)
