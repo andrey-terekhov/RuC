@@ -50,6 +50,7 @@ void preprocess_context_init(preprocess_context *context, data_files *sources, d
 	context->before_temp_p = -1;
 	context->iwp = 0;
 	context->FILE_flag = 1;
+	context->h_flag = 0;
 
 	context->sources = sources;
 	context->headers = headers;
