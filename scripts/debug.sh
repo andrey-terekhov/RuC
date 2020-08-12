@@ -29,7 +29,7 @@ main()
 	build
 	gdbinit
 
-	gdb -x $init --args $ruc $1 #&>$log
+	sudo gdb -x $init --args $ruc $1 #&>$log
 	#while [[ $? != 139 ]]
 	#do
 	#	gdb -x $init --args $ruc $1 &>$log
