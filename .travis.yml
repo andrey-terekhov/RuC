@@ -19,4 +19,9 @@ matrix:
       dist: xenial
 
 script:
-  - ./scripts/test.sh -v v1.1 -d
+#  - ./scripts/test.sh -v v1.1 -d
+  - sudo apt-get -y install gdb
+  - mkdir build && cd build && cmake .. && cd ..
+  - cmake --build build --config Debug
+  - gdb -ex run --args ./build/ruc ./tests/errors/102.2/Masin/toint.c
+  - cat tmp
