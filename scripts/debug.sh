@@ -16,8 +16,8 @@ gdbinit()
 {
 	init=gdbinit
 
-	echo "set startup-with-shell off" >$init
-	echo "set \$_exitcode = -1" >>$init
+	#echo "set startup-with-shell off" >$init
+	echo "set \$_exitcode = -1" >$init
 	echo "run" >>$init
 	echo "if \$_exitcode != -1" >>$init
 	echo "	quit \$_exitcode" >>$init
