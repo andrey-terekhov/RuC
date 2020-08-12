@@ -45,17 +45,39 @@ void m_error(int ernum, preprocess_context *context)
 	if (context->before_temp != NULL)
 	{
 		int i = 0;
-		data_file f;
+		data_file* f;
+		if( context == NULL)
+		{
+			printf("context null\n");
+		}
+		printf("h_flag = %i\n", context->h_flag);
 		if (context->h_flag)
 		{
-			f = context->headers->files[context->headers->cur];
+			f = &context->headers->files[context->headers->cur];
+			printf(" h cur = %d\n",context->headers->cur);
 		}
 		else
 		{
-			f = context->sources->files[context->sources->cur];
+			f = &context->sources->files[context->sources->cur];
+			printf(" c cur = %d\n",context->sources->cur);
+		}
+	
+		if( f == NULL)
+		{
+			printf("f null\n");
+		}
+		if( f->name == NULL)
+		{
+			printf("name null\n");
+		}
+		if(f->include_source.str == NULL)
+		{
+			printf("include_source null\n");
 		}
 
-		const char *name = f.name;
+		const char *name = f->name;
+		int *s = context->before_temp->str;
+		int p = context->before_temp->p;
 
 		int j = 2;
 #if MACRODEBUG
@@ -65,13 +87,13 @@ void m_error(int ernum, preprocess_context *context)
 #endif
 		printf("line 1) ");
 
-		if ((&f)->include_source.str[0] != '\0')
+		if ((f)->include_source.str[0] != '\0')
 		{
-			int *s = (&f)->include_source.str;
-			while (s[i] != '\0')
+			int *s2 = (f)->include_source.str;
+			while (s2[i] != '\0')
 			{
 				printf_character(s[i]);
-				if (s[i] == '\n')
+				if (s2[i] == '\n')
 				{
 					printf("line %i) ", j);
 					j++;
@@ -80,19 +102,13 @@ void m_error(int ernum, preprocess_context *context)
 			}
 		}
 
-		if(f.include_line != -1)
+		for (i = 0; i < p; i++)
 		{
-			int *s = context->before_temp->str;
-			int p = context->before_temp->p;
-			for (i = 0; i < p; i++)
+			printf_character(s[i]);
+			if (s[i] == '\n')
 			{
-				
-				printf_character(s[i]);
-				if (s[i] == '\n')
-				{
-					printf("line %i) ", j);
-					j++;
-				}
+				printf("line %i) ", j);
+				j++;
 			}
 		}
 	}
