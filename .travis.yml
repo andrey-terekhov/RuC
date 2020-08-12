@@ -15,13 +15,6 @@ matrix:
       # we don't enable sanitizers on gcc
       env: ENABLE_SANITIZERS="-DENABLE_SANITIZERS=1"
       before_install:
-        #- wget https://ftp.gnu.org/gnu/gdb/gdb-7.11.1.tar.xz
-        #- tar xopf gdb-7.11.1.tar.xz
-        #- cd gdb-7.11.1
-        #- ./configure
-        #- make
-        #- sudo make install
-        #- cd ..
         - brew install gdb
         - echo "set startup-with-shell off" >> ~/.gdbinit
     - name: "Ubuntu 16.04"

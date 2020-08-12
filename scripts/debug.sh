@@ -16,7 +16,6 @@ gdbinit()
 {
 	init=gdbinit
 
-	#echo "set startup-with-shell off" >$init
 	echo "set \$_exitcode = -1" >$init
 	echo "run" >>$init
 	echo "if \$_exitcode != -1" >>$init
@@ -30,18 +29,16 @@ main()
 	build
 	gdbinit
 
-	sudo gdb -x $init --args $ruc $1 #&>$log
-	gdb -x $init --args $ruc $1 #&>$log
-	#while [[ $? != 139 ]]
-	#do
-	#	gdb -x $init --args $ruc $1 &>$log
-	#	echo "[Inferior 1 exited with code $?]"
-	#done
+	sudo gdb -x $init --args $ruc $1 &>$log
+	while [[ $? != 139 ]]
+	do
+		sudo gdb -x $init --args $ruc $1 &>$log
+	done
 
-	#cat $log
+	cat $log
 
 	rm $init
-	#rm $log
+	rm $log
 
 	exit 139
 }
