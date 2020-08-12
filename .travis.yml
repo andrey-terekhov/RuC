@@ -18,10 +18,11 @@ matrix:
       os: linux
       dist: xenial
 
+install:
+  - sudo apt-get -y install gdb
+
 script:
-  - ./scripts/test.sh -v v1.1 -d
-#  - sudo apt-get -y install gdb
-#  - mkdir build && cd build && cmake .. && cd ..
-#  - cmake --build build --config Debug
-#  - gdb -ex run --args ./build/ruc ./tests/errors/102.2/Masin/toint.c
-#  - cat tmp
+#  - ./scripts/test.sh -v v1.1 
+  - mkdir build && cd build && cmake .. && cd ..
+  - cmake --build build --config Debug
+  - gdb -ex run --args ./build/ruc ./tests/errors/RegressTests/sm=.c
