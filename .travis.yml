@@ -17,7 +17,7 @@ matrix:
       before_install:
         - wget https://ftp.gnu.org/gnu/gdb/gdb-7.11.1.tar.xz
         - tar xopf gdb-7.11.1.tar.xz
-        - cd gdb-7.11.1.tar.xz
+        - cd gdb-7.11.1
         - ./configure
         - make
         - sudo make install
@@ -30,4 +30,4 @@ matrix:
 
 script:
 #  - ./scripts/test.sh -v v1.1 -d
-  - ./scripts/debug.sh ./tests/errors/RegressTests/sm=.c
+  - ./scripts/debug.sh ../tests/errors/RegressTests/sm=.c

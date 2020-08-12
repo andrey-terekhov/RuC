@@ -35,12 +35,13 @@ main()
 		gdb -x $init --args $ruc $1 &>$log
 	done
 
+	code=$?
 	cat $log
 
 	rm $init
 	rm $log
 
-	exit $?
+	exit $code
 }
 
 main $@
