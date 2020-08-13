@@ -29,16 +29,16 @@ main()
 	build
 	gdbinit
 
-	sudo gdb -x $init --args $ruc $1 &>$log
+	sudo gdb -x $init --args $ruc $1 #&>$log
 	while [[ $? != 139 ]]
 	do
-		sudo gdb -x $init --args $ruc $1 &>$log
+		sudo gdb -x $init --args $ruc $1 #&>$log
 	done
 
-	cat $log
+	#cat $log
 
 	rm $init
-	rm $log
+	#rm $log
 
 	exit 139
 }
