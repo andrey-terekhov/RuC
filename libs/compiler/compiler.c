@@ -121,8 +121,7 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 		compiler_context_attach_io(context, macro_processed, IO_TYPE_INPUT, IO_SOURCE_MEM);
 		output_tables_and_tree(context, tree_path);
-		printf("дерево построено\n");
-		if(!context->error_flag && !context->error_flag)
+		if(!context->error_flag)
 		{
 			output_codes(context, codes_path);
 		}
@@ -318,7 +317,7 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 
 	process_user_requests(context, workspace);
 
-	if(context->error_flag2 != 0 || context->error_flag != 0)
+	if(context->error_flag != 0)
 	{
 		k = 1;
 	}
