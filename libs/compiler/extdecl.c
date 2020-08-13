@@ -3570,7 +3570,7 @@ void block(compiler_context *context, int b)
 		else
 		{
 			statement(context);
-			if(context->cur == LEOF)
+			if(context->cur == LEOF && context->error_flag)
 			{
 				return;
 			}
