@@ -3463,7 +3463,7 @@ int gettype(compiler_context *context)
 		if (context->error_flag == 5)
 		{
 			context->error_flag = 3;
-			return;//1
+			return 0;//1
 		}
 		if (context->identab[context->lastid + 3] < 1000)
 		{
@@ -4003,7 +4003,7 @@ void ext_decl(compiler_context *context)
 
 			// описания идентов-не-функций
 
-			if (context->func_def == 4)
+			if (context->func_def == 3)
 			{
 				decl_id(context, context->type);
 			}

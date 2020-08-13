@@ -750,8 +750,8 @@ int scaner(compiler_context *context)
 		context->buf_flag--;
 	}
 	
-	// if(context->kw)
-	//		printf("scaner context->cur %i context->next %i repr %i\n",
-	//		context->cur, context->next, repr);
+//	 if(context->kw)
+//			printf("scaner context->cur %i context->next %i buf_flag %i\n",
+//			context->cur, context->next, context->buf_flag);
 	return context->cur;
 }
