@@ -3570,6 +3570,10 @@ void block(compiler_context *context, int b)
 		else
 		{
 			statement(context);
+			if(context->cur == LEOF)
+			{
+				return;
+			}
 		}
 	} while (notended);
 

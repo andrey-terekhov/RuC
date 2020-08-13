@@ -103,10 +103,10 @@ void error(compiler_context *context, int ernum)
 		}
 	}
 	
-	/*if(context->curchar != EOF)
+	if(context->curchar != EOF)
 	{
 		scaner(context);
-	}*/
+	}
 	/*int i = 0;
 	int k = 0;
 
