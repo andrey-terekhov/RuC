@@ -30,18 +30,11 @@ const char *name = "../tests/executable/floatsign.c";
 
 int main(int argc, const char *argv[])
 {
+	printf("\x1B[0m"); // Not working without using printf
+
 	if (argc < 2)
 	{
-		if (!compiler_compile(name))
-		{
-			printf("Корректное завершение");
-			return 0;
-		}
-		else
-		{
-			printf("Ошибка");
-			return 1;
-		}
+		return compiler_compile(name);
 	}
 	else
 	{
@@ -50,7 +43,7 @@ int main(int argc, const char *argv[])
 		ws = compiler_get_workspace(argc, argv);
 		if (ws == NULL)
 		{
-			fprintf(stderr, " failed to create a workspace\n");
+			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m failed to create a workspace\n");
 			return 1;
 		}
 
@@ -59,23 +52,16 @@ int main(int argc, const char *argv[])
 			char *str;
 
 			str = compiler_workspace_error2str(&ws->error);
-			fprintf(stderr, "error: %s", str != NULL ? str : "Unknown workspace error");
+			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m unknown workspace error\n");
 			free(str);
 
 			compiler_workspace_free(ws);
 			return 1;
 		}
-		int k = compiler_workspace_compile(ws);
+
+		int ret = compiler_workspace_compile(ws);
 		compiler_workspace_free(ws);
-		if(!k)
-		{
-			printf("Корректное завершение");
-			return 0;
-		}
-		else
-		{
-			printf("Ошибка");
-			return 1;
-		}
+
+		return ret;
 	}
 }

@@ -58,6 +58,11 @@ void compiler_context_init(compiler_context *context)
 	context->buf_flag = 0;
 	context->error_flag = 0;
 	context->new_line_flag = 0;
+	context->line = 1;
+	context->charnum = 0;
+	context->charnum_before = 0;
+	context->buf_cur = 0;
+	context->temp_tc = 0;
 }
 
 void compiler_context_deinit(compiler_context *context)
@@ -134,11 +139,11 @@ void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_
 		{
 			if (io_type_is_output(type))
 			{
-				printf(" ошибка открытия файла %s: %s\n", ptr, strerror(errno));
+				fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m %s: %s\n", ptr, strerror(errno));
 			}
 			else
 			{
-				printf(" не найден файл %s\n", ptr);
+				fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m %s: No such file or directory\n", ptr);
 			}
 			exit(1);
 		}

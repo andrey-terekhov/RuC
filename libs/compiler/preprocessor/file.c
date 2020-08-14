@@ -92,8 +92,8 @@ void m_old_nextch_type(preprocess_context *context)
 
 void control_string_pinter(preprocess_context *context, int before, int after)
 {
-	control_string* cs;
-	
+	control_string *cs;
+
 	if (context->h_flag == 0)
 	{
 		cs = &context->sources->files[context->sources->cur].cs;
@@ -116,10 +116,15 @@ void end_line(preprocess_context *context, macro_long_string *s)
 	}
 	if (context->FILE_flag)
 	{
-		context->line++;
+		context->line++; //!!
+
 #if MACRODEBUG
-		printf("Line %i) ", context->line);
-		
+		if (context->line == 2)
+		{
+			printf("\nИсходный текст:\n\n");
+		}
+
+		printf("Line %i) ", context->line - 1);
 
 		for (int j = context->temp_output; j < s->p; j++)
 		{
@@ -128,12 +133,10 @@ void end_line(preprocess_context *context, macro_long_string *s)
 				printf_character(s->str[j]);
 			}
 		}
-
-		printf("\n");
 #endif
-		context->temp_output = s->p; 
-	}
 
+		context->temp_output = s->p;
+	}
 }
 
 void m_onemore(preprocess_context *context)
@@ -149,9 +152,14 @@ void m_onemore(preprocess_context *context)
 			end_line(context, context->before_temp);
 		}
 	}
-	else
+	else if (context->current_string != NULL)
 	{
 		context->nextchar = context->current_string[context->current_p++];
+	}
+	else
+	{
+		printf("file.c m_onemore not current_string");
+		context->nextchar = EOF;
 	}
 }
 
@@ -170,7 +178,7 @@ void m_fprintf(int a, preprocess_context *context)
 
 	printer_printchar(&context->output_options, a);
 	// printf_character(a);
-	// printf(" %d \n", a);
+	// printf(", %d; \n", a);
 	// printf(" t = %d n = %d\n", nextch_type,context -> nextp);
 }
 
@@ -293,6 +301,6 @@ void m_nextch(preprocess_context *context)
 		}
 	}
 
-	// printf(" t = %d curcar = %c curcar = %i n = %d f = %d\n", context->nextch_type,
-	// context->curchar, context->curchar, context->nextp, context->inp_p);
+	// printf(" t = %d curcar = %c curcar = %i n = %d \n", context->nextch_type,
+	// context->curchar, context->curchar, context->nextp);
 }

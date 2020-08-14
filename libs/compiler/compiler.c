@@ -67,12 +67,12 @@ char *preprocess_ruc_file(compiler_context *context, compiler_workspace *workspa
 
 	char *result = preprocess_file(argc, argv, sources, headers);
 	free(argv);
-	
-	if(context->hfs.p == 0)
+
+	if (context->hfs.p == 0)
 	{
 		context->c_flag++;
 	}
-	
+
 	return result;
 }
 
@@ -101,18 +101,16 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 #endif
 		if (strlen(macro_path) == 0 || strlen(tree_path) == 0 || strlen(codes_path) == 0)
 		{
-			fprintf(stderr, " ошибка при создании временного файла\n");
+			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m ошибка:\x1B[0m не удалось создать временные файлы\n");
 			exit(1);
 		}
 
 		// Препроцессинг в массив
 
-
 		macro_processed = preprocess_ruc_file(context, workspace); // макрогенерация
 		if (macro_processed == NULL)
 		{
-			fprintf(stderr, " ошибка выделения памяти для "
-							"макрогенератора\n");
+			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m ошибка:\x1B[0m не удалось выделить память для макрогенератора\n");
 			exit(1);
 		}
 
@@ -121,7 +119,7 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 		compiler_context_attach_io(context, macro_processed, IO_TYPE_INPUT, IO_SOURCE_MEM);
 		output_tables_and_tree(context, tree_path);
-		if(!context->error_flag)
+		if (!context->error_flag)
 		{
 			output_codes(context, codes_path);
 		}
@@ -300,10 +298,10 @@ compiler_workspace *compiler_get_workspace(int argc, const char *argv[])
 COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 {
 	compiler_context *context = malloc(sizeof(compiler_context));
-	int k = 0;
+
 	if (context == NULL)
 	{
-		fprintf(stderr, " ошибка выделения памяти под контекст\n");
+		fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m ошибка:\x1B[0m не удалось выделить память под контекст\n");
 		return 1;
 	}
 
@@ -317,13 +315,11 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 
 	process_user_requests(context, workspace);
 
-	if(context->error_flag != 0)
-	{
-		k = 1;
-	}
+	int ret = get_exit_code(context);
 	compiler_context_deinit(context);
 	free(context);
-	return k;
+
+	return ret;
 }
 
 COMPILER_EXPORTED int compiler_compile(const char *path)

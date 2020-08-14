@@ -1,9 +1,9 @@
 
 void main()
 {
-	int b = 10;
-	goto ex;
-	ex:;
-	printid(b);
-	ex:;
+	int i = 0;
+	for (i = 0; i < 10 i++)
+	{
+		printid(i);
+	}
 }

@@ -14,9 +14,15 @@ matrix:
       # Beacause of https://stackoverflow.com/questions/50024731/ld-unrecognized-option-push-state-no-as-needed
       # we don't enable sanitizers on gcc
       env: ENABLE_SANITIZERS="-DENABLE_SANITIZERS=1"
+      # before_install:
+      #  - brew install gdb
+      #  - echo "set startup-with-shell off" >> ~/.gdbinit
     - name: "Ubuntu 16.04"
       os: linux
       dist: xenial
+      # before_install:
+      #  - sudo apt-get -y install gdb
 
 script:
   - ./scripts/test.sh -v v1.1
+#  - ./scripts/debug.sh ../tests/errors/RegressTests/sm=.c

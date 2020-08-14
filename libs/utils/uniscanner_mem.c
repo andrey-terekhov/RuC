@@ -91,7 +91,7 @@ int io_mem_scanf(universal_scanner_options *opts, const char *fmt, va_list args)
 	UNUSED(fmt);
 	UNUSED(args);
 
-	fprintf(stderr, "mem scanf not implemented\n");
+	fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m mem scanf not implemented\n");
 	exit(4);
 }
 
