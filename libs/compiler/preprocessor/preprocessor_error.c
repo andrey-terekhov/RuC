@@ -27,6 +27,11 @@
 
 void printf_character(int wchar)
 {
+	if (wchar < 0)
+	{
+		return;
+	}
+
 	if (wchar < 128)
 	{
 		printf("%c", wchar);
@@ -37,6 +42,87 @@ void printf_character(int wchar)
 		unsigned char second = (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
 
 		printf("%c%c", first, second);
+	}
+}
+
+void errors_set(int ernum)
+{
+	switch (ernum)
+	{
+		case after_preproces_words_must_be_space:
+			fprintf(stderr, "после команды препроцессора должен идти перенос строки\n");
+			break;
+		case after_ident_must_be_space1:
+			fprintf(stderr, "после идентификатора должен идти ' ' \n");
+			break;
+		case ident_begins_with_letters1:
+			fprintf(stderr, "идентификатор должен начинаться с буквы \n");
+			break;
+		case must_be_endif:
+			fprintf(stderr, "условный оператор препроцессора должен заканчиваться '#ENDIF' \n");
+			break;
+		case dont_elif:
+			fprintf(stderr, "в этом типе условного оператора не может использоваться '#ELIF' \n");
+			break;
+		case preproces_words_not_exist:
+			fprintf(stderr, "в препроцессоре не существует написанной команды\n");
+			break;
+		case not_enough_param:
+			fprintf(stderr, "у этого идентификатора меньше параметров\n");
+			break;
+		case functionid_begins_with_letters:
+			fprintf(stderr, "идентификатор с параметрами должен начинаться с буквы\n");
+			break;
+		case functions_cannot_be_changed:
+			fprintf(stderr, "идентификатор с параметрами нельзя переопределять\n");
+			break;
+		case after_functionid_must_be_comma:
+			fprintf(stderr, "после идентификатора в функции должны быть ')' или ',' потом ' ' \n");
+			break;
+		case stalpe:
+			fprintf(stderr, "в функции аргументы должны быть описаны через запятую, в скобках\n");
+			break;
+		case not_relis_if:
+			fprintf(stderr, "if ещё не реализован");
+			break;
+		case before_endif:
+			fprintf(stderr, "перед '#ENDIF' должен стоять условный оператор препроцессора\n");
+			break;
+		case repeat_ident:
+			fprintf(stderr, "этот идентификатор препроцессора уже используется\n");
+			break;
+		case ident_not_exist:
+			fprintf(stderr, "данный идентификатор препроцессора не существует\n");
+			break;
+		case comm_not_ended:
+			fprintf(stderr, "комментарий, начавшийся с /* , не закрыт\n");
+			break;
+		case not_enough_param2:
+			fprintf(stderr, "у этой функции больше параметров\n");
+			break;
+		case not_end_fail_define:
+			fprintf(stderr, "файл не может закончится до окончания команды '#DEFINE' поставьте перенос строки\n");
+			break;
+		case scob_not_clous:
+			fprintf(stderr, "количество открывающих скобок не соответствует числу закрывающих\n");
+			break;
+		case after_eval_must_be_ckob:
+			fprintf(stderr, "сразу после команды '#EVAL' должен быть символ '('\n");
+			break;
+		case too_many_nuber:
+			fprintf(stderr, "слишком большое число\n");
+			break;
+		case must_be_digit_after_exp1:
+			fprintf(stderr, "после экспоненты должно быть число\n");
+			break;
+		case not_arithmetic_operations:
+			fprintf(stderr, "все арифметические операции должны быть внутри команды '#EVAL()'\n");
+			break;
+		case not_logical_operations:
+			fprintf(stderr, "внутри команды '#EVAL()' не должно быть логических операций\n");
+			break;
+		default:
+			fprintf(stderr, "не реализованная ошибка №%d\n", ernum);
 	}
 }
 
@@ -66,13 +152,16 @@ void m_error(int ernum, preprocess_context *context)
 		int p = context->before_temp->p;
 
 #if MACRODEBUG
-		printf("\n Ошибка №%i при препроцесировании в файле: \"%s\"\n \n", ernum, name);
-#else
-		printf("\n Ошибка при препроцесировании в файле: \"%s\"\n \n", name);
+		printf("\n\n");
 #endif
+		fprintf(stderr, "\x1B[1;39m%s:\x1B[1;31m ошибка:\x1B[0m ", name);
+		errors_set(ernum);
 
-		int j = 2;
-		printf("line 1) ");
+#if MACRODEBUG
+		//int j = 2;
+		//printf("line 1) ");
+		printf(" ");
+
 		if ((f)->include_source.str[0] != '\0')
 		{
 			int *s2 = (f)->include_source.str;
@@ -81,8 +170,9 @@ void m_error(int ernum, preprocess_context *context)
 				printf_character(s[i]);
 				if (s2[i] == '\n')
 				{
-					printf("line %i) ", j);
-					j++;
+					printf(" ");
+					//printf("line %i) ", j);
+					//j++;
 				}
 				i++;
 			}
@@ -93,90 +183,18 @@ void m_error(int ernum, preprocess_context *context)
 			printf_character(s[i]);
 			if (s[i] == '\n')
 			{
-				printf("line %i) ", j);
-				j++;
+				printf(" ");
+				//printf("line %i) ", j);
+				//j++;
 			}
 		}
+		printf("\n");
+#endif
 	}
-
-	printf("\n тип ошибки: ");
-
-	switch (ernum)
+	else
 	{
-		case after_preproces_words_must_be_space:
-			printf("после команды препроцессора должен идти перенос строки\n");
-			break;
-		case after_ident_must_be_space1:
-			printf("после идентификатора должен идти ' ' \n");
-			break;
-		case ident_begins_with_letters1:
-			printf("идентификатор должен начинаться с буквы \n");
-			break;
-		case must_be_endif:
-			printf("условный оператор препроцессора должен заканчиваться '#ENDIF' \n");
-			break;
-		case dont_elif:
-			printf("в этом типе условного оператора не может использоваться '#ELIF' \n");
-			break;
-		case preproces_words_not_exist:
-			printf("в препроцессоре не существует написанной команды\n");
-			break;
-		case not_enough_param:
-			printf("у этого идентификатора меньше параметров\n");
-			break;
-		case functionid_begins_with_letters:
-			printf("идентификатор с параметрами должен начинаться с буквы\n");
-			break;
-		case functions_cannot_be_changed:
-			printf("идентификатор с параметрами нельзя переопределять\n");
-			break;
-		case after_functionid_must_be_comma:
-			printf("после идентификатора в функции должны быть ')' или ',' потом ' ' \n");
-			break;
-		case stalpe:
-			printf("в функции аргументы должны быть описаны через запятую, в скобках\n");
-			break;
-		case not_relis_if:
-			printf("if ещё не реализован");
-			break;
-		case before_endif:
-			printf("перед '#ENDIF' должен стоять условный оператор препроцессора\n");
-			break;
-		case repeat_ident:
-			printf("этот идентификатор препроцессора уже используется\n");
-			break;
-		case ident_not_exist:
-			printf("данный идентификатор препроцессора не существует\n");
-			break;
-		case comm_not_ended:
-			printf("комментарий, начавшийся с /* , не закрыт\n");
-			break;
-		case not_enough_param2:
-			printf("у этой функции больше параметров\n");
-			break;
-		case not_end_fail_define:
-			printf("файл не может закончится до окончания команды '#DEFINE' поставьте перенос строки\n");
-			break;
-		case scob_not_clous:
-			printf("количество открывающих скобок не соответствует числу закрывающих\n");
-			break;
-		case after_eval_must_be_ckob:
-			printf("сразу после команды '#EVAL' должен быть символ '('\n");
-			break;
-		case too_many_nuber:
-			printf("слишком большое число\n");
-			break;
-		case must_be_digit_after_exp1:
-			printf("после экспоненты должно быть число\n");
-			break;
-		case not_arithmetic_operations:
-			printf("все арифметические операции должны быть внутри команды '#EVAL()'\n");
-			break;
-		case not_logical_operations:
-			printf("внутри команды '#EVAL()' не должно быть логических операций\n");
-			break;
-		default:
-			printf("не реализованная ошибка №%d\n", ernum);
+		fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m ошибка:\x1B[0m ");
+		errors_set(ernum);
 	}
 
 	exit(2);
