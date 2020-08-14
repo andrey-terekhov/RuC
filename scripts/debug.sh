@@ -4,7 +4,7 @@ build()
 {
 	cd `dirname $0`/..
 	mkdir -p build && cd build && cmake ..
-	if ! cmake --build . --config Release ; then
+	if ! cmake --build . --config Debug ; then
 		exit 1
 	fi
 
@@ -26,22 +26,21 @@ gdbinit()
 
 main()
 {
-	#build
-	ruc=./ruc
+	build
 	gdbinit
 
-	sudo gdb -x $init --args $ruc $@ #&>$log
-	#while [[ $? != 139 ]]
-	#do
-		#sudo gdb -x $init --args $ruc $1 #&>$log
-	#done
+	sudo gdb -x $init --args $ruc $@ &>$log
+	while [[ $? != 139 ]]
+	do
+		sudo gdb -x $init --args $ruc $@ &>$log
+	done
 
-	#cat $log
+	cat $log
 
-	#rm $init
-	#rm $log
+	rm $init
+	rm $log
 
-	exit $? #139
+	exit 139
 }
 
 main $@

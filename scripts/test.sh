@@ -68,11 +68,11 @@ build()
 {
 	cd `dirname $0`/..
 	mkdir -p build && cd build && cmake ..
-	if ! cmake --build . --config Debug ; then
+	if ! cmake --build . --config Release ; then
 		exit 1
 	fi
 
-	ruc_compiler=../scripts/debug.sh
+	ruc_compiler=./ruc
 
 	build_vm
 
@@ -189,9 +189,9 @@ compiling()
 			message_failure
 			let failure++
 
-			#if ! [[ -z $debug ]] ; then
+			if ! [[ -z $debug ]] ; then
 				cat $log
-			#fi
+			fi
 			;;
 		*)
 			if [[ $path == $error_dir/* ]] ; then
@@ -201,9 +201,9 @@ compiling()
 				message_failure
 				let failure++
 
-				#if ! [[ -z $debug ]] ; then
+				if ! [[ -z $debug ]] ; then
 					cat $log
-				#fi
+				fi
 			fi
 			;;
 	esac
@@ -218,8 +218,7 @@ test()
 		action="compiling"
 
 		if [[ $path != */$include_subdir/* ]] ; then
-			$ruc_compiler $sources &>$log
-			#internal_timeout $wait_for $ruc_compiler $sources &>$log
+			internal_timeout $wait_for $ruc_compiler $sources &>$log
 			compiling
 		fi
 	done
@@ -238,8 +237,7 @@ test()
 
 			action="compiling"
 
-			$ruc_compiler $sources &>$log
-			#internal_timeout $wait_for $ruc_compiler $sources &>$log
+			internal_timeout $wait_for $ruc_compiler $sources &>$log
 			compiling
 		done
 	done
