@@ -57,6 +57,7 @@ int main(int argc, const char *argv[])
 			return 1;
 		}
 
+		printf("compiler_get_workspace()\n");
 		int ret = compiler_workspace_compile(ws);
 		compiler_workspace_free(ws);
 

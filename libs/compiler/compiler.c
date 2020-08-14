@@ -65,6 +65,7 @@ char *preprocess_ruc_file(compiler_context *context, compiler_workspace *workspa
 		current = current->next;
 	}
 
+	printf("preprocess_ruc_file()\n");
 	char *result = preprocess_file(argc, argv, sources, headers);
 	free(argv);
 
@@ -107,7 +108,7 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 		// Препроцессинг в массив
 
-		printf("!!!!!!!!!!!!!!1\n");
+		printf("process_user_requests()\n");
 		macro_processed = preprocess_ruc_file(context, workspace); // макрогенерация
 		if (macro_processed == NULL)
 		{
@@ -315,6 +316,7 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 
 	init_modetab(context);
 
+	printf("init_modetab()\n");
 	process_user_requests(context, workspace);
 
 	int ret = get_exit_code(context);
