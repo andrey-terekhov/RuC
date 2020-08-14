@@ -137,7 +137,7 @@ void m_error(int ernum, preprocess_context *context)
 	{
 		int i = 0;
 		data_file *f;
-		
+
 		if (context->h_flag)
 		{
 			f = &context->headers->files[context->headers->cur];
@@ -158,8 +158,8 @@ void m_error(int ernum, preprocess_context *context)
 		errors_set(ernum);
 
 #if MACRODEBUG
-		//int j = 2;
-		//printf("line 1) ");
+		// int j = 2;
+		// printf("line 1) ");
 		printf(" ");
 
 		if ((f)->include_source.str[0] != '\0')
@@ -171,8 +171,8 @@ void m_error(int ernum, preprocess_context *context)
 				if (s2[i] == '\n')
 				{
 					printf(" ");
-					//printf("line %i) ", j);
-					//j++;
+					// printf("line %i) ", j);
+					// j++;
 				}
 				i++;
 			}
@@ -184,8 +184,8 @@ void m_error(int ernum, preprocess_context *context)
 			if (s[i] == '\n')
 			{
 				printf(" ");
-				//printf("line %i) ", j);
-				//j++;
+				// printf("line %i) ", j);
+				// j++;
 			}
 		}
 		printf("\n");

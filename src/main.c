@@ -31,7 +31,7 @@ const char *name = "../tests/executable/floatsign.c";
 int main(int argc, const char *argv[])
 {
 	printf("\x1B[0m"); // Not working without using printf
-	
+
 	if (argc < 2)
 	{
 		return compiler_compile(name);
