@@ -38,8 +38,9 @@ void onemore(compiler_context *context)
 	context->curchar = context->nextchar;
 	context->nextchar = getnext(context);
 	if (0)
-	{ // context->kw)
-		printf("context->curchar =%c %i context->nextchar=%c %i\n", context->curchar, context->curchar,
+	{
+		// context->kw)
+		printf("context->curchar=%c %i context->nextchar=%c %i\n", context->curchar, context->curchar,
 			   context->nextchar, context->nextchar);
 	}
 }
@@ -474,9 +475,8 @@ int scan(compiler_context *context)
 			next_string_elem(context);
 			if (context->curchar != '\'')
 			{
-				// error(context, no_right_apost);
+				error(context, no_right_apost);
 				context->error_flag = 1;
-				printf("символьная константа не заканчивается символом '\n");
 			}
 			else
 			{

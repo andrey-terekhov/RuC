@@ -467,14 +467,11 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 	context.mfirstrp = context.rp;
 
 
-	printf("preprocess_file()\n");
 	open_files(&context, argc, argv);
 
 
-	printf("open_files()\n");
 	preprocess_h_file(&context);
 
-	printf("preprocess_h_file()\n");
 	preprocess_c_file(&context);
 
 	context.before_temp = NULL;

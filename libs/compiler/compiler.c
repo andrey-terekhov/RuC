@@ -65,7 +65,6 @@ char *preprocess_ruc_file(compiler_context *context, compiler_workspace *workspa
 		current = current->next;
 	}
 
-	printf("preprocess_ruc_file()\n");
 	char *result = preprocess_file(argc, argv, sources, headers);
 	free(argv);
 
@@ -102,18 +101,16 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 #endif
 		if (strlen(macro_path) == 0 || strlen(tree_path) == 0 || strlen(codes_path) == 0)
 		{
-			fprintf(stderr, " ошибка при создании временного файла\n");
+			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m ошибка:\x1B[0m не удалось создать временные файлы\n");
 			exit(1);
 		}
 
 		// Препроцессинг в массив
 
-		printf("process_user_requests()\n");
 		macro_processed = preprocess_ruc_file(context, workspace); // макрогенерация
 		if (macro_processed == NULL)
 		{
-			fprintf(stderr, " ошибка выделения памяти для "
-							"макрогенератора\n");
+			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m ошибка:\x1B[0m не удалось выделить память для макрогенератора\n");
 			exit(1);
 		}
 
@@ -304,7 +301,7 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 
 	if (context == NULL)
 	{
-		fprintf(stderr, " ошибка выделения памяти под контекст\n");
+		fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m ошибка:\x1B[0m не удалось выделить память под контекст\n");
 		return 1;
 	}
 
@@ -316,14 +313,12 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 
 	init_modetab(context);
 
-	printf("init_modetab()\n");
 	process_user_requests(context, workspace);
 
 	int ret = get_exit_code(context);
 	compiler_context_deinit(context);
 	free(context);
 
-	printf(" "); // Not working without using printf
 	return ret;
 }
 

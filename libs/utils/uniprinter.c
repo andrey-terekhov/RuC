@@ -73,7 +73,7 @@ int printer_printf(universal_printer_options *opts, const char *fmt, ...)
 
 		if (*tmp == NULL)
 		{
-			fprintf(stderr, " failed to find a suitable printer\n");
+			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m failed to find a suitable printer\n");
 			exit(1);
 		}
 

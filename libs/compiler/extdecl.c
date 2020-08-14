@@ -2033,7 +2033,6 @@ void struct_init(compiler_context *context, int decl_type)
 	if (context->cur != BEGIN)
 	{
 		error(context, struct_init_must_start_from_BEGIN);
-		printf("инициализация структуры должна начинаться со {\n");
 		context->buf_cur = context->next;
 		context->next = context->cur;
 		context->cur = BEGIN;
@@ -2059,8 +2058,6 @@ void struct_init(compiler_context *context, int decl_type)
 			else
 			{
 				error(context, no_comma_in_init_list);
-				printf("между элементами инициализации массива или структуры "
-					   "должна быть ,\n");
 				context->next = context->cur;
 				context->cur = COMMA;
 			}
@@ -2075,7 +2072,6 @@ void struct_init(compiler_context *context, int decl_type)
 	else
 	{
 		error(context, wait_end);
-		printf("в инициализации структуры здесь ожидалась правая фигурная скобка }\n");
 		context->cur = END;
 	}
 	context->leftansttype = decl_type;

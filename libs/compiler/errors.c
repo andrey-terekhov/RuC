@@ -32,8 +32,27 @@ void printident(compiler_context *context, int r)
 	} while (REPRTAB[r] != 0);
 }
 
+void print_error_location(compiler_context *context)
+{
+	data_file *file;
+
+	if (context->c_flag)
+	{
+		file = &((context->cfs).files[(context->cfs).cur]);
+	}
+	else
+	{
+		file = &((context->hfs).files[(context->hfs).cur]);
+	}
+
+	printer_printf(&context->err_options, "\x1B[1;39m%s:\x1B[0m ", file->name);
+}
+
 void warning(compiler_context *context, int ernum)
 {
+	print_error_location(context);
+	printer_printf(&context->err_options, "\x1B[1;35mпредупреждение:\x1B[0m ");
+
 	switch (ernum)
 	{
 		case too_long_int:
@@ -83,22 +102,6 @@ void show_macro(compiler_context *context, int k, int nwe_line, int *s, int num)
 		}
 		printer_printf(&context->err_options, "\n");
 	}
-}
-
-void print_error_location(compiler_context *context)
-{
-	data_file *file;
-
-	if (context->c_flag)
-	{
-		file = &((context->cfs).files[(context->cfs).cur]);
-	}
-	else
-	{
-		file = &((context->hfs).files[(context->hfs).cur]);
-	}
-
-	printer_printf(&context->err_options, "\x1B[1;39m%s:\x1B[0m ", file->name);
 }
 
 void error(compiler_context *context, int ernum)
