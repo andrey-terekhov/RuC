@@ -24,5 +24,5 @@ matrix:
         - sudo apt-get -y install gdb
 
 script:
-#  - ./scripts/test.sh -v v1.1 -d
-  - ./scripts/debug.sh ../tests/errors/RegressTests/sm=.c
+  - ./scripts/test.sh -v v1.1 -d -w 5
+#  - ./scripts/debug.sh ../tests/errors/RegressTests/sm=.c

@@ -68,11 +68,11 @@ build()
 {
 	cd `dirname $0`/..
 	mkdir -p build && cd build && cmake ..
-	if ! cmake --build . --config Release ; then
+	if ! cmake --build . --config Debug ; then
 		exit 1
 	fi
 
-	ruc_compiler=./ruc
+	ruc_compiler=../scripts/debug.sh
 
 	build_vm
 
@@ -218,7 +218,8 @@ test()
 		action="compiling"
 
 		if [[ $path != */$include_subdir/* ]] ; then
-			internal_timeout $wait_for $ruc_compiler $sources &>$log
+			$ruc_compiler $sources &>$log
+			#internal_timeout $wait_for $ruc_compiler $sources &>$log
 			compiling
 		fi
 	done
@@ -237,7 +238,8 @@ test()
 
 			action="compiling"
 
-			internal_timeout $wait_for $ruc_compiler $sources &>$log
+			$ruc_compiler $sources &>$log
+			#internal_timeout $wait_for $ruc_compiler $sources &>$log
 			compiling
 		done
 	done

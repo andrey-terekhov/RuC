@@ -26,21 +26,22 @@ gdbinit()
 
 main()
 {
-	build
+	#build
+	ruc=./ruc
 	gdbinit
 
-	sudo gdb -x $init --args $ruc $1 #&>$log
-	while [[ $? != 139 ]]
-	do
-		sudo gdb -x $init --args $ruc $1 #&>$log
-	done
+	sudo gdb -x $init --args $ruc $@ #&>$log
+	#while [[ $? != 139 ]]
+	#do
+		#sudo gdb -x $init --args $ruc $1 #&>$log
+	#done
 
 	#cat $log
 
-	rm $init
+	#rm $init
 	#rm $log
 
-	exit 139
+	exit $? #139
 }
 
 main $@
