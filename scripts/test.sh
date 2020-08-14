@@ -189,9 +189,9 @@ compiling()
 			message_failure
 			let failure++
 
-			if ! [[ -z $debug ]] ; then
+			#if ! [[ -z $debug ]] ; then
 				cat $log
-			fi
+			#fi
 			;;
 		*)
 			if [[ $path == $error_dir/* ]] ; then
@@ -201,9 +201,9 @@ compiling()
 				message_failure
 				let failure++
 
-				if ! [[ -z $debug ]] ; then
+				#if ! [[ -z $debug ]] ; then
 					cat $log
-				fi
+				#fi
 			fi
 			;;
 	esac
