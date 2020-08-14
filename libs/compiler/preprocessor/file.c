@@ -117,9 +117,14 @@ void end_line(preprocess_context *context, macro_long_string *s)
 	if (context->FILE_flag)
 	{
 		context->line++; //!!
-#if MACRODEBUG
-		printf("Line %i) ", context->line - 1);
 
+#if MACRODEBUG
+		if (context->line == 2)
+		{
+			printf("\nИсходный текст:\n\n");
+		}
+
+		printf("Line %i) ", context->line - 1);
 
 		for (int j = context->temp_output; j < s->p; j++)
 		{
@@ -128,8 +133,8 @@ void end_line(preprocess_context *context, macro_long_string *s)
 				printf_character(s->str[j]);
 			}
 		}
-
 #endif
+
 		context->temp_output = s->p;
 	}
 }

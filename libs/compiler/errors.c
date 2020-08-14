@@ -332,7 +332,7 @@ void error(compiler_context *context, int ernum)
 			printer_printf(&context->err_options, "в каждой программе должна быть ГЛАВНАЯ функция\n");
 			break;
 		case no_leftbr_in_printid: // OK/12
-			printer_printf(&context->err_options, "в колманде ПЕЧАТЬИД или ЧИТАТЬИД нет (\n");
+			printer_printf(&context->err_options, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет (\n");
 			break;
 		case no_rightbr_in_printid: // OK/13
 			printer_printf(&context->err_options, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет )\n");
@@ -485,16 +485,16 @@ void error(compiler_context *context, int ernum)
 			break;
 
 		case error_in_initialization:
-			printer_printf(&context->err_options, "Несоотетствие типов при инициализации переменной\n");
+			printer_printf(&context->err_options, "несоответствие типов при инициализации переменной\n");
 			break;
 		case type_missmatch:
-			printer_printf(&context->err_options, "Несоответствие типов\n");
+			printer_printf(&context->err_options, "несоответствие типов\n");
 			break;
 		case array_assigment:
-			printer_printf(&context->err_options, "Присваивание в массив запрещено\n");
+			printer_printf(&context->err_options, "присваивание в массив запрещено\n");
 			break;
 		case wrong_struct_ass:
-			printer_printf(&context->err_options, "Для структур и указателей допустима только операция "
+			printer_printf(&context->err_options, "для структур и указателей допустима только операция "
 												  "присваивания =\n");
 			break;
 		case wrong_init:
@@ -578,17 +578,17 @@ void error(compiler_context *context, int ernum)
 			break;
 
 		case no_leftbr_in_printf: // OK
-			printer_printf(&context->err_options, "Не хватает открывающей скобки в printf/печатьф\n");
+			printer_printf(&context->err_options, "не хватает открывающей скобки в printf/печатьф\n");
 			break;
 		case no_rightbr_in_printf:
-			printer_printf(&context->err_options, "Не хватает закрывающей скобки в printf/печатьф\n");
+			printer_printf(&context->err_options, "не хватает закрывающей скобки в printf/печатьф\n");
 			break;
 		case wrong_first_printf_param:
-			printer_printf(&context->err_options, "Первым параметром в printf/печатьф должна быть константная "
+			printer_printf(&context->err_options, "первым параметром в printf/печатьф должна быть константная "
 												  "форматная строка\n");
 			break;
 		case wrong_printf_param_type:
-			printer_printf(&context->err_options, "Тип параметра printf/печатьф не соответствует "
+			printer_printf(&context->err_options, "тип параметра printf/печатьф не соответствует "
 												  "спецификатору: %%");
 			printer_printchar(&context->err_options, context->bad_printf_placeholder);
 			switch (context->bad_printf_placeholder)
@@ -610,7 +610,7 @@ void error(compiler_context *context, int ernum)
 					break;
 
 				case 1089: // с
-					printer_printf(&context->err_options, " (русск.)");
+					printer_printf(&context->err_options, " (рус.)");
 				case 's':
 					printer_printf(&context->err_options, " ожидает строку\n");
 					break;
@@ -619,19 +619,19 @@ void error(compiler_context *context, int ernum)
 			}
 			break;
 		case wrong_printf_param_number:
-			printer_printf(&context->err_options, "Количество параметров printf/печатьф не соответствует "
+			printer_printf(&context->err_options, "количество параметров printf/печатьф не соответствует "
 												  "количеству спецификаторов\n");
 			break;
 		case printf_no_format_placeholder:
-			printer_printf(&context->err_options, "В printf/печатьф нет спецификатора типа после '%%'\n");
+			printer_printf(&context->err_options, "в printf/печатьф нет спецификатора типа после '%%'\n");
 			break;
 		case printf_unknown_format_placeholder:
-			printer_printf(&context->err_options, "В printf/печатьф неизвестный спецификатор типа %%");
+			printer_printf(&context->err_options, "в printf/печатьф неизвестный спецификатор типа %%");
 			printer_printchar(&context->err_options, context->bad_printf_placeholder);
 			printer_printf(&context->err_options, "\n");
 			break;
 		case too_many_printf_params:
-			printer_printf(&context->err_options, "Максимально в printf/печатьф можно выводить %i значений\n",
+			printer_printf(&context->err_options, "максимально в printf/печатьф можно выводить %i значений\n",
 						   MAXPRINTFPARAMS);
 			break;
 

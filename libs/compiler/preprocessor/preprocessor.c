@@ -454,10 +454,6 @@ void preprocess_c_file(preprocess_context *context)
 
 char *preprocess_file(int argc, const char *argv[], data_files *sources, data_files *headers)
 {
-#if MACRODEBUG
-	printf("\nИсходный текст:\n \n");
-#endif
-
 	preprocess_context context;
 	preprocess_context_init(&context, sources, headers);
 	printer_attach_buffer(&context.output_options, 1024);
@@ -480,7 +476,8 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 	char *macro_processed = context.output_options.ptr;
 
 #if MACRODEBUG
-	printf("\n>\n%s<\n", macro_processed);
+	printf("\n\n");
+	printf("Текст после препроцессирования:\n\n%s\n", macro_processed);
 #endif
 	return macro_processed;
 }
