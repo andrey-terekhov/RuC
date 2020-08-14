@@ -90,7 +90,8 @@ internal_timeout()
 	if [[ $? == 0 ]] ; then
 		timeout $@
 	else
-		perl -e 'alarm shift; exec @ARGV' $@;
+		# perl -e 'alarm shift; exec @ARGV' $@;
+		gtimeout $@
 	fi
 }
 
