@@ -45,8 +45,8 @@ void m_error(int ernum, preprocess_context *context)
 	if (context->before_temp != NULL)
 	{
 		int i = 0;
-		data_file* f;
-		if( context == NULL)
+		data_file *f;
+		if (context == NULL)
 		{
 			printf("context null\n");
 		}
@@ -54,23 +54,23 @@ void m_error(int ernum, preprocess_context *context)
 		if (context->h_flag)
 		{
 			f = &context->headers->files[context->headers->cur];
-			printf(" h cur = %d\n",context->headers->cur);
+			printf(" h cur = %d\n", context->headers->cur);
 		}
 		else
 		{
 			f = &context->sources->files[context->sources->cur];
-			printf(" c cur = %d\n",context->sources->cur);
+			printf(" c cur = %d\n", context->sources->cur);
 		}
-	
-		if( f == NULL)
+
+		if (f == NULL)
 		{
 			printf("f null\n");
 		}
-		if( f->name == NULL)
+		if (f->name == NULL)
 		{
 			printf("name null\n");
 		}
-		if(f->include_source.str == NULL)
+		if (f->include_source.str == NULL)
 		{
 			printf("include_source null\n");
 		}

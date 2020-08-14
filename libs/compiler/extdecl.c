@@ -287,8 +287,8 @@ int toidentab(compiler_context *context, int f, int type)
 			error(context, repeated_decl);
 			context->error_flag2 = 1;
 			return 0; // 1
-			// только определение функции может иметь 2
-			// описания, т.е. иметь предописание
+					  // только определение функции может иметь 2
+					  // описания, т.е. иметь предописание
 		}
 	}
 

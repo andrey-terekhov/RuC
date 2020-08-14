@@ -219,7 +219,7 @@ void marcer_update(compiler_context *context)
 			files = &context->hfs;
 		}
 		nextch(context);
-		if((files->files[files->cur]).pred != -1)
+		if ((files->files[files->cur]).pred != -1)
 		{
 			files->cur = (files->files[files->cur]).pred;
 		}
@@ -738,7 +738,7 @@ int scan(compiler_context *context)
 				context->error_flag2 = 1;
 				return 0;
 			}
-		}
+	}
 }
 
 int scaner(compiler_context *context)

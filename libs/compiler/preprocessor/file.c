@@ -116,7 +116,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 	}
 	if (context->FILE_flag)
 	{
-		context->line++;//!!
+		context->line++; //!!
 #if MACRODEBUG
 		printf("Line %i) ", context->line - 1);
 
@@ -129,7 +129,7 @@ void end_line(preprocess_context *context, macro_long_string *s)
 			}
 		}
 
-		//printf("\n");
+		// printf("\n");
 #endif
 		context->temp_output = s->p;
 	}
@@ -173,8 +173,8 @@ void m_fprintf(int a, preprocess_context *context)
 	}
 
 	printer_printchar(&context->output_options, a);
-	//printf_character(a);
-	//printf(", %d; \n", a);
+	// printf_character(a);
+	// printf(", %d; \n", a);
 	// printf(" t = %d n = %d\n", nextch_type,context -> nextp);
 }
 

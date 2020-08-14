@@ -140,12 +140,12 @@ void error(compiler_context *context, int ernum)
 		i++;
 	}
 	nwe_line += 1;
-	//!!! const char *name - имя файла 
+	//!!! const char *name - имя файла
 	//!!! int *s - большой текст
 	//!!! int nwe_line - номер реальной строки в большом тексте (s)
-	//int num_line = nwe_line + f->include_line;//!!! - номер строки (цифра которую вывести в сообщении) 
+	//int num_line = nwe_line + f->include_line;//!!! - номер строки (цифра которую вывести в сообщении)
 
-	
+
 	/*i = 0;
 	k = 0;
 	if (f->include_source.str[0] != 0)

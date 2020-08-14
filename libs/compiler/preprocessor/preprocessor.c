@@ -280,7 +280,7 @@ void add_c_file_siple(preprocess_context *context)
 	context->sources->files[context->sources->cur].cs.p = 0;
 	context->control_aflag = 0;
 	context->control_bflag = 0;
-	
+
 	while (context->curchar != EOF && context->main_file == -1)
 	{
 		if (context->curchar == 'm' || context->curchar == 'M' || context->curchar == 0x413 ||
