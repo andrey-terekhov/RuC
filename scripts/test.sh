@@ -86,11 +86,9 @@ build()
 
 internal_timeout()
 {
-	which timeout
-	if [[ $? == 0 ]] ; then
+	if [[ $OSTYPE == "linux-gnu" ]] ; then
 		timeout $@
 	else
-		# perl -e 'alarm shift; exec @ARGV' $@;
 		gtimeout $@
 	fi
 }

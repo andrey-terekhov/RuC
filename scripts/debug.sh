@@ -1,5 +1,18 @@
 #!/bin/bash
 
+install()
+{
+	which gdb
+	if [[ $? != 0 ]] ; then
+		if [[ $OSTYPE == "linux-gnu" ]] ; then
+			sudo apt-get -y install gdb
+		else
+			brew install gdb
+			echo "set startup-with-shell off" >> ~/.gdbinit
+		fi
+	fi
+}
+
 build()
 {
 	cd `dirname $0`/..
@@ -26,6 +39,7 @@ gdbinit()
 
 main()
 {
+	install
 	build
 	gdbinit
 
