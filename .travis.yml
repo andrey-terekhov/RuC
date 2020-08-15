@@ -10,7 +10,7 @@ matrix:
   include:
     - name: "macOS"
       os: osx
-      osx_image: xcode10.1
+      osx_image: xcode12
       # Beacause of https://stackoverflow.com/questions/50024731/ld-unrecognized-option-push-state-no-as-needed
       # we don't enable sanitizers on gcc
       env: ENABLE_SANITIZERS="-DENABLE_SANITIZERS=1"
