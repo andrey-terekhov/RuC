@@ -1,4 +1,4 @@
-#defineKEK 1
+#define KEK 1
 
 int main ()
 {
