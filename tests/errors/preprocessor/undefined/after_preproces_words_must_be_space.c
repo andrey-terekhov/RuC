@@ -1,4 +1,4 @@
-#define KEK 1 
+#define KEK 1
 int main ()
 {
 	#if KEK==0 printf("0\n");
