@@ -8,7 +8,7 @@
 #include <stdlib.h>
 extern void tablesandtree();
 
-int t, op, opnd;
+int t, op, opnd, firststruct = 1;
 
 int mcopy()
 {
@@ -16,7 +16,7 @@ int mcopy()
     return mtree[mtc++] = tree[tc++];
 }
 
-int munop(int t)
+int munop(int t)  // один операнд, возвращает n+1, где n = числу параметров
 {
     switch (t)
     {
@@ -53,17 +53,11 @@ int munop(int t)
             
             return 1;
 
-
         case TPrint:
-        case TPrintf:
+//        case TPrintf:
+        case TDYNSelect:
+
             return 2;
-            
-        case COPY01:
-        case COPY10:
-        case COPY0STASS:
-        case COPY0ST:
-            
-            return 3;
             
         default:
             
@@ -71,13 +65,17 @@ int munop(int t)
     }
 }
 
-int mbinop(int t)
+int mbinop(int t)   // два операнда, возвращает n+1, где n = числу параметров
 {
     switch (t)
     {
             
         case LOGAND:
         case LOGOR:
+            
+        case TArassn:
+        case TArassni:
+        case TArassnc:
             
             op += 1000;
             return 2;
@@ -148,13 +146,19 @@ int mbinop(int t)
         case LMINUSR:
         case LMULTR:    
         case LDIVR:
-            
-        case COPY11:
-        case COPY1STASS:
-        case COPY1ST:
+
             
             op += 1000;
             return 1;
+            
+        case COPY11:
+            op += 1000;
+            return 2;
+            
+        case COPY01:
+        case COPY10:
+            op += 1000;
+            return 3;
             
         case COPY00:
             op += 1000;
@@ -166,6 +170,7 @@ int mbinop(int t)
 }
 
 void mexpr();
+int operand();
 
 void mstatement();
 
@@ -247,9 +252,19 @@ void mstatement()
             {
                 t = mcopy();
             }while (t != 0);
-            
             break;
-           
+            
+        case TPrintf:
+            mcopy();
+            mcopy();   // sumsize
+            operand(); // форматная строка
+            do
+            {
+                mexpr();
+            }while (tree[tc] != 0);
+            tc++;
+            break;
+            
         default:
             mexpr();
     }
@@ -297,14 +312,28 @@ int operand()
         mcopy();
         mcopy();
     }
-    else if (t == TString || t == TStringf)
+    else if (t == TString || t == TStringc || t == TStringf)
     {
+        int nstr;
         mcopy();
-        int nstr = mcopy();
+        nstr = mcopy();
         for (i=0; i<nstr; i++)
+        {
             mcopy();
+            mcopy();
+        }
     }
-    else if (t == TSliceident/* || t == TSelect */)
+    else if (t == TStringform)
+    {
+        int nstr;
+        mcopy();
+        nstr = mcopy();
+        for (i=0; i<nstr; i++)
+        {
+            mcopy();
+        }
+    }
+    else if (t == TSliceident)
     {
         mcopy();
         mcopy();             // displ
@@ -344,20 +373,23 @@ int operand()
     else if (t == TStructinit)
     {
         int i, n;
+        if (firststruct)
+            firststruct = 0;
+        else
+            flag = 0;
         mcopy();
         n =  mcopy();
         for (i=0; i<n; i++)
             mexpr();
+        firststruct = 1;
     }
     else if (t == TIdenttoval || t == TIdenttovalc || t == TIdenttovalf ||
-             t == TIdenttoaddr || t == TConst || t == TConstc || t == TConstf ||
-             t == TSelect || t== TSelectc || t == TSelectf || t == TSelectd ||
-             t == TDYNSelect)
+             t == TIdenttoaddr || t == TConst || t == TConstc || t == TConstf)
     {
         mcopy();
         mcopy();
     }
-    else if (t == TConstd || t == TIdenttovald)
+    else if (t == TConstd || t == TIdenttovald || t == TSelect)
     {
         mcopy();
         mcopy();

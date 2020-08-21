@@ -10,7 +10,7 @@
 const char * name =
 //"tests/Mishatest.c";
 
-"tests/mips/inc_dec.c";
+"tests/mips/arrays3.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
@@ -38,7 +38,7 @@ int nextchar, curchar, func_def;
 int hashtab[256], reprtab[MAXREPRTAB], rp = 1, identab[MAXIDENTAB], id = 2,
     modetab[MAXMODETAB], md = 1, startmode = 1;
 int stack[100], stackop[100], stackoperands[100], stacklog[100], ansttype,
-    sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg = -1, displ = 0, maxdispl,
+    sp=0, sopnd=-1, aux=0, lastid, curid = 2, lg = -1, displ = 24, maxdispl,
     maxdisplg, type, op = 0, inass = 0, firstdecl;
 int iniprocs[INIPROSIZE], procd = 1, arrdim, arrelemlen, was_struct_with_arr, usual;
 int instring = 0, inswitch = 0, inloop = 0, lexstr[MAXSTRINGL+1];
@@ -85,6 +85,12 @@ int main(int argc, const char * argv[])
 {
     int i;
 
+    if (argc != 2){
+        printf("Error: not enough argumnts\n");
+    }
+    else {
+        name = argv[1];
+    }
     for (i=0; i<256; i++)
         hashtab[i] = 0;
     

@@ -80,6 +80,7 @@
 				ED9101951FAA0CF50089A8A4 /* keywords.txt */,
 				ED6E611F221311DC00363321 /* mipsgen.c */,
 				ED6E6120221311DC00363321 /* mipsopt.c */,
+				EDCB45881DDF4B9C0030AE24 /* main.c */,
 				EDC2DE3821357B1C0056585C /* preprocess.c */,
 				EDE8849F1F499DA300DAE9F0 /* th_static.h */,
 				EDCB45821DDF4B9C0030AE24 /* codes.c */,
@@ -88,7 +89,6 @@
 				EDCB45841DDF4B9C0030AE24 /* error.c */,
 				EDCB45851DDF4B9C0030AE24 /* extdecl.c */,
 				ED70946E2350BC0500FACB6D /* Defs.h */,
-				EDCB45881DDF4B9C0030AE24 /* main.c */,
 			);
 			path = RuC;
 			sourceTree = "<group>";

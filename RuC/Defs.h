@@ -128,6 +128,8 @@
 #define DECATR     9098
 
 #define UNMINUSR   9099
+#define TDYNSelect 9100
+
 
 // Коды операций виртуальной машины, кроме операций C
 
@@ -168,16 +170,18 @@
 #define TPrint        9587
 #define ROWING        9488
 #define ROWINGD       9489
-
+#define TArassn       9490
+#define TArassni      9491
+#define TArassnc      9492
 
 #define COPY00   9300    // d1, d2, l
 #define COPY01   9301    // d1,     l
 #define COPY10   9302    //     d2, l
 #define COPY11   9303    //         l
-#define COPY0ST  9304    // d1      l   to stack
-#define COPY1ST  9305    //         l   to stack
-#define COPY0STASS  9306 // d1,     l   from stack
-#define COPY1STASS  9307 //         l   from stack
+//#define COPY0ST  9304    // d1      l   to stack
+//#define COPY1ST  9305    //         l   to stack
+//#define COPY0STASS  9306 // d1,     l   from stack
+//#define COPY1STASS  9307 //         l   from stack
 #define COPYST   9308    // d1, d2, l   структура - значение функции
 
 // Коды операций стандартных функций
@@ -379,12 +383,12 @@
 #define TReturnval  -326
 #define TGoto       -327
 #define TLabel      -328
-
+#define TStringform -329
 #define TPrintid    -330
 #define TPrintf     -331
 #define TGetid      -332
 #define TIdenttoaddr -333
-#define TDYNSelect   -334
+
 #define TFunidtoval -335
 #define TStructbeg  -336
 #define TStructend  -337
@@ -398,9 +402,6 @@
 #define TBeginit    -348
 #define TStructinit -349
 #define TSelect     -350
-#define TSelectc    -351
-#define TSelectf    -352
-#define TSelectd    -353
 
 
 
@@ -598,6 +599,7 @@
 #define not_rowoffloat_in_stanfunc         384
 #define wrong_register                     385
 #define wrong_postexpr                     386
+#define wrong_assn                         387
 
 //  коды предупреждений
 

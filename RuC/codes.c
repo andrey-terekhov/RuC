@@ -99,8 +99,10 @@ void tablesandtree()
     i = 0;
     while (i < tc)
     {
+        int t; ;
         fprintf(output, "tc %i) ", i);
-        switch (tree[i++])
+        t = tree[i++];
+        switch (t > 10000 ? t-1000 : t)
         {
             case TFuncdef:
                 fprintf(output, "TFuncdef funcn= %i maxdispl= %i\n", tree[i], tree[i+1]);
@@ -110,12 +112,19 @@ void tablesandtree()
                 fprintf(output, "TDeclarr N= %i\n", tree[i++]);
                 break;
             case TDeclid:
-                fprintf(output, "TDeclid ident= %i eltype= %i N= %i all= %i iniproc= %i, usual= %i instuct= %i\n",
-                        tree[i], tree[i+1], tree[i+2], tree[i+3], tree[i+4], tree[i+5], tree[i+6]);
+                fprintf(output, "TDeclid ident= %i eltype= %i N= %i all= %i iniproc= %i,"
+                        "usual= %i instuct= %i\n",
+                    tree[i], tree[i+1], tree[i+2], tree[i+3], tree[i+4], tree[i+5], tree[i+6]);
 				i += 7;
+                break;
+            case TStringform:
+                fprintf(output, "TStringform n= %i\n", tree[i++]);
                 break;
             case TString:
                 fprintf(output, "TString n= %i\n", tree[i++]);
+                break;
+            case TStringc:
+                fprintf(output, "TStringc n= %i\n", tree[i++]);
                 break;
             case TStringf:
                 fprintf(output, "TStringf n= %i\n", n = tree[i++]);
@@ -191,13 +200,8 @@ void tablesandtree()
                 fprintf(output, "TIdenttovalf %i\n", tree[i++]);
                 break;
             case TSelect:
-                fprintf(output, "TSelect %i\n", tree[i++]);
-                break;
-            case TSelectc:
-                fprintf(output, "TSelectc %i\n", tree[i++]);
-                break;
-            case TSelectf:
-                fprintf(output, "TSelectf %i\n", tree[i++]);
+                fprintf(output, "TSelect %i %i\n", tree[i], tree[i+1]);
+                i += 2;
                 break;
 
             case TFunidtoval:
@@ -267,20 +271,6 @@ void tablesandtree()
                 break;
             case COPY11:
                 fprintf(output, "COPY11 %i\n", tree[i++]);     // type
-                break;
-            case COPY0ST:
-                fprintf(output, "COPY0ST %i ", tree[i++]);     // displleft
-                fprintf(output, "(%i)\n", tree[i++]);          // type
-                break;
-            case COPY1ST:
-                fprintf(output, "COPY1ST (%i)\n", tree[i++]);  // type
-                break;
-            case COPY0STASS:
-                fprintf(output, "COPY0STASS %i ", tree[i++]);  // displleft
-                fprintf(output, "(%i)\n", tree[i++]);          // type
-                break;
-            case COPY1STASS:
-                fprintf(output, "COPY1STASS (%i)\n", tree[i++]);// type
                 break;
             case COPYST:
                 fprintf(output, "COPYST %i ", tree[i++]);       // displ

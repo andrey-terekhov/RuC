@@ -678,6 +678,10 @@ void m_error(int ernum)
         case scob_not_clous:
             printf("Количество открывающих скобок не соотвеcтвует числу закрывающих\n");
             break;
+        case wrong_assn:
+            printf("неправильный левый аргумент в присваивании\n");
+            break;
+            
         default: ;
     }
     exit(2);

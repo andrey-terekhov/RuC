@@ -15,7 +15,8 @@
     // AMEM, тогда надо загрузить в breg,            могут ответить
     // AREG, если areg - сохраняемый регистр, то ничего не делать, иначе в breg
     // В качестве левого операнда могут использоваться только сохраняемые регистры,
-    // в том числе и те, которые применяются для адресации
+    // в том числе и те, которые применяются для адресации, то есть при этом запросе
+    // структура должна адресоваться от breg
 #define BF     3     // свободный запрос на правый операнд
 #define BCF    4     // goto на метку elselab по false
 #define BCT    5     // goto на метку elselab по true
@@ -303,7 +304,7 @@ void tocodeCondFlagF(int op, char type[], int label) // это tocodeJ  ???
 }
 
 
-
+void Struct_init_gen(int t, int ld, int lr);
 void MExpr_gen();
 
 void mdsp(int displ)
@@ -506,6 +507,28 @@ void MBin_operation(int c)      // бинарная операция (два в�
 //    printf("bin form tc= %i mbox= %i manst= %i\n", tc, mbox, manst);
     switch (c)
     {
+            case TArassn:
+            case TArassni:
+            case TArassnc:
+        {
+            int dim = tree[tc++];
+            mbox = BREG;
+            leftreg = breg = getreg();
+            MExpr_gen();
+            breg = a1;
+            MExpr_gen();
+            tocodemove(a0, leftreg);
+            tocodeI(addi, a2, d0, dim);
+            if (c == TArassn)
+                tocodeJ(jal, "ARASSN", -1);
+            else if (c == TArassni)
+                    tocodeJ(jal, "ARASSNI", -1);
+            else
+                tocodeJ(jal, "ARASSNC", -1);
+            freereg(leftreg);
+            return;
+        }
+
         case COPY00:
         {
             int leftdispl, leftreg;
@@ -516,23 +539,51 @@ void MBin_operation(int c)      // бинарная операция (два в�
             structcopy(tree[tc++], leftdispl, leftreg, adispl, areg);
             return;
         }
-        case COPY11:
-        case COPY1STASS:
-        case COPY1ST:
+            
+        case COPY01:
         {
-            int type = tree[tc++];
-            int oldbox = mbox;
-            int flag = 0;
-            int rez = mbox <= 2 ? breg : (flag = 1, getreg());
-            int leftdispl, leftreg;
+            int type;
+            mdsp(tree[tc++]);
+            type = tree[tc++];
+            tc += 2;           // IDENT
+            structdispl = 0;
+            Struct_init_gen(type, adispl, areg);
+            mbox = oldbox;
+            breg = oldreg;
+            return;
+        }
+        case COPY10:
+        {
+            breg = getreg();
+            int rdi, rreg, type;
+            mdsp(tree[tc++]);
+            rdi = adispl;
+            rreg = areg;
+            type = tree[tc++];
             mbox = BREGF;
             MExpr_gen();
-            leftdispl = 0;
-            leftreg = breg;
-            mbox = BF;
-            MExpr_gen();
-            structcopy(type, leftdispl, leftreg, adispl, areg);
+            structcopy(type, adispl, areg, rdi, rreg);
             mbox = oldbox;
+            breg = oldreg;
+            freereg(breg);
+            return;
+        }
+
+        case COPY11:
+        {
+            int type = tree[tc++];
+            int oldbox = mbox, oldreg = breg;
+            int flag = 0;
+            int rez = mbox == BREGF ? breg : (flag = 1, getreg());
+            int leftdispl, leftreg;
+            mbox = BREGF;
+            leftreg = breg = rez;
+            MExpr_gen();
+            leftdispl = adispl;
+            structdispl = 0;
+            Struct_init_gen(type, leftdispl, leftreg);
+            mbox = oldbox;
+            breg = oldreg;
             if (flag)
                 freereg(rez);
             return;
@@ -561,7 +612,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
         case DIVASSR:
             
         {
-            int idp = tree[tc+1], rareg;
+            int idp = tree[tc+1], rareg, type;
             tc +=2;
             if (tree[tc-2] == TIdent) // здесь может быть только TIDENT или SELECT
             {
@@ -590,8 +641,11 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 }
                 mdsp(identab[idp+3]);
             }
-            else   // TSelect, TSelectc, TSelectf, TSelectd
+            else   // TSelect
+            {
                 mdsp(idp);
+                type = tree[tc++];
+            }
             leftdispl = adispl; leftreg = areg;
             if (c == ASS || c == ASSR)
             {
@@ -1299,42 +1353,16 @@ void BCend()
 void MUnar_expr(int c)
 {
     int rez, opnd, oldbox = mbox, oldreg = breg, oldelselab = elselab;
-//    mbox = BF;
     switch (c)
     {
-        case COPY01:
-        case COPY0STASS:
+        case TDYNSelect:
         {
-            int ldi, lreg, type;
-            mdsp(tree[tc++]);
-            ldi = adispl;
-            lreg = areg;
-            type = tree[tc++];
-            mbox = BF;
+            int d = tree[tc++];
             MExpr_gen();
-            structcopy(type, ldi, lreg, adispl, areg);
-            mbox = oldbox;
-            breg = oldreg;
+            manst =AMEM;
+            adispl += d;
             return;
         }
-        case COPY10:
-        case COPY0ST:
-        {
-            int rdi, rreg, type;
-            mdsp(tree[tc++]);
-            rdi = adispl;
-            rreg = areg;
-            type = tree[tc++];
-            mbox = BF;
-            MExpr_gen();
-            structcopy(type, displ, areg, rdi, rreg);
-            mbox = oldbox;
-            breg = oldreg;
-            return;
-        }
-    }
-    switch (c)
-    {
         case POSTINC:
         case INC:
         case POSTDEC:
@@ -1345,7 +1373,7 @@ void MUnar_expr(int c)
         case POSTDECR:
         case DECR:
         {
-            int idp = tree[tc+1], rareg, rez;
+            int idp = tree[tc+1], rareg, rez, type;
             tc +=2;
             if (tree[tc-2] == TIdent) // здесь может быть только TIDENT или SELECT
             {
@@ -1393,9 +1421,13 @@ void MUnar_expr(int c)
                 }
                 mdsp(identab[idp+3]);
             }
-            else   // TSelect, TSelectc, TSelectf, TSelectd
+            else   // TSelect
+            {
                 mdsp(idp);
-            rez = mbox <= BREGF ? breg : t0;    // !!!!
+                type = tree[tc++];
+            }
+            
+            rez = mbox <= BREGF ? breg : t0;
             if (c == INC || c == POSTINC)
             {
                tocodeB(lw, rez, adispl, areg);
@@ -1407,34 +1439,36 @@ void MUnar_expr(int c)
             }
             else if (c == INCR || c == POSTINCR)
             {
-               tocodeB(lwc1, ft0, adispl, areg);
+                rez = mbox <= BREGF ? breg : ft0;
+               tocodeB(lwc1, rez, adispl, areg);
                tocodeLI_S(li_s, ft1, 1.000000);
-               tocodeR(add_s, ft1, ft0, ft1);
+               tocodeR(add_s, ft1, rez, ft1);
                tocodeB(swc1, ft1, adispl, areg);
                manst = AREG;
-               areg = c == INCR ? ft1 : ft0;
+               areg = c == INCR ? ft1 : rez;
                return;
             }
             else if (c == DEC || c == POSTDEC)
             {
-               tocodeB(lw, t0, adispl, areg);
-               tocodeI(addi, t1, t0, -1);
+                rez = mbox <= BREGF ? breg : t0;
+               tocodeB(lw, rez, adispl, areg);
+               tocodeI(addi, t1, rez, -1);
                tocodeB(sw, t1, adispl, areg);
                manst = AREG;
-               areg = c == DEC ? t1 : t0;
+               areg = c == DEC ? t1 : rez;
                return;
             }
             else if (c == DECR || c == POSTDECR)
             {
-                tocodeB(lwc1, ft0, adispl, areg);
+                rez = mbox <= BREGF ? breg : ft0;
+                tocodeB(lwc1, rez, adispl, areg);
                 tocodeLI_S(li_s, ft1, -1.000000);
-                tocodeR(add_s, ft1, ft0, ft1);
+                tocodeR(add_s, ft1, rez, ft1);
                 tocodeB(swc1, ft1, adispl, areg);
                 manst = AREG;
-                areg = c == DECR ? ft1 : ft0;
+                areg = c == DECR ? ft1 : rez;
                 return;
             }
-
         }
 
         case POSTINCAT:
@@ -1443,18 +1477,34 @@ void MUnar_expr(int c)
         case DECAT:
             mbox = BF;
             MExpr_gen();                  // здесь точно будет manst == AMEM
-            tocodeB(lw, t0, adispl, areg);
-            tocodeI(addi, t1, t0, c == INCAT || c == POSTINCAT ? 1 : -1);
+            rez = mbox <= BREGF ? breg : t0;
+            tocodeB(lw, rez, adispl, areg);
+            tocodeI(addi, t1, rez, c == INCAT || c == POSTINCAT ? 1 : -1);
             tocodeB(sw, t1, adispl, areg);
-            areg = c == INCAT || c == DECAT ? t1 : t0;
+            areg = c == INCAT || c == DECAT ? t1 : rez;
             return;
+            
+        case POSTINCATR:
+        case INCATR:
+        case POSTDECATR:
+        case DECATR:
+            {
+                rez = mbox <= BREGF ? breg : ft0;
+                tocodeB(lwc1, rez, adispl, areg);
+                tocodeLI_S(li_s, ft1, c == INCAT || c == POSTINCAT ? 1.000000 : -1.000000);
+                tocodeR(add_s, ft1, rez, ft1);
+                tocodeB(swc1, ft1, adispl, areg);
+                manst = AREG;
+                areg = c == INCATR || c == DECATR ? ft1 : rez;
+                return;
+            }
 
         case TAddrtoval:
         case TAddrtovalc:
              mbox = BF;
              MExpr_gen();          // сейчас адрес в регистре areg
              rez = oldbox <= BREGF ? oldreg : t0;
-             tocodeB(c == TAddrtoval ? lw : lb, rez, 0, areg);
+             tocodeB(c == TAddrtoval ? lw : lhu, rez, 0, areg);
              manst = AREG;
              areg = rez;
              BCend();
@@ -1471,14 +1521,31 @@ void MUnar_expr(int c)
             
          case TPrint:
          {
-             int type = tree[tc++];
+             int t = tree[tc++], rez;
              mbox = BREG;
-             breg = type == LFLOAT || type == LDOUBLE ? fa0 : a0;
+             rez = breg = t == LFLOAT ? fa0 : a0;
              MExpr_gen();
-             tocodeI(addi, a1, d0, type);
-             tocodeJ(jal, "PRINT", -1);
-         }
-             break;
+            if (t == LFLOAT)
+            {
+                tocodeB(swc1, rez, -8064, gp);
+                tocodeI(addi, a0, gp, -8064);
+            }
+            else if (t == LINT || t == LCHAR)
+            {
+                tocodeB(t == LCHAR ? sh : sw, rez, -8068, gp);
+                tocodeI(addi, a0, gp, -8068);
+            }
+             else if (t > 0 && modetab[t] == MSTRUCT)
+                 tocodeI(addi, a0, areg, adispl);
+             else //MARRAY
+                 tocodeB(lw, a0, adispl, areg);
+                 
+             tocodeI(addi, a1, d0, t);
+            tocodemove(a2, d0);
+            tocodeI(addi, a3, d0, '\n');
+            tocodeJ(jal, "auxprint", -1);
+        }
+            break;
 
         case WIDEN:
         case WIDEN1:
@@ -1557,7 +1624,9 @@ void MExpr_gen()
     if (tree[tc] == NOP)
         tc++;
     if (tree[tc] == TExprend)
+    {
         tc++;
+    }
 }
 
 void MDeclid_gen();
@@ -1590,9 +1659,11 @@ void MPrimary()
             }
                 break;
             case TIdent:
-                idp = tree[tc++];
+                  idp = tree[tc++];
                 manst = AMEM;
                 mdsp(identab[idp+3]);
+                if (mbox <= 2)
+                    tocodeB(lw, breg, adispl, areg);
                 break;
             case TIdenttoaddr:
                 mdsp(identab[tree[tc++]+3]);
@@ -1605,7 +1676,11 @@ void MPrimary()
             case TIdenttovalc:
             case TIdenttovalf:
             {
+                int type;
                 idp = tree[tc++];
+                type = identab[idp+2];
+                if (type > 0 && modetab[type] == MPOINT)
+                    type = modetab[type+1];
                 if (identab[idp] < 0)
                 {
                     areg = identab[idp+3];
@@ -1617,10 +1692,17 @@ void MPrimary()
                 mdsp(identab[idp+3]);
                 rez = mbox <= BREGF ? breg : treecode ==TIdenttovalf ?ft0 : t0;
                 tocodeB(treecode == TIdenttoval ? lw :
-                        treecode == TIdenttovalf ? lwc1 : lb, rez, adispl, areg);
+                        treecode == TIdenttovalf ? lwc1 : lhu, rez, adispl, areg);
                 areg = rez;
 //                  printf("idtoval adispl= %i areg= %i manst= %i\n", adispl, areg, manst);
-                manst = AREG;
+                areg = rez;
+                if (type > 0 && modetab[type] == MSTRUCT)
+                {
+                    manst = AMEM;
+                    adispl = 0;
+                }
+                else
+                    manst = AREG;
                 BCend();
             }
                 break;
@@ -1685,44 +1767,37 @@ void MPrimary()
             tocodeL("STRING", stringnum);
                 if (treecode == TStringc)
                 {
-                    printf("\t.ascii \"");
-                    fprintf(output, "\t.ascii \"");
-                    for (i=0; i<n; i++)
+                    for (i=0; i<3*n; i+=3)
                     {
-                        char c = tree[tc];
-                        if (c == '\n')
-                        {
-                            tc++;
-                            printf("%s", "\\n");
-                            fprintf(output, "%s", "\\n");
-                        }
-                        else
-                        {
-                            printf("%c", c);
-                            fprintf(output, "%c", tree[tc++]);
-                        }
+                        int c;
+                        tc++;      //TConstc
+                        c = tree[tc++];
+                        printf("\t.half %i\n", c);
+                        fprintf(output, "\t.half %i\n", (tc++, c));
                     }
-                    printf("\\0\"\n");
-                    fprintf(output, "\\0\"\n");
                 }
                 else if (treecode == TString)
                 {
-                    for (i=0; i<n; i++)
+                    for (i=0; i<3*n; i+=3)
                     {
-                        int c = tree[tc];
+                        int c;
+                        tc++;                // TConst
+                        c = tree[tc++];      // TExprend
                         printf("\t.word %i\n", c);
-                        fprintf(output, "\t.word %i\n", tree[tc++]);
+                        fprintf(output, "\t.word %i\n", (tc++, c));
                     }
                 }
                 else        // TStringf
                 {
-                    for (i=0; i<n; i++)
+                    for (i=0; i<3*n; i+=3)
                     {
-                        int c = tree[tc++];
+                        int c;         // TConstf
+                        tc++;
+                        c = tree[tc++];
                         float f;
                         memcpy(&f, &c, sizeof(float));
                         printf("\t.float %f\n", f);
-                        fprintf(output, "\t.float %f\n", f);
+                        fprintf(output, "\t.float %f\n", (tc++, f));
                     }
                 }
                 printf("\t.text\n\t.align 2\n");
@@ -1738,17 +1813,13 @@ void MPrimary()
             case TDeclid:
                 MDeclid_gen();
                 break;
-/*
             case TBeginit:
             {
                 int n = tree[tc++], i;
-                tocode(BEGINIT);
-                tocode(n);
                 for (i=0; i<n; i++)
                     MExpr_gen();
             }
                 break;
-*/
             case TSliceident:
                 mdsp(tree[tc++]);              // параметр - смещение
                 tocodeB(lw, a0, adispl, areg); // продолжение в след case
@@ -1760,8 +1831,8 @@ void MPrimary()
                 breg = a1;                         // a1 - это index
                 MExpr_gen();
                 d = szof(eltype);
-                if (d == 1)
-                    tocodeJ(jal, "SLICE1", -1);    // v0 - адрес i-го элемента
+                if (d == 2)
+                    tocodeJ(jal, "SLICE2", -1);    // v0 - адрес i-го элемента
                 else if (d == 4)
                    tocodeJ(jal, "SLICE4", -1);     // v0 - адрес i-го элемента
                  else
@@ -1785,21 +1856,21 @@ void MPrimary()
                 break;
                 
             case TSelect:
-            case TSelectc:
-                rez = mbox <= 2 ? breg : t0;
+            {
+                int type;
                 mdsp(tree[tc++]);
-                tocodeB(treecode == TSelectc ? lb : lw, rez, adispl, areg);
-                manst = AREG;
-                areg = rez;
+                type = tree[tc++];
+                if (type > 0 && modetab[type] == MSTRUCT)
+                    manst = AMEM;
+                else
+                {
+                    rez = mbox <= 2 ? breg : type == LFLOAT ? ft0 : t0;
+                    tocodeB(type == LCHAR ? lhu : type == LFLOAT ? lwc1 : lw, rez, adispl, areg);
+                    manst = AREG;
+                    areg = rez;
+                }
                 break;
-            case TSelectf:
-                rez = mbox <= 2 ? breg : ft0;
-                mdsp(tree[tc++]);
-                tocodeB(lwc1, rez, adispl, areg);
-                manst = AREG;
-                areg = rez;
-                break;
-                
+            }
             case TCall1:
             {
                 int ftype = tree[tc++];
@@ -1838,7 +1909,8 @@ void MPrimary()
                 }
                 else
                 {
-                    if (mbox <= BREGF)
+                    if (mbox == BREG || (mbox == BREGF &&
+                        (ftype > 0 && modetab[ftype] == MSTRUCT)))
                         tocodemove(areg = breg, v0);
                     else
                         areg = v0;
@@ -2138,7 +2210,7 @@ void MStmt_gen()
                 }
                 else   //  if (t == LINT || t == LCHAR)
                 {
-                    tocodeB(t == LCHAR ? sb : sw, r, -8068, gp);
+                    tocodeB(t == LCHAR ? sh : sw, r, -8068, gp);
                     tocodeI(addi, a0, gp, -8068);
                 }
             }
@@ -2148,7 +2220,11 @@ void MStmt_gen()
                 tocodeI(addi, a0, areg, adispl);
             }
             tocodeI(addi, a1, d0, t);
-            if (t > 0 && modetab[t] == MARRAY && modetab[t + 1] > 0)
+            if (t == LCHAR)
+            {
+                tocodemove(a2, d0);
+            }
+            else if (t > 0 && modetab[t] == MARRAY && modetab[t + 1] > 0)
             {
                 tocodeI(addi, a2, d0, '\n');
             }
@@ -2272,7 +2348,6 @@ void Struct_init_gen(int t, int olddispl, int oldreg)  // в это время m
         n = tree[tc++];
         for (i = 0; i < n; i++)
             Struct_init_gen(modetab[t+=2], olddispl, oldreg);
-        tc++;                                          // TExprend
     }
     else
     {
@@ -2296,6 +2371,37 @@ void Struct_init_gen(int t, int olddispl, int oldreg)  // в это время m
                     breg, olddispl+structdispl, oldreg);
         }
         structdispl += szof(t);
+    }
+}
+
+void ARInitc(int N, int dim, char *str)
+{
+    int i, n = tree[tc+1];
+    tc += 2;
+    if (dim <= N)
+    {
+//        char *strc = strcat("AR", str);
+        printf("\t.rdata\n\t.align 2\n");
+        fprintf(output, "\t.rdata\n\t.align 2\n");
+        printf("\t.long %i\n", n);
+        fprintf(output, "\t.long %i\n", n);
+    tocodeL(str, -1);
+
+        for (i=0; i<n; ++i)
+        {
+            char sti[80];
+            sprintf(sti, "%i", i);
+            char *strsti = strcat(str, sti);
+            printf("\t.long %s\n", strsti);
+            fprintf(output, "\t.long %s\n", strsti);
+        }
+        for (i=0; i<n; ++i)
+        {
+            char sti[80];
+            sprintf(sti, "%i", i);
+            char *strsti = strcat(str, sti);
+            ARInitc(N, dim+1, strsti);
+        }
     }
 }
 
@@ -2364,7 +2470,10 @@ void MDeclid_gen()
     }
     else if (usual == 2)
     {
-        MPrimary();
+//        char *sti;
+//       sprintf(sti, "%i", labnum++);
+//        sti = strcat("AR", sti);
+        ARInitc(N, 1, "AR");
         tocodeB(sw, t0, olddispl, oldreg);
     }
     else                                // Обработка массива int a[N1]...[NN] =
@@ -2415,28 +2524,11 @@ void mipsgen()
             case TFuncdef:
             {
                 int i, n, ftype, id, a0i = a0, a0f = fa0;
+                int displf = 12, displi = -4;
                 identref =  tree[tc++];
                 ftype = identab[identref+2];
                 n = modetab[ftype+2];
                 id = identref + 4;
-                    for (i=0; i < n; i++)
-                    {
-                        int ptype = modetab[ftype+3+i];
-                        identab[id] = -identab[id];
-                        if (ptype == LFLOAT || ptype == LDOUBLE)
-                        {
-                            identab[id+3] = a0f++;
-                            if (a0f == 44)
-                                merror(too_many_params);
-                        }
-                        else
-                        {     // параметры массивы и структуры передаются адресом
-                            identab[id+3] = a0i++;
-                            if (a0i == 8)
-                                merror(too_many_params);
-                        }
-                        id += 4;
-                    }
                 tocodeJ(jump, "NEXT", identref);
             tocodeL("FUNC", identab[identref+3]);
                 maxdispl = (tree[tc++] + 7) / 8 * 8;
@@ -2447,7 +2539,29 @@ void mipsgen()
                 tocodeB(sw, ra, 16, stp);
                 printf("\n");
                 fprintf(output, "\n");
-                
+                    
+                for (i=0; i < n; i++)
+                {
+                    int ptype = modetab[ftype+3+i];
+//                    identab[id] = -identab[id];
+                    if (ptype == LFLOAT || ptype == LDOUBLE)
+                    {
+//                        identab[id+3] = a0f;
+                        identab[id+3] = displf += 4;
+                        tocodeB(swc1, a0f++, displf+DISPL0, stp);
+                        if (a0f == 44)
+                            merror(too_many_params);
+                    }
+                    else
+                    {     // параметры массивы и структуры передаются адресом
+//                        identab[id+3] = a0i;
+                        identab[id+3] = displi += 4;
+                        tocodeB(sw, a0i++, displi+DISPL0, stp);
+                        if (a0i == 8)
+                            merror(too_many_params);
+                    }
+                    id += 4;
+                }
                 tc++;             // TBegin
                 mcompstmt_gen();
                 printf("\n");
