@@ -71,7 +71,7 @@ static void scanner_prepare(universal_scanner_options *opts)
 
 		if (*tmp == NULL)
 		{
-			fprintf(stderr, " failed to find a suitable scanner\n");
+			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m failed to find a suitable scanner\n");
 			exit(1);
 		}
 

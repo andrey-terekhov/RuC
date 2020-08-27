@@ -276,6 +276,10 @@ void add_c_file_siple(preprocess_context *context)
 	include_source_set(context->sources, context->before_temp_p, context->before_temp->p);
 	context->before_temp = &context->sources->files[context->sources->cur].before_source;
 	context->temp_output = 0;
+	context->sources->files[context->sources->cur].include_line = context->line - 1;
+	context->sources->files[context->sources->cur].cs.p = 0;
+	context->control_aflag = 0;
+	context->control_bflag = 0;
 
 	while (context->curchar != EOF && context->main_file == -1)
 	{
@@ -357,12 +361,12 @@ void add_c_file(preprocess_context *context)
 void open_files(preprocess_context *context, int number, const char *codes[])
 {
 	context->include_ways = malloc(number * sizeof(char *));
-	
+
 	const char **ways = context->include_ways;
 	int *iwp = &context->iwp;
 
 	for (int i = 0; i < number; i++)
-	{		
+	{
 		if (codes[i][0] == '-' && codes[i][1] == 'I')
 		{
 			ways[*iwp] = &codes[i][2];
@@ -373,8 +377,8 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 				ways[*iwp][length - 1] = '\0';
 			}*/
 
-			//printf("\n include_ways[i] = %s\n", ways[*iwp]);
-			//printf("\n include_ways[i] = %s\n", context->include_ways[*iwp]);
+			// printf("\n include_ways[i] = %s\n", ways[*iwp]);
+			// printf("\n include_ways[i] = %s\n", context->include_ways[*iwp]);
 			context->iwp++;
 		}
 	}
@@ -433,7 +437,7 @@ void preprocess_c_file(preprocess_context *context)
 	data_files *fs = context->sources;
 	fs->cur = 0;
 
-	if (context->main_file != fs->p - 1)
+	if (context->main_file != fs->p - 1 && context->main_file != -1)
 	{
 		swap(&fs->files[context->main_file], &fs->files[fs->p - 1]);
 	}
@@ -450,12 +454,6 @@ void preprocess_c_file(preprocess_context *context)
 
 char *preprocess_file(int argc, const char *argv[], data_files *sources, data_files *headers)
 {
-#if MACRODEBUG
-	printf("\nИсходный текст:\n \n");
-#else
-	printf("\n");
-#endif
-	
 	preprocess_context context;
 	preprocess_context_init(&context, sources, headers);
 	printer_attach_buffer(&context.output_options, 1024);
@@ -478,7 +476,8 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 	char *macro_processed = context.output_options.ptr;
 
 #if MACRODEBUG
-	printf("\n>\n%s<\n", macro_processed);
+	printf("\n\n");
+	printf("Текст после препроцессирования:\n\n%s\n", macro_processed);
 #endif
 	return macro_processed;
 }
@@ -558,4 +557,3 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 		j = start;
 	}
 }*/
-

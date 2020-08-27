@@ -1,9 +1,8 @@
 
 void main()
 {
+	int А[] = 10, 10, 0, 0};
 	int b = 10;
-	goto ex;
-	ex:;
+	printid(А);
 	printid(b);
-	ex:;
 }
