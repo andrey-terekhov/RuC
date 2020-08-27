@@ -16,7 +16,7 @@
 
 #pragma once
 
-#define MACRODEBUG 0
+#define MACRODEBUG 1
 
 #define MAXTAB		100000
 #define LONGSTR		10000
@@ -67,6 +67,7 @@
 
 // Коды ошибок
 
+#define just_kill_yourself					1
 #define after_ident_must_be_space1			366
 #define ident_begins_with_s					367
 #define must_be_endif						368

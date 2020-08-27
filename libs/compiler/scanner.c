@@ -17,8 +17,8 @@
 #include "context.h"
 #include "errors.h"
 #include "global.h"
-#include "uniscanner.h"
 #include "macro_global_struct.h"
+#include "uniscanner.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -37,10 +37,12 @@ void onemore(compiler_context *context)
 {
 	context->curchar = context->nextchar;
 	context->nextchar = getnext(context);
-	 if (0)//context->kw)
-	 printf("context->curchar =%c %i context->nextchar=%c %i\n",
-	 context->curchar, context->curchar, context->nextchar,
-	 context->nextchar);
+	if (0)
+	{
+		// context->kw)
+		printf("context->curchar=%c %i context->nextchar=%c %i\n", context->curchar, context->curchar,
+			   context->nextchar, context->nextchar);
+	}
 }
 
 void endofline(compiler_context *context)
@@ -56,8 +58,8 @@ void endofline(compiler_context *context)
 				printer_printchar(&context->output_options, context->source[j]);
 			}
 		}
-		fflush(stdout);
 	}*/
+	// fflush(stdout);
 }
 
 void endnl(compiler_context *context)
@@ -95,8 +97,9 @@ void nextch(compiler_context *context)
 		return;
 	}
 
-	if (context->curchar == '\n')
+	if (context->kw && context->curchar == '\n')
 	{
+		context->temp_tc = context->tc;
 		endnl(context);
 	}
 	return;
@@ -123,6 +126,7 @@ void next_string_elem(compiler_context *context)
 		else if (context->curchar != '\'' && context->curchar != '\\' && context->curchar != '\"')
 		{
 			error(context, bad_escape_sym);
+			exit(2);
 		}
 		else
 		{
@@ -216,7 +220,10 @@ void marcer_update(compiler_context *context)
 			files = &context->hfs;
 		}
 		nextch(context);
-		files->cur = (files->files[files->cur]).pred;
+		if ((files->files[files->cur]).pred != -1)
+		{
+			files->cur = (files->files[files->cur]).pred;
+		}
 		if (files->cur != -1)
 		{
 			context->line = (files->files[files->cur]).line;
@@ -232,8 +239,13 @@ void marcer_update(compiler_context *context)
 int scan(compiler_context *context)
 {
 	int cr;
+	context->new_line_flag = 0;
 	while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
 	{
+		if (context->curchar == '\n')
+		{
+			context->new_line_flag = 1;
+		}
 		nextch(context);
 	}
 	// printf("scan context->curchar = %c %i\n", context->curchar, context->curchar);
@@ -463,10 +475,8 @@ int scan(compiler_context *context)
 			next_string_elem(context);
 			if (context->curchar != '\'')
 			{
-				printf("символьная константа не заканчивается символом '\n");
-				
-				//error(context, no_right_apost);
-				exit(2);
+				error(context, no_right_apost);
+				context->error_flag = 1;
 			}
 			else
 			{
@@ -494,6 +504,7 @@ int scan(compiler_context *context)
 				if (n == MAXSTRINGL)
 				{
 					error(context, too_long_string);
+					exit(2);
 				}
 				nextch(context);
 				while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
@@ -634,6 +645,7 @@ int scan(compiler_context *context)
 				if (!digit(context))
 				{
 					error(context, must_be_digit_after_exp);
+					exit(2);
 				}
 				while (digit(context))
 				{
@@ -723,8 +735,8 @@ int scan(compiler_context *context)
 			else
 			{
 				printer_printf(&context->err_options, "плохой символ %c %i\n", context->curchar, context->curchar);
-				nextch(context);
-				exit(10);
+				context->error_flag = 1;
+				return 0;
 			}
 	}
 }
@@ -732,7 +744,7 @@ int scan(compiler_context *context)
 int scaner(compiler_context *context)
 {
 	context->cur = context->next;
-	if(!context->buf_flag)
+	if (!context->buf_flag)
 	{
 		context->next = scan(context);
 	}
@@ -741,9 +753,9 @@ int scaner(compiler_context *context)
 		context->next = context->buf_cur;
 		context->buf_flag--;
 	}
-	
-	// if(context->kw)
-	//		printf("scaner context->cur %i context->next %i repr %i\n",
-	//		context->cur, context->next, repr);
+
+	//	 if(context->kw)
+	//			printf("scaner context->cur %i context->next %i buf_flag %i\n",
+	//			context->cur, context->next, context->buf_flag);
 	return context->cur;
 }

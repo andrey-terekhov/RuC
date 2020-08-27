@@ -21,7 +21,7 @@
 #include <string.h>
 
 
-void  macro_long_string_init(macro_long_string* s)
+void macro_long_string_init(macro_long_string *s)
 {
 	s->size = LONGSTR;
 	s->p = 0;
@@ -51,10 +51,11 @@ void macro_long_string_free(macro_long_string *s)
 void data_file_pinter(data_file *f, FILE *input)
 {
 	f->cs.p = 0;
+	f->include_line = -1;
 
 	macro_long_string_init(&f->before_source);
 	macro_long_string_init(&f->include_source);
-	
+
 	f->include_source.str[0] = 0;
 	f->input = input;
 	f->pred = -1;
@@ -73,7 +74,7 @@ void data_file_free(data_file *f)
 
 void data_files_clear(data_files *fs)
 {
-	for(int i = 0; i < fs->p; i++)
+	for (int i = 0; i < fs->p; i++)
 	{
 		data_file_free(&fs->files[i]);
 	}
@@ -97,7 +98,7 @@ void data_files_pinter(data_files *s, const char *file_way, FILE *input)
 		data_file *reallocated = realloc(s->files, s->size * sizeof(data_file));
 		s->files = reallocated;
 	}
-	
+
 	if (input == NULL)
 	{
 		s->files[s->p].name = file_way;
