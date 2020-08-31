@@ -2110,7 +2110,11 @@ void statement(compiler_context *context)
 			{
 				error(context, repeated_label);
 			}
-			totree(context, id);
+            else
+            {
+                context->gotost[i - 1] = -context->line;
+            }
+            totree(context, id);
 		}
 		context->identab[id + 2] = 1;
 
