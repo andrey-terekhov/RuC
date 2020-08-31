@@ -296,8 +296,8 @@ int toidentab(compiler_context *context, int f, int type)
 			error(context, repeated_decl);
 			context->error_flag = 5;
 			return 0; // 1
-			// только определение функции может иметь 2
-			// описания, т.е. иметь предописание
+					  // только определение функции может иметь 2
+					  // описания, т.е. иметь предописание
 		}
 	}
 
@@ -2683,6 +2683,10 @@ void statement(compiler_context *context)
 			{
 				error(context, repeated_label);
 				context->error_flag = 2;
+			}
+			else
+			{
+				context->gotost[i - 1] = -context->line;
 			}
 			totree(context, id);
 		}
