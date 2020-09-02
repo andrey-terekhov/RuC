@@ -76,12 +76,12 @@ CTestTestfile.cmake
 _deps
 
 ## VSCode
-*/.vscode/*
+.vscode/*
 *.code-workspace
 
 ## Xcode
 xcuserdata/
-build/
+build*/
 DerivedData/
 Debug/
 Release/

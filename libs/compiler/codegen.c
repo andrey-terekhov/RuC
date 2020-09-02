@@ -121,10 +121,11 @@ int Expr_gen(compiler_context *context, int incond)
 	int flagprim = 1;
 	int eltype;
 	int wasstring = 0;
+	int op;
 
 	while (flagprim)
 	{
-		switch (context->tree[context->tc++])
+		switch (op = context->tree[context->tc++])
 		{
 			case TIdent:
 			{
@@ -173,6 +174,7 @@ int Expr_gen(compiler_context *context, int incond)
 				break;
 			}
 			case TString:
+			case TStringd:
 			{
 				int n = context->tree[context->tc++];
 				int res;
@@ -184,7 +186,15 @@ int Expr_gen(compiler_context *context, int incond)
 				context->pc += 2;
 				for (i = 0; i < n; i++)
 				{
-					tocode(context, context->tree[context->tc++]);
+					if (op == TString)
+					{
+						tocode(context, context->tree[context->tc++]);
+					}
+					else
+					{
+						tocode(context, context->tree[context->tc++]);
+						tocode(context, context->tree[context->tc++]);
+					}
 				}
 				context->mem[res - 1] = n;
 				context->mem[res - 2] = context->pc;
@@ -791,10 +801,8 @@ void codegen(compiler_context *context)
 			}
 			default:
 			{
-				printf("что-то не то\n");
-				printf("tc=%i tree[tc-2]=%i "
-					   "tree[tc-1]=%i\n",
-					   context->tc, context->tree[context->tc - 2], context->tree[context->tc - 1]);
+				printf("tc=%i tree[tc-2]=%i tree[tc-1]=%i\n", context->tc, context->tree[context->tc - 2],
+					   context->tree[context->tc - 1]);
 				break;
 			}
 		}
@@ -803,6 +811,7 @@ void codegen(compiler_context *context)
 	if (context->wasmain == 0)
 	{
 		error(context, no_main_in_program);
+		return;
 	}
 	tocode(context, CALL1);
 	tocode(context, CALL2);

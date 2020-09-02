@@ -17,6 +17,9 @@
 #pragma once
 
 #include "constants.h"
+#include "macro_global_struct.h"
+#include "uniprinter.h"
+#include "uniscanner.h"
 #include <stdio.h>
 
 
@@ -26,10 +29,8 @@ extern "C" {
 
 typedef struct preprocess_context
 {
-	FILE *input_stak[10];
-	int inp_file;
-	char way[80];
-	int inp_p;
+	int include_type;
+
 	int hashtab[256];
 	int reprtab[MAXTAB];
 	int rp;
@@ -40,6 +41,8 @@ typedef struct preprocess_context
 
 	int mstring[STRIGSIZE];
 	int msp;
+
+	int strp;
 
 	int fchange[STRIGSIZE * 3];
 	int cp;
@@ -57,25 +60,47 @@ typedef struct preprocess_context
 	int wsp;
 
 	int mfirstrp;
-	int mlastrp;
 
 	int mclp;
+
+	int prep_flag;
 
 	int curchar, nextchar;
 	int nextch_type;
 	int cur;
 
 	int nextp;
+	int main_file;
 
 	int oldcurchar[DIP];
 	int oldnextchar[DIP];
 	int oldnextch_type[DIP];
 	int oldnextp[DIP];
 	int dipp;
+
+	int line;
+	int control_aflag;
+	int control_bflag;
+
+	int temp_output;
+	data_files *sources;
+	data_files *headers;
+	int h_flag;
+
+	int FILE_flag;
+	FILE *current_file;
+	macro_long_string *before_temp;
+	int before_temp_p;
+	int *current_string;
+	int current_p;
+
+	const char **include_ways;
+	int iwp;
+
+	universal_printer_options output_options;
 } preprocess_context;
 
-
-void preprocess_context_init(preprocess_context *context);
+void preprocess_context_init(preprocess_context *context, data_files *sources, data_files *headers);
 
 #ifdef __cplusplus
 } /* extern "C" */

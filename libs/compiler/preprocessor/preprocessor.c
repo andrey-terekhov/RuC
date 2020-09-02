@@ -16,12 +16,13 @@
 
 #include "preprocessor.h"
 #include "calculator.h"
+#include "compiler.h"
 #include "constants.h"
 #include "context.h"
 #include "context_var.h"
 #include "define.h"
-#include "errors.h"
 #include "file.h"
+#include "frontend_utils.h"
 #include "if.h"
 #include "include.h"
 #include "preprocessor_error.h"
@@ -34,21 +35,34 @@
 #include <string.h>
 #include <wchar.h>
 
-
-#define MACRODEBAG 0
-
-
 void to_reprtab(char str[], int num, preprocess_context *context)
 {
 	int i;
 	int oldrepr = context->rp;
 	int hash = 0;
+	unsigned char firstchar;
+	unsigned char secondchar;
+	int p;
+	int c = 0;
 	context->rp += 2;
 
 	for (i = 0; str[i] != 0; i++)
 	{
-		hash += str[i];
-		context->reprtab[context->rp++] = str[i];
+		sscanf(&str[i], "%c%n", &firstchar, &p);
+
+		if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
+		{
+			++i;
+			sscanf(&str[i], "%c%n", &secondchar, &p);
+			c = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 | (secondchar & /*0b111111*/ 0x3F);
+		}
+		else
+		{
+			c = firstchar;
+		}
+
+		hash += c;
+		context->reprtab[context->rp++] = c;
 	}
 
 	hash &= 255;
@@ -68,6 +82,7 @@ void to_reprtab_full(char str1[], char str2[], char str3[], char str4[], int num
 
 void add_keywods(preprocess_context *context)
 {
+	to_reprtab_full("MAIN", "main", "ГЛАВНАЯ", "главная", SH_MAIN, context);
 	to_reprtab_full("#DEFINE", "#define", "#ОПРЕД", "#опред", SH_DEFINE, context);
 	to_reprtab_full("#IFDEF", "#ifdef", "#ЕСЛИБЫЛ", "#еслибыл", SH_IFDEF, context);
 	to_reprtab_full("#IFNDEF", "#ifndef", "#ЕСЛИНЕБЫЛ", "#еслинебыл", SH_IFNDEF, context);
@@ -84,48 +99,63 @@ void add_keywods(preprocess_context *context)
 	to_reprtab_full("#FOR", "#for", "#ДЛЯ", "#для", SH_FOR, context);
 	to_reprtab_full("#ENDF", "#endf", "#КОНЕЦД", "#конецд", SH_ENDF, context);
 	to_reprtab_full("#EVAL", "#eval", "#ВЫЧИСЛЕНИЕ", "#вычисление", SH_EVAL, context);
-	to_reprtab_full("#INCLUDE", "#include", "#ДОБАВИТЬ", "#ДОБАВИТЬ", SH_INCLUDE, context);
+	to_reprtab_full("#INCLUDE", "#include", "#ДОБАВИТЬ", "#добавить", SH_INCLUDE, context);
 }
 
-void preprocess_words(preprocess_context *context, compiler_context *c_context)
+void output_keywods(preprocess_context *context)
+{
+	for (int j = 0; j < context->reprtab[context->rp]; j++)
+	{
+		m_fprintf(context->reprtab[context->rp + 2 + j], context);
+	}
+}
+
+void preprocess_words(preprocess_context *context)
 {
 	if (context->curchar != '(' && context->curchar != '\"')
 	{
-		m_nextch(context, c_context);
+		m_nextch(context);
 	}
 
-	space_skip(context, c_context);
-
+	space_skip(context);
 	switch (context->cur)
 	{
 		case SH_INCLUDE:
 		{
-			include_relis(context, c_context);
+			if (!context->h_flag)
+			{
+				include_relis(context, context->sources);
+			}
+			else
+			{
+				include_relis(context, context->headers);
+			}
+
 			return;
 		}
 		case SH_DEFINE:
 		case SH_MACRO:
 		{
-			define_relis(context, c_context);
+			define_relis(context);
 			return;
 		}
 		case SH_UNDEF:
 		{
 			int k;
-			context->macrotext[context->reprtab[(k = collect_mident(context, c_context)) + 1]] = MACROUNDEF;
-			space_end_line(context, c_context);
+			context->macrotext[context->reprtab[(k = collect_mident(context)) + 1]] = MACROUNDEF;
+			space_end_line(context);
 			return;
 		}
 		case SH_IF:
 		case SH_IFDEF:
 		case SH_IFNDEF:
 		{
-			if_relis(context, c_context);
+			if_relis(context);
 			return;
 		}
 		case SH_SET:
 		{
-			set_relis(context, c_context);
+			set_relis(context);
 			return;
 		}
 		case SH_ELSE:
@@ -136,42 +166,38 @@ void preprocess_words(preprocess_context *context, compiler_context *c_context)
 		{
 			if (context->curchar == '(')
 			{
-				calculator(0, context, c_context);
+				calculator(0, context);
 			}
 			else
 			{
-				m_error(after_eval_must_be_ckob, c_context);
+				m_error(after_eval_must_be_ckob, context);
 			}
 
-			m_change_nextch_type(CTYPE, 0, context, c_context);
+			m_change_nextch_type(CTYPE, 0, context);
 			return;
 		}
 		case SH_WHILE:
 		{
 			context->wsp = 0;
 			context->ifsp = 0;
-			while_collect(context, c_context);
-			m_change_nextch_type(WHILETYPE, 0, context, c_context);
+			while_collect(context);
+			m_change_nextch_type(WHILETYPE, 0, context);
 
 			context->nextp = 0;
-			while_relis(context, c_context);
+			while_relis(context);
 
 			return;
 		}
 		default:
 		{
-			m_nextch(context, c_context);
-			for (int j = 0; j < context->reprtab[context->rp]; j++)
-			{
-				m_fprintf(context->reprtab[context->rp + 2 + j], context, c_context);
-			}
-
+			m_nextch(context);
+			output_keywods(context);
 			return;
 		}
 	}
 }
 
-void preprocess_scan(preprocess_context *context, compiler_context *c_context)
+void preprocess_scan(preprocess_context *context)
 {
 	int i;
 
@@ -182,108 +208,278 @@ void preprocess_scan(preprocess_context *context, compiler_context *c_context)
 
 		case '#':
 		{
-			context->cur = macro_keywords(context, c_context);
-			c_context->prep_flag = 1;
-			preprocess_words(context, c_context);
+			context->cur = macro_keywords(context);
+			context->prep_flag = 1;
+			preprocess_words(context);
 
 			return;
 		}
 		case '\'':
 		case '\"':
 		{
-			space_skip_str(context, c_context);
+			space_skip_str(context);
 			return;
 		}
 		case '@':
 		{
-			m_nextch(context, c_context);
+			m_nextch(context);
 			return;
 		}
 		default:
 		{
-			if (is_letter(context) && c_context->prep_flag == 1)
+			if (is_letter(context) && context->prep_flag == 1)
 			{
-				int r = collect_mident(context, c_context);
+				int r = collect_mident(context);
 
 				if (r)
 				{
-					define_get_from_macrotext(r, context, c_context);
+					define_get_from_macrotext(r, context);
 				}
 				else
 				{
 					for (i = 0; i < context->msp; i++)
 					{
-						m_fprintf(context->mstring[i], context, c_context);
+						m_fprintf(context->mstring[i], context);
 					}
 				}
 			}
 			else
 			{
-				m_fprintf(context->curchar, context, c_context);
-				m_nextch(context, c_context);
+				m_fprintf(context->curchar, context);
+				m_nextch(context);
 			}
 		}
 	}
 }
 
-void open_main_file(const char *code, preprocess_context *context)
+void swap(data_file *f1, data_file *f2)
 {
-	int i = 0;
-	while (code[i] != '.' || code[i + 1] != 'c')
-	{
-		context->way[i] = code[i];
-		i++;
-	}
-	context->way[i] = code[i];
-	i++;
-	context->way[i] = code[i];
-	i++;
-	context->way[i] = '\0';
-	i++;
+	macro_long_string temp_s = f1->before_source;
+	f1->before_source = f2->before_source;
+	f2->before_source = temp_s;
 
-	context->input_stak[context->inp_p++] = fopen(context->way, "r"); // исходный текст
-	// context->input_stak[context->inp_p] = fopen("../../tests/00test.c", "r");
-	if (context->input_stak[context->inp_file] == NULL)
-	{
-		printf(" не найден файл %s\n", context->way);
-		exit(1);
-	}
+	macro_long_string temp_include_source = f1->include_source;
+	f1->include_source = f2->include_source;
+	f2->include_source = temp_include_source;
 
+	int temp_pred = f1->pred;
+	f1->pred = f2->pred;
+	f2->pred = temp_pred;
 
-	while (code[i] != '/')
-	{
-		i--;
-	}
-	context->way[i + 1] = '\0';
+	const char *temp_name = f1->name;
+	f1->name = f2->name;
+	f2->name = temp_name;
 }
 
-void preprocess_file(compiler_context *c_context, const char *code)
+void add_c_file_siple(preprocess_context *context)
 {
-	c_context->mlines[c_context->mline = 1] = 1;
-	c_context->charnum = 1;
-	preprocess_context *context = malloc(sizeof(preprocess_context));
-	preprocess_context_init(context);
-	open_main_file(code, context);
-	for (int i = 0; i < HASH; i++)
+	include_source_set(context->sources, context->before_temp_p, context->before_temp->p);
+	context->before_temp = &context->sources->files[context->sources->cur].before_source;
+	context->temp_output = 0;
+	context->sources->files[context->sources->cur].include_line = context->line - 1;
+	context->sources->files[context->sources->cur].cs.p = 0;
+	context->control_aflag = 0;
+	context->control_bflag = 0;
+
+	while (context->curchar != EOF && context->main_file == -1)
 	{
-		context->hashtab[i] = 0;
+		if (context->curchar == 'm' || context->curchar == 'M' || context->curchar == 0x413 ||
+			context->curchar == 0x433)
+		{
+			context->cur = macro_keywords(context);
+			if (context->cur == SH_MAIN)
+			{
+				context->main_file = context->sources->cur;
+			}
+		}
+		m_nextch(context);
 	}
 
-	add_keywods(context);
-	context->mfirstrp = context->rp;
-	get_next_char(context);
-	m_nextch(context, c_context);
 	while (context->curchar != EOF)
 	{
-		preprocess_scan(context, c_context);
+		m_nextch(context);
 	}
-	c_context->m_conect_lines[context->mclp++] = c_context->mline - 1;
+}
 
-	if (MACRODEBAG)
+void add_c_file(preprocess_context *context)
+{
+	get_next_char(context);
+	m_nextch(context);
+
+	while (context->curchar != EOF)
 	{
-		char *macro_processed = strdup(c_context->output_options.ptr);
-		printf("%s\n", macro_processed);
+		switch (context->curchar)
+		{
+			case EOF:
+				return;
+			case ' ':
+			case '\n':
+			case '\t':
+			{
+				m_nextch(context);
+				break;
+			}
+			case '#':
+			{
+				if (context->nextchar == 'i' || context->nextchar == 'I' || context->nextchar == 0x414 ||
+					context->nextchar == 0x434)
+				{
+					context->before_temp_p = (context->before_temp)->p;
+					context->cur = macro_keywords(context);
+					if (context->cur == SH_INCLUDE)
+					{
+						include_relis(context, context->sources);
+						if (context->h_flag)
+						{
+							context->h_flag = 0;
+							add_c_file_siple(context);
+							return;
+						}
+						break;
+					}
+					else
+					{
+						add_c_file_siple(context);
+						return;
+					}
+				}
+				else
+				{
+					add_c_file_siple(context);
+					return;
+				}
+			}
+			default:
+			{
+				add_c_file_siple(context);
+				return;
+			}
+		}
 	}
+}
+
+void open_files(preprocess_context *context, int number, const char *codes[])
+{
+	context->include_ways = malloc(number * sizeof(char *));
+
+	const char **ways = context->include_ways;
+	int *iwp = &context->iwp;
+
+	for (int i = 0; i < number; i++)
+	{
+		if (codes[i][0] == '-' && codes[i][1] == 'I')
+		{
+			ways[*iwp] = &codes[i][2];
+
+			/*int length = strlen(ways[*iwp]);
+			if (ways[*iwp][length - 1] == '/')
+			{
+				ways[*iwp][length - 1] = '\0';
+			}*/
+
+			// printf("\n include_ways[i] = %s\n", ways[*iwp]);
+			// printf("\n include_ways[i] = %s\n", context->include_ways[*iwp]);
+			context->iwp++;
+		}
+	}
+
+
+	data_files_init(context->sources, number);
+	data_files_init(context->headers, number);
+
+	for (int i = 0; i < number; i++)
+	{
+		if (codes[i][0] == '-' && codes[i][1] == 'I')
+		{
+			continue;
+		}
+
+		if (find_file(context, codes[i]))
+		{
+			int old_cur = open_p_faile(context, codes[i]);
+			cur_failes_next(context->sources, old_cur, context);
+			context->before_temp = &context->sources->files[context->sources->cur].include_source;
+			context->before_temp->p = 0;
+
+			add_c_file(context);
+
+			include_fclose(context);
+			set_old_cur(context->sources, old_cur, context);
+		}
+	}
+}
+
+void preprocess_h_file(preprocess_context *context)
+{
+	data_files *fs = context->headers;
+	fs->cur++;
+
+	context->h_flag = 1;
+	context->include_type = 1;
+
+	while (fs->cur < fs->p)
+	{
+		context->current_file = fs->files[fs->cur].input;
+
+		context->before_temp = &fs->files[fs->cur].before_source;
+		context->before_temp->p = 0;
+		context->temp_output = 0;
+		file_read(context);
+		fs->cur++;
+	}
+
+	context->h_flag = 0;
+	context->FILE_flag = 0;
+}
+
+void preprocess_c_file(preprocess_context *context)
+{
+	data_files *fs = context->sources;
+	fs->cur = 0;
+
+	if (context->main_file != fs->p - 1 && context->main_file != -1)
+	{
+		swap(&fs->files[context->main_file], &fs->files[fs->p - 1]);
+	}
+
+	while (fs->cur < fs->p)
+	{
+		context->current_string = fs->files[fs->cur].before_source.str;
+		context->current_p = fs->files[fs->cur].before_source.p;
+
+		file_read(context);
+		fs->cur++;
+	}
+}
+
+char *preprocess_file(int argc, const char *argv[], data_files *sources, data_files *headers)
+{
+	preprocess_context context;
+	preprocess_context_init(&context, sources, headers);
+	printer_attach_buffer(&context.output_options, 1024);
+
+	add_keywods(&context);
+
+	context.mfirstrp = context.rp;
+
+
+	open_files(&context, argc, argv);
+
+
+	preprocess_h_file(&context);
+
+	preprocess_c_file(&context);
+
+	context.before_temp = NULL;
+	free(context.include_ways);
+
+	char *macro_processed = context.output_options.ptr;
+
+#if MACRODEBUG
+	printf("\n\n");
+	printf("Текст после препроцессирования:\n\n%s\n", macro_processed);
+#endif
+	return macro_processed;
 }
 
 /*
@@ -292,18 +488,72 @@ void preprocess_file(compiler_context *c_context, const char *code)
 		printf("str[%d] = %d,%c.\n", k, fstring[k], fstring[k]);
 	}
 
-	printf("1\n");
+	printf("!!!!!!!!!!!!!!1\n");
 
-	for (int k = 0; k < mp; k++)
+	for (int k = 0; k < context->mp; k++)
 	{
-		printf("macrotext[%d] = %d,%c.\n", k, macrotext[k], macrotext[k]);
+		printf("context->macrotext[%d] = %d,%c.\n", k, context->macrotext[k], context->macrotext[k]);
 	}
-	for (int k = 0; k < cp; k++)
+	for (int k = context->mfirstrp; k < context->mfirstrp + 20; k++)
 	{
-		printf("localstack[%d] = %d,%c.\n", k, localstack[k], localstack[k]);
+		printf("str[%d] = %d,%c.\n", k, context->reprtab[k], context->reprtab[k]);
 	}
 	for (int k = 0; k < cp; k++)
 	{
 		printf(" fchange[%d] = %d,%c.\n", k, fchange[k], fchange[k]);
 	}
+
+	/Egor/test_eval1.c
+	/Egor/calculator/test1.c
+	/Fadeev/import.c
+	/Egor/Macro/includ/cofig.txt
 */
+
+/*void open_files_config(const char *code, preprocess_context *context, int start)
+{
+	FILE* cofig = fopen(context->way, "r");
+	context->current_file = cofig;
+	while (code[start] != '/')
+	{
+		start--;
+	}
+	start++;
+	context->way[start] = '\0';
+
+	char* way_temp = context->way;
+	int j = start;
+	get_next_char(context);
+	m_nextch(context);
+	while(context->curchar != EOF)
+	{
+		while(way_temp[j-1] != 'c'|| way_temp[j-2] != '.')
+		{
+			way_temp[j++] = context->curchar;
+			m_nextch(context);
+		}
+		way_temp[j++] = '\0';
+
+		if (find_file(context, way_temp))
+		{
+			int old_cur = open_p_faile(context, way_temp);
+			context->line = 1;
+
+			cur_failes_next(context->sources, old_cur, context);
+			(context->before_temp)->str = (&(context->sources)->files[(context->sources)->cur])->include_source;
+			(context->before_temp)->p = 0;
+
+			add_c_file(context);
+
+			include_fclose(context);
+			set_old_cur(context->sources, old_cur, context);
+			(context->before_temp)->str = NULL;
+
+
+			context->current_file = cofig;
+			get_next_char(context);
+			m_nextch(context);
+		}
+		space_skip(context);
+		j = start;
+	}
+}*/

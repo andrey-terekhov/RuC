@@ -24,7 +24,12 @@
 extern "C" {
 #endif
 
-void include_relis(preprocess_context *context, compiler_context *c_context);
+void include_relis(preprocess_context *context, data_files *fs);
+int open_p_faile(preprocess_context *context, const char *file_way);
+void file_read(preprocess_context *context);
+void cur_failes_next(data_files *fs, int old_cur, preprocess_context *context);
+void set_old_cur(data_files *fs, int old, preprocess_context *context);
+void include_fclose(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */
