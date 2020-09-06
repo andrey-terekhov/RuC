@@ -86,6 +86,7 @@ void data_files_init(data_files *s, int num)
 {
 	s->size = num;
 	s->p = 0;
+	s->i = 0;
 	s->cur = -1;
 	s->files = malloc(num * sizeof(data_file));
 }

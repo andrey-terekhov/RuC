@@ -221,7 +221,14 @@ void file_read(preprocess_context *context)
 	if (context->FILE_flag)
 	{
 		get_next_char(context);
-		m_nextch(context);
+		if (context->nextchar == EOF)
+		{
+			context->curchar = EOF;
+		}
+		else
+		{
+			m_nextch(context);
+		}
 	}
 	else
 	{
@@ -229,7 +236,6 @@ void file_read(preprocess_context *context)
 		m_nextch(context);
 		m_nextch(context);
 	}
-
 
 	while (context->curchar != EOF)
 	{
@@ -262,7 +268,6 @@ void open_file(preprocess_context *context, data_file *f)
 		m_nextch(context);
 	}
 	temp_way[i] = '\0';
-
 	if (temp_way[i - 1] == 'h' && temp_way[i - 2] == '.')
 	{
 		if (context->include_type == 0)
@@ -286,6 +291,7 @@ void open_file(preprocess_context *context, data_file *f)
 			file_read(context);
 			set_old_cur(context->headers, old_cur, context);
 
+			context->sources->i++;
 			context->before_temp->str = context->headers->files[context->headers->cur].before_source.str;
 			context->before_temp->p = context->headers->files[context->headers->cur].before_source.p;
 			context->before_temp->size = context->headers->files[context->headers->cur].before_source.size;
@@ -308,11 +314,19 @@ void open_file(preprocess_context *context, data_file *f)
 			cur_failes_next(context->sources, old_cur, context);
 			context->before_temp->str = context->sources->files[context->sources->cur].before_source.str;
 			context->before_temp->p = 0;
-
+			if (context->nextch_type != FILETYPE)
+			{
+				m_change_nextch_type(FILETYPE, 0, context);
+			}
 			file_read(context);
+			if (context->dipp != 0)
+			{
+				m_old_nextch_type(context);
+			}
 
 			set_old_cur(context->sources, old_cur, context);
 
+			context->sources->i++;
 			context->before_temp->str = context->sources->files[context->sources->cur].before_source.str;
 			context->before_temp->p = context->sources->files[context->sources->cur].before_source.p;
 			context->before_temp->size = context->sources->files[context->sources->cur].before_source.size;

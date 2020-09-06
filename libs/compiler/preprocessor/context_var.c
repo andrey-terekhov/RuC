@@ -39,7 +39,7 @@ void preprocess_context_init(preprocess_context *context, data_files *sources, d
 	context->mfirstrp = -1;
 	context->prep_flag = 0;
 	context->mclp = 1;
-	context->nextch_type = 0;
+	context->nextch_type = FILETYPE;
 	context->nextp = 0;
 	context->main_file = -1;
 	context->dipp = 0;

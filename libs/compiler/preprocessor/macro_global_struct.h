@@ -59,6 +59,7 @@ typedef struct data_files
 	int p;
 	int cur;
 	int size;
+	int i;
 } data_files;
 
 void data_files_init(data_files *s, int num);

@@ -331,6 +331,7 @@ void calculator(int if_flag, preprocess_context *context)
 				m_error(after_eval_must_be_ckob, context);
 			}
 			m_change_nextch_type(CTYPE, 0, context);
+			m_nextch(context);
 		}
 		else if ((opration_flag || context->curchar == '(') && (c = check_opiration(context)))
 		{

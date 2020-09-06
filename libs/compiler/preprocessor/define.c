@@ -377,6 +377,7 @@ void define_get_from_macrotext(int r, preprocess_context *context)
 
 		// printf("--from_macrotext r = %d\n", t + 1);
 		m_change_nextch_type(TEXTTYPE, t + 1, context);
+		m_nextch(context);
 	}
 	else
 	{
@@ -431,69 +432,77 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 	int lmp = context->mp;
 
 	context->macrotext[context->mp++] = MACRODEF;
-	while (context->curchar != '\n')
+	if(context->curchar != '\n')
 	{
-		if (context->curchar == EOF)
+		while (context->curchar != '\n')
 		{
-			m_error(not_end_fail_define, context);
-		}
-		else if (context->curchar == '#')
-		{
-			context->cur = macro_keywords(context);
-			if (context->cur == SH_EVAL)
+			if (context->curchar == EOF)
 			{
-				if (context->curchar != '(')
+				m_error(not_end_fail_define, context);
+			}
+			else if (context->curchar == '#')
+			{
+				context->cur = macro_keywords(context);
+				if (context->cur == SH_EVAL)
 				{
-					m_error(after_eval_must_be_ckob, context);
+					if (context->curchar != '(')
+					{
+						m_error(after_eval_must_be_ckob, context);
+					}
+
+					calculator(0, context);
+
+					for (j = 0; j < context->csp; j++)
+					{
+						context->macrotext[context->mp++] = context->cstring[j];
+					}
 				}
-
-				calculator(0, context);
-
-				for (j = 0; j < context->csp; j++)
+				else
 				{
-					context->macrotext[context->mp++] = context->cstring[j];
+					for (j = 0; j < context->reprtab[context->rp]; j++)
+					{
+						context->macrotext[context->mp++] = context->reprtab[context->rp + 2 + j];
+					}
+				}
+			}
+			else if (context->curchar == '\\')
+			{
+				m_nextch(context);
+				space_end_line(context);
+			}
+			else if (is_letter(context))
+			{
+				int k = collect_mident(context);
+				if (k)
+				{
+					define_get_from_macrotext(k, context);
+				}
+				else
+				{
+					for (j = 0; j < context->msp; j++)
+					{
+						context->macrotext[context->mp++] = context->mstring[j];
+					}
 				}
 			}
 			else
 			{
-				for (j = 0; j < context->reprtab[context->rp]; j++)
-				{
-					context->macrotext[context->mp++] = context->reprtab[context->rp + 2 + j];
-				}
+				context->macrotext[context->mp++] = context->curchar;
+				m_nextch(context);
 			}
 		}
-		else if (context->curchar == '\\')
-		{
-			m_nextch(context);
-			space_end_line(context);
-		}
-		else if (is_letter(context))
-		{
-			int k = collect_mident(context);
-			if (k)
-			{
-				define_get_from_macrotext(k, context);
-			}
-			else
-			{
-				for (j = 0; j < context->msp; j++)
-				{
-					context->macrotext[context->mp++] = context->mstring[j];
-				}
-			}
-		}
-		else
-		{
-			context->macrotext[context->mp++] = context->curchar;
-			m_nextch(context);
-		}
-	}
 
-	while (context->macrotext[context->mp - 1] == ' ' || context->macrotext[context->mp - 1] == '\t')
-	{
-		context->macrotext[context->mp - 1] = MACROEND;
-		context->mp--;
+		while (context->macrotext[context->mp - 1] == ' ' || context->macrotext[context->mp - 1] == '\t')
+		{
+			context->macrotext[context->mp - 1] = MACROEND;
+			context->mp--;
+		}
 	}
+	else
+	{
+		context->macrotext[context->mp++] = 0;
+	}
+	
 	context->macrotext[context->mp++] = MACROEND;
 
 	if (r)
@@ -520,7 +529,7 @@ void define_relis(preprocess_context *context)
 		m_nextch(context);
 		function_add_to_macrotext(context);
 	}
-	else if (context->curchar != ' ')
+	else if (context->curchar != ' ' && context->curchar != '\n' && context->curchar != '\t')
 	{
 		m_error(after_ident_must_be_space1, context);
 	}
