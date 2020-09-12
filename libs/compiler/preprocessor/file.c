@@ -36,9 +36,8 @@ int get_next_char(preprocess_context *context)
 	unsigned char secondchar;
 	if (fscanf(context->current_file, "%c", &firstchar) == EOF)
 	{
-		return EOF;
+		return context->nextchar = EOF;
 	}
-
 	else
 	{
 		if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
@@ -74,10 +73,8 @@ void m_change_nextch_type(int type, int p, preprocess_context *context)
 	context->nextp = p;
 	context->dipp++;
 
-
 	// printf("nextch_type\n");
 	context->nextch_type = type;
-	m_nextch(context);
 }
 
 void m_old_nextch_type(preprocess_context *context)
@@ -144,7 +141,7 @@ void m_onemore(preprocess_context *context)
 	context->curchar = context->nextchar;
 	if (context->FILE_flag)
 	{
-		context->nextchar = get_next_char(context);
+		get_next_char(context);
 		long_string_pinter(context->before_temp, context->curchar);
 
 		if (context->curchar == EOF)
@@ -231,11 +228,12 @@ void m_nextch_cange(preprocess_context *context)
 	m_nextch(context);
 	// printf("2 lsp = %d context->curchar = %d l = %d\n",  lsp, context->curchar, context->curchar + lsp);
 	m_change_nextch_type(FTYPE, context->localstack[context->curchar + context->lsp], context);
+	m_nextch(context);
 }
 
 void m_nextch(preprocess_context *context)
 {
-	if (context->nextch_type != 0 && context->nextch_type <= TEXTTYPE)
+	if (context->nextch_type != FILETYPE && context->nextch_type <= TEXTTYPE)
 	{
 		if (context->nextch_type == MTYPE && context->nextp < context->msp)
 		{

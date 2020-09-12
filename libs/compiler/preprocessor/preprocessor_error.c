@@ -154,7 +154,7 @@ void m_error(int ernum, preprocess_context *context)
 #if MACRODEBUG
 		printf("\n\n");
 #endif
-		fprintf(stderr, "\x1B[1;39m%s:\x1B[1;31m ошибка:\x1B[0m ", name);
+		fprintf(stderr, "\x1B[1;39m%s:\x1B[1;31m Ошибка:\x1B[0m ", name);
 		errors_set(ernum);
 
 #if MACRODEBUG

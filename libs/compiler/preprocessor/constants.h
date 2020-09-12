@@ -40,6 +40,7 @@
 #define FTYPE			  6
 #define TEXTTYPE		  10
 #define PREPROCESS_STRING 11
+#define FILETYPE 0
 
 
 // Ключевые слова

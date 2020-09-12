@@ -89,6 +89,7 @@ void while_relis(preprocess_context *context)
 	{
 		m_nextch(context);
 		m_change_nextch_type(IFTYPE, context->wstring[context->nextp], context);
+		m_nextch(context);
 		calculator(1, context);
 		m_old_nextch_type(context);
 

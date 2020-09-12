@@ -112,16 +112,22 @@ void output_keywods(preprocess_context *context)
 
 void preprocess_words(preprocess_context *context)
 {
-	if (context->curchar != '(' && context->curchar != '\"')
+	/*if (context->curchar != '(')
 	{
 		m_nextch(context);
-	}
+	}*/
 
 	space_skip(context);
 	switch (context->cur)
 	{
 		case SH_INCLUDE:
 		{
+			
+			if (context->curchar != '\"')
+			{
+				m_nextch(context);
+			}
+
 			if (!context->h_flag)
 			{
 				include_relis(context, context->sources);
@@ -182,6 +188,8 @@ void preprocess_words(preprocess_context *context)
 			context->ifsp = 0;
 			while_collect(context);
 			m_change_nextch_type(WHILETYPE, 0, context);
+			m_nextch(context);
+			m_nextch(context);
 
 			context->nextp = 0;
 			while_relis(context);
@@ -190,7 +198,7 @@ void preprocess_words(preprocess_context *context)
 		}
 		default:
 		{
-			m_nextch(context);
+			//m_nextch(context);
 			output_keywods(context);
 			return;
 		}
@@ -209,8 +217,17 @@ void preprocess_scan(preprocess_context *context)
 		case '#':
 		{
 			context->cur = macro_keywords(context);
-			context->prep_flag = 1;
-			preprocess_words(context);
+		
+			if(context->cur != 0)
+			{
+				context->prep_flag = 1;
+				preprocess_words(context);
+			}
+			else
+			{
+				//m_nextch(context);
+				output_keywods(context);
+			}
 
 			return;
 		}
@@ -303,14 +320,16 @@ void add_c_file_siple(preprocess_context *context)
 
 void add_c_file(preprocess_context *context)
 {
-	get_next_char(context);
 	m_nextch(context);
-
 	while (context->curchar != EOF)
 	{
 		switch (context->curchar)
 		{
 			case EOF:
+			{
+				add_c_file_siple(context);
+				return;
+			}
 				return;
 			case ' ':
 			case '\n':
@@ -401,7 +420,17 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 			context->before_temp = &context->sources->files[context->sources->cur].include_source;
 			context->before_temp->p = 0;
 
-			add_c_file(context);
+			get_next_char(context);
+
+			if (context->nextchar == EOF)
+			{
+				context->sources->files[context->sources->cur].before_source.str[
+					context->sources->files[context->sources->cur].before_source.p++] = EOF;
+			}
+			else
+			{
+				add_c_file(context);
+			}
 
 			include_fclose(context);
 			set_old_cur(context->sources, old_cur, context);
@@ -417,10 +446,9 @@ void preprocess_h_file(preprocess_context *context)
 	context->h_flag = 1;
 	context->include_type = 1;
 
-	while (fs->cur < fs->p)
+	while (fs->cur < fs->p - fs->i)
 	{
 		context->current_file = fs->files[fs->cur].input;
-
 		context->before_temp = &fs->files[fs->cur].before_source;
 		context->before_temp->p = 0;
 		context->temp_output = 0;
@@ -442,7 +470,7 @@ void preprocess_c_file(preprocess_context *context)
 		swap(&fs->files[context->main_file], &fs->files[fs->p - 1]);
 	}
 
-	while (fs->cur < fs->p)
+	while (fs->cur < fs->p - fs->i)
 	{
 		context->current_string = fs->files[fs->cur].before_source.str;
 		context->current_p = fs->files[fs->cur].before_source.p;
@@ -462,9 +490,7 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 
 	context.mfirstrp = context.rp;
 
-
 	open_files(&context, argc, argv);
-
 
 	preprocess_h_file(&context);
 
@@ -477,12 +503,14 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 
 #if MACRODEBUG
 	printf("\n\n");
-	printf("Текст после препроцессирования:\n\n%s\n", macro_processed);
+	printf("Текст после препроцессирования:\n>\n%s<\n", macro_processed);
 #endif
 	return macro_processed;
 }
 
 /*
+	printf("cur = %d, %c; next = %d, %c;\n",context->curchar, context->curchar, context->nextchar, context->nextchar);
+
 	for (int k = 0; k < fsp; k++)
 	{
 		printf("str[%d] = %d,%c.\n", k, fstring[k], fstring[k]);
@@ -508,52 +536,3 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 	/Fadeev/import.c
 	/Egor/Macro/includ/cofig.txt
 */
-
-/*void open_files_config(const char *code, preprocess_context *context, int start)
-{
-	FILE* cofig = fopen(context->way, "r");
-	context->current_file = cofig;
-	while (code[start] != '/')
-	{
-		start--;
-	}
-	start++;
-	context->way[start] = '\0';
-
-	char* way_temp = context->way;
-	int j = start;
-	get_next_char(context);
-	m_nextch(context);
-	while(context->curchar != EOF)
-	{
-		while(way_temp[j-1] != 'c'|| way_temp[j-2] != '.')
-		{
-			way_temp[j++] = context->curchar;
-			m_nextch(context);
-		}
-		way_temp[j++] = '\0';
-
-		if (find_file(context, way_temp))
-		{
-			int old_cur = open_p_faile(context, way_temp);
-			context->line = 1;
-
-			cur_failes_next(context->sources, old_cur, context);
-			(context->before_temp)->str = (&(context->sources)->files[(context->sources)->cur])->include_source;
-			(context->before_temp)->p = 0;
-
-			add_c_file(context);
-
-			include_fclose(context);
-			set_old_cur(context->sources, old_cur, context);
-			(context->before_temp)->str = NULL;
-
-
-			context->current_file = cofig;
-			get_next_char(context);
-			m_nextch(context);
-		}
-		space_skip(context);
-		j = start;
-	}
-}*/
