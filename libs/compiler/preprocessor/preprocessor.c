@@ -408,7 +408,8 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 
 	for (int i = 0; i < number; i++)
 	{
-		if (codes[i][0] == '-' && codes[i][1] == 'I')
+		int l = strlen(codes[i]);
+		if ((codes[i][0] == '-' && codes[i][1] == 'I') || codes[i][l-1] == 'h')
 		{
 			continue;
 		}
