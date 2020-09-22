@@ -138,26 +138,32 @@ void gen_way(char *full, const char *path, const char *file, int is_slash)
 
 	if (is_slash)
 	{
-		size = strrchr(path, '/') - path;
+		char *slash = strrchr(path, '/');
+		if (slash != NULL)
+		{
+			size = slash - path;
+			memcpy(full, path, size * sizeof(char));
+			full[size++] = '/';
+		}
+		else
+		{
+			size = 0;
+		}
 	}
 	else
 	{
 		size = strlen(path);
 	}
 
-	memcpy(full, path, size);
-	full[size++] = '/';
-
 	int file_size = strlen(file);
-	memcpy(&full[size], file, file_size);
+	memcpy(&full[size], file, file_size * sizeof(char));
 
 	full[size + file_size] = '\0';
-	// printf("\n path = %s\n file = %s\n full = %s\n", path, file, full);
 }
 
 int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int flag)
 {
-	char file_way[STRIGSIZE];
+	char file_way[STRIGSIZE + 1024];
 
 	gen_way(file_way, fs->name, temp_way, 1);
 	if(!find_file(context, file_way))
@@ -259,6 +265,7 @@ void file_read(preprocess_context *context)
 
 void open_file(preprocess_context *context, data_file *f)
 {
+	printf("!!!!!!!!!!!!!!9\n");
 	int i = 0;
 	char temp_way[STRIGSIZE];
 
@@ -272,7 +279,7 @@ void open_file(preprocess_context *context, data_file *f)
 		m_nextch(context);
 	}
 	temp_way[i] = '\0';
-
+	printf("!!!!!!!!!!!!!!10\n");
 	int h = 0;
 	data_files* fs;
 
@@ -286,7 +293,7 @@ void open_file(preprocess_context *context, data_file *f)
 		fs = context->sources;
 	}	 
 
-
+	printf("!!!!!!!!!!!!!!11\n");
 	int old_cur;
 	if ((h && context->include_type != 2) || (!h && context->include_type != 0))
 	{
@@ -297,18 +304,19 @@ void open_file(preprocess_context *context, data_file *f)
 		}
 	}
 
+	printf("!!!!!!!!!!!!!!12\n");
 	if (h && context->include_type == 0)
 	{
 		context->before_temp_p = -1;
 	}
 	else if (context->include_type == 1 || context->include_type == 2 && !h)
 	{
-		printf("222");
+		printf("name %s\n", temp_way);
 		if(!h)
 		{
 			context->FILE_flag = 1;
 		}
-
+		printf("!!!!!!!!!!!!!!13\n");
 		fs->files[fs->cur].before_source.p = context->before_temp->p;
 		fs->files[fs->cur].before_source.size = context->before_temp->size;
 
