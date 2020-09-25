@@ -153,22 +153,23 @@ void gen_way(char *full, const char *path, const char *file, int is_slash)
 	else
 	{
 		size = strlen(path);
+		memcpy(full, path, size * sizeof(char));
+		full[size++] = '/';
 	}
 
 	int file_size = strlen(file);
 	memcpy(&full[size], file, file_size * sizeof(char));
-
 	full[size + file_size] = '\0';
+	//printf("4full = %s, path = %s file = %s \n", full, path, file);
 }
 
 int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int flag)
 {
 	char file_way[STRIGSIZE + 1024];
-
 	gen_way(file_way, fs->name, temp_way, 1);
 	if(!find_file(context, file_way))
 	{
-		return -1;
+		return -2;
 	}
 	FILE *f = fopen(file_way, "r");
 
@@ -177,6 +178,7 @@ int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int
 		for (int i = 0; i < context->iwp; i++)
 		{
 			gen_way(file_way, context->include_ways[i], temp_way, 0);
+			
 			f = fopen(file_way, "r");
 
 			if (f != NULL)
@@ -187,7 +189,7 @@ int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int
 	}
 	if (f == NULL)
 	{
-		// printf(" не найден файл %s\n", temp_way);
+		printf(" не найден файл %s\n", temp_way);
 		m_error(1, context);
 	}
 	if (flag == 0)
@@ -265,7 +267,6 @@ void file_read(preprocess_context *context)
 
 void open_file(preprocess_context *context, data_file *f)
 {
-	printf("!!!!!!!!!!!!!!9\n");
 	int i = 0;
 	char temp_way[STRIGSIZE];
 
@@ -279,7 +280,6 @@ void open_file(preprocess_context *context, data_file *f)
 		m_nextch(context);
 	}
 	temp_way[i] = '\0';
-	printf("!!!!!!!!!!!!!!10\n");
 	int h = 0;
 	data_files* fs;
 
@@ -293,30 +293,26 @@ void open_file(preprocess_context *context, data_file *f)
 		fs = context->sources;
 	}	 
 
-	printf("!!!!!!!!!!!!!!11\n");
 	int old_cur;
 	if ((h && context->include_type != 2) || (!h && context->include_type != 0))
 	{
 		old_cur = open_i_faile(context, temp_way, f, h);
-		if (old_cur == -1)
+		if (old_cur == -2)
 		{
 			return;
 		}
 	}
 
-	printf("!!!!!!!!!!!!!!12\n");
 	if (h && context->include_type == 0)
 	{
 		context->before_temp_p = -1;
 	}
 	else if (context->include_type == 1 || context->include_type == 2 && !h)
 	{
-		printf("name %s\n", temp_way);
 		if(!h)
 		{
 			context->FILE_flag = 1;
 		}
-		printf("!!!!!!!!!!!!!!13\n");
 		fs->files[fs->cur].before_source.p = context->before_temp->p;
 		fs->files[fs->cur].before_source.size = context->before_temp->size;
 
