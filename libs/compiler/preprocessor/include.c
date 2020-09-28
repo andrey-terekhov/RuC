@@ -294,7 +294,7 @@ void open_file(preprocess_context *context, data_file *f)
 	}	 
 
 	int old_cur;
-	if ((h && context->include_type != 2) || (!h && context->include_type != 0))
+	if (h  || context->include_type != 0)
 	{
 		old_cur = open_i_faile(context, temp_way, f, h);
 		if (old_cur == -2)
