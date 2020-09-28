@@ -4,7 +4,7 @@ int main()
    float k;
    int d[2] = {4,2};
    float m[2] = {1.5, 2.5};
-   c=a+b;
+   c = a + b;
    print ("c  5");
    printid(c);
 
