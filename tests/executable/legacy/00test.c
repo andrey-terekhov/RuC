@@ -1,4 +1,3 @@
-
 void main()
 {
     int a=9, *b, e = 1;
