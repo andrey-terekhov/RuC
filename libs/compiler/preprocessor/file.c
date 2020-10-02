@@ -155,7 +155,6 @@ void m_onemore(preprocess_context *context)
 	}
 	else
 	{
-		printf("file.c m_onemore not current_string");
 		context->nextchar = EOF;
 	}
 }

@@ -408,7 +408,8 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 
 	for (int i = 0; i < number; i++)
 	{
-		if (codes[i][0] == '-' && codes[i][1] == 'I')
+		int l = strlen(codes[i]);
+		if ((codes[i][0] == '-' && codes[i][1] == 'I') || codes[i][l-1] == 'h')
 		{
 			continue;
 		}
@@ -456,6 +457,7 @@ void preprocess_h_file(preprocess_context *context)
 		fs->cur++;
 	}
 
+	context->include_type = 2;
 	context->h_flag = 0;
 	context->FILE_flag = 0;
 }
@@ -489,11 +491,8 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 	add_keywods(&context);
 
 	context.mfirstrp = context.rp;
-
 	open_files(&context, argc, argv);
-
 	preprocess_h_file(&context);
-
 	preprocess_c_file(&context);
 
 	context.before_temp = NULL;

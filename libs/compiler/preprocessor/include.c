@@ -138,28 +138,39 @@ void gen_way(char *full, const char *path, const char *file, int is_slash)
 
 	if (is_slash)
 	{
-		size = strrchr(path, '/') - path;
+		char *slash = strrchr(path, '/');
+		if (slash != NULL)
+		{
+			size = slash - path;
+			memcpy(full, path, size * sizeof(char));
+			full[size++] = '/';
+		}
+		else
+		{
+			size = 0;
+		}
 	}
 	else
 	{
 		size = strlen(path);
+		memcpy(full, path, size * sizeof(char));
+		full[size++] = '/';
 	}
 
-	memcpy(full, path, size);
-	full[size++] = '/';
-
 	int file_size = strlen(file);
-	memcpy(&full[size], file, file_size);
-
+	memcpy(&full[size], file, file_size * sizeof(char));
 	full[size + file_size] = '\0';
-	// printf("\n path = %s\n file = %s\n full = %s\n", path, file, full);
+	//printf("4full = %s, path = %s file = %s \n", full, path, file);
 }
 
 int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int flag)
 {
-	char file_way[STRIGSIZE];
-
+	char file_way[STRIGSIZE + 1024];
 	gen_way(file_way, fs->name, temp_way, 1);
+	if(!find_file(context, file_way))
+	{
+		return -2;
+	}
 	FILE *f = fopen(file_way, "r");
 
 	if (f == NULL)
@@ -167,6 +178,7 @@ int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int
 		for (int i = 0; i < context->iwp; i++)
 		{
 			gen_way(file_way, context->include_ways[i], temp_way, 0);
+			
 			f = fopen(file_way, "r");
 
 			if (f != NULL)
@@ -177,7 +189,7 @@ int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int
 	}
 	if (f == NULL)
 	{
-		// printf(" не найден файл %s\n", temp_way);
+		printf(" не найден файл %s\n", temp_way);
 		m_error(1, context);
 	}
 	if (flag == 0)
@@ -268,70 +280,81 @@ void open_file(preprocess_context *context, data_file *f)
 		m_nextch(context);
 	}
 	temp_way[i] = '\0';
+	int h = 0;
+	data_files* fs;
+
 	if (temp_way[i - 1] == 'h' && temp_way[i - 2] == '.')
 	{
-		if (context->include_type == 0)
+		h++;
+	 	fs = context->headers;
+	}
+	else
+	{
+		fs = context->sources;
+	}	 
+
+	int old_cur;
+	if (h  || context->include_type != 0)
+	{
+		old_cur = open_i_faile(context, temp_way, f, h);
+		if (old_cur == -2)
 		{
-			open_i_faile(context, temp_way, f, 1);
-			context->before_temp_p = -1;
+			return;
 		}
-		else if (context->include_type == 1)
+	}
+
+	if (h && context->include_type == 0)
+	{
+		context->before_temp_p = -1;
+	}
+	else if (context->include_type == 1 || context->include_type == 2 && !h)
+	{
+		if(!h)
 		{
-			int old_cur = open_i_faile(context, temp_way, f, 1);
+			context->FILE_flag = 1;
+		}
+		fs->files[fs->cur].before_source.p = context->before_temp->p;
+		fs->files[fs->cur].before_source.size = context->before_temp->size;
 
-			context->headers->files[context->headers->cur].before_source.p = context->before_temp->p;
-			context->headers->files[context->headers->cur].before_source.size = context->before_temp->size;
+		cur_failes_next(fs, old_cur, context);
 
-			cur_failes_next(context->headers, old_cur, context);
+		context->before_temp->str = fs->files[fs->cur].before_source.str;
+		context->before_temp->p = 0;
 
-			context->before_temp->str = context->headers->files[context->headers->cur].before_source.str;
-			context->before_temp->p = 0;
-
+		if(h)
+		{
 			begin_faile(context, context->headers);
-			file_read(context);
-			set_old_cur(context->headers, old_cur, context);
-
-			context->sources->i++;
-			context->before_temp->str = context->headers->files[context->headers->cur].before_source.str;
-			context->before_temp->p = context->headers->files[context->headers->cur].before_source.p;
-			context->before_temp->size = context->headers->files[context->headers->cur].before_source.size;
 		}
-		else
+
+		if (!h && context->nextch_type != FILETYPE)
 		{
-			m_error(25, context);
+			m_change_nextch_type(FILETYPE, 0, context);
+		}
+
+		file_read(context);
+		
+		if (!h && context->dipp != 0)
+		{
+			m_old_nextch_type(context);
+		}
+
+		set_old_cur(fs, old_cur, context);
+
+		fs->i++;
+		context->before_temp->str = fs->files[fs->cur].before_source.str;
+		context->before_temp->p = fs->files[fs->cur].before_source.p;
+		context->before_temp->size = fs->files[fs->cur].before_source.size;
+
+		if(!h)
+		{
+			context->FILE_flag = 0;
 		}
 	}
 	else
 	{
-		if (context->include_type != 0)
+		if(h)
 		{
-			context->FILE_flag = 1;
-			int old_cur = open_i_faile(context, temp_way, f, 0);
-
-			context->sources->files[context->sources->cur].before_source.p = context->before_temp->p;
-			context->sources->files[context->sources->cur].before_source.size = context->before_temp->size;
-
-			cur_failes_next(context->sources, old_cur, context);
-			context->before_temp->str = context->sources->files[context->sources->cur].before_source.str;
-			context->before_temp->p = 0;
-			if (context->nextch_type != FILETYPE)
-			{
-				m_change_nextch_type(FILETYPE, 0, context);
-			}
-			file_read(context);
-			if (context->dipp != 0)
-			{
-				m_old_nextch_type(context);
-			}
-
-			set_old_cur(context->sources, old_cur, context);
-
-			context->sources->i++;
-			context->before_temp->str = context->sources->files[context->sources->cur].before_source.str;
-			context->before_temp->p = context->sources->files[context->sources->cur].before_source.p;
-			context->before_temp->size = context->sources->files[context->sources->cur].before_source.size;
-
-			context->FILE_flag = 0;
+			m_error(25, context);
 		}
 		else
 		{
@@ -350,7 +373,6 @@ void include_relis(preprocess_context *context, data_files *fs)
 		m_error(26, context);
 	}
 	m_nextch(context);
-
 	open_file(context, &fs->files[fs->cur]);
 	m_nextch(context);
 

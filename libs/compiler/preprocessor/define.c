@@ -500,7 +500,7 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 	}
 	else
 	{
-		context->macrotext[context->mp++] = 0;
+		context->macrotext[context->mp++] = '0';
 	}
 	
 	context->macrotext[context->mp++] = MACROEND;
