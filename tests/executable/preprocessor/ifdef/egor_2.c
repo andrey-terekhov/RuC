@@ -8,7 +8,7 @@
 void main()
 {
   int n = abc;
-  printid(n);
+  assert(n == -4, "Must be -4");
 }
 
 
