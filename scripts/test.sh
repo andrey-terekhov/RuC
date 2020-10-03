@@ -45,6 +45,8 @@ init()
 	success=0
 	failure=0
 	timeout=0
+
+	log=tmp
 }
 
 build_vm()
@@ -77,17 +79,17 @@ build()
 	test_dir=../tests
 	error_dir=../tests/errors
 	exec_dir=../tests/executable
-	
+
 	error_subdir=errors
+	include_subdir=include
 }
 
 internal_timeout()
 {
-	which timeout
-	if [[ $? == 0 ]] ; then
+	if [[ $OSTYPE == "linux-gnu" ]] ; then
 		timeout $@
 	else
-		perl -e 'alarm shift; exec @ARGV' $@;
+		gtimeout $@
 	fi
 }
 
@@ -95,7 +97,7 @@ message_success()
 {
 	if [[ -z $debug ]] ; then
 		if [[ -z $silence ]] ; then
-			echo -e "\x1B[1;32m $action success \x1B[1;39m: $code"
+			echo -e "\x1B[1;32m $action success \x1B[1;39m: $path"
 			sleep $output_time
 		fi
 	fi
@@ -104,7 +106,7 @@ message_success()
 message_timeout()
 {
 	if [[ -z $silence ]] ; then
-		echo -e "\x1B[1;34m $action timeout \x1B[1;39m: $code"
+		echo -e "\x1B[1;34m $action timeout \x1B[1;39m: $path"
 		sleep $output_time
 	fi
 }
@@ -112,20 +114,20 @@ message_timeout()
 message_failure()
 {
 	if [[ -z $silence ]] ; then
-		echo -e "\x1B[1;31m $action failure \x1B[1;39m: $code"
+		echo -e "\x1B[1;31m $action failure \x1B[1;39m: $path"
 		sleep $output_time
 	fi
 }
 
 execution()
 {
-	if [[ $code == $exec_dir/* ]] ; then
+	if [[ $path == $exec_dir/* ]] ; then
 		action="execution"
-		internal_timeout $wait_for $ruc_interpreter export.txt >/dev/null 2>/dev/null
+		internal_timeout $wait_for $ruc_interpreter export.txt &>$log
 
 		case "$?" in
 			0)
-				if [[ $code == */$error_subdir/* ]] ; then
+				if [[ $path == */$error_subdir/* ]] ; then
 					message_failure
 					let failure++
 				else
@@ -137,9 +139,18 @@ execution()
 				message_timeout
 				let timeout++
 				;;
-			*)
+			139)
+				# Segmentation fault
 
-				if [[ $code == */$error_subdir/* ]] ; then
+				message_failure
+				let failure++
+
+				if ! [[ -z $debug ]] ; then
+					cat $log
+				fi
+				;;
+			*)
+				if [[ $path == */$error_subdir/* ]] ; then
 					message_success
 					let success++
 				else
@@ -147,7 +158,7 @@ execution()
 					let failure++
 
 					if ! [[ -z $debug ]] ; then
-						$ruc_interpreter export.txt
+						cat $log
 					fi
 				fi
 				;;
@@ -155,50 +166,87 @@ execution()
 	fi
 }
 
+compiling()
+{
+	case "$?" in
+		0)
+			if [[ $path == $error_dir/* ]] ; then
+				message_failure
+				let failure++
+			else
+				message_success
+				execution
+			fi
+			;;
+		124|142)
+			message_timeout
+			let timeout++
+			;;
+		139)
+			# Segmentation fault
+
+			message_failure
+			let failure++
+
+			if ! [[ -z $debug ]] ; then
+				cat $log
+			fi
+			;;
+		*)
+			if [[ $path == $error_dir/* ]] ; then
+				message_success
+				let success++
+			else
+				message_failure
+				let failure++
+
+				if ! [[ -z $debug ]] ; then
+					cat $log
+				fi
+			fi
+			;;
+	esac
+}
+
 test()
 {
 	# Do not use names with spaces!
-	for code in `find ${test_dir} -name *.c`
+	for path in `find $test_dir -name *.c`
 	do
+		sources=$path
 		action="compiling"
-		internal_timeout $wait_for $ruc_compiler $code >/dev/null 2>/dev/null
 
-		case "$?" in
-			0)
-				if [[ $code == $error_dir/* ]] ; then
-					message_failure
-					let failure++
-				else
-					message_success
-					execution
-				fi
-				;;
-			124|142)
-				message_timeout
-				let timeout++
-				;;
-			*)
-				if [[ $code == $error_dir/* ]] ; then
-					message_success
-					let success++
-				else
-					message_failure
-					let failure++
-
-					if ! [[ -z $debug ]] ; then
-						$ruc_compiler $code
-					fi
-				fi
-				;;
-		esac
+		if [[ $path != */$include_subdir/* ]] ; then
+			internal_timeout $wait_for $ruc_compiler $sources &>$log
+			compiling
+		fi
 	done
 
+	for include in `find $test_dir -name $include_subdir -type d`
+	do
+		for path in `ls -d $include/*`
+		do
+			sources=`find $path -name *.c`
+
+			for subdir in `find $path -name *.h`
+			do
+				temp=`dirname $subdir`
+				sources="$sources -I$temp"
+			done
+
+			action="compiling"
+
+			internal_timeout $wait_for $ruc_compiler $sources &>$log
+			compiling
+		done
+	done
 
 	if [[ -z $silence ]] ; then
 		echo
 	fi
 
 	echo -e "\x1B[1;39m success = $success, failure = $failure, timeout = $timeout"
+	rm $log
 }
 
 main()

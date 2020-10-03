@@ -24,8 +24,8 @@
 extern "C" {
 #endif
 
-void while_collect(preprocess_context *context, compiler_context *c_context);
-void while_relis(preprocess_context *context, compiler_context *c_context);
+void while_collect(preprocess_context *context);
+void while_relis(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

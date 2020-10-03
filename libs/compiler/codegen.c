@@ -801,10 +801,8 @@ void codegen(compiler_context *context)
 			}
 			default:
 			{
-				printf("что-то не то\n");
-				printf("tc=%i tree[tc-2]=%i "
-					   "tree[tc-1]=%i\n",
-					   context->tc, context->tree[context->tc - 2], context->tree[context->tc - 1]);
+				printf("tc=%i tree[tc-2]=%i tree[tc-1]=%i\n", context->tc, context->tree[context->tc - 2],
+					   context->tree[context->tc - 1]);
 				break;
 			}
 		}
@@ -813,6 +811,7 @@ void codegen(compiler_context *context)
 	if (context->wasmain == 0)
 	{
 		error(context, no_main_in_program);
+		return;
 	}
 	tocode(context, CALL1);
 	tocode(context, CALL2);

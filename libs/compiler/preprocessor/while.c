@@ -30,7 +30,7 @@
 #include <string.h>
 
 
-void while_collect(preprocess_context *context, compiler_context *c_context)
+void while_collect(preprocess_context *context)
 {
 	int oldwsp = context->wsp;
 
@@ -41,20 +41,20 @@ void while_collect(preprocess_context *context, compiler_context *c_context)
 	while (context->curchar != '\n')
 	{
 		context->ifstring[context->ifsp++] = context->curchar;
-		m_nextch(context, c_context);
+		m_nextch(context);
 	}
 	context->ifstring[context->ifsp++] = '\n';
-	m_nextch(context, c_context);
+	m_nextch(context);
 
 	while (context->curchar != EOF)
 	{
 		if (context->curchar == '#')
 		{
-			context->cur = macro_keywords(context, c_context);
+			context->cur = macro_keywords(context);
 
 			if (context->cur == SH_WHILE)
 			{
-				while_collect(context, c_context);
+				while_collect(context);
 			}
 			else if (context->cur == SH_ENDW)
 			{
@@ -74,12 +74,12 @@ void while_collect(preprocess_context *context, compiler_context *c_context)
 			}
 		}
 		context->wstring[context->wsp++] = context->curchar;
-		m_nextch(context, c_context);
+		m_nextch(context);
 	}
-	a_erorr(8);
+	m_error(40, context);
 }
 
-void while_relis(preprocess_context *context, compiler_context *c_context)
+void while_relis(preprocess_context *context)
 {
 	int oldernextp = context->nextp;
 	int end = context->wstring[oldernextp + 2];
@@ -87,38 +87,39 @@ void while_relis(preprocess_context *context, compiler_context *c_context)
 	context->cur = 0;
 	while (context->wstring[oldernextp] == WHILEBEGIN)
 	{
-		m_nextch(context, c_context);
-		m_change_nextch_type(IFTYPE, context->wstring[context->nextp], context, c_context);
-		calculator(1, context, c_context);
+		m_nextch(context);
+		m_change_nextch_type(IFTYPE, context->wstring[context->nextp], context);
+		m_nextch(context);
+		calculator(1, context);
 		m_old_nextch_type(context);
 
 
 		if (context->cstring[0] == 0)
 		{
 			context->nextp = end;
-			m_nextch(context, c_context);
+			m_nextch(context);
 			return;
 		}
 
-		m_nextch(context, c_context);
-		m_nextch(context, c_context);
-		m_nextch(context, c_context);
-		space_skip(context, c_context);
+		m_nextch(context);
+		m_nextch(context);
+		m_nextch(context);
+		space_skip(context);
 
 		while (context->nextp != end || context->nextch_type != WHILETYPE)
 		{
 			if (context->curchar == WHILEBEGIN)
 			{
 				context->nextp--;
-				while_relis(context, c_context);
+				while_relis(context);
 			}
 			else if (context->curchar == EOF)
 			{
-				a_erorr(12);
+				m_error(41, context);
 			}
 			else
 			{
-				preprocess_scan(context, c_context);
+				preprocess_scan(context);
 			}
 		}
 		context->nextp = oldernextp;

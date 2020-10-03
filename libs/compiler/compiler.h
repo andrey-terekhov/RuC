@@ -56,6 +56,7 @@ typedef struct compiler_workspace
 	compiler_workspace_file *files; /** A single-linked list of files */
 	compiler_workspace_error error; /** Workspace propagation error */
 	char *output_file;				/** Output file name */
+	int number_of_files;			/** Number of files */
 } compiler_workspace;
 
 

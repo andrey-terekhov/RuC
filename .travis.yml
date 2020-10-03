@@ -8,12 +8,9 @@ language: c
 
 matrix:
   include:
-    - name: "macOS"
+    - name: "macOS 10.15.5"
       os: osx
-      osx_image: xcode10.1
-      # Beacause of https://stackoverflow.com/questions/50024731/ld-unrecognized-option-push-state-no-as-needed
-      # we don't enable sanitizers on gcc
-      env: ENABLE_SANITIZERS="-DENABLE_SANITIZERS=1"
+      osx_image: xcode12
     - name: "Ubuntu 16.04"
       os: linux
       dist: xenial
