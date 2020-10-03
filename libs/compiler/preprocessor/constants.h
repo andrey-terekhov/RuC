@@ -16,10 +16,14 @@
 
 #pragma once
 
-#define MAXTAB	  100000
-#define STRIGSIZE 150
-#define HASH	  256
-#define DIP		  10
+#define MACRODEBUG 1
+
+#define MAXTAB		100000
+#define LONGSTR		10000
+#define STRIGSIZE	256
+#define HASH		256
+#define DIP			10
+#define CONTROLSIZE 250
 
 #define CANGEEND	  -6
 #define MACROEND	  -5
@@ -29,7 +33,6 @@
 #define MACROFUNCTION 0
 #define MACRODEF	  1
 
-#define SOURSTYPE		  1
 #define MTYPE			  2
 #define CTYPE			  3
 #define IFTYPE			  4
@@ -37,10 +40,12 @@
 #define FTYPE			  6
 #define TEXTTYPE		  10
 #define PREPROCESS_STRING 11
+#define FILETYPE 0
 
 
 // Ключевые слова
 
+#define SH_MAIN	   -63
 #define SH_DEFINE  -64
 #define SH_IFDEF   -65
 #define SH_IFNDEF  -66
@@ -63,7 +68,8 @@
 
 // Коды ошибок
 
-#define after_ident_must_be_space			366
+#define just_kill_yourself					1
+#define after_ident_must_be_space1			366
 #define ident_begins_with_s					367
 #define must_be_endif						368
 #define dont_elif							369
@@ -73,7 +79,7 @@
 #define after_functionid_must_be_comma		373
 #define stalpe								374
 #define not_relis_if						375
-#define befor_endif							376
+#define before_endif						376
 #define repeat_ident						377
 #define not_enough_param2					378
 #define not_end_fail_define					379
@@ -87,3 +93,4 @@
 #define must_be_digit_after_exp1			387
 #define not_arithmetic_operations			389
 #define not_logical_operations				390
+#define comm_not_ended						391

@@ -2,7 +2,7 @@
 #set a 2112345678
 void main()
 {
-  a;
+  assert(a == 2112345678, "fail1");
 }
 
 

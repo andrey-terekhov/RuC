@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "compiler.h"
 #include "context.h"
 #include "context_var.h"
 
@@ -24,8 +25,8 @@
 extern "C" {
 #endif
 
-void preprocess_file(compiler_context *c_context, const char *code);
-void preprocess_scan(preprocess_context *context, compiler_context *c_context);
+char *preprocess_file(int argc, const char *argv[], data_files *sources, data_files *headers);
+void preprocess_scan(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

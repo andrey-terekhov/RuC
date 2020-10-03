@@ -4,5 +4,5 @@
 #set a #eval(a+1)
 void main()
 {
-  a;
+  assert(a == 4, "fail1");
 }

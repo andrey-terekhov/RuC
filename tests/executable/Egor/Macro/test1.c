@@ -11,7 +11,7 @@ l
 
 void main()
 {
-  a;
+  assert(a == 10, "fail1");
 }
 
 
