@@ -3,7 +3,7 @@
 #define C 7 
 #define D 1 
 
-#define concat(a, b) a@b
+#define concat(a, b) a @ b
 #define case1(t) concat(concat(int a, t), ; )
 #define case2(t) concat(concat(double b, t), ; )
 
