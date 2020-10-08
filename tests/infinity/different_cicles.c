@@ -1,34 +1,36 @@
-int a,b,i;
+int a, b, i;
+
 void main()
 {
     do
     {
-        if (a>b)
+        if (a > b)
         {
             continue;
-            a=1;
+            a = 1;
             return;
             a = -11;
         }
         else
         {
-            b=2;
+            b = 2;
             continue;
             b = -22;
         }
         break;
     }
-    while (a+b>0);
+    while (a + b > 0);
     
     while (!a)
-    {continue;
+    {
+        continue;
         break;
         return;
         continue;
-        a&=b;
+        a &= b;
     }
  
-    for (i=0; i<5; ++i)
+    for (i = 0; i < 5; ++i)
     {
         a = b;
         continue;
@@ -36,7 +38,8 @@ void main()
         continue;
         b = a;
     }
-    for (i=0; i<5;)
+
+    for (i = 0; i < 5;)
     {
         a = b;
         break;
