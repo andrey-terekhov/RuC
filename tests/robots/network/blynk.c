@@ -11,5 +11,3 @@ void main()
     blynk_property(66, "color", "#000000");
     blynk_lcd(77, 88, 99, "str8");
 }
-    
-    
