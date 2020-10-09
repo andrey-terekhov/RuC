@@ -244,9 +244,17 @@ void file_read(preprocess_context *context)
 	}
 	else
 	{
-		context->current_p = 0;
-		m_nextch(context);
-		m_nextch(context);
+		if(context->current_string != NULL && context->current_p != 0)
+		{
+			context->curchar = context->current_string[0];
+			context->nextchar = context->current_string[1];
+			context->current_p = 2;
+		}
+		else
+		{
+			context->curchar = EOF;
+		}
+	
 	}
 
 	while (context->curchar != EOF)
@@ -318,6 +326,7 @@ void open_file(preprocess_context *context, data_file *f)
 
 		cur_failes_next(fs, old_cur, context);
 
+		context->before_temp = &fs->files[fs->cur].before_source;
 		context->before_temp->str = fs->files[fs->cur].before_source.str;
 		context->before_temp->p = 0;
 
