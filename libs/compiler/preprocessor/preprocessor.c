@@ -122,7 +122,6 @@ void preprocess_words(preprocess_context *context)
 	{
 		case SH_INCLUDE:
 		{
-			
 			if (context->curchar != '\"')
 			{
 				m_nextch(context);
@@ -198,7 +197,7 @@ void preprocess_words(preprocess_context *context)
 		}
 		default:
 		{
-			//m_nextch(context);
+			// m_nextch(context);
 			output_keywods(context);
 			return;
 		}
@@ -217,15 +216,15 @@ void preprocess_scan(preprocess_context *context)
 		case '#':
 		{
 			context->cur = macro_keywords(context);
-		
-			if(context->cur != 0)
+
+			if (context->cur != 0)
 			{
 				context->prep_flag = 1;
 				preprocess_words(context);
 			}
 			else
 			{
-				//m_nextch(context);
+				// m_nextch(context);
 				output_keywods(context);
 			}
 
@@ -409,7 +408,7 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 	for (int i = 0; i < number; i++)
 	{
 		int l = strlen(codes[i]);
-		if ((codes[i][0] == '-' && codes[i][1] == 'I') || codes[i][l-1] == 'h')
+		if ((codes[i][0] == '-' && codes[i][1] == 'I') || codes[i][l - 1] == 'h')
 		{
 			continue;
 		}
@@ -425,8 +424,8 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 
 			if (context->nextchar == EOF)
 			{
-				context->sources->files[context->sources->cur].before_source.str[
-					context->sources->files[context->sources->cur].before_source.p++] = EOF;
+				context->sources->files[context->sources->cur]
+					.before_source.str[context->sources->files[context->sources->cur].before_source.p++] = EOF;
 			}
 			else
 			{

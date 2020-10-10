@@ -146,10 +146,11 @@ void m_onemore(preprocess_context *context)
 
 		if (context->curchar == EOF)
 		{
+			context->nextchar = EOF;
 			end_line(context, context->before_temp);
 		}
 	}
-	else if (context->current_string != NULL)
+	else if (context->current_string != NULL && context->curchar != EOF)
 	{
 		context->nextchar = context->current_string[context->current_p++];
 	}
@@ -298,6 +299,6 @@ void m_nextch(preprocess_context *context)
 		}
 	}
 
-	// printf(" t = %d curcar = %c curcar = %i n = %d \n", context->nextch_type,
-	// context->curchar, context->curchar, context->nextp);
+	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", context->nextch_type,
+	// context->curchar, context->curchar, context->nextchar, context->nextchar);
 }
