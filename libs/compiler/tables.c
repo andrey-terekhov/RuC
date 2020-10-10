@@ -76,7 +76,7 @@ void init_modetab(compiler_context *context)
 	context->modetab[19] = context->startmode = 14;
 	context->md = 19;
 	context->keywordsnum = 0;
-	context->lines[context->line = 1] = 1;
+	context->line = 1;
 	context->charnum = 1;
 	context->kw = 1;
 	context->tc = 0;

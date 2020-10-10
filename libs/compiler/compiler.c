@@ -21,6 +21,7 @@
 #include "defs.h"
 #include "errors.h"
 #include "frontend_utils.h"
+#include "macro_global_struct.h"
 #include "preprocessor.h"
 #include "tables.h"
 #include <stdio.h>
@@ -49,6 +50,32 @@ void report_cb(asp_report *report)
 }
 #endif
 
+char *preprocess_ruc_file(compiler_context *context, compiler_workspace *workspace)
+{
+	data_files *sources = &context->cfs;
+	data_files *headers = &context->hfs;
+
+	int argc = workspace->number_of_files;
+	const char **argv = malloc(argc * sizeof(char *));
+
+	compiler_workspace_file *current = workspace->files;
+	for (int i = 0; i < argc; i++)
+	{
+		argv[i] = current->path;
+		current = current->next;
+	}
+
+	char *result = preprocess_file(argc, argv, sources, headers);
+	free(argv);
+
+	if (context->hfs.p == 0)
+	{
+		context->c_flag++;
+	}
+
+	return result;
+}
+
 static void process_user_requests(compiler_context *context, compiler_workspace *workspace)
 {
 	compiler_workspace_file *file;
@@ -74,24 +101,16 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 #endif
 		if (strlen(macro_path) == 0 || strlen(tree_path) == 0 || strlen(codes_path) == 0)
 		{
-			fprintf(stderr, " ошибка при создании временного файла\n");
+			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m ошибка:\x1B[0m не удалось создать временные файлы\n");
 			exit(1);
 		}
 
-		// Открытие исходного текста
-		compiler_context_attach_io(context, file->path, IO_TYPE_INPUT, IO_SOURCE_FILE);
-
 		// Препроцессинг в массив
-		compiler_context_attach_io(context, "", IO_TYPE_OUTPUT, IO_SOURCE_MEM);
 
-		printf("\nИсходный текст:\n \n");
-
-		preprocess_file(context, file->path); // макрогенерация
-		macro_processed = strdup(context->output_options.ptr);
+		macro_processed = preprocess_ruc_file(context, workspace); // макрогенерация
 		if (macro_processed == NULL)
 		{
-			fprintf(stderr, " ошибка выделения памяти для "
-							"макрогенератора\n");
+			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m ошибка:\x1B[0m не удалось выделить память для макрогенератора\n");
 			exit(1);
 		}
 
@@ -100,8 +119,14 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 		compiler_context_attach_io(context, macro_processed, IO_TYPE_INPUT, IO_SOURCE_MEM);
 		output_tables_and_tree(context, tree_path);
-		output_codes(context, codes_path);
+		if (!context->error_flag)
+		{
+			output_codes(context, codes_path);
+		}
 		compiler_context_detach_io(context, IO_TYPE_INPUT);
+
+		data_files_clear(&context->cfs);
+		data_files_clear(&context->hfs);
 
 		/* Will be left for debugging in case of failure */
 #if !defined(FILE_DEBUG) && !defined(_MSC_VER)
@@ -122,7 +147,10 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 
 compiler_workspace *compiler_workspace_create()
 {
-	return calloc(1, sizeof(compiler_workspace));
+	compiler_workspace *temp = calloc(1, sizeof(compiler_workspace));
+	temp->files = NULL;
+	temp->number_of_files = 0;
+	return temp;
 }
 
 void compiler_workspace_free(compiler_workspace *workspace)
@@ -161,6 +189,7 @@ compiler_workspace_file *compiler_workspace_add_file(compiler_workspace *workspa
 		return NULL;
 	}
 
+	file->next = NULL;
 	file->path = strdup(path);
 
 	/* Find the tail file */
@@ -180,6 +209,7 @@ compiler_workspace_file *compiler_workspace_add_file(compiler_workspace *workspa
 		workspace->files = file;
 	}
 
+	workspace->number_of_files++;
 	return file;
 }
 
@@ -271,7 +301,7 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 
 	if (context == NULL)
 	{
-		fprintf(stderr, " ошибка выделения памяти под контекст\n");
+		fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m ошибка:\x1B[0m не удалось выделить память под контекст\n");
 		return 1;
 	}
 
@@ -285,9 +315,11 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 
 	process_user_requests(context, workspace);
 
+	int ret = get_exit_code(context);
 	compiler_context_deinit(context);
 	free(context);
-	return 0;
+
+	return ret;
 }
 
 COMPILER_EXPORTED int compiler_compile(const char *path)

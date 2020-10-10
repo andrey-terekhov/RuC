@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-void calculator(int if_flag, preprocess_context *context, compiler_context *c_context);
+void calculator(int if_flag, preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

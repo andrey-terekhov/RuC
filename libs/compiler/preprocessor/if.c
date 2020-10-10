@@ -33,24 +33,24 @@
 int checkif = 0;
 
 
-int if_check(int type_if, preprocess_context *context, compiler_context *c_context)
+int if_check(int type_if, preprocess_context *context)
 {
 	int flag = 0;
 
 	if (type_if == SH_IF)
 	{
-		calculator(1, context, c_context);
+		calculator(1, context);
 		return context->cstring[0];
 	}
 	else
 	{
 		context->msp = 0;
-		if (collect_mident(context, c_context))
+		if (collect_mident(context))
 		{
 			flag = 1;
 		}
 
-		space_end_line(context, c_context);
+		space_end_line(context);
 
 		if (type_if == SH_IFDEF)
 		{
@@ -63,7 +63,7 @@ int if_check(int type_if, preprocess_context *context, compiler_context *c_conte
 	}
 }
 
-void if_end(preprocess_context *context, compiler_context *c_context)
+void if_end(preprocess_context *context)
 {
 	int fl_cur;
 
@@ -71,15 +71,15 @@ void if_end(preprocess_context *context, compiler_context *c_context)
 	{
 		if (context->curchar == '#')
 		{
-			fl_cur = macro_keywords(context, c_context);
-			m_nextch(context, c_context);
+			fl_cur = macro_keywords(context);
+			m_nextch(context);
 
 			if (fl_cur == SH_ENDIF)
 			{
 				checkif--;
 				if (checkif < 0)
 				{
-					m_error(befor_endif, c_context);
+					m_error(before_endif, context);
 				}
 				return;
 			}
@@ -87,19 +87,19 @@ void if_end(preprocess_context *context, compiler_context *c_context)
 			if (fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
 			{
 				checkif++;
-				if_end(context, c_context);
+				if_end(context);
 			}
 		}
 		else
 		{
-			m_nextch(context, c_context);
+			m_nextch(context);
 		}
 	}
 
-	m_error(must_be_endif, c_context);
+	m_error(must_be_endif, context);
 }
 
-int if_false(preprocess_context *context, compiler_context *c_context)
+int if_false(preprocess_context *context)
 {
 	int fl_cur = context->cur;
 
@@ -107,8 +107,8 @@ int if_false(preprocess_context *context, compiler_context *c_context)
 	{
 		if (context->curchar == '#')
 		{
-			fl_cur = macro_keywords(context, c_context);
-			m_nextch(context, c_context);
+			fl_cur = macro_keywords(context);
+			m_nextch(context);
 
 			if (fl_cur == SH_ELSE || fl_cur == SH_ELIF || fl_cur == SH_ENDIF)
 			{
@@ -117,24 +117,24 @@ int if_false(preprocess_context *context, compiler_context *c_context)
 
 			if (fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
 			{
-				if_end(context, c_context);
+				if_end(context);
 			}
 		}
 		else
 		{
-			m_nextch(context, c_context);
+			m_nextch(context);
 		}
 	}
 
-	m_error(must_be_endif, c_context);
+	m_error(must_be_endif, context);
 	return 1;
 }
 
-void if_true(int type_if, preprocess_context *context, compiler_context *c_context)
+void if_true(int type_if, preprocess_context *context)
 {
 	while (context->curchar != EOF)
 	{
-		preprocess_scan(context, c_context);
+		preprocess_scan(context);
 
 		if (context->cur == SH_ELSE || context->cur == SH_ELIF)
 		{
@@ -146,7 +146,7 @@ void if_true(int type_if, preprocess_context *context, compiler_context *c_conte
 			checkif--;
 			if (checkif < 0)
 			{
-				m_error(befor_endif, c_context);
+				m_error(before_endif, context);
 			}
 
 			return;
@@ -155,55 +155,55 @@ void if_true(int type_if, preprocess_context *context, compiler_context *c_conte
 
 	if (type_if != SH_IF && context->cur == SH_ELIF)
 	{
-		m_error(dont_elif, c_context);
+		m_error(dont_elif, context);
 	}
 
-	if_end(context, c_context);
+	if_end(context);
 }
 
-void if_relis(preprocess_context *context, compiler_context *c_context)
+void if_relis(preprocess_context *context)
 {
 	int type_if = context->cur;
-	int flag = if_check(type_if, context, c_context); // начало (if)
+	int flag = if_check(type_if, context); // начало (if)
 
 	checkif++;
 	if (flag)
 	{
-		if_true(type_if, context, c_context);
+		if_true(type_if, context);
 		return;
 	}
 	else
 	{
-		context->cur = if_false(context, c_context);
+		context->cur = if_false(context);
 	}
 
 	if (type_if == SH_IF)
 	{
 		while (context->cur == SH_ELIF)
 		{
-			flag = if_check(type_if, context, c_context);
-			space_end_line(context, c_context);
+			flag = if_check(type_if, context);
+			space_end_line(context);
 
 			if (flag)
 			{
-				if_true(type_if, context, c_context);
+				if_true(type_if, context);
 				return;
 			}
 			else
 			{
-				context->cur = if_false(context, c_context);
+				context->cur = if_false(context);
 			}
 		}
 	}
 	else if (context->cur == SH_ELIF)
 	{
-		a_erorr(7);
+		m_error(10, context);
 	}
 
 	if (context->cur == SH_ELSE)
 	{
 		context->cur = 0;
-		if_true(type_if, context, c_context);
+		if_true(type_if, context);
 
 		return;
 	}
@@ -213,7 +213,7 @@ void if_relis(preprocess_context *context, compiler_context *c_context)
 		checkif--;
 		if (checkif < 0)
 		{
-			m_error(befor_endif, c_context);
+			m_error(before_endif, context);
 		}
 	}
 }

@@ -19,6 +19,7 @@
 #include "context.h"
 #include "context_var.h"
 #include "file.h"
+#include "macro_global_struct.h"
 #include "preprocessor.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
@@ -29,67 +30,71 @@
 #include <string.h>
 #include <wchar.h>
 
-
-void m_fopen(preprocess_context *context, const char *file_way)
+void update_faile(int old_cur, data_file *cur_f, data_file *old_f, preprocess_context *context)
 {
-	context->input_stak[++context->inp_file] = fopen(file_way, "r");
-	if (context->input_stak[context->inp_file] == NULL)
-	{
-		printf(" не найден файл %s\n", file_way);
-		exit(1);
-	}
+	cur_f->pred = old_cur;
+	old_f->line = context->control_bflag;
+	context->control_bflag = 0;
 }
 
-void include_fopen(preprocess_context *context, const char *file_way)
+void cur_failes_next(data_files *fs, int old_cur, preprocess_context *context)
 {
-	context->input_stak[++context->inp_p] = fopen(file_way, "r");
-	if (context->input_stak[context->inp_p] == NULL)
-	{
-		printf(" не найден файл %s\n", file_way);
-		exit(1);
-	}
+	fs->cur = fs->p - 1;
+	update_faile(old_cur, &fs->files[fs->cur], &fs->files[old_cur], context);
 }
 
-void file_read(preprocess_context *context, compiler_context *c_context)
+void set_old_cur(data_files *fs, int old, preprocess_context *context)
 {
-	get_next_char(context);
-	m_nextch(context, c_context);
-	// деректива лайн begin
-	while (context->curchar != EOF)
-	{
-		preprocess_scan(context, c_context);
-	}
-	// деректива лайн end
-	m_fprintf('\n', context, c_context);
-	m_fprintf('\n', context, c_context);
-	fclose(context->input_stak[context->inp_p]);
-	context->inp_p--;
-	m_nextch(context, c_context);
-	m_nextch(context, c_context);
+	fs->cur = old;
+	context->control_bflag = fs->files[fs->cur].line;
 }
 
-void open_file(preprocess_context *context, compiler_context *c_context)
+void print_marcer(int p, preprocess_context *context)
 {
-	char file_way[100];
-	int i = 0;
-
-	while (context->way[i] != '\0')
+	m_fprintf('#', context);
+	m_fprintf('1', context);
+	int n = 1;
+	int c = 0;
+	while (n * 10 < p)
 	{
-		file_way[i] = context->way[i];
-		i++;
+		n *= 10;
 	}
-
-	while (context->curchar != '\"')
+	while (n != 1)
 	{
-		if (context->curchar == EOF)
+		c = p % n;
+		c = (p - c) / n;
+		p -= c * n;
+		c += '0';
+		m_fprintf(c, context);
+		n /= 10;
+	}
+	p += '0';
+	m_fprintf(p, context);
+	m_fprintf('\n', context);
+}
+
+void print_end_marcer(preprocess_context *context)
+{
+	m_fprintf('\n', context);
+	m_fprintf('#', context);
+	m_fprintf('2', context);
+	m_fprintf('\n', context);
+}
+
+/*char *gen_way(preprocess_context *context, char *cur_way, char *temp_way)
+{
+	char *file_way = malloc(STRIGSIZE * sizeof(char));
+	//memset(file_way, 0, STRIGSIZE * sizeof(char));
+
+	file_way = cur_way;
+	int i = strlen(cur_way);
+	int j = 0;
+
+	while (temp_way[j] != '\0')
+	{
+		if (temp_way[j] == '.' && temp_way[j + 1] == '.' && i != 0)
 		{
-			a_erorr(1);
-		}
-
-		if (context->curchar == '.' && context->nextchar == '.' && i != 0)
-		{
-			m_nextch(context, c_context);
-			m_nextch(context, c_context);
+			j += 2;
 			if (file_way[i] != '/')
 			{
 				i--;
@@ -99,57 +104,286 @@ void open_file(preprocess_context *context, compiler_context *c_context)
 				i--;
 			}
 
-			if (context->curchar == '/')
+			if (temp_way[j++] != '/')
 			{
-				m_nextch(context, c_context);
-			}
-			else
-			{
-				a_erorr(1);
+				m_error(24, context);
 			}
 		}
 		else
 		{
-			file_way[i++] = context->curchar;
-			m_nextch(context, c_context);
+			file_way[i++] = temp_way[j++];
 		}
 	}
+
 	file_way[i++] = '\0';
+	return file_way;
+}*/
 
-	include_fopen(context, file_way);
-
-	if (file_way[i - 2] == 'h' && file_way[i - 3] == '.')
+int open_p_faile(preprocess_context *context, const char *file_way)
+{
+	context->current_file = fopen(file_way, "r");
+	if (context->current_file == NULL)
 	{
-		if (context->include_type == 1)
+		fprintf(stderr, "\x1B[1;39m%s:\x1B[1;31m ошибка:\x1B[0m файл не найден\n", file_way);
+		m_error(just_kill_yourself, context);
+	}
+	data_files_pinter(context->sources, file_way, NULL);
+
+	return context->sources->cur;
+}
+
+void gen_way(char *full, const char *path, const char *file, int is_slash)
+{
+	int size;
+
+	if (is_slash)
+	{
+		char *slash = strrchr(path, '/');
+		if (slash != NULL)
 		{
-			file_read(context, c_context);
+			size = slash - path;
+			memcpy(full, path, size * sizeof(char));
+			full[size++] = '/';
 		}
-		else if (context->include_type == 2)
+		else
 		{
-			a_erorr(70);
+			size = 0;
 		}
 	}
 	else
 	{
-		file_read(context, c_context);
+		size = strlen(path);
+		memcpy(full, path, size * sizeof(char));
+		full[size++] = '/';
+	}
+
+	int file_size = strlen(file);
+	memcpy(&full[size], file, file_size * sizeof(char));
+	full[size + file_size] = '\0';
+	// printf("4full = %s, path = %s file = %s \n", full, path, file);
+}
+
+int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int flag)
+{
+	char file_way[STRIGSIZE + 1024];
+	gen_way(file_way, fs->name, temp_way, 1);
+	if (!find_file(context, file_way))
+	{
+		return -2;
+	}
+	FILE *f = fopen(file_way, "r");
+
+	if (f == NULL)
+	{
+		for (int i = 0; i < context->iwp; i++)
+		{
+			gen_way(file_way, context->include_ways[i], temp_way, 0);
+
+			f = fopen(file_way, "r");
+
+			if (f != NULL)
+			{
+				break;
+			}
+		}
+	}
+	if (f == NULL)
+	{
+		printf(" не найден файл %s\n", temp_way);
+		m_error(1, context);
+	}
+	if (flag == 0)
+	{
+		context->current_file = f;
+		data_files_pinter(context->sources, file_way, NULL);
+		return context->sources->cur;
+	}
+	else
+	{
+		data_files_pinter(context->headers, file_way, f);
+		return context->headers->cur;
+	}
+}
+
+void include_fclose(preprocess_context *context)
+{
+	fclose(context->current_file);
+	context->current_file = NULL;
+	context->line = 1;
+}
+
+void begin_faile(preprocess_context *context, data_files *fs)
+{
+	context->current_file = (fs->files[fs->cur]).input;
+}
+
+void file_read(preprocess_context *context)
+{
+	int cur;
+	if (context->h_flag)
+	{
+		cur = context->headers->cur;
+	}
+	else
+	{
+		cur = context->sources->cur;
+	}
+
+	print_marcer(cur, context);
+	if (context->FILE_flag)
+	{
+		get_next_char(context);
+		if (context->nextchar == EOF)
+		{
+			context->curchar = EOF;
+		}
+		else
+		{
+			m_nextch(context);
+		}
+	}
+	else
+	{
+		if (context->current_string != NULL && context->current_p != 0)
+		{
+			context->curchar = context->current_string[0];
+			context->nextchar = context->current_string[1];
+			context->current_p = 2;
+		}
+		else
+		{
+			context->curchar = EOF;
+		}
+	}
+
+	while (context->curchar != EOF)
+	{
+		preprocess_scan(context);
+	}
+
+	control_string_pinter(context, context->control_bflag + 1, 1);
+	context->control_bflag = 0;
+
+	print_end_marcer(context);
+
+	if (context->FILE_flag)
+	{
+		include_fclose(context);
+	}
+}
+
+void open_file(preprocess_context *context, data_file *f)
+{
+	int i = 0;
+	char temp_way[STRIGSIZE];
+
+	while (context->curchar != '\"')
+	{
+		if (context->curchar == EOF)
+		{
+			m_error(23, context);
+		}
+		temp_way[i++] = context->curchar;
+		m_nextch(context);
+	}
+	temp_way[i] = '\0';
+	int h = 0;
+	data_files *fs;
+
+	if (temp_way[i - 1] == 'h' && temp_way[i - 2] == '.')
+	{
+		h++;
+		fs = context->headers;
+	}
+	else
+	{
+		fs = context->sources;
+	}
+
+	int old_cur;
+	if (h || context->include_type != 0)
+	{
+		old_cur = open_i_faile(context, temp_way, f, h);
+		if (old_cur == -2)
+		{
+			return;
+		}
+	}
+
+	if (h && context->include_type == 0)
+	{
+		context->before_temp_p = -1;
+	}
+	else if (context->include_type == 1 || context->include_type == 2 && !h)
+	{
+		if (!h)
+		{
+			context->FILE_flag = 1;
+		}
+		fs->files[fs->cur].before_source.p = context->before_temp->p;
+		fs->files[fs->cur].before_source.size = context->before_temp->size;
+
+		cur_failes_next(fs, old_cur, context);
+
+		context->before_temp = &fs->files[fs->cur].before_source;
+		context->before_temp->str = fs->files[fs->cur].before_source.str;
+		context->before_temp->p = 0;
+
+		if (h)
+		{
+			begin_faile(context, context->headers);
+		}
+
+		if (!h && context->nextch_type != FILETYPE)
+		{
+			m_change_nextch_type(FILETYPE, 0, context);
+		}
+
+		file_read(context);
+
+		if (!h && context->dipp != 0)
+		{
+			m_old_nextch_type(context);
+		}
+
+		set_old_cur(fs, old_cur, context);
+
+		fs->i++;
+		context->before_temp->str = fs->files[fs->cur].before_source.str;
+		context->before_temp->p = fs->files[fs->cur].before_source.p;
+		context->before_temp->size = fs->files[fs->cur].before_source.size;
+
+		if (!h)
+		{
+			context->FILE_flag = 0;
+		}
+	}
+	else
+	{
+		if (h)
+		{
+			m_error(25, context);
+		}
+		else
+		{
+			context->h_flag = 1;
+		}
 	}
 }
 
 
-void include_relis(preprocess_context *context, compiler_context *c_context)
+void include_relis(preprocess_context *context, data_files *fs)
 {
-	int old_inp_p = context->inp_p;
+	space_skip(context);
+
 	if (context->curchar != '\"')
 	{
-		a_erorr(1);
+		m_error(26, context);
 	}
-	if (context->inp_p >= 20)
-	{
-		a_erorr(1); // переполнение или цыкл
-	}
-	m_nextch(context, c_context);
+	m_nextch(context);
+	open_file(context, &fs->files[fs->cur]);
+	m_nextch(context);
 
-	open_file(context, c_context);
-	// m_nextch(context, c_context);
-	space_end_line(context, c_context);
+
+	space_end_line(context);
 }

@@ -20,5 +20,5 @@ $ cmake --build build --config Release
 
 Так как в сборке используется CMake, имеется возможность генерации проекта для IDE, например Xcode:
 ```
-cmake . -G Xcode
+$ cmake . -G Xcode
 ```
