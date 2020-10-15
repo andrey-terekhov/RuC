@@ -1,16 +1,18 @@
-   int main()
+int main()
 {
-   int a=7, b=-3;
+   int a = 7, b = -3;
+
    a = abs(a);
    b = abs(b);
-   print ("a  7");
+   print("a  7");
    printid(a);
-   print ("b  3");
+   print("b  3");
    printid(b);
 
-   a=sqrt(a);
+   a = sqrt(a);
    print ("a  2");
    printid(a);
+
    float c = sqrt(45);
    print ("c  6.708204");
    printid(c);

@@ -5,7 +5,7 @@ BraceWrapping:
 	AfterCaseLabel: 'true'
 	AfterClass: 'true'
 	AfterControlStatement: 'true'
-	AfterEnum: 'true'
+	Afterstruct: 'true'
 	AfterFunction: 'true'
 	AfterNamespace: 'true'
 	AfterStruct: 'true'

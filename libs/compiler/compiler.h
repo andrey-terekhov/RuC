@@ -36,7 +36,7 @@ typedef struct compiler_workspace_file
 } compiler_workspace_file;
 
 /** Compiler workspace error codes */
-typedef enum compiler_workspace_errno
+typedef struct compiler_workspace_errno
 {
 	COMPILER_WS_EOK = 0,   /** No error occured */
 	COMPILER_WS_ENOOUTPUT, /** No output file set */

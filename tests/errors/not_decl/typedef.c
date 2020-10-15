@@ -1,12 +1,12 @@
 typedef int tint;
 
-   int main()
+int main()
 {
-   tint a=2;
+   tint a = 2;
    print ("a  2");
    printid(a);
 
-   int b=3;
+   int b = 3;
    print ("b  3");
    printid(b);
 

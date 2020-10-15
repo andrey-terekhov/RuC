@@ -1,5 +1,3 @@
-
-
 void main() 
 {
 	// will not compile in C

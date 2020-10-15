@@ -285,7 +285,7 @@ void error(compiler_context *context, int ernum)
 		case float_instead_int:
 			printer_printf(&context->err_options, "формальный параметр имеет тип ЦЕЛ, а фактический - ВЕЩ\n");
 			break;
-		case wrong_number_of_params: // OK--
+		case wrong_number_of_params: // gotovo
 			printer_printf(&context->err_options, "неправильное количество фактических параметров\n");
 			break;
 		case wait_rightbr_in_primary: // OK/6
@@ -322,7 +322,7 @@ void error(compiler_context *context, int ernum)
 			printer_printf(&context->err_options, "операция, применимая только к целым, применена к "
 												  "вещественному аргументу\n");
 			break;
-		case assmnt_float_to_int:
+		case assmnt_float_to_int:	// gotovo
 			printer_printf(&context->err_options, "нельзя присваивать целому вещественное значение\n");
 			break;
 		case more_than_1_main:
@@ -348,7 +348,7 @@ void error(compiler_context *context, int ernum)
 			printer_printf(&context->err_options, "целая или литерная переменная инициализируется значением "
 												  "типа ВЕЩ\n");
 			break;
-		case must_be_digit_after_exp:
+		case must_be_digit_after_exp:	// gotovo
 			printer_printf(&context->err_options, "должна быть цифра после e\n");
 			break;
 		case no_comma_in_setmotor: // OK
@@ -490,7 +490,7 @@ void error(compiler_context *context, int ernum)
 		case type_missmatch:
 			printer_printf(&context->err_options, "несоответствие типов\n");
 			break;
-		case array_assigment:
+		case array_assigment:	//gotovo
 			printer_printf(&context->err_options, "присваивание в массив запрещено\n");
 			break;
 		case wrong_struct_ass:
@@ -545,7 +545,7 @@ void error(compiler_context *context, int ernum)
 			printer_printf(&context->err_options, "в качестве описателя можно использовать только "
 												  "идентификаторы, описанные как типы\n");
 			break;
-		case not_decl:
+		case not_decl:	// gotovo
 			printer_printf(&context->err_options, "здесь должен быть тип (стандартный или описанный "
 												  "пользователем)\n");
 			break;
