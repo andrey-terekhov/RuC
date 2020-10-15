@@ -1,7 +1,9 @@
 int f()
 {
-    return;
+    return 3.14;
 }
+
+
 void main()
 {
     int a = f();

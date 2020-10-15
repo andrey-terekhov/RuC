@@ -247,7 +247,7 @@ void error(compiler_context *context, int ernum)
 		case cond_must_be_in_brkts: // OK/3
 			printer_printf(&context->err_options, "условие должно быть в ()\n");
 			break;
-		case repeated_decl:
+		case repeated_decl:	// gotovo
 			printer_printf(&context->err_options, "повторное описание идентификатора ");
 			printident(context, REPRTAB_POS);
 			printer_printf(&context->err_options, "\n");
@@ -361,22 +361,22 @@ void error(compiler_context *context, int ernum)
 		case no_leftbr_in_stand_func: // OK??
 			printer_printf(&context->err_options, "в вызове стандартной функции нет (\n");
 			break;
-		case no_rightbr_in_stand_func: // OK
+		case no_rightbr_in_stand_func: // gotovo
 			printer_printf(&context->err_options, "в вызове стандартной функции нет )\n");
 			break;
 		case bad_param_in_stand_func:
 			printer_printf(&context->err_options, "параметры стандартных функций могут быть только целыми и "
 												  "вещественными\n");
 			break;
-		case no_ret_in_func: // OKd1/??/--
+		case no_ret_in_func: // gotovo
 			printer_printf(&context->err_options, "в функции, возвращающей непустое значение, нет оператора "
 												  "ВОЗВРАТ со значением\n");
 			break;
-		case bad_type_in_ret: // OKd1/??
+		case bad_type_in_ret: // gotovo
 			printer_printf(&context->err_options, "в функции, возвращающей целое или литерное значение, "
 												  "оператор ВОЗВРАТ со значением ВЕЩ\n");
 			break;
-		case notvoidret_in_void_func: // OKd1/??
+		case notvoidret_in_void_func: // gotovo
 			printer_printf(&context->err_options, "в функции, возвращающей пустое значение, оператор ВОЗВРАТ "
 												  "со значением\n");
 			break;
@@ -386,7 +386,7 @@ void error(compiler_context *context, int ernum)
 		case no_right_apost: // OK?+
 			printer_printf(&context->err_options, "символьная константа не заканчивается символом '\n");
 			break;
-		case decl_after_strmt: // OKd/18
+		case decl_after_strmt: // gotovo
 			printer_printf(&context->err_options, "встретилось описание после оператора\n");
 			break;
 		case too_long_string:
@@ -472,7 +472,7 @@ void error(compiler_context *context, int ernum)
 		case pointer_in_print: // OKd1/22
 			printer_printf(&context->err_options, "указатели нельзя печатать\n");
 			break;
-		case wrong_struct:
+		case wrong_struct:	// gotovo
 			printer_printf(&context->err_options, "неправильное описание структуры\n");
 			break;
 		case after_dot_must_be_ident: // OK--
@@ -484,7 +484,7 @@ void error(compiler_context *context, int ernum)
 												  "структуру\n");
 			break;
 
-		case error_in_initialization:
+		case error_in_initialization:	// gotovo
 			printer_printf(&context->err_options, "несоответствие типов при инициализации переменной\n");
 			break;
 		case type_missmatch:
@@ -497,7 +497,7 @@ void error(compiler_context *context, int ernum)
 			printer_printf(&context->err_options, "для структур и указателей допустима только операция "
 												  "присваивания =\n");
 			break;
-		case wrong_init:
+		case wrong_init:	//gotovo
 			printer_printf(&context->err_options, "переменные такого типа нельзя инициализировать\n");
 			break;
 		case no_field:
@@ -541,7 +541,7 @@ void error(compiler_context *context, int ernum)
 			printer_printf(&context->err_options, "в РуСи можно определять границы массива по инициализации "
 												  "только по младшему измерению\n");
 			break;
-		case ident_not_type:
+		case ident_not_type:	// gotovo
 			printer_printf(&context->err_options, "в качестве описателя можно использовать только "
 												  "идентификаторы, описанные как типы\n");
 			break;
@@ -577,17 +577,17 @@ void error(compiler_context *context, int ernum)
 												  "иметь тип void*(void*)\n");
 			break;
 
-		case no_leftbr_in_printf: // OK
+		case no_leftbr_in_printf: // gotovo
 			printer_printf(&context->err_options, "не хватает открывающей скобки в printf/печатьф\n");
 			break;
-		case no_rightbr_in_printf:
+		case no_rightbr_in_printf:	// gotovo
 			printer_printf(&context->err_options, "не хватает закрывающей скобки в printf/печатьф\n");
 			break;
-		case wrong_first_printf_param: // OKd1??
+		case wrong_first_printf_param: // gotovo
 			printer_printf(&context->err_options, "первым параметром в printf/печатьф должна быть константная "
 												  "форматная строка\n");
 			break;
-		case wrong_printf_param_type: // OKd1??
+		case wrong_printf_param_type: // gotovo
 			printer_printf(&context->err_options, "тип параметра printf/печатьф не соответствует "
 												  "спецификатору: %%");
 			printer_printchar(&context->err_options, context->bad_printf_placeholder);
@@ -618,19 +618,19 @@ void error(compiler_context *context, int ernum)
 					printer_printf(&context->err_options, " -- неизвестный спецификатор");
 			}
 			break;
-		case wrong_printf_param_number: // OKd1??
+		case wrong_printf_param_number: // gotovo
 			printer_printf(&context->err_options, "количество параметров printf/печатьф не соответствует "
 												  "количеству спецификаторов\n");
 			break;
-		case printf_no_format_placeholder: // OKd1
+		case printf_no_format_placeholder: // gotovo
 			printer_printf(&context->err_options, "в printf/печатьф нет спецификатора типа после '%%'\n");
 			break;
-		case printf_unknown_format_placeholder: // OKd1
+		case printf_unknown_format_placeholder: // gotovo
 			printer_printf(&context->err_options, "в printf/печатьф неизвестный спецификатор типа %%");
 			printer_printchar(&context->err_options, context->bad_printf_placeholder);
 			printer_printf(&context->err_options, "\n");
 			break;
-		case too_many_printf_params: // OKd1
+		case too_many_printf_params: // gotovo
 			printer_printf(&context->err_options, "максимально в printf/печатьф можно выводить %i значений\n",
 						   MAXPRINTFPARAMS);
 			break;
@@ -655,7 +655,7 @@ void error(compiler_context *context, int ernum)
 			printer_printf(&context->err_options, "если в инициализаторе встретилась строка, то и дальше "
 												  "должны быть только строки\n");
 			break;
-		case wrong_init_in_actparam:
+		case wrong_init_in_actparam:	//gotovo
 			printer_printf(&context->err_options, "в инициализаторе-фактическом параметре функции могут быть "
 												  "только константы\n");
 			break;
