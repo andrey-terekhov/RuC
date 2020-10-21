@@ -357,7 +357,7 @@
 #define LDEFAULT	  -10
 #define LDO			  -11
 #define LELSE		  -12
-#define Lstruct		  -13
+#define LENUM		  -13
 #define LSTRUCT		  -14
 #define LTYPEDEF	  -15
 #define LFOR		  -16

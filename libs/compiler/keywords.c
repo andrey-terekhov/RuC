@@ -28,7 +28,7 @@ char keywords_txt[] =
 	"DEFAULT default УМОЛЧАНИЕ умолчание\n"
 	"DO do ЦИКЛ цикл\n"
 	"ELSE else ИНАЧЕ иначе\n"
-	"struct struct ПЕРЕЧЕНЬ перечень\n"
+	"ENUM enum ПЕРЕЧЕНЬ перечень\n"
 	"STRUCT struct СТРУКТУРА структура\n"
 	"TYPEDEF typedef ОПРТИПА опртипа\n"
 	"FOR for ДЛЯ для\n"
