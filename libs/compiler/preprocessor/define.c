@@ -432,7 +432,7 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 	int lmp = context->mp;
 
 	context->macrotext[context->mp++] = MACRODEF;
-	if(context->curchar != '\n')
+	if (context->curchar != '\n')
 	{
 		while (context->curchar != '\n')
 		{
@@ -502,7 +502,7 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 	{
 		context->macrotext[context->mp++] = '0';
 	}
-	
+
 	context->macrotext[context->mp++] = MACROEND;
 
 	if (r)
