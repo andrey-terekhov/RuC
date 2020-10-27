@@ -6,6 +6,14 @@ init()
 	wait_for=2
 	vm_release=master
 
+	test_dir=../tests
+	error_dir=../tests/errors
+	exec_dir=../tests/executable
+
+	error_subdir=errors
+	warning_subdir=warning
+	include_subdir=include
+
 	while ! [[ -z $1 ]]
 	do
 		case "$1" in
@@ -76,14 +84,6 @@ build()
 	ruc_compiler=./ruc
 
 	build_vm
-
-	test_dir=../tests
-	error_dir=../tests/errors
-	exec_dir=../tests/executable
-
-	error_subdir=errors
-	warning_subdir=warning
-	include_subdir=include
 }
 
 internal_timeout()
@@ -129,6 +129,47 @@ message_failure()
 	fi
 }
 
+search_warnings()
+{
+	if [[ `grep -c "\[1;31m" $log` > 1 ]] ; then
+		message_warning
+		let warning++
+
+		if ! [[ -z $debug ]] ; then
+			cat $log
+		fi
+	else
+		message_success
+		let success++
+	fi
+}
+
+interpreter_zero_code_logic()
+{
+	if [[ $path == */$error_subdir/* ]] ; then
+		message_failure
+		let failure++
+	else
+		message_success
+		let success++
+	fi
+}
+
+interpreter_other_code_logic()
+{
+	if [[ $path == */$error_subdir/* ]] ; then
+		message_success
+		let success++
+	else
+		message_failure
+		let failure++
+
+		if ! [[ -z $debug ]] ; then
+			cat $log
+		fi
+	fi
+}
+
 execution()
 {
 	if [[ $path == $exec_dir/* ]] ; then
@@ -137,13 +178,7 @@ execution()
 
 		case "$?" in
 			0)
-				if [[ $path == */$error_subdir/* ]] ; then
-					message_failure
-					let failure++
-				else
-					message_success
-					let success++
-				fi
+				interpreter_zero_code_logic
 				;;
 			124|142)
 				message_timeout
@@ -161,33 +196,50 @@ execution()
 				fi
 				;;
 			*)
-				if [[ $path == */$error_subdir/* ]] ; then
-					message_success
-					let success++
-				else
-					message_failure
-					let failure++
-
-					if ! [[ -z $debug ]] ; then
-						cat $log
-					fi
-				fi
+				interpreter_other_code_logic
 				;;
 		esac
 	fi
 }
 
+compiler_zero_code_logic()
+{
+	if [[ $path == $error_dir/* ]] ; then
+		message_failure
+		let failure++
+	else
+		message_success
+		execution
+	fi
+}
+
+compiler_other_code_logic()
+{
+	if [[ $path == $error_dir/* ]] ; then
+		if [[ $path == */$warning_subdir/* ]] ; then
+			message_success
+			let success++
+		else
+			search_warnings
+		fi
+	else
+		message_failure
+		let failure++
+
+		if ! [[ -z $debug ]] ; then
+			cat $log
+		fi
+	fi
+}
+
 compiling()
 {
+	action="compiling"
+	internal_timeout $wait_for $ruc_compiler $sources &>$log
+
 	case "$?" in
 		0)
-			if [[ $path == $error_dir/* ]] ; then
-				message_failure
-				let failure++
-			else
-				message_success
-				execution
-			fi
+			compiler_zero_code_logic
 			;;
 		124|142)
 			message_timeout
@@ -205,31 +257,7 @@ compiling()
 			fi
 			;;
 		*)
-			if [[ $path == $error_dir/* ]] ; then
-				if [[ $path == */$warning_subdir/* ]] ; then
-					message_success
-					let success++
-				else
-					if [[ `grep -c "\[1;31m" $log` > 1 ]] ; then
-						message_warning
-						let warning++
-
-						if ! [[ -z $debug ]] ; then
-							cat $log
-						fi
-					else
-						message_success
-						let success++
-					fi
-				fi
-			else
-				message_failure
-				let failure++
-
-				if ! [[ -z $debug ]] ; then
-					cat $log
-				fi
-			fi
+			compiler_other_code_logic
 			;;
 	esac
 }
@@ -240,10 +268,8 @@ test()
 	for path in `find $test_dir -name *.c`
 	do
 		sources=$path
-		action="compiling"
 
 		if [[ $path != */$include_subdir/* ]] ; then
-			internal_timeout $wait_for $ruc_compiler $sources &>$log
 			compiling
 		fi
 	done
@@ -260,9 +286,6 @@ test()
 				sources="$sources -I$temp"
 			done
 
-			action="compiling"
-
-			internal_timeout $wait_for $ruc_compiler $sources &>$log
 			compiling
 		done
 	done
