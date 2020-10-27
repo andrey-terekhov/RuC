@@ -11,21 +11,28 @@ init()
 	exec_dir=../tests/executable
 
 	error_subdir=errors
-	warning_subdir=warning
+	warning_subdir=warnings
 	include_subdir=include
 
 	while ! [[ -z $1 ]]
 	do
 		case "$1" in
 			-h|--help)
-				echo -e "Usage: ./${0##*/} [KEY]..."
+				echo -e "Usage: ./${0##*/} [KEY] ..."
+				echo -e "Description:"
+				echo -e "\tThis script tests all files from \"$test_dir\" directory."
+				echo -e "\tFolder \"$error_dir\" should contain tests with expected error."
+				echo -e "\tExecutable tests should be in \"$exec_dir\" directory."
+				echo -e "\tTo ignore invalid tests output, use \"*/$warning_subdir/*\" subdirectory."
+				echo -e "\tFor tests with expected runtime error, use \"*/$error_subdir/*\" subdirectory."
+				echo -e "\tFor multi-file tests, use \"*/$include_subdir/*\" subdirectory."
 				echo -e "Keys:"
-				echo -e "\t-h, --help\tTo output help info"
-				echo -e "\t-s, --silence\tFor silence testing"
-				echo -e "\t-d, --debug\tSwitch on debug tracing"
-				echo -e "\t-v, --virtual\tSet RuC virtual machine release"
-				echo -e "\t-o, --output\tSet output printing time (default = 0.1)"
-				echo -e "\t-w, --wait\tSet waiting time for timeout result (default = 2)"
+				echo -e "\t-h, --help\tTo output help info."
+				echo -e "\t-s, --silence\tFor silence testing."
+				echo -e "\t-d, --debug\tSwitch on debug tracing."
+				echo -e "\t-v, --virtual\tSet RuC virtual machine release."
+				echo -e "\t-o, --output\tSet output printing time (default = 0.1)."
+				echo -e "\t-w, --wait\tSet waiting time for timeout result (default = 2)."
 				exit 0
 				;;
 			-s|--silence)
