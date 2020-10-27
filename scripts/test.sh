@@ -82,6 +82,7 @@ build()
 	exec_dir=../tests/executable
 
 	error_subdir=errors
+	warning_subdir=warning
 	include_subdir=include
 }
 
@@ -205,16 +206,21 @@ compiling()
 			;;
 		*)
 			if [[ $path == $error_dir/* ]] ; then
-				if [[ `grep -c "31m" $log` > 1 ]] ; then
-					message_warning
-					let warning++
-
-					if ! [[ -z $debug ]] ; then
-						cat $log
-					fi
-				else
+				if [[ $path == */$warning_subdir/* ]] ; then
 					message_success
 					let success++
+				else
+					if [[ `grep -c "\[1;31m" $log` > 1 ]] ; then
+						message_warning
+						let warning++
+
+						if ! [[ -z $debug ]] ; then
+							cat $log
+						fi
+					else
+						message_success
+						let success++
+					fi
 				fi
 			else
 				message_failure
