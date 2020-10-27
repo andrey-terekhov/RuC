@@ -139,8 +139,9 @@ execution()
 				message_timeout
 				let timeout++
 				;;
-			139)
+			139|134)
 				# Segmentation fault
+				# Double free or corruption (!prev)
 
 				message_failure
 				let failure++
@@ -182,8 +183,9 @@ compiling()
 			message_timeout
 			let timeout++
 			;;
-		139)
+		139|134)
 			# Segmentation fault
+			# Double free or corruption (!prev)
 
 			message_failure
 			let failure++
