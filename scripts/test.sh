@@ -43,6 +43,7 @@ init()
 	done
 
 	success=0
+	warning=0
 	failure=0
 	timeout=0
 
@@ -100,6 +101,14 @@ message_success()
 			echo -e "\x1B[1;32m $action success \x1B[1;39m: $path"
 			sleep $output_time
 		fi
+	fi
+}
+
+message_warning()
+{
+	if [[ -z $silence ]] ; then
+		echo -e "\x1B[1;33m $action warning \x1B[1;39m: $path"
+		sleep $output_time
 	fi
 }
 
@@ -196,8 +205,17 @@ compiling()
 			;;
 		*)
 			if [[ $path == $error_dir/* ]] ; then
-				message_success
-				let success++
+				if [[ `grep -c "31m" $log` > 1 ]] ; then
+					message_warning
+					let warning++
+
+					if ! [[ -z $debug ]] ; then
+						cat $log
+					fi
+				else
+					message_success
+					let success++
+				fi
 			else
 				message_failure
 				let failure++
@@ -247,7 +265,7 @@ test()
 		echo
 	fi
 
-	echo -e "\x1B[1;39m success = $success, failure = $failure, timeout = $timeout"
+	echo -e "\x1B[1;39m success = $success, warning = $warning, failure = $failure, timeout = $timeout"
 	rm $log
 }
 
