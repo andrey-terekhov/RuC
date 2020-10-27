@@ -129,47 +129,6 @@ message_failure()
 	fi
 }
 
-search_warnings()
-{
-	if [[ `grep -c "\[1;31m" $log` > 1 ]] ; then
-		message_warning
-		let warning++
-
-		if ! [[ -z $debug ]] ; then
-			cat $log
-		fi
-	else
-		message_success
-		let success++
-	fi
-}
-
-interpreter_zero_code_logic()
-{
-	if [[ $path == */$error_subdir/* ]] ; then
-		message_failure
-		let failure++
-	else
-		message_success
-		let success++
-	fi
-}
-
-interpreter_other_code_logic()
-{
-	if [[ $path == */$error_subdir/* ]] ; then
-		message_success
-		let success++
-	else
-		message_failure
-		let failure++
-
-		if ! [[ -z $debug ]] ; then
-			cat $log
-		fi
-	fi
-}
-
 execution()
 {
 	if [[ $path == $exec_dir/* ]] ; then
@@ -178,7 +137,13 @@ execution()
 
 		case "$?" in
 			0)
-				interpreter_zero_code_logic
+				if [[ $path == */$error_subdir/* ]] ; then
+					message_failure
+					let failure++
+				else
+					message_success
+					let success++
+				fi
 				;;
 			124|142)
 				message_timeout
@@ -196,38 +161,38 @@ execution()
 				fi
 				;;
 			*)
-				interpreter_other_code_logic
+				if [[ $path == */$error_subdir/* ]] ; then
+					message_success
+					let success++
+				else
+					message_failure
+					let failure++
+
+					if ! [[ -z $debug ]] ; then
+						cat $log
+					fi
+				fi
 				;;
 		esac
 	fi
 }
 
-compiler_zero_code_logic()
+check_warnings()
 {
-	if [[ $path == $error_dir/* ]] ; then
-		message_failure
-		let failure++
-	else
+	if [[ $path == */$warning_subdir/* ]] ; then
 		message_success
-		execution
-	fi
-}
+		let success++
+	else
+		if [[ `grep -c "\[1;31m" $log` > 1 ]] ; then
+			message_warning
+			let warning++
 
-compiler_other_code_logic()
-{
-	if [[ $path == $error_dir/* ]] ; then
-		if [[ $path == */$warning_subdir/* ]] ; then
+			if ! [[ -z $debug ]] ; then
+				cat $log
+			fi
+		else
 			message_success
 			let success++
-		else
-			search_warnings
-		fi
-	else
-		message_failure
-		let failure++
-
-		if ! [[ -z $debug ]] ; then
-			cat $log
 		fi
 	fi
 }
@@ -239,7 +204,13 @@ compiling()
 
 	case "$?" in
 		0)
-			compiler_zero_code_logic
+			if [[ $path == $error_dir/* ]] ; then
+				message_failure
+				let failure++
+			else
+				message_success
+				execution
+			fi
 			;;
 		124|142)
 			message_timeout
@@ -257,7 +228,16 @@ compiling()
 			fi
 			;;
 		*)
-			compiler_other_code_logic
+			if [[ $path == $error_dir/* ]] ; then
+				check_warnings
+			else
+				message_failure
+				let failure++
+
+				if ! [[ -z $debug ]] ; then
+					cat $log
+				fi
+			fi
 			;;
 	esac
 }
