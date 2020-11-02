@@ -225,6 +225,9 @@ void space_skip_str(preprocess_context *context)
 		m_nextch(context);
 	}
 
-	m_fprintf(context->curchar, context);
-	m_nextch(context);
+	if (context->curchar != EOF)
+	{
+		m_fprintf(context->curchar, context);
+		m_nextch(context);
+	}
 }

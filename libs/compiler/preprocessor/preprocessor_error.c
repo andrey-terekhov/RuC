@@ -128,11 +128,6 @@ void errors_set(int ernum)
 
 void m_error(int ernum, preprocess_context *context)
 {
-	if (ernum == just_kill_yourself)
-	{
-		exit(2);
-	}
-
 	if (context->before_temp != NULL)
 	{
 		int i = 0;
