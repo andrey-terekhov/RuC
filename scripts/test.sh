@@ -6,18 +6,33 @@ init()
 	wait_for=2
 	vm_release=master
 
+	test_dir=../tests
+	error_dir=../tests/errors
+	exec_dir=../tests/executable
+
+	error_subdir=errors
+	warning_subdir=warnings
+	include_subdir=include
+
 	while ! [[ -z $1 ]]
 	do
 		case "$1" in
 			-h|--help)
-				echo -e "Usage: ./${0##*/} [KEY]..."
+				echo -e "Usage: ./${0##*/} [KEY] ..."
+				echo -e "Description:"
+				echo -e "\tThis script tests all files from \"$test_dir\" directory."
+				echo -e "\tFolder \"$error_dir\" should contain tests with expected error."
+				echo -e "\tExecutable tests should be in \"$exec_dir\" directory."
+				echo -e "\tTo ignore invalid tests output, use \"*/$warning_subdir/*\" subdirectory."
+				echo -e "\tFor tests with expected runtime error, use \"*/$error_subdir/*\" subdirectory."
+				echo -e "\tFor multi-file tests, use \"*/$include_subdir/*\" subdirectory."
 				echo -e "Keys:"
-				echo -e "\t-h, --help\tTo output help info"
-				echo -e "\t-s, --silence\tFor silence testing"
-				echo -e "\t-d, --debug\tSwitch on debug tracing"
-				echo -e "\t-v, --virtual\tSet RuC virtual machine release"
-				echo -e "\t-o, --output\tSet output printing time (default = 0.1)"
-				echo -e "\t-w, --wait\tSet waiting time for timeout result (default = 2)"
+				echo -e "\t-h, --help\tTo output help info."
+				echo -e "\t-s, --silence\tFor silence testing."
+				echo -e "\t-d, --debug\tSwitch on debug tracing."
+				echo -e "\t-v, --virtual\tSet RuC virtual machine release."
+				echo -e "\t-o, --output\tSet output printing time (default = 0.1)."
+				echo -e "\t-w, --wait\tSet waiting time for timeout result (default = 2)."
 				exit 0
 				;;
 			-s|--silence)
@@ -43,6 +58,7 @@ init()
 	done
 
 	success=0
+	warning=0
 	failure=0
 	timeout=0
 
@@ -75,13 +91,6 @@ build()
 	ruc_compiler=./ruc
 
 	build_vm
-
-	test_dir=../tests
-	error_dir=../tests/errors
-	exec_dir=../tests/executable
-
-	error_subdir=errors
-	include_subdir=include
 }
 
 internal_timeout()
@@ -100,6 +109,14 @@ message_success()
 			echo -e "\x1B[1;32m $action success \x1B[1;39m: $path"
 			sleep $output_time
 		fi
+	fi
+}
+
+message_warning()
+{
+	if [[ -z $silence ]] ; then
+		echo -e "\x1B[1;33m $action warning \x1B[1;39m: $path"
+		sleep $output_time
 	fi
 }
 
@@ -139,8 +156,9 @@ execution()
 				message_timeout
 				let timeout++
 				;;
-			139)
+			139|134)
 				# Segmentation fault
+				# Double free or corruption (!prev)
 
 				message_failure
 				let failure++
@@ -166,8 +184,31 @@ execution()
 	fi
 }
 
+check_warnings()
+{
+	if [[ $path == */$warning_subdir/* ]] ; then
+		message_success
+		let success++
+	else
+		if [[ `grep -c "\[1;31m" $log` > 1 ]] ; then
+			message_warning
+			let warning++
+
+			if ! [[ -z $debug ]] ; then
+				cat $log
+			fi
+		else
+			message_success
+			let success++
+		fi
+	fi
+}
+
 compiling()
 {
+	action="compiling"
+	internal_timeout $wait_for $ruc_compiler $sources &>$log
+
 	case "$?" in
 		0)
 			if [[ $path == $error_dir/* ]] ; then
@@ -182,8 +223,9 @@ compiling()
 			message_timeout
 			let timeout++
 			;;
-		139)
+		139|134)
 			# Segmentation fault
+			# Double free or corruption (!prev)
 
 			message_failure
 			let failure++
@@ -194,8 +236,7 @@ compiling()
 			;;
 		*)
 			if [[ $path == $error_dir/* ]] ; then
-				message_success
-				let success++
+				check_warnings
 			else
 				message_failure
 				let failure++
@@ -214,10 +255,8 @@ test()
 	for path in `find $test_dir -name *.c`
 	do
 		sources=$path
-		action="compiling"
 
 		if [[ $path != */$include_subdir/* ]] ; then
-			internal_timeout $wait_for $ruc_compiler $sources &>$log
 			compiling
 		fi
 	done
@@ -234,9 +273,6 @@ test()
 				sources="$sources -I$temp"
 			done
 
-			action="compiling"
-
-			internal_timeout $wait_for $ruc_compiler $sources &>$log
 			compiling
 		done
 	done
@@ -245,7 +281,7 @@ test()
 		echo
 	fi
 
-	echo -e "\x1B[1;39m success = $success, failure = $failure, timeout = $timeout"
+	echo -e "\x1B[1;39m success = $success, warning = $warning, failure = $failure, timeout = $timeout"
 	rm $log
 }
 
