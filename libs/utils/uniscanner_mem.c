@@ -15,6 +15,7 @@
  */
 
 #include "uniscanner.h"
+#include "logger.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -91,7 +92,7 @@ int io_mem_scanf(universal_scanner_options *opts, const char *fmt, va_list args)
 	UNUSED(fmt);
 	UNUSED(args);
 
-	fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m mem scanf not implemented\n");
+	log_system_error("ruc", "mem scanf not implemented");
 	exit(4);
 }
 

@@ -15,6 +15,7 @@
  */
 
 #include "compiler.h"
+#include "logger.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,7 +31,7 @@ const char *name = "../tests/executable/floatsign.c";
 
 int main(int argc, const char *argv[])
 {
-	printf("\x1B[0m"); // Not working without using printf
+	printf(""); // Not working without using printf
 
 	if (argc < 2)
 	{
@@ -43,7 +44,7 @@ int main(int argc, const char *argv[])
 		ws = compiler_get_workspace(argc, argv);
 		if (ws == NULL)
 		{
-			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m failed to create a workspace\n");
+			log_system_error("ruc", "failed to create a workspace");
 			return 1;
 		}
 
@@ -52,7 +53,7 @@ int main(int argc, const char *argv[])
 			char *str;
 
 			str = compiler_workspace_error2str(&ws->error);
-			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m unknown workspace error\n");
+			log_system_error("ruc", "unknown workspace error");
 			free(str);
 
 			compiler_workspace_free(ws);

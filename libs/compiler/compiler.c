@@ -21,6 +21,7 @@
 #include "defs.h"
 #include "errors.h"
 #include "frontend_utils.h"
+#include "logger.h"
 #include "macro_global_struct.h"
 #include "preprocessor.h"
 #include "tables.h"
@@ -101,7 +102,7 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 #endif
 		if (strlen(macro_path) == 0 || strlen(tree_path) == 0 || strlen(codes_path) == 0)
 		{
-			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m ошибка:\x1B[0m не удалось создать временные файлы\n");
+			log_system_error("ruc", "не удалось создать временные файлы");
 			exit(1);
 		}
 
@@ -110,7 +111,7 @@ static void process_user_requests(compiler_context *context, compiler_workspace 
 		macro_processed = preprocess_ruc_file(context, workspace); // макрогенерация
 		if (macro_processed == NULL)
 		{
-			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m ошибка:\x1B[0m не удалось выделить память для макрогенератора\n");
+			log_system_error("ruc", "не удалось выделить память для макрогенератора");
 			exit(1);
 		}
 
@@ -301,7 +302,7 @@ COMPILER_EXPORTED int compiler_workspace_compile(compiler_workspace *workspace)
 
 	if (context == NULL)
 	{
-		fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m ошибка:\x1B[0m не удалось выделить память под контекст\n");
+		log_system_error("ruc", "не удалось выделить память под контекст");
 		return 1;
 	}
 
