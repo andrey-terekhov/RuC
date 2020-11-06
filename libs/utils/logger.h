@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <stddef.h>
 #include "utils_internal.h"
 
 
@@ -26,13 +27,13 @@ extern "C" {
 typedef void (*logger)(const char *const tag, const char *const msg);
 
 
-//int set_error_log(const log func);
-//int set_warning_log(const log func);
-//int set_note_log(const log func);
+UTILS_EXPORTED int set_error_log(const logger func);
+UTILS_EXPORTED int set_warning_log(const logger func);
+UTILS_EXPORTED int set_note_log(const logger func);
 
-//void log_error(const char *const tag, const char *const msg, const char *const line, const size_t symbol);
-//void log_warning(const char *const tag, const char *const msg, const char *const line, const size_t symbol);
-//void log_note(const char *const tag, const char *const msg, const char *const line, const size_t symbol);
+UTILS_EXPORTED void log_error(const char *const tag, const char *const msg, const char *const line, const size_t symbol);
+UTILS_EXPORTED void log_warning(const char *const tag, const char *const msg, const char *const line, const size_t symbol);
+UTILS_EXPORTED void log_note(const char *const tag, const char *const msg, const char *const line, const size_t symbol);
 
 UTILS_EXPORTED void log_system_error(const char *const tag, const char *const msg);
 UTILS_EXPORTED void log_system_warning(const char *const tag, const char *const msg);
