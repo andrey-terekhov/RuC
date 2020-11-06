@@ -41,6 +41,58 @@ void set_color(const uint8_t color)
 #endif
 }
 
+void print_msg(const uint8_t color, const char *const msg)
+{
+	set_color(COLOR_DEFAULT);
+	
+	size_t i = 0;
+	while (msg[i] != '\0' && msg[i] != '\n')
+	{
+		fprintf(stderr, "%c", msg[i++]);
+	}
+
+	if (msg[i] == '\0')
+	{
+		fprintf(stderr, "\n");
+		return;
+	}
+
+	size_t j = i + 1;
+	while (msg[j] != '\0' && msg[j] != '\n')
+	{
+		j++;
+	}
+
+	if (msg[j] == '\0')
+	{
+		fprintf(stderr, "%s\n", &msg[i]);
+		return;
+	}
+
+	while (msg[j] != '^')
+	{
+		fprintf(stderr, "%c", msg[i++]);
+		j++;
+	}
+
+	set_color(color);
+	while (msg[j] != '\0')
+	{
+		fprintf(stderr, "%c", msg[i++]);
+		j++;
+	}
+
+	set_color(COLOR_DEFAULT);
+	while (msg[i] != '\n')
+	{
+		fprintf(stderr, "%c", msg[i++]);
+	}
+
+	set_color(color);
+	fprintf(stderr, "%s\n", &msg[i]);
+	set_color(COLOR_DEFAULT);
+}
+
 void default_error_log(const char *const tag, const char *const msg)
 {
 	set_color(COLOR_TAG);
@@ -49,8 +101,7 @@ void default_error_log(const char *const tag, const char *const msg)
 	set_color(COLOR_ERROR);
 	fprintf(stderr, "ошибка: ");
 
-	set_color(COLOR_DEFAULT);
-	fprintf(stderr, "%s\n", msg);
+	print_msg(COLOR_ERROR, msg);
 }
 
 void default_warning_log(const char *const tag, const char *const msg)
@@ -61,8 +112,7 @@ void default_warning_log(const char *const tag, const char *const msg)
 	set_color(COLOR_WARNING);
 	fprintf(stderr, "предупреждение: ");
 
-	set_color(COLOR_DEFAULT);
-	fprintf(stderr, "%s\n", msg);
+	print_msg(COLOR_WARNING, msg);
 }
 
 void default_note_log(const char *const tag, const char *const msg)
@@ -73,8 +123,7 @@ void default_note_log(const char *const tag, const char *const msg)
 	set_color(COLOR_NOTE);
 	fprintf(stderr, "примечание: ");
 
-	set_color(COLOR_DEFAULT);
-	fprintf(stderr, "%s\n", msg);
+	print_msg(COLOR_NOTE, msg);
 }
 
 
