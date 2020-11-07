@@ -275,7 +275,7 @@ void splice(char *const buffer, const char *const msg, const char *const line, c
 	size_t size = 0;
 	while (line[size] != '\0' && line[size] != '\n')
 	{
-		cur = sprintf(&buffer[cur], "%c", line[size]);
+		cur += sprintf(&buffer[cur], "%c", line[size]);
 		size++;
 	}
 
