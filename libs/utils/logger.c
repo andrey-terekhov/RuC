@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <uchar.h>
+#include "utf_8.h"
 
 #ifdef _MSC_VER
 	#include <windows.h>
@@ -22,6 +23,15 @@
 
 #define BUFFER_SIZE 1024
 
+const char *const TAG_LOGGER = "logger";
+
+const char *const TAG_ERROR = "ошибка";
+const char *const TAG_WARNING = "предупреждение";
+const char *const TAG_NOTE = "примечание";
+
+const char *const ERROR_LOGGER_ARG_NULL = "NULL указатель на строку";
+const char *const ERROR_LOGGER_ARG_MULTILINE  = "многострочный входной параметр";
+
 
 void default_error_log(const char *const tag, const char *const msg);
 void default_warning_log(const char *const tag, const char *const msg);
@@ -40,16 +50,6 @@ void set_color(const uint8_t color)
 #else
 	fprintf(stderr, "\x1B[1;%im", color);
 #endif
-}
-
-int is_russian(const char *const str)
-{
-	const char16_t ch = ((char16_t)str[0] << 8) | ((char16_t)str[1] & 0x00FF);
-
-	return  ch == 'Ё' || ch == 'ё'
-		|| (ch >= 'А' && ch <= 'Я')
-		|| (ch >= 'а' && ch <= 'п')
-		|| (ch >= 'р' && ch <= 'я');
 }
 
 void print_msg(const uint8_t color, const char *const msg)
@@ -82,8 +82,7 @@ void print_msg(const uint8_t color, const char *const msg)
 
 	while (msg[j] != '^')
 	{
-		fprintf(stderr, "%c", msg[i++]);
-		if (is_russian(&msg[i - 1]))
+		for (size_t k = symbol_size(msg[i]); k > 0; k--)
 		{
 			fprintf(stderr, "%c", msg[i++]);
 		}
@@ -94,8 +93,7 @@ void print_msg(const uint8_t color, const char *const msg)
 	set_color(color);
 	while (msg[j] != '\0')
 	{
-		fprintf(stderr, "%c", msg[i++]);
-		if (is_russian(&msg[i - 1]))
+		for (size_t k = symbol_size(msg[i]); k > 0; k--)
 		{
 			fprintf(stderr, "%c", msg[i++]);
 		}
@@ -120,7 +118,7 @@ void default_error_log(const char *const tag, const char *const msg)
 	fprintf(stderr, "%s: ", tag);
 
 	set_color(COLOR_ERROR);
-	fprintf(stderr, "ошибка: ");
+	fprintf(stderr, "%s: ", TAG_ERROR);
 
 	print_msg(COLOR_ERROR, msg);
 }
@@ -131,7 +129,7 @@ void default_warning_log(const char *const tag, const char *const msg)
 	fprintf(stderr, "%s: ", tag);
 
 	set_color(COLOR_WARNING);
-	fprintf(stderr, "предупреждение: ");
+	fprintf(stderr, "%s: ", TAG_WARNING);
 
 	print_msg(COLOR_WARNING, msg);
 }
@@ -142,7 +140,7 @@ void default_note_log(const char *const tag, const char *const msg)
 	fprintf(stderr, "%s: ", tag);
 
 	set_color(COLOR_NOTE);
-	fprintf(stderr, "примечание: ");
+	fprintf(stderr, "%s: ", TAG_NOTE);
 
 	print_msg(COLOR_NOTE, msg);
 }
@@ -182,9 +180,26 @@ int set_note_log(const logger func)
 }
 
 
-void log_system_error(const char *const tag, const char *const msg)
+int check_tag_msg(const char *const tag, const char *const msg)
 {
 	if (tag == NULL || msg == NULL)
+	{
+		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
+		return -1;
+	}
+
+	if (strchr(tag, '\n') != NULL || strchr(msg, '\n') != NULL)
+	{
+		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_MULTILINE);
+		return -1;
+	}
+
+	return 0;
+}
+
+void log_system_error(const char *const tag, const char *const msg)
+{
+	if (check_tag_msg(tag, msg))
 	{
 		return;
 	}
@@ -194,7 +209,7 @@ void log_system_error(const char *const tag, const char *const msg)
 
 void log_system_warning(const char *const tag, const char *const msg)
 {
-	if (tag == NULL || msg == NULL)
+	if (check_tag_msg(tag, msg))
 	{
 		return;
 	}
@@ -204,7 +219,7 @@ void log_system_warning(const char *const tag, const char *const msg)
 
 void log_system_note(const char *const tag, const char *const msg)
 {
-	if (tag == NULL || msg == NULL)
+	if (check_tag_msg(tag, msg))
 	{
 		return;
 	}
@@ -212,26 +227,22 @@ void log_system_note(const char *const tag, const char *const msg)
 	current_note_log(tag, msg);
 }
 
-size_t length(const char *const line, const size_t symbol)
+
+size_t length(const char *const line, const size_t size, const size_t symbol)
 {
-	const size_t size = strlen(line);
 	size_t i = symbol;
 	size_t j = i;
 
 	while (i < size)
 	{
-		if (line[i] == '_' || (line[i] >= '0' && line[i] <= '9')
-			|| (line[i] >= 'A' && line[i] <= 'Z')
-			|| (line[i] >= 'a' && line[i] <= 'z'))
-		{
-			i++;
-			j++;
-			continue;
-		}
+		const char32_t ch = to_utf_8(&line[i]);
 
-		if (i + 1 < size && is_russian(&line[i]))
+		if (is_russian(ch) || ch == '_'
+			|| (ch >= '0' && ch <= '9')
+			|| (ch >= 'A' && ch <= 'Z')
+			|| (ch >= 'a' && ch <= 'z'))
 		{
-			i += 2;
+			i += symbol_size(line[i]);
 			j++;
 			continue;
 		}
@@ -244,25 +255,25 @@ size_t length(const char *const line, const size_t symbol)
 
 void splice(char *const buffer, const char *const msg, const char *const line, const size_t symbol)
 {
-	strcpy(buffer, msg);
-	strcat(buffer, "\n");
-	strcat(buffer, line);
+	size_t cur = sprintf(buffer, "%s\n", msg);
 
-	const size_t len = length(line, symbol);
+	size_t size = 0;
+	while (line[size] != '\0' && line[size] != '\n')
+	{
+		cur += sprintf(&buffer[cur], "%c", line[size]);
+		size++;
+	}
+
+	const size_t len = length(line, size, symbol);
 	if (len == 0)
 	{
 		return;
 	}
 
-	size_t cur = strlen(buffer);
 	buffer[cur++] = '\n';
-	for (size_t i = 0; i < symbol; i++)
+	for (size_t i = 0; i < symbol; i += symbol_size(line[i]))
 	{
 		buffer[cur++] = line[i] == '\t' ? '\t' : ' ';
-		if (is_russian(&line[i]))
-		{
-			i++;
-		}
 	}
 
 	buffer[cur++] = '^';
@@ -274,42 +285,59 @@ void splice(char *const buffer, const char *const msg, const char *const line, c
 	buffer[cur++] = '\0';
 }
 
-
 void log_error(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
-	if (tag == NULL || msg == NULL || line == NULL)
+	if (check_tag_msg(tag, msg))
 	{
 		return;
 	}
-	
+
+	if (line == NULL)
+	{
+		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
+		return;
+	}
+
 	char buffer[BUFFER_SIZE];
 	splice(buffer, msg, line, symbol);
 
-	log_system_error(tag, buffer);
+	current_error_log(tag, buffer);
 }
 
 void log_warning(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
-	if (tag == NULL || msg == NULL || line == NULL)
+	if (check_tag_msg(tag, msg))
 	{
+		return;
+	}
+
+	if (line == NULL)
+	{
+		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
 		return;
 	}
 	
 	char buffer[BUFFER_SIZE];
 	splice(buffer, msg, line, symbol);
 
-	log_system_warning(tag, buffer);
+	current_warning_log(tag, buffer);
 }
 
 void log_note(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
-	if (tag == NULL || msg == NULL || line == NULL)
+	if (check_tag_msg(tag, msg))
 	{
+		return;
+	}
+
+	if (line == NULL)
+	{
+		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
 		return;
 	}
 	
 	char buffer[BUFFER_SIZE];
 	splice(buffer, msg, line, symbol);
 
-	log_system_note(tag, buffer);
+	current_note_log(tag, buffer);
 }
