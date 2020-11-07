@@ -182,9 +182,14 @@ int set_note_log(const logger func)
 }
 
 
+int check_tag_msg(const char *const tag, const char *const msg)
+{
+	return tag == NULL || msg == NULL || strchr(tag, '\n') != NULL || strchr(msg, '\n') != NULL;
+}
+
 void log_system_error(const char *const tag, const char *const msg)
 {
-	if (tag == NULL || msg == NULL)
+	if (check_tag_msg(tag, msg))
 	{
 		return;
 	}
@@ -194,7 +199,7 @@ void log_system_error(const char *const tag, const char *const msg)
 
 void log_system_warning(const char *const tag, const char *const msg)
 {
-	if (tag == NULL || msg == NULL)
+	if (check_tag_msg(tag, msg))
 	{
 		return;
 	}
@@ -204,7 +209,7 @@ void log_system_warning(const char *const tag, const char *const msg)
 
 void log_system_note(const char *const tag, const char *const msg)
 {
-	if (tag == NULL || msg == NULL)
+	if (check_tag_msg(tag, msg))
 	{
 		return;
 	}
@@ -212,9 +217,9 @@ void log_system_note(const char *const tag, const char *const msg)
 	current_note_log(tag, msg);
 }
 
-size_t length(const char *const line, const size_t symbol)
+
+size_t length(const char *const line, const size_t size, const size_t symbol)
 {
-	const size_t size = strlen(line);
 	size_t i = symbol;
 	size_t j = i;
 
@@ -244,17 +249,21 @@ size_t length(const char *const line, const size_t symbol)
 
 void splice(char *const buffer, const char *const msg, const char *const line, const size_t symbol)
 {
-	strcpy(buffer, msg);
-	strcat(buffer, "\n");
-	strcat(buffer, line);
+	size_t cur = sprintf(buffer, "%s\n", msg);
 
-	const size_t len = length(line, symbol);
+	size_t size = 0;
+	while (line[size] != '\0' && line[size] != '\n')
+	{
+		cur = sprintf(&buffer[cur], "%c", line[size]);
+		size++;
+	}
+
+	const size_t len = length(line, size, symbol);
 	if (len == 0)
 	{
 		return;
 	}
 
-	size_t cur = strlen(buffer);
 	buffer[cur++] = '\n';
 	for (size_t i = 0; i < symbol; i++)
 	{
@@ -274,10 +283,9 @@ void splice(char *const buffer, const char *const msg, const char *const line, c
 	buffer[cur++] = '\0';
 }
 
-
 void log_error(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
-	if (tag == NULL || msg == NULL || line == NULL)
+	if (check_tag_msg(tag, msg) || line == NULL)
 	{
 		return;
 	}
@@ -285,12 +293,12 @@ void log_error(const char *const tag, const char *const msg, const char *const l
 	char buffer[BUFFER_SIZE];
 	splice(buffer, msg, line, symbol);
 
-	log_system_error(tag, buffer);
+	current_error_log(tag, buffer);
 }
 
 void log_warning(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
-	if (tag == NULL || msg == NULL || line == NULL)
+	if (check_tag_msg(tag, msg) || line == NULL)
 	{
 		return;
 	}
@@ -298,12 +306,12 @@ void log_warning(const char *const tag, const char *const msg, const char *const
 	char buffer[BUFFER_SIZE];
 	splice(buffer, msg, line, symbol);
 
-	log_system_warning(tag, buffer);
+	current_warning_log(tag, buffer);
 }
 
 void log_note(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
-	if (tag == NULL || msg == NULL || line == NULL)
+	if (check_tag_msg(tag, msg) || line == NULL)
 	{
 		return;
 	}
@@ -311,5 +319,5 @@ void log_note(const char *const tag, const char *const msg, const char *const li
 	char buffer[BUFFER_SIZE];
 	splice(buffer, msg, line, symbol);
 
-	log_system_note(tag, buffer);
+	current_note_log(tag, buffer);
 }
