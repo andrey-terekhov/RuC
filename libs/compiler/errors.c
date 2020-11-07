@@ -17,22 +17,37 @@
 #include "errors.h"
 #include "codes.h"
 #include "global.h"
+#include "logger.h"
 #include "macro_global_struct.h"
 #include "scanner.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 
-void printident(compiler_context *context, int r)
+size_t printident(compiler_context *context, int r, char *const msg, size_t index)
 {
 	r += 2; // ссылка на context->reprtab
 	do
 	{
-		printer_printchar(&context->err_options, REPRTAB[r++]);
+		int wchar = REPRTAB[r++];
+
+		if (wchar < 128)
+		{
+			index = sprintf(&msg[index], "%c", wchar);
+		}
+		else
+		{
+			unsigned char first = (unsigned char)((wchar >> 6) | /*0b11000000*/ 0xC0);
+			unsigned char second = (unsigned char)((wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80);
+
+			index = sprintf(&msg[index], "%c%c", first, second);
+		}
 	} while (REPRTAB[r] != 0);
+	
+	return index;
 }
 
-void print_error_location(compiler_context *context)
+void get_tag(compiler_context *context, char *const tag)
 {
 	data_file *file;
 
@@ -45,24 +60,28 @@ void print_error_location(compiler_context *context)
 		file = &((context->hfs).files[(context->hfs).cur]);
 	}
 
-	printer_printf(&context->err_options, "\x1B[1;39m%s:\x1B[0m ", file->name);
+	sprintf(tag, "%s", file->name);
 }
 
 void warning(compiler_context *context, int ernum)
 {
-	print_error_location(context);
-	printer_printf(&context->err_options, "\x1B[1;35mпредупреждение:\x1B[0m ");
+	char tag[MAXSTRINGL];
+	char msg[4 * MAXSTRINGL];
+
+	get_tag(context, tag);
 
 	switch (ernum)
 	{
 		case too_long_int:
-			printer_printf(&context->err_options, "слишком большая целая константа, преобразована в ДЛИН "
-												  "(DOUBLE)\n");
+			sprintf(msg, "слишком большая целая константа, преобразована в ДЛИН "
+												  "(DOUBLE)");
 			break;
 
 		default:
 			break;
 	}
+
+	log_system_warning(tag, msg);
 }
 
 void show_macro(compiler_context *context, int k, int nwe_line, int *s, int num)
@@ -191,8 +210,12 @@ void error(compiler_context *context, int ernum)
 
 	show_macro(context, i, new_line, s);
 	*/
-	print_error_location(context);
-	printer_printf(&context->err_options, "\x1B[1;31mошибка:\x1B[0m ");
+	char tag[MAXSTRINGL];
+	char msg[4 * MAXSTRINGL];
+	size_t index = 0;
+
+	get_tag(context, tag);
+	
 	context->error_flag = 1;
 	context->tc = context->temp_tc;
 	if (!context->new_line_flag && context->curchar != EOF)
@@ -215,482 +238,478 @@ void error(compiler_context *context, int ernum)
 
 	switch (ernum)
 	{
-		case after_type_must_be_ident: // gotovo
-			printer_printf(&context->err_options, "после символа типа должен быть идентификатор или * "
-												  "идентификатор\n");
+		case after_type_must_be_ident: // test_exist
+			index = sprintf(&msg[index], "после символа типа должен быть идентификатор или * "
+												  "идентификатор");
 			break;
-		case wait_right_sq_br: // gotovo
-			printer_printf(&context->err_options, "ожидалась ]\n");
+		case wait_right_sq_br: // test_exist
+			index = sprintf(&msg[index], "ожидалась ]");
 			break;
 		case only_functions_may_have_type_VOID: // need_test
-			printer_printf(&context->err_options, "только функции могут иметь тип ПУСТО\n");
+			index = sprintf(&msg[index], "только функции могут иметь тип ПУСТО");
 			break;
-		case decl_and_def_have_diff_type:	// gotovo
-			printer_printf(&context->err_options, "прототип функции и ее описание имеют разные типы\n");
+		case decl_and_def_have_diff_type:	// test_exist
+			index = sprintf(&msg[index], "прототип функции и ее описание имеют разные типы");
 			break;
 		case wrong_param_list: // need_test
-			printer_printf(&context->err_options, "неправильный список параметров\n");
+			index = sprintf(&msg[index], "неправильный список параметров");
 			break;
-		case def_must_end_with_semicomma: // gotovo
-			printer_printf(&context->err_options, "список описаний должен заканчиваться ;\n");
+		case def_must_end_with_semicomma: // test_exist
+			index = sprintf(&msg[index], "список описаний должен заканчиваться ;");
 			break;
 		case func_decl_req_params: // need_test
-			printer_printf(&context->err_options, "вообще-то я думал, что это предописание функции (нет "
-												  "идентификаторов-параметров), а тут тело функции\n");
+			index = sprintf(&msg[index], "вообще-то я думал, что это предописание функции (нет "
+												  "идентификаторов-параметров), а тут тело функции");
 			break;
-		case wait_while_in_do_stmt: // gotovo
-			printer_printf(&context->err_options, "ждем ПОКА в операторе ЦИКЛ\n");
+		case wait_while_in_do_stmt: // test_exist
+			index = sprintf(&msg[index], "ждем ПОКА в операторе ЦИКЛ");
 			break;
-		case no_semicolon_after_stmt: // gotovo
-			printer_printf(&context->err_options, "нет ; после оператора\n");
+		case no_semicolon_after_stmt: // test_exist
+			index = sprintf(&msg[index], "нет ; после оператора");
 			break;
-		case cond_must_be_in_brkts: // gotovo
-			printer_printf(&context->err_options, "условие должно быть в ()\n");
+		case cond_must_be_in_brkts: // test_exist
+			index = sprintf(&msg[index], "условие должно быть в ()");
 			break;
-		case repeated_decl:	// gotovo
-			printer_printf(&context->err_options, "повторное описание идентификатора ");
-			printident(context, REPRTAB_POS);
-			printer_printf(&context->err_options, "\n");
+		case repeated_decl:	// test_exist
+			index = sprintf(&msg[index], "повторное описание идентификатора ");
+			index = printident(context, REPRTAB_POS, msg, index);
 			break;
-		case arr_init_must_start_from_BEGIN: // gotovo
-			printer_printf(&context->err_options, "инициализация массива должна начинаться со {\n");
+		case arr_init_must_start_from_BEGIN: // test_exist
+			index = sprintf(&msg[index], "инициализация массива должна начинаться со {");
 			break;
 		case struct_init_must_start_from_BEGIN: // need_test
-			printer_printf(&context->err_options, "инициализация структуры должна начинаться со {\n");
+			index = sprintf(&msg[index], "инициализация структуры должна начинаться со {");
 			break;
 		case no_comma_in_init_list: // need_test
-			printer_printf(&context->err_options, "между элементами инициализации массива или структуры "
-												  "должна быть ,\n");
+			index = sprintf(&msg[index], "между элементами инициализации массива или структуры "
+												  "должна быть ,");
 			break;
-		case ident_is_not_declared: // gotovo
-			printer_printf(&context->err_options, "не описан идентификатор ");
-			printident(context, REPRTAB_POS);
-			printer_printf(&context->err_options, "\n");
+		case ident_is_not_declared: // test_exist
+			index = sprintf(&msg[index], "не описан идентификатор ");
+			index = printident(context, REPRTAB_POS, msg, index);
 			break;
-		case no_rightsqbr_in_slice: // gotovo
-			printer_printf(&context->err_options, "не хватает ] в вырезке элемента массива\n");
+		case no_rightsqbr_in_slice: // test_exist
+			index = sprintf(&msg[index], "не хватает ] в вырезке элемента массива");
 			break;
-		case index_must_be_int:	// gotovo
-			printer_printf(&context->err_options, "индекс элемента массива должен иметь тип ЦЕЛ\n");
+		case index_must_be_int:	// test_exist
+			index = sprintf(&msg[index], "индекс элемента массива должен иметь тип ЦЕЛ");
 			break;
-		case slice_not_from_array:	// gotovo
-			printer_printf(&context->err_options, "попытка вырезки элемента не из массива\n");
+		case slice_not_from_array:	// test_exist
+			index = sprintf(&msg[index], "попытка вырезки элемента не из массива");
 			break;
-		case call_not_from_function:	//gotovo
-			printer_printf(&context->err_options, "попытка вызова не функции\n");
+		case call_not_from_function:	//test_exist
+			index = sprintf(&msg[index], "попытка вызова не функции");
 			break;
-		case no_comma_in_act_params: // gotovo
-			printer_printf(&context->err_options, "после фактического параметра должна быть ,\n");
+		case no_comma_in_act_params: // test_exist
+			index = sprintf(&msg[index], "после фактического параметра должна быть ,");
 			break;
-		case float_instead_int:	// gotovo
-			printer_printf(&context->err_options, "формальный параметр имеет тип ЦЕЛ, а фактический - ВЕЩ\n");
+		case float_instead_int:	// test_exist
+			index = sprintf(&msg[index], "формальный параметр имеет тип ЦЕЛ, а фактический - ВЕЩ");
 			break;
-		case wrong_number_of_params: // gotovo
-			printer_printf(&context->err_options, "неправильное количество фактических параметров\n");
+		case wrong_number_of_params: // test_exist
+			index = sprintf(&msg[index], "неправильное количество фактических параметров");
 			break;
-		case wait_rightbr_in_primary: // gotovo
-			printer_printf(&context->err_options, "не хватает ) в первичном выражении\n");
+		case wait_rightbr_in_primary: // test_exist
+			index = sprintf(&msg[index], "не хватает ) в первичном выражении");
 			break;
-		case unassignable_inc:	// gotovo
-			printer_printf(&context->err_options, "++ и -- применимы только к переменным и элементам массива\n");
+		case unassignable_inc:	// test_exist
+			index = sprintf(&msg[index], "++ и -- применимы только к переменным и элементам массива");
 			break;
-		case wrong_addr:	// gotovo
-			printer_printf(&context->err_options, "операция получения адреса & применима только к переменным\n");
+		case wrong_addr:	// test_exist
+			index = sprintf(&msg[index], "операция получения адреса & применима только к переменным");
 			break;
-		case no_colon_in_cond_expr: // gotovo
-			printer_printf(&context->err_options, "нет : в условном выражении\n");
+		case no_colon_in_cond_expr: // test_exist
+			index = sprintf(&msg[index], "нет : в условном выражении");
 			break;
-		case no_colon_in_case: // gotovo
-			printer_printf(&context->err_options, "после выражения в выборе нет :\n");
+		case no_colon_in_case: // test_exist
+			index = sprintf(&msg[index], "после выражения в выборе нет :");
 			break;
 		case case_after_default: // need_test
-			printer_printf(&context->err_options, "встретился выбор после умолчания\n");
+			index = sprintf(&msg[index], "встретился выбор после умолчания");
 			break;
 		case no_ident_after_goto: // need_test
-			printer_printf(&context->err_options, "после goto должна быть метка, т.е. идентификатор\n");
+			index = sprintf(&msg[index], "после goto должна быть метка, т.е. идентификатор");
 			break;
-		case no_leftbr_in_for: // gotovo
-			printer_printf(&context->err_options, "в операторе цикла ДЛЯ нет (\n");
+		case no_leftbr_in_for: // test_exist
+			index = sprintf(&msg[index], "в операторе цикла ДЛЯ нет (");
 			break;
-		case no_semicolon_in_for: // gotovo
-			printer_printf(&context->err_options, "в операторе цикла ДЛЯ нет ;\n");
+		case no_semicolon_in_for: // test_exist
+			index = sprintf(&msg[index], "в операторе цикла ДЛЯ нет ;");
 			break;
-		case no_rightbr_in_for: // gotovo
-			printer_printf(&context->err_options, "в операторе цикла ДЛЯ нет )\n");
+		case no_rightbr_in_for: // test_exist
+			index = sprintf(&msg[index], "в операторе цикла ДЛЯ нет )");
 			break;
-		case int_op_for_float:	// gotovo
-			printer_printf(&context->err_options, "операция, применимая только к целым, применена к "
-												  "вещественному аргументу\n");
+		case int_op_for_float:	// test_exist
+			index = sprintf(&msg[index], "операция, применимая только к целым, применена к "
+												  "вещественному аргументу");
 			break;
-		case assmnt_float_to_int:	// gotovo
-			printer_printf(&context->err_options, "нельзя присваивать целому вещественное значение\n");
+		case assmnt_float_to_int:	// test_exist
+			index = sprintf(&msg[index], "нельзя присваивать целому вещественное значение");
 			break;
-		case more_than_1_main:	// gotovo
-			printer_printf(&context->err_options, "в программе может быть только 1 идентификатор ГЛАВНАЯ\n");
+		case more_than_1_main:	// test_exist
+			index = sprintf(&msg[index], "в программе может быть только 1 идентификатор ГЛАВНАЯ");
 			break;
-		case no_main_in_program: // gotovo
-			printer_printf(&context->err_options, "в каждой программе должна быть ГЛАВНАЯ функция\n");
+		case no_main_in_program: // test_exist
+			index = sprintf(&msg[index], "в каждой программе должна быть ГЛАВНАЯ функция");
 			break;
-		case no_leftbr_in_printid: // gotovo
-			printer_printf(&context->err_options, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет (\n");
+		case no_leftbr_in_printid: // test_exist
+			index = sprintf(&msg[index], "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет (");
 			break;
-		case no_rightbr_in_printid: // gotovo
-			printer_printf(&context->err_options, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет )\n");
+		case no_rightbr_in_printid: // test_exist
+			index = sprintf(&msg[index], "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет )");
 			break;
 		case no_ident_in_printid: // need_test
-			printer_printf(&context->err_options, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора\n");
+			index = sprintf(&msg[index], "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора");
 			break;
 		case float_in_switch: // need_test
-			printer_printf(&context->err_options, "в условии переключателя можно использовать только типы "
-												  "ЛИТЕРА и ЦЕЛ\n");
+			index = sprintf(&msg[index], "в условии переключателя можно использовать только типы "
+												  "ЛИТЕРА и ЦЕЛ");
 			break;
-		case init_int_by_float:	// gotovo
-			printer_printf(&context->err_options, "целая или литерная переменная инициализируется значением "
-												  "типа ВЕЩ\n");
+		case init_int_by_float:	// test_exist
+			index = sprintf(&msg[index], "целая или литерная переменная инициализируется значением "
+												  "типа ВЕЩ");
 			break;
-		case must_be_digit_after_exp:	// gotovo
-			printer_printf(&context->err_options, "должна быть цифра после e\n");
+		case must_be_digit_after_exp:	// test_exist
+			index = sprintf(&msg[index], "должна быть цифра после e");
 			break;
 		case no_comma_in_setmotor: // need_test
-			printer_printf(&context->err_options, "в команде управления роботом после первого параметра нет ,\n");
+			index = sprintf(&msg[index], "в команде управления роботом после первого параметра нет ,");
 			break;
 		case param_setmotor_not_int:	// need_test
-			printer_printf(&context->err_options, "в командах МОТОР, УСТНАПРЯЖЕНИЕ, ЦИФРДАТЧИК и АНАЛОГДАТЧИК "
-												  "параметры должны быть целыми\n");
+			index = sprintf(&msg[index], "в командах МОТОР, УСТНАПРЯЖЕНИЕ, ЦИФРДАТЧИК и АНАЛОГДАТЧИК "
+												  "параметры должны быть целыми");
 			break;
 		case no_leftbr_in_stand_func: // need_test
-			printer_printf(&context->err_options, "в вызове стандартной функции нет (\n");
+			index = sprintf(&msg[index], "в вызове стандартной функции нет (");
 			break;
-		case no_rightbr_in_stand_func: // gotovo
-			printer_printf(&context->err_options, "в вызове стандартной функции нет )\n");
+		case no_rightbr_in_stand_func: // test_exist
+			index = sprintf(&msg[index], "в вызове стандартной функции нет )");
 			break;
-		case bad_param_in_stand_func:	// gotovo
-			printer_printf(&context->err_options, "параметры стандартных функций могут быть только целыми и "
-												  "вещественными\n");
+		case bad_param_in_stand_func:	// test_exist
+			index = sprintf(&msg[index], "параметры стандартных функций могут быть только целыми и "
+												  "вещественными");
 			break;
-		case no_ret_in_func: // gotovo
-			printer_printf(&context->err_options, "в функции, возвращающей непустое значение, нет оператора "
-												  "ВОЗВРАТ со значением\n");
+		case no_ret_in_func: // test_exist
+			index = sprintf(&msg[index], "в функции, возвращающей непустое значение, нет оператора "
+												  "ВОЗВРАТ со значением");
 			break;
-		case bad_type_in_ret: // gotovo
-			printer_printf(&context->err_options, "в функции, возвращающей целое или литерное значение, "
-												  "оператор ВОЗВРАТ со значением ВЕЩ\n");
+		case bad_type_in_ret: // test_exist
+			index = sprintf(&msg[index], "в функции, возвращающей целое или литерное значение, "
+												  "оператор ВОЗВРАТ со значением ВЕЩ");
 			break;
-		case notvoidret_in_void_func: // gotovo
-			printer_printf(&context->err_options, "в функции, возвращающей пустое значение, оператор ВОЗВРАТ "
-												  "со значением\n");
+		case notvoidret_in_void_func: // test_exist
+			index = sprintf(&msg[index], "в функции, возвращающей пустое значение, оператор ВОЗВРАТ "
+												  "со значением");
 			break;
-		case bad_escape_sym:	//gotovo
-			printer_printf(&context->err_options, "неизвестный служебный символ\n");
+		case bad_escape_sym:	//test_exist
+			index = sprintf(&msg[index], "неизвестный служебный символ");
 			break;
 		case no_right_apost: // need_test
-			printer_printf(&context->err_options, "символьная константа не заканчивается символом '\n");
+			index = sprintf(&msg[index], "символьная константа не заканчивается символом '");
 			break;
-		case decl_after_strmt: // gotovo
-			printer_printf(&context->err_options, "встретилось описание после оператора\n");
+		case decl_after_strmt: // test_exist
+			index = sprintf(&msg[index], "встретилось описание после оператора");
 			break;
-		case too_long_string:	// gotovo
-			printer_printf(&context->err_options, "слишком длинная строка ( больше, чем MAXSTRINGL)\n");
+		case too_long_string:	// test_exist
+			index = sprintf(&msg[index], "слишком длинная строка ( больше, чем MAXSTRINGL)");
 			break;
 		case aster_before_func:	// need_test
-			printer_printf(&context->err_options, "* перед описанием функции\n");
+			index = sprintf(&msg[index], "* перед описанием функции");
 			break;
-		case aster_not_for_pointer:	// gotovo
-			printer_printf(&context->err_options, "операция * применяется не к указателю\n");
+		case aster_not_for_pointer:	// test_exist
+			index = sprintf(&msg[index], "операция * применяется не к указателю");
 			break;
 		case aster_with_row:	// need_test
-			printer_printf(&context->err_options, "операцию * нельзя применять к массивам\n");
+			index = sprintf(&msg[index], "операцию * нельзя применять к массивам");
 			break;
 		case wrong_fun_as_param: // need_test
-			printer_printf(&context->err_options, "неправильная запись функции, передаваемой параметром в "
-												  "другую функцию\n");
+			index = sprintf(&msg[index], "неправильная запись функции, передаваемой параметром в "
+												  "другую функцию");
 			break;
 		case no_right_br_in_paramfun: // need_test
-			printer_printf(&context->err_options, "нет ) в функции, передаваемой параметром в другую функцию\n");
+			index = sprintf(&msg[index], "нет ) в функции, передаваемой параметром в другую функцию");
 			break;
 		case par_type_void_with_nofun:	// need_test
-			printer_printf(&context->err_options, "в параметре функции тип пусто может быть только у "
-												  "параметра-функции\n");
+			index = sprintf(&msg[index], "в параметре функции тип пусто может быть только у "
+												  "параметра-функции");
 			break;
 		case ident_in_declarator:	// need_test
-			printer_printf(&context->err_options, "в деклараторах (предописаниях) могут быть только типы, но "
-												  "без идентификаторов-параметров\n");
+			index = sprintf(&msg[index], "в деклараторах (предописаниях) могут быть только типы, но "
+												  "без идентификаторов-параметров");
 			break;
 		case array_before_func: // need_test
-			printer_printf(&context->err_options, "функция не может выдавать значение типа массив\n");
+			index = sprintf(&msg[index], "функция не может выдавать значение типа массив");
 			break;
 		case wait_definition: // need_test
-			printer_printf(&context->err_options, "вообще-то, я думал, что это определение функции, а тут нет "
-												  "идентификатора-параметра\n");
+			index = sprintf(&msg[index], "вообще-то, я думал, что это определение функции, а тут нет "
+												  "идентификатора-параметра");
 			break;
 		case wait_declarator: // need_test
-			printer_printf(&context->err_options, "вообще-то, я думал, что это предописание функции, а тут "
-												  "идентификатор-параметр\n");
+			index = sprintf(&msg[index], "вообще-то, я думал, что это предописание функции, а тут "
+												  "идентификатор-параметр");
 			break;
 		case two_idents_for_1_declarer:	// need_test
-			printer_printf(&context->err_options, "в описании функции на каждый описатель должен быть один "
-												  "параметр\n");
+			index = sprintf(&msg[index], "в описании функции на каждый описатель должен быть один "
+												  "параметр");
 			break;
 		case function_has_no_body: // need_test
-			printer_printf(&context->err_options, "есть параметры определения функции, но нет блока, "
-												  "являющегося ее телом\n");
+			index = sprintf(&msg[index], "есть параметры определения функции, но нет блока, "
+												  "являющегося ее телом");
 			break;
 		case diff_formal_param_type_and_actual:	// need_test
-			printer_printf(&context->err_options, "типы формального и фактического параметров различаются\n");
+			index = sprintf(&msg[index], "типы формального и фактического параметров различаются");
 			break;
 		case float_in_condition:	// need_test
-			printer_printf(&context->err_options, "условие должно иметь тип ЦЕЛ или ЛИТЕРА\n");
+			index = sprintf(&msg[index], "условие должно иметь тип ЦЕЛ или ЛИТЕРА");
 			break;
 		case case_or_default_not_in_switch: // need_test
-			printer_printf(&context->err_options, "метка СЛУЧАЙ или УМОЛЧАНИЕ не в операторе ВЫБОР\n");
+			index = sprintf(&msg[index], "метка СЛУЧАЙ или УМОЛЧАНИЕ не в операторе ВЫБОР");
 			break;
 		case break_not_in_loop_or_switch: // need_test
-			printer_printf(&context->err_options, "оператор ВЫХОД не в цикле и не в операторе ВЫБОР\n");
+			index = sprintf(&msg[index], "оператор ВЫХОД не в цикле и не в операторе ВЫБОР");
 			break;
 		case continue_not_in_loop:	// need_test
-			printer_printf(&context->err_options, "оператор ПРОДОЛЖИТЬ не в цикле\n");
+			index = sprintf(&msg[index], "оператор ПРОДОЛЖИТЬ не в цикле");
 			break;
 		case not_primary:	// need_test
-			printer_printf(&context->err_options, "первичное не может начинаться с лексемы %i\n", context->cur);
+			index = sprintf(&msg[index], "первичное не может начинаться с лексемы %i", context->cur);
 			break;
 		case wrong_operand:	// need_test
-			printer_printf(&context->err_options, "операнд операции может иметь только тип ЦЕЛ, ЛИТ или ВЕЩ\n");
+			index = sprintf(&msg[index], "операнд операции может иметь только тип ЦЕЛ, ЛИТ или ВЕЩ");
 			break;
 		case label_not_declared:	// need_test
-			printer_printf(&context->err_options, "в строке %i переход на неописанную метку ", context->hash);
-			printident(context, REPRTAB_POS);
-			printer_printf(&context->err_options, "\n");
+			index = sprintf(&msg[index], "в строке %i переход на неописанную метку ", context->hash);
+			index = printident(context, REPRTAB_POS, msg, index);
 			break;
-		case repeated_label: // gotovo
-			printer_printf(&context->err_options, "повторное описание метки ");
-			printident(context, REPRTAB_POS);
-			printer_printf(&context->err_options, "\n");
+		case repeated_label: // test_exist
+			index = sprintf(&msg[index], "повторное описание метки ");
+			index = printident(context, REPRTAB_POS, msg, index);
 			break;
 		case operand_is_pointer:	// need_test
-			printer_printf(&context->err_options, "операнд бинарной формулы не может быть указателем\n");
+			index = sprintf(&msg[index], "операнд бинарной формулы не может быть указателем");
 			break;
-		case pointer_in_print: // gotovo
-			printer_printf(&context->err_options, "указатели нельзя печатать\n");
+		case pointer_in_print: // test_exist
+			index = sprintf(&msg[index], "указатели нельзя печатать");
 			break;
-		case wrong_struct:	// gotovo
-			printer_printf(&context->err_options, "неправильное описание структуры\n");
+		case wrong_struct:	// test_exist
+			index = sprintf(&msg[index], "неправильное описание структуры");
 			break;
-		case after_dot_must_be_ident: // gotovo
-			printer_printf(&context->err_options, "после . или -> должен быть идентификатор-имя поля "
-												  "структуры\n");
+		case after_dot_must_be_ident: // test_exist
+			index = sprintf(&msg[index], "после . или -> должен быть идентификатор-имя поля "
+												  "структуры");
 			break;
 		case get_field_not_from_struct_pointer:	// need_test
-			printer_printf(&context->err_options, "применять операцию -> можно только к указателю на "
-												  "структуру\n");
+			index = sprintf(&msg[index], "применять операцию -> можно только к указателю на "
+												  "структуру");
 			break;
 
-		case error_in_initialization:	// gotovo
-			printer_printf(&context->err_options, "несоответствие типов при инициализации переменной\n");
+		case error_in_initialization:	// test_exist
+			index = sprintf(&msg[index], "несоответствие типов при инициализации переменной");
 			break;
 		case type_missmatch:	// need_test
-			printer_printf(&context->err_options, "несоответствие типов\n");
+			index = sprintf(&msg[index], "несоответствие типов");
 			break;
-		case array_assigment:	//gotovo
-			printer_printf(&context->err_options, "присваивание в массив запрещено\n");
+		case array_assigment:	//test_exist
+			index = sprintf(&msg[index], "присваивание в массив запрещено");
 			break;
 		case wrong_struct_ass:	// need_test
-			printer_printf(&context->err_options, "для структур и указателей допустима только операция "
-												  "присваивания =\n");
+			index = sprintf(&msg[index], "для структур и указателей допустима только операция "
+												  "присваивания =");
 			break;
-		case wrong_init:	//gotovo
-			printer_printf(&context->err_options, "переменные такого типа нельзя инициализировать\n");
+		case wrong_init:	//test_exist
+			index = sprintf(&msg[index], "переменные такого типа нельзя инициализировать");
 			break;
-		case no_field:	// gotovo
-			printer_printf(&context->err_options, "нет такого поля ");
-			printident(context, REPRTAB_POS);
-			printer_printf(&context->err_options, " в структуре");
-			printer_printf(&context->err_options, "\n");
+		case no_field:	// test_exist
+			index = sprintf(&msg[index], "нет такого поля ");
+			index = printident(context, REPRTAB_POS, msg, index);
+			index = sprintf(&msg[index], " в структуре");
 			break;
 		case slice_from_func:	// need_test
-			printer_printf(&context->err_options, "вырезка элемента из массива, выданного функцией, а функции "
-												  "не могут выдавать массивы\n");
+			index = sprintf(&msg[index], "вырезка элемента из массива, выданного функцией, а функции "
+												  "не могут выдавать массивы");
 			break;
 		case bad_toval:	// need_test
-			printer_printf(&context->err_options, "странный toval ansttype=%i\n", context->ansttype);
+			index = sprintf(&msg[index], "странный toval ansttype=%i", context->ansttype);
 			break;
 		case wait_end: // need_test
-			printer_printf(&context->err_options, "в инициализации структуры здесь ожидалась правая фигурная "
-												  "скобка }\n");
+			index = sprintf(&msg[index], "в инициализации структуры здесь ожидалась правая фигурная "
+												  "скобка }");
 			break;
-		case act_param_not_ident:	// gotovo
-			printer_printf(&context->err_options, "фактическим параметром-функцией может быть только "
-												  "идентификатор\n");
+		case act_param_not_ident:	// test_exist
+			index = sprintf(&msg[index], "фактическим параметром-функцией может быть только "
+												  "идентификатор");
 			break;
 		case unassignable:	// need_test
-			printer_printf(&context->err_options, "в левой части присваивания стоит что-то, чему нельзя "
-												  "присваивать\n");
+			index = sprintf(&msg[index], "в левой части присваивания стоит что-то, чему нельзя "
+												  "присваивать");
 			break;
-		case pnt_before_array:	// gotovo
-			printer_printf(&context->err_options, "в РуСи не бывает указателей на массивы\n");
+		case pnt_before_array:	// test_exist
+			index = sprintf(&msg[index], "в РуСи не бывает указателей на массивы");
 			break;
-		case array_size_must_be_int:	// gotovo
-			printer_printf(&context->err_options, "размер массива может иметь тип только ЦЕЛ или ЛИТЕРА\n");
+		case array_size_must_be_int:	// test_exist
+			index = sprintf(&msg[index], "размер массива может иметь тип только ЦЕЛ или ЛИТЕРА");
 			break;
 		case no_semicomma_in_struct:	// need_test
-			printer_printf(&context->err_options, "описание поля структуры должно заканчиваться ;\n");
+			index = sprintf(&msg[index], "описание поля структуры должно заканчиваться ;");
 			break;
-		case wait_ident_after_semicomma_in_struct: // gotovo
-			printer_printf(&context->err_options, "в структуре после типа поля должен идти идентификатор поля\n");
+		case wait_ident_after_semicomma_in_struct: // test_exist
+			index = sprintf(&msg[index], "в структуре после типа поля должен идти идентификатор поля");
 			break;
-		case empty_init:	// gotovo
-			printer_printf(&context->err_options, "в РуСи можно определять границы массива по инициализации "
-												  "только по младшему измерению\n");
+		case empty_init:	// test_exist
+			index = sprintf(&msg[index], "в РуСи можно определять границы массива по инициализации "
+												  "только по младшему измерению");
 			break;
-		case ident_not_type:	// gotovo
-			printer_printf(&context->err_options, "в качестве описателя можно использовать только "
-												  "идентификаторы, описанные как типы\n");
+		case ident_not_type:	// test_exist
+			index = sprintf(&msg[index], "в качестве описателя можно использовать только "
+												  "идентификаторы, описанные как типы");
 			break;
-		case not_decl:	// gotovo
-			printer_printf(&context->err_options, "здесь должен быть тип (стандартный или описанный "
-												  "пользователем)\n");
+		case not_decl:	// test_exist
+			index = sprintf(&msg[index], "здесь должен быть тип (стандартный или описанный "
+												  "пользователем)");
 			break;
 		case predef_but_notdef: // need_test
-			printer_printf(&context->err_options, "функция ");
-			printident(context, REPRTAB_POS);
-			printer_printf(&context->err_options, " была предопределена, но не описана\n");
+			index = sprintf(&msg[index], "функция ");
+			index = printident(context, REPRTAB_POS, msg, index);
+			index = sprintf(&msg[index], " была предопределена, но не описана");
 			break;
-		case print_without_br: // gotovo
-			printer_printf(&context->err_options, "операнд оператора печати должен быть в круглых скобках ()\n");
+		case print_without_br: // test_exist
+			index = sprintf(&msg[index], "операнд оператора печати должен быть в круглых скобках ()");
 			break;
-		case select_not_from_struct:	// gotovo
-			printer_printf(&context->err_options, "выборка поля . не из структуры\n");
+		case select_not_from_struct:	// test_exist
+			index = sprintf(&msg[index], "выборка поля . не из структуры");
 			break;
-		case init_not_struct:	// gotovo
-			printer_printf(&context->err_options, "в РуСи только структуре можно присвоить или передать "
-												  "параметром запись {,,,}\n");
+		case init_not_struct:	// test_exist
+			index = sprintf(&msg[index], "в РуСи только структуре можно присвоить или передать "
+												  "параметром запись {,,,}");
 			break;
-		case param_threads_not_int:	// gotovo
-			printer_printf(&context->err_options, "процедуры, управляющие параллельными нитями, могут иметь "
-												  "только целые параметры\n");
+		case param_threads_not_int:	// test_exist
+			index = sprintf(&msg[index], "процедуры, управляющие параллельными нитями, могут иметь "
+												  "только целые параметры");
 			break;
-		case wrong_arg_in_send:	// gotovo
-			printer_printf(&context->err_options, "неправильный тип аргумента в процедуре t_msg_send, должен "
-												  "иметь тип msg_info\n");
+		case wrong_arg_in_send:	// test_exist
+			index = sprintf(&msg[index], "неправильный тип аргумента в процедуре t_msg_send, должен "
+												  "иметь тип msg_info");
 			break;
-		case wrong_arg_in_create:	// gotovo
-			printer_printf(&context->err_options, "неправильный тип аргумента в процедуре t_create, должен "
-												  "иметь тип void*(void*)\n");
+		case wrong_arg_in_create:	// test_exist
+			index = sprintf(&msg[index], "неправильный тип аргумента в процедуре t_create, должен "
+												  "иметь тип void*(void*)");
 			break;
 
-		case no_leftbr_in_printf: // gotovo
-			printer_printf(&context->err_options, "не хватает открывающей скобки в printf/печатьф\n");
+		case no_leftbr_in_printf: // test_exist
+			index = sprintf(&msg[index], "не хватает открывающей скобки в printf/печатьф");
 			break;
-		case no_rightbr_in_printf:	// gotovo
-			printer_printf(&context->err_options, "не хватает закрывающей скобки в printf/печатьф\n");
+		case no_rightbr_in_printf:	// test_exist
+			index = sprintf(&msg[index], "не хватает закрывающей скобки в printf/печатьф");
 			break;
-		case wrong_first_printf_param: // gotovo
-			printer_printf(&context->err_options, "первым параметром в printf/печатьф должна быть константная "
-												  "форматная строка\n");
+		case wrong_first_printf_param: // test_exist
+			index = sprintf(&msg[index], "первым параметром в printf/печатьф должна быть константная "
+												  "форматная строка");
 			break;
-		case wrong_printf_param_type: // gotovo
-			printer_printf(&context->err_options, "тип параметра printf/печатьф не соответствует "
+		case wrong_printf_param_type: // test_exist
+			index = sprintf(&msg[index], "тип параметра printf/печатьф не соответствует "
 												  "спецификатору: %%");
 			printer_printchar(&context->err_options, context->bad_printf_placeholder);
 			switch (context->bad_printf_placeholder)
 			{
 				case 'i':
 				case 1094: // 'ц'
-					printer_printf(&context->err_options, " ожидает целое число\n");
+					index = sprintf(&msg[index], " ожидает целое число");
 					break;
 
 				case 'c':
-					printer_printf(&context->err_options, " (англ.)");
+					index = sprintf(&msg[index], " (англ.)");
 				case 1083: // л
-					printer_printf(&context->err_options, " ожидает литеру\n");
+					index = sprintf(&msg[index], " ожидает литеру");
 					break;
 
 				case 'f':
 				case 1074: // в
-					printer_printf(&context->err_options, " ожидает вещественное число\n");
+					index = sprintf(&msg[index], " ожидает вещественное число");
 					break;
 
 				case 1089: // с
-					printer_printf(&context->err_options, " (рус.)");
+					index = sprintf(&msg[index], " (рус.)");
 				case 's':
-					printer_printf(&context->err_options, " ожидает строку\n");
+					index = sprintf(&msg[index], " ожидает строку");
 					break;
 				default:
-					printer_printf(&context->err_options, " -- неизвестный спецификатор");
+					index = sprintf(&msg[index], " -- неизвестный спецификатор");
 			}
 			break;
-		case wrong_printf_param_number: // gotovo
-			printer_printf(&context->err_options, "количество параметров printf/печатьф не соответствует "
-												  "количеству спецификаторов\n");
+		case wrong_printf_param_number: // test_exist
+			index = sprintf(&msg[index], "количество параметров printf/печатьф не соответствует "
+												  "количеству спецификаторов");
 			break;
-		case printf_no_format_placeholder: // gotovo
-			printer_printf(&context->err_options, "в printf/печатьф нет спецификатора типа после '%%'\n");
+		case printf_no_format_placeholder: // test_exist
+			index = sprintf(&msg[index], "в printf/печатьф нет спецификатора типа после '%%'");
 			break;
-		case printf_unknown_format_placeholder: // gotovo
-			printer_printf(&context->err_options, "в printf/печатьф неизвестный спецификатор типа %%");
+		case printf_unknown_format_placeholder: // test_exist
+			index = sprintf(&msg[index], "в printf/печатьф неизвестный спецификатор типа %%");
 			printer_printchar(&context->err_options, context->bad_printf_placeholder);
-			printer_printf(&context->err_options, "\n");
 			break;
-		case too_many_printf_params: // gotovo
-			printer_printf(&context->err_options, "максимально в printf/печатьф можно выводить %i значений\n",
+		case too_many_printf_params: // test_exist
+			index = sprintf(&msg[index], "максимально в printf/печатьф можно выводить %i значений",
 						   MAXPRINTFPARAMS);
 			break;
 
 		case no_mult_in_cast: // need_test
-			printer_printf(&context->err_options, "нет * в cast (приведении)\n");
+			index = sprintf(&msg[index], "нет * в cast (приведении)");
 			break;
 		case no_rightbr_in_cast: // need_test
-			printer_printf(&context->err_options, "нет ) в cast (приведении)\n");
+			index = sprintf(&msg[index], "нет ) в cast (приведении)");
 			break;
 		case not_pointer_in_cast:	// need_test
-			printer_printf(&context->err_options, "cast (приведение) может быть применено только к указателю\n");
+			index = sprintf(&msg[index], "cast (приведение) может быть применено только к указателю");
 			break;
-		case empty_bound_without_init:	// gotovo
-			printer_printf(&context->err_options, "в описании массива границы не указаны, а инициализации нет\n");
+		case empty_bound_without_init:	// test_exist
+			index = sprintf(&msg[index], "в описании массива границы не указаны, а инициализации нет");
 			break;
 		case begin_with_notarray:	// need_test
-			printer_printf(&context->err_options, "инициализация, начинающаяся с {, должна соответствовать "
-												  "массиву или структуре\n");
+			index = sprintf(&msg[index], "инициализация, начинающаяся с {, должна соответствовать "
+												  "массиву или структуре");
 			break;
 		case string_and_notstring:	// need_test
-			printer_printf(&context->err_options, "если в инициализаторе встретилась строка, то и дальше "
-												  "должны быть только строки\n");
+			index = sprintf(&msg[index], "если в инициализаторе встретилась строка, то и дальше "
+												  "должны быть только строки");
 			break;
-		case wrong_init_in_actparam:	//gotovo
-			printer_printf(&context->err_options, "в инициализаторе-фактическом параметре функции могут быть "
-												  "только константы\n");
+		case wrong_init_in_actparam:	//test_exist
+			index = sprintf(&msg[index], "в инициализаторе-фактическом параметре функции могут быть "
+												  "только константы");
 			break;
 		case no_comma_or_end:	// need_test
-			printer_printf(&context->err_options, "в инициализаторе ожидали , или }\n");
+			index = sprintf(&msg[index], "в инициализаторе ожидали , или }");
 			break;
 		case no_comma_in_act_params_stanfunc: // need_test
-			printer_printf(&context->err_options, "в операции над строками после параметра нет , \n");
+			index = sprintf(&msg[index], "в операции над строками после параметра нет , ");
 			break;
-		case not_string_in_stanfunc:	// gotovo
-			printer_printf(&context->err_options, "в операции над строками параметр не строка\n");
+		case not_string_in_stanfunc:	// test_exist
+			index = sprintf(&msg[index], "в операции над строками параметр не строка");
 			break;
-		case not_int_in_stanfunc:	// gotovo
-			printer_printf(&context->err_options, "в этой операции этот параметр должен иметь тип ЦЕЛ\n");
+		case not_int_in_stanfunc:	// test_exist
+			index = sprintf(&msg[index], "в этой операции этот параметр должен иметь тип ЦЕЛ");
 			break;
 		case not_float_in_stanfunc:	// need_test
-			printer_printf(&context->err_options, "в этой операции этот параметр должен иметь тип ВЕЩ\n");
+			index = sprintf(&msg[index], "в этой операции этот параметр должен иметь тип ВЕЩ");
 			break;
 		case not_point_string_in_stanfunc:	// need_test
-			printer_printf(&context->err_options, "в этой операции над строками первый параметр должен быть "
-												  "указателем на строку\n");
+			index = sprintf(&msg[index], "в этой операции над строками первый параметр должен быть "
+												  "указателем на строку");
 			break;
-		case not_rowofint_in_stanfunc:	// gotovo
-			printer_printf(&context->err_options, "в этой операции этот параметр должен иметь тип массив "
-												  "целых\n");
+		case not_rowofint_in_stanfunc:	// test_exist
+			index = sprintf(&msg[index], "в этой операции этот параметр должен иметь тип массив "
+												  "целых");
 			break;
 		case not_rowoffloat_in_stanfunc:	// need_test
-			printer_printf(&context->err_options, "в этой операции этот параметр должен иметь тип массив вещ\n");
+			index = sprintf(&msg[index], "в этой операции этот параметр должен иметь тип массив вещ");
 			break;
 		case not_array_in_stanfunc:	// need_test
-			printer_printf(&context->err_options, "в этой операции этот параметр должен иметь тип массив\n");
+			index = sprintf(&msg[index], "в этой операции этот параметр должен иметь тип массив");
 			break;
 		default:
-			printer_printf(&context->err_options, "этот код ошибки я прозевал\n");
+			index = sprintf(&msg[index], "этот код ошибки я прозевал");
 	}
+
+	log_system_error(tag, msg);
 	// exit(2);
 }
 

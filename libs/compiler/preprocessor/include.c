@@ -19,6 +19,7 @@
 #include "context.h"
 #include "context_var.h"
 #include "file.h"
+#include "logger.h"
 #include "macro_global_struct.h"
 #include "preprocessor.h"
 #include "preprocessor_error.h"
@@ -124,7 +125,7 @@ int open_p_faile(preprocess_context *context, const char *file_way)
 	context->current_file = fopen(file_way, "r");
 	if (context->current_file == NULL)
 	{
-		fprintf(stderr, "\x1B[1;39m%s:\x1B[1;31m ошибка:\x1B[0m файл не найден\n", file_way);
+		log_system_error(file_way, "файл не найден");
 		m_error(just_kill_yourself, context);
 	}
 	data_files_pinter(context->sources, file_way, NULL);

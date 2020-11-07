@@ -15,6 +15,7 @@
  */
 
 #include "uniprinter.h"
+#include "logger.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -73,7 +74,7 @@ int printer_printf(universal_printer_options *opts, const char *fmt, ...)
 
 		if (*tmp == NULL)
 		{
-			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m failed to find a suitable printer\n");
+			log_system_error("ruc", "failed to find a suitable printer");
 			exit(1);
 		}
 
