@@ -22,6 +22,15 @@
 
 #define BUFFER_SIZE 1024
 
+const char *const TAG_LOGGER = "logger";
+
+const char *const TAG_ERROR = "ошибка";
+const char *const TAG_WARNING = "предупреждение";
+const char *const TAG_NOTE = "примечание";
+
+const char *const ERROR_LOGGER_ARG_NULL = "NULL указатель на строку";
+const char *const ERROR_LOGGER_ARG_MULTILINE  = "многострочный входной параметр";
+
 
 void default_error_log(const char *const tag, const char *const msg);
 void default_warning_log(const char *const tag, const char *const msg);
@@ -120,7 +129,7 @@ void default_error_log(const char *const tag, const char *const msg)
 	fprintf(stderr, "%s: ", tag);
 
 	set_color(COLOR_ERROR);
-	fprintf(stderr, "ошибка: ");
+	fprintf(stderr, "%s: ", TAG_ERROR);
 
 	print_msg(COLOR_ERROR, msg);
 }
@@ -131,7 +140,7 @@ void default_warning_log(const char *const tag, const char *const msg)
 	fprintf(stderr, "%s: ", tag);
 
 	set_color(COLOR_WARNING);
-	fprintf(stderr, "предупреждение: ");
+	fprintf(stderr, "%s: ", TAG_WARNING);
 
 	print_msg(COLOR_WARNING, msg);
 }
@@ -142,7 +151,7 @@ void default_note_log(const char *const tag, const char *const msg)
 	fprintf(stderr, "%s: ", tag);
 
 	set_color(COLOR_NOTE);
-	fprintf(stderr, "примечание: ");
+	fprintf(stderr, "%s: ", TAG_NOTE);
 
 	print_msg(COLOR_NOTE, msg);
 }
@@ -184,7 +193,19 @@ int set_note_log(const logger func)
 
 int check_tag_msg(const char *const tag, const char *const msg)
 {
-	return tag == NULL || msg == NULL || strchr(tag, '\n') != NULL || strchr(msg, '\n') != NULL;
+	if (tag == NULL || msg == NULL)
+	{
+		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
+		return -1;
+	}
+
+	if (strchr(tag, '\n') != NULL || strchr(msg, '\n') != NULL)
+	{
+		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_MULTILINE);
+		return -1;
+	}
+
+	return 0;
 }
 
 void log_system_error(const char *const tag, const char *const msg)
@@ -285,11 +306,17 @@ void splice(char *const buffer, const char *const msg, const char *const line, c
 
 void log_error(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
-	if (check_tag_msg(tag, msg) || line == NULL)
+	if (check_tag_msg(tag, msg))
 	{
 		return;
 	}
-	
+
+	if (line == NULL)
+	{
+		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
+		return;
+	}
+
 	char buffer[BUFFER_SIZE];
 	splice(buffer, msg, line, symbol);
 
@@ -298,8 +325,14 @@ void log_error(const char *const tag, const char *const msg, const char *const l
 
 void log_warning(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
-	if (check_tag_msg(tag, msg) || line == NULL)
+	if (check_tag_msg(tag, msg))
 	{
+		return;
+	}
+
+	if (line == NULL)
+	{
+		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
 		return;
 	}
 	
@@ -311,8 +344,14 @@ void log_warning(const char *const tag, const char *const msg, const char *const
 
 void log_note(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
-	if (check_tag_msg(tag, msg) || line == NULL)
+	if (check_tag_msg(tag, msg))
 	{
+		return;
+	}
+
+	if (line == NULL)
+	{
+		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
 		return;
 	}
 	
