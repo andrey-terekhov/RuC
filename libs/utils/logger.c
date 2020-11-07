@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <uchar.h>
 
 #ifdef _MSC_VER
 	#include <windows.h>
@@ -41,6 +42,16 @@ void set_color(const uint8_t color)
 #endif
 }
 
+int is_russian(const char *const str)
+{
+	const char16_t ch = ((char16_t)str[0] << 8) | ((char16_t)str[1] & 0x00FF);
+
+	return  ch == 'Ё' || ch == 'ё'
+		|| (ch >= 'А' && ch <= 'Я')
+		|| (ch >= 'а' && ch <= 'п')
+		|| (ch >= 'р' && ch <= 'я');
+}
+
 void print_msg(const uint8_t color, const char *const msg)
 {
 	set_color(COLOR_DEFAULT);
@@ -72,6 +83,11 @@ void print_msg(const uint8_t color, const char *const msg)
 	while (msg[j] != '^')
 	{
 		fprintf(stderr, "%c", msg[i++]);
+		if (is_russian(&msg[i - 1]))
+		{
+			fprintf(stderr, "%c", msg[i++]);
+		}
+		
 		j++;
 	}
 
@@ -79,6 +95,11 @@ void print_msg(const uint8_t color, const char *const msg)
 	while (msg[j] != '\0')
 	{
 		fprintf(stderr, "%c", msg[i++]);
+		if (is_russian(&msg[i - 1]))
+		{
+			fprintf(stderr, "%c", msg[i++]);
+		}
+
 		j++;
 	}
 
@@ -191,24 +212,34 @@ void log_system_note(const char *const tag, const char *const msg)
 	current_note_log(tag, msg);
 }
 
-
 size_t length(const char *const line, const size_t symbol)
 {
 	const size_t size = strlen(line);
 	size_t i = symbol;
+	size_t j = i;
 
-	while (i < size && (line[i] == '_' || line[i] == 'Ё' || line[i] == 'ё'
-		|| (line[i] >= '0' && line[i] <= '9')
-		|| (line[i] >= 'A' && line[i] <= 'Z')
-		|| (line[i] >= 'a' && line[i] <= 'z')
-		|| (line[i] >= 'А' && line[i] <= 'Я')
-		|| (line[i] >= 'а' && line[i] <= 'п')
-		|| (line[i] >= 'р' && line[i] <= 'я')))
+	while (i < size)
 	{
-		i++;
+		if (line[i] == '_' || (line[i] >= '0' && line[i] <= '9')
+			|| (line[i] >= 'A' && line[i] <= 'Z')
+			|| (line[i] >= 'a' && line[i] <= 'z'))
+		{
+			i++;
+			j++;
+			continue;
+		}
+
+		if (i + 1 < size && is_russian(&line[i]))
+		{
+			i += 2;
+			j++;
+			continue;
+		}
+
+		break;
 	}
 
-	return symbol >= size ? 0 : i == symbol ? 1 : i - symbol;
+	return symbol >= size ? 0 : j == symbol ? 1 : j - symbol;
 }
 
 void splice(char *const buffer, const char *const msg, const char *const line, const size_t symbol)
@@ -228,6 +259,10 @@ void splice(char *const buffer, const char *const msg, const char *const line, c
 	for (size_t i = 0; i < symbol; i++)
 	{
 		buffer[cur++] = line[i] == '\t' ? '\t' : ' ';
+		if (is_russian(&line[i]))
+		{
+			i++;
+		}
 	}
 
 	buffer[cur++] = '^';
