@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <uchar.h>
+#include "utf_8.h"
 
 #ifdef _MSC_VER
 	#include <windows.h>
@@ -51,16 +52,6 @@ void set_color(const uint8_t color)
 #endif
 }
 
-int is_russian(const char *const str)
-{
-	const char16_t ch = ((char16_t)str[0] << 8) | ((char16_t)str[1] & 0x00FF);
-
-	return  ch == 'Ё' || ch == 'ё'
-		|| (ch >= 'А' && ch <= 'Я')
-		|| (ch >= 'а' && ch <= 'п')
-		|| (ch >= 'р' && ch <= 'я');
-}
-
 void print_msg(const uint8_t color, const char *const msg)
 {
 	set_color(COLOR_DEFAULT);
@@ -91,8 +82,7 @@ void print_msg(const uint8_t color, const char *const msg)
 
 	while (msg[j] != '^')
 	{
-		fprintf(stderr, "%c", msg[i++]);
-		if (is_russian(&msg[i - 1]))
+		for (size_t k = symbol_size(msg[i]); k > 0; k--)
 		{
 			fprintf(stderr, "%c", msg[i++]);
 		}
@@ -103,8 +93,7 @@ void print_msg(const uint8_t color, const char *const msg)
 	set_color(color);
 	while (msg[j] != '\0')
 	{
-		fprintf(stderr, "%c", msg[i++]);
-		if (is_russian(&msg[i - 1]))
+		for (size_t k = symbol_size(msg[i]); k > 0; k--)
 		{
 			fprintf(stderr, "%c", msg[i++]);
 		}
@@ -246,18 +235,14 @@ size_t length(const char *const line, const size_t size, const size_t symbol)
 
 	while (i < size)
 	{
-		if (line[i] == '_' || (line[i] >= '0' && line[i] <= '9')
-			|| (line[i] >= 'A' && line[i] <= 'Z')
-			|| (line[i] >= 'a' && line[i] <= 'z'))
-		{
-			i++;
-			j++;
-			continue;
-		}
+		const char32_t ch = to_utf_8(&line[i]);
 
-		if (i + 1 < size && is_russian(&line[i]))
+		if (is_russian(ch) || ch == '_'
+			|| (ch >= '0' && ch <= '9')
+			|| (ch >= 'A' && ch <= 'Z')
+			|| (ch >= 'a' && ch <= 'z'))
 		{
-			i += 2;
+			i += symbol_size(line[i]);
 			j++;
 			continue;
 		}
@@ -286,13 +271,9 @@ void splice(char *const buffer, const char *const msg, const char *const line, c
 	}
 
 	buffer[cur++] = '\n';
-	for (size_t i = 0; i < symbol; i++)
+	for (size_t i = 0; i < symbol; i += symbol_size(line[i]))
 	{
 		buffer[cur++] = line[i] == '\t' ? '\t' : ' ';
-		if (is_russian(&line[i]))
-		{
-			i++;
-		}
 	}
 
 	buffer[cur++] = '^';

@@ -59,7 +59,7 @@ size_t to_string(char *const buffer, const char32_t symbol);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-//int is_russian(const char32_t symbol);
+int is_russian(const char32_t symbol);
 
 #ifdef __cplusplus
 } /* extern "C" */

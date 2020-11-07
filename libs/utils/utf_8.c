@@ -18,12 +18,7 @@ size_t symbol_size(const char symbol)
 		return 2;
 	}
 
-	if ((symbol & 0b10000000) == 0b00000000)
-	{
-		return 1;
-	}
-
-	return 0;
+	return 1;
 }
 
 char32_t to_utf_8(const char *const symbol)
@@ -63,10 +58,10 @@ size_t to_string(char *const buffer, const char32_t symbol)
 	return octets;
 }
 
-/*int is_russian(const char32_t symbol)
+int is_russian(const char32_t symbol)
 {
 	return  symbol == 'Ё' || symbol == 'ё'
 		|| (symbol >= 'А' && symbol <= 'Я')
 		|| (symbol >= 'а' && symbol <= 'п')
 		|| (symbol >= 'р' && symbol <= 'я');
-}*/
+}
