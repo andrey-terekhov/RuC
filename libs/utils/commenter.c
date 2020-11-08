@@ -4,22 +4,68 @@
 #include <string.h>
 #include <uchar.h>
 
-int comment(char *const comment, const char *const path, const size_t line)
+#define CMT_INCORRECT 0
+//#define CMT_ 1
+#define CMT_MACRO 2
+
+/*struct comment 
+{
+	char path[100MAX_STRING];
+	size_t line;
+	size_t symbol;
+	int type;
+};*/
+
+comment cmt_create(const char *const path, const size_t line)	//Надо делать, алгоритм проверки на корректность не придумал
+{
+	comment cmt;
+	strcpy(cmt.path, path);
+	cmt.line = line;
+	cmt.type = 1;
+	return cmt;
+}
+
+comment cmt_create_macro(const char *const path, const size_t line, const size_t symbol)
+{
+	comment cmt;
+	return cmt;
+}
+
+
+int cmt_to_buffer(const comment *const cmt, char *const buffer)
 {
 	return 0;
 }
 
-int macro_comment(char *const comment, const char *const path, const size_t line, const size_t symbol)
+comment cmt_search(const char *const code, const size_t position)
 {
-	return 0;
+	comment cmt;
+	return cmt;
 }
 
-const char * search_comment(const char *const code, const size_t position)
+
+int cmt_is_correct(const comment *const cmt)
 {
-	return '1';
+	return cmt->type != CMT_INCORRECT ? 1 : 0;
 }
 
-int extract_comment(const char *const comment, char *const path, size_t *const line, size_t *const symbol)
+int cmt_is_macro(const comment *const cmt)
 {
-	return 0;
+	return cmt->type == CMT_MACRO ? 1 : 0;
+}
+
+
+const char *cmt_get_path(const comment *const cmt)
+{
+	return cmt->path;
+}
+
+size_t cmt_get_line(const comment *const cmt)
+{
+	return cmt->line;
+}
+
+size_t cmt_get_symbol(const comment *const cmt)
+{
+	return cmt->symbol;
 }

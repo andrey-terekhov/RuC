@@ -25,7 +25,13 @@ extern "C" {
 #endif
 
 /** Structure for storing information about comments */
-typedef struct comment comment;
+typedef struct comment
+{
+	char path[100/*MAX_STRING*/];
+	size_t line;
+	size_t symbol;
+	int type;
+} comment;
 
 /**
  *	Create comment
