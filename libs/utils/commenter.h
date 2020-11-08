@@ -24,50 +24,97 @@
 extern "C" {
 #endif
 
-/**
- *	Add comment in line
- *
- *	@param	comment	Text of comment
- *	@param	path	Part of code
- *	@param	line	Nomber of line
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-UTILS_EXPORTED int comment(char *const comment, const char *const path, const size_t line);
+/** Structure for storing information about comments */
+typedef struct comment comment;
 
 /**
- *	Add comment before symbol in line
+ *	Create comment
  *
- *	@param	comment	Text of comment
- *	@param	path	Part of code
- *	@param	line	Nomber of line
- *	@param	symbol	Position
+ *	@param	path	File path
+ *	@param	line	Line nomber
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Result
  */
-UTILS_EXPORTED int macro_comment(char *const comment, const char *const path, const size_t line, const size_t symbol);
+UTILS_EXPORTED comment cmt_create(const char *const path, const size_t line);
 
 /**
- *	Search comment in code
+ *	Create macro comment
  *
- *	@param	code		Line of code
- *	@param	position	Position in line after comment
+ *	@param	path	File path
+ *	@param	line	Line nomber
+  *	@param	symbol	Position in line
  *
- *	@return	@c string Text of comment
+ *	@return	Result
  */
-UTILS_EXPORTED const char * search_comment(const char *const code, const size_t position);
+UTILS_EXPORTED comment cmt_create_macro(const char *const path, const size_t line, const size_t symbol);
+
 
 /**
- *	
+ *	Add comment to buffer
  *
- *	@param	comment	Text of comment
- *	@param	path	Part of code
- *	@param	line	Nomber of line
- *	@param	symbol	Position in line after comment
+ *	@param	cmt		Comment
+ *	@param	buffer	Destination line
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	@c 0 on success, @c 1 on failure
  */
-UTILS_EXPORTED int extract_comment(const char *const comment, char *const path, size_t *const line, size_t *const symbol);
+UTILS_EXPORTED int cmt_to_buffer(const comment *const cmt, char *const buffer);
+
+/**
+ *	Find comment in code
+ *
+ *	@param	code	Comment
+ *	@param	position	Position in code after comment
+ *
+ *	@return	Result
+ */
+UTILS_EXPORTED comment cmt_search(const char *const code, const size_t position);
+
+
+/**
+ *	Check that comment is correct
+ *
+ *	@param	cmt	Comment
+ *
+ *	@return	@c 1 if correct, @c 0 if incorrect
+ */
+UTILS_EXPORTED int cmt_is_correct(const comment *const cmt);
+
+/**
+ *	Check that comment is macro
+ *
+ *	@param	cmt	Comment
+ *
+ *	@return	@c 1 if macro, @c 0 if not macro
+ */
+UTILS_EXPORTED int cmt_is_macro(const comment *const cmt);
+
+
+/**
+ *	Extract path from comment
+ *
+ *	@param	cmt	Comment
+ *
+ *	@return	result
+ */
+UTILS_EXPORTED const char * cmt_get_path(const comment *const cmt);
+
+/**
+ *	Extract line from comment
+ *
+ *	@param	cmt	Comment
+ *
+ *	@return	result
+ */
+UTILS_EXPORTED size_t cmt_get_line(const comment *const cmt);
+
+/**
+ *	Extract symbol from comment
+ *
+ *	@param	cmt	Comment
+ *
+ *	@return	result
+ */
+UTILS_EXPORTED size_t cmt_get_symbol(const comment *const cmt);
 
 #ifdef __cplusplus
 } /* extern "C" */
