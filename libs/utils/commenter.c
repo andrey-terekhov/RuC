@@ -64,12 +64,11 @@ void cmt_parse(comment *const cmt)
 	}
 
 	size_t line = 0;
-	if (sscanf(&(cmt->path[i]), "%li", &line) == 0)
+	if (sscanf(&(cmt->path[++i]), "%li", &line) == 0)
 	{
 		return;
 	}
 	
-	i++;
 	while (cmt->path[i] >= '0' && cmt->path[i] <= '9')
 	{
 		i++;
@@ -82,7 +81,7 @@ void cmt_parse(comment *const cmt)
 	}
 	
 	size_t symbol = 0;
-	if (sscanf(&(cmt->path[i]), "%li", &symbol) != 0)
+	if (sscanf(&(cmt->path[++i]), "%li", &symbol) != 0)
 	{
 		cmt->line = line;
 		cmt->symbol = symbol;
