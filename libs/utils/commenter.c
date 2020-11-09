@@ -49,7 +49,47 @@ size_t cmt_to_string(const comment *const cmt, char *const buffer)
 	return sprintf(buffer, "%s%c%s%c%li\n", PREFIX, SEPARATOR, cmt->path, SEPARATOR, cmt->line);
 }
 
-void reverse_search(comment *const cmt, const char *const code, const size_t position)
+
+void cmt_parse(comment *const cmt)
+{
+	size_t i = 0;
+	while (cmt->path[i] != '\0' && cmt->path[i] != '\n' && cmt->path[i] != SEPARATOR)
+	{
+		i++;
+	}
+
+	if (cmt->path[i] != SEPARATOR)
+	{
+		return;
+	}
+
+	size_t line = 0;
+	if (sscanf(&(cmt->path[i]), "%li", &line) == 0)
+	{
+		return;
+	}
+	
+	i++;
+	while (cmt->path[i] >= '0' && cmt->path[i] <= '9')
+	{
+		i++;
+	}
+
+	if (cmt->path[i] != SEPARATOR)
+	{
+		cmt->line += line - 1;
+		return;
+	}
+	
+	size_t symbol = 0;
+	if (sscanf(&(cmt->path[i]), "%li", &symbol) != 0)
+	{
+		cmt->line = line;
+		cmt->symbol = symbol;
+	}
+}
+
+void cmt_reverse(comment *const cmt, const char *const code, const size_t position)
 {
 	const size_t size = strlen(PREFIX);
 	
@@ -77,6 +117,11 @@ void reverse_search(comment *const cmt, const char *const code, const size_t pos
 
 		i--;
 	}
+
+	if (cmt->path != NULL)
+	{
+		cmt_parse(cmt);
+	}
 }
 
 comment cmt_search(const char *const code, const size_t position)
@@ -101,7 +146,7 @@ comment cmt_search(const char *const code, const size_t position)
 	cmt.code = &code[i];
 	cmt.symbol = position - i;
 
-	reverse_search(&cmt, code, i);
+	cmt_reverse(&cmt, code, i);
 	return cmt;
 }
 
