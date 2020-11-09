@@ -27,51 +27,53 @@ extern "C" {
 /** Structure for storing information about comments */
 typedef struct comment
 {
-	char path[100/*MAX_STRING*/];
-	size_t line;
-	size_t symbol;
-	int type;
+	char *path;		/** Filename path */
+	size_t line;	/** Line number */
+	size_t symbol;	/** Position in line */
+
+	char *code;		/** Current line in code */
 } comment;
+
 
 /**
  *	Create comment
  *
- *	@param	path	File path
- *	@param	line	Line nomber
+ *	@param	path		File path
+ *	@param	line		Line number
  *
- *	@return	Result
+ *	@return	Comment structure
  */
 UTILS_EXPORTED comment cmt_create(const char *const path, const size_t line);
 
 /**
  *	Create macro comment
  *
- *	@param	path	File path
- *	@param	line	Line nomber
-  *	@param	symbol	Position in line
+ *	@param	path		File path
+ *	@param	line		Line number
+  *	@param	symbol		Position in line
  *
- *	@return	Result
+ *	@return	Macro comment structure
  */
 UTILS_EXPORTED comment cmt_create_macro(const char *const path, const size_t line, const size_t symbol);
 
 
 /**
- *	Add comment to buffer
+ *	Write comment to buffer
  *
- *	@param	cmt		Comment
- *	@param	buffer	Destination line
+ *	@param	cmt			Comment
+ *	@param	buffer		Destination line
  *
- *	@return	@c 0 on success, @c 1 on failure
+ *	@return	Size of сomment in buffer
  */
-UTILS_EXPORTED int cmt_to_buffer(const comment *const cmt, char *const buffer);
+UTILS_EXPORTED size_t cmt_to_buffer(const comment *const cmt, char *const buffer);
 
 /**
  *	Find comment in code
  *
- *	@param	code	Comment
+ *	@param	code		Comment
  *	@param	position	Position in code after comment
  *
- *	@return	Result
+ *	@return	Comment structure
  */
 UTILS_EXPORTED comment cmt_search(const char *const code, const size_t position);
 
@@ -79,46 +81,58 @@ UTILS_EXPORTED comment cmt_search(const char *const code, const size_t position)
 /**
  *	Check that comment is correct
  *
- *	@param	cmt	Comment
+ *	@param	cmt			Comment
  *
- *	@return	@c 1 if correct, @c 0 if incorrect
+ *	@return	@c 1 on true, @c 0 on false
  */
 UTILS_EXPORTED int cmt_is_correct(const comment *const cmt);
 
+
 /**
- *	Check that comment is macro
+ *	Get tag from comment
  *
- *	@param	cmt	Comment
+ *	@param	cmt			Comment
+ *	@param	tag			Tag entry location	
  *
- *	@return	@c 1 if macro, @c 0 if not macro
+ *	@return Size of tag
  */
-UTILS_EXPORTED int cmt_is_macro(const comment *const cmt);
-
+UTILS_EXPORTED size_t cmt_get_tag(const comment *const cmt, char *const tag);
 
 /**
- *	Extract path from comment
+ *	Get current code line
  *
- *	@param	cmt	Comment
+ *	@param	cmt			Comment
+ *	@param	code		Code line entry location	
  *
- *	@return	result
+ *	@return Size of code line
  */
-UTILS_EXPORTED const char * cmt_get_path(const comment *const cmt);
+UTILS_EXPORTED size_t cmt_get_code_line(const comment *const cmt, char *const code);
 
 /**
- *	Extract line from comment
+ *	Get current filename path
  *
- *	@param	cmt	Comment
+ *	@param	cmt			Comment
+ *	@param	path		Path entry location	
  *
- *	@return	result
+ *	@return Size of path
+ */
+UTILS_EXPORTED size_t cmt_get_path(const comment *const cmt, char *const path);
+
+/**
+ *	Get normalized line number in code
+ *
+ *	@param	cmt			Comment
+ *
+ *	@return	Line number
  */
 UTILS_EXPORTED size_t cmt_get_line(const comment *const cmt);
 
 /**
- *	Extract symbol from comment
+ *	Get normalized position in line
  *
- *	@param	cmt	Comment
+ *	@param	cmt			Comment
  *
- *	@return	result
+ *	@return	Position in line
  */
 UTILS_EXPORTED size_t cmt_get_symbol(const comment *const cmt);
 
