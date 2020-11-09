@@ -27,11 +27,11 @@ extern "C" {
 /** Structure for storing information about comments */
 typedef struct comment
 {
-	char *path;		/** Filename path */
+	const char *path;		/** Filename path */
 	size_t line;	/** Line number */
 	size_t symbol;	/** Position in line */
 
-	char *code;		/** Current line in code */
+	const char *code;		/** Current line in code */
 } comment;
 
 
@@ -58,14 +58,14 @@ UTILS_EXPORTED comment cmt_create_macro(const char *const path, const size_t lin
 
 
 /**
- *	Write comment to buffer
+ *	Write comment to string
  *
  *	@param	cmt			Comment
- *	@param	buffer		Destination line
+ *	@param	buffer		Destination string
  *
  *	@return	Size of сomment in buffer
  */
-UTILS_EXPORTED size_t cmt_to_buffer(const comment *const cmt, char *const buffer);
+UTILS_EXPORTED size_t cmt_to_string(const comment *const cmt, char *const buffer);
 
 /**
  *	Find comment in code
@@ -92,31 +92,31 @@ UTILS_EXPORTED int cmt_is_correct(const comment *const cmt);
  *	Get tag from comment
  *
  *	@param	cmt			Comment
- *	@param	tag			Tag entry location	
+ *	@param	buffer		Tag entry location	
  *
  *	@return Size of tag
  */
-UTILS_EXPORTED size_t cmt_get_tag(const comment *const cmt, char *const tag);
+UTILS_EXPORTED size_t cmt_get_tag(const comment *const cmt, char *const buffer);
 
 /**
  *	Get current code line
  *
  *	@param	cmt			Comment
- *	@param	code		Code line entry location	
+ *	@param	buffer		Code line entry location	
  *
  *	@return Size of code line
  */
-UTILS_EXPORTED size_t cmt_get_code_line(const comment *const cmt, char *const code);
+UTILS_EXPORTED size_t cmt_get_code_line(const comment *const cmt, char *const buffer);
 
 /**
  *	Get current filename path
  *
  *	@param	cmt			Comment
- *	@param	path		Path entry location	
+ *	@param	buffer		Path entry location	
  *
  *	@return Size of path
  */
-UTILS_EXPORTED size_t cmt_get_path(const comment *const cmt, char *const path);
+UTILS_EXPORTED size_t cmt_get_path(const comment *const cmt, char *const buffer);
 
 /**
  *	Get normalized line number in code
