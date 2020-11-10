@@ -46,8 +46,10 @@
 #ifdef ANALYSIS_ENABLED
 void report_cb(asp_report *report)
 {
-	fprintf(stderr, "%s:%d:%d: %s: %s\n", report->file, report->line, report->column, report->rule_id,
+	char msg[4 * MAXSTRINGL];
+	sprintf(msg, "%s:%d:%d: %s: %s", report->file, report->line, report->column, report->rule_id,
 			report->explanation);
+	log_system_note("report_cb", msg)
 }
 #endif
 

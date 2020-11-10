@@ -1,7 +1,7 @@
-#include "utf_8.h"
+#include "utf8.h"
 
 
-size_t symbol_size(const char symbol)
+size_t utf8_symbol_size(const char symbol)
 {
 	if ((symbol & 0b11110000) == 0b11110000)
 	{
@@ -21,7 +21,7 @@ size_t symbol_size(const char symbol)
 	return 1;
 }
 
-char32_t to_utf_8(const char *const symbol)
+char32_t utf8_convert(const char *const symbol)
 {
 	if (symbol == NULL)
 	{
@@ -29,7 +29,7 @@ char32_t to_utf_8(const char *const symbol)
 	}
 
 	char32_t result = 0x00000000;
-	for (size_t i = 0; i < symbol_size(symbol[0]); i++)
+	for (size_t i = 0; i < utf8_symbol_size(symbol[0]); i++)
 	{
 		result <<= 8;
 		result |= 0x000000FF & symbol[i];
@@ -38,7 +38,7 @@ char32_t to_utf_8(const char *const symbol)
 	return result;	
 }
 
-size_t to_string(char *const buffer, const char32_t symbol)
+size_t utf8_to_string(char *const buffer, const char32_t symbol)
 {
 	char32_t mask = 0xFF000000;
 	size_t octets = 4;
@@ -58,7 +58,7 @@ size_t to_string(char *const buffer, const char32_t symbol)
 	return octets;
 }
 
-int is_russian(const char32_t symbol)
+int utf8_is_russian(const char32_t symbol)
 {
 	return  symbol == 'Ё' || symbol == 'ё'
 		|| (symbol >= 'А' && symbol <= 'Я')
