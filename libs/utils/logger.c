@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <uchar.h>
-#include "utf_8.h"
+#include "utf8.h"
 
 #ifdef _MSC_VER
 	#include <windows.h>
@@ -82,7 +82,7 @@ void print_msg(const uint8_t color, const char *const msg)
 
 	while (msg[j] != '^')
 	{
-		for (size_t k = symbol_size(msg[i]); k > 0; k--)
+		for (size_t k = utf8_symbol_size(msg[i]); k > 0; k--)
 		{
 			fprintf(stderr, "%c", msg[i++]);
 		}
@@ -93,7 +93,7 @@ void print_msg(const uint8_t color, const char *const msg)
 	set_color(color);
 	while (msg[j] != '\0')
 	{
-		for (size_t k = symbol_size(msg[i]); k > 0; k--)
+		for (size_t k = utf8_symbol_size(msg[i]); k > 0; k--)
 		{
 			fprintf(stderr, "%c", msg[i++]);
 		}
@@ -235,14 +235,14 @@ size_t length(const char *const line, const size_t size, const size_t symbol)
 
 	while (i < size)
 	{
-		const char32_t ch = to_utf_8(&line[i]);
+		const char32_t ch = utf8_convert(&line[i]);
 
-		if (is_russian(ch) || ch == '_'
+		if (utf8_is_russian(ch) || ch == '_'
 			|| (ch >= '0' && ch <= '9')
 			|| (ch >= 'A' && ch <= 'Z')
 			|| (ch >= 'a' && ch <= 'z'))
 		{
-			i += symbol_size(line[i]);
+			i += utf8_symbol_size(line[i]);
 			j++;
 			continue;
 		}
@@ -271,7 +271,7 @@ void splice(char *const buffer, const char *const msg, const char *const line, c
 	}
 
 	buffer[cur++] = '\n';
-	for (size_t i = 0; i < symbol; i += symbol_size(line[i]))
+	for (size_t i = 0; i < symbol; i += utf8_symbol_size(line[i]))
 	{
 		buffer[cur++] = line[i] == '\t' ? '\t' : ' ';
 	}
