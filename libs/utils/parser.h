@@ -81,10 +81,11 @@ UTILS_EXPORTED int ws_add_file(workspace *const ws, const char *const path);
  *
  *	@param	ws			Workspace structure
  *	@param	paths		Files paths
+ *	@param	num			Number of files
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int ws_add_files(workspace *const ws, const char *const *const paths);
+UTILS_EXPORTED int ws_add_files(workspace *const ws, const char *const *const paths, const size_t num);
 
 
 /**
@@ -102,10 +103,11 @@ UTILS_EXPORTED int ws_add_dir(workspace *const ws, const char *const path);
  *
  *	@param	ws			Workspace structure
  *	@param	path		Directories paths
+ *	@param	num			Number of directories
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int ws_add_dirs(workspace *const ws, const char *const *const paths);
+UTILS_EXPORTED int ws_add_dirs(workspace *const ws, const char *const *const paths, const size_t num);
 
 
 /**
@@ -123,10 +125,11 @@ UTILS_EXPORTED int ws_add_flag(workspace *const ws, const char *const flag);
  *
  *	@param	ws			Workspace structure
  *	@param	flag		Flags
+ *	@param	num			Number of flags
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int ws_add_flags(workspace *const ws, const char *const *const flags);
+UTILS_EXPORTED int ws_add_flags(workspace *const ws, const char *const *const flags, const size_t num);
 
 
 /**
@@ -157,7 +160,17 @@ UTILS_EXPORTED int ws_is_correct(const workspace *const ws);
  *
  *	@return	Files list
  */
-UTILS_EXPORTED const char *const *ws_get_file_list(const workspace *const ws);
+UTILS_EXPORTED const char *const *ws_get_files_list(const workspace *const ws);
+
+/**
+ *	Get files number from workspase
+ *
+ *	@param	ws			Workspace structure
+ *
+ *	@return	Files number
+ */
+UTILS_EXPORTED size_t ws_get_files_num(const workspace *const ws);
+
 
 /**
  *	Get directories list from workspase
@@ -166,7 +179,17 @@ UTILS_EXPORTED const char *const *ws_get_file_list(const workspace *const ws);
  *
  *	@return	Directories list
  */
-UTILS_EXPORTED const char *const *ws_get_dir_list(const workspace *const ws);
+UTILS_EXPORTED const char *const *ws_get_dirs_list(const workspace *const ws);
+
+/**
+ *	Get directories number from workspase
+ *
+ *	@param	ws			Workspace structure
+ *
+ *	@return	Directories number
+ */
+UTILS_EXPORTED size_t ws_get_dirs_num(const workspace *const ws);
+
 
 /**
  *	Get flags list from workspase
@@ -175,7 +198,16 @@ UTILS_EXPORTED const char *const *ws_get_dir_list(const workspace *const ws);
  *
  *	@return	Flags list
  */
-UTILS_EXPORTED const char *const *ws_get_flag_list(const workspace *const ws);
+UTILS_EXPORTED const char *const *ws_get_flags_list(const workspace *const ws);
+
+/**
+ *	Get flags number from workspase
+ *
+ *	@param	ws			Workspace structure
+ *
+ *	@return	Flags number
+ */
+UTILS_EXPORTED size_t ws_get_flags_num(const workspace *const ws);
 
 
 /**
