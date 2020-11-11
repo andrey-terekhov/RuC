@@ -15,9 +15,66 @@
 const char *const default_output = "export.txt";
 
 
+void ws_add_error(workspace *const ws)
+{
+	if (ws == NULL)
+	{
+		return;
+	}
+
+	ws->was_error = 1;
+}
+
 workspace ws_parse_args(const int argc, const char *const *const argv)
 {
-	workspace ws;
+	workspace ws;// = ws_create();
+
+	ws.files_num = 0;
+	ws.dirs_num = 0;
+	ws.flags_num = 0;
+
+	strcpy(ws.output, default_output);
+	ws.was_error = 0;
+
+	if (argv == NULL)
+	{
+		ws_add_error(&ws);
+		return ws;
+	}
+
+	for (int i = 1; i < argc; i++)
+	{
+		if (argv[i] == NULL)
+		{
+			ws_add_error(&ws);
+			return ws;
+		}
+
+		if (argv[i][0] != '-')
+		{
+			if (ws_add_file(&ws, argv[i]) == -1)
+			{
+				return ws;
+			}
+			continue;
+		}
+
+		if (argv[i][1] == 'o' && argv[i][2] == '\0')
+		{
+			if (i + 1 < argc || ws_set_output(&ws, argv[++i]) == -1)
+			{
+				ws_add_error(&ws);
+				return ws;
+			}
+			continue;
+		}
+
+		if (ws_add_flag(&ws, argv[i]) == -1)
+		{
+			return ws;
+		}
+	}
+
 	return ws;
 }
 
@@ -36,16 +93,6 @@ workspace ws_create()
 	return ws;
 }
 
-
-void ws_add_error(workspace *const ws)
-{
-	if (ws == NULL)
-	{
-		return;
-	}
-
-	ws->was_error = 1;
-}
 
 int ws_add_file(workspace *const ws, const char *const path)
 {
@@ -94,7 +141,7 @@ int ws_add_dir(workspace *const ws, const char *const path)
 	}
 	closedir(dir);*/
 
-	strcpy(ws->files[ws->files_num++], path);
+	strcpy(ws->files[ws->dirs_num++], path);
 	return 0;
 }
 
