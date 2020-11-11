@@ -42,7 +42,7 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 {
 	char32_t mask = 0xFF000000;
 	size_t octets = 4;
-	while ((symbol & mask) == 0 & octets > 0)
+	while ((symbol & mask) == 0 && octets > 0)
 	{
 		mask >>= 8;
 		octets--;
@@ -50,7 +50,7 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 
 	for (size_t i = 0; i < octets; i++)
 	{
-		buffer[i] = (symbol & mask) >> (8 * (octets - i - 1));
+		buffer[i] = (char)((symbol & mask) >> (8 * (octets - i - 1)));
 		mask >>= 8;
 	}
 

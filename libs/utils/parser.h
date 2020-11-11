@@ -21,8 +21,8 @@
 #include "utils_internal.h"
 
  
-#define MAX_PATHS 1024
-#define MAX_FLAGS 128
+#define MAX_PATHS 512
+#define MAX_FLAGS 64
 #define MAX_STRING 256
 
 

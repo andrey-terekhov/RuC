@@ -1,8 +1,15 @@
 #include "parser.h"
-#include <dirent.h>
 #include <stdint.h>
 #include <string.h>
-#include <unistd.h>
+
+#ifndef _MSC_VER
+	#include <unistd.h>
+	//#include <dirent.h>
+#else
+	#define F_OK 0
+
+	extern int access(const char *path, int mode);
+#endif
 
 
 const char *const default_output = "export.txt";
@@ -73,19 +80,19 @@ int ws_add_files(workspace *const ws, const char *const *const paths, const size
 
 int ws_add_dir(workspace *const ws, const char *const path)
 {
-	if (!ws_is_correct(ws) || path == NULL)
+	if (!ws_is_correct(ws) || path == NULL || access(path, F_OK) == -1)
 	{
 		ws_add_error(ws);
 		return -1;
 	}
 
-	DIR* dir = opendir(path);
+	/*DIR* dir = opendir(path);
 	if (!dir)
 	{
 		ws_add_error(ws);
 		return -1;
 	}
-	closedir(dir);
+	closedir(dir);*/
 
 	strcpy(ws->files[ws->files_num++], path);
 	return 0;

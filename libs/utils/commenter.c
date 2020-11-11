@@ -42,11 +42,11 @@ size_t cmt_to_string(const comment *const cmt, char *const buffer)
 	
 	if (cmt->symbol != SIZE_MAX)
 	{
-		return sprintf(buffer, "%s%c%s%c%li%c%li\n", PREFIX, SEPARATOR
+		return sprintf(buffer, "%s%c%s%c%zi%c%zi\n", PREFIX, SEPARATOR
 			, cmt->path, SEPARATOR, cmt->line, SEPARATOR, cmt->symbol);
 	}
 
-	return sprintf(buffer, "%s%c%s%c%li\n", PREFIX, SEPARATOR, cmt->path, SEPARATOR, cmt->line);
+	return sprintf(buffer, "%s%c%s%c%zi\n", PREFIX, SEPARATOR, cmt->path, SEPARATOR, cmt->line);
 }
 
 
@@ -64,7 +64,7 @@ void cmt_parse(comment *const cmt)
 	}
 
 	size_t line = 0;
-	if (sscanf(&(cmt->path[++i]), "%li", &line) == 0)
+	if (sscanf(&(cmt->path[++i]), "%zi", &line) == 0)
 	{
 		return;
 	}
@@ -81,7 +81,7 @@ void cmt_parse(comment *const cmt)
 	}
 	
 	size_t symbol = 0;
-	if (sscanf(&(cmt->path[++i]), "%li", &symbol) != 0)
+	if (sscanf(&(cmt->path[++i]), "%zi", &symbol) != 0)
 	{
 		cmt->line = line;
 		cmt->symbol = symbol;
@@ -160,7 +160,7 @@ size_t cmt_get_tag(const comment *const cmt, char *const buffer)
 {
 	size_t i = cmt_get_path(cmt, buffer);
 
-	return i == 0 ? 0 : i + sprintf(&buffer[i], ":%li:%li", cmt->line, cmt->symbol);
+	return i == 0 ? 0 : i + sprintf(&buffer[i], ":%zi:%zi", cmt->line, cmt->symbol);
 }
 
 size_t cmt_get_code_line(const comment *const cmt, char *const buffer)
