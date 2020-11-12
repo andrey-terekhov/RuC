@@ -601,7 +601,8 @@ int scan()
                 }
                 reprtab[oldrepr] = hashtab[hash];
                 repr = hashtab[hash] = oldrepr;
-                reprtab[repr+1] = (keywordsnum) ? -((++keywordsnum - 2)/4) : 1;  // 0 - только MAIN, < 0 - ключевые слова, 1 - обычные иденты
+                reprtab[repr+1] = (keywordsnum) ? -((++keywordsnum - 2)/4) : 1;
+				// 0 - только MAIN, < 0 - ключевые слова, 1 - обычные иденты
                 return IDENT;
             }
             else

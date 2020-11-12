@@ -10,7 +10,6 @@
 		ED39C260222E6107005E7385 /* scaner.c in Sources */ = {isa = PBXBuildFile; fileRef = ED39C25F222E6107005E7385 /* scaner.c */; };
 		ED6E6121221311DC00363321 /* mipsgen.c in Sources */ = {isa = PBXBuildFile; fileRef = ED6E611F221311DC00363321 /* mipsgen.c */; };
 		ED6E6122221311DC00363321 /* mipsopt.c in Sources */ = {isa = PBXBuildFile; fileRef = ED6E6120221311DC00363321 /* mipsopt.c */; };
-		ED9101961FAA0CF60089A8A4 /* keywords.txt in CopyFiles */ = {isa = PBXBuildFile; fileRef = ED9101951FAA0CF50089A8A4 /* keywords.txt */; };
 		EDC2DE3921357B1C0056585C /* preprocess.c in Sources */ = {isa = PBXBuildFile; fileRef = EDC2DE3821357B1C0056585C /* preprocess.c */; };
 		EDCB458B1DDF4B9C0030AE24 /* codes.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45821DDF4B9C0030AE24 /* codes.c */; };
 		EDCB458C1DDF4B9C0030AE24 /* error.c in Sources */ = {isa = PBXBuildFile; fileRef = EDCB45841DDF4B9C0030AE24 /* error.c */; };
@@ -25,7 +24,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 16;
 			files = (
-				ED9101961FAA0CF60089A8A4 /* keywords.txt in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -36,7 +34,6 @@
 		ED6E611F221311DC00363321 /* mipsgen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mipsgen.c; sourceTree = "<group>"; };
 		ED6E6120221311DC00363321 /* mipsopt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mipsopt.c; sourceTree = "<group>"; };
 		ED70946E2350BC0500FACB6D /* Defs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Defs.h; sourceTree = "<group>"; };
-		ED9101951FAA0CF50089A8A4 /* keywords.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = keywords.txt; sourceTree = "<group>"; };
 		EDC2DE3821357B1C0056585C /* preprocess.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = preprocess.c; sourceTree = "<group>"; };
 		EDCB45771DDF4ACF0030AE24 /* ruc */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ruc; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDCB45821DDF4B9C0030AE24 /* codes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = codes.c; sourceTree = "<group>"; };
@@ -77,7 +74,6 @@
 		EDCB45791DDF4ACF0030AE24 /* RuC */ = {
 			isa = PBXGroup;
 			children = (
-				ED9101951FAA0CF50089A8A4 /* keywords.txt */,
 				ED6E611F221311DC00363321 /* mipsgen.c */,
 				ED6E6120221311DC00363321 /* mipsopt.c */,
 				EDCB45881DDF4B9C0030AE24 /* main.c */,

@@ -450,6 +450,15 @@ void mustbeint()
         error(not_int_in_stanfunc);
 }
 
+void mustberow()
+{
+    exprassn(0, 1);
+    toval();
+    sopnd--;
+    if (! (ansttype > 0 && modetab[ansttype] == MARRAY))
+        error(not_array_in_upb);
+}
+
 void mustberowofint()
 {
     if (cur == BEGIN)
@@ -579,6 +588,13 @@ int primaryexpr()
         int func = cur;
         if (scaner() != LEFTBR)
             error(no_leftbr_in_stand_func);
+        if (func == UPB)
+        {
+            mustbeint();
+            mustbe(COMMA, no_comma_in_act_params_stanfunc);
+            
+
+        }
         if (func <= STRCPY && func >= STRLEN)     // функции работы со строками
         {
             if (func >= STRNCAT)
@@ -1237,8 +1253,8 @@ int inition(int decl_type)
         sopnd--;
         if (is_int(decl_type) && is_float(ansttype))
             error(init_int_by_float);
-        else if (decl_type != ansttype)
-            error(error_in_initialization);
+//        else if (decl_type != ansttype)
+//            error(error_in_initialization);
         
         if (is_float(decl_type) && is_int(ansttype))
             insertwiden();
@@ -1605,11 +1621,29 @@ void statement()
                      if (is_pointer(ansttype))
                          error(pointer_in_print);
                      sopnd--;
-            }while (next == COMMA ? scaner(), 1 : 0);
+				}while (next == COMMA ? scaner(), 1 : 0);
                 mustbe(RIGHTBR, no_rightbr_in_printid);
 
             }
                 break;
+				
+			case GET:
+			{
+				mustbe(LEFTBR, no_leftbr_in_printid);
+				do
+				{
+					 scaner();
+					 exprassn(0, 1);
+					 toval();
+					 totree(TGet);
+					 totree(ansttype);
+					 totree(TExprend);
+					 sopnd--;
+				}while (next == COMMA ? scaner(), 1 : 0);
+				mustbe(RIGHTBR, no_rightbr_in_printid);
+			}
+				break;
+
             case PRINTID:
             {
                 mustbe(LEFTBR, no_leftbr_in_printid);
@@ -1635,6 +1669,23 @@ void statement()
                 mustbe(RIGHTBR, no_rightbr_in_printid);
             }
                 break;
+
+			case GETID:
+			{
+						  mustbe(LEFTBR, no_leftbr_in_printid);
+				do
+				{
+					mustbe(IDENT, no_ident_in_printid);
+						  lastid = reprtab[repr + 1];
+						  if (lastid == 1)
+							  error(ident_is_not_declared);
+						  totree(TGetid);
+						  totree(lastid);
+				}
+				while (next == COMMA ? scaner(), 1 : 0);
+				mustbe(RIGHTBR, no_rightbr_in_printid);
+			}
+				break;
 
             case PRINTF:
             {
@@ -1696,22 +1747,6 @@ void statement()
             }
                 break;
 
-            case GETID:
-            {
-                          mustbe(LEFTBR, no_leftbr_in_printid);
-                do
-                {
-                    mustbe(IDENT, no_ident_in_printid);
-                          lastid = reprtab[repr + 1];
-                          if (lastid == 1)
-                              error(ident_is_not_declared);
-                          totree(TGetid);
-                          totree(lastid);
-                }
-                while (next == COMMA ? scaner(), 1 : 0);
-                mustbe(RIGHTBR, no_rightbr_in_printid);
-            }
-                break;
             case LBREAK:
             {
                            if (!(inloop || inswitch))

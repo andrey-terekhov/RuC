@@ -54,7 +54,7 @@ int munop(int t)  // один операнд, возвращает n+1, где n
             return 1;
 
         case TPrint:
-//        case TPrintf:
+		case TGet:
         case TDYNSelect:
 
             return 2;
@@ -262,7 +262,7 @@ void mstatement()
             {
                 mexpr();
             }while (tree[tc] != 0);
-            tc++;
+			mcopy();
             break;
             
         default:
@@ -337,19 +337,13 @@ int operand()
     {
         mcopy();
         mcopy();             // displ
-        if (t == TSliceident)
-        {
-            mcopy();         // type
-            mexpr();         // index
-        }
-        while ((t = tree[tc]) == TSlice /*|| t == TSelect*/)
+		mcopy();         	 // type
+		mexpr();         	 // index
+        while ((t = tree[tc]) == TSlice)
         {
             mcopy();
-            if (t == TSlice)
-            {
-                mcopy();
-                mexpr();
-            }
+			mcopy();         // type
+			mexpr();
         }
     }
     else if (t == TCall1)
@@ -403,9 +397,10 @@ int operand()
 
 void mexpr()
 {
-    int wasopnd = 0;
+    int wasopnd;
     while (1)
     {
+		wasopnd = 0;
         while ( (stack[++sp] = operand() ) )
         {
             wasopnd = 1;
@@ -426,8 +421,6 @@ void mexpr()
                 if (wasopnd)
                     if (op == WIDEN1)
                         permute(stack[sp-1]);
-//                    else if (op == TPrintf)
-//                        permute(stack[sp -= tree[tc+1]]);
                     else
                         permute(stack[sp]);
                 else

@@ -62,9 +62,9 @@ void error(int ernum)
         case decl_and_def_have_diff_type:
             printf("прототип функции и ее описание имеют разные типы\n");
             break;
-        case decl_must_start_from_ident_or_decl:
-            printf("описание может начинаться только с описателя или идентификатора\n");
-            break;
+//        case decl_must_start_from_ident_or_decl:
+//            printf("описание может начинаться только с описателя или идентификатора\n");
+//            break;
         case no_comma_in_param_list:
             printf("параметры должны разделяться запятыми\n");
             break;
@@ -608,6 +608,9 @@ void error(int ernum)
             break;
         case wrong_postexpr:
             printf("postexpr должно начинаться с идентификатора\n");
+            break;
+        case not_array_in_upb:
+            printf("вторым параметром стан. функции КОЛ_ВО должен быть массив\n");
             break;
 
 

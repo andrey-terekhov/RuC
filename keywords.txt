@@ -21,11 +21,14 @@ RETURN return ВОЗВРАТ возврат
 SIZEOF sizeof РАЗМЕР размер
 SWITCH switch ВЫБОР выбор
 WHILE while ПОКА пока
+
 PRINTID printid ПЕЧАТЬИД печатьид
+GETID getid ВВОДИД вводид
 PRINT print ПЕЧАТЬ печать
+GET get ВВОД ввод
 PRINTF printf ПЕЧАТЬФ печатьф
 SCANF scanf ЧИТАТЬФ читатьф 
-GETID getid ЧИТАТЬИД читатьид
+
 T_CREATE_DIRECT t_creat_direct Н_СОЗДАТЬ_НЕПОСР н_создать_непоср
 T_EXIT_DIRECT t_exit_direct Н_КОНЕЦ_НЕПОСР н_конец_непоср
 SETMOTOR setmotor МОТОР мотор

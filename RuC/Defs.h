@@ -168,11 +168,12 @@
 #define TAddrtovalf   9485
 #define TAddrtovald   9486
 #define TPrint        9587
-#define ROWING        9488
-#define ROWINGD       9489
-#define TArassn       9490
-#define TArassni      9491
-#define TArassnc      9492
+#define TGet          9588
+#define ROWING        9489
+#define ROWINGD       9490
+#define TArassn       9491
+#define TArassni      9492
+#define TArassnc      9493
 
 #define COPY00   9300    // d1, d2, l
 #define COPY01   9301    // d1,     l
@@ -189,45 +190,45 @@
 #define ABSIC     9651
 #define CASTC     9526
 
-#define CREATEDIRECTC 9528
-#define EXITDIRECTC   9529
+#define CREATEDIRECTC 9500-TCREATEDIRECT
+#define EXITDIRECTC   9500-TEXITDIRECT
 
-#define SETMOTORC 9530
-#define GETDIGSENSORC 9531
-#define GETANSENSORC  9532
-#define VOLTAGEC      9533
-#define ABSC      9534
-#define SQRTC     9535
-#define EXPC      9536
-#define SINC      9537
-#define COSC      9538
-#define LOGC      9539
-#define LOG10C    9540
-#define ASINC     9541
-#define RANDC     9542
-#define ROUNDC    9543
+#define SETMOTORC 9500-SETMOTOR
+#define GETDIGSENSORC 9500-GETDIGSENSOR
+#define GETANSENSORC  9500-GETANSENSOR
+#define VOLTAGEC      9500-VOLTAGE
+#define ABSC      9500-ABS
+#define SQRTC     9500-SQRT
+#define EXPC      9500-EXP
+#define SINC      9500-SIN
+#define COSC      9500-COS
+#define LOGC      9500-LOG
+#define LOG10C    9500-LOG10
+#define ASINC     9500-ASIN
+#define RANDC     9500-RAND
+#define ROUNDC    9500-ROUND
 
-#define STRCPYC   9544
-#define STRNCPYC  9545
-#define STRCATC   9546
-#define STRNCATC  9547
-#define STRCMPC   9548
-#define STRNCMPC  9549
-#define STRSTRC   9550
-#define STRLENC   9551
+#define STRCPYC   9500-STRCPY
+#define STRNCPYC  9500-STRNCPY
+#define STRCATC   9500-STRCAT
+#define STRNCATC  9500-STRNCAT
+#define STRCMPC   9500-STRCMP
+#define STRNCMPC  9500-STRNCMP
+#define STRSTRC   9500-STRSTR
+#define STRLENC   9500-STRLEN
 
-#define MSGSENDC  9552
-#define MSGRECEIVEC 9553
-#define JOINC     9554
-#define SLEEPC    9555
-#define SEMCREATEC  9556
-#define SEMWAITC  9557
-#define SEMPOSTC  9558
-#define CREATEC   9559
-#define INITC     9560
-#define DESTROYC  9561
-#define EXITC     9562
-#define GETNUMC   9563
+#define MSGSENDC  9500-TMSGSEND
+#define MSGRECEIVEC 9500-TMSGRECEIVE
+#define JOINC     9500-TJOIN
+#define SLEEPC    9500-TSLEEP
+#define SEMCREATEC  9500-TSEMCREATE
+#define SEMWAITC  9500-TSEMWAIT
+#define SEMPOSTC  9500-TSEMPOST
+#define CREATEC   9500-TCREATE
+#define INITC     9500-TINIT
+#define DESTROYC  9500-TDESTROY
+#define EXITC     9500-TEXIT
+#define GETNUMC   9500-TGETNUM
 
 
 // Лексемы
@@ -283,71 +284,73 @@
 #define LSWITCH   -21
 #define LWHILE    -22
 #define PRINTID   -23
-#define PRINT     -24
-#define PRINTF    -25
-#define SCANF     -26
-#define GETID     -27
-#define TCREATEDIRECT -28
-#define TEXITDIRECT -29
+#define GETID     -24
+#define PRINT     -25
+#define GET       -26
+#define PRINTF    -27
+#define SCANF     -28
+#define TCREATEDIRECT -29
+#define TEXITDIRECT -30
 
-#define STANDARD_FUNC_START -30
-#define SETMOTOR  -30
-#define GETDIGSENSOR -31
-#define GETANSENSOR  -32
-#define VOLTAGE      -33
+#define STANDARD_FUNC_START -31
+#define SETMOTOR  -31
+#define GETDIGSENSOR -32
+#define GETANSENSOR  -33
+#define VOLTAGE      -34
 
-#define ABS       -34
-#define SQRT      -35
-#define EXP       -36
-#define SIN       -37
-#define COS       -38
-#define LOG       -39
-#define LOG10     -40
-#define ASIN      -41
-#define RAND      -42
-#define ROUND     -43
+#define ABS       -35
+#define SQRT      -36
+#define EXP       -37
+#define SIN       -38
+#define COS       -39
+#define LOG       -40
+#define LOG10     -41
+#define ASIN      -42
+#define RAND      -43
+#define ROUND     -44
 
-#define STRCPY    -44
-#define STRNCPY   -45
-#define STRCAT    -46
-#define STRNCAT   -47
-#define STRCMP    -48
-#define STRNCMP   -49
-#define STRSTR    -50
-#define STRLEN    -51
+#define STRCPY    -45
+#define STRNCPY   -46
+#define STRCAT    -47
+#define STRNCAT   -48
+#define STRCMP    -49
+#define STRNCMP   -50
+#define STRSTR    -51
+#define STRLEN    -52
 
 
-#define TMSGSEND   -52
-#define TMSGRECEIVE -53
-#define TJOIN      -54
-#define TSLEEP     -55
-#define TSEMCREATE -56
-#define TSEMWAIT   -57
-#define TSEMPOST   -58
-#define TCREATE    -59
-#define TINIT      -60
-#define TDESTROY   -61
-#define TEXIT      -62
-#define TGETNUM    -63
+#define TMSGSEND   -53
+#define TMSGRECEIVE -54
+#define TJOIN      -55
+#define TSLEEP     -56
+#define TSEMCREATE -57
+#define TSEMWAIT   -58
+#define TSEMPOST   -59
+#define TCREATE    -60
+#define TINIT      -61
+#define TDESTROY   -62
+#define TEXIT      -63
+#define TGETNUM    -64
 
-#define SH_DEFINE     -64   // #define
-#define SH_IFDEF      -65   // #ifdef
-#define SH_IFNDEF     -66   // #ifndef
-#define SH_IF         -67   // #if
-#define SH_ELIF       -68   // #elif
-#define SH_ENDIF      -69   // #endif
-#define SH_ELSE       -70   // #else
+#define SH_DEFINE     -65   // #define
+#define SH_IFDEF      -66   // #ifdef
+#define SH_IFNDEF     -67   // #ifndef
+#define SH_IF         -68   // #if
+#define SH_ELIF       -69   // #elif
+#define SH_ENDIF      -70   // #endif
+#define SH_ELSE       -71   // #else
 
-#define WIFI_CONNECT  -71
-#define BLYNK_AUTORIZATION -72
-#define BLYNK_SEND    -73
-#define BLYNK_RECEIVE -74
-#define BLYNK_NOTIFICATION -75
-#define BLYNK_PROPERTY     -76
-#define BLYNK_LCD     -77
-#define BLYNK_TERMINAL     -78
-#define SETSIGNAL     -79
-#define REGR          -80
+#define WIFI_CONNECT  -72
+#define BLYNK_AUTORIZATION -73
+#define BLYNK_SEND    -74
+#define BLYNK_RECEIVE -75
+#define BLYNK_NOTIFICATION -76
+#define BLYNK_PROPERTY     -77
+#define BLYNK_LCD     -78
+#define BLYNK_TERMINAL     -79
+#define SETSIGNAL     -80
+#define REGR          -81
+#define UPB           -82
 
 #define LVOIDASTER    -150
 #define ABSI          -151
@@ -385,10 +388,10 @@
 #define TLabel      -328
 #define TStringform -329
 #define TPrintid    -330
-#define TPrintf     -331
-#define TGetid      -332
-#define TIdenttoaddr -333
-
+#define TGetid      -331
+#define TPrintf     -332
+#define TScanf      -333
+#define TIdenttoaddr -334
 #define TFunidtoval -335
 #define TStructbeg  -336
 #define TStructend  -337
@@ -411,7 +414,7 @@
 #define wait_right_sq_br                   202
 #define only_functions_may_have_type_VOID  203
 #define decl_and_def_have_diff_type        204
-#define decl_must_start_from_ident_or_decl 205
+//#define decl_must_start_from_ident_or_decl 205
 #define no_comma_in_param_list             206
 #define wrong_param_list                   207
 #define no_comma_in_type_list              208
@@ -600,6 +603,7 @@
 #define wrong_register                     385
 #define wrong_postexpr                     386
 #define wrong_assn                         387
+#define not_array_in_upb                   388
 
 //  коды предупреждений
 
