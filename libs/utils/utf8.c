@@ -60,17 +60,10 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 
 int utf8_is_russian(const char32_t symbol)
 {
-#ifdef __APPLE__
-	return  symbol == U'Ё' || symbol == U'ё'
-		|| (symbol >= U'А' && symbol <= U'Я')
-		|| (symbol >= U'а' && symbol <= U'п')
-		|| (symbol >= U'р' && symbol <= U'я');
-#else
-	return  symbol == 'Ё' || symbol == 'ё'
-		|| (symbol >= 'А' && symbol <= 'Я')
-		|| (symbol >= 'а' && symbol <= 'п')
-		|| (symbol >= 'р' && symbol <= 'я');
-#endif
+	return  symbol == utf8_convert("Ё") || symbol == utf8_convert("ё")
+		|| (symbol >= utf8_convert("А") && symbol <= utf8_convert("Я"))
+		|| (symbol >= utf8_convert("а") && symbol <= utf8_convert("п"))
+		|| (symbol >= utf8_convert("р") && symbol <= utf8_convert("я"));
 }
 
 
