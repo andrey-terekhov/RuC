@@ -102,13 +102,13 @@ void ws_unix_path(const char *const path, char *const buffer)
 
 		if (buffer[j - 1] == '/')
 		{
-			if (j - last == 1 || j - last == 2 && buffer[last] == '.')
+			if (j - last == 1 || (j - last == 2 && buffer[last] == '.'))
 			{
 				j = last;
 			}
 			else if (last != 0 && j - last == 3 && buffer[last] == '.' && buffer[last + 1] == '.'
-				&& !(last > 3 && buffer[last - 2] == '.' && buffer[last - 3] == '.' && buffer[last - 4] == '/'
-					|| last == 3 && buffer[last - 2] == '.' && buffer[last - 3] == '.'))
+				&& !((last > 3 && buffer[last - 2] == '.' && buffer[last - 3] == '.' && buffer[last - 4] == '/')
+					|| (last == 3 && buffer[last - 2] == '.' && buffer[last - 3] == '.')))
 			{
 				j = last - 1;
 				while (j > 0 && buffer[j - 1] != '/')
