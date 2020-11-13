@@ -102,7 +102,7 @@ void ws_unix_path(const char *const path, char *const buffer)
 
 		if (buffer[j - 1] == '/')
 		{
-			if (j - last == 2 && buffer[last] == '.')
+			if (j - last == 1 || j - last == 2 && buffer[last] == '.')
 			{
 				j = last;
 			}
@@ -116,14 +116,27 @@ void ws_unix_path(const char *const path, char *const buffer)
 					j--;
 				}
 			}
-			
+
 			last = j;
 		}
 
 		i++;
 	}
 
-	buffer[j] = '\0';
+	buffer[buffer[j - 1] == '/' ? j - 1 : j] = '\0';
+}
+
+int ws_exists(const char *const element, const char array[][MAX_STRING], const size_t size)
+{
+	for (size_t i = 0; i < size; i++)
+	{
+		if (strcmp(element, array[i]) == 0)
+		{
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 int ws_add_file(workspace *const ws, const char *const path)
@@ -141,7 +154,10 @@ int ws_add_file(workspace *const ws, const char *const path)
 		return -1;
 	}
 
-	ws->files_num++;
+	if (!ws_exists(ws->files[ws->files_num], ws->files, ws->files_num))
+	{
+		ws->files_num++;
+	}
 	return 0;
 }
 
@@ -178,10 +194,12 @@ int ws_add_dir(workspace *const ws, const char *const path)
 		ws_add_error(ws);
 		return -1;
 	}
-	
-	ws->dirs_num++;
-	return 0;
 
+	if (!ws_exists(ws->dirs[ws->dirs_num], ws->dirs, ws->dirs_num))
+	{
+		ws->dirs_num++;
+	}
+	return 0;
 }
 
 int ws_add_dirs(workspace *const ws, const char *const *const paths, const size_t num)
@@ -221,7 +239,10 @@ int ws_add_flag(workspace *const ws, const char *const flag)
 		return ws_add_dir(ws, &flag[2]);
 	}
 
-	strcpy(ws->flags[ws->flags_num++], flag);
+	if (!ws_exists(flag, ws->flags, ws->flags_num))
+	{
+		strcpy(ws->flags[ws->flags_num++], flag);
+	}
 	return 0;
 }
 
