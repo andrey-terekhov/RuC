@@ -14,6 +14,8 @@
  *	limitations under the License.
  */
 
+#pragma comment(linker, "/STACK:268435456")
+
 #include "compiler.h"
 #include "workspace.h"
 
