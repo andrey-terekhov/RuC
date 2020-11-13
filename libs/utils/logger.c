@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <uchar.h>
 #include "utf8.h"
 
 #ifdef _MSC_VER
