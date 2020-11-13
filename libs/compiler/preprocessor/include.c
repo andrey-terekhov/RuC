@@ -190,7 +190,7 @@ int open_i_faile(preprocess_context *context, char *temp_way, data_file *fs, int
 	}
 	if (f == NULL)
 	{
-		printf(" не найден файл %s\n", temp_way);
+		log_system_error(temp_way, "файл не найден");
 		m_error(1, context);
 	}
 	if (flag == 0)

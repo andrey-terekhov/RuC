@@ -17,7 +17,14 @@
 #pragma once
 
 #include <stddef.h>
-#include <uchar.h>
+
+#ifdef __APPLE__
+	#include <stdint.h>
+	
+	typedef uint32_t char32_t;
+#else
+	#include <uchar.h>
+#endif
 
 
 #ifdef __cplusplus

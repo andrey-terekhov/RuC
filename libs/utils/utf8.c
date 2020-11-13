@@ -42,7 +42,7 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 {
 	char32_t mask = 0xFF000000;
 	size_t octets = 4;
-	while ((symbol & mask) == 0 & octets > 0)
+	while ((symbol & mask) == 0 && octets > 0)
 	{
 		mask >>= 8;
 		octets--;
@@ -50,7 +50,7 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 
 	for (size_t i = 0; i < octets; i++)
 	{
-		buffer[i] = (symbol & mask) >> (8 * (octets - i - 1));
+		buffer[i] = (char)((symbol & mask) >> (8 * (octets - i - 1)));
 		mask >>= 8;
 	}
 
@@ -60,8 +60,10 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 
 int utf8_is_russian(const char32_t symbol)
 {
-	return  symbol == 'Ё' || symbol == 'ё'
-		|| (symbol >= 'А' && symbol <= 'Я')
-		|| (symbol >= 'а' && symbol <= 'п')
-		|| (symbol >= 'р' && symbol <= 'я');
+	return  symbol == utf8_convert("Ё") || symbol == utf8_convert("ё")
+		|| (symbol >= utf8_convert("А") && symbol <= utf8_convert("Я"))
+		|| (symbol >= utf8_convert("а") && symbol <= utf8_convert("п"))
+		|| (symbol >= utf8_convert("р") && symbol <= utf8_convert("я"));
 }
+
+
