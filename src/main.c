@@ -15,54 +15,23 @@
  */
 
 #include "compiler.h"
-#include "logger.h"
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "workspace.h"
 
 
 const char *name = "../tests/executable/floatsign.c";
-// "../tests/Egor/Macro/test3.c";
-// "../tests/defstest/MULTASSATV_9221.c";
-//"../tests/defstest/SHLASSAT_9014.c";
-//"../tests/stanfunc0.c";
 // "../tests/mips/0test.c";
 
 
 int main(int argc, const char *argv[])
 {
-	printf(""); // Not working without using printf
+	//printf(""); // Not working without using printf
+
+	workspace ws = ws_parse_args(argc, argv);
 
 	if (argc < 2)
 	{
-		return compiler_compile(name);
+		ws_add_file(&ws, name);
 	}
-	else
-	{
-		compiler_workspace *ws;
-
-		ws = compiler_get_workspace(argc, argv);
-		if (ws == NULL)
-		{
-			log_system_error("ruc", "failed to create a workspace");
-			return 1;
-		}
-
-		if (ws->error.code != COMPILER_WS_EOK)
-		{
-			char *str;
-
-			str = compiler_workspace_error2str(&ws->error);
-			log_system_error("ruc", "unknown workspace error");
-			free(str);
-
-			compiler_workspace_free(ws);
-			return 1;
-		}
-
-		int ret = compiler_workspace_compile(ws);
-		compiler_workspace_free(ws);
-
-		return ret;
-	}
+	
+	return compile_to_vm(&ws);
 }
