@@ -4,7 +4,6 @@
 
 #ifndef _MSC_VER
 	#include <unistd.h>
-	//#include <dirent.h>
 #else
 	#define F_OK 0
 
@@ -91,15 +90,58 @@ workspace ws_create()
 }
 
 
+void ws_unix_path(const char *const path, char *const buffer)
+{
+	size_t i = 0;
+	size_t j = 0;
+	size_t last = 0;
+
+	while (path[i] != '\0')
+	{
+		buffer[j++] = path[i] == '\\' ? '/' : path[i];
+
+		if (buffer[j - 1] == '/')
+		{
+			if (j - last == 2 && buffer[last] == '.')
+			{
+				j = last;
+			}
+			else if (last != 0 && j - last == 3 && buffer[last] == '.' && buffer[last + 1] == '.'
+				&& !(last > 3 && buffer[last - 2] == '.' && buffer[last - 3] == '.' && buffer[last - 4] == '/'
+					|| last == 3 && buffer[last - 2] == '.' && buffer[last - 3] == '.'))
+			{
+				j = last - 1;
+				while (j > 0 && buffer[j - 1] != '/')
+				{
+					j--;
+				}
+			}
+			
+			last = j;
+		}
+
+		i++;
+	}
+
+	buffer[j] = '\0';
+}
+
 int ws_add_file(workspace *const ws, const char *const path)
 {
-	if (!ws_is_correct(ws) || path == NULL || access(path, F_OK) == -1)
+	if (!ws_is_correct(ws) || path == NULL)
 	{
 		ws_add_error(ws);
 		return -1;
 	}
 
-	strcpy(ws->files[ws->files_num++], path);
+	ws_unix_path(path, ws->files[ws->files_num]);
+	if (access(ws->files[ws->files_num], F_OK) == -1)
+	{
+		ws_add_error(ws);
+		return -1;
+	}
+
+	ws->files_num++;
 	return 0;
 }
 
@@ -124,22 +166,22 @@ int ws_add_files(workspace *const ws, const char *const *const paths, const size
 
 int ws_add_dir(workspace *const ws, const char *const path)
 {
-	if (!ws_is_correct(ws) || path == NULL || access(path, F_OK) == -1)
+	if (!ws_is_correct(ws) || path == NULL)
 	{
 		ws_add_error(ws);
 		return -1;
 	}
 
-	/*DIR* dir = opendir(path);
-	if (!dir)
+	ws_unix_path(path, ws->dirs[ws->dirs_num]);
+	if (access(ws->dirs[ws->dirs_num], F_OK) == -1)
 	{
 		ws_add_error(ws);
 		return -1;
 	}
-	closedir(dir);*/
-
-	strcpy(ws->dirs[ws->dirs_num++], path);
+	
+	ws->dirs_num++;
 	return 0;
+
 }
 
 int ws_add_dirs(workspace *const ws, const char *const *const paths, const size_t num)
