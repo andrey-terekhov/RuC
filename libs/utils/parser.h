@@ -154,60 +154,34 @@ UTILS_EXPORTED int ws_is_correct(const workspace *const ws);
 
 
 /**
- *	Get files list from workspase
+ *	Get file by index from workspase
  *
  *	@param	ws			Workspace structure
+  *	@param	index		File index in list
  *
- *	@return	Files list
+ *	@return	File
  */
-UTILS_EXPORTED const char *const *ws_get_files_list(const workspace *const ws);
+UTILS_EXPORTED const char *ws_get_file(const workspace *const ws, const size_t index);
 
 /**
- *	Get files number from workspase
+ *	Get directory by index from workspase
  *
  *	@param	ws			Workspace structure
+  *	@param	index		Directory index in list
  *
- *	@return	Files number
+ *	@return	Directory
  */
-UTILS_EXPORTED size_t ws_get_files_num(const workspace *const ws);
-
+UTILS_EXPORTED const char *ws_get_dir(const workspace *const ws, const size_t index);
 
 /**
- *	Get directories list from workspase
+ *	Get flag by index from workspase
  *
  *	@param	ws			Workspace structure
+  *	@param	index		Flag index in list
  *
- *	@return	Directories list
+ *	@return	Flag
  */
-UTILS_EXPORTED const char *const *ws_get_dirs_list(const workspace *const ws);
-
-/**
- *	Get directories number from workspase
- *
- *	@param	ws			Workspace structure
- *
- *	@return	Directories number
- */
-UTILS_EXPORTED size_t ws_get_dirs_num(const workspace *const ws);
-
-
-/**
- *	Get flags list from workspase
- *
- *	@param	ws			Workspace structure
- *
- *	@return	Flags list
- */
-UTILS_EXPORTED const char *const *ws_get_flags_list(const workspace *const ws);
-
-/**
- *	Get flags number from workspase
- *
- *	@param	ws			Workspace structure
- *
- *	@return	Flags number
- */
-UTILS_EXPORTED size_t ws_get_flags_num(const workspace *const ws);
+UTILS_EXPORTED const char *ws_get_flag(const workspace *const ws, const size_t index);
 
 
 /**

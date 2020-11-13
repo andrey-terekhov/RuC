@@ -15,6 +15,16 @@
 const char *const default_output = "export.txt";
 
 
+void ws_init(workspace *const ws)
+{
+	ws->files_num = 0;
+	ws->dirs_num = 0;
+	ws->flags_num = 0;
+
+	strcpy(ws->output, default_output);
+	ws->was_error = 0;
+}
+
 void ws_add_error(workspace *const ws)
 {
 	if (ws == NULL)
@@ -27,14 +37,8 @@ void ws_add_error(workspace *const ws)
 
 workspace ws_parse_args(const int argc, const char *const *const argv)
 {
-	workspace ws;// = ws_create();
-
-	ws.files_num = 0;
-	ws.dirs_num = 0;
-	ws.flags_num = 0;
-
-	strcpy(ws.output, default_output);
-	ws.was_error = 0;
+	workspace ws;
+	ws_init(&ws);
 
 	if (argv == NULL)
 	{
@@ -82,14 +86,7 @@ workspace ws_parse_args(const int argc, const char *const *const argv)
 workspace ws_create()
 {
 	workspace ws;
-
-	ws.files_num = 0;
-	ws.dirs_num = 0;
-	ws.flags_num = 0;
-
-	strcpy(ws.output, default_output);
-	ws.was_error = 0;
-
+	ws_init(&ws);
 	return ws;
 }
 
@@ -141,7 +138,7 @@ int ws_add_dir(workspace *const ws, const char *const path)
 	}
 	closedir(dir);*/
 
-	strcpy(ws->files[ws->dirs_num++], path);
+	strcpy(ws->dirs[ws->dirs_num++], path);
 	return 0;
 }
 
@@ -224,36 +221,19 @@ int ws_is_correct(const workspace *const ws)
 }
 
 
-const char *const *ws_get_files_list(const workspace *const ws)
+const char *ws_get_file(const workspace *const ws, const size_t index)
 {
-	return ws_is_correct(ws) ? (const char *const *)(ws->files) : NULL;
+	return ws_is_correct(ws) && index < ws->files_num ? ws->files[index] : NULL;
 }
 
-size_t ws_get_files_num(const workspace *const ws)
+const char *ws_get_dir(const workspace *const ws, const size_t index)
 {
-	return ws_is_correct(ws) ? ws->files_num : 0;
+	return ws_is_correct(ws) && index < ws->dirs_num ? ws->dirs[index] : NULL;
 }
 
-
-const char *const *ws_get_dirs_list(const workspace *const ws)
+const char *ws_get_flag(const workspace *const ws, const size_t index)
 {
-	return ws_is_correct(ws) ? (const char *const *)(ws->dirs) : NULL;
-}
-
-size_t ws_get_dirs_num(const workspace *const ws)
-{
-	return ws_is_correct(ws) ? ws->dirs_num : 0;
-}
-
-
-const char *const *ws_get_flags_list(const workspace *const ws)
-{
-	return ws_is_correct(ws) ? (const char *const *)(ws->flags) : NULL;
-}
-
-size_t ws_get_flags_num(const workspace *const ws)
-{
-	return ws_is_correct(ws) ? ws->flags_num : 0;
+	return ws_is_correct(ws) && index < ws->flags_num ? ws->flags[index] : NULL;
 }
 
 
