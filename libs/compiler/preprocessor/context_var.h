@@ -79,18 +79,13 @@ typedef struct preprocess_context
 	int dipp;
 
 	int line;
-	int control_aflag;
-	int control_bflag;
 
 	int temp_output;
 	data_files *sources;
 	data_files *headers;
 	int h_flag;
 
-	int FILE_flag;
 	FILE *current_file;
-	macro_long_string *before_temp;
-	int before_temp_p;
 	int *current_string;
 	int current_p;
 

@@ -34,8 +34,6 @@
 void update_faile(int old_cur, data_file *cur_f, data_file *old_f, preprocess_context *context)
 {
 	cur_f->pred = old_cur;
-	old_f->line = context->control_bflag;
-	context->control_bflag = 0;
 }
 
 void cur_failes_next(data_files *fs, int old_cur, preprocess_context *context)
@@ -47,40 +45,8 @@ void cur_failes_next(data_files *fs, int old_cur, preprocess_context *context)
 void set_old_cur(data_files *fs, int old, preprocess_context *context)
 {
 	fs->cur = old;
-	context->control_bflag = fs->files[fs->cur].line;
 }
 
-void print_marcer(int p, preprocess_context *context)
-{
-	m_fprintf('#', context);
-	m_fprintf('1', context);
-	int n = 1;
-	int c = 0;
-	while (n * 10 < p)
-	{
-		n *= 10;
-	}
-	while (n != 1)
-	{
-		c = p % n;
-		c = (p - c) / n;
-		p -= c * n;
-		c += '0';
-		m_fprintf(c, context);
-		n /= 10;
-	}
-	p += '0';
-	m_fprintf(p, context);
-	m_fprintf('\n', context);
-}
-
-void print_end_marcer(preprocess_context *context)
-{
-	m_fprintf('\n', context);
-	m_fprintf('#', context);
-	m_fprintf('2', context);
-	m_fprintf('\n', context);
-}
 
 /*char *gen_way(preprocess_context *context, char *cur_way, char *temp_way)
 {
@@ -119,6 +85,16 @@ void print_end_marcer(preprocess_context *context)
 	file_way[i++] = '\0';
 	return file_way;
 }*/
+
+void open_cur_faile(preprocess_context *context, const char *file_way)
+{
+	context->current_file = fopen(file_way, "r");
+	if (context->current_file == NULL)
+	{
+		log_system_error(file_way, "файл не найден");
+		m_error(just_kill_yourself, context);
+	}
+}
 
 int open_p_faile(preprocess_context *context, const char *file_way)
 {
@@ -230,47 +206,24 @@ void file_read(preprocess_context *context)
 		cur = context->sources->cur;
 	}
 
-	print_marcer(cur, context);
-	if (context->FILE_flag)
+	
+	get_next_char(context);
+	if (context->nextchar == EOF)
 	{
-		get_next_char(context);
-		if (context->nextchar == EOF)
-		{
-			context->curchar = EOF;
-		}
-		else
-		{
-			m_nextch(context);
-		}
+		context->curchar = EOF;
 	}
 	else
 	{
-		if (context->current_string != NULL && context->current_p != 0)
-		{
-			context->curchar = context->current_string[0];
-			context->nextchar = context->current_string[1];
-			context->current_p = 2;
-		}
-		else
-		{
-			context->curchar = EOF;
-		}
+		m_nextch(context);
 	}
+	
 
 	while (context->curchar != EOF)
 	{
 		preprocess_scan(context);
 	}
 
-	control_string_pinter(context, context->control_bflag + 1, 1);
-	context->control_bflag = 0;
-
-	print_end_marcer(context);
-
-	if (context->FILE_flag)
-	{
-		include_fclose(context);
-	}
+	include_fclose(context);
 }
 
 void open_file(preprocess_context *context, data_file *f)
@@ -311,24 +264,10 @@ void open_file(preprocess_context *context, data_file *f)
 		}
 	}
 
-	if (h && context->include_type == 0)
+	if (context->include_type == 1 || context->include_type == 2 && !h)
 	{
-		context->before_temp_p = -1;
-	}
-	else if (context->include_type == 1 || context->include_type == 2 && !h)
-	{
-		if (!h)
-		{
-			context->FILE_flag = 1;
-		}
-		fs->files[fs->cur].before_source.p = context->before_temp->p;
-		fs->files[fs->cur].before_source.size = context->before_temp->size;
-
 		cur_failes_next(fs, old_cur, context);
 
-		context->before_temp = &fs->files[fs->cur].before_source;
-		context->before_temp->str = fs->files[fs->cur].before_source.str;
-		context->before_temp->p = 0;
 
 		if (h)
 		{
@@ -350,14 +289,7 @@ void open_file(preprocess_context *context, data_file *f)
 		set_old_cur(fs, old_cur, context);
 
 		fs->i++;
-		context->before_temp->str = fs->files[fs->cur].before_source.str;
-		context->before_temp->p = fs->files[fs->cur].before_source.p;
-		context->before_temp->size = fs->files[fs->cur].before_source.size;
 
-		if (!h)
-		{
-			context->FILE_flag = 0;
-		}
 	}
 	else
 	{

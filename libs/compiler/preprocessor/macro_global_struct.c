@@ -21,42 +21,9 @@
 #include <string.h>
 
 
-void macro_long_string_init(macro_long_string *s)
-{
-	s->size = LONGSTR;
-	s->p = 0;
-	s->str = malloc(s->size * sizeof(int));
-}
-
-void long_string_pinter(macro_long_string *s, int a)
-{
-	if (s->str != NULL)
-	{
-		if (s->p == s->size)
-		{
-			s->size *= 2;
-			int *reallocated = realloc(s->str, s->size * sizeof(int));
-			s->str = reallocated;
-		}
-		s->str[s->p++] = a;
-	}
-}
-
-void macro_long_string_free(macro_long_string *s)
-{
-	free(s->str);
-}
-
-
 void data_file_pinter(data_file *f, FILE *input)
 {
-	f->cs.p = 0;
 	f->include_line = -1;
-
-	macro_long_string_init(&f->before_source);
-	macro_long_string_init(&f->include_source);
-
-	f->include_source.str[0] = 0;
 	f->input = input;
 	f->pred = -1;
 }
@@ -67,9 +34,6 @@ void data_file_free(data_file *f)
 	{
 		free(f->name);
 	}
-
-	macro_long_string_free(&f->before_source);
-	macro_long_string_free(&f->include_source);
 }
 
 void data_files_clear(data_files *fs)
@@ -112,30 +76,4 @@ void data_files_pinter(data_files *s, const char *file_way, FILE *input)
 
 	data_file_pinter(&s->files[s->p], input);
 	s->p++;
-}
-
-void include_source_set(data_files *fs, int temp_p, int p)
-{
-	data_file *f = &fs->files[fs->cur];
-	int *str_i = f->include_source.str;
-	int *str_b = f->before_source.str;
-
-	if (temp_p == -1)
-	{
-		str_b[0] = str_i[p - 1];
-		str_b[1] = '\0';
-		str_i[p - 1] = '\0';
-
-		f->before_source.p = 1;
-	}
-	else
-	{
-		for (int i = 0; i < p - temp_p + 1; i++)
-		{
-			str_b[i] = str_i[temp_p + i - 1];
-		}
-		str_b[p - temp_p + 1] = '\0';
-		str_i[temp_p] = '\0';
-		f->before_source.p = p - temp_p + 1;
-	}
 }

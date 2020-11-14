@@ -45,18 +45,12 @@ void preprocess_context_init(preprocess_context *context, data_files *sources, d
 	context->dipp = 0;
 	context->line = 1;
 	context->temp_output = 0;
-	context->control_aflag = 0;
-	context->control_bflag = 0;
-	context->before_temp_p = -1;
 	context->iwp = 0;
-	context->FILE_flag = 1;
 	context->h_flag = 0;
 	context->current_p = 0;
 
 	context->sources = sources;
 	context->headers = headers;
-
-	context->before_temp = NULL;
 
 	for (int i = 0; i < HASH; i++)
 	{
