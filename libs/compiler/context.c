@@ -15,6 +15,7 @@
  */
 
 #include "global.h"
+#include "logger.h"
 #include <errno.h>
 #include <math.h>
 #include <stdio.h>
@@ -139,11 +140,15 @@ void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_
 		{
 			if (io_type_is_output(type))
 			{
-				fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m %s: %s\n", ptr, strerror(errno));
+				char msg[4 * MAXSTRINGL];
+				sprintf(msg, "%s: %s", ptr, strerror(errno));
+				log_system_error("ruc", msg);
 			}
 			else
 			{
-				fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m %s: No such file or directory\n", ptr);
+				char msg[4 * MAXSTRINGL];
+				sprintf(msg, "%s: No such file or directory\n", ptr);
+				log_system_error("ruc", msg);
 			}
 			exit(1);
 		}
