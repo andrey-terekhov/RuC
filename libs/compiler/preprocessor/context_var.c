@@ -17,6 +17,8 @@
 #include "context_var.h"
 #include "constants.h"
 #include "commenter.h"
+#include "preprocessor_error.h"
+#include "logger.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -131,47 +133,38 @@ int con_file_open(files* fs, preprocess_context *context, int h_flag)
 	if((h_flag && (fs->cur >= fs->begin_h && fs->cur < fs->end_h )) || 
 		!h_flag && fs->cur < fs->begin_h)
 	{
-		printf("!!!!!!!!!!!!!!21\n");
 		fs->cur++;
 		if(!h_flag && fs->cur == fs->main_faile)
 		{
-			printf("!!!!!!!!!!!!!!11\n");
 			fs->cur++;
 		}
 	}
 	else if(fs->end_h <= fs->begin_h)
 	{
-		printf("!!!!!!!!!!!!!!22\n");
 		return 1;
 	}
 	else if(!h_flag)
 	{
-		printf("!!!!!!!!!!!!!!23\n");
 		fs->cur = 0;
 	}
 	else
 	{
-		printf("!!!!!!!!!!!!!!24\n");
 		fs->cur = fs->begin_h;
 	}
 
 	if((h_flag && fs->cur == fs->end_h) || (!h_flag && fs->cur == fs->p_s))
 	{
-		printf("!!!!!!!!!!!!!!25 %d %d %d\n", fs->cur, fs->end_h, fs->p_s);
 		return 1;
 	}
 	
 	
 	context->current_file = fopen(fs->files[fs->cur].name, "r");
 
-
-	printf("!!!!!!!!!!!!!!3 c = %d s = %s\n",fs->cur, fs->files[fs->cur].name);
 	if (context->current_file == NULL)
 	{
 		log_system_error(fs->files[fs->cur].name, "файл не найден");
 		m_error(just_kill_yourself, context);
 	}
-	printf("!!!!!!!!!!!!!!4\n");
 
 	return 0;
 	
@@ -186,7 +179,6 @@ void con_file_it_is_main(files *fs)
 void con_file_it_is_end_h(files *fs)
 {
 	fs->end_h = fs->p;
-	printf("!!!!!!!!!!!!!!9 %d\n", fs->p);
 }
 
 void con_file_close_cur(preprocess_context *context)

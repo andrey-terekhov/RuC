@@ -112,8 +112,7 @@ int open_include_faile(preprocess_context *context, char *temp_way, file *fl, in
 void file_read(preprocess_context *context)
 {
 	int old_line = context->line;
-	context->line = 1; 
-	printf("!!!!!!!!!!!!!!1\n");
+	context->line = 1;
 	get_next_char(context);
 	if (context->nextchar == EOF)
 	{
@@ -123,7 +122,7 @@ void file_read(preprocess_context *context)
 	{
 		m_nextch(context);
 	}
-	printf("!!!!!!!!!!!!!!2\n");
+
 	if(context->curchar != '#')
 	{
 		con_file_print_coment(&context->fs, context);
