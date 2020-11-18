@@ -17,6 +17,7 @@
 #include "context_var.h"
 #include "constants.h"
 #include "commenter.h"
+#include "file.h"
 #include "preprocessor_error.h"
 #include "logger.h"
 #include <stdio.h>
