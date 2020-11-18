@@ -17,7 +17,6 @@
 #pragma once
 
 #include "defs.h"
-#include "macro_global_struct.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
 #include <stdio.h>
@@ -155,8 +154,6 @@ typedef struct compiler_context
 	int new_line_flag;
 
 	int c_flag;
-	data_files cfs;
-	data_files hfs;
 	compiler_table reprtab;
 
 } compiler_context;

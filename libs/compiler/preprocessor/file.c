@@ -216,11 +216,11 @@ void m_nextch(preprocess_context *context)
 			// printf(" i = %d curcar = %c curcar = %i n = %d\n", nextch_type, context->curchar,
 			// context->curchar,context -> nextp);
 
-		/*if(context->curchar == '\n')
-		{
-			add_coment()
-		}*/
-			if (context->curchar == MACROCANGE)
+			if(context->curchar == '\n')
+			{
+				con_file_print_coment(&context->fs, context);
+			}
+			else if (context->curchar == MACROCANGE)
 			{
 				m_nextch_cange(context);
 			}
@@ -257,6 +257,6 @@ void m_nextch(preprocess_context *context)
 		}
 	}
 
-	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", context->nextch_type,
-	// context->curchar, context->curchar, context->nextchar, context->nextchar);
+	 printf("t = %d curchar = %c, %i nextchar = %c, %i \n", context->nextch_type,
+	 context->curchar, context->curchar, context->nextchar, context->nextchar);
 }

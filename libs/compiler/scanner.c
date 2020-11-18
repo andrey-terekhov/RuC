@@ -17,7 +17,6 @@
 #include "context.h"
 #include "errors.h"
 #include "global.h"
-#include "macro_global_struct.h"
 #include "uniscanner.h"
 #include <limits.h>
 #include <math.h>
@@ -169,72 +168,6 @@ int equal(compiler_context *context, int i, int j)
 	return 0;
 }
 
-void marcer_update(compiler_context *context)
-{
-	data_files *files;
-
-	nextch(context);
-
-	if (context->curchar == '1')
-	{
-		nextch(context);
-
-		int c = context->curchar - '0';
-		nextch(context);
-
-		while (digit(context))
-		{
-			c = c * 10 + context->curchar - '0';
-			nextch(context);
-		}
-
-
-		if (c == 0)
-		{
-			context->c_flag++;
-		}
-
-		if (context->c_flag == 1)
-		{
-			files = &context->cfs;
-		}
-		else
-		{
-			files = &context->hfs;
-		}
-
-		files->cur = c;
-		if (files->cur != -1)
-		{
-			(files->files[files->cur]).line = context->line;
-		}
-	}
-	else
-	{
-		if (context->c_flag == 1)
-		{
-			files = &context->cfs;
-		}
-		else
-		{
-			files = &context->hfs;
-		}
-		nextch(context);
-		if ((files->files[files->cur]).pred != -1)
-		{
-			files->cur = (files->files[files->cur]).pred;
-		}
-		if (files->cur != -1)
-		{
-			context->line = (files->files[files->cur]).line;
-		}
-		else
-		{
-			context->line = 0;
-		}
-		nextch(context);
-	}
-}
 
 int scan(compiler_context *context)
 {
@@ -680,11 +613,6 @@ int scan(compiler_context *context)
 		}
 
 		default:
-			if (context->curchar == '#' && (context->nextchar == '1' || context->nextchar == '2'))
-			{
-				marcer_update(context);
-				return scan(context);
-			}
 			if (letter(context) || context->curchar == '#')
 			{
 				int oldrepr = REPRTAB_LEN;

@@ -35,6 +35,9 @@
 #include <string.h>
 #include <wchar.h>
 
+#define H_FILE 1
+#define C_FILE 0
+
 void to_reprtab(char str[], int num, preprocess_context *context)
 {
 	int i;
@@ -127,14 +130,7 @@ void preprocess_words(preprocess_context *context)
 				m_nextch(context);
 			}
 
-			if (!context->h_flag)
-			{
-				include_relis(context, context->sources);
-			}
-			else
-			{
-				include_relis(context, context->headers);
-			}
+			include_relis(context);
 
 			return;
 		}
@@ -221,10 +217,10 @@ void preprocess_scan(preprocess_context *context)
 			{
 				context->prep_flag = 1;
 				preprocess_words(context);
-				/*if(context->curchar == '#')
+				if(context->curchar != '#')
 				{
-					add_coment()
-				}*/
+					con_file_print_coment(&context->fs, context);
+				}
 			}
 			else
 			{
@@ -272,27 +268,16 @@ void preprocess_scan(preprocess_context *context)
 	}
 }
 
-void swap(data_file *f1, data_file *f2)
-{
-	int temp_pred = f1->pred;
-	f1->pred = f2->pred;
-	f2->pred = temp_pred;
-
-	const char *temp_name = f1->name;
-	f1->name = f2->name;
-	f2->name = temp_name;
-}
-
 void add_c_file_siple(preprocess_context *context)
 {
 	context->temp_output = 0;
 
-	while (context->curchar != EOF && context->main_file == -1)
+	while (context->curchar != EOF && context->fs.main_faile == -1)
 	{
 		context->cur = macro_keywords(context);
 		if (context->cur == SH_MAIN)
 		{
-			context->main_file = context->sources->cur;
+			con_file_it_is_main(&context->fs);
 		}
 		m_nextch(context);
 	}
@@ -326,13 +311,7 @@ void add_c_file(preprocess_context *context)
 				context->cur = macro_keywords(context);
 				if (context->cur == SH_INCLUDE)
 				{
-					include_relis(context, context->sources);
-					if (context->h_flag)
-					{
-						context->h_flag = 0;
-						add_c_file_siple(context);
-						return;
-					}
+					include_relis(context);
 					break;
 				}
 			}
@@ -370,10 +349,6 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 		}
 	}
 
-
-	data_files_init(context->sources, number);
-	data_files_init(context->headers, number);
-
 	for (int i = 0; i < number; i++)
 	{
 		int l = strlen(codes[i]);
@@ -384,8 +359,8 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 
 		if (find_file(context, codes[i]))
 		{
-			int old_cur = open_p_faile(context, codes[i]);
-			cur_failes_next(context->sources, old_cur, context);
+			con_files_add_parametrs(&context->fs, codes[i]);
+			con_file_open(&context->fs, context, C_FILE);
 
 			get_next_char(context);
 
@@ -393,56 +368,51 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 			{
 				add_c_file(context);
 			}
-
-			include_fclose(context);
-			set_old_cur(context->sources, old_cur, context);
+			con_file_close_cur(context);
 		}
 	}
+	con_file_it_is_end_h(&context->fs);
 }
 
 void preprocess_h_file(preprocess_context *context)
 {
-	data_files *fs = context->headers;
-	fs->cur++;
 
 	context->h_flag = 1;
 	context->include_type = 1;
+	int stop = 1;
+	stop = con_file_open(&context->fs, context, H_FILE);
 
-	while (fs->cur < fs->p - fs->i)
+	while(!stop)
 	{
-		context->current_file = fs->files[fs->cur].input;
-		context->temp_output = 0;
 		file_read(context);
-		fs->cur++;
+		context->temp_output = 0;
+		stop = con_file_open(&context->fs, context, H_FILE);
 	}
 
-	context->include_type = 2;
-	context->h_flag = 0;
 }
 
 void preprocess_c_file(preprocess_context *context)
 {
-	data_files *fs = context->sources;
-	fs->cur = 0;
+	context->include_type = 2;
+	context->h_flag = 0;
 
-	if (context->main_file != fs->p - 1 && context->main_file != -1)
+	int stop = 1;
+	stop = con_file_open(&context->fs, context, C_FILE);
+
+	while (!stop)
 	{
-		swap(&fs->files[context->main_file], &fs->files[fs->p - 1]);
-	}
-
-	while (fs->cur < fs->p - fs->i)
-	{
-
-		open_cur_faile(context, fs->files[fs->cur].name);
 		file_read(context);
-		fs->cur++;
+		stop = con_file_open(&context->fs, context, C_FILE);
 	}
+	con_file_open_main(&context->fs, context);
+
+	file_read(context);
 }
 
-char *preprocess_file(int argc, const char *argv[], data_files *sources, data_files *headers)
+char *preprocess_file(int argc, const char *argv[])
 {
 	preprocess_context context;
-	preprocess_context_init(&context, sources, headers);
+	preprocess_context_init(&context, argc);
 	printer_attach_buffer(&context.output_options, 1024);
 
 	add_keywods(&context);
@@ -451,7 +421,6 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 	open_files(&context, argc, argv);
 	preprocess_h_file(&context);
 	preprocess_c_file(&context);
-
 	free(context.include_ways);
 
 	char *macro_processed = context.output_options.ptr;
@@ -460,6 +429,8 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 	printf("\n\n");
 	printf("Текст после препроцессирования:\n>\n%s<\n", macro_processed);
 #endif
+
+	con_files_free(&context.fs);
 	return macro_processed;
 }
 

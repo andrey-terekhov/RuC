@@ -18,7 +18,6 @@
 #include "codes.h"
 #include "global.h"
 #include "logger.h"
-#include "macro_global_struct.h"
 #include "scanner.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,7 +46,7 @@ size_t printident(compiler_context *context, int r, char *const msg, size_t inde
 	return index;
 }
 
-void get_tag(compiler_context *context, char *const tag)
+/*void get_tag(compiler_context *context, char *const tag)
 {
 	data_file *file;
 
@@ -61,14 +60,14 @@ void get_tag(compiler_context *context, char *const tag)
 	}
 
 	sprintf(tag, "%s", file->name);
-}
+}*/
 
 void warning(compiler_context *context, int ernum)
 {
 	char tag[MAXSTRINGL];
 	char msg[4 * MAXSTRINGL];
 
-	get_tag(context, tag);
+	//get_tag(context, tag);
 
 	switch (ernum)
 	{
@@ -188,7 +187,7 @@ void error(compiler_context *context, int ernum)
 	char msg[4 * MAXSTRINGL];
 	size_t index = 0;
 
-	get_tag(context, tag);
+	//get_tag(context, tag);
 	
 	context->error_flag = 1;
 	context->tc = context->temp_tc;

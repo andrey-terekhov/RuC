@@ -176,7 +176,7 @@ void m_error(int ernum, preprocess_context *context)
 	else
 	{
 		errors_set(ernum, "macro");
-	}
+	}*/
 
-	exit(2);*/
+	exit(2);
 }
