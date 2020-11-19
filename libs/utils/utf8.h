@@ -41,7 +41,7 @@ extern "C" {
 size_t utf8_symbol_size(const char symbol);
 
 /**
- *	Convert character of string to UTF-8 сharacter
+ *	Convert character from string to UTF-8 сharacter
  *
  *	@param	symbol	Character
  *

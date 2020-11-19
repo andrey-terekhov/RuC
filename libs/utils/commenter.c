@@ -34,7 +34,7 @@ void cmt_parse(comment *const cmt)
 
 	if (cmt->path[i] != SEPARATOR)
 	{
-		cmt->line += line - 1;
+		cmt->line += line - 2;
 		return;
 	}
 	
@@ -135,7 +135,7 @@ comment cmt_search(const char *const code, const size_t position)
 {
 	comment cmt;
 	cmt.path = NULL;
-	cmt.line = 0;
+	cmt.line = 1;
 	cmt.symbol = SIZE_MAX;
 	cmt.code = NULL;
 	
