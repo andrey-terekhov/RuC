@@ -65,5 +65,3 @@ int utf8_is_russian(const char32_t symbol)
 		|| (symbol >= utf8_convert("а") && symbol <= utf8_convert("п"))
 		|| (symbol >= utf8_convert("р") && symbol <= utf8_convert("я"));
 }
-
-

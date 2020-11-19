@@ -8,48 +8,6 @@ const char *const PREFIX = "// #";
 const char SEPARATOR = ' ';
 
 
-comment cmt_create(const char *const path, const size_t line)
-{
-	comment cmt;
-
-	cmt.path = path;
-	cmt.line = line;
-	cmt.symbol = SIZE_MAX;
-	cmt.code = NULL;
-
-	return cmt;
-}
-
-comment cmt_create_macro(const char *const path, const size_t line, const size_t symbol)
-{
-	comment cmt;
-
-	cmt.path = path;
-	cmt.line = line;
-	cmt.symbol = symbol;
-	cmt.code = NULL;
-
-	return cmt;
-}
-
-
-size_t cmt_to_string(const comment *const cmt, char *const buffer)
-{
-	if (!cmt_is_correct(cmt) || buffer == NULL)
-	{
-		return 0;
-	}
-	
-	if (cmt->symbol != SIZE_MAX)
-	{
-		return sprintf(buffer, "%s%c%s%c%zi%c%zi\n", PREFIX, SEPARATOR
-			, cmt->path, SEPARATOR, cmt->line, SEPARATOR, cmt->symbol);
-	}
-
-	return sprintf(buffer, "%s%c%s%c%zi\n", PREFIX, SEPARATOR, cmt->path, SEPARATOR, cmt->line);
-}
-
-
 void cmt_parse(comment *const cmt)
 {
 	size_t i = 0;
@@ -122,6 +80,56 @@ void cmt_reverse(comment *const cmt, const char *const code, const size_t positi
 		cmt_parse(cmt);
 	}
 }
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+*/
+
+comment cmt_create(const char *const path, const size_t line)
+{
+	comment cmt;
+
+	cmt.path = path;
+	cmt.line = line;
+	cmt.symbol = SIZE_MAX;
+	cmt.code = NULL;
+
+	return cmt;
+}
+
+comment cmt_create_macro(const char *const path, const size_t line, const size_t symbol)
+{
+	comment cmt;
+
+	cmt.path = path;
+	cmt.line = line;
+	cmt.symbol = symbol;
+	cmt.code = NULL;
+
+	return cmt;
+}
+
+
+size_t cmt_to_string(const comment *const cmt, char *const buffer)
+{
+	if (!cmt_is_correct(cmt) || buffer == NULL)
+	{
+		return 0;
+	}
+	
+	if (cmt->symbol != SIZE_MAX)
+	{
+		return sprintf(buffer, "%s%c%s%c%zi%c%zi\n", PREFIX, SEPARATOR
+			, cmt->path, SEPARATOR, cmt->line, SEPARATOR, cmt->symbol);
+	}
+
+	return sprintf(buffer, "%s%c%s%c%zi\n", PREFIX, SEPARATOR, cmt->path, SEPARATOR, cmt->line);
+}
+
 
 comment cmt_search(const char *const code, const size_t position)
 {

@@ -111,6 +111,7 @@ void print_msg(const uint8_t color, const char *const msg)
 	set_color(COLOR_DEFAULT);
 }
 
+
 void default_error_log(const char *const tag, const char *const msg)
 {
 	set_color(COLOR_TAG);
@@ -145,40 +146,6 @@ void default_note_log(const char *const tag, const char *const msg)
 }
 
 
-int set_error_log(const logger func)
-{
-	if (func == NULL)
-	{
-		return -1;
-	}
-
-	current_error_log = func;
-	return 0;
-}
-
-int set_warning_log(const logger func)
-{
-	if (func == NULL)
-	{
-		return -1;
-	}
-
-	current_warning_log = func;
-	return 0;
-}
-
-int set_note_log(const logger func)
-{
-	if (func == NULL)
-	{
-		return -1;
-	}
-
-	current_note_log = func;
-	return 0;
-}
-
-
 int check_tag_msg(const char *const tag, const char *const msg)
 {
 	if (tag == NULL || msg == NULL)
@@ -194,36 +161,6 @@ int check_tag_msg(const char *const tag, const char *const msg)
 	}
 
 	return 0;
-}
-
-void log_system_error(const char *const tag, const char *const msg)
-{
-	if (check_tag_msg(tag, msg))
-	{
-		return;
-	}
-	
-	current_error_log(tag, msg);
-}
-
-void log_system_warning(const char *const tag, const char *const msg)
-{
-	if (check_tag_msg(tag, msg))
-	{
-		return;
-	}
-	
-	current_warning_log(tag, msg);
-}
-
-void log_system_note(const char *const tag, const char *const msg)
-{
-	if (check_tag_msg(tag, msg))
-	{
-		return;
-	}
-	
-	current_note_log(tag, msg);
 }
 
 
@@ -284,6 +221,48 @@ void splice(char *const buffer, const char *const msg, const char *const line, c
 	buffer[cur++] = '\0';
 }
 
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+*/
+
+int set_error_log(const logger func)
+{
+	if (func == NULL)
+	{
+		return -1;
+	}
+
+	current_error_log = func;
+	return 0;
+}
+
+int set_warning_log(const logger func)
+{
+	if (func == NULL)
+	{
+		return -1;
+	}
+
+	current_warning_log = func;
+	return 0;
+}
+
+int set_note_log(const logger func)
+{
+	if (func == NULL)
+	{
+		return -1;
+	}
+
+	current_note_log = func;
+	return 0;
+}
+
+
 void log_error(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
 	if (check_tag_msg(tag, msg))
@@ -339,4 +318,35 @@ void log_note(const char *const tag, const char *const msg, const char *const li
 	splice(buffer, msg, line, symbol);
 
 	current_note_log(tag, buffer);
+}
+
+
+void log_system_error(const char *const tag, const char *const msg)
+{
+	if (check_tag_msg(tag, msg))
+	{
+		return;
+	}
+	
+	current_error_log(tag, msg);
+}
+
+void log_system_warning(const char *const tag, const char *const msg)
+{
+	if (check_tag_msg(tag, msg))
+	{
+		return;
+	}
+	
+	current_warning_log(tag, msg);
+}
+
+void log_system_note(const char *const tag, const char *const msg)
+{
+	if (check_tag_msg(tag, msg))
+	{
+		return;
+	}
+	
+	current_note_log(tag, msg);
 }
