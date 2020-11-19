@@ -96,6 +96,22 @@ void nextch(compiler_context *context)
 		return;
 	}
 
+	if (context->curchar == '/' && context->nextchar == '/')
+	{
+		do
+		{
+			onemore(context);
+			if (context->curchar == EOF)
+			{
+				endnl(context);
+				printer_printf(&context->output_options, "\n");
+				return;
+			}
+		} while (context->curchar != '\n');
+		endnl(context);
+		return;
+	}
+	
 	if (context->kw && context->curchar == '\n')
 	{
 		context->temp_tc = context->tc;
