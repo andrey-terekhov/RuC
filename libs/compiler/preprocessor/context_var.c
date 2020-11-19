@@ -64,8 +64,17 @@ void preprocess_context_init(preprocess_context *context, int num)
 
 void con_file_add(file *f, const char *name, int cnost_name)
 {
-	f->name = name;
 	f->const_name = cnost_name;
+	if(cnost_name)
+	{
+		f->name = name;
+	}
+	else
+	{
+		f->name = malloc((strlen(name) + 1) * sizeof(char));
+		strcpy(f->name, name);
+	}
+	
 }
 
 void con_file_free(file *f )
@@ -147,6 +156,10 @@ int con_file_open(files* fs, preprocess_context *context, int h_flag)
 	else if(!h_flag)
 	{
 		fs->cur = 0;
+		if(fs->cur == fs->main_faile)
+		{
+			fs->cur++;
+		}
 	}
 	else
 	{
@@ -157,8 +170,7 @@ int con_file_open(files* fs, preprocess_context *context, int h_flag)
 	{
 		return 1;
 	}
-	
-	
+
 	context->current_file = fopen(fs->files[fs->cur].name, "r");
 
 	if (context->current_file == NULL)
@@ -174,7 +186,7 @@ int con_file_open(files* fs, preprocess_context *context, int h_flag)
 
 void con_file_it_is_main(files *fs)
 {
-	fs->main_faile = fs->p_s - 1;
+	fs->main_faile = fs->cur;
 }
 
 void con_file_it_is_end_h(files *fs)

@@ -112,8 +112,16 @@ int open_include_faile(preprocess_context *context, char *temp_way, file *fl, in
 void file_read(preprocess_context *context)
 {
 	int old_line = context->line;
-	context->line = 1;
+	context->line = 2;
+
 	get_next_char(context);
+
+	if(context->nextchar != '#')
+	{
+		con_file_print_coment(&context->fs, context);
+	}
+	context->line = 1;
+
 	if (context->nextchar == EOF)
 	{
 		context->curchar = EOF;
@@ -123,16 +131,11 @@ void file_read(preprocess_context *context)
 		m_nextch(context);
 	}
 
-	if(context->curchar != '#')
-	{
-		con_file_print_coment(&context->fs, context);
-	}
-
 	while (context->curchar != EOF)
 	{
 		preprocess_scan(context);
 	}
-
+	m_fprintf('\n', context);
 	con_file_close_cur(context);
 	context->line = old_line;
 }
@@ -161,24 +164,21 @@ void open_file(preprocess_context *context)
 
 	int old_cur = context->fs.cur;
 	FILE* file_old = context->current_file;
-	
-	if (h || context->include_type != 0)
+	if ((h && context->include_type != 2) || (!h && context->include_type != 0))
 	{
-		int i = open_include_faile(context, temp_way, &context->fs.files[context->fs.cur], h);
-		if (i == -2)
+		int k = open_include_faile(context, temp_way, &context->fs.files[context->fs.cur], h);
+		if (k == -2)
 		{
 			return;
 		}
 	}
-
 	if (context->include_type == 1 || context->include_type == 2 && !h)
 	{
-
+		
 		if (!h && context->nextch_type != FILETYPE)
 		{
 			m_change_nextch_type(FILETYPE, 0, context);
 		}
-
 		file_read(context);
 
 		if (!h && context->dipp != 0)
@@ -186,17 +186,7 @@ void open_file(preprocess_context *context)
 			m_old_nextch_type(context);
 		}
 	}
-	else
-	{
-		if (h)
-		{
-			m_error(25, context);
-		}
-		else
-		{
-			context->h_flag = 1;
-		}
-	}
+
 	context->fs.cur = old_cur;
 	context->current_file = file_old;
 }
