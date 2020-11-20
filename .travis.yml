@@ -16,4 +16,4 @@ matrix:
       dist: xenial
 
 script:
-  - ./scripts/test.sh -v v1.1 -d
+  - ./scripts/test.sh -v v1.1
