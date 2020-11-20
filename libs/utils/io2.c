@@ -1,82 +1,152 @@
 #include "io2.h"
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 
-size_t percent(universal_io *const io, const char *const format, va_list *args)
-{
-	/*switch (format[i])
-		{
-			case '%':
-			{
-				i += percent(io, &format[i + 1], &local);
-			}
-			break;
+#define FORMAT_BUFFER_SIZE 128
 
-			case ' ':
-			case '\t':
-			case '\r':
-			case '\n':
-			{
-				while (io->in_buffer[io->in_position] == ' '
-					|| io->in_buffer[io->in_position] == '\t'
-					|| io->in_buffer[io->in_position] == '\r'
-					|| io->in_buffer[io->in_position] == '\n')
+
+int is_specifier(const char ch)
+{
+	return (ch >= '0' && ch <= '9')
+		|| ch == 'h' || ch == 'l'
+		|| ch == 'j' || ch == 'z' 
+		|| ch == 't' || ch == 'L'
+		|| ch == '.';
+}
+
+int is_integer(const char ch)
+{
+	return ch == 'd' || ch == 'i';
+}
+
+int is_unsigned(const char ch)
+{
+	return ch == 'u' || ch == 'o'
+		|| ch == 'x' || ch == 'X';
+}
+
+int is_floating(const char ch)
+{
+	return ch == 'f' || ch == 'F'
+		|| ch == 'e' || ch == 'E'
+		|| ch == 'g' || ch == 'G'
+		|| ch == 'a' || ch == 'A';
+}
+
+int is_characters(const char ch)
+{
+	return ch == 'c' || ch == 'C'
+		|| ch == 's' || ch == 'S'
+		|| ch == '[';
+}
+
+int is_pointer(const char ch)
+{
+	return ch == 'p';
+}
+
+int is_count(const char ch)
+{
+	return ch == 'n';
+}
+
+
+void scan_arg(universal_io *const io, const size_t position, const char *const format, size_t size, void *arg)
+{
+	char buffer[FORMAT_BUFFER_SIZE];
+		
+	for (size_t i = 0; i < size; i++)
+	{
+		buffer[i] = format[i];
+	}
+
+	buffer[size] = '%';
+	buffer[size + 1] = 'n';
+	buffer[size + 2] = '\0';
+
+	int number = 0;
+	sscanf(io->in_buffer, buffer, arg, &number);
+	io->in_position += number;
+
+	if (is_count(format[size - 1]))
+	{
+		*(int *)arg = io->in_position - position;
+		/*switch (format[size - 2])
+		{
+			case 'h':
+				if (format[size - 3] == 'h')
 				{
-					io->in_position++;
+					arg = (void *)va_arg(*args, signed char *);
 				}
-			}
-			break;
-		}	
-		*/
-	return 0;
+				else
+				{
+					arg = (void *)va_arg(*args, short int *);
+				}
+				break;
+			case 'l':
+				if (format[size - 3] == 'l')
+				{
+					arg = (void *)va_arg(*args, long long int *);
+				}
+				else
+				{
+					arg = (void *)va_arg(*args, long int *);
+				}
+				break;
+			case 'j':
+				arg = (void *)va_arg(*args, intmax_t *);
+				//arg = (void *)va_arg(*args, int *);
+				break;
+			case 'z':
+				arg = (void *)va_arg(*args, size_t *);
+				break;
+			case 't':
+				arg = (void *)va_arg(*args, ptrdiff_t *);
+				break;
+			default:
+				arg = (void *)va_arg(*args, int *);
+		}*/
+	}
 }
 
 int in_func_buffer(universal_io *const io, const char *const format, va_list args)
 {
-	va_list local;
-	va_copy(local, args);
+	const size_t position = io->in_position;
+	int ret = 0;
 
-	int ret = vsscanf(io->in_buffer, format, args);
-	
-	for (size_t i = 0; format[i] != '\0'; i++)
+	size_t last = 0;
+	size_t i = 0;
+	while (format[i] != '\0')
 	{
-		switch (format[i])
+		if (format[i] == '%')
 		{
-			case '%':
+			while (is_specifier(format[i + 1]) || is_integer(format[i + 1]) || is_unsigned(format[i + 1])
+				|| is_floating(format[i + 1]) || is_characters(format[i + 1]) || is_pointer(format[i + 1])
+				|| is_count(format[i + 1]))
 			{
-				i += percent(io, &format[i + 1], &local);
-			}
-			break;
-
-			case ' ':
-			case '\t':
-			case '\r':
-			case '\n':
-			{
-				while (io->in_buffer[io->in_position] == ' '
-					|| io->in_buffer[io->in_position] == '\t'
-					|| io->in_buffer[io->in_position] == '\r'
-					|| io->in_buffer[io->in_position] == '\n')
+				i++;
+				if (format[i] == '[')
 				{
-					io->in_position++;
+					while (format[i + 1] != '\0' && format[i] != '\\' && format[i + 1] != ']')
+					{
+						i++;
+					}
 				}
 			}
-			break;
-			
-			default:
-			{
-				if (io->in_buffer[io->in_position] != format[i])
-				{
-					return ret;
-				}
 
-				io->in_position++;
+			if (format[i] != '%' && !is_specifier(format[i]))
+			{
+				scan_arg(io, position, &format[last], i + 1, va_arg(args, void *));
+				last = i + 1;
 			}
 		}
+
+		i++;
 	}
-		
+
 	return ret;
 }
 
@@ -134,7 +204,7 @@ int in_set_file(universal_io *const io, const char *const path)
 		return -1;
 	}
 
-	io->in_file = path;
+	//io->in_file = path;
 
 	return 0;
 }
