@@ -43,6 +43,14 @@ int equal_reprtab(int i, int j, preprocess_context *context)
 	return 0;
 }
 
+void output_keywods(preprocess_context *context)
+{
+	for (int j = 0; j < context->reprtab[context->rp]; j++)
+	{
+		m_fprintf(context->reprtab[context->rp + 2 + j], context);
+	}
+}
+
 int is_letter(preprocess_context *context)
 {
 	return (context->curchar >= 'A' && context->curchar <= 'Z') ||

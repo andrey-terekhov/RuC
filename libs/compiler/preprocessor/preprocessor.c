@@ -105,14 +105,6 @@ void add_keywods(preprocess_context *context)
 	to_reprtab_full("#INCLUDE", "#include", "#ДОБАВИТЬ", "#добавить", SH_INCLUDE, context);
 }
 
-void output_keywods(preprocess_context *context)
-{
-	for (int j = 0; j < context->reprtab[context->rp]; j++)
-	{
-		m_fprintf(context->reprtab[context->rp + 2 + j], context);
-	}
-}
-
 void preprocess_words(preprocess_context *context)
 {
 	/*if (context->curchar != '(')
