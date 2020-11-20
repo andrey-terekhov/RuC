@@ -26,11 +26,16 @@
 extern "C" {
 #endif
 
+typedef struct universal_io universal_io;
+
+
 /**
  *	Prototype of user input/output function
  *
  *	@param	format		String format
  *	@param	args		Variadic argument list
+ *
+ *	@return	Return printf/scanf-like value
  */
 typedef int (*io_user_func)(const char *const format, va_list args);
 
@@ -40,12 +45,14 @@ typedef int (*io_user_func)(const char *const format, va_list args);
  *	@param	io			Universal io structure
  *	@param	format		String format
  *	@param	args		Variadic argument list
+ *
+ *	@return	Return printf/scanf-like value
  */
 typedef int (*io_func)(universal_io *const io, const char *const format, va_list args);
 
 
 /** Input and output settings */
-typedef struct universal_io
+struct universal_io
 {
 	FILE *in_file;				/** Input file */
 	const char *in_buffer;		/** Input buffer */
@@ -64,7 +71,7 @@ typedef struct universal_io
 
 	io_user_func out_user_func;	/** Output user function */
 	io_func out_func;			/** Current output function */
-} universal_io;
+};
 
 
 /**
