@@ -419,9 +419,13 @@ char *preprocess_file(int argc, const char *argv[])
 	add_keywods(&context);
 
 	context.mfirstrp = context.rp;
+	printf("!!!!!!!!!!!!!!1\n");
 	open_files(&context, argc, argv);
+	printf("!!!!!!!!!!!!!!2\n");
 	preprocess_h_file(&context);
+	printf("!!!!!!!!!!!!!!3\n");
 	preprocess_c_file(&context);
+	printf("!!!!!!!!!!!!!!4\n");
 
 	free(context.include_ways);
 

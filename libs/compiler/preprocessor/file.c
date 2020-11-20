@@ -258,6 +258,6 @@ void m_nextch(preprocess_context *context)
 		}
 	}
 
-	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", context->nextch_type,
-	// context->curchar, context->curchar, context->nextchar, context->nextchar);
+	 printf("t = %d curchar = %c, %i nextchar = %c, %i \n", context->nextch_type,
+	 context->curchar, context->curchar, context->nextchar, context->nextchar);
 }
