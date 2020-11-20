@@ -90,6 +90,7 @@ void m_old_nextch_type(preprocess_context *context)
 void end_line(preprocess_context *context)
 {
 	context->line++; //!!
+	printf("!!!new_line = %d!!!\n", context->line - 1);
 
 /*#if MACRODEBUG
 	if (context->line == 2)

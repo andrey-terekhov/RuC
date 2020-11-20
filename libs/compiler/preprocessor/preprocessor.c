@@ -360,7 +360,7 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 		if (find_file(context, codes[i]))
 		{
 			con_files_add_parametrs(&context->fs, codes[i]);
-			con_file_open(&context->fs, context, C_FILE);
+			con_file_open_next(&context->fs, context, C_FILE);
 
 			get_next_char(context);
 
@@ -376,37 +376,38 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 
 void preprocess_h_file(preprocess_context *context)
 {
-
 	context->h_flag = 1;
 	context->include_type = 1;
-	int stop = 1;
-	stop = con_file_open(&context->fs, context, H_FILE);
 
-	while(!stop)
+	if(con_file_open_hedrs(&context->fs, context))
 	{
 		file_read(context);
-		context->temp_output = 0;
-		stop = con_file_open(&context->fs, context, H_FILE);
-	}
 
+		while (con_file_open_next(&context->fs, context, C_FILE))
+		{
+			file_read(context);
+		}
+	}
 }
 
 void preprocess_c_file(preprocess_context *context)
 {
 	context->include_type = 2;
 	context->h_flag = 0;
-
-	int stop = 1;
-	stop = con_file_open(&context->fs, context, C_FILE);
-
-	while (!stop)
+	if(con_file_open_sorse(&context->fs, context))
 	{
 		file_read(context);
-		stop = con_file_open(&context->fs, context, C_FILE);
-	}
-	con_file_open_main(&context->fs, context);
 
-	file_read(context);
+		while (con_file_open_next(&context->fs, context, C_FILE))
+		{
+			file_read(context);
+		}
+	}
+
+	if(con_file_open_main(&context->fs, context))
+	{
+		file_read(context);
+	}
 }
 
 char *preprocess_file(int argc, const char *argv[])
@@ -421,6 +422,7 @@ char *preprocess_file(int argc, const char *argv[])
 	open_files(&context, argc, argv);
 	preprocess_h_file(&context);
 	preprocess_c_file(&context);
+
 	free(context.include_ways);
 
 	char *macro_processed = context.output_options.ptr;

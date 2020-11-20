@@ -121,8 +121,10 @@ void con_files_add_parametrs(files* fs, const char *name);
 void con_files_add_include(files* fs, const char *name);
 void con_files_free(files *fs);
 
-void con_file_open_main(files* fs, preprocess_context *context);
-int con_file_open(files* fs, preprocess_context *context, int h_flag);
+int con_file_open_main(files* fs, preprocess_context *context);
+int con_file_open_sorse(files* fs, preprocess_context *context);
+int con_file_open_hedrs(files* fs, preprocess_context *context);
+int con_file_open_next(files* fs, preprocess_context *context, int h_flag);
 void con_file_close_cur(preprocess_context *context);
 
 void con_file_it_is_main(files *fs);

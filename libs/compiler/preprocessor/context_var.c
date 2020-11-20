@@ -127,50 +127,8 @@ void con_files_free(files *fs)
 	free(fs->files);
 }
 
-void con_file_open_main(files* fs, preprocess_context *context)
+void con_file_open_cur(files* fs, preprocess_context *context)
 {
-   fs->cur = fs->main_faile;
-   context->current_file = fopen(fs->files[fs->cur].name, "r");
-   	if (context->current_file == NULL)
-	{
-		log_system_error(fs->files[fs->cur].name, "файл не найден");
-		m_error(just_kill_yourself, context);
-	}
-}
-
-int con_file_open(files* fs, preprocess_context *context, int h_flag)
-{
-	if((h_flag && (fs->cur >= fs->begin_h && fs->cur < fs->end_h )) || 
-		!h_flag && fs->cur < fs->begin_h)
-	{
-		fs->cur++;
-		if(!h_flag && fs->cur == fs->main_faile)
-		{
-			fs->cur++;
-		}
-	}
-	else if(fs->end_h <= fs->begin_h)
-	{
-		return 1;
-	}
-	else if(!h_flag)
-	{
-		fs->cur = 0;
-		if(fs->cur == fs->main_faile)
-		{
-			fs->cur++;
-		}
-	}
-	else
-	{
-		fs->cur = fs->begin_h;
-	}
-
-	if((h_flag && fs->cur == fs->end_h) || (!h_flag && fs->cur == fs->p_s))
-	{
-		return 1;
-	}
-
 	context->current_file = fopen(fs->files[fs->cur].name, "r");
 
 	if (context->current_file == NULL)
@@ -178,10 +136,82 @@ int con_file_open(files* fs, preprocess_context *context, int h_flag)
 		log_system_error(fs->files[fs->cur].name, "файл не найден");
 		m_error(just_kill_yourself, context);
 	}
+}
 
-	return 0;
+int con_file_open_main(files* fs, preprocess_context *context)
+{	
+	
+	if(fs->main_faile == -1)
+	{
+		return 0;
+	}
+
+	fs->cur = fs->main_faile;
+
+	con_file_open_cur(&context->fs, context);
+
+	return 1;
+}
+
+int con_file_open_sorse(files* fs, preprocess_context *context)
+{
+	fs->cur = 0;
+	if(fs->cur == fs->main_faile)
+	{
+		fs->cur++;
+	}
+
+	if(fs->cur == fs->p_s)
+	{
+		return 0;
+	}
+
+	con_file_open_cur(&context->fs, context);
+
+	return 1;
+}
+
+int con_file_open_hedrs(files* fs, preprocess_context *context)
+{
+	if( fs->end_h > fs->begin_h)
+	{
+		fs->cur = fs->begin_h;
+	}
+	else
+	{
+		return 0;
+	}
 	
 
+	con_file_open_cur(&context->fs, context);
+
+	return 1;
+}
+
+int con_file_open_next(files* fs, preprocess_context *context, int h_flag)
+{
+	if((h_flag && (fs->cur >= fs->begin_h && fs->cur < fs->end_h )) || 
+		!h_flag && fs->cur < fs->begin_h && fs->cur < fs->p_s - 1)
+	{
+		fs->cur++;
+		if(!h_flag && fs->cur == fs->main_faile)
+		{
+			fs->cur++;
+		}
+	}
+	else
+	{
+		return 0;
+	}
+	
+	if((h_flag && fs->cur == fs->end_h) || (!h_flag && fs->cur == fs->p_s))
+	{
+		return 0;
+	}
+
+	con_file_open_cur(&context->fs, context);
+
+	return 1;
 }
 
 void con_file_it_is_main(files *fs)
