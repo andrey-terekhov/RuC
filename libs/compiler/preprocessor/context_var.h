@@ -40,7 +40,7 @@ typedef struct files
 	int p_s;
 	int cur;
 	int size;
-	int begin_h;
+	int begin_f;
 	int end_h;
 } files;
 

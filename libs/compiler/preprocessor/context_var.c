@@ -98,7 +98,7 @@ void con_files_init(files *fs, int num)
 	fs->main_faile = -1;
 	fs->cur = -1;
 
-	fs->begin_h = num + 1;
+	fs->begin_f = num + 1;
 }
 
 void con_files_add_parametrs(files* fs, const char *name)
@@ -122,10 +122,13 @@ void con_files_add_include(files* fs, const char *name)
 void con_files_free(files *fs)
 {
 	printf("!!!!!!!!!!!!!!5\n");
-	for (int i = 0; i < fs->p; i++)
+	for (int i = fs->begin_f; i < fs->p; i++)
 	{
 		printf("!!!!!!!!!!!!!!6\n");
-		con_file_free(&fs->files[i]);
+		if(fs->files[i].name != NULL)
+		{
+			con_file_free(&fs->files[i]);
+		}
 	}
 	printf("!!!!!!!!!!!!!!10\n");
 	free(fs->files);
@@ -178,9 +181,9 @@ int con_file_open_sorse(files* fs, preprocess_context *context)
 
 int con_file_open_hedrs(files* fs, preprocess_context *context)
 {
-	if( fs->end_h > fs->begin_h)
+	if( fs->end_h > fs->begin_f)
 	{
-		fs->cur = fs->begin_h;
+		fs->cur = fs->begin_f;
 	}
 	else
 	{
@@ -195,8 +198,8 @@ int con_file_open_hedrs(files* fs, preprocess_context *context)
 
 int con_file_open_next(files* fs, preprocess_context *context, int h_flag)
 {
-	if((h_flag && (fs->cur >= fs->begin_h && fs->cur < fs->end_h )) || 
-		!h_flag && fs->cur < fs->begin_h && fs->cur < fs->p_s - 1)
+	if((h_flag && (fs->cur >= fs->begin_f && fs->cur < fs->end_h )) || 
+		!h_flag && fs->cur < fs->begin_f && fs->cur < fs->p_s - 1)
 	{
 		fs->cur++;
 		if(!h_flag && fs->cur == fs->main_faile)
