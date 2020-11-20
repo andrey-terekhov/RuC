@@ -125,7 +125,7 @@ void con_files_free(files *fs)
 	for (int i = fs->begin_f; i < fs->p; i++)
 	{
 		printf("!!!!!!!!!!!!!!6\n");
-		if(fs->files[i].name != NULL)
+		if(&fs->files[i] != NULL && fs->files[i].name != NULL)
 		{
 			con_file_free(&fs->files[i]);
 		}

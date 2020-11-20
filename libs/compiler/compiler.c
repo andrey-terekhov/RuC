@@ -81,7 +81,7 @@ char *preprocess_ruc_file(compiler_context *context, const workspace *const ws)
 		free(argv[i]);
 	}
 	free(argv);
-
+	printf("!!!!!!!!!!!!!!-1\n");
 	return result;
 }
 
@@ -117,17 +117,20 @@ static void process_user_requests(compiler_context *context, const workspace *co
 		log_system_error("ruc", "не удалось выделить память для макрогенератора");
 		exit(1);
 	}
-
+	printf("!!!!!!!!!!!!!!-2\n");
 	compiler_context_detach_io(context, IO_TYPE_OUTPUT);
 	compiler_context_detach_io(context, IO_TYPE_INPUT);
-
+	printf("!!!!!!!!!!!!!!-3\n");
 	compiler_context_attach_io(context, macro_processed, IO_TYPE_INPUT, IO_SOURCE_MEM);
 	output_tables_and_tree(context, tree_path);
+	printf("!!!!!!!!!!!!!!-4\n");
 	if (!context->error_flag)
 	{
 		output_codes(context, codes_path);
+		printf("!!!!!!!!!!!!!!-5\n");
 	}
 	compiler_context_detach_io(context, IO_TYPE_INPUT);
+	printf("!!!!!!!!!!!!!!-6\n");
 
 	/* Will be left for debugging in case of failure */
 #if !defined(FILE_DEBUG) && !defined(_MSC_VER)
@@ -140,6 +143,7 @@ static void process_user_requests(compiler_context *context, const workspace *co
 #endif
 
 	output_export(context, ws_get_output(ws));
+	printf("!!!!!!!!!!!!!!-7\n");
 }
 
 int compile_to_vm(const workspace *const ws)

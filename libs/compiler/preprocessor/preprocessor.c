@@ -436,7 +436,7 @@ char *preprocess_file(int argc, const char *argv[])
 	printf("\n\n");
 	printf("Текст после препроцессирования:\n>\n%s<\n", macro_processed);
 #endif
-
+	printf("!!!!!!!!!!!!!!-0\n");
 	return macro_processed;
 }
 
