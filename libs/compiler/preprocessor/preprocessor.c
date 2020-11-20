@@ -125,13 +125,7 @@ void preprocess_words(preprocess_context *context)
 	{
 		case SH_INCLUDE:
 		{
-			if (context->curchar != '\"')
-			{
-				m_nextch(context);
-			}
-
 			include_relis(context);
-
 			return;
 		}
 		case SH_DEFINE:

@@ -198,9 +198,12 @@ void include_relis(preprocess_context *context)
 
 	if (context->curchar != '\"')
 	{
-		m_error(26, context);
+		if(context->include_type > 0)
+		output_keywods(context);
+		return;
 	}
 	m_nextch(context);
+	printf("!!!!!!!!!!!!!!04\n");
 	open_file(context);
 	m_nextch(context);
 

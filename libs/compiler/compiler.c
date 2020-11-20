@@ -172,9 +172,9 @@ int compile_to_vm(const workspace *const ws)
 	process_user_requests(context, ws);
 
 	int ret = get_exit_code(context);
+	printf("!!!!!!!!!!!!!!-8\n");
 	compiler_context_deinit(context);
 	free(context);
-
 	return ret;
 }
 
