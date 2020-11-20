@@ -26,22 +26,22 @@ extern "C" {
 #endif
 
 /**
- *	Parse command line arguments
+ *	Universal printf-like function
  *
- *	@param	io			Command line arguments
- *	@param	format		Command line arguments
+ *	@param	io			Universal io structure
+ *	@param	format		String format
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Return printf-like value
  */
 UTILS_EXPORTED int uni_printf(universal_io *const io, const char *const format, ...);
 
 /**
- *	Parse command line arguments
+ *	Universal function for printing UTF-8 characters
  *
- *	@param	io			Command line arguments
- *	@param	wchar		Command line arguments
+ *	@param	io			Universal io structure
+ *	@param	wchar		UTF-8 character
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Return printf-like value
  */
 UTILS_EXPORTED int uni_print_char(universal_io *const io, const char32_t wchar);
 

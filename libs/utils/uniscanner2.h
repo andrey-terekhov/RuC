@@ -26,21 +26,21 @@ extern "C" {
 #endif
 
 /**
- *	Parse command line arguments
+ *	Universal scanf-like function
  *
- *	@param	io			Command line arguments
- *	@param	format		Command line arguments
+ *	@param	io			Universal io structure
+ *	@param	format		String format
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Return scanf-like value
  */
 UTILS_EXPORTED int uni_scanf(universal_io *const io, const char *const format, ...);
 
 /**
- *	Parse command line arguments
+ *	Universal function for scanning UTF-8 characters
  *
- *	@param	io			Command line arguments
+ *	@param	io			Universal io structure
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	UTF-8 character
  */
 UTILS_EXPORTED char32_t uni_scan_char(universal_io *const io);
 

@@ -7,7 +7,8 @@
  *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
  *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
  *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
-*/
+ */
+
 
 universal_io io_create()
 {
@@ -85,10 +86,10 @@ int out_set_file(universal_io *const io, const char *const path)
 	return 0;
 }
 
-int out_set_buffer(universal_io *const io, const char *const buffer)
+int out_set_buffer(universal_io *const io, const size_t size)
 {
 	return 0;
-}	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+}
 
 int out_set_func(universal_io *const io, const io_user_func func)
 {

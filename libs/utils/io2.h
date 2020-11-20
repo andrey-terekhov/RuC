@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <stddef.h>
+#include "utf8.h"
 #include "utils_internal.h"
 
 
@@ -26,42 +27,43 @@ extern "C" {
 #endif
 
 /**
- *	Prototype of user function
+ *	Prototype of user input/output function
  *
- *	@param	format		
- *	@param	args		List of arguments
+ *	@param	format		String format
+ *	@param	args		Variadic argument list
  */
 typedef int (*io_user_func)(const char *const format, va_list args);
 
 /**
- *	Prototype of function
+ *	Prototype of input/output function
  *
- *	@param	format		
- *	@param	args		List of arguments
+ *	@param	io			Universal io structure
+ *	@param	format		String format
+ *	@param	args		Variadic argument list
  */
-typedef int (*io_func)(const char *const format, va_list args);
+typedef int (*io_func)(universal_io *const io, const char *const format, va_list args);
 
 
-/** Structure for parsing start arguments of program */
+/** Input and output settings */
 typedef struct universal_io
 {
-	FILE *in_file;				/** Input file path */
+	FILE *in_file;				/** Input file */
 	const char *in_buffer;		/** Input buffer */
 
-	size_t in_size;				/**  */
-	size_t in_position;			/**  */
+	size_t in_size;				/** Size of input buffer */
+	size_t in_position;			/** Current position of input buffer */
 
-	io_user_func in_user_func;	/**  */
-	io_func in_func;			/**  */
+	io_user_func in_user_func;	/** Input user function */
+	io_func in_func;			/** Current input function */
 
-	FILE *out_file;				/**  */
-	char *out_buffer;			/**  */
+	FILE *out_file;				/** Output file */
+	char *out_buffer;			/** Output buffer */
 
-	size_t out_size;			/**  */
-	size_t out_position;		/**  */
+	size_t out_size;			/** Size of output buffer */
+	size_t out_position;		/** Current position of output buffer */
 
-	io_user_func out_user_func;	/**  */
-	io_func out_func;			/**  */
+	io_user_func out_user_func;	/** Output user function */
+	io_func out_func;			/** Current output function */
 } universal_io;
 
 
@@ -105,7 +107,7 @@ UTILS_EXPORTED int in_set_func(universal_io *const io, const io_user_func func);
 
 
 /**
- *	Check that in_file is file
+ *	Check that current input option is file
  *
  *	@param	io			Universal io structure
  *
@@ -114,7 +116,7 @@ UTILS_EXPORTED int in_set_func(universal_io *const io, const io_user_func func);
 UTILS_EXPORTED int in_is_file(const universal_io *const io);
 
 /**
- *	Check that in_buffer is buffer
+ *	Check that current input option is buffer
  *
  *	@param	io			Universal io structure
  *
@@ -123,7 +125,7 @@ UTILS_EXPORTED int in_is_file(const universal_io *const io);
 UTILS_EXPORTED int in_is_buffer(const universal_io *const io);
 
 /**
- *	Check that in_func is function
+ *	Check that current input option is function
  *
  *	@param	io			Universal io structure
  *
@@ -145,7 +147,7 @@ UTILS_EXPORTED io_func in_get_func(const universal_io *const io);
  *	Get input file path from universal io structure
  *
  *	@param	io			Universal io structure
- *	@param	buffer		Buffer to return
+ *	@param	buffer		Buffer to return file path
  *
  *	@return	Size of buffer
  */
@@ -165,7 +167,7 @@ UTILS_EXPORTED const char *in_get_buffer(const universal_io *const io);
  *
  *	@param	io			Universal io structure
  *
- *	@return	input position
+ *	@return	Input position
  */
 UTILS_EXPORTED size_t in_get_position(const universal_io *const io);
 
@@ -180,7 +182,7 @@ UTILS_EXPORTED size_t in_get_position(const universal_io *const io);
 UTILS_EXPORTED int in_close_file(universal_io *const io);
 
 /**
- *	Clear input
+ *	Clear all input parameters
  *
  *	@param	io			Universal io structure
  *
@@ -207,7 +209,7 @@ UTILS_EXPORTED int out_set_file(universal_io *const io, const char *const path);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int out_set_buffer(universal_io *const io, const char *const buffer);	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+UTILS_EXPORTED int out_set_buffer(universal_io *const io, const size_t size);
 
 /**
  *	Set output function
@@ -221,7 +223,7 @@ UTILS_EXPORTED int out_set_func(universal_io *const io, const io_user_func func)
 
 
 /**
- *	Chek that out_file is file
+ *	Check that current output option is file
  *
  *	@param	io			Universal io structure
  *
@@ -230,7 +232,7 @@ UTILS_EXPORTED int out_set_func(universal_io *const io, const io_user_func func)
 UTILS_EXPORTED int out_is_file(const universal_io *const io);
 
 /**
- *	Chek that out_buffer is buffer
+ *	Check that current output option is buffer
  *
  *	@param	io			Universal io structure
  *
@@ -239,7 +241,7 @@ UTILS_EXPORTED int out_is_file(const universal_io *const io);
 UTILS_EXPORTED int out_is_buffer(const universal_io *const io);
 
 /**
- *	Chek that out_func is function
+ *	Check that current output option is function
  *
  *	@param	io			Universal io structure
  *
@@ -273,7 +275,7 @@ UTILS_EXPORTED size_t out_get_path(const universal_io *const io, char *const buf
  *
  *	@param	io		Command line arguments
  *
- *	@return	Output buffer
+ *	@return	Output buffer (need to use @c free() function)
  */
 UTILS_EXPORTED char *out_extract_buffer(universal_io *const io);
 
@@ -287,7 +289,7 @@ UTILS_EXPORTED char *out_extract_buffer(universal_io *const io);
 UTILS_EXPORTED int out_close_file(universal_io *const io);
 
 /**
- *	Clear output 
+ *	Clear all output parameters
  *
  *	@param	io			Universal io structure
  *
