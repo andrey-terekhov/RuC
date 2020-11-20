@@ -81,10 +81,8 @@ void con_file_free(file *f )
 {
 	if (!f->const_name)
 	{
-		printf("!!!!!!!!!!!!!!7\n");
 		free(f->name);
 	}
-	printf("!!!!!!!!!!!!!!8\n");
 }
 
 void con_files_init(files *fs, int num)
@@ -121,18 +119,14 @@ void con_files_add_include(files* fs, const char *name)
 
 void con_files_free(files *fs)
 {
-	printf("!!!!!!!!!!!!!!5\n");
 	for (int i = fs->begin_f; i < fs->p; i++)
 	{
-		printf("!!!!!!!!!!!!!!6\n");
 		if(&fs->files[i] != NULL && fs->files[i].name != NULL)
 		{
 			con_file_free(&fs->files[i]);
 		}
 	}
-	printf("!!!!!!!!!!!!!!10\n");
 	free(fs->files);
-	printf("!!!!!!!!!!!!!!11\n");
 }
 
 void con_file_open_cur(files* fs, preprocess_context *context)
