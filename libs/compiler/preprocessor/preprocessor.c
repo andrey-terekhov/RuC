@@ -428,6 +428,7 @@ char *preprocess_file(int argc, const char *argv[])
 	printf("!!!!!!!!!!!!!!4\n");
 
 	free(context.include_ways);
+	con_files_free(&context.fs);
 
 	char *macro_processed = context.output_options.ptr;
 
@@ -436,7 +437,6 @@ char *preprocess_file(int argc, const char *argv[])
 	printf("Текст после препроцессирования:\n>\n%s<\n", macro_processed);
 #endif
 
-	con_files_free(&context.fs);
 	return macro_processed;
 }
 
