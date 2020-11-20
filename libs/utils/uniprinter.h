@@ -17,7 +17,7 @@
 #pragma once
 
 #include "io.h"
-#include "utils_internal.h"
+#include "dll.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -62,21 +62,21 @@ typedef struct printer_desc
  *
  *	@param	opts	Printer context
  */
-UTILS_EXPORTED void printer_init(universal_printer_options *opts);
+EXPORTED void printer_init(universal_printer_options *opts);
 
 /**
  *	Deinitialize printer
  *
  *	@param	opts	Printer context
  */
-UTILS_EXPORTED void printer_deinit(universal_printer_options *opts);
+EXPORTED void printer_deinit(universal_printer_options *opts);
 
 /**
  *	Close current printer stream
  *
  *	@param	opts	Printer context
  */
-UTILS_EXPORTED void printer_close(universal_printer_options *opts);
+EXPORTED void printer_close(universal_printer_options *opts);
 
 /**
  *	Universal function for printing data to some output
@@ -86,7 +86,7 @@ UTILS_EXPORTED void printer_close(universal_printer_options *opts);
  *
  *	@return	printf-like return value
  */
-UTILS_EXPORTED int printer_printf(universal_printer_options *opts, const char *fmt, ...);
+EXPORTED int printer_printf(universal_printer_options *opts, const char *fmt, ...);
 
 /**
  *	Universal function for printing (wide) characters
@@ -96,7 +96,7 @@ UTILS_EXPORTED int printer_printf(universal_printer_options *opts, const char *f
  *
  *	@return	printf-like return value
  */
-UTILS_EXPORTED int printer_printchar(universal_printer_options *opts, int wchar);
+EXPORTED int printer_printchar(universal_printer_options *opts, int wchar);
 
 /**
  *	Attach file to printer
@@ -106,7 +106,7 @@ UTILS_EXPORTED int printer_printchar(universal_printer_options *opts, int wchar)
  *
  *	@return	@c true on success, @c false on failure
  */
-UTILS_EXPORTED bool printer_attach_file(universal_printer_options *opts, FILE *file);
+EXPORTED bool printer_attach_file(universal_printer_options *opts, FILE *file);
 
 /**
  *	Attach buffer to printer
@@ -116,7 +116,7 @@ UTILS_EXPORTED bool printer_attach_file(universal_printer_options *opts, FILE *f
  *
  *	@return	@c true on success, @c false on failure
  */
-UTILS_EXPORTED bool printer_attach_buffer(universal_printer_options *opts, size_t size);
+EXPORTED bool printer_attach_buffer(universal_printer_options *opts, size_t size);
 
 #ifdef __cplusplus
 } /* extern "C" */

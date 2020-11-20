@@ -18,7 +18,7 @@
 
 #include <limits.h>
 #include <stddef.h>
-#include "utils_internal.h"
+#include "dll.h"
 
  
 #define MAX_PATHS 128
@@ -55,7 +55,7 @@ typedef struct workspace
  *
  *	@return	Workspace structure
  */
-UTILS_EXPORTED workspace ws_parse_args(const int argc, const char *const *const argv);
+EXPORTED workspace ws_parse_args(const int argc, const char *const *const argv);
 
 
 /**
@@ -63,7 +63,7 @@ UTILS_EXPORTED workspace ws_parse_args(const int argc, const char *const *const 
  *
  *	@return	Workspace structure
  */
-UTILS_EXPORTED workspace ws_create();
+EXPORTED workspace ws_create();
 
 
 /**
@@ -74,7 +74,7 @@ UTILS_EXPORTED workspace ws_create();
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int ws_add_file(workspace *const ws, const char *const path);
+EXPORTED int ws_add_file(workspace *const ws, const char *const path);
 
 /**
  *	Add files paths to workspace
@@ -85,7 +85,7 @@ UTILS_EXPORTED int ws_add_file(workspace *const ws, const char *const path);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int ws_add_files(workspace *const ws, const char *const *const paths, const size_t num);
+EXPORTED int ws_add_files(workspace *const ws, const char *const *const paths, const size_t num);
 
 
 /**
@@ -96,7 +96,7 @@ UTILS_EXPORTED int ws_add_files(workspace *const ws, const char *const *const pa
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int ws_add_dir(workspace *const ws, const char *const path);
+EXPORTED int ws_add_dir(workspace *const ws, const char *const path);
 
 /**
  *	Add include directories to workspace
@@ -107,7 +107,7 @@ UTILS_EXPORTED int ws_add_dir(workspace *const ws, const char *const path);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int ws_add_dirs(workspace *const ws, const char *const *const paths, const size_t num);
+EXPORTED int ws_add_dirs(workspace *const ws, const char *const *const paths, const size_t num);
 
 
 /**
@@ -118,7 +118,7 @@ UTILS_EXPORTED int ws_add_dirs(workspace *const ws, const char *const *const pat
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int ws_add_flag(workspace *const ws, const char *const flag);
+EXPORTED int ws_add_flag(workspace *const ws, const char *const flag);
 
 /**
  *	Add flags to workspace
@@ -129,7 +129,7 @@ UTILS_EXPORTED int ws_add_flag(workspace *const ws, const char *const flag);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int ws_add_flags(workspace *const ws, const char *const *const flags, const size_t num);
+EXPORTED int ws_add_flags(workspace *const ws, const char *const *const flags, const size_t num);
 
 
 /**
@@ -140,7 +140,7 @@ UTILS_EXPORTED int ws_add_flags(workspace *const ws, const char *const *const fl
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int ws_set_output(workspace *const ws, const char *const path);
+EXPORTED int ws_set_output(workspace *const ws, const char *const path);
 
 
 /**
@@ -150,7 +150,7 @@ UTILS_EXPORTED int ws_set_output(workspace *const ws, const char *const path);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-UTILS_EXPORTED int ws_is_correct(const workspace *const ws);
+EXPORTED int ws_is_correct(const workspace *const ws);
 
 
 /**
@@ -161,7 +161,7 @@ UTILS_EXPORTED int ws_is_correct(const workspace *const ws);
  *
  *	@return	File
  */
-UTILS_EXPORTED const char *ws_get_file(const workspace *const ws, const size_t index);
+EXPORTED const char *ws_get_file(const workspace *const ws, const size_t index);
 
 /**
  *	Get directory by index from workspase
@@ -171,7 +171,7 @@ UTILS_EXPORTED const char *ws_get_file(const workspace *const ws, const size_t i
  *
  *	@return	Directory
  */
-UTILS_EXPORTED const char *ws_get_dir(const workspace *const ws, const size_t index);
+EXPORTED const char *ws_get_dir(const workspace *const ws, const size_t index);
 
 /**
  *	Get flag by index from workspase
@@ -181,7 +181,7 @@ UTILS_EXPORTED const char *ws_get_dir(const workspace *const ws, const size_t in
  *
  *	@return	Flag
  */
-UTILS_EXPORTED const char *ws_get_flag(const workspace *const ws, const size_t index);
+EXPORTED const char *ws_get_flag(const workspace *const ws, const size_t index);
 
 
 /**
@@ -191,7 +191,7 @@ UTILS_EXPORTED const char *ws_get_flag(const workspace *const ws, const size_t i
  *
  *	@return	Output file name
  */
-UTILS_EXPORTED const char *ws_get_output(const workspace *const ws);
+EXPORTED const char *ws_get_output(const workspace *const ws);
 
 
 /**
@@ -201,7 +201,7 @@ UTILS_EXPORTED const char *ws_get_output(const workspace *const ws);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int ws_clear(workspace *const ws);
+EXPORTED int ws_clear(workspace *const ws);
 
 #ifdef __cplusplus
 } /* extern "C" */

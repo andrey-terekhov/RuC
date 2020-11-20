@@ -18,7 +18,7 @@
 
 #include <stdio.h>
 #include "io2.h"
-#include "utils_internal.h"
+#include "dll.h"
 
 
 #ifdef __cplusplus
@@ -33,7 +33,9 @@ extern "C" {
  *
  *	@return	Return printf-like value
  */
-UTILS_EXPORTED int uni_printf(universal_io *const io, const char *const format, ...);
+EXPORTED int uni_printf(universal_io *const io, const char *const format, ...)
+	__attribute__((format(printf, 2, 3)))
+	__attribute__((nonnull(2)));
 
 /**
  *	Universal function for printing UTF-8 characters
@@ -43,7 +45,7 @@ UTILS_EXPORTED int uni_printf(universal_io *const io, const char *const format, 
  *
  *	@return	Return printf-like value
  */
-UTILS_EXPORTED int uni_print_char(universal_io *const io, const char32_t wchar);
+EXPORTED int uni_print_char(universal_io *const io, const char32_t wchar);
 
 #ifdef __cplusplus
 } /* extern "C" */

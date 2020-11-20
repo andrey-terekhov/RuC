@@ -18,7 +18,7 @@
 
 #include <stdio.h>
 #include "io2.h"
-#include "utils_internal.h"
+#include "dll.h"
 
 
 #ifdef __cplusplus
@@ -33,7 +33,9 @@ extern "C" {
  *
  *	@return	Return scanf-like value
  */
-UTILS_EXPORTED int uni_scanf(universal_io *const io, const char *const format, ...);
+EXPORTED int uni_scanf(universal_io *const io, const char *const format, ...)
+	__attribute__((format(scanf, 2, 3)))
+	__attribute__((nonnull(2)));
 
 /**
  *	Universal function for scanning UTF-8 characters
@@ -42,7 +44,7 @@ UTILS_EXPORTED int uni_scanf(universal_io *const io, const char *const format, .
  *
  *	@return	UTF-8 character
  */
-UTILS_EXPORTED char32_t uni_scan_char(universal_io *const io);
+EXPORTED char32_t uni_scan_char(universal_io *const io);
 
 #ifdef __cplusplus
 } /* extern "C" */

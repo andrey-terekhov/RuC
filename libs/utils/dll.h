@@ -18,7 +18,9 @@
 
 
 #ifdef _MSC_VER
-	#define UTILS_EXPORTED __declspec(dllexport)
+	#define EXPORTED __declspec(dllexport)
+	
+	#define __attribute__(x)
 #else
-	#define UTILS_EXPORTED
+	#define EXPORTED
 #endif

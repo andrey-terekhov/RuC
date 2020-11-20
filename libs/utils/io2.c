@@ -1,9 +1,83 @@
 #include "io2.h"
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
 
+
+size_t percent(universal_io *const io, const char *const format, va_list *args)
+{
+	/*switch (format[i])
+		{
+			case '%':
+			{
+				i += percent(io, &format[i + 1], &local);
+			}
+			break;
+
+			case ' ':
+			case '\t':
+			case '\r':
+			case '\n':
+			{
+				while (io->in_buffer[io->in_position] == ' '
+					|| io->in_buffer[io->in_position] == '\t'
+					|| io->in_buffer[io->in_position] == '\r'
+					|| io->in_buffer[io->in_position] == '\n')
+				{
+					io->in_position++;
+				}
+			}
+			break;
+		}	
+		*/
+	return 0;
+}
 
 int in_func_buffer(universal_io *const io, const char *const format, va_list args)
 {
-	return 0;
+	va_list local;
+	va_copy(local, args);
+
+	int ret = vsscanf(io->in_buffer, format, args);
+	
+	for (size_t i = 0; format[i] != '\0'; i++)
+	{
+		switch (format[i])
+		{
+			case '%':
+			{
+				i += percent(io, &format[i + 1], &local);
+			}
+			break;
+
+			case ' ':
+			case '\t':
+			case '\r':
+			case '\n':
+			{
+				while (io->in_buffer[io->in_position] == ' '
+					|| io->in_buffer[io->in_position] == '\t'
+					|| io->in_buffer[io->in_position] == '\r'
+					|| io->in_buffer[io->in_position] == '\n')
+				{
+					io->in_position++;
+				}
+			}
+			break;
+			
+			default:
+			{
+				if (io->in_buffer[io->in_position] != format[i])
+				{
+					return ret;
+				}
+
+				io->in_position++;
+			}
+		}
+	}
+		
+	return ret;
 }
 
 int in_func_user(universal_io *const io, const char *const format, va_list args)

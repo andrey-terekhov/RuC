@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include "utf8.h"
-#include "utils_internal.h"
+#include "dll.h"
 
 
 #ifdef __cplusplus
@@ -79,7 +79,7 @@ struct universal_io
  *
  *	@return	Universal io structure
  */
-UTILS_EXPORTED universal_io io_create();
+EXPORTED universal_io io_create();
 
 
 /**
@@ -90,7 +90,7 @@ UTILS_EXPORTED universal_io io_create();
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int in_set_file(universal_io *const io, const char *const path);
+EXPORTED int in_set_file(universal_io *const io, const char *const path);
 
 /**
  *	Set input buffer
@@ -100,7 +100,7 @@ UTILS_EXPORTED int in_set_file(universal_io *const io, const char *const path);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int in_set_buffer(universal_io *const io, const char *const buffer);
+EXPORTED int in_set_buffer(universal_io *const io, const char *const buffer);
 
 /**
  *	Set input function
@@ -110,7 +110,7 @@ UTILS_EXPORTED int in_set_buffer(universal_io *const io, const char *const buffe
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int in_set_func(universal_io *const io, const io_user_func func);
+EXPORTED int in_set_func(universal_io *const io, const io_user_func func);
 
 
 /**
@@ -120,7 +120,7 @@ UTILS_EXPORTED int in_set_func(universal_io *const io, const io_user_func func);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-UTILS_EXPORTED int in_is_correct(const universal_io *const io);
+EXPORTED int in_is_correct(const universal_io *const io);
 
 /**
  *	Check that current input option is file
@@ -129,7 +129,7 @@ UTILS_EXPORTED int in_is_correct(const universal_io *const io);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-UTILS_EXPORTED int in_is_file(const universal_io *const io);
+EXPORTED int in_is_file(const universal_io *const io);
 
 /**
  *	Check that current input option is buffer
@@ -138,7 +138,7 @@ UTILS_EXPORTED int in_is_file(const universal_io *const io);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-UTILS_EXPORTED int in_is_buffer(const universal_io *const io);
+EXPORTED int in_is_buffer(const universal_io *const io);
 
 /**
  *	Check that current input option is function
@@ -147,7 +147,7 @@ UTILS_EXPORTED int in_is_buffer(const universal_io *const io);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-UTILS_EXPORTED int in_is_func(const universal_io *const io);
+EXPORTED int in_is_func(const universal_io *const io);
 
 
 /**
@@ -157,7 +157,7 @@ UTILS_EXPORTED int in_is_func(const universal_io *const io);
  *
  *	@return	Input function
  */
-UTILS_EXPORTED io_func in_get_func(const universal_io *const io);
+EXPORTED io_func in_get_func(const universal_io *const io);
 
 /**
  *	Get input file path from universal io structure
@@ -167,7 +167,7 @@ UTILS_EXPORTED io_func in_get_func(const universal_io *const io);
  *
  *	@return	Size of buffer
  */
-UTILS_EXPORTED size_t in_get_path(const universal_io *const io, char *const buffer);
+EXPORTED size_t in_get_path(const universal_io *const io, char *const buffer);
 
 /**
  *	Get input buffer from universal io structure
@@ -176,7 +176,7 @@ UTILS_EXPORTED size_t in_get_path(const universal_io *const io, char *const buff
  *
  *	@return	Input buffer
  */
-UTILS_EXPORTED const char *in_get_buffer(const universal_io *const io);
+EXPORTED const char *in_get_buffer(const universal_io *const io);
 
 /**
  *	Get input position from universal io structure
@@ -185,7 +185,7 @@ UTILS_EXPORTED const char *in_get_buffer(const universal_io *const io);
  *
  *	@return	Input position
  */
-UTILS_EXPORTED size_t in_get_position(const universal_io *const io);
+EXPORTED size_t in_get_position(const universal_io *const io);
 
 
 /**
@@ -195,7 +195,7 @@ UTILS_EXPORTED size_t in_get_position(const universal_io *const io);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int in_close_file(universal_io *const io);
+EXPORTED int in_close_file(universal_io *const io);
 
 /**
  *	Clear all input parameters
@@ -204,7 +204,7 @@ UTILS_EXPORTED int in_close_file(universal_io *const io);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int in_clear(universal_io *const io);
+EXPORTED int in_clear(universal_io *const io);
 
 
 /**
@@ -215,7 +215,7 @@ UTILS_EXPORTED int in_clear(universal_io *const io);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int out_set_file(universal_io *const io, const char *const path);
+EXPORTED int out_set_file(universal_io *const io, const char *const path);
 
 /**
  *	Set output buffer
@@ -225,7 +225,7 @@ UTILS_EXPORTED int out_set_file(universal_io *const io, const char *const path);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int out_set_buffer(universal_io *const io, const size_t size);
+EXPORTED int out_set_buffer(universal_io *const io, const size_t size);
 
 /**
  *	Set output function
@@ -235,7 +235,7 @@ UTILS_EXPORTED int out_set_buffer(universal_io *const io, const size_t size);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int out_set_func(universal_io *const io, const io_user_func func);
+EXPORTED int out_set_func(universal_io *const io, const io_user_func func);
 
 
 /**
@@ -245,7 +245,7 @@ UTILS_EXPORTED int out_set_func(universal_io *const io, const io_user_func func)
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-UTILS_EXPORTED int out_is_correct(const universal_io *const io);
+EXPORTED int out_is_correct(const universal_io *const io);
 
 /**
  *	Check that current output option is file
@@ -254,7 +254,7 @@ UTILS_EXPORTED int out_is_correct(const universal_io *const io);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-UTILS_EXPORTED int out_is_file(const universal_io *const io);
+EXPORTED int out_is_file(const universal_io *const io);
 
 /**
  *	Check that current output option is buffer
@@ -263,7 +263,7 @@ UTILS_EXPORTED int out_is_file(const universal_io *const io);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-UTILS_EXPORTED int out_is_buffer(const universal_io *const io);
+EXPORTED int out_is_buffer(const universal_io *const io);
 
 /**
  *	Check that current output option is function
@@ -272,7 +272,7 @@ UTILS_EXPORTED int out_is_buffer(const universal_io *const io);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-UTILS_EXPORTED int out_is_func(const universal_io *const io);
+EXPORTED int out_is_func(const universal_io *const io);
 
 
 /**
@@ -282,7 +282,7 @@ UTILS_EXPORTED int out_is_func(const universal_io *const io);
  *
  *	@return	Output function
  */
-UTILS_EXPORTED io_func out_get_func(const universal_io *const io);
+EXPORTED io_func out_get_func(const universal_io *const io);
 
 /**
  *	Get output file path from universal io structure
@@ -292,7 +292,7 @@ UTILS_EXPORTED io_func out_get_func(const universal_io *const io);
  *
  *	@return	Size of buffer
  */
-UTILS_EXPORTED size_t out_get_path(const universal_io *const io, char *const buffer);
+EXPORTED size_t out_get_path(const universal_io *const io, char *const buffer);
 
 
 /**
@@ -302,7 +302,7 @@ UTILS_EXPORTED size_t out_get_path(const universal_io *const io, char *const buf
  *
  *	@return	Output buffer (need to use @c free() function)
  */
-UTILS_EXPORTED char *out_extract_buffer(universal_io *const io);
+EXPORTED char *out_extract_buffer(universal_io *const io);
 
 /**
  *	Close output file
@@ -311,7 +311,7 @@ UTILS_EXPORTED char *out_extract_buffer(universal_io *const io);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int out_close_file(universal_io *const io);
+EXPORTED int out_close_file(universal_io *const io);
 
 /**
  *	Clear all output parameters
@@ -320,7 +320,7 @@ UTILS_EXPORTED int out_close_file(universal_io *const io);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int out_clear(universal_io *const io);
+EXPORTED int out_clear(universal_io *const io);
 
 
 /**
@@ -330,7 +330,7 @@ UTILS_EXPORTED int out_clear(universal_io *const io);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int io_erase(universal_io *const io);
+EXPORTED int io_erase(universal_io *const io);
 
 #ifdef __cplusplus
 } /* extern "C" */
