@@ -114,6 +114,15 @@ UTILS_EXPORTED int in_set_func(universal_io *const io, const io_user_func func);
 
 
 /**
+ *	Check that current input option is correct
+ *
+ *	@param	io			Universal io structure
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+UTILS_EXPORTED int in_is_correct(const universal_io *const io);
+
+/**
  *	Check that current input option is file
  *
  *	@param	io			Universal io structure
@@ -228,6 +237,15 @@ UTILS_EXPORTED int out_set_buffer(universal_io *const io, const size_t size);
  */
 UTILS_EXPORTED int out_set_func(universal_io *const io, const io_user_func func);
 
+
+/**
+ *	Check that current output option is correct
+ *
+ *	@param	io			Universal io structure
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+UTILS_EXPORTED int out_is_correct(const universal_io *const io);
 
 /**
  *	Check that current output option is file

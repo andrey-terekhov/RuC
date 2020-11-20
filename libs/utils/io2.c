@@ -33,6 +33,11 @@ int in_set_func(universal_io *const io, const io_user_func func)
 }
 
 
+int in_is_correct(const universal_io *const io)
+{
+	return 0;
+}
+
 int in_is_file(const universal_io *const io)
 {
 	return 0;
@@ -96,6 +101,11 @@ int out_set_func(universal_io *const io, const io_user_func func)
 	return 0;
 }
 
+
+int out_is_correct(const universal_io *const io)
+{
+	return 0;
+}
 
 int out_is_file(const universal_io *const io)
 {
