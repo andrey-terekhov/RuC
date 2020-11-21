@@ -8,6 +8,13 @@
 #define MAX_FORMAT_SIZE 128
 
 
+int in_func_file(universal_io *const io, const char *const format, va_list args)
+{
+	int ret = vfscanf(io->in_file, format, args);
+	return ret != EOF ? ret : 0;
+}
+
+
 int is_specifier(const char ch)
 {
 	return (ch >= '0' && ch <= '9')
@@ -100,9 +107,16 @@ int in_func_buffer(universal_io *const io, const char *const format, va_list arg
 	return ret;
 }
 
+
 int in_func_user(universal_io *const io, const char *const format, va_list args)
 {
 	return io->in_user_func(format, args);
+}
+
+
+int out_func_file(universal_io *const io, const char *const format, va_list args)
+{
+	return vfprintf(io->out_file, format, args);
 }
 
 
@@ -113,7 +127,7 @@ int out_func_buffer(universal_io *const io, const char *const format, va_list ar
 
 	int ret = vsnprintf(&io->out_buffer[io->out_position], io->out_size, format, local);
 
-	if (ret != -1 && ret < io->out_size - io->out_position)
+	if (ret != -1 && ret + io->out_position < io->out_size)
 	{
 		io->out_position += ret;
 		return ret;
@@ -131,6 +145,7 @@ int out_func_buffer(universal_io *const io, const char *const format, va_list ar
 	io->out_buffer = new_buffer;
 	return out_func_buffer(io, format, args);
 }
+
 
 int out_func_user(universal_io *const io, const char *const format, va_list args)
 {
@@ -172,20 +187,28 @@ universal_io io_create()
 	return io;
 }
 
-// FIX ME
+
 int in_set_file(universal_io *const io, const char *const path)
 {
-	if (io == NULL || path == NULL)
+	if (path == NULL || in_clear(io))
 	{
 		return -1;
 	}
+	
+	io->in_file = fopen(path, "rt");
+	if (io->in_file == NULL)
+	{
+		return -1;
+	}
+
+	io->in_func = &in_func_file;
 
 	return 0;
 }
 
 int in_set_buffer(universal_io *const io, const char *const buffer)
 {
-	if (in_clear(io))
+	if (buffer == NULL || in_clear(io))
 	{
 		return -1;
 	}
@@ -260,10 +283,18 @@ size_t in_get_position(const universal_io *const io)
 	return in_is_buffer(io) ? io->in_position : 0;
 }
 
-// FIX ME
+
 int in_close_file(universal_io *const io)
 {
-	return 0;
+	if (!in_is_file(io))
+	{
+		return -1;
+	}
+
+	int ret = fclose(io->in_file);
+	io->in_file = NULL;
+
+	return ret;
 }
 
 int in_clear(universal_io *const io)
@@ -295,12 +326,25 @@ int in_clear(universal_io *const io)
 	return 0;
 }
 
-// FIX ME
+
 int out_set_file(universal_io *const io, const char *const path)
 {
+	if (path == NULL || out_clear(io))
+	{
+		return -1;
+	}
+	
+	io->out_file = fopen(path, "wt");
+	if (io->out_file == NULL)
+	{
+		return -1;
+	}
+
+	io->out_func = &out_func_file;
+
 	return 0;
 }
-// FIX ME
+
 int out_set_buffer(universal_io *const io, const size_t size)
 {
 	if (out_clear(io))
@@ -387,10 +431,18 @@ char *out_extract_buffer(universal_io *const io)
 	io->out_func = NULL;
 	return buffer;
 }
-// FIX ME
+
 int out_close_file(universal_io *const io)
 {
-	return 0;
+	if (!out_is_file(io))
+	{
+		return -1;
+	}
+
+	int ret = fclose(io->out_file);
+	io->out_file = NULL;
+
+	return ret;
 }
 
 int out_clear(universal_io *const io)
