@@ -6,7 +6,9 @@
 #include "workspace.h"
 
 #ifdef _MSC_VER
-	
+	#include <windows.h>
+
+	extern intptr_t _get_osfhandle(int fd);
 #elif __APPLE__
 	#include <fcntl.h>
 #else
@@ -166,7 +168,17 @@ int out_func_user(universal_io *const io, const char *const format, va_list args
 size_t io_get_path(FILE *const file, char *const buffer)
 {
 #ifdef _MSC_VER
-	return 0;
+	GetFinalPathNameByHandleA((HANDLE)_get_osfhandle(_fileno(file)), buffer, MAX_PATH, FILE_NAME_NORMALIZED);
+
+	size_t ret = 0;
+	while (buffer[ret + 4] != '\0')
+	{
+		buffer[ret] = buffer[ret + 4];
+		ret++;
+	}
+
+	buffer[ret] = '\0';
+	return ret;
 #elif __APPLE__
 	return fcntl(fileno(file), F_GETPATH, buffer) != -1 ? strlen(buffer) : 0;
 #else
@@ -300,7 +312,7 @@ size_t in_get_path(const universal_io *const io, char *const buffer)
 {
 	if (!in_is_file(io))
 	{
-		return -1;
+		return 0;
 	}
 
 	return io_get_path(io->in_file, buffer);
@@ -446,7 +458,7 @@ size_t out_get_path(const universal_io *const io, char *const buffer)
 {
 	if (!out_is_file(io))
 	{
-		return -1;
+		return 0;
 	}
 
 	return io_get_path(io->out_file, buffer);
