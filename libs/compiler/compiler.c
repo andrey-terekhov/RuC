@@ -22,7 +22,6 @@
 #include "errors.h"
 #include "frontend_utils.h"
 #include "logger.h"
-#include "macro_global_struct.h"
 #include "preprocessor.h"
 #include "tables.h"
 #include <stdio.h>
@@ -55,8 +54,6 @@ void report_cb(asp_report *report)
 
 char *preprocess_ruc_file(compiler_context *context, const workspace *const ws)
 {
-	data_files *sources = &context->cfs;
-	data_files *headers = &context->hfs;
 
 	char **argv = malloc(MAX_PATHS * sizeof(char *));
 
@@ -78,18 +75,12 @@ char *preprocess_ruc_file(compiler_context *context, const workspace *const ws)
 		temp = ws_get_dir(ws, argc - files_num);
 	}
 	
-	char *result = preprocess_file(argc, (const char **)argv, sources, headers);
+	char *result = preprocess_file(argc, (const char **)argv);
 	for (int i = 0; i < argc; i++)
 	{
 		free(argv[i]);
 	}
 	free(argv);
-
-	if (context->hfs.p == 0)
-	{
-		context->c_flag++;
-	}
-
 	return result;
 }
 
@@ -125,10 +116,8 @@ static void process_user_requests(compiler_context *context, const workspace *co
 		log_system_error("ruc", "не удалось выделить память для макрогенератора");
 		exit(1);
 	}
-
 	compiler_context_detach_io(context, IO_TYPE_OUTPUT);
 	compiler_context_detach_io(context, IO_TYPE_INPUT);
-
 	compiler_context_attach_io(context, macro_processed, IO_TYPE_INPUT, IO_SOURCE_MEM);
 	output_tables_and_tree(context, tree_path);
 	if (!context->error_flag)
@@ -136,9 +125,6 @@ static void process_user_requests(compiler_context *context, const workspace *co
 		output_codes(context, codes_path);
 	}
 	compiler_context_detach_io(context, IO_TYPE_INPUT);
-
-	data_files_clear(&context->cfs);
-	data_files_clear(&context->hfs);
 
 	/* Will be left for debugging in case of failure */
 #if !defined(FILE_DEBUG) && !defined(_MSC_VER)
@@ -181,7 +167,6 @@ int compile_to_vm(const workspace *const ws)
 	int ret = get_exit_code(context);
 	compiler_context_deinit(context);
 	free(context);
-
 	return ret;
 }
 

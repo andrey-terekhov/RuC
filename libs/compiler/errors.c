@@ -18,7 +18,6 @@
 #include "codes.h"
 #include "global.h"
 #include "logger.h"
-#include "macro_global_struct.h"
 #include "scanner.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,7 +46,7 @@ size_t printident(compiler_context *context, int r, char *const msg, size_t inde
 	return index;
 }
 
-void get_tag(compiler_context *context, char *const tag)
+/*void get_tag(compiler_context *context, char *const tag)
 {
 	data_file *file;
 
@@ -61,14 +60,14 @@ void get_tag(compiler_context *context, char *const tag)
 	}
 
 	sprintf(tag, "%s", file->name);
-}
+}*/
 
 void warning(compiler_context *context, int ernum)
 {
 	char tag[MAXSTRINGL];
 	char msg[4 * MAXSTRINGL];
 
-	get_tag(context, tag);
+	//get_tag(context, tag);
 
 	switch (ernum)
 	{
@@ -139,8 +138,6 @@ void error(compiler_context *context, int ernum)
 	}
 
 	const char *name = f->name;
-	int *s = (f->before_source).str;
-
 	//printer_printf(&context->err_options, "\n Oшибка в файле: \"%s\" № %i\n \n", name, ernum);
 	context->line--;
 	if (context->charnum == 0)
@@ -153,8 +150,6 @@ void error(compiler_context *context, int ernum)
 	}
 
 	int new_line = context->line;
-	int *control_before = (f->cs).str_before;
-	int *control_after = (f->cs).str_after;
 
 	while (control_before[i] < context->line + 1)
 	{
@@ -170,28 +165,6 @@ void error(compiler_context *context, int ernum)
 
 	/*i = 0;
 	k = 0;
-	if (f->include_source.str[0] != 0)
-	{
-		k++;
-
-		printer_printf(&context->err_options, "line %i) ", k);
-
-		int *s2 = f->include_source.str;
-		while (s2[i] != '\0')
-		{
-			printer_printchar(&context->err_options, s2[i]);
-			if (s2[i] == '\n' && s2[i + 1] == '\0')
-			{
-				break;
-			}
-			else if (s2[i] == '\n')
-			{
-				k++;
-				printer_printf(&context->err_options, "line %i) ", k);
-			}
-			i++;
-		}
-	}
 
 	i = 0;
 
@@ -214,7 +187,7 @@ void error(compiler_context *context, int ernum)
 	char msg[4 * MAXSTRINGL];
 	size_t index = 0;
 
-	get_tag(context, tag);
+	//get_tag(context, tag);
 	
 	context->error_flag = 1;
 	context->tc = context->temp_tc;

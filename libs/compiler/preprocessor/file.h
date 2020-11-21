@@ -23,7 +23,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void control_string_pinter(preprocess_context *context, int before, int after);
 
 void m_change_nextch_type(int type, int p, preprocess_context *context);
 void m_old_nextch_type(preprocess_context *context);
