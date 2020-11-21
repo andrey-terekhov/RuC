@@ -87,92 +87,47 @@ void m_old_nextch_type(preprocess_context *context)
 	// printf("oldnextch_type = %d\n", nextch_type);
 }
 
-void control_string_pinter(preprocess_context *context, int before, int after)
+void end_line(preprocess_context *context)
 {
-	control_string *cs;
+	context->line++; //!!
+//	printf("!!!new_line = %d!!!\n", context->line - 1);
 
-	if (context->h_flag == 0)
+/*#if MACRODEBUG
+	if (context->line == 2)
 	{
-		cs = &context->sources->files[context->sources->cur].cs;
-	}
-	else
-	{
-		cs = &context->headers->files[context->headers->cur].cs;
+		printf("\nИсходный текст:\n\n");
 	}
 
-	cs->str_before[cs->p] = before;
-	cs->str_after[cs->p] = after;
-	cs->p++;
-}
+	printf("Line %i) ", context->line - 1);
 
-void end_line(preprocess_context *context, macro_long_string *s)
-{
-	if (context->include_type > 0)
+	for (int j = context->temp_output; j < s->p; j++)
 	{
-		context->control_aflag++;
-	}
-	if (context->FILE_flag)
-	{
-		context->line++; //!!
-
-#if MACRODEBUG
-		if (context->line == 2)
+		if (s->str[j] != EOF)
 		{
-			printf("\nИсходный текст:\n\n");
+			printf_character(s->str[j]);
 		}
-
-		printf("Line %i) ", context->line - 1);
-
-		for (int j = context->temp_output; j < s->p; j++)
-		{
-			if (s->str[j] != EOF)
-			{
-				printf_character(s->str[j]);
-			}
-		}
+	}
 #endif
 
-		context->temp_output = s->p;
-	}
+	context->temp_output = s->p;*/
 }
 
 void m_onemore(preprocess_context *context)
 {
 	context->curchar = context->nextchar;
-	if (context->FILE_flag)
-	{
-		get_next_char(context);
-		long_string_pinter(context->before_temp, context->curchar);
 
-		if (context->curchar == EOF)
-		{
-			context->nextchar = EOF;
-			end_line(context, context->before_temp);
-		}
-	}
-	else if (context->current_string != NULL && context->curchar != EOF)
-	{
-		context->nextchar = context->current_string[context->current_p++];
-	}
-	else
+	get_next_char(context);
+
+	if (context->curchar == EOF)
 	{
 		context->nextchar = EOF;
+		end_line(context);
 	}
 }
 
 
 void m_fprintf(int a, preprocess_context *context)
 {
-	if (a == '\n')
-	{
-		context->control_bflag++;
-		if (context->control_aflag != 1)
-		{
-			control_string_pinter(context, context->control_bflag, context->control_aflag);
-		}
-		context->control_aflag = 0;
-	}
-
 	printer_printchar(&context->output_options, a);
 	// printf_character(a);
 	// printf(", %d; \n", a);
@@ -207,12 +162,12 @@ void m_coment_skip(preprocess_context *context)
 			// m_fprintf_com();
 			if (context->curchar == '\n')
 			{
-				end_line(context, context->before_temp);
+				end_line(context);
 			}
 
 			if (context->curchar == EOF)
 			{
-				end_line(context, context->before_temp);
+				end_line(context);
 				m_error(comm_not_ended, context);
 			}
 		} while (context->curchar != '*' || context->nextchar != '/');
@@ -262,7 +217,11 @@ void m_nextch(preprocess_context *context)
 			// printf(" i = %d curcar = %c curcar = %i n = %d\n", nextch_type, context->curchar,
 			// context->curchar,context -> nextp);
 
-			if (context->curchar == MACROCANGE)
+			if(context->curchar == '\n')
+			{
+				con_file_print_coment(&context->fs, context);
+			}
+			else if (context->curchar == MACROCANGE)
 			{
 				m_nextch_cange(context);
 			}
@@ -295,7 +254,7 @@ void m_nextch(preprocess_context *context)
 
 		if (context->curchar == '\n')
 		{
-			end_line(context, context->before_temp);
+			end_line(context);
 		}
 	}
 

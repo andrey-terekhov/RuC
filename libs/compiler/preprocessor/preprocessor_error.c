@@ -133,7 +133,7 @@ void errors_set(int ernum, const char *const tag)
 
 void m_error(int ernum, preprocess_context *context)
 {
-	if (context->before_temp != NULL)
+	/*if ()
 	{
 		int i = 0;
 		data_file *f;
@@ -148,8 +148,6 @@ void m_error(int ernum, preprocess_context *context)
 		}
 
 		const char *name = f->name;
-		int *s = context->before_temp->str;
-		int p = context->before_temp->p;
 
 #if MACRODEBUG
 		printf("\n\n");
@@ -161,21 +159,6 @@ void m_error(int ernum, preprocess_context *context)
 		// printf("line 1) ");
 		printf(" ");
 
-		if ((f)->include_source.str[0] != '\0')
-		{
-			int *s2 = (f)->include_source.str;
-			while (s2[i] != '\0')
-			{
-				printf_character(s[i]);
-				if (s2[i] == '\n')
-				{
-					printf(" ");
-					// printf("line %i) ", j);
-					// j++;
-				}
-				i++;
-			}
-		}
 
 		for (i = 0; i < p; i++)
 		{
@@ -192,8 +175,8 @@ void m_error(int ernum, preprocess_context *context)
 	}
 	else
 	{
-		errors_set(ernum, "macro");
-	}
-
-	exit(2);
+		
+	}*/
+	errors_set(ernum, "macro");
+	exit(1);
 }
