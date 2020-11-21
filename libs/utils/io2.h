@@ -57,7 +57,6 @@ struct universal_io
 	FILE *in_file;				/** Input file */
 	const char *in_buffer;		/** Input buffer */
 
-	size_t in_size;				/** Size of input buffer */
 	size_t in_position;			/** Current position of input buffer */
 
 	io_user_func in_user_func;	/** Input user function */

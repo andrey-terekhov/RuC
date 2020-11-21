@@ -123,7 +123,6 @@ universal_io io_create()
 	io.in_file = NULL;
 	io.in_buffer = NULL;
 
-	io.in_size = 0;
 	io.in_position = 0;
 
 	io.in_user_func = NULL;
@@ -163,7 +162,6 @@ int in_set_buffer(universal_io *const io, const char *const buffer)
 
 	io->in_buffer = buffer;
 
-	//io->in_size = strlen(buffer);
 	io->in_position = 0;
 	
 	io->in_func = &in_func_buffer;
@@ -253,7 +251,6 @@ int in_clear(universal_io *const io)
 	{
 		io->in_buffer = NULL;
 
-		io->in_size = 0;
 		io->in_position = 0;
 
 		io->in_func = NULL;
