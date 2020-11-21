@@ -8,15 +8,15 @@
 #ifdef _MSC_VER
 	
 #elif __APPLE__
-	#include <sys/syslimits.h>
 	#include <fcntl.h>
 #else
 	#include <unistd.h>
+
+	#define MAX_LINK_SIZE 20
 #endif
 
 
 #define MAX_FORMAT_SIZE 128
-#define MAX_LINK_SIZE 20
 
 int in_func_file(universal_io *const io, const char *const format, va_list args)
 {
@@ -167,14 +167,12 @@ size_t io_get_path(FILE *const file, char *const buffer)
 {
 #ifdef _MSC_VER
 	return 0;
-#else
-#ifdef __APPLE__
-	int ret = fcntl(file, F_GETPATH, buffer);
+#elif __APPLE__
+	return fcntl(fileno(file), F_GETPATH, buffer) != -1 ? strlen(buffer) : 0;
 #else
 	char link[MAX_LINK_SIZE];	
 	sprintf(link, "/proc/self/fd/%d", fileno(file));
 	int ret = readlink(link, buffer, 256);
-#endif
 
 	if (ret == -1)
 	{
