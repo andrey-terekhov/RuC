@@ -3,10 +3,20 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "workspace.h"
+
+#ifdef _MSC_VER
+	
+#elif __APPLE__
+	#include <sys/syslimits.h>
+	#include <fcntl.h>
+#else
+	#include <unistd.h>
+#endif
 
 
 #define MAX_FORMAT_SIZE 128
-
+#define MAX_LINK_SIZE 20
 
 int in_func_file(universal_io *const io, const char *const format, va_list args)
 {
@@ -153,6 +163,31 @@ int out_func_user(universal_io *const io, const char *const format, va_list args
 }
 
 
+size_t io_get_path(FILE *const file, char *const buffer)
+{
+#ifdef _MSC_VER
+	return 0;
+#else
+#ifdef __APPLE__
+	int ret = fcntl(file, F_GETPATH, buffer);
+#else
+	char link[MAX_LINK_SIZE];	
+	sprintf(link, "/proc/self/fd/%d", fileno(file));
+	int ret = readlink(link, buffer, 256);
+#endif
+
+	if (ret == -1)
+	{
+		buffer[0] = '\0';
+		return -1;
+	}
+
+	buffer[ret] = '\0';
+	return ret;
+#endif
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -262,15 +297,15 @@ io_func in_get_func(const universal_io *const io)
 {
 	return io != NULL ? io->in_func : NULL;
 }
-// FIX ME
+
 size_t in_get_path(const universal_io *const io, char *const buffer)
 {
 	if (!in_is_file(io))
 	{
-		return 0;
+		return -1;
 	}
 
-	return 0;
+	return io_get_path(io->in_file, buffer);
 }
 
 const char *in_get_buffer(const universal_io *const io)
@@ -408,10 +443,15 @@ io_func out_get_func(const universal_io *const io)
 {
 	return io != NULL ? io->out_func : NULL;
 }
-// FIX ME
+
 size_t out_get_path(const universal_io *const io, char *const buffer)
 {
-	return 0;
+	if (!out_is_file(io))
+	{
+		return -1;
+	}
+
+	return io_get_path(io->out_file, buffer);
 }
 
 
