@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 #define MAX_FORMAT_SIZE 128
@@ -32,17 +33,17 @@ int is_specifier(const char ch)
 int scan_arg(universal_io *const io, const char *const format, size_t size, void *arg)
 {
 	char buffer[MAX_FORMAT_SIZE];
-		
-	for (size_t i = 0; i < size; i++)
-	{
-		buffer[i] = format[i];
-	}
-
+	strncpy(buffer, format, size);
 	sprintf(&buffer[size], "%%zn");
 
 	size_t number = 0;
 	int ret = sscanf(&io->in_buffer[io->in_position], buffer, arg, &number);
 	io->in_position += number;
+
+	if (io->in_position >= io->in_size && number == 0)
+	{
+		return 0;
+	}
 
 	return ret;
 }
@@ -67,7 +68,7 @@ int in_func_buffer(universal_io *const io, const char *const format, va_list arg
 				
 				if (format[i] == '[')
 				{
-					while (format[i + 1] != '\0' && format[i] != '\\' && format[i + 1] != ']')
+					while (format[i] != '\0' && (format[i - 1] == '\\' || format[i] != ']'))
 					{
 						i++;
 					}
@@ -78,6 +79,11 @@ int in_func_buffer(universal_io *const io, const char *const format, va_list arg
 			{
 				void *arg = va_arg(args, void *);
 				ret += scan_arg(io, &format[last], i + 1, arg);
+
+				if (io->in_position >= io->in_size)
+				{
+					return ret;
+				}
 
 				if (was_count)
 				{
@@ -148,6 +154,7 @@ universal_io io_create()
 	io.in_file = NULL;
 	io.in_buffer = NULL;
 
+	io.in_size = 0;
 	io.in_position = 0;
 
 	io.in_user_func = NULL;
@@ -184,6 +191,8 @@ int in_set_buffer(universal_io *const io, const char *const buffer)
 	}
 
 	io->in_buffer = buffer;
+
+	io->in_size = strlen(io->in_buffer);
 	io->in_position = 0;
 	
 	io->in_func = &in_func_buffer;
@@ -272,6 +281,7 @@ int in_clear(universal_io *const io)
 	{
 		io->in_buffer = NULL;
 
+		io->in_size = 0;
 		io->in_position = 0;
 
 		io->in_func = NULL;
