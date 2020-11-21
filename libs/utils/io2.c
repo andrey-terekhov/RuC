@@ -11,48 +11,24 @@
 int is_specifier(const char ch)
 {
 	return (ch >= '0' && ch <= '9')
-		|| ch == 'h' || ch == 'l'
+		|| ch == 'h' || ch == 'l'		// Sub-specifiers
 		|| ch == 'j' || ch == 'z' 
 		|| ch == 't' || ch == 'L'
-		|| ch == '*';
-}
-
-int is_integer(const char ch)
-{
-	return ch == 'd' || ch == 'i';
-}
-
-int is_unsigned(const char ch)
-{
-	return ch == 'u' || ch == 'o'
-		|| ch == 'x' || ch == 'X';
-}
-
-int is_floating(const char ch)
-{
-	return ch == 'f' || ch == 'F'
+		|| ch == '*'	
+		|| ch == 'i'					// Integer
+		|| ch == 'd' || ch == 'u'		// Decimal integer
+		|| ch == 'o'					// Octal integer
+		|| ch == 'x' || ch == 'X'		// Hexadecimal integer
+		|| ch == 'f' || ch == 'F'		// Floating point number
 		|| ch == 'e' || ch == 'E'
 		|| ch == 'g' || ch == 'G'
-		|| ch == 'a' || ch == 'A';
+		|| ch == 'a' || ch == 'A'
+		|| ch == 'c' || ch == 'C'		// Character
+		|| ch == 's' || ch == 'S'		// String of characters
+		|| ch == 'p'					// Pointer address
+		|| ch == '['					// Scanset
+		|| ch == 'n';					// Count
 }
-
-int is_characters(const char ch)
-{
-	return ch == 'c' || ch == 'C'
-		|| ch == 's' || ch == 'S'
-		|| ch == '[';
-}
-
-int is_pointer(const char ch)
-{
-	return ch == 'p';
-}
-
-int is_count(const char ch)
-{
-	return ch == 'n';
-}
-
 
 int scan_arg(universal_io *const io, const char *const format, size_t size, void *arg)
 {
@@ -85,9 +61,7 @@ int in_func_buffer(universal_io *const io, const char *const format, va_list arg
 		{
 			int was_count = 0;
 
-			while (is_specifier(format[i + 1]) || is_integer(format[i + 1]) || is_unsigned(format[i + 1])
-				|| is_floating(format[i + 1]) || is_characters(format[i + 1]) || is_pointer(format[i + 1])
-				|| is_count(format[i + 1]))
+			while (is_specifier(format[i + 1]))
 			{
 				i++;
 				was_count = was_count || format[i] == 'n';
