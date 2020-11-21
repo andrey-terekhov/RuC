@@ -5,7 +5,7 @@
 //#include <string.h>
 
 
-#define FORMAT_BUFFER_SIZE 128
+#define MAX_FORMAT_SIZE 128
 
 
 int is_specifier(const char ch)
@@ -14,7 +14,7 @@ int is_specifier(const char ch)
 		|| ch == 'h' || ch == 'l'
 		|| ch == 'j' || ch == 'z' 
 		|| ch == 't' || ch == 'L'
-		|| ch == '.';
+		|| ch == '*';
 }
 
 int is_integer(const char ch)
@@ -54,27 +54,20 @@ int is_count(const char ch)
 }
 
 
-int scan_arg(universal_io *const io, const size_t position, const char *const format, size_t size, void *arg)
+int scan_arg(universal_io *const io, const char *const format, size_t size, void *arg)
 {
-	char buffer[FORMAT_BUFFER_SIZE];
+	char buffer[MAX_FORMAT_SIZE];
 		
 	for (size_t i = 0; i < size; i++)
 	{
 		buffer[i] = format[i];
 	}
 
-	buffer[size] = '%';
-	buffer[size + 1] = 'n';
-	buffer[size + 2] = '\0';
+	sprintf(&buffer[size], "%%zn");
 
-	int number = 0;
+	size_t number = 0;
 	int ret = sscanf(&io->in_buffer[io->in_position], buffer, arg, &number);
 	io->in_position += number;
-
-	if (is_count(format[size - 1]))
-	{
-		*(int *)arg = io->in_position - position;
-	}
 
 	return ret;
 }
@@ -90,11 +83,15 @@ int in_func_buffer(universal_io *const io, const char *const format, va_list arg
 	{
 		if (format[i] == '%')
 		{
+			int was_count = 0;
+
 			while (is_specifier(format[i + 1]) || is_integer(format[i + 1]) || is_unsigned(format[i + 1])
 				|| is_floating(format[i + 1]) || is_characters(format[i + 1]) || is_pointer(format[i + 1])
 				|| is_count(format[i + 1]))
 			{
 				i++;
+				was_count = was_count || format[i] == 'n';
+				
 				if (format[i] == '[')
 				{
 					while (format[i + 1] != '\0' && format[i] != '\\' && format[i + 1] != ']')
@@ -104,9 +101,16 @@ int in_func_buffer(universal_io *const io, const char *const format, va_list arg
 				}
 			}
 
-			if (format[i] != '%' && !is_specifier(format[i]))
+			if (format[i] != '%')
 			{
-				ret += scan_arg(io, position, &format[last], i + 1, va_arg(args, void *));
+				void *arg = va_arg(args, void *);
+				ret += scan_arg(io, &format[last], i + 1, arg);
+
+				if (was_count)
+				{
+					*(int *)arg = io->in_position - position;
+				}
+
 				last = i + 1;
 			}
 		}
