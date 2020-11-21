@@ -2,7 +2,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
+//#include <string.h>
 
 
 #define FORMAT_BUFFER_SIZE 128
@@ -54,7 +54,7 @@ int is_count(const char ch)
 }
 
 
-void scan_arg(universal_io *const io, const size_t position, const char *const format, size_t size, void *arg)
+int scan_arg(universal_io *const io, const size_t position, const char *const format, size_t size, void *arg)
 {
 	char buffer[FORMAT_BUFFER_SIZE];
 		
@@ -68,48 +68,15 @@ void scan_arg(universal_io *const io, const size_t position, const char *const f
 	buffer[size + 2] = '\0';
 
 	int number = 0;
-	sscanf(io->in_buffer, buffer, arg, &number);
+	int ret = sscanf(&io->in_buffer[io->in_position], buffer, arg, &number);
 	io->in_position += number;
 
 	if (is_count(format[size - 1]))
 	{
 		*(int *)arg = io->in_position - position;
-		/*switch (format[size - 2])
-		{
-			case 'h':
-				if (format[size - 3] == 'h')
-				{
-					arg = (void *)va_arg(*args, signed char *);
-				}
-				else
-				{
-					arg = (void *)va_arg(*args, short int *);
-				}
-				break;
-			case 'l':
-				if (format[size - 3] == 'l')
-				{
-					arg = (void *)va_arg(*args, long long int *);
-				}
-				else
-				{
-					arg = (void *)va_arg(*args, long int *);
-				}
-				break;
-			case 'j':
-				arg = (void *)va_arg(*args, intmax_t *);
-				//arg = (void *)va_arg(*args, int *);
-				break;
-			case 'z':
-				arg = (void *)va_arg(*args, size_t *);
-				break;
-			case 't':
-				arg = (void *)va_arg(*args, ptrdiff_t *);
-				break;
-			default:
-				arg = (void *)va_arg(*args, int *);
-		}*/
 	}
+
+	return ret;
 }
 
 int in_func_buffer(universal_io *const io, const char *const format, va_list args)
@@ -139,7 +106,7 @@ int in_func_buffer(universal_io *const io, const char *const format, va_list arg
 
 			if (format[i] != '%' && !is_specifier(format[i]))
 			{
-				scan_arg(io, position, &format[last], i + 1, va_arg(args, void *));
+				ret += scan_arg(io, position, &format[last], i + 1, va_arg(args, void *));
 				last = i + 1;
 			}
 		}
@@ -218,7 +185,7 @@ int in_set_buffer(universal_io *const io, const char *const buffer)
 
 	io->in_buffer = buffer;
 
-	io->in_size = strlen(buffer);
+	//io->in_size = strlen(buffer);
 	io->in_position = 0;
 	
 	io->in_func = &in_func_buffer;
@@ -274,7 +241,7 @@ size_t in_get_path(const universal_io *const io, char *const buffer)
 	}
 
 	//sprintf(buffer, "%s", io->in_file);
-	return strlen(buffer);
+	return 0;
 }
 
 const char *in_get_buffer(const universal_io *const io)
