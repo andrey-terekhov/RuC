@@ -70,7 +70,7 @@ void ws_unix_path(const char *const path, char *const buffer)
 	buffer[buffer[j - 1] == '/' ? j - 1 : j] = '\0';
 }
 
-int ws_exists(const char *const element, const char array[][MAX_STRING], const size_t size)
+int ws_exists(const char *const element, const char array[][MAX_ARG_SIZE], const size_t size)
 {
 	for (size_t i = 0; i < size; i++)
 	{

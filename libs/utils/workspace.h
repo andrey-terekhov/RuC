@@ -23,7 +23,7 @@
  
 #define MAX_PATHS 128
 #define MAX_FLAGS 32
-#define MAX_STRING 256
+#define MAX_ARG_SIZE 256
 
 
 #ifdef __cplusplus
@@ -33,16 +33,16 @@ extern "C" {
 /** Structure for parsing start arguments of program */
 typedef struct workspace
 {
-	char files[MAX_PATHS][MAX_STRING];	/** Files list */
+	char files[MAX_PATHS][MAX_ARG_SIZE];	/** Files list */
 	size_t files_num;					/** Number of files */
 
-	char dirs[MAX_PATHS][MAX_STRING];	/** Directories list */
+	char dirs[MAX_PATHS][MAX_ARG_SIZE];	/** Directories list */
 	size_t dirs_num;					/** Number of directories */
 
-	char flags[MAX_FLAGS][MAX_STRING];	/** Flags list */
+	char flags[MAX_FLAGS][MAX_ARG_SIZE];	/** Flags list */
 	size_t flags_num;					/** Number of flags */
 
-	char output[MAX_STRING];			/** Output file name */
+	char output[MAX_ARG_SIZE];			/** Output file name */
 	int was_error;						/** @c 0 if no errors */
 } workspace;
 

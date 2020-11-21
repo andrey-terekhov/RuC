@@ -20,7 +20,7 @@
 	const uint8_t COLOR_DEFAULT = 0;
 #endif
 
-#define BUFFER_SIZE 1024
+#define MAX_MSG_SIZE 1024
 
 const char *const TAG_LOGGER = "logger";
 
@@ -278,7 +278,7 @@ void log_error(const char *const tag, const char *const msg, const char *const l
 		return;
 	}
 
-	char buffer[BUFFER_SIZE];
+	char buffer[MAX_MSG_SIZE];
 	splice(buffer, msg, line, symbol);
 
 	current_error_log(tag, buffer);
@@ -297,7 +297,7 @@ void log_warning(const char *const tag, const char *const msg, const char *const
 		return;
 	}
 	
-	char buffer[BUFFER_SIZE];
+	char buffer[MAX_MSG_SIZE];
 	splice(buffer, msg, line, symbol);
 
 	current_warning_log(tag, buffer);
@@ -316,7 +316,7 @@ void log_note(const char *const tag, const char *const msg, const char *const li
 		return;
 	}
 	
-	char buffer[BUFFER_SIZE];
+	char buffer[MAX_MSG_SIZE];
 	splice(buffer, msg, line, symbol);
 
 	current_note_log(tag, buffer);

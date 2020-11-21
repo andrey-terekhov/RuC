@@ -2,7 +2,6 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>
-//#include <string.h>
 
 
 #define MAX_FORMAT_SIZE 128
@@ -82,7 +81,7 @@ int in_func_buffer(universal_io *const io, const char *const format, va_list arg
 
 				if (was_count)
 				{
-					*(int *)arg = io->in_position - position;
+					*(size_t *)arg = io->in_position - position;
 				}
 
 				last = i + 1;
@@ -100,6 +99,32 @@ int in_func_user(universal_io *const io, const char *const format, va_list args)
 	return io->in_user_func(format, args);
 }
 
+
+int out_func_buffer(universal_io *const io, const char *const format, va_list args)
+{
+	va_list local;
+	va_copy(local, args);
+
+	int ret = vsnprintf(&io->out_buffer[io->out_position], io->out_size, format, local);
+
+	if (ret != -1)
+	{
+		io->out_position += ret;
+		return ret;
+	}
+
+	io->out_buffer[io->out_position] = '\0';
+
+	char *new_buffer = realloc(io->out_buffer, 2 * io->out_size * sizeof(char));
+	if (new_buffer == NULL)
+	{
+		return -1;
+	}
+
+	io->out_size *= 2;
+	io->out_buffer = new_buffer;
+	return out_func_buffer(io, format, args);
+}
 
 int out_func_user(universal_io *const io, const char *const format, va_list args)
 {
@@ -140,15 +165,13 @@ universal_io io_create()
 	return io;
 }
 
-
+// FIX ME
 int in_set_file(universal_io *const io, const char *const path)
 {
 	if (io == NULL || path == NULL)
 	{
 		return -1;
 	}
-
-	//io->in_file = path;
 
 	return 0;
 }
@@ -161,7 +184,6 @@ int in_set_buffer(universal_io *const io, const char *const buffer)
 	}
 
 	io->in_buffer = buffer;
-
 	io->in_position = 0;
 	
 	io->in_func = &in_func_buffer;
@@ -208,7 +230,7 @@ io_func in_get_func(const universal_io *const io)
 {
 	return io != NULL ? io->in_func : NULL;
 }
-
+// FIX ME
 size_t in_get_path(const universal_io *const io, char *const buffer)
 {
 	if (!in_is_file(io))
@@ -216,7 +238,6 @@ size_t in_get_path(const universal_io *const io, char *const buffer)
 		return 0;
 	}
 
-	//sprintf(buffer, "%s", io->in_file);
 	return 0;
 }
 
@@ -230,7 +251,7 @@ size_t in_get_position(const universal_io *const io)
 	return in_is_buffer(io) ? io->in_position : 0;
 }
 
-
+// FIX ME
 int in_close_file(universal_io *const io)
 {
 	return 0;
@@ -264,14 +285,33 @@ int in_clear(universal_io *const io)
 	return 0;
 }
 
-
+// FIX ME
 int out_set_file(universal_io *const io, const char *const path)
 {
 	return 0;
 }
-
+// FIX ME
 int out_set_buffer(universal_io *const io, const size_t size)
 {
+	if (out_clear(io))
+	{
+		return -1;
+	}
+
+	io->out_size = size + 1;
+	io->out_buffer = malloc(io->out_size * sizeof(char));
+	
+	if (io->out_buffer == NULL)
+	{
+		io->out_size = 0;
+		return -1;
+	}
+
+	io->out_buffer[0] = '\0';
+	io->out_position = 0;
+	
+	io->out_func = &out_func_buffer;
+
 	return 0;
 }
 
@@ -314,7 +354,7 @@ io_func out_get_func(const universal_io *const io)
 {
 	return io != NULL ? io->out_func : NULL;
 }
-
+// FIX ME
 size_t out_get_path(const universal_io *const io, char *const buffer)
 {
 	return 0;
@@ -337,7 +377,7 @@ char *out_extract_buffer(universal_io *const io)
 	io->out_func = NULL;
 	return buffer;
 }
-
+// FIX ME
 int out_close_file(universal_io *const io)
 {
 	return 0;
