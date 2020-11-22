@@ -42,6 +42,16 @@ extern "C" {
 EXPORTED size_t utf8_symbol_size(const char symbol);
 
 /**
+ *	Get first UTF-8 character octet index
+ *
+ *	@param	str		String with character
+ *	@param	index	Index of character
+ *
+ *	@return	First octet index
+ */
+EXPORTED size_t utf8_to_first_byte(const char *const str, const size_t index);
+
+/**
  *	Convert character from string to UTF-8 сharacter
  *
  *	@param	symbol	Character

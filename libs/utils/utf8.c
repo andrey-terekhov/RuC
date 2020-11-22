@@ -26,6 +26,13 @@ size_t utf8_symbol_size(const char symbol)
 	return 1;
 }
 
+size_t utf8_to_first_byte(const char *const str, const size_t index)
+{
+	return str == NULL ? 0
+		: (str[index] & 0b11000000) == 0b10000000
+			? utf8_to_first_byte(str, index - 1) : index;
+}
+
 char32_t utf8_convert(const char *const symbol)
 {
 	if (symbol == NULL)
@@ -62,7 +69,7 @@ char32_t utf8_convert(const char *const symbol)
 
 size_t utf8_to_string(char *const buffer, const char32_t symbol)
 {
-	if ((symbol & 0xFFE00000) != 0x00000000)
+	if (buffer == NULL || (symbol & 0xFFE00000) != 0x00000000)
 	{
 		return 0;
 	}
