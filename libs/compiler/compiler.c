@@ -163,7 +163,7 @@ int compile_to_vm(const workspace *const ws)
 
 	process_user_requests(context, ws);
 
-	int ret = get_exit_code(context);
+	int ret = context->error_flag;
 	free(context);
 	return ret;
 }
