@@ -20,6 +20,7 @@
 #include "logger.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
+#include "utf8.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -157,7 +158,7 @@ int letter(compiler_context *context)
 {
 	return (context->curchar >= 'A' && context->curchar <= 'Z') ||
 		   (context->curchar >= 'a' && context->curchar <= 'z') || context->curchar == '_' ||
-		   (context->curchar >= 0x410 /*А */ && context->curchar <= 0x44F /*'я'*/);
+		   utf8_is_russian(context->curchar);
 }
 
 int digit(compiler_context *context)
@@ -687,11 +688,12 @@ int scan(compiler_context *context)
 				}
 				
 				char msg[256];
-				sprintf(msg, "плохой символ %c %i\n", context->curchar, context->curchar);
+				size_t index = sprintf(msg, "плохой символ ");
+				index += utf8_to_string(&msg[index], context->curchar);
+				index += sprintf(&msg[index], " %i", context->curchar);
 				log_system_error(tag, msg);
 
-				context->error_flag = 1;
-				return 0;
+				exit(1);
 			}
 	}
 }
