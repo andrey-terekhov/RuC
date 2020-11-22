@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include "utf8.h"
 
 
 const char *const PREFIX = "// #";
@@ -168,9 +169,27 @@ int cmt_is_correct(const comment *const cmt)
 
 size_t cmt_get_tag(const comment *const cmt, char *const buffer)
 {
-	size_t i = cmt_get_path(cmt, buffer);
+	size_t index = cmt_get_path(cmt, buffer);
 
-	return i == 0 ? 0 : i + sprintf(&buffer[i], ":%zi:%zi", cmt->line, cmt->symbol);
+	if (index == 0)
+	{
+		return 0;
+	}
+
+	index += sprintf(&buffer[index], ":%zi", cmt->line);
+	
+	const size_t first = utf8_to_first_byte(cmt->code, cmt->symbol);
+	size_t symbol = first;
+
+	size_t i = 0;
+	while (i < first)
+	{
+		const size_t size = utf8_symbol_size(cmt->code[i]);
+		symbol -= size - 1;
+		i += size;
+	}
+
+	return index + sprintf(&buffer[index], ":%zi", symbol + 1);
 }
 
 size_t cmt_get_code_line(const comment *const cmt, char *const buffer)
@@ -211,10 +230,10 @@ size_t cmt_get_path(const comment *const cmt, char *const buffer)
 
 size_t cmt_get_line(const comment *const cmt)
 {
-	return cmt->line;
+	return cmt != NULL ? cmt->line : 0;
 }
 
 size_t cmt_get_symbol(const comment *const cmt)
 {
-	return cmt->symbol;
+	return cmt != NULL ? cmt->symbol : 0;
 }
