@@ -551,26 +551,6 @@ void get_warning(const int num, char *const msg)
 
 void error(compiler_context *const context, const int num)
 {
-	context->error_flag = 1;
-	context->tc = context->temp_tc;
-	/*if (!context->new_line_flag && context->curchar != EOF)
-	{
-		while (context->curchar != '\n' && context->curchar != EOF)
-		{
-			nextch(context);
-		}
-
-		if (context->curchar != EOF)
-		{
-			scaner(context);
-		}
-	}
-
-	if (context->curchar != EOF)
-	{
-		scaner(context);
-	}*/
-
 	const universal_io *const io = &context->io;
 
 	char tag[MAX_TAG_SIZE] = TAG_RUC;

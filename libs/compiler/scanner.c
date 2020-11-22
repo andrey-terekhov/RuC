@@ -429,6 +429,7 @@ int scan(compiler_context *context)
 			{
 				error(context, no_right_apost);
 				context->error_flag = 1;
+				context->tc = context->temp_tc;
 			}
 			else
 			{

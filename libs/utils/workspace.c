@@ -11,7 +11,7 @@
 #endif
 
 
-const char *const default_output = "export.txt";
+const char *const DEFAULT_OUTPUT = "export.txt";
 
 
 void ws_init(workspace *const ws)
@@ -20,7 +20,7 @@ void ws_init(workspace *const ws)
 	ws->dirs_num = 0;
 	ws->flags_num = 0;
 
-	strcpy(ws->output, default_output);
+	strcpy(ws->output, DEFAULT_OUTPUT);
 	ws->was_error = 0;
 }
 
@@ -327,7 +327,7 @@ int ws_clear(workspace *const ws)
 	ws->dirs_num = 0;
 	ws->flags_num = 0;
 
-	strcpy(ws->output, default_output);
+	strcpy(ws->output, DEFAULT_OUTPUT);
 	ws->was_error = 0;
 
 	return 0;
