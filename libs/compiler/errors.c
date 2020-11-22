@@ -19,6 +19,7 @@
 #include "global.h"
 #include "logger.h"
 #include "scanner.h"
+#include "utf8.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -64,7 +65,7 @@ size_t printident(compiler_context *context, int r, char *const msg, size_t inde
 
 void warning(compiler_context *context, int ernum)
 {
-	char tag[MAXSTRINGL];
+	char tag[MAXSTRINGL] = "ruc";
 	char msg[4 * MAXSTRINGL];
 
 	//get_tag(context, tag);
@@ -83,7 +84,7 @@ void warning(compiler_context *context, int ernum)
 	log_system_warning(tag, msg);
 }
 
-void show_macro(compiler_context *context, int k, int nwe_line, int *s, int num)
+/*void show_macro(compiler_context *context, int k, int nwe_line, int *s, int num)
 {
 	int flag = 1;
 	int i = k;
@@ -120,7 +121,7 @@ void show_macro(compiler_context *context, int k, int nwe_line, int *s, int num)
 		}
 		printer_printf(&context->err_options, "\n");
 	}
-}
+}*/
 
 void error(compiler_context *context, int ernum)
 {
@@ -183,7 +184,7 @@ void error(compiler_context *context, int ernum)
 
 	show_macro(context, i, new_line, s);
 	*/
-	char tag[MAXSTRINGL];
+	char tag[MAXSTRINGL] = "ruc";
 	char msg[4 * MAXSTRINGL];
 	size_t index = 0;
 
@@ -581,7 +582,7 @@ void error(compiler_context *context, int ernum)
 		case wrong_printf_param_type: // test_exist
 			index += sprintf(&msg[index], "тип параметра printf/печатьф не соответствует "
 												  "спецификатору: %%");
-			printer_printchar(&context->err_options, context->bad_printf_placeholder);
+			index += utf8_to_string(&msg[index], context->bad_printf_placeholder);
 			switch (context->bad_printf_placeholder)
 			{
 				case 'i':
@@ -618,7 +619,7 @@ void error(compiler_context *context, int ernum)
 			break;
 		case printf_unknown_format_placeholder: // test_exist
 			index += sprintf(&msg[index], "в printf/печатьф неизвестный спецификатор типа %%");
-			printer_printchar(&context->err_options, context->bad_printf_placeholder);
+			index += utf8_to_string(&msg[index], context->bad_printf_placeholder);
 			break;
 		case too_many_printf_params: // test_exist
 			index += sprintf(&msg[index], "максимально в printf/печатьф можно выводить %i значений",
@@ -686,11 +687,11 @@ void error(compiler_context *context, int ernum)
 	// exit(2);
 }
 
-void set_errors_output(compiler_context *context, char *path)
+/*void set_errors_output(compiler_context *context, char *path)
 {
 	compiler_context_detach_io(context, IO_TYPE_ERROR);
 	compiler_context_attach_io(context, path, IO_TYPE_ERROR, IO_SOURCE_FILE);
-}
+}*/
 
 int get_exit_code(compiler_context *context)
 {

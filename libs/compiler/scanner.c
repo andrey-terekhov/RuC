@@ -17,7 +17,9 @@
 #include "context.h"
 #include "errors.h"
 #include "global.h"
-#include "uniscanner.h"
+#include "logger.h"
+#include "uniprinter2.h"
+#include "uniscanner2.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -27,7 +29,7 @@
 
 int getnext(compiler_context *context)
 {
-	int ret = scanner_getnext(&context->input_options);
+	int ret = uni_scan_char(&context->io);
 	context->nextchar = ret;
 	return ret;
 }
@@ -49,12 +51,12 @@ void endofline(compiler_context *context)
 	/*if (context->prep_flag == 1)
 	{
 		int j;
-		printer_printf(&context->output_options, "line %i) ", context->line - 1);
+		uni_printf(&context->io, "line %i) ", context->line - 1);
 		for (j = context->lines[context->line - 1]; j < context->lines[context->line]; j++)
 		{
 			if (context->source[j] != EOF)
 			{
-				printer_printchar(&context->output_options, context->source[j]);
+				uni_print_char(&context->io, context->source[j]);
 			}
 		}
 	}*/
@@ -84,7 +86,7 @@ void nextch(compiler_context *context)
 	{
 		onemore(context);
 		endnl(context);
-		// printer_printf(&context->output_options, "\n");
+		// uni_printf(&context->io, "\n");
 		return;
 	}
 	if (context->kw)
@@ -104,7 +106,7 @@ void nextch(compiler_context *context)
 			if (context->curchar == EOF)
 			{
 				endnl(context);
-				printer_printf(&context->output_options, "\n");
+				uni_printf(&context->io, "\n");
 				return;
 			}
 		} while (context->curchar != '\n');
@@ -678,7 +680,16 @@ int scan(compiler_context *context)
 			}
 			else
 			{
-				printer_printf(&context->err_options, "плохой символ %c %i\n", context->curchar, context->curchar);
+				char tag[256];
+				if (!in_get_path(&context->io, tag))
+				{
+					sprintf(tag, "ruc");
+				}
+				
+				char msg[256];
+				sprintf(msg, "плохой символ %c %i\n", context->curchar, context->curchar);
+				log_system_error(tag, msg);
+
 				context->error_flag = 1;
 				return 0;
 			}

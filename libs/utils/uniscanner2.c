@@ -25,7 +25,7 @@ char32_t uni_scan_char(universal_io *const io)
 	char buffer[8];
 	if (!uni_scanf(io, "%c", &buffer[0]))
 	{
-		return 0x00000000;
+		return EOF;
 	}
 
 	const size_t size = utf8_symbol_size(buffer[0]);
@@ -33,7 +33,7 @@ char32_t uni_scan_char(universal_io *const io)
 	{
 		if (!uni_scanf(io, "%c", &buffer[i]))
 		{
-			return 0x00000000;
+			return EOF;
 		}
 	}
 	

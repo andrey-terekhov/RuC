@@ -30,10 +30,11 @@
 void compiler_context_init(compiler_context *context)
 {
 	memset(context, 0, sizeof(compiler_context));
-	scanner_init(&context->input_options);
-	printer_init(&context->output_options);
-	printer_init(&context->err_options);
-	printer_init(&context->miscout_options);
+	//scanner_init(&context->input_options);
+	//printer_init(&context->output_options);
+	//printer_init(&context->err_options);
+	//printer_init(&context->miscout_options);
+	context->io = io_create();
 	compiler_table_init(&context->reprtab);
 
 	context->charnum = 0;
@@ -66,16 +67,16 @@ void compiler_context_init(compiler_context *context)
 	context->temp_tc = 0;
 }
 
-void compiler_context_deinit(compiler_context *context)
+/*void compiler_context_deinit(compiler_context *context)
 {
-	scanner_deinit(&context->input_options);
-	printer_deinit(&context->output_options);
-	printer_deinit(&context->err_options);
-	printer_deinit(&context->miscout_options);
-}
+	//scanner_deinit(&context->input_options);
+	//printer_deinit(&context->output_options);
+	//printer_deinit(&context->err_options);
+	//printer_deinit(&context->miscout_options);
+}*/
 
 /** Is I/O an actual output? */
-static bool io_type_is_output(ruc_io_type type)
+/*static bool io_type_is_output(ruc_io_type type)
 {
 	switch (type)
 	{
@@ -84,10 +85,10 @@ static bool io_type_is_output(ruc_io_type type)
 		default:
 			return true;
 	}
-}
+}*/
 
 /** Get type-specific options */
-static void *io_type2opts(compiler_context *context, ruc_io_type type)
+/*static void *io_type2opts(compiler_context *context, ruc_io_type type)
 {
 	switch (type)
 	{
@@ -102,16 +103,16 @@ static void *io_type2opts(compiler_context *context, ruc_io_type type)
 		default:
 			return NULL;
 	}
-}
+}*/
 
 /** Get access mask for a specific IO type */
-static const char *io_type2access_mask(ruc_io_type type)
+/*static const char *io_type2access_mask(ruc_io_type type)
 {
 	return io_type_is_output(type) ? "wt" : "r";
-}
+}*/
 
 /** Open file with specific mask taking standard files into account */
-static FILE *io_get_file(const char *ptr, const char *mask)
+/*static FILE *io_get_file(const char *ptr, const char *mask)
 {
 	if (strcmp(ptr, ":stderr") == 0)
 	{
@@ -126,9 +127,9 @@ static FILE *io_get_file(const char *ptr, const char *mask)
 		return stdin;
 	}
 	return fopen(ptr, mask);
-}
+}*/
 
-void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_io_type type, ruc_io_source source)
+/*void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_io_type type, ruc_io_source source)
 {
 	void *opts = io_type2opts(context, type);
 
@@ -173,9 +174,9 @@ void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_
 			scanner_attach_buffer(opts, ptr);
 		}
 	}
-}
+}*/
 
-void compiler_context_detach_io(compiler_context *context, ruc_io_type type)
+/*void compiler_context_detach_io(compiler_context *context, ruc_io_type type)
 {
 	void *opts = io_type2opts(context, type);
 
@@ -187,7 +188,7 @@ void compiler_context_detach_io(compiler_context *context, ruc_io_type type)
 	{
 		scanner_close(opts);
 	}
-}
+}*/
 
 void compiler_table_init(compiler_table *table)
 {
