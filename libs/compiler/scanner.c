@@ -143,7 +143,7 @@ void next_string_elem(compiler_context *context)
 		}
 		else if (context->curchar != '\'' && context->curchar != '\\' && context->curchar != '\"')
 		{
-			error(context, bad_escape_sym);
+			error(&context->io, bad_escape_sym);
 			exit(1);
 		}
 		else
@@ -427,7 +427,7 @@ int scan(compiler_context *context)
 			next_string_elem(context);
 			if (context->curchar != '\'')
 			{
-				error(context, no_right_apost);
+				error(&context->io, no_right_apost);
 				context->error_flag = 1;
 				context->tc = context->temp_tc;
 			}
@@ -456,7 +456,7 @@ int scan(compiler_context *context)
 				}
 				if (n == MAXSTRINGL)
 				{
-					error(context, too_long_string);
+					error(&context->io, too_long_string);
 					exit(1);
 				}
 				nextch(context);
@@ -597,7 +597,7 @@ int scan(compiler_context *context)
 				}
 				if (!digit(context))
 				{
-					error(context, must_be_digit_after_exp);
+					error(&context->io, must_be_digit_after_exp);
 					exit(1);
 				}
 				while (digit(context))
@@ -624,7 +624,7 @@ int scan(compiler_context *context)
 			{
 				if (flagtoolong)
 				{
-					warning(context, too_long_int);
+					warning(&context->io, too_long_int);
 				}
 				context->ansttype = LFLOAT;
 			}

@@ -35,10 +35,35 @@ int gettype(compiler_context *context);
 void block(compiler_context *context, int b);
 
 
-void context_error(compiler_context *const context, const int num)
+void context_error(compiler_context *const context, const int num) // Вынесено из errors.c
 {
 	const universal_io *const io = &context->io;
-	error(context, num);
+
+	switch (num)
+	{
+		case not_primary:
+			error(io, num, context->cur);
+			break;
+		case bad_toval:
+			error(io, num, context->ansttype);
+			break;
+		case wrong_printf_param_type:
+		case printf_unknown_format_placeholder:
+			error(io, num, context->bad_printf_placeholder);
+			break;
+		case repeated_decl:
+		case ident_is_not_declared:
+		case repeated_label:
+		case no_field:
+		case predef_but_notdef:
+			error(io, num, REPRTAB, REPRTAB_POS);
+			break;
+		case label_not_declared:
+			error(io, num, context->hash, REPRTAB, REPRTAB_POS);
+			break;
+		default:
+			error(io, num);
+	}
 	
 	context->error_flag = 1;
 	context->tc = context->temp_tc;

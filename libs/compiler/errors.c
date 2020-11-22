@@ -15,14 +15,14 @@
  */
 
 #include "errors.h"
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdint.h>
 #include "commenter.h"
 #include "global.h"
 #include "logger.h"
-#include "scanner.h"
 #include "uniio.h"
 #include "utf8.h"
-#include <stdio.h>
-#include <stdint.h>
 
 
 #define TAG_RUC "ruc"
@@ -34,23 +34,24 @@
 #define MAX_INT_LENGTH 12
 
 
-size_t printident(compiler_context *const context, int r, char *const buffer)
+size_t printident(const int *const reprtab, int pos, char *const buffer)
 {
 	size_t index = 0;
 
-	r += 2; // ссылка на context->reprtab
+	pos += 2; // ссылка на context->reprtab
 	do
 	{
-		index += utf8_to_string(buffer, REPRTAB[r++]);
-	} while (REPRTAB[r] != 0);
-	
+		index += utf8_to_string(buffer, reprtab[pos++]);
+	} while (reprtab[pos] != 0);
+
 	return index;
 }
 
 
-void get_error(compiler_context *const context, const int num, char *const msg)
+void get_error(const int num, char *const msg, va_list args)
 {
 	size_t index = 0;
+
 	switch (num)
 	{
 		case after_type_must_be_ident: // test_exist
@@ -86,9 +87,13 @@ void get_error(compiler_context *const context, const int num, char *const msg)
 			sprintf(msg, "условие должно быть в ()");
 			break;
 		case repeated_decl:	// test_exist
+		{
 			index += sprintf(&msg[index], "повторное описание идентификатора ");
-			index += printident(context, REPRTAB_POS, &msg[index]);
-			break;
+			const int *const reprtab = va_arg(args, int *);
+			const int pos = va_arg(args, int);
+			index += printident(reprtab, pos, &msg[index]);
+		}
+		break;
 		case arr_init_must_start_from_BEGIN: // test_exist
 			sprintf(msg, "инициализация массива должна начинаться со {");
 			break;
@@ -100,9 +105,13 @@ void get_error(compiler_context *const context, const int num, char *const msg)
 												  "должна быть ,");
 			break;
 		case ident_is_not_declared: // test_exist
+		{
 			index += sprintf(&msg[index], "не описан идентификатор ");
-			index += printident(context, REPRTAB_POS, &msg[index]);
-			break;
+			const int *const reprtab = va_arg(args, int *);
+			const int pos = va_arg(args, int);
+			index += printident(reprtab, pos, &msg[index]);
+		}
+		break;
 		case no_rightsqbr_in_slice: // test_exist
 			sprintf(msg, "не хватает ] в вырезке элемента массива");
 			break;
@@ -287,19 +296,31 @@ void get_error(compiler_context *const context, const int num, char *const msg)
 			sprintf(msg, "оператор ПРОДОЛЖИТЬ не в цикле");
 			break;
 		case not_primary:	// need_test
-			sprintf(msg, "первичное не может начинаться с лексемы %i", context->cur);
-			break;
+		{
+			const int cur = va_arg(args, int);
+			sprintf(msg, "первичное не может начинаться с лексемы %i", cur);
+		}
+		break;
 		case wrong_operand:	// need_test
 			sprintf(msg, "операнд операции может иметь только тип ЦЕЛ, ЛИТ или ВЕЩ");
 			break;
 		case label_not_declared:	// need_test
-			index += sprintf(&msg[index], "в строке %i переход на неописанную метку ", context->hash);
-			index += printident(context, REPRTAB_POS, &msg[index]);
-			break;
+		{
+			const int hash = va_arg(args, int);
+			index += sprintf(&msg[index], "в строке %i переход на неописанную метку ", hash);
+			const int *const reprtab = va_arg(args, int *);
+			const int pos = va_arg(args, int);
+			index += printident(reprtab, pos, &msg[index]);
+		}
+		break;
 		case repeated_label: // test_exist
+		{
 			index += sprintf(&msg[index], "повторное описание метки ");
-			index += printident(context, REPRTAB_POS, &msg[index]);
-			break;
+			const int *const reprtab = va_arg(args, int *);
+			const int pos = va_arg(args, int);
+			index += printident(reprtab, pos, &msg[index]);
+		}
+		break;
 		case operand_is_pointer:	// need_test
 			sprintf(msg, "операнд бинарной формулы не может быть указателем");
 			break;
@@ -335,17 +356,24 @@ void get_error(compiler_context *const context, const int num, char *const msg)
 			sprintf(msg, "переменные такого типа нельзя инициализировать");
 			break;
 		case no_field:	// test_exist
+		{
 			index += sprintf(&msg[index], "нет такого поля ");
-			index += printident(context, REPRTAB_POS, &msg[index]);
+			const int *const reprtab = va_arg(args, int *);
+			const int pos = va_arg(args, int);
+			index += printident(reprtab, pos, &msg[index]);
 			index += sprintf(&msg[index], " в структуре");
-			break;
+		}
+		break;
 		case slice_from_func:	// need_test
 			sprintf(msg, "вырезка элемента из массива, выданного функцией, а функции "
 												  "не могут выдавать массивы");
 			break;
 		case bad_toval:	// need_test
-			sprintf(msg, "странный toval ansttype=%i", context->ansttype);
-			break;
+		{
+			const int ansttype = va_arg(args, int);
+			sprintf(msg, "странный toval ansttype=%i", ansttype);
+		}
+		break;
 		case wait_end: // need_test
 			sprintf(msg, "в инициализации структуры здесь ожидалась правая фигурная "
 												  "скобка }");
@@ -383,10 +411,14 @@ void get_error(compiler_context *const context, const int num, char *const msg)
 												  "пользователем)");
 			break;
 		case predef_but_notdef: // need_test
+		{
 			index += sprintf(&msg[index], "функция ");
-			index += printident(context, REPRTAB_POS, &msg[index]);
+			const int *const reprtab = va_arg(args, int *);
+			const int pos = va_arg(args, int);
+			index += printident(reprtab, pos, &msg[index]);
 			index += sprintf(&msg[index], " была предопределена, но не описана");
-			break;
+		}
+		break;
 		case print_without_br: // test_exist
 			sprintf(msg, "операнд оператора печати должен быть в круглых скобках ()");
 			break;
@@ -421,10 +453,12 @@ void get_error(compiler_context *const context, const int num, char *const msg)
 												  "форматная строка");
 			break;
 		case wrong_printf_param_type: // test_exist
+		{
 			index += sprintf(&msg[index], "тип параметра printf/печатьф не соответствует "
 												  "спецификатору: %%");
-			index += utf8_to_string(&msg[index], context->bad_printf_placeholder);
-			switch (context->bad_printf_placeholder)
+			const int bad_printf_placeholder = va_arg(args, int);
+			index += utf8_to_string(&msg[index], bad_printf_placeholder);
+			switch (bad_printf_placeholder)
 			{
 				case 'i':
 				case U'ц': // 1094
@@ -450,7 +484,8 @@ void get_error(compiler_context *const context, const int num, char *const msg)
 				default:
 					index += sprintf(&msg[index], " -- неизвестный спецификатор");
 			}
-			break;
+		}
+		break;
 		case wrong_printf_param_number: // test_exist
 			sprintf(msg, "количество параметров printf/печатьф не соответствует "
 												  "количеству спецификаторов");
@@ -459,9 +494,12 @@ void get_error(compiler_context *const context, const int num, char *const msg)
 			sprintf(msg, "в printf/печатьф нет спецификатора типа после '%%'");
 			break;
 		case printf_unknown_format_placeholder: // test_exist
+		{
 			index += sprintf(&msg[index], "в printf/печатьф неизвестный спецификатор типа %%");
-			index += utf8_to_string(&msg[index], context->bad_printf_placeholder);
-			break;
+			const int bad_printf_placeholder = va_arg(args, int);
+			index += utf8_to_string(&msg[index], bad_printf_placeholder);
+		}
+		break;
 		case too_many_printf_params: // test_exist
 			sprintf(msg, "максимально в printf/печатьф можно выводить %i значений",
 						   MAXPRINTFPARAMS);
@@ -540,6 +578,36 @@ void get_warning(const int num, char *const msg)
 }
 
 
+void output(const universal_io *const io, const char *const msg, const logger system_func
+	, void (*func)(const char *const, const char *const, const char *const, const size_t))
+{
+	char tag[MAX_TAG_SIZE] = TAG_RUC;
+
+	const char *code = in_get_buffer(io);
+	if (code == NULL)
+	{
+		in_get_path(io, tag);
+		system_func(tag, msg);
+	}
+
+	size_t position = in_get_position(io) - 1;
+	while (position > 0
+		&& (code[position] == ' ' || code[position] == '\t'
+		|| code[position] == '\r' || code[position] == '\n'))
+	{
+		position--;
+	}
+
+	comment cmt = cmt_search(code, position);
+	cmt_get_tag(&cmt, tag);
+
+	char line[MAX_LINE_SIZE];
+	cmt_get_code_line(&cmt, line);
+
+	func(tag, msg, line, cmt_get_symbol(&cmt));
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -549,68 +617,36 @@ void get_warning(const int num, char *const msg)
  */
 
 
-void error(compiler_context *const context, const int num)
+void error(const universal_io *const io, const int num, ...)
 {
-	const universal_io *const io = &context->io;
+	va_list args;
+	va_start(args, num);
 
-	char tag[MAX_TAG_SIZE] = TAG_RUC;
-	char msg[MAX_MSG_SIZE] = "";
-	get_error(context, num, msg);
+	char msg[MAX_MSG_SIZE];
+	get_error(num, msg, args);
 
-	const char *code = in_get_buffer(io);
-	if (code == NULL)
-	{
-		in_get_path(io, tag);
-		log_system_error(tag, msg);
-	}
+	va_end(args);
 
-	size_t position = in_get_position(io) - 1;
-	while ((code[position] == ' ' || code[position] == '\t'
-		|| code[position] == '\r' || code[position] == '\n')
-		&& code[position] != '\0')
-	{
-		position--;
-	}
-
-	comment cmt = cmt_search(code, position);
-	cmt_get_tag(&cmt, tag);
-
-	char line[MAX_LINE_SIZE];
-	cmt_get_code_line(&cmt, line);
-
-	log_error(tag, msg, line, cmt_get_symbol(&cmt));
+	output(io, msg, &log_system_error, &log_error);
 }
 
-void warning(compiler_context *const context, const int num)
+void warning(const universal_io *const io, const int num)
 {
-	const universal_io *const io = &context->io;
-
-	char tag[MAX_TAG_SIZE] = TAG_RUC;
-	char msg[MAX_MSG_SIZE] = "";
+	char msg[MAX_MSG_SIZE];
 	get_warning(num, msg);
 
-	const char *code = in_get_buffer(io);
-	if (code == NULL)
-	{
-		in_get_path(io, tag);
-		log_system_warning(tag, msg);
-	}
+	output(io, msg, &log_system_warning, &log_warning);
+}
 
-	size_t position = in_get_position(io) - 1;
-	while ((code[position] == ' ' || code[position] == '\t'
-		|| code[position] == '\r' || code[position] == '\n')
-		&& code[position] != '\0')
-	{
-		position--;
-	}
-	
-	comment cmt = cmt_search(code, position);
-	cmt_get_tag(&cmt, tag);
 
-	char line[MAX_LINE_SIZE];
-	cmt_get_code_line(&cmt, line);
+void error_msg(const universal_io *const io, const char *const msg)
+{
+	output(io, msg, &log_system_error, &log_error);
+}
 
-	log_warning(tag, msg, line, cmt_get_symbol(&cmt));
+void warning_msg(const universal_io *const io, const char *const msg)
+{
+	output(io, msg, &log_system_warning, &log_warning);
 }
 
 
@@ -626,15 +662,4 @@ void system_warning(const int num)
 	char buffer[MAX_INT_LENGTH];
 	sprintf(buffer, "%i", num);
 	log_system_warning(TAG_RUC, buffer);
-}
-
-
-void system_error_msg(const char *const msg)
-{
-	log_system_error(TAG_RUC, msg);
-}
-
-void system_warning_msg(const char *const msg)
-{
-	log_system_warning(TAG_RUC, msg);
 }

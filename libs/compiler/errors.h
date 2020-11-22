@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "context.h"
+#include "uniio.h"
 
 
 #ifdef __cplusplus
@@ -29,7 +29,7 @@ extern "C" {
  *	@param	io		Universal io
  *	@param	num		Error number
  */
-void error(compiler_context *const context, const int num);
+void error(const universal_io *const io, const int num, ...);
 
 /**
  *	Emit a warning for some problem
@@ -37,7 +37,24 @@ void error(compiler_context *const context, const int num);
  *	@param	io		Universal io
  *	@param	num		Warning number
  */
-void warning(compiler_context *const context, const int num);
+void warning(const universal_io *const io, const int num);
+
+
+/**
+ *	Emit error message
+ *
+ *	@param	io		Universal io
+ *	@param	msg		Error message
+ */
+void error_msg(const universal_io *const io, const char *const msg);
+
+/**
+ *	Emit warning message
+ *
+ *	@param	io		Universal io
+ *	@param	msg		Warning message
+ */
+void warning_msg(const universal_io *const io, const char *const msg);
 
 
 /**
@@ -53,21 +70,6 @@ void system_error(const int num);
  *	@param	num		Warning number
  */
 void system_warning(const int num);
-
-
-/**
- *	Emit error message
- *
- *	@param	msg		Error message
- */
-void system_error_msg(const char *const msg);
-
-/**
- *	Emit warning message
- *
- *	@param	msg		Warning message
- */
-void system_warning_msg(const char *const msg);
 
 #ifdef __cplusplus
 } /* extern "C" */
