@@ -18,8 +18,8 @@
 #include "errors.h"
 #include "global.h"
 #include "logger.h"
-#include "uniprinter2.h"
-#include "uniscanner2.h"
+#include "uniprinter.h"
+#include "uniscanner.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>

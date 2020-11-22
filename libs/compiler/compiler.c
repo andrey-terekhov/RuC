@@ -21,7 +21,7 @@
 #include "defs.h"
 #include "errors.h"
 #include "frontend_utils.h"
-#include "io2.h"
+#include "io.h"
 #include "logger.h"
 #include "preprocessor.h"
 #include "tables.h"

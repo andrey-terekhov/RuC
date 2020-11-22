@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov
+ *	Copyright 2020 Andrey Terekhov, Victor Y. Fadeev, Dmitrii Davladov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,107 +16,36 @@
 
 #pragma once
 
+#include <stdio.h>
 #include "io.h"
 #include "dll.h"
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdio.h>
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** Options of universal printer */
-typedef struct universal_printer_options
-{
-	ruc_io_source source;
-	FILE *output;
-	char *ptr;
-	size_t pos;
-	size_t size;
-	void *opaque;
-} universal_printer_options;
+/**
+ *	Universal printf-like function
+ *
+ *	@param	io			Universal io structure
+ *	@param	format		String format
+ *
+ *	@return	Return printf-like value
+ */
+EXPORTED int uni_printf(universal_io *const io, const char *const format, ...)
+	__attribute__((format(printf, 2, 3)))
+	__attribute__((nonnull(2)));
 
 /**
- *	Prototype for a function printing to a context
+ *	Universal function for printing UTF-8 characters
  *
- *	@param	opts	Printer options
- *	@param	fmt		String format
- *	@param	args	Variadic argument list
+ *	@param	io			Universal io structure
+ *	@param	wchar		UTF-8 character
  *
- *	@return	printf()-like return value
+ *	@return	Return printf-like value
  */
-typedef int (*io_printf_t)(universal_printer_options *opts, const char *fmt, va_list args);
-
-/** Printer description */
-typedef struct printer_desc
-{
-	ruc_io_source source; /** Data source supported by printer */
-	io_printf_t printf;	  /** The pointer to a function printing to data destination */
-} printer_desc;
-
-
-/**
- *	Initialize printer
- *
- *	@param	opts	Printer context
- */
-EXPORTED void printer_init(universal_printer_options *opts);
-
-/**
- *	Deinitialize printer
- *
- *	@param	opts	Printer context
- */
-EXPORTED void printer_deinit(universal_printer_options *opts);
-
-/**
- *	Close current printer stream
- *
- *	@param	opts	Printer context
- */
-EXPORTED void printer_close(universal_printer_options *opts);
-
-/**
- *	Universal function for printing data to some output
- *
- *	@param	opts	Universal printer options
- *	@param	fmt		String format
- *
- *	@return	printf-like return value
- */
-EXPORTED int printer_printf(universal_printer_options *opts, const char *fmt, ...);
-
-/**
- *	Universal function for printing (wide) characters
- *
- *	@param	opts	Universal printer options
- *	@param	wchar	Symbol
- *
- *	@return	printf-like return value
- */
-EXPORTED int printer_printchar(universal_printer_options *opts, int wchar);
-
-/**
- *	Attach file to printer
- *
- *	@param	opts	Universal printer options
- *	@param	file	Target file
- *
- *	@return	@c true on success, @c false on failure
- */
-EXPORTED bool printer_attach_file(universal_printer_options *opts, FILE *file);
-
-/**
- *	Attach buffer to printer
- *
- *	@param	opts	Universal printer options
- *	@param	size	Buffer size
- *
- *	@return	@c true on success, @c false on failure
- */
-EXPORTED bool printer_attach_buffer(universal_printer_options *opts, size_t size);
+EXPORTED int uni_print_char(universal_io *const io, const char32_t wchar);
 
 #ifdef __cplusplus
 } /* extern "C" */

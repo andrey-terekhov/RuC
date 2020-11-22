@@ -18,10 +18,10 @@
 #include "codes.h"
 #include "extdecl.h"
 #include "global.h"
-#include "io2.h"
+#include "io.h"
 #include "keywords.h"
 #include "scanner.h"
-#include "uniprinter2.h"
+#include "uniprinter.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>

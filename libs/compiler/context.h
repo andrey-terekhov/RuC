@@ -17,7 +17,7 @@
 #pragma once
 
 #include "defs.h"
-#include "io2.h"
+#include "io.h"
 //#include "uniprinter.h"
 //#include "uniscanner.h"
 #include <stdio.h>

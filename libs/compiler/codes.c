@@ -16,7 +16,7 @@
 
 #include "codes.h"
 #include "global.h"
-#include "uniprinter2.h"
+#include "uniprinter.h"
 #include <stdio.h>
 #include <string.h>
 
