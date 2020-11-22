@@ -18,7 +18,7 @@
 #include "codes.h"
 #include "extdecl.h"
 #include "global.h"
-#include "io.h"
+#include "uniio.h"
 #include "keywords.h"
 #include "scanner.h"
 #include "uniprinter.h"
@@ -62,7 +62,6 @@ void read_keywords(compiler_context *context)
 
 	memcpy(keywords, keywords_txt, len + 1);
 
-	//compiler_context_attach_io(context, keywords, IO_TYPE_INPUT, IO_SOURCE_MEM);
 	in_set_buffer(&context->io, keywords);
 
 	context->keywordsnum = 1;
@@ -73,14 +72,12 @@ void read_keywords(compiler_context *context)
 		; // чтение ключевых слов
 	}
 
-	//compiler_context_detach_io(context, IO_TYPE_INPUT);
 	in_clear(&context->io);
 }
 
 /** Вывод таблиц и дерева */
 void output_tables_and_tree(compiler_context *context, const char *path)
 {
-	//compiler_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
 	out_set_file(&context->io, path);
 
 	getnext(context);
@@ -90,18 +87,15 @@ void output_tables_and_tree(compiler_context *context, const char *path)
 	ext_decl(context); // генерация дерева
 
 	tablesandtree(context);
-	//compiler_context_detach_io(context, IO_TYPE_OUTPUT);
 	out_clear(&context->io);
 }
 
 /** Генерация кодов */
 void output_codes(compiler_context *context, const char *path)
 {
-	//compiler_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
 	out_set_file(&context->io, path);
 	codegen(context);
 	tablesandcode(context);
-	//compiler_context_detach_io(context, IO_TYPE_OUTPUT);
 	out_clear(&context->io);
 }
 
@@ -110,7 +104,6 @@ void output_export(compiler_context *context, const char *path)
 {
 	int i;
 
-	//compiler_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
 	out_set_file(&context->io, path);
 	uni_printf(&context->io, "#!/usr/bin/ruc-vm\n");
 
@@ -146,7 +139,6 @@ void output_export(compiler_context *context, const char *path)
 	}
 	uni_printf(&context->io, "\n");
 
-	//compiler_context_detach_io(context, IO_TYPE_OUTPUT);
 	out_clear(&context->io);
 
 	make_executable(path);

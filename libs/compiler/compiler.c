@@ -21,7 +21,7 @@
 #include "defs.h"
 #include "errors.h"
 #include "frontend_utils.h"
-#include "io.h"
+#include "uniio.h"
 #include "logger.h"
 #include "preprocessor.h"
 #include "tables.h"
@@ -117,16 +117,13 @@ static void process_user_requests(compiler_context *context, const workspace *co
 		log_system_error("ruc", "не удалось выделить память для макрогенератора");
 		exit(1);
 	}
-	//compiler_context_detach_io(context, IO_TYPE_OUTPUT);
-	//compiler_context_detach_io(context, IO_TYPE_INPUT);
-	//compiler_context_attach_io(context, macro_processed, IO_TYPE_INPUT, IO_SOURCE_MEM);
+	
 	in_set_buffer(&context->io, macro_processed);
 	output_tables_and_tree(context, tree_path);
 	if (!context->error_flag)
 	{
 		output_codes(context, codes_path);
 	}
-	//compiler_context_detach_io(context, IO_TYPE_INPUT);
 
 	/* Will be left for debugging in case of failure */
 #if !defined(FILE_DEBUG) && !defined(_MSC_VER)
@@ -159,8 +156,6 @@ int compile_to_vm(const workspace *const ws)
 	}
 
 	compiler_context_init(context);
-	//compiler_context_attach_io(context, ":stderr", IO_TYPE_ERROR, IO_SOURCE_FILE);
-	//compiler_context_attach_io(context, ":stdout", IO_TYPE_MISC, IO_SOURCE_FILE);
 
 	read_keywords(context);
 
@@ -169,7 +164,6 @@ int compile_to_vm(const workspace *const ws)
 	process_user_requests(context, ws);
 
 	int ret = get_exit_code(context);
-	//compiler_context_deinit(context);
 	free(context);
 	return ret;
 }

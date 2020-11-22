@@ -25,7 +25,7 @@
 #include "frontend_utils.h"
 #include "if.h"
 #include "include.h"
-#include "io.h"
+#include "uniio.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
 #include "while.h"
