@@ -584,7 +584,14 @@ void error(compiler_context *const context, const int num)
 		log_system_error(tag, msg);
 	}
 
-	size_t position = in_get_position(io);
+	size_t position = in_get_position(io) - 1;
+	while ((code[position] == ' ' || code[position] == '\t'
+		|| code[position] == '\r' || code[position] == '\n')
+		&& code[position] != '\0')
+	{
+		position--;
+	}
+
 	comment cmt = cmt_search(code, position);
 	cmt_get_tag(&cmt, tag);
 
@@ -609,7 +616,14 @@ void warning(compiler_context *const context, const int num)
 		log_system_warning(tag, msg);
 	}
 
-	size_t position = in_get_position(io);
+	size_t position = in_get_position(io) - 1;
+	while ((code[position] == ' ' || code[position] == '\t'
+		|| code[position] == '\r' || code[position] == '\n')
+		&& code[position] != '\0')
+	{
+		position--;
+	}
+	
 	comment cmt = cmt_search(code, position);
 	cmt_get_tag(&cmt, tag);
 
