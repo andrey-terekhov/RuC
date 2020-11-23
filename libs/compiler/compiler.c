@@ -53,42 +53,8 @@ void report_cb(asp_report *report)
 }
 #endif
 
-char *preprocess_ruc_file(compiler_context *context, const workspace *const ws)
-{
-
-	char **argv = malloc(MAX_PATHS * sizeof(char *));
-
-	int argc = 0;
-	const char *temp = ws_get_file(ws, argc);
-	while (temp != NULL)
-	{
-		argv[argc] = malloc((1 + strlen(temp)) * sizeof(char));
-		sprintf(argv[argc++], "%s", temp);
-		temp = ws_get_file(ws, argc);
-	}
-
-	const int files_num = argc;
-	temp = ws_get_dir(ws, argc - files_num);
-	while (temp != NULL)
-	{
-		argv[argc] = malloc((3 + strlen(temp)) * sizeof(char));
-		sprintf(argv[argc++], "-I%s", temp);
-		temp = ws_get_dir(ws, argc - files_num);
-	}
-	
-	char *result = preprocess_file(argc, (const char **)argv);
-	for (int i = 0; i < argc; i++)
-	{
-		free(argv[i]);
-	}
-	free(argv);
-	return result;
-}
-
 static void process_user_requests(compiler_context *context, const workspace *const ws)
-{
-	char *macro_processed;
-	
+{	
 #if !defined(FILE_DEBUG) && !defined(_MSC_VER)
 	/* Regular file */
 	char macro_path[] = "/tmp/macroXXXXXX";
@@ -111,7 +77,7 @@ static void process_user_requests(compiler_context *context, const workspace *co
 
 	// Препроцессинг в массив
 
-	macro_processed = preprocess_ruc_file(context, ws); // макрогенерация
+	char *macro_processed = macro(ws); // макрогенерация
 	if (macro_processed == NULL)
 	{
 		system_error("не удалось выделить память для макрогенератора");

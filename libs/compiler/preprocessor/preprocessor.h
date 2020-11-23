@@ -16,17 +16,58 @@
 
 #pragma once
 
-#include "compiler.h"
-#include "context.h"
 #include "context_var.h"
+#include "dll.h"
+#include "workspace.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-char *preprocess_file(int argc, const char *argv[]);
 void preprocess_scan(preprocess_context *context);
+
+
+/**
+ *	Preprocess files from workspace
+ *
+ *	@param	ws		Workspace
+ *
+ *	@return	Preprocessed string, @c NULL on failure
+ */
+EXPORTED char *macro(const workspace *const ws);
+
+/**
+ *	Preprocess files from workspace
+ *
+ *	@param	ws		Workspace
+ *	@param	path	Output file name
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+EXPORTED int macro_to_file(const workspace *const ws, const char *const path);
+
+
+/**
+ *	Preprocess files from terminal arguments
+ *
+ *	@param	argc	Number of command line arguments
+ *	@param	argv	Command line arguments
+ *
+ *	@return	Preprocessed string, @c NULL on failure
+ */
+EXPORTED char *auto_macro(const int argc, const char *const *const argv);
+
+/**
+ *	Preprocess files from terminal arguments
+ *
+ *	@param	argc	Number of command line arguments
+ *	@param	argv	Command line arguments
+ *	@param	path	Output file name
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+EXPORTED int auto_macro_to_file(const int argc, const char *const *const argv, const char *const path);
 
 #ifdef __cplusplus
 } /* extern "C" */
