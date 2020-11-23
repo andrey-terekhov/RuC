@@ -40,7 +40,7 @@ void tablesandtree(compiler_context *context)
 			j++;
 		}
 		i++;
-	}
+	}*/
 	/*for (i = 1; i < context->line; i++)
 	{
 		uni_printf(&context->io, "line %i) ", i);
@@ -373,7 +373,7 @@ void tablesandcode(compiler_context *context)
 			j++;
 		}
 		i++;
-	}
+	}*/
 
 	/*for (i = 1; i < context->line; i++)
 	{
