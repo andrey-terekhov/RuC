@@ -16,7 +16,6 @@
 
 #include "file.h"
 #include "constants.h"
-#include "context.h"
 #include "context_var.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"

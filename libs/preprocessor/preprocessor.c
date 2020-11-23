@@ -16,13 +16,10 @@
 
 #include "preprocessor.h"
 #include "calculator.h"
-#include "compiler.h"
 #include "constants.h"
-#include "context.h"
 #include "context_var.h"
 #include "define.h"
 #include "file.h"
-#include "frontend_utils.h"
 #include "if.h"
 #include "include.h"
 #include "uniio.h"

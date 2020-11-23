@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "context.h"
 #include "context_var.h"
 
 
@@ -24,7 +23,7 @@
 extern "C" {
 #endif
 
-void if_relis(preprocess_context *context);
+void calculator(int if_flag, preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

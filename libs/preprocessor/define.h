@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "context.h"
 #include "context_var.h"
 
 
@@ -24,15 +23,9 @@
 extern "C" {
 #endif
 
-void m_change_nextch_type(int type, int p, preprocess_context *context);
-void m_old_nextch_type(preprocess_context *context);
-
-int get_dipp(preprocess_context *context);
-int get_next_char(preprocess_context *context);
-
-void m_fprintf(int a, preprocess_context *context);
-void pred_fprintf(int a, preprocess_context *context);
-void m_nextch(preprocess_context *context);
+void define_get_from_macrotext(int r, preprocess_context *context);
+void define_relis(preprocess_context *context);
+void set_relis(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */
