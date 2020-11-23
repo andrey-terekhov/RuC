@@ -11,7 +11,7 @@ target_link_libraries(${PROJECT_NAME} utils)
 
 
 if(MSVC)
-	target_compile_options(${PROJECT_NAME} PRIVATE /utf-8)
+	target_compile_options(${PROJECT_NAME} PRIVATE /W4 /utf-8)
 else()
-	target_link_libraries(${PROJECT_NAME} m)
+	target_compile_options(${PROJECT_NAME} PRIVATE -Wextra)
 endif()
