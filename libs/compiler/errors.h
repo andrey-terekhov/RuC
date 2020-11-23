@@ -37,7 +37,7 @@ void error(const universal_io *const io, const int num, ...);
  *	@param	io		Universal io
  *	@param	num		Warning number
  */
-void warning(const universal_io *const io, const int num);
+void warning(const universal_io *const io, const int num, ...);
 
 
 /**
@@ -60,16 +60,16 @@ void warning_msg(const universal_io *const io, const char *const msg);
 /**
  *	Emit error by number
  *
- *	@param	num		Error number
+ *	@param	msg		Error message
  */
-void system_error(const int num);
+void system_error(const char *const msg);
 
 /**
  *	Emit warning by number
  *
- *	@param	num		Warning number
+ *	@param	msg		Warning message
  */
-void system_warning(const int num);
+void system_warning(const char *const msg);
 
 #ifdef __cplusplus
 } /* extern "C" */

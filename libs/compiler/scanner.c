@@ -681,19 +681,13 @@ int scan(compiler_context *context)
 				return IDENT;
 			}
 			else
-			{
-				char tag[256];
-				if (!in_get_path(&context->io, tag))
-				{
-					sprintf(tag, "ruc");
-				}
-				
+			{				
 				char msg[256];
 				size_t index = sprintf(msg, "плохой символ ");
 				index += utf8_to_string(&msg[index], context->curchar);
 				index += sprintf(&msg[index], " %i", context->curchar);
-				log_system_error(tag, msg);
 
+				error_msg(&context->io, msg);
 				exit(1);
 			}
 	}

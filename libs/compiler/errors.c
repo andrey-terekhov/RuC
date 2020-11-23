@@ -563,8 +563,10 @@ void get_error(const int num, char *const msg, va_list args)
 	}
 }
 
-void get_warning(const int num, char *const msg)
+void get_warning(const int num, char *const msg, va_list args)
 {
+	UNUSED(args);
+	
 	switch (num)
 	{
 		case too_long_int:
@@ -630,10 +632,15 @@ void error(const universal_io *const io, const int num, ...)
 	output(io, msg, &log_system_error, &log_error);
 }
 
-void warning(const universal_io *const io, const int num)
+void warning(const universal_io *const io, const int num, ...)
 {
+	va_list args;
+	va_start(args, num);
+
 	char msg[MAX_MSG_SIZE];
-	get_warning(num, msg);
+	get_warning(num, msg, args);
+
+	va_end(args);
 
 	output(io, msg, &log_system_warning, &log_warning);
 }
@@ -650,16 +657,12 @@ void warning_msg(const universal_io *const io, const char *const msg)
 }
 
 
-void system_error(const int num)
+void system_error(const char *const msg)
 {
-	char buffer[MAX_INT_LENGTH];
-	sprintf(buffer, "%i", num);
-	log_system_error(TAG_RUC, buffer);
+	log_system_error(TAG_RUC, msg);
 }
 
-void system_warning(const int num)
+void system_warning(const char *const msg)
 {
-	char buffer[MAX_INT_LENGTH];
-	sprintf(buffer, "%i", num);
-	log_system_warning(TAG_RUC, buffer);
+	log_system_warning(TAG_RUC, msg);
 }

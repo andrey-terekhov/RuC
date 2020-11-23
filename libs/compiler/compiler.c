@@ -105,7 +105,7 @@ static void process_user_requests(compiler_context *context, const workspace *co
 #endif
 	if (strlen(macro_path) == 0 || strlen(tree_path) == 0 || strlen(codes_path) == 0)
 	{
-		log_system_error("ruc", "не удалось создать временные файлы");
+		system_error("не удалось создать временные файлы");
 		exit(1);
 	}
 
@@ -114,7 +114,7 @@ static void process_user_requests(compiler_context *context, const workspace *co
 	macro_processed = preprocess_ruc_file(context, ws); // макрогенерация
 	if (macro_processed == NULL)
 	{
-		log_system_error("ruc", "не удалось выделить память для макрогенератора");
+		system_error("не удалось выделить память для макрогенератора");
 		exit(1);
 	}
 	
@@ -144,14 +144,14 @@ int compile_to_vm(const workspace *const ws)
 {
 	if (!ws_is_correct(ws))
 	{
-		log_system_error("ruc", "некорректные входные данные");
+		system_error("некорректные входные данные");
 		return 1;
 	}
 
 	compiler_context *context = malloc(sizeof(compiler_context));
 	if (context == NULL)
 	{
-		log_system_error("ruc", "не удалось выделить память под контекст");
+		system_error("не удалось выделить память под контекст");
 		return 1;
 	}
 
