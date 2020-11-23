@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "context.h"
 #include "context_var.h"
 
 
@@ -24,18 +23,9 @@
 extern "C" {
 #endif
 
-int equal_reprtab(int i, int j, preprocess_context *context);
-void output_keywods(preprocess_context *context);
-int macro_keywords(preprocess_context *context);
-int collect_mident(preprocess_context *context);
-int find_file(preprocess_context *context, const char *s);
+void m_error(int ernum, preprocess_context *context);
 
-void space_end_line(preprocess_context *context);
-void space_skip(preprocess_context *context);
-void space_skip_str(preprocess_context *context);
-
-int is_letter(preprocess_context *context);
-int is_digit(int a);
+void printf_character(int wchar);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -1,5 +1,5 @@
 /*
- *	Copyright 2020 Andrey Terekhov, Egor Anikin
+ *	Copyright 2018 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "context.h"
 #include "context_var.h"
 
 
@@ -24,9 +23,18 @@
 extern "C" {
 #endif
 
-void define_get_from_macrotext(int r, preprocess_context *context);
-void define_relis(preprocess_context *context);
-void set_relis(preprocess_context *context);
+int equal_reprtab(int i, int j, preprocess_context *context);
+void output_keywods(preprocess_context *context);
+int macro_keywords(preprocess_context *context);
+int collect_mident(preprocess_context *context);
+int find_file(preprocess_context *context, const char *s);
+
+void space_end_line(preprocess_context *context);
+void space_skip(preprocess_context *context);
+void space_skip_str(preprocess_context *context);
+
+int is_letter(preprocess_context *context);
+int is_digit(int a);
 
 #ifdef __cplusplus
 } /* extern "C" */

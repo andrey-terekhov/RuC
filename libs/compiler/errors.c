@@ -466,7 +466,8 @@ void get_error(const int num, char *const msg, va_list args)
 					break;
 
 				case 'c':
-					index += sprintf(&msg[index], " (англ.)");
+					index += sprintf(&msg[index], " (англ.) ожидает литеру");
+					break;
 				case U'л': // 1083
 					index += sprintf(&msg[index], " ожидает литеру");
 					break;
@@ -477,7 +478,8 @@ void get_error(const int num, char *const msg, va_list args)
 					break;
 
 				case U'с': // 1089
-					index += sprintf(&msg[index], " (рус.)");
+					index += sprintf(&msg[index], " (рус.) ожидает строку");
+					break;
 				case 's':
 					index += sprintf(&msg[index], " ожидает строку");
 					break;

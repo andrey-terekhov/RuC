@@ -16,16 +16,14 @@
 
 #include "preprocessor.h"
 #include "calculator.h"
-#include "compiler.h"
 #include "constants.h"
-#include "context.h"
 #include "context_var.h"
 #include "define.h"
 #include "file.h"
-#include "frontend_utils.h"
 #include "if.h"
 #include "include.h"
 #include "uniio.h"
+#include "uniprinter.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
 #include "while.h"
@@ -423,6 +421,7 @@ char *preprocess_file(int argc, const char *argv[])
 	return macro_processed;
 }
 
+
 /*
 	printf("cur = %d, %c; next = %d, %c;\n",context->curchar, context->curchar, context->nextchar, context->nextchar);
 
@@ -451,3 +450,89 @@ char *preprocess_file(int argc, const char *argv[])
 	/Fadeev/import.c
 	/Egor/Macro/includ/cofig.txt
 */
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+char *macro(const workspace *const ws)
+{
+	char **argv = malloc(MAX_PATHS * sizeof(char *));
+
+	int argc = 0;
+	const char *temp = ws_get_file(ws, argc);
+	while (temp != NULL)
+	{
+		argv[argc] = malloc((1 + strlen(temp)) * sizeof(char));
+		sprintf(argv[argc++], "%s", temp);
+		temp = ws_get_file(ws, argc);
+	}
+
+	const int files_num = argc;
+	temp = ws_get_dir(ws, argc - files_num);
+	while (temp != NULL)
+	{
+		argv[argc] = malloc((3 + strlen(temp)) * sizeof(char));
+		sprintf(argv[argc++], "-I%s", temp);
+		temp = ws_get_dir(ws, argc - files_num);
+	}
+	
+	char *result = preprocess_file(argc, (const char **)argv);
+	for (int i = 0; i < argc; i++)
+	{
+		free(argv[i]);
+	}
+	free(argv);
+	return result;
+}
+
+int macro_to_file(const workspace *const ws, const char *const path)
+{
+	char *buffer = macro(ws);
+	if (buffer == NULL)
+	{
+		return -1;
+	}
+
+	universal_io io = io_create();
+	if (out_set_file(&io, path))
+	{
+		free(buffer);
+		return -1;
+	}
+	
+	uni_printf(&io, "%s", buffer);
+	io_erase(&io);
+
+	free(buffer);
+	return 0;
+}
+
+
+char *auto_macro(const int argc, const char *const *const argv)
+{
+	workspace ws = ws_parse_args(argc, argv);
+	if (!ws_is_correct(&ws))
+	{
+		return NULL;
+	}
+
+	return macro(&ws);
+}
+
+int auto_macro_to_file(const int argc, const char *const *const argv, const char *const path)
+{
+	workspace ws = ws_parse_args(argc, argv);
+	if (!ws_is_correct(&ws))
+	{
+		return -1;
+	}
+
+	return macro_to_file(&ws, path);
+}
