@@ -23,6 +23,7 @@
 #include "if.h"
 #include "include.h"
 #include "uniio.h"
+#include "uniprinter.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
 #include "while.h"
@@ -493,16 +494,45 @@ char *macro(const workspace *const ws)
 
 int macro_to_file(const workspace *const ws, const char *const path)
 {
+	char *buffer = macro(ws);
+	if (buffer == NULL)
+	{
+		return -1;
+	}
+
+	universal_io io = io_create();
+	if (out_set_file(&io, path))
+	{
+		free(buffer);
+		return -1;
+	}
+	
+	uni_printf(&io, "%s", buffer);
+	io_erase(&io);
+
+	free(buffer);
 	return 0;
 }
 
 
 char *auto_macro(const int argc, const char *const *const argv)
 {
-	return NULL;
+	workspace ws = ws_parse_args(argc, argv);
+	if (!ws_is_correct(&ws))
+	{
+		return NULL;
+	}
+
+	return macro(&ws);
 }
 
 int auto_macro_to_file(const int argc, const char *const *const argv, const char *const path)
 {
-	return 0;
+	workspace ws = ws_parse_args(argc, argv);
+	if (!ws_is_correct(&ws))
+	{
+		return -1;
+	}
+
+	return macro_to_file(&ws, path);
 }

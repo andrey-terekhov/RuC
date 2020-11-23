@@ -47,9 +47,9 @@ void onemore(compiler_context *context)
 	}
 }
 
-void endofline(compiler_context *context)
+/*void endofline(compiler_context *context)
 {
-	/*if (context->prep_flag == 1)
+	if (context->prep_flag == 1)
 	{
 		int j;
 		uni_printf(&context->io, "line %i) ", context->line - 1);
@@ -60,9 +60,9 @@ void endofline(compiler_context *context)
 				uni_print_char(&context->io, context->source[j]);
 			}
 		}
-	}*/
+	}
 	// fflush(stdout);
-}
+}*/
 
 void endnl(compiler_context *context)
 {
