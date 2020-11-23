@@ -164,6 +164,31 @@ int check_tag_msg(const char *const tag, const char *const msg)
 }
 
 
+size_t literal(const char *const line, const size_t symbol)
+{
+	size_t i = utf8_to_first_byte(line, symbol);
+	size_t j = i;
+
+	char32_t ch = utf8_convert(&line[j]);
+	while (utf8_is_russian(ch) || ch == '_'
+		|| (ch >= '0' && ch <= '9')
+		|| (ch >= 'A' && ch <= 'Z')
+		|| (ch >= 'a' && ch <= 'z'))
+	{
+		i = j;
+		if (j == 0)
+		{
+			break;
+		}
+
+		j = utf8_to_first_byte(line, j - 1);
+		ch = utf8_convert(&line[j]);
+	}
+
+	return i;
+}
+
+
 size_t length(const char *const line, const size_t size, const size_t symbol)
 {
 	size_t i = symbol;
@@ -200,14 +225,15 @@ void splice(char *const buffer, const char *const msg, const char *const line, c
 		size++;
 	}
 
-	const size_t len = length(line, size, symbol);
+	const size_t ch = literal(line, symbol);
+	const size_t len = length(line, size, ch);
 	if (len == 0)
 	{
 		return;
 	}
 
 	buffer[cur++] = '\n';
-	for (size_t i = 0; i < symbol; i += utf8_symbol_size(line[i]))
+	for (size_t i = 0; i < ch; i += utf8_symbol_size(line[i]))
 	{
 		buffer[cur++] = line[i] == '\t' ? '\t' : ' ';
 	}
