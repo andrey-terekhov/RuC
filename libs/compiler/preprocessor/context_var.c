@@ -27,7 +27,8 @@
 // Определение глобальных переменных
 void preprocess_context_init(preprocess_context *context, int num)
 {
-	printer_init(&context->output_options);
+	//printer_init(&context->output_options);
+	context->io = io_create();
 
 	con_files_init(&context->fs, num);
 

@@ -25,6 +25,7 @@
 #include "frontend_utils.h"
 #include "if.h"
 #include "include.h"
+#include "uniio.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
 #include "while.h"
@@ -400,7 +401,7 @@ char *preprocess_file(int argc, const char *argv[])
 {
 	preprocess_context context;
 	preprocess_context_init(&context, argc);
-	printer_attach_buffer(&context.output_options, 1024);
+	out_set_buffer(&context.io, 1024);
 
 	add_keywods(&context);
 
@@ -412,8 +413,9 @@ char *preprocess_file(int argc, const char *argv[])
 	free(context.include_ways);
 	con_files_free(&context.fs);
 
-	char *macro_processed = context.output_options.ptr;
+	char *macro_processed = out_extract_buffer(&context.io);
 
+	
 #if MACRODEBUG
 	printf("\n\n");
 	printf("Текст после препроцессирования:\n>\n%s<\n", macro_processed);

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <stddef.h>
+#include "dll.h"
 
 #ifdef __APPLE__
 	#include <stdint.h>
@@ -38,7 +39,17 @@ extern "C" {
  *
  *	@return	Number of octets
  */
-size_t utf8_symbol_size(const char symbol);
+EXPORTED size_t utf8_symbol_size(const char symbol);
+
+/**
+ *	Get first UTF-8 character octet index
+ *
+ *	@param	str		String with character
+ *	@param	index	Index of character
+ *
+ *	@return	First octet index
+ */
+EXPORTED size_t utf8_to_first_byte(const char *const str, const size_t index);
 
 /**
  *	Convert character from string to UTF-8 сharacter
@@ -47,7 +58,7 @@ size_t utf8_symbol_size(const char symbol);
  *
  *	@return	UTF-8 сharacter
  */
-char32_t utf8_convert(const char *const symbol);
+EXPORTED char32_t utf8_convert(const char *const symbol);
 
 /**
  *	Write UTF-8 сharacter to string
@@ -57,7 +68,7 @@ char32_t utf8_convert(const char *const symbol);
  *
  *	@return	Size of сharacter in string
  */
-size_t utf8_to_string(char *const buffer, const char32_t symbol);
+EXPORTED size_t utf8_to_string(char *const buffer, const char32_t symbol);
 
 /**
  *	Checks if сharacter is russian
@@ -66,7 +77,7 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int utf8_is_russian(const char32_t symbol);
+EXPORTED int utf8_is_russian(const char32_t symbol);
 
 #ifdef __cplusplus
 } /* extern "C" */

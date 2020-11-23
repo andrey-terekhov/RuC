@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov
+ *	Copyright 2020 Andrey Terekhov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,22 +14,13 @@
  *	limitations under the License.
  */
 
-#include "uniprinter.h"
-#include <limits.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#pragma once
 
 
-/** File-based printer */
-int printer_file_fprintf(universal_printer_options *opts, const char *fmt, va_list args)
-{
-	int ret;
-
-	ret = vfprintf(opts->output, fmt, args);
-
-	return ret;
-}
-
-printer_desc printer_file = { IO_SOURCE_FILE, printer_file_fprintf };
+#ifdef _MSC_VER
+	#define EXPORTED __declspec(dllexport)
+	
+	#define __attribute__(x)
+#else
+	#define EXPORTED
+#endif

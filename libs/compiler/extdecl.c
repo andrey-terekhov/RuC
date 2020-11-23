@@ -35,6 +35,58 @@ int gettype(compiler_context *context);
 void block(compiler_context *context, int b);
 
 
+void context_error(compiler_context *const context, const int num) // Вынесено из errors.c
+{
+	const universal_io *const io = &context->io;
+
+	switch (num)
+	{
+		case not_primary:
+			error(io, num, context->cur);
+			break;
+		case bad_toval:
+			error(io, num, context->ansttype);
+			break;
+		case wrong_printf_param_type:
+		case printf_unknown_format_placeholder:
+			error(io, num, context->bad_printf_placeholder);
+			break;
+		case repeated_decl:
+		case ident_is_not_declared:
+		case repeated_label:
+		case no_field:
+		case predef_but_notdef:
+			error(io, num, REPRTAB, REPRTAB_POS);
+			break;
+		case label_not_declared:
+			error(io, num, context->hash, REPRTAB, REPRTAB_POS);
+			break;
+		default:
+			error(io, num);
+	}
+	
+	context->error_flag = 1;
+	context->tc = context->temp_tc;
+
+	/*if (!context->new_line_flag && context->curchar != EOF)
+	{
+		while (context->curchar != '\n' && context->curchar != EOF)
+		{
+			nextch(context);
+		}
+
+		if (context->curchar != EOF)
+		{
+			scaner(context);
+		}
+	}
+
+	if (context->curchar != EOF)
+	{
+		scaner(context);
+	}*/
+}
+
 int modeeq(compiler_context *context, int first_mode, int second_mode)
 {
 	int n;
@@ -108,7 +160,7 @@ int evaluate_params(compiler_context *context, int num, int formatstr[], int for
 			{
 				if (numofparams == MAXPRINTFPARAMS)
 				{
-					error(context, too_many_printf_params);
+					context_error(context, too_many_printf_params);
 					return 0;
 				}
 
@@ -141,12 +193,12 @@ int evaluate_params(compiler_context *context, int num, int formatstr[], int for
 					break;
 
 				case 0:
-					error(context, printf_no_format_placeholder);
+					context_error(context, printf_no_format_placeholder);
 					return 0;
 
 				default:
 					context->bad_printf_placeholder = fsi;
-					error(context, printf_unknown_format_placeholder);
+					context_error(context, printf_unknown_format_placeholder);
 					return 0;
 			}
 		}
@@ -203,7 +255,7 @@ void mustbe(compiler_context *context, int what, int e)
 {
 	if (context->next != what)
 	{
-		error(context, e);
+		context_error(context, e);
 		context->cur = what;
 	}
 	else
@@ -216,7 +268,7 @@ void mustbe_complex(compiler_context *context, int what, int e)
 {
 	if (scaner(context) != what)
 	{
-		error(context, e);
+		context_error(context, e);
 		context->error_flag = e;
 	}
 }
@@ -271,7 +323,7 @@ int toidentab(compiler_context *context, int f, int type)
 	{
 		if (context->wasmain)
 		{
-			error(context, more_than_1_main); //--
+			context_error(context, more_than_1_main); //--
 			context->error_flag = 5;
 			return 0; // 1
 		}
@@ -293,7 +345,7 @@ int toidentab(compiler_context *context, int f, int type)
 	{
 		if (context->func_def == 3 ? 1 : context->identab[pred + 1] > 0 ? 1 : context->func_def == 1 ? 0 : 1)
 		{
-			error(context, repeated_decl);
+			context_error(context, repeated_decl);
 			context->error_flag = 5;
 			return 0; // 1
 					  // только определение функции может иметь 2
@@ -369,7 +421,7 @@ void binop(compiler_context *context, int sp)
 
 	if (is_pointer(context, ltype) || is_pointer(context, rtype))
 	{
-		error(context, operand_is_pointer);
+		context_error(context, operand_is_pointer);
 		context->error_flag = 5;
 		return; // 1
 	}
@@ -377,7 +429,7 @@ void binop(compiler_context *context, int sp)
 		 op == LREM) &&
 		(is_float(context, ltype) || is_float(context, rtype)))
 	{
-		error(context, int_op_for_float);
+		context_error(context, int_op_for_float);
 		context->error_flag = 5;
 		return; // 1
 	}
@@ -471,7 +523,7 @@ void applid(compiler_context *context)
 	context->lastid = REPRTAB[REPRTAB_POS + 1];
 	if (context->lastid == 1)
 	{
-		error(context, ident_is_not_declared);
+		context_error(context, ident_is_not_declared);
 		context->error_flag = 5;
 	}
 }
@@ -508,7 +560,7 @@ void actstring(int type, compiler_context *context)
 		}
 		else
 		{
-			error(context, wrong_init_in_actparam);
+			context_error(context, wrong_init_in_actparam);
 			context->error_flag = 1;
 			return; // 1
 		}
@@ -518,7 +570,7 @@ void actstring(int type, compiler_context *context)
 	context->tree[adn] = n;
 	if (context->cur != END)
 	{
-		error(context, no_comma_or_end);
+		context_error(context, no_comma_or_end);
 		context->error_flag = 1;
 		return; // 1
 	}
@@ -540,7 +592,7 @@ void mustbestring(compiler_context *context)
 	if (!(context->ansttype > 0 && context->modetab[context->ansttype] == MARRAY &&
 		  context->modetab[context->ansttype + 1] == LCHAR))
 	{
-		error(context, not_string_in_stanfunc);
+		context_error(context, not_string_in_stanfunc);
 		context->error_flag = 5;
 	}
 }
@@ -560,7 +612,7 @@ void mustbepointstring(compiler_context *context)
 		  is_array(context, context->modetab[context->ansttype + 1]) &&
 		  context->modetab[context->modetab[context->ansttype + 1] + 1] == LCHAR))
 	{
-		error(context, not_point_string_in_stanfunc);
+		context_error(context, not_point_string_in_stanfunc);
 		context->error_flag = 5;
 		return; // 1
 	}
@@ -580,7 +632,7 @@ void mustberow(compiler_context *context)
 
 	if (!(context->ansttype > 0 && context->modetab[context->ansttype] == MARRAY))
 	{
-		error(context, not_array_in_stanfunc);
+		context_error(context, not_array_in_stanfunc);
 		context->error_flag = 5;
 	}
 }
@@ -598,7 +650,7 @@ void mustbeint(compiler_context *context)
 	context->sopnd--;
 	if (context->ansttype != LINT && context->ansttype != LCHAR)
 	{
-		error(context, not_int_in_stanfunc);
+		context_error(context, not_int_in_stanfunc);
 		context->error_flag = 5;
 	}
 }
@@ -633,7 +685,7 @@ void mustberowofint(compiler_context *context)
 	if (!(context->ansttype > 0 && context->modetab[context->ansttype] == MARRAY &&
 		  (context->modetab[context->ansttype + 1] == LINT || context->modetab[context->ansttype + 1] == LCHAR)))
 	{
-		error(context, not_rowofint_in_stanfunc);
+		context_error(context, not_rowofint_in_stanfunc);
 		context->error_flag = 5;
 	}
 }
@@ -669,7 +721,7 @@ void mustberowoffloat(compiler_context *context)
 	if (!(context->ansttype > 0 && context->modetab[context->ansttype] == MARRAY &&
 		  context->modetab[context->ansttype + 1] == LFLOAT))
 	{
-		error(context, not_rowoffloat_in_stanfunc);
+		context_error(context, not_rowoffloat_in_stanfunc);
 		context->error_flag = 5;
 	}
 }
@@ -739,7 +791,7 @@ void primaryexpr(compiler_context *context)
 			}
 			if (!is_pointer(context, context->ansttype))
 			{
-				error(context, not_pointer_in_cast);
+				context_error(context, not_pointer_in_cast);
 				context->error_flag = 4;
 				return; // 1
 			}
@@ -771,7 +823,7 @@ void primaryexpr(compiler_context *context)
 
 		if (scaner(context) != LEFTBR)
 		{
-			error(context, no_leftbr_in_stand_func);
+			context_error(context, no_leftbr_in_stand_func);
 			context->buf_cur = context->next;
 			context->next = context->cur;
 			context->cur = LEFTBR;
@@ -966,7 +1018,7 @@ void primaryexpr(compiler_context *context)
 						}
 						else if (context->ansttype != LFLOAT)
 						{
-							error(context, not_float_in_stanfunc);
+							context_error(context, not_float_in_stanfunc);
 							context->error_flag = 4;
 							return; // 1
 						}
@@ -1103,7 +1155,7 @@ void primaryexpr(compiler_context *context)
 
 					if (context->cur != IDENT)
 					{
-						error(context, act_param_not_ident);
+						context_error(context, act_param_not_ident);
 						context->error_flag = 4;
 						return; // 1
 					}
@@ -1116,7 +1168,7 @@ void primaryexpr(compiler_context *context)
 					if (context->identab[context->lastid + 2] != 15 ||
 						context->error_flag == 5) // 15 - это аргумент типа void* (void*)
 					{
-						error(context, wrong_arg_in_create);
+						context_error(context, wrong_arg_in_create);
 						context->error_flag = 4;
 						return; // 1
 					}
@@ -1150,7 +1202,7 @@ void primaryexpr(compiler_context *context)
 					{
 						if (context->ansttype != 2) // 2 - это аргумент типа msg_info (struct{int numTh; int data;})
 						{
-							error(context, wrong_arg_in_send);
+							context_error(context, wrong_arg_in_send);
 							context->error_flag = 4;
 							return; // 1
 						}
@@ -1160,7 +1212,7 @@ void primaryexpr(compiler_context *context)
 					{
 						if (!is_int(context, context->ansttype))
 						{
-							error(context, param_threads_not_int);
+							context_error(context, param_threads_not_int);
 							context->error_flag = 4;
 							return; // 1
 						}
@@ -1214,7 +1266,7 @@ void primaryexpr(compiler_context *context)
 				context->notrobot = 0;
 				if (!is_int(context, context->ansttype))
 				{
-					error(context, param_setmotor_not_int);
+					context_error(context, param_setmotor_not_int);
 					context->error_flag = 4;
 					return; // 1
 				}
@@ -1241,7 +1293,7 @@ void primaryexpr(compiler_context *context)
 					toval(context);
 					if (!is_int(context, context->ansttype))
 					{
-						error(context, param_setmotor_not_int);
+						context_error(context, param_setmotor_not_int);
 						context->error_flag = 4;
 						return; // 1
 					}
@@ -1268,7 +1320,7 @@ void primaryexpr(compiler_context *context)
 				}
 				if (!is_float(context, context->ansttype))
 				{
-					error(context, bad_param_in_stand_func);
+					context_error(context, bad_param_in_stand_func);
 					context->error_flag = 4;
 					return; // 1
 				}
@@ -1284,7 +1336,7 @@ void primaryexpr(compiler_context *context)
 	}
 	else
 	{
-		error(context, not_primary);
+		context_error(context, not_primary);
 		context->error_flag = 4;
 		return; // 1
 	}
@@ -1299,7 +1351,7 @@ void index_check(compiler_context *context)
 {
 	if (!is_int(context, context->ansttype))
 	{
-		error(context, index_must_be_int);
+		context_error(context, index_must_be_int);
 		context->error_flag = 5;
 	}
 }
@@ -1333,7 +1385,7 @@ int find_field(compiler_context *context, int stype)
 	}
 	if (flag)
 	{
-		error(context, no_field);
+		context_error(context, no_field);
 		context->error_flag = 5;
 		return 0; // 1
 	}
@@ -1394,7 +1446,7 @@ void postexpr(compiler_context *context)
 		scaner(context);
 		if (!is_function(context, leftansttyp))
 		{
-			error(context, call_not_from_function);
+			context_error(context, call_not_from_function);
 			context->error_flag = 4;
 			return; // 1
 		}
@@ -1416,7 +1468,7 @@ void postexpr(compiler_context *context)
 
 				if (context->cur != IDENT)
 				{
-					error(context, act_param_not_ident);
+					context_error(context, act_param_not_ident);
 					context->error_flag = 4;
 					return; // 1
 				}
@@ -1428,7 +1480,7 @@ void postexpr(compiler_context *context)
 				}
 				if (context->identab[context->lastid + 2] != mdj)
 				{
-					error(context, diff_formal_param_type_and_actual);
+					context_error(context, diff_formal_param_type_and_actual);
 					context->error_flag = 4;
 					return; // 1
 				}
@@ -1470,14 +1522,14 @@ void postexpr(compiler_context *context)
 
 					if (mdj > 0 && mdj != context->ansttype)
 					{
-						error(context, diff_formal_param_type_and_actual);
+						context_error(context, diff_formal_param_type_and_actual);
 						context->error_flag = 4;
 						return; // 1
 					}
 
 					if (is_int(context, mdj) && is_float(context, context->ansttype))
 					{
-						error(context, float_instead_int);
+						context_error(context, float_instead_int);
 						context->error_flag = 4;
 						return; // 1
 					}
@@ -1491,7 +1543,7 @@ void postexpr(compiler_context *context)
 			}
 			if (i < n - 1 && scaner(context) != COMMA)
 			{
-				error(context, no_comma_in_act_params);
+				context_error(context, no_comma_in_act_params);
 				context->error_flag = 4;
 				return; // 1
 			}
@@ -1516,13 +1568,13 @@ void postexpr(compiler_context *context)
 			int elem_type;
 			if (was_func)
 			{
-				error(context, slice_from_func);
+				context_error(context, slice_from_func);
 				context->error_flag = 4;
 				return; // 1
 			}
 			if (context->modetab[context->ansttype] != MARRAY) // вырезка не из массива
 			{
-				error(context, slice_not_from_array);
+				context_error(context, slice_not_from_array);
 				context->error_flag = 4;
 				return; // 1
 			}
@@ -1570,7 +1622,7 @@ void postexpr(compiler_context *context)
 			if (context->modetab[context->ansttype] != MPOINT ||
 				context->modetab[context->modetab[context->ansttype + 1]] != MSTRUCT)
 			{
-				error(context, get_field_not_from_struct_pointer);
+				context_error(context, get_field_not_from_struct_pointer);
 				context->error_flag = 4;
 				return; // 1
 			}
@@ -1602,7 +1654,7 @@ void postexpr(compiler_context *context)
 		{
 			if (context->ansttype < 0 || context->modetab[context->ansttype] != MSTRUCT)
 			{
-				error(context, select_not_from_struct);
+				context_error(context, select_not_from_struct);
 				context->error_flag = 4;
 				return; // 1
 			}
@@ -1657,14 +1709,14 @@ void postexpr(compiler_context *context)
 
 		if (!is_int(context, context->ansttype) && !is_float(context, context->ansttype))
 		{
-			error(context, wrong_operand);
+			context_error(context, wrong_operand);
 			context->error_flag = 4;
 			return; // 1
 		}
 
 		if (context->anst != IDENT && context->anst != ADDR)
 		{
-			error(context, unassignable_inc);
+			context_error(context, unassignable_inc);
 			context->error_flag = 4;
 			return; // 1
 		}
@@ -1699,7 +1751,7 @@ void unarexpr(compiler_context *context)
 			}
 			if (context->anst != IDENT && context->anst != ADDR)
 			{
-				error(context, unassignable_inc);
+				context_error(context, unassignable_inc);
 				context->error_flag = 7;
 				return; // 1
 			}
@@ -1727,7 +1779,7 @@ void unarexpr(compiler_context *context)
 			{
 				if (context->anst == VAL)
 				{
-					error(context, wrong_addr);
+					context_error(context, wrong_addr);
 					context->error_flag = 7;
 					return; // 1
 				}
@@ -1745,7 +1797,7 @@ void unarexpr(compiler_context *context)
 			{
 				if (!is_pointer(context, context->ansttype))
 				{
-					error(context, aster_not_for_pointer);
+					context_error(context, aster_not_for_pointer);
 					context->error_flag = 7;
 					return; // 1
 				}
@@ -1763,7 +1815,7 @@ void unarexpr(compiler_context *context)
 				toval(context);
 				if ((op == LNOT || op == LOGNOT) && context->ansttype == LFLOAT)
 				{
-					error(context, int_op_for_float);
+					context_error(context, int_op_for_float);
 					context->error_flag = 7;
 					return; // 1
 				}
@@ -1971,7 +2023,7 @@ void condexpr(compiler_context *context)
 			toval(context);
 			if (!is_int(context, context->ansttype))
 			{
-				error(context, float_in_condition);
+				context_error(context, float_in_condition);
 				context->error_flag = 4;
 				return; // 1
 			}
@@ -2058,7 +2110,7 @@ void inition(compiler_context *context, int decl_type)
 		context->sopnd--;
 		if (is_int(context, decl_type) && is_float(context, context->ansttype))
 		{
-			error(context, init_int_by_float);
+			context_error(context, init_int_by_float);
 			context->error_flag = 5;
 			return; // 1
 		}
@@ -2068,7 +2120,7 @@ void inition(compiler_context *context, int decl_type)
 		}
 		else if (decl_type != context->ansttype)
 		{
-			error(context, error_in_initialization);
+			context_error(context, error_in_initialization);
 			context->error_flag = 5;
 			return; // 1
 		}
@@ -2079,7 +2131,7 @@ void inition(compiler_context *context, int decl_type)
 	}
 	else
 	{
-		error(context, wrong_init);
+		context_error(context, wrong_init);
 		context->error_flag = 5;
 		return; // 1
 	}
@@ -2095,7 +2147,7 @@ void struct_init(compiler_context *context, int decl_type)
 
 	if (context->cur != BEGIN)
 	{
-		error(context, struct_init_must_start_from_BEGIN);
+		context_error(context, struct_init_must_start_from_BEGIN);
 		context->buf_cur = context->next;
 		context->next = context->cur;
 		context->cur = BEGIN;
@@ -2121,7 +2173,7 @@ void struct_init(compiler_context *context, int decl_type)
 			}
 			else
 			{
-				error(context, no_comma_in_init_list);
+				context_error(context, no_comma_in_init_list);
 				context->next = context->cur;
 				context->cur = COMMA;
 			}
@@ -2135,7 +2187,7 @@ void struct_init(compiler_context *context, int decl_type)
 	}
 	else
 	{
-		error(context, wait_end);
+		context_error(context, wait_end);
 		context->cur = END;
 	}
 	context->leftansttype = decl_type;
@@ -2179,7 +2231,7 @@ void exprassn(compiler_context *context, int level)
 		}
 		else
 		{
-			error(context, init_not_struct);
+			context_error(context, init_not_struct);
 			context->error_flag = 6;
 			return; // 1
 		}
@@ -2215,7 +2267,7 @@ void exprassn(compiler_context *context, int level)
 
 		if (leftanst == VAL)
 		{
-			error(context, unassignable);
+			context_error(context, unassignable);
 			context->error_flag = 6;
 			return; // 1
 		}
@@ -2225,14 +2277,14 @@ void exprassn(compiler_context *context, int level)
 
 		if (intopassn(context, lnext) && (is_float(context, ltype) || is_float(context, rtype)))
 		{
-			error(context, int_op_for_float);
+			context_error(context, int_op_for_float);
 			context->error_flag = 6;
 			return; // 1
 		}
 
 		if (is_array(context, ltype)) // присваивать массив в массив в си нельзя
 		{
-			error(context, array_assigment);
+			context_error(context, array_assigment);
 			context->error_flag = 6;
 			return; // 1
 		}
@@ -2241,13 +2293,13 @@ void exprassn(compiler_context *context, int level)
 		{
 			if (ltype != rtype) // типы должны быть равны
 			{
-				error(context, type_missmatch);
+				context_error(context, type_missmatch);
 				context->error_flag = 6;
 				return; // 1
 			}
 			if (opp != ASS) // в структуру можно присваивать только с помощью =
 			{
-				error(context, wrong_struct_ass);
+				context_error(context, wrong_struct_ass);
 				context->error_flag = 6;
 				return; // 1
 			}
@@ -2278,14 +2330,14 @@ void exprassn(compiler_context *context, int level)
 		{
 			if (is_pointer(context, ltype) && opp != ASS) // в указатель можно присваивать только с помощью =
 			{
-				error(context, wrong_struct_ass);
+				context_error(context, wrong_struct_ass);
 				context->error_flag = 6;
 				return; // 1
 			}
 
 			if (is_int(context, ltype) && is_float(context, rtype))
 			{
-				error(context, assmnt_float_to_int);
+				context_error(context, assmnt_float_to_int);
 				context->error_flag = 6;
 				return; // 1
 			}
@@ -2299,7 +2351,7 @@ void exprassn(compiler_context *context, int level)
 			if (is_pointer(context, ltype) && is_pointer(context, rtype) && ltype != rtype)
 			{
 				// проверка нужна только для указателей
-				error(context, type_missmatch);
+				context_error(context, type_missmatch);
 				context->error_flag = 6;
 				return; // 1
 			}
@@ -2393,7 +2445,7 @@ void array_init(compiler_context *context, int decl_type)
 		{
 			if (context->onlystrings == 0)
 			{
-				error(context, string_and_notstring);
+				context_error(context, string_and_notstring);
 				context->error_flag = 7;
 				return; // 1
 			}
@@ -2413,7 +2465,7 @@ void array_init(compiler_context *context, int decl_type)
 		{
 			if (context->cur != BEGIN)
 			{
-				error(context, arr_init_must_start_from_BEGIN);
+				context_error(context, arr_init_must_start_from_BEGIN);
 				context->buf_cur = context->next;
 				context->next = context->cur;
 				context->cur = BEGIN;
@@ -2439,7 +2491,7 @@ void array_init(compiler_context *context, int decl_type)
 			}
 			else
 			{
-				error(context, wait_end);
+				context_error(context, wait_end);
 				context->error_flag = 7;
 				return; // 1
 			}
@@ -2453,14 +2505,14 @@ void array_init(compiler_context *context, int decl_type)
 		}
 		else
 		{
-			error(context, begin_with_notarray);
+			context_error(context, begin_with_notarray);
 			context->error_flag = 7;
 			return; // 1
 		}
 	}
 	else if (context->onlystrings == 1)
 	{
-		error(context, string_and_notstring);
+		context_error(context, string_and_notstring);
 		context->error_flag = 7;
 		return; // 1
 	}
@@ -2479,7 +2531,7 @@ int arrdef(compiler_context *context, int t)
 	context->usual = 1; // описание массива без пустых границ
 	if (is_pointer(context, t))
 	{
-		error(context, pnt_before_array);
+		context_error(context, pnt_before_array);
 		context->error_flag = 5;
 		return 0; // 1
 	}
@@ -2493,7 +2545,7 @@ int arrdef(compiler_context *context, int t)
 			scaner(context);
 			if (context->next == LEFTSQBR) // int a[][]={{1,2,3}, {4,5,6}} - нельзя;
 			{
-				error(context, empty_init); // границы определять по инициализации можно
+				context_error(context, empty_init); // границы определять по инициализации можно
 				context->error_flag = 5;
 				return 0; // 1
 			}
@@ -2518,7 +2570,7 @@ int arrdef(compiler_context *context, int t)
 			toval(context);
 			if (!is_int(context, context->ansttype))
 			{
-				error(context, array_size_must_be_int);
+				context_error(context, array_size_must_be_int);
 				context->error_flag = 5;
 				return 0; // 1
 			}
@@ -2569,7 +2621,7 @@ void decl_id(compiler_context *context, int decl_type)
 		}
 		if ((!context->usual && context->next != ASS))
 		{
-			error(context, empty_bound_without_init);
+			context_error(context, empty_bound_without_init);
 			context->error_flag = 4;
 			return; // 1
 		}
@@ -2631,7 +2683,7 @@ void statement(compiler_context *context)
 		 context->cur == LSTRUCT) &&
 		context->blockflag)
 	{
-		error(context, decl_after_strmt);
+		context_error(context, decl_after_strmt);
 		flagsemicol = 0;
 	}
 	if (context->cur == BEGIN)
@@ -2682,7 +2734,7 @@ void statement(compiler_context *context)
 			REPRTAB_POS = context->identab[id + 1];
 			if (context->gotost[i - 1] < 0)
 			{
-				error(context, repeated_label);
+				context_error(context, repeated_label);
 				context->error_flag = 2;
 			}
 			else
@@ -2725,7 +2777,7 @@ void statement(compiler_context *context)
 				totree(context, TExprend);
 				if (is_pointer(context, context->ansttype))
 				{
-					error(context, pointer_in_print);
+					context_error(context, pointer_in_print);
 					flagsemicol = 0;
 				}
 				context->sopnd--;
@@ -2741,7 +2793,7 @@ void statement(compiler_context *context)
 					context->lastid = REPRTAB[REPRTAB_POS + 1];
 					if (context->lastid == 1)
 					{
-						error(context, ident_is_not_declared);
+						context_error(context, ident_is_not_declared);
 						context->wasdefault = oldwasdefault;
 						context->inswitch = oldinswitch;
 						context->inloop = oldinloop;
@@ -2767,7 +2819,7 @@ void statement(compiler_context *context)
 				mustbe(context, LEFTBR, no_leftbr_in_printf);
 				if (scaner(context) != STRING) // выкушиваем форматную строку
 				{
-					error(context, wrong_first_printf_param);
+					context_error(context, wrong_first_printf_param);
 					break;
 				}
 
@@ -2789,7 +2841,7 @@ void statement(compiler_context *context)
 				{
 					if (i >= paramnum)
 					{
-						error(context, wrong_printf_param_number);
+						context_error(context, wrong_printf_param_number);
 						context->error_flag = 2;
 						break;
 					}
@@ -2812,7 +2864,7 @@ void statement(compiler_context *context)
 					else if (formattypes[i] != context->ansttype)
 					{
 						context->bad_printf_placeholder = placeholders[i];
-						error(context, wrong_printf_param_type);
+						context_error(context, wrong_printf_param_type);
 						context->error_flag = 2;
 						break;
 					}
@@ -2828,7 +2880,7 @@ void statement(compiler_context *context)
 
 				if (context->cur != RIGHTBR)
 				{
-					error(context, no_rightbr_in_printf);
+					context_error(context, no_rightbr_in_printf);
 					context->buf_cur = context->next;
 					context->next = context->cur;
 					context->cur = RIGHTBR;
@@ -2838,7 +2890,7 @@ void statement(compiler_context *context)
 
 				if (i != paramnum)
 				{
-					error(context, wrong_printf_param_number);
+					context_error(context, wrong_printf_param_number);
 					flagsemicol = 0;
 					break;
 				}
@@ -2868,7 +2920,7 @@ void statement(compiler_context *context)
 					context->lastid = REPRTAB[REPRTAB_POS + 1];
 					if (context->lastid == 1)
 					{
-						error(context, ident_is_not_declared);
+						context_error(context, ident_is_not_declared);
 						context->error_flag = 2;
 						flagsemicol = 0;
 						break;
@@ -2894,7 +2946,7 @@ void statement(compiler_context *context)
 			{
 				if (!(context->inloop || context->inswitch))
 				{
-					error(context, break_not_in_loop_or_switch);
+					context_error(context, break_not_in_loop_or_switch);
 					flagsemicol = 0;
 					break;
 				}
@@ -2905,12 +2957,12 @@ void statement(compiler_context *context)
 			{
 				if (!context->inswitch)
 				{
-					error(context, case_or_default_not_in_switch);
+					context_error(context, case_or_default_not_in_switch);
 					break;
 				}
 				if (context->wasdefault)
 				{
-					error(context, case_after_default);
+					context_error(context, case_after_default);
 					break;
 				}
 				totree(context, TCase);
@@ -2931,7 +2983,7 @@ void statement(compiler_context *context)
 				totree(context, TExprend);
 				if (context->ansttype == LFLOAT)
 				{
-					error(context, float_in_switch);
+					context_error(context, float_in_switch);
 					break;
 				}
 				context->sopnd--;
@@ -2944,7 +2996,7 @@ void statement(compiler_context *context)
 			{
 				if (!context->inloop)
 				{
-					error(context, continue_not_in_loop);
+					context_error(context, continue_not_in_loop);
 					flagsemicol = 0;
 					break;
 				}
@@ -2955,7 +3007,7 @@ void statement(compiler_context *context)
 			{
 				if (!context->inswitch)
 				{
-					error(context, case_or_default_not_in_switch);
+					context_error(context, case_or_default_not_in_switch);
 					break;
 				}
 				mustbe(context, COLON, no_colon_in_case);
@@ -2979,7 +3031,7 @@ void statement(compiler_context *context)
 				}
 				else
 				{
-					error(context, wait_while_in_do_stmt);
+					context_error(context, wait_while_in_do_stmt);
 					context->cur = LWHILE;
 					exprinbrkts(context, cond_must_be_in_brkts);
 					context->sopnd--;
@@ -3140,7 +3192,7 @@ void statement(compiler_context *context)
 				{
 					if (ftype != LVOID)
 					{
-						error(context, no_ret_in_func);
+						context_error(context, no_ret_in_func);
 						break;
 					}
 					totree(context, TReturnvoid);
@@ -3155,7 +3207,7 @@ void statement(compiler_context *context)
 					{
 						if (ftype == LVOID)
 						{
-							error(context, notvoidret_in_void_func);
+							context_error(context, notvoidret_in_void_func);
 							flagsemicol = 0;
 							break;
 						}
@@ -3177,7 +3229,7 @@ void statement(compiler_context *context)
 						}
 						else if (ftype != context->ansttype)
 						{
-							error(context, bad_type_in_ret);
+							context_error(context, bad_type_in_ret);
 							flagsemicol = 0;
 							break;
 						}
@@ -3197,7 +3249,7 @@ void statement(compiler_context *context)
 				}
 				if (context->ansttype != LCHAR && context->ansttype != LINT)
 				{
-					error(context, float_in_switch);
+					context_error(context, float_in_switch);
 					flagsemicol = 0;
 					break;
 				}
@@ -3238,7 +3290,7 @@ void statement(compiler_context *context)
 
 	if (flagsemicol && scaner(context) != SEMICOLON)
 	{
-		error(context, no_semicolon_after_stmt);
+		context_error(context, no_semicolon_after_stmt);
 		context->buf_cur = context->next;
 		context->next = context->cur;
 		context->cur = SEMICOLON;
@@ -3350,7 +3402,7 @@ int struct_decl_list(compiler_context *context)
 		curdispl += szof(context, t);
 		if (scaner(context) != SEMICOLON)
 		{
-			error(context, no_semicomma_in_struct);
+			context_error(context, no_semicomma_in_struct);
 			context->buf_cur = context->next;
 			context->next = context->cur;
 			context->cur = BEGIN;
@@ -3428,7 +3480,7 @@ int gettype(compiler_context *context)
 			{
 				if (l == 1)
 				{
-					error(context, ident_is_not_declared);
+					context_error(context, ident_is_not_declared);
 					context->error_flag = 3;
 					return 0; // 1
 				}
@@ -3438,7 +3490,7 @@ int gettype(compiler_context *context)
 		}
 		else
 		{
-			error(context, wrong_struct);
+			context_error(context, wrong_struct);
 			context->error_flag = 3;
 			return 0; // 1
 		}
@@ -3453,7 +3505,7 @@ int gettype(compiler_context *context)
 		}
 		if (context->identab[context->lastid + 3] < 1000)
 		{
-			error(context, ident_not_type);
+			context_error(context, ident_not_type);
 			context->error_flag = 3;
 			return 0; // 1
 		}
@@ -3462,7 +3514,7 @@ int gettype(compiler_context *context)
 	}
 	else
 	{
-		error(context, not_decl);
+		context_error(context, not_decl);
 		context->error_flag = 3;
 		return 0; // 1
 	}
@@ -3535,7 +3587,7 @@ void block(compiler_context *context, int b)
 			}
 			else
 			{
-				error(context, def_must_end_with_semicomma);
+				context_error(context, def_must_end_with_semicomma);
 				context->cur = SEMICOLON;
 				repeat = 0;
 			}
@@ -3598,7 +3650,7 @@ void function_definition(compiler_context *context)
 	{
 		if (context->functype != context->identab[pred + 2])
 		{
-			error(context, decl_and_def_have_diff_type);
+			context_error(context, decl_and_def_have_diff_type);
 			return; // 1
 		}
 		context->identab[pred + 3] = fn;
@@ -3639,7 +3691,7 @@ void function_definition(compiler_context *context)
 	// }
 	if (ftype != LVOID && !context->wasret)
 	{
-		error(context, no_ret_in_func);
+		context_error(context, no_ret_in_func);
 		context->error_flag = 1;
 		return; // 1
 	}
@@ -3659,7 +3711,7 @@ void function_definition(compiler_context *context)
 		}
 		if (!context->identab[context->gotost[i] + 2])
 		{
-			error(context, label_not_declared);
+			context_error(context, label_not_declared);
 			context->error_flag = 1;
 			return; // 1
 		}
@@ -3727,7 +3779,7 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 			}
 			else if (context->next == IDENT)
 			{
-				error(context, ident_in_declarator);
+				context_error(context, ident_in_declarator);
 				context->error_flag = 2;
 				return 0;
 			}
@@ -3738,7 +3790,7 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 
 				if (is_pointer(context, context->type) && ident == 0)
 				{
-					error(context, aster_with_row);
+					context_error(context, aster_with_row);
 					context->error_flag = 2;
 					return 0;
 				}
@@ -3757,7 +3809,7 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 			wastype = 1;
 			if (context->next != LEFTBR)
 			{
-				error(context, par_type_void_with_nofun);
+				context_error(context, par_type_void_with_nofun);
 				context->error_flag = 2;
 				return 0;
 			}
@@ -3783,7 +3835,7 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 						}
 						else
 						{
-							error(context, two_idents_for_1_declarer);
+							context_error(context, two_idents_for_1_declarer);
 							context->error_flag = 2;
 							return 0;
 						}
@@ -3791,7 +3843,7 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 					}
 					else
 					{
-						error(context, ident_in_declarator);
+						context_error(context, ident_in_declarator);
 						context->error_flag = 2;
 						return 0;
 					}
@@ -3801,13 +3853,13 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 				scaner(context);
 				if (maybe_fun == 1)
 				{
-					error(context, aster_before_func);
+					context_error(context, aster_before_func);
 					context->error_flag = 2;
 					return 0;
 				}
 				else if (maybe_fun == 2)
 				{
-					error(context, array_before_func);
+					context_error(context, array_before_func);
 					context->error_flag = 2;
 					return 0;
 				}
@@ -3826,13 +3878,13 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 			}
 			else if (func_d == 2 && ident > 0)
 			{
-				error(context, wait_declarator);
+				context_error(context, wait_declarator);
 				context->error_flag = 2;
 				return 0;
 			}
 			else if (func_d == 1 && ident == 0)
 			{
-				error(context, wait_definition);
+				context_error(context, wait_definition);
 				context->error_flag = 2;
 				return 0;
 			}
@@ -3853,7 +3905,7 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 		}
 		else
 		{
-			error(context, wrong_param_list);
+			context_error(context, wrong_param_list);
 			context->buf_cur = context->next;
 			context->next = context->cur;
 			context->cur = RIGHTBR;
@@ -3965,7 +4017,7 @@ void ext_decl(compiler_context *context)
 					scaner(context);
 					if (context->func_def == 2)
 					{
-						error(context, func_decl_req_params);
+						context_error(context, func_decl_req_params);
 						goto ex;
 					}
 
@@ -3976,14 +4028,14 @@ void ext_decl(compiler_context *context)
 				{
 					if (context->func_def == 1)
 					{
-						error(context, function_has_no_body);
+						context_error(context, function_has_no_body);
 						goto ex;
 					}
 				}
 			}
 			else if (context->firstdecl == LVOID)
 			{
-				error(context, only_functions_may_have_type_VOID);
+				context_error(context, only_functions_may_have_type_VOID);
 				goto ex;
 			}
 
@@ -4012,7 +4064,7 @@ void ext_decl(compiler_context *context)
 			}
 			else
 			{
-				error(context, def_must_end_with_semicomma);
+				context_error(context, def_must_end_with_semicomma);
 				context->cur = SEMICOLON;
 				repeat = 0;
 			}
@@ -4023,13 +4075,13 @@ void ext_decl(compiler_context *context)
 
 	if (context->wasmain == 0)
 	{
-		error(context, no_main_in_program);
+		context_error(context, no_main_in_program);
 	}
 	for (i = 0; i <= context->prdf; i++)
 	{
 		if (context->predef[i])
 		{
-			error(context, predef_but_notdef);
+			context_error(context, predef_but_notdef);
 		}
 	}
 	totree(context, TEnd);
