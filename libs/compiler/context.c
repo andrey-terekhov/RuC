@@ -30,10 +30,7 @@
 void compiler_context_init(compiler_context *context)
 {
 	memset(context, 0, sizeof(compiler_context));
-	scanner_init(&context->input_options);
-	printer_init(&context->output_options);
-	printer_init(&context->err_options);
-	printer_init(&context->miscout_options);
+	context->io = io_create();
 	compiler_table_init(&context->reprtab);
 
 	context->charnum = 0;
@@ -64,129 +61,6 @@ void compiler_context_init(compiler_context *context)
 	context->charnum_before = 0;
 	context->buf_cur = 0;
 	context->temp_tc = 0;
-}
-
-void compiler_context_deinit(compiler_context *context)
-{
-	scanner_deinit(&context->input_options);
-	printer_deinit(&context->output_options);
-	printer_deinit(&context->err_options);
-	printer_deinit(&context->miscout_options);
-}
-
-/** Is I/O an actual output? */
-static bool io_type_is_output(ruc_io_type type)
-{
-	switch (type)
-	{
-		case IO_TYPE_INPUT:
-			return false;
-		default:
-			return true;
-	}
-}
-
-/** Get type-specific options */
-static void *io_type2opts(compiler_context *context, ruc_io_type type)
-{
-	switch (type)
-	{
-		case IO_TYPE_INPUT:
-			return &context->input_options;
-		case IO_TYPE_OUTPUT:
-			return &context->output_options;
-		case IO_TYPE_ERROR:
-			return &context->err_options;
-		case IO_TYPE_MISC:
-			return &context->miscout_options;
-		default:
-			return NULL;
-	}
-}
-
-/** Get access mask for a specific IO type */
-static const char *io_type2access_mask(ruc_io_type type)
-{
-	return io_type_is_output(type) ? "wt" : "r";
-}
-
-/** Open file with specific mask taking standard files into account */
-static FILE *io_get_file(const char *ptr, const char *mask)
-{
-	if (strcmp(ptr, ":stderr") == 0)
-	{
-		return stderr;
-	}
-	else if (strcmp(ptr, ":stdout") == 0)
-	{
-		return stdout;
-	}
-	else if (strcmp(ptr, ":stdin") == 0)
-	{
-		return stdin;
-	}
-	return fopen(ptr, mask);
-}
-
-void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_io_type type, ruc_io_source source)
-{
-	void *opts = io_type2opts(context, type);
-
-	if (source == IO_SOURCE_FILE)
-	{
-		FILE *f = io_get_file(ptr, io_type2access_mask(type));
-
-		if (f == NULL)
-		{
-			if (io_type_is_output(type))
-			{
-				char msg[4 * MAXSTRINGL];
-				sprintf(msg, "%s: %s", ptr, strerror(errno));
-				log_system_error("ruc", msg);
-			}
-			else
-			{
-				char msg[4 * MAXSTRINGL];
-				sprintf(msg, "%s: No such file or directory\n", ptr);
-				log_system_error("ruc", msg);
-			}
-			exit(1);
-		}
-
-		if (io_type_is_output(type))
-		{
-			printer_attach_file(opts, f);
-		}
-		else
-		{
-			scanner_attach_file(opts, f);
-		}
-	}
-	else
-	{
-		if (io_type_is_output(type))
-		{
-			printer_attach_buffer(opts, DEFAULT_OUTBUF_SIZE);
-		}
-		else
-		{
-			scanner_attach_buffer(opts, ptr);
-		}
-	}
-}
-
-void compiler_context_detach_io(compiler_context *context, ruc_io_type type)
-{
-	void *opts = io_type2opts(context, type);
-
-	if (io_type_is_output(type))
-	{
-		printer_close(opts);
-	}
-	else
-	{
-		scanner_close(opts);
-	}
 }
 
 void compiler_table_init(compiler_table *table)

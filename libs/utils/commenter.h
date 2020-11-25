@@ -17,7 +17,7 @@
 #pragma once
 
 #include <stddef.h>
-#include "utils_internal.h"
+#include "dll.h"
 
 
 #ifdef __cplusplus
@@ -43,7 +43,7 @@ typedef struct comment
  *
  *	@return	Comment structure
  */
-UTILS_EXPORTED comment cmt_create(const char *const path, const size_t line);
+EXPORTED comment cmt_create(const char *const path, const size_t line);
 
 /**
  *	Create macro comment
@@ -54,7 +54,7 @@ UTILS_EXPORTED comment cmt_create(const char *const path, const size_t line);
  *
  *	@return	Macro comment structure
  */
-UTILS_EXPORTED comment cmt_create_macro(const char *const path, const size_t line, const size_t symbol);
+EXPORTED comment cmt_create_macro(const char *const path, const size_t line, const size_t symbol);
 
 
 /**
@@ -65,7 +65,7 @@ UTILS_EXPORTED comment cmt_create_macro(const char *const path, const size_t lin
  *
  *	@return	Size of сomment in buffer
  */
-UTILS_EXPORTED size_t cmt_to_string(const comment *const cmt, char *const buffer);
+EXPORTED size_t cmt_to_string(const comment *const cmt, char *const buffer);
 
 
 /**
@@ -76,7 +76,7 @@ UTILS_EXPORTED size_t cmt_to_string(const comment *const cmt, char *const buffer
  *
  *	@return	Comment structure
  */
-UTILS_EXPORTED comment cmt_search(const char *const code, const size_t position);
+EXPORTED comment cmt_search(const char *const code, const size_t position);
 
 
 /**
@@ -86,7 +86,7 @@ UTILS_EXPORTED comment cmt_search(const char *const code, const size_t position)
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-UTILS_EXPORTED int cmt_is_correct(const comment *const cmt);
+EXPORTED int cmt_is_correct(const comment *const cmt);
 
 
 /**
@@ -97,7 +97,7 @@ UTILS_EXPORTED int cmt_is_correct(const comment *const cmt);
  *
  *	@return Size of tag
  */
-UTILS_EXPORTED size_t cmt_get_tag(const comment *const cmt, char *const buffer);
+EXPORTED size_t cmt_get_tag(const comment *const cmt, char *const buffer);
 
 /**
  *	Get current code line
@@ -107,7 +107,7 @@ UTILS_EXPORTED size_t cmt_get_tag(const comment *const cmt, char *const buffer);
  *
  *	@return Size of code line
  */
-UTILS_EXPORTED size_t cmt_get_code_line(const comment *const cmt, char *const buffer);
+EXPORTED size_t cmt_get_code_line(const comment *const cmt, char *const buffer);
 
 /**
  *	Get current filename path
@@ -117,7 +117,7 @@ UTILS_EXPORTED size_t cmt_get_code_line(const comment *const cmt, char *const bu
  *
  *	@return Size of path
  */
-UTILS_EXPORTED size_t cmt_get_path(const comment *const cmt, char *const buffer);
+EXPORTED size_t cmt_get_path(const comment *const cmt, char *const buffer);
 
 /**
  *	Get normalized line number in code
@@ -126,7 +126,7 @@ UTILS_EXPORTED size_t cmt_get_path(const comment *const cmt, char *const buffer)
  *
  *	@return	Line number
  */
-UTILS_EXPORTED size_t cmt_get_line(const comment *const cmt);
+EXPORTED size_t cmt_get_line(const comment *const cmt);
 
 /**
  *	Get normalized position in line
@@ -135,7 +135,7 @@ UTILS_EXPORTED size_t cmt_get_line(const comment *const cmt);
  *
  *	@return	Position in line
  */
-UTILS_EXPORTED size_t cmt_get_symbol(const comment *const cmt);
+EXPORTED size_t cmt_get_symbol(const comment *const cmt);
 
 #ifdef __cplusplus
 } /* extern "C" */

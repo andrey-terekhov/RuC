@@ -1,5 +1,5 @@
 /*
- *	Copyright 2018 Andrey Terekhov, Egor Anikin
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "context.h"
 #include "context_var.h"
 
 
@@ -24,9 +23,15 @@
 extern "C" {
 #endif
 
-void m_error(int ernum, preprocess_context *context);
+void m_change_nextch_type(int type, int p, preprocess_context *context);
+void m_old_nextch_type(preprocess_context *context);
 
-void printf_character(int wchar);
+int get_dipp(preprocess_context *context);
+int get_next_char(preprocess_context *context);
+
+void m_fprintf(int a, preprocess_context *context);
+void pred_fprintf(int a, preprocess_context *context);
+void m_nextch(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

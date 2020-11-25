@@ -17,7 +17,6 @@
 #include "define.h"
 #include "calculator.h"
 #include "constants.h"
-#include "context.h"
 #include "context_var.h"
 #include "file.h"
 #include "preprocessor_error.h"

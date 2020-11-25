@@ -190,7 +190,7 @@ check_warnings()
 		message_success
 		let success++
 	else
-		if [[ `grep -c "\[1;31m" $log` > 1 ]] ; then
+		if [[ `grep -c "\[1;31mошибка: " $log` > 1 ]] ; then
 			message_warning
 			let warning++
 

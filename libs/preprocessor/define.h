@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,25 +16,16 @@
 
 #pragma once
 
+#include "context_var.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** Input/Output pipe type */
-typedef enum ruc_io_type
-{
-	IO_TYPE_INPUT,	/** Input pipe */
-	IO_TYPE_OUTPUT, /** Output pipe */
-	IO_TYPE_ERROR,	/** Error pipe */
-	IO_TYPE_MISC,	/** Misc output pipe */
-} ruc_io_type;
-
-typedef enum ruc_io_source
-{
-	IO_SOURCE_FILE, /** File-based input/output */
-	IO_SOURCE_MEM,	/** Buffer-based input/output */
-} ruc_io_source;
+void define_get_from_macrotext(int r, preprocess_context *context);
+void define_relis(preprocess_context *context);
+void set_relis(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

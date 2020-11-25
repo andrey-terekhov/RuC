@@ -17,8 +17,7 @@
 #pragma once
 
 #include "defs.h"
-#include "uniprinter.h"
-#include "uniscanner.h"
+#include "uniio.h"
 #include <stdio.h>
 
 
@@ -46,10 +45,7 @@ typedef struct compiler_table
 /** Определение глобальных переменных */
 typedef struct compiler_context
 {
-	universal_scanner_options input_options;
-	universal_printer_options output_options;
-	universal_printer_options err_options;
-	universal_printer_options miscout_options;
+	universal_io io;
 
 	double numdouble;
 	int line;
@@ -165,31 +161,6 @@ typedef struct compiler_context
  *	@param	context	Uninitialized RuC context
  */
 void compiler_context_init(compiler_context *context);
-
-/**
- *	Deinitialize RuC ontext
- *
- *	@param	context	Initialized RuC context
- */
-void compiler_context_deinit(compiler_context *context);
-
-/**
- *	Attach input to a specific input/output pipe
- *
- *	@param	context	RuC context
- *	@param	ptr		Context-specific data, e.g. path to file or a pointer to data
- *	@param	type	IO type
- *	@param	source	Data source
- */
-void compiler_context_attach_io(compiler_context *context, const char *ptr, ruc_io_type type, ruc_io_source source);
-
-/**
- *	Detach file from a specific input/output pipe
- *
- *	@param	context	RuC context
- *	@param	type	IO type
- */
-void compiler_context_detach_io(compiler_context *context, ruc_io_type type);
 
 /**
  *	Initialize compiler table

@@ -17,8 +17,7 @@
 #pragma once
 
 #include "constants.h"
-#include "uniprinter.h"
-#include "uniscanner.h"
+#include "uniio.h"
 #include <stdio.h>
 
 
@@ -108,7 +107,7 @@ typedef struct preprocess_context
 	const char **include_ways;
 	int iwp;
 
-	universal_printer_options output_options;
+	universal_io io;
 } preprocess_context;
 
 void preprocess_context_init(preprocess_context *context, int num);

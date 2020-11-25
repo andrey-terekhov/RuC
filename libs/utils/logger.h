@@ -17,7 +17,7 @@
 #pragma once
 
 #include <stddef.h>
-#include "utils_internal.h"
+#include "dll.h"
 
 
 #ifdef __cplusplus
@@ -40,7 +40,7 @@ typedef void (*logger)(const char *const tag, const char *const msg);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int set_error_log(const logger func);
+EXPORTED int set_error_log(const logger func);
 
 /**
  *	Set custom warning logging function
@@ -49,7 +49,7 @@ UTILS_EXPORTED int set_error_log(const logger func);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int set_warning_log(const logger func);
+EXPORTED int set_warning_log(const logger func);
 
 /**
  *	Set custom note logging function
@@ -58,7 +58,7 @@ UTILS_EXPORTED int set_warning_log(const logger func);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-UTILS_EXPORTED int set_note_log(const logger func);
+EXPORTED int set_note_log(const logger func);
 
 
 /**
@@ -69,7 +69,7 @@ UTILS_EXPORTED int set_note_log(const logger func);
  *	@param	line	Code line
  *	@param	symbol	Position in line, if more than length, then turn off highlighting
  */
-UTILS_EXPORTED void log_error(const char *const tag, const char *const msg, const char *const line, const size_t symbol);
+EXPORTED void log_error(const char *const tag, const char *const msg, const char *const line, const size_t symbol);
 
 /**
  *	Add warning message to log
@@ -79,7 +79,7 @@ UTILS_EXPORTED void log_error(const char *const tag, const char *const msg, cons
  *	@param	line	Code line
  *	@param	symbol	Position in line, if more than length, then turn off highlighting
  */
-UTILS_EXPORTED void log_warning(const char *const tag, const char *const msg, const char *const line, const size_t symbol);
+EXPORTED void log_warning(const char *const tag, const char *const msg, const char *const line, const size_t symbol);
 
 /**
  *	Add note message to log
@@ -89,7 +89,7 @@ UTILS_EXPORTED void log_warning(const char *const tag, const char *const msg, co
  *	@param	line	Code line
  *	@param	symbol	Position in line, if more line length, then turn off highlighting
  */
-UTILS_EXPORTED void log_note(const char *const tag, const char *const msg, const char *const line, const size_t symbol);
+EXPORTED void log_note(const char *const tag, const char *const msg, const char *const line, const size_t symbol);
 
 
 /**
@@ -98,7 +98,7 @@ UTILS_EXPORTED void log_note(const char *const tag, const char *const msg, const
  *	@param	tag		Message location
  *	@param	msg		Message content
  */
-UTILS_EXPORTED void log_system_error(const char *const tag, const char *const msg);
+EXPORTED void log_system_error(const char *const tag, const char *const msg);
 
 /**
  *	Add warning message to log
@@ -106,7 +106,7 @@ UTILS_EXPORTED void log_system_error(const char *const tag, const char *const ms
  *	@param	tag		Message location
  *	@param	msg		Message content
  */
-UTILS_EXPORTED void log_system_warning(const char *const tag, const char *const msg);
+EXPORTED void log_system_warning(const char *const tag, const char *const msg);
 
 /**
  *	Add note message to log
@@ -114,7 +114,7 @@ UTILS_EXPORTED void log_system_warning(const char *const tag, const char *const 
  *	@param	tag		Message location
  *	@param	msg		Message content
  */
-UTILS_EXPORTED void log_system_note(const char *const tag, const char *const msg);
+EXPORTED void log_system_note(const char *const tag, const char *const msg);
 
 #ifdef __cplusplus
 } /* extern "C" */

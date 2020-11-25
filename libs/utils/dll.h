@@ -1,5 +1,5 @@
 /*
- *	Copyright 2020 Andrey Terekhov, Egor Anikin
+ *	Copyright 2020 Andrey Terekhov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,17 +16,11 @@
 
 #pragma once
 
-#include "context.h"
-#include "context_var.h"
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void include_relis(preprocess_context *context);
-void file_read(preprocess_context *context);
-
-#ifdef __cplusplus
-} /* extern "C" */
+#ifdef _MSC_VER
+	#define EXPORTED __declspec(dllexport)
+	
+	#define __attribute__(x)
+#else
+	#define EXPORTED
 #endif

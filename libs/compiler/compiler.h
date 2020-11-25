@@ -16,14 +16,8 @@
 
 #pragma once
 
+#include "dll.h"
 #include "workspace.h"
-
-
-#ifdef _MSC_VER
-	#define COMPILER_EXPORTED __declspec(dllexport)
-#else
-	#define COMPILER_EXPORTED
-#endif
 
 
 #ifdef __cplusplus
@@ -37,7 +31,7 @@ extern "C" {
  *
  *	@return	Status code
  */
-COMPILER_EXPORTED int compile_to_vm(const workspace *const ws);
+EXPORTED int compile_to_vm(const workspace *const ws);
 
 
 /**
@@ -48,7 +42,7 @@ COMPILER_EXPORTED int compile_to_vm(const workspace *const ws);
  *
  *	@return	Status code
  */
-COMPILER_EXPORTED int auto_compile_to_vm(const int argc, const char *const *const argv);
+EXPORTED int auto_compile_to_vm(const int argc, const char *const *const argv);
 
 
 /**
@@ -58,7 +52,7 @@ COMPILER_EXPORTED int auto_compile_to_vm(const int argc, const char *const *cons
  *
  *	@return	Status code
  */
-COMPILER_EXPORTED int no_macro_compile_to_vm(const char *const path);
+EXPORTED int no_macro_compile_to_vm(const char *const path);
 
 #ifdef __cplusplus
 } /* extern "C" */

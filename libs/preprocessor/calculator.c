@@ -15,11 +15,8 @@
  */
 
 #include "calculator.h"
-#include "context.h"
 #include "define.h"
-#include "defs.h"
 #include "file.h"
-#include "global.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
 #include <limits.h>

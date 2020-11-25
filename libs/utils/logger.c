@@ -20,7 +20,7 @@
 	const uint8_t COLOR_DEFAULT = 0;
 #endif
 
-#define BUFFER_SIZE 1024
+#define MAX_MSG_SIZE 1024
 
 const char *const TAG_LOGGER = "logger";
 
@@ -111,6 +111,7 @@ void print_msg(const uint8_t color, const char *const msg)
 	set_color(COLOR_DEFAULT);
 }
 
+
 void default_error_log(const char *const tag, const char *const msg)
 {
 	set_color(COLOR_TAG);
@@ -145,40 +146,6 @@ void default_note_log(const char *const tag, const char *const msg)
 }
 
 
-int set_error_log(const logger func)
-{
-	if (func == NULL)
-	{
-		return -1;
-	}
-
-	current_error_log = func;
-	return 0;
-}
-
-int set_warning_log(const logger func)
-{
-	if (func == NULL)
-	{
-		return -1;
-	}
-
-	current_warning_log = func;
-	return 0;
-}
-
-int set_note_log(const logger func)
-{
-	if (func == NULL)
-	{
-		return -1;
-	}
-
-	current_note_log = func;
-	return 0;
-}
-
-
 int check_tag_msg(const char *const tag, const char *const msg)
 {
 	if (tag == NULL || msg == NULL)
@@ -196,34 +163,29 @@ int check_tag_msg(const char *const tag, const char *const msg)
 	return 0;
 }
 
-void log_system_error(const char *const tag, const char *const msg)
-{
-	if (check_tag_msg(tag, msg))
-	{
-		return;
-	}
-	
-	current_error_log(tag, msg);
-}
 
-void log_system_warning(const char *const tag, const char *const msg)
+size_t literal(const char *const line, const size_t symbol)
 {
-	if (check_tag_msg(tag, msg))
-	{
-		return;
-	}
-	
-	current_warning_log(tag, msg);
-}
+	size_t i = utf8_to_first_byte(line, symbol);
+	size_t j = i;
 
-void log_system_note(const char *const tag, const char *const msg)
-{
-	if (check_tag_msg(tag, msg))
+	char32_t ch = utf8_convert(&line[j]);
+	while (utf8_is_russian(ch) || ch == '_'
+		|| (ch >= '0' && ch <= '9')
+		|| (ch >= 'A' && ch <= 'Z')
+		|| (ch >= 'a' && ch <= 'z'))
 	{
-		return;
+		i = j;
+		if (j == 0)
+		{
+			break;
+		}
+
+		j = utf8_to_first_byte(line, j - 1);
+		ch = utf8_convert(&line[j]);
 	}
-	
-	current_note_log(tag, msg);
+
+	return i;
 }
 
 
@@ -263,14 +225,15 @@ void splice(char *const buffer, const char *const msg, const char *const line, c
 		size++;
 	}
 
-	const size_t len = length(line, size, symbol);
+	const size_t ch = literal(line, symbol);
+	const size_t len = length(line, size, ch);
 	if (len == 0)
 	{
 		return;
 	}
 
 	buffer[cur++] = '\n';
-	for (size_t i = 0; i < symbol; i += utf8_symbol_size(line[i]))
+	for (size_t i = 0; i < ch; i += utf8_symbol_size(line[i]))
 	{
 		buffer[cur++] = line[i] == '\t' ? '\t' : ' ';
 	}
@@ -283,6 +246,50 @@ void splice(char *const buffer, const char *const msg, const char *const line, c
 
 	buffer[cur++] = '\0';
 }
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+int set_error_log(const logger func)
+{
+	if (func == NULL)
+	{
+		return -1;
+	}
+
+	current_error_log = func;
+	return 0;
+}
+
+int set_warning_log(const logger func)
+{
+	if (func == NULL)
+	{
+		return -1;
+	}
+
+	current_warning_log = func;
+	return 0;
+}
+
+int set_note_log(const logger func)
+{
+	if (func == NULL)
+	{
+		return -1;
+	}
+
+	current_note_log = func;
+	return 0;
+}
+
 
 void log_error(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
@@ -297,7 +304,7 @@ void log_error(const char *const tag, const char *const msg, const char *const l
 		return;
 	}
 
-	char buffer[BUFFER_SIZE];
+	char buffer[MAX_MSG_SIZE];
 	splice(buffer, msg, line, symbol);
 
 	current_error_log(tag, buffer);
@@ -316,7 +323,7 @@ void log_warning(const char *const tag, const char *const msg, const char *const
 		return;
 	}
 	
-	char buffer[BUFFER_SIZE];
+	char buffer[MAX_MSG_SIZE];
 	splice(buffer, msg, line, symbol);
 
 	current_warning_log(tag, buffer);
@@ -335,8 +342,39 @@ void log_note(const char *const tag, const char *const msg, const char *const li
 		return;
 	}
 	
-	char buffer[BUFFER_SIZE];
+	char buffer[MAX_MSG_SIZE];
 	splice(buffer, msg, line, symbol);
 
 	current_note_log(tag, buffer);
+}
+
+
+void log_system_error(const char *const tag, const char *const msg)
+{
+	if (check_tag_msg(tag, msg))
+	{
+		return;
+	}
+	
+	current_error_log(tag, msg);
+}
+
+void log_system_warning(const char *const tag, const char *const msg)
+{
+	if (check_tag_msg(tag, msg))
+	{
+		return;
+	}
+	
+	current_warning_log(tag, msg);
+}
+
+void log_system_note(const char *const tag, const char *const msg)
+{
+	if (check_tag_msg(tag, msg))
+	{
+		return;
+	}
+	
+	current_note_log(tag, msg);
 }

@@ -16,10 +16,10 @@
 
 #include "file.h"
 #include "constants.h"
-#include "context.h"
 #include "context_var.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
+#include "uniprinter.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -128,7 +128,7 @@ void m_onemore(preprocess_context *context)
 
 void m_fprintf(int a, preprocess_context *context)
 {
-	printer_printchar(&context->output_options, a);
+	uni_print_char(&context->io, a);
 	// printf_character(a);
 	// printf(", %d; \n", a);
 	// printf(" t = %d n = %d\n", nextch_type,context -> nextp);
