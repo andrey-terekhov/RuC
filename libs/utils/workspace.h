@@ -34,16 +34,16 @@ extern "C" {
 typedef struct workspace
 {
 	char files[MAX_PATHS][MAX_ARG_SIZE];	/** Files list */
-	size_t files_num;					/** Number of files */
+	size_t files_num;						/** Number of files */
 
-	char dirs[MAX_PATHS][MAX_ARG_SIZE];	/** Directories list */
-	size_t dirs_num;					/** Number of directories */
+	char dirs[MAX_PATHS][MAX_ARG_SIZE];		/** Directories list */
+	size_t dirs_num;						/** Number of directories */
 
 	char flags[MAX_FLAGS][MAX_ARG_SIZE];	/** Flags list */
-	size_t flags_num;					/** Number of flags */
+	size_t flags_num;						/** Number of flags */
 
-	char output[MAX_ARG_SIZE];			/** Output file name */
-	int was_error;						/** @c 0 if no errors */
+	char output[MAX_ARG_SIZE];				/** Output file name */
+	int was_error;							/** @c 0 if no errors */
 } workspace;
 
 
