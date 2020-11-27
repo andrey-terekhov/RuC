@@ -461,7 +461,7 @@ char *preprocess_file(int argc, const char *argv[])
  */
 
 
-char *macro(const workspace *const ws)
+char *macro(workspace *const ws)
 {
 	char **argv = malloc(MAX_PATHS * sizeof(char *));
 
@@ -492,7 +492,7 @@ char *macro(const workspace *const ws)
 	return result;
 }
 
-int macro_to_file(const workspace *const ws, const char *const path)
+int macro_to_file(workspace *const ws, const char *const path)
 {
 	char *buffer = macro(ws);
 	if (buffer == NULL)

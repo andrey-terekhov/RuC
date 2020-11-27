@@ -106,7 +106,7 @@ static void process_user_requests(compiler_context *context, const workspace *co
 	free(macro_processed);
 }
 
-int compile_to_vm(const workspace *const ws)
+int compile_to_vm(workspace *const ws)
 {
 	if (!ws_is_correct(ws))
 	{
