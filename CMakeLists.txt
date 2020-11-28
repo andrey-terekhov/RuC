@@ -12,11 +12,13 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	#add_compile_options(/W4 /WX /utf-8 /wd5105 /std:c11)
 	add_compile_options(/W4 /utf-8 /wd5105 /std:c11)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
-	add_compile_options(-Werror=return-type -Wall -Wextra -g -std=c11)
 else()
-	add_compile_options(-Werror=return-type -Wall -Wextra -g -posix -std=c11)
-	add_definitions(-D_POSIX_C_SOURCE=200112L)
+	add_compile_options(-Werror=return-type -Wall -Wextra -g -std=c11)
+	
+	if(NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
+		add_compile_options(-posix)
+		add_definitions(-D_POSIX_C_SOURCE=200112L)
+	endif()
 endif()
 
 
