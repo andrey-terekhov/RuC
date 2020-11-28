@@ -11,9 +11,9 @@ matrix:
     - name: "macOS 10.15.5"
       os: osx
       osx_image: xcode12
-    - name: "Ubuntu 16.04"
+    - name: "Ubuntu 18.04"
       os: linux
-      dist: xenial
+      dist: bionic
 
 script:
   - ./scripts/test.sh -v v1.1
