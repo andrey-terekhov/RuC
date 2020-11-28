@@ -14,7 +14,9 @@
  *	limitations under the License.
  */
 
-#pragma comment(linker, "/STACK:268435456")
+#ifdef _MSC_VER
+	#pragma comment(linker, "/STACK:268435456")
+#endif
 
 #include "compiler.h"
 #include "workspace.h"

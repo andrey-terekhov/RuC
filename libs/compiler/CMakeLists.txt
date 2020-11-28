@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.13.5)
 
 project(compiler)
 
@@ -9,10 +9,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(${PROJECT_NAME} preprocessor utils)
 
-
-if(MSVC)
-	target_compile_options(${PROJECT_NAME} PRIVATE /W4 /utf-8)
-else()
-	target_compile_options(${PROJECT_NAME} PRIVATE -Wextra)
+if(NOT CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	target_link_libraries(${PROJECT_NAME} m)
 endif()
