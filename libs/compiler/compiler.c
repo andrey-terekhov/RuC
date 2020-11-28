@@ -34,24 +34,9 @@
 	#include <unistd.h>
 #endif
 
-#ifdef ANALYSIS_ENABLED
-	#include "asp/asp_simple.h"
-	#define ASP_HOST "localhost"
-	#define ASP_PORT (5500)
-#endif
 
 #define FILE_DEBUG
 
-
-#ifdef ANALYSIS_ENABLED
-void report_cb(asp_report *report)
-{
-	char msg[4 * MAXSTRINGL];
-	sprintf(msg, "%s:%d:%d: %s: %s", report->file, report->line, report->column, report->rule_id,
-			report->explanation);
-	log_system_note("report_cb", msg)
-}
-#endif
 
 static void process_user_requests(compiler_context *context, const workspace *const ws)
 {	
@@ -96,9 +81,6 @@ static void process_user_requests(compiler_context *context, const workspace *co
 	unlink(tree_path);
 	unlink(codes_path);
 	unlink(macro_path);
-#endif
-#ifdef ANALYSIS_ENABLED
-	asp_simple_invoke_singlefile(ASP_HOST, ASP_PORT, argv[i], ASP_LANGUAGE_RUC, report_cb);
 #endif
 
 	output_export(context, ws_get_output(ws));
