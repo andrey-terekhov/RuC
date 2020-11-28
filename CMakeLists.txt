@@ -9,9 +9,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 
 if(MSVC)
+	#add_compile_options(/W4 /WX /utf-8)
+	add_compile_options(/W4 /utf-8)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 else()
-	add_compile_options(-Werror=return-type -g)
+	add_compile_options(-Werror=return-type -Wextra -g)
 endif()
 
 
