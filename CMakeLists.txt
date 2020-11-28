@@ -10,7 +10,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 if(MSVC)
 	#add_compile_options(/W4 /WX /utf-8)
-	add_compile_options(/W4 /utf-8)
+	add_compile_options(/W4 /utf-8 /wd5105 /std:c11)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 else()
 	add_compile_options(-Werror=return-type -Wall -Wextra -g -posix -std=c11)
@@ -41,5 +41,4 @@ endfunction()
 get_all_targets(targets .)
 install(TARGETS ${targets}
 		RUNTIME DESTINATION ${PROJECT_NAME}
-		LIBRARY DESTINATION ${PROJECT_NAME}
-		ARCHIVE DESTINATION ${PROJECT_NAME})
+		LIBRARY DESTINATION ${PROJECT_NAME})
