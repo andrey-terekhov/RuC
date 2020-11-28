@@ -13,7 +13,8 @@ if(MSVC)
 	add_compile_options(/W4 /utf-8)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 else()
-	add_compile_options(-Werror=return-type -Wextra -g)
+	add_compile_options(-Werror=return-type -Wall -Wextra -g -posix -std=c11)
+	add_definitions(-D_POSIX_C_SOURCE=200112L)
 endif()
 
 
