@@ -1,22 +1,23 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.7.2)
 
 project(ruc)
 
 
-option(ANALYSIS_ENABLED "Enable static analysis of input files" OFF)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(TEST_INPUTS_DIR ${PROJECT_SOURCE_DIR}/tests)
 
 # Put all libraries to one folder
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 else()
 	add_compile_options(-Werror=return-type -g)
 endif()
+
+
+option(ANALYSIS_ENABLED "Enable static analysis of input files" OFF)
 
 if(ANALYSIS_ENABLED)
 	include(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/aspsimple.cmake)
@@ -30,16 +31,21 @@ add_subdirectory(libs)
 add_subdirectory(src)
 
 
-enable_testing()
-set(TEST_TIMEOUT 1)
-file(GLOB TEST_INPUTS "${TEST_INPUTS_DIR}/*.c"
-						"${TEST_INPUTS_DIR}/*/*.c"
-						"${TEST_INPUTS_DIR}/*/*/*.c"
-						"${TEST_INPUTS_DIR}/*/*/*/*.c")
+function(get_all_targets _targets _dir)
+	get_property(_subdirs DIRECTORY ${_dir} PROPERTY SUBDIRECTORIES)
 
-foreach(TEST_INPUT ${TEST_INPUTS})
-	add_test(NAME ${TEST_INPUT}
-			 COMMAND "./ruc" ${TEST_INPUT}
-			 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
-	set_tests_properties(${TEST_INPUT} PROPERTIES TIMEOUT ${TEST_TIMEOUT})
-endforeach(TEST_INPUT)
+	foreach(_subdir IN LISTS _subdirs)
+		get_all_targets(${_targets} ${_subdir})
+	endforeach()
+
+	get_property(_sub_targets DIRECTORY ${_dir} PROPERTY BUILDSYSTEM_TARGETS)
+	set(${_targets} ${${_targets}} ${_sub_targets} PARENT_SCOPE)
+endfunction()
+
+
+# Set install parameters
+get_all_targets(targets .)
+install(TARGETS ${targets}
+		RUNTIME DESTINATION ${PROJECT_NAME}
+		LIBRARY DESTINATION ${PROJECT_NAME}
+		ARCHIVE DESTINATION ${PROJECT_NAME})
