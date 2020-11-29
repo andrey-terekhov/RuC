@@ -77,7 +77,11 @@ build_vm()
 	fi
 
 	cd ../..
-	ruc_interpreter=./ruc-vm/build/ruc-vm
+	if [[ $OSTYPE == "msys" ]] ; then
+		ruc_interpreter=./ruc-vm/build/Release/ruc-vm
+	else
+		ruc_interpreter=./ruc-vm/build/ruc-vm
+	fi
 }
 
 build()
@@ -88,17 +92,21 @@ build()
 		exit 1
 	fi
 
-	ruc_compiler=./ruc
+	if [[ $OSTYPE == "msys" ]] ; then
+		ruc_compiler=./Release/ruc.exe
+	else
+		ruc_compiler=./ruc
+	fi
 
 	build_vm
 }
 
 internal_timeout()
 {
-	if [[ $OSTYPE == "linux-gnu" ]] ; then
-		timeout $@
-	else
+	if [[ $OSTYPE == "darwin" ]] ; then
 		gtimeout $@
+	else
+		timeout $@
 	fi
 }
 
@@ -190,7 +198,7 @@ check_warnings()
 		message_success
 		let success++
 	else
-		if [[ `grep -c "\[1;31mошибка: " $log` > 1 ]] ; then
+		if [[ `grep -c "ошибка: " $log` > 1 ]] ; then
 			message_warning
 			let warning++
 
