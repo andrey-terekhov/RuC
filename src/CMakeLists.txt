@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.13.5)
 project(main)
 
 
-file(GLOB SRC "*.c")
-file(GLOB HDR "*.h")
+file(GLOB_RECURSE SRC "*.c")
+file(GLOB_RECURSE HDR "*.h")
 
 source_group("\\" FILES ${SRC} ${HDR})
 add_executable(${PROJECT_NAME} ${SRC} ${HDR})
