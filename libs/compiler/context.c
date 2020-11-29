@@ -27,10 +27,10 @@
 #define DEFAULT_OUTBUF_SIZE (1024)
 
 
-void compiler_context_init(compiler_context *context)
+void compiler_context_init(compiler_context *context, universal_io *const io)
 {
 	memset(context, 0, sizeof(compiler_context));
-	context->io = io_create();
+	context->io = io;
 	compiler_table_init(&context->reprtab);
 
 	context->charnum = 0;

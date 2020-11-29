@@ -35,40 +35,70 @@
 #endif
 
 
-#define FILE_DEBUG
+//#define GENERATE_FILES
 
 
 const char *const DEFAULT_MACRO = "macro.txt";
 const char *const DEFAULT_KEYWORDS = "keywords.txt";
 const char *const DEFAULT_TREE = "tree.txt";
 const char *const DEFAULT_CODES = "codes.txt";
+const char *const DEFAULT_OUTPUT = "export.txt";
 
 
-static void process_user_requests(compiler_context *context, const workspace *const ws)
+int compile_from_io_to_vm(universal_io *const io)
 {
-
-	// Препроцессинг в массив
-
-	char *macro_processed = macro(ws); // макрогенерация
-	if (macro_processed == NULL)
+	if (!in_is_correct(io) || !out_is_correct(io))
 	{
-		system_error("не удалось выделить память для макрогенератора");
-		exit(1);
+		io_erase(io);
+		system_error("некорректные параметры ввода/вывода");
+		return 1;
 	}
-	
-	in_set_buffer(&context->io, macro_processed);
+
+	compiler_context *context = malloc(sizeof(compiler_context));
+	if (context == NULL)
+	{
+		io_erase(io);
+		system_error("не удалось выделить память под контекст");
+		return 1;
+	}
+
+	universal_io temp = io_create();
+	compiler_context_init(context, &temp);
+
+	read_keywords(context);
+
+	init_modetab(context);
+
+	io_erase(&temp);
+	char output[MAX_ARG_SIZE];
+	out_get_path(io, output);
+
+	context->io = io;
 	output_tables_and_tree(context, DEFAULT_TREE);
 	if (!context->error_flag)
 	{
 		output_codes(context, DEFAULT_CODES);
 	}
 
-	output_export(context, ws_get_output(ws));
-	io_erase(&context->io);
-	free(macro_processed);
+	output_export(context, output);
+	io_erase(io);
+
+	int ret = context->error_flag;
+	free(context);
+	return ret;
 }
 
-int compile_to_vm(const workspace *const ws)
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+int compile_to_vm(workspace *const ws)
 {
 	if (!ws_is_correct(ws))
 	{
@@ -76,23 +106,19 @@ int compile_to_vm(const workspace *const ws)
 		return 1;
 	}
 
-	compiler_context *context = malloc(sizeof(compiler_context));
-	if (context == NULL)
+	// Препроцессинг в массив
+	char *const preprocessing = macro(ws); // макрогенерация
+	if (preprocessing == NULL)
 	{
-		system_error("не удалось выделить память под контекст");
 		return 1;
 	}
 
-	compiler_context_init(context);
+	universal_io io = io_create();
+	in_set_buffer(&io, preprocessing);
+	out_set_file(&io, ws_get_output(ws));
+	int ret = compile_from_io_to_vm(&io);
 
-	read_keywords(context);
-
-	init_modetab(context);
-
-	process_user_requests(context, ws);
-
-	int ret = context->error_flag;
-	free(context);
+	free(preprocessing);
 	return ret;
 }
 
@@ -100,4 +126,12 @@ int auto_compile_to_vm(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
 	return compile_to_vm(&ws);
+}
+
+int no_macro_compile_to_vm(const char *const path)
+{
+	universal_io io = io_create();
+	in_set_file(&io, path);
+	out_set_file(&io, DEFAULT_OUTPUT);
+	return compile_from_io_to_vm(&io);
 }

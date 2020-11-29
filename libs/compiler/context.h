@@ -45,7 +45,7 @@ typedef struct compiler_table
 /** Определение глобальных переменных */
 typedef struct compiler_context
 {
-	universal_io io;
+	universal_io *io;
 
 	double numdouble;
 	int line;
@@ -160,7 +160,7 @@ typedef struct compiler_context
  *
  *	@param	context	Uninitialized RuC context
  */
-void compiler_context_init(compiler_context *context);
+void compiler_context_init(compiler_context *context, universal_io *const io);
 
 /**
  *	Initialize compiler table

@@ -37,7 +37,7 @@ void block(compiler_context *context, int b);
 
 void context_error(compiler_context *const context, const int num) // Вынесено из errors.c
 {
-	const universal_io *const io = &context->io;
+	const universal_io *const io = context->io;
 
 	switch (num)
 	{

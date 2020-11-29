@@ -52,7 +52,7 @@ static void make_executable(const char *path)
 /** Занесение ключевых слов в reprtab */
 void read_keywords(compiler_context *context)
 {
-	in_set_buffer(&context->io, KEYWORDS);
+	in_set_buffer(context->io, KEYWORDS);
 
 	context->keywordsnum = 1;
 	getnext(context);
@@ -62,13 +62,13 @@ void read_keywords(compiler_context *context)
 		; // чтение ключевых слов
 	}
 
-	in_clear(&context->io);
+	in_clear(context->io);
 }
 
 /** Вывод таблиц и дерева */
 void output_tables_and_tree(compiler_context *context, const char *path)
 {
-	out_set_file(&context->io, path);
+	out_set_file(context->io, path);
 
 	getnext(context);
 	nextch(context);
@@ -77,16 +77,16 @@ void output_tables_and_tree(compiler_context *context, const char *path)
 	ext_decl(context); // генерация дерева
 
 	tablesandtree(context);
-	out_clear(&context->io);
+	out_clear(context->io);
 }
 
 /** Генерация кодов */
 void output_codes(compiler_context *context, const char *path)
 {
-	out_set_file(&context->io, path);
+	out_set_file(context->io, path);
 	codegen(context);
 	tablesandcode(context);
-	out_clear(&context->io);
+	out_clear(context->io);
 }
 
 /** Вывод таблиц в файл */
@@ -94,42 +94,42 @@ void output_export(compiler_context *context, const char *path)
 {
 	int i;
 
-	out_set_file(&context->io, path);
-	uni_printf(&context->io, "#!/usr/bin/ruc-vm\n");
+	out_set_file(context->io, path);
+	uni_printf(context->io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(&context->io, "%i %i %i %i %i %i %i\n", context->pc, context->funcnum, context->id,
+	uni_printf(context->io, "%i %i %i %i %i %i %i\n", context->pc, context->funcnum, context->id,
 				   REPRTAB_LEN, context->md, context->maxdisplg, context->wasmain);
 
 	for (i = 0; i < context->pc; i++)
 	{
-		uni_printf(&context->io, "%i ", context->mem[i]);
+		uni_printf(context->io, "%i ", context->mem[i]);
 	}
-	uni_printf(&context->io, "\n");
+	uni_printf(context->io, "\n");
 
 	for (i = 0; i < context->funcnum; i++)
 	{
-		uni_printf(&context->io, "%i ", context->functions[i]);
+		uni_printf(context->io, "%i ", context->functions[i]);
 	}
-	uni_printf(&context->io, "\n");
+	uni_printf(context->io, "\n");
 
 	for (i = 0; i < context->id; i++)
 	{
-		uni_printf(&context->io, "%i ", context->identab[i]);
+		uni_printf(context->io, "%i ", context->identab[i]);
 	}
-	uni_printf(&context->io, "\n");
+	uni_printf(context->io, "\n");
 
 	for (i = 0; i < REPRTAB_LEN; i++)
 	{
-		uni_printf(&context->io, "%i ", REPRTAB[i]);
+		uni_printf(context->io, "%i ", REPRTAB[i]);
 	}
 
 	for (i = 0; i < context->md; i++)
 	{
-		uni_printf(&context->io, "%i ", context->modetab[i]);
+		uni_printf(context->io, "%i ", context->modetab[i]);
 	}
-	uni_printf(&context->io, "\n");
+	uni_printf(context->io, "\n");
 
-	out_clear(&context->io);
+	out_clear(context->io);
 
 	make_executable(path);
 }
