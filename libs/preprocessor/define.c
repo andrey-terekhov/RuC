@@ -31,24 +31,27 @@
 void define_get_from_macrotext(int r, preprocess_context *context);
 
 
-int m_equal(preprocess_context *context)
+int m_equal(preprocess_context *context, char32_t* s)
 {
-	int i = 0;
+	int i = 1;
 	int n = 1;
 	int j = 0;
 
 	while (j < context->csp)
 	{
-		while (context->mstring[i++] == context->cstring[j++])
+		while (s[i] == context->cstring[j])
 		{
-			if (context->mstring[i] == MACROEND && context->cstring[j] == 0)
+			i++;
+			j++;
+			
+			if (s[i] == 0 && context->cstring[j] == 0)
 			{
 				return n;
 			}
 		}
 
 		n++;
-		i = 0;
+		i = 1;
 		if (context->cstring[j++] != 0)
 		{
 			while (context->cstring[j++] != 0)
@@ -57,7 +60,6 @@ int m_equal(preprocess_context *context)
 			}
 		}
 	}
-
 	return 0;
 }
 
@@ -68,11 +70,13 @@ void function_scob_collect(int t, int num, preprocess_context *context)
 
 	while (context->curchar != EOF)
 	{
-		if (is_letter(context))
+		if (is_letter(context) != 0)
 		{
-			int r = collect_mident(context);
+			char32_t str[STRIGSIZE];
+			collect_mident(context, str);
+			int r = con_repr_find(&context->repr, str);
 
-			if (r)
+			if (r != 0)
 			{
 				int oldcp1 = context->cp;
 				int oldlsp = context->lsp;
@@ -105,9 +109,10 @@ void function_scob_collect(int t, int num, preprocess_context *context)
 			}
 			else
 			{
-				for (i = 0; i < context->msp; i++)
+				int i = 1;
+				while (str[i] != '\0')
 				{
-					context->fchange[context->cp++] = context->mstring[i];
+					context->fchange[context->cp++] = str[i++];
 				}
 			}
 		}
@@ -129,7 +134,9 @@ void function_scob_collect(int t, int num, preprocess_context *context)
 		}
 		else if (context->curchar == '#')
 		{
-			if (macro_keywords(context) == SH_EVAL && context->curchar == '(')
+			char32_t str[STRIGSIZE];
+			collect_mident(context, str);
+			if (con_repr_find(&context->repr, str) == SH_EVAL && context->curchar == '(')
 			{
 				calculator(0, context);
 				for (i = 0; i < context->csp; i++)
@@ -139,9 +146,10 @@ void function_scob_collect(int t, int num, preprocess_context *context)
 			}
 			else
 			{
-				for (i = 0; i < context->reprtab[context->rp]; i++)
+				int i = 1; 
+				while (str[i] != '\0')
 				{
-					context->fchange[context->cp++] = context->reprtab[context->rp + 2 + i];
+					context->fchange[context->cp++] = str[i++];
 				}
 			}
 		}
@@ -209,26 +217,27 @@ void funktionleter(int flag_macro, preprocess_context *context)
 	int n = 0;
 	int i = 0;
 
-	context->msp = 0;
-
-	int r = collect_mident(context);
+	char32_t str[STRIGSIZE];
+	collect_mident(context, str);
+	int r = con_repr_find(&context->repr, str);
 
 	// printf("funktionleter\n");
 
-	if ((n = m_equal(context)) != 0)
+	if ((n = m_equal(context, str)) != 0)
 	{
 		context->macrotext[context->mp++] = MACROCANGE;
 		context->macrotext[context->mp++] = n - 1;
 	}
-	else if (!flag_macro && r)
+	else if (flag_macro == 0 && r)
 	{
-		define_get_from_macrotext(r, context);
+		define_get_from_macrotext(r, context);	
 	}
 	else
 	{
-		for (i = 0; i < context->msp; i++)
+		int i = 1; 
+		while (str[i] != '\0')
 		{
-			context->macrotext[context->mp++] = context->mstring[i];
+			context->macrotext[context->mp++] = str[i++];
 		}
 	}
 }
@@ -242,11 +251,9 @@ int to_functionident(preprocess_context *context)
 
 	while (context->curchar != ')')
 	{
-		context->msp = 0;
-
-		if (is_letter(context))
+		if (is_letter(context) != 0)
 		{
-			while (is_letter(context) || is_digit(context->curchar))
+			while (is_letter(context) != 0 || is_digit(context->curchar) != 0)
 			{
 				context->cstring[context->csp++] = context->curchar;
 				m_nextch(context);
@@ -258,7 +265,7 @@ int to_functionident(preprocess_context *context)
 			m_error(functionid_begins_with_letters, context);
 		}
 
-		context->msp = 0;
+		
 		if (context->curchar == ',')
 		{
 			m_nextch(context);
@@ -305,15 +312,18 @@ void function_add_to_macrotext(preprocess_context *context)
 
 	while (context->curchar != '\n' || flag_macro && context->curchar != EOF)
 	{
-		if (is_letter(context) && !empty)
+		if (is_letter(context) != 0 && empty == 0)
 		{
 			funktionleter(flag_macro, context);
 		}
 		else if (context->curchar == '#')
 		{
-			context->cur = macro_keywords(context);
+			
+			char32_t str[STRIGSIZE];
+			collect_mident(context, str);
+			context->cur = con_repr_find(&context->repr, str);
 
-			if (!flag_macro && context->cur == SH_EVAL && context->curchar == '(')
+			if (flag_macro == 0 && context->cur == SH_EVAL && context->curchar == '(')
 			{
 				calculator(0, context);
 				for (j = 0; j < context->csp; j++)
@@ -321,7 +331,7 @@ void function_add_to_macrotext(preprocess_context *context)
 					context->macrotext[context->mp++] = context->cstring[j];
 				}
 			}
-			else if (flag_macro && context->cur == SH_ENDM)
+			else if (flag_macro != 0 && context->cur == SH_ENDM)
 			{
 				m_nextch(context);
 				context->macrotext[context->mp++] = MACROEND;
@@ -330,9 +340,10 @@ void function_add_to_macrotext(preprocess_context *context)
 			else
 			{
 				context->cur = 0;
-				for (j = 0; j < context->reprtab[context->rp]; j++)
+				int i = 1; 
+				while (str[i] != '\0')
 				{
-					context->macrotext[context->mp++] = context->reprtab[context->rp + 2 + j];
+					context->macrotext[context->mp++] = str[i++];
 				}
 			}
 		}
@@ -361,11 +372,11 @@ void function_add_to_macrotext(preprocess_context *context)
 // define
 void define_get_from_macrotext(int r, preprocess_context *context)
 {
-	int t = context->reprtab[r + 1];
+	int t = r;
 
-	if (r)
+	if (r != 0)
 	{
-		context->msp = 0;
+		
 		if (context->macrotext[t] == MACROFUNCTION)
 		{
 			if (context->macrotext[++t] > -1)
@@ -384,51 +395,9 @@ void define_get_from_macrotext(int r, preprocess_context *context)
 	}
 }
 
-int define_add_to_reprtab(preprocess_context *context)
-{
-	int r;
-	int oldrepr = context->rp;
-	int hash = 0;
-	context->rp += 2;
-
-	do
-	{
-		hash += context->curchar;
-		context->reprtab[context->rp++] = context->curchar;
-		m_nextch(context);
-	} while (is_letter(context) || is_digit(context->curchar));
-
-	hash &= 255;
-	context->reprtab[context->rp++] = 0;
-	r = context->hashtab[hash];
-
-	while (r)
-	{
-		if (equal_reprtab(r, oldrepr, context))
-		{
-			if (context->macrotext[context->reprtab[r + 1]] == MACROUNDEF)
-			{
-				context->rp = oldrepr;
-				return r;
-			}
-			else
-			{
-				m_error(repeat_ident, context);
-			}
-		}
-		r = context->reprtab[r];
-	}
-
-	context->reprtab[oldrepr] = context->hashtab[hash];
-	context->reprtab[oldrepr + 1] = context->mp;
-	context->hashtab[hash] = oldrepr;
-	return 0;
-}
-
-void define_add_to_macrotext(int r, preprocess_context *context)
+void define_add_to_macrotext(preprocess_context *context)
 {
 	int j;
-	int lmp = context->mp;
 
 	context->macrotext[context->mp++] = MACRODEF;
 	if (context->curchar != '\n')
@@ -441,7 +410,9 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 			}
 			else if (context->curchar == '#')
 			{
-				context->cur = macro_keywords(context);
+				char32_t str[STRIGSIZE];
+				collect_mident(context, str);
+				context->cur = con_repr_find(&context->repr, str);
 				if (context->cur == SH_EVAL)
 				{
 					if (context->curchar != '(')
@@ -458,9 +429,10 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 				}
 				else
 				{
-					for (j = 0; j < context->reprtab[context->rp]; j++)
+					int i = 1; 
+					while (str[i] != '\0')
 					{
-						context->macrotext[context->mp++] = context->reprtab[context->rp + 2 + j];
+						context->macrotext[context->mp++] = str[i++];
 					}
 				}
 			}
@@ -469,18 +441,21 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 				m_nextch(context);
 				space_end_line(context);
 			}
-			else if (is_letter(context))
+			else if (is_letter(context) != 0)
 			{
-				int k = collect_mident(context);
-				if (k)
+				char32_t str[STRIGSIZE];
+				collect_mident(context, str);
+				int k = con_repr_find(&context->repr, str);
+				if (k != 0)
 				{
 					define_get_from_macrotext(k, context);
 				}
 				else
 				{
-					for (j = 0; j < context->msp; j++)
+					int i = 1; 
+					while (str[i] != '\0')
 					{
-						context->macrotext[context->mp++] = context->mstring[j];
+						context->macrotext[context->mp++] = str[i++];
 					}
 				}
 			}
@@ -503,27 +478,19 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 	}
 
 	context->macrotext[context->mp++] = MACROEND;
-
-	if (r)
-	{
-		context->reprtab[r + 1] = lmp;
-	}
 }
 
 void define_relis(preprocess_context *context)
 {
 	int r;
-
-	if (!is_letter(context))
+	if (is_letter(context) == 0)
 	{
 		m_error(ident_begins_with_letters1, context);
 	}
+	
+	con_repr_add_ident(&context->repr, context);
 
-	r = define_add_to_reprtab(context);
-
-	context->msp = 0;
-
-	if (context->curchar == '(' && !r)
+	if (context->curchar == '(')
 	{
 		m_nextch(context);
 		function_add_to_macrotext(context);
@@ -535,7 +502,7 @@ void define_relis(preprocess_context *context)
 	else
 	{
 		space_skip(context);
-		define_add_to_macrotext(r, context);
+		define_add_to_macrotext(context);
 	}
 	m_nextch(context);
 }
@@ -546,18 +513,14 @@ void set_relis(preprocess_context *context)
 
 	space_skip(context);
 
-	if (!is_letter(context))
+	if (is_letter(context) == 0)
 	{
 		m_error(ident_begins_with_letters1, context);
 	}
 
-	j = collect_mident(context);
+	con_repr_change(&context->repr, context);
 
-	if (context->macrotext[context->reprtab[j + 1]] == MACROFUNCTION)
-	{
-		m_error(functions_cannot_be_changed, context);
-	}
-	else if (context->curchar != ' ')
+	if (context->curchar != ' ')
 	{
 		m_error(after_ident_must_be_space1, context);
 	}
@@ -565,6 +528,6 @@ void set_relis(preprocess_context *context)
 	m_nextch(context);
 	space_skip(context);
 
-	define_add_to_macrotext(j, context);
+	define_add_to_macrotext(context);
 }
 //

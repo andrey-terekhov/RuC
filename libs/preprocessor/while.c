@@ -49,7 +49,9 @@ void while_collect(preprocess_context *context)
 	{
 		if (context->curchar == '#')
 		{
-			context->cur = macro_keywords(context);
+			char32_t str[STRIGSIZE];
+			collect_mident(context, str);
+			context->cur = con_repr_find(&context->repr, str);
 
 			if (context->cur == SH_WHILE)
 			{
@@ -64,11 +66,10 @@ void while_collect(preprocess_context *context)
 			}
 			else
 			{
-				int i = 0;
-
-				for (i = 0; i < context->reprtab[context->rp]; i++)
+				int i = 1;
+				while (str[i] != '\0')
 				{
-					context->wstring[context->wsp++] = context->reprtab[context->rp + 2 + i];
+					context->wstring[context->wsp++] = str[i++];
 				}
 			}
 		}

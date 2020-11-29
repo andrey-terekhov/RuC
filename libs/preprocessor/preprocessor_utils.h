@@ -23,11 +23,9 @@
 extern "C" {
 #endif
 
-int equal_reprtab(int i, int j, preprocess_context *context);
+int strlen32(const char32_t* strarg);
 void output_keywods(preprocess_context *context);
-int macro_keywords(preprocess_context *context);
-int collect_mident(preprocess_context *context);
-int find_file(preprocess_context *context, const char *s);
+void collect_mident(preprocess_context *context, char32_t* str);
 
 void space_end_line(preprocess_context *context);
 void space_skip(preprocess_context *context);

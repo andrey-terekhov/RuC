@@ -25,169 +25,49 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-int equal_reprtab(int i, int j, preprocess_context *context)
+int strlen32(const char32_t* strarg)
 {
-	++i;
-	++j;
-
-	while (context->reprtab[++i] == context->reprtab[++j])
-	{
-		if (context->reprtab[i] == 0 && context->reprtab[j] == 0)
-		{
-			return 1;
-		}
-	}
-
-	return 0;
-}
-
-void output_keywods(preprocess_context *context)
-{
-	for (int j = 0; j < context->reprtab[context->rp]; j++)
-	{
-		m_fprintf(context->reprtab[context->rp + 2 + j], context);
-	}
+   if(!strarg)
+     return -1; //strarg is NULL pointer
+   char32_t* str = strarg;
+   for(;*str;++str)
+     ; // empty body
+   return str-strarg;
 }
 
 int is_letter(preprocess_context *context)
 {
-	return (context->curchar >= 'A' && context->curchar <= 'Z') ||
+	if ((context->curchar >= 'A' && context->curchar <= 'Z') ||
 		   (context->curchar >= 'a' && context->curchar <= 'z') || context->curchar == '_' ||
-		   (context->curchar >= 0x410 /*'А'*/ && context->curchar <= 0x44F /*'я'*/);
+		   (context->curchar >= 0x410 /*'А'*/ && context->curchar <= 0x44F /*'я'*/))
+	{
+		return 1;
+	}
+	return 0;
 }
 
 int is_digit(int a)
 {
-	return a >= '0' && a <= '9';
+	if(a >= '0' && a <= '9')
+	{
+		return 1;
+	}
+	return 0;
 }
 
-int macro_keywords(preprocess_context *context)
+void collect_mident(preprocess_context *context, char32_t *str)
 {
-	int oldrepr = context->rp;
-	int r = 0;
-	int n = 0;
-
-	context->rp += 2;
+	int i = 1;
 	int hash = 0;
 	do
 	{
-		hash += context->curchar;
-		context->reprtab[context->rp++] = context->curchar;
-		n++;
-		m_nextch(context);
-	} while (is_letter(context) || is_digit(context->curchar));
-
-	/*if (context->curchar != '\n' && context->curchar != ' ' && context->curchar != '\t' && context->curchar != '(' &&
-		context->curchar != '\"')
-	{
-		m_error(after_ident_must_be_space, context);
-	}*/
-
-	hash &= 255;
-	context->reprtab[context->rp++] = 0;
-	r = context->hashtab[hash];
-	if (r)
-	{
-		do
-		{
-			if (equal_reprtab(r, oldrepr, context))
-			{
-				context->rp = oldrepr;
-				context->reprtab[context->rp] = n;
-				return (context->reprtab[r + 1] < 0) ? context->reprtab[r + 1] : 0;
-			}
-			else
-			{
-				r = context->reprtab[r];
-			}
-		} while (r);
-	}
-
-	context->rp = oldrepr;
-	context->reprtab[context->rp] = n;
-	return 0;
-}
-
-int mf_equal(int i, preprocess_context *context)
-{
-	int j = 0;
-	i += 2;
-
-	while (context->reprtab[i++] == context->mstring[j++])
-	{
-		if (context->reprtab[i] == 0 && context->mstring[j] == MACROEND)
-		{
-			return 1;
-		}
-	}
-
-	return 0;
-}
-
-int collect_mident(preprocess_context *context)
-{
-	int r;
-	int hash = 0;
-	context->msp = 0;
-
-	while (is_letter(context) || is_digit(context->curchar))
-	{
-		context->mstring[context->msp++] = context->curchar;
+		str[i++] = context->curchar;
 		hash += context->curchar;
 		m_nextch(context);
-	}
-
-	context->mstring[context->msp] = MACROEND;
-	hash &= 255;
-	r = context->hashtab[hash];
-
-	while (r)
-	{
-		if (r >= context->mfirstrp && mf_equal(r, context))
-		{
-			return (context->macrotext[context->reprtab[r + 1]] != MACROUNDEF) ? r : 0;
-		}
-
-		r = context->reprtab[r];
-	}
-
-	return 0;
-}
-
-int find_file(preprocess_context *context, const char *s)
-{
-	int oldrp = context->rp;
-	context->rp += 2;
-
-	int r;
-	int hash = 0;
-	int i = 0;
-
-	while (s[i] != '\0')
-	{
-		context->reprtab[context->rp++] = s[i];
-		hash += s[i];
-		i++;
-	}
-
-	hash &= 255;
-	r = context->hashtab[hash];
-
-	while (r)
-	{
-		if (context->reprtab[r + 1] == SH_FILE && equal_reprtab(r, oldrp, context))
-		{
-			return 0;
-		}
-
-		r = context->reprtab[r];
-	}
-
-	context->reprtab[oldrp] = context->hashtab[hash];
-	context->reprtab[oldrp + 1] = SH_FILE;
-	context->hashtab[hash] = oldrp;
-	return 1;
+	} while (is_letter(context) != 0 || is_digit(context->curchar) != 0);
+	str[i++] = 0;
+	str[0] = hash & 255;
+	return;
 }
 
 void space_end_line(preprocess_context *context)

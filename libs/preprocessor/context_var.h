@@ -19,26 +19,33 @@
 #include "constants.h"
 #include "uniio.h"
 #include <stdio.h>
+#include "workspace.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+typedef struct reprtab
+{
+	char32_t tab[MAXTAB];
+	int hashtab[HASH];
+	int p;
+} reprtab;
+
 typedef struct file
 {
-	char *name;
+	const char* name;
 	int const_name;
 } file;
 
 typedef struct files
 {
-	file *files;
+	file files[MAX_ARG_SIZE*3];
 	int main_faile;
 	int p;
 	int p_s;
 	int cur;
-	int size;
 	int begin_f;
 	int end_h;
 } files;
@@ -47,16 +54,10 @@ typedef struct preprocess_context
 {
 	int include_type;
 
-	int hashtab[256];
-	int reprtab[MAXTAB];
-	int rp;
+	reprtab repr;
 
 	int macrotext[MAXTAB];
 	int mp;
-	int oldmp;
-
-	int mstring[STRIGSIZE];
-	int msp;
 
 	int strp;
 
@@ -104,21 +105,22 @@ typedef struct preprocess_context
 	int *current_string;
 	int current_p;
 
-	const char **include_ways;
+	const char *include_ways[MAX_FLAGS];
 	int iwp;
 
 	universal_io io;
 } preprocess_context;
 
-void preprocess_context_init(preprocess_context *context, int num);
+void con_init(preprocess_context *context);
 
-void con_file_add(file *f, const char *name, int cnost_name);
-void con_file_free(file *f );
 
-void con_files_init(files *fs, int num);
+int con_repr_add(reprtab *repr, char* s, int cod);
+void con_repr_add_ident(reprtab *repr, preprocess_context *context);
+int con_repr_find(reprtab* repr, char32_t* s);
+void con_repr_change(reprtab *repr, preprocess_context *context);
+
 void con_files_add_parametrs(files* fs, const char *name);
 void con_files_add_include(files* fs, const char *name);
-void con_files_free(files *fs);
 
 int con_file_open_main(files* fs, preprocess_context *context);
 int con_file_open_sorse(files* fs, preprocess_context *context);

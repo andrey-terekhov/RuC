@@ -34,7 +34,7 @@ void gen_way(char *full, const char *path, const char *file, int is_slash)
 {
 	int size;
 
-	if (is_slash)
+	if (is_slash != 0)
 	{
 		char *slash = strrchr(path, '/');
 		if (slash != NULL)
@@ -67,7 +67,7 @@ int open_include_faile(preprocess_context *context, char *temp_way, file *fl, in
 
 	gen_way(file_way, fl->name, temp_way, 1);
 
-	if (!find_file(context, file_way))
+	if (con_repr_add(&context->repr, file_way, SH_FILE) == 0)
 	{
 		return -2;
 	}
@@ -197,8 +197,6 @@ void include_relis(preprocess_context *context)
 
 	if (context->curchar != '\"')
 	{
-		if(context->include_type > 0)
-		output_keywods(context);
 		return;
 	}
 	m_nextch(context);

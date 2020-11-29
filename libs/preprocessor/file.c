@@ -190,12 +190,7 @@ void m_nextch(preprocess_context *context)
 {
 	if (context->nextch_type != FILETYPE && context->nextch_type <= TEXTTYPE)
 	{
-		if (context->nextch_type == MTYPE && context->nextp < context->msp)
-		{
-			context->curchar = context->mstring[context->nextp++];
-			context->nextchar = context->mstring[context->nextp];
-		}
-		else if (context->nextch_type == CTYPE && context->nextp < context->csp)
+		if (context->nextch_type == CTYPE && context->nextp < context->csp)
 		{
 			context->curchar = context->cstring[context->nextp++];
 			context->nextchar = context->cstring[context->nextp];

@@ -43,8 +43,10 @@ int if_check(int type_if, preprocess_context *context)
 	}
 	else
 	{
-		context->msp = 0;
-		if (collect_mident(context))
+		char32_t str[STRIGSIZE];
+		collect_mident(context, str);
+		
+		if (con_repr_find(&context->repr, str) != 0)
 		{
 			flag = 1;
 		}
@@ -70,7 +72,9 @@ void if_end(preprocess_context *context)
 	{
 		if (context->curchar == '#')
 		{
-			fl_cur = macro_keywords(context);
+			char32_t str[STRIGSIZE];
+			collect_mident(context, str);
+			fl_cur = con_repr_find(&context->repr, str);
 			m_nextch(context);
 
 			if (fl_cur == SH_ENDIF)
@@ -106,7 +110,9 @@ int if_false(preprocess_context *context)
 	{
 		if (context->curchar == '#')
 		{
-			fl_cur = macro_keywords(context);
+			char32_t str[STRIGSIZE];
+			collect_mident(context, str);
+			fl_cur = con_repr_find(&context->repr, str);
 			m_nextch(context);
 
 			if (fl_cur == SH_ELSE || fl_cur == SH_ELIF || fl_cur == SH_ENDIF)
@@ -166,7 +172,7 @@ void if_relis(preprocess_context *context)
 	int flag = if_check(type_if, context); // начало (if)
 
 	checkif++;
-	if (flag)
+	if (flag != 0)
 	{
 		if_true(type_if, context);
 		return;
@@ -183,7 +189,7 @@ void if_relis(preprocess_context *context)
 			flag = if_check(type_if, context);
 			space_end_line(context);
 
-			if (flag)
+			if (flag != 0)
 			{
 				if_true(type_if, context);
 				return;
