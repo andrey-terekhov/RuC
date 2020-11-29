@@ -38,27 +38,14 @@
 #define FILE_DEBUG
 
 
-static void process_user_requests(compiler_context *context, const workspace *const ws)
-{	
-#if !defined(FILE_DEBUG) && !defined(_MSC_VER)
-	/* Regular file */
-	char macro_path[] = "/tmp/macroXXXXXX";
-	char tree_path[] = "/tmp/treeXXXXXX";
-	char codes_path[] = "/tmp/codesXXXXXX";
+const char *const DEFAULT_MACRO = "macro.txt";
+const char *const DEFAULT_KEYWORDS = "keywords.txt";
+const char *const DEFAULT_TREE = "tree.txt";
+const char *const DEFAULT_CODES = "codes.txt";
 
-	mkstemp(macro_path);
-	mkstemp(tree_path);
-	mkstemp(codes_path);
-#else
-	char macro_path[] = "macro.txt";
-	char tree_path[] = "tree.txt";
-	char codes_path[] = "codes.txt";
-#endif
-	if (strlen(macro_path) == 0 || strlen(tree_path) == 0 || strlen(codes_path) == 0)
-	{
-		system_error("не удалось создать временные файлы");
-		exit(1);
-	}
+
+static void process_user_requests(compiler_context *context, const workspace *const ws)
+{
 
 	// Препроцессинг в массив
 
@@ -70,18 +57,11 @@ static void process_user_requests(compiler_context *context, const workspace *co
 	}
 	
 	in_set_buffer(&context->io, macro_processed);
-	output_tables_and_tree(context, tree_path);
+	output_tables_and_tree(context, DEFAULT_TREE);
 	if (!context->error_flag)
 	{
-		output_codes(context, codes_path);
+		output_codes(context, DEFAULT_CODES);
 	}
-
-	/* Will be left for debugging in case of failure */
-#if !defined(FILE_DEBUG) && !defined(_MSC_VER)
-	unlink(tree_path);
-	unlink(codes_path);
-	unlink(macro_path);
-#endif
 
 	output_export(context, ws_get_output(ws));
 	io_erase(&context->io);
