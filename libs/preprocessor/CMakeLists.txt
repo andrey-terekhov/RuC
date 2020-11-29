@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.13.5)
 project(preprocessor)
 
 
-file(GLOB_RECURSE SRC "*.c")
-file(GLOB_RECURSE HDR "*.h")
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.c")
+file(GLOB_RECURSE HDR CONFIGURE_DEPENDS "*.h")
 
 source_group("\\" FILES ${SRC} ${HDR})
 add_library(${PROJECT_NAME} SHARED ${SRC} ${HDR})
