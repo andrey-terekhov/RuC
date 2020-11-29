@@ -2,7 +2,7 @@
 
 init()
 {
-	output_time=0.0
+	output_time=0.1
 	wait_for=2
 	vm_release=master
 
@@ -31,7 +31,7 @@ init()
 				echo -e "\t-s, --silence\tFor silence testing."
 				echo -e "\t-d, --debug\tSwitch on debug tracing."
 				echo -e "\t-v, --virtual\tSet RuC virtual machine release."
-				echo -e "\t-o, --output\tSet output printing time (default = 0.0)."
+				echo -e "\t-o, --output\tSet output printing time (default = 0.1)."
 				echo -e "\t-w, --wait\tSet waiting time for timeout result (default = 2)."
 				exit 0
 				;;
