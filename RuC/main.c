@@ -10,7 +10,7 @@
 const char * name =
 //"tests/Mishatest.c";
 
-"tests/mips/get.c";
+"tests/mips/optimizations/big_matrix.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
@@ -51,6 +51,9 @@ int gotost[1000], pgotost, regis;
 int anst, anstdispl, ansttype, leftansttype = -1;   
 
 int bad_printf_placeholder = 0;
+
+// optimization flags
+int cycle_jump_reduce = 1;
 
 extern void preprocess_file();
 

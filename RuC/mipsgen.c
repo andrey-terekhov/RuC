@@ -2189,12 +2189,15 @@ void MStmt_gen()
                 MExpr_gen();         // init
             adbreak = elselab = labnum++;
             adcont  = labnum++;
-        tocodeL("BEGLOOP", adcont);
+            if (cycle_jump_reduce == 0)
+            	tocodeL("BEGLOOP", adcont);
             if (condref)
             {
                 mbox = BCF;
                 MExpr_gen();         // cond
             }
+            if (cycle_jump_reduce == 1)
+            	tocodeL("BEGLOOP", adcont);
             if (incrref)
             {
                 mbox = BV;
@@ -2212,7 +2215,16 @@ void MStmt_gen()
                 MStmt_gen();         // statement
             tocodeL("CONT", adcont);
             }
-            tocodeJ(jump, "BEGLOOP", adcont);
+            if (cycle_jump_reduce == 0)
+            	tocodeJ(jump, "BEGLOOP", adcont);
+            if (cycle_jump_reduce == 1 && condref)
+            {
+            	int old_tc = tc;
+            	tc = condref;
+                mbox = BCF;
+                MExpr_gen();         // cond
+                tc = old_tc;
+            }
         tocodeL("end", adbreak);
         tocodeL("ELSE", adbreak);
 
