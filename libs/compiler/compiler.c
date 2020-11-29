@@ -53,7 +53,7 @@ void report_cb(asp_report *report)
 }
 #endif
 
-static void process_user_requests(compiler_context *context, workspace *const ws)
+static void process_user_requests(compiler_context *context, const workspace *const ws)
 {	
 #if !defined(FILE_DEBUG) && !defined(_MSC_VER)
 	/* Regular file */
@@ -106,7 +106,7 @@ static void process_user_requests(compiler_context *context, workspace *const ws
 	free(macro_processed);
 }
 
-int compile_to_vm(workspace *const ws)
+int compile_to_vm(const workspace *const ws)
 {
 	if (!ws_is_correct(ws))
 	{
