@@ -4,7 +4,10 @@ project(ruc)
 
 
 file(GLOB SRC "*.c")
-add_executable(${PROJECT_NAME} ${SRC})
+file(GLOB HDR "*.h")
+
+add_executable(${PROJECT_NAME} ${SRC} ${HDR})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 
 target_link_libraries(${PROJECT_NAME} compiler utils)
