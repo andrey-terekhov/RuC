@@ -2,7 +2,7 @@
 
 init()
 {
-	output_time=0.1
+	output_time=0.2
 	wait_for=2
 	vm_release=master
 
