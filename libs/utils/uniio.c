@@ -1,5 +1,4 @@
 #include "uniio.h"
-#include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
