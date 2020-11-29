@@ -2,7 +2,7 @@
 
 init()
 {
-	output_time=0.1
+	output_time=0.0
 	wait_for=2
 	vm_release=master
 
@@ -31,7 +31,7 @@ init()
 				echo -e "\t-s, --silence\tFor silence testing."
 				echo -e "\t-d, --debug\tSwitch on debug tracing."
 				echo -e "\t-v, --virtual\tSet RuC virtual machine release."
-				echo -e "\t-o, --output\tSet output printing time (default = 0.1)."
+				echo -e "\t-o, --output\tSet output printing time (default = 0.0)."
 				echo -e "\t-w, --wait\tSet waiting time for timeout result (default = 2)."
 				exit 0
 				;;
@@ -77,7 +77,11 @@ build_vm()
 	fi
 
 	cd ../..
-	ruc_interpreter=./ruc-vm/build/ruc-vm
+	if [[ $OSTYPE == "msys" ]] ; then
+		ruc_interpreter=./ruc-vm/build/Release/ruc-vm
+	else
+		ruc_interpreter=./ruc-vm/build/ruc-vm
+	fi
 }
 
 build()
@@ -88,17 +92,21 @@ build()
 		exit 1
 	fi
 
-	ruc_compiler=./ruc
+	if [[ $OSTYPE == "msys" ]] ; then
+		ruc_compiler=./Release/ruc.exe
+	else
+		ruc_compiler=./ruc
+	fi
 
 	build_vm
 }
 
 internal_timeout()
 {
-	if [[ $OSTYPE == "linux-gnu" ]] ; then
-		timeout $@
-	else
+	if [[ $OSTYPE == "darwin" ]] ; then
 		gtimeout $@
+	else
+		timeout $@
 	fi
 }
 
@@ -190,7 +198,7 @@ check_warnings()
 		message_success
 		let success++
 	else
-		if [[ `grep -c "\[1;31mошибка: " $log` > 1 ]] ; then
+		if [[ `grep -c "ошибка: " $log` > 1 ]] ; then
 			message_warning
 			let warning++
 
