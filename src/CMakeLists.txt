@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13.5)
 
-project(main)
+project(ruc)
 
 
 file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.c")
