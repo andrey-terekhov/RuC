@@ -52,17 +52,7 @@ static void make_executable(const char *path)
 /** Занесение ключевых слов в reprtab */
 void read_keywords(compiler_context *context)
 {
-	size_t len = strlen(keywords_txt);
-	char *keywords = malloc(len + 1);
-
-	if (keywords == NULL)
-	{
-		exit(-1);
-	}
-
-	memcpy(keywords, keywords_txt, len + 1);
-
-	in_set_buffer(&context->io, keywords);
+	in_set_buffer(&context->io, KEYWORDS);
 
 	context->keywordsnum = 1;
 	getnext(context);
