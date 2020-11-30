@@ -16,3 +16,36 @@
 
 #include "syntax.h"
 
+
+int syntax_init(syntax *const sx)
+{
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
+	compiler_table_init(&sx->reprtab);
+	sx->reprtab.len = 1;
+
+	sx->pc = 4;
+	sx->procd = 1;
+	sx->funcnum = 2;
+	sx->id = 2;
+	sx->md = 1;
+
+	sx->maxdisplg = 3;
+
+	return 0;
+}
+
+int syntax_deinit(syntax *const sx)
+{
+	if (sx == NULL || sx->reprtab.table == NULL)
+	{
+		return -1;
+	}
+
+	free(sx->reprtab.table);
+	sx->reprtab.table = NULL;
+	return 0;
+}

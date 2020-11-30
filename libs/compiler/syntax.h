@@ -17,6 +17,12 @@
 #pragma once
 
 #include "context.h"
+#include "defs.h"
+
+
+#define REPRTAB		(sx->reprtab.table)
+#define REPRTAB_POS (sx->reprtab.pos)
+#define REPRTAB_LEN (sx->reprtab.len)
 
 
 #ifdef __cplusplus
@@ -53,6 +59,25 @@ typedef struct syntax
 
 	compiler_table reprtab;		/** Representations table */
 } syntax;
+
+
+/**
+ *	Initialize syntax structure (by allocating memory)
+ *
+ *	@param	sx		Syntax structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int syntax_init(syntax *const sx);
+
+/**
+ *	Deinitialize syntax structure (by free memory)
+ *
+ *	@param	sx		Syntax structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int syntax_deinit(syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */
