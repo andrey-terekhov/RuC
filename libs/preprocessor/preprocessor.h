@@ -35,7 +35,7 @@ void preprocess_scan(preprocess_context *context);
  *
  *	@return	Preprocessed string, @c NULL on failure
  */
-EXPORTED char *macro(const workspace *const ws);
+EXPORTED char *macro(workspace *const ws);
 
 /**
  *	Preprocess files from workspace
@@ -45,7 +45,7 @@ EXPORTED char *macro(const workspace *const ws);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int macro_to_file(const workspace *const ws, const char *const path);
+EXPORTED int macro_to_file(workspace *const ws, const char *const path);
 
 
 /**
