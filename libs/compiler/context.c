@@ -35,7 +35,6 @@ compiler_context compiler_context_create(universal_io *const io, syntax *const s
 	context.notrobot = 1;
 	context.prdf = -1;
 	context.leftansttype = -1;
-	context.c_flag = -1;
 	context.buf_flag = 0;
 	context.error_flag = 0;
 	context.new_line_flag = 0;

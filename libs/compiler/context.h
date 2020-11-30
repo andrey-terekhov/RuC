@@ -38,10 +38,9 @@ typedef struct compiler_context
 
 	int line;
 	int charnum;
-	int charnum_before;
+	int charnum_before;				// useless
 	int cur;
 	int next;
-	int next1;
 	int num;
 	int hash;
 	int keywordsnum;
@@ -51,7 +50,7 @@ typedef struct compiler_context
 		int first;
 		int second;
 	} numr;
-	int last_line[LINESSIZE * 2];
+	int last_line[LINESSIZE * 2];	// useless
 	int nextchar;
 	int curchar;
 	int func_def;
@@ -63,7 +62,6 @@ typedef struct compiler_context
 	int stacklog[100];
 	int sp;
 	int sopnd;
-	int aux;
 	int lastid;
 	int curid;
 	int lg;
@@ -74,39 +72,30 @@ typedef struct compiler_context
 	int inass;
 	int firstdecl;
 	int arrdim;
-	int arrelemlen;
 	int was_struct_with_arr;
 	int usual;
 	int instring;
 	int inswitch;
 	int inloop;
 	int lexstr[MAXSTRINGL + 1];
-	int mtree[MAXTREESIZE];
-	int mtc;
 	int functype;
-	int kw;
+	int kw;							// useless
 	int blockflag;
-	int entry;
 	int wasret;
 	int wasdefault;
-	int notrobot;
-	int prep_flag;
+	int notrobot;					// useless
+	//int prep_flag;
 	int adcont;
 	int adbreak;
 	int adcase;
-	int adandor;
-	int switchreg;
 	int predef[FUNCSIZE];
 	int prdf;
-	int emptyarrdef;
 	int gotost[1000];
 	int pgotost;
 	int anst;
 	int ansttype;
 	int leftansttype; // anst = VAL  - значение на стеке
-	int g;
-	int l;
-	int x;
+	int x;							// useless
 	int iniproc; // anst = ADDR - на стеке адрес значения
 				 // anst = IDENT- значение в статике,
 				 // в anstdisl смещение от l или g
@@ -120,9 +109,7 @@ typedef struct compiler_context
 	int buf_cur;
 	int temp_tc;
 	int error_flag;
-	int new_line_flag;
-
-	int c_flag;
+	int new_line_flag;				// useless
 } compiler_context;
 
 
