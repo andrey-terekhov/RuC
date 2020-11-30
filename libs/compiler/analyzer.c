@@ -1,5 +1,5 @@
 /*
- *	Copyright 2020 Andrey Terekhov, Maxim Menshikov
+ *	Copyright 2020 Andrey Terekhov, Maxim Menshikov, Dmitrii Davladov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,16 +14,58 @@
  *	limitations under the License.
  */
 
-#include "tables.h"
-#include "defs.h"
-#include <limits.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "analyzer.h"
+#include "extdecl.h"
+#include "keywords.h"
+#include "scanner.h"
+#include "uniio.h"
 
 
-int toreprtab(compiler_context *context, char str[])
+analyzer compiler_context_create(universal_io *const io, syntax *const sx)
+{
+	analyzer context;
+	context.io = io;
+	context.sx = sx;
+
+	context.charnum = 0;
+	context.charnum_before = 0;
+	context.startmode = 1;
+	context.sopnd = -1;
+	context.curid = 2;
+	context.lg = -1;
+	context.displ = -3;
+	context.maxdispl = 3;
+	context.blockflag = 1;
+	context.notrobot = 1;
+	context.prdf = -1;
+	context.leftansttype = -1;
+	context.buf_flag = 0;
+	context.error_flag = 0;
+	context.new_line_flag = 0;
+	context.line = 1;
+	context.charnum = 0;
+	context.charnum_before = 0;
+	context.buf_cur = 0;
+	context.temp_tc = 0;
+
+	return context;
+}
+
+
+/** Занесение ключевых слов в reprtab */
+void read_keywords(analyzer *context)
+{
+	context->keywordsnum = 1;
+	getnext(context);
+	nextch(context);
+	while (scan(context) != LEOF)
+	{
+		; // чтение ключевых слов
+	}
+}
+
+
+int toreprtab(analyzer *context, char str[])
 {
 	int i;
 	int oldrepr = REPRTAB_LEN;
@@ -50,7 +92,7 @@ int toreprtab(compiler_context *context, char str[])
 }
 
 /** Инициализация modetab */
-void init_modetab(compiler_context *context)
+void init_modetab(analyzer *context)
 {
 	// занесение в modetab описателя struct {int numTh; int inf; }
 	context->sx->modetab[1] = 0;
@@ -81,4 +123,38 @@ void init_modetab(compiler_context *context)
 	context->charnum = 1;
 	context->kw = 1;
 	context->sx->tc = 0;
+}
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+int analyze(universal_io *const io, syntax *const sx)
+{
+	if (!in_is_correct(io) || sx == NULL)
+	{
+		return -1;
+	}
+
+	universal_io temp = io_create();
+	analyzer context = compiler_context_create(&temp, sx);
+	
+	in_set_buffer(context.io, KEYWORDS);
+	read_keywords(&context);
+	in_clear(context.io);
+
+	init_modetab(&context);
+
+	io_erase(&temp);
+
+	context.io = io;
+	ext_decl(&context);
+
+	return context.error_flag;
 }

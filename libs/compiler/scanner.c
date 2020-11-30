@@ -14,28 +14,25 @@
  *	limitations under the License.
  */
 
-#include "context.h"
+#include "analyzer.h"
 #include "errors.h"
 #include "defs.h"
-#include "logger.h"
-#include "uniprinter.h"
 #include "uniscanner.h"
 #include "utf8.h"
 #include <limits.h>
 #include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 
-int getnext(compiler_context *context)
+int getnext(analyzer *context)
 {
 	int ret = uni_scan_char(context->io);
 	context->nextchar = ret;
 	return ret;
 }
 
-void onemore(compiler_context *context)
+void onemore(analyzer *context)
 {
 	context->curchar = context->nextchar;
 	context->nextchar = getnext(context);
@@ -47,7 +44,7 @@ void onemore(compiler_context *context)
 	}
 }
 
-/*void endofline(compiler_context *context)
+/*void endofline(analyzer *context)
 {
 	if (context->prep_flag == 1)
 	{
@@ -64,7 +61,7 @@ void onemore(compiler_context *context)
 	// fflush(stdout);
 }*/
 
-void endnl(compiler_context *context)
+void endnl(analyzer *context)
 {
 	if (context->kw)
 	{
@@ -80,7 +77,7 @@ void endnl(compiler_context *context)
 	}*/
 }
 
-void nextch(compiler_context *context)
+void nextch(analyzer *context)
 {
 	onemore(context);
 	if (context->curchar == EOF)
@@ -123,7 +120,7 @@ void nextch(compiler_context *context)
 	return;
 }
 
-void next_string_elem(compiler_context *context)
+void next_string_elem(analyzer *context)
 {
 	context->num = context->curchar;
 	if (context->curchar == '\\')
@@ -154,25 +151,25 @@ void next_string_elem(compiler_context *context)
 	nextch(context);
 }
 
-int letter(compiler_context *context)
+int letter(analyzer *context)
 {
 	return (context->curchar >= 'A' && context->curchar <= 'Z') ||
 		   (context->curchar >= 'a' && context->curchar <= 'z') || context->curchar == '_' ||
 		   utf8_is_russian(context->curchar);
 }
 
-int digit(compiler_context *context)
+int digit(analyzer *context)
 {
 	return context->curchar >= '0' && context->curchar <= '9';
 }
 
-int ispower(compiler_context *context)
+int ispower(analyzer *context)
 {
 	return context->curchar == 'e' || context->curchar == 'E'; // || context->curchar == 'е' || context->curchar == 'Е')
 															   // // это русские е и Е
 }
 
-int equal(compiler_context *context, int i, int j)
+int equal(analyzer *context, int i, int j)
 {
 	++i;
 	++j;
@@ -188,7 +185,7 @@ int equal(compiler_context *context, int i, int j)
 }
 
 
-int scan(compiler_context *context)
+int scan(analyzer *context)
 {
 	int cr;
 	context->new_line_flag = 0;
@@ -692,7 +689,7 @@ int scan(compiler_context *context)
 	}
 }
 
-int scaner(compiler_context *context)
+int scaner(analyzer *context)
 {
 	context->cur = context->next;
 	if (!context->buf_flag)

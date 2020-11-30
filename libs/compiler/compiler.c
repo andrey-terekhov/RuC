@@ -15,34 +15,16 @@
  */
 
 #include "compiler.h"
+#include "analyzer.h"
 #include "codegen.h"
 #include "codes.h"
-#include "context.h"
-#include "defs.h"
 #include "errors.h"
-#include "frontend_utils.h"
-#include "uniio.h"
-#include "logger.h"
 #include "preprocessor.h"
-#include "tables.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <wchar.h>
-
-#include "extdecl.h"
-#include "scanner.h"
-#include "uniprinter.h"
-#include <limits.h>
-#include <math.h>
-
 #include "syntax.h"
+#include "uniio.h"
+#include <stdlib.h>
 
-#ifdef __linux__
-	#include <unistd.h>
-#endif
-
-#if defined(__APPLE__) || defined(__linux__)
+#ifndef _MSC_VER
 	#include <sys/stat.h>
 	#include <sys/types.h>
 #endif
@@ -52,7 +34,6 @@
 
 
 const char *const DEFAULT_MACRO = "macro.txt";
-const char *const DEFAULT_KEYWORDS = "keywords.txt";
 const char *const DEFAULT_TREE = "tree.txt";
 const char *const DEFAULT_CODES = "codes.txt";
 const char *const DEFAULT_OUTPUT = "export.txt";
@@ -75,70 +56,13 @@ static void make_executable(const char *const path)
 #endif
 }
 
-/** Вывод таблиц и дерева */
-void output_tables_and_tree(syntax *const sx, compiler_context *context, const char *const path)
-{
-	getnext(context);
-	nextch(context);
-	context->next = scan(context);
-
-	ext_decl(context); // генерация дерева
-
-	tables_and_tree(sx, path);
-}
-
-/** Генерация кодов */
-void output_codes(syntax *const sx, compiler_context *context, const char *const path)
-{
-	codegen(context);
-	tables_and_code(sx, path);
-}
-
-/** Вывод таблиц в файл */
-void output_export(universal_io *const io, const syntax *const sx)
-{
-	uni_printf(io, "#!/usr/bin/ruc-vm\n");
-
-	uni_printf(io, "%i %i %i %i %i %i %i\n", sx->pc, sx->funcnum, sx->id,
-				   sx->reprtab.len, sx->md, sx->maxdisplg, sx->wasmain);
-
-	for (int i = 0; i < sx->pc; i++)
-	{
-		uni_printf(io, "%i ", sx->mem[i]);
-	}
-	uni_printf(io, "\n");
-
-	for (int i = 0; i < sx->funcnum; i++)
-	{
-		uni_printf(io, "%i ", sx->functions[i]);
-	}
-	uni_printf(io, "\n");
-
-	for (int i = 0; i < sx->id; i++)
-	{
-		uni_printf(io, "%i ", sx->identab[i]);
-	}
-	uni_printf(io, "\n");
-
-	for (int i = 0; i < sx->reprtab.len; i++)
-	{
-		uni_printf(io, "%i ", sx->reprtab.table[i]);
-	}
-
-	for (int i = 0; i < sx->md; i++)
-	{
-		uni_printf(io, "%i ", sx->modetab[i]);
-	}
-	uni_printf(io, "\n");
-}
-
 int compile_from_io_to_vm(universal_io *const io)
 {
 	if (!in_is_correct(io) || !out_is_correct(io))
 	{
 		system_error("некорректные параметры ввода/вывода");
 		io_erase(io);
-		return 1;
+		return -1;
 	}
 
 	syntax sx;
@@ -146,29 +70,25 @@ int compile_from_io_to_vm(universal_io *const io)
 	{
 		system_error("не удалось выделить память для таблиц");
 		io_erase(io);
-		return 1;
+		return -1;
 	}
 
-	universal_io temp = io_create();
-	compiler_context context = compiler_context_create(&temp, &sx);
+	int ret = analyze(io, &sx);
+#ifdef GENERATE_FILES
+	tables_and_tree(&sx, DEFAULT_TREE);
+#endif
 
-	read_keywords(&context);
-	init_modetab(&context);
-
-	io_erase(&temp);
-
-	context.io = io;
-	output_tables_and_tree(&sx, &context, DEFAULT_TREE);
-	if (!context.error_flag)
+	if (!ret)
 	{
-		output_codes(&sx, &context, DEFAULT_CODES);
+		ret = encode_to_vm(io, &sx);
+#ifdef GENERATE_FILES
+		tables_and_codes(&sx, DEFAULT_CODES);
+#endif
 	}
 
-	output_export(io, &sx);
 	io_erase(io);
-
 	syntax_deinit(&sx);
-	return context.error_flag;
+	return ret;
 }
 
 
@@ -186,18 +106,30 @@ int compile_to_vm(workspace *const ws)
 	if (!ws_is_correct(ws))
 	{
 		system_error("некорректные входные данные");
-		return 1;
+		return -1;
 	}
 
+	universal_io io = io_create();
+
+#ifndef GENERATE_FILES
 	// Препроцессинг в массив
 	char *const preprocessing = macro(ws); // макрогенерация
 	if (preprocessing == NULL)
 	{
-		return 1;
+		return -1;
 	}
 
-	universal_io io = io_create();
 	in_set_buffer(&io, preprocessing);
+#else
+	int ret_macro = macro_to_file(ws, DEFAULT_MACRO);
+	if (ret_macro)
+	{
+		return ret_macro;
+	}
+
+	in_set_file(&io, DEFAULT_MACRO);
+#endif
+
 	out_set_file(&io, ws_get_output(ws));
 
 	int ret = compile_from_io_to_vm(&io);
@@ -206,7 +138,9 @@ int compile_to_vm(workspace *const ws)
 		make_executable(ws_get_output(ws));
 	}
 
+#ifndef GENERATE_FILES
 	free(preprocessing);
+#endif
 	return ret;
 }
 

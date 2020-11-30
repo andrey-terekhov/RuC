@@ -23,8 +23,21 @@
 extern "C" {
 #endif
 
-void tables_and_code(const syntax *const sx, const char *const path);
+/**
+ *	Output tables and tree
+ *
+ *	@param	sx		Syntax structure
+ *	@param	path	File path
+ */
 void tables_and_tree(const syntax *const sx, const char *const path);
+
+/**
+ *	Output tables and codes
+ *
+ *	@param	sx		Syntax structure
+ *	@param	path	File path
+ */
+void tables_and_codes(const syntax *const sx, const char *const path);
 
 #ifdef __cplusplus
 } /* extern "C" */

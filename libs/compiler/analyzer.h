@@ -1,5 +1,5 @@
 /*
- *	Copyright 2020 Andrey Terekhov, Maxim Menshikov
+ *	Copyright 2020 Andrey Terekhov, Maxim Menshikov, Dmitrii Davladov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 /** Определение глобальных переменных */
-typedef struct compiler_context
+typedef struct analyzer
 {
 	universal_io *io;
 	syntax *sx;
@@ -85,9 +85,6 @@ typedef struct compiler_context
 	int wasdefault;
 	int notrobot;					// useless
 	//int prep_flag;
-	int adcont;
-	int adbreak;
-	int adcase;
 	int predef[FUNCSIZE];
 	int prdf;
 	int gotost[1000];
@@ -110,18 +107,18 @@ typedef struct compiler_context
 	int temp_tc;
 	int error_flag;
 	int new_line_flag;				// useless
-} compiler_context;
+} analyzer;
 
 
 /**
- *	Create RuC context
+ *	Analyze source code to generate syntax structure
  *
  *	@param	io		Universal io structure
  *	@param	sx		Syntax structure
  *
- *	@return	RuC context structure
+ *	@return	@c 0 on success, @c error_code on failure
  */
-compiler_context compiler_context_create(universal_io *const io, syntax *const sx);
+int analyze(universal_io *const io, syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */

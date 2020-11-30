@@ -21,21 +21,21 @@
 #include <string.h>
 
 
-void exprassnval(compiler_context *);
-void expr(compiler_context *context, int level);
-void exprassn(compiler_context *context, int);
+void exprassnval(analyzer *);
+void expr(analyzer *context, int level);
+void exprassn(analyzer *context, int);
 
-void struct_init(compiler_context *context, int);
-int gettype(compiler_context *context);
+void struct_init(analyzer *context, int);
+int gettype(analyzer *context);
 
 // если b=1, то это просто блок,
 // b = 2 - блок нити,
 // b = -1 - блок в switch, иначе
 // b = 0 - это блок функции
-void block(compiler_context *context, int b);
+void block(analyzer *context, int b);
 
 
-void context_error(compiler_context *const context, const int num) // Вынесено из errors.c
+void context_error(analyzer *const context, const int num) // Вынесено из errors.c
 {
 	const universal_io *const io = context->io;
 
@@ -87,7 +87,7 @@ void context_error(compiler_context *const context, const int num) // Вынес
 	}*/
 }
 
-int modeeq(compiler_context *context, int first_mode, int second_mode)
+int modeeq(analyzer *context, int first_mode, int second_mode)
 {
 	int n;
 	int i;
@@ -110,7 +110,7 @@ int modeeq(compiler_context *context, int first_mode, int second_mode)
 	return flag;
 }
 
-int check_duplicates(compiler_context *context)
+int check_duplicates(analyzer *context)
 {
 	// проверяет, имеется ли в modetab только что внесенный тип.
 	// если да, то возвращает ссылку на старую запись, иначе - на новую.
@@ -133,7 +133,7 @@ int check_duplicates(compiler_context *context)
 	return context->startmode + 1;
 }
 
-int newdecl(compiler_context *context, int type, int elemtype)
+int newdecl(analyzer *context, int type, int elemtype)
 {
 	context->sx->modetab[context->sx->md] = context->startmode;
 	context->startmode = context->sx->md++;
@@ -143,7 +143,7 @@ int newdecl(compiler_context *context, int type, int elemtype)
 	return check_duplicates(context);
 }
 
-int evaluate_params(compiler_context *context, int num, int formatstr[], int formattypes[], int placeholders[])
+int evaluate_params(analyzer *context, int num, int formatstr[], int formattypes[], int placeholders[])
 {
 	int numofparams = 0;
 	int i = 0;
@@ -207,34 +207,34 @@ int evaluate_params(compiler_context *context, int num, int formatstr[], int for
 	return numofparams;
 }
 
-int szof(compiler_context *context, int type)
+int szof(analyzer *context, int type)
 {
 	return context->next == LEFTSQBR
 			   ? 1
 			   : type == LFLOAT ? 2 : (type > 0 && context->sx->modetab[type] == MSTRUCT) ? context->sx->modetab[type + 1] : 1;
 }
 
-int is_row_of_char(compiler_context *context, int t)
+int is_row_of_char(analyzer *context, int t)
 {
 	return t > 0 && context->sx->modetab[t] == MARRAY && context->sx->modetab[t + 1] == LCHAR;
 }
 
-int is_function(compiler_context *context, int t)
+int is_function(analyzer *context, int t)
 {
 	return t > 0 && context->sx->modetab[t] == MFUNCTION;
 }
 
-int is_array(compiler_context *context, int t)
+int is_array(analyzer *context, int t)
 {
 	return t > 0 && context->sx->modetab[t] == MARRAY;
 }
 
-int is_pointer(compiler_context *context, int t)
+int is_pointer(analyzer *context, int t)
 {
 	return t > 0 && context->sx->modetab[t] == MPOINT;
 }
 
-int is_struct(compiler_context *context, int t)
+int is_struct(analyzer *context, int t)
 {
 	return t > 0 && context->sx->modetab[t] == MSTRUCT;
 }
@@ -249,7 +249,7 @@ int is_int(int t)
 	return t == LINT || t == LLONG || t == LCHAR;
 }
 
-void mustbe(compiler_context *context, int what, int e)
+void mustbe(analyzer *context, int what, int e)
 {
 	if (context->next != what)
 	{
@@ -262,7 +262,7 @@ void mustbe(compiler_context *context, int what, int e)
 	}
 }
 
-void mustbe_complex(compiler_context *context, int what, int e)
+void mustbe_complex(analyzer *context, int what, int e)
 {
 	if (scaner(context) != what)
 	{
@@ -271,12 +271,12 @@ void mustbe_complex(compiler_context *context, int what, int e)
 	}
 }
 
-void totree(compiler_context *context, int op)
+void totree(analyzer *context, int op)
 {
 	context->sx->tree[context->sx->tc++] = op;
 }
 
-void totreef(compiler_context *context, int op)
+void totreef(analyzer *context, int op)
 {
 	context->sx->tree[context->sx->tc++] = op;
 	if (context->ansttype == LFLOAT &&
@@ -286,7 +286,7 @@ void totreef(compiler_context *context, int op)
 	}
 }
 
-int getstatic(compiler_context *context, int type)
+int getstatic(analyzer *context, int type)
 {
 	int olddispl = context->displ;
 	context->displ += context->lg * szof(context, type); // lg - смещение от l (+1) или от g (-1)
@@ -301,7 +301,7 @@ int getstatic(compiler_context *context, int type)
 	return olddispl;
 }
 
-int toidentab(compiler_context *context, int f, int type)
+int toidentab(analyzer *context, int f, int type)
 {
 	// f =  0, если не ф-ция, f=1, если метка, f=funcnum,
 	// если описание ф-ции,
@@ -411,7 +411,7 @@ int toidentab(compiler_context *context, int f, int type)
 	return context->lastid;
 }
 
-void binop(compiler_context *context, int sp)
+void binop(analyzer *context, int sp)
 {
 	int op = context->stackop[sp];
 	int rtype = context->stackoperands[context->sopnd--];
@@ -463,7 +463,7 @@ void binop(compiler_context *context, int sp)
 	context->anst = VAL;
 }
 
-void toval(compiler_context *context)
+void toval(analyzer *context)
 {
 	// надо значение положить на стек,
 	// например, чтобы передать параметром
@@ -508,14 +508,14 @@ void toval(compiler_context *context)
 	}
 }
 
-void insertwiden(compiler_context *context)
+void insertwiden(analyzer *context)
 {
 	context->sx->tc--;
 	totree(context, WIDEN);
 	totree(context, TExprend);
 }
 
-void applid(compiler_context *context)
+void applid(analyzer *context)
 {
 	compiler_table_expand(&context->sx->reprtab, 1);
 	context->lastid = REPRTAB[REPRTAB_POS + 1];
@@ -527,10 +527,10 @@ void applid(compiler_context *context)
 }
 
 
-void exprval(compiler_context *context);
-void unarexpr(compiler_context *context);
+void exprval(analyzer *context);
+void unarexpr(analyzer *context);
 
-void actstring(int type, compiler_context *context)
+void actstring(int type, analyzer *context)
 {
 	int n = 0;
 	int adn;
@@ -576,7 +576,7 @@ void actstring(int type, compiler_context *context)
 	context->anst = VAL;
 }
 
-void mustbestring(compiler_context *context)
+void mustbestring(analyzer *context)
 {
 	scaner(context);
 	exprassn(context, 1);
@@ -595,7 +595,7 @@ void mustbestring(compiler_context *context)
 	}
 }
 
-void mustbepointstring(compiler_context *context)
+void mustbepointstring(analyzer *context)
 {
 	scaner(context);
 	exprassn(context, 1);
@@ -616,7 +616,7 @@ void mustbepointstring(compiler_context *context)
 	}
 }
 
-void mustberow(compiler_context *context)
+void mustberow(analyzer *context)
 {
 	scaner(context);
 	exprassn(context, 1);
@@ -635,7 +635,7 @@ void mustberow(compiler_context *context)
 	}
 }
 
-void mustbeint(compiler_context *context)
+void mustbeint(analyzer *context)
 {
 	scaner(context);
 	exprassn(context, 1);
@@ -653,7 +653,7 @@ void mustbeint(compiler_context *context)
 	}
 }
 
-void mustberowofint(compiler_context *context)
+void mustberowofint(analyzer *context)
 {
 	if (scaner(context) == BEGIN)
 	{
@@ -688,7 +688,7 @@ void mustberowofint(compiler_context *context)
 	}
 }
 
-void mustberowoffloat(compiler_context *context)
+void mustberowoffloat(analyzer *context)
 {
 	if (scaner(context) == BEGIN)
 	{
@@ -724,7 +724,7 @@ void mustberowoffloat(compiler_context *context)
 	}
 }
 
-void primaryexpr(compiler_context *context)
+void primaryexpr(analyzer *context)
 {
 	if (context->cur == NUMBER)
 	{
@@ -1345,7 +1345,7 @@ void primaryexpr(compiler_context *context)
 	}
 }
 
-void index_check(compiler_context *context)
+void index_check(analyzer *context)
 {
 	if (!is_int(context->ansttype))
 	{
@@ -1354,7 +1354,7 @@ void index_check(compiler_context *context)
 	}
 }
 
-int find_field(compiler_context *context, int stype)
+int find_field(analyzer *context, int stype)
 {
 	// выдает смещение до найденного поля или ошибку
 
@@ -1390,7 +1390,7 @@ int find_field(compiler_context *context, int stype)
 	return select_displ;
 }
 
-void selectend(compiler_context *context)
+void selectend(analyzer *context)
 {
 	while (context->next == DOT)
 	{
@@ -1409,7 +1409,7 @@ void selectend(compiler_context *context)
 	}
 }
 
-int Norder(compiler_context *context, int t)
+int Norder(analyzer *context, int t)
 {
 	// вычислить размерность массива
 
@@ -1421,9 +1421,9 @@ int Norder(compiler_context *context, int t)
 	return n;
 }
 
-void array_init(compiler_context *context, int t);
+void array_init(analyzer *context, int t);
 
-void postexpr(compiler_context *context)
+void postexpr(analyzer *context)
 {
 	int lid;
 	int leftansttyp;
@@ -1733,7 +1733,7 @@ void postexpr(compiler_context *context)
 	}
 }
 
-void unarexpr(compiler_context *context)
+void unarexpr(analyzer *context)
 {
 	int op = context->cur;
 	if (context->cur == LNOT || context->cur == LOGNOT || context->cur == LPLUS || context->cur == LMINUS ||
@@ -1866,7 +1866,7 @@ void unarexpr(compiler_context *context)
 	}
 }
 
-void exprinbrkts(compiler_context *context, int er)
+void exprinbrkts(analyzer *context, int er)
 {
 	mustbe(context, LEFTBR, er);
 	scaner(context);
@@ -1879,7 +1879,7 @@ void exprinbrkts(compiler_context *context, int er)
 	mustbe(context, RIGHTBR, er);
 }
 
-void exprassninbrkts(compiler_context *context, int er)
+void exprassninbrkts(analyzer *context, int er)
 {
 	mustbe(context, LEFTBR, er);
 	scaner(context);
@@ -1934,7 +1934,7 @@ int prio(int op)
 																													 : 0;
 }
 
-void subexpr(compiler_context *context)
+void subexpr(analyzer *context)
 {
 	int oldsp = context->sp;
 	int wasop = 0;
@@ -1992,7 +1992,7 @@ int intopassn(int next)
 	return next == REMASS || next == SHLASS || next == SHRASS || next == ANDASS || next == EXORASS || next == ORASS;
 }
 
-int opassn(compiler_context *context)
+int opassn(analyzer *context)
 {
 	return (context->next == ASS || context->next == MULTASS || context->next == DIVASS || context->next == PLUSASS ||
 			context->next == MINUSASS || intopassn(context->next))
@@ -2000,7 +2000,7 @@ int opassn(compiler_context *context)
 			   : 0;
 }
 
-void condexpr(compiler_context *context)
+void condexpr(analyzer *context)
 {
 	int globtype = 0;
 	int adif = 0;
@@ -2089,7 +2089,7 @@ void condexpr(compiler_context *context)
 	}
 }
 
-void inition(compiler_context *context, int decl_type)
+void inition(analyzer *context, int decl_type)
 {
 	if (decl_type < 0 || is_pointer(context, decl_type) || // Обработка для базовых типов, указателей
 		(is_array(context, decl_type) && context->sx->modetab[decl_type + 1] == LCHAR)) // или строк
@@ -2133,7 +2133,7 @@ void inition(compiler_context *context, int decl_type)
 	}
 }
 
-void struct_init(compiler_context *context, int decl_type)
+void struct_init(analyzer *context, int decl_type)
 {
 	// сейчас context->sx->modetab[decl_type] равен MSTRUCT
 
@@ -2189,7 +2189,7 @@ void struct_init(compiler_context *context, int decl_type)
 	context->leftansttype = decl_type;
 }
 
-void exprassnvoid(compiler_context *context)
+void exprassnvoid(analyzer *context)
 {
 	int t = context->sx->tree[context->sx->tc - 2] < 9000 ? context->sx->tc - 3 : context->sx->tc - 2;
 	int tt = context->sx->tree[t];
@@ -2201,7 +2201,7 @@ void exprassnvoid(compiler_context *context)
 	--context->sopnd;
 }
 
-void exprassn(compiler_context *context, int level)
+void exprassn(analyzer *context, int level)
 {
 	int leftanst;
 	int leftanstdispl;
@@ -2377,7 +2377,7 @@ void exprassn(compiler_context *context, int level)
 	// в виде unarexpr уже выкушано
 }
 
-void expr(compiler_context *context, int level)
+void expr(analyzer *context, int level)
 {
 	exprassn(context, level);
 	if (context->error_flag == 6)
@@ -2404,7 +2404,7 @@ void expr(compiler_context *context, int level)
 	}
 }
 
-void exprval(compiler_context *context)
+void exprval(analyzer *context)
 {
 	expr(context, 1);
 	if (context->error_flag == 5)
@@ -2416,7 +2416,7 @@ void exprval(compiler_context *context)
 	totree(context, TExprend);
 }
 
-void exprassnval(compiler_context *context)
+void exprassnval(analyzer *context)
 {
 	exprassn(context, 1);
 	if (context->error_flag == 6)
@@ -2428,7 +2428,7 @@ void exprassnval(compiler_context *context)
 	totree(context, TExprend);
 }
 
-void array_init(compiler_context *context, int decl_type)
+void array_init(analyzer *context, int decl_type)
 {
 	// сейчас context->sx->modetab[decl_type] равен MARRAY
 
@@ -2519,7 +2519,7 @@ void array_init(compiler_context *context, int decl_type)
 	}
 }
 
-int arrdef(compiler_context *context, int t)
+int arrdef(analyzer *context, int t)
 {
 	// вызывается при описании массивов и структур из массивов сразу после idorpnt
 
@@ -2579,7 +2579,7 @@ int arrdef(compiler_context *context, int t)
 	return t;
 }
 
-void decl_id(compiler_context *context, int decl_type)
+void decl_id(analyzer *context, int decl_type)
 {
 	// вызывается из block и extdecl, только эта процедура реально отводит память
 	// если встретятся массивы (прямо или в структурах), их размеры уже будут в стеке
@@ -2664,7 +2664,7 @@ void decl_id(compiler_context *context, int decl_type)
 	}
 }
 
-void statement(compiler_context *context)
+void statement(analyzer *context)
 {
 	int flagsemicol = 1;
 	int oldwasdefault = context->wasdefault;
@@ -3295,7 +3295,7 @@ void statement(compiler_context *context)
 	context->inloop = oldinloop;
 }
 
-int idorpnt(compiler_context *context, int e, int t)
+int idorpnt(analyzer *context, int e, int t)
 {
 	if (context->next == LMULT)
 	{
@@ -3306,7 +3306,7 @@ int idorpnt(compiler_context *context, int e, int t)
 	return t;
 }
 
-int struct_decl_list(compiler_context *context)
+int struct_decl_list(analyzer *context)
 {
 	int field_count = 0;
 	int i;
@@ -3428,7 +3428,7 @@ int struct_decl_list(compiler_context *context)
 	return check_duplicates(context);
 }
 
-int gettype(compiler_context *context)
+int gettype(analyzer *context)
 {
 	// gettype(context) выедает тип (кроме верхних массивов и указателей)
 	// при этом, если такого типа нет в modetab, тип туда заносится;
@@ -3515,7 +3515,7 @@ int gettype(compiler_context *context)
 	return 0; // 1
 }
 
-void block(compiler_context *context, int b)
+void block(analyzer *context, int b)
 {
 	// если b=1, то это просто блок,
 	// b = 2 - блок нити,
@@ -3621,7 +3621,7 @@ void block(compiler_context *context, int b)
 	totree(context, TEnd);
 }
 
-void function_definition(compiler_context *context)
+void function_definition(analyzer *context)
 {
 	int fn = context->sx->identab[context->lastid + 3];
 	int i;
@@ -3716,7 +3716,7 @@ void function_definition(compiler_context *context)
 	context->displ = olddispl;
 }
 
-int func_declarator(compiler_context *context, int level, int func_d, int firstdecl)
+int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 {
 	// на 1 уровне это может быть определением функции или предописанием, на
 	// остальных уровнях - только декларатором (без идентов)
@@ -3921,8 +3921,13 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 	return check_duplicates(context);
 }
 
-void ext_decl(compiler_context *context)
+/** Генерация дерева */
+void ext_decl(analyzer *context)
 {
+	getnext(context);
+	nextch(context);
+	context->next = scan(context);
+	
 	int i;
 	context->temp_tc = context->sx->tc;
 	do // top levext_declel описания переменных и функций до конца файла

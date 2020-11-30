@@ -21,10 +21,11 @@
 #include <string.h>
 
 
+/** Вывод таблиц и дерева */
 void tables_and_tree(const syntax *const sx, const char *const path)
 {
 	universal_io io = io_create();
-	if (out_set_file(&io, path))
+	if (sx == NULL || out_set_file(&io, path))
 	{
 		return;
 	}
@@ -351,10 +352,11 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 	io_erase(&io);
 }
 
-void tables_and_code(const syntax *const sx, const char *const path)
+/** Вывод таблиц и кодов */
+void tables_and_codes(const syntax *const sx, const char *const path)
 {
 	universal_io io = io_create();
-	if (out_set_file(&io, path))
+	if (sx == NULL || out_set_file(&io, path))
 	{
 		return;
 	}
