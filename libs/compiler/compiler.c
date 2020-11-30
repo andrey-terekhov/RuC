@@ -30,8 +30,21 @@
 #include <string.h>
 #include <wchar.h>
 
+#include "extdecl.h"
+#include "global.h"
+#include "scanner.h"
+#include "uniprinter.h"
+#include <limits.h>
+#include <math.h>
+
+
 #ifdef __linux__
 	#include <unistd.h>
+#endif
+
+#if defined(__APPLE__) || defined(__linux__)
+	#include <sys/stat.h>
+	#include <sys/types.h>
 #endif
 
 
@@ -44,6 +57,90 @@ const char *const DEFAULT_TREE = "tree.txt";
 const char *const DEFAULT_CODES = "codes.txt";
 const char *const DEFAULT_OUTPUT = "export.txt";
 
+
+/** Make executable actually executable on best-effort basis (if possible) */
+static void make_executable(const char *path)
+{
+#if defined(__APPLE__) || defined(__linux__)
+	struct stat stat_buf;
+
+	if (stat(path, &stat_buf) != 0)
+	{
+		return;
+	}
+
+	chmod(path, stat_buf.st_mode | S_IXUSR);
+#endif
+}
+
+/** Вывод таблиц и дерева */
+void output_tables_and_tree(compiler_context *context, const char *path)
+{
+	out_set_file(context->io, path);
+
+	getnext(context);
+	nextch(context);
+	context->next = scan(context);
+
+	ext_decl(context); // генерация дерева
+
+	tablesandtree(context);
+	out_clear(context->io);
+}
+
+/** Генерация кодов */
+void output_codes(compiler_context *context, const char *path)
+{
+	out_set_file(context->io, path);
+	codegen(context);
+	tablesandcode(context);
+	out_clear(context->io);
+}
+
+/** Вывод таблиц в файл */
+void output_export(compiler_context *context, const char *path)
+{
+	int i;
+
+	out_set_file(context->io, path);
+	uni_printf(context->io, "#!/usr/bin/ruc-vm\n");
+
+	uni_printf(context->io, "%i %i %i %i %i %i %i\n", context->pc, context->funcnum, context->id,
+				   REPRTAB_LEN, context->md, context->maxdisplg, context->wasmain);
+
+	for (i = 0; i < context->pc; i++)
+	{
+		uni_printf(context->io, "%i ", context->mem[i]);
+	}
+	uni_printf(context->io, "\n");
+
+	for (i = 0; i < context->funcnum; i++)
+	{
+		uni_printf(context->io, "%i ", context->functions[i]);
+	}
+	uni_printf(context->io, "\n");
+
+	for (i = 0; i < context->id; i++)
+	{
+		uni_printf(context->io, "%i ", context->identab[i]);
+	}
+	uni_printf(context->io, "\n");
+
+	for (i = 0; i < REPRTAB_LEN; i++)
+	{
+		uni_printf(context->io, "%i ", REPRTAB[i]);
+	}
+
+	for (i = 0; i < context->md; i++)
+	{
+		uni_printf(context->io, "%i ", context->modetab[i]);
+	}
+	uni_printf(context->io, "\n");
+
+	out_clear(context->io);
+
+	make_executable(path);
+}
 
 int compile_from_io_to_vm(universal_io *const io)
 {
