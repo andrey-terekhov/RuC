@@ -17,13 +17,10 @@
 #include "analyzer.h"
 #include "errors.h"
 #include "defs.h"
-#include "logger.h"
-#include "uniprinter.h"
 #include "uniscanner.h"
 #include "utf8.h"
 #include <limits.h>
 #include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
