@@ -47,7 +47,6 @@ typedef struct compiler_context
 {
 	universal_io *io;
 
-	double numdouble;
 	int line;
 	int charnum;
 	int charnum_before;

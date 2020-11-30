@@ -552,12 +552,12 @@ int scan(compiler_context *context)
 			int flagint = 1;
 			int flagtoolong = 0;
 			double k;
+			double numdouble = 0.0;
 			context->num = 0;
-			context->numdouble = 0.0;
 			while (digit(context))
 			{
-				context->numdouble = context->numdouble * 10 + (context->curchar - '0');
-				if (context->numdouble > (double)INT_MAX)
+				numdouble = numdouble * 10 + (context->curchar - '0');
+				if (numdouble > (double)INT_MAX)
 				{
 					flagtoolong = 1;
 					flagint = 0;
@@ -573,7 +573,7 @@ int scan(compiler_context *context)
 				k = 0.1;
 				while (digit(context))
 				{
-					context->numdouble += (context->curchar - '0') * k;
+					numdouble += (context->curchar - '0') * k;
 					k *= 0.1;
 					nextch(context);
 				}
@@ -611,7 +611,7 @@ int scan(compiler_context *context)
 						context->num *= 10;
 					}
 				}
-				context->numdouble *= pow(10.0, minus * d);
+				numdouble *= pow(10.0, minus * d);
 			}
 
 			if (flagint)
@@ -627,7 +627,7 @@ int scan(compiler_context *context)
 				}
 				context->ansttype = LFLOAT;
 			}
-			memcpy(&context->numr, &context->numdouble, sizeof(double));
+			memcpy(&context->numr, &numdouble, sizeof(double));
 			return NUMBER;
 		}
 

@@ -183,10 +183,13 @@ void tables_and_tree(compiler_context *context)
 				uni_printf(context->io, "TConst %i\n", context->tree[i++]);
 				break;
 			case TConstd:
-				memcpy(&context->numdouble, &context->tree[i], sizeof(double));
+			{
+				double numdouble;
+				memcpy(&numdouble, &context->tree[i], sizeof(double));
 				i += 2;
-				uni_printf(context->io, "TConstd %f\n", context->numdouble);
-				break;
+				uni_printf(context->io, "TConstd %f\n", numdouble);
+			}
+			break;
 			case TSliceident:
 				uni_printf(context->io, "TSliceident displ= %i type= %i\n", context->tree[i],
 							   context->tree[i + 1]);
@@ -528,10 +531,13 @@ void tables_and_code(compiler_context *context)
 				uni_printf(context->io, "LI %i\n", context->mem[i++]);
 				break;
 			case LID:
-				memcpy(&context->numdouble, &context->mem[i], sizeof(double));
+			{
+				double numdouble;
+				memcpy(&numdouble, &context->mem[i], sizeof(double));
 				i += 2;
-				uni_printf(context->io, "LID %.15f\n", context->numdouble);
-				break;
+				uni_printf(context->io, "LID %.15f\n", numdouble);
+			}
+			break;
 			case LOAD:
 				uni_printf(context->io, "LOAD %i\n", context->mem[i++]);
 				break;
