@@ -30,81 +30,156 @@
 #include <string.h>
 #include <wchar.h>
 
+#include "extdecl.h"
+#include "scanner.h"
+#include "uniprinter.h"
+#include <limits.h>
+#include <math.h>
+
+#include "syntax.h"
+
 #ifdef __linux__
 	#include <unistd.h>
 #endif
 
-#ifdef ANALYSIS_ENABLED
-	#include "asp/asp_simple.h"
-	#define ASP_HOST "localhost"
-	#define ASP_PORT (5500)
+#if defined(__APPLE__) || defined(__linux__)
+	#include <sys/stat.h>
+	#include <sys/types.h>
 #endif
 
-#define FILE_DEBUG
+
+//#define GENERATE_FILES
 
 
-#ifdef ANALYSIS_ENABLED
-void report_cb(asp_report *report)
+const char *const DEFAULT_MACRO = "macro.txt";
+const char *const DEFAULT_KEYWORDS = "keywords.txt";
+const char *const DEFAULT_TREE = "tree.txt";
+const char *const DEFAULT_CODES = "codes.txt";
+const char *const DEFAULT_OUTPUT = "export.txt";
+
+
+/** Make executable actually executable on best-effort basis (if possible) */
+static void make_executable(const char *const path)
 {
-	char msg[4 * MAXSTRINGL];
-	sprintf(msg, "%s:%d:%d: %s: %s", report->file, report->line, report->column, report->rule_id,
-			report->explanation);
-	log_system_note("report_cb", msg)
-}
-#endif
+#ifndef _MSC_VER
+	struct stat stat_buf;
 
-static void process_user_requests(compiler_context *context, const workspace *const ws)
-{	
-#if !defined(FILE_DEBUG) && !defined(_MSC_VER)
-	/* Regular file */
-	char macro_path[] = "/tmp/macroXXXXXX";
-	char tree_path[] = "/tmp/treeXXXXXX";
-	char codes_path[] = "/tmp/codesXXXXXX";
+	if (stat(path, &stat_buf))
+	{
+		return;
+	}
 
-	mkstemp(macro_path);
-	mkstemp(tree_path);
-	mkstemp(codes_path);
+	chmod(path, stat_buf.st_mode | S_IXUSR);
 #else
-	char macro_path[] = "macro.txt";
-	char tree_path[] = "tree.txt";
-	char codes_path[] = "codes.txt";
+	(void)path;
 #endif
-	if (strlen(macro_path) == 0 || strlen(tree_path) == 0 || strlen(codes_path) == 0)
-	{
-		system_error("не удалось создать временные файлы");
-		exit(1);
-	}
-
-	// Препроцессинг в массив
-
-	char *macro_processed = macro(ws); // макрогенерация
-	if (macro_processed == NULL)
-	{
-		system_error("не удалось выделить память для макрогенератора");
-		exit(1);
-	}
-	
-	in_set_buffer(&context->io, macro_processed);
-	output_tables_and_tree(context, tree_path);
-	if (!context->error_flag)
-	{
-		output_codes(context, codes_path);
-	}
-
-	/* Will be left for debugging in case of failure */
-#if !defined(FILE_DEBUG) && !defined(_MSC_VER)
-	unlink(tree_path);
-	unlink(codes_path);
-	unlink(macro_path);
-#endif
-#ifdef ANALYSIS_ENABLED
-	asp_simple_invoke_singlefile(ASP_HOST, ASP_PORT, argv[i], ASP_LANGUAGE_RUC, report_cb);
-#endif
-
-	output_export(context, ws_get_output(ws));
-	io_erase(&context->io);
-	free(macro_processed);
 }
+
+/** Вывод таблиц и дерева */
+void output_tables_and_tree(syntax *const sx, compiler_context *context, const char *const path)
+{
+	getnext(context);
+	nextch(context);
+	context->next = scan(context);
+
+	ext_decl(context); // генерация дерева
+
+	tables_and_tree(sx, path);
+}
+
+/** Генерация кодов */
+void output_codes(syntax *const sx, compiler_context *context, const char *const path)
+{
+	codegen(context);
+	tables_and_code(sx, path);
+}
+
+/** Вывод таблиц в файл */
+void output_export(universal_io *const io, const syntax *const sx)
+{
+	uni_printf(io, "#!/usr/bin/ruc-vm\n");
+
+	uni_printf(io, "%i %i %i %i %i %i %i\n", sx->pc, sx->funcnum, sx->id,
+				   sx->reprtab.len, sx->md, sx->maxdisplg, sx->wasmain);
+
+	for (int i = 0; i < sx->pc; i++)
+	{
+		uni_printf(io, "%i ", sx->mem[i]);
+	}
+	uni_printf(io, "\n");
+
+	for (int i = 0; i < sx->funcnum; i++)
+	{
+		uni_printf(io, "%i ", sx->functions[i]);
+	}
+	uni_printf(io, "\n");
+
+	for (int i = 0; i < sx->id; i++)
+	{
+		uni_printf(io, "%i ", sx->identab[i]);
+	}
+	uni_printf(io, "\n");
+
+	for (int i = 0; i < sx->reprtab.len; i++)
+	{
+		uni_printf(io, "%i ", sx->reprtab.table[i]);
+	}
+
+	for (int i = 0; i < sx->md; i++)
+	{
+		uni_printf(io, "%i ", sx->modetab[i]);
+	}
+	uni_printf(io, "\n");
+}
+
+int compile_from_io_to_vm(universal_io *const io)
+{
+	if (!in_is_correct(io) || !out_is_correct(io))
+	{
+		system_error("некорректные параметры ввода/вывода");
+		io_erase(io);
+		return 1;
+	}
+
+	syntax sx;
+	if (syntax_init(&sx))
+	{
+		system_error("не удалось выделить память для таблиц");
+		io_erase(io);
+		return 1;
+	}
+
+	universal_io temp = io_create();
+	compiler_context context = compiler_context_create(&temp, &sx);
+
+	read_keywords(&context);
+	init_modetab(&context);
+
+	io_erase(&temp);
+
+	context.io = io;
+	output_tables_and_tree(&sx, &context, DEFAULT_TREE);
+	if (!context.error_flag)
+	{
+		output_codes(&sx, &context, DEFAULT_CODES);
+	}
+
+	output_export(io, &sx);
+	io_erase(io);
+
+	syntax_deinit(&sx);
+	return context.error_flag;
+}
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
 
 int compile_to_vm(workspace *const ws)
 {
@@ -114,23 +189,24 @@ int compile_to_vm(workspace *const ws)
 		return 1;
 	}
 
-	compiler_context *context = malloc(sizeof(compiler_context));
-	if (context == NULL)
+	// Препроцессинг в массив
+	char *const preprocessing = macro(ws); // макрогенерация
+	if (preprocessing == NULL)
 	{
-		system_error("не удалось выделить память под контекст");
 		return 1;
 	}
 
-	compiler_context_init(context);
+	universal_io io = io_create();
+	in_set_buffer(&io, preprocessing);
+	out_set_file(&io, ws_get_output(ws));
 
-	read_keywords(context);
+	int ret = compile_from_io_to_vm(&io);
+	if (!ret)
+	{
+		make_executable(ws_get_output(ws));
+	}
 
-	init_modetab(context);
-
-	process_user_requests(context, ws);
-
-	int ret = context->error_flag;
-	free(context);
+	free(preprocessing);
 	return ret;
 }
 
@@ -138,4 +214,19 @@ int auto_compile_to_vm(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
 	return compile_to_vm(&ws);
+}
+
+int no_macro_compile_to_vm(const char *const path)
+{
+	universal_io io = io_create();
+	in_set_file(&io, path);
+	out_set_file(&io, DEFAULT_OUTPUT);
+
+	int ret = compile_from_io_to_vm(&io);
+	if (!ret)
+	{
+		make_executable(DEFAULT_OUTPUT);
+	}
+
+	return ret;
 }
