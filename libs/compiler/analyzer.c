@@ -1,5 +1,5 @@
 /*
- *	Copyright 2020 Andrey Terekhov, Maxim Menshikov
+ *	Copyright 2020 Andrey Terekhov, Maxim Menshikov, Dmitrii Davladov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 
 #include "analyzer.h"
 #include "extdecl.h"
-#include "frontend_utils.h"
+#include "keywords.h"
+#include "scanner.h"
 #include "tables.h"
+#include "uniio.h"
 
 
 analyzer compiler_context_create(universal_io *const io, syntax *const sx)
@@ -51,12 +53,37 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx)
 }
 
 
+/** Занесение ключевых слов в reprtab */
+void read_keywords(analyzer *context)
+{
+	context->keywordsnum = 1;
+	getnext(context);
+	nextch(context);
+	while (scan(context) != LEOF)
+	{
+		; // чтение ключевых слов
+	}
+}
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
 int analyze(universal_io *const io, syntax *const sx)
 {
 	universal_io temp = io_create();
 	analyzer context = compiler_context_create(&temp, sx);
-
+	
+	in_set_buffer(context.io, KEYWORDS);
 	read_keywords(&context);
+	in_clear(context.io);
+
 	init_modetab(&context);
 
 	io_erase(&temp);

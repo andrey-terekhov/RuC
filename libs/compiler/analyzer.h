@@ -1,5 +1,5 @@
 /*
- *	Copyright 2020 Andrey Terekhov, Maxim Menshikov
+ *	Copyright 2020 Andrey Terekhov, Maxim Menshikov, Dmitrii Davladov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -108,17 +108,6 @@ typedef struct analyzer
 	int error_flag;
 	int new_line_flag;				// useless
 } analyzer;
-
-
-/**
- *	Create RuC context
- *
- *	@param	io		Universal io structure
- *	@param	sx		Syntax structure
- *
- *	@return	RuC context structure
- */
-analyzer compiler_context_create(universal_io *const io, syntax *const sx);
 
 
 /**
