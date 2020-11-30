@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov
+ *	Copyright 2020 Andrey Terekhov, Maxim Menshikov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -22,16 +22,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- *	Save up a string array to reprtab
- *
- *	@param	context	RuC context
- *	@param	str		Target string
- *
- *	@return	FIXME
- */
-int toreprtab(compiler_context *context, char str[]);
 
 /**
  *	Mode table initialization
