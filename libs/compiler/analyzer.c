@@ -14,12 +14,15 @@
  *	limitations under the License.
  */
 
-#include "context.h"
+#include "analyzer.h"
+#include "extdecl.h"
+#include "frontend_utils.h"
+#include "tables.h"
 
 
-compiler_context compiler_context_create(universal_io *const io, syntax *const sx)
+analyzer compiler_context_create(universal_io *const io, syntax *const sx)
 {
-	compiler_context context;
+	analyzer context;
 	context.io = io;
 	context.sx = sx;
 
@@ -45,4 +48,21 @@ compiler_context compiler_context_create(universal_io *const io, syntax *const s
 	context.temp_tc = 0;
 
 	return context;
+}
+
+
+int analyze(universal_io *const io, syntax *const sx)
+{
+	universal_io temp = io_create();
+	analyzer context = compiler_context_create(&temp, sx);
+
+	read_keywords(&context);
+	init_modetab(&context);
+
+	io_erase(&temp);
+
+	context.io = io;
+	ext_decl(&context);
+
+	return context.error_flag;
 }

@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 /** Определение глобальных переменных */
-typedef struct compiler_context
+typedef struct analyzer
 {
 	universal_io *io;
 	syntax *sx;
@@ -107,7 +107,7 @@ typedef struct compiler_context
 	int temp_tc;
 	int error_flag;
 	int new_line_flag;				// useless
-} compiler_context;
+} analyzer;
 
 
 /**
@@ -118,7 +118,18 @@ typedef struct compiler_context
  *
  *	@return	RuC context structure
  */
-compiler_context compiler_context_create(universal_io *const io, syntax *const sx);
+analyzer compiler_context_create(universal_io *const io, syntax *const sx);
+
+
+/**
+ *	Analyze source code to generate syntax structure
+ *
+ *	@param	io		Universal io structure
+ *	@param	sx		Syntax structure
+ *
+ *	@return	@c 0 on success, @c error_code on failure
+ */
+int analyze(universal_io *const io, syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */

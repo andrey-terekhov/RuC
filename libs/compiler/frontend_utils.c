@@ -21,7 +21,7 @@
 
 
 /** Занесение ключевых слов в reprtab */
-void read_keywords(compiler_context *context)
+void read_keywords(analyzer *context)
 {
 	in_set_buffer(context->io, KEYWORDS);
 

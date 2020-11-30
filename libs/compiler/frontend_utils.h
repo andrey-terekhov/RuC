@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "context.h"
+#include "analyzer.h"
 
 
 #ifdef __cplusplus
@@ -28,7 +28,7 @@ extern "C" {
  *
  *	@param	context	RuC context
  */
-void read_keywords(compiler_context *context);
+void read_keywords(analyzer *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

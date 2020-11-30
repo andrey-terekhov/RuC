@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "context.h"
+#include "analyzer.h"
 
 
 #ifdef __cplusplus
@@ -28,7 +28,7 @@ extern "C" {
  *
  *	@param	context	RuC context
  */
-void init_modetab(compiler_context *context);
+void init_modetab(analyzer *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -23,7 +23,7 @@
 #include <string.h>
 
 
-int toreprtab(compiler_context *context, char str[])
+int toreprtab(analyzer *context, char str[])
 {
 	int i;
 	int oldrepr = REPRTAB_LEN;
@@ -50,7 +50,7 @@ int toreprtab(compiler_context *context, char str[])
 }
 
 /** Инициализация modetab */
-void init_modetab(compiler_context *context)
+void init_modetab(analyzer *context)
 {
 	// занесение в modetab описателя struct {int numTh; int inf; }
 	context->sx->modetab[1] = 0;
