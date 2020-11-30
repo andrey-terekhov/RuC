@@ -2584,8 +2584,6 @@ void decl_id(compiler_context *context, int decl_type)
 	// если встретятся массивы (прямо или в структурах), их размеры уже будут в стеке
 
 	int oldid = toidentab(context, 0, decl_type);
-	int elem_len;
-	int i;
 	int elem_type;
 	int all; // all - место в дереве, где будет общее количество выражений в инициализации, для массивов - только
 			 // признак (1) наличия инициализации

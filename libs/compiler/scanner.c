@@ -582,14 +582,13 @@ int scan(compiler_context *context)
 			if (ispower(context))
 			{
 				int d = 0;
-				int k = 1;
-				int i;
+				int minus = 1;
 				nextch(context);
 				if (context->curchar == '-')
 				{
 					flagint = 0;
 					nextch(context);
-					k = -1;
+					minus = -1;
 				}
 				else if (context->curchar == '+')
 				{
@@ -607,12 +606,12 @@ int scan(compiler_context *context)
 				}
 				if (flagint)
 				{
-					for (i = 1; i <= d; i++)
+					for (int i = 1; i <= d; i++)
 					{
 						context->num *= 10;
 					}
 				}
-				context->numdouble *= pow(10.0, k * d);
+				context->numdouble *= pow(10.0, minus * d);
 			}
 
 			if (flagint)

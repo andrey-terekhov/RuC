@@ -58,17 +58,19 @@ const char *const DEFAULT_OUTPUT = "export.txt";
 
 
 /** Make executable actually executable on best-effort basis (if possible) */
-static void make_executable(const char *path)
+static void make_executable(const char *const path)
 {
-#if defined(__APPLE__) || defined(__linux__)
+#ifndef _MSC_VER
 	struct stat stat_buf;
 
-	if (stat(path, &stat_buf) != 0)
+	if (stat(path, &stat_buf))
 	{
 		return;
 	}
 
 	chmod(path, stat_buf.st_mode | S_IXUSR);
+#else
+	(void)path;
 #endif
 }
 
