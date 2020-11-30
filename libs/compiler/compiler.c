@@ -34,7 +34,6 @@
 
 
 const char *const DEFAULT_MACRO = "macro.txt";
-const char *const DEFAULT_KEYWORDS = "keywords.txt";
 const char *const DEFAULT_TREE = "tree.txt";
 const char *const DEFAULT_CODES = "codes.txt";
 const char *const DEFAULT_OUTPUT = "export.txt";
@@ -63,7 +62,7 @@ int compile_from_io_to_vm(universal_io *const io)
 	{
 		system_error("некорректные параметры ввода/вывода");
 		io_erase(io);
-		return 1;
+		return -1;
 	}
 
 	syntax sx;
@@ -71,16 +70,20 @@ int compile_from_io_to_vm(universal_io *const io)
 	{
 		system_error("не удалось выделить память для таблиц");
 		io_erase(io);
-		return 1;
+		return -1;
 	}
 
 	int ret = analyze(io, &sx);
+#ifdef GENERATE_FILES
 	tables_and_tree(&sx, DEFAULT_TREE);
+#endif
 
 	if (!ret)
 	{
 		ret = encode_to_vm(io, &sx);
+#ifdef GENERATE_FILES
 		tables_and_codes(&sx, DEFAULT_CODES);
+#endif
 	}
 
 	io_erase(io);
@@ -103,18 +106,30 @@ int compile_to_vm(workspace *const ws)
 	if (!ws_is_correct(ws))
 	{
 		system_error("некорректные входные данные");
-		return 1;
+		return -1;
 	}
 
+	universal_io io = io_create();
+
+#ifndef GENERATE_FILES
 	// Препроцессинг в массив
 	char *const preprocessing = macro(ws); // макрогенерация
 	if (preprocessing == NULL)
 	{
-		return 1;
+		return -1;
 	}
 
-	universal_io io = io_create();
 	in_set_buffer(&io, preprocessing);
+#else
+	int ret_macro = macro_to_file(ws, DEFAULT_MACRO);
+	if (ret_macro)
+	{
+		return ret_macro;
+	}
+
+	in_set_file(&io, DEFAULT_MACRO);
+#endif
+
 	out_set_file(&io, ws_get_output(ws));
 
 	int ret = compile_from_io_to_vm(&io);
@@ -123,7 +138,9 @@ int compile_to_vm(workspace *const ws)
 		make_executable(ws_get_output(ws));
 	}
 
+#ifndef GENERATE_FILES
 	free(preprocessing);
+#endif
 	return ret;
 }
 

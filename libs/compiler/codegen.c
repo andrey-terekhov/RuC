@@ -888,6 +888,11 @@ void output_export(universal_io *const io, const syntax *const sx)
 
 int encode_to_vm(universal_io *const io, syntax *const sx)
 {
+	if (io == NULL || sx == NULL)
+	{
+		return -1;
+	}
+
 	ad context;
 	
 	context.io = io;

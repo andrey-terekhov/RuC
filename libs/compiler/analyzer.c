@@ -137,6 +137,11 @@ void init_modetab(analyzer *context)
 
 int analyze(universal_io *const io, syntax *const sx)
 {
+	if (io == NULL || sx == NULL)
+	{
+		return -1;
+	}
+
 	universal_io temp = io_create();
 	analyzer context = compiler_context_create(&temp, sx);
 	
