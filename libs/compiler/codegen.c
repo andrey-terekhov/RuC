@@ -17,7 +17,7 @@
 #include "codegen.h"
 #include "errors.h"
 #include "extdecl.h"
-#include "global.h"
+#include "defs.h"
 #include <stdlib.h>
 
 

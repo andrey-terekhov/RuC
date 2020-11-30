@@ -14,7 +14,8 @@
  *	limitations under the License.
  */
 
-#include "global.h"
+#include "tables.h"
+#include "defs.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>

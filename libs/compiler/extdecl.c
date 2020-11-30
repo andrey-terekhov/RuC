@@ -16,7 +16,7 @@
 
 #include "extdecl.h"
 #include "errors.h"
-#include "global.h"
+#include "defs.h"
 #include "scanner.h"
 #include <string.h>
 
@@ -239,15 +239,13 @@ int is_struct(compiler_context *context, int t)
 	return t > 0 && context->modetab[t] == MSTRUCT;
 }
 
-int is_float(compiler_context *context, int t)
+int is_float(int t)
 {
-	UNUSED(context);
 	return t == LFLOAT || t == LDOUBLE;
 }
 
-int is_int(compiler_context *context, int t)
+int is_int(int t)
 {
-	UNUSED(context);
 	return t == LINT || t == LLONG || t == LCHAR;
 }
 
@@ -427,21 +425,21 @@ void binop(compiler_context *context, int sp)
 	}
 	if ((op == LOGOR || op == LOGAND || op == LOR || op == LEXOR || op == LAND || op == LSHL || op == LSHR ||
 		 op == LREM) &&
-		(is_float(context, ltype) || is_float(context, rtype)))
+		(is_float(ltype) || is_float(rtype)))
 	{
 		context_error(context, int_op_for_float);
 		context->error_flag = 5;
 		return; // 1
 	}
-	if (is_int(context, ltype) && is_float(context, rtype))
+	if (is_int(ltype) && is_float(rtype))
 	{
 		totree(context, WIDEN1);
 	}
-	if (is_int(context, rtype) && is_float(context, ltype))
+	if (is_int(rtype) && is_float(ltype))
 	{
 		totree(context, WIDEN);
 	}
-	if (is_float(context, ltype) || is_float(context, rtype))
+	if (is_float(ltype) || is_float(rtype))
 	{
 		context->ansttype = LFLOAT;
 	}
@@ -496,14 +494,14 @@ void toval(compiler_context *context)
 	{
 		if (context->anst == IDENT)
 		{
-			context->tree[context->tc - 2] = is_float(context, context->ansttype) ? TIdenttovald : TIdenttoval;
+			context->tree[context->tc - 2] = is_float(context->ansttype) ? TIdenttovald : TIdenttoval;
 		}
 
 		if (!(is_array(context, context->ansttype) || is_pointer(context, context->ansttype)))
 		{
 			if (context->anst == ADDR)
 			{
-				totree(context, is_float(context, context->ansttype) ? TAddrtovald : TAddrtoval);
+				totree(context, is_float(context->ansttype) ? TAddrtovald : TAddrtoval);
 			}
 		}
 		context->anst = VAL;
@@ -1012,7 +1010,7 @@ void primaryexpr(compiler_context *context)
 						}
 						toval(context);
 						context->sopnd--;
-						if (is_int(context, context->ansttype))
+						if (is_int(context->ansttype))
 						{
 							totree(context, WIDEN);
 						}
@@ -1210,7 +1208,7 @@ void primaryexpr(compiler_context *context)
 					}
 					else
 					{
-						if (!is_int(context, context->ansttype))
+						if (!is_int(context->ansttype))
 						{
 							context_error(context, param_threads_not_int);
 							context->error_flag = 4;
@@ -1264,7 +1262,7 @@ void primaryexpr(compiler_context *context)
 			if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR || func == VOLTAGE)
 			{
 				context->notrobot = 0;
-				if (!is_int(context, context->ansttype))
+				if (!is_int(context->ansttype))
 				{
 					context_error(context, param_setmotor_not_int);
 					context->error_flag = 4;
@@ -1291,7 +1289,7 @@ void primaryexpr(compiler_context *context)
 						return; // 1
 					}
 					toval(context);
-					if (!is_int(context, context->ansttype))
+					if (!is_int(context->ansttype))
 					{
 						context_error(context, param_setmotor_not_int);
 						context->error_flag = 4;
@@ -1307,18 +1305,18 @@ void primaryexpr(compiler_context *context)
 					}
 				}
 			}
-			else if (func == ABS && is_int(context, context->ansttype))
+			else if (func == ABS && is_int(context->ansttype))
 			{
 				func = ABSI;
 			}
 			else
 			{
-				if (is_int(context, context->ansttype))
+				if (is_int(context->ansttype))
 				{
 					totree(context, WIDEN);
 					context->ansttype = context->stackoperands[context->sopnd] = LFLOAT;
 				}
-				if (!is_float(context, context->ansttype))
+				if (!is_float(context->ansttype))
 				{
 					context_error(context, bad_param_in_stand_func);
 					context->error_flag = 4;
@@ -1349,7 +1347,7 @@ void primaryexpr(compiler_context *context)
 
 void index_check(compiler_context *context)
 {
-	if (!is_int(context, context->ansttype))
+	if (!is_int(context->ansttype))
 	{
 		context_error(context, index_must_be_int);
 		context->error_flag = 5;
@@ -1527,14 +1525,14 @@ void postexpr(compiler_context *context)
 						return; // 1
 					}
 
-					if (is_int(context, mdj) && is_float(context, context->ansttype))
+					if (is_int(mdj) && is_float(context->ansttype))
 					{
 						context_error(context, float_instead_int);
 						context->error_flag = 4;
 						return; // 1
 					}
 
-					if (is_float(context, mdj) && is_int(context, context->ansttype))
+					if (is_float(mdj) && is_int(context->ansttype))
 					{
 						insertwiden(context);
 					}
@@ -1707,7 +1705,7 @@ void postexpr(compiler_context *context)
 	{
 		int op;
 
-		if (!is_int(context, context->ansttype) && !is_float(context, context->ansttype))
+		if (!is_int(context->ansttype) && !is_float(context->ansttype))
 		{
 			context_error(context, wrong_operand);
 			context->error_flag = 4;
@@ -1894,11 +1892,9 @@ void exprassninbrkts(compiler_context *context, int er)
 	mustbe(context, RIGHTBR, er);
 }
 
-int prio(compiler_context *context, int op)
+int prio(int op)
 {
 	// возвращает 0, если не операция
-
-	UNUSED(context);
 	return op == LOGOR
 			   ? 1
 			   : op == LOGAND
@@ -1945,7 +1941,7 @@ void subexpr(compiler_context *context)
 	int wasop = 0;
 	int ad = 0;
 
-	while ((p = prio(context, context->next)))
+	while ((p = prio(context->next)))
 	{
 		wasop = 1;
 		toval(context);
@@ -1990,16 +1986,15 @@ void subexpr(compiler_context *context)
 	}
 }
 
-int intopassn(compiler_context *context, int next)
+int intopassn(int next)
 {
-	UNUSED(context);
 	return next == REMASS || next == SHLASS || next == SHRASS || next == ANDASS || next == EXORASS || next == ORASS;
 }
 
 int opassn(compiler_context *context)
 {
 	return (context->next == ASS || context->next == MULTASS || context->next == DIVASS || context->next == PLUSASS ||
-			context->next == MINUSASS || intopassn(context, context->next))
+			context->next == MINUSASS || intopassn(context->next))
 			   ? context->op = context->next
 			   : 0;
 }
@@ -2021,7 +2016,7 @@ void condexpr(compiler_context *context)
 		while (context->next == QUEST)
 		{
 			toval(context);
-			if (!is_int(context, context->ansttype))
+			if (!is_int(context->ansttype))
 			{
 				context_error(context, float_in_condition);
 				context->error_flag = 4;
@@ -2041,7 +2036,7 @@ void condexpr(compiler_context *context)
 				globtype = context->ansttype;
 			}
 			context->sopnd--;
-			if (is_float(context, context->ansttype))
+			if (is_float(context->ansttype))
 			{
 				globtype = LFLOAT;
 			}
@@ -2067,7 +2062,7 @@ void condexpr(compiler_context *context)
 		}
 		toval(context);
 		totree(context, TExprend);
-		if (is_float(context, context->ansttype))
+		if (is_float(context->ansttype))
 		{
 			globtype = LFLOAT;
 		}
@@ -2081,7 +2076,7 @@ void condexpr(compiler_context *context)
 		{
 			r = context->tree[adif];
 			context->tree[adif] = TExprend;
-			context->tree[adif - 1] = is_float(context, globtype) ? WIDEN : NOP;
+			context->tree[adif - 1] = is_float(globtype) ? WIDEN : NOP;
 			adif = r;
 		}
 
@@ -2108,13 +2103,13 @@ void inition(compiler_context *context, int decl_type)
 		totree(context, TExprend);
 		// съедаем выражение, его значение будет на стеке
 		context->sopnd--;
-		if (is_int(context, decl_type) && is_float(context, context->ansttype))
+		if (is_int(decl_type) && is_float(context->ansttype))
 		{
 			context_error(context, init_int_by_float);
 			context->error_flag = 5;
 			return; // 1
 		}
-		if (is_float(context, decl_type) && is_int(context, context->ansttype))
+		if (is_float(decl_type) && is_int(context->ansttype))
 		{
 			insertwiden(context);
 		}
@@ -2275,7 +2270,7 @@ void exprassn(compiler_context *context, int level)
 														  // операндов со стека
 		ltype = context->stackoperands[context->sopnd];
 
-		if (intopassn(context, lnext) && (is_float(context, ltype) || is_float(context, rtype)))
+		if (intopassn(lnext) && (is_float(ltype) || is_float(rtype)))
 		{
 			context_error(context, int_op_for_float);
 			context->error_flag = 6;
@@ -2335,7 +2330,7 @@ void exprassn(compiler_context *context, int level)
 				return; // 1
 			}
 
-			if (is_int(context, ltype) && is_float(context, rtype))
+			if (is_int(ltype) && is_float(rtype))
 			{
 				context_error(context, assmnt_float_to_int);
 				context->error_flag = 6;
@@ -2343,7 +2338,7 @@ void exprassn(compiler_context *context, int level)
 			}
 
 			toval(context);
-			if (is_int(context, rtype) && is_float(context, ltype))
+			if (is_int(rtype) && is_float(ltype))
 			{
 				totree(context, WIDEN);
 				context->ansttype = LFLOAT;
@@ -2568,7 +2563,7 @@ int arrdef(compiler_context *context, int t)
 				return 0; // 1
 			}
 			toval(context);
-			if (!is_int(context, context->ansttype))
+			if (!is_int(context->ansttype))
 			{
 				context_error(context, array_size_must_be_int);
 				context->error_flag = 5;
@@ -2679,7 +2674,7 @@ void statement(compiler_context *context)
 
 	context->wasdefault = 0;
 	scaner(context);
-	if ((is_int(context, context->cur) || is_float(context, context->cur) || context->cur == LVOID ||
+	if ((is_int(context->cur) || is_float(context->cur) || context->cur == LVOID ||
 		 context->cur == LSTRUCT) &&
 		context->blockflag)
 	{
@@ -3442,7 +3437,7 @@ int gettype(compiler_context *context)
 	// или 0, если типа не было
 
 	context->was_struct_with_arr = 0;
-	if (is_int(context, context->type = context->cur) || is_float(context, context->type) || context->type == LVOID)
+	if (is_int(context->type = context->cur) || is_float(context->type) || context->type == LVOID)
 	{
 		return (context->cur == LLONG ? LINT : context->cur == LDOUBLE ? LFLOAT : context->type);
 	}
@@ -3544,7 +3539,7 @@ void block(compiler_context *context, int b)
 	}
 	context->blockflag = 0;
 
-	while (is_int(context, context->next) || is_float(context, context->next) || context->next == LSTRUCT ||
+	while (is_int(context->next) || is_float(context->next) || context->next == LSTRUCT ||
 		   context->next == LVOID)
 	{
 		int repeat = 1;
@@ -3744,7 +3739,7 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 
 	while (repeat)
 	{
-		if (context->cur == LVOID || is_int(context, context->cur) || is_float(context, context->cur) ||
+		if (context->cur == LVOID || is_int(context->cur) || is_float(context->cur) ||
 			context->cur == LSTRUCT)
 		{
 			maybe_fun = 0; // м.б. параметр-ф-ция?

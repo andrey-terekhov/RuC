@@ -16,7 +16,7 @@
 
 #include "context.h"
 #include "errors.h"
-#include "global.h"
+#include "defs.h"
 #include "logger.h"
 #include "uniprinter.h"
 #include "uniscanner.h"

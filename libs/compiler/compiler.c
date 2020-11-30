@@ -31,7 +31,6 @@
 #include <wchar.h>
 
 #include "extdecl.h"
-#include "global.h"
 #include "scanner.h"
 #include "uniprinter.h"
 #include <limits.h>
