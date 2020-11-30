@@ -64,7 +64,7 @@ void context_error(compiler_context *const context, const int num) // Вынес
 		default:
 			error(io, num);
 	}
-	
+
 	context->error_flag = 1;
 	context->tc = context->temp_tc;
 
@@ -1936,12 +1936,12 @@ int prio(int op)
 
 void subexpr(compiler_context *context)
 {
-	int p;
 	int oldsp = context->sp;
 	int wasop = 0;
 	int ad = 0;
 
-	while ((p = prio(context->next)))
+	int p = prio(context->next);
+	while (p)
 	{
 		wasop = 1;
 		toval(context);
@@ -1971,6 +1971,7 @@ void subexpr(compiler_context *context)
 			context->error_flag = 5;
 			return; // 1
 		}
+		p = prio(context->next);
 	}
 	if (wasop)
 	{
@@ -3439,13 +3440,15 @@ int gettype(compiler_context *context)
 	{
 		return (context->cur == LLONG ? LINT : context->cur == LDOUBLE ? LFLOAT : context->type);
 	}
-	else if (context->type == LSTRUCT)
+
+	if (context->type == LSTRUCT)
 	{
 		if (context->next == BEGIN) // struct {
 		{
 			return (struct_decl_list(context));
 		}
-		else if (context->next == IDENT)
+
+		if (context->next == IDENT)
 		{
 			int l;
 
@@ -3481,14 +3484,13 @@ int gettype(compiler_context *context)
 				return (context->identab[l + 2]);
 			}
 		}
-		else
-		{
-			context_error(context, wrong_struct);
-			context->error_flag = 3;
-			return 0; // 1
-		}
+
+		context_error(context, wrong_struct);
+		context->error_flag = 3;
+		return 0; // 1
 	}
-	else if (context->cur == IDENT)
+
+	if (context->cur == IDENT)
 	{
 		applid(context);
 		if (context->error_flag == 5)
@@ -3496,22 +3498,21 @@ int gettype(compiler_context *context)
 			context->error_flag = 3;
 			return 0; // 1
 		}
+
 		if (context->identab[context->lastid + 3] < 1000)
 		{
 			context_error(context, ident_not_type);
 			context->error_flag = 3;
 			return 0; // 1
 		}
+
 		context->was_struct_with_arr = context->identab[context->lastid + 3] - 1000;
 		return context->identab[context->lastid + 2];
 	}
-	else
-	{
-		context_error(context, not_decl);
-		context->error_flag = 3;
-		return 0; // 1
-	}
-	return 0;
+
+	context_error(context, not_decl);
+	context->error_flag = 3;
+	return 0; // 1
 }
 
 void block(compiler_context *context, int b)
