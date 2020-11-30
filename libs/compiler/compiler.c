@@ -142,17 +142,20 @@ int compile_from_io_to_vm(universal_io *const io)
 	ext_decl(&context);
 	tables_and_tree(&sx, DEFAULT_TREE);
 
-	if (!context.error_flag)
+	int ret = context.error_flag;
+	if (!ret)
 	{
-		codegen(&context);
-		tables_and_codes(&sx, DEFAULT_CODES);
+		ret = encode_to_vm(io, &sx);
+		if (!ret)
+		{
+			tables_and_codes(&sx, DEFAULT_CODES);
+			output_export(io, &sx);
+		}
 	}
 
-	output_export(io, &sx);
 	io_erase(io);
-
 	syntax_deinit(&sx);
-	return context.error_flag;
+	return ret;
 }
 
 

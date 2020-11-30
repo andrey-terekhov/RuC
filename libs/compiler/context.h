@@ -85,9 +85,6 @@ typedef struct compiler_context
 	int wasdefault;
 	int notrobot;					// useless
 	//int prep_flag;
-	int adcont;
-	int adbreak;
-	int adcase;
 	int predef[FUNCSIZE];
 	int prdf;
 	int gotost[1000];

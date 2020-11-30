@@ -16,23 +16,33 @@
 
 #include "codegen.h"
 #include "errors.h"
-#include "extdecl.h"
 #include "defs.h"
 #include <stdlib.h>
 
 
-void Declid_gen(compiler_context *context);
-void compstmt_gen(compiler_context *context);
+typedef struct ad
+{
+	universal_io *io;
+	syntax *sx;
+
+	int adcont;
+	int adbreak;
+	int adcase;
+} ad;
 
 
-void tocode(compiler_context *context, int c)
+void Declid_gen(ad *const context);
+void compstmt_gen(ad *const context);
+
+
+void tocode(ad *const context, int c)
 {
 	// printf("tocode context->sx->tc=%i context->sx->pc %i) %i\n", context->sx->tc,
 	// context->sx->pc, c);
 	context->sx->mem[context->sx->pc++] = c;
 }
 
-void adbreakend(compiler_context *context)
+void adbreakend(ad *const context)
 {
 	while (context->adbreak)
 	{
@@ -42,7 +52,7 @@ void adbreakend(compiler_context *context)
 	}
 }
 
-void adcontbeg(compiler_context *context, int ad)
+void adcontbeg(ad *const context, int ad)
 {
 	while (context->adcont != ad)
 	{
@@ -52,7 +62,7 @@ void adcontbeg(compiler_context *context, int ad)
 	}
 }
 
-void adcontend(compiler_context *context)
+void adcontend(ad *const context)
 {
 	while (context->adcont != 0)
 	{
@@ -62,7 +72,7 @@ void adcontend(compiler_context *context)
 	}
 }
 
-void finalop(compiler_context *context)
+void finalop(ad *const context)
 {
 	int c;
 
@@ -116,7 +126,12 @@ void finalop(compiler_context *context)
 	}
 }
 
-int Expr_gen(compiler_context *context, int incond)
+int sz_of(ad *const context, int type)
+{
+	return type == LFLOAT ? 2 : (type > 0 && context->sx->modetab[type] == MSTRUCT) ? context->sx->modetab[type + 1] : 1;
+}
+
+int Expr_gen(ad *const context, int incond)
 {
 	int flagprim = 1;
 	int eltype;
@@ -242,7 +257,7 @@ int Expr_gen(compiler_context *context, int incond)
 				eltype = context->sx->tree[context->sx->tc++];
 				Expr_gen(context, 0);
 				tocode(context, SLICE);
-				tocode(context, szof(context, eltype));
+				tocode(context, sz_of(context, eltype));
 				if (eltype > 0 && context->sx->modetab[eltype] == MARRAY)
 				{
 					tocode(context, LAT);
@@ -330,7 +345,7 @@ int Expr_gen(compiler_context *context, int incond)
 	return wasstring;
 }
 
-void Stmt_gen(compiler_context *context)
+void Stmt_gen(ad *const context)
 {
 	switch (context->sx->tree[context->sx->tc++])
 	{
@@ -612,7 +627,7 @@ void Stmt_gen(compiler_context *context)
 	}
 }
 
-void Struct_init_gen(compiler_context *context)
+void Struct_init_gen(ad *const context)
 {
 	int i;
 	int n;
@@ -633,7 +648,7 @@ void Struct_init_gen(compiler_context *context)
 	}
 }
 
-void Declid_gen(compiler_context *context)
+void Declid_gen(ad *const context)
 {
 	int olddispl = context->sx->tree[context->sx->tc++];
 	int telem = context->sx->tree[context->sx->tc++];
@@ -649,7 +664,7 @@ void Declid_gen(compiler_context *context)
 	// all == 0 нет инициализатора,
 	// all == 1 есть инициализатор
 	// all == 2 есть инициализатор только из строк
-	element_len = szof(context, telem);
+	element_len = sz_of(context, telem);
 
 	if (N == 0) // обычная переменная int a; или struct point p;
 	{
@@ -701,7 +716,7 @@ void Declid_gen(compiler_context *context)
 	}
 }
 
-void compstmt_gen(compiler_context *context)
+void compstmt_gen(ad *const context)
 {
 	while (context->sx->tree[context->sx->tc] != TEnd)
 	{
@@ -737,7 +752,7 @@ void compstmt_gen(compiler_context *context)
 }
 
 /** Генерация кодов */
-void codegen(compiler_context *context)
+int codegen(ad *const context)
 {
 	int treesize = context->sx->tc;
 
@@ -812,10 +827,32 @@ void codegen(compiler_context *context)
 	if (context->sx->wasmain == 0)
 	{
 		error(context->io, no_main_in_program);
-		return;
+		return -1;
 	}
 	tocode(context, CALL1);
 	tocode(context, CALL2);
 	tocode(context, context->sx->identab[context->sx->wasmain + 3]);
 	tocode(context, STOP);
+
+	return 0;
+}
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+int encode_to_vm(universal_io *const io, syntax *const sx)
+{
+	ad context;
+	
+	context.io = io;
+	context.sx = sx;
+
+	return codegen(&context);
 }

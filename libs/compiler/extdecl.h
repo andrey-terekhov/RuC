@@ -24,7 +24,6 @@ extern "C" {
 #endif
 
 void ext_decl(compiler_context *context);
-int szof(compiler_context *context, int type);
 
 #ifdef __cplusplus
 } /* extern "C" */
