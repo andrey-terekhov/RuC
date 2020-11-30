@@ -24,16 +24,6 @@ extern "C" {
 #endif
 
 /**
- *	Save up a string array to reprtab
- *
- *	@param	context	RuC context
- *	@param	str		Target string
- *
- *	@return	FIXME
- */
-int toreprtab(compiler_context *context, char str[]);
-
-/**
  *	Mode table initialization
  *
  *	@param	context	RuC context
