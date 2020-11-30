@@ -45,8 +45,12 @@ int syntax_init(syntax *const sx)
 	sx->funcnum = 2;
 	sx->id = 2;
 	sx->md = 1;
+	sx->tc = 0;
 
 	sx->maxdisplg = 3;
+	sx->wasmain = 0;
+
+	sx->anstdispl = 0;
 
 	return 0;
 }
