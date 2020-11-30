@@ -23,10 +23,10 @@
 
 void tables_and_tree(compiler_context *context)
 {
-	int i;
-	int j;
-	int n;
-	double d;
+	//int i;
+	//int j;
+	//int n;
+	//double d;
 	/*int k = context->before_source_p;
 
 	uni_printf(context->io, "\n%s\n", "source");
@@ -53,15 +53,13 @@ void tables_and_tree(compiler_context *context)
 
 	uni_printf(context->io, "\n%s\n", "identab");
 
-	i = 2;
-	while (i < context->id)
+	for (int i = 2; i < context->id; i += 4)
 	{
-		for (j = 0; j < 4; j++)
+		for (int j = 0; j < 4; j++)
 		{
 			uni_printf(context->io, "id %i) %i\n", i + j, context->identab[i + j]);
 		}
 		uni_printf(context->io, "\n");
-		i += 4;
 	}
 	/*
 		uni_printf(context->io, "\n%s\n", "repr");
@@ -70,7 +68,7 @@ void tables_and_tree(compiler_context *context)
 			reprtab[i]);
 	*/
 	uni_printf(context->io, "\n%s\n", "modetab");
-	for (i = 0; i < context->md; i++)
+	for (int i = 0; i < context->md; i++)
 	{
 		uni_printf(context->io, "md %i) %i\n", i, context->modetab[i]);
 	}
@@ -82,7 +80,7 @@ void tables_and_tree(compiler_context *context)
 	*/
 	uni_printf(context->io, "\n");
 
-	i = 0;
+	int i = 0;
 	while (i < context->tc)
 	{
 		uni_printf(context->io, "tc %i) ", i);
@@ -105,21 +103,28 @@ void tables_and_tree(compiler_context *context)
 				i += 7;
 				break;
 			case TString:
-				uni_printf(context->io, "TString n= %i\n", n = context->tree[i++]);
-				for (j = 0; j < n; ++j)
+			{
+				int n = context->tree[i++];
+				uni_printf(context->io, "TString n= %i\n", n);
+				for (int j = 0; j < n; ++j)
 				{
 					uni_printf(context->io, "%i\n", context->tree[i++]);
 				}
-				break;
+			}
+			break;
 			case TStringd:
-				uni_printf(context->io, "TStringd n= %i\n", context->tree[i++]);
-				for (j = 0; j < n; ++j)
+			{
+				int n = context->tree[i++];
+				uni_printf(context->io, "TStringd n= %i\n", n);
+				for (int j = 0; j < n; ++j)
 				{
+					double d;
 					memcpy(&d, &context->tree[i], sizeof(double));
 					i += 2;
 					uni_printf(context->io, "%f\n", d);
 				}
-				break;
+			}
+			break;
 			case TCondexpr:
 				uni_printf(context->io, "TCondexpr\n");
 				break;
@@ -360,8 +365,8 @@ void tables_and_tree(compiler_context *context)
 
 void tables_and_code(compiler_context *context)
 {
-	int i = 1;
-	int j = 0;
+	//int i = 1;
+	//int j = 0;
 	/*int k = context->before_source_p;
 	uni_printf(context->io, "\n%s\n", "source");
 	while (j < k)
@@ -385,19 +390,19 @@ void tables_and_code(compiler_context *context)
 	}*/
 
 	uni_printf(context->io, "\n\n%s\n", "functions");
-	for (i = 1; i <= context->funcnum; i++)
+	for (int i = 1; i <= context->funcnum; i++)
 	{
 		uni_printf(context->io, "fun %i) %i\n", i, context->functions[i]);
 	}
 
 	uni_printf(context->io, "\n%s\n", "iniprocs");
-	for (i = 1; i <= context->procd; i++)
+	for (int i = 1; i <= context->procd; i++)
 	{
 		uni_printf(context->io, "inipr %i) %i\n", i, context->iniprocs[i]);
 	}
 
 	uni_printf(context->io, "\n%s\n", "mem");
-	i = 0;
+	int i = 0;
 	while (i < context->pc)
 	{
 		uni_printf(context->io, "pc %i) ", i);
