@@ -59,13 +59,10 @@ const char *const DEFAULT_OUTPUT = "export.txt";
 
 
 /** Make executable actually executable on best-effort basis (if possible) */
-static void make_executable(universal_io *const io)
+static void make_executable(const char *const path)
 {
 #ifndef _MSC_VER
 	struct stat stat_buf;
-
-	char path[MAX_ARG_SIZE];
-	out_get_path(io, path);
 
 	if (stat(path, &stat_buf))
 	{
@@ -76,8 +73,6 @@ static void make_executable(universal_io *const io)
 #else
 	(void)path;
 #endif
-
-	out_clear(io);
 }
 
 /** Вывод таблиц и дерева */
@@ -135,8 +130,6 @@ void output_export(universal_io *const io, const syntax *const sx)
 		uni_printf(io, "%i ", sx->modetab[i]);
 	}
 	uni_printf(io, "\n");
-
-	make_executable(io);
 }
 
 int compile_from_io_to_vm(universal_io *const io)
@@ -172,10 +165,9 @@ int compile_from_io_to_vm(universal_io *const io)
 	}
 
 	output_export(io, &sx);
-
-	syntax_deinit(&sx);
 	io_erase(io);
 
+	syntax_deinit(&sx);
 	return context.error_flag;
 }
 
@@ -207,7 +199,12 @@ int compile_to_vm(workspace *const ws)
 	universal_io io = io_create();
 	in_set_buffer(&io, preprocessing);
 	out_set_file(&io, ws_get_output(ws));
+
 	int ret = compile_from_io_to_vm(&io);
+	if (!ret)
+	{
+		make_executable(ws_get_output(ws));
+	}
 
 	free(preprocessing);
 	return ret;
@@ -224,5 +221,12 @@ int no_macro_compile_to_vm(const char *const path)
 	universal_io io = io_create();
 	in_set_file(&io, path);
 	out_set_file(&io, DEFAULT_OUTPUT);
-	return compile_from_io_to_vm(&io);
+
+	int ret = compile_from_io_to_vm(&io);
+	if (!ret)
+	{
+		make_executable(DEFAULT_OUTPUT);
+	}
+
+	return ret;
 }
