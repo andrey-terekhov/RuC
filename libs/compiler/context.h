@@ -42,7 +42,6 @@ typedef struct compiler_table
 	int size;	/** Total size of a table */
 } compiler_table;
 
-/** Определение глобальных переменных */
 typedef struct compiler_context
 {
 	universal_io *io;
