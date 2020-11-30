@@ -15,8 +15,9 @@
  */
 
 #include "codegen.h"
-#include "errors.h"
 #include "defs.h"
+#include "errors.h"
+#include "uniprinter.h"
 #include <stdlib.h>
 
 
@@ -837,6 +838,44 @@ int codegen(ad *const context)
 	return 0;
 }
 
+/** Вывод таблиц в файл */
+void output_export(universal_io *const io, const syntax *const sx)
+{
+	uni_printf(io, "#!/usr/bin/ruc-vm\n");
+
+	uni_printf(io, "%i %i %i %i %i %i %i\n", sx->pc, sx->funcnum, sx->id,
+				   sx->reprtab.len, sx->md, sx->maxdisplg, sx->wasmain);
+
+	for (int i = 0; i < sx->pc; i++)
+	{
+		uni_printf(io, "%i ", sx->mem[i]);
+	}
+	uni_printf(io, "\n");
+
+	for (int i = 0; i < sx->funcnum; i++)
+	{
+		uni_printf(io, "%i ", sx->functions[i]);
+	}
+	uni_printf(io, "\n");
+
+	for (int i = 0; i < sx->id; i++)
+	{
+		uni_printf(io, "%i ", sx->identab[i]);
+	}
+	uni_printf(io, "\n");
+
+	for (int i = 0; i < sx->reprtab.len; i++)
+	{
+		uni_printf(io, "%i ", sx->reprtab.table[i]);
+	}
+
+	for (int i = 0; i < sx->md; i++)
+	{
+		uni_printf(io, "%i ", sx->modetab[i]);
+	}
+	uni_printf(io, "\n");
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -854,5 +893,11 @@ int encode_to_vm(universal_io *const io, syntax *const sx)
 	context.io = io;
 	context.sx = sx;
 
-	return codegen(&context);
+	int ret = codegen(&context);
+	if (!ret)
+	{
+		output_export(io, sx);
+	}
+
+	return ret;
 }

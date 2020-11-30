@@ -75,44 +75,6 @@ static void make_executable(const char *const path)
 #endif
 }
 
-/** Вывод таблиц в файл */
-void output_export(universal_io *const io, const syntax *const sx)
-{
-	uni_printf(io, "#!/usr/bin/ruc-vm\n");
-
-	uni_printf(io, "%i %i %i %i %i %i %i\n", sx->pc, sx->funcnum, sx->id,
-				   sx->reprtab.len, sx->md, sx->maxdisplg, sx->wasmain);
-
-	for (int i = 0; i < sx->pc; i++)
-	{
-		uni_printf(io, "%i ", sx->mem[i]);
-	}
-	uni_printf(io, "\n");
-
-	for (int i = 0; i < sx->funcnum; i++)
-	{
-		uni_printf(io, "%i ", sx->functions[i]);
-	}
-	uni_printf(io, "\n");
-
-	for (int i = 0; i < sx->id; i++)
-	{
-		uni_printf(io, "%i ", sx->identab[i]);
-	}
-	uni_printf(io, "\n");
-
-	for (int i = 0; i < sx->reprtab.len; i++)
-	{
-		uni_printf(io, "%i ", sx->reprtab.table[i]);
-	}
-
-	for (int i = 0; i < sx->md; i++)
-	{
-		uni_printf(io, "%i ", sx->modetab[i]);
-	}
-	uni_printf(io, "\n");
-}
-
 int compile_from_io_to_vm(universal_io *const io)
 {
 	if (!in_is_correct(io) || !out_is_correct(io))
@@ -149,7 +111,6 @@ int compile_from_io_to_vm(universal_io *const io)
 		if (!ret)
 		{
 			tables_and_codes(&sx, DEFAULT_CODES);
-			output_export(io, &sx);
 		}
 	}
 
