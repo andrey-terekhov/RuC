@@ -164,6 +164,7 @@ int compile_from_io_to_vm(universal_io *const io)
 
 	io_erase(&temp);
 
+	context.io = io;
 	output_tables_and_tree(&sx, &context, DEFAULT_TREE);
 	if (!context.error_flag)
 	{
