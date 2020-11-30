@@ -15,7 +15,7 @@
  */
 
 #include "codes.h"
-#include "global.h"
+#include "defs.h"
 #include "uniprinter.h"
 #include <stdio.h>
 #include <string.h>
@@ -23,36 +23,7 @@
 
 void tables_and_tree(compiler_context *context)
 {
-	//int i;
-	//int j;
-	//int n;
-	//double d;
-	/*int k = context->before_source_p;
-
-	uni_printf(context->io, "\n%s\n", "source");
-
-	while (j < k)
-	{
-		uni_printf(context->io, "line %i) ", i);
-		while (j < k && context->before_source[j] != '\n')
-		{
-			uni_print_char(context->io, context->before_source[j]);
-			j++;
-		}
-		i++;
-	}*/
-	/*for (i = 1; i < context->line; i++)
-	{
-		uni_printf(context->io, "line %i) ", i);
-		for (j = context->lines[i]; j < context->lines[i + 1]; j++)
-		{
-			uni_print_char(context->io, context->source[j]);
-		}
-	}
-	uni_printf(context->io, "\n");*/
-
 	uni_printf(context->io, "\n%s\n", "identab");
-
 	for (int i = 2; i < context->id; i += 4)
 	{
 		for (int j = 0; j < 4; j++)
@@ -61,23 +32,29 @@ void tables_and_tree(compiler_context *context)
 		}
 		uni_printf(context->io, "\n");
 	}
+
 	/*
-		uni_printf(context->io, "\n%s\n", "repr");
-		for (i = 1206; i <= rp; i++)
-			uni_printf(context->io, "rp %i) %i\n", i,
-			reprtab[i]);
+	uni_printf(context->io, "\n%s\n", "repr");
+	for (int i = 1206; i <= rp; i++)
+	{
+		uni_printf(context->io, "rp %i) %i\n", i, reprtab[i]);
+	}
 	*/
+
 	uni_printf(context->io, "\n%s\n", "modetab");
 	for (int i = 0; i < context->md; i++)
 	{
 		uni_printf(context->io, "md %i) %i\n", i, context->modetab[i]);
 	}
+
 	/*
-		uni_printf(context->io, "\n%s\n", "tree");
-		for (i=0; i<=tc; i++)
-			uni_printf(context->io, "tc %i) %i\n", i,
-			context->tree[i]);
+	uni_printf(context->io, "\n%s\n", "tree");
+	for (int i = 0; i <= tc; i++)
+	{
+		uni_printf(context->io, "tc %i) %i\n", i, context->tree[i]);
+	}
 	*/
+
 	uni_printf(context->io, "\n");
 
 	int i = 0;
@@ -365,30 +342,6 @@ void tables_and_tree(compiler_context *context)
 
 void tables_and_code(compiler_context *context)
 {
-	//int i = 1;
-	//int j = 0;
-	/*int k = context->before_source_p;
-	uni_printf(context->io, "\n%s\n", "source");
-	while (j < k)
-	{
-		uni_printf(context->io, "line %i) ", i);
-		while (j < k && context->before_source[j] != '\n')
-		{
-			uni_print_char(context->io, context->before_source[j]);
-			j++;
-		}
-		i++;
-	}*/
-
-	/*for (i = 1; i < context->line; i++)
-	{
-		uni_printf(context->io, "line %i) ", i);
-		for (j = context->lines[i]; j < context->lines[i + 1]; j++)
-		{
-			uni_print_char(context->io, context->source[j]);
-		}
-	}*/
-
 	uni_printf(context->io, "\n\n%s\n", "functions");
 	for (int i = 1; i <= context->funcnum; i++)
 	{
@@ -563,10 +516,11 @@ void tables_and_code(compiler_context *context)
 				uni_printf(context->io, "displ= %i ", context->mem[i++]);
 				uni_printf(context->io, "usual= %i\n", context->mem[i++]);
 				break;
-			//	case STRUCTINIT:
-			//		uni_printf(context->io,
-			//		"STRUCTINIT N= %i ", context->mem[i++]);
-			//		break;
+			/*
+			case STRUCTINIT:
+				uni_printf(context->io,	"STRUCTINIT N= %i ", context->mem[i++]);
+				break;
+			*/
 			case NOP:
 				uni_printf(context->io, "NOP\n");
 				break;
