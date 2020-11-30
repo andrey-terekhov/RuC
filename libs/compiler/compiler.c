@@ -75,25 +75,6 @@ static void make_executable(const char *const path)
 #endif
 }
 
-/** Вывод таблиц и дерева */
-void output_tables_and_tree(syntax *const sx, compiler_context *context, const char *const path)
-{
-	getnext(context);
-	nextch(context);
-	context->next = scan(context);
-
-	ext_decl(context); // генерация дерева
-
-	tables_and_tree(sx, path);
-}
-
-/** Генерация кодов */
-void output_codes(syntax *const sx, compiler_context *context, const char *const path)
-{
-	codegen(context);
-	tables_and_code(sx, path);
-}
-
 /** Вывод таблиц в файл */
 void output_export(universal_io *const io, const syntax *const sx)
 {
@@ -158,10 +139,13 @@ int compile_from_io_to_vm(universal_io *const io)
 	io_erase(&temp);
 
 	context.io = io;
-	output_tables_and_tree(&sx, &context, DEFAULT_TREE);
+	ext_decl(&context);
+	tables_and_tree(&sx, DEFAULT_TREE);
+
 	if (!context.error_flag)
 	{
-		output_codes(&sx, &context, DEFAULT_CODES);
+		codegen(&context);
+		tables_and_codes(&sx, DEFAULT_CODES);
 	}
 
 	output_export(io, &sx);

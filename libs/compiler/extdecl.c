@@ -3921,8 +3921,13 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 	return check_duplicates(context);
 }
 
+/** Генерация дерева */
 void ext_decl(compiler_context *context)
 {
+	getnext(context);
+	nextch(context);
+	context->next = scan(context);
+	
 	int i;
 	context->temp_tc = context->sx->tc;
 	do // top levext_declel описания переменных и функций до конца файла

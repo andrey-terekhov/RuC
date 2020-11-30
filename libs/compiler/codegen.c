@@ -736,6 +736,7 @@ void compstmt_gen(compiler_context *context)
 	context->sx->tc++;
 }
 
+/** Генерация кодов */
 void codegen(compiler_context *context)
 {
 	int treesize = context->sx->tc;
