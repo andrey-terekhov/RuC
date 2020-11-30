@@ -23,8 +23,8 @@
 extern "C" {
 #endif
 
-void tablesandcode(compiler_context *context);
-void tablesandtree(compiler_context *context);
+void tables_and_code(compiler_context *context);
+void tables_and_tree(compiler_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

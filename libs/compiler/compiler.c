@@ -84,7 +84,7 @@ void output_tables_and_tree(compiler_context *context, const char *path)
 
 	ext_decl(context); // генерация дерева
 
-	tablesandtree(context);
+	tables_and_tree(context);
 	out_clear(context->io);
 }
 
@@ -93,7 +93,7 @@ void output_codes(compiler_context *context, const char *path)
 {
 	out_set_file(context->io, path);
 	codegen(context);
-	tablesandcode(context);
+	tables_and_code(context);
 	out_clear(context->io);
 }
 

@@ -21,7 +21,7 @@
 #include <string.h>
 
 
-void tablesandtree(compiler_context *context)
+void tables_and_tree(compiler_context *context)
 {
 	int i;
 	int j;
@@ -358,7 +358,7 @@ void tablesandtree(compiler_context *context)
 	}
 }
 
-void tablesandcode(compiler_context *context)
+void tables_and_code(compiler_context *context)
 {
 	int i = 1;
 	int j = 0;

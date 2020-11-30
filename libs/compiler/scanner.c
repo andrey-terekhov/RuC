@@ -107,7 +107,7 @@ void nextch(compiler_context *context)
 			if (context->curchar == EOF)
 			{
 				endnl(context);
-				uni_printf(context->io, "\n");
+				// uni_printf(context->io, "\n");
 				return;
 			}
 		} while (context->curchar != '\n');
