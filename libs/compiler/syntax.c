@@ -15,6 +15,19 @@
  */
 
 #include "syntax.h"
+#include <stdlib.h>
+#include <string.h>
+
+
+#ifdef __GNUC__
+	#define likely(x)	__builtin_expect((x), 1)
+	#define unlikely(x) __builtin_expect((x), 0)
+#else
+	#define likely(x)	(x)
+	#define unlikely(x) (x)
+#endif
+
+#define DEFAULT_OUTBUF_SIZE (1024)
 
 
 int syntax_init(syntax *const sx)
@@ -48,4 +61,44 @@ int syntax_deinit(syntax *const sx)
 	free(sx->reprtab.table);
 	sx->reprtab.table = NULL;
 	return 0;
+}
+
+
+void compiler_table_init(compiler_table *table)
+{
+	table->table = malloc(COMPILER_TABLE_SIZE_DEFAULT * sizeof(int));
+	if (table->table == NULL)
+	{
+		exit(1); // need a better way to stop!
+	}
+	table->pos = 0;
+	table->len = 0;
+	table->size = COMPILER_TABLE_SIZE_DEFAULT;
+	memset(table->table, 0, COMPILER_TABLE_SIZE_DEFAULT * sizeof(int));
+}
+
+int compiler_table_ensure_allocated(compiler_table *table, int pos)
+{
+	if (unlikely(pos >= table->size))
+	{
+		int size = (table->size * 2 > (pos + COMPILER_TABLE_INCREMENT_MIN)) ? (table->size * 2)
+																			: (pos + COMPILER_TABLE_INCREMENT_MIN);
+		int *buf = realloc(table->table, sizeof(int) * size);
+
+		if (buf == NULL)
+		{
+			exit(1);
+		}
+
+		memset(&buf[table->size], 0, size - table->size);
+		table->table = buf;
+		table->size = size;
+	}
+
+	return table->size;
+}
+
+int compiler_table_expand(compiler_table *table, int len)
+{
+	return compiler_table_ensure_allocated(table, table->len + len);
 }

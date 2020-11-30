@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include "context.h"
+#include "syntax.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void tables_and_code(compiler_context *context);
-void tables_and_tree(compiler_context *context);
+void tables_and_code(const syntax *const sx, const char *const path);
+void tables_and_tree(const syntax *const sx, const char *const path);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -36,6 +36,7 @@
 #include <limits.h>
 #include <math.h>
 
+#include "syntax.h"
 
 #ifdef __linux__
 	#include <unistd.h>
@@ -58,10 +59,13 @@ const char *const DEFAULT_OUTPUT = "export.txt";
 
 
 /** Make executable actually executable on best-effort basis (if possible) */
-static void make_executable(const char *const path)
+static void make_executable(universal_io *const io)
 {
 #ifndef _MSC_VER
 	struct stat stat_buf;
+
+	char path[MAX_ARG_SIZE];
+	out_get_path(io, path);
 
 	if (stat(path, &stat_buf))
 	{
@@ -72,118 +76,106 @@ static void make_executable(const char *const path)
 #else
 	(void)path;
 #endif
+
+	out_clear(io);
 }
 
 /** Вывод таблиц и дерева */
-void output_tables_and_tree(compiler_context *context, const char *path)
+void output_tables_and_tree(syntax *const sx, compiler_context *context, const char *const path)
 {
-	out_set_file(context->io, path);
-
 	getnext(context);
 	nextch(context);
 	context->next = scan(context);
 
 	ext_decl(context); // генерация дерева
 
-	tables_and_tree(context);
-	out_clear(context->io);
+	tables_and_tree(sx, path);
 }
 
 /** Генерация кодов */
-void output_codes(compiler_context *context, const char *path)
+void output_codes(syntax *const sx, compiler_context *context, const char *const path)
 {
-	out_set_file(context->io, path);
 	codegen(context);
-	tables_and_code(context);
-	out_clear(context->io);
+	tables_and_code(sx, path);
 }
 
 /** Вывод таблиц в файл */
-void output_export(compiler_context *context, const char *path)
+void output_export(universal_io *const io, const syntax *const sx)
 {
-	int i;
+	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	out_set_file(context->io, path);
-	uni_printf(context->io, "#!/usr/bin/ruc-vm\n");
+	uni_printf(io, "%i %i %i %i %i %i %i\n", sx->pc, sx->funcnum, sx->id,
+				   sx->reprtab.len, sx->md, sx->maxdisplg, sx->wasmain);
 
-	uni_printf(context->io, "%i %i %i %i %i %i %i\n", context->pc, context->funcnum, context->id,
-				   REPRTAB_LEN, context->md, context->maxdisplg, context->wasmain);
-
-	for (i = 0; i < context->pc; i++)
+	for (int i = 0; i < sx->pc; i++)
 	{
-		uni_printf(context->io, "%i ", context->mem[i]);
+		uni_printf(io, "%i ", sx->mem[i]);
 	}
-	uni_printf(context->io, "\n");
+	uni_printf(io, "\n");
 
-	for (i = 0; i < context->funcnum; i++)
+	for (int i = 0; i < sx->funcnum; i++)
 	{
-		uni_printf(context->io, "%i ", context->functions[i]);
+		uni_printf(io, "%i ", sx->functions[i]);
 	}
-	uni_printf(context->io, "\n");
+	uni_printf(io, "\n");
 
-	for (i = 0; i < context->id; i++)
+	for (int i = 0; i < sx->id; i++)
 	{
-		uni_printf(context->io, "%i ", context->identab[i]);
+		uni_printf(io, "%i ", sx->identab[i]);
 	}
-	uni_printf(context->io, "\n");
+	uni_printf(io, "\n");
 
-	for (i = 0; i < REPRTAB_LEN; i++)
+	for (int i = 0; i < sx->reprtab.len; i++)
 	{
-		uni_printf(context->io, "%i ", REPRTAB[i]);
+		uni_printf(io, "%i ", sx->reprtab.table[i]);
 	}
 
-	for (i = 0; i < context->md; i++)
+	for (int i = 0; i < sx->md; i++)
 	{
-		uni_printf(context->io, "%i ", context->modetab[i]);
+		uni_printf(io, "%i ", sx->modetab[i]);
 	}
-	uni_printf(context->io, "\n");
+	uni_printf(io, "\n");
 
-	out_clear(context->io);
-
-	make_executable(path);
+	make_executable(io);
 }
 
 int compile_from_io_to_vm(universal_io *const io)
 {
 	if (!in_is_correct(io) || !out_is_correct(io))
 	{
-		io_erase(io);
 		system_error("некорректные параметры ввода/вывода");
+		io_erase(io);
 		return 1;
 	}
 
-	compiler_context *context = malloc(sizeof(compiler_context));
-	if (context == NULL)
+	syntax sx;
+	if (syntax_init(&sx))
 	{
+		system_error("не удалось выделить память для таблиц");
 		io_erase(io);
-		system_error("не удалось выделить память под контекст");
 		return 1;
 	}
 
 	universal_io temp = io_create();
-	compiler_context_init(context, &temp);
+	compiler_context context = compiler_context_create(&temp, &sx);
 
-	read_keywords(context);
-
-	init_modetab(context);
+	read_keywords(&context);
+	init_modetab(&context);
 
 	io_erase(&temp);
-	char output[MAX_ARG_SIZE];
-	out_get_path(io, output);
 
-	context->io = io;
-	output_tables_and_tree(context, DEFAULT_TREE);
-	if (!context->error_flag)
+	output_tables_and_tree(&sx, &context, DEFAULT_TREE);
+	if (!context.error_flag)
 	{
-		output_codes(context, DEFAULT_CODES);
+		output_codes(&sx, &context, DEFAULT_CODES);
 	}
 
-	output_export(context, output);
+	output_export(io, &sx);
+
+	syntax_deinit(&sx);
 	io_erase(io);
 
-	int ret = context->error_flag;
-	free(context);
-	return ret;
+	return context.error_flag;
 }
 
 

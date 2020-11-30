@@ -17,34 +17,24 @@
 #pragma once
 
 #include "defs.h"
+#include "syntax.h"
 #include "uniio.h"
-#include <stdio.h>
 
 
-#define COMPILER_TABLE_SIZE_DEFAULT	 (100)
-#define COMPILER_TABLE_INCREMENT_MIN (100)
-
-#define REPRTAB		(context->reprtab.table)
-#define REPRTAB_POS (context->reprtab.pos)
-#define REPRTAB_LEN (context->reprtab.len)
+#define REPRTAB		(context->sx->reprtab.table)
+#define REPRTAB_POS (context->sx->reprtab.pos)
+#define REPRTAB_LEN (context->sx->reprtab.len)
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** A designated compiler table */
-typedef struct compiler_table
-{
-	int *table; /** Actual table */
-	int len;	/** Length of a useful part of table */
-	int pos;	/** A position in a table */
-	int size;	/** Total size of a table */
-} compiler_table;
-
+/** Определение глобальных переменных */
 typedef struct compiler_context
 {
 	universal_io *io;
+	syntax *sx;
 
 	int line;
 	int charnum;
@@ -66,10 +56,6 @@ typedef struct compiler_context
 	int curchar;
 	int func_def;
 	int hashtab[256];
-	int identab[MAXIDENTAB];
-	int id;
-	int modetab[MAXMODETAB];
-	int md;
 	int startmode;
 	int stack[100];
 	int stackop[100];
@@ -83,13 +69,10 @@ typedef struct compiler_context
 	int lg;
 	int displ;
 	int maxdispl;
-	int maxdisplg;
 	int type;
 	int op;
 	int inass;
 	int firstdecl;
-	int iniprocs[INIPROSIZE];
-	int procd;
 	int arrdim;
 	int arrelemlen;
 	int was_struct_with_arr;
@@ -98,19 +81,12 @@ typedef struct compiler_context
 	int inswitch;
 	int inloop;
 	int lexstr[MAXSTRINGL + 1];
-	int tree[MAXTREESIZE];
-	int tc;
 	int mtree[MAXTREESIZE];
 	int mtc;
-	int mem[MAXMEMSIZE];
-	int pc;
-	int functions[FUNCSIZE];
-	int funcnum;
 	int functype;
 	int kw;
 	int blockflag;
 	int entry;
-	int wasmain;
 	int wasret;
 	int wasdefault;
 	int notrobot;
@@ -126,7 +102,6 @@ typedef struct compiler_context
 	int gotost[1000];
 	int pgotost;
 	int anst;
-	int anstdispl;
 	int ansttype;
 	int leftansttype; // anst = VAL  - значение на стеке
 	int g;
@@ -148,44 +123,18 @@ typedef struct compiler_context
 	int new_line_flag;
 
 	int c_flag;
-	compiler_table reprtab;
-
 } compiler_context;
 
 
 /**
- *	Initialize RuC context
+ *	Create RuC context
  *
- *	@param	context	Uninitialized RuC context
+ *	@param	io		Universal io structure
+ *	@param	sx		Syntax structure
+ *
+ *	@return	RuC context structure
  */
-void compiler_context_init(compiler_context *context, universal_io *const io);
-
-/**
- *	Initialize compiler table
- *
- *	@param	table	Target compiler table
- */
-void compiler_table_init(compiler_table *table);
-
-/**
- *	Ensure that specific offset is allocated in a table
- *
- *	@param	table	Target compiler table
- *	@param	pos		Target position
- *
- *	@return	Table size
- */
-int compiler_table_ensure_allocated(compiler_table *table, int pos);
-
-/**
- *	Expand compiler table
- *
- *	@param	table	Target compiler table
- *	@param	len		Requested length
- *
- *	@return	New size
- */
-int compiler_table_expand(compiler_table *table, int len);
+compiler_context compiler_context_create(universal_io *const io, syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */

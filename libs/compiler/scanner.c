@@ -117,7 +117,7 @@ void nextch(compiler_context *context)
 	
 	if (context->kw && context->curchar == '\n')
 	{
-		context->temp_tc = context->tc;
+		context->temp_tc = context->sx->tc;
 		endnl(context);
 	}
 	return;
@@ -429,7 +429,7 @@ int scan(compiler_context *context)
 			{
 				error(context->io, no_right_apost);
 				context->error_flag = 1;
-				context->tc = context->temp_tc;
+				context->sx->tc = context->temp_tc;
 			}
 			else
 			{
@@ -636,20 +636,20 @@ int scan(compiler_context *context)
 			{
 				int oldrepr = REPRTAB_LEN;
 				int r;
-				compiler_table_expand(&context->reprtab, 2);
+				compiler_table_expand(&context->sx->reprtab, 2);
 				REPRTAB_LEN += 2;
 				context->hash = 0;
 
 				do
 				{
 					context->hash += context->curchar;
-					compiler_table_expand(&context->reprtab, 1);
+					compiler_table_expand(&context->sx->reprtab, 1);
 					REPRTAB[REPRTAB_LEN++] = context->curchar;
 					nextch(context);
 				} while (letter(context) || digit(context));
 
 				context->hash &= 255;
-				compiler_table_expand(&context->reprtab, 1);
+				compiler_table_expand(&context->sx->reprtab, 1);
 				REPRTAB[REPRTAB_LEN++] = 0;
 				r = context->hashtab[context->hash];
 				if (r)
@@ -659,21 +659,21 @@ int scan(compiler_context *context)
 						if (equal(context, r, oldrepr))
 						{
 							REPRTAB_LEN = oldrepr;
-							compiler_table_ensure_allocated(&context->reprtab, r + 1);
+							compiler_table_ensure_allocated(&context->sx->reprtab, r + 1);
 							return (REPRTAB[r + 1] < 0) ? REPRTAB[r + 1] : (REPRTAB_POS = r, IDENT);
 						}
 						else
 						{
-							compiler_table_ensure_allocated(&context->reprtab, r);
+							compiler_table_ensure_allocated(&context->sx->reprtab, r);
 							r = REPRTAB[r];
 						}
 					} while (r);
 				}
 
-				compiler_table_ensure_allocated(&context->reprtab, oldrepr);
+				compiler_table_ensure_allocated(&context->sx->reprtab, oldrepr);
 				REPRTAB[oldrepr] = context->hashtab[context->hash];
 				REPRTAB_POS = context->hashtab[context->hash] = oldrepr;
-				compiler_table_expand(&context->reprtab, 1);
+				compiler_table_expand(&context->sx->reprtab, 1);
 				REPRTAB[REPRTAB_POS + 1] =
 					(context->keywordsnum) ? -((++context->keywordsnum - 2) / 4) : 1; // 0 - только MAIN, < 0 - ключевые
 																					  // слова, 1 - обычные иденты

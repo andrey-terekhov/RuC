@@ -38,7 +38,7 @@ size_t printident(const int *const reprtab, int pos, char *const buffer)
 {
 	size_t index = 0;
 
-	pos += 2; // ссылка на context->reprtab
+	pos += 2; // ссылка на reprtab
 	do
 	{
 		index += utf8_to_string(buffer, reprtab[pos++]);

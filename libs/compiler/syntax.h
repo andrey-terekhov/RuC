@@ -16,18 +16,25 @@
 
 #pragma once
 
-#include "context.h"
 #include "defs.h"
 
 
-#define REPRTAB		(sx->reprtab.table)
-#define REPRTAB_POS (sx->reprtab.pos)
-#define REPRTAB_LEN (sx->reprtab.len)
+#define COMPILER_TABLE_SIZE_DEFAULT	 (100)
+#define COMPILER_TABLE_INCREMENT_MIN (100)
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** A designated compiler table */
+typedef struct compiler_table
+{
+	int *table; /** Actual table */
+	int len;	/** Length of a useful part of table */
+	int pos;	/** A position in a table */
+	int size;	/** Total size of a table */
+} compiler_table;
 
 /** Global vars definition */
 typedef struct syntax
@@ -78,6 +85,34 @@ int syntax_init(syntax *const sx);
  *	@return	@c 0 on success, @c -1 on failure
  */
 int syntax_deinit(syntax *const sx);
+
+
+/**
+ *	Initialize compiler table
+ *
+ *	@param	table	Target compiler table
+ */
+void compiler_table_init(compiler_table *table);
+
+/**
+ *	Ensure that specific offset is allocated in a table
+ *
+ *	@param	table	Target compiler table
+ *	@param	pos		Target position
+ *
+ *	@return	Table size
+ */
+int compiler_table_ensure_allocated(compiler_table *table, int pos);
+
+/**
+ *	Expand compiler table
+ *
+ *	@param	table	Target compiler table
+ *	@param	len		Requested length
+ *
+ *	@return	New size
+ */
+int compiler_table_expand(compiler_table *table, int len);
 
 #ifdef __cplusplus
 } /* extern "C" */
