@@ -20,7 +20,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 else()
 	add_compile_options(-Werror=return-type -Wall -Wextra -g -std=c11)
-	
+
 	if(NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
 		add_compile_options(-posix)
 		add_definitions(-D_POSIX_C_SOURCE=200112L)
