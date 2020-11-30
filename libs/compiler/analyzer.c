@@ -137,7 +137,7 @@ void init_modetab(analyzer *context)
 
 int analyze(universal_io *const io, syntax *const sx)
 {
-	if (io == NULL || sx == NULL)
+	if (!in_is_correct(io) || sx == NULL)
 	{
 		return -1;
 	}

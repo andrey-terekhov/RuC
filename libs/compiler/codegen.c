@@ -888,7 +888,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 
 int encode_to_vm(universal_io *const io, syntax *const sx)
 {
-	if (io == NULL || sx == NULL)
+	if (out_is_correct(io) || sx == NULL)
 	{
 		return -1;
 	}
