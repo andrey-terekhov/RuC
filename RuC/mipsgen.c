@@ -33,6 +33,7 @@ int mbox, breg, elselab;
 int manst, adispl, areg, idp;
 int labnum = 1, stringnum = 1, elselab, flagBC, identref, structdispl;
 int log_real = 2;
+int flag_jump_end_cycle = 0;
 // унарные операции LNOT, LOGNOT, -, ++, --, TIdenttoval(*), TIdenttoaddr(&)
 // LNOT nor rd, rs, d0    LOGNOT slti rt, rs, 1   - sub rd, d0, rt
 // *  lw rt, displ(rs) или сразу 0(areg)   & addi rt, areg, adispl или сразу areg
@@ -909,15 +910,23 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 else
                     // leftanst == AREG && anst == AREG
                     tocodeR(sub, t1, lopnd, ropnd);
-
-                    if (c == LLT)
-                        tocodeJC(mbox == BCF ? bgez : bltz, t1, "ELSE", elselab);
-                    else if (c == LGT)
-                        tocodeJC(mbox == BCF ? blez : bgtz, t1, "ELSE", elselab);
-                    else if (c == LLE)
-                        tocodeJC(mbox == BCF ? bgtz : blez, t1, "ELSE", elselab);
-                    else
-                        tocodeJC(mbox == BCF ? bltz : bgez, t1, "ELSE", elselab);
+                	
+                if (flag_jump_end_cycle == 0)
+                {
+					if (c == LLT)
+						tocodeJC(mbox == BCF ? bgez : bltz, t1, "ELSE", elselab);
+					else if (c == LGT)
+						tocodeJC(mbox == BCF ? blez : bgtz, t1, "ELSE", elselab);
+					else if (c == LLE)
+						tocodeJC(mbox == BCF ? bgtz : blez, t1, "ELSE", elselab);
+					else
+						tocodeJC(mbox == BCF ? bltz : bgez, t1, "ELSE", elselab);
+                }
+                else if (flag_jump_end_cycle == 1)
+                {
+					if (c == LLT)
+						tocodeJC(bltz, t1, "BEGLOOP", adcont);
+                }
                 flagBC = 0;
                 return;
                 
@@ -2222,7 +2231,9 @@ void MStmt_gen()
             	int old_tc = tc;
             	tc = condref;
                 mbox = BCF;
+                flag_jump_end_cycle = 1;
                 MExpr_gen();         // cond
+                flag_jump_end_cycle = 0;
                 tc = old_tc;
             }
         tocodeL("end", adbreak);
