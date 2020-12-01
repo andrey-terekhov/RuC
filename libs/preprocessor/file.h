@@ -1,5 +1,5 @@
 /*
- *	Copyright 2020 Andrey Terekhov, Victor Y. Fadeev, Dmitrii Davladov
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,35 +16,22 @@
 
 #pragma once
 
-#include <stdio.h>
-#include "uniio.h"
-#include "dll.h"
+#include "context_var.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- *	Universal scanf-like function
- *
- *	@param	io			Universal io structure
- *	@param	format		String format
- *
- *	@return	Return scanf-like value
- */
-EXPORTED int uni_scanf(universal_io *const io, const char *const format, ...)
-	__attribute__((format(scanf, 2, 3)))
-	__attribute__((nonnull(2)));
+void m_change_nextch_type(int type, int p, preprocess_context *context);
+void m_old_nextch_type(preprocess_context *context);
 
-/**
- *	Universal function for scanning UTF-8 characters
- *
- *	@param	io			Universal io structure
- *
- *	@return	UTF-8 character
- */
-EXPORTED char32_t uni_scan_char(universal_io *const io);
+int get_dipp(preprocess_context *context);
+int get_next_char(preprocess_context *context);
+
+void m_fprintf(int a, preprocess_context *context);
+void pred_fprintf(int a, preprocess_context *context);
+void m_nextch(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

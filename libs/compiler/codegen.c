@@ -810,7 +810,7 @@ void codegen(compiler_context *context)
 
 	if (context->wasmain == 0)
 	{
-		error(context, no_main_in_program);
+		error(&context->io, no_main_in_program);
 		return;
 	}
 	tocode(context, CALL1);

@@ -18,8 +18,10 @@
 #include "codes.h"
 #include "extdecl.h"
 #include "global.h"
+#include "uniio.h"
 #include "keywords.h"
 #include "scanner.h"
+#include "uniprinter.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -60,7 +62,7 @@ void read_keywords(compiler_context *context)
 
 	memcpy(keywords, keywords_txt, len + 1);
 
-	compiler_context_attach_io(context, keywords, IO_TYPE_INPUT, IO_SOURCE_MEM);
+	in_set_buffer(&context->io, keywords);
 
 	context->keywordsnum = 1;
 	getnext(context);
@@ -70,13 +72,13 @@ void read_keywords(compiler_context *context)
 		; // чтение ключевых слов
 	}
 
-	compiler_context_detach_io(context, IO_TYPE_INPUT);
+	in_clear(&context->io);
 }
 
 /** Вывод таблиц и дерева */
 void output_tables_and_tree(compiler_context *context, const char *path)
 {
-	compiler_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
+	out_set_file(&context->io, path);
 
 	getnext(context);
 	nextch(context);
@@ -85,16 +87,16 @@ void output_tables_and_tree(compiler_context *context, const char *path)
 	ext_decl(context); // генерация дерева
 
 	tablesandtree(context);
-	compiler_context_detach_io(context, IO_TYPE_OUTPUT);
+	out_clear(&context->io);
 }
 
 /** Генерация кодов */
 void output_codes(compiler_context *context, const char *path)
 {
-	compiler_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
+	out_set_file(&context->io, path);
 	codegen(context);
 	tablesandcode(context);
-	compiler_context_detach_io(context, IO_TYPE_OUTPUT);
+	out_clear(&context->io);
 }
 
 /** Вывод таблиц в файл */
@@ -102,42 +104,42 @@ void output_export(compiler_context *context, const char *path)
 {
 	int i;
 
-	compiler_context_attach_io(context, path, IO_TYPE_OUTPUT, IO_SOURCE_FILE);
-	printer_printf(&context->output_options, "#!/usr/bin/ruc-vm\n");
+	out_set_file(&context->io, path);
+	uni_printf(&context->io, "#!/usr/bin/ruc-vm\n");
 
-	printer_printf(&context->output_options, "%i %i %i %i %i %i %i\n", context->pc, context->funcnum, context->id,
+	uni_printf(&context->io, "%i %i %i %i %i %i %i\n", context->pc, context->funcnum, context->id,
 				   REPRTAB_LEN, context->md, context->maxdisplg, context->wasmain);
 
 	for (i = 0; i < context->pc; i++)
 	{
-		printer_printf(&context->output_options, "%i ", context->mem[i]);
+		uni_printf(&context->io, "%i ", context->mem[i]);
 	}
-	printer_printf(&context->output_options, "\n");
+	uni_printf(&context->io, "\n");
 
 	for (i = 0; i < context->funcnum; i++)
 	{
-		printer_printf(&context->output_options, "%i ", context->functions[i]);
+		uni_printf(&context->io, "%i ", context->functions[i]);
 	}
-	printer_printf(&context->output_options, "\n");
+	uni_printf(&context->io, "\n");
 
 	for (i = 0; i < context->id; i++)
 	{
-		printer_printf(&context->output_options, "%i ", context->identab[i]);
+		uni_printf(&context->io, "%i ", context->identab[i]);
 	}
-	printer_printf(&context->output_options, "\n");
+	uni_printf(&context->io, "\n");
 
 	for (i = 0; i < REPRTAB_LEN; i++)
 	{
-		printer_printf(&context->output_options, "%i ", REPRTAB[i]);
+		uni_printf(&context->io, "%i ", REPRTAB[i]);
 	}
 
 	for (i = 0; i < context->md; i++)
 	{
-		printer_printf(&context->output_options, "%i ", context->modetab[i]);
+		uni_printf(&context->io, "%i ", context->modetab[i]);
 	}
-	printer_printf(&context->output_options, "\n");
+	uni_printf(&context->io, "\n");
 
-	compiler_context_detach_io(context, IO_TYPE_OUTPUT);
+	out_clear(&context->io);
 
 	make_executable(path);
 }

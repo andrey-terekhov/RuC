@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2020 Andrey Terekhov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,28 +14,13 @@
  *	limitations under the License.
  */
 
+#pragma once
+
+
 #ifdef _MSC_VER
-	#pragma comment(linker, "/STACK:268435456")
-#endif
-
-#include "compiler.h"
-#include "workspace.h"
-
-
-const char *name = "../tests/executable/floatsign.c";
-// "../tests/mips/0test.c";
-
-
-int main(int argc, const char *argv[])
-{
-	//printf(""); // Not working without using printf
-
-	workspace ws = ws_parse_args(argc, argv);
-
-	if (argc < 2)
-	{
-		ws_add_file(&ws, name);
-	}
+	#define EXPORTED __declspec(dllexport)
 	
-	return compile_to_vm(&ws);
-}
+	#define __attribute__(x)
+#else
+	#define EXPORTED
+#endif

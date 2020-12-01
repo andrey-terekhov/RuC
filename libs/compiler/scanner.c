@@ -17,8 +17,10 @@
 #include "context.h"
 #include "errors.h"
 #include "global.h"
-#include "macro_global_struct.h"
+#include "logger.h"
+#include "uniprinter.h"
 #include "uniscanner.h"
+#include "utf8.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -28,7 +30,7 @@
 
 int getnext(compiler_context *context)
 {
-	int ret = scanner_getnext(&context->input_options);
+	int ret = uni_scan_char(&context->io);
 	context->nextchar = ret;
 	return ret;
 }
@@ -45,22 +47,22 @@ void onemore(compiler_context *context)
 	}
 }
 
-void endofline(compiler_context *context)
+/*void endofline(compiler_context *context)
 {
-	/*if (context->prep_flag == 1)
+	if (context->prep_flag == 1)
 	{
 		int j;
-		printer_printf(&context->output_options, "line %i) ", context->line - 1);
+		uni_printf(&context->io, "line %i) ", context->line - 1);
 		for (j = context->lines[context->line - 1]; j < context->lines[context->line]; j++)
 		{
 			if (context->source[j] != EOF)
 			{
-				printer_printchar(&context->output_options, context->source[j]);
+				uni_print_char(&context->io, context->source[j]);
 			}
 		}
-	}*/
+	}
 	// fflush(stdout);
-}
+}*/
 
 void endnl(compiler_context *context)
 {
@@ -85,7 +87,7 @@ void nextch(compiler_context *context)
 	{
 		onemore(context);
 		endnl(context);
-		// printer_printf(&context->output_options, "\n");
+		// uni_printf(&context->io, "\n");
 		return;
 	}
 	if (context->kw)
@@ -97,6 +99,22 @@ void nextch(compiler_context *context)
 		return;
 	}
 
+	if (context->curchar == '/' && context->nextchar == '/')
+	{
+		do
+		{
+			onemore(context);
+			if (context->curchar == EOF)
+			{
+				endnl(context);
+				uni_printf(&context->io, "\n");
+				return;
+			}
+		} while (context->curchar != '\n');
+		endnl(context);
+		return;
+	}
+	
 	if (context->kw && context->curchar == '\n')
 	{
 		context->temp_tc = context->tc;
@@ -125,8 +143,8 @@ void next_string_elem(compiler_context *context)
 		}
 		else if (context->curchar != '\'' && context->curchar != '\\' && context->curchar != '\"')
 		{
-			error(context, bad_escape_sym);
-			exit(2);
+			error(&context->io, bad_escape_sym);
+			exit(1);
 		}
 		else
 		{
@@ -140,7 +158,7 @@ int letter(compiler_context *context)
 {
 	return (context->curchar >= 'A' && context->curchar <= 'Z') ||
 		   (context->curchar >= 'a' && context->curchar <= 'z') || context->curchar == '_' ||
-		   (context->curchar >= 0x410 /*А */ && context->curchar <= 0x44F /*'я'*/);
+		   utf8_is_russian(context->curchar);
 }
 
 int digit(compiler_context *context)
@@ -169,72 +187,6 @@ int equal(compiler_context *context, int i, int j)
 	return 0;
 }
 
-void marcer_update(compiler_context *context)
-{
-	data_files *files;
-
-	nextch(context);
-
-	if (context->curchar == '1')
-	{
-		nextch(context);
-
-		int c = context->curchar - '0';
-		nextch(context);
-
-		while (digit(context))
-		{
-			c = c * 10 + context->curchar - '0';
-			nextch(context);
-		}
-
-
-		if (c == 0)
-		{
-			context->c_flag++;
-		}
-
-		if (context->c_flag == 1)
-		{
-			files = &context->cfs;
-		}
-		else
-		{
-			files = &context->hfs;
-		}
-
-		files->cur = c;
-		if (files->cur != -1)
-		{
-			(files->files[files->cur]).line = context->line;
-		}
-	}
-	else
-	{
-		if (context->c_flag == 1)
-		{
-			files = &context->cfs;
-		}
-		else
-		{
-			files = &context->hfs;
-		}
-		nextch(context);
-		if ((files->files[files->cur]).pred != -1)
-		{
-			files->cur = (files->files[files->cur]).pred;
-		}
-		if (files->cur != -1)
-		{
-			context->line = (files->files[files->cur]).line;
-		}
-		else
-		{
-			context->line = 0;
-		}
-		nextch(context);
-	}
-}
 
 int scan(compiler_context *context)
 {
@@ -475,8 +427,9 @@ int scan(compiler_context *context)
 			next_string_elem(context);
 			if (context->curchar != '\'')
 			{
-				error(context, no_right_apost);
+				error(&context->io, no_right_apost);
 				context->error_flag = 1;
+				context->tc = context->temp_tc;
 			}
 			else
 			{
@@ -503,8 +456,8 @@ int scan(compiler_context *context)
 				}
 				if (n == MAXSTRINGL)
 				{
-					error(context, too_long_string);
-					exit(2);
+					error(&context->io, too_long_string);
+					exit(1);
 				}
 				nextch(context);
 				while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
@@ -644,8 +597,8 @@ int scan(compiler_context *context)
 				}
 				if (!digit(context))
 				{
-					error(context, must_be_digit_after_exp);
-					exit(2);
+					error(&context->io, must_be_digit_after_exp);
+					exit(1);
 				}
 				while (digit(context))
 				{
@@ -671,7 +624,7 @@ int scan(compiler_context *context)
 			{
 				if (flagtoolong)
 				{
-					warning(context, too_long_int);
+					warning(&context->io, too_long_int);
 				}
 				context->ansttype = LFLOAT;
 			}
@@ -680,11 +633,6 @@ int scan(compiler_context *context)
 		}
 
 		default:
-			if (context->curchar == '#' && (context->nextchar == '1' || context->nextchar == '2'))
-			{
-				marcer_update(context);
-				return scan(context);
-			}
 			if (letter(context) || context->curchar == '#')
 			{
 				int oldrepr = REPRTAB_LEN;
@@ -733,10 +681,14 @@ int scan(compiler_context *context)
 				return IDENT;
 			}
 			else
-			{
-				printer_printf(&context->err_options, "плохой символ %c %i\n", context->curchar, context->curchar);
-				context->error_flag = 1;
-				return 0;
+			{				
+				char msg[256];
+				size_t index = sprintf(msg, "плохой символ ");
+				index += utf8_to_string(&msg[index], context->curchar);
+				index += sprintf(&msg[index], " %i", context->curchar);
+
+				error_msg(&context->io, msg);
+				exit(1);
 			}
 	}
 }
