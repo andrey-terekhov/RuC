@@ -305,7 +305,7 @@ void open_files(preprocess_context *context)
 	size_t num = context->fs.ws->files_num;
 	const char *temp = ws_get_file(context->fs.ws, i++);
 
-	for(int j = 0; j < num; j++)
+	for(size_t j = 0; j < num; j++)
 	{
 		if (find_file(context, temp))
 		{
