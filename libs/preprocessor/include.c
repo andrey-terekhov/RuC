@@ -22,6 +22,7 @@
 #include "preprocessor.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
+#include "workspace.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -61,11 +62,11 @@ void gen_way(char *full, const char *path, const char *file, int is_slash)
 	// printf("4full = %s, path = %s file = %s \n", full, path, file);
 }
 
-int open_include_faile(preprocess_context *context, char *temp_way, file *fl, int flag)
+int open_include_faile(preprocess_context *context, char *temp_way, const char* f_name)
 {
 	char file_way[STRIGSIZE + 1024];
 
-	gen_way(file_way, fl->name, temp_way, 1);
+	gen_way(file_way, f_name, temp_way, 1);
 
 	if (!find_file(context, file_way))
 	{
@@ -76,9 +77,13 @@ int open_include_faile(preprocess_context *context, char *temp_way, file *fl, in
 
 	if (f == NULL)
 	{
-		for (int i = 0; i < context->iwp; i++)
+		int i = 0;
+		const char *temp_dir = ws_get_dir(context->fs.ws, i++);
+		while (temp_dir != NULL)
 		{
-			gen_way(file_way, context->include_ways[i], temp_way, 0);
+		
+			gen_way(file_way, temp_dir, temp_way, 0);
+			temp_dir = ws_get_dir(context->fs.ws, i++);
 
 			f = fopen(file_way, "r");
 
@@ -95,7 +100,7 @@ int open_include_faile(preprocess_context *context, char *temp_way, file *fl, in
 		m_error(1, context);
 	}
 
-	if (flag == 0 || context->include_type > 0)
+	if (context->include_type != 0)
 	{
 		context->current_file = f;
 	}
@@ -104,7 +109,7 @@ int open_include_faile(preprocess_context *context, char *temp_way, file *fl, in
 		fclose(f);
 	}
 	
-	con_files_add_include(&context->fs, file_way);
+	con_files_add_include(&context->fs, file_way, context->include_type);
 	return 0;
 }
 
@@ -163,14 +168,16 @@ void open_file(preprocess_context *context)
 
 	int old_cur = context->fs.cur;
 	FILE* file_old = context->current_file;
+
 	if ((h && context->include_type != 2) || (!h && context->include_type != 0))
 	{
-		int k = open_include_faile(context, temp_way, &context->fs.files[context->fs.cur], h);
+		int k = open_include_faile(context, temp_way, ws_get_file(context->fs.ws, context->fs.cur));
 		if (k == -2)
 		{
 			return;
 		}
 	}
+
 	if (context->include_type == 1 || (context->include_type == 2 && !h))
 	{
 		

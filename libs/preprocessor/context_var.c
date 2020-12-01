@@ -17,6 +17,7 @@
 #include "context_var.h"
 #include "constants.h"
 #include "commenter.h"
+#include "workspace.h"
 #include "file.h"
 #include "preprocessor_error.h"
 #include "logger.h"
@@ -25,12 +26,21 @@
 #include <string.h>
 
 // Определение глобальных переменных
-void preprocess_context_init(preprocess_context *context, int num)
+void con_files_init(files *fs, workspace *const ws)
+{
+	fs->p = 0;
+	fs->cur = -1;
+	fs->end_h = 0;
+	fs->begin_f = 0;
+	fs->ws = ws;
+}
+
+void preprocess_context_init(preprocess_context *context, workspace *const ws)
 {
 	//printer_init(&context->output_options);
 	context->io = io_create();
 
-	con_files_init(&context->fs, num);
+	con_files_init(&context->fs, ws);
 
 	context->include_type = 0;
 	context->rp = 1;
@@ -62,109 +72,39 @@ void preprocess_context_init(preprocess_context *context, int num)
 	}
 }
 
-
-void con_file_add(file *f, const char *name, int cnost_name)
+void con_files_add_include(files* fs, char *name, int c_flag)
 {
-	f->const_name = cnost_name;
-	if(cnost_name)
+	fs->p++;
+	
+	if(c_flag == 0)
 	{
-		f->name = name;//Ws
+		fs->end_h++;
 	}
 	else
 	{
-		f->name = malloc((strlen(name) + 1) * sizeof(char));
-		strcpy(f->name, name);
+		fs->cur = fs->p;
 	}
 	
-}
-
-void con_file_free(file *f )
-{
-	if (!f->const_name)
-	{
-		free(f->name);
-	}
-}
-
-void con_files_init(files *fs, int num)
-{
-	fs->size = num*3;
-	fs->files = malloc(fs->size * sizeof(file));
-
-	fs->p_s = 0;
-	fs->p = num + 1;
-
-	fs->main_faile = -1;
-	fs->cur = -1;
-
-	fs->begin_f = num + 1;
-}
-
-void con_files_add_parametrs(files* fs, const char *name)
-{
-	con_file_add(&fs->files[fs->p_s++], name, 1);
-}
-
-void con_files_add_include(files* fs, const char *name)
-{
-	/*if (s->p == s->size)
-	{
-		s->size *= 2;
-		data_file *reallocated = realloc(s->files, s->size * sizeof(data_file));
-		s->files = reallocated;
-	}*/
-
-	fs->cur = fs->p;
-	con_file_add(&fs->files[fs->p++], name, 0);
-}
-
-void con_files_free(files *fs)
-{
-	for (int i = fs->begin_f; i < fs->p; i++)
-	{
-		if(&fs->files[i] != NULL && fs->files[i].name != NULL)
-		{
-			con_file_free(&fs->files[i]);
-		}
-	}
-	free(fs->files);
+	ws_add_file(fs->ws, name);
 }
 
 void con_file_open_cur(files* fs, preprocess_context *context)
 {
-	context->current_file = fopen(fs->files[fs->cur].name, "r");
+	context->current_file = fopen(ws_get_file(fs->ws, fs->cur), "r");
 
 	if (context->current_file == NULL)
 	{
-		log_system_error(fs->files[fs->cur].name, "файл не найден");
+		log_system_error(ws_get_file(fs->ws, fs->cur), "файл не найден");
 		m_error(just_kill_yourself, context);
 	}
 }
 
-int con_file_open_main(files* fs, preprocess_context *context)
-{	
-	
-	if(fs->main_faile == -1)
-	{
-		return 0;
-	}
-
-	fs->cur = fs->main_faile;
-
-	con_file_open_cur(&context->fs, context);
-
-	return 1;
-}
 
 int con_file_open_sorse(files* fs, preprocess_context *context)
 {
 	fs->cur = 0;
-	if(fs->cur == fs->main_faile)
-	{
-		fs->cur++;
-	}
 
-	if(fs->cur == fs->p_s)
+	if(fs->cur == fs->begin_f)
 	{
 		return 0;
 	}
@@ -184,7 +124,6 @@ int con_file_open_hedrs(files* fs, preprocess_context *context)
 	{
 		return 0;
 	}
-	
 
 	con_file_open_cur(&context->fs, context);
 
@@ -193,21 +132,12 @@ int con_file_open_hedrs(files* fs, preprocess_context *context)
 
 int con_file_open_next(files* fs, preprocess_context *context, int h_flag)
 {
-	if((h_flag && (fs->cur >= fs->begin_f && fs->cur < fs->end_h )) || 
-		(!h_flag && fs->cur < fs->begin_f && fs->cur < fs->p_s - 1))
+	if((h_flag && (fs->cur >= fs->begin_f && fs->cur < fs->end_h - 1)) || 
+		(!h_flag && fs->cur < fs->begin_f - 1))
 	{
 		fs->cur++;
-		if(!h_flag && fs->cur == fs->main_faile)
-		{
-			fs->cur++;
-		}
 	}
 	else
-	{
-		return 0;
-	}
-	
-	if((h_flag && fs->cur == fs->end_h) || (!h_flag && fs->cur == fs->p_s))
 	{
 		return 0;
 	}
@@ -217,14 +147,11 @@ int con_file_open_next(files* fs, preprocess_context *context, int h_flag)
 	return 1;
 }
 
-void con_file_it_is_main(files *fs)
+void con_file_it_is_end_h(files *fs, int i)
 {
-	fs->main_faile = fs->cur;
-}
-
-void con_file_it_is_end_h(files *fs)
-{
-	fs->end_h = fs->p;
+	fs->end_h += i;
+	fs->p += i;
+	fs->begin_f = i;
 }
 
 void con_file_close_cur(preprocess_context *context)
@@ -236,7 +163,7 @@ void con_file_close_cur(preprocess_context *context)
 
 void con_file_print_coment(files *fs, preprocess_context *context)
 {
-	comment com = cmt_create(fs->files[fs->cur].name, context->line-1);
+	comment com = cmt_create(ws_get_file(fs->ws, fs->cur), context->line-1);
 	char *buf = malloc(100 * sizeof(char *));
 	size_t size = cmt_to_string(&com, buf);
 	for(size_t i = 0; i < size; i++)
