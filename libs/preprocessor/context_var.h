@@ -94,7 +94,7 @@ typedef struct preprocess_context
 	int oldnextp[DIP];
 	int dipp;
 
-	size_t line;
+	int line;
 
 	int temp_output;
 	files fs;

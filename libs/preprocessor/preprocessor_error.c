@@ -25,7 +25,7 @@
 #include <string.h>
 
 
-void printf_character(int wchar)
+/*void printf_character(int wchar)
 {
 	if (wchar < 0)
 	{
@@ -38,12 +38,12 @@ void printf_character(int wchar)
 	}
 	else
 	{
-		unsigned char first = (wchar >> 6) | /*0b11000000*/ 0xC0;
-		unsigned char second = (wchar & /*0b111111*/ 0x3F) | /*0b10000000*/ 0x80;
+		unsigned char first = (wchar >> 6) | /*0b11000000*//* 0xC0;
+		//unsigned char second = (wchar & /*0b111111*//*  0x3F) | /*0b10000000*//*  0x80;
 
 		printf("%c%c", first, second);
 	}
-}
+}*/
 
 void errors_set(int ernum, const char *const tag)
 {
@@ -130,8 +130,9 @@ void errors_set(int ernum, const char *const tag)
 	}
 }
 
-void m_error(int ernum, preprocess_context *context)
+void m_error(int ernum, preprocess_context *context)//стандартизация ошибок
 {
+	(void)context;
 	/*if ()
 	{
 		int i = 0;

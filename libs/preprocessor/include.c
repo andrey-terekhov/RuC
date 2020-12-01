@@ -39,7 +39,7 @@ void gen_way(char *full, const char *path, const char *file, int is_slash)
 		char *slash = strrchr(path, '/');
 		if (slash != NULL)
 		{
-			size = slash - path;
+			size = (int)(slash - path);
 			memcpy(full, path, size * sizeof(char));
 			full[size++] = '/';
 		}
@@ -50,12 +50,12 @@ void gen_way(char *full, const char *path, const char *file, int is_slash)
 	}
 	else
 	{
-		size = strlen(path);
+		size = (int)strlen(path);
 		memcpy(full, path, size * sizeof(char));
 		full[size++] = '/';
 	}
 
-	int file_size = strlen(file);
+	int file_size = (int)strlen(file);
 	memcpy(&full[size], file, file_size * sizeof(char));
 	full[size + file_size] = '\0';
 	// printf("4full = %s, path = %s file = %s \n", full, path, file);
@@ -150,7 +150,7 @@ void open_file(preprocess_context *context)
 		{
 			m_error(23, context);
 		}
-		temp_way[i++] = context->curchar;
+		temp_way[i++] = (char)context->curchar;
 		m_nextch(context);
 	}
 	temp_way[i] = '\0';

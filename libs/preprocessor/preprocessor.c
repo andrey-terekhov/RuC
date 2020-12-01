@@ -336,7 +336,7 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 
 	for (int i = 0; i < number; i++)
 	{
-		int l = strlen(codes[i]);
+		int l = (int)strlen(codes[i]);
 		if ((codes[i][0] == '-' && codes[i][1] == 'I') || codes[i][l - 1] == 'h')
 		{
 			continue;
@@ -408,7 +408,7 @@ char *preprocess_file(int argc, const char *argv[])
 	preprocess_h_file(&context);
 	preprocess_c_file(&context);
 
-	free(context.include_ways);
+	free(context.include_ways);//Ws
 	con_files_free(&context.fs);
 
 	char *macro_processed = out_extract_buffer(&context.io);
@@ -492,7 +492,7 @@ char *macro(workspace *const ws)
 	return result;
 }
 
-int macro_to_file(const workspace *const ws, const char *const path)
+int macro_to_file(workspace *const ws, const char *const path)
 {
 	char *buffer = macro(ws);
 	if (buffer == NULL)

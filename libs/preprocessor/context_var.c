@@ -68,7 +68,7 @@ void con_file_add(file *f, const char *name, int cnost_name)
 	f->const_name = cnost_name;
 	if(cnost_name)
 	{
-		f->name = name;
+		f->name = name;//Ws
 	}
 	else
 	{
