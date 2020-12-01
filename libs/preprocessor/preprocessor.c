@@ -297,8 +297,8 @@ void add_c_file(preprocess_context *context)
 				if (context->cur == SH_INCLUDE)
 				{
 					include_relis(context);
-					break;
 				}
+				break;
 			}
 			default:
 			{

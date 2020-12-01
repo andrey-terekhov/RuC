@@ -171,7 +171,7 @@ void open_file(preprocess_context *context)
 			return;
 		}
 	}
-	if (context->include_type == 1 || context->include_type == 2 && !h)
+	if (context->include_type == 1 || (context->include_type == 2 && !h))
 	{
 		
 		if (!h && context->nextch_type != FILETYPE)

@@ -38,8 +38,8 @@
 	}
 	else
 	{
-		unsigned char first = (wchar >> 6) | /*0b11000000*//* 0xC0;
-		//unsigned char second = (wchar & /*0b111111*//*  0x3F) | /*0b10000000*//*  0x80;
+		unsigned char first = (wchar >> 6) | 0xC0;
+		unsigned char second = (wchar & 0x3F) | 0x80;
 
 		printf("%c%c", first, second);
 	}

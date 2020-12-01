@@ -236,6 +236,11 @@ double relis_opiration(double x, double y, int r, int int_flag)
 			{
 				return (int)x % (int)y;
 			}
+			else
+			{
+				return 0;
+			}
+			
 		default:
 			return 0;
 	}

@@ -42,7 +42,7 @@ void preprocess_context_init(preprocess_context *context, int num)
 	context->lsp = 0;
 	context->csp = 0;
 	context->ifsp = 0;
-	context->wsp;
+	context->wsp = 0;
 	context->mfirstrp = -1;
 	context->prep_flag = 0;
 	context->mclp = 1;
@@ -194,7 +194,7 @@ int con_file_open_hedrs(files* fs, preprocess_context *context)
 int con_file_open_next(files* fs, preprocess_context *context, int h_flag)
 {
 	if((h_flag && (fs->cur >= fs->begin_f && fs->cur < fs->end_h )) || 
-		!h_flag && fs->cur < fs->begin_f && fs->cur < fs->p_s - 1)
+		(!h_flag && fs->cur < fs->begin_f && fs->cur < fs->p_s - 1))
 	{
 		fs->cur++;
 		if(!h_flag && fs->cur == fs->main_faile)
