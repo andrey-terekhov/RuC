@@ -31,7 +31,7 @@ extern "C" {
  *
  *	@return	Status code
  */
-EXPORTED int compile_to_vm(const workspace *const ws);
+EXPORTED int compile_to_vm(workspace *const ws);
 
 
 /**
