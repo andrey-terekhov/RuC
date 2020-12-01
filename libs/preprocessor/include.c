@@ -23,6 +23,7 @@
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
 #include "workspace.h"
+#include "uniio.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -73,9 +74,10 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 		return -2;
 	}
 
-	FILE *f = fopen(file_way, "r");
+	universal_io temp_io = io_create();
+	int res = in_set_file(&temp_io, file_way);
 
-	if (f == NULL)
+	if (res == -1)
 	{
 		int i = 0;
 		const char *temp_dir = ws_get_dir(context->fs.ws, i++);
@@ -83,18 +85,18 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 		{
 		
 			gen_way(file_way, temp_dir, temp_way, 0);
-			temp_dir = ws_get_dir(context->fs.ws, i++);
 
-			f = fopen(file_way, "r");
+			res = in_set_file(&temp_io, file_way);
 
-			if (f != NULL)
+			if (res == 0)
 			{
 				break;
 			}
+			temp_dir = ws_get_dir(context->fs.ws, i++);
 		}
 	}
 
-	if (f == NULL)
+	if (res == -1)
 	{
 		log_system_error(temp_way, "файл не найден");
 		m_error(1, context);
@@ -102,12 +104,11 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 
 	if (context->include_type != 0)
 	{
-		context->current_file = f;
+		in_set_file(&context->input_io , file_way);
 	}
-	else
-	{
-		fclose(f);
-	}
+
+	in_close_file(&temp_io);
+
 	con_files_add_include(&context->fs, file_way, context->include_type);
 	return 0;
 }
@@ -166,7 +167,7 @@ void open_file(preprocess_context *context)
 	}
 
 	int old_cur = context->fs.cur;
-	FILE* file_old = context->current_file;
+	universal_io old_io = context->input_io;
 
 	if ((h && context->include_type != 2) || (!h && context->include_type != 0))
 	{
@@ -193,7 +194,7 @@ void open_file(preprocess_context *context)
 	}
 
 	context->fs.cur = old_cur;
-	context->current_file = file_old;
+	context->input_io = old_io;
 }
 
 

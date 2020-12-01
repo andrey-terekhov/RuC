@@ -305,7 +305,7 @@ void open_files(preprocess_context *context)
 	size_t num = context->fs.ws->files_num;
 	const char *temp = ws_get_file(context->fs.ws, i++);
 
-	for(int j = 0; j < num; j++)
+	for(size_t j = 0; j < num; j++)
 	{
 		if (find_file(context, temp))
 		{
@@ -360,7 +360,7 @@ char *macro(workspace *const ws)
 {
 	preprocess_context context;
 	preprocess_context_init(&context, ws);
-	out_set_buffer(&context.io, 1024);
+	out_set_buffer(&context.output_io, 1024);
 
 	add_keywods(&context);
 
@@ -369,7 +369,7 @@ char *macro(workspace *const ws)
 	preprocess_h_file(&context);
 	preprocess_c_file(&context);
 
-	char *macro_processed = out_extract_buffer(&context.io);
+	char *macro_processed = out_extract_buffer(&context.output_io);
 
 	
 #if MACRODEBUG

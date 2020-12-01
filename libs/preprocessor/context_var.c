@@ -38,7 +38,8 @@ void con_files_init(files *fs, workspace *const ws)
 void preprocess_context_init(preprocess_context *context, workspace *const ws)
 {
 	//printer_init(&context->output_options);
-	context->io = io_create();
+	context->output_io = io_create();
+	context->input_io = io_create();
 
 	con_files_init(&context->fs, ws);
 
@@ -90,9 +91,9 @@ void con_files_add_include(files* fs, char *name, int c_flag)
 
 void con_file_open_cur(files* fs, preprocess_context *context)
 {
-	context->current_file = fopen(ws_get_file(fs->ws, fs->cur), "r");
+	int res = in_set_file(&context->input_io, ws_get_file(fs->ws, fs->cur));
 
-	if (context->current_file == NULL)
+	if (res == -1)
 	{
 		log_system_error(ws_get_file(fs->ws, fs->cur), "файл не найден");
 		m_error(just_kill_yourself, context);
@@ -156,8 +157,7 @@ void con_file_it_is_end_h(files *fs, int i)
 
 void con_file_close_cur(preprocess_context *context)
 {
-	fclose(context->current_file);
-	context->current_file = NULL;
+	in_close_file(&context->input_io);
 	context->line = 1;
 }
 

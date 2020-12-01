@@ -93,13 +93,12 @@ typedef struct preprocess_context
 	files fs;
 	int h_flag;
 
-	FILE *current_file;
 	int *current_string;
 	int current_p;
 
 	int iwp;
-
-	universal_io io;
+	universal_io input_io;
+	universal_io output_io;
 } preprocess_context;
 
 void preprocess_context_init(preprocess_context *context, workspace *const ws);
