@@ -108,7 +108,6 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 	{
 		fclose(f);
 	}
-	
 	con_files_add_include(&context->fs, file_way, context->include_type);
 	return 0;
 }

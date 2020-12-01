@@ -68,7 +68,7 @@
 
 // Коды ошибок
 
-#define just_kill_yourself					1
+#define just_kill_yourself					365
 #define after_ident_must_be_space1			366
 #define ident_begins_with_s					367
 #define must_be_endif						368

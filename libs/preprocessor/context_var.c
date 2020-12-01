@@ -31,7 +31,7 @@ void con_files_init(files *fs, workspace *const ws)
 	fs->p = 0;
 	fs->cur = -1;
 	fs->end_h = 0;
-	fs->begin_f = 0;
+	fs->begin_f = -1;
 	fs->ws = ws;
 }
 
@@ -133,7 +133,7 @@ int con_file_open_hedrs(files* fs, preprocess_context *context)
 int con_file_open_next(files* fs, preprocess_context *context, int h_flag)
 {
 	if((h_flag && (fs->cur >= fs->begin_f && fs->cur < fs->end_h - 1)) || 
-		(!h_flag && fs->cur < fs->begin_f - 1))
+		(!h_flag && (fs->begin_f < 0 || fs->cur < fs->begin_f - 1)))
 	{
 		fs->cur++;
 	}

@@ -302,9 +302,10 @@ void add_c_file(preprocess_context *context)
 void open_files(preprocess_context *context)
 {
 	int i = 0;
+	int num = context->fs.ws->files_num;
 	const char *temp = ws_get_file(context->fs.ws, i++);
-	
-	while (temp != NULL)
+
+	for(int j = 0; j < num; j++)
 	{
 		if (find_file(context, temp))
 		{
@@ -321,7 +322,7 @@ void open_files(preprocess_context *context)
 		temp = ws_get_file(context->fs.ws, i++);
 	}
 
-	con_file_it_is_end_h(&context->fs, i);
+	con_file_it_is_end_h(&context->fs, i-1);
 }
 
 void preprocess_h_file(preprocess_context *context)
