@@ -18,18 +18,20 @@
 
 #define MAXTAB		50000
 #define LONGSTR		10000
-#define STRIGSIZE	256
+#define STRIGSIZE	250
 #define HASH		256
 #define HASH_M		255
 #define DIP			10
 
 #define CANGEEND	  -6
 #define MACROEND	  -5
-#define MACROUNDEF	  -3
 #define MACROCANGE	  -4
 #define WHILEBEGIN	  -2
-#define MACROFUNCTION 0
+
+
 #define MACRODEF	  1
+#define MACROUNDEF	  -3
+#define MACROFUNCTION 0
 
 #define MTYPE			  2
 #define CTYPE			  3

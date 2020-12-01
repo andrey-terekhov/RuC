@@ -15,18 +15,14 @@
  */
 
 #include "preprocessor.h"
-#include "calculator.h"
 #include "constants.h"
 #include "context_var.h"
-#include "define.h"
 #include "file.h"
-#include "if.h"
 #include "include.h"
 #include "uniio.h"
 #include "uniprinter.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
-#include "while.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -99,165 +95,6 @@ void add_keywods(preprocess_context *context)
 	to_reprtab_full("#INCLUDE", "#include", "#ДОБАВИТЬ", "#добавить", SH_INCLUDE, context);
 }
 
-void preprocess_words(preprocess_context *context)
-{
-	/*if (context->curchar != '(')
-	{
-		m_nextch(context);
-	}*/
-	space_skip(context);
-	switch (context->cur)
-	{
-		case SH_INCLUDE:
-		{
-			include_relis(context);
-			return;
-		}
-		case SH_DEFINE:
-		case SH_MACRO:
-		{
-			define_relis(context);
-			return;
-		}
-		case SH_UNDEF:
-		{
-			char32_t str[STRIGSIZE];
-			collect_mident(context, str);
-			int k = con_repr_find(&context->repr, str);
-			if(k)
-			{
-				context->macrotext[k]= MACROUNDEF;
-			}
-			space_end_line(context);
-			return;
-		}
-		case SH_IF:
-		case SH_IFDEF:
-		case SH_IFNDEF:
-		{
-			if_relis(context);
-			return;
-		}
-		case SH_SET:
-		{
-			set_relis(context);
-			return;
-		}
-		case SH_ELSE:
-		case SH_ELIF:
-		case SH_ENDIF:
-			return;
-		case SH_EVAL:
-		{
-			if (context->curchar == '(')
-			{
-				calculator(0, context);
-			}
-			else
-			{
-				m_error(after_eval_must_be_ckob, context);
-			}
-
-			m_change_nextch_type(CTYPE, 0, context);
-			return;
-		}
-		case SH_WHILE:
-		{
-			context->wsp = 0;
-			context->ifsp = 0;
-			while_collect(context);
-			m_change_nextch_type(WHILETYPE, 0, context);
-			m_nextch(context);
-			m_nextch(context);
-
-			context->nextp = 0;
-			while_relis(context);
-
-			return;
-		}
-		default:
-		{
-			return;//error
-		}
-	}
-}
-
-void preprocess_scan(preprocess_context *context)
-{
-	int i;
-
-	switch (context->curchar)
-	{
-		case EOF:
-			return;
-
-		case '#':
-		{
-			char32_t str[STRIGSIZE];
-			collect_mident(context, str);
-			context->cur = con_repr_find(&context->repr, str);
-
-			if (context->cur != 0)
-			{
-				context->prep_flag = 1;
-				preprocess_words(context);
-				if(context->curchar != '#')
-				{
-					con_file_print_coment(&context->fs, context);
-				}
-			}
-			else
-			{
-				// m_nextch(context);
-				int i = 1; 
-				while (str[i] != '\0')
-				{
-					m_fprintf(str[i++], context);
-				}
-			}
-
-			return;
-		}
-		case '\'':
-		case '\"':
-		{
-			space_skip_str(context);
-			return;
-		}
-		case '@':
-		{
-			m_nextch(context);
-			return;
-		}
-		default:
-		{
-			if (is_letter(context) != 0 && context->prep_flag == 1)
-			{
-				char32_t str[STRIGSIZE];
-				collect_mident(context, str);
-				int r = con_repr_find(&context->repr, str);
-				if (r != 0 && r <= MAXTAB)
-				{
-					
-					define_get_from_macrotext(r, context);
-				}
-				else
-				{
-					int i = 1; 
-					while (str[i] != '\0')
-					{
-						m_fprintf(str[i++], context);
-					}
-				}
-			}
-			else
-			{
-				m_fprintf(context->curchar, context);
-				m_nextch(context);
-			}
-		}
-	}
-}
 
 void add_c_file_siple(preprocess_context *context)
 {

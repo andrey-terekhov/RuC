@@ -15,7 +15,7 @@
  */
 
 #include "calculator.h"
-#include "define.h"
+#include "macros_get.h"
 #include "file.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"

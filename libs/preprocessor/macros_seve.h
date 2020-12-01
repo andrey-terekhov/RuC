@@ -23,8 +23,8 @@
 extern "C" {
 #endif
 
-void while_collect(preprocess_context *context);
-void while_relis(preprocess_context *context);
+void define_relis(preprocess_context *context);
+void set_relis(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

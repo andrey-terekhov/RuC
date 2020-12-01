@@ -26,6 +26,41 @@
 extern "C" {
 #endif
 
+
+typedef struct local_io
+{
+	char32_t str[STRIGSIZE * 5];
+	size_t p;
+} local_io;
+
+typedef struct local_big_io
+{
+	char32_t str[MAXTAB];
+	size_t p;
+} local_big_io;
+
+typedef struct switch_io
+{
+	local_io fchange;
+	local_io localstack;//?
+	local_io cstring;
+	local_io ifstring;
+	local_io wstring;
+
+	local_big_io marotext;
+
+	universal_io *file_io;
+
+	int cur_type;
+	local_io *cur_io;
+
+	int old_curchar;
+	int old_nextchar;
+	int old_nextch_type[DIP];
+	int old_symbol_number[DIP];
+	int deep_p;
+} switch_io;
+
 typedef struct reprtab
 {
 	char32_t tab[MAXTAB];
@@ -76,10 +111,6 @@ typedef struct preprocess_context
 	int wstring[STRIGSIZE * 5];
 	int wsp;
 
-	int mfirstrp;
-
-	int mclp;
-
 	int prep_flag;
 
 	int curchar, nextchar;
@@ -87,7 +118,7 @@ typedef struct preprocess_context
 	int cur;
 
 	int nextp;
-	int main_file;
+	int checkif;
 
 	int oldcurchar[DIP];
 	int oldnextchar[DIP];

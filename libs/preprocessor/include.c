@@ -15,11 +15,11 @@
  */
 
 #include "include.h"
+#include "parser.h"
 #include "constants.h"
 #include "context_var.h"
 #include "file.h"
 #include "logger.h"
-#include "preprocessor.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
 #include <limits.h>

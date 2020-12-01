@@ -53,18 +53,16 @@ void con_init(preprocess_context *context)
 	context->csp = 0;
 	context->ifsp = 0;
 	context->wsp;
-	context->mfirstrp = -1;
 	context->prep_flag = 0;
-	context->mclp = 1;
 	context->nextch_type = FILETYPE;
 	context->nextp = 0;
-	context->main_file = -1;
 	context->dipp = 0;
 	context->line = 1;
 	context->temp_output = 0;
 	context->iwp = 0;
 	context->h_flag = 0;
 	context->current_p = 0;
+	context->checkif = 0;
 }
 
 int con_repr_find_loc(reprtab* repr, char32_t* s, int hash)
@@ -379,4 +377,12 @@ void con_file_print_coment(files *fs, preprocess_context *context)
 	}
 	free(buf);
 }
+
+void con_switch_io_add(switch_io switcher, int type_io, char c) ;
+void con_switch_io_clean(switch_io switcher, int type_io);
+void con_switch_io_cange(switch_io switcher, int type_io, size_t p);
+void con_switch_io_back(switch_io switcher);
+void con_switch_io_nextch(switch_io switcher);
+//con_switch_get_curchar(switch_io switcher): char
+//con_switch_get_nextchar(switch_io switcher): char
 
