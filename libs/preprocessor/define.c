@@ -303,7 +303,7 @@ void function_add_to_macrotext(preprocess_context *context)
 	}
 	space_skip(context);
 
-	while (context->curchar != '\n' || flag_macro && context->curchar != EOF)
+	while ((context->curchar != '\n' || flag_macro) && context->curchar != EOF)
 	{
 		if (is_letter(context) && !empty)
 		{

@@ -1,3 +1,3 @@
 
-#define Q 10
+#define P 10
 
