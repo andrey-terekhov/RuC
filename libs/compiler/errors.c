@@ -590,6 +590,7 @@ void output(const universal_io *const io, const char *const msg, const logger sy
 	{
 		in_get_path(io, tag);
 		system_func(tag, msg);
+		return;
 	}
 
 	size_t position = in_get_position(io) - 1;
