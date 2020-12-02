@@ -35,8 +35,13 @@
 #include <string.h>
 #include <wchar.h>
 
+
 #define H_FILE 1
 #define C_FILE 0
+
+
+const size_t SIZE_OUT_BUFFER = 1024;
+
 
 void to_reprtab(char str[], int num, preprocess_context *context)
 {
@@ -357,6 +362,22 @@ void preprocess_c_file(preprocess_context *context)
 }
 
 
+int macro_form_io(workspace *const ws, universal_io *const io)
+{
+	preprocess_context context;
+	preprocess_context_init(&context, ws, io);
+
+	add_keywods(&context);
+
+	context.mfirstrp = context.rp;
+	open_files(&context);
+	preprocess_h_file(&context);
+	preprocess_c_file(&context);
+
+	return 0;
+}
+
+
 /*
 	printf("cur = %d, %c; next = %d, %c;\n",context->curchar, context->curchar, context->nextchar, context->nextchar);
 
@@ -398,40 +419,35 @@ void preprocess_c_file(preprocess_context *context)
 
 char *macro(workspace *const ws)
 {
-	preprocess_context context;
-	preprocess_context_init(&context, ws);
-	out_set_buffer(&context.io, 1024);
+	universal_io io = io_create();
+	if (out_set_buffer(&io, SIZE_OUT_BUFFER))
+	{
+		return NULL;
+	}
 
-	add_keywods(&context);
+	int ret = macro_form_io(ws, &io);
+	if (ret)
+	{
+		io_erase(&io);
+		return NULL;
+	}
 
-	context.mfirstrp = context.rp;
-	open_files(&context);
-	preprocess_h_file(&context);
-	preprocess_c_file(&context);
-
-	return out_extract_buffer(&context.io);
+	in_clear(&io);
+	return out_extract_buffer(&io);
 }
 
 int macro_to_file(workspace *const ws, const char *const path)
 {
-	char *buffer = macro(ws);
-	if (buffer == NULL)
-	{
-		return -1;
-	}
-
 	universal_io io = io_create();
 	if (out_set_file(&io, path))
 	{
-		free(buffer);
 		return -1;
 	}
-	
-	uni_printf(&io, "%s", buffer);
-	io_erase(&io);
 
-	free(buffer);
-	return 0;
+	int ret = macro_form_io(ws, &io);
+
+	io_erase(&io);
+	return ret;
 }
 
 

@@ -35,10 +35,9 @@ void con_files_init(files *fs, workspace *const ws)
 	fs->ws = ws;
 }
 
-void preprocess_context_init(preprocess_context *context, workspace *const ws)
+void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io)
 {
-	//printer_init(&context->output_options);
-	context->io = io_create();
+	context->io = io;
 
 	con_files_init(&context->fs, ws);
 

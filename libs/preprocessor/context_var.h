@@ -99,10 +99,10 @@ typedef struct preprocess_context
 
 	int iwp;
 
-	universal_io io;
+	universal_io *io;
 } preprocess_context;
 
-void preprocess_context_init(preprocess_context *context, workspace *const ws);
+void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io);
 
 void con_files_add_include(files* fs, char *name, int h_flag);
 int con_file_open_sorse(files* fs, preprocess_context *context);
