@@ -28,6 +28,8 @@
 #include "preprocessor_utils.h"
 #include "while.h"
 #include "workspace.h"
+#include "logger.h"
+#include "uniscanner.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>

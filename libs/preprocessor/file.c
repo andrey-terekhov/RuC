@@ -34,6 +34,10 @@ void m_nextch(preprocess_context *context);
 void get_next_char(preprocess_context *context)
 {
 	int ret = uni_scan_char(&context->input_io);
+	if(ret == '\r')
+	{
+		ret = uni_scan_char(&context->input_io);
+	}
 	context->nextchar = ret;
 }
 

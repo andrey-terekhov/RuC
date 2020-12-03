@@ -21,6 +21,7 @@
 #include "file.h"
 #include "preprocessor_error.h"
 #include "logger.h"
+#include "uniio.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
