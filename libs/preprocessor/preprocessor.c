@@ -380,14 +380,11 @@ int macro_form_io(workspace *const ws, universal_io *const io)
 
 /*
 	printf("cur = %d, %c; next = %d, %c;\n",context->curchar, context->curchar, context->nextchar, context->nextchar);
-
 	for (int k = 0; k < fsp; k++)
 	{
 		printf("str[%d] = %d,%c.\n", k, fstring[k], fstring[k]);
 	}
-
 	printf("!!!!!!!!!!!!!!1\n");
-
 	for (int k = 0; k < context->mp; k++)
 	{
 		printf("context->macrotext[%d] = %d,%c.\n", k, context->macrotext[k], context->macrotext[k]);
@@ -400,7 +397,6 @@ int macro_form_io(workspace *const ws, universal_io *const io)
 	{
 		printf(" fchange[%d] = %d,%c.\n", k, fchange[k], fchange[k]);
 	}
-
 	/Egor/test_eval1.c
 	/Egor/calculator/test1.c
 	/Fadeev/import.c
@@ -435,7 +431,6 @@ char *macro(workspace *const ws)
 	in_clear(&io);
 	return out_extract_buffer(&io);
 }
-
 
 int macro_to_file(workspace *const ws, const char *const path)
 {

@@ -21,7 +21,6 @@
 #include "file.h"
 #include "preprocessor_error.h"
 #include "logger.h"
-#include "uniio.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,8 +37,8 @@ void con_files_init(files *fs, workspace *const ws)
 
 void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io)
 {
-	//printer_init(&context->output_options);
 	context->io = io;
+	
 	context->input_io = io_create();
 
 	con_files_init(&context->fs, ws);
@@ -172,4 +171,3 @@ void con_file_print_coment(files *fs, preprocess_context *context)
 		m_fprintf(buf[i], context);
 	}
 }
-

@@ -93,6 +93,7 @@ typedef struct preprocess_context
 	files fs;
 	int h_flag;
 
+	FILE *current_file;
 	int *current_string;
 	int current_p;
 
