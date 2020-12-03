@@ -71,20 +71,16 @@ int toreprtab(analyzer *context, char str[])
 	int oldrepr = REPRTAB_LEN;
 
 	context->hash = 0;
-	compiler_table_expand(&context->sx->reprtab, 2);
 
 	REPRTAB_LEN += 2;
 	for (i = 0; str[i] != 0; i++)
 	{
-		compiler_table_expand(&context->sx->reprtab, 1);
 		context->hash += str[i];
 		REPRTAB[REPRTAB_LEN++] = str[i];
 	}
 	context->hash &= 255;
-	compiler_table_expand(&context->sx->reprtab, 1);
 
 	REPRTAB[REPRTAB_LEN++] = 0;
-	compiler_table_ensure_allocated(&context->sx->reprtab, oldrepr + 1);
 
 	REPRTAB[oldrepr] = context->hashtab[context->hash];
 	REPRTAB[oldrepr + 1] = 1;
