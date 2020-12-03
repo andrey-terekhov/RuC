@@ -163,7 +163,7 @@ void con_file_close_cur(preprocess_context *context)
 
 void con_file_print_coment(files *fs, preprocess_context *context)
 {
-	comment com = cmt_create(ws_get_file(fs->ws, fs->cur), context->line-1);
+	comment com = cmt_create(ws_get_file(fs->ws, fs->cur), context->line);
 	char *buf = malloc(100 * sizeof(char *));
 	size_t size = cmt_to_string(&com, buf);
 	for(size_t i = 0; i < size; i++)

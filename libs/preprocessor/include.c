@@ -209,8 +209,6 @@ void include_relis(preprocess_context *context)
 	}
 	m_nextch(context);
 	open_file(context);
-	m_nextch(context);
-
 
 	space_end_line(context);
 }

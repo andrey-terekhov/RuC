@@ -56,7 +56,8 @@ void while_collect(preprocess_context *context)
 				while_collect(context);
 			}
 			else if (context->cur == SH_ENDW)
-			{
+			{	
+				context->wstring[context->wsp++] = ' ';
 				context->wstring[oldwsp + 2] = context->wsp;
 				context->cur = 0;
 
@@ -107,6 +108,7 @@ void while_relis(preprocess_context *context)
 
 		while (context->nextp != end || context->nextch_type != WHILETYPE)
 		{
+			printf("end = %d, context->nextp = %d t = %d\n", end, context->nextp, context->nextch_type);
 			if (context->curchar == WHILEBEGIN)
 			{
 				context->nextp--;
