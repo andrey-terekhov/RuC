@@ -25,6 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_CMT_SIZE MAX_ARG_SIZE + 32
+
 // Определение глобальных переменных
 void con_files_init(files *fs, workspace *const ws)
 {
@@ -162,12 +164,11 @@ void con_file_close_cur(preprocess_context *context)
 
 void con_file_print_coment(files *fs, preprocess_context *context)
 {
-	comment com = cmt_create(ws_get_file(fs->ws, fs->cur), context->line-1);
-	char *buf = malloc(100 * sizeof(char *));
-	size_t size = cmt_to_string(&com, buf);
-	for(size_t i = 0; i < size; i++)
-	{
-		m_fprintf(buf[i], context);
-	}
+	comment cmt = cmt_create(ws_get_file(fs->ws, fs->cur), context->line-1);
+
+	char buffer[MAX_CMT_SIZE];
+	cmt_to_string(&cmt, buffer);
+
+	uni_printf(context->io, "%s", buffer);
 }
 
