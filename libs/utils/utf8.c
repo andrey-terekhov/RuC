@@ -17,6 +17,163 @@
 #include "utf8.h"
 
 
+char char_to_cp1251(const char32_t symbol)
+{
+	if (symbol >= U'А' && symbol <= U'Я')
+	{
+		return (char)(symbol - U'А' + 0xC0);
+	}
+
+	if (symbol >= U'а' && symbol <= U'п')
+	{
+		return (char)(symbol - U'а' + 0xE0);
+	}
+
+	if (symbol >= U'р' && symbol <= U'я')
+	{
+		return (char)(symbol - U'р' + 0xF0);
+	}
+
+	switch (symbol)
+	{
+		case U'Ђ':
+			return 0x80;
+		case U'Ѓ':
+			return 0x81;
+		case U'‚':
+			return 0x82;
+		case U'ѓ':
+			return 0x83;
+		case U'„':
+			return 0x84;
+		case U'…':
+			return 0x85;
+		case U'†':
+			return 0x86;
+		case U'‡':
+			return 0x87;
+		case U'€':
+			return 0x88;
+		case U'‰':
+			return 0x89;
+		case U'Љ':
+			return 0x8A;
+		case U'‹':
+			return 0x8B;
+		case U'Њ':
+			return 0x8C;
+		case U'Ќ':
+			return 0x8D;
+		case U'Ћ':
+			return 0x8E;
+		case U'Џ':
+			return 0x8F;
+		case U'ђ':
+			return 0x90;
+		case U'‘':
+			return 0x91;
+		case U'’':
+			return 0x92;
+		case U'“':
+			return 0x93;
+		case U'”':
+			return 0x94;
+		case U'•':
+			return 0x95;
+		case U'–':
+			return 0x96;
+		case U'—':
+			return 0x97;
+
+		case U'™':
+			return 0x99;
+		case U'љ':
+			return 0x9A;
+		case U'›':
+			return 0x9B;
+		case U'њ':
+			return 0x9C;
+		case U'ќ':
+			return 0x9D;
+		case U'ћ':
+			return 0x9E;
+		case U'џ':
+			return 0x9F;
+
+		case U'Ў':
+			return 0xA1;
+		case U'ў':
+			return 0xA2;
+		case U'Ј':
+			return 0xA3;
+
+		case U'Ґ':
+			return 0xA5;
+
+		case U'Ё':
+			return 0xA8;
+
+		case U'Є':
+			return 0xAA;
+
+		case U'Ї':
+			return 0xAF;
+
+		case U'І':
+			return 0xB2;
+		case U'і':
+			return 0xB3;
+		case U'ґ':
+			return 0xB4;
+
+		case U'ё':
+			return 0xB8;
+		case U'№':
+			return 0xB9;
+		case U'є':
+			return 0xBA;
+
+		case U'ј':
+			return 0xBC;
+		case U'Ѕ':
+			return 0xBD;
+		case U'ѕ':
+			return 0xBE;
+		case U'ї':
+			return 0xBF;
+
+		case 0xA0:
+		case U'¤':
+		case U'¦':
+		case U'§':
+		case U'©':
+		case U'«':
+		case U'¬':
+		case 0xAD:
+		case U'®':
+		case U'°':
+		case U'±':
+		case U'µ':
+		case U'¶':
+		case U'·':
+		case U'»':
+			return (char)symbol;
+
+		default:
+			return 0x98;
+	}
+}
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
 size_t utf8_symbol_size(const char symbol)
 {
 	if ((symbol & 0b10000000) == 0b00000000)
@@ -129,6 +286,34 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 
 	buffer[octets] = '\0';
 	return octets;
+}
+
+size_t utf8_to_cp1251(const char *const src, char *const dest)
+{
+	if (src == NULL || dest == NULL)
+	{
+		return 0;
+	}
+
+	size_t i = 0;
+	size_t j = 0;
+	while (src[i] != '\0')
+	{
+		const size_t size = utf8_symbol_size(src[i]);
+		if (size == 1)
+		{
+			dest[j++] = src[i];
+		}
+		else
+		{
+			dest[j++] = char_to_cp1251(utf8_convert(&src[i]));
+		}
+
+		i += size;
+	}
+
+	dest[j] = '\0';
+	return j;
 }
 
 int utf8_is_russian(const char32_t symbol)
