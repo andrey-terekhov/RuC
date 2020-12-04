@@ -139,16 +139,11 @@ void print_msg(const uint8_t color, const char *const msg)
 void default_log(const char *const tag, const char *const msg, const uint8_t color, const char *const tag_log)
 {
 	set_color(COLOR_TAG);
-#ifdef _MSC_VER
-	char buffer[MAX_MSG_SIZE];
-	utf8_to_cp1251(tag, buffer);
-	fprintf(stderr, "%s: ", buffer);
-#else
 	fprintf(stderr, "%s: ", tag);
-#endif
 
 	set_color(color);
 #ifdef _MSC_VER
+	char buffer[MAX_MSG_SIZE];
 	utf8_to_cp1251(tag_log, buffer);
 	fprintf(stderr, "%s: ", buffer);
 #else

@@ -21,6 +21,7 @@
 #include "file.h"
 #include "preprocessor_error.h"
 #include "logger.h"
+#include "uniprinter.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -171,4 +172,3 @@ void con_file_print_coment(files *fs, preprocess_context *context)
 
 	uni_printf(context->io, "%s", buffer);
 }
-
