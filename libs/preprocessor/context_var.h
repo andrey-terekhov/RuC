@@ -18,6 +18,7 @@
 
 #include "constants.h"
 #include "uniio.h"
+#include "workspace.h"
 #include <stdio.h>
 
 
@@ -25,20 +26,12 @@
 extern "C" {
 #endif
 
-typedef struct file
-{
-	char *name;
-	int const_name;
-} file;
 
 typedef struct files
 {
-	file *files;
-	int main_faile;
+	workspace *ws;
 	int p;
-	int p_s;
 	int cur;
-	int size;
 	int begin_f;
 	int end_h;
 } files;
@@ -94,7 +87,7 @@ typedef struct preprocess_context
 	int oldnextp[DIP];
 	int dipp;
 
-	size_t line;
+	int line;
 
 	int temp_output;
 	files fs;
@@ -104,30 +97,20 @@ typedef struct preprocess_context
 	int *current_string;
 	int current_p;
 
-	const char **include_ways;
 	int iwp;
 
-	universal_io io;
+	universal_io *io;
 } preprocess_context;
 
-void preprocess_context_init(preprocess_context *context, int num);
+void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io);
 
-void con_file_add(file *f, const char *name, int cnost_name);
-void con_file_free(file *f );
-
-void con_files_init(files *fs, int num);
-void con_files_add_parametrs(files* fs, const char *name);
-void con_files_add_include(files* fs, const char *name);
-void con_files_free(files *fs);
-
-int con_file_open_main(files* fs, preprocess_context *context);
+void con_files_add_include(files* fs, char *name, int h_flag);
 int con_file_open_sorse(files* fs, preprocess_context *context);
 int con_file_open_hedrs(files* fs, preprocess_context *context);
 int con_file_open_next(files* fs, preprocess_context *context, int h_flag);
 void con_file_close_cur(preprocess_context *context);
 
-void con_file_it_is_main(files *fs);
-void con_file_it_is_end_h(files *fs);
+void con_file_it_is_end_h(files *fs, int i);
 
 void con_file_print_coment(files *fs, preprocess_context *context);
 

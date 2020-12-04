@@ -30,7 +30,8 @@
 #endif
 
 
-//#define GENERATE_FILES
+//#define GENERATE_MACRO
+//#define GENERATE_TABLES
 
 
 const char *const DEFAULT_MACRO = "macro.txt";
@@ -65,29 +66,22 @@ int compile_from_io_to_vm(universal_io *const io)
 		return -1;
 	}
 
-	syntax sx;
-	if (syntax_init(&sx))
-	{
-		system_error("не удалось выделить память для таблиц");
-		io_erase(io);
-		return -1;
-	}
+	syntax sx = sx_create();
 
 	int ret = analyze(io, &sx);
-#ifdef GENERATE_FILES
+#ifdef GENERATE_TABLES
 	tables_and_tree(&sx, DEFAULT_TREE);
 #endif
 
 	if (!ret)
 	{
 		ret = encode_to_vm(io, &sx);
-#ifdef GENERATE_FILES
+#ifdef GENERATE_TABLES
 		tables_and_codes(&sx, DEFAULT_CODES);
 #endif
 	}
 
 	io_erase(io);
-	syntax_deinit(&sx);
 	return ret;
 }
 
@@ -111,7 +105,7 @@ int compile_to_vm(workspace *const ws)
 
 	universal_io io = io_create();
 
-#ifndef GENERATE_FILES
+#ifndef GENERATE_MACRO
 	// Препроцессинг в массив
 	char *const preprocessing = macro(ws); // макрогенерация
 	if (preprocessing == NULL)
@@ -138,7 +132,7 @@ int compile_to_vm(workspace *const ws)
 		make_executable(ws_get_output(ws));
 	}
 
-#ifndef GENERATE_FILES
+#ifndef GENERATE_MACRO
 	free(preprocessing);
 #endif
 	return ret;

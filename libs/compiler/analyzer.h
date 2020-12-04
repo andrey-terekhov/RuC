@@ -21,9 +21,9 @@
 #include "uniio.h"
 
 
-#define REPRTAB		(context->sx->reprtab.table)
-#define REPRTAB_POS (context->sx->reprtab.pos)
-#define REPRTAB_LEN (context->sx->reprtab.len)
+#define REPRTAB		(context->sx->reprtab)
+#define REPRTAB_POS (context->sx->repr)
+#define REPRTAB_LEN (context->sx->rp)
 
 
 #ifdef __cplusplus

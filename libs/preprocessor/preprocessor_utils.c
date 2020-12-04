@@ -28,11 +28,14 @@
 
 int equal_reprtab(int i, int j, preprocess_context *context)
 {
-	++i;
-	++j;
+	i += 2;
+	j += 2;
 
-	while (context->reprtab[++i] == context->reprtab[++j])
+	while (context->reprtab[i] == context->reprtab[j])
 	{
+		i++;
+		j++;
+
 		if (context->reprtab[i] == 0 && context->reprtab[j] == 0)
 		{
 			return 1;

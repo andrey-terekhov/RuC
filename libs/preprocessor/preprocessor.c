@@ -27,6 +27,7 @@
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
 #include "while.h"
+#include "workspace.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -34,8 +35,13 @@
 #include <string.h>
 #include <wchar.h>
 
+
 #define H_FILE 1
 #define C_FILE 0
+
+
+const size_t SIZE_OUT_BUFFER = 1024;
+
 
 void to_reprtab(char str[], int num, preprocess_context *context)
 {
@@ -256,17 +262,6 @@ void preprocess_scan(preprocess_context *context)
 void add_c_file_siple(preprocess_context *context)
 {
 	context->temp_output = 0;
-
-	while (context->curchar != EOF && context->fs.main_faile == -1)
-	{
-		context->cur = macro_keywords(context);
-		if (context->cur == SH_MAIN)
-		{
-			con_file_it_is_main(&context->fs);
-		}
-		m_nextch(context);
-	}
-
 	while (context->curchar != EOF)
 	{
 		m_nextch(context);
@@ -297,8 +292,8 @@ void add_c_file(preprocess_context *context)
 				if (context->cur == SH_INCLUDE)
 				{
 					include_relis(context);
-					break;
 				}
+				break;
 			}
 			default:
 			{
@@ -309,42 +304,16 @@ void add_c_file(preprocess_context *context)
 	}
 }
 
-void open_files(preprocess_context *context, int number, const char *codes[])
+void open_files(preprocess_context *context)
 {
-	context->include_ways = malloc(number * sizeof(char *));
+	int i = 0;
+	size_t num = context->fs.ws->files_num;
+	const char *temp = ws_get_file(context->fs.ws, i++);
 
-	const char **ways = context->include_ways;
-	int *iwp = &context->iwp;
-
-	for (int i = 0; i < number; i++)
+	for(size_t j = 0; j < num; j++)
 	{
-		if (codes[i][0] == '-' && codes[i][1] == 'I')
+		if (find_file(context, temp))
 		{
-			ways[*iwp] = &codes[i][2];
-
-			/*int length = strlen(ways[*iwp]);
-			if (ways[*iwp][length - 1] == '/')
-			{
-				ways[*iwp][length - 1] = '\0';
-			}*/
-
-			// printf("\n include_ways[i] = %s\n", ways[*iwp]);
-			// printf("\n include_ways[i] = %s\n", context->include_ways[*iwp]);
-			context->iwp++;
-		}
-	}
-
-	for (int i = 0; i < number; i++)
-	{
-		int l = strlen(codes[i]);
-		if ((codes[i][0] == '-' && codes[i][1] == 'I') || codes[i][l - 1] == 'h')
-		{
-			continue;
-		}
-
-		if (find_file(context, codes[i]))
-		{
-			con_files_add_parametrs(&context->fs, codes[i]);
 			con_file_open_next(&context->fs, context, C_FILE);
 
 			get_next_char(context);
@@ -355,8 +324,10 @@ void open_files(preprocess_context *context, int number, const char *codes[])
 			}
 			con_file_close_cur(context);
 		}
+		temp = ws_get_file(context->fs.ws, i++);
 	}
-	con_file_it_is_end_h(&context->fs);
+
+	con_file_it_is_end_h(&context->fs, i-1);
 }
 
 void preprocess_h_file(preprocess_context *context)
@@ -388,37 +359,22 @@ void preprocess_c_file(preprocess_context *context)
 			file_read(context);
 		}
 	}
-
-	if(con_file_open_main(&context->fs, context))
-	{
-		file_read(context);
-	}
 }
 
-char *preprocess_file(int argc, const char *argv[])
+
+int macro_form_io(workspace *const ws, universal_io *const io)
 {
 	preprocess_context context;
-	preprocess_context_init(&context, argc);
-	out_set_buffer(&context.io, 1024);
+	preprocess_context_init(&context, ws, io);
 
 	add_keywods(&context);
 
 	context.mfirstrp = context.rp;
-	open_files(&context, argc, argv);
+	open_files(&context);
 	preprocess_h_file(&context);
 	preprocess_c_file(&context);
 
-	free(context.include_ways);
-	con_files_free(&context.fs);
-
-	char *macro_processed = out_extract_buffer(&context.io);
-
-	
-#if MACRODEBUG
-	printf("\n\n");
-	printf("Текст после препроцессирования:\n>\n%s<\n", macro_processed);
-#endif
-	return macro_processed;
+	return 0;
 }
 
 
@@ -463,55 +419,35 @@ char *preprocess_file(int argc, const char *argv[])
 
 char *macro(workspace *const ws)
 {
-	char **argv = malloc(MAX_PATHS * sizeof(char *));
-
-	int argc = 0;
-	const char *temp = ws_get_file(ws, argc);
-	while (temp != NULL)
+	universal_io io = io_create();
+	if (out_set_buffer(&io, SIZE_OUT_BUFFER))
 	{
-		argv[argc] = malloc((1 + strlen(temp)) * sizeof(char));
-		sprintf(argv[argc++], "%s", temp);
-		temp = ws_get_file(ws, argc);
+		return NULL;
 	}
 
-	const int files_num = argc;
-	temp = ws_get_dir(ws, argc - files_num);
-	while (temp != NULL)
+	int ret = macro_form_io(ws, &io);
+	if (ret)
 	{
-		argv[argc] = malloc((3 + strlen(temp)) * sizeof(char));
-		sprintf(argv[argc++], "-I%s", temp);
-		temp = ws_get_dir(ws, argc - files_num);
+		io_erase(&io);
+		return NULL;
 	}
-	
-	char *result = preprocess_file(argc, (const char **)argv);
-	for (int i = 0; i < argc; i++)
-	{
-		free(argv[i]);
-	}
-	free(argv);
-	return result;
+
+	in_clear(&io);
+	return out_extract_buffer(&io);
 }
 
 int macro_to_file(workspace *const ws, const char *const path)
 {
-	char *buffer = macro(ws);
-	if (buffer == NULL)
-	{
-		return -1;
-	}
-
 	universal_io io = io_create();
 	if (out_set_file(&io, path))
 	{
-		free(buffer);
 		return -1;
 	}
-	
-	uni_printf(&io, "%s", buffer);
-	io_erase(&io);
 
-	free(buffer);
-	return 0;
+	int ret = macro_form_io(ws, &io);
+
+	io_erase(&io);
+	return ret;
 }
 
 
