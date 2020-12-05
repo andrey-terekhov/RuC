@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "context.h"
+#include "uniio.h"
 
 
 #ifdef __cplusplus
@@ -24,37 +24,52 @@ extern "C" {
 #endif
 
 /**
- *	Emit a warning for some problem
- *
- *	@param	context	Compiler context
- *	@param	errnum	Error number
- */
-void warning(compiler_context *context, int errnum);
-
-/**
  *	Emit an error for some problem
  *
- *	@param	context	Compiler context
- *	@param	errnum	Error number
+ *	@param	io		Universal io
+ *	@param	num		Error number
  */
-void error(compiler_context *context, int errnum);
+void error(const universal_io *const io, const int num, ...);
 
 /**
- *	Set errors output file
+ *	Emit a warning for some problem
  *
- *	@param	context	Compiler context
- *	@param	path	Path to file
+ *	@param	io		Universal io
+ *	@param	num		Warning number
  */
-void set_errors_output(compiler_context *context, char *path);
+void warning(const universal_io *const io, const int num, ...);
+
 
 /**
- *	Return program output code
+ *	Emit error message
  *
- *	@param	context	Compiler context
- *
- *	@return	Program exit code
+ *	@param	io		Universal io
+ *	@param	msg		Error message
  */
-int get_exit_code(compiler_context *context);
+void error_msg(const universal_io *const io, const char *const msg);
+
+/**
+ *	Emit warning message
+ *
+ *	@param	io		Universal io
+ *	@param	msg		Warning message
+ */
+void warning_msg(const universal_io *const io, const char *const msg);
+
+
+/**
+ *	Emit error by number
+ *
+ *	@param	msg		Error message
+ */
+void system_error(const char *const msg);
+
+/**
+ *	Emit warning by number
+ *
+ *	@param	msg		Warning message
+ */
+void system_warning(const char *const msg);
 
 #ifdef __cplusplus
 } /* extern "C" */

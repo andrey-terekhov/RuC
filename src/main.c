@@ -14,54 +14,28 @@
  *	limitations under the License.
  */
 
+#ifdef _MSC_VER
+	#pragma comment(linker, "/STACK:268435456")
+#endif
+
 #include "compiler.h"
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "workspace.h"
 
 
 const char *name = "../tests/executable/floatsign.c";
-// "../tests/Egor/Macro/test3.c";
-// "../tests/defstest/MULTASSATV_9221.c";
-//"../tests/defstest/SHLASSAT_9014.c";
-//"../tests/stanfunc0.c";
 // "../tests/mips/0test.c";
 
 
 int main(int argc, const char *argv[])
 {
-	printf("\x1B[0m"); // Not working without using printf
+	//printf(""); // Not working without using printf
+
+	workspace ws = ws_parse_args(argc, argv);
 
 	if (argc < 2)
 	{
-		return compiler_compile(name);
+		ws_add_file(&ws, name);
 	}
-	else
-	{
-		compiler_workspace *ws;
-
-		ws = compiler_get_workspace(argc, argv);
-		if (ws == NULL)
-		{
-			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m failed to create a workspace\n");
-			return 1;
-		}
-
-		if (ws->error.code != COMPILER_WS_EOK)
-		{
-			char *str;
-
-			str = compiler_workspace_error2str(&ws->error);
-			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m unknown workspace error\n");
-			free(str);
-
-			compiler_workspace_free(ws);
-			return 1;
-		}
-
-		int ret = compiler_workspace_compile(ws);
-		compiler_workspace_free(ws);
-
-		return ret;
-	}
+	
+	return compile_to_vm(&ws);
 }

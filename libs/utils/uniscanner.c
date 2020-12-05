@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov
+ *	Copyright 2020 Andrey Terekhov, Victor Y. Fadeev, Dmitrii Davladov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -15,106 +15,43 @@
  */
 
 #include "uniscanner.h"
-#include <limits.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stdarg.h>
+#include "utf8.h"
 
 
-extern scanner_desc scanner_mem;
-extern scanner_desc scanner_file;
-
-
-scanner_desc *scanners[] = { &scanner_file, &scanner_mem, NULL };
-
-
-void scanner_init(universal_scanner_options *opts)
+int uni_scanf(universal_io *const io, const char *const format, ...)
 {
-	memset(opts, 0, sizeof(universal_scanner_options));
-	opts->source = IO_SOURCE_FILE;
-}
-
-void scanner_deinit(universal_scanner_options *opts)
-{
-	scanner_close(opts);
-}
-
-void scanner_close(universal_scanner_options *opts)
-{
-	if (opts->input != NULL)
+	if (!in_is_correct(io))
 	{
-		fclose(opts->input);
-		opts->input = NULL;
+		return 0;
 	}
 
-	if (opts->ptr != NULL)
-	{
-		free(opts->ptr);
-		opts->ptr = NULL;
-	}
-
-	opts->pos = 0;
-	opts->opaque = NULL;
-}
-
-static void scanner_prepare(universal_scanner_options *opts)
-{
-	if (opts->opaque == NULL)
-	{
-		scanner_desc **tmp = scanners;
-
-		while (*tmp != NULL && (*tmp)->source != opts->source)
-		{
-			tmp++;
-		}
-
-		if (*tmp == NULL)
-		{
-			fprintf(stderr, "\x1B[1;39mruc:\x1B[1;31m fatal error:\x1B[0m failed to find a suitable scanner\n");
-			exit(1);
-		}
-
-		opts->opaque = *tmp;
-	}
-}
-
-int scanner_getnext(universal_scanner_options *opts)
-{
-	scanner_prepare(opts);
-	return ((scanner_desc *)opts->opaque)->getnext(opts);
-}
-
-int scanner_scanf(universal_scanner_options *opts, const char *fmt, ...)
-{
-	int ret;
 	va_list args;
+	va_start(args, format);
 
-	va_start(args, fmt);
+	io_func func = in_get_func(io);
+	int ret = func(io, format, args);
 
-	scanner_prepare(opts);
-	ret = ((scanner_desc *)opts->opaque)->scanf(opts, fmt, args);
 	va_end(args);
-
 	return ret;
 }
 
-bool scanner_attach_file(universal_scanner_options *opts, FILE *f)
+char32_t uni_scan_char(universal_io *const io)
 {
-	opts->source = IO_SOURCE_FILE;
-	opts->input = f;
-	opts->ptr = NULL;
-	opts->pos = 0;
-	opts->opaque = NULL;
-	return true;
-}
+	char buffer[8];
+	if (!uni_scanf(io, "%c", &buffer[0]))
+	{
+		return (char32_t)EOF;
+	}
 
-bool scanner_attach_buffer(universal_scanner_options *opts, const char *ptr)
-{
-	opts->source = IO_SOURCE_MEM;
-	opts->input = NULL;
-	opts->ptr = (char *)ptr;
-	opts->pos = 0;
-	opts->opaque = NULL;
-	return opts->ptr != NULL;
+	const size_t size = utf8_symbol_size(buffer[0]);
+	for (size_t i = 1; i < size; i++)
+	{
+		if (!uni_scanf(io, "%c", &buffer[i]))
+		{
+			return (char32_t)EOF;
+		}
+	}
+	
+	return utf8_convert(buffer);
 }
