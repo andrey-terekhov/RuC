@@ -2586,7 +2586,7 @@ void decl_id(analyzer *context, int decl_type)
 	int elem_type;
 	int all; // all - место в дереве, где будет общее количество выражений в инициализации, для массивов - только
 			 // признак (1) наличия инициализации
-	int adN;
+	int adN = 0; // warning C4701: potentially uninitialized local variable used
 
 	context->usual = 1;
 	context->arrdim = 0; // arrdim - размерность (0-скаляр), д.б. столько выражений-границ
@@ -3520,7 +3520,7 @@ void block(analyzer *context, int b)
 	int oldinswitch = context->inswitch;
 	int notended = 1;
 	int i;
-	int olddispl;
+	int olddispl = 0; // warning C4701: potentially uninitialized local variable used
 	int oldlg = context->lg;
 	int firstdecl;
 
@@ -3717,8 +3717,8 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 	int loc_modetab[100];
 	int locmd;
 	int numpar = 0;
-	int ident;
-	int maybe_fun;
+	int ident = 0; // warning C4701: potentially uninitialized local variable used
+	int maybe_fun = 0; // warning C4701: potentially uninitialized local variable used
 	int repeat = 1;
 	int i;
 	int wastype = 0;

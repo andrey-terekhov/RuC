@@ -9,8 +9,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 
 if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-	#add_compile_options(/W4 /WX /utf-8 /wd5105)
-	add_compile_options(/W4 /utf-8 /wd5105)
+	add_compile_options(/W4 /WX /wd5105 /utf-8)
 
 	# Starting in Visual Studio 2019 version 16.8, you may specify /std:c11
 	if(MSVC_VERSION GREATER_EQUAL 1928)
