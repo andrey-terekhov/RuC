@@ -40,7 +40,10 @@ int uni_print_char(universal_io *const io, const char32_t wchar)
 {
 	char buffer[8];
 
-	utf8_to_string(buffer, wchar);
+	if (!utf8_to_string(buffer, wchar))
+	{
+		return 0;
+	}
 
 	return uni_printf(io, "%s", buffer);
 }
