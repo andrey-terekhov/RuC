@@ -535,7 +535,6 @@ int scan(analyzer *context)
 				nextch(context);
 				return DOT;
 			}
-			__attribute__((fallthrough)); // Удаляет warning при компиляции
 		case '0':
 		case '1':
 		case '2':

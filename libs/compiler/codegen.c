@@ -249,7 +249,6 @@ int Expr_gen(syntax *const sx, int incond)
 					   LOAD); // параметры - смещение идента и тип элемента
 				tocode(sx,
 					   sx->tree[sx->tc++]); // продолжение в след case
-				__attribute__((fallthrough)); // Удаляет warning при компиляции
 			}
 			case TSlice: // параметр - тип элемента
 			{
