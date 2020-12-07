@@ -547,7 +547,8 @@ void mustbepointstring(analyzer *context)
 	}
 	toval(context);
 	context->sopnd--;
-	if (!(is_pointer(context->sx, context->ansttype) && is_string(context->sx, context->ansttype + 1)))
+	if (!(is_pointer(context->sx, context->ansttype) &&
+		  is_string(context->sx, modetab_get(context->sx, context->ansttype + 1))))
 	{
 		context_error(context, not_point_string_in_stanfunc);
 		context->error_flag = 5;
