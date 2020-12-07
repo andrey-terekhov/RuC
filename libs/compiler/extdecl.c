@@ -524,7 +524,7 @@ void mustbestring(analyzer *context)
 	}
 	toval(context);
 	context->sopnd--;
-	if (!(is_array(context->sx, context->ansttype) && modetab_get(context->sx, context->ansttype + 1) != LCHAR))
+	if (!(is_array(context->sx, context->ansttype) && modetab_get(context->sx, context->ansttype + 1) == LCHAR))
 	{
 		context_error(context, not_string_in_stanfunc);
 		context->error_flag = 5;
