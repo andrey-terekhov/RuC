@@ -3414,14 +3414,16 @@ int struct_decl_list(analyzer *context)
 
 	loc_modetab[1] = curdispl; // тут длина структуры
 	loc_modetab[2] = field_count * 2;
+	
+	return modetab_add(context->sx, locmd, loc_modetab);
 
-	context->sx->modetab[context->sx->md] = context->startmode;
+	/*context->sx->modetab[context->sx->md] = context->startmode;
 	context->startmode = context->sx->md++;
 	for (i = 0; i < locmd; i++)
 	{
 		context->sx->modetab[context->sx->md++] = loc_modetab[i];
 	}
-	return check_duplicates(context);
+	return check_duplicates(context);*/
 }
 
 int gettype(analyzer *context)
@@ -3903,15 +3905,17 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 	}
 	context->func_def = func_d;
 	loc_modetab[2] = numpar;
+	
+	return modetab_add(context->sx, locmd, loc_modetab);
 
-	context->sx->modetab[context->sx->md] = context->startmode;
+	/*context->sx->modetab[context->sx->md] = context->startmode;
 	context->startmode = context->sx->md++;
 	for (i = 0; i < numpar + 3; i++)
 	{
 		context->sx->modetab[context->sx->md++] = loc_modetab[i];
 	}
 
-	return check_duplicates(context);
+	return check_duplicates(context);*/
 }
 
 /** Генерация дерева */
