@@ -28,32 +28,32 @@ typedef struct syntax
 {
 	// mem, pc & iniprocs - usage here only for codes printing
 
-	int mem[MAXMEMSIZE];		/** Memory */
-	int pc;						/** Program counter */
+	int mem[MAXMEMSIZE];		/**< Memory */
+	int pc;						/**< Program counter */
 
-	int iniprocs[INIPROSIZE];	/** Init processes */
-	int procd;					/** Process management daemon */
+	int iniprocs[INIPROSIZE];	/**< Init processes */
+	int procd;					/**< Process management daemon */
 
-	int functions[FUNCSIZE];	/** Functions table */
-	int funcnum;				/** Number of functions */
+	int functions[FUNCSIZE];	/**< Functions table */
+	int funcnum;				/**< Number of functions */
 
-	int identab[MAXIDENTAB];	/** Identifiers table */
-	int id;						/** Number of identifiers */
+	int identab[MAXIDENTAB];	/**< Identifiers table */
+	int id;						/**< Number of identifiers */
 
-	int modetab[MAXMODETAB];	/** Modes table */
-	int md;						/** Number of modes */
+	int modetab[MAXMODETAB];	/**< Modes table */
+	int md;						/**< Number of modes */
 	
-	int tree[MAXTREESIZE];		/** Tree */
-	int tc;						/** Tree counter */
+	int tree[MAXTREESIZE];		/**< Tree */
+	int tc;						/**< Tree counter */
 
-	int reprtab[MAXREPRTAB];	/** Representations table */
-	int rp;						/** Representations size */
-	int repr;					/** Representations position */
+	int reprtab[MAXREPRTAB];	/**< Representations table */
+	int rp;						/**< Representations size */
+	int repr;					/**< Representations position */
 
-	int maxdisplg;				/** Max displacement */
-	int wasmain;				/** Main function flag */
+	int maxdisplg;				/**< Max displacement */
+	int wasmain;				/**< Main function flag */
 
-	int anstdispl;				/** Stack displacement */
+	int anstdispl;				/**< Stack displacement */
 } syntax;
 
 
