@@ -65,9 +65,6 @@ typedef struct syntax
  */
 syntax sx_create();
 
-
-int check_mode_duplicates(syntax *sx);
-
 /**
  *	Add new record to modetab
  *
