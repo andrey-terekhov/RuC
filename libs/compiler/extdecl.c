@@ -3249,7 +3249,6 @@ int idorpnt(analyzer *context, int e, int t)
 int struct_decl_list(analyzer *context)
 {
 	int field_count = 0;
-	int i;
 	int t;
 	int elem_type;
 	int curdispl = 0;
@@ -3658,7 +3657,6 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 	int ident = 0; // warning C4701: potentially uninitialized local variable used
 	int maybe_fun = 0; // warning C4701: potentially uninitialized local variable used
 	int repeat = 1;
-	int i;
 	int wastype = 0;
 	int old;
 
