@@ -107,3 +107,14 @@ int modetab_add(syntax *const sx, const int size, const int new_record[])
 	}
 	return check_mode_duplicates(sx);
 }
+
+
+int newdecl(syntax *const sx, const int type, const int elemtype)
+{
+	sx->modetab[sx->md] = sx->startmode;
+	sx->startmode = sx->md++;
+	sx->modetab[sx->md++] = type;
+	sx->modetab[sx->md++] = elemtype; // ссылка на элемент
+	
+	return check_mode_duplicates(sx);
+}

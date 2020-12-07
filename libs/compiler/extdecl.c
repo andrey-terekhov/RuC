@@ -87,62 +87,6 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 	}*/
 }
 
-int modeeq(analyzer *context, int first_mode, int second_mode)
-{
-	int n;
-	int i;
-	int flag = 1;
-	int mode;
-	if (context->sx->modetab[first_mode] != context->sx->modetab[second_mode])
-	{
-		return 0;
-	}
-
-	mode = context->sx->modetab[first_mode];
-	// определяем, сколько полей надо сравнивать для различных типов записей
-	n = mode == MSTRUCT || mode == MFUNCTION ? 2 + context->sx->modetab[first_mode + 2] : 1;
-
-	for (i = 1; i <= n && flag; i++)
-	{
-		flag = context->sx->modetab[first_mode + i] == context->sx->modetab[second_mode + i];
-	}
-
-	return flag;
-}
-
-int check_duplicates(analyzer *context)
-{
-	// проверяет, имеется ли в modetab только что внесенный тип.
-	// если да, то возвращает ссылку на старую запись, иначе - на новую.
-
-	int old = context->sx->modetab[context->sx->startmode];
-
-	while (old)
-	{
-		if (modeeq(context, context->sx->startmode + 1, old + 1))
-		{
-			context->sx->md = context->sx->startmode;
-			context->sx->startmode = context->sx->modetab[context->sx->startmode];
-			return old + 1;
-		}
-		else
-		{
-			old = context->sx->modetab[old];
-		}
-	}
-	return context->sx->startmode + 1;
-}
-
-int newdecl(analyzer *context, int type, int elemtype)
-{
-	context->sx->modetab[context->sx->md] = context->sx->startmode;
-	context->sx->startmode = context->sx->md++;
-	context->sx->modetab[context->sx->md++] = type;
-	context->sx->modetab[context->sx->md++] = elemtype; // ссылка на элемент
-
-	return check_duplicates(context);
-}
-
 int evaluate_params(analyzer *context, int num, int formatstr[], int formattypes[], int placeholders[])
 {
 	int numofparams = 0;
@@ -186,7 +130,7 @@ int evaluate_params(analyzer *context, int num, int formatstr[], int formattypes
 
 				case 's':
 				case 1089: // с
-					formattypes[numofparams++] = newdecl(context, MARRAY, LCHAR);
+					formattypes[numofparams++] = newdecl(context->sx, MARRAY, LCHAR);
 					break;
 
 				case '%':
@@ -570,7 +514,7 @@ void actstring(int type, analyzer *context)
 		context->error_flag = 1;
 		return; // 1
 	}
-	context->ansttype = newdecl(context, MARRAY, type);
+	context->ansttype = newdecl(context->sx, MARRAY, type);
 	context->anst = VAL;
 }
 
@@ -675,7 +619,7 @@ void mustberowofint(analyzer *context)
 		if (context->ansttype == LINT || context->ansttype == LCHAR)
 		{
 			totree(context, ROWING);
-			context->ansttype = newdecl(context, MARRAY, LINT);
+			context->ansttype = newdecl(context->sx, MARRAY, LINT);
 		}
 	}
 	if (!(context->ansttype > 0 && context->sx->modetab[context->ansttype] == MARRAY &&
@@ -710,7 +654,7 @@ void mustberowoffloat(analyzer *context)
 		if (context->ansttype == LFLOAT)
 		{
 			totree(context, ROWINGD);
-			context->ansttype = newdecl(context, MARRAY, LFLOAT);
+			context->ansttype = newdecl(context->sx, MARRAY, LFLOAT);
 		}
 	}
 
@@ -746,7 +690,7 @@ void primaryexpr(analyzer *context)
 	{
 		int i;
 
-		context->ansttype = newdecl(context, MARRAY, LCHAR); // теперь пишем context->ansttype в
+		context->ansttype = newdecl(context->sx, MARRAY, LCHAR); // теперь пишем context->ansttype в
 															 // анализаторе, а не в сканере
 		totree(context, TString);
 		totree(context, context->num);
@@ -900,7 +844,7 @@ void primaryexpr(analyzer *context)
 			else
 			{
 				context->stackoperands[++context->sopnd] = context->ansttype =
-					func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : newdecl(context, MARRAY, LCHAR);
+					func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : newdecl(context->sx, MARRAY, LCHAR);
 			}
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
@@ -1786,7 +1730,7 @@ void unarexpr(analyzer *context)
 				}
 
 				context->stackoperands[context->sopnd] = context->ansttype =
-					newdecl(context, MPOINT, context->ansttype);
+					newdecl(context->sx, MPOINT, context->ansttype);
 				context->anst = VAL;
 			}
 			else if (op == LMULT)
@@ -2572,7 +2516,7 @@ int arrdef(analyzer *context, int t)
 			context->sopnd--;
 			mustbe(context, RIGHTSQBR, wait_right_sq_br);
 		}
-		t = newdecl(context, MARRAY, t); // Меняем тип в identtab (увеличиваем размерность массива)
+		t = newdecl(context->sx, MARRAY, t); // Меняем тип в identtab (увеличиваем размерность массива)
 	}
 	return t;
 }
@@ -3296,7 +3240,7 @@ int idorpnt(analyzer *context, int e, int t)
 	if (context->next == LMULT)
 	{
 		scaner(context);
-		t = t == LVOID ? LVOIDASTER : newdecl(context, MPOINT, t);
+		t = t == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, t);
 	}
 	mustbe_complex(context, IDENT, e);
 	return t;
@@ -3416,14 +3360,6 @@ int struct_decl_list(analyzer *context)
 	loc_modetab[2] = field_count * 2;
 	
 	return modetab_add(context->sx, locmd, loc_modetab);
-
-	/*context->sx->modetab[context->sx->md] = context->startmode;
-	context->startmode = context->sx->md++;
-	for (i = 0; i < locmd; i++)
-	{
-		context->sx->modetab[context->sx->md++] = loc_modetab[i];
-	}
-	return check_duplicates(context);*/
 }
 
 int gettype(analyzer *context)
@@ -3755,7 +3691,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 			{
 				maybe_fun = 1;
 				scaner(context);
-				context->type = context->type == LVOID ? LVOIDASTER : newdecl(context, MPOINT, context->type);
+				context->type = context->type == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, context->type);
 			}
 			if (level)
 			{
@@ -3788,7 +3724,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 				{
 					scaner(context);
 					mustbe(context, RIGHTSQBR, wait_right_sq_br);
-					context->type = newdecl(context, MARRAY, context->type);
+					context->type = newdecl(context->sx, MARRAY, context->type);
 				}
 			}
 		}
@@ -3907,15 +3843,6 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 	loc_modetab[2] = numpar;
 	
 	return modetab_add(context->sx, locmd, loc_modetab);
-
-	/*context->sx->modetab[context->sx->md] = context->startmode;
-	context->startmode = context->sx->md++;
-	for (i = 0; i < numpar + 3; i++)
-	{
-		context->sx->modetab[context->sx->md++] = loc_modetab[i];
-	}
-
-	return check_duplicates(context);*/
 }
 
 /** Генерация дерева */
@@ -3961,7 +3888,7 @@ void ext_decl(analyzer *context)
 			if (context->next == LMULT)
 			{
 				scaner(context);
-				context->type = context->firstdecl == LVOID ? LVOIDASTER : newdecl(context, MPOINT, context->firstdecl);
+				context->type = context->firstdecl == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, context->firstdecl);
 			}
 			mustbe_complex(context, IDENT, after_type_must_be_ident);
 			if (context->error_flag == after_type_must_be_ident)

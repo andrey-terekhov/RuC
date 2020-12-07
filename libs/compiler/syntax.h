@@ -66,6 +66,8 @@ typedef struct syntax
 syntax sx_create();
 
 
+int check_mode_duplicates(syntax *sx);
+
 /**
  *	Add new record to modetab
  *
@@ -75,6 +77,16 @@ syntax sx_create();
  *	@return	Pointer to new record
  */
 int modetab_add(syntax *const sx, const int size, const int new_record[]);
+
+/**
+ *	Add new record of array or pointer to modetab
+ *
+ *	@param	sx	Syntax structure
+ *	@param	type	Type of record: @c MARRAY or @c MPOINT
+ *	@param	elemtype	Type of element
+ *	@return	Pointer to new record
+ */
+int newdecl(syntax *const sx, const int type, const int elemtype);
 
 #ifdef __cplusplus
 } /* extern "C" */

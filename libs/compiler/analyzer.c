@@ -29,7 +29,6 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx)
 
 	context.charnum = 0;
 	context.charnum_before = 0;
-	//context.startmode = 1;
 	context.sopnd = -1;
 	context.curid = 2;
 	context.lg = -1;
