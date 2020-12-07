@@ -168,6 +168,11 @@ int is_array(syntax *const sx, const int t)
 	return t > 0 && modetab_get(sx, t) == MARRAY;
 }
 
+int is_string(syntax *const sx, const int t)
+{
+	return is_array(sx, t) && modetab_get(sx, t + 1) == LCHAR;
+}
+
 int is_pointer(syntax *const sx, const int t)
 {
 	return t > 0 && modetab_get(sx, t) == MPOINT;
@@ -524,7 +529,7 @@ void mustbestring(analyzer *context)
 	}
 	toval(context);
 	context->sopnd--;
-	if (!(is_array(context->sx, context->ansttype) && modetab_get(context->sx, context->ansttype + 1) == LCHAR))
+	if (!(is_string(context->sx, context->ansttype)))
 	{
 		context_error(context, not_string_in_stanfunc);
 		context->error_flag = 5;
@@ -542,9 +547,7 @@ void mustbepointstring(analyzer *context)
 	}
 	toval(context);
 	context->sopnd--;
-	if (!(context->ansttype > 0 && context->sx->modetab[context->ansttype] == MPOINT &&
-		  is_array(context->sx, context->sx->modetab[context->ansttype + 1]) &&
-		  context->sx->modetab[context->sx->modetab[context->ansttype + 1] + 1] == LCHAR))
+	if (!(is_pointer(context->sx, context->ansttype) && is_string(context->sx, context->ansttype + 1)))
 	{
 		context_error(context, not_point_string_in_stanfunc);
 		context->error_flag = 5;
