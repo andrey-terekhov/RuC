@@ -76,6 +76,15 @@ syntax sx_create();
 int modetab_add(syntax *const sx, const int size, const int new_record[]);
 
 /**
+ *	Get an item from modetab by index
+ *
+ *	@param	sx	Syntax structure
+ *	@param	index	Index of record
+ *	@return	Item by index in modetab
+ */
+int modetab_get(syntax *const sx, const int index);
+
+/**
  *	Add new record of array or pointer to modetab
  *
  *	@param	sx	Syntax structure

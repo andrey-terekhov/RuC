@@ -158,37 +158,32 @@ int szof(analyzer *context, int type)
 			   : type == LFLOAT ? 2 : (type > 0 && context->sx->modetab[type] == MSTRUCT) ? context->sx->modetab[type + 1] : 1;
 }
 
-int is_row_of_char(analyzer *context, int t)
+int is_function(syntax *const sx, const int t)
 {
-	return t > 0 && context->sx->modetab[t] == MARRAY && context->sx->modetab[t + 1] == LCHAR;
+	return t > 0 && modetab_get(sx, t) == MFUNCTION;
 }
 
-int is_function(analyzer *context, int t)
+int is_array(syntax *const sx, const int t)
 {
-	return t > 0 && context->sx->modetab[t] == MFUNCTION;
+	return t > 0 && modetab_get(sx, t) == MARRAY;
 }
 
-int is_array(analyzer *context, int t)
+int is_pointer(syntax *const sx, const int t)
 {
-	return t > 0 && context->sx->modetab[t] == MARRAY;
+	return t > 0 && modetab_get(sx, t) == MPOINT;
 }
 
-int is_pointer(analyzer *context, int t)
+int is_struct(syntax *const sx, const int t)
 {
-	return t > 0 && context->sx->modetab[t] == MPOINT;
+	return t > 0 && modetab_get(sx, t) == MSTRUCT;
 }
 
-int is_struct(analyzer *context, int t)
-{
-	return t > 0 && context->sx->modetab[t] == MSTRUCT;
-}
-
-int is_float(int t)
+int is_float(const int t)
 {
 	return t == LFLOAT || t == LDOUBLE;
 }
 
-int is_int(int t)
+int is_int(const int t)
 {
 	return t == LINT || t == LLONG || t == LCHAR;
 }
@@ -360,7 +355,7 @@ void binop(analyzer *context, int sp)
 	int rtype = context->stackoperands[context->sopnd--];
 	int ltype = context->stackoperands[context->sopnd];
 
-	if (is_pointer(context, ltype) || is_pointer(context, rtype))
+	if (is_pointer(context->sx, ltype) || is_pointer(context->sx, rtype))
 	{
 		context_error(context, operand_is_pointer);
 		context->error_flag = 5;
@@ -415,7 +410,7 @@ void toval(analyzer *context)
 	{
 		;
 	}
-	else if (is_struct(context, context->ansttype))
+	else if (is_struct(context->sx, context->ansttype))
 	{
 		if (!context->inass)
 		{
@@ -429,7 +424,7 @@ void toval(analyzer *context)
 			{
 				totree(context, COPY1ST);
 			}
-			totree(context, context->sx->modetab[context->ansttype + 1]);
+			totree(context, modetab_get(context->sx, context->ansttype + 1));
 			context->anst = VAL;
 		}
 	}
@@ -440,7 +435,7 @@ void toval(analyzer *context)
 			context->sx->tree[context->sx->tc - 2] = is_float(context->ansttype) ? TIdenttovald : TIdenttoval;
 		}
 
-		if (!(is_array(context, context->ansttype) || is_pointer(context, context->ansttype)))
+		if (!(is_array(context->sx, context->ansttype) || is_pointer(context->sx, context->ansttype)))
 		{
 			if (context->anst == ADDR)
 			{
@@ -529,8 +524,7 @@ void mustbestring(analyzer *context)
 	}
 	toval(context);
 	context->sopnd--;
-	if (!(context->ansttype > 0 && context->sx->modetab[context->ansttype] == MARRAY &&
-		  context->sx->modetab[context->ansttype + 1] == LCHAR))
+	if (!(is_array(context->sx, context->ansttype) && modetab_get(context->sx, context->ansttype + 1) != LCHAR))
 	{
 		context_error(context, not_string_in_stanfunc);
 		context->error_flag = 5;
@@ -549,7 +543,7 @@ void mustbepointstring(analyzer *context)
 	toval(context);
 	context->sopnd--;
 	if (!(context->ansttype > 0 && context->sx->modetab[context->ansttype] == MPOINT &&
-		  is_array(context, context->sx->modetab[context->ansttype + 1]) &&
+		  is_array(context->sx, context->sx->modetab[context->ansttype + 1]) &&
 		  context->sx->modetab[context->sx->modetab[context->ansttype + 1] + 1] == LCHAR))
 	{
 		context_error(context, not_point_string_in_stanfunc);
@@ -570,7 +564,7 @@ void mustberow(analyzer *context)
 	toval(context);
 	context->sopnd--;
 
-	if (!(context->ansttype > 0 && context->sx->modetab[context->ansttype] == MARRAY))
+	if (!is_array(context->sx, context->ansttype))
 	{
 		context_error(context, not_array_in_stanfunc);
 		context->error_flag = 5;
@@ -729,7 +723,7 @@ void primaryexpr(analyzer *context)
 				context->error_flag = 4;
 				return; // 1
 			}
-			if (!is_pointer(context, context->ansttype))
+			if (!is_pointer(context->sx, context->ansttype))
 			{
 				context_error(context, not_pointer_in_cast);
 				context->error_flag = 4;
@@ -1345,7 +1339,7 @@ void selectend(analyzer *context)
 	}
 
 	totree(context, context->sx->anstdispl);
-	if (is_array(context, context->ansttype) || is_pointer(context, context->ansttype))
+	if (is_array(context->sx, context->ansttype) || is_pointer(context->sx, context->ansttype))
 	{
 		totree(context, TAddrtoval);
 	}
@@ -1384,7 +1378,7 @@ void postexpr(analyzer *context)
 
 		was_func = 1;
 		scaner(context);
-		if (!is_function(context, leftansttyp))
+		if (!is_function(context->sx, leftansttyp))
 		{
 			context_error(context, call_not_from_function);
 			context->error_flag = 4;
@@ -1402,7 +1396,7 @@ void postexpr(analyzer *context)
 																   // context->ansttype будет вид фактического
 																   // параметра
 			scaner(context);
-			if (is_function(context, mdj))
+			if (is_function(context->sx, mdj))
 			{
 				// фактическим параметром должна быть функция, в С - это только идентификатор
 
@@ -1439,7 +1433,7 @@ void postexpr(analyzer *context)
 			}
 			else
 			{
-				if (context->cur == BEGIN && is_array(context, mdj))
+				if (context->cur == BEGIN && is_array(context->sx, mdj))
 				{
 					actstring(context->sx->modetab[mdj + 1], context), totree(context, TExprend);
 					if (context->error_flag == 2)
@@ -1495,7 +1489,7 @@ void postexpr(analyzer *context)
 		totree(context, lid);
 		context->stackoperands[context->sopnd] = context->ansttype = context->sx->modetab[leftansttyp + 1];
 		context->anst = VAL;
-		if (is_struct(context, context->ansttype))
+		if (is_struct(context->sx, context->ansttype))
 		{
 			context->x -= context->sx->modetab[context->ansttype + 1] - 1;
 		}
@@ -1735,7 +1729,7 @@ void unarexpr(analyzer *context)
 			}
 			else if (op == LMULT)
 			{
-				if (!is_pointer(context, context->ansttype))
+				if (!is_pointer(context->sx, context->ansttype))
 				{
 					context_error(context, aster_not_for_pointer);
 					context->error_flag = 7;
@@ -2033,8 +2027,8 @@ void condexpr(analyzer *context)
 
 void inition(analyzer *context, int decl_type)
 {
-	if (decl_type < 0 || is_pointer(context, decl_type) || // Обработка для базовых типов, указателей
-		(is_array(context, decl_type) && context->sx->modetab[decl_type + 1] == LCHAR)) // или строк
+	if (decl_type < 0 || is_pointer(context->sx, decl_type) || // Обработка для базовых типов, указателей
+		(is_array(context->sx, decl_type) && context->sx->modetab[decl_type + 1] == LCHAR)) // или строк
 	{
 		exprassn(context, 1);
 		if (context->error_flag == 6)
@@ -2153,11 +2147,11 @@ void exprassn(analyzer *context, int level)
 
 	if (context->cur == BEGIN)
 	{
-		if (is_struct(context, context->leftansttype))
+		if (is_struct(context->sx, context->leftansttype))
 		{
 			struct_init(context, context->leftansttype);
 		}
-		else if (is_array(context, context->leftansttype))
+		else if (is_array(context->sx, context->leftansttype))
 		{
 			// пока в RuC присваивать массивы нельзя
 			array_init(context, context->leftansttype);
@@ -2220,14 +2214,14 @@ void exprassn(analyzer *context, int level)
 			return; // 1
 		}
 
-		if (is_array(context, ltype)) // присваивать массив в массив в си нельзя
+		if (is_array(context->sx, ltype)) // присваивать массив в массив в си нельзя
 		{
 			context_error(context, array_assigment);
 			context->error_flag = 6;
 			return; // 1
 		}
 
-		if (is_struct(context, ltype)) // присваивание в структуру
+		if (is_struct(context->sx, ltype)) // присваивание в структуру
 		{
 			if (ltype != rtype) // типы должны быть равны
 			{
@@ -2266,7 +2260,7 @@ void exprassn(analyzer *context, int level)
 		}
 		else // оба операнда базового типа или указатели
 		{
-			if (is_pointer(context, ltype) && opp != ASS) // в указатель можно присваивать только с помощью =
+			if (is_pointer(context->sx, ltype) && opp != ASS) // в указатель можно присваивать только с помощью =
 			{
 				context_error(context, wrong_struct_ass);
 				context->error_flag = 6;
@@ -2286,7 +2280,7 @@ void exprassn(analyzer *context, int level)
 				totree(context, WIDEN);
 				context->ansttype = LFLOAT;
 			}
-			if (is_pointer(context, ltype) && is_pointer(context, rtype) && ltype != rtype)
+			if (is_pointer(context->sx, ltype) && is_pointer(context->sx, rtype) && ltype != rtype)
 			{
 				// проверка нужна только для указателей
 				context_error(context, type_missmatch);
@@ -2377,7 +2371,7 @@ void array_init(analyzer *context, int decl_type)
 	int ad;
 	int all = 0;
 
-	if (is_array(context, decl_type))
+	if (is_array(context->sx, decl_type))
 	{
 		if (context->cur == STRING)
 		{
@@ -2437,7 +2431,7 @@ void array_init(analyzer *context, int decl_type)
 	}
 	else if (context->cur == BEGIN)
 	{
-		if (is_struct(context, decl_type))
+		if (is_struct(context->sx, decl_type))
 		{
 			struct_init(context, decl_type);
 		}
@@ -2467,7 +2461,7 @@ int arrdef(analyzer *context, int t)
 
 	context->arrdim = 0;
 	context->usual = 1; // описание массива без пустых границ
-	if (is_pointer(context, t))
+	if (is_pointer(context->sx, t))
 	{
 		context_error(context, pnt_before_array);
 		context->error_flag = 5;
@@ -2567,7 +2561,7 @@ void decl_id(analyzer *context, int decl_type)
 	totree(context, elem_type);																		  // elem_type
 	totree(context, context->arrdim);																  // N
 	context->sx->tree[all = context->sx->tc++] = 0;															  // all
-	context->sx->tree[context->sx->tc++] = is_pointer(context, decl_type) ? 0 : context->was_struct_with_arr; // proc
+	context->sx->tree[context->sx->tc++] = is_pointer(context->sx, decl_type) ? 0 : context->was_struct_with_arr; // proc
 	totree(context, context->usual);																  // context->usual
 	totree(context, 0); // массив не в структуре
 
@@ -2576,7 +2570,7 @@ void decl_id(analyzer *context, int decl_type)
 		scaner(context);
 		scaner(context);
 		context->sx->tree[all] = szof(context, decl_type);
-		if (is_array(context, decl_type)) // инициализация массива
+		if (is_array(context->sx, decl_type)) // инициализация массива
 		{
 			context->onlystrings = 2;
 			if (!context->usual)
@@ -2711,7 +2705,7 @@ void statement(analyzer *context)
 				totree(context, TPrint);
 				totree(context, context->ansttype);
 				totree(context, TExprend);
-				if (is_pointer(context, context->ansttype))
+				if (is_pointer(context->sx, context->ansttype))
 				{
 					context_error(context, pointer_in_print);
 					flagsemicol = 0;
@@ -3302,7 +3296,7 @@ int struct_decl_list(analyzer *context)
 			{
 				scaner(context);
 				scaner(context);
-				if (is_array(context, t)) // инициализация массива
+				if (is_array(context->sx, t)) // инициализация массива
 				{
 					context->onlystrings = 2;
 					context->sx->tree[all] = 1;
@@ -3711,7 +3705,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 			{
 				maybe_fun = 2;
 
-				if (is_pointer(context, context->type) && ident == 0)
+				if (is_pointer(context->sx, context->type) && ident == 0)
 				{
 					context_error(context, aster_with_row);
 					context->error_flag = 2;

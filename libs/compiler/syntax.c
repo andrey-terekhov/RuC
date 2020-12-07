@@ -108,6 +108,11 @@ int modetab_add(syntax *const sx, const int size, const int new_record[])
 	return check_mode_duplicates(sx);
 }
 
+int modetab_get(syntax *const sx, const int index)
+{
+	return sx->modetab[index];
+}
+
 
 int newdecl(syntax *const sx, const int type, const int elemtype)
 {
