@@ -115,14 +115,14 @@ int check_duplicates(analyzer *context)
 	// проверяет, имеется ли в modetab только что внесенный тип.
 	// если да, то возвращает ссылку на старую запись, иначе - на новую.
 
-	int old = context->sx->modetab[context->startmode];
+	int old = context->sx->modetab[context->sx->startmode];
 
 	while (old)
 	{
-		if (modeeq(context, context->startmode + 1, old + 1))
+		if (modeeq(context, context->sx->startmode + 1, old + 1))
 		{
-			context->sx->md = context->startmode;
-			context->startmode = context->sx->modetab[context->startmode];
+			context->sx->md = context->sx->startmode;
+			context->sx->startmode = context->sx->modetab[context->sx->startmode];
 			return old + 1;
 		}
 		else
@@ -130,13 +130,13 @@ int check_duplicates(analyzer *context)
 			old = context->sx->modetab[old];
 		}
 	}
-	return context->startmode + 1;
+	return context->sx->startmode + 1;
 }
 
 int newdecl(analyzer *context, int type, int elemtype)
 {
-	context->sx->modetab[context->sx->md] = context->startmode;
-	context->startmode = context->sx->md++;
+	context->sx->modetab[context->sx->md] = context->sx->startmode;
+	context->sx->startmode = context->sx->md++;
 	context->sx->modetab[context->sx->md++] = type;
 	context->sx->modetab[context->sx->md++] = elemtype; // ссылка на элемент
 
