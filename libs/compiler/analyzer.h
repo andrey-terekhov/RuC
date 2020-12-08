@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov
+ *	Copyright 2020 Andrey Terekhov, Maxim Menshikov, Dmitrii Davladov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -17,43 +17,30 @@
 #pragma once
 
 #include "defs.h"
+#include "syntax.h"
 #include "uniio.h"
-#include <stdio.h>
 
 
-#define COMPILER_TABLE_SIZE_DEFAULT	 (100)
-#define COMPILER_TABLE_INCREMENT_MIN (100)
-
-#define REPRTAB		(context->reprtab.table)
-#define REPRTAB_POS (context->reprtab.pos)
-#define REPRTAB_LEN (context->reprtab.len)
+#define REPRTAB		(context->sx->reprtab)
+#define REPRTAB_POS (context->sx->repr)
+#define REPRTAB_LEN (context->sx->rp)
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** A designated compiler table */
-typedef struct compiler_table
-{
-	int *table; /** Actual table */
-	int len;	/** Length of a useful part of table */
-	int pos;	/** A position in a table */
-	int size;	/** Total size of a table */
-} compiler_table;
-
 /** Определение глобальных переменных */
-typedef struct compiler_context
+typedef struct analyzer
 {
-	universal_io io;
+	universal_io *io;
+	syntax *sx;
 
-	double numdouble;
 	int line;
 	int charnum;
-	int charnum_before;
+	int charnum_before;				// useless
 	int cur;
 	int next;
-	int next1;
 	int num;
 	int hash;
 	int keywordsnum;
@@ -63,15 +50,11 @@ typedef struct compiler_context
 		int first;
 		int second;
 	} numr;
-	int last_line[LINESSIZE * 2];
+	int last_line[LINESSIZE * 2];	// useless
 	int nextchar;
 	int curchar;
 	int func_def;
 	int hashtab[256];
-	int identab[MAXIDENTAB];
-	int id;
-	int modetab[MAXMODETAB];
-	int md;
 	int startmode;
 	int stack[100];
 	int stackop[100];
@@ -79,61 +62,37 @@ typedef struct compiler_context
 	int stacklog[100];
 	int sp;
 	int sopnd;
-	int aux;
 	int lastid;
 	int curid;
 	int lg;
 	int displ;
 	int maxdispl;
-	int maxdisplg;
 	int type;
 	int op;
 	int inass;
 	int firstdecl;
-	int iniprocs[INIPROSIZE];
-	int procd;
 	int arrdim;
-	int arrelemlen;
 	int was_struct_with_arr;
 	int usual;
 	int instring;
 	int inswitch;
 	int inloop;
 	int lexstr[MAXSTRINGL + 1];
-	int tree[MAXTREESIZE];
-	int tc;
-	int mtree[MAXTREESIZE];
-	int mtc;
-	int mem[MAXMEMSIZE];
-	int pc;
-	int functions[FUNCSIZE];
-	int funcnum;
 	int functype;
-	int kw;
+	int kw;							// useless
 	int blockflag;
-	int entry;
-	int wasmain;
 	int wasret;
 	int wasdefault;
-	int notrobot;
-	int prep_flag;
-	int adcont;
-	int adbreak;
-	int adcase;
-	int adandor;
-	int switchreg;
+	int notrobot;					// useless
+	//int prep_flag;
 	int predef[FUNCSIZE];
 	int prdf;
-	int emptyarrdef;
 	int gotost[1000];
 	int pgotost;
 	int anst;
-	int anstdispl;
 	int ansttype;
 	int leftansttype; // anst = VAL  - значение на стеке
-	int g;
-	int l;
-	int x;
+	int x;							// useless
 	int iniproc; // anst = ADDR - на стеке адрес значения
 				 // anst = IDENT- значение в статике,
 				 // в anstdisl смещение от l или g
@@ -147,47 +106,19 @@ typedef struct compiler_context
 	int buf_cur;
 	int temp_tc;
 	int error_flag;
-	int new_line_flag;
-
-	int c_flag;
-	compiler_table reprtab;
-
-} compiler_context;
+	int new_line_flag;				// useless
+} analyzer;
 
 
 /**
- *	Initialize RuC context
+ *	Analyze source code to generate syntax structure
  *
- *	@param	context	Uninitialized RuC context
+ *	@param	io		Universal io structure
+ *	@param	sx		Syntax structure
+ *
+ *	@return	@c 0 on success, @c error_code on failure
  */
-void compiler_context_init(compiler_context *context);
-
-/**
- *	Initialize compiler table
- *
- *	@param	table	Target compiler table
- */
-void compiler_table_init(compiler_table *table);
-
-/**
- *	Ensure that specific offset is allocated in a table
- *
- *	@param	table	Target compiler table
- *	@param	pos		Target position
- *
- *	@return	Table size
- */
-int compiler_table_ensure_allocated(compiler_table *table, int pos);
-
-/**
- *	Expand compiler table
- *
- *	@param	table	Target compiler table
- *	@param	len		Requested length
- *
- *	@return	New size
- */
-int compiler_table_expand(compiler_table *table, int len);
+int analyze(universal_io *const io, syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */

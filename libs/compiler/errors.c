@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "commenter.h"
-#include "global.h"
+#include "defs.h"
 #include "logger.h"
 #include "uniio.h"
 #include "utf8.h"
@@ -38,7 +38,7 @@ size_t printident(const int *const reprtab, int pos, char *const buffer)
 {
 	size_t index = 0;
 
-	pos += 2; // ссылка на context->reprtab
+	pos += 2; // ссылка на reprtab
 	do
 	{
 		index += utf8_to_string(buffer, reprtab[pos++]);
@@ -565,10 +565,8 @@ void get_error(const int num, char *const msg, va_list args)
 	}
 }
 
-void get_warning(const int num, char *const msg, va_list args)
+void get_warning(const int num, char *const msg)
 {
-	UNUSED(args);
-	
 	switch (num)
 	{
 		case too_long_int:
@@ -592,6 +590,7 @@ void output(const universal_io *const io, const char *const msg, const logger sy
 	{
 		in_get_path(io, tag);
 		system_func(tag, msg);
+		return;
 	}
 
 	size_t position = in_get_position(io) - 1;
@@ -636,13 +635,8 @@ void error(const universal_io *const io, const int num, ...)
 
 void warning(const universal_io *const io, const int num, ...)
 {
-	va_list args;
-	va_start(args, num);
-
 	char msg[MAX_MSG_SIZE];
-	get_warning(num, msg, args);
-
-	va_end(args);
+	get_warning(num, msg);
 
 	output(io, msg, &log_system_warning, &log_warning);
 }
