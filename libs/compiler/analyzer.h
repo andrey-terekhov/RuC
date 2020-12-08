@@ -55,7 +55,6 @@ typedef struct analyzer
 	int curchar;
 	int func_def;
 	int hashtab[256];
-	int startmode;
 	int stack[100];
 	int stackop[100];
 	int stackoperands[100];
