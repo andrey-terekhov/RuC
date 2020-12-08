@@ -37,7 +37,10 @@ void block(analyzer *context, int b);
 
 int newdecl(syntax *const sx, const int type, const int element_type)
 {
-	return mode_add(sx, (int []){type, element_type}, 2);
+	int temp[2];
+	temp[0] = type;
+	temp[1] = element_type;
+	return mode_add(sx, temp, 2);
 }
 
 
