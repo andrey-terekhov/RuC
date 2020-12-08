@@ -128,7 +128,7 @@ void m_onemore(preprocess_context *context)
 
 void m_fprintf(int a, preprocess_context *context)
 {
-	uni_print_char(&context->io, a);
+	uni_print_char(context->io, a);
 	// printf_character(a);
 	// printf(", %d; \n", a);
 	// printf(" t = %d n = %d\n", nextch_type,context -> nextp);
@@ -190,7 +190,12 @@ void m_nextch(preprocess_context *context)
 {
 	if (context->nextch_type != FILETYPE && context->nextch_type <= TEXTTYPE)
 	{
-		if (context->nextch_type == CTYPE && context->nextp < context->csp)
+		if (context->nextch_type == MTYPE && context->nextp < context->msp)
+		{
+			context->curchar = context->mstring[context->nextp++];
+			context->nextchar = context->mstring[context->nextp];
+		}
+		else if (context->nextch_type == CTYPE && context->nextp < context->csp)
 		{
 			context->curchar = context->cstring[context->nextp++];
 			context->nextchar = context->cstring[context->nextp];

@@ -15,14 +15,19 @@
  */
 
 #include "preprocessor.h"
+#include "calculator.h"
 #include "constants.h"
 #include "context_var.h"
+#include "define.h"
 #include "file.h"
+#include "if.h"
 #include "include.h"
 #include "uniio.h"
 #include "uniprinter.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
+#include "while.h"
+#include "workspace.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -30,13 +35,15 @@
 #include <string.h>
 #include <wchar.h>
 
-#define MACRODEBUG 1
 
 #define H_FILE 1
 #define C_FILE 0
 
 
-/*void to_reprtab(char str[], int num, preprocess_context *context)
+const size_t SIZE_OUT_BUFFER = 1024;
+
+
+void to_reprtab(char str[], int num, preprocess_context *context)
 {
 	int i;
 	int oldrepr = context->rp;
@@ -51,26 +58,34 @@
 	{
 		sscanf(&str[i], "%c%n", &firstchar, &p);
 
-		if ((firstchar & /*0b11100000* 0xE0) == /*0b11000000* 0xC0)
+		if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
 		{
 			++i;
 			sscanf(&str[i], "%c%n", &secondchar, &p);
-			c = ((int)(firstchar & /*0b11111* 0x1F)) << 6 | (secondchar & /*0b111111* 0x3F);
+			c = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 | (secondchar & /*0b111111*/ 0x3F);
 		}
 		else
 		{
 			c = firstchar;
 		}
 
-		hash += c
-}*/
+		hash += c;
+		context->reprtab[context->rp++] = c;
+	}
+
+	hash &= 255;
+	context->reprtab[context->rp++] = 0;
+	context->reprtab[oldrepr] = context->hashtab[hash];
+	context->reprtab[oldrepr + 1] = num;
+	context->hashtab[hash] = oldrepr;
+}
 
 void to_reprtab_full(char str1[], char str2[], char str3[], char str4[], int num, preprocess_context *context)
 {
-	con_repr_add(&context->repr, str1, num);
-	con_repr_add(&context->repr, str2, num);
-	con_repr_add(&context->repr, str3, num);
-	con_repr_add(&context->repr, str4, num);
+	to_reprtab(str1, num, context);
+	to_reprtab(str2, num, context);
+	to_reprtab(str3, num, context);
+	to_reprtab(str4, num, context);
 }
 
 void add_keywods(preprocess_context *context)
@@ -95,23 +110,158 @@ void add_keywods(preprocess_context *context)
 	to_reprtab_full("#INCLUDE", "#include", "#ДОБАВИТЬ", "#добавить", SH_INCLUDE, context);
 }
 
+void preprocess_words(preprocess_context *context)
+{
+	/*if (context->curchar != '(')
+	{
+		m_nextch(context);
+	}*/
+
+	space_skip(context);
+	switch (context->cur)
+	{
+		case SH_INCLUDE:
+		{
+			include_relis(context);
+			return;
+		}
+		case SH_DEFINE:
+		case SH_MACRO:
+		{
+			define_relis(context);
+			return;
+		}
+		case SH_UNDEF:
+		{
+			int k;
+			context->macrotext[context->reprtab[(k = collect_mident(context)) + 1]] = MACROUNDEF;
+			space_end_line(context);
+			return;
+		}
+		case SH_IF:
+		case SH_IFDEF:
+		case SH_IFNDEF:
+		{
+			if_relis(context);
+			return;
+		}
+		case SH_SET:
+		{
+			set_relis(context);
+			return;
+		}
+		case SH_ELSE:
+		case SH_ELIF:
+		case SH_ENDIF:
+			return;
+		case SH_EVAL:
+		{
+			if (context->curchar == '(')
+			{
+				calculator(0, context);
+			}
+			else
+			{
+				m_error(after_eval_must_be_ckob, context);
+			}
+
+			m_change_nextch_type(CTYPE, 0, context);
+			return;
+		}
+		case SH_WHILE:
+		{
+			context->wsp = 0;
+			context->ifsp = 0;
+			while_collect(context);
+			m_change_nextch_type(WHILETYPE, 0, context);
+			m_nextch(context);
+			m_nextch(context);
+
+			context->nextp = 0;
+			while_relis(context);
+
+			return;
+		}
+		default:
+		{
+			// m_nextch(context);
+			output_keywods(context);
+			return;
+		}
+	}
+}
+
+void preprocess_scan(preprocess_context *context)
+{
+	int i;
+
+	switch (context->curchar)
+	{
+		case EOF:
+			return;
+
+		case '#':
+		{
+			context->cur = macro_keywords(context);
+
+			if (context->cur != 0)
+			{
+				context->prep_flag = 1;
+				preprocess_words(context);
+				if(context->curchar != '#')
+				{
+					con_file_print_coment(&context->fs, context);
+				}
+			}
+			else
+			{
+				// m_nextch(context);
+				output_keywods(context);
+			}
+
+			return;
+		}
+		case '\'':
+		case '\"':
+		{
+			space_skip_str(context);
+			return;
+		}
+		case '@':
+		{
+			m_nextch(context);
+			return;
+		}
+		default:
+		{
+			if (is_letter(context) && context->prep_flag == 1)
+			{
+				int r = collect_mident(context);
+
+				if (r)
+				{
+					define_get_from_macrotext(r, context);
+				}
+				else
+				{
+					for (i = 0; i < context->msp; i++)
+					{
+						m_fprintf(context->mstring[i], context);
+					}
+				}
+			}
+			else
+			{
+				m_fprintf(context->curchar, context);
+				m_nextch(context);
+			}
+		}
+	}
+}
 
 void add_c_file_siple(preprocess_context *context)
 {
 	context->temp_output = 0;
-
-	while (context->curchar != EOF && context->fs.main_faile == -1)
-	{
-		char32_t str[STRIGSIZE];
-		collect_mident(context, str);
-		context->cur = con_repr_find(&context->repr, str);
-		if (context->cur == SH_MAIN)
-		{
-			con_file_it_is_main(&context->fs);
-		}
-		m_nextch(context);
-	}
-
 	while (context->curchar != EOF)
 	{
 		m_nextch(context);
@@ -138,15 +288,12 @@ void add_c_file(preprocess_context *context)
 			}
 			case '#':
 			{
-				char32_t str[STRIGSIZE];//char32_t *str = malloc(100 * sizeof(char *));
-				collect_mident(context, str);
-				
-				context->cur = con_repr_find(&context->repr, str);
+				context->cur = macro_keywords(context);
 				if (context->cur == SH_INCLUDE)
 				{
 					include_relis(context);
-					break;
 				}
+				break;
 			}
 			default:
 			{
@@ -157,32 +304,16 @@ void add_c_file(preprocess_context *context)
 	}
 }
 
-void open_files(preprocess_context *context, const workspace *const ws)
+void open_files(preprocess_context *context)
 {
-	const char **ways = context->include_ways;
 	int i = 0;
-	const char *temp = ws_get_dir(ws, i);
-	while (temp != NULL)
-	{
-		ways[i++] = temp;
-		temp = ws_get_dir(ws, i);
-	}
-	context->iwp = i;
-	
-	i = 0;
-	temp = ws_get_file(ws, i++);
-	while (temp != NULL)
-	{
-		int l = strlen(temp);
-		if (temp[l - 1] == 'h')
-		{
-			temp = ws_get_file(ws, i++);
-			continue;
-		}
+	size_t num = context->fs.ws->files_num;
+	const char *temp = ws_get_file(context->fs.ws, i++);
 
-		if (con_repr_add(&context->repr, temp, SH_FILE) != 0)
+	for(size_t j = 0; j < num; j++)
+	{
+		if (find_file(context, temp))
 		{
-			con_files_add_parametrs(&context->fs, temp);
 			con_file_open_next(&context->fs, context, C_FILE);
 
 			get_next_char(context);
@@ -193,9 +324,10 @@ void open_files(preprocess_context *context, const workspace *const ws)
 			}
 			con_file_close_cur(context);
 		}
-		temp = ws_get_file(ws, i++);
+		temp = ws_get_file(context->fs.ws, i++);
 	}
-	con_file_it_is_end_h(&context->fs);
+
+	con_file_it_is_end_h(&context->fs, i-1);
 }
 
 void preprocess_h_file(preprocess_context *context)
@@ -203,11 +335,11 @@ void preprocess_h_file(preprocess_context *context)
 	context->h_flag = 1;
 	context->include_type = 1;
 
-	if(con_file_open_hedrs(&context->fs, context) != 0)
+	if(con_file_open_hedrs(&context->fs, context))
 	{
 		file_read(context);
 
-		while (con_file_open_next(&context->fs, context, C_FILE)!= 0)
+		while (con_file_open_next(&context->fs, context, C_FILE))
 		{
 			file_read(context);
 		}
@@ -218,44 +350,31 @@ void preprocess_c_file(preprocess_context *context)
 {
 	context->include_type = 2;
 	context->h_flag = 0;
-	if(con_file_open_sorse(&context->fs, context) != 0)
+	if(con_file_open_sorse(&context->fs, context))
 	{
 		file_read(context);
 
-		while (con_file_open_next(&context->fs, context, C_FILE) != 0)
+		while (con_file_open_next(&context->fs, context, C_FILE))
 		{
 			file_read(context);
 		}
 	}
-
-	if(con_file_open_main(&context->fs, context) != 0)
-	{
-		file_read(context);
-	}
 }
 
-char *macro(workspace *const ws)
+
+int macro_form_io(workspace *const ws, universal_io *const io)
 {
 	preprocess_context context;
-	con_init(&context);
-	out_set_buffer(&context.io, 1024);
+	preprocess_context_init(&context, ws, io);
 
 	add_keywods(&context);
 
-	open_files(&context, ws);
+	context.mfirstrp = context.rp;
+	open_files(&context);
 	preprocess_h_file(&context);
 	preprocess_c_file(&context);
 
-	con_files_free(&context.fs);
-
-	char *macro_processed = out_extract_buffer(&context.io);
-
-	
-#if MACRODEBUG
-	printf("\n\n");
-	printf("Текст после препроцессирования:\n>\n%s<\n", macro_processed);
-#endif
-	return macro_processed;
+	return 0;
 }
 
 
@@ -273,7 +392,10 @@ char *macro(workspace *const ws)
 	{
 		printf("context->macrotext[%d] = %d,%c.\n", k, context->macrotext[k], context->macrotext[k]);
 	}
-	
+	for (int k = context->mfirstrp; k < context->mfirstrp + 20; k++)
+	{
+		printf("str[%d] = %d,%c.\n", k, context->reprtab[k], context->reprtab[k]);
+	}
 	for (int k = 0; k < cp; k++)
 	{
 		printf(" fchange[%d] = %d,%c.\n", k, fchange[k], fchange[k]);
@@ -285,26 +407,47 @@ char *macro(workspace *const ws)
 	/Egor/Macro/includ/cofig.txt
 */
 
-int macro_to_file(workspace *const ws, const char *const path)
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+char *macro(workspace *const ws)
 {
-	char *buffer = macro(ws);
-	if (buffer == NULL)
+	universal_io io = io_create();
+	if (out_set_buffer(&io, SIZE_OUT_BUFFER))
 	{
-		return -1;
+		return NULL;
 	}
 
+	int ret = macro_form_io(ws, &io);
+	if (ret)
+	{
+		io_erase(&io);
+		return NULL;
+	}
+
+	in_clear(&io);
+	return out_extract_buffer(&io);
+}
+
+int macro_to_file(workspace *const ws, const char *const path)
+{
 	universal_io io = io_create();
 	if (out_set_file(&io, path))
 	{
-		free(buffer);
 		return -1;
 	}
-	
-	uni_printf(&io, "%s", buffer);
-	io_erase(&io);
 
-	free(buffer);
-	return 0;
+	int ret = macro_form_io(ws, &io);
+
+	io_erase(&io);
+	return ret;
 }
 
 

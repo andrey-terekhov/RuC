@@ -25,6 +25,9 @@
 extern "C" {
 #endif
 
+void preprocess_scan(preprocess_context *context);
+
+
 /**
  *	Preprocess files from workspace
  *

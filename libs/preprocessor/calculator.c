@@ -15,7 +15,7 @@
  */
 
 #include "calculator.h"
-#include "macros_get.h"
+#include "define.h"
 #include "file.h"
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
@@ -50,7 +50,7 @@ double get_digit(preprocess_context *context)
 		m_nextch(context);
 	}
 
-	while (is_digit(context->curchar) != 0)
+	while (is_digit(context->curchar))
 	{
 		numdouble = numdouble * 10 + (context->curchar - '0');
 		if (numdouble > (double)INT_MAX)
@@ -67,7 +67,7 @@ double get_digit(preprocess_context *context)
 		m_nextch(context);
 		k = 0.1;
 
-		while (is_digit(context->curchar) != 0)
+		while (is_digit(context->curchar))
 		{
 			numdouble += (context->curchar - '0') * k;
 			k *= 0.1;
@@ -77,8 +77,8 @@ double get_digit(preprocess_context *context)
 
 	if (is_power(context))
 	{
-		int d = 0;
-		int k = 1;
+		int power = 0;
+		int sign = 1;
 		int i;
 
 		m_nextch(context);
@@ -86,7 +86,7 @@ double get_digit(preprocess_context *context)
 		{
 			flagint = 0;
 			m_nextch(context);
-			k = -1;
+			sign = -1;
 		}
 		else if (context->curchar == '+')
 		{
@@ -94,30 +94,30 @@ double get_digit(preprocess_context *context)
 		}
 
 
-		if (is_digit(context->curchar) == 0)
+		if (!is_digit(context->curchar))
 		{
 			m_error(must_be_digit_after_exp1, context);
 		}
 
 
-		while (is_digit(context->curchar) != 0)
+		while (is_digit(context->curchar))
 		{
-			d = d * 10 + context->curchar - '0';
+			power = power * 10 + context->curchar - '0';
 			m_nextch(context);
 		}
 
-		if (flagint != 0)
+		if (flagint)
 		{
-			for (i = 1; i <= d; i++)
+			for (i = 1; i <= power; i++)
 			{
 				num *= 10;
 			}
 		}
 
-		numdouble *= pow(10.0, k * d);
+		numdouble *= pow(10.0, sign * power);
 	}
 
-	if (flagint != 0)
+	if (flagint)
 	{
 		return num * d;
 	}
@@ -223,7 +223,7 @@ double relis_opiration(double x, double y, int r, int int_flag)
 		case '*':
 			return x * y;
 		case '/':
-			if (int_flag != 0)
+			if (int_flag)
 			{
 				return (int)x / (int)y;
 			}
@@ -232,10 +232,15 @@ double relis_opiration(double x, double y, int r, int int_flag)
 				return x / y;
 			}
 		case '%':
-			if (int_flag != 0)
+			if (int_flag)
 			{
 				return (int)x % (int)y;
 			}
+			else
+			{
+				return 0;
+			}
+			
 		default:
 			return 0;
 	}
@@ -245,7 +250,7 @@ void double_to_string(double x, int int_flag, preprocess_context *context)
 {
 	char s[30] = "\0";
 
-	if (int_flag != 0)
+	if (int_flag)
 	{
 		sprintf(s, "%f", x);
 		for (context->csp = 0; context->csp < 20; context->csp++)
@@ -260,14 +265,14 @@ void double_to_string(double x, int int_flag, preprocess_context *context)
 	}
 	else
 	{
-		int l;
+		int l = 0;
 
 		sprintf(s, "%.14lf", x);
 		for (context->csp = 0; context->csp < 20; context->csp++)
 		{
 			context->cstring[context->csp] = s[context->csp];
 
-			if (s[context->csp] != '0' && is_digit(s[context->csp]) != 0)
+			if (s[context->csp] != '0' && is_digit(s[context->csp]))
 			{
 				l = context->csp;
 			}
@@ -280,13 +285,13 @@ void calculator(int if_flag, preprocess_context *context)
 {
 	int i = 0;
 	int op = 0;
-	int c;
+	int c = 0;
 	double stack[10];
 	int int_flag[10];
 	int operation[10];
 	int opration_flag = 0;
 
-	if (if_flag == 0)
+	if (!if_flag)
 	{
 		operation[op++] = '(';
 		m_nextch(context);
@@ -296,20 +301,17 @@ void calculator(int if_flag, preprocess_context *context)
 	{
 		space_skip(context);
 
-		if ((is_digit(context->curchar) != 0 || (context->curchar == '-' && 
-			is_digit(context->nextchar) != 0)) && opration_flag == 0)
+		if ((is_digit(context->curchar) || (context->curchar == '-' && is_digit(context->nextchar))) && !opration_flag)
 		{
 			opration_flag = 1;
 			stack[i] = get_digit(context);
 			int_flag[i++] = flagint;
 		}
-		else if (is_letter(context) != 0)
+		else if (is_letter(context))
 		{
-			char32_t str[STRIGSIZE];
-			collect_mident(context, str);
-			int r = con_repr_find(&context->repr, str);
+			int r = collect_mident(context);
 
-			if (r != 0)
+			if (r)
 			{
 				define_get_from_macrotext(r, context);
 			}
@@ -318,11 +320,9 @@ void calculator(int if_flag, preprocess_context *context)
 				m_error(1, context);
 			}
 		}
-		else if (context->curchar == '#' && if_flag != 0)
+		else if (context->curchar == '#' && if_flag)
 		{
-			char32_t str[STRIGSIZE];
-			collect_mident(context, str);
-			context->cur = con_repr_find(&context->repr, str);
+			context->cur = macro_keywords(context);
 
 			if (context->cur == SH_EVAL && context->curchar == '(')
 			{
@@ -334,29 +334,6 @@ void calculator(int if_flag, preprocess_context *context)
 			}
 			m_change_nextch_type(CTYPE, 0, context);
 			m_nextch(context);
-		}
-		else if ((opration_flag || context->curchar == '(') && (c = check_opiration(context) != 0))
-		{
-			int n = get_prior(c);
-			opration_flag = 0;
-
-			if (n != 0 && if_flag != 0 && n > 3)
-			{
-				m_error(not_arithmetic_operations, context);
-			}
-			if (n != 0 && if_flag == 0 && n <= 3)
-			{
-				m_error(not_logical_operations, context);
-			}
-
-			while (op != 0 && n != 0 && get_prior(operation[op - 1]) >= n)
-			{
-				int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
-				stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
-				op--;
-				i--;
-			}
-			operation[op++] = c;
 		}
 		else if (context->curchar == ')')
 		{
@@ -375,10 +352,41 @@ void calculator(int if_flag, preprocess_context *context)
 			op--;
 			m_nextch(context);
 
-			if (op == 0 && if_flag == 0)
+			if (op == 0 && !if_flag)
 			{
 				double_to_string(stack[0], int_flag[0], context);
 				return;
+			}
+		}
+		else if (opration_flag || context->curchar == '(')
+		{
+			c = check_opiration(context);
+			if (c)
+			{
+				int n = get_prior(c);
+				opration_flag = 0;
+
+				if (n != 0 && if_flag && n > 3)
+				{
+					m_error(not_arithmetic_operations, context);
+				}
+				if (n != 0 && !if_flag && n <= 3)
+				{
+					m_error(not_logical_operations, context);
+				}
+
+				while (op != 0 && n != 0 && get_prior(operation[op - 1]) >= n)
+				{
+					int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
+					stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
+					op--;
+					i--;
+				}
+				operation[op++] = c;
+			}
+			else if (context->curchar != '\n')
+			{
+				m_error(3, context);
 			}
 		}
 		else if (context->curchar != '\n')
@@ -387,7 +395,7 @@ void calculator(int if_flag, preprocess_context *context)
 		}
 	}
 
-	if (if_flag != 0)
+	if (if_flag)
 	{
 		context->csp = 0;
 		while (op > 0)

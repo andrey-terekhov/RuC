@@ -16,22 +16,22 @@
 
 #pragma once
 
-#define MAXTAB		50000
+#define MACRODEBUG 1
+
+#define MAXTAB		100000
 #define LONGSTR		10000
-#define STRIGSIZE	250
+#define STRIGSIZE	256
 #define HASH		256
-#define HASH_M		255
 #define DIP			10
+#define CONTROLSIZE 250
 
 #define CANGEEND	  -6
 #define MACROEND	  -5
+#define MACROUNDEF	  -3
 #define MACROCANGE	  -4
 #define WHILEBEGIN	  -2
-
-
-#define MACRODEF	  1
-#define MACROUNDEF	  -3
 #define MACROFUNCTION 0
+#define MACRODEF	  1
 
 #define MTYPE			  2
 #define CTYPE			  3
@@ -45,31 +45,30 @@
 
 // Ключевые слова
 
-#define SH_FILE	   (MAXTAB)
-#define SH_MAIN	   (MAXTAB + 1)
-#define SH_DEFINE  (MAXTAB + 2)
-#define SH_IFDEF   (MAXTAB + 3)
-#define SH_IFNDEF  (MAXTAB + 4)
-#define SH_IF	   (MAXTAB + 5)
-#define SH_ELIF	   (MAXTAB + 6)
-#define SH_ENDIF   (MAXTAB + 7)
-#define SH_ELSE	   (MAXTAB + 8)
-#define SH_MACRO   (MAXTAB + 9)
-#define SH_ENDM	   (MAXTAB + 10)
-#define SH_WHILE   (MAXTAB + 11)
-#define SH_ENDW	   (MAXTAB + 12)
-#define SH_SET	   (MAXTAB + 13)
-#define SH_UNDEF   (MAXTAB + 14)
-#define SH_FOR	   (MAXTAB + 15)
-#define SH_ENDF	   (MAXTAB + 16)
-#define SH_EVAL	   (MAXTAB + 17)
-#define SH_INCLUDE (MAXTAB + 18)
-
+#define SH_MAIN	   -63
+#define SH_DEFINE  -64
+#define SH_IFDEF   -65
+#define SH_IFNDEF  -66
+#define SH_IF	   -67
+#define SH_ELIF	   -68
+#define SH_ENDIF   -69
+#define SH_ELSE	   -70
+#define SH_MACRO   -71
+#define SH_ENDM	   -72
+#define SH_WHILE   -73
+#define SH_ENDW	   -74
+#define SH_SET	   -75
+#define SH_UNDEF   -76
+#define SH_FOR	   -77
+#define SH_ENDF	   -78
+#define SH_EVAL	   -79
+#define SH_INCLUDE -80
+#define SH_FILE	   -81
 
 
 // Коды ошибок
 
-#define just_kill_yourself					1
+#define just_kill_yourself					365
 #define after_ident_must_be_space1			366
 #define ident_begins_with_s					367
 #define must_be_endif						368
