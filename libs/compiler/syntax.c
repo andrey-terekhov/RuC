@@ -42,28 +42,29 @@ syntax sx_create()
 }
 
 
-int equal_modes(syntax *const sx, int first_mode, int second_mode)
+int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
 {
-	int record_length;
-	int i;
-	int flag = 1;
-	int mode;
+	int length;
 	
-	if (sx->modetab[first_mode] != sx->modetab[second_mode])
+	if (sx->modetab[first] != sx->modetab[second])
 	{
 		return 0;
 	}
 	
-	mode = sx->modetab[first_mode];
+	int mode = sx->modetab[first];
 	// Определяем, сколько полей надо сравнивать для различных типов записей
 	if (mode == MSTRUCT || mode == MFUNCTION)
-		record_length = 2 + sx->modetab[first_mode + 2];
-	else
-		record_length = 1;
-	
-	for (i = 1; i <= record_length && flag; i++)
 	{
-		if (sx->modetab[first_mode + i] != sx->modetab[second_mode + i])
+		length = 2 + sx->modetab[first + 2];
+	}
+	else
+	{
+		length = 1;
+	}
+	
+	for (size_t i = 1; i <= (size_t)length; i++)
+	{
+		if (sx->modetab[first + i] != sx->modetab[second + i])
 		{
 			return 0;
 		}
@@ -73,16 +74,19 @@ int equal_modes(syntax *const sx, int first_mode, int second_mode)
 }
 
 
-int check_mode_duplicates(syntax *const sx)
+size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 {
-	// Проверяет, имеется ли в modetab только что внесенный тип
-	// Если да, то возвращает ссылку на старую запись, иначе - на новую
-	
-	int old = sx->modetab[sx->startmode];
-	
+	sx->modetab[sx->md] = sx->startmode;
+	sx->startmode = sx->md++;
+	for (size_t i = 0; i < size; i++)
+	{
+		sx->modetab[sx->md++] = record[i];
+	}
+	// Checking mode duplicates
+	size_t old = sx->modetab[sx->startmode];
 	while (old)
 	{
-		if (equal_modes(sx, sx->startmode + 1, old + 1))
+		if (mode_is_equal(sx, sx->startmode + 1, old + 1))
 		{
 			sx->md = sx->startmode;
 			sx->startmode = sx->modetab[sx->startmode];
@@ -97,29 +101,7 @@ int check_mode_duplicates(syntax *const sx)
 }
 
 
-int modetab_add(syntax *const sx, const int size, const int new_record[])
-{
-	sx->modetab[sx->md] = sx->startmode;
-	sx->startmode = sx->md++;
-	for (int i = 0; i < size; i++)
-	{
-		sx->modetab[sx->md++] = new_record[i];
-	}
-	return check_mode_duplicates(sx);
-}
-
-int modetab_get(syntax *const sx, const int index)
+int mode_get(syntax *const sx, const size_t index)
 {
 	return sx->modetab[index];
-}
-
-
-int newdecl(syntax *const sx, const int type, const int elemtype)
-{
-	sx->modetab[sx->md] = sx->startmode;
-	sx->startmode = sx->md++;
-	sx->modetab[sx->md++] = type;
-	sx->modetab[sx->md++] = elemtype; // ссылка на элемент
-	
-	return check_mode_duplicates(sx);
 }

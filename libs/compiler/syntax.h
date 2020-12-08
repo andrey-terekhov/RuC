@@ -17,6 +17,7 @@
 #pragma once
 
 #include "defs.h"
+#include <stddef.h>
 
 
 #ifdef __cplusplus
@@ -41,8 +42,8 @@ typedef struct syntax
 	int id;						/**< Number of identifiers */
 
 	int modetab[MAXMODETAB];	/**< Modes table */
-	int startmode;				/**< Start of last record in modetab */
 	int md;						/**< Number of modes */
+	int startmode;				/**< Start of last record in modetab */
 	
 	int tree[MAXTREESIZE];		/**< Tree */
 	int tc;						/**< Tree counter */
@@ -69,30 +70,21 @@ syntax sx_create();
  *	Add new record to modetab
  *
  *	@param	sx	Syntax structure
+ *	@param	record	Pointer to the new record
  *	@param	size	Size of the new record
- *	@param	new_record	The new record itself
- *	@return	Pointer to new record
+ *
+ *	@return	Index of the new record from modetab
  */
-int modetab_add(syntax *const sx, const int size, const int new_record[]);
+size_t mode_add(syntax *const sx, const int *const record, const size_t size);
 
 /**
  *	Get an item from modetab by index
  *
  *	@param	sx	Syntax structure
  *	@param	index	Index of record
- *	@return	Item by index in modetab
+ *	@return	Item by index from modetab
  */
-int modetab_get(syntax *const sx, const int index);
-
-/**
- *	Add new record of array or pointer to modetab
- *
- *	@param	sx	Syntax structure
- *	@param	type	Type of record: @c MARRAY or @c MPOINT
- *	@param	elemtype	Type of element
- *	@return	Pointer to new record
- */
-int newdecl(syntax *const sx, const int type, const int elemtype);
+int mode_get(syntax *const sx, const size_t index);
 
 #ifdef __cplusplus
 } /* extern "C" */

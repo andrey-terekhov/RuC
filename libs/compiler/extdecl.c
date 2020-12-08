@@ -35,6 +35,12 @@ int gettype(analyzer *context);
 void block(analyzer *context, int b);
 
 
+int newdecl(syntax *const sx, const int type, const int element_type)
+{
+	return mode_add(sx, (int []){type, element_type}, 2);
+}
+
+
 void context_error(analyzer *const context, const int num) // Вынесено из errors.c
 {
 	const universal_io *const io = context->io;
@@ -153,27 +159,27 @@ int evaluate_params(analyzer *context, int num, int formatstr[], int formattypes
 
 int is_function(syntax *const sx, const int t)
 {
-	return t > 0 && modetab_get(sx, t) == MFUNCTION;
+	return t > 0 && mode_get(sx, t) == MFUNCTION;
 }
 
 int is_array(syntax *const sx, const int t)
 {
-	return t > 0 && modetab_get(sx, t) == MARRAY;
+	return t > 0 && mode_get(sx, t) == MARRAY;
 }
 
 int is_string(syntax *const sx, const int t)
 {
-	return is_array(sx, t) && modetab_get(sx, t + 1) == LCHAR;
+	return is_array(sx, t) && mode_get(sx, t + 1) == LCHAR;
 }
 
 int is_pointer(syntax *const sx, const int t)
 {
-	return t > 0 && modetab_get(sx, t) == MPOINT;
+	return t > 0 && mode_get(sx, t) == MPOINT;
 }
 
 int is_struct(syntax *const sx, const int t)
 {
-	return t > 0 && modetab_get(sx, t) == MSTRUCT;
+	return t > 0 && mode_get(sx, t) == MSTRUCT;
 }
 
 int is_float(const int t)
@@ -189,7 +195,7 @@ int is_int(const int t)
 int szof(analyzer *context, int type)
 {
 	return context->next == LEFTSQBR ? 1
-	: type == LFLOAT ? 2 : (is_struct(context->sx, type)) ? modetab_get(context->sx, type + 1) : 1;
+	: type == LFLOAT ? 2 : (is_struct(context->sx, type)) ? mode_get(context->sx, type + 1) : 1;
 }
 
 void mustbe(analyzer *context, int what, int e)
@@ -428,7 +434,7 @@ void toval(analyzer *context)
 			{
 				totree(context, COPY1ST);
 			}
-			totree(context, modetab_get(context->sx, context->ansttype + 1));
+			totree(context, mode_get(context->sx, context->ansttype + 1));
 			context->anst = VAL;
 		}
 	}
@@ -547,7 +553,7 @@ void mustbepointstring(analyzer *context)
 	toval(context);
 	context->sopnd--;
 	if (!(is_pointer(context->sx, context->ansttype) &&
-		  is_string(context->sx, modetab_get(context->sx, context->ansttype + 1))))
+		  is_string(context->sx, mode_get(context->sx, context->ansttype + 1))))
 	{
 		context_error(context, not_point_string_in_stanfunc);
 		context->error_flag = 5;
@@ -620,7 +626,7 @@ void mustberowofint(analyzer *context)
 		}
 	}
 	if (!(is_array(context->sx, context->ansttype) &&
-		  is_int(modetab_get(context->sx, context->ansttype + 1))))
+		  is_int(mode_get(context->sx, context->ansttype + 1))))
 	{
 		context_error(context, not_rowofint_in_stanfunc);
 		context->error_flag = 5;
@@ -656,7 +662,7 @@ void mustberowoffloat(analyzer *context)
 	}
 
 	if (!(is_array(context->sx, context->ansttype) &&
-		  modetab_get(context->sx, context->ansttype + 1) == LFLOAT))
+		  mode_get(context->sx, context->ansttype + 1) == LFLOAT))
 	{
 		context_error(context, not_rowoffloat_in_stanfunc);
 		context->error_flag = 5;
@@ -1300,16 +1306,16 @@ int find_field(analyzer *context, int stype)
 	int i;
 	int flag = 1;
 	int select_displ = 0;
-	int record_length = modetab_get(context->sx, stype + 2);
+	int record_length = mode_get(context->sx, stype + 2);
 
 	scaner(context);
 	mustbe(context, IDENT, after_dot_must_be_ident);
 
 	for (i = 0; i < record_length; i += 2) // тут хранится удвоенное n
 	{
-		int field_type = modetab_get(context->sx, stype + 3 + i);
+		int field_type = mode_get(context->sx, stype + 3 + i);
 
-		if (modetab_get(context->sx, stype + 4 + i) == REPRTAB_POS)
+		if (mode_get(context->sx, stype + 4 + i) == REPRTAB_POS)
 		{
 			context->stackoperands[context->sopnd] = context->ansttype = field_type;
 			flag = 0;
@@ -1377,14 +1383,14 @@ void postexpr(analyzer *context)
 			return; // 1
 		}
 
-		n = modetab_get(context->sx, leftansttyp + 2); // берем количество аргументов функции
+		n = mode_get(context->sx, leftansttyp + 2); // берем количество аргументов функции
 
 		totree(context, TCall1);
 		totree(context, n);
 		j = leftansttyp + 3;
 		for (i = 0; i < n; i++) // фактические параметры
 		{
-			int mdj = context->leftansttype = modetab_get(context->sx, j); // это вид формального параметра, в
+			int mdj = context->leftansttype = mode_get(context->sx, j); // это вид формального параметра, в
 																   // context->ansttype будет вид фактического
 																   // параметра
 			scaner(context);
@@ -1427,7 +1433,7 @@ void postexpr(analyzer *context)
 			{
 				if (context->cur == BEGIN && is_array(context->sx, mdj))
 				{
-					actstring(modetab_get(context->sx, mdj + 1), context), totree(context, TExprend);
+					actstring(mode_get(context->sx, mdj + 1), context), totree(context, TExprend);
 					if (context->error_flag == 2)
 					{
 						context->error_flag = 4;
@@ -1479,11 +1485,11 @@ void postexpr(analyzer *context)
 		mustbe(context, RIGHTBR, wrong_number_of_params);
 		totree(context, TCall2);
 		totree(context, lid);
-		context->stackoperands[context->sopnd] = context->ansttype = modetab_get(context->sx, leftansttyp + 1);
+		context->stackoperands[context->sopnd] = context->ansttype = mode_get(context->sx, leftansttyp + 1);
 		context->anst = VAL;
 		if (is_struct(context->sx, context->ansttype))
 		{
-			context->x -= modetab_get(context->sx, context->ansttype + 1) - 1;
+			context->x -= mode_get(context->sx, context->ansttype + 1) - 1;
 		}
 	}
 
@@ -1505,7 +1511,7 @@ void postexpr(analyzer *context)
 				return; // 1
 			}
 
-			elem_type = modetab_get(context->sx, context->ansttype + 1);
+			elem_type = mode_get(context->sx, context->ansttype + 1);
 
 			scaner(context);
 			scaner(context);
@@ -1546,7 +1552,7 @@ void postexpr(analyzer *context)
 			// перед выборкой мог быть вызов функции или вырезка элемента массива
 
 			if (!is_pointer(context->sx, context->ansttype) ||
-				!is_struct(context->sx, modetab_get(context->sx, context->ansttype + 1)))
+				!is_struct(context->sx, mode_get(context->sx, context->ansttype + 1)))
 			{
 				context_error(context, get_field_not_from_struct_pointer);
 				context->error_flag = 4;
@@ -1562,7 +1568,7 @@ void postexpr(analyzer *context)
 			totree(context, TSelect); // context->anst уже был ADDR, т.е. адрес
 									  // теперь уже всегда на верхушке стека
 
-			context->ansttype = modetab_get(context->sx, context->ansttype + 1);
+			context->ansttype = mode_get(context->sx, context->ansttype + 1);
 			context->sx->anstdispl = find_field(context, context->ansttype);
 			if (context->error_flag == 6)
 			{
@@ -1734,7 +1740,7 @@ void unarexpr(analyzer *context)
 					context->sx->tree[context->sx->tc - 2] = TIdenttoval; // *p
 				}
 
-				context->stackoperands[context->sopnd] = context->ansttype = modetab_get(context->sx, context->ansttype + 1);
+				context->stackoperands[context->sopnd] = context->ansttype = mode_get(context->sx, context->ansttype + 1);
 				context->anst = ADDR;
 			}
 			else
@@ -2068,7 +2074,7 @@ void struct_init(analyzer *context, int decl_type)
 
 	int next_field = decl_type + 3;
 	int i;
-	int nf = modetab_get(context->sx, decl_type + 2) / 2;
+	int nf = mode_get(context->sx, decl_type + 2) / 2;
 
 	if (context->cur != BEGIN)
 	{
@@ -2083,7 +2089,7 @@ void struct_init(analyzer *context, int decl_type)
 	for (i = 0; i < nf; i++)
 	{
 		scaner(context);
-		inition(context, modetab_get(context->sx, next_field));
+		inition(context, mode_get(context->sx, next_field));
 		if (context->error_flag == 5)
 		{
 			context->error_flag = 1;
@@ -2247,7 +2253,7 @@ void exprassn(analyzer *context, int level)
 			{
 				totree(context, context->sx->anstdispl); // displright
 			}
-			totree(context, modetab_get(context->sx, ltype + 1)); // длина
+			totree(context, mode_get(context->sx, ltype + 1)); // длина
 			context->anst = leftanst;
 			context->sx->anstdispl = leftanstdispl;
 		}
@@ -2402,7 +2408,7 @@ void array_init(analyzer *context, int decl_type)
 			{
 				scaner(context);
 				all++;
-				array_init(context, modetab_get(context->sx, decl_type + 1));
+				array_init(context, mode_get(context->sx, decl_type + 1));
 				if (context->error_flag == 7)
 				{
 					return; // 1
@@ -3105,7 +3111,7 @@ void statement(analyzer *context)
 			break;
 			case LRETURN:
 			{
-				int ftype = modetab_get(context->sx, context->functype + 1);
+				int ftype = mode_get(context->sx, context->functype + 1);
 				context->wasret = 1;
 				if (context->next == SEMICOLON)
 				{
@@ -3343,7 +3349,7 @@ int struct_decl_list(analyzer *context)
 	loc_modetab[1] = curdispl; // тут длина структуры
 	loc_modetab[2] = field_count * 2;
 	
-	return modetab_add(context->sx, locmd, loc_modetab);
+	return mode_add(context->sx, loc_modetab, locmd);
 }
 
 int gettype(analyzer *context)
@@ -3550,8 +3556,8 @@ void function_definition(analyzer *context)
 
 	context->pgotost = 0;
 	context->functype = context->sx->identab[context->lastid + 2];
-	ftype = modetab_get(context->sx, context->functype + 1);
-	n = modetab_get(context->sx, context->functype + 2);
+	ftype = mode_get(context->sx, context->functype + 1);
+	n = mode_get(context->sx, context->functype + 2);
 	context->wasret = 0;
 	context->displ = 3;
 	context->maxdispl = 3;
@@ -3568,7 +3574,7 @@ void function_definition(analyzer *context)
 	context->curid = context->sx->id;
 	for (i = 0; i < n; i++)
 	{
-		context->type = modetab_get(context->sx, context->functype + i + 3);
+		context->type = mode_get(context->sx, context->functype + i + 3);
 		REPRTAB_POS = context->sx->functions[fn + i + 1];
 		if (REPRTAB_POS > 0)
 		{
@@ -3825,7 +3831,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 	context->func_def = func_d;
 	loc_modetab[2] = numpar;
 	
-	return modetab_add(context->sx, locmd, loc_modetab);
+	return mode_add(context->sx, loc_modetab, locmd);
 }
 
 /** Генерация дерева */
