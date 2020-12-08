@@ -67,22 +67,23 @@ typedef struct syntax
 syntax sx_create();
 
 /**
- *	Add new record to modetab
+ *	Add new record to modes table
  *
- *	@param	sx	Syntax structure
- *	@param	record	Pointer to the new record
- *	@param	size	Size of the new record
+ *	@param	sx			Syntax structure
+ *	@param	record		Pointer to the new record
+ *	@param	size		Size of the new record
  *
- *	@return	Index of the new record from modetab
+ *	@return	Index of the new record in modes table
  */
 size_t mode_add(syntax *const sx, const int *const record, const size_t size);
 
 /**
- *	Get an item from modetab by index
+ *	Get an item from modes table by index
  *
- *	@param	sx	Syntax structure
- *	@param	index	Index of record
- *	@return	Item by index from modetab
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record
+ *
+ *	@return	Item by index from modes table
  */
 int mode_get(syntax *const sx, const size_t index);
 

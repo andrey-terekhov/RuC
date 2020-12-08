@@ -40,7 +40,7 @@ int newdecl(syntax *const sx, const int type, const int element_type)
 	int temp[2];
 	temp[0] = type;
 	temp[1] = element_type;
-	return mode_add(sx, temp, 2);
+	return (int)mode_add(sx, temp, 2);
 }
 
 
@@ -3352,7 +3352,7 @@ int struct_decl_list(analyzer *context)
 	loc_modetab[1] = curdispl; // тут длина структуры
 	loc_modetab[2] = field_count * 2;
 	
-	return mode_add(context->sx, loc_modetab, locmd);
+	return (int)mode_add(context->sx, loc_modetab, locmd);
 }
 
 int gettype(analyzer *context)
@@ -3834,7 +3834,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 	context->func_def = func_d;
 	loc_modetab[2] = numpar;
 	
-	return mode_add(context->sx, loc_modetab, locmd);
+	return (int)mode_add(context->sx, loc_modetab, locmd);
 }
 
 /** Генерация дерева */
