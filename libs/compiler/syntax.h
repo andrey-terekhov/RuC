@@ -17,6 +17,7 @@
 #pragma once
 
 #include "defs.h"
+#include <stddef.h>
 
 
 #ifdef __cplusplus
@@ -42,6 +43,7 @@ typedef struct syntax
 
 	int modetab[MAXMODETAB];	/**< Modes table */
 	int md;						/**< Number of modes */
+	int startmode;				/**< Start of last record in modetab */
 	
 	int tree[MAXTREESIZE];		/**< Tree */
 	int tc;						/**< Tree counter */
@@ -63,6 +65,26 @@ typedef struct syntax
  *	@return	Syntax structure
  */
 syntax sx_create();
+
+/**
+ *	Add new record to modetab
+ *
+ *	@param	sx	Syntax structure
+ *	@param	record	Pointer to the new record
+ *	@param	size	Size of the new record
+ *
+ *	@return	Index of the new record from modetab
+ */
+size_t mode_add(syntax *const sx, const int *const record, const size_t size);
+
+/**
+ *	Get an item from modetab by index
+ *
+ *	@param	sx	Syntax structure
+ *	@param	index	Index of record
+ *	@return	Item by index from modetab
+ */
+int mode_get(syntax *const sx, const size_t index);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -28,6 +28,7 @@ syntax sx_create()
 	sx.funcnum = 2;
 	sx.id = 2;
 	sx.md = 1;
+	sx.startmode = 1;
 	sx.tc = 0;
 	sx.rp = 1;
 	sx.repr = 0;
@@ -38,4 +39,69 @@ syntax sx_create()
 	sx.anstdispl = 0;
 
 	return sx;
+}
+
+
+int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
+{
+	int length;
+	
+	if (sx->modetab[first] != sx->modetab[second])
+	{
+		return 0;
+	}
+	
+	int mode = sx->modetab[first];
+	// Определяем, сколько полей надо сравнивать для различных типов записей
+	if (mode == MSTRUCT || mode == MFUNCTION)
+	{
+		length = 2 + sx->modetab[first + 2];
+	}
+	else
+	{
+		length = 1;
+	}
+	
+	for (size_t i = 1; i <= (size_t)length; i++)
+	{
+		if (sx->modetab[first + i] != sx->modetab[second + i])
+		{
+			return 0;
+		}
+	}
+	
+	return 1;
+}
+
+
+size_t mode_add(syntax *const sx, const int *const record, const size_t size)
+{
+	sx->modetab[sx->md] = sx->startmode;
+	sx->startmode = sx->md++;
+	for (size_t i = 0; i < size; i++)
+	{
+		sx->modetab[sx->md++] = record[i];
+	}
+	// Checking mode duplicates
+	size_t old = sx->modetab[sx->startmode];
+	while (old)
+	{
+		if (mode_is_equal(sx, sx->startmode + 1, old + 1))
+		{
+			sx->md = sx->startmode;
+			sx->startmode = sx->modetab[sx->startmode];
+			return old + 1;
+		}
+		else
+		{
+			old = sx->modetab[old];
+		}
+	}
+	return sx->startmode + 1;
+}
+
+
+int mode_get(syntax *const sx, const size_t index)
+{
+	return sx->modetab[index];
 }
