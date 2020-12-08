@@ -98,7 +98,7 @@ typedef struct preprocess_context
 	int current_p;
 
 	int iwp;
-	universal_io input_io;
+
 	universal_io *io;
 } preprocess_context;
 

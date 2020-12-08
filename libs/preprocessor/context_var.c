@@ -21,9 +21,12 @@
 #include "file.h"
 #include "preprocessor_error.h"
 #include "logger.h"
+#include "uniprinter.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define MAX_CMT_SIZE MAX_ARG_SIZE + 32
 
 // Определение глобальных переменных
 void con_files_init(files *fs, workspace *const ws)
@@ -38,8 +41,6 @@ void con_files_init(files *fs, workspace *const ws)
 void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io)
 {
 	context->io = io;
-	
-	context->input_io = io_create();
 
 	con_files_init(&context->fs, ws);
 
@@ -91,9 +92,9 @@ void con_files_add_include(files* fs, char *name, int c_flag)
 
 void con_file_open_cur(files* fs, preprocess_context *context)
 {
-	int res = in_set_file(&context->input_io, ws_get_file(fs->ws, fs->cur));
+	context->current_file = fopen(ws_get_file(fs->ws, fs->cur), "r");
 
-	if (res == -1)
+	if (context->current_file == NULL)
 	{
 		log_system_error(ws_get_file(fs->ws, fs->cur), "файл не найден");
 		m_error(just_kill_yourself, context);
@@ -157,17 +158,17 @@ void con_file_it_is_end_h(files *fs, int i)
 
 void con_file_close_cur(preprocess_context *context)
 {
-	in_close_file(&context->input_io);
+	fclose(context->current_file);
+	context->current_file = NULL;
 	context->line = 1;
 }
 
 void con_file_print_coment(files *fs, preprocess_context *context)
 {
-	comment com = cmt_create(ws_get_file(fs->ws, fs->cur), context->line-1);
-	char *buf = malloc(100 * sizeof(char *));
-	size_t size = cmt_to_string(&com, buf);
-	for(size_t i = 0; i < size; i++)
-	{
-		m_fprintf(buf[i], context);
-	}
+	comment cmt = cmt_create(ws_get_file(fs->ws, fs->cur), context->line-1);
+
+	char buffer[MAX_CMT_SIZE];
+	cmt_to_string(&cmt, buffer);
+
+	uni_printf(context->io, "%s", buffer);
 }
