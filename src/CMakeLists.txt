@@ -1,20 +1,14 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.13.5)
 
 project(ruc)
 
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.c")
+file(GLOB_RECURSE HDR CONFIGURE_DEPENDS "*.h")
 
+source_group("\\" FILES ${SRC} ${HDR})
+add_executable(${PROJECT_NAME} ${SRC} ${HDR})
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-file(GLOB SRC "*.c")
-
-add_executable(${PROJECT_NAME} ${SRC})
 
 target_link_libraries(${PROJECT_NAME} compiler utils)
-
-
-if(ANALYSIS_ENABLED)
-	target_compile_definitions(${PROJECT_NAME} PRIVATE ANALYSIS_ENABLED)
-	target_link_libraries(${PROJECT_NAME} aspsimple)
-endif()
