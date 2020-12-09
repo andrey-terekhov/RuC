@@ -27,11 +27,11 @@ extern "C" {
 /** Structure for storing information about comments */
 typedef struct comment
 {
-	const char *path;	/** Filename path */
-	size_t line;		/** Line number */
-	size_t symbol;		/** Position in line */
+	const char *path;	/**< Filename path */
+	size_t line;		/**< Line number */
+	size_t symbol;		/**< Position in line */
 
-	const char *code;	/** Current line in code */
+	const char *code;	/**< Current line in code */
 } comment;
 
 
