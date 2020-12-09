@@ -66,13 +66,7 @@ int compile_from_io_to_vm(universal_io *const io)
 		return -1;
 	}
 
-	syntax sx;
-	if (syntax_init(&sx))
-	{
-		system_error("не удалось выделить память для таблиц");
-		io_erase(io);
-		return -1;
-	}
+	syntax sx = sx_create();
 
 	int ret = analyze(io, &sx);
 #ifdef GENERATE_TABLES
@@ -88,7 +82,6 @@ int compile_from_io_to_vm(universal_io *const io)
 	}
 
 	io_erase(io);
-	syntax_deinit(&sx);
 	return ret;
 }
 

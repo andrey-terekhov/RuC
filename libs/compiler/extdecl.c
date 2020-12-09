@@ -314,7 +314,6 @@ int toidentab(analyzer *context, int f, int type)
 	// context->sx->reprtab[context->repr+1], context->sx->reprtab[context->repr+2]);
 	int pred;
 
-	compiler_table_expand(&context->sx->reprtab, 1);
 
 	context->lastid = context->sx->id;
 	if (REPRTAB[REPRTAB_POS + 1] == 0) // это может быть только MAIN
@@ -517,7 +516,6 @@ void insertwiden(analyzer *context)
 
 void applid(analyzer *context)
 {
-	compiler_table_expand(&context->sx->reprtab, 1);
 	context->lastid = REPRTAB[REPRTAB_POS + 1];
 	if (context->lastid == 1)
 	{
@@ -2588,7 +2586,7 @@ void decl_id(analyzer *context, int decl_type)
 	int elem_type;
 	int all; // all - место в дереве, где будет общее количество выражений в инициализации, для массивов - только
 			 // признак (1) наличия инициализации
-	int adN;
+	int adN = 0; // warning C4701: potentially uninitialized local variable used
 
 	context->usual = 1;
 	context->arrdim = 0; // arrdim - размерность (0-скаляр), д.б. столько выражений-границ
@@ -2783,7 +2781,6 @@ void statement(analyzer *context)
 				do
 				{
 					mustbe(context, IDENT, no_ident_in_printid);
-					compiler_table_expand(&context->sx->reprtab, 1);
 					context->lastid = REPRTAB[REPRTAB_POS + 1];
 					if (context->lastid == 1)
 					{
@@ -2905,7 +2902,6 @@ void statement(analyzer *context)
 
 			case GETID:
 			{
-				compiler_table_expand(&context->sx->reprtab, 1);
 
 				mustbe(context, LEFTBR, no_leftbr_in_printid);
 				do
@@ -3452,7 +3448,6 @@ int gettype(analyzer *context)
 		{
 			int l;
 
-			compiler_table_expand(&context->sx->reprtab, 1);
 			l = REPRTAB[REPRTAB_POS + 1];
 			scaner(context);
 			if (context->next == BEGIN) // struct key {
@@ -3525,7 +3520,7 @@ void block(analyzer *context, int b)
 	int oldinswitch = context->inswitch;
 	int notended = 1;
 	int i;
-	int olddispl;
+	int olddispl = 0; // warning C4701: potentially uninitialized local variable used
 	int oldlg = context->lg;
 	int firstdecl;
 
@@ -3611,7 +3606,6 @@ void block(analyzer *context, int b)
 	{
 		for (i = context->sx->id - 4; i >= context->curid; i -= 4)
 		{
-			compiler_table_ensure_allocated(&context->sx->reprtab, context->sx->identab[i + 1] + 1);
 			REPRTAB[context->sx->identab[i + 1] + 1] = context->sx->identab[i];
 		}
 		context->displ = olddispl;
@@ -3691,7 +3685,6 @@ void function_definition(analyzer *context)
 	}
 	for (i = context->sx->id - 4; i >= context->curid; i -= 4)
 	{
-		compiler_table_ensure_allocated(&context->sx->reprtab, context->sx->identab[i + 1] + 1);
 		REPRTAB[context->sx->identab[i + 1] + 1] = context->sx->identab[i];
 	}
 
@@ -3724,8 +3717,8 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 	int loc_modetab[100];
 	int locmd;
 	int numpar = 0;
-	int ident;
-	int maybe_fun;
+	int ident = 0; // warning C4701: potentially uninitialized local variable used
+	int maybe_fun = 0; // warning C4701: potentially uninitialized local variable used
 	int repeat = 1;
 	int i;
 	int wastype = 0;

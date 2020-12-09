@@ -19,22 +19,9 @@
 #include "defs.h"
 
 
-#define COMPILER_TABLE_SIZE_DEFAULT	 (100)
-#define COMPILER_TABLE_INCREMENT_MIN (100)
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** A designated compiler table */
-typedef struct compiler_table
-{
-	int *table; /** Actual table */
-	int len;	/** Length of a useful part of table */
-	int pos;	/** A position in a table */
-	int size;	/** Total size of a table */
-} compiler_table;
 
 /** Global vars definition */
 typedef struct syntax
@@ -59,60 +46,23 @@ typedef struct syntax
 	int tree[MAXTREESIZE];		/** Tree */
 	int tc;						/** Tree counter */
 
+	int reprtab[MAXREPRTAB];	/** Representations table */
+	int rp;						/** Representations size */
+	int repr;					/** Representations position */
+
 	int maxdisplg;				/** Max displacement */
 	int wasmain;				/** Main function flag */
 
 	int anstdispl;				/** Stack displacement */
-
-	compiler_table reprtab;		/** Representations table */
 } syntax;
 
 
 /**
- *	Initialize syntax structure (by allocating memory)
+ *	Create Syntax structure
  *
- *	@param	sx		Syntax structure
- *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Syntax structure
  */
-int syntax_init(syntax *const sx);
-
-/**
- *	Deinitialize syntax structure (by free memory)
- *
- *	@param	sx		Syntax structure
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int syntax_deinit(syntax *const sx);
-
-
-/**
- *	Initialize compiler table
- *
- *	@param	table	Target compiler table
- */
-void compiler_table_init(compiler_table *table);
-
-/**
- *	Ensure that specific offset is allocated in a table
- *
- *	@param	table	Target compiler table
- *	@param	pos		Target position
- *
- *	@return	Table size
- */
-int compiler_table_ensure_allocated(compiler_table *table, int pos);
-
-/**
- *	Expand compiler table
- *
- *	@param	table	Target compiler table
- *	@param	len		Requested length
- *
- *	@return	New size
- */
-int compiler_table_expand(compiler_table *table, int len);
+syntax sx_create();
 
 #ifdef __cplusplus
 } /* extern "C" */

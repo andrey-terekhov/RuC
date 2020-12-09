@@ -842,7 +842,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
 	uni_printf(io, "%i %i %i %i %i %i %i\n", sx->pc, sx->funcnum, sx->id,
-				   sx->reprtab.len, sx->md, sx->maxdisplg, sx->wasmain);
+				   sx->rp, sx->md, sx->maxdisplg, sx->wasmain);
 
 	for (int i = 0; i < sx->pc; i++)
 	{
@@ -862,9 +862,9 @@ void output_export(universal_io *const io, const syntax *const sx)
 	}
 	uni_printf(io, "\n");
 
-	for (int i = 0; i < sx->reprtab.len; i++)
+	for (int i = 0; i < sx->rp; i++)
 	{
-		uni_printf(io, "%i ", sx->reprtab.table[i]);
+		uni_printf(io, "%i ", sx->reprtab[i]);
 	}
 
 	for (int i = 0; i < sx->md; i++)

@@ -152,9 +152,9 @@ int out_func_buffer(universal_io *const io, const char *const format, va_list ar
 	va_list local;
 	va_copy(local, args);
 
-	int ret = vsnprintf(&io->out_buffer[io->out_position], io->out_size, format, local);
+	int ret = vsnprintf(&io->out_buffer[io->out_position], io->out_size - io->out_position, format, local);
 
-	if (ret != -1 && ret + io->out_position < io->out_size - 1)
+	if (ret != -1 && ret + io->out_position < io->out_size)
 	{
 		io->out_position += ret;
 		return ret;
