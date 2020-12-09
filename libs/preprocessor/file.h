@@ -27,7 +27,7 @@ void m_change_nextch_type(int type, int p, preprocess_context *context);
 void m_old_nextch_type(preprocess_context *context);
 
 int get_dipp(preprocess_context *context);
-void get_next_char(preprocess_context *context);
+int get_next_char(preprocess_context *context);
 
 void m_fprintf(int a, preprocess_context *context);
 void pred_fprintf(int a, preprocess_context *context);

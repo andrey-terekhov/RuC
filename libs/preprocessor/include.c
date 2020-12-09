@@ -104,7 +104,7 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 
 	if (context->include_type != 0)
 	{
-		in_set_file(&context->input_io , file_way);
+		in_set_file(context->io_input , file_way);
 	}
 
 	in_close_file(&temp_io);
@@ -167,13 +167,18 @@ void open_file(preprocess_context *context)
 	}
 
 	int old_cur = context->fs.cur;
-	universal_io old_io = context->input_io;
+	universal_io new_io = io_create();
+	universal_io *io_old = context->io_input;
+	context->io_input = &new_io;
 
 	if ((h && context->include_type != 2) || (!h && context->include_type != 0))
 	{
 		int k = open_include_faile(context, temp_way, ws_get_file(context->fs.ws, context->fs.cur));
 		if (k == -2)
 		{
+			context->fs.cur = old_cur;
+			context->io_input = io_old;
+			in_clear(&new_io);
 			return;
 		}
 	}
@@ -194,7 +199,8 @@ void open_file(preprocess_context *context)
 	}
 
 	context->fs.cur = old_cur;
-	context->input_io = old_io;
+	context->io_input = io_old;
+	in_clear(&new_io);
 }
 
 

@@ -22,6 +22,7 @@
 #include "preprocessor_error.h"
 #include "logger.h"
 #include "uniprinter.h"
+#include "uniio.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,9 +39,10 @@ void con_files_init(files *fs, workspace *const ws)
 	fs->ws = ws;
 }
 
-void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io)
+void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io, universal_io *const io_input)
 {
-	context->io = io;
+	context->io_output = io;
+	context->io_input = io_input;
 
 	con_files_init(&context->fs, ws);
 
@@ -92,9 +94,9 @@ void con_files_add_include(files* fs, char *name, int c_flag)
 
 void con_file_open_cur(files* fs, preprocess_context *context)
 {
-	context->current_file = fopen(ws_get_file(fs->ws, fs->cur), "r");
+	int rez = in_set_file(context->io_input, ws_get_file(fs->ws, fs->cur));
 
-	if (context->current_file == NULL)
+	if (rez == -1)
 	{
 		log_system_error(ws_get_file(fs->ws, fs->cur), "файл не найден");
 		m_error(just_kill_yourself, context);
@@ -158,8 +160,7 @@ void con_file_it_is_end_h(files *fs, int i)
 
 void con_file_close_cur(preprocess_context *context)
 {
-	fclose(context->current_file);
-	context->current_file = NULL;
+	in_clear(context->io_input);
 	context->line = 1;
 }
 
@@ -170,5 +171,5 @@ void con_file_print_coment(files *fs, preprocess_context *context)
 	char buffer[MAX_CMT_SIZE];
 	cmt_to_string(&cmt, buffer);
 
-	uni_printf(context->io, "%s", buffer);
+	uni_printf(context->io_output, "%s", buffer);
 }

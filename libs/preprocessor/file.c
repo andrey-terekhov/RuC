@@ -31,14 +31,14 @@
 void m_nextch(preprocess_context *context);
 
 
-void get_next_char(preprocess_context *context)
+int get_next_char(preprocess_context *context)
 {
-	int ret = uni_scan_char(&context->input_io);
-	if(ret == '\r')
+	context->nextchar = uni_scan_char(context->io_input);
+	if(context->nextchar == '\r')
 	{
-		ret = uni_scan_char(&context->input_io);
+		return get_next_char(context);
 	}
-	context->nextchar = ret;
+	return context->nextchar;
 }
 
 int get_dipp(preprocess_context *context)
@@ -110,7 +110,7 @@ void m_onemore(preprocess_context *context)
 
 void m_fprintf(int a, preprocess_context *context)
 {
-	uni_print_char(context->io, a);
+	uni_print_char(context->io_output, a);
 	// printf_character(a);
 	// printf(", %d; \n", a);
 	// printf(" t = %d n = %d\n", nextch_type,context -> nextp);
@@ -240,6 +240,6 @@ void m_nextch(preprocess_context *context)
 		}
 	}
 
-	 printf("t = %d curchar = %c, %i nextchar = %c, %i \n", context->nextch_type,
-	 context->curchar, context->curchar, context->nextchar, context->nextchar);
+	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", context->nextch_type,
+	// context->curchar, context->curchar, context->nextchar, context->nextchar);
 }
