@@ -67,6 +67,33 @@ typedef struct syntax
 syntax sx_create();
 
 /**
+ *	Add new record to functions table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	ref			Function definition start in syntax tree
+ */
+void func_add(syntax *const sx, const size_t ref);
+
+/**
+ *	Set function start reference by index in functions table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	ref			Function definition start in syntax tree
+ *	@param	index		Index of record in functions table
+ */
+void func_set(syntax *const sx, const size_t ref, const size_t index);
+
+/**
+ *	Get an item from functions table by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in functions table
+ *
+ *	@return	Item by index from functions table
+ */
+int func_get(syntax *const sx, const size_t index);
+
+/**
  *	Add new record to modes table
  *
  *	@param	sx			Syntax structure

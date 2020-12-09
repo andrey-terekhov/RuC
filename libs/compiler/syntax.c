@@ -42,6 +42,24 @@ syntax sx_create()
 }
 
 
+void func_add(syntax *const sx, const size_t ref)
+{
+	sx->functions[sx->funcnum++] = ref;
+}
+
+
+void func_set(syntax *const sx, const size_t ref, const size_t index)
+{
+	sx->functions[index] = ref;
+}
+
+
+int func_get(syntax *const sx, const size_t index)
+{
+	return sx->functions[index];
+}
+
+
 int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
 {
 	if (sx->modetab[first] != sx->modetab[second])
@@ -67,6 +85,7 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 	
 	return 1;
 }
+
 
 size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 {
