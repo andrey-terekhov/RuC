@@ -67,6 +67,14 @@ typedef struct syntax
 syntax sx_create();
 
 /**
+ *	Test tree building
+ *
+ *	@param	sx	Syntax structure
+ */
+void tree_test(const syntax *const sx);
+
+
+/**
  *	Add new record to functions table
  *
  *	@param	sx			Syntax structure
@@ -96,6 +104,7 @@ int func_set(syntax *const sx, const size_t index, const size_t ref);
  *	@return	Item by index from functions table, @c INT_MAX on failure
  */
 int func_get(syntax *const sx, const size_t index);
+
 
 /**
  *	Add new record to modes table

@@ -31,7 +31,7 @@
 
 
 //#define GENERATE_MACRO
-//#define GENERATE_TABLES
+#define GENERATE_TABLES
 
 
 const char *const DEFAULT_MACRO = "macro.txt";
@@ -75,6 +75,8 @@ int compile_from_io_to_vm(universal_io *const io)
 
 	if (!ret)
 	{
+		tree_test(&sx);
+
 		ret = encode_to_vm(io, &sx);
 #ifdef GENERATE_TABLES
 		tables_and_codes(&sx, DEFAULT_CODES);
