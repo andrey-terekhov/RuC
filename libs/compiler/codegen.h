@@ -16,14 +16,23 @@
 
 #pragma once
 
-#include "context.h"
+#include "syntax.h"
+#include "uniio.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void codegen(compiler_context *context);
+/**
+ *	Encode to virtual machine codes
+ *
+ *	@param	io		Universal io structure
+ *	@param	sx		Syntax structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int encode_to_vm(universal_io *const io, syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */

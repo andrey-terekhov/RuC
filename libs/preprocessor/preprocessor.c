@@ -35,34 +35,41 @@
 #include <string.h>
 #include <wchar.h>
 
+
 #define H_FILE 1
 #define C_FILE 0
 
-void to_reprtab(char str[], int num, preprocess_context *context)
+
+const size_t SIZE_OUT_BUFFER = 1024;
+
+
+void to_reprtab(const char str[], int num, preprocess_context *context)
 {
-	int i;
+	int i = 0;
 	int oldrepr = context->rp;
 	int hash = 0;
-	unsigned char firstchar;
-	unsigned char secondchar;
-	int p;
+	//unsigned char firstchar;
+	//unsigned char secondchar;
+	//int p;
 	int c = 0;
 	context->rp += 2;
 
-	for (i = 0; str[i] != 0; i++)
+	while(str[i] != '\0')
 	{
-		sscanf(&str[i], "%c%n", &firstchar, &p);
+		/*sscanf(&str[i], "%c%n", &firstchar, &p);
 
-		if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
+		if ((firstchar & 0xE0) == 0xC0)
 		{
 			++i;
 			sscanf(&str[i], "%c%n", &secondchar, &p);
-			c = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 | (secondchar & /*0b111111*/ 0x3F);
+			c = ((int)(firstchar & 0x1F)) << 6 | (secondchar & 0x3F);
 		}
 		else
 		{
 			c = firstchar;
-		}
+		}*/
+		c = utf8_convert(&str[i]);
+		i += utf8_symbol_size(str[i]);
 
 		hash += c;
 		context->reprtab[context->rp++] = c;
@@ -75,7 +82,7 @@ void to_reprtab(char str[], int num, preprocess_context *context)
 	context->hashtab[hash] = oldrepr;
 }
 
-void to_reprtab_full(char str1[], char str2[], char str3[], char str4[], int num, preprocess_context *context)
+void to_reprtab_full(const char str1[], const char str2[], const char str3[], const char str4[], int num, preprocess_context *context)
 {
 	to_reprtab(str1, num, context);
 	to_reprtab(str2, num, context);
@@ -123,6 +130,7 @@ void preprocess_words(preprocess_context *context)
 		case SH_DEFINE:
 		case SH_MACRO:
 		{
+			context->prep_flag = 1;
 			define_relis(context);
 			return;
 		}
@@ -202,7 +210,6 @@ void preprocess_scan(preprocess_context *context)
 
 			if (context->cur != 0)
 			{
-				context->prep_flag = 1;
 				preprocess_words(context);
 				printf("!!!!!!!!!!!!!!1 n = %d\n", context->nextchar);
 				if(context->nextchar != '#' && context->nextch_type != WHILETYPE && 
@@ -264,7 +271,6 @@ void preprocess_scan(preprocess_context *context)
 
 void add_c_file_siple(preprocess_context *context)
 {
-	context->temp_output = 0;
 	while (context->curchar != EOF)
 	{
 		m_nextch(context);
@@ -364,11 +370,12 @@ void preprocess_c_file(preprocess_context *context)
 	}
 }
 
-char *macro(workspace *const ws)
+
+int macro_form_io(workspace *const ws, universal_io *const io)
 {
+	universal_io io_input = io_create();
 	preprocess_context context;
-	preprocess_context_init(&context, ws);
-	out_set_buffer(&context.io, 1024);
+	preprocess_context_init(&context, ws, io, &io_input);
 
 	add_keywods(&context);
 
@@ -376,15 +383,10 @@ char *macro(workspace *const ws)
 	open_files(&context);
 	preprocess_h_file(&context);
 	preprocess_c_file(&context);
-
-	char *macro_processed = out_extract_buffer(&context.io);
+	in_clear(&io_input);
 
 	
-#if MACRODEBUG
-	printf("\n\n");
-	printf("Текст после препроцессирования:\n>\n%s<\n", macro_processed);
-#endif
-	return macro_processed;
+	return 0;
 }
 
 
@@ -418,27 +420,46 @@ char *macro(workspace *const ws)
 */
 
 
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+char *macro(workspace *const ws)
+{
+	universal_io io = io_create();
+	if (out_set_buffer(&io, SIZE_OUT_BUFFER))
+	{
+		return NULL;
+	}
+
+	int ret = macro_form_io(ws, &io);
+	if (ret)
+	{
+		io_erase(&io);
+		return NULL;
+	}
+
+	in_clear(&io);
+	return out_extract_buffer(&io);
+}
 
 int macro_to_file(workspace *const ws, const char *const path)
 {
-	char *buffer = macro(ws);
-	if (buffer == NULL)
-	{
-		return -1;
-	}
-
 	universal_io io = io_create();
 	if (out_set_file(&io, path))
 	{
-		free(buffer);
 		return -1;
 	}
-	
-	uni_printf(&io, "%s", buffer);
-	io_erase(&io);
 
-	free(buffer);
-	return 0;
+	int ret = macro_form_io(ws, &io);
+
+	io_erase(&io);
+	return ret;
 }
 
 

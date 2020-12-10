@@ -198,7 +198,13 @@ check_warnings()
 		message_success
 		let success++
 	else
-		if [[ `grep -c "ошибка: " $log` > 1 ]] ; then
+		if [[ $OSTYPE == "msys" ]] ; then
+			flag=`cat $log | iconv -c -f CP1251 -t UTF-8 | grep -c "ошибка: "`
+		else
+			flag=`grep -c "ошибка: " $log`
+		fi
+
+		if [[ $flag > 1 ]] ; then
 			message_warning
 			let warning++
 

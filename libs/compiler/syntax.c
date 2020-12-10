@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov
+ *	Copyright 2020 Andrey Terekhov, Victor Y. Fadeev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,32 +14,28 @@
  *	limitations under the License.
  */
 
-#pragma once
+#include "syntax.h"
+#include <stdlib.h>
+#include <string.h>
 
-#include "context.h"
 
+syntax sx_create()
+{
+	syntax sx;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+	sx.pc = 4;
+	sx.procd = 1;
+	sx.funcnum = 2;
+	sx.id = 2;
+	sx.md = 1;
+	sx.tc = 0;
+	sx.rp = 1;
+	sx.repr = 0;
 
-/**
- *	Save up a string array to reprtab
- *
- *	@param	context	RuC context
- *	@param	str		Target string
- *
- *	@return	FIXME
- */
-int toreprtab(compiler_context *context, char str[]);
+	sx.maxdisplg = 3;
+	sx.wasmain = 0;
 
-/**
- *	Mode table initialization
- *
- *	@param	context	RuC context
- */
-void init_modetab(compiler_context *context);
+	sx.anstdispl = 0;
 
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
+	return sx;
+}

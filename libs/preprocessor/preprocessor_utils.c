@@ -19,6 +19,7 @@
 #include "context_var.h"
 #include "file.h"
 #include "preprocessor_error.h"
+#include "utf8.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -28,11 +29,14 @@
 
 int equal_reprtab(int i, int j, preprocess_context *context)
 {
-	++i;
-	++j;
+	i += 2;
+	j += 2;
 
-	while (context->reprtab[++i] == context->reprtab[++j])
+	while (context->reprtab[i] == context->reprtab[j])
 	{
+		i++;
+		j++;
+
 		if (context->reprtab[i] == 0 && context->reprtab[j] == 0)
 		{
 			return 1;
@@ -54,7 +58,7 @@ int is_letter(preprocess_context *context)
 {
 	return (context->curchar >= 'A' && context->curchar <= 'Z') ||
 		   (context->curchar >= 'a' && context->curchar <= 'z') || context->curchar == '_' ||
-		   (context->curchar >= 0x410 /*'А'*/ && context->curchar <= 0x44F /*'я'*/);
+		   utf8_is_russian(context->curchar);
 }
 
 int is_digit(int a)
@@ -114,8 +118,10 @@ int mf_equal(int i, preprocess_context *context)
 	int j = 0;
 	i += 2;
 
-	while (context->reprtab[i++] == context->mstring[j++])
+	while (context->reprtab[i] == context->mstring[j])
 	{
+		i++;
+		j++;
 		if (context->reprtab[i] == 0 && context->mstring[j] == MACROEND)
 		{
 			return 1;
