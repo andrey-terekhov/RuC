@@ -130,6 +130,7 @@ void preprocess_words(preprocess_context *context)
 		case SH_DEFINE:
 		case SH_MACRO:
 		{
+			context->prep_flag = 1;
 			define_relis(context);
 			return;
 		}
@@ -208,7 +209,6 @@ void preprocess_scan(preprocess_context *context)
 
 			if (context->cur != 0)
 			{
-				context->prep_flag = 1;
 				preprocess_words(context);
 				if(context->curchar != '#')
 				{
@@ -263,7 +263,6 @@ void preprocess_scan(preprocess_context *context)
 
 void add_c_file_siple(preprocess_context *context)
 {
-	context->temp_output = 0;
 	while (context->curchar != EOF)
 	{
 		m_nextch(context);

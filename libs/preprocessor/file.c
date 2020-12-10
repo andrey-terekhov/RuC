@@ -71,27 +71,7 @@ void m_old_nextch_type(preprocess_context *context)
 
 void end_line(preprocess_context *context)
 {
-	context->line++; //!!
-//	printf("!!!new_line = %d!!!\n", context->line - 1);
-
-/*#if MACRODEBUG
-	if (context->line == 2)
-	{
-		printf("\nИсходный текст:\n\n");
-	}
-
-	printf("Line %i) ", context->line - 1);
-
-	for (int j = context->temp_output; j < s->p; j++)
-	{
-		if (s->str[j] != EOF)
-		{
-			printf_character(s->str[j]);
-		}
-	}
-#endif
-
-	context->temp_output = s->p;*/
+	context->line++;
 }
 
 void m_onemore(preprocess_context *context)
