@@ -3594,7 +3594,7 @@ void function_definition(analyzer *context)
 			return; // 1
 		}
 	}
-	func_set(context->sx, context->sx->tc, fn);
+	func_set(context->sx, fn, context->sx->tc);
 	totree(context, TFuncdef);
 	totree(context, fid);
 	pred = context->sx->tc++;

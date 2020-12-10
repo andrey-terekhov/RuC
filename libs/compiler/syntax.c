@@ -44,15 +44,13 @@ syntax sx_create()
 
 void func_add(syntax *const sx, const size_t ref)
 {
-	sx->functions[sx->funcnum++] = ref;
+	func_set(sx, sx->funcnum++, ref);
 }
 
-
-void func_set(syntax *const sx, const size_t ref, const size_t index)
+void func_set(syntax *const sx, const size_t index, const size_t ref)
 {
 	sx->functions[index] = ref;
 }
-
 
 int func_get(syntax *const sx, const size_t index)
 {
@@ -86,7 +84,6 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 	return 1;
 }
 
-
 size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 {
 	sx->modetab[sx->md] = sx->startmode;
@@ -114,7 +111,6 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 
 	return sx->startmode + 1;
 }
-
 
 int mode_get(syntax *const sx, const size_t index)
 {
