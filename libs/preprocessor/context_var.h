@@ -46,12 +46,9 @@ typedef struct preprocess_context
 
 	int macrotext[MAXTAB];
 	int mp;
-	int oldmp;
 
 	int mstring[STRIGSIZE];
 	int msp;
-
-	int strp;
 
 	int fchange[STRIGSIZE * 3];
 	int cp;
@@ -70,8 +67,6 @@ typedef struct preprocess_context
 
 	int mfirstrp;
 
-	int mclp;
-
 	int prep_flag;
 
 	int curchar, nextchar;
@@ -79,7 +74,6 @@ typedef struct preprocess_context
 	int cur;
 
 	int nextp;
-	int main_file;
 
 	int oldcurchar[DIP];
 	int oldnextchar[DIP];
@@ -89,14 +83,8 @@ typedef struct preprocess_context
 
 	int line;
 
-	int temp_output;
 	files fs;
 	int h_flag;
-
-	int *current_string;
-	int current_p;
-
-	int iwp;
 
 	universal_io *io_output;
 	universal_io *io_input;
