@@ -205,7 +205,7 @@ void con_file_close_cur(preprocess_context *context)
 
 void con_file_print_coment(files *fs, preprocess_context *context)
 {
-	comment cmt = cmt_create(ws_get_file(fs->ws, fs->cur), context->line-1);
+	comment cmt = cmt_create(ws_get_file(fs->ws, fs->cur), context->line);
 
 	char buffer[MAX_CMT_SIZE];
 	cmt_to_string(&cmt, buffer);
