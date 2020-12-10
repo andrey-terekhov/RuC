@@ -18,6 +18,7 @@
 #include "errors.h"
 #include "defs.h"
 #include "scanner.h"
+#include <limits.h>
 #include <string.h>
 
 
@@ -3578,7 +3579,14 @@ void function_definition(analyzer *context)
 	for (i = 0; i < n; i++)
 	{
 		context->type = mode_get(context->sx, context->functype + i + 3);
-		REPRTAB_POS = func_get(context->sx, fn + i + 1);
+		int temp = func_get(context->sx, fn + i + 1);
+		if (temp == INT_MAX)
+		{
+			context->error_flag = 1;
+			return;
+		}
+
+		REPRTAB_POS = temp;
 		if (REPRTAB_POS > 0)
 		{
 			toidentab(context, 0, context->type);
