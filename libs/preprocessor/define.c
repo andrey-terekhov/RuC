@@ -39,13 +39,17 @@ int m_equal(preprocess_context *context)
 
 	while (j < context->csp)
 	{
-		while (context->mstring[i++] == context->cstring[j++])
+		while (context->mstring[i] == context->cstring[j])
 		{
+			i++;
+			j++;
 			if (context->mstring[i] == MACROEND && context->cstring[j] == 0)
 			{
 				return n;
 			}
 		}
+		i++;
+		j++;
 
 		n++;
 		i = 0;
@@ -351,6 +355,8 @@ void function_add_to_macrotext(preprocess_context *context)
 		{
 			m_nextch(context);
 			space_end_line(context);
+			//context->macrotext[context->mp++] = '\n';
+			m_nextch(context);
 		}
 	}
 
@@ -468,6 +474,8 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 			{
 				m_nextch(context);
 				space_end_line(context);
+				//context->macrotext[context->mp++] = '\n';
+				m_nextch(context);
 			}
 			else if (is_letter(context))
 			{
@@ -537,7 +545,6 @@ void define_relis(preprocess_context *context)
 		space_skip(context);
 		define_add_to_macrotext(r, context);
 	}
-	m_nextch(context);
 }
 
 void set_relis(preprocess_context *context)

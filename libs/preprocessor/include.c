@@ -23,6 +23,7 @@
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
 #include "workspace.h"
+#include "uniio.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -73,9 +74,10 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 		return -2;
 	}
 
-	FILE *f = fopen(file_way, "r");
+	universal_io temp_io = io_create();
+	int res = in_set_file(&temp_io, file_way);
 
-	if (f == NULL)
+	if (res == -1)
 	{
 		int i = 0;
 		const char *temp_dir = ws_get_dir(context->fs.ws, i++);
@@ -83,18 +85,18 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 		{
 		
 			gen_way(file_way, temp_dir, temp_way, 0);
-			temp_dir = ws_get_dir(context->fs.ws, i++);
 
-			f = fopen(file_way, "r");
+			res = in_set_file(&temp_io, file_way);
 
-			if (f != NULL)
+			if (res == 0)
 			{
 				break;
 			}
+			temp_dir = ws_get_dir(context->fs.ws, i++);
 		}
 	}
 
-	if (f == NULL)
+	if (res == -1)
 	{
 		log_system_error(temp_way, "файл не найден");
 		m_error(1, context);
@@ -102,12 +104,11 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 
 	if (context->include_type != 0)
 	{
-		context->current_file = f;
+		in_set_file(context->io_input , file_way);
 	}
-	else
-	{
-		fclose(f);
-	}
+
+	in_close_file(&temp_io);
+
 	con_files_add_include(&context->fs, file_way, context->include_type);
 	return 0;
 }
@@ -115,7 +116,7 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 void file_read(preprocess_context *context)
 {
 	int old_line = context->line;
-	context->line = 2;
+	context->line = 1;
 
 	get_next_char(context);
 
@@ -123,7 +124,6 @@ void file_read(preprocess_context *context)
 	{
 		con_file_print_coment(&context->fs, context);
 	}
-	context->line = 1;
 
 	if (context->nextchar == EOF)
 	{
@@ -166,13 +166,18 @@ void open_file(preprocess_context *context)
 	}
 
 	int old_cur = context->fs.cur;
-	FILE* file_old = context->current_file;
+	universal_io new_io = io_create();
+	universal_io *io_old = context->io_input;
+	context->io_input = &new_io;
 
 	if ((h && context->include_type != 2) || (!h && context->include_type != 0))
 	{
 		int k = open_include_faile(context, temp_way, ws_get_file(context->fs.ws, context->fs.cur));
 		if (k == -2)
 		{
+			context->fs.cur = old_cur;
+			context->io_input = io_old;
+			in_clear(&new_io);
 			return;
 		}
 	}
@@ -193,7 +198,8 @@ void open_file(preprocess_context *context)
 	}
 
 	context->fs.cur = old_cur;
-	context->current_file = file_old;
+	context->io_input = io_old;
+	in_clear(&new_io);
 }
 
 
@@ -210,7 +216,5 @@ void include_relis(preprocess_context *context)
 	m_nextch(context);
 	open_file(context);
 	m_nextch(context);
-
-
 	space_end_line(context);
 }

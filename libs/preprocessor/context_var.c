@@ -22,6 +22,7 @@
 #include "preprocessor_error.h"
 #include "logger.h"
 #include "uniprinter.h"
+#include "uniio.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,17 +39,16 @@ void con_files_init(files *fs, workspace *const ws)
 	fs->ws = ws;
 }
 
-void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io)
+void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io, universal_io *const io_input)
 {
-	context->io = io;
+	context->io_output = io;
+	context->io_input = io_input;
 
 	con_files_init(&context->fs, ws);
 
 	context->include_type = 0;
 	context->rp = 1;
 	context->mp = 1;
-	context->strp = 0;
-	context->oldmp = 1;
 	context->msp = 0;
 	context->cp = 0;
 	context->lsp = 0;
@@ -57,20 +57,61 @@ void preprocess_context_init(preprocess_context *context, workspace *const ws, u
 	context->wsp = 0;
 	context->mfirstrp = -1;
 	context->prep_flag = 0;
-	context->mclp = 1;
 	context->nextch_type = FILETYPE;
+	context->curchar = 0;
+	context->nextchar = 0;
+	context->cur = 0;
 	context->nextp = 0;
-	context->main_file = -1;
 	context->dipp = 0;
 	context->line = 1;
-	context->temp_output = 0;
-	context->iwp = 0;
 	context->h_flag = 0;
-	context->current_p = 0;
 
 	for (int i = 0; i < HASH; i++)
 	{
 		context->hashtab[i] = 0;
+	}
+
+	for (int i = 0; i < MAXTAB; i++)
+	{
+		context->reprtab[i] = 0;
+	}
+
+	for (int i = 0; i < STRIGSIZE; i++)
+	{
+		context->mstring[i] = 0;
+	}
+
+	for (int i = 0; i < STRIGSIZE*3; i++)
+	{
+		context->fchange[i] = 0;
+	}
+
+	for (int i = 0; i < STRIGSIZE; i++)
+	{
+		context->localstack[i] = 0;
+	}
+
+	for (int i = 0; i < STRIGSIZE; i++)
+	{
+		context->cstring[i] = 0;
+	}
+	
+	for (int i = 0; i < STRIGSIZE*2; i++)
+	{
+		context->ifstring[i] = 0;
+	}
+
+	for (int i = 0; i < STRIGSIZE*5; i++)
+	{
+		context->wstring[i] = 0;
+	}
+
+	for (int i = 0; i < DIP; i++)
+	{
+		context->oldcurchar[i] = 0;
+		context->oldnextchar[i] = 0;
+		context->oldnextch_type[i] = 0;
+		context->oldnextp[i] = 0;
 	}
 }
 
@@ -92,9 +133,9 @@ void con_files_add_include(files* fs, char *name, int c_flag)
 
 void con_file_open_cur(files* fs, preprocess_context *context)
 {
-	context->current_file = fopen(ws_get_file(fs->ws, fs->cur), "r");
+	int rez = in_set_file(context->io_input, ws_get_file(fs->ws, fs->cur));
 
-	if (context->current_file == NULL)
+	if (rez == -1)
 	{
 		log_system_error(ws_get_file(fs->ws, fs->cur), "файл не найден");
 		m_error(just_kill_yourself, context);
@@ -158,17 +199,16 @@ void con_file_it_is_end_h(files *fs, int i)
 
 void con_file_close_cur(preprocess_context *context)
 {
-	fclose(context->current_file);
-	context->current_file = NULL;
+	in_clear(context->io_input);
 	context->line = 1;
 }
 
 void con_file_print_coment(files *fs, preprocess_context *context)
 {
-	comment cmt = cmt_create(ws_get_file(fs->ws, fs->cur), context->line-1);
+	comment cmt = cmt_create(ws_get_file(fs->ws, fs->cur), context->line);
 
 	char buffer[MAX_CMT_SIZE];
 	cmt_to_string(&cmt, buffer);
 
-	uni_printf(context->io, "%s", buffer);
+	uni_printf(context->io_output, "%s", buffer);
 }
