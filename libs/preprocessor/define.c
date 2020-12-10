@@ -39,13 +39,17 @@ int m_equal(preprocess_context *context)
 
 	while (j < context->csp)
 	{
-		while (context->mstring[i++] == context->cstring[j++])
+		while (context->mstring[i] == context->cstring[j])
 		{
+			i++;
+			j++;
 			if (context->mstring[i] == MACROEND && context->cstring[j] == 0)
 			{
 				return n;
 			}
 		}
+		i++;
+		j++;
 
 		n++;
 		i = 0;

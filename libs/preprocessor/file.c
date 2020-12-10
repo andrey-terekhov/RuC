@@ -20,6 +20,7 @@
 #include "preprocessor_error.h"
 #include "preprocessor_utils.h"
 #include "uniprinter.h"
+#include "uniscanner.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -32,30 +33,11 @@ void m_nextch(preprocess_context *context);
 
 int get_next_char(preprocess_context *context)
 {
-	unsigned char firstchar;
-	unsigned char secondchar;
-	if (fscanf(context->current_file, "%c", &firstchar) == EOF)
+	context->nextchar = uni_scan_char(context->io_input);
+	if (context->nextchar == U'\r')
 	{
-		return context->nextchar = EOF;
+		return get_next_char(context);
 	}
-	else
-	{
-		if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
-		{
-			fscanf(context->current_file, "%c", &secondchar);
-			context->nextchar = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 | (secondchar & /*0b111111*/ 0x3F);
-		}
-		else
-		{
-			context->nextchar = firstchar;
-		}
-
-		if (context->nextchar == 13 /* cr */)
-		{
-			get_next_char(context);
-		}
-	}
-
 	return context->nextchar;
 }
 
@@ -128,7 +110,7 @@ void m_onemore(preprocess_context *context)
 
 void m_fprintf(int a, preprocess_context *context)
 {
-	uni_print_char(context->io, a);
+	uni_print_char(context->io_output, a);
 	// printf_character(a);
 	// printf(", %d; \n", a);
 	// printf(" t = %d n = %d\n", nextch_type,context -> nextp);
