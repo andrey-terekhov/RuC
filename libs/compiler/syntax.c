@@ -190,18 +190,19 @@ size_t skipper(const syntax *const sx, size_t i)
 
 	i--;
 
-	if (sx->tree[i] >= 9001 && sx->tree[i] <= 9595)
-	{
-		return skipper(sx, i + 1);
-	}
-
 	if (is_operator(sx->tree[i]) || is_declaration(sx->tree[i]))
 	{
 		return i;
 	}
 
+	/*if (sx->tree[i] >= 9001 && sx->tree[i] <= 9595)
+	{
+		return skipper(sx, i + 1);
+	}*/
+
 	printf("skipper: tree[%li] = %i\n", i, sx->tree[i]);
-	exit(139);
+	//exit(139);
+	return skipper(sx, i + 1);
 }
 
 size_t checker(const syntax *const sx, size_t i)
@@ -229,7 +230,7 @@ size_t checker(const syntax *const sx, size_t i)
 			i += 2;
 			return checker(sx, i);
 		case TDeclid:		// IdentDecl:  6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
-			return i + 7;
+			return skipper(sx, i + 7);
 		case TDeclarr:		// ArrayDecl: n+2 потомков (размерность массива, n выражений-размеров, инициализатор (может не быть));
 		{
 			size_t n = sx->tree[i++];
@@ -286,6 +287,22 @@ size_t checker(const syntax *const sx, size_t i)
 							// Scanf: n+2 потомков (форматирующая строка, число параметров, n параметров-ссылок на identab);
 			return i + 1;
 
+		case TIf:			// If: 3 потомка (условие, тело-then, тело-else) - ветка else присутствует не всегда, здесь предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
+		{
+			int is_else = sx->tree[i++];
+			i = skipper(sx, i);
+			i = checker(sx, i);
+			return is_else ? checker(sx, is_else) : i;
+		}
+		case TSwitch:		// Switch: 2 потомка (условие, тело оператора);
+			i = skipper(sx, i);
+			return checker(sx, i);
+		case TCase:			// Case: 2 потомка (условие, тело оператора);
+			i = skipper(sx, i);
+			return checker(sx, i);
+		case TDefault:		// Default: 1 потомок (тело оператора);
+			return checker(sx, i);
+
 		case TGoto:			// Goto: 1 потомок (ссылка на identab);
 			return i + 1;
 		case TContinue:		// Continue: нет потомков;
@@ -298,8 +315,10 @@ size_t checker(const syntax *const sx, size_t i)
 			return skipper(sx, i + 1);
 	}
 
-	//i--;
-	return skipper(sx, i - 1);
+	i--;
+	printf("checker: tree[%li] = %i\n", i, sx->tree[i]);
+	return skipper(sx, i);	// CompoundStatement: n+1 потомков (число потомков, n узлов-операторов);
+								// ExpressionStatement: 1 потомок (выражение);
 
 	//printf("checker: tree[%li] = %i\n", i, sx->tree[i]);
 	//exit(139);
