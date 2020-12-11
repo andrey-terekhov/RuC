@@ -195,10 +195,10 @@ size_t skipper(const syntax *const sx, size_t i)
 		return i;
 	}
 
-	/*if (sx->tree[i] >= 9001 && sx->tree[i] <= 9595)
+	if (sx->tree[i] >= 9001 && sx->tree[i] <= 9595)
 	{
 		return skipper(sx, i + 1);
-	}*/
+	}
 
 	printf("skipper: tree[%li] = %i\n", i, sx->tree[i]);
 	//exit(139);
@@ -264,11 +264,11 @@ size_t checker(const syntax *const sx, size_t i)
 			return i + 1;
 		}
 		case TStructbeg:	// StructDecl: n+2 потомков (размерность структуры, n объявлений полей, инициализатор (может не быть));
-			return i + 1;
+			return i + 1;	// FIXME
 		case TStructinit:	// StructInit: n+1 потомков (размерность инициализатора, n выражений-инициализаторов);
-			return i + 1;
+			return i + 1;	// FIXME
 		case TStructend:
-			return i + 1;
+			return i + 1;	// FIXME
 
 		case TBegin:
 			while (sx->tree[i] != TEnd)
@@ -282,10 +282,10 @@ size_t checker(const syntax *const sx, size_t i)
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab);
 			return skipper(sx, i + 1);
 		case TPrintf:		// Printf: n+2 потомков (форматирующая строка, число параметров, n параметров-выражений);
-			return i + 1;
+			return i + 1;	// FIXME
 		case TGetid:		// GetID: 1 потомок (ссылка на identab);
 							// Scanf: n+2 потомков (форматирующая строка, число параметров, n параметров-ссылок на identab);
-			return i + 1;
+			return i + 1;	// FIXME
 
 		case TIf:			// If: 3 потомка (условие, тело-then, тело-else) - ветка else присутствует не всегда, здесь предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
 		{
@@ -303,8 +303,42 @@ size_t checker(const syntax *const sx, size_t i)
 		case TDefault:		// Default: 1 потомок (тело оператора);
 			return checker(sx, i);
 
+		case TWhile:		// While: 2 потомка (условие, тело цикла);
+			i = skipper(sx, i);
+			return checker(sx, i);
+		case TDo:			// Do: 2 потомка (тело цикла, условие);
+			i = checker(sx, i);
+			return skipper(sx, i);
+		case TFor:			// For: 4 потомка (выражение или объявление, условие окончания, выражение-инкремент, тело цикла); - первые 3 ветки присутствуют не всегда,  здесь также предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
+		{
+			size_t var = sx->tree[i++];
+			if (var != 0)
+			{
+				skipper(sx, var);
+			}
+
+			size_t cond = sx->tree[i++];
+			if (cond != 0)
+			{
+				skipper(sx, var);
+			}
+
+			size_t inc = sx->tree[i++];
+			if (inc != 0)
+			{
+				skipper(sx, var);
+			}
+
+			size_t body = sx->tree[i++];
+			return checker(sx, body);
+		}
+
+		case TLabel:		// LabeledStatement: 2 потомка (ссылка на identab, тело оператора);
+			return i + 1;	// FIXME
+
 		case TGoto:			// Goto: 1 потомок (ссылка на identab);
-			return i + 1;
+			return i + 1;	// FIXME
+
 		case TContinue:		// Continue: нет потомков;
 			return i;
 		case TBreak:		// Break: нет потомков;
