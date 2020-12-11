@@ -247,10 +247,6 @@ int getstatic(analyzer *context, int type)
 	{
 		context->maxdispl = (context->displ > context->maxdispl) ? context->displ : context->maxdispl;
 	}
-	else
-	{
-		context->sx->maxdisplg = -context->displ;
-	}
 	return olddispl;
 }
 
@@ -432,7 +428,7 @@ void toval(analyzer *context)
 			{
 				context->sx->tc -= 2;
 				totree(context, COPY0ST);
-				totree(context, context->sx->anstdispl);
+				totree(context, context->anstdispl);
 			}
 			else // тут может быть только ADDR
 			{
@@ -720,7 +716,7 @@ void primaryexpr(analyzer *context)
 		}
 
 		totree(context, TIdent);
-		totree(context, context->sx->anstdispl = context->sx->identab[context->lastid + 3]);
+		totree(context, context->anstdispl = context->sx->identab[context->lastid + 3]);
 		context->stackoperands[++context->sopnd] = context->ansttype = context->sx->identab[context->lastid + 2];
 		context->anst = IDENT;
 	}
@@ -1344,7 +1340,7 @@ void selectend(analyzer *context)
 {
 	while (context->next == DOT)
 	{
-		context->sx->anstdispl += find_field(context, context->ansttype);
+		context->anstdispl += find_field(context, context->ansttype);
 		if (context->error_flag == 6)
 		{
 			context->error_flag = 5;
@@ -1352,7 +1348,7 @@ void selectend(analyzer *context)
 		}
 	}
 
-	totree(context, context->sx->anstdispl);
+	totree(context, context->anstdispl);
 	if (is_array(context->sx, context->ansttype) || is_pointer(context->sx, context->ansttype))
 	{
 		totree(context, TAddrtoval);
@@ -1523,7 +1519,7 @@ void postexpr(analyzer *context)
 			if (context->anst == IDENT) // a[i]
 			{
 				context->sx->tree[context->sx->tc - 2] = TSliceident;
-				context->sx->tree[context->sx->tc - 1] = context->sx->anstdispl;
+				context->sx->tree[context->sx->tc - 1] = context->anstdispl;
 			}
 			else // a[i][j]
 			{
@@ -1573,7 +1569,7 @@ void postexpr(analyzer *context)
 									  // теперь уже всегда на верхушке стека
 
 			context->ansttype = mode_get(context->sx, context->ansttype + 1);
-			context->sx->anstdispl = find_field(context, context->ansttype);
+			context->anstdispl = find_field(context, context->ansttype);
 			if (context->error_flag == 6)
 			{
 				context->error_flag = 4;
@@ -1598,10 +1594,10 @@ void postexpr(analyzer *context)
 			if (context->anst == VAL) // структура - значение функции
 			{
 				int len1 = szof(context, context->ansttype);
-				context->sx->anstdispl = 0;
+				context->anstdispl = 0;
 				while (context->next == DOT)
 				{
-					context->sx->anstdispl += find_field(context, context->ansttype);
+					context->anstdispl += find_field(context, context->ansttype);
 					if (context->error_flag == 6)
 					{
 						context->error_flag = 4;
@@ -1609,28 +1605,28 @@ void postexpr(analyzer *context)
 					}
 				}
 				totree(context, COPYST);
-				totree(context, context->sx->anstdispl);
+				totree(context, context->anstdispl);
 				totree(context, szof(context, context->ansttype));
 				totree(context, len1);
 			}
 			else if (context->anst == IDENT)
 			{
-				int globid = context->sx->anstdispl < 0 ? -1 : 1;
+				int globid = context->anstdispl < 0 ? -1 : 1;
 				while (context->next == DOT)
 				{
-					context->sx->anstdispl += globid * find_field(context, context->ansttype);
+					context->anstdispl += globid * find_field(context, context->ansttype);
 					if (context->error_flag == 6)
 					{
 						context->error_flag = 4;
 						return; // 1
 					}
 				}
-				context->sx->tree[context->sx->tc - 1] = context->sx->anstdispl;
+				context->sx->tree[context->sx->tc - 1] = context->anstdispl;
 			}
 			else // ADDR
 			{
 				totree(context, TSelect);
-				context->sx->anstdispl = 0;
+				context->anstdispl = 0;
 				selectend(context);
 				if (context->error_flag == 5)
 				{
@@ -2184,7 +2180,7 @@ void exprassn(analyzer *context, int level)
 	}
 
 	leftanst = context->anst;
-	leftanstdispl = context->sx->anstdispl;
+	leftanstdispl = context->anstdispl;
 	context->leftansttype = context->ansttype;
 	if (opassn(context))
 	{
@@ -2255,11 +2251,11 @@ void exprassn(analyzer *context, int level)
 			}
 			if (context->anst == IDENT)
 			{
-				totree(context, context->sx->anstdispl); // displright
+				totree(context, context->anstdispl); // displright
 			}
 			totree(context, mode_get(context->sx, ltype + 1)); // длина
 			context->anst = leftanst;
-			context->sx->anstdispl = leftanstdispl;
+			context->anstdispl = leftanstdispl;
 		}
 		else // оба операнда базового типа или указатели
 		{
@@ -2298,7 +2294,7 @@ void exprassn(analyzer *context, int level)
 			totreef(context, opp);
 			if (leftanst == IDENT)
 			{
-				totree(context, context->sx->anstdispl = leftanstdispl);
+				totree(context, context->anstdispl = leftanstdispl);
 			}
 			context->anst = VAL;
 		}

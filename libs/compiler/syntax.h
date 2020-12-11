@@ -51,11 +51,8 @@ typedef struct syntax
 	int reprtab[MAXREPRTAB];	/**< Representations table */
 	int rp;						/**< Representations size */
 	int repr;					/**< Representations position */
-
-	int maxdisplg;				/**< Max displacement */
+	
 	int wasmain;				/**< Main function flag */
-
-	int anstdispl;				/**< Stack displacement */
 } syntax;
 
 
