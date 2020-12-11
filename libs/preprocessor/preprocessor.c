@@ -43,31 +43,33 @@
 const size_t SIZE_OUT_BUFFER = 1024;
 
 
-void to_reprtab(char str[], int num, preprocess_context *context)
+void to_reprtab(const char str[], int num, preprocess_context *context)
 {
-	int i;
+	int i = 0;
 	int oldrepr = context->rp;
 	int hash = 0;
-	unsigned char firstchar;
-	unsigned char secondchar;
-	int p;
+	//unsigned char firstchar;
+	//unsigned char secondchar;
+	//int p;
 	int c = 0;
 	context->rp += 2;
 
-	for (i = 0; str[i] != 0; i++)
+	while(str[i] != '\0')
 	{
-		sscanf(&str[i], "%c%n", &firstchar, &p);
+		/*sscanf(&str[i], "%c%n", &firstchar, &p);
 
-		if ((firstchar & /*0b11100000*/ 0xE0) == /*0b11000000*/ 0xC0)
+		if ((firstchar & 0xE0) == 0xC0)
 		{
 			++i;
 			sscanf(&str[i], "%c%n", &secondchar, &p);
-			c = ((int)(firstchar & /*0b11111*/ 0x1F)) << 6 | (secondchar & /*0b111111*/ 0x3F);
+			c = ((int)(firstchar & 0x1F)) << 6 | (secondchar & 0x3F);
 		}
 		else
 		{
 			c = firstchar;
-		}
+		}*/
+		c = utf8_convert(&str[i]);
+		i += (int)utf8_symbol_size(str[i]);
 
 		hash += c;
 		context->reprtab[context->rp++] = c;
@@ -80,7 +82,7 @@ void to_reprtab(char str[], int num, preprocess_context *context)
 	context->hashtab[hash] = oldrepr;
 }
 
-void to_reprtab_full(char str1[], char str2[], char str3[], char str4[], int num, preprocess_context *context)
+void to_reprtab_full(const char str1[], const char str2[], const char str3[], const char str4[], int num, preprocess_context *context)
 {
 	to_reprtab(str1, num, context);
 	to_reprtab(str2, num, context);
@@ -128,6 +130,7 @@ void preprocess_words(preprocess_context *context)
 		case SH_DEFINE:
 		case SH_MACRO:
 		{
+			context->prep_flag = 1;
 			define_relis(context);
 			return;
 		}
@@ -206,7 +209,6 @@ void preprocess_scan(preprocess_context *context)
 
 			if (context->cur != 0)
 			{
-				context->prep_flag = 1;
 				preprocess_words(context);
 				if(context->curchar != '#')
 				{
@@ -261,7 +263,6 @@ void preprocess_scan(preprocess_context *context)
 
 void add_c_file_siple(preprocess_context *context)
 {
-	context->temp_output = 0;
 	while (context->curchar != EOF)
 	{
 		m_nextch(context);
@@ -364,8 +365,9 @@ void preprocess_c_file(preprocess_context *context)
 
 int macro_form_io(workspace *const ws, universal_io *const io)
 {
+	universal_io io_input = io_create();
 	preprocess_context context;
-	preprocess_context_init(&context, ws, io);
+	preprocess_context_init(&context, ws, io, &io_input);
 
 	add_keywods(&context);
 
@@ -373,7 +375,9 @@ int macro_form_io(workspace *const ws, universal_io *const io)
 	open_files(&context);
 	preprocess_h_file(&context);
 	preprocess_c_file(&context);
+	in_clear(&io_input);
 
+	
 	return 0;
 }
 

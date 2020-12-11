@@ -18,6 +18,7 @@
 #include "errors.h"
 #include "defs.h"
 #include "scanner.h"
+#include <limits.h>
 #include <string.h>
 
 
@@ -3578,7 +3579,14 @@ void function_definition(analyzer *context)
 	for (i = 0; i < n; i++)
 	{
 		context->type = mode_get(context->sx, context->functype + i + 3);
-		REPRTAB_POS = context->sx->functions[fn + i + 1];
+		int temp = func_get(context->sx, fn + i + 1);
+		if (temp == INT_MAX)
+		{
+			context->error_flag = 1;
+			return;
+		}
+
+		REPRTAB_POS = temp;
 		if (REPRTAB_POS > 0)
 		{
 			toidentab(context, 0, context->type);
@@ -3594,7 +3602,7 @@ void function_definition(analyzer *context)
 			return; // 1
 		}
 	}
-	context->sx->functions[fn] = context->sx->tc;
+	func_set(context->sx, fn, context->sx->tc);
 	totree(context, TFuncdef);
 	totree(context, fid);
 	pred = context->sx->tc++;
@@ -3691,7 +3699,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 				{
 					scaner(context);
 					ident = 1;
-					context->sx->functions[context->sx->funcnum++] = REPRTAB_POS;
+					func_add(context->sx, REPRTAB_POS);
 				}
 			}
 			else if (context->next == IDENT)
@@ -3756,7 +3764,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 							context->error_flag = 2;
 							return 0;
 						}
-						context->sx->functions[context->sx->funcnum++] = -REPRTAB_POS;
+						func_add(context->sx, -REPRTAB_POS);
 					}
 					else
 					{

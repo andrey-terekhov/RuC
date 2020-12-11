@@ -67,13 +67,44 @@ typedef struct syntax
 syntax sx_create();
 
 /**
+ *	Add new record to functions table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	ref			Start of function definition in syntax tree
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int func_add(syntax *const sx, const size_t ref);
+
+/**
+ *	Set function start reference by index in functions table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in functions table
+ *	@param	ref			Start of function definition in syntax tree
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int func_set(syntax *const sx, const size_t index, const size_t ref);
+
+/**
+ *	Get an item from functions table by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in functions table
+ *
+ *	@return	Item by index from functions table, @c INT_MAX on failure
+ */
+int func_get(syntax *const sx, const size_t index);
+
+/**
  *	Add new record to modes table
  *
  *	@param	sx			Syntax structure
  *	@param	record		Pointer to the new record
  *	@param	size		Size of the new record
  *
- *	@return	Index of the new record in modes table
+ *	@return	Index of the new record in modes table, @c SIZE_MAX on failure
  */
 size_t mode_add(syntax *const sx, const int *const record, const size_t size);
 
@@ -83,7 +114,7 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record
  *
- *	@return	Item by index from modes table
+ *	@return	Item by index from modes table, @c INT_MAX on failure
  */
 int mode_get(syntax *const sx, const size_t index);
 
