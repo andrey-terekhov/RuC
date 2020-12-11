@@ -3158,7 +3158,11 @@ void parse_printid_statement(analyzer *const context)
 			context_error(context, no_ident_in_printid);
 			skip_until(context, COMMA | RIGHTBR | SEMICOLON);
 		}
-		if (context->next != COMMA)
+		if (context->next == COMMA)
+		{
+			scaner(context);
+		}
+		else
 		{
 			break;
 		}
@@ -3285,7 +3289,11 @@ void parse_getid_statement(analyzer *const context)
 			context_error(context, no_ident_in_getid);
 			skip_until(context, COMMA | RIGHTBR | SEMICOLON);
 		}
-		if (context->next != COMMA)
+		if (context->next == COMMA)
+		{
+			scaner(context);
+		}
+		else
 		{
 			break;
 		}
