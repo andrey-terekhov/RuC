@@ -148,6 +148,9 @@ void get_error(const int num, char *const msg, va_list args)
 		case no_colon_in_case: // test_exist
 			sprintf(msg, "после выражения в выборе нет :");
 			break;
+		case no_colon_in_default: // test_exist
+			sprintf(msg, "после метки УМОЛЧАНИЕ нет :");
+			break;
 		case case_after_default: // need_test
 			sprintf(msg, "встретился выбор после умолчания");
 			break;
@@ -177,14 +180,25 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "в каждой программе должна быть ГЛАВНАЯ функция");
 			break;
 		case no_leftbr_in_printid: // test_exist
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет (");
+			sprintf(msg, "в команде ПЕЧАТЬИД нет (");
 			break;
 		case no_rightbr_in_printid: // test_exist
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет )");
+			sprintf(msg, "в команде ПЕЧАТЬИД нет )");
 			break;
 		case no_ident_in_printid: // need_test
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора");
+			sprintf(msg, "в команде ПЕЧАТЬИД нет идентификатора");
 			break;
+			
+		case no_leftbr_in_getid: // test_exist
+			sprintf(msg, "в команде ЧИТАТЬИД нет (");
+			break;
+		case no_rightbr_in_getid: // test_exist
+			sprintf(msg, "в команде ЧИТАТЬИД нет )");
+			break;
+		case no_ident_in_getid: // need_test
+			sprintf(msg, "в команде ЧИТАТЬИД нет идентификатора");
+			break;
+			
 		case float_in_switch: // need_test
 			sprintf(msg, "в условии переключателя можно использовать только типы "
 												  "ЛИТЕРА и ЦЕЛ");
@@ -286,8 +300,11 @@ void get_error(const int num, char *const msg, va_list args)
 		case float_in_condition:	// need_test
 			sprintf(msg, "условие должно иметь тип ЦЕЛ или ЛИТЕРА");
 			break;
-		case case_or_default_not_in_switch: // need_test
-			sprintf(msg, "метка СЛУЧАЙ или УМОЛЧАНИЕ не в операторе ВЫБОР");
+		case case_not_in_switch: // need_test
+			sprintf(msg, "метка СЛУЧАЙ не в операторе ВЫБОР");
+			break;
+		case default_not_in_switch: // need_test
+			sprintf(msg, "метка УМОЛЧАНИЕ не в операторе ВЫБОР");
 			break;
 		case break_not_in_loop_or_switch: // need_test
 			sprintf(msg, "оператор ВЫХОД не в цикле и не в операторе ВЫБОР");
