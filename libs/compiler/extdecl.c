@@ -3001,7 +3001,7 @@ void parse_for_statement(analyzer *const context)
 		context->sx->tree[increment_ref] = context->sx->tc;
 		expr(context, 0);
 		exprassnvoid(context);
-		mustbe(context, SEMICOLON, no_semicolon_in_for);
+		mustbe(context, RIGHTBR, no_rightbr_in_for);
 	}
 	
 	context->sx->tree[statement_ref] = context->sx->tc;
