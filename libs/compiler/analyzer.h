@@ -90,7 +90,6 @@ typedef struct analyzer
 	int pgotost;
 	int anst;
 	int ansttype;
-	int anstdispl;
 	int leftansttype; // anst = VAL  - значение на стеке
 	int x;							// useless
 	int iniproc; // anst = ADDR - на стеке адрес значения

@@ -34,7 +34,6 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx)
 	context.lg = -1;
 	context.displ = -3;
 	context.maxdispl = 3;
-	context.anstdispl = 0;
 	context.blockflag = 1;
 	context.notrobot = 1;
 	context.prdf = -1;

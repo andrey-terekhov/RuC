@@ -142,13 +142,13 @@ int Expr_gen(syntax *const sx, int incond)
 		{
 			case TIdent:
 			{
-				sx->tc++;
+				sx->anstdispl = sx->tree[sx->tc++];
 				break;
 			}
 			case TIdenttoaddr:
 			{
 				tocode(sx, LA);
-				tocode(sx, sx->tree[sx->tc++]);
+				tocode(sx, sx->anstdispl = sx->tree[sx->tc++]);
 				break;
 			}
 			case TIdenttoval:
@@ -842,7 +842,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
 	uni_printf(io, "%i %i %i %i %i %i %i\n", sx->pc, sx->funcnum, sx->id,
-				   sx->rp, sx->md, 0, sx->wasmain);
+				   sx->rp, sx->md, sx->maxdisplg, sx->wasmain);
 
 	for (int i = 0; i < sx->pc; i++)
 	{

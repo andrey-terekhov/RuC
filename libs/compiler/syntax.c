@@ -71,7 +71,10 @@ syntax sx_create()
 	sx.rp = 1;
 	sx.repr = 0;
 
+	sx.maxdisplg = 3;
 	sx.wasmain = 0;
+
+	sx.anstdispl = 0;
 
 	return sx;
 }
