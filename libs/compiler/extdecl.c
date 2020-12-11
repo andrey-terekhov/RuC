@@ -2885,12 +2885,13 @@ void parse_switch_statement(analyzer *const context)
 	totree(context, TSwitch);
 	
 	exprinbrkts(context, cond_must_be_in_brkts);
-	if (/*!is_undefined(context->ansttype) &&*/ !is_int(context->ansttype))
+	if (!is_int(context->ansttype))
 	{
 		context_error(context, float_in_switch);
 	}
 	
 	context->sopnd--;
+	scaner(context);
 	context->inswitch = 1;
 	parse_compound_statement(context, SWITCH);
 	context->wasdefault = 0;
