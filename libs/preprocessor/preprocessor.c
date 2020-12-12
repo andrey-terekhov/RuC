@@ -114,10 +114,6 @@ void add_keywods(preprocess_context *context)
 
 void preprocess_words(preprocess_context *context)
 {
-	/*if (context->curchar != '(')
-	{
-		m_nextch(context);
-	}*/
 
 	space_skip(context);
 	switch (context->cur)
@@ -136,9 +132,16 @@ void preprocess_words(preprocess_context *context)
 		}
 		case SH_UNDEF:
 		{
-			int k;
-			context->macrotext[context->reprtab[(k = collect_mident(context)) + 1]] = MACROUNDEF;
-			space_end_line(context);
+			int k = collect_mident(context);
+			if(k)
+			{
+				context->macrotext[context->reprtab[k + 1]] = MACROUNDEF;
+				space_end_line(context);
+			}
+			else
+			{
+				m_error(45, context);
+			}
 			return;
 		}
 		case SH_IF:
@@ -146,7 +149,6 @@ void preprocess_words(preprocess_context *context)
 		case SH_IFNDEF:
 		{
 			if_relis(context);
-			printf("!!!!!!!!!!!!!!3\n");
 			return;
 		}
 		case SH_SET:
@@ -167,6 +169,7 @@ void preprocess_words(preprocess_context *context)
 			else
 			{
 				m_error(after_eval_must_be_ckob, context);
+				return;
 			}
 
 			m_change_nextch_type(CTYPE, 0, context);
@@ -177,12 +180,18 @@ void preprocess_words(preprocess_context *context)
 			context->wsp = 0;
 			context->ifsp = 0;
 			while_collect(context);
+			if(context->error_in_string)
+			{
+				return;
+			}
+			
 			m_change_nextch_type(WHILETYPE, 0, context);
 			m_nextch(context);
 			m_nextch(context);
 
 			context->nextp = 0;
 			while_relis(context);
+			m_old_nextch_type(context);
 
 			return;
 		}
@@ -211,11 +220,9 @@ void preprocess_scan(preprocess_context *context)
 			if (context->cur != 0)
 			{
 				preprocess_words(context);
-				printf("!!!!!!!!!!!!!!1 n = %d\n", context->nextchar);
 				if(context->nextchar != '#' && context->nextch_type != WHILETYPE && 
 					context->nextch_type != TEXTTYPE)//curflag
 				{
-					printf("!!!!!!!!!!!!!!2\n");
 					con_file_print_coment(&context->fs, context);
 				}
 				if(context->cur != SH_ELSE && context->cur != SH_ELIF && context->cur != SH_ENDIF)
@@ -228,6 +235,8 @@ void preprocess_scan(preprocess_context *context)
 				// m_nextch(context);
 				output_keywods(context);
 			}
+
+			context->error_in_string = 0;
 
 			return;
 		}

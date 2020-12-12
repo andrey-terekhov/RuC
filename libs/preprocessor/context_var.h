@@ -38,6 +38,9 @@ typedef struct files
 
 typedef struct preprocess_context
 {
+	int error_in_string;
+	int error_in_file;
+
 	int include_type;
 
 	int hashtab[256];
@@ -46,6 +49,9 @@ typedef struct preprocess_context
 
 	int macrotext[MAXTAB];
 	int mp;
+
+	char32_t error_string[STRIGSIZE];
+	size_t position;
 
 	int mstring[STRIGSIZE];
 	int msp;

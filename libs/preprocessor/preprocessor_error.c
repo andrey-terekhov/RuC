@@ -17,166 +17,141 @@
 #include "preprocessor_error.h"
 #include "constants.h"
 #include "context_var.h"
+#include "file.h"
 #include "logger.h"
+#include "file.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#define TAG_RUC_MACRO "ruc-macro"
 
-/*void printf_character(int wchar)
+int strlen32(const char32_t* strarg)
 {
-	if (wchar < 0)
-	{
-		return;
-	}
+   if(!strarg)
+   {
+	   return -1;
+   }
+   char32_t* str = strarg;
+   for(;*str; ++str);
+   return str-strarg;
+}
 
-	if (wchar < 128)
-	{
-		printf("%c", wchar);
-	}
-	else
-	{
-		unsigned char first = (wchar >> 6) | 0xC0;
-		unsigned char second = (wchar & 0x3F) | 0x80;
-
-		printf("%c%c", first, second);
-	}
-}*/
-
-void errors_set(int ernum, const char *const tag)
+void get_error(int ernum, char *msg)
 {
 	switch (ernum)
 	{
 		case after_preproces_words_must_be_space:
-			log_system_error(tag, "после команды препроцессора должен идти перенос строки");
+			sprintf(msg, "после команды препроцессора должен идти перенос строки");
 			break;
 		case after_ident_must_be_space1:
-			log_system_error(tag, "после идентификатора должен идти ' ' ");
+			sprintf(msg, "после идентификатора должен идти ' ' ");
 			break;
 		case ident_begins_with_letters1:
-			log_system_error(tag, "идентификатор должен начинаться с буквы ");
+			sprintf(msg, "идентификатор должен начинаться с буквы ");
 			break;
 		case must_be_endif:
-			log_system_error(tag, "условный оператор препроцессора должен заканчиваться '#ENDIF' ");
+			sprintf(msg, "условный оператор препроцессора должен заканчиваться '#ENDIF' ");
 			break;
 		case dont_elif:
-			log_system_error(tag, "в этом типе условного оператора не может использоваться '#ELIF' ");
+			sprintf(msg, "в этом типе условного оператора не может использоваться '#ELIF' ");
 			break;
 		case preproces_words_not_exist:
-			log_system_error(tag, "в препроцессоре не существует написанной команды");
+			sprintf(msg, "в препроцессоре не существует написанной команды");
 			break;
 		case not_enough_param:
-			log_system_error(tag, "у этого идентификатора меньше параметров");
+			sprintf(msg, "у этого идентификатора меньше параметров");
 			break;
 		case functionid_begins_with_letters:
-			log_system_error(tag, "идентификатор с параметрами должен начинаться с буквы");
+			sprintf(msg, "идентификатор с параметрами должен начинаться с буквы");
 			break;
 		case functions_cannot_be_changed:
-			log_system_error(tag, "идентификатор с параметрами нельзя переопределять");
+			sprintf(msg, "идентификатор с параметрами нельзя переопределять");
 			break;
 		case after_functionid_must_be_comma:
-			log_system_error(tag, "после идентификатора в функции должны быть ')' или ',' потом ' ' ");
+			sprintf(msg, "после идентификатора в функции должны быть ')' или ',' потом ' ' ");
 			break;
 		case stalpe:
-			log_system_error(tag, "в функции аргументы должны быть описаны через запятую, в скобках");
+			sprintf(msg, "в функции аргументы должны быть описаны через запятую, в скобках");
 			break;
 		case not_relis_if:
-			log_system_error(tag, "if ещё не реализован");
+			sprintf(msg, "if ещё не реализован");
 			break;
 		case before_endif:
-			log_system_error(tag, "перед '#ENDIF' должен стоять условный оператор препроцессора");
+			sprintf(msg, "перед '#ENDIF' должен стоять условный оператор препроцессора");
 			break;
 		case repeat_ident:
-			log_system_error(tag, "этот идентификатор препроцессора уже используется");
+			sprintf(msg, "этот идентификатор препроцессора уже используется");
 			break;
 		case ident_not_exist:
-			log_system_error(tag, "данный идентификатор препроцессора не существует");
+			sprintf(msg, "данный идентификатор препроцессора не существует");
 			break;
 		case comm_not_ended:
-			log_system_error(tag, "комментарий, начавшийся с /* , не закрыт");
+			sprintf(msg, "комментарий, начавшийся с /* , не закрыт");
 			break;
 		case not_enough_param2:
-			log_system_error(tag, "у этой функции больше параметров");
+			sprintf(msg, "у этой функции больше параметров");
 			break;
 		case not_end_fail_define:
-			log_system_error(tag, "файл не может закончится до окончания команды '#DEFINE' поставьте перенос строки");
+			sprintf(msg, "файл не может закончится до окончания команды '#DEFINE' поставьте перенос строки");
 			break;
 		case scob_not_clous:
-			log_system_error(tag, "количество открывающих скобок не соответствует числу закрывающих");
+			sprintf(msg, "количество открывающих скобок не соответствует числу закрывающих");
 			break;
 		case after_eval_must_be_ckob:
-			log_system_error(tag, "сразу после команды '#EVAL' должен быть символ '('");
+			sprintf(msg, "сразу после команды '#EVAL' должен быть символ '('");
 			break;
 		case too_many_nuber:
-			log_system_error(tag, "слишком большое число");
+			sprintf(msg, "слишком большое число");
 			break;
 		case must_be_digit_after_exp1:
-			log_system_error(tag, "после экспоненты должно быть число");
+			sprintf(msg, "после экспоненты должно быть число");
 			break;
 		case not_arithmetic_operations:
-			log_system_error(tag, "все арифметические операции должны быть внутри команды '#EVAL()'");
+			sprintf(msg, "все арифметические операции должны быть внутри команды '#EVAL()'");
 			break;
 		case not_logical_operations:
-			log_system_error(tag, "внутри команды '#EVAL()' не должно быть логических операций");
+			sprintf(msg, "внутри команды '#EVAL()' не должно быть логических операций");
 			break;
 		default:
 		{
-			char msg[128];
 			sprintf(msg, "не реализованная ошибка №%d", ernum);
-			log_system_error(tag, msg);
 		}
 	}
 }
 
-void m_error(int ernum, preprocess_context *context)//стандартизация ошибок
+void m_error(int ernum, preprocess_context *context)
 {
-	(void)context;
-	/*if ()
+	context->error_in_string = 1;
+	context->error_in_file = 1;
+	char tag[STRIGSIZE] = TAG_RUC_MACRO;
+	char32_t *line = context->error_string;
+	size_t position = strlen32(line);
+
+	in_get_path(context->io_input, tag);
+	size_t index = strlen(tag);
+	index += sprintf(&tag[index], ":%zi", context->line);
+	
+	while (position > 0
+		&& (line[position] == ' ' || line[position] == '\t'
+		|| line[position] == '\r' || line[position] == '\n'))
 	{
-		int i = 0;
-		data_file *f;
-
-		if (context->h_flag)
-		{
-			f = &context->headers->files[context->headers->cur];
-		}
-		else
-		{
-			f = &context->sources->files[context->sources->cur];
-		}
-
-		const char *name = f->name;
-
-#if MACRODEBUG
-		printf("\n\n");
-#endif
-		errors_set(ernum, name);
-
-#if MACRODEBUG
-		// int j = 2;
-		// printf("line 1) ");
-		printf(" ");
-
-
-		for (i = 0; i < p; i++)
-		{
-			printf_character(s[i]);
-			if (s[i] == '\n')
-			{
-				printf(" ");
-				// printf("line %i) ", j);
-				// j++;
-			}
-		}
-		printf("\n");
-#endif
+		position--;
 	}
-	else
+	index += sprintf(&tag[index], ":%zi", position);
+
+	char msg[STRIGSIZE];
+	errors_set(ernum, msg);
+
+	while (context->curchar != '\n')
 	{
-		
-	}*/
-	errors_set(ernum, "macro");
+		m_nextch(context);
+	}
+	
+
+	log_error(tag, msg, line, position);
+	
 	exit(1);
 }

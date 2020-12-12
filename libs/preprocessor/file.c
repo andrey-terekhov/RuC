@@ -17,7 +17,6 @@
 #include "file.h"
 #include "constants.h"
 #include "context_var.h"
-#include "preprocessor_error.h"
 #include "preprocessor_utils.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
@@ -130,7 +129,7 @@ void m_coment_skip(preprocess_context *context)
 			if (context->curchar == EOF)
 			{
 				end_line(context);
-				m_error(comm_not_ended, context);
+				return;
 			}
 		} while (context->curchar != '*' || context->nextchar != '/');
 
@@ -220,6 +219,15 @@ void m_nextch(preprocess_context *context)
 		}
 	}
 
+	if (context->curchar != '\n')
+	{
+		context->error_string[context->position++] = context->curchar;
+		context->error_string[context->position] = '\0';
+	}
+	else
+	{
+		context->position = 0;
+	}
 	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", context->nextch_type,
 	// context->curchar, context->curchar, context->nextchar, context->nextchar);
 }

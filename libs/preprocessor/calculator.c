@@ -56,6 +56,7 @@ double get_digit(preprocess_context *context)
 		if (numdouble > (double)INT_MAX)
 		{
 			m_error(too_many_nuber, context);
+			return 0.0;
 		}
 		num = num * 10 + (context->curchar - '0');
 		m_nextch(context);
@@ -97,6 +98,7 @@ double get_digit(preprocess_context *context)
 		if (!is_digit(context->curchar))
 		{
 			m_error(must_be_digit_after_exp1, context);
+			return 0.0;
 		}
 
 
@@ -305,6 +307,10 @@ void calculator(int if_flag, preprocess_context *context)
 		{
 			opration_flag = 1;
 			stack[i] = get_digit(context);
+			if(context->error_in_string)
+			{
+				return;
+			}
 			int_flag[i++] = flagint;
 		}
 		else if (is_letter(context))
@@ -314,10 +320,15 @@ void calculator(int if_flag, preprocess_context *context)
 			if (r)
 			{
 				define_get_from_macrotext(r, context);
+				if(context->error_in_string)
+				{
+					return;
+				}
 			}
 			else
 			{
 				m_error(1, context);
+				return;
 			}
 		}
 		else if (context->curchar == '#' && if_flag)
@@ -327,10 +338,15 @@ void calculator(int if_flag, preprocess_context *context)
 			if (context->cur == SH_EVAL && context->curchar == '(')
 			{
 				calculator(0, context);
+				if(context->error_in_string)
+				{
+					return;
+				}	
 			}
 			else
 			{
 				m_error(after_eval_must_be_ckob, context);
+				return;
 			}
 			m_change_nextch_type(CTYPE, 0, context);
 			m_nextch(context);
@@ -342,6 +358,7 @@ void calculator(int if_flag, preprocess_context *context)
 				if (i < 2 || op == 0)
 				{
 					m_error(2, context);
+					return;
 				}
 
 				int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
@@ -369,10 +386,12 @@ void calculator(int if_flag, preprocess_context *context)
 				if (n != 0 && if_flag && n > 3)
 				{
 					m_error(not_arithmetic_operations, context);
+					return;
 				}
 				if (n != 0 && !if_flag && n <= 3)
 				{
 					m_error(not_logical_operations, context);
+					return;
 				}
 
 				while (op != 0 && n != 0 && get_prior(operation[op - 1]) >= n)
@@ -387,11 +406,13 @@ void calculator(int if_flag, preprocess_context *context)
 			else if (context->curchar != '\n')
 			{
 				m_error(3, context);
+				return;
 			}
 		}
 		else if (context->curchar != '\n')
 		{
 			m_error(3, context);
+			return;
 		}
 	}
 
@@ -403,6 +424,7 @@ void calculator(int if_flag, preprocess_context *context)
 			if (i < 2)
 			{
 				m_error(4, context);
+				return;
 			}
 
 			int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
@@ -423,5 +445,6 @@ void calculator(int if_flag, preprocess_context *context)
 	else
 	{
 		m_error(5, context);
+		return;
 	}
 }

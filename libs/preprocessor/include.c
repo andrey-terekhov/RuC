@@ -99,7 +99,8 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 	if (res == -1)
 	{
 		log_system_error(temp_way, "файл не найден");
-		m_error(1, context);
+		context->error_in_file = 1;
+		return -2;
 	}
 
 	if (context->include_type != 0)
@@ -153,6 +154,7 @@ void open_file(preprocess_context *context)
 		if (context->curchar == EOF)
 		{
 			m_error(23, context);
+			return;
 		}
 		temp_way[i++] = (char)context->curchar;
 		m_nextch(context);
@@ -205,6 +207,14 @@ void open_file(preprocess_context *context)
 
 void include_relis(preprocess_context *context)
 {
+	if(context->error_in_file)
+	{
+		while (context->curchar != '\n')
+		{
+			m_nextch(context);
+		}
+		return;
+	}
 	space_skip(context);
 
 	if (context->curchar != '\"')
@@ -215,6 +225,10 @@ void include_relis(preprocess_context *context)
 	}
 	m_nextch(context);
 	open_file(context);
+	if(context->error_in_string)
+	{
+		return;
+	}
 	m_nextch(context);
 	space_end_line(context);
 }

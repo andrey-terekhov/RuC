@@ -50,6 +50,10 @@ int if_check(int type_if, preprocess_context *context)
 		}
 
 		space_end_line(context);
+		if(context->error_in_string)
+		{
+			return 0;
+		}
 
 		if (type_if == SH_IFDEF)
 		{
@@ -71,7 +75,6 @@ void if_end(preprocess_context *context)
 		if (context->curchar == '#')
 		{
 			fl_cur = macro_keywords(context);
-			printf("!!!!!!!!!!!!!!4\n");
 			if (fl_cur == SH_ENDIF)
 			{
 				checkif--;
@@ -86,6 +89,10 @@ void if_end(preprocess_context *context)
 			{
 				checkif++;
 				if_end(context);
+				if(context->error_in_string)
+				{
+					return;
+				}
 			}
 		}
 		else
@@ -116,6 +123,10 @@ int if_false(preprocess_context *context)
 			if (fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
 			{
 				if_end(context);
+				if(context->error_in_string)
+				{
+					return 1;
+				}
 			}
 		}
 		else
@@ -154,6 +165,8 @@ void if_true(int type_if, preprocess_context *context)
 	if (type_if != SH_IF && context->cur == SH_ELIF)
 	{
 		m_error(dont_elif, context);
+		checkif--;
+		return;
 	}
 
 	if_end(context);
@@ -163,6 +176,11 @@ void if_relis(preprocess_context *context)
 {
 	int type_if = context->cur;
 	int flag = if_check(type_if, context); // начало (if)
+	if(context->error_in_string)
+	{
+		checkif--;
+		return;
+	}
 
 	checkif++;
 	if (flag)
@@ -173,6 +191,11 @@ void if_relis(preprocess_context *context)
 	else
 	{
 		context->cur = if_false(context);
+		if(context->error_in_string)
+		{
+			checkif--;
+			return;
+		}
 	}
 
 	if (type_if == SH_IF)
@@ -181,6 +204,11 @@ void if_relis(preprocess_context *context)
 		{
 			flag = if_check(type_if, context);
 			space_end_line(context);
+			if(context->error_in_string)
+			{
+				checkif--;
+				return;
+			}
 
 			if (flag)
 			{
@@ -190,12 +218,19 @@ void if_relis(preprocess_context *context)
 			else
 			{
 				context->cur = if_false(context);
+				if(context->error_in_string)
+				{
+					checkif--;
+					return;
+				}
 			}
 		}
 	}
 	else if (context->cur == SH_ELIF)
 	{
 		m_error(10, context);
+		checkif--;
+		return;
 	}
 
 	if (context->cur == SH_ELSE)

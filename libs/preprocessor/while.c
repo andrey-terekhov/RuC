@@ -108,7 +108,6 @@ void while_relis(preprocess_context *context)
 
 		while (context->nextp != end || context->nextch_type != WHILETYPE)
 		{
-			printf("end = %d, context->nextp = %d t = %d\n", end, context->nextp, context->nextch_type);
 			if (context->curchar == WHILEBEGIN)
 			{
 				context->nextp--;
@@ -117,6 +116,7 @@ void while_relis(preprocess_context *context)
 			else if (context->curchar == EOF)
 			{
 				m_error(41, context);
+				return;
 			}
 			else
 			{
