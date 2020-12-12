@@ -115,7 +115,7 @@ void skip_until(analyzer *const context, const unsigned int tokens)
 	{
 		switch (context->next)
 		{
-			case EOF:
+			case LEOF:
 				return;
 				
 			case LEFTBR:
@@ -3713,6 +3713,11 @@ void block(analyzer *context, int b)
 
 	do
 	{
+		if (context->next == LEOF)
+		{
+			context_error(context, wait_end);
+			return;
+		}
 		if (b == 2 ? context->next == TEXIT : context->next == END)
 		{
 			scaner(context);
