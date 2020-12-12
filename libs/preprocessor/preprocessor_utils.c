@@ -209,7 +209,6 @@ void space_end_line(preprocess_context *context)
 			m_error(after_preproces_words_must_be_space, context);
 		}
 	}
-	m_nextch(context);
 }
 
 void space_skip(preprocess_context *context)

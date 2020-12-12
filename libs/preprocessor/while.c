@@ -56,7 +56,8 @@ void while_collect(preprocess_context *context)
 				while_collect(context);
 			}
 			else if (context->cur == SH_ENDW)
-			{
+			{	
+				context->wstring[context->wsp++] = ' ';
 				context->wstring[oldwsp + 2] = context->wsp;
 				context->cur = 0;
 

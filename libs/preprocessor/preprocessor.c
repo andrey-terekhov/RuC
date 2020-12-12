@@ -210,9 +210,14 @@ void preprocess_scan(preprocess_context *context)
 			if (context->cur != 0)
 			{
 				preprocess_words(context);
-				if(context->curchar != '#')
+				if(context->nextchar != '#' && context->nextch_type != WHILETYPE && 
+					context->nextch_type != TEXTTYPE)//curflag
 				{
 					con_file_print_coment(&context->fs, context);
+				}
+				if(context->cur != SH_ELSE && context->cur != SH_ELIF && context->cur != SH_ENDIF)
+				{
+					m_nextch(context);
 				}
 			}
 			else
