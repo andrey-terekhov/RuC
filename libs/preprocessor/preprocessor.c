@@ -69,7 +69,7 @@ void to_reprtab(const char str[], int num, preprocess_context *context)
 			c = firstchar;
 		}*/
 		c = utf8_convert(&str[i]);
-		i += utf8_symbol_size(str[i]);
+		i += (int)utf8_symbol_size(str[i]);
 
 		hash += c;
 		context->reprtab[context->rp++] = c;
