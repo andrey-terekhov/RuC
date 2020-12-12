@@ -175,7 +175,6 @@ void function_stack_create(int n, preprocess_context *context)
 	int num = 0;
 
 	m_nextch(context);
-	// printf("function_stack_create n = %d\n", n);
 	context->localstack[num + context->lsp] = context->cp;
 
 	if (context->curchar == ')')
@@ -418,7 +417,6 @@ void define_get_from_macrotext(int r, preprocess_context *context)
 			}
 		}
 
-		// printf("--from_macrotext r = %d\n", t + 1);
 		m_change_nextch_type(TEXTTYPE, t + 1, context);
 		m_nextch(context);
 	}
