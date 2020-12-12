@@ -162,12 +162,14 @@ void preprocess_words(preprocess_context *context)
 			return;
 		case SH_EVAL:
 		{
+			printf("!!!!!!!!!!!!!!1\n");
 			if (context->curchar == '(')
 			{
 				calculator(0, context);
 			}
 			else
 			{
+				printf("!!!!!!!!!!!!!!2\n");
 				m_error(after_eval_must_be_ckob, context);
 				return;
 			}
@@ -191,7 +193,10 @@ void preprocess_words(preprocess_context *context)
 
 			context->nextp = 0;
 			while_relis(context);
-			m_old_nextch_type(context);
+			if(context->nextch_type != FILETYPE)
+			{
+				m_old_nextch_type(context);
+			}
 
 			return;
 		}
@@ -271,6 +276,10 @@ void preprocess_scan(preprocess_context *context)
 			}
 			else
 			{
+				if (context->curchar == U'\r')
+				{
+					printf("!!!!!!!!!!!!!!101\n");
+				}
 				m_fprintf(context->curchar, context);
 				m_nextch(context);
 			}
@@ -339,6 +348,8 @@ void open_files(preprocess_context *context)
 			if (context->nextchar != EOF)
 			{
 				add_c_file(context);
+				context->position = 0;
+				context->error_string[context->position] = '\0';
 			}
 			con_file_close_cur(context);
 		}
@@ -393,7 +404,10 @@ int macro_form_io(workspace *const ws, universal_io *const io)
 	preprocess_h_file(&context);
 	preprocess_c_file(&context);
 	in_clear(&io_input);
-
+	if(context.error_in_file)
+	{
+		return -1;
+	}
 	
 	return 0;
 }

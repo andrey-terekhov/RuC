@@ -50,7 +50,7 @@ typedef struct preprocess_context
 	int macrotext[MAXTAB];
 	int mp;
 
-	char32_t error_string[STRIGSIZE];
+	char error_string[STRIGSIZE];
 	size_t position;
 
 	int mstring[STRIGSIZE];

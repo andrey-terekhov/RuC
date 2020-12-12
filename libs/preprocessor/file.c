@@ -64,7 +64,6 @@ void m_change_nextch_type(int type, int p, preprocess_context *context)
 	context->oldnextp[context->dipp] = context->nextp;
 	context->nextp = p;
 	context->dipp++;
-
 	context->nextch_type = type;
 }
 
@@ -224,7 +223,7 @@ void m_nextch(preprocess_context *context)
 
 	if (context->curchar != '\n')
 	{
-		context->error_string[context->position++] = context->curchar;
+		context->error_string[context->position++] = (char)context->curchar;
 		context->error_string[context->position] = '\0';
 	}
 	else

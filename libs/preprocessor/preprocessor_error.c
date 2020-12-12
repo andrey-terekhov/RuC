@@ -26,9 +26,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define TAG_RUC_MACRO "ruc-macro"
+#define TAG_RUC_MACRO "ruc-macro: "
 
-void get_error(int ernum, char *msg)
+void get_message_error(int ernum, char *msg)
 {
 	switch (ernum)
 	{
@@ -116,10 +116,10 @@ void m_error(int ernum, preprocess_context *context)
 	context->error_in_string = 1;
 	context->error_in_file = 1;
 	char tag[STRIGSIZE] = TAG_RUC_MACRO;
-	char32_t *line = context->error_string;
-	size_t position = strlen32(line);
+	char *line = context->error_string;
+	size_t position = strlen(line);
 
-	in_get_path(context->io_input, tag);
+	strcat(tag, ws_get_file(context->fs.ws, context->fs.cur));
 	size_t index = strlen(tag);
 	index += sprintf(&tag[index], ":%zi", (size_t)context->line);
 	
@@ -129,12 +129,12 @@ void m_error(int ernum, preprocess_context *context)
 	{
 		position--;
 	}
-	index += sprintf(&tag[index], ":%zi", position);
+	sprintf(&tag[index], ":%zi", position);
 
 	char msg[STRIGSIZE];
-	get_error(ernum, msg);
+	get_message_error(ernum, msg);
 
-	while (context->curchar != '\n')
+	while (context->curchar != '\n' && context->curchar != EOF)
 	{
 		m_nextch(context);
 	}

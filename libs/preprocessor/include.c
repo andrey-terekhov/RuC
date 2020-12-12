@@ -142,6 +142,10 @@ void file_read(preprocess_context *context)
 	m_fprintf('\n', context);
 	con_file_close_cur(context);
 	context->line = old_line;
+
+	
+	context->position = 0;
+	context->error_string[context->position] = '\0';
 }
 
 void open_file(preprocess_context *context)
