@@ -146,7 +146,6 @@ void preprocess_words(preprocess_context *context)
 		case SH_IFNDEF:
 		{
 			if_relis(context);
-			printf("!!!!!!!!!!!!!!3\n");
 			return;
 		}
 		case SH_SET:
@@ -211,11 +210,9 @@ void preprocess_scan(preprocess_context *context)
 			if (context->cur != 0)
 			{
 				preprocess_words(context);
-				printf("!!!!!!!!!!!!!!1 n = %d\n", context->nextchar);
 				if(context->nextchar != '#' && context->nextch_type != WHILETYPE && 
 					context->nextch_type != TEXTTYPE)//curflag
 				{
-					printf("!!!!!!!!!!!!!!2\n");
 					con_file_print_coment(&context->fs, context);
 				}
 				if(context->cur != SH_ELSE && context->cur != SH_ELIF && context->cur != SH_ENDIF)

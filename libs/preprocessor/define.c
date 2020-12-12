@@ -163,7 +163,6 @@ void function_stack_create(int n, preprocess_context *context)
 	int num = 0;
 
 	m_nextch(context);
-	// printf("function_stack_create n = %d\n", n);
 	context->localstack[num + context->lsp] = context->cp;
 
 	if (context->curchar == ')')
@@ -217,8 +216,6 @@ void funktionleter(int flag_macro, preprocess_context *context)
 
 	int r = collect_mident(context);
 
-	// printf("funktionleter\n");
-
 	if ((n = m_equal(context)) != 0)
 	{
 		context->macrotext[context->mp++] = MACROCANGE;
@@ -241,8 +238,6 @@ int to_functionident(preprocess_context *context)
 {
 	int num = 0;
 	context->csp = 0;
-
-	// printf("to_functionident\n");
 
 	while (context->curchar != ')')
 	{
@@ -275,7 +270,6 @@ int to_functionident(preprocess_context *context)
 		}
 	}
 
-	// printf("-to_functionident = %d\n", num);
 	m_nextch(context);
 	return num;
 }
@@ -285,8 +279,6 @@ void function_add_to_macrotext(preprocess_context *context)
 	int j;
 	int flag_macro = 0;
 	int empty = 0;
-
-	// printf("function_add_to_macrotext\n");
 
 	if (context->cur == SH_MACRO)
 	{
@@ -380,7 +372,6 @@ void define_get_from_macrotext(int r, preprocess_context *context)
 			}
 		}
 
-		// printf("--from_macrotext r = %d\n", t + 1);
 		m_change_nextch_type(TEXTTYPE, t + 1, context);
 		m_nextch(context);
 	}
