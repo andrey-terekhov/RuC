@@ -23,6 +23,7 @@
 extern "C" {
 #endif
 
+int strlen32(char32_t* strarg);
 void m_change_nextch_type(int type, int p, preprocess_context *context);
 void m_old_nextch_type(preprocess_context *context);
 

@@ -30,6 +30,17 @@
 void m_nextch(preprocess_context *context);
 
 
+int strlen32(char32_t* strarg)
+{
+   if(!strarg)
+   {
+	   return -1;
+   }
+   char32_t* str = strarg;
+   for(;*str; ++str);
+   return str-strarg;
+}
+
 int get_next_char(preprocess_context *context)
 {
 	context->nextchar = uni_scan_char(context->io_input);

@@ -28,17 +28,6 @@
 
 #define TAG_RUC_MACRO "ruc-macro"
 
-int strlen32(const char32_t* strarg)
-{
-   if(!strarg)
-   {
-	   return -1;
-   }
-   char32_t* str = strarg;
-   for(;*str; ++str);
-   return str-strarg;
-}
-
 void get_error(int ernum, char *msg)
 {
 	switch (ernum)
@@ -132,7 +121,7 @@ void m_error(int ernum, preprocess_context *context)
 
 	in_get_path(context->io_input, tag);
 	size_t index = strlen(tag);
-	index += sprintf(&tag[index], ":%zi", context->line);
+	index += sprintf(&tag[index], ":%zi", (size_t)context->line);
 	
 	while (position > 0
 		&& (line[position] == ' ' || line[position] == '\t'
@@ -143,15 +132,12 @@ void m_error(int ernum, preprocess_context *context)
 	index += sprintf(&tag[index], ":%zi", position);
 
 	char msg[STRIGSIZE];
-	errors_set(ernum, msg);
+	get_error(ernum, msg);
 
 	while (context->curchar != '\n')
 	{
 		m_nextch(context);
 	}
-	
 
 	log_error(tag, msg, line, position);
-	
-	exit(1);
 }
