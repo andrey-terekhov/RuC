@@ -16,15 +16,14 @@
 
 #pragma once
 
-#include "context.h"
+#include "analyzer.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void ext_decl(compiler_context *context);
-int szof(compiler_context *context, int type);
+void ext_decl(analyzer *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

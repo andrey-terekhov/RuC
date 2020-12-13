@@ -39,13 +39,17 @@ int m_equal(preprocess_context *context)
 
 	while (j < context->csp)
 	{
-		while (context->mstring[i++] == context->cstring[j++])
+		while (context->mstring[i] == context->cstring[j])
 		{
+			i++;
+			j++;
 			if (context->mstring[i] == MACROEND && context->cstring[j] == 0)
 			{
 				return n;
 			}
 		}
+		i++;
+		j++;
 
 		n++;
 		i = 0;
@@ -159,7 +163,6 @@ void function_stack_create(int n, preprocess_context *context)
 	int num = 0;
 
 	m_nextch(context);
-	// printf("function_stack_create n = %d\n", n);
 	context->localstack[num + context->lsp] = context->cp;
 
 	if (context->curchar == ')')
@@ -213,8 +216,6 @@ void funktionleter(int flag_macro, preprocess_context *context)
 
 	int r = collect_mident(context);
 
-	// printf("funktionleter\n");
-
 	if ((n = m_equal(context)) != 0)
 	{
 		context->macrotext[context->mp++] = MACROCANGE;
@@ -237,8 +238,6 @@ int to_functionident(preprocess_context *context)
 {
 	int num = 0;
 	context->csp = 0;
-
-	// printf("to_functionident\n");
 
 	while (context->curchar != ')')
 	{
@@ -271,7 +270,6 @@ int to_functionident(preprocess_context *context)
 		}
 	}
 
-	// printf("-to_functionident = %d\n", num);
 	m_nextch(context);
 	return num;
 }
@@ -281,8 +279,6 @@ void function_add_to_macrotext(preprocess_context *context)
 	int j;
 	int flag_macro = 0;
 	int empty = 0;
-
-	// printf("function_add_to_macrotext\n");
 
 	if (context->cur == SH_MACRO)
 	{
@@ -303,7 +299,7 @@ void function_add_to_macrotext(preprocess_context *context)
 	}
 	space_skip(context);
 
-	while (context->curchar != '\n' || flag_macro && context->curchar != EOF)
+	while ((context->curchar != '\n' || flag_macro) && context->curchar != EOF)
 	{
 		if (is_letter(context) && !empty)
 		{
@@ -351,6 +347,8 @@ void function_add_to_macrotext(preprocess_context *context)
 		{
 			m_nextch(context);
 			space_end_line(context);
+			//context->macrotext[context->mp++] = '\n';
+			m_nextch(context);
 		}
 	}
 
@@ -374,7 +372,6 @@ void define_get_from_macrotext(int r, preprocess_context *context)
 			}
 		}
 
-		// printf("--from_macrotext r = %d\n", t + 1);
 		m_change_nextch_type(TEXTTYPE, t + 1, context);
 		m_nextch(context);
 	}
@@ -468,6 +465,8 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 			{
 				m_nextch(context);
 				space_end_line(context);
+				//context->macrotext[context->mp++] = '\n';
+				m_nextch(context);
 			}
 			else if (is_letter(context))
 			{
@@ -537,7 +536,6 @@ void define_relis(preprocess_context *context)
 		space_skip(context);
 		define_add_to_macrotext(r, context);
 	}
-	m_nextch(context);
 }
 
 void set_relis(preprocess_context *context)

@@ -1,5 +1,20 @@
+/*
+ *	Copyright 2020 Andrey Terekhov, Victor Y. Fadeev, Dmitrii Davladov
+ *
+ *	Licensed under the Apache License, Version 2.0 (the "License");
+ *	you may not use this file except in compliance with the License.
+ *	You may obtain a copy of the License at
+ *
+ *		http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *	Unless required by applicable law or agreed to in writing, software
+ *	distributed under the License is distributed on an "AS IS" BASIS,
+ *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *	See the License for the specific language governing permissions and
+ *	limitations under the License.
+ */
+
 #include "uniio.h"
-#include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -137,9 +152,9 @@ int out_func_buffer(universal_io *const io, const char *const format, va_list ar
 	va_list local;
 	va_copy(local, args);
 
-	int ret = vsnprintf(&io->out_buffer[io->out_position], io->out_size, format, local);
+	int ret = vsnprintf(&io->out_buffer[io->out_position], io->out_size - io->out_position, format, local);
 
-	if (ret != -1 && ret + io->out_position < io->out_size - 1)
+	if (ret != -1 && ret + io->out_position < io->out_size)
 	{
 		io->out_position += ret;
 		return ret;

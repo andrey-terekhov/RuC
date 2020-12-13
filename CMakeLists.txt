@@ -1,25 +1,29 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.13.5)
 
 project(ruc)
 
-
-option(ANALYSIS_ENABLED "Enable static analysis of input files" OFF)
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(TEST_INPUTS_DIR ${PROJECT_SOURCE_DIR}/tests)
 
 # Put all libraries to one folder
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-if(MSVC)
+
+if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+	add_compile_options(/W4 /WX /wd5105 /utf-8)
+
+	# Starting in Visual Studio 2019 version 16.8, you may specify /std:c11
+	if(MSVC_VERSION GREATER_EQUAL 1928)
+		add_compile_options(/std:c11)
+	endif()
+
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 else()
-	add_compile_options(-Werror=return-type -g)
-endif()
+	add_compile_options(-Werror=return-type -Wall -Wextra -Wno-implicit-fallthrough -g -std=c11)
 
-if(ANALYSIS_ENABLED)
-	include(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/aspsimple.cmake)
+	if(NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
+		add_compile_options(-posix)
+		add_definitions(-D_POSIX_C_SOURCE=200112L)
+	endif()
 endif()
 
 
@@ -30,16 +34,20 @@ add_subdirectory(libs)
 add_subdirectory(src)
 
 
-enable_testing()
-set(TEST_TIMEOUT 1)
-file(GLOB TEST_INPUTS "${TEST_INPUTS_DIR}/*.c"
-						"${TEST_INPUTS_DIR}/*/*.c"
-						"${TEST_INPUTS_DIR}/*/*/*.c"
-						"${TEST_INPUTS_DIR}/*/*/*/*.c")
+function(get_all_targets _targets _dir)
+	get_property(_subdirs DIRECTORY ${_dir} PROPERTY SUBDIRECTORIES)
 
-foreach(TEST_INPUT ${TEST_INPUTS})
-	add_test(NAME ${TEST_INPUT}
-			 COMMAND "./ruc" ${TEST_INPUT}
-			 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
-	set_tests_properties(${TEST_INPUT} PROPERTIES TIMEOUT ${TEST_TIMEOUT})
-endforeach(TEST_INPUT)
+	foreach(_subdir IN LISTS _subdirs)
+		get_all_targets(${_targets} ${_subdir})
+	endforeach()
+
+	get_property(_sub_targets DIRECTORY ${_dir} PROPERTY BUILDSYSTEM_TARGETS)
+	set(${_targets} ${${_targets}} ${_sub_targets} PARENT_SCOPE)
+endfunction()
+
+
+# Set install parameters
+get_all_targets(targets .)
+install(TARGETS ${targets}
+		RUNTIME DESTINATION ${PROJECT_NAME}
+		LIBRARY DESTINATION ${PROJECT_NAME})

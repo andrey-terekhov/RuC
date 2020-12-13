@@ -14,13 +14,15 @@
  *	limitations under the License.
  */
 
-#pragma comment(linker, "/STACK:268435456")
+#ifdef _MSC_VER
+	#pragma comment(linker, "/STACK:268435456")
+#endif
 
 #include "compiler.h"
 #include "workspace.h"
 
 
-const char *name = "../tests/executable/floatsign.c";
+const char *name = "../tests/sleep/threads/russian.c";
 // "../tests/mips/0test.c";
 
 
