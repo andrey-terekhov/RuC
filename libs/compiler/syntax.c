@@ -112,13 +112,13 @@ int is_declaration(const int value)
 		|| value == TStructbeg
 		|| value == TStructend
 		|| value == TDeclarr
-		|| value == TBeginit
 		|| value == TStructinit;
 }
 
 int is_expression(const int value)
 {
-	return value == TConstd
+	return value == TBeginit
+		|| value == TConstd
 		|| value == TStringd
 		|| value == TExprend
 		|| value == TCondexpr
@@ -142,6 +142,23 @@ size_t skipper(const syntax *const sx, size_t i)
 {
 	switch (sx->tree[i++])
 	{
+		// Может иметь несколько потомков
+		case TBeginit:		// ArrayInit: n+1 потомков (размерность инициализатора, n выражений-инициализаторов);
+		{
+			size_t n = sx->tree[i++];
+			for (size_t j = 0; j < n; j++)
+			{
+				i = skipper(sx, i);
+			}
+
+			if (sx->tree[i] != TExprend)
+			{
+				system_error("TBeginit need TExprend");
+				exit(139);
+			}
+			return i + 1;
+		}
+
 		case TCondexpr:
 			return skipper(sx, i);
 		case TIdenttoaddr:
@@ -197,7 +214,7 @@ size_t skipper(const syntax *const sx, size_t i)
 		return i;
 	}
 
-	if (sx->tree[i] >= 9001 && sx->tree[i] <= 9595 || sx->tree[i] == 9651)
+	if ((sx->tree[i] >= 9001 && sx->tree[i] <= 9595) || sx->tree[i] == 9651)
 	{
 		i += 1;
 		while (!is_expression(sx->tree[i]))
@@ -266,29 +283,7 @@ size_t checker(const syntax *const sx, size_t i)
 				i = skipper(sx, i);
 			}
 
-			return i;	// FIXME
-		}
-		case TBeginit:		// ArrayInit: n+1 потомков (размерность инициализатора, n выражений-инициализаторов);
-		{
-			size_t n = sx->tree[i++];
-			for (size_t j = 0; j < n; j++)
-			{
-				if (sx->tree[i] == TBeginit)
-				{
-					i = checker(sx, i);
-				}
-				else
-				{
-					i = skipper(sx, i);
-				}
-			}
-
-			if (sx->tree[i] != TExprend)
-			{
-				system_error("TBeginit need TExprend");
-				exit(139);
-			}
-			return i + 1;
+			return checker(sx, i);
 		}
 		case TStructbeg:	// StructDecl: n+2 потомков (размерность структуры, n объявлений полей, инициализатор (может не быть));
 			return i + 1;	// FIXME
@@ -381,7 +376,7 @@ size_t checker(const syntax *const sx, size_t i)
 	i--;
 
 	if (!is_expression(sx->tree[i])
-		&& !(sx->tree[i] >= 9001 && sx->tree[i] <= 9595 || sx->tree[i] == 9651))
+		&& !((sx->tree[i] >= 9001 && sx->tree[i] <= 9595) || sx->tree[i] == 9651))
 	{
 		printf("checker: tree[%li] = %i\n", i, sx->tree[i]);
 	}
