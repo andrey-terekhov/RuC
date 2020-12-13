@@ -111,13 +111,13 @@ int is_declaration(const int value)
 		|| value == TDeclid
 		|| value == TStructbeg
 		|| value == TStructend
-		|| value == TDeclarr
-		|| value == TStructinit;
+		|| value == TDeclarr;
 }
 
 int is_expression(const int value)
 {
 	return value == TBeginit
+		|| value == TStructinit
 		|| value == TConstd
 		|| value == TStringd
 		|| value == TExprend
@@ -154,6 +154,21 @@ size_t skipper(const syntax *const sx, size_t i)
 			if (sx->tree[i] != TExprend)
 			{
 				system_error("TBeginit need TExprend");
+				exit(139);
+			}
+			return i + 1;
+		}
+		case TStructinit:	// StructInit: n+1 потомков (размерность инициализатора, n выражений-инициализаторов);
+		{
+			size_t n = sx->tree[i++];
+			for (size_t j = 0; j < n; j++)
+			{
+				i = skipper(sx, i);
+			}
+
+			if (sx->tree[i] != TExprend)
+			{
+				system_error("TStructinit need TExprend");
 				exit(139);
 			}
 			return i + 1;
@@ -286,11 +301,12 @@ size_t checker(const syntax *const sx, size_t i)
 			return checker(sx, i);
 		}
 		case TStructbeg:	// StructDecl: n+2 потомков (размерность структуры, n объявлений полей, инициализатор (может не быть));
-			return i + 1;	// FIXME
-		case TStructinit:	// StructInit: n+1 потомков (размерность инициализатора, n выражений-инициализаторов);
-			return i + 1;	// FIXME
-		case TStructend:
-			return i + 1;	// FIXME
+			i += 1;
+			while (sx->tree[i] != TStructend)
+			{
+				i = checker(sx, i);
+			}
+			return i + 2;
 
 		case TBegin:
 			while (sx->tree[i] != TEnd)
