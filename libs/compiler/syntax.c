@@ -101,7 +101,8 @@ int is_operator(const int value)
 		|| value == TPrint
 		|| value == TPrintid
 		|| value == TPrintf
-		|| value == TGetid;
+		|| value == TGetid
+		|| value == NOP;
 }
 
 int is_declaration(const int value)
@@ -179,8 +180,8 @@ size_t skipper(const syntax *const sx, size_t i)
 			return skipper(sx, i + n * 2);
 		}
 
-		case TIdenttovald:	// d - END
-			return i + 1;
+		case TIdenttovald:	// d - WTF?!
+			return skipper(sx, i + 1);
 		case TAddrtovald:	// d - END
 			return i;
 
@@ -192,17 +193,43 @@ size_t skipper(const syntax *const sx, size_t i)
 
 	if (is_operator(sx->tree[i]) || is_declaration(sx->tree[i]))
 	{
+		//printf("operator: tree[%li] = %i\n", i, sx->tree[i]);
 		return i;
 	}
 
-	if (sx->tree[i] >= 9001 && sx->tree[i] <= 9595)
+	if (sx->tree[i] >= 9001 && sx->tree[i] <= 9595 || sx->tree[i] == 9651)
 	{
-		return skipper(sx, i + 1);
+		i += 1;
+		while (!is_expression(sx->tree[i]))
+		{
+			if (is_operator(sx->tree[i]) || is_declaration(sx->tree[i]))
+			{
+				return i;
+				//printf("9001..9595: tree[%li] = %i\n", i, sx->tree[i]);
+				//exit(139);
+			}
+
+			/*if (sx->tree[i] >= -29 && sx->tree[i] <= 0)
+			{
+				printf("9001..9595: tree[%li] = %i\n", i, sx->tree[i]);
+				exit(139);
+			}
+
+			if (sx->tree[i] >= -151 && sx->tree[i] <= -30)
+			{
+				printf("9001..9595: tree[%li] = %i\n", i, sx->tree[i]);
+				exit(139);
+			}*/
+			
+			i++;
+		}
+
+		return skipper(sx, i);
 	}
 
 	printf("skipper: tree[%li] = %i\n", i, sx->tree[i]);
-	//exit(139);
-	return skipper(sx, i + 1);
+	exit(139);
+	//return skipper(sx, i + 1);
 }
 
 size_t checker(const syntax *const sx, size_t i)
@@ -239,7 +266,7 @@ size_t checker(const syntax *const sx, size_t i)
 				i = skipper(sx, i);
 			}
 
-			return i;
+			return i;	// FIXME
 		}
 		case TBeginit:		// ArrayInit: n+1 потомков (размерность инициализатора, n выражений-инициализаторов);
 		{
@@ -282,10 +309,10 @@ size_t checker(const syntax *const sx, size_t i)
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab);
 			return skipper(sx, i + 1);
 		case TPrintf:		// Printf: n+2 потомков (форматирующая строка, число параметров, n параметров-выражений);
-			return i + 1;	// FIXME
+			return i + 1;
 		case TGetid:		// GetID: 1 потомок (ссылка на identab);
 							// Scanf: n+2 потомков (форматирующая строка, число параметров, n параметров-ссылок на identab);
-			return i + 1;	// FIXME
+			return i + 1;
 
 		case TIf:			// If: 3 потомка (условие, тело-then, тело-else) - ветка else присутствует не всегда, здесь предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
 		{
@@ -320,13 +347,13 @@ size_t checker(const syntax *const sx, size_t i)
 			size_t cond = sx->tree[i++];
 			if (cond != 0)
 			{
-				skipper(sx, var);
+				skipper(sx, cond);
 			}
 
 			size_t inc = sx->tree[i++];
 			if (inc != 0)
 			{
-				skipper(sx, var);
+				skipper(sx, inc);
 			}
 
 			size_t body = sx->tree[i++];
@@ -334,10 +361,9 @@ size_t checker(const syntax *const sx, size_t i)
 		}
 
 		case TLabel:		// LabeledStatement: 2 потомка (ссылка на identab, тело оператора);
-			return i + 1;	// FIXME
-
+			return i + 1;
 		case TGoto:			// Goto: 1 потомок (ссылка на identab);
-			return i + 1;	// FIXME
+			return i + 1;
 
 		case TContinue:		// Continue: нет потомков;
 			return i;
@@ -347,10 +373,19 @@ size_t checker(const syntax *const sx, size_t i)
 			return i;
 		case TReturnval:	// ReturnValue: 2 потомка (тип значения, выражение);
 			return skipper(sx, i + 1);
+
+		case NOP:			// NoOperation: 0 потомков;
+			return i;
 	}
 
 	i--;
-	printf("checker: tree[%li] = %i\n", i, sx->tree[i]);
+
+	if (!is_expression(sx->tree[i])
+		&& !(sx->tree[i] >= 9001 && sx->tree[i] <= 9595 || sx->tree[i] == 9651))
+	{
+		printf("checker: tree[%li] = %i\n", i, sx->tree[i]);
+	}
+
 	return skipper(sx, i);	// CompoundStatement: n+1 потомков (число потомков, n узлов-операторов);
 								// ExpressionStatement: 1 потомок (выражение);
 
