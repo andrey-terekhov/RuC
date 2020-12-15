@@ -219,7 +219,12 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 		case TCondexpr:
 			return i;	// FIXME
 		case TIdenttoaddr:
-			return i + 1;	// FIXME
+			i += 1;
+			while (sx->tree[i] != TExprend)
+			{
+				i = skipper(sx, i, 0);
+			}
+			return i;
 		case TSelect:
 			return i + 1;	// FIXME
 		case TFunidtoval:
