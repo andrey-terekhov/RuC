@@ -73,8 +73,9 @@ syntax sx_create()
 
 	sx.maxdisplg = 3;
 	sx.wasmain = 0;
-
-	sx.anstdispl = 0;
+	
+	sx.displ = -3;
+	sx.curid = 2;
 
 	return sx;
 }

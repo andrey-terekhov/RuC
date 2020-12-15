@@ -142,13 +142,13 @@ int Expr_gen(syntax *const sx, int incond)
 		{
 			case TIdent:
 			{
-				sx->anstdispl = sx->tree[sx->tc++];
+				sx->tc++;
 				break;
 			}
 			case TIdenttoaddr:
 			{
 				tocode(sx, LA);
-				tocode(sx, sx->anstdispl = sx->tree[sx->tc++]);
+				tocode(sx, sx->tree[sx->tc++]);
 				break;
 			}
 			case TIdenttoval:

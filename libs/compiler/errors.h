@@ -26,7 +26,7 @@ extern "C" {
 /** Errors codes */
 enum ERROR
 {
-	after_type_must_be_ident = 201,
+	after_type_must_be_ident,
 	wait_right_sq_br,
 	only_functions_may_have_type_VOID,
 	decl_and_def_have_diff_type,
@@ -134,7 +134,7 @@ enum ERROR
 	init_not_struct,
 	param_threads_not_int,
 
-	wrong_arg_in_send = 341,
+	wrong_arg_in_send,
 	wrong_arg_in_create,
 
 	no_leftbr_in_printf,
@@ -155,7 +155,7 @@ enum ERROR
 	wrong_init_in_actparam,
 	no_comma_or_end,
 
-	not_string_in_stanfunc = 362,
+	not_string_in_stanfunc,
 	not_int_in_stanfunc,
 	no_comma_in_act_params_stanfunc,
 	not_point_string_in_stanfunc,
@@ -187,7 +187,7 @@ enum ERROR
 /** Warnings codes */
 enum WARNING
 {
-	too_long_int = 400,
+	too_long_int,
 };
 
 

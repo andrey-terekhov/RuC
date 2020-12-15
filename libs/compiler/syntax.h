@@ -55,7 +55,8 @@ typedef struct syntax
 	int maxdisplg;				/**< Max displacement */
 	int wasmain;				/**< Main function flag */
 
-	int anstdispl;				/**< Stack displacement */
+	int curid;
+	int displ;
 } syntax;
 
 
