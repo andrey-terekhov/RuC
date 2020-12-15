@@ -140,6 +140,38 @@ int is_expression(const int value)
 
 size_t skipper(const syntax *const sx, size_t i, int from_checker)
 {
+	if (sx->tree[i] == TPrint)
+	{
+		return i + 2;
+	}
+
+	if (is_operator(sx->tree[i]) || is_declaration(sx->tree[i]))
+	{
+		if (!from_checker)
+		{
+			printf("operator: tree[%li] = %i\n", i, sx->tree[i]);
+			exit(139);
+		}
+
+		return i;
+	}
+
+	if (from_checker)
+	{
+		i = skipper(sx, i, 0);
+		if (sx->tree[i] == TPrint)
+		{
+			i = skipper(sx, i + 2, 0);
+		}
+
+		if (sx->tree[i] != TExprend)
+		{
+			printf("from checker: tree[%li] = %i\n", i, sx->tree[i]);
+			exit(139);
+		}
+		return i + 1;
+	}
+	
 	switch (sx->tree[i++])
 	{
 		// Может иметь несколько потомков
@@ -148,58 +180,75 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 			size_t n = sx->tree[i++];
 			for (size_t j = 0; j < n; j++)
 			{
-				i = skipper(sx, i, 0);
+				i = skipper(sx, i, 1);
 			}
 
-			if (sx->tree[i] != TExprend)
+			/*if (sx->tree[i] != TExprend)
 			{
 				system_error("TBeginit need TExprend");
 				exit(139);
 			}
-			return i + 1;
+			return i + 1;*/
+			return i;
 		}
 		case TStructinit:	// StructInit: n+1 потомков (размерность инициализатора, n выражений-инициализаторов);
 		{
 			size_t n = sx->tree[i++];
 			for (size_t j = 0; j < n; j++)
 			{
-				i = skipper(sx, i, 0);
+				i = skipper(sx, i, 1);
 			}
 
-			if (sx->tree[i] != TExprend)
+			/*if (sx->tree[i] != TExprend)
 			{
 				system_error("TStructinit need TExprend");
 				exit(139);
 			}
-			return i + 1;
+			return i + 1;*/
+			return i;
 		}
 
 		case TCondexpr:
-			return skipper(sx, i, 0);
+			return i;	// FIXME
 		case TIdenttoaddr:
-			return skipper(sx, i + 1, 0);
+			return i + 1;	// FIXME
 		case TSelect:
-			return skipper(sx, i + 1, 0);
+			return i + 1;	// FIXME
 		case TFunidtoval:
-			return skipper(sx, i + 1, 0);
+			return i + 1;	// FIXME
 		case TIdent:
-			return skipper(sx, i + 1, 0);
+			i += 1;
+			while (sx->tree[i] != TExprend)
+			{
+				i = skipper(sx, i, 0);
+			}
+			return i;
 
 		case TSliceident:
-			i = skipper(sx, i + 2, 0);
-			return skipper(sx, i, 0);
+			i += 2;
+			while (sx->tree[i] != TExprend)
+			{
+				i = skipper(sx, i, 0);
+			}
+
+			i += 1;
+			while (sx->tree[i] != TExprend)
+			{
+				i = skipper(sx, i, 0);
+			}
+			return i;
 		case TSlice:
-			return skipper(sx, i + 1, 0);
+			return i + 1;	// FIXME
 
 		case TCall1:
-			return skipper(sx, i + 1, 0);
+			return i + 1;	// FIXME
 		case TCall2:
 			return i + 1;
 
 		case TConst:
-			return skipper(sx, i + 1, 0);
+			return i + 1;	// FIXME
 		case TConstd:		// d - double
-			return skipper(sx, i + 2, 0);
+			return i + 2;	// FIXME
 		case TString:
 		{
 			int n = sx->tree[i++];
@@ -212,9 +261,14 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 		}
 
 		case TIdenttoval:
-			return i + 1;
+			i += 1;
+			while (sx->tree[i] != TExprend)
+			{
+				i = skipper(sx, i, 0);
+			}
+			return i;
 		case TIdenttovald:	// d - WTF?!
-			return skipper(sx, i + 1, 0);
+			return i + 1;	// FIXME
 
 		case TAddrtoval:
 			return i;
@@ -222,21 +276,15 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 			return i;
 
 		case TExprend:
-			return i;
+			if (from_checker)
+			{
+				printf("TExprend: tree[%li] = %i\n", i - 1, sx->tree[i - 1]);
+				exit(139);
+			}
+			return i - 1;
 	}
 
 	i--;
-
-	if (is_operator(sx->tree[i]) || is_declaration(sx->tree[i]))
-	{
-		if (!from_checker)
-		{
-			printf("operator: tree[%li] = %i\n", i, sx->tree[i]);
-			exit(139);
-		}
-
-		return i;
-	}
 
 	if ((sx->tree[i] >= 9001 && sx->tree[i] <= 9595) || sx->tree[i] == 9651)
 	{
@@ -265,7 +313,7 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 			i++;
 		}
 
-		return skipper(sx, i, 0);
+		return i;
 	}
 
 	printf("skipper: tree[%li] = %i\n", i, sx->tree[i]);
@@ -325,7 +373,13 @@ size_t checker(const syntax *const sx, size_t i)
 			return i + 1;
 
 		case TPrint:		// Print: 2 потомка (тип значения, выражение);
-			return skipper(sx, i + 1, 1);
+			i = skipper(sx, i + 1, 0);
+			if (sx->tree[i] != TExprend)
+			{
+				system_error("TPrint need TExprend");
+				exit(139);
+			}
+			return i + 1;
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab);
 			return skipper(sx, i + 1, 1);
 		case TPrintf:		// Printf: n+2 потомков (форматирующая строка, число параметров, n параметров-выражений);
