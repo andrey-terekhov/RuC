@@ -145,18 +145,21 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 		return i + 2;
 	}
 
-	if (is_operator(sx->tree[i]) || is_declaration(sx->tree[i]))
+	if (sx->tree[i] == NOP && !from_checker)
+	{
+		return i + 1;
+	}
+
+	if ((is_operator(sx->tree[i]) || is_declaration(sx->tree[i]))
+		&& sx->tree[i] != TPrint)
+		//&& sx->tree[i] != NOP)
 	{
 		if (!from_checker)
 		{
 			printf("operator: tree[%li] = %i\n", i, sx->tree[i]);
 			exit(139);
 		}
-		
-		if (sx->tree[i] != TPrint)
-		{
-			return i;
-		}
+		return i;	
 	}
 
 	if (from_checker)
