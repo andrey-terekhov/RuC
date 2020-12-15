@@ -180,7 +180,11 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 			size_t n = sx->tree[i++];
 			for (size_t j = 0; j < n; j++)
 			{
-				i = skipper(sx, i, 1);
+				while (sx->tree[i] != TExprend)
+				{
+					i = skipper(sx, i, 0);
+				}
+				i++;
 			}
 
 			/*if (sx->tree[i] != TExprend)
@@ -196,7 +200,11 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 			size_t n = sx->tree[i++];
 			for (size_t j = 0; j < n; j++)
 			{
-				i = skipper(sx, i, 1);
+				while (sx->tree[i] != TExprend)
+				{
+					i = skipper(sx, i, 0);
+				}
+				i++;
 			}
 
 			/*if (sx->tree[i] != TExprend)
