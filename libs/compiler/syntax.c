@@ -271,7 +271,12 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 			}
 			return i;
 		case TConstd:		// d - double
-			return i + 2;	// FIXME
+			i += 2;
+			while (sx->tree[i] != TExprend)
+			{
+				i = skipper(sx, i, 0);
+			}
+			return i;
 		case TString:
 		{
 			int n = sx->tree[i++];
