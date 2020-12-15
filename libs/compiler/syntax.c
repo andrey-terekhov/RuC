@@ -82,7 +82,7 @@ syntax sx_create()
 
 int mem_set(syntax *const sx, const size_t index, const size_t ref)
 {
-	if (sx == NULL)
+	if (sx == NULL || (int)index >= sx->pc)
 	{
 		return -1;
 	}
@@ -93,7 +93,7 @@ int mem_set(syntax *const sx, const size_t index, const size_t ref)
 
 int mem_get(syntax *const sx, const size_t index)
 {
-	if (sx == NULL)
+	if (sx == NULL || (int)index >= sx->pc)
 	{
 		return INT_MAX;
 	}
@@ -101,9 +101,10 @@ int mem_get(syntax *const sx, const size_t index)
 	return sx->mem[index];
 }
 
+
 int iniprocs_set(syntax *const sx, const size_t index, const size_t ref)
 {
-	if (sx == NULL)
+	if (sx == NULL || (int)index >= sx->procd)
 	{
 		return -1;
 	}
@@ -111,6 +112,17 @@ int iniprocs_set(syntax *const sx, const size_t index, const size_t ref)
 	sx->iniprocs[index] = (int)ref;
 	return 0;
 }
+
+int iniprocs_get(syntax *const sx, const size_t index)
+{
+	if (sx == NULL || (int)index >= sx->procd)
+	{
+		return INT_MAX;
+	}
+
+	return sx->iniprocs[index];
+}
+
 
 int func_add(syntax *const sx, const size_t ref)
 {

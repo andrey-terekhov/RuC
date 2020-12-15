@@ -67,6 +67,48 @@ typedef struct syntax
 syntax sx_create();
 
 /**
+ *	Set value by index in mem
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in mem
+ *	@param	ref			Value
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int mem_set(syntax *const sx, const size_t index, const size_t ref);
+
+/**
+ *	Get an item by index from mem
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in mem
+ *
+ *	@return	Item by index from mem, @c INT_MAX on failure
+ */
+int mem_get(syntax *const sx, const size_t index);
+
+/**
+ *	Set value by index in iniprocs table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in iniprocs table
+ *	@param	ref			Value
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int iniprocs_set(syntax *const sx, const size_t index, const size_t ref);
+
+/**
+ *	Get an item by index in iniprocs table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in iniprocs table
+ *
+ *	@return	Item by index from iniprocs table, @c INT_MAX on failure
+ */
+int iniprocs_get(syntax *const sx, const size_t index);
+
+/**
  *	Add new record to functions table
  *
  *	@param	sx			Syntax structure
