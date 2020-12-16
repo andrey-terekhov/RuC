@@ -20,7 +20,7 @@
 #include "file.h"
 #include "logger.h"
 #include "preprocessor.h"
-#include "preprocessor_error.h"
+#include "error.h"
 #include "preprocessor_utils.h"
 #include "workspace.h"
 #include "uniio.h"

@@ -14,7 +14,7 @@
  *	limitations under the License.
  */
 
-#include "preprocessor_error.h"
+#include "error.h"
 #include "constants.h"
 #include "context_var.h"
 #include "file.h"

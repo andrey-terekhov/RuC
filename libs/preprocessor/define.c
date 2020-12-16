@@ -19,7 +19,7 @@
 #include "constants.h"
 #include "context_var.h"
 #include "file.h"
-#include "preprocessor_error.h"
+#include "error.h"
 #include "preprocessor_utils.h"
 #include <limits.h>
 #include <math.h>

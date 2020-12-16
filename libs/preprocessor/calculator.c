@@ -17,7 +17,7 @@
 #include "calculator.h"
 #include "define.h"
 #include "file.h"
-#include "preprocessor_error.h"
+#include "error.h"
 #include "preprocessor_utils.h"
 #include <limits.h>
 #include <math.h>

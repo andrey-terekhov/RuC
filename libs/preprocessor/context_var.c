@@ -19,7 +19,7 @@
 #include "commenter.h"
 #include "workspace.h"
 #include "file.h"
-#include "preprocessor_error.h"
+#include "error.h"
 #include "logger.h"
 #include "uniprinter.h"
 #include "uniio.h"
