@@ -17,7 +17,8 @@
 #include "file.h"
 #include "constants.h"
 #include "context_var.h"
-#include "preprocessor_utils.h"
+#include "error.h"
+#include "utils.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
 #include <limits.h>
@@ -133,6 +134,7 @@ void m_coment_skip(preprocess_context *context)
 
 			if (context->curchar == EOF)
 			{
+				m_error(comm_not_ended, context);
 				end_line(context);
 				return;
 			}

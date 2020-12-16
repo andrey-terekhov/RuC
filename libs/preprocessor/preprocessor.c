@@ -25,7 +25,7 @@
 #include "uniio.h"
 #include "uniprinter.h"
 #include "error.h"
-#include "preprocessor_utils.h"
+#include "utils.h"
 #include "while.h"
 #include "workspace.h"
 #include <limits.h>

@@ -14,7 +14,7 @@
  *	limitations under the License.
  */
 
-#include "preprocessor_utils.h"
+#include "utils.h"
 #include "constants.h"
 #include "context_var.h"
 #include "file.h"
@@ -242,4 +242,15 @@ void space_skip_str(preprocess_context *context)
 		m_fprintf(context->curchar, context);
 		m_nextch(context);
 	}
+}
+
+size_t skip_str(preprocess_context *context)
+{
+	char *line = context->error_string;
+	size_t position = strlen(line);
+	while (context->curchar != '\n' && context->curchar != EOF)
+	{
+		m_nextch(context);
+	}
+	return position;
 }

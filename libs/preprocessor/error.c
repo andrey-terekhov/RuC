@@ -16,10 +16,7 @@
 
 #include "error.h"
 #include "constants.h"
-#include "context_var.h"
-#include "file.h"
 #include "logger.h"
-#include "file.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -111,17 +108,13 @@ void get_message_error(int ernum, char *msg)
 	}
 }
 
-void m_error(int ernum, preprocess_context *context)
+void m_error(int ernum, const char *name, size_t line_number, const char *line, size_t position)
 {
-	context->error_in_string = 1;
-	context->error_in_file = 1;
 	char tag[STRIGSIZE] = TAG_RUC_MACRO;
-	char *line = context->error_string;
-	size_t position = strlen(line);
 
-	strcat(tag, ws_get_file(context->fs.ws, context->fs.cur));
+	strcat(tag, name);
 	size_t index = strlen(tag);
-	index += sprintf(&tag[index], ":%zi", (size_t)context->line);
+	index += sprintf(&tag[index], ":%zi", line_number);
 	
 	while (position > 0
 		&& (line[position] == ' ' || line[position] == '\t'
@@ -133,11 +126,6 @@ void m_error(int ernum, preprocess_context *context)
 
 	char msg[STRIGSIZE];
 	get_message_error(ernum, msg);
-
-	while (context->curchar != '\n' && context->curchar != EOF)
-	{
-		m_nextch(context);
-	}
 
 	log_error(tag, msg, line, position);
 }
