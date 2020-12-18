@@ -770,7 +770,7 @@ int codegen(universal_io *const io, syntax *const sx)
 				int fn = sx->identab[identref + 3];
 				int pred;
 
-				sx->functions[fn] = sx->pc;
+				func_set(sx, fn, sx->pc);
 				tocode(sx, FUNCBEG);
 				tocode(sx, maxdispl);
 				pred = sx->pc++;
@@ -852,7 +852,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 
 	for (int i = 0; i < sx->funcnum; i++)
 	{
-		uni_printf(io, "%i ", sx->functions[i]);
+		uni_printf(io, "%i ", func_get(sx, i));
 	}
 	uni_printf(io, "\n");
 

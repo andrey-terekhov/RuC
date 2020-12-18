@@ -146,7 +146,7 @@ int func_set(syntax *const sx, const size_t index, const size_t ref)
 	return 0;
 }
 
-int func_get(syntax *const sx, const size_t index)
+int func_get(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || (int)index >= sx->funcnum)
 	{

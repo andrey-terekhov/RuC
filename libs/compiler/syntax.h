@@ -137,7 +137,7 @@ int func_set(syntax *const sx, const size_t index, const size_t ref);
  *
  *	@return	Item by index from functions table, @c INT_MAX on failure
  */
-int func_get(syntax *const sx, const size_t index);
+int func_get(const syntax *const sx, const size_t index);
 
 /**
  *	Add new record to modes table
