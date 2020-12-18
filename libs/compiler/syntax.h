@@ -158,7 +158,7 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size);
  *
  *	@return	Item by index from modes table, @c INT_MAX on failure
  */
-int mode_get(syntax *const sx, const size_t index);
+int mode_get(const syntax *const sx, const size_t index);
 
 #ifdef __cplusplus
 } /* extern "C" */

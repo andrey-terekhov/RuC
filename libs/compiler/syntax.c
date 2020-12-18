@@ -190,7 +190,7 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 	return sx->startmode + 1;
 }
 
-int mode_get(syntax *const sx, const size_t index)
+int mode_get(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || (int)index >= sx->md)
 	{

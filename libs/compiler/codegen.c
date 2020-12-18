@@ -126,7 +126,7 @@ void finalop(syntax *const sx)
 
 int sz_of(syntax *const sx, int type)
 {
-	return type == LFLOAT ? 2 : (type > 0 && sx->modetab[type] == MSTRUCT) ? sx->modetab[type + 1] : 1;
+	return type == LFLOAT ? 2 : (type > 0 && mode_get(sx, type) == MSTRUCT) ? mode_get(sx, type + 1) : 1;
 }
 
 int Expr_gen(syntax *const sx, int incond)
@@ -256,7 +256,7 @@ int Expr_gen(syntax *const sx, int incond)
 				Expr_gen(sx, 0);
 				tocode(sx, SLICE);
 				tocode(sx, sz_of(sx, eltype));
-				if (eltype > 0 && sx->modetab[eltype] == MARRAY)
+				if (eltype > 0 && mode_get(sx, eltype) == MARRAY)
 				{
 					tocode(sx, LAT);
 				}
@@ -674,7 +674,7 @@ void Declid_gen(syntax *const sx)
 		}
 		if (all) // int a = или struct{} a =
 		{
-			if (telem > 0 && sx->modetab[telem] == MSTRUCT)
+			if (telem > 0 && mode_get(sx, telem) == MSTRUCT)
 			{
 				Struct_init_gen(sx);
 				tocode(sx, COPY0STASS);
@@ -869,7 +869,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 
 	for (int i = 0; i < sx->md; i++)
 	{
-		uni_printf(io, "%i ", sx->modetab[i]);
+		uni_printf(io, "%i ", mode_get(sx, i));
 	}
 	uni_printf(io, "\n");
 }
