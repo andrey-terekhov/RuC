@@ -115,7 +115,7 @@ void skip_until(analyzer *const context, const unsigned int tokens)
 	{
 		switch (context->next)
 		{
-			case EOF:
+			case LEOF:
 				return;
 				
 			case LEFTBR:
@@ -2885,12 +2885,13 @@ void parse_switch_statement(analyzer *const context)
 	totree(context, TSwitch);
 	
 	exprinbrkts(context, cond_must_be_in_brkts);
-	if (/*!is_undefined(context->ansttype) &&*/ !is_int(context->ansttype))
+	if (!is_int(context->ansttype))
 	{
 		context_error(context, float_in_switch);
 	}
 	
 	context->sopnd--;
+	scaner(context);
 	context->inswitch = 1;
 	parse_compound_statement(context, SWITCH);
 	context->wasdefault = 0;
@@ -3158,7 +3159,11 @@ void parse_printid_statement(analyzer *const context)
 			context_error(context, no_ident_in_printid);
 			skip_until(context, COMMA | RIGHTBR | SEMICOLON);
 		}
-		if (context->next != COMMA)
+		if (context->next == COMMA)
+		{
+			scaner(context);
+		}
+		else
 		{
 			break;
 		}
@@ -3176,7 +3181,6 @@ void parse_printf_statement(analyzer *const context)
 	int formattypes[MAXPRINTFPARAMS];
 	int placeholders[MAXPRINTFPARAMS];
 	int sumsize = 0;
-	int fnum;
 	
 	mustbe(context, LEFTBR, no_leftbr_in_printf);
 	
@@ -3195,13 +3199,14 @@ void parse_printf_statement(analyzer *const context)
 	// FIXME: lexstr должна заканчиваться 0
 	formatstr[context->num] = 0;
 	
-	int expected_param_number = evaluate_params(context, fnum = context->num, formatstr, formattypes, placeholders);
+	int expected_param_number = evaluate_params(context, context->num, formatstr, formattypes, placeholders);
 	int actual_param_number = 0;
 	//for (int i = 0; scaner(context) == COMMA; i++)
 	while (context->next != RIGHTBR && actual_param_number != expected_param_number)
 	{
 		scaner(context);
-		
+		scaner(context);
+
 		exprassn(context, 1);
 		toval(context);
 		totree(context, TExprend);
@@ -3220,6 +3225,10 @@ void parse_printf_statement(analyzer *const context)
 		sumsize += szof(context, formattypes[actual_param_number]);
 		--context->sopnd;
 		actual_param_number++;
+		if (context->next != COMMA)
+		{
+			break;
+		}
 	}
 	
 	mustbe(context, RIGHTBR, no_rightbr_in_printf);
@@ -3230,9 +3239,9 @@ void parse_printf_statement(analyzer *const context)
 	}
 	
 	totree(context, TString);
-	totree(context, fnum);
+	totree(context, context->num);
 	
-	for (int i = 0; i < fnum; i++)
+	for (int i = 0; i < context->num; i++)
 	{
 		totree(context, formatstr[i]);
 	}
@@ -3281,7 +3290,11 @@ void parse_getid_statement(analyzer *const context)
 			context_error(context, no_ident_in_getid);
 			skip_until(context, COMMA | RIGHTBR | SEMICOLON);
 		}
-		if (context->next != COMMA)
+		if (context->next == COMMA)
+		{
+			scaner(context);
+		}
+		else
 		{
 			break;
 		}
@@ -3700,6 +3713,11 @@ void block(analyzer *context, int b)
 
 	do
 	{
+		if (context->next == LEOF)
+		{
+			context_error(context, wait_end);
+			return;
+		}
 		if (b == 2 ? context->next == TEXIT : context->next == END)
 		{
 			scaner(context);
