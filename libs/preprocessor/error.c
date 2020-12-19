@@ -15,27 +15,27 @@
  */
 
 #include "error.h"
-#include "constants.h"
 #include "logger.h"
 #include <limits.h>
-#include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stddef.h>
 
-#define TAG_RUC_MACRO "ruc-macro: "
 
-void get_message_error(int ernum, char *msg)
+#define TAG_MACRO "macro"
+#define STRIGSIZE	256
+
+
+void get_message_error(int ernum, char *const msg)
 {
 	switch (ernum)
 	{
 		case after_preproces_words_must_be_space:
 			sprintf(msg, "после команды препроцессора должен идти перенос строки");
 			break;
-		case after_ident_must_be_space1:
+		case after_ident_must_be_space:
 			sprintf(msg, "после идентификатора должен идти ' ' ");
 			break;
-		case ident_begins_with_letters1:
+		case ident_begins_with_letters:
 			sprintf(msg, "идентификатор должен начинаться с буквы ");
 			break;
 		case must_be_endif:
@@ -61,9 +61,6 @@ void get_message_error(int ernum, char *msg)
 			break;
 		case stalpe:
 			sprintf(msg, "в функции аргументы должны быть описаны через запятую, в скобках");
-			break;
-		case not_relis_if:
-			sprintf(msg, "if ещё не реализован");
 			break;
 		case before_endif:
 			sprintf(msg, "перед '#ENDIF' должен стоять условный оператор препроцессора");
@@ -102,30 +99,28 @@ void get_message_error(int ernum, char *msg)
 			sprintf(msg, "внутри команды '#EVAL()' не должно быть логических операций");
 			break;
 		default:
-		{
 			sprintf(msg, "не реализованная ошибка №%d", ernum);
-		}
 	}
 }
 
-void m_error(int ernum, const char *name, size_t line_number, const char *line, size_t position)
+void macro_error(const int num, const char *const path, const size_t line, const char *const code, size_t position)
 {
-	char tag[STRIGSIZE] = TAG_RUC_MACRO;
+	char tag[STRIGSIZE] = TAG_MACRO;
 
-	strcat(tag, name);
-	size_t index = strlen(tag);
-	index += sprintf(&tag[index], ":%zi", line_number);
+	
+	size_t index = sprintf(tag, "%s", path);
+	index += sprintf(&tag[index], ":%zi", line);
 	
 	while (position > 0
-		&& (line[position] == ' ' || line[position] == '\t'
-		|| line[position] == '\r' || line[position] == '\n'))
+		&& (code[position] == ' ' || code[position] == '\t'
+		|| code[position] == '\r' || code[position] == '\n'))
 	{
 		position--;
 	}
 	sprintf(&tag[index], ":%zi", position);
 
 	char msg[STRIGSIZE];
-	get_message_error(ernum, msg);
+	get_message_error(num, msg);
 
-	log_error(tag, msg, line, position);
+	log_error(tag, msg, code, position);
 }

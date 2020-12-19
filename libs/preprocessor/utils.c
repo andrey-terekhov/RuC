@@ -85,7 +85,8 @@ int macro_keywords(preprocess_context *context)
 	/*if (context->curchar != '\n' && context->curchar != ' ' && context->curchar != '\t' && context->curchar != '(' &&
 		context->curchar != '\"')
 	{
-		m_error(after_ident_must_be_space, context);
+		size_t position = skip_str(context); 
+		macro_error(after_ident_must_be_space, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 	}*/
 
 	hash &= 255;
@@ -196,7 +197,7 @@ int find_file(preprocess_context *context, const char *s)
 	return 1;
 }
 
-void space_end_line(preprocess_context *context)
+int space_end_line(preprocess_context *context)
 {
 	while (context->curchar != '\n')
 	{
@@ -206,9 +207,13 @@ void space_end_line(preprocess_context *context)
 		}
 		else
 		{
-			m_error(after_preproces_words_must_be_space, context);
+			size_t position = skip_str(context); 
+			macro_error(after_preproces_words_must_be_space, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			return -1;
 		}
 	}
+
+	return 0;
 }
 
 void space_skip(preprocess_context *context)
@@ -253,4 +258,12 @@ size_t skip_str(preprocess_context *context)
 		m_nextch(context);
 	}
 	return position;
+}
+
+void skip_file(preprocess_context *context)
+{
+	while (context->curchar != EOF)
+	{
+		m_nextch(context);
+	}
 }

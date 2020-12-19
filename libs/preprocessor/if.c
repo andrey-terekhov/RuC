@@ -38,7 +38,10 @@ int if_check(int type_if, preprocess_context *context)
 
 	if (type_if == SH_IF)
 	{
-		calculator(1, context);
+		if(calculator(1, context))
+		{
+			return -1;
+		}
 		return context->cstring[0];
 	}
 	else
@@ -49,10 +52,9 @@ int if_check(int type_if, preprocess_context *context)
 			flag = 1;
 		}
 
-		space_end_line(context);
-		if(context->error_in_string)
+		if(space_end_line(context))
 		{
-			return 0;
+			return -1;
 		}
 
 		if (type_if == SH_IFDEF)
@@ -66,7 +68,7 @@ int if_check(int type_if, preprocess_context *context)
 	}
 }
 
-void if_end(preprocess_context *context)
+int if_end(preprocess_context *context)
 {
 	int fl_cur;
 
@@ -80,18 +82,19 @@ void if_end(preprocess_context *context)
 				checkif--;
 				if (checkif < 0)
 				{
-					m_error(before_endif, context);
+					size_t position = skip_str(context); 
+					macro_error(before_endif, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+					return -1;
 				}
-				return;
+				return 0;
 			}
 
 			if (fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
 			{
 				checkif++;
-				if_end(context);
-				if(context->error_in_string)
+				if(if_end(context))
 				{
-					return;
+					return -1;
 				}
 			}
 		}
@@ -101,7 +104,9 @@ void if_end(preprocess_context *context)
 		}
 	}
 
-	m_error(must_be_endif, context);
+	size_t position = skip_str(context); 
+	macro_error(must_be_endif, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+	return -1;
 }
 
 int if_false(preprocess_context *context)
@@ -122,10 +127,9 @@ int if_false(preprocess_context *context)
 
 			if (fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
 			{
-				if_end(context);
-				if(context->error_in_string)
+				if(if_end(context))
 				{
-					return 1;
+					return -1;
 				}
 			}
 		}
@@ -135,15 +139,21 @@ int if_false(preprocess_context *context)
 		}
 	}
 
-	m_error(must_be_endif, context);
-	return 1;
+	size_t position = skip_str(context); 
+	macro_error(must_be_endif, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+	return -1;
 }
 
-void if_true(int type_if, preprocess_context *context)
+int if_true(int type_if, preprocess_context *context)
 {
+	int error = 0;
 	while (context->curchar != EOF)
 	{
-		preprocess_scan(context);
+		error = preprocess_scan(context);
+		if(error)
+		{
+			return error;
+		}
 
 		if (context->cur == SH_ELSE || context->cur == SH_ELIF)
 		{
@@ -155,47 +165,50 @@ void if_true(int type_if, preprocess_context *context)
 			checkif--;
 			if (checkif < 0)
 			{
-				m_error(before_endif, context);
+				size_t position = skip_str(context); 
+				macro_error(before_endif, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				return -1;
 			}
 
-			return;
+			return -1;
 		}
 	}
 
 	if (type_if != SH_IF && context->cur == SH_ELIF)
 	{
-		m_error(dont_elif, context);
+		size_t position = skip_str(context); 
+		macro_error(dont_elif, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 		checkif--;
-		return;
+		return -1;
 	}
 
-	if_end(context);
+	return if_end(context);
 }
 
-void if_relis(preprocess_context *context)
+int if_relis(preprocess_context *context)
 {
 	int type_if = context->cur;
 	int flag = if_check(type_if, context); // начало (if)
-	if(context->error_in_string)
+	if(flag == -1)
 	{
 		checkif--;
-		return;
+		return 0;
 	}
 
 	checkif++;
 	if (flag)
 	{
-		if_true(type_if, context);
-		return;
+		return if_true(type_if, context);
 	}
 	else
 	{
-		context->cur = if_false(context);
-		if(context->error_in_string)
+		int rez = if_false(context);
+		if(rez)
 		{
 			checkif--;
-			return;
+			return -1;
 		}
+		context->cur = rez;
 	}
 
 	if (type_if == SH_IF)
@@ -203,42 +216,40 @@ void if_relis(preprocess_context *context)
 		while (context->cur == SH_ELIF)
 		{
 			flag = if_check(type_if, context);
-			space_end_line(context);
-			if(context->error_in_string)
+			if(flag == -1 || space_end_line(context))
 			{
 				checkif--;
-				return;
+				return -1;
 			}
 
 			if (flag)
 			{
-				if_true(type_if, context);
-				return;
+				return if_true(type_if, context);
 			}
 			else
 			{
-				context->cur = if_false(context);
-				if(context->error_in_string)
+				int rez = if_false(context);
+				if(rez)
 				{
 					checkif--;
-					return;
+					return -1;
 				}
+				context->cur = rez;
 			}
 		}
 	}
 	else if (context->cur == SH_ELIF)
 	{
-		m_error(10, context);
+		size_t position = skip_str(context); 
+		macro_error(10, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 		checkif--;
-		return;
+		return -1;
 	}
 
 	if (context->cur == SH_ELSE)
 	{
 		context->cur = 0;
-		if_true(type_if, context);
-
-		return;
+		return if_true(type_if, context);;
 	}
 
 	if (context->cur == SH_ENDIF)
@@ -246,7 +257,10 @@ void if_relis(preprocess_context *context)
 		checkif--;
 		if (checkif < 0)
 		{
-			m_error(before_endif, context);
+			size_t position = skip_str(context); 
+			macro_error(before_endif, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			return -1;
 		}
 	}
+	return 0;
 }

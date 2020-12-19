@@ -134,7 +134,8 @@ void m_coment_skip(preprocess_context *context)
 
 			if (context->curchar == EOF)
 			{
-				m_error(comm_not_ended, context);
+				size_t position = skip_str(context); 
+				macro_error(comm_not_ended, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 				end_line(context);
 				return;
 			}

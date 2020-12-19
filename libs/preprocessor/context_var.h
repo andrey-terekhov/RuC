@@ -38,9 +38,6 @@ typedef struct files
 
 typedef struct preprocess_context
 {
-	int error_in_string;
-	int error_in_file;
-
 	int include_type;
 
 	int hashtab[256];
@@ -87,7 +84,7 @@ typedef struct preprocess_context
 	int oldnextp[DIP];
 	int dipp;
 
-	int line;
+	size_t line;
 
 	files fs;
 	int h_flag;

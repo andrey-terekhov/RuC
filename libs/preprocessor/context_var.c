@@ -66,8 +66,6 @@ void preprocess_context_init(preprocess_context *context, workspace *const ws, u
 	context->line = 1;
 	context->h_flag = 0;
 	context->position = 0;
-	context->error_in_string = 0;
-	context->error_in_file = 0;
 
 	for (int i = 0; i < HASH; i++)
 	{
@@ -141,17 +139,12 @@ void con_files_add_include(files* fs, char *name, int c_flag)
 
 int con_file_open_cur(files* fs, preprocess_context *context)
 {
-	if(context->error_in_file)
-	{
-		return 0;
-	}
 	int rez = in_set_file(context->io_input, ws_get_file(fs->ws, fs->cur));
 
-	if (rez == -1)
+	if (rez)
 	{
-		context->error_in_file = 1;
 		log_system_error(ws_get_file(fs->ws, fs->cur), "файл не найден");
-		return 0;
+		return -1;
 	}
 	return 1;
 }

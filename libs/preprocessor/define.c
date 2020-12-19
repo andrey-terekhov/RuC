@@ -28,7 +28,7 @@
 #include <string.h>
 
 
-void define_get_from_macrotext(int r, preprocess_context *context);
+int define_get_from_macrotext(int r, preprocess_context *context);
 
 
 int m_equal(preprocess_context *context)
@@ -66,7 +66,7 @@ int m_equal(preprocess_context *context)
 }
 
 // define c параметрами (function)
-void function_scob_collect(int t, int num, preprocess_context *context)
+int function_scob_collect(int t, int num, preprocess_context *context)
 {
 	int i;
 
@@ -85,10 +85,9 @@ void function_scob_collect(int t, int num, preprocess_context *context)
 				int ldip;
 
 				context->lsp += num;
-				define_get_from_macrotext(r, context);
-				if(context->error_in_string)
+				if(define_get_from_macrotext(r, context))
 				{
-					return;
+					return -1;
 				}
 				ldip = get_dipp(context);
 
@@ -123,10 +122,10 @@ void function_scob_collect(int t, int num, preprocess_context *context)
 		{
 			context->fchange[context->cp++] = context->curchar;
 			m_nextch(context);
-			function_scob_collect(0, num, context);
-			if(context->error_in_string)
+			
+			if(function_scob_collect(0, num, context))
 			{
-				return;
+				return -1;
 			}
 		}
 		else if (context->curchar == ')' || (t == 1 && context->curchar == ','))
@@ -137,16 +136,15 @@ void function_scob_collect(int t, int num, preprocess_context *context)
 				m_nextch(context);
 			}
 
-			return;
+			return 0;
 		}
 		else if (context->curchar == '#')
 		{
 			if (macro_keywords(context) == SH_EVAL && context->curchar == '(')
-			{
-				calculator(0, context);
-				if(context->error_in_string)
+			{	
+				if(calculator(0, context))
 				{
-					return;
+					return -1;
 				}
 				for (i = 0; i < context->csp; i++)
 				{
@@ -167,10 +165,12 @@ void function_scob_collect(int t, int num, preprocess_context *context)
 			m_nextch(context);
 		}
 	}
-	m_error(scob_not_clous, context);
+	size_t position = skip_str(context); 
+	macro_error(scob_not_clous, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+	return -1;
 }
 
-void function_stack_create(int n, preprocess_context *context)
+int function_stack_create(int n, preprocess_context *context)
 {
 	int num = 0;
 
@@ -179,16 +179,16 @@ void function_stack_create(int n, preprocess_context *context)
 
 	if (context->curchar == ')')
 	{
-		m_error(stalpe, context);
-		return;
+		size_t position = skip_str(context); 
+		macro_error(stalpe, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		return -1;
 	}
 
 	while (context->curchar != ')')
 	{
-		function_scob_collect(1, num, context);
-		if(context->error_in_string)
+		if(function_scob_collect(1, num, context))
 		{
-			return;
+			return -1;
 		}
 		context->fchange[context->cp++] = CANGEEND;
 
@@ -199,8 +199,9 @@ void function_stack_create(int n, preprocess_context *context)
 
 			if (num > n)
 			{
-				m_error(not_enough_param, context);
-				return;
+				size_t position = skip_str(context); 
+				macro_error(not_enough_param, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				return -1;
 			}
 			m_nextch(context);
 
@@ -213,20 +214,23 @@ void function_stack_create(int n, preprocess_context *context)
 		{
 			if (num != n)
 			{
-				m_error(not_enough_param2, context);
-				return;
+				size_t position = skip_str(context); 
+				macro_error(not_enough_param2, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				return -1;
 			}
 			m_nextch(context);
 
 			context->cp = context->localstack[context->lsp];
-			return;
+			return 0;
 		}
 	}
 
-	m_error(scob_not_clous, context);
+	size_t position = skip_str(context); 
+	macro_error(scob_not_clous, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+	return -1;
 }
 
-void funktionleter(int flag_macro, preprocess_context *context)
+int funktionleter(int flag_macro, preprocess_context *context)
 {
 	int n = 0;
 	int i = 0;
@@ -242,10 +246,9 @@ void funktionleter(int flag_macro, preprocess_context *context)
 	}
 	else if (!flag_macro && r)
 	{
-		define_get_from_macrotext(r, context);
-		if(context->error_in_string)
+		if(define_get_from_macrotext(r, context))
 		{
-			return;
+			return -1;
 		}
 	}
 	else
@@ -255,6 +258,7 @@ void funktionleter(int flag_macro, preprocess_context *context)
 			context->macrotext[context->mp++] = context->mstring[i];
 		}
 	}
+	return 0;
 }
 
 int to_functionident(preprocess_context *context)
@@ -277,8 +281,9 @@ int to_functionident(preprocess_context *context)
 		}
 		else
 		{
-			m_error(functionid_begins_with_letters, context);
-			return 0;
+			size_t position = skip_str(context); 
+			macro_error(functionid_begins_with_letters, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			return -1;
 		}
 
 		context->msp = 0;
@@ -290,15 +295,16 @@ int to_functionident(preprocess_context *context)
 		}
 		else if (context->curchar != ')')
 		{
-			m_error(after_functionid_must_be_comma, context);
-			return 0;
+			size_t position = skip_str(context); 
+			macro_error(after_functionid_must_be_comma, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			return -1;
 		}
 	}
 	m_nextch(context);
 	return num;
 }
 
-void function_add_to_macrotext(preprocess_context *context)
+int function_add_to_macrotext(preprocess_context *context)
 {
 	int j;
 	int flag_macro = 0;
@@ -318,12 +324,13 @@ void function_add_to_macrotext(preprocess_context *context)
 		m_nextch(context);
 	}
 	else
-	{
-		context->macrotext[context->mp++] = to_functionident(context);
-		if(context->error_in_string)
+	{	
+		int rez = to_functionident(context);
+		if(rez == -1)
 		{
-			return;
+			return -1;
 		}
+		context->macrotext[context->mp++] = rez;
 	}
 	space_skip(context);
 
@@ -331,10 +338,9 @@ void function_add_to_macrotext(preprocess_context *context)
 	{
 		if (is_letter(context) && !empty)
 		{
-			funktionleter(flag_macro, context);
-			if(context->error_in_string)
+			if(funktionleter(flag_macro, context))
 			{
-				return;
+				return -1;
 			}
 		}
 		else if (context->curchar == '#')
@@ -343,10 +349,9 @@ void function_add_to_macrotext(preprocess_context *context)
 
 			if (!flag_macro && context->cur == SH_EVAL && context->curchar == '(')
 			{
-				calculator(0, context);
-				if(context->error_in_string)
+				if(calculator(0, context))
 				{
-					return;
+					return -1;
 				}
 				for (j = 0; j < context->csp; j++)
 				{
@@ -357,7 +362,7 @@ void function_add_to_macrotext(preprocess_context *context)
 			{
 				m_nextch(context);
 				context->macrotext[context->mp++] = MACROEND;
-				return;
+				return 0;
 			}
 			else
 			{
@@ -376,17 +381,18 @@ void function_add_to_macrotext(preprocess_context *context)
 
 		if (context->curchar == EOF)
 		{
-			m_error(not_end_fail_define, context);
-			return;
+			size_t position = skip_str(context); 
+			macro_error(not_end_fail_define, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			return -1;
 		}
 
 		if (context->curchar == '\\')
 		{
 			m_nextch(context);
 			space_end_line(context);
-			if(context->error_in_string)
+			if(space_end_line(context))
 			{
-				return;
+				return -1;
 			}
 			//context->macrotext[context->mp++] = '\n';
 			m_nextch(context);
@@ -394,11 +400,12 @@ void function_add_to_macrotext(preprocess_context *context)
 	}
 
 	context->macrotext[context->mp++] = MACROEND;
+	return 0;
 }
 //
 
 // define
-void define_get_from_macrotext(int r, preprocess_context *context)
+int define_get_from_macrotext(int r, preprocess_context *context)
 {
 	int t = context->reprtab[r + 1];
 
@@ -409,10 +416,10 @@ void define_get_from_macrotext(int r, preprocess_context *context)
 		{
 			if (context->macrotext[++t] > -1)
 			{
-				function_stack_create(context->macrotext[t], context);
-				if(context->error_in_string)
+				
+				if(function_stack_create(context->macrotext[t], context))
 				{
-					return;
+					return -1;
 				}
 			}
 		}
@@ -422,8 +429,12 @@ void define_get_from_macrotext(int r, preprocess_context *context)
 	}
 	else
 	{
-		m_error(ident_not_exist, context);
+		size_t position = skip_str(context); 
+		macro_error(ident_not_exist, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		return -1;
 	}
+
+	return 0;
 }
 
 int define_add_to_reprtab(preprocess_context *context)
@@ -455,8 +466,9 @@ int define_add_to_reprtab(preprocess_context *context)
 			}
 			else
 			{
-				m_error(repeat_ident, context);
-				return 0;
+				size_t position = skip_str(context); 
+				macro_error(repeat_ident, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				return -1;
 			}
 		}
 		r = context->reprtab[r];
@@ -468,7 +480,7 @@ int define_add_to_reprtab(preprocess_context *context)
 	return 0;
 }
 
-void define_add_to_macrotext(int r, preprocess_context *context)
+int define_add_to_macrotext(int r, preprocess_context *context)
 {
 	int j;
 	int lmp = context->mp;
@@ -480,8 +492,9 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 		{
 			if (context->curchar == EOF)
 			{
-				m_error(not_end_fail_define, context);
-				return;
+				size_t position = skip_str(context); 
+				macro_error(not_end_fail_define, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				return -1;
 			}
 			else if (context->curchar == '#')
 			{
@@ -490,14 +503,14 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 				{
 					if (context->curchar != '(')
 					{
-						m_error(after_eval_must_be_ckob, context);
-						return;
+						size_t position = skip_str(context); 
+						macro_error(after_eval_must_be_ckob, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+						return -1;
 					}
 
-					calculator(0, context);
-					if(context->error_in_string)
+					if(calculator(0, context))
 					{
-						return;
+						return -1;
 					}
 
 					for (j = 0; j < context->csp; j++)
@@ -516,10 +529,9 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 			else if (context->curchar == '\\')
 			{
 				m_nextch(context);
-				space_end_line(context);
-				if(context->error_in_string)
+				if(space_end_line(context))
 				{
-					return;
+					return -1;
 				}
 				//context->macrotext[context->mp++] = '\n';
 				m_nextch(context);
@@ -529,10 +541,9 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 				int k = collect_mident(context);
 				if (k)
 				{
-					define_get_from_macrotext(k, context);
-					if(context->error_in_string)
+					if(define_get_from_macrotext(k, context))
 					{
-						return;
+						return -1;
 					}
 				}
 				else
@@ -567,22 +578,24 @@ void define_add_to_macrotext(int r, preprocess_context *context)
 	{
 		context->reprtab[r + 1] = lmp;
 	}
+	return 0;
 }
 
-void define_relis(preprocess_context *context)
+int define_relis(preprocess_context *context)
 {
 	int r;
 
 	if (!is_letter(context))
 	{
-		m_error(ident_begins_with_letters1, context);
-		return;
+		size_t position = skip_str(context); 
+		macro_error(ident_begins_with_letters, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		return -1;
 	}
 
 	r = define_add_to_reprtab(context);
-	if(context->error_in_string)
+	if(r == -1)
 	{
-		return;
+		return -1;
 	}
 
 	context->msp = 0;
@@ -590,25 +603,26 @@ void define_relis(preprocess_context *context)
 	if (context->curchar == '(' && !r)
 	{
 		m_nextch(context);
-		function_add_to_macrotext(context);
-		if(context->error_in_string)
+		if(function_add_to_macrotext(context))
 		{
-			return;
+			return -1;
 		}
 	}
 	else if (context->curchar != ' ' && context->curchar != '\n' && context->curchar != '\t')
 	{
-		m_error(after_ident_must_be_space1, context);
-		return;
+		size_t position = skip_str(context); 
+		macro_error(after_ident_must_be_space, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		return -1;
 	}
 	else
 	{
 		space_skip(context);
-		define_add_to_macrotext(r, context);
+		return define_add_to_macrotext(r, context);
 	}
+	return 0;
 }
 
-void set_relis(preprocess_context *context)
+int set_relis(preprocess_context *context)
 {
 	int j;
 
@@ -616,26 +630,29 @@ void set_relis(preprocess_context *context)
 
 	if (!is_letter(context))
 	{
-		m_error(ident_begins_with_letters1, context);
-		return;
+		size_t position = skip_str(context); 
+		macro_error(ident_begins_with_letters, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		return -1;
 	}
 
 	j = collect_mident(context);
 
 	if (context->macrotext[context->reprtab[j + 1]] == MACROFUNCTION)
 	{
-		m_error(functions_cannot_be_changed, context);
-		return;
+		size_t position = skip_str(context); 
+		macro_error(functions_cannot_be_changed, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		return -1;
 	}
-	else if (context->curchar != ' ')
-	{
-		m_error(after_ident_must_be_space1, context);
-		return;
+	else if (context->curchar != ' ' && context->curchar != '\t')
+	{	
+		size_t position = skip_str(context);
+		macro_error(after_ident_must_be_space, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		return -1;
 	}
 
 	m_nextch(context);
 	space_skip(context);
 
-	define_add_to_macrotext(j, context);
+	return define_add_to_macrotext(j, context);
 }
 //

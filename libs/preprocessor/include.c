@@ -99,8 +99,7 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 	if (res == -1)
 	{
 		log_system_error(temp_way, "файл не найден");
-		context->error_in_file = 1;
-		return -2;
+		return -3;
 	}
 
 	if (context->include_type != 0)
@@ -114,7 +113,7 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 	return 0;
 }
 
-void file_read(preprocess_context *context)
+int file_read(preprocess_context *context)
 {
 	int old_line = context->line;
 	context->line = 1;
@@ -134,10 +133,16 @@ void file_read(preprocess_context *context)
 	{
 		m_nextch(context);
 	}
-
+	int error = 0; 
 	while (context->curchar != EOF)
 	{
-		preprocess_scan(context);
+		error = preprocess_scan(context) || error;  
+	}
+
+	if(error)
+	{
+		skip_file(context);
+		error = -1;
 	}
 	m_fprintf('\n', context);
 	con_file_close_cur(context);
@@ -146,19 +151,22 @@ void file_read(preprocess_context *context)
 	
 	context->position = 0;
 	context->error_string[context->position] = '\0';
+	return error;
 }
 
-void open_file(preprocess_context *context)
+int open_file(preprocess_context *context)
 {
 	int i = 0;
 	char temp_way[STRIGSIZE];
+	int rez = 0;
 
 	while (context->curchar != '\"')
 	{
 		if (context->curchar == EOF)
 		{
-			m_error(23, context);
-			return;
+			size_t position = skip_str(context); 
+			macro_error(23, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			return -1;
 		}
 		temp_way[i++] = (char)context->curchar;
 		m_nextch(context);
@@ -184,8 +192,16 @@ void open_file(preprocess_context *context)
 			context->fs.cur = old_cur;
 			context->io_input = io_old;
 			in_clear(&new_io);
-			return;
+			return 0;
 		}
+		else if(k == -3)
+		{
+			context->fs.cur = old_cur;
+			context->io_input = io_old;
+			in_clear(&new_io);
+			return -1;
+		}
+		
 	}
 
 	if (context->include_type == 1 || (context->include_type == 2 && !h))
@@ -195,7 +211,7 @@ void open_file(preprocess_context *context)
 		{
 			m_change_nextch_type(FILETYPE, 0, context);
 		}
-		file_read(context);
+		rez = -file_read(context);
 
 		if (!h && context->dipp != 0)
 		{
@@ -206,33 +222,28 @@ void open_file(preprocess_context *context)
 	context->fs.cur = old_cur;
 	context->io_input = io_old;
 	in_clear(&new_io);
+	return rez;
 }
 
 
-void include_relis(preprocess_context *context)
+int include_relis(preprocess_context *context)
 {
-	if(context->error_in_file)
-	{
-		while (context->curchar != '\n')
-		{
-			m_nextch(context);
-		}
-		return;
-	}
 	space_skip(context);
 
 	if (context->curchar != '\"')
 	{
 		if(context->include_type > 0)
 		output_keywods(context);
-		return;
+		return 0;
 	}
 	m_nextch(context);
-	open_file(context);
-	if(context->error_in_string)
+	int rez = open_file(context);
+	if(rez == 1)
 	{
-		return;
+		skip_file(context);
+		return 1;
 	}
 	m_nextch(context);
 	space_end_line(context);
+	return rez;
 }
