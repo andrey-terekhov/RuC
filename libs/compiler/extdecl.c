@@ -100,7 +100,7 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 
 int has_token_set(const unsigned int left, const unsigned int right)
 {
-	return (left & right) != 0;
+	return left & right;
 }
 
 /**
@@ -125,7 +125,9 @@ void skip_until(analyzer *const context, const unsigned int tokens)
 				
 			case RIGHTBR:
 				if (has_token_set(tokens, RIGHTBR))
+				{
 					return;
+				}
 				else
 				{
 					scaner(context);
@@ -139,7 +141,9 @@ void skip_until(analyzer *const context, const unsigned int tokens)
 				
 			case RIGHTSQBR:
 				if (has_token_set(tokens, RIGHTSQBR))
+				{
 					return;
+				}
 				else
 				{
 					scaner(context);
@@ -153,7 +157,9 @@ void skip_until(analyzer *const context, const unsigned int tokens)
 				
 			case END:
 				if (has_token_set(tokens, END))
+				{
 					return;
+				}
 				else
 				{
 					scaner(context);
@@ -167,7 +173,9 @@ void skip_until(analyzer *const context, const unsigned int tokens)
 				
 			case COLON:
 				if (has_token_set(tokens, COLON))
+				{
 					return;
+				}
 				else
 				{
 					scaner(context);
@@ -176,7 +184,9 @@ void skip_until(analyzer *const context, const unsigned int tokens)
 				
 			case SEMICOLON:
 				if (has_token_set(tokens, SEMICOLON))
+				{
 					return;
+				}
 				else
 				{
 					scaner(context);

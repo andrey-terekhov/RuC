@@ -317,19 +317,19 @@
 
 // Такие коды сделаны для функции skip_until()
 // Это позволяет передавать несколько аргументов, разделяя их |
-#define COMMA	  1 << 1 //100
+#define COMMA	  0b00000001 //100
 #define QUEST	  101
-#define COLON	  1 << 2 //102
+#define COLON	  0b00000010 //102
 #define LEFTBR	  103
-#define RIGHTBR	  1 << 3 //104
+#define RIGHTBR	  0b00000100 //104
 #define LEFTSQBR  105
-#define RIGHTSQBR 1 << 4 //106
+#define RIGHTSQBR 0b00001000 //106
 #define STRING	  107
 #define NUMBER	  108
 #define IDENT	  109
 #define BEGIN	  115
-#define END		  1 << 5 //116
-#define SEMICOLON 1 << 6 //117
+#define END		  0b00010000 //116
+#define SEMICOLON 0b00100000 //117
 #define LAPOST	  118
 #define LQUOTE	  119
 #define LEOF	  120
