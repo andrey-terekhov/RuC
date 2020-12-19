@@ -40,6 +40,7 @@ typedef struct syntax
 
 	int identab[MAXIDENTAB];	/**< Identifiers table */
 	int id;						/**< Number of identifiers */
+	int curid;					/**< Start of current scope in identifiers table */
 
 	int modetab[MAXMODETAB];	/**< Modes table */
 	int md;						/**< Number of modes */
@@ -52,10 +53,16 @@ typedef struct syntax
 	int rp;						/**< Representations size */
 	int repr;					/**< Representations position */
 
+	int maxdispl;				/**< Max displacement */
 	int maxdisplg;				/**< Max displacement */
 	int wasmain;				/**< Main function flag */
 
 	int anstdispl;				/**< Stack displacement */
+	int displ;
+	int lg;
+	
+	int predef[FUNCSIZE];		/**< Predefined functions table */
+	int prdf;					/**< Number of predefined functions */
 } syntax;
 
 
@@ -98,6 +105,18 @@ int func_set(syntax *const sx, const size_t index, const size_t ref);
 int func_get(syntax *const sx, const size_t index);
 
 /**
+ *	Add new record to identifiers table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	f
+ *	@param	type
+ *	@param	func_def
+ *
+ *	@return	pointer to the last record in identifiers table
+ */
+int ident_add(syntax *const sx, int f, int type, int func_def);
+
+/**
  *	Get identifier mode by index in identifiers table
  *
  *	@param	sx			Syntax structure
@@ -138,6 +157,18 @@ int ident_get_displ(syntax *const sx, const size_t index);
  *	@return	@c 0 on success, @c -1 on failure
  */
 int ident_set_displ(syntax *const sx, const size_t index, const int displ);
+
+/**
+ *	Get type size
+ *
+ *	@note Also used in codegen
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Standart type or pointer to modetab
+ *
+ *	@return	Type size
+ */
+int sz_of(syntax *const sx, int type);
 
 /**
  *	Add new record to modes table

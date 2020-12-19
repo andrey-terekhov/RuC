@@ -332,128 +332,22 @@ void totreef(analyzer *context, int op)
 	}
 }
 
-int getstatic(analyzer *context, int type)
-{
-	int olddispl = context->displ;
-	context->displ += context->lg * szof(context, type); // lg - смещение от l (+1) или от g (-1)
-	if (context->lg > 0)
-	{
-		context->maxdispl = (context->displ > context->maxdispl) ? context->displ : context->maxdispl;
-	}
-	else
-	{
-		context->sx->maxdisplg = -context->displ;
-	}
-	return olddispl;
-}
-
 int toidentab(analyzer *context, int f, int type)
 {
-	// f =  0, если не ф-ция, f=1, если метка, f=funcnum,
-	// если описание ф-ции,
-	// f = -1, если ф-ция-параметр, f>=1000, если это описание типа
-	// f = -2, #define
-
-	// printf("\n f= %i context->repr %i rtab[context->repr] %i
-	// rtab[context->repr+1] %i rtab[context->repr+2] %i\n", f,
-	// context->repr, context->sx->reprtab[context->repr],
-	// context->sx->reprtab[context->repr+1], context->sx->reprtab[context->repr+2]);
-	int pred;
-
-
-	context->lastid = context->sx->id;
-	if (REPRTAB[REPRTAB_POS + 1] == 0) // это может быть только MAIN
+	int return_value = ident_add(context->sx, f, type, context->func_def);
+	if (return_value == -1)
 	{
-		if (context->sx->wasmain)
-		{
-			context_error(context, more_than_1_main); //--
-			context->error_flag = 5;
-			return 0; // 1
-		}
-		context->sx->wasmain = context->sx->id;
+		context_error(context, more_than_1_main); //--
+		context->error_flag = 5;
+		return context->lastid = 0; // 1
 	}
-
-	// ссылка на описание с таким же
-	// представлением в предыдущем блоке
-	pred = context->sx->identab[context->sx->id] = REPRTAB[REPRTAB_POS + 1];
-	if (pred)
+	else if (return_value == -2)
 	{
-		// pred == 0 только для main, эту ссылку портить нельзя
-		// ссылка на текущее описание с этим представлением
-		// (это в reprtab)
-		REPRTAB[REPRTAB_POS + 1] = context->sx->id;
+		context_error(context, repeated_decl);
+		context->error_flag = 5;
+		return context->lastid = 0;
 	}
-
-	if (f != 1 && pred >= context->curid) // один  и тот же идент м.б. переменной и меткой
-	{
-		if (context->func_def == 3 ? 1 : context->sx->identab[pred + 1] > 0 ? 1 : context->func_def == 1 ? 0 : 1)
-		{
-			context_error(context, repeated_decl);
-			context->error_flag = 5;
-			return 0; // 1
-					  // только определение функции может иметь 2
-					  // описания, т.е. иметь предописание
-		}
-	}
-
-	context->sx->identab[context->sx->id + 1] = REPRTAB_POS; // ссылка на представление
-	if (f == -2)									 // #define
-	{
-		context->sx->identab[context->sx->id + 2] = 1;
-		context->sx->identab[context->sx->id + 3] = type; // это целое число, определенное по #define
-	}
-	else // дальше тип или ссылка на modetab (для функций и структур)
-	{
-		context->sx->identab[context->sx->id + 2] = type; // тип -1 int, -2 char, -3 float, -4 long, -5 double,
-												  // если тип > 0, то это ссылка на modetab
-		if (f == 1)
-		{
-			context->sx->identab[context->sx->id + 2] = 0; // 0, если первым встретился goto, когда встретим метку,
-												   // поставим 1
-			context->sx->identab[context->sx->id + 3] = 0; // при генерации кода когда встретим метку, поставим pc
-		}
-		else if (f >= 1000)
-		{
-			context->sx->identab[context->sx->id + 3] = f; // это описание типа, если f > 1000, то f-1000 - это номер
-												   // иниц проц
-		}
-		else if (f)
-		{
-			if (f < 0)
-			{
-				context->sx->identab[context->sx->id + 3] = -(context->displ++);
-				context->maxdispl = context->displ;
-			}
-			else // identtab[context->lastid+3] - номер функции, если < 0, то
-				 // это функция-параметр
-			{
-				context->sx->identab[context->sx->id + 3] = f;
-				if (context->func_def == 2)
-				{
-					context->sx->identab[context->lastid + 1] *= -1; //это предописание
-					context->predef[++context->prdf] = REPRTAB_POS;
-				}
-				else
-				{
-					int i;
-
-					for (i = 0; i <= context->prdf; i++)
-					{
-						if (context->predef[i] == REPRTAB_POS)
-						{
-							context->predef[i] = 0;
-						}
-					}
-				}
-			}
-		}
-		else
-		{
-			context->sx->identab[context->sx->id + 3] = getstatic(context, type);
-		}
-	}
-	context->sx->id += 4;
-	return context->lastid;
+	return context->lastid = return_value;
 }
 
 void binop(analyzer *context, int sp)
@@ -3645,15 +3539,15 @@ void block(analyzer *context, int b)
 	int notended = 1;
 	int i;
 	int olddispl = 0; // warning C4701: potentially uninitialized local variable used
-	int oldlg = context->lg;
+	int oldlg = context->sx->lg;
 	int firstdecl;
 
 	context->inswitch = b < 0;
 	totree(context, TBegin);
 	if (b)
 	{
-		olddispl = context->displ;
-		context->curid = context->sx->id;
+		olddispl = context->sx->displ;
+		context->sx->curid = context->sx->id;
 	}
 	context->blockflag = 0;
 
@@ -3733,14 +3627,14 @@ void block(analyzer *context, int b)
 
 	if (b)
 	{
-		for (i = context->sx->id - 4; i >= context->curid; i -= 4)
+		for (i = context->sx->id - 4; i >= context->sx->curid; i -= 4)
 		{
 			REPRTAB[context->sx->identab[i + 1] + 1] = context->sx->identab[i];
 		}
-		context->displ = olddispl;
+		context->sx->displ = olddispl;
 	}
 	context->inswitch = oldinswitch;
-	context->lg = oldlg;
+	context->sx->lg = oldlg;
 	totree(context, TEnd);
 }
 
@@ -3753,16 +3647,16 @@ void function_definition(analyzer *context)
 	int ftype;
 	int n;
 	int fid = context->lastid;
-	int olddispl = context->displ;
+	int olddispl = context->sx->displ;
 
 	context->pgotost = 0;
 	context->functype = ident_get_mode(context->sx, context->lastid);
 	ftype = mode_get(context->sx, context->functype + 1);
 	n = mode_get(context->sx, context->functype + 2);
 	context->wasret = 0;
-	context->displ = 3;
-	context->maxdispl = 3;
-	context->lg = 1;
+	context->sx->displ = 3;
+	context->sx->maxdispl = 3;
+	context->sx->lg = 1;
 	if ((pred = context->sx->identab[context->lastid]) > 1) // был прототип
 	{
 		if (context->functype != ident_get_mode(context->sx, pred))
@@ -3772,7 +3666,7 @@ void function_definition(analyzer *context)
 		}
 		ident_set_displ(context->sx, pred, fn);
 	}
-	context->curid = context->sx->id;
+	context->sx->curid = context->sx->id;
 	for (i = 0; i < n; i++)
 	{
 		context->type = mode_get(context->sx, context->functype + i + 3);
@@ -3819,7 +3713,7 @@ void function_definition(analyzer *context)
 		context->error_flag = 1;
 		return; // 1
 	}
-	for (i = context->sx->id - 4; i >= context->curid; i -= 4)
+	for (i = context->sx->id - 4; i >= context->sx->curid; i -= 4)
 	{
 		REPRTAB[context->sx->identab[i + 1] + 1] = context->sx->identab[i];
 	}
@@ -3839,10 +3733,10 @@ void function_definition(analyzer *context)
 			return; // 1
 		}
 	}
-	context->curid = 2; // все функции описываются на одном уровне
-	context->sx->tree[pred] = context->maxdispl; // + 1;?
-	context->lg = -1;
-	context->displ = olddispl;
+	context->sx->curid = 2; // все функции описываются на одном уровне
+	context->sx->tree[pred] = context->sx->maxdispl; // + 1;?
+	context->sx->lg = -1;
+	context->sx->displ = olddispl;
 }
 
 int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
@@ -4197,9 +4091,9 @@ void ext_decl(analyzer *context)
 	{
 		context_error(context, no_main_in_program);
 	}
-	for (i = 0; i <= context->prdf; i++)
+	for (i = 0; i <= context->sx->prdf; i++)
 	{
-		if (context->predef[i])
+		if (context->sx->predef[i])
 		{
 			context_error(context, predef_but_notdef);
 		}

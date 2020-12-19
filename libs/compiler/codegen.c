@@ -124,10 +124,10 @@ void finalop(syntax *const sx)
 	}
 }
 
-int sz_of(syntax *const sx, int type)
+/*int sz_of(syntax *const sx, int type)
 {
 	return type == LFLOAT ? 2 : (type > 0 && sx->modetab[type] == MSTRUCT) ? sx->modetab[type + 1] : 1;
-}
+}*/
 
 int Expr_gen(syntax *const sx, int incond)
 {

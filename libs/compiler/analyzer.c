@@ -30,13 +30,8 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx)
 	context.charnum = 0;
 	context.charnum_before = 0;
 	context.sopnd = -1;
-	context.curid = 2;
-	context.lg = -1;
-	context.displ = -3;
-	context.maxdispl = 3;
 	context.blockflag = 1;
 	context.notrobot = 1;
-	context.prdf = -1;
 	context.leftansttype = -1;
 	context.buf_flag = 0;
 	context.error_flag = 0;
