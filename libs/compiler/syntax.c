@@ -214,7 +214,8 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 			i = skipper(sx, i + 2, 1);
 			return skipper(sx, i, 1) - 1;
 		case TSlice:
-			return i + 1;	// FIXME
+			i = skipper(sx, i + 1, 1);
+			return skipper(sx, i, 1) - 1;
 
 		case TCall1:
 			return i + 1;	// FIXME
@@ -344,6 +345,9 @@ size_t checker(const syntax *const sx, size_t i)
 			return i + 1;
 
 		case TPrint:		// Print: 2 потомка (тип значения, выражение);
+			system_warning("TPrint call");
+			exit(139);
+
 			i += 1;
 			if (sx->tree[i] != TExprend)
 			{
@@ -430,6 +434,11 @@ size_t checker(const syntax *const sx, size_t i)
 	{
 		printf("checker: tree[%li] = %i\n", i, sx->tree[i]);
 	}
+
+	/*if ((sx->tree[i] >= 9001 && sx->tree[i] <= 9595) || sx->tree[i] == 9651)
+	{
+		return skipper(sx, i, 0);
+	}*/
 
 	return skipper(sx, i, 1);	// CompoundStatement: n+1 потомков (число потомков, n узлов-операторов);
 								// ExpressionStatement: 1 потомок (выражение);
