@@ -16,6 +16,7 @@
 
 #include "tree.h"
 #include "errors.h"
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -374,6 +375,36 @@ size_t checker(const syntax *const sx, size_t i)
  *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
  *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
  */
+
+
+node node_get_root(const syntax *const sx)
+{
+	node nd;
+	nd.ref = (tree *)&sx->tree;
+
+	return nd;
+}
+
+int node_get_child(const node *const nd, const size_t index, node *const child)
+{
+	if (nd == NULL || index > nd->num || child == NULL)
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int node_get_type(const node *const nd)
+{
+	return nd != NULL ? *((int *)nd->type) : INT_MAX;
+}
+
+int node_get_arg(const node *const nd, const size_t index)
+{
+	return nd != NULL && index < nd->argc ? ((int *)nd->argv)[index] : INT_MAX;
+}
 
 
 void tree_test(const syntax *const sx)

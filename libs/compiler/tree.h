@@ -17,11 +17,71 @@
 #pragma once
 
 #include "syntax.h"
+#include <stddef.h>
+#include <stdint.h>
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** Tree type */
+typedef int * tree;
+
+/** Tree node */
+typedef struct node
+{
+	tree *ref;					/**< Reference to tree */
+	uintptr_t type;				/**< Node type */
+
+	uintptr_t argv;				/**< Reference to arguments */
+	size_t argc;				/**< Number of arguments */
+
+	uintptr_t chldn;			/**< Reference to children */
+	size_t num;					/**< Amount of children */
+} node;
+
+
+/**
+ *	Get tree root node
+ *
+ *	@param	sx		Syntax structure
+ *
+ *	@return	Node
+ */
+node node_get_root(const syntax *const sx);
+
+/**
+ *	Get child from node by index
+ *
+ *	@param	nd		Parrent node
+ *	@param	index	Child number
+ *	@param	child	Node for writing
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int node_get_child(const node *const nd, const size_t index, node *const child);
+
+
+/**
+ *	Get type of node
+ *
+ *	@param	nd		Node structure
+ *
+ *	@return	Node type, @c INT_MAX on failure
+ */
+int node_get_type(const node *const nd);
+
+/**
+ *	Get argument from node by index
+ *
+ *	@param	nd		Node structure
+ *	@param	index	Argument number
+ *
+ *	@return	Argument, @c INT_MAX on failure
+ */
+int node_get_arg(const node *const nd, const size_t index);
+
 
 /**
  *	Test tree building
