@@ -156,7 +156,7 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 	{
 		if (!from_checker)
 		{
-			printf("operator: tree[%li] = %i\n", i, sx->tree[i]);
+			printf("operator: tree[%zi] = %i\n", i, sx->tree[i]);
 			exit(139);
 		}
 		return i;
@@ -245,7 +245,7 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 		case TExprend:
 			if (from_checker)
 			{
-				printf("TExprend: tree[%li] = %i\n", i - 1, sx->tree[i - 1]);
+				printf("TExprend: tree[%zi] = %i\n", i - 1, sx->tree[i - 1]);
 				exit(139);
 			}
 			return i - 1;
@@ -269,7 +269,7 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 		return i;
 	}
 
-	printf("skipper: tree[%li] = %i\n", i, sx->tree[i]);
+	printf("skipper: tree[%zi] = %i\n", i, sx->tree[i]);
 	exit(139);
 }
 
@@ -328,13 +328,13 @@ size_t checker(const syntax *const sx, size_t i)
 			system_warning("TPrint call");
 			exit(139);
 
-			i += 1;
+			/*i += 1;
 			if (sx->tree[i] != TExprend)
 			{
 				system_error("TPrint need TExprend");
 				exit(139);
 			}
-			return i + 1;
+			return i + 1;*/
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
 			return skipper(sx, i + 1, 1);
 		case TPrintf:		// Printf: n + 2 потомков (форматирующая строка, число параметров, n параметров-выражений)
@@ -419,7 +419,7 @@ size_t checker(const syntax *const sx, size_t i)
 	if (!is_expression(sx->tree[i])
 		&& !((sx->tree[i] >= 9001 && sx->tree[i] <= 9595) || sx->tree[i] == 9651))
 	{
-		printf("checker: tree[%li] = %i\n", i, sx->tree[i]);
+		printf("checker: tree[%zi] = %i\n", i, sx->tree[i]);
 	}
 
 	return skipper(sx, i, 1);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
