@@ -102,7 +102,9 @@ int is_operator(const int value)
 		|| value == TPrintid
 		|| value == TPrintf
 		|| value == TGetid
-		|| value == NOP;
+		|| value == NOP
+		|| value == CREATEDIRECTC
+		|| value == EXITC;
 }
 
 int is_declaration(const int value)
@@ -425,6 +427,13 @@ size_t checker(const syntax *const sx, size_t i)
 
 		case NOP:			// NoOperation: 0 потомков;
 			return i;
+
+		case CREATEDIRECTC:
+			while (sx->tree[i] != EXITC)
+			{
+				i = checker(sx, i);
+			}
+			return i + 1;
 	}
 
 	i--;
