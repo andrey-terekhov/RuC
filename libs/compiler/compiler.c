@@ -21,6 +21,7 @@
 #include "errors.h"
 #include "preprocessor.h"
 #include "syntax.h"
+#include "tree.h"
 #include "uniio.h"
 #include <stdlib.h>
 
