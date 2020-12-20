@@ -153,7 +153,6 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 
 	if ((is_operator(sx->tree[i]) || is_declaration(sx->tree[i]))
 		&& sx->tree[i] != TPrint)
-		//&& sx->tree[i] != NOP)
 	{
 		if (!from_checker)
 		{
@@ -170,11 +169,6 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 			i = skipper(sx, i, 0);
 		}
 
-		/*if (sx->tree[i] != TExprend)
-		{
-			printf("from checker: tree[%li] = %i\n", i, sx->tree[i]);
-			exit(139);
-		}*/
 		return i + 1;
 	}
 
@@ -267,21 +261,7 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 			if (is_operator(sx->tree[i]) || is_declaration(sx->tree[i]))
 			{
 				return i;
-				//printf("9001..9595: tree[%li] = %i\n", i, sx->tree[i]);
-				//exit(139);
 			}
-
-			/*if (sx->tree[i] >= -29 && sx->tree[i] <= 0)
-			{
-				printf("9001..9595: tree[%li] = %i\n", i, sx->tree[i]);
-				exit(139);
-			}
-
-			if (sx->tree[i] >= -151 && sx->tree[i] <= -30)
-			{
-				printf("9001..9595: tree[%li] = %i\n", i, sx->tree[i]);
-				exit(139);
-			}*/
 
 			i++;
 		}
@@ -291,7 +271,6 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 
 	printf("skipper: tree[%li] = %i\n", i, sx->tree[i]);
 	exit(139);
-	//return skipper(sx, i + 1, 0);
 }
 
 size_t checker(const syntax *const sx, size_t i)
@@ -443,16 +422,8 @@ size_t checker(const syntax *const sx, size_t i)
 		printf("checker: tree[%li] = %i\n", i, sx->tree[i]);
 	}
 
-	/*if ((sx->tree[i] >= 9001 && sx->tree[i] <= 9595) || sx->tree[i] == 9651)
-	{
-		return skipper(sx, i, 0);
-	}*/
-
 	return skipper(sx, i, 1);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
 								// ExpressionStatement: 1 потомок (выражение)
-
-	//printf("checker: tree[%li] = %i\n", i, sx->tree[i]);
-	//exit(139);
 }
 
 
