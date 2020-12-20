@@ -71,8 +71,6 @@ void if_end(preprocess_context *context)
 		if (context->curchar == '#')
 		{
 			fl_cur = macro_keywords(context);
-			m_nextch(context);
-
 			if (fl_cur == SH_ENDIF)
 			{
 				checkif--;

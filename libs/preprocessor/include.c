@@ -116,7 +116,7 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 void file_read(preprocess_context *context)
 {
 	int old_line = context->line;
-	context->line = 2;
+	context->line = 1;
 
 	get_next_char(context);
 
@@ -124,7 +124,6 @@ void file_read(preprocess_context *context)
 	{
 		con_file_print_coment(&context->fs, context);
 	}
-	context->line = 1;
 
 	if (context->nextchar == EOF)
 	{
@@ -217,7 +216,5 @@ void include_relis(preprocess_context *context)
 	m_nextch(context);
 	open_file(context);
 	m_nextch(context);
-
-
 	space_end_line(context);
 }
