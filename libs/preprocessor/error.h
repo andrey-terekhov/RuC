@@ -50,6 +50,14 @@ enum ERROR
 	comm_not_ended,
 	not_enough_param2,
 	must_be_digit_after_exp1,
+	not_macro,
+	incorrect_arithmetic_expression,
+	third_party_symbol,
+	in_eval_must_end_parenthesis,
+	must_end_quote,
+	must_start_quote,
+	macro_does_not_exist,
+	must_end_endw,
 };
 
 

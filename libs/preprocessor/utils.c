@@ -166,7 +166,6 @@ int find_file(preprocess_context *context, const char *s)
 {
 	int oldrp = context->rp;
 	context->rp += 2;
-
 	int r;
 	int hash = 0;
 	int i = 0;
@@ -185,6 +184,7 @@ int find_file(preprocess_context *context, const char *s)
 	{
 		if (context->reprtab[r + 1] == SH_FILE && equal_reprtab(r, oldrp, context))
 		{
+			context->rp = oldrp;
 			return 0;
 		}
 
@@ -194,6 +194,7 @@ int find_file(preprocess_context *context, const char *s)
 	context->reprtab[oldrp] = context->hashtab[hash];
 	context->reprtab[oldrp + 1] = SH_FILE;
 	context->hashtab[hash] = oldrp;
+	context->reprtab[context->rp++] = 0;
 	return 1;
 }
 

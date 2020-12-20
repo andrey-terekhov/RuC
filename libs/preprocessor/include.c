@@ -69,14 +69,8 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 
 	gen_way(file_way, f_name, temp_way, 1);
 
-	if (!find_file(context, file_way))
-	{
-		return -2;
-	}
-
 	universal_io temp_io = io_create();
 	int res = in_set_file(&temp_io, file_way);
-
 	if (res == -1)
 	{
 		int i = 0;
@@ -100,6 +94,10 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 	{
 		log_system_error(temp_way, "файл не найден");
 		return -3;
+	}
+	else if (!find_file(context, file_way))
+	{
+		return -2;
 	}
 
 	if (context->include_type != 0)
@@ -136,7 +134,7 @@ int file_read(preprocess_context *context)
 	int error = 0; 
 	while (context->curchar != EOF)
 	{
-		error = preprocess_scan(context) || error;  
+		error = preprocess_scan(context) || error;
 	}
 
 	if(error)
@@ -165,7 +163,7 @@ int open_file(preprocess_context *context)
 		if (context->curchar == EOF)
 		{
 			size_t position = skip_str(context); 
-			macro_error(23, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			macro_error(must_end_quote, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 			return -1;
 		}
 		temp_way[i++] = (char)context->curchar;
@@ -233,8 +231,11 @@ int include_relis(preprocess_context *context)
 	if (context->curchar != '\"')
 	{
 		if(context->include_type > 0)
-		output_keywods(context);
-		return 0;
+		{
+			size_t position = skip_str(context); 
+			macro_error(must_start_quote, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			return -1;
+		}
 	}
 	m_nextch(context);
 	int rez = open_file(context);

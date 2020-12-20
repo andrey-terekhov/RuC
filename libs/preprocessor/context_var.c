@@ -125,7 +125,7 @@ void con_files_add_include(files* fs, char *name, int c_flag)
 {
 	fs->p++;
 	
-	if(c_flag == 0)
+	if(c_flag != 2)
 	{
 		fs->end_h++;
 	}

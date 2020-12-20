@@ -98,6 +98,30 @@ void get_message_error(int ernum, char *const msg)
 		case not_logical_operations:
 			sprintf(msg, "внутри команды '#EVAL()' не должно быть логических операций");
 			break;
+		case not_macro:
+			sprintf(msg, "идентификатор не является макросом, это недопустимо для данных вычислений");
+			break; 
+		case incorrect_arithmetic_expression:
+			sprintf(msg, "неправильно составленное арифметическое выражение, возможно неправильно расставлены скобки");
+			break;  
+		case third_party_symbol: 
+			sprintf(msg, "в строке с вычислениями не должно быть посторонних символов");
+			break; 
+		case in_eval_must_end_parenthesis: 
+			sprintf(msg, "вычисления внутри директивы #eval должны заканчиваться символом )");
+			break;
+		case must_end_quote:
+			sprintf(msg, "указание имени include файла должно заканчиваться символом \"");
+			break;
+		case must_start_quote:
+			sprintf(msg, "указание имени include файла должно начинаться символа \"");
+			break;
+		case macro_does_not_exist:
+			sprintf(msg, "такого макроса не существует");
+			break;
+		case must_end_endw:
+			sprintf(msg, "цикл должен заканчиваться #ENDW");
+			break;
 		default:
 			sprintf(msg, "не реализованная ошибка №%d", ernum);
 	}

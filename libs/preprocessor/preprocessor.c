@@ -139,7 +139,7 @@ int preprocess_words(preprocess_context *context)
 			else
 			{
 				size_t position = skip_str(context); 
-				macro_error(45, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				macro_error(macro_does_not_exist, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 				return -1;
 			}
 		}
@@ -360,14 +360,17 @@ int preprocess_h_file(preprocess_context *context)
 	context->h_flag = 1;
 	context->include_type = 1;
 	int rez = con_file_open_hedrs(&context->fs, context);
+	printf("!!!!!!!!!!!!!!000\n");
 	if(rez == 1)
 	{
 		rez = file_read(context);
+		
 		if(rez == 0)
 		{
+			printf("!!!!!!!!!!!!!!0001\n");
 			rez = con_file_open_next(&context->fs, context, H_FILE);
 		}
-		
+		printf("!!!!!!!!!!!!!!0002\n");
 
 		while (rez == 1)
 		{
@@ -418,7 +421,7 @@ int macro_form_io(workspace *const ws, universal_io *const io)
 	context.mfirstrp = context.rp;
 	
 	open_files(&context);
-
+	
 	int rez = preprocess_h_file(&context);
 	if (rez)
 	{

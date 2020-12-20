@@ -78,7 +78,7 @@ int while_collect(preprocess_context *context)
 	}
 
 	size_t position = skip_str(context); 
-	macro_error(40, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+	macro_error(must_end_endw, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 	return -1;
 }
 
@@ -126,7 +126,7 @@ int while_relis(preprocess_context *context)
 			else if (context->curchar == EOF)
 			{
 				size_t position = skip_str(context); 
-				macro_error(41, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				macro_error(must_end_endw, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 				return -1;
 			}
 			else

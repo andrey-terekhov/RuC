@@ -30,7 +30,7 @@
 #endif
 
 
-//#define GENERATE_MACRO
+#define GENERATE_MACRO
 //#define GENERATE_TABLES
 
 

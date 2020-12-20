@@ -332,7 +332,7 @@ int calculator(int if_flag, preprocess_context *context)
 			else
 			{
 				size_t position = skip_str(context); 
-				macro_error(1, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				macro_error(not_macro, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 				return -1;
 			}
 		}
@@ -364,7 +364,7 @@ int calculator(int if_flag, preprocess_context *context)
 				if (i < 2 || op == 0)
 				{
 					size_t position = skip_str(context); 
-					macro_error(2, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+					macro_error(incorrect_arithmetic_expression, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 					return -1;
 				}
 
@@ -415,14 +415,14 @@ int calculator(int if_flag, preprocess_context *context)
 			else if (context->curchar != '\n')
 			{
 				size_t position = skip_str(context); 
-				macro_error(3, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				macro_error(third_party_symbol, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 				return -1;
 			}
 		}
 		else if (context->curchar != '\n')
 		{
 			size_t position = skip_str(context); 
-			macro_error(3, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			macro_error(third_party_symbol, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 			return -1;
 		}
 	}
@@ -435,7 +435,7 @@ int calculator(int if_flag, preprocess_context *context)
 			if (i < 2)
 			{
 				size_t position = skip_str(context); 
-				macro_error(4, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				macro_error(incorrect_arithmetic_expression, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 				return -1;
 			}
 
@@ -457,7 +457,7 @@ int calculator(int if_flag, preprocess_context *context)
 	else
 	{
 		size_t position = skip_str(context); 
-		macro_error(5, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		macro_error(in_eval_must_end_parenthesis, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 		return -1;
 	}
 	return 0;
