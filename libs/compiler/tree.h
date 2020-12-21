@@ -89,7 +89,7 @@ int node_get_arg(const node *const nd, const size_t index);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int tree_test(const syntax *const sx);
+int tree_test(syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */

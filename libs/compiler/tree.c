@@ -223,8 +223,8 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 	error(NULL, tree_expression_unknown, i - 1, tree[i - 1]);
 	return SIZE_MAX;
 }
-
-size_t skip_operator(const tree *const tree, size_t i)
+size_t skip_operator(tree *const tree, size_t i);
+size_t node_operator(tree *const tree, size_t i, node *const nd)
 {
 	if (i == SIZE_MAX)
 	{
@@ -234,10 +234,11 @@ size_t skip_operator(const tree *const tree, size_t i)
 	switch (tree[i++])
 	{
 		case TFuncdef:		// Funcdef: 2 потомка (ссылка на identab, тело функции)
-			i += 2;
-			return skip_operator(tree, i);
+			i = skip_operator(tree, i + 2);
+			break;
 		case TDeclid:		// IdentDecl: 6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
-			return skip_expression(tree, i + 7, 1);
+			i = skip_expression(tree, i + 7, 1);
+			break;
 		case TDeclarr:		// ArrayDecl: n + 2 потомков (размерность массива, n выражений-размеров, инициализатор (может не быть))
 		{
 			size_t n = tree[i++];
@@ -246,53 +247,68 @@ size_t skip_operator(const tree *const tree, size_t i)
 				i = skip_expression(tree, i, 1);
 			}
 
-			return skip_operator(tree, i);
+			i = skip_operator(tree, i);
 		}
+		break;
 		case TStructbeg:	// StructDecl: n + 2 потомков (размерность структуры, n объявлений полей, инициализатор (может не быть))
 			i += 1;
 			while (tree[i] != TStructend)
 			{
 				i = skip_operator(tree, i);
 			}
-			return i == SIZE_MAX ? SIZE_MAX : i + 2;
+			i = i == SIZE_MAX ? SIZE_MAX : i + 2;
+			break;
 
 		case TBegin:
 			while (tree[i] != TEnd)
 			{
 				i = skip_operator(tree, i);
 			}
-			return i == SIZE_MAX ? SIZE_MAX : i + 1;
+			i = i == SIZE_MAX ? SIZE_MAX : i + 1;
+			break;
 
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
-			return skip_expression(tree, i + 1, 1);
+			i = skip_expression(tree, i + 1, 1);
+			break;
 		case TPrintf:		// Printf: n + 2 потомков (форматирующая строка, число параметров, n параметров-выражений)
-			return i + 1;
+			i += 1;
+			break;
 		case TGetid:		// GetID: 1 потомок (ссылка на identab)
 							// Scanf: n + 2 потомков (форматирующая строка, число параметров, n параметров-ссылок на identab)
-			return i + 1;
+			i += 1;
+			break;
 
 		case TIf:			// If: 3 потомка (условие, тело-then, тело-else) - ветка else присутствует не всегда, здесь предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
 		{
 			int is_else = tree[i++];
 			i = skip_expression(tree, i, 1);
 			i = skip_operator(tree, i);
-			return is_else && i != SIZE_MAX ? skip_operator(tree, is_else) : i;
+			if (is_else && i != SIZE_MAX)
+			{
+				i = skip_operator(tree, is_else);
+			}
 		}
+		break;
 		case TSwitch:		// Switch: 2 потомка (условие, тело оператора)
 			i = skip_expression(tree, i, 1);
-			return skip_operator(tree, i);
+			i = skip_operator(tree, i);
+			break;
 		case TCase:			// Case: 2 потомка (условие, тело оператора)
 			i = skip_expression(tree, i, 1);
-			return skip_operator(tree, i);
+			i = skip_operator(tree, i);
+			break;
 		case TDefault:		// Default: 1 потомок (тело оператора)
-			return skip_operator(tree, i);
+			i = skip_operator(tree, i);
+			break;
 
 		case TWhile:		// While: 2 потомка (условие, тело цикла)
 			i = skip_expression(tree, i, 1);
-			return skip_operator(tree, i);
+			i = skip_operator(tree, i);
+			break;
 		case TDo:			// Do: 2 потомка (тело цикла, условие)
 			i = skip_operator(tree, i);
-			return skip_expression(tree, i, 1);
+			i = skip_expression(tree, i, 1);
+			break;
 		case TFor:			// For: 4 потомка (выражение или объявление, условие окончания, выражение-инкремент, тело цикла); - первые 3 ветки присутствуют не всегда,  здесь также предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
 		{
 			size_t var = tree[i++];
@@ -323,47 +339,70 @@ size_t skip_operator(const tree *const tree, size_t i)
 			}
 
 			size_t body = tree[i++];
-			return skip_operator(tree, body);
+			i = skip_operator(tree, body);
 		}
+		break;
 
 		case TGoto:			// Goto: 1 потомок (ссылка на identab)
-			return i + 1;
+			i += 1;
+			break;
 		case TLabel:		// LabeledStatement: 2 потомка (ссылка на identab, тело оператора)
-			return i + 1;
+			i += 1;
+			break;
 
 		case TContinue:		// Continue: нет потомков
-			return i;
 		case TBreak:		// Break: нет потомков
-			return i;
 		case TReturnvoid:	// ReturnVoid: нет потомков
-			return i;
+			break;
 		case TReturnval:	// ReturnValue: 2 потомка (тип значения, выражение)
-			return skip_expression(tree, i + 1, 1);
+			i = skip_expression(tree, i + 1, 1);
+			break;
 
 		case NOP:			// NoOperation: 0 потомков
-			return i;
+			break;
 		case CREATEDIRECTC:
 			while (tree[i] != EXITC)
 			{
 				i = skip_operator(tree, i);
 			}
-			return i == SIZE_MAX ? SIZE_MAX : i + 1;
-	}
+			i = i == SIZE_MAX ? SIZE_MAX : i + 1;
+			break;
 
-	i--;
-	if (!is_expression(tree[i]) && !is_lexeme(tree[i]))
+		default:
+			i--;
+			if (!is_expression(tree[i]) && !is_lexeme(tree[i]))
+			{
+				warning(NULL, tree_operator_unknown, i, tree[i]);
+			}
+
+			i = skip_expression(tree, i, 1);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
+												// ExpressionStatement: 1 потомок (выражение)
+	}
+	
+	if (nd != NULL)
 	{
-		warning(NULL, tree_operator_unknown, i, tree[i]);
+		nd->tree = tree;
+		//nd->type = i;
 	}
 
-	return skip_expression(tree, i, 1);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
-										// ExpressionStatement: 1 потомок (выражение)
+	return i;
 }
 
+size_t skip_operator(tree *const tree, const size_t i)
+{
+	return node_operator(tree, i, NULL);
+}
 
 int node_is_correct(const node *const nd)
 {
 	return nd != NULL && nd->tree != NULL;
+}
+
+
+void tree_print(syntax *const sx)
+{
+	node nd = node_get_root(sx);
+	printf("-=root=-\nnum\t%zi\nargc\t%zi\n", nd.num, nd.argc);
 }
 
 
@@ -414,7 +453,23 @@ int node_get_child(const node *const nd, const size_t index, node *const child)
 		return -1;
 	}
 
-	return 0;
+	size_t i = nd->children;
+	for (size_t num = 0; num < index; num++)
+	{
+		if (nd->type == SIZE_MAX || node_get_type(nd))
+		{
+			i = skip_operator(nd->tree, i);
+		}
+		else
+		{
+			i = skip_expression(nd->tree, i, 1);
+		}
+	}
+
+	/*child->tree = nd->tree;
+	child->type = i;
+	return node_init(child);*/
+	return node_operator(nd->tree, i, child) != SIZE_MAX ? 0 : -1;
 }
 
 
@@ -429,8 +484,9 @@ int node_get_arg(const node *const nd, const size_t index)
 }
 
 
-int tree_test(const syntax *const sx)
+int tree_test(syntax *const sx)
 {
+	//tree_print(sx);
 	// Тестирование функций
 	size_t i = 0;
 	while (i != SIZE_MAX && (int)i < sx->tc - 1)
