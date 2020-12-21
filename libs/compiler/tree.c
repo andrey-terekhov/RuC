@@ -90,6 +90,11 @@ int is_lexeme(const int value)
 
 size_t skip_expression(const tree *const tree, size_t i, int is_block)
 {
+	if (i == SIZE_MAX)
+	{
+		return SIZE_MAX;
+	}
+
 	if (tree[i] == NOP && !is_block)
 	{
 		return i + 1;
@@ -100,7 +105,7 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 		if (!is_block)
 		{
 			error(NULL, tree_expression_not_block, i, tree[i]);
-			exit(139);
+			return SIZE_MAX;
 		}
 		return i;
 	}
@@ -112,7 +117,7 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 			i = skip_expression(tree, i, 0);
 		}
 
-		return i + 1;
+		return i == SIZE_MAX ? SIZE_MAX : i + 1;
 	}
 
 	switch (tree[i++])
@@ -124,7 +129,7 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 			{
 				i = skip_expression(tree, i, 1);
 			}
-			return i;
+			return i == SIZE_MAX ? SIZE_MAX : i;
 		}
 		case TStructinit:	// StructInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
 		{
@@ -133,7 +138,7 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 			{
 				i = skip_expression(tree, i, 1);
 			}
-			return i;
+			return i == SIZE_MAX ? SIZE_MAX : i;
 		}
 
 		case TPrint:		// Print: 2 потомка (тип значения, выражение)
@@ -157,7 +162,8 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 		case TIdenttoaddr:
 			return i + 1;
 		case TIdent:
-			return skip_expression(tree, i + 1, 1) - 1;	// Может быть общий TExprend
+			i = skip_expression(tree, i + 1, 1);	// Может быть общий TExprend
+			return i == SIZE_MAX ? SIZE_MAX : i - 1;
 
 		case TConst:
 			return i + 1;
@@ -177,21 +183,24 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 
 		case TSliceident:
 			i = skip_expression(tree, i + 2, 1);			// 2 ветви потомков
-			return skip_expression(tree, i, 1) - 1;		// Может быть общий TExprend
+			i = skip_expression(tree, i, 1);
+			return i == SIZE_MAX ? SIZE_MAX : i - 1;		// Может быть общий TExprend
 		case TSlice:
 			i = skip_expression(tree, i + 1, 1);			// 2 ветви потомков
-			return skip_expression(tree, i, 1) - 1;		// Может быть общий TExprend
+			i = skip_expression(tree, i, 1);
+			return i == SIZE_MAX ? SIZE_MAX : i - 1;		// Может быть общий TExprend
 
 		case TCall1:
 			return i + 1;
 		case TCall2:
-			return skip_expression(tree, i + 1, 1) - 1;	// Может быть общий TExprend
+			i = skip_expression(tree, i + 1, 1);
+			return i == SIZE_MAX ? SIZE_MAX : i - 1;		// Может быть общий TExprend
 
 		case TExprend:
 			if (is_block)
 			{
 				error(NULL, tree_expression_texprend, i - 1, tree[i - 1]);
-				exit(139);
+				return SIZE_MAX;
 			}
 			return i - 1;
 	}
@@ -212,11 +221,16 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 	}
 
 	error(NULL, tree_expression_unknown, i - 1, tree[i - 1]);
-	exit(139);
+	return SIZE_MAX;
 }
 
 size_t skip_operator(const tree *const tree, size_t i)
 {
+	if (i == SIZE_MAX)
+	{
+		return SIZE_MAX;
+	}
+
 	switch (tree[i++])
 	{
 		case TFuncdef:		// Funcdef: 2 потомка (ссылка на identab, тело функции)
@@ -240,14 +254,14 @@ size_t skip_operator(const tree *const tree, size_t i)
 			{
 				i = skip_operator(tree, i);
 			}
-			return i + 2;
+			return i == SIZE_MAX ? SIZE_MAX : i + 2;
 
 		case TBegin:
 			while (tree[i] != TEnd)
 			{
 				i = skip_operator(tree, i);
 			}
-			return i + 1;
+			return i == SIZE_MAX ? SIZE_MAX : i + 1;
 
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
 			return skip_expression(tree, i + 1, 1);
@@ -262,7 +276,7 @@ size_t skip_operator(const tree *const tree, size_t i)
 			int is_else = tree[i++];
 			i = skip_expression(tree, i, 1);
 			i = skip_operator(tree, i);
-			return is_else ? skip_operator(tree, is_else) : i;
+			return is_else && i != SIZE_MAX ? skip_operator(tree, is_else) : i;
 		}
 		case TSwitch:		// Switch: 2 потомка (условие, тело оператора)
 			i = skip_expression(tree, i, 1);
@@ -284,19 +298,28 @@ size_t skip_operator(const tree *const tree, size_t i)
 			size_t var = tree[i++];
 			if (var != 0)
 			{
-				skip_expression(tree, var, 1);
+				if (skip_expression(tree, var, 1) == SIZE_MAX)
+				{
+					return SIZE_MAX;
+				}
 			}
 
 			size_t cond = tree[i++];
 			if (cond != 0)
 			{
-				skip_expression(tree, cond, 1);
+				if (skip_expression(tree, cond, 1) == SIZE_MAX)
+				{
+					return SIZE_MAX;
+				}
 			}
 
 			size_t inc = tree[i++];
 			if (inc != 0)
 			{
-				skip_expression(tree, inc, 1);
+				if (skip_expression(tree, inc, 1) == SIZE_MAX)
+				{
+					return SIZE_MAX;
+				}
 			}
 
 			size_t body = tree[i++];
@@ -324,7 +347,7 @@ size_t skip_operator(const tree *const tree, size_t i)
 			{
 				i = skip_operator(tree, i);
 			}
-			return i + 1;
+			return i == SIZE_MAX ? SIZE_MAX : i + 1;
 	}
 
 	i--;
@@ -395,9 +418,14 @@ int tree_test(const syntax *const sx)
 {
 	// Тестирование функций
 	size_t i = 0;
-	while ((int)i < sx->tc - 1)
+	while (i != SIZE_MAX && (int)i < sx->tc - 1)
 	{
 		i = skip_operator(sx->tree, i);
+	}
+
+	if (i == SIZE_MAX)
+	{
+		return -1;
 	}
 
 	if (sx->tree[i] == TEnd)
