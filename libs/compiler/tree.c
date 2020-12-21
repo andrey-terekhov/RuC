@@ -236,8 +236,8 @@ node node_operator(tree *const tree, size_t *i)
 	nd.tree = tree;
 	nd.type = *i;
 	nd.argv = nd.type + 1;
+
 	nd.argc = 0;
-	nd.children = nd.type + 1;
 	nd.amount = 0;
 
 	*i += 1;
@@ -245,7 +245,6 @@ node node_operator(tree *const tree, size_t *i)
 	{
 		case TFuncdef:		// Funcdef: 2 потомка (ссылка на identab, тело функции)
 			nd.argc = 2;
-			nd.children = nd.type + nd.argc + 1;
 			nd.amount = 1;
 
 			*i += nd.argc;
@@ -253,7 +252,6 @@ node node_operator(tree *const tree, size_t *i)
 			break;
 		case TDeclid:		// IdentDecl: 6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
 			nd.argc = 7;
-			nd.children = nd.type + nd.argc + 1;
 			nd.amount = 1;
 
 			*i += nd.argc;
@@ -262,7 +260,6 @@ node node_operator(tree *const tree, size_t *i)
 		case TDeclarr:		// ArrayDecl: n + 2 потомков (размерность массива, n выражений-размеров, инициализатор (может не быть))
 		{
 			nd.argc = 1;
-			nd.children = nd.type + nd.argc + 1;
 			nd.amount = node_get_arg(&nd, 0) + 1;
 
 			*i += nd.argc;
@@ -276,7 +273,6 @@ node node_operator(tree *const tree, size_t *i)
 		break;
 		case TStructbeg:	// StructDecl: n + 2 потомков (размерность структуры, n объявлений полей, инициализатор (может не быть))
 			nd.argc = 1;
-			nd.children = nd.type + nd.argc + 1;
 			
 			*i += nd.argc;
 			while (tree[*i] != TStructend)
@@ -292,7 +288,6 @@ node node_operator(tree *const tree, size_t *i)
 			break;
 
 		case TBegin:
-			nd.children = nd.type + nd.argc + 1;
 
 			while (tree[*i] != TEnd)
 			{
@@ -308,7 +303,6 @@ node node_operator(tree *const tree, size_t *i)
 
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
 			nd.argc = 1;
-			nd.children = nd.type + nd.argc + 1;
 			nd.amount = 1;
 
 			*i += nd.argc;
@@ -325,7 +319,6 @@ node node_operator(tree *const tree, size_t *i)
 			break;
 		case TLabel:		// LabeledStatement: 2 потомка (ссылка на identab, тело оператора)
 			nd.argc = 1;
-			nd.children = nd.type + nd.argc + 1;
 			nd.amount = 1;
 
 			*i += nd.argc;
@@ -335,7 +328,6 @@ node node_operator(tree *const tree, size_t *i)
 		case TIf:			// If: 3 потомка (условие, тело-then, тело-else) - ветка else присутствует не всегда, здесь предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
 		{
 			nd.argc = 1;
-			nd.children = nd.type + nd.argc + 1;
 			nd.amount = node_get_arg(&nd, 0) != 0 ? 3 : 2;
 
 			*i += nd.argc;
@@ -352,7 +344,6 @@ node node_operator(tree *const tree, size_t *i)
 		case TFor:			// For: 4 потомка (выражение или объявление, условие окончания, выражение-инкремент, тело цикла); - первые 3 ветки присутствуют не всегда,  здесь также предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
 		{
 			nd.argc = 4;
-			nd.children = nd.type + nd.argc + 1;
 			nd.amount = 1;
 
 			size_t var = node_get_arg(&nd, 0);
@@ -390,7 +381,6 @@ node node_operator(tree *const tree, size_t *i)
 		}
 		break;
 		case TDo:			// Do: 2 потомка (тело цикла, условие)
-			nd.children = nd.type + nd.argc + 1;
 			nd.amount = 2;
 
 			node_operator(tree, i);
@@ -400,14 +390,12 @@ node node_operator(tree *const tree, size_t *i)
 
 		case TSwitch:		// Switch: 2 потомка (условие, тело оператора)
 		case TCase:			// Case: 2 потомка (условие, тело оператора)
-			nd.children = nd.type + nd.argc + 1;
 			nd.amount = 2;
 
 			*i = skip_expression(tree, *i, 1);
 			node_operator(tree, i);
 			break;
 		case TDefault:		// Default: 1 потомок (тело оператора)
-			nd.children = nd.type + nd.argc + 1;
 			nd.amount = 1;
 
 			node_operator(tree, i);
@@ -415,7 +403,6 @@ node node_operator(tree *const tree, size_t *i)
 
 		case TReturnval:	// ReturnValue: 2 потомка (тип значения, выражение)
 			nd.argc = 1;
-			nd.children = nd.type + nd.argc + 1;
 			nd.amount = 1;
 
 			*i += nd.argc;
@@ -428,7 +415,6 @@ node node_operator(tree *const tree, size_t *i)
 		case NOP:			// NoOperation: 0 потомков
 			break;
 		case CREATEDIRECTC:
-			nd.children = nd.type + nd.argc + 1;
 
 			while (tree[*i] != EXITC)
 			{
@@ -451,12 +437,14 @@ node node_operator(tree *const tree, size_t *i)
 
 			*i = skip_expression(tree, *i, 1);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
 												// ExpressionStatement: 1 потомок (выражение)
-			
-			nd.children = nd.type + nd.argc + 1;
+			nd.children = nd.type + 1;
 			nd.amount = 1;
 			nd.type = *i - 1;
+
+			return nd;
 	}
 
+	nd.children = nd.type + nd.argc + 1;
 	return nd;
 }
 
@@ -516,9 +504,9 @@ node node_get_root(syntax *const sx)
 
 node node_get_child(node *const nd, const size_t index)
 {
-	node child;
 	if (!node_is_correct(nd) || index > nd->amount)
 	{
+		node child;
 		child.tree = NULL;
 		return child;
 	}
@@ -536,10 +524,7 @@ node node_get_child(node *const nd, const size_t index)
 		}
 	}
 
-	child.tree = nd->tree;
-	/*hild->type = i;
-	return node_init(child);*/
-	return child;
+	return node_operator(nd->tree, &i);
 }
 
 
