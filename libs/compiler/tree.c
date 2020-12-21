@@ -23,7 +23,13 @@
 
 int is_operator(const int value)
 {
-	return value == TBegin
+	return value == TFuncdef		// Declarations
+		|| value == TDeclid
+		|| value == TStructbeg
+		|| value == TStructend
+		|| value == TDeclarr
+
+		|| value == TBegin			// Operators
 		|| value == TEnd
 		|| value == TIf
 		|| value == TWhile
@@ -38,28 +44,22 @@ int is_operator(const int value)
 		|| value == TReturnval
 		|| value == TGoto
 		|| value == TLabel
-		|| value == TPrint
 		|| value == TPrintid
 		|| value == TPrintf
 		|| value == TGetid
-		|| value == NOP
+		
+		|| value == NOP				// Lexemes
 		|| value == CREATEDIRECTC;
-}
-
-int is_declaration(const int value)
-{
-	return value == TFuncdef
-		|| value == TDeclid
-		|| value == TStructbeg
-		|| value == TStructend
-		|| value == TDeclarr;
 }
 
 int is_expression(const int value)
 {
-	return value == TBeginit
+	return value == TBeginit		// Declarations
 		|| value == TStructinit
-		|| value == TConstd
+
+		|| value == TPrint			// Operator
+
+		|| value == TConstd			// Expressions
 		|| value == TStringd
 		|| value == TExprend
 		|| value == TCondexpr
@@ -82,18 +82,12 @@ int is_expression(const int value)
 
 size_t skipper(const syntax *const sx, size_t i, int from_checker)
 {
-	if (sx->tree[i] == TPrint && !from_checker)
-	{
-		return i + 2;
-	}
-
 	if (sx->tree[i] == NOP && !from_checker)
 	{
 		return i + 1;
 	}
 
-	if ((is_operator(sx->tree[i]) || is_declaration(sx->tree[i]))
-		&& sx->tree[i] != TPrint)
+	if (is_operator(sx->tree[i]))
 	{
 		if (!from_checker)
 		{
@@ -134,6 +128,9 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 			}
 			return i;
 		}
+
+		case TPrint:		// Print: 2 потомка (тип значения, выражение)
+			return i + 1;
 
 		case TCondexpr:
 			return i;
@@ -199,7 +196,7 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 		i += 1;
 		while (!is_expression(sx->tree[i]))
 		{
-			if (is_operator(sx->tree[i]) || is_declaration(sx->tree[i]))
+			if (is_operator(sx->tree[i]))
 			{
 				return i;
 			}
@@ -265,9 +262,9 @@ size_t checker(const syntax *const sx, size_t i)
 			}
 			return i + 1;
 
-		case TPrint:		// Print: 2 потомка (тип значения, выражение)
+		/*case TPrint:		// Print: 2 потомка (тип значения, выражение)
 			system_warning("TPrint call");
-			exit(139);
+			exit(139);*/
 
 			/*i += 1;
 			if (sx->tree[i] != TExprend)
@@ -380,6 +377,20 @@ size_t checker(const syntax *const sx, size_t i)
 node node_get_root(const syntax *const sx)
 {
 	node nd;
+	nd.ref = NULL;
+	nd.type = (uintptr_t)NULL;
+
+	nd.argv = (uintptr_t)NULL;
+	nd.argc = 0;
+
+	nd.children = (uintptr_t)NULL;
+	nd.num = 0;
+
+	if (sx == NULL)
+	{
+		return nd;
+	}
+
 	nd.ref = (tree *)&sx->tree;
 
 	return nd;

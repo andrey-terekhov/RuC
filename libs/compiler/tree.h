@@ -37,7 +37,7 @@ typedef struct node
 	uintptr_t argv;				/**< Reference to arguments */
 	size_t argc;				/**< Number of arguments */
 
-	uintptr_t chldn;			/**< Reference to children */
+	uintptr_t children;			/**< Reference to children */
 	size_t num;					/**< Amount of children */
 } node;
 
