@@ -26,28 +26,28 @@ int is_operator(const int value)
 {
 	return value == TFuncdef		// Declarations
 		|| value == TDeclid
+		|| value == TDeclarr
 		|| value == TStructbeg
 		|| value == TStructend
-		|| value == TDeclarr
 
 		|| value == TBegin			// Operators
 		|| value == TEnd
-		|| value == TIf
-		|| value == TWhile
-		|| value == TDo
-		|| value == TFor
-		|| value == TSwitch
-		|| value == TCase
-		|| value == TDefault
-		|| value == TBreak
-		|| value == TContinue
-		|| value == TReturnvoid
-		|| value == TReturnval
-		|| value == TGoto
-		|| value == TLabel
 		|| value == TPrintid
 		|| value == TPrintf
 		|| value == TGetid
+		|| value == TIf
+		|| value == TSwitch
+		|| value == TCase
+		|| value == TDefault
+		|| value == TWhile
+		|| value == TDo
+		|| value == TFor
+		|| value == TGoto
+		|| value == TLabel
+		|| value == TContinue
+		|| value == TBreak
+		|| value == TReturnvoid
+		|| value == TReturnval
 		
 		|| value == NOP				// Lexemes
 		|| value == CREATEDIRECTC;
@@ -60,24 +60,23 @@ int is_expression(const int value)
 
 		|| value == TPrint			// Operator
 
-		|| value == TConstd			// Expressions
-		|| value == TStringd
-		|| value == TExprend
-		|| value == TCondexpr
-		|| value == TIdenttovald
-		|| value == TAddrtovald
-		|| value == TIdenttoaddr
+		|| value == TCondexpr		// Expressions
 		|| value == TSelect
-		|| value == TFunidtoval
+		|| value == TAddrtoval
+		|| value == TAddrtovald
+		|| value == TIdenttoval
+		|| value == TIdenttovald
+		|| value == TIdenttoaddr
 		|| value == TIdent
 		|| value == TConst
+		|| value == TConstd
 		|| value == TString
+		|| value == TStringd
 		|| value == TSliceident
 		|| value == TSlice
-		|| value == TIdenttoval
-		|| value == TAddrtoval
 		|| value == TCall1
-		|| value == TCall2;
+		|| value == TCall2
+		|| value == TExprend;
 }
 
 int is_lexeme(const int value)
@@ -117,7 +116,6 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 
 	switch (tree[i++])
 	{
-		// Может иметь несколько потомков
 		case TBeginit:		// ArrayInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
 		{
 			size_t n = tree[i++];
@@ -142,14 +140,39 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 
 		case TCondexpr:
 			return i;
-		case TIdenttoaddr:
-			return i + 1;
 		case TSelect:
 			return i + 1;
-		/*case TFunidtoval:	// Not used
-			return i + 1;*/
+
+		case TAddrtoval:
+			return i;
+		case TAddrtovald:
+			return i;
+
+		case TIdenttoval:
+			return i + 1;
+		case TIdenttovald:
+			return i + 1;
+
+		case TIdenttoaddr:
+			return i + 1;
 		case TIdent:
 			return skip_expression(tree, i + 1, 1) - 1;	// Может быть общий TExprend
+
+		case TConst:
+			return i + 1;
+		case TConstd:		// d - double
+			return i + 2;
+
+		case TString:
+		{
+			int n = tree[i++];
+			return i + n;
+		}
+		case TStringd:		// d - double
+		{
+			int n = tree[i++];
+			return i + n * 2;
+		}
 
 		case TSliceident:
 			i = skip_expression(tree, i + 2, 1);			// 2 ветви потомков
@@ -163,31 +186,6 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 		case TCall2:
 			return skip_expression(tree, i + 1, 1) - 1;	// Может быть общий TExprend
 
-		case TConst:
-			return i + 1;
-		case TConstd:		// d - double
-			return i + 2;
-		case TString:
-		{
-			int n = tree[i++];
-			return i + n;
-		}
-		case TStringd:		// d - double
-		{
-			int n = tree[i++];
-			return i + n * 2;
-		}
-
-		case TIdenttoval:
-			return i + 1;
-		case TIdenttovald:	// d - WTF?!
-			return i + 1;
-
-		case TAddrtoval:
-			return i;
-		case TAddrtovald:	// d - END
-			return i;
-
 		case TExprend:
 			if (is_block)
 			{
@@ -197,11 +195,8 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 			return i - 1;
 	}
 
-	i--;
-
-	if (is_lexeme(tree[i]))
+	if (is_lexeme(tree[i - 1]))
 	{
-		i += 1;
 		while (!is_expression(tree[i]))
 		{
 			if (is_operator(tree[i]))
@@ -215,7 +210,7 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 		return i;
 	}
 
-	printf("skipper: tree[%zi] = %i\n", i, tree[i]);
+	printf("skipper: tree[%zi] = %i\n", i - 1, tree[i - 1]);
 	exit(139);
 }
 
@@ -307,9 +302,9 @@ size_t skip_operator(const tree *const tree, size_t i)
 			return skip_operator(tree, body);
 		}
 
-		case TLabel:		// LabeledStatement: 2 потомка (ссылка на identab, тело оператора)
-			return i + 1;
 		case TGoto:			// Goto: 1 потомок (ссылка на identab)
+			return i + 1;
+		case TLabel:		// LabeledStatement: 2 потомка (ссылка на identab, тело оператора)
 			return i + 1;
 
 		case TContinue:		// Continue: нет потомков
@@ -323,7 +318,6 @@ size_t skip_operator(const tree *const tree, size_t i)
 
 		case NOP:			// NoOperation: 0 потомков
 			return i;
-
 		case CREATEDIRECTC:
 			while (tree[i] != EXITC)
 			{
@@ -333,14 +327,13 @@ size_t skip_operator(const tree *const tree, size_t i)
 	}
 
 	i--;
-
 	if (!is_expression(tree[i]) && !is_lexeme(tree[i]))
 	{
 		printf("checker: tree[%zi] = %i\n", i, tree[i]);
 	}
 
 	return skip_expression(tree, i, 1);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
-								// ExpressionStatement: 1 потомок (выражение)
+										// ExpressionStatement: 1 потомок (выражение)
 }
 
 
