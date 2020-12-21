@@ -17,6 +17,7 @@
 #include "tree.h"
 #include "errors.h"
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -357,12 +358,12 @@ node node_get_root(const syntax *const sx)
 {
 	node nd;
 	nd.ref = NULL;
-	nd.type = NULL;
+	nd.type = SIZE_MAX;
 
-	nd.argv = NULL;
+	nd.argv = 0;
 	nd.argc = 0;
 
-	nd.children = NULL;
+	nd.children = 0;
 	nd.num = 0;
 
 	if (sx == NULL)
@@ -388,12 +389,12 @@ int node_get_child(const node *const nd, const size_t index, node *const child)
 
 int node_get_type(const node *const nd)
 {
-	return nd != NULL ? *((int *)nd->type) : INT_MAX;
+	return nd != NULL ? *nd->ref[nd->type] : INT_MAX;
 }
 
 int node_get_arg(const node *const nd, const size_t index)
 {
-	return nd != NULL && index < nd->argc ? ((int *)nd->argv)[index] : INT_MAX;
+	return nd != NULL && index < nd->argc ? *nd->ref[nd->argv + index] : INT_MAX;
 }
 
 

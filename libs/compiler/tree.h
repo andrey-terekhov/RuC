@@ -30,14 +30,14 @@ typedef int * tree;
 /** Tree node */
 typedef struct node
 {
-	tree *ref;					/**< Reference to tree */
-	void *type;				/**< Node type */
+	tree *ref;				/**< Reference to tree */
+	size_t type;			/**< Node type */
 
-	void *argv;				/**< Reference to arguments */
-	size_t argc;				/**< Number of arguments */
+	size_t argv;			/**< Reference to arguments */
+	size_t argc;			/**< Number of arguments */
 
-	void *children;			/**< Reference to children */
-	size_t num;					/**< Amount of children */
+	size_t children;		/**< Reference to children */
+	size_t num;				/**< Amount of children */
 } node;
 
 
