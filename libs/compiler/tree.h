@@ -25,12 +25,12 @@ extern "C" {
 #endif
 
 /** Tree type */
-typedef int * tree;
+typedef int tree;
 
 /** Tree node */
 typedef struct node
 {
-	tree *ref;				/**< Reference to tree */
+	tree *tree;				/**< Reference to tree */
 	size_t type;			/**< Node type */
 
 	size_t argv;			/**< Reference to arguments */
