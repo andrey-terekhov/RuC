@@ -85,7 +85,7 @@ int mem_set(syntax *const sx, const size_t index, const size_t ref);
  *
  *	@return	Item by index from mem, @c INT_MAX on failure
  */
-int mem_get(syntax *const sx, const size_t index);
+int mem_get(const syntax *const sx, const size_t index);
 
 /**
  *	Set value by index in iniprocs table

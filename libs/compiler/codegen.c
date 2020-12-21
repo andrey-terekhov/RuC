@@ -44,7 +44,7 @@ void adbreakend(syntax *const sx, ad *const context)
 {
 	while (context->adbreak)
 	{
-		int r = sx->mem[context->adbreak];
+		int r = mem_get(sx, context->adbreak);
 		sx->mem[context->adbreak] = sx->pc;
 		context->adbreak = r;
 	}
@@ -54,7 +54,7 @@ void adcontbeg(syntax *const sx, ad *const context, int ad)
 {
 	while (context->adcont != ad)
 	{
-		int r = sx->mem[context->adcont];
+		int r = mem_get(sx, context->adcont);
 		sx->mem[context->adcont] = ad;
 		context->adcont = r;
 	}
@@ -64,7 +64,7 @@ void adcontend(syntax *const sx, ad *const context)
 {
 	while (context->adcont != 0)
 	{
-		int r = sx->mem[context->adcont];
+		int r = mem_get(sx, context->adcont);
 		sx->mem[context->adcont] = sx->pc;
 		context->adcont = r;
 	}
@@ -326,7 +326,7 @@ int Expr_gen(syntax *const sx, int incond)
 
 				while (ad)
 				{
-					int r = sx->mem[ad];
+					int r = mem_get(sx, ad);
 					sx->mem[ad] = sx->pc;
 					ad = r;
 				}
@@ -512,7 +512,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			{
 				while (a) // проставить ссылку на метку во всех ранних переходах
 				{
-					int r = sx->mem[-a];
+					int r = mem_get(sx, -a);
 					sx->mem[-a] = sx->pc;
 					a = r;
 				}
@@ -846,7 +846,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 
 	for (int i = 0; i < sx->pc; i++)
 	{
-		uni_printf(io, "%i ", sx->mem[i]);
+		uni_printf(io, "%i ", mem_get(sx, i));
 	}
 	uni_printf(io, "\n");
 
