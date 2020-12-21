@@ -288,8 +288,11 @@ node node_operator(tree *const tree, size_t *i)
 							// Scanf: n + 2 потомков (форматирующая строка, число параметров, n параметров-ссылок на identab)
 		
 		case TGoto:			// Goto: 1 потомок (ссылка на identab)
+			*i += 1;
+			break;
 		case TLabel:		// LabeledStatement: 2 потомка (ссылка на identab, тело оператора)
 			*i += 1;
+			node_operator(tree, i);
 			break;
 
 		case TIf:			// If: 3 потомка (условие, тело-then, тело-else) - ветка else присутствует не всегда, здесь предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
@@ -342,7 +345,6 @@ node node_operator(tree *const tree, size_t *i)
 			*i = body;
 		}
 		break;
-
 		case TDo:			// Do: 2 потомка (тело цикла, условие)
 			node_operator(tree, i);
 			*i = skip_expression(tree, *i, 1);
