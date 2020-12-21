@@ -437,11 +437,7 @@ node node_operator(tree *const tree, size_t *i)
 
 			*i = skip_expression(tree, *i, 1);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
 												// ExpressionStatement: 1 потомок (выражение)
-			nd.children = nd.type + 1;
-			nd.amount = 1;
 			nd.type = *i - 1;
-
-			return nd;
 	}
 
 	nd.children = nd.type + nd.argc + 1;
@@ -455,10 +451,35 @@ size_t skip_operator(tree *const tree, size_t i)
 }
 
 
+void tree_print_recursive(node *const nd, size_t tabs)
+{
+	for (size_t i = 0; i < tabs; i++)
+	{
+		printf("\t");
+	}
+	printf("tc %zi) %i", nd->type, node_get_type(nd));
+
+	for (size_t i = 0; i < nd->argc; i++)
+	{
+		printf(" %i", node_get_arg(nd, i));
+	}
+	printf("\n");
+
+	for (size_t i = 0; i < node_get_amount(nd); i++)
+	{
+		node child = node_get_child(nd, i);
+		tree_print_recursive(&child, tabs + 1);
+	}
+}
+
 void tree_print(syntax *const sx)
 {
 	node nd = node_get_root(sx);
-	printf("-=root=-\nnum\t%zi\nargc\t%zi\n", nd.amount, nd.argc);
+	for (size_t i = 0; i < node_get_amount(&nd); i++)
+	{
+		node child = node_get_child(&nd, i);
+		tree_print_recursive(&child, 0);
+	}
 }
 
 
@@ -552,7 +573,7 @@ int node_is_correct(const node *const nd)
 
 int tree_test(syntax *const sx)
 {
-	//tree_print(sx);
+	tree_print(sx);
 	// Тестирование функций
 	size_t i = 0;
 	while (i != SIZE_MAX && (int)i < sx->tc - 1)
