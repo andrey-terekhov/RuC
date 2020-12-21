@@ -378,12 +378,12 @@ node node_get_root(const syntax *const sx)
 {
 	node nd;
 	nd.ref = NULL;
-	nd.type = (uintptr_t)NULL;
+	nd.type = NULL;
 
-	nd.argv = (uintptr_t)NULL;
+	nd.argv = NULL;
 	nd.argc = 0;
 
-	nd.children = (uintptr_t)NULL;
+	nd.children = NULL;
 	nd.num = 0;
 
 	if (sx == NULL)

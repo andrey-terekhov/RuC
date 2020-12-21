@@ -18,7 +18,6 @@
 
 #include "syntax.h"
 #include <stddef.h>
-#include <stdint.h>
 
 
 #ifdef __cplusplus
@@ -32,12 +31,12 @@ typedef int * tree;
 typedef struct node
 {
 	tree *ref;					/**< Reference to tree */
-	uintptr_t type;				/**< Node type */
+	void *type;				/**< Node type */
 
-	uintptr_t argv;				/**< Reference to arguments */
+	void *argv;				/**< Reference to arguments */
 	size_t argc;				/**< Number of arguments */
 
-	uintptr_t children;			/**< Reference to children */
+	void *children;			/**< Reference to children */
 	size_t num;					/**< Amount of children */
 } node;
 
