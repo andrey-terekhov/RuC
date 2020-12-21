@@ -37,7 +37,7 @@ typedef struct node
 	size_t argc;			/**< Number of arguments */
 
 	size_t children;		/**< Reference to children */
-	size_t num;				/**< Amount of children */
+	size_t amount;			/**< Amount of children */
 } node;
 
 
@@ -46,7 +46,7 @@ typedef struct node
  *
  *	@param	sx		Syntax structure
  *
- *	@return	Node
+ *	@return	Root node
  */
 node node_get_root(syntax *const sx);
 
@@ -55,12 +55,20 @@ node node_get_root(syntax *const sx);
  *
  *	@param	nd		Parrent node
  *	@param	index	Child number
- *	@param	child	Node for writing
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Child node
  */
-int node_get_child(const node *const nd, const size_t index, node *const child);
+node node_get_child(node *const nd, const size_t index);
 
+
+/**
+ *	Get amount of children
+ *
+ *	@param	nd		Node structure
+ *
+ *	@return	Amount of children
+ */
+size_t node_get_amount(const node *const nd);
 
 /**
  *	Get type of node
@@ -80,6 +88,16 @@ int node_get_type(const node *const nd);
  *	@return	Argument, @c INT_MAX on failure
  */
 int node_get_arg(const node *const nd, const size_t index);
+
+
+/**
+ *	Check that node is correct
+ *
+ *	@param	nd		Node structure
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+int node_is_correct(const node *const nd);
 
 
 /**

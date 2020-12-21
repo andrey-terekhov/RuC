@@ -393,16 +393,11 @@ size_t skip_operator(tree *const tree, const size_t i)
 	return node_operator(tree, i, NULL);
 }
 
-int node_is_correct(const node *const nd)
-{
-	return nd != NULL && nd->tree != NULL;
-}
-
 
 void tree_print(syntax *const sx)
 {
 	node nd = node_get_root(sx);
-	printf("-=root=-\nnum\t%zi\nargc\t%zi\n", nd.num, nd.argc);
+	printf("-=root=-\nnum\t%zi\nargc\t%zi\n", nd.amount, nd.argc);
 }
 
 
@@ -429,13 +424,13 @@ node node_get_root(syntax *const sx)
 	nd.argv = 0;
 	nd.argc = 0;
 	nd.children = 0;
-	nd.num = 0;
+	nd.amount = 0;
 
 	size_t i = 0;
 	while (i != SIZE_MAX && nd.tree[i] != TEnd)
 	{
 		i = skip_operator(nd.tree, i);
-		nd.num++;
+		nd.amount++;
 	}
 
 	if (i == SIZE_MAX)
@@ -446,11 +441,13 @@ node node_get_root(syntax *const sx)
 	return nd;
 }
 
-int node_get_child(const node *const nd, const size_t index, node *const child)
+node node_get_child(node *const nd, const size_t index)
 {
-	if (!node_is_correct(nd) || index > nd->num || child == NULL)
+	node child;
+	if (!node_is_correct(nd) || index > nd->amount)
 	{
-		return -1;
+		child.tree = NULL;
+		return child;
 	}
 
 	size_t i = nd->children;
@@ -466,12 +463,17 @@ int node_get_child(const node *const nd, const size_t index, node *const child)
 		}
 	}
 
-	/*child->tree = nd->tree;
-	child->type = i;
+	child.tree = nd->tree;
+	/*hild->type = i;
 	return node_init(child);*/
-	return node_operator(nd->tree, i, child) != SIZE_MAX ? 0 : -1;
+	return child;
 }
 
+
+size_t node_get_amount(const node *const nd)
+{
+	return node_is_correct(nd) ? nd->amount : 0;
+}
 
 int node_get_type(const node *const nd)
 {
@@ -481,6 +483,12 @@ int node_get_type(const node *const nd)
 int node_get_arg(const node *const nd, const size_t index)
 {
 	return node_is_correct(nd) && index < nd->argc ? nd->tree[nd->argv + index] : INT_MAX;
+}
+
+
+int node_is_correct(const node *const nd)
+{
+	return nd != NULL && nd->tree != NULL;
 }
 
 
