@@ -391,7 +391,7 @@ int node_get_arg(const node *const nd, const size_t index)
 }
 
 
-void tree_test(const syntax *const sx)
+int tree_test(const syntax *const sx)
 {
 	// Тестирование функций
 	size_t i = 0;
@@ -402,9 +402,9 @@ void tree_test(const syntax *const sx)
 
 	if (sx->tree[i] == TEnd)
 	{
-		return;
+		return 0;
 	}
 
 	error(NULL, tree_no_tend);
-	exit(139);
+	return -1;
 }

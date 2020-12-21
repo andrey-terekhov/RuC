@@ -66,13 +66,6 @@ typedef struct syntax
  */
 syntax sx_create();
 
-/**
- *	Test tree building
- *
- *	@param	sx	Syntax structure
- */
-void tree_test(const syntax *const sx);
-
 
 /**
  *	Add new record to functions table

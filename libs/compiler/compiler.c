@@ -76,7 +76,11 @@ int compile_from_io_to_vm(universal_io *const io)
 
 	if (!ret)
 	{
-		tree_test(&sx);
+		if (tree_test(&sx))
+		{
+			io_erase(io);
+			return 139;
+		}
 
 		ret = encode_to_vm(io, &sx);
 #ifdef GENERATE_TABLES
