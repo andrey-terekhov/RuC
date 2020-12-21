@@ -16,6 +16,7 @@
 
 #include "tree.h"
 #include "errors.h"
+#include "logger.h"
 #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -98,7 +99,7 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 	{
 		if (!is_block)
 		{
-			printf("operator: tree[%zi] = %i\n", i, tree[i]);
+			error(NULL, tree_expression_not_block, i, tree[i]);
 			exit(139);
 		}
 		return i;
@@ -189,7 +190,7 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 		case TExprend:
 			if (is_block)
 			{
-				printf("TExprend: tree[%zi] = %i\n", i - 1, tree[i - 1]);
+				error(NULL, tree_expression_texprend, i - 1, tree[i - 1]);
 				exit(139);
 			}
 			return i - 1;
@@ -210,7 +211,7 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 		return i;
 	}
 
-	printf("skipper: tree[%zi] = %i\n", i - 1, tree[i - 1]);
+	error(NULL, tree_expression_unknown, i - 1, tree[i - 1]);
 	exit(139);
 }
 
@@ -329,7 +330,7 @@ size_t skip_operator(const tree *const tree, size_t i)
 	i--;
 	if (!is_expression(tree[i]) && !is_lexeme(tree[i]))
 	{
-		printf("checker: tree[%zi] = %i\n", i, tree[i]);
+		warning(NULL, tree_operator_unknown, i, tree[i]);
 	}
 
 	return skip_expression(tree, i, 1);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
@@ -404,6 +405,6 @@ void tree_test(const syntax *const sx)
 		return;
 	}
 
-	system_error("No TEnd");
+	error(NULL, tree_no_tend);
 	exit(139);
 }

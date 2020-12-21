@@ -177,12 +177,19 @@ enum ERROR
 
 	not_float_in_stanfunc,
 	not_array_in_stanfunc,
+
+	tree_expression_not_block,
+	tree_expression_texprend,
+	tree_expression_unknown,
+	tree_no_tend,
 };
 
 /** Warnings codes */
 enum WARNING
 {
 	too_long_int = 400,
+
+	tree_operator_unknown,
 };
 
 
