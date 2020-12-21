@@ -213,22 +213,12 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 
 size_t checker(const syntax *const sx, size_t i)
 {
-	if ((int)i >= sx->tc)
+	/*if ((int)i >= sx->tc)
 	{
 		system_error("i >= sx->tc");
 		exit(139);
-	}
+	}*/
 
-	if ((int)i == sx->tc - 1)
-	{
-		if (sx->tree[i++] == TEnd)
-		{
-			return i;
-		}
-
-		system_error("No TEnd");
-		exit(139);
-	}
 
 	switch (sx->tree[i++])
 	{
@@ -262,17 +252,6 @@ size_t checker(const syntax *const sx, size_t i)
 			}
 			return i + 1;
 
-		/*case TPrint:		// Print: 2 потомка (тип значения, выражение)
-			system_warning("TPrint call");
-			exit(139);*/
-
-			/*i += 1;
-			if (sx->tree[i] != TExprend)
-			{
-				system_error("TPrint need TExprend");
-				exit(139);
-			}
-			return i + 1;*/
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
 			return skipper(sx, i + 1, 1);
 		case TPrintf:		// Printf: n + 2 потомков (форматирующая строка, число параметров, n параметров-выражений)
@@ -422,8 +401,16 @@ void tree_test(const syntax *const sx)
 {
 	// Тестирование функций
 	size_t i = 0;
-	while ((int)i < sx->tc)
+	while ((int)i < sx->tc - 1)
 	{
 		i = checker(sx, i);
 	}
+
+	if (sx->tree[i] == TEnd)
+	{
+		return;
+	}
+
+	system_error("No TEnd");
+	exit(139);
 }
