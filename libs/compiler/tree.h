@@ -48,7 +48,7 @@ typedef struct node
  *
  *	@return	Node
  */
-node node_get_root(const syntax *const sx);
+node node_get_root(syntax *const sx);
 
 /**
  *	Get child from node by index
