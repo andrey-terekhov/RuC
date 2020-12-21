@@ -36,20 +36,20 @@ int is_operator(const int value)
 		|| value == TPrintid
 		|| value == TPrintf
 		|| value == TGetid
+		|| value == TGoto
+		|| value == TLabel
 		|| value == TIf
+		|| value == TFor
+		|| value == TDo
+		|| value == TWhile
 		|| value == TSwitch
 		|| value == TCase
 		|| value == TDefault
-		|| value == TWhile
-		|| value == TDo
-		|| value == TFor
-		|| value == TGoto
-		|| value == TLabel
-		|| value == TContinue
-		|| value == TBreak
-		|| value == TReturnvoid
 		|| value == TReturnval
-		
+		|| value == TReturnvoid
+		|| value == TBreak
+		|| value == TContinue
+
 		|| value == NOP				// Lexemes
 		|| value == CREATEDIRECTC;
 }
@@ -284,10 +284,11 @@ node node_operator(tree *const tree, size_t *i)
 			*i = skip_expression(tree, *i + 1, 1);
 			break;
 		case TPrintf:		// Printf: n + 2 потомков (форматирующая строка, число параметров, n параметров-выражений)
-			*i += 1;
-			break;
 		case TGetid:		// GetID: 1 потомок (ссылка на identab)
 							// Scanf: n + 2 потомков (форматирующая строка, число параметров, n параметров-ссылок на identab)
+		
+		case TGoto:			// Goto: 1 потомок (ссылка на identab)
+		case TLabel:		// LabeledStatement: 2 потомка (ссылка на identab, тело оператора)
 			*i += 1;
 			break;
 
@@ -303,23 +304,7 @@ node node_operator(tree *const tree, size_t *i)
 			}
 		}
 		break;
-		case TSwitch:		// Switch: 2 потомка (условие, тело оператора)
-		case TCase:			// Case: 2 потомка (условие, тело оператора)
-			*i = skip_expression(tree, *i, 1);
-			node_operator(tree, i);
-			break;
-		case TDefault:		// Default: 1 потомок (тело оператора)
-			node_operator(tree, i);
-			break;
 
-		case TWhile:		// While: 2 потомка (условие, тело цикла)
-			*i = skip_expression(tree, *i, 1);
-			node_operator(tree, i);
-			break;
-		case TDo:			// Do: 2 потомка (тело цикла, условие)
-			node_operator(tree, i);
-			*i = skip_expression(tree, *i, 1);
-			break;
 		case TFor:			// For: 4 потомка (выражение или объявление, условие окончания, выражение-инкремент, тело цикла); - первые 3 ветки присутствуют не всегда,  здесь также предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
 		{
 			size_t var = tree[(*i)++];
@@ -358,20 +343,27 @@ node node_operator(tree *const tree, size_t *i)
 		}
 		break;
 
-		case TGoto:			// Goto: 1 потомок (ссылка на identab)
-			*i += 1;
+		case TDo:			// Do: 2 потомка (тело цикла, условие)
+			node_operator(tree, i);
+			*i = skip_expression(tree, *i, 1);
 			break;
-		case TLabel:		// LabeledStatement: 2 потомка (ссылка на identab, тело оператора)
-			*i += 1;
+		case TWhile:		// While: 2 потомка (условие, тело цикла)
+
+		case TSwitch:		// Switch: 2 потомка (условие, тело оператора)
+		case TCase:			// Case: 2 потомка (условие, тело оператора)
+			*i = skip_expression(tree, *i, 1);
+			node_operator(tree, i);
+			break;
+		case TDefault:		// Default: 1 потомок (тело оператора)
+			node_operator(tree, i);
 			break;
 
-		case TContinue:		// Continue: нет потомков
-		case TBreak:		// Break: нет потомков
-		case TReturnvoid:	// ReturnVoid: нет потомков
-			break;
 		case TReturnval:	// ReturnValue: 2 потомка (тип значения, выражение)
 			*i = skip_expression(tree, *i + 1, 1);
 			break;
+		case TReturnvoid:	// ReturnVoid: нет потомков
+		case TBreak:		// Break: нет потомков
+		case TContinue:		// Continue: нет потомков
 
 		case NOP:			// NoOperation: 0 потомков
 			break;
