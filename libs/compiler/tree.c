@@ -81,16 +81,16 @@ int is_expression(const int value)
 }
 
 
-size_t skipper(const syntax *const sx, size_t i, int from_checker)
+size_t skip_expression(const syntax *const sx, size_t i, int is_block)
 {
-	if (sx->tree[i] == NOP && !from_checker)
+	if (sx->tree[i] == NOP && !is_block)
 	{
 		return i + 1;
 	}
 
 	if (is_operator(sx->tree[i]))
 	{
-		if (!from_checker)
+		if (!is_block)
 		{
 			printf("operator: tree[%zi] = %i\n", i, sx->tree[i]);
 			exit(139);
@@ -98,11 +98,11 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 		return i;
 	}
 
-	if (from_checker)
+	if (is_block)
 	{
 		while (sx->tree[i] != TExprend)
 		{
-			i = skipper(sx, i, 0);
+			i = skip_expression(sx, i, 0);
 		}
 
 		return i + 1;
@@ -116,7 +116,7 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 			size_t n = sx->tree[i++];
 			for (size_t j = 0; j < n; j++)
 			{
-				i = skipper(sx, i, 1);
+				i = skip_expression(sx, i, 1);
 			}
 			return i;
 		}
@@ -125,7 +125,7 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 			size_t n = sx->tree[i++];
 			for (size_t j = 0; j < n; j++)
 			{
-				i = skipper(sx, i, 1);
+				i = skip_expression(sx, i, 1);
 			}
 			return i;
 		}
@@ -142,19 +142,19 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 		/*case TFunidtoval:	// Not used
 			return i + 1;*/
 		case TIdent:
-			return skipper(sx, i + 1, 1) - 1;	// Может быть общий TExprend
+			return skip_expression(sx, i + 1, 1) - 1;	// Может быть общий TExprend
 
 		case TSliceident:
-			i = skipper(sx, i + 2, 1);			// 2 ветви потомков
-			return skipper(sx, i, 1) - 1;		// Может быть общий TExprend
+			i = skip_expression(sx, i + 2, 1);			// 2 ветви потомков
+			return skip_expression(sx, i, 1) - 1;		// Может быть общий TExprend
 		case TSlice:
-			i = skipper(sx, i + 1, 1);			// 2 ветви потомков
-			return skipper(sx, i, 1) - 1;		// Может быть общий TExprend
+			i = skip_expression(sx, i + 1, 1);			// 2 ветви потомков
+			return skip_expression(sx, i, 1) - 1;		// Может быть общий TExprend
 
 		case TCall1:
 			return i + 1;
 		case TCall2:
-			return skipper(sx, i + 1, 1) - 1;	// Может быть общий TExprend
+			return skip_expression(sx, i + 1, 1) - 1;	// Может быть общий TExprend
 
 		case TConst:
 			return i + 1;
@@ -182,7 +182,7 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 			return i;
 
 		case TExprend:
-			if (from_checker)
+			if (is_block)
 			{
 				printf("TExprend: tree[%zi] = %i\n", i - 1, sx->tree[i - 1]);
 				exit(139);
@@ -212,7 +212,7 @@ size_t skipper(const syntax *const sx, size_t i, int from_checker)
 	exit(139);
 }
 
-size_t checker(const syntax *const sx, size_t i)
+size_t skip_operator(const syntax *const sx, size_t i)
 {
 	/*if ((int)i >= sx->tc)
 	{
@@ -220,41 +220,40 @@ size_t checker(const syntax *const sx, size_t i)
 		exit(139);
 	}*/
 
-
 	switch (sx->tree[i++])
 	{
 		case TFuncdef:		// Funcdef: 2 потомка (ссылка на identab, тело функции)
 			i += 2;
-			return checker(sx, i);
+			return skip_operator(sx, i);
 		case TDeclid:		// IdentDecl: 6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
-			return skipper(sx, i + 7, 1);
+			return skip_expression(sx, i + 7, 1);
 		case TDeclarr:		// ArrayDecl: n + 2 потомков (размерность массива, n выражений-размеров, инициализатор (может не быть))
 		{
 			size_t n = sx->tree[i++];
 			for (size_t j = 0; j < n; j++)
 			{
-				i = skipper(sx, i, 1);
+				i = skip_expression(sx, i, 1);
 			}
 
-			return checker(sx, i);
+			return skip_operator(sx, i);
 		}
 		case TStructbeg:	// StructDecl: n + 2 потомков (размерность структуры, n объявлений полей, инициализатор (может не быть))
 			i += 1;
 			while (sx->tree[i] != TStructend)
 			{
-				i = checker(sx, i);
+				i = skip_operator(sx, i);
 			}
 			return i + 2;
 
 		case TBegin:
 			while (sx->tree[i] != TEnd)
 			{
-				i = checker(sx, i);
+				i = skip_operator(sx, i);
 			}
 			return i + 1;
 
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
-			return skipper(sx, i + 1, 1);
+			return skip_expression(sx, i + 1, 1);
 		case TPrintf:		// Printf: n + 2 потомков (форматирующая строка, число параметров, n параметров-выражений)
 			return i + 1;
 		case TGetid:		// GetID: 1 потомок (ссылка на identab)
@@ -264,47 +263,47 @@ size_t checker(const syntax *const sx, size_t i)
 		case TIf:			// If: 3 потомка (условие, тело-then, тело-else) - ветка else присутствует не всегда, здесь предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
 		{
 			int is_else = sx->tree[i++];
-			i = skipper(sx, i, 1);
-			i = checker(sx, i);
-			return is_else ? checker(sx, is_else) : i;
+			i = skip_expression(sx, i, 1);
+			i = skip_operator(sx, i);
+			return is_else ? skip_operator(sx, is_else) : i;
 		}
 		case TSwitch:		// Switch: 2 потомка (условие, тело оператора)
-			i = skipper(sx, i, 1);
-			return checker(sx, i);
+			i = skip_expression(sx, i, 1);
+			return skip_operator(sx, i);
 		case TCase:			// Case: 2 потомка (условие, тело оператора)
-			i = skipper(sx, i, 1);
-			return checker(sx, i);
+			i = skip_expression(sx, i, 1);
+			return skip_operator(sx, i);
 		case TDefault:		// Default: 1 потомок (тело оператора)
-			return checker(sx, i);
+			return skip_operator(sx, i);
 
 		case TWhile:		// While: 2 потомка (условие, тело цикла)
-			i = skipper(sx, i, 1);
-			return checker(sx, i);
+			i = skip_expression(sx, i, 1);
+			return skip_operator(sx, i);
 		case TDo:			// Do: 2 потомка (тело цикла, условие)
-			i = checker(sx, i);
-			return skipper(sx, i, 1);
+			i = skip_operator(sx, i);
+			return skip_expression(sx, i, 1);
 		case TFor:			// For: 4 потомка (выражение или объявление, условие окончания, выражение-инкремент, тело цикла); - первые 3 ветки присутствуют не всегда,  здесь также предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
 		{
 			size_t var = sx->tree[i++];
 			if (var != 0)
 			{
-				skipper(sx, var, 1);
+				skip_expression(sx, var, 1);
 			}
 
 			size_t cond = sx->tree[i++];
 			if (cond != 0)
 			{
-				skipper(sx, cond, 1);
+				skip_expression(sx, cond, 1);
 			}
 
 			size_t inc = sx->tree[i++];
 			if (inc != 0)
 			{
-				skipper(sx, inc, 1);
+				skip_expression(sx, inc, 1);
 			}
 
 			size_t body = sx->tree[i++];
-			return checker(sx, body);
+			return skip_operator(sx, body);
 		}
 
 		case TLabel:		// LabeledStatement: 2 потомка (ссылка на identab, тело оператора)
@@ -319,7 +318,7 @@ size_t checker(const syntax *const sx, size_t i)
 		case TReturnvoid:	// ReturnVoid: нет потомков
 			return i;
 		case TReturnval:	// ReturnValue: 2 потомка (тип значения, выражение)
-			return skipper(sx, i + 1, 1);
+			return skip_expression(sx, i + 1, 1);
 
 		case NOP:			// NoOperation: 0 потомков
 			return i;
@@ -327,7 +326,7 @@ size_t checker(const syntax *const sx, size_t i)
 		case CREATEDIRECTC:
 			while (sx->tree[i] != EXITC)
 			{
-				i = checker(sx, i);
+				i = skip_operator(sx, i);
 			}
 			return i + 1;
 	}
@@ -340,7 +339,7 @@ size_t checker(const syntax *const sx, size_t i)
 		printf("checker: tree[%zi] = %i\n", i, sx->tree[i]);
 	}
 
-	return skipper(sx, i, 1);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
+	return skip_expression(sx, i, 1);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
 								// ExpressionStatement: 1 потомок (выражение)
 }
 
@@ -404,7 +403,7 @@ void tree_test(const syntax *const sx)
 	size_t i = 0;
 	while ((int)i < sx->tc - 1)
 	{
-		i = checker(sx, i);
+		i = skip_operator(sx, i);
 	}
 
 	if (sx->tree[i] == TEnd)
