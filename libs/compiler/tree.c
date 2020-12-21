@@ -80,6 +80,13 @@ int is_expression(const int value)
 		|| value == TCall2;
 }
 
+int is_lexeme(const int value)
+{
+	return (value >= 9001 && value <= 9595
+		&& value != CREATEDIRECTC)
+		|| value == ABSIC;
+}
+
 
 size_t skip_expression(const tree *const tree, size_t i, int is_block)
 {
@@ -192,7 +199,7 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 
 	i--;
 
-	if ((tree[i] >= 9001 && tree[i] <= 9595) || tree[i] == 9651)
+	if (is_lexeme(tree[i]))
 	{
 		i += 1;
 		while (!is_expression(tree[i]))
@@ -327,8 +334,7 @@ size_t skip_operator(const tree *const tree, size_t i)
 
 	i--;
 
-	if (!is_expression(tree[i])
-		&& !((tree[i] >= 9001 && tree[i] <= 9595) || tree[i] == 9651))
+	if (!is_expression(tree[i]) && !is_lexeme(tree[i]))
 	{
 		printf("checker: tree[%zi] = %i\n", i, tree[i]);
 	}
