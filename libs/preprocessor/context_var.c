@@ -77,37 +77,37 @@ void preprocess_context_init(preprocess_context *context, workspace *const ws, u
 		context->reprtab[i] = 0;
 	}
 
-	for (int i = 0; i < STRIGSIZE; i++)
+	for (int i = 0; i < STRING_SIZE; i++)
 	{
 		context->mstring[i] = 0;
 	}
 
-	for (int i = 0; i < STRIGSIZE; i++)
+	for (int i = 0; i < STRING_SIZE; i++)
 	{
 		context->error_string[i] = 0;
 	}
 
-	for (int i = 0; i < STRIGSIZE*3; i++)
+	for (int i = 0; i < STRING_SIZE*3; i++)
 	{
 		context->fchange[i] = 0;
 	}
 
-	for (int i = 0; i < STRIGSIZE; i++)
+	for (int i = 0; i < STRING_SIZE; i++)
 	{
 		context->localstack[i] = 0;
 	}
 
-	for (int i = 0; i < STRIGSIZE; i++)
+	for (int i = 0; i < STRING_SIZE; i++)
 	{
 		context->cstring[i] = 0;
 	}
 	
-	for (int i = 0; i < STRIGSIZE*2; i++)
+	for (int i = 0; i < STRING_SIZE*2; i++)
 	{
 		context->ifstring[i] = 0;
 	}
 
-	for (int i = 0; i < STRIGSIZE*5; i++)
+	for (int i = 0; i < STRING_SIZE*5; i++)
 	{
 		context->wstring[i] = 0;
 	}

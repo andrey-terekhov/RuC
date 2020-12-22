@@ -20,7 +20,7 @@
 
 #define MAXTAB		100000
 #define LONGSTR		10000
-#define STRIGSIZE	256
+#define STRING_SIZE	256
 #define HASH		256
 #define DIP			10
 #define CONTROLSIZE 250

@@ -80,7 +80,7 @@ int function_scob_collect(int t, int num, preprocess_context *context)
 			{
 				int oldcp1 = context->cp;
 				int oldlsp = context->lsp;
-				int locfchange[STRIGSIZE];
+				int locfchange[STRING_SIZE];
 				int lcp = 0;
 				int ldip;
 

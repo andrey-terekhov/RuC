@@ -1,5 +1,5 @@
 /*
- *	Copyright 2018 Andrey Terekhov, Egor Anikin
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,18 +16,18 @@
 
 #include "error.h"
 #include "logger.h"
-#include <limits.h>
+#include "constants.h"
 #include <stdio.h>
 #include <stddef.h>
 
 
-#define TAG_MACRO "macro"
-#define STRIGSIZE	256
+#define ERROR_STRING_SIZE STRING_SIZE
+#define TAG_MACRO "macro"	
 
 
-void get_message_error(int ernum, char *const msg)
+void get_message_error(const int num, char *const msg)
 {
-	switch (ernum)
+	switch (num)
 	{
 		case after_preproces_words_must_be_space:
 			sprintf(msg, "после команды препроцессора должен идти перенос строки");
@@ -123,27 +123,25 @@ void get_message_error(int ernum, char *const msg)
 			sprintf(msg, "цикл должен заканчиваться #ENDW");
 			break;
 		default:
-			sprintf(msg, "не реализованная ошибка №%d", ernum);
+			sprintf(msg, "не реализованная ошибка №%d", num);
 	}
 }
 
 void macro_error(const int num, const char *const path, const size_t line, const char *const code, size_t position)
 {
-	char tag[STRIGSIZE] = TAG_MACRO;
-
+	char tag[ERROR_STRING_SIZE] = TAG_MACRO;
 	
 	size_t index = sprintf(tag, "%s", path);
 	index += sprintf(&tag[index], ":%zi", line);
 	
-	while (position > 0
-		&& (code[position] == ' ' || code[position] == '\t'
-		|| code[position] == '\r' || code[position] == '\n'))
+	while (position > 0 && (code[position] == ' ' || code[position] == '\t'||
+	 code[position] == '\n'))
 	{
 		position--;
 	}
 	sprintf(&tag[index], ":%zi", position);
 
-	char msg[STRIGSIZE];
+	char msg[ERROR_STRING_SIZE];
 	get_message_error(num, msg);
 
 	log_error(tag, msg, code, position);

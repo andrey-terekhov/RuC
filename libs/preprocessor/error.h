@@ -1,11 +1,11 @@
 /*
- *	Copyright  Andrey Terekhov, Egor Anikin
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
- *	Licensed under the Apache License, Version . (the "License");
+ *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
  *	You may obtain a copy of the License at
  *
- *http://www.apache.org/licenses/LICENSE-.
+ *		http://www.apache.org/licenses/LICENSE-2.0
  *
  *	Unless required by applicable law or agreed to in writing, software
  *	distributed under the License is distributed on an "AS IS" BASIS,
@@ -65,7 +65,7 @@ enum ERROR
  *	Emit an error for some problem
  *
  *	@param	num			Error code
- *	@param	path		Path current file
+ *	@param	path		Current file path
  *	@param	line		Error line number
  *	@param	code		Error line
  *	@param	position	Error position in line

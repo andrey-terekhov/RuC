@@ -360,17 +360,14 @@ int preprocess_h_file(preprocess_context *context)
 	context->h_flag = 1;
 	context->include_type = 1;
 	int rez = con_file_open_hedrs(&context->fs, context);
-	printf("!!!!!!!!!!!!!!000\n");
 	if(rez == 1)
 	{
 		rez = file_read(context);
 		
 		if(rez == 0)
 		{
-			printf("!!!!!!!!!!!!!!0001\n");
 			rez = con_file_open_next(&context->fs, context, H_FILE);
 		}
-		printf("!!!!!!!!!!!!!!0002\n");
 
 		while (rez == 1)
 		{
@@ -419,9 +416,9 @@ int macro_form_io(workspace *const ws, universal_io *const io)
 
 	add_keywods(&context);
 	context.mfirstrp = context.rp;
-	
+
 	open_files(&context);
-	
+
 	int rez = preprocess_h_file(&context);
 	if (rez)
 	{
@@ -438,37 +435,6 @@ int macro_form_io(workspace *const ws, universal_io *const io)
 	
 	return 0;
 }
-
-
-/*
-	printf("cur = %d, %c; next = %d, %c;\n",context->curchar, context->curchar, context->nextchar, context->nextchar);
-
-	for (int k = 0; k < fsp; k++)
-	{
-		printf("str[%d] = %d,%c.\n", k, fstring[k], fstring[k]);
-	}
-
-	printf("!!!!!!!!!!!!!!1\n");
-
-	for (int k = 0; k < context->mp; k++)
-	{
-		printf("context->macrotext[%d] = %d,%c.\n", k, context->macrotext[k], context->macrotext[k]);
-	}
-	for (int k = context->mfirstrp; k < context->mfirstrp + 20; k++)
-	{
-		printf("str[%d] = %d,%c.\n", k, context->reprtab[k], context->reprtab[k]);
-	}
-	for (int k = 0; k < cp; k++)
-	{
-		printf(" fchange[%d] = %d,%c.\n", k, fchange[k], fchange[k]);
-	}
-
-	/Egor/test_eval1.c
-	/Egor/calculator/test1.c
-	/Fadeev/import.c
-	/Egor/Macro/includ/cofig.txt
-*/
-
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______

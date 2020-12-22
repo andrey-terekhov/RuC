@@ -47,25 +47,25 @@ typedef struct preprocess_context
 	int macrotext[MAXTAB];
 	int mp;
 
-	char error_string[STRIGSIZE];
+	char error_string[STRING_SIZE];
 	size_t position;
 
-	int mstring[STRIGSIZE];
+	int mstring[STRING_SIZE];
 	int msp;
 
-	int fchange[STRIGSIZE * 3];
+	int fchange[STRING_SIZE * 3];
 	int cp;
 
-	int localstack[STRIGSIZE];
+	int localstack[STRING_SIZE];
 	int lsp;
 
-	int cstring[STRIGSIZE];
+	int cstring[STRING_SIZE];
 	int csp;
 
-	int ifstring[STRIGSIZE * 2];
+	int ifstring[STRING_SIZE * 2];
 	int ifsp;
 
-	int wstring[STRIGSIZE * 5];
+	int wstring[STRING_SIZE * 5];
 	int wsp;
 
 	int mfirstrp;

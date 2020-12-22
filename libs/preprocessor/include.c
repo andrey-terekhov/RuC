@@ -65,7 +65,7 @@ void gen_way(char *full, const char *path, const char *file, int is_slash)
 
 int open_include_faile(preprocess_context *context, char *temp_way, const char* f_name)
 {
-	char file_way[STRIGSIZE + 1024];
+	char file_way[STRING_SIZE + 1024];
 
 	gen_way(file_way, f_name, temp_way, 1);
 
@@ -155,7 +155,7 @@ int file_read(preprocess_context *context)
 int open_file(preprocess_context *context)
 {
 	int i = 0;
-	char temp_way[STRIGSIZE];
+	char temp_way[STRING_SIZE];
 	int rez = 0;
 
 	while (context->curchar != '\"')
@@ -236,6 +236,11 @@ int include_relis(preprocess_context *context)
 			macro_error(must_start_quote, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 			return -1;
 		}
+		else
+		{
+			return 0;
+		}
+		
 	}
 	m_nextch(context);
 	int rez = open_file(context);
