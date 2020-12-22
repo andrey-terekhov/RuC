@@ -20,7 +20,6 @@
 #include "tree.h"
 #include "uniio.h"
 #include "uniprinter.h"
-#include <limits.h>
 #include <string.h>
 
 

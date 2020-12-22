@@ -17,7 +17,9 @@
 #pragma once
 
 #include "defs.h"
+#include <limits.h>
 #include <stddef.h>
+#include <stdint.h>
 
 
 #ifdef __cplusplus

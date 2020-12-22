@@ -17,7 +17,6 @@
 #include "tree.h"
 #include "errors.h"
 #include "logger.h"
-#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

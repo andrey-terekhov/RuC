@@ -17,6 +17,7 @@
 #pragma once
 
 #include "syntax.h"
+#include <limits.h>
 #include <stddef.h>
 
 

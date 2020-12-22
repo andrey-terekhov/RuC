@@ -18,7 +18,6 @@
 #include "errors.h"
 #include "defs.h"
 #include "scanner.h"
-#include <limits.h>
 #include <string.h>
 
 
