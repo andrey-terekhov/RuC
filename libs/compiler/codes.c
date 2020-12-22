@@ -21,6 +21,523 @@
 #include <string.h>
 
 
+size_t node_type_name(const int elem, const size_t num, char *const buffer)
+{
+	if (buffer == NULL)
+	{
+		return 0;
+	}
+
+	size_t argc = 0;
+	int was_switch = 0;
+
+	switch (elem)
+	{
+		case TFuncdef:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TFuncdef");
+					break;
+				case 1:
+					sprintf(buffer, "funcn");
+					break;
+				case 2:
+					sprintf(buffer, "maxdispl");
+					break;
+			}
+			break;
+		case TDeclarr:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TDeclarr");
+					break;
+				case 1:
+					sprintf(buffer, "N");
+					break;
+			}
+			break;
+		case TDeclid:
+			argc = 7;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TDeclid");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "eltype");
+					break;
+				case 3:
+					sprintf(buffer, "N");
+					break;
+				case 4:
+					sprintf(buffer, "all");
+					break;
+				case 5:
+					sprintf(buffer, "iniproc");
+					break;
+				case 6:
+					sprintf(buffer, "usual");
+					break;
+				case 7:
+					sprintf(buffer, "instuct");
+					break;
+			}
+			break;
+		case TString:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TString");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case TStringd:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TStringd");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case TCondexpr:
+			sprintf(buffer, "TCondexpr");
+			break;
+		case TBegin:
+			sprintf(buffer, "TBegin");
+			break;
+		case TEnd:
+			sprintf(buffer, "TEnd");
+			break;
+		case TBeginit:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TBeginit");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case TStructinit:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TStructinit");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case TIf:
+			argc = 1;
+			sprintf(buffer, "TIf");
+			break;
+		case TWhile:
+			sprintf(buffer, "TWhile");
+			break;
+		case TDo:
+			sprintf(buffer, "TDo");
+			break;
+		case TFor:
+			argc = 4;
+			sprintf(buffer, "TFor");
+			break;
+		case TSwitch:
+			sprintf(buffer, "TSwitch");
+			break;
+		case TCase:
+			sprintf(buffer, "TCase");
+			break;
+		case TDefault:
+			sprintf(buffer, "TDefault");
+			break;
+		case TBreak:
+			sprintf(buffer, "TBreak");
+			break;
+		case TContinue:
+			sprintf(buffer, "TContinue");
+			break;
+		case TReturnvoid:
+			sprintf(buffer, "TReturn");
+			break;
+		case TReturnval:
+			argc = 1;
+			sprintf(buffer, "TReturnval");
+			break;
+		case TGoto:
+			argc = 1;
+			sprintf(buffer, "TGoto");
+			break;
+		case TIdent:
+			argc = 1;
+			sprintf(buffer, "TIdent");
+			break;
+		case TIdenttoval:
+			argc = 1;
+			sprintf(buffer, "TIdenttoval");
+			break;
+		case TIdenttovald:
+			argc = 1;
+			sprintf(buffer, "TIdenttovald");
+			break;
+		case TFunidtoval:
+			argc = 1;
+			sprintf(buffer, "TFunidtoval");
+			break;
+		case TIdenttoaddr:
+			argc = 1;
+			sprintf(buffer, "TIdenttoaddr");
+			break;
+		case TAddrtoval:
+			sprintf(buffer, "TAddrtoval");
+			break;
+		case TAddrtovald:
+			sprintf(buffer, "TAddrtovald");
+			break;
+		case TExprend:
+			sprintf(buffer, "TExprend");
+			break;
+		case TConst:
+			argc = 1;
+			sprintf(buffer, "TConst");
+			break;
+		case TConstd:
+			argc = 2;
+			sprintf(buffer, "TConstd");
+		break;
+		case TSliceident:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TSliceident");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "type");
+					break;
+			}
+			break;
+		case TSlice:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TSlice");
+					break;
+				case 1:
+					sprintf(buffer, "elem_type");
+					break;
+			}
+			break;
+		case TSelect:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TSelect");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+			}
+			break;
+		case NOP:
+			sprintf(buffer, "NOP");
+			break;
+		case ADLOGAND:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "ADLOGAND");
+					break;
+				case 1:
+					sprintf(buffer, "addr");
+					break;
+			}
+			break;
+		case ADLOGOR:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "ADLOGOR");
+					break;
+				case 1:
+					sprintf(buffer, "addr");
+					break;
+			}
+			break;
+		case COPY00:
+			argc = 3;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY00");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "displright");
+					break;
+				case 3:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY01:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY01");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY10:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY10");
+					break;
+				case 1:
+					sprintf(buffer, "displright");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY11:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY11");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY0ST:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY0ST");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY1ST:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY1ST");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY0STASS:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY0STASS");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY1STASS:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY1STASS");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPYST:
+			argc = 3;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPYST");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+				case 3:
+					sprintf(buffer, "length1");
+					break;
+			}
+			break;
+
+		case TCall1:
+			argc = 1;
+			sprintf(buffer, "TCall1");
+			break;
+		case TCall2:
+			argc = 1;
+			sprintf(buffer, "TCall2");
+			break;
+		case TLabel:
+			argc = 1;
+			sprintf(buffer, "TLabel");
+			break;
+		case TStructbeg:
+			argc = 1;
+			sprintf(buffer, "TStructbeg");
+			break;
+		case TStructend:
+			argc = 1;
+			sprintf(buffer, "TStructend");
+			break;
+		case TPrint:
+			argc = 1;
+			sprintf(buffer, "TPrint");
+			break;
+		case TPrintid:
+			argc = 1;
+			sprintf(buffer, "TPrintid");
+			break;
+		case TPrintf:
+			argc = 1;
+			sprintf(buffer, "TPrintf");
+			break;
+		case TGetid:
+			argc = 1;
+			sprintf(buffer, "TGetid");
+			break;
+		case SETMOTORC:
+			sprintf(buffer, "Setmotor");
+			break;
+		case CREATEC:
+			sprintf(buffer, "TCREATE");
+			break;
+		case CREATEDIRECTC:
+			sprintf(buffer, "TCREATEDIRECT");
+			break;
+		case EXITC:
+			sprintf(buffer, "TEXIT");
+			break;
+		case EXITDIRECTC:
+			sprintf(buffer, "TEXITDIRECT");
+			break;
+		case MSGSENDC:
+			sprintf(buffer, "TMSGSEND");
+			break;
+		case MSGRECEIVEC:
+			sprintf(buffer, "TMSGRECEIVE");
+			break;
+		case JOINC:
+			sprintf(buffer, "TJOIN");
+			break;
+		case SLEEPC:
+			sprintf(buffer, "TSLEEP");
+			break;
+		case SEMCREATEC:
+			sprintf(buffer, "TSEMCREATE");
+			break;
+		case SEMWAITC:
+			sprintf(buffer, "TSEMWAIT");
+			break;
+		case SEMPOSTC:
+			sprintf(buffer, "TSEMPOST");
+			break;
+		case INITC:
+			sprintf(buffer, "INITC");
+			break;
+		case DESTROYC:
+			sprintf(buffer, "DESTROYC");
+			break;
+		case GETNUMC:
+			sprintf(buffer, "GETNUMC");
+			break;
+
+		default:
+			sprintf(buffer, "TOper %i", elem);
+	}
+
+	if ((num != 0 && !was_switch) || argc < num)
+	{
+		buffer[0] = '\0';
+	}
+	return argc;
+}
+
+
 /** Вывод таблиц и дерева */
 void tables_and_tree(const syntax *const sx, const char *const path)
 {
@@ -68,284 +585,52 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 	while (i < sx->tc)
 	{
 		uni_printf(&io, "tc %i) ", i);
-		switch (sx->tree[i++])
+		const int type = sx->tree[i++];
+
+		char buffer[32];
+		size_t argc = node_type_name(type, 0, buffer);
+		uni_printf(&io, "%s", buffer);
+
+		if (type == TConstd)
 		{
-			case TFuncdef:
-				uni_printf(&io, "TFuncdef funcn= %i maxdispl= %i\n", sx->tree[i],
-							   sx->tree[i + 1]);
-				i += 2;
-				break;
-			case TDeclarr:
-				uni_printf(&io, "TDeclarr N= %i\n", sx->tree[i++]);
-				break;
-			case TDeclid:
-				uni_printf(&io,
-							   "TDeclid displ= %i eltype= %i N= %i all= %i iniproc= "
-							   "%i, usual= %i instuct= %i\n",
-							   sx->tree[i], sx->tree[i + 1], sx->tree[i + 2], sx->tree[i + 3],
-							   sx->tree[i + 4], sx->tree[i + 5], sx->tree[i + 6]);
-				i += 7;
-				break;
-			case TString:
-			{
-				int n = sx->tree[i++];
-				uni_printf(&io, "TString n= %i\n", n);
-				for (int j = 0; j < n; ++j)
-				{
-					uni_printf(&io, "%i\n", sx->tree[i++]);
-				}
-			}
-			break;
-			case TStringd:
-			{
-				int n = sx->tree[i++];
-				uni_printf(&io, "TStringd n= %i\n", n);
-				for (int j = 0; j < n; ++j)
-				{
-					double d;
-					memcpy(&d, &sx->tree[i], sizeof(double));
-					i += 2;
-					uni_printf(&io, "%f\n", d);
-				}
-			}
-			break;
-			case TCondexpr:
-				uni_printf(&io, "TCondexpr\n");
-				break;
-			case TBegin:
-				uni_printf(&io, "TBegin\n");
-				break;
-			case TEnd:
-				uni_printf(&io, "TEnd\n");
-				break;
-			case TBeginit:
-				uni_printf(&io, "TBeginit n= %i\n", sx->tree[i++]);
-				break;
-			case TStructinit:
-				uni_printf(&io, "TStructinit n= %i\n", sx->tree[i++]);
-				break;
-			case TIf:
-				uni_printf(&io, "TIf %i\n", sx->tree[i++]);
-				break;
-			case TWhile:
-				uni_printf(&io, "TWhile\n");
-				break;
-			case TDo:
-				uni_printf(&io, "TDo\n");
-				break;
-			case TFor:
-				uni_printf(&io, "TFor %i %i %i %i\n", sx->tree[i], sx->tree[i + 1],
-							   sx->tree[i + 2], sx->tree[i + 3]);
-				i += 4;
-				break;
-			case TSwitch:
-				uni_printf(&io, "TSwitch\n");
-				break;
-			case TCase:
-				uni_printf(&io, "TCase\n");
-				break;
-			case TDefault:
-				uni_printf(&io, "TDefault\n");
-				break;
-			case TBreak:
-				uni_printf(&io, "TBreak\n");
-				break;
-			case TContinue:
-				uni_printf(&io, "TContinue\n");
-				break;
-			case TReturnvoid:
-				uni_printf(&io, "TReturn\n");
-				break;
-			case TReturnval:
-				uni_printf(&io, "TReturnval %i\n", sx->tree[i++]);
-				break;
-			case TGoto:
-				uni_printf(&io, "TGoto %i\n", sx->tree[i++]);
-				break;
-			case TIdent:
-				uni_printf(&io, "TIdent %i\n", sx->tree[i++]);
-				break;
-			case TIdenttoval:
-				uni_printf(&io, "TIdenttoval %i\n", sx->tree[i++]);
-				break;
-			case TIdenttovald:
-				uni_printf(&io, "TIdenttovald %i\n", sx->tree[i++]);
-				break;
-			case TFunidtoval:
-				uni_printf(&io, "TFunidtoval %i\n", sx->tree[i++]);
-				break;
-			case TIdenttoaddr:
-				uni_printf(&io, "TIdenttoaddr %i\n", sx->tree[i++]);
-				break;
-			case TAddrtoval:
-				uni_printf(&io, "TAddrtoval\n");
-				break;
-			case TAddrtovald:
-				uni_printf(&io, "TAddrtovald\n");
-				break;
-			case TExprend:
-				uni_printf(&io, "TExprend\n");
-				break;
-			case TConst:
-				uni_printf(&io, "TConst %i\n", sx->tree[i++]);
-				break;
-			case TConstd:
-			{
-				double numdouble;
-				memcpy(&numdouble, &sx->tree[i], sizeof(double));
-				i += 2;
-				uni_printf(&io, "TConstd %f\n", numdouble);
-			}
-			break;
-			case TSliceident:
-				uni_printf(&io, "TSliceident displ= %i type= %i\n", sx->tree[i],
-							   sx->tree[i + 1]);
-				i += 2;
-				break;
-			case TSlice:
-				uni_printf(&io, "TSlice elem_type= %i\n", sx->tree[i++]);
-				break;
-			case TSelect:
-				uni_printf(&io, "TSelect displ= %i\n", sx->tree[i++]);
-				break;
-			case NOP:
-				uni_printf(&io, "NOP\n");
-				break;
-			case ADLOGAND:
-				uni_printf(&io, "ADLOGAND addr= %i\n", sx->tree[i++]);
-				break;
-			case ADLOGOR:
-				uni_printf(&io, "ADLOGOR addr= %i\n", sx->tree[i++]);
-				break;
-			case COPY00:
-				uni_printf(&io, "COPY00 %i ",
-							   sx->tree[i++]); // displleft
-				uni_printf(&io, "%i ",
-							   sx->tree[i++]); // displright
-				uni_printf(&io, "(%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY01:
-				uni_printf(&io, "COPY01 %i ",
-							   sx->tree[i++]); // displleft
-				uni_printf(&io, "(%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY10:
-				uni_printf(&io, "COPY10 %i ",
-							   sx->tree[i++]); // displright
-				uni_printf(&io, "(%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY11:
-				uni_printf(&io, "COPY11 %i\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY0ST:
-				uni_printf(&io, "COPY0ST %i ",
-							   sx->tree[i++]); // displleft
-				uni_printf(&io, "(%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY1ST:
-				uni_printf(&io, "COPY1ST (%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY0STASS:
-				uni_printf(&io, "COPY0STASS %i ",
-							   sx->tree[i++]); // displleft
-				uni_printf(&io, "(%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY1STASS:
-				uni_printf(&io, "COPY1STASS (%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPYST:
-				uni_printf(&io, "COPYST %i ",
-							   sx->tree[i++]); // displ
-				uni_printf(&io, "(%i)",
-							   sx->tree[i++]); // length
-				uni_printf(&io, "(%i)\n",
-							   sx->tree[i++]); // length1
-				break;
+			double numdouble;
+			memcpy(&numdouble, &sx->tree[i], sizeof(double));
+			i += 2;
+			uni_printf(&io, " %f\n", numdouble);
+			continue;
+		}
 
-			case TCall1:
-				uni_printf(&io, "TCall1 %i\n", sx->tree[i++]);
-				break;
-			case TCall2:
-				uni_printf(&io, "TCall2 %i\n", sx->tree[i++]);
-				break;
-			case TLabel:
-				uni_printf(&io, "TLabel %i\n", sx->tree[i++]);
-				break;
-			case TStructbeg:
-				uni_printf(&io, "TStructbeg %i\n", sx->tree[i++]);
-				break;
-			case TStructend:
-				uni_printf(&io, "TStructend %i\n", sx->tree[i++]);
-				break;
-			case TPrint:
-				uni_printf(&io, "TPrint %i\n", sx->tree[i++]);
-				break;
-			case TPrintid:
-				uni_printf(&io, "TPrintid %i\n", sx->tree[i++]);
-				break;
-			case TPrintf:
-				uni_printf(&io, "TPrintf %i\n", sx->tree[i++]);
-				break;
-			case TGetid:
-				uni_printf(&io, "TGetid %i\n", sx->tree[i++]);
-				break;
-			case SETMOTORC:
-				uni_printf(&io, "Setmotor\n");
-				break;
-			case CREATEC:
-				uni_printf(&io, "TCREATE\n");
-				break;
-			case CREATEDIRECTC:
-				uni_printf(&io, "TCREATEDIRECT\n");
-				break;
-			case EXITC:
-				uni_printf(&io, "TEXIT\n");
-				break;
-			case EXITDIRECTC:
-				uni_printf(&io, "TEXITDIRECT\n");
-				break;
-			case MSGSENDC:
-				uni_printf(&io, "TMSGSEND\n");
-				break;
-			case MSGRECEIVEC:
-				uni_printf(&io, "TMSGRECEIVE\n");
-				break;
-			case JOINC:
-				uni_printf(&io, "TJOIN\n");
-				break;
-			case SLEEPC:
-				uni_printf(&io, "TSLEEP\n");
-				break;
-			case SEMCREATEC:
-				uni_printf(&io, "TSEMCREATE\n");
-				break;
-			case SEMWAITC:
-				uni_printf(&io, "TSEMWAIT\n");
-				break;
-			case SEMPOSTC:
-				uni_printf(&io, "TSEMPOST\n");
-				break;
-			case INITC:
-				uni_printf(&io, "INITC\n");
-				break;
-			case DESTROYC:
-				uni_printf(&io, "DESTROYC\n");
-				break;
-			case GETNUMC:
-				uni_printf(&io, "GETNUMC\n");
-				break;
+		for (size_t j = 1; j <= argc; j++)
+		{
+			node_type_name(type, j, buffer);
 
+			if (buffer[0] != '\0')
+			{
+				uni_printf(&io, " %s=", buffer);
+			}
 
-			default:
-				uni_printf(&io, "TOper %i\n", sx->tree[i - 1]);
+			uni_printf(&io, " %i", sx->tree[i++]);
+		}
+		uni_printf(&io, "\n");
+
+		if (type == TString)
+		{
+			const size_t n = sx->tree[i - 1];
+			for (size_t j = 0; j < n; j++)
+			{
+				uni_printf(&io, "%i\n", sx->tree[i++]);
+			}
+		}
+		else if (type == TStringd)
+		{
+			const size_t n = sx->tree[i - 1] * 2;
+			for (size_t j = 0; j < n; j++)
+			{
+				double d;
+				memcpy(&d, &sx->tree[i], sizeof(double));
+				i += 2;
+				uni_printf(&io, "%f\n", d);
+			}
 		}
 	}
 
