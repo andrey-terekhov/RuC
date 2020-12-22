@@ -27,10 +27,9 @@ extern "C" {
 enum ERROR
 {
 	after_ident_must_be_space = 365,
-	ident_begins_with_s,//
 	must_be_endif,
 	dont_elif,
-	preproces_words_not_exist,//
+	preproces_words_not_exist,
 	not_enough_param,
 	functionid_begins_with_letters,
 	after_functionid_must_be_comma,

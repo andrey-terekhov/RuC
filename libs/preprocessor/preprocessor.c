@@ -201,8 +201,9 @@ int preprocess_words(preprocess_context *context)
 		}
 		default:
 		{
-			// m_nextch(context);
-			output_keywods(context);
+			//output_keywods(context);
+			size_t position = skip_str(context); 
+			macro_error(preproces_words_not_exist, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
 			return 0;
 		}
 	}

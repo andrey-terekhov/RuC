@@ -45,7 +45,7 @@ void get_message_error(const int num, char *const msg)
 			sprintf(msg, "в этом типе условного оператора не может использоваться '#ELIF' ");
 			break;
 		case preproces_words_not_exist:
-			sprintf(msg, "в препроцессоре не существует написанной команды");
+			sprintf(msg, "в препроцессоре не существует такой команды");
 			break;
 		case not_enough_param:
 			sprintf(msg, "у этого идентификатора меньше параметров");
