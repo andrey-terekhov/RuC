@@ -1353,7 +1353,7 @@ void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
 	size_t i = 0;
 	while (i < argc && node_get_arg(nd, i) != INT_MAX)
 	{
-		elem_get_name(node_get_type(nd), i, buffer);
+		elem_get_name(node_get_type(nd), i + 1, buffer);
 		
 		if (buffer[0] != '\0')
 		{
