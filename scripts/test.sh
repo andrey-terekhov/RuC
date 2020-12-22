@@ -195,6 +195,8 @@ execution()
 				fi
 				;;
 		esac
+	else
+		let success++
 	fi
 }
 
