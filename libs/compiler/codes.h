@@ -24,6 +24,15 @@ extern "C" {
 #endif
 
 /**
+ *	Output new tree
+ *
+ *	@param	sx		Syntax structure
+ *	@param	path	File path
+ */
+void tree_print(syntax *const sx, const char *const path);
+
+
+/**
  *	Output tables and tree
  *
  *	@param	sx		Syntax structure

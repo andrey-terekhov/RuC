@@ -607,6 +607,13 @@ void get_warning(const int num, char *const msg, va_list args)
 			sprintf(msg, "неизвестный оператор, tree[%zi] = %i", i, elem);
 		}
 		break;
+		case node_argc:
+		{
+			const size_t i = va_arg(args, size_t);
+			const char *elem = va_arg(args, char *);
+			sprintf(msg, "несоответствие количества аргументов, tree[%zi] = %s", i, elem);
+		}
+		break;
 
 		default:
 			break;

@@ -16,12 +16,19 @@
 
 #include "codes.h"
 #include "defs.h"
+#include "errors.h"
+#include "tree.h"
 #include "uniio.h"
 #include "uniprinter.h"
+#include <limits.h>
 #include <string.h>
 
 
-size_t elem_type_name(const int elem, const size_t num, char *const buffer)
+#define MAX_ELEM_SIZE	32
+#define INDENT			"  "
+
+
+size_t elem_get_name(const int elem, const size_t num, char *const buffer)
 {
 	if (buffer == NULL)
 	{
@@ -1282,8 +1289,8 @@ size_t elem_to_io(universal_io *const io, const int *const table, size_t i)
 {
 	const int type = table[i++];
 
-	char buffer[32];
-	size_t argc = elem_type_name(type, 0, buffer);
+	char buffer[MAX_ELEM_SIZE];
+	size_t argc = elem_get_name(type, 0, buffer);
 	uni_printf(io, "%s", buffer);
 
 	if (type == TConstd || type == LID)
@@ -1297,7 +1304,7 @@ size_t elem_to_io(universal_io *const io, const int *const table, size_t i)
 
 	for (size_t j = 1; j <= argc; j++)
 	{
-		elem_type_name(type, j, buffer);
+		elem_get_name(type, j, buffer);
 
 		if (buffer[0] != '\0')
 		{
@@ -1332,6 +1339,46 @@ size_t elem_to_io(universal_io *const io, const int *const table, size_t i)
 }
 
 
+void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
+{
+	for (size_t i = 0; i < tabs; i++)
+	{
+		uni_printf(io, INDENT);
+	}
+	uni_printf(io, "tc %zi) ", nd->type);
+
+	char buffer[MAX_ELEM_SIZE];
+	size_t argc = elem_get_name(node_get_type(nd), 0, buffer);
+	uni_printf(io, "%s", buffer);
+
+	size_t i = 0;
+	while (i < argc && node_get_arg(nd, i) != INT_MAX)
+	{
+		elem_get_name(node_get_type(nd), i, buffer);
+		
+		if (buffer[0] != '\0')
+		{
+			uni_printf(io, " %s=", buffer);
+		}
+
+		uni_printf(io, " %i", node_get_arg(nd, i++));
+	}
+	uni_printf(io, "\n");
+
+	if (i != argc)
+	{
+		elem_get_name(node_get_type(nd), 0, buffer);
+		warning(NULL, node_argc, nd->type, buffer);
+	}
+
+	for (size_t j = 0; j < node_get_amount(nd); j++)
+	{
+		node child = node_get_child(nd, j);
+		tree_print_recursive(io, &child, tabs + 1);
+	}
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -1339,6 +1386,25 @@ size_t elem_to_io(universal_io *const io, const int *const table, size_t i)
  *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
  *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
  */
+
+
+void tree_print(syntax *const sx, const char *const path)
+{
+	universal_io io = io_create();
+	if (sx == NULL || out_set_file(&io, path))
+	{
+		return;
+	}
+
+	node nd = node_get_root(sx);
+	for (size_t i = 0; i < node_get_amount(&nd); i++)
+	{
+		node child = node_get_child(&nd, i);
+		tree_print_recursive(&io, &child, 0);
+	}
+
+	io_erase(&io);
+}
 
 
 /** Вывод таблиц и дерева */

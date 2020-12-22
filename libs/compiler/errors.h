@@ -190,6 +190,7 @@ enum WARNING
 	too_long_int = 400,
 
 	tree_operator_unknown,
+	node_argc,
 };
 
 

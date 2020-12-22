@@ -451,38 +451,6 @@ size_t skip_operator(tree *const tree, size_t i)
 }
 
 
-void tree_print_recursive(node *const nd, size_t tabs)
-{
-	for (size_t i = 0; i < tabs; i++)
-	{
-		printf("\t");
-	}
-	printf("tc %zi) %i", nd->type, node_get_type(nd));
-
-	for (size_t i = 0; i < nd->argc; i++)
-	{
-		printf(" %i", node_get_arg(nd, i));
-	}
-	printf("\n");
-
-	for (size_t i = 0; i < node_get_amount(nd); i++)
-	{
-		node child = node_get_child(nd, i);
-		tree_print_recursive(&child, tabs + 1);
-	}
-}
-
-void tree_print(syntax *const sx)
-{
-	node nd = node_get_root(sx);
-	for (size_t i = 0; i < node_get_amount(&nd); i++)
-	{
-		node child = node_get_child(&nd, i);
-		tree_print_recursive(&child, 0);
-	}
-}
-
-
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -573,7 +541,6 @@ int node_is_correct(const node *const nd)
 
 int tree_test(syntax *const sx)
 {
-	tree_print(sx);
 	// Тестирование функций
 	size_t i = 0;
 	while (i != SIZE_MAX && (int)i < sx->tc - 1)
