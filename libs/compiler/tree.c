@@ -88,7 +88,7 @@ int is_lexeme(const int value)
 
 
 size_t skip_expression(const tree *const tree, size_t i, int is_block)
-{
+{printf("skip_expression\n");
 	if (i == SIZE_MAX)
 	{
 		return SIZE_MAX;
@@ -101,17 +101,17 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 
 	if (is_operator(tree[i]))
 	{
-		if (!is_block)
-		{
+		//if (!is_block)
+		//{
 			error(NULL, tree_expression_not_block, i, tree[i]);
 			return SIZE_MAX;
-		}
-		return i;
+		//}
+		//return i;
 	}
 
 	if (is_block)
 	{
-		while (tree[i] != TExprend)
+		while (i != SIZE_MAX && tree[i] != TExprend)
 		{
 			i = skip_expression(tree, i, 0);
 		}
@@ -223,7 +223,227 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 	return SIZE_MAX;
 }
 
-node node_operator(tree *const tree, size_t *i)
+size_t node_operator(node *const nd, tree *const tree, size_t i)
+{//printf("node\n");
+	if (i == SIZE_MAX)
+	{
+		nd->tree = NULL;
+		return i;
+	}
+	
+	nd->tree = tree;
+	nd->type = i;
+	nd->argv = nd->type + 1;
+
+	nd->argc = 0;
+	nd->amount = 0;
+	i += 1;
+
+	switch (nd->tree[nd->type])
+	{
+		case TFuncdef:		// Funcdef: 2 потомка (ссылка на identab, тело функции)
+			printf("TFuncdef\n");
+			nd->argc = 2;
+			nd->amount = 1;
+
+			i += nd->argc;
+			i = node_operator(nd, tree, i);printf("after TFuncdef i = %i\n",i);
+			break;
+		case TDeclid:		// IdentDecl: 6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
+			nd->argc = 7;
+			nd->amount = 1;
+//printf("TDeclid\n");
+			i += nd->argc;
+			i = skip_expression(tree, i, 1);
+			break;
+		case TDeclarr:		// ArrayDecl: n + 2 потомков (размерность массива, n выражений-размеров, инициализатор (может не быть))
+		{
+			nd->argc = 1;
+			nd->amount = node_get_arg(nd, 0) + 1;
+
+			i += nd->argc;
+			for (size_t j = 0; j < nd->amount; j++)
+			{
+				i = skip_expression(tree, i, 1);
+			}
+
+			i = node_operator(nd, tree, i);
+		}
+		break;
+		case TStructbeg:	// StructDecl: n + 2 потомков (размерность структуры, n объявлений полей, инициализатор (может не быть))
+			nd->argc = 1;
+			
+			i += nd->argc;
+			while (i != SIZE_MAX && tree[i] != TStructend)
+			{
+				i = node_operator(nd, tree, i);
+				nd->amount++;
+			}
+
+			if (i != SIZE_MAX)
+			{
+				i += 2;
+			}
+			break;
+
+		case TBegin:
+
+			while (i != SIZE_MAX && tree[i] != TEnd)
+			{//printf("TBegin\n");
+				i = node_operator(nd, tree, i);//printf("after node i = %i\n",i);
+				nd->amount++;
+			}
+			//printf("TEnd or SIZE_MAX in TBegin\n");
+			if (i != SIZE_MAX)
+			{//printf("TEnd in TBegin\n");
+				i += 1;
+			}//printf("SIZE_MAX in TBegin\ti = %i\n",i);
+			break;
+
+		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
+			nd->argc = 1;
+			nd->amount = 1;
+
+			i += nd->argc;
+			i = skip_expression(tree, i, 1);
+			break;
+		case TPrintf:		// Printf: n + 2 потомков (форматирующая строка, число параметров, n параметров-выражений)
+		case TGetid:		// GetID: 1 потомок (ссылка на identab)
+							// Scanf: n + 2 потомков (форматирующая строка, число параметров, n параметров-ссылок на identab)
+		
+		case TGoto:			// Goto: 1 потомок (ссылка на identab)
+			nd->argc = 1;
+
+			i += nd->argc;
+			break;
+		case TLabel:		// LabeledStatement: 2 потомка (ссылка на identab, тело оператора)
+			nd->argc = 1;
+			nd->amount = 1;
+
+			i += nd->argc;
+			i = node_operator(nd, tree, i);
+			break;
+
+		case TIf:			// If: 3 потомка (условие, тело-then, тело-else) - ветка else присутствует не всегда, здесь предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
+		{
+			nd->argc = 1;
+			nd->amount = node_get_arg(nd, 0) != 0 ? 3 : 2;
+
+			i += nd->argc;
+			i = skip_expression(tree, i, 1);
+			i = node_operator(nd, tree, i);
+			if (node_get_arg(nd, 0) && i != SIZE_MAX)
+			{
+				i = node_get_arg(nd, 0);
+				i = node_operator(nd, tree, i);
+			}
+		}
+		break;
+
+		case TFor:			// For: 4 потомка (выражение или объявление, условие окончания, выражение-инкремент, тело цикла); - первые 3 ветки присутствуют не всегда,  здесь также предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
+		{
+			nd->argc = 4;
+			nd->amount = 1;
+
+			size_t var = node_get_arg(nd, 0);
+			if (var != 0)
+			{
+				if (skip_expression(tree, var, 1) == SIZE_MAX)
+				{
+					nd->tree = NULL;
+					return var;
+				}
+			}
+
+			size_t cond = node_get_arg(nd, 1);
+			if (cond != 0)
+			{
+				if (skip_expression(tree, cond, 1) == SIZE_MAX)
+				{
+					nd->tree = NULL;
+					return cond;
+				}
+			}
+
+			size_t inc = node_get_arg(nd, 2);
+			if (inc != 0)
+			{
+				if (skip_expression(tree, inc, 1) == SIZE_MAX)
+				{
+					nd->tree = NULL;
+					return inc;
+				}
+			}
+
+			i = node_get_arg(nd, 3);
+			i = node_operator(nd, tree, i);
+		}
+		break;
+		case TDo:			// Do: 2 потомка (тело цикла, условие)
+			nd->amount = 2;
+
+			i = node_operator(nd, tree, i);
+			i = skip_expression(tree, i, 1);
+			break;
+		case TWhile:		// While: 2 потомка (условие, тело цикла)
+
+		case TSwitch:		// Switch: 2 потомка (условие, тело оператора)
+		case TCase:			// Case: 2 потомка (условие, тело оператора)
+			nd->amount = 2;
+
+			i = skip_expression(tree, i, 1);
+			i = node_operator(nd, tree, i);
+			break;
+		case TDefault:		// Default: 1 потомок (тело оператора)
+			nd->amount = 1;
+
+			i = node_operator(nd, tree, i);
+			break;
+
+		case TReturnval:	// ReturnValue: 2 потомка (тип значения, выражение)
+			nd->argc = 1;
+			nd->amount = 1;
+
+			i += nd->argc;
+			i = skip_expression(tree, i, 1);
+			break;
+		case TReturnvoid:	// ReturnVoid: нет потомков
+		case TBreak:		// Break: нет потомков
+		case TContinue:		// Continue: нет потомков
+
+		case NOP:			// NoOperation: 0 потомков
+			break;
+		case CREATEDIRECTC:
+
+			while (i != SIZE_MAX && tree[i] != EXITC)
+			{
+				i = node_operator(nd, tree, i);
+				nd->amount++;
+			}
+			
+			if (i != SIZE_MAX)
+			{
+				i += 1;
+			}
+			break;
+
+		default:
+			(i)--;printf("default\n");
+			if (!is_expression(tree[i]) && !is_lexeme(tree[i]))
+			{printf("in if\t%i\n",tree[i]);
+				warning(NULL, tree_operator_unknown, i, tree[i]);
+			}
+printf("i=%i\n",i);
+			i = skip_expression(tree, i, 1);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
+												// ExpressionStatement: 1 потомок (выражение)
+			nd->type = i - 1;printf("after default\t%i\n", i);
+	}
+
+	nd->children = nd->type + nd->argc + 1;//printf("node return\t%i\n",i);
+	return i;
+}
+
+/*node node_operator(tree *const tree, size_t *i)
 {
 	node nd;
 	if (*i == SIZE_MAX)
@@ -441,11 +661,13 @@ node node_operator(tree *const tree, size_t *i)
 
 	nd.children = nd.type + nd.argc + 1;
 	return nd;
-}
+}*/
 
 size_t skip_operator(tree *const tree, size_t i)
-{
-	node nd = node_operator(tree, &i);
+{//printf("skip_operator\n");
+	node nd;
+	i = node_operator(&nd, tree, i);
+	//printf("skip_operator return\ti = %i\t%i\n\n", i, SIZE_MAX);
 	return node_is_correct(&nd) ? i : SIZE_MAX;
 }
 
@@ -512,7 +734,18 @@ node node_get_child(node *const nd, const size_t index)
 		}
 	}
 
-	return node_operator(nd->tree, &i);
+	node nd_ret;
+	nd_ret.tree = nd->tree;
+	nd_ret.type = i;
+	nd_ret.argv = nd_ret.type + 1;
+
+	nd_ret.argc = 0;
+	nd_ret.amount = 0;
+
+	node_operator(&nd_ret, nd->tree, i);
+	return nd_ret;
+
+	//return node_operator(nd->tree, &i);
 }
 
 
@@ -539,11 +772,11 @@ int node_is_correct(const node *const nd)
 
 
 int tree_test(syntax *const sx)
-{
+{//printf("tree_test\n");
 	// Тестирование функций
 	size_t i = 0;
 	while (i != SIZE_MAX && (int)i < sx->tc - 1)
-	{
+	{//printf("while in tree_test\t%i\n",i);
 		i = skip_operator(sx->tree, i);
 	}
 
