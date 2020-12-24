@@ -285,7 +285,7 @@ node node_operator(tree *const tree, const size_t index)
 	nd.argc = 0;
 	nd.amount = 0;
 
-	switch (nd.tree[nd.type])
+	switch (tree[index])
 	{
 		case TFuncdef:		// Funcdef: 2 потомка (ссылка на identab, тело функции)
 			nd.argc = 2;
