@@ -251,14 +251,7 @@ node node_operator(tree *const tree, size_t *i)
 			break;
 		case TDeclid:		// IdentDecl: 6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
 			nd.argc = 7;
-			if (nd.argv[&nd.argc - 3])	// nd.argv[4] == 1 означает наличие TExprend
-			{
-				nd.amount = 1;
-			}
-			else
-			{
-				nd.amount = 0;
-			}
+			nd.amount = nd.tree[nd.type + 4];	// all означает наличие TExprend	
 
 			*i += nd.argc;
 			*i = skip_expression(tree, *i, 1);
