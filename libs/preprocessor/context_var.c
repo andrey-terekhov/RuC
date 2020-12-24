@@ -139,9 +139,7 @@ void con_files_add_include(files* fs, char *name, int c_flag)
 
 int con_file_open_cur(files* fs, preprocess_context *context)
 {
-	int rez = in_set_file(context->io_input, ws_get_file(fs->ws, fs->cur));
-
-	if (rez)
+	if (in_set_file(context->io_input, ws_get_file(fs->ws, fs->cur)))
 	{
 		log_system_error(ws_get_file(fs->ws, fs->cur), "файл не найден");
 		return -1;

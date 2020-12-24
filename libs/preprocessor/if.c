@@ -83,7 +83,7 @@ int if_end(preprocess_context *context)
 				if (checkif < 0)
 				{
 					size_t position = skip_str(context); 
-					macro_error(before_endif, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+					macro_error(before_endif, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 					return -1;
 				}
 				return 0;
@@ -105,7 +105,7 @@ int if_end(preprocess_context *context)
 	}
 
 	size_t position = skip_str(context); 
-	macro_error(must_be_endif, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+	macro_error(must_be_endif, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 	return -1;
 }
 
@@ -140,7 +140,7 @@ int if_false(preprocess_context *context)
 	}
 
 	size_t position = skip_str(context); 
-	macro_error(must_be_endif, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+	macro_error(must_be_endif, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 	return 0;
 }
 
@@ -166,7 +166,7 @@ int if_true(int type_if, preprocess_context *context)
 			if (checkif < 0)
 			{
 				size_t position = skip_str(context); 
-				macro_error(before_endif, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				macro_error(before_endif, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 				return -1;
 			}
 
@@ -177,7 +177,7 @@ int if_true(int type_if, preprocess_context *context)
 	if (type_if != SH_IF && context->cur == SH_ELIF)
 	{
 		size_t position = skip_str(context); 
-		macro_error(dont_elif, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		macro_error(dont_elif, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 		checkif--;
 		return -1;
 	}
@@ -202,13 +202,13 @@ int if_relis(preprocess_context *context)
 	}
 	else
 	{
-		int rez = if_false(context);
-		if(!rez)
+		int res = if_false(context);
+		if(!res)
 		{
 			checkif--;
 			return -1;
 		}
-		context->cur = rez;
+		context->cur = res;
 	}
 
 	
@@ -227,13 +227,13 @@ int if_relis(preprocess_context *context)
 		}
 		else
 		{
-			int rez = if_false(context);
-			if(!rez)
+			int res = if_false(context);
+			if(!res)
 			{
 				checkif--;
 				return -1;
 			}
-			context->cur = rez;
+			context->cur = res;
 		}
 	}
 	
@@ -250,7 +250,7 @@ int if_relis(preprocess_context *context)
 		if (checkif < 0)
 		{
 			size_t position = skip_str(context); 
-			macro_error(before_endif, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			macro_error(before_endif, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 			return -1;
 		}
 	}

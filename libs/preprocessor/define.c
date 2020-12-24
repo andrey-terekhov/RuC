@@ -166,7 +166,7 @@ int function_scob_collect(int t, int num, preprocess_context *context)
 		}
 	}
 	size_t position = skip_str(context); 
-	macro_error(scob_not_clous, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+	macro_error(scob_not_clous, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 	return -1;
 }
 
@@ -180,7 +180,7 @@ int function_stack_create(int n, preprocess_context *context)
 	if (context->curchar == ')')
 	{
 		size_t position = skip_str(context); 
-		macro_error(stalpe, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		macro_error(stalpe, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 		return -1;
 	}
 
@@ -200,7 +200,7 @@ int function_stack_create(int n, preprocess_context *context)
 			if (num > n)
 			{
 				size_t position = skip_str(context); 
-				macro_error(not_enough_param, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				macro_error(not_enough_param, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 				return -1;
 			}
 			m_nextch(context);
@@ -215,7 +215,7 @@ int function_stack_create(int n, preprocess_context *context)
 			if (num != n)
 			{
 				size_t position = skip_str(context); 
-				macro_error(not_enough_param2, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				macro_error(not_enough_param2, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 				return -1;
 			}
 			m_nextch(context);
@@ -226,7 +226,7 @@ int function_stack_create(int n, preprocess_context *context)
 	}
 
 	size_t position = skip_str(context); 
-	macro_error(scob_not_clous, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+	macro_error(scob_not_clous, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 	return -1;
 }
 
@@ -282,7 +282,7 @@ int to_functionident(preprocess_context *context)
 		else
 		{
 			size_t position = skip_str(context); 
-			macro_error(functionid_begins_with_letters, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			macro_error(functionid_begins_with_letters, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 			return -1;
 		}
 
@@ -296,7 +296,7 @@ int to_functionident(preprocess_context *context)
 		else if (context->curchar != ')')
 		{
 			size_t position = skip_str(context); 
-			macro_error(after_functionid_must_be_comma, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			macro_error(after_functionid_must_be_comma, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 			return -1;
 		}
 	}
@@ -325,12 +325,12 @@ int function_add_to_macrotext(preprocess_context *context)
 	}
 	else
 	{	
-		int rez = to_functionident(context);
-		if(rez == -1)
+		int res = to_functionident(context);
+		if(res == -1)
 		{
 			return -1;
 		}
-		context->macrotext[context->mp++] = rez;
+		context->macrotext[context->mp++] = res;
 	}
 	space_skip(context);
 
@@ -382,7 +382,7 @@ int function_add_to_macrotext(preprocess_context *context)
 		if (context->curchar == EOF)
 		{
 			size_t position = skip_str(context); 
-			macro_error(not_end_fail_define, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			macro_error(not_end_fail_define, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 			return -1;
 		}
 
@@ -430,7 +430,7 @@ int define_get_from_macrotext(int r, preprocess_context *context)
 	else
 	{
 		size_t position = skip_str(context); 
-		macro_error(ident_not_exist, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		macro_error(ident_not_exist, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 		return -1;
 	}
 
@@ -467,7 +467,7 @@ int define_add_to_reprtab(preprocess_context *context)
 			else
 			{
 				size_t position = skip_str(context); 
-				macro_error(repeat_ident, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				macro_error(repeat_ident, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 				return -1;
 			}
 		}
@@ -493,7 +493,7 @@ int define_add_to_macrotext(int r, preprocess_context *context)
 			if (context->curchar == EOF)
 			{
 				size_t position = skip_str(context); 
-				macro_error(not_end_fail_define, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				macro_error(not_end_fail_define, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 				return -1;
 			}
 			else if (context->curchar == '#')
@@ -504,7 +504,7 @@ int define_add_to_macrotext(int r, preprocess_context *context)
 					if (context->curchar != '(')
 					{
 						size_t position = skip_str(context); 
-						macro_error(after_eval_must_be_ckob, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+						macro_error(after_eval_must_be_ckob, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 						return -1;
 					}
 
@@ -588,7 +588,7 @@ int define_relis(preprocess_context *context)
 	if (!is_letter(context))
 	{
 		size_t position = skip_str(context); 
-		macro_error(ident_begins_with_letters, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		macro_error(ident_begins_with_letters, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 		return -1;
 	}
 
@@ -611,7 +611,7 @@ int define_relis(preprocess_context *context)
 	else if (context->curchar != ' ' && context->curchar != '\n' && context->curchar != '\t')
 	{
 		size_t position = skip_str(context); 
-		macro_error(after_ident_must_be_space, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		macro_error(after_ident_must_be_space, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 		return -1;
 	}
 	else
@@ -631,7 +631,7 @@ int set_relis(preprocess_context *context)
 	if (!is_letter(context))
 	{
 		size_t position = skip_str(context); 
-		macro_error(ident_begins_with_letters, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		macro_error(ident_begins_with_letters, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 		return -1;
 	}
 
@@ -640,13 +640,13 @@ int set_relis(preprocess_context *context)
 	if (context->macrotext[context->reprtab[j + 1]] == MACROFUNCTION)
 	{
 		size_t position = skip_str(context); 
-		macro_error(functions_cannot_be_changed, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		macro_error(functions_cannot_be_changed, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 		return -1;
 	}
 	else if (context->curchar != ' ' && context->curchar != '\t')
 	{	
 		size_t position = skip_str(context);
-		macro_error(after_ident_must_be_space, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		macro_error(after_ident_must_be_space, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 		return -1;
 	}
 

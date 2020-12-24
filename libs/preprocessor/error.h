@@ -65,11 +65,11 @@ enum ERROR
  *
  *	@param	num			Error code
  *	@param	path		Current file path
+  *	@param	code		Error line in current file
  *	@param	line		Error line number
- *	@param	code		Error line
  *	@param	position	Error position in line
  */
-void macro_error(const int num, const char *const path, const size_t line, const char *const code, size_t position);
+void macro_error(const int num, const char *const path, const char *const code, const size_t line, size_t position);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -139,7 +139,7 @@ int preprocess_words(preprocess_context *context)
 			else
 			{
 				size_t position = skip_str(context); 
-				macro_error(macro_does_not_exist, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				macro_error(macro_does_not_exist, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 				return -1;
 			}
 		}
@@ -170,7 +170,7 @@ int preprocess_words(preprocess_context *context)
 			else
 			{
 				size_t position = skip_str(context); 
-				macro_error(after_eval_must_be_ckob, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+				macro_error(after_eval_must_be_ckob, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 				return -1;
 			}
 
@@ -191,19 +191,19 @@ int preprocess_words(preprocess_context *context)
 			m_nextch(context);
 
 			context->nextp = 0;
-			int rez = while_relis(context);
+			int res = while_relis(context);
 			if(context->nextch_type != FILETYPE)
 			{
 				m_old_nextch_type(context);
 			}
 
-			return rez;
+			return res;
 		}
 		default:
 		{
 			//output_keywods(context);
 			size_t position = skip_str(context); 
-			macro_error(preproces_words_not_exist, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			macro_error(preproces_words_not_exist, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 			return 0;
 		}
 	}
@@ -224,7 +224,7 @@ int preprocess_scan(preprocess_context *context)
 
 			if (context->cur != 0)
 			{
-				int rez = preprocess_words(context);
+				int res = preprocess_words(context);
 				if(context->nextchar != '#' && context->nextch_type != WHILETYPE && 
 					context->nextch_type != TEXTTYPE)//curflag
 				{
@@ -234,7 +234,7 @@ int preprocess_scan(preprocess_context *context)
 				{
 					m_nextch(context);
 				}
-				return rez;
+				return res;
 			}
 			else
 			{
@@ -360,52 +360,56 @@ int preprocess_h_file(preprocess_context *context)
 {
 	context->h_flag = 1;
 	context->include_type = 1;
-	int rez = con_file_open_hedrs(&context->fs, context);
-	if(rez == 1)
+	int res = con_file_open_hedrs(&context->fs, context);
+	if(res == 1)
 	{
-		rez = file_read(context);
+		res = file_read(context);
 		
-		if(rez == 0)
+		if(file_read(context))
 		{
-			rez = con_file_open_next(&context->fs, context, H_FILE);
+			return -1;
 		}
+			
+		res = con_file_open_next(&context->fs, context, C_FILE);
 
-		while (rez == 1)
+		while (res == 1)
 		{
-			rez = file_read(context);
-			if(rez == 0)
+			if(file_read(context))
 			{
-				rez = con_file_open_next(&context->fs, context, H_FILE);
+				return -1;
 			}
+			
+			res = con_file_open_next(&context->fs, context, H_FILE);
 		}
 	}
-	return rez;
+	return res;
 }
 
 int preprocess_c_file(preprocess_context *context)
 {
 	context->include_type = 2;
 	context->h_flag = 0;
-	int rez = con_file_open_sorse(&context->fs, context);
-	if(rez == 1)
+	int res = con_file_open_sorse(&context->fs, context);
+	if(res == 1)
 	{
-		rez = file_read(context);
-		if(rez == 0)
+		if(file_read(context))
 		{
-			rez = con_file_open_next(&context->fs, context, C_FILE);
+			return -1;
 		}
-		
 
-		while (rez == 1)
+		res = con_file_open_next(&context->fs, context, C_FILE);
+
+		while (res == 1)
 		{
-			rez = file_read(context);
-			if(rez == 0)
+			if(file_read(context))
 			{
-				rez = con_file_open_next(&context->fs, context, C_FILE);
+				return -1;
 			}
+			
+			res = con_file_open_next(&context->fs, context, C_FILE);
 		}
 	}
-	return rez;
+	return res;
 }
 
 
@@ -420,14 +424,12 @@ int macro_form_io(workspace *const ws, universal_io *const io)
 
 	open_files(&context);
 
-	int rez = preprocess_h_file(&context);
-	if (rez)
+	if (preprocess_h_file(&context))
 	{
 		return -1;
 	}
 
-	rez =  preprocess_c_file(&context);
-	if (rez)
+	if (preprocess_c_file(&context))
 	{
 		return -1;
 	}

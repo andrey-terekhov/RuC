@@ -86,7 +86,7 @@ int macro_keywords(preprocess_context *context)
 		context->curchar != '\"')
 	{
 		size_t position = skip_str(context); 
-		macro_error(after_ident_must_be_space, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+		macro_error(after_ident_must_be_space, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 	}*/
 
 	hash &= 255;
@@ -209,7 +209,7 @@ int space_end_line(preprocess_context *context)
 		else
 		{
 			size_t position = skip_str(context); 
-			macro_error(after_preproces_words_must_be_space, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			macro_error(after_preproces_words_must_be_space, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 			return -1;
 		}
 	}

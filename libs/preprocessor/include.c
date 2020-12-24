@@ -156,14 +156,14 @@ int open_file(preprocess_context *context)
 {
 	int i = 0;
 	char temp_way[STRING_SIZE];
-	int rez = 0;
+	int res = 0;
 
 	while (context->curchar != '\"')
 	{
 		if (context->curchar == EOF)
 		{
 			size_t position = skip_str(context); 
-			macro_error(must_end_quote, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			macro_error(must_end_quote, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 			return -1;
 		}
 		temp_way[i++] = (char)context->curchar;
@@ -209,7 +209,7 @@ int open_file(preprocess_context *context)
 		{
 			m_change_nextch_type(FILETYPE, 0, context);
 		}
-		rez = -file_read(context);
+		res = -file_read(context);
 
 		if (!h && context->dipp != 0)
 		{
@@ -220,7 +220,7 @@ int open_file(preprocess_context *context)
 	context->fs.cur = old_cur;
 	context->io_input = io_old;
 	in_clear(&new_io);
-	return rez;
+	return res;
 }
 
 
@@ -233,7 +233,7 @@ int include_relis(preprocess_context *context)
 		if(context->include_type > 0)
 		{
 			size_t position = skip_str(context); 
-			macro_error(must_start_quote, ws_get_file(context->fs.ws, context->fs.cur), context->line, context->error_string, position);
+			macro_error(must_start_quote, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 			return -1;
 		}
 		else
@@ -243,13 +243,13 @@ int include_relis(preprocess_context *context)
 		
 	}
 	m_nextch(context);
-	int rez = open_file(context);
-	if(rez == 1)
+	int res = open_file(context);
+	if(res == 1)
 	{
 		skip_file(context);
 		return 1;
 	}
 	m_nextch(context);
 	space_end_line(context);
-	return rez;
+	return res;
 }
