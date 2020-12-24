@@ -117,14 +117,14 @@ int lex_identifier_or_keyword(analyzer *const context)
 		{
 			if (repr_is_equal(context, cur_repr, old_repr))
 			{
-				REPRTAB_LEN = old_repr;
+				REPRTAB_LEN = (int)old_repr;
 				if (REPRTAB[cur_repr + 1] < 0)
 				{
 					return REPRTAB[cur_repr + 1];
 				}
 				else
 				{
-					REPRTAB_POS = cur_repr;
+					REPRTAB_POS = (int)cur_repr;
 					return IDENT;
 				}
 			}
@@ -135,8 +135,9 @@ int lex_identifier_or_keyword(analyzer *const context)
 		} while (cur_repr);
 	}
 	
-	REPRTAB[old_repr] = context->hashtab[hash];
-	REPRTAB_POS = context->hashtab[hash] = old_repr;
+	REPRTAB[old_repr] = (int)context->hashtab[hash];
+	REPRTAB_POS = (int)old_repr;
+	context->hashtab[hash] = old_repr;
 	// 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
 	REPRTAB[REPRTAB_POS + 1] = (context->keywordsnum) ? -((++context->keywordsnum - 2) / 4) : 1;
 	return IDENT;
@@ -183,7 +184,7 @@ int lex_numeric_constant(analyzer *const context)
 	
 	if (is_power(context->curchar))
 	{
-		int exp = 0;
+		int power = 0;
 		int sign = 1;
 		get_char(context);
 		
@@ -207,18 +208,18 @@ int lex_numeric_constant(analyzer *const context)
 		
 		while (utf8_is_digit(context->curchar))
 		{
-			exp = exp * 10 + (context->curchar - '0');
+			power = power * 10 + (context->curchar - '0');
 			get_char(context);
 		}
 		
 		if (flag_int)
 		{
-			for (int i = 1; i <= exp; i++)
+			for (int i = 1; i <= power; i++)
 			{
 				context->num *= 10;
 			}
 		}
-		num_double *= pow(10.0, sign * exp);
+		num_double *= pow(10.0, sign * power);
 	}
 	
 	if (flag_int)
@@ -353,7 +354,7 @@ int lex_string_literal(analyzer *const context)
 		}
 		skip_whitespace(context);
 	}
-	context->num = length;
+	context->num = (int)length;
 	return STRING;
 }
 
@@ -369,6 +370,10 @@ int lex_string_literal(analyzer *const context)
 
 char32_t get_char(analyzer *const context)
 {
+	if (context == NULL)
+	{
+		return (char32_t)EOF;
+	}
 	context->curchar = context->nextchar;
 	context->nextchar = uni_scan_char(context->io);
 	return context->curchar;
@@ -377,6 +382,10 @@ char32_t get_char(analyzer *const context)
 
 int lex(analyzer *const context)
 {
+	if (context == NULL)
+	{
+		return LEOF;
+	}
 	skip_whitespace(context);
 	switch (context->curchar)
 	{

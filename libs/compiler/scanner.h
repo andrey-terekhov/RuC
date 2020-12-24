@@ -28,7 +28,7 @@ extern "C" {
  *
  *	@param	context	Analyzer structure
  *
- *	@return	character
+ *	@return	Character
  */
 char32_t get_char(analyzer *const context);
 
@@ -37,7 +37,7 @@ char32_t get_char(analyzer *const context);
  *
  *	@param	context	Analyzer structure
  *
- *	@return	token
+ *	@return	Token
  */
 int lex(analyzer *const context);
 

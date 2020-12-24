@@ -75,7 +75,7 @@ int toreprtab(analyzer *context, char str[])
 
 	REPRTAB[REPRTAB_LEN++] = 0;
 
-	REPRTAB[oldrepr] = context->hashtab[context->hash];
+	REPRTAB[oldrepr] = (int)context->hashtab[context->hash];
 	REPRTAB[oldrepr + 1] = 1;
 	return context->hashtab[context->hash] = oldrepr;
 }
