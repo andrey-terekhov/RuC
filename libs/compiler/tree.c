@@ -50,8 +50,7 @@ int is_operator(const int value)
 		|| value == TContinue
 
 		|| value == NOP				// Lexemes
-		|| value == CREATEDIRECTC
-		|| value == EXITC;
+		|| value == CREATEDIRECTC;
 }
 
 int is_expression(const int value)
@@ -253,7 +252,7 @@ node node_operator(tree *const tree, size_t *i)
 		case TDeclid:		// IdentDecl: 6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
 		{
 			nd.argc = 7;
-			nd.amount = nd.tree[nd.type + 4] ? 1 : 0;	// по all можно определить наличие TExprend	
+			nd.amount = node_get_arg(&nd, 3) ? 1 : 0;	// по all можно определить наличие TExprend
 			//size_t n = nd.tree[nd.type + 3];			// N указывает размерность массива
 			//nd.amount *= n;	// Понадобится, когда будут реализованы выражения
 
@@ -284,14 +283,11 @@ node node_operator(tree *const tree, size_t *i)
 				node_operator(tree, i);
 				nd.amount++;
 			}
-			nd.amount++;
 
 			if (*i != SIZE_MAX)
 			{
 				*i += 2;
 			}
-			break;
-		case TStructend:
 			break;
 
 		case TBegin:
@@ -300,21 +296,19 @@ node node_operator(tree *const tree, size_t *i)
 				node_operator(tree, i);
 				nd.amount++;
 			}
-			nd.amount++;
 
 			if (*i != SIZE_MAX)
 			{
 				*i += 1;
 			}
 			break;
-		case TEnd:
-			break;
 
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
 			nd.argc = 1;
-			nd.amount = 0;
 
 			*i += nd.argc;
+			nd.amount = is_expression(tree[*i]) || is_lexeme(tree[*i]) ? 1 : 0;
+
 			*i = skip_expression(tree, *i, 1);
 			break;
 		case TPrintf:		// Printf: n + 2 потомков (форматирующая строка, число параметров, n параметров-выражений)
@@ -430,15 +424,12 @@ node node_operator(tree *const tree, size_t *i)
 				node_operator(tree, i);
 				nd.amount++;
 			}
-			nd.amount++;
 			
 			if (*i != SIZE_MAX)
 			{
 				*i += 1;
 			}
 			break;
-		case EXITC:
-		break;
 
 		default:
 			(*i)--;
