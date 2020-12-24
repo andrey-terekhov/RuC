@@ -22,6 +22,10 @@
 #include <stdlib.h>
 
 
+node node_expression(tree *const tree, const size_t index);
+node node_operator(tree *const tree, const size_t index);
+
+
 int is_operator(const int value)
 {
 	return value == TFuncdef		// Declarations
@@ -87,7 +91,7 @@ int is_lexeme(const int value)
 }
 
 
-size_t skip_expression(const tree *const tree, size_t i, int is_block)
+size_t skip_expression(tree *const tree, size_t i, int is_block)
 {
 	if (i == SIZE_MAX)
 	{
@@ -224,7 +228,46 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 	return SIZE_MAX;
 }
 
-size_t skip_operator(tree *const tree, size_t i);
+node node_expression(tree *const tree, const size_t index)
+{
+	node nd;
+	nd.tree = tree;
+	nd.type = index;
+
+	nd.tree = NULL;
+	return nd;
+}
+
+size_t skip_operator(tree *const tree, size_t i)
+{
+	node nd = node_operator(tree, i);
+	if (!node_is_correct(&nd))
+	{
+		return SIZE_MAX;
+	}
+
+	i = nd.children;
+	for (size_t j = 0; j < node_get_amount(&nd); j++)
+	{
+		i = skip_operator(tree, i);
+	}
+
+	if (i != SIZE_MAX)
+	{
+		switch (node_get_type(&nd))
+		{
+			case TStructbeg:
+				i += 2;
+				break;
+			case TBegin:
+			case CREATEDIRECTC:
+				i += 1;
+				break;
+		}
+	}
+
+	return i;
+}
 
 node node_operator(tree *const tree, const size_t index)
 {
@@ -376,37 +419,6 @@ node node_operator(tree *const tree, const size_t index)
 
 	nd.children = nd.argv + nd.argc;
 	return nd;
-}
-
-size_t skip_operator(tree *const tree, size_t i)
-{
-	node nd = node_operator(tree, i);
-	if (!node_is_correct(&nd))
-	{
-		return SIZE_MAX;
-	}
-
-	i = nd.children;
-	for (size_t j = 0; j < node_get_amount(&nd); j++)
-	{
-		i = skip_operator(tree, i);
-	}
-
-	if (i != SIZE_MAX)
-	{
-		switch (node_get_type(&nd))
-		{
-			case TStructbeg:
-				i += 2;
-				break;
-			case TBegin:
-			case CREATEDIRECTC:
-				i += 1;
-				break;
-		}
-	}
-
-	return i;
 }
 
 
