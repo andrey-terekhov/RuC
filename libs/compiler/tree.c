@@ -251,12 +251,16 @@ node node_operator(tree *const tree, size_t *i)
 			node_operator(tree, i);
 			break;
 		case TDeclid:		// IdentDecl: 6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
+		{
 			nd.argc = 7;
 			nd.amount = nd.tree[nd.type + 4] ? 1 : 0;	// по all можно определить наличие TExprend	
+			//size_t n = nd.tree[nd.type + 3];			// N указывает размерность массива
+			//nd.amount *= n;	// Понадобится, когда будут реализованы выражения
 
 			*i += nd.argc;
 			*i = skip_expression(tree, *i, 1);
-			break;
+		}
+		break;
 		case TDeclarr:		// ArrayDecl: n + 2 потомков (размерность массива, n выражений-размеров, инициализатор (может не быть))
 		{
 			nd.argc = 1;
