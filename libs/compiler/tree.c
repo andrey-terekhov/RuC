@@ -110,7 +110,8 @@ size_t skip_expression(tree *const tree, size_t i, int is_block)
 	{
 		if (tree[i + 1] != TExprend)
 		{
-			exit(139);
+			error(NULL, tree_expression_texprend, i + 1, tree[i + 1]);
+			return SIZE_MAX;
 		}
 
 		nd.children = nd.argv + nd.argc;
