@@ -223,6 +223,8 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 	return SIZE_MAX;
 }
 
+size_t skip_operator(tree *const tree, size_t i);
+
 node node_operator(tree *const tree, size_t *i)
 {
 	node nd;
@@ -247,14 +249,14 @@ node node_operator(tree *const tree, size_t *i)
 			nd.amount = 1;
 
 			*i += nd.argc;
-			node_operator(tree, i);
+			//node_operator(tree, i);
 			break;
 		case TDeclid:		// IdentDecl: 6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
 			nd.argc = 7;
 			nd.amount = node_get_arg(&nd, 3) ? 1 : 0;	// по all можно определить наличие TExprend
 
 			*i += nd.argc;
-			*i = skip_expression(tree, *i, 1);
+			//*i = skip_expression(tree, *i, 1);
 			break;
 		case TDeclarr:		// ArrayDecl: n + 2 потомков (размерность массива, n выражений-размеров, инициализатор (может не быть))
 		{
@@ -262,42 +264,58 @@ node node_operator(tree *const tree, size_t *i)
 			nd.amount = node_get_arg(&nd, 0) + 1;
 
 			*i += nd.argc;
-			for (size_t j = 0; j < nd.amount; j++)
+			/*for (size_t j = 0; j < nd.amount; j++)
 			{
 				*i = skip_expression(tree, *i, 1);
 			}
 
-			node_operator(tree, i);
+			node_operator(tree, i);*/
 		}
 		break;
 		case TStructbeg:	// StructDecl: n + 2 потомков (размерность структуры, n объявлений полей, инициализатор (может не быть))
+		{
 			nd.argc = 1;
 			
 			*i += nd.argc;
-			while (*i != SIZE_MAX && tree[*i] != TStructend)
+			size_t j = *i;
+			while (j != SIZE_MAX && tree[j] != TStructend)
 			{
-				node_operator(tree, i);
+				j = skip_operator(nd.tree, j);
+				//node_operator(tree, i);
 				nd.amount++;
 			}
 
-			if (*i != SIZE_MAX)
+			if (j == SIZE_MAX)
 			{
-				*i += 2;
+				*i = SIZE_MAX;
 			}
-			break;
+			/*if (j != SIZE_MAX)
+			{
+				*i = j + 2;
+			}*/
+		}
+		break;
 
 		case TBegin:
-			while (*i != SIZE_MAX && tree[*i] != TEnd)
+		{//printf("TBegin\n");
+			size_t j = *i;
+			while (j != SIZE_MAX && tree[j] != TEnd)
 			{
-				node_operator(tree, i);
+				j = skip_operator(nd.tree, j);
+				//node_operator(tree, i);
 				nd.amount++;
 			}
 
-			if (*i != SIZE_MAX)
+			if (j == SIZE_MAX)
 			{
-				*i += 1;
-			}
-			break;
+				*i = SIZE_MAX;
+			}//printf("TBegin return i\t%i\n", *i);
+			/*if (j != SIZE_MAX)
+			{
+				*i = j + 1;
+			}*/
+		}
+		break;
 
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
 			nd.argc = 1;
@@ -305,7 +323,7 @@ node node_operator(tree *const tree, size_t *i)
 			*i += nd.argc;
 			nd.amount = is_expression(tree[*i]) || is_lexeme(tree[*i]) ? 1 : 0;
 
-			*i = skip_expression(tree, *i, 1);
+			//*i = skip_expression(tree, *i, 1);
 			break;
 		case TPrintf:		// Printf: n + 2 потомков (форматирующая строка, число параметров, n параметров-выражений)
 		case TGetid:		// GetID: 1 потомок (ссылка на identab)
@@ -321,7 +339,7 @@ node node_operator(tree *const tree, size_t *i)
 			nd.amount = 1;
 
 			*i += nd.argc;
-			node_operator(tree, i);
+			//node_operator(tree, i);
 			break;
 
 		case TIf:			// If: 3 потомка (условие, тело-then, тело-else) - ветка else присутствует не всегда, здесь предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
@@ -330,13 +348,13 @@ node node_operator(tree *const tree, size_t *i)
 			nd.amount = node_get_arg(&nd, 0) != 0 ? 3 : 2;
 
 			*i += nd.argc;
-			*i = skip_expression(tree, *i, 1);
+			/**i = skip_expression(tree, *i, 1);
 			node_operator(tree, i);
 			if (node_get_arg(&nd, 0) && *i != SIZE_MAX)
 			{
 				*i = node_get_arg(&nd, 0);
 				node_operator(tree, i);
-			}
+			}*/
 		}
 		break;
 
@@ -349,44 +367,44 @@ node node_operator(tree *const tree, size_t *i)
 			if (var != 0)
 			{
 				nd.amount++;
-				if (skip_expression(tree, var, 1) == SIZE_MAX)
+				/*if (skip_expression(tree, var, 1) == SIZE_MAX)
 				{
 					nd.tree = NULL;
 					return nd;
-				}
+				}*/
 			}
 
 			size_t cond = node_get_arg(&nd, 1);
 			if (cond != 0)
 			{
 				nd.amount++;
-				if (skip_expression(tree, cond, 1) == SIZE_MAX)
+				/*if (skip_expression(tree, cond, 1) == SIZE_MAX)
 				{
 					nd.tree = NULL;
 					return nd;
-				}
+				}*/
 			}
 
 			size_t inc = node_get_arg(&nd, 2);
 			if (inc != 0)
 			{
 				nd.amount++;
-				if (skip_expression(tree, inc, 1) == SIZE_MAX)
+				/*if (skip_expression(tree, inc, 1) == SIZE_MAX)
 				{
 					nd.tree = NULL;
 					return nd;
-				}
+				}*/
 			}
 
 			*i = node_get_arg(&nd, 3);
-			node_operator(tree, i);
+			//node_operator(tree, i);
 		}
 		break;
 		case TDo:			// Do: 2 потомка (тело цикла, условие)
 			nd.amount = 2;
 
-			node_operator(tree, i);
-			*i = skip_expression(tree, *i, 1);
+			//node_operator(tree, i);
+			//*i = skip_expression(tree, *i, 1);
 			break;
 		case TWhile:		// While: 2 потомка (условие, тело цикла)
 
@@ -394,13 +412,13 @@ node node_operator(tree *const tree, size_t *i)
 		case TCase:			// Case: 2 потомка (условие, тело оператора)
 			nd.amount = 2;
 
-			*i = skip_expression(tree, *i, 1);
-			node_operator(tree, i);
+			//*i = skip_expression(tree, *i, 1);
+			//node_operator(tree, i);
 			break;
 		case TDefault:		// Default: 1 потомок (тело оператора)
 			nd.amount = 1;
 
-			node_operator(tree, i);
+			//node_operator(tree, i);
 			break;
 
 		case TReturnval:	// ReturnValue: 2 потомка (тип значения, выражение)
@@ -408,7 +426,7 @@ node node_operator(tree *const tree, size_t *i)
 			nd.amount = 1;
 
 			*i += nd.argc;
-			*i = skip_expression(tree, *i, 1);
+			//*i = skip_expression(tree, *i, 1);
 			break;
 		case TReturnvoid:	// ReturnVoid: нет потомков
 		case TBreak:		// Break: нет потомков
@@ -417,18 +435,25 @@ node node_operator(tree *const tree, size_t *i)
 		case NOP:			// NoOperation: 0 потомков
 			break;
 		case CREATEDIRECTC:
-
-			while (*i != SIZE_MAX && tree[*i] != EXITC)
+		{
+			size_t j = *i;
+			while (j != SIZE_MAX && tree[j] != EXITC)
 			{
-				node_operator(tree, i);
+				j = skip_operator(nd.tree, j);
+				//node_operator(tree, i);
 				nd.amount++;
 			}
-			
-			if (*i != SIZE_MAX)
+
+			if (j == SIZE_MAX)
 			{
-				*i += 1;
+				*i = SIZE_MAX;
 			}
-			break;
+			/*if (j != SIZE_MAX)
+			{
+				*i = j + 1;
+			}*/
+		}
+		break;
 
 		default:
 			(*i)--;
@@ -449,7 +474,38 @@ node node_operator(tree *const tree, size_t *i)
 size_t skip_operator(tree *const tree, size_t i)
 {
 	node nd = node_operator(tree, &i);
-	return node_is_correct(&nd) ? i : SIZE_MAX;
+	if (!node_is_correct(&nd))
+	{
+		return SIZE_MAX;
+	}
+
+	i = nd.children;
+	for (size_t j = 0; j < node_get_amount(&nd); j++)
+	{
+		/*if (node_get_type(&nd) == TIf)
+		{
+			printf("type\t%i\ni\t%i\n", node_get_type(&nd), i);
+		}*/
+		i = skip_operator(tree, i);
+
+		if (i == SIZE_MAX)
+		{
+			return i;
+		}
+	}
+
+	switch (node_get_type(&nd))
+		{
+			case TStructbeg:
+				i += 2;
+				break;
+			case TBegin:
+			case CREATEDIRECTC:
+				i += 1;
+				break;
+		}
+
+	return i;
 }
 
 
