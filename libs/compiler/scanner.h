@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2020 Andrey Terekhov, Victor Y. Fadeev, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -23,13 +23,8 @@
 extern "C" {
 #endif
 
-void onemore(analyzer *context);
-int getnext(analyzer *context);
-int scaner(analyzer *context);
-void nextch(analyzer *context);
-int letter(analyzer *);
-int digit(analyzer *);
-int equal(analyzer *, int, int);
+int getnext(analyzer *const context);
+void get_char(analyzer *const context);
 
 /**
  *	Lex next token from io

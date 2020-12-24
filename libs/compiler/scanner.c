@@ -1,5 +1,5 @@
 /*
- *	Copyright 2014 Andrey Terekhov
+ *	Copyright 2020 Andrey Terekhov, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,11 +16,8 @@
 
 #include "analyzer.h"
 #include "errors.h"
-#include "defs.h"
 #include "uniscanner.h"
-#include "utf8.h"
 #include <math.h>
-#include <stdlib.h>
 #include <string.h>
 
 
@@ -36,94 +33,6 @@ char32_t get_char(analyzer *const context)
 	context->curchar = context->nextchar;
 	context->nextchar = uni_scan_char(context->io);
 	return context->curchar;
-}
-
-void onemore(analyzer *context)
-{
-	context->curchar = context->nextchar;
-	context->nextchar = getnext(context);
-	if (0)
-	{
-		// context->kw)
-		printf("context->curchar=%c %i context->nextchar=%c %i\n", context->curchar, context->curchar,
-			   context->nextchar, context->nextchar);
-	}
-}
-
-/*void endofline(analyzer *context)
-{
-	if (context->prep_flag == 1)
-	{
-		int j;
-		uni_printf(context->io, "line %i) ", context->line - 1);
-		for (j = context->lines[context->line - 1]; j < context->lines[context->line]; j++)
-		{
-			if (context->source[j] != EOF)
-			{
-				uni_print_char(context->io, context->source[j]);
-			}
-		}
-	}
-	// fflush(stdout);
-}*/
-
-void endnl(analyzer *context)
-{
-	if (context->kw)
-	{
-		++context->line;
-		context->charnum_before = context->charnum;
-		context->charnum = 0;
-	}
-	/*context->lines[++context->line] = context->charnum;
-	context->lines[context->line + 1] = context->charnum;
-	if (context->kw)
-	{
-		endofline(context);
-	}*/
-}
-
-void nextch(analyzer *context)
-{
-	onemore(context);
-	if (context->curchar == (char32_t) EOF)
-	{
-		onemore(context);
-		endnl(context);
-		// uni_printf(context->io, "\n");
-		return;
-	}
-	if (context->kw)
-	{
-		context->last_line[context->charnum++] = context->curchar;
-	}
-	if (context->instring)
-	{
-		return;
-	}
-
-	if (context->curchar == '/' && context->nextchar == '/')
-	{
-		do
-		{
-			onemore(context);
-			if (context->curchar == (char32_t) EOF)
-			{
-				endnl(context);
-				// uni_printf(context->io, "\n");
-				return;
-			}
-		} while (context->curchar != '\n');
-		endnl(context);
-		return;
-	}
-	
-	if (context->kw && context->curchar == '\n')
-	{
-		context->temp_tc = context->sx->tc;
-		endnl(context);
-	}
-	return;
 }
 
 int ispower(const char32_t symbol)
@@ -214,7 +123,7 @@ int lex_identifier_or_keyword(analyzer *const context)
 	{
 		hash += context->curchar;
 		REPRTAB[REPRTAB_LEN++] = context->curchar;
-		nextch(context);
+		get_char(context);
 	} while (utf8_is_letter(context->curchar) || utf8_is_digit(context->curchar));
 	
 	context->hash = (hash &= 255);
@@ -642,11 +551,11 @@ int lex(analyzer *const context)
 				case '=':
 					get_char(context);
 					return PLUSASS;
-					
+
 				case '+':
 					get_char(context);
 					return INC;
-					
+
 				default:
 					return LPLUS;
 			}
@@ -657,11 +566,11 @@ int lex(analyzer *const context)
 				case '=':
 					get_char(context);
 					return ORASS;
-					
+
 				case '|':
 					get_char(context);
 					return LOGOR;
-					
+
 				default:
 					return LOR;
 			}
@@ -672,11 +581,11 @@ int lex(analyzer *const context)
 				case '=':
 					get_char(context);
 					return ANDASS;
-					
+
 				case '&':
 					get_char(context);
 					return LOGAND;
-					
+
 				default:
 					return LAND;
 			}
@@ -687,15 +596,15 @@ int lex(analyzer *const context)
 				case '=':
 					get_char(context);
 					return MINUSASS;
-					
+
 				case '-':
 					get_char(context);
 					return DEC;
-					
+
 				case '>':
 					get_char(context);
 					return ARROW;
-					
+
 				default:
 					return LMINUS;
 			}
@@ -713,11 +622,11 @@ int lex(analyzer *const context)
 					{
 						return LSHL;
 					}
-					
+
 				case '=':
 					get_char(context);
 					return LLE;
-					
+
 				default:
 					return LLT;
 			}
@@ -735,11 +644,11 @@ int lex(analyzer *const context)
 					{
 						return LSHR;
 					}
-					
+
 				case '=':
 					get_char(context);
 					return LGE;
-					
+
 				default:
 					return LGT;
 			}
@@ -750,41 +659,22 @@ int lex(analyzer *const context)
 				case '=':
 					get_char(context);
 					return DIVASS;
-					
+
 				case '+':
 					get_char(context);
 					return INC;
-					
-					// Comments [C99 6.4.9]
+
+				// Comments [C99 6.4.9]
 				case '/':
 					skip_line_comment(context);
 					return lex(context);
-					
+
 				case '*':
 					skip_block_comment(context);
 					return lex(context);
-					
+
 				default:
 					return LDIV;
 			}
 	}
-}
-
-int scaner(analyzer *context)
-{
-	context->cur = context->next;
-	if (!context->buf_flag)
-	{
-		context->next = lex(context);
-	}
-	else
-	{
-		context->next = context->buf_cur;
-		context->buf_flag--;
-	}
-
-	//	 if(context->kw)
-	//			printf("scaner context->cur %i context->next %i buf_flag %i\n",
-	//			context->cur, context->next, context->buf_flag);
-	return context->cur;
 }
