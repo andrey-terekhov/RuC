@@ -23,7 +23,13 @@
 extern "C" {
 #endif
 
-char32_t getnext(analyzer *const context);
+/**
+ *	Read next character from io
+ *
+ *	@param	context	Analyzer structure
+ *
+ *	@return	character
+ */
 char32_t get_char(analyzer *const context);
 
 /**

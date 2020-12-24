@@ -14,26 +14,12 @@
  *	limitations under the License.
  */
 
+#include "scanner.h"
 #include "analyzer.h"
 #include "errors.h"
 #include "uniscanner.h"
 #include <math.h>
 #include <string.h>
-
-
-char32_t getnext(analyzer *const context)
-{
-	char32_t ret = uni_scan_char(context->io);
-	context->nextchar = ret;
-	return ret;
-}
-
-char32_t get_char(analyzer *const context)
-{
-	context->curchar = context->nextchar;
-	context->nextchar = uni_scan_char(context->io);
-	return context->curchar;
-}
 
 
 /**
@@ -44,7 +30,7 @@ char32_t get_char(analyzer *const context)
 void skip_whitespace(analyzer *const context)
 {
 	while (context->curchar == ' ' || context->curchar == '\t'
-		   || context->curchar == '\n' || context->curchar == '\r')
+		|| context->curchar == '\n' || context->curchar == '\r')
 	{
 		get_char(context);
 	}
@@ -379,6 +365,14 @@ int lex_string_literal(analyzer *const context)
  *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
  *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
  */
+
+
+char32_t get_char(analyzer *const context)
+{
+	context->curchar = context->nextchar;
+	context->nextchar = uni_scan_char(context->io);
+	return context->curchar;
+}
 
 
 int lex(analyzer *const context)
