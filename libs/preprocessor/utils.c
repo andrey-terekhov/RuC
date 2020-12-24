@@ -14,11 +14,11 @@
  *	limitations under the License.
  */
 
-#include "preprocessor_utils.h"
+#include "utils.h"
 #include "constants.h"
 #include "context_var.h"
 #include "file.h"
-#include "preprocessor_error.h"
+#include "error.h"
 #include "utf8.h"
 #include <limits.h>
 #include <math.h>
@@ -85,7 +85,8 @@ int macro_keywords(preprocess_context *context)
 	/*if (context->curchar != '\n' && context->curchar != ' ' && context->curchar != '\t' && context->curchar != '(' &&
 		context->curchar != '\"')
 	{
-		m_error(after_ident_must_be_space, context);
+		size_t position = skip_str(context); 
+		macro_error(after_ident_must_be_space, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 	}*/
 
 	hash &= 255;
@@ -165,7 +166,6 @@ int find_file(preprocess_context *context, const char *s)
 {
 	int oldrp = context->rp;
 	context->rp += 2;
-
 	int r;
 	int hash = 0;
 	int i = 0;
@@ -184,6 +184,7 @@ int find_file(preprocess_context *context, const char *s)
 	{
 		if (context->reprtab[r + 1] == SH_FILE && equal_reprtab(r, oldrp, context))
 		{
+			context->rp = oldrp;
 			return 0;
 		}
 
@@ -193,10 +194,11 @@ int find_file(preprocess_context *context, const char *s)
 	context->reprtab[oldrp] = context->hashtab[hash];
 	context->reprtab[oldrp + 1] = SH_FILE;
 	context->hashtab[hash] = oldrp;
+	context->reprtab[context->rp++] = 0;
 	return 1;
 }
 
-void space_end_line(preprocess_context *context)
+int space_end_line(preprocess_context *context)
 {
 	while (context->curchar != '\n')
 	{
@@ -206,9 +208,13 @@ void space_end_line(preprocess_context *context)
 		}
 		else
 		{
-			m_error(after_preproces_words_must_be_space, context);
+			size_t position = skip_str(context); 
+			macro_error(after_preproces_words_must_be_space, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+			return -1;
 		}
 	}
+
+	return 0;
 }
 
 void space_skip(preprocess_context *context)
@@ -240,6 +246,25 @@ void space_skip_str(preprocess_context *context)
 	if (context->curchar != EOF)
 	{
 		m_fprintf(context->curchar, context);
+		m_nextch(context);
+	}
+}
+
+size_t skip_str(preprocess_context *context)
+{
+	char *line = context->error_string;
+	size_t position = strlen(line);
+	while (context->curchar != '\n' && context->curchar != EOF)
+	{
+		m_nextch(context);
+	}
+	return position;
+}
+
+void skip_file(preprocess_context *context)
+{
+	while (context->curchar != EOF)
+	{
 		m_nextch(context);
 	}
 }
