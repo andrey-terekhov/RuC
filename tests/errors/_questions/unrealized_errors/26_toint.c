@@ -1,5 +1,5 @@
-#include <stdio.h>
-#include <math.h> 
+//#include <stdio.h>
+//#include <math.h> 
 
 #define BUFF_SIZE 20
 

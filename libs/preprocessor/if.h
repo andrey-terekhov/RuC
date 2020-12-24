@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-void if_relis(preprocess_context *context);
+int if_relis(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */
