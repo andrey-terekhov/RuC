@@ -96,6 +96,11 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 
 	if (tree[i] == NOP && !is_block)
 	{
+		if (tree[i + 1] != TExprend)
+		{
+			exit(139);
+		}
+
 		return i + 1;
 	}
 
