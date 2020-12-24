@@ -24,11 +24,18 @@
 #include <string.h>
 
 
-int getnext(analyzer *context)
+char32_t getnext(analyzer *const context)
 {
-	int ret = uni_scan_char(context->io);
+	char32_t ret = uni_scan_char(context->io);
 	context->nextchar = ret;
 	return ret;
+}
+
+char32_t get_char(analyzer *const context)
+{
+	context->curchar = context->nextchar;
+	context->nextchar = uni_scan_char(context->io);
+	return context->curchar;
 }
 
 void onemore(analyzer *context)
@@ -79,7 +86,7 @@ void endnl(analyzer *context)
 void nextch(analyzer *context)
 {
 	onemore(context);
-	if (context->curchar == EOF)
+	if (context->curchar == (char32_t) EOF)
 	{
 		onemore(context);
 		endnl(context);
@@ -100,7 +107,7 @@ void nextch(analyzer *context)
 		do
 		{
 			onemore(context);
-			if (context->curchar == EOF)
+			if (context->curchar == (char32_t) EOF)
 			{
 				endnl(context);
 				// uni_printf(context->io, "\n");
@@ -119,42 +126,59 @@ void nextch(analyzer *context)
 	return;
 }
 
-void next_string_elem(analyzer *context)
-{
-	context->num = context->curchar;
-	if (context->curchar == '\\')
-	{
-		nextch(context);
-		if (context->curchar == 'n' || context->curchar == 1085 /* 'н' */)
-		{
-			context->num = 10;
-		}
-		else if (context->curchar == 't' || context->curchar == 1090 /* 'т' */)
-		{
-			context->num = 9;
-		}
-		else if (context->curchar == '0')
-		{
-			context->num = 0;
-		}
-		else if (context->curchar != '\'' && context->curchar != '\\' && context->curchar != '\"')
-		{
-			error(context->io, unknown_escape_sequence);
-			exit(1);
-		}
-		else
-		{
-			context->num = context->curchar;
-		}
-	}
-	nextch(context);
-}
-
 int ispower(analyzer *context)
 {
 	return context->curchar == 'e' || context->curchar == 'E'; // || context->curchar == 'е' || context->curchar == 'Е')
 															   // // это русские е и Е
 }
+
+
+/**
+ *	Skip over a series of whitespace characters
+ *
+ *	@param	context	Analyzer structure
+ */
+void skip_whitespace(analyzer *const context)
+{
+	while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
+	{
+		get_char(context);
+	}
+}
+
+/**
+ *	Skip until we find the newline character that terminates the comment
+ *
+ *	@param	context	Analyzer structure
+ */
+void skip_line_comment(analyzer *const context)
+{
+	while (context->curchar != '\n' && context->nextchar != (char32_t)EOF)
+	{
+		get_char(context);
+	}
+}
+
+/**
+ *	Skip until we find '*' and '/' that terminates the comment
+ *
+ *	@param	context	Analyzer structure
+ */
+void skip_block_comment(analyzer *const context)
+{
+	while (context->curchar != '*' && context->nextchar != '/')
+	{
+		if (context->nextchar == (char32_t)EOF)
+		{
+			error(context->io, unterminated_block_comment);
+			context->error_flag = 1;
+			return;
+		}
+		get_char(context);
+	}
+	get_char(context);
+}
+
 
 int repr_is_equal(analyzer *const context, size_t i, size_t j)
 {
@@ -227,6 +251,133 @@ int lex_identifier_or_keyword(analyzer *const context)
 	// 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
 	REPRTAB[REPRTAB_POS + 1] = (context->keywordsnum) ? -((++context->keywordsnum - 2) / 4) : 1;
 	return IDENT;
+}
+
+
+/**	Get character or escape sequence after '\' */
+char32_t get_next_string_elem(analyzer *const context)
+{
+	if (context->curchar == '\\')
+	{
+		switch (get_char(context))
+		{
+			case 'n':
+			case U'н':
+				return '\n';
+
+			case 't':
+			case U'т':
+				return '\t';
+
+			case '0':
+				return '\0';
+
+			case '\\':
+			case '\'':
+			case '\"':
+				return context->curchar;
+
+			default:
+				error(context->io, unknown_escape_sequence);
+				context->error_flag = 1;
+				return context->curchar;
+		}
+	}
+	else
+	{
+		return context->curchar;
+	}
+}
+
+/**
+ *	Lex character constant [C99 6.4.4.4]
+ *
+ *	@note Lexes the remainder of a character constant after apostrophe
+ *
+ *	@param	context	Analyzer structure
+ *
+ *	@return	@c NUMBER
+ */
+int lex_char_constant(analyzer *const context)
+{
+	context->ansttype = LCHAR;
+	if (get_char(context) == '\'')
+	{
+		error(context->io, empty_char_const);
+		context->error_flag = 1;
+		context->num = 0;
+		return NUMBER;
+	}
+	
+	context->num = get_next_string_elem(context);
+	
+	if (get_char(context) == '\'')
+	{
+		get_char(context);
+	}
+	else
+	{
+		error(context->io, expected_apost_after_char_const);
+		context->error_flag = 1;
+	}
+	return NUMBER;
+}
+
+/**
+ *	Lex string literal [C99 6.4.5]
+ *
+ *	@note	Lexes the remainder of a string literal after quote mark
+ *
+ *	@param	context	Analyzer structure
+ *
+ *	@return	@c STRING
+ */
+int lex_string_literal(analyzer *const context)
+{
+	size_t length = 0;
+	int flag_too_long_string = 0;
+	get_char(context);
+	while (1)
+	{
+		while (context->curchar != '"' && context->curchar != '\n' && length < MAXSTRINGL)
+		{
+			if (!flag_too_long_string)
+			{
+				context->lexstr[length++] = get_next_string_elem(context);
+			}
+			get_char(context);
+		}
+		if (length == MAXSTRINGL)
+		{
+			error(context->io, too_long_string);
+			context->error_flag = 1;
+			flag_too_long_string = 1;
+			while (context->curchar != '"' && context->curchar != '\n')
+			{
+				get_char(context);
+			}
+		}
+		if (context->curchar == '"')
+		{
+			get_char(context);
+		}
+		else
+		{
+			error(context->io, missing_terminating_quote_char);
+			context->error_flag = 1;
+		}
+		skip_whitespace(context);
+		if (context->curchar == '\"')
+		{
+			get_char(context);
+		}
+		else
+		{
+			break;
+		}
+	}
+	context->num = length;
+	return STRING;
 }
 
 
@@ -462,64 +613,15 @@ int scan(analyzer *context)
 				cr = LOGNOT;
 			}
 			return cr;
+			
+		// Character Constants [C99 6.4.4.4]
 		case '\'':
-		{
-			context->instring = 1;
-			nextch(context);
-			next_string_elem(context);
-			if (context->curchar != '\'')
-			{
-				error(context->io, expected_apost_after_char_const);
-				context->error_flag = 1;
-				context->sx->tc = context->temp_tc;
-			}
-			else
-			{
-				nextch(context);
-			}
-			context->instring = 0;
-			context->ansttype = LCHAR;
-			return NUMBER;
-		}
+			return lex_char_constant(context);
+			
+		// String Literals [C99 6.4.5]
 		case '\"':
-		{
-			int n = 0;
-			int flag = 1;
-			context->instring = 1;
-			nextch(context);
-			while (flag)
-			{
-				while (context->curchar != '\"' && n < MAXSTRINGL)
-				{
-					next_string_elem(context);
-					context->lexstr[n++] = context->num;
-					// printf("n= %i %c %i\n", n-1,
-					// context->num, context->num);
-				}
-				if (n == MAXSTRINGL)
-				{
-					error(context->io, too_long_string);
-					exit(1);
-				}
-				nextch(context);
-				while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
-				{
-					nextch(context);
-				}
-				if (context->curchar == '\"')
-				{
-					nextch(context);
-				}
-				else
-				{
-					flag = 0;
-				}
-			}
-
-			context->num = n;
-			context->instring = 0;
-			return STRING;
-		}
+			return lex_string_literal(context);
+			
 		case '(':
 		{
 			nextch(context);

@@ -36,25 +36,27 @@ typedef struct analyzer
 	universal_io *io;
 	syntax *sx;
 
-	int line;
-	int charnum;
-	int charnum_before;				// useless
-	int cur;
-	int next;
+	char32_t curchar;
+	char32_t nextchar;
 	int num;
-	int hash;
-	int keywordsnum;
-	int wasstructdef;
 	struct
 	{
 		int first;
 		int second;
 	} numr;
+	char32_t lexstr[MAXSTRINGL + 1];
+	int hash;
+	size_t hashtab[256];
+	
+	int line;
+	int charnum;
+	int charnum_before;				// useless
+	int cur;
+	int next;
+	int keywordsnum;
+	int wasstructdef;
 	int last_line[LINESSIZE * 2];	// useless
-	int nextchar;
-	int curchar;
 	int func_def;
-	int hashtab[256];
 	int stack[100];
 	int stackop[100];
 	int stackoperands[100];
@@ -76,7 +78,6 @@ typedef struct analyzer
 	int instring;
 	int inswitch;
 	int inloop;
-	int lexstr[MAXSTRINGL + 1];
 	int functype;
 	int kw;							// useless
 	int blockflag;
