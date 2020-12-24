@@ -31,15 +31,19 @@
 void m_nextch(preprocess_context *context);
 
 
-int strlen32(char32_t* strarg)
+size_t strlen32(const char32_t *const str)
 {
-   if(!strarg)
-   {
-	   return -1;
-   }
-   char32_t* str = strarg;
-   for(;*str; ++str);
-   return str-strarg;
+	if (str == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	size_t i = 0;
+	while (str[i] != U'\0')
+	{
+		i++;
+	}
+	return i;
 }
 
 int get_next_char(preprocess_context *context)

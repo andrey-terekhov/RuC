@@ -113,7 +113,7 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 
 int file_read(preprocess_context *context)
 {
-	int old_line = context->line;
+	size_t old_line = context->line;
 	context->line = 1;
 
 	get_next_char(context);

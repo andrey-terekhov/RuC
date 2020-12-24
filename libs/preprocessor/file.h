@@ -17,13 +17,23 @@
 #pragma once
 
 #include "context_var.h"
+#include <stddef.h>
+#include <stdint.h>
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int strlen32(char32_t* strarg);
+/**
+ *	Length of char32_t string
+ *
+ *	@param	str		String
+ *
+ *	@return	Length of string, @c SIZE_MAX on failure
+ */
+size_t strlen32(const char32_t *const str);
+
 void m_change_nextch_type(int type, int p, preprocess_context *context);
 void m_old_nextch_type(preprocess_context *context);
 
