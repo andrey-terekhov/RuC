@@ -336,9 +336,9 @@ int lex_string_literal(analyzer *const context)
 {
 	size_t length = 0;
 	int flag_too_long_string = 0;
-	get_char(context);
-	while (1)
+	while (context->curchar == '\"')
 	{
+		get_char(context);
 		while (context->curchar != '"' && context->curchar != '\n' && length < MAXSTRINGL)
 		{
 			if (!flag_too_long_string)
@@ -367,14 +367,6 @@ int lex_string_literal(analyzer *const context)
 			context->error_flag = 1;
 		}
 		skip_whitespace(context);
-		if (context->curchar == '\"')
-		{
-			get_char(context);
-		}
-		else
-		{
-			break;
-		}
 	}
 	context->num = length;
 	return STRING;
