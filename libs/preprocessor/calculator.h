@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-void calculator(int if_flag, preprocess_context *context);
+int calculator(int if_flag, preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

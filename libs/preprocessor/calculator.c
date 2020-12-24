@@ -17,8 +17,8 @@
 #include "calculator.h"
 #include "define.h"
 #include "file.h"
-#include "preprocessor_error.h"
-#include "preprocessor_utils.h"
+#include "error.h"
+#include "utils.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -36,7 +36,7 @@ int is_power(preprocess_context *context)
 			   'E'; // || context->curchar == (int)'е' || context->curchar == (int)'Е';	// это русские е и Е
 }
 
-double get_digit(preprocess_context *context)
+double get_digit(preprocess_context *context, int* error)
 {
 	double k;
 	int d = 1;
@@ -55,7 +55,10 @@ double get_digit(preprocess_context *context)
 		numdouble = numdouble * 10 + (context->curchar - '0');
 		if (numdouble > (double)INT_MAX)
 		{
-			m_error(too_many_nuber, context);
+			size_t position = skip_str(context); 
+			macro_error(too_many_nuber, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+			*error = -1;
+			return 0.0;
 		}
 		num = num * 10 + (context->curchar - '0');
 		m_nextch(context);
@@ -96,7 +99,10 @@ double get_digit(preprocess_context *context)
 
 		if (!is_digit(context->curchar))
 		{
-			m_error(must_be_digit_after_exp1, context);
+			size_t position = skip_str(context); 
+			macro_error(must_be_digit_after_exp1, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+			*error = -1;
+			return 0.0;
 		}
 
 
@@ -281,7 +287,7 @@ void double_to_string(double x, int int_flag, preprocess_context *context)
 	}
 }
 
-void calculator(int if_flag, preprocess_context *context)
+int calculator(int if_flag, preprocess_context *context)
 {
 	int i = 0;
 	int op = 0;
@@ -303,8 +309,13 @@ void calculator(int if_flag, preprocess_context *context)
 
 		if ((is_digit(context->curchar) || (context->curchar == '-' && is_digit(context->nextchar))) && !opration_flag)
 		{
+			int error = 0;
 			opration_flag = 1;
-			stack[i] = get_digit(context);
+			stack[i] = get_digit(context, &error);
+			if(error)
+			{
+				return -1;
+			}
 			int_flag[i++] = flagint;
 		}
 		else if (is_letter(context))
@@ -313,11 +324,16 @@ void calculator(int if_flag, preprocess_context *context)
 
 			if (r)
 			{
-				define_get_from_macrotext(r, context);
+				if(define_get_from_macrotext(r, context))
+				{
+					return -1;
+				}
 			}
 			else
 			{
-				m_error(1, context);
+				size_t position = skip_str(context); 
+				macro_error(not_macro, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+				return -1;
 			}
 		}
 		else if (context->curchar == '#' && if_flag)
@@ -326,11 +342,17 @@ void calculator(int if_flag, preprocess_context *context)
 
 			if (context->cur == SH_EVAL && context->curchar == '(')
 			{
-				calculator(0, context);
+				
+				if(calculator(0, context))
+				{
+					return -1;
+				}	
 			}
 			else
 			{
-				m_error(after_eval_must_be_ckob, context);
+				size_t position = skip_str(context); 
+				macro_error(after_eval_must_be_ckob, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+				return -1;
 			}
 			m_change_nextch_type(CTYPE, 0, context);
 			m_nextch(context);
@@ -341,7 +363,9 @@ void calculator(int if_flag, preprocess_context *context)
 			{
 				if (i < 2 || op == 0)
 				{
-					m_error(2, context);
+					size_t position = skip_str(context); 
+					macro_error(incorrect_arithmetic_expression, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+					return -1;
 				}
 
 				int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
@@ -355,7 +379,7 @@ void calculator(int if_flag, preprocess_context *context)
 			if (op == 0 && !if_flag)
 			{
 				double_to_string(stack[0], int_flag[0], context);
-				return;
+				return 0;
 			}
 		}
 		else if (opration_flag || context->curchar == '(')
@@ -368,11 +392,15 @@ void calculator(int if_flag, preprocess_context *context)
 
 				if (n != 0 && if_flag && n > 3)
 				{
-					m_error(not_arithmetic_operations, context);
+					size_t position = skip_str(context); 
+					macro_error(not_arithmetic_operations, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+					return -1;
 				}
 				if (n != 0 && !if_flag && n <= 3)
 				{
-					m_error(not_logical_operations, context);
+					size_t position = skip_str(context); 
+					macro_error(not_logical_operations, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+					return -1;
 				}
 
 				while (op != 0 && n != 0 && get_prior(operation[op - 1]) >= n)
@@ -386,12 +414,16 @@ void calculator(int if_flag, preprocess_context *context)
 			}
 			else if (context->curchar != '\n')
 			{
-				m_error(3, context);
+				size_t position = skip_str(context); 
+				macro_error(third_party_symbol, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+				return -1;
 			}
 		}
 		else if (context->curchar != '\n')
 		{
-			m_error(3, context);
+			size_t position = skip_str(context); 
+			macro_error(third_party_symbol, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+			return -1;
 		}
 	}
 
@@ -402,7 +434,9 @@ void calculator(int if_flag, preprocess_context *context)
 		{
 			if (i < 2)
 			{
-				m_error(4, context);
+				size_t position = skip_str(context); 
+				macro_error(incorrect_arithmetic_expression, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+				return -1;
 			}
 
 			int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
@@ -422,6 +456,9 @@ void calculator(int if_flag, preprocess_context *context)
 	}
 	else
 	{
-		m_error(5, context);
+		size_t position = skip_str(context); 
+		macro_error(in_eval_must_end_parenthesis, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+		return -1;
 	}
+	return 0;
 }
