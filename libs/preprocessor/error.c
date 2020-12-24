@@ -21,9 +21,10 @@
 #include <stddef.h>
 
 
-#define ERROR_MSG_SIZE	STRING_SIZE
+#define TAG_MACRO		"macro"
+
 #define ERROR_TAG_SIZE	STRING_SIZE
-#define TAG_MACRO		"macro"	
+#define ERROR_MSG_SIZE	STRING_SIZE
 
 
 void get_message_error(const int num, char *const msg)
@@ -130,25 +131,30 @@ void get_message_error(const int num, char *const msg)
 
 void macro_error(const int num, const char *const path, const char *const code, const size_t line, size_t position)
 {
-	char tag[ERROR_TAG_SIZE] = TAG_MACRO;
+	char msg[ERROR_MSG_SIZE];
+	get_message_error(num, msg);
 
-	if(path == NULL || code == NULL)
+	if (path == NULL)
 	{
-		log_system_error(tag, "некоректные параметры ошибки");
+		log_system_error(TAG_MACRO, msg);
+		return;
 	}
-	
+
+	char tag[ERROR_TAG_SIZE];
 	size_t index = sprintf(tag, "%s", path);
+
+	if (code == NULL)
+	{
+		log_system_error(tag, msg);
+		return;
+	}
+
 	index += sprintf(&tag[index], ":%zi", line);
-	
 	while (position > 0 && (code[position] == ' ' || code[position] == '\t'))
 	{
 		position--;
 	}
-
 	sprintf(&tag[index], ":%zi", position);
-
-	char msg[ERROR_MSG_SIZE];
-	get_message_error(num, msg);
 
 	log_error(tag, msg, code, position);
 }
