@@ -225,23 +225,22 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 
 size_t skip_operator(tree *const tree, size_t i);
 
-node node_operator(tree *const tree, size_t *i)
+node node_operator(tree *const tree, const size_t index)
 {
 	node nd;
-	if (*i == SIZE_MAX)
+	if (index == SIZE_MAX)
 	{
 		nd.tree = NULL;
 		return nd;
 	}
 
 	nd.tree = tree;
-	nd.type = *i;
+	nd.type = index;
 	nd.argv = nd.type + 1;
 
 	nd.argc = 0;
 	nd.amount = 0;
 
-	*i += 1;
 	switch (nd.tree[nd.type])
 	{
 		case TFuncdef:		// Funcdef: 2 потомка (ссылка на identab, тело функции)
@@ -364,15 +363,13 @@ node node_operator(tree *const tree, size_t *i)
 		break;
 
 		default:
-			(*i)--;
-			if (!is_expression(tree[*i]) && !is_lexeme(tree[*i]))
+			if (!is_expression(tree[nd.type]) && !is_lexeme(tree[nd.type]))
 			{
-				warning(NULL, tree_operator_unknown, *i, tree[*i]);
+				warning(NULL, tree_operator_unknown, nd.type, tree[nd.type]);
 			}
 
-			*i = skip_expression(tree, *i, 1);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
-												// ExpressionStatement: 1 потомок (выражение)
-			nd.type = *i - 1;
+			nd.type = skip_expression(tree, nd.type, 1) - 1;	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
+																// ExpressionStatement: 1 потомок (выражение)
 			nd.argv = nd.type + 1;
 	}
 
@@ -382,7 +379,7 @@ node node_operator(tree *const tree, size_t *i)
 
 size_t skip_operator(tree *const tree, size_t i)
 {
-	node nd = node_operator(tree, &i);
+	node nd = node_operator(tree, i);
 	if (!node_is_correct(&nd))
 	{
 		return SIZE_MAX;
@@ -474,7 +471,7 @@ node node_get_child(node *const nd, const size_t index)
 		}
 	}
 
-	return node_operator(nd->tree, &i);
+	return node_operator(nd->tree, i);
 }
 
 
