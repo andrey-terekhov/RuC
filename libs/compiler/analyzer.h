@@ -33,29 +33,22 @@ extern "C" {
 /** Определение глобальных переменных */
 typedef struct analyzer
 {
-	universal_io *io;
-	syntax *sx;
+	universal_io *io;					/**< Universal io structure */
+	syntax *sx;							/**< Syntax structure */
 
-	char32_t curchar;
-	char32_t nextchar;
-	int num;
-	struct
-	{
-		int first;
-		int second;
-	} numr;
-	char32_t lexstr[MAXSTRINGL + 1];
-	int hash;
-	size_t hashtab[256];
+	char32_t curchar;					/**< Current character */
+	char32_t nextchar;					/**< Lookahead character */
+	int num;							/**< Value of the read integer number */
+	struct { int fst; int snd; } numr;	/**< Value of the read double number */
+	char32_t lexstr[MAXSTRINGL + 1];	/**< Representation of the read string literal */
+	int hash;							/**< Last value of hash function */
+	size_t hashtab[256];				/**< Hash table for reprtab */
 	
 	int line;
-	int charnum;
-	int charnum_before;				// useless
 	int cur;
 	int next;
 	int keywordsnum;
 	int wasstructdef;
-	int last_line[LINESSIZE * 2];	// useless
 	int func_def;
 	int stack[100];
 	int stackop[100];
@@ -75,16 +68,12 @@ typedef struct analyzer
 	int arrdim;
 	int was_struct_with_arr;
 	int usual;
-	int instring;
 	int inswitch;
 	int inloop;
 	int functype;
-	int kw;							// useless
 	int blockflag;
 	int wasret;
 	int wasdefault;
-	int notrobot;					// useless
-	//int prep_flag;
 	int predef[FUNCSIZE];
 	int prdf;
 	int gotost[1000];
@@ -93,12 +82,6 @@ typedef struct analyzer
 	int ansttype;
 	int leftansttype; // anst = VAL  - значение на стеке
 	int x;							// useless
-	int iniproc; // anst = ADDR - на стеке адрес значения
-				 // anst = IDENT- значение в статике,
-				 // в anstdisl смещение от l или g
-				 // в ansttype всегда тип возвращаемого значения
-				 // если значение указателя, адрес массива или строки
-				 //лежит на верхушке стека, то это VAL, а не ADDR
 	int bad_printf_placeholder;
 	int onlystrings;
 
@@ -106,7 +89,6 @@ typedef struct analyzer
 	int buf_cur;
 	int temp_tc;
 	int error_flag;
-	int new_line_flag;				// useless
 } analyzer;
 
 

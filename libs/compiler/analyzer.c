@@ -27,23 +27,17 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx)
 	context.io = io;
 	context.sx = sx;
 
-	context.charnum = 0;
-	context.charnum_before = 0;
 	context.sopnd = -1;
 	context.curid = 2;
 	context.lg = -1;
 	context.displ = -3;
 	context.maxdispl = 3;
 	context.blockflag = 1;
-	context.notrobot = 1;
 	context.prdf = -1;
 	context.leftansttype = -1;
 	context.buf_flag = 0;
 	context.error_flag = 0;
-	context.new_line_flag = 0;
 	context.line = 1;
-	context.charnum = 0;
-	context.charnum_before = 0;
 	context.buf_cur = 0;
 	context.temp_tc = 0;
 
@@ -56,7 +50,7 @@ void read_keywords(analyzer *context)
 {
 	context->keywordsnum = 1;
 	getnext(context);
-	nextch(context);
+	get_char(context);
 	while (lex(context) != LEOF)
 	{
 		; // чтение ключевых слов
@@ -115,8 +109,6 @@ void init_modetab(analyzer *context)
 	context->sx->md = 19;
 	context->keywordsnum = 0;
 	context->line = 1;
-	context->charnum = 1;
-	context->kw = 1;
 	context->sx->tc = 0;
 }
 

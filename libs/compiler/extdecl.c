@@ -35,6 +35,26 @@ int gettype(analyzer *context);
 void block(analyzer *context, int b);
 
 
+int scaner(analyzer *context)
+{
+	context->cur = context->next;
+	if (!context->buf_flag)
+	{
+		context->next = lex(context);
+	}
+	else
+	{
+		context->next = context->buf_cur;
+		context->buf_flag--;
+	}
+	
+	//	 if(context->kw)
+	//			printf("scaner context->cur %i context->next %i buf_flag %i\n",
+	//			context->cur, context->next, context->buf_flag);
+	return context->cur;
+}
+
+
 int newdecl(syntax *const sx, const int type, const int element_type)
 {
 	int temp[2];
@@ -772,8 +792,8 @@ void primaryexpr(analyzer *context)
 		if (context->ansttype == LFLOAT) // context->ansttype задается прямо в сканере
 		{
 			totree(context, TConstd);
-			totree(context, context->numr.first);
-			totree(context, context->numr.second);
+			totree(context, context->numr.fst);
+			totree(context, context->numr.snd);
 		}
 		else
 		{
@@ -921,7 +941,7 @@ void primaryexpr(analyzer *context)
 		}
 		else if (func >= RECEIVE_STRING && func <= SEND_INT)
 		{
-			context->notrobot = 0; // новые функции Фадеева
+			// новые функции Фадеева
 			mustbeint(context);
 			if (context->error_flag == 5)
 			{
@@ -948,7 +968,6 @@ void primaryexpr(analyzer *context)
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
 		{
-			context->notrobot = 0;
 			if (func <= PIXEL && func >= ICON)
 			{
 				// scaner(context);
@@ -1302,7 +1321,6 @@ void primaryexpr(analyzer *context)
 			// SETMOTOR и VOLTAGE void (int port, int volt)
 			if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR || func == VOLTAGE)
 			{
-				context->notrobot = 0;
 				if (!is_int(context->ansttype))
 				{
 					context_error(context, param_setmotor_not_int);
@@ -4047,7 +4065,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 void ext_decl(analyzer *context)
 {
 	getnext(context);
-	nextch(context);
+	get_char(context);
 	context->next = lex(context);
 	
 	int i;
