@@ -76,7 +76,7 @@ int compile_from_io_to_vm(universal_io *const io)
 
 	if (!ret)
 	{
-		//tree_print(&sx, "new.txt");
+		tree_print(&sx, "new.txt");
 		if (tree_test(&sx))
 		{
 			io_erase(io);

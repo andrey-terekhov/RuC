@@ -251,7 +251,14 @@ node node_operator(tree *const tree, size_t *i)
 			break;
 		case TDeclid:		// IdentDecl: 6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
 			nd.argc = 7;
-			nd.amount = 1;
+			if (nd.argv[&nd.argc - 3])	// nd.argv[4] == 1 означает наличие TExprend
+			{
+				nd.amount = 1;
+			}
+			else
+			{
+				nd.amount = 0;
+			}
 
 			*i += nd.argc;
 			*i = skip_expression(tree, *i, 1);
@@ -285,19 +292,22 @@ node node_operator(tree *const tree, size_t *i)
 				*i += 2;
 			}
 			break;
+		case TStructend:
+			break;
 
 		case TBegin:
-
 			while (*i != SIZE_MAX && tree[*i] != TEnd)
 			{
 				node_operator(tree, i);
 				nd.amount++;
 			}
-			
+			nd.amount++;
 			if (*i != SIZE_MAX)
 			{
 				*i += 1;
 			}
+			break;
+		case TEnd:
 			break;
 
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)

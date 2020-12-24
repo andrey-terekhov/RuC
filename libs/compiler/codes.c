@@ -1396,7 +1396,7 @@ void tree_print(syntax *const sx, const char *const path)
 	}
 
 	node nd = node_get_root(sx);
-	for (size_t i = 0; i < node_get_amount(&nd); i++)
+	for (size_t i = 0; i <= node_get_amount(&nd); i++)
 	{
 		node child = node_get_child(&nd, i);
 		tree_print_recursive(&io, &child, 0);
