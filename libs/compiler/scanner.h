@@ -24,13 +24,21 @@ extern "C" {
 #endif
 
 void onemore(analyzer *context);
-int scan(analyzer *context);
 int getnext(analyzer *context);
 int scaner(analyzer *context);
 void nextch(analyzer *context);
 int letter(analyzer *);
 int digit(analyzer *);
 int equal(analyzer *, int, int);
+
+/**
+ *	Lex next token from io
+ *
+ *	@param	context	Analyzer structure
+ *
+ *	@return	token
+ */
+int lex(analyzer *const context);
 
 #ifdef __cplusplus
 } /* extern "C" */

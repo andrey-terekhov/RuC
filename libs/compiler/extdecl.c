@@ -4048,7 +4048,7 @@ void ext_decl(analyzer *context)
 {
 	getnext(context);
 	nextch(context);
-	context->next = scan(context);
+	context->next = lex(context);
 	
 	int i;
 	context->temp_tc = context->sx->tc;

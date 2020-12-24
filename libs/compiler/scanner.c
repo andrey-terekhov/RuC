@@ -477,317 +477,22 @@ int lex_string_literal(analyzer *const context)
 }
 
 
-int scan(analyzer *context)
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+int lex(analyzer *const context)
 {
-	int cr;
-	context->new_line_flag = 0;
-	while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
-	{
-		if (context->curchar == '\n')
-		{
-			context->new_line_flag = 1;
-		}
-		nextch(context);
-	}
-	// printf("scan context->curchar = %c %i\n", context->curchar, context->curchar);
+	skip_whitespace(context);
 	switch (context->curchar)
 	{
 		case EOF:
-		{
 			return LEOF;
-		}
-		case ',':
-		{
-			nextch(context);
-			return COMMA;
-		}
-
-		case '=':
-			nextch(context);
-			if (context->curchar == '=')
-			{
-				nextch(context);
-				cr = EQEQ;
-			}
-			else
-			{
-				cr = ASS;
-			}
-			return cr;
-
-		case '*':
-			nextch(context);
-			if (context->curchar == '=')
-			{
-				nextch(context);
-				cr = MULTASS;
-			}
-			else
-			{
-				cr = LMULT;
-			}
-			return cr;
-
-		case '/':
-			nextch(context);
-			if (context->curchar == '=')
-			{
-				nextch(context);
-				cr = DIVASS;
-			}
-			else
-			{
-				cr = LDIV;
-			}
-			return cr;
-
-		case '%':
-			nextch(context);
-			if (context->curchar == '=')
-			{
-				nextch(context);
-				cr = REMASS;
-			}
-			else
-			{
-				cr = LREM;
-			}
-			return cr;
-
-		case '+':
-			nextch(context);
-			if (context->curchar == '=')
-			{
-				nextch(context);
-				cr = PLUSASS;
-			}
-			else if (context->curchar == '+')
-			{
-				nextch(context);
-				cr = INC;
-			}
-			else
-			{
-				cr = LPLUS;
-			}
-			return cr;
-
-		case '-':
-			nextch(context);
-			if (context->curchar == '=')
-			{
-				nextch(context);
-				cr = MINUSASS;
-			}
-			else if (context->curchar == '-')
-			{
-				nextch(context);
-				cr = DEC;
-			}
-			else if (context->curchar == '>')
-			{
-				nextch(context);
-				cr = ARROW;
-			}
-			else
-			{
-				cr = LMINUS;
-			}
-			return cr;
-
-		case '<':
-			nextch(context);
-			if (context->curchar == '<')
-			{
-				nextch(context);
-				if (context->curchar == '=')
-				{
-					nextch(context);
-					cr = SHLASS;
-				}
-				else
-				{
-					cr = LSHL;
-				}
-			}
-			else if (context->curchar == '=')
-			{
-				nextch(context);
-				cr = LLE;
-			}
-			else
-			{
-				cr = LLT;
-			}
-
-			return cr;
-
-		case '>':
-			nextch(context);
-			if (context->curchar == '>')
-			{
-				nextch(context);
-				if (context->curchar == '=')
-				{
-					nextch(context);
-					cr = SHRASS;
-				}
-				else
-				{
-					cr = LSHR;
-				}
-			}
-			else if (context->curchar == '=')
-			{
-				nextch(context);
-				cr = LGE;
-			}
-			else
-			{
-				cr = LGT;
-			}
-			return cr;
-
-		case '&':
-			nextch(context);
-			if (context->curchar == '=')
-			{
-				nextch(context);
-				cr = ANDASS;
-			}
-			else if (context->curchar == '&')
-			{
-				nextch(context);
-				cr = LOGAND;
-			}
-			else
-			{
-				cr = LAND;
-			}
-			return cr;
-
-		case '^':
-			nextch(context);
-			if (context->curchar == '=')
-			{
-				nextch(context);
-				cr = EXORASS;
-			}
-			else
-			{
-				cr = LEXOR;
-			}
-			return cr;
-
-		case '|':
-			nextch(context);
-			if (context->curchar == '=')
-			{
-				nextch(context);
-				cr = ORASS;
-			}
-			else if (context->curchar == '|')
-			{
-				nextch(context);
-				cr = LOGOR;
-			}
-			else
-			{
-				cr = LOR;
-			}
-			return cr;
-
-		case '!':
-			nextch(context);
-			if (context->curchar == '=')
-			{
-				nextch(context);
-				cr = NOTEQ;
-			}
-			else
-			{
-				cr = LOGNOT;
-			}
-			return cr;
-			
-		// Character Constants [C99 6.4.4.4]
-		case '\'':
-			return lex_char_constant(context);
-			
-		// String Literals [C99 6.4.5]
-		case '\"':
-			return lex_string_literal(context);
-			
-		case '(':
-		{
-			nextch(context);
-			return LEFTBR;
-		}
-
-		case ')':
-		{
-			nextch(context);
-			return RIGHTBR;
-		}
-
-		case '[':
-		{
-			nextch(context);
-			return LEFTSQBR;
-		}
-
-		case ']':
-		{
-			nextch(context);
-			return RIGHTSQBR;
-		}
-
-		case '~':
-		{
-			nextch(context);
-			return LNOT; // поразрядное отрицание
-		}
-		case '{':
-		{
-			nextch(context);
-			return BEGIN;
-		}
-		case '}':
-		{
-			nextch(context);
-			return END;
-		}
-		case ';':
-		{
-			nextch(context);
-			return SEMICOLON;
-		}
-		case '?':
-		{
-			nextch(context);
-			return QUEST;
-		}
-		case ':':
-		{
-			nextch(context);
-			return COLON;
-		}
-		case '.':
-			if (utf8_is_digit(context->nextchar))
-			{
-				return lex_numeric_constant(context);
-			}
-			else
-			{
-				nextch(context);
-				return DOT;
-			}
-
-		// Integer Constants [C99 6.4.4.1]
-		// Floating Constants [C99 6.4.4.2]
-		case '0': case '1': case '2': case '3': case '4':
-		case '5': case '6': case '7': case '8': case '9':
-			return lex_numeric_constant(context);
 
 		default:
 			if (utf8_is_letter(context->curchar) || context->curchar == '#')
@@ -801,8 +506,266 @@ int scan(analyzer *context)
 				error(context->io, bad_character, context->curchar);
 				context->error_flag = 1;
 				// Притворимся, что плохого символа не было
-				nextch(context);
-				return scan(context);
+				get_char(context);
+				return lex(context);
+			}
+
+		// Integer Constants [C99 6.4.4.1]
+		// Floating Constants [C99 6.4.4.2]
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9':
+			return lex_numeric_constant(context);
+
+		// Character Constants [C99 6.4.4.4]
+		case '\'':
+			return lex_char_constant(context);
+
+		// String Literals [C99 6.4.5]
+		case '\"':
+			return lex_string_literal(context);
+
+		// Punctuators [C99 6.4.6]
+		case '?':
+			get_char(context);
+			return QUEST;
+
+		case '[':
+			get_char(context);
+			return LEFTSQBR;
+
+		case ']':
+			get_char(context);
+			return RIGHTSQBR;
+
+		case '(':
+			get_char(context);
+			return LEFTBR;
+
+		case ')':
+			get_char(context);
+			return RIGHTBR;
+
+		case '{':
+			get_char(context);
+			return BEGIN;
+
+		case '}':
+			get_char(context);
+			return END;
+
+		case '~':
+			get_char(context);
+			return LNOT;
+
+		case ':':
+			get_char(context);
+			return COLON;
+
+		case ';':
+			get_char(context);
+			return SEMICOLON;
+
+		case ',':
+			get_char(context);
+			return COMMA;
+
+		case '.':
+			if (utf8_is_digit(context->nextchar))
+			{
+				lex_numeric_constant(context);
+				return NUMBER;
+			}
+			else
+			{
+				get_char(context);
+				return DOT;
+			}
+
+		case '*':
+			if (get_char(context) == '=')
+			{
+				get_char(context);
+				return MULTASS;
+			}
+			else
+			{
+				return LMULT;
+			}
+
+		case '!':
+			if (get_char(context) == '=')
+			{
+				get_char(context);
+				return NOTEQ;
+			}
+			else
+			{
+				return LOGNOT;
+			}
+
+		case '%':
+			if (get_char(context) == '=')
+			{
+				get_char(context);
+				return REMASS;
+			}
+			else
+			{
+				return LREM;
+			}
+
+		case '^':
+			if (get_char(context) == '=')
+			{
+				get_char(context);
+				return EXORASS;
+			}
+			else
+			{
+				return LEXOR;
+			}
+
+		case '=':
+			if (get_char(context) == '=')
+			{
+				get_char(context);
+				return EQEQ;
+			}
+			else
+			{
+				return ASS;
+			}
+
+		case '+':
+			switch (get_char(context))
+			{
+				case '=':
+					get_char(context);
+					return PLUSASS;
+					
+				case '+':
+					get_char(context);
+					return INC;
+					
+				default:
+					return LPLUS;
+			}
+
+		case '|':
+			switch (get_char(context))
+			{
+				case '=':
+					get_char(context);
+					return ORASS;
+					
+				case '|':
+					get_char(context);
+					return LOGOR;
+					
+				default:
+					return LOR;
+			}
+
+		case '&':
+			switch (get_char(context))
+			{
+				case '=':
+					get_char(context);
+					return ANDASS;
+					
+				case '&':
+					get_char(context);
+					return LOGAND;
+					
+				default:
+					return LAND;
+			}
+
+		case '-':
+			switch (get_char(context))
+			{
+				case '=':
+					get_char(context);
+					return MINUSASS;
+					
+				case '-':
+					get_char(context);
+					return DEC;
+					
+				case '>':
+					get_char(context);
+					return ARROW;
+					
+				default:
+					return LMINUS;
+			}
+
+		case '<':
+			switch (get_char(context))
+			{
+				case '<':
+					if (get_char(context) == '=')
+					{
+						get_char(context);
+						return SHLASS;
+					}
+					else
+					{
+						return LSHL;
+					}
+					
+				case '=':
+					get_char(context);
+					return LLE;
+					
+				default:
+					return LLT;
+			}
+
+		case '>':
+			switch (get_char(context))
+			{
+				case '>':
+					if (get_char(context) == '=')
+					{
+						get_char(context);
+						return SHRASS;
+					}
+					else
+					{
+						return LSHR;
+					}
+					
+				case '=':
+					get_char(context);
+					return LGE;
+					
+				default:
+					return LGT;
+			}
+
+		case '/':
+			switch (get_char(context))
+			{
+				case '=':
+					get_char(context);
+					return DIVASS;
+					
+				case '+':
+					get_char(context);
+					return INC;
+					
+					// Comments [C99 6.4.9]
+				case '/':
+					skip_line_comment(context);
+					return lex(context);
+					
+				case '*':
+					skip_block_comment(context);
+					return lex(context);
+					
+				default:
+					return LDIV;
 			}
 	}
 }
@@ -812,7 +775,7 @@ int scaner(analyzer *context)
 	context->cur = context->next;
 	if (!context->buf_flag)
 	{
-		context->next = scan(context);
+		context->next = lex(context);
 	}
 	else
 	{

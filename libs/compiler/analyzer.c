@@ -57,7 +57,7 @@ void read_keywords(analyzer *context)
 	context->keywordsnum = 1;
 	getnext(context);
 	nextch(context);
-	while (scan(context) != LEOF)
+	while (lex(context) != LEOF)
 	{
 		; // чтение ключевых слов
 	}
