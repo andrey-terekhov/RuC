@@ -182,7 +182,7 @@ int lex_numeric_constant(analyzer *const context)
 		}
 	}
 	
-	if (is_power(context->curchar))
+	if (utf8_is_power(context->curchar))
 	{
 		int power = 0;
 		int sign = 1;

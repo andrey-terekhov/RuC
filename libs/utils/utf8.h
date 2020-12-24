@@ -114,7 +114,7 @@ EXPORTED int utf8_is_digit(const char32_t symbol);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int is_power(const char32_t symbol);
+EXPORTED int utf8_is_power(const char32_t symbol);
 
 #ifdef __cplusplus
 } /* extern "C" */

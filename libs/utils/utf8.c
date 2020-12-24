@@ -336,7 +336,7 @@ int utf8_is_digit(const char32_t symbol)
 	return symbol >= '0' && symbol <= '9';
 }
 
-int is_power(const char32_t symbol)
+int utf8_is_power(const char32_t symbol)
 {
 	return symbol == 'e' || symbol == 'E' || symbol == U'е' || symbol == U'Е';
 }

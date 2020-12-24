@@ -70,7 +70,7 @@ double get_digit(preprocess_context *context, int* error)
 		}
 	}
 
-	if (is_power(context->curchar))
+	if (utf8_is_power(context->curchar))
 	{
 		int power = 0;
 		int sign = 1;
