@@ -2,7 +2,7 @@
 
 init()
 {
-	output_time=0.1
+	output_time=0.0
 	wait_for=2
 	vm_release=master
 
@@ -29,14 +29,18 @@ init()
 				echo -e "Keys:"
 				echo -e "\t-h, --help\tTo output help info."
 				echo -e "\t-s, --silence\tFor silence testing."
+				echo -e "\t-i, --ignore\tIgnore errors & executing stages."
 				echo -e "\t-d, --debug\tSwitch on debug tracing."
 				echo -e "\t-v, --virtual\tSet RuC virtual machine release."
-				echo -e "\t-o, --output\tSet output printing time (default = 0.1)."
+				echo -e "\t-o, --output\tSet output printing time (default = 0.0)."
 				echo -e "\t-w, --wait\tSet waiting time for timeout result (default = 2)."
 				exit 0
 				;;
 			-s|--silence)
 				silence=$1
+				;;
+			-i|--ignore)
+				ignore=$1
 				;;
 			-d|--debug)
 				debug=$1
@@ -77,7 +81,11 @@ build_vm()
 	fi
 
 	cd ../..
-	ruc_interpreter=./ruc-vm/build/ruc-vm
+	if [[ $OSTYPE == "msys" ]] ; then
+		ruc_interpreter=./ruc-vm/build/Release/ruc-vm
+	else
+		ruc_interpreter=./ruc-vm/build/ruc-vm
+	fi
 }
 
 build()
@@ -88,17 +96,23 @@ build()
 		exit 1
 	fi
 
-	ruc_compiler=./ruc
+	if [[ $OSTYPE == "msys" ]] ; then
+		ruc_compiler=./Release/ruc.exe
+	else
+		ruc_compiler=./ruc
+	fi
 
-	build_vm
+	if [[ -z $ignore ]] ; then
+		build_vm
+	fi
 }
 
 internal_timeout()
 {
-	if [[ $OSTYPE == "linux-gnu" ]] ; then
-		timeout $@
-	else
+	if [[ $OSTYPE == "darwin" ]] ; then
 		gtimeout $@
+	else
+		timeout $@
 	fi
 }
 
@@ -181,6 +195,8 @@ execution()
 				fi
 				;;
 		esac
+	else
+		let success++
 	fi
 }
 
@@ -190,7 +206,13 @@ check_warnings()
 		message_success
 		let success++
 	else
-		if [[ `grep -c "\[1;31m" $log` > 1 ]] ; then
+		if [[ $OSTYPE == "msys" ]] ; then
+			flag=`cat $log | iconv -c -f CP1251 -t UTF-8 | grep -c "ошибка: "`
+		else
+			flag=`grep -c "ошибка: " $log`
+		fi
+
+		if [[ $flag > 1 ]] ; then
 			message_warning
 			let warning++
 
@@ -206,47 +228,54 @@ check_warnings()
 
 compiling()
 {
-	action="compiling"
-	internal_timeout $wait_for $ruc_compiler $sources &>$log
+	if [[ -z $ignore || $path != $error_dir/* ]] ; then
+		action="compiling"
+		internal_timeout $wait_for $ruc_compiler $sources &>$log
 
-	case "$?" in
-		0)
-			if [[ $path == $error_dir/* ]] ; then
-				message_failure
-				let failure++
-			else
-				message_success
-				execution
-			fi
-			;;
-		124|142)
-			message_timeout
-			let timeout++
-			;;
-		139|134)
-			# Segmentation fault
-			# Double free or corruption (!prev)
+		case "$?" in
+			0)
+				if [[ $path == $error_dir/* ]] ; then
+					message_failure
+					let failure++
+				else
+					message_success
 
-			message_failure
-			let failure++
+					if [[ -z $ignore ]] ; then
+						execution
+					else
+						let success++
+					fi
+				fi
+				;;
+			124|142)
+				message_timeout
+				let timeout++
+				;;
+			139|134)
+				# Segmentation fault
+				# Double free or corruption (!prev)
 
-			if ! [[ -z $debug ]] ; then
-				cat $log
-			fi
-			;;
-		*)
-			if [[ $path == $error_dir/* ]] ; then
-				check_warnings
-			else
 				message_failure
 				let failure++
 
 				if ! [[ -z $debug ]] ; then
 					cat $log
 				fi
-			fi
-			;;
-	esac
+				;;
+			*)
+				if [[ $path == $error_dir/* ]] ; then
+					check_warnings
+				else
+					message_failure
+					let failure++
+
+					if ! [[ -z $debug ]] ; then
+						cat $log
+					fi
+				fi
+				;;
+		esac
+	fi
 }
 
 test()

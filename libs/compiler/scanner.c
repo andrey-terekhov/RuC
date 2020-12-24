@@ -14,26 +14,24 @@
  *	limitations under the License.
  */
 
-#include "context.h"
+#include "analyzer.h"
 #include "errors.h"
-#include "global.h"
-#include "macro_global_struct.h"
+#include "defs.h"
 #include "uniscanner.h"
-#include <limits.h>
+#include "utf8.h"
 #include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 
-int getnext(compiler_context *context)
+int getnext(analyzer *context)
 {
-	int ret = scanner_getnext(&context->input_options);
+	int ret = uni_scan_char(context->io);
 	context->nextchar = ret;
 	return ret;
 }
 
-void onemore(compiler_context *context)
+void onemore(analyzer *context)
 {
 	context->curchar = context->nextchar;
 	context->nextchar = getnext(context);
@@ -45,24 +43,24 @@ void onemore(compiler_context *context)
 	}
 }
 
-void endofline(compiler_context *context)
+/*void endofline(analyzer *context)
 {
-	/*if (context->prep_flag == 1)
+	if (context->prep_flag == 1)
 	{
 		int j;
-		printer_printf(&context->output_options, "line %i) ", context->line - 1);
+		uni_printf(context->io, "line %i) ", context->line - 1);
 		for (j = context->lines[context->line - 1]; j < context->lines[context->line]; j++)
 		{
 			if (context->source[j] != EOF)
 			{
-				printer_printchar(&context->output_options, context->source[j]);
+				uni_print_char(context->io, context->source[j]);
 			}
 		}
-	}*/
+	}
 	// fflush(stdout);
-}
+}*/
 
-void endnl(compiler_context *context)
+void endnl(analyzer *context)
 {
 	if (context->kw)
 	{
@@ -78,14 +76,14 @@ void endnl(compiler_context *context)
 	}*/
 }
 
-void nextch(compiler_context *context)
+void nextch(analyzer *context)
 {
 	onemore(context);
 	if (context->curchar == EOF)
 	{
 		onemore(context);
 		endnl(context);
-		// printer_printf(&context->output_options, "\n");
+		// uni_printf(context->io, "\n");
 		return;
 	}
 	if (context->kw)
@@ -97,15 +95,31 @@ void nextch(compiler_context *context)
 		return;
 	}
 
+	if (context->curchar == '/' && context->nextchar == '/')
+	{
+		do
+		{
+			onemore(context);
+			if (context->curchar == EOF)
+			{
+				endnl(context);
+				// uni_printf(context->io, "\n");
+				return;
+			}
+		} while (context->curchar != '\n');
+		endnl(context);
+		return;
+	}
+	
 	if (context->kw && context->curchar == '\n')
 	{
-		context->temp_tc = context->tc;
+		context->temp_tc = context->sx->tc;
 		endnl(context);
 	}
 	return;
 }
 
-void next_string_elem(compiler_context *context)
+void next_string_elem(analyzer *context)
 {
 	context->num = context->curchar;
 	if (context->curchar == '\\')
@@ -125,8 +139,8 @@ void next_string_elem(compiler_context *context)
 		}
 		else if (context->curchar != '\'' && context->curchar != '\\' && context->curchar != '\"')
 		{
-			error(context, bad_escape_sym);
-			exit(2);
+			error(context->io, bad_escape_sym);
+			exit(1);
 		}
 		else
 		{
@@ -136,25 +150,25 @@ void next_string_elem(compiler_context *context)
 	nextch(context);
 }
 
-int letter(compiler_context *context)
+int letter(analyzer *context)
 {
 	return (context->curchar >= 'A' && context->curchar <= 'Z') ||
 		   (context->curchar >= 'a' && context->curchar <= 'z') || context->curchar == '_' ||
-		   (context->curchar >= 0x410 /*А */ && context->curchar <= 0x44F /*'я'*/);
+		   utf8_is_russian(context->curchar);
 }
 
-int digit(compiler_context *context)
+int digit(analyzer *context)
 {
 	return context->curchar >= '0' && context->curchar <= '9';
 }
 
-int ispower(compiler_context *context)
+int ispower(analyzer *context)
 {
 	return context->curchar == 'e' || context->curchar == 'E'; // || context->curchar == 'е' || context->curchar == 'Е')
 															   // // это русские е и Е
 }
 
-int equal(compiler_context *context, int i, int j)
+int equal(analyzer *context, int i, int j)
 {
 	++i;
 	++j;
@@ -169,74 +183,8 @@ int equal(compiler_context *context, int i, int j)
 	return 0;
 }
 
-void marcer_update(compiler_context *context)
-{
-	data_files *files;
 
-	nextch(context);
-
-	if (context->curchar == '1')
-	{
-		nextch(context);
-
-		int c = context->curchar - '0';
-		nextch(context);
-
-		while (digit(context))
-		{
-			c = c * 10 + context->curchar - '0';
-			nextch(context);
-		}
-
-
-		if (c == 0)
-		{
-			context->c_flag++;
-		}
-
-		if (context->c_flag == 1)
-		{
-			files = &context->cfs;
-		}
-		else
-		{
-			files = &context->hfs;
-		}
-
-		files->cur = c;
-		if (files->cur != -1)
-		{
-			(files->files[files->cur]).line = context->line;
-		}
-	}
-	else
-	{
-		if (context->c_flag == 1)
-		{
-			files = &context->cfs;
-		}
-		else
-		{
-			files = &context->hfs;
-		}
-		nextch(context);
-		if ((files->files[files->cur]).pred != -1)
-		{
-			files->cur = (files->files[files->cur]).pred;
-		}
-		if (files->cur != -1)
-		{
-			context->line = (files->files[files->cur]).line;
-		}
-		else
-		{
-			context->line = 0;
-		}
-		nextch(context);
-	}
-}
-
-int scan(compiler_context *context)
+int scan(analyzer *context)
 {
 	int cr;
 	context->new_line_flag = 0;
@@ -475,8 +423,9 @@ int scan(compiler_context *context)
 			next_string_elem(context);
 			if (context->curchar != '\'')
 			{
-				error(context, no_right_apost);
+				error(context->io, no_right_apost);
 				context->error_flag = 1;
+				context->sx->tc = context->temp_tc;
 			}
 			else
 			{
@@ -503,8 +452,8 @@ int scan(compiler_context *context)
 				}
 				if (n == MAXSTRINGL)
 				{
-					error(context, too_long_string);
-					exit(2);
+					error(context->io, too_long_string);
+					exit(1);
 				}
 				nextch(context);
 				while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
@@ -599,12 +548,12 @@ int scan(compiler_context *context)
 			int flagint = 1;
 			int flagtoolong = 0;
 			double k;
+			double numdouble = 0.0;
 			context->num = 0;
-			context->numdouble = 0.0;
 			while (digit(context))
 			{
-				context->numdouble = context->numdouble * 10 + (context->curchar - '0');
-				if (context->numdouble > (double)INT_MAX)
+				numdouble = numdouble * 10 + (context->curchar - '0');
+				if (numdouble > (double)INT_MAX)
 				{
 					flagtoolong = 1;
 					flagint = 0;
@@ -620,7 +569,7 @@ int scan(compiler_context *context)
 				k = 0.1;
 				while (digit(context))
 				{
-					context->numdouble += (context->curchar - '0') * k;
+					numdouble += (context->curchar - '0') * k;
 					k *= 0.1;
 					nextch(context);
 				}
@@ -629,14 +578,13 @@ int scan(compiler_context *context)
 			if (ispower(context))
 			{
 				int d = 0;
-				int k = 1;
-				int i;
+				int minus = 1;
 				nextch(context);
 				if (context->curchar == '-')
 				{
 					flagint = 0;
 					nextch(context);
-					k = -1;
+					minus = -1;
 				}
 				else if (context->curchar == '+')
 				{
@@ -644,8 +592,8 @@ int scan(compiler_context *context)
 				}
 				if (!digit(context))
 				{
-					error(context, must_be_digit_after_exp);
-					exit(2);
+					error(context->io, must_be_digit_after_exp);
+					exit(1);
 				}
 				while (digit(context))
 				{
@@ -654,12 +602,12 @@ int scan(compiler_context *context)
 				}
 				if (flagint)
 				{
-					for (i = 1; i <= d; i++)
+					for (int i = 1; i <= d; i++)
 					{
 						context->num *= 10;
 					}
 				}
-				context->numdouble *= pow(10.0, k * d);
+				numdouble *= pow(10.0, minus * d);
 			}
 
 			if (flagint)
@@ -671,38 +619,30 @@ int scan(compiler_context *context)
 			{
 				if (flagtoolong)
 				{
-					warning(context, too_long_int);
+					warning(context->io, too_long_int);
 				}
 				context->ansttype = LFLOAT;
 			}
-			memcpy(&context->numr, &context->numdouble, sizeof(double));
+			memcpy(&context->numr, &numdouble, sizeof(double));
 			return NUMBER;
 		}
 
 		default:
-			if (context->curchar == '#' && (context->nextchar == '1' || context->nextchar == '2'))
-			{
-				marcer_update(context);
-				return scan(context);
-			}
 			if (letter(context) || context->curchar == '#')
 			{
 				int oldrepr = REPRTAB_LEN;
 				int r;
-				compiler_table_expand(&context->reprtab, 2);
 				REPRTAB_LEN += 2;
 				context->hash = 0;
 
 				do
 				{
 					context->hash += context->curchar;
-					compiler_table_expand(&context->reprtab, 1);
 					REPRTAB[REPRTAB_LEN++] = context->curchar;
 					nextch(context);
 				} while (letter(context) || digit(context));
 
 				context->hash &= 255;
-				compiler_table_expand(&context->reprtab, 1);
 				REPRTAB[REPRTAB_LEN++] = 0;
 				r = context->hashtab[context->hash];
 				if (r)
@@ -712,36 +652,36 @@ int scan(compiler_context *context)
 						if (equal(context, r, oldrepr))
 						{
 							REPRTAB_LEN = oldrepr;
-							compiler_table_ensure_allocated(&context->reprtab, r + 1);
 							return (REPRTAB[r + 1] < 0) ? REPRTAB[r + 1] : (REPRTAB_POS = r, IDENT);
 						}
 						else
 						{
-							compiler_table_ensure_allocated(&context->reprtab, r);
 							r = REPRTAB[r];
 						}
 					} while (r);
 				}
 
-				compiler_table_ensure_allocated(&context->reprtab, oldrepr);
 				REPRTAB[oldrepr] = context->hashtab[context->hash];
 				REPRTAB_POS = context->hashtab[context->hash] = oldrepr;
-				compiler_table_expand(&context->reprtab, 1);
 				REPRTAB[REPRTAB_POS + 1] =
 					(context->keywordsnum) ? -((++context->keywordsnum - 2) / 4) : 1; // 0 - только MAIN, < 0 - ключевые
 																					  // слова, 1 - обычные иденты
 				return IDENT;
 			}
 			else
-			{
-				printer_printf(&context->err_options, "плохой символ %c %i\n", context->curchar, context->curchar);
-				context->error_flag = 1;
-				return 0;
+			{				
+				char msg[256];
+				size_t index = sprintf(msg, "плохой символ ");
+				index += utf8_to_string(&msg[index], context->curchar);
+				index += sprintf(&msg[index], " %i", context->curchar);
+
+				error_msg(context->io, msg);
+				exit(1);
 			}
 	}
 }
 
-int scaner(compiler_context *context)
+int scaner(analyzer *context)
 {
 	context->cur = context->next;
 	if (!context->buf_flag)
