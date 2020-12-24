@@ -93,10 +93,18 @@ int is_lexeme(const int value)
 
 size_t skip_expression(tree *const tree, size_t i, int is_block)
 {
+	node nd;
 	if (i == SIZE_MAX)
 	{
 		return SIZE_MAX;
 	}
+
+	nd.tree = tree;
+	nd.type = i;
+	nd.argv = nd.type + 1;
+
+	nd.argc = 0;
+	nd.amount = 0;
 
 	if (tree[i] == NOP && !is_block)
 	{
@@ -105,6 +113,7 @@ size_t skip_expression(tree *const tree, size_t i, int is_block)
 			exit(139);
 		}
 
+		nd.children = nd.argv + nd.argc;
 		return i + 1;
 	}
 
@@ -128,14 +137,15 @@ size_t skip_expression(tree *const tree, size_t i, int is_block)
 	{
 		case TBeginit:		// ArrayInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
 		case TStructinit:	// StructInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
-		{
-			size_t n = tree[i++];
-			for (size_t j = 0; j < n; j++)
+			nd.argc = 1;
+			nd.amount = node_get_arg(&nd, 0);
+
+			i += nd.argc;
+			for (size_t j = 0; j < nd.amount; j++)
 			{
 				i = skip_expression(tree, i, 1);
 			}
-		}
-		break;
+			break;
 
 		case TAddrtovald:
 		case TAddrtoval:
@@ -144,7 +154,8 @@ size_t skip_expression(tree *const tree, size_t i, int is_block)
 			break;
 
 		case TConstd:		// d - double
-			i += 2;
+			nd.argc = 2;
+			i += nd.argc;
 			break;
 		case TConst:
 		case TSelect:
@@ -156,37 +167,64 @@ size_t skip_expression(tree *const tree, size_t i, int is_block)
 		case TIdenttoval:
 
 		case TCall1:
-			i += 1;
+			nd.argc = 1;
+			i += nd.argc;
 			break;
 		case TCall2:
 
 		case TIdent:
-			i = skip_expression(tree, i + 1, 1);	// Может быть общий TExprend
-			i = i == SIZE_MAX ? SIZE_MAX : i - 1;
+			nd.argc = 1;
+			nd.amount = 1;
+
+			i += nd.argc;
+			i = skip_expression(tree, i, 1);
+			if (i == SIZE_MAX)
+			{
+				return SIZE_MAX;
+			}
+			i -= 1;			// Может быть общий TExprend
 			break;
 
 		case TStringd:		// d - double
 		{
-			int n = tree[i++];
-			i += n * 2;
+			nd.argc = 1;
+			nd.argc += node_get_arg(&nd, 0) * 2;
+			i += nd.argc;
 		}
 		break;
 		case TString:
 		{
-			int n = tree[i++];
-			i += n;
+			nd.argc = 1;
+			nd.argc += node_get_arg(&nd, 0);
+			i += nd.argc;
 		}
 		break;
 
 		case TSliceident:
-			i = skip_expression(tree, i + 2, 1);			// 2 ветви потомков
+			nd.argc = 2;
+			nd.amount = 2;
+
+			i += nd.argc;
+			i = skip_expression(tree, i, 1);			// 2 ветви потомков
 			i = skip_expression(tree, i, 1);
-			i = i == SIZE_MAX ? SIZE_MAX : i - 1;			// Может быть общий TExprend
+			if (i == SIZE_MAX)
+			{
+				return SIZE_MAX;
+			}
+			i -= 1;			// Может быть общий TExprend
 			break;
 		case TSlice:
-			i = skip_expression(tree, i + 1, 1);			// 2 ветви потомков
+			nd.argc = 1;
+			nd.amount = 2;
+
+			i += nd.argc;
+			i = skip_expression(tree, i, 1);			// 2 ветви потомков
 			i = skip_expression(tree, i, 1);
-			i = i == SIZE_MAX ? SIZE_MAX : i - 1;			// Может быть общий TExprend
+			if (i == SIZE_MAX)
+			{
+				return SIZE_MAX;
+			}
+			i -= 1;			// Может быть общий TExprend
 			break;
 
 		case TExprend:
@@ -213,10 +251,12 @@ size_t skip_expression(tree *const tree, size_t i, int is_block)
 					return SIZE_MAX;
 				}
 
+				nd.argc++;
 				i++;
 			}
 	}
 
+	nd.children = nd.argv + nd.argc;
 	return i;
 }
 
