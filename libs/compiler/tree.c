@@ -127,14 +127,6 @@ size_t skip_expression(tree *const tree, size_t i, int is_block)
 	switch (tree[i++])
 	{
 		case TBeginit:		// ArrayInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
-		{
-			size_t n = tree[i++];
-			for (size_t j = 0; j < n; j++)
-			{
-				i = skip_expression(tree, i, 1);
-			}
-		}
-		break;
 		case TStructinit:	// StructInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
 		{
 			size_t n = tree[i++];
@@ -145,53 +137,44 @@ size_t skip_expression(tree *const tree, size_t i, int is_block)
 		}
 		break;
 
-		case TPrint:		// Print: 2 потомка (тип значения, выражение)
-			i += 1;
-			break;
+		case TAddrtovald:
+		case TAddrtoval:
 
 		case TCondexpr:
 			break;
+
+		case TConstd:		// d - double
+			i += 2;
+			break;
+		case TConst:
 		case TSelect:
-			i += 1;
-			break;
 
-		case TAddrtoval:
-			break;
-		case TAddrtovald:
-			break;
-
-		case TIdenttoval:
-			i += 1;
-			break;
-		case TIdenttovald:
-			i += 1;
-			break;
+		case TPrint:		// Print: 2 потомка (тип значения, выражение)
 
 		case TIdenttoaddr:
+		case TIdenttovald:
+		case TIdenttoval:
+
+		case TCall1:
 			i += 1;
 			break;
+		case TCall2:
+
 		case TIdent:
 			i = skip_expression(tree, i + 1, 1);	// Может быть общий TExprend
 			i = i == SIZE_MAX ? SIZE_MAX : i - 1;
 			break;
 
-		case TConst:
-			i += 1;
-			break;
-		case TConstd:		// d - double
-			i += 2;
-			break;
-
-		case TString:
-		{
-			int n = tree[i++];
-			i += n;
-		}
-		break;
 		case TStringd:		// d - double
 		{
 			int n = tree[i++];
 			i += n * 2;
+		}
+		break;
+		case TString:
+		{
+			int n = tree[i++];
+			i += n;
 		}
 		break;
 
@@ -203,14 +186,6 @@ size_t skip_expression(tree *const tree, size_t i, int is_block)
 		case TSlice:
 			i = skip_expression(tree, i + 1, 1);			// 2 ветви потомков
 			i = skip_expression(tree, i, 1);
-			i = i == SIZE_MAX ? SIZE_MAX : i - 1;			// Может быть общий TExprend
-			break;
-
-		case TCall1:
-			i += 1;
-			break;
-		case TCall2:
-			i = skip_expression(tree, i + 1, 1);
 			i = i == SIZE_MAX ? SIZE_MAX : i - 1;			// Может быть общий TExprend
 			break;
 
