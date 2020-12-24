@@ -3863,7 +3863,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 /** Генерация дерева */
 void ext_decl(analyzer *context)
 {
-	getnext(context);
+	get_char(context);
 	get_char(context);
 	context->next = lex(context);
 	

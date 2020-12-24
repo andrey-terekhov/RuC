@@ -49,7 +49,7 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx)
 void read_keywords(analyzer *context)
 {
 	context->keywordsnum = 1;
-	getnext(context);
+	get_char(context);
 	get_char(context);
 	while (lex(context) != LEOF)
 	{

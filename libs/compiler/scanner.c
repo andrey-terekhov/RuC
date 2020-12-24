@@ -168,7 +168,6 @@ int lex_numeric_constant(analyzer *const context)
 {
 	int num_int = 0;
 	double num_double = 0.0;
-	double k;
 	int flag_int = 1;
 	int flag_too_long = 0;
 	
@@ -188,17 +187,17 @@ int lex_numeric_constant(analyzer *const context)
 	if (context->curchar == '.')
 	{
 		flag_int = 0;
-		k = 0.1;
+		double position_mult = 0.1;
 		while (utf8_is_digit(get_char(context)))
 		{
-			num_double += (context->curchar - '0') * k;
-			k *= 0.1;
+			num_double += (context->curchar - '0') * position_mult;
+			position_mult *= 0.1;
 		}
 	}
 	
 	if (is_power(context->curchar))
 	{
-		int d = 0;
+		int exp = 0;
 		int sign = 1;
 		get_char(context);
 		
@@ -222,18 +221,18 @@ int lex_numeric_constant(analyzer *const context)
 		
 		while (utf8_is_digit(context->curchar))
 		{
-			d = d * 10 + (context->curchar - '0');
+			exp = exp * 10 + (context->curchar - '0');
 			get_char(context);
 		}
 		
 		if (flag_int)
 		{
-			for (int i = 1; i <= d; i++)
+			for (int i = 1; i <= exp; i++)
 			{
 				context->num *= 10;
 			}
 		}
-		num_double *= pow(10.0, sign * d);
+		num_double *= pow(10.0, sign * exp);
 	}
 	
 	if (flag_int)
