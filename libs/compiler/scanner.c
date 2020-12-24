@@ -1,5 +1,5 @@
 /*
- *	Copyright 2020 Andrey Terekhov, Ilya Andreev
+ *	Copyright 2014 Andrey Terekhov, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -35,11 +35,6 @@ char32_t get_char(analyzer *const context)
 	return context->curchar;
 }
 
-int ispower(const char32_t symbol)
-{
-	return symbol == 'e' || symbol == 'E' || symbol == U'е' || symbol == U'Е';
-}
-
 
 /**
  *	Skip over a series of whitespace characters
@@ -48,7 +43,8 @@ int ispower(const char32_t symbol)
  */
 void skip_whitespace(analyzer *const context)
 {
-	while (context->curchar == ' ' || context->curchar == '\t' || context->curchar == '\n')
+	while (context->curchar == ' ' || context->curchar == '\t'
+		   || context->curchar == '\n' || context->curchar == '\r')
 	{
 		get_char(context);
 	}
@@ -88,7 +84,7 @@ void skip_block_comment(analyzer *const context)
 }
 
 
-int repr_is_equal(analyzer *const context, size_t i, size_t j)
+int repr_is_equal(const analyzer *const context, size_t i, size_t j)
 {
 	i += 2;
 	j += 2;
@@ -115,7 +111,6 @@ int repr_is_equal(analyzer *const context, size_t i, size_t j)
 int lex_identifier_or_keyword(analyzer *const context)
 {
 	size_t old_repr = REPRTAB_LEN;
-	size_t r;
 	size_t hash = 0;
 	REPRTAB_LEN += 2;
 	
@@ -128,30 +123,30 @@ int lex_identifier_or_keyword(analyzer *const context)
 	
 	context->hash = (hash &= 255);
 	REPRTAB[REPRTAB_LEN++] = 0;
-	r = context->hashtab[hash];
 	
-	if (r)
+	size_t cur_repr = context->hashtab[hash];
+	if (cur_repr)
 	{
 		do
 		{
-			if (repr_is_equal(context, r, old_repr))
+			if (repr_is_equal(context, cur_repr, old_repr))
 			{
 				REPRTAB_LEN = old_repr;
-				if (REPRTAB[r + 1] < 0)
+				if (REPRTAB[cur_repr + 1] < 0)
 				{
-					return REPRTAB[r + 1];
+					return REPRTAB[cur_repr + 1];
 				}
 				else
 				{
-					REPRTAB_POS = r;
+					REPRTAB_POS = cur_repr;
 					return IDENT;
 				}
 			}
 			else
 			{
-				r = REPRTAB[r];
+				cur_repr = REPRTAB[cur_repr];
 			}
-		} while (r);
+		} while (cur_repr);
 	}
 	
 	REPRTAB[old_repr] = context->hashtab[hash];
@@ -201,7 +196,7 @@ int lex_numeric_constant(analyzer *const context)
 		}
 	}
 	
-	if (ispower(context->curchar))
+	if (is_power(context->curchar))
 	{
 		int d = 0;
 		int sign = 1;

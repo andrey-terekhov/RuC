@@ -28,14 +28,6 @@
 
 int flagint = 1;
 
-
-int is_power(preprocess_context *context)
-{
-	return context->curchar == 'e' ||
-		   context->curchar ==
-			   'E'; // || context->curchar == (int)'е' || context->curchar == (int)'Е';	// это русские е и Е
-}
-
 double get_digit(preprocess_context *context, int* error)
 {
 	double k;
@@ -78,7 +70,7 @@ double get_digit(preprocess_context *context, int* error)
 		}
 	}
 
-	if (is_power(context))
+	if (is_power(context->curchar))
 	{
 		int power = 0;
 		int sign = 1;

@@ -56,12 +56,12 @@ void get_error(const int num, char *const msg, va_list args)
 	{
 		case bad_character:
 		{
-			const int bad_char = va_arg(args, int);
-			sprintf(msg, "Плохой символ = %i", bad_char);
+			const char32_t bad_char = va_arg(args, int);
+			sprintf(msg, "плохой символ = %i", bad_char);
 		}
 
 		case empty_char_const:
-			sprintf(msg, "Пустая символьная константа");
+			sprintf(msg, "пустая символьная константа");
 			break;
 
 		case unknown_escape_sequence:	//test_exist

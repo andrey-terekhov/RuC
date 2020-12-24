@@ -327,11 +327,16 @@ int utf8_is_russian(const char32_t symbol)
 int utf8_is_letter(const char32_t symbol)
 {
 	return  utf8_is_russian(symbol) || symbol == '_'
-		|| (symbol >= U'A' && symbol <= U'Z')
-		|| (symbol >= U'a' && symbol <= U'z');
+		|| (symbol >= 'A' && symbol <= 'Z')
+		|| (symbol >= 'a' && symbol <= 'z');
 }
 
 int utf8_is_digit(const char32_t symbol)
 {
 	return symbol >= '0' && symbol <= '9';
+}
+
+int is_power(const char32_t symbol)
+{
+	return symbol == 'e' || symbol == 'E' || symbol == U'е' || symbol == U'Е';
 }

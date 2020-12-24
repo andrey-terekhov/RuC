@@ -1,5 +1,5 @@
 /*
- *	Copyright 2020 Andrey Terekhov, Victor Y. Fadeev, Ilya Andreev
+ *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@
 extern "C" {
 #endif
 
-int getnext(analyzer *const context);
-void get_char(analyzer *const context);
+char32_t getnext(analyzer *const context);
+char32_t get_char(analyzer *const context);
 
 /**
  *	Lex next token from io

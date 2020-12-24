@@ -107,6 +107,15 @@ EXPORTED int utf8_is_letter(const char32_t symbol);
  */
 EXPORTED int utf8_is_digit(const char32_t symbol);
 
+/**
+ *	Checks if сharacter is 'E', 'e', 'Е' or 'е'
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+EXPORTED int is_power(const char32_t symbol);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
