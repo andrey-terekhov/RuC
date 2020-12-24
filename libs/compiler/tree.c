@@ -252,7 +252,7 @@ node node_operator(tree *const tree, size_t *i)
 			break;
 		case TDeclid:		// IdentDecl: 6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
 			nd.argc = 7;
-			nd.amount = nd.tree[nd.type + 4];	// all означает наличие TExprend	
+			nd.amount = nd.tree[nd.type + 4] ? 1 : 0;	// по all можно определить наличие TExprend	
 
 			*i += nd.argc;
 			*i = skip_expression(tree, *i, 1);
@@ -308,7 +308,7 @@ node node_operator(tree *const tree, size_t *i)
 
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
 			nd.argc = 1;
-			nd.amount = 1;
+			nd.amount = 0;
 
 			*i += nd.argc;
 			*i = skip_expression(tree, *i, 1);
@@ -349,7 +349,7 @@ node node_operator(tree *const tree, size_t *i)
 		case TFor:			// For: 4 потомка (выражение или объявление, условие окончания, выражение-инкремент, тело цикла); - первые 3 ветки присутствуют не всегда,  здесь также предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
 		{
 			nd.argc = 4;
-			nd.amount = 1;
+			nd.amount = 4;
 
 			size_t var = node_get_arg(&nd, 0);
 			if (var != 0)
