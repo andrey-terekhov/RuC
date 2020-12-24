@@ -58,10 +58,10 @@ void read_keywords(analyzer *context)
 }
 
 
-int toreprtab(analyzer *context, char str[])
+size_t toreprtab(analyzer *context, char str[])
 {
 	int i;
-	int oldrepr = REPRTAB_LEN;
+	size_t oldrepr = REPRTAB_LEN;
 
 	context->hash = 0;
 
@@ -89,8 +89,8 @@ void init_modetab(analyzer *context)
 	context->sx->modetab[3] = 2;
 	context->sx->modetab[4] = 4;
 	context->sx->modetab[5] = context->sx->modetab[7] = LINT;
-	context->sx->modetab[6] = toreprtab(context, "numTh");
-	context->sx->modetab[8] = toreprtab(context, "data");
+	context->sx->modetab[6] = (int)toreprtab(context, "numTh");
+	context->sx->modetab[8] = (int)toreprtab(context, "data");
 
 	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
 	context->sx->modetab[9] = 1;
