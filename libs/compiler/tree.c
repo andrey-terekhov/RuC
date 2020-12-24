@@ -50,7 +50,8 @@ int is_operator(const int value)
 		|| value == TContinue
 
 		|| value == NOP				// Lexemes
-		|| value == CREATEDIRECTC;
+		|| value == CREATEDIRECTC
+		|| value == EXITC;
 }
 
 int is_expression(const int value)
@@ -279,6 +280,7 @@ node node_operator(tree *const tree, size_t *i)
 				node_operator(tree, i);
 				nd.amount++;
 			}
+			nd.amount++;
 
 			if (*i != SIZE_MAX)
 			{
@@ -295,6 +297,7 @@ node node_operator(tree *const tree, size_t *i)
 				nd.amount++;
 			}
 			nd.amount++;
+
 			if (*i != SIZE_MAX)
 			{
 				*i += 1;
@@ -423,12 +426,15 @@ node node_operator(tree *const tree, size_t *i)
 				node_operator(tree, i);
 				nd.amount++;
 			}
+			nd.amount++;
 			
 			if (*i != SIZE_MAX)
 			{
 				*i += 1;
 			}
 			break;
+		case EXITC:
+		break;
 
 		default:
 			(*i)--;
