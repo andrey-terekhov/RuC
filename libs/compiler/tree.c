@@ -250,16 +250,12 @@ node node_operator(tree *const tree, size_t *i)
 			node_operator(tree, i);
 			break;
 		case TDeclid:		// IdentDecl: 6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
-		{
 			nd.argc = 7;
 			nd.amount = node_get_arg(&nd, 3) ? 1 : 0;	// по all можно определить наличие TExprend
-			//size_t n = nd.tree[nd.type + 3];			// N указывает размерность массива
-			//nd.amount *= n;	// Понадобится, когда будут реализованы выражения
 
 			*i += nd.argc;
 			*i = skip_expression(tree, *i, 1);
-		}
-		break;
+			break;
 		case TDeclarr:		// ArrayDecl: n + 2 потомков (размерность массива, n выражений-размеров, инициализатор (может не быть))
 		{
 			nd.argc = 1;
@@ -347,11 +343,12 @@ node node_operator(tree *const tree, size_t *i)
 		case TFor:			// For: 4 потомка (выражение или объявление, условие окончания, выражение-инкремент, тело цикла); - первые 3 ветки присутствуют не всегда,  здесь также предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
 		{
 			nd.argc = 4;
-			nd.amount = 4;
+			nd.amount = 1;
 
 			size_t var = node_get_arg(&nd, 0);
 			if (var != 0)
 			{
+				nd.amount++;
 				if (skip_expression(tree, var, 1) == SIZE_MAX)
 				{
 					nd.tree = NULL;
@@ -362,6 +359,7 @@ node node_operator(tree *const tree, size_t *i)
 			size_t cond = node_get_arg(&nd, 1);
 			if (cond != 0)
 			{
+				nd.amount++;
 				if (skip_expression(tree, cond, 1) == SIZE_MAX)
 				{
 					nd.tree = NULL;
@@ -372,6 +370,7 @@ node node_operator(tree *const tree, size_t *i)
 			size_t inc = node_get_arg(&nd, 2);
 			if (inc != 0)
 			{
+				nd.amount++;
 				if (skip_expression(tree, inc, 1) == SIZE_MAX)
 				{
 					nd.tree = NULL;
