@@ -323,3 +323,15 @@ int utf8_is_russian(const char32_t symbol)
 		|| (symbol >= U'а' && symbol <= U'п')
 		|| (symbol >= U'р' && symbol <= U'я');
 }
+
+int utf8_is_letter(const char32_t symbol)
+{
+	return  utf8_is_russian(symbol) || symbol == '_'
+		|| (symbol >= U'A' && symbol <= U'Z')
+		|| (symbol >= U'a' && symbol <= U'z');
+}
+
+int utf8_is_digit(const char32_t symbol)
+{
+	return symbol >= '0' && symbol <= '9';
+}

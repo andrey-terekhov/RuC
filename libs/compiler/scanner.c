@@ -150,18 +150,6 @@ void next_string_elem(analyzer *context)
 	nextch(context);
 }
 
-int letter(analyzer *context)
-{
-	return (context->curchar >= 'A' && context->curchar <= 'Z') ||
-		   (context->curchar >= 'a' && context->curchar <= 'z') || context->curchar == '_' ||
-		   utf8_is_russian(context->curchar);
-}
-
-int digit(analyzer *context)
-{
-	return context->curchar >= '0' && context->curchar <= '9';
-}
-
 int ispower(analyzer *context)
 {
 	return context->curchar == 'e' || context->curchar == 'E'; // || context->curchar == 'е' || context->curchar == 'Е')
@@ -550,7 +538,7 @@ int scan(analyzer *context)
 			double k;
 			double numdouble = 0.0;
 			context->num = 0;
-			while (digit(context))
+			while (utf8_is_digit(context->curchar))
 			{
 				numdouble = numdouble * 10 + (context->curchar - '0');
 				if (numdouble > (double)INT_MAX)
@@ -567,7 +555,7 @@ int scan(analyzer *context)
 				flagint = 0;
 				nextch(context);
 				k = 0.1;
-				while (digit(context))
+				while (utf8_is_digit(context->curchar))
 				{
 					numdouble += (context->curchar - '0') * k;
 					k *= 0.1;
@@ -590,12 +578,12 @@ int scan(analyzer *context)
 				{
 					nextch(context);
 				}
-				if (!digit(context))
+				if (!utf8_is_digit(context->curchar))
 				{
 					error(context->io, must_be_digit_after_exp);
 					exit(1);
 				}
-				while (digit(context))
+				while (utf8_is_digit(context->curchar))
 				{
 					d = d * 10 + context->curchar - '0';
 					nextch(context);
@@ -628,7 +616,7 @@ int scan(analyzer *context)
 		}
 
 		default:
-			if (letter(context) || context->curchar == '#')
+			if (utf8_is_letter(context->curchar) || context->curchar == '#')
 			{
 				int oldrepr = REPRTAB_LEN;
 				int r;
@@ -640,7 +628,7 @@ int scan(analyzer *context)
 					context->hash += context->curchar;
 					REPRTAB[REPRTAB_LEN++] = context->curchar;
 					nextch(context);
-				} while (letter(context) || digit(context));
+				} while (utf8_is_letter(context->curchar) || utf8_is_digit(context->curchar));
 
 				context->hash &= 255;
 				REPRTAB[REPRTAB_LEN++] = 0;
