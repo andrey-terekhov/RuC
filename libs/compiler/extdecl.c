@@ -873,7 +873,6 @@ void primaryexpr(analyzer *context)
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
 		{
-			context->notrobot = 0;
 			if (func <= PIXEL && func >= ICON)
 			{
 				// scaner(context);
@@ -1227,7 +1226,6 @@ void primaryexpr(analyzer *context)
 			// SETMOTOR и VOLTAGE void (int port, int volt)
 			if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR || func == VOLTAGE)
 			{
-				context->notrobot = 0;
 				if (!is_int(context->ansttype))
 				{
 					context_error(context, param_setmotor_not_int);
