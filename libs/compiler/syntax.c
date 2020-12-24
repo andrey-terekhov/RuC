@@ -78,14 +78,14 @@ syntax sx_create()
 }
 
 
-int mem_set(syntax *const sx, const size_t index, const size_t ref)
+int mem_set(syntax *const sx, const size_t index, const int value)
 {
 	if (sx == NULL || (int)index >= sx->pc)
 	{
 		return -1;
 	}
 
-	sx->mem[index] = (int)ref;
+	sx->mem[index] = value;
 	return 0;
 }
 
@@ -100,18 +100,18 @@ int mem_get(const syntax *const sx, const size_t index)
 }
 
 
-int iniprocs_set(syntax *const sx, const size_t index, const size_t ref)
+int proc_set(syntax *const sx, const size_t index, const int value)
 {
 	if (sx == NULL || (int)index >= sx->procd)
 	{
 		return -1;
 	}
 
-	sx->iniprocs[index] = (int)ref;
+	sx->iniprocs[index] = value;
 	return 0;
 }
 
-int iniprocs_get(syntax *const sx, const size_t index)
+int proc_get(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || (int)index >= sx->procd)
 	{

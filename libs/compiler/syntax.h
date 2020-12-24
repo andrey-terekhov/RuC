@@ -68,47 +68,50 @@ typedef struct syntax
  */
 syntax sx_create();
 
+
 /**
- *	Set value by index in mem
+ *	Set value by index in memory table
  *
  *	@param	sx			Syntax structure
- *	@param	index		Index of record in mem
- *	@param	ref			Value
+ *	@param	index		Index to record
+ *	@param	value		Value to record
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int mem_set(syntax *const sx, const size_t index, const size_t ref);
+int mem_set(syntax *const sx, const size_t index, const int value);
 
 /**
- *	Get an item by index from mem
+ *	Get an item by index from memory table
  *
  *	@param	sx			Syntax structure
- *	@param	index		Index of record in mem
+ *	@param	index		Index of record in table
  *
- *	@return	Item by index from mem, @c INT_MAX on failure
+ *	@return	Item by index from table, @c INT_MAX on failure
  */
 int mem_get(const syntax *const sx, const size_t index);
 
+
 /**
- *	Set value by index in iniprocs table
+ *	Set value by index in init processes table
  *
  *	@param	sx			Syntax structure
- *	@param	index		Index of record in iniprocs table
- *	@param	ref			Value
+ *	@param	index		Index to record
+ *	@param	value		Value to record
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int iniprocs_set(syntax *const sx, const size_t index, const size_t ref);
+int proc_set(syntax *const sx, const size_t index, const int value);
 
 /**
- *	Get an item by index in iniprocs table
+ *	Get an item by index from init processes table
  *
  *	@param	sx			Syntax structure
- *	@param	index		Index of record in iniprocs table
+ *	@param	index		Index of record in table
  *
- *	@return	Item by index from iniprocs table, @c INT_MAX on failure
+ *	@return	Item by index from table, @c INT_MAX on failure
  */
-int iniprocs_get(syntax *const sx, const size_t index);
+int proc_get(const syntax *const sx, const size_t index);
+
 
 /**
  *	Add new record to functions table
@@ -140,6 +143,7 @@ int func_set(syntax *const sx, const size_t index, const size_t ref);
  *	@return	Item by index from functions table, @c INT_MAX on failure
  */
 int func_get(const syntax *const sx, const size_t index);
+
 
 /**
  *	Add new record to modes table
