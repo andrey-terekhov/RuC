@@ -165,6 +165,7 @@ enum ERROR
 	tree_expression_not_block,
 	tree_expression_texprend,
 	tree_expression_unknown,
+	tree_expression_operator,
 	tree_no_tend,
 };
 

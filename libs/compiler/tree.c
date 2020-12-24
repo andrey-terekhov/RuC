@@ -205,11 +205,12 @@ size_t skip_expression(tree *const tree, size_t i, int is_block)
 				return SIZE_MAX;
 			}
 
-			while (!is_expression(tree[i]))
+			while (tree[i] != NOP && !is_expression(tree[i]))
 			{
 				if (is_operator(tree[i]))
 				{
-					return i;
+					error(NULL, tree_expression_operator, i, tree[i]);
+					return SIZE_MAX;
 				}
 
 				i++;
