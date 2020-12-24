@@ -101,12 +101,8 @@ size_t skip_expression(const tree *const tree, size_t i, int is_block)
 
 	if (is_operator(tree[i]))
 	{
-		if (!is_block)
-		{
-			error(NULL, tree_expression_not_block, i, tree[i]);
-			return SIZE_MAX;
-		}
-		return i;
+		error(NULL, tree_expression_not_block, i, tree[i]);
+		return SIZE_MAX;
 	}
 
 	if (is_block)
