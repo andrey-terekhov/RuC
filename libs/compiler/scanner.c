@@ -126,10 +126,9 @@ void nextch(analyzer *context)
 	return;
 }
 
-int ispower(analyzer *context)
+int ispower(const char32_t symbol)
 {
-	return context->curchar == 'e' || context->curchar == 'E'; // || context->curchar == 'е' || context->curchar == 'Е')
-															   // // это русские е и Е
+	return symbol == 'e' || symbol == 'E' || symbol == U'е' || symbol == U'Е';
 }
 
 
@@ -251,6 +250,103 @@ int lex_identifier_or_keyword(analyzer *const context)
 	// 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
 	REPRTAB[REPRTAB_POS + 1] = (context->keywordsnum) ? -((++context->keywordsnum - 2) / 4) : 1;
 	return IDENT;
+}
+
+
+/**
+ *	Lex numeric constant [C99 6.4.4.1 & 6.4.4.2]
+ *
+ *	@param	context	Analyzer structure
+ *
+ *	@return	@c NUMBER
+ */
+int lex_numeric_constant(analyzer *const context)
+{
+	int num_int = 0;
+	double num_double = 0.0;
+	double k;
+	int flag_int = 1;
+	int flag_too_long = 0;
+	
+	while (utf8_is_digit(context->curchar))
+	{
+		num_int = num_int * 10 + (context->curchar - '0');
+		num_double = num_double * 10 + (context->curchar - '0');
+		get_char(context);
+	}
+	
+	if (num_double > (double)INT_MAX)
+	{
+		flag_too_long = 1;
+		flag_int = 0;
+	}
+	
+	if (context->curchar == '.')
+	{
+		flag_int = 0;
+		k = 0.1;
+		while (utf8_is_digit(get_char(context)))
+		{
+			num_double += (context->curchar - '0') * k;
+			k *= 0.1;
+		}
+	}
+	
+	if (ispower(context->curchar))
+	{
+		int d = 0;
+		int sign = 1;
+		get_char(context);
+		
+		if (context->curchar == '-')
+		{
+			flag_int = 0;
+			get_char(context);
+			sign = -1;
+		}
+		else if (context->curchar == '+')
+		{
+			get_char(context);
+		}
+		
+		if (!utf8_is_digit(context->curchar))
+		{
+			error(context->io, must_be_digit_after_exp);
+			context->error_flag = 1;
+			return NUMBER;
+		}
+		
+		while (utf8_is_digit(context->curchar))
+		{
+			d = d * 10 + (context->curchar - '0');
+			get_char(context);
+		}
+		
+		if (flag_int)
+		{
+			for (int i = 1; i <= d; i++)
+			{
+				context->num *= 10;
+			}
+		}
+		num_double *= pow(10.0, sign * d);
+	}
+	
+	if (flag_int)
+	{
+		context->ansttype = LINT;
+		context->num = num_int;
+	}
+	else
+	{
+		context->ansttype = LFLOAT;
+		memcpy(&context->numr, &num_double, sizeof(double));
+		if (flag_too_long)
+		{
+			warning(context->io, too_long_int);
+		}
+	}
+	return NUMBER;
 }
 
 
@@ -677,103 +773,21 @@ int scan(analyzer *context)
 			return COLON;
 		}
 		case '.':
-			if (context->nextchar < '0' || context->nextchar > '9')
+			if (utf8_is_digit(context->nextchar))
+			{
+				return lex_numeric_constant(context);
+			}
+			else
 			{
 				nextch(context);
 				return DOT;
 			}
-		case '0':
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-		case '8':
-		case '9':
-		{
-			int flagint = 1;
-			int flagtoolong = 0;
-			double k;
-			double numdouble = 0.0;
-			context->num = 0;
-			while (utf8_is_digit(context->curchar))
-			{
-				numdouble = numdouble * 10 + (context->curchar - '0');
-				if (numdouble > (double)INT_MAX)
-				{
-					flagtoolong = 1;
-					flagint = 0;
-				}
-				context->num = context->num * 10 + (context->curchar - '0');
-				nextch(context);
-			}
 
-			if (context->curchar == '.')
-			{
-				flagint = 0;
-				nextch(context);
-				k = 0.1;
-				while (utf8_is_digit(context->curchar))
-				{
-					numdouble += (context->curchar - '0') * k;
-					k *= 0.1;
-					nextch(context);
-				}
-			}
-
-			if (ispower(context))
-			{
-				int d = 0;
-				int minus = 1;
-				nextch(context);
-				if (context->curchar == '-')
-				{
-					flagint = 0;
-					nextch(context);
-					minus = -1;
-				}
-				else if (context->curchar == '+')
-				{
-					nextch(context);
-				}
-				if (!utf8_is_digit(context->curchar))
-				{
-					error(context->io, must_be_digit_after_exp);
-					exit(1);
-				}
-				while (utf8_is_digit(context->curchar))
-				{
-					d = d * 10 + context->curchar - '0';
-					nextch(context);
-				}
-				if (flagint)
-				{
-					for (int i = 1; i <= d; i++)
-					{
-						context->num *= 10;
-					}
-				}
-				numdouble *= pow(10.0, minus * d);
-			}
-
-			if (flagint)
-			{
-				context->ansttype = LINT;
-				return NUMBER;
-			}
-			else
-			{
-				if (flagtoolong)
-				{
-					warning(context->io, too_long_int);
-				}
-				context->ansttype = LFLOAT;
-			}
-			memcpy(&context->numr, &numdouble, sizeof(double));
-			return NUMBER;
-		}
+		// Integer Constants [C99 6.4.4.1]
+		// Floating Constants [C99 6.4.4.2]
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9':
+			return lex_numeric_constant(context);
 
 		default:
 			if (utf8_is_letter(context->curchar) || context->curchar == '#')
