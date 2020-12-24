@@ -15,8 +15,6 @@
  */
 
 #include "syntax.h"
-#include <limits.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -80,6 +78,50 @@ syntax sx_create()
 }
 
 
+int mem_set(syntax *const sx, const size_t index, const int value)
+{
+	if (sx == NULL || (int)index >= sx->pc)
+	{
+		return -1;
+	}
+
+	sx->mem[index] = value;
+	return 0;
+}
+
+int mem_get(const syntax *const sx, const size_t index)
+{
+	if (sx == NULL || (int)index >= sx->pc)
+	{
+		return INT_MAX;
+	}
+
+	return sx->mem[index];
+}
+
+
+int proc_set(syntax *const sx, const size_t index, const int value)
+{
+	if (sx == NULL || (int)index >= sx->procd)
+	{
+		return -1;
+	}
+
+	sx->iniprocs[index] = value;
+	return 0;
+}
+
+int proc_get(const syntax *const sx, const size_t index)
+{
+	if (sx == NULL || (int)index >= sx->procd)
+	{
+		return INT_MAX;
+	}
+
+	return sx->iniprocs[index];
+}
+
+
 int func_add(syntax *const sx, const size_t ref)
 {
 	if (sx == NULL)
@@ -102,7 +144,7 @@ int func_set(syntax *const sx, const size_t index, const size_t ref)
 	return 0;
 }
 
-int func_get(syntax *const sx, const size_t index)
+int func_get(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || (int)index >= sx->funcnum)
 	{
@@ -146,7 +188,7 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 	return sx->startmode + 1;
 }
 
-int mode_get(syntax *const sx, const size_t index)
+int mode_get(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || (int)index >= sx->md)
 	{

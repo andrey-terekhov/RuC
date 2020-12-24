@@ -19,7 +19,7 @@
 #include "commenter.h"
 #include "workspace.h"
 #include "file.h"
-#include "preprocessor_error.h"
+#include "error.h"
 #include "logger.h"
 #include "uniprinter.h"
 #include "uniio.h"
@@ -65,6 +65,7 @@ void preprocess_context_init(preprocess_context *context, workspace *const ws, u
 	context->dipp = 0;
 	context->line = 1;
 	context->h_flag = 0;
+	context->position = 0;
 
 	for (int i = 0; i < HASH; i++)
 	{
@@ -76,32 +77,37 @@ void preprocess_context_init(preprocess_context *context, workspace *const ws, u
 		context->reprtab[i] = 0;
 	}
 
-	for (int i = 0; i < STRIGSIZE; i++)
+	for (int i = 0; i < STRING_SIZE; i++)
 	{
 		context->mstring[i] = 0;
 	}
 
-	for (int i = 0; i < STRIGSIZE*3; i++)
+	for (int i = 0; i < STRING_SIZE; i++)
+	{
+		context->error_string[i] = 0;
+	}
+
+	for (int i = 0; i < STRING_SIZE*3; i++)
 	{
 		context->fchange[i] = 0;
 	}
 
-	for (int i = 0; i < STRIGSIZE; i++)
+	for (int i = 0; i < STRING_SIZE; i++)
 	{
 		context->localstack[i] = 0;
 	}
 
-	for (int i = 0; i < STRIGSIZE; i++)
+	for (int i = 0; i < STRING_SIZE; i++)
 	{
 		context->cstring[i] = 0;
 	}
 	
-	for (int i = 0; i < STRIGSIZE*2; i++)
+	for (int i = 0; i < STRING_SIZE*2; i++)
 	{
 		context->ifstring[i] = 0;
 	}
 
-	for (int i = 0; i < STRIGSIZE*5; i++)
+	for (int i = 0; i < STRING_SIZE*5; i++)
 	{
 		context->wstring[i] = 0;
 	}
@@ -119,7 +125,7 @@ void con_files_add_include(files* fs, char *name, int c_flag)
 {
 	fs->p++;
 	
-	if(c_flag == 0)
+	if(c_flag != 2)
 	{
 		fs->end_h++;
 	}
@@ -131,15 +137,14 @@ void con_files_add_include(files* fs, char *name, int c_flag)
 	ws_add_file(fs->ws, name);
 }
 
-void con_file_open_cur(files* fs, preprocess_context *context)
+int con_file_open_cur(files* fs, preprocess_context *context)
 {
-	int rez = in_set_file(context->io_input, ws_get_file(fs->ws, fs->cur));
-
-	if (rez == -1)
+	if (in_set_file(context->io_input, ws_get_file(fs->ws, fs->cur)))
 	{
 		log_system_error(ws_get_file(fs->ws, fs->cur), "файл не найден");
-		m_error(just_kill_yourself, context);
+		return -1;
 	}
+	return 1;
 }
 
 
@@ -152,9 +157,7 @@ int con_file_open_sorse(files* fs, preprocess_context *context)
 		return 0;
 	}
 
-	con_file_open_cur(&context->fs, context);
-
-	return 1;
+	return con_file_open_cur(&context->fs, context);
 }
 
 int con_file_open_hedrs(files* fs, preprocess_context *context)
@@ -168,9 +171,7 @@ int con_file_open_hedrs(files* fs, preprocess_context *context)
 		return 0;
 	}
 
-	con_file_open_cur(&context->fs, context);
-
-	return 1;
+	return con_file_open_cur(&context->fs, context);
 }
 
 int con_file_open_next(files* fs, preprocess_context *context, int h_flag)
@@ -185,9 +186,7 @@ int con_file_open_next(files* fs, preprocess_context *context, int h_flag)
 		return 0;
 	}
 
-	con_file_open_cur(&context->fs, context);
-
-	return 1;
+	return con_file_open_cur(&context->fs, context);
 }
 
 void con_file_it_is_end_h(files *fs, int i)
@@ -205,7 +204,7 @@ void con_file_close_cur(preprocess_context *context)
 
 void con_file_print_coment(files *fs, preprocess_context *context)
 {
-	comment cmt = cmt_create(ws_get_file(fs->ws, fs->cur), context->line-1);
+	comment cmt = cmt_create(ws_get_file(fs->ws, fs->cur), context->line);
 
 	char buffer[MAX_CMT_SIZE];
 	cmt_to_string(&cmt, buffer);

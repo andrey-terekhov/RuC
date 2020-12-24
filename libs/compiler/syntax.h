@@ -17,7 +17,9 @@
 #pragma once
 
 #include "defs.h"
+#include <limits.h>
 #include <stddef.h>
+#include <stdint.h>
 
 
 #ifdef __cplusplus
@@ -66,6 +68,51 @@ typedef struct syntax
  */
 syntax sx_create();
 
+
+/**
+ *	Set value by index in memory table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index to record
+ *	@param	value		Value to record
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int mem_set(syntax *const sx, const size_t index, const int value);
+
+/**
+ *	Get an item by index from memory table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in table
+ *
+ *	@return	Item by index from table, @c INT_MAX on failure
+ */
+int mem_get(const syntax *const sx, const size_t index);
+
+
+/**
+ *	Set value by index in init processes table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index to record
+ *	@param	value		Value to record
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int proc_set(syntax *const sx, const size_t index, const int value);
+
+/**
+ *	Get an item by index from init processes table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in table
+ *
+ *	@return	Item by index from table, @c INT_MAX on failure
+ */
+int proc_get(const syntax *const sx, const size_t index);
+
+
 /**
  *	Add new record to functions table
  *
@@ -95,7 +142,8 @@ int func_set(syntax *const sx, const size_t index, const size_t ref);
  *
  *	@return	Item by index from functions table, @c INT_MAX on failure
  */
-int func_get(syntax *const sx, const size_t index);
+int func_get(const syntax *const sx, const size_t index);
+
 
 /**
  *	Add new record to modes table
@@ -116,7 +164,7 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size);
  *
  *	@return	Item by index from modes table, @c INT_MAX on failure
  */
-int mode_get(syntax *const sx, const size_t index);
+int mode_get(const syntax *const sx, const size_t index);
 
 #ifdef __cplusplus
 } /* extern "C" */
