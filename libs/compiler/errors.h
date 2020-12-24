@@ -26,6 +26,15 @@ extern "C" {
 /** Errors codes */
 enum ERROR
 {
+	// Ошибки сканера
+	bad_character,
+	empty_char_const,
+	unknown_escape_sequence,
+	expected_apost_after_char_const,
+	missing_terminating_quote_char,
+	unterminated_block_comment,
+
+	// Прочие ошибки
 	after_type_must_be_ident = 201,
 	wait_right_sq_br,
 	only_functions_may_have_type_VOID,
@@ -74,8 +83,6 @@ enum ERROR
 	no_ret_in_func,
 	bad_type_in_ret,
 	notvoidret_in_void_func,
-	bad_escape_sym,
-	no_right_apost,
 	decl_after_strmt,
 	too_long_string,
 	aster_before_func,

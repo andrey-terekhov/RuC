@@ -139,7 +139,7 @@ void next_string_elem(analyzer *context)
 		}
 		else if (context->curchar != '\'' && context->curchar != '\\' && context->curchar != '\"')
 		{
-			error(context->io, bad_escape_sym);
+			error(context->io, unknown_escape_sequence);
 			exit(1);
 		}
 		else
@@ -156,19 +156,77 @@ int ispower(analyzer *context)
 															   // // это русские е и Е
 }
 
-int equal(analyzer *context, int i, int j)
+int repr_is_equal(analyzer *const context, size_t i, size_t j)
 {
-	++i;
-	++j;
+	i += 2;
+	j += 2;
 	/* Assuming allocated */
-	while (REPRTAB[++i] == REPRTAB[++j])
+	while (REPRTAB[i] == REPRTAB[j])
 	{
+		i++;
+		j++;
 		if (REPRTAB[i] == 0 && REPRTAB[j] == 0)
 		{
 			return 1;
 		}
 	}
 	return 0;
+}
+
+/**
+ *	Lex identifier or keyword [C99 6.4.1 & 6.4.2]
+ *
+ *	@param	context	Analyzer structure
+ *
+ *	@return	keyword number on keyword, @c IDENT on identifier
+ */
+int lex_identifier_or_keyword(analyzer *const context)
+{
+	size_t old_repr = REPRTAB_LEN;
+	size_t r;
+	size_t hash = 0;
+	REPRTAB_LEN += 2;
+	
+	do
+	{
+		hash += context->curchar;
+		REPRTAB[REPRTAB_LEN++] = context->curchar;
+		nextch(context);
+	} while (utf8_is_letter(context->curchar) || utf8_is_digit(context->curchar));
+	
+	context->hash = (hash &= 255);
+	REPRTAB[REPRTAB_LEN++] = 0;
+	r = context->hashtab[hash];
+	
+	if (r)
+	{
+		do
+		{
+			if (repr_is_equal(context, r, old_repr))
+			{
+				REPRTAB_LEN = old_repr;
+				if (REPRTAB[r + 1] < 0)
+				{
+					return REPRTAB[r + 1];
+				}
+				else
+				{
+					REPRTAB_POS = r;
+					return IDENT;
+				}
+			}
+			else
+			{
+				r = REPRTAB[r];
+			}
+		} while (r);
+	}
+	
+	REPRTAB[old_repr] = context->hashtab[hash];
+	REPRTAB_POS = context->hashtab[hash] = old_repr;
+	// 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
+	REPRTAB[REPRTAB_POS + 1] = (context->keywordsnum) ? -((++context->keywordsnum - 2) / 4) : 1;
+	return IDENT;
 }
 
 
@@ -411,7 +469,7 @@ int scan(analyzer *context)
 			next_string_elem(context);
 			if (context->curchar != '\'')
 			{
-				error(context->io, no_right_apost);
+				error(context->io, expected_apost_after_char_const);
 				context->error_flag = 1;
 				context->sx->tc = context->temp_tc;
 			}
@@ -618,53 +676,17 @@ int scan(analyzer *context)
 		default:
 			if (utf8_is_letter(context->curchar) || context->curchar == '#')
 			{
-				int oldrepr = REPRTAB_LEN;
-				int r;
-				REPRTAB_LEN += 2;
-				context->hash = 0;
-
-				do
-				{
-					context->hash += context->curchar;
-					REPRTAB[REPRTAB_LEN++] = context->curchar;
-					nextch(context);
-				} while (utf8_is_letter(context->curchar) || utf8_is_digit(context->curchar));
-
-				context->hash &= 255;
-				REPRTAB[REPRTAB_LEN++] = 0;
-				r = context->hashtab[context->hash];
-				if (r)
-				{
-					do
-					{
-						if (equal(context, r, oldrepr))
-						{
-							REPRTAB_LEN = oldrepr;
-							return (REPRTAB[r + 1] < 0) ? REPRTAB[r + 1] : (REPRTAB_POS = r, IDENT);
-						}
-						else
-						{
-							r = REPRTAB[r];
-						}
-					} while (r);
-				}
-
-				REPRTAB[oldrepr] = context->hashtab[context->hash];
-				REPRTAB_POS = context->hashtab[context->hash] = oldrepr;
-				REPRTAB[REPRTAB_POS + 1] =
-					(context->keywordsnum) ? -((++context->keywordsnum - 2) / 4) : 1; // 0 - только MAIN, < 0 - ключевые
-																					  // слова, 1 - обычные иденты
-				return IDENT;
+				// Keywords [C99 6.4.1]
+				// Identifiers [C99 6.4.2]
+				return lex_identifier_or_keyword(context);
 			}
 			else
-			{				
-				char msg[256];
-				size_t index = sprintf(msg, "плохой символ ");
-				index += utf8_to_string(&msg[index], context->curchar);
-				index += sprintf(&msg[index], " %i", context->curchar);
-
-				error_msg(context->io, msg);
-				exit(1);
+			{
+				error(context->io, bad_character, context->curchar);
+				context->error_flag = 1;
+				// Притворимся, что плохого символа не было
+				nextch(context);
+				return scan(context);
 			}
 	}
 }
