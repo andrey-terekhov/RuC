@@ -50,7 +50,7 @@ double get_digit(preprocess_context *context, int* error)
 		m_nextch(context);
 	}
 
-	while (is_digit(context->curchar))
+	while (utf8_is_digit(context->curchar))
 	{
 		numdouble = numdouble * 10 + (context->curchar - '0');
 		if (numdouble > (double)INT_MAX)
@@ -70,7 +70,7 @@ double get_digit(preprocess_context *context, int* error)
 		m_nextch(context);
 		k = 0.1;
 
-		while (is_digit(context->curchar))
+		while (utf8_is_digit(context->curchar))
 		{
 			numdouble += (context->curchar - '0') * k;
 			k *= 0.1;
@@ -97,7 +97,7 @@ double get_digit(preprocess_context *context, int* error)
 		}
 
 
-		if (!is_digit(context->curchar))
+		if (!utf8_is_digit(context->curchar))
 		{
 			size_t position = skip_str(context); 
 			macro_error(must_be_digit_after_exp1, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
@@ -106,7 +106,7 @@ double get_digit(preprocess_context *context, int* error)
 		}
 
 
-		while (is_digit(context->curchar))
+		while (utf8_is_digit(context->curchar))
 		{
 			power = power * 10 + context->curchar - '0';
 			m_nextch(context);
@@ -278,7 +278,7 @@ void double_to_string(double x, int int_flag, preprocess_context *context)
 		{
 			context->cstring[context->csp] = s[context->csp];
 
-			if (s[context->csp] != '0' && is_digit(s[context->csp]))
+			if (s[context->csp] != '0' && utf8_is_digit(s[context->csp]))
 			{
 				l = context->csp;
 			}
@@ -307,7 +307,7 @@ int calculator(int if_flag, preprocess_context *context)
 	{
 		space_skip(context);
 
-		if ((is_digit(context->curchar) || (context->curchar == '-' && is_digit(context->nextchar))) && !opration_flag)
+		if ((utf8_is_digit(context->curchar) || (context->curchar == '-' && utf8_is_digit(context->nextchar))) && !opration_flag)
 		{
 			int error = 0;
 			opration_flag = 1;
@@ -318,7 +318,7 @@ int calculator(int if_flag, preprocess_context *context)
 			}
 			int_flag[i++] = flagint;
 		}
-		else if (is_letter(context))
+		else if (utf8_is_letter(context->curchar))
 		{
 			int r = collect_mident(context);
 
