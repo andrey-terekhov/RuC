@@ -249,7 +249,7 @@ node node_expression(tree *const tree, size_t *i)
 				return nd;
 			}
 
-			while (tree[*i] != NOP && !is_expression(tree[*i]))
+			while (tree[*i] != NOP && !is_expression(tree[*i]) && !is_lexeme(tree[*i]))
 			{
 				if (is_operator(tree[*i]))
 				{
