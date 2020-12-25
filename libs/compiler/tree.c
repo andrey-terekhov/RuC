@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 
-node node_expression(tree *const tree, const size_t index);
+node node_expression(tree *const tree, size_t *i);
 node node_operator(tree *const tree, const size_t index);
 
 
@@ -91,60 +91,69 @@ int is_lexeme(const int value)
 }
 
 
-size_t skip_expression(tree *const tree, size_t i, int is_block)
+size_t skip_expression(tree *const tree, size_t i)
+{
+	
+	if (tree[i] != NOP && (is_operator(tree[i]) || tree[i] == TExprend))
+	{
+		return i;
+	}
+	node nd = node_expression(tree, &i);
+	return node_is_correct(&nd) ? i : SIZE_MAX;
+}
+
+node node_expression(tree *const tree, size_t *i)
 {
 	node nd;
-	if (i == SIZE_MAX)
+	if (*i == SIZE_MAX)
 	{
-		return SIZE_MAX;
+		nd.tree = NULL;
+		return nd;
 	}
 
 	nd.tree = tree;
-	nd.type = i;
+	nd.type = *i;
 	nd.argv = nd.type + 1;
 
 	nd.argc = 0;
 	nd.amount = 0;
 
-	if (tree[i] == NOP && !is_block)
+	if (tree[*i] == NOP)
 	{
-		if (tree[i + 1] != TExprend)
+		if (tree[*i + 1] != TExprend)
 		{
-			error(NULL, tree_expression_texprend, i + 1, tree[i + 1]);
-			return SIZE_MAX;
+			error(NULL, tree_expression_texprend, *i + 1, tree[*i + 1]);
+			nd.tree = NULL;
 		}
 
 		nd.children = nd.argv + nd.argc;
-		return i + 1;
-	}
-
-	if (is_operator(tree[i]))
-	{
-		error(NULL, tree_expression_not_block, i, tree[i]);
-		return SIZE_MAX;
-	}
-
-	if (is_block)
-	{
-		while (i != SIZE_MAX && tree[i] != TExprend)
+		*i += 2;
+		while (tree[*i] == TExprend)
 		{
-			i = skip_expression(tree, i, 0);
+			*i += 1;
 		}
-
-		return i == SIZE_MAX ? SIZE_MAX : i + 1;
+		return nd;
 	}
 
-	switch (tree[i++])
+	if (is_operator(tree[*i]))
+	{
+		error(NULL, tree_expression_not_block, *i, tree[*i]);
+		nd.tree = NULL;
+		return nd;
+	}
+
+	*i += 1;
+	switch (tree[nd.type])
 	{
 		case TBeginit:		// ArrayInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
 		case TStructinit:	// StructInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
 			nd.argc = 1;
 			nd.amount = node_get_arg(&nd, 0);
 
-			i += nd.argc;
+			*i += nd.argc;
 			for (size_t j = 0; j < nd.amount; j++)
 			{
-				i = skip_expression(tree, i, 1);
+				*i = skip_expression(tree, *i);
 			}
 			break;
 
@@ -156,7 +165,7 @@ size_t skip_expression(tree *const tree, size_t i, int is_block)
 
 		case TConstd:		// d - double
 			nd.argc = 2;
-			i += nd.argc;
+			*i += nd.argc;
 			break;
 		case TConst:
 		case TSelect:
@@ -169,105 +178,112 @@ size_t skip_expression(tree *const tree, size_t i, int is_block)
 
 		case TCall1:
 			nd.argc = 1;
-			i += nd.argc;
+			*i += nd.argc;
 			break;
 		case TCall2:
 
 		case TIdent:
+		{
 			nd.argc = 1;
 			nd.amount = 1;
 
-			i += nd.argc;
-			i = skip_expression(tree, i, 1);
-			if (i == SIZE_MAX)
+			*i += nd.argc;
+			size_t j = skip_expression(tree, *i);
+			if (j == SIZE_MAX)
 			{
-				return SIZE_MAX;
+				nd.tree = NULL;
+				return nd;
 			}
-			i -= 1;			// Может быть общий TExprend
-			break;
+			*i = j == *i ? j : j - 1;			// Может быть общий TExprend
+		}
+		break;
 
 		case TStringd:		// d - double
-		{
 			nd.argc = 1;
 			nd.argc += node_get_arg(&nd, 0) * 2;
-			i += nd.argc;
-		}
-		break;
+			*i += nd.argc;
+			break;
 		case TString:
-		{
 			nd.argc = 1;
 			nd.argc += node_get_arg(&nd, 0);
-			i += nd.argc;
-		}
-		break;
+			*i += nd.argc;
+			break;
 
 		case TSliceident:
+		{
 			nd.argc = 2;
 			nd.amount = 2;
 
-			i += nd.argc;
-			i = skip_expression(tree, i, 1);			// 2 ветви потомков
-			i = skip_expression(tree, i, 1);
-			if (i == SIZE_MAX)
+			*i += nd.argc;
+			*i = skip_expression(tree, *i);			// 2 ветви потомков
+			size_t j = skip_expression(tree, *i);
+			if (j == SIZE_MAX)
 			{
-				return SIZE_MAX;
+				nd.tree = NULL;
+				return nd;
 			}
-			i -= 1;			// Может быть общий TExprend
-			break;
+			*i = j == *i ? j : j - 1;			// Может быть общий TExprend
+		}
+		break;
 		case TSlice:
+		{
 			nd.argc = 1;
 			nd.amount = 2;
 
-			i += nd.argc;
-			i = skip_expression(tree, i, 1);			// 2 ветви потомков
-			i = skip_expression(tree, i, 1);
-			if (i == SIZE_MAX)
+			*i += nd.argc;
+			*i = skip_expression(tree, *i);			// 2 ветви потомков
+			size_t j = skip_expression(tree, *i);
+			if (j == SIZE_MAX)
 			{
-				return SIZE_MAX;
+				nd.tree = NULL;
+				return nd;
 			}
-			i -= 1;			// Может быть общий TExprend
-			break;
+			*i = j == *i ? j : j - 1;			// Может быть общий TExprend
+		}
+		break;
 
 		case TExprend:
-			if (is_block)
-			{
-				error(NULL, tree_expression_texprend, i - 1, tree[i - 1]);
-				return SIZE_MAX;
-			}
-			i -= 1;
-			break;
+			error(NULL, tree_expression_texprend, *i - 1, tree[*i - 1]);
+			nd.tree = NULL;
+			return nd;
 
 		default:
-			if (!is_lexeme(tree[i - 1]))
+			if (!is_lexeme(tree[*i - 1]))
 			{
-				error(NULL, tree_expression_unknown, i - 1, tree[i - 1]);
-				return SIZE_MAX;
+				error(NULL, tree_expression_unknown, *i - 1, tree[*i - 1]);
+				nd.tree = NULL;
+				return nd;
 			}
 
-			while (tree[i] != NOP && !is_expression(tree[i]))
+			while (tree[*i] != NOP && !is_expression(tree[*i]))
 			{
-				if (is_operator(tree[i]))
+				if (is_operator(tree[*i]))
 				{
-					error(NULL, tree_expression_operator, i, tree[i]);
-					return SIZE_MAX;
+					error(NULL, tree_expression_operator, *i, tree[*i]);
+					nd.tree = NULL;
+					return nd;
 				}
 
 				nd.argc++;
-				i++;
+				*i += 1;
 			}
 	}
 
 	nd.children = nd.argv + nd.argc;
-	return i;
-}
-
-node node_expression(tree *const tree, const size_t index)
-{
-	node nd;
-	nd.tree = tree;
-	nd.type = index;
-
-	nd.tree = NULL;
+	if (tree[*i] != TExprend && (tree[*i] == NOP || is_expression(tree[*i]) || is_lexeme(tree[*i])))
+	{
+		nd.amount++;
+		*i = skip_expression(tree, *i);
+	}
+	else
+	{
+		if (tree[*i] != TExprend)
+		{
+			error(NULL, tree_expression_no_texprend, *i, tree[*i]);
+			nd.tree = NULL;
+		}
+		*i += 1;
+	}
 	return nd;
 }
 
@@ -446,8 +462,8 @@ node node_operator(tree *const tree, const size_t index)
 				warning(NULL, tree_operator_unknown, nd.type, tree[nd.type]);
 			}
 
-			nd.type = skip_expression(tree, nd.type, 1) - 1;	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
-																// ExpressionStatement: 1 потомок (выражение)
+			nd.type = skip_expression(tree, nd.type) - 1;	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
+															// ExpressionStatement: 1 потомок (выражение)
 			nd.argv = nd.type + 1;
 	}
 
@@ -514,7 +530,7 @@ node node_get_child(node *const nd, const size_t index)
 		}
 		else
 		{
-			i = skip_expression(nd->tree, i, 1);
+			i = skip_expression(nd->tree, i);
 		}
 	}
 

@@ -589,6 +589,13 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "оператор в выражении, tree[%zi] = %i", i, elem);
 		}
 		break;
+		case tree_expression_no_texprend:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "отсутствует TExprend, tree[%zi] = %i", i, elem);
+		}
+		break;
 		case tree_no_tend:
 			sprintf(msg, "отсутствует внешний TEnd дерева");
 			break;

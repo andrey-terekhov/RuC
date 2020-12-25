@@ -166,6 +166,7 @@ enum ERROR
 	tree_expression_texprend,
 	tree_expression_unknown,
 	tree_expression_operator,
+	tree_expression_no_texprend,
 	tree_no_tend,
 };
 
