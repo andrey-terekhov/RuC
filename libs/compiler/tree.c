@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 
-node node_expression(tree *const tree, size_t *i);
+node node_expression(tree *const tree, const size_t index);
 node node_operator(tree *const tree, const size_t index);
 
 
@@ -99,38 +99,26 @@ size_t skip_expression_2(tree *const tree, size_t i)
 	}
 	return i;
 }
-size_t skip_expression(tree *const tree, size_t k)
+size_t skip_expression(tree *const tree, size_t i)
 {
-	//printf("tree[%i] = %i\n", i, tree[i]);
-	node nd = node_expression(tree, &k);
+	node nd = node_expression(tree, i);
 	if (!node_is_correct(&nd))
 	{
 		return SIZE_MAX;
 	}
 
-	size_t i = nd.children;
+	i = nd.children;
 	for (size_t j = 0; j < node_get_amount(&nd); j++)
 	{
 		i = skip_expression(tree, i);
 	}
-//printf("type\t\t%i\nargc\t\t%i\namount\t\t%i\nchildren\t%i\n\n", node_get_type(&nd), nd.argc, node_get_amount(&nd), nd.children);
-	/*if (node_get_amount(&nd) == 0)
-	{
-		if (tree[i] != TExprend)
-		{
-			error(NULL, tree_expression_no_texprend, i, tree[i]);
-			nd.tree = NULL;
-		}
-		i++;
-		return i;
-	}
 
-	return tree[i] == TExprend && node_get_amount(&nd) != 1 ? i + 1 : i;*/
 	if (node_get_amount(&nd) == 0
 		|| node_get_type(&nd) == TBeginit
 		|| node_get_type(&nd) == TStructinit
 		|| (node_get_type(&nd) == TSliceident && node_get_amount(&nd) == 1)
-		|| (node_get_type(&nd) == TSlice && node_get_amount(&nd) == 1))
+		|| (node_get_type(&nd) == TSlice && node_get_amount(&nd) == 1)
+		|| (node_get_type(&nd) == TIdent && node_get_amount(&nd) == 0))
 	{
 		if (tree[i] != TExprend)
 		{
@@ -138,46 +126,47 @@ size_t skip_expression(tree *const tree, size_t k)
 			nd.tree = NULL;
 		}
 		i++;
-	}
-
-	if (i != k)
+	}return i;
+printf("type\t\t%i\nargc\t\t%i\namount\t\t%i\nchildren\t%i\n\n", node_get_type(&nd), nd.argc, node_get_amount(&nd), nd.children);
+	/*if (i != k)
 	{
-		printf("type\t\t%i\nargc\t\t%i\namount\t\t%i\nchildren\t%i\n\n", node_get_type(&nd), nd.argc, node_get_amount(&nd), nd.children);
+		
 		printf("k\ttree[%i] = %i\n", i, tree[i]);
 		printf("i\ttree[%i] = %i\n", k, tree[k]);
 		exit(139);
-	}
+	}*/
 
-	return k;
+	return tree[i] == TExprend ? i + 1 : i;
 }
 int arr[1488];
 size_t head = 0;
 size_t count = 0;
-node node_expression(tree *const tree, size_t *i)
+node node_expression(tree *const tree, const size_t index)
 {
 	node nd;
-	if (*i == SIZE_MAX)
+	if (index == SIZE_MAX)
 	{
 		nd.tree = NULL;
 		return nd;
 	}
+
 	/*int flag = 0;
 	for (size_t j = 0; j < head; j++)
 	{
-		if (arr[j] == *i)
+		if (arr[j] == index)
 		{
 			flag = 1;
 		}
 	}
 	if (!flag)
 	{
-		arr[head++] = (int)*i;
+		arr[head++] = (int)index;
 		count = 0;
 	}
 	else
 	{
 		count++;
-		if (count > 500000000000)
+		if (count > 10000)
 		{
 			for (size_t j = 0; j < head; j++)
 			{
@@ -188,32 +177,25 @@ node node_expression(tree *const tree, size_t *i)
 	}*/
 
 	nd.tree = tree;
-	nd.type = *i;
+	nd.type = index;
 	nd.argv = nd.type + 1;
 
 	nd.argc = 0;
 	nd.amount = 0;
 
-	if (tree[*i] != NOP && is_operator(tree[*i]))
+	if (tree[index] != NOP && is_operator(tree[index]))
 	{
-		error(NULL, tree_expression_not_block, *i, tree[*i]);
+		error(NULL, tree_expression_not_block, index, tree[index]);
 		nd.tree = NULL;
 		return nd;
 	}
 
-	*i += 1;
-	switch (tree[nd.type])
+	switch (tree[index])
 	{
 		case TBeginit:		// ArrayInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
 		case TStructinit:	// StructInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
 			nd.argc = 1;
 			nd.amount = node_get_arg(&nd, 0);
-
-			*i += nd.argc;
-			for (size_t j = 0; j < nd.amount; j++)
-			{
-				*i = skip_expression_2(tree, *i);
-			}
 			break;
 
 		case TAddrtovald:
@@ -224,7 +206,6 @@ node node_expression(tree *const tree, size_t *i)
 
 		case TConstd:		// d - double
 			nd.argc = 2;
-			*i += nd.argc;
 			break;
 		case TConst:
 		case TSelect:
@@ -237,128 +218,98 @@ node node_expression(tree *const tree, size_t *i)
 
 		case TCall1:
 			nd.argc = 1;
-			*i += nd.argc;
 			break;
 		case TCall2:
 
 		case TIdent:
 			nd.argc = 1;
-
-			*i += nd.argc;
-			if (tree[*i] != TExprend)
-			{
-				nd.amount++;
-				*i = skip_expression_2(tree, *i);
-				if (*i == SIZE_MAX)
-				{
-					nd.tree = NULL;
-					return nd;
-				}
-				*i -= 1;			// Может быть общий TExprend
-			}
 			break;
 
 		case TStringd:		// d - double
 			nd.argc = 1;
 			nd.argc += node_get_arg(&nd, 0) * 2;
-			*i += nd.argc;
 			break;
 		case TString:
 			nd.argc = 1;
 			nd.argc += node_get_arg(&nd, 0);
-			*i += nd.argc;
 			break;
 
 		case TSliceident:
 			nd.argc = 2;
 			nd.amount = 1;
-
-			*i += nd.argc;
-			*i = skip_expression_2(tree, *i);		// 2 ветви потомков
-			if (tree[*i] != TExprend)
-			{
-				nd.amount++;
-				*i = skip_expression_2(tree, *i);
-				if (*i == SIZE_MAX)
-				{
-					nd.tree = NULL;
-					return nd;
-				}
-				*i -= 1;			// Может быть общий TExprend
-			}
 			break;
 		case TSlice:
 			nd.argc = 1;
 			nd.amount = 1;
-
-			*i += nd.argc;
-			*i = skip_expression_2(tree, *i);		// 2 ветви потомков
-			if (tree[*i] != TExprend)
-			{
-				nd.amount++;
-				*i = skip_expression_2(tree, *i);
-				if (*i == SIZE_MAX)
-				{
-					nd.tree = NULL;
-					return nd;
-				}
-				*i -= 1;			// Может быть общий TExprend
-			}
 			break;
 
 		case TExprend:
-			error(NULL, tree_expression_texprend, *i - 1, tree[*i - 1]);
+			error(NULL, tree_expression_texprend, index - 1, tree[index - 1]);
 			nd.tree = NULL;
 			return nd;
 
 		case NOP:
-			if (tree[*i] != TExprend)
+			if (tree[index + 1] != TExprend)
 			{
-				error(NULL, tree_expression_no_texprend, *i, tree[*i]);
+				error(NULL, tree_expression_no_texprend, index, tree[index]);
 				nd.tree = NULL;
 			}
 
 			nd.argv++;
-			*i = nd.argv;
 			break;
 
 		default:
-			if (!is_lexeme(tree[*i - 1]))
+		{
+			if (!is_lexeme(tree[index]))
 			{
-				error(NULL, tree_expression_unknown, *i - 1, tree[*i - 1]);
+				error(NULL, tree_expression_unknown, index, tree[index]);
 				nd.tree = NULL;
 				return nd;
 			}
 
-			while (tree[*i] != NOP && !is_expression(tree[*i]) && !is_lexeme(tree[*i]))
+			size_t j = index + 1;
+			while (tree[j] != NOP && !is_expression(tree[j]) && !is_lexeme(tree[j]))
 			{
-				if (is_operator(tree[*i]))
+				if (is_operator(tree[j]))
 				{
-					error(NULL, tree_expression_operator, *i, tree[*i]);
+					error(NULL, tree_expression_operator, j, tree[j]);
 					nd.tree = NULL;
 					return nd;
 				}
 
 				nd.argc++;
-				*i += 1;
+				j++;
 			}
+		}
 	}
-//if(i>=84)printf("tree[%i] = %i\n", *i, tree[*i]);
+
 	nd.children = nd.argv + nd.argc;
-	if (tree[*i] != TExprend && (tree[*i] == NOP || is_expression(tree[*i]) || is_lexeme(tree[*i])))
+
+	size_t j = nd.children;
+	for (size_t k = 0; k < nd.amount; k++)
 	{
-		nd.amount++;
-		*i = skip_expression_2(tree, *i);
+		j = skip_expression(tree, j);
 	}
-	else
+
+	if (j == SIZE_MAX)
 	{
-		if (tree[*i] != TExprend)
+		nd.tree = NULL;
+		return nd;
+	}
+
+	if (tree[j] != TExprend)
+	{
+		if (tree[j] == NOP || is_expression(tree[j]) || is_lexeme(tree[j]))
 		{
-			error(NULL, tree_expression_no_texprend, *i, tree[*i]);
+			nd.amount++;
+		}
+		else
+		{
+			error(NULL, tree_expression_no_texprend, j, tree[j]);
 			nd.tree = NULL;
 		}
-		*i += 1;
 	}
+
 	return nd;
 }
 
