@@ -408,8 +408,8 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			context->adcont = ad;
 			Expr_gen(sx, 0);
 			tocode(sx, BE0);
-			sx->mem[sx->pc] = 0;
-			context->adbreak = sx->pc++;
+			mem_add(sx, 0);
+			context->adbreak = sx->pc - 1;
 			Stmt_gen(sx, context);
 			adcontbeg(sx, context, ad);
 			tocode(sx, B);
