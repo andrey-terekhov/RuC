@@ -565,15 +565,15 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		case TBreak:
 		{
 			tocode(sx, B);
-			sx->mem[sx->pc] = context->adbreak;
-			context->adbreak = sx->pc++;
+			mem_add(sx, context->adbreak);
+			context->adbreak = sx->pc - 1;
 			break;
 		}
 		case TContinue:
 		{
 			tocode(sx, B);
-			sx->mem[sx->pc] = context->adcont;
-			context->adcont = sx->pc++;
+			mem_add(sx, context->adcont);
+			context->adcont = sx->pc - 1;
 			break;
 		}
 		case TReturnvoid:
