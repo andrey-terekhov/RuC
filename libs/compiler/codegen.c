@@ -327,7 +327,7 @@ int Expr_gen(syntax *const sx, int incond)
 				while (ad)
 				{
 					int r = mem_get(sx, ad);
-					sx->mem[ad] = sx->pc;
+					mem_set(sx, ad, sx->pc);
 					ad = r;
 				}
 			}
@@ -373,7 +373,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			int numproc = sx->tree[sx->tree[sx->tc++] + 1];
 
 			tocode(sx, STOP);
-			sx->mem[sx->iniprocs[numproc] - 1] = sx->pc;
+			mem_set(sx, sx->iniprocs[numproc] - 1, sx->pc);
 			break;
 		}
 		case TBegin:
@@ -391,12 +391,12 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			Stmt_gen(sx, context);
 			if (elseref)
 			{
-				sx->mem[ad] = sx->pc + 2;
+				mem_set(sx, ad, sx->pc + 2);
 				tocode(sx, B);
 				ad = sx->pc++;
 				Stmt_gen(sx, context);
 			}
-			sx->mem[ad] = sx->pc;
+			mem_set(sx, ad, sx->pc);
 			break;
 		}
 		case TWhile:
