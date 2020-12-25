@@ -16,7 +16,6 @@
 
 #include "syntax.h"
 #include <stdlib.h>
-#include <string.h>
 
 
 int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
