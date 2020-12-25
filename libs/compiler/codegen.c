@@ -44,7 +44,7 @@ void adbreakend(syntax *const sx, ad *const context)
 {
 	while (context->adbreak)
 	{
-		int r = sx->mem[context->adbreak];
+		int r = mem_get(sx, context->adbreak);
 		sx->mem[context->adbreak] = sx->pc;
 		context->adbreak = r;
 	}
@@ -54,7 +54,7 @@ void adcontbeg(syntax *const sx, ad *const context, int ad)
 {
 	while (context->adcont != ad)
 	{
-		int r = sx->mem[context->adcont];
+		int r = mem_get(sx, context->adcont);
 		sx->mem[context->adcont] = ad;
 		context->adcont = r;
 	}
@@ -64,7 +64,7 @@ void adcontend(syntax *const sx, ad *const context)
 {
 	while (context->adcont != 0)
 	{
-		int r = sx->mem[context->adcont];
+		int r = mem_get(sx, context->adcont);
 		sx->mem[context->adcont] = sx->pc;
 		context->adcont = r;
 	}
@@ -126,7 +126,7 @@ void finalop(syntax *const sx)
 
 int sz_of(syntax *const sx, int type)
 {
-	return type == LFLOAT ? 2 : (type > 0 && sx->modetab[type] == MSTRUCT) ? sx->modetab[type + 1] : 1;
+	return type == LFLOAT ? 2 : (type > 0 && mode_get(sx, type) == MSTRUCT) ? mode_get(sx, type + 1) : 1;
 }
 
 int Expr_gen(syntax *const sx, int incond)
@@ -256,7 +256,7 @@ int Expr_gen(syntax *const sx, int incond)
 				Expr_gen(sx, 0);
 				tocode(sx, SLICE);
 				tocode(sx, sz_of(sx, eltype));
-				if (eltype > 0 && sx->modetab[eltype] == MARRAY)
+				if (eltype > 0 && mode_get(sx, eltype) == MARRAY)
 				{
 					tocode(sx, LAT);
 				}
@@ -326,7 +326,7 @@ int Expr_gen(syntax *const sx, int incond)
 
 				while (ad)
 				{
-					int r = sx->mem[ad];
+					int r = mem_get(sx, ad);
 					sx->mem[ad] = sx->pc;
 					ad = r;
 				}
@@ -512,7 +512,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			{
 				while (a) // проставить ссылку на метку во всех ранних переходах
 				{
-					int r = sx->mem[-a];
+					int r = mem_get(sx, -a);
 					sx->mem[-a] = sx->pc;
 					a = r;
 				}
@@ -674,7 +674,7 @@ void Declid_gen(syntax *const sx)
 		}
 		if (all) // int a = или struct{} a =
 		{
-			if (telem > 0 && sx->modetab[telem] == MSTRUCT)
+			if (telem > 0 && mode_get(sx, telem) == MSTRUCT)
 			{
 				Struct_init_gen(sx);
 				tocode(sx, COPY0STASS);
@@ -770,7 +770,7 @@ int codegen(universal_io *const io, syntax *const sx)
 				int fn = sx->identab[identref + 3];
 				int pred;
 
-				sx->functions[fn] = sx->pc;
+				func_set(sx, fn, sx->pc);
 				tocode(sx, FUNCBEG);
 				tocode(sx, maxdispl);
 				pred = sx->pc++;
@@ -846,13 +846,13 @@ void output_export(universal_io *const io, const syntax *const sx)
 
 	for (int i = 0; i < sx->pc; i++)
 	{
-		uni_printf(io, "%i ", sx->mem[i]);
+		uni_printf(io, "%i ", mem_get(sx, i));
 	}
 	uni_printf(io, "\n");
 
 	for (int i = 0; i < sx->funcnum; i++)
 	{
-		uni_printf(io, "%i ", sx->functions[i]);
+		uni_printf(io, "%i ", func_get(sx, i));
 	}
 	uni_printf(io, "\n");
 
@@ -869,7 +869,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 
 	for (int i = 0; i < sx->md; i++)
 	{
-		uni_printf(io, "%i ", sx->modetab[i]);
+		uni_printf(io, "%i ", mode_get(sx, i));
 	}
 	uni_printf(io, "\n");
 }

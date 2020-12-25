@@ -29,6 +29,7 @@ init()
 				echo -e "Keys:"
 				echo -e "\t-h, --help\tTo output help info."
 				echo -e "\t-s, --silence\tFor silence testing."
+				echo -e "\t-i, --ignore\tIgnore errors & executing stages."
 				echo -e "\t-d, --debug\tSwitch on debug tracing."
 				echo -e "\t-v, --virtual\tSet RuC virtual machine release."
 				echo -e "\t-o, --output\tSet output printing time (default = 0.0)."
@@ -37,6 +38,9 @@ init()
 				;;
 			-s|--silence)
 				silence=$1
+				;;
+			-i|--ignore)
+				ignore=$1
 				;;
 			-d|--debug)
 				debug=$1
@@ -98,7 +102,9 @@ build()
 		ruc_compiler=./ruc
 	fi
 
-	build_vm
+	if [[ -z $ignore ]] ; then
+		build_vm
+	fi
 }
 
 internal_timeout()
@@ -189,6 +195,8 @@ execution()
 				fi
 				;;
 		esac
+	else
+		let success++
 	fi
 }
 
@@ -220,47 +228,54 @@ check_warnings()
 
 compiling()
 {
-	action="compiling"
-	internal_timeout $wait_for $ruc_compiler $sources &>$log
+	if [[ -z $ignore || $path != $error_dir/* ]] ; then
+		action="compiling"
+		internal_timeout $wait_for $ruc_compiler $sources &>$log
 
-	case "$?" in
-		0)
-			if [[ $path == $error_dir/* ]] ; then
-				message_failure
-				let failure++
-			else
-				message_success
-				execution
-			fi
-			;;
-		124|142)
-			message_timeout
-			let timeout++
-			;;
-		139|134)
-			# Segmentation fault
-			# Double free or corruption (!prev)
+		case "$?" in
+			0)
+				if [[ $path == $error_dir/* ]] ; then
+					message_failure
+					let failure++
+				else
+					message_success
 
-			message_failure
-			let failure++
+					if [[ -z $ignore ]] ; then
+						execution
+					else
+						let success++
+					fi
+				fi
+				;;
+			124|142)
+				message_timeout
+				let timeout++
+				;;
+			139|134)
+				# Segmentation fault
+				# Double free or corruption (!prev)
 
-			if ! [[ -z $debug ]] ; then
-				cat $log
-			fi
-			;;
-		*)
-			if [[ $path == $error_dir/* ]] ; then
-				check_warnings
-			else
 				message_failure
 				let failure++
 
 				if ! [[ -z $debug ]] ; then
 					cat $log
 				fi
-			fi
-			;;
-	esac
+				;;
+			*)
+				if [[ $path == $error_dir/* ]] ; then
+					check_warnings
+				else
+					message_failure
+					let failure++
+
+					if ! [[ -z $debug ]] ; then
+						cat $log
+					fi
+				fi
+				;;
+		esac
+	fi
 }
 
 test()

@@ -19,7 +19,6 @@
 #include "defs.h"
 #include "uniscanner.h"
 #include "utf8.h"
-#include <limits.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>

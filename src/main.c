@@ -22,7 +22,7 @@
 #include "workspace.h"
 
 
-const char *name = "../tests/executable/floatsign.c";
+const char *name = "../tests/sleep/threads/russian.c";
 // "../tests/mips/0test.c";
 
 

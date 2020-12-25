@@ -17,6 +17,9 @@
 #pragma once
 
 #include "defs.h"
+#include <limits.h>
+#include <stddef.h>
+#include <stdint.h>
 
 
 #ifdef __cplusplus
@@ -28,32 +31,33 @@ typedef struct syntax
 {
 	// mem, pc & iniprocs - usage here only for codes printing
 
-	int mem[MAXMEMSIZE];		/** Memory */
-	int pc;						/** Program counter */
+	int mem[MAXMEMSIZE];		/**< Memory */
+	int pc;						/**< Program counter */
 
-	int iniprocs[INIPROSIZE];	/** Init processes */
-	int procd;					/** Process management daemon */
+	int iniprocs[INIPROSIZE];	/**< Init processes */
+	int procd;					/**< Process management daemon */
 
-	int functions[FUNCSIZE];	/** Functions table */
-	int funcnum;				/** Number of functions */
+	int functions[FUNCSIZE];	/**< Functions table */
+	int funcnum;				/**< Number of functions */
 
-	int identab[MAXIDENTAB];	/** Identifiers table */
-	int id;						/** Number of identifiers */
+	int identab[MAXIDENTAB];	/**< Identifiers table */
+	int id;						/**< Number of identifiers */
 
-	int modetab[MAXMODETAB];	/** Modes table */
-	int md;						/** Number of modes */
+	int modetab[MAXMODETAB];	/**< Modes table */
+	int md;						/**< Number of modes */
+	int startmode;				/**< Start of last record in modetab */
 	
-	int tree[MAXTREESIZE];		/** Tree */
-	int tc;						/** Tree counter */
+	int tree[MAXTREESIZE];		/**< Tree */
+	int tc;						/**< Tree counter */
 
-	int reprtab[MAXREPRTAB];	/** Representations table */
-	int rp;						/** Representations size */
-	int repr;					/** Representations position */
+	int reprtab[MAXREPRTAB];	/**< Representations table */
+	int rp;						/**< Representations size */
+	int repr;					/**< Representations position */
 
-	int maxdisplg;				/** Max displacement */
-	int wasmain;				/** Main function flag */
+	int maxdisplg;				/**< Max displacement */
+	int wasmain;				/**< Main function flag */
 
-	int anstdispl;				/** Stack displacement */
+	int anstdispl;				/**< Stack displacement */
 } syntax;
 
 
@@ -63,6 +67,105 @@ typedef struct syntax
  *	@return	Syntax structure
  */
 syntax sx_create();
+
+
+/**
+ *	Set value by index in memory table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index to record
+ *	@param	value		Value to record
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int mem_set(syntax *const sx, const size_t index, const int value);
+
+/**
+ *	Get an item by index from memory table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in table
+ *
+ *	@return	Item by index from table, @c INT_MAX on failure
+ */
+int mem_get(const syntax *const sx, const size_t index);
+
+
+/**
+ *	Set value by index in init processes table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index to record
+ *	@param	value		Value to record
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int proc_set(syntax *const sx, const size_t index, const int value);
+
+/**
+ *	Get an item by index from init processes table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in table
+ *
+ *	@return	Item by index from table, @c INT_MAX on failure
+ */
+int proc_get(const syntax *const sx, const size_t index);
+
+
+/**
+ *	Add new record to functions table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	ref			Start of function definition in syntax tree
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int func_add(syntax *const sx, const size_t ref);
+
+/**
+ *	Set function start reference by index in functions table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in functions table
+ *	@param	ref			Start of function definition in syntax tree
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int func_set(syntax *const sx, const size_t index, const size_t ref);
+
+/**
+ *	Get an item from functions table by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in functions table
+ *
+ *	@return	Item by index from functions table, @c INT_MAX on failure
+ */
+int func_get(const syntax *const sx, const size_t index);
+
+
+
+/**
+ *	Add new record to modes table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	record		Pointer to the new record
+ *	@param	size		Size of the new record
+ *
+ *	@return	Index of the new record in modes table, @c SIZE_MAX on failure
+ */
+size_t mode_add(syntax *const sx, const int *const record, const size_t size);
+
+/**
+ *	Get an item from modes table by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record
+ *
+ *	@return	Item by index from modes table, @c INT_MAX on failure
+ */
+int mode_get(const syntax *const sx, const size_t index);
 
 #ifdef __cplusplus
 } /* extern "C" */

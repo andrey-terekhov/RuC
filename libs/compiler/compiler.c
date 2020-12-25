@@ -21,6 +21,7 @@
 #include "errors.h"
 #include "preprocessor.h"
 #include "syntax.h"
+#include "tree.h"
 #include "uniio.h"
 #include <stdlib.h>
 
@@ -32,10 +33,12 @@
 
 //#define GENERATE_MACRO
 //#define GENERATE_TABLES
+//#define GENERATE_TREE
 
 
 const char *const DEFAULT_MACRO = "macro.txt";
 const char *const DEFAULT_TREE = "tree.txt";
+const char *const DEFAULT_NEW = "new.txt";
 const char *const DEFAULT_CODES = "codes.txt";
 const char *const DEFAULT_OUTPUT = "export.txt";
 
@@ -75,6 +78,16 @@ int compile_from_io_to_vm(universal_io *const io)
 
 	if (!ret)
 	{
+#ifdef GENERATE_TREE
+		ret = tree_test(&sx);
+		if (ret)
+		{
+			io_erase(io);
+			return ret;
+		}
+		tree_print(&sx, DEFAULT_NEW);
+#endif
+
 		ret = encode_to_vm(io, &sx);
 #ifdef GENERATE_TABLES
 		tables_and_codes(&sx, DEFAULT_CODES);

@@ -46,31 +46,29 @@ typedef struct preprocess_context
 
 	int macrotext[MAXTAB];
 	int mp;
-	int oldmp;
 
-	int mstring[STRIGSIZE];
+	char error_string[STRING_SIZE];
+	size_t position;
+
+	int mstring[STRING_SIZE];
 	int msp;
 
-	int strp;
-
-	int fchange[STRIGSIZE * 3];
+	int fchange[STRING_SIZE * 3];
 	int cp;
 
-	int localstack[STRIGSIZE];
+	int localstack[STRING_SIZE];
 	int lsp;
 
-	int cstring[STRIGSIZE];
+	int cstring[STRING_SIZE];
 	int csp;
 
-	int ifstring[STRIGSIZE * 2];
+	int ifstring[STRING_SIZE * 2];
 	int ifsp;
 
-	int wstring[STRIGSIZE * 5];
+	int wstring[STRING_SIZE * 5];
 	int wsp;
 
 	int mfirstrp;
-
-	int mclp;
 
 	int prep_flag;
 
@@ -79,7 +77,6 @@ typedef struct preprocess_context
 	int cur;
 
 	int nextp;
-	int main_file;
 
 	int oldcurchar[DIP];
 	int oldnextchar[DIP];
@@ -87,22 +84,16 @@ typedef struct preprocess_context
 	int oldnextp[DIP];
 	int dipp;
 
-	int line;
+	size_t line;
 
-	int temp_output;
 	files fs;
 	int h_flag;
 
-	FILE *current_file;
-	int *current_string;
-	int current_p;
-
-	int iwp;
-
-	universal_io *io;
+	universal_io *io_output;
+	universal_io *io_input;
 } preprocess_context;
 
-void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io);
+void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io, universal_io *const io_input);
 
 void con_files_add_include(files* fs, char *name, int h_flag);
 int con_file_open_sorse(files* fs, preprocess_context *context);
