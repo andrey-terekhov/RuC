@@ -45,7 +45,7 @@ void adbreakend(syntax *const sx, ad *const context)
 	while (context->adbreak)
 	{
 		int r = mem_get(sx, context->adbreak);
-		sx->mem[context->adbreak] = sx->pc;
+		mem_set(sx, context->adbreak, sx->pc);
 		context->adbreak = r;
 	}
 }
@@ -55,7 +55,7 @@ void adcontbeg(syntax *const sx, ad *const context, int ad)
 	while (context->adcont != ad)
 	{
 		int r = mem_get(sx, context->adcont);
-		sx->mem[context->adcont] = ad;
+		mem_set(sx, context->adcont, ad);
 		context->adcont = r;
 	}
 }
@@ -65,7 +65,7 @@ void adcontend(syntax *const sx, ad *const context)
 	while (context->adcont != 0)
 	{
 		int r = mem_get(sx, context->adcont);
-		sx->mem[context->adcont] = sx->pc;
+		mem_set(sx, context->adcont, sx->pc);
 		context->adcont = r;
 	}
 }
