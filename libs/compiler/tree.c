@@ -93,10 +93,59 @@ int is_lexeme(const int value)
 
 size_t skip_expression(tree *const tree, size_t i)
 {
+	//printf("tree[%i] = %i\n", i, tree[i]);
 	node nd = node_expression(tree, &i);
-	return node_is_correct(&nd) ? i : SIZE_MAX;
-}
+	if (!node_is_correct(&nd))
+	{
+		return SIZE_MAX;
+	}
 
+	//i = nd.children;
+	/*for (size_t j = 0; j < node_get_amount(&nd); j++)
+	{
+		i = skip_expression(tree, i);
+	}*/
+//printf("type\t\t%i\nargc\t\t%i\namount\t\t%i\nchildren\t%i\n\n", node_get_type(&nd), nd.argc, node_get_amount(&nd), nd.children);
+	/*if (node_get_amount(&nd) == 0)
+	{
+		if (tree[i] != TExprend)
+		{
+			error(NULL, tree_expression_no_texprend, i, tree[i]);
+			nd.tree = NULL;
+		}
+		i++;
+		return i;
+	}
+
+	return tree[i] == TExprend && node_get_amount(&nd) != 1 ? i + 1 : i;*/
+	/*if (node_get_amount(&nd) == 0
+		|| node_get_type(&nd) == TBeginit
+		|| node_get_type(&nd) == TStructinit
+		|| (node_get_type(&nd) == TSliceident && node_get_amount(&nd) == 1)
+		|| (node_get_type(&nd) == TSlice && node_get_amount(&nd) == 1))
+	{
+		if (tree[i] != TExprend)
+		{
+			error(NULL, tree_expression_no_texprend, i, tree[i]);
+			nd.tree = NULL;
+		}
+		i++;
+	}*/
+
+	if (nd.type >= 98 && nd.type <= 148)
+	{
+		if (node_get_amount(&nd) != 1)
+		{
+			//printf("type\t\t%i\nargc\t\t%i\namount\t\t%i\nchildren\t%i\n\n", node_get_type(&nd), nd.argc, node_get_amount(&nd), nd.children);
+			//printf("tree[%i] = %i\n", i, tree[i]);
+		}
+	}
+
+	return i;
+}
+int arr[1488];
+size_t head = 0;
+size_t count = 0;
 node node_expression(tree *const tree, size_t *i)
 {
 	node nd;
@@ -104,6 +153,31 @@ node node_expression(tree *const tree, size_t *i)
 	{
 		nd.tree = NULL;
 		return nd;
+	}
+	int flag = 0;
+	for (size_t j = 0; j < head; j++)
+	{
+		if (arr[j] == *i)
+		{
+			flag = 1;
+		}
+	}
+	if (!flag)
+	{
+		arr[head++] = (int)*i;
+		count = 0;
+	}
+	else
+	{
+		count++;
+		if (count > 500000)
+		{
+			for (size_t j = 0; j < head; j++)
+			{
+				printf("tree[%i]\t= %i\n", arr[j], tree[arr[j]]);
+			}
+			exit(139);
+		}
 	}
 
 	nd.tree = tree;
@@ -233,7 +307,7 @@ node node_expression(tree *const tree, size_t *i)
 		case NOP:
 			if (tree[*i] != TExprend)
 			{
-				error(NULL, tree_expression_texprend, *i, tree[*i]);
+				error(NULL, tree_expression_no_texprend, *i, tree[*i]);
 				nd.tree = NULL;
 			}
 
@@ -262,7 +336,7 @@ node node_expression(tree *const tree, size_t *i)
 				*i += 1;
 			}
 	}
-
+//if(i>=84)printf("tree[%i] = %i\n", *i, tree[*i]);
 	nd.children = nd.argv + nd.argc;
 	if (tree[*i] != TExprend && (tree[*i] == NOP || is_expression(tree[*i]) || is_lexeme(tree[*i])))
 	{
