@@ -19,6 +19,7 @@
 #include "keywords.h"
 #include "scanner.h"
 #include "uniio.h"
+#include "string.h"
 
 
 analyzer compiler_context_create(universal_io *const io, syntax *const sx)
@@ -27,6 +28,7 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx)
 	context.io = io;
 	context.sx = sx;
 
+	memset(context.hashtab, 0, 256);
 	context.sopnd = -1;
 	context.curid = 2;
 	context.lg = -1;

@@ -102,7 +102,7 @@ EXPORTED int ws_add_dir(workspace *const ws, const char *const path);
  *	Add include directories to workspace
  *
  *	@param	ws			Workspace structure
- *	@param	path		Directories paths
+ *	@param	paths		Directories paths
  *	@param	num			Number of directories
  *
  *	@return	@c 0 on success, @c -1 on failure
@@ -124,7 +124,7 @@ EXPORTED int ws_add_flag(workspace *const ws, const char *const flag);
  *	Add flags to workspace
  *
  *	@param	ws			Workspace structure
- *	@param	flag		Flags
+ *	@param	flags		Flags
  *	@param	num			Number of flags
  *
  *	@return	@c 0 on success, @c -1 on failure
