@@ -460,7 +460,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			{
 				Expr_gen(sx, 0); // cond
 				tocode(sx, BE0);
-				mem_add(sx, sx->pc, 0);
+				mem_add(sx, 0);
 				context->adbreak = sx->pc - 1;
 			}
 			incrtc = sx->tc;
@@ -513,7 +513,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 				while (a) // проставить ссылку на метку во всех ранних переходах
 				{
 					int r = mem_get(sx, -a);
-					mem_set(sx, -a, sx->pc);
+					sx->mem[-a] = sx->pc;
 					a = r;
 				}
 			}
