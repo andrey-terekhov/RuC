@@ -513,7 +513,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 				while (a) // проставить ссылку на метку во всех ранних переходах
 				{
 					int r = mem_get(sx, -a);
-					sx->mem[-a] = sx->pc;
+					mem_set(sx, -a, sx->pc);
 					a = r;
 				}
 			}
@@ -531,7 +531,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			Stmt_gen(sx, context);
 			if (context->adcase > 0)
 			{
-				sx->mem[context->adcase] = sx->pc;
+				mem_set(sx, context->adcase, sx->pc);
 			}
 			context->adcase = oldcase;
 			adbreakend(sx, context);
@@ -542,7 +542,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			if (context->adcase)
 			{
-				sx->mem[context->adcase] = sx->pc;
+				mem_set(sx, context->adcase, sx->pc);
 			}
 			tocode(sx, _DOUBLE);
 			Expr_gen(sx, 0);
@@ -556,7 +556,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			if (context->adcase)
 			{
-				sx->mem[context->adcase] = sx->pc;
+				mem_set(sx, context->adcase, sx->pc);
 			}
 			context->adcase = 0;
 			Stmt_gen(sx, context);
