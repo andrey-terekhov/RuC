@@ -90,15 +90,7 @@ int is_lexeme(const int value)
 		|| value == ABSIC;
 }
 
-size_t skip_expression_2(tree *const tree, size_t i)
-{
-	node nd = node_expression(tree, &i);
-	if (!node_is_correct(&nd))
-	{
-		return SIZE_MAX;
-	}
-	return i;
-}
+
 size_t skip_expression(tree *const tree, size_t i)
 {
 	node nd = node_expression(tree, i);
@@ -126,21 +118,11 @@ size_t skip_expression(tree *const tree, size_t i)
 			nd.tree = NULL;
 		}
 		i++;
-	}return i;
-printf("type\t\t%i\nargc\t\t%i\namount\t\t%i\nchildren\t%i\n\n", node_get_type(&nd), nd.argc, node_get_amount(&nd), nd.children);
-	/*if (i != k)
-	{
-		
-		printf("k\ttree[%i] = %i\n", i, tree[i]);
-		printf("i\ttree[%i] = %i\n", k, tree[k]);
-		exit(139);
-	}*/
+	}
 
-	return tree[i] == TExprend ? i + 1 : i;
+	return i;
 }
-int arr[1488];
-size_t head = 0;
-size_t count = 0;
+
 node node_expression(tree *const tree, const size_t index)
 {
 	node nd;
@@ -149,32 +131,6 @@ node node_expression(tree *const tree, const size_t index)
 		nd.tree = NULL;
 		return nd;
 	}
-
-	/*int flag = 0;
-	for (size_t j = 0; j < head; j++)
-	{
-		if (arr[j] == index)
-		{
-			flag = 1;
-		}
-	}
-	if (!flag)
-	{
-		arr[head++] = (int)index;
-		count = 0;
-	}
-	else
-	{
-		count++;
-		if (count > 10000)
-		{
-			for (size_t j = 0; j < head; j++)
-			{
-				printf("tree[%i]\t= %i\n", arr[j], tree[arr[j]]);
-			}
-			exit(139);
-		}
-	}*/
 
 	nd.tree = tree;
 	nd.type = index;
@@ -284,7 +240,6 @@ node node_expression(tree *const tree, const size_t index)
 	}
 
 	nd.children = nd.argv + nd.argc;
-
 	size_t j = nd.children;
 	for (size_t k = 0; k < nd.amount; k++)
 	{
