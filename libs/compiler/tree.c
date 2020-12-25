@@ -93,11 +93,6 @@ int is_lexeme(const int value)
 
 size_t skip_expression(tree *const tree, size_t i)
 {
-	
-	if (tree[i] != NOP && (is_operator(tree[i]) || tree[i] == TExprend))
-	{
-		return i;
-	}
 	node nd = node_expression(tree, &i);
 	return node_is_correct(&nd) ? i : SIZE_MAX;
 }
@@ -166,20 +161,21 @@ node node_expression(tree *const tree, size_t *i)
 		case TCall2:
 
 		case TIdent:
-		{
 			nd.argc = 1;
-			nd.amount = 1;
 
 			*i += nd.argc;
-			size_t j = skip_expression(tree, *i);
-			if (j == SIZE_MAX)
+			if (tree[*i] != TExprend)
 			{
-				nd.tree = NULL;
-				return nd;
+				nd.amount++;
+				*i = skip_expression(tree, *i);
+				if (*i == SIZE_MAX)
+				{
+					nd.tree = NULL;
+					return nd;
+				}
+				*i -= 1;			// Может быть общий TExprend
 			}
-			*i = j == *i ? j : j - 1;			// Может быть общий TExprend
-		}
-		break;
+			break;
 
 		case TStringd:		// d - double
 			nd.argc = 1;
@@ -193,37 +189,41 @@ node node_expression(tree *const tree, size_t *i)
 			break;
 
 		case TSliceident:
-		{
 			nd.argc = 2;
-			nd.amount = 2;
+			nd.amount = 1;
 
 			*i += nd.argc;
 			*i = skip_expression(tree, *i);		// 2 ветви потомков
-			size_t j = skip_expression(tree, *i);
-			if (j == SIZE_MAX)
+			if (tree[*i] != TExprend)
 			{
-				nd.tree = NULL;
-				return nd;
+				nd.amount++;
+				*i = skip_expression(tree, *i);
+				if (*i == SIZE_MAX)
+				{
+					nd.tree = NULL;
+					return nd;
+				}
+				*i -= 1;			// Может быть общий TExprend
 			}
-			*i = j == *i ? j : j - 1;			// Может быть общий TExprend
-		}
-		break;
+			break;
 		case TSlice:
-		{
 			nd.argc = 1;
-			nd.amount = 2;
+			nd.amount = 1;
 
 			*i += nd.argc;
 			*i = skip_expression(tree, *i);		// 2 ветви потомков
-			size_t j = skip_expression(tree, *i);
-			if (j == SIZE_MAX)
+			if (tree[*i] != TExprend)
 			{
-				nd.tree = NULL;
-				return nd;
+				nd.amount++;
+				*i = skip_expression(tree, *i);
+				if (*i == SIZE_MAX)
+				{
+					nd.tree = NULL;
+					return nd;
+				}
+				*i -= 1;			// Может быть общий TExprend
 			}
-			*i = j == *i ? j : j - 1;			// Может быть общий TExprend
-		}
-		break;
+			break;
 
 		case TExprend:
 			error(NULL, tree_expression_texprend, *i - 1, tree[*i - 1]);
