@@ -1324,7 +1324,7 @@ size_t elem_to_io(universal_io *const io, const int *const table, size_t i)
 	}
 	else if (type == TStringd)
 	{
-		const size_t n = table[i - 1] * 2;
+		const size_t n = table[i - 1];
 		for (size_t j = 0; j < n; j++)
 		{
 			double d;
