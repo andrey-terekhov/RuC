@@ -63,14 +63,13 @@ void gen_way(char *full, const char *path, const char *file, int is_slash)
 	// printf("4full = %s, path = %s file = %s \n", full, path, file);
 }
 
-int open_include_faile(preprocess_context *context, char *temp_way, const char* f_name)
+int open_include_faile(preprocess_context *context, const char* const path, const char* const temp_way, universal_io* temp_io)
 {
 	char file_way[STRING_SIZE + 1024];
 
-	gen_way(file_way, f_name, temp_way, 1);
+	gen_way(file_way, path, temp_way, 1);
 
-	universal_io temp_io = io_create();
-	int res = in_set_file(&temp_io, file_way);
+	int res = in_set_file(temp_io, file_way);
 	if (res == -1)
 	{
 		int i = 0;
@@ -80,7 +79,7 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 		
 			gen_way(file_way, temp_dir, temp_way, 0);
 
-			res = in_set_file(&temp_io, file_way);
+			res = in_set_file(temp_io, file_way);
 
 			if (res == 0)
 			{
@@ -92,27 +91,30 @@ int open_include_faile(preprocess_context *context, char *temp_way, const char* 
 
 	if (res == -1)
 	{
-		log_system_error(temp_way, "файл не найден");
-		return -3;
+		log_system_error(file_way, "файл не найден");
+		return -1;
 	}
-	else if (!find_file(context, file_way))
+
+	size_t num = ws_get_files_num(context->fs.ws);	
+	size_t index = ws_add_file(context->fs.ws, file_way);
+
+	if(index < context->fs.end_sorse && context->fs.already_included[index] == 0)
+	{
+		context->fs.already_included[index] = 1;
+	}
+	else if(num != ws_get_files_num(context->fs.ws))
 	{
 		return -2;
 	}
-
-	if (context->include_type != 0)
-	{
-		in_set_file(context->io_input , file_way);
-	}
-
-	in_close_file(&temp_io);
-
-	con_files_add_include(&context->fs, file_way, context->include_type);
-	return 0;
+	
+	
+	return index;
 }
 
-int file_read(preprocess_context *context)
-{
+int file_read(preprocess_context *context, const size_t new_cur_file)
+{	
+	size_t old_cur = context->fs.cur;
+	context->fs.cur = new_cur_file;
 	size_t old_line = context->line;
 	context->line = 1;
 
@@ -131,6 +133,10 @@ int file_read(preprocess_context *context)
 	{
 		m_nextch(context);
 	}
+
+	context->position = 0;
+	context->error_string[context->position] = '\0';
+
 	int error = 0; 
 	while (context->curchar != EOF)
 	{
@@ -143,12 +149,13 @@ int file_read(preprocess_context *context)
 		error = -1;
 	}
 	m_fprintf('\n', context);
-	con_file_close_cur(context);
-	context->line = old_line;
 
+	context->line = old_line;
+	context->fs.cur = old_cur;
 	
 	context->position = 0;
 	context->error_string[context->position] = '\0';
+
 	return error;
 }
 
@@ -166,60 +173,46 @@ int open_file(preprocess_context *context)
 			macro_error(must_end_quote, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 			return -1;
 		}
+
 		temp_way[i++] = (char)context->curchar;
 		m_nextch(context);
 	}
 	temp_way[i] = '\0';
-	int h = 0;
 
-	if (temp_way[i - 1] == 'h' && temp_way[i - 2] == '.')
+	universal_io temp_io = io_create();
+		
+	int index = open_include_faile(context, temp_way, ws_get_file(context->fs.ws, context->fs.cur), &temp_io);
+	if (index == -2)
 	{
-		h++;
+		in_clear(&temp_io);
+		return 0;
+	}
+	else if(index == -1)
+	{
+		in_clear(&temp_io);
+		return -1;
+	}
+	
+	int  dipp = 0;	
+	if (context->nextch_type != FILETYPE)
+	{
+		m_change_nextch_type(FILETYPE, 0, context);
+		dipp++;
 	}
 
-	int old_cur = context->fs.cur;
-	universal_io new_io = io_create();
 	universal_io *io_old = context->io_input;
-	context->io_input = &new_io;
+	context->io_input = &temp_io;
 
-	if ((h && context->include_type != 2) || (!h && context->include_type != 0))
-	{
-		int k = open_include_faile(context, temp_way, ws_get_file(context->fs.ws, context->fs.cur));
-		if (k == -2)
-		{
-			context->fs.cur = old_cur;
-			context->io_input = io_old;
-			in_clear(&new_io);
-			return 0;
-		}
-		else if(k == -3)
-		{
-			context->fs.cur = old_cur;
-			context->io_input = io_old;
-			in_clear(&new_io);
-			return -1;
-		}
-		
-	}
+	res = -file_read(context, (size_t)index);
 
-	if (context->include_type == 1 || (context->include_type == 2 && !h))
-	{
-		
-		if (!h && context->nextch_type != FILETYPE)
-		{
-			m_change_nextch_type(FILETYPE, 0, context);
-		}
-		res = -file_read(context);
-
-		if (!h && context->dipp != 0)
-		{
-			m_old_nextch_type(context);
-		}
-	}
-
-	context->fs.cur = old_cur;
 	context->io_input = io_old;
-	in_clear(&new_io);
+	in_clear(&temp_io);
+
+	if (dipp)
+	{
+		m_old_nextch_type(context);
+	}
+
 	return res;
 }
 
@@ -230,17 +223,9 @@ int include_relis(preprocess_context *context)
 
 	if (context->curchar != '\"')
 	{
-		if(context->include_type > 0)
-		{
-			size_t position = skip_str(context); 
-			macro_error(must_start_quote, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
-			return -1;
-		}
-		else
-		{
-			return 0;
-		}
-		
+		size_t position = skip_str(context); 
+		macro_error(must_start_quote, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+		return -1;	
 	}
 	m_nextch(context);
 	int res = open_file(context);

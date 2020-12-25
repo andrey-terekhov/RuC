@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-int file_read(preprocess_context *context);
+int file_read(preprocess_context *context, const size_t new_cur_file);
 int include_relis(preprocess_context *context);
 
 #ifdef __cplusplus

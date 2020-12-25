@@ -29,14 +29,15 @@
 
 #define MAX_CMT_SIZE MAX_ARG_SIZE + 32
 
-// Определение глобальных переменных
 void con_files_init(files *fs, workspace *const ws)
 {
-	fs->p = 0;
-	fs->cur = -1;
-	fs->end_h = 0;
-	fs->begin_f = -1;
 	fs->ws = ws;
+	fs->cur = MAX_PATHS;
+	size_t end_sorse = 0;
+	for (size_t i = 0; i < MAX_PATHS; i++)
+	{
+		fs->already_included[i] = 0;
+	}
 }
 
 void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io, universal_io *const io_input)
@@ -46,7 +47,6 @@ void preprocess_context_init(preprocess_context *context, workspace *const ws, u
 
 	con_files_init(&context->fs, ws);
 
-	context->include_type = 0;
 	context->rp = 1;
 	context->mp = 1;
 	context->msp = 0;
@@ -121,85 +121,14 @@ void preprocess_context_init(preprocess_context *context, workspace *const ws, u
 	}
 }
 
-void con_files_add_include(files* fs, char *name, int c_flag)
+int con_file_open(files* fs, preprocess_context *context, size_t indext)
 {
-	fs->p++;
-	
-	if(c_flag != 2)
-	{
-		fs->end_h++;
-	}
-	else
-	{
-		fs->cur = fs->p;
-	}
-	
-	ws_add_file(fs->ws, name);
-}
-
-int con_file_open_cur(files* fs, preprocess_context *context)
-{
-	if (in_set_file(context->io_input, ws_get_file(fs->ws, fs->cur)))
+	if (in_set_file(context->io_input, ws_get_file(fs->ws, indext)))
 	{
 		log_system_error(ws_get_file(fs->ws, fs->cur), "файл не найден");
 		return -1;
 	}
-	return 1;
-}
-
-
-int con_file_open_sorse(files* fs, preprocess_context *context)
-{
-	fs->cur = 0;
-
-	if(fs->cur == fs->begin_f)
-	{
-		return 0;
-	}
-
-	return con_file_open_cur(&context->fs, context);
-}
-
-int con_file_open_hedrs(files* fs, preprocess_context *context)
-{
-	if( fs->end_h > fs->begin_f)
-	{
-		fs->cur = fs->begin_f;
-	}
-	else
-	{
-		return 0;
-	}
-
-	return con_file_open_cur(&context->fs, context);
-}
-
-int con_file_open_next(files* fs, preprocess_context *context, int h_flag)
-{
-	if((h_flag && (fs->cur >= fs->begin_f && fs->cur < fs->end_h - 1)) || 
-		(!h_flag && (fs->begin_f < 0 || fs->cur < fs->begin_f - 1)))
-	{
-		fs->cur++;
-	}
-	else
-	{
-		return 0;
-	}
-
-	return con_file_open_cur(&context->fs, context);
-}
-
-void con_file_it_is_end_h(files *fs, int i)
-{
-	fs->end_h += i;
-	fs->p += i;
-	fs->begin_f = i;
-}
-
-void con_file_close_cur(preprocess_context *context)
-{
-	in_clear(context->io_input);
-	context->line = 1;
+	return 0;
 }
 
 void con_file_print_coment(files *fs, preprocess_context *context)

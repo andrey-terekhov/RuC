@@ -284,134 +284,34 @@ int preprocess_scan(preprocess_context *context)
 	}
 }
 
-void add_c_file_siple(preprocess_context *context)
+int preprocess_files(preprocess_context *context)
 {
-	while (context->curchar != EOF)
-	{
-		m_nextch(context);
-	}
-}
-
-void add_c_file(preprocess_context *context)
-{
-	m_nextch(context);
-	while (context->curchar != EOF)
-	{
-		switch (context->curchar)
-		{
-			case EOF:
-			{
-				return;
-			}
-			case ' ':
-			case '\n':
-			case '\t':
-			{
-				m_nextch(context);
-				break;
-			}
-			case '#':
-			{
-				context->cur = macro_keywords(context);
-				if (context->cur == SH_INCLUDE)
-				{
-					include_relis(context);
-				}
-				break;
-			}
-			default:
-			{
-				add_c_file_siple(context);
-				return;
-			}
-		}
-	}
-}
-
-void open_files(preprocess_context *context)
-{
-	int i = 0;
+	size_t i = 0;
 	size_t num = ws_get_files_num(context->fs.ws);
-	const char *temp = ws_get_file(context->fs.ws, i++);
+	context->fs.end_sorse = num;
 
-	for(size_t j = 0; j < num; j++)
+	while (i < num)
 	{
-		if (find_file(context, temp))
+		if(context->fs.already_included[i])
 		{
-			con_file_open_next(&context->fs, context, C_FILE);
-
-			get_next_char(context);
-
-			if (context->nextchar != EOF)
-			{
-				add_c_file(context);
-				context->position = 0;
-				context->error_string[context->position] = '\0';
-			}
-			con_file_close_cur(context);
+			continue;
 		}
-		temp = ws_get_file(context->fs.ws, i++);
-	}
 
-	con_file_it_is_end_h(&context->fs, i-1);
-}
-
-int preprocess_h_file(preprocess_context *context)
-{
-	context->h_flag = 1;
-	context->include_type = 1;
-	int res = con_file_open_hedrs(&context->fs, context);
-	if(res == 1)
-	{
-		res = file_read(context);
-		
-		if(file_read(context))
+		if(con_file_open(&context->fs, context, i++))
 		{
-			return -1;
-		}
-			
-		res = con_file_open_next(&context->fs, context, C_FILE);
-
-		while (res == 1)
-		{
-			if(file_read(context))
+			if(file_read(context, i))
 			{
 				return -1;
 			}
-			
-			res = con_file_open_next(&context->fs, context, H_FILE);
 		}
-	}
-	return res;
-}
-
-int preprocess_c_file(preprocess_context *context)
-{
-	context->include_type = 2;
-	context->h_flag = 0;
-	int res = con_file_open_sorse(&context->fs, context);
-	if(res == 1)
-	{
-		if(file_read(context))
+		else
 		{
 			return -1;
 		}
-
-		res = con_file_open_next(&context->fs, context, C_FILE);
-
-		while (res == 1)
-		{
-			if(file_read(context))
-			{
-				return -1;
-			}
-			
-			res = con_file_open_next(&context->fs, context, C_FILE);
-		}
 	}
-	return res;
-}
 
+	return 0;
+}
 
 int macro_form_io(workspace *const ws, universal_io *const io)
 {
@@ -422,14 +322,7 @@ int macro_form_io(workspace *const ws, universal_io *const io)
 	add_keywods(&context);
 	context.mfirstrp = context.rp;
 
-	open_files(&context);
-
-	if (preprocess_h_file(&context))
-	{
-		return -1;
-	}
-
-	if (preprocess_c_file(&context))
+	if (preprocess_files(&context))
 	{
 		return -1;
 	}

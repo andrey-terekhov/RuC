@@ -30,16 +30,13 @@ extern "C" {
 typedef struct files
 {
 	workspace *ws;
-	int p;
-	int cur;
-	int begin_f;
-	int end_h;
+	size_t cur;
+	size_t end_sorse;
+	int already_included[MAX_PATHS]
 } files;
 
 typedef struct preprocess_context
 {
-	int include_type;
-
 	int hashtab[256];
 	int reprtab[MAXTAB];
 	int rp;
@@ -95,13 +92,7 @@ typedef struct preprocess_context
 
 void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io, universal_io *const io_input);
 
-void con_files_add_include(files* fs, char *name, int h_flag);
-int con_file_open_sorse(files* fs, preprocess_context *context);
-int con_file_open_hedrs(files* fs, preprocess_context *context);
-int con_file_open_next(files* fs, preprocess_context *context, int h_flag);
-void con_file_close_cur(preprocess_context *context);
-
-void con_file_it_is_end_h(files *fs, int i);
+int con_file_open(files* fs, preprocess_context *context, size_t indext);
 
 void con_file_print_coment(files *fs, preprocess_context *context);
 
