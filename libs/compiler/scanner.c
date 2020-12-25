@@ -108,7 +108,7 @@ int lex_identifier_or_keyword(analyzer *const context)
 	} while (utf8_is_letter(context->curchar) || utf8_is_digit(context->curchar));
 	
 	hash &= 255;
-	context->hash = hash;
+	context->hash = (int)hash;
 	REPRTAB[REPRTAB_LEN++] = 0;
 	
 	size_t cur_repr = context->hashtab[hash];
