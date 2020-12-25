@@ -1284,6 +1284,15 @@ size_t elem_get_name(const int elem, const size_t num, char *const buffer)
 	return argc;
 }
 
+
+void double_to_io(universal_io *const io, const int64_t fst, const int64_t snd)
+{
+	int64_t num = (snd << 32) | fst;
+	double numdouble;
+	memcpy(&numdouble, &num, sizeof(double));
+	uni_printf(io, " %f\n", numdouble);
+}
+
 size_t elem_to_io(universal_io *const io, const int *const table, size_t i)
 {
 	const int type = table[i++];
@@ -1294,11 +1303,8 @@ size_t elem_to_io(universal_io *const io, const int *const table, size_t i)
 
 	if (type == TConstd || type == LID)
 	{
-		double numdouble;
-		memcpy(&numdouble, &table[i], sizeof(double));
-		i += 2;
-		uni_printf(io, " %.15f\n", numdouble);
-		return i;
+		double_to_io(io, table[i], table[i + 1]);
+		return i + 2;
 	}
 
 	for (size_t j = 1; j <= argc; j++)
@@ -1327,10 +1333,8 @@ size_t elem_to_io(universal_io *const io, const int *const table, size_t i)
 		const size_t n = table[i - 1];
 		for (size_t j = 0; j < n; j++)
 		{
-			double d;
-			memcpy(&d, &table[i], sizeof(double));
+			double_to_io(io, table[i], table[i + 1]);
 			i += 2;
-			uni_printf(io, "%f\n", d);
 		}
 	}
 
@@ -1346,28 +1350,36 @@ void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
 	}
 	uni_printf(io, "tc %zi) ", nd->type);
 
+	const int type = node_get_type(nd);
 	char buffer[MAX_ELEM_SIZE];
-	size_t argc = elem_get_name(node_get_type(nd), 0, buffer);
+	size_t argc = elem_get_name(type, 0, buffer);
 	uni_printf(io, "%s", buffer);
 
-	size_t i = 0;
-	while (i < argc && node_get_arg(nd, i) != INT_MAX)
+	if (type == TConstd || type == LID)
 	{
-		elem_get_name(node_get_type(nd), i + 1, buffer);
-		
-		if (buffer[0] != '\0')
-		{
-			uni_printf(io, " %s=", buffer);
-		}
-
-		uni_printf(io, " %i", node_get_arg(nd, i++));
+		double_to_io(io, node_get_arg(nd, 0), node_get_arg(nd, 1));
 	}
-	uni_printf(io, "\n");
-
-	if (i != argc)
+	else
 	{
-		elem_get_name(node_get_type(nd), 0, buffer);
-		warning(NULL, node_argc, nd->type, buffer);
+		size_t i = 0;
+		while (i < argc && node_get_arg(nd, i) != INT_MAX)
+		{
+			elem_get_name(type, i + 1, buffer);
+			
+			if (buffer[0] != '\0')
+			{
+				uni_printf(io, " %s=", buffer);
+			}
+
+			uni_printf(io, " %i", node_get_arg(nd, i++));
+		}
+		uni_printf(io, "\n");
+
+		if (i != argc)
+		{
+			elem_get_name(type, 0, buffer);
+			warning(NULL, node_argc, nd->type, buffer);
+		}
 	}
 
 	for (size_t j = 0; j < node_get_amount(nd); j++)
