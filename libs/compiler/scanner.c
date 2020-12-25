@@ -70,16 +70,16 @@ void skip_block_comment(analyzer *const context)
 }
 
 
-int repr_is_equal(const analyzer *const context, size_t i, size_t j)
+int repr_is_equal(const syntax *const sx, size_t i, size_t j)
 {
 	i += 2;
 	j += 2;
 	/* Assuming allocated */
-	while (REPRTAB[i] == REPRTAB[j])
+	while (sx->reprtab[i] == sx->reprtab[j])
 	{
 		i++;
 		j++;
-		if (REPRTAB[i] == 0 && REPRTAB[j] == 0)
+		if (sx->reprtab[i] == 0 && sx->reprtab[j] == 0)
 		{
 			return 1;
 		}
@@ -116,7 +116,7 @@ int lex_identifier_or_keyword(analyzer *const context)
 	{
 		do
 		{
-			if (repr_is_equal(context, cur_repr, old_repr))
+			if (repr_is_equal(context->sx, cur_repr, old_repr))
 			{
 				REPRTAB_LEN = (int)old_repr;
 				if (REPRTAB[cur_repr + 1] < 0)
