@@ -318,12 +318,9 @@ int Expr_gen(syntax *const sx, int incond)
 					adelse = sx->pc++;
 					Expr_gen(sx, 0); // then
 					tocode(sx, B);
-					//mem_add(sx, ad);
-					//ad = sx->pc - 1;
-					//mem_set(sx, adelse, sx->pc - 1);
-					sx->mem[sx->pc] = ad;
-					ad = sx->pc;
-					sx->mem[adelse] = ++sx->pc;
+					mem_add(sx, ad);
+					ad = sx->pc - 1;
+					mem_set(sx, adelse, sx->pc);
 					Expr_gen(sx, 1); // else или cond
 				} while (sx->tree[sx->tc] == TCondexpr);
 
