@@ -271,15 +271,15 @@ node node_expression(tree *const tree, const size_t index)
 
 size_t skip_operator(tree *const tree, size_t i)
 {
+	if (!is_operator(tree[i]))
+	{
+		return skip_expression(tree, i);
+	}
+
 	node nd = node_operator(tree, i);
 	if (!node_is_correct(&nd))
 	{
 		return SIZE_MAX;
-	}
-
-	if (!is_operator(node_get_type(&nd)))
-	{
-		return skip_expression(tree, i);
 	}
 
 	i = nd.children;
