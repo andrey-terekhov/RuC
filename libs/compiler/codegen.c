@@ -776,7 +776,7 @@ int codegen(universal_io *const io, syntax *const sx)
 				pred = sx->pc++;
 				sx->tc++; // TBegin
 				compstmt_gen(sx, &context);
-				sx->mem[pred] = sx->pc;
+				mem_set(sx, pred, sx->pc);
 				break;
 			}
 			case TDeclarr:
@@ -811,7 +811,7 @@ int codegen(universal_io *const io, syntax *const sx)
 				int numproc = sx->tree[sx->tree[sx->tc++] + 1];
 
 				tocode(sx, STOP);
-				sx->mem[sx->iniprocs[numproc] - 1] = sx->pc;
+				mem_set(sx, sx->iniprocs[numproc] - 1, sx->pc);
 				break;
 			}
 			default:
