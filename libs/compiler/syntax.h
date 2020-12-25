@@ -68,6 +68,15 @@ typedef struct syntax
  */
 syntax sx_create();
 
+/**
+ *	Add new record to memory table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	value			Value to record
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int mem_add(syntax *const sx, const int value);
 
 /**
  *	Set value by index in memory table

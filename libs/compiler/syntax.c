@@ -78,6 +78,17 @@ syntax sx_create()
 }
 
 
+int mem_add(syntax *const sx, const int value)
+{
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
+	sx->pc++;
+	return mem_set(sx, sx->pc - 1, value);
+}
+
 int mem_set(syntax *const sx, const size_t index, const int value)
 {
 	if (sx == NULL || (int)index >= sx->pc)
