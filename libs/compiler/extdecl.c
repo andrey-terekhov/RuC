@@ -114,7 +114,7 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 	}*/
 }
 
-int evaluate_params(analyzer *context, int num, int formatstr[], int formattypes[], int placeholders[])
+int evaluate_params(analyzer *context, int num, size_t formatstr[], int formattypes[], int placeholders[])
 {
 	int numofparams = 0;
 	int i = 0;
@@ -721,7 +721,7 @@ void primaryexpr(analyzer *context)
 
 		for (i = 0; i < context->num; i++)
 		{
-			totree(context, context->lexstr[i]);
+			totree(context, (int)context->lexstr[i]);
 		}
 
 		context->stackoperands[++context->sopnd] = context->ansttype; // ROWOFCHAR
@@ -2753,7 +2753,7 @@ void statement(analyzer *context)
 
 			case PRINTF:
 			{
-				int formatstr[MAXSTRINGL];
+				size_t formatstr[MAXSTRINGL];
 				int formattypes[MAXPRINTFPARAMS];
 				int placeholders[MAXPRINTFPARAMS];
 				int paramnum = 0;
