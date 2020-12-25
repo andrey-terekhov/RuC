@@ -37,7 +37,7 @@ void tocode(syntax *const sx, int c)
 {
 	// printf("tocode sx->tc=%i sx->pc %i) %i\n", sx->tc,
 	// sx->pc, c);
-	sx->mem[sx->pc++] = c;
+	mem_add(sx, c);
 }
 
 void adbreakend(syntax *const sx, ad *const context)
