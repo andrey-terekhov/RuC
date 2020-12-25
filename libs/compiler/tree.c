@@ -90,21 +90,29 @@ int is_lexeme(const int value)
 		|| value == ABSIC;
 }
 
-
-size_t skip_expression(tree *const tree, size_t i)
+size_t skip_expression_2(tree *const tree, size_t i)
 {
-	//printf("tree[%i] = %i\n", i, tree[i]);
 	node nd = node_expression(tree, &i);
 	if (!node_is_correct(&nd))
 	{
 		return SIZE_MAX;
 	}
+	return i;
+}
+size_t skip_expression(tree *const tree, size_t k)
+{
+	//printf("tree[%i] = %i\n", i, tree[i]);
+	node nd = node_expression(tree, &k);
+	if (!node_is_correct(&nd))
+	{
+		return SIZE_MAX;
+	}
 
-	//i = nd.children;
-	/*for (size_t j = 0; j < node_get_amount(&nd); j++)
+	size_t i = nd.children;
+	for (size_t j = 0; j < node_get_amount(&nd); j++)
 	{
 		i = skip_expression(tree, i);
-	}*/
+	}
 //printf("type\t\t%i\nargc\t\t%i\namount\t\t%i\nchildren\t%i\n\n", node_get_type(&nd), nd.argc, node_get_amount(&nd), nd.children);
 	/*if (node_get_amount(&nd) == 0)
 	{
@@ -118,7 +126,7 @@ size_t skip_expression(tree *const tree, size_t i)
 	}
 
 	return tree[i] == TExprend && node_get_amount(&nd) != 1 ? i + 1 : i;*/
-	/*if (node_get_amount(&nd) == 0
+	if (node_get_amount(&nd) == 0
 		|| node_get_type(&nd) == TBeginit
 		|| node_get_type(&nd) == TStructinit
 		|| (node_get_type(&nd) == TSliceident && node_get_amount(&nd) == 1)
@@ -130,18 +138,17 @@ size_t skip_expression(tree *const tree, size_t i)
 			nd.tree = NULL;
 		}
 		i++;
-	}*/
-
-	if (nd.type >= 98 && nd.type <= 148)
-	{
-		if (node_get_amount(&nd) != 1)
-		{
-			//printf("type\t\t%i\nargc\t\t%i\namount\t\t%i\nchildren\t%i\n\n", node_get_type(&nd), nd.argc, node_get_amount(&nd), nd.children);
-			//printf("tree[%i] = %i\n", i, tree[i]);
-		}
 	}
 
-	return i;
+	if (i != k)
+	{
+		printf("type\t\t%i\nargc\t\t%i\namount\t\t%i\nchildren\t%i\n\n", node_get_type(&nd), nd.argc, node_get_amount(&nd), nd.children);
+		printf("k\ttree[%i] = %i\n", i, tree[i]);
+		printf("i\ttree[%i] = %i\n", k, tree[k]);
+		exit(139);
+	}
+
+	return k;
 }
 int arr[1488];
 size_t head = 0;
@@ -154,7 +161,7 @@ node node_expression(tree *const tree, size_t *i)
 		nd.tree = NULL;
 		return nd;
 	}
-	int flag = 0;
+	/*int flag = 0;
 	for (size_t j = 0; j < head; j++)
 	{
 		if (arr[j] == *i)
@@ -170,7 +177,7 @@ node node_expression(tree *const tree, size_t *i)
 	else
 	{
 		count++;
-		if (count > 500000)
+		if (count > 500000000000)
 		{
 			for (size_t j = 0; j < head; j++)
 			{
@@ -178,7 +185,7 @@ node node_expression(tree *const tree, size_t *i)
 			}
 			exit(139);
 		}
-	}
+	}*/
 
 	nd.tree = tree;
 	nd.type = *i;
@@ -205,7 +212,7 @@ node node_expression(tree *const tree, size_t *i)
 			*i += nd.argc;
 			for (size_t j = 0; j < nd.amount; j++)
 			{
-				*i = skip_expression(tree, *i);
+				*i = skip_expression_2(tree, *i);
 			}
 			break;
 
@@ -241,7 +248,7 @@ node node_expression(tree *const tree, size_t *i)
 			if (tree[*i] != TExprend)
 			{
 				nd.amount++;
-				*i = skip_expression(tree, *i);
+				*i = skip_expression_2(tree, *i);
 				if (*i == SIZE_MAX)
 				{
 					nd.tree = NULL;
@@ -267,11 +274,11 @@ node node_expression(tree *const tree, size_t *i)
 			nd.amount = 1;
 
 			*i += nd.argc;
-			*i = skip_expression(tree, *i);		// 2 ветви потомков
+			*i = skip_expression_2(tree, *i);		// 2 ветви потомков
 			if (tree[*i] != TExprend)
 			{
 				nd.amount++;
-				*i = skip_expression(tree, *i);
+				*i = skip_expression_2(tree, *i);
 				if (*i == SIZE_MAX)
 				{
 					nd.tree = NULL;
@@ -285,11 +292,11 @@ node node_expression(tree *const tree, size_t *i)
 			nd.amount = 1;
 
 			*i += nd.argc;
-			*i = skip_expression(tree, *i);		// 2 ветви потомков
+			*i = skip_expression_2(tree, *i);		// 2 ветви потомков
 			if (tree[*i] != TExprend)
 			{
 				nd.amount++;
-				*i = skip_expression(tree, *i);
+				*i = skip_expression_2(tree, *i);
 				if (*i == SIZE_MAX)
 				{
 					nd.tree = NULL;
@@ -341,7 +348,7 @@ node node_expression(tree *const tree, size_t *i)
 	if (tree[*i] != TExprend && (tree[*i] == NOP || is_expression(tree[*i]) || is_lexeme(tree[*i])))
 	{
 		nd.amount++;
-		*i = skip_expression(tree, *i);
+		*i = skip_expression_2(tree, *i);
 	}
 	else
 	{
