@@ -315,14 +315,29 @@ const char *ws_get_file(const workspace *const ws, const size_t index)
 	return ws_is_correct(ws) && index < ws->files_num ? ws->files[index] : NULL;
 }
 
+size_t ws_get_files_num(const workspace *const ws)
+{
+	return ws_is_correct(ws) ? ws->files_num : 0;
+}
+
 const char *ws_get_dir(const workspace *const ws, const size_t index)
 {
 	return ws_is_correct(ws) && index < ws->dirs_num ? ws->dirs[index] : NULL;
 }
 
+size_t ws_get_dirs_num(const workspace *const ws)
+{
+	return ws_is_correct(ws) ? ws->dirs_num : 0;
+}
+
 const char *ws_get_flag(const workspace *const ws, const size_t index)
 {
 	return ws_is_correct(ws) && index < ws->flags_num ? ws->flags[index] : NULL;
+}
+
+size_t ws_get_flags_num(const workspace *const ws)
+{
+	return ws_is_correct(ws) ? ws->flags_num : 0;
 }
 
 
