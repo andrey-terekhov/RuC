@@ -118,24 +118,7 @@ node node_expression(tree *const tree, size_t *i)
 	nd.argc = 0;
 	nd.amount = 0;
 
-	if (tree[*i] == NOP)
-	{
-		if (tree[*i + 1] != TExprend)
-		{
-			error(NULL, tree_expression_texprend, *i + 1, tree[*i + 1]);
-			nd.tree = NULL;
-		}
-
-		nd.children = nd.argv + nd.argc;
-		*i += 2;
-		while (tree[*i] == TExprend)
-		{
-			*i += 1;
-		}
-		return nd;
-	}
-
-	if (is_operator(tree[*i]))
+	if (tree[*i] != NOP && is_operator(tree[*i]))
 	{
 		error(NULL, tree_expression_not_block, *i, tree[*i]);
 		nd.tree = NULL;
@@ -215,7 +198,7 @@ node node_expression(tree *const tree, size_t *i)
 			nd.amount = 2;
 
 			*i += nd.argc;
-			*i = skip_expression(tree, *i);			// 2 ветви потомков
+			*i = skip_expression(tree, *i);		// 2 ветви потомков
 			size_t j = skip_expression(tree, *i);
 			if (j == SIZE_MAX)
 			{
@@ -231,7 +214,7 @@ node node_expression(tree *const tree, size_t *i)
 			nd.amount = 2;
 
 			*i += nd.argc;
-			*i = skip_expression(tree, *i);			// 2 ветви потомков
+			*i = skip_expression(tree, *i);		// 2 ветви потомков
 			size_t j = skip_expression(tree, *i);
 			if (j == SIZE_MAX)
 			{
@@ -246,6 +229,17 @@ node node_expression(tree *const tree, size_t *i)
 			error(NULL, tree_expression_texprend, *i - 1, tree[*i - 1]);
 			nd.tree = NULL;
 			return nd;
+
+		case NOP:
+			if (tree[*i] != TExprend)
+			{
+				error(NULL, tree_expression_texprend, *i, tree[*i]);
+				nd.tree = NULL;
+			}
+
+			nd.argv++;
+			*i = nd.argv;
+			break;
 
 		default:
 			if (!is_lexeme(tree[*i - 1]))
