@@ -96,7 +96,7 @@ void finalop(syntax *const sx)
 				tocode(sx, c);
 				if (c == LOGOR || c == LOGAND)
 				{
-					sx->mem[sx->tree[sx->tc++]] = sx->pc;
+					mem_set(sx, sx->tree[sx->tc++], sx->pc);
 				}
 				else if (c == COPY00 || c == COPYST)
 				{
@@ -209,8 +209,8 @@ int Expr_gen(syntax *const sx, int incond)
 						tocode(sx, sx->tree[sx->tc++]);
 					}
 				}
-				sx->mem[res - 1] = n;
-				sx->mem[res - 2] = sx->pc;
+				mem_set(sx, res - 1, n);
+				mem_set(sx, res - 2, sx->pc);
 				wasstring = 1;
 				break;
 			}
