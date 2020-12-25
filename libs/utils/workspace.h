@@ -18,6 +18,7 @@
 
 #include <limits.h>
 #include <stddef.h>
+#include <stdint.h>
 #include "dll.h"
 
  
@@ -72,9 +73,9 @@ EXPORTED workspace ws_create();
  *	@param	ws			Workspace structure
  *	@param	path		File path
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	File index, @c SIZE_MAX on failure
  */
-EXPORTED int ws_add_file(workspace *const ws, const char *const path);
+EXPORTED size_t ws_add_file(workspace *const ws, const char *const path);
 
 /**
  *	Add files paths to workspace
@@ -94,9 +95,9 @@ EXPORTED int ws_add_files(workspace *const ws, const char *const *const paths, c
  *	@param	ws			Workspace structure
  *	@param	path		Directory path
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Directory index, @c SIZE_MAX on failure
  */
-EXPORTED int ws_add_dir(workspace *const ws, const char *const path);
+EXPORTED size_t ws_add_dir(workspace *const ws, const char *const path);
 
 /**
  *	Add include directories to workspace
@@ -116,9 +117,9 @@ EXPORTED int ws_add_dirs(workspace *const ws, const char *const *const paths, co
  *	@param	ws			Workspace structure
  *	@param	flag		Flag
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Flag index, @c SIZE_MAX on failure
  */
-EXPORTED int ws_add_flag(workspace *const ws, const char *const flag);
+EXPORTED size_t ws_add_flag(workspace *const ws, const char *const flag);
 
 /**
  *	Add flags to workspace
