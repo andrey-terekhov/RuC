@@ -200,7 +200,7 @@ node node_expression(tree *const tree, const size_t index)
 			break;
 
 		case TExprend:
-			error(NULL, tree_expression_texprend, index - 1, tree[index - 1]);
+			error(NULL, tree_expression_texprend, index, tree[index]);
 			nd.tree = NULL;
 			return nd;
 
@@ -277,6 +277,11 @@ size_t skip_operator(tree *const tree, size_t i)
 		return SIZE_MAX;
 	}
 
+	if (!is_operator(node_get_type(&nd)))
+	{
+		return skip_expression(tree, i);
+	}
+
 	i = nd.children;
 	for (size_t j = 0; j < node_get_amount(&nd); j++)
 	{
@@ -338,7 +343,7 @@ node node_operator(tree *const tree, const size_t index)
 			size_t j = nd.argv + nd.argc;
 			while (j != SIZE_MAX && tree[j] != TStructend)
 			{
-				j = skip_operator(nd.tree, j);
+				j = skip_operator(tree, j);
 				nd.amount++;
 			}
 
@@ -354,7 +359,7 @@ node node_operator(tree *const tree, const size_t index)
 			size_t j = nd.argv + nd.argc;
 			while (j != SIZE_MAX && tree[j] != TEnd)
 			{
-				j = skip_operator(nd.tree, j);
+				j = skip_operator(tree, j);
 				nd.amount++;
 			}
 
@@ -426,7 +431,7 @@ node node_operator(tree *const tree, const size_t index)
 			size_t j = nd.argv + nd.argc;
 			while (j != SIZE_MAX && tree[j] != EXITC)
 			{
-				j = skip_operator(nd.tree, j);
+				j = skip_operator(tree, j);
 				nd.amount++;
 			}
 
@@ -438,14 +443,13 @@ node node_operator(tree *const tree, const size_t index)
 		break;
 
 		default:
-			if (!is_expression(tree[nd.type]) && !is_lexeme(tree[nd.type]))
+			if (!is_expression(tree[index]) && !is_lexeme(tree[index]))
 			{
-				warning(NULL, tree_operator_unknown, nd.type, tree[nd.type]);
+				warning(NULL, tree_operator_unknown, index, tree[index]);
 			}
 
-			nd.type = skip_expression(tree, nd.type) - 1;	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
-															// ExpressionStatement: 1 потомок (выражение)
-			nd.argv = nd.type + 1;
+			return node_expression(tree, index);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
+													// ExpressionStatement: 1 потомок (выражение)
 	}
 
 	nd.children = nd.argv + nd.argc;
