@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 
-void preprocess_scan(preprocess_context *context);
+int preprocess_scan(preprocess_context *context);
 
 
 /**

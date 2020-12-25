@@ -17,8 +17,8 @@
 #include "file.h"
 #include "constants.h"
 #include "context_var.h"
-#include "preprocessor_error.h"
-#include "preprocessor_utils.h"
+#include "error.h"
+#include "utils.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
 #include <limits.h>
@@ -30,6 +30,21 @@
 
 void m_nextch(preprocess_context *context);
 
+
+size_t strlen32(const char32_t *const str)
+{
+	if (str == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	size_t i = 0;
+	while (str[i] != '\0')
+	{
+		i++;
+	}
+	return i;
+}
 
 int get_next_char(preprocess_context *context)
 {
@@ -54,7 +69,6 @@ void m_change_nextch_type(int type, int p, preprocess_context *context)
 	context->oldnextp[context->dipp] = context->nextp;
 	context->nextp = p;
 	context->dipp++;
-
 	context->nextch_type = type;
 }
 
@@ -124,8 +138,10 @@ void m_coment_skip(preprocess_context *context)
 
 			if (context->curchar == EOF)
 			{
+				size_t position = skip_str(context); 
+				macro_error(comm_not_ended, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 				end_line(context);
-				m_error(comm_not_ended, context);
+				return;
 			}
 		} while (context->curchar != '*' || context->nextchar != '/');
 
@@ -212,6 +228,15 @@ void m_nextch(preprocess_context *context)
 		}
 	}
 
+	if (context->curchar != '\n')
+	{
+		context->error_string[context->position++] = (char)context->curchar;
+		context->error_string[context->position] = '\0';
+	}
+	else
+	{
+		context->position = 0;
+	}
 	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", context->nextch_type,
 	// context->curchar, context->curchar, context->nextchar, context->nextchar);
 }
