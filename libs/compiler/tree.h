@@ -54,7 +54,7 @@ node node_get_root(syntax *const sx);
 /**
  *	Get child from node by index
  *
- *	@param	nd		Parrent node
+ *	@param	nd		Parent node
  *	@param	index	Child number
  *
  *	@return	Child node
