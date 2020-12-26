@@ -150,7 +150,7 @@ int lex_identifier_or_keyword(analyzer *const context)
  *
  *	@param	context	Analyzer structure
  *
- *	@return	@c NUMBER
+ *	@return	@c INT_CONST on integer, @c FLOAT_CONST on floating point
  */
 int lex_numeric_constant(analyzer *const context)
 {
@@ -204,7 +204,7 @@ int lex_numeric_constant(analyzer *const context)
 		{
 			error(context->io, must_be_digit_after_exp);
 			context->error_flag = 1;
-			return NUMBER;
+			return FLOAT_CONST;
 		}
 		
 		while (utf8_is_digit(context->curchar))
@@ -225,19 +225,19 @@ int lex_numeric_constant(analyzer *const context)
 	
 	if (flag_int)
 	{
-		context->ansttype = LINT;
 		context->num = num_int;
+		return INT_CONST;
 	}
 	else
 	{
-		context->ansttype = LFLOAT;
 		memcpy(&context->numr, &num_double, sizeof(double));
 		if (flag_too_long)
 		{
 			warning(context->io, too_long_int);
 		}
+		return FLOAT_CONST;
 	}
-	return NUMBER;
+	//return NUMBER;
 }
 
 
@@ -283,17 +283,16 @@ char32_t get_next_string_elem(analyzer *const context)
  *
  *	@param	context	Analyzer structure
  *
- *	@return	@c NUMBER
+ *	@return	@c CHAR_CONST
  */
 int lex_char_constant(analyzer *const context)
 {
-	context->ansttype = LCHAR;
 	if (get_char(context) == '\'')
 	{
 		error(context->io, empty_char_const);
 		context->error_flag = 1;
 		context->num = 0;
-		return NUMBER;
+		return CHAR_CONST;
 	}
 	
 	context->num = get_next_string_elem(context);
@@ -307,7 +306,7 @@ int lex_char_constant(analyzer *const context)
 		error(context->io, expected_apost_after_char_const);
 		context->error_flag = 1;
 	}
-	return NUMBER;
+	return CHAR_CONST;
 }
 
 /**
@@ -471,8 +470,7 @@ int lex(analyzer *const context)
 		case '.':
 			if (utf8_is_digit(context->nextchar))
 			{
-				lex_numeric_constant(context);
-				return NUMBER;
+				return lex_numeric_constant(context);
 			}
 			else
 			{

@@ -692,30 +692,32 @@ void mustberowoffloat(analyzer *context)
 
 void primaryexpr(analyzer *context)
 {
-	if (context->cur == NUMBER)
+	if (context->cur == CHAR_CONST)
 	{
-		if (context->ansttype == LFLOAT) // context->ansttype задается прямо в сканере
-		{
-			totree(context, TConstd);
-			totree(context, context->numr.fst);
-			totree(context, context->numr.snd);
-		}
-		else
-		{
-			totree(context, TConst);
-			totree(context, context->num); // LINT, LCHAR
-		}
-		context->stackoperands[++context->sopnd] = context->ansttype;
-		// printf("number context->sopnd=%i context->ansttype=%i\n",
-		// context->sopnd, context->ansttype);
+		totree(context, TConst);
+		totree(context, context->num);
+		context->stackoperands[++context->sopnd] = context->ansttype = LCHAR;
+		context->anst = NUMBER;
+	}
+	else if (context->cur == INT_CONST)
+	{
+		totree(context, TConst);
+		totree(context, context->num);
+		context->stackoperands[++context->sopnd] = context->ansttype = LINT;
+		context->anst = NUMBER;
+	}
+	else if (context->cur == FLOAT_CONST)
+	{
+		totree(context, TConstd);
+		totree(context, context->numr.fst);
+		totree(context, context->numr.snd);
+		context->stackoperands[++context->sopnd] = context->ansttype = LFLOAT;
 		context->anst = NUMBER;
 	}
 	else if (context->cur == STRING)
 	{
 		int i;
 
-		context->ansttype = newdecl(context->sx, MARRAY, LCHAR); // теперь пишем context->ansttype в
-															 // анализаторе, а не в сканере
 		totree(context, TString);
 		totree(context, context->num);
 
@@ -724,7 +726,7 @@ void primaryexpr(analyzer *context)
 			totree(context, (int)context->lexstr[i]);
 		}
 
-		context->stackoperands[++context->sopnd] = context->ansttype; // ROWOFCHAR
+		context->stackoperands[++context->sopnd] = context->ansttype = newdecl(context->sx, MARRAY, LCHAR);
 		context->anst = VAL;
 	}
 	else if (context->cur == IDENT)
