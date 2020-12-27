@@ -365,7 +365,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			tocode(sx, B);
 			tocode(sx, 0);
-			sx->iniprocs[sx->tree[sx->tc++]] = sx->pc;
+			proc_set(sx, sx->tree[sx->tc++], sx->pc);
 			break;
 		}
 		case TStructend:
@@ -803,7 +803,7 @@ int codegen(universal_io *const io, syntax *const sx)
 			{
 				tocode(sx, B);
 				tocode(sx, 0);
-				sx->iniprocs[sx->tree[sx->tc++]] = sx->pc;
+				proc_set(sx, sx->tree[sx->tc++], sx->pc);
 				break;
 			}
 			case TStructend:
