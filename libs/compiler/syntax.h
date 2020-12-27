@@ -73,7 +73,7 @@ syntax sx_create();
  *
  *	@param	sx			Syntax structure
  *
- *	@return	Size of memory table on success, @c INT_MAX on failure
+ *	@return	Program counter on success, @c INT_MAX on failure
  */
 size_t mem_get_size(const syntax *const sx);
 
