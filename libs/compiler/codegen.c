@@ -373,7 +373,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			int numproc = sx->tree[sx->tree[sx->tc++] + 1];
 
 			tocode(sx, STOP);
-			mem_set(sx, sx->iniprocs[numproc] - 1, sx->pc);
+			mem_set(sx, proc_get(sx, numproc) - 1, sx->pc);
 			break;
 		}
 		case TBegin:
@@ -670,7 +670,7 @@ void Declid_gen(syntax *const sx)
 		{
 			tocode(sx, STRUCTWITHARR);
 			tocode(sx, olddispl);
-			tocode(sx, sx->iniprocs[iniproc]);
+			tocode(sx, proc_get(sx, iniproc));
 		}
 		if (all) // int a = или struct{} a =
 		{
@@ -696,7 +696,7 @@ void Declid_gen(syntax *const sx)
 		tocode(sx, all == 0 ? N : abs(N) - 1);
 		tocode(sx, element_len);
 		tocode(sx, olddispl);
-		tocode(sx, sx->iniprocs[iniproc]);
+		tocode(sx, proc_get(sx, iniproc));
 		tocode(sx, usual);
 		tocode(sx, all);
 		tocode(sx, instruct);
@@ -811,7 +811,7 @@ int codegen(universal_io *const io, syntax *const sx)
 				int numproc = sx->tree[sx->tree[sx->tc++] + 1];
 
 				tocode(sx, STOP);
-				mem_set(sx, sx->iniprocs[numproc] - 1, sx->pc);
+				mem_set(sx, proc_get(sx, numproc) - 1, sx->pc);
 				break;
 			}
 			default:
