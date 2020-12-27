@@ -78,6 +78,16 @@ syntax sx_create()
 }
 
 
+size_t mem_get_size(const syntax *const sx)
+{
+	if (sx == NULL)
+	{
+		return INT_MAX;
+	}
+	return sx->pc;
+}
+
+
 int mem_add(syntax *const sx, const int value)
 {
 	if (sx == NULL)

@@ -69,6 +69,16 @@ typedef struct syntax
 syntax sx_create();
 
 /**
+ *	Get size of memory table
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	Size of memory table on success, @c INT_MAX on failure
+ */
+size_t mem_get_size(const syntax *const sx);
+
+
+/**
  *	Add new record to memory table
  *
  *	@param	sx			Syntax structure
