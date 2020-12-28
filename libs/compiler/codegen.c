@@ -518,11 +518,11 @@ void Stmt_gen(syntax *const sx, ad *const context)
 				while (a) // проставить ссылку на метку во всех ранних переходах
 				{
 					int r = mem_get(sx, -a);
-					mem_set(sx, -a, sx->pc);
+					mem_set(sx, -a, (int)mem_get_size(sx));
 					a = r;
 				}
 			}
-			sx->identab[id + 3] = sx->pc;
+			sx->identab[id + 3] = (int)mem_get_size(sx);
 			break;
 		}
 		case TSwitch:
@@ -536,7 +536,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			Stmt_gen(sx, context);
 			if (context->adcase > 0)
 			{
-				mem_set(sx, context->adcase, sx->pc);
+				mem_set(sx, context->adcase, (int)mem_get_size(sx));
 			}
 			context->adcase = oldcase;
 			adbreakend(sx, context);
@@ -547,13 +547,14 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			if (context->adcase)
 			{
-				mem_set(sx, context->adcase, sx->pc);
+				mem_set(sx, context->adcase, (int)mem_get_size(sx));
 			}
 			tocode(sx, _DOUBLE);
 			Expr_gen(sx, 0);
 			tocode(sx, EQEQ);
 			tocode(sx, BE0);
-			context->adcase = sx->pc++;
+			context->adcase = (int)mem_get_size(sx);
+			sx->pc++;
 			Stmt_gen(sx, context);
 			break;
 		}
@@ -561,7 +562,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			if (context->adcase)
 			{
-				mem_set(sx, context->adcase, sx->pc);
+				mem_set(sx, context->adcase, (int)mem_get_size(sx));
 			}
 			context->adcase = 0;
 			Stmt_gen(sx, context);
@@ -571,14 +572,14 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			tocode(sx, B);
 			mem_add(sx, context->adbreak);
-			context->adbreak = sx->pc - 1;
+			context->adbreak = (int)mem_get_size(sx) - 1;
 			break;
 		}
 		case TContinue:
 		{
 			tocode(sx, B);
 			mem_add(sx, context->adcont);
-			context->adcont = sx->pc - 1;
+			context->adcont = (int)mem_get_size(sx) - 1;
 			break;
 		}
 		case TReturnvoid:
@@ -775,13 +776,14 @@ int codegen(universal_io *const io, syntax *const sx)
 				int fn = sx->identab[identref + 3];
 				int pred;
 
-				func_set(sx, fn, sx->pc);
+				func_set(sx, fn, (int)mem_get_size(sx));
 				tocode(sx, FUNCBEG);
 				tocode(sx, maxdispl);
-				pred = sx->pc++;
+				pred = (int)mem_get_size(sx);
+				sx->pc++;
 				sx->tc++; // TBegin
 				compstmt_gen(sx, &context);
-				mem_set(sx, pred, sx->pc);
+				mem_set(sx, pred, (int)mem_get_size(sx));
 				break;
 			}
 			case TDeclarr:
@@ -808,7 +810,7 @@ int codegen(universal_io *const io, syntax *const sx)
 			{
 				tocode(sx, B);
 				tocode(sx, 0);
-				proc_set(sx, sx->tree[sx->tc++], sx->pc);
+				proc_set(sx, sx->tree[sx->tc++], (int)mem_get_size(sx));
 				break;
 			}
 			case TStructend:
@@ -816,7 +818,7 @@ int codegen(universal_io *const io, syntax *const sx)
 				int numproc = sx->tree[sx->tree[sx->tc++] + 1];
 
 				tocode(sx, STOP);
-				mem_set(sx, proc_get(sx, numproc) - 1, sx->pc);
+				mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
 				break;
 			}
 			default:
@@ -846,10 +848,10 @@ void output_export(universal_io *const io, const syntax *const sx)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%i %i %i %i %i %i %i\n", sx->pc, sx->funcnum, sx->id,
+	uni_printf(io, "%i %i %i %i %i %i %i\n", (int)mem_get_size(sx), sx->funcnum, sx->id,
 				   sx->rp, sx->md, sx->maxdisplg, sx->wasmain);
 
-	for (int i = 0; i < sx->pc; i++)
+	for (int i = 0; i < (int)mem_get_size(sx); i++)
 	{
 		uni_printf(io, "%i ", mem_get(sx, i));
 	}
