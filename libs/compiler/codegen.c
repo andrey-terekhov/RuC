@@ -45,7 +45,7 @@ void adbreakend(syntax *const sx, ad *const context)
 	while (context->adbreak)
 	{
 		int r = mem_get(sx, context->adbreak);
-		mem_set(sx, context->adbreak, sx->pc);
+		mem_set(sx, context->adbreak, (int)mem_get_size(sx));
 		context->adbreak = r;
 	}
 }
