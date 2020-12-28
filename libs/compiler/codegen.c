@@ -317,19 +317,20 @@ int Expr_gen(syntax *const sx, int incond)
 				{
 					sx->tc++;
 					tocode(sx, BE0);
-					adelse = sx->pc++;
+					adelse = (int)mem_get_size(sx);
+					sx->pc++;
 					Expr_gen(sx, 0); // then
 					tocode(sx, B);
 					mem_add(sx, ad);
-					ad = sx->pc - 1;
-					mem_set(sx, adelse, sx->pc);
+					ad = (int)mem_get_size(sx) - 1;
+					mem_set(sx, adelse, (int)mem_get_size(sx));
 					Expr_gen(sx, 1); // else или cond
 				} while (sx->tree[sx->tc] == TCondexpr);
 
 				while (ad)
 				{
 					int r = mem_get(sx, ad);
-					mem_set(sx, ad, sx->pc);
+					mem_set(sx, ad, (int)mem_get_size(sx));
 					ad = r;
 				}
 			}
@@ -367,7 +368,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			tocode(sx, B);
 			tocode(sx, 0);
-			proc_set(sx, sx->tree[sx->tc++], sx->pc);
+			proc_set(sx, sx->tree[sx->tc++], (int)mem_get_size(sx));
 			break;
 		}
 		case TStructend:
@@ -375,7 +376,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			int numproc = sx->tree[sx->tree[sx->tc++] + 1];
 
 			tocode(sx, STOP);
-			mem_set(sx, proc_get(sx, numproc) - 1, sx->pc);
+			mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
 			break;
 		}
 		case TBegin:
@@ -389,28 +390,30 @@ void Stmt_gen(syntax *const sx, ad *const context)
 
 			Expr_gen(sx, 0);
 			tocode(sx, BE0);
-			ad = sx->pc++;
+			ad = (int)mem_get_size(sx);
+			sx->pc++;
 			Stmt_gen(sx, context);
 			if (elseref)
 			{
-				mem_set(sx, ad, sx->pc + 2);
+				mem_set(sx, ad, (int)mem_get_size(sx) + 2);
 				tocode(sx, B);
-				ad = sx->pc++;
+				ad = (int)mem_get_size(sx);
+				sx->pc++;
 				Stmt_gen(sx, context);
 			}
-			mem_set(sx, ad, sx->pc);
+			mem_set(sx, ad, (int)mem_get_size(sx));
 			break;
 		}
 		case TWhile:
 		{
 			int oldbreak = context->adbreak;
 			int oldcont = context->adcont;
-			int ad = sx->pc;
+			int ad = (int)mem_get_size(sx);
 
 			context->adcont = ad;
 			Expr_gen(sx, 0);
 			tocode(sx, BE0);
-			context->adbreak = sx->pc;
+			context->adbreak = (int)mem_get_size(sx);
 			mem_add(sx, 0);	
 			Stmt_gen(sx, context);
 			adcontbeg(sx, context, ad);
@@ -425,7 +428,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			int oldbreak = context->adbreak;
 			int oldcont = context->adcont;
-			int ad = sx->pc;
+			int ad = (int)mem_get_size(sx);
 
 			context->adcont = context->adbreak = 0;
 			Stmt_gen(sx, context);
@@ -455,14 +458,14 @@ void Stmt_gen(syntax *const sx, ad *const context)
 				Expr_gen(sx, 0); // init
 			}
 
-			initad = sx->pc;
+			initad = (int)mem_get_size(sx);
 			context->adcont = context->adbreak = 0;
 
 			if (condref)
 			{
 				Expr_gen(sx, 0); // cond
 				tocode(sx, BE0);
-				context->adbreak = sx->pc;
+				context->adbreak = (int)mem_get_size(sx);
 				mem_add(sx, 0);	
 			}
 			incrtc = sx->tc;
@@ -498,7 +501,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			}
 			else // метка еще не описана
 			{
-				sx->identab[id + 3] = -sx->pc;
+				sx->identab[id + 3] = -(int)mem_get_size(sx);
 				tocode(sx,
 					   id1 < 0 ? 0 : a); // первый раз встретился переход на еще
 										 // не описанную метку или нет
