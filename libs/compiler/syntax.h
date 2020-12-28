@@ -77,6 +77,15 @@ syntax sx_create();
  */
 size_t mem_get_size(const syntax *const sx);
 
+/**
+ *	Increase size of memory table by value
+ *
+ *	@param	sx			Syntax structure
+ *	@param	value			Value to increase
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int mem_increase(syntax *const sx, const int value);
 
 /**
  *	Add new record to memory table

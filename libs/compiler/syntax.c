@@ -87,6 +87,16 @@ size_t mem_get_size(const syntax *const sx)
 	return sx->pc;
 }
 
+int mem_increase(syntax *const sx, const int value)
+{
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
+	sx->pc += value;
+	return 0;
+}
 
 int mem_add(syntax *const sx, const int value)
 {
