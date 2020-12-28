@@ -36,7 +36,7 @@ void compstmt_gen(syntax *const sx, ad *const context);
 void tocode(syntax *const sx, int c)
 {
 	// printf("tocode sx->tc=%i sx->pc %i) %i\n", sx->tc,
-	// sx->pc, c);
+	// (int)mem_get_size(sx), c);
 	mem_add(sx, c);
 }
 
@@ -65,7 +65,7 @@ void adcontend(syntax *const sx, ad *const context)
 	while (context->adcont != 0)
 	{
 		int r = mem_get(sx, context->adcont);
-		mem_set(sx, context->adcont, sx->pc);
+		mem_set(sx, context->adcont, (int)mem_get_size(sx));
 		context->adcont = r;
 	}
 }
@@ -83,20 +83,22 @@ void finalop(syntax *const sx)
 			{
 				tocode(sx, _DOUBLE);
 				tocode(sx, BNE0);
-				sx->tree[sx->tree[sx->tc++]] = sx->pc++;
+				sx->tree[sx->tree[sx->tc++]] = (int)mem_get_size(sx);
+				sx->pc++;
 			}
 			else if (c == ADLOGAND)
 			{
 				tocode(sx, _DOUBLE);
 				tocode(sx, BE0);
-				sx->tree[sx->tree[sx->tc++]] = sx->pc++;
+				sx->tree[sx->tree[sx->tc++]] = (int)mem_get_size(sx);
+				sx->pc++;
 			}
 			else
 			{
 				tocode(sx, c);
 				if (c == LOGOR || c == LOGAND)
 				{
-					mem_set(sx, sx->tree[sx->tc++], sx->pc);
+					mem_set(sx, sx->tree[sx->tc++], (int)mem_get_size(sx));
 				}
 				else if (c == COPY00 || c == COPYST)
 				{
@@ -194,7 +196,7 @@ int Expr_gen(syntax *const sx, int incond)
 				int i;
 
 				tocode(sx, LI);
-				tocode(sx, res = sx->pc + 4);
+				tocode(sx, res = (int)mem_get_size(sx) + 4);
 				tocode(sx, B);
 				sx->pc += 2;
 				for (i = 0; i < n; i++)
@@ -210,7 +212,7 @@ int Expr_gen(syntax *const sx, int incond)
 					}
 				}
 				mem_set(sx, res - 1, n);
-				mem_set(sx, res - 2, sx->pc);
+				mem_set(sx, res - 2, (int)mem_get_size(sx));
 				wasstring = 1;
 				break;
 			}
