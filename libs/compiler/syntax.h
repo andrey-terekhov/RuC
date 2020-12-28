@@ -85,7 +85,7 @@ size_t mem_get_size(const syntax *const sx);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int mem_increase(syntax *const sx, const int value);
+int mem_increase(syntax *const sx, const size_t value);
 
 /**
  *	Add new record to memory table

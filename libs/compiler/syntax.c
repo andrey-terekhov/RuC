@@ -87,7 +87,7 @@ size_t mem_get_size(const syntax *const sx)
 	return sx->pc;
 }
 
-int mem_increase(syntax *const sx, const int value)
+int mem_increase(syntax *const sx, const size_t value)
 {
 	if (sx == NULL)
 	{
