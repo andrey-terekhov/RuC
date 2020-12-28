@@ -84,14 +84,14 @@ void finalop(syntax *const sx)
 				tocode(sx, _DOUBLE);
 				tocode(sx, BNE0);
 				sx->tree[sx->tree[sx->tc++]] = (int)mem_get_size(sx);
-				sx->pc++;
+				mem_increase(sx, 1);
 			}
 			else if (c == ADLOGAND)
 			{
 				tocode(sx, _DOUBLE);
 				tocode(sx, BE0);
 				sx->tree[sx->tree[sx->tc++]] = (int)mem_get_size(sx);
-				sx->pc++;
+				mem_increase(sx, 1);
 			}
 			else
 			{
@@ -198,7 +198,7 @@ int Expr_gen(syntax *const sx, int incond)
 				tocode(sx, LI);
 				tocode(sx, res = (int)mem_get_size(sx) + 4);
 				tocode(sx, B);
-				sx->pc += 2;
+				mem_increase(sx, 2);
 				for (i = 0; i < n; i++)
 				{
 					if (op == TString)
@@ -318,7 +318,7 @@ int Expr_gen(syntax *const sx, int incond)
 					sx->tc++;
 					tocode(sx, BE0);
 					adelse = (int)mem_get_size(sx);
-					sx->pc++;
+					mem_increase(sx, 1);
 					Expr_gen(sx, 0); // then
 					tocode(sx, B);
 					mem_add(sx, ad);
@@ -391,14 +391,14 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			Expr_gen(sx, 0);
 			tocode(sx, BE0);
 			ad = (int)mem_get_size(sx);
-			sx->pc++;
+			mem_increase(sx, 1);
 			Stmt_gen(sx, context);
 			if (elseref)
 			{
 				mem_set(sx, ad, (int)mem_get_size(sx) + 2);
 				tocode(sx, B);
 				ad = (int)mem_get_size(sx);
-				sx->pc++;
+				mem_increase(sx, 1);
 				Stmt_gen(sx, context);
 			}
 			mem_set(sx, ad, (int)mem_get_size(sx));
@@ -554,7 +554,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			tocode(sx, EQEQ);
 			tocode(sx, BE0);
 			context->adcase = (int)mem_get_size(sx);
-			sx->pc++;
+			mem_increase(sx, 1);
 			Stmt_gen(sx, context);
 			break;
 		}
@@ -780,7 +780,7 @@ int codegen(universal_io *const io, syntax *const sx)
 				tocode(sx, FUNCBEG);
 				tocode(sx, maxdispl);
 				pred = (int)mem_get_size(sx);
-				sx->pc++;
+				mem_increase(sx, 1);
 				sx->tc++; // TBegin
 				compstmt_gen(sx, &context);
 				mem_set(sx, pred, (int)mem_get_size(sx));
