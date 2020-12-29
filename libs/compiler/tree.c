@@ -476,6 +476,8 @@ node node_get_root(syntax *const sx)
 	}
 
 	nd.tree = sx->tree;
+	nd.parent = SIZE_MAX;
+	nd.index = SIZE_MAX;
 	nd.type = SIZE_MAX;
 	nd.argv = 0;
 	nd.argc = 0;
@@ -519,7 +521,11 @@ node node_get_child(node *const nd, const size_t index)
 		}
 	}
 
-	return node_operator(nd->tree, i);
+	node child = node_operator(nd->tree, i);
+	child.parent = nd->type;
+	child.index = index;
+
+	return child;
 }
 
 node node_get_next(node *const nd)
