@@ -457,6 +457,31 @@ node node_operator(tree *const tree, const size_t index)
 }
 
 
+size_t skip_end(const tree *const tree, size_t index)
+{
+	while (tree[index] == TEnd || tree[index] == TStructend || tree[index] == TExprend || tree[index] == EXITC)
+	{
+		if (tree[index] == EXITC)
+		{
+			size_t j = index - 1;
+			while (j > 0 && tree[j] != CREATEDIRECTC && tree[j] != CREATEC)
+			{
+				j--;
+			}
+
+			if (tree[j] != CREATEDIRECTC)
+			{
+				return index;
+			}
+		}
+
+		index++;
+	}
+
+	return index;
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -494,6 +519,7 @@ node node_get_root(syntax *const sx)
 		nd.tree = NULL;
 	}
 
+	sx->tree[sx->tc] = INT_MAX;		// FIXME: для проверки на конец дерева
 	return nd;
 }
 
@@ -524,7 +550,26 @@ node node_get_child(node *const nd, const size_t index)
 
 node node_get_next(node *const nd)
 {
-	return *nd;
+	if (!node_is_correct(nd))
+	{
+		node next;
+		next.tree = NULL;
+		return next;
+	}
+
+	if (node_get_amount(nd) > 0)
+	{
+		return node_get_child(nd, 0);
+	}
+
+	const size_t index = skip_end(nd->tree, nd->type + nd->argc + 1);
+	if (nd->tree[index] == INT_MAX)
+	{
+		node next;
+		next.tree = NULL;
+		return next;
+	}
+	return node_operator(nd->tree, index);
 }
 
 
