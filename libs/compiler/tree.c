@@ -522,6 +522,11 @@ node node_get_child(node *const nd, const size_t index)
 	return node_operator(nd->tree, i);
 }
 
+node node_get_next(node *const nd)
+{
+	return *nd;
+}
+
 
 size_t node_get_amount(const node *const nd)
 {
@@ -530,7 +535,7 @@ size_t node_get_amount(const node *const nd)
 
 int node_get_type(const node *const nd)
 {
-	return node_is_correct(nd) ? nd->tree[nd->type] : INT_MAX;
+	return node_is_correct(nd) && nd->type != SIZE_MAX ? nd->tree[nd->type] : INT_MAX;
 }
 
 int node_get_arg(const node *const nd, const size_t index)

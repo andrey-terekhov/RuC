@@ -61,6 +61,15 @@ node node_get_root(syntax *const sx);
  */
 node node_get_child(node *const nd, const size_t index);
 
+/**
+ *	Get next node from tree traversal in pre-order (NLR)
+ *
+ *	@param	nd		Current node
+ *
+ *	@return	Next node
+ */
+node node_get_next(node *const nd);
+
 
 /**
  *	Get amount of children
