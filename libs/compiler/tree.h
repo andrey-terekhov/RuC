@@ -32,6 +32,10 @@ typedef int tree;
 typedef struct node
 {
 	tree *tree;				/**< Reference to tree */
+
+	size_t parent;			/**< Reference to parent */
+	size_t index;			/**< Child index of parent */
+
 	size_t type;			/**< Node type */
 
 	size_t argv;			/**< Reference to arguments */

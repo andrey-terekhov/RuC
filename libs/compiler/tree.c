@@ -524,6 +524,13 @@ node node_get_child(node *const nd, const size_t index)
 
 node node_get_next(node *const nd)
 {
+	if (!node_is_correct(nd))
+	{
+		node next;
+		next.tree = NULL;
+		return next;
+	}
+
 	return *nd;
 }
 
