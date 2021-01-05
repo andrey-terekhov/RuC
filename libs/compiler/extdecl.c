@@ -17,7 +17,7 @@
 #include "extdecl.h"
 #include "errors.h"
 #include "defs.h"
-#include "scanner.h"
+#include "lexer.h"
 #include <string.h>
 
 
@@ -39,7 +39,7 @@ int scanner(analyzer *context)
 	context->cur = context->next;
 	if (!context->buf_flag)
 	{
-		context->next = lex(context);
+		context->next = lex(context->lexer);
 	}
 	else
 	{
@@ -86,7 +86,7 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 			error(io, num, REPRTAB, REPRTAB_POS);
 			break;
 		case label_not_declared:
-			error(io, num, context->hash, REPRTAB, REPRTAB_POS);
+			error(io, num, context->sx->hash, REPRTAB, REPRTAB_POS);
 			break;
 		default:
 			error(io, num);
@@ -114,7 +114,7 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 	}*/
 }
 
-int evaluate_params(analyzer *context, int num, size_t formatstr[], int formattypes[], int placeholders[])
+int evaluate_params(analyzer *context, int num, char32_t formatstr[], int formattypes[], int placeholders[])
 {
 	int numofparams = 0;
 	int i = 0;
@@ -127,7 +127,7 @@ int evaluate_params(analyzer *context, int num, size_t formatstr[], int formatty
 	{
 		if (formatstr[i] == '%')
 		{
-			if (fsi = formatstr[++i], fsi != '%')
+			if (fsi = (int)formatstr[++i], fsi != '%')
 			{
 				if (numofparams == MAXPRINTFPARAMS)
 				{
@@ -695,22 +695,22 @@ void primaryexpr(analyzer *context)
 	if (context->cur == CHAR_CONST)
 	{
 		totree(context, TConst);
-		totree(context, context->num);
+		totree(context, context->lexer->num);
 		context->stackoperands[++context->sopnd] = context->ansttype = LCHAR;
 		context->anst = NUMBER;
 	}
 	else if (context->cur == INT_CONST)
 	{
 		totree(context, TConst);
-		totree(context, context->num);
+		totree(context, context->lexer->num);
 		context->stackoperands[++context->sopnd] = context->ansttype = LINT;
 		context->anst = NUMBER;
 	}
 	else if (context->cur == FLOAT_CONST)
 	{
 		totree(context, TConstd);
-		totree(context, context->numr.fst);
-		totree(context, context->numr.snd);
+		totree(context, context->lexer->numr.fst);
+		totree(context, context->lexer->numr.snd);
 		context->stackoperands[++context->sopnd] = context->ansttype = LFLOAT;
 		context->anst = NUMBER;
 	}
@@ -719,11 +719,11 @@ void primaryexpr(analyzer *context)
 		int i;
 
 		totree(context, TString);
-		totree(context, context->num);
+		totree(context, context->lexer->num);
 
-		for (i = 0; i < context->num; i++)
+		for (i = 0; i < context->lexer->num; i++)
 		{
-			totree(context, (int)context->lexstr[i]);
+			totree(context, (int)context->lexer->lexstr[i]);
 		}
 
 		context->stackoperands[++context->sopnd] = context->ansttype = newdecl(context->sx, MARRAY, LCHAR);
@@ -2755,7 +2755,7 @@ void statement(analyzer *context)
 
 			case PRINTF:
 			{
-				size_t formatstr[MAXSTRINGL];
+				char32_t formatstr[MAXSTRINGL];
 				int formattypes[MAXPRINTFPARAMS];
 				int placeholders[MAXPRINTFPARAMS];
 				int paramnum = 0;
@@ -2770,13 +2770,13 @@ void statement(analyzer *context)
 					break;
 				}
 
-				for (i = 0; i < context->num; i++)
+				for (i = 0; i < context->lexer->num; i++)
 				{
-					formatstr[i] = context->lexstr[i];
+					formatstr[i] = context->lexer->lexstr[i];
 				}
-				formatstr[context->num] = 0;
+				formatstr[context->lexer->num] = 0;
 
-				paramnum = evaluate_params(context, fnum = context->num, formatstr, formattypes, placeholders);
+				paramnum = evaluate_params(context, fnum = context->lexer->num, formatstr, formattypes, placeholders);
 
 				if (context->error_flag)
 				{
@@ -2847,7 +2847,7 @@ void statement(analyzer *context)
 
 				for (i = 0; i < fnum; i++)
 				{
-					totree(context, formatstr[i]);
+					totree(context, (int)formatstr[i]);
 				}
 				totree(context, TExprend);
 
@@ -3647,10 +3647,10 @@ void function_definition(analyzer *context)
 	for (i = 0; i < context->pgotost - 1; i += 2)
 	{
 		REPRTAB_POS = context->sx->identab[context->gotost[i] + 1];
-		context->hash = context->gotost[i + 1];
-		if (context->hash < 0)
+		context->sx->hash = context->gotost[i + 1];
+		if (context->sx->hash < 0)
 		{
-			context->hash = -context->hash;
+			context->sx->hash = -context->sx->hash;
 		}
 		if (!context->sx->identab[context->gotost[i] + 2])
 		{
@@ -3865,9 +3865,9 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 /** Генерация дерева */
 void ext_decl(analyzer *context)
 {
-	get_char(context);
-	get_char(context);
-	context->next = lex(context);
+	get_char(context->lexer);
+	get_char(context->lexer);
+	context->next = lex(context->lexer);
 	
 	int i;
 	context->temp_tc = context->sx->tc;

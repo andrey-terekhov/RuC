@@ -49,6 +49,9 @@ typedef struct syntax
 	
 	int tree[MAXTREESIZE];		/**< Tree */
 	int tc;						/**< Tree counter */
+	
+	int hash;					/**< Last value of hash function */
+	size_t hashtab[256];		/**< Hash table for reprtab */
 
 	int reprtab[MAXREPRTAB];	/**< Representations table */
 	int rp;						/**< Representations size */

@@ -19,6 +19,7 @@
 #include "defs.h"
 #include "syntax.h"
 #include "uniio.h"
+#include "lexer.h"
 
 
 #define REPRTAB		(context->sx->reprtab)
@@ -35,19 +36,11 @@ typedef struct analyzer
 {
 	universal_io *io;					/**< Universal io structure */
 	syntax *sx;							/**< Syntax structure */
-
-	char32_t curchar;					/**< Current character */
-	char32_t nextchar;					/**< Lookahead character */
-	int num;							/**< Value of the read integer number */
-	struct { int fst; int snd; } numr;	/**< Value of the read double number */
-	char32_t lexstr[MAXSTRINGL + 1];	/**< Representation of the read string literal */
-	int hash;							/**< Last value of hash function */
-	size_t hashtab[256];				/**< Hash table for reprtab */
+	Lexer *lexer;						/**< Lexer structure */
 	
 	int line;
 	int cur;
 	int next;
-	int keywordsnum;
 	int wasstructdef;
 	int func_def;
 	int stack[100];

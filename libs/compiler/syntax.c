@@ -73,6 +73,11 @@ syntax sx_create()
 	sx.wasmain = 0;
 
 	sx.anstdispl = 0;
+	
+	for (int i = 0; i < 256; i++)
+	{
+		sx.hashtab[i] = 0;
+	}
 
 	return sx;
 }
