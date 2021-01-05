@@ -147,5 +147,5 @@ int analyze(universal_io *const io, syntax *const sx)
 	context.lexer->io = io;
 	ext_decl(&context);
 
-	return context.error_flag;
+	return context.error_flag || context.lexer->error_flag;
 }
