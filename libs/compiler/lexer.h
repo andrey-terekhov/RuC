@@ -33,11 +33,11 @@ typedef struct Lexer
 	
 	char32_t curchar;					/**< Current character */
 	char32_t nextchar;					/**< Lookahead character */
+	int repr;							/**< Pointer to representation of the read identifier */
 	int num;							/**< Value of the read integer number */
 	struct { int fst; int snd; } numr;	/**< Value of the read double number */
 	char32_t lexstr[MAXSTRINGL + 1];	/**< Representation of the read string literal */
 	
-	int keywordsnum;
 	int error_flag;						/**< Error flag */
 } Lexer;
 
@@ -66,7 +66,7 @@ char32_t get_char(Lexer *const lexer);
  *
  *	@return	Token
  */
-int lex(Lexer *const lexer);
+Token lex(Lexer *const lexer);
 
 #ifdef __cplusplus
 } /* extern "C" */

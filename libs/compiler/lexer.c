@@ -34,7 +34,6 @@ void lexer_error(Lexer *const lexer, const int num)
 	}
 }
 
-
 /**
  *	Skip over a series of whitespace characters
  *
@@ -81,24 +80,6 @@ void skip_block_comment(Lexer *const lexer)
 	get_char(lexer);
 }
 
-/**	Check if representations are equal */
-int repr_is_equal(const syntax *const sx, size_t i, size_t j)
-{
-	i += 2;
-	j += 2;
-	/* Assuming allocated */
-	while (sx->reprtab[i] == sx->reprtab[j])
-	{
-		i++;
-		j++;
-		if (sx->reprtab[i] == 0 && sx->reprtab[j] == 0)
-		{
-			return 1;
-		}
-	}
-	return 0;
-}
-
 /**
  *	Lex identifier or keyword [C99 6.4.1 & 6.4.2]
  *
@@ -106,56 +87,29 @@ int repr_is_equal(const syntax *const sx, size_t i, size_t j)
  *
  *	@return	keyword number on keyword, @c identifier on identifier
  */
-int lex_identifier_or_keyword(Lexer *const lexer)
+Token lex_identifier_or_keyword(Lexer *const lexer)
 {
-	size_t old_repr = lexer->sx->rp;
-	size_t hash = 0;
-	lexer->sx->rp += 2;
-	
+	char32_t spelling[MAXSTRINGL];
+	size_t length = 0;
+
 	do
 	{
-		hash += lexer->curchar;
-		lexer->sx->reprtab[lexer->sx->rp++] = lexer->curchar;
+		spelling[length++] = lexer->curchar;
 		get_char(lexer);
 	} while (utf8_is_letter(lexer->curchar) || utf8_is_digit(lexer->curchar));
-	
-	hash &= 255;
-	lexer->sx->hash = (int)hash;
-	lexer->sx->reprtab[lexer->sx->rp++] = 0;
-	
-	size_t cur_repr = lexer->sx->hashtab[hash];
-	if (cur_repr)
-	{
-		do
-		{
-			if (repr_is_equal(lexer->sx, cur_repr, old_repr))
-			{
-				lexer->sx->rp = old_repr;
-				if (lexer->sx->reprtab[cur_repr + 1] < 0)
-				{
-					return lexer->sx->reprtab[cur_repr + 1];
-				}
-				else
-				{
-					lexer->sx->repr = cur_repr;
-					return IDENT;
-				}
-			}
-			else
-			{
-				cur_repr = lexer->sx->reprtab[cur_repr];
-			}
-		} while (cur_repr);
-	}
-	
-	lexer->sx->reprtab[old_repr] = lexer->sx->hashtab[hash];
-	lexer->sx->repr = old_repr;
-	lexer->sx->hashtab[hash] = old_repr;
-	// 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
-	lexer->sx->reprtab[lexer->sx->repr + 1] = (lexer->keywordsnum) ? -((++lexer->keywordsnum - 2) / 4) : 1;
-	return identifier;
-}
+	spelling[length] = 0;
 
+	int repr = repr_add(lexer->sx, spelling);
+	if (repr_get_reference(lexer->sx, repr) < 0)
+	{
+		return repr_get_reference(lexer->sx, repr);
+	}
+	else
+	{
+		lexer->repr = repr;
+		return identifier;
+	}
+}
 
 /**
  *	Lex numeric constant [C99 6.4.4.1 & 6.4.4.2]
@@ -164,7 +118,7 @@ int lex_identifier_or_keyword(Lexer *const lexer)
  *
  *	@return	@c int_constant on integer, @c float_contant on floating point
  */
-int lex_numeric_constant(Lexer *const lexer)
+Token lex_numeric_constant(Lexer *const lexer)
 {
 	int num_int = 0;
 	double num_double = 0.0;
@@ -250,7 +204,6 @@ int lex_numeric_constant(Lexer *const lexer)
 	}
 }
 
-
 /**	Get character or escape sequence after '\' */
 char32_t get_next_string_elem(Lexer *const lexer)
 {
@@ -294,7 +247,7 @@ char32_t get_next_string_elem(Lexer *const lexer)
  *
  *	@return	@c char_constant
  */
-int lex_char_constant(Lexer *const lexer)
+Token lex_char_constant(Lexer *const lexer)
 {
 	if (get_char(lexer) == '\'')
 	{
@@ -325,7 +278,7 @@ int lex_char_constant(Lexer *const lexer)
  *
  *	@return	@c string_literal
  */
-int lex_string_literal(Lexer *const lexer)
+Token lex_string_literal(Lexer *const lexer)
 {
 	size_t length = 0;
 	int flag_too_long_string = 0;
@@ -378,6 +331,7 @@ Lexer lexer_create(universal_io *const io, syntax *const sx)
 	Lexer lexer;
 	lexer.io = io;
 	lexer.sx = sx;
+	lexer.repr = 0;
 	
 	return lexer;
 }
@@ -393,7 +347,7 @@ char32_t get_char(Lexer *const lexer)
 	return lexer->curchar;
 }
 
-int lex(Lexer *const lexer)
+Token lex(Lexer *const lexer)
 {
 	if (lexer == NULL)
 	{

@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-
+/**	Check if modes are equal */
 int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
 {
 	if (sx->modetab[first] != sx->modetab[second])
@@ -45,6 +45,25 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 	return 1;
 }
 
+/**	Check if representations are equal */
+int repr_is_equal(const syntax *const sx, size_t i, size_t j)
+{
+	i += 2;
+	j += 2;
+	/* Assuming allocated */
+	while (sx->reprtab[i] == sx->reprtab[j])
+	{
+		i++;
+		j++;
+		if (sx->reprtab[i] == 0 && sx->reprtab[j] == 0)
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -67,7 +86,6 @@ syntax sx_create()
 	sx.startmode = 1;
 	sx.tc = 0;
 	sx.rp = 1;
-	sx.repr = 0;
 
 	sx.maxdisplg = 3;
 	sx.wasmain = 0;
@@ -201,4 +219,84 @@ int mode_get(const syntax *const sx, const size_t index)
 	}
 
 	return sx->modetab[index];
+}
+
+
+int repr_add(syntax *const sx, const char32_t *const spelling)
+{
+	size_t old_repr = sx->rp;
+	size_t hash = 0;
+	size_t i = 0;
+	sx->rp += 2;
+
+	do
+	{
+		 hash += spelling[i];
+		 sx->reprtab[sx->rp++] = spelling[i];
+	} while (spelling[i++] != 0);
+
+	hash &= 255;
+	sx->hash = (int)hash;
+	//sx->reprtab[sx->rp++] = 0;
+
+	size_t cur_repr = sx->hashtab[hash];
+	if (cur_repr != 0)
+	{
+		do
+		{
+			if (repr_is_equal(sx, cur_repr, old_repr))
+			{
+				sx->rp = old_repr;
+				return cur_repr;
+			}
+			else
+			{
+				cur_repr = sx->reprtab[cur_repr];
+			}
+		} while (cur_repr != 0);
+	}
+
+	sx->reprtab[old_repr] = sx->hashtab[hash];
+	//sx->repr = old_repr;
+	sx->hashtab[hash] = old_repr;
+	// 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
+	sx->reprtab[old_repr + 1] = (sx->keywordsnum) ? -((++sx->keywordsnum - 2) / 4) : 1;
+	return old_repr;
+}
+
+int repr_get_spelling(const syntax *const sx, size_t index, char32_t *const spelling)
+{
+	if (sx == NULL || (int)index >= sx->md)
+	{
+		return -1;
+	}
+
+	int i = 0;
+	index += 2;
+	do
+	{
+		spelling[i++] = sx->reprtab[index++];
+	} while (sx->reprtab[index] != 0);
+	return 0;
+}
+
+int repr_get_reference(const syntax *const sx, const size_t index)
+{
+	if (sx == NULL || (int)index >= sx->rp)
+	{
+		return INT_MAX;
+	}
+
+	return sx->reprtab[index + 1];
+}
+
+int repr_set_reference(syntax *const sx, const size_t index, const size_t ref)
+{
+	if (sx == NULL || (int)index >= sx->rp)
+	{
+		return -1;
+	}
+
+	sx->reprtab[index + 1] = (int)ref;
+	return 0;
 }
