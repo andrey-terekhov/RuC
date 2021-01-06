@@ -20,17 +20,22 @@
 #include "errors.h"
 #include "uniscanner.h"
 
-
-void lexer_error(Lexer *const lexer, const int num)
+/**
+ *	Emmit an error from lexer
+ *
+ *	@param	lexer	Lexer structure
+ *	@param	err		Error code
+ */
+void lexer_error(Lexer *const lexer, const enum ERROR err)
 {
 	lexer->error_flag = 1;
-	if (num == bad_character)
+	if (err == bad_character)
 	{
-		error(lexer->io, num, lexer->curchar);
+		error(lexer->io, err, lexer->curchar);
 	}
 	else
 	{
-		error(lexer->io, num);
+		error(lexer->io, err);
 	}
 }
 
