@@ -222,7 +222,7 @@ int mode_get(const syntax *const sx, const size_t index)
 }
 
 
-int repr_add(syntax *const sx, const char32_t *const spelling)
+size_t repr_add(syntax *const sx, const char32_t *const spelling)
 {
 	size_t old_repr = sx->rp;
 	size_t hash = 0;
@@ -257,7 +257,6 @@ int repr_add(syntax *const sx, const char32_t *const spelling)
 	}
 
 	sx->reprtab[old_repr] = sx->hashtab[hash];
-	//sx->repr = old_repr;
 	sx->hashtab[hash] = old_repr;
 	// 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
 	sx->reprtab[old_repr + 1] = (sx->keywordsnum) ? -((++sx->keywordsnum - 2) / 4) : 1;

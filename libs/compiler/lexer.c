@@ -104,10 +104,10 @@ Token lex_identifier_or_keyword(Lexer *const lexer)
 	} while (utf8_is_letter(lexer->curchar) || utf8_is_digit(lexer->curchar));
 	spelling[length] = 0;
 
-	int repr = repr_add(lexer->sx, spelling);
+	const size_t repr = repr_add(lexer->sx, spelling);
 	if (repr_get_reference(lexer->sx, repr) < 0)
 	{
-		return repr_get_reference(lexer->sx, repr);
+		return (Token)repr_get_reference(lexer->sx, repr);
 	}
 	else
 	{
@@ -121,7 +121,7 @@ Token lex_identifier_or_keyword(Lexer *const lexer)
  *
  *	@param	lexer	Lexer structure
  *
- *	@return	@c int_constant on integer, @c float_contant on floating point
+ *	@return	@c int_constant on integer, @c float_constant on floating point
  */
 Token lex_numeric_constant(Lexer *const lexer)
 {
@@ -174,7 +174,7 @@ Token lex_numeric_constant(Lexer *const lexer)
 		if (!utf8_is_digit(lexer->curchar))
 		{
 			lexer_error(lexer, must_be_digit_after_exp);
-			return float_contant;
+			return float_constant;
 		}
 		
 		while (utf8_is_digit(lexer->curchar))
@@ -205,7 +205,7 @@ Token lex_numeric_constant(Lexer *const lexer)
 		{
 			warning(lexer->io, too_long_int);
 		}
-		return float_contant;
+		return float_constant;
 	}
 }
 

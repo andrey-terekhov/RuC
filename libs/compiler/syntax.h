@@ -180,7 +180,7 @@ int mode_get(const syntax *const sx, const size_t index);
  *
  *	@return	Index of the new record in representations table, @c SIZE_MAX on failure
  */
-int repr_add(syntax *const sx, const char32_t *const spelling);
+size_t repr_add(syntax *const sx, const char32_t *const spelling);
 
 /**
  *	Get a representation spelling from representations table by index

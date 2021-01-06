@@ -68,7 +68,7 @@ typedef enum Token
 
 	// Constants [C99 6.4.4]
 	int_constant		= INT_CONST,	/**< Integer Constant [C99 6.4.4.1] */
-	float_contant		= FLOAT_CONST,	/**< Floating Constant [C99 6.4.4.2] */
+	float_constant		= FLOAT_CONST,	/**< Floating Constant [C99 6.4.4.2] */
 	char_constant		= CHAR_CONST,	/**< Character Constant [C99 6.4.4.4] */
 	string_literal		= STRING,		/**< String Literal [C99 6.4.5] */
 
