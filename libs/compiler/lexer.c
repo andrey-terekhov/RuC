@@ -21,7 +21,7 @@
 #include "uniscanner.h"
 
 /**
- *	Emmit an error from lexer
+ *	Emit an error from lexer
  *
  *	@param	lexer	Lexer structure
  *	@param	err		Error code
