@@ -54,7 +54,8 @@ int is_operator(const int value)
 		|| value == TContinue
 
 		|| value == NOP				// Lexemes
-		|| value == CREATEDIRECTC;
+		|| value == CREATEDIRECTC
+		|| value == EXITDIRECTC;
 }
 
 int is_expression(const int value)
@@ -288,20 +289,6 @@ size_t skip_operator(tree *const tree, size_t i)
 		i = skip_operator(tree, i);
 	}
 
-	if (i != SIZE_MAX)
-	{
-		switch (node_get_type(&nd))
-		{
-			case TStructbeg:
-				i += 2;
-				break;
-			case TBegin:
-			case CREATEDIRECTC:
-				i += 1;
-				break;
-		}
-	}
-
 	return i;
 }
 
@@ -337,6 +324,7 @@ node node_operator(tree *const tree, const size_t index)
 			nd.amount = node_get_arg(&nd, 0) + 1;
 		}
 		break;
+
 		case TStructbeg:	// StructDecl: n + 2 потомков (размерность структуры, n объявлений полей, инициализатор (может не быть))
 		{
 			nd.argc = 1;
@@ -347,12 +335,20 @@ node node_operator(tree *const tree, const size_t index)
 				nd.amount++;
 			}
 
-			if (j == SIZE_MAX)
+			if (j != SIZE_MAX)
+			{
+				skip_operator(tree, j);
+				nd.amount++;
+			}
+			else
 			{
 				nd.tree = NULL;
 			}
 		}
 		break;
+		case TStructend:
+			nd.argc = 1;
+			break;
 
 		case TBegin:
 		{
@@ -363,12 +359,20 @@ node node_operator(tree *const tree, const size_t index)
 				nd.amount++;
 			}
 
-			if (j == SIZE_MAX)
+			if (j != SIZE_MAX)
+			{
+				skip_operator(tree, j);
+				nd.amount++;
+			}
+			else
 			{
 				nd.tree = NULL;
 			}
+			
 		}
 		break;
+		case TEnd:
+			break;
 
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
 			nd.argc = 1;
@@ -426,6 +430,7 @@ node node_operator(tree *const tree, const size_t index)
 
 		case NOP:			// NoOperation: 0 потомков
 			break;
+
 		case CREATEDIRECTC:
 		{
 			size_t j = nd.argv + nd.argc;
@@ -435,12 +440,19 @@ node node_operator(tree *const tree, const size_t index)
 				nd.amount++;
 			}
 
-			if (j == SIZE_MAX)
+			if (j != SIZE_MAX)
+			{
+				skip_operator(tree, j);
+				nd.amount++;
+			}
+			else
 			{
 				nd.tree = NULL;
 			}
 		}
 		break;
+		case EXITDIRECTC:
+			break;
 
 		default:
 			if (!is_expression(tree[index]) && !is_lexeme(tree[index]))
