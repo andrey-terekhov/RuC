@@ -2626,7 +2626,7 @@ void statement(analyzer *context)
 		totree(context, CREATEDIRECTC);
 		flagsemicol = 0;
 		block(context, 2);
-		totree(context, EXITC);
+		totree(context, EXITDIRECTC);
 	}
 	else if (context->cur == SEMICOLON)
 	{

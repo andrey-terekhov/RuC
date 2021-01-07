@@ -71,6 +71,16 @@ EXPORTED char32_t utf8_convert(const char *const symbol);
 EXPORTED size_t utf8_to_string(char *const buffer, const char32_t symbol);
 
 /**
+ *	Convert UTF-8 string to CP866 string
+ *
+ *	@param	src		UTF-8 string
+ *	@param	dest	CP866 string
+ *
+ *	@return	Size of destination string
+ */
+EXPORTED size_t utf8_to_cp866(const char *const src, char *const dest);
+
+/**
  *	Convert UTF-8 string to Windows-1251 string
  *
  *	@param	src		UTF-8 string

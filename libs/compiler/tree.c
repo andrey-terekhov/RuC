@@ -429,7 +429,7 @@ node node_operator(tree *const tree, const size_t index)
 		case CREATEDIRECTC:
 		{
 			size_t j = nd.argv + nd.argc;
-			while (j != SIZE_MAX && tree[j] != EXITC)
+			while (j != SIZE_MAX && tree[j] != EXITDIRECTC)
 			{
 				j = skip_operator(tree, j);
 				nd.amount++;
