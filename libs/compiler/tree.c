@@ -106,21 +106,6 @@ size_t skip_expression(tree *const tree, size_t i)
 		i = skip_expression(tree, i);
 	}
 
-	if (node_get_amount(&nd) == 0
-		|| node_get_type(&nd) == TBeginit
-		|| node_get_type(&nd) == TStructinit
-		|| (node_get_type(&nd) == TSliceident && node_get_amount(&nd) == 1)
-		|| (node_get_type(&nd) == TSlice && node_get_amount(&nd) == 1)
-		|| (node_get_type(&nd) == TIdent && node_get_amount(&nd) == 0))
-	{
-		if (tree[i] != TExprend)
-		{
-			error(NULL, tree_expression_no_texprend, i, tree[i]);
-			nd.tree = NULL;
-		}
-		i++;
-	}
-
 	return i;
 }
 
@@ -201,8 +186,7 @@ node node_expression(tree *const tree, const size_t index)
 			break;
 
 		case TExprend:
-			error(NULL, tree_expression_texprend, index, tree[index]);
-			nd.tree = NULL;
+			nd.children = nd.argv + nd.argc;
 			return nd;
 
 		case NOP:
@@ -253,17 +237,14 @@ node node_expression(tree *const tree, const size_t index)
 		return nd;
 	}
 
-	if (tree[j] != TExprend)
+	if (tree[j] == NOP || is_expression(tree[j]) || is_lexeme(tree[j]))
 	{
-		if (tree[j] == NOP || is_expression(tree[j]) || is_lexeme(tree[j]))
-		{
-			nd.amount++;
-		}
-		else
-		{
-			error(NULL, tree_expression_no_texprend, j, tree[j]);
-			nd.tree = NULL;
-		}
+		nd.amount++;
+	}
+	else
+	{
+		error(NULL, tree_expression_no_texprend, j, tree[j]);
+		nd.tree = NULL;
 	}
 
 	return nd;
