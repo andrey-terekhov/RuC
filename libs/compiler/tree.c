@@ -87,7 +87,8 @@ int is_expression(const int value)
 int is_lexeme(const int value)
 {
 	return (value >= 9001 && value <= 9595
-		&& value != CREATEDIRECTC)
+		&& value != CREATEDIRECTC
+		&& value != EXITDIRECTC)
 		|| value == ABSIC;
 }
 
