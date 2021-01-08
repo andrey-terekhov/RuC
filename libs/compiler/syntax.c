@@ -237,7 +237,6 @@ size_t repr_add(syntax *const sx, const char32_t *const spelling)
 
 	hash &= 255;
 	sx->hash = (int)hash;
-	//sx->reprtab[sx->rp++] = 0;
 
 	size_t cur_repr = sx->hashtab[hash];
 	if (cur_repr != 0)
@@ -265,7 +264,7 @@ size_t repr_add(syntax *const sx, const char32_t *const spelling)
 
 int repr_get_spelling(const syntax *const sx, size_t index, char32_t *const spelling)
 {
-	if (sx == NULL || (int)index >= sx->md)
+	if (sx == NULL || (int)index >= sx->rp)
 	{
 		return -1;
 	}
