@@ -604,3 +604,13 @@ int tree_test(syntax *const sx)
 	error(NULL, tree_no_tend);
 	return -1;
 }
+
+int tree_test_next(syntax *const sx)
+{
+	return 0;
+}
+
+int tree_test_recursive(syntax *const sx)
+{
+	return 0;
+}
