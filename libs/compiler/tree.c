@@ -52,8 +52,7 @@ int is_operator(const int value)
 		|| value == TBreak
 		|| value == TContinue
 
-		|| value == NOP				// Lexemes
-		|| value == CREATEDIRECTC
+		|| value == CREATEDIRECTC	// Lexemes
 		|| value == EXITDIRECTC;
 }
 
@@ -125,7 +124,7 @@ node node_expression(tree *const tree, const size_t index)
 	nd.argc = 0;
 	nd.amount = 0;
 
-	if (tree[index] != NOP && is_operator(tree[index]))
+	if (is_operator(tree[index]))
 	{
 		error(NULL, tree_expression_not_block, index, tree[index]);
 		nd.tree = NULL;
@@ -251,7 +250,7 @@ node node_expression(tree *const tree, const size_t index)
 
 size_t skip_operator(tree *const tree, size_t i)
 {
-	if (!is_operator(tree[i]))
+	if (!is_operator(tree[i]) && tree[i] != NOP)
 	{
 		return skip_expression(tree, i);
 	}
@@ -532,8 +531,7 @@ node node_get_child(node *const nd, const size_t index)
 	size_t i = nd->children;
 	for (size_t num = 0; num < index; num++)
 	{
-		if (nd->type == SIZE_MAX
-			|| (node_get_type(nd) != NOP && is_operator(node_get_type(nd))))
+		if (nd->type == SIZE_MAX || is_operator(node_get_type(nd)))
 		{
 			i = skip_operator(nd->tree, i);
 		}
@@ -543,9 +541,9 @@ node node_get_child(node *const nd, const size_t index)
 		}
 	}
 
-	return !is_operator(node_get_type(nd)) && nd->tree[i] == NOP && nd->type != SIZE_MAX
-		? node_expression(nd->tree, i)
-		: node_operator(nd->tree, i);
+	return nd->type == SIZE_MAX || is_operator(node_get_type(nd))
+		? node_operator(nd->tree, i)
+		: node_expression(nd->tree, i);
 }
 
 node node_get_next(node *const nd)
