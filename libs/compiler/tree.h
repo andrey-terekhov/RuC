@@ -61,6 +61,15 @@ node node_get_root(syntax *const sx);
  */
 node node_get_child(node *const nd, const size_t index);
 
+/**
+ *	Get next node from tree traversal in pre-order (NLR)
+ *
+ *	@param	nd		Current node
+ *
+ *	@return	Next node
+ */
+node node_get_next(node *const nd);
+
 
 /**
  *	Get amount of children
@@ -109,6 +118,24 @@ int node_is_correct(const node *const nd);
  *	@return	@c 0 on success, @c -1 on failure
  */
 int tree_test(syntax *const sx);
+
+/**
+ *	Test tree building by node_get_next
+ *
+ *	@param	sx	Syntax structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int tree_test_next(syntax *const sx);
+
+/**
+ *	Test tree building from tree traversal
+ *
+ *	@param	sx	Syntax structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int tree_test_recursive(syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */

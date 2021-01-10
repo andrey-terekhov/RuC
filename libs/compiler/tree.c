@@ -18,7 +18,6 @@
 #include "errors.h"
 #include "logger.h"
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 
@@ -53,8 +52,8 @@ int is_operator(const int value)
 		|| value == TBreak
 		|| value == TContinue
 
-		|| value == NOP				// Lexemes
-		|| value == CREATEDIRECTC;
+		|| value == CREATEDIRECTC	// Lexemes
+		|| value == EXITDIRECTC;
 }
 
 int is_expression(const int value)
@@ -86,7 +85,8 @@ int is_expression(const int value)
 int is_lexeme(const int value)
 {
 	return (value >= 9001 && value <= 9595
-		&& value != CREATEDIRECTC)
+		&& value != CREATEDIRECTC
+		&& value != EXITDIRECTC)
 		|| value == ABSIC;
 }
 
@@ -103,21 +103,6 @@ size_t skip_expression(tree *const tree, size_t i)
 	for (size_t j = 0; j < node_get_amount(&nd); j++)
 	{
 		i = skip_expression(tree, i);
-	}
-
-	if (node_get_amount(&nd) == 0
-		|| node_get_type(&nd) == TBeginit
-		|| node_get_type(&nd) == TStructinit
-		|| (node_get_type(&nd) == TSliceident && node_get_amount(&nd) == 1)
-		|| (node_get_type(&nd) == TSlice && node_get_amount(&nd) == 1)
-		|| (node_get_type(&nd) == TIdent && node_get_amount(&nd) == 0))
-	{
-		if (tree[i] != TExprend)
-		{
-			error(NULL, tree_expression_no_texprend, i, tree[i]);
-			nd.tree = NULL;
-		}
-		i++;
 	}
 
 	return i;
@@ -139,7 +124,7 @@ node node_expression(tree *const tree, const size_t index)
 	nd.argc = 0;
 	nd.amount = 0;
 
-	if (tree[index] != NOP && is_operator(tree[index]))
+	if (is_operator(tree[index]))
 	{
 		error(NULL, tree_expression_not_block, index, tree[index]);
 		nd.tree = NULL;
@@ -200,8 +185,7 @@ node node_expression(tree *const tree, const size_t index)
 			break;
 
 		case TExprend:
-			error(NULL, tree_expression_texprend, index, tree[index]);
-			nd.tree = NULL;
+			nd.children = nd.argv + nd.argc;
 			return nd;
 
 		case NOP:
@@ -210,8 +194,6 @@ node node_expression(tree *const tree, const size_t index)
 				error(NULL, tree_expression_no_texprend, index, tree[index]);
 				nd.tree = NULL;
 			}
-
-			nd.argv++;
 			break;
 
 		default:
@@ -252,17 +234,14 @@ node node_expression(tree *const tree, const size_t index)
 		return nd;
 	}
 
-	if (tree[j] != TExprend)
+	if (tree[j] == NOP || is_expression(tree[j]) || is_lexeme(tree[j]))
 	{
-		if (tree[j] == NOP || is_expression(tree[j]) || is_lexeme(tree[j]))
-		{
-			nd.amount++;
-		}
-		else
-		{
-			error(NULL, tree_expression_no_texprend, j, tree[j]);
-			nd.tree = NULL;
-		}
+		nd.amount++;
+	}
+	else
+	{
+		error(NULL, tree_expression_no_texprend, j, tree[j]);
+		nd.tree = NULL;
 	}
 
 	return nd;
@@ -271,7 +250,7 @@ node node_expression(tree *const tree, const size_t index)
 
 size_t skip_operator(tree *const tree, size_t i)
 {
-	if (!is_operator(tree[i]))
+	if (!is_operator(tree[i]) && tree[i] != NOP)
 	{
 		return skip_expression(tree, i);
 	}
@@ -286,20 +265,6 @@ size_t skip_operator(tree *const tree, size_t i)
 	for (size_t j = 0; j < node_get_amount(&nd); j++)
 	{
 		i = skip_operator(tree, i);
-	}
-
-	if (i != SIZE_MAX)
-	{
-		switch (node_get_type(&nd))
-		{
-			case TStructbeg:
-				i += 2;
-				break;
-			case TBegin:
-			case CREATEDIRECTC:
-				i += 1;
-				break;
-		}
 	}
 
 	return i;
@@ -337,6 +302,7 @@ node node_operator(tree *const tree, const size_t index)
 			nd.amount = node_get_arg(&nd, 0) + 1;
 		}
 		break;
+
 		case TStructbeg:	// StructDecl: n + 2 потомков (размерность структуры, n объявлений полей, инициализатор (может не быть))
 		{
 			nd.argc = 1;
@@ -347,12 +313,20 @@ node node_operator(tree *const tree, const size_t index)
 				nd.amount++;
 			}
 
-			if (j == SIZE_MAX)
+			if (j != SIZE_MAX)
+			{
+				skip_operator(tree, j);
+				nd.amount++;
+			}
+			else
 			{
 				nd.tree = NULL;
 			}
 		}
 		break;
+		case TStructend:
+			nd.argc = 1;
+			break;
 
 		case TBegin:
 		{
@@ -363,12 +337,20 @@ node node_operator(tree *const tree, const size_t index)
 				nd.amount++;
 			}
 
-			if (j == SIZE_MAX)
+			if (j != SIZE_MAX)
+			{
+				skip_operator(tree, j);
+				nd.amount++;
+			}
+			else
 			{
 				nd.tree = NULL;
 			}
+			
 		}
 		break;
+		case TEnd:
+			break;
 
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
 			nd.argc = 1;
@@ -426,6 +408,7 @@ node node_operator(tree *const tree, const size_t index)
 
 		case NOP:			// NoOperation: 0 потомков
 			break;
+
 		case CREATEDIRECTC:
 		{
 			size_t j = nd.argv + nd.argc;
@@ -435,12 +418,19 @@ node node_operator(tree *const tree, const size_t index)
 				nd.amount++;
 			}
 
-			if (j == SIZE_MAX)
+			if (j != SIZE_MAX)
+			{
+				skip_operator(tree, j);
+				nd.amount++;
+			}
+			else
 			{
 				nd.tree = NULL;
 			}
 		}
 		break;
+		case EXITDIRECTC:
+			break;
 
 		default:
 			if (!is_expression(tree[index]) && !is_lexeme(tree[index]))
@@ -454,6 +444,37 @@ node node_operator(tree *const tree, const size_t index)
 
 	nd.children = nd.argv + nd.argc;
 	return nd;
+}
+
+
+size_t node_test_recursive(node *const nd, size_t i)
+{
+	if (i == SIZE_MAX)
+	{
+		return SIZE_MAX;
+	}
+
+	if (nd->tree[i++] != node_get_type(nd))
+	{
+		error(NULL, tree_unexpected, node_get_type(nd), i - 1, nd->tree[i - 1]);
+		return SIZE_MAX;
+	}
+
+	for (size_t j = 0; node_get_arg(nd, j) != INT_MAX; j++)
+	{
+		if (nd->tree[i++] != node_get_arg(nd, j))
+		{
+			error(NULL, tree_unexpected, node_get_arg(nd, j), i - 1, nd->tree[i - 1]);
+			return SIZE_MAX;
+		}
+	}
+
+	for (size_t j = 0; j < node_get_amount(nd); j++)
+	{
+		node child = node_get_child(nd, j);
+		i = node_test_recursive(&child, i);
+	}
+	return i;
 }
 
 
@@ -494,6 +515,7 @@ node node_get_root(syntax *const sx)
 		nd.tree = NULL;
 	}
 
+	sx->tree[sx->tc] = INT_MAX;		// FIXME: для проверки на конец дерева
 	return nd;
 }
 
@@ -509,7 +531,7 @@ node node_get_child(node *const nd, const size_t index)
 	size_t i = nd->children;
 	for (size_t num = 0; num < index; num++)
 	{
-		if (nd->type == SIZE_MAX || node_get_type(nd))
+		if (nd->type == SIZE_MAX || is_operator(node_get_type(nd)))
 		{
 			i = skip_operator(nd->tree, i);
 		}
@@ -519,7 +541,26 @@ node node_get_child(node *const nd, const size_t index)
 		}
 	}
 
-	return node_operator(nd->tree, i);
+	return nd->type == SIZE_MAX || is_operator(node_get_type(nd))
+		? node_operator(nd->tree, i)
+		: node_expression(nd->tree, i);
+}
+
+node node_get_next(node *const nd)
+{
+	if (!node_is_correct(nd) || nd->tree[nd->children] == INT_MAX)
+	{
+		node next;
+		next.tree = NULL;
+		return next;
+	}
+
+	if (nd->type == SIZE_MAX)
+	{
+		return node_operator(nd->tree, 0);
+	}
+
+	return node_operator(nd->tree, nd->children);
 }
 
 
@@ -530,7 +571,7 @@ size_t node_get_amount(const node *const nd)
 
 int node_get_type(const node *const nd)
 {
-	return node_is_correct(nd) ? nd->tree[nd->type] : INT_MAX;
+	return node_is_correct(nd) && nd->type != SIZE_MAX ? nd->tree[nd->type] : INT_MAX;
 }
 
 int node_get_arg(const node *const nd, const size_t index)
@@ -547,6 +588,11 @@ int node_is_correct(const node *const nd)
 
 int tree_test(syntax *const sx)
 {
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
 	// Тестирование функций
 	size_t i = 0;
 	while (i != SIZE_MAX && (int)i < sx->tc - 1)
@@ -566,4 +612,55 @@ int tree_test(syntax *const sx)
 
 	error(NULL, tree_no_tend);
 	return -1;
+}
+
+int tree_test_next(syntax *const sx)
+{
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
+	size_t i = 0;
+	node nd = node_get_root(sx);
+
+	nd = node_get_next(&nd);
+	while (node_is_correct(&nd))
+	{
+		if (sx->tree[i++] != node_get_type(&nd))
+		{
+			error(NULL, tree_unexpected, node_get_type(&nd), i - 1, sx->tree[i - 1]);
+			return -1;
+		}
+
+		for (size_t j = 0; node_get_arg(&nd, j) != INT_MAX; j++)
+		{
+			if (sx->tree[i++] != node_get_arg(&nd, j))
+			{
+				error(NULL, tree_unexpected, node_get_arg(&nd, j), i - 1, sx->tree[i - 1]);
+				return -1;
+			}
+		}
+		nd = node_get_next(&nd);
+	}
+
+	return sx->tree[i] == INT_MAX ? 0 : -1;
+}
+
+int tree_test_recursive(syntax *const sx)
+{
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
+	size_t index = 0;
+	node nd = node_get_root(sx);
+	for (size_t i = 0; i < node_get_amount(&nd); i++)
+	{
+		node child = node_get_child(&nd, i);
+		index = node_test_recursive(&child, index);
+	}
+
+	return index != SIZE_MAX && sx->tree[index] == TEnd ? 0 : -1;
 }

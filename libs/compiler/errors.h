@@ -168,6 +168,7 @@ enum ERROR
 	tree_expression_operator,
 	tree_expression_no_texprend,
 	tree_no_tend,
+	tree_unexpected,
 };
 
 /** Warnings codes */
