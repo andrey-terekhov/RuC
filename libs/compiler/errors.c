@@ -599,6 +599,14 @@ void get_error(const int num, char *const msg, va_list args)
 		case tree_no_tend:
 			sprintf(msg, "отсутствует внешний TEnd дерева");
 			break;
+		case tree_unexpected:
+		{
+			const int unexp = va_arg(args, int);
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "получен %i, ожидался tree[%zi] = %i", unexp, i, elem);
+		}
+		break;
 
 		default:
 			sprintf(msg, "этот код ошибки я прозевал");

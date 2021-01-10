@@ -18,7 +18,6 @@
 #include "errors.h"
 #include "logger.h"
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 
@@ -584,6 +583,11 @@ int node_is_correct(const node *const nd)
 
 int tree_test(syntax *const sx)
 {
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
 	// Тестирование функций
 	size_t i = 0;
 	while (i != SIZE_MAX && (int)i < sx->tc - 1)
@@ -607,10 +611,43 @@ int tree_test(syntax *const sx)
 
 int tree_test_next(syntax *const sx)
 {
-	return 0;
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
+	size_t i = 0;
+	node nd = node_get_root(sx);
+
+	nd = node_get_next(&nd);
+	while (node_is_correct(&nd))
+	{
+		if (sx->tree[i++] != node_get_type(&nd))
+		{
+			error(NULL, tree_unexpected, node_get_type(&nd), i - 1, sx->tree[i - 1]);
+			return -1;
+		}
+
+		for (size_t j = 0; node_get_arg(&nd, j) != INT_MAX; j++)
+		{
+			if (sx->tree[i++] != node_get_arg(&nd, j))
+			{
+				error(NULL, tree_unexpected, node_get_arg(&nd, j), i - 1, sx->tree[i - 1]);
+				return -1;
+			}
+		}
+		nd = node_get_next(&nd);
+	}
+
+	return sx->tree[i] == INT_MAX ? 0 : -1;
 }
 
 int tree_test_recursive(syntax *const sx)
 {
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
 	return 0;
 }
