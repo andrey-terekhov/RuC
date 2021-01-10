@@ -195,8 +195,6 @@ node node_expression(tree *const tree, const size_t index)
 				error(NULL, tree_expression_no_texprend, index, tree[index]);
 				nd.tree = NULL;
 			}
-
-			nd.argv++;
 			break;
 
 		default:
@@ -450,6 +448,37 @@ node node_operator(tree *const tree, const size_t index)
 }
 
 
+size_t node_test_recursive(node *const nd, size_t i)
+{
+	if (i == SIZE_MAX)
+	{
+		return SIZE_MAX;
+	}
+
+	if (nd->tree[i++] != node_get_type(nd))
+	{
+		error(NULL, tree_unexpected, node_get_type(nd), i - 1, nd->tree[i - 1]);
+		return SIZE_MAX;
+	}
+
+	for (size_t j = 0; node_get_arg(nd, j) != INT_MAX; j++)
+	{
+		if (nd->tree[i++] != node_get_arg(nd, j))
+		{
+			error(NULL, tree_unexpected, node_get_arg(nd, j), i - 1, nd->tree[i - 1]);
+			return SIZE_MAX;
+		}
+	}
+
+	for (size_t j = 0; j < node_get_amount(nd); j++)
+	{
+		node child = node_get_child(nd, j);
+		i = node_test_recursive(&child, i);
+	}
+	return i;
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -503,7 +532,8 @@ node node_get_child(node *const nd, const size_t index)
 	size_t i = nd->children;
 	for (size_t num = 0; num < index; num++)
 	{
-		if (nd->type == SIZE_MAX || node_get_type(nd))
+		if (nd->type == SIZE_MAX
+			|| (node_get_type(nd) != NOP && is_operator(node_get_type(nd))))
 		{
 			i = skip_operator(nd->tree, i);
 		}
@@ -513,7 +543,9 @@ node node_get_child(node *const nd, const size_t index)
 		}
 	}
 
-	return node_operator(nd->tree, i);
+	return !is_operator(node_get_type(nd)) && nd->tree[i] == NOP && nd->type != SIZE_MAX
+		? node_expression(nd->tree, i)
+		: node_operator(nd->tree, i);
 }
 
 node node_get_next(node *const nd)
@@ -624,5 +656,13 @@ int tree_test_recursive(syntax *const sx)
 		return -1;
 	}
 
-	return 0;
+	size_t index = 0;
+	node nd = node_get_root(sx);
+	for (size_t i = 0; i < node_get_amount(&nd); i++)
+	{
+		node child = node_get_child(&nd, i);
+		index = node_test_recursive(&child, index);
+	}
+
+	return index != SIZE_MAX && sx->tree[index] == TEnd ? 0 : -1;
 }
