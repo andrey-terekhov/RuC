@@ -544,26 +544,19 @@ node node_get_child(node *const nd, const size_t index)
 
 node node_get_next(node *const nd)
 {
-	if (!node_is_correct(nd))
+	if (!node_is_correct(nd) || nd->tree[nd->children] == INT_MAX)
 	{
 		node next;
 		next.tree = NULL;
 		return next;
 	}
 
-	if (node_get_amount(nd) > 0)
+	if (nd->type == SIZE_MAX)
 	{
-		return node_get_child(nd, 0);
+		return node_operator(nd->tree, 0);
 	}
 
-	const size_t index = skip_end(nd->tree, nd->type + nd->argc + 1);
-	if (nd->tree[index] == INT_MAX)
-	{
-		node next;
-		next.tree = NULL;
-		return next;
-	}
-	return node_operator(nd->tree, index);
+	return node_operator(nd->tree, nd->children);
 }
 
 
