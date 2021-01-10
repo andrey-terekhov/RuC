@@ -450,31 +450,6 @@ node node_operator(tree *const tree, const size_t index)
 }
 
 
-size_t skip_end(const tree *const tree, size_t index)
-{
-	while (tree[index] == TEnd || tree[index] == TStructend || tree[index] == TExprend || tree[index] == EXITC)
-	{
-		if (tree[index] == EXITC)
-		{
-			size_t j = index - 1;
-			while (j > 0 && tree[j] != CREATEDIRECTC && tree[j] != CREATEC)
-			{
-				j--;
-			}
-
-			if (tree[j] != CREATEDIRECTC)
-			{
-				return index;
-			}
-		}
-
-		index++;
-	}
-
-	return index;
-}
-
-
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
