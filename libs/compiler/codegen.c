@@ -23,9 +23,9 @@
 
 typedef struct ad
 {
-	int adcont;
-	int adbreak;
-	int adcase;
+	size_t adcont;
+	size_t adbreak;
+	size_t adcase;
 } ad;
 
 
@@ -50,7 +50,7 @@ void adbreakend(syntax *const sx, ad *const context)
 	}
 }
 
-void adcontbeg(syntax *const sx, ad *const context, int ad)
+void adcontbeg(syntax *const sx, ad *const context, size_t ad)
 {
 	while (context->adcont != ad)
 	{
