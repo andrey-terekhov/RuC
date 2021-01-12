@@ -331,7 +331,7 @@ void add_c_file(preprocess_context *context)
 void open_files(preprocess_context *context)
 {
 	int i = 0;
-	size_t num = context->fs.ws->files_num;
+	size_t num = ws_get_files_num(context->fs.ws);
 	const char *temp = ws_get_file(context->fs.ws, i++);
 
 	for(size_t j = 0; j < num; j++)

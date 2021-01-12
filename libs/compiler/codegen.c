@@ -356,6 +356,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			tocode(sx, CREATEDIRECTC);
 			break;
 		}
+		case EXITDIRECTC:
 		case EXITC:
 		{
 			tocode(sx, EXITC);

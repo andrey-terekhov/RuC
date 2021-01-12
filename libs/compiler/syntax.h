@@ -149,6 +149,7 @@ int func_set(syntax *const sx, const size_t index, const size_t ref);
 int func_get(const syntax *const sx, const size_t index);
 
 
+
 /**
  *	Add a new record to modes table
  *
