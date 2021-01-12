@@ -312,13 +312,12 @@ int Expr_gen(syntax *const sx, int incond)
 			}
 			else
 			{
-				int adelse;
 				int ad = 0;
 				do
 				{
 					sx->tc++;
 					tocode(sx, BE0);
-					adelse = (int)mem_get_size(sx);
+					size_t adelse = mem_get_size(sx);
 					mem_increase(sx, 1);
 					Expr_gen(sx, 0); // then
 					tocode(sx, B);
