@@ -144,14 +144,14 @@ void default_log(const char *const tag, const char *const msg, const uint8_t col
 	set_color(color);
 #ifdef _MSC_VER
 	char buffer[MAX_MSG_SIZE];
-	utf8_to_cp1251(tag_log, buffer);
+	utf8_to_cp866(tag_log, buffer);
 	fprintf(stderr, "%s: ", buffer);
 #else
 	fprintf(stderr, "%s: ", tag_log);
 #endif
 
 #ifdef _MSC_VER
-	utf8_to_cp1251(msg, buffer);
+	utf8_to_cp866(msg, buffer);
 	print_msg(color, buffer);
 #else
 	print_msg(color, msg);

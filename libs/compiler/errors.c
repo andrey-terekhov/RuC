@@ -581,12 +581,60 @@ void get_error(const int num, char *const msg, va_list args)
 		case not_array_in_stanfunc:	// need_test
 			sprintf(msg, "в этой операции этот параметр должен иметь тип массив");
 			break;
+
+		case tree_expression_not_block:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "в выражении встретился оператор вне блока, tree[%zi] = %i", i, elem);
+		}
+		break;
+		case tree_expression_texprend:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "лишний TExprend внутри блока, tree[%zi] = %i", i, elem);
+		}
+		break;
+		case tree_expression_unknown:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "неизвестное выражение, tree[%zi] = %i", i, elem);
+		}
+		break;
+		case tree_expression_operator:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "оператор в выражении, tree[%zi] = %i", i, elem);
+		}
+		break;
+		case tree_expression_no_texprend:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "отсутствует TExprend, tree[%zi] = %i", i, elem);
+		}
+		break;
+		case tree_no_tend:
+			sprintf(msg, "отсутствует внешний TEnd дерева");
+			break;
+		case tree_unexpected:
+		{
+			const int unexp = va_arg(args, int);
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "получен %i, ожидался tree[%zi] = %i", unexp, i, elem);
+		}
+		break;
+
 		default:
 			sprintf(msg, "этот код ошибки я прозевал");
 	}
 }
 
-void get_warning(const int num, char *const msg)
+void get_warning(const int num, char *const msg, va_list args)
 {
 	switch (num)
 	{
@@ -594,6 +642,21 @@ void get_warning(const int num, char *const msg)
 			sprintf(msg, "слишком большая целая константа, преобразована в ДЛИН "
 												  "(DOUBLE)");
 			break;
+
+		case tree_operator_unknown:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "неизвестный оператор, tree[%zi] = %i", i, elem);
+		}
+		break;
+		case node_argc:
+		{
+			const size_t i = va_arg(args, size_t);
+			const char *elem = va_arg(args, char *);
+			sprintf(msg, "несоответствие количества аргументов, tree[%zi] = %s", i, elem);
+		}
+		break;
 
 		default:
 			break;
@@ -656,8 +719,13 @@ void error(const universal_io *const io, const int num, ...)
 
 void warning(const universal_io *const io, const int num, ...)
 {
+	va_list args;
+	va_start(args, num);
+
 	char msg[MAX_MSG_SIZE];
-	get_warning(num, msg);
+	get_warning(num, msg, args);
+
+	va_end(args);
 
 	output(io, msg, &log_system_warning, &log_warning);
 }
