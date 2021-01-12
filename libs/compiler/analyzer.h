@@ -75,7 +75,7 @@ typedef struct analyzer
 	int ansttype;
 	int leftansttype; // anst = VAL  - значение на стеке
 	int x;							// useless
-	int bad_printf_placeholder;
+	char32_t bad_printf_placeholder;
 	int onlystrings;
 
 	int buf_flag;

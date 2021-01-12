@@ -114,11 +114,11 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 	}*/
 }
 
-int evaluate_params(analyzer *context, int num, char32_t formatstr[], int formattypes[], int placeholders[])
+int evaluate_params(analyzer *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[])
 {
-	int numofparams = 0;
+	int num_of_params = 0;
 	int i = 0;
-	int fsi;
+	char32_t fsi;
 
 	//	for (i=0; i<num; i++)
 	//		printf("%c %i\n", formatstr[i], formatstr[i]);
@@ -127,37 +127,37 @@ int evaluate_params(analyzer *context, int num, char32_t formatstr[], int format
 	{
 		if (formatstr[i] == '%')
 		{
-			if (fsi = (int)formatstr[++i], fsi != '%')
+			if (fsi = formatstr[++i], fsi != '%')
 			{
-				if (numofparams == MAXPRINTFPARAMS)
+				if (num_of_params == MAXPRINTFPARAMS)
 				{
 					context_error(context, too_many_printf_params);
 					return 0;
 				}
 
-				placeholders[numofparams] = fsi;
+				placeholders[num_of_params] = fsi;
 			}
 			switch (fsi) // Если добавляется новый спецификатор -- не забыть
 						 // внести его в switch в bad_printf_placeholder
 			{
 				case 'i':
 				case 1094: // 'ц'
-					formattypes[numofparams++] = LINT;
+					formattypes[num_of_params++] = LINT;
 					break;
 
 				case 'c':
 				case 1083: // л
-					formattypes[numofparams++] = LCHAR;
+					formattypes[num_of_params++] = LCHAR;
 					break;
 
 				case 'f':
 				case 1074: // в
-					formattypes[numofparams++] = LFLOAT;
+					formattypes[num_of_params++] = LFLOAT;
 					break;
 
 				case 's':
 				case 1089: // с
-					formattypes[numofparams++] = newdecl(context->sx, MARRAY, LCHAR);
+					formattypes[num_of_params++] = newdecl(context->sx, MARRAY, LCHAR);
 					break;
 
 				case '%':
@@ -175,7 +175,7 @@ int evaluate_params(analyzer *context, int num, char32_t formatstr[], int format
 		}
 	}
 
-	return numofparams;
+	return num_of_params;
 }
 
 int is_function(syntax *const sx, const int t)
@@ -726,7 +726,8 @@ void primaryexpr(analyzer *context)
 			totree(context, context->lxr->lexstr[i]);
 		}
 
-		context->stackoperands[++context->sopnd] = context->ansttype = newdecl(context->sx, MARRAY, LCHAR);
+		context->ansttype = newdecl(context->sx, MARRAY, LCHAR);
+		context->stackoperands[++context->sopnd] = context->ansttype;
 		context->anst = VAL;
 	}
 	else if (context->cur == IDENT)
@@ -2757,7 +2758,7 @@ void statement(analyzer *context)
 			{
 				char32_t formatstr[MAXSTRINGL + 1];
 				int formattypes[MAXPRINTFPARAMS];
-				int placeholders[MAXPRINTFPARAMS];
+				char32_t placeholders[MAXPRINTFPARAMS];
 				int paramnum = 0;
 				int sumsize = 0;
 				int i = 0;

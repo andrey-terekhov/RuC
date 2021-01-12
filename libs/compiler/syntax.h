@@ -61,7 +61,7 @@ typedef struct syntax
 	int wasmain;					/**< Main function flag */
 
 	int anstdispl;					/**< Stack displacement */
-	int keywordsnum;
+	int keywordsnum;				/**< Number of read keyword */
 } syntax;
 
 
