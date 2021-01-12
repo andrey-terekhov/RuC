@@ -418,7 +418,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			Stmt_gen(sx, context);
 			adcontbeg(sx, context, ad);
 			tocode(sx, B);
-			tocode(sx, ad);
+			tocode(sx, (int)ad);
 			adbreakend(sx, context);
 			context->adbreak = oldbreak;
 			context->adcont = oldcont;
@@ -426,16 +426,16 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TDo:
 		{
-			int oldbreak = context->adbreak;
-			int oldcont = context->adcont;
-			int ad = (int)mem_get_size(sx);
+			size_t oldbreak = context->adbreak;
+			size_t oldcont = context->adcont;
+			size_t ad = mem_get_size(sx);
 
 			context->adcont = context->adbreak = 0;
 			Stmt_gen(sx, context);
 			adcontend(sx, context);
 			Expr_gen(sx, 0);
 			tocode(sx, BNE0);
-			tocode(sx, ad);
+			tocode(sx, (int)ad);
 			adbreakend(sx, context);
 			context->adbreak = oldbreak;
 			context->adcont = oldcont;
