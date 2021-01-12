@@ -23,7 +23,7 @@
 
 
 #define REPRTAB		(context->sx->reprtab)
-#define REPRTAB_POS (context->lexer->repr)
+#define REPRTAB_POS (context->lxr->repr)
 #define REPRTAB_LEN (context->sx->rp)
 
 
