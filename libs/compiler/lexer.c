@@ -92,7 +92,7 @@ void skip_block_comment(lexer *const lxr)
  *
  *	@return	keyword number on keyword, @c identifier on identifier
  */
-token lex_identifier_or_keyword(lexer *const lxr)
+TOKEN lex_identifier_or_keyword(lexer *const lxr)
 {
 	char32_t spelling[MAXSTRINGL];
 	size_t length = 0;
@@ -107,7 +107,7 @@ token lex_identifier_or_keyword(lexer *const lxr)
 	const size_t repr = repr_add(lxr->sx, spelling);
 	if (repr_get_reference(lxr->sx, repr) < 0)
 	{
-		return (token)repr_get_reference(lxr->sx, repr);
+		return (TOKEN)repr_get_reference(lxr->sx, repr);
 	}
 	else
 	{
@@ -123,7 +123,7 @@ token lex_identifier_or_keyword(lexer *const lxr)
  *
  *	@return	@c int_constant on integer, @c float_constant on floating point
  */
-token lex_numeric_constant(lexer *const lxr)
+TOKEN lex_numeric_constant(lexer *const lxr)
 {
 	int num_int = 0;
 	double num_double = 0.0;
@@ -252,7 +252,7 @@ char32_t get_next_string_elem(lexer *const lxr)
  *
  *	@return	@c char_constant
  */
-token lex_char_constant(lexer *const lxr)
+TOKEN lex_char_constant(lexer *const lxr)
 {
 	if (get_char(lxr) == '\'')
 	{
@@ -283,7 +283,7 @@ token lex_char_constant(lexer *const lxr)
  *
  *	@return	@c string_literal
  */
-token lex_string_literal(lexer *const lxr)
+TOKEN lex_string_literal(lexer *const lxr)
 {
 	size_t length = 0;
 	int flag_too_long_string = 0;
@@ -352,7 +352,7 @@ char32_t get_char(lexer *const lxr)
 	return lxr->curr_char;
 }
 
-token lex(lexer *const lxr)
+TOKEN lex(lexer *const lxr)
 {
 	if (lxr == NULL)
 	{

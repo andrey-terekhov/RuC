@@ -58,6 +58,7 @@ void get_error(const int num, char *const msg, va_list args)
 		{
 			const char32_t bad_char = va_arg(args, char32_t);
 			sprintf(msg, "плохой символ = %i", bad_char);
+			break;
 		}
 
 		case empty_character:
