@@ -2755,7 +2755,7 @@ void statement(analyzer *context)
 
 			case PRINTF:
 			{
-				char32_t formatstr[MAXSTRINGL];
+				char32_t formatstr[MAXSTRINGL + 1];
 				int formattypes[MAXPRINTFPARAMS];
 				int placeholders[MAXPRINTFPARAMS];
 				int paramnum = 0;
