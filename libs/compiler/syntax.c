@@ -226,8 +226,8 @@ size_t repr_add(syntax *const sx, const char32_t *const spelling)
 
 	do
 	{
-		 hash += spelling[i];
-		 sx->reprtab[sx->rp++] = (spelling[i] & 255);
+		 hash += (spelling[i] & 255);
+		 sx->reprtab[sx->rp++] = spelling[i];
 	} while (spelling[i++] != 0);
 
 	sx->hash = (int)hash;
