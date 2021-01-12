@@ -527,8 +527,8 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TSwitch:
 		{
-			int oldbreak = context->adbreak;
-			int oldcase = context->adcase;
+			size_t oldbreak = context->adbreak;
+			size_t oldcase = context->adcase;
 
 			context->adbreak = 0;
 			context->adcase = 0;
