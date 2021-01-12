@@ -447,18 +447,17 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			int condref = sx->tree[sx->tc++];
 			int incrref = sx->tree[sx->tc++];
 			int stmtref = sx->tree[sx->tc++];
-			int oldbreak = context->adbreak;
-			int oldcont = context->adcont;
 			int incrtc;
 			int endtc;
-			int initad;
+			size_t oldbreak = context->adbreak;
+			size_t oldcont = context->adcont;
 
 			if (fromref)
 			{
 				Expr_gen(sx, 0); // init
 			}
 
-			initad = (int)mem_get_size(sx);
+			size_t initad = mem_get_size(sx);
 			context->adcont = context->adbreak = 0;
 
 			if (condref)
@@ -482,7 +481,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			}
 
 			tocode(sx, B);
-			tocode(sx, initad);
+			tocode(sx, (int)initad);
 			adbreakend(sx, context);
 			context->adbreak = oldbreak;
 			context->adcont = oldcont;
