@@ -35,8 +35,8 @@ void compstmt_gen(syntax *const sx, ad *const context);
 
 void tocode(syntax *const sx, int c)
 {
-	// printf("tocode sx->tc=%i sx->pc %i) %i\n", sx->tc,
-	// (int)mem_get_size(sx), c);
+	// printf("tocode sx->tc=%i sx->pc %zi) %i\n", sx->tc,
+	// mem_get_size(sx), c);
 	mem_add(sx, c);
 }
 
@@ -196,7 +196,8 @@ int Expr_gen(syntax *const sx, int incond)
 				int i;
 
 				tocode(sx, LI);
-				tocode(sx, res = (int)mem_get_size(sx) + 4);
+				res = (int)mem_get_size(sx) + 4;
+				tocode(sx, res);
 				tocode(sx, B);
 				mem_increase(sx, 2);
 				for (i = 0; i < n; i++)
