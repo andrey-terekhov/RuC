@@ -14,7 +14,7 @@
  *	limitations under the License.
  */
 
-#include "include.h"
+#include "multi_file.h"
 #include "constants.h"
 #include "context_var.h"
 #include "file.h"
@@ -24,6 +24,8 @@
 #include "utils.h"
 #include "workspace.h"
 #include "uniio.h"
+#include "uniprinter.h"
+#include "uniscanner.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -31,8 +33,7 @@
 #include <string.h>
 #include <wchar.h>
 
-
-void gen_way(char *full, const char *path, const char *file, int is_slash)
+void mf_gen_way(char *full, const char *path, const char *file, int is_slash)
 {
 	int size;
 
@@ -60,58 +61,55 @@ void gen_way(char *full, const char *path, const char *file, int is_slash)
 	int file_size = (int)strlen(file);
 	memcpy(&full[size], file, file_size * sizeof(char));
 	full[size + file_size] = '\0';
-	// printf("4full = %s, path = %s file = %s \n", full, path, file);
 }
 
-int open_include_faile(preprocess_context *context, const char* const path, const char* const temp_way, universal_io* temp_io)
+int mf_open_include_faile(preprocess_context *context, const char* const path, const char* const temp_way, universal_io* temp_io)
 {
-	char file_way[STRING_SIZE + 1024];
+	char full_path[MAX_ARG_SIZE];
 
-	gen_way(file_way, path, temp_way, 1);
+	mf_gen_way(full_path, path, temp_way, 1);
 
-	int res = in_set_file(temp_io, file_way);
+	int res = in_set_file(temp_io, full_path);
 	if (res == -1)
 	{
 		int i = 0;
 		const char *temp_dir = ws_get_dir(context->fs.ws, i++);
 		while (temp_dir != NULL)
 		{
-		
-			gen_way(file_way, temp_dir, temp_way, 0);
-
-			res = in_set_file(temp_io, file_way);
-
+			mf_gen_way(full_path, temp_dir, temp_way, 0);
+			res = in_set_file(temp_io, full_path);
 			if (res == 0)
 			{
 				break;
 			}
+			
 			temp_dir = ws_get_dir(context->fs.ws, i++);
 		}
 	}
 
 	if (res == -1)
 	{
-		log_system_error(file_way, "файл не найден");
+		log_system_error(full_path, "файл не найден");
+
 		return -1;
 	}
 
 	size_t num = ws_get_files_num(context->fs.ws);	
-	size_t index = ws_add_file(context->fs.ws, file_way);
+	size_t index = ws_add_file(context->fs.ws, full_path);
 
-	if(index < context->fs.end_sorse && context->fs.already_included[index] == 0)
+	if(index < context->fs.end_sorse && !context->fs.already_included[index])
 	{
-		context->fs.already_included[index] = 1;
+		context->fs.already_included[index]++;
 	}
-	else if(num != ws_get_files_num(context->fs.ws))
+	else if(num == ws_get_files_num(context->fs.ws))
 	{
 		return -2;
 	}
 	
-	
 	return index;
 }
 
-int file_read(preprocess_context *context, const size_t new_cur_file)
+int mf_preprocess_file(preprocess_context *context, const size_t new_cur_file)
 {	
 	size_t old_cur = context->fs.cur;
 	context->fs.cur = new_cur_file;
@@ -122,7 +120,7 @@ int file_read(preprocess_context *context, const size_t new_cur_file)
 
 	if(context->nextchar != '#')
 	{
-		con_file_print_coment(&context->fs, context);
+		con_file_print_coment(context);
 	}
 
 	if (context->nextchar == EOF)
@@ -148,6 +146,7 @@ int file_read(preprocess_context *context, const size_t new_cur_file)
 		skip_file(context);
 		error = -1;
 	}
+
 	m_fprintf('\n', context);
 
 	context->line = old_line;
@@ -159,10 +158,10 @@ int file_read(preprocess_context *context, const size_t new_cur_file)
 	return error;
 }
 
-int open_file(preprocess_context *context)
+int mf_open_file(preprocess_context *context)
 {
 	int i = 0;
-	char temp_way[STRING_SIZE];
+	char temp_way[MAX_ARG_SIZE];
 	int res = 0;
 
 	while (context->curchar != '\"')
@@ -177,11 +176,12 @@ int open_file(preprocess_context *context)
 		temp_way[i++] = (char)context->curchar;
 		m_nextch(context);
 	}
+
 	temp_way[i] = '\0';
 
 	universal_io temp_io = io_create();
 		
-	int index = open_include_faile(context, temp_way, ws_get_file(context->fs.ws, context->fs.cur), &temp_io);
+	int index = mf_open_include_faile(context, ws_get_file(context->fs.ws, context->fs.cur), temp_way, &temp_io);
 	if (index == -2)
 	{
 		in_clear(&temp_io);
@@ -192,7 +192,7 @@ int open_file(preprocess_context *context)
 		in_clear(&temp_io);
 		return -1;
 	}
-	
+
 	int  dipp = 0;	
 	if (context->nextch_type != FILETYPE)
 	{
@@ -202,8 +202,8 @@ int open_file(preprocess_context *context)
 
 	universal_io *io_old = context->io_input;
 	context->io_input = &temp_io;
-
-	res = -file_read(context, (size_t)index);
+	
+	res = -mf_preprocess_file(context, (size_t)index);
 
 	context->io_input = io_old;
 	in_clear(&temp_io);
@@ -216,8 +216,50 @@ int open_file(preprocess_context *context)
 	return res;
 }
 
+int mf_file_open(preprocess_context *context, size_t index)
+{
+	if (in_set_file(context->io_input, ws_get_file(context->fs.ws, index)))
+	{
+		log_system_error(ws_get_file(context->fs.ws, index), "файл не найден");
+		return -1;
+	}
+	return 0;
+}
 
-int include_relis(preprocess_context *context)
+int mf_preprocess_files(preprocess_context *context)
+{
+	size_t num = ws_get_files_num(context->fs.ws);
+	context->fs.end_sorse = num;
+
+	for (size_t i = 0; i < num; i++)
+	{
+		if(context->fs.already_included[i])
+		{
+			continue;
+		}
+		else
+		{
+			context->fs.already_included[i]++;
+		}
+		
+
+		if(mf_file_open(context, i))
+		{
+			return -1;
+		}
+		else
+		{
+			if(mf_preprocess_file(context, i))
+			{
+				return -1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+int mf_include_relis(preprocess_context *context)
 {
 	space_skip(context);
 
@@ -227,14 +269,20 @@ int include_relis(preprocess_context *context)
 		macro_error(must_start_quote, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 		return -1;	
 	}
+
 	m_nextch(context);
-	int res = open_file(context);
+
+	int res = mf_open_file(context);
+
 	if(res == 1)
 	{
 		skip_file(context);
+
 		return 1;
 	}
+
+	get_next_char(context);
 	m_nextch(context);
-	space_end_line(context);
+
 	return res;
 }

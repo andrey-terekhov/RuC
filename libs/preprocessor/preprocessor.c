@@ -21,7 +21,7 @@
 #include "define.h"
 #include "file.h"
 #include "if.h"
-#include "include.h"
+#include "multi_file.h"
 #include "uniio.h"
 #include "uniprinter.h"
 #include "error.h"
@@ -120,7 +120,7 @@ int preprocess_words(preprocess_context *context)
 	{
 		case SH_INCLUDE:
 		{
-			return include_relis(context);
+			return mf_include_relis(context);
 		}
 		case SH_DEFINE:
 		case SH_MACRO:
@@ -228,9 +228,10 @@ int preprocess_scan(preprocess_context *context)
 				if(context->nextchar != '#' && context->nextch_type != WHILETYPE && 
 					context->nextch_type != TEXTTYPE)//curflag
 				{
-					con_file_print_coment(&context->fs, context);
+					con_file_print_coment(context);
 				}
-				if(context->cur != SH_ELSE && context->cur != SH_ELIF && context->cur != SH_ENDIF)
+
+				if(context->cur != SH_INCLUDE && context->cur != SH_ELSE && context->cur != SH_ELIF && context->cur != SH_ENDIF)
 				{
 					m_nextch(context);
 				}
@@ -284,46 +285,18 @@ int preprocess_scan(preprocess_context *context)
 	}
 }
 
-int preprocess_files(preprocess_context *context)
-{
-	size_t i = 0;
-	size_t num = ws_get_files_num(context->fs.ws);
-	context->fs.end_sorse = num;
-
-	while (i < num)
-	{
-		if(context->fs.already_included[i])
-		{
-			continue;
-		}
-
-		if(con_file_open(&context->fs, context, i++))
-		{
-			if(file_read(context, i))
-			{
-				return -1;
-			}
-		}
-		else
-		{
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
 int macro_form_io(workspace *const ws, universal_io *const io)
 {
 	universal_io io_input = io_create();
 	preprocess_context context;
-	preprocess_context_init(&context, ws, io, &io_input);
+	con_preprocess_context_init(&context, ws, io, &io_input);
 
 	add_keywods(&context);
 	context.mfirstrp = context.rp;
 
-	if (preprocess_files(&context))
+	if (mf_preprocess_files(&context))
 	{
+		in_clear(&io_input);
 		return -1;
 	}
 
@@ -349,8 +322,7 @@ char *macro(workspace *const ws)
 		return NULL;
 	}
 
-	int ret = macro_form_io(ws, &io);
-	if (ret)
+	if (macro_form_io(ws, &io))
 	{
 		io_erase(&io);
 		return NULL;

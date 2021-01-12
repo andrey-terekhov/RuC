@@ -23,8 +23,24 @@
 extern "C" {
 #endif
 
-int file_read(preprocess_context *context, const size_t new_cur_file);
-int include_relis(preprocess_context *context);
+/**
+ *	Preprocess all files that are currently in the workspace
+ *
+ *	@param	context		Preprocessor context variables
+ *
+ *  @return	@c 0 on success, @c -1 on failure
+ */
+int mf_preprocess_files(preprocess_context *context);
+
+/**
+ *	Implementation of the directive include - open and insert the specified file
+ *
+ *	@param	context		Preprocessor context variables
+ *
+ *  @return	@c 0 on success, @c -1 if could not be opened, 
+ *  @c 1 if there is an error inside the specified file
+ */
+int mf_include_relis(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

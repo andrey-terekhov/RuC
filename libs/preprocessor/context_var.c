@@ -33,14 +33,14 @@ void con_files_init(files *fs, workspace *const ws)
 {
 	fs->ws = ws;
 	fs->cur = MAX_PATHS;
-	size_t end_sorse = 0;
+	fs->end_sorse = 0;
 	for (size_t i = 0; i < MAX_PATHS; i++)
 	{
 		fs->already_included[i] = 0;
 	}
 }
 
-void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io, universal_io *const io_input)
+void con_preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io, universal_io *const io_input)
 {
 	context->io_output = io;
 	context->io_input = io_input;
@@ -49,7 +49,6 @@ void preprocess_context_init(preprocess_context *context, workspace *const ws, u
 
 	context->rp = 1;
 	context->mp = 1;
-	context->msp = 0;
 	context->cp = 0;
 	context->lsp = 0;
 	context->csp = 0;
@@ -64,7 +63,6 @@ void preprocess_context_init(preprocess_context *context, workspace *const ws, u
 	context->nextp = 0;
 	context->dipp = 0;
 	context->line = 1;
-	context->h_flag = 0;
 	context->position = 0;
 
 	for (int i = 0; i < HASH; i++)
@@ -121,19 +119,9 @@ void preprocess_context_init(preprocess_context *context, workspace *const ws, u
 	}
 }
 
-int con_file_open(files* fs, preprocess_context *context, size_t indext)
+void con_file_print_coment(preprocess_context *context)
 {
-	if (in_set_file(context->io_input, ws_get_file(fs->ws, indext)))
-	{
-		log_system_error(ws_get_file(fs->ws, fs->cur), "файл не найден");
-		return -1;
-	}
-	return 0;
-}
-
-void con_file_print_coment(files *fs, preprocess_context *context)
-{
-	comment cmt = cmt_create(ws_get_file(fs->ws, fs->cur), context->line);
+	comment cmt = cmt_create(ws_get_file(context->fs.ws, context->fs.cur), context->line);
 
 	char buffer[MAX_CMT_SIZE];
 	cmt_to_string(&cmt, buffer);

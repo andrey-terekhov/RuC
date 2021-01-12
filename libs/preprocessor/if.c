@@ -46,7 +46,6 @@ int if_check(int type_if, preprocess_context *context)
 	}
 	else
 	{
-		context->msp = 0;
 		if (collect_mident(context))
 		{
 			flag = 1;

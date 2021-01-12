@@ -32,7 +32,7 @@ typedef struct files
 	workspace *ws;
 	size_t cur;
 	size_t end_sorse;
-	int already_included[MAX_PATHS]
+	int already_included[MAX_PATHS];
 } files;
 
 typedef struct preprocess_context
@@ -84,17 +84,13 @@ typedef struct preprocess_context
 	size_t line;
 
 	files fs;
-	int h_flag;
 
 	universal_io *io_output;
 	universal_io *io_input;
 } preprocess_context;
 
-void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io, universal_io *const io_input);
-
-int con_file_open(files* fs, preprocess_context *context, size_t indext);
-
-void con_file_print_coment(files *fs, preprocess_context *context);
+void con_preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io, universal_io *const io_input);
+void con_file_print_coment(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

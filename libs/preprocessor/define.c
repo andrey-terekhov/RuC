@@ -234,9 +234,6 @@ int funktionleter(int flag_macro, preprocess_context *context)
 {
 	int n = 0;
 	int i = 0;
-
-	context->msp = 0;
-
 	int r = collect_mident(context);
 
 	if ((n = m_equal(context)) != 0)
@@ -268,8 +265,6 @@ int to_functionident(preprocess_context *context)
 
 	while (context->curchar != ')')
 	{
-		context->msp = 0;
-
 		if (is_letter(context))
 		{
 			while (is_letter(context) || is_digit(context->curchar))
@@ -286,7 +281,6 @@ int to_functionident(preprocess_context *context)
 			return -1;
 		}
 
-		context->msp = 0;
 		if (context->curchar == ',')
 		{
 			m_nextch(context);
@@ -389,7 +383,6 @@ int function_add_to_macrotext(preprocess_context *context)
 		if (context->curchar == '\\')
 		{
 			m_nextch(context);
-			space_end_line(context);
 			if(space_end_line(context))
 			{
 				return -1;
@@ -411,7 +404,6 @@ int define_get_from_macrotext(int r, preprocess_context *context)
 
 	if (r)
 	{
-		context->msp = 0;
 		if (context->macrotext[t] == MACROFUNCTION)
 		{
 			if (context->macrotext[++t] > -1)
@@ -598,15 +590,10 @@ int define_relis(preprocess_context *context)
 		return -1;
 	}
 
-	context->msp = 0;
-
 	if (context->curchar == '(' && !r)
 	{
 		m_nextch(context);
-		if(function_add_to_macrotext(context))
-		{
-			return -1;
-		}
+		return function_add_to_macrotext(context);
 	}
 	else if (context->curchar != ' ' && context->curchar != '\n' && context->curchar != '\t')
 	{
@@ -619,7 +606,6 @@ int define_relis(preprocess_context *context)
 		space_skip(context);
 		return define_add_to_macrotext(r, context);
 	}
-	return 0;
 }
 
 int set_relis(preprocess_context *context)
