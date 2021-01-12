@@ -26,15 +26,16 @@ extern "C" {
 /** Errors codes */
 enum ERROR
 {
-	// Ошибки сканера
-	bad_character,
-	empty_char_const,
-	unknown_escape_sequence,
-	expected_apost_after_char_const,
-	missing_terminating_quote_char,
-	unterminated_block_comment,
+	// Lexer errors
+	bad_character,						/**< "Bad character in source" error */
+	empty_character,					/**< "Empty character constant" error */
+	unknown_escape_sequence,			/**< "Unknown escape sequence" error */
+	expected_apost_after_char_const,	/**< "Missing terminating ' character" error */
+	missing_terminating_quote_char,		/**< "Missing terminating '"' character" error */
+	string_too_long,					/**< "String literal exceeds maximum length" error */
+	unterminated_block_comment,			/**< "Unterminated block comment" error */
 
-	// Прочие ошибки
+	// Other errors
 	after_type_must_be_ident = 201,
 	wait_right_sq_br,
 	only_functions_may_have_type_VOID,
@@ -84,7 +85,6 @@ enum ERROR
 	bad_type_in_ret,
 	notvoidret_in_void_func,
 	decl_after_strmt,
-	too_long_string,
 	aster_before_func,
 	aster_not_for_pointer,
 	aster_with_row,

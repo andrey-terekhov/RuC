@@ -14,18 +14,17 @@
  *	limitations under the License.
  */
 
-#ifndef RUC_TOKENS_H
-#define RUC_TOKENS_H
+#pragma once
 
 #include "defs.h"
-#include "../preprocessor/constants.h"
+#include "constants.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef enum Token
+typedef enum token
 {
 	eof					= LEOF,			/**< End of file */
 
@@ -203,11 +202,8 @@ typedef enum Token
 	sh_eval				= SH_EVAL,		/**< '#eval'	keyword */
 	sh_include			= SH_INCLUDE,	/**< '#include'	keyword */
 	sh_file				= SH_FILE,		/**< '#file'	keyword */
-} Token;
-
+} token;
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-#endif /* RUC_TOKENS_H */

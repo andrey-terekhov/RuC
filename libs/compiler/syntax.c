@@ -46,23 +46,19 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 }
 
 /**	Check if representations are equal */
-int repr_is_equal(const syntax *const sx, size_t i, size_t j)
+int repr_is_equal(const syntax *const sx, const size_t first, const size_t second)
 {
-	i += 2;
-	j += 2;
-	/* Assuming allocated */
-	while (sx->reprtab[i] == sx->reprtab[j])
+	size_t i = 2;
+	while (sx->reprtab[first + i] == sx->reprtab[second + i])
 	{
 		i++;
-		j++;
-		if (sx->reprtab[i] == 0 && sx->reprtab[j] == 0)
+		if (sx->reprtab[first + i] == 0 && sx->reprtab[second + i] == 0)
 		{
 			return 1;
 		}
 	}
 	return 0;
 }
-
 
 
 /*
@@ -224,8 +220,8 @@ int mode_get(const syntax *const sx, const size_t index)
 
 size_t repr_add(syntax *const sx, const char32_t *const spelling)
 {
-	size_t old_repr = sx->rp;
-	size_t hash = 0;
+	const size_t old_repr = sx->rp;
+	uint8_t hash = 0;
 	size_t i = 0;
 	sx->rp += 2;
 
@@ -235,7 +231,6 @@ size_t repr_add(syntax *const sx, const char32_t *const spelling)
 		 sx->reprtab[sx->rp++] = spelling[i];
 	} while (spelling[i++] != 0);
 
-	hash &= 255;
 	sx->hash = (int)hash;
 
 	size_t cur_repr = sx->hashtab[hash];
@@ -255,32 +250,32 @@ size_t repr_add(syntax *const sx, const char32_t *const spelling)
 		} while (cur_repr != 0);
 	}
 
-	sx->reprtab[old_repr] = sx->hashtab[hash];
+	sx->reprtab[old_repr] = (int)sx->hashtab[hash];
 	sx->hashtab[hash] = old_repr;
 	// 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
 	sx->reprtab[old_repr + 1] = (sx->keywordsnum) ? -((++sx->keywordsnum - 2) / 4) : 1;
 	return old_repr;
 }
 
-int repr_get_spelling(const syntax *const sx, size_t index, char32_t *const spelling)
+int repr_get_spelling(const syntax *const sx, const size_t index, char32_t *const spelling)
 {
-	if (sx == NULL || (int)index >= sx->rp)
+	if (sx == NULL || index >= sx->rp)
 	{
 		return -1;
 	}
 
-	int i = 0;
-	index += 2;
+	size_t i = 2;
 	do
 	{
-		spelling[i++] = sx->reprtab[index++];
-	} while (sx->reprtab[index] != 0);
+		spelling[i] = sx->reprtab[index + i];
+		i++;
+	} while (sx->reprtab[index + i] != 0);
 	return 0;
 }
 
 int repr_get_reference(const syntax *const sx, const size_t index)
 {
-	if (sx == NULL || (int)index >= sx->rp)
+	if (sx == NULL || index >= sx->rp)
 	{
 		return INT_MAX;
 	}
@@ -290,7 +285,7 @@ int repr_get_reference(const syntax *const sx, const size_t index)
 
 int repr_set_reference(syntax *const sx, const size_t index, const size_t ref)
 {
-	if (sx == NULL || (int)index >= sx->rp)
+	if (sx == NULL || index >= sx->rp)
 	{
 		return -1;
 	}

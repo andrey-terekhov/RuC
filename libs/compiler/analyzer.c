@@ -22,12 +22,12 @@
 #include "string.h"
 
 
-analyzer compiler_context_create(universal_io *const io, syntax *const sx, Lexer *const lexer)
+analyzer compiler_context_create(universal_io *const io, syntax *const sx, lexer *const lexer)
 {
 	analyzer context;
 	context.io = io;
 	context.sx = sx;
-	context.lexer = lexer;
+	context.lxr = lexer;
 
 	context.sopnd = -1;
 	context.curid = 2;
@@ -51,9 +51,9 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx, Lexer
 void read_keywords(analyzer *context)
 {
 	context->sx->keywordsnum = 1;
-	get_char(context->lexer);
-	get_char(context->lexer);
-	while (lex(context->lexer) != LEOF)
+	get_char(context->lxr);
+	get_char(context->lxr);
+	while (lex(context->lxr) != LEOF)
 	{
 		; // чтение ключевых слов
 	}
@@ -132,7 +132,7 @@ int analyze(universal_io *const io, syntax *const sx)
 	}
 
 	universal_io temp = io_create();
-	Lexer lexer = lexer_create(&temp, sx);
+	lexer lexer = create_lexer(&temp, sx);
 	analyzer context = compiler_context_create(&temp, sx, &lexer);
 	
 	in_set_buffer(context.io, KEYWORDS);
@@ -144,8 +144,8 @@ int analyze(universal_io *const io, syntax *const sx)
 	io_erase(&temp);
 
 	context.io = io;
-	context.lexer->io = io;
+	context.lxr->io = io;
 	ext_decl(&context);
 
-	return context.error_flag || context.lexer->error_flag;
+	return context.error_flag || context.lxr->error_flag;
 }

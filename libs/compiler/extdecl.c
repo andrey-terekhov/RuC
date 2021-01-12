@@ -39,7 +39,7 @@ int scanner(analyzer *context)
 	context->cur = context->next;
 	if (!context->buf_flag)
 	{
-		context->next = lex(context->lexer);
+		context->next = lex(context->lxr);
 	}
 	else
 	{
@@ -695,22 +695,22 @@ void primaryexpr(analyzer *context)
 	if (context->cur == CHAR_CONST)
 	{
 		totree(context, TConst);
-		totree(context, context->lexer->num);
+		totree(context, context->lxr->num);
 		context->stackoperands[++context->sopnd] = context->ansttype = LCHAR;
 		context->anst = NUMBER;
 	}
 	else if (context->cur == INT_CONST)
 	{
 		totree(context, TConst);
-		totree(context, context->lexer->num);
+		totree(context, context->lxr->num);
 		context->stackoperands[++context->sopnd] = context->ansttype = LINT;
 		context->anst = NUMBER;
 	}
 	else if (context->cur == FLOAT_CONST)
 	{
 		totree(context, TConstd);
-		totree(context, context->lexer->numr.fst);
-		totree(context, context->lexer->numr.snd);
+		memcpy(&context->sx->tree[context->sx->tc], &context->lxr->num_double, sizeof(double));
+		context->sx->tc += 2;
 		context->stackoperands[++context->sopnd] = context->ansttype = LFLOAT;
 		context->anst = NUMBER;
 	}
@@ -719,11 +719,11 @@ void primaryexpr(analyzer *context)
 		int i;
 
 		totree(context, TString);
-		totree(context, context->lexer->num);
+		totree(context, context->lxr->num);
 
-		for (i = 0; i < context->lexer->num; i++)
+		for (i = 0; i < context->lxr->num; i++)
 		{
-			totree(context, (int)context->lexer->lexstr[i]);
+			totree(context, context->lxr->lexstr[i]);
 		}
 
 		context->stackoperands[++context->sopnd] = context->ansttype = newdecl(context->sx, MARRAY, LCHAR);
@@ -2770,13 +2770,13 @@ void statement(analyzer *context)
 					break;
 				}
 
-				for (i = 0; i < context->lexer->num; i++)
+				for (i = 0; i < context->lxr->num; i++)
 				{
-					formatstr[i] = context->lexer->lexstr[i];
+					formatstr[i] = context->lxr->lexstr[i];
 				}
-				formatstr[context->lexer->num] = 0;
+				formatstr[context->lxr->num] = 0;
 
-				paramnum = evaluate_params(context, fnum = context->lexer->num, formatstr, formattypes, placeholders);
+				paramnum = evaluate_params(context, fnum = context->lxr->num, formatstr, formattypes, placeholders);
 
 				if (context->error_flag)
 				{
@@ -3865,9 +3865,9 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 /** Генерация дерева */
 void ext_decl(analyzer *context)
 {
-	get_char(context->lexer);
-	get_char(context->lexer);
-	context->next = lex(context->lexer);
+	get_char(context->lxr);
+	get_char(context->lxr);
+	context->next = lex(context->lxr);
 	
 	int i;
 	context->temp_tc = context->sx->tc;

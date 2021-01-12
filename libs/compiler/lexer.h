@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev, Ilya Andreev
+ *	Copyright 2021 Andrey Terekhov, Victor Y. Fadeev, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,62 +14,61 @@
  *	limitations under the License.
  */
 
-#ifndef RUC_LEXER_H
-#define RUC_LEXER_H
+#pragma once
 
 #include "defs.h"
 #include "tokens.h"
 #include "syntax.h"
 #include "uniio.h"
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct Lexer
+typedef struct lexer
 {
 	universal_io *io;					/**< Universal io structure */
 	syntax *sx;							/**< Syntax structure */
 	
-	char32_t curchar;					/**< Current character */
-	char32_t nextchar;					/**< Lookahead character */
+	char32_t curr_char;					/**< Current character */
+	char32_t next_char;					/**< Lookahead character */
 	int repr;							/**< Pointer to representation of the read identifier */
 	int num;							/**< Value of the read integer number */
-	struct { int fst; int snd; } numr;	/**< Value of the read double number */
+	double num_double;					/**< Value of the read double number */
 	char32_t lexstr[MAXSTRINGL + 1];	/**< Representation of the read string literal */
 	
 	int error_flag;						/**< Error flag */
-} Lexer;
+} lexer;
 
 /**
  *	Create lexer structure
  *
  *	@param	io		Universal io structure
+ *	@param	sx		Syntax structure
  *
  *	@return	Lexer structure
  */
-Lexer lexer_create(universal_io *const io, syntax *const sx);
+lexer create_lexer(universal_io *const io, syntax *const sx);
 
 /**
  *	Read next character from io
  *
- *	@param	lexer	Lexer structure
+ *	@param	lxr		Lexer structure
  *
  *	@return	Character
  */
-char32_t get_char(Lexer *const lexer);
+char32_t get_char(lexer *const lxr);
 
 /**
  *	Lex next token from io
  *
- *	@param	lexer	Lexer structure
+ *	@param	lxr		Lexer structure
  *
  *	@return	Token
  */
-Token lex(Lexer *const lexer);
+token lex(lexer *const lxr);
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-#endif /* RUC_LEXER_H */

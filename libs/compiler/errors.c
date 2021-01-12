@@ -60,7 +60,7 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "плохой символ = %i", bad_char);
 		}
 
-		case empty_char_const:
+		case empty_character:
 			sprintf(msg, "пустая символьная константа");
 			break;
 
@@ -74,6 +74,10 @@ void get_error(const int num, char *const msg, va_list args)
 
 		case missing_terminating_quote_char:
 			sprintf(msg, "строка не заканчивается символом \"");
+			break;
+			
+		case string_too_long:	// test_exist
+			sprintf(msg, "слишком длинная строка (больше, чем MAXSTRINGL)");
 			break;
 
 		case unterminated_block_comment:
@@ -253,9 +257,6 @@ void get_error(const int num, char *const msg, va_list args)
 			break;
 		case decl_after_strmt: // test_exist
 			sprintf(msg, "встретилось описание после оператора");
-			break;
-		case too_long_string:	// test_exist
-			sprintf(msg, "слишком длинная строка ( больше, чем MAXSTRINGL)");
 			break;
 		case aster_before_func:	// need_test
 			sprintf(msg, "* перед описанием функции");
