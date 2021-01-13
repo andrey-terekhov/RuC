@@ -78,15 +78,6 @@ syntax sx_create()
 }
 
 
-size_t mem_get_size(const syntax *const sx)
-{
-	if (sx == NULL)
-	{
-		return INT_MAX;
-	}
-	return sx->pc;
-}
-
 int mem_increase(syntax *const sx, const size_t value)
 {
 	if (sx == NULL)
@@ -128,6 +119,15 @@ int mem_get(const syntax *const sx, const size_t index)
 	}
 
 	return sx->mem[index];
+}
+
+size_t mem_get_size(const syntax *const sx)
+{
+	if (sx == NULL)
+	{
+		return INT_MAX;
+	}
+	return sx->pc;
 }
 
 

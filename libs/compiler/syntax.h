@@ -68,14 +68,6 @@ typedef struct syntax
  */
 syntax sx_create();
 
-/**
- *	Get size of memory table
- *
- *	@param	sx			Syntax structure
- *
- *	@return	Program counter on success, @c INT_MAX on failure
- */
-size_t mem_get_size(const syntax *const sx);
 
 /**
  *	Increase size of memory table by value
@@ -117,6 +109,15 @@ int mem_set(syntax *const sx, const size_t index, const int value);
  *	@return	Item by index from table, @c INT_MAX on failure
  */
 int mem_get(const syntax *const sx, const size_t index);
+
+/**
+ *	Get size of memory table
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	Program counter on success, @c INT_MAX on failure
+ */
+size_t mem_get_size(const syntax *const sx);
 
 
 /**

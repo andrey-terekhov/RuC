@@ -845,10 +845,10 @@ void output_export(universal_io *const io, const syntax *const sx)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%i %i %i %i %i %i %i\n", (int)mem_get_size(sx), sx->funcnum, sx->id,
+	uni_printf(io, "%zi %i %i %i %i %i %i\n", mem_get_size(sx), sx->funcnum, sx->id,
 				   sx->rp, sx->md, sx->maxdisplg, sx->wasmain);
 
-	for (int i = 0; i < (int)mem_get_size(sx); i++)
+	for (size_t i = 0; i < mem_get_size(sx); i++)
 	{
 		uni_printf(io, "%i ", mem_get(sx, i));
 	}
