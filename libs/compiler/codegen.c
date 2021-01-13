@@ -23,9 +23,9 @@
 
 typedef struct ad
 {
-	int adcont;
-	int adbreak;
-	int adcase;
+	size_t adcont;
+	size_t adbreak;
+	size_t adcase;
 } ad;
 
 
@@ -35,27 +35,27 @@ void compstmt_gen(syntax *const sx, ad *const context);
 
 void tocode(syntax *const sx, int c)
 {
-	// printf("tocode sx->tc=%i sx->pc %i) %i\n", sx->tc,
-	// sx->pc, c);
-	sx->mem[sx->pc++] = c;
+	// printf("tocode sx->tc=%i sx->pc %zi) %i\n", sx->tc,
+	// mem_get_size(sx), c);
+	mem_add(sx, c);
 }
 
 void adbreakend(syntax *const sx, ad *const context)
 {
 	while (context->adbreak)
 	{
-		int r = mem_get(sx, context->adbreak);
-		sx->mem[context->adbreak] = sx->pc;
+		size_t r = mem_get(sx, context->adbreak);
+		mem_set(sx, context->adbreak, (int)mem_get_size(sx));
 		context->adbreak = r;
 	}
 }
 
-void adcontbeg(syntax *const sx, ad *const context, int ad)
+void adcontbeg(syntax *const sx, ad *const context, size_t ad)
 {
 	while (context->adcont != ad)
 	{
-		int r = mem_get(sx, context->adcont);
-		sx->mem[context->adcont] = ad;
+		size_t r = mem_get(sx, context->adcont);
+		mem_set(sx, context->adcont, (int)ad);
 		context->adcont = r;
 	}
 }
@@ -64,8 +64,8 @@ void adcontend(syntax *const sx, ad *const context)
 {
 	while (context->adcont != 0)
 	{
-		int r = mem_get(sx, context->adcont);
-		sx->mem[context->adcont] = sx->pc;
+		size_t r = mem_get(sx, context->adcont);
+		mem_set(sx, context->adcont, (int)mem_get_size(sx));
 		context->adcont = r;
 	}
 }
@@ -83,20 +83,22 @@ void finalop(syntax *const sx)
 			{
 				tocode(sx, _DOUBLE);
 				tocode(sx, BNE0);
-				sx->tree[sx->tree[sx->tc++]] = sx->pc++;
+				sx->tree[sx->tree[sx->tc++]] = (int)mem_get_size(sx);
+				mem_increase(sx, 1);
 			}
 			else if (c == ADLOGAND)
 			{
 				tocode(sx, _DOUBLE);
 				tocode(sx, BE0);
-				sx->tree[sx->tree[sx->tc++]] = sx->pc++;
+				sx->tree[sx->tree[sx->tc++]] = (int)mem_get_size(sx);
+				mem_increase(sx, 1);
 			}
 			else
 			{
 				tocode(sx, c);
 				if (c == LOGOR || c == LOGAND)
 				{
-					sx->mem[sx->tree[sx->tc++]] = sx->pc;
+					mem_set(sx, sx->tree[sx->tc++], (int)mem_get_size(sx));
 				}
 				else if (c == COPY00 || c == COPYST)
 				{
@@ -194,9 +196,10 @@ int Expr_gen(syntax *const sx, int incond)
 				int i;
 
 				tocode(sx, LI);
-				tocode(sx, res = sx->pc + 4);
+				res = (int)mem_get_size(sx) + 4;
+				tocode(sx, res);
 				tocode(sx, B);
-				sx->pc += 2;
+				mem_increase(sx, 2);
 				for (i = 0; i < n; i++)
 				{
 					if (op == TString)
@@ -209,8 +212,8 @@ int Expr_gen(syntax *const sx, int incond)
 						tocode(sx, sx->tree[sx->tc++]);
 					}
 				}
-				sx->mem[res - 1] = n;
-				sx->mem[res - 2] = sx->pc;
+				mem_set(sx, res - 1, n);
+				mem_set(sx, res - 2, (int)mem_get_size(sx));
 				wasstring = 1;
 				break;
 			}
@@ -309,25 +312,25 @@ int Expr_gen(syntax *const sx, int incond)
 			}
 			else
 			{
-				int adelse;
-				int ad = 0;
+				size_t ad = 0;
 				do
 				{
 					sx->tc++;
 					tocode(sx, BE0);
-					adelse = sx->pc++;
+					size_t adelse = mem_get_size(sx);
+					mem_increase(sx, 1);
 					Expr_gen(sx, 0); // then
 					tocode(sx, B);
-					sx->mem[sx->pc] = ad;
-					ad = sx->pc;
-					sx->mem[adelse] = ++sx->pc;
+					mem_add(sx, (int)ad);
+					ad = mem_get_size(sx) - 1;
+					mem_set(sx, adelse, (int)mem_get_size(sx));
 					Expr_gen(sx, 1); // else или cond
 				} while (sx->tree[sx->tc] == TCondexpr);
 
 				while (ad)
 				{
 					int r = mem_get(sx, ad);
-					sx->mem[ad] = sx->pc;
+					mem_set(sx, ad, (int)mem_get_size(sx));
 					ad = r;
 				}
 			}
@@ -366,7 +369,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			tocode(sx, B);
 			tocode(sx, 0);
-			sx->iniprocs[sx->tree[sx->tc++]] = sx->pc;
+			proc_set(sx, sx->tree[sx->tc++], (int)mem_get_size(sx));
 			break;
 		}
 		case TStructend:
@@ -374,7 +377,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			int numproc = sx->tree[sx->tree[sx->tc++] + 1];
 
 			tocode(sx, STOP);
-			sx->mem[sx->iniprocs[numproc] - 1] = sx->pc;
+			mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
 			break;
 		}
 		case TBegin:
@@ -384,37 +387,38 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		case TIf:
 		{
 			int elseref = sx->tree[sx->tc++];
-			int ad;
 
 			Expr_gen(sx, 0);
 			tocode(sx, BE0);
-			ad = sx->pc++;
+			size_t ad = mem_get_size(sx);
+			mem_increase(sx, 1);
 			Stmt_gen(sx, context);
 			if (elseref)
 			{
-				sx->mem[ad] = sx->pc + 2;
+				mem_set(sx, ad, (int)mem_get_size(sx) + 2);
 				tocode(sx, B);
-				ad = sx->pc++;
+				ad = mem_get_size(sx);
+				mem_increase(sx, 1);
 				Stmt_gen(sx, context);
 			}
-			sx->mem[ad] = sx->pc;
+			mem_set(sx, ad, (int)mem_get_size(sx));
 			break;
 		}
 		case TWhile:
 		{
-			int oldbreak = context->adbreak;
-			int oldcont = context->adcont;
-			int ad = sx->pc;
+			size_t oldbreak = context->adbreak;
+			size_t oldcont = context->adcont;
+			size_t ad = mem_get_size(sx);
 
 			context->adcont = ad;
 			Expr_gen(sx, 0);
 			tocode(sx, BE0);
-			sx->mem[sx->pc] = 0;
-			context->adbreak = sx->pc++;
+			context->adbreak = mem_get_size(sx);
+			mem_add(sx, 0);	
 			Stmt_gen(sx, context);
 			adcontbeg(sx, context, ad);
 			tocode(sx, B);
-			tocode(sx, ad);
+			tocode(sx, (int)ad);
 			adbreakend(sx, context);
 			context->adbreak = oldbreak;
 			context->adcont = oldcont;
@@ -422,16 +426,16 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TDo:
 		{
-			int oldbreak = context->adbreak;
-			int oldcont = context->adcont;
-			int ad = sx->pc;
+			size_t oldbreak = context->adbreak;
+			size_t oldcont = context->adcont;
+			size_t ad = mem_get_size(sx);
 
 			context->adcont = context->adbreak = 0;
 			Stmt_gen(sx, context);
 			adcontend(sx, context);
 			Expr_gen(sx, 0);
 			tocode(sx, BNE0);
-			tocode(sx, ad);
+			tocode(sx, (int)ad);
 			adbreakend(sx, context);
 			context->adbreak = oldbreak;
 			context->adcont = oldcont;
@@ -443,26 +447,25 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			int condref = sx->tree[sx->tc++];
 			int incrref = sx->tree[sx->tc++];
 			int stmtref = sx->tree[sx->tc++];
-			int oldbreak = context->adbreak;
-			int oldcont = context->adcont;
 			int incrtc;
 			int endtc;
-			int initad;
+			size_t oldbreak = context->adbreak;
+			size_t oldcont = context->adcont;
 
 			if (fromref)
 			{
 				Expr_gen(sx, 0); // init
 			}
 
-			initad = sx->pc;
+			size_t initad = mem_get_size(sx);
 			context->adcont = context->adbreak = 0;
 
 			if (condref)
 			{
 				Expr_gen(sx, 0); // cond
 				tocode(sx, BE0);
-				sx->mem[sx->pc] = 0;
-				context->adbreak = sx->pc++;
+				context->adbreak = (int)mem_get_size(sx);
+				mem_add(sx, 0);	
 			}
 			incrtc = sx->tc;
 			sx->tc = stmtref;
@@ -478,7 +481,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			}
 
 			tocode(sx, B);
-			tocode(sx, initad);
+			tocode(sx, (int)initad);
 			adbreakend(sx, context);
 			context->adbreak = oldbreak;
 			context->adcont = oldcont;
@@ -497,7 +500,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			}
 			else // метка еще не описана
 			{
-				sx->identab[id + 3] = -sx->pc;
+				sx->identab[id + 3] = -(int)mem_get_size(sx);
 				tocode(sx,
 					   id1 < 0 ? 0 : a); // первый раз встретился переход на еще
 										 // не описанную метку или нет
@@ -514,17 +517,17 @@ void Stmt_gen(syntax *const sx, ad *const context)
 				while (a) // проставить ссылку на метку во всех ранних переходах
 				{
 					int r = mem_get(sx, -a);
-					sx->mem[-a] = sx->pc;
+					mem_set(sx, -a, (int)mem_get_size(sx));
 					a = r;
 				}
 			}
-			sx->identab[id + 3] = sx->pc;
+			sx->identab[id + 3] = (int)mem_get_size(sx);
 			break;
 		}
 		case TSwitch:
 		{
-			int oldbreak = context->adbreak;
-			int oldcase = context->adcase;
+			size_t oldbreak = context->adbreak;
+			size_t oldcase = context->adcase;
 
 			context->adbreak = 0;
 			context->adcase = 0;
@@ -532,7 +535,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			Stmt_gen(sx, context);
 			if (context->adcase > 0)
 			{
-				sx->mem[context->adcase] = sx->pc;
+				mem_set(sx, context->adcase, (int)mem_get_size(sx));
 			}
 			context->adcase = oldcase;
 			adbreakend(sx, context);
@@ -543,13 +546,14 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			if (context->adcase)
 			{
-				sx->mem[context->adcase] = sx->pc;
+				mem_set(sx, context->adcase, (int)mem_get_size(sx));
 			}
 			tocode(sx, _DOUBLE);
 			Expr_gen(sx, 0);
 			tocode(sx, EQEQ);
 			tocode(sx, BE0);
-			context->adcase = sx->pc++;
+			context->adcase = (int)mem_get_size(sx);
+			mem_increase(sx, 1);
 			Stmt_gen(sx, context);
 			break;
 		}
@@ -557,7 +561,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			if (context->adcase)
 			{
-				sx->mem[context->adcase] = sx->pc;
+				mem_set(sx, context->adcase, (int)mem_get_size(sx));
 			}
 			context->adcase = 0;
 			Stmt_gen(sx, context);
@@ -566,15 +570,15 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		case TBreak:
 		{
 			tocode(sx, B);
-			sx->mem[sx->pc] = context->adbreak;
-			context->adbreak = sx->pc++;
+			mem_add(sx, context->adbreak);
+			context->adbreak = (int)mem_get_size(sx) - 1;
 			break;
 		}
 		case TContinue:
 		{
 			tocode(sx, B);
-			sx->mem[sx->pc] = context->adcont;
-			context->adcont = sx->pc++;
+			mem_add(sx, context->adcont);
+			context->adcont = (int)mem_get_size(sx) - 1;
 			break;
 		}
 		case TReturnvoid:
@@ -671,7 +675,7 @@ void Declid_gen(syntax *const sx)
 		{
 			tocode(sx, STRUCTWITHARR);
 			tocode(sx, olddispl);
-			tocode(sx, sx->iniprocs[iniproc]);
+			tocode(sx, proc_get(sx, iniproc));
 		}
 		if (all) // int a = или struct{} a =
 		{
@@ -697,7 +701,7 @@ void Declid_gen(syntax *const sx)
 		tocode(sx, all == 0 ? N : abs(N) - 1);
 		tocode(sx, element_len);
 		tocode(sx, olddispl);
-		tocode(sx, sx->iniprocs[iniproc]);
+		tocode(sx, proc_get(sx, iniproc));
 		tocode(sx, usual);
 		tocode(sx, all);
 		tocode(sx, instruct);
@@ -769,15 +773,15 @@ int codegen(universal_io *const io, syntax *const sx)
 				int identref = sx->tree[sx->tc++];
 				int maxdispl = sx->tree[sx->tc++];
 				int fn = sx->identab[identref + 3];
-				int pred;
 
-				func_set(sx, fn, sx->pc);
+				func_set(sx, fn, (int)mem_get_size(sx));
 				tocode(sx, FUNCBEG);
 				tocode(sx, maxdispl);
-				pred = sx->pc++;
+				size_t old_pc = mem_get_size(sx);
+				mem_increase(sx, 1);
 				sx->tc++; // TBegin
 				compstmt_gen(sx, &context);
-				sx->mem[pred] = sx->pc;
+				mem_set(sx, old_pc, (int)mem_get_size(sx));
 				break;
 			}
 			case TDeclarr:
@@ -804,7 +808,7 @@ int codegen(universal_io *const io, syntax *const sx)
 			{
 				tocode(sx, B);
 				tocode(sx, 0);
-				sx->iniprocs[sx->tree[sx->tc++]] = sx->pc;
+				proc_set(sx, sx->tree[sx->tc++], (int)mem_get_size(sx));
 				break;
 			}
 			case TStructend:
@@ -812,7 +816,7 @@ int codegen(universal_io *const io, syntax *const sx)
 				int numproc = sx->tree[sx->tree[sx->tc++] + 1];
 
 				tocode(sx, STOP);
-				sx->mem[sx->iniprocs[numproc] - 1] = sx->pc;
+				mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
 				break;
 			}
 			default:
@@ -842,10 +846,10 @@ void output_export(universal_io *const io, const syntax *const sx)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%i %i %i %i %i %i %i\n", sx->pc, sx->funcnum, sx->id,
+	uni_printf(io, "%zi %i %i %i %i %i %i\n", mem_get_size(sx), sx->funcnum, sx->id,
 				   sx->rp, sx->md, sx->maxdisplg, sx->wasmain);
 
-	for (int i = 0; i < sx->pc; i++)
+	for (size_t i = 0; i < mem_get_size(sx); i++)
 	{
 		uni_printf(io, "%i ", mem_get(sx, i));
 	}

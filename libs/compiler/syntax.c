@@ -77,6 +77,28 @@ syntax sx_create()
 }
 
 
+int mem_increase(syntax *const sx, const size_t value)
+{
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
+	sx->pc += value;
+	return 0;
+}
+
+int mem_add(syntax *const sx, const int value)
+{
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
+	sx->pc++;
+	return mem_set(sx, sx->pc - 1, value);
+}
+
 int mem_set(syntax *const sx, const size_t index, const int value)
 {
 	if (sx == NULL || (int)index >= sx->pc)
@@ -96,6 +118,15 @@ int mem_get(const syntax *const sx, const size_t index)
 	}
 
 	return sx->mem[index];
+}
+
+size_t mem_get_size(const syntax *const sx)
+{
+	if (sx == NULL)
+	{
+		return INT_MAX;
+	}
+	return sx->pc;
 }
 
 

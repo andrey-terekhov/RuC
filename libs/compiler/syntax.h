@@ -70,6 +70,26 @@ syntax sx_create();
 
 
 /**
+ *	Increase size of memory table by value
+ *
+ *	@param	sx			Syntax structure
+ *	@param	value			Value to increase
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int mem_increase(syntax *const sx, const size_t value);
+
+/**
+ *	Add new record to memory table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	value			Value to record
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int mem_add(syntax *const sx, const int value);
+
+/**
  *	Set value by index in memory table
  *
  *	@param	sx			Syntax structure
@@ -89,6 +109,15 @@ int mem_set(syntax *const sx, const size_t index, const int value);
  *	@return	Item by index from table, @c INT_MAX on failure
  */
 int mem_get(const syntax *const sx, const size_t index);
+
+/**
+ *	Get size of memory table
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	Program counter on success, @c INT_MAX on failure
+ */
+size_t mem_get_size(const syntax *const sx);
 
 
 /**
