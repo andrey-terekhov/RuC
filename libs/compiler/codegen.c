@@ -15,10 +15,11 @@
  */
 
 #include "codegen.h"
+#include <stdlib.h>
 #include "defs.h"
 #include "errors.h"
+#include "tree.h"
 #include "uniprinter.h"
-#include <stdlib.h>
 
 
 typedef struct ad
@@ -757,6 +758,16 @@ void compstmt_gen(syntax *const sx, ad *const context)
 /** Генерация кодов */
 int codegen(universal_io *const io, syntax *const sx)
 {
+	node root = node_get_root(sx);
+	// тут пока эксперимент
+	node cur_node_print = node_get_next(&root);
+	while (node_is_correct(&cur_node_print))
+	{
+		printf("%i\n", node_get_type(&cur_node_print));
+		cur_node_print = node_get_next(&cur_node_print);
+	}
+	// тут эксперимент заканчивается
+
 	ad context;
 
 	int treesize = sx->tc;
