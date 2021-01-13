@@ -29,6 +29,7 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx, lexer
 	context.sx = sx;
 	context.lxr = lexer;
 
+	context.sp = 0;
 	context.sopnd = -1;
 	context.curid = 2;
 	context.lg = -1;
