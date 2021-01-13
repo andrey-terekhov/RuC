@@ -386,18 +386,17 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		case TIf:
 		{
 			int elseref = sx->tree[sx->tc++];
-			int ad;
 
 			Expr_gen(sx, 0);
 			tocode(sx, BE0);
-			ad = (int)mem_get_size(sx);
+			size_t ad = mem_get_size(sx);
 			mem_increase(sx, 1);
 			Stmt_gen(sx, context);
 			if (elseref)
 			{
 				mem_set(sx, ad, (int)mem_get_size(sx) + 2);
 				tocode(sx, B);
-				ad = (int)mem_get_size(sx);
+				ad = mem_get_size(sx);
 				mem_increase(sx, 1);
 				Stmt_gen(sx, context);
 			}
