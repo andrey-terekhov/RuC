@@ -312,7 +312,7 @@ int Expr_gen(syntax *const sx, int incond)
 			}
 			else
 			{
-				int ad = 0;
+				size_t ad = 0;
 				do
 				{
 					sx->tc++;
@@ -321,8 +321,8 @@ int Expr_gen(syntax *const sx, int incond)
 					mem_increase(sx, 1);
 					Expr_gen(sx, 0); // then
 					tocode(sx, B);
-					mem_add(sx, ad);
-					ad = (int)mem_get_size(sx) - 1;
+					mem_add(sx, (int)ad);
+					ad = mem_get_size(sx) - 1;
 					mem_set(sx, adelse, (int)mem_get_size(sx));
 					Expr_gen(sx, 1); // else или cond
 				} while (sx->tree[sx->tc] == TCondexpr);
