@@ -772,16 +772,15 @@ int codegen(universal_io *const io, syntax *const sx)
 				int identref = sx->tree[sx->tc++];
 				int maxdispl = sx->tree[sx->tc++];
 				int fn = sx->identab[identref + 3];
-				int pred;
 
 				func_set(sx, fn, (int)mem_get_size(sx));
 				tocode(sx, FUNCBEG);
 				tocode(sx, maxdispl);
-				pred = (int)mem_get_size(sx);
+				size_t old_pc = mem_get_size(sx);
 				mem_increase(sx, 1);
 				sx->tc++; // TBegin
 				compstmt_gen(sx, &context);
-				mem_set(sx, pred, (int)mem_get_size(sx));
+				mem_set(sx, old_pc, (int)mem_get_size(sx));
 				break;
 			}
 			case TDeclarr:
