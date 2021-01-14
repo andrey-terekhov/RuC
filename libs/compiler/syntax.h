@@ -341,7 +341,7 @@ int repr_set_reference(syntax *const sx, const size_t index, const size_t ref);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int enter_block_scope(syntax *const sx, int old_displ, int old_lg);
+int enter_block_scope(syntax *const sx, int *const old_displ, int *const old_lg);
 
 /**
  *	Exit block scope

@@ -501,7 +501,7 @@ int repr_set_reference(syntax *const sx, const size_t index, const size_t ref)
 }
 
 
-int enter_block_scope(syntax *const sx, int old_displ, int old_lg)
+int enter_block_scope(syntax *const sx, int *const old_displ, int *const old_lg)
 {
 	if (sx == NULL)
 	{
@@ -509,8 +509,8 @@ int enter_block_scope(syntax *const sx, int old_displ, int old_lg)
 	}
 	
 	sx->curid = sx->id;
-	old_displ = sx->displ;
-	old_lg = sx->lg;
+	*old_displ = sx->displ;
+	*old_lg = sx->lg;
 	return 0;
 }
 
