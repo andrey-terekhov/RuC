@@ -69,30 +69,33 @@ int repr_is_equal(const syntax *const sx, const size_t first, const size_t secon
  */
 
 
-syntax sx_create()
+int sx_init(syntax *const sx)
 {
-	syntax sx;
-
-	sx.pc = 4;
-	sx.procd = 1;
-	sx.funcnum = 2;
-	sx.id = 2;
-	sx.md = 1;
-	sx.startmode = 1;
-	sx.tc = 0;
-	sx.rp = 1;
-
-	sx.maxdisplg = 3;
-	sx.wasmain = 0;
-
-	sx.anstdispl = 0;
-	
-	for (int i = 0; i < 256; i++)
+	if (sx == NULL)
 	{
-		sx.hashtab[i] = 0;
+		return -1;
 	}
 
-	return sx;
+	sx->pc = 4;
+	sx->procd = 1;
+	sx->funcnum = 2;
+	sx->id = 2;
+	sx->md = 1;
+	sx->startmode = 1;
+	sx->tc = 0;
+	sx->rp = 1;
+
+	sx->maxdisplg = 3;
+	sx->wasmain = 0;
+
+	sx->anstdispl = 0;
+	
+	for (size_t i = 0; i < 256; i++)
+	{
+		sx->hashtab[i] = 0;
+	}
+
+	return 0;
 }
 
 
