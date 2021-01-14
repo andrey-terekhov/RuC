@@ -82,7 +82,7 @@ int compile_from_io_to_vm(universal_io *const io)
 	
 	if (!ret)
 	{
-		ret = sx_сheck(&sx, io);
+		ret = sx_check(&sx, io);
 	}
 
 	if (!ret)

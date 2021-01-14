@@ -90,7 +90,7 @@ int sx_init(syntax *const sx);
  *
  *	@return	@c 0 if syntax is correct, @c -1 otherwise
  */
-int sx_сheck(syntax *const sx, universal_io *const io);
+int sx_check(syntax *const sx, universal_io *const io);
 
 
 /**

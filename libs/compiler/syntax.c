@@ -122,7 +122,7 @@ int sx_init(syntax *const sx)
 	return 0;
 }
 
-int sx_сheck(syntax *const sx, universal_io *const io)
+int sx_check(syntax *const sx, universal_io *const io)
 {
 	int error_flag = 0;
 	
@@ -380,11 +380,11 @@ int ident_set_displ(syntax *const sx, const size_t index, const int displ)
 	return 0;
 }
 
+
 int size_of(syntax *const sx, const int mode)
 {
 	return mode == LFLOAT ? 2 : (mode > 0 && mode_get(sx, mode) == MSTRUCT) ? mode_get(sx, mode + 1) : 1;
 }
-
 
 size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 {
