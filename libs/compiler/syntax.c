@@ -235,11 +235,11 @@ int func_set(syntax *const sx, const size_t index, const size_t ref)
 		return -1;
 	}
 
-	sx->functions[index] = (int)ref;
+	sx->functions[index] = ref;
 	return 0;
 }
 
-int func_get(const syntax *const sx, const size_t index)
+size_t func_get(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || index >= sx->funcnum)
 	{
@@ -250,9 +250,9 @@ int func_get(const syntax *const sx, const size_t index)
 }
 
 
-int ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def)
+size_t ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def)
 {
-	const int lastid = sx->id;
+	const size_t lastid = sx->id;
 	sx->id += 4;
 	if (repr_get_reference(sx, repr) == 0) // это может быть только MAIN
 	{
@@ -282,7 +282,7 @@ int ident_add(syntax *const sx, const size_t repr, const int type, const int mod
 		}
 	}
 	
-	sx->identab[lastid + 1] = repr; // ссылка на представление
+	sx->identab[lastid + 1] = (int)repr; // ссылка на представление
 	ident_set_mode(sx, lastid, mode);
 	if (type == 1)
 	{
@@ -387,7 +387,7 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 		return SIZE_MAX;
 	}
 
-	sx->modetab[sx->md] = sx->startmode;
+	sx->modetab[sx->md] = (int) sx->startmode;
 	sx->startmode = sx->md++;
 	for (size_t i = 0; i < size; i++)
 	{

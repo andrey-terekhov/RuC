@@ -194,7 +194,7 @@ int func_set(syntax *const sx, const size_t index, const size_t ref);
  *
  *	@return	Item by index from functions table, @c INT_MAX on failure
  */
-int func_get(const syntax *const sx, const size_t index);
+size_t func_get(const syntax *const sx, const size_t index);
 
 
 /**
@@ -210,7 +210,7 @@ int func_get(const syntax *const sx, const size_t index);
  *
  *	@return	pointer to the last record in identifiers table
  */
-int ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def);
+size_t ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def);
 
 /**
  *	Get identifier mode by index in identifiers table
