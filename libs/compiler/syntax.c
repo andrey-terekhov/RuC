@@ -124,7 +124,7 @@ int sx_init(syntax *const sx)
 
 int sx_сheck(syntax *const sx, universal_io *const io)
 {
-	int error_flag;
+	int error_flag = 0;
 	
 	if (sx->main_ref == 0)
 	{
@@ -338,7 +338,7 @@ int ident_add(syntax *const sx, const size_t repr, const int type, const int mod
 	return lastid;
 }
 
-int ident_get_mode(syntax *const sx, const size_t index)
+int ident_get_mode(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || index >= sx->id)
 	{
@@ -359,7 +359,7 @@ int ident_set_mode(syntax *const sx, const size_t index, const int mode)
 	return 0;
 }
 
-int ident_get_displ(syntax *const sx, const size_t index)
+int ident_get_displ(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || index >= sx->id)
 	{

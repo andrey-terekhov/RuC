@@ -221,7 +221,7 @@ int ident_add(syntax *const sx, const size_t repr, const int type, const int mod
  *
  *	@return	Identifier mode, @c INT_MAX on failure
  */
-int ident_get_mode(syntax *const sx, const size_t index);
+int ident_get_mode(const syntax *const sx, const size_t index);
 
 /**
  *	Set identifier mode by index in identifiers table
@@ -242,7 +242,7 @@ int ident_set_mode(syntax *const sx, const size_t index, const int mode);
  *
  *	@return	Identifier displacement, @c INT_MAX on failure
  */
-int ident_get_displ(syntax *const sx, const size_t index);
+int ident_get_displ(const syntax *const sx, const size_t index);
 
 /**
  *	Set identifier displacement by index in identifiers table
@@ -255,15 +255,16 @@ int ident_get_displ(syntax *const sx, const size_t index);
  */
 int ident_set_displ(syntax *const sx, const size_t index, const int displ);
 
+
 /**
- *	Get type size
+ *	Get mode size
  *
  *	@note Also used in codegen
  *
  *	@param	sx			Syntax structure
  *	@param	mode		Standart type or pointer to modetab
  *
- *	@return	Type size
+ *	@return	Mode size
  */
 int size_of(syntax *const sx, const int mode);
 

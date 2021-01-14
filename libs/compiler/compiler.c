@@ -79,6 +79,11 @@ int compile_from_io_to_vm(universal_io *const io)
 		tables_and_tree(&sx, DEFAULT_TREE);
 #endif
 	}
+	
+	if (!ret)
+	{
+		ret = sx_сheck(&sx, io);
+	}
 
 	if (!ret)
 	{

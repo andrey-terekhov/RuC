@@ -142,8 +142,6 @@ int analyze(universal_io *const io, syntax *const sx)
 	context.io = io;
 	context.lxr->io = io;
 	ext_decl(&context);
-	
-	int ret = sx_сheck(sx, io);
 
-	return context.error_flag || context.lxr->error_flag || ret;
+	return context.error_flag || context.lxr->error_flag;
 }
