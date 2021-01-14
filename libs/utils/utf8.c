@@ -488,3 +488,20 @@ int utf8_is_russian(const char32_t symbol)
 		|| (symbol >= U'а' && symbol <= U'п')
 		|| (symbol >= U'р' && symbol <= U'я');
 }
+
+int utf8_is_letter(const char32_t symbol)
+{
+	return  utf8_is_russian(symbol) || symbol == '_'
+		|| (symbol >= 'A' && symbol <= 'Z')
+		|| (symbol >= 'a' && symbol <= 'z');
+}
+
+int utf8_is_digit(const char32_t symbol)
+{
+	return symbol >= '0' && symbol <= '9';
+}
+
+int utf8_is_power(const char32_t symbol)
+{
+	return symbol == 'e' || symbol == 'E' || symbol == U'е' || symbol == U'Е';
+}

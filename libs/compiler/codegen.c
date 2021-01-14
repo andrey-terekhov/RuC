@@ -44,7 +44,7 @@ void adbreakend(syntax *const sx, ad *const context)
 {
 	while (context->adbreak)
 	{
-		size_t r = mem_get(sx, context->adbreak);
+		const size_t r = mem_get(sx, context->adbreak);
 		mem_set(sx, context->adbreak, (int)mem_get_size(sx));
 		context->adbreak = r;
 	}
@@ -54,7 +54,7 @@ void adcontbeg(syntax *const sx, ad *const context, size_t ad)
 {
 	while (context->adcont != ad)
 	{
-		size_t r = mem_get(sx, context->adcont);
+		const size_t r = mem_get(sx, context->adcont);
 		mem_set(sx, context->adcont, (int)ad);
 		context->adcont = r;
 	}
@@ -64,7 +64,7 @@ void adcontend(syntax *const sx, ad *const context)
 {
 	while (context->adcont != 0)
 	{
-		size_t r = mem_get(sx, context->adcont);
+		const size_t r = mem_get(sx, context->adcont);
 		mem_set(sx, context->adcont, (int)mem_get_size(sx));
 		context->adcont = r;
 	}
@@ -192,15 +192,13 @@ int Expr_gen(syntax *const sx, int incond)
 			case TStringd:
 			{
 				int n = sx->tree[sx->tc++];
-				int res;
-				int i;
 
 				tocode(sx, LI);
-				res = (int)mem_get_size(sx) + 4;
-				tocode(sx, res);
+				size_t res = mem_get_size(sx) + 4;
+				tocode(sx, (int)res);
 				tocode(sx, B);
 				mem_increase(sx, 2);
-				for (i = 0; i < n; i++)
+				for (int i = 0; i < n; i++)
 				{
 					if (op == TString)
 					{
@@ -464,7 +462,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			{
 				Expr_gen(sx, 0); // cond
 				tocode(sx, BE0);
-				context->adbreak = (int)mem_get_size(sx);
+				context->adbreak = mem_get_size(sx);
 				mem_add(sx, 0);	
 			}
 			incrtc = sx->tc;
@@ -552,7 +550,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			Expr_gen(sx, 0);
 			tocode(sx, EQEQ);
 			tocode(sx, BE0);
-			context->adcase = (int)mem_get_size(sx);
+			context->adcase = mem_get_size(sx);
 			mem_increase(sx, 1);
 			Stmt_gen(sx, context);
 			break;
@@ -570,15 +568,15 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		case TBreak:
 		{
 			tocode(sx, B);
-			mem_add(sx, context->adbreak);
-			context->adbreak = (int)mem_get_size(sx) - 1;
+			mem_add(sx, (int)context->adbreak);
+			context->adbreak = mem_get_size(sx) - 1;
 			break;
 		}
 		case TContinue:
 		{
 			tocode(sx, B);
-			mem_add(sx, context->adcont);
-			context->adcont = (int)mem_get_size(sx) - 1;
+			mem_add(sx, (int)context->adcont);
+			context->adcont = mem_get_size(sx) - 1;
 			break;
 		}
 		case TReturnvoid:
@@ -774,7 +772,7 @@ int codegen(universal_io *const io, syntax *const sx)
 				int maxdispl = sx->tree[sx->tc++];
 				int fn = sx->identab[identref + 3];
 
-				func_set(sx, fn, (int)mem_get_size(sx));
+				func_set(sx, fn, mem_get_size(sx));
 				tocode(sx, FUNCBEG);
 				tocode(sx, maxdispl);
 				size_t old_pc = mem_get_size(sx);
@@ -846,7 +844,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%zi %i %i %i %i %i %i\n", mem_get_size(sx), sx->funcnum, sx->id,
+	uni_printf(io, "%zi %i %i %zi %i %i %i\n", mem_get_size(sx), sx->funcnum, sx->id,
 				   sx->rp, sx->md, sx->maxdisplg, sx->wasmain);
 
 	for (size_t i = 0; i < mem_get_size(sx); i++)
@@ -867,7 +865,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 	}
 	uni_printf(io, "\n");
 
-	for (int i = 0; i < sx->rp; i++)
+	for (size_t i = 0; i < sx->rp; i++)
 	{
 		uni_printf(io, "%i ", sx->reprtab[i]);
 	}

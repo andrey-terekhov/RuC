@@ -18,6 +18,7 @@
 #include <stdlib.h>
 
 
+/**	Check if modes are equal */
 int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
 {
 	if (sx->modetab[first] != sx->modetab[second])
@@ -44,6 +45,21 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 	return 1;
 }
 
+/**	Check if representations are equal */
+int repr_is_equal(const syntax *const sx, const size_t first, const size_t second)
+{
+	size_t i = 2;
+	while (sx->reprtab[first + i] == sx->reprtab[second + i])
+	{
+		i++;
+		if (sx->reprtab[first + i] == 0 && sx->reprtab[second + i] == 0)
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -54,26 +70,33 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
  */
 
 
-syntax sx_create()
+int sx_init(syntax *const sx)
 {
-	syntax sx;
+	if (sx == NULL)
+	{
+		return -1;
+	}
 
-	sx.pc = 4;
-	sx.procd = 1;
-	sx.funcnum = 2;
-	sx.id = 2;
-	sx.md = 1;
-	sx.startmode = 1;
-	sx.tc = 0;
-	sx.rp = 1;
-	sx.repr = 0;
+	sx->pc = 4;
+	sx->procd = 1;
+	sx->funcnum = 2;
+	sx->id = 2;
+	sx->md = 1;
+	sx->startmode = 1;
+	sx->tc = 0;
+	sx->rp = 1;
 
-	sx.maxdisplg = 3;
-	sx.wasmain = 0;
+	sx->maxdisplg = 3;
+	sx->wasmain = 0;
 
-	sx.anstdispl = 0;
+	sx->anstdispl = 0;
+	
+	for (size_t i = 0; i < 256; i++)
+	{
+		sx->hashtab[i] = 0;
+	}
 
-	return sx;
+	return 0;
 }
 
 
@@ -84,7 +107,7 @@ int mem_increase(syntax *const sx, const size_t value)
 		return -1;
 	}
 
-	sx->pc += value;
+	sx->pc += (int)value;
 	return 0;
 }
 
@@ -226,4 +249,81 @@ int mode_get(const syntax *const sx, const size_t index)
 	}
 
 	return sx->modetab[index];
+}
+
+
+size_t repr_add(syntax *const sx, const char32_t *const spelling)
+{
+	const size_t old_repr = sx->rp;
+	uint8_t hash = 0;
+	size_t i = 0;
+	sx->rp += 2;
+
+	do
+	{
+		 hash += (spelling[i] & 255);
+		 sx->reprtab[sx->rp++] = spelling[i];
+	} while (spelling[i++] != 0);
+
+	sx->hash = (int)hash;
+
+	size_t cur_repr = sx->hashtab[hash];
+	if (cur_repr != 0)
+	{
+		do
+		{
+			if (repr_is_equal(sx, cur_repr, old_repr))
+			{
+				sx->rp = old_repr;
+				return cur_repr;
+			}
+			else
+			{
+				cur_repr = sx->reprtab[cur_repr];
+			}
+		} while (cur_repr != 0);
+	}
+
+	sx->reprtab[old_repr] = (int)sx->hashtab[hash];
+	sx->hashtab[hash] = old_repr;
+	// 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
+	sx->reprtab[old_repr + 1] = (sx->keywordsnum) ? -((++sx->keywordsnum - 2) / 4) : 1;
+	return old_repr;
+}
+
+int repr_get_spelling(const syntax *const sx, const size_t index, char32_t *const spelling)
+{
+	if (sx == NULL || index >= sx->rp)
+	{
+		return -1;
+	}
+
+	size_t i = 2;
+	do
+	{
+		spelling[i] = sx->reprtab[index + i];
+		i++;
+	} while (sx->reprtab[index + i] != 0);
+	return 0;
+}
+
+int repr_get_reference(const syntax *const sx, const size_t index)
+{
+	if (sx == NULL || index >= sx->rp)
+	{
+		return INT_MAX;
+	}
+
+	return sx->reprtab[index + 1];
+}
+
+int repr_set_reference(syntax *const sx, const size_t index, const size_t ref)
+{
+	if (sx == NULL || index >= sx->rp)
+	{
+		return -1;
+	}
+
+	sx->reprtab[index + 1] = (int)ref;
+	return 0;
 }
