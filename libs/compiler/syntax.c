@@ -18,10 +18,10 @@
 #include <stdlib.h>
 
 
-int getstatic(syntax *const sx, int type)
+int getstatic(syntax *const sx, const int type)
 {
 	int olddispl = sx->displ;
-	sx->displ += sx->lg * size_of(sx, type); // lg - смещение от l (+1) или от g (-1)
+	sx->displ += sx->lg * size_of(sx, type);
 	if (sx->lg > 0)
 	{
 		sx->maxdispl = (sx->displ > sx->maxdispl) ? sx->displ : sx->maxdispl;
@@ -399,7 +399,7 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 
 int mode_get(const syntax *const sx, const size_t index)
 {
-	if (sx == NULL || (int)index >= sx->md)
+	if (sx == NULL || index >= sx->md)
 	{
 		return INT_MAX;
 	}

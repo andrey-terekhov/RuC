@@ -46,8 +46,8 @@ typedef struct syntax
 	size_t curid;					/**< Start of current scope in identifiers table */
 
 	int modetab[MAXMODETAB];		/**< Modes table */
-	int md;							/**< Number of modes */
-	int startmode;					/**< Start of last record in modetab */
+	size_t md;						/**< Number of modes */
+	size_t startmode;				/**< Start of last record in modetab */
 	
 	int tree[MAXTREESIZE];			/**< Tree */
 	int tc;							/**< Tree counter */
@@ -63,8 +63,8 @@ typedef struct syntax
 	int wasmain;					/**< Main function flag */
 
 	int anstdispl;					/**< Stack displacement */
-	int displ;
-	int lg;
+	int displ;						/**< Stack displacement in current scope */
+	int lg;							/**< Displacement from l (+1) or g (-1) */
 	
 	size_t predef[FUNCSIZE];		/**< Predefined functions table */
 	int prdf;						/**< Number of predefined functions */

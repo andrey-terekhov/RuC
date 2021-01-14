@@ -839,7 +839,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%zi %i %zi %zi %i %i %i\n", mem_get_size(sx), sx->funcnum, sx->id,
+	uni_printf(io, "%zi %i %zi %zi %zi %i %i\n", mem_get_size(sx), sx->funcnum, sx->id,
 				   sx->rp, sx->md, sx->maxdisplg, sx->wasmain);
 
 	for (size_t i = 0; i < mem_get_size(sx); i++)
@@ -865,7 +865,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 		uni_printf(io, "%i ", sx->reprtab[i]);
 	}
 
-	for (int i = 0; i < sx->md; i++)
+	for (size_t i = 0; i < sx->md; i++)
 	{
 		uni_printf(io, "%i ", mode_get(sx, i));
 	}
