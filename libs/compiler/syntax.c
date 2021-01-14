@@ -208,6 +208,27 @@ int func_get(const syntax *const sx, const size_t index)
 }
 
 
+int ident_get_mode(syntax *const sx, const size_t index)
+{
+	if (sx == NULL || (int)index >= sx->id)
+	{
+		return INT_MAX;
+	}
+	
+	return sx->identab[index + 2];
+}
+
+int ident_set_mode(syntax *const sx, const size_t index, const int mode)
+{
+	if (sx == NULL || (int)index >= sx->id)
+	{
+		return -1;
+	}
+	
+	sx->identab[index + 2] = mode;
+	return 0;
+}
+
 int ident_get_displ(syntax *const sx, const size_t index)
 {
 	if (sx == NULL || (int)index >= sx->id)

@@ -181,6 +181,27 @@ int func_get(const syntax *const sx, const size_t index);
 
 
 /**
+ *	Get identifier mode by index in identifiers table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return	Identifier mode, @c INT_MAX on failure
+ */
+int ident_get_mode(syntax *const sx, const size_t index);
+
+/**
+ *	Set identifier mode by index in identifiers table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *	@param	displ		Identifier mode
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int ident_set_mode(syntax *const sx, const size_t index, const int mode);
+
+/**
  *	Get identifier displacement by index in identifiers table
  *
  *	@param	sx			Syntax structure

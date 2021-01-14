@@ -741,7 +741,7 @@ void primaryexpr(analyzer *context)
 
 		totree(context, TIdent);
 		totree(context, context->sx->anstdispl = ident_get_displ(context->sx, context->lastid));
-		context->stackoperands[++context->sopnd] = context->ansttype = context->sx->identab[context->lastid + 2];
+		context->stackoperands[++context->sopnd] = context->ansttype = ident_get_mode(context->sx, context->lastid);
 		context->anst = IDENT;
 	}
 	else if (context->cur == LEFTBR)
@@ -1131,7 +1131,7 @@ void primaryexpr(analyzer *context)
 						context->error_flag = 4;
 						return; // 1
 					}
-					if (context->sx->identab[context->lastid + 2] != 15 ||
+					if (ident_get_mode(context->sx, context->lastid) != 15 ||
 						context->error_flag == 5) // 15 - это аргумент типа void* (void*)
 					{
 						context_error(context, wrong_arg_in_create);
@@ -1432,7 +1432,7 @@ void postexpr(analyzer *context)
 					context->error_flag = 4;
 					return; // 1
 				}
-				if (context->sx->identab[context->lastid + 2] != mdj)
+				if (ident_get_mode(context->sx, context->lastid) != mdj)
 				{
 					context_error(context, diff_formal_param_type_and_actual);
 					context->error_flag = 4;
@@ -2560,8 +2560,8 @@ void decl_id(analyzer *context, int decl_type)
 	{
 		totree(context, TDeclarr);
 		adN = context->sx->tc++;
-		decl_type = context->sx->identab[oldid + 2] =
-			arrdef(context, decl_type); // Меняем тип (увеличиваем размерность массива)
+		// Меняем тип (увеличиваем размерность массива)
+		ident_set_mode(context->sx, oldid, decl_type = arrdef(context, decl_type));
 		context->sx->tree[adN] = context->arrdim;
 		if (context->error_flag == 5)
 		{
@@ -2699,7 +2699,7 @@ void statement(analyzer *context)
 		}
 		else
 		{
-			context->sx->identab[id + 2] = 1;
+			ident_set_mode(context->sx, id, 1);
 
 			scanner(context);
 			statement(context);
@@ -3418,9 +3418,9 @@ int gettype(analyzer *context)
 					return 0; // 1
 				}
 				lid = context->lastid;
-				context->sx->identab[lid + 2] = struct_decl_list(context);
+				ident_set_mode(context->sx, lid, struct_decl_list(context));
 				ident_set_displ(context->sx, lid, 1000 + context->was_struct_with_arr);
-				return context->sx->identab[lid + 2];
+				return ident_get_mode(context->sx, lid);
 			}
 			else // struct key это применение типа
 			{
@@ -3431,7 +3431,7 @@ int gettype(analyzer *context)
 					return 0; // 1
 				}
 				context->was_struct_with_arr = ident_get_displ(context->sx, l) - 1000;
-				return (context->sx->identab[l + 2]);
+				return ident_get_mode(context->sx, l);
 			}
 		}
 
@@ -3457,7 +3457,7 @@ int gettype(analyzer *context)
 		}
 
 		context->was_struct_with_arr = ident_get_displ(context->sx, context->lastid) - 1000;
-		return context->sx->identab[context->lastid + 2];
+		return ident_get_mode(context->sx, context->lastid);
 	}
 
 	context_error(context, not_decl);
@@ -3583,7 +3583,7 @@ void function_definition(analyzer *context)
 	int olddispl = context->displ;
 
 	context->pgotost = 0;
-	context->functype = context->sx->identab[context->lastid + 2];
+	context->functype = ident_get_mode(context->sx, context->lastid);
 	ftype = mode_get(context->sx, context->functype + 1);
 	n = mode_get(context->sx, context->functype + 2);
 	context->wasret = 0;
@@ -3592,7 +3592,7 @@ void function_definition(analyzer *context)
 	context->lg = 1;
 	if ((pred = context->sx->identab[context->lastid]) > 1) // был прототип
 	{
-		if (context->functype != context->sx->identab[pred + 2])
+		if (context->functype != ident_get_mode(context->sx, pred))
 		{
 			context_error(context, decl_and_def_have_diff_type);
 			return; // 1
