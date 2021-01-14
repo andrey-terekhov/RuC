@@ -62,7 +62,6 @@ typedef struct syntax
 	int maxdisplg;					/**< Max displacement */
 	size_t main_ref;				/**< Main function reference */
 
-	int anstdispl;					/**< Stack displacement */
 	int displ;						/**< Stack displacement in current scope */
 	int lg;							/**< Displacement from l (+1) or g (-1) */
 	

@@ -67,6 +67,7 @@ typedef struct analyzer
 	int pgotost;
 	int anst;
 	int ansttype;
+	int anstdispl;
 	int leftansttype; // anst = VAL  - значение на стеке
 	int x;							// useless
 	char32_t bad_printf_placeholder;

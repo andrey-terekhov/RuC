@@ -38,6 +38,8 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx, lexer
 	context.line = 1;
 	context.buf_cur = 0;
 	context.temp_tc = 0;
+	
+	context.anstdispl = 0;
 
 	return context;
 }

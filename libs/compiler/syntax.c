@@ -104,8 +104,6 @@ int sx_init(syntax *const sx)
 
 	sx->maxdisplg = 3;
 	sx->main_ref = 0;
-
-	sx->anstdispl = 0;
 	
 	sx->maxdispl = 3;
 	sx->displ = -3;
