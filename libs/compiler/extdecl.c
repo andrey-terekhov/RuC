@@ -258,13 +258,13 @@ void totreef(analyzer *context, int op)
 int toidentab(analyzer *context, int f, int type)
 {
 	const size_t return_value = ident_add(context->sx, REPRTAB_POS, f, type, context->func_def);
-	if (return_value == SIZE_T_MAX)
+	if (return_value == SIZE_MAX)
 	{
 		context_error(context, more_than_1_main); //--
 		context->error_flag = 5;
 		return context->lastid = 0; // 1
 	}
-	else if (return_value == SIZE_T_MAX - 1)
+	else if (return_value == SIZE_MAX - 1)
 	{
 		context_error(context, repeated_decl);
 		context->error_flag = 5;

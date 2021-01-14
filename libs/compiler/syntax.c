@@ -258,7 +258,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 	{
 		if (sx->main_ref)
 		{
-			return SIZE_T_MAX;
+			return SIZE_MAX;
 		}
 		sx->main_ref = lastid;
 	}
@@ -276,7 +276,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 	{
 		if (func_def == 3 ? 1 : sx->identab[pred + 1] > 0 ? 1 : func_def == 1 ? 0 : 1)
 		{
-			return SIZE_T_MAX - 1;	// 1
+			return SIZE_MAX - 1;	// 1
 									// только определение функции может иметь 2
 									// описания, т.е. иметь предописание
 		}
