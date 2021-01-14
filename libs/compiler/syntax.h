@@ -64,7 +64,7 @@ typedef struct syntax
 
 	int anstdispl;					/**< Stack displacement */
 	int keywordsnum;				/**< Number of read keyword */
-	
+
 	node *current; 					/**< Current node during traversing the tree */
 } syntax;
 
@@ -248,6 +248,26 @@ int repr_get_reference(const syntax *const sx, const size_t index);
  *	@return	@c 0 on success, @c -1 on failure
  */
 int repr_set_reference(syntax *const sx, const size_t index, const size_t ref);
+
+
+/**
+ *	Set current node
+ *
+ *	@param	sx		Syntax structure
+ *	@param	nd		Node to set
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int tree_set_node(syntax *const sx, node *const nd);
+
+/**
+ *	Get current node
+ *
+ *	@param	sx		Syntax structure
+ *
+ *	@return	Current node, @c NULL on failure
+ */
+node *tree_get_node(syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */
