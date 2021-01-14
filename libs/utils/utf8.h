@@ -71,6 +71,16 @@ EXPORTED char32_t utf8_convert(const char *const symbol);
 EXPORTED size_t utf8_to_string(char *const buffer, const char32_t symbol);
 
 /**
+ *	Convert UTF-8 string to CP866 string
+ *
+ *	@param	src		UTF-8 string
+ *	@param	dest	CP866 string
+ *
+ *	@return	Size of destination string
+ */
+EXPORTED size_t utf8_to_cp866(const char *const src, char *const dest);
+
+/**
  *	Convert UTF-8 string to Windows-1251 string
  *
  *	@param	src		UTF-8 string
@@ -81,13 +91,40 @@ EXPORTED size_t utf8_to_string(char *const buffer, const char32_t symbol);
 EXPORTED size_t utf8_to_cp1251(const char *const src, char *const dest);
 
 /**
- *	Checks if сharacter is russian
+ *	Checks if сharacter is russian letter
  *
  *	@param	symbol	UTF-8 сharacter
  *
  *	@return	@c 1 on true, @c 0 on false
  */
 EXPORTED int utf8_is_russian(const char32_t symbol);
+
+/**
+ *	Checks if сharacter is english or russian letter
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+EXPORTED int utf8_is_letter(const char32_t symbol);
+
+/**
+ *	Checks if сharacter is digit
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+EXPORTED int utf8_is_digit(const char32_t symbol);
+
+/**
+ *	Checks if сharacter is 'E', 'e', 'Е' or 'е'
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+EXPORTED int utf8_is_power(const char32_t symbol);
 
 #ifdef __cplusplus
 } /* extern "C" */

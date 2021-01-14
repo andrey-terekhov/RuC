@@ -257,7 +257,7 @@ int preprocess_scan(preprocess_context *context)
 		}
 		default:
 		{
-			if (is_letter(context) && context->prep_flag == 1)
+			if (utf8_is_letter(context->curchar) && context->prep_flag == 1)
 			{
 				int r = collect_mident(context);
 
@@ -331,7 +331,7 @@ void add_c_file(preprocess_context *context)
 void open_files(preprocess_context *context)
 {
 	int i = 0;
-	size_t num = context->fs.ws->files_num;
+	size_t num = ws_get_files_num(context->fs.ws);
 	const char *temp = ws_get_file(context->fs.ws, i++);
 
 	for(size_t j = 0; j < num; j++)

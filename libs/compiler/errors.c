@@ -54,6 +54,37 @@ void get_error(const int num, char *const msg, va_list args)
 
 	switch (num)
 	{
+		case bad_character:
+		{
+			const char32_t bad_char = va_arg(args, char32_t);
+			sprintf(msg, "плохой символ = %i", bad_char);
+		}
+		break;
+
+		case empty_character:
+			sprintf(msg, "пустая символьная константа");
+			break;
+
+		case unknown_escape_sequence:	//test_exist
+			sprintf(msg, "неизвестный служебный символ");
+			break;
+
+		case expected_apost_after_char_const: // need_test
+			sprintf(msg, "символьная константа не заканчивается символом '");
+			break;
+
+		case missing_terminating_quote_char:
+			sprintf(msg, "строка не заканчивается символом \"");
+			break;
+			
+		case string_too_long:	// test_exist
+			sprintf(msg, "слишком длинная строка (больше, чем MAXSTRINGL)");
+			break;
+
+		case unterminated_block_comment:
+			sprintf(msg, "блочный комментарий не окончен");
+			break;
+
 		case after_type_must_be_ident: // test_exist
 			sprintf(msg, "после символа типа должен быть идентификатор или * "
 												  "идентификатор");
@@ -225,17 +256,8 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "в функции, возвращающей пустое значение, оператор ВОЗВРАТ "
 												  "со значением");
 			break;
-		case bad_escape_sym:	//test_exist
-			sprintf(msg, "неизвестный служебный символ");
-			break;
-		case no_right_apost: // need_test
-			sprintf(msg, "символьная константа не заканчивается символом '");
-			break;
 		case decl_after_strmt: // test_exist
 			sprintf(msg, "встретилось описание после оператора");
-			break;
-		case too_long_string:	// test_exist
-			sprintf(msg, "слишком длинная строка ( больше, чем MAXSTRINGL)");
 			break;
 		case aster_before_func:	// need_test
 			sprintf(msg, "* перед описанием функции");
@@ -560,12 +582,60 @@ void get_error(const int num, char *const msg, va_list args)
 		case not_array_in_stanfunc:	// need_test
 			sprintf(msg, "в этой операции этот параметр должен иметь тип массив");
 			break;
+
+		case tree_expression_not_block:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "в выражении встретился оператор вне блока, tree[%zi] = %i", i, elem);
+		}
+		break;
+		case tree_expression_texprend:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "лишний TExprend внутри блока, tree[%zi] = %i", i, elem);
+		}
+		break;
+		case tree_expression_unknown:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "неизвестное выражение, tree[%zi] = %i", i, elem);
+		}
+		break;
+		case tree_expression_operator:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "оператор в выражении, tree[%zi] = %i", i, elem);
+		}
+		break;
+		case tree_expression_no_texprend:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "отсутствует TExprend, tree[%zi] = %i", i, elem);
+		}
+		break;
+		case tree_no_tend:
+			sprintf(msg, "отсутствует внешний TEnd дерева");
+			break;
+		case tree_unexpected:
+		{
+			const int unexp = va_arg(args, int);
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "получен %i, ожидался tree[%zi] = %i", unexp, i, elem);
+		}
+		break;
+
 		default:
 			sprintf(msg, "этот код ошибки я прозевал");
 	}
 }
 
-void get_warning(const int num, char *const msg)
+void get_warning(const int num, char *const msg, va_list args)
 {
 	switch (num)
 	{
@@ -573,6 +643,21 @@ void get_warning(const int num, char *const msg)
 			sprintf(msg, "слишком большая целая константа, преобразована в ДЛИН "
 												  "(DOUBLE)");
 			break;
+
+		case tree_operator_unknown:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "неизвестный оператор, tree[%zi] = %i", i, elem);
+		}
+		break;
+		case node_argc:
+		{
+			const size_t i = va_arg(args, size_t);
+			const char *elem = va_arg(args, char *);
+			sprintf(msg, "несоответствие количества аргументов, tree[%zi] = %s", i, elem);
+		}
+		break;
 
 		default:
 			break;
@@ -635,8 +720,13 @@ void error(const universal_io *const io, const int num, ...)
 
 void warning(const universal_io *const io, const int num, ...)
 {
+	va_list args;
+	va_start(args, num);
+
 	char msg[MAX_MSG_SIZE];
-	get_warning(num, msg);
+	get_warning(num, msg, args);
+
+	va_end(args);
 
 	output(io, msg, &log_system_warning, &log_warning);
 }

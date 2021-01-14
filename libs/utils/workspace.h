@@ -18,6 +18,7 @@
 
 #include <limits.h>
 #include <stddef.h>
+#include <stdint.h>
 #include "dll.h"
 
  
@@ -72,9 +73,9 @@ EXPORTED workspace ws_create();
  *	@param	ws			Workspace structure
  *	@param	path		File path
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	File index, @c SIZE_MAX on failure
  */
-EXPORTED int ws_add_file(workspace *const ws, const char *const path);
+EXPORTED size_t ws_add_file(workspace *const ws, const char *const path);
 
 /**
  *	Add files paths to workspace
@@ -94,15 +95,15 @@ EXPORTED int ws_add_files(workspace *const ws, const char *const *const paths, c
  *	@param	ws			Workspace structure
  *	@param	path		Directory path
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Directory index, @c SIZE_MAX on failure
  */
-EXPORTED int ws_add_dir(workspace *const ws, const char *const path);
+EXPORTED size_t ws_add_dir(workspace *const ws, const char *const path);
 
 /**
  *	Add include directories to workspace
  *
  *	@param	ws			Workspace structure
- *	@param	path		Directories paths
+ *	@param	paths		Directories paths
  *	@param	num			Number of directories
  *
  *	@return	@c 0 on success, @c -1 on failure
@@ -116,15 +117,15 @@ EXPORTED int ws_add_dirs(workspace *const ws, const char *const *const paths, co
  *	@param	ws			Workspace structure
  *	@param	flag		Flag
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Flag index, @c SIZE_MAX on failure
  */
-EXPORTED int ws_add_flag(workspace *const ws, const char *const flag);
+EXPORTED size_t ws_add_flag(workspace *const ws, const char *const flag);
 
 /**
  *	Add flags to workspace
  *
  *	@param	ws			Workspace structure
- *	@param	flag		Flags
+ *	@param	flags		Flags
  *	@param	num			Number of flags
  *
  *	@return	@c 0 on success, @c -1 on failure
@@ -164,6 +165,15 @@ EXPORTED int ws_is_correct(const workspace *const ws);
 EXPORTED const char *ws_get_file(const workspace *const ws, const size_t index);
 
 /**
+ *	Get number of files
+ *
+ *	@param	ws			Workspace structure
+ *
+ *	@return	Number of files
+ */
+EXPORTED size_t ws_get_files_num(const workspace *const ws);
+
+/**
  *	Get directory by index from workspase
  *
  *	@param	ws			Workspace structure
@@ -174,6 +184,15 @@ EXPORTED const char *ws_get_file(const workspace *const ws, const size_t index);
 EXPORTED const char *ws_get_dir(const workspace *const ws, const size_t index);
 
 /**
+ *	Get number of directories
+ *
+ *	@param	ws			Workspace structure
+ *
+ *	@return	Number of directories
+ */
+EXPORTED size_t ws_get_dirs_num(const workspace *const ws);
+
+/**
  *	Get flag by index from workspase
  *
  *	@param	ws			Workspace structure
@@ -182,6 +201,15 @@ EXPORTED const char *ws_get_dir(const workspace *const ws, const size_t index);
  *	@return	Flag
  */
 EXPORTED const char *ws_get_flag(const workspace *const ws, const size_t index);
+
+/**
+ *	Get number of flags
+ *
+ *	@param	ws			Workspace structure
+ *
+ *	@return	Number of flags
+ */
+EXPORTED size_t ws_get_flags_num(const workspace *const ws);
 
 
 /**

@@ -26,6 +26,16 @@ extern "C" {
 /** Errors codes */
 enum ERROR
 {
+	// Lexer errors
+	bad_character,						/**< "Bad character in source" error */
+	empty_character,					/**< "Empty character constant" error */
+	unknown_escape_sequence,			/**< "Unknown escape sequence" error */
+	expected_apost_after_char_const,	/**< "Missing terminating ' character" error */
+	missing_terminating_quote_char,		/**< "Missing terminating '"' character" error */
+	string_too_long,					/**< "String literal exceeds maximum length" error */
+	unterminated_block_comment,			/**< "Unterminated block comment" error */
+
+	// Other errors
 	after_type_must_be_ident = 201,
 	wait_right_sq_br,
 	only_functions_may_have_type_VOID,
@@ -74,10 +84,7 @@ enum ERROR
 	no_ret_in_func,
 	bad_type_in_ret,
 	notvoidret_in_void_func,
-	bad_escape_sym,
-	no_right_apost,
 	decl_after_strmt,
-	too_long_string,
 	aster_before_func,
 	aster_not_for_pointer,
 	aster_with_row,
@@ -161,12 +168,23 @@ enum ERROR
 
 	not_float_in_stanfunc,
 	not_array_in_stanfunc,
+
+	tree_expression_not_block,
+	tree_expression_texprend,
+	tree_expression_unknown,
+	tree_expression_operator,
+	tree_expression_no_texprend,
+	tree_no_tend,
+	tree_unexpected,
 };
 
 /** Warnings codes */
 enum WARNING
 {
 	too_long_int = 400,
+
+	tree_operator_unknown,
+	node_argc,
 };
 
 

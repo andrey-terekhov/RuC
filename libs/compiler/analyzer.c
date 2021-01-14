@@ -17,33 +17,30 @@
 #include "analyzer.h"
 #include "extdecl.h"
 #include "keywords.h"
-#include "scanner.h"
+#include "lexer.h"
 #include "uniio.h"
+#include "string.h"
 
 
-analyzer compiler_context_create(universal_io *const io, syntax *const sx)
+analyzer compiler_context_create(universal_io *const io, syntax *const sx, lexer *const lexer)
 {
 	analyzer context;
 	context.io = io;
 	context.sx = sx;
+	context.lxr = lexer;
 
-	context.charnum = 0;
-	context.charnum_before = 0;
+	context.sp = 0;
 	context.sopnd = -1;
 	context.curid = 2;
 	context.lg = -1;
 	context.displ = -3;
 	context.maxdispl = 3;
 	context.blockflag = 1;
-	context.notrobot = 1;
 	context.prdf = -1;
 	context.leftansttype = -1;
 	context.buf_flag = 0;
 	context.error_flag = 0;
-	context.new_line_flag = 0;
 	context.line = 1;
-	context.charnum = 0;
-	context.charnum_before = 0;
 	context.buf_cur = 0;
 	context.temp_tc = 0;
 
@@ -54,36 +51,36 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx)
 /** Занесение ключевых слов в reprtab */
 void read_keywords(analyzer *context)
 {
-	context->keywordsnum = 1;
-	getnext(context);
-	nextch(context);
-	while (scan(context) != LEOF)
+	context->sx->keywordsnum = 1;
+	get_char(context->lxr);
+	get_char(context->lxr);
+	while (lex(context->lxr) != LEOF)
 	{
 		; // чтение ключевых слов
 	}
 }
 
 
-int toreprtab(analyzer *context, char str[])
+size_t toreprtab(analyzer *context, char str[])
 {
 	int i;
-	int oldrepr = REPRTAB_LEN;
+	size_t oldrepr = REPRTAB_LEN;
 
-	context->hash = 0;
+	context->sx->hash = 0;
 
 	REPRTAB_LEN += 2;
 	for (i = 0; str[i] != 0; i++)
 	{
-		context->hash += str[i];
+		context->sx->hash += str[i];
 		REPRTAB[REPRTAB_LEN++] = str[i];
 	}
-	context->hash &= 255;
+	context->sx->hash &= 255;
 
 	REPRTAB[REPRTAB_LEN++] = 0;
 
-	REPRTAB[oldrepr] = context->hashtab[context->hash];
+	REPRTAB[oldrepr] = (int)context->sx->hashtab[context->sx->hash];
 	REPRTAB[oldrepr + 1] = 1;
-	return context->hashtab[context->hash] = oldrepr;
+	return context->sx->hashtab[context->sx->hash] = oldrepr;
 }
 
 /** Инициализация modetab */
@@ -95,8 +92,8 @@ void init_modetab(analyzer *context)
 	context->sx->modetab[3] = 2;
 	context->sx->modetab[4] = 4;
 	context->sx->modetab[5] = context->sx->modetab[7] = LINT;
-	context->sx->modetab[6] = toreprtab(context, "numTh");
-	context->sx->modetab[8] = toreprtab(context, "data");
+	context->sx->modetab[6] = (int)toreprtab(context, "numTh");
+	context->sx->modetab[8] = (int)toreprtab(context, "data");
 
 	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
 	context->sx->modetab[9] = 1;
@@ -113,10 +110,8 @@ void init_modetab(analyzer *context)
 	context->sx->modetab[18] = LVOIDASTER;
 	context->sx->modetab[19] = context->sx->startmode = 14;
 	context->sx->md = 19;
-	context->keywordsnum = 0;
+	context->sx->keywordsnum = 0;
 	context->line = 1;
-	context->charnum = 1;
-	context->kw = 1;
 	context->sx->tc = 0;
 }
 
@@ -138,7 +133,8 @@ int analyze(universal_io *const io, syntax *const sx)
 	}
 
 	universal_io temp = io_create();
-	analyzer context = compiler_context_create(&temp, sx);
+	lexer lexer = create_lexer(&temp, sx);
+	analyzer context = compiler_context_create(&temp, sx, &lexer);
 	
 	in_set_buffer(context.io, KEYWORDS);
 	read_keywords(&context);
@@ -149,7 +145,8 @@ int analyze(universal_io *const io, syntax *const sx)
 	io_erase(&temp);
 
 	context.io = io;
+	context.lxr->io = io;
 	ext_decl(&context);
 
-	return context.error_flag;
+	return context.error_flag || context.lxr->error_flag;
 }

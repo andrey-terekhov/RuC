@@ -39,7 +39,7 @@ size_t strlen32(const char32_t *const str)
 	}
 
 	size_t i = 0;
-	while (str[i] != U'\0')
+	while (str[i] != '\0')
 	{
 		i++;
 	}
