@@ -64,6 +64,8 @@ typedef struct syntax
 
 	int anstdispl;					/**< Stack displacement */
 	int keywordsnum;				/**< Number of read keyword */
+	
+	node *current; 					/**< Current node during traversing the tree */
 } syntax;
 
 

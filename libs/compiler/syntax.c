@@ -96,6 +96,8 @@ int sx_init(syntax *const sx)
 		sx->hashtab[i] = 0;
 	}
 
+	sx->current = NULL;
+
 	return 0;
 }
 
