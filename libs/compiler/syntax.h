@@ -61,7 +61,7 @@ typedef struct syntax
 
 	int anstdispl;				/**< Stack displacement */
 
-	node *current;				/**< Current node during traversing the tree */
+	// node *current;				/**< Current node during traversing the tree */
 } syntax;
 
 
@@ -200,24 +200,24 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size);
 int mode_get(const syntax *const sx, const size_t index);
 
 
-/**
- *	Set value in current 
- *
- *	@param	sx			Syntax structure
- *	@param	value		Value to record
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int current_set(syntax *const sx, const node value);
+// /**
+//  *	Set value in current 
+//  *
+//  *	@param	sx			Syntax structure
+//  *	@param	value		Value to record
+//  *
+//  *	@return	@c 0 on success, @c -1 on failure
+//  */
+// int current_set(syntax *const sx, const node value);
 
-/**
- *	Get a current node from current
- *
- *	@param	sx			Syntax structure
- *
- *	@return	Current node from current, @c ??? on failure
- */
-node current_get(const syntax *const sx);
+// /**
+//  *	Get a current node from current
+//  *
+//  *	@param	sx			Syntax structure
+//  *
+//  *	@return	Current node from current, @c ??? on failure
+//  */
+// node current_get(const syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */

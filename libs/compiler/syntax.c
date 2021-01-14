@@ -74,7 +74,7 @@ syntax sx_create()
 
 	sx.anstdispl = 0;
 
-	sx.current = NULL;
+	// sx.current = NULL;
 
 	return sx;
 }
@@ -232,24 +232,24 @@ int mode_get(const syntax *const sx, const size_t index)
 }
 
 
-int current_set(syntax *const sx, const node value)
-{
-	if (sx == NULL)
-	{
-		return -1;
-	}
+// int current_set(syntax *const sx, const node value)
+// {
+// 	if (sx == NULL)
+// 	{
+// 		return -1;
+// 	}
 
-	*(sx->current) = value;
-	return 0;
-}
+// 	*(sx->current) = value;
+// 	return 0;
+// }
 
-node current_get(const syntax *const sx)
-{
-	if (sx == NULL || sx->current == NULL)
-	{
-		// todo придумать, что возвращать в случае неудачи
-		// return NULL;
-	}
+// node current_get(const syntax *const sx)
+// {
+// 	if (sx == NULL || sx->current == NULL)
+// 	{
+// 		// todo придумать, что возвращать в случае неудачи
+// 		// return NULL;
+// 	}
 
-	return *(sx->current);
-}
+// 	return *(sx->current);
+// }
