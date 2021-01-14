@@ -335,7 +335,7 @@ int tree_set_node(syntax *const sx, node *const nd)
 {
 	if (sx == NULL || nd == NULL)
 	{
-		return 0;
+		return -1;
 	}
 
 	sx->current = nd;
