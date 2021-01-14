@@ -66,7 +66,7 @@ typedef struct syntax
 	int displ;
 	int lg;
 	
-	int predef[FUNCSIZE];			/**< Predefined functions table */
+	size_t predef[FUNCSIZE];		/**< Predefined functions table */
 	int prdf;						/**< Number of predefined functions */
 	
 	int keywordsnum;				/**< Number of read keyword */
