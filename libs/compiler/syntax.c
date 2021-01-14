@@ -16,6 +16,7 @@
 
 #include "syntax.h"
 #include <stdlib.h>
+#include "tree.h"
 
 
 int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
@@ -72,6 +73,8 @@ syntax sx_create()
 	sx.wasmain = 0;
 
 	sx.anstdispl = 0;
+
+	sx.current = NULL;
 
 	return sx;
 }
@@ -226,4 +229,27 @@ int mode_get(const syntax *const sx, const size_t index)
 	}
 
 	return sx->modetab[index];
+}
+
+
+int current_set(syntax *const sx, const node value)
+{
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
+	*(sx->current) = value;
+	return 0;
+}
+
+node current_get(const syntax *const sx)
+{
+	if (sx == NULL || sx->current == NULL)
+	{
+		// todo придумать, что возвращать в случае неудачи
+		// return NULL;
+	}
+
+	return *(sx->current);
 }

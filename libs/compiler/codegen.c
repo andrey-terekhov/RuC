@@ -758,8 +758,8 @@ void compstmt_gen(syntax *const sx, ad *const context)
 /** Генерация кодов */
 int codegen(universal_io *const io, syntax *const sx)
 {
+	// тут пока эксперимент, отладочная печать
 	node root = node_get_root(sx);
-	// тут пока эксперимент
 	node cur_node_print = node_get_next(&root);
 	while (node_is_correct(&cur_node_print))
 	{
