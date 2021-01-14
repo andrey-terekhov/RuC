@@ -1428,7 +1428,7 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 	}
 
 	uni_printf(&io, "\n%s\n", "identab");
-	for (size_t i = 2; (int)i < sx->id; i += 4)
+	for (size_t i = 2; i < sx->id; i += 4)
 	{
 		for (size_t j = 0; j < 4; j++)
 		{

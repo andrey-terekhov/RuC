@@ -42,8 +42,8 @@ typedef struct syntax
 	int funcnum;					/**< Number of functions */
 
 	int identab[MAXIDENTAB];		/**< Identifiers table */
-	int id;							/**< Number of identifiers */
-	int curid;						/**< Start of current scope in identifiers table */
+	size_t id;						/**< Number of identifiers */
+	size_t curid;					/**< Start of current scope in identifiers table */
 
 	int modetab[MAXMODETAB];		/**< Modes table */
 	int md;							/**< Number of modes */

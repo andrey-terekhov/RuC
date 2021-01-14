@@ -3369,7 +3369,6 @@ void block(analyzer *context, int b)
 
 	int oldinswitch = context->inswitch;
 	int notended = 1;
-	int i;
 	int olddispl = 0; // warning C4701: potentially uninitialized local variable used
 	int oldlg = context->sx->lg;
 	int firstdecl;
@@ -3454,7 +3453,7 @@ void block(analyzer *context, int b)
 
 	if (b)
 	{
-		for (i = context->sx->id - 4; i >= context->sx->curid; i -= 4)
+		for (size_t i = context->sx->id - 4; i >= context->sx->curid; i -= 4)
 		{
 			REPRTAB[context->sx->identab[i + 1] + 1] = context->sx->identab[i];
 		}
@@ -3468,7 +3467,6 @@ void block(analyzer *context, int b)
 void function_definition(analyzer *context)
 {
 	int fn = ident_get_displ(context->sx, context->lastid);
-	int i;
 	int pred;
 	int oldrepr = REPRTAB_POS;
 	int ftype;
@@ -3494,7 +3492,7 @@ void function_definition(analyzer *context)
 		ident_set_displ(context->sx, pred, fn);
 	}
 	context->sx->curid = context->sx->id;
-	for (i = 0; i < n; i++)
+	for (int i = 0; i < n; i++)
 	{
 		context->type = mode_get(context->sx, context->functype + i + 3);
 		int temp = func_get(context->sx, fn + i + 1);
@@ -3540,12 +3538,12 @@ void function_definition(analyzer *context)
 		context->error_flag = 1;
 		return; // 1
 	}
-	for (i = context->sx->id - 4; i >= context->sx->curid; i -= 4)
+	for (size_t i = context->sx->id - 4; i >= context->sx->curid; i -= 4)
 	{
 		REPRTAB[context->sx->identab[i + 1] + 1] = context->sx->identab[i];
 	}
 
-	for (i = 0; i < context->pgotost - 1; i += 2)
+	for (int i = 0; i < context->pgotost - 1; i += 2)
 	{
 		REPRTAB_POS = context->sx->identab[context->gotost[i] + 1];
 		context->sx->hash = context->gotost[i + 1];

@@ -232,7 +232,7 @@ int func_get(const syntax *const sx, const size_t index)
 
 int ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def)
 {
-	int pred;
+	size_t pred;
 	int lastid = sx->id;
 	if (sx->reprtab[repr + 1] == 0) // это может быть только MAIN
 	{
@@ -318,7 +318,7 @@ int ident_add(syntax *const sx, const size_t repr, const int type, const int mod
 
 int ident_get_mode(syntax *const sx, const size_t index)
 {
-	if (sx == NULL || (int)index >= sx->id)
+	if (sx == NULL || index >= sx->id)
 	{
 		return INT_MAX;
 	}
@@ -328,7 +328,7 @@ int ident_get_mode(syntax *const sx, const size_t index)
 
 int ident_set_mode(syntax *const sx, const size_t index, const int mode)
 {
-	if (sx == NULL || (int)index >= sx->id)
+	if (sx == NULL || index >= sx->id)
 	{
 		return -1;
 	}
@@ -339,7 +339,7 @@ int ident_set_mode(syntax *const sx, const size_t index, const int mode)
 
 int ident_get_displ(syntax *const sx, const size_t index)
 {
-	if (sx == NULL || (int)index >= sx->id)
+	if (sx == NULL || index >= sx->id)
 	{
 		return INT_MAX;
 	}
@@ -349,7 +349,7 @@ int ident_get_displ(syntax *const sx, const size_t index)
 
 int ident_set_displ(syntax *const sx, const size_t index, const int displ)
 {
-	if (sx == NULL || (int)index >= sx->id)
+	if (sx == NULL || index >= sx->id)
 	{
 		return -1;
 	}
