@@ -60,8 +60,6 @@ typedef struct syntax
 	int wasmain;				/**< Main function flag */
 
 	int anstdispl;				/**< Stack displacement */
-
-	node *current;				/**< Current node during traversing the tree */
 } syntax;
 
 
