@@ -180,6 +180,27 @@ int func_set(syntax *const sx, const size_t index, const size_t ref);
 int func_get(const syntax *const sx, const size_t index);
 
 
+/**
+ *	Get identifier displacement by index in identifiers table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return	Identifier displacement, @c INT_MAX on failure
+ */
+int ident_get_displ(syntax *const sx, const size_t index);
+
+/**
+ *	Set identifier displacement by index in identifiers table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *	@param	displ		Identifier displacement
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int ident_set_displ(syntax *const sx, const size_t index, const int displ);
+
 
 /**
  *	Add a new record to modes table

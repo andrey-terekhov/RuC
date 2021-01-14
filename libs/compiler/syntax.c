@@ -208,6 +208,28 @@ int func_get(const syntax *const sx, const size_t index)
 }
 
 
+int ident_get_displ(syntax *const sx, const size_t index)
+{
+	if (sx == NULL || (int)index >= sx->id)
+	{
+		return INT_MAX;
+	}
+	
+	return sx->identab[index + 3];
+}
+
+int ident_set_displ(syntax *const sx, const size_t index, const int displ)
+{
+	if (sx == NULL || (int)index >= sx->id)
+	{
+		return -1;
+	}
+	
+	sx->identab[index + 3] = displ;
+	return 0;
+}
+
+
 size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 {
 	if (sx == NULL || record == NULL)

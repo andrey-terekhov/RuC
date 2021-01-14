@@ -740,7 +740,7 @@ void primaryexpr(analyzer *context)
 		}
 
 		totree(context, TIdent);
-		totree(context, context->sx->anstdispl = context->sx->identab[context->lastid + 3]);
+		totree(context, context->sx->anstdispl = ident_get_displ(context->sx, context->lastid));
 		context->stackoperands[++context->sopnd] = context->ansttype = context->sx->identab[context->lastid + 2];
 		context->anst = IDENT;
 	}
@@ -1140,7 +1140,7 @@ void primaryexpr(analyzer *context)
 					}
 
 					context->stackoperands[context->sopnd] = context->ansttype = LINT;
-					dn = context->sx->identab[context->lastid + 3];
+					dn = ident_get_displ(context->sx, context->lastid);
 					if (dn < 0)
 					{
 						totree(context, TIdenttoval);
@@ -1438,7 +1438,7 @@ void postexpr(analyzer *context)
 					context->error_flag = 4;
 					return; // 1
 				}
-				dn = context->sx->identab[context->lastid + 3];
+				dn = ident_get_displ(context->sx, context->lastid);
 				if (dn < 0)
 				{
 					totree(context, TIdenttoval);
@@ -1684,7 +1684,7 @@ void postexpr(analyzer *context)
 		totreef(context, op);
 		if (context->anst == IDENT)
 		{
-			totree(context, context->sx->identab[lid + 3]);
+			totree(context, ident_get_displ(context->sx, lid));
 		}
 		context->anst = VAL;
 	}
@@ -1717,7 +1717,7 @@ void unarexpr(analyzer *context)
 			totreef(context, op);
 			if (context->anst == IDENT)
 			{
-				totree(context, context->sx->identab[context->lastid + 3]);
+				totree(context, ident_get_displ(context->sx, context->lastid));
 			}
 			context->anst = VAL;
 		}
@@ -2576,12 +2576,12 @@ void decl_id(analyzer *context, int decl_type)
 		}
 	}
 	totree(context, TDeclid);
-	totree(context, context->sx->identab[oldid + 3]);													  // displ
-	totree(context, elem_type);																		  // elem_type
-	totree(context, context->arrdim);																  // N
-	context->sx->tree[all = context->sx->tc++] = 0;															  // all
+	totree(context, ident_get_displ(context->sx, oldid));												// displ
+	totree(context, elem_type);																			// elem_type
+	totree(context, context->arrdim);																	// N
+	context->sx->tree[all = context->sx->tc++] = 0;														// all
 	context->sx->tree[context->sx->tc++] = is_pointer(context->sx, decl_type) ? 0 : context->was_struct_with_arr; // proc
-	totree(context, context->usual);																  // context->usual
+	totree(context, context->usual);																	// context->usual
 	totree(context, 0); // массив не в структуре
 
 	if (context->next == ASS)
@@ -3419,7 +3419,7 @@ int gettype(analyzer *context)
 				}
 				lid = context->lastid;
 				context->sx->identab[lid + 2] = struct_decl_list(context);
-				context->sx->identab[lid + 3] = 1000 + context->was_struct_with_arr;
+				ident_set_displ(context->sx, lid, 1000 + context->was_struct_with_arr);
 				return context->sx->identab[lid + 2];
 			}
 			else // struct key это применение типа
@@ -3430,7 +3430,7 @@ int gettype(analyzer *context)
 					context->error_flag = 3;
 					return 0; // 1
 				}
-				context->was_struct_with_arr = context->sx->identab[l + 3] - 1000;
+				context->was_struct_with_arr = ident_get_displ(context->sx, l) - 1000;
 				return (context->sx->identab[l + 2]);
 			}
 		}
@@ -3449,14 +3449,14 @@ int gettype(analyzer *context)
 			return 0; // 1
 		}
 
-		if (context->sx->identab[context->lastid + 3] < 1000)
+		if (ident_get_displ(context->sx, context->lastid) < 1000)
 		{
 			context_error(context, ident_not_type);
 			context->error_flag = 3;
 			return 0; // 1
 		}
 
-		context->was_struct_with_arr = context->sx->identab[context->lastid + 3] - 1000;
+		context->was_struct_with_arr = ident_get_displ(context->sx, context->lastid) - 1000;
 		return context->sx->identab[context->lastid + 2];
 	}
 
@@ -3573,7 +3573,7 @@ void block(analyzer *context, int b)
 
 void function_definition(analyzer *context)
 {
-	int fn = context->sx->identab[context->lastid + 3];
+	int fn = ident_get_displ(context->sx, context->lastid);
 	int i;
 	int pred;
 	int oldrepr = REPRTAB_POS;
@@ -3597,7 +3597,7 @@ void function_definition(analyzer *context)
 			context_error(context, decl_and_def_have_diff_type);
 			return; // 1
 		}
-		context->sx->identab[pred + 3] = fn;
+		ident_set_displ(context->sx, pred, fn);
 	}
 	context->curid = context->sx->id;
 	for (i = 0; i < n; i++)
