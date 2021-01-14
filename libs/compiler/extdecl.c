@@ -3376,8 +3376,7 @@ void block(analyzer *context, int b)
 	totree(context, TBegin);
 	if (b)
 	{
-		oldlg = context->sx->lg;
-		olddispl = enter_block_scope(context->sx);
+		enter_block_scope(context->sx, &olddispl, &oldlg);
 	}
 	context->blockflag = 0;
 
@@ -3452,8 +3451,7 @@ void block(analyzer *context, int b)
 
 	if (b)
 	{
-		exit_block_scope(context->sx, olddispl);
-		context->sx->lg = oldlg;
+		exit_block_scope(context->sx, olddispl, oldlg);
 	}
 	context->inswitch = oldinswitch;
 	totree(context, TEnd);

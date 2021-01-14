@@ -501,18 +501,20 @@ int repr_set_reference(syntax *const sx, const size_t index, const size_t ref)
 }
 
 
-int enter_block_scope(syntax *const sx)
+int enter_block_scope(syntax *const sx, int old_displ, int old_lg)
 {
 	if (sx == NULL)
 	{
-		return INT_MAX;
+		return -1;
 	}
 	
 	sx->curid = sx->id;
-	return sx->displ;
+	old_displ = sx->displ;
+	old_lg = sx->lg;
+	return 0;
 }
 
-int exit_block_scope(syntax *const sx, const int scope_start)
+int exit_block_scope(syntax *const sx, const int old_displ, const int old_lg)
 {
 	if (sx == NULL)
 	{
@@ -523,7 +525,8 @@ int exit_block_scope(syntax *const sx, const int scope_start)
 	{
 		sx->reprtab[sx->identab[i + 1] + 1] = sx->identab[i];
 	}
-	sx->displ = scope_start;
+	sx->displ = old_displ;
+	sx->lg = old_lg;
 	return 0;
 }
 

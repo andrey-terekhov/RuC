@@ -336,21 +336,23 @@ int repr_set_reference(syntax *const sx, const size_t index, const size_t ref);
  *	Enter block scope
  *
  *	@param	sx			Syntax structure
+ *	@param	old_displ	Variable to save previous stack displacement
+ *	@param	old_lg		Variable to save previous value of lg
  *
- *	@return	Previous stack displacement
+ *	@return	@c 0 on success, @c -1 on failure
  */
-int enter_block_scope(syntax *const sx);
+int enter_block_scope(syntax *const sx, int old_displ, int old_lg);
 
 /**
  *	Exit block scope
  *
  *	@param	sx			Syntax structure
- *	@param	pred		Reference to function declaration in the tree
- *	@param	scope_start	Stack displacement at the start of the new scope
+ *	@param	old_displ	Stack displacement at the start of the new scope
+ *	@param	old_lg		Previous value of lg
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int exit_block_scope(syntax *const sx, const int scope_start);
+int exit_block_scope(syntax *const sx, const int old_displ, const int old_lg);
 
 /**
  *	Enter function scope
