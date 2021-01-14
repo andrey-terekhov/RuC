@@ -91,6 +91,14 @@ int sx_init(syntax *const sx)
 
 	sx->anstdispl = 0;
 	
+	sx->maxdisplg = 3;
+	sx->maxdispl = 3;
+	sx->displ = -3;
+	sx->curid = 2;
+	sx->lg = -1;
+	
+	sx->prdf = -1;
+	
 	for (size_t i = 0; i < 256; i++)
 	{
 		sx->hashtab[i] = 0;

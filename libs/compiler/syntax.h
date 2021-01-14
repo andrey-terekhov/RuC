@@ -43,6 +43,7 @@ typedef struct syntax
 
 	int identab[MAXIDENTAB];		/**< Identifiers table */
 	int id;							/**< Number of identifiers */
+	int curid;						/**< Start of current scope in identifiers table */
 
 	int modetab[MAXMODETAB];		/**< Modes table */
 	int md;							/**< Number of modes */
@@ -57,10 +58,17 @@ typedef struct syntax
 	char32_t reprtab[MAXREPRTAB];	/**< Representations table */
 	size_t rp;						/**< Representations size */
 
+	int maxdispl;					/**< Max displacement */
 	int maxdisplg;					/**< Max displacement */
 	int wasmain;					/**< Main function flag */
 
 	int anstdispl;					/**< Stack displacement */
+	int displ;
+	int lg;
+	
+	int predef[FUNCSIZE];			/**< Predefined functions table */
+	int prdf;						/**< Number of predefined functions */
+	
 	int keywordsnum;				/**< Number of read keyword */
 } syntax;
 

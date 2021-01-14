@@ -50,10 +50,6 @@ typedef struct analyzer
 	int sp;
 	int sopnd;
 	int lastid;
-	int curid;
-	int lg;
-	int displ;
-	int maxdispl;
 	int type;
 	int op;
 	int inass;
@@ -67,8 +63,6 @@ typedef struct analyzer
 	int blockflag;
 	int wasret;
 	int wasdefault;
-	int predef[FUNCSIZE];
-	int prdf;
 	int gotost[1000];
 	int pgotost;
 	int anst;
