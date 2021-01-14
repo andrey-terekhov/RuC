@@ -355,13 +355,13 @@ int toidentab(analyzer *context, int f, int type)
 				if (context->func_def == 2)
 				{
 					context->sx->identab[context->lastid + 1] *= -1; //это предописание
-					context->sx->predef[++context->sx->displ] = REPRTAB_POS;
+					context->sx->predef[++context->sx->prdf] = REPRTAB_POS;
 				}
 				else
 				{
 					int i;
 
-					for (i = 0; i <= context->sx->displ; i++)
+					for (i = 0; i <= context->sx->prdf; i++)
 					{
 						if (context->sx->predef[i] == REPRTAB_POS)
 						{
@@ -4024,7 +4024,7 @@ void ext_decl(analyzer *context)
 	{
 		context_error(context, no_main_in_program);
 	}
-	for (i = 0; i <= context->sx->displ; i++)
+	for (i = 0; i <= context->sx->prdf; i++)
 	{
 		if (context->sx->predef[i])
 		{

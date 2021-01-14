@@ -91,7 +91,6 @@ int sx_init(syntax *const sx)
 
 	sx->anstdispl = 0;
 	
-	sx->maxdisplg = 3;
 	sx->maxdispl = 3;
 	sx->displ = -3;
 	sx->curid = 2;
