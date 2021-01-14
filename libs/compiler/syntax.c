@@ -21,7 +21,7 @@
 
 int getstatic(syntax *const sx, const int type)
 {
-	int olddispl = sx->displ;
+	const int olddispl = sx->displ;
 	sx->displ += sx->lg * size_of(sx, type);
 	if (sx->lg > 0)
 	{
@@ -43,7 +43,7 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 	}
 
 	size_t length = 1;
-	int mode = sx->modetab[first];
+	const int mode = sx->modetab[first];
 	// Определяем, сколько полей надо сравнивать для различных типов записей
 	if (mode == MSTRUCT || mode == MFUNCTION)
 	{
@@ -254,9 +254,8 @@ int func_get(const syntax *const sx, const size_t index)
 
 int ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def)
 {
-	size_t pred;
-	int lastid = sx->id;
-	if (sx->reprtab[repr + 1] == 0) // это может быть только MAIN
+	const int lastid = sx->id;
+	if (repr_get_reference(sx, repr) == 0) // это может быть только MAIN
 	{
 		if (sx->main_ref)
 		{
@@ -265,15 +264,14 @@ int ident_add(syntax *const sx, const size_t repr, const int type, const int mod
 		sx->main_ref = sx->id;
 	}
 	
-	// ссылка на описание с таким же
-	// представлением в предыдущем блоке
-	pred = sx->identab[sx->id] = sx->reprtab[repr + 1];
+	// Ссылка на описание с таким же представлением в предыдущем блоке
+	const size_t pred = sx->identab[sx->id] = sx->reprtab[repr + 1];
 	if (pred)
 	{
 		// pred == 0 только для main, эту ссылку портить нельзя
 		// ссылка на текущее описание с этим представлением
 		// (это в reprtab)
-		sx->reprtab[repr + 1] = sx->id;
+		repr_set_reference(sx, repr, sx->id);
 	}
 	
 	if (type != 1 && pred >= sx->curid) // один  и тот же идент м.б. переменной и меткой
@@ -287,30 +285,29 @@ int ident_add(syntax *const sx, const size_t repr, const int type, const int mod
 	}
 	
 	sx->identab[sx->id + 1] = repr; // ссылка на представление
-	sx->identab[sx->id + 2] = mode; // тип -1 int, -2 char, -3 float, -4 long, -5 double,
-									// если тип > 0, то это ссылка на modetab
+	ident_set_mode(sx, sx->id, mode);
 	if (type == 1)
 	{
-		sx->identab[sx->id + 2] = 0; // 0, если первым встретился goto, когда встретим метку,
-									 // поставим 1
-		sx->identab[sx->id + 3] = 0; // при генерации кода когда встретим метку, поставим pc
+		ident_set_mode(sx, sx->id, 0);	// 0, если первым встретился goto, когда встретим метку,
+										// поставим 1
+		ident_set_displ(sx, sx->id, 0);	// при генерации кода когда встретим метку, поставим pc
 	}
 	else if (type >= 1000)
 	{
-		sx->identab[sx->id + 3] = type; // это описание типа, если f > 1000, то f-1000 - это номер
-									 // иниц проц
+		// Это описание типа, тогда type - 1000 – это номер инициирующей процедуры
+		ident_set_displ(sx, sx->id, type);
 	}
 	else if (type)
 	{
 		if (type < 0)
 		{
-			sx->identab[sx->id + 3] = -(sx->displ++);
+			ident_set_displ(sx, sx->id, -(sx->displ++));
 			sx->maxdispl = sx->displ;
 		}
 		else // identtab[context->lastid+3] - номер функции, если < 0, то
 			 // это функция-параметр
 		{
-			sx->identab[sx->id + 3] = type;
+			ident_set_displ(sx, sx->id, type);
 			if (func_def == 2)
 			{
 				sx->identab[lastid + 1] *= -1; //это предописание
@@ -332,7 +329,7 @@ int ident_add(syntax *const sx, const size_t repr, const int type, const int mod
 	}
 	else
 	{
-		sx->identab[sx->id + 3] = getstatic(sx, mode);
+		ident_set_displ(sx, sx->id, getstatic(sx, mode));
 	}
 	sx->id += 4;
 	return lastid;
