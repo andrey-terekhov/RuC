@@ -38,8 +38,8 @@ typedef struct syntax
 	int iniprocs[INIPROSIZE];		/**< Init processes */
 	int procd;						/**< Process management daemon */
 
-	int functions[FUNCSIZE];		/**< Functions table */
-	int funcnum;					/**< Number of functions */
+	size_t functions[FUNCSIZE];		/**< Functions table */
+	size_t funcnum;					/**< Number of functions */
 
 	int identab[MAXIDENTAB];		/**< Identifiers table */
 	size_t id;						/**< Number of identifiers */

@@ -3815,7 +3815,7 @@ void ext_decl(analyzer *context)
 
 			if (context->next == LEFTBR) // определение или предописание функции
 			{
-				int oldfuncnum = context->sx->funcnum++;
+				size_t oldfuncnum = context->sx->funcnum++;
 				int firsttype = context->type;
 				funrepr = REPRTAB_POS;
 				scanner(context);
@@ -3844,7 +3844,7 @@ void ext_decl(analyzer *context)
 				// (context->func_def=1 или 2)
 				REPRTAB_POS = funrepr;
 
-				toidentab(context, oldfuncnum, context->type);
+				toidentab(context, (int) oldfuncnum, context->type);
 				if (context->error_flag == 5)
 				{
 					context->error_flag = 1;
