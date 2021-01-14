@@ -2709,6 +2709,7 @@ void statement(analyzer *context)
 	{
 		context->blockflag = 1;
 
+		// And here too
 		switch (context->cur)
 		{
 			case PRINT:
@@ -2720,7 +2721,11 @@ void statement(analyzer *context)
 					flagsemicol = 0;
 					break;
 				}
-				context->sx->tc--;
+
+				if (context->sx->tc != 0)
+				{
+					context->sx->tc--;
+				}
 				totree(context, TPrint);
 				totree(context, context->ansttype);
 				totree(context, TExprend);
@@ -3460,6 +3465,7 @@ int gettype(analyzer *context)
 	return 0; // 1
 }
 
+/** Debug from here */
 void block(analyzer *context, int b)
 {
 	// если b=1, то это просто блок,
