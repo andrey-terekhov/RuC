@@ -257,20 +257,20 @@ void totreef(analyzer *context, int op)
 
 int toidentab(analyzer *context, int f, int type)
 {
-	int return_value = ident_add(context->sx, REPRTAB_POS, f, type, context->func_def);
-	if (return_value == -1)
+	const size_t return_value = ident_add(context->sx, REPRTAB_POS, f, type, context->func_def);
+	if (return_value == SIZE_T_MAX)
 	{
 		context_error(context, more_than_1_main); //--
 		context->error_flag = 5;
 		return context->lastid = 0; // 1
 	}
-	else if (return_value == -2)
+	else if (return_value == SIZE_T_MAX - 1)
 	{
 		context_error(context, repeated_decl);
 		context->error_flag = 5;
 		return context->lastid = 0;
 	}
-	return context->lastid = return_value;
+	return context->lastid = (int)return_value;
 }
 
 void binop(analyzer *context, int sp)
