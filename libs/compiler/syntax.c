@@ -18,6 +18,21 @@
 #include <stdlib.h>
 
 
+int getstatic(syntax *const sx, int type)
+{
+	int olddispl = sx->displ;
+	sx->displ += sx->lg * size_of(sx, type); // lg - смещение от l (+1) или от g (-1)
+	if (sx->lg > 0)
+	{
+		sx->maxdispl = (sx->displ > sx->maxdispl) ? sx->displ : sx->maxdispl;
+	}
+	else
+	{
+		sx->maxdisplg = -sx->displ;
+	}
+	return olddispl;
+}
+
 /**	Check if modes are equal */
 int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
 {
@@ -215,6 +230,92 @@ int func_get(const syntax *const sx, const size_t index)
 }
 
 
+int ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def)
+{
+	int pred;
+	int lastid = sx->id;
+	if (sx->reprtab[repr + 1] == 0) // это может быть только MAIN
+	{
+		if (sx->wasmain)
+		{
+			return -1;
+		}
+		sx->wasmain = sx->id;
+	}
+	
+	// ссылка на описание с таким же
+	// представлением в предыдущем блоке
+	pred = sx->identab[sx->id] = sx->reprtab[repr + 1];
+	if (pred)
+	{
+		// pred == 0 только для main, эту ссылку портить нельзя
+		// ссылка на текущее описание с этим представлением
+		// (это в reprtab)
+		sx->reprtab[repr + 1] = sx->id;
+	}
+	
+	if (type != 1 && pred >= sx->curid) // один  и тот же идент м.б. переменной и меткой
+	{
+		if (func_def == 3 ? 1 : sx->identab[pred + 1] > 0 ? 1 : func_def == 1 ? 0 : 1)
+		{
+			return -2;	// 1
+						// только определение функции может иметь 2
+						// описания, т.е. иметь предописание
+		}
+	}
+	
+	sx->identab[sx->id + 1] = repr; // ссылка на представление
+	sx->identab[sx->id + 2] = mode; // тип -1 int, -2 char, -3 float, -4 long, -5 double,
+									// если тип > 0, то это ссылка на modetab
+	if (type == 1)
+	{
+		sx->identab[sx->id + 2] = 0; // 0, если первым встретился goto, когда встретим метку,
+									 // поставим 1
+		sx->identab[sx->id + 3] = 0; // при генерации кода когда встретим метку, поставим pc
+	}
+	else if (type >= 1000)
+	{
+		sx->identab[sx->id + 3] = type; // это описание типа, если f > 1000, то f-1000 - это номер
+									 // иниц проц
+	}
+	else if (type)
+	{
+		if (type < 0)
+		{
+			sx->identab[sx->id + 3] = -(sx->displ++);
+			sx->maxdispl = sx->displ;
+		}
+		else // identtab[context->lastid+3] - номер функции, если < 0, то
+			 // это функция-параметр
+		{
+			sx->identab[sx->id + 3] = type;
+			if (func_def == 2)
+			{
+				sx->identab[lastid + 1] *= -1; //это предописание
+				sx->predef[++sx->prdf] = repr;
+			}
+			else
+			{
+				int i;
+				
+				for (i = 0; i <= sx->prdf; i++)
+				{
+					if (sx->predef[i] == repr)
+					{
+						sx->predef[i] = 0;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		sx->identab[sx->id + 3] = getstatic(sx, mode);
+	}
+	sx->id += 4;
+	return lastid;
+}
+
 int ident_get_mode(syntax *const sx, const size_t index)
 {
 	if (sx == NULL || (int)index >= sx->id)
@@ -255,6 +356,11 @@ int ident_set_displ(syntax *const sx, const size_t index, const int displ)
 	
 	sx->identab[index + 3] = displ;
 	return 0;
+}
+
+int size_of(syntax *const sx, const int mode)
+{
+	return mode == LFLOAT ? 2 : (mode > 0 && mode_get(sx, mode) == MSTRUCT) ? mode_get(sx, mode + 1) : 1;
 }
 
 

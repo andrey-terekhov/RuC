@@ -256,128 +256,22 @@ void totreef(analyzer *context, int op)
 	}
 }
 
-int getstatic(analyzer *context, int type)
-{
-	int olddispl = context->sx->displ;
-	context->sx->displ += context->sx->lg * szof(context, type); // lg - смещение от l (+1) или от g (-1)
-	if (context->sx->lg > 0)
-	{
-		context->sx->maxdispl = (context->sx->displ > context->sx->maxdispl) ? context->sx->displ : context->sx->maxdispl;
-	}
-	else
-	{
-		context->sx->maxdisplg = -context->sx->displ;
-	}
-	return olddispl;
-}
-
 int toidentab(analyzer *context, int f, int type)
 {
-	// f =  0, если не ф-ция, f=1, если метка, f=funcnum,
-	// если описание ф-ции,
-	// f = -1, если ф-ция-параметр, f>=1000, если это описание типа
-	// f = -2, #define
-
-	// printf("\n f= %i context->repr %i rtab[context->repr] %i
-	// rtab[context->repr+1] %i rtab[context->repr+2] %i\n", f,
-	// context->repr, context->sx->reprtab[context->repr],
-	// context->sx->reprtab[context->repr+1], context->sx->reprtab[context->repr+2]);
-	int pred;
-
-
-	context->lastid = context->sx->id;
-	if (REPRTAB[REPRTAB_POS + 1] == 0) // это может быть только MAIN
+	int return_value = ident_add(context->sx, REPRTAB_POS, f, type, context->func_def);
+	if (return_value == -1)
 	{
-		if (context->sx->wasmain)
-		{
-			context_error(context, more_than_1_main); //--
-			context->error_flag = 5;
-			return 0; // 1
-		}
-		context->sx->wasmain = context->sx->id;
+		context_error(context, more_than_1_main); //--
+		context->error_flag = 5;
+		return context->lastid = 0; // 1
 	}
-
-	// ссылка на описание с таким же
-	// представлением в предыдущем блоке
-	pred = context->sx->identab[context->sx->id] = REPRTAB[REPRTAB_POS + 1];
-	if (pred)
+	else if (return_value == -2)
 	{
-		// pred == 0 только для main, эту ссылку портить нельзя
-		// ссылка на текущее описание с этим представлением
-		// (это в reprtab)
-		REPRTAB[REPRTAB_POS + 1] = context->sx->id;
+		context_error(context, repeated_decl);
+		context->error_flag = 5;
+		return context->lastid = 0;
 	}
-
-	if (f != 1 && pred >= context->sx->curid) // один  и тот же идент м.б. переменной и меткой
-	{
-		if (context->func_def == 3 ? 1 : context->sx->identab[pred + 1] > 0 ? 1 : context->func_def == 1 ? 0 : 1)
-		{
-			context_error(context, repeated_decl);
-			context->error_flag = 5;
-			return 0; // 1
-					  // только определение функции может иметь 2
-					  // описания, т.е. иметь предописание
-		}
-	}
-
-	context->sx->identab[context->sx->id + 1] = REPRTAB_POS; // ссылка на представление
-	if (f == -2)									 // #define
-	{
-		context->sx->identab[context->sx->id + 2] = 1;
-		context->sx->identab[context->sx->id + 3] = type; // это целое число, определенное по #define
-	}
-	else // дальше тип или ссылка на modetab (для функций и структур)
-	{
-		context->sx->identab[context->sx->id + 2] = type; // тип -1 int, -2 char, -3 float, -4 long, -5 double,
-												  // если тип > 0, то это ссылка на modetab
-		if (f == 1)
-		{
-			context->sx->identab[context->sx->id + 2] = 0; // 0, если первым встретился goto, когда встретим метку,
-												   // поставим 1
-			context->sx->identab[context->sx->id + 3] = 0; // при генерации кода когда встретим метку, поставим pc
-		}
-		else if (f >= 1000)
-		{
-			context->sx->identab[context->sx->id + 3] = f; // это описание типа, если f > 1000, то f-1000 - это номер
-												   // иниц проц
-		}
-		else if (f)
-		{
-			if (f < 0)
-			{
-				context->sx->identab[context->sx->id + 3] = -(context->sx->displ++);
-				context->sx->maxdispl = context->sx->displ;
-			}
-			else // identtab[context->lastid+3] - номер функции, если < 0, то
-				 // это функция-параметр
-			{
-				context->sx->identab[context->sx->id + 3] = f;
-				if (context->func_def == 2)
-				{
-					context->sx->identab[context->lastid + 1] *= -1; //это предописание
-					context->sx->predef[++context->sx->prdf] = REPRTAB_POS;
-				}
-				else
-				{
-					int i;
-
-					for (i = 0; i <= context->sx->prdf; i++)
-					{
-						if (context->sx->predef[i] == REPRTAB_POS)
-						{
-							context->sx->predef[i] = 0;
-						}
-					}
-				}
-			}
-		}
-		else
-		{
-			context->sx->identab[context->sx->id + 3] = getstatic(context, type);
-		}
-	}
-	context->sx->id += 4;
-	return context->lastid;
+	return context->lastid = return_value;
 }
 
 void binop(analyzer *context, int sp)

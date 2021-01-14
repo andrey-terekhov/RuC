@@ -126,11 +126,6 @@ void finalop(syntax *const sx)
 	}
 }
 
-int sz_of(syntax *const sx, int type)
-{
-	return type == LFLOAT ? 2 : (type > 0 && mode_get(sx, type) == MSTRUCT) ? mode_get(sx, type + 1) : 1;
-}
-
 int Expr_gen(syntax *const sx, int incond)
 {
 	int flagprim = 1;
@@ -256,7 +251,7 @@ int Expr_gen(syntax *const sx, int incond)
 				eltype = sx->tree[sx->tc++];
 				Expr_gen(sx, 0);
 				tocode(sx, SLICE);
-				tocode(sx, sz_of(sx, eltype));
+				tocode(sx, size_of(sx, eltype));
 				if (eltype > 0 && mode_get(sx, eltype) == MARRAY)
 				{
 					tocode(sx, LAT);
@@ -665,7 +660,7 @@ void Declid_gen(syntax *const sx)
 	// all == 0 нет инициализатора,
 	// all == 1 есть инициализатор
 	// all == 2 есть инициализатор только из строк
-	element_len = sz_of(sx, telem);
+	element_len = size_of(sx, telem);
 
 	if (N == 0) // обычная переменная int a; или struct point p;
 	{

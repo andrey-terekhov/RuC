@@ -87,7 +87,7 @@ int sx_init(syntax *const sx);
  *	Increase size of memory table by value
  *
  *	@param	sx			Syntax structure
- *	@param	value			Value to increase
+ *	@param	value		Value to increase
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
@@ -97,7 +97,7 @@ int mem_increase(syntax *const sx, const size_t value);
  *	Add new record to memory table
  *
  *	@param	sx			Syntax structure
- *	@param	value			Value to record
+ *	@param	value		Value to record
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
@@ -189,6 +189,21 @@ int func_get(const syntax *const sx, const size_t index);
 
 
 /**
+ *	Add new record to identifiers table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	repr		Pointer to representation of the new identifier
+ *	@param	type		@c 0 for variable, @c 1 for label, funcnum for function,
+ *						@c -1 for function as parameter, >= 100 for type specifier
+ *	@param	mode		Mode of the new identifier
+ *	@param	func_def	@c 0 for function without args, @c 1 for function defenition,
+ *						@c 2 for function declaration, @c 3 for variables
+ *
+ *	@return	pointer to the last record in identifiers table
+ */
+int ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def);
+
+/**
  *	Get identifier mode by index in identifiers table
  *
  *	@param	sx			Syntax structure
@@ -230,6 +245,17 @@ int ident_get_displ(syntax *const sx, const size_t index);
  */
 int ident_set_displ(syntax *const sx, const size_t index, const int displ);
 
+/**
+ *	Get type size
+ *
+ *	@note Also used in codegen
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Standart type or pointer to modetab
+ *
+ *	@return	Type size
+ */
+int size_of(syntax *const sx, const int mode);
 
 /**
  *	Add a new record to modes table
