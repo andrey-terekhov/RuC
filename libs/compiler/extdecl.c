@@ -17,7 +17,7 @@
 #include "extdecl.h"
 #include "errors.h"
 #include "defs.h"
-#include "scanner.h"
+#include "lexer.h"
 #include <string.h>
 
 
@@ -34,6 +34,24 @@ int gettype(analyzer *context);
 // b = 0 - это блок функции
 void block(analyzer *context, int b);
 
+int scanner(analyzer *context)
+{
+	context->cur = context->next;
+	if (!context->buf_flag)
+	{
+		context->next = lex(context->lxr);
+	}
+	else
+	{
+		context->next = context->buf_cur;
+		context->buf_flag--;
+	}
+	
+	//	 if(context->kw)
+	//			printf("scaner context->cur %i context->next %i buf_flag %i\n",
+	//			context->cur, context->next, context->buf_flag);
+	return context->cur;
+}
 
 int newdecl(syntax *const sx, const int type, const int element_type)
 {
@@ -68,7 +86,7 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 			error(io, num, REPRTAB, REPRTAB_POS);
 			break;
 		case label_not_declared:
-			error(io, num, context->hash, REPRTAB, REPRTAB_POS);
+			error(io, num, context->sx->hash, REPRTAB, REPRTAB_POS);
 			break;
 		default:
 			error(io, num);
@@ -96,11 +114,11 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 	}*/
 }
 
-int evaluate_params(analyzer *context, int num, int formatstr[], int formattypes[], int placeholders[])
+int evaluate_params(analyzer *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[])
 {
-	int numofparams = 0;
+	int num_of_params = 0;
 	int i = 0;
-	int fsi;
+	char32_t fsi;
 
 	//	for (i=0; i<num; i++)
 	//		printf("%c %i\n", formatstr[i], formatstr[i]);
@@ -111,35 +129,35 @@ int evaluate_params(analyzer *context, int num, int formatstr[], int formattypes
 		{
 			if (fsi = formatstr[++i], fsi != '%')
 			{
-				if (numofparams == MAXPRINTFPARAMS)
+				if (num_of_params == MAXPRINTFPARAMS)
 				{
 					context_error(context, too_many_printf_params);
 					return 0;
 				}
 
-				placeholders[numofparams] = fsi;
+				placeholders[num_of_params] = fsi;
 			}
 			switch (fsi) // Если добавляется новый спецификатор -- не забыть
 						 // внести его в switch в bad_printf_placeholder
 			{
 				case 'i':
 				case 1094: // 'ц'
-					formattypes[numofparams++] = LINT;
+					formattypes[num_of_params++] = LINT;
 					break;
 
 				case 'c':
 				case 1083: // л
-					formattypes[numofparams++] = LCHAR;
+					formattypes[num_of_params++] = LCHAR;
 					break;
 
 				case 'f':
 				case 1074: // в
-					formattypes[numofparams++] = LFLOAT;
+					formattypes[num_of_params++] = LFLOAT;
 					break;
 
 				case 's':
 				case 1089: // с
-					formattypes[numofparams++] = newdecl(context->sx, MARRAY, LCHAR);
+					formattypes[num_of_params++] = newdecl(context->sx, MARRAY, LCHAR);
 					break;
 
 				case '%':
@@ -157,7 +175,7 @@ int evaluate_params(analyzer *context, int num, int formatstr[], int formattypes
 		}
 	}
 
-	return numofparams;
+	return num_of_params;
 }
 
 int is_function(syntax *const sx, const int t)
@@ -210,13 +228,13 @@ void mustbe(analyzer *context, int what, int e)
 	}
 	else
 	{
-		scaner(context);
+		scanner(context);
 	}
 }
 
 void mustbe_complex(analyzer *context, int what, int e)
 {
-	if (scaner(context) != what)
+	if (scanner(context) != what)
 	{
 		context_error(context, e);
 		context->error_flag = e;
@@ -484,7 +502,7 @@ void actstring(int type, analyzer *context)
 {
 	int n = 0;
 	int adn;
-	scaner(context);
+	scanner(context);
 	totree(context, type == LFLOAT ? TStringd : TString);
 	adn = context->sx->tc++;
 	do
@@ -513,7 +531,7 @@ void actstring(int type, analyzer *context)
 			return; // 1
 		}
 		++n;
-	} while (scaner(context) == COMMA ? scaner(context), 1 : 0);
+	} while (scanner(context) == COMMA ? scanner(context), 1 : 0);
 
 	context->sx->tree[adn] = n;
 	if (context->cur != END)
@@ -528,7 +546,7 @@ void actstring(int type, analyzer *context)
 
 void mustbestring(analyzer *context)
 {
-	scaner(context);
+	scanner(context);
 	exprassn(context, 1);
 	if (context->error_flag == 6)
 	{
@@ -546,7 +564,7 @@ void mustbestring(analyzer *context)
 
 void mustbepointstring(analyzer *context)
 {
-	scaner(context);
+	scanner(context);
 	exprassn(context, 1);
 	if (context->error_flag == 6)
 	{
@@ -566,7 +584,7 @@ void mustbepointstring(analyzer *context)
 
 void mustberow(analyzer *context)
 {
-	scaner(context);
+	scanner(context);
 	exprassn(context, 1);
 	if (context->error_flag == 6)
 	{
@@ -585,7 +603,7 @@ void mustberow(analyzer *context)
 
 void mustbeint(analyzer *context)
 {
-	scaner(context);
+	scanner(context);
 	exprassn(context, 1);
 	if (context->error_flag == 6)
 	{
@@ -603,7 +621,7 @@ void mustbeint(analyzer *context)
 
 void mustberowofint(analyzer *context)
 {
-	if (scaner(context) == BEGIN)
+	if (scanner(context) == BEGIN)
 	{
 		actstring(LINT, context), totree(context, TExprend);
 		if (context->error_flag == 2)
@@ -638,7 +656,7 @@ void mustberowofint(analyzer *context)
 
 void mustberowoffloat(analyzer *context)
 {
-	if (scaner(context) == BEGIN)
+	if (scanner(context) == BEGIN)
 	{
 		actstring(LFLOAT, context), totree(context, TExprend);
 		if (context->error_flag == 2)
@@ -674,39 +692,42 @@ void mustberowoffloat(analyzer *context)
 
 void primaryexpr(analyzer *context)
 {
-	if (context->cur == NUMBER)
+	if (context->cur == CHAR_CONST)
 	{
-		if (context->ansttype == LFLOAT) // context->ansttype задается прямо в сканере
-		{
-			totree(context, TConstd);
-			totree(context, context->numr.first);
-			totree(context, context->numr.second);
-		}
-		else
-		{
-			totree(context, TConst);
-			totree(context, context->num); // LINT, LCHAR
-		}
-		context->stackoperands[++context->sopnd] = context->ansttype;
-		// printf("number context->sopnd=%i context->ansttype=%i\n",
-		// context->sopnd, context->ansttype);
+		totree(context, TConst);
+		totree(context, context->lxr->num);
+		context->stackoperands[++context->sopnd] = context->ansttype = LCHAR;
+		context->anst = NUMBER;
+	}
+	else if (context->cur == INT_CONST)
+	{
+		totree(context, TConst);
+		totree(context, context->lxr->num);
+		context->stackoperands[++context->sopnd] = context->ansttype = LINT;
+		context->anst = NUMBER;
+	}
+	else if (context->cur == FLOAT_CONST)
+	{
+		totree(context, TConstd);
+		memcpy(&context->sx->tree[context->sx->tc], &context->lxr->num_double, sizeof(double));
+		context->sx->tc += 2;
+		context->stackoperands[++context->sopnd] = context->ansttype = LFLOAT;
 		context->anst = NUMBER;
 	}
 	else if (context->cur == STRING)
 	{
 		int i;
 
-		context->ansttype = newdecl(context->sx, MARRAY, LCHAR); // теперь пишем context->ansttype в
-															 // анализаторе, а не в сканере
 		totree(context, TString);
-		totree(context, context->num);
+		totree(context, context->lxr->num);
 
-		for (i = 0; i < context->num; i++)
+		for (i = 0; i < context->lxr->num; i++)
 		{
-			totree(context, context->lexstr[i]);
+			totree(context, context->lxr->lexstr[i]);
 		}
 
-		context->stackoperands[++context->sopnd] = context->ansttype; // ROWOFCHAR
+		context->ansttype = newdecl(context->sx, MARRAY, LCHAR);
+		context->stackoperands[++context->sopnd] = context->ansttype;
 		context->anst = VAL;
 	}
 	else if (context->cur == IDENT)
@@ -727,7 +748,7 @@ void primaryexpr(analyzer *context)
 	{
 		if (context->next == LVOID)
 		{
-			scaner(context);
+			scanner(context);
 			mustbe(context, LMULT, no_mult_in_cast);
 			unarexpr(context);
 			if (context->error_flag == 7)
@@ -749,7 +770,7 @@ void primaryexpr(analyzer *context)
 		else
 		{
 			int oldsp = context->sp;
-			scaner(context);
+			scanner(context);
 			expr(context, 1);
 			if (context->error_flag == 5)
 			{
@@ -767,7 +788,7 @@ void primaryexpr(analyzer *context)
 	{
 		int func = context->cur;
 
-		if (scaner(context) != LEFTBR)
+		if (scanner(context) != LEFTBR)
 		{
 			context_error(context, no_leftbr_in_stand_func);
 			context->buf_cur = context->next;
@@ -828,7 +849,7 @@ void primaryexpr(analyzer *context)
 		}
 		else if (func >= RECEIVE_STRING && func <= SEND_INT)
 		{
-			context->notrobot = 0; // новые функции Фадеева
+			// новые функции Фадеева
 			mustbeint(context);
 			if (context->error_flag == 5)
 			{
@@ -855,7 +876,6 @@ void primaryexpr(analyzer *context)
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
 		{
-			context->notrobot = 0;
 			if (func <= PIXEL && func >= ICON)
 			{
 				// scaner(context);
@@ -949,7 +969,7 @@ void primaryexpr(analyzer *context)
 					}
 					else // DRAW_NUMBER
 					{
-						scaner(context);
+						scanner(context);
 						exprassn(context, 1);
 						if (context->error_flag == 6)
 						{
@@ -1093,7 +1113,7 @@ void primaryexpr(analyzer *context)
 				// MSGSEND void(msg_info)  CREATE int(void*(*func)(void*))
 				// SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
 				// у этих процедур 1 параметр
-				scaner(context);
+				scanner(context);
 
 				if (func == TCREATE)
 				{
@@ -1183,7 +1203,7 @@ void primaryexpr(analyzer *context)
 		}
 		else if (func == ROUND)
 		{
-			scaner(context);
+			scanner(context);
 			exprassn(context, 1);
 			if (context->error_flag == 6)
 			{
@@ -1195,7 +1215,7 @@ void primaryexpr(analyzer *context)
 		}
 		else
 		{
-			scaner(context);
+			scanner(context);
 			exprassn(context, 1);
 			if (context->error_flag == 6)
 			{
@@ -1209,7 +1229,6 @@ void primaryexpr(analyzer *context)
 			// SETMOTOR и VOLTAGE void (int port, int volt)
 			if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR || func == VOLTAGE)
 			{
-				context->notrobot = 0;
 				if (!is_int(context->ansttype))
 				{
 					context_error(context, param_setmotor_not_int);
@@ -1229,7 +1248,7 @@ void primaryexpr(analyzer *context)
 				}
 				else
 				{
-					scaner(context);
+					scanner(context);
 					exprassn(context, 1);
 					if (context->error_flag == 6)
 					{
@@ -1311,7 +1330,7 @@ int find_field(analyzer *context, int stype)
 	int select_displ = 0;
 	int record_length = mode_get(context->sx, stype + 2);
 
-	scaner(context);
+	scanner(context);
 	mustbe(context, IDENT, after_dot_must_be_ident);
 
 	for (i = 0; i < record_length; i += 2) // тут хранится удвоенное n
@@ -1378,7 +1397,7 @@ void postexpr(analyzer *context)
 		int oldinass = context->inass;
 
 		was_func = 1;
-		scaner(context);
+		scanner(context);
 		if (!is_function(context->sx, leftansttyp))
 		{
 			context_error(context, call_not_from_function);
@@ -1396,7 +1415,7 @@ void postexpr(analyzer *context)
 			int mdj = context->leftansttype = mode_get(context->sx, j); // это вид формального параметра, в
 																   // context->ansttype будет вид фактического
 																   // параметра
-			scaner(context);
+			scanner(context);
 			if (is_function(context->sx, mdj))
 			{
 				// фактическим параметром должна быть функция, в С - это только идентификатор
@@ -1476,7 +1495,7 @@ void postexpr(analyzer *context)
 					--context->sopnd;
 				}
 			}
-			if (i < n - 1 && scaner(context) != COMMA)
+			if (i < n - 1 && scanner(context) != COMMA)
 			{
 				context_error(context, no_comma_in_act_params);
 				context->error_flag = 4;
@@ -1516,8 +1535,8 @@ void postexpr(analyzer *context)
 
 			elem_type = mode_get(context->sx, context->ansttype + 1);
 
-			scaner(context);
-			scaner(context);
+			scanner(context);
+			scanner(context);
 
 			if (context->anst == IDENT) // a[i]
 			{
@@ -1661,7 +1680,7 @@ void postexpr(analyzer *context)
 		{
 			op += 4;
 		}
-		scaner(context);
+		scanner(context);
 		totreef(context, op);
 		if (context->anst == IDENT)
 		{
@@ -1679,7 +1698,7 @@ void unarexpr(analyzer *context)
 	{
 		if (context->cur == INC || context->cur == DEC)
 		{
-			scaner(context);
+			scanner(context);
 			unarexpr(context);
 			if (context->error_flag == 7)
 			{
@@ -1704,7 +1723,7 @@ void unarexpr(analyzer *context)
 		}
 		else
 		{
-			scaner(context);
+			scanner(context);
 			unarexpr(context);
 			if (context->error_flag == 7)
 			{
@@ -1807,7 +1826,7 @@ void unarexpr(analyzer *context)
 void exprinbrkts(analyzer *context, int er)
 {
 	mustbe(context, LEFTBR, er);
-	scaner(context);
+	scanner(context);
 	exprval(context);
 	if (context->error_flag == 4)
 	{
@@ -1820,7 +1839,7 @@ void exprinbrkts(analyzer *context, int er)
 void exprassninbrkts(analyzer *context, int er)
 {
 	mustbe(context, LEFTBR, er);
-	scaner(context);
+	scanner(context);
 	exprassnval(context);
 	if (context->error_flag == 4)
 	{
@@ -1901,8 +1920,8 @@ void subexpr(analyzer *context)
 		context->stack[context->sp] = p;
 		context->stacklog[context->sp] = ad;
 		context->stackop[context->sp++] = context->next;
-		scaner(context);
-		scaner(context);
+		scanner(context);
+		scanner(context);
 		unarexpr(context);
 		if (context->error_flag == 7)
 		{
@@ -1962,8 +1981,8 @@ void condexpr(analyzer *context)
 				return; // 1
 			}
 			totree(context, TCondexpr);
-			scaner(context);
-			scaner(context);
+			scanner(context);
+			scanner(context);
 			context->sopnd--;
 			exprval(context); // then
 			if (context->error_flag == 4)
@@ -1985,7 +2004,7 @@ void condexpr(analyzer *context)
 				adif = context->sx->tc++;
 			}
 			mustbe(context, COLON, no_colon_in_cond_expr);
-			scaner(context);
+			scanner(context);
 			unarexpr(context);
 			if (context->error_flag == 7)
 			{
@@ -2091,7 +2110,7 @@ void struct_init(analyzer *context, int decl_type)
 	totree(context, nf);
 	for (i = 0; i < nf; i++)
 	{
-		scaner(context);
+		scanner(context);
 		inition(context, mode_get(context->sx, next_field));
 		if (context->error_flag == 5)
 		{
@@ -2103,7 +2122,7 @@ void struct_init(analyzer *context, int decl_type)
 		{
 			if (context->next == COMMA) // поля инициализации идут через запятую, заканчиваются }
 			{
-				scaner(context);
+				scanner(context);
 			}
 			else
 			{
@@ -2117,7 +2136,7 @@ void struct_init(analyzer *context, int decl_type)
 	if (context->next == END)
 	{
 		totree(context, TExprend);
-		scaner(context);
+		scanner(context);
 	}
 	else
 	{
@@ -2190,8 +2209,8 @@ void exprassn(analyzer *context, int level)
 		int opp = context->op;
 		lnext = context->next;
 		context->inass = 1;
-		scaner(context);
-		scaner(context);
+		scanner(context);
+		scanner(context);
 		exprassn(context, level + 1);
 		if (context->error_flag == 6)
 		{
@@ -2327,8 +2346,8 @@ void expr(analyzer *context, int level)
 	{
 		exprassnvoid(context);
 		context->sopnd--;
-		scaner(context);
-		scaner(context);
+		scanner(context);
+		scanner(context);
 		exprassn(context, level);
 		if (context->error_flag == 6)
 		{
@@ -2409,14 +2428,14 @@ void array_init(analyzer *context, int decl_type)
 			ad = context->sx->tc++;
 			do
 			{
-				scaner(context);
+				scanner(context);
 				all++;
 				array_init(context, mode_get(context->sx, decl_type + 1));
 				if (context->error_flag == 7)
 				{
 					return; // 1
 				}
-			} while (scaner(context) == COMMA);
+			} while (scanner(context) == COMMA);
 
 			if (context->cur == END)
 			{
@@ -2473,10 +2492,10 @@ int arrdef(analyzer *context, int t)
 	while (context->next == LEFTSQBR) // это определение массива (может быть многомерным)
 	{
 		context->arrdim++;
-		scaner(context);
+		scanner(context);
 		if (context->next == RIGHTSQBR)
 		{
-			scaner(context);
+			scanner(context);
 			if (context->next == LEFTSQBR) // int a[][]={{1,2,3}, {4,5,6}} - нельзя;
 			{
 				context_error(context, empty_init); // границы определять по инициализации можно
@@ -2488,7 +2507,7 @@ int arrdef(analyzer *context, int t)
 		}
 		else
 		{
-			scaner(context);
+			scanner(context);
 			unarexpr(context);
 			if (context->error_flag == 7)
 			{
@@ -2567,8 +2586,8 @@ void decl_id(analyzer *context, int decl_type)
 
 	if (context->next == ASS)
 	{
-		scaner(context);
-		scaner(context);
+		scanner(context);
+		scanner(context);
 		context->sx->tree[all] = szof(context, decl_type);
 		if (is_array(context->sx, decl_type)) // инициализация массива
 		{
@@ -2608,7 +2627,7 @@ void statement(analyzer *context)
 	int oldinloop = context->inloop;
 
 	context->wasdefault = 0;
-	scaner(context);
+	scanner(context);
 	if ((is_int(context->cur) || is_float(context->cur) || context->cur == LVOID ||
 		 context->cur == LSTRUCT) &&
 		context->blockflag)
@@ -2682,7 +2701,7 @@ void statement(analyzer *context)
 		{
 			context->sx->identab[id + 2] = 1;
 
-			scaner(context);
+			scanner(context);
 			statement(context);
 		}
 	}
@@ -2690,6 +2709,7 @@ void statement(analyzer *context)
 	{
 		context->blockflag = 1;
 
+		// And here too
 		switch (context->cur)
 		{
 			case PRINT:
@@ -2701,7 +2721,11 @@ void statement(analyzer *context)
 					flagsemicol = 0;
 					break;
 				}
-				context->sx->tc--;
+
+				if (context->sx->tc != 0)
+				{
+					context->sx->tc--;
+				}
 				totree(context, TPrint);
 				totree(context, context->ansttype);
 				totree(context, TExprend);
@@ -2730,35 +2754,35 @@ void statement(analyzer *context)
 					}
 					totree(context, TPrintid);
 					totree(context, context->lastid);
-				} while (context->next == COMMA ? scaner(context), 1 : 0);
+				} while (context->next == COMMA ? scanner(context), 1 : 0);
 				mustbe(context, RIGHTBR, no_rightbr_in_printid);
 			}
 			break;
 
 			case PRINTF:
 			{
-				int formatstr[MAXSTRINGL];
+				char32_t formatstr[MAXSTRINGL + 1];
 				int formattypes[MAXPRINTFPARAMS];
-				int placeholders[MAXPRINTFPARAMS];
+				char32_t placeholders[MAXPRINTFPARAMS];
 				int paramnum = 0;
 				int sumsize = 0;
 				int i = 0;
 				int fnum;
 
 				mustbe(context, LEFTBR, no_leftbr_in_printf);
-				if (scaner(context) != STRING) // выкушиваем форматную строку
+				if (scanner(context) != STRING) // выкушиваем форматную строку
 				{
 					context_error(context, wrong_first_printf_param);
 					break;
 				}
 
-				for (i = 0; i < context->num; i++)
+				for (i = 0; i < context->lxr->num; i++)
 				{
-					formatstr[i] = context->lexstr[i];
+					formatstr[i] = context->lxr->lexstr[i];
 				}
-				formatstr[context->num] = 0;
+				formatstr[context->lxr->num] = 0;
 
-				paramnum = evaluate_params(context, fnum = context->num, formatstr, formattypes, placeholders);
+				paramnum = evaluate_params(context, fnum = context->lxr->num, formatstr, formattypes, placeholders);
 
 				if (context->error_flag)
 				{
@@ -2766,7 +2790,7 @@ void statement(analyzer *context)
 					break;
 				}
 
-				for (i = 0; scaner(context) == COMMA; i++)
+				for (i = 0; scanner(context) == COMMA; i++)
 				{
 					if (i >= paramnum)
 					{
@@ -2775,7 +2799,7 @@ void statement(analyzer *context)
 						break;
 					}
 
-					scaner(context);
+					scanner(context);
 
 					exprassn(context, 1);
 					if (context->error_flag == 6)
@@ -2829,7 +2853,7 @@ void statement(analyzer *context)
 
 				for (i = 0; i < fnum; i++)
 				{
-					totree(context, formatstr[i]);
+					totree(context, (int)formatstr[i]);
 				}
 				totree(context, TExprend);
 
@@ -2861,7 +2885,7 @@ void statement(analyzer *context)
 					}
 					totree(context, TGetid);
 					totree(context, context->lastid);
-				} while (context->next == COMMA ? scaner(context), 1 : 0);
+				} while (context->next == COMMA ? scanner(context), 1 : 0);
 				if (context->error_flag == 2)
 				{
 					context->error_flag = 1;
@@ -2894,7 +2918,7 @@ void statement(analyzer *context)
 					break;
 				}
 				totree(context, TCase);
-				scaner(context);
+				scanner(context);
 				unarexpr(context);
 				if (context->error_flag == 7)
 				{
@@ -2953,7 +2977,7 @@ void statement(analyzer *context)
 
 				if (context->next == LWHILE)
 				{
-					scaner(context);
+					scanner(context);
 					exprinbrkts(context, cond_must_be_in_brkts);
 					context->sopnd--;
 				}
@@ -2983,7 +3007,7 @@ void statement(analyzer *context)
 				condref = context->sx->tc++;
 				incrref = context->sx->tc++;
 				stmtref = context->sx->tc++;
-				if (scaner(context) == SEMICOLON) // init
+				if (scanner(context) == SEMICOLON) // init
 				{
 					context->sx->tree[fromref] = 0;
 				}
@@ -3000,7 +3024,7 @@ void statement(analyzer *context)
 					exprassnvoid(context);
 					mustbe(context, SEMICOLON, no_semicolon_in_for);
 				}
-				if (scaner(context) == SEMICOLON) // cond
+				if (scanner(context) == SEMICOLON) // cond
 				{
 					context->sx->tree[condref] = 0;
 				}
@@ -3018,7 +3042,7 @@ void statement(analyzer *context)
 					mustbe(context, SEMICOLON, no_semicolon_in_for);
 					context->sopnd--;
 				}
-				if (scaner(context) == RIGHTBR) // incr
+				if (scanner(context) == RIGHTBR) // incr
 				{
 					context->sx->tree[incrref] = 0;
 				}
@@ -3102,7 +3126,7 @@ void statement(analyzer *context)
 				statement(context);
 				if (context->next == LELSE)
 				{
-					scaner(context);
+					scanner(context);
 					context->sx->tree[elseref] = context->sx->tc;
 					statement(context);
 				}
@@ -3141,7 +3165,7 @@ void statement(analyzer *context)
 						}
 						totree(context, TReturnval);
 						totree(context, szof(context, ftype));
-						scaner(context);
+						scanner(context);
 						expr(context, 1);
 						if (context->error_flag == 5)
 						{
@@ -3182,7 +3206,7 @@ void statement(analyzer *context)
 					break;
 				}
 				context->sopnd--;
-				scaner(context);
+				scanner(context);
 				context->inswitch = 1;
 				block(context, -1);
 				flagsemicol = 0;
@@ -3216,7 +3240,7 @@ void statement(analyzer *context)
 		}
 	}
 
-	if (flagsemicol && scaner(context) != SEMICOLON)
+	if (flagsemicol && scanner(context) != SEMICOLON)
 	{
 		context_error(context, no_semicolon_after_stmt);
 		context->buf_cur = context->next;
@@ -3233,7 +3257,7 @@ int idorpnt(analyzer *context, int e, int t)
 {
 	if (context->next == LMULT)
 	{
-		scaner(context);
+		scanner(context);
 		t = t == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, t);
 	}
 	mustbe_complex(context, IDENT, e);
@@ -3256,8 +3280,8 @@ int struct_decl_list(analyzer *context)
 	totree(context, TStructbeg);
 	context->sx->tree[context->sx->tc++] = 0; // тут будет номер иниц процедуры
 
-	scaner(context);
-	scaner(context);
+	scanner(context);
+	scanner(context);
 
 	do
 	{
@@ -3294,8 +3318,8 @@ int struct_decl_list(analyzer *context)
 			wasarr = 1;
 			if (context->next == ASS)
 			{
-				scaner(context);
-				scaner(context);
+				scanner(context);
+				scanner(context);
 				if (is_array(context->sx, t)) // инициализация массива
 				{
 					context->onlystrings = 2;
@@ -3327,7 +3351,7 @@ int struct_decl_list(analyzer *context)
 		loc_modetab[locmd++] = oldrepr;
 		field_count++;
 		curdispl += szof(context, t);
-		if (scaner(context) != SEMICOLON)
+		if (scanner(context) != SEMICOLON)
 		{
 			context_error(context, no_semicomma_in_struct);
 			context->buf_cur = context->next;
@@ -3335,7 +3359,7 @@ int struct_decl_list(analyzer *context)
 			context->cur = BEGIN;
 			context->buf_flag++;
 		}
-	} while (scaner(context) != END);
+	} while (scanner(context) != END);
 
 	if (wasarr)
 	{
@@ -3380,7 +3404,7 @@ int gettype(analyzer *context)
 			int l;
 
 			l = REPRTAB[REPRTAB_POS + 1];
-			scaner(context);
+			scanner(context);
 			if (context->next == BEGIN) // struct key {
 			{
 				// если такое описание уже было, то это ошибка - повторное описание
@@ -3441,6 +3465,7 @@ int gettype(analyzer *context)
 	return 0; // 1
 }
 
+/** Debug from here */
 void block(analyzer *context, int b)
 {
 	// если b=1, то это просто блок,
@@ -3468,7 +3493,7 @@ void block(analyzer *context, int b)
 		   context->next == LVOID)
 	{
 		int repeat = 1;
-		scaner(context);
+		scanner(context);
 		firstdecl = gettype(context);
 		if (context->error_flag == 3)
 		{
@@ -3477,7 +3502,7 @@ void block(analyzer *context, int b)
 		}
 		if (context->wasstructdef && context->next == SEMICOLON)
 		{
-			scaner(context);
+			scanner(context);
 			continue;
 		}
 		do
@@ -3498,11 +3523,11 @@ void block(analyzer *context, int b)
 			}
 			if (context->next == COMMA)
 			{
-				scaner(context);
+				scanner(context);
 			}
 			else if (context->next == SEMICOLON)
 			{
-				scaner(context);
+				scanner(context);
 				repeat = 0;
 			}
 			else
@@ -3520,7 +3545,7 @@ void block(analyzer *context, int b)
 	{
 		if (b == 2 ? context->next == TEXIT : context->next == END)
 		{
-			scaner(context);
+			scanner(context);
 			notended = 0;
 		}
 		else
@@ -3629,10 +3654,10 @@ void function_definition(analyzer *context)
 	for (i = 0; i < context->pgotost - 1; i += 2)
 	{
 		REPRTAB_POS = context->sx->identab[context->gotost[i] + 1];
-		context->hash = context->gotost[i + 1];
-		if (context->hash < 0)
+		context->sx->hash = context->gotost[i + 1];
+		if (context->sx->hash < 0)
 		{
-			context->hash = -context->hash;
+			context->sx->hash = -context->sx->hash;
 		}
 		if (!context->sx->identab[context->gotost[i] + 2])
 		{
@@ -3689,14 +3714,14 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 			if (context->next == LMULT)
 			{
 				maybe_fun = 1;
-				scaner(context);
+				scanner(context);
 				context->type = context->type == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, context->type);
 			}
 			if (level)
 			{
 				if (context->next == IDENT)
 				{
-					scaner(context);
+					scanner(context);
 					ident = 1;
 					func_add(context->sx, REPRTAB_POS);
 				}
@@ -3721,7 +3746,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 
 				while (context->next == LEFTSQBR)
 				{
-					scaner(context);
+					scanner(context);
 					mustbe(context, RIGHTSQBR, wait_right_sq_br);
 					context->type = newdecl(context->sx, MARRAY, context->type);
 				}
@@ -3746,13 +3771,13 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 
 			if (context->next == LEFTBR)
 			{
-				scaner(context);
+				scanner(context);
 				mustbe(context, LMULT, wrong_fun_as_param);
 				if (context->next == IDENT)
 				{
 					if (level)
 					{
-						scaner(context);
+						scanner(context);
 						if (ident == 0)
 						{
 							ident = 2;
@@ -3774,7 +3799,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 				}
 				mustbe(context, RIGHTBR, no_right_br_in_paramfun);
 				mustbe(context, LEFTBR, wrong_fun_as_param);
-				scaner(context);
+				scanner(context);
 				if (maybe_fun == 1)
 				{
 					context_error(context, aster_before_func);
@@ -3813,9 +3838,9 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 				return 0;
 			}
 
-			if (scaner(context) == COMMA)
+			if (scanner(context) == COMMA)
 			{
-				scaner(context);
+				scanner(context);
 			}
 			else if (context->cur == RIGHTBR)
 			{
@@ -3847,9 +3872,9 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 /** Генерация дерева */
 void ext_decl(analyzer *context)
 {
-	getnext(context);
-	nextch(context);
-	context->next = scan(context);
+	get_char(context->lxr);
+	get_char(context->lxr);
+	context->next = lex(context->lxr);
 	
 	int i;
 	context->temp_tc = context->sx->tc;
@@ -3859,7 +3884,7 @@ void ext_decl(analyzer *context)
 		int funrepr;
 		int first = 1;
 		context->wasstructdef = 0;
-		scaner(context);
+		scanner(context);
 
 		context->firstdecl = gettype(context);
 		if (context->error_flag == 3)
@@ -3869,7 +3894,7 @@ void ext_decl(analyzer *context)
 		}
 		if (context->wasstructdef && context->next == SEMICOLON) // struct point {float x, y;};
 		{
-			scaner(context);
+			scanner(context);
 			continue;
 		}
 
@@ -3886,7 +3911,7 @@ void ext_decl(analyzer *context)
 			context->type = context->firstdecl;
 			if (context->next == LMULT)
 			{
-				scaner(context);
+				scanner(context);
 				context->type = context->firstdecl == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, context->firstdecl);
 			}
 			mustbe_complex(context, IDENT, after_type_must_be_ident);
@@ -3901,8 +3926,8 @@ void ext_decl(analyzer *context)
 				int oldfuncnum = context->sx->funcnum++;
 				int firsttype = context->type;
 				funrepr = REPRTAB_POS;
-				scaner(context);
-				scaner(context);
+				scanner(context);
+				scanner(context);
 
 				// выкушает все параметры до ) включительно
 				context->type = func_declarator(context, first, 3, firsttype);
@@ -3936,7 +3961,7 @@ void ext_decl(analyzer *context)
 
 				if (context->next == BEGIN)
 				{
-					scaner(context);
+					scanner(context);
 					if (context->func_def == 2)
 					{
 						context_error(context, func_decl_req_params);
@@ -3976,12 +4001,12 @@ void ext_decl(analyzer *context)
 
 			if (context->next == COMMA)
 			{
-				scaner(context);
+				scanner(context);
 				first = 0;
 			}
 			else if (context->next == SEMICOLON)
 			{
-				scaner(context);
+				scanner(context);
 				repeat = 0;
 			}
 			else

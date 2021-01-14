@@ -72,7 +72,7 @@ int function_scob_collect(int t, int num, preprocess_context *context)
 
 	while (context->curchar != EOF)
 	{
-		if (is_letter(context))
+		if (utf8_is_letter(context->curchar))
 		{
 			int r = collect_mident(context);
 
@@ -270,9 +270,9 @@ int to_functionident(preprocess_context *context)
 	{
 		context->msp = 0;
 
-		if (is_letter(context))
+		if (utf8_is_letter(context->curchar))
 		{
-			while (is_letter(context) || is_digit(context->curchar))
+			while (utf8_is_letter(context->curchar) || utf8_is_digit(context->curchar))
 			{
 				context->cstring[context->csp++] = context->curchar;
 				m_nextch(context);
@@ -336,7 +336,7 @@ int function_add_to_macrotext(preprocess_context *context)
 
 	while ((context->curchar != '\n' || flag_macro) && context->curchar != EOF)
 	{
-		if (is_letter(context) && !empty)
+		if (utf8_is_letter(context->curchar) && !empty)
 		{
 			if(funktionleter(flag_macro, context))
 			{
@@ -449,7 +449,7 @@ int define_add_to_reprtab(preprocess_context *context)
 		hash += context->curchar;
 		context->reprtab[context->rp++] = context->curchar;
 		m_nextch(context);
-	} while (is_letter(context) || is_digit(context->curchar));
+	} while (utf8_is_letter(context->curchar) || utf8_is_digit(context->curchar));
 
 	hash &= 255;
 	context->reprtab[context->rp++] = 0;
@@ -536,7 +536,7 @@ int define_add_to_macrotext(int r, preprocess_context *context)
 				//context->macrotext[context->mp++] = '\n';
 				m_nextch(context);
 			}
-			else if (is_letter(context))
+			else if (utf8_is_letter(context->curchar))
 			{
 				int k = collect_mident(context);
 				if (k)
@@ -585,7 +585,7 @@ int define_relis(preprocess_context *context)
 {
 	int r;
 
-	if (!is_letter(context))
+	if (!utf8_is_letter(context->curchar))
 	{
 		size_t position = skip_str(context); 
 		macro_error(ident_begins_with_letters, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
@@ -628,7 +628,7 @@ int set_relis(preprocess_context *context)
 
 	space_skip(context);
 
-	if (!is_letter(context))
+	if (!utf8_is_letter(context->curchar))
 	{
 		size_t position = skip_str(context); 
 		macro_error(ident_begins_with_letters, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);

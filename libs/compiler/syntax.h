@@ -20,6 +20,7 @@
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "uniio.h"
 
 
 #ifdef __cplusplus
@@ -33,42 +34,47 @@ typedef struct syntax
 {
 	// mem, pc & iniprocs - usage here only for codes printing
 
-	int mem[MAXMEMSIZE];		/**< Memory */
-	int pc;						/**< Program counter */
+	int mem[MAXMEMSIZE];			/**< Memory */
+	int pc;							/**< Program counter */
 
-	int iniprocs[INIPROSIZE];	/**< Init processes */
-	int procd;					/**< Process management daemon */
+	int iniprocs[INIPROSIZE];		/**< Init processes */
+	int procd;						/**< Process management daemon */
 
-	int functions[FUNCSIZE];	/**< Functions table */
-	int funcnum;				/**< Number of functions */
+	int functions[FUNCSIZE];		/**< Functions table */
+	int funcnum;					/**< Number of functions */
 
-	int identab[MAXIDENTAB];	/**< Identifiers table */
-	int id;						/**< Number of identifiers */
+	int identab[MAXIDENTAB];		/**< Identifiers table */
+	int id;							/**< Number of identifiers */
 
-	int modetab[MAXMODETAB];	/**< Modes table */
-	int md;						/**< Number of modes */
-	int startmode;				/**< Start of last record in modetab */
+	int modetab[MAXMODETAB];		/**< Modes table */
+	int md;							/**< Number of modes */
+	int startmode;					/**< Start of last record in modetab */
 	
-	int tree[MAXTREESIZE];		/**< Tree */
-	int tc;						/**< Tree counter */
+	int tree[MAXTREESIZE];			/**< Tree */
+	int tc;							/**< Tree counter */
+	
+	size_t hashtab[256];			/**< Hash table for reprtab */
+	int hash;						/**< Last value of hash function */
 
-	int reprtab[MAXREPRTAB];	/**< Representations table */
-	int rp;						/**< Representations size */
-	int repr;					/**< Representations position */
+	char32_t reprtab[MAXREPRTAB];	/**< Representations table */
+	size_t rp;						/**< Representations size */
 
-	int maxdisplg;				/**< Max displacement */
-	int wasmain;				/**< Main function flag */
+	int maxdisplg;					/**< Max displacement */
+	int wasmain;					/**< Main function flag */
 
-	int anstdispl;				/**< Stack displacement */
+	int anstdispl;					/**< Stack displacement */
+	int keywordsnum;				/**< Number of read keyword */
 } syntax;
 
 
 /**
- *	Create Syntax structure
+ *	Init Syntax structure
  *
- *	@return	Syntax structure
+ *	@param	sx			Syntax structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
  */
-syntax sx_create();
+int sx_init(syntax *const sx);
 
 
 /**
@@ -145,7 +151,7 @@ int proc_get(const syntax *const sx, const size_t index);
 
 
 /**
- *	Add new record to functions table
+ *	Add a new record to functions table
  *
  *	@param	sx			Syntax structure
  *	@param	ref			Start of function definition in syntax tree
@@ -178,7 +184,7 @@ int func_get(const syntax *const sx, const size_t index);
 
 
 /**
- *	Add new record to modes table
+ *	Add a new record to modes table
  *
  *	@param	sx			Syntax structure
  *	@param	record		Pointer to the new record
@@ -192,11 +198,54 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size);
  *	Get an item from modes table by index
  *
  *	@param	sx			Syntax structure
- *	@param	index		Index of record
+ *	@param	index		Index of record in modes table
  *
  *	@return	Item by index from modes table, @c INT_MAX on failure
  */
 int mode_get(const syntax *const sx, const size_t index);
+
+
+/**
+ *	Add a new record to representations table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	spelling	Spelling of new identifier or keyword
+ *
+ *	@return	Index of the new record in representations table, @c SIZE_MAX on failure
+ */
+size_t repr_add(syntax *const sx, const char32_t *const spelling);
+
+/**
+ *	Get a representation spelling from table by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in representations table
+ *	@param	spelling	String for result
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int repr_get_spelling(const syntax *const sx, const size_t index, char32_t *const spelling);
+
+/**
+ *	Get a representation reference from table by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in representations table
+ *
+ *	@return	Reference by index from representations table, @c INT_MAX on failure
+ */
+int repr_get_reference(const syntax *const sx, const size_t index);
+
+/**
+ *	Set representation reference by index in table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in representations table
+ *	@param	ref			Reference to identifiers table
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int repr_set_reference(syntax *const sx, const size_t index, const size_t ref);
 
 #ifdef __cplusplus
 } /* extern "C" */
