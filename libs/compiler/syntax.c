@@ -255,23 +255,23 @@ int func_get(const syntax *const sx, const size_t index)
 int ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def)
 {
 	const int lastid = sx->id;
+	sx->id += 4;
 	if (repr_get_reference(sx, repr) == 0) // это может быть только MAIN
 	{
 		if (sx->main_ref)
 		{
 			return -1;
 		}
-		sx->main_ref = sx->id;
+		sx->main_ref = lastid;
 	}
-	
 	// Ссылка на описание с таким же представлением в предыдущем блоке
-	const size_t pred = sx->identab[sx->id] = sx->reprtab[repr + 1];
+	const size_t pred = sx->identab[lastid] = sx->reprtab[repr + 1];
 	if (pred)
 	{
 		// pred == 0 только для main, эту ссылку портить нельзя
 		// ссылка на текущее описание с этим представлением
 		// (это в reprtab)
-		repr_set_reference(sx, repr, sx->id);
+		repr_set_reference(sx, repr, lastid);
 	}
 	
 	if (type != 1 && pred >= sx->curid) // один  и тот же идент м.б. переменной и меткой
@@ -284,30 +284,30 @@ int ident_add(syntax *const sx, const size_t repr, const int type, const int mod
 		}
 	}
 	
-	sx->identab[sx->id + 1] = repr; // ссылка на представление
-	ident_set_mode(sx, sx->id, mode);
+	sx->identab[lastid + 1] = repr; // ссылка на представление
+	ident_set_mode(sx, lastid, mode);
 	if (type == 1)
 	{
-		ident_set_mode(sx, sx->id, 0);	// 0, если первым встретился goto, когда встретим метку,
+		ident_set_mode(sx, lastid, 0);	// 0, если первым встретился goto, когда встретим метку,
 										// поставим 1
-		ident_set_displ(sx, sx->id, 0);	// при генерации кода когда встретим метку, поставим pc
+		ident_set_displ(sx, lastid, 0);	// при генерации кода когда встретим метку, поставим pc
 	}
 	else if (type >= 1000)
 	{
 		// Это описание типа, тогда type - 1000 – это номер инициирующей процедуры
-		ident_set_displ(sx, sx->id, type);
+		ident_set_displ(sx, lastid, type);
 	}
 	else if (type)
 	{
 		if (type < 0)
 		{
-			ident_set_displ(sx, sx->id, -(sx->displ++));
+			ident_set_displ(sx, lastid, -(sx->displ++));
 			sx->maxdispl = sx->displ;
 		}
-		else // identtab[context->lastid+3] - номер функции, если < 0, то
+		else // identtab[sx->id+3] - номер функции, если < 0, то
 			 // это функция-параметр
 		{
-			ident_set_displ(sx, sx->id, type);
+			ident_set_displ(sx, lastid, type);
 			if (func_def == 2)
 			{
 				sx->identab[lastid + 1] *= -1; //это предописание
@@ -329,9 +329,8 @@ int ident_add(syntax *const sx, const size_t repr, const int type, const int mod
 	}
 	else
 	{
-		ident_set_displ(sx, sx->id, getstatic(sx, mode));
+		ident_set_displ(sx, lastid, getstatic(sx, mode));
 	}
-	sx->id += 4;
 	return lastid;
 }
 
