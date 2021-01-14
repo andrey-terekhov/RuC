@@ -3368,7 +3368,7 @@ void block(analyzer *context, int b)
 
 	int oldinswitch = context->inswitch;
 	int notended = 1;
-	int olddispl = 0; // warning C4701: potentially uninitialized local variable used
+	int olddispl = 0;
 	int oldlg = context->sx->lg;
 	int firstdecl;
 
@@ -3376,8 +3376,7 @@ void block(analyzer *context, int b)
 	totree(context, TBegin);
 	if (b)
 	{
-		olddispl = context->sx->displ;
-		context->sx->curid = context->sx->id;
+		olddispl = enter_block_scope(context->sx);
 	}
 	context->blockflag = 0;
 
@@ -3452,11 +3451,7 @@ void block(analyzer *context, int b)
 
 	if (b)
 	{
-		for (size_t i = context->sx->id - 4; i >= context->sx->curid; i -= 4)
-		{
-			REPRTAB[context->sx->identab[i + 1] + 1] = context->sx->identab[i];
-		}
-		context->sx->displ = olddispl;
+		exit_block_scope(context->sx, olddispl);
 	}
 	context->inswitch = oldinswitch;
 	context->sx->lg = oldlg;
@@ -3471,16 +3466,13 @@ void function_definition(analyzer *context)
 	int ftype;
 	int n;
 	int fid = context->lastid;
-	int olddispl = context->sx->displ;
 
 	context->pgotost = 0;
 	context->functype = ident_get_mode(context->sx, context->lastid);
 	ftype = mode_get(context->sx, context->functype + 1);
 	n = mode_get(context->sx, context->functype + 2);
 	context->wasret = 0;
-	context->sx->displ = 3;
-	context->sx->maxdispl = 3;
-	context->sx->lg = 1;
+	
 	if ((pred = context->sx->identab[context->lastid]) > 1) // был прототип
 	{
 		if (context->functype != ident_get_mode(context->sx, pred))
@@ -3490,7 +3482,8 @@ void function_definition(analyzer *context)
 		}
 		ident_set_displ(context->sx, pred, fn);
 	}
-	context->sx->curid = context->sx->id;
+	
+	const int old_displ = enter_func_scope(context->sx);
 	for (int i = 0; i < n; i++)
 	{
 		context->type = mode_get(context->sx, context->functype + i + 3);
@@ -3537,10 +3530,8 @@ void function_definition(analyzer *context)
 		context->error_flag = 1;
 		return; // 1
 	}
-	for (size_t i = context->sx->id - 4; i >= context->sx->curid; i -= 4)
-	{
-		REPRTAB[context->sx->identab[i + 1] + 1] = context->sx->identab[i];
-	}
+	
+	exit_func_scope(context->sx, pred, old_displ);
 
 	for (int i = 0; i < context->pgotost - 1; i += 2)
 	{
@@ -3557,10 +3548,6 @@ void function_definition(analyzer *context)
 			return; // 1
 		}
 	}
-	context->sx->curid = 2; // все функции описываются на одном уровне
-	context->sx->tree[pred] = context->sx->maxdispl; // + 1;?
-	context->sx->lg = -1;
-	context->sx->displ = olddispl;
 }
 
 int func_declarator(analyzer *context, int level, int func_d, int firstdecl)

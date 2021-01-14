@@ -499,3 +499,65 @@ int repr_set_reference(syntax *const sx, const size_t index, const size_t ref)
 	sx->reprtab[index + 1] = (int)ref;
 	return 0;
 }
+
+
+int enter_block_scope(syntax *const sx)
+{
+	if (sx == NULL)
+	{
+		return INT_MAX;
+	}
+	
+	sx->curid = sx->id;
+	return sx->displ;
+}
+
+int exit_block_scope(syntax *const sx, const int scope_start)
+{
+	if (sx == NULL)
+	{
+		return -1;
+	}
+	
+	for (size_t i = sx->id - 4; i >= sx->curid; i -= 4)
+	{
+		sx->reprtab[sx->identab[i + 1] + 1] = sx->identab[i];
+	}
+	sx->displ = scope_start;
+	return 0;
+}
+
+int enter_func_scope(syntax *const sx)
+{
+	if (sx == NULL)
+	{
+		return INT_MAX;
+	}
+	
+	const int old_displ = sx->displ;
+	sx->curid = sx->id;
+	sx->displ = 3;
+	sx->maxdispl = 3;
+	sx->lg = 1;
+	
+	return old_displ;
+}
+
+int exit_func_scope(syntax *const sx, const size_t pred, const int scope_start)
+{
+	if (sx == NULL || (int)pred >= sx->tc)
+	{
+		return -1;
+	}
+	
+	for (size_t i = sx->id - 4; i >= sx->curid; i -= 4)
+	{
+		sx->reprtab[sx->identab[i + 1] + 1] = sx->identab[i];
+	}
+	sx->curid = 2; // все функции описываются на одном уровне
+	sx->tree[pred] = sx->maxdispl;
+	sx->lg = -1;
+	sx->displ = scope_start;
+	
+	return 0;
+}

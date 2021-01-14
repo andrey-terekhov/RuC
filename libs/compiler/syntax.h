@@ -331,6 +331,47 @@ int repr_get_reference(const syntax *const sx, const size_t index);
  */
 int repr_set_reference(syntax *const sx, const size_t index, const size_t ref);
 
+
+/**
+ *	Enter block scope
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	Previous stack displacement
+ */
+int enter_block_scope(syntax *const sx);
+
+/**
+ *	Exit block scope
+ *
+ *	@param	sx			Syntax structure
+ *	@param	pred		Reference to function declaration in the tree
+ *	@param	scope_start	Stack displacement at the start of the new scope
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int exit_block_scope(syntax *const sx, const int scope_start);
+
+/**
+ *	Enter function scope
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	Previous stack displacement
+ */
+int enter_func_scope(syntax *const sx);
+
+/**
+ *	Exit function scope
+ *
+ *	@param	sx			Syntax structure
+ *	@param	pred		Reference to function declaration in the tree
+ *	@param	scope_start	Stack displacement at the start of the new scope
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int exit_func_scope(syntax *const sx, const size_t pred, const int scope_start);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
