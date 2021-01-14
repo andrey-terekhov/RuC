@@ -34,6 +34,10 @@ enum ERROR
 	missing_terminating_quote_char,		/**< "Missing terminating '"' character" error */
 	string_too_long,					/**< "String literal exceeds maximum length" error */
 	unterminated_block_comment,			/**< "Unterminated block comment" error */
+	
+	// Environment errors
+	no_main_in_program,					/**< "Undefined main" error */
+	predef_but_notdef,					/**< "Undefined function" error */
 
 	// Other errors
 	after_type_must_be_ident = 201,
@@ -70,7 +74,6 @@ enum ERROR
 	int_op_for_float,
 	assmnt_float_to_int,
 	more_than_1_main,
-	no_main_in_program,
 	no_leftbr_in_printid,
 	no_rightbr_in_printid,
 	no_ident_in_printid,
@@ -130,7 +133,6 @@ enum ERROR
 	empty_init,
 	ident_not_type,
 	not_decl,
-	predef_but_notdef,
 	print_without_br,
 	select_not_from_struct,
 	init_not_struct,

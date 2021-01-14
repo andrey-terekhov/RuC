@@ -60,7 +60,7 @@ typedef struct syntax
 
 	int maxdispl;					/**< Max displacement */
 	int maxdisplg;					/**< Max displacement */
-	int wasmain;					/**< Main function flag */
+	size_t main_ref;				/**< Main function reference */
 
 	int anstdispl;					/**< Stack displacement */
 	int displ;						/**< Stack displacement in current scope */
@@ -81,6 +81,16 @@ typedef struct syntax
  *	@return	@c 0 on success, @c -1 on failure
  */
 int sx_init(syntax *const sx);
+
+/**
+ *	Check if syntax structure is correct
+ *
+ *	@param	sx			Syntax structure
+ *	@param	io			Universal io structure
+ *
+ *	@return	@c 0 if syntax is correct, @c -1 otherwise
+ */
+int sx_сheck(syntax *const sx, universal_io *const io);
 
 
 /**

@@ -16,6 +16,7 @@
 
 #include "syntax.h"
 #include <stdlib.h>
+#include "errors.h"
 
 
 int getstatic(syntax *const sx, const int type)
@@ -102,7 +103,7 @@ int sx_init(syntax *const sx)
 	sx->rp = 1;
 
 	sx->maxdisplg = 3;
-	sx->wasmain = 0;
+	sx->main_ref = 0;
 
 	sx->anstdispl = 0;
 	
@@ -119,6 +120,27 @@ int sx_init(syntax *const sx)
 	}
 
 	return 0;
+}
+
+int sx_сheck(syntax *const sx, universal_io *const io)
+{
+	int error_flag;
+	
+	if (sx->main_ref == 0)
+	{
+		error(io, no_main_in_program);
+		error_flag = -1;
+	}
+	
+	for (int i = 0; i <= sx->prdf; i++)
+	{
+		if (sx->predef[i])
+		{
+			error(io, predef_but_notdef, sx->reprtab, sx->predef[i]);
+			error_flag = -1;
+		}
+	}
+	return error_flag;
 }
 
 
@@ -236,11 +258,11 @@ int ident_add(syntax *const sx, const size_t repr, const int type, const int mod
 	int lastid = sx->id;
 	if (sx->reprtab[repr + 1] == 0) // это может быть только MAIN
 	{
-		if (sx->wasmain)
+		if (sx->main_ref)
 		{
 			return -1;
 		}
-		sx->wasmain = sx->id;
+		sx->main_ref = sx->id;
 	}
 	
 	// ссылка на описание с таким же

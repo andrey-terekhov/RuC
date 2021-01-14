@@ -82,7 +82,6 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 		case ident_is_not_declared:
 		case repeated_label:
 		case no_field:
-		case predef_but_notdef:
 			error(io, num, REPRTAB, REPRTAB_POS);
 			break;
 		case label_not_declared:
@@ -3768,7 +3767,6 @@ void ext_decl(analyzer *context)
 	get_char(context->lxr);
 	context->next = lex(context->lxr);
 	
-	int i;
 	context->temp_tc = context->sx->tc;
 	do // top levext_declel описания переменных и функций до конца файла
 	{
@@ -3911,18 +3909,6 @@ void ext_decl(analyzer *context)
 
 	ex:;
 	} while (context->next != LEOF);
-
-	if (context->sx->wasmain == 0)
-	{
-		context_error(context, no_main_in_program);
-	}
-	for (i = 0; i <= context->sx->prdf; i++)
-	{
-		if (context->sx->predef[i])
-		{
-			context_error(context, predef_but_notdef);
-		}
-	}
 	totree(context, TEnd);
 }
 /*

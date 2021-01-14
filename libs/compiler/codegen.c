@@ -748,7 +748,7 @@ void compstmt_gen(syntax *const sx, ad *const context)
 }
 
 /** Генерация кодов */
-int codegen(universal_io *const io, syntax *const sx)
+int codegen(syntax *const sx)
 {
 	ad context;
 
@@ -820,15 +820,9 @@ int codegen(universal_io *const io, syntax *const sx)
 			}
 		}
 	}
-
-	if (sx->wasmain == 0)
-	{
-		error(io, no_main_in_program);
-		return -1;
-	}
 	tocode(sx, CALL1);
 	tocode(sx, CALL2);
-	tocode(sx, sx->identab[sx->wasmain + 3]);
+	tocode(sx, sx->identab[sx->main_ref + 3]);
 	tocode(sx, STOP);
 
 	return 0;
@@ -839,8 +833,8 @@ void output_export(universal_io *const io, const syntax *const sx)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%zi %zi %zi %zi %zi %i %i\n", mem_get_size(sx), sx->funcnum, sx->id,
-				   sx->rp, sx->md, sx->maxdisplg, sx->wasmain);
+	uni_printf(io, "%zi %zi %zi %zi %zi %i %zi\n", mem_get_size(sx), sx->funcnum, sx->id,
+				   sx->rp, sx->md, sx->maxdisplg, sx->main_ref);
 
 	for (size_t i = 0; i < mem_get_size(sx); i++)
 	{
@@ -889,7 +883,7 @@ int encode_to_vm(universal_io *const io, syntax *const sx)
 		return -1;
 	}
 
-	int ret = codegen(io, sx);
+	int ret = codegen(sx);
 	if (!ret)
 	{
 		output_export(io, sx);

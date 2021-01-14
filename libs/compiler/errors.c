@@ -85,6 +85,20 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "блочный комментарий не окончен");
 			break;
 
+		case no_main_in_program: // test_exist
+			sprintf(msg, "в каждой программе должна быть ГЛАВНАЯ функция");
+			break;
+
+		case predef_but_notdef: // need_test
+		{
+			index += sprintf(&msg[index], "функция ");
+			const int *const reprtab = va_arg(args, int *);
+			const int pos = va_arg(args, int);
+			index += printident(reprtab, pos, &msg[index]);
+			index += sprintf(&msg[index], " была предопределена, но не описана");
+		}
+		break;
+
 		case after_type_must_be_ident: // test_exist
 			sprintf(msg, "после символа типа должен быть идентификатор или * "
 												  "идентификатор");
@@ -203,9 +217,6 @@ void get_error(const int num, char *const msg, va_list args)
 			break;
 		case more_than_1_main:	// test_exist
 			sprintf(msg, "в программе может быть только 1 идентификатор ГЛАВНАЯ");
-			break;
-		case no_main_in_program: // test_exist
-			sprintf(msg, "в каждой программе должна быть ГЛАВНАЯ функция");
 			break;
 		case no_leftbr_in_printid: // test_exist
 			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет (");
@@ -432,15 +443,6 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "здесь должен быть тип (стандартный или описанный "
 												  "пользователем)");
 			break;
-		case predef_but_notdef: // need_test
-		{
-			index += sprintf(&msg[index], "функция ");
-			const int *const reprtab = va_arg(args, int *);
-			const int pos = va_arg(args, int);
-			index += printident(reprtab, pos, &msg[index]);
-			index += sprintf(&msg[index], " была предопределена, но не описана");
-		}
-		break;
 		case print_without_br: // test_exist
 			sprintf(msg, "операнд оператора печати должен быть в круглых скобках ()");
 			break;
