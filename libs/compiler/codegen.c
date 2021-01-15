@@ -141,6 +141,9 @@ int Expr_gen(syntax *const sx, int incond)
 
 	while (flagprim)
 	{
+		// tree_next_node(sx);
+		// printf("%i tc=%i: Expr_gen\n", node_get_type(tree_get_node(sx)), sx->tc);
+
 		switch (op = sx->tree[sx->tc++])
 		{
 			case TIdent:
@@ -338,6 +341,9 @@ int Expr_gen(syntax *const sx, int incond)
 		}
 		if (sx->tree[sx->tc] == TExprend)
 		{
+			// tree_next_node(sx);
+			// printf("%i tc=%i: TExprend Expr_gen\n", node_get_type(tree_get_node(sx)), sx->tc);
+			
 			sx->tc++;
 			flagprim = 0;
 		}
@@ -347,6 +353,10 @@ int Expr_gen(syntax *const sx, int incond)
 
 void Stmt_gen(syntax *const sx, ad *const context)
 {
+	// node *prev_node = tree_get_node(sx);
+	// tree_next_node(sx);
+	// printf("%i tc=%i: Stmt_gen\n", node_get_type(tree_get_node(sx)), sx->tc);
+
 	switch (sx->tree[sx->tc++])
 	{
 		case NOP:
@@ -622,7 +632,9 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		default:
 		{
+			// tree_set_node(sx, prev_node);
 			sx->tc--;
+			// printf("default %i tc=%i: Stmt_gen\n", node_get_type(tree_get_node(sx)), sx->tc);
 			Expr_gen(sx, 0);
 			break;
 		}
@@ -722,6 +734,9 @@ void compstmt_gen(syntax *const sx, ad *const context)
 {
 	while (sx->tree[sx->tc] != TEnd)
 	{
+		// tree_next_node(sx);
+		// printf("%i tc=%i: compstmt_gen\n", node_get_type(tree_get_node(sx)), sx->tc);
+		
 		switch (sx->tree[sx->tc])
 		{
 			case TDeclarr:
@@ -745,6 +760,7 @@ void compstmt_gen(syntax *const sx, ad *const context)
 			}
 			default:
 			{
+				// printf("default %i tc=%i: compstmt_gen\n", node_get_type(tree_get_node(sx)), sx->tc);
 				Stmt_gen(sx, context);
 				break;
 			}
@@ -756,6 +772,15 @@ void compstmt_gen(syntax *const sx, ad *const context)
 /** Генерация кодов */
 int codegen(universal_io *const io, syntax *const sx)
 {
+	node root = node_get_root(sx);
+	tree_set_node(sx, &root);
+
+	// // тут пока эксперимент, отладочная печать
+	// while (!tree_next_node(sx))
+	// {
+	// 	printf("%i\n", node_get_type(tree_get_node(sx)));
+	// }
+	// // тут эксперимент заканчивается
 	ad context;
 
 	int treesize = sx->tc;
@@ -763,6 +788,9 @@ int codegen(universal_io *const io, syntax *const sx)
 
 	while (sx->tc < treesize)
 	{
+		// tree_next_node(sx);
+		// printf("%i tc=%i :codegen\n", node_get_type(tree_get_node(sx)), sx->tc);
+
 		switch (sx->tree[sx->tc++])
 		{
 			case TEnd:
@@ -778,7 +806,11 @@ int codegen(universal_io *const io, syntax *const sx)
 				tocode(sx, maxdispl);
 				size_t old_pc = mem_get_size(sx);
 				mem_increase(sx, 1);
-				sx->tc++; // TBegin
+
+				// tree_next_node(sx);
+				// printf("%i tc=%i :codegen TBegin\n", node_get_type(tree_get_node(sx)), sx->tc);
+
+				sx->tc++; // TBegin	
 				compstmt_gen(sx, &context);
 				mem_set(sx, old_pc, (int)mem_get_size(sx));
 				break;
