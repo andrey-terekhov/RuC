@@ -582,16 +582,23 @@ int node_get_arg(const node *const nd, const size_t index)
 
 int node_set_type(node *const nd, const int type)
 {
+	(void)nd;
+	(void)type;
 	return 0;
 }
 
 int node_add_arg(node *const nd, const int arg)
 {
+	(void)nd;
+	(void)arg;
 	return 0;
 }
 
 int node_set_arg(node *const nd, const size_t index, const int arg)
 {
+	(void)nd;
+	(void)index;
+	(void)arg;
 	return 0;
 }
 
@@ -616,7 +623,7 @@ int tree_test(syntax *const sx)
 
 	// Тестирование функций
 	size_t i = 0;
-	while (i != SIZE_MAX && (int)i < sx->tc - 1)
+	while (i != SIZE_MAX && i < sx->tc - 1)
 	{
 		i = skip_operator(sx->tree, i);
 	}
@@ -688,5 +695,6 @@ int tree_test_recursive(syntax *const sx)
 
 int tree_test_copy(syntax *const sx)
 {
+	(void)sx;
 	return 0;
 }
