@@ -83,7 +83,7 @@ int sx_init(syntax *const sx);
  *	Increase size of memory table by value
  *
  *	@param	sx			Syntax structure
- *	@param	value			Value to increase
+ *	@param	value		Value to increase
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
@@ -93,7 +93,7 @@ int mem_increase(syntax *const sx, const size_t value);
  *	Add new record to memory table
  *
  *	@param	sx			Syntax structure
- *	@param	value			Value to record
+ *	@param	value		Value to record
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
