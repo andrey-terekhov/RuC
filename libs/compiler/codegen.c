@@ -15,10 +15,11 @@
  */
 
 #include "codegen.h"
+#include <stdlib.h>
 #include "defs.h"
 #include "errors.h"
+#include "tree.h"
 #include "uniprinter.h"
-#include <stdlib.h>
 
 
 typedef struct ad
