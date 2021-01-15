@@ -16,6 +16,7 @@
 
 #include "syntax.h"
 #include <stdlib.h>
+#include "tree.h"
 
 
 /**	Check if modes are equal */
@@ -333,7 +334,7 @@ int repr_set_reference(syntax *const sx, const size_t index, const size_t ref)
 
 int tree_set_node(syntax *const sx, node *const nd)
 {
-	if (sx == NULL || nd == NULL)
+	if (sx == NULL || !node_is_correct(nd))
 	{
 		return -1;
 	}
@@ -342,9 +343,26 @@ int tree_set_node(syntax *const sx, node *const nd)
 	return 0;
 }
 
+int tree_next_node(syntax *const sx)
+{
+	if (sx == NULL || !node_is_correct(sx->current))
+	{
+		return -1;
+	}
+
+	*(sx->current) = node_get_next(sx->current);
+	
+	if (!node_is_correct(sx->current))
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
 node *tree_get_node(syntax *const sx)
 {
-	if (sx == NULL || sx->current == NULL)
+	if (sx == NULL || !node_is_correct(sx->current))
 	{
 		return NULL;
 	}
