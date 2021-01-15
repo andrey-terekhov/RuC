@@ -243,7 +243,7 @@ size_t func_get(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || index >= sx->funcnum)
 	{
-		return INT_MAX;
+		return SIZE_MAX;
 	}
 
 	return sx->functions[index];

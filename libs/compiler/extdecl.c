@@ -3486,8 +3486,8 @@ void function_definition(analyzer *context)
 	for (int i = 0; i < n; i++)
 	{
 		context->type = mode_get(context->sx, context->functype + i + 3);
-		int temp = func_get(context->sx, fn + i + 1);
-		if (temp == INT_MAX)
+		size_t temp = func_get(context->sx, fn + i + 1);
+		if (temp == SIZE_MAX)
 		{
 			context->error_flag = 1;
 			return;

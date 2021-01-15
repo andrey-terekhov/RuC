@@ -105,7 +105,8 @@ void init_modetab(analyzer *context)
 	context->sx->modetab[16] = LVOIDASTER;
 	context->sx->modetab[17] = 1;
 	context->sx->modetab[18] = LVOIDASTER;
-	context->sx->modetab[19] = context->sx->startmode = 14;
+	context->sx->modetab[19] = 14;
+	context->sx->startmode = 14;
 	context->sx->md = 19;
 	context->sx->keywordsnum = 0;
 	context->line = 1;
