@@ -25,13 +25,17 @@
 extern "C" {
 #endif
 
-/** Tree type */
-typedef int tree;
+/** Tree reference */
+typedef struct tree
+{
+	int *array;				/**< Reference to table */
+	size_t *size;			/**< Reference to size */
+} tree;
 
 /** Tree node */
 typedef struct node
 {
-	tree *tree;				/**< Reference to tree */
+	tree tree;				/**< Tree reference */
 	size_t type;			/**< Node type */
 
 	size_t argv;			/**< Reference to arguments */
