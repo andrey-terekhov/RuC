@@ -69,12 +69,16 @@ int compile_from_io_to_vm(universal_io *const io)
 		return -1;
 	}
 
-	syntax sx = sx_create();
+	syntax sx;
+	int ret = sx_init(&sx);
 
-	int ret = analyze(io, &sx);
+	if (!ret)
+	{
+		ret = analyze(io, &sx);
 #ifdef GENERATE_TABLES
-	tables_and_tree(&sx, DEFAULT_TREE);
+		tables_and_tree(&sx, DEFAULT_TREE);
 #endif
+	}
 
 	if (!ret)
 	{

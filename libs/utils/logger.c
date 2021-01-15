@@ -198,10 +198,7 @@ size_t literal(const char *const line, const size_t symbol)
 	size_t j = i;
 
 	char32_t ch = utf8_convert(&line[j]);
-	while (utf8_is_russian(ch) || ch == '_'
-		|| (ch >= '0' && ch <= '9')
-		|| (ch >= 'A' && ch <= 'Z')
-		|| (ch >= 'a' && ch <= 'z'))
+	while (utf8_is_letter(ch) || utf8_is_digit(ch))
 	{
 		i = j;
 		if (j == 0)
@@ -226,10 +223,7 @@ size_t length(const char *const line, const size_t size, const size_t symbol)
 	{
 		const char32_t ch = utf8_convert(&line[i]);
 
-		if (utf8_is_russian(ch) || ch == '_'
-			|| (ch >= '0' && ch <= '9')
-			|| (ch >= 'A' && ch <= 'Z')
-			|| (ch >= 'a' && ch <= 'z'))
+		if (utf8_is_letter(ch) || utf8_is_digit(ch))
 		{
 			i += utf8_symbol_size(line[i]);
 			j++;
