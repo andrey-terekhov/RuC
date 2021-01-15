@@ -351,13 +351,8 @@ int tree_next_node(syntax *const sx)
 	}
 
 	*(sx->current) = node_get_next(sx->current);
-	
-	if (!node_is_correct(sx->current))
-	{
-		return 1;
-	}
 
-	return 0;
+	return !node_is_correct(sx->current);
 }
 
 node *tree_get_node(syntax *const sx)

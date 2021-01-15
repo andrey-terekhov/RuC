@@ -267,7 +267,7 @@ int tree_set_node(syntax *const sx, node *const nd);
  *
  *	@return	@c -1 on failure, 
  *			@c  0 on success,
- *			@c  1 on incorrectness of next node
+ *			@c  1 on the end of the tree
  */
 int tree_next_node(syntax *const sx);
 
