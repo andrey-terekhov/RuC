@@ -261,7 +261,7 @@ int repr_set_reference(syntax *const sx, const size_t index, const size_t ref);
 int tree_set_node(syntax *const sx, node *const nd);
 
 /**
- *	Set in current node next node
+ *	Set next node in current node
  *
  *	@param	sx			Syntax structure
  *
