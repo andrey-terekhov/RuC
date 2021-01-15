@@ -25,6 +25,22 @@ node node_expression(tree *const tree, const size_t index);
 node node_operator(tree *const tree, const size_t index);
 
 
+tree sx_to_tree(syntax *const sx)
+{
+	tree tree;
+	if (sx == NULL)
+	{
+		tree.array = NULL;
+		return tree;
+	}
+
+	tree.array = sx->tree;
+	tree.size = &sx->tc;
+
+	return tree;
+}
+
+
 int tree_is_correct(const tree *const tree)
 {
 	return tree != NULL && tree->array != NULL && tree->size != NULL;
@@ -538,13 +554,10 @@ node node_get_root(syntax *const sx)
 
 	node nd;
 
-	nd.tree.array = sx->tree;
-	nd.tree.size = &sx->tc;
-
+	nd.tree = sx_to_tree(sx);
 	nd.type = SIZE_MAX;
 	nd.argv = 0;
 	nd.argc = 0;
-
 	nd.children = 0;
 	nd.amount = 0;
 
@@ -661,7 +674,7 @@ int tree_test(syntax *const sx)
 		return -1;
 	}
 
-	tree tree = { sx->tree, &sx->tc };
+	tree tree = sx_to_tree(sx);
 
 	// Тестирование функций
 	size_t i = 0;
@@ -691,30 +704,31 @@ int tree_test_next(syntax *const sx)
 		return -1;
 	}
 
-	size_t i = 0;
 	node nd = node_get_root(sx);
+	tree temp = nd.tree;
 
+	size_t i = 0;
 	nd = node_get_next(&nd);
 	while (node_is_correct(&nd))
 	{
-		if (sx->tree[i++] != node_get_type(&nd))
+		if (tree_get(&temp, i++) != node_get_type(&nd))
 		{
-			error(NULL, tree_unexpected, node_get_type(&nd), i - 1, sx->tree[i - 1]);
+			error(NULL, tree_unexpected, node_get_type(&nd), i - 1, tree_get(&temp, i - 1));
 			return -1;
 		}
 
 		for (size_t j = 0; node_get_arg(&nd, j) != INT_MAX; j++)
 		{
-			if (sx->tree[i++] != node_get_arg(&nd, j))
+			if (tree_get(&temp, i++) != node_get_arg(&nd, j))
 			{
-				error(NULL, tree_unexpected, node_get_arg(&nd, j), i - 1, sx->tree[i - 1]);
+				error(NULL, tree_unexpected, node_get_arg(&nd, j), i - 1, tree_get(&temp, i - 1));
 				return -1;
 			}
 		}
 		nd = node_get_next(&nd);
 	}
 
-	return i == sx->tc ? 0 : -1;
+	return i == tree_size(&temp) ? 0 : -1;
 }
 
 int tree_test_recursive(syntax *const sx)
@@ -724,15 +738,17 @@ int tree_test_recursive(syntax *const sx)
 		return -1;
 	}
 
-	size_t index = 0;
 	node nd = node_get_root(sx);
+	tree temp = nd.tree;
+
+	size_t index = 0;
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
 	{
 		node child = node_get_child(&nd, i);
 		index = node_test_recursive(&child, index);
 	}
 
-	return index != SIZE_MAX && index == sx->tc ? 0 : -1;
+	return index != SIZE_MAX && index == tree_size(&temp) ? 0 : -1;
 }
 
 int tree_test_copy(syntax *const sx)
