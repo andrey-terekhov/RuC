@@ -129,6 +129,14 @@ int is_lexeme(const int value)
 }
 
 
+node node_broken()
+{
+	node nd;
+	nd.tree.array = NULL;
+	return nd;
+}
+
+
 size_t skip_expression(tree *const tree, size_t i)
 {
 	node nd = node_expression(tree, i);
@@ -148,12 +156,12 @@ size_t skip_expression(tree *const tree, size_t i)
 
 node node_expression(tree *const tree, const size_t index)
 {
-	node nd;
 	if (index == SIZE_MAX)
 	{
-		nd.tree.array = NULL;
-		return nd;
+		return node_broken();
 	}
+
+	node nd;
 
 	nd.tree = *tree;
 	nd.type = index;
@@ -165,8 +173,7 @@ node node_expression(tree *const tree, const size_t index)
 	if (is_operator(tree_get(tree, index)))
 	{
 		error(NULL, tree_expression_not_block, index, tree_get(tree, index));
-		nd.tree.array = NULL;
-		return nd;
+		return node_broken();
 	}
 
 	switch (tree_get(tree, index))
@@ -230,7 +237,7 @@ node node_expression(tree *const tree, const size_t index)
 			if (tree_get(tree, index + 1) != TExprend)
 			{
 				error(NULL, tree_expression_no_texprend, index, tree_get(tree, index));
-				nd.tree.array = NULL;
+				return node_broken();
 			}
 			break;
 
@@ -239,8 +246,7 @@ node node_expression(tree *const tree, const size_t index)
 			if (!is_lexeme(tree_get(tree, index)))
 			{
 				error(NULL, tree_expression_unknown, index, tree_get(tree, index));
-				nd.tree.array = NULL;
-				return nd;
+				return node_broken();
 			}
 
 			size_t j = index + 1;
@@ -249,8 +255,7 @@ node node_expression(tree *const tree, const size_t index)
 				if (is_operator(tree_get(tree, j)))
 				{
 					error(NULL, tree_expression_operator, j, tree_get(tree, j));
-					nd.tree.array = NULL;
-					return nd;
+					return node_broken();
 				}
 
 				nd.argc++;
@@ -268,8 +273,7 @@ node node_expression(tree *const tree, const size_t index)
 
 	if (j == SIZE_MAX)
 	{
-		nd.tree.array = NULL;
-		return nd;
+		return node_broken();
 	}
 
 	if (tree_get(tree, j) == NOP || is_expression(tree_get(tree, j)) || is_lexeme(tree_get(tree, j)))
@@ -279,7 +283,7 @@ node node_expression(tree *const tree, const size_t index)
 	else
 	{
 		error(NULL, tree_expression_no_texprend, j, tree_get(tree, j));
-		nd.tree.array = NULL;
+		return node_broken();
 	}
 
 	return nd;
@@ -310,12 +314,12 @@ size_t skip_operator(tree *const tree, size_t i)
 
 node node_operator(tree *const tree, const size_t index)
 {
-	node nd;
 	if (index == SIZE_MAX)
 	{
-		nd.tree.array = NULL;
-		return nd;
+		return node_broken();
 	}
+
+	node nd;
 
 	nd.tree = *tree;
 	nd.type = index;
@@ -358,7 +362,7 @@ node node_operator(tree *const tree, const size_t index)
 			}
 			else
 			{
-				nd.tree.array = NULL;
+				return node_broken();
 			}
 		}
 		break;
@@ -382,7 +386,7 @@ node node_operator(tree *const tree, const size_t index)
 			}
 			else
 			{
-				nd.tree.array = NULL;
+				return node_broken();
 			}
 			
 		}
@@ -463,7 +467,7 @@ node node_operator(tree *const tree, const size_t index)
 			}
 			else
 			{
-				nd.tree.array = NULL;
+				return node_broken();
 			}
 		}
 		break;
@@ -527,12 +531,12 @@ size_t node_test_recursive(node *const nd, size_t i)
 
 node node_get_root(syntax *const sx)
 {
-	node nd;
 	if (sx == NULL)
 	{
-		nd.tree.array = NULL;
-		return nd;
+		return node_broken();
 	}
+
+	node nd;
 
 	nd.tree.array = sx->tree;
 	nd.tree.size = &sx->tc;
@@ -553,7 +557,7 @@ node node_get_root(syntax *const sx)
 
 	if (i == SIZE_MAX)
 	{
-		nd.tree.array = NULL;
+		return node_broken();
 	}
 
 	return nd;
@@ -563,9 +567,7 @@ node node_get_child(node *const nd, const size_t index)
 {
 	if (!node_is_correct(nd) || index > nd->amount)
 	{
-		node child;
-		child.tree.array = NULL;
-		return child;
+		return node_broken();
 	}
 
 	size_t i = nd->children;
@@ -590,9 +592,7 @@ node node_get_next(node *const nd)
 {
 	if (!node_is_correct(nd) || tree_get(&nd->tree, nd->children) == INT_MAX)
 	{
-		node next;
-		next.tree.array = NULL;
-		return next;
+		return node_broken();
 	}
 
 	if (nd->type == SIZE_MAX)
