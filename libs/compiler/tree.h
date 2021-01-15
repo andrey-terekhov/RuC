@@ -101,6 +101,47 @@ int node_get_arg(const node *const nd, const size_t index);
 
 
 /**
+ *	Set node type
+ *
+ *	@param	nd		Node structure
+ *	@param	type	Node type
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int node_set_type(node *const nd, const int type);
+
+/**
+ *	Add new node argument
+ *
+ *	@param	nd		Node structure
+ *	@param	arg		Node argument
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int node_add_arg(node *const nd, const int arg);
+
+/**
+ *	Set node argument by index
+ *
+ *	@param	nd		Node structure
+ *	@param	index	Argument number
+ *	@param	arg		Node argument
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int node_set_arg(node *const nd, const size_t index, const int arg);
+
+/**
+ *	Set child node
+ *
+ *	@param	nd		Current node
+ *
+ *	@return	Child node
+ */
+node node_set_child(node *const nd);
+
+
+/**
  *	Check that node is correct
  *
  *	@param	nd		Node structure
@@ -113,7 +154,7 @@ int node_is_correct(const node *const nd);
 /**
  *	Test tree building
  *
- *	@param	sx	Syntax structure
+ *	@param	sx		Syntax structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
@@ -122,7 +163,7 @@ int tree_test(syntax *const sx);
 /**
  *	Test tree building by node_get_next
  *
- *	@param	sx	Syntax structure
+ *	@param	sx		Syntax structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
@@ -131,11 +172,20 @@ int tree_test_next(syntax *const sx);
 /**
  *	Test tree building from tree traversal
  *
- *	@param	sx	Syntax structure
+ *	@param	sx		Syntax structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
 int tree_test_recursive(syntax *const sx);
+
+/**
+ *	Test tree copying by new interface
+ *
+ *	@param	sx		Syntax structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int tree_test_copy(syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */

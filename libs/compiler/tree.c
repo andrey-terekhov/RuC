@@ -580,6 +580,27 @@ int node_get_arg(const node *const nd, const size_t index)
 }
 
 
+int node_set_type(node *const nd, const int type)
+{
+	return 0;
+}
+
+int node_add_arg(node *const nd, const int arg)
+{
+	return 0;
+}
+
+int node_set_arg(node *const nd, const size_t index, const int arg)
+{
+	return 0;
+}
+
+node node_set_child(node *const nd)
+{
+	return *nd;
+}
+
+
 int node_is_correct(const node *const nd)
 {
 	return nd != NULL && nd->tree != NULL;
@@ -663,4 +684,9 @@ int tree_test_recursive(syntax *const sx)
 	}
 
 	return index != SIZE_MAX && sx->tree[index] == TEnd ? 0 : -1;
+}
+
+int tree_test_copy(syntax *const sx)
+{
+	return 0;
 }
