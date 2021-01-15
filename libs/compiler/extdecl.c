@@ -3493,7 +3493,7 @@ void function_definition(analyzer *context)
 			return;
 		}
 
-		REPRTAB_POS = temp;
+		REPRTAB_POS = (int)temp;
 		if (REPRTAB_POS > 0)
 		{
 			toidentab(context, 0, context->type);
