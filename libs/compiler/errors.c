@@ -630,6 +630,33 @@ void get_error(const int num, char *const msg, va_list args)
 		}
 		break;
 
+		case set_type_error:
+		{
+			const size_t type = va_arg(args, size_t);
+			sprintf(msg, "невозможно записать тип потомка %zi", type);
+		}
+		break;
+		case add_arg_error:
+		{
+			const size_t index = va_arg(args, size_t);
+			sprintf(msg, "невозможно записать %zi-й аргумент узла", index);
+		}
+		break;
+		case set_child_error:
+		{
+			const size_t index = va_arg(args, size_t);
+			sprintf(msg, "невозможно записать %zi-й потомок", index);
+		}
+		break;
+		case set_wrong_element:
+		{
+			const size_t index = va_arg(args, size_t);
+			const size_t expected = va_arg(args, size_t);
+			const size_t retrieved = va_arg(args, size_t);
+			sprintf(msg, "ожидался tree[%zi] = %zi, записан tree[%zi] = %zi", index, expected, index, retrieved);
+		}
+		break;
+
 		default:
 			sprintf(msg, "этот код ошибки я прозевал");
 	}

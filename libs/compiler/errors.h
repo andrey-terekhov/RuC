@@ -176,6 +176,11 @@ enum ERROR
 	tree_expression_no_texprend,
 	tree_no_tend,
 	tree_unexpected,
+
+	set_type_error,
+	add_arg_error,
+	set_child_error,
+	set_wrong_element,
 };
 
 /** Warnings codes */
