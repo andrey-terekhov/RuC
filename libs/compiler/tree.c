@@ -535,6 +535,34 @@ size_t node_test_recursive(node *const nd, size_t i)
 	return i;
 }
 
+int node_test_copy(node *const dest, node *const nd)
+{
+	node child_dest = node_set_child(dest);
+	if (node_set_type(&child_dest, node_get_type(nd)))
+	{
+		return -1;
+	}
+
+	for (size_t i = 0; node_get_arg(nd, i) != INT_MAX; i++)
+	{
+		if (node_add_arg(&child_dest, node_get_arg(nd, i)))
+		{
+			return -1;
+		}
+	}
+
+	for (size_t i = 0; i < node_get_amount(nd); i++)
+	{
+		node child = node_get_child(&nd, i);
+		if (node_test_copy(&dest, &child))
+		{
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -739,7 +767,6 @@ int tree_test_recursive(syntax *const sx)
 	}
 
 	node nd = node_get_root(sx);
-	tree temp = nd.tree;
 
 	size_t index = 0;
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
@@ -748,11 +775,41 @@ int tree_test_recursive(syntax *const sx)
 		index = node_test_recursive(&child, index);
 	}
 
-	return index != SIZE_MAX && index == tree_size(&temp) ? 0 : -1;
+	return index != SIZE_MAX && index == tree_size(&nd.tree) ? 0 : -1;
 }
 
 int tree_test_copy(syntax *const sx)
 {
-	(void)sx;
-	return 0;
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
+	syntax sx_dest;
+	sx_init(&sx_dest);
+
+	node nd = node_get_root(sx);
+	node nd_dest = node_get_root(&sx_dest);
+
+	for (size_t i = 0; i < node_get_amount(&nd); i++)
+	{
+		node child = node_get_child(&nd, i);
+		if (node_test_copy(&nd_dest, &child))
+		{
+			return -1;
+		}
+	}
+
+	size_t i = 0;
+	while (i < tree_size(&nd.tree) && i < tree_size(&nd_dest.tree))
+	{
+		if (tree_get(&nd.tree, i) != tree_get(&nd_dest.tree, i))
+		{
+			return -1;
+		}
+
+		i++;
+	}
+
+	return tree_size(&nd.tree) != tree_size(&nd_dest.tree);
 }
