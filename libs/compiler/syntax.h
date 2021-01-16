@@ -231,7 +231,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
  *
  *	@return	Identifier index in representations table, @c INT_MAX on failure
  */
-int ident_get_repr(const syntax *const sx, const size_t index);
+size_t ident_get_repr(const syntax *const sx, const size_t index);
 
 /**
  *	Get item mode from identifiers table by index
@@ -262,7 +262,7 @@ int ident_get_displ(const syntax *const sx, const size_t index);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int ident_set_repr(syntax *const sx, const size_t index, const int repr);
+int ident_set_repr(syntax *const sx, const size_t index, const size_t repr);
 
 /**
  *	Set identifier mode by index in identifiers table

@@ -25,11 +25,14 @@ int get_static(syntax *const sx, const int type)
 	const int old_displ = sx->displ;
 	sx->displ += sx->lg * size_of(sx, type);
 	
-	sx->maxdisplg = sx->lg <= 0
-		? -sx->displ
-		: sx->displ > sx->maxdispl
-			? sx->displ
-			: sx->maxdispl;
+	if (sx->lg > 0)
+	{
+		sx->maxdispl = (sx->displ > sx->maxdispl) ? sx->displ : sx->maxdispl;
+	}
+	else
+	{
+		sx->maxdisplg = -sx->displ;
+	}
 	
 	return old_displ;
 }
@@ -276,13 +279,13 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 	}
 	
 	// Один и тот же идентификатор м.б. переменной и меткой
-	if (type != 1 && prev >= sx->curid && (func_def != 1 || sx->identab[prev + 1] > 0))
+	if (type != 1 && prev >= sx->curid && (func_def != 1 || ident_get_repr(sx, prev) > 0))
 	{
 		return SIZE_MAX - 1;	// только определение функции может иметь 2 описания,
 								// т.е. иметь предописание
 	}
 	
-	sx->identab[lastid + 1] = (int)repr; // ссылка на представление
+	ident_set_repr(sx, lastid, repr);
 	ident_set_mode(sx, lastid, mode);
 	
 	if (type < 0)
@@ -327,21 +330,17 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 			}
 		}
 	}
-	else
-	{
-		ident_set_displ(sx, lastid, get_static(sx, mode));
-	}
 	return lastid;
 }
 
-int ident_get_repr(const syntax *const sx, const size_t index)
+size_t ident_get_repr(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || index >= sx->id)
 	{
 		return INT_MAX;
 	}
 	
-	return sx->identab[index + 1];
+	return (size_t)sx->identab[index + 1];
 }
 
 int ident_get_mode(const syntax *const sx, const size_t index)
@@ -364,14 +363,14 @@ int ident_get_displ(const syntax *const sx, const size_t index)
 	return sx->identab[index + 3];
 }
 
-int ident_set_repr(syntax *const sx, const size_t index, const int repr)
+int ident_set_repr(syntax *const sx, const size_t index, const size_t repr)
 {
 	if (sx == NULL || index >= sx->id)
 	{
 		return -1;
 	}
 	
-	sx->identab[index + 1] = repr;
+	sx->identab[index + 1] = (int)repr;
 	return 0;
 }
 
@@ -582,7 +581,7 @@ int scope_func_exit(syntax *const sx, const size_t decl_ref, const int displ)
 		repr_set_reference(sx, ident_get_repr(sx, i), sx->identab[i]);
 	}
 	
-	sx->curid = 2; // все функции описываются на одном уровне
+	sx->curid = 2;	// Все функции описываются на одном уровне
 	sx->tree[decl_ref] = sx->maxdispl;
 	sx->lg = -1;
 	sx->displ = displ;
