@@ -37,5 +37,10 @@ int main(int argc, const char *argv[])
 		ws_add_file(&ws, name);
 	}
 	
+
+#ifdef TESTING_EXIT_CODE
+	return compile_to_vm(&ws) ? TESTING_EXIT_CODE : 0;
+#else
 	return compile_to_vm(&ws);
+#endif
 }

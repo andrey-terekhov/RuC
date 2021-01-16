@@ -2,6 +2,8 @@
 
 init()
 {
+	exit_code=1
+
 	output_time=0.0
 	wait_for=5
 	vm_release=master
@@ -74,7 +76,7 @@ build_folder()
 	rm -rf build && mkdir build && cd build
 
 	if [[ $OSTYPE == "msys" ]] ; then
-		cmake ..
+		cmake .. -DTESTING_EXIT_CODE=$exit_code
 
 		if ! cmake --build . --config Release ; then
 			exit 1
@@ -84,8 +86,8 @@ build_folder()
 			fi
 		fi
 	else
-		mkdir Release && cd Release && cmake ../.. && cd ..
-		mkdir Debug && cd Debug && cmake ../.. && cd ..
+		mkdir Release && cd Release && cmake ../.. -DTESTING_EXIT_CODE=$exit_code && cd ..
+		mkdir Debug && cd Debug && cmake ../.. -DTESTING_EXIT_CODE=$exit_code && cd ..
 
 		if ! cmake --build Release --config Release ; then
 			exit 1
