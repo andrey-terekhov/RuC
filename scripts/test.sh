@@ -3,7 +3,7 @@
 init()
 {
 	output_time=0.0
-	wait_for=2
+	wait_for=5
 	vm_release=master
 
 	test_dir=../tests
@@ -33,7 +33,7 @@ init()
 				echo -e "\t-d, --debug\tSwitch on debug tracing."
 				echo -e "\t-v, --virtual\tSet RuC virtual machine release."
 				echo -e "\t-o, --output\tSet output printing time (default = 0.0)."
-				echo -e "\t-w, --wait\tSet waiting time for timeout result (default = 2)."
+				echo -e "\t-w, --wait\tSet waiting time for timeout result (default = 5)."
 				exit 0
 				;;
 			-s|--silence)
@@ -75,7 +75,7 @@ build_vm()
 	git clone -b $vm_release --recursive https://github.com/andrey-terekhov/RuC-VM ruc-vm
 
 	cd ruc-vm
-	mkdir -p build && cd build && cmake ..
+	rm -rf build && mkdir build && cd build && cmake ..
 	if ! cmake --build . --config Release ; then
 		exit 1
 	fi
@@ -91,7 +91,7 @@ build_vm()
 build()
 {
 	cd `dirname $0`/..
-	mkdir -p build && cd build && cmake ..
+	rm -rf build && mkdir build && cd build && cmake ..
 	if ! cmake --build . --config Release ; then
 		exit 1
 	fi
