@@ -215,7 +215,7 @@ void get_error(const int num, char *const msg, va_list args)
 		case assmnt_float_to_int:	// test_exist
 			sprintf(msg, "нельзя присваивать целому вещественное значение");
 			break;
-		case more_than_1_main:	// test_exist
+		case redefinition_of_main:	// test_exist
 			sprintf(msg, "в программе может быть только 1 идентификатор ГЛАВНАЯ");
 			break;
 		case no_leftbr_in_printid: // test_exist

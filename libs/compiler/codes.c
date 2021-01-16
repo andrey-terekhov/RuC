@@ -1439,7 +1439,7 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 
 	/*
 	uni_printf(&io, "\n%s\n", "repr");
-	for (size_t i = 1206; (int)i <= sx->rp; i++)
+	for (size_t i = 1206; i <= sx->rp; i++)
 	{
 		uni_printf(&io, "rp %zi) %i\n", i, sx->reprtab[i]);
 	}

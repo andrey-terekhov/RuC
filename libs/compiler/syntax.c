@@ -19,19 +19,18 @@
 #include "errors.h"
 
 
-int getstatic(syntax *const sx, const int type)
+int get_static(syntax *const sx, const int type)
 {
-	const int olddispl = sx->displ;
+	const int old_displ = sx->displ;
 	sx->displ += sx->lg * size_of(sx, type);
-	if (sx->lg > 0)
-	{
-		sx->maxdispl = (sx->displ > sx->maxdispl) ? sx->displ : sx->maxdispl;
-	}
-	else
-	{
-		sx->maxdisplg = -sx->displ;
-	}
-	return olddispl;
+	
+	sx->maxdisplg = sx->lg <= 0
+		? -sx->displ
+		: sx->displ > sx->maxdispl
+			? sx->displ
+			: sx->maxdispl;
+	
+	return old_displ;
 }
 
 /**	Check if modes are equal */
@@ -130,7 +129,7 @@ int sx_check(syntax *const sx, universal_io *const io)
 		error_flag = -1;
 	}
 	
-	for (int i = 0; i <= sx->prdf; i++)
+	for (size_t i = 0; (int)i <= sx->prdf; i++)
 	{
 		if (sx->predef[i])
 		{
@@ -254,6 +253,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 {
 	const size_t lastid = sx->id;
 	sx->id += 4;
+	
 	if (repr_get_reference(sx, repr) == 0) // это может быть только MAIN
 	{
 		if (sx->main_ref)
@@ -262,74 +262,83 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 		}
 		sx->main_ref = lastid;
 	}
+	
 	// Ссылка на описание с таким же представлением в предыдущем блоке
-	const size_t pred = sx->identab[lastid] = sx->reprtab[repr + 1];
-	if (pred)
+	const size_t prev = sx->identab[lastid] = sx->reprtab[repr + 1];
+	if (prev)
 	{
-		// pred == 0 только для main, эту ссылку портить нельзя
-		// ссылка на текущее описание с этим представлением
-		// (это в reprtab)
+		// prev == 0 только для main, эту ссылку портить нельзя
+		// иначе это ссылка на текущее описание с этим представлением
 		repr_set_reference(sx, repr, lastid);
 	}
 	
-	if (type != 1 && pred >= sx->curid) // один  и тот же идент м.б. переменной и меткой
+	// Один и тот же идентификатор м.б. переменной и меткой
+	if (type != 1 && prev >= sx->curid && (func_def != 1 || sx->identab[prev + 1] > 0))
 	{
-		if (func_def == 3 ? 1 : sx->identab[pred + 1] > 0 ? 1 : func_def == 1 ? 0 : 1)
-		{
-			return SIZE_MAX - 1;	// 1
-									// только определение функции может иметь 2
-									// описания, т.е. иметь предописание
-		}
+		return SIZE_MAX - 1;	// только определение функции может иметь 2 описания,
+								// т.е. иметь предописание
 	}
 	
 	sx->identab[lastid + 1] = (int)repr; // ссылка на представление
 	ident_set_mode(sx, lastid, mode);
-	if (type == 1)
+	
+	if (type < 0)
 	{
-		ident_set_mode(sx, lastid, 0);	// 0, если первым встретился goto, когда встретим метку,
-										// поставим 1
+		// Так как < 0, это функция-параметр
+		ident_set_displ(sx, lastid, -(sx->displ++));
+		sx->maxdispl = sx->displ;
+	}
+	else if (type == 0)
+	{
+		ident_set_displ(sx, lastid, get_static(sx, mode));
+	}
+	else if (type == 1)
+	{
+		ident_set_mode(sx, lastid, 0);	// 0, если первым встретился goto,
+										// когда встретим метку, поставим 1
 		ident_set_displ(sx, lastid, 0);	// при генерации кода когда встретим метку, поставим pc
 	}
 	else if (type >= 1000)
 	{
-		// Это описание типа, тогда type - 1000 – это номер инициирующей процедуры
+		// Это описание типа, а (type - 1000) – это номер инициирующей процедуры
 		ident_set_displ(sx, lastid, type);
 	}
-	else if (type)
+	else if (type > 1 && type < 1000)
 	{
-		if (type < 0)
+		// identtab[sx->id + 3] - номер функции
+		ident_set_displ(sx, lastid, type);
+		
+		if (func_def == 2)
 		{
-			ident_set_displ(sx, lastid, -(sx->displ++));
-			sx->maxdispl = sx->displ;
+			sx->identab[lastid + 1] *= -1;	// это предописание
+			sx->predef[++sx->prdf] = repr;
 		}
-		else // identtab[sx->id+3] - номер функции, если < 0, то
-			 // это функция-параметр
+		else
 		{
-			ident_set_displ(sx, lastid, type);
-			if (func_def == 2)
+			for (size_t i = 0; (int)i <= sx->prdf; i++)
 			{
-				sx->identab[lastid + 1] *= -1; //это предописание
-				sx->predef[++sx->prdf] = repr;
-			}
-			else
-			{
-				int i;
-				
-				for (i = 0; i <= sx->prdf; i++)
+				if (sx->predef[i] == repr)
 				{
-					if (sx->predef[i] == repr)
-					{
-						sx->predef[i] = 0;
-					}
+					sx->predef[i] = 0;
 				}
 			}
 		}
 	}
 	else
 	{
-		ident_set_displ(sx, lastid, getstatic(sx, mode));
+		ident_set_displ(sx, lastid, get_static(sx, mode));
 	}
 	return lastid;
+}
+
+int ident_get_repr(const syntax *const sx, const size_t index)
+{
+	if (sx == NULL || index >= sx->id)
+	{
+		return INT_MAX;
+	}
+	
+	return sx->identab[index + 1];
 }
 
 int ident_get_mode(const syntax *const sx, const size_t index)
@@ -342,6 +351,27 @@ int ident_get_mode(const syntax *const sx, const size_t index)
 	return sx->identab[index + 2];
 }
 
+int ident_get_displ(const syntax *const sx, const size_t index)
+{
+	if (sx == NULL || index >= sx->id)
+	{
+		return INT_MAX;
+	}
+	
+	return sx->identab[index + 3];
+}
+
+int ident_set_repr(syntax *const sx, const size_t index, const int repr)
+{
+	if (sx == NULL || index >= sx->id)
+	{
+		return -1;
+	}
+	
+	sx->identab[index + 1] = repr;
+	return 0;
+}
+
 int ident_set_mode(syntax *const sx, const size_t index, const int mode)
 {
 	if (sx == NULL || index >= sx->id)
@@ -351,16 +381,6 @@ int ident_set_mode(syntax *const sx, const size_t index, const int mode)
 	
 	sx->identab[index + 2] = mode;
 	return 0;
-}
-
-int ident_get_displ(const syntax *const sx, const size_t index)
-{
-	if (sx == NULL || index >= sx->id)
-	{
-		return INT_MAX;
-	}
-	
-	return sx->identab[index + 3];
 }
 
 int ident_set_displ(syntax *const sx, const size_t index, const int displ)
@@ -375,7 +395,7 @@ int ident_set_displ(syntax *const sx, const size_t index, const int displ)
 }
 
 
-int size_of(syntax *const sx, const int mode)
+int size_of(const syntax *const sx, const int mode)
 {
 	return mode == LFLOAT ? 2 : (mode > 0 && mode_get(sx, mode) == MSTRUCT) ? mode_get(sx, mode + 1) : 1;
 }
@@ -501,20 +521,20 @@ int repr_set_reference(syntax *const sx, const size_t index, const size_t ref)
 }
 
 
-int enter_block_scope(syntax *const sx, int *const old_displ, int *const old_lg)
+int scope_block_enter(syntax *const sx, int *const displ, int *const lg)
 {
-	if (sx == NULL)
+	if (sx == NULL || displ == NULL || lg == NULL)
 	{
 		return -1;
 	}
 	
 	sx->curid = sx->id;
-	*old_displ = sx->displ;
-	*old_lg = sx->lg;
+	*displ = sx->displ;
+	*lg = sx->lg;
 	return 0;
 }
 
-int exit_block_scope(syntax *const sx, const int old_displ, const int old_lg)
+int scope_block_exit(syntax *const sx, const int displ, const int lg)
 {
 	if (sx == NULL)
 	{
@@ -523,44 +543,46 @@ int exit_block_scope(syntax *const sx, const int old_displ, const int old_lg)
 	
 	for (size_t i = sx->id - 4; i >= sx->curid; i -= 4)
 	{
-		sx->reprtab[sx->identab[i + 1] + 1] = sx->identab[i];
+		repr_set_reference(sx, ident_get_repr(sx, i), sx->identab[i]);
 	}
-	sx->displ = old_displ;
-	sx->lg = old_lg;
+	
+	sx->displ = displ;
+	sx->lg = lg;
 	return 0;
 }
 
-int enter_func_scope(syntax *const sx)
+int scope_func_enter(syntax *const sx)
 {
 	if (sx == NULL)
 	{
 		return INT_MAX;
 	}
 	
-	const int old_displ = sx->displ;
+	const int displ = sx->displ;
 	sx->curid = sx->id;
 	sx->displ = 3;
 	sx->maxdispl = 3;
 	sx->lg = 1;
 	
-	return old_displ;
+	return displ;
 }
 
-int exit_func_scope(syntax *const sx, const size_t pred, const int scope_start)
+int scope_func_exit(syntax *const sx, const size_t decl_ref, const int displ)
 {
-	if (sx == NULL || (int)pred >= sx->tc)
+	if (sx == NULL || (int)decl_ref >= sx->tc)
 	{
 		return -1;
 	}
 	
 	for (size_t i = sx->id - 4; i >= sx->curid; i -= 4)
 	{
-		sx->reprtab[sx->identab[i + 1] + 1] = sx->identab[i];
+		repr_set_reference(sx, ident_get_repr(sx, i), sx->identab[i]);
 	}
+	
 	sx->curid = 2; // все функции описываются на одном уровне
-	sx->tree[pred] = sx->maxdispl;
+	sx->tree[decl_ref] = sx->maxdispl;
 	sx->lg = -1;
-	sx->displ = scope_start;
+	sx->displ = displ;
 	
 	return 0;
 }

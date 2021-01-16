@@ -258,19 +258,22 @@ void totreef(analyzer *context, int op)
 int toidentab(analyzer *context, int f, int type)
 {
 	const size_t return_value = ident_add(context->sx, REPRTAB_POS, f, type, context->func_def);
+	context->lastid = 0;
 	if (return_value == SIZE_MAX)
 	{
-		context_error(context, more_than_1_main); //--
+		context_error(context, redefinition_of_main); //--
 		context->error_flag = 5;
-		return context->lastid = 0; // 1
 	}
 	else if (return_value == SIZE_MAX - 1)
 	{
 		context_error(context, repeated_decl);
 		context->error_flag = 5;
-		return context->lastid = 0;
 	}
-	return context->lastid = (int)return_value;
+	else
+	{
+		context->lastid = (int)return_value;
+	}
+	return context->lastid;
 }
 
 void binop(analyzer *context, int sp)
@@ -3376,7 +3379,7 @@ void block(analyzer *context, int b)
 	totree(context, TBegin);
 	if (b)
 	{
-		enter_block_scope(context->sx, &olddispl, &oldlg);
+		scope_block_enter(context->sx, &olddispl, &oldlg);
 	}
 	context->blockflag = 0;
 
@@ -3451,7 +3454,7 @@ void block(analyzer *context, int b)
 
 	if (b)
 	{
-		exit_block_scope(context->sx, olddispl, oldlg);
+		scope_block_exit(context->sx, olddispl, oldlg);
 	}
 	context->inswitch = oldinswitch;
 	totree(context, TEnd);
@@ -3482,7 +3485,7 @@ void function_definition(analyzer *context)
 		ident_set_displ(context->sx, pred, fn);
 	}
 	
-	const int old_displ = enter_func_scope(context->sx);
+	const int old_displ = scope_func_enter(context->sx);
 	for (int i = 0; i < n; i++)
 	{
 		context->type = mode_get(context->sx, context->functype + i + 3);
@@ -3530,7 +3533,7 @@ void function_definition(analyzer *context)
 		return; // 1
 	}
 	
-	exit_func_scope(context->sx, pred, old_displ);
+	scope_func_exit(context->sx, pred, old_displ);
 
 	for (int i = 0; i < context->pgotost - 1; i += 2)
 	{

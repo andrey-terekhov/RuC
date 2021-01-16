@@ -73,7 +73,7 @@ enum ERROR
 	no_rightbr_in_for,
 	int_op_for_float,
 	assmnt_float_to_int,
-	more_than_1_main,
+	redefinition_of_main,
 	no_leftbr_in_printid,
 	no_rightbr_in_printid,
 	no_ident_in_printid,
