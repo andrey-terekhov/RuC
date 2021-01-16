@@ -58,7 +58,7 @@ int tree_add(tree *const tree, const int value)
 		return -1;
 	}
 
-	tree->array[*tree->size++] = value;
+	tree->array[(*tree->size)++] = value;
 	return 0;
 }
 
@@ -553,8 +553,8 @@ int node_test_copy(node *const dest, node *const nd)
 
 	for (size_t i = 0; i < node_get_amount(nd); i++)
 	{
-		node child = node_get_child(&nd, i);
-		if (node_test_copy(&dest, &child))
+		node child = node_get_child(nd, i);
+		if (node_test_copy(dest, &child))
 		{
 			return -1;
 		}
@@ -663,29 +663,64 @@ int node_get_arg(const node *const nd, const size_t index)
 
 int node_set_type(node *const nd, const int type)
 {
-	(void)nd;
-	(void)type;
-	return 0;
+	if (!node_is_correct(nd) || nd->argc != 0 || nd->amount != 0)
+	{
+		return -1;
+	}
+
+	if (nd->type == tree_size(&nd->tree))
+	{
+		return tree_add(&nd->tree, type);
+	}
+
+	return nd->type != SIZE_MAX ? tree_set(&nd->tree, nd->type, type) : -1;
 }
 
 int node_add_arg(node *const nd, const int arg)
 {
-	(void)nd;
-	(void)arg;
-	return 0;
+	if (node_get_type(nd) == INT_MAX || nd->argv + nd->argc != tree_size(&nd->tree) || nd->amount != 0)
+	{
+		return -1;
+	}
+
+	const int ret = tree_add(&nd->tree, arg);
+	if (!ret)
+	{
+		nd->argc++;
+	}
+
+	return ret;
 }
 
 int node_set_arg(node *const nd, const size_t index, const int arg)
 {
-	(void)nd;
-	(void)index;
-	(void)arg;
-	return 0;
+	if (node_get_type(nd) == INT_MAX || index >= nd->argc)
+	{
+		return -1;
+	}
+
+	return tree_set(&nd->tree, nd->argv + index, arg);
 }
 
 node node_set_child(node *const nd)
 {
-	return *nd;
+	if (!node_is_correct(nd))
+	{
+		return node_broken();
+	}
+
+	node child;
+
+	child.tree = nd->tree;
+	child.type = tree_size(&nd->tree);
+
+	child.argv = child.type + 1;
+	child.argc = 0;
+
+	child.children = child.argv + child.argc;
+	child.amount = 0;
+
+	return child;
 }
 
 
