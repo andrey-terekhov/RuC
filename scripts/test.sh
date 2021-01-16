@@ -69,38 +69,54 @@ init()
 	log=tmp
 }
 
+build_folder()
+{
+	rm -rf build && mkdir build && cd build
+
+	if [[ $OSTYPE == "msys" ]] ; then
+		cmake ..
+
+		if ! cmake --build . --config Release ; then
+			exit 1
+		else
+			if ! cmake --build . --config Debug ; then
+				exit 1
+			fi
+		fi
+	else
+		mkdir Release && cd Release && cmake ../.. && cd ..
+		mkdir Debug && cd Debug && cmake ../.. && cd ..
+
+		if ! cmake --build Release --config Release ; then
+			exit 1
+		else
+			if ! cmake --build Debug --config Debug ; then
+				exit 1
+			fi
+		fi
+	fi
+}
+
 build_vm()
 {
 	rm -rf ruc-vm
 	git clone -b $vm_release --recursive https://github.com/andrey-terekhov/RuC-VM ruc-vm
 
 	cd ruc-vm
-	rm -rf build && mkdir build && cd build && cmake ..
-	if ! cmake --build . --config Release ; then
-		exit 1
-	fi
-
+	build_folder
 	cd ../..
-	if [[ $OSTYPE == "msys" ]] ; then
-		ruc_interpreter=./ruc-vm/build/Release/ruc-vm
-	else
-		ruc_interpreter=./ruc-vm/build/ruc-vm
-	fi
+
+	ruc_interpreter=./ruc-vm/build/Release/ruc-vm
+	ruc_interpreter_debug=./ruc-vm/build/Debug/ruc-vm
 }
 
 build()
 {
 	cd `dirname $0`/..
-	rm -rf build && mkdir build && cd build && cmake ..
-	if ! cmake --build . --config Release ; then
-		exit 1
-	fi
+	build_folder
 
-	if [[ $OSTYPE == "msys" ]] ; then
-		ruc_compiler=./Release/ruc.exe
-	else
-		ruc_compiler=./ruc
-	fi
+	ruc_compiler=./Release/ruc
+	ruc_compiler_debug=./Debug/ruc
 
 	if [[ -z $ignore ]] ; then
 		build_vm
