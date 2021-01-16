@@ -105,11 +105,17 @@ build_vm()
 	git clone -b $vm_release --recursive https://github.com/andrey-terekhov/RuC-VM ruc-vm
 
 	cd ruc-vm
-	build_folder
-	cd ../..
+	mkdir -p build && cd build && cmake ..
+	if ! cmake --build . --config Release ; then
+		exit 1
+	fi
 
-	ruc_interpreter=./ruc-vm/build/Release/ruc-vm
-	ruc_interpreter_debug=./ruc-vm/build/Debug/ruc-vm
+	cd ../..
+	if [[ $OSTYPE == "msys" ]] ; then
+		ruc_interpreter=./ruc-vm/build/Release/ruc-vm
+	else
+		ruc_interpreter=./ruc-vm/build/ruc-vm
+	fi
 }
 
 build()
