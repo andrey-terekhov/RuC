@@ -17,6 +17,7 @@
 #include "syntax.h"
 #include <stdlib.h>
 #include "errors.h"
+#include "tree.h"
 
 
 int getstatic(syntax *const sx, const int type)
@@ -116,6 +117,8 @@ int sx_init(syntax *const sx)
 	{
 		sx->hashtab[i] = 0;
 	}
+
+	sx->current = NULL;
 
 	return 0;
 }
@@ -563,4 +566,37 @@ int exit_func_scope(syntax *const sx, const size_t pred, const int scope_start)
 	sx->displ = scope_start;
 	
 	return 0;
+}
+
+
+int tree_set_node(syntax *const sx, node *const nd)
+{
+	if (sx == NULL || !node_is_correct(nd))
+	{
+		return -1;
+	}
+
+	sx->current = nd;
+	return 0;
+}
+
+int tree_next_node(syntax *const sx)
+{
+	if (sx == NULL || !node_is_correct(sx->current))
+	{
+		return -1;
+	}
+
+	*(sx->current) = node_get_next(sx->current);
+	return !node_is_correct(sx->current);
+}
+
+node *tree_get_node(syntax *const sx)
+{
+	if (sx == NULL || !node_is_correct(sx->current))
+	{
+		return NULL;
+	}
+
+	return sx->current;
 }
