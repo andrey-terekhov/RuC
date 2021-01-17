@@ -270,7 +270,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 	}
 	
 	// Ссылка на описание с таким же представлением в предыдущем блоке
-	const size_t prev = sx->identab[lastid] = sx->reprtab[repr + 1];
+	const size_t prev = sx->identab[lastid] = repr_get_reference(sx, repr);
 	if (prev)
 	{
 		// prev == 0 только для main, эту ссылку портить нельзя
@@ -278,11 +278,17 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 		repr_set_reference(sx, repr, lastid);
 	}
 	
-	// Один и тот же идентификатор м.б. переменной и меткой
+	/*
 	if (type != 1 && prev >= sx->curid && (func_def != 1 || ident_get_repr(sx, prev) > 0))
 	{
-		return SIZE_MAX - 1;	// только определение функции может иметь 2 описания,
-								// т.е. иметь предописание
+		return SIZE_MAX - 1;
+	}*/
+	
+	// Один и тот же идентификатор м.б. переменной и меткой
+	if (type != 1 && prev >= sx->curid && (func_def == 3 ? 1 : ident_get_repr(sx, prev) > 0 ? 1 : func_def == 1 ? 0 : 1))
+	{
+		// Только определение функции может иметь 2 описания, то есть иметь предописание
+		return SIZE_MAX - 1;
 	}
 	
 	ident_set_repr(sx, lastid, repr);
@@ -300,27 +306,31 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 	}
 	else if (type == 1)
 	{
-		ident_set_mode(sx, lastid, 0);	// 0, если первым встретился goto,
-										// когда встретим метку, поставим 1
-		ident_set_displ(sx, lastid, 0);	// при генерации кода когда встретим метку, поставим pc
+		// Это метка
+		// В поле mode: 0, если первым встретился goto, когда встретим метку, поставим 1
+		// В поле displ: при генерации кода когда встретим метку, поставим pc
+		ident_set_mode(sx, lastid, 0);
+		ident_set_displ(sx, lastid, 0);
 	}
 	else if (type >= 1000)
 	{
-		// Это описание типа, а (type - 1000) – это номер инициирующей процедуры
+		// Это описание типа, а (type-1000) – это номер инициирующей процедуры
 		ident_set_displ(sx, lastid, type);
 	}
 	else if (type > 1 && type < 1000)
 	{
-		// identtab[sx->id + 3] - номер функции
+		// Это функция, и в поле displ находится её номер
 		ident_set_displ(sx, lastid, type);
 		
 		if (func_def == 2)
 		{
-			sx->identab[lastid + 1] *= -1;	// это предописание
+			// Это предописание функции
+			ident_set_repr(sx, lastid, -(size_t)ident_get_repr(sx, lastid));
 			sx->predef[++sx->prdf] = repr;
 		}
 		else
 		{
+			// Это описание функции
 			for (size_t i = 0; (int)i <= sx->prdf; i++)
 			{
 				if (sx->predef[i] == repr)
@@ -333,14 +343,14 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 	return lastid;
 }
 
-size_t ident_get_repr(const syntax *const sx, const size_t index)
+int ident_get_repr(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || index >= sx->id)
 	{
 		return INT_MAX;
 	}
 	
-	return (size_t)sx->identab[index + 1];
+	return sx->identab[index + 1];
 }
 
 int ident_get_mode(const syntax *const sx, const size_t index)

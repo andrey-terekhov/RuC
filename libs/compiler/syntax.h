@@ -231,7 +231,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
  *
  *	@return	Identifier index in representations table, @c INT_MAX on failure
  */
-size_t ident_get_repr(const syntax *const sx, const size_t index);
+int ident_get_repr(const syntax *const sx, const size_t index);
 
 /**
  *	Get item mode from identifiers table by index
@@ -289,7 +289,7 @@ int ident_set_displ(syntax *const sx, const size_t index, const int displ);
 
 /**
  *	Get mode size
- *	@note Also used in codegen
+ *	@note	Also used in codegen
  *
  *	@param	sx			Syntax structure
  *	@param	mode		Standart type or index for modes table
