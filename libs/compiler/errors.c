@@ -590,13 +590,6 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "в выражении встретился оператор вне блока, tree[%zi] = %i", i, elem);
 		}
 		break;
-		case tree_expression_texprend:
-		{
-			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "лишний TExprend внутри блока, tree[%zi] = %i", i, elem);
-		}
-		break;
 		case tree_expression_unknown:
 		{
 			const size_t i = va_arg(args, size_t);
@@ -630,30 +623,26 @@ void get_error(const int num, char *const msg, va_list args)
 		}
 		break;
 
-		case set_type_error:
-		{
-			const size_t type = va_arg(args, size_t);
-			sprintf(msg, "невозможно записать тип потомка %zi", type);
-		}
-		break;
-		case add_arg_error:
+		case node_cannot_set_child:
 		{
 			const size_t i = va_arg(args, size_t);
-			sprintf(msg, "невозможно записать %zi-й аргумент узла", i);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "невозможно получить потомка от tree[%zi] = %i", i, elem);
 		}
 		break;
-		case set_child_error:
+		case node_cannot_set_type:
 		{
+			const int type = va_arg(args, int);
 			const size_t i = va_arg(args, size_t);
-			sprintf(msg, "невозможно записать %zi-й потомок", i);
+			sprintf(msg, "невозможно установить тип %i в tree[%zi]", type, i);
 		}
 		break;
-		case set_wrong_element:
+		case node_cannot_add_arg:
 		{
+			const int arg = va_arg(args, int);
 			const size_t i = va_arg(args, size_t);
-			const size_t expected = va_arg(args, size_t);
-			const size_t retrieved = va_arg(args, size_t);
-			sprintf(msg, "ожидался tree[%zi] = %zi, записан tree[%zi] = %zi", i, expected, i, retrieved);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "невозможно добавить аргумент %i для tree[%zi] = %i", arg, i, elem);
 		}
 		break;
 

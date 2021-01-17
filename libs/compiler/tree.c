@@ -538,9 +538,15 @@ size_t node_test_recursive(node *const nd, size_t i)
 int node_test_copy(node *const dest, node *const nd)
 {
 	node child_dest = node_set_child(dest);
+	if (!node_is_correct(&child_dest))
+	{
+		error(NULL, node_cannot_set_child, dest->type, node_get_type(dest));
+		return -1;
+	}
+
 	if (node_set_type(&child_dest, node_get_type(nd)))
 	{
-		error(NULL, set_type_error, node_get_type(nd));
+		error(NULL, node_cannot_set_type, node_get_type(nd), child_dest.type);
 		return -1;
 	}
 
@@ -548,7 +554,7 @@ int node_test_copy(node *const dest, node *const nd)
 	{
 		if (node_add_arg(&child_dest, node_get_arg(nd, i)))
 		{
-			error(NULL, add_arg_error, i);
+			error(NULL, node_cannot_add_arg, node_get_arg(nd, i), child_dest.type, node_get_type(&child_dest));
 			return -1;
 		}
 	}
@@ -558,7 +564,6 @@ int node_test_copy(node *const dest, node *const nd)
 		node child = node_get_child(nd, i);
 		if (node_test_copy(dest, &child))
 		{
-			error(NULL, set_child_error, i);
 			return -1;
 		}
 	}
@@ -858,7 +863,6 @@ int tree_test_copy(syntax *const sx)
 		node child = node_get_child(&nd, i);
 		if (node_test_copy(&nd_dest, &child))
 		{
-			error(NULL, set_child_error, i);
 			return -1;
 		}
 	}
@@ -868,7 +872,7 @@ int tree_test_copy(syntax *const sx)
 	{
 		if (tree_get(&nd.tree, i) != tree_get(&nd_dest.tree, i))
 		{
-			error(NULL, set_wrong_element, i, tree_get(&nd.tree, i), tree_get(&nd_dest.tree, i));
+			error(NULL, tree_unexpected, tree_get(&nd_dest.tree, i), i, tree_get(&nd.tree, i));
 			return -1;
 		}
 
