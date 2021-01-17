@@ -69,33 +69,30 @@ init()
 	timeout=0
 
 	log=tmp
+	dir=temp
 }
 
 build_folder()
 {
-	rm -rf build && mkdir build && cd build
+	rm -rf build && mkdir build && cd build && cmake .. -DTESTING_EXIT_CODE=$exit_code
 
-	if [[ $OSTYPE == "msys" ]] ; then
-		cmake .. -DTESTING_EXIT_CODE=$exit_code
+	if ! cmake --build . --config Debug ; then
+		exit 1
+	fi
 
-		if ! cmake --build . --config Release ; then
-			exit 1
-		else
-			if ! cmake --build . --config Debug ; then
-				exit 1
-			fi
-		fi
-	else
-		mkdir Release && cd Release && cmake ../.. -DTESTING_EXIT_CODE=$exit_code && cd ..
-		mkdir Debug && cd Debug && cmake ../.. -DTESTING_EXIT_CODE=$exit_code && cd ..
+	if [[ $OSTYPE != "msys" ]] ; then
+		cmake --install . --prefix $dir --config Debug
+		mv $dir/$1 Debug
+	fi
 
-		if ! cmake --build Release --config Release ; then
-			exit 1
-		else
-			if ! cmake --build Debug --config Debug ; then
-				exit 1
-			fi
-		fi
+
+	if ! cmake --build . --config Release ; then
+		exit 1
+	fi
+
+	if [[ $OSTYPE != "msys" ]] ; then
+		cmake --install . --prefix $dir --config Release
+		mv $dir/$1 Release && rm -rf $dir
 	fi
 }
 
@@ -121,7 +118,7 @@ build_vm()
 build()
 {
 	cd `dirname $0`/..
-	build_folder
+	build_folder ruc
 
 	ruc_compiler=./Release/ruc
 	ruc_compiler_debug=./Debug/ruc
