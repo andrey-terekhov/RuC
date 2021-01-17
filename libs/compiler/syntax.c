@@ -307,7 +307,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 	else if (type == 1)
 	{
 		// Это метка
-		// В поле mode: 0, если первым встретился goto, когда встретим метку, поставим 1
+		// В поле mode: 0, если первым встретился goto; когда встретим метку, поставим 1
 		// В поле displ: при генерации кода когда встретим метку, поставим pc
 		ident_set_mode(sx, lastid, 0);
 		ident_set_displ(sx, lastid, 0);
@@ -325,7 +325,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 		if (func_def == 2)
 		{
 			// Это предописание функции
-			ident_set_repr(sx, lastid, -(size_t)ident_get_repr(sx, lastid));
+			sx->identab[lastid + 1] = -ident_get_repr(sx, lastid);
 			sx->predef[++sx->prdf] = repr;
 		}
 		else
