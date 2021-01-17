@@ -125,7 +125,7 @@ int sx_init(syntax *const sx)
 	return 0;
 }
 
-int sx_check(syntax *const sx, universal_io *const io)
+int sx_is_correct(syntax *const sx, universal_io *const io)
 {
 	int error_flag = 0;
 	

@@ -91,9 +91,9 @@ int sx_init(syntax *const sx);
  *	@param	sx			Syntax structure
  *	@param	io			Universal io structure
  *
- *	@return	@c 0 if syntax is correct, @c -1 otherwise
+ *	@return	@c 1 on true, @c 0 on false
  */
-int sx_check(syntax *const sx, universal_io *const io);
+int sx_is_correct(syntax *const sx, universal_io *const io);
 
 
 /**
