@@ -575,7 +575,7 @@ int scope_func_enter(syntax *const sx)
 
 int scope_func_exit(syntax *const sx, const size_t decl_ref, const int displ)
 {
-	if (sx == NULL || (int)decl_ref >= sx->tc)
+	if (sx == NULL || decl_ref >= sx->tc)
 	{
 		return -1;
 	}
