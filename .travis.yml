@@ -18,4 +18,4 @@ matrix:
       dist: focal
 
 script:
-  - ./scripts/test.sh -v v1.1 -w 5
+  - ./scripts/test.sh -v v1.1 -w 5.1
