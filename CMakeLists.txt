@@ -9,22 +9,23 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 
 if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-	add_compile_options(/W4 /WX /wd5105 /utf-8)
-
 	# Starting in Visual Studio 2019 version 16.8, you may specify /std:c11
-	if(MSVC_VERSION GREATER_EQUAL 1928)
-		add_compile_options(/std:c11)
-	endif()
+	add_compile_options(/W4 /WX /wd5105 /utf-8
+						"$<$<VERSION_GREATER_EQUAL:MSVC_VERSION,1928>:/std:c11>"
+						"$<$<CONFIG:RELEASE>:/O2>"
+						"$<$<CONFIG:DEBUG>:/Od>")
 
-	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
-	add_compile_options(-Werror=return-type -Wall -Wextra -Wno-implicit-fallthrough -g -std=c11)
+	add_compile_options(-Werror=return-type -Wall -Wextra -Wno-implicit-fallthrough -std=c11
+						"$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:-posix>"
+						"$<$<CONFIG:RELEASE>:-s -O2>"
+						"$<$<CONFIG:DEBUG>:-g -Og>")
 
-	if(NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
-		add_compile_options(-posix)
-		add_definitions(-D_POSIX_C_SOURCE=200112L)
-	endif()
+	add_compile_definitions("$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:_POSIX_C_SOURCE=200112L>")
 endif()
+
+add_compile_definitions("$<$<CONFIG:RELEASE>:NDEBUG>")
 
 
 # Add libraries
