@@ -670,35 +670,42 @@ int node_set_type(node *const nd, const int type)
 	{
 		return -1;
 	}
-	else if (nd->argc != 0 || nd->amount != 0)
+
+	if (nd->type == SIZE_MAX)
+	{
+		return -2;
+	}
+
+	if (nd->argc != 0 || nd->amount != 0)
 	{
 		return -3;
 	}
 
-	if (nd->type == tree_size(&nd->tree))
-	{
-		return tree_add(&nd->tree, type);
-	}
-
-	return nd->type != SIZE_MAX ? tree_set(&nd->tree, nd->type, type) : -2;
+	return nd->type == tree_size(&nd->tree)
+		? tree_add(&nd->tree, type)
+		: tree_set(&nd->tree, nd->type, type);
 }
 
 int node_add_arg(node *const nd, const int arg)
 {
-	if (node_is_correct(nd) || nd->argv + nd->argc != tree_size(&nd->tree))
+	if (!node_is_correct(nd))
 	{
 		return -1;
 	}
-	else if (node_get_type(nd) == INT_MAX)
+
+	if (node_get_type(nd) == INT_MAX)
 	{
 		return -2;
 	}
-	else if (nd->amount != 0)
+
+	if (nd->amount != 0)
 	{
 		return -3;
 	}
 
-	const int ret = tree_add(&nd->tree, arg);
+	const int ret = nd->argv + nd->argc == tree_size(&nd->tree)
+					? tree_add(&nd->tree, arg)
+					: -1;
 	if (!ret)
 	{
 		nd->argc++;
@@ -709,11 +716,12 @@ int node_add_arg(node *const nd, const int arg)
 
 int node_set_arg(node *const nd, const size_t index, const int arg)
 {
-	if (node_is_correct(nd) || index >= nd->argc)
+	if (!node_is_correct(nd) || index >= nd->argc)
 	{
 		return -1;
 	}
-	else if (node_get_type(nd) == INT_MAX)
+
+	if (node_get_type(nd) == INT_MAX)
 	{
 		return -2;
 	}

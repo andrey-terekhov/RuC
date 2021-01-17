@@ -111,9 +111,9 @@ int node_get_arg(const node *const nd, const size_t index);
  *	@param	type	Node type
  *
  *	@return	@c  0 on success,
- *			@c -1 if can not set,
- *			@c -2 if set in root,
- *			@c -3 if set in not empty node
+ *			@c -1 on failure,
+ *			@c -2 on trying to reset the root node,
+ *			@c -3 on trying to set non-empty node
  */
 int node_set_type(node *const nd, const int type);
 
@@ -124,9 +124,9 @@ int node_set_type(node *const nd, const int type);
  *	@param	arg		Node argument
  *
  *	@return	@c  0 on success,
- *			@c -1 if can not add,
- *			@c -2 if add in root,
- *			@c -3 if add in not empty node
+ *			@c -1 on failure,
+ *			@c -2 on root or types not set node,
+ *			@c -3 on node with children
  */
 int node_add_arg(node *const nd, const int arg);
 
@@ -138,8 +138,8 @@ int node_add_arg(node *const nd, const int arg);
  *	@param	arg		Node argument
  *
  *	@return	@c  0 on success,
- *			@c -1 if can not set,
- *			@c -2 if set in root,
+ *			@c -1 on failure,
+ *			@c -2 on root or types not set node
  */
 int node_set_arg(node *const nd, const size_t index, const int arg);
 
