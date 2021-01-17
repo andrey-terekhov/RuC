@@ -18,20 +18,22 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	# Starting in Visual Studio 2019 version 16.8, you may specify /std:c11
 	add_compile_options(/W4 /WX /wd5105 /utf-8
 						"$<$<VERSION_GREATER_EQUAL:MSVC_VERSION,1928>:/std:c11>"
-						"$<$<CONFIG:RELEASE>:/O2>"
-						"$<$<CONFIG:DEBUG>:/Od>")
+						"$<$<CONFIG:Release>:/O2>"
+						"$<$<CONFIG:Debug>:/Od>")
 
 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
 	add_compile_options(-Werror=return-type -Wall -Wextra -Wno-implicit-fallthrough -std=c11
 						"$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:-posix>"
-						"$<$<CONFIG:RELEASE>:-s -O2>"
-						"$<$<CONFIG:DEBUG>:-g -Og>")
+						"$<$<CONFIG:Release>:-s>"
+						"$<$<CONFIG:Release>:-O2>"
+						"$<$<CONFIG:Debug>:-g>"
+						"$<$<CONFIG:Debug>:-Og>")
 
 	add_compile_definitions("$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:_POSIX_C_SOURCE=200112L>")
 endif()
 
-add_compile_definitions("$<$<CONFIG:RELEASE>:NDEBUG>")
+add_compile_definitions("$<$<CONFIG:Release>:NDEBUG>")
 
 
 # Add libraries

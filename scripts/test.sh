@@ -74,8 +74,9 @@ init()
 
 build_folder()
 {
-	rm -rf build && mkdir build && cd build && cmake .. -DTESTING_EXIT_CODE=$exit_code
+	rm -rf build && mkdir build && cd build
 
+	cmake .. -DCMAKE_BUILD_TYPE=Debug -DTESTING_EXIT_CODE=$exit_code
 	if ! cmake --build . --config Debug ; then
 		exit 1
 	fi
@@ -85,7 +86,7 @@ build_folder()
 		mv $dir/$1 Debug
 	fi
 
-
+	cmake .. -DCMAKE_BUILD_TYPE=Release -DTESTING_EXIT_CODE=$exit_code
 	if ! cmake --build . --config Release ; then
 		exit 1
 	fi
