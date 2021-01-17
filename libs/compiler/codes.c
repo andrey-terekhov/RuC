@@ -1453,7 +1453,7 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 
 	/*
 	uni_printf(&io, "\n%s\n", "tree");
-	for (size_t i = 0; (int)i <= tc; i++)
+	for (size_t i = 0; i <= tc; i++)
 	{
 		uni_printf(&io, "tc %zi) %i\n", i, sx->tree[i]);
 	}
@@ -1462,7 +1462,7 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 	uni_printf(&io, "\n");
 
 	size_t i = 0;
-	while ((int)i < sx->tc)
+	while (i < sx->tc)
 	{
 		uni_printf(&io, "tc %zi) ", i);
 		i = elem_to_io(&io, sx->tree, i);

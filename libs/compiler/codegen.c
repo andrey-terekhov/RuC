@@ -36,7 +36,7 @@ void compstmt_gen(syntax *const sx, ad *const context);
 
 void tocode(syntax *const sx, int c)
 {
-	// printf("tocode sx->tc=%i sx->pc %zi) %i\n", sx->tc,
+	// printf("tocode sx->tc=%zi sx->pc %zi) %i\n", sx->tc,
 	// mem_get_size(sx), c);
 	mem_add(sx, c);
 }
@@ -441,8 +441,6 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			int condref = sx->tree[sx->tc++];
 			int incrref = sx->tree[sx->tc++];
 			int stmtref = sx->tree[sx->tc++];
-			int incrtc;
-			int endtc;
 			size_t oldbreak = context->adbreak;
 			size_t oldcont = context->adcont;
 
@@ -461,14 +459,14 @@ void Stmt_gen(syntax *const sx, ad *const context)
 				context->adbreak = mem_get_size(sx);
 				mem_add(sx, 0);	
 			}
-			incrtc = sx->tc;
+			size_t incrtc = sx->tc;
 			sx->tc = stmtref;
 			Stmt_gen(sx, context); // ???? был 0
 			adcontend(sx, context);
 
 			if (incrref)
 			{
-				endtc = sx->tc;
+				size_t endtc = sx->tc;
 				sx->tc = incrtc;
 				Expr_gen(sx, 0); // incr
 				sx->tc = endtc;
@@ -753,7 +751,7 @@ int codegen(syntax *const sx)
 {
 	ad context;
 
-	int treesize = sx->tc;
+	size_t treesize = sx->tc;
 	sx->tc = 0;
 
 	while (sx->tc < treesize)
@@ -815,7 +813,7 @@ int codegen(syntax *const sx)
 			}
 			default:
 			{
-				printf("tc=%i tree[tc-2]=%i tree[tc-1]=%i\n", sx->tc, sx->tree[sx->tc - 2],
+				printf("tc=%zi tree[tc-2]=%i tree[tc-1]=%i\n", sx->tc, sx->tree[sx->tc - 2],
 					   sx->tree[sx->tc - 1]);
 				break;
 			}

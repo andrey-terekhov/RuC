@@ -90,7 +90,8 @@ int compile_from_io_to_vm(universal_io *const io)
 #ifdef GENERATE_TREE
 		ret = tree_test(&sx)
 			|| tree_test_next(&sx)
-			|| tree_test_recursive(&sx);
+			|| tree_test_recursive(&sx)
+			|| tree_test_copy(&sx);
 		if (ret)
 		{
 			io_erase(io);

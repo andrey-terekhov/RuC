@@ -55,7 +55,7 @@ typedef struct syntax
 	size_t startmode;				/**< Start of last record in modetab */
 	
 	int tree[MAXTREESIZE];			/**< Tree */
-	int tc;							/**< Tree counter */
+	size_t tc;							/**< Tree counter */
 	
 	size_t hashtab[256];			/**< Hash table for reprtab */
 	int hash;						/**< Last value of hash function */

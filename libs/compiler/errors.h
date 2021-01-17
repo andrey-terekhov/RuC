@@ -171,13 +171,19 @@ enum ERROR
 	not_float_in_stanfunc,
 	not_array_in_stanfunc,
 
+	// Tree parsing errors
 	tree_expression_not_block,
-	tree_expression_texprend,
 	tree_expression_unknown,
 	tree_expression_operator,
 	tree_expression_no_texprend,
+
+	// Tree testing errors
 	tree_no_tend,
 	tree_unexpected,
+
+	node_cannot_set_child,
+	node_cannot_set_type,
+	node_cannot_add_arg,
 };
 
 /** Warnings codes */

@@ -75,7 +75,7 @@ typedef struct analyzer
 
 	int buf_flag;
 	int buf_cur;
-	int temp_tc;
+	size_t temp_tc;
 	int error_flag;
 } analyzer;
 
