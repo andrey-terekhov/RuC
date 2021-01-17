@@ -278,16 +278,10 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 		repr_set_reference(sx, repr, lastid);
 	}
 	
-	/*
+	// Один и тот же идентификатор м.б. переменной и меткой
 	if (type != 1 && prev >= sx->curid && (func_def != 1 || ident_get_repr(sx, prev) > 0))
 	{
-		return SIZE_MAX - 1;
-	}*/
-	
-	// Один и тот же идентификатор м.б. переменной и меткой
-	if (type != 1 && prev >= sx->curid && (func_def == 3 ? 1 : ident_get_repr(sx, prev) > 0 ? 1 : func_def == 1 ? 0 : 1))
-	{
-		// Только определение функции может иметь 2 описания, то есть иметь предописание
+		// Только определение функции может иметь 2 описания, то есть иметь предописани
 		return SIZE_MAX - 1;
 	}
 	
