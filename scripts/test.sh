@@ -180,7 +180,7 @@ execution()
 		action="execution"
 		internal_timeout $wait_for $ruc_interpreter export.txt &>$log
 
-		case "$?" in
+		case $? in
 			0)
 				if [[ $path == */$error_subdir/* ]] ; then
 					message_failure
@@ -256,7 +256,7 @@ compiling()
 		action="compiling"
 		internal_timeout $wait_for $ruc_compiler $sources &>$log
 
-		case "$?" in
+		case $? in
 			0)
 				if [[ $path == $error_dir/* ]] ; then
 					message_failure
@@ -275,18 +275,7 @@ compiling()
 				message_timeout
 				let timeout++
 				;;
-			139|134)
-				# Segmentation fault
-				# Double free or corruption (!prev)
-
-				message_failure
-				let failure++
-
-				if ! [[ -z $debug ]] ; then
-					cat $log
-				fi
-				;;
-			*)
+			$exit_code)
 				if [[ $path == $error_dir/* ]] ; then
 					check_warnings
 				else
@@ -296,6 +285,18 @@ compiling()
 					if ! [[ -z $debug ]] ; then
 						cat $log
 					fi
+				fi
+				;;
+			*)
+				# Segmentation fault
+				# Double free or corruption (!prev)
+				# Etcetera
+
+				message_failure
+				let failure++
+
+				if ! [[ -z $debug ]] ; then
+					cat $log
 				fi
 				;;
 		esac
