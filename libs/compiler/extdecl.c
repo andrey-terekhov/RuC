@@ -637,7 +637,8 @@ void primaryexpr(analyzer *context)
 
 		totree(context, TIdent);
 		totree(context, context->anstdispl = ident_get_displ(context->sx, context->lastid));
-		context->stackoperands[++context->sopnd] = context->ansttype = ident_get_mode(context->sx, context->lastid);
+		context->ansttype = ident_get_mode(context->sx, context->lastid);
+		context->stackoperands[++context->sopnd] = context->ansttype;
 		context->anst = IDENT;
 	}
 	else if (context->cur == LEFTBR)
@@ -2211,11 +2212,13 @@ void exprassn(analyzer *context, int level)
 			totreef(context, opp);
 			if (leftanst == IDENT)
 			{
-				totree(context, context->anstdispl = leftanstdispl);
+				context->anstdispl = leftanstdispl;
+				totree(context, leftanstdispl);
 			}
 			context->anst = VAL;
 		}
-		context->stackoperands[context->sopnd] = context->ansttype = ltype; // тип результата - на стек
+		context->ansttype = ltype;
+		context->stackoperands[context->sopnd] = ltype; // тип результата - на стек
 	}
 	else
 	{
@@ -2453,7 +2456,8 @@ void decl_id(analyzer *context, int decl_type)
 		totree(context, TDeclarr);
 		adN = context->sx->tc++;
 		// Меняем тип (увеличиваем размерность массива)
-		ident_set_mode(context->sx, oldid, decl_type = arrdef(context, decl_type));
+		decl_type = arrdef(context, decl_type);
+		ident_set_mode(context->sx, oldid, decl_type);
 		context->sx->tree[adN] = context->arrdim;
 		if (context->error_flag == 5)
 		{
