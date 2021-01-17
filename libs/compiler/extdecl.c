@@ -3840,25 +3840,25 @@ void ext_decl(analyzer *context)
 					if (context->func_def == 2)
 					{
 						context_error(context, func_decl_req_params);
-						goto ex;
+						break;
 					}
 
 					function_definition(context);
-					goto ex;
+					break;
 				}
 				else
 				{
 					if (context->func_def == 1)
 					{
 						context_error(context, function_has_no_body);
-						goto ex;
+						break;
 					}
 				}
 			}
 			else if (context->firstdecl == LVOID)
 			{
 				context_error(context, only_functions_may_have_type_VOID);
-				goto ex;
+				break;
 			}
 
 			// описания идентов-не-функций
@@ -3892,7 +3892,6 @@ void ext_decl(analyzer *context)
 			}
 		} while (repeat);
 
-	ex:;
 	} while (context->next != LEOF);
 	totree(context, TEnd);
 }
