@@ -70,6 +70,7 @@ init()
 
 	log=tmp
 	dir=temp
+	exp=export.tmp
 }
 
 build_folder()
@@ -118,9 +119,9 @@ build_vm()
 
 	cd ../..
 	if [[ $OSTYPE == "msys" ]] ; then
-		ruc_interpreter=./ruc-vm/build/Release/ruc-vm
+		interpreter=./ruc-vm/build/Release/ruc-vm
 	else
-		ruc_interpreter=./ruc-vm/build/ruc-vm
+		interpreter=./ruc-vm/build/ruc-vm
 	fi
 }
 
@@ -129,8 +130,8 @@ build()
 	cd `dirname $0`/..
 	build_folder ruc
 
-	ruc_compiler=./Release/ruc
-	ruc_compiler_debug=./Debug/ruc
+	compiler=./Release/ruc
+	compiler_debug=./Debug/ruc
 
 	if [[ -z $ignore ]] ; then
 		build_vm
@@ -139,11 +140,18 @@ build()
 
 internal_timeout()
 {
+	exec=$1
+	shift
+	exec_debug=$2
+	shift
+
 	if [[ $OSTYPE == "darwin" ]] ; then
-		gtimeout $@
+		gtimeout $wait_for $exec $@
 	else
-		timeout $@
+		timeout $wait_for $exec $@
 	fi
+
+	return $?
 }
 
 message_success()
@@ -184,7 +192,7 @@ execution()
 {
 	if [[ $path == $exec_dir/* ]] ; then
 		action="execution"
-		internal_timeout $wait_for $ruc_interpreter export.txt &>$log
+		internal_timeout $interpreter $interpreter export.txt &>$log
 
 		case $? in
 			0)
@@ -260,7 +268,7 @@ compiling()
 {
 	if [[ -z $ignore || $path != $error_dir/* ]] ; then
 		action="compiling"
-		internal_timeout $wait_for $ruc_compiler $sources &>$log
+		internal_timeout $compiler $compiler_debug $sources &>$log
 
 		case $? in
 			0)
