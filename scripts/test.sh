@@ -76,7 +76,12 @@ build_folder()
 {
 	rm -rf build && mkdir build && cd build
 
-	cmake .. -DCMAKE_BUILD_TYPE=Debug -DTESTING_EXIT_CODE=$exit_code
+	if [[ $OSTYPE != "msys" ]] ; then
+		CMAKE_BUILD_TYPE=-DCMAKE_BUILD_TYPE=Debug
+	fi
+
+
+	cmake .. $CMAKE_BUILD_TYPE -DTESTING_EXIT_CODE=$exit_code
 	if ! cmake --build . --config Debug ; then
 		exit 1
 	fi
@@ -84,16 +89,19 @@ build_folder()
 	if [[ $OSTYPE != "msys" ]] ; then
 		cmake --install . --prefix $dir --config Debug
 		mv $dir/$1 Debug
+		CMAKE_BUILD_TYPE=-DCMAKE_BUILD_TYPE=Release
 	fi
 
-	cmake .. -DCMAKE_BUILD_TYPE=Release -DTESTING_EXIT_CODE=$exit_code
+
+	cmake .. $CMAKE_BUILD_TYPE -DTESTING_EXIT_CODE=$exit_code
 	if ! cmake --build . --config Release ; then
 		exit 1
 	fi
 
 	if [[ $OSTYPE != "msys" ]] ; then
 		cmake --install . --prefix $dir --config Release
-		mv $dir/$1 Release && rm -rf $dir
+		mv $dir/$1 Release
+		rm -rf $dir
 	fi
 }
 
