@@ -3,7 +3,7 @@
 init()
 {
 	exit_code=1
-	exp=export.txt
+	vm_exec=export.txt
 
 	vm_release=master
 	output_time=0.0
@@ -77,6 +77,7 @@ init()
 	fi
 
 	log=tmp
+	buf=buf
 }
 
 build_folder()
@@ -130,7 +131,7 @@ build_vm()
 		interpreter=./ruc-vm/build/ruc-vm
 	fi
 
-	interpreter_debug=interpreter
+	interpreter_debug=$interpreter
 }
 
 build()
@@ -149,15 +150,33 @@ build()
 run()
 {
 	exec=$1
-	shift
 	exec_debug=$2
+	shift
 	shift
 
 	$runner $exec $@ &>$log
 	ret=$?
 
 	if [[ $exec != $exec_debug ]] ; then
-		return $ret
+		if [[ $ret == 0 ]] ; then
+			mv $vm_exec $buf
+
+			$runner $exec_debug $@ &>$log
+			ret=$?
+
+			if [[ $ret == 0 ]] ; then
+				mv $buf $vm_exec
+			fi
+		elif [[ $ret == $exit_code ]] ; then
+			mv $log $buf
+
+			$runner $exec_debug $@ &>$log
+			ret=$?
+
+			if [[ $ret == $exit_code ]] ; then
+				mv $buf $log
+			fi
+		fi
 	fi
 
 	return $ret
@@ -201,7 +220,7 @@ execution()
 {
 	if [[ $path == $exec_dir/* ]] ; then
 		action="execution"
-		run $interpreter $interpreter_debug $exp
+		run $interpreter $interpreter_debug $vm_exec
 
 		case $? in
 			0)
@@ -277,7 +296,7 @@ compiling()
 {
 	if [[ -z $ignore || $path != $dir_error/* ]] ; then
 		action="compiling"
-		run $compiler $compiler_debug $sources -o $exp
+		run $compiler $compiler_debug $sources -o $vm_exec
 
 		case $? in
 			0)
@@ -360,6 +379,7 @@ test()
 
 	echo -e "\x1B[1;39m success = $success, warning = $warning, failure = $failure, timeout = $timeout"
 	rm -f $log
+	rm -f $buf
 }
 
 main()
