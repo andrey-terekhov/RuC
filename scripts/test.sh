@@ -3,18 +3,20 @@
 init()
 {
 	exit_code=1
+	vm_exec=export.txt
 
+	vm_release=master
 	output_time=0.0
 	wait_for=5
-	vm_release=master
 
-	test_dir=../tests
-	error_dir=../tests/errors
-	exec_dir=../tests/executable
+	dir_install=./install
+	dir_test=../tests
+	dir_error=../tests/errors
+	dir_exec=../tests/executable
 
-	error_subdir=errors
-	warning_subdir=warnings
-	include_subdir=include
+	subdir_error=errors
+	subdir_warning=warnings
+	subdir_include=include
 
 	while ! [[ -z $1 ]]
 	do
@@ -22,12 +24,12 @@ init()
 			-h|--help)
 				echo -e "Usage: ./${0##*/} [KEY] ..."
 				echo -e "Description:"
-				echo -e "\tThis script tests all files from \"$test_dir\" directory."
-				echo -e "\tFolder \"$error_dir\" should contain tests with expected error."
+				echo -e "\tThis script tests all files from \"$dir_test\" directory."
+				echo -e "\tFolder \"$dir_error\" should contain tests with expected error."
 				echo -e "\tExecutable tests should be in \"$exec_dir\" directory."
-				echo -e "\tTo ignore invalid tests output, use \"*/$warning_subdir/*\" subdirectory."
-				echo -e "\tFor tests with expected runtime error, use \"*/$error_subdir/*\" subdirectory."
-				echo -e "\tFor multi-file tests, use \"*/$include_subdir/*\" subdirectory."
+				echo -e "\tTo ignore invalid tests output, use \"*/$subdir_warning/*\" subdirectory."
+				echo -e "\tFor tests with expected runtime error, use \"*/$subdir_error/*\" subdirectory."
+				echo -e "\tFor multi-file tests, use \"*/$subdir_include/*\" subdirectory."
 				echo -e "Keys:"
 				echo -e "\t-h, --help\tTo output help info."
 				echo -e "\t-s, --silence\tFor silence testing."
@@ -69,8 +71,7 @@ init()
 	timeout=0
 
 	log=tmp
-	dir=temp
-	exp=export.tmp
+	buf=buf
 }
 
 build_folder()
@@ -88,8 +89,8 @@ build_folder()
 	fi
 
 	if [[ $OSTYPE != "msys" ]] ; then
-		cmake --install . --prefix $dir --config Debug
-		mv $dir/$1 Debug
+		cmake --install . --prefix $dir_install --config Debug
+		mv $dir_install/$1 Debug
 		CMAKE_BUILD_TYPE=-DCMAKE_BUILD_TYPE=Release
 	fi
 
@@ -100,9 +101,9 @@ build_folder()
 	fi
 
 	if [[ $OSTYPE != "msys" ]] ; then
-		cmake --install . --prefix $dir --config Release
-		mv $dir/$1 Release
-		rm -rf $dir
+		cmake --install . --prefix $dir_install --config Release
+		mv $dir_install/$1 Release
+		rm -rf $dir_install
 	fi
 }
 
@@ -123,6 +124,8 @@ build_vm()
 	else
 		interpreter=./ruc-vm/build/ruc-vm
 	fi
+
+	interpreter_debug=interpreter
 }
 
 build()
@@ -138,7 +141,7 @@ build()
 	fi
 }
 
-internal_timeout()
+run()
 {
 	exec=$1
 	shift
@@ -146,12 +149,17 @@ internal_timeout()
 	shift
 
 	if [[ $OSTYPE == "darwin" ]] ; then
-		gtimeout $wait_for $exec $@
+		gtimeout $wait_for $exec $@ &>$log
 	else
-		timeout $wait_for $exec $@
+		timeout $wait_for $exec $@ &>$log
+	fi
+	ret=$?
+
+	if [[ ( $ret == 0 || $ret == $exit_code ) && $exec != $exec_debug ]] ; then
+		return $ret
 	fi
 
-	return $?
+	return $ret
 }
 
 message_success()
@@ -192,11 +200,11 @@ execution()
 {
 	if [[ $path == $exec_dir/* ]] ; then
 		action="execution"
-		internal_timeout $interpreter $interpreter export.txt &>$log
+		run $interpreter $interpreter_debug $vm_exec
 
 		case $? in
 			0)
-				if [[ $path == */$error_subdir/* ]] ; then
+				if [[ $path == */$subdir_error/* ]] ; then
 					message_failure
 					let failure++
 				else
@@ -220,7 +228,7 @@ execution()
 				fi
 				;;
 			*)
-				if [[ $path == */$error_subdir/* ]] ; then
+				if [[ $path == */$subdir_error/* ]] ; then
 					message_success
 					let success++
 				else
@@ -240,7 +248,7 @@ execution()
 
 check_warnings()
 {
-	if [[ $path == */$warning_subdir/* ]] ; then
+	if [[ $path == */$subdir_warning/* ]] ; then
 		message_success
 		let success++
 	else
@@ -266,13 +274,13 @@ check_warnings()
 
 compiling()
 {
-	if [[ -z $ignore || $path != $error_dir/* ]] ; then
+	if [[ -z $ignore || $path != $dir_error/* ]] ; then
 		action="compiling"
-		internal_timeout $compiler $compiler_debug $sources &>$log
+		run $compiler $compiler_debug $sources
 
 		case $? in
 			0)
-				if [[ $path == $error_dir/* ]] ; then
+				if [[ $path == $dir_error/* ]] ; then
 					message_failure
 					let failure++
 				else
@@ -290,7 +298,7 @@ compiling()
 				let timeout++
 				;;
 			$exit_code)
-				if [[ $path == $error_dir/* ]] ; then
+				if [[ $path == $dir_error/* ]] ; then
 					check_warnings
 				else
 					message_failure
@@ -320,16 +328,16 @@ compiling()
 test()
 {
 	# Do not use names with spaces!
-	for path in `find $test_dir -name *.c`
+	for path in `find $dir_test -name *.c`
 	do
 		sources=$path
 
-		if [[ $path != */$include_subdir/* ]] ; then
+		if [[ $path != */$subdir_include/* ]] ; then
 			compiling
 		fi
 	done
 
-	for include in `find $test_dir -name $include_subdir -type d`
+	for include in `find $dir_test -name $subdir_include -type d`
 	do
 		for path in `ls -d $include/*`
 		do
