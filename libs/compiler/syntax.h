@@ -218,8 +218,8 @@ size_t func_get(const syntax *const sx, const size_t index);
  *						@c 3 for variables
  *
  *	@return	Index of the last item in identifiers table,
- *			@c SIZE_MAX @c - @c 1 on "redeclaration" error
- *			@c SIZE_MAX on "redefinition of main" error
+ *			@c SIZE_MAX @c - @c 1 on redeclaration
+ *			@c SIZE_MAX on redefinition of main
  */
 size_t ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def);
 

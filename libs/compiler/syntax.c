@@ -24,16 +24,16 @@ int get_static(syntax *const sx, const int type)
 {
 	const int old_displ = sx->displ;
 	sx->displ += sx->lg * size_of(sx, type);
-	
+
 	if (sx->lg > 0)
 	{
-		sx->maxdispl = (sx->displ > sx->maxdispl) ? sx->displ : sx->maxdispl;
+		sx->maxdispl = sx->displ > sx->maxdispl ? sx->displ : sx->maxdispl;
 	}
 	else
 	{
 		sx->maxdisplg = -sx->displ;
 	}
-	
+
 	return old_displ;
 }
 
@@ -107,14 +107,14 @@ int sx_init(syntax *const sx)
 
 	sx->maxdisplg = 3;
 	sx->main_ref = 0;
-	
+
 	sx->maxdispl = 3;
 	sx->displ = -3;
 	sx->curid = 2;
 	sx->lg = -1;
-	
+
 	sx->prdf = -1;
-	
+
 	for (size_t i = 0; i < 256; i++)
 	{
 		sx->hashtab[i] = 0;
@@ -127,23 +127,23 @@ int sx_init(syntax *const sx)
 
 int sx_is_correct(syntax *const sx, universal_io *const io)
 {
-	int error_flag = 0;
-	
+	int is_correct = 1;
 	if (sx->main_ref == 0)
 	{
 		error(io, no_main_in_program);
-		error_flag = -1;
+		is_correct = 0;
 	}
-	
+
 	for (size_t i = 0; (int)i <= sx->prdf; i++)
 	{
 		if (sx->predef[i])
 		{
 			error(io, predef_but_notdef, sx->reprtab, sx->predef[i]);
-			error_flag = -1;
+			is_correct = 0;
 		}
 	}
-	return error_flag;
+
+	return is_correct;
 }
 
 
@@ -258,8 +258,9 @@ size_t func_get(const syntax *const sx, const size_t index)
 size_t ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def)
 {
 	const size_t lastid = sx->id;
+	sx->identab[lastid] = repr_get_reference(sx, repr);
 	sx->id += 4;
-	
+
 	if (repr_get_reference(sx, repr) == 0) // это может быть только MAIN
 	{
 		if (sx->main_ref)
@@ -268,26 +269,26 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 		}
 		sx->main_ref = lastid;
 	}
-	
+
 	// Ссылка на описание с таким же представлением в предыдущем блоке
-	const size_t prev = sx->identab[lastid] = repr_get_reference(sx, repr);
+	const size_t prev = sx->identab[lastid];
 	if (prev)
 	{
 		// prev == 0 только для main, эту ссылку портить нельзя
 		// иначе это ссылка на текущее описание с этим представлением
 		repr_set_reference(sx, repr, lastid);
 	}
-	
+
 	// Один и тот же идентификатор м.б. переменной и меткой
 	if (type != 1 && prev >= sx->curid && (func_def != 1 || ident_get_repr(sx, prev) > 0))
 	{
-		// Только определение функции может иметь 2 описания, то есть иметь предописани
+		// Только определение функции может иметь 2 описания, то есть иметь предописание
 		return SIZE_MAX - 1;
 	}
-	
+
 	ident_set_repr(sx, lastid, repr);
 	ident_set_mode(sx, lastid, mode);
-	
+
 	if (type < 0)
 	{
 		// Так как < 0, это функция-параметр
@@ -302,7 +303,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 	{
 		// Это метка
 		// В поле mode: 0, если первым встретился goto; когда встретим метку, поставим 1
-		// В поле displ: при генерации кода когда встретим метку, поставим pc
+		// В поле displ: при генерации кода, когда встретим метку, поставим pc
 		ident_set_mode(sx, lastid, 0);
 		ident_set_displ(sx, lastid, 0);
 	}
@@ -315,7 +316,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 	{
 		// Это функция, и в поле displ находится её номер
 		ident_set_displ(sx, lastid, type);
-		
+
 		if (func_def == 2)
 		{
 			// Это предописание функции
@@ -343,7 +344,7 @@ int ident_get_repr(const syntax *const sx, const size_t index)
 	{
 		return INT_MAX;
 	}
-	
+
 	return sx->identab[index + 1];
 }
 
@@ -353,7 +354,7 @@ int ident_get_mode(const syntax *const sx, const size_t index)
 	{
 		return INT_MAX;
 	}
-	
+
 	return sx->identab[index + 2];
 }
 
@@ -363,7 +364,7 @@ int ident_get_displ(const syntax *const sx, const size_t index)
 	{
 		return INT_MAX;
 	}
-	
+
 	return sx->identab[index + 3];
 }
 
@@ -373,7 +374,7 @@ int ident_set_repr(syntax *const sx, const size_t index, const size_t repr)
 	{
 		return -1;
 	}
-	
+
 	sx->identab[index + 1] = (int)repr;
 	return 0;
 }
@@ -384,7 +385,7 @@ int ident_set_mode(syntax *const sx, const size_t index, const int mode)
 	{
 		return -1;
 	}
-	
+
 	sx->identab[index + 2] = mode;
 	return 0;
 }
@@ -395,7 +396,7 @@ int ident_set_displ(syntax *const sx, const size_t index, const int displ)
 	{
 		return -1;
 	}
-	
+
 	sx->identab[index + 3] = displ;
 	return 0;
 }
@@ -459,8 +460,8 @@ size_t repr_add(syntax *const sx, const char32_t *const spelling)
 
 	do
 	{
-		 hash += (spelling[i] & 255);
-		 sx->reprtab[sx->rp++] = spelling[i];
+		hash += (spelling[i] & 255);
+		sx->reprtab[sx->rp++] = spelling[i];
 	} while (spelling[i++] != 0);
 
 	sx->hash = (int)hash;
@@ -533,7 +534,7 @@ int scope_block_enter(syntax *const sx, int *const displ, int *const lg)
 	{
 		return -1;
 	}
-	
+
 	sx->curid = sx->id;
 	*displ = sx->displ;
 	*lg = sx->lg;
@@ -546,12 +547,12 @@ int scope_block_exit(syntax *const sx, const int displ, const int lg)
 	{
 		return -1;
 	}
-	
+
 	for (size_t i = sx->id - 4; i >= sx->curid; i -= 4)
 	{
 		repr_set_reference(sx, ident_get_repr(sx, i), sx->identab[i]);
 	}
-	
+
 	sx->displ = displ;
 	sx->lg = lg;
 	return 0;
@@ -563,7 +564,7 @@ int scope_func_enter(syntax *const sx)
 	{
 		return INT_MAX;
 	}
-	
+
 	const int displ = sx->displ;
 	sx->curid = sx->id;
 	sx->displ = 3;
@@ -579,12 +580,12 @@ int scope_func_exit(syntax *const sx, const size_t decl_ref, const int displ)
 	{
 		return -1;
 	}
-	
+
 	for (size_t i = sx->id - 4; i >= sx->curid; i -= 4)
 	{
 		repr_set_reference(sx, ident_get_repr(sx, i), sx->identab[i]);
 	}
-	
+
 	sx->curid = 2;	// Все функции описываются на одном уровне
 	sx->tree[decl_ref] = sx->maxdispl;
 	sx->lg = -1;

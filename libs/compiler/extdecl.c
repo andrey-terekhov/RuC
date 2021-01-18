@@ -257,22 +257,24 @@ void totreef(analyzer *context, int op)
 
 int toidentab(analyzer *context, int f, int type)
 {
-	const size_t return_value = ident_add(context->sx, REPRTAB_POS, f, type, context->func_def);
+	const size_t ret = ident_add(context->sx, REPRTAB_POS, f, type, context->func_def);
 	context->lastid = 0;
-	if (return_value == SIZE_MAX)
+
+	if (ret == SIZE_MAX)
 	{
 		context_error(context, redefinition_of_main); //--
 		context->error_flag = 5;
 	}
-	else if (return_value == SIZE_MAX - 1)
+	else if (ret == SIZE_MAX - 1)
 	{
 		context_error(context, repeated_decl);
 		context->error_flag = 5;
 	}
 	else
 	{
-		context->lastid = (int)return_value;
+		context->lastid = (int)ret;
 	}
+	
 	return context->lastid;
 }
 
@@ -636,7 +638,8 @@ void primaryexpr(analyzer *context)
 		}
 
 		totree(context, TIdent);
-		totree(context, context->anstdispl = ident_get_displ(context->sx, context->lastid));
+		context->anstdispl = ident_get_displ(context->sx, context->lastid);
+		totree(context, context->anstdispl);
 		context->ansttype = ident_get_mode(context->sx, context->lastid);
 		context->stackoperands[++context->sopnd] = context->ansttype;
 		context->anst = IDENT;
