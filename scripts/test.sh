@@ -276,7 +276,7 @@ compiling()
 {
 	if [[ -z $ignore || $path != $dir_error/* ]] ; then
 		action="compiling"
-		run $compiler $compiler_debug $sources
+		run $compiler $compiler_debug $sources -o $vm_exec
 
 		case $? in
 			0)
