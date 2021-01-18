@@ -85,6 +85,20 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "блочный комментарий не окончен");
 			break;
 
+		case no_main_in_program: // test_exist
+			sprintf(msg, "в каждой программе должна быть ГЛАВНАЯ функция");
+			break;
+
+		case predef_but_notdef: // need_test
+		{
+			index += sprintf(&msg[index], "функция ");
+			const int *const reprtab = va_arg(args, int *);
+			const int pos = va_arg(args, int);
+			index += printident(reprtab, pos, &msg[index]);
+			index += sprintf(&msg[index], " была предопределена, но не описана");
+		}
+		break;
+
 		case after_type_must_be_ident: // test_exist
 			sprintf(msg, "после символа типа должен быть идентификатор или * "
 												  "идентификатор");
@@ -201,11 +215,8 @@ void get_error(const int num, char *const msg, va_list args)
 		case assmnt_float_to_int:	// test_exist
 			sprintf(msg, "нельзя присваивать целому вещественное значение");
 			break;
-		case more_than_1_main:	// test_exist
+		case redefinition_of_main:	// test_exist
 			sprintf(msg, "в программе может быть только 1 идентификатор ГЛАВНАЯ");
-			break;
-		case no_main_in_program: // test_exist
-			sprintf(msg, "в каждой программе должна быть ГЛАВНАЯ функция");
 			break;
 		case no_leftbr_in_printid: // test_exist
 			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет (");
@@ -432,15 +443,6 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "здесь должен быть тип (стандартный или описанный "
 												  "пользователем)");
 			break;
-		case predef_but_notdef: // need_test
-		{
-			index += sprintf(&msg[index], "функция ");
-			const int *const reprtab = va_arg(args, int *);
-			const int pos = va_arg(args, int);
-			index += printident(reprtab, pos, &msg[index]);
-			index += sprintf(&msg[index], " была предопределена, но не описана");
-		}
-		break;
 		case print_without_br: // test_exist
 			sprintf(msg, "операнд оператора печати должен быть в круглых скобках ()");
 			break;
@@ -590,13 +592,6 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "в выражении встретился оператор вне блока, tree[%zi] = %i", i, elem);
 		}
 		break;
-		case tree_expression_texprend:
-		{
-			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "лишний TExprend внутри блока, tree[%zi] = %i", i, elem);
-		}
-		break;
 		case tree_expression_unknown:
 		{
 			const size_t i = va_arg(args, size_t);
@@ -627,6 +622,29 @@ void get_error(const int num, char *const msg, va_list args)
 			const size_t i = va_arg(args, size_t);
 			const int elem = va_arg(args, int);
 			sprintf(msg, "получен %i, ожидался tree[%zi] = %i", unexp, i, elem);
+		}
+		break;
+
+		case node_cannot_set_child:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "невозможно получить потомка от tree[%zi] = %i", i, elem);
+		}
+		break;
+		case node_cannot_set_type:
+		{
+			const int type = va_arg(args, int);
+			const size_t i = va_arg(args, size_t);
+			sprintf(msg, "невозможно установить тип %i в tree[%zi]", type, i);
+		}
+		break;
+		case node_cannot_add_arg:
+		{
+			const int arg = va_arg(args, int);
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "невозможно добавить аргумент %i для tree[%zi] = %i", arg, i, elem);
 		}
 		break;
 

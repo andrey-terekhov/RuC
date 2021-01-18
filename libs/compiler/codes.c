@@ -1428,7 +1428,7 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 	}
 
 	uni_printf(&io, "\n%s\n", "identab");
-	for (size_t i = 2; (int)i < sx->id; i += 4)
+	for (size_t i = 2; i < sx->id; i += 4)
 	{
 		for (size_t j = 0; j < 4; j++)
 		{
@@ -1439,21 +1439,21 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 
 	/*
 	uni_printf(&io, "\n%s\n", "repr");
-	for (size_t i = 1206; (int)i <= sx->rp; i++)
+	for (size_t i = 1206; i <= sx->rp; i++)
 	{
 		uni_printf(&io, "rp %zi) %i\n", i, sx->reprtab[i]);
 	}
 	*/
 
 	uni_printf(&io, "\n%s\n", "modetab");
-	for (size_t i = 0; (int)i < sx->md; i++)
+	for (size_t i = 0; i < sx->md; i++)
 	{
 		uni_printf(&io, "md %zi) %i\n", i, sx->modetab[i]);
 	}
 
 	/*
 	uni_printf(&io, "\n%s\n", "tree");
-	for (size_t i = 0; (int)i <= tc; i++)
+	for (size_t i = 0; i <= tc; i++)
 	{
 		uni_printf(&io, "tc %zi) %i\n", i, sx->tree[i]);
 	}
@@ -1462,7 +1462,7 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 	uni_printf(&io, "\n");
 
 	size_t i = 0;
-	while ((int)i < sx->tc)
+	while (i < sx->tc)
 	{
 		uni_printf(&io, "tc %zi) ", i);
 		i = elem_to_io(&io, sx->tree, i);
@@ -1481,9 +1481,9 @@ void tables_and_codes(const syntax *const sx, const char *const path)
 	}
 
 	uni_printf(&io, "\n\n%s\n", "functions");
-	for (size_t i = 1; (int)i <= sx->funcnum; i++)
+	for (size_t i = 1; i <= sx->funcnum; i++)
 	{
-		uni_printf(&io, "fun %zi) %i\n", i, sx->functions[i]);
+		uni_printf(&io, "fun %zi) %zi\n", i, sx->functions[i]);
 	}
 
 	uni_printf(&io, "\n%s\n", "iniprocs");

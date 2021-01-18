@@ -39,19 +39,23 @@ typedef struct syntax
 
 	int iniprocs[INIPROSIZE];		/**< Init processes */
 	int procd;						/**< Process management daemon */
+	
+	size_t predef[FUNCSIZE];		/**< Predefined functions table */
+	int prdf;						/**< Number of predefined functions */
 
-	int functions[FUNCSIZE];		/**< Functions table */
-	int funcnum;					/**< Number of functions */
+	size_t functions[FUNCSIZE];		/**< Functions table */
+	size_t funcnum;					/**< Number of functions */
 
 	int identab[MAXIDENTAB];		/**< Identifiers table */
-	int id;							/**< Number of identifiers */
+	size_t id;						/**< Number of identifiers */
+	size_t curid;					/**< Start of current scope in identifiers table */
 
 	int modetab[MAXMODETAB];		/**< Modes table */
-	int md;							/**< Number of modes */
-	int startmode;					/**< Start of last record in modetab */
+	size_t md;						/**< Number of modes */
+	size_t startmode;				/**< Start of last record in modetab */
 	
 	int tree[MAXTREESIZE];			/**< Tree */
-	int tc;							/**< Tree counter */
+	size_t tc;							/**< Tree counter */
 	
 	size_t hashtab[256];			/**< Hash table for reprtab */
 	int hash;						/**< Last value of hash function */
@@ -59,10 +63,13 @@ typedef struct syntax
 	char32_t reprtab[MAXREPRTAB];	/**< Representations table */
 	size_t rp;						/**< Representations size */
 
+	int maxdispl;					/**< Max displacement */
 	int maxdisplg;					/**< Max displacement */
-	int wasmain;					/**< Main function flag */
+	size_t main_ref;				/**< Main function reference */
 
-	int anstdispl;					/**< Stack displacement */
+	int displ;						/**< Stack displacement in current scope */
+	int lg;							/**< Displacement from l (+1) or g (-1) */
+	
 	int keywordsnum;				/**< Number of read keyword */
 
 	node *current; 					/**< Current node during traversing the tree */
@@ -78,6 +85,16 @@ typedef struct syntax
  */
 int sx_init(syntax *const sx);
 
+/**
+ *	Check if syntax structure is correct
+ *
+ *	@param	sx			Syntax structure
+ *	@param	io			Universal io structure
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+int sx_is_correct(syntax *const sx, universal_io *const io);
+
 
 /**
  *	Increase size of memory table by value
@@ -90,7 +107,7 @@ int sx_init(syntax *const sx);
 int mem_increase(syntax *const sx, const size_t value);
 
 /**
- *	Add new record to memory table
+ *	Add new value to memory table
  *
  *	@param	sx			Syntax structure
  *	@param	value		Value to record
@@ -179,11 +196,107 @@ int func_set(syntax *const sx, const size_t index, const size_t ref);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in functions table
  *
- *	@return	Item by index from functions table, @c INT_MAX on failure
+ *	@return	Item by index from functions table, @c SIZE_MAX on failure
  */
-int func_get(const syntax *const sx, const size_t index);
+size_t func_get(const syntax *const sx, const size_t index);
 
 
+/**
+ *	Add new item to identifiers table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	repr		New identifier index in representations table
+ *	@param	type		@c -1 for function as parameter,
+ *						@c  0 for variable,
+ *						@c  1 for label,
+ *						@c  funcnum for function,
+ *						@c  >= @c 100 for type specifier
+ *	@param	mode		New identifier mode
+ *	@param	func_def	@c 0 for function without args,
+ *						@c 1 for function definition,
+ *						@c 2 for function declaration,
+ *						@c 3 for variables
+ *
+ *	@return	Index of the last item in identifiers table,
+ *			@c SIZE_MAX @c - @c 1 on redeclaration
+ *			@c SIZE_MAX on redefinition of main
+ */
+size_t ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def);
+
+/**
+ *	Get item representation from identifiers table by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return	Identifier index in representations table, @c INT_MAX on failure
+ */
+int ident_get_repr(const syntax *const sx, const size_t index);
+
+/**
+ *	Get item mode from identifiers table by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return	Identifier mode, @c INT_MAX on failure
+ */
+int ident_get_mode(const syntax *const sx, const size_t index);
+
+/**
+ *	Get item displacement from identifiers table by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return	Identifier displacement, @c INT_MAX on failure
+ */
+int ident_get_displ(const syntax *const sx, const size_t index);
+
+/**
+ *	Set identifier representation by index in identifiers table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *	@param	repr		Index of record in representation table
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int ident_set_repr(syntax *const sx, const size_t index, const size_t repr);
+
+/**
+ *	Set identifier mode by index in identifiers table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *	@param	mode		Identifier mode
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int ident_set_mode(syntax *const sx, const size_t index, const int mode);
+
+/**
+ *	Set identifier displacement by index in identifiers table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *	@param	displ		Identifier displacement
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int ident_set_displ(syntax *const sx, const size_t index, const int displ);
+
+
+/**
+ *	Get mode size
+ *	@note	Also used in codegen
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Standart type or index for modes table
+ *
+ *	@return	Mode size
+ */
+int size_of(const syntax *const sx, const int mode);
 
 /**
  *	Add a new record to modes table
@@ -250,6 +363,49 @@ int repr_get_reference(const syntax *const sx, const size_t index);
 int repr_set_reference(syntax *const sx, const size_t index, const size_t ref);
 
 
+/**
+ *	Enter block scope
+ *
+ *	@param	sx			Syntax structure
+ *	@param	displ		Variable to save previous stack displacement
+ *	@param	lg			Variable to save previous value of lg
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int scope_block_enter(syntax *const sx, int *const displ, int *const lg);
+
+/**
+ *	Exit block scope
+ *
+ *	@param	sx			Syntax structure
+ *	@param	displ		Stack displacement at the start of the scope
+ *	@param	lg			Previous value of lg
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int scope_block_exit(syntax *const sx, const int displ, const int lg);
+
+/**
+ *	Enter function scope
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	Previous stack displacement, @c INT_MAX on failure
+ */
+int scope_func_enter(syntax *const sx);
+
+/**
+ *	Exit function scope
+ *
+ *	@param	sx			Syntax structure
+ *	@param	decl_ref	Reference to function declaration in the tree
+ *	@param	displ		Stack displacement at the start of the scope
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int scope_func_exit(syntax *const sx, const size_t decl_ref, const int displ);
+
+  
 /**
  *	Set current node
  *
