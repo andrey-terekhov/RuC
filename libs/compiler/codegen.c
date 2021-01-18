@@ -785,6 +785,9 @@ void Struct_init_gen(syntax *const sx)
 			Struct_init_gen(sx);
 		}
 		sx->tc++; // TExprend
+
+		tree_next_node(sx); // TExprend
+		printf("%i tc=%i :Struct_init_gen TExprend\n", node_get_type(tree_get_node(sx)), sx->tc);
 	}
 	else
 	{
@@ -810,13 +813,14 @@ void Declid_gen(syntax *const sx)
 	// all == 2 есть инициализатор только из строк
 	element_len = sz_of(sx, telem);
 
-	tree_next_node(sx);
-	printf("%i tc=%i :Declid_gen\n", node_get_type(tree_get_node(sx)), sx->tc);
 
 	if (N == 0) // обычная переменная int a; или struct point p;
 	{
 		if (iniproc)
 		{
+			tree_next_node(sx);
+			printf("%i tc=%i :Declid_gen1\n", node_get_type(tree_get_node(sx)), sx->tc);
+
 			tocode(sx, STRUCTWITHARR);
 			tocode(sx, olddispl);
 			tocode(sx, proc_get(sx, iniproc));
@@ -832,6 +836,9 @@ void Declid_gen(syntax *const sx)
 			}
 			else
 			{
+				tree_next_node(sx);
+				printf("%i tc=%i :Declid_gen2\n", node_get_type(tree_get_node(sx)), sx->tc);
+
 				Expr_gen(sx, 0);
 				tocode(sx, telem == LFLOAT ? ASSRV : ASSV);
 				tocode(sx, olddispl);
@@ -840,6 +847,9 @@ void Declid_gen(syntax *const sx)
 	}
 	else // Обработка массива int a[N1]...[NN] =
 	{
+		tree_next_node(sx);
+		printf("%i tc=%i :Declid_gen3\n", node_get_type(tree_get_node(sx)), sx->tc);
+
 		tocode(sx, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN
 								 // уже лежат на стеке
 		tocode(sx, all == 0 ? N : abs(N) - 1);
@@ -956,7 +966,7 @@ int codegen(universal_io *const io, syntax *const sx)
 				// sx->tc++;
 				sx->tc += 3; 	
 
-				tree_next_node(sx);  // TBegin
+				tree_next_node(sx); // TBegin
 				printf("%i tc=%i :codegen\n", node_get_type(tree_get_node(sx)), sx->tc);
 
 				compstmt_gen(sx, &context);
