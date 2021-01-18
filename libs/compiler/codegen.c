@@ -362,11 +362,11 @@ int Expr_gen(syntax *const sx, int incond)
 
 		if (sx->tree[sx->tc] == TCondexpr)
 		{
-			tree_next_node(sx);
-			printf("%i tc=%i: Expr_gen TCondexpr\n", node_get_type(tree_get_node(sx)), sx->tc);
-
 			if (incond)
 			{
+				tree_next_node(sx);
+				printf("%i tc=%i: Expr_gen TCondexpr\n", node_get_type(tree_get_node(sx)), sx->tc);
+				
 				return wasstring;
 			}
 			else
