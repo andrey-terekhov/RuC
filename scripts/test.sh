@@ -3,7 +3,7 @@
 init()
 {
 	exit_code=1
-	vm_exec=export.txt
+	exp=export.txt
 
 	vm_release=master
 	output_time=0.0
@@ -70,8 +70,13 @@ init()
 	failure=0
 	timeout=0
 
+	if [[ $OSTYPE == "darwin" ]] ; then
+		runner="gtimeout $wait_for"
+	else
+		runner="timeout $wait_for"
+	fi
+
 	log=tmp
-	buf=buf
 }
 
 build_folder()
@@ -148,14 +153,10 @@ run()
 	exec_debug=$2
 	shift
 
-	if [[ $OSTYPE == "darwin" ]] ; then
-		gtimeout $wait_for $exec $@ &>$log
-	else
-		timeout $wait_for $exec $@ &>$log
-	fi
+	$runner $exec $@ &>$log
 	ret=$?
 
-	if [[ ( $ret == 0 || $ret == $exit_code ) && $exec != $exec_debug ]] ; then
+	if [[ $exec != $exec_debug ]] ; then
 		return $ret
 	fi
 
@@ -200,7 +201,7 @@ execution()
 {
 	if [[ $path == $exec_dir/* ]] ; then
 		action="execution"
-		run $interpreter $interpreter_debug $vm_exec
+		run $interpreter $interpreter_debug $exp
 
 		case $? in
 			0)
@@ -276,7 +277,7 @@ compiling()
 {
 	if [[ -z $ignore || $path != $dir_error/* ]] ; then
 		action="compiling"
-		run $compiler $compiler_debug $sources -o $vm_exec
+		run $compiler $compiler_debug $sources -o $exp
 
 		case $? in
 			0)
@@ -358,7 +359,7 @@ test()
 	fi
 
 	echo -e "\x1B[1;39m success = $success, warning = $warning, failure = $failure, timeout = $timeout"
-	rm $log
+	rm -f $log
 }
 
 main()
