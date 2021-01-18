@@ -159,6 +159,9 @@ int Expr_gen(syntax *const sx, int incond)
 			{
 				tocode(sx, LA);
 				tocode(sx, sx->anstdispl = sx->tree[sx->tc++]);
+
+				tree_next_node(sx);
+				printf("%i tc=%i :Expr_gen TIdenttoaddr \n", node_get_type(tree_get_node(sx)), sx->tc);
 				break;
 			}
 			case TIdenttoval:
@@ -174,16 +177,25 @@ int Expr_gen(syntax *const sx, int incond)
 			{
 				tocode(sx, LOADD);
 				tocode(sx, sx->tree[sx->tc++]);
+
+				tree_next_node(sx);
+				printf("%i tc=%i :Expr_gen TIdenttovald\n", node_get_type(tree_get_node(sx)), sx->tc);
 				break;
 			}
 			case TAddrtoval:
 			{
 				tocode(sx, LAT);
+
+				tree_next_node(sx);
+				printf("%i tc=%i :Expr_gen TAddrtoval\n", node_get_type(tree_get_node(sx)), sx->tc);
 				break;
 			}
 			case TAddrtovald:
 			{
 				tocode(sx, LATD);
+
+				tree_next_node(sx);
+				printf("%i tc=%i :Expr_gen TAddrtovald\n", node_get_type(tree_get_node(sx)), sx->tc);
 				break;
 			}
 			case TConst:
@@ -200,6 +212,9 @@ int Expr_gen(syntax *const sx, int incond)
 				tocode(sx, LID);
 				tocode(sx, sx->tree[sx->tc++]);
 				tocode(sx, sx->tree[sx->tc++]);
+
+				tree_next_node(sx);
+				printf("%i tc=%i :Expr_gen TConstd\n", node_get_type(tree_get_node(sx)), sx->tc);
 				break;
 			}
 			case TString:
@@ -245,6 +260,10 @@ int Expr_gen(syntax *const sx, int incond)
 
 				tocode(sx, BEGINIT);
 				tocode(sx, n);
+
+				tree_next_node(sx);
+				printf("%i tc=%i :Expr_gen TBeginit\n", node_get_type(tree_get_node(sx)), sx->tc);
+
 				for (i = 0; i < n; i++)
 				{
 					Expr_gen(sx, 0);
@@ -255,6 +274,9 @@ int Expr_gen(syntax *const sx, int incond)
 			{
 				int n = sx->tree[sx->tc++];
 				int i;
+
+				tree_next_node(sx);
+				printf("%i tc=%i :Expr_gen TStructinit\n", node_get_type(tree_get_node(sx)), sx->tc);
 
 				for (i = 0; i < n; i++)
 				{
@@ -272,6 +294,10 @@ int Expr_gen(syntax *const sx, int incond)
 			case TSlice: // параметр - тип элемента
 			{
 				eltype = sx->tree[sx->tc++];
+
+				tree_next_node(sx);
+				printf("%i tc=%i :Expr_gen TSlice\n", node_get_type(tree_get_node(sx)), sx->tc);
+
 				Expr_gen(sx, 0);
 				tocode(sx, SLICE);
 				tocode(sx, sz_of(sx, eltype));
@@ -285,6 +311,9 @@ int Expr_gen(syntax *const sx, int incond)
 			{
 				tocode(sx, SELECT); // SELECT field_displ
 				tocode(sx, sx->tree[sx->tc++]);
+
+				tree_next_node(sx);
+				printf("%i tc=%i :Expr_gen TSelect\n", node_get_type(tree_get_node(sx)), sx->tc);
 				break;
 			}
 			case TPrint:
@@ -302,6 +331,10 @@ int Expr_gen(syntax *const sx, int incond)
 				int n = sx->tree[sx->tc++];
 
 				tocode(sx, CALL1);
+
+				tree_next_node(sx);
+				printf("%i tc=%i: Expr_gen TCall1\n", node_get_type(tree_get_node(sx)), sx->tc);
+
 				for (i = 0; i < n; i++)
 				{
 					Expr_gen(sx, 0);
@@ -312,6 +345,10 @@ int Expr_gen(syntax *const sx, int incond)
 			{
 				tocode(sx, CALL2);
 				tocode(sx, sx->identab[sx->tree[sx->tc++] + 3]);
+
+				tree_next_node(sx);
+				printf("%i tc=%i: Expr_gen TCall2\n", node_get_type(tree_get_node(sx)), sx->tc);
+
 				break;
 			}
 			default:
@@ -325,6 +362,9 @@ int Expr_gen(syntax *const sx, int incond)
 
 		if (sx->tree[sx->tc] == TCondexpr)
 		{
+			tree_next_node(sx);
+			printf("%i tc=%i: Expr_gen TCondexpr\n", node_get_type(tree_get_node(sx)), sx->tc);
+
 			if (incond)
 			{
 				return wasstring;
