@@ -813,14 +813,13 @@ void Declid_gen(syntax *const sx)
 	// all == 2 есть инициализатор только из строк
 	element_len = sz_of(sx, telem);
 
+	tree_next_node(sx);
+	printf("%i tc=%i :Declid_gen\n", node_get_type(tree_get_node(sx)), sx->tc);
 
 	if (N == 0) // обычная переменная int a; или struct point p;
 	{
 		if (iniproc)
 		{
-			tree_next_node(sx);
-			printf("%i tc=%i :Declid_gen1\n", node_get_type(tree_get_node(sx)), sx->tc);
-
 			tocode(sx, STRUCTWITHARR);
 			tocode(sx, olddispl);
 			tocode(sx, proc_get(sx, iniproc));
@@ -836,9 +835,6 @@ void Declid_gen(syntax *const sx)
 			}
 			else
 			{
-				tree_next_node(sx);
-				printf("%i tc=%i :Declid_gen2\n", node_get_type(tree_get_node(sx)), sx->tc);
-
 				Expr_gen(sx, 0);
 				tocode(sx, telem == LFLOAT ? ASSRV : ASSV);
 				tocode(sx, olddispl);
@@ -847,9 +843,6 @@ void Declid_gen(syntax *const sx)
 	}
 	else // Обработка массива int a[N1]...[NN] =
 	{
-		tree_next_node(sx);
-		printf("%i tc=%i :Declid_gen3\n", node_get_type(tree_get_node(sx)), sx->tc);
-
 		tocode(sx, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN
 								 // уже лежат на стеке
 		tocode(sx, all == 0 ? N : abs(N) - 1);
@@ -948,10 +941,10 @@ int codegen(universal_io *const io, syntax *const sx)
 				break;
 			case TFuncdef:
 			{
-				// int identref = sx->tree[sx->tc++];
-				// int maxdispl = sx->tree[sx->tc++];
-				int identref = node_get_arg(tree_get_node(sx), 0);
-				int maxdispl = node_get_arg(tree_get_node(sx), 1);
+				int identref = sx->tree[sx->tc++];
+				int maxdispl = sx->tree[sx->tc++];
+				// int identref = node_get_arg(tree_get_node(sx), 0);
+				// int maxdispl = node_get_arg(tree_get_node(sx), 1);
 				int fn = sx->identab[identref + 3];
 
 				func_set(sx, fn, mem_get_size(sx));
@@ -963,8 +956,8 @@ int codegen(universal_io *const io, syntax *const sx)
 				tree_next_node(sx);
 				printf("%i tc=%i :codegen TBegin\n", node_get_type(tree_get_node(sx)), sx->tc);
 
-				// sx->tc++;
-				sx->tc += 3; 	
+				sx->tc++;
+				// sx->tc += 3; 	
 
 				tree_next_node(sx); // TBegin
 				printf("%i tc=%i :codegen\n", node_get_type(tree_get_node(sx)), sx->tc);
