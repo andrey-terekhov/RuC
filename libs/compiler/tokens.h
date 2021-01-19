@@ -142,6 +142,10 @@ typedef enum TOKEN
 	kw_strncmp			= STRNCMP,		/**< 'strncmp'	keyword */
 	kw_strstr			= STRSTR,		/**< 'strstr'	keyword */
 	kw_strlen			= STRLEN,		/**< 'strlen'	keyword */
+
+
+	kw_t_create_direct	= TCREATEDIRECT,
+	kw_t_exit_direct	= TEXITDIRECT,
 	
 	kw_msg_send			= TMSGSEND,		/**< 't_msg_send'		keyword */
 	kw_msg_receive		= TMSGRECEIVE,	/**< 't_msg_receive'	keyword */

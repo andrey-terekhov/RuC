@@ -15,7 +15,7 @@
  */
 
 #include "compiler.h"
-#include "analyzer.h"
+#include "parser.h"
 #include "codegen.h"
 #include "codes.h"
 #include "errors.h"

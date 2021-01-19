@@ -28,23 +28,23 @@ int has_token_set(const unsigned int tokens, const TOKEN token)
 }
 
 
-int scanner(analyzer *context)
+int scanner(parser *context)
 {
-	context->cur = context->next;
+	context->curr_token = context->next_token;
 	if (!context->buf_flag)
 	{
-		context->next = lex(context->lxr);
+		context->next_token = lex(context->lxr);
 	}
 	else
 	{
-		context->next = context->buf_cur;
+		context->next_token = context->buf_cur;
 		context->buf_flag--;
 	}
 	
 	//	 if(context->kw)
 	//			printf("scaner context->cur %i context->next %i buf_flag %i\n",
 	//			context->cur, context->next, context->buf_flag);
-	return context->cur;
+	return context->curr_token;
 }
 
 int newdecl(syntax *const sx, const int type, const int element_type)
@@ -91,18 +91,18 @@ int is_int(const int t)
 	return t == LINT || t == LLONG || t == LCHAR;
 }
 
-int szof(analyzer *context, int type)
+int szof(parser *context, int type)
 {
-	return context->next == LEFTSQBR ? 1
+	return context->next_token == LEFTSQBR ? 1
 	: type == LFLOAT ? 2 : (is_struct(context->sx, type)) ? mode_get(context->sx, type + 1) : 1;
 }
 
-void mustbe(analyzer *context, int what, int e)
+void mustbe(parser *context, int what, int e)
 {
-	if (context->next != what)
+	if (context->next_token != what)
 	{
 		parser_error(context, e);
-		context->cur = what;
+		context->curr_token = what;
 	}
 	else
 	{
@@ -110,7 +110,7 @@ void mustbe(analyzer *context, int what, int e)
 	}
 }
 
-void mustbe_complex(analyzer *context, int what, int e)
+void mustbe_complex(parser *context, int what, int e)
 {
 	if (scanner(context) != what)
 	{
@@ -119,12 +119,12 @@ void mustbe_complex(analyzer *context, int what, int e)
 	}
 }
 
-void totree(analyzer *context, int op)
+void totree(parser *context, int op)
 {
 	context->sx->tree[context->sx->tc++] = op;
 }
 
-void totreef(analyzer *context, int op)
+void totreef(parser *context, int op)
 {
 	context->sx->tree[context->sx->tc++] = op;
 	if (context->ansttype == LFLOAT &&
@@ -134,7 +134,7 @@ void totreef(analyzer *context, int op)
 	}
 }
 
-int toidentab(analyzer *context, int f, int type)
+int toidentab(parser *context, int f, int type)
 {
 	const size_t ret = ident_add(context->sx, REPRTAB_POS, f, type, context->func_def);
 	context->lastid = 0;
@@ -157,7 +157,7 @@ int toidentab(analyzer *context, int f, int type)
 	return context->lastid;
 }
 
-void applid(analyzer *context)
+void applid(parser *context)
 {
 	context->lastid = REPRTAB[REPRTAB_POS + 1];
 	if (context->lastid == 1)
@@ -178,46 +178,62 @@ void applid(analyzer *context)
  */
 
 
-void parser_error(analyzer *const context, const enum ERROR err)
+void parser_error(parser *const context, const enum ERROR err)
 {
-	const universal_io *const io = context->io;
 	context->was_error = 1;
-
 	switch (err)
 	{
 		case not_primary:
-			error(io, err, context->cur);
+			error(context->io, err, context->curr_token);
 			break;
 		case bad_toval:
-			error(io, err, context->ansttype);
+			error(context->io, err, context->ansttype);
 			break;
 		case wrong_printf_param_type:
 		case printf_unknown_format_placeholder:
-			error(io, err, context->bad_printf_placeholder);
+			error(context->io, err, context->bad_printf_placeholder);
 			break;
 		case repeated_decl:
 		case ident_is_not_declared:
 		case repeated_label:
 		case no_field:
-			error(io, err, REPRTAB, REPRTAB_POS);
+			error(context->io, err, REPRTAB, REPRTAB_POS);
 			break;
 		case label_not_declared:
-			error(io, err, context->sx->hash, REPRTAB, REPRTAB_POS);
+			error(context->io, err, context->sx->hash, REPRTAB, REPRTAB_POS);
 			break;
 		default:
-			error(io, err);
+			error(context->io, err);
 	}
 }
 
-void skip_until(analyzer *const context, const unsigned int tokens)
+void consume_token(parser *const parser)
 {
-	while (context->next != eof)
+	parser->curr_token = parser->next_token;
+	parser->next_token = lex(parser->lxr);
+}
+
+void try_consume_token(parser *const parser, const TOKEN expected, const enum ERROR err)
+{
+	if (parser->next_token == expected)
 	{
-		switch (context->next)
+		consume_token(parser);
+	}
+	else
+	{
+		parser_error(parser, err);
+	}
+}
+
+void skip_until(parser *const parser, const unsigned int tokens)
+{
+	while (parser->next_token != eof)
+	{
+		switch (parser->next_token)
 		{
 			case l_paren:
-				scanner(context);
-				skip_until(context, r_paren);
+				consume_token(parser);
+				skip_until(parser, r_paren);
 				break;
 
 			case r_paren:
@@ -227,13 +243,13 @@ void skip_until(analyzer *const context, const unsigned int tokens)
 				}
 				else
 				{
-					scanner(context);
+					consume_token(parser);
 					break;
 				}
 
 			case l_square:
-				scanner(context);
-				skip_until(context, r_square);
+				consume_token(parser);
+				skip_until(parser, r_square);
 				break;
 
 			case r_square:
@@ -243,13 +259,13 @@ void skip_until(analyzer *const context, const unsigned int tokens)
 				}
 				else
 				{
-					scanner(context);
+					consume_token(parser);
 					break;
 				}
 
 			case l_brace:
-				scanner(context);
-				skip_until(context, r_brace);
+				consume_token(parser);
+				skip_until(parser, r_brace);
 				break;
 
 			case r_brace:
@@ -259,13 +275,13 @@ void skip_until(analyzer *const context, const unsigned int tokens)
 				}
 				else
 				{
-					scanner(context);
+					consume_token(parser);
 					break;
 				}
 
 			case question:
-				scanner(context);
-				skip_until(context, colon);
+				consume_token(parser);
+				skip_until(parser, colon);
 				break;
 
 			case COLON:
@@ -275,7 +291,7 @@ void skip_until(analyzer *const context, const unsigned int tokens)
 				}
 				else
 				{
-					scanner(context);
+					consume_token(parser);
 					break;
 				}
 
@@ -286,12 +302,12 @@ void skip_until(analyzer *const context, const unsigned int tokens)
 				}
 				else
 				{
-					scanner(context);
+					consume_token(parser);
 					break;
 				}
 
 			default:
-				scanner(context);
+				consume_token(parser);
 				break;
 		}
 	}

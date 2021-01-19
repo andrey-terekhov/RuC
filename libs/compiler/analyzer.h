@@ -37,10 +37,10 @@ typedef struct analyzer
 	universal_io *io;					/**< Universal io structure */
 	syntax *sx;							/**< Syntax structure */
 	lexer *lxr;							/**< Lexer structure */
-	
+
+	TOKEN curr_token;					/**< Current character */
+	TOKEN next_token;					/**< Lookahead character */
 	int line;
-	int cur;
-	int next;
 	int wasstructdef;
 	int func_def;
 	int stack[100];
@@ -76,7 +76,7 @@ typedef struct analyzer
 	int buf_flag;
 	int buf_cur;
 	int was_error;
-} analyzer;
+} parser;
 
 
 /**

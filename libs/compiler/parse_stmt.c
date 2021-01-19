@@ -23,7 +23,7 @@
  *	labeled-statement:
  *		identifier ':' statement
  */
-void parse_labeled_statement(analyzer *const context)
+void parse_labeled_statement(parser *const context)
 {
 	int id;
 	int i;
@@ -82,7 +82,7 @@ void parse_labeled_statement(analyzer *const context)
  *	labeled-statement:
  *		'case' constant-expression ':' statement
  */
-void parse_case_statement(analyzer *const context)
+void parse_case_statement(parser *const context)
 {
 	totree(context, TCase);
 
@@ -118,7 +118,7 @@ void parse_case_statement(analyzer *const context)
  *	labeled-statement:
  *		'default' ':' statement
  */
-void parse_default_statement(analyzer *const context)
+void parse_default_statement(parser *const context)
 {
 	totree(context, TDefault);
 	context->wasdefault = 1;
@@ -136,7 +136,7 @@ void parse_default_statement(analyzer *const context)
  *	expression-statement:
  *		expression ';'
  */
-void parse_expression_statement(analyzer *const context)
+void parse_expression_statement(parser *const context)
 {
 	expr(context, 0);
 	exprassnvoid(context);
@@ -150,7 +150,7 @@ void parse_expression_statement(analyzer *const context)
  *		'if' '(' expression ')' statement
  *		'if' '(' expression ')' statement 'else' statement
  */
-void parse_if_statement(analyzer *const context)
+void parse_if_statement(parser *const context)
 {
 	totree(context, TIf);
 	size_t else_ref = context->sx->tc++;
@@ -159,7 +159,7 @@ void parse_if_statement(analyzer *const context)
 	context->sopnd--;
 	parse_statement(context);
 
-	if (context->next == LELSE)
+	if (context->next_token == LELSE)
 	{
 		scanner(context);
 		context->sx->tree[else_ref] = (int)context->sx->tc;
@@ -177,7 +177,7 @@ void parse_if_statement(analyzer *const context)
  *	switch-statement:
  *		'switch' '(' expression ')' statement
  */
-void parse_switch_statement(analyzer *const context)
+void parse_switch_statement(parser *const context)
 {
 	totree(context, TSwitch);
 
@@ -200,7 +200,7 @@ void parse_switch_statement(analyzer *const context)
  *	while-statement:
  *		'while' '(' expression ')' statement
  */
-void parse_while_statement(analyzer *const context)
+void parse_while_statement(parser *const context)
 {
 	int oldinloop = context->inloop;
 	totree(context, TWhile);
@@ -217,14 +217,14 @@ void parse_while_statement(analyzer *const context)
  *	do-statement:
  *		'do' statement 'while' '(' expression ')' ';'
  */
-void parse_do_statement(analyzer *const context)
+void parse_do_statement(parser *const context)
 {
 	int oldinloop = context->inloop;
 	totree(context, TDo);
 
 	context->inloop = 1;
 	parse_statement(context);
-	if (context->next == LWHILE)
+	if (context->next_token == LWHILE)
 	{
 		scanner(context);
 		exprinbrkts(context, cond_must_be_in_brkts);
@@ -247,7 +247,7 @@ void parse_do_statement(analyzer *const context)
  *		'for' '(' expression[opt] ';' expression[opt] ';' expression[opt] ')' statement
  *		'for' '(' declaration expression[opt] ';' expression[opt] ')' statement
  */
-void parse_for_statement(analyzer *const context)
+void parse_for_statement(parser *const context)
 {
 	int oldinloop = context->inloop;
 
@@ -309,7 +309,7 @@ void parse_for_statement(analyzer *const context)
  *	jump-statement:
  *		'goto' identifier ';'
  */
-void parse_goto_statement(analyzer *const context)
+void parse_goto_statement(parser *const context)
 {
 	int i;
 	int flag = 1;
@@ -347,7 +347,7 @@ void parse_goto_statement(analyzer *const context)
  *	jump-statement:
  *		'continue' ';'
  */
-void parse_continue_statement(analyzer *const context)
+void parse_continue_statement(parser *const context)
 {
 	totree(context, TContinue);
 
@@ -365,7 +365,7 @@ void parse_continue_statement(analyzer *const context)
  *	jump-statement:
  *		'break' ';'
  */
-void parse_break_statement(analyzer *const context)
+void parse_break_statement(parser *const context)
 {
 	totree(context, TBreak);
 
@@ -384,11 +384,11 @@ void parse_break_statement(analyzer *const context)
  *		'return' expression[opt] ';'
  *		'return' braced-init-list ';'
  */
-void parse_return_statement(analyzer *const context)
+void parse_return_statement(parser *const context)
 {
 	int return_type = mode_get(context->sx, context->functype + 1);
 	context->wasret = 1;
-	if (context->next == SEMICOLON)
+	if (context->next_token == SEMICOLON)
 	{
 		totree(context, TReturnvoid);
 		scanner(context);
@@ -425,7 +425,7 @@ void parse_return_statement(analyzer *const context)
 }
 
 /**	Parse t_create_direct statement [RuC] */
-void parse_create_direct_statement(analyzer *const context)
+void parse_create_direct_statement(parser *const context)
 {
 	totree(context, CREATEDIRECTC);
 	parse_compound_statement(context, THREAD);
@@ -433,13 +433,13 @@ void parse_create_direct_statement(analyzer *const context)
 }
 
 /**	Parse printid statement [RuC] */
-void parse_printid_statement(analyzer *const context)
+void parse_printid_statement(parser *const context)
 {
 	mustbe(context, LEFTBR, no_leftbr_in_printid);
 
-	while (context->next != RIGHTBR)
+	while (context->next_token != RIGHTBR)
 	{
-		if (context->next == IDENT)
+		if (context->next_token == IDENT)
 		{
 			scanner(context);
 			applid(context);
@@ -451,7 +451,7 @@ void parse_printid_statement(analyzer *const context)
 			parser_error(context, no_ident_in_printid);
 			skip_until(context, COMMA | RIGHTBR | SEMICOLON);
 		}
-		if (context->next == COMMA)
+		if (context->next_token == COMMA)
 		{
 			scanner(context);
 		}
@@ -467,7 +467,7 @@ void parse_printid_statement(analyzer *const context)
 }
 
 /**	Parse print statement [RuC] */
-void parse_print_statement(analyzer *const context)
+void parse_print_statement(parser *const context)
 {
 	exprassninbrkts(context, print_without_br);
 	context->sx->tc--;
@@ -484,13 +484,13 @@ void parse_print_statement(analyzer *const context)
 }
 
 /**	Parse getid statement [RuC] */
-void parse_getid_statement(analyzer *const context)
+void parse_getid_statement(parser *const context)
 {
 	mustbe(context, LEFTBR, no_leftbr_in_getid);
 
-	while (context->next != RIGHTBR)
+	while (context->next_token != RIGHTBR)
 	{
-		if (context->next == IDENT)
+		if (context->next_token == IDENT)
 		{
 			scanner(context);
 			applid(context);
@@ -502,7 +502,7 @@ void parse_getid_statement(analyzer *const context)
 			parser_error(context, no_ident_in_getid);
 			skip_until(context, COMMA | RIGHTBR | SEMICOLON);
 		}
-		if (context->next == COMMA)
+		if (context->next_token == COMMA)
 		{
 			scanner(context);
 		}
@@ -516,7 +516,7 @@ void parse_getid_statement(analyzer *const context)
 	mustbe(context, SEMICOLON, no_semicolon_after_stmt);
 }
 
-int evaluate_params(analyzer *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[])
+int evaluate_params(parser *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[])
 {
 	int num_of_params = 0;
 	int i = 0;
@@ -581,10 +581,10 @@ int evaluate_params(analyzer *context, int num, char32_t formatstr[], int format
 }
 
 /**	Parse scanf statement [RuC] */
-void parse_scanf_statement(analyzer *const context);
+void parse_scanf_statement(parser *const context);
 
 /**	Parse printf statement [RuC] */
-void parse_printf_statement(analyzer *const context)
+void parse_printf_statement(parser *const context)
 {
 	char32_t formatstr[MAXSTRINGL + 1];
 	int formattypes[MAXPRINTFPARAMS];
@@ -593,7 +593,7 @@ void parse_printf_statement(analyzer *const context)
 
 	mustbe(context, LEFTBR, no_leftbr_in_printf);
 
-	if (context->next != STRING)
+	if (context->next_token != STRING)
 	{
 		parser_error(context, wrong_first_printf_param);
 		skip_until(context, SEMICOLON);
@@ -610,7 +610,7 @@ void parse_printf_statement(analyzer *const context)
 	int expected_param_number = evaluate_params(context, context->lxr->num, formatstr, formattypes, placeholders);
 	int actual_param_number = 0;
 	//for (int i = 0; scanner(context) == COMMA; i++)
-	while (context->next != RIGHTBR && actual_param_number != expected_param_number)
+	while (context->next_token != RIGHTBR && actual_param_number != expected_param_number)
 	{
 		scanner(context);
 		scanner(context);
@@ -633,7 +633,7 @@ void parse_printf_statement(analyzer *const context)
 		sumsize += szof(context, formattypes[actual_param_number]);
 		--context->sopnd;
 		actual_param_number++;
-		if (context->next != COMMA)
+		if (context->next_token != COMMA)
 		{
 			break;
 		}
@@ -669,7 +669,7 @@ void parse_printf_statement(analyzer *const context)
  */
 
 
-void parse_statement(analyzer *const context)
+void parse_statement(parser *const context)
 {
 	int oldwasdefault = context->wasdefault;
 	int oldinswitch = context->inswitch;
@@ -677,8 +677,8 @@ void parse_statement(analyzer *const context)
 
 	context->wasdefault = 0;
 	scanner(context);
-	if ((is_int(context->cur) || is_float(context->cur) || context->cur == LVOID ||
-		 context->cur == LSTRUCT) &&
+	if ((is_int(context->curr_token) || is_float(context->curr_token) || context->curr_token == LVOID ||
+		 context->curr_token == LSTRUCT) &&
 		context->blockflag)
 	{
 		parser_error(context, decl_after_strmt);
@@ -687,7 +687,7 @@ void parse_statement(analyzer *const context)
 	{
 		context->blockflag = 1;
 
-		switch (context->cur)
+		switch (context->curr_token)
 		{
 			case semicolon:
 				totree(context, NOP);
@@ -701,7 +701,7 @@ void parse_statement(analyzer *const context)
 				parse_default_statement(context);
 				break;
 
-			case BEGIN:
+			case l_brace:
 				parse_compound_statement(context, REGBLOCK);
 				break;
 
@@ -741,7 +741,7 @@ void parse_statement(analyzer *const context)
 				parse_return_statement(context);
 				break;
 
-			case TCREATEDIRECT:
+			case kw_t_create_direct:
 				parse_create_direct_statement(context);
 				break;
 
@@ -761,8 +761,8 @@ void parse_statement(analyzer *const context)
 				parse_getid_statement(context);
 				break;
 
-			case IDENT:
-				if (context->next == COLON)
+			case identifier:
+				if (context->next_token == colon)
 				{
 					parse_labeled_statement(context);
 					break;
@@ -778,13 +778,8 @@ void parse_statement(analyzer *const context)
 	context->inloop = oldinloop;
 }
 
-void parse_compound_statement(analyzer *const context, const block_type b)
+void parse_compound_statement(parser *const context, const block_type b)
 {
-	// если b=1, то это просто блок,
-	// b = 2 - блок нити,
-	// b = -1 - блок в switch, иначе
-	// b = 0 - это блок функции
-
 	int oldinswitch = context->inswitch;
 	int notended = 1;
 	int olddispl = 0;
@@ -799,8 +794,8 @@ void parse_compound_statement(analyzer *const context, const block_type b)
 	}
 	context->blockflag = 0;
 
-	while (is_int(context->next) || is_float(context->next) || context->next == LSTRUCT ||
-		   context->next == LVOID)
+	while (is_int(context->next_token) || is_float(context->next_token) || context->next_token == LSTRUCT ||
+		   context->next_token == LVOID)
 	{
 		int repeat = 1;
 		scanner(context);
@@ -810,7 +805,7 @@ void parse_compound_statement(analyzer *const context, const block_type b)
 			context->was_error = 1;
 			continue;
 		}
-		if (context->wasstructdef && context->next == SEMICOLON)
+		if (context->wasstructdef && context->next_token == SEMICOLON)
 		{
 			scanner(context);
 			continue;
@@ -831,11 +826,11 @@ void parse_compound_statement(analyzer *const context, const block_type b)
 				context->was_error = 1;
 				break;
 			}
-			if (context->next == COMMA)
+			if (context->next_token == COMMA)
 			{
 				scanner(context);
 			}
-			else if (context->next == SEMICOLON)
+			else if (context->next_token == SEMICOLON)
 			{
 				scanner(context);
 				repeat = 0;
@@ -843,7 +838,7 @@ void parse_compound_statement(analyzer *const context, const block_type b)
 			else
 			{
 				parser_error(context, def_must_end_with_semicomma);
-				context->cur = SEMICOLON;
+				context->curr_token = SEMICOLON;
 				repeat = 0;
 			}
 		} while (repeat);
@@ -853,12 +848,12 @@ void parse_compound_statement(analyzer *const context, const block_type b)
 
 	do
 	{
-		if (context->next == LEOF)
+		if (context->next_token == LEOF)
 		{
 			parser_error(context, wait_end);
 			return;
 		}
-		if (b == 2 ? context->next == TEXIT : context->next == END)
+		if (b == 2 ? context->next_token == TEXIT : context->next_token == END)
 		{
 			scanner(context);
 			notended = 0;
@@ -866,7 +861,7 @@ void parse_compound_statement(analyzer *const context, const block_type b)
 		else
 		{
 			parse_statement(context);
-			if (context->cur == LEOF && context->was_error)
+			if (context->curr_token == LEOF && context->was_error)
 			{
 				return;
 			}

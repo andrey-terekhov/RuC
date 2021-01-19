@@ -18,7 +18,7 @@
 #include <string.h>
 
 
-void binop(analyzer *context, int sp)
+void binop(parser *context, int sp)
 {
 	int op = context->stackop[sp];
 	int rtype = context->stackoperands[context->sopnd--];
@@ -70,7 +70,7 @@ void binop(analyzer *context, int sp)
 	context->anst = VAL;
 }
 
-void toval(analyzer *context)
+void toval(parser *context)
 {
 	// надо значение положить на стек,
 	// например, чтобы передать параметром
@@ -115,14 +115,14 @@ void toval(analyzer *context)
 	}
 }
 
-void insertwiden(analyzer *context)
+void insertwiden(parser *context)
 {
 	context->sx->tc--;
 	totree(context, WIDEN);
 	totree(context, TExprend);
 }
 
-void actstring(int type, analyzer *context)
+void actstring(int type, parser *context)
 {
 	scanner(context);
 	totree(context, type == LFLOAT ? TStringd : TString);
@@ -158,7 +158,7 @@ void actstring(int type, analyzer *context)
 	} while (scanner(context) == COMMA ? scanner(context), 1 : 0);
 
 	context->sx->tree[adn] = n;
-	if (context->cur != END)
+	if (context->curr_token != END)
 	{
 		parser_error(context, no_comma_or_end);
 		context->was_error = 1;
@@ -168,7 +168,7 @@ void actstring(int type, analyzer *context)
 	context->anst = VAL;
 }
 
-void mustbestring(analyzer *context)
+void mustbestring(parser *context)
 {
 	scanner(context);
 	exprassn(context, 1);
@@ -186,7 +186,7 @@ void mustbestring(analyzer *context)
 	}
 }
 
-void mustbepointstring(analyzer *context)
+void mustbepointstring(parser *context)
 {
 	scanner(context);
 	exprassn(context, 1);
@@ -206,7 +206,7 @@ void mustbepointstring(analyzer *context)
 	}
 }
 
-void mustberow(analyzer *context)
+void mustberow(parser *context)
 {
 	scanner(context);
 	exprassn(context, 1);
@@ -225,7 +225,7 @@ void mustberow(analyzer *context)
 	}
 }
 
-void mustbeint(analyzer *context)
+void mustbeint(parser *context)
 {
 	scanner(context);
 	exprassn(context, 1);
@@ -243,7 +243,7 @@ void mustbeint(analyzer *context)
 	}
 }
 
-void mustberowofint(analyzer *context)
+void mustberowofint(parser *context)
 {
 	if (scanner(context) == BEGIN)
 	{
@@ -278,7 +278,7 @@ void mustberowofint(analyzer *context)
 	}
 }
 
-void mustberowoffloat(analyzer *context)
+void mustberowoffloat(parser *context)
 {
 	if (scanner(context) == BEGIN)
 	{
@@ -314,23 +314,23 @@ void mustberowoffloat(analyzer *context)
 	}
 }
 
-void primaryexpr(analyzer *context)
+void primaryexpr(parser *context)
 {
-	if (context->cur == CHAR_CONST)
+	if (context->curr_token == CHAR_CONST)
 	{
 		totree(context, TConst);
 		totree(context, context->lxr->num);
 		context->stackoperands[++context->sopnd] = context->ansttype = LCHAR;
 		context->anst = NUMBER;
 	}
-	else if (context->cur == INT_CONST)
+	else if (context->curr_token == INT_CONST)
 	{
 		totree(context, TConst);
 		totree(context, context->lxr->num);
 		context->stackoperands[++context->sopnd] = context->ansttype = LINT;
 		context->anst = NUMBER;
 	}
-	else if (context->cur == FLOAT_CONST)
+	else if (context->curr_token == FLOAT_CONST)
 	{
 		totree(context, TConstd);
 		memcpy(&context->sx->tree[context->sx->tc], &context->lxr->num_double, sizeof(double));
@@ -338,7 +338,7 @@ void primaryexpr(analyzer *context)
 		context->stackoperands[++context->sopnd] = context->ansttype = LFLOAT;
 		context->anst = NUMBER;
 	}
-	else if (context->cur == STRING)
+	else if (context->curr_token == STRING)
 	{
 		int i;
 
@@ -354,7 +354,7 @@ void primaryexpr(analyzer *context)
 		context->stackoperands[++context->sopnd] = context->ansttype;
 		context->anst = VAL;
 	}
-	else if (context->cur == IDENT)
+	else if (context->curr_token == IDENT)
 	{
 		applid(context);
 		if (context->was_error == 5)
@@ -370,9 +370,9 @@ void primaryexpr(analyzer *context)
 		context->stackoperands[++context->sopnd] = context->ansttype;
 		context->anst = IDENT;
 	}
-	else if (context->cur == LEFTBR)
+	else if (context->curr_token == LEFTBR)
 	{
-		if (context->next == LVOID)
+		if (context->next_token == LVOID)
 		{
 			scanner(context);
 			mustbe(context, LMULT, no_mult_in_cast);
@@ -410,16 +410,16 @@ void primaryexpr(analyzer *context)
 			}
 		}
 	}
-	else if (context->cur <= STANDARD_FUNC_START) // стандартная функция
+	else if (context->curr_token <= STANDARD_FUNC_START) // стандартная функция
 	{
-		int func = context->cur;
+		int func = context->curr_token;
 
 		if (scanner(context) != LEFTBR)
 		{
 			parser_error(context, no_leftbr_in_stand_func);
-			context->buf_cur = context->next;
-			context->next = context->cur;
-			context->cur = LEFTBR;
+			context->buf_cur = context->next_token;
+			context->next_token = context->curr_token;
+			context->curr_token = LEFTBR;
 			context->buf_flag++;
 		}
 		if (func == ASSERT)
@@ -745,7 +745,7 @@ void primaryexpr(analyzer *context)
 				{
 					int dn;
 
-					if (context->cur != IDENT)
+					if (context->curr_token != IDENT)
 					{
 						parser_error(context, act_param_not_ident);
 						context->was_error = 4;
@@ -938,7 +938,7 @@ void primaryexpr(analyzer *context)
 	}
 }
 
-void index_check(analyzer *context)
+void index_check(parser *context)
 {
 	if (!is_int(context->ansttype))
 	{
@@ -947,7 +947,7 @@ void index_check(analyzer *context)
 	}
 }
 
-int find_field(analyzer *context, int stype)
+int find_field(parser *context, int stype)
 {
 	// выдает смещение до найденного поля или ошибку
 
@@ -984,9 +984,9 @@ int find_field(analyzer *context, int stype)
 	return select_displ;
 }
 
-void selectend(analyzer *context)
+void selectend(parser *context)
 {
-	while (context->next == DOT)
+	while (context->next_token == DOT)
 	{
 		context->anstdispl += find_field(context, context->ansttype);
 		if (context->was_error == 6)
@@ -1003,7 +1003,7 @@ void selectend(analyzer *context)
 	}
 }
 
-void postexpr(analyzer *context)
+void postexpr(parser *context)
 {
 	int lid;
 	int leftansttyp;
@@ -1012,7 +1012,7 @@ void postexpr(analyzer *context)
 	lid = context->lastid;
 	leftansttyp = context->ansttype;
 
-	if (context->next == LEFTBR) // вызов функции
+	if (context->next_token == LEFTBR) // вызов функции
 	{
 		int i;
 		int j;
@@ -1044,7 +1044,7 @@ void postexpr(analyzer *context)
 			{
 				// фактическим параметром должна быть функция, в С - это только идентификатор
 
-				if (context->cur != IDENT)
+				if (context->curr_token != IDENT)
 				{
 					parser_error(context, act_param_not_ident);
 					context->was_error = 4;
@@ -1077,7 +1077,7 @@ void postexpr(analyzer *context)
 			}
 			else
 			{
-				if (context->cur == BEGIN && is_array(context->sx, mdj))
+				if (context->curr_token == BEGIN && is_array(context->sx, mdj))
 				{
 					actstring(mode_get(context->sx, mdj + 1), context), totree(context, TExprend);
 					if (context->was_error == 2)
@@ -1139,9 +1139,9 @@ void postexpr(analyzer *context)
 		}
 	}
 
-	while (context->next == LEFTSQBR || context->next == ARROW || context->next == DOT)
+	while (context->next_token == LEFTSQBR || context->next_token == ARROW || context->next_token == DOT)
 	{
-		while (context->next == LEFTSQBR) // вырезка из массива (возможно, многомерного)
+		while (context->next_token == LEFTSQBR) // вырезка из массива (возможно, многомерного)
 		{
 			int elem_type;
 			if (was_func)
@@ -1191,7 +1191,7 @@ void postexpr(analyzer *context)
 			context->anst = ADDR;
 		}
 
-		while (context->next == ARROW)
+		while (context->next_token == ARROW)
 		{
 			// это выборка поля из указателя на структуру, если после
 			// -> больше одной точки подряд, схлопываем в 1 select
@@ -1228,7 +1228,7 @@ void postexpr(analyzer *context)
 				return; // 1
 			}
 		}
-		if (context->next == DOT)
+		if (context->next_token == DOT)
 
 		{
 			if (!is_struct(context->sx, context->ansttype))
@@ -1241,7 +1241,7 @@ void postexpr(analyzer *context)
 			{
 				int len1 = szof(context, context->ansttype);
 				context->anstdispl = 0;
-				while (context->next == DOT)
+				while (context->next_token == DOT)
 				{
 					context->anstdispl += find_field(context, context->ansttype);
 					if (context->was_error == 6)
@@ -1258,7 +1258,7 @@ void postexpr(analyzer *context)
 			else if (context->anst == IDENT)
 			{
 				int globid = context->anstdispl < 0 ? -1 : 1;
-				while (context->next == DOT)
+				while (context->next_token == DOT)
 				{
 					context->anstdispl += globid * find_field(context, context->ansttype);
 					if (context->was_error == 6)
@@ -1282,7 +1282,7 @@ void postexpr(analyzer *context)
 			}
 		}
 	}
-	if (context->next == INC || context->next == DEC) // a++, a--
+	if (context->next_token == INC || context->next_token == DEC) // a++, a--
 	{
 		int op;
 
@@ -1299,7 +1299,7 @@ void postexpr(analyzer *context)
 			context->was_error = 4;
 			return; // 1
 		}
-		op = (context->next == INC) ? POSTINC : POSTDEC;
+		op = (context->next_token == INC) ? POSTINC : POSTDEC;
 		if (context->anst == ADDR)
 		{
 			op += 4;
@@ -1314,13 +1314,13 @@ void postexpr(analyzer *context)
 	}
 }
 
-void unarexpr(analyzer *context)
+void unarexpr(parser *context)
 {
-	int op = context->cur;
-	if (context->cur == LNOT || context->cur == LOGNOT || context->cur == LPLUS || context->cur == LMINUS ||
-		context->cur == LAND || context->cur == LMULT || context->cur == INC || context->cur == DEC)
+	int op = context->curr_token;
+	if (context->curr_token == LNOT || context->curr_token == LOGNOT || context->curr_token == LPLUS || context->curr_token == LMINUS ||
+		context->curr_token == LAND || context->curr_token == LMULT || context->curr_token == INC || context->curr_token == DEC)
 	{
-		if (context->cur == INC || context->cur == DEC)
+		if (context->curr_token == INC || context->curr_token == DEC)
 		{
 			scanner(context);
 			unarexpr(context);
@@ -1447,7 +1447,7 @@ void unarexpr(analyzer *context)
 	}
 }
 
-void exprinbrkts(analyzer *context, int er)
+void exprinbrkts(parser *context, int er)
 {
 	mustbe(context, LEFTBR, er);
 	scanner(context);
@@ -1460,7 +1460,7 @@ void exprinbrkts(analyzer *context, int er)
 	mustbe(context, RIGHTBR, er);
 }
 
-void exprassninbrkts(analyzer *context, int er)
+void exprassninbrkts(parser *context, int er)
 {
 	mustbe(context, LEFTBR, er);
 	scanner(context);
@@ -1515,12 +1515,12 @@ int prio(int op)
 	: 0;
 }
 
-void subexpr(analyzer *context)
+void subexpr(parser *context)
 {
 	int oldsp = context->sp;
 	int wasop = 0;
 
-	int p = prio(context->next);
+	int p = prio(context->next_token);
 	while (p)
 	{
 		wasop = 1;
@@ -1543,7 +1543,7 @@ void subexpr(analyzer *context)
 
 		context->stack[context->sp] = p;
 		context->stacklog[context->sp] = (int)ad;
-		context->stackop[context->sp++] = context->next;
+		context->stackop[context->sp++] = context->next_token;
 		scanner(context);
 		scanner(context);
 		unarexpr(context);
@@ -1552,7 +1552,7 @@ void subexpr(analyzer *context)
 			context->was_error = 5;
 			return; // 1
 		}
-		p = prio(context->next);
+		p = prio(context->next_token);
 	}
 	if (wasop)
 	{
@@ -1573,15 +1573,15 @@ int intopassn(int next)
 	return next == REMASS || next == SHLASS || next == SHRASS || next == ANDASS || next == EXORASS || next == ORASS;
 }
 
-int opassn(analyzer *context)
+int opassn(parser *context)
 {
-	return (context->next == ASS || context->next == MULTASS || context->next == DIVASS || context->next == PLUSASS ||
-			context->next == MINUSASS || intopassn(context->next))
-	? context->op = context->next
+	return (context->next_token == ASS || context->next_token == MULTASS || context->next_token == DIVASS || context->next_token == PLUSASS ||
+			context->next_token == MINUSASS || intopassn(context->next_token))
+	? context->op = context->next_token
 	: 0;
 }
 
-void condexpr(analyzer *context)
+void condexpr(parser *context)
 {
 	int globtype = 0;
 	size_t adif = 0;
@@ -1592,9 +1592,9 @@ void condexpr(analyzer *context)
 		context->was_error = 4;
 		return; // 1
 	}
-	if (context->next == QUEST)
+	if (context->next_token == QUEST)
 	{
-		while (context->next == QUEST)
+		while (context->next_token == QUEST)
 		{
 			toval(context);
 			if (!is_int(context->ansttype))
@@ -1669,7 +1669,7 @@ void condexpr(analyzer *context)
 	}
 }
 
-void exprassnvoid(analyzer *context)
+void exprassnvoid(parser *context)
 {
 	size_t t = context->sx->tree[context->sx->tc - 2] < 9000 ? context->sx->tc - 3 : context->sx->tc - 2;
 	int tt = context->sx->tree[t];
@@ -1681,7 +1681,7 @@ void exprassnvoid(analyzer *context)
 	--context->sopnd;
 }
 
-void exprassn(analyzer *context, int level)
+void exprassn(parser *context, int level)
 {
 	int leftanst;
 	int leftanstdispl;
@@ -1689,7 +1689,7 @@ void exprassn(analyzer *context, int level)
 	int rtype;
 	int lnext;
 
-	if (context->cur == BEGIN)
+	if (context->curr_token == BEGIN)
 	{
 		if (is_struct(context->sx, context->leftansttype))
 		{
@@ -1730,7 +1730,7 @@ void exprassn(analyzer *context, int level)
 	if (opassn(context))
 	{
 		int opp = context->op;
-		lnext = context->next;
+		lnext = context->next_token;
 		context->inass = 1;
 		scanner(context);
 		scanner(context);
@@ -1859,7 +1859,7 @@ void exprassn(analyzer *context, int level)
 	// в виде unarexpr уже выкушано
 }
 
-void expr(analyzer *context, int level)
+void expr(parser *context, int level)
 {
 	exprassn(context, level);
 	if (context->was_error == 6)
@@ -1867,7 +1867,7 @@ void expr(analyzer *context, int level)
 		context->was_error = 5;
 		return; // 1
 	}
-	while (context->next == COMMA)
+	while (context->next_token == COMMA)
 	{
 		exprassnvoid(context);
 		context->sopnd--;
@@ -1886,7 +1886,7 @@ void expr(analyzer *context, int level)
 	}
 }
 
-void exprval(analyzer *context)
+void exprval(parser *context)
 {
 	expr(context, 1);
 	if (context->was_error == 5)
@@ -1898,7 +1898,7 @@ void exprval(analyzer *context)
 	totree(context, TExprend);
 }
 
-void exprassnval(analyzer *context)
+void exprassnval(parser *context)
 {
 	exprassn(context, 1);
 	if (context->was_error == 6)
