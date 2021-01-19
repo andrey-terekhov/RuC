@@ -879,8 +879,8 @@ void compstmt_gen(syntax *const sx, ad *const context)
 				int i;
 				int N;
 
-				sx->tc += 2;
-				N = node_get_arg(tree_get_node(sx), 0);
+				sx->tc++;
+				N = sx->tree[sx->tc++];
 
 				tree_next_node(sx);
 				printf("default %i tc=%i: compstmt_gen TDeclarr\n", node_get_type(tree_get_node(sx)), sx->tc);
