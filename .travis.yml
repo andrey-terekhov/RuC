@@ -21,4 +21,4 @@ before_script:
   - git config --global advice.detachedHead false
 
 script:
-  - ./scripts/test.sh -v v1.1
+  - ./scripts/test.sh
