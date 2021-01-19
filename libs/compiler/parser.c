@@ -228,71 +228,27 @@ void skip_until(parser *const parser, const unsigned int tokens)
 		switch (parser->next_token)
 		{
 			case l_paren:
-				consume_token(parser);
 				skip_until(parser, r_paren);
 				break;
 
-			case r_paren:
-				if (has_token_set(tokens, r_paren))
-				{
-					return;
-				}
-				else
-				{
-					consume_token(parser);
-					break;
-				}
-
 			case l_square:
-				consume_token(parser);
 				skip_until(parser, r_square);
 				break;
 
-			case r_square:
-				if (has_token_set(tokens, r_square))
-				{
-					return;
-				}
-				else
-				{
-					consume_token(parser);
-					break;
-				}
-
 			case l_brace:
-				consume_token(parser);
 				skip_until(parser, r_brace);
 				break;
 
-			case r_brace:
-				if (has_token_set(tokens, r_brace))
-				{
-					return;
-				}
-				else
-				{
-					consume_token(parser);
-					break;
-				}
-
 			case question:
-				consume_token(parser);
 				skip_until(parser, colon);
 				break;
 
-			case COLON:
-				if (has_token_set(tokens, colon))
-				{
-					return;
-				}
-				else
-				{
-					consume_token(parser);
-					break;
-				}
-
+			case r_paren:
+			case r_square:
+			case r_brace:
+			case colon:
 			case semicolon:
-				if (has_token_set(tokens, semicolon))
+				if (has_token_set(tokens, parser->next_token))
 				{
 					return;
 				}
