@@ -33,6 +33,7 @@ typedef struct map
 {
 	char *keys;					/**< Keys storage */
 	size_t keys_size;			/**< Size of keys storage */
+	size_t keys_next;			/**< Next size position */
 	size_t keys_alloc;			/**< Allocated size of keys storage */
 
 	map_hash *values;			/**< Values storage */
@@ -68,10 +69,11 @@ size_t map_add(map *const as, const char *const key, const int value);
  *	@param	as				Map structure
  *	@param	io				Universal io structure
  *	@param	value			Value
+ *	@param	symbol			Next character after key
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t map_add_by_io(map *const as, universal_io *const io, const int value);
+size_t map_add_by_io(map *const as, universal_io *const io, const int value, char32_t *const last);
 
 
 /**
@@ -91,10 +93,11 @@ size_t map_set(map *const as, const char *const key, const int value);
  *	@param	as				Map structure
  *	@param	io				Universal io structure
  *	@param	value			New value
+ *	@param	symbol			Next character after key
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t map_set_by_io(map *const as, universal_io *const io, const int value);
+size_t map_set_by_io(map *const as, universal_io *const io, const int value, char32_t *const last);
 
 /**
  *	Set new value by index
@@ -123,10 +126,11 @@ int map_get(const map *const as, const char *const key);
  *
  *	@param	as				Map structure
  *	@param	io				Universal io structure
+ *	@param	symbol			Next character after key
  *
  *	@return	Value, @c INT_MAX on failure
  */
-int map_get_by_io(const map *const as, universal_io *const io);
+int map_get_by_io(const map *const as, universal_io *const io, char32_t *const last);
 
 /**
  *	Get value by index

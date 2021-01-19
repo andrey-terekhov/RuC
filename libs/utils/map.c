@@ -30,6 +30,13 @@ struct map_hash
 };
 
 
+size_t map_get_hash(map *const as, const char *const key);
+
+size_t map_get_hash_by_io(map *const as, universal_io *const io, char32_t *const last);
+
+size_t map_add_by_hash(map *const as, const size_t hash, const int value);
+
+
 map map_broken()
 {
 	map as;
@@ -37,9 +44,6 @@ map map_broken()
 	as.keys = NULL;
 	return as;
 }
-
-
-size_t map_get_hash(const char *const key);
 
 
 /*
@@ -85,62 +89,38 @@ map map_create(const size_t values)
 
 size_t map_add(map *const as, const char *const key, const int value)
 {
-	if (as == NULL || key == NULL)
+	if (!map_is_correct(as) || key == NULL)
 	{
 		return SIZE_MAX;
 	}
 
-	return 0;
+	return map_add_by_hash(as, map_get_hash(as, key), value);
 }
 
-size_t map_add_by_io(map *const as, universal_io *const io, const int value);
-
-
-size_t map_set(map *const as, const char *const key, const int value)
+size_t map_add_by_io(map *const as, universal_io *const io, const int value, char32_t *const last)
 {
-	if (as == NULL || key == NULL)
+	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
 	{
 		return SIZE_MAX;
 	}
 
-	return 0;
-}
-
-size_t map_set_by_io(map *const as, universal_io *const io, const int value);
-
-int map_set_at(map *const as, const size_t index, const int value)
-{
-	if (as == NULL)
-	{
-		return -1;
-	}
-
-	return 0;
+	return map_add_by_hash(as, map_get_hash_by_io(as, io, last), value);
 }
 
 
+size_t map_set(map *const as, const char *const key, const int value);
 
-int map_get(const map *const as, const char *const key)
-{
-	if (as == NULL || key == NULL)
-	{
-		return -1;
-	}
+size_t map_set_by_io(map *const as, universal_io *const io, const int value, char32_t *const last);
 
-	return 0;
-}
+int map_set_at(map *const as, const size_t index, const int value);
 
-int map_get_by_io(const map *const as, universal_io *const io);
 
-int map_get_at(const map *const as, const size_t index)
-{
-	if (as == NULL)
-	{
-		return -1;
-	}
 
-	return 0;
-}
+int map_get(const map *const as, const char *const key);
+
+int map_get_by_io(const map *const as, universal_io *const io, char32_t *const last);
+
+int map_get_at(const map *const as, const size_t index);
 
 
 int map_is_correct(const map *const as)
