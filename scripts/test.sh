@@ -119,7 +119,7 @@ build_vm()
 	git clone -b $vm_release --recursive https://github.com/andrey-terekhov/RuC-VM ruc-vm
 
 	cd ruc-vm
-	mkdir -p build && cd build && cmake ..
+	mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DTESTING_EXIT_CODE=$exit_code
 	if ! cmake --build . --config Release ; then
 		exit 1
 	fi
@@ -233,29 +233,32 @@ execution()
 					message_failure
 					let failure++
 				else
-					message_success
-					let success++
+					if [[ $build_type == "(Debug)" ]] ; then
+						build_type=""
+
+						message_failure
+						let failure++
+					else
+						message_success
+						let success++
+					fi
 				fi
 				;;
 			124|142)
 				message_timeout
 				let timeout++
 				;;
-			139|134)
-				# Segmentation fault
-				# Double free or corruption (!prev)
-
-				message_failure
-				let failure++
-
-				if ! [[ -z $debug ]] ; then
-					cat $log
-				fi
-				;;
-			*)
+			$exit_code)
 				if [[ $path == */$subdir_error/* ]] ; then
-					message_success
-					let success++
+					if [[ $build_type == "(Debug)" ]] ; then
+						build_type=""
+
+						message_failure
+						let failure++
+					else
+						message_success
+						let success++
+					fi
 				else
 					message_failure
 					let failure++
@@ -263,6 +266,18 @@ execution()
 					if ! [[ -z $debug ]] ; then
 						cat $log
 					fi
+				fi
+				;;
+			*)
+				# Segmentation fault
+				# Double free or corruption (!prev)
+				# Etcetera
+
+				message_failure
+				let failure++
+
+				if ! [[ -z $debug ]] ; then
+					cat $log
 				fi
 				;;
 		esac
