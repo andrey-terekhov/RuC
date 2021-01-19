@@ -16,6 +16,7 @@
 
 #include "map.h"
 #include <stdlib.h>
+#include "uniscanner.h"
 #include "utf8.h"
 
 
@@ -65,7 +66,35 @@ size_t map_get_hash(map *const as, const char *const key)
 	return hash % MAP_HASH_MAX;
 }
 
-size_t map_get_hash_by_io(map *const as, universal_io *const io, char32_t *const last);
+size_t map_get_hash_by_io(map *const as, universal_io *const io, char32_t *const last)
+{
+	*last = uni_scan_char(io);
+	if (!utf8_is_letter(*last))
+	{
+		return SIZE_MAX;
+	}
+
+	as->keys_next = as->keys_size;
+	if (map_add_key_symbol(as, *last))
+	{
+		return SIZE_MAX;
+	}
+
+	size_t hash = *last;
+	*last = uni_scan_char(io);
+	while (utf8_is_letter(*last) || utf8_is_digit(*last))
+	{
+		if (map_add_key_symbol(as, *last))
+		{
+			return SIZE_MAX;
+		}
+
+		hash += *last;
+		*last = uni_scan_char(io);
+	}
+
+	return hash % MAP_HASH_MAX;
+}
 
 size_t map_add_by_hash(map *const as, const size_t hash, const int value);
 
