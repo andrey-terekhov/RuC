@@ -929,7 +929,8 @@ int codegen(universal_io *const io, syntax *const sx)
 	printf("%i tc=%i :codegen\n", node_get_type(tree_get_node(sx)), sx->tc);
 	while (sx->tc < treesize)
 	{
-		switch (sx->tree[sx->tc++])
+		sx->tc++;
+		switch (node_get_type(tree_get_node(sx)))
 		{
 			case TEnd:
 				// printf("%i tc=%i :codegen TEnd\n", node_get_type(tree_get_node(sx)), sx->tc);
