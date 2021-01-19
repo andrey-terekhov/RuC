@@ -100,8 +100,8 @@ void parse_case_statement(analyzer *const context)
 	unarexpr(context);
 	condexpr(context);
 	toval(context);
-
 	totree(context, TExprend);
+
 	if (context->ansttype == LFLOAT)
 	{
 		context_error(context, float_in_switch);

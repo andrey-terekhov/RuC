@@ -315,27 +315,29 @@
 
 // Лексемы
 
-#define COMMA		100
-#define QUEST		101
-#define COLON		102
-#define LEFTBR		103
-#define RIGHTBR		104
-#define LEFTSQBR	105
-#define RIGHTSQBR	106
-#define STRING		107
-#define NUMBER		108
-#define IDENT		109
-#define INT_CONST	112
-#define CHAR_CONST	113
-#define FLOAT_CONST	114
-#define BEGIN		115
-#define END			116
-#define SEMICOLON	117
-#define LAPOST		118
-#define LQUOTE		119
-#define LEOF		120
-#define ARROW		121
-#define DOT			122
+// Такие коды сделаны для функции skip_until()
+// Это позволяет передавать несколько аргументов, разделяя их |
+#define COMMA	  1 << 1 //100
+#define QUEST	  101
+#define COLON	  1 << 2 //102
+#define LEFTBR	  103
+#define RIGHTBR	  1 << 3 //104
+#define LEFTSQBR  105
+#define RIGHTSQBR 1 << 4 //106
+#define STRING	  107
+#define NUMBER	  108
+#define IDENT	  109
+#define CHAR_CONST 111
+#define INT_CONST 112
+#define FLOAT_CONST 113
+#define BEGIN	  115
+#define END		  1 << 5 //116
+#define SEMICOLON 1 << 6 //117
+#define LAPOST	  118
+#define LQUOTE	  119
+#define LEOF	  120
+#define ARROW	  121
+#define DOT		  122
 
 
 // Ответы
