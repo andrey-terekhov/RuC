@@ -20,7 +20,7 @@ init()
 
 	while ! [[ -z $1 ]]
 	do
-		case "$1" in
+		case $1 in
 			-h|--help)
 				echo -e "Usage: ./${0##*/} [KEY] ..."
 				echo -e "Description:"
@@ -30,6 +30,7 @@ init()
 				echo -e "\tTo ignore invalid tests output, use \"*/$subdir_warning/*\" subdirectory."
 				echo -e "\tFor tests with expected runtime error, use \"*/$subdir_error/*\" subdirectory."
 				echo -e "\tFor multi-file tests, use \"*/$subdir_include/*\" subdirectory."
+				echo -e "\tFailed tests for debug build only will be marked with \"(Debug)\"."
 				echo -e "Keys:"
 				echo -e "\t-h, --help\tTo output help info."
 				echo -e "\t-s, --silence\tFor silence testing."
