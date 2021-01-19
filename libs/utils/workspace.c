@@ -143,7 +143,7 @@ workspace ws_parse_args(const int argc, const char *const *const argv)
 
 		if (argv[i][1] == 'o' && argv[i][2] == '\0')
 		{
-			if (i + 1 < argc || ws_set_output(&ws, argv[++i]) == -1)
+			if (i + 1 >= argc || ws_set_output(&ws, argv[++i]) == -1)
 			{
 				ws_add_error(&ws);
 				return ws;

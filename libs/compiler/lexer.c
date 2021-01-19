@@ -334,9 +334,11 @@ TOKEN lex_string_literal(lexer *const lxr)
 lexer create_lexer(universal_io *const io, syntax *const sx)
 {
 	lexer lxr;
+
 	lxr.io = io;
 	lxr.sx = sx;
 	lxr.repr = 0;
+	lxr.error_flag = 0;
 	
 	return lxr;
 }
