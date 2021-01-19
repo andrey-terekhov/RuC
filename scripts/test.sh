@@ -7,7 +7,7 @@ init()
 
 	vm_release=master
 	output_time=0.0
-	wait_for=5
+	wait_for=2
 
 	dir_install=./install
 	dir_test=../tests
@@ -38,7 +38,7 @@ init()
 				echo -e "\t-d, --debug\tSwitch on debug tracing."
 				echo -e "\t-v, --virtual\tSet RuC virtual machine release."
 				echo -e "\t-o, --output\tSet output printing time (default = 0.0)."
-				echo -e "\t-w, --wait\tSet waiting time for timeout result (default = 5)."
+				echo -e "\t-w, --wait\tSet waiting time for timeout result (default = 2)."
 				exit 0
 				;;
 			-s|--silence)
