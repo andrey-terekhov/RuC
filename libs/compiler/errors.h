@@ -27,14 +27,32 @@ extern "C" {
 enum ERROR
 {
 	// Lexer errors
-	bad_character,						/**< "Bad character in source" error */
-	empty_character,					/**< "Empty character constant" error */
-	unknown_escape_sequence,			/**< "Unknown escape sequence" error */
-	expected_apost_after_char_const,	/**< "Missing terminating ' character" error */
-	missing_terminating_quote_char,		/**< "Missing terminating '"' character" error */
-	string_too_long,					/**< "String literal exceeds maximum length" error */
-	unterminated_block_comment,			/**< "Unterminated block comment" error */
-	
+	bad_character,						/**< "Bad character in source" */
+	empty_character,					/**< "Empty character constant" */
+	unknown_escape_sequence,			/**< "Unknown escape sequence" */
+	expected_apost_after_char_const,	/**< "Missing terminating ' character" */
+	missing_terminating_quote_char,		/**< "Missing terminating '"' character" */
+	string_too_long,					/**< "String literal exceeds maximum length" */
+	unterminated_block_comment,			/**< "Unterminated block comment" */
+
+	// Statement errors
+	expected_semi_after_stmt,			/**< "Expected ';' after statement" */
+	case_not_in_switch,					/**< "'case' statement not in switch statement" */
+	float_in_switch,
+	expected_colon_after_case,			/**< "Expected ':' after 'case'" */
+	default_not_in_switch,				/**< "'default' statement not in switch statement" */
+	expected_colon_after_default,		/**< "Expected ':' after 'default'" */
+	expected_while,						/**< "Expected 'while' in do/while loop" */
+	no_leftbr_in_for,
+	no_semicolon_in_for,
+	no_rightbr_in_for,
+	no_ident_after_goto,
+	continue_not_in_loop,				/**< "'continue' statement not in loop statement" */
+	break_not_in_loop_or_switch,		/**< "'break' statement not in loop or switch statement" */
+	no_ret_in_func,
+	bad_type_in_ret,
+	notvoidret_in_void_func,
+
 	// Environment errors
 	no_main_in_program,					/**< "Undefined main" error */
 	predef_but_notdef,					/**< "Undefined function" error */
@@ -47,8 +65,6 @@ enum ERROR
 	wrong_param_list,
 	def_must_end_with_semicomma,
 	func_decl_req_params,
-	wait_while_in_do_stmt,
-	expected_semi_after_stmt,
 	cond_must_be_in_brkts,
 	repeated_decl,
 	arr_init_must_start_from_BEGIN,
@@ -65,12 +81,6 @@ enum ERROR
 	unassignable_inc,
 	wrong_addr,
 	no_colon_in_cond_expr,
-	expected_colon_after_case,
-	expected_colon_after_default,
-	no_ident_after_goto,
-	no_leftbr_in_for,
-	no_semicolon_in_for,
-	no_rightbr_in_for,
 	int_op_for_float,
 	assmnt_float_to_int,
 	redefinition_of_main,
@@ -80,16 +90,12 @@ enum ERROR
 	no_leftbr_in_getid,
 	no_rightbr_in_getid,
 	no_ident_in_getid,
-	float_in_switch,
 	init_int_by_float,
 	no_comma_in_setmotor,
 	param_setmotor_not_int,
 	no_leftbr_in_stand_func,
 	no_rightbr_in_stand_func,
 	bad_param_in_stand_func,
-	no_ret_in_func,
-	bad_type_in_ret,
-	notvoidret_in_void_func,
 	decl_after_strmt,
 	aster_before_func,
 	aster_not_for_pointer,
@@ -105,10 +111,6 @@ enum ERROR
 	two_idents_for_1_declarer,
 	function_has_no_body,
 	diff_formal_param_type_and_actual,
-	case_not_in_switch,
-	default_not_in_switch,
-	break_not_in_loop_or_switch,
-	continue_not_in_loop,
 	not_primary,
 	wrong_operand,
 	must_be_digit_after_exp,

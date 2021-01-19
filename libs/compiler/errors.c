@@ -122,7 +122,7 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "вообще-то я думал, что это предописание функции (нет "
 												  "идентификаторов-параметров), а тут тело функции");
 			break;
-		case wait_while_in_do_stmt: // test_exist
+		case expected_while: // test_exist
 			sprintf(msg, "ждем ПОКА в операторе ЦИКЛ");
 			break;
 		case expected_semi_after_stmt: // test_exist

@@ -38,8 +38,8 @@ typedef struct analyzer
 	syntax *sx;							/**< Syntax structure */
 	lexer *lxr;							/**< Lexer structure */
 
-	TOKEN curr_token;					/**< Current character */
-	TOKEN next_token;					/**< Lookahead character */
+	TOKEN curr_token;					/**< Current token */
+	TOKEN next_token;					/**< Lookahead token */
 	int line;
 	int wasstructdef;
 	int func_def;
@@ -58,7 +58,7 @@ typedef struct analyzer
 	int was_struct_with_arr;
 	int usual;
 	int flag_in_switch;
-	int inloop;
+	int flag_in_loop;
 	int functype;
 	int blockflag;
 	int wasret;

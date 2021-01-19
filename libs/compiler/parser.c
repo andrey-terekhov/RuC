@@ -225,21 +225,26 @@ void skip_until(parser *const parser, const unsigned int tokens)
 {
 	while (parser->next_token != eof)
 	{
+		consume_token(parser);
 		switch (parser->next_token)
 		{
 			case l_paren:
+				consume_token(parser);
 				skip_until(parser, r_paren);
 				break;
 
 			case l_square:
+				consume_token(parser);
 				skip_until(parser, r_square);
 				break;
 
 			case l_brace:
+				consume_token(parser);
 				skip_until(parser, r_brace);
 				break;
 
 			case question:
+				consume_token(parser);
 				skip_until(parser, colon);
 				break;
 

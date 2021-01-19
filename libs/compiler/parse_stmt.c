@@ -190,15 +190,15 @@ void parse_switch_statement(parser *const context)
  *	while-statement:
  *		'while' '(' expression ')' statement
  */
-void parse_while_statement(parser *const context)
+void parse_while_statement(parser *const parser)
 {
-	int oldinloop = context->inloop;
-	totree(context, TWhile);
+	int old_in_loop = parser->flag_in_loop;
+	totree(parser, TWhile);
 
-	context->inloop = 1;
-	exprinbrkts(context, cond_must_be_in_brkts);
-	parse_statement(context);
-	context->inloop = oldinloop;
+	parser->flag_in_loop = 1;
+	exprinbrkts(parser, cond_must_be_in_brkts);
+	parse_statement(parser);
+	parser->flag_in_loop = old_in_loop;
 }
 
 /**
@@ -207,27 +207,28 @@ void parse_while_statement(parser *const context)
  *	do-statement:
  *		'do' statement 'while' '(' expression ')' ';'
  */
-void parse_do_statement(parser *const context)
+void parse_do_statement(parser *const parser)
 {
-	int oldinloop = context->inloop;
-	totree(context, TDo);
+	int old_in_loop = parser->flag_in_loop;
+	totree(parser, TDo);
 
-	context->inloop = 1;
-	parse_statement(context);
-	if (context->next_token == LWHILE)
+	parser->flag_in_loop = 1;
+	parse_statement(parser);
+
+	if (parser->next_token == LWHILE)
 	{
-		scanner(context);
-		exprinbrkts(context, cond_must_be_in_brkts);
-		context->sopnd--;
+		scanner(parser);
+		exprinbrkts(parser, cond_must_be_in_brkts);
+		parser->sopnd--;
 	}
 	else
 	{
-		parser_error(context, wait_while_in_do_stmt);
-		skip_until(context, SEMICOLON);
+		parser_error(parser, expected_while);
+		skip_until(parser, semicolon);
 	}
 
-	mustbe(context, SEMICOLON, expected_semi_after_stmt);
-	context->inloop = oldinloop;
+	try_consume_token(parser, semicolon, expected_semi_after_stmt);
+	parser->flag_in_loop = old_in_loop;
 }
 
 /**
@@ -239,7 +240,7 @@ void parse_do_statement(parser *const context)
  */
 void parse_for_statement(parser *const context)
 {
-	int oldinloop = context->inloop;
+	int oldinloop = context->flag_in_loop;
 
 	totree(context, TFor);
 	size_t inition_ref = context->sx->tc++;
@@ -288,9 +289,9 @@ void parse_for_statement(parser *const context)
 	}
 
 	context->sx->tree[statement_ref] = (int)context->sx->tc;
-	context->inloop = 1;
+	context->flag_in_loop = 1;
 	parse_statement(context);
-	context->inloop = oldinloop;
+	context->flag_in_loop = oldinloop;
 }
 
 /**
@@ -341,7 +342,7 @@ void parse_continue_statement(parser *const parser)
 {
 	totree(parser, TContinue);
 
-	if (!parser->inloop)
+	if (!parser->flag_in_loop)
 	{
 		parser_error(parser, continue_not_in_loop);
 	}
@@ -359,7 +360,7 @@ void parse_break_statement(parser *const parser)
 {
 	totree(parser, TBreak);
 
-	if (!(parser->inloop || parser->flag_in_switch))
+	if (!(parser->flag_in_loop || parser->flag_in_switch))
 	{
 		parser_error(parser, break_not_in_loop_or_switch);
 	}
@@ -509,13 +510,9 @@ void parse_getid_statement(parser *const context)
 int evaluate_params(parser *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[])
 {
 	int num_of_params = 0;
-	int i = 0;
 	char32_t fsi;
 
-	//	for (i=0; i<num; i++)
-	//		printf("%c %i\n", formatstr[i], formatstr[i]);
-
-	for (i = 0; i < num; i++)
+	for (int i = 0; i < num; i++)
 	{
 		if (formatstr[i] == '%')
 		{
@@ -662,7 +659,7 @@ void parse_printf_statement(parser *const context)
 void parse_statement(parser *const context)
 {
 	int oldinswitch = context->flag_in_switch;
-	int oldinloop = context->inloop;
+	int oldinloop = context->flag_in_loop;
 
 	scanner(context);
 	if ((is_int(context->curr_token) || is_float(context->curr_token) || context->curr_token == LVOID ||
@@ -762,7 +759,7 @@ void parse_statement(parser *const context)
 	}
 
 	context->flag_in_switch = oldinswitch;
-	context->inloop = oldinloop;
+	context->flag_in_loop = oldinloop;
 }
 
 void parse_compound_statement(parser *const context, const block_type b)
