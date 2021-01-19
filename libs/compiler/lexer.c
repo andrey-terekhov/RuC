@@ -28,7 +28,7 @@
  */
 void lexer_error(lexer *const lxr, const enum ERROR err)
 {
-	lxr->error_flag = 1;
+	lxr->was_error = 1;
 	if (err == bad_character)
 	{
 		error(lxr->io, err, lxr->curr_char);

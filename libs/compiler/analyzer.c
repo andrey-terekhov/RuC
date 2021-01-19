@@ -34,10 +34,9 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx, lexer
 	context.blockflag = 1;
 	context.leftansttype = -1;
 	context.buf_flag = 0;
-	context.error_flag = 0;
+	context.was_error = 0;
 	context.line = 1;
 	context.buf_cur = 0;
-	context.temp_tc = 0;
 	
 	context.anstdispl = 0;
 
@@ -146,5 +145,5 @@ int analyze(universal_io *const io, syntax *const sx)
 	context.lxr->io = io;
 	ext_decl(&context);
 
-	return context.error_flag || context.lxr->error_flag;
+	return context.was_error || context.lxr->was_error;
 }

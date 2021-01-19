@@ -36,9 +36,9 @@ void parse_labeled_statement(analyzer *const context)
 	if (flag)
 	{
 		totree(context, id = toidentab(context, 1, 0));
-		if (context->error_flag == 5)
+		if (context->was_error == 5)
 		{
-			context->error_flag = 2;
+			context->was_error = 2;
 		}
 		else
 		{
@@ -53,8 +53,8 @@ void parse_labeled_statement(analyzer *const context)
 		REPRTAB_POS = context->sx->identab[id + 1];
 		if (context->gotost[i - 1] < 0)
 		{
-			context_error(context, repeated_label);
-			context->error_flag = 2;
+			parser_error(context, repeated_label);
+			context->was_error = 2;
 		}
 		else
 		{
@@ -63,9 +63,9 @@ void parse_labeled_statement(analyzer *const context)
 		totree(context, id);
 	}
 
-	if (context->error_flag == 2)
+	if (context->was_error == 2)
 	{
-		context->error_flag = 1;
+		context->was_error = 1;
 	}
 	else
 	{
@@ -88,12 +88,12 @@ void parse_case_statement(analyzer *const context)
 
 	if (!context->inswitch)
 	{
-		context_error(context, case_not_in_switch);
+		parser_error(context, case_not_in_switch);
 	}
 	else if (context->wasdefault)
 	{
 		// FIXME: C99 такого не запрещает
-		context_error(context, case_after_default);
+		parser_error(context, case_after_default);
 	}
 
 	scanner(context);
@@ -104,7 +104,7 @@ void parse_case_statement(analyzer *const context)
 
 	if (context->ansttype == LFLOAT)
 	{
-		context_error(context, float_in_switch);
+		parser_error(context, float_in_switch);
 	}
 	context->sopnd--;
 
@@ -127,7 +127,7 @@ void parse_default_statement(analyzer *const context)
 	parse_statement(context);
 
 	if (!context->inswitch)
-		context_error(context, default_not_in_switch);
+		parser_error(context, default_not_in_switch);
 }
 
 /**
@@ -184,7 +184,7 @@ void parse_switch_statement(analyzer *const context)
 	exprinbrkts(context, cond_must_be_in_brkts);
 	if (!is_int(context->ansttype))
 	{
-		context_error(context, float_in_switch);
+		parser_error(context, float_in_switch);
 	}
 
 	context->sopnd--;
@@ -232,7 +232,7 @@ void parse_do_statement(analyzer *const context)
 	}
 	else
 	{
-		context_error(context, wait_while_in_do_stmt);
+		parser_error(context, wait_while_in_do_stmt);
 		skip_until(context, SEMICOLON);
 	}
 
@@ -353,7 +353,7 @@ void parse_continue_statement(analyzer *const context)
 
 	if (!context->inloop)
 	{
-		context_error(context, continue_not_in_loop);
+		parser_error(context, continue_not_in_loop);
 	}
 
 	mustbe(context, SEMICOLON, no_semicolon_after_stmt);
@@ -371,7 +371,7 @@ void parse_break_statement(analyzer *const context)
 
 	if (!(context->inloop || context->inswitch))
 	{
-		context_error(context, break_not_in_loop_or_switch);
+		parser_error(context, break_not_in_loop_or_switch);
 	}
 
 	mustbe(context, SEMICOLON, no_semicolon_after_stmt);
@@ -393,7 +393,7 @@ void parse_return_statement(analyzer *const context)
 		totree(context, TReturnvoid);
 		scanner(context);
 		if (return_type != LVOID)
-			context_error(context, no_ret_in_func);
+			parser_error(context, no_ret_in_func);
 	}
 	else
 	{
@@ -401,7 +401,7 @@ void parse_return_statement(analyzer *const context)
 		{
 			if (return_type == LVOID)
 			{
-				context_error(context, notvoidret_in_void_func);
+				parser_error(context, notvoidret_in_void_func);
 			}
 			totree(context, TReturnval);
 			totree(context, szof(context, return_type));
@@ -416,7 +416,7 @@ void parse_return_statement(analyzer *const context)
 			}
 			else if (return_type != context->ansttype)
 			{
-				context_error(context, bad_type_in_ret);
+				parser_error(context, bad_type_in_ret);
 			}
 			totree(context, TExprend);
 			mustbe(context, SEMICOLON, no_semicolon_after_stmt);
@@ -448,7 +448,7 @@ void parse_printid_statement(analyzer *const context)
 		}
 		else
 		{
-			context_error(context, no_ident_in_printid);
+			parser_error(context, no_ident_in_printid);
 			skip_until(context, COMMA | RIGHTBR | SEMICOLON);
 		}
 		if (context->next == COMMA)
@@ -466,6 +466,123 @@ void parse_printid_statement(analyzer *const context)
 
 }
 
+/**	Parse print statement [RuC] */
+void parse_print_statement(analyzer *const context)
+{
+	exprassninbrkts(context, print_without_br);
+	context->sx->tc--;
+	totree(context, TPrint);
+	totree(context, context->ansttype);
+	totree(context, TExprend);
+
+	if (is_pointer(context->sx, context->ansttype))
+	{
+		parser_error(context, pointer_in_print);
+	}
+	context->sopnd--;
+	mustbe(context, SEMICOLON, no_semicolon_after_stmt);
+}
+
+/**	Parse getid statement [RuC] */
+void parse_getid_statement(analyzer *const context)
+{
+	mustbe(context, LEFTBR, no_leftbr_in_getid);
+
+	while (context->next != RIGHTBR)
+	{
+		if (context->next == IDENT)
+		{
+			scanner(context);
+			applid(context);
+			totree(context, TGetid);
+			totree(context, context->lastid);
+		}
+		else
+		{
+			parser_error(context, no_ident_in_getid);
+			skip_until(context, COMMA | RIGHTBR | SEMICOLON);
+		}
+		if (context->next == COMMA)
+		{
+			scanner(context);
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	mustbe(context, RIGHTBR, no_rightbr_in_getid);
+	mustbe(context, SEMICOLON, no_semicolon_after_stmt);
+}
+
+int evaluate_params(analyzer *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[])
+{
+	int num_of_params = 0;
+	int i = 0;
+	char32_t fsi;
+
+	//	for (i=0; i<num; i++)
+	//		printf("%c %i\n", formatstr[i], formatstr[i]);
+
+	for (i = 0; i < num; i++)
+	{
+		if (formatstr[i] == '%')
+		{
+			if (fsi = formatstr[++i], fsi != '%')
+			{
+				if (num_of_params == MAXPRINTFPARAMS)
+				{
+					parser_error(context, too_many_printf_params);
+					return 0;
+				}
+
+				placeholders[num_of_params] = fsi;
+			}
+			switch (fsi) // Если добавляется новый спецификатор -- не забыть
+						 // внести его в switch в bad_printf_placeholder
+			{
+				case 'i':
+				case 1094: // 'ц'
+					formattypes[num_of_params++] = LINT;
+					break;
+
+				case 'c':
+				case 1083: // л
+					formattypes[num_of_params++] = LCHAR;
+					break;
+
+				case 'f':
+				case 1074: // в
+					formattypes[num_of_params++] = LFLOAT;
+					break;
+
+				case 's':
+				case 1089: // с
+					formattypes[num_of_params++] = newdecl(context->sx, MARRAY, LCHAR);
+					break;
+
+				case '%':
+					break;
+
+				case 0:
+					parser_error(context, printf_no_format_placeholder);
+					return 0;
+
+				default:
+					context->bad_printf_placeholder = fsi;
+					parser_error(context, printf_unknown_format_placeholder);
+					return 0;
+			}
+		}
+	}
+
+	return num_of_params;
+}
+
+/**	Parse scanf statement [RuC] */
+void parse_scanf_statement(analyzer *const context);
+
 /**	Parse printf statement [RuC] */
 void parse_printf_statement(analyzer *const context)
 {
@@ -478,7 +595,7 @@ void parse_printf_statement(analyzer *const context)
 
 	if (context->next != STRING)
 	{
-		context_error(context, wrong_first_printf_param);
+		parser_error(context, wrong_first_printf_param);
 		skip_until(context, SEMICOLON);
 		return;
 	}
@@ -510,7 +627,7 @@ void parse_printf_statement(analyzer *const context)
 		{
 			// FIXME: для этого заводится отдельное поле в analyzer
 			context->bad_printf_placeholder = placeholders[actual_param_number];
-			context_error(context, wrong_printf_param_type);
+			parser_error(context, wrong_printf_param_type);
 		}
 
 		sumsize += szof(context, formattypes[actual_param_number]);
@@ -526,7 +643,7 @@ void parse_printf_statement(analyzer *const context)
 
 	if (actual_param_number != expected_param_number)
 	{
-		context_error(context, wrong_printf_param_number);
+		parser_error(context, wrong_printf_param_number);
 	}
 
 	totree(context, TString);
@@ -541,60 +658,6 @@ void parse_printf_statement(analyzer *const context)
 	totree(context, TPrintf);
 	totree(context, sumsize);
 }
-
-/**	Parse print statement [RuC] */
-void parse_print_statement(analyzer *const context)
-{
-	exprassninbrkts(context, print_without_br);
-	context->sx->tc--;
-	totree(context, TPrint);
-	totree(context, context->ansttype);
-	totree(context, TExprend);
-
-	if (is_pointer(context->sx, context->ansttype))
-	{
-		context_error(context, pointer_in_print);
-	}
-	context->sopnd--;
-	mustbe(context, SEMICOLON, no_semicolon_after_stmt);
-}
-
-/**	Parse scanf statement [RuC] */
-void parse_scanf_statement(analyzer *const context);
-
-/**	Parse getid statement [RuC] */
-void parse_getid_statement(analyzer *const context)
-{
-	mustbe(context, LEFTBR, no_leftbr_in_getid);
-
-	while (context->next != RIGHTBR)
-	{
-		if (context->next == IDENT)
-		{
-			scanner(context);
-			applid(context);
-			totree(context, TGetid);
-			totree(context, context->lastid);
-		}
-		else
-		{
-			context_error(context, no_ident_in_getid);
-			skip_until(context, COMMA | RIGHTBR | SEMICOLON);
-		}
-		if (context->next == COMMA)
-		{
-			scanner(context);
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	mustbe(context, RIGHTBR, no_rightbr_in_getid);
-	mustbe(context, SEMICOLON, no_semicolon_after_stmt);
-}
-
 
 
 /*
@@ -618,7 +681,7 @@ void parse_statement(analyzer *const context)
 		 context->cur == LSTRUCT) &&
 		context->blockflag)
 	{
-		context_error(context, decl_after_strmt);
+		parser_error(context, decl_after_strmt);
 	}
 	else
 	{
@@ -626,15 +689,15 @@ void parse_statement(analyzer *const context)
 
 		switch (context->cur)
 		{
-			case SEMICOLON:
+			case semicolon:
 				totree(context, NOP);
 				break;
 
-			case LCASE:
+			case kw_case:
 				parse_case_statement(context);
 				break;
 
-			case LDEFAULT:
+			case kw_default:
 				parse_default_statement(context);
 				break;
 
@@ -642,39 +705,39 @@ void parse_statement(analyzer *const context)
 				parse_compound_statement(context, REGBLOCK);
 				break;
 
-			case LIF:
+			case kw_if:
 				parse_if_statement(context);
 				break;
 
-			case LSWITCH:
+			case kw_switch:
 				parse_switch_statement(context);
 				break;
 
-			case LWHILE:
+			case kw_while:
 				parse_while_statement(context);
 				break;
 
-			case LDO:
+			case kw_do:
 				parse_do_statement(context);
 				break;
 
-			case LFOR:
+			case kw_for:
 				parse_for_statement(context);
 				break;
 
-			case LGOTO:
+			case kw_goto:
 				parse_goto_statement(context);
 				break;
 
-			case LCONTINUE:
+			case kw_continue:
 				parse_continue_statement(context);
 				break;
 
-			case LBREAK:
+			case kw_break:
 				parse_break_statement(context);
 				break;
 
-			case LRETURN:
+			case kw_return:
 				parse_return_statement(context);
 				break;
 
@@ -682,19 +745,19 @@ void parse_statement(analyzer *const context)
 				parse_create_direct_statement(context);
 				break;
 
-			case PRINTID:
+			case kw_printid:
 				parse_printid_statement(context);
 				break;
 
-			case PRINTF:
+			case kw_printf:
 				parse_printf_statement(context);
 				break;
 
-			case PRINT:
+			case kw_print:
 				parse_print_statement(context);
 				break;
 
-			case GETID:
+			case kw_getid:
 				parse_getid_statement(context);
 				break;
 
@@ -715,7 +778,7 @@ void parse_statement(analyzer *const context)
 	context->inloop = oldinloop;
 }
 
-void parse_compound_statement(analyzer *context, const block_type b)
+void parse_compound_statement(analyzer *const context, const block_type b)
 {
 	// если b=1, то это просто блок,
 	// b = 2 - блок нити,
@@ -742,9 +805,9 @@ void parse_compound_statement(analyzer *context, const block_type b)
 		int repeat = 1;
 		scanner(context);
 		firstdecl = gettype(context);
-		if (context->error_flag == 3)
+		if (context->was_error == 3)
 		{
-			context->error_flag = 1;
+			context->was_error = 1;
 			continue;
 		}
 		if (context->wasstructdef && context->next == SEMICOLON)
@@ -756,16 +819,16 @@ void parse_compound_statement(analyzer *context, const block_type b)
 		{
 			int temp = idorpnt(context, after_type_must_be_ident, firstdecl);
 
-			if (context->error_flag == after_type_must_be_ident)
+			if (context->was_error == after_type_must_be_ident)
 			{
-				context->error_flag = 1;
+				context->was_error = 1;
 				break;
 			}
 
 			decl_id(context, temp);
-			if (context->error_flag == 4)
+			if (context->was_error == 4)
 			{
-				context->error_flag = 1;
+				context->was_error = 1;
 				break;
 			}
 			if (context->next == COMMA)
@@ -779,7 +842,7 @@ void parse_compound_statement(analyzer *context, const block_type b)
 			}
 			else
 			{
-				context_error(context, def_must_end_with_semicomma);
+				parser_error(context, def_must_end_with_semicomma);
 				context->cur = SEMICOLON;
 				repeat = 0;
 			}
@@ -792,7 +855,7 @@ void parse_compound_statement(analyzer *context, const block_type b)
 	{
 		if (context->next == LEOF)
 		{
-			context_error(context, wait_end);
+			parser_error(context, wait_end);
 			return;
 		}
 		if (b == 2 ? context->next == TEXIT : context->next == END)
@@ -803,7 +866,7 @@ void parse_compound_statement(analyzer *context, const block_type b)
 		else
 		{
 			parse_statement(context);
-			if (context->cur == LEOF && context->error_flag)
+			if (context->cur == LEOF && context->was_error)
 			{
 				return;
 			}

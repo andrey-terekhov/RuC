@@ -23,9 +23,9 @@ void inition(analyzer *context, int decl_type)
 		(is_string(context->sx, decl_type))) // или строк
 	{
 		exprassn(context, 1);
-		if (context->error_flag == 6)
+		if (context->was_error == 6)
 		{
-			context->error_flag = 5;
+			context->was_error = 5;
 			return; // 1
 		}
 		toval(context);
@@ -34,8 +34,8 @@ void inition(analyzer *context, int decl_type)
 		context->sopnd--;
 		if (is_int(decl_type) && is_float(context->ansttype))
 		{
-			context_error(context, init_int_by_float);
-			context->error_flag = 5;
+			parser_error(context, init_int_by_float);
+			context->was_error = 5;
 			return; // 1
 		}
 		if (is_float(decl_type) && is_int(context->ansttype))
@@ -44,8 +44,8 @@ void inition(analyzer *context, int decl_type)
 		}
 		else if (decl_type != context->ansttype)
 		{
-			context_error(context, error_in_initialization);
-			context->error_flag = 5;
+			parser_error(context, error_in_initialization);
+			context->was_error = 5;
 			return; // 1
 		}
 	}
@@ -55,8 +55,8 @@ void inition(analyzer *context, int decl_type)
 	}
 	else
 	{
-		context_error(context, wrong_init);
-		context->error_flag = 5;
+		parser_error(context, wrong_init);
+		context->was_error = 5;
 		return; // 1
 	}
 }
@@ -71,7 +71,7 @@ void struct_init(analyzer *context, int decl_type)
 
 	if (context->cur != BEGIN)
 	{
-		context_error(context, struct_init_must_start_from_BEGIN);
+		parser_error(context, struct_init_must_start_from_BEGIN);
 		context->buf_cur = context->next;
 		context->next = context->cur;
 		context->cur = BEGIN;
@@ -83,9 +83,9 @@ void struct_init(analyzer *context, int decl_type)
 	{
 		scanner(context);
 		inition(context, mode_get(context->sx, next_field));
-		if (context->error_flag == 5)
+		if (context->was_error == 5)
 		{
-			context->error_flag = 1;
+			context->was_error = 1;
 			return; // 1
 		}
 		next_field += 2;
@@ -97,7 +97,7 @@ void struct_init(analyzer *context, int decl_type)
 			}
 			else
 			{
-				context_error(context, no_comma_in_init_list);
+				parser_error(context, no_comma_in_init_list);
 				context->next = context->cur;
 				context->cur = COMMA;
 			}
@@ -111,7 +111,7 @@ void struct_init(analyzer *context, int decl_type)
 	}
 	else
 	{
-		context_error(context, wait_end);
+		parser_error(context, wait_end);
 		context->cur = END;
 	}
 	context->leftansttype = decl_type;
@@ -127,8 +127,8 @@ void array_init(analyzer *context, int decl_type)
 		{
 			if (context->onlystrings == 0)
 			{
-				context_error(context, string_and_notstring);
-				context->error_flag = 7;
+				parser_error(context, string_and_notstring);
+				context->was_error = 7;
 				return; // 1
 			}
 			if (context->onlystrings == 2)
@@ -136,9 +136,9 @@ void array_init(analyzer *context, int decl_type)
 				context->onlystrings = 1;
 			}
 			primaryexpr(context);
-			if (context->error_flag == 4)
+			if (context->was_error == 4)
 			{
-				context->error_flag = 7;
+				context->was_error = 7;
 				return; // 1
 			}
 			totree(context, TExprend);
@@ -147,7 +147,7 @@ void array_init(analyzer *context, int decl_type)
 		{
 			if (context->cur != BEGIN)
 			{
-				context_error(context, arr_init_must_start_from_BEGIN);
+				parser_error(context, arr_init_must_start_from_BEGIN);
 				context->buf_cur = context->next;
 				context->next = context->cur;
 				context->cur = BEGIN;
@@ -162,7 +162,7 @@ void array_init(analyzer *context, int decl_type)
 				scanner(context);
 				all++;
 				array_init(context, mode_get(context->sx, decl_type + 1));
-				if (context->error_flag == 7)
+				if (context->was_error == 7)
 				{
 					return; // 1
 				}
@@ -175,8 +175,8 @@ void array_init(analyzer *context, int decl_type)
 			}
 			else
 			{
-				context_error(context, wait_end);
-				context->error_flag = 7;
+				parser_error(context, wait_end);
+				context->was_error = 7;
 				return; // 1
 			}
 		}
@@ -189,15 +189,15 @@ void array_init(analyzer *context, int decl_type)
 		}
 		else
 		{
-			context_error(context, begin_with_notarray);
-			context->error_flag = 7;
+			parser_error(context, begin_with_notarray);
+			context->was_error = 7;
 			return; // 1
 		}
 	}
 	else if (context->onlystrings == 1)
 	{
-		context_error(context, string_and_notstring);
-		context->error_flag = 7;
+		parser_error(context, string_and_notstring);
+		context->was_error = 7;
 		return; // 1
 	}
 	else
@@ -215,8 +215,8 @@ int arrdef(analyzer *context, int t)
 	context->usual = 1; // описание массива без пустых границ
 	if (is_pointer(context->sx, t))
 	{
-		context_error(context, pnt_before_array);
-		context->error_flag = 5;
+		parser_error(context, pnt_before_array);
+		context->was_error = 5;
 		return 0; // 1
 	}
 
@@ -229,8 +229,8 @@ int arrdef(analyzer *context, int t)
 			scanner(context);
 			if (context->next == LEFTSQBR) // int a[][]={{1,2,3}, {4,5,6}} - нельзя;
 			{
-				context_error(context, empty_init); // границы определять по инициализации можно
-				context->error_flag = 5;
+				parser_error(context, empty_init); // границы определять по инициализации можно
+				context->was_error = 5;
 				return 0; // 1
 			}
 			// только по последнему изм.
@@ -240,22 +240,22 @@ int arrdef(analyzer *context, int t)
 		{
 			scanner(context);
 			unarexpr(context);
-			if (context->error_flag == 7)
+			if (context->was_error == 7)
 			{
-				context->error_flag = 5;
+				context->was_error = 5;
 				return 0; // 1
 			}
 			condexpr(context);
-			if (context->error_flag == 7)
+			if (context->was_error == 7)
 			{
-				context->error_flag = 5;
+				context->was_error = 5;
 				return 0; // 1
 			}
 			toval(context);
 			if (!is_int(context->ansttype))
 			{
-				context_error(context, array_size_must_be_int);
-				context->error_flag = 5;
+				parser_error(context, array_size_must_be_int);
+				context->was_error = 5;
 				return 0; // 1
 			}
 			totree(context, TExprend);
@@ -279,9 +279,9 @@ void decl_id(analyzer *context, int decl_type)
 	context->usual = 1;
 	context->arrdim = 0; // arrdim - размерность (0-скаляр), д.б. столько выражений-границ
 	elem_type = decl_type;
-	if (context->error_flag == 5)
+	if (context->was_error == 5)
 	{
-		context->error_flag = 4;
+		context->was_error = 4;
 		return; // 1
 	}
 
@@ -293,15 +293,15 @@ void decl_id(analyzer *context, int decl_type)
 		decl_type = arrdef(context, decl_type);
 		ident_set_mode(context->sx, oldid, decl_type);
 		context->sx->tree[adN] = context->arrdim;
-		if (context->error_flag == 5)
+		if (context->was_error == 5)
 		{
-			context->error_flag = 4;
+			context->was_error = 4;
 			return; // 1
 		}
 		if ((!context->usual && context->next != ASS))
 		{
-			context_error(context, empty_bound_without_init);
-			context->error_flag = 4;
+			parser_error(context, empty_bound_without_init);
+			context->was_error = 4;
 			return; // 1
 		}
 	}
@@ -329,9 +329,9 @@ void decl_id(analyzer *context, int decl_type)
 				context->sx->tree[adN]--; // это уменьшение N в Declarr
 			}
 			array_init(context, decl_type);
-			if (context->error_flag == 7)
+			if (context->was_error == 7)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 			if (context->onlystrings == 1)
@@ -344,9 +344,9 @@ void decl_id(analyzer *context, int decl_type)
 			inition(context, decl_type);
 		}
 	}
-	if (context->error_flag == 5)
+	if (context->was_error == 5)
 	{
-		context->error_flag = 4;
+		context->was_error = 4;
 		return; // 1
 	}
 }
@@ -384,9 +384,9 @@ int struct_decl_list(analyzer *context)
 	{
 		int oldrepr;
 		t = elem_type = idorpnt(context, wait_ident_after_semicomma_in_struct, gettype(context));
-		if (context->error_flag == wait_ident_after_semicomma_in_struct || context->error_flag == 3)
+		if (context->was_error == wait_ident_after_semicomma_in_struct || context->was_error == 3)
 		{
-			context->error_flag = 3;
+			context->was_error = 3;
 			return 0;
 		}
 		oldrepr = REPRTAB_POS;
@@ -395,9 +395,9 @@ int struct_decl_list(analyzer *context)
 			totree(context, TDeclarr);
 			size_t adN = context->sx->tc++;
 			t = arrdef(context, elem_type); // Меняем тип (увеличиваем размерность массива)
-			if (context->error_flag == 5)
+			if (context->was_error == 5)
 			{
-				context->error_flag = 3;
+				context->was_error = 3;
 				return 0;
 			}
 			context->sx->tree[adN] = context->arrdim;
@@ -425,9 +425,9 @@ int struct_decl_list(analyzer *context)
 						context->sx->tree[adN]--; // это уменьшение N в Declarr
 					}
 					array_init(context, t);
-					if (context->error_flag == 7)
+					if (context->was_error == 7)
 					{
-						context->error_flag = 3;
+						context->was_error = 3;
 						return 0;
 					}
 					if (context->onlystrings == 1)
@@ -449,7 +449,7 @@ int struct_decl_list(analyzer *context)
 		curdispl += szof(context, t);
 		if (scanner(context) != SEMICOLON)
 		{
-			context_error(context, no_semicomma_in_struct);
+			parser_error(context, no_semicomma_in_struct);
 			context->buf_cur = context->next;
 			context->next = context->cur;
 			context->cur = BEGIN;
@@ -508,9 +508,9 @@ int gettype(analyzer *context)
 				context->wasstructdef = 1; // это  определение типа (может быть,
 										   // без описания переменных)
 				toidentab(context, 1000, 0);
-				if (context->error_flag == 5)
+				if (context->was_error == 5)
 				{
-					context->error_flag = 3;
+					context->was_error = 3;
 					return 0; // 1
 				}
 				lid = context->lastid;
@@ -522,8 +522,8 @@ int gettype(analyzer *context)
 			{
 				if (l == 1)
 				{
-					context_error(context, ident_is_not_declared);
-					context->error_flag = 3;
+					parser_error(context, ident_is_not_declared);
+					context->was_error = 3;
 					return 0; // 1
 				}
 				context->was_struct_with_arr = ident_get_displ(context->sx, l) - 1000;
@@ -531,24 +531,24 @@ int gettype(analyzer *context)
 			}
 		}
 
-		context_error(context, wrong_struct);
-		context->error_flag = 3;
+		parser_error(context, wrong_struct);
+		context->was_error = 3;
 		return 0; // 1
 	}
 
 	if (context->cur == IDENT)
 	{
 		applid(context);
-		if (context->error_flag == 5)
+		if (context->was_error == 5)
 		{
-			context->error_flag = 3;
+			context->was_error = 3;
 			return 0; // 1
 		}
 
 		if (ident_get_displ(context->sx, context->lastid) < 1000)
 		{
-			context_error(context, ident_not_type);
-			context->error_flag = 3;
+			parser_error(context, ident_not_type);
+			context->was_error = 3;
 			return 0; // 1
 		}
 
@@ -556,8 +556,8 @@ int gettype(analyzer *context)
 		return ident_get_mode(context->sx, context->lastid);
 	}
 
-	context_error(context, not_decl);
-	context->error_flag = 3;
+	parser_error(context, not_decl);
+	context->was_error = 3;
 	return 0; // 1
 }
 
@@ -580,7 +580,7 @@ void function_definition(analyzer *context)
 	{
 		if (context->functype != ident_get_mode(context->sx, pred))
 		{
-			context_error(context, decl_and_def_have_diff_type);
+			parser_error(context, decl_and_def_have_diff_type);
 			return; // 1
 		}
 		ident_set_displ(context->sx, pred, fn);
@@ -593,7 +593,7 @@ void function_definition(analyzer *context)
 		size_t temp = func_get(context->sx, fn + i + 1);
 		if (temp == SIZE_MAX)
 		{
-			context->error_flag = 1;
+			context->was_error = 1;
 			return;
 		}
 
@@ -607,9 +607,9 @@ void function_definition(analyzer *context)
 			REPRTAB_POS = -REPRTAB_POS;
 			toidentab(context, -1, context->type);
 		}
-		if (context->error_flag == 5)
+		if (context->was_error == 5)
 		{
-			context->error_flag = 1;
+			context->was_error = 1;
 			return; // 1
 		}
 	}
@@ -629,8 +629,8 @@ void function_definition(analyzer *context)
 	// }
 	if (ftype != LVOID && !context->wasret)
 	{
-		context_error(context, no_ret_in_func);
-		context->error_flag = 1;
+		parser_error(context, no_ret_in_func);
+		context->was_error = 1;
 		return; // 1
 	}
 
@@ -646,8 +646,8 @@ void function_definition(analyzer *context)
 		}
 		if (!context->sx->identab[context->gotost[i] + 2])
 		{
-			context_error(context, label_not_declared);
-			context->error_flag = 1;
+			parser_error(context, label_not_declared);
+			context->was_error = 1;
 			return; // 1
 		}
 	}
@@ -687,9 +687,9 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 					   // 2 - был идент-параметр-функция
 			wastype = 1;
 			context->type = gettype(context);
-			if (context->error_flag == 3)
+			if (context->was_error == 3)
 			{
-				context->error_flag = 2;
+				context->was_error = 2;
 				return 0;
 			}
 			if (context->next == LMULT)
@@ -709,8 +709,8 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 			}
 			else if (context->next == IDENT)
 			{
-				context_error(context, ident_in_declarator);
-				context->error_flag = 2;
+				parser_error(context, ident_in_declarator);
+				context->was_error = 2;
 				return 0;
 			}
 
@@ -720,8 +720,8 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 
 				if (is_pointer(context->sx, context->type) && ident == 0)
 				{
-					context_error(context, aster_with_row);
-					context->error_flag = 2;
+					parser_error(context, aster_with_row);
+					context->was_error = 2;
 					return 0;
 				}
 
@@ -739,8 +739,8 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 			wastype = 1;
 			if (context->next != LEFTBR)
 			{
-				context_error(context, par_type_void_with_nofun);
-				context->error_flag = 2;
+				parser_error(context, par_type_void_with_nofun);
+				context->was_error = 2;
 				return 0;
 			}
 		}
@@ -765,16 +765,16 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 						}
 						else
 						{
-							context_error(context, two_idents_for_1_declarer);
-							context->error_flag = 2;
+							parser_error(context, two_idents_for_1_declarer);
+							context->was_error = 2;
 							return 0;
 						}
 						func_add(context->sx, -REPRTAB_POS);
 					}
 					else
 					{
-						context_error(context, ident_in_declarator);
-						context->error_flag = 2;
+						parser_error(context, ident_in_declarator);
+						context->was_error = 2;
 						return 0;
 					}
 				}
@@ -783,20 +783,20 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 				scanner(context);
 				if (maybe_fun == 1)
 				{
-					context_error(context, aster_before_func);
-					context->error_flag = 2;
+					parser_error(context, aster_before_func);
+					context->was_error = 2;
 					return 0;
 				}
 				else if (maybe_fun == 2)
 				{
-					context_error(context, array_before_func);
-					context->error_flag = 2;
+					parser_error(context, array_before_func);
+					context->was_error = 2;
 					return 0;
 				}
 
 				old = context->func_def;
 				loc_modetab[locmd - 1] = func_declarator(context, 0, 2, context->type);
-				if (context->error_flag == 2)
+				if (context->was_error == 2)
 				{
 					return 0;
 				}
@@ -808,14 +808,14 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 			}
 			else if (func_d == 2 && ident > 0)
 			{
-				context_error(context, wait_declarator);
-				context->error_flag = 2;
+				parser_error(context, wait_declarator);
+				context->was_error = 2;
 				return 0;
 			}
 			else if (func_d == 1 && ident == 0)
 			{
-				context_error(context, wait_definition);
-				context->error_flag = 2;
+				parser_error(context, wait_definition);
+				context->was_error = 2;
 				return 0;
 			}
 
@@ -835,7 +835,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 		}
 		else
 		{
-			context_error(context, wrong_param_list);
+			parser_error(context, wrong_param_list);
 			context->buf_cur = context->next;
 			context->next = context->cur;
 			context->cur = RIGHTBR;
@@ -857,7 +857,6 @@ void ext_decl(analyzer *context)
 	get_char(context->lxr);
 	context->next = lex(context->lxr);
 
-	context->temp_tc = context->sx->tc;
 	do // top levext_declel описания переменных и функций до конца файла
 	{
 		int repeat = 1;
@@ -867,9 +866,9 @@ void ext_decl(analyzer *context)
 		scanner(context);
 
 		context->firstdecl = gettype(context);
-		if (context->error_flag == 3)
+		if (context->was_error == 3)
 		{
-			context->error_flag = 1;
+			context->was_error = 1;
 			continue;
 		}
 		if (context->wasstructdef && context->next == SEMICOLON) // struct point {float x, y;};
@@ -895,9 +894,9 @@ void ext_decl(analyzer *context)
 				context->type = context->firstdecl == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, context->firstdecl);
 			}
 			mustbe_complex(context, IDENT, after_type_must_be_ident);
-			if (context->error_flag == after_type_must_be_ident)
+			if (context->was_error == after_type_must_be_ident)
 			{
-				context->error_flag = 1;
+				context->was_error = 1;
 				break;
 			}
 
@@ -911,9 +910,9 @@ void ext_decl(analyzer *context)
 
 				// выкушает все параметры до ) включительно
 				context->type = func_declarator(context, first, 3, firsttype);
-				if (context->error_flag == 2)
+				if (context->was_error == 2)
 				{
-					context->error_flag = 1;
+					context->was_error = 1;
 					break;
 				}
 
@@ -933,9 +932,9 @@ void ext_decl(analyzer *context)
 				REPRTAB_POS = funrepr;
 
 				toidentab(context, (int) oldfuncnum, context->type);
-				if (context->error_flag == 5)
+				if (context->was_error == 5)
 				{
-					context->error_flag = 1;
+					context->was_error = 1;
 					break;
 				}
 
@@ -944,7 +943,7 @@ void ext_decl(analyzer *context)
 					scanner(context);
 					if (context->func_def == 2)
 					{
-						context_error(context, func_decl_req_params);
+						parser_error(context, func_decl_req_params);
 						break;
 					}
 
@@ -955,14 +954,14 @@ void ext_decl(analyzer *context)
 				{
 					if (context->func_def == 1)
 					{
-						context_error(context, function_has_no_body);
+						parser_error(context, function_has_no_body);
 						break;
 					}
 				}
 			}
 			else if (context->firstdecl == LVOID)
 			{
-				context_error(context, only_functions_may_have_type_VOID);
+				parser_error(context, only_functions_may_have_type_VOID);
 				break;
 			}
 
@@ -973,9 +972,9 @@ void ext_decl(analyzer *context)
 				decl_id(context, context->type);
 			}
 
-			if (context->error_flag == 4)
+			if (context->was_error == 4)
 			{
-				context->error_flag = 1;
+				context->was_error = 1;
 				break;
 			}
 
@@ -991,7 +990,7 @@ void ext_decl(analyzer *context)
 			}
 			else
 			{
-				context_error(context, def_must_end_with_semicomma);
+				parser_error(context, def_must_end_with_semicomma);
 				context->cur = SEMICOLON;
 				repeat = 0;
 			}

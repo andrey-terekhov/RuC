@@ -24,10 +24,24 @@
 extern "C" {
 #endif
 
-int scanner(analyzer *context);
+/**
+ *	Emit an error from parser
+ *
+ *	@param	context	Parser structure
+ *	@param	err		Error code
+ */
+void parser_error(analyzer *const context, const enum ERROR err);
+
+/**
+ *	Read tokens until one of the specified tokens
+ *
+ *	@param	context		Parser structure
+ *	@param	tokens		Set of the specified tokens
+ */
 void skip_until(analyzer *const context, const unsigned int tokens);
+
+int scanner(analyzer *context);
 int newdecl(syntax *const sx, const int type, const int element_type);
-void context_error(analyzer *const context, const int num);
 int evaluate_params(analyzer *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[]);
 int is_function(syntax *const sx, const int t);
 int is_array(syntax *const sx, const int t);
@@ -129,7 +143,7 @@ void ext_decl(analyzer *context);
  *		iteration-statement
  *		jump-statement
  */
-void parse_statement(analyzer *context);
+void parse_statement(analyzer *const context);
 
 typedef enum block_type
 { REGBLOCK = 1, THREAD = 2, SWITCH = -1, FUNCBODY = 0 } block_type;
@@ -149,6 +163,13 @@ typedef enum block_type
  *		statement
  */
 void parse_compound_statement(analyzer *const context, const block_type type);
+
+/// ParseTopLevelDecl - Parse one top-level declaration, return whatever the
+/// action tells us to.  This returns true if the EOF was encountered.
+///
+///   top-level-declaration:
+///           declaration
+void parse_top_level_declaration(analyzer *const context);
 
 #ifdef __cplusplus
 } /* extern "C" */
