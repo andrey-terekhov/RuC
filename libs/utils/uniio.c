@@ -32,8 +32,8 @@
 	#define MAX_LINK_SIZE 20
 #endif
 
-
 #define MAX_FORMAT_SIZE 128
+
 
 int in_func_file(universal_io *const io, const char *const format, va_list args)
 {

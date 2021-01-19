@@ -16,6 +16,7 @@
 
 #include "map.h"
 #include <stdlib.h>
+#include "utf8.h"
 
 
 const size_t MAP_HASH_MAX = 256;
@@ -30,7 +31,39 @@ struct map_hash
 };
 
 
-size_t map_get_hash(map *const as, const char *const key);
+size_t map_get_hash(map *const as, const char *const key)
+{
+	char32_t ch = utf8_convert(key);
+	if (!utf8_is_letter(ch))
+	{
+		return SIZE_MAX;
+	}
+
+	as->keys_next = as->keys_size;
+	if (map_add_key_symbol(as, ch))
+	{
+		return SIZE_MAX;
+	}
+
+	size_t hash = ch;
+	while (key[as->keys_next - as->keys_size] != '\0')
+	{
+		ch = utf8_convert(&key[as->keys_next - as->keys_size]);
+		if (!utf8_is_letter(ch) && !utf8_is_digit(ch))
+		{
+			return SIZE_MAX;
+		}
+
+		if (map_add_key_symbol(as, ch))
+		{
+			return SIZE_MAX;
+		}
+
+		hash += ch;
+	}
+
+	return hash % MAP_HASH_MAX;
+}
 
 size_t map_get_hash_by_io(map *const as, universal_io *const io, char32_t *const last);
 
