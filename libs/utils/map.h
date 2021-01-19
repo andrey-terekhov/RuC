@@ -140,6 +140,16 @@ int map_get_at(const map *const as, const size_t index);
 
 
 /**
+ *	Check that map is correct
+ *
+ *	@param	as				Map structure
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+int map_is_correct(const map *const as);
+
+
+/**
  *	Free allocated memory
  *
  *	@param	as				Map structure

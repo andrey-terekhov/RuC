@@ -19,6 +19,7 @@
 
 
 const size_t MAP_HASH_MAX = 256;
+const size_t MAP_KEY_SIZE = 8;
 
 
 struct map_hash
@@ -27,6 +28,15 @@ struct map_hash
 	size_t ref;
 	int value;
 };
+
+
+map map_broken()
+{
+	map as;
+	as.values = NULL;
+	as.keys = NULL;
+	return as;
+}
 
 
 size_t map_get_hash(const char *const key);
@@ -44,7 +54,30 @@ size_t map_get_hash(const char *const key);
 map map_create(const size_t values)
 {
 	map as;
-	
+
+	as.values_size = MAP_HASH_MAX;
+	as.values_alloc = as.values_size + values;
+
+	as.values = malloc(as.values_alloc * sizeof(map_hash));
+	if (as.values == NULL)
+	{
+		return map_broken();
+	}
+
+	for (size_t i = 0; i < as.values_size; i++)
+	{
+		as.values[i].next = SIZE_MAX;
+	}
+
+	as.keys_size = 0;
+	as.keys_alloc = as.values_alloc * MAP_KEY_SIZE;
+
+	as.keys = malloc(as.keys_alloc * sizeof(char));
+	if (as.keys == NULL)
+	{
+		free(as.values);
+		return map_broken();
+	}
 
 	return as;
 }
@@ -110,13 +143,24 @@ int map_get_at(const map *const as, const size_t index)
 }
 
 
+int map_is_correct(const map *const as)
+{
+	return as != NULL && as->values != NULL && as->keys != NULL;
+}
+
+
 int map_clear(map *const as)
 {
-	if (as == NULL || as->table == NULL || as->table->key == NULL)
+	if (!map_is_correct(as))
 	{
 		return -1;
 	}
 
-	free(as->table->key);
+	free(as->values);
+	as->values = NULL;
+
+	free(as->keys);
+	as->keys = NULL;
+
 	return 0;
 }
