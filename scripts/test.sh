@@ -26,7 +26,7 @@ init()
 				echo -e "Description:"
 				echo -e "\tThis script tests all files from \"$dir_test\" directory."
 				echo -e "\tFolder \"$dir_error\" should contain tests with expected error."
-				echo -e "\tExecutable tests should be in \"$exec_dir\" directory."
+				echo -e "\tExecutable tests should be in \"$dir_exec\" directory."
 				echo -e "\tTo ignore invalid tests output, use \"*/$subdir_warning/*\" subdirectory."
 				echo -e "\tFor tests with expected runtime error, use \"*/$subdir_error/*\" subdirectory."
 				echo -e "\tFor multi-file tests, use \"*/$subdir_include/*\" subdirectory."
@@ -223,7 +223,7 @@ message_failure()
 
 execution()
 {
-	if [[ $path == $exec_dir/* ]] ; then
+	if [[ $path == $dir_exec/* ]] ; then
 		action="execution"
 		run $interpreter $interpreter_debug $vm_exec
 
