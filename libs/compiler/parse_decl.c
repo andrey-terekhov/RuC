@@ -14,7 +14,7 @@
  *	limitations under the License.
  */
 
-#include "extdecl.h"
+#include "parser.h"
 
 
 void inition(analyzer *context, int decl_type)
@@ -619,7 +619,7 @@ void function_definition(analyzer *context)
 	pred = (int)context->sx->tc++;
 	REPRTAB_POS = oldrepr;
 
-	block(context, 0);
+	parse_compound_statement(context, 0);
 
 	// if (ftype == LVOID && context->sx->tree[context->sx->tc - 1] != TReturnvoid)
 	// {
@@ -1000,10 +1000,3 @@ void ext_decl(analyzer *context)
 	} while (context->next != LEOF);
 	totree(context, TEnd);
 }
-/*
- printf(
- context->buf_cur = context->next;
- context->next = context->cur;
- context->cur = BEGIN;
- context->buf_flag++;
- */

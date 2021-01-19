@@ -319,7 +319,7 @@ void get_error(const int num, char *const msg, va_list args)
 		case float_in_condition:	// need_test
 			sprintf(msg, "условие должно иметь тип ЦЕЛ или ЛИТЕРА");
 			break;
-		case case_or_default_not_in_switch: // need_test
+		case case_not_in_switch: // need_test
 			sprintf(msg, "метка СЛУЧАЙ или УМОЛЧАНИЕ не в операторе ВЫБОР");
 			break;
 		case break_not_in_loop_or_switch: // need_test

@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2021 Andrey Terekhov, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 int scanner(analyzer *context);
+void skip_until(analyzer *const context, const unsigned int tokens);
 int newdecl(syntax *const sx, const int type, const int element_type);
 void context_error(analyzer *const context, const int num);
 int evaluate_params(analyzer *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[]);
@@ -103,7 +104,6 @@ int arrdef(analyzer *context, int t);
 
 void decl_id(analyzer *context, int decl_type);
 
-void statement(analyzer *context);
 
 int idorpnt(analyzer *context, int e, int t);
 
@@ -111,16 +111,44 @@ int struct_decl_list(analyzer *context);
 
 int gettype(analyzer *context);
 
-/** Debug from here */
-void block(analyzer *context, int b);
-
 void function_definition(analyzer *context);
 
 int func_declarator(analyzer *context, int level, int func_d, int firstdecl);
 
-
-
 void ext_decl(analyzer *context);
+
+
+/**
+ *	Parse statement [C99 6.8]
+ *
+ *	statement:
+ *		labeled-statement
+ *		compound-statement
+ *		expression-statement
+ *		selection-statement
+ *		iteration-statement
+ *		jump-statement
+ */
+void parse_statement(analyzer *context);
+
+typedef enum block_type
+{ REGBLOCK = 1, THREAD = 2, SWITCH = -1, FUNCBODY = 0 } block_type;
+
+/**
+ *	Parse '{}' block [C99 6.8.2]
+ *
+ *	compound-statement:
+ *  	{ block-item-list[opt] }
+ *
+ *	block-item-list:
+ *		block-item
+ *		block-item-list block-item
+ *
+ *	block-item:
+ *		declaration
+ *		statement
+ */
+void parse_compound_statement(analyzer *const context, const block_type type);
 
 #ifdef __cplusplus
 } /* extern "C" */

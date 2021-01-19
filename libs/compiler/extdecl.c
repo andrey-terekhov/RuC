@@ -14,11 +14,114 @@
  *	limitations under the License.
  */
 
-#include "extdecl.h"
+#include "parser.h"
 #include "errors.h"
 #include "defs.h"
 #include "lexer.h"
 #include <string.h>
+
+int has_token_set(const unsigned int left, const unsigned int right)
+{
+	return (left & right) != 0;
+}
+
+/**
+ *	Read tokens until one of the specified tokens
+ *
+ *	@param	context		Parser structure
+ *	@param	tokens		Specified tokens
+ */
+void skip_until(analyzer *const context, const unsigned int tokens)
+{
+	while (1)
+	{
+		switch (context->next)
+		{
+			case LEOF:
+				return;
+
+			case LEFTBR:
+				scanner(context);
+				skip_until(context, RIGHTBR);
+				break;
+
+			case RIGHTBR:
+				if (has_token_set(tokens, RIGHTBR))
+				{
+					return;
+				}
+				else
+				{
+					scanner(context);
+					break;
+				}
+
+			case LEFTSQBR:
+				scanner(context);
+				skip_until(context, RIGHTSQBR);
+				break;
+
+			case RIGHTSQBR:
+				if (has_token_set(tokens, RIGHTSQBR))
+				{
+					return;
+				}
+				else
+				{
+					scanner(context);
+					break;
+				}
+
+			case BEGIN:
+				scanner(context);
+				skip_until(context, END);
+				break;
+
+			case END:
+				if (has_token_set(tokens, END))
+				{
+					return;
+				}
+				else
+				{
+					scanner(context);
+					break;
+				}
+
+			case QUEST:
+				scanner(context);
+				skip_until(context, COLON);
+				break;
+
+			case COLON:
+				if (has_token_set(tokens, COLON))
+				{
+					return;
+				}
+				else
+				{
+					scanner(context);
+					break;
+				}
+
+			case SEMICOLON:
+				if (has_token_set(tokens, SEMICOLON))
+				{
+					return;
+				}
+				else
+				{
+					scanner(context);
+					break;
+				}
+
+			default:
+				scanner(context);
+				break;
+		}
+	}
+}
+
 
 int scanner(analyzer *context)
 {
@@ -271,4 +374,5 @@ void applid(analyzer *context)
 		context_error(context, ident_is_not_declared);
 		context->error_flag = 5;
 	}
+
 }

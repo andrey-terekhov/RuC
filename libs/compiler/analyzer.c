@@ -15,7 +15,7 @@
  */
 
 #include "analyzer.h"
-#include "extdecl.h"
+#include "parser.h"
 #include "keywords.h"
 #include "lexer.h"
 #include "uniio.h"
