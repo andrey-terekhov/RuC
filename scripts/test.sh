@@ -415,4 +415,4 @@ main()
 	exit 0
 }
 
-main $@
+main $@ 2>/dev/null
