@@ -15,23 +15,21 @@
  */
 
 #include "map.h"
-#include <limits.h>
-#include <stdint.h>
 #include <stdlib.h>
 
 
-const uint8_t MAP_HASH_MAX = UCHAR_MAX;
+const size_t MAP_HASH_MAX = 256;
 
 
 struct map_hash
 {
 	size_t next;
-	const char *key;
+	size_t ref;
 	int value;
 };
 
 
-uint8_t map_get_hash(const char *const key);
+size_t map_get_hash(const char *const key);
 
 
 /*
@@ -46,7 +44,7 @@ uint8_t map_get_hash(const char *const key);
 map map_create(const size_t values)
 {
 	map as;
-	as.table->key = (char *) malloc(10 * sizeof(char));
+	
 
 	return as;
 }
@@ -62,6 +60,9 @@ size_t map_add(map *const as, const char *const key, const int value)
 	return 0;
 }
 
+size_t map_add_by_io(map *const as, universal_io *const io, const int value);
+
+
 size_t map_set(map *const as, const char *const key, const int value)
 {
 	if (as == NULL || key == NULL)
@@ -71,6 +72,8 @@ size_t map_set(map *const as, const char *const key, const int value)
 
 	return 0;
 }
+
+size_t map_set_by_io(map *const as, universal_io *const io, const int value);
 
 int map_set_at(map *const as, const size_t index, const int value)
 {
@@ -93,6 +96,8 @@ int map_get(const map *const as, const char *const key)
 
 	return 0;
 }
+
+int map_get_by_io(const map *const as, universal_io *const io);
 
 int map_get_at(const map *const as, const size_t index)
 {

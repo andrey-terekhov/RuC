@@ -16,7 +16,9 @@
 
 #pragma once
 
+#include <limits.h>
 #include <stddef.h>
+#include "uniio.h"
 
 
 #ifdef __cplusplus
@@ -29,9 +31,13 @@ typedef struct map_hash map_hash;
 /** Associative array (Dictionary) */
 typedef struct map
 {
-	map_hash *table;			/**< Key-values hash table */
-	size_t size;				/**< Size of table */
-	size_t alloc;				/**< Allocated size of table */
+	char *keys;					/**< Keys storage */
+	size_t keys_size;			/**< Size of keys storage */
+	size_t keys_alloc;			/**< Allocated size of keys storage */
+
+	map_hash *values;			/**< Values storage */
+	size_t values_size;			/**< Size of values storage */
+	size_t values_alloc;		/**< Allocated size of values storage */
 } map;
 
 
@@ -57,6 +63,18 @@ map map_create(const size_t values);
 size_t map_add(map *const as, const char *const key, const int value);
 
 /**
+ *	Add new pair by reading key from io
+ *
+ *	@param	as				Map structure
+ *	@param	io				Universal io structure
+ *	@param	value			Value
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+size_t map_add_by_io(map *const as, universal_io *const io, const int value);
+
+
+/**
  *	Set new value by existing key
  *
  *	@param	as				Map structure
@@ -66,6 +84,17 @@ size_t map_add(map *const as, const char *const key, const int value);
  *	@return	Index of record, @c SIZE_MAX on failure
  */
 size_t map_set(map *const as, const char *const key, const int value);
+
+/**
+ *	Set new value by reading existing key from io
+ *
+ *	@param	as				Map structure
+ *	@param	io				Universal io structure
+ *	@param	value			New value
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+size_t map_set_by_io(map *const as, universal_io *const io, const int value);
 
 /**
  *	Set new value by index
@@ -88,6 +117,16 @@ int map_set_at(map *const as, const size_t index, const int value);
  *	@return	Value, @c INT_MAX on failure
  */
 int map_get(const map *const as, const char *const key);
+
+/**
+ *	Get value by reading key from io
+ *
+ *	@param	as				Map structure
+ *	@param	io				Universal io structure
+ *
+ *	@return	Value, @c INT_MAX on failure
+ */
+int map_get_by_io(const map *const as, universal_io *const io);
 
 /**
  *	Get value by index
