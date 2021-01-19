@@ -31,18 +31,15 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx, lexer
 
 	context.sp = 0;
 	context.sopnd = -1;
-	context.curid = 2;
-	context.lg = -1;
-	context.displ = -3;
-	context.maxdispl = 3;
 	context.blockflag = 1;
-	context.prdf = -1;
 	context.leftansttype = -1;
 	context.buf_flag = 0;
 	context.error_flag = 0;
 	context.line = 1;
 	context.buf_cur = 0;
 	context.temp_tc = 0;
+	
+	context.anstdispl = 0;
 
 	return context;
 }
@@ -108,7 +105,8 @@ void init_modetab(analyzer *context)
 	context->sx->modetab[16] = LVOIDASTER;
 	context->sx->modetab[17] = 1;
 	context->sx->modetab[18] = LVOIDASTER;
-	context->sx->modetab[19] = context->sx->startmode = 14;
+	context->sx->modetab[19] = 14;
+	context->sx->startmode = 14;
 	context->sx->md = 19;
 	context->sx->keywordsnum = 0;
 	context->line = 1;

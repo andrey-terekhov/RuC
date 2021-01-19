@@ -127,11 +127,6 @@ void finalop(syntax *const sx)
 	}
 }
 
-int sz_of(syntax *const sx, int type)
-{
-	return type == LFLOAT ? 2 : (type > 0 && mode_get(sx, type) == MSTRUCT) ? mode_get(sx, type + 1) : 1;
-}
-
 int Expr_gen(syntax *const sx, int incond)
 {
 	int flagprim = 1;
@@ -145,13 +140,13 @@ int Expr_gen(syntax *const sx, int incond)
 		{
 			case TIdent:
 			{
-				sx->anstdispl = sx->tree[sx->tc++];
+				sx->tc++;
 				break;
 			}
 			case TIdenttoaddr:
 			{
 				tocode(sx, LA);
-				tocode(sx, sx->anstdispl = sx->tree[sx->tc++]);
+				tocode(sx, sx->tree[sx->tc++]);
 				break;
 			}
 			case TIdenttoval:
@@ -257,7 +252,7 @@ int Expr_gen(syntax *const sx, int incond)
 				eltype = sx->tree[sx->tc++];
 				Expr_gen(sx, 0);
 				tocode(sx, SLICE);
-				tocode(sx, sz_of(sx, eltype));
+				tocode(sx, size_of(sx, eltype));
 				if (eltype > 0 && mode_get(sx, eltype) == MARRAY)
 				{
 					tocode(sx, LAT);
@@ -664,7 +659,7 @@ void Declid_gen(syntax *const sx)
 	// all == 0 нет инициализатора,
 	// all == 1 есть инициализатор
 	// all == 2 есть инициализатор только из строк
-	element_len = sz_of(sx, telem);
+	element_len = size_of(sx, telem);
 
 	if (N == 0) // обычная переменная int a; или struct point p;
 	{
@@ -752,7 +747,7 @@ void compstmt_gen(syntax *const sx, ad *const context)
 }
 
 /** Генерация кодов */
-int codegen(universal_io *const io, syntax *const sx)
+int codegen(syntax *const sx)
 {
 	ad context;
 
@@ -824,15 +819,9 @@ int codegen(universal_io *const io, syntax *const sx)
 			}
 		}
 	}
-
-	if (sx->wasmain == 0)
-	{
-		error(io, no_main_in_program);
-		return -1;
-	}
 	tocode(sx, CALL1);
 	tocode(sx, CALL2);
-	tocode(sx, sx->identab[sx->wasmain + 3]);
+	tocode(sx, sx->identab[sx->main_ref + 3]);
 	tocode(sx, STOP);
 
 	return 0;
@@ -843,8 +832,8 @@ void output_export(universal_io *const io, const syntax *const sx)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%zi %i %i %zi %i %i %i\n", mem_get_size(sx), sx->funcnum, sx->id,
-				   sx->rp, sx->md, sx->maxdisplg, sx->wasmain);
+	uni_printf(io, "%zi %zi %zi %zi %zi %i %zi\n", mem_get_size(sx), sx->funcnum, sx->id,
+				   sx->rp, sx->md, sx->maxdisplg, sx->main_ref);
 
 	for (size_t i = 0; i < mem_get_size(sx); i++)
 	{
@@ -852,13 +841,13 @@ void output_export(universal_io *const io, const syntax *const sx)
 	}
 	uni_printf(io, "\n");
 
-	for (int i = 0; i < sx->funcnum; i++)
+	for (size_t i = 0; i < sx->funcnum; i++)
 	{
-		uni_printf(io, "%i ", func_get(sx, i));
+		uni_printf(io, "%zi ", func_get(sx, i));
 	}
 	uni_printf(io, "\n");
 
-	for (int i = 0; i < sx->id; i++)
+	for (size_t i = 0; i < sx->id; i++)
 	{
 		uni_printf(io, "%i ", sx->identab[i]);
 	}
@@ -869,7 +858,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 		uni_printf(io, "%i ", sx->reprtab[i]);
 	}
 
-	for (int i = 0; i < sx->md; i++)
+	for (size_t i = 0; i < sx->md; i++)
 	{
 		uni_printf(io, "%i ", mode_get(sx, i));
 	}
@@ -893,7 +882,7 @@ int encode_to_vm(universal_io *const io, syntax *const sx)
 		return -1;
 	}
 
-	int ret = codegen(io, sx);
+	int ret = codegen(sx);
 	if (!ret)
 	{
 		output_export(io, sx);

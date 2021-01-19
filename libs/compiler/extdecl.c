@@ -82,7 +82,6 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 		case ident_is_not_declared:
 		case repeated_label:
 		case no_field:
-		case predef_but_notdef:
 			error(io, num, REPRTAB, REPRTAB_POS);
 			break;
 		case label_not_declared:
@@ -256,127 +255,26 @@ void totreef(analyzer *context, int op)
 	}
 }
 
-int getstatic(analyzer *context, int type)
+int toidentab(analyzer *context, int f, int type)
 {
-	int olddispl = context->displ;
-	context->displ += context->lg * szof(context, type); // lg - смещение от l (+1) или от g (-1)
-	if (context->lg > 0)
+	const size_t ret = ident_add(context->sx, REPRTAB_POS, f, type, context->func_def);
+	context->lastid = 0;
+
+	if (ret == SIZE_MAX)
 	{
-		context->maxdispl = (context->displ > context->maxdispl) ? context->displ : context->maxdispl;
+		context_error(context, redefinition_of_main); //--
+		context->error_flag = 5;
+	}
+	else if (ret == SIZE_MAX - 1)
+	{
+		context_error(context, repeated_decl);
+		context->error_flag = 5;
 	}
 	else
 	{
-		context->sx->maxdisplg = -context->displ;
+		context->lastid = (int)ret;
 	}
-	return olddispl;
-}
-
-int toidentab(analyzer *context, int f, int type)
-{
-	// f =  0, если не ф-ция, f=1, если метка, f=funcnum,
-	// если описание ф-ции,
-	// f = -1, если ф-ция-параметр, f>=1000, если это описание типа
-	// f = -2, #define
-
-	// printf("\n f= %i context->repr %i rtab[context->repr] %i
-	// rtab[context->repr+1] %i rtab[context->repr+2] %i\n", f,
-	// context->repr, context->sx->reprtab[context->repr],
-	// context->sx->reprtab[context->repr+1], context->sx->reprtab[context->repr+2]);
-	int pred;
-
-
-	context->lastid = context->sx->id;
-	if (REPRTAB[REPRTAB_POS + 1] == 0) // это может быть только MAIN
-	{
-		if (context->sx->wasmain)
-		{
-			context_error(context, more_than_1_main); //--
-			context->error_flag = 5;
-			return 0; // 1
-		}
-		context->sx->wasmain = context->sx->id;
-	}
-
-	// ссылка на описание с таким же
-	// представлением в предыдущем блоке
-	pred = context->sx->identab[context->sx->id] = REPRTAB[REPRTAB_POS + 1];
-	if (pred)
-	{
-		// pred == 0 только для main, эту ссылку портить нельзя
-		// ссылка на текущее описание с этим представлением
-		// (это в reprtab)
-		REPRTAB[REPRTAB_POS + 1] = context->sx->id;
-	}
-
-	if (f != 1 && pred >= context->curid) // один  и тот же идент м.б. переменной и меткой
-	{
-		if (context->func_def == 3 ? 1 : context->sx->identab[pred + 1] > 0 ? 1 : context->func_def == 1 ? 0 : 1)
-		{
-			context_error(context, repeated_decl);
-			context->error_flag = 5;
-			return 0; // 1
-					  // только определение функции может иметь 2
-					  // описания, т.е. иметь предописание
-		}
-	}
-
-	context->sx->identab[context->sx->id + 1] = REPRTAB_POS; // ссылка на представление
-	if (f == -2)									 // #define
-	{
-		context->sx->identab[context->sx->id + 2] = 1;
-		context->sx->identab[context->sx->id + 3] = type; // это целое число, определенное по #define
-	}
-	else // дальше тип или ссылка на modetab (для функций и структур)
-	{
-		context->sx->identab[context->sx->id + 2] = type; // тип -1 int, -2 char, -3 float, -4 long, -5 double,
-												  // если тип > 0, то это ссылка на modetab
-		if (f == 1)
-		{
-			context->sx->identab[context->sx->id + 2] = 0; // 0, если первым встретился goto, когда встретим метку,
-												   // поставим 1
-			context->sx->identab[context->sx->id + 3] = 0; // при генерации кода когда встретим метку, поставим pc
-		}
-		else if (f >= 1000)
-		{
-			context->sx->identab[context->sx->id + 3] = f; // это описание типа, если f > 1000, то f-1000 - это номер
-												   // иниц проц
-		}
-		else if (f)
-		{
-			if (f < 0)
-			{
-				context->sx->identab[context->sx->id + 3] = -(context->displ++);
-				context->maxdispl = context->displ;
-			}
-			else // identtab[context->lastid+3] - номер функции, если < 0, то
-				 // это функция-параметр
-			{
-				context->sx->identab[context->sx->id + 3] = f;
-				if (context->func_def == 2)
-				{
-					context->sx->identab[context->lastid + 1] *= -1; //это предописание
-					context->predef[++context->prdf] = REPRTAB_POS;
-				}
-				else
-				{
-					int i;
-
-					for (i = 0; i <= context->prdf; i++)
-					{
-						if (context->predef[i] == REPRTAB_POS)
-						{
-							context->predef[i] = 0;
-						}
-					}
-				}
-			}
-		}
-		else
-		{
-			context->sx->identab[context->sx->id + 3] = getstatic(context, type);
-		}
-	}
-	context->sx->id += 4;
+	
 	return context->lastid;
 }
 
@@ -449,7 +347,7 @@ void toval(analyzer *context)
 			{
 				context->sx->tc -= 2;
 				totree(context, COPY0ST);
-				totree(context, context->sx->anstdispl);
+				totree(context, context->anstdispl);
 			}
 			else // тут может быть только ADDR
 			{
@@ -740,8 +638,10 @@ void primaryexpr(analyzer *context)
 		}
 
 		totree(context, TIdent);
-		totree(context, context->sx->anstdispl = context->sx->identab[context->lastid + 3]);
-		context->stackoperands[++context->sopnd] = context->ansttype = context->sx->identab[context->lastid + 2];
+		context->anstdispl = ident_get_displ(context->sx, context->lastid);
+		totree(context, context->anstdispl);
+		context->ansttype = ident_get_mode(context->sx, context->lastid);
+		context->stackoperands[++context->sopnd] = context->ansttype;
 		context->anst = IDENT;
 	}
 	else if (context->cur == LEFTBR)
@@ -1131,7 +1031,7 @@ void primaryexpr(analyzer *context)
 						context->error_flag = 4;
 						return; // 1
 					}
-					if (context->sx->identab[context->lastid + 2] != 15 ||
+					if (ident_get_mode(context->sx, context->lastid) != 15 ||
 						context->error_flag == 5) // 15 - это аргумент типа void* (void*)
 					{
 						context_error(context, wrong_arg_in_create);
@@ -1140,7 +1040,7 @@ void primaryexpr(analyzer *context)
 					}
 
 					context->stackoperands[context->sopnd] = context->ansttype = LINT;
-					dn = context->sx->identab[context->lastid + 3];
+					dn = ident_get_displ(context->sx, context->lastid);
 					if (dn < 0)
 					{
 						totree(context, TIdenttoval);
@@ -1362,7 +1262,7 @@ void selectend(analyzer *context)
 {
 	while (context->next == DOT)
 	{
-		context->sx->anstdispl += find_field(context, context->ansttype);
+		context->anstdispl += find_field(context, context->ansttype);
 		if (context->error_flag == 6)
 		{
 			context->error_flag = 5;
@@ -1370,7 +1270,7 @@ void selectend(analyzer *context)
 		}
 	}
 
-	totree(context, context->sx->anstdispl);
+	totree(context, context->anstdispl);
 	if (is_array(context->sx, context->ansttype) || is_pointer(context->sx, context->ansttype))
 	{
 		totree(context, TAddrtoval);
@@ -1432,13 +1332,13 @@ void postexpr(analyzer *context)
 					context->error_flag = 4;
 					return; // 1
 				}
-				if (context->sx->identab[context->lastid + 2] != mdj)
+				if (ident_get_mode(context->sx, context->lastid) != mdj)
 				{
 					context_error(context, diff_formal_param_type_and_actual);
 					context->error_flag = 4;
 					return; // 1
 				}
-				dn = context->sx->identab[context->lastid + 3];
+				dn = ident_get_displ(context->sx, context->lastid);
 				if (dn < 0)
 				{
 					totree(context, TIdenttoval);
@@ -1541,7 +1441,7 @@ void postexpr(analyzer *context)
 			if (context->anst == IDENT) // a[i]
 			{
 				context->sx->tree[context->sx->tc - 2] = TSliceident;
-				context->sx->tree[context->sx->tc - 1] = context->sx->anstdispl;
+				context->sx->tree[context->sx->tc - 1] = context->anstdispl;
 			}
 			else // a[i][j]
 			{
@@ -1591,7 +1491,7 @@ void postexpr(analyzer *context)
 									  // теперь уже всегда на верхушке стека
 
 			context->ansttype = mode_get(context->sx, context->ansttype + 1);
-			context->sx->anstdispl = find_field(context, context->ansttype);
+			context->anstdispl = find_field(context, context->ansttype);
 			if (context->error_flag == 6)
 			{
 				context->error_flag = 4;
@@ -1616,10 +1516,10 @@ void postexpr(analyzer *context)
 			if (context->anst == VAL) // структура - значение функции
 			{
 				int len1 = szof(context, context->ansttype);
-				context->sx->anstdispl = 0;
+				context->anstdispl = 0;
 				while (context->next == DOT)
 				{
-					context->sx->anstdispl += find_field(context, context->ansttype);
+					context->anstdispl += find_field(context, context->ansttype);
 					if (context->error_flag == 6)
 					{
 						context->error_flag = 4;
@@ -1627,28 +1527,28 @@ void postexpr(analyzer *context)
 					}
 				}
 				totree(context, COPYST);
-				totree(context, context->sx->anstdispl);
+				totree(context, context->anstdispl);
 				totree(context, szof(context, context->ansttype));
 				totree(context, len1);
 			}
 			else if (context->anst == IDENT)
 			{
-				int globid = context->sx->anstdispl < 0 ? -1 : 1;
+				int globid = context->anstdispl < 0 ? -1 : 1;
 				while (context->next == DOT)
 				{
-					context->sx->anstdispl += globid * find_field(context, context->ansttype);
+					context->anstdispl += globid * find_field(context, context->ansttype);
 					if (context->error_flag == 6)
 					{
 						context->error_flag = 4;
 						return; // 1
 					}
 				}
-				context->sx->tree[context->sx->tc - 1] = context->sx->anstdispl;
+				context->sx->tree[context->sx->tc - 1] = context->anstdispl;
 			}
 			else // ADDR
 			{
 				totree(context, TSelect);
-				context->sx->anstdispl = 0;
+				context->anstdispl = 0;
 				selectend(context);
 				if (context->error_flag == 5)
 				{
@@ -1684,7 +1584,7 @@ void postexpr(analyzer *context)
 		totreef(context, op);
 		if (context->anst == IDENT)
 		{
-			totree(context, context->sx->identab[lid + 3]);
+			totree(context, ident_get_displ(context->sx, lid));
 		}
 		context->anst = VAL;
 	}
@@ -1717,7 +1617,7 @@ void unarexpr(analyzer *context)
 			totreef(context, op);
 			if (context->anst == IDENT)
 			{
-				totree(context, context->sx->identab[context->lastid + 3]);
+				totree(context, ident_get_displ(context->sx, context->lastid));
 			}
 			context->anst = VAL;
 		}
@@ -2201,7 +2101,7 @@ void exprassn(analyzer *context, int level)
 	}
 
 	leftanst = context->anst;
-	leftanstdispl = context->sx->anstdispl;
+	leftanstdispl = context->anstdispl;
 	context->leftansttype = context->ansttype;
 	if (opassn(context))
 	{
@@ -2272,11 +2172,11 @@ void exprassn(analyzer *context, int level)
 			}
 			if (context->anst == IDENT)
 			{
-				totree(context, context->sx->anstdispl); // displright
+				totree(context, context->anstdispl); // displright
 			}
 			totree(context, mode_get(context->sx, ltype + 1)); // длина
 			context->anst = leftanst;
-			context->sx->anstdispl = leftanstdispl;
+			context->anstdispl = leftanstdispl;
 		}
 		else // оба операнда базового типа или указатели
 		{
@@ -2315,11 +2215,13 @@ void exprassn(analyzer *context, int level)
 			totreef(context, opp);
 			if (leftanst == IDENT)
 			{
-				totree(context, context->sx->anstdispl = leftanstdispl);
+				context->anstdispl = leftanstdispl;
+				totree(context, leftanstdispl);
 			}
 			context->anst = VAL;
 		}
-		context->stackoperands[context->sopnd] = context->ansttype = ltype; // тип результата - на стек
+		context->ansttype = ltype;
+		context->stackoperands[context->sopnd] = ltype; // тип результата - на стек
 	}
 	else
 	{
@@ -2556,8 +2458,9 @@ void decl_id(analyzer *context, int decl_type)
 	{
 		totree(context, TDeclarr);
 		adN = context->sx->tc++;
-		decl_type = context->sx->identab[oldid + 2] =
-			arrdef(context, decl_type); // Меняем тип (увеличиваем размерность массива)
+		// Меняем тип (увеличиваем размерность массива)
+		decl_type = arrdef(context, decl_type);
+		ident_set_mode(context->sx, oldid, decl_type);
 		context->sx->tree[adN] = context->arrdim;
 		if (context->error_flag == 5)
 		{
@@ -2572,14 +2475,14 @@ void decl_id(analyzer *context, int decl_type)
 		}
 	}
 	totree(context, TDeclid);
-	totree(context, context->sx->identab[oldid + 3]);												// displ
+	totree(context, ident_get_displ(context->sx, oldid));												// displ
 	totree(context, elem_type);																		// elem_type
 	totree(context, context->arrdim);																// N
 	size_t all = context->sx->tc++; // all - место в дереве, где будет общее количество выражений в инициализации,
 									// для массивов - только признак (1) наличия инициализации
 	context->sx->tree[all] = 0;
 	context->sx->tree[context->sx->tc++] = is_pointer(context->sx, decl_type) ? 0 : context->was_struct_with_arr; // proc
-	totree(context, context->usual);																  // context->usual
+	totree(context, context->usual);																	// context->usual
 	totree(context, 0); // массив не в структуре
 
 	if (context->next == ASS)
@@ -2697,7 +2600,7 @@ void statement(analyzer *context)
 		}
 		else
 		{
-			context->sx->identab[id + 2] = 1;
+			ident_set_mode(context->sx, id, 1);
 
 			scanner(context);
 			statement(context);
@@ -3410,9 +3313,9 @@ int gettype(analyzer *context)
 					return 0; // 1
 				}
 				lid = context->lastid;
-				context->sx->identab[lid + 2] = struct_decl_list(context);
-				context->sx->identab[lid + 3] = 1000 + context->was_struct_with_arr;
-				return context->sx->identab[lid + 2];
+				ident_set_mode(context->sx, lid, struct_decl_list(context));
+				ident_set_displ(context->sx, lid, 1000 + context->was_struct_with_arr);
+				return ident_get_mode(context->sx, lid);
 			}
 			else // struct key это применение типа
 			{
@@ -3422,8 +3325,8 @@ int gettype(analyzer *context)
 					context->error_flag = 3;
 					return 0; // 1
 				}
-				context->was_struct_with_arr = context->sx->identab[l + 3] - 1000;
-				return (context->sx->identab[l + 2]);
+				context->was_struct_with_arr = ident_get_displ(context->sx, l) - 1000;
+				return ident_get_mode(context->sx, l);
 			}
 		}
 
@@ -3441,15 +3344,15 @@ int gettype(analyzer *context)
 			return 0; // 1
 		}
 
-		if (context->sx->identab[context->lastid + 3] < 1000)
+		if (ident_get_displ(context->sx, context->lastid) < 1000)
 		{
 			context_error(context, ident_not_type);
 			context->error_flag = 3;
 			return 0; // 1
 		}
 
-		context->was_struct_with_arr = context->sx->identab[context->lastid + 3] - 1000;
-		return context->sx->identab[context->lastid + 2];
+		context->was_struct_with_arr = ident_get_displ(context->sx, context->lastid) - 1000;
+		return ident_get_mode(context->sx, context->lastid);
 	}
 
 	context_error(context, not_decl);
@@ -3467,17 +3370,15 @@ void block(analyzer *context, int b)
 
 	int oldinswitch = context->inswitch;
 	int notended = 1;
-	int i;
-	int olddispl = 0; // warning C4701: potentially uninitialized local variable used
-	int oldlg = context->lg;
+	int olddispl = 0;
+	int oldlg = 0;
 	int firstdecl;
 
 	context->inswitch = b < 0;
 	totree(context, TBegin);
 	if (b)
 	{
-		olddispl = context->displ;
-		context->curid = context->sx->id;
+		scope_block_enter(context->sx, &olddispl, &oldlg);
 	}
 	context->blockflag = 0;
 
@@ -3552,57 +3453,49 @@ void block(analyzer *context, int b)
 
 	if (b)
 	{
-		for (i = context->sx->id - 4; i >= context->curid; i -= 4)
-		{
-			REPRTAB[context->sx->identab[i + 1] + 1] = context->sx->identab[i];
-		}
-		context->displ = olddispl;
+		scope_block_exit(context->sx, olddispl, oldlg);
 	}
 	context->inswitch = oldinswitch;
-	context->lg = oldlg;
 	totree(context, TEnd);
 }
 
 void function_definition(analyzer *context)
 {
-	int fn = context->sx->identab[context->lastid + 3];
-	int i;
+	int fn = ident_get_displ(context->sx, context->lastid);
 	int pred;
 	int oldrepr = REPRTAB_POS;
 	int ftype;
 	int n;
 	int fid = context->lastid;
-	int olddispl = context->displ;
 
 	context->pgotost = 0;
-	context->functype = context->sx->identab[context->lastid + 2];
+	context->functype = ident_get_mode(context->sx, context->lastid);
 	ftype = mode_get(context->sx, context->functype + 1);
 	n = mode_get(context->sx, context->functype + 2);
 	context->wasret = 0;
-	context->displ = 3;
-	context->maxdispl = 3;
-	context->lg = 1;
+	
 	if ((pred = context->sx->identab[context->lastid]) > 1) // был прототип
 	{
-		if (context->functype != context->sx->identab[pred + 2])
+		if (context->functype != ident_get_mode(context->sx, pred))
 		{
 			context_error(context, decl_and_def_have_diff_type);
 			return; // 1
 		}
-		context->sx->identab[pred + 3] = fn;
+		ident_set_displ(context->sx, pred, fn);
 	}
-	context->curid = context->sx->id;
-	for (i = 0; i < n; i++)
+	
+	const int old_displ = scope_func_enter(context->sx);
+	for (int i = 0; i < n; i++)
 	{
 		context->type = mode_get(context->sx, context->functype + i + 3);
-		int temp = func_get(context->sx, fn + i + 1);
-		if (temp == INT_MAX)
+		size_t temp = func_get(context->sx, fn + i + 1);
+		if (temp == SIZE_MAX)
 		{
 			context->error_flag = 1;
 			return;
 		}
 
-		REPRTAB_POS = temp;
+		REPRTAB_POS = (int)temp;
 		if (REPRTAB_POS > 0)
 		{
 			toidentab(context, 0, context->type);
@@ -3638,12 +3531,10 @@ void function_definition(analyzer *context)
 		context->error_flag = 1;
 		return; // 1
 	}
-	for (i = context->sx->id - 4; i >= context->curid; i -= 4)
-	{
-		REPRTAB[context->sx->identab[i + 1] + 1] = context->sx->identab[i];
-	}
+	
+	scope_func_exit(context->sx, pred, old_displ);
 
-	for (i = 0; i < context->pgotost - 1; i += 2)
+	for (int i = 0; i < context->pgotost - 1; i += 2)
 	{
 		REPRTAB_POS = context->sx->identab[context->gotost[i] + 1];
 		context->sx->hash = context->gotost[i + 1];
@@ -3658,10 +3549,6 @@ void function_definition(analyzer *context)
 			return; // 1
 		}
 	}
-	context->curid = 2; // все функции описываются на одном уровне
-	context->sx->tree[pred] = context->maxdispl; // + 1;?
-	context->lg = -1;
-	context->displ = olddispl;
 }
 
 int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
@@ -3868,7 +3755,6 @@ void ext_decl(analyzer *context)
 	get_char(context->lxr);
 	context->next = lex(context->lxr);
 	
-	int i;
 	context->temp_tc = context->sx->tc;
 	do // top levext_declel описания переменных и функций до конца файла
 	{
@@ -3915,7 +3801,7 @@ void ext_decl(analyzer *context)
 
 			if (context->next == LEFTBR) // определение или предописание функции
 			{
-				int oldfuncnum = context->sx->funcnum++;
+				size_t oldfuncnum = context->sx->funcnum++;
 				int firsttype = context->type;
 				funrepr = REPRTAB_POS;
 				scanner(context);
@@ -3944,7 +3830,7 @@ void ext_decl(analyzer *context)
 				// (context->func_def=1 или 2)
 				REPRTAB_POS = funrepr;
 
-				toidentab(context, oldfuncnum, context->type);
+				toidentab(context, (int) oldfuncnum, context->type);
 				if (context->error_flag == 5)
 				{
 					context->error_flag = 1;
@@ -3957,25 +3843,25 @@ void ext_decl(analyzer *context)
 					if (context->func_def == 2)
 					{
 						context_error(context, func_decl_req_params);
-						goto ex;
+						break;
 					}
 
 					function_definition(context);
-					goto ex;
+					break;
 				}
 				else
 				{
 					if (context->func_def == 1)
 					{
 						context_error(context, function_has_no_body);
-						goto ex;
+						break;
 					}
 				}
 			}
 			else if (context->firstdecl == LVOID)
 			{
 				context_error(context, only_functions_may_have_type_VOID);
-				goto ex;
+				break;
 			}
 
 			// описания идентов-не-функций
@@ -4009,20 +3895,7 @@ void ext_decl(analyzer *context)
 			}
 		} while (repeat);
 
-	ex:;
 	} while (context->next != LEOF);
-
-	if (context->sx->wasmain == 0)
-	{
-		context_error(context, no_main_in_program);
-	}
-	for (i = 0; i <= context->prdf; i++)
-	{
-		if (context->predef[i])
-		{
-			context_error(context, predef_but_notdef);
-		}
-	}
 	totree(context, TEnd);
 }
 /*
