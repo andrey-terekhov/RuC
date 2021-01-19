@@ -119,8 +119,12 @@ build_vm()
 	rm -rf ruc-vm
 	git clone -b $vm_release --recursive https://github.com/andrey-terekhov/RuC-VM ruc-vm
 
+	if [[ $OSTYPE != "msys" ]] ; then
+		CMAKE_BUILD_TYPE=-DCMAKE_BUILD_TYPE=Release
+	fi
+
 	cd ruc-vm
-	mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DTESTING_EXIT_CODE=$exit_code
+	mkdir -p build && cd build && cmake .. $CMAKE_BUILD_TYPE -DTESTING_EXIT_CODE=$exit_code
 	if ! cmake --build . --config Release ; then
 		exit 1
 	fi
