@@ -773,13 +773,15 @@ void Struct_init_gen(syntax *const sx)
 	int i;
 	int n;
 
-	tree_next_node(sx);
-	printf("%i tc=%i :Struct_init_gen\n", node_get_type(tree_get_node(sx)), sx->tc);
 
 	if (sx->tree[sx->tc] == TStructinit)
 	{
 		sx->tc++;
 		n = sx->tree[sx->tc++];
+
+		tree_next_node(sx);
+		printf("%i tc=%i :Struct_init_gen\n", node_get_type(tree_get_node(sx)), sx->tc);
+
 		for (i = 0; i < n; i++)
 		{
 			Struct_init_gen(sx);
