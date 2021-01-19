@@ -15,15 +15,17 @@
  */
 
 #include "map.h"
+#include <limits.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 
 const uint8_t MAP_HASH_MAX = UCHAR_MAX;
-const uint8_t MAP_BYTES_SIZE = sizeof(map_size_t) / sizeof(char);
 
 
 struct map_hash
 {
-	map_size_t next;
+	size_t next;
 	const char *key;
 	int value;
 };
@@ -41,12 +43,75 @@ uint8_t map_get_hash(const char *const key);
  */
 
 
-map map_create(const map_size_t values);
+map map_create(const size_t values)
+{
+	map as;
+	as.table->key = (char *) malloc(10 * sizeof(char));
 
-const char *map_add(map *const as, const char *const key, const int value);
-const char *map_set(map *const as, const char *const key, const int value);
-int map_get(const map *const as, const char *const key);
+	return as;
+}
 
-int map_is_correct(const map *const as);
 
-int map_clear();
+size_t map_add(map *const as, const char *const key, const int value)
+{
+	if (as == NULL || key == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	return 0;
+}
+
+size_t map_set(map *const as, const char *const key, const int value)
+{
+	if (as == NULL || key == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	return 0;
+}
+
+int map_set_at(map *const as, const size_t index, const int value)
+{
+	if (as == NULL)
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+
+
+int map_get(const map *const as, const char *const key)
+{
+	if (as == NULL || key == NULL)
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+int map_get_at(const map *const as, const size_t index)
+{
+	if (as == NULL)
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int map_clear(map *const as)
+{
+	if (as == NULL || as->table == NULL || as->table->key == NULL)
+	{
+		return -1;
+	}
+
+	free(as->table->key);
+	return 0;
+}

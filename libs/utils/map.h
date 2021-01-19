@@ -16,17 +16,12 @@
 
 #pragma once
 
-#include <limits.h>
 #include <stddef.h>
-#include <stdint.h>
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-const map_size_t MAP_SIZE_MAX = USHRT_MAX;
-typedef uint16_t map_size_t;
 
 /** Hash table */
 typedef struct map_hash map_hash;
@@ -34,13 +29,9 @@ typedef struct map_hash map_hash;
 /** Associative array (Dictionary) */
 typedef struct map
 {
-	char *keys;					/**< Keys storage */
-	size_t keys_size;			/**< Size of keys storage */
-	size_t keys_alloc;			/**< Allocated size of keys storage */
-
-	map_hash *values;			/**< Values storage */
-	map_size_t values_size;		/**< Size of values storage */
-	size_t values_alloc;		/**< Allocated size of values storage */
+	map_hash *table;			/**< Key-values hash table */
+	size_t size;				/**< Size of table */
+	size_t alloc;				/**< Allocated size of table */
 } map;
 
 
@@ -51,24 +42,72 @@ typedef struct map
  *
  *	@return	Map structure
  */
-map map_create(const map_size_t values);
+map map_create(const size_t values);
+
 
 /**
- *	Add new node argument
+ *	Add new key-value pair
  *
- *	@param	as				Node structure
- *	@param	key				Node argument
- *	@param	value			Node argument
+ *	@param	as				Map structure
+ *	@param	key				Unique string key
+ *	@param	value			Value
  *
- *	@return	
+ *	@return	Index of record, @c SIZE_MAX on failure
  */
-const char *map_add(map *const as, const char *const key, const int value);
-const char *map_set(map *const as, const char *const key, const int value);
+size_t map_add(map *const as, const char *const key, const int value);
+
+/**
+ *	Set new value by existing key
+ *
+ *	@param	as				Map structure
+ *	@param	key				Unique string key
+ *	@param	value			New value
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+size_t map_set(map *const as, const char *const key, const int value);
+
+/**
+ *	Set new value by index
+ *
+ *	@param	as				Map structure
+ *	@param	index			Record index
+ *	@param	value			New value
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int map_set_at(map *const as, const size_t index, const int value);
+
+
+/**
+ *	Get value by key
+ *
+ *	@param	as				Map structure
+ *	@param	key				Unique string key
+ *
+ *	@return	Value, @c INT_MAX on failure
+ */
 int map_get(const map *const as, const char *const key);
 
-int map_is_correct(const map *const as);
+/**
+ *	Get value by index
+ *
+ *	@param	as				Map structure
+ *	@param	index			Value index
+ *
+ *	@return	Value, @c INT_MAX on failure
+ */
+int map_get_at(const map *const as, const size_t index);
 
-int map_clear();
+
+/**
+ *	Free allocated memory
+ *
+ *	@param	as				Map structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int map_clear(map *const as);
 
 #ifdef __cplusplus
 } /* extern "C" */
