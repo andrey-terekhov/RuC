@@ -406,7 +406,11 @@ main()
 	init $@
 
 	build
-	test
+	if [[ -z $debug ]] ; then
+		test 2>/dev/null
+	else
+		test
+	fi
 
 	if [[ $failure != 0 || $timeout != 0 ]] ; then
 		exit 1
@@ -415,4 +419,4 @@ main()
 	exit 0
 }
 
-main $@ 2>/dev/null
+main $@
