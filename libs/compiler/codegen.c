@@ -910,7 +910,7 @@ void compstmt_gen(syntax *const sx, ad *const context)
 	}
 	sx->tc++;
 
-	tree_next_node(sx);
+	tree_next_node(sx); // TEnd
 	printf("%i tc=%i: compstmt_gen exit\n", node_get_type(tree_get_node(sx)), sx->tc);
 }
 
@@ -938,13 +938,10 @@ int codegen(universal_io *const io, syntax *const sx)
 		switch (sx->tree[sx->tc++])
 		{
 			case TEnd:
-				// tree_next_node(sx);
 				// printf("%i tc=%i :codegen TEnd\n", node_get_type(tree_get_node(sx)), sx->tc);
 				break;
 			case TFuncdef:
 			{
-				// int identref = sx->tree[sx->tc++];
-				// int maxdispl = sx->tree[sx->tc++];
 				int identref = node_get_arg(tree_get_node(sx), 0);
 				int maxdispl = node_get_arg(tree_get_node(sx), 1);
 				int fn = sx->identab[identref + 3];
@@ -958,7 +955,6 @@ int codegen(universal_io *const io, syntax *const sx)
 				tree_next_node(sx);
 				printf("%i tc=%i :codegen TBegin\n", node_get_type(tree_get_node(sx)), sx->tc);
 
-				// sx->tc++;
 				sx->tc += 3; 	
 
 				tree_next_node(sx); // TBegin
@@ -971,7 +967,9 @@ int codegen(universal_io *const io, syntax *const sx)
 			case TDeclarr:
 			{
 				int i;
-				int N = sx->tree[sx->tc++];
+				int N = node_get_arg(tree_get_node(sx), 0);
+
+				sx->tc++;
 
 				tree_next_node(sx);
 				printf("%i tc=%i :codegen TDeclarr\n", node_get_type(tree_get_node(sx)), sx->tc);
