@@ -1909,3 +1909,18 @@ void exprassnval(parser *context)
 	toval(context);
 	totree(context, TExprend);
 }
+
+void parse_constant_expression(parser *const parser)
+{
+	scanner(parser);
+	unarexpr(parser);
+	condexpr(parser);
+	toval(parser);
+	totree(parser, TExprend);
+}
+
+void parse_expression(parser *const parser)
+{
+	expr(parser, 0);
+	exprassnvoid(parser);
+}

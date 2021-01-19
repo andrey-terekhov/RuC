@@ -57,12 +57,11 @@ typedef struct analyzer
 	int arrdim;
 	int was_struct_with_arr;
 	int usual;
-	int inswitch;
+	int flag_in_switch;
 	int inloop;
 	int functype;
 	int blockflag;
 	int wasret;
-	int wasdefault;
 	int gotost[1000];
 	int pgotost;
 	int anst;

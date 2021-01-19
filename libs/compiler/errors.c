@@ -125,7 +125,7 @@ void get_error(const int num, char *const msg, va_list args)
 		case wait_while_in_do_stmt: // test_exist
 			sprintf(msg, "ждем ПОКА в операторе ЦИКЛ");
 			break;
-		case no_semicolon_after_stmt: // test_exist
+		case expected_semi_after_stmt: // test_exist
 			sprintf(msg, "нет ; после оператора");
 			break;
 		case cond_must_be_in_brkts: // test_exist
@@ -190,11 +190,8 @@ void get_error(const int num, char *const msg, va_list args)
 		case no_colon_in_cond_expr: // test_exist
 			sprintf(msg, "нет : в условном выражении");
 			break;
-		case no_colon_in_case: // test_exist
+		case expected_colon_after_case: // test_exist
 			sprintf(msg, "после выражения в выборе нет :");
-			break;
-		case case_after_default: // need_test
-			sprintf(msg, "встретился выбор после умолчания");
 			break;
 		case no_ident_after_goto: // need_test
 			sprintf(msg, "после goto должна быть метка, т.е. идентификатор");

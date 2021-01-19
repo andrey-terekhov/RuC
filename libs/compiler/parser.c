@@ -40,10 +40,6 @@ int scanner(parser *context)
 		context->next_token = context->buf_cur;
 		context->buf_flag--;
 	}
-	
-	//	 if(context->kw)
-	//			printf("scaner context->cur %i context->next %i buf_flag %i\n",
-	//			context->cur, context->next, context->buf_flag);
 	return context->curr_token;
 }
 
