@@ -1000,7 +1000,9 @@ int codegen(universal_io *const io, syntax *const sx)
 			}
 			case TStructend:
 			{
-				int numproc = sx->tree[sx->tree[sx->tc++] + 1];
+				int numproc = sx->tree[node_get_arg(tree_get_node(sx), 0) + 1];
+
+				sx->tc++;
 
 				tocode(sx, STOP);
 				mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
