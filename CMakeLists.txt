@@ -7,7 +7,7 @@ project(ruc)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-# Set RPATH for CMake
+# Set RPATH for searching dynamic libraries in the same folder
 set(CMAKE_INSTALL_RPATH $ORIGIN @loader_path)
 set(CMAKE_SKIP_BUILD_RPATH TRUE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
@@ -23,6 +23,8 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 
 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
+	# Add POSIX flag to declare ‘fileno’ function
+	# Enable -s flag for Release build to remove code info from exec
 	add_compile_options(-Werror=return-type -Wall -Wextra -Wno-implicit-fallthrough -std=c11
 						"$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:-posix>"
 						"$<$<NOT:$<OR:$<CXX_COMPILER_ID:AppleClang,Clang>,$<CONFIG:Debug>>>:-s>"
@@ -30,9 +32,11 @@ else()
 						"$<$<CONFIG:Debug>:-g>"
 						"$<$<CONFIG:Debug>:-Og>")
 
+	# Set _POSIX_C_SOURCE to declare ‘readlink’ function
 	add_compile_definitions("$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:_POSIX_C_SOURCE=200112L>")
 endif()
 
+# Disable asserts for Release build
 add_compile_definitions("$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
 
 
