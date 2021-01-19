@@ -920,12 +920,6 @@ int codegen(universal_io *const io, syntax *const sx)
 	node root = node_get_root(sx);
 	tree_set_node(sx, &root);
 
-	// // тут пока эксперимент, отладочная печать
-	// while (!tree_next_node(sx))
-	// {
-	// 	printf("%i\n", node_get_type(tree_get_node(sx)));
-	// }
-	// // тут эксперимент заканчивается
 	ad context;
 
 	int treesize = sx->tc;
@@ -996,7 +990,9 @@ int codegen(universal_io *const io, syntax *const sx)
 			{
 				tocode(sx, B);
 				tocode(sx, 0);
-				proc_set(sx, sx->tree[sx->tc++], (int)mem_get_size(sx));
+				proc_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_get_size(sx));
+
+				sx->tc++;
 
 				tree_next_node(sx);
 				printf("%i tc=%i :codegen TStructbeg\n", node_get_type(tree_get_node(sx)), sx->tc);
