@@ -790,6 +790,11 @@ void parse_compound_statement(analyzer *context, const block_type b)
 
 	do
 	{
+		if (context->next == LEOF)
+		{
+			context_error(context, wait_end);
+			return;
+		}
 		if (b == 2 ? context->next == TEXIT : context->next == END)
 		{
 			scanner(context);
