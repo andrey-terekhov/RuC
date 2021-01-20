@@ -169,6 +169,33 @@ size_t map_add_by_hash(map *const as, const size_t hash, const int value)
 	return index;
 }
 
+size_t map_set_by_hash(map *const as, const size_t hash, const int value)
+{
+	if (hash == SIZE_MAX)
+	{
+		return SIZE_MAX;
+	}
+
+	size_t index = hash;
+	while (as->values[index].next != SIZE_MAX)
+	{
+		if (map_cmp_key(as, index) == 0)
+		{
+			as->values[index].value = value;
+			return index;
+		}
+		index = as->values[index].next;
+	}
+
+	if (as->values[index].ref == SIZE_MAX || map_cmp_key(as, index) != 0)
+	{
+		return SIZE_MAX;
+	}
+
+	as->values[index].value = value;
+	return index;
+}
+
 
 map map_broken()
 {
@@ -262,7 +289,16 @@ size_t map_set_by_io(map *const as, universal_io *const io, const int value, cha
 	return map_set_by_hash(as, map_get_hash_by_io(as, io, last), value);
 }
 
-int map_set_at(map *const as, const size_t index, const int value);
+int map_set_at(map *const as, const size_t index, const int value)
+{
+	if (!map_is_correct(as) || index >= as->values_size || as->values[index].ref == SIZE_MAX)
+	{
+		return -1;
+	}
+
+	as->values[index].value = value;
+	return 0;
+}
 
 
 
