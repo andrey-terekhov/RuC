@@ -57,6 +57,7 @@ void try_consume_token(parser *const parser, const TOKEN expected, const enum ER
  */
 void skip_until(parser *const parser, const unsigned int tokens);
 
+
 /**
  *	Parse assignment expression [C99 6.5.16]
  *
@@ -66,6 +67,8 @@ void skip_until(parser *const parser, const unsigned int tokens);
  *
  *	assignment-operator: one of
  *		=  *=  /=  %=  +=  -=  <<=  >>=  &=  ˆ=  |=
+ *
+ *	@param	parser	Parser structure
  */
 void parse_assignment_expression(parser *const parser);
 
@@ -73,8 +76,10 @@ void parse_assignment_expression(parser *const parser);
  *	Parse expression [C99 6.5.17]
  *
  *	expression:
- *		assignment-expression ...[opt]
- *		expression ',' assignment-expression ...[opt]
+ *		assignment-expression
+ *		expression ',' assignment-expression
+ *
+ *	@param	parser	Parser structure
  */
 void parse_expression(parser *const parser);
 
@@ -83,13 +88,18 @@ void parse_expression(parser *const parser);
  *
  *	constant-expression:
  *		conditional-expression
+ *
+ *	@param	parser	Parser structure
  */
 void parse_constant_expression(parser *const parser);
+
 
 /**
  *	Parse a declaration [C99 6.7]
  *	@note Parses a full declaration, which consists of declaration-specifiers,
  *	some number of declarators, and a semicolon
+ *
+ *	@param	parser	Parser structure
  */
 void parse_declaration(parser *const parser);
 
@@ -97,8 +107,11 @@ void parse_declaration(parser *const parser);
  *	Parse a top level declaration [C99 6.7]
  *	@note Parses a full declaration, which consists either of declaration-specifiers,
  *	some number of declarators, and a semicolon, or function definition
+ *
+ *	@param	parser	Parser structure
  */
 void parse_top_level_declaration(parser *const parser);
+
 
 /**
  *	Parse statement [C99 6.8]
@@ -110,6 +123,8 @@ void parse_top_level_declaration(parser *const parser);
  *		selection-statement
  *		iteration-statement
  *		jump-statement
+ *
+ *	@param	parser	Parser structure
  */
 void parse_statement(parser *const context);
 
@@ -135,6 +150,8 @@ typedef enum block_type
  *	block-item:
  *		declaration
  *		statement
+ *
+ *	@param	parser	Parser structure
  */
 void parse_compound_statement(parser *const context, const block_type type);
 

@@ -22,6 +22,8 @@
  *
  *	labeled-statement:
  *		identifier ':' statement
+ *
+ *	@param	parser	Parser structure
  */
 void parse_labeled_statement(parser *const context)
 {
@@ -81,6 +83,8 @@ void parse_labeled_statement(parser *const context)
  *
  *	labeled-statement:
  *		'case' constant-expression ':' statement
+ *
+ *	@param	parser	Parser structure
  */
 void parse_case_statement(parser *const parser)
 {
@@ -108,6 +112,8 @@ void parse_case_statement(parser *const parser)
  *
  *	labeled-statement:
  *		'default' ':' statement
+ *
+ *	@param	parser	Parser structure
  */
 void parse_default_statement(parser *const parser)
 {
@@ -127,6 +133,8 @@ void parse_default_statement(parser *const parser)
  *
  *	expression-statement:
  *		expression ';'
+ *
+ *	@param	parser	Parser structure
  */
 void parse_expression_statement(parser *const parser)
 {
@@ -140,6 +148,8 @@ void parse_expression_statement(parser *const parser)
  *	if-statement:
  *		'if' '(' expression ')' statement
  *		'if' '(' expression ')' statement 'else' statement
+ *
+ *	@param	parser	Parser structure
  */
 void parse_if_statement(parser *const context)
 {
@@ -167,6 +177,8 @@ void parse_if_statement(parser *const context)
  *
  *	switch-statement:
  *		'switch' '(' expression ')' statement
+ *
+ *	@param	parser	Parser structure
  */
 void parse_switch_statement(parser *const context)
 {
@@ -189,6 +201,8 @@ void parse_switch_statement(parser *const context)
  *
  *	while-statement:
  *		'while' '(' expression ')' statement
+ *
+ *	@param	parser	Parser structure
  */
 void parse_while_statement(parser *const parser)
 {
@@ -206,6 +220,8 @@ void parse_while_statement(parser *const parser)
  *
  *	do-statement:
  *		'do' statement 'while' '(' expression ')' ';'
+ *
+ *	@param	parser	Parser structure
  */
 void parse_do_statement(parser *const parser)
 {
@@ -237,6 +253,8 @@ void parse_do_statement(parser *const parser)
  *	for-statement:
  *		'for' '(' expression[opt] ';' expression[opt] ';' expression[opt] ')' statement
  *		'for' '(' declaration expression[opt] ';' expression[opt] ')' statement
+ *
+ *	@param	parser	Parser structure
  */
 void parse_for_statement(parser *const context)
 {
@@ -299,6 +317,8 @@ void parse_for_statement(parser *const context)
  *
  *	jump-statement:
  *		'goto' identifier ';'
+ *
+ *	@param	parser	Parser structure
  */
 void parse_goto_statement(parser *const context)
 {
@@ -337,6 +357,8 @@ void parse_goto_statement(parser *const context)
  *
  *	jump-statement:
  *		'continue' ';'
+ *
+ *	@param	parser	Parser structure
  */
 void parse_continue_statement(parser *const parser)
 {
@@ -355,6 +377,8 @@ void parse_continue_statement(parser *const parser)
  *
  *	jump-statement:
  *		'break' ';'
+ *
+ *	@param	parser	Parser structure
  */
 void parse_break_statement(parser *const parser)
 {
@@ -374,6 +398,8 @@ void parse_break_statement(parser *const parser)
  *	jump-statement:
  *		'return' expression[opt] ';'
  *		'return' braced-init-list ';'
+ *
+ *	@param	parser	Parser structure
  */
 void parse_return_statement(parser *const context)
 {

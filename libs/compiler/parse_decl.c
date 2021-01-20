@@ -18,6 +18,25 @@
 
 #define undefined 0
 
+/**
+ *	Parse type specifier [C99 6.7.2]
+ *
+ *	type-specifier:
+ *		void
+ *		char
+ *		short
+ *		int
+ *		long
+ *		float
+ *		double
+ *		struct-or-union-specifier
+ *		enum-specifier [TODO]
+ *		typedef-name [TODO]
+ *
+ *	@param	parser	Parser structure
+ *
+ *	@return	Standart type or index for modes table
+ */
 int parse_type_specifier(parser *const parser)
 {
 	parser->was_struct_with_arr = 0;
@@ -29,6 +48,7 @@ int parse_type_specifier(parser *const parser)
 		case kw_char:
 			return LCHAR;
 
+		//case kw_short:
 		case kw_int:
 		case kw_long:
 			return LINT;
