@@ -933,7 +933,7 @@ int codegen(universal_io *const io, syntax *const sx)
 		switch (node_get_type(tree_get_node(sx)))
 		{
 			case TEnd:
-				// printf("%i tc=%i :codegen TEnd\n", node_get_type(tree_get_node(sx)), sx->tc);
+				printf("%i tc=%i :codegen TEnd\n", node_get_type(tree_get_node(sx)), sx->tc);
 				break;
 			case TFuncdef:
 			{
