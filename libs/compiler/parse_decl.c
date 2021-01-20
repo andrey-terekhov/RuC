@@ -76,7 +76,6 @@ int parse_type_specifier(parser *const parser)
 					else // if (parser->next_token != l_brace)
 					{
 						const size_t id = repr_get_reference(parser->sx, repr);
-						consume_token(parser);
 
 						if (id == 1)
 						{
