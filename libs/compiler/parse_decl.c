@@ -59,9 +59,12 @@ int parse_type_specifier(parser *const parser)
 					return struct_decl_list(parser);
 
 				case identifier:
+				{
+					const size_t repr = (size_t)parser->lxr->repr;
+					consume_token(parser);
+
 					if (parser->next_token == l_brace)
 					{
-						const size_t repr = (size_t)parser->lxr->repr;
 						const int mode = struct_decl_list(parser);
 						const size_t id = ident_add(parser->sx, repr, 1000, mode, 3);
 						ident_set_displ(parser->sx, id, 1000 + parser->was_struct_with_arr);
@@ -72,7 +75,7 @@ int parse_type_specifier(parser *const parser)
 					}
 					else // if (parser->next_token != l_brace)
 					{
-						const size_t id = repr_get_reference(parser->sx, parser->lxr->repr);
+						const size_t id = repr_get_reference(parser->sx, repr);
 						consume_token(parser);
 
 						if (id == 1)
@@ -85,6 +88,7 @@ int parse_type_specifier(parser *const parser)
 						parser->was_struct_with_arr = ident_get_displ(parser->sx, id) - 1000;
 						return ident_get_mode(parser->sx, id);
 					}
+				}
 
 				default:
 					parser_error(parser, wrong_struct);
@@ -446,7 +450,6 @@ int idorpnt(parser *context, int e, int t)
 
 int struct_decl_list(parser *context)
 {
-	scanner(context);
 	int field_count = 0;
 	int t;
 	int elem_type;
