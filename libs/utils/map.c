@@ -16,6 +16,7 @@
 
 #include "map.h"
 #include <stdlib.h>
+#include <string.h>
 #include "uniscanner.h"
 #include "utf8.h"
 
@@ -40,14 +41,14 @@ int map_add_key_symbol(map *const as, const char ch)
 		return 0;
 	}
 
-	char *new_keys = realloc(as->keys, 2 * as->keys_alloc * sizeof(char));
-	if (new_keys == NULL)
+	char *keys_new = realloc(as->keys, 2 * as->keys_alloc * sizeof(char));
+	if (keys_new == NULL)
 	{
 		return -1;
 	}
 
 	as->keys_size *= 2;
-	as->keys = new_keys;
+	as->keys = keys_new;
 	return map_add_key_symbol(as, ch);
 }
 
@@ -115,6 +116,12 @@ size_t map_get_hash_by_io(map *const as, universal_io *const io, char32_t *const
 	return hash % MAP_HASH_MAX;
 }
 
+
+int map_cmp_key(const map *const as, const int index)
+{
+	return strcmp(as->keys[as->values[index].ref], as->keys[as->keys_size]);
+}
+
 size_t map_add_by_hash(map *const as, const size_t hash, const int value)
 {
 	if (hash == SIZE_MAX)
@@ -122,9 +129,44 @@ size_t map_add_by_hash(map *const as, const size_t hash, const int value)
 		return SIZE_MAX;
 	}
 
+	size_t index = hash;
+	while (as->values[index].next != SIZE_MAX)
+	{
+		if (map_cmp_key(as, index) == 0)
+		{
+			return as->values[index].value == value ? index : SIZE_MAX;
+		}
+		index = as->values[index].next;
+	}
 
+	if (as->values[index].ref == SIZE_MAX)
+	{
+		as->values[index].ref = as->keys_size;
+		as->keys_size = as->keys_next + 1;
+		as->values[index].value = value;
+		return index;
+	}
 
-	return 0;
+	if (as->values_size == as->values_alloc)
+	{
+		map_hash *values_new = realloc(as->values, 2 * as->values_alloc * sizeof(map_hash));
+		if (values_new == NULL)
+		{
+			return SIZE_MAX;
+		}
+
+		as->values_size *= 2;
+		as->values = values_new;
+	}
+
+	as->values[index].next = as->values_size;
+	index = as->values_size++;
+
+	as->values[index].next = SIZE_MAX;
+	as->values[index].ref = as->keys_size;
+	as->keys_size = as->keys_next + 1;
+	as->values[index].value = value;
+	return index;
 }
 
 
@@ -162,6 +204,7 @@ map map_create(const size_t values)
 	for (size_t i = 0; i < as.values_size; i++)
 	{
 		as.values[i].next = SIZE_MAX;
+		as.values[i].ref = SIZE_MAX;
 	}
 
 	as.keys_size = 0;
