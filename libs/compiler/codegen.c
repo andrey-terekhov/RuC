@@ -870,9 +870,9 @@ void Declid_gen(syntax *const sx)
 
 void compstmt_gen(syntax *const sx, ad *const context)
 {
-	while (node_get_type(tree_get_node(sx)) != TEnd)
+	while (sx->tree[sx->tc] != TEnd)
 	{		
-		switch (node_get_type(tree_get_node(sx)))
+		switch (sx->tree[sx->tc])
 		{
 			case TDeclarr:
 			{
@@ -933,7 +933,7 @@ int codegen(universal_io *const io, syntax *const sx)
 		switch (node_get_type(tree_get_node(sx)))
 		{
 			case TEnd:
-				printf("%i tc=%i :codegen TEnd\n", node_get_type(tree_get_node(sx)), sx->tc);
+				// printf("%i tc=%i :codegen TEnd\n", node_get_type(tree_get_node(sx)), sx->tc);
 				break;
 			case TFuncdef:
 			{
