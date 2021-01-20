@@ -182,6 +182,7 @@ void parse_if_statement(parser *const context)
  */
 void parse_switch_statement(parser *const context)
 {
+	int old_in_switch = context->flag_in_switch;
 	totree(context, TSwitch);
 
 	exprinbrkts(context, cond_must_be_in_brkts);
@@ -194,6 +195,8 @@ void parse_switch_statement(parser *const context)
 	scanner(context);
 	context->flag_in_switch = 1;
 	parse_compound_statement(context, SWITCH);
+
+	context->flag_in_switch = old_in_switch;
 }
 
 /**
@@ -794,7 +797,6 @@ void parse_compound_statement(parser *const context, const block_type b)
 	int notended = 1;
 	int olddispl = 0;
 	int oldlg = 0;
-	int firstdecl;
 
 	context->flag_in_switch = b < 0;
 	totree(context, TBegin);
@@ -807,51 +809,7 @@ void parse_compound_statement(parser *const context, const block_type b)
 	while (is_int(context->next_token) || is_float(context->next_token) || context->next_token == LSTRUCT ||
 		   context->next_token == LVOID)
 	{
-		int repeat = 1;
-		scanner(context);
-		firstdecl = parse_type_specifier(context);
-		if (context->was_error == 3)
-		{
-			context->was_error = 1;
-			continue;
-		}
-		if (context->wasstructdef && context->next_token == SEMICOLON)
-		{
-			scanner(context);
-			continue;
-		}
-		do
-		{
-			int temp = idorpnt(context, after_type_must_be_ident, firstdecl);
-
-			if (context->was_error == after_type_must_be_ident)
-			{
-				context->was_error = 1;
-				break;
-			}
-
-			decl_id(context, temp);
-			if (context->was_error == 4)
-			{
-				context->was_error = 1;
-				break;
-			}
-			if (context->next_token == COMMA)
-			{
-				scanner(context);
-			}
-			else if (context->next_token == SEMICOLON)
-			{
-				scanner(context);
-				repeat = 0;
-			}
-			else
-			{
-				parser_error(context, def_must_end_with_semicomma);
-				context->curr_token = SEMICOLON;
-				repeat = 0;
-			}
-		} while (repeat);
+		parse_declaration(context);
 	}
 
 	// кончились описания, пошли операторы до }
