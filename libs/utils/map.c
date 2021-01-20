@@ -196,6 +196,31 @@ size_t map_set_by_hash(map *const as, const size_t hash, const int value)
 	return index;
 }
 
+int map_get_by_hash(map *const as, const size_t hash)
+{
+	if (hash == SIZE_MAX)
+	{
+		return INT_MAX;
+	}
+
+	size_t index = hash;
+	while (as->values[index].next != SIZE_MAX)
+	{
+		if (map_cmp_key(as, index) == 0)
+		{
+			return as->values[index].value;
+		}
+		index = as->values[index].next;
+	}
+
+	if (as->values[index].ref == SIZE_MAX || map_cmp_key(as, index) != 0)
+	{
+		return INT_MAX;
+	}
+
+	return as->values[index].value;
+}
+
 
 map map_broken()
 {
