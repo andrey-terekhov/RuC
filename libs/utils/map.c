@@ -47,7 +47,7 @@ int map_add_key_symbol(map *const as, const char32_t ch)
 		return -1;
 	}
 
-	as->keys_size *= 2;
+	as->keys_alloc *= 2;
 	as->keys = keys_new;
 	return map_add_key_symbol(as, ch);
 }
@@ -155,7 +155,7 @@ size_t map_add_by_hash(map *const as, const size_t hash, const int value)
 			return SIZE_MAX;
 		}
 
-		as->values_size *= 2;
+		as->values_alloc *= 2;
 		as->values = values_new;
 	}
 
