@@ -33,7 +33,7 @@ struct map_hash
 };
 
 
-int map_add_key_symbol(map *const as, const char ch)
+int map_add_key_symbol(map *const as, const char32_t ch)
 {
 	if (MAX_SYMBOL_SIZE <= as->keys_alloc - as->keys_next)
 	{
@@ -117,9 +117,9 @@ size_t map_get_hash_by_io(map *const as, universal_io *const io, char32_t *const
 }
 
 
-int map_cmp_key(const map *const as, const int index)
+int map_cmp_key(const map *const as, const size_t index)
 {
-	return strcmp(as->keys[as->values[index].ref], as->keys[as->keys_size]);
+	return strcmp(&as->keys[as->values[index].ref], &as->keys[as->keys_size]);
 }
 
 size_t map_add_by_hash(map *const as, const size_t hash, const int value)
@@ -196,7 +196,7 @@ size_t map_set_by_hash(map *const as, const size_t hash, const int value)
 	return index;
 }
 
-int map_get_by_hash(map *const as, const size_t hash)
+int map_get_by_hash(const map *const as, const size_t hash)
 {
 	if (hash == SIZE_MAX)
 	{
@@ -327,7 +327,7 @@ int map_set_at(map *const as, const size_t index, const int value)
 
 
 
-int map_get(const map *const as, const char *const key)
+int map_get(map *const as, const char *const key)
 {
 	if (!map_is_correct(as) || key == NULL)
 	{
@@ -337,7 +337,7 @@ int map_get(const map *const as, const char *const key)
 	return map_get_by_hash(as, map_get_hash(as, key));
 }
 
-int map_get_by_io(const map *const as, universal_io *const io, char32_t *const last)
+int map_get_by_io(map *const as, universal_io *const io, char32_t *const last)
 {
 	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
 	{

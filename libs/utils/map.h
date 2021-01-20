@@ -18,6 +18,8 @@
 
 #include <limits.h>
 #include <stddef.h>
+#include <stdint.h>
+#include "dll.h"
 #include "uniio.h"
 
 
@@ -49,7 +51,7 @@ typedef struct map
  *
  *	@return	Map structure
  */
-map map_create(const size_t values);
+EXPORTED map map_create(const size_t values);
 
 
 /**
@@ -61,7 +63,7 @@ map map_create(const size_t values);
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t map_add(map *const as, const char *const key, const int value);
+EXPORTED size_t map_add(map *const as, const char *const key, const int value);
 
 /**
  *	Add new pair by reading key from io
@@ -73,7 +75,7 @@ size_t map_add(map *const as, const char *const key, const int value);
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t map_add_by_io(map *const as, universal_io *const io, const int value, char32_t *const last);
+EXPORTED size_t map_add_by_io(map *const as, universal_io *const io, const int value, char32_t *const last);
 
 
 /**
@@ -85,7 +87,7 @@ size_t map_add_by_io(map *const as, universal_io *const io, const int value, cha
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t map_set(map *const as, const char *const key, const int value);
+EXPORTED size_t map_set(map *const as, const char *const key, const int value);
 
 /**
  *	Set new value by reading existing key from io
@@ -97,7 +99,7 @@ size_t map_set(map *const as, const char *const key, const int value);
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t map_set_by_io(map *const as, universal_io *const io, const int value, char32_t *const last);
+EXPORTED size_t map_set_by_io(map *const as, universal_io *const io, const int value, char32_t *const last);
 
 /**
  *	Set new value by index
@@ -108,7 +110,7 @@ size_t map_set_by_io(map *const as, universal_io *const io, const int value, cha
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int map_set_at(map *const as, const size_t index, const int value);
+EXPORTED int map_set_at(map *const as, const size_t index, const int value);
 
 
 /**
@@ -119,7 +121,7 @@ int map_set_at(map *const as, const size_t index, const int value);
  *
  *	@return	Value, @c INT_MAX on failure
  */
-int map_get(const map *const as, const char *const key);
+EXPORTED int map_get(map *const as, const char *const key);
 
 /**
  *	Get value by reading key from io
@@ -130,7 +132,7 @@ int map_get(const map *const as, const char *const key);
  *
  *	@return	Value, @c INT_MAX on failure
  */
-int map_get_by_io(const map *const as, universal_io *const io, char32_t *const last);
+EXPORTED int map_get_by_io(map *const as, universal_io *const io, char32_t *const last);
 
 /**
  *	Get value by index
@@ -140,7 +142,7 @@ int map_get_by_io(const map *const as, universal_io *const io, char32_t *const l
  *
  *	@return	Value, @c INT_MAX on failure
  */
-int map_get_at(const map *const as, const size_t index);
+EXPORTED int map_get_at(const map *const as, const size_t index);
 
 
 /**
@@ -150,7 +152,7 @@ int map_get_at(const map *const as, const size_t index);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int map_is_correct(const map *const as);
+EXPORTED int map_is_correct(const map *const as);
 
 
 /**
@@ -160,7 +162,7 @@ int map_is_correct(const map *const as);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int map_clear(map *const as);
+EXPORTED int map_clear(map *const as);
 
 #ifdef __cplusplus
 } /* extern "C" */
