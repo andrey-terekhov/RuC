@@ -242,9 +242,25 @@ size_t map_add_by_io(map *const as, universal_io *const io, const int value, cha
 }
 
 
-size_t map_set(map *const as, const char *const key, const int value);
+size_t map_set(map *const as, const char *const key, const int value)
+{
+	if (!map_is_correct(as) || key == NULL)
+	{
+		return SIZE_MAX;
+	}
 
-size_t map_set_by_io(map *const as, universal_io *const io, const int value, char32_t *const last);
+	return map_set_by_hash(as, map_get_hash(as, key), value);
+}
+
+size_t map_set_by_io(map *const as, universal_io *const io, const int value, char32_t *const last)
+{
+	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	return map_set_by_hash(as, map_get_hash_by_io(as, io, last), value);
+}
 
 int map_set_at(map *const as, const size_t index, const int value);
 
