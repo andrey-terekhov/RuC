@@ -193,7 +193,7 @@ int arrdef(parser *context, int t);
 void decl_id(parser *context, int decl_type);
 int idorpnt(parser *context, int e, int t);
 int struct_decl_list(parser *context);
-int gettype(parser *context);
+int parse_type_specifier(parser *const parser);
 void function_definition(parser *context);
 int func_declarator(parser *context, int level, int func_d, int firstdecl);
 void ext_decl(parser *context);

@@ -783,7 +783,7 @@ void parse_compound_statement(parser *const context, const block_type b)
 	{
 		int repeat = 1;
 		scanner(context);
-		firstdecl = gettype(context);
+		firstdecl = parse_type_specifier(context);
 		if (context->was_error == 3)
 		{
 			context->was_error = 1;

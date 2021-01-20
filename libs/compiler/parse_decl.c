@@ -16,6 +16,88 @@
 
 #include "parser.h"
 
+#define undefined 0
+
+int parse_type_specifier(parser *const parser)
+{
+	parser->was_struct_with_arr = 0;
+	switch (parser->curr_token)
+	{
+		case kw_void:
+			return LVOID;
+
+		case kw_char:
+			return LCHAR;
+
+		case kw_int:
+		case kw_long:
+			return LINT;
+
+		case kw_float:
+		case kw_double:
+			return LFLOAT;
+
+		case identifier:
+		{
+			const size_t id = repr_get_reference(parser->sx, parser->lxr->repr);
+
+			if (ident_get_displ(parser->sx, id) < 1000)
+			{
+				parser_error(parser, ident_not_type);
+				return undefined;
+			}
+
+			parser->was_struct_with_arr = ident_get_displ(parser->sx, id) - 1000;
+			return ident_get_mode(parser->sx, id);
+		}
+
+		case kw_struct:
+		{
+			switch (parser->next_token)
+			{
+				case l_brace:
+					return struct_decl_list(parser);
+
+				case identifier:
+					if (parser->next_token == l_brace)
+					{
+						const size_t repr = (size_t)parser->lxr->repr;
+						const int mode = struct_decl_list(parser);
+						const size_t id = ident_add(parser->sx, repr, 1000, mode, 3);
+						ident_set_displ(parser->sx, id, 1000 + parser->was_struct_with_arr);
+
+						parser->wasstructdef = 1;
+
+						return ident_get_mode(parser->sx, id);
+					}
+					else // if (parser->next_token != l_brace)
+					{
+						const size_t id = repr_get_reference(parser->sx, parser->lxr->repr);
+						consume_token(parser);
+
+						if (id == 1)
+						{
+							parser_error(parser, ident_is_not_declared);
+							return undefined;
+						}
+
+						// TODO: what if it was not a type specifier?
+						parser->was_struct_with_arr = ident_get_displ(parser->sx, id) - 1000;
+						return ident_get_mode(parser->sx, id);
+					}
+
+				default:
+					parser_error(parser, wrong_struct);
+					return undefined;
+			}
+		}
+
+		default:
+			parser_error(parser, not_decl);
+			return undefined;
+	}
+}
+
 
 void inition(parser *context, int decl_type)
 {
@@ -364,6 +446,7 @@ int idorpnt(parser *context, int e, int t)
 
 int struct_decl_list(parser *context)
 {
+	scanner(context);
 	int field_count = 0;
 	int t;
 	int elem_type;
@@ -383,7 +466,7 @@ int struct_decl_list(parser *context)
 	do
 	{
 		int oldrepr;
-		t = elem_type = idorpnt(context, wait_ident_after_semicomma_in_struct, gettype(context));
+		t = elem_type = idorpnt(context, wait_ident_after_semicomma_in_struct, parse_type_specifier(context));
 		if (context->was_error == wait_ident_after_semicomma_in_struct || context->was_error == 3)
 		{
 			context->was_error = 3;
@@ -473,92 +556,6 @@ int struct_decl_list(parser *context)
 	loc_modetab[2] = field_count * 2;
 
 	return (int)mode_add(context->sx, loc_modetab, locmd);
-}
-
-int gettype(parser *context)
-{
-	// gettype(context) выедает тип (кроме верхних массивов и указателей)
-	// при этом, если такого типа нет в modetab, тип туда заносится;
-	// возвращает отрицательное число(базовый тип), положительное (ссылка на modetab)
-	// или 0, если типа не было
-
-	context->was_struct_with_arr = 0;
-	if (is_int(context->type = context->curr_token) || is_float(context->type) || context->type == LVOID)
-	{
-		return (context->curr_token == LLONG ? LINT : context->curr_token == LDOUBLE ? LFLOAT : context->type);
-	}
-
-	if (context->type == LSTRUCT)
-	{
-		if (context->next_token == BEGIN) // struct {
-		{
-			return (struct_decl_list(context));
-		}
-
-		if (context->next_token == IDENT)
-		{
-			int l;
-
-			l = REPRTAB[REPRTAB_POS + 1];
-			scanner(context);
-			if (context->next_token == BEGIN) // struct key {
-			{
-				// если такое описание уже было, то это ошибка - повторное описание
-				int lid;
-				context->wasstructdef = 1; // это  определение типа (может быть,
-										   // без описания переменных)
-				toidentab(context, 1000, 0);
-				if (context->was_error == 5)
-				{
-					context->was_error = 3;
-					return 0; // 1
-				}
-				lid = context->lastid;
-				ident_set_mode(context->sx, lid, struct_decl_list(context));
-				ident_set_displ(context->sx, lid, 1000 + context->was_struct_with_arr);
-				return ident_get_mode(context->sx, lid);
-			}
-			else // struct key это применение типа
-			{
-				if (l == 1)
-				{
-					parser_error(context, ident_is_not_declared);
-					context->was_error = 3;
-					return 0; // 1
-				}
-				context->was_struct_with_arr = ident_get_displ(context->sx, l) - 1000;
-				return ident_get_mode(context->sx, l);
-			}
-		}
-
-		parser_error(context, wrong_struct);
-		context->was_error = 3;
-		return 0; // 1
-	}
-
-	if (context->curr_token == IDENT)
-	{
-		applid(context);
-		if (context->was_error == 5)
-		{
-			context->was_error = 3;
-			return 0; // 1
-		}
-
-		if (ident_get_displ(context->sx, context->lastid) < 1000)
-		{
-			parser_error(context, ident_not_type);
-			context->was_error = 3;
-			return 0; // 1
-		}
-
-		context->was_struct_with_arr = ident_get_displ(context->sx, context->lastid) - 1000;
-		return ident_get_mode(context->sx, context->lastid);
-	}
-
-	parser_error(context, not_decl);
-	context->was_error = 3;
-	return 0; // 1
 }
 
 void function_definition(parser *context)
@@ -686,7 +683,7 @@ int func_declarator(parser *context, int level, int func_d, int firstdecl)
 					   // 1 - был статический идент,
 					   // 2 - был идент-параметр-функция
 			wastype = 1;
-			context->type = gettype(context);
+			context->type = parse_type_specifier(context);
 			if (context->was_error == 3)
 			{
 				context->was_error = 2;
@@ -865,7 +862,7 @@ void ext_decl(parser *context)
 		context->wasstructdef = 0;
 		scanner(context);
 
-		context->firstdecl = gettype(context);
+		context->firstdecl = parse_type_specifier(context);
 		if (context->was_error == 3)
 		{
 			context->was_error = 1;
