@@ -96,7 +96,6 @@ enum ERROR
 	no_leftbr_in_stand_func,
 	no_rightbr_in_stand_func,
 	bad_param_in_stand_func,
-	decl_after_strmt,
 	aster_before_func,
 	aster_not_for_pointer,
 	aster_with_row,

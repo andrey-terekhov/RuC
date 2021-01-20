@@ -685,110 +685,94 @@ void parse_printf_statement(parser *const context)
  */
 
 
-void parse_statement(parser *const context)
+void parse_statement(parser *const parser)
 {
-	int oldinswitch = context->flag_in_switch;
-	int oldinloop = context->flag_in_loop;
-
-	scanner(context);
-	if ((is_int(context->curr_token) || is_float(context->curr_token) || context->curr_token == LVOID ||
-		 context->curr_token == LSTRUCT) &&
-		context->blockflag)
+	consume_token(parser);
+	
+	switch (parser->curr_token)
 	{
-		parser_error(context, decl_after_strmt);
+		case semicolon:
+			totree(parser, NOP);
+			break;
+
+		case kw_case:
+			parse_case_statement(parser);
+			break;
+
+		case kw_default:
+			parse_default_statement(parser);
+			break;
+
+		case l_brace:
+			parse_compound_statement(parser, REGBLOCK);
+			break;
+
+		case kw_if:
+			parse_if_statement(parser);
+			break;
+
+		case kw_switch:
+			parse_switch_statement(parser);
+			break;
+
+		case kw_while:
+			parse_while_statement(parser);
+			break;
+
+		case kw_do:
+			parse_do_statement(parser);
+			break;
+
+		case kw_for:
+			parse_for_statement(parser);
+			break;
+
+		case kw_goto:
+			parse_goto_statement(parser);
+			break;
+
+		case kw_continue:
+			parse_continue_statement(parser);
+			break;
+
+		case kw_break:
+			parse_break_statement(parser);
+			break;
+
+		case kw_return:
+			parse_return_statement(parser);
+			break;
+
+		case kw_t_create_direct:
+			parse_create_direct_statement(parser);
+			break;
+
+		case kw_printid:
+			parse_printid_statement(parser);
+			break;
+
+		case kw_printf:
+			parse_printf_statement(parser);
+			break;
+
+		case kw_print:
+			parse_print_statement(parser);
+			break;
+
+		case kw_getid:
+			parse_getid_statement(parser);
+			break;
+
+		case identifier:
+			if (parser->next_token == colon)
+			{
+				parse_labeled_statement(parser);
+				break;
+			}
+
+		default:
+			parse_expression_statement(parser);
 	}
-	else
-	{
-		context->blockflag = 1;
-
-		switch (context->curr_token)
-		{
-			case semicolon:
-				totree(context, NOP);
-				break;
-
-			case kw_case:
-				parse_case_statement(context);
-				break;
-
-			case kw_default:
-				parse_default_statement(context);
-				break;
-
-			case l_brace:
-				parse_compound_statement(context, REGBLOCK);
-				break;
-
-			case kw_if:
-				parse_if_statement(context);
-				break;
-
-			case kw_switch:
-				parse_switch_statement(context);
-				break;
-
-			case kw_while:
-				parse_while_statement(context);
-				break;
-
-			case kw_do:
-				parse_do_statement(context);
-				break;
-
-			case kw_for:
-				parse_for_statement(context);
-				break;
-
-			case kw_goto:
-				parse_goto_statement(context);
-				break;
-
-			case kw_continue:
-				parse_continue_statement(context);
-				break;
-
-			case kw_break:
-				parse_break_statement(context);
-				break;
-
-			case kw_return:
-				parse_return_statement(context);
-				break;
-
-			case kw_t_create_direct:
-				parse_create_direct_statement(context);
-				break;
-
-			case kw_printid:
-				parse_printid_statement(context);
-				break;
-
-			case kw_printf:
-				parse_printf_statement(context);
-				break;
-
-			case kw_print:
-				parse_print_statement(context);
-				break;
-
-			case kw_getid:
-				parse_getid_statement(context);
-				break;
-
-			case identifier:
-				if (context->next_token == colon)
-				{
-					parse_labeled_statement(context);
-					break;
-				}
-
-			default:
-				parse_expression_statement(context);
-		}
-	}
-
-	context->flag_in_switch = oldinswitch;
-	context->flag_in_loop = oldinloop;
 }
 
 void parse_compound_statement(parser *const context, const block_type b)

@@ -264,9 +264,6 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "в функции, возвращающей пустое значение, оператор ВОЗВРАТ "
 												  "со значением");
 			break;
-		case decl_after_strmt: // test_exist
-			sprintf(msg, "встретилось описание после оператора");
-			break;
 		case aster_before_func:	// need_test
 			sprintf(msg, "* перед описанием функции");
 			break;
