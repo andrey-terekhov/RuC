@@ -883,7 +883,7 @@ void compstmt_gen(syntax *const sx, ad *const context)
 				N = sx->tree[sx->tc++];
 
 				tree_next_node(sx);
-				printf("default %i tc=%i: compstmt_gen TDeclarr\n", node_get_type(tree_get_node(sx)), sx->tc);
+				printf("%i tc=%i: compstmt_gen TDeclarr\n", node_get_type(tree_get_node(sx)), sx->tc);
 
 				for (i = 0; i < N; i++)
 				{
@@ -947,10 +947,11 @@ int codegen(universal_io *const io, syntax *const sx)
 				size_t old_pc = mem_get_size(sx);
 				mem_increase(sx, 1);
 
+				sx->tc += 2;
 				tree_next_node(sx);
 				printf("%i tc=%i :codegen TBegin\n", node_get_type(tree_get_node(sx)), sx->tc);
 
-				sx->tc += 3; 	
+				sx->tc++; 	
 
 				tree_next_node(sx); // TBegin
 				printf("%i tc=%i :codegen\n", node_get_type(tree_get_node(sx)), sx->tc);
