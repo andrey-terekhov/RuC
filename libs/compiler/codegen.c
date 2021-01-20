@@ -872,7 +872,7 @@ void compstmt_gen(syntax *const sx, ad *const context)
 {
 	while (sx->tree[sx->tc] != TEnd)
 	{		
-		switch (sx->tree[sx->tc])
+		switch (node_get_type(tree_get_node(sx)))
 		{
 			case TDeclarr:
 			{
