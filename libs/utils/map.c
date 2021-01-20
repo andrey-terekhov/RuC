@@ -32,6 +32,25 @@ struct map_hash
 };
 
 
+int map_add_key_symbol(map *const as, const char ch, const size_t size)
+{
+	if (size < as->keys_alloc - as->keys_next)
+	{
+		as->keys_next += utf8_to_string(&as->keys[as->keys_next], ch);
+		return 0;
+	}
+
+	char *new_keys = realloc(as->keys, 2 * as->keys_alloc * sizeof(char));
+	if (new_keys == NULL)
+	{
+		return -1;
+	}
+
+	as->keys_size *= 2;
+	as->keys = new_keys;
+	return map_add_key_symbol(as, ch, size);
+}
+
 size_t map_get_hash(map *const as, const char *const key)
 {
 	char32_t ch = utf8_convert(key);
@@ -41,7 +60,7 @@ size_t map_get_hash(map *const as, const char *const key)
 	}
 
 	as->keys_next = as->keys_size;
-	if (map_add_key_symbol(as, ch))
+	if (map_add_key_symbol(as, ch, utf8_symbol_size(key)))
 	{
 		return SIZE_MAX;
 	}
@@ -55,7 +74,7 @@ size_t map_get_hash(map *const as, const char *const key)
 			return SIZE_MAX;
 		}
 
-		if (map_add_key_symbol(as, ch))
+		if (map_add_key_symbol(as, ch, utf8_symbol_size(&key[as->keys_next - as->keys_size])))
 		{
 			return SIZE_MAX;
 		}
