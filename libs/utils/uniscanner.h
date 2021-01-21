@@ -21,6 +21,9 @@
 #include "dll.h"
 
 
+#define MAX_SYMBOL_SIZE 8
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
