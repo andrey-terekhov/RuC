@@ -40,7 +40,16 @@ vector vector_create(const size_t values)
 
 size_t map_add(vector *const vec, const int64_t value);
 
-int vector_set(vector *const vec, const size_t index, const int64_t value);
+int vector_set(vector *const vec, const size_t index, const int64_t value)
+{
+	if (!vector_is_correct(vec) || index >= vec->size)
+	{
+		return -1;
+	}
+
+	vec->array[index] = value;
+	return 0;
+}
 
 int64_t vector_get(const vector *const vec, const size_t index)
 {
