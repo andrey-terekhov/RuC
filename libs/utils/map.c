@@ -146,6 +146,10 @@ size_t map_add_by_hash(map *const as, const size_t hash, const int64_t value)
 		as->values[index].value = value;
 		return index;
 	}
+	else if (map_cmp_key(as, index) == 0)
+	{
+		return value == LLONG_MAX ? index : SIZE_MAX;
+	}
 
 	if (as->values_size == as->values_alloc)
 	{
