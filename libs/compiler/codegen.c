@@ -544,11 +544,11 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			size_t oldbreak = context->adbreak;
 			size_t oldcont = context->adcont;
 
-			node incrnode = node_get_child(tree_get_node(sx), 2);
-			node stmtnode = node_get_child(tree_get_node(sx), 3);
+//			node incrnode = node_get_child(tree_get_node(sx), 2);
+//			node stmtnode = node_get_child(tree_get_node(sx), 3);
 
-			printf("%i stmtnode\n", node_get_type(&incrnode));
-			printf("%i stmtnode\n", node_get_type(&stmtnode));
+//			printf("%i incrnode\n", node_get_type(&incrnode));
+//			printf("%i stmtnode\n", node_get_type(&stmtnode));
 
 			tree_next_node(sx);
 			printf("%i tc=%i: Stmt_gen TFor\n", node_get_type(tree_get_node(sx)), sx->tc);
@@ -571,7 +571,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			incrtc = sx->tc;
 			sx->tc = stmtref;
 
-			tree_set_node(sx, &stmtnode);
+//			tree_set_node(sx, &stmtnode);
 
 			Stmt_gen(sx, context); // ???? был 0
 			adcontend(sx, context);
@@ -581,13 +581,13 @@ void Stmt_gen(syntax *const sx, ad *const context)
 				endtc = sx->tc;
 				sx->tc = incrtc;
 
-				node *endnode = tree_get_node(sx);
-				tree_set_node(sx, &incrnode);
+//				node *endnode = tree_get_node(sx);
+//				tree_set_node(sx, &incrnode);
 
 				Expr_gen(sx, 0); // incr
 				sx->tc = endtc;
 
-				tree_set_node(sx, endnode);
+//				tree_set_node(sx, endnode);
 			}
 
 			tocode(sx, B);
@@ -887,7 +887,8 @@ void compstmt_gen(syntax *const sx, ad *const context)
 {
 	while (sx->tree[sx->tc] != TEnd)
 	{		
-		switch (node_get_type(tree_get_node(sx)))
+//		switch (node_get_type(tree_get_node(sx)))
+		switch (sx->tree[sx->tc])
 		{
 			case TDeclarr:
 			{
