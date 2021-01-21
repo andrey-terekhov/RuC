@@ -893,14 +893,28 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 if (leftanst == CONST && manst == AREG)
                 {
                     tocodeI(addi, t1, ropnd, -leftnum);
-                    if (c == LLT)
-                        tocodeJC(mbox == BCF ? blez : bgtz, t1, "ELSE", elselab);
-                    else if (c == LGT)
-                        tocodeJC(mbox == BCF ? bgez : bltz, t1, "ELSE", elselab);
-                    else if (c == LLE)
-                        tocodeJC(mbox == BCF ? bltz : bgez, t1, "ELSE", elselab);
-                    else
-                        tocodeJC(mbox == BCF ? bgtz : blez, t1, "ELSE", elselab);
+                    if (flag_jump_end_cycle == 0)
+                    {
+						if (c == LLT)
+							tocodeJC(mbox == BCF ? blez : bgtz, t1, "ELSE", elselab);
+						else if (c == LGT)
+							tocodeJC(mbox == BCF ? bgez : bltz, t1, "ELSE", elselab);
+						else if (c == LLE)
+							tocodeJC(mbox == BCF ? bltz : bgez, t1, "ELSE", elselab);
+						else
+							tocodeJC(mbox == BCF ? bgtz : blez, t1, "ELSE", elselab);
+                    }
+                    else if (flag_jump_end_cycle == 1)
+                    {
+    					if (c == LLT)
+    						tocodeJC(bgtz, t1, "BEGLOOP", adcont);
+						else if (c == LGT)
+							tocodeJC(bltz, t1, "BEGLOOP", adcont);
+						else if (c == LLE)
+							tocodeJC(bgez, t1, "BEGLOOP", adcont);
+						else
+							tocodeJC(blez, t1, "BEGLOOP", adcont);
+                    }
                     flagBC = 0;
                     return;
                 }
@@ -926,6 +940,12 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 {
 					if (c == LLT)
 						tocodeJC(bltz, t1, "BEGLOOP", adcont);
+					else if (c == LGT)
+						tocodeJC(bgtz, t1, "BEGLOOP", adcont);
+					else if (c == LLE)
+						tocodeJC(blez, t1, "BEGLOOP", adcont);
+					else
+						tocodeJC(bgez, t1, "BEGLOOP", adcont);
                 }
                 flagBC = 0;
                 return;
