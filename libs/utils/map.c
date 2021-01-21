@@ -134,7 +134,7 @@ size_t map_add_by_hash(map *const as, const size_t hash, const int64_t value)
 	{
 		if (map_cmp_key(as, index) == 0)
 		{
-			return as->values[index].value == value ? index : SIZE_MAX;
+			return value == LLONG_MAX ? index : SIZE_MAX;
 		}
 		index = as->values[index].next;
 	}
@@ -280,7 +280,7 @@ size_t map_reserve(map *const as, const char *const key)
 		return SIZE_MAX;
 	}
 
-	return 0;
+	return map_add_by_hash(as, map_get_hash(as, key), LLONG_MAX);
 }
 
 
