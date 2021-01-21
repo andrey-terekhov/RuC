@@ -42,7 +42,15 @@ size_t map_add(vector *const vec, const int64_t value);
 
 int vector_set(vector *const vec, const size_t index, const int64_t value);
 
-int64_t vector_get(const vector *const vec, const size_t index);
+int64_t vector_get(const vector *const vec, const size_t index)
+{
+	if (!vector_is_correct(vec) || index >= vec->size)
+	{
+		return LLONG_MAX;
+	}
+
+	return vec->array[index];
+}
 
 
 size_t vector_size(vector *const vec)
