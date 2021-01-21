@@ -38,7 +38,28 @@ vector vector_create(const size_t values)
 }
 
 
-size_t map_add(vector *const vec, const int64_t value);
+size_t map_add(vector *const vec, const int64_t value)
+{
+	if (!vector_is_correct(vec))
+	{
+		return SIZE_MAX;
+	}
+
+	if (vec->size == vec->size_alloc)
+	{
+		int64_t *array_new = realloc(vec->array, 2 * vec->size_alloc * sizeof(int64_t));
+		if (array_new == NULL)
+		{
+			return SIZE_MAX;
+		}
+
+		vec->size_alloc *= 2;
+		vec->array = array_new;
+	}
+
+	vec->array[vec->size] = value;
+	return vec->size++;
+}
 
 int vector_set(vector *const vec, const size_t index, const int64_t value)
 {
