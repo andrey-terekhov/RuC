@@ -213,7 +213,7 @@ int struct_decl_list(parser *context);
 int parse_type_specifier(parser *const parser);
 void function_definition(parser *context);
 int func_declarator(parser *context, int level, int func_d, int firstdecl);
-void ext_decl(parser *context);
+void ext_decl(parser *const parser);
 
 #ifdef __cplusplus
 } /* extern "C" */

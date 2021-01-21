@@ -879,76 +879,76 @@ int func_declarator(parser *context, int level, int func_d, int firstdecl)
  */
 
 
-void parse_declaration(parser *const context)
+void parse_declaration(parser *const parser)
 {
 	int repeat = 1;
-	scanner(context);
-	int firstdecl = parse_type_specifier(context);
-	if (context->was_error == 3)
+	scanner(parser);
+	int firstdecl = parse_type_specifier(parser);
+	if (parser->was_error == 3)
 	{
-		context->was_error = 1;
+		parser->was_error = 1;
 		return;
 	}
-	if (context->wasstructdef && context->next_token == SEMICOLON)
+	if (parser->wasstructdef && parser->next_token == SEMICOLON)
 	{
-		scanner(context);
+		scanner(parser);
 		return;
 	}
 	do
 	{
-		int temp = idorpnt(context, after_type_must_be_ident, firstdecl);
+		int temp = idorpnt(parser, after_type_must_be_ident, firstdecl);
 
-		if (context->was_error == after_type_must_be_ident)
+		if (parser->was_error == after_type_must_be_ident)
 		{
-			context->was_error = 1;
+			parser->was_error = 1;
 			break;
 		}
 
-		decl_id(context, temp);
-		if (context->was_error == 4)
+		decl_id(parser, temp);
+		if (parser->was_error == 4)
 		{
-			context->was_error = 1;
+			parser->was_error = 1;
 			break;
 		}
-		if (context->next_token == COMMA)
+		if (parser->next_token == COMMA)
 		{
-			scanner(context);
+			scanner(parser);
 		}
-		else if (context->next_token == SEMICOLON)
+		else if (parser->next_token == SEMICOLON)
 		{
-			scanner(context);
+			scanner(parser);
 			repeat = 0;
 		}
 		else
 		{
-			parser_error(context, def_must_end_with_semicomma);
-			context->curr_token = SEMICOLON;
+			parser_error(parser, def_must_end_with_semicomma);
+			parser->curr_token = SEMICOLON;
 			repeat = 0;
 		}
 	} while (repeat);
 }
 
-void parse_top_level_declaration(parser *const context)
+void parse_top_level_declaration(parser *const parser)
 {
 	int repeat = 1;
 	int funrepr;
 	int first = 1;
-	context->wasstructdef = 0;
-	scanner(context);
+	parser->wasstructdef = 0;
+	scanner(parser);
 
-	context->firstdecl = parse_type_specifier(context);
-	if (context->was_error == 3)
+	parser->firstdecl = parse_type_specifier(parser);
+	if (parser->was_error == 3)
 	{
-		context->was_error = 1;
+		parser->was_error = 1;
 		return;
 	}
-	if (context->wasstructdef && context->next_token == SEMICOLON) // struct point {float x, y;};
+	if (parser->wasstructdef && parser->next_token == SEMICOLON) // struct point {float x, y;};
 	{
-		scanner(context);
+		scanner(parser);
 		return;
 	}
 
-	context->func_def = 3; // context->func_def = 0 - (),
+	parser->func_def = 3; // context->func_def = 0 - (),
 						   // 1 - определение функции,
 						   // 2 - это предописание,
 						   // 3 - не знаем или вообще не функция
@@ -958,111 +958,111 @@ void parse_top_level_declaration(parser *const context)
 
 	do // описываемые объекты через ',' определение функции может быть только одно, никаких ','
 	{
-		context->type = context->firstdecl;
-		if (context->next_token == LMULT)
+		parser->type = parser->firstdecl;
+		if (parser->next_token == LMULT)
 		{
-			scanner(context);
-			context->type = context->firstdecl == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, context->firstdecl);
+			scanner(parser);
+			parser->type = parser->firstdecl == LVOID ? LVOIDASTER : newdecl(parser->sx, MPOINT, parser->firstdecl);
 		}
-		mustbe_complex(context, IDENT, after_type_must_be_ident);
-		if (context->was_error == after_type_must_be_ident)
+		mustbe_complex(parser, IDENT, after_type_must_be_ident);
+		if (parser->was_error == after_type_must_be_ident)
 		{
-			context->was_error = 1;
+			parser->was_error = 1;
 			break;
 		}
 
-		if (context->next_token == LEFTBR) // определение или предописание функции
+		if (parser->next_token == LEFTBR) // определение или предописание функции
 		{
-			size_t oldfuncnum = context->sx->funcnum++;
-			int firsttype = context->type;
-			funrepr = REPRTAB_POS;
-			scanner(context);
-			scanner(context);
+			size_t oldfuncnum = parser->sx->funcnum++;
+			int firsttype = parser->type;
+			funrepr = parser->lxr->repr;
+			scanner(parser);
+			scanner(parser);
 
 			// выкушает все параметры до ) включительно
-			context->type = func_declarator(context, first, 3, firsttype);
-			if (context->was_error == 2)
+			parser->type = func_declarator(parser, first, 3, firsttype);
+			if (parser->was_error == 2)
 			{
-				context->was_error = 1;
+				parser->was_error = 1;
 				break;
 			}
 
-			if (context->next_token == BEGIN)
+			if (parser->next_token == BEGIN)
 			{
-				if (context->func_def == 0)
+				if (parser->func_def == 0)
 				{
-					context->func_def = 1;
+					parser->func_def = 1;
 				}
 			}
-			else if (context->func_def == 0)
+			else if (parser->func_def == 0)
 			{
-				context->func_def = 2;
+				parser->func_def = 2;
 			}
 			// теперь я точно знаю, это определение ф-ции или предописание
 			// (context->func_def=1 или 2)
-			REPRTAB_POS = funrepr;
+			parser->lxr->repr = funrepr;
 
-			toidentab(context, (int) oldfuncnum, context->type);
-			if (context->was_error == 5)
+			toidentab(parser, (int) oldfuncnum, parser->type);
+			if (parser->was_error == 5)
 			{
-				context->was_error = 1;
+				parser->was_error = 1;
 				break;
 			}
 
-			if (context->next_token == BEGIN)
+			if (parser->next_token == BEGIN)
 			{
-				scanner(context);
-				if (context->func_def == 2)
+				scanner(parser);
+				if (parser->func_def == 2)
 				{
-					parser_error(context, func_decl_req_params);
+					parser_error(parser, func_decl_req_params);
 					break;
 				}
 
-				function_definition(context);
+				function_definition(parser);
 				break;
 			}
 			else
 			{
-				if (context->func_def == 1)
+				if (parser->func_def == 1)
 				{
-					parser_error(context, function_has_no_body);
+					parser_error(parser, function_has_no_body);
 					break;
 				}
 			}
 		}
-		else if (context->firstdecl == LVOID)
+		else if (parser->firstdecl == LVOID)
 		{
-			parser_error(context, only_functions_may_have_type_VOID);
+			parser_error(parser, only_functions_may_have_type_VOID);
 			break;
 		}
 
 		// описания идентов-не-функций
 
-		if (context->func_def == 3)
+		if (parser->func_def == 3)
 		{
-			decl_id(context, context->type);
+			decl_id(parser, parser->type);
 		}
 
-		if (context->was_error == 4)
+		if (parser->was_error == 4)
 		{
-			context->was_error = 1;
+			parser->was_error = 1;
 			break;
 		}
 
-		if (context->next_token == COMMA)
+		if (parser->next_token == COMMA)
 		{
-			scanner(context);
+			scanner(parser);
 			first = 0;
 		}
-		else if (context->next_token == SEMICOLON)
+		else if (parser->next_token == SEMICOLON)
 		{
-			scanner(context);
+			scanner(parser);
 			repeat = 0;
 		}
 		else
 		{
-			parser_error(context, def_must_end_with_semicomma);
-			context->curr_token = SEMICOLON;
+			parser_error(parser, def_must_end_with_semicomma);
+			parser->curr_token = SEMICOLON;
 			repeat = 0;
 		}
 	} while (repeat);
@@ -1073,7 +1073,7 @@ void ext_decl(parser *const parser)
 {
 	get_char(parser->lxr);
 	get_char(parser->lxr);
-	parser->next_token = lex(parser->lxr);
+	consume_token(parser);
 
 	do
 	{
