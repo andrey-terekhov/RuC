@@ -29,7 +29,7 @@ struct map_hash
 {
 	size_t next;
 	size_t ref;
-	int value;
+	int64_t value;
 };
 
 
@@ -122,7 +122,7 @@ int map_cmp_key(const map *const as, const size_t index)
 	return strcmp(&as->keys[as->values[index].ref], &as->keys[as->keys_size]);
 }
 
-size_t map_add_by_hash(map *const as, const size_t hash, const int value)
+size_t map_add_by_hash(map *const as, const size_t hash, const int64_t value)
 {
 	if (hash == SIZE_MAX)
 	{
@@ -169,7 +169,7 @@ size_t map_add_by_hash(map *const as, const size_t hash, const int value)
 	return index;
 }
 
-size_t map_set_by_hash(map *const as, const size_t hash, const int value)
+size_t map_set_by_hash(map *const as, const size_t hash, const int64_t value)
 {
 	if (hash == SIZE_MAX)
 	{
@@ -196,11 +196,11 @@ size_t map_set_by_hash(map *const as, const size_t hash, const int value)
 	return index;
 }
 
-int map_get_by_hash(const map *const as, const size_t hash)
+int64_t map_get_by_hash(const map *const as, const size_t hash)
 {
 	if (hash == SIZE_MAX)
 	{
-		return INT_MAX;
+		return LLONG_MAX;
 	}
 
 	size_t index = hash;
@@ -215,7 +215,7 @@ int map_get_by_hash(const map *const as, const size_t hash)
 
 	if (as->values[index].ref == SIZE_MAX || map_cmp_key(as, index) != 0)
 	{
-		return INT_MAX;
+		return LLONG_MAX;
 	}
 
 	return as->values[index].value;
@@ -273,7 +273,7 @@ map map_create(const size_t values)
 }
 
 
-size_t map_add(map *const as, const char *const key, const int value)
+size_t map_add(map *const as, const char *const key, const int64_t value)
 {
 	if (!map_is_correct(as) || key == NULL)
 	{
@@ -283,7 +283,7 @@ size_t map_add(map *const as, const char *const key, const int value)
 	return map_add_by_hash(as, map_get_hash(as, key), value);
 }
 
-size_t map_add_by_io(map *const as, universal_io *const io, const int value, char32_t *const last)
+size_t map_add_by_io(map *const as, universal_io *const io, const int64_t value, char32_t *const last)
 {
 	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
 	{
@@ -294,7 +294,7 @@ size_t map_add_by_io(map *const as, universal_io *const io, const int value, cha
 }
 
 
-size_t map_set(map *const as, const char *const key, const int value)
+size_t map_set(map *const as, const char *const key, const int64_t value)
 {
 	if (!map_is_correct(as) || key == NULL)
 	{
@@ -304,7 +304,7 @@ size_t map_set(map *const as, const char *const key, const int value)
 	return map_set_by_hash(as, map_get_hash(as, key), value);
 }
 
-size_t map_set_by_io(map *const as, universal_io *const io, const int value, char32_t *const last)
+size_t map_set_by_io(map *const as, universal_io *const io, const int64_t value, char32_t *const last)
 {
 	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
 	{
@@ -314,7 +314,7 @@ size_t map_set_by_io(map *const as, universal_io *const io, const int value, cha
 	return map_set_by_hash(as, map_get_hash_by_io(as, io, last), value);
 }
 
-int map_set_at(map *const as, const size_t index, const int value)
+int map_set_at(map *const as, const size_t index, const int64_t value)
 {
 	if (!map_is_correct(as) || index >= as->values_size || as->values[index].ref == SIZE_MAX)
 	{
@@ -327,31 +327,31 @@ int map_set_at(map *const as, const size_t index, const int value)
 
 
 
-int map_get(map *const as, const char *const key)
+int64_t map_get(map *const as, const char *const key)
 {
 	if (!map_is_correct(as) || key == NULL)
 	{
-		return INT_MAX;
+		return LLONG_MAX;
 	}
 
 	return map_get_by_hash(as, map_get_hash(as, key));
 }
 
-int map_get_by_io(map *const as, universal_io *const io, char32_t *const last)
+int64_t map_get_by_io(map *const as, universal_io *const io, char32_t *const last)
 {
 	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
 	{
-		return INT_MAX;
+		return LLONG_MAX;
 	}
 
 	return map_get_by_hash(as, map_get_hash_by_io(as, io, last));
 }
 
-int map_get_at(const map *const as, const size_t index)
+int64_t map_get_at(const map *const as, const size_t index)
 {
 	if (!map_is_correct(as) || index >= as->values_size || as->values[index].ref == SIZE_MAX)
 	{
-		return INT_MAX;
+		return LLONG_MAX;
 	}
 
 	return as->values[index].value;

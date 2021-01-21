@@ -63,7 +63,7 @@ EXPORTED map map_create(const size_t values);
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-EXPORTED size_t map_add(map *const as, const char *const key, const int value);
+EXPORTED size_t map_add(map *const as, const char *const key, const int64_t value);
 
 /**
  *	Add new pair by reading key from io
@@ -75,7 +75,7 @@ EXPORTED size_t map_add(map *const as, const char *const key, const int value);
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-EXPORTED size_t map_add_by_io(map *const as, universal_io *const io, const int value, char32_t *const last);
+EXPORTED size_t map_add_by_io(map *const as, universal_io *const io, const int64_t value, char32_t *const last);
 
 
 /**
@@ -87,7 +87,7 @@ EXPORTED size_t map_add_by_io(map *const as, universal_io *const io, const int v
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-EXPORTED size_t map_set(map *const as, const char *const key, const int value);
+EXPORTED size_t map_set(map *const as, const char *const key, const int64_t value);
 
 /**
  *	Set new value by reading existing key from io
@@ -99,7 +99,7 @@ EXPORTED size_t map_set(map *const as, const char *const key, const int value);
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-EXPORTED size_t map_set_by_io(map *const as, universal_io *const io, const int value, char32_t *const last);
+EXPORTED size_t map_set_by_io(map *const as, universal_io *const io, const int64_t value, char32_t *const last);
 
 /**
  *	Set new value by index
@@ -110,7 +110,7 @@ EXPORTED size_t map_set_by_io(map *const as, universal_io *const io, const int v
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int map_set_at(map *const as, const size_t index, const int value);
+EXPORTED int map_set_at(map *const as, const size_t index, const int64_t value);
 
 
 /**
@@ -119,9 +119,9 @@ EXPORTED int map_set_at(map *const as, const size_t index, const int value);
  *	@param	as				Map structure
  *	@param	key				Unique string key
  *
- *	@return	Value, @c INT_MAX on failure
+ *	@return	Value, @c LLONG_MAX on failure
  */
-EXPORTED int map_get(map *const as, const char *const key);
+EXPORTED int64_t map_get(map *const as, const char *const key);
 
 /**
  *	Get value by reading key from io
@@ -130,9 +130,9 @@ EXPORTED int map_get(map *const as, const char *const key);
  *	@param	io				Universal io structure
  *	@param	symbol			Next character after key
  *
- *	@return	Value, @c INT_MAX on failure
+ *	@return	Value, @c LLONG_MAX on failure
  */
-EXPORTED int map_get_by_io(map *const as, universal_io *const io, char32_t *const last);
+EXPORTED int64_t map_get_by_io(map *const as, universal_io *const io, char32_t *const last);
 
 /**
  *	Get value by index
@@ -140,9 +140,9 @@ EXPORTED int map_get_by_io(map *const as, universal_io *const io, char32_t *cons
  *	@param	as				Map structure
  *	@param	index			Value index
  *
- *	@return	Value, @c INT_MAX on failure
+ *	@return	Value, @c LLONG_MAX on failure
  */
-EXPORTED int map_get_at(const map *const as, const size_t index);
+EXPORTED int64_t map_get_at(const map *const as, const size_t index);
 
 
 /**
