@@ -103,7 +103,8 @@ void parse_case_statement(parser *const parser)
 	}
 	parser->sopnd--;
 
-	try_consume_token(parser, colon, expected_colon_after_case);
+	expect_and_consume_token(parser, colon, expected_colon_after_case);
+
 	parse_statement(parser);
 }
 
@@ -124,7 +125,8 @@ void parse_default_statement(parser *const parser)
 		parser_error(parser, default_not_in_switch);
 	}
 
-	try_consume_token(parser, colon, expected_colon_after_default);
+	expect_and_consume_token(parser, colon, expected_colon_after_default);
+
 	parse_statement(parser);
 }
 
@@ -139,7 +141,7 @@ void parse_default_statement(parser *const parser)
 void parse_expression_statement(parser *const parser)
 {
 	parse_expression(parser);
-	try_consume_token(parser, semicolon, expected_semi_after_stmt);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 
 /**
@@ -246,7 +248,8 @@ void parse_do_statement(parser *const parser)
 		skip_until(parser, semicolon);
 	}
 
-	try_consume_token(parser, semicolon, expected_semi_after_stmt);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+	
 	parser->flag_in_loop = old_in_loop;
 }
 
@@ -372,7 +375,7 @@ void parse_continue_statement(parser *const parser)
 		parser_error(parser, continue_not_in_loop);
 	}
 
-	try_consume_token(parser, semicolon, expected_semi_after_stmt);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 
 /**
@@ -392,7 +395,7 @@ void parse_break_statement(parser *const parser)
 		parser_error(parser, break_not_in_loop_or_switch);
 	}
 
-	try_consume_token(parser, semicolon, expected_semi_after_stmt);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 
 /**
@@ -772,6 +775,7 @@ void parse_statement(parser *const parser)
 
 		default:
 			parse_expression_statement(parser);
+			break;
 	}
 }
 

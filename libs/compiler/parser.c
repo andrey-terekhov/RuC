@@ -209,13 +209,20 @@ void consume_token(parser *const parser)
 	parser->next_token = lex(parser->lxr);
 }
 
-void try_consume_token(parser *const parser, const TOKEN expected, const enum ERROR err)
+int try_consume_token(parser *const parser, const TOKEN expected)
 {
 	if (parser->next_token == expected)
 	{
 		consume_token(parser);
+		return 1;
 	}
-	else
+
+	return 0;
+}
+
+void expect_and_consume_token(parser *const parser, const TOKEN expected, const enum ERROR err)
+{
+	if (!try_consume_token(parser, expected))
 	{
 		parser_error(parser, err);
 	}
@@ -225,7 +232,6 @@ void skip_until(parser *const parser, const unsigned int tokens)
 {
 	while (parser->next_token != eof)
 	{
-		//consume_token(parser);
 		switch (parser->next_token)
 		{
 			case l_paren:

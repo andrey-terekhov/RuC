@@ -884,9 +884,8 @@ void parse_inner_declaration(parser *const parser)
 	consume_token(parser);
 	int group_type = parse_type_specifier(parser);
 
-	if (parser->flag_was_type_def && parser->next_token == semicolon)
+	if (parser->flag_was_type_def && try_consume_token(parser, semicolon))
 	{
-		consume_token(parser);
 		return;
 	}
 
@@ -909,9 +908,9 @@ void parse_inner_declaration(parser *const parser)
 			parser_error(parser, after_type_must_be_ident);
 			skip_until(parser, comma | semicolon);
 		}
-	} while (parser->next_token == comma ? consume_token(parser), 1 : 0);
+	} while (try_consume_token(parser, comma));
 
-	try_consume_token(parser, semicolon, expected_semi_after_decl);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_decl);
 }
 
 void parse_external_declaration(parser *const parser)
