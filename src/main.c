@@ -22,9 +22,9 @@
 #include "workspace.h"
 
 
-const char *name = "../tests/robots/network/blynk.c";
+const char *name = //"../tests/robots/network/blynk.c";
 // "../tests/mips/0test.c";
-// "../tests/input/getid/topol/yastrebov.c";
+ "../tests/input/getid/topol/yastrebov.c";
 
 int main(int argc, const char *argv[])
 {
