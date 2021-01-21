@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "uniio.h"
+#include "vector.h"
 
 
 #ifdef __cplusplus
@@ -34,8 +35,7 @@ typedef struct syntax
 {
 	// mem, pc & iniprocs - usage here only for codes printing
 
-	int mem[MAXMEMSIZE];			/**< Memory */
-	int pc;							/**< Program counter */
+	vector memory;					/**< Memory table */
 
 	int iniprocs[INIPROSIZE];		/**< Init processes */
 	int procd;						/**< Process management daemon */

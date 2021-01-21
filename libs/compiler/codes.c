@@ -1494,11 +1494,11 @@ void tables_and_codes(const syntax *const sx, const char *const path)
 
 	uni_printf(&io, "\n%s\n", "mem");
 	size_t i = 0;
-	while ((int)i < sx->pc)
+	/*while ((int)i < sx->pc)
 	{
 		uni_printf(&io, "pc %zi) ", i);
 		i = elem_to_io(&io, sx->mem, i);
-	}
+	}*/
 
 	io_erase(&io);
 }
