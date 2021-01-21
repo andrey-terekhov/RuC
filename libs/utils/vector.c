@@ -15,20 +15,45 @@
  */
 
 #include "vector.h"
+#include <math.h>
 #include <stdlib.h>
 
 
-vector vector_create(const size_t values)
+vector vector_create(const size_t alloc)
 {
 	vector vec;
 
 	vec.size = 0;
-	vec.size_alloc = values != 0 ? values : 1;
+	vec.size_alloc = alloc != 0 ? alloc : 1;
 	vec.array = malloc(vec.size_alloc * sizeof(int64_t));
 
 	return vec;
 }
 
+
+int vector_increase(vector *const vec, const size_t size)
+{
+	if (!vector_is_correct(vec))
+	{
+		return -1;
+	}
+
+	if (vec->size + size > vec->size_alloc)
+	{
+		const size_t n = (size_t)powl(2, floorl(log2l((long double)(vec->size + size) / vec->size_alloc)));
+		int64_t *array_new = realloc(vec->array, n * vec->size_alloc * sizeof(int64_t));
+		if (array_new == NULL)
+		{
+			return -1;
+
+
+		vec->size_alloc *= 2;
+		vec->array = array_new;
+	}
+
+	vec->size += size;
+	return 0;
+}
 
 size_t vector_add(vector *const vec, const int64_t value)
 {

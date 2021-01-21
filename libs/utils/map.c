@@ -244,12 +244,12 @@ map map_broken()
  */
 
 
-map map_create(const size_t values)
+map map_create(const size_t alloc)
 {
 	map as;
 
 	as.values_size = MAP_HASH_MAX;
-	as.values_alloc = as.values_size + values;
+	as.values_alloc = as.values_size + alloc;
 
 	as.values = malloc(as.values_alloc * sizeof(map_hash));
 	if (as.values == NULL)

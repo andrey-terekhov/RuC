@@ -47,11 +47,11 @@ typedef struct map
 /**
  *	Create map structure
  *
- *	@param	values			Initializer of values count
+ *	@param	alloc			Initializer of allocated size
  *
  *	@return	Map structure
  */
-EXPORTED map map_create(const size_t values);
+EXPORTED map map_create(const size_t alloc);
 
 
 /**
