@@ -55,6 +55,17 @@ EXPORTED map map_create(const size_t values);
 
 
 /**
+ *	Reserve new key or return existing
+ *
+ *	@param	as				Map structure
+ *	@param	key				Unique string key
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t map_reserve(map *const as, const char *const key);
+
+
+/**
  *	Add new key-value pair
  *
  *	@param	as				Map structure

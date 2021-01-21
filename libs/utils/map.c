@@ -273,6 +273,17 @@ map map_create(const size_t values)
 }
 
 
+size_t map_reserve(map *const as, const char *const key)
+{
+	if (!map_is_correct(as) || key == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	return 0;
+}
+
+
 size_t map_add(map *const as, const char *const key, const int64_t value)
 {
 	if (!map_is_correct(as) || key == NULL)
