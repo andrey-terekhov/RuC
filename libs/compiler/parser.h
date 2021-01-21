@@ -33,7 +33,7 @@ extern "C" {
 void parser_error(parser *const context, const enum ERROR err);
 
 /**
- *	Consume the current 'peek token' and lex the next one.
+ *	Consume the current 'peek token' and lex the next one
  *
  *	@param	parser		Parser structure
  */
@@ -101,7 +101,7 @@ void parse_constant_expression(parser *const parser);
  *
  *	@param	parser	Parser structure
  */
-void parse_declaration(parser *const parser);
+void parse_inner_declaration(parser *const parser);
 
 /**
  *	Parse a top level declaration [C99 6.7]
@@ -110,7 +110,7 @@ void parse_declaration(parser *const parser);
  *
  *	@param	parser	Parser structure
  */
-void parse_top_level_declaration(parser *const parser);
+void parse_external_declaration(parser *const parser);
 
 
 /**
@@ -210,7 +210,6 @@ int arrdef(parser *context, int t);
 void decl_id(parser *context, int decl_type);
 int idorpnt(parser *context, int e, int t);
 int struct_decl_list(parser *context);
-int parse_type_specifier(parser *const parser);
 void function_definition(parser *context);
 int func_declarator(parser *context, int level, int func_d, int firstdecl);
 void ext_decl(parser *const parser);

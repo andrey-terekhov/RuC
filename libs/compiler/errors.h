@@ -63,7 +63,7 @@ enum ERROR
 	only_functions_may_have_type_VOID,
 	decl_and_def_have_diff_type,
 	wrong_param_list,
-	def_must_end_with_semicomma,
+	expected_semi_after_decl,
 	func_decl_req_params,
 	cond_must_be_in_brkts,
 	repeated_decl,

@@ -41,7 +41,7 @@ typedef struct analyzer
 	TOKEN curr_token;					/**< Current token */
 	TOKEN next_token;					/**< Lookahead token */
 	int line;
-	int wasstructdef;
+	int flag_was_type_def;
 	int func_def;
 	int stack[100];
 	int stackop[100];

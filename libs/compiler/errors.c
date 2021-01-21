@@ -115,7 +115,7 @@ void get_error(const int num, char *const msg, va_list args)
 		case wrong_param_list: // need_test
 			sprintf(msg, "неправильный список параметров");
 			break;
-		case def_must_end_with_semicomma: // test_exist
+		case expected_semi_after_decl: // test_exist
 			sprintf(msg, "список описаний должен заканчиваться ;");
 			break;
 		case func_decl_req_params: // need_test

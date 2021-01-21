@@ -225,7 +225,7 @@ void skip_until(parser *const parser, const unsigned int tokens)
 {
 	while (parser->next_token != eof)
 	{
-		consume_token(parser);
+		//consume_token(parser);
 		switch (parser->next_token)
 		{
 			case l_paren:

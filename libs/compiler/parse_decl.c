@@ -89,7 +89,7 @@ int parse_type_specifier(parser *const parser)
 						const size_t id = ident_add(parser->sx, repr, 1000, mode, 3);
 						ident_set_displ(parser->sx, id, 1000 + parser->was_struct_with_arr);
 
-						parser->wasstructdef = 1;
+						parser->flag_was_type_def = 1;
 
 						return ident_get_mode(parser->sx, id);
 					}
@@ -879,61 +879,47 @@ int func_declarator(parser *context, int level, int func_d, int firstdecl)
  */
 
 
-void parse_declaration(parser *const parser)
+void parse_inner_declaration(parser *const parser)
 {
-	int repeat = 1;
-	scanner(parser);
-	int firstdecl = parse_type_specifier(parser);
-	if (parser->was_error == 3)
+	consume_token(parser);
+	int group_type = parse_type_specifier(parser);
+
+	if (parser->flag_was_type_def && parser->next_token == semicolon)
 	{
-		parser->was_error = 1;
+		consume_token(parser);
 		return;
 	}
-	if (parser->wasstructdef && parser->next_token == SEMICOLON)
-	{
-		scanner(parser);
-		return;
-	}
+
 	do
 	{
-		int temp = idorpnt(parser, after_type_must_be_ident, firstdecl);
-
-		if (parser->was_error == after_type_must_be_ident)
+		int type = group_type;
+		if (parser->next_token == star)
 		{
-			parser->was_error = 1;
-			break;
+			consume_token(parser);
+			type = group_type == LVOID ? LVOIDASTER : newdecl(parser->sx, MPOINT, group_type);
 		}
 
-		decl_id(parser, temp);
-		if (parser->was_error == 4)
+		if (parser->next_token == identifier)
 		{
-			parser->was_error = 1;
-			break;
-		}
-		if (parser->next_token == COMMA)
-		{
-			scanner(parser);
-		}
-		else if (parser->next_token == SEMICOLON)
-		{
-			scanner(parser);
-			repeat = 0;
+			consume_token(parser);
+			decl_id(parser, type);
 		}
 		else
 		{
-			parser_error(parser, def_must_end_with_semicomma);
-			parser->curr_token = SEMICOLON;
-			repeat = 0;
+			parser_error(parser, after_type_must_be_ident);
+			skip_until(parser, comma | semicolon);
 		}
-	} while (repeat);
+	} while (parser->next_token == comma ? consume_token(parser), 1 : 0);
+
+	try_consume_token(parser, semicolon, expected_semi_after_decl);
 }
 
-void parse_top_level_declaration(parser *const parser)
+void parse_external_declaration(parser *const parser)
 {
 	int repeat = 1;
 	int funrepr;
 	int first = 1;
-	parser->wasstructdef = 0;
+	parser->flag_was_type_def = 0;
 	scanner(parser);
 
 	parser->firstdecl = parse_type_specifier(parser);
@@ -942,7 +928,7 @@ void parse_top_level_declaration(parser *const parser)
 		parser->was_error = 1;
 		return;
 	}
-	if (parser->wasstructdef && parser->next_token == SEMICOLON) // struct point {float x, y;};
+	if (parser->flag_was_type_def && parser->next_token == SEMICOLON) // struct point {float x, y;};
 	{
 		scanner(parser);
 		return;
@@ -1061,7 +1047,7 @@ void parse_top_level_declaration(parser *const parser)
 		}
 		else
 		{
-			parser_error(parser, def_must_end_with_semicomma);
+			parser_error(parser, expected_semi_after_decl);
 			parser->curr_token = SEMICOLON;
 			repeat = 0;
 		}
@@ -1077,7 +1063,7 @@ void ext_decl(parser *const parser)
 
 	do
 	{
-		parse_top_level_declaration(parser);
+		parse_external_declaration(parser);
 	} while (parser->next_token != eof);
 
 	totree(parser, TEnd);

@@ -793,7 +793,7 @@ void parse_compound_statement(parser *const context, const block_type b)
 	while (is_int(context->next_token) || is_float(context->next_token) || context->next_token == LSTRUCT ||
 		   context->next_token == LVOID)
 	{
-		parse_declaration(context);
+		parse_inner_declaration(context);
 	}
 
 	// кончились описания, пошли операторы до }
