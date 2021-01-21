@@ -257,7 +257,7 @@ int preprocess_scan(preprocess_context *context)
 		}
 		default:
 		{
-			if (is_letter(context) && context->prep_flag == 1)
+			if (utf8_is_letter(context->curchar) && context->prep_flag == 1)
 			{
 				int r = collect_mident(context);
 

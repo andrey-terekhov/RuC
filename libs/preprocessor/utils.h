@@ -35,9 +35,6 @@ void space_skip_str(preprocess_context *context);
 size_t skip_str(preprocess_context *context);
 void skip_file(preprocess_context *context);
 
-int is_letter(preprocess_context *context);
-int is_digit(int a);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

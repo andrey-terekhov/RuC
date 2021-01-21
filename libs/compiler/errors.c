@@ -54,6 +54,51 @@ void get_error(const int num, char *const msg, va_list args)
 
 	switch (num)
 	{
+		case bad_character:
+		{
+			const char32_t bad_char = va_arg(args, char32_t);
+			sprintf(msg, "плохой символ = %i", bad_char);
+		}
+		break;
+
+		case empty_character:
+			sprintf(msg, "пустая символьная константа");
+			break;
+
+		case unknown_escape_sequence:	//test_exist
+			sprintf(msg, "неизвестный служебный символ");
+			break;
+
+		case expected_apost_after_char_const: // need_test
+			sprintf(msg, "символьная константа не заканчивается символом '");
+			break;
+
+		case missing_terminating_quote_char:
+			sprintf(msg, "строка не заканчивается символом \"");
+			break;
+			
+		case string_too_long:	// test_exist
+			sprintf(msg, "слишком длинная строка (больше, чем MAXSTRINGL)");
+			break;
+
+		case unterminated_block_comment:
+			sprintf(msg, "блочный комментарий не окончен");
+			break;
+
+		case no_main_in_program: // test_exist
+			sprintf(msg, "в каждой программе должна быть ГЛАВНАЯ функция");
+			break;
+
+		case predef_but_notdef: // need_test
+		{
+			index += sprintf(&msg[index], "функция ");
+			const int *const reprtab = va_arg(args, int *);
+			const int pos = va_arg(args, int);
+			index += printident(reprtab, pos, &msg[index]);
+			index += sprintf(&msg[index], " была предопределена, но не описана");
+		}
+		break;
+
 		case after_type_must_be_ident: // test_exist
 			sprintf(msg, "после символа типа должен быть идентификатор или * "
 												  "идентификатор");
@@ -170,11 +215,8 @@ void get_error(const int num, char *const msg, va_list args)
 		case assmnt_float_to_int:	// test_exist
 			sprintf(msg, "нельзя присваивать целому вещественное значение");
 			break;
-		case more_than_1_main:	// test_exist
+		case redefinition_of_main:	// test_exist
 			sprintf(msg, "в программе может быть только 1 идентификатор ГЛАВНАЯ");
-			break;
-		case no_main_in_program: // test_exist
-			sprintf(msg, "в каждой программе должна быть ГЛАВНАЯ функция");
 			break;
 		case no_leftbr_in_printid: // test_exist
 			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет (");
@@ -225,17 +267,8 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "в функции, возвращающей пустое значение, оператор ВОЗВРАТ "
 												  "со значением");
 			break;
-		case bad_escape_sym:	//test_exist
-			sprintf(msg, "неизвестный служебный символ");
-			break;
-		case no_right_apost: // need_test
-			sprintf(msg, "символьная константа не заканчивается символом '");
-			break;
 		case decl_after_strmt: // test_exist
 			sprintf(msg, "встретилось описание после оператора");
-			break;
-		case too_long_string:	// test_exist
-			sprintf(msg, "слишком длинная строка ( больше, чем MAXSTRINGL)");
 			break;
 		case aster_before_func:	// need_test
 			sprintf(msg, "* перед описанием функции");
@@ -410,15 +443,6 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "здесь должен быть тип (стандартный или описанный "
 												  "пользователем)");
 			break;
-		case predef_but_notdef: // need_test
-		{
-			index += sprintf(&msg[index], "функция ");
-			const int *const reprtab = va_arg(args, int *);
-			const int pos = va_arg(args, int);
-			index += printident(reprtab, pos, &msg[index]);
-			index += sprintf(&msg[index], " была предопределена, но не описана");
-		}
-		break;
 		case print_without_br: // test_exist
 			sprintf(msg, "операнд оператора печати должен быть в круглых скобках ()");
 			break;
@@ -568,13 +592,6 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "в выражении встретился оператор вне блока, tree[%zi] = %i", i, elem);
 		}
 		break;
-		case tree_expression_texprend:
-		{
-			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "лишний TExprend внутри блока, tree[%zi] = %i", i, elem);
-		}
-		break;
 		case tree_expression_unknown:
 		{
 			const size_t i = va_arg(args, size_t);
@@ -599,6 +616,37 @@ void get_error(const int num, char *const msg, va_list args)
 		case tree_no_tend:
 			sprintf(msg, "отсутствует внешний TEnd дерева");
 			break;
+		case tree_unexpected:
+		{
+			const int unexp = va_arg(args, int);
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "получен %i, ожидался tree[%zi] = %i", unexp, i, elem);
+		}
+		break;
+
+		case node_cannot_set_child:
+		{
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "невозможно получить потомка от tree[%zi] = %i", i, elem);
+		}
+		break;
+		case node_cannot_set_type:
+		{
+			const int type = va_arg(args, int);
+			const size_t i = va_arg(args, size_t);
+			sprintf(msg, "невозможно установить тип %i в tree[%zi]", type, i);
+		}
+		break;
+		case node_cannot_add_arg:
+		{
+			const int arg = va_arg(args, int);
+			const size_t i = va_arg(args, size_t);
+			const int elem = va_arg(args, int);
+			sprintf(msg, "невозможно добавить аргумент %i для tree[%zi] = %i", arg, i, elem);
+		}
+		break;
 
 		default:
 			sprintf(msg, "этот код ошибки я прозевал");

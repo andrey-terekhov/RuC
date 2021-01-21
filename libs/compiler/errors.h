@@ -26,6 +26,20 @@ extern "C" {
 /** Errors codes */
 enum ERROR
 {
+	// Lexer errors
+	bad_character,						/**< "Bad character in source" error */
+	empty_character,					/**< "Empty character constant" error */
+	unknown_escape_sequence,			/**< "Unknown escape sequence" error */
+	expected_apost_after_char_const,	/**< "Missing terminating ' character" error */
+	missing_terminating_quote_char,		/**< "Missing terminating '"' character" error */
+	string_too_long,					/**< "String literal exceeds maximum length" error */
+	unterminated_block_comment,			/**< "Unterminated block comment" error */
+	
+	// Environment errors
+	no_main_in_program,					/**< "Undefined main" error */
+	predef_but_notdef,					/**< "Undefined function" error */
+
+	// Other errors
 	after_type_must_be_ident = 201,
 	wait_right_sq_br,
 	only_functions_may_have_type_VOID,
@@ -59,8 +73,7 @@ enum ERROR
 	no_rightbr_in_for,
 	int_op_for_float,
 	assmnt_float_to_int,
-	more_than_1_main,
-	no_main_in_program,
+	redefinition_of_main,
 	no_leftbr_in_printid,
 	no_rightbr_in_printid,
 	no_ident_in_printid,
@@ -74,10 +87,7 @@ enum ERROR
 	no_ret_in_func,
 	bad_type_in_ret,
 	notvoidret_in_void_func,
-	bad_escape_sym,
-	no_right_apost,
 	decl_after_strmt,
-	too_long_string,
 	aster_before_func,
 	aster_not_for_pointer,
 	aster_with_row,
@@ -123,7 +133,6 @@ enum ERROR
 	empty_init,
 	ident_not_type,
 	not_decl,
-	predef_but_notdef,
 	print_without_br,
 	select_not_from_struct,
 	init_not_struct,
@@ -162,12 +171,19 @@ enum ERROR
 	not_float_in_stanfunc,
 	not_array_in_stanfunc,
 
+	// Tree parsing errors
 	tree_expression_not_block,
-	tree_expression_texprend,
 	tree_expression_unknown,
 	tree_expression_operator,
 	tree_expression_no_texprend,
+
+	// Tree testing errors
 	tree_no_tend,
+	tree_unexpected,
+
+	node_cannot_set_child,
+	node_cannot_set_type,
+	node_cannot_add_arg,
 };
 
 /** Warnings codes */

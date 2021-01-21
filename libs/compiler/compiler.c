@@ -31,9 +31,9 @@
 #endif
 
 
-//#define GENERATE_MACRO
-//#define GENERATE_TABLES
-//#define GENERATE_TREE
+#define GENERATE_MACRO
+#define GENERATE_TABLES
+#define GENERATE_TREE
 
 
 const char *const DEFAULT_MACRO = "macro.txt";
@@ -69,17 +69,29 @@ int compile_from_io_to_vm(universal_io *const io)
 		return -1;
 	}
 
-	syntax sx = sx_create();
+	syntax sx;
+	int ret = sx_init(&sx);
 
-	int ret = analyze(io, &sx);
+	if (!ret)
+	{
+		ret = analyze(io, &sx);
 #ifdef GENERATE_TABLES
-	tables_and_tree(&sx, DEFAULT_TREE);
+		tables_and_tree(&sx, DEFAULT_TREE);
 #endif
+	}
+	
+	if (!ret)
+	{
+		ret = !sx_is_correct(&sx, io);
+	}
 
 	if (!ret)
 	{
 #ifdef GENERATE_TREE
-		ret = tree_test(&sx);
+		ret = tree_test(&sx)
+			|| tree_test_next(&sx)
+			|| tree_test_recursive(&sx)
+			|| tree_test_copy(&sx);
 		if (ret)
 		{
 			io_erase(io);
