@@ -15,7 +15,6 @@
  */
 
 #include "vector.h"
-#include <math.h>
 #include <stdlib.h>
 
 
@@ -40,12 +39,12 @@ int vector_increase(vector *const vec, const size_t size)
 
 	if (vec->size + size > vec->size_alloc)
 	{
-		const size_t n = (size_t)powl(2, floorl(log2l((long double)(vec->size + size) / vec->size_alloc)));
-		int64_t *array_new = realloc(vec->array, n * vec->size_alloc * sizeof(int64_t));
+		const size_t alloc_new = vec->size + size > 2 * vec->size_alloc ? vec->size + size : 2 * vec->size_alloc;
+		int64_t *array_new = realloc(vec->array, alloc_new * sizeof(int64_t));
 		if (array_new == NULL)
 		{
 			return -1;
-
+		}
 
 		vec->size_alloc *= 2;
 		vec->array = array_new;
