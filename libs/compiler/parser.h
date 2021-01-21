@@ -183,7 +183,7 @@ void mustbe(parser *context, int what, int e);
 void mustbe_complex(parser *context, int what, int e);
 void totree(parser *context, int op);
 void totreef(parser *context, int op);
-int toidentab(parser *context, int f, int type);
+int toidentab(parser *context, size_t repr, int f, int type);
 void binop(parser *context, int sp);
 void toval(parser *context);
 void insertwiden(parser *context);
@@ -220,7 +220,7 @@ int arrdef(parser *context, int t);
 void decl_id(parser *context, int decl_type);
 int idorpnt(parser *context, int e, int t);
 int struct_decl_list(parser *context);
-void function_definition(parser *context);
+void function_definition(parser *context, size_t function_id);
 int func_declarator(parser *context, int level, int func_d, int firstdecl);
 void ext_decl(parser *const parser);
 

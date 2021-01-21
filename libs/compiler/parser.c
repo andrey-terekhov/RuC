@@ -130,9 +130,9 @@ void totreef(parser *context, int op)
 	}
 }
 
-int toidentab(parser *context, int f, int type)
+int toidentab(parser *context, size_t repr, int f, int type)
 {
-	const size_t ret = ident_add(context->sx, REPRTAB_POS, f, type, context->func_def);
+	const size_t ret = ident_add(context->sx, repr, f, type, context->func_def);
 	context->lastid = 0;
 
 	if (ret == SIZE_MAX)

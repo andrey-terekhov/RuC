@@ -86,7 +86,7 @@ int parse_type_specifier(parser *const parser)
 					if (parser->next_token == l_brace)
 					{
 						const int mode = struct_decl_list(parser);
-						const size_t id = ident_add(parser->sx, repr, 1000, mode, 3);
+						const size_t id = toidentab(parser, repr, 1000, mode);
 						ident_set_displ(parser->sx, id, 1000 + parser->was_struct_with_arr);
 
 						parser->flag_was_type_def = 1;
@@ -377,7 +377,7 @@ void decl_id(parser *context, int decl_type)
 	// вызывается из block и extdecl, только эта процедура реально отводит память
 	// если встретятся массивы (прямо или в структурах), их размеры уже будут в стеке
 
-	int oldid = toidentab(context, 0, decl_type);
+	int oldid = toidentab(context, (size_t)REPRTAB_POS, 0, decl_type);
 	int elem_type;
 	size_t adN = 0; // warning C4701: potentially uninitialized local variable used
 
@@ -580,8 +580,9 @@ int struct_decl_list(parser *context)
 	return (int)mode_add(context->sx, loc_modetab, locmd);
 }
 
-void function_definition(parser *context)
+void function_definition(parser *context, size_t function_id)
 {
+	context->lastid = function_id;
 	int fn = ident_get_displ(context->sx, context->lastid);
 	int pred;
 	int oldrepr = REPRTAB_POS;
@@ -619,12 +620,12 @@ void function_definition(parser *context)
 		REPRTAB_POS = (int)temp;
 		if (REPRTAB_POS > 0)
 		{
-			toidentab(context, 0, context->type);
+			toidentab(context, (size_t)REPRTAB_POS, 0, context->type);
 		}
 		else
 		{
 			REPRTAB_POS = -REPRTAB_POS;
-			toidentab(context, -1, context->type);
+			toidentab(context, (size_t)REPRTAB_POS, -1, context->type);
 		}
 		if (context->was_error == 5)
 		{
@@ -637,6 +638,7 @@ void function_definition(parser *context)
 	totree(context, fid);
 	pred = (int)context->sx->tc++;
 	REPRTAB_POS = oldrepr;
+	consume_token(context);
 
 	parse_compound_statement(context, 0);
 
@@ -882,6 +884,7 @@ int func_declarator(parser *context, int level, int func_d, int firstdecl)
 void parse_inner_declaration(parser *const parser)
 {
 	consume_token(parser);
+	parser->flag_was_type_def = 0;
 	int group_type = parse_type_specifier(parser);
 
 	if (parser->flag_was_type_def && try_consume_token(parser, semicolon))
@@ -915,142 +918,89 @@ void parse_inner_declaration(parser *const parser)
 
 void parse_external_declaration(parser *const parser)
 {
-	int repeat = 1;
-	int funrepr;
-	int first = 1;
+	consume_token(parser);
 	parser->flag_was_type_def = 0;
-	scanner(parser);
+	int group_type = parse_type_specifier(parser);
 
-	parser->firstdecl = parse_type_specifier(parser);
-	if (parser->was_error == 3)
+	if (parser->flag_was_type_def && try_consume_token(parser, semicolon))
 	{
-		parser->was_error = 1;
-		return;
-	}
-	if (parser->flag_was_type_def && parser->next_token == SEMICOLON) // struct point {float x, y;};
-	{
-		scanner(parser);
 		return;
 	}
 
-	parser->func_def = 3; // context->func_def = 0 - (),
-						   // 1 - определение функции,
-						   // 2 - это предописание,
-						   // 3 - не знаем или вообще не функция
-
-	//	if (firstdecl == 0)
-	//		firstdecl = LINT;
-
-	do // описываемые объекты через ',' определение функции может быть только одно, никаких ','
+	parser->func_def = 3;
+	do
 	{
-		parser->type = parser->firstdecl;
-		if (parser->next_token == LMULT)
+		int type = group_type;
+		if (parser->next_token == star)
 		{
-			scanner(parser);
-			parser->type = parser->firstdecl == LVOID ? LVOIDASTER : newdecl(parser->sx, MPOINT, parser->firstdecl);
-		}
-		mustbe_complex(parser, IDENT, after_type_must_be_ident);
-		if (parser->was_error == after_type_must_be_ident)
-		{
-			parser->was_error = 1;
-			break;
+			consume_token(parser);
+			type = group_type == LVOID ? LVOIDASTER : newdecl(parser->sx, MPOINT, group_type);
 		}
 
-		if (parser->next_token == LEFTBR) // определение или предописание функции
+		if (try_consume_token(parser, identifier))
 		{
-			size_t oldfuncnum = parser->sx->funcnum++;
-			int firsttype = parser->type;
-			funrepr = parser->lxr->repr;
-			scanner(parser);
-			scanner(parser);
-
-			// выкушает все параметры до ) включительно
-			parser->type = func_declarator(parser, first, 3, firsttype);
-			if (parser->was_error == 2)
+			if (parser->next_token == l_paren)
 			{
-				parser->was_error = 1;
-				break;
-			}
+				const size_t function_num = parser->sx->funcnum++;
+				const size_t function_repr = (size_t)parser->lxr->repr;
+				consume_token(parser);
+				consume_token(parser);
 
-			if (parser->next_token == BEGIN)
-			{
-				if (parser->func_def == 0)
+				type = func_declarator(parser, 1, 3, type);
+
+				if (parser->func_def == 0 && parser->next_token == l_brace)
 				{
 					parser->func_def = 1;
 				}
-			}
-			else if (parser->func_def == 0)
-			{
-				parser->func_def = 2;
-			}
-			// теперь я точно знаю, это определение ф-ции или предописание
-			// (context->func_def=1 или 2)
-			parser->lxr->repr = funrepr;
-
-			toidentab(parser, (int) oldfuncnum, parser->type);
-			if (parser->was_error == 5)
-			{
-				parser->was_error = 1;
-				break;
-			}
-
-			if (parser->next_token == BEGIN)
-			{
-				scanner(parser);
-				if (parser->func_def == 2)
+				else if (parser->func_def == 0)
 				{
-					parser_error(parser, func_decl_req_params);
-					break;
+					parser->func_def = 2;
 				}
+				
+				const size_t function_id = toidentab(parser, function_repr, (int)function_num, type);
 
-				function_definition(parser);
-				break;
+				if (parser->next_token == l_brace)
+				{
+					if (parser->func_def == 1)
+					{
+						function_definition(parser, function_id);
+						return;
+					}
+					else
+					{
+						parser_error(parser, func_decl_req_params);
+						skip_until(parser, r_brace);
+						return;
+					}
+				}
+				else if (parser->func_def == 1)
+				{
+					parser_error(parser, function_has_no_body);
+					// На случай, если после неправильного декларатора стоит ';'
+					try_consume_token(parser, semicolon);
+				}
+			}
+			else if (group_type == LVOID)
+			{
+				parser_error(parser, only_functions_may_have_type_VOID);
 			}
 			else
 			{
-				if (parser->func_def == 1)
-				{
-					parser_error(parser, function_has_no_body);
-					break;
-				}
+				decl_id(parser, type);
 			}
-		}
-		else if (parser->firstdecl == LVOID)
-		{
-			parser_error(parser, only_functions_may_have_type_VOID);
-			break;
-		}
-
-		// описания идентов-не-функций
-
-		if (parser->func_def == 3)
-		{
-			decl_id(parser, parser->type);
-		}
-
-		if (parser->was_error == 4)
-		{
-			parser->was_error = 1;
-			break;
-		}
-
-		if (parser->next_token == COMMA)
-		{
-			scanner(parser);
-			first = 0;
-		}
-		else if (parser->next_token == SEMICOLON)
-		{
-			scanner(parser);
-			repeat = 0;
 		}
 		else
 		{
-			parser_error(parser, expected_semi_after_decl);
-			parser->curr_token = SEMICOLON;
-			repeat = 0;
+			parser_error(parser, after_type_must_be_ident);
+			skip_until(parser, comma | semicolon);
 		}
-	} while (repeat);
+
+	} while (try_consume_token(parser, comma));
+
+	if (parser->func_def != 1)
+	{
+		expect_and_consume_token(parser, semicolon, expected_semi_after_decl);
+	}
 }
 
 /** Генерация дерева */

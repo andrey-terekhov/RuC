@@ -42,7 +42,10 @@ typedef struct analyzer
 	TOKEN next_token;					/**< Lookahead token */
 	int line;
 	int flag_was_type_def;
-	int func_def;
+	int func_def;	// context->func_def = 0 - (),
+					// 1 - определение функции,
+					// 2 - это предописание,
+					// 3 - не знаем или вообще не функция
 	int stack[100];
 	int stackop[100];
 	int stackoperands[100];
@@ -53,7 +56,6 @@ typedef struct analyzer
 	int type;
 	int op;
 	int inass;
-	int firstdecl;
 	int arrdim;
 	int was_struct_with_arr;
 	int usual;

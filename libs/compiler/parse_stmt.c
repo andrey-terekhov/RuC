@@ -37,7 +37,7 @@ void parse_labeled_statement(parser *const context)
 	}
 	if (flag)
 	{
-		totree(context, id = toidentab(context, 1, 0));
+		totree(context, id = toidentab(context, (size_t)REPRTAB_POS, 1, 0));
 		if (context->was_error == 5)
 		{
 			context->was_error = 2;
@@ -342,7 +342,7 @@ void parse_goto_statement(parser *const context)
 		// первый раз встретился переход на метку, которой не было,
 		// в этом случае ссылка на identtab, стоящая после TGoto,
 		// будет отрицательной
-		totree(context, -toidentab(context, 1, 0));
+		totree(context, -toidentab(context, (size_t)REPRTAB_POS, 1, 0));
 		context->gotost[context->pgotost++] = context->lastid;
 	}
 	else
