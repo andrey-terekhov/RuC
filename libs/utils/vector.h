@@ -53,7 +53,7 @@ EXPORTED vector vector_create(const size_t values);
  *
  *	@return	Index, @c SIZE_MAX on failure
  */
-EXPORTED size_t map_add(vector *const vec, const int64_t value);
+EXPORTED size_t vector_add(vector *const vec, const int64_t value);
 
 /**
  *	Set new value

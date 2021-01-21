@@ -15,15 +15,7 @@
  */
 
 #include "vector.h"
-
-
-/*
- *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
- *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
- *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
- *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
- *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
- */
+#include <stdlib.h>
 
 
 vector vector_create(const size_t values)
@@ -38,7 +30,7 @@ vector vector_create(const size_t values)
 }
 
 
-size_t map_add(vector *const vec, const int64_t value)
+size_t vector_add(vector *const vec, const int64_t value)
 {
 	if (!vector_is_correct(vec))
 	{
