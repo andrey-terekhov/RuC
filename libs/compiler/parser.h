@@ -139,13 +139,7 @@ void parse_external_declaration(parser *const parser);
 void parse_statement(parser *const context);
 
 /**	The kind of block to parse */
-typedef enum block_type
-{
-	REGBLOCK = 1,
-	THREAD = 2,
-	SWITCH = -1,
-	FUNCBODY = 0
-} block_type;
+typedef enum block_type { REGBLOCK, THREAD, SWITCH, FUNCBODY } block_type;
 
 /**
  *	Parse '{}' block [C99 6.8.2]

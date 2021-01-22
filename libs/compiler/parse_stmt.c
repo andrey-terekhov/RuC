@@ -23,7 +23,7 @@
  *	labeled-statement:
  *		identifier ':' statement
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_labeled_statement(parser *const context)
 {
@@ -84,7 +84,7 @@ void parse_labeled_statement(parser *const context)
  *	labeled-statement:
  *		'case' constant-expression ':' statement
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_case_statement(parser *const parser)
 {
@@ -114,7 +114,7 @@ void parse_case_statement(parser *const parser)
  *	labeled-statement:
  *		'default' ':' statement
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_default_statement(parser *const parser)
 {
@@ -136,7 +136,7 @@ void parse_default_statement(parser *const parser)
  *	expression-statement:
  *		expression ';'
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_expression_statement(parser *const parser)
 {
@@ -151,7 +151,7 @@ void parse_expression_statement(parser *const parser)
  *		'if' '(' expression ')' statement
  *		'if' '(' expression ')' statement 'else' statement
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_if_statement(parser *const context)
 {
@@ -180,7 +180,7 @@ void parse_if_statement(parser *const context)
  *	switch-statement:
  *		'switch' '(' expression ')' statement
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_switch_statement(parser *const context)
 {
@@ -207,7 +207,7 @@ void parse_switch_statement(parser *const context)
  *	while-statement:
  *		'while' '(' expression ')' statement
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_while_statement(parser *const parser)
 {
@@ -226,7 +226,7 @@ void parse_while_statement(parser *const parser)
  *	do-statement:
  *		'do' statement 'while' '(' expression ')' ';'
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_do_statement(parser *const parser)
 {
@@ -260,7 +260,7 @@ void parse_do_statement(parser *const parser)
  *		'for' '(' expression[opt] ';' expression[opt] ';' expression[opt] ')' statement
  *		'for' '(' declaration expression[opt] ';' expression[opt] ')' statement
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_for_statement(parser *const context)
 {
@@ -324,7 +324,7 @@ void parse_for_statement(parser *const context)
  *	jump-statement:
  *		'goto' identifier ';'
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_goto_statement(parser *const context)
 {
@@ -364,7 +364,7 @@ void parse_goto_statement(parser *const context)
  *	jump-statement:
  *		'continue' ';'
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_continue_statement(parser *const parser)
 {
@@ -384,7 +384,7 @@ void parse_continue_statement(parser *const parser)
  *	jump-statement:
  *		'break' ';'
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_break_statement(parser *const parser)
 {
@@ -405,7 +405,7 @@ void parse_break_statement(parser *const parser)
  *		'return' expression[opt] ';'
  *		'return' braced-init-list ';'
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_return_statement(parser *const context)
 {
@@ -678,6 +678,52 @@ void parse_printf_statement(parser *const context)
 	totree(context, sumsize);
 }
 
+/**
+ *	Parse statement or declaration
+ *	block-item:
+ *		statement
+ *		declaration
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_block_item(parser *const parser)
+{
+	switch (parser->next_token)
+	{
+		case kw_void:
+		case kw_char:
+		//case kw_short:
+		case kw_int:
+		case kw_long:
+		case kw_float:
+		case kw_double:
+		case kw_struct:
+		//case kw_union:
+		//case kw_enum:
+		//case kw_typedef:
+			parse_inner_declaration(parser);
+			return;
+
+		case identifier:
+		{
+			const size_t id = repr_get_reference(parser->sx, parser->lxr->repr);
+			if (ident_get_displ(parser->sx, id) >= 1000)
+			{
+				parse_inner_declaration(parser);
+			}
+			else
+			{
+				parse_statement(parser);
+			}
+			return;
+		}
+
+		default:
+			parse_statement(parser);
+			return;
+	}
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -779,55 +825,37 @@ void parse_statement(parser *const parser)
 	}
 }
 
-void parse_compound_statement(parser *const context, const block_type b)
+void parse_compound_statement(parser *const parser, const block_type type)
 {
-	int oldinswitch = context->flag_in_switch;
-	int notended = 1;
-	int olddispl = 0;
-	int oldlg = 0;
+	totree(parser, TBegin);
 
-	context->flag_in_switch = b < 0;
-	totree(context, TBegin);
-	if (b)
-	{
-		scope_block_enter(context->sx, &olddispl, &oldlg);
-	}
-	context->blockflag = 0;
+	int old_in_switch = parser->flag_in_switch;
+	int old_displ = 0;
+	int old_lg = 0;
 
-	while (is_int(context->next_token) || is_float(context->next_token) || context->next_token == LSTRUCT ||
-		   context->next_token == LVOID)
+	parser->flag_in_switch = (type == THREAD);
+	if (type != FUNCBODY)
 	{
-		parse_inner_declaration(context);
+		scope_block_enter(parser->sx, &old_displ, &old_lg);
 	}
 
-	// кончились описания, пошли операторы до }
+	TOKEN end_token = (type == THREAD) ? kw_exit : r_brace;
 
-	do
+	if (try_consume_token(parser, end_token))
 	{
-		if (context->next_token == LEOF)
-		{
-			parser_error(context, wait_end);
-			return;
-		}
-		if (b == 2 ? context->next_token == TEXIT : context->next_token == END)
-		{
-			scanner(context);
-			notended = 0;
-		}
-		else
-		{
-			parse_statement(context);
-			if (context->curr_token == LEOF && context->was_error)
-			{
-				return;
-			}
-		}
-	} while (notended);
-
-	if (b)
-	{
-		scope_block_exit(context->sx, olddispl, oldlg);
+		// Если это пустой блок
+		totree(parser, NOP);
 	}
-	context->flag_in_switch = oldinswitch;
-	totree(context, TEnd);
+	else do
+	{
+		parse_block_item(parser);
+		/* Почему не ловилась ошибка, если в блоке нити встретилась '}'? */
+	} while (parser->next_token != eof && !try_consume_token(parser, end_token));
+
+	if (type != FUNCBODY)
+	{
+		scope_block_exit(parser->sx, old_displ, old_lg);
+	}
+	parser->flag_in_switch = old_in_switch;
+	totree(parser, TEnd);
 }

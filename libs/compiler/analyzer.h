@@ -62,7 +62,6 @@ typedef struct analyzer
 	int flag_in_switch;
 	int flag_in_loop;
 	int functype;
-	int blockflag;
 	int wasret;
 	int gotost[1000];
 	int pgotost;

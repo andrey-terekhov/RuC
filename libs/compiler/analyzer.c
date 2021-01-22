@@ -31,7 +31,6 @@ parser compiler_context_create(universal_io *const io, syntax *const sx, lexer *
 
 	context.sp = 0;
 	context.sopnd = -1;
-	context.blockflag = 1;
 	context.leftansttype = -1;
 	context.buf_flag = 0;
 	context.was_error = 0;
