@@ -833,7 +833,7 @@ void parse_compound_statement(parser *const parser, const block_type type)
 	int old_displ = 0;
 	int old_lg = 0;
 
-	parser->flag_in_switch = (type == THREAD);
+	parser->flag_in_switch = (type == SWITCH);
 	if (type != FUNCBODY)
 	{
 		scope_block_enter(parser->sx, &old_displ, &old_lg);
