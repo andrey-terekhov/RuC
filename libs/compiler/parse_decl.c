@@ -640,7 +640,7 @@ void function_definition(parser *context, size_t function_id)
 	REPRTAB_POS = oldrepr;
 	consume_token(context);
 
-	parse_compound_statement(context, 0);
+	parse_compound_statement(context, FUNCBODY);
 
 	// if (ftype == LVOID && context->sx->tree[context->sx->tc - 1] != TReturnvoid)
 	// {
