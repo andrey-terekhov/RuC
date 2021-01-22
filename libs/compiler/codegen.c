@@ -544,11 +544,16 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			size_t oldbreak = context->adbreak;
 			size_t oldcont = context->adcont;
 
-//			node incrnode = node_get_child(tree_get_node(sx), 2);
-//			node stmtnode = node_get_child(tree_get_node(sx), 3);
+			node incrnode = node_get_child(tree_get_node(sx), 2);
+			*(sx->stmtnode) = node_get_child(tree_get_node(sx), 3);
+						
+			if (node_get_amount(tree_get_node(sx)) == 1) // только тело
+			{
+				*(sx->stmtnode) = node_get_child(tree_get_node(sx), 0);
+			}
 
-//			printf("%i incrnode\n", node_get_type(&incrnode));
-//			printf("%i stmtnode\n", node_get_type(&stmtnode));
+			printf("%i incrnode\n", node_get_type(&incrnode));
+			printf("%i stmtnode\n", node_get_type(sx->stmtnode));
 
 			tree_next_node(sx);
 			printf("%i tc=%i: Stmt_gen TFor\n", node_get_type(tree_get_node(sx)), sx->tc);
@@ -571,7 +576,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			incrtc = sx->tc;
 			sx->tc = stmtref;
 
-//			tree_set_node(sx, &stmtnode);
+			tree_set_node(sx, sx->stmtnode); // из-за этого ошибка
 
 			Stmt_gen(sx, context); // ???? был 0
 			adcontend(sx, context);
@@ -887,8 +892,8 @@ void compstmt_gen(syntax *const sx, ad *const context)
 {
 	while (sx->tree[sx->tc] != TEnd)
 	{		
-//		switch (node_get_type(tree_get_node(sx)))
-		switch (sx->tree[sx->tc])
+		switch (node_get_type(tree_get_node(sx)))
+//		switch (sx->tree[sx->tc])
 		{
 			case TDeclarr:
 			{
@@ -934,6 +939,9 @@ void compstmt_gen(syntax *const sx, ad *const context)
 int codegen(universal_io *const io, syntax *const sx)
 {
 	node root = node_get_root(sx);
+	node stmtnode;
+	sx->stmtnode = &stmtnode;
+
 	tree_set_node(sx, &root);
 
 	ad context;

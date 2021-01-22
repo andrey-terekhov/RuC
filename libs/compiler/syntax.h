@@ -66,6 +66,7 @@ typedef struct syntax
 	int keywordsnum;				/**< Number of read keyword */
 
 	node *current; 					/**< Current node during traversing the tree */
+	node *stmtnode;
 } syntax;
 
 
