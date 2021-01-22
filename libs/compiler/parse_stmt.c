@@ -850,9 +850,9 @@ void parse_compound_statement(parser *const parser, const block_type type)
 	{
 		parse_block_item(parser);
 		/* Почему не ловилась ошибка, если в блоке нити встретилась '}'? */
-	} while (parser->next_token != eof && !try_consume_token(parser, end_token));
+	} while (parser->next_token != eof && parser->next_token != end_token);
 
-	if (parser->next_token == eof)
+	if (!try_consume_token(parser, end_token))
 	{
 		parser_error(parser, expected_end);
 	}
