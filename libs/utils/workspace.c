@@ -16,6 +16,7 @@
 
 #include "workspace.h"
 #include <string.h>
+#include <stdlib.h>
 
 #ifndef _MSC_VER
 	#include <unistd.h>
@@ -49,40 +50,27 @@ void ws_add_error(workspace *const ws)
 	ws->was_error = 1;
 }
 
-void ws_unix_path(const char *const path, char *const buffer)
+static int ws_unix_path(const char *const path, char *const buffer, const size_t max_len)
 {
-	size_t i = 0;
-	size_t j = 0;
-	size_t last = 0;
+	char *tmp;
+#ifndef _WIN32
+	char  resolved[PATH_MAX];
 
-	while (path[i] != '\0')
-	{
-		buffer[j++] = path[i] == '\\' ? '/' : path[i];
+	tmp = realpath(path, resolved);
+	if (tmp == NULL || strlen(resolved) >= max_len)
+		return -1;
+	strcpy(buffer, resolved);
+#else
 
-		if (buffer[j - 1] == '/')
-		{
-			if (j - last == 1 || (j - last == 2 && buffer[last] == '.'))
-			{
-				j = last;
-			}
-			else if (last != 0 && j - last == 3 && buffer[last] == '.' && buffer[last + 1] == '.'
-				&& !((last > 3 && buffer[last - 2] == '.' && buffer[last - 3] == '.' && buffer[last - 4] == '/')
-					|| (last == 3 && buffer[last - 2] == '.' && buffer[last - 3] == '.')))
-			{
-				j = last - 1;
-				while (j > 0 && buffer[j - 1] != '/')
-				{
-					j--;
-				}
-			}
+	if (_fullpath(buffer, path, max_len) == NULL)
+		return -1;
+#endif
 
-			last = j;
-		}
+	/* Replace all occurrences of Windows-style backslash with forward slash */
+	while ((tmp = strchr(buffer, '\\')) != NULL)
+		*tmp = '/';
 
-		i++;
-	}
-
-	buffer[buffer[j - 1] == '/' ? j - 1 : j] = '\0';
+	return 0;
 }
 
 size_t ws_exists(const char *const element, const char array[][MAX_ARG_SIZE], const size_t size)
@@ -177,8 +165,9 @@ size_t ws_add_file(workspace *const ws, const char *const path)
 		return SIZE_MAX;
 	}
 
-	ws_unix_path(path, ws->files[ws->files_num]);
-	if (access(ws->files[ws->files_num], F_OK) == -1)
+	if (ws_unix_path(path, ws->files[ws->files_num],
+	                 sizeof(ws->files[ws->files_num])) == -1 ||
+	    access(ws->files[ws->files_num], F_OK) == -1)
 	{
 		ws_add_error(ws);
 		return SIZE_MAX;
@@ -221,8 +210,9 @@ size_t ws_add_dir(workspace *const ws, const char *const path)
 		return SIZE_MAX;
 	}
 
-	ws_unix_path(path, ws->dirs[ws->dirs_num]);
-	if (access(ws->dirs[ws->dirs_num], F_OK) == -1)
+	if (ws_unix_path(path, ws->dirs[ws->dirs_num],
+	                 sizeof(ws->dirs[ws->dirs_num])) == -1 ||
+	    access(ws->dirs[ws->dirs_num], F_OK) == -1)
 	{
 		ws_add_error(ws);
 		return SIZE_MAX;
