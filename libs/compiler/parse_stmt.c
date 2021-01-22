@@ -852,6 +852,11 @@ void parse_compound_statement(parser *const parser, const block_type type)
 		/* Почему не ловилась ошибка, если в блоке нити встретилась '}'? */
 	} while (parser->next_token != eof && !try_consume_token(parser, end_token));
 
+	if (parser->next_token == eof)
+	{
+		parser_error(parser, expected_end);
+	}
+
 	if (type != FUNCBODY)
 	{
 		scope_block_exit(parser->sx, old_displ, old_lg);

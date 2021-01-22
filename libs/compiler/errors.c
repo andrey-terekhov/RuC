@@ -128,6 +128,9 @@ void get_error(const int num, char *const msg, va_list args)
 		case expected_semi_after_stmt: // test_exist
 			sprintf(msg, "нет ; после оператора");
 			break;
+		case expected_end: // test_exist
+			sprintf(msg, "нет } в конце блока");
+			break;
 		case cond_must_be_in_brkts: // test_exist
 			sprintf(msg, "условие должно быть в ()");
 			break;
