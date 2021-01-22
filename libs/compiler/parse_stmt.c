@@ -846,15 +846,18 @@ void parse_compound_statement(parser *const parser, const block_type type)
 		// Если это пустой блок
 		totree(parser, NOP);
 	}
-	else do
+	else
 	{
-		parse_block_item(parser);
-		/* Почему не ловилась ошибка, если в блоке нити встретилась '}'? */
-	} while (parser->next_token != eof && parser->next_token != end_token);
+		do
+		{
+			parse_block_item(parser);
+			/* Почему не ловилась ошибка, если в блоке нити встретилась '}'? */
+		} while (parser->next_token != eof && parser->next_token != end_token);
 
-	if (!try_consume_token(parser, end_token))
-	{
-		parser_error(parser, expected_end);
+		if (!try_consume_token(parser, end_token))
+		{
+			parser_error(parser, expected_end);
+		}
 	}
 
 	if (type != FUNCBODY)
