@@ -895,10 +895,9 @@ void Declid_gen(syntax *const sx)
 
 void compstmt_gen(syntax *const sx, ad *const context)
 {
-	while (sx->tree[local_tc] != TEnd)
+	while (node_get_type(tree_get_node(sx)) != TEnd)
 	{		
 		switch (node_get_type(tree_get_node(sx)))
-//		switch (sx->tree[local_tc])
 		{
 			case TDeclarr:
 			{
@@ -944,9 +943,6 @@ void compstmt_gen(syntax *const sx, ad *const context)
 int codegen(universal_io *const io, syntax *const sx)
 {
 	node root = node_get_root(sx);
-	node stmtnode;
-	sx->stmtnode = &stmtnode;
-
 	tree_set_node(sx, &root);
 
 	ad context;
