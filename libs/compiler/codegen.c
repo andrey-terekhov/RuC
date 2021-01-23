@@ -415,7 +415,8 @@ int Expr_gen(syntax *const sx, int incond)
 
 void Stmt_gen(syntax *const sx, ad *const context)
 {
-	switch (sx->tree[local_tc++])
+	local_tc++;
+	switch (node_get_type(tree_get_node(sx)))
 	{
 		case NOP:
 		{
