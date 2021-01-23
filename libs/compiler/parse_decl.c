@@ -16,7 +16,65 @@
 
 #include "parser.h"
 
-#define undefined 0
+
+/**
+ *	Parse struct or union specifier [C99 6.7.2.1]
+ *
+ *	struct-or-union-specifier:
+ *		struct-or-union identifier[opt] '{' struct-contents '}'
+ *		struct-or-union identifier
+ *
+ *	struct-or-union:
+ *		'struct'
+ *		'union'
+ *
+ *	@param	parser		Parser structure
+ *
+ *	@return	Standart type or index for modes table
+ */
+int parse_struct_or_union_specifier(parser *const parser)
+{
+	switch (parser->next_token)
+	{
+		case l_brace:
+			return struct_decl_list(parser);
+
+		case identifier:
+		{
+			const size_t repr = (size_t)parser->lxr->repr;
+			consume_token(parser);
+
+			if (parser->next_token == l_brace)
+			{
+				const int mode = struct_decl_list(parser);
+				const size_t id = toidentab(parser, repr, 1000, mode);
+				ident_set_displ(parser->sx, id, 1000 + parser->was_struct_with_arr);
+
+				parser->flag_was_type_def = 1;
+
+				return ident_get_mode(parser->sx, id);
+			}
+			else // if (parser->next_token != l_brace)
+			{
+				const size_t id = repr_get_reference(parser->sx, repr);
+
+				if (id == 1)
+				{
+					parser_error(parser, ident_is_not_declared);
+					return mode_undefined;
+				}
+
+				// TODO: what if it was not a type specifier?
+				parser->was_struct_with_arr = ident_get_displ(parser->sx, id) - 1000;
+				return ident_get_mode(parser->sx, id);
+			}
+		}
+
+		default:
+			parser_error(parser, wrong_struct);
+			return mode_undefined;
+	}
+}
 
 /**
  *	Parse type specifier [C99 6.7.2]
@@ -43,19 +101,19 @@ int parse_type_specifier(parser *const parser)
 	switch (parser->curr_token)
 	{
 		case kw_void:
-			return LVOID;
+			return mode_void;
 
 		case kw_char:
-			return LCHAR;
+			return mode_character;
 
 		//case kw_short:
 		case kw_int:
 		case kw_long:
-			return LINT;
+			return mode_integer;
 
 		case kw_float:
 		case kw_double:
-			return LFLOAT;
+			return mode_float;
 
 		case identifier:
 		{
@@ -64,60 +122,20 @@ int parse_type_specifier(parser *const parser)
 			if (ident_get_displ(parser->sx, id) < 1000)
 			{
 				parser_error(parser, ident_not_type);
-				return undefined;
+				return mode_undefined;
 			}
 
 			parser->was_struct_with_arr = ident_get_displ(parser->sx, id) - 1000;
 			return ident_get_mode(parser->sx, id);
 		}
 
+		//case kw_union:
 		case kw_struct:
-		{
-			switch (parser->next_token)
-			{
-				case l_brace:
-					return struct_decl_list(parser);
-
-				case identifier:
-				{
-					const size_t repr = (size_t)parser->lxr->repr;
-					consume_token(parser);
-
-					if (parser->next_token == l_brace)
-					{
-						const int mode = struct_decl_list(parser);
-						const size_t id = toidentab(parser, repr, 1000, mode);
-						ident_set_displ(parser->sx, id, 1000 + parser->was_struct_with_arr);
-
-						parser->flag_was_type_def = 1;
-
-						return ident_get_mode(parser->sx, id);
-					}
-					else // if (parser->next_token != l_brace)
-					{
-						const size_t id = repr_get_reference(parser->sx, repr);
-
-						if (id == 1)
-						{
-							parser_error(parser, ident_is_not_declared);
-							return undefined;
-						}
-
-						// TODO: what if it was not a type specifier?
-						parser->was_struct_with_arr = ident_get_displ(parser->sx, id) - 1000;
-						return ident_get_mode(parser->sx, id);
-					}
-				}
-
-				default:
-					parser_error(parser, wrong_struct);
-					return undefined;
-			}
-		}
+			return parse_struct_or_union_specifier(parser);
 
 		default:
 			parser_error(parser, not_decl);
-			return undefined;
+			return mode_undefined;
 	}
 }
 
@@ -367,7 +385,7 @@ int arrdef(parser *context, int t)
 			context->sopnd--;
 			mustbe(context, RIGHTSQBR, wait_right_sq_br);
 		}
-		t = newdecl(context->sx, MARRAY, t); // Меняем тип в identtab (увеличиваем размерность массива)
+		t = newdecl(context->sx, mode_array, t); // Меняем тип в identtab (увеличиваем размерность массива)
 	}
 	return t;
 }
@@ -461,7 +479,7 @@ int idorpnt(parser *context, int e, int t)
 	if (context->next_token == LMULT)
 	{
 		scanner(context);
-		t = t == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, t);
+		t = t == mode_void ? mode_void_pointer : newdecl(context->sx, mode_pointer, t);
 	}
 	mustbe_complex(context, IDENT, e);
 	return t;
@@ -477,7 +495,7 @@ int struct_decl_list(parser *context)
 	int loc_modetab[100];
 	int locmd = 3;
 
-	loc_modetab[0] = MSTRUCT;
+	loc_modetab[0] = mode_struct;
 	size_t tstrbeg = context->sx->tc;
 	totree(context, TStructbeg);
 	context->sx->tree[context->sx->tc++] = 0; // тут будет номер иниц процедуры
@@ -651,8 +669,6 @@ void function_definition(parser *context, size_t function_id)
 	if (ftype != LVOID && !context->wasret)
 	{
 		parser_error(context, no_ret_in_func);
-		context->was_error = 1;
-		return; // 1
 	}
 
 	scope_func_exit(context->sx, pred, old_displ);
@@ -668,8 +684,6 @@ void function_definition(parser *context, size_t function_id)
 		if (!context->sx->identab[context->gotost[i] + 2])
 		{
 			parser_error(context, label_not_declared);
-			context->was_error = 1;
-			return; // 1
 		}
 	}
 }
@@ -688,7 +702,7 @@ int func_declarator(parser *context, int level, int func_d, int firstdecl)
 	int wastype = 0;
 	int old;
 
-	loc_modetab[0] = MFUNCTION;
+	loc_modetab[0] = mode_function;
 	loc_modetab[1] = firstdecl;
 	loc_modetab[2] = 0;
 	locmd = 3;
@@ -717,7 +731,7 @@ int func_declarator(parser *context, int level, int func_d, int firstdecl)
 			{
 				maybe_fun = 1;
 				scanner(context);
-				context->type = context->type == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, context->type);
+				context->type = context->type == LVOID ? LVOIDASTER : newdecl(context->sx, mode_pointer, context->type);
 			}
 			if (level)
 			{
@@ -750,7 +764,7 @@ int func_declarator(parser *context, int level, int func_d, int firstdecl)
 				{
 					scanner(context);
 					mustbe(context, RIGHTSQBR, wait_right_sq_br);
-					context->type = newdecl(context->sx, MARRAY, context->type);
+					context->type = newdecl(context->sx, mode_array, context->type);
 				}
 			}
 		}
@@ -898,7 +912,7 @@ void parse_inner_declaration(parser *const parser)
 		if (parser->next_token == star)
 		{
 			consume_token(parser);
-			type = group_type == LVOID ? LVOIDASTER : newdecl(parser->sx, MPOINT, group_type);
+			type = group_type == mode_void ? mode_void_pointer : newdecl(parser->sx, mode_pointer, group_type);
 		}
 
 		if (parser->next_token == identifier)
@@ -934,7 +948,7 @@ void parse_external_declaration(parser *const parser)
 		if (parser->next_token == star)
 		{
 			consume_token(parser);
-			type = group_type == LVOID ? LVOIDASTER : newdecl(parser->sx, MPOINT, group_type);
+			type = group_type == mode_void ? mode_void_pointer : newdecl(parser->sx, mode_pointer, group_type);
 		}
 
 		if (try_consume_token(parser, identifier))

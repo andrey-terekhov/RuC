@@ -253,7 +253,7 @@ int Expr_gen(syntax *const sx, int incond)
 				Expr_gen(sx, 0);
 				tocode(sx, SLICE);
 				tocode(sx, size_of(sx, eltype));
-				if (eltype > 0 && mode_get(sx, eltype) == MARRAY)
+				if (eltype > 0 && mode_get(sx, eltype) == mode_array)
 				{
 					tocode(sx, LAT);
 				}
@@ -671,7 +671,7 @@ void Declid_gen(syntax *const sx)
 		}
 		if (all) // int a = или struct{} a =
 		{
-			if (telem > 0 && mode_get(sx, telem) == MSTRUCT)
+			if (telem > 0 && mode_get(sx, telem) == mode_struct)
 			{
 				Struct_init_gen(sx);
 				tocode(sx, COPY0STASS);

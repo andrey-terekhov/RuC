@@ -563,22 +563,22 @@ int evaluate_params(parser *context, int num, char32_t formatstr[], int formatty
 			{
 				case 'i':
 				case 1094: // 'ц'
-					formattypes[num_of_params++] = LINT;
+					formattypes[num_of_params++] = mode_integer;
 					break;
 
 				case 'c':
 				case 1083: // л
-					formattypes[num_of_params++] = LCHAR;
+					formattypes[num_of_params++] = mode_character;
 					break;
 
 				case 'f':
 				case 1074: // в
-					formattypes[num_of_params++] = LFLOAT;
+					formattypes[num_of_params++] = mode_float;
 					break;
 
 				case 's':
 				case 1089: // с
-					formattypes[num_of_params++] = newdecl(context->sx, MARRAY, LCHAR);
+					formattypes[num_of_params++] = newdecl(context->sx, mode_array, mode_character);
 					break;
 
 				case '%':
@@ -854,10 +854,7 @@ void parse_compound_statement(parser *const parser, const block_type type)
 			/* Почему не ловилась ошибка, если в блоке нити встретилась '}'? */
 		} while (parser->next_token != eof && parser->next_token != end_token);
 
-		if (!try_consume_token(parser, end_token))
-		{
-			parser_error(parser, expected_end);
-		}
+		expect_and_consume_token(parser, end_token, expected_end);
 	}
 
 	if (type != FUNCBODY)

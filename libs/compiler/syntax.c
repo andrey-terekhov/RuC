@@ -48,7 +48,7 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 	size_t length = 1;
 	const int mode = sx->modetab[first];
 	// Определяем, сколько полей надо сравнивать для различных типов записей
-	if (mode == MSTRUCT || mode == MFUNCTION)
+	if (mode == mode_struct || mode == mode_function)
 	{
 		length = 2 + sx->modetab[first + 2];
 	}
@@ -404,7 +404,7 @@ int ident_set_displ(syntax *const sx, const size_t index, const int displ)
 
 int size_of(const syntax *const sx, const int mode)
 {
-	return mode == LFLOAT ? 2 : (mode > 0 && mode_get(sx, mode) == MSTRUCT) ? mode_get(sx, mode + 1) : 1;
+	return mode == mode_float ? 2 : (mode > 0 && mode_get(sx, mode) == mode_struct) ? mode_get(sx, mode + 1) : 1;
 }
 
 size_t mode_add(syntax *const sx, const int *const record, const size_t size)

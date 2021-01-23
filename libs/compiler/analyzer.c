@@ -83,26 +83,26 @@ void init_modetab(parser *context)
 {
 	// занесение в modetab описателя struct {int numTh; int inf; }
 	context->sx->modetab[1] = 0;
-	context->sx->modetab[2] = MSTRUCT;
+	context->sx->modetab[2] = mode_struct;
 	context->sx->modetab[3] = 2;
 	context->sx->modetab[4] = 4;
-	context->sx->modetab[5] = context->sx->modetab[7] = LINT;
+	context->sx->modetab[5] = context->sx->modetab[7] = mode_integer;
 	context->sx->modetab[6] = (int)toreprtab(context, "numTh");
 	context->sx->modetab[8] = (int)toreprtab(context, "data");
 
 	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
 	context->sx->modetab[9] = 1;
-	context->sx->modetab[10] = MFUNCTION;
-	context->sx->modetab[11] = LVOID;
+	context->sx->modetab[10] = mode_function;
+	context->sx->modetab[11] = mode_void;
 	context->sx->modetab[12] = 1;
 	context->sx->modetab[13] = 2;
 
 	// занесение в modetab описателя функции void* interpreter(void* n)
 	context->sx->modetab[14] = 9;
-	context->sx->modetab[15] = MFUNCTION;
-	context->sx->modetab[16] = LVOIDASTER;
+	context->sx->modetab[15] = mode_function;
+	context->sx->modetab[16] = mode_void_pointer;
 	context->sx->modetab[17] = 1;
-	context->sx->modetab[18] = LVOIDASTER;
+	context->sx->modetab[18] = mode_void_pointer;
 	context->sx->modetab[19] = 14;
 	context->sx->startmode = 14;
 	context->sx->md = 19;

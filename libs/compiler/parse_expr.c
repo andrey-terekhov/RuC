@@ -164,7 +164,7 @@ void actstring(int type, parser *context)
 		context->was_error = 1;
 		return; // 1
 	}
-	context->ansttype = newdecl(context->sx, MARRAY, type);
+	context->ansttype = newdecl(context->sx, mode_array, type);
 	context->anst = VAL;
 }
 
@@ -267,7 +267,7 @@ void mustberowofint(parser *context)
 		if (context->ansttype == LINT || context->ansttype == LCHAR)
 		{
 			totree(context, ROWING);
-			context->ansttype = newdecl(context->sx, MARRAY, LINT);
+			context->ansttype = newdecl(context->sx, mode_array, LINT);
 		}
 	}
 	if (!(is_array(context->sx, context->ansttype) &&
@@ -302,7 +302,7 @@ void mustberowoffloat(parser *context)
 		if (context->ansttype == LFLOAT)
 		{
 			totree(context, ROWINGD);
-			context->ansttype = newdecl(context->sx, MARRAY, LFLOAT);
+			context->ansttype = newdecl(context->sx, mode_array, LFLOAT);
 		}
 	}
 
@@ -350,7 +350,7 @@ void primaryexpr(parser *context)
 			totree(context, context->lxr->lexstr[i]);
 		}
 
-		context->ansttype = newdecl(context->sx, MARRAY, LCHAR);
+		context->ansttype = newdecl(context->sx, mode_array, LCHAR);
 		context->stackoperands[++context->sopnd] = context->ansttype;
 		context->anst = VAL;
 	}
@@ -497,7 +497,7 @@ void primaryexpr(parser *context)
 			else
 			{
 				context->stackoperands[++context->sopnd] = context->ansttype =
-				func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : newdecl(context->sx, MARRAY, LCHAR);
+				func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : newdecl(context->sx, mode_array, LCHAR);
 			}
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
@@ -1369,7 +1369,7 @@ void unarexpr(parser *context)
 				}
 
 				context->stackoperands[context->sopnd] = context->ansttype =
-				newdecl(context->sx, MPOINT, context->ansttype);
+				newdecl(context->sx, mode_pointer, context->ansttype);
 				context->anst = VAL;
 			}
 			else if (op == LMULT)

@@ -54,27 +54,27 @@ int newdecl(syntax *const sx, const int type, const int element_type)
 
 int is_function(syntax *const sx, const int t)
 {
-	return t > 0 && mode_get(sx, t) == MFUNCTION;
+	return t > 0 && mode_get(sx, t) == mode_function;
 }
 
 int is_array(syntax *const sx, const int t)
 {
-	return t > 0 && mode_get(sx, t) == MARRAY;
+	return t > 0 && mode_get(sx, t) == mode_array;
 }
 
 int is_string(syntax *const sx, const int t)
 {
-	return is_array(sx, t) && mode_get(sx, t + 1) == LCHAR;
+	return is_array(sx, t) && mode_get(sx, t + 1) == mode_character;
 }
 
 int is_pointer(syntax *const sx, const int t)
 {
-	return t > 0 && mode_get(sx, t) == MPOINT;
+	return t > 0 && mode_get(sx, t) == mode_pointer;
 }
 
 int is_struct(syntax *const sx, const int t)
 {
-	return t > 0 && mode_get(sx, t) == MSTRUCT;
+	return t > 0 && mode_get(sx, t) == mode_struct;
 }
 
 int is_float(const int t)
