@@ -747,7 +747,9 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		case TPrintid:
 		{
 			tocode(sx, PRINTID);
-			tocode(sx, sx->tree[local_tc++]); // ссылка в identtab
+			tocode(sx, node_get_arg(tree_get_node(sx), 0)); // ссылка в identtab
+
+			local_tc++;
 
 			tree_next_node(sx);
 			printf("%i tc=%i: Stmt_gen TPrintid\n", node_get_type(tree_get_node(sx)), local_tc);
@@ -756,8 +758,9 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		case TPrintf:
 		{
 			tocode(sx, PRINTF);
-			tocode(sx, sx->tree[local_tc++]); // общий размер того,
+			tocode(sx, node_get_arg(tree_get_node(sx), 0)); // общий размер того,
 														   // что надо вывести
+			local_tc++;
 			
 			tree_next_node(sx);
 			printf("%i tc=%i: Stmt_gen TPrintf\n", node_get_type(tree_get_node(sx)), local_tc);
