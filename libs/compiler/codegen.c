@@ -366,7 +366,6 @@ int Expr_gen(syntax *const sx, int incond)
 		{
 			if (incond)
 			{
-				tree_next_node(sx);
 				printf("%i tc=%i: Expr_gen TCondexpr\n", node_get_type(tree_get_node(sx)), local_tc);
 
 				return wasstring;
@@ -899,7 +898,7 @@ void Declid_gen(syntax *const sx)
 
 void compstmt_gen(syntax *const sx, ad *const context)
 {
-	while (sx->tree[local_tc] != TEnd)
+	while (node_get_type(tree_get_node(sx)) != TEnd)
 	{		
 		switch (node_get_type(tree_get_node(sx)))
 		{
