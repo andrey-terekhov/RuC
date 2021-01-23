@@ -895,7 +895,7 @@ void Declid_gen(syntax *const sx)
 
 void compstmt_gen(syntax *const sx, ad *const context)
 {
-	while (node_get_type(tree_get_node(sx)) != TEnd)
+	while (sx->tree[local_tc] != TEnd)
 	{		
 		switch (node_get_type(tree_get_node(sx)))
 		{
