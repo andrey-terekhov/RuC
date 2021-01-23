@@ -362,7 +362,7 @@ int Expr_gen(syntax *const sx, int incond)
 
 		finalop(sx);
 
-		if (sx->tree[local_tc] == TCondexpr)
+		if (node_get_type(tree_get_node(sx)) == TCondexpr)
 		{
 			if (incond)
 			{
@@ -389,7 +389,7 @@ int Expr_gen(syntax *const sx, int incond)
 					ad = mem_get_size(sx) - 1;
 					mem_set(sx, adelse, (int)mem_get_size(sx));
 					Expr_gen(sx, 1); // else или cond
-				} while (sx->tree[local_tc] == TCondexpr);
+				} while (node_get_type(tree_get_node(sx)) == TCondexpr);
 
 				while (ad)
 				{
@@ -401,7 +401,7 @@ int Expr_gen(syntax *const sx, int incond)
 
 			finalop(sx);
 		}
-		if (sx->tree[local_tc] == TExprend)
+		if (node_get_type(tree_get_node(sx)) == TExprend)
 		{		
 			local_tc++;
 			flagprim = 0;
