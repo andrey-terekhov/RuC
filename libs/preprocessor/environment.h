@@ -18,6 +18,7 @@
 
 #include "constants.h"
 #include "uniio.h"
+#include "linker.h"
 #include "workspace.h"
 #include <stdio.h>
 
@@ -26,16 +27,7 @@
 extern "C" {
 #endif
 
-
-typedef struct files
-{
-	workspace *ws;
-	size_t cur;
-	size_t end_sorse;
-	int already_included[MAX_PATHS];
-} files;
-
-typedef struct preprocess_context
+typedef struct environment
 {
 	int hashtab[256];
 	int reprtab[MAXTAB];
@@ -83,14 +75,15 @@ typedef struct preprocess_context
 
 	size_t line;
 
-	files fs;
+	linker lk;
 
-	universal_io *io_output;
-	universal_io *io_input;
-} preprocess_context;
+	universal_io *output;
+	universal_io *input;
+} environment;
 
-void con_preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io, universal_io *const io_input);
-void con_file_print_coment(preprocess_context *context);
+void env_init(environment *const env, workspace *const ws, universal_io *const output);
+void env_add_comment(environment *const env);
+void env_clear_error_string(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

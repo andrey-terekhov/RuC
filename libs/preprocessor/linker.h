@@ -16,31 +16,52 @@
 
 #pragma once
 
-#include "context_var.h"
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- *	Preprocess all files that are currently in the workspace
- *
- *	@param	context		Preprocessor context variables
- *
- *  @return	@c 0 on success, @c -1 on failure
- */
-int mf_preprocess_files(preprocess_context *context);
+#include "workspace.h"
+
+
+typedef struct environment environment;
+
+typedef struct linker
+{
+	workspace *ws;
+
+	int included[MAX_PATHS];
+
+	size_t current;
+	
+	size_t count_source;
+} linker;
 
 /**
- *	Implementation of the directive include - open and insert the specified file
+ *	Create linker structure
  *
- *	@param	context		Preprocessor context variables
- *
- *  @return	@c 0 on success, @c -1 if could not be opened, 
- *  @c 1 if there is an error inside the specified file
+ *	@return	Linker structure
  */
-int mf_include_relis(preprocess_context *context);
+linker lk_create(workspace *const ws);
+
+/**
+ *	Preprocess all files from workspace
+ *
+ *	@param	env		Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int lk_preprocess_all(environment *const env);
+
+/**
+ *	Include current file from environment to target output
+ *
+ *	@param	env		Preprocessor environment
+ *
+ *	@return	@c  0 on success,
+ *			@c -1 on file couldn't be opened, 
+ *			@c 1 on error inside the file
+ */
+int lk_include(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */
