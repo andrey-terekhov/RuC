@@ -444,7 +444,9 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			tocode(sx, B);
 			tocode(sx, 0);
-			proc_set(sx, sx->tree[local_tc++], (int)mem_get_size(sx));
+			proc_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_get_size(sx));
+
+			local_tc++;
 
 			tree_next_node(sx);
 			printf("%i tc=%i: Stmt_gen TStructbeg\n", node_get_type(tree_get_node(sx)), local_tc);
@@ -452,7 +454,9 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TStructend:
 		{
-			int numproc = sx->tree[sx->tree[local_tc++] + 1];
+			int numproc = sx->tree[node_get_arg(tree_get_node(sx), 0) + 1];
+
+			local_tc++;
 
 			tocode(sx, STOP);
 			mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
@@ -470,7 +474,9 @@ void Stmt_gen(syntax *const sx, ad *const context)
 
 		case TIf:
 		{
-			int elseref = sx->tree[local_tc++];
+			int elseref = node_get_arg(tree_get_node(sx), 0);
+
+			local_tc++;
 
 			tree_next_node(sx);
 			printf("%i tc=%i: Stmt_gen TIf\n", node_get_type(tree_get_node(sx)), local_tc);
