@@ -549,8 +549,6 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			node temp = node_get_child(tfor, 0);
 			tree_set_node(sx, &temp);
 			size_t child_stmt = 0;
-			// tree_next_node(sx);
-			// printf("%i tc=%i: Stmt_gen TFor\n", node_get_type(tree_get_node(sx)), local_tc);
 
 			if (ref_from)
 			{
@@ -598,7 +596,6 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			*tfor = temp;
 			tree_set_node(sx, tfor);
 			
-			// local_tc = tfor->type;
 			tocode(sx, B);
 			tocode(sx, (int)initad);
 			adbreakend(sx, context);
@@ -608,9 +605,11 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TGoto:
 		{
-			int id1 = sx->tree[local_tc++];
+			int id1 = node_get_arg(tree_get_node(sx), 0);
 			int a;
 			int id = id1 > 0 ? id1 : -id1;
+
+			local_tc++;
 
 			tocode(sx, B);
 			if ((a = sx->identab[id + 3]) > 0) // метка уже описана
@@ -631,8 +630,10 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TLabel:
 		{
-			int id = sx->tree[local_tc++];
+			int id = node_get_arg(tree_get_node(sx), 0);
 			int a;
+
+			local_tc++;
 
 			if ((a = sx->identab[id + 3]) < 0) // были переходы на метку
 			{
@@ -734,7 +735,9 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TReturnval:
 		{
-			int d = sx->tree[local_tc++];
+			int d = node_get_arg(tree_get_node(sx), 0);
+
+			local_tc++;
 
 			tree_next_node(sx);
 			printf("%i tc=%i: Stmt_gen TReturnval\n", node_get_type(tree_get_node(sx)), local_tc);
