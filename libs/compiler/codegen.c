@@ -824,20 +824,22 @@ void Struct_init_gen(syntax *const sx)
 
 void Declid_gen(syntax *const sx)
 {
-	int olddispl = sx->tree[local_tc++];
-	int telem = sx->tree[local_tc++];
-	int N = sx->tree[local_tc++];
+	int olddispl = node_get_arg(tree_get_node(sx), 0);
+	int telem = node_get_arg(tree_get_node(sx), 1);
+	int N = node_get_arg(tree_get_node(sx), 2);
 	int element_len;
-	int all = sx->tree[local_tc++];
-	int iniproc = sx->tree[local_tc++];
-	int usual = sx->tree[local_tc++];
-	int instruct = sx->tree[local_tc++];
+	int all = node_get_arg(tree_get_node(sx), 3);
+	int iniproc = node_get_arg(tree_get_node(sx), 4);
+	int usual = node_get_arg(tree_get_node(sx), 5);
+	int instruct = node_get_arg(tree_get_node(sx), 6);
 	// all - общее кол-во слов в структуре
 	// для массивов есть еще usual // == 0 с пустыми границами,
 	// == 1 без пустых границ,
 	// all == 0 нет инициализатора,
 	// all == 1 есть инициализатор
 	// all == 2 есть инициализатор только из строк
+
+	local_tc += 7;
 	element_len = sz_of(sx, telem);
 
 	tree_next_node(sx);
