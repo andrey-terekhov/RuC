@@ -767,7 +767,9 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		case TGetid:
 		{
 			tocode(sx, GETID);
-			tocode(sx, sx->tree[local_tc++]); // ссылка в identtab
+			tocode(sx, node_get_arg(tree_get_node(sx), 0)); // ссылка в identtab
+
+			local_tc++;
 
 			tree_next_node(sx);
 			printf("%i tc=%i: Stmt_gen TGetid\n", node_get_type(tree_get_node(sx)), local_tc);
