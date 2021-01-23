@@ -800,7 +800,7 @@ void Struct_init_gen(syntax *const sx)
 	int n;
 
 
-	if (sx->tree[local_tc] == TStructinit)
+	if (node_get_type(tree_get_node(sx)) == TStructinit)
 	{
 		local_tc += 2;
 		n = node_get_arg(tree_get_node(sx), 0);
