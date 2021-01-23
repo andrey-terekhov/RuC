@@ -422,10 +422,10 @@ void get_error(const int num, char *const msg, va_list args)
 		case array_size_must_be_int:	// test_exist
 			sprintf(msg, "размер массива может иметь тип только ЦЕЛ или ЛИТЕРА");
 			break;
-		case no_semicomma_in_struct:	// need_test
+		case no_semicolon_in_struct:	// need_test
 			sprintf(msg, "описание поля структуры должно заканчиваться ;");
 			break;
-		case wait_ident_after_semicomma_in_struct: // test_exist
+		case wait_ident_after_semicolon_in_struct: // test_exist
 			sprintf(msg, "в структуре после типа поля должен идти идентификатор поля");
 			break;
 		case empty_init:	// test_exist

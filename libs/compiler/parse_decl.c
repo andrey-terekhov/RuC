@@ -16,65 +16,10 @@
 
 #include "parser.h"
 
+int parse_type_specifier(parser *const parser);
+size_t parse_struct_or_union_specifier(parser *const parser);
+size_t parse_struct_declaration_list(parser *const parser);
 
-/**
- *	Parse struct or union specifier [C99 6.7.2.1]
- *
- *	struct-or-union-specifier:
- *		struct-or-union identifier[opt] '{' struct-contents '}'
- *		struct-or-union identifier
- *
- *	struct-or-union:
- *		'struct'
- *		'union'
- *
- *	@param	parser		Parser structure
- *
- *	@return	Standart type or index for modes table
- */
-int parse_struct_or_union_specifier(parser *const parser)
-{
-	switch (parser->next_token)
-	{
-		case l_brace:
-			return struct_decl_list(parser);
-
-		case identifier:
-		{
-			const size_t repr = (size_t)parser->lxr->repr;
-			consume_token(parser);
-
-			if (parser->next_token == l_brace)
-			{
-				const int mode = struct_decl_list(parser);
-				const size_t id = toidentab(parser, repr, 1000, mode);
-				ident_set_displ(parser->sx, id, 1000 + parser->was_struct_with_arr);
-
-				parser->flag_was_type_def = 1;
-
-				return ident_get_mode(parser->sx, id);
-			}
-			else // if (parser->next_token != l_brace)
-			{
-				const size_t id = repr_get_reference(parser->sx, repr);
-
-				if (id == 1)
-				{
-					parser_error(parser, ident_is_not_declared);
-					return mode_undefined;
-				}
-
-				// TODO: what if it was not a type specifier?
-				parser->was_struct_with_arr = ident_get_displ(parser->sx, id) - 1000;
-				return ident_get_mode(parser->sx, id);
-			}
-		}
-
-		default:
-			parser_error(parser, wrong_struct);
-			return mode_undefined;
-	}
-}
 
 /**
  *	Parse type specifier [C99 6.7.2]
@@ -137,6 +82,183 @@ int parse_type_specifier(parser *const parser)
 			parser_error(parser, not_decl);
 			return mode_undefined;
 	}
+}
+
+/**
+ *	Parse struct or union specifier [C99 6.7.2.1]
+ *
+ *	struct-or-union-specifier:
+ *		struct-or-union identifier[opt] '{' struct-contents '}'
+ *		struct-or-union identifier
+ *
+ *	struct-or-union:
+ *		'struct'
+ *		'union'
+ *
+ *	@param	parser		Parser structure
+ *
+ *	@return	@c mode_undefined or index for modes table
+ */
+size_t parse_struct_or_union_specifier(parser *const parser)
+{
+	switch (parser->next_token)
+	{
+		case l_brace:
+			return parse_struct_declaration_list(parser);
+
+		case identifier:
+		{
+			const size_t repr = (size_t)parser->lxr->repr;
+			consume_token(parser);
+
+			if (parser->next_token == l_brace)
+			{
+				const int mode = parse_struct_declaration_list(parser);
+				const size_t id = toidentab(parser, repr, 1000, mode);
+				ident_set_displ(parser->sx, id, 1000 + parser->was_struct_with_arr);
+
+				parser->flag_was_type_def = 1;
+
+				return ident_get_mode(parser->sx, id);
+			}
+			else // if (parser->next_token != l_brace)
+			{
+				const size_t id = repr_get_reference(parser->sx, repr);
+
+				if (id == 1)
+				{
+					parser_error(parser, ident_is_not_declared);
+					return mode_undefined;
+				}
+
+				// TODO: what if it was not a type specifier?
+				parser->was_struct_with_arr = ident_get_displ(parser->sx, id) - 1000;
+				return ident_get_mode(parser->sx, id);
+			}
+		}
+
+		default:
+			parser_error(parser, wrong_struct);
+			return mode_undefined;
+	}
+}
+
+size_t parse_struct_declaration_list(parser *const parser)
+{
+	size_t struct_begin_ref = parser->sx->tc;
+	totree(parser, TStructbeg);
+
+	int local_modetab[100];
+	size_t local_md = 3;
+
+	local_modetab[0] = mode_struct;
+	totree(parser, 0);	// Тут будет номер иниц процедуры
+
+	size_t field_number = 0;
+	int displ = 0;
+	int wasarr = 0;
+
+	consume_token(parser);
+	if (parser->next_token == r_brace)
+	{
+		// Что делать с пустой структурой?
+		//parser_error(parser, empty_struct);
+		consume_token(parser);
+		return mode_undefined;
+	}
+
+	do
+	{
+		consume_token(parser);
+		
+		int element_type = parse_type_specifier(parser);
+		if (element_type == mode_void)
+		{
+			parser_error(parser, only_functions_may_have_type_VOID);
+			element_type = mode_undefined;
+		}
+
+		int type = element_type;
+		if (parser->next_token == star)
+		{
+			consume_token(parser);
+			type = newdecl(parser->sx, mode_pointer, element_type);
+		}
+
+		const size_t repr = parser->lxr->repr;
+		if (parser->next_token == identifier)
+		{
+			consume_token(parser);
+			if (parser->next_token == l_square)
+			{
+				totree(parser, TDeclarr);
+				size_t adN = parser->sx->tc++;
+				type = arrdef(parser, element_type);	// Меняем тип (увеличиваем размерность массива)
+				parser->sx->tree[adN] = parser->arrdim;
+
+				totree(parser, TDeclid);
+				totree(parser, displ);
+				totree(parser, element_type);
+				totree(parser, parser->arrdim);							 // N
+				size_t all = parser->sx->tc++;
+				parser->sx->tree[all] = 0;						 // all
+				parser->sx->tree[parser->sx->tc++] = parser->was_struct_with_arr; // proc
+				totree(parser, parser->usual);							 // context->usual
+				totree(parser, 1); // признак, что массив в структуре
+				wasarr = 1;
+
+				if (parser->next_token == equal)
+				{
+					consume_token(parser);
+					consume_token(parser);
+					if (is_array(parser->sx, type)) // инициализация массива
+					{
+						parser->onlystrings = 2;
+						parser->sx->tree[all] = 1;
+						if (!parser->usual)
+						{
+							parser->sx->tree[adN]--; // это уменьшение N в Declarr
+						}
+						array_init(parser, type);
+						if (parser->onlystrings == 1)
+						{
+							parser->sx->tree[all + 2] = parser->usual + 2; // только из строк 2 - без
+						}
+						// границ, 3 - с границами
+					}
+				}
+			}
+		}
+		else
+		{
+			parser_error(parser, wait_ident_after_semicolon_in_struct);
+			skip_until(parser, semicolon | r_brace);
+		}
+
+		local_modetab[local_md++] = type;
+		local_modetab[local_md++] = repr;
+		field_number++;
+		displ += szof(parser, type);
+
+		expect_and_consume_token(parser, semicolon, no_semicolon_in_struct);
+	} while (!try_consume_token(parser, r_brace));
+
+	if (wasarr)
+	{
+		totree(parser, TStructend);
+		totree(parser, (int)struct_begin_ref);
+		parser->sx->tree[struct_begin_ref + 1] = parser->was_struct_with_arr = parser->sx->procd++;
+	}
+	else
+	{
+		parser->sx->tree[struct_begin_ref] = NOP;
+		parser->sx->tree[struct_begin_ref + 1] = NOP;
+	}
+
+	local_modetab[1] = displ;
+	local_modetab[2] = (int)field_number * 2;
+
+	return mode_add(parser->sx, local_modetab, local_md);
 }
 
 
@@ -485,118 +607,6 @@ int idorpnt(parser *context, int e, int t)
 	return t;
 }
 
-int struct_decl_list(parser *context)
-{
-	int field_count = 0;
-	int t;
-	int elem_type;
-	int curdispl = 0;
-	int wasarr = 0;
-	int loc_modetab[100];
-	int locmd = 3;
-
-	loc_modetab[0] = mode_struct;
-	size_t tstrbeg = context->sx->tc;
-	totree(context, TStructbeg);
-	context->sx->tree[context->sx->tc++] = 0; // тут будет номер иниц процедуры
-
-	scanner(context);
-	scanner(context);
-
-	do
-	{
-		int oldrepr;
-		t = elem_type = idorpnt(context, wait_ident_after_semicomma_in_struct, parse_type_specifier(context));
-		if (context->was_error == wait_ident_after_semicomma_in_struct || context->was_error == 3)
-		{
-			context->was_error = 3;
-			return 0;
-		}
-		oldrepr = REPRTAB_POS;
-		if (context->next_token == LEFTSQBR)
-		{
-			totree(context, TDeclarr);
-			size_t adN = context->sx->tc++;
-			t = arrdef(context, elem_type); // Меняем тип (увеличиваем размерность массива)
-			if (context->was_error == 5)
-			{
-				context->was_error = 3;
-				return 0;
-			}
-			context->sx->tree[adN] = context->arrdim;
-
-			totree(context, TDeclid);
-			totree(context, curdispl);
-			totree(context, elem_type);
-			totree(context, context->arrdim);							 // N
-			size_t all = context->sx->tc++;
-			context->sx->tree[all] = 0;						 // all
-			context->sx->tree[context->sx->tc++] = context->was_struct_with_arr; // proc
-			totree(context, context->usual);							 // context->usual
-			totree(context, 1); // признак, что массив в структуре
-			wasarr = 1;
-			if (context->next_token == ASS)
-			{
-				scanner(context);
-				scanner(context);
-				if (is_array(context->sx, t)) // инициализация массива
-				{
-					context->onlystrings = 2;
-					context->sx->tree[all] = 1;
-					if (!context->usual)
-					{
-						context->sx->tree[adN]--; // это уменьшение N в Declarr
-					}
-					array_init(context, t);
-					if (context->was_error == 7)
-					{
-						context->was_error = 3;
-						return 0;
-					}
-					if (context->onlystrings == 1)
-					{
-						context->sx->tree[all + 2] = context->usual + 2; // только из строк 2 - без
-					}
-					// границ, 3 - с границами
-				}
-				else
-				{
-					// structdispl = context->sx->identab[oldid+3];
-					// context->sx->tree[all] = inition(context, t);
-				}
-			} // конец ASS
-		}	  // конец LEFTSQBR
-		loc_modetab[locmd++] = t;
-		loc_modetab[locmd++] = oldrepr;
-		field_count++;
-		curdispl += szof(context, t);
-		if (scanner(context) != SEMICOLON)
-		{
-			parser_error(context, no_semicomma_in_struct);
-			context->buf_cur = context->next_token;
-			context->next_token = context->curr_token;
-			context->curr_token = BEGIN;
-			context->buf_flag++;
-		}
-	} while (scanner(context) != END);
-
-	if (wasarr)
-	{
-		totree(context, TStructend);
-		totree(context, (int)tstrbeg);
-		context->sx->tree[tstrbeg + 1] = context->was_struct_with_arr = context->sx->procd++;
-	}
-	else
-	{
-		context->sx->tree[tstrbeg] = NOP;
-		context->sx->tree[tstrbeg + 1] = NOP;
-	}
-
-	loc_modetab[1] = curdispl; // тут длина структуры
-	loc_modetab[2] = field_count * 2;
-
-	return (int)mode_add(context->sx, loc_modetab, locmd);
-}
 
 void function_definition(parser *context, size_t function_id)
 {
@@ -901,7 +911,12 @@ void parse_inner_declaration(parser *const parser)
 	parser->flag_was_type_def = 0;
 	int group_type = parse_type_specifier(parser);
 
-	if (parser->flag_was_type_def && try_consume_token(parser, semicolon))
+	if (group_type == mode_void)
+	{
+		parser_error(parser, only_functions_may_have_type_VOID);
+		group_type = mode_undefined;
+	}
+	else if (parser->flag_was_type_def && try_consume_token(parser, semicolon))
 	{
 		return;
 	}
@@ -912,7 +927,7 @@ void parse_inner_declaration(parser *const parser)
 		if (parser->next_token == star)
 		{
 			consume_token(parser);
-			type = group_type == mode_void ? mode_void_pointer : newdecl(parser->sx, mode_pointer, group_type);
+			type = newdecl(parser->sx, mode_pointer, group_type);
 		}
 
 		if (parser->next_token == identifier)
