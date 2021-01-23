@@ -312,7 +312,9 @@ int Expr_gen(syntax *const sx, int incond)
 			case TSelect:
 			{
 				tocode(sx, SELECT); // SELECT field_displ
-				tocode(sx, sx->tree[local_tc++]);
+				tocode(sx, node_get_arg(tree_get_node(sx), 0));
+
+				local_tc++;
 
 				tree_next_node(sx);
 				printf("%i tc=%i :Expr_gen TSelect\n", node_get_type(tree_get_node(sx)), local_tc);
@@ -321,7 +323,9 @@ int Expr_gen(syntax *const sx, int incond)
 			case TPrint:
 			{
 				tocode(sx, PRINT);
-				tocode(sx, sx->tree[local_tc++]); // type
+				tocode(sx, node_get_arg(tree_get_node(sx), 0)); // type
+
+				local_tc++;
 
 				tree_next_node(sx);
 				printf("%i tc=%i :Expr_gen TPrint\n", node_get_type(tree_get_node(sx)), local_tc);
@@ -330,7 +334,9 @@ int Expr_gen(syntax *const sx, int incond)
 			case TCall1:
 			{
 				int i;
-				int n = sx->tree[local_tc++];
+				int n = node_get_arg(tree_get_node(sx), 0);
+
+				local_tc++;
 
 				tocode(sx, CALL1);
 
@@ -346,7 +352,9 @@ int Expr_gen(syntax *const sx, int incond)
 			case TCall2:
 			{
 				tocode(sx, CALL2);
-				tocode(sx, sx->identab[sx->tree[local_tc++] + 3]);
+				tocode(sx, sx->identab[node_get_arg(tree_get_node(sx), 0) + 3]);
+
+				local_tc++;
 
 				tree_next_node(sx);
 				printf("%i tc=%i: Expr_gen TCall2\n", node_get_type(tree_get_node(sx)), local_tc);
