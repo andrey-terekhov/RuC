@@ -212,8 +212,6 @@ void exprassnval(parser *context);
 void array_init(parser *context, int decl_type);
 int arrdef(parser *context, int t);
 void decl_id(parser *context, int decl_type);
-int idorpnt(parser *context, int e, int t);
-void function_definition(parser *context, size_t function_id);
 int func_declarator(parser *context, int level, int func_d, int firstdecl);
 void ext_decl(parser *const parser);
 

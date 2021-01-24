@@ -85,7 +85,7 @@ int parse_type_specifier(parser *const parser)
 }
 
 /**
- *	Parse struct or union specifier [C99 6.7.2.1]
+ *	Parse struct or union specifier [C99 6.7.2.1p1]
  *
  *	struct-or-union-specifier:
  *		struct-or-union identifier[opt] '{' struct-contents '}'
@@ -143,6 +143,24 @@ size_t parse_struct_or_union_specifier(parser *const parser)
 	}
 }
 
+/**
+ *	Parse struct declaration list [C99 6.7.2.1p2]
+ *
+ *	struct-declaration-list:
+ *		struct-declaration
+ *		struct-declaration-list struct-declaration
+ *
+ *	struct-declaration:
+ *		type-specifier struct-declarator-list ';'
+ *
+ *	struct-declarator-list:
+ *		declarator
+ *		struct-declarator-list ',' declarator
+ *
+ *	@param	parser		Parser structure
+ *
+ *	@return	@c mode_undefined or index for modes table
+ */
 size_t parse_struct_declaration_list(parser *const parser)
 {
 	size_t struct_begin_ref = parser->sx->tc;
@@ -596,107 +614,6 @@ void decl_id(parser *context, int decl_type)
 	}
 }
 
-int idorpnt(parser *context, int e, int t)
-{
-	if (context->next_token == LMULT)
-	{
-		scanner(context);
-		t = t == mode_void ? mode_void_pointer : newdecl(context->sx, mode_pointer, t);
-	}
-	mustbe_complex(context, IDENT, e);
-	return t;
-}
-
-
-void function_definition(parser *context, size_t function_id)
-{
-	context->lastid = function_id;
-	int fn = ident_get_displ(context->sx, context->lastid);
-	int pred;
-	int oldrepr = REPRTAB_POS;
-	int ftype;
-	int n;
-	int fid = context->lastid;
-
-	context->pgotost = 0;
-	context->functype = ident_get_mode(context->sx, context->lastid);
-	ftype = mode_get(context->sx, context->functype + 1);
-	n = mode_get(context->sx, context->functype + 2);
-	context->wasret = 0;
-
-	if ((pred = context->sx->identab[context->lastid]) > 1) // был прототип
-	{
-		if (context->functype != ident_get_mode(context->sx, pred))
-		{
-			parser_error(context, decl_and_def_have_diff_type);
-			return; // 1
-		}
-		ident_set_displ(context->sx, pred, fn);
-	}
-
-	const int old_displ = scope_func_enter(context->sx);
-	for (int i = 0; i < n; i++)
-	{
-		context->type = mode_get(context->sx, context->functype + i + 3);
-		size_t temp = func_get(context->sx, fn + i + 1);
-		if (temp == SIZE_MAX)
-		{
-			context->was_error = 1;
-			return;
-		}
-
-		REPRTAB_POS = (int)temp;
-		if (REPRTAB_POS > 0)
-		{
-			toidentab(context, (size_t)REPRTAB_POS, 0, context->type);
-		}
-		else
-		{
-			REPRTAB_POS = -REPRTAB_POS;
-			toidentab(context, (size_t)REPRTAB_POS, -1, context->type);
-		}
-		if (context->was_error == 5)
-		{
-			context->was_error = 1;
-			return; // 1
-		}
-	}
-	func_set(context->sx, fn, (int)context->sx->tc);
-	totree(context, TFuncdef);
-	totree(context, fid);
-	pred = (int)context->sx->tc++;
-	REPRTAB_POS = oldrepr;
-	consume_token(context);
-
-	parse_compound_statement(context, FUNCBODY);
-
-	// if (ftype == LVOID && context->sx->tree[context->sx->tc - 1] != TReturnvoid)
-	// {
-	context->sx->tc--;
-	totree(context, TReturnvoid);
-	totree(context, TEnd);
-	// }
-	if (ftype != LVOID && !context->wasret)
-	{
-		parser_error(context, no_ret_in_func);
-	}
-
-	scope_func_exit(context->sx, pred, old_displ);
-
-	for (int i = 0; i < context->pgotost - 1; i += 2)
-	{
-		REPRTAB_POS = context->sx->identab[context->gotost[i] + 1];
-		context->sx->hash = context->gotost[i + 1];
-		if (context->sx->hash < 0)
-		{
-			context->sx->hash = -context->sx->hash;
-		}
-		if (!context->sx->identab[context->gotost[i] + 2])
-		{
-			parser_error(context, label_not_declared);
-		}
-	}
-}
 
 int func_declarator(parser *context, int level, int func_d, int firstdecl)
 {
@@ -893,6 +810,76 @@ int func_declarator(parser *context, int level, int func_d, int firstdecl)
 	loc_modetab[2] = numpar;
 
 	return (int)mode_add(context->sx, loc_modetab, locmd);
+}
+
+void function_definition(parser *const parser, const size_t function_id)
+{
+	parser->function_type = ident_get_mode(parser->sx, function_id);
+	const size_t function_number = (size_t)ident_get_displ(parser->sx, function_id);
+	const size_t param_number = (size_t)mode_get(parser->sx, parser->function_type + 2);
+
+	parser->pgotost = 0;
+	parser->flag_was_return = 0;
+
+	int pred;
+	if ((pred = parser->sx->identab[function_id]) > 1) // был прототип
+	{
+		if (parser->function_type != ident_get_mode(parser->sx, pred))
+		{
+			parser_error(parser, decl_and_def_have_diff_type);
+			skip_until(parser, r_brace);
+			return;
+		}
+		ident_set_displ(parser->sx, pred, function_number);
+	}
+
+	const int old_displ = scope_func_enter(parser->sx);
+	for (size_t i = 0; i < param_number; i++)
+	{
+		const int type = mode_get(parser->sx, parser->function_type + i + 3);
+		const size_t repr = func_get(parser->sx, function_number + i + 1);
+		if (repr > 0)
+		{
+			toidentab(parser, repr, 0, type);
+		}
+		else
+		{
+			toidentab(parser, -repr, -1, type);
+		}
+	}
+
+	func_set(parser->sx, function_number, parser->sx->tc);
+	totree(parser, TFuncdef);
+	totree(parser, function_id);
+	pred = (int)parser->sx->tc++;
+	consume_token(parser);
+
+	parse_compound_statement(parser, FUNCBODY);
+
+	parser->sx->tc--;
+	totree(parser, TReturnvoid);
+	totree(parser, TEnd);
+
+	if (mode_get(parser->sx, parser->function_type + 1) != mode_void && !parser->flag_was_return)
+	{
+		parser_error(parser, no_ret_in_func);
+	}
+
+	scope_func_exit(parser->sx, pred, old_displ);
+
+	for (int i = 0; i < parser->pgotost - 1; i += 2)
+	{
+		parser->lxr->repr = parser->sx->identab[parser->gotost[i] + 1];
+		parser->sx->hash = parser->gotost[i + 1];
+		if (parser->sx->hash < 0)
+		{
+			parser->sx->hash = -parser->sx->hash;
+		}
+		if (!parser->sx->identab[parser->gotost[i] + 2])
+		{
+			parser_error(parser, label_not_declared);
+		}
+	}
 }
 
 

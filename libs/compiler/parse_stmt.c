@@ -409,8 +409,8 @@ void parse_break_statement(parser *const parser)
  */
 void parse_return_statement(parser *const context)
 {
-	int return_type = mode_get(context->sx, context->functype + 1);
-	context->wasret = 1;
+	int return_type = mode_get(context->sx, context->function_type + 1);
+	context->flag_was_return = 1;
 	if (context->next_token == SEMICOLON)
 	{
 		totree(context, TReturnvoid);
