@@ -35,35 +35,35 @@ item_status item_get_status(const workspace *const ws)
 	const char *flag = ws_get_flag(ws, i);
 	while (flag != NULL && status != item_error)
 	{
-		if (strcmp(flag, "-int64") == 0 || strcmp(flag, "-INT64") == 0)
+		if (strcmp(flag, "-i64") == 0)
 		{
 			status = status != item_types ? item_error : item_int64;
 		}
-		else if (strcmp(flag, "-int32") == 0 || strcmp(flag, "-INT32") == 0)
+		else if (strcmp(flag, "-i32") == 0)
 		{
 			status = status != item_types ? item_error : item_int32;
 		}
-		else if (strcmp(flag, "-int16") == 0 || strcmp(flag, "-INT16") == 0)
+		else if (strcmp(flag, "-i16") == 0)
 		{
 			status = status != item_types ? item_error : item_int16;
 		}
-		else if (strcmp(flag, "-int8") == 0 || strcmp(flag, "-INT8") == 0)
+		else if (strcmp(flag, "-i8") == 0)
 		{
 			status = status != item_types ? item_error : item_int8;
 		}
-		else if (strcmp(flag, "-uint64") == 0 || strcmp(flag, "-UINT64") == 0)
+		else if (strcmp(flag, "-u64") == 0)
 		{
 			status = status != item_types ? item_error : item_uint64;
 		}
-		else if (strcmp(flag, "-uint32") == 0 || strcmp(flag, "-UINT32") == 0)
+		else if (strcmp(flag, "-u32") == 0)
 		{
 			status = status != item_types ? item_error : item_uint32;
 		}
-		else if (strcmp(flag, "-uint16") == 0 || strcmp(flag, "-UINT16") == 0)
+		else if (strcmp(flag, "-u16") == 0)
 		{
 			status = status != item_types ? item_error : item_uint16;
 		}
-		else if (strcmp(flag, "-uint8") == 0 || strcmp(flag, "-UINT8") == 0)
+		else if (strcmp(flag, "-u8") == 0)
 		{
 			status = status != item_types ? item_error : item_uint8;
 		}

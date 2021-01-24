@@ -16,49 +16,68 @@
 
 #pragma once
 
+#include <inttypes.h>
 #include <limits.h>
 #include <stdint.h>
 #include "dll.h"
 #include "workspace.h"
 
 
-#define DEFAULT_ITEM int64_t
+#define DEFAULT_TYPE int64_t
 #define DEFAULT_MIN LLONG_MIN
 #define DEFAULT_MAX LLONG_MAX
+#define DEFAULT_PRI PRIi64
 
 #ifndef ITEM
-	#define ITEM DEFAULT_ITEM
+	#define ITEM_TYPE DEFAULT_TYPE
 	#define ITEM_MIN DEFAULT_MIN
 	#define ITEM_MAX DEFAULT_MAX
-#elif ITEM == int64_t
+	#define PRIitem DEFAULT_PRI
+#elif ITEM == -64
+	#define ITEM_TYPE int64_t
 	#define ITEM_MIN LLONG_MIN
 	#define ITEM_MAX LLONG_MAX
-#elif ITEM == int32_t
+	#define PRIitem PRIi64
+#elif ITEM == -32
+	#define ITEM_TYPE int32_t
 	#define ITEM_MIN INT_MIN
 	#define ITEM_MAX INT_MAX
-#elif ITEM == int16_t
+	#define PRIitem PRIi32
+#elif ITEM == -16
+	#define ITEM_TYPE int16_t
 	#define ITEM_MIN SHRT_MIN
 	#define ITEM_MAX SHRT_MAX
-#elif ITEM == int8_t
+	#define PRIitem PRIi16
+#elif ITEM == -8
+	#define ITEM_TYPE int8_t
 	#define ITEM_MIN CHAR_MIN
 	#define ITEM_MAX CHAR_MAX
-#elif ITEM == uint64_t
+	#define PRIitem PRIi8
+#elif ITEM == 64
+	#define ITEM_TYPE uint64_t
 	#define ITEM_MIN 0
 	#define ITEM_MAX ULLONG_MAX
-#elif ITEM == uint32_t
+	#define PRIitem PRIu64
+#elif ITEM == 32
+	#define ITEM_TYPE uint32_t
 	#define ITEM_MIN 0
 	#define ITEM_MAX UINT_MAX
-#elif ITEM == uint16_t
+	#define PRIitem PRIu32
+#elif ITEM == 16
+	#define ITEM_TYPE uint16_t
 	#define ITEM_MIN 0
 	#define ITEM_MAX USHRT_MAX
-#elif ITEM == uint8_t
+	#define PRIitem PRIu16
+#elif ITEM == 8
+	#define ITEM_TYPE uint8_t
 	#define ITEM_MIN 0
 	#define ITEM_MAX UCHAR_MAX
+	#define PRIitem PRIu8
 #else
-	#undef ITEM
-	#define ITEM DEFAULT_ITEM
+	#define ITEM_TYPE DEFAULT_TYPE
 	#define ITEM_MIN DEFAULT_MIN
 	#define ITEM_MAX DEFAULT_MAX
+	#define PRIitem DEFAULT_PRI
 #endif
 
 
@@ -82,7 +101,7 @@ typedef enum ITEM_STATUS
 } item_status;
 
 /** Item type */
-typedef ITEM item_t;
+typedef ITEM_TYPE item_t;
 
 
 /**
