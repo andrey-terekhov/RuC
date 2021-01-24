@@ -17,9 +17,10 @@
 #pragma once
 
 #include <limits.h>
-#include <stddef.h>
+//#include <stddef.h>
 #include <stdint.h>
 #include "dll.h"
+#include "workspace.h"
 
 
 #define DEFAULT_ITEM int64_t
@@ -66,7 +67,30 @@
 extern "C" {
 #endif
 
+typedef enum ITEM_STATUS
+{
+	item_error = -1,
+	item_int64,
+	item_int32,
+	item_int16,
+	item_int8,
+	item_uint64,
+	item_uint32,
+	item_uint16,
+	item_uint8,
+	item_types,
+} item_status;
+
 typedef ITEM item_t;
+
+
+item_status item_get_status(const workspace *const ws);
+
+item_t item_get_max(const item_status status);
+
+item_t item_get_min(const item_status status);
+
+int item_check_var(const item_status status, const item_t var);
 
 #ifdef __cplusplus
 } /* extern "C" */
