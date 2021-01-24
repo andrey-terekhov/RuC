@@ -97,6 +97,31 @@ item_t item_get_min(const item_status status)
 	}
 }
 
-item_t item_get_max(const item_status status);
+item_t item_get_max(const item_status status)
+{
+	switch (status)
+	{
+		case item_int64:
+			return LLONG_MAX;
+		case item_int32:
+			return INT_MAX;
+		case item_int16:
+			return SHRT_MAX;
+		case item_int8:
+			return CHAR_MAX;
+
+		case item_uint64:
+			return ULLONG_MAX;
+		case item_uint32:
+			return UINT_MAX;
+		case item_uint16:
+			return USHRT_MAX;
+		case item_uint8:
+			return UCHAR_MAX;
+		
+		default:
+			return 0;
+	}
+}
 
 int item_check_var(const item_status status, const item_t var);
