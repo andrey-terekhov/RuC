@@ -10,7 +10,8 @@
 const char * name =
 //"tests/Mishatest.c";
 
-"tests/mips/optimizations/cycle_jump_reduce/test51.c";
+//"tests/mips/optimizations/cycle_jump_reduce/test43.c";
+"tests/mips/printid.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
@@ -53,7 +54,7 @@ int anst, anstdispl, ansttype, leftansttype = -1;
 int bad_printf_placeholder = 0;
 
 // optimization flags
-int cycle_jump_reduce = 0;
+int cycle_jump_reduce = 1;
 
 extern void preprocess_file();
 
