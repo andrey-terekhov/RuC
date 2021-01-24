@@ -1,5 +1,5 @@
 /*
- *	Copyright 2021 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2021 Andrey Terekhov, Victor Y. Fadeev, Dmitrii Davladov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 #pragma once
 
 #include <limits.h>
-//#include <stddef.h>
 #include <stdint.h>
 #include "dll.h"
 #include "workspace.h"
@@ -67,30 +66,61 @@
 extern "C" {
 #endif
 
+/** Item type for output tables */
 typedef enum ITEM_STATUS
 {
-	item_error = -1,
-	item_int64,
-	item_int32,
-	item_int16,
-	item_int8,
-	item_uint64,
-	item_uint32,
-	item_uint16,
-	item_uint8,
-	item_types,
+	item_error = -1,		/**< Error code */
+	item_int64,				/**< Item is int64_t */
+	item_int32,				/**< Item is int32_t */
+	item_int16,				/**< Item is int16_t */
+	item_int8,				/**< Item is int8_t */
+	item_uint64,			/**< Item is uint64_t */
+	item_uint32,			/**< Item is uint32_t */
+	item_uint16,			/**< Item is uint16_t */
+	item_uint8,				/**< Item is uint8_t */
+	item_types,				/**< Max item types */
 } item_status;
 
+/** Item type */
 typedef ITEM item_t;
 
 
-item_status item_get_status(const workspace *const ws);
+/**
+ *	Get target item type from workspace flags
+ *
+ *	@param	ws			Workspace structure
+ *
+ *	@return	Item status
+ */
+EXPORTED item_status item_get_status(const workspace *const ws);
 
-item_t item_get_max(const item_status status);
+/**
+ *	Get target item min
+ *
+ *	@param	status		Item status
+ *
+ *	@return	Target @c ITEM_MIN
+ */
+EXPORTED item_t item_get_min(const item_status status);
 
-item_t item_get_min(const item_status status);
+/**
+ *	Get target item max
+ *
+ *	@param	status		Item status
+ *
+ *	@return	Target @c ITEM_MAX
+ */
+EXPORTED item_t item_get_max(const item_status status);
 
-int item_check_var(const item_status status, const item_t var);
+/**
+ *	Check that variable is not out of range
+ *
+ *	@param	status		Item status
+ *	@param	var			Checking variable
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+EXPORTED int item_check_var(const item_status status, const item_t var);
 
 #ifdef __cplusplus
 } /* extern "C" */
