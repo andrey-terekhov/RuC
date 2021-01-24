@@ -1551,14 +1551,16 @@ void MUnar_expr(int c)
 		{
 			int t = tree[tc++], rez;
 			mbox = BREG;
-			rez = breg = a0;
+			rez = breg = a1;
 			MExpr_gen();
 			if (t > 0 && modetab[t] == MSTRUCT)
-				tocodeI(addi, a0, areg, adispl);
+				tocodeI(addi, a1, areg, adispl);
 			else if (t > 0 && modetab[t] == MARRAY)
-				tocodeB(lw, a0, adispl, areg);
+				tocodeB(lw, a1, adispl, areg);
 			
-			tocodeI(addi, a1, d0, t);
+			if (t > 0 && modetab[t] == MPOINT)
+				t = modetab[t+1];
+			tocodeI(addi, a0, d0, t);
 		    tocodeJ(jal, "auxget", -1);
 	   }
 		   break;
@@ -2321,17 +2323,11 @@ void MStmt_gen()
             }
             tocodeI(addi, a1, d0, t);
             if (t == LCHAR)
-            {
                 tocodemove(a2, d0);
-            }
             else if (t > 0 && modetab[t] == MARRAY && modetab[t + 1] > 0)
-            {
                 tocodeI(addi, a2, d0, '\n');
-            }
             else
-            {
                 tocodeI(addi, a2, d0, ' ');
-            }
             tocodeI(addi, a3, d0, '\n');
             tocodeJ(jal, "auxprint", -1);
         }
@@ -2343,29 +2339,9 @@ void MStmt_gen()
 			i = tree[tc++];                // ссылка на identtab
 			t = identab[i + 2];            // тип
 			
-			fprintf(output, "\t.rdata\n\t.align 2\n");
-		tocodeL("STRING", stringnum);
-			printf("\t.ascii \"");
-			fprintf(output, "\t.ascii \"");
-
-			while (tree[tc] != 0)
-			{
-				printf("%c", tree[tc]);
-				fprintf(output, "%c", tree[tc++]);
-			}
-			tc++;
-			printf("\\0\"\n\t.text\n\t.align 2\n");
-			fprintf(output, "\\0\"\n\t.text\n\t.align 2\n");
-			fprintf(output, "\tlui $t1, %%hi(STRING%i)\n", stringnum);
-			fprintf(output, "\taddiu $a0, $t1, %%lo(STRING%i)\n", stringnum++);
-			tocodemove(s7, stp);
-			tocodeI(addi, stp, fp, -16);
-			tocodeJ(jal, "printf", -1);
-			tocodemove(stp, s7);
-			
 			mdsp(identab[i + 3]);
-			tocodeI(addi, a0, areg, adispl);
-			tocodeI(addi, a1, d0, t);
+			tocodeI(addi, a0, d0, t);
+			tocodeI(addi, a1, areg, adispl);
 			tocodeJ(jal, "auxget", -1);
 		}
 			break;
@@ -2451,13 +2427,7 @@ void MStmt_gen()
             }
         }
             break;
-/*
-        case TGetid:
-        {
-            tocode(GETID);
-            tocode(tree[tc++]);  // ссылка в identtab
-        }
-            break;
+ /*
         case SETMOTOR:
             MExpr_gen();
             MExpr_gen();
