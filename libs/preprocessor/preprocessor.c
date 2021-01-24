@@ -450,6 +450,11 @@ int macro_form_io(workspace *const ws, universal_io *const io)
 
 char *macro(workspace *const ws)
 {
+	if (!ws_is_correct(&ws) || ws_get_files_num(ws) == 0)
+	{
+		return NULL;
+	}
+
 	universal_io io = io_create();
 	if (out_set_buffer(&io, SIZE_OUT_BUFFER))
 	{
@@ -469,6 +474,11 @@ char *macro(workspace *const ws)
 
 int macro_to_file(workspace *const ws, const char *const path)
 {
+	if (!ws_is_correct(&ws) || ws_get_files_num(ws) == 0)
+	{
+		return -1;
+	}
+
 	universal_io io = io_create();
 	if (out_set_file(&io, path))
 	{
@@ -485,21 +495,11 @@ int macro_to_file(workspace *const ws, const char *const path)
 char *auto_macro(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	if (!ws_is_correct(&ws))
-	{
-		return NULL;
-	}
-
 	return macro(&ws);
 }
 
 int auto_macro_to_file(const int argc, const char *const *const argv, const char *const path)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	if (!ws_is_correct(&ws))
-	{
-		return -1;
-	}
-
 	return macro_to_file(&ws, path);
 }
