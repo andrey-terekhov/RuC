@@ -74,8 +74,29 @@ item_status item_get_status(const workspace *const ws)
 	return status == item_types ? DEFAULT_STATUS : status;
 }
 
-item_t item_get_max(const item_status status);
+item_t item_get_min(const item_status status)
+{
+	switch (status)
+	{
+		case item_int64:
+			return LLONG_MIN;
+		case item_int32:
+			return INT_MIN;
+		case item_int16:
+			return SHRT_MIN;
+		case item_int8:
+			return CHAR_MIN;
 
-item_t item_get_min(const item_status status);
+		case item_uint64:
+		case item_uint32:
+		case item_uint16:
+		case item_uint8:
+		
+		default:
+			return 0;
+	}
+}
+
+item_t item_get_max(const item_status status);
 
 int item_check_var(const item_status status, const item_t var);
