@@ -11,7 +11,7 @@ const char * name =
 //"tests/Mishatest.c";
 
 //"tests/mips/optimizations/cycle_jump_reduce/test43.c";
-"tests/mips/printid.c";
+"tests/mips/get.c";;
 
 //"../../../tests/Egor/Macro/for.c";
 
