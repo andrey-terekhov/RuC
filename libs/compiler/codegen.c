@@ -1013,8 +1013,8 @@ int codegen(universal_io *const io, syntax *const sx)
 
 	tree_next_node(sx);
 	printf("%i tc=%i :codegen\n", node_get_type(tree_get_node(sx)), local_tc);
-	while (local_tc < treesize)
-	// while (node_is_correct(tree_get_node(sx)))
+	// while (local_tc < treesize)
+	while (node_is_correct(tree_get_node(sx)))
 	{
 		local_tc++;
 		switch (node_get_type(tree_get_node(sx)))
@@ -1109,10 +1109,6 @@ int codegen(universal_io *const io, syntax *const sx)
 			}
 		}
 	}
-
-	// printf("%i tc=%i :codegen end\n", node_get_type(tree_get_node(sx)), local_tc);
-	// tree_next_node(sx);
-	// printf("%i tc=%i :codegen end2\n", node_get_type(tree_get_node(sx)), local_tc);
 
 	if (sx->wasmain == 0)
 	{
