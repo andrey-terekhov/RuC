@@ -86,14 +86,20 @@ void finalop(syntax *const sx)
 			{
 				tocode(sx, _DOUBLE);
 				tocode(sx, BNE0);
-				sx->tree[sx->tree[local_tc++]] = (int)mem_get_size(sx);
+				sx->tree[node_get_arg(tree_get_node(sx), 0)] = (int)mem_get_size(sx);
+
+				local_tc++;
+
 				mem_increase(sx, 1);
 			}
 			else if (c == ADLOGAND)
 			{
 				tocode(sx, _DOUBLE);
 				tocode(sx, BE0);
-				sx->tree[sx->tree[local_tc++]] = (int)mem_get_size(sx);
+				sx->tree[node_get_arg(tree_get_node(sx), 0)] = (int)mem_get_size(sx);
+
+				local_tc++;
+				
 				mem_increase(sx, 1);
 			}
 			else
