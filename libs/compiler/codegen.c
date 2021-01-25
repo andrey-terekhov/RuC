@@ -222,7 +222,9 @@ int Expr_gen(syntax *const sx, int incond)
 			case TString:
 			case TStringd:
 			{
-				int n = sx->tree[local_tc++];
+				int n = node_get_arg(tree_get_node(sx), 0);
+
+				local_tc++;
 
 				tocode(sx, LI);
 				size_t res = mem_get_size(sx) + 4;
@@ -233,12 +235,14 @@ int Expr_gen(syntax *const sx, int incond)
 				{
 					if (op == TString)
 					{
-						tocode(sx, sx->tree[local_tc++]);
+						tocode(sx, node_get_arg(tree_get_node(sx), i + 1));
+						local_tc++;
 					}
 					else
 					{
-						tocode(sx, sx->tree[local_tc++]);
-						tocode(sx, sx->tree[local_tc++]);
+						tocode(sx, node_get_arg(tree_get_node(sx), 2 * i + 1));
+						tocode(sx, node_get_arg(tree_get_node(sx), 2 * i + 1 + 1));
+						local_tc += 2;
 					}
 				}
 				mem_set(sx, res - 1, n);
