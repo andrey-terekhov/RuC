@@ -38,7 +38,7 @@ int uni_scanf(universal_io *const io, const char *const format, ...)
 
 char32_t uni_scan_char(universal_io *const io)
 {
-	char buffer[8];
+	char buffer[MAX_SYMBOL_SIZE];
 	if (!uni_scanf(io, "%c", &buffer[0]))
 	{
 		return (char32_t)EOF;

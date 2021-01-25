@@ -79,13 +79,19 @@ int compile_from_io_to_vm(universal_io *const io)
 		tables_and_tree(&sx, DEFAULT_TREE);
 #endif
 	}
+	
+	if (!ret)
+	{
+		ret = !sx_is_correct(&sx, io);
+	}
 
 	if (!ret)
 	{
 #ifdef GENERATE_TREE
 		ret = tree_test(&sx)
 			|| tree_test_next(&sx)
-			|| tree_test_recursive(&sx);
+			|| tree_test_recursive(&sx)
+			|| tree_test_copy(&sx);
 		if (ret)
 		{
 			io_erase(io);
