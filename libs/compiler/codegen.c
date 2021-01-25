@@ -143,77 +143,52 @@ int Expr_gen(syntax *const sx, int incond)
 
 	while (flagprim)
 	{
-		local_tc++;
 		switch (op = node_get_type(tree_get_node(sx)))
 		{
 			case TIdent:
 			{
 				sx->anstdispl = node_get_arg(tree_get_node(sx), 0);
-
-				local_tc++;
-
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TIdent \n", node_get_type(tree_get_node(sx)), local_tc);
 				break;
 			}
 			case TIdenttoaddr:
 			{
 				tocode(sx, LA);
 				tocode(sx, sx->anstdispl = node_get_arg(tree_get_node(sx), 0));
-
-				local_tc++;
-
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TIdenttoaddr \n", node_get_type(tree_get_node(sx)), local_tc);
 				break;
 			}
 			case TIdenttoval:
 			{
 				tocode(sx, LOAD);
 				tocode(sx, node_get_arg(tree_get_node(sx), 0));
-
-				local_tc++;
-
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TIdenttoval \n", node_get_type(tree_get_node(sx)), local_tc);
 				break;
 			}
 			case TIdenttovald:
 			{
 				tocode(sx, LOADD);
 				tocode(sx, node_get_arg(tree_get_node(sx), 0));
-
-				local_tc++;
-
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TIdenttovald\n", node_get_type(tree_get_node(sx)), local_tc);
 				break;
 			}
 			case TAddrtoval:
 			{
 				tocode(sx, LAT);
-
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TAddrtoval\n", node_get_type(tree_get_node(sx)), local_tc);
 				break;
 			}
 			case TAddrtovald:
 			{
 				tocode(sx, LATD);
-
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TAddrtovald\n", node_get_type(tree_get_node(sx)), local_tc);
 				break;
 			}
 			case TConst:
 			{
 				tocode(sx, LI);
 				tocode(sx, node_get_arg(tree_get_node(sx), 0));
-
-				local_tc++;
-
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TConst\n", node_get_type(tree_get_node(sx)), local_tc);
 				break;
 			}
 			case TConstd:
@@ -221,19 +196,13 @@ int Expr_gen(syntax *const sx, int incond)
 				tocode(sx, LID);
 				tocode(sx, node_get_arg(tree_get_node(sx), 0));
 				tocode(sx, node_get_arg(tree_get_node(sx), 1));
-
-				local_tc += 2;
-
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TConstd\n", node_get_type(tree_get_node(sx)), local_tc);
 				break;
 			}
 			case TString:
 			case TStringd:
 			{
 				int n = node_get_arg(tree_get_node(sx), 0);
-
-				local_tc++;
 
 				tocode(sx, LI);
 				size_t res = mem_get_size(sx) + 4;
@@ -245,22 +214,17 @@ int Expr_gen(syntax *const sx, int incond)
 					if (op == TString)
 					{
 						tocode(sx, node_get_arg(tree_get_node(sx), i + 1));
-						local_tc++;
 					}
 					else
 					{
 						tocode(sx, node_get_arg(tree_get_node(sx), 2 * i + 1));
 						tocode(sx, node_get_arg(tree_get_node(sx), 2 * i + 1 + 1));
-						local_tc += 2;
 					}
 				}
 				mem_set(sx, res - 1, n);
 				mem_set(sx, res - 2, (int)mem_get_size(sx));
 				wasstring = 1;
-
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TString\n", node_get_type(tree_get_node(sx)), local_tc);
-
 				break;
 			}
 			case TDeclid:
@@ -271,14 +235,11 @@ int Expr_gen(syntax *const sx, int incond)
 			case TBeginit:
 			{
 				int n = node_get_arg(tree_get_node(sx), 0);
-				local_tc++;
 				int i;
 
 				tocode(sx, BEGINIT);
 				tocode(sx, n);
-
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TBeginit\n", node_get_type(tree_get_node(sx)), local_tc);
 
 				for (i = 0; i < n; i++)
 				{
@@ -289,11 +250,9 @@ int Expr_gen(syntax *const sx, int incond)
 			case TStructinit:
 			{
 				int n = node_get_arg(tree_get_node(sx), 0);
-				local_tc++;
 				int i;
 
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TStructinit\n", node_get_type(tree_get_node(sx)), local_tc);
 
 				for (i = 0; i < n; i++)
 				{
@@ -305,18 +264,12 @@ int Expr_gen(syntax *const sx, int incond)
 			{
 				tocode(sx, LOAD); // параметры - смещение идента и тип элемента
 				tocode(sx, node_get_arg(tree_get_node(sx), 0)); // продолжение в след case
-
-				local_tc++;
 			}
 			case TSlice: // параметр - тип элемента
 			{
 				eltype = node_get_arg(tree_get_node(sx), (node_get_type(tree_get_node(sx)) == TSlice) ? 0 : 1);
 
-				local_tc++;
-
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TSlice\n", node_get_type(tree_get_node(sx)), local_tc);
-
 				Expr_gen(sx, 0);
 				tocode(sx, SLICE);
 				tocode(sx, sz_of(sx, eltype));
@@ -330,22 +283,14 @@ int Expr_gen(syntax *const sx, int incond)
 			{
 				tocode(sx, SELECT); // SELECT field_displ
 				tocode(sx, node_get_arg(tree_get_node(sx), 0));
-
-				local_tc++;
-
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TSelect\n", node_get_type(tree_get_node(sx)), local_tc);
 				break;
 			}
 			case TPrint:
 			{
 				tocode(sx, PRINT);
 				tocode(sx, node_get_arg(tree_get_node(sx), 0)); // type
-
-				local_tc++;
-
 				tree_next_node(sx);
-				printf("%i tc=%i :Expr_gen TPrint\n", node_get_type(tree_get_node(sx)), local_tc);
 				break;
 			}
 			case TCall1:
@@ -353,12 +298,8 @@ int Expr_gen(syntax *const sx, int incond)
 				int i;
 				int n = node_get_arg(tree_get_node(sx), 0);
 
-				local_tc++;
-
 				tocode(sx, CALL1);
-
 				tree_next_node(sx);
-				printf("%i tc=%i: Expr_gen TCall1\n", node_get_type(tree_get_node(sx)), local_tc);
 
 				for (i = 0; i < n; i++)
 				{
@@ -370,17 +311,11 @@ int Expr_gen(syntax *const sx, int incond)
 			{
 				tocode(sx, CALL2);
 				tocode(sx, sx->identab[node_get_arg(tree_get_node(sx), 0) + 3]);
-
-				local_tc++;
-
 				tree_next_node(sx);
-				printf("%i tc=%i: Expr_gen TCall2\n", node_get_type(tree_get_node(sx)), local_tc);
-
 				break;
 			}
 			default:
 			{
-				local_tc--;
 				break;
 			}
 		}
@@ -391,8 +326,6 @@ int Expr_gen(syntax *const sx, int incond)
 		{
 			if (incond)
 			{
-				printf("%i tc=%i: Expr_gen TCondexpr\n", node_get_type(tree_get_node(sx)), local_tc);
-
 				return wasstring;
 			}
 			else
@@ -400,14 +333,10 @@ int Expr_gen(syntax *const sx, int incond)
 				size_t ad = 0;
 				do
 				{
-					local_tc++;
 					tocode(sx, BE0);
 					size_t adelse = mem_get_size(sx);
 					mem_increase(sx, 1);
-
 					tree_next_node(sx);
-					printf("%i tc=%i: Expr_gen TCondexpr\n", node_get_type(tree_get_node(sx)), local_tc);
-
 					Expr_gen(sx, 0); // then
 					tocode(sx, B);
 					mem_add(sx, (int)ad);
@@ -428,11 +357,8 @@ int Expr_gen(syntax *const sx, int incond)
 		}
 		if (node_get_type(tree_get_node(sx)) == TExprend)
 		{		
-			local_tc++;
 			flagprim = 0;
-
 			tree_next_node(sx);
-			printf("%i tc=%i: Expr_gen TExprend\n", node_get_type(tree_get_node(sx)), local_tc);
 		}
 	}
 	return wasstring;
