@@ -47,7 +47,7 @@ int vector_increase(vector *const vec, const size_t size)
 			return -1;
 		}
 
-		vec->size_alloc *= 2;
+		vec->size_alloc = alloc_new;
 		vec->array = array_new;
 	}
 
