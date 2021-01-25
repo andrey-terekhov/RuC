@@ -86,7 +86,39 @@ size_t map_get_hash(map *const as, const char *const key)
 	return hash % MAP_HASH_MAX;
 }
 
-size_t map_get_hash_by_utf8(map *const as, const char32_t *const key);
+size_t map_get_hash_by_utf8(map *const as, const char32_t *const key)
+{
+	if (!utf8_is_letter(key[0]) && key[0] != '#')
+	{
+		return SIZE_MAX;
+	}
+
+	as->keys_next = as->keys_size;
+	if (map_add_key_symbol(as, key[0]))
+	{
+		return SIZE_MAX;
+	}
+
+	size_t hash = key[0];
+
+	size_t i = 1;
+	while (key[i] != '\0')
+	{
+		if (!utf8_is_letter(key[i]) && !utf8_is_digit(key[i]))
+		{
+			return SIZE_MAX;
+		}
+
+		if (map_add_key_symbol(as, key[i]))
+		{
+			return SIZE_MAX;
+		}
+
+		hash += key[i++];
+	}
+
+	return hash % MAP_HASH_MAX;
+}
 
 size_t map_get_hash_by_io(map *const as, universal_io *const io, char32_t *const last)
 {
