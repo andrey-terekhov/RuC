@@ -99,7 +99,7 @@ void finalop(syntax *const sx)
 				sx->tree[node_get_arg(tree_get_node(sx), 0)] = (int)mem_get_size(sx);
 
 				local_tc++;
-				
+
 				mem_increase(sx, 1);
 			}
 			else
@@ -107,13 +107,17 @@ void finalop(syntax *const sx)
 				tocode(sx, c);
 				if (c == LOGOR || c == LOGAND)
 				{
-					mem_set(sx, sx->tree[local_tc++], (int)mem_get_size(sx));
+					mem_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_get_size(sx));
+
+					local_tc++;
 				}
 				else if (c == COPY00 || c == COPYST)
 				{
-					tocode(sx, sx->tree[local_tc++]); // d1
-					tocode(sx, sx->tree[local_tc++]); // d2
-					tocode(sx, sx->tree[local_tc++]); // длина
+					tocode(sx, node_get_arg(tree_get_node(sx), 0)); // d1
+					tocode(sx, node_get_arg(tree_get_node(sx), 1)); // d2
+					tocode(sx, node_get_arg(tree_get_node(sx), 2)); // длина
+
+					local_tc +=3;
 				}
 				else if (c == COPY01 || c == COPY10 || c == COPY0ST || c == COPY0STASS)
 				{
