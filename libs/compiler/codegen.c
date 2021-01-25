@@ -140,14 +140,13 @@ int Expr_gen(syntax *const sx, int incond)
 		{
 			case TIdent:
 			{
-				// sx->anstdispl = node_get_arg(tree_get_node(sx), 0);
 				tree_next_node(sx);
 				break;
 			}
 			case TIdenttoaddr:
 			{
 				tocode(sx, LA);
-				// tocode(sx, sx->anstdispl = node_get_arg(tree_get_node(sx), 0));
+				tocode(sx, node_get_arg(tree_get_node(sx), 0));
 				tree_next_node(sx);
 				break;
 			}
