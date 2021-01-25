@@ -203,7 +203,9 @@ int Expr_gen(syntax *const sx, int incond)
 			case TConst:
 			{
 				tocode(sx, LI);
-				tocode(sx, sx->tree[local_tc++]);
+				tocode(sx, node_get_arg(tree_get_node(sx), 0));
+
+				local_tc++;
 
 				tree_next_node(sx);
 				printf("%i tc=%i :Expr_gen TConst\n", node_get_type(tree_get_node(sx)), local_tc);
@@ -212,8 +214,10 @@ int Expr_gen(syntax *const sx, int incond)
 			case TConstd:
 			{
 				tocode(sx, LID);
-				tocode(sx, sx->tree[local_tc++]);
-				tocode(sx, sx->tree[local_tc++]);
+				tocode(sx, node_get_arg(tree_get_node(sx), 0));
+				tocode(sx, node_get_arg(tree_get_node(sx), 1));
+
+				local_tc += 2;
 
 				tree_next_node(sx);
 				printf("%i tc=%i :Expr_gen TConstd\n", node_get_type(tree_get_node(sx)), local_tc);
