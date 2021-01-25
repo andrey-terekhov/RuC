@@ -257,7 +257,8 @@ int Expr_gen(syntax *const sx, int incond)
 			}
 			case TBeginit:
 			{
-				int n = sx->tree[local_tc++];
+				int n = node_get_arg(tree_get_node(sx), 0);
+				local_tc++;
 				int i;
 
 				tocode(sx, BEGINIT);
@@ -274,7 +275,8 @@ int Expr_gen(syntax *const sx, int incond)
 			}
 			case TStructinit:
 			{
-				int n = sx->tree[local_tc++];
+				int n = node_get_arg(tree_get_node(sx), 0);
+				local_tc++;
 				int i;
 
 				tree_next_node(sx);
