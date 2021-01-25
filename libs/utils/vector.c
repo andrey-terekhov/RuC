@@ -24,7 +24,7 @@ vector vector_create(const size_t alloc)
 
 	vec.size = 0;
 	vec.size_alloc = alloc != 0 ? alloc : 1;
-	vec.array = malloc(vec.size_alloc * sizeof(int64_t));
+	vec.array = malloc(vec.size_alloc * sizeof(item_t));
 
 	return vec;
 }
@@ -40,7 +40,7 @@ int vector_increase(vector *const vec, const size_t size)
 	if (vec->size + size > vec->size_alloc)
 	{
 		const size_t alloc_new = vec->size + size > 2 * vec->size_alloc ? vec->size + size : 2 * vec->size_alloc;
-		int64_t *array_new = realloc(vec->array, alloc_new * sizeof(int64_t));
+		item_t *array_new = realloc(vec->array, alloc_new * sizeof(item_t));
 		if (array_new == NULL)
 		{
 			return -1;
@@ -54,7 +54,7 @@ int vector_increase(vector *const vec, const size_t size)
 	return 0;
 }
 
-size_t vector_add(vector *const vec, const int64_t value)
+size_t vector_add(vector *const vec, const item_t value)
 {
 	if (!vector_is_correct(vec))
 	{
@@ -63,7 +63,7 @@ size_t vector_add(vector *const vec, const int64_t value)
 
 	if (vec->size == vec->size_alloc)
 	{
-		int64_t *array_new = realloc(vec->array, 2 * vec->size_alloc * sizeof(int64_t));
+		item_t *array_new = realloc(vec->array, 2 * vec->size_alloc * sizeof(item_t));
 		if (array_new == NULL)
 		{
 			return SIZE_MAX;
@@ -77,7 +77,7 @@ size_t vector_add(vector *const vec, const int64_t value)
 	return vec->size++;
 }
 
-int vector_set(vector *const vec, const size_t index, const int64_t value)
+int vector_set(vector *const vec, const size_t index, const item_t value)
 {
 	if (!vector_is_correct(vec) || index >= vec->size)
 	{
@@ -88,11 +88,11 @@ int vector_set(vector *const vec, const size_t index, const int64_t value)
 	return 0;
 }
 
-int64_t vector_get(const vector *const vec, const size_t index)
+item_t vector_get(const vector *const vec, const size_t index)
 {
 	if (!vector_is_correct(vec) || index >= vec->size)
 	{
-		return LLONG_MAX;
+		return ITEM_MAX;
 	}
 
 	return vec->array[index];

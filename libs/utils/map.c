@@ -29,7 +29,7 @@ struct map_hash
 {
 	size_t next;
 	size_t ref;
-	int64_t value;
+	item_t value;
 };
 
 
@@ -122,7 +122,7 @@ int map_cmp_key(const map *const as, const size_t index)
 	return strcmp(&as->keys[as->values[index].ref], &as->keys[as->keys_size]);
 }
 
-size_t map_add_by_hash(map *const as, const size_t hash, const int64_t value)
+size_t map_add_by_hash(map *const as, const size_t hash, const item_t value)
 {
 	if (hash == SIZE_MAX)
 	{
@@ -134,7 +134,7 @@ size_t map_add_by_hash(map *const as, const size_t hash, const int64_t value)
 	{
 		if (map_cmp_key(as, index) == 0)
 		{
-			return value == LLONG_MAX ? index : SIZE_MAX;
+			return value == ITEM_MAX ? index : SIZE_MAX;
 		}
 		index = as->values[index].next;
 	}
@@ -148,7 +148,7 @@ size_t map_add_by_hash(map *const as, const size_t hash, const int64_t value)
 	}
 	else if (map_cmp_key(as, index) == 0)
 	{
-		return value == LLONG_MAX ? index : SIZE_MAX;
+		return value == ITEM_MAX ? index : SIZE_MAX;
 	}
 
 	if (as->values_size == as->values_alloc)
@@ -173,7 +173,7 @@ size_t map_add_by_hash(map *const as, const size_t hash, const int64_t value)
 	return index;
 }
 
-size_t map_set_by_hash(map *const as, const size_t hash, const int64_t value)
+size_t map_set_by_hash(map *const as, const size_t hash, const item_t value)
 {
 	if (hash == SIZE_MAX)
 	{
@@ -200,11 +200,11 @@ size_t map_set_by_hash(map *const as, const size_t hash, const int64_t value)
 	return index;
 }
 
-int64_t map_get_by_hash(const map *const as, const size_t hash)
+item_t map_get_by_hash(const map *const as, const size_t hash)
 {
 	if (hash == SIZE_MAX)
 	{
-		return LLONG_MAX;
+		return ITEM_MAX;
 	}
 
 	size_t index = hash;
@@ -219,7 +219,7 @@ int64_t map_get_by_hash(const map *const as, const size_t hash)
 
 	if (as->values[index].ref == SIZE_MAX || map_cmp_key(as, index) != 0)
 	{
-		return LLONG_MAX;
+		return ITEM_MAX;
 	}
 
 	return as->values[index].value;
@@ -284,11 +284,11 @@ size_t map_reserve(map *const as, const char *const key)
 		return SIZE_MAX;
 	}
 
-	return map_add_by_hash(as, map_get_hash(as, key), LLONG_MAX);
+	return map_add_by_hash(as, map_get_hash(as, key), ITEM_MAX);
 }
 
 
-size_t map_add(map *const as, const char *const key, const int64_t value)
+size_t map_add(map *const as, const char *const key, const item_t value)
 {
 	if (!map_is_correct(as) || key == NULL)
 	{
@@ -298,7 +298,7 @@ size_t map_add(map *const as, const char *const key, const int64_t value)
 	return map_add_by_hash(as, map_get_hash(as, key), value);
 }
 
-size_t map_add_by_io(map *const as, universal_io *const io, const int64_t value, char32_t *const last)
+size_t map_add_by_io(map *const as, universal_io *const io, const item_t value, char32_t *const last)
 {
 	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
 	{
@@ -309,7 +309,7 @@ size_t map_add_by_io(map *const as, universal_io *const io, const int64_t value,
 }
 
 
-size_t map_set(map *const as, const char *const key, const int64_t value)
+size_t map_set(map *const as, const char *const key, const item_t value)
 {
 	if (!map_is_correct(as) || key == NULL)
 	{
@@ -319,7 +319,7 @@ size_t map_set(map *const as, const char *const key, const int64_t value)
 	return map_set_by_hash(as, map_get_hash(as, key), value);
 }
 
-size_t map_set_by_io(map *const as, universal_io *const io, const int64_t value, char32_t *const last)
+size_t map_set_by_io(map *const as, universal_io *const io, const item_t value, char32_t *const last)
 {
 	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
 	{
@@ -329,7 +329,7 @@ size_t map_set_by_io(map *const as, universal_io *const io, const int64_t value,
 	return map_set_by_hash(as, map_get_hash_by_io(as, io, last), value);
 }
 
-int map_set_at(map *const as, const size_t index, const int64_t value)
+int map_set_at(map *const as, const size_t index, const item_t value)
 {
 	if (!map_is_correct(as) || index >= as->values_size || as->values[index].ref == SIZE_MAX)
 	{
@@ -342,31 +342,31 @@ int map_set_at(map *const as, const size_t index, const int64_t value)
 
 
 
-int64_t map_get(map *const as, const char *const key)
+item_t map_get(map *const as, const char *const key)
 {
 	if (!map_is_correct(as) || key == NULL)
 	{
-		return LLONG_MAX;
+		return ITEM_MAX;
 	}
 
 	return map_get_by_hash(as, map_get_hash(as, key));
 }
 
-int64_t map_get_by_io(map *const as, universal_io *const io, char32_t *const last)
+item_t map_get_by_io(map *const as, universal_io *const io, char32_t *const last)
 {
 	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
 	{
-		return LLONG_MAX;
+		return ITEM_MAX;
 	}
 
 	return map_get_by_hash(as, map_get_hash_by_io(as, io, last));
 }
 
-int64_t map_get_at(const map *const as, const size_t index)
+item_t map_get_at(const map *const as, const size_t index)
 {
 	if (!map_is_correct(as) || index >= as->values_size || as->values[index].ref == SIZE_MAX)
 	{
-		return LLONG_MAX;
+		return ITEM_MAX;
 	}
 
 	return as->values[index].value;
