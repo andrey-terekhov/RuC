@@ -101,7 +101,7 @@ item_t vector_get(const vector *const vec, const size_t index)
 }
 
 
-size_t vector_size(vector *const vec)
+size_t vector_size(const vector *const vec)
 {
 	return vector_is_correct(vec) ? vec->size : SIZE_MAX;
 }

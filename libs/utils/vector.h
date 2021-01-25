@@ -93,7 +93,7 @@ EXPORTED item_t vector_get(const vector *const vec, const size_t index);
  *
  *	@return	Size of vector, @c SIZE_MAX on failure
  */
-EXPORTED size_t vector_size(vector *const vec);
+EXPORTED size_t vector_size(const vector *const vec);
 
 /**
  *	Check that vector is correct
