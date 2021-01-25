@@ -637,6 +637,23 @@ node node_get_child(node *const nd, const size_t index)
 		: node_expression(&nd->tree, i);
 }
 
+
+size_t node_get_amount(const node *const nd)
+{
+	return node_is_correct(nd) ? nd->amount : 0;
+}
+
+int node_get_type(const node *const nd)
+{
+	return node_is_correct(nd) && nd->type != SIZE_MAX ? tree_get(&nd->tree, nd->type) : INT_MAX;
+}
+
+int node_get_arg(const node *const nd, const size_t index)
+{
+	return node_is_correct(nd) && index < nd->argc ? tree_get(&nd->tree, nd->argv + index) : INT_MAX;
+}
+
+
 node node_get_next(node *const nd)
 {
 	if (!node_is_correct(nd) || tree_get(&nd->tree, nd->children) == INT_MAX)
@@ -652,20 +669,16 @@ node node_get_next(node *const nd)
 	return node_operator(&nd->tree, nd->children);
 }
 
-
-size_t node_get_amount(const node *const nd)
+int node_set_next(node *const nd)
 {
-	return node_is_correct(nd) ? nd->amount : 0;
-}
+	node next = node_get_next(nd);
+	if (!node_is_correct(&next))
+	{
+		return -1;
+	}
 
-int node_get_type(const node *const nd)
-{
-	return node_is_correct(nd) && nd->type != SIZE_MAX ? tree_get(&nd->tree, nd->type) : INT_MAX;
-}
-
-int node_get_arg(const node *const nd, const size_t index)
-{
-	return node_is_correct(nd) && index < nd->argc ? tree_get(&nd->tree, nd->argv + index) : INT_MAX;
+	*nd = next;
+	return 0;
 }
 
 
