@@ -63,6 +63,17 @@ EXPORTED map map_create(const size_t alloc);
  */
 EXPORTED size_t map_reserve(map *const as, const char *const key);
 
+/**
+ *	Reserve new key by reading it from io or return existing
+ *
+ *	@param	as				Map structure
+ *	@param	io				Universal io structure
+ *	@param	symbol			Next character after key
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t map_reserve_by_io(map *const as, universal_io *const io, char32_t *const last);
+
 
 /**
  *	Add new key-value pair

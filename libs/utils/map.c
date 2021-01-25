@@ -287,6 +287,16 @@ size_t map_reserve(map *const as, const char *const key)
 	return map_add_by_hash(as, map_get_hash(as, key), ITEM_MAX);
 }
 
+size_t map_reserve_by_io(map *const as, universal_io *const io, char32_t *const last)
+{
+	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	return map_add_by_hash(as, map_get_hash_by_io(as, io, last), ITEM_MAX);
+}
+
 
 size_t map_add(map *const as, const char *const key, const item_t value)
 {
