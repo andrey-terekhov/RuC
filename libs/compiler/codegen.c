@@ -837,7 +837,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 
 	for (size_t i = 0; i < mem_get_size(sx); i++)
 	{
-		uni_printf(io, "%i ", mem_get(sx, i));
+		uni_printf(io, "%" PRIitem " ", mem_get(sx, i));
 	}
 	uni_printf(io, "\n");
 

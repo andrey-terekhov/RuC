@@ -154,19 +154,19 @@ int mem_increase(syntax *const sx, const size_t size)
 	return sx != NULL ? vector_increase(&sx->memory, size) : -1;
 }
 
-int mem_add(syntax *const sx, const int64_t value)
+int mem_add(syntax *const sx, const item_t value)
 {
 	return sx != NULL ? vector_add(&sx->memory, value) != SIZE_MAX ? 0 : -1 : -1;
 }
 
-int mem_set(syntax *const sx, const size_t index, const int64_t value)
+int mem_set(syntax *const sx, const size_t index, const item_t value)
 {
 	return sx != NULL ? vector_set(&sx->memory, index, value) : -1;
 }
 
-int64_t mem_get(const syntax *const sx, const size_t index)
+item_t mem_get(const syntax *const sx, const size_t index)
 {
-	return sx != NULL ? vector_get(&sx->memory, index) : LLONG_MAX;
+	return sx != NULL ? vector_get(&sx->memory, index) : ITEM_MAX;
 }
 
 size_t mem_get_size(const syntax *const sx)
