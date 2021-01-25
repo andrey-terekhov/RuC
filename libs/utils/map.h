@@ -16,10 +16,9 @@
 
 #pragma once
 
-#include <limits.h>
 #include <stddef.h>
-#include <stdint.h>
 #include "dll.h"
+#include "item.h"
 #include "uniio.h"
 
 
@@ -64,6 +63,27 @@ EXPORTED map map_create(const size_t alloc);
  */
 EXPORTED size_t map_reserve(map *const as, const char *const key);
 
+/**
+ *	Reserve new UTF-8 key or return existing
+ *
+ *	@param	as				Map structure
+ *	@param	key				Unique UTF-8 string key
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t map_reserve_by_utf8(map *const as, const char32_t *const key);
+
+/**
+ *	Reserve new key by reading it from io or return existing
+ *
+ *	@param	as				Map structure
+ *	@param	io				Universal io structure
+ *	@param	symbol			Next character after key
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t map_reserve_by_io(map *const as, universal_io *const io, char32_t *const last);
+
 
 /**
  *	Add new key-value pair
@@ -74,7 +94,18 @@ EXPORTED size_t map_reserve(map *const as, const char *const key);
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-EXPORTED size_t map_add(map *const as, const char *const key, const int64_t value);
+EXPORTED size_t map_add(map *const as, const char *const key, const item_t value);
+
+/**
+ *	Add new UTF-8 key-value pair
+ *
+ *	@param	as				Map structure
+ *	@param	key				Unique UTF-8 string key
+ *	@param	value			Value
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t map_add_by_utf8(map *const as, const char32_t *const key, const item_t value);
 
 /**
  *	Add new pair by reading key from io
@@ -86,7 +117,7 @@ EXPORTED size_t map_add(map *const as, const char *const key, const int64_t valu
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-EXPORTED size_t map_add_by_io(map *const as, universal_io *const io, const int64_t value, char32_t *const last);
+EXPORTED size_t map_add_by_io(map *const as, universal_io *const io, const item_t value, char32_t *const last);
 
 
 /**
@@ -98,7 +129,18 @@ EXPORTED size_t map_add_by_io(map *const as, universal_io *const io, const int64
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-EXPORTED size_t map_set(map *const as, const char *const key, const int64_t value);
+EXPORTED size_t map_set(map *const as, const char *const key, const item_t value);
+
+/**
+ *	Set new value by existing UTF-8 key
+ *
+ *	@param	as				Map structure
+ *	@param	key				Unique UTF-8 string key
+ *	@param	value			New value
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t map_set_by_utf8(map *const as, const char32_t *const key, const item_t value);
 
 /**
  *	Set new value by reading existing key from io
@@ -110,7 +152,7 @@ EXPORTED size_t map_set(map *const as, const char *const key, const int64_t valu
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-EXPORTED size_t map_set_by_io(map *const as, universal_io *const io, const int64_t value, char32_t *const last);
+EXPORTED size_t map_set_by_io(map *const as, universal_io *const io, const item_t value, char32_t *const last);
 
 /**
  *	Set new value by index
@@ -121,7 +163,7 @@ EXPORTED size_t map_set_by_io(map *const as, universal_io *const io, const int64
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int map_set_at(map *const as, const size_t index, const int64_t value);
+EXPORTED int map_set_by_index(map *const as, const size_t index, const item_t value);
 
 
 /**
@@ -130,9 +172,19 @@ EXPORTED int map_set_at(map *const as, const size_t index, const int64_t value);
  *	@param	as				Map structure
  *	@param	key				Unique string key
  *
- *	@return	Value, @c LLONG_MAX on failure
+ *	@return	Value, @c ITEM_MAX on failure
  */
-EXPORTED int64_t map_get(map *const as, const char *const key);
+EXPORTED item_t map_get(map *const as, const char *const key);
+
+/**
+ *	Get value by UTF-8 key
+ *
+ *	@param	as				Map structure
+ *	@param	key				Unique UTF-8 string key
+ *
+ *	@return	Value, @c ITEM_MAX on failure
+ */
+EXPORTED item_t map_get_by_utf8(map *const as, const char32_t *const key);
 
 /**
  *	Get value by reading key from io
@@ -141,9 +193,9 @@ EXPORTED int64_t map_get(map *const as, const char *const key);
  *	@param	io				Universal io structure
  *	@param	symbol			Next character after key
  *
- *	@return	Value, @c LLONG_MAX on failure
+ *	@return	Value, @c ITEM_MAX on failure
  */
-EXPORTED int64_t map_get_by_io(map *const as, universal_io *const io, char32_t *const last);
+EXPORTED item_t map_get_by_io(map *const as, universal_io *const io, char32_t *const last);
 
 /**
  *	Get value by index
@@ -151,10 +203,20 @@ EXPORTED int64_t map_get_by_io(map *const as, universal_io *const io, char32_t *
  *	@param	as				Map structure
  *	@param	index			Value index
  *
- *	@return	Value, @c LLONG_MAX on failure
+ *	@return	Value, @c ITEM_MAX on failure
  */
-EXPORTED int64_t map_get_at(const map *const as, const size_t index);
+EXPORTED item_t map_get_by_index(const map *const as, const size_t index);
 
+
+/**
+ *	Return key by index
+ *
+ *	@param	as				Map structure
+ *	@param	index			Key index
+ *
+ *	@return	Key, @c NULL on failure
+ */
+EXPORTED const char *map_to_string(const map *const as, const size_t index);
 
 /**
  *	Check that map is correct

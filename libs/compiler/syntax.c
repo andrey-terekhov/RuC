@@ -583,13 +583,7 @@ int tree_set_node(syntax *const sx, node *const nd)
 
 int tree_next_node(syntax *const sx)
 {
-	if (sx == NULL || !node_is_correct(sx->current))
-	{
-		return -1;
-	}
-
-	*(sx->current) = node_get_next(sx->current);
-	return !node_is_correct(sx->current);
+	return sx != NULL ? node_set_next(sx->current) : -1;
 }
 
 node *tree_get_node(syntax *const sx)

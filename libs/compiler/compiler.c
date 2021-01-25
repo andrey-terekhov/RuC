@@ -122,7 +122,7 @@ int compile_from_io_to_vm(universal_io *const io)
 
 int compile_to_vm(workspace *const ws)
 {
-	if (!ws_is_correct(ws))
+	if (!ws_is_correct(ws) || ws_get_files_num(ws) == 0)
 	{
 		system_error("некорректные входные данные");
 		return -1;
