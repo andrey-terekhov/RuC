@@ -288,14 +288,16 @@ int Expr_gen(syntax *const sx, int incond)
 			}
 			case TSliceident:
 			{
-				tocode(sx,
-					   LOAD); // параметры - смещение идента и тип элемента
-				tocode(sx,
-					   sx->tree[local_tc++]); // продолжение в след case
+				tocode(sx, LOAD); // параметры - смещение идента и тип элемента
+				tocode(sx, node_get_arg(tree_get_node(sx), 0)); // продолжение в след case
+
+				local_tc++;
 			}
 			case TSlice: // параметр - тип элемента
 			{
-				eltype = sx->tree[local_tc++];
+				eltype = node_get_arg(tree_get_node(sx), (node_get_type(tree_get_node(sx)) == TSlice) ? 0 : 1);
+
+				local_tc++;
 
 				tree_next_node(sx);
 				printf("%i tc=%i :Expr_gen TSlice\n", node_get_type(tree_get_node(sx)), local_tc);
