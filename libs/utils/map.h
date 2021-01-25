@@ -163,7 +163,7 @@ EXPORTED size_t map_set_by_io(map *const as, universal_io *const io, const item_
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int map_set_at(map *const as, const size_t index, const item_t value);
+EXPORTED int map_set_by_index(map *const as, const size_t index, const item_t value);
 
 
 /**
@@ -205,7 +205,7 @@ EXPORTED item_t map_get_by_io(map *const as, universal_io *const io, char32_t *c
  *
  *	@return	Value, @c ITEM_MAX on failure
  */
-EXPORTED item_t map_get_at(const map *const as, const size_t index);
+EXPORTED item_t map_get_by_index(const map *const as, const size_t index);
 
 
 /**

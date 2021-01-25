@@ -403,7 +403,7 @@ size_t map_set_by_io(map *const as, universal_io *const io, const item_t value, 
 	return map_set_by_hash(as, map_get_hash_by_io(as, io, last), value);
 }
 
-int map_set_at(map *const as, const size_t index, const item_t value)
+int map_set_by_index(map *const as, const size_t index, const item_t value)
 {
 	if (!map_is_correct(as) || index >= as->values_size || as->values[index].ref == SIZE_MAX)
 	{
@@ -446,7 +446,7 @@ item_t map_get_by_io(map *const as, universal_io *const io, char32_t *const last
 	return map_get_by_hash(as, map_get_hash_by_io(as, io, last));
 }
 
-item_t map_get_at(const map *const as, const size_t index)
+item_t map_get_by_index(const map *const as, const size_t index)
 {
 	if (!map_is_correct(as) || index >= as->values_size || as->values[index].ref == SIZE_MAX)
 	{
