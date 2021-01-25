@@ -147,11 +147,14 @@ int Expr_gen(syntax *const sx, int incond)
 
 	while (flagprim)
 	{
-		switch (op = sx->tree[local_tc++])
+		local_tc++;
+		switch (op = node_get_type(tree_get_node(sx)))
 		{
 			case TIdent:
 			{
-				sx->anstdispl = sx->tree[local_tc++];
+				sx->anstdispl = node_get_arg(tree_get_node(sx), 0);
+
+				local_tc++;
 
 				tree_next_node(sx);
 				printf("%i tc=%i :Expr_gen TIdent \n", node_get_type(tree_get_node(sx)), local_tc);
@@ -160,7 +163,9 @@ int Expr_gen(syntax *const sx, int incond)
 			case TIdenttoaddr:
 			{
 				tocode(sx, LA);
-				tocode(sx, sx->anstdispl = sx->tree[local_tc++]);
+				tocode(sx, sx->anstdispl = node_get_arg(tree_get_node(sx), 0));
+
+				local_tc++;
 
 				tree_next_node(sx);
 				printf("%i tc=%i :Expr_gen TIdenttoaddr \n", node_get_type(tree_get_node(sx)), local_tc);
@@ -169,7 +174,9 @@ int Expr_gen(syntax *const sx, int incond)
 			case TIdenttoval:
 			{
 				tocode(sx, LOAD);
-				tocode(sx, sx->tree[local_tc++]);
+				tocode(sx, node_get_arg(tree_get_node(sx), 0));
+
+				local_tc++;
 
 				tree_next_node(sx);
 				printf("%i tc=%i :Expr_gen TIdenttoval \n", node_get_type(tree_get_node(sx)), local_tc);
@@ -178,7 +185,9 @@ int Expr_gen(syntax *const sx, int incond)
 			case TIdenttovald:
 			{
 				tocode(sx, LOADD);
-				tocode(sx, sx->tree[local_tc++]);
+				tocode(sx, node_get_arg(tree_get_node(sx), 0));
+
+				local_tc++;
 
 				tree_next_node(sx);
 				printf("%i tc=%i :Expr_gen TIdenttovald\n", node_get_type(tree_get_node(sx)), local_tc);
