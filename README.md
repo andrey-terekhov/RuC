@@ -18,6 +18,8 @@ $ mkdir build && cd build && cmake .. && cd ..
 $ cmake --build build --config Release
 ```
 
+P.s. Если вы собирали Debug версию, не забудьте вернуть `-DCMAKE_BUILD_TYPE=Release`
+
 ## Использование
 
 Установить сборку в систему можно одной из следующих команд:
