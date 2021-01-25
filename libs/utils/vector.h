@@ -16,10 +16,9 @@
 
 #pragma once
 
-#include <limits.h>
 #include <stddef.h>
-#include <stdint.h>
 #include "dll.h"
+#include "item.h"
 
 
 #ifdef __cplusplus
@@ -29,7 +28,7 @@ extern "C" {
 /** Vector structure */
 typedef struct vector
 {
-	int64_t *array;				/**< Vector array */
+	item_t *array;				/**< Vector array */
 	size_t size;				/**< Size of vector */
 	size_t size_alloc;			/**< Allocated size of vector */
 } vector;
@@ -38,12 +37,22 @@ typedef struct vector
 /**
  *	Create new vector
  *
- *	@param	values			Initializer of values count
+ *	@param	alloc			Initializer of allocated size
  *
  *	@return	Vector structure
  */
-EXPORTED vector vector_create(const size_t values);
+EXPORTED vector vector_create(const size_t alloc);
 
+
+/**
+ *	Increase vector size
+ *
+ *	@param	vec				Vector structure
+ *	@param	size			Size to increase
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+EXPORTED int vector_increase(vector *const vec, const size_t size);
 
 /**
  *	Add new value
@@ -53,7 +62,7 @@ EXPORTED vector vector_create(const size_t values);
  *
  *	@return	Index, @c SIZE_MAX on failure
  */
-EXPORTED size_t vector_add(vector *const vec, const int64_t value);
+EXPORTED size_t vector_add(vector *const vec, const item_t value);
 
 /**
  *	Set new value
@@ -64,7 +73,7 @@ EXPORTED size_t vector_add(vector *const vec, const int64_t value);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int vector_set(vector *const vec, const size_t index, const int64_t value);
+EXPORTED int vector_set(vector *const vec, const size_t index, const item_t value);
 
 /**
  *	Get value
@@ -72,9 +81,9 @@ EXPORTED int vector_set(vector *const vec, const size_t index, const int64_t val
  *	@param	vec				Vector structure
  *	@param	index			Index
  *
- *	@return	Value, @c LLONG_MAX on failure
+ *	@return	Value, @c ITEM_MAX on failure
  */
-EXPORTED int64_t vector_get(const vector *const vec, const size_t index);
+EXPORTED item_t vector_get(const vector *const vec, const size_t index);
 
 
 /**
