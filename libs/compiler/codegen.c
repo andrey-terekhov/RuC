@@ -121,18 +121,24 @@ void finalop(syntax *const sx)
 				}
 				else if (c == COPY01 || c == COPY10 || c == COPY0ST || c == COPY0STASS)
 				{
-					tocode(sx, sx->tree[local_tc++]); // d1
-					tocode(sx, sx->tree[local_tc++]); // длина
+					tocode(sx, node_get_arg(tree_get_node(sx), 0)); // d1
+					tocode(sx, node_get_arg(tree_get_node(sx), 1)); // длина
+
+					local_tc +=2;
 				}
 				else if (c == COPY11 || c == COPY1ST || c == COPY1STASS)
 				{
-					tocode(sx, sx->tree[local_tc++]); // длина
+					tocode(sx, node_get_arg(tree_get_node(sx), 0)); // длина
+
+					local_tc++;
 				}
 				else if ((c >= REMASS && c <= DIVASS) || (c >= REMASSV && c <= DIVASSV) ||
 						 (c >= ASSR && c <= DIVASSR) || (c >= ASSRV && c <= DIVASSRV) || (c >= POSTINC && c <= DEC) ||
 						 (c >= POSTINCV && c <= DECV) || (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))
 				{
-					tocode(sx, sx->tree[local_tc++]);
+					tocode(sx,node_get_arg(tree_get_node(sx), 0));
+
+					local_tc++;
 				}
 			}
 		}
