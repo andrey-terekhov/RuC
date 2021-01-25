@@ -77,7 +77,7 @@ void finalop(syntax *const sx)
 {
 	int c;
 
-	while ((c = sx->tree[local_tc]) > 9000)
+	while ((c = node_get_type(tree_get_node(sx))) > 9000)
 	{
 		local_tc++;
 		if (c != NOP)
