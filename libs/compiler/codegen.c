@@ -22,8 +22,6 @@
 #include "uniprinter.h"
 
 
-int local_tc;
-
 typedef struct ad
 {
 	size_t adcont;
@@ -695,20 +693,15 @@ void Struct_init_gen(syntax *const sx)
 
 	if (node_get_type(tree_get_node(sx)) == TStructinit)
 	{
-		local_tc += 2;
 		n = node_get_arg(tree_get_node(sx), 0);
 
 		tree_next_node(sx);
-		printf("%i tc=%i :Struct_init_gen\n", node_get_type(tree_get_node(sx)), local_tc);
 
 		for (i = 0; i < n; i++)
 		{
 			Struct_init_gen(sx);
 		}
-		local_tc++; // TExprend
-
 		tree_next_node(sx); // TExprend
-		printf("%i tc=%i :Struct_init_gen TExprend\n", node_get_type(tree_get_node(sx)), local_tc);
 	}
 	else
 	{
@@ -733,11 +726,9 @@ void Declid_gen(syntax *const sx)
 	// all == 1 есть инициализатор
 	// all == 2 есть инициализатор только из строк
 
-	local_tc += 7;
 	element_len = sz_of(sx, telem);
 
 	tree_next_node(sx);
-	printf("%i tc=%i :Declid_gen\n", node_get_type(tree_get_node(sx)), local_tc);
 
 	if (N == 0) // обычная переменная int a; или struct point p;
 	{
@@ -798,13 +789,9 @@ void compstmt_gen(syntax *const sx, ad *const context)
 			case TDeclarr:
 			{
 				int i;
-				int N;
-
-				local_tc += 2;
-				N = node_get_arg(tree_get_node(sx), 0);
+				int N = node_get_arg(tree_get_node(sx), 0);
 
 				tree_next_node(sx);
-				printf("%i tc=%i: compstmt_gen TDeclarr\n", node_get_type(tree_get_node(sx)), local_tc);
 
 				for (i = 0; i < N; i++)
 				{
@@ -814,25 +801,17 @@ void compstmt_gen(syntax *const sx, ad *const context)
 			}
 			case TDeclid:
 			{
-				local_tc++;
-
-				printf("TDeclid %i tc=%i: compstmt_gen\n", node_get_type(tree_get_node(sx)), local_tc);
-
 				Declid_gen(sx);
 				break;
 			}
 			default:
 			{
-				printf("default %i tc=%i: compstmt_gen\n", node_get_type(tree_get_node(sx)), local_tc);
 				Stmt_gen(sx, context);
 				break;
 			}
 		}
 	}
-	local_tc++; // TEnd
-
 	tree_next_node(sx); // TEnd
-	printf("%i tc=%i: compstmt_gen exit\n", node_get_type(tree_get_node(sx)), local_tc);
 }
 
 /** Генерация кодов */
@@ -843,17 +822,13 @@ int codegen(universal_io *const io, syntax *const sx)
 
 	ad context;
 
-	local_tc = 0;
-
 	tree_next_node(sx);
-	printf("%i tc=%i :codegen\n", node_get_type(tree_get_node(sx)), local_tc);
+
 	while (node_is_correct(tree_get_node(sx)))
 	{
-		local_tc++;
 		switch (node_get_type(tree_get_node(sx)))
 		{
 			case TEnd:
-				printf("%i tc=%i :codegen TEnd\n", node_get_type(tree_get_node(sx)), local_tc);
 				tree_next_node(sx);
 				break;
 			case TFuncdef:
@@ -867,16 +842,8 @@ int codegen(universal_io *const io, syntax *const sx)
 				tocode(sx, maxdispl);
 				size_t old_pc = mem_get_size(sx);
 				mem_increase(sx, 1);
-
-				// local_tc += 2;
 				tree_next_node(sx);
-				printf("%i tc=%i :codegen TBegin\n", node_get_type(tree_get_node(sx)), local_tc);
-
-				local_tc++; 	
-
 				tree_next_node(sx); // TBegin
-				printf("%i tc=%i :codegen\n", node_get_type(tree_get_node(sx)), local_tc);
-
 				compstmt_gen(sx, &context);
 				mem_set(sx, old_pc, (int)mem_get_size(sx));
 				break;
@@ -886,10 +853,7 @@ int codegen(universal_io *const io, syntax *const sx)
 				int i;
 				int N = node_get_arg(tree_get_node(sx), 0);
 
-				local_tc++;
-
 				tree_next_node(sx);
-				printf("%i tc=%i :codegen TDeclarr\n", node_get_type(tree_get_node(sx)), local_tc);
 
 				for (i = 0; i < N; i++)
 				{
@@ -905,8 +869,6 @@ int codegen(universal_io *const io, syntax *const sx)
 			case NOP:
 			{
 				tree_next_node(sx);
-				printf("%i tc=%i :codegen NOP\n", node_get_type(tree_get_node(sx)), local_tc);
-
 				break;
 			}
 			case TStructbeg:
@@ -914,24 +876,16 @@ int codegen(universal_io *const io, syntax *const sx)
 				tocode(sx, B);
 				tocode(sx, 0);
 				proc_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_get_size(sx));
-
-				local_tc++;
-
 				tree_next_node(sx);
-				printf("%i tc=%i :codegen TStructbeg\n", node_get_type(tree_get_node(sx)), local_tc);
 				break;
 			}
 			case TStructend:
 			{
 				int numproc = sx->tree[node_get_arg(tree_get_node(sx), 0) + 1];
 
-				local_tc++;
-
 				tocode(sx, STOP);
 				mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
-
 				tree_next_node(sx);
-				printf("%i tc=%i :codegen TStructend\n", node_get_type(tree_get_node(sx)), local_tc);
 				break;
 			}
 			default:

@@ -22,9 +22,8 @@
 #include "workspace.h"
 
 
-const char *name = //"../tests/robots/network/blynk.c";
+const char *name = "../tests/robots/network/blynk.c";
 // "../tests/mips/0test.c";
- "../tests/executable/types/float/test_5.c";
 
 int main(int argc, const char *argv[])
 {
