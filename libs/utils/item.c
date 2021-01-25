@@ -78,20 +78,30 @@ item_t item_get_min(const item_status status)
 {
 	switch (status)
 	{
-		case item_int64:
-			return LLONG_MIN;
-		case item_int32:
-			return INT_MIN;
-		case item_int16:
-			return SHRT_MIN;
 		case item_int8:
+#if ITEM_MIN <= CHAR_MIN
 			return CHAR_MIN;
+#endif
+		case item_int16:
+#if ITEM_MIN <= SHRT_MIN
+			return SHRT_MIN;
+#endif
+		case item_int32:
+#if ITEM_MIN <= INT_MIN
+			return INT_MIN;
+#endif
+		case item_int64:
+#if ITEM_MIN <= LLONG_MIN
+			return LLONG_MIN;
+#else
+			return ITEM_MIN;
+#endif
 
-		case item_uint64:
-		case item_uint32:
-		case item_uint16:
 		case item_uint8:
-		
+		case item_uint16:
+		case item_uint32:
+		case item_uint64:
+
 		default:
 			return 0;
 	}
@@ -101,24 +111,44 @@ item_t item_get_max(const item_status status)
 {
 	switch (status)
 	{
-		case item_int64:
-			return LLONG_MAX;
-		case item_int32:
-			return INT_MAX;
-		case item_int16:
-			return SHRT_MAX;
 		case item_int8:
+#if ITEM_MAX >= CHAR_MAX
 			return CHAR_MAX;
-
-		case item_uint64:
-			return ULLONG_MAX;
-		case item_uint32:
-			return UINT_MAX;
-		case item_uint16:
-			return USHRT_MAX;
+#endif
 		case item_uint8:
+#if ITEM_MAX >= UCHAR_MAX
 			return UCHAR_MAX;
-		
+#endif
+
+		case item_int16:
+#if ITEM_MAX >= SHRT_MAX
+			return SHRT_MAX;
+#endif
+		case item_uint16:
+#if ITEM_MAX >= USHRT_MAX
+			return USHRT_MAX;
+#endif
+
+		case item_int32:
+#if ITEM_MAX >= INT_MAX
+			return INT_MAX;
+#endif
+		case item_uint32:
+#if ITEM_MAX >= UINT_MAX
+			return UINT_MAX;
+#endif
+
+		case item_int64:
+#if ITEM_MAX >= LLONG_MAX
+			return LLONG_MAX;
+#endif
+		case item_uint64:
+#if ITEM_MAX >= ULLONG_MAX
+			return ULLONG_MAX;
+#else
+			return ITEM_MAX;
+#endif
+
 		default:
 			return 0;
 	}
