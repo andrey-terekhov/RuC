@@ -64,6 +64,16 @@ EXPORTED map map_create(const size_t alloc);
 EXPORTED size_t map_reserve(map *const as, const char *const key);
 
 /**
+ *	Reserve new UTF-8 key or return existing
+ *
+ *	@param	as				Map structure
+ *	@param	key				Unique UTF-8 string key
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t map_reserve_by_utf8(map *const as, const char32_t *const key);
+
+/**
  *	Reserve new key by reading it from io or return existing
  *
  *	@param	as				Map structure
@@ -85,6 +95,17 @@ EXPORTED size_t map_reserve_by_io(map *const as, universal_io *const io, char32_
  *	@return	Index of record, @c SIZE_MAX on failure
  */
 EXPORTED size_t map_add(map *const as, const char *const key, const item_t value);
+
+/**
+ *	Add new UTF-8 key-value pair
+ *
+ *	@param	as				Map structure
+ *	@param	key				Unique UTF-8 string key
+ *	@param	value			Value
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t map_add_by_utf8(map *const as, const char32_t *const key, const item_t value);
 
 /**
  *	Add new pair by reading key from io
@@ -109,6 +130,17 @@ EXPORTED size_t map_add_by_io(map *const as, universal_io *const io, const item_
  *	@return	Index of record, @c SIZE_MAX on failure
  */
 EXPORTED size_t map_set(map *const as, const char *const key, const item_t value);
+
+/**
+ *	Set new value by existing UTF-8 key
+ *
+ *	@param	as				Map structure
+ *	@param	key				Unique UTF-8 string key
+ *	@param	value			New value
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t map_set_by_utf8(map *const as, const char32_t *const key, const item_t value);
 
 /**
  *	Set new value by reading existing key from io
@@ -143,6 +175,16 @@ EXPORTED int map_set_at(map *const as, const size_t index, const item_t value);
  *	@return	Value, @c ITEM_MAX on failure
  */
 EXPORTED item_t map_get(map *const as, const char *const key);
+
+/**
+ *	Get value by UTF-8 key
+ *
+ *	@param	as				Map structure
+ *	@param	key				Unique UTF-8 string key
+ *
+ *	@return	Value, @c ITEM_MAX on failure
+ */
+EXPORTED item_t map_get_by_utf8(map *const as, const char32_t *const key);
 
 /**
  *	Get value by reading key from io

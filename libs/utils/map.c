@@ -86,6 +86,8 @@ size_t map_get_hash(map *const as, const char *const key)
 	return hash % MAP_HASH_MAX;
 }
 
+size_t map_get_hash_by_utf8(map *const as, const char32_t *const key);
+
 size_t map_get_hash_by_io(map *const as, universal_io *const io, char32_t *const last)
 {
 	*last = uni_scan_char(io);
@@ -287,6 +289,16 @@ size_t map_reserve(map *const as, const char *const key)
 	return map_add_by_hash(as, map_get_hash(as, key), ITEM_MAX);
 }
 
+size_t map_reserve_by_utf8(map *const as, const char32_t *const key)
+{
+	if (!map_is_correct(as) || key == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	return map_add_by_hash(as, map_get_hash_by_utf8(as, key), ITEM_MAX);
+}
+
 size_t map_reserve_by_io(map *const as, universal_io *const io, char32_t *const last)
 {
 	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
@@ -308,6 +320,16 @@ size_t map_add(map *const as, const char *const key, const item_t value)
 	return map_add_by_hash(as, map_get_hash(as, key), value);
 }
 
+size_t map_add_by_utf8(map *const as, const char32_t *const key, const item_t value)
+{
+	if (!map_is_correct(as) || key == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	return map_add_by_hash(as, map_get_hash_by_utf8(as, key), value);
+}
+
 size_t map_add_by_io(map *const as, universal_io *const io, const item_t value, char32_t *const last)
 {
 	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
@@ -327,6 +349,16 @@ size_t map_set(map *const as, const char *const key, const item_t value)
 	}
 
 	return map_set_by_hash(as, map_get_hash(as, key), value);
+}
+
+size_t map_set_by_utf8(map *const as, const char32_t *const key, const item_t value)
+{
+	if (!map_is_correct(as) || key == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	return map_set_by_hash(as, map_get_hash_by_utf8(as, key), value);
 }
 
 size_t map_set_by_io(map *const as, universal_io *const io, const item_t value, char32_t *const last)
@@ -360,6 +392,16 @@ item_t map_get(map *const as, const char *const key)
 	}
 
 	return map_get_by_hash(as, map_get_hash(as, key));
+}
+
+item_t map_get_by_utf8(map *const as, const char32_t *const key)
+{
+	if (!map_is_correct(as) || key == NULL)
+	{
+		return ITEM_MAX;
+	}
+
+	return map_get_by_hash(as, map_get_hash_by_utf8(as, key));
 }
 
 item_t map_get_by_io(map *const as, universal_io *const io, char32_t *const last)
