@@ -167,6 +167,16 @@ EXPORTED item_t map_get_at(const map *const as, const size_t index);
 
 
 /**
+ *	Return key by index
+ *
+ *	@param	as				Map structure
+ *	@param	index			Key index
+ *
+ *	@return	Key, @c NULL on failure
+ */
+EXPORTED const char *map_to_string(const map *const as, const size_t index);
+
+/**
  *	Check that map is correct
  *
  *	@param	as				Map structure

@@ -383,6 +383,16 @@ item_t map_get_at(const map *const as, const size_t index)
 }
 
 
+const char *map_to_string(const map *const as, const size_t index)
+{
+	if (!map_is_correct(as) || index >= as->values_size || as->values[index].ref == SIZE_MAX)
+	{
+		return NULL;
+	}
+
+	return &as->keys[as->values[index].ref];
+}
+
 int map_is_correct(const map *const as)
 {
 	return as != NULL && as->values != NULL && as->keys != NULL;
