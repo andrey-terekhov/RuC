@@ -16,6 +16,7 @@
 
 #include "vector.h"
 #include <stdlib.h>
+#include <string.h>
 
 
 vector vector_create(const size_t alloc)
@@ -50,6 +51,7 @@ int vector_increase(vector *const vec, const size_t size)
 		vec->array = array_new;
 	}
 
+	memset(&vec->array[vec->size], 0, size * sizeof(item_t));
 	vec->size += size;
 	return 0;
 }
