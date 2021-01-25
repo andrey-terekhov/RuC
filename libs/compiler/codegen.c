@@ -140,18 +140,14 @@ int Expr_gen(syntax *const sx, int incond)
 		{
 			case TIdent:
 			{
-				// tree_next_node(sx);
-
-				sx->tc++;
+				tree_next_node(sx);
 				break;
 			}
 			case TIdenttoaddr:
 			{
 				tocode(sx, LA);
-				// tocode(sx, node_get_arg(tree_get_node(sx), 0));
-				// tree_next_node(sx);
-
-				tocode(sx, sx->tree[sx->tc++]);
+				tocode(sx, node_get_arg(tree_get_node(sx), 0));
+				tree_next_node(sx);
 				break;
 			}
 			case TIdenttoval:
@@ -466,15 +462,10 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TFor:
 		{
-			// node *tfor = tree_get_node(sx);
-			// int ref_from = node_get_arg(tfor, 0);
-			// int ref_cond = node_get_arg(tfor, 1);
-			// int ref_incr = node_get_arg(tfor, 2);
-
-			int fromref = sx->tree[sx->tc++];
-			int condref = sx->tree[sx->tc++];
-			int incrref = sx->tree[sx->tc++];
-			int stmtref = sx->tree[sx->tc++];
+			node *tfor = tree_get_node(sx);
+			int ref_from = node_get_arg(tfor, 0);
+			int ref_cond = node_get_arg(tfor, 1);
+			int ref_incr = node_get_arg(tfor, 2);
 
 			size_t oldbreak = context->adbreak;
 			size_t oldcont = context->adcont;
@@ -501,29 +492,21 @@ void Stmt_gen(syntax *const sx, ad *const context)
 				child_stmt++;
 			}
 
-			// if (ref_incr)
-			// {
-			// 	child_stmt++;
-			// }
+			if (ref_incr)
+			{
+				child_stmt++;
+			}
 
-			// temp = node_get_child(tfor, child_stmt);
-
-			size_t incrtc = sx->tc;
-			sx->tc = stmtref;
+			temp = node_get_child(tfor, child_stmt);
 
 			Stmt_gen(sx, context); // ???? был 0
 			adcontend(sx, context);
 
 			if (ref_incr)
 			{
-				// node incr = node_get_child(tfor, child_stmt - 1);
-				// tree_set_node(sx, &incr);
-				// Expr_gen(sx, 0); // incr	
-
-				size_t endtc = sx->tc;
-				sx->tc = incrtc;
-				Expr_gen(sx, 0); // incr
-				sx->tc = endtc;
+				node incr = node_get_child(tfor, child_stmt - 1);
+				tree_set_node(sx, &incr);
+				Expr_gen(sx, 0); // incr	
 			}
 
 			*tfor = temp;
@@ -737,11 +720,9 @@ void Declid_gen(syntax *const sx)
 	// all == 1 есть инициализатор
 	// all == 2 есть инициализатор только из строк
 
-	// element_len = size_of(sx, telem);
-
-	// tree_next_node(sx);
-
 	element_len = size_of(sx, telem);
+
+	tree_next_node(sx);
 
 	if (N == 0) // обычная переменная int a; или struct point p;
 	{
@@ -835,11 +816,7 @@ int codegen(syntax *const sx)
 
 	ad context;
 
-
-	// tree_next_node(sx);
-
-	size_t treesize = sx->tc;
-	sx->tc = 0;
+	tree_next_node(sx);
 
 	while (node_is_correct(tree_get_node(sx)))
 	{
