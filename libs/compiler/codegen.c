@@ -79,7 +79,6 @@ void finalop(syntax *const sx)
 
 	while ((c = node_get_type(tree_get_node(sx))) > 9000)
 	{
-		local_tc++;
 		if (c != NOP)
 		{
 			if (c == ADLOGOR)
@@ -87,9 +86,6 @@ void finalop(syntax *const sx)
 				tocode(sx, _DOUBLE);
 				tocode(sx, BNE0);
 				sx->tree[node_get_arg(tree_get_node(sx), 0)] = (int)mem_get_size(sx);
-
-				local_tc++;
-
 				mem_increase(sx, 1);
 			}
 			else if (c == ADLOGAND)
@@ -97,9 +93,6 @@ void finalop(syntax *const sx)
 				tocode(sx, _DOUBLE);
 				tocode(sx, BE0);
 				sx->tree[node_get_arg(tree_get_node(sx), 0)] = (int)mem_get_size(sx);
-
-				local_tc++;
-
 				mem_increase(sx, 1);
 			}
 			else
@@ -108,44 +101,31 @@ void finalop(syntax *const sx)
 				if (c == LOGOR || c == LOGAND)
 				{
 					mem_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_get_size(sx));
-
-					local_tc++;
 				}
 				else if (c == COPY00 || c == COPYST)
 				{
 					tocode(sx, node_get_arg(tree_get_node(sx), 0)); // d1
 					tocode(sx, node_get_arg(tree_get_node(sx), 1)); // d2
 					tocode(sx, node_get_arg(tree_get_node(sx), 2)); // длина
-
-					local_tc +=3;
 				}
 				else if (c == COPY01 || c == COPY10 || c == COPY0ST || c == COPY0STASS)
 				{
 					tocode(sx, node_get_arg(tree_get_node(sx), 0)); // d1
 					tocode(sx, node_get_arg(tree_get_node(sx), 1)); // длина
-
-					local_tc +=2;
 				}
 				else if (c == COPY11 || c == COPY1ST || c == COPY1STASS)
 				{
 					tocode(sx, node_get_arg(tree_get_node(sx), 0)); // длина
-
-					local_tc++;
 				}
 				else if ((c >= REMASS && c <= DIVASS) || (c >= REMASSV && c <= DIVASSV) ||
 						 (c >= ASSR && c <= DIVASSR) || (c >= ASSRV && c <= DIVASSRV) || (c >= POSTINC && c <= DEC) ||
 						 (c >= POSTINCV && c <= DECV) || (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))
 				{
 					tocode(sx,node_get_arg(tree_get_node(sx), 0));
-
-					local_tc++;
 				}
 			}
 		}
-
 		tree_next_node(sx);
-		printf("%i tc=%i :finalop \n", node_get_type(tree_get_node(sx)), local_tc);
-
 	}
 }
 
@@ -1008,12 +988,10 @@ int codegen(universal_io *const io, syntax *const sx)
 
 	ad context;
 
-	int treesize = sx->tc;
 	local_tc = 0;
 
 	tree_next_node(sx);
 	printf("%i tc=%i :codegen\n", node_get_type(tree_get_node(sx)), local_tc);
-	// while (local_tc < treesize)
 	while (node_is_correct(tree_get_node(sx)))
 	{
 		local_tc++;
@@ -1035,7 +1013,7 @@ int codegen(universal_io *const io, syntax *const sx)
 				size_t old_pc = mem_get_size(sx);
 				mem_increase(sx, 1);
 
-				local_tc += 2;
+				// local_tc += 2;
 				tree_next_node(sx);
 				printf("%i tc=%i :codegen TBegin\n", node_get_type(tree_get_node(sx)), local_tc);
 
@@ -1103,8 +1081,8 @@ int codegen(universal_io *const io, syntax *const sx)
 			}
 			default:
 			{
-				printf("tc=%i tree[tc-2]=%i tree[tc-1]=%i\n", local_tc, sx->tree[local_tc - 2],
-					   sx->tree[local_tc - 1]);
+				// printf("tc=%i tree[tc-2]=%i tree[tc-1]=%i\n", local_tc, sx->tree[local_tc - 2],
+				// 	   sx->tree[local_tc - 1]);
 				break;
 			}
 		}
