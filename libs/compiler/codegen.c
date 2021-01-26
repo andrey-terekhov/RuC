@@ -424,7 +424,9 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			size_t oldcont = context->adcont;
 			size_t ad = mem_get_size(sx);
 
-			context->adcont = context->adbreak = 0;
+			context->adcont = 0;
+			context->adbreak = 0;
+
 			Stmt_gen(sx, context);
 			adcontend(sx, context);
 			Expr_gen(sx, 0);
@@ -450,7 +452,8 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			}
 
 			size_t initad = mem_get_size(sx);
-			context->adcont = context->adbreak = 0;
+			context->adcont = 0;
+			context->adbreak = 0;
 
 			if (condref)
 			{
