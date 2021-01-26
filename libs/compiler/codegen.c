@@ -391,18 +391,19 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			int numproc = sx->tree[node_get_arg(tree_get_node(sx), 0) + 1];
 
 			tocode(sx, STOP);
-			mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));			
+			mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));	
 			tree_next_node(sx);
 			break;
 		}
 		case TBegin:
+		{
 			tree_next_node(sx);
 			compstmt_gen(sx, context);
 			break;
-
+		}
 		case TIf:
 		{
-			int elseref = node_get_arg(tree_get_node(sx), 0);
+			int ref_else = node_get_arg(tree_get_node(sx), 0);
 
 			tree_next_node(sx);
 			Expr_gen(sx, 0);
@@ -410,7 +411,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			size_t ad = mem_get_size(sx);
 			mem_increase(sx, 1);
 			Stmt_gen(sx, context);
-			if (elseref)
+			if (ref_else)
 			{
 				mem_set(sx, ad, (int)mem_get_size(sx) + 2);
 				tocode(sx, B);
@@ -634,8 +635,8 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		case TReturnval:
 		{
 			int d = node_get_arg(tree_get_node(sx), 0);
-
 			tree_next_node(sx);
+
 			Expr_gen(sx, 0);
 			tocode(sx, RETURNVAL);
 			tocode(sx, d);
@@ -708,7 +709,7 @@ void Declid_gen(syntax *const sx)
 	int olddispl = node_get_arg(tree_get_node(sx), 0);
 	int telem = node_get_arg(tree_get_node(sx), 1);
 	int N = node_get_arg(tree_get_node(sx), 2);
-	int element_len;
+	int element_len = size_of(sx, telem);
 	int all = node_get_arg(tree_get_node(sx), 3);
 	int iniproc = node_get_arg(tree_get_node(sx), 4);
 	int usual = node_get_arg(tree_get_node(sx), 5);
@@ -719,9 +720,6 @@ void Declid_gen(syntax *const sx)
 	// all == 0 нет инициализатора,
 	// all == 1 есть инициализатор
 	// all == 2 есть инициализатор только из строк
-
-	element_len = size_of(sx, telem);
-
 	tree_next_node(sx);
 
 	if (N == 0) // обычная переменная int a; или struct point p;
@@ -777,17 +775,16 @@ void Declid_gen(syntax *const sx)
 void compstmt_gen(syntax *const sx, ad *const context)
 {
 	while (node_get_type(tree_get_node(sx)) != TEnd)
-	{		
+	{
 		switch (node_get_type(tree_get_node(sx)))
 		{
 			case TDeclarr:
 			{
-				int i;
 				int N = node_get_arg(tree_get_node(sx), 0);
 
 				tree_next_node(sx);
 
-				for (i = 0; i < N; i++)
+				for (int i = 0; i < N; i++)
 				{
 					Expr_gen(sx, 0);
 				}
@@ -844,12 +841,11 @@ int codegen(syntax *const sx)
 			}
 			case TDeclarr:
 			{
-				int i;
 				int N = node_get_arg(tree_get_node(sx), 0);
 
 				tree_next_node(sx);
 
-				for (i = 0; i < N; i++)
+				for (int i = 0; i < N; i++)
 				{
 					Expr_gen(sx, 0);
 				}
