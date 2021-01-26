@@ -130,7 +130,6 @@ void finalop(syntax *const sx)
 int Expr_gen(syntax *const sx, int incond)
 {
 	int flagprim = 1;
-	int eltype;
 	int wasstring = 0;
 	int op;
 
@@ -259,7 +258,7 @@ int Expr_gen(syntax *const sx, int incond)
 			}
 			case TSlice: // параметр - тип элемента
 			{
-				eltype = node_get_arg(tree_get_node(sx), (node_get_type(tree_get_node(sx)) == TSlice) ? 0 : 1);
+				int eltype = node_get_arg(tree_get_node(sx), (node_get_type(tree_get_node(sx)) == TSlice) ? 0 : 1);
 
 				tree_next_node(sx);
 				Expr_gen(sx, 0);
