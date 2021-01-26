@@ -96,7 +96,9 @@ int sx_init(syntax *const sx)
 		return -1;
 	}
 
-	sx->pc = 4;
+	sx->memory = vector_create(MAXMEMSIZE);
+	vector_increase(&sx->memory, 4);
+
 	sx->procd = 1;
 	sx->funcnum = 2;
 	sx->id = 2;
@@ -147,56 +149,29 @@ int sx_is_correct(syntax *const sx, universal_io *const io)
 }
 
 
-int mem_increase(syntax *const sx, const size_t value)
+int mem_increase(syntax *const sx, const size_t size)
 {
-	if (sx == NULL)
-	{
-		return -1;
-	}
-
-	sx->pc += (int)value;
-	return 0;
+	return sx != NULL ? vector_increase(&sx->memory, size) : -1;
 }
 
-int mem_add(syntax *const sx, const int value)
+int mem_add(syntax *const sx, const item_t value)
 {
-	if (sx == NULL)
-	{
-		return -1;
-	}
-
-	sx->pc++;
-	return mem_set(sx, sx->pc - 1, value);
+	return sx != NULL ? vector_add(&sx->memory, value) != SIZE_MAX ? 0 : -1 : -1;
 }
 
-int mem_set(syntax *const sx, const size_t index, const int value)
+int mem_set(syntax *const sx, const size_t index, const item_t value)
 {
-	if (sx == NULL || (int)index >= sx->pc)
-	{
-		return -1;
-	}
-
-	sx->mem[index] = value;
-	return 0;
+	return sx != NULL ? vector_set(&sx->memory, index, value) : -1;
 }
 
-int mem_get(const syntax *const sx, const size_t index)
+item_t mem_get(const syntax *const sx, const size_t index)
 {
-	if (sx == NULL || (int)index >= sx->pc)
-	{
-		return INT_MAX;
-	}
-
-	return sx->mem[index];
+	return sx != NULL ? vector_get(&sx->memory, index) : ITEM_MAX;
 }
 
 size_t mem_get_size(const syntax *const sx)
 {
-	if (sx == NULL)
-	{
-		return INT_MAX;
-	}
-	return sx->pc;
+	return sx != NULL ? vector_size(&sx->memory) : SIZE_MAX;
 }
 
 

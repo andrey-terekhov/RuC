@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "uniio.h"
+#include "vector.h"
 
 
 #ifdef __cplusplus
@@ -34,8 +35,7 @@ typedef struct syntax
 {
 	// mem, pc & iniprocs - usage here only for codes printing
 
-	int mem[MAXMEMSIZE];			/**< Memory */
-	int pc;							/**< Program counter */
+	vector memory;					/**< Memory table */
 
 	int iniprocs[INIPROSIZE];		/**< Init processes */
 	int procd;						/**< Process management daemon */
@@ -114,7 +114,7 @@ int mem_increase(syntax *const sx, const size_t value);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int mem_add(syntax *const sx, const int value);
+int mem_add(syntax *const sx, const item_t value);
 
 /**
  *	Set value by index in memory table
@@ -125,7 +125,7 @@ int mem_add(syntax *const sx, const int value);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int mem_set(syntax *const sx, const size_t index, const int value);
+int mem_set(syntax *const sx, const size_t index, const item_t value);
 
 /**
  *	Get an item by index from memory table
@@ -133,9 +133,9 @@ int mem_set(syntax *const sx, const size_t index, const int value);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in table
  *
- *	@return	Item by index from table, @c INT_MAX on failure
+ *	@return	Item by index from table, @c ITEM_MAX on failure
  */
-int mem_get(const syntax *const sx, const size_t index);
+item_t mem_get(const syntax *const sx, const size_t index);
 
 /**
  *	Get size of memory table
