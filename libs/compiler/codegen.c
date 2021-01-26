@@ -303,9 +303,8 @@ int Expr_gen(syntax *const sx, int incond)
 			{
 				tocode(sx, CALL2);
 
-				// tocode(sx, sx->identab[node_get_arg(tree_get_node(sx), 0) + 3]);
-				// tree_next_node(sx);
-				tocode(sx, ident_get_displ(sx, sx->tree[sx->tc++]));
+				tocode(sx, ident_get_displ(sx, node_get_arg(tree_get_node(sx), 0)));
+				tree_next_node(sx);
 				break;
 			}
 			default:
@@ -451,8 +450,8 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			size_t oldcont = context->adcont;
 			size_t ad = mem_get_size(sx);
 
-			// tree_next_node(sx);
-			// context->adcont = context->adbreak = 0;
+			tree_next_node(sx);
+
 			context->adcont = 0;
 			context->adbreak = 0;
 
@@ -528,10 +527,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TGoto:
 		{
-			// int id1 = node_get_arg(tree_get_node(sx), 0);
-			// int a;
-			int id1 = sx->tree[sx->tc++];
-
+			int id1 = node_get_arg(tree_get_node(sx), 0);
 			int id = id1 > 0 ? id1 : -id1;
 
 			tocode(sx, B);
@@ -553,9 +549,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TLabel:
 		{
-			// int id = node_get_arg(tree_get_node(sx), 0);
-			// int a;
-			int id = sx->tree[sx->tc++];
+			int id = node_get_arg(tree_get_node(sx), 0);
 			int a = ident_get_displ(sx, id);
 
 			if (a < 0) // были переходы на метку
@@ -567,9 +561,8 @@ void Stmt_gen(syntax *const sx, ad *const context)
 					a = r;
 				}
 			}
-			// sx->identab[id + 3] = (int)mem_get_size(sx);
-			// tree_next_node(sx);
 			ident_set_displ(sx, id, (int)mem_get_size(sx));
+			tree_next_node(sx);
 			break;
 		}
 		case TSwitch:
@@ -836,13 +829,9 @@ int codegen(syntax *const sx)
 				break;
 			case TFuncdef:
 			{
-				// int identref = node_get_arg(tree_get_node(sx), 0);
-				// int maxdispl = node_get_arg(tree_get_node(sx), 1);
-				// int fn = sx->identab[identref + 3];
-				int identref = sx->tree[sx->tc++];
-				int maxdispl = sx->tree[sx->tc++];
+				int identref = node_get_arg(tree_get_node(sx), 0);
+				int maxdispl = node_get_arg(tree_get_node(sx), 1);
 				int fn = ident_get_displ(sx, identref);
-
 
 				func_set(sx, fn, mem_get_size(sx));
 				tocode(sx, FUNCBEG);
