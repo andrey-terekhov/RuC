@@ -88,8 +88,9 @@ void init_modetab(analyzer *context)
 	context->sx->modetab[2] = MSTRUCT;
 	context->sx->modetab[3] = 2;
 	context->sx->modetab[4] = 4;
-	context->sx->modetab[5] = context->sx->modetab[7] = LINT;
+	context->sx->modetab[5] = LINT;
 	context->sx->modetab[6] = (int)toreprtab(context, "numTh");
+	context->sx->modetab[7] = LINT;
 	context->sx->modetab[8] = (int)toreprtab(context, "data");
 
 	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)

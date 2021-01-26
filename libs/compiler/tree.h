@@ -65,15 +65,6 @@ node node_get_root(syntax *const sx);
  */
 node node_get_child(node *const nd, const size_t index);
 
-/**
- *	Get next node from tree traversal in pre-order (NLR)
- *
- *	@param	nd		Current node
- *
- *	@return	Next node
- */
-node node_get_next(node *const nd);
-
 
 /**
  *	Get amount of children
@@ -102,6 +93,25 @@ int node_get_type(const node *const nd);
  *	@return	Argument, @c INT_MAX on failure
  */
 int node_get_arg(const node *const nd, const size_t index);
+
+
+/**
+ *	Get next node from tree traversal in pre-order (NLR)
+ *
+ *	@param	nd		Current node
+ *
+ *	@return	Next node
+ */
+node node_get_next(node *const nd);
+
+/**
+ *	Set next node to the same one from tree traversal in pre-order (NLR)
+ *
+ *	@param	nd		Current node
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int node_set_next(node *const nd);
 
 
 /**
