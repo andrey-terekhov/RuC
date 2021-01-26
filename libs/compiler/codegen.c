@@ -371,7 +371,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			int numproc = sx->tree[sx->tc++];
 
 			tocode(sx, STOP);
-			mem_set(sx, proc_get(sx, numproc) - 1, (item_t)mem_get_size(sx));
+			mem_set(sx, (size_t)proc_get(sx, numproc) - 1, (item_t)mem_get_size(sx));
 			break;
 		}
 		case TBegin:
