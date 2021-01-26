@@ -9,3 +9,8 @@ file(GLOB_RECURSE HDR CONFIGURE_DEPENDS "*.h")
 source_group("\\" FILES ${SRC} ${HDR})
 add_library(${PROJECT_NAME} SHARED ${SRC} ${HDR})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+
+if(DEFINED ITEM)
+	add_compile_definitions(ITEM=${ITEM})
+endif()
