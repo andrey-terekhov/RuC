@@ -40,6 +40,8 @@ typedef struct syntax
 
 	vector predef;					/**< Predefined functions table */
 	vector functions;				/**< Functions table */
+	
+	vector tree;					/**< Tree table */
 
 	int identab[MAXIDENTAB];		/**< Identifiers table */
 	size_t id;						/**< Number of identifiers */
@@ -48,9 +50,6 @@ typedef struct syntax
 	int modetab[MAXMODETAB];		/**< Modes table */
 	size_t md;						/**< Number of modes */
 	size_t startmode;				/**< Start of last record in modetab */
-	
-	int tree[MAXTREESIZE];			/**< Tree */
-	size_t tc;						/**< Tree counter */
 	
 	size_t hashtab[256];			/**< Hash table for reprtab */
 	int hash;						/**< Last value of hash function */

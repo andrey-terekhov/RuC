@@ -111,7 +111,6 @@ void init_modetab(analyzer *context)
 	context->sx->md = 19;
 	context->sx->keywordsnum = 0;
 	context->line = 1;
-	context->sx->tc = 0;
 }
 
 

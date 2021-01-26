@@ -104,11 +104,12 @@ int sx_init(syntax *const sx)
 	sx->predef = vector_create(FUNCSIZE);
 	sx->functions = vector_create(FUNCSIZE);
 	vector_increase(&sx->functions, 2);
+	
+	sx->tree = vector_create(MAXTREESIZE);
 
 	sx->id = 2;
 	sx->md = 1;
 	sx->startmode = 1;
-	sx->tc = 0;
 	sx->rp = 1;
 
 	sx->maxdisplg = 3;
@@ -162,6 +163,8 @@ int sx_clear(syntax *const sx)
 
 	vector_clear(&sx->predef);
 	vector_clear(&sx->functions);
+	
+	vector_clear(&sx->tree);
 
 	return 0;
 }
@@ -541,7 +544,7 @@ int scope_func_enter(syntax *const sx)
 
 int scope_func_exit(syntax *const sx, const size_t decl_ref, const int displ)
 {
-	if (sx == NULL || decl_ref >= sx->tc)
+	if (sx == NULL || decl_ref >= vector_size(&sx->tree))
 	{
 		return -1;
 	}
@@ -552,7 +555,7 @@ int scope_func_exit(syntax *const sx, const size_t decl_ref, const int displ)
 	}
 
 	sx->curid = 2;	// Все функции описываются на одном уровне
-	sx->tree[decl_ref] = sx->maxdispl;
+	vector_set(&sx->tree, decl_ref, sx->maxdispl);
 	sx->lg = -1;
 	sx->displ = displ;
 	

@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include "commenter.h"
 #include "defs.h"
+#include "item.h"
 #include "logger.h"
 #include "uniio.h"
 #include "utf8.h"
@@ -588,29 +589,29 @@ void get_error(const int num, char *const msg, va_list args)
 		case tree_expression_not_block:
 		{
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "в выражении встретился оператор вне блока, tree[%zi] = %i", i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "в выражении встретился оператор вне блока, tree[%zi] = %" PRIitem, i, elem);
 		}
 		break;
 		case tree_expression_unknown:
 		{
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "неизвестное выражение, tree[%zi] = %i", i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "неизвестное выражение, tree[%zi] = %" PRIitem, i, elem);
 		}
 		break;
 		case tree_expression_operator:
 		{
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "оператор в выражении, tree[%zi] = %i", i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "оператор в выражении, tree[%zi] = %" PRIitem, i, elem);
 		}
 		break;
 		case tree_expression_no_texprend:
 		{
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "отсутствует TExprend, tree[%zi] = %i", i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "отсутствует TExprend, tree[%zi] = %" PRIitem, i, elem);
 		}
 		break;
 		case tree_no_tend:
@@ -618,33 +619,33 @@ void get_error(const int num, char *const msg, va_list args)
 			break;
 		case tree_unexpected:
 		{
-			const int unexp = va_arg(args, int);
+			const item_t unexp = va_arg(args, item_t);
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "получен %i, ожидался tree[%zi] = %i", unexp, i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "получен %" PRIitem ", ожидался tree[%zi] = %" PRIitem, unexp, i, elem);
 		}
 		break;
 
 		case node_cannot_set_child:
 		{
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "невозможно получить потомка от tree[%zi] = %i", i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "невозможно получить потомка от tree[%zi] = %" PRIitem, i, elem);
 		}
 		break;
 		case node_cannot_set_type:
 		{
-			const int type = va_arg(args, int);
+			const item_t type = va_arg(args, item_t);
 			const size_t i = va_arg(args, size_t);
-			sprintf(msg, "невозможно установить тип %i в tree[%zi]", type, i);
+			sprintf(msg, "невозможно установить тип %" PRIitem " в tree[%zi]", type, i);
 		}
 		break;
 		case node_cannot_add_arg:
 		{
-			const int arg = va_arg(args, int);
+			const item_t arg = va_arg(args, item_t);
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "невозможно добавить аргумент %i для tree[%zi] = %i", arg, i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "невозможно добавить аргумент %" PRIitem " для tree[%zi] = %" PRIitem, arg, i, elem);
 		}
 		break;
 
@@ -665,8 +666,8 @@ void get_warning(const int num, char *const msg, va_list args)
 		case tree_operator_unknown:
 		{
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "неизвестный оператор, tree[%zi] = %i", i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "неизвестный оператор, tree[%zi] = %" PRIitem, i, elem);
 		}
 		break;
 		case node_argc:

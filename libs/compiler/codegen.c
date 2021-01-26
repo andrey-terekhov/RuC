@@ -34,9 +34,9 @@ void Declid_gen(syntax *const sx);
 void compstmt_gen(syntax *const sx, ad *const context);
 
 
-void tocode(syntax *const sx, int c)
+void tocode(syntax *const sx, item_t c)
 {
-	// printf("tocode tc=%zi pc=%zi) %i\n", sx->tc,
+	// printf("tocode tc=%zi pc=%zi) %i\n", sx->tree.size,
 	// mem_get_size(sx), c);
 	mem_add(sx, c);
 }
@@ -73,25 +73,25 @@ void adcontend(syntax *const sx, ad *const context)
 
 void finalop(syntax *const sx)
 {
-	int c;
+	item_t c;
 
-	while ((c = sx->tree[sx->tc]) > 9000)
+	while ((c = sx->tree.array[sx->tree.size]) > 9000)
 	{
-		sx->tc++;
+		sx->tree.size++;
 		if (c != NOP)
 		{
 			if (c == ADLOGOR)
 			{
 				tocode(sx, _DOUBLE);
 				tocode(sx, BNE0);
-				sx->tree[sx->tree[sx->tc++]] = (int)mem_get_size(sx);
+				sx->tree.array[sx->tree.array[sx->tree.size++]] = (item_t)mem_get_size(sx);
 				mem_increase(sx, 1);
 			}
 			else if (c == ADLOGAND)
 			{
 				tocode(sx, _DOUBLE);
 				tocode(sx, BE0);
-				sx->tree[sx->tree[sx->tc++]] = (int)mem_get_size(sx);
+				sx->tree.array[sx->tree.array[sx->tree.size++]] = (item_t)mem_get_size(sx);
 				mem_increase(sx, 1);
 			}
 			else
@@ -99,28 +99,28 @@ void finalop(syntax *const sx)
 				tocode(sx, c);
 				if (c == LOGOR || c == LOGAND)
 				{
-					mem_set(sx, sx->tree[sx->tc++], (item_t)mem_get_size(sx));
+					mem_set(sx, (size_t)sx->tree.array[sx->tree.size++], (item_t)mem_get_size(sx));
 				}
 				else if (c == COPY00 || c == COPYST)
 				{
-					tocode(sx, sx->tree[sx->tc++]); // d1
-					tocode(sx, sx->tree[sx->tc++]); // d2
-					tocode(sx, sx->tree[sx->tc++]); // длина
+					tocode(sx, sx->tree.array[sx->tree.size++]); // d1
+					tocode(sx, sx->tree.array[sx->tree.size++]); // d2
+					tocode(sx, sx->tree.array[sx->tree.size++]); // длина
 				}
 				else if (c == COPY01 || c == COPY10 || c == COPY0ST || c == COPY0STASS)
 				{
-					tocode(sx, sx->tree[sx->tc++]); // d1
-					tocode(sx, sx->tree[sx->tc++]); // длина
+					tocode(sx, sx->tree.array[sx->tree.size++]); // d1
+					tocode(sx, sx->tree.array[sx->tree.size++]); // длина
 				}
 				else if (c == COPY11 || c == COPY1ST || c == COPY1STASS)
 				{
-					tocode(sx, sx->tree[sx->tc++]); // длина
+					tocode(sx, sx->tree.array[sx->tree.size++]); // длина
 				}
 				else if ((c >= REMASS && c <= DIVASS) || (c >= REMASSV && c <= DIVASSV) ||
 						 (c >= ASSR && c <= DIVASSR) || (c >= ASSRV && c <= DIVASSRV) || (c >= POSTINC && c <= DEC) ||
 						 (c >= POSTINCV && c <= DECV) || (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))
 				{
-					tocode(sx, sx->tree[sx->tc++]);
+					tocode(sx, sx->tree.array[sx->tree.size++]);
 				}
 			}
 		}
@@ -130,35 +130,34 @@ void finalop(syntax *const sx)
 int Expr_gen(syntax *const sx, int incond)
 {
 	int flagprim = 1;
-	int eltype;
 	int wasstring = 0;
-	int op;
+	item_t op;
 
 	while (flagprim)
 	{
-		switch (op = sx->tree[sx->tc++])
+		switch (op = sx->tree.array[sx->tree.size++])
 		{
 			case TIdent:
 			{
-				sx->tc++;
+				sx->tree.size++;
 				break;
 			}
 			case TIdenttoaddr:
 			{
 				tocode(sx, LA);
-				tocode(sx, sx->tree[sx->tc++]);
+				tocode(sx, sx->tree.array[sx->tree.size++]);
 				break;
 			}
 			case TIdenttoval:
 			{
 				tocode(sx, LOAD);
-				tocode(sx, sx->tree[sx->tc++]);
+				tocode(sx, sx->tree.array[sx->tree.size++]);
 				break;
 			}
 			case TIdenttovald:
 			{
 				tocode(sx, LOADD);
-				tocode(sx, sx->tree[sx->tc++]);
+				tocode(sx, sx->tree.array[sx->tree.size++]);
 				break;
 			}
 			case TAddrtoval:
@@ -174,36 +173,36 @@ int Expr_gen(syntax *const sx, int incond)
 			case TConst:
 			{
 				tocode(sx, LI);
-				tocode(sx, sx->tree[sx->tc++]);
+				tocode(sx, sx->tree.array[sx->tree.size++]);
 				break;
 			}
 			case TConstd:
 			{
 				tocode(sx, LID);
-				tocode(sx, sx->tree[sx->tc++]);
-				tocode(sx, sx->tree[sx->tc++]);
+				tocode(sx, sx->tree.array[sx->tree.size++]);
+				tocode(sx, sx->tree.array[sx->tree.size++]);
 				break;
 			}
 			case TString:
 			case TStringd:
 			{
-				int n = sx->tree[sx->tc++];
+				item_t n = sx->tree.array[sx->tree.size++];
 
 				tocode(sx, LI);
 				size_t res = mem_get_size(sx) + 4;
 				tocode(sx, (int)res);
 				tocode(sx, B);
 				mem_increase(sx, 2);
-				for (int i = 0; i < n; i++)
+				for (item_t i = 0; i < n; i++)
 				{
 					if (op == TString)
 					{
-						tocode(sx, sx->tree[sx->tc++]);
+						tocode(sx, sx->tree.array[sx->tree.size++]);
 					}
 					else
 					{
-						tocode(sx, sx->tree[sx->tc++]);
-						tocode(sx, sx->tree[sx->tc++]);
+						tocode(sx, sx->tree.array[sx->tree.size++]);
+						tocode(sx, sx->tree.array[sx->tree.size++]);
 					}
 				}
 				mem_set(sx, res - 1, n);
@@ -218,12 +217,12 @@ int Expr_gen(syntax *const sx, int incond)
 			}
 			case TBeginit:
 			{
-				int n = sx->tree[sx->tc++];
-				int i;
+				item_t n = sx->tree.array[sx->tree.size++];
 
 				tocode(sx, BEGINIT);
 				tocode(sx, n);
-				for (i = 0; i < n; i++)
+
+				for (item_t i = 0; i < n; i++)
 				{
 					Expr_gen(sx, 0);
 				}
@@ -231,10 +230,9 @@ int Expr_gen(syntax *const sx, int incond)
 			}
 			case TStructinit:
 			{
-				int n = sx->tree[sx->tc++];
-				int i;
+				item_t n = sx->tree.array[sx->tree.size++];
 
-				for (i = 0; i < n; i++)
+				for (item_t i = 0; i < n; i++)
 				{
 					Expr_gen(sx, 0);
 				}
@@ -245,15 +243,15 @@ int Expr_gen(syntax *const sx, int incond)
 				tocode(sx,
 					   LOAD); // параметры - смещение идента и тип элемента
 				tocode(sx,
-					   sx->tree[sx->tc++]); // продолжение в след case
+					   sx->tree.array[sx->tree.size++]); // продолжение в след case
 			}
 			case TSlice: // параметр - тип элемента
 			{
-				eltype = sx->tree[sx->tc++];
+				item_t eltype = sx->tree.array[sx->tree.size++];
 				Expr_gen(sx, 0);
 				tocode(sx, SLICE);
-				tocode(sx, size_of(sx, eltype));
-				if (eltype > 0 && mode_get(sx, eltype) == MARRAY)
+				tocode(sx, size_of(sx, (int)eltype));
+				if (eltype > 0 && mode_get(sx, (size_t)eltype) == MARRAY)
 				{
 					tocode(sx, LAT);
 				}
@@ -262,22 +260,21 @@ int Expr_gen(syntax *const sx, int incond)
 			case TSelect:
 			{
 				tocode(sx, SELECT); // SELECT field_displ
-				tocode(sx, sx->tree[sx->tc++]);
+				tocode(sx, sx->tree.array[sx->tree.size++]);
 				break;
 			}
 			case TPrint:
 			{
 				tocode(sx, PRINT);
-				tocode(sx, sx->tree[sx->tc++]); // type
+				tocode(sx, sx->tree.array[sx->tree.size++]); // type
 				break;
 			}
 			case TCall1:
 			{
-				int i;
-				int n = sx->tree[sx->tc++];
+				item_t n = sx->tree.array[sx->tree.size++];
 
 				tocode(sx, CALL1);
-				for (i = 0; i < n; i++)
+				for (item_t i = 0; i < n; i++)
 				{
 					Expr_gen(sx, 0);
 				}
@@ -286,19 +283,19 @@ int Expr_gen(syntax *const sx, int incond)
 			case TCall2:
 			{
 				tocode(sx, CALL2);
-				tocode(sx, ident_get_displ(sx, sx->tree[sx->tc++]));
+				tocode(sx, ident_get_displ(sx, (size_t)sx->tree.array[sx->tree.size++]));
 				break;
 			}
 			default:
 			{
-				sx->tc--;
+				sx->tree.size--;
 				break;
 			}
 		}
 
 		finalop(sx);
 
-		if (sx->tree[sx->tc] == TCondexpr)
+		if (sx->tree.array[sx->tree.size] == TCondexpr)
 		{
 			if (incond)
 			{
@@ -309,7 +306,7 @@ int Expr_gen(syntax *const sx, int incond)
 				size_t ad = 0;
 				do
 				{
-					sx->tc++;
+					sx->tree.size++;
 					tocode(sx, BE0);
 					size_t adelse = mem_get_size(sx);
 					mem_increase(sx, 1);
@@ -319,7 +316,7 @@ int Expr_gen(syntax *const sx, int incond)
 					ad = mem_get_size(sx) - 1;
 					mem_set(sx, adelse, (item_t)mem_get_size(sx));
 					Expr_gen(sx, 1); // else или cond
-				} while (sx->tree[sx->tc] == TCondexpr);
+				} while (sx->tree.array[sx->tree.size] == TCondexpr);
 
 				while (ad)
 				{
@@ -331,9 +328,9 @@ int Expr_gen(syntax *const sx, int incond)
 
 			finalop(sx);
 		}
-		if (sx->tree[sx->tc] == TExprend)
+		if (sx->tree.array[sx->tree.size] == TExprend)
 		{
-			sx->tc++;
+			sx->tree.size++;
 			flagprim = 0;
 		}
 	}
@@ -342,7 +339,7 @@ int Expr_gen(syntax *const sx, int incond)
 
 void Stmt_gen(syntax *const sx, ad *const context)
 {
-	switch (sx->tree[sx->tc++])
+	switch (sx->tree.array[sx->tree.size++])
 	{
 		case NOP:
 		{
@@ -363,12 +360,12 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			tocode(sx, B);
 			tocode(sx, 0);
-			proc_set(sx, sx->tree[sx->tc++], (int)mem_get_size(sx));
+			proc_set(sx, (size_t)sx->tree.array[sx->tree.size++], (item_t)mem_get_size(sx));
 			break;
 		}
 		case TStructend:
 		{
-			int numproc = sx->tree[sx->tc++];
+			size_t numproc = (size_t)sx->tree.array[sx->tree.size++];
 
 			tocode(sx, STOP);
 			mem_set(sx, (size_t)proc_get(sx, numproc) - 1, (item_t)mem_get_size(sx));
@@ -380,7 +377,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 
 		case TIf:
 		{
-			int elseref = sx->tree[sx->tc++];
+			const item_t elseref = sx->tree.array[sx->tree.size++];
 
 			Expr_gen(sx, 0);
 			tocode(sx, BE0);
@@ -439,10 +436,10 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TFor:
 		{
-			int fromref = sx->tree[sx->tc++];
-			int condref = sx->tree[sx->tc++];
-			int incrref = sx->tree[sx->tc++];
-			int stmtref = sx->tree[sx->tc++];
+			const item_t fromref = sx->tree.array[sx->tree.size++];
+			const item_t condref = sx->tree.array[sx->tree.size++];
+			const item_t incrref = sx->tree.array[sx->tree.size++];
+			const item_t stmtref = sx->tree.array[sx->tree.size++];
 			size_t oldbreak = context->adbreak;
 			size_t oldcont = context->adcont;
 
@@ -462,17 +459,17 @@ void Stmt_gen(syntax *const sx, ad *const context)
 				context->adbreak = mem_get_size(sx);
 				mem_add(sx, 0);	
 			}
-			size_t incrtc = sx->tc;
-			sx->tc = stmtref;
+			size_t incrtc = sx->tree.size;
+			sx->tree.size = (size_t)stmtref;
 			Stmt_gen(sx, context); // ???? был 0
 			adcontend(sx, context);
 
 			if (incrref)
 			{
-				size_t endtc = sx->tc;
-				sx->tc = incrtc;
+				size_t endtc = sx->tree.size;
+				sx->tree.size = incrtc;
 				Expr_gen(sx, 0); // incr
-				sx->tc = endtc;
+				sx->tree.size = endtc;
 			}
 
 			tocode(sx, B);
@@ -484,8 +481,8 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TGoto:
 		{
-			int id1 = sx->tree[sx->tc++];
-			int id = id1 > 0 ? id1 : -id1;
+			item_t id1 = sx->tree.array[sx->tree.size++];
+			size_t id = id1 > 0 ? (size_t)id1 : (size_t)(-id1);
 
 			tocode(sx, B);
 			int a = ident_get_displ(sx, id);
@@ -504,7 +501,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TLabel:
 		{
-			int id = sx->tree[sx->tc++];
+			size_t id = (size_t)sx->tree.array[sx->tree.size++];
 			item_t a = ident_get_displ(sx, id);
 
 			if (a < 0) // были переходы на метку
@@ -583,7 +580,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TReturnval:
 		{
-			int d = sx->tree[sx->tc++];
+			item_t d = sx->tree.array[sx->tree.size++];
 
 			Expr_gen(sx, 0);
 			tocode(sx, RETURNVAL);
@@ -593,20 +590,20 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		case TPrintid:
 		{
 			tocode(sx, PRINTID);
-			tocode(sx, sx->tree[sx->tc++]); // ссылка в identtab
+			tocode(sx, sx->tree.array[sx->tree.size++]); // ссылка в identtab
 			break;
 		}
 		case TPrintf:
 		{
 			tocode(sx, PRINTF);
-			tocode(sx, sx->tree[sx->tc++]); // общий размер того,
+			tocode(sx, sx->tree.array[sx->tree.size++]); // общий размер того,
 														   // что надо вывести
 			break;
 		}
 		case TGetid:
 		{
 			tocode(sx, GETID);
-			tocode(sx, sx->tree[sx->tc++]); // ссылка в identtab
+			tocode(sx, sx->tree.array[sx->tree.size++]); // ссылка в identtab
 			break;
 		}
 		case SETMOTOR:
@@ -618,7 +615,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		default:
 		{
-			sx->tc--;
+			sx->tree.size--;
 			Expr_gen(sx, 0);
 			break;
 		}
@@ -627,18 +624,15 @@ void Stmt_gen(syntax *const sx, ad *const context)
 
 void Struct_init_gen(syntax *const sx)
 {
-	int i;
-	int n;
-
-	if (sx->tree[sx->tc] == TStructinit)
+	if (sx->tree.array[sx->tree.size] == TStructinit)
 	{
-		sx->tc++;
-		n = sx->tree[sx->tc++];
-		for (i = 0; i < n; i++)
+		sx->tree.size++;
+		const item_t n = sx->tree.array[sx->tree.size++];
+		for (item_t i = 0; i < n; i++)
 		{
 			Struct_init_gen(sx);
 		}
-		sx->tc++; // TExprend
+		sx->tree.size++; // TExprend
 	}
 	else
 	{
@@ -648,21 +642,21 @@ void Struct_init_gen(syntax *const sx)
 
 void Declid_gen(syntax *const sx)
 {
-	int olddispl = sx->tree[sx->tc++];
-	int telem = sx->tree[sx->tc++];
-	int N = sx->tree[sx->tc++];
+	item_t olddispl = sx->tree.array[sx->tree.size++];
+	item_t telem = sx->tree.array[sx->tree.size++];
+	item_t N = sx->tree.array[sx->tree.size++];
 	int element_len;
-	int all = sx->tree[sx->tc++];
-	int iniproc = sx->tree[sx->tc++];
-	int usual = sx->tree[sx->tc++];
-	int instruct = sx->tree[sx->tc++];
+	item_t all = sx->tree.array[sx->tree.size++];
+	item_t iniproc = sx->tree.array[sx->tree.size++];
+	item_t usual = sx->tree.array[sx->tree.size++];
+	item_t instruct = sx->tree.array[sx->tree.size++];
 	// all - общее кол-во слов в структуре
 	// для массивов есть еще usual // == 0 с пустыми границами,
 	// == 1 без пустых границ,
 	// all == 0 нет инициализатора,
 	// all == 1 есть инициализатор
 	// all == 2 есть инициализатор только из строк
-	element_len = size_of(sx, telem);
+	element_len = size_of(sx, (int)telem);
 
 	if (N == 0) // обычная переменная int a; или struct point p;
 	{
@@ -670,11 +664,11 @@ void Declid_gen(syntax *const sx)
 		{
 			tocode(sx, STRUCTWITHARR);
 			tocode(sx, olddispl);
-			tocode(sx, (int)proc_get(sx, iniproc));
+			tocode(sx, proc_get(sx, (size_t)iniproc));
 		}
 		if (all) // int a = или struct{} a =
 		{
-			if (telem > 0 && mode_get(sx, telem) == MSTRUCT)
+			if (telem > 0 && mode_get(sx, (size_t)telem) == MSTRUCT)
 			{
 				Struct_init_gen(sx);
 				tocode(sx, COPY0STASS);
@@ -693,10 +687,10 @@ void Declid_gen(syntax *const sx)
 	{
 		tocode(sx, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN
 								 // уже лежат на стеке
-		tocode(sx, all == 0 ? N : abs(N) - 1);
+		tocode(sx, all == 0 ? N : abs((int)N) - 1);
 		tocode(sx, element_len);
 		tocode(sx, olddispl);
-		tocode(sx, (int)proc_get(sx, iniproc));
+		tocode(sx, proc_get(sx, (size_t)iniproc));
 		tocode(sx, usual);
 		tocode(sx, all);
 		tocode(sx, instruct);
@@ -705,7 +699,7 @@ void Declid_gen(syntax *const sx)
 		{
 			Expr_gen(sx, 0);
 			tocode(sx, ARRINIT); // ARRINIT N d all displ usual
-			tocode(sx, abs(N));
+			tocode(sx, abs((int)N));
 			tocode(sx, element_len);
 			tocode(sx, olddispl);
 			tocode(sx, usual); // == 0 с пустыми границами
@@ -716,18 +710,15 @@ void Declid_gen(syntax *const sx)
 
 void compstmt_gen(syntax *const sx, ad *const context)
 {
-	while (sx->tree[sx->tc] != TEnd)
+	while (sx->tree.array[sx->tree.size] != TEnd)
 	{
-		switch (sx->tree[sx->tc])
+		switch (sx->tree.array[sx->tree.size])
 		{
 			case TDeclarr:
 			{
-				int i;
-				int N;
-
-				sx->tc++;
-				N = sx->tree[sx->tc++];
-				for (i = 0; i < N; i++)
+				sx->tree.size++;
+				item_t N = sx->tree.array[sx->tree.size++];
+				for (item_t i = 0; i < N; i++)
 				{
 					Expr_gen(sx, 0);
 				}
@@ -735,7 +726,7 @@ void compstmt_gen(syntax *const sx, ad *const context)
 			}
 			case TDeclid:
 			{
-				sx->tc++;
+				sx->tree.size++;
 				Declid_gen(sx);
 				break;
 			}
@@ -746,7 +737,7 @@ void compstmt_gen(syntax *const sx, ad *const context)
 			}
 		}
 	}
-	sx->tc++;
+	sx->tree.size++;
 }
 
 /** Генерация кодов */
@@ -754,19 +745,19 @@ int codegen(syntax *const sx)
 {
 	ad context;
 
-	size_t treesize = sx->tc;
-	sx->tc = 0;
+	size_t treesize = sx->tree.size;
+	sx->tree.size = 0;
 
-	while (sx->tc < treesize)
+	while (sx->tree.size < treesize)
 	{
-		switch (sx->tree[sx->tc++])
+		switch (sx->tree.array[sx->tree.size++])
 		{
 			case TEnd:
 				break;
 			case TFuncdef:
 			{
-				int identref = sx->tree[sx->tc++];
-				int maxdispl = sx->tree[sx->tc++];
+				size_t identref = (size_t)sx->tree.array[sx->tree.size++];
+				item_t maxdispl = sx->tree.array[sx->tree.size++];
 				int fn = ident_get_displ(sx, identref);
 
 				func_set(sx, fn, mem_get_size(sx));
@@ -774,17 +765,16 @@ int codegen(syntax *const sx)
 				tocode(sx, maxdispl);
 				size_t old_pc = mem_get_size(sx);
 				mem_increase(sx, 1);
-				sx->tc++; // TBegin
+				sx->tree.size++; // TBegin
 				compstmt_gen(sx, &context);
 				mem_set(sx, old_pc, (item_t)mem_get_size(sx));
 				break;
 			}
 			case TDeclarr:
 			{
-				int i;
-				int N = sx->tree[sx->tc++];
+				item_t N = sx->tree.array[sx->tree.size++];
 
-				for (i = 0; i < N; i++)
+				for (item_t i = 0; i < N; i++)
 				{
 					Expr_gen(sx, 0);
 				}
@@ -803,12 +793,12 @@ int codegen(syntax *const sx)
 			{
 				tocode(sx, B);
 				tocode(sx, 0);
-				proc_set(sx, sx->tree[sx->tc++], (item_t)mem_get_size(sx));
+				proc_set(sx, (size_t)sx->tree.array[sx->tree.size++], (item_t)mem_get_size(sx));
 				break;
 			}
 			case TStructend:
 			{
-				int numproc = sx->tree[sx->tc++];
+				size_t numproc = (size_t)sx->tree.array[sx->tree.size++];
 
 				tocode(sx, STOP);
 				mem_set(sx, (size_t)proc_get(sx, numproc) - 1, (item_t)mem_get_size(sx));
@@ -816,8 +806,8 @@ int codegen(syntax *const sx)
 			}
 			default:
 			{
-				printf("tc=%zi tree[tc-2]=%i tree[tc-1]=%i\n", sx->tc, sx->tree[sx->tc - 2],
-					   sx->tree[sx->tc - 1]);
+				printf("tc=%zi tree[tc-2]=%" PRIitem " tree[tc-1]=%" PRIitem "\n", sx->tree.size
+					, sx->tree.array[sx->tree.size - 2], sx->tree.array[sx->tree.size - 1]);
 				break;
 			}
 		}
