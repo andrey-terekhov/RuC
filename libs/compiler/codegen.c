@@ -36,7 +36,7 @@ void compstmt_gen(syntax *const sx, ad *const context);
 
 void tocode(syntax *const sx, int c)
 {
-	// printf("tocode sx->tc=%zi sx->pc %zi) %i\n", sx->tc,
+	// printf("tocode tc=%zi pc=%zi) %i\n", sx->tc,
 	// mem_get_size(sx), c);
 	mem_add(sx, c);
 }
@@ -286,7 +286,7 @@ int Expr_gen(syntax *const sx, int incond)
 			case TCall2:
 			{
 				tocode(sx, CALL2);
-				tocode(sx, sx->identab[sx->tree[sx->tc++] + 3]);
+				tocode(sx, ident_get_displ(sx, sx->tree[sx->tc++]));
 				break;
 			}
 			default:
@@ -368,7 +368,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TStructend:
 		{
-			int numproc = sx->tree[sx->tree[sx->tc++] + 1];
+			int numproc = sx->tree[sx->tc++];
 
 			tocode(sx, STOP);
 			mem_set(sx, proc_get(sx, numproc) - 1, (item_t)mem_get_size(sx));
@@ -424,7 +424,9 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			size_t oldcont = context->adcont;
 			size_t ad = mem_get_size(sx);
 
-			context->adcont = context->adbreak = 0;
+			context->adcont = 0;
+			context->adbreak = 0;
+
 			Stmt_gen(sx, context);
 			adcontend(sx, context);
 			Expr_gen(sx, 0);
@@ -450,7 +452,8 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			}
 
 			size_t initad = mem_get_size(sx);
-			context->adcont = context->adbreak = 0;
+			context->adcont = 0;
+			context->adbreak = 0;
 
 			if (condref)
 			{
@@ -482,29 +485,29 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		case TGoto:
 		{
 			int id1 = sx->tree[sx->tc++];
-			int a;
 			int id = id1 > 0 ? id1 : -id1;
 
 			tocode(sx, B);
-			if ((a = sx->identab[id + 3]) > 0) // метка уже описана
+			int a = ident_get_displ(sx, id);
+
+			if (a > 0) // метка уже описана
 			{
 				tocode(sx, a);
 			}
 			else // метка еще не описана
 			{
-				sx->identab[id + 3] = -(int)mem_get_size(sx);
-				tocode(sx,
-					   id1 < 0 ? 0 : a); // первый раз встретился переход на еще
-										 // не описанную метку или нет
+				ident_set_displ(sx, id, -(int)mem_get_size(sx));
+				tocode(sx, id1 < 0 ? 0 : a);	// первый раз встретился переход на еще
+												// не описанную метку или нет
 			}
 			break;
 		}
 		case TLabel:
 		{
 			int id = sx->tree[sx->tc++];
-			item_t a;
+			item_t a = ident_get_displ(sx, id);
 
-			if ((a = sx->identab[id + 3]) < 0) // были переходы на метку
+			if (a < 0) // были переходы на метку
 			{
 				while (a) // проставить ссылку на метку во всех ранних переходах
 				{
@@ -513,7 +516,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 					a = r;
 				}
 			}
-			sx->identab[id + 3] = (int)mem_get_size(sx);
+			ident_set_displ(sx, id, (int)mem_get_size(sx));
 			break;
 		}
 		case TSwitch:
@@ -764,7 +767,7 @@ int codegen(syntax *const sx)
 			{
 				int identref = sx->tree[sx->tc++];
 				int maxdispl = sx->tree[sx->tc++];
-				int fn = sx->identab[identref + 3];
+				int fn = ident_get_displ(sx, identref);
 
 				func_set(sx, fn, mem_get_size(sx));
 				tocode(sx, FUNCBEG);
@@ -805,7 +808,7 @@ int codegen(syntax *const sx)
 			}
 			case TStructend:
 			{
-				int numproc = sx->tree[sx->tree[sx->tc++] + 1];
+				int numproc = sx->tree[sx->tc++];
 
 				tocode(sx, STOP);
 				mem_set(sx, proc_get(sx, numproc) - 1, (item_t)mem_get_size(sx));
@@ -821,7 +824,7 @@ int codegen(syntax *const sx)
 	}
 	tocode(sx, CALL1);
 	tocode(sx, CALL2);
-	tocode(sx, sx->identab[sx->main_ref + 3]);
+	tocode(sx, ident_get_displ(sx, sx->main_ref));
 	tocode(sx, STOP);
 
 	return 0;
