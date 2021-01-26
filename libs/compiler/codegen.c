@@ -813,6 +813,7 @@ void compstmt_gen(syntax *const sx, ad *const context)
 /** Генерация кодов */
 int codegen(syntax *const sx)
 {
+	int is_end = 0;
 	node root = node_get_root(sx);
 	tree_set_node(sx, &root);
 
@@ -820,12 +821,12 @@ int codegen(syntax *const sx)
 
 	tree_next_node(sx);
 
-	while (node_is_correct(tree_get_node(sx)))
+	while (!is_end)
 	{
 		switch (node_get_type(tree_get_node(sx)))
 		{
 			case TEnd:
-				tree_next_node(sx);
+				is_end = tree_next_node(sx);
 				break;
 			case TFuncdef:
 			{
