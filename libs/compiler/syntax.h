@@ -39,9 +39,7 @@ typedef struct syntax
 	vector processes;				/**< Init processes table */
 
 	vector predef;					/**< Predefined functions table */
-
-	size_t functions[FUNCSIZE];		/**< Functions table */
-	size_t funcnum;					/**< Number of functions */
+	vector functions;				/**< Functions table */
 
 	int identab[MAXIDENTAB];		/**< Identifiers table */
 	size_t id;						/**< Number of identifiers */
@@ -182,7 +180,7 @@ item_t proc_get(const syntax *const sx, const size_t index);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int func_add(syntax *const sx, const size_t ref);
+int func_add(syntax *const sx, const item_t ref);
 
 /**
  *	Set function start reference by index in functions table
@@ -193,7 +191,7 @@ int func_add(syntax *const sx, const size_t ref);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int func_set(syntax *const sx, const size_t index, const size_t ref);
+int func_set(syntax *const sx, const size_t index, const item_t ref);
 
 /**
  *	Get an item from functions table by index
@@ -201,9 +199,9 @@ int func_set(syntax *const sx, const size_t index, const size_t ref);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in functions table
  *
- *	@return	Item by index from functions table, @c SIZE_MAX on failure
+ *	@return	Item by index from functions table, @c ITEM_MAX on failure
  */
-size_t func_get(const syntax *const sx, const size_t index);
+item_t func_get(const syntax *const sx, const size_t index);
 
 
 /**

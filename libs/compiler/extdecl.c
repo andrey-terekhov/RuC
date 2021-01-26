@@ -3491,8 +3491,8 @@ void function_definition(analyzer *context)
 	for (int i = 0; i < n; i++)
 	{
 		context->type = mode_get(context->sx, context->functype + i + 3);
-		size_t temp = func_get(context->sx, fn + i + 1);
-		if (temp == SIZE_MAX)
+		item_t temp = func_get(context->sx, fn + i + 1);
+		if (temp == ITEM_MAX)
 		{
 			context->error_flag = 1;
 			return;
@@ -3804,7 +3804,8 @@ void ext_decl(analyzer *context)
 
 			if (context->next == LEFTBR) // определение или предописание функции
 			{
-				size_t oldfuncnum = context->sx->funcnum++;
+				size_t oldfuncnum = vector_size(&context->sx->functions);
+				vector_increase(&context->sx->functions, 1);
 				int firsttype = context->type;
 				funrepr = REPRTAB_POS;
 				scanner(context);

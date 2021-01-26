@@ -1481,13 +1481,13 @@ void tables_and_codes(const syntax *const sx, const char *const path)
 	}
 
 	uni_printf(&io, "\n\n%s\n", "functions");
-	for (size_t i = 1; i <= sx->funcnum; i++)
+	for (size_t i = 0; i < vector_size(&sx->functions); i++)
 	{
-		uni_printf(&io, "fun %zi) %zi\n", i, sx->functions[i]);
+		uni_printf(&io, "fun %zi) %" PRIitem "\n", i, vector_get(&sx->functions, i));
 	}
 
 	uni_printf(&io, "\n%s\n", "iniprocs");
-	for (size_t i = 1; i <= vector_size(&sx->processes); i++)
+	for (size_t i = 0; i < vector_size(&sx->processes); i++)
 	{
 		uni_printf(&io, "inipr %zi) %" PRIitem "\n", i, vector_get(&sx->processes, i));
 	}

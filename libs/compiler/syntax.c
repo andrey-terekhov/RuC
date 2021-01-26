@@ -98,14 +98,13 @@ int sx_init(syntax *const sx)
 
 	sx->memory = vector_create(MAXMEMSIZE);
 	vector_increase(&sx->memory, 4);
-
 	sx->processes = vector_create(INIPROSIZE);
 	vector_increase(&sx->processes, 1);
 
 	sx->predef = vector_create(FUNCSIZE);
-	//sx->prdf = -1;
+	sx->functions = vector_create(FUNCSIZE);
+	vector_increase(&sx->functions, 2);
 
-	sx->funcnum = 2;
 	sx->id = 2;
 	sx->md = 1;
 	sx->startmode = 1;
@@ -160,7 +159,9 @@ int sx_clear(syntax *const sx)
 
 	vector_clear(&sx->memory);
 	vector_clear(&sx->processes);
+
 	vector_clear(&sx->predef);
+	vector_clear(&sx->functions);
 
 	return 0;
 }
@@ -203,36 +204,19 @@ item_t proc_get(const syntax *const sx, const size_t index)
 }
 
 
-int func_add(syntax *const sx, const size_t ref)
+int func_add(syntax *const sx, const item_t ref)
 {
-	if (sx == NULL)
-	{
-		return -1;
-	}
-
-	sx->funcnum++;
-	return func_set(sx, sx->funcnum - 1, ref);
+	return sx != NULL ? vector_add(&sx->functions, ref) != SIZE_MAX ? 0 : -1 : -1;
 }
 
-int func_set(syntax *const sx, const size_t index, const size_t ref)
+int func_set(syntax *const sx, const size_t index, const item_t ref)
 {
-	if (sx == NULL || index >= sx->funcnum)
-	{
-		return -1;
-	}
-
-	sx->functions[index] = ref;
-	return 0;
+	return sx != NULL ? vector_set(&sx->functions, index, ref) : -1;
 }
 
-size_t func_get(const syntax *const sx, const size_t index)
+item_t func_get(const syntax *const sx, const size_t index)
 {
-	if (sx == NULL || index >= sx->funcnum)
-	{
-		return SIZE_MAX;
-	}
-
-	return sx->functions[index];
+	return sx != NULL ? vector_get(&sx->functions, index) : ITEM_MAX;
 }
 
 
