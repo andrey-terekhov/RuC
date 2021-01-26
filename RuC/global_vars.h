@@ -39,4 +39,6 @@ extern int anst, anstdispl, ansttype, leftansttype;
 
 extern int bad_printf_placeholder;
 
+extern int cycle_jump_reduce;
+
 #endif

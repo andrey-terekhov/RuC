@@ -52,6 +52,9 @@ int anst, anstdispl, ansttype, leftansttype = -1;
 
 int bad_printf_placeholder = 0;
 
+// optimization flags
+int cycle_jump_reduce = 1;
+
 extern void preprocess_file();
 
 extern void tablesandtree();
