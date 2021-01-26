@@ -1487,9 +1487,9 @@ void tables_and_codes(const syntax *const sx, const char *const path)
 	}
 
 	uni_printf(&io, "\n%s\n", "iniprocs");
-	for (size_t i = 1; (int)i <= sx->procd; i++)
+	for (size_t i = 1; i <= vector_size(&sx->processes); i++)
 	{
-		uni_printf(&io, "inipr %zi) %i\n", i, sx->iniprocs[i]);
+		uni_printf(&io, "inipr %zi) %" PRIitem "\n", i, vector_get(&sx->processes, i));
 	}
 
 	uni_printf(&io, "\n%s\n", "mem");

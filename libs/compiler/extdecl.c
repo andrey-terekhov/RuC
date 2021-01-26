@@ -3260,7 +3260,10 @@ int struct_decl_list(analyzer *context)
 	{
 		totree(context, TStructend);
 		totree(context, (int)tstrbeg);
-		context->sx->tree[tstrbeg + 1] = context->was_struct_with_arr = context->sx->procd++;
+
+		context->was_struct_with_arr = (int)vector_size(&context->sx->processes);
+		context->sx->tree[tstrbeg + 1] = context->was_struct_with_arr;
+		vector_increase(&context->sx->processes, 1);
 	}
 	else
 	{

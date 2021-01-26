@@ -106,6 +106,7 @@ int compile_from_io_to_vm(universal_io *const io)
 #endif
 	}
 
+	sx_clear(&sx);
 	io_erase(io);
 	return ret;
 }

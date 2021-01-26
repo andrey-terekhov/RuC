@@ -670,7 +670,7 @@ void Declid_gen(syntax *const sx)
 		{
 			tocode(sx, STRUCTWITHARR);
 			tocode(sx, olddispl);
-			tocode(sx, proc_get(sx, iniproc));
+			tocode(sx, (int)proc_get(sx, iniproc));
 		}
 		if (all) // int a = или struct{} a =
 		{
@@ -696,7 +696,7 @@ void Declid_gen(syntax *const sx)
 		tocode(sx, all == 0 ? N : abs(N) - 1);
 		tocode(sx, element_len);
 		tocode(sx, olddispl);
-		tocode(sx, proc_get(sx, iniproc));
+		tocode(sx, (int)proc_get(sx, iniproc));
 		tocode(sx, usual);
 		tocode(sx, all);
 		tocode(sx, instruct);
@@ -803,7 +803,7 @@ int codegen(syntax *const sx)
 			{
 				tocode(sx, B);
 				tocode(sx, 0);
-				proc_set(sx, sx->tree[sx->tc++], (int)mem_get_size(sx));
+				proc_set(sx, sx->tree[sx->tc++], (item_t)mem_get_size(sx));
 				break;
 			}
 			case TStructend:
@@ -811,7 +811,7 @@ int codegen(syntax *const sx)
 				int numproc = sx->tree[sx->tc++];
 
 				tocode(sx, STOP);
-				mem_set(sx, proc_get(sx, numproc) - 1, (item_t)mem_get_size(sx));
+				mem_set(sx, (size_t)proc_get(sx, numproc) - 1, (item_t)mem_get_size(sx));
 				break;
 			}
 			default:

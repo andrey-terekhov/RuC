@@ -99,7 +99,9 @@ int sx_init(syntax *const sx)
 	sx->memory = vector_create(MAXMEMSIZE);
 	vector_increase(&sx->memory, 4);
 
-	sx->procd = 1;
+	sx->processes = vector_create(INIPROSIZE);
+	vector_increase(&sx->processes, 1);
+
 	sx->funcnum = 2;
 	sx->id = 2;
 	sx->md = 1;
@@ -148,6 +150,19 @@ int sx_is_correct(syntax *const sx, universal_io *const io)
 	return is_correct;
 }
 
+int sx_clear(syntax *const sx)
+{
+	if (sx == NULL)
+	{
+		return -1;
+	}
+
+	vector_clear(&sx->memory);
+	vector_clear(&sx->processes);
+
+	return 0;
+}
+
 
 int mem_increase(syntax *const sx, const size_t size)
 {
@@ -175,25 +190,14 @@ size_t mem_get_size(const syntax *const sx)
 }
 
 
-int proc_set(syntax *const sx, const size_t index, const int value)
+int proc_set(syntax *const sx, const size_t index, const item_t value)
 {
-	if (sx == NULL || (int)index >= sx->procd)
-	{
-		return -1;
-	}
-
-	sx->iniprocs[index] = value;
-	return 0;
+	return sx != NULL ? vector_set(&sx->processes, index, value) : -1;
 }
 
-int proc_get(const syntax *const sx, const size_t index)
+item_t proc_get(const syntax *const sx, const size_t index)
 {
-	if (sx == NULL || (int)index >= sx->procd)
-	{
-		return INT_MAX;
-	}
-
-	return sx->iniprocs[index];
+	return sx != NULL ? vector_get(&sx->processes, index) : ITEM_MAX;
 }
 
 

@@ -33,13 +33,11 @@ typedef struct node node;
 /** Global vars definition */
 typedef struct syntax
 {
-	// mem, pc & iniprocs - usage here only for codes printing
+	// memory & processes - usage here only for codes printing
 
 	vector memory;					/**< Memory table */
+	vector processes;				/**< Init processes table */
 
-	int iniprocs[INIPROSIZE];		/**< Init processes */
-	int procd;						/**< Process management daemon */
-	
 	size_t predef[FUNCSIZE];		/**< Predefined functions table */
 	int prdf;						/**< Number of predefined functions */
 
@@ -95,6 +93,15 @@ int sx_init(syntax *const sx);
  */
 int sx_is_correct(syntax *const sx, universal_io *const io);
 
+/**
+ *	Free allocated memory
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int sx_clear(syntax *const sx);
+
 
 /**
  *	Increase size of memory table by value
@@ -142,7 +149,7 @@ item_t mem_get(const syntax *const sx, const size_t index);
  *
  *	@param	sx			Syntax structure
  *
- *	@return	Program counter on success, @c INT_MAX on failure
+ *	@return	Program counter on success, @c SIZE_MAX on failure
  */
 size_t mem_get_size(const syntax *const sx);
 
@@ -156,7 +163,7 @@ size_t mem_get_size(const syntax *const sx);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int proc_set(syntax *const sx, const size_t index, const int value);
+int proc_set(syntax *const sx, const size_t index, const item_t value);
 
 /**
  *	Get an item by index from init processes table
@@ -164,9 +171,9 @@ int proc_set(syntax *const sx, const size_t index, const int value);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in table
  *
- *	@return	Item by index from table, @c INT_MAX on failure
+ *	@return	Item by index from table, @c ITEM_MAX on failure
  */
-int proc_get(const syntax *const sx, const size_t index);
+item_t proc_get(const syntax *const sx, const size_t index);
 
 
 /**

@@ -879,6 +879,7 @@ int tree_test_copy(syntax *const sx)
 		node child = node_get_child(&nd, i);
 		if (node_test_copy(&nd_dest, &child))
 		{
+			sx_clear(&sx_dest);
 			return -1;
 		}
 	}
@@ -889,11 +890,14 @@ int tree_test_copy(syntax *const sx)
 		if (tree_get(&nd.tree, i) != tree_get(&nd_dest.tree, i))
 		{
 			error(NULL, tree_unexpected, tree_get(&nd_dest.tree, i), i, tree_get(&nd.tree, i));
+			sx_clear(&sx_dest);
 			return -1;
 		}
 
 		i++;
 	}
 
-	return tree_size(&nd.tree) != tree_size(&nd_dest.tree);
+	const int ret = tree_size(&nd.tree) != tree_size(&nd_dest.tree);
+	sx_clear(&sx_dest);
+	return ret;
 }
