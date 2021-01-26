@@ -38,8 +38,7 @@ typedef struct syntax
 	vector memory;					/**< Memory table */
 	vector processes;				/**< Init processes table */
 
-	size_t predef[FUNCSIZE];		/**< Predefined functions table */
-	int prdf;						/**< Number of predefined functions */
+	vector predef;					/**< Predefined functions table */
 
 	size_t functions[FUNCSIZE];		/**< Functions table */
 	size_t funcnum;					/**< Number of functions */
@@ -87,11 +86,10 @@ int sx_init(syntax *const sx);
  *	Check if syntax structure is correct
  *
  *	@param	sx			Syntax structure
- *	@param	io			Universal io structure
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int sx_is_correct(syntax *const sx, universal_io *const io);
+int sx_is_correct(syntax *const sx);
 
 /**
  *	Free allocated memory

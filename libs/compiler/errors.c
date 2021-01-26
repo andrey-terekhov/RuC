@@ -34,7 +34,7 @@
 #define MAX_INT_LENGTH 12
 
 
-size_t printident(const int *const reprtab, int pos, char *const buffer)
+size_t printident(const int *const reprtab, size_t pos, char *const buffer)
 {
 	size_t index = 0;
 
@@ -93,7 +93,7 @@ void get_error(const int num, char *const msg, va_list args)
 		{
 			index += sprintf(&msg[index], "функция ");
 			const int *const reprtab = va_arg(args, int *);
-			const int pos = va_arg(args, int);
+			const size_t pos = va_arg(args, size_t);
 			index += printident(reprtab, pos, &msg[index]);
 			index += sprintf(&msg[index], " была предопределена, но не описана");
 		}

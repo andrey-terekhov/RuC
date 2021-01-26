@@ -102,6 +102,9 @@ int sx_init(syntax *const sx)
 	sx->processes = vector_create(INIPROSIZE);
 	vector_increase(&sx->processes, 1);
 
+	sx->predef = vector_create(FUNCSIZE);
+	//sx->prdf = -1;
+
 	sx->funcnum = 2;
 	sx->id = 2;
 	sx->md = 1;
@@ -117,8 +120,6 @@ int sx_init(syntax *const sx)
 	sx->curid = 2;
 	sx->lg = -1;
 
-	sx->prdf = -1;
-
 	for (size_t i = 0; i < 256; i++)
 	{
 		sx->hashtab[i] = 0;
@@ -129,20 +130,20 @@ int sx_init(syntax *const sx)
 	return 0;
 }
 
-int sx_is_correct(syntax *const sx, universal_io *const io)
+int sx_is_correct(syntax *const sx)
 {
 	int is_correct = 1;
 	if (sx->main_ref == 0)
 	{
-		error(io, no_main_in_program);
+		error(NULL, no_main_in_program);
 		is_correct = 0;
 	}
 
-	for (size_t i = 0; (int)i <= sx->prdf; i++)
+	for (size_t i = 0; i < vector_size(&sx->predef); i++)
 	{
-		if (sx->predef[i])
+		if (vector_get(&sx->predef, i))
 		{
-			error(io, predef_but_notdef, sx->reprtab, sx->predef[i]);
+			error(NULL, predef_but_notdef, sx->reprtab, (size_t)vector_get(&sx->predef, i));
 			is_correct = 0;
 		}
 	}
@@ -159,6 +160,7 @@ int sx_clear(syntax *const sx)
 
 	vector_clear(&sx->memory);
 	vector_clear(&sx->processes);
+	vector_clear(&sx->predef);
 
 	return 0;
 }
@@ -300,16 +302,16 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 		{
 			// Это предописание функции
 			sx->identab[lastid + 1] = -ident_get_repr(sx, lastid);
-			sx->predef[++sx->prdf] = repr;
+			vector_add(&sx->predef, (item_t)repr);
 		}
 		else
 		{
 			// Это описание функции
-			for (size_t i = 0; (int)i <= sx->prdf; i++)
+			for (size_t i = 0; i < vector_size(&sx->predef); i++)
 			{
-				if (sx->predef[i] == repr)
+				if ((size_t)vector_get(&sx->predef, i) == repr)
 				{
-					sx->predef[i] = 0;
+					vector_set(&sx->predef, i, 0);
 				}
 			}
 		}
