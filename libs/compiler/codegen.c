@@ -368,7 +368,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case TStructend:
 		{
-			int numproc = sx->tree[sx->tree[sx->tc++] + 1];
+			int numproc = sx->tree[sx->tc++];
 
 			tocode(sx, STOP);
 			mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
@@ -808,7 +808,7 @@ int codegen(syntax *const sx)
 			}
 			case TStructend:
 			{
-				int numproc = sx->tree[sx->tree[sx->tc++] + 1];
+				int numproc = sx->tree[sx->tc++];
 
 				tocode(sx, STOP);
 				mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
