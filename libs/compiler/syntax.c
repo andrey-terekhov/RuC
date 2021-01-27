@@ -143,7 +143,9 @@ int sx_is_correct(syntax *const sx)
 	{
 		if (vector_get(&sx->predef, i))
 		{
-			error(NULL, predef_but_notdef, sx->reprtab, (size_t)vector_get(&sx->predef, i));
+			char buffer[MAXSTRINGL];
+			repr_get_ident(sx, (size_t)vector_get(&sx->predef, i), buffer);
+			error(NULL, predef_but_notdef, buffer);
 			is_correct = 0;
 		}
 	}
@@ -456,6 +458,23 @@ size_t repr_add(syntax *const sx, const char32_t *const spelling)
 	// 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
 	sx->reprtab[old_repr + 1] = (sx->keywordsnum) ? -((++sx->keywordsnum - 2) / 4) : 1;
 	return old_repr;
+}
+
+size_t repr_get_ident(const syntax *const sx, const size_t index, char *const buffer)
+{
+	if (sx == NULL || index >= sx->rp)
+	{
+		return SIZE_MAX;
+	}
+
+	size_t i = 0;
+	size_t pos = index + 2; // ссылка на reprtab
+	while (sx->reprtab[pos] != '\0')
+	{
+		i += utf8_to_string(buffer, sx->reprtab[pos++]);
+	}
+
+	return i;
 }
 
 int repr_get_spelling(const syntax *const sx, const size_t index, char32_t *const spelling)

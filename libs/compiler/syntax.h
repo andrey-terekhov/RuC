@@ -333,6 +333,17 @@ int mode_get(const syntax *const sx, const size_t index);
 size_t repr_add(syntax *const sx, const char32_t *const spelling);
 
 /**
+ *	Write identificator name from representations table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in representations table
+ *	@param	buffer		Output string
+ *
+ *	@return	Size of сharacter in string, @c SIZE_MAX on failure
+ */
+size_t repr_get_ident(const syntax *const sx, const size_t index, char *const buffer);
+
+/**
  *	Get a representation spelling from table by index
  *
  *	@param	sx			Syntax structure

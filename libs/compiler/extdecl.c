@@ -119,11 +119,19 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 		case ident_is_not_declared:
 		case repeated_label:
 		case no_field:
-			error(io, num, REPRTAB, REPRTAB_POS);
-			break;
+		{
+			char buffer[MAXSTRINGL];
+			repr_get_ident(context->sx, REPRTAB_POS, buffer);
+			error(io, num, buffer);
+		}
+		break;
 		case label_not_declared:
-			error(io, num, context->sx->hash, REPRTAB, REPRTAB_POS);
-			break;
+		{
+			char buffer[MAXSTRINGL];
+			repr_get_ident(context->sx, REPRTAB_POS, buffer);
+			error(io, num, context->sx->hash, buffer);
+		}
+		break;
 		default:
 			error(io, num);
 	}
