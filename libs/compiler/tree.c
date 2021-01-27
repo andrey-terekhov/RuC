@@ -319,9 +319,6 @@ node node_operator(vector *const tree, const size_t index)
 
 			if (j != SIZE_MAX)
 			{
-				// Tree modification: Copy procedure number from TStructbeg to TStructend
-				vector_set(tree, j + 1, vector_get(tree, nd.argv));
-
 				skip_operator(tree, j);
 				nd.amount++;
 			}
