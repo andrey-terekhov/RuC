@@ -63,7 +63,7 @@ int newdecl(syntax *const sx, const int type, const int element_type)
 }
 
 
-int double_to_tree(vector *const tree, const size_t index, const double num)
+int double_to_tree(vector *const tree, const double num)
 {
 	int64_t num64;
 	memcpy(&num64, &num, sizeof(int64_t));
@@ -78,22 +78,21 @@ int double_to_tree(vector *const tree, const size_t index, const double num)
 	}
 #endif
 
-	if (index == vector_size(tree))
-	{
-		size_t ret = vector_add(tree, fst);
-		ret = ret != SIZE_MAX ? vector_add(tree, snd) : SIZE_MAX;
-		return ret == SIZE_MAX;
-	}
-
-	return vector_set(tree, index, fst) || vector_set(tree, index + 1, snd);
+	size_t ret = vector_add(tree, fst);
+	ret = ret != SIZE_MAX ? vector_add(tree, snd) : SIZE_MAX;
+	return ret == SIZE_MAX;
 }
 
-double double_from_tree(vector *const tree, const size_t index)
+double double_from_tree(vector *const tree)
 {
-	int64_t fst = (int64_t)vector_get(tree, index) & 0x00000000ffffffff;
-	int64_t snd = (int64_t)vector_get(tree, index + 1) & 0x00000000ffffffff;
+	const size_t index = vector_size(tree) - 2;
 
+	const int64_t fst = (int64_t)vector_get(tree, index) & 0x00000000ffffffff;
+	const int64_t snd = (int64_t)vector_get(tree, index + 1) & 0x00000000ffffffff;
 	int64_t num64 = (snd << 32) | fst;
+
+	vector_remove(tree);
+	vector_remove(tree);
 
 	double num;
 	memcpy(&num, &num64, sizeof(double));
@@ -645,7 +644,7 @@ void primaryexpr(analyzer *context)
 	else if (context->cur == FLOAT_CONST)
 	{
 		totree(context, TConstd);
-		double_to_tree(&context->sx->tree, vector_size(&context->sx->tree), context->lxr->num_double);
+		double_to_tree(&context->sx->tree, context->lxr->num_double);
 		context->stackoperands[++context->sopnd] = context->ansttype = LFLOAT;
 		context->anst = NUMBER;
 	}
@@ -1719,8 +1718,7 @@ void unarexpr(analyzer *context)
 					}
 					else if (context->sx->tree.array[context->sx->tree.size - 3] == TConstd)
 					{
-						double_to_tree(&context->sx->tree, vector_size(&context->sx->tree) - 2,
-							-double_from_tree(&context->sx->tree, vector_size(&context->sx->tree) - 2));
+						double_to_tree(&context->sx->tree, -double_from_tree(&context->sx->tree));
 					}
 					else
 					{
