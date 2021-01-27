@@ -65,6 +65,15 @@ EXPORTED int vector_increase(vector *const vec, const size_t size);
 EXPORTED size_t vector_add(vector *const vec, const item_t value);
 
 /**
+ *	Remove last value
+ *
+ *	@param	vec				Vector structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+EXPORTED int vector_remove(vector *const vec);
+
+/**
  *	Set new value
  *
  *	@param	vec				Vector structure
@@ -84,6 +93,7 @@ EXPORTED int vector_set(vector *const vec, const size_t index, const item_t valu
  *	@return	Value, @c ITEM_MAX on failure
  */
 EXPORTED item_t vector_get(const vector *const vec, const size_t index);
+
 
 
 /**
