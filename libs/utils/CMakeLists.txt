@@ -12,5 +12,5 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
 if(DEFINED ITEM)
-	add_compile_definitions(ITEM=${ITEM})
+	target_compile_definitions(${PROJECT_NAME} PUBLIC ITEM=${ITEM})
 endif()
