@@ -129,11 +129,10 @@ void finalop(syntax *const sx)
 
 int Expr_gen(syntax *const sx, int incond)
 {
-	int flagprim = 1;
 	int wasstring = 0;
 	int op;
 
-	while (flagprim)
+	while (node_get_type(tree_get_node(sx)) != TExprend)
 	{
 		switch (op = node_get_type(tree_get_node(sx)))
 		{
@@ -347,12 +346,8 @@ int Expr_gen(syntax *const sx, int incond)
 
 			finalop(sx);
 		}
-		if (node_get_type(tree_get_node(sx)) == TExprend)
-		{		
-			flagprim = 0;
-			tree_next_node(sx);
-		}
 	}
+	tree_next_node(sx);
 	return wasstring;
 }
 
