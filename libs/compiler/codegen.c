@@ -84,7 +84,6 @@ void finalop(syntax *const sx)
 				tocode(sx, _DOUBLE);
 				tocode(sx, BNE0);
 				stack_push(sx, (int)mem_get_size(sx));
-				// sx->tree[node_get_arg(tree_get_node(sx), 0)] = (int)mem_get_size(sx);
 				mem_increase(sx, 1);
 			}
 			else if (c == ADLOGAND)
@@ -92,7 +91,6 @@ void finalop(syntax *const sx)
 				tocode(sx, _DOUBLE);
 				tocode(sx, BE0);
 				stack_push(sx, (int)mem_get_size(sx));
-				// sx->tree[node_get_arg(tree_get_node(sx), 0)] = (int)mem_get_size(sx);
 				mem_increase(sx, 1);
 			}
 			else
@@ -101,7 +99,6 @@ void finalop(syntax *const sx)
 				if (c == LOGOR || c == LOGAND)
 				{
 					mem_set(sx, stack_pop(sx), (int)mem_get_size(sx));
-					// mem_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_get_size(sx));
 				}
 				else if (c == COPY00 || c == COPYST)
 				{
