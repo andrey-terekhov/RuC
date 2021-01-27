@@ -97,6 +97,7 @@ int sx_init(syntax *const sx)
 	}
 
 	sx->pc = 4;
+	sx->stack_size = -1;
 	sx->procd = 1;
 	sx->funcnum = 2;
 	sx->id = 2;
@@ -197,6 +198,29 @@ size_t mem_get_size(const syntax *const sx)
 		return INT_MAX;
 	}
 	return sx->pc;
+}
+
+
+int stack_push(syntax *const sx, const int value)
+{
+	if (sx == NULL || sx->stack_size == 255)
+	{
+		return -1;
+	}
+
+	sx->stack_size++;
+	sx->stack[sx->stack_size] = value;
+	return 0;
+}
+
+int stack_pop(syntax *const sx)
+{
+	if (sx == NULL || sx->stack_size == -1)
+	{
+		return INT_MAX;
+	}
+
+	return sx->stack[sx->stack_size--];
 }
 
 

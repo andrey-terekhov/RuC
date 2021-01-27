@@ -37,6 +37,9 @@ typedef struct syntax
 	int mem[MAXMEMSIZE];			/**< Memory */
 	int pc;							/**< Program counter */
 
+	int stack[256];					/**< Stack for logic operations*/
+	int stack_size;					/**< Size of stack*/
+
 	int iniprocs[INIPROSIZE];		/**< Init processes */
 	int procd;						/**< Process management daemon */
 	
@@ -145,6 +148,26 @@ int mem_get(const syntax *const sx, const size_t index);
  *	@return	Program counter on success, @c INT_MAX on failure
  */
 size_t mem_get_size(const syntax *const sx);
+
+
+/**
+ *	Push new value to stack
+ *
+ *	@param	sx			Syntax structure
+ *	@param	value		Value to push
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int stack_push(syntax *const sx, const int value);
+
+/**
+ *	Pop value from stack
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	value, @c INT_MAX on failure
+ */
+int stack_pop(syntax *const sx);
 
 
 /**
