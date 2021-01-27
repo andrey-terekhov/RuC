@@ -399,6 +399,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			tree_next_node(sx);
 			compstmt_gen(sx, context);
+			tree_next_node(sx); // TEnd
 			break;
 		}
 		case TIf:
@@ -806,7 +807,7 @@ void compstmt_gen(syntax *const sx, ad *const context)
 			}
 		}
 	}
-	tree_next_node(sx); // TEnd
+	//tree_next_node(sx); // TEnd
 }
 
 /** Генерация кодов */
@@ -841,6 +842,7 @@ int codegen(syntax *const sx)
 				tree_next_node(sx);
 				tree_next_node(sx); // TBegin
 				compstmt_gen(sx, &context);
+				tree_next_node(sx); // TEnd
 				mem_set(sx, old_pc, (int)mem_get_size(sx));
 				break;
 			}
