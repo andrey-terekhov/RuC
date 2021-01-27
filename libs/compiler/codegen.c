@@ -769,7 +769,7 @@ int codegen(syntax *const sx)
 				int maxdispl = sx->tree[sx->tc++];
 				int fn = ident_get_displ(sx, identref);
 
-				func_set(sx, fn, mem_get_size(sx));
+				func_set(sx, fn, (item_t)mem_get_size(sx));
 				tocode(sx, FUNCBEG);
 				tocode(sx, maxdispl);
 				size_t old_pc = mem_get_size(sx);
