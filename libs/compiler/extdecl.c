@@ -3259,11 +3259,13 @@ int struct_decl_list(analyzer *context)
 	if (wasarr)
 	{
 		totree(context, TStructend);
-		totree(context, (int)tstrbeg);
 
-		context->was_struct_with_arr = (int)vector_size(&context->sx->processes);
-		context->sx->tree[tstrbeg + 1] = context->was_struct_with_arr;
+		const int procd = (int)vector_size(&context->sx->processes);
 		vector_increase(&context->sx->processes, 1);
+
+		totree(context, procd);
+		context->sx->tree[tstrbeg + 1] = procd;
+		context->was_struct_with_arr = procd;
 	}
 	else
 	{

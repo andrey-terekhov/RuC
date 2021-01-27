@@ -373,9 +373,6 @@ node node_operator(tree *const tree, const size_t index)
 
 			if (j != SIZE_MAX)
 			{
-				// Tree modification: Copy procedure number from TStructbeg to TStructend
-				tree_set(tree, j + 1, tree_get(tree, nd.argv));
-
 				skip_operator(tree, j);
 				nd.amount++;
 			}
