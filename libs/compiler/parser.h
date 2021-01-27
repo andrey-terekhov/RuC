@@ -27,10 +27,10 @@ extern "C" {
 /**
  *	Emit an error from parser
  *
- *	@param	context		Parser structure
- *	@param	err			Error code
+ *	@param	parser		Parser structure
+ *	@param	num			Error code
  */
-void parser_error(parser *const context, const enum ERROR err);
+void parser_error(parser *const parser, const int num, ...);
 
 /**
  *	Consume the current 'peek token' and lex the next one
@@ -47,7 +47,7 @@ void consume_token(parser *const parser);
  *
  *	@return	@c 0, if 'peek token' is expected and consumed, @c 0 otherwise
  */
-int try_consume_token(parser *const parser, const TOKEN expected);
+int try_consume_token(parser *const parser, const token expected);
 
 /**
  *	Try consume the current 'peek token' and lex the next one
@@ -57,7 +57,7 @@ int try_consume_token(parser *const parser, const TOKEN expected);
  *	@param	expected	Expected token to consume
  *	@param	err			Error to emit
  */
-void expect_and_consume_token(parser *const parser, const TOKEN expected, const enum ERROR err);
+void expect_and_consume_token(parser *const parser, const token expected, const enum ERROR err);
 
 /**
  *	Read tokens until one of the specified tokens
@@ -212,7 +212,6 @@ void exprassnval(parser *context);
 void array_init(parser *context, int decl_type);
 int arrdef(parser *context, int t);
 void decl_id(parser *context, int decl_type);
-int func_declarator(parser *context, int level, int func_d, int firstdecl);
 void ext_decl(parser *const parser);
 
 #ifdef __cplusplus

@@ -15,6 +15,7 @@
  */
 
 #include "parser.h"
+#include <stdlib.h>
 
 int parse_type_specifier(parser *const parser);
 size_t parse_struct_or_union_specifier(parser *const parser);
@@ -615,7 +616,7 @@ void decl_id(parser *context, int decl_type)
 }
 
 
-int func_declarator(parser *context, int level, int func_d, int firstdecl)
+size_t func_declarator(parser *context, int level, int func_d, int firstdecl)
 {
 	// на 1 уровне это может быть определением функции или предописанием, на
 	// остальных уровнях - только декларатором (без идентов)
@@ -757,7 +758,7 @@ int func_declarator(parser *context, int level, int func_d, int firstdecl)
 				}
 
 				old = context->func_def;
-				loc_modetab[locmd - 1] = func_declarator(context, 0, 2, context->type);
+				loc_modetab[locmd - 1] = (int)func_declarator(context, 0, 2, context->type);
 				if (context->was_error == 2)
 				{
 					return 0;
@@ -809,7 +810,7 @@ int func_declarator(parser *context, int level, int func_d, int firstdecl)
 	context->func_def = func_d;
 	loc_modetab[2] = numpar;
 
-	return (int)mode_add(context->sx, loc_modetab, locmd);
+	return mode_add(context->sx, loc_modetab, locmd);
 }
 
 void function_definition(parser *const parser, const size_t function_id)
@@ -821,8 +822,8 @@ void function_definition(parser *const parser, const size_t function_id)
 	parser->pgotost = 0;
 	parser->flag_was_return = 0;
 
-	int pred;
-	if ((pred = parser->sx->identab[function_id]) > 1) // был прототип
+	const int pred = parser->sx->identab[function_id];
+	if (pred > 1) // был прототип
 	{
 		if (parser->function_type != ident_get_mode(parser->sx, pred))
 		{
@@ -834,26 +835,22 @@ void function_definition(parser *const parser, const size_t function_id)
 	}
 
 	const int old_displ = scope_func_enter(parser->sx);
+
 	for (size_t i = 0; i < param_number; i++)
 	{
 		const int type = mode_get(parser->sx, parser->function_type + i + 3);
 		const size_t repr = func_get(parser->sx, function_number + i + 1);
-		if (repr > 0)
-		{
-			toidentab(parser, repr, 0, type);
-		}
-		else
-		{
-			toidentab(parser, -repr, -1, type);
-		}
+
+		toidentab(parser, abs(repr), 0, type);
 	}
 
 	func_set(parser->sx, function_number, parser->sx->tc);
 	totree(parser, TFuncdef);
 	totree(parser, function_id);
-	pred = (int)parser->sx->tc++;
-	consume_token(parser);
 
+	const size_t maxdispl_ref = parser->sx->tc++;
+
+	consume_token(parser);
 	parse_compound_statement(parser, FUNCBODY);
 
 	parser->sx->tc--;
@@ -865,7 +862,7 @@ void function_definition(parser *const parser, const size_t function_id)
 		parser_error(parser, no_ret_in_func);
 	}
 
-	scope_func_exit(parser->sx, pred, old_displ);
+	scope_func_exit(parser->sx, maxdispl_ref, old_displ);
 
 	for (int i = 0; i < parser->pgotost - 1; i += 2)
 	{
@@ -950,7 +947,14 @@ void parse_external_declaration(parser *const parser)
 		if (parser->next_token == star)
 		{
 			consume_token(parser);
-			type = group_type == mode_void ? mode_void_pointer : newdecl(parser->sx, mode_pointer, group_type);
+			if (group_type == mode_void)
+			{
+				type = mode_void_pointer;
+			}
+			else
+			{
+				type = newdecl(parser->sx, mode_pointer, group_type);
+			}
 		}
 
 		if (try_consume_token(parser, identifier))
@@ -962,7 +966,7 @@ void parse_external_declaration(parser *const parser)
 				consume_token(parser);
 				consume_token(parser);
 
-				type = func_declarator(parser, 1, 3, type);
+				type = (int)func_declarator(parser, 1, 3, type);
 
 				if (parser->func_def == 0 && parser->next_token == l_brace)
 				{

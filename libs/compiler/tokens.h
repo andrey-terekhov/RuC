@@ -206,7 +206,7 @@ typedef enum TOKEN
 	sh_eval				= SH_EVAL,		/**< '#eval'	keyword */
 	sh_include			= SH_INCLUDE,	/**< '#include'	keyword */
 	sh_file				= SH_FILE,		/**< '#file'	keyword */
-} TOKEN;
+} token;
 
 #ifdef __cplusplus
 } /* extern "C" */

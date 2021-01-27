@@ -22,7 +22,7 @@
 
 
 /**	Check if the set of tokens has token in it*/
-int has_token_set(const unsigned int tokens, const TOKEN token)
+int has_token_set(const unsigned int tokens, const token token)
 {
 	return (tokens & token) != 0;
 }
@@ -174,33 +174,39 @@ void applid(parser *context)
  */
 
 
-void parser_error(parser *const context, const enum ERROR err)
+void parser_error(parser *const parser, const int num, ...)
 {
-	context->was_error = 1;
-	switch (err)
+	parser->was_error = 1;
+
+	va_list args;
+	va_start(args, num);
+
+	error(parser->io, num, args);
+
+	/*switch (num)
 	{
 		case not_primary:
-			error(context->io, err, context->curr_token);
+			error(context->io, num, context->curr_token);
 			break;
 		case bad_toval:
-			error(context->io, err, context->ansttype);
+			error(context->io, num, context->ansttype);
 			break;
 		case wrong_printf_param_type:
 		case printf_unknown_format_placeholder:
-			error(context->io, err, context->bad_printf_placeholder);
+			error(context->io, num, context->bad_printf_placeholder);
 			break;
 		case repeated_decl:
 		case ident_is_not_declared:
 		case repeated_label:
 		case no_field:
-			error(context->io, err, REPRTAB, REPRTAB_POS);
+			error(context->io, num, REPRTAB, REPRTAB_POS);
 			break;
 		case label_not_declared:
-			error(context->io, err, context->sx->hash, REPRTAB, REPRTAB_POS);
+			error(context->io, num, context->sx->hash, REPRTAB, REPRTAB_POS);
 			break;
 		default:
-			error(context->io, err);
-	}
+			error(context->io, num);
+	}*/
 }
 
 void consume_token(parser *const parser)
@@ -209,7 +215,7 @@ void consume_token(parser *const parser)
 	parser->next_token = lex(parser->lxr);
 }
 
-int try_consume_token(parser *const parser, const TOKEN expected)
+int try_consume_token(parser *const parser, const token expected)
 {
 	if (parser->next_token == expected)
 	{
@@ -220,7 +226,7 @@ int try_consume_token(parser *const parser, const TOKEN expected)
 	return 0;
 }
 
-void expect_and_consume_token(parser *const parser, const TOKEN expected, const enum ERROR err)
+void expect_and_consume_token(parser *const parser, const token expected, const enum ERROR err)
 {
 	if (!try_consume_token(parser, expected))
 	{

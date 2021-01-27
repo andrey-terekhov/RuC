@@ -54,20 +54,20 @@ lexer create_lexer(universal_io *const io, syntax *const sx);
 /**
  *	Read next character from io
  *
- *	@param	lxr		Lexer structure
+ *	@param	lexer	Lexer structure
  *
  *	@return	Character
  */
-char32_t get_char(lexer *const lxr);
+char32_t get_char(lexer *const lexer);
 
 /**
  *	Lex next token from io
  *
- *	@param	lxr		Lexer structure
+ *	@param	lexer	Lexer structure
  *
  *	@return	Token
  */
-TOKEN lex(lexer *const lxr);
+token lex(lexer *const lexer);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -839,7 +839,7 @@ void parse_compound_statement(parser *const parser, const block_type type)
 		scope_block_enter(parser->sx, &old_displ, &old_lg);
 	}
 
-	TOKEN end_token = (type == THREAD) ? kw_exit : r_brace;
+	token end_token = (type == THREAD) ? kw_exit : r_brace;
 
 	if (try_consume_token(parser, end_token))
 	{
