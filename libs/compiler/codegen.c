@@ -808,20 +808,16 @@ void compstmt_gen(syntax *const sx, ad *const context)
 /** Генерация кодов */
 int codegen(syntax *const sx)
 {
-	int is_end = 0;
 	node root = node_get_root(sx);
 	tree_set_node(sx, &root);
 
 	ad context;
 
-	tree_next_node(sx);
-
-	while (!is_end)
+	while (tree_next_node(sx) == 0)
 	{
 		switch (node_get_type(tree_get_node(sx)))
 		{
 			case TEnd:
-				is_end = tree_next_node(sx);
 				break;
 			case TFuncdef:
 			{
@@ -837,40 +833,29 @@ int codegen(syntax *const sx)
 				tree_next_node(sx);
 				tree_next_node(sx); // TBegin
 				compstmt_gen(sx, &context);
-				tree_next_node(sx); // TEnd
 				mem_set(sx, old_pc, (int)mem_get_size(sx));
 				break;
 			}
 			case TDeclarr:
 			{
 				int N = node_get_arg(tree_get_node(sx), 0);
-
-				tree_next_node(sx);
-
 				for (int i = 0; i < N; i++)
 				{
+					tree_next_node(sx);
 					Expr_gen(sx, 0);
-					tree_next_node(sx); // TExprend
 				}
 				break;
 			}
 			case TDeclid:
-			{
 				Declid_gen(sx);
-				tree_next_node(sx); // TExpend
 				break;
-			}
 			case NOP:
-			{
-				tree_next_node(sx);
 				break;
-			}
 			case TStructbeg:
 			{
 				tocode(sx, B);
 				tocode(sx, 0);
 				proc_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_get_size(sx));
-				tree_next_node(sx);
 				break;
 			}
 			case TStructend:
@@ -879,7 +864,6 @@ int codegen(syntax *const sx)
 
 				tocode(sx, STOP);
 				mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
-				tree_next_node(sx);
 				break;
 			}
 			default:
@@ -890,6 +874,7 @@ int codegen(syntax *const sx)
 			}
 		}
 	}
+
 	tocode(sx, CALL1);
 	tocode(sx, CALL2);
 	tocode(sx, ident_get_displ(sx, sx->main_ref));
