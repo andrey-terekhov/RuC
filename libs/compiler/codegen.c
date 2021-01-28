@@ -386,11 +386,8 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			break;
 		}
 		case TBegin:
-		{
-			tree_next_node(sx); // TBegin
 			compstmt_gen(sx, context);
 			break;
-		}
 		case TIf:
 		{
 			int ref_else = node_get_arg(tree_get_node(sx), 0);
@@ -771,38 +768,32 @@ void Declid_gen(syntax *const sx)
 
 void compstmt_gen(syntax *const sx, ad *const context)
 {
+	tree_next_node(sx); // TBegin
+
 	while (node_get_type(tree_get_node(sx)) != TEnd)
 	{
 		switch (node_get_type(tree_get_node(sx)))
 		{
 			case TDeclarr:
 			{
-				int N = node_get_arg(tree_get_node(sx), 0);
-
-				tree_next_node(sx);
-
+				const int N = node_get_arg(tree_get_node(sx), 0);
 				for (int i = 0; i < N; i++)
 				{
+					tree_next_node(sx);
 					Expr_gen(sx, 0);
-					tree_next_node(sx); // TExprend
 				}
 				break;
 			}
 			case TDeclid:
-			{
 				Declid_gen(sx);
-				tree_next_node(sx); // TExpend
 				break;
-			}
 			default:
-			{
 				Stmt_gen(sx, context);
-				tree_next_node(sx);
 				break;
-			}
 		}
+
+		tree_next_node(sx);
 	}
-	//tree_next_node(sx); // TEnd
 }
 
 /** Генерация кодов */
@@ -831,7 +822,6 @@ int codegen(syntax *const sx)
 				size_t old_pc = mem_get_size(sx);
 				mem_increase(sx, 1);
 				tree_next_node(sx);
-				tree_next_node(sx); // TBegin
 				compstmt_gen(sx, &context);
 				mem_set(sx, old_pc, (int)mem_get_size(sx));
 				break;
