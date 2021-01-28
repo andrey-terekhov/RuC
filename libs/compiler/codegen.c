@@ -22,56 +22,58 @@
 #include "uniprinter.h"
 
 
-typedef struct ad
+typedef struct address
 {
-	size_t adcont;
-	size_t adbreak;
-	size_t adcase;
-} ad;
+	size_t addr_cond;
+	size_t addr_break;
+	size_t addr_case;
+} address;
 
 
-void Declid_gen(syntax *const sx);
-void compstmt_gen(syntax *const sx, ad *const context);
+static void Declid_gen(syntax *const sx);
+static void compstmt_gen(syntax *const sx, address *const context);
+static int declaration(syntax *const sx);
 
 
-void tocode(syntax *const sx, int c)
+static void tocode(syntax *const sx, int c)
 {
 	// printf("tocode tc=%zi pc=%zi) %i\n", sx->tc,
 	// mem_get_size(sx), c);
 	mem_add(sx, c);
 }
 
-void adbreakend(syntax *const sx, ad *const context)
+static void addr_begin_condition(syntax *const sx, address *const context, const size_t addr)
 {
-	while (context->adbreak)
+	while (context->addr_cond != addr)
 	{
-		const size_t r = mem_get(sx, context->adbreak);
-		mem_set(sx, context->adbreak, (int)mem_get_size(sx));
-		context->adbreak = r;
+		const size_t ref = mem_get(sx, context->addr_cond);
+		mem_set(sx, context->addr_cond, (int)addr);
+		context->addr_cond = ref;
 	}
 }
 
-void adcontbeg(syntax *const sx, ad *const context, size_t ad)
+static void addr_end_condition(syntax *const sx, address *const context)
 {
-	while (context->adcont != ad)
+	while (context->addr_cond)
 	{
-		const size_t r = mem_get(sx, context->adcont);
-		mem_set(sx, context->adcont, (int)ad);
-		context->adcont = r;
+		const size_t ref = mem_get(sx, context->addr_cond);
+		mem_set(sx, context->addr_cond, (int)mem_get_size(sx));
+		context->addr_cond = ref;
 	}
 }
 
-void adcontend(syntax *const sx, ad *const context)
+static void addr_end_break(syntax *const sx, address *const context)
 {
-	while (context->adcont != 0)
+	while (context->addr_break)
 	{
-		const size_t r = mem_get(sx, context->adcont);
-		mem_set(sx, context->adcont, (int)mem_get_size(sx));
-		context->adcont = r;
+		const size_t ref = mem_get(sx, context->addr_break);
+		mem_set(sx, context->addr_break, (int)mem_get_size(sx));
+		context->addr_break = ref;
 	}
 }
 
-void finalop(syntax *const sx)
+
+static void finalop(syntax *const sx)
 {
 	int c;
 
@@ -136,7 +138,7 @@ void finalop(syntax *const sx)
  *					@c  0 for usual expression,
  *					@c  1 for expression in condition
  */
-void Expr_gen(syntax *const sx, int mode)
+static void expression(syntax *const sx, int mode)
 {
 	if (mode != -1)
 	{
@@ -192,14 +194,14 @@ void Expr_gen(syntax *const sx, int mode)
 			case TString:
 			case TStringd:
 			{
-				int n = node_get_arg(tree_get_node(sx), 0);
+				const int N = node_get_arg(tree_get_node(sx), 0);
 
 				tocode(sx, LI);
-				size_t res = mem_get_size(sx) + 4;
+				const size_t res = mem_get_size(sx) + 4;
 				tocode(sx, (int)res);
 				tocode(sx, B);
 				mem_increase(sx, 2);
-				for (int i = 0; i < n; i++)
+				for (int i = 0; i < N; i++)
 				{
 					if (operation == TString)
 					{
@@ -211,13 +213,10 @@ void Expr_gen(syntax *const sx, int mode)
 						tocode(sx, node_get_arg(tree_get_node(sx), 2 * i + 1 + 1));
 					}
 				}
-				mem_set(sx, res - 1, n);
+				mem_set(sx, res - 1, N);
 				mem_set(sx, res - 2, (int)mem_get_size(sx));
 				break;
 			}
-			case TDeclid:
-				Declid_gen(sx);
-				break;
 			case TBeginit:
 			{
 				const int N = node_get_arg(tree_get_node(sx), 0);
@@ -227,7 +226,7 @@ void Expr_gen(syntax *const sx, int mode)
 
 				for (int i = 0; i < N; i++)
 				{
-					Expr_gen(sx, 0);
+					expression(sx, 0);
 				}
 				break;
 			}
@@ -236,7 +235,7 @@ void Expr_gen(syntax *const sx, int mode)
 				const int N = node_get_arg(tree_get_node(sx), 0);
 				for (int i = 0; i < N; i++)
 				{
-					Expr_gen(sx, 0);
+					expression(sx, 0);
 				}
 				break;
 			}
@@ -249,7 +248,7 @@ void Expr_gen(syntax *const sx, int mode)
 			{
 				int eltype = node_get_arg(tree_get_node(sx), operation == TSlice ? 0 : 1);
 
-				Expr_gen(sx, 0);
+				expression(sx, 0);
 				tocode(sx, SLICE);
 				tocode(sx, size_of(sx, eltype));
 				if (eltype > 0 && mode_get(sx, eltype) == MARRAY)
@@ -277,7 +276,7 @@ void Expr_gen(syntax *const sx, int mode)
 				const int N = node_get_arg(tree_get_node(sx), 0);
 				for (int i = 0; i < N; i++)
 				{
-					Expr_gen(sx, 0);
+					expression(sx, 0);
 				}
 				break;
 			}
@@ -312,19 +311,19 @@ void Expr_gen(syntax *const sx, int mode)
 				tocode(sx, BE0);
 				size_t adelse = mem_get_size(sx);
 				mem_increase(sx, 1);
-				Expr_gen(sx, 0); // then
+				expression(sx, 0); // then
 				tocode(sx, B);
 				mem_add(sx, (int)ad);
 				ad = mem_get_size(sx) - 1;
 				mem_set(sx, adelse, (int)mem_get_size(sx));
-				Expr_gen(sx, 1); // else или cond
+				expression(sx, 1); // else или cond
 			} while (node_get_type(tree_get_node(sx)) == TCondexpr);
 
 			while (ad)
 			{
-				int r = mem_get(sx, ad);
+				int ref = mem_get(sx, ad);
 				mem_set(sx, ad, (int)mem_get_size(sx));
-				ad = r;
+				ad = ref;
 			}
 
 			finalop(sx);
@@ -332,7 +331,7 @@ void Expr_gen(syntax *const sx, int mode)
 	}
 }
 
-void Stmt_gen(syntax *const sx, ad *const context)
+static void statement(syntax *const sx, address *const context)
 {
 	switch (node_get_type(tree_get_node(sx)))
 	{
@@ -345,90 +344,79 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		case EXITC:
 			tocode(sx, EXITC);
 			break;
-		case TStructbeg:
-		{
-			tocode(sx, B);
-			tocode(sx, 0);
-			proc_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_get_size(sx));
-			break;
-		}
-		case TStructend:
-		{
-			int numproc = node_get_arg(tree_get_node(sx), 0);
-
-			tocode(sx, STOP);
-			mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
-			break;
-		}
 		case TBegin:
 			compstmt_gen(sx, context);
 			break;
 		case TIf:
 		{
-			int ref_else = node_get_arg(tree_get_node(sx), 0);
+			const int ref_else = node_get_arg(tree_get_node(sx), 0);
 
-			Expr_gen(sx, 0);
+			expression(sx, 0);
 			tree_next_node(sx); // TExprend
+
 			tocode(sx, BE0);
-			size_t ad = mem_get_size(sx);
+			size_t addr = mem_get_size(sx);
 			mem_increase(sx, 1);
-			Stmt_gen(sx, context);
+			statement(sx, context);
+
 			if (ref_else)
 			{
 				tree_next_node(sx);
-				mem_set(sx, ad, (int)mem_get_size(sx) + 2);
+				mem_set(sx, addr, (int)mem_get_size(sx) + 2);
 				tocode(sx, B);
-				ad = mem_get_size(sx);
+				addr = mem_get_size(sx);
 				mem_increase(sx, 1);
-				Stmt_gen(sx, context);
+				statement(sx, context);
 			}
-			mem_set(sx, ad, (int)mem_get_size(sx));
-			break;
+			mem_set(sx, addr, (int)mem_get_size(sx));
 		}
+		break;
 		case TWhile:
 		{
-			size_t oldbreak = context->adbreak;
-			size_t oldcont = context->adcont;
-			size_t ad = mem_get_size(sx);
+			size_t old_break = context->addr_break;
+			size_t old_cond = context->addr_cond;
+			size_t addr = mem_get_size(sx);
 
-			context->adcont = ad;
-			Expr_gen(sx, 0);
+			context->addr_cond = addr;
+			expression(sx, 0);
 			tree_next_node(sx); // TExprend
+
 			tocode(sx, BE0);
-			context->adbreak = mem_get_size(sx);
+			context->addr_break = mem_get_size(sx);
 			mem_add(sx, 0);	
-			Stmt_gen(sx, context);
-			adcontbeg(sx, context, ad);
+			statement(sx, context);
+
+			addr_begin_condition(sx, context, addr);
 			tocode(sx, B);
-			tocode(sx, (int)ad);
-			adbreakend(sx, context);
-			context->adbreak = oldbreak;
-			context->adcont = oldcont;
-			break;
+			tocode(sx, (int)addr);
+			addr_end_break(sx, context);
+			context->addr_break = old_break;
+			context->addr_cond = old_cond;
 		}
+		break;
 		case TDo:
 		{
-			size_t oldbreak = context->adbreak;
-			size_t oldcont = context->adcont;
-			size_t ad = mem_get_size(sx);
+			size_t old_break = context->addr_break;
+			size_t old_cond = context->addr_cond;
+			size_t addr = mem_get_size(sx);
 
 			tree_next_node(sx);
 
-			context->adcont = 0;
-			context->adbreak = 0;
+			context->addr_cond = 0;
+			context->addr_break = 0;
 
-			Stmt_gen(sx, context);
-			adcontend(sx, context);
+			statement(sx, context);
+			addr_end_condition(sx, context);
 
-			Expr_gen(sx, 0);
+			expression(sx, 0);
 
 			tocode(sx, BNE0);
-			tocode(sx, (int)ad);
-			adbreakend(sx, context);
-			context->adbreak = oldbreak;
-			context->adcont = oldcont;
-			break;
+			tocode(sx, (int)addr);
+			addr_end_break(sx, context);
+			context->addr_break = old_break;
+			context->addr_cond = old_cond;
 		}
+		break;
 		case TFor:
 		{
 			node *tfor = tree_get_node(sx);
@@ -436,8 +424,8 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			int ref_cond = node_get_arg(tfor, 1);
 			int ref_incr = node_get_arg(tfor, 2);
 
-			size_t oldbreak = context->adbreak;
-			size_t oldcont = context->adcont;
+			size_t old_break = context->addr_break;
+			size_t old_cond = context->addr_cond;
 
 			node incr = *tfor;
 			tree_set_node(sx, &incr);
@@ -445,19 +433,19 @@ void Stmt_gen(syntax *const sx, ad *const context)
 
 			if (ref_from)
 			{
-				Expr_gen(sx, 0); // initialization
+				expression(sx, 0); // initialization
 				child_stmt++;
 			}
 
 			size_t initad = mem_get_size(sx);
-			context->adcont = 0;
-			context->adbreak = 0;
+			context->addr_cond = 0;
+			context->addr_break = 0;
 
 			if (ref_cond)
 			{
-				Expr_gen(sx, 0); // condition
+				expression(sx, 0); // condition
 				tocode(sx, BE0);
-				context->adbreak = mem_get_size(sx);
+				context->addr_break = mem_get_size(sx);
 				mem_add(sx, 0);
 				child_stmt++;
 			}
@@ -470,13 +458,13 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			node stmt = node_get_child(tfor, child_stmt);
 			tree_set_node(sx, &stmt);
 
-			Stmt_gen(sx, context); // ???? был 0
-			adcontend(sx, context);
+			statement(sx, context); // ???? был 0
+			addr_end_condition(sx, context);
 
 			if (ref_incr)
 			{
 				tree_set_node(sx, &incr);
-				Expr_gen(sx, 0); // increment
+				expression(sx, 0); // increment
 			}
 
 			*tfor = stmt;
@@ -484,167 +472,169 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			
 			tocode(sx, B);
 			tocode(sx, (int)initad);
-			adbreakend(sx, context);
-			context->adbreak = oldbreak;
-			context->adcont = oldcont;
-			break;
+			addr_end_break(sx, context);
+			context->addr_break = old_break;
+			context->addr_cond = old_cond;
 		}
+		break;
 		case TGoto:
 		{
-			int id1 = node_get_arg(tree_get_node(sx), 0);
-			int id = id1 > 0 ? id1 : -id1;
-
 			tocode(sx, B);
-			int a = ident_get_displ(sx, id);
 
-			if (a > 0) // метка уже описана
+			const int id_sign = node_get_arg(tree_get_node(sx), 0);
+			const size_t id = id_sign > 0 ? id_sign : -id_sign;
+			const int addr = ident_get_displ(sx, id);
+
+			if (addr > 0) // метка уже описана
 			{
-				tocode(sx, a);
+				tocode(sx, addr);
 			}
 			else // метка еще не описана
 			{
 				ident_set_displ(sx, id, -(int)mem_get_size(sx));
-				tocode(sx, id1 < 0 ? 0 : a);	// первый раз встретился переход на еще
-												// не описанную метку или нет
+
+				// первый раз встретился переход на еще не описанную метку или нет
+				tocode(sx, id_sign < 0 ? 0 : addr);
 			}
-			break;
 		}
+		break;
 		case TLabel:
 		{
-			int id = node_get_arg(tree_get_node(sx), 0);
-			int a = ident_get_displ(sx, id);
+			const int id = node_get_arg(tree_get_node(sx), 0);
+			int addr = ident_get_displ(sx, id);
 
-			if (a < 0) // были переходы на метку
+			if (addr < 0) // были переходы на метку
 			{
-				while (a) // проставить ссылку на метку во всех ранних переходах
+				while (addr) // проставить ссылку на метку во всех ранних переходах
 				{
-					int r = mem_get(sx, -a);
-					mem_set(sx, -a, (int)mem_get_size(sx));
-					a = r;
+					int ref = mem_get(sx, -addr);
+					mem_set(sx, -addr, (int)mem_get_size(sx));
+					addr = ref;
 				}
 			}
 			ident_set_displ(sx, id, (int)mem_get_size(sx));
-			break;
 		}
+		break;
 		case TSwitch:
 		{
-			size_t oldbreak = context->adbreak;
-			size_t oldcase = context->adcase;
+			const size_t old_break = context->addr_break;
+			const size_t old_case = context->addr_case;
 
-			context->adbreak = 0;
-			context->adcase = 0;
+			context->addr_break = 0;
+			context->addr_case = 0;
 
-			Expr_gen(sx, 0);
+			expression(sx, 0);
 			tree_next_node(sx); // TExprend
-			Stmt_gen(sx, context);
-			if (context->adcase > 0)
+			statement(sx, context);
+			if (context->addr_case > 0)
 			{
-				mem_set(sx, context->adcase, (int)mem_get_size(sx));
+				mem_set(sx, context->addr_case, (int)mem_get_size(sx));
 			}
-			context->adcase = oldcase;
-			adbreakend(sx, context);
-			context->adbreak = oldbreak;
-			break;
+			context->addr_case = old_case;
+			addr_end_break(sx, context);
+			context->addr_break = old_break;
 		}
+		break;
 		case TCase:
 		{
-			if (context->adcase)
+			if (context->addr_case)
 			{
-				mem_set(sx, context->adcase, (int)mem_get_size(sx));
+				mem_set(sx, context->addr_case, (int)mem_get_size(sx));
 			}
 			tocode(sx, _DOUBLE);
 
-			Expr_gen(sx, 0);
+			expression(sx, 0);
 			tree_next_node(sx); // TExprend
 			tocode(sx, EQEQ);
 			tocode(sx, BE0);
-			context->adcase = mem_get_size(sx);
+			context->addr_case = mem_get_size(sx);
 			mem_increase(sx, 1);
-			Stmt_gen(sx, context);
-			break;
+			statement(sx, context);
 		}
+		break;
 		case TDefault:
 		{
-			if (context->adcase)
+			if (context->addr_case)
 			{
-				mem_set(sx, context->adcase, (int)mem_get_size(sx));
+				mem_set(sx, context->addr_case, (int)mem_get_size(sx));
 			}
-			context->adcase = 0;
+			context->addr_case = 0;
 
 			tree_next_node(sx);
-			Stmt_gen(sx, context);
-			break;
+			statement(sx, context);
 		}
+		break;
 		case TBreak:
 		{
 			tocode(sx, B);
-			mem_add(sx, (int)context->adbreak);
-			context->adbreak = mem_get_size(sx) - 1;
-			break;
+			mem_add(sx, (int)context->addr_break);
+			context->addr_break = mem_get_size(sx) - 1;
 		}
+		break;
 		case TContinue:
 		{
 			tocode(sx, B);
-			mem_add(sx, (int)context->adcont);
-			context->adcont = mem_get_size(sx) - 1;
-			break;
+			mem_add(sx, (int)context->addr_cond);
+			context->addr_cond = mem_get_size(sx) - 1;
 		}
+		break;
 		case TReturnvoid:
-		{
 			tocode(sx, RETURNVOID);
 			break;
-		}
 		case TReturnval:
 		{
-			int d = node_get_arg(tree_get_node(sx), 0);
-			Expr_gen(sx, 0);
+			const int value = node_get_arg(tree_get_node(sx), 0);
+			expression(sx, 0);
 
 			tocode(sx, RETURNVAL);
-			tocode(sx, d);
-			break;
+			tocode(sx, value);
 		}
+		break;
 		case TPrintid:
 		{
 			tocode(sx, PRINTID);
 			tocode(sx, node_get_arg(tree_get_node(sx), 0)); // ссылка в identtab
-			break;
 		}
+		break;
 		case TPrintf:
 		{
 			tocode(sx, PRINTF);
 			tocode(sx, node_get_arg(tree_get_node(sx), 0)); // общий размер того, что надо вывести
-			break;
 		}
+		break;
 		case TGetid:
 		{
 			tocode(sx, GETID);
 			tocode(sx, node_get_arg(tree_get_node(sx), 0)); // ссылка в identtab
-			break;
 		}
+		break;
 		case SETMOTOR:
 		{
-			Expr_gen(sx, 0);
-			Expr_gen(sx, 0);
+			expression(sx, 0);
+			expression(sx, 0);
 
 			tocode(sx, SETMOTORC);
-			break;
 		}
+		break;
 		default:
 		{
-			Expr_gen(sx, -1);
-			break;
+			if (declaration(sx))
+			{
+				expression(sx, -1);
+			}
 		}
+		break;
 	}
 }
 
-void Struct_init_gen(syntax *const sx)
+static void Struct_init_gen(syntax *const sx)
 {
 	if (node_get_type(tree_get_node(sx)) == TStructinit)
 	{
-		const int n = node_get_arg(tree_get_node(sx), 0);
+		const int N = node_get_arg(tree_get_node(sx), 0);
 		tree_next_node(sx);
 
-		for (int i = 0; i < n; i++)
+		for (int i = 0; i < N; i++)
 		{
 			Struct_init_gen(sx);
 			tree_next_node(sx); // TExprend
@@ -652,11 +642,11 @@ void Struct_init_gen(syntax *const sx)
 	}
 	else
 	{
-		Expr_gen(sx, -1);
+		expression(sx, -1);
 	}
 }
 
-void Declid_gen(syntax *const sx)
+static void Declid_gen(syntax *const sx)
 {
 	int olddispl = node_get_arg(tree_get_node(sx), 0);
 	int telem = node_get_arg(tree_get_node(sx), 1);
@@ -694,7 +684,7 @@ void Declid_gen(syntax *const sx)
 			}
 			else
 			{
-				Expr_gen(sx, 0);
+				expression(sx, 0);
 
 				tocode(sx, telem == LFLOAT ? ASSRV : ASSV);
 				tocode(sx, olddispl);
@@ -715,7 +705,7 @@ void Declid_gen(syntax *const sx)
 
 		if (all) // all == 1, если есть инициализация массива
 		{
-			Expr_gen(sx, 0);
+			expression(sx, 0);
 
 			tocode(sx, ARRINIT); // ARRINIT N d all displ usual
 			tocode(sx, abs(N));
@@ -727,42 +717,64 @@ void Declid_gen(syntax *const sx)
 	}
 }
 
-void compstmt_gen(syntax *const sx, ad *const context)
+static void compstmt_gen(syntax *const sx, address *const context)
 {
 	tree_next_node(sx); // TBegin
 
 	while (node_get_type(tree_get_node(sx)) != TEnd)
 	{
-		switch (node_get_type(tree_get_node(sx)))
-		{
-			case TDeclarr:
-			{
-				const int N = node_get_arg(tree_get_node(sx), 0);
-				for (int i = 0; i < N; i++)
-				{
-					Expr_gen(sx, 0);
-				}
-			}
-			break;
-			case TDeclid:
-				Declid_gen(sx);
-				break;
-			default:
-				Stmt_gen(sx, context);
-				break;
-		}
-
+		statement(sx, context);
 		tree_next_node(sx);
 	}
 }
 
+static int declaration(syntax *const sx)
+{
+	switch (node_get_type(tree_get_node(sx)))
+	{
+		case TDeclarr:
+		{
+			const int N = node_get_arg(tree_get_node(sx), 0);
+			for (int i = 0; i < N; i++)
+			{
+				expression(sx, 0);
+			}
+		}
+		break;
+		case TDeclid:
+			Declid_gen(sx);
+			break;
+
+		case TStructbeg:
+		{
+			tocode(sx, B);
+			tocode(sx, 0);
+			proc_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_get_size(sx));
+		}
+		break;
+		case TStructend:
+		{
+			const int num_proc = node_get_arg(tree_get_node(sx), 0);
+
+			tocode(sx, STOP);
+			mem_set(sx, proc_get(sx, num_proc) - 1, (int)mem_get_size(sx));
+		}
+		break;
+
+		default:
+			return -1;
+	}
+
+	return 0;
+}
+
 /** Генерация кодов */
-int codegen(syntax *const sx)
+static int codegen(syntax *const sx)
 {
 	node root = node_get_root(sx);
 	tree_set_node(sx, &root);
 
-	ad context;
+	address context;
 
 	while (tree_next_node(sx) == 0)
 	{
@@ -787,42 +799,20 @@ int codegen(syntax *const sx)
 				mem_set(sx, old_pc, (int)mem_get_size(sx));
 			}
 			break;
-			case TDeclarr:
-			{
-				const int N = node_get_arg(tree_get_node(sx), 0);
-				for (int i = 0; i < N; i++)
-				{
-					Expr_gen(sx, 0);
-				}
-			}
-			break;
-			case TDeclid:
-				Declid_gen(sx);
-				break;
-
-			case TStructbeg:
-			{
-				tocode(sx, B);
-				tocode(sx, 0);
-				proc_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_get_size(sx));
-			}
-			break;
-			case TStructend:
-			{
-				const int num_proc = node_get_arg(tree_get_node(sx), 0);
-
-				tocode(sx, STOP);
-				mem_set(sx, proc_get(sx, num_proc) - 1, (int)mem_get_size(sx));
-			}
-			break;
 
 			case NOP:
 			case TEnd:
 				break;
 
 			default:
-				printf("tc=%zi tree[tc-2]=%i tree[tc-1]=%i\n", sx->tc, sx->tree[sx->tc - 2], sx->tree[sx->tc - 1]);
-				return -1;
+			{
+				if (declaration(sx))
+				{
+					printf("tc=%zi tree[tc-2]=%i tree[tc-1]=%i\n", sx->tc, sx->tree[sx->tc - 2], sx->tree[sx->tc - 1]);
+					return -1;
+				}
+			}
+			break;
 		}
 	}
 
