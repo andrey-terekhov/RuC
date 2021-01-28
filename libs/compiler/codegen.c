@@ -332,20 +332,21 @@ static void expression(syntax *const sx, node *const nd, int mode)
 
 static void structure(syntax *const sx, node *const nd)
 {
-	if (node_get_type(nd) == TStructinit)
+	node cur = node_get_next(nd);
+	if (node_get_type(&cur) == TStructinit)
 	{
-		const int N = node_get_arg(nd, 0);
-		node_set_next(nd);
-
+		const int N = node_get_arg(&cur, 0);
 		for (int i = 0; i < N; i++)
 		{
-			structure(sx, nd);
-			node_set_next(nd); // TExprend
+			structure(sx, &cur);
 		}
+
+		node_set_next(&cur); // TExprend
+		node_copy(nd, &cur);
 	}
 	else
 	{
-		expression(sx, nd, -1);
+		expression(sx, nd, 0);
 	}
 }
 
@@ -385,7 +386,6 @@ static void identifier(syntax *const sx, node *const nd)
 		{
 			if (type > 0 && mode_get(sx, type) == MSTRUCT)
 			{
-				node_set_next(nd);
 				structure(sx, nd);
 
 				tocode(sx, COPY0STASS);
@@ -599,8 +599,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			{
 				expression(sx, &incr, 0); // increment
 			}
-
-			*nd = stmt;
+			node_copy(nd, &stmt);
 
 			tocode(sx, B);
 			tocode(sx, (int)initad);
