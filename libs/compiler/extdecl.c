@@ -138,15 +138,15 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 
 	context->error_flag = 1;
 
-	if (context->temp_tc > vector_size(&context->sx->tree))
+	if (context->temp_tc > vector_size(&TREE))
 	{
-		vector_increase(&context->sx->tree, context->temp_tc - vector_size(&context->sx->tree));
+		vector_increase(&TREE, context->temp_tc - vector_size(&TREE));
 	}
 	else
 	{
-		while(context->temp_tc < vector_size(&context->sx->tree))
+		while(context->temp_tc < vector_size(&TREE))
 		{
-			vector_remove(&context->sx->tree);
+			vector_remove(&TREE);
 		}
 	}
 
@@ -298,17 +298,17 @@ void mustbe_complex(analyzer *context, int what, int e)
 
 void totree(analyzer *context, item_t op)
 {
-	vector_add(&context->sx->tree, op);
+	vector_add(&TREE, op);
 }
 
 void totreef(analyzer *context, item_t op)
 {
-	vector_add(&context->sx->tree, op);
+	vector_add(&TREE, op);
 	if (context->ansttype == LFLOAT &&
 		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
 	{
-		const size_t index = vector_size(&context->sx->tree) - 1;
-		vector_set(&context->sx->tree, index, vector_get(&context->sx->tree, index) + 50);
+		const size_t index = vector_size(&TREE) - 1;
+		vector_set(&TREE, index, vector_get(&TREE, index) + 50);
 	}
 }
 
@@ -370,7 +370,7 @@ void binop(analyzer *context, int sp)
 	if (op == LOGOR || op == LOGAND)
 	{
 		totree(context, op);
-		context->sx->tree.array[context->stacklog[sp]] = (int)context->sx->tree.size++;
+		TREE.array[context->stacklog[sp]] = (int)TREE.size++;
 	}
 	else
 	{
@@ -402,7 +402,7 @@ void toval(analyzer *context)
 		{
 			if (context->anst == IDENT)
 			{
-				context->sx->tree.size -= 2;
+				TREE.size -= 2;
 				totree(context, COPY0ST);
 				totree(context, context->anstdispl);
 			}
@@ -418,7 +418,7 @@ void toval(analyzer *context)
 	{
 		if (context->anst == IDENT)
 		{
-			context->sx->tree.array[context->sx->tree.size - 2] = is_float(context->ansttype) ? TIdenttovald : TIdenttoval;
+			TREE.array[TREE.size - 2] = is_float(context->ansttype) ? TIdenttovald : TIdenttoval;
 		}
 
 		if (!(is_array(context->sx, context->ansttype) || is_pointer(context->sx, context->ansttype)))
@@ -434,7 +434,7 @@ void toval(analyzer *context)
 
 void insertwiden(analyzer *context)
 {
-	context->sx->tree.size--;
+	TREE.size--;
 	totree(context, WIDEN);
 	totree(context, TExprend);
 }
@@ -457,7 +457,7 @@ void actstring(int type, analyzer *context)
 {
 	scanner(context);
 	totree(context, type == LFLOAT ? TStringd : TString);
-	size_t adn = context->sx->tree.size++;
+	size_t adn = TREE.size++;
 	
 	int n = 0;
 	do
@@ -468,16 +468,16 @@ void actstring(int type, analyzer *context)
 			context->error_flag = 1;
 			return; // 1
 		}
-		if (context->sx->tree.array[context->sx->tree.size - 3] == TConstd)
+		if (TREE.array[TREE.size - 3] == TConstd)
 		{
-			context->sx->tree.array[context->sx->tree.size - 3] = context->sx->tree.array[context->sx->tree.size - 2];
-			context->sx->tree.array[context->sx->tree.size - 2] = context->sx->tree.array[context->sx->tree.size - 1];
-			--context->sx->tree.size;
+			TREE.array[TREE.size - 3] = TREE.array[TREE.size - 2];
+			TREE.array[TREE.size - 2] = TREE.array[TREE.size - 1];
+			--TREE.size;
 		}
-		else if (context->sx->tree.array[context->sx->tree.size - 2] == TConst)
+		else if (TREE.array[TREE.size - 2] == TConst)
 		{
-			context->sx->tree.array[context->sx->tree.size - 2] = context->sx->tree.array[context->sx->tree.size - 1];
-			--context->sx->tree.size;
+			TREE.array[TREE.size - 2] = TREE.array[TREE.size - 1];
+			--TREE.size;
 		}
 		else
 		{
@@ -488,7 +488,7 @@ void actstring(int type, analyzer *context)
 		++n;
 	} while (scanner(context) == COMMA ? scanner(context), 1 : 0);
 
-	context->sx->tree.array[adn] = n;
+	TREE.array[adn] = n;
 	if (context->cur != END)
 	{
 		context_error(context, no_comma_or_end);
@@ -664,7 +664,7 @@ void primaryexpr(analyzer *context)
 	else if (context->cur == FLOAT_CONST)
 	{
 		totree(context, TConstd);
-		double_to_tree(&context->sx->tree, context->lxr->num_double);
+		double_to_tree(&TREE, context->lxr->num_double);
 		context->stackoperands[++context->sopnd] = context->ansttype = LFLOAT;
 		context->anst = NUMBER;
 	}
@@ -1496,8 +1496,8 @@ void postexpr(analyzer *context)
 
 			if (context->anst == IDENT) // a[i]
 			{
-				context->sx->tree.array[context->sx->tree.size - 2] = TSliceident;
-				context->sx->tree.array[context->sx->tree.size - 1] = context->anstdispl;
+				TREE.array[TREE.size - 2] = TSliceident;
+				TREE.array[TREE.size - 1] = context->anstdispl;
 			}
 			else // a[i][j]
 			{
@@ -1539,7 +1539,7 @@ void postexpr(analyzer *context)
 
 			if (context->anst == IDENT)
 			{
-				context->sx->tree.array[context->sx->tree.size - 2] = TIdenttoval;
+				TREE.array[TREE.size - 2] = TIdenttoval;
 			}
 			context->anst = ADDR;
 			// pointer  мог быть значением функции (VAL) или, может быть,
@@ -1599,7 +1599,7 @@ void postexpr(analyzer *context)
 						return; // 1
 					}
 				}
-				context->sx->tree.array[context->sx->tree.size - 1] = context->anstdispl;
+				TREE.array[TREE.size - 1] = context->anstdispl;
 			}
 			else // ADDR
 			{
@@ -1697,7 +1697,7 @@ void unarexpr(analyzer *context)
 
 				if (context->anst == IDENT)
 				{
-					context->sx->tree.array[context->sx->tree.size - 2] = TIdenttoaddr; // &a
+					TREE.array[TREE.size - 2] = TIdenttoaddr; // &a
 				}
 
 				context->stackoperands[context->sopnd] = context->ansttype =
@@ -1715,7 +1715,7 @@ void unarexpr(analyzer *context)
 
 				if (context->anst == IDENT)
 				{
-					context->sx->tree.array[context->sx->tree.size - 2] = TIdenttoval; // *p
+					TREE.array[TREE.size - 2] = TIdenttoval; // *p
 				}
 
 				context->stackoperands[context->sopnd] = context->ansttype = mode_get(context->sx, context->ansttype + 1);
@@ -1732,13 +1732,13 @@ void unarexpr(analyzer *context)
 				}
 				else if (op == LMINUS)
 				{
-					if (context->sx->tree.array[context->sx->tree.size - 2] == TConst)
+					if (TREE.array[TREE.size - 2] == TConst)
 					{
-						context->sx->tree.array[context->sx->tree.size - 1] *= -1;
+						TREE.array[TREE.size - 1] *= -1;
 					}
-					else if (context->sx->tree.array[context->sx->tree.size - 3] == TConstd)
+					else if (TREE.array[TREE.size - 3] == TConstd)
 					{
-						double_to_tree(&context->sx->tree, -double_from_tree(&context->sx->tree));
+						double_to_tree(&TREE, -double_from_tree(&TREE));
 					}
 					else
 					{
@@ -1867,7 +1867,7 @@ void subexpr(analyzer *context)
 		if (p <= 2)
 		{
 			totree(context, p == 1 ? ADLOGOR : ADLOGAND);
-			ad = context->sx->tree.size++;
+			ad = TREE.size++;
 		}
 
 		context->stack[context->sp] = p;
@@ -1952,8 +1952,8 @@ void condexpr(analyzer *context)
 			}
 			else
 			{
-				context->sx->tree.array[context->sx->tree.size] = (item_t)adif;
-				adif = context->sx->tree.size++;
+				TREE.array[TREE.size] = (item_t)adif;
+				adif = TREE.size++;
 			}
 			mustbe(context, COLON, no_colon_in_cond_expr);
 			scanner(context);
@@ -1978,15 +1978,15 @@ void condexpr(analyzer *context)
 		}
 		else
 		{
-			context->sx->tree.array[context->sx->tree.size] = (item_t)adif;
-			adif = context->sx->tree.size++;
+			TREE.array[TREE.size] = (item_t)adif;
+			adif = TREE.size++;
 		}
 
 		while (adif != 0)
 		{
-			size_t r = (size_t)context->sx->tree.array[adif];
-			context->sx->tree.array[adif] = TExprend;
-			context->sx->tree.array[adif - 1] = is_float(globtype) ? WIDEN : NOP;
+			size_t r = (size_t)TREE.array[adif];
+			TREE.array[adif] = TExprend;
+			TREE.array[adif - 1] = is_float(globtype) ? WIDEN : NOP;
 			adif = r;
 		}
 
@@ -2100,12 +2100,12 @@ void struct_init(analyzer *context, int decl_type)
 
 void exprassnvoid(analyzer *context)
 {
-	size_t t = context->sx->tree.array[context->sx->tree.size - 2] < 9000 ? context->sx->tree.size - 3 : context->sx->tree.size - 2;
-	item_t tt = context->sx->tree.array[t];
+	size_t t = TREE.array[TREE.size - 2] < 9000 ? TREE.size - 3 : TREE.size - 2;
+	item_t tt = TREE.array[t];
 	if ((tt >= ASS && tt <= DIVASSAT) || (tt >= POSTINC && tt <= DECAT) || (tt >= ASSR && tt <= DIVASSATR) ||
 		(tt >= POSTINCR && tt <= DECATR))
 	{
-		context->sx->tree.array[t] += 200;
+		TREE.array[t] += 200;
 	}
 	--context->sopnd;
 }
@@ -2376,7 +2376,7 @@ void array_init(analyzer *context, int decl_type)
 				context->buf_flag++;
 			}
 			totree(context, TBeginit);
-			size_t ad = context->sx->tree.size++;
+			size_t ad = TREE.size++;
 
 			int all = 0;
 			do
@@ -2392,7 +2392,7 @@ void array_init(analyzer *context, int decl_type)
 
 			if (context->cur == END)
 			{
-				context->sx->tree.array[ad] = all;
+				TREE.array[ad] = all;
 				totree(context, TExprend);
 			}
 			else
@@ -2510,11 +2510,11 @@ void decl_id(analyzer *context, int decl_type)
 	if (context->next == LEFTSQBR) // это определение массива (может быть многомерным)
 	{
 		totree(context, TDeclarr);
-		adN = context->sx->tree.size++;
+		adN = TREE.size++;
 		// Меняем тип (увеличиваем размерность массива)
 		decl_type = arrdef(context, decl_type);
 		ident_set_mode(context->sx, oldid, decl_type);
-		context->sx->tree.array[adN] = context->arrdim;
+		TREE.array[adN] = context->arrdim;
 		if (context->error_flag == 5)
 		{
 			context->error_flag = 4;
@@ -2531,10 +2531,10 @@ void decl_id(analyzer *context, int decl_type)
 	totree(context, ident_get_displ(context->sx, oldid));												// displ
 	totree(context, elem_type);																		// elem_type
 	totree(context, context->arrdim);																// N
-	size_t all = context->sx->tree.size++; // all - место в дереве, где будет общее количество выражений в инициализации,
+	size_t all = TREE.size++; // all - место в дереве, где будет общее количество выражений в инициализации,
 									// для массивов - только признак (1) наличия инициализации
-	context->sx->tree.array[all] = 0;
-	context->sx->tree.array[context->sx->tree.size++] = is_pointer(context->sx, decl_type) ? 0 : context->was_struct_with_arr; // proc
+	TREE.array[all] = 0;
+	TREE.array[TREE.size++] = is_pointer(context->sx, decl_type) ? 0 : context->was_struct_with_arr; // proc
 	totree(context, context->usual);																	// context->usual
 	totree(context, 0); // массив не в структуре
 
@@ -2542,13 +2542,13 @@ void decl_id(analyzer *context, int decl_type)
 	{
 		scanner(context);
 		scanner(context);
-		context->sx->tree.array[all] = szof(context, decl_type);
+		TREE.array[all] = szof(context, decl_type);
 		if (is_array(context->sx, decl_type)) // инициализация массива
 		{
 			context->onlystrings = 2;
 			if (!context->usual)
 			{
-				context->sx->tree.array[adN]--; // это уменьшение N в Declarr
+				TREE.array[adN]--; // это уменьшение N в Declarr
 			}
 			array_init(context, decl_type);
 			if (context->error_flag == 7)
@@ -2558,7 +2558,7 @@ void decl_id(analyzer *context, int decl_type)
 			}
 			if (context->onlystrings == 1)
 			{
-				context->sx->tree.array[all + 2] = context->usual + 2; // только из строк 2 - без границ, 3 - с границами
+				TREE.array[all + 2] = context->usual + 2; // только из строк 2 - без границ, 3 - с границами
 			}
 		}
 		else
@@ -2676,9 +2676,9 @@ void statement(analyzer *context)
 					break;
 				}
 
-				if (context->sx->tree.size != 0)
+				if (TREE.size != 0)
 				{
-					context->sx->tree.size--;
+					TREE.size--;
 				}
 				totree(context, TPrint);
 				totree(context, context->ansttype);
@@ -2953,18 +2953,18 @@ void statement(analyzer *context)
 			{
 				mustbe(context, LEFTBR, no_leftbr_in_for);
 				totree(context, TFor);
-				size_t fromref = context->sx->tree.size++;
-				size_t condref = context->sx->tree.size++;
-				size_t incrref = context->sx->tree.size++;
-				size_t stmtref = context->sx->tree.size++;
+				size_t fromref = TREE.size++;
+				size_t condref = TREE.size++;
+				size_t incrref = TREE.size++;
+				size_t stmtref = TREE.size++;
 
 				if (scanner(context) == SEMICOLON) // init
 				{
-					context->sx->tree.array[fromref] = 0;
+					TREE.array[fromref] = 0;
 				}
 				else
 				{
-					context->sx->tree.array[fromref] = (int)context->sx->tree.size;
+					TREE.array[fromref] = (int)TREE.size;
 					expr(context, 0);
 					if (context->error_flag == 5)
 					{
@@ -2977,11 +2977,11 @@ void statement(analyzer *context)
 				}
 				if (scanner(context) == SEMICOLON) // cond
 				{
-					context->sx->tree.array[condref] = 0;
+					TREE.array[condref] = 0;
 				}
 				else
 				{
-					context->sx->tree.array[condref] = (int)context->sx->tree.size;
+					TREE.array[condref] = (int)TREE.size;
 					exprval(context);
 					if (context->error_flag == 4)
 					{
@@ -2995,11 +2995,11 @@ void statement(analyzer *context)
 				}
 				if (scanner(context) == RIGHTBR) // incr
 				{
-					context->sx->tree.array[incrref] = 0;
+					TREE.array[incrref] = 0;
 				}
 				else
 				{
-					context->sx->tree.array[incrref] = (int)context->sx->tree.size;
+					TREE.array[incrref] = (int)TREE.size;
 					expr(context, 0);
 					if (context->error_flag == 5)
 					{
@@ -3011,7 +3011,7 @@ void statement(analyzer *context)
 					mustbe(context, RIGHTBR, no_rightbr_in_for);
 				}
 				flagsemicol = 0;
-				context->sx->tree.array[stmtref] = (int)context->sx->tree.size;
+				TREE.array[stmtref] = (int)TREE.size;
 				context->inloop = 1;
 				statement(context);
 			}
@@ -3064,7 +3064,7 @@ void statement(analyzer *context)
 			case LIF:
 			{
 				totree(context, TIf);
-				size_t elseref = context->sx->tree.size++;
+				size_t elseref = TREE.size++;
 				flagsemicol = 0;
 				exprinbrkts(context, cond_must_be_in_brkts);
 				if (context->error_flag == 3)
@@ -3077,12 +3077,12 @@ void statement(analyzer *context)
 				if (context->next == LELSE)
 				{
 					scanner(context);
-					context->sx->tree.array[elseref] = (int)context->sx->tree.size;
+					TREE.array[elseref] = (int)TREE.size;
 					statement(context);
 				}
 				else
 				{
-					context->sx->tree.array[elseref] = 0;
+					TREE.array[elseref] = 0;
 				}
 			}
 			break;
@@ -3225,9 +3225,9 @@ int struct_decl_list(analyzer *context)
 	int locmd = 3;
 
 	loc_modetab[0] = MSTRUCT;
-	size_t tstrbeg = context->sx->tree.size;
+	size_t tstrbeg = TREE.size;
 	totree(context, TStructbeg);
-	context->sx->tree.array[context->sx->tree.size++] = 0; // тут будет номер иниц процедуры
+	TREE.array[TREE.size++] = 0; // тут будет номер иниц процедуры
 
 	scanner(context);
 	scanner(context);
@@ -3245,22 +3245,22 @@ int struct_decl_list(analyzer *context)
 		if (context->next == LEFTSQBR)
 		{
 			totree(context, TDeclarr);
-			size_t adN = context->sx->tree.size++;
+			size_t adN = TREE.size++;
 			t = arrdef(context, elem_type); // Меняем тип (увеличиваем размерность массива)
 			if (context->error_flag == 5)
 			{
 				context->error_flag = 3;
 				return 0;
 			}
-			context->sx->tree.array[adN] = context->arrdim;
+			TREE.array[adN] = context->arrdim;
 
 			totree(context, TDeclid);
 			totree(context, curdispl);
 			totree(context, elem_type);
 			totree(context, context->arrdim);							 // N
-			size_t all = context->sx->tree.size++;
-			context->sx->tree.array[all] = 0;						 // all
-			context->sx->tree.array[context->sx->tree.size++] = context->was_struct_with_arr; // proc
+			size_t all = TREE.size++;
+			TREE.array[all] = 0;						 // all
+			TREE.array[TREE.size++] = context->was_struct_with_arr; // proc
 			totree(context, context->usual);							 // context->usual
 			totree(context, 1); // признак, что массив в структуре
 			wasarr = 1;
@@ -3271,10 +3271,10 @@ int struct_decl_list(analyzer *context)
 				if (is_array(context->sx, t)) // инициализация массива
 				{
 					context->onlystrings = 2;
-					context->sx->tree.array[all] = 1;
+					TREE.array[all] = 1;
 					if (!context->usual)
 					{
-						context->sx->tree.array[adN]--; // это уменьшение N в Declarr
+						TREE.array[adN]--; // это уменьшение N в Declarr
 					}
 					array_init(context, t);
 					if (context->error_flag == 7)
@@ -3284,14 +3284,14 @@ int struct_decl_list(analyzer *context)
 					}
 					if (context->onlystrings == 1)
 					{
-						context->sx->tree.array[all + 2] = context->usual + 2; // только из строк 2 - без
+						TREE.array[all + 2] = context->usual + 2; // только из строк 2 - без
 					}
 					// границ, 3 - с границами
 				}
 				else
 				{
 					// structdispl = context->sx->identab[oldid+3];
-					// context->sx->tree.array[all] = inition(context, t);
+					// TREE.array[all] = inition(context, t);
 				}
 			} // конец ASS
 		}	  // конец LEFTSQBR
@@ -3317,13 +3317,13 @@ int struct_decl_list(analyzer *context)
 		vector_increase(&context->sx->processes, 1);
 
 		totree(context, procd);
-		context->sx->tree.array[tstrbeg + 1] = procd;
+		TREE.array[tstrbeg + 1] = procd;
 		context->was_struct_with_arr = procd;
 	}
 	else
 	{
-		context->sx->tree.array[tstrbeg] = NOP;
-		context->sx->tree.array[tstrbeg + 1] = NOP;
+		TREE.array[tstrbeg] = NOP;
+		TREE.array[tstrbeg + 1] = NOP;
 	}
 
 	loc_modetab[1] = curdispl; // тут длина структуры
@@ -3569,17 +3569,17 @@ void function_definition(analyzer *context)
 			return; // 1
 		}
 	}
-	func_set(context->sx, fn, (int)context->sx->tree.size);
+	func_set(context->sx, fn, (int)TREE.size);
 	totree(context, TFuncdef);
 	totree(context, fid);
-	pred = (int)context->sx->tree.size++;
+	pred = (int)TREE.size++;
 	REPRTAB_POS = oldrepr;
 
 	block(context, 0);
 
-	// if (ftype == LVOID && context->sx->tree.array[context->sx->tree.size - 1] != TReturnvoid)
+	// if (ftype == LVOID && TREE.array[TREE.size - 1] != TReturnvoid)
 	// {
-	context->sx->tree.size--;
+	TREE.size--;
 	totree(context, TReturnvoid);
 	totree(context, TEnd);
 	// }
@@ -3813,7 +3813,7 @@ void ext_decl(analyzer *context)
 	get_char(context->lxr);
 	context->next = lex(context->lxr);
 	
-	context->temp_tc = context->sx->tree.size;
+	context->temp_tc = TREE.size;
 	do // top levext_declel описания переменных и функций до конца файла
 	{
 		int repeat = 1;
