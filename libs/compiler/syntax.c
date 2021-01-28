@@ -121,7 +121,6 @@ int sx_init(syntax *const sx)
 		sx->hashtab[i] = 0;
 	}
 
-	sx->current = NULL;
 	sx->max_threads = 0;
 
 	return 0;
@@ -617,31 +616,4 @@ int scope_func_exit(syntax *const sx, const size_t decl_ref, const int displ)
 	sx->displ = displ;
 	
 	return 0;
-}
-
-
-int tree_set_node(syntax *const sx, node *const nd)
-{
-	if (sx == NULL || !node_is_correct(nd))
-	{
-		return -1;
-	}
-
-	sx->current = nd;
-	return 0;
-}
-
-int tree_next_node(syntax *const sx)
-{
-	return sx != NULL ? node_set_next(sx->current) : -1;
-}
-
-node *tree_get_node(syntax *const sx)
-{
-	if (sx == NULL || !node_is_correct(sx->current))
-	{
-		return NULL;
-	}
-
-	return sx->current;
 }
