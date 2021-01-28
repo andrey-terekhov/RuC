@@ -127,9 +127,21 @@ void finalop(syntax *const sx)
 	}
 }
 
-int Expr_gen(syntax *const sx, int incond)
+
+/**
+ *	Expression generation
+ *
+ *	@param	sx		Syntax structure
+ *	@param	mode	@c -1 for expression on the same node,
+ *					@c  0 for usual expression,
+ *					@c  1 for expression in condition
+ */
+void Expr_gen(syntax *const sx, int mode)
 {
-	int was_string = 0;
+	if (mode != -1)
+	{
+		tree_next_node(sx);
+	}
 
 	while (node_get_type(tree_get_node(sx)) != TExprend)
 	{
@@ -201,7 +213,6 @@ int Expr_gen(syntax *const sx, int incond)
 				}
 				mem_set(sx, res - 1, n);
 				mem_set(sx, res - 2, (int)mem_get_size(sx));
-				was_string = 1;
 				break;
 			}
 			case TDeclid:
@@ -216,7 +227,6 @@ int Expr_gen(syntax *const sx, int incond)
 
 				for (int i = 0; i < N; i++)
 				{
-					tree_next_node(sx);
 					Expr_gen(sx, 0);
 				}
 				break;
@@ -226,7 +236,6 @@ int Expr_gen(syntax *const sx, int incond)
 				const int N = node_get_arg(tree_get_node(sx), 0);
 				for (int i = 0; i < N; i++)
 				{
-					tree_next_node(sx);
 					Expr_gen(sx, 0);
 				}
 				break;
@@ -240,7 +249,6 @@ int Expr_gen(syntax *const sx, int incond)
 			{
 				int eltype = node_get_arg(tree_get_node(sx), operation == TSlice ? 0 : 1);
 
-				tree_next_node(sx);
 				Expr_gen(sx, 0);
 				tocode(sx, SLICE);
 				tocode(sx, size_of(sx, eltype));
@@ -269,7 +277,6 @@ int Expr_gen(syntax *const sx, int incond)
 				const int N = node_get_arg(tree_get_node(sx), 0);
 				for (int i = 0; i < N; i++)
 				{
-					tree_next_node(sx);
 					Expr_gen(sx, 0);
 				}
 				break;
@@ -294,40 +301,35 @@ int Expr_gen(syntax *const sx, int incond)
 
 		if (node_get_type(tree_get_node(sx)) == TCondexpr)
 		{
-			if (incond)
+			if (mode == 1)
 			{
-				return was_string;
+				return;
 			}
-			else
-			{
-				size_t ad = 0;
-				do
-				{
-					tocode(sx, BE0);
-					size_t adelse = mem_get_size(sx);
-					mem_increase(sx, 1);
-					tree_next_node(sx);
-					Expr_gen(sx, 0); // then
-					tree_next_node(sx); // TExprend
-					tocode(sx, B);
-					mem_add(sx, (int)ad);
-					ad = mem_get_size(sx) - 1;
-					mem_set(sx, adelse, (int)mem_get_size(sx));
-					Expr_gen(sx, 1); // else или cond
-				} while (node_get_type(tree_get_node(sx)) == TCondexpr);
 
-				while (ad)
-				{
-					int r = mem_get(sx, ad);
-					mem_set(sx, ad, (int)mem_get_size(sx));
-					ad = r;
-				}
+			size_t ad = 0;
+			do
+			{
+				tocode(sx, BE0);
+				size_t adelse = mem_get_size(sx);
+				mem_increase(sx, 1);
+				Expr_gen(sx, 0); // then
+				tocode(sx, B);
+				mem_add(sx, (int)ad);
+				ad = mem_get_size(sx) - 1;
+				mem_set(sx, adelse, (int)mem_get_size(sx));
+				Expr_gen(sx, 1); // else или cond
+			} while (node_get_type(tree_get_node(sx)) == TCondexpr);
+
+			while (ad)
+			{
+				int r = mem_get(sx, ad);
+				mem_set(sx, ad, (int)mem_get_size(sx));
+				ad = r;
 			}
 
 			finalop(sx);
 		}
 	}
-	return was_string;
 }
 
 void Stmt_gen(syntax *const sx, ad *const context)
@@ -365,7 +367,6 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			int ref_else = node_get_arg(tree_get_node(sx), 0);
 
-			tree_next_node(sx);
 			Expr_gen(sx, 0);
 			tree_next_node(sx); // TExprend
 			tocode(sx, BE0);
@@ -390,7 +391,6 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			size_t oldcont = context->adcont;
 			size_t ad = mem_get_size(sx);
 
-			tree_next_node(sx);
 			context->adcont = ad;
 			Expr_gen(sx, 0);
 			tree_next_node(sx); // TExprend
@@ -420,7 +420,6 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			Stmt_gen(sx, context);
 			adcontend(sx, context);
 
-			tree_next_node(sx);
 			Expr_gen(sx, 0);
 
 			tocode(sx, BNE0);
@@ -440,14 +439,13 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			size_t oldbreak = context->adbreak;
 			size_t oldcont = context->adcont;
 
-			node temp = node_get_child(tfor, 0);
-			tree_set_node(sx, &temp);
+			node incr = *tfor;
+			tree_set_node(sx, &incr);
 			size_t child_stmt = 0;
 
 			if (ref_from)
 			{
-				Expr_gen(sx, 0); // init
-				tree_next_node(sx); // TExprend
+				Expr_gen(sx, 0); // initialization
 				child_stmt++;
 			}
 
@@ -457,8 +455,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 
 			if (ref_cond)
 			{
-				Expr_gen(sx, 0); // cond
-				tree_next_node(sx); // TExprend
+				Expr_gen(sx, 0); // condition
 				tocode(sx, BE0);
 				context->adbreak = mem_get_size(sx);
 				mem_add(sx, 0);
@@ -470,19 +467,19 @@ void Stmt_gen(syntax *const sx, ad *const context)
 				child_stmt++;
 			}
 
-			temp = node_get_child(tfor, child_stmt);
+			node stmt = node_get_child(tfor, child_stmt);
+			tree_set_node(sx, &stmt);
 
 			Stmt_gen(sx, context); // ???? был 0
 			adcontend(sx, context);
 
 			if (ref_incr)
 			{
-				node incr = node_get_child(tfor, child_stmt - 1);
 				tree_set_node(sx, &incr);
-				Expr_gen(sx, 0); // incr
+				Expr_gen(sx, 0); // increment
 			}
 
-			*tfor = temp;
+			*tfor = stmt;
 			tree_set_node(sx, tfor);
 			
 			tocode(sx, B);
@@ -537,7 +534,6 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			context->adbreak = 0;
 			context->adcase = 0;
 
-			tree_next_node(sx);
 			Expr_gen(sx, 0);
 			tree_next_node(sx); // TExprend
 			Stmt_gen(sx, context);
@@ -558,7 +554,6 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			}
 			tocode(sx, _DOUBLE);
 
-			tree_next_node(sx);
 			Expr_gen(sx, 0);
 			tree_next_node(sx); // TExprend
 			tocode(sx, EQEQ);
@@ -602,8 +597,6 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		case TReturnval:
 		{
 			int d = node_get_arg(tree_get_node(sx), 0);
-
-			tree_next_node(sx);
 			Expr_gen(sx, 0);
 
 			tocode(sx, RETURNVAL);
@@ -630,10 +623,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		case SETMOTOR:
 		{
-			tree_next_node(sx);
 			Expr_gen(sx, 0);
-			tree_next_node(sx); // TExprend
-
 			Expr_gen(sx, 0);
 
 			tocode(sx, SETMOTORC);
@@ -641,7 +631,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		}
 		default:
 		{
-			Expr_gen(sx, 0);
+			Expr_gen(sx, -1);
 			break;
 		}
 	}
@@ -662,7 +652,7 @@ void Struct_init_gen(syntax *const sx)
 	}
 	else
 	{
-		Expr_gen(sx, 0);
+		Expr_gen(sx, -1);
 	}
 }
 
@@ -704,7 +694,6 @@ void Declid_gen(syntax *const sx)
 			}
 			else
 			{
-				tree_next_node(sx);
 				Expr_gen(sx, 0);
 
 				tocode(sx, telem == LFLOAT ? ASSRV : ASSV);
@@ -726,7 +715,6 @@ void Declid_gen(syntax *const sx)
 
 		if (all) // all == 1, если есть инициализация массива
 		{
-			tree_next_node(sx);
 			Expr_gen(sx, 0);
 
 			tocode(sx, ARRINIT); // ARRINIT N d all displ usual
@@ -752,7 +740,6 @@ void compstmt_gen(syntax *const sx, ad *const context)
 				const int N = node_get_arg(tree_get_node(sx), 0);
 				for (int i = 0; i < N; i++)
 				{
-					tree_next_node(sx);
 					Expr_gen(sx, 0);
 				}
 			}
@@ -805,7 +792,6 @@ int codegen(syntax *const sx)
 				const int N = node_get_arg(tree_get_node(sx), 0);
 				for (int i = 0; i < N; i++)
 				{
-					tree_next_node(sx);
 					Expr_gen(sx, 0);
 				}
 			}
