@@ -129,56 +129,45 @@ void finalop(syntax *const sx)
 
 int Expr_gen(syntax *const sx, int incond)
 {
-	int wasstring = 0;
-	int op;
+	int was_string = 0;
 
 	while (node_get_type(tree_get_node(sx)) != TExprend)
 	{
-		switch (op = node_get_type(tree_get_node(sx)))
+		const int operation = node_get_type(tree_get_node(sx));
+		int was_operation = 1;
+
+		switch (operation)
 		{
 			case TIdent:
-			{
-				tree_next_node(sx);
 				break;
-			}
 			case TIdenttoaddr:
 			{
 				tocode(sx, LA);
 				tocode(sx, node_get_arg(tree_get_node(sx), 0));
-				tree_next_node(sx);
 				break;
 			}
 			case TIdenttoval:
 			{
 				tocode(sx, LOAD);
 				tocode(sx, node_get_arg(tree_get_node(sx), 0));
-				tree_next_node(sx);
 				break;
 			}
 			case TIdenttovald:
 			{
 				tocode(sx, LOADD);
 				tocode(sx, node_get_arg(tree_get_node(sx), 0));
-				tree_next_node(sx);
 				break;
 			}
 			case TAddrtoval:
-			{
 				tocode(sx, LAT);
-				tree_next_node(sx);
 				break;
-			}
 			case TAddrtovald:
-			{
 				tocode(sx, LATD);
-				tree_next_node(sx);
 				break;
-			}
 			case TConst:
 			{
 				tocode(sx, LI);
 				tocode(sx, node_get_arg(tree_get_node(sx), 0));
-				tree_next_node(sx);
 				break;
 			}
 			case TConstd:
@@ -186,7 +175,6 @@ int Expr_gen(syntax *const sx, int incond)
 				tocode(sx, LID);
 				tocode(sx, node_get_arg(tree_get_node(sx), 0));
 				tocode(sx, node_get_arg(tree_get_node(sx), 1));
-				tree_next_node(sx);
 				break;
 			}
 			case TString:
@@ -201,7 +189,7 @@ int Expr_gen(syntax *const sx, int incond)
 				mem_increase(sx, 2);
 				for (int i = 0; i < n; i++)
 				{
-					if (op == TString)
+					if (operation == TString)
 					{
 						tocode(sx, node_get_arg(tree_get_node(sx), i + 1));
 					}
@@ -213,43 +201,33 @@ int Expr_gen(syntax *const sx, int incond)
 				}
 				mem_set(sx, res - 1, n);
 				mem_set(sx, res - 2, (int)mem_get_size(sx));
-				wasstring = 1;
-				tree_next_node(sx);
+				was_string = 1;
 				break;
 			}
 			case TDeclid:
-			{
 				Declid_gen(sx);
-				tree_next_node(sx); // TExpend
 				break;
-			}
 			case TBeginit:
 			{
-				int n = node_get_arg(tree_get_node(sx), 0);
-				int i;
+				const int N = node_get_arg(tree_get_node(sx), 0);
 
 				tocode(sx, BEGINIT);
-				tocode(sx, n);
-				tree_next_node(sx);
+				tocode(sx, N);
 
-				for (i = 0; i < n; i++)
+				for (int i = 0; i < N; i++)
 				{
+					tree_next_node(sx);
 					Expr_gen(sx, 0);
-					tree_next_node(sx); // TExpend
 				}
 				break;
 			}
 			case TStructinit:
 			{
-				int n = node_get_arg(tree_get_node(sx), 0);
-				int i;
-
-				tree_next_node(sx);
-
-				for (i = 0; i < n; i++)
+				const int N = node_get_arg(tree_get_node(sx), 0);
+				for (int i = 0; i < N; i++)
 				{
+					tree_next_node(sx);
 					Expr_gen(sx, 0);
-					tree_next_node(sx); // TExprend
 				}
 				break;
 			}
@@ -260,11 +238,10 @@ int Expr_gen(syntax *const sx, int incond)
 			}
 			case TSlice: // параметр - тип элемента
 			{
-				int eltype = node_get_arg(tree_get_node(sx), (node_get_type(tree_get_node(sx)) == TSlice) ? 0 : 1);
+				int eltype = node_get_arg(tree_get_node(sx), operation == TSlice ? 0 : 1);
 
 				tree_next_node(sx);
 				Expr_gen(sx, 0);
-				tree_next_node(sx); // TExprend
 				tocode(sx, SLICE);
 				tocode(sx, size_of(sx, eltype));
 				if (eltype > 0 && mode_get(sx, eltype) == MARRAY)
@@ -277,43 +254,40 @@ int Expr_gen(syntax *const sx, int incond)
 			{
 				tocode(sx, SELECT); // SELECT field_displ
 				tocode(sx, node_get_arg(tree_get_node(sx), 0));
-				tree_next_node(sx);
 				break;
 			}
 			case TPrint:
 			{
 				tocode(sx, PRINT);
 				tocode(sx, node_get_arg(tree_get_node(sx), 0)); // type
-				tree_next_node(sx);
 				break;
 			}
 			case TCall1:
 			{
-				int i;
-				int n = node_get_arg(tree_get_node(sx), 0);
-
 				tocode(sx, CALL1);
-				tree_next_node(sx);
 
-				for (i = 0; i < n; i++)
+				const int N = node_get_arg(tree_get_node(sx), 0);
+				for (int i = 0; i < N; i++)
 				{
+					tree_next_node(sx);
 					Expr_gen(sx, 0);
-					tree_next_node(sx); // TExprend
 				}
 				break;
 			}
 			case TCall2:
 			{
 				tocode(sx, CALL2);
-
 				tocode(sx, ident_get_displ(sx, node_get_arg(tree_get_node(sx), 0)));
-				tree_next_node(sx);
 				break;
 			}
 			default:
-			{
+				was_operation = 0;
 				break;
-			}
+		}
+
+		if (was_operation)
+		{
+			tree_next_node(sx);
 		}
 
 		finalop(sx);
@@ -322,7 +296,7 @@ int Expr_gen(syntax *const sx, int incond)
 		{
 			if (incond)
 			{
-				return wasstring;
+				return was_string;
 			}
 			else
 			{
@@ -353,8 +327,7 @@ int Expr_gen(syntax *const sx, int incond)
 			finalop(sx);
 		}
 	}
-	//tree_next_node(sx);
-	return wasstring;
+	return was_string;
 }
 
 void Stmt_gen(syntax *const sx, ad *const context)
@@ -840,6 +813,7 @@ int codegen(syntax *const sx)
 			case TDeclid:
 				Declid_gen(sx);
 				break;
+
 			case TStructbeg:
 			{
 				tocode(sx, B);
@@ -855,9 +829,11 @@ int codegen(syntax *const sx)
 				mem_set(sx, proc_get(sx, num_proc) - 1, (int)mem_get_size(sx));
 			}
 			break;
+
 			case NOP:
 			case TEnd:
 				break;
+
 			default:
 				printf("tc=%zi tree[tc-2]=%i tree[tc-1]=%i\n", sx->tc, sx->tree[sx->tc - 2], sx->tree[sx->tc - 1]);
 				return -1;
