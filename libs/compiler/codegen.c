@@ -362,29 +362,19 @@ void Stmt_gen(syntax *const sx, ad *const context)
 	switch (node_get_type(tree_get_node(sx)))
 	{
 		case NOP:
-		{
-			tree_next_node(sx);
 			break;
-		}
 		case CREATEDIRECTC:
-		{
 			tocode(sx, CREATEDIRECTC);
-			tree_next_node(sx);
 			break;
-		}
 		case EXITDIRECTC:
 		case EXITC:
-		{
 			tocode(sx, EXITC);
-			tree_next_node(sx);
 			break;
-		}
 		case TStructbeg:
 		{
 			tocode(sx, B);
 			tocode(sx, 0);
 			proc_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_get_size(sx));
-			tree_next_node(sx);
 			break;
 		}
 		case TStructend:
@@ -392,15 +382,13 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			int numproc = node_get_arg(tree_get_node(sx), 0);
 
 			tocode(sx, STOP);
-			mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));	
-			tree_next_node(sx);
+			mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
 			break;
 		}
 		case TBegin:
 		{
 			tree_next_node(sx); // TBegin
 			compstmt_gen(sx, context);
-			tree_next_node(sx); // TEnd
 			break;
 		}
 		case TIf:
@@ -416,6 +404,7 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			Stmt_gen(sx, context);
 			if (ref_else)
 			{
+				tree_next_node(sx);
 				mem_set(sx, ad, (int)mem_get_size(sx) + 2);
 				tocode(sx, B);
 				ad = mem_get_size(sx);
@@ -460,8 +449,10 @@ void Stmt_gen(syntax *const sx, ad *const context)
 
 			Stmt_gen(sx, context);
 			adcontend(sx, context);
+
+			tree_next_node(sx);
 			Expr_gen(sx, 0);
-			tree_next_node(sx); // TExprend
+
 			tocode(sx, BNE0);
 			tocode(sx, (int)ad);
 			adbreakend(sx, context);
@@ -519,7 +510,6 @@ void Stmt_gen(syntax *const sx, ad *const context)
 				node incr = node_get_child(tfor, child_stmt - 1);
 				tree_set_node(sx, &incr);
 				Expr_gen(sx, 0); // incr
-				tree_next_node(sx); // TExprend
 			}
 
 			*tfor = temp;
@@ -550,8 +540,6 @@ void Stmt_gen(syntax *const sx, ad *const context)
 				tocode(sx, id1 < 0 ? 0 : a);	// первый раз встретился переход на еще
 												// не описанную метку или нет
 			}
-
-			tree_next_node(sx);
 			break;
 		}
 		case TLabel:
@@ -569,7 +557,6 @@ void Stmt_gen(syntax *const sx, ad *const context)
 				}
 			}
 			ident_set_displ(sx, id, (int)mem_get_size(sx));
-			tree_next_node(sx);
 			break;
 		}
 		case TSwitch:
@@ -628,8 +615,6 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			tocode(sx, B);
 			mem_add(sx, (int)context->adbreak);
 			context->adbreak = mem_get_size(sx) - 1;
-
-			tree_next_node(sx);
 			break;
 		}
 		case TContinue:
@@ -637,22 +622,20 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			tocode(sx, B);
 			mem_add(sx, (int)context->adcont);
 			context->adcont = mem_get_size(sx) - 1;
-			tree_next_node(sx);
 			break;
 		}
 		case TReturnvoid:
 		{
 			tocode(sx, RETURNVOID);
-			tree_next_node(sx);
 			break;
 		}
 		case TReturnval:
 		{
 			int d = node_get_arg(tree_get_node(sx), 0);
-			tree_next_node(sx);
 
+			tree_next_node(sx);
 			Expr_gen(sx, 0);
-			tree_next_node(sx); // TExprend
+
 			tocode(sx, RETURNVAL);
 			tocode(sx, d);
 			break;
@@ -661,22 +644,18 @@ void Stmt_gen(syntax *const sx, ad *const context)
 		{
 			tocode(sx, PRINTID);
 			tocode(sx, node_get_arg(tree_get_node(sx), 0)); // ссылка в identtab
-			tree_next_node(sx);
 			break;
 		}
 		case TPrintf:
 		{
 			tocode(sx, PRINTF);
-			tocode(sx, node_get_arg(tree_get_node(sx), 0)); // общий размер того,
-														   // что надо вывести
-			tree_next_node(sx);
+			tocode(sx, node_get_arg(tree_get_node(sx), 0)); // общий размер того, что надо вывести
 			break;
 		}
 		case TGetid:
 		{
 			tocode(sx, GETID);
 			tocode(sx, node_get_arg(tree_get_node(sx), 0)); // ссылка в identtab
-			tree_next_node(sx);
 			break;
 		}
 		case SETMOTOR:
@@ -684,15 +663,15 @@ void Stmt_gen(syntax *const sx, ad *const context)
 			tree_next_node(sx);
 			Expr_gen(sx, 0);
 			tree_next_node(sx); // TExprend
+
 			Expr_gen(sx, 0);
-			tree_next_node(sx); // TExprend
+
 			tocode(sx, SETMOTORC);
 			break;
 		}
 		default:
 		{
 			Expr_gen(sx, 0);
-			tree_next_node(sx); // TExprend
 			break;
 		}
 	}
@@ -818,6 +797,7 @@ void compstmt_gen(syntax *const sx, ad *const context)
 			default:
 			{
 				Stmt_gen(sx, context);
+				tree_next_node(sx);
 				break;
 			}
 		}
