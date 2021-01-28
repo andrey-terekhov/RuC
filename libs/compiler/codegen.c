@@ -814,7 +814,7 @@ static int codegen(syntax *const sx)
 			{
 				if (declaration(sx))
 				{
-					printf("tc=%zi tree[tc-2]=%i tree[tc-1]=%i\n", sx->tc, sx->tree[sx->tc - 2], sx->tree[sx->tc - 1]);
+					error(NULL, node_unexpected, node_get_type(tree_get_node(sx)));
 					return -1;
 				}
 			}
