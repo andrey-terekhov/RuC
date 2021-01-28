@@ -699,26 +699,20 @@ void Stmt_gen(syntax *const sx, ad *const context)
 
 void Struct_init_gen(syntax *const sx)
 {
-	int i;
-	int n;
-
-
 	if (node_get_type(tree_get_node(sx)) == TStructinit)
 	{
-		n = node_get_arg(tree_get_node(sx), 0);
-
+		const int n = node_get_arg(tree_get_node(sx), 0);
 		tree_next_node(sx);
 
-		for (i = 0; i < n; i++)
+		for (int i = 0; i < n; i++)
 		{
 			Struct_init_gen(sx);
+			tree_next_node(sx); // TExprend
 		}
-		tree_next_node(sx); // TExprend
 	}
 	else
 	{
 		Expr_gen(sx, 0);
-		tree_next_node(sx); // TExprend
 	}
 }
 
@@ -753,6 +747,7 @@ void Declid_gen(syntax *const sx)
 			if (telem > 0 && mode_get(sx, telem) == MSTRUCT)
 			{
 				Struct_init_gen(sx);
+				tree_next_node(sx); // TExprend
 				tocode(sx, COPY0STASS);
 				tocode(sx, olddispl);
 				tocode(sx, all); // общее кол-во слов
