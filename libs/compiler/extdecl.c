@@ -137,7 +137,11 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 	}
 
 	context->error_flag = 1;
-	context->sx->tree.size = context->temp_tc;
+	while (vector_size (&context->sx->tree) < context->temp_tc)
+	{
+		vector_increase(&context->sx->tree, 1);
+	}
+	//context->sx->tree.size = context->temp_tc;
 
 	/*if (!context->new_line_flag && context->curchar != EOF)
 	{
@@ -287,16 +291,20 @@ void mustbe_complex(analyzer *context, int what, int e)
 
 void totree(analyzer *context, int op)
 {
-	context->sx->tree.array[context->sx->tree.size++] = op;
+	vector_add(&context->sx->tree, op);
+	//context->sx->tree.array[context->sx->tree.size++] = op;
 }
 
 void totreef(analyzer *context, int op)
 {
-	context->sx->tree.array[context->sx->tree.size++] = op;
+	vector_add(&context->sx->tree, op);
+	//context->sx->tree.array[context->sx->tree.size++] = op;
 	if (context->ansttype == LFLOAT &&
 		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
 	{
-		context->sx->tree.array[context->sx->tree.size - 1] += 50;
+		vector_set(&context->sx->tree, vector_size(&context->sx->tree) - 1
+			, vector_get(&context->sx->tree, vector_size(&context->sx->tree) - 1) + 50);
+		//context->sx->tree.array[context->sx->tree.size - 1] += 50;
 	}
 }
 
