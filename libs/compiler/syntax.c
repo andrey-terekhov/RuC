@@ -122,6 +122,7 @@ int sx_init(syntax *const sx)
 	}
 
 	sx->current = NULL;
+	sx->max_threads = 0;
 
 	return 0;
 }

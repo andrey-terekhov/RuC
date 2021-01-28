@@ -476,6 +476,7 @@ static void statement(syntax *const sx, address *const context)
 			break;
 		case CREATEDIRECTC:
 			tocode(sx, CREATEDIRECTC);
+			sx->max_threads++;
 			break;
 		case EXITDIRECTC:
 		case EXITC:
@@ -835,7 +836,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
 	uni_printf(io, "%zi %zi %zi %zi %zi %i %zi\n", mem_size(sx), sx->funcnum, sx->id,
-				   sx->rp, sx->md, sx->maxdisplg, sx->ref_main);
+				   sx->rp, sx->md, sx->maxdisplg, sx->max_threads);
 
 	for (size_t i = 0; i < mem_size(sx); i++)
 	{

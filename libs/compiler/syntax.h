@@ -32,7 +32,7 @@ typedef struct node node;
 /** Global vars definition */
 typedef struct syntax
 {
-	// mem, pc & iniprocs - usage here only for codes printing
+	// mem, pc, iniprocs & max_threads - usage here only for codes printing
 
 	int mem[MAXMEMSIZE];			/**< Memory */
 	int pc;							/**< Program counter */
@@ -74,6 +74,8 @@ typedef struct syntax
 	int lg;							/**< Displacement from l (+1) or g (-1) */
 	
 	int keywordsnum;				/**< Number of read keyword */
+
+	size_t max_threads;				/**< Max threads count */
 
 	node *current; 					/**< Current node during traversing the tree */
 } syntax;
