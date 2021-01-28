@@ -782,8 +782,8 @@ void compstmt_gen(syntax *const sx, ad *const context)
 					tree_next_node(sx);
 					Expr_gen(sx, 0);
 				}
-				break;
 			}
+			break;
 			case TDeclid:
 				Declid_gen(sx);
 				break;
@@ -808,68 +808,66 @@ int codegen(syntax *const sx)
 	{
 		switch (node_get_type(tree_get_node(sx)))
 		{
-			case TEnd:
-				break;
 			case TFuncdef:
 			{
-				int identref = node_get_arg(tree_get_node(sx), 0);
-				int maxdispl = node_get_arg(tree_get_node(sx), 1);
-				int fn = ident_get_displ(sx, identref);
+				const int ref_ident = node_get_arg(tree_get_node(sx), 0);
+				const int max_displ = node_get_arg(tree_get_node(sx), 1);				
+				const int func = ident_get_displ(sx, ref_ident);
 
-				func_set(sx, fn, mem_get_size(sx));
+				func_set(sx, func, mem_get_size(sx));
 				tocode(sx, FUNCBEG);
-				tocode(sx, maxdispl);
-				size_t old_pc = mem_get_size(sx);
+				tocode(sx, max_displ);
+
+				const size_t old_pc = mem_get_size(sx);
 				mem_increase(sx, 1);
+
 				tree_next_node(sx);
 				compstmt_gen(sx, &context);
+
 				mem_set(sx, old_pc, (int)mem_get_size(sx));
-				break;
 			}
+			break;
 			case TDeclarr:
 			{
-				int N = node_get_arg(tree_get_node(sx), 0);
+				const int N = node_get_arg(tree_get_node(sx), 0);
 				for (int i = 0; i < N; i++)
 				{
 					tree_next_node(sx);
 					Expr_gen(sx, 0);
 				}
-				break;
 			}
+			break;
 			case TDeclid:
 				Declid_gen(sx);
-				break;
-			case NOP:
 				break;
 			case TStructbeg:
 			{
 				tocode(sx, B);
 				tocode(sx, 0);
 				proc_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_get_size(sx));
-				break;
 			}
+			break;
 			case TStructend:
 			{
-				int numproc = node_get_arg(tree_get_node(sx), 0);
+				const int num_proc = node_get_arg(tree_get_node(sx), 0);
 
 				tocode(sx, STOP);
-				mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
-				break;
+				mem_set(sx, proc_get(sx, num_proc) - 1, (int)mem_get_size(sx));
 			}
+			break;
+			case NOP:
+			case TEnd:
+				break;
 			default:
-			{
-				printf("tc=%zi tree[tc-2]=%i tree[tc-1]=%i\n", sx->tc, sx->tree[sx->tc - 2],
-					   sx->tree[sx->tc - 1]);
-				break;
-			}
+				printf("tc=%zi tree[tc-2]=%i tree[tc-1]=%i\n", sx->tc, sx->tree[sx->tc - 2], sx->tree[sx->tc - 1]);
+				return -1;
 		}
 	}
 
 	tocode(sx, CALL1);
 	tocode(sx, CALL2);
-	tocode(sx, ident_get_displ(sx, sx->main_ref));
+	tocode(sx, ident_get_displ(sx, sx->ref_main));
 	tocode(sx, STOP);
-
 	return 0;
 }
 
@@ -879,7 +877,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
 	uni_printf(io, "%zi %zi %zi %zi %zi %i %zi\n", mem_get_size(sx), sx->funcnum, sx->id,
-				   sx->rp, sx->md, sx->maxdisplg, sx->main_ref);
+				   sx->rp, sx->md, sx->maxdisplg, sx->ref_main);
 
 	for (size_t i = 0; i < mem_get_size(sx); i++)
 	{

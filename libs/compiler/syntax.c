@@ -107,7 +107,7 @@ int sx_init(syntax *const sx)
 	sx->rp = 1;
 
 	sx->maxdisplg = 3;
-	sx->main_ref = 0;
+	sx->ref_main = 0;
 
 	sx->maxdispl = 3;
 	sx->displ = -3;
@@ -129,7 +129,7 @@ int sx_init(syntax *const sx)
 int sx_is_correct(syntax *const sx, universal_io *const io)
 {
 	int is_correct = 1;
-	if (sx->main_ref == 0)
+	if (sx->ref_main == 0)
 	{
 		error(io, no_main_in_program);
 		is_correct = 0;
@@ -287,11 +287,11 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 
 	if (repr_get_reference(sx, repr) == 0) // это может быть только MAIN
 	{
-		if (sx->main_ref)
+		if (sx->ref_main)
 		{
 			return SIZE_MAX;
 		}
-		sx->main_ref = lastid;
+		sx->ref_main = lastid;
 	}
 
 	// Ссылка на описание с таким же представлением в предыдущем блоке
