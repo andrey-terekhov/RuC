@@ -220,6 +220,7 @@ int Expr_gen(syntax *const sx, int incond)
 			case TDeclid:
 			{
 				Declid_gen(sx);
+				tree_next_node(sx); // TExpend
 				break;
 			}
 			case TBeginit:
@@ -732,7 +733,6 @@ void Declid_gen(syntax *const sx)
 	// all == 0 нет инициализатора,
 	// all == 1 есть инициализатор
 	// all == 2 есть инициализатор только из строк
-	tree_next_node(sx);
 
 	if (N == 0) // обычная переменная int a; или struct point p;
 	{
@@ -746,16 +746,18 @@ void Declid_gen(syntax *const sx)
 		{
 			if (telem > 0 && mode_get(sx, telem) == MSTRUCT)
 			{
+				tree_next_node(sx);
 				Struct_init_gen(sx);
-				tree_next_node(sx); // TExprend
+
 				tocode(sx, COPY0STASS);
 				tocode(sx, olddispl);
 				tocode(sx, all); // общее кол-во слов
 			}
 			else
 			{
+				tree_next_node(sx);
 				Expr_gen(sx, 0);
-				tree_next_node(sx); // TExprend
+
 				tocode(sx, telem == LFLOAT ? ASSRV : ASSV);
 				tocode(sx, olddispl);
 			}
@@ -775,8 +777,9 @@ void Declid_gen(syntax *const sx)
 
 		if (all) // all == 1, если есть инициализация массива
 		{
+			tree_next_node(sx);
 			Expr_gen(sx, 0);
-			tree_next_node(sx); // TExprend
+
 			tocode(sx, ARRINIT); // ARRINIT N d all displ usual
 			tocode(sx, abs(N));
 			tocode(sx, element_len);
@@ -809,6 +812,7 @@ void compstmt_gen(syntax *const sx, ad *const context)
 			case TDeclid:
 			{
 				Declid_gen(sx);
+				tree_next_node(sx); // TExpend
 				break;
 			}
 			default:
@@ -873,6 +877,7 @@ int codegen(syntax *const sx)
 			case TDeclid:
 			{
 				Declid_gen(sx);
+				tree_next_node(sx); // TExpend
 				break;
 			}
 			case NOP:
