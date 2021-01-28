@@ -147,7 +147,7 @@ int mem_get(const syntax *const sx, const size_t index);
  *
  *	@return	Program counter on success, @c INT_MAX on failure
  */
-size_t mem_get_size(const syntax *const sx);
+size_t mem_size(const syntax *const sx);
 
 
 /**

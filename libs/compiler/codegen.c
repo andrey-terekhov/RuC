@@ -38,7 +38,7 @@ static int declaration(syntax *const sx);
 static void tocode(syntax *const sx, int c)
 {
 	// printf("tocode tc=%zi pc=%zi) %i\n", sx->tc,
-	// mem_get_size(sx), c);
+	// mem_size(sx), c);
 	mem_add(sx, c);
 }
 
@@ -57,7 +57,7 @@ static void addr_end_condition(syntax *const sx, address *const context)
 	while (context->addr_cond)
 	{
 		const size_t ref = mem_get(sx, context->addr_cond);
-		mem_set(sx, context->addr_cond, (int)mem_get_size(sx));
+		mem_set(sx, context->addr_cond, (int)mem_size(sx));
 		context->addr_cond = ref;
 	}
 }
@@ -67,7 +67,7 @@ static void addr_end_break(syntax *const sx, address *const context)
 	while (context->addr_break)
 	{
 		const size_t ref = mem_get(sx, context->addr_break);
-		mem_set(sx, context->addr_break, (int)mem_get_size(sx));
+		mem_set(sx, context->addr_break, (int)mem_size(sx));
 		context->addr_break = ref;
 	}
 }
@@ -85,14 +85,14 @@ static void finalop(syntax *const sx)
 			{
 				tocode(sx, _DOUBLE);
 				tocode(sx, BNE0);
-				stack_push(sx, (int)mem_get_size(sx));
+				stack_push(sx, (int)mem_size(sx));
 				mem_increase(sx, 1);
 			}
 			else if (c == ADLOGAND)
 			{
 				tocode(sx, _DOUBLE);
 				tocode(sx, BE0);
-				stack_push(sx, (int)mem_get_size(sx));
+				stack_push(sx, (int)mem_size(sx));
 				mem_increase(sx, 1);
 			}
 			else
@@ -100,7 +100,7 @@ static void finalop(syntax *const sx)
 				tocode(sx, c);
 				if (c == LOGOR || c == LOGAND)
 				{
-					mem_set(sx, stack_pop(sx), (int)mem_get_size(sx));
+					mem_set(sx, stack_pop(sx), (int)mem_size(sx));
 				}
 				else if (c == COPY00 || c == COPYST)
 				{
@@ -197,7 +197,7 @@ static void expression(syntax *const sx, int mode)
 				const int N = node_get_arg(tree_get_node(sx), 0);
 
 				tocode(sx, LI);
-				const size_t res = mem_get_size(sx) + 4;
+				const size_t res = mem_size(sx) + 4;
 				tocode(sx, (int)res);
 				tocode(sx, B);
 				mem_increase(sx, 2);
@@ -214,7 +214,7 @@ static void expression(syntax *const sx, int mode)
 					}
 				}
 				mem_set(sx, res - 1, N);
-				mem_set(sx, res - 2, (int)mem_get_size(sx));
+				mem_set(sx, res - 2, (int)mem_size(sx));
 				break;
 			}
 			case TBeginit:
@@ -309,20 +309,20 @@ static void expression(syntax *const sx, int mode)
 			do
 			{
 				tocode(sx, BE0);
-				size_t adelse = mem_get_size(sx);
+				size_t adelse = mem_size(sx);
 				mem_increase(sx, 1);
 				expression(sx, 0); // then
 				tocode(sx, B);
 				mem_add(sx, (int)ad);
-				ad = mem_get_size(sx) - 1;
-				mem_set(sx, adelse, (int)mem_get_size(sx));
+				ad = mem_size(sx) - 1;
+				mem_set(sx, adelse, (int)mem_size(sx));
 				expression(sx, 1); // else или cond
 			} while (node_get_type(tree_get_node(sx)) == TCondexpr);
 
 			while (ad)
 			{
 				int ref = mem_get(sx, ad);
-				mem_set(sx, ad, (int)mem_get_size(sx));
+				mem_set(sx, ad, (int)mem_size(sx));
 				ad = ref;
 			}
 
@@ -355,34 +355,34 @@ static void statement(syntax *const sx, address *const context)
 			tree_next_node(sx); // TExprend
 
 			tocode(sx, BE0);
-			size_t addr = mem_get_size(sx);
+			size_t addr = mem_size(sx);
 			mem_increase(sx, 1);
 			statement(sx, context);
 
 			if (ref_else)
 			{
 				tree_next_node(sx);
-				mem_set(sx, addr, (int)mem_get_size(sx) + 2);
+				mem_set(sx, addr, (int)mem_size(sx) + 2);
 				tocode(sx, B);
-				addr = mem_get_size(sx);
+				addr = mem_size(sx);
 				mem_increase(sx, 1);
 				statement(sx, context);
 			}
-			mem_set(sx, addr, (int)mem_get_size(sx));
+			mem_set(sx, addr, (int)mem_size(sx));
 		}
 		break;
 		case TWhile:
 		{
 			size_t old_break = context->addr_break;
 			size_t old_cond = context->addr_cond;
-			size_t addr = mem_get_size(sx);
+			size_t addr = mem_size(sx);
 
 			context->addr_cond = addr;
 			expression(sx, 0);
 			tree_next_node(sx); // TExprend
 
 			tocode(sx, BE0);
-			context->addr_break = mem_get_size(sx);
+			context->addr_break = mem_size(sx);
 			mem_add(sx, 0);	
 			statement(sx, context);
 
@@ -398,7 +398,7 @@ static void statement(syntax *const sx, address *const context)
 		{
 			size_t old_break = context->addr_break;
 			size_t old_cond = context->addr_cond;
-			size_t addr = mem_get_size(sx);
+			size_t addr = mem_size(sx);
 
 			tree_next_node(sx);
 
@@ -437,7 +437,7 @@ static void statement(syntax *const sx, address *const context)
 				child_stmt++;
 			}
 
-			size_t initad = mem_get_size(sx);
+			size_t initad = mem_size(sx);
 			context->addr_cond = 0;
 			context->addr_break = 0;
 
@@ -445,7 +445,7 @@ static void statement(syntax *const sx, address *const context)
 			{
 				expression(sx, 0); // condition
 				tocode(sx, BE0);
-				context->addr_break = mem_get_size(sx);
+				context->addr_break = mem_size(sx);
 				mem_add(sx, 0);
 				child_stmt++;
 			}
@@ -491,7 +491,7 @@ static void statement(syntax *const sx, address *const context)
 			}
 			else // метка еще не описана
 			{
-				ident_set_displ(sx, id, -(int)mem_get_size(sx));
+				ident_set_displ(sx, id, -(int)mem_size(sx));
 
 				// первый раз встретился переход на еще не описанную метку или нет
 				tocode(sx, id_sign < 0 ? 0 : addr);
@@ -508,11 +508,11 @@ static void statement(syntax *const sx, address *const context)
 				while (addr) // проставить ссылку на метку во всех ранних переходах
 				{
 					int ref = mem_get(sx, -addr);
-					mem_set(sx, -addr, (int)mem_get_size(sx));
+					mem_set(sx, -addr, (int)mem_size(sx));
 					addr = ref;
 				}
 			}
-			ident_set_displ(sx, id, (int)mem_get_size(sx));
+			ident_set_displ(sx, id, (int)mem_size(sx));
 		}
 		break;
 		case TSwitch:
@@ -528,7 +528,7 @@ static void statement(syntax *const sx, address *const context)
 			statement(sx, context);
 			if (context->addr_case > 0)
 			{
-				mem_set(sx, context->addr_case, (int)mem_get_size(sx));
+				mem_set(sx, context->addr_case, (int)mem_size(sx));
 			}
 			context->addr_case = old_case;
 			addr_end_break(sx, context);
@@ -539,7 +539,7 @@ static void statement(syntax *const sx, address *const context)
 		{
 			if (context->addr_case)
 			{
-				mem_set(sx, context->addr_case, (int)mem_get_size(sx));
+				mem_set(sx, context->addr_case, (int)mem_size(sx));
 			}
 			tocode(sx, _DOUBLE);
 
@@ -547,7 +547,7 @@ static void statement(syntax *const sx, address *const context)
 			tree_next_node(sx); // TExprend
 			tocode(sx, EQEQ);
 			tocode(sx, BE0);
-			context->addr_case = mem_get_size(sx);
+			context->addr_case = mem_size(sx);
 			mem_increase(sx, 1);
 			statement(sx, context);
 		}
@@ -556,7 +556,7 @@ static void statement(syntax *const sx, address *const context)
 		{
 			if (context->addr_case)
 			{
-				mem_set(sx, context->addr_case, (int)mem_get_size(sx));
+				mem_set(sx, context->addr_case, (int)mem_size(sx));
 			}
 			context->addr_case = 0;
 
@@ -568,14 +568,14 @@ static void statement(syntax *const sx, address *const context)
 		{
 			tocode(sx, B);
 			mem_add(sx, (int)context->addr_break);
-			context->addr_break = mem_get_size(sx) - 1;
+			context->addr_break = mem_size(sx) - 1;
 		}
 		break;
 		case TContinue:
 		{
 			tocode(sx, B);
 			mem_add(sx, (int)context->addr_cond);
-			context->addr_cond = mem_get_size(sx) - 1;
+			context->addr_cond = mem_size(sx) - 1;
 		}
 		break;
 		case TReturnvoid:
@@ -749,7 +749,7 @@ static int declaration(syntax *const sx)
 		{
 			tocode(sx, B);
 			tocode(sx, 0);
-			proc_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_get_size(sx));
+			proc_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_size(sx));
 		}
 		break;
 		case TStructend:
@@ -757,7 +757,7 @@ static int declaration(syntax *const sx)
 			const int num_proc = node_get_arg(tree_get_node(sx), 0);
 
 			tocode(sx, STOP);
-			mem_set(sx, proc_get(sx, num_proc) - 1, (int)mem_get_size(sx));
+			mem_set(sx, proc_get(sx, num_proc) - 1, (int)mem_size(sx));
 		}
 		break;
 
@@ -786,17 +786,17 @@ static int codegen(syntax *const sx)
 				const int max_displ = node_get_arg(tree_get_node(sx), 1);				
 				const int func = ident_get_displ(sx, ref_ident);
 
-				func_set(sx, func, mem_get_size(sx));
+				func_set(sx, func, mem_size(sx));
 				tocode(sx, FUNCBEG);
 				tocode(sx, max_displ);
 
-				const size_t old_pc = mem_get_size(sx);
+				const size_t old_pc = mem_size(sx);
 				mem_increase(sx, 1);
 
 				tree_next_node(sx);
 				compstmt_gen(sx, &context);
 
-				mem_set(sx, old_pc, (int)mem_get_size(sx));
+				mem_set(sx, old_pc, (int)mem_size(sx));
 			}
 			break;
 
@@ -828,10 +828,10 @@ void output_export(universal_io *const io, const syntax *const sx)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%zi %zi %zi %zi %zi %i %zi\n", mem_get_size(sx), sx->funcnum, sx->id,
+	uni_printf(io, "%zi %zi %zi %zi %zi %i %zi\n", mem_size(sx), sx->funcnum, sx->id,
 				   sx->rp, sx->md, sx->maxdisplg, sx->ref_main);
 
-	for (size_t i = 0; i < mem_get_size(sx); i++)
+	for (size_t i = 0; i < mem_size(sx); i++)
 	{
 		uni_printf(io, "%i ", mem_get(sx, i));
 	}

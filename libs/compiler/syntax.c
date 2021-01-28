@@ -191,7 +191,7 @@ int mem_get(const syntax *const sx, const size_t index)
 	return sx->mem[index];
 }
 
-size_t mem_get_size(const syntax *const sx)
+size_t mem_size(const syntax *const sx)
 {
 	if (sx == NULL)
 	{
