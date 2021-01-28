@@ -25,22 +25,13 @@
 typedef struct address
 {
 	size_t addr_cond;
-	size_t addr_break;
 	size_t addr_case;
+	size_t addr_break;
 } address;
 
 
-static void Declid_gen(syntax *const sx);
-static void compstmt_gen(syntax *const sx, address *const context);
-static int declaration(syntax *const sx);
+static void block(syntax *const sx, address *const context);
 
-
-static void tocode(syntax *const sx, int c)
-{
-	// printf("tocode tc=%zi pc=%zi) %i\n", sx->tc,
-	// mem_size(sx), c);
-	mem_add(sx, c);
-}
 
 static void addr_begin_condition(syntax *const sx, address *const context, const size_t addr)
 {
@@ -73,22 +64,29 @@ static void addr_end_break(syntax *const sx, address *const context)
 }
 
 
-static void finalop(syntax *const sx)
+static void tocode(syntax *const sx, int c)
 {
-	int c;
+	// printf("tocode tc=%zi pc=%zi) %i\n", sx->tc,
+	// mem_size(sx), c);
+	mem_add(sx, c);
+}
 
-	while ((c = node_get_type(tree_get_node(sx))) > 9000)
+
+static void final_operation(syntax *const sx)
+{
+	int op = node_get_type(tree_get_node(sx));
+	while (op > 9000)
 	{
-		if (c != NOP)
+		if (op != NOP)
 		{
-			if (c == ADLOGOR)
+			if (op == ADLOGOR)
 			{
 				tocode(sx, _DOUBLE);
 				tocode(sx, BNE0);
 				stack_push(sx, (int)mem_size(sx));
 				mem_increase(sx, 1);
 			}
-			else if (c == ADLOGAND)
+			else if (op == ADLOGAND)
 			{
 				tocode(sx, _DOUBLE);
 				tocode(sx, BE0);
@@ -97,38 +95,39 @@ static void finalop(syntax *const sx)
 			}
 			else
 			{
-				tocode(sx, c);
-				if (c == LOGOR || c == LOGAND)
+				tocode(sx, op);
+				if (op == LOGOR || op == LOGAND)
 				{
 					mem_set(sx, stack_pop(sx), (int)mem_size(sx));
 				}
-				else if (c == COPY00 || c == COPYST)
+				else if (op == COPY00 || op == COPYST)
 				{
 					tocode(sx, node_get_arg(tree_get_node(sx), 0)); // d1
 					tocode(sx, node_get_arg(tree_get_node(sx), 1)); // d2
 					tocode(sx, node_get_arg(tree_get_node(sx), 2)); // длина
 				}
-				else if (c == COPY01 || c == COPY10 || c == COPY0ST || c == COPY0STASS)
+				else if (op == COPY01 || op == COPY10 || op == COPY0ST || op == COPY0STASS)
 				{
 					tocode(sx, node_get_arg(tree_get_node(sx), 0)); // d1
 					tocode(sx, node_get_arg(tree_get_node(sx), 1)); // длина
 				}
-				else if (c == COPY11 || c == COPY1ST || c == COPY1STASS)
+				else if (op == COPY11 || op == COPY1ST || op == COPY1STASS)
 				{
 					tocode(sx, node_get_arg(tree_get_node(sx), 0)); // длина
 				}
-				else if ((c >= REMASS && c <= DIVASS) || (c >= REMASSV && c <= DIVASSV) ||
-						 (c >= ASSR && c <= DIVASSR) || (c >= ASSRV && c <= DIVASSRV) || (c >= POSTINC && c <= DEC) ||
-						 (c >= POSTINCV && c <= DECV) || (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))
+				else if ((op >= REMASS && op <= DIVASS) || (op >= REMASSV && op <= DIVASSV) ||
+						 (op >= ASSR && op <= DIVASSR) || (op >= ASSRV && op <= DIVASSRV) || (op >= POSTINC && op <= DEC) ||
+						 (op >= POSTINCV && op <= DECV) || (op >= POSTINCR && op <= DECR) || (op >= POSTINCRV && op <= DECRV))
 				{
 					tocode(sx,node_get_arg(tree_get_node(sx), 0));
 				}
 			}
 		}
+
 		tree_next_node(sx);
+		op = node_get_type(tree_get_node(sx));
 	}
 }
-
 
 /**
  *	Expression generation
@@ -296,7 +295,7 @@ static void expression(syntax *const sx, int mode)
 			tree_next_node(sx);
 		}
 
-		finalop(sx);
+		final_operation(sx);
 
 		if (node_get_type(tree_get_node(sx)) == TCondexpr)
 		{
@@ -326,9 +325,147 @@ static void expression(syntax *const sx, int mode)
 				ad = ref;
 			}
 
-			finalop(sx);
+			final_operation(sx);
 		}
 	}
+}
+
+static void structure(syntax *const sx)
+{
+	if (node_get_type(tree_get_node(sx)) == TStructinit)
+	{
+		const int N = node_get_arg(tree_get_node(sx), 0);
+		tree_next_node(sx);
+
+		for (int i = 0; i < N; i++)
+		{
+			structure(sx);
+			tree_next_node(sx); // TExprend
+		}
+	}
+	else
+	{
+		expression(sx, -1);
+	}
+}
+
+static void identifier(syntax *const sx)
+{
+	const int old_displ = node_get_arg(tree_get_node(sx), 0);
+	const int type = node_get_arg(tree_get_node(sx), 1);
+	const int N = node_get_arg(tree_get_node(sx), 2);
+
+	/*
+	*	@param	all		Общее кол-во слов в структуре:
+	*						@c 0 нет инициализатора,
+	*						@c 1 есть инициализатор,
+	*						@c 2 есть инициализатор только из строк
+	*/
+	const int all = node_get_arg(tree_get_node(sx), 3);
+	const int process = node_get_arg(tree_get_node(sx), 4);
+
+	/*
+	*	@param	usual	Для массивов:
+	*						@c 0 с пустыми границами,
+	*						@c 1 без пустых границ
+	*/
+	const int usual = node_get_arg(tree_get_node(sx), 5);
+	const int instruction = node_get_arg(tree_get_node(sx), 6);
+
+
+	if (N == 0) // Обычная переменная int a; или struct point p;
+	{
+		if (process)
+		{
+			tocode(sx, STRUCTWITHARR);
+			tocode(sx, old_displ);
+			tocode(sx, proc_get(sx, process));
+		}
+		if (all) // int a = или struct{} a =
+		{
+			if (type > 0 && mode_get(sx, type) == MSTRUCT)
+			{
+				tree_next_node(sx);
+				structure(sx);
+
+				tocode(sx, COPY0STASS);
+				tocode(sx, old_displ);
+				tocode(sx, all); // Общее количество слов
+			}
+			else
+			{
+				expression(sx, 0);
+
+				tocode(sx, type == LFLOAT ? ASSRV : ASSV);
+				tocode(sx, old_displ);
+			}
+		}
+	}
+	else // Обработка массива int a[N1]...[NN] =
+	{
+		const int length = size_of(sx, type);
+
+		tocode(sx, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
+		tocode(sx, all == 0 ? N : abs(N) - 1);
+		tocode(sx, length);
+		tocode(sx, old_displ);
+		tocode(sx, proc_get(sx, process));
+		tocode(sx, usual);
+		tocode(sx, all);
+		tocode(sx, instruction);
+
+		if (all) // all == 1, если есть инициализация массива
+		{
+			expression(sx, 0);
+
+			tocode(sx, ARRINIT); // ARRINIT N d all displ usual
+			tocode(sx, abs(N));
+			tocode(sx, length);
+			tocode(sx, old_displ);
+			tocode(sx, usual);	// == 0 с пустыми границами
+								// == 1 без пустых границ и без инициализации
+		}
+	}
+}
+
+static int declaration(syntax *const sx)
+{
+	switch (node_get_type(tree_get_node(sx)))
+	{
+		case TDeclarr:
+		{
+			const int N = node_get_arg(tree_get_node(sx), 0);
+			for (int i = 0; i < N; i++)
+			{
+				expression(sx, 0);
+			}
+		}
+		break;
+		case TDeclid:
+			identifier(sx);
+			break;
+
+		case TStructbeg:
+		{
+			tocode(sx, B);
+			tocode(sx, 0);
+			proc_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_size(sx));
+		}
+		break;
+		case TStructend:
+		{
+			const int num_proc = node_get_arg(tree_get_node(sx), 0);
+
+			tocode(sx, STOP);
+			mem_set(sx, proc_get(sx, num_proc) - 1, (int)mem_size(sx));
+		}
+		break;
+
+		default:
+			return -1;
+	}
+
+	return 0;
 }
 
 static void statement(syntax *const sx, address *const context)
@@ -345,7 +482,7 @@ static void statement(syntax *const sx, address *const context)
 			tocode(sx, EXITC);
 			break;
 		case TBegin:
-			compstmt_gen(sx, context);
+			block(sx, context);
 			break;
 		case TIf:
 		{
@@ -627,145 +764,14 @@ static void statement(syntax *const sx, address *const context)
 	}
 }
 
-static void Struct_init_gen(syntax *const sx)
-{
-	if (node_get_type(tree_get_node(sx)) == TStructinit)
-	{
-		const int N = node_get_arg(tree_get_node(sx), 0);
-		tree_next_node(sx);
-
-		for (int i = 0; i < N; i++)
-		{
-			Struct_init_gen(sx);
-			tree_next_node(sx); // TExprend
-		}
-	}
-	else
-	{
-		expression(sx, -1);
-	}
-}
-
-static void Declid_gen(syntax *const sx)
-{
-	int olddispl = node_get_arg(tree_get_node(sx), 0);
-	int telem = node_get_arg(tree_get_node(sx), 1);
-	int N = node_get_arg(tree_get_node(sx), 2);
-	int element_len = size_of(sx, telem);
-	int all = node_get_arg(tree_get_node(sx), 3);
-	int iniproc = node_get_arg(tree_get_node(sx), 4);
-	int usual = node_get_arg(tree_get_node(sx), 5);
-	int instruct = node_get_arg(tree_get_node(sx), 6);
-	// all - общее кол-во слов в структуре
-	// для массивов есть еще usual // == 0 с пустыми границами,
-	// == 1 без пустых границ,
-	// all == 0 нет инициализатора,
-	// all == 1 есть инициализатор
-	// all == 2 есть инициализатор только из строк
-
-	if (N == 0) // обычная переменная int a; или struct point p;
-	{
-		if (iniproc)
-		{
-			tocode(sx, STRUCTWITHARR);
-			tocode(sx, olddispl);
-			tocode(sx, proc_get(sx, iniproc));
-		}
-		if (all) // int a = или struct{} a =
-		{
-			if (telem > 0 && mode_get(sx, telem) == MSTRUCT)
-			{
-				tree_next_node(sx);
-				Struct_init_gen(sx);
-
-				tocode(sx, COPY0STASS);
-				tocode(sx, olddispl);
-				tocode(sx, all); // общее кол-во слов
-			}
-			else
-			{
-				expression(sx, 0);
-
-				tocode(sx, telem == LFLOAT ? ASSRV : ASSV);
-				tocode(sx, olddispl);
-			}
-		}
-	}
-	else // Обработка массива int a[N1]...[NN] =
-	{
-		tocode(sx, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN
-								 // уже лежат на стеке
-		tocode(sx, all == 0 ? N : abs(N) - 1);
-		tocode(sx, element_len);
-		tocode(sx, olddispl);
-		tocode(sx, proc_get(sx, iniproc));
-		tocode(sx, usual);
-		tocode(sx, all);
-		tocode(sx, instruct);
-
-		if (all) // all == 1, если есть инициализация массива
-		{
-			expression(sx, 0);
-
-			tocode(sx, ARRINIT); // ARRINIT N d all displ usual
-			tocode(sx, abs(N));
-			tocode(sx, element_len);
-			tocode(sx, olddispl);
-			tocode(sx, usual); // == 0 с пустыми границами
-									// == 1 без пустых границ и без иниц
-		}
-	}
-}
-
-static void compstmt_gen(syntax *const sx, address *const context)
+static void block(syntax *const sx, address *const context)
 {
 	tree_next_node(sx); // TBegin
-
 	while (node_get_type(tree_get_node(sx)) != TEnd)
 	{
 		statement(sx, context);
 		tree_next_node(sx);
 	}
-}
-
-static int declaration(syntax *const sx)
-{
-	switch (node_get_type(tree_get_node(sx)))
-	{
-		case TDeclarr:
-		{
-			const int N = node_get_arg(tree_get_node(sx), 0);
-			for (int i = 0; i < N; i++)
-			{
-				expression(sx, 0);
-			}
-		}
-		break;
-		case TDeclid:
-			Declid_gen(sx);
-			break;
-
-		case TStructbeg:
-		{
-			tocode(sx, B);
-			tocode(sx, 0);
-			proc_set(sx, node_get_arg(tree_get_node(sx), 0), (int)mem_size(sx));
-		}
-		break;
-		case TStructend:
-		{
-			const int num_proc = node_get_arg(tree_get_node(sx), 0);
-
-			tocode(sx, STOP);
-			mem_set(sx, proc_get(sx, num_proc) - 1, (int)mem_size(sx));
-		}
-		break;
-
-		default:
-			return -1;
-	}
-
-	return 0;
 }
 
 /** Генерация кодов */
@@ -794,7 +800,7 @@ static int codegen(syntax *const sx)
 				mem_increase(sx, 1);
 
 				tree_next_node(sx);
-				compstmt_gen(sx, &context);
+				block(sx, &context);
 
 				mem_set(sx, old_pc, (int)mem_size(sx));
 			}
