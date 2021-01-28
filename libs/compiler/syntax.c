@@ -166,7 +166,7 @@ int sx_clear(syntax *const sx)
 	vector_clear(&sx->predef);
 	vector_clear(&sx->functions);
 	
-	vector_clear(&sx->tree);
+	//vector_clear(&sx->tree);
 
 	return 0;
 }
