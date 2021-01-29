@@ -3242,9 +3242,9 @@ int struct_decl_list(analyzer *context)
 	int locmd = 3;
 
 	loc_modetab[0] = MSTRUCT;
-	size_t tstrbeg = TREE.size;
+	size_t tstrbeg = vector_size(&TREE);
 	totree(context, TStructbeg);
-	TREE.array[TREE.size++] = 0; // тут будет номер иниц процедуры
+	vector_increase(&TREE, 1); // тут будет номер иниц процедуры
 
 	scanner(context);
 	scanner(context);
@@ -3262,23 +3262,25 @@ int struct_decl_list(analyzer *context)
 		if (context->next == LEFTSQBR)
 		{
 			totree(context, TDeclarr);
-			size_t adN = TREE.size++;
+			size_t adN = vector_size(&TREE);
+			vector_increase(&TREE, 1);
 			t = arrdef(context, elem_type); // Меняем тип (увеличиваем размерность массива)
 			if (context->error_flag == 5)
 			{
 				context->error_flag = 3;
 				return 0;
 			}
-			TREE.array[adN] = context->arrdim;
+			vector_set(&TREE, adN, context->arrdim);
 
 			totree(context, TDeclid);
 			totree(context, curdispl);
 			totree(context, elem_type);
-			totree(context, context->arrdim);							 // N
-			size_t all = TREE.size++;
-			TREE.array[all] = 0;						 // all
-			TREE.array[TREE.size++] = context->was_struct_with_arr; // proc
-			totree(context, context->usual);							 // context->usual
+			totree(context, context->arrdim);						// N
+			size_t all = vector_size(&TREE);
+			vector_increase(&TREE, 1);
+			vector_set(&TREE, all, 0);								// all
+			vector_add(&TREE, context->was_struct_with_arr);	 	// proc
+			totree(context, context->usual);						// context->usual
 			totree(context, 1); // признак, что массив в структуре
 			wasarr = 1;
 			if (context->next == ASS)
@@ -3288,10 +3290,10 @@ int struct_decl_list(analyzer *context)
 				if (is_array(context->sx, t)) // инициализация массива
 				{
 					context->onlystrings = 2;
-					TREE.array[all] = 1;
+					vector_set(&TREE, all, 1);
 					if (!context->usual)
 					{
-						TREE.array[adN]--; // это уменьшение N в Declarr
+						vector_set(&TREE, adN, vector_get(&TREE, adN) - 1); // это уменьшение N в Declarr
 					}
 					array_init(context, t);
 					if (context->error_flag == 7)
@@ -3301,9 +3303,9 @@ int struct_decl_list(analyzer *context)
 					}
 					if (context->onlystrings == 1)
 					{
-						TREE.array[all + 2] = context->usual + 2; // только из строк 2 - без
+						vector_set(&TREE, all + 2, context->usual + 2);
+						TREE.array[all + 2] = context->usual + 2;			// только из строк 2 - без границ, 3 - с границами
 					}
-					// границ, 3 - с границами
 				}
 				else
 				{
@@ -3334,13 +3336,13 @@ int struct_decl_list(analyzer *context)
 		vector_increase(&context->sx->processes, 1);
 
 		totree(context, procd);
-		TREE.array[tstrbeg + 1] = procd;
+		vector_set(&TREE, tstrbeg + 1, procd);
 		context->was_struct_with_arr = procd;
 	}
 	else
 	{
-		TREE.array[tstrbeg] = NOP;
-		TREE.array[tstrbeg + 1] = NOP;
+		vector_set(&TREE, tstrbeg, NOP);
+		vector_set(&TREE, tstrbeg + 1, NOP);
 	}
 
 	loc_modetab[1] = curdispl; // тут длина структуры
@@ -3586,10 +3588,12 @@ void function_definition(analyzer *context)
 			return; // 1
 		}
 	}
-	func_set(context->sx, fn, (int)TREE.size);
+	const size_t size = vector_size(&TREE);
+	func_set(context->sx, fn, (int)size);
 	totree(context, TFuncdef);
 	totree(context, fid);
-	pred = (int)TREE.size++;
+	pred = (int)TREE.size;
+	vector_increase(&TREE, 1);
 	REPRTAB_POS = oldrepr;
 
 	block(context, 0);
