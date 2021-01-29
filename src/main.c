@@ -22,7 +22,7 @@
 #include "workspace.h"
 
 
-const char *name = "../tests/robots/network/blynk.c";
+const char *name = "../tests/executable/types/int/test_1.c";
 // "../tests/mips/0test.c";
 
 

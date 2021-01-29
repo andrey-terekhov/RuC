@@ -715,6 +715,17 @@ node node_set_child(node *const nd)
 }
 
 
+int node_copy(node *const dest, const node *const src)
+{
+	if (!node_is_correct(src) || dest == NULL)
+	{
+		return -1;
+	}
+
+	*dest = *src;
+	return 0;
+}
+
 int node_is_correct(const node *const nd)
 {
 	return nd != NULL && vector_is_correct(nd->tree);
