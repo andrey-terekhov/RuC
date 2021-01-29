@@ -2388,7 +2388,8 @@ void array_init(analyzer *context, int decl_type)
 				context->buf_flag++;
 			}
 			totree(context, TBeginit);
-			size_t ad = TREE.size++;
+			size_t ad = vector_size(&TREE);
+			vector_increase(&TREE, 1);
 
 			int all = 0;
 			do
@@ -2404,7 +2405,7 @@ void array_init(analyzer *context, int decl_type)
 
 			if (context->cur == END)
 			{
-				TREE.array[ad] = all;
+				vector_set(&TREE, ad, all);
 				totree(context, TExprend);
 			}
 			else
@@ -2522,11 +2523,12 @@ void decl_id(analyzer *context, int decl_type)
 	if (context->next == LEFTSQBR) // это определение массива (может быть многомерным)
 	{
 		totree(context, TDeclarr);
-		adN = TREE.size++;
+		adN = vector_size(&TREE);
+		vector_increase(&TREE, 1);
 		// Меняем тип (увеличиваем размерность массива)
 		decl_type = arrdef(context, decl_type);
 		ident_set_mode(context->sx, oldid, decl_type);
-		TREE.array[adN] = context->arrdim;
+		vector_set(&TREE, adN, context->arrdim);
 		if (context->error_flag == 5)
 		{
 			context->error_flag = 4;
@@ -2540,14 +2542,15 @@ void decl_id(analyzer *context, int decl_type)
 		}
 	}
 	totree(context, TDeclid);
-	totree(context, ident_get_displ(context->sx, oldid));												// displ
+	totree(context, ident_get_displ(context->sx, oldid));											// displ
 	totree(context, elem_type);																		// elem_type
 	totree(context, context->arrdim);																// N
-	size_t all = TREE.size++; // all - место в дереве, где будет общее количество выражений в инициализации,
-									// для массивов - только признак (1) наличия инициализации
-	TREE.array[all] = 0;
-	TREE.array[TREE.size++] = is_pointer(context->sx, decl_type) ? 0 : context->was_struct_with_arr; // proc
-	totree(context, context->usual);																	// context->usual
+	size_t all = vector_size(&TREE);	// all - место в дереве, где будет общее количество выражений в инициализации,
+										// для массивов - только признак (1) наличия инициализации
+	vector_increase(&TREE, 1);
+	vector_set(&TREE, all, 0);
+	vector_add(&TREE, is_pointer(context->sx, decl_type) ? 0 : context->was_struct_with_arr);		// proc
+	totree(context, context->usual);																// context->usual
 	totree(context, 0); // массив не в структуре
 
 	if (context->next == ASS)
