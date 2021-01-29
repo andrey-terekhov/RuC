@@ -162,7 +162,7 @@ void tablesandtree()
             case TFor:
 				if (check_nested_for)
 				{
-					fprintf(output, "TFor %i %i %i %i %i\n", tree[i], tree[i+1], tree[i+2], tree[i+3], tree[i+4]);
+					fprintf(output, "TFor %i %i %i %i %i\n", tree[i+1], tree[i+2], tree[i+3], tree[i+4], tree[i+5]);
 					i += 5;
 				}
 				else
@@ -171,6 +171,9 @@ void tablesandtree()
 					i += 4;
 				}
                 break;
+			case TForEnd:
+				fprintf(output, "TForEnd\n");
+				break;
             case TSwitch:
                 fprintf(output, "TSwitch\n");
                 break;

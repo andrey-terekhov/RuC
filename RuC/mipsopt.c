@@ -178,13 +178,14 @@ void mblock();
 
 void opt_for_statement()
 {
-	int fromref, condref, incrref, statemref;
 	mcopy();
-	mcopy();
+	if (check_nested_for)
+		mcopy();
+	int fromref, condref, incrref, stmtref;
 	fromref = mcopy();
 	condref = mcopy();
 	incrref = mcopy();
-	statemref = mcopy();
+	stmtref = mcopy();
 	if (fromref)
 		mexpr();
 	if (condref)
@@ -232,6 +233,9 @@ void mstatement()
         case TFor:
 			opt_for_statement();
             break;
+		case TForEnd:
+			mcopy();
+			break;
         case TLabel:
             mcopy();
             mcopy();

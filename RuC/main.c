@@ -10,7 +10,7 @@
 const char * name =
 //"tests/Mishatest.c";
 
-"tests/mips/printid.c";
+"../tests/mips/for.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
@@ -54,6 +54,7 @@ int bad_printf_placeholder = 0;
 
 // optimization flags
 int cycle_jump_reduce = 1;
+int check_nested_for = 1;
 
 extern void preprocess_file();
 

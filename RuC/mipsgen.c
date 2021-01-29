@@ -2212,7 +2212,8 @@ void MStmt_gen()
             break;
         case TFor:
         {
-			tc++; // Здесь был флаг вложенности
+			if (check_nested_for)
+				tc++; // Здесь был флаг вложенности
             int fromref = tree[tc++], condref = tree[tc++], incrref = tree[tc++],
             stmtref = tree[tc++];
             int oldbreak = adbreak, oldcont = adcont, incrtc, endtc;
@@ -2261,6 +2262,7 @@ void MStmt_gen()
             }
         tocodeL("end", adbreak);
         tocodeL("ELSE", adbreak);
+			tc++; // Здесь был TForEnd
 
             adbreak = oldbreak;
             adcont = oldcont;
