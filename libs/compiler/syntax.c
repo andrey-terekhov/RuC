@@ -100,8 +100,7 @@ int sx_init(syntax *const sx)
 	vector_increase(&sx->memory, 4);
 	sx->processes = vector_create(INIPROSIZE);
 	vector_increase(&sx->processes, 1);
-
-	sx->stack_size = -1;
+	sx->stack = vector_create(256);
 
 	sx->predef = vector_create(FUNCSIZE);
 	sx->functions = vector_create(FUNCSIZE);
@@ -164,6 +163,7 @@ int sx_clear(syntax *const sx)
 
 	vector_clear(&sx->memory);
 	vector_clear(&sx->processes);
+	vector_clear(&sx->stack);
 
 	vector_clear(&sx->predef);
 	vector_clear(&sx->functions);
@@ -200,29 +200,6 @@ size_t mem_size(const syntax *const sx)
 }
 
 
-int stack_push(syntax *const sx, const int value)
-{
-	if (sx == NULL || sx->stack_size == 255)
-	{
-		return -1;
-	}
-
-	sx->stack_size++;
-	sx->stack[sx->stack_size] = value;
-	return 0;
-}
-
-int stack_pop(syntax *const sx)
-{
-	if (sx == NULL || sx->stack_size == -1)
-	{
-		return INT_MAX;
-	}
-
-	return sx->stack[sx->stack_size--];
-}
-
-
 int proc_set(syntax *const sx, const size_t index, const item_t value)
 {
 	return sx != NULL ? vector_set(&sx->processes, index, value) : -1;
@@ -231,6 +208,17 @@ int proc_set(syntax *const sx, const size_t index, const item_t value)
 item_t proc_get(const syntax *const sx, const size_t index)
 {
 	return sx != NULL ? vector_get(&sx->processes, index) : ITEM_MAX;
+}
+
+
+int stack_push(syntax *const sx, const item_t value)
+{
+	return sx != NULL ? vector_add(&sx->stack, value) != SIZE_MAX ? 0 : -1 : -1;
+}
+
+item_t stack_pop(syntax *const sx)
+{
+	return sx != NULL ? vector_remove(&sx->stack) : ITEM_MAX;
 }
 
 

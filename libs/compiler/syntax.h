@@ -33,13 +33,11 @@ typedef struct node node;
 /** Global vars definition */
 typedef struct syntax
 {
-	// mem, pc, iniprocs & max_threads - usage here only for codes printing
+	// memory, processes, stack & max_threads - usage here only for codes printing
 
 	vector memory;					/**< Memory table */
 	vector processes;				/**< Init processes table */
-
-	int stack[256];					/**< Stack for logic operations*/
-	int stack_size;					/**< Size of stack*/
+	vector stack;					/**< Stack for logic operations*/
 
 	vector predef;					/**< Predefined functions table */
 	vector functions;				/**< Functions table */
@@ -153,26 +151,6 @@ size_t mem_size(const syntax *const sx);
 
 
 /**
- *	Push new value to stack
- *
- *	@param	sx			Syntax structure
- *	@param	value		Value to push
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int stack_push(syntax *const sx, const int value);
-
-/**
- *	Pop value from stack
- *
- *	@param	sx			Syntax structure
- *
- *	@return	value, @c INT_MAX on failure
- */
-int stack_pop(syntax *const sx);
-
-
-/**
  *	Set value by index in init processes table
  *
  *	@param	sx			Syntax structure
@@ -192,6 +170,26 @@ int proc_set(syntax *const sx, const size_t index, const item_t value);
  *	@return	Item by index from table, @c ITEM_MAX on failure
  */
 item_t proc_get(const syntax *const sx, const size_t index);
+
+
+/**
+ *	Push new value to stack
+ *
+ *	@param	sx			Syntax structure
+ *	@param	value		Value to push
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int stack_push(syntax *const sx, const item_t value);
+
+/**
+ *	Pop value from stack
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	Value, @c ITEM_MAX on failure
+ */
+item_t stack_pop(syntax *const sx);
 
 
 /**

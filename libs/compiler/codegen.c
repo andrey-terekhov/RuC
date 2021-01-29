@@ -75,14 +75,14 @@ static void final_operation(syntax *const sx, node *const nd)
 			{
 				mem_add(sx, _DOUBLE);
 				mem_add(sx, BNE0);
-				stack_push(sx, (int)mem_size(sx));
+				stack_push(sx, (item_t)mem_size(sx));
 				mem_increase(sx, 1);
 			}
 			else if (op == ADLOGAND)
 			{
 				mem_add(sx, _DOUBLE);
 				mem_add(sx, BE0);
-				stack_push(sx, (int)mem_size(sx));
+				stack_push(sx, (item_t)mem_size(sx));
 				mem_increase(sx, 1);
 			}
 			else
