@@ -180,7 +180,22 @@ void opt_for_statement()
 {
 	mcopy();
 	if (check_nested_for)
+	{
+		int temp_tc = tc;
+		int flag_nested_for_ref = tc+1;
+		while (tree[temp_tc] != TForEnd)
+		{
+			if (tree[temp_tc] == TFor)
+			{
+				tree[flag_nested_for_ref] = 0;
+				break;
+			}
+			temp_tc++;
+		}
+		if (tree[temp_tc] == TForEnd)
+			tree[flag_nested_for_ref] = 1;
 		mcopy();
+	}
 	int fromref, condref, incrref, stmtref;
 	fromref = mcopy();
 	condref = mcopy();
