@@ -2557,13 +2557,13 @@ void decl_id(analyzer *context, int decl_type)
 	{
 		scanner(context);
 		scanner(context);
-		TREE.array[all] = szof(context, decl_type);
+		vector_set(&TREE, all, szof(context, decl_type));
 		if (is_array(context->sx, decl_type)) // инициализация массива
 		{
 			context->onlystrings = 2;
 			if (!context->usual)
 			{
-				TREE.array[adN]--; // это уменьшение N в Declarr
+				vector_set(&TREE, adN, vector_get(&TREE, adN) - 1); // это уменьшение N в Declarr
 			}
 			array_init(context, decl_type);
 			if (context->error_flag == 7)
@@ -2573,7 +2573,7 @@ void decl_id(analyzer *context, int decl_type)
 			}
 			if (context->onlystrings == 1)
 			{
-				TREE.array[all + 2] = context->usual + 2; // только из строк 2 - без границ, 3 - с границами
+				vector_set(&TREE, all + 2, context->usual + 2); // только из строк 2 - без границ, 3 - с границами
 			}
 		}
 		else
@@ -2691,9 +2691,9 @@ void statement(analyzer *context)
 					break;
 				}
 
-				if (TREE.size != 0)
+				if (vector_size(&TREE) != 0)
 				{
-					TREE.size--;
+					vector_remove(&TREE);
 				}
 				totree(context, TPrint);
 				totree(context, context->ansttype);
@@ -2968,18 +2968,19 @@ void statement(analyzer *context)
 			{
 				mustbe(context, LEFTBR, no_leftbr_in_for);
 				totree(context, TFor);
-				size_t fromref = TREE.size++;
-				size_t condref = TREE.size++;
-				size_t incrref = TREE.size++;
-				size_t stmtref = TREE.size++;
+				size_t fromref = vector_size(&TREE);
+				size_t condref = fromref + 1;
+				size_t incrref = condref + 1;
+				size_t stmtref = incrref + 1;
+				vector_increase(&TREE, 4);
 
 				if (scanner(context) == SEMICOLON) // init
 				{
-					TREE.array[fromref] = 0;
+					vector_set(&TREE, fromref, 0);
 				}
 				else
 				{
-					TREE.array[fromref] = (int)TREE.size;
+					vector_set(&TREE, fromref, vector_size(&TREE));
 					expr(context, 0);
 					if (context->error_flag == 5)
 					{
@@ -2992,11 +2993,11 @@ void statement(analyzer *context)
 				}
 				if (scanner(context) == SEMICOLON) // cond
 				{
-					TREE.array[condref] = 0;
+					vector_set(&TREE, condref, 0);
 				}
 				else
 				{
-					TREE.array[condref] = (int)TREE.size;
+					vector_set(&TREE, condref, vector_size(&TREE));
 					exprval(context);
 					if (context->error_flag == 4)
 					{
@@ -3010,11 +3011,11 @@ void statement(analyzer *context)
 				}
 				if (scanner(context) == RIGHTBR) // incr
 				{
-					TREE.array[incrref] = 0;
+					vector_set(&TREE, incrref, 0);
 				}
 				else
 				{
-					TREE.array[incrref] = (int)TREE.size;
+					vector_set(&TREE, incrref, vector_size(&TREE));
 					expr(context, 0);
 					if (context->error_flag == 5)
 					{
@@ -3026,7 +3027,7 @@ void statement(analyzer *context)
 					mustbe(context, RIGHTBR, no_rightbr_in_for);
 				}
 				flagsemicol = 0;
-				TREE.array[stmtref] = (int)TREE.size;
+				vector_set(&TREE, stmtref, vector_size(&TREE));
 				context->inloop = 1;
 				statement(context);
 			}
@@ -3079,7 +3080,8 @@ void statement(analyzer *context)
 			case LIF:
 			{
 				totree(context, TIf);
-				size_t elseref = TREE.size++;
+				size_t elseref = vector_size(&TREE);
+				vector_increase(&TREE, 1);
 				flagsemicol = 0;
 				exprinbrkts(context, cond_must_be_in_brkts);
 				if (context->error_flag == 3)
@@ -3092,12 +3094,12 @@ void statement(analyzer *context)
 				if (context->next == LELSE)
 				{
 					scanner(context);
-					TREE.array[elseref] = (int)TREE.size;
+					vector_set(&TREE, elseref, (item_t)vector_size(&TREE));;
 					statement(context);
 				}
 				else
 				{
-					TREE.array[elseref] = 0;
+					vector_set(&TREE, elseref, 0);
 				}
 			}
 			break;
