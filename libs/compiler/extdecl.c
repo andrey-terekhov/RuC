@@ -3303,14 +3303,13 @@ int struct_decl_list(analyzer *context)
 					}
 					if (context->onlystrings == 1)
 					{
-						vector_set(&TREE, all + 2, context->usual + 2);
-						TREE.array[all + 2] = context->usual + 2;			// только из строк 2 - без границ, 3 - с границами
+						vector_set(&TREE, all + 2, context->usual + 2);			// только из строк 2 - без границ, 3 - с границами
 					}
 				}
 				else
 				{
 					// structdispl = context->sx->identab[oldid+3];
-					// TREE.array[all] = inition(context, t);
+					// vector_get(&TREE, all) = inition(context, t);
 				}
 			} // конец ASS
 		}	  // конец LEFTSQBR
@@ -3593,19 +3592,18 @@ void function_definition(analyzer *context)
 	totree(context, TFuncdef);
 	totree(context, fid);
 	pred = (int)TREE.size;	// FIXME
-	if (TREE.size == vector_size(&TREE))
+	/*if (TREE.size == vector_size(&TREE))
 	{
 		printf("ghjk\n");
-	}
+	}*/
 	vector_increase(&TREE, 1);
 	REPRTAB_POS = oldrepr;
 
 	block(context, 0);
 
-	// if (ftype == LVOID && TREE.array[TREE.size - 1] != TReturnvoid)
+	// if (ftype == LVOID && vector_get(&TREE, vector_size(&TREE) - 1) != TReturnvoid)
 	// {
 	vector_remove(&TREE);
-	//TREE.size--;
 	totree(context, TReturnvoid);
 	totree(context, TEnd);
 	// }
@@ -3839,7 +3837,7 @@ void ext_decl(analyzer *context)
 	get_char(context->lxr);
 	context->next = lex(context->lxr);
 	
-	context->temp_tc = TREE.size;
+	context->temp_tc = vector_size(&TREE);
 	do // top levext_declel описания переменных и функций до конца файла
 	{
 		int repeat = 1;
