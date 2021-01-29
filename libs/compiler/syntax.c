@@ -101,6 +101,8 @@ int sx_init(syntax *const sx)
 	sx->processes = vector_create(INIPROSIZE);
 	vector_increase(&sx->processes, 1);
 
+	sx->stack_size = -1;
+
 	sx->predef = vector_create(FUNCSIZE);
 	sx->functions = vector_create(FUNCSIZE);
 	vector_increase(&sx->functions, 2);
@@ -113,7 +115,7 @@ int sx_init(syntax *const sx)
 	sx->rp = 1;
 
 	sx->maxdisplg = 3;
-	sx->main_ref = 0;
+	sx->ref_main = 0;
 
 	sx->maxdispl = 3;
 	sx->displ = -3;
@@ -125,7 +127,7 @@ int sx_init(syntax *const sx)
 		sx->hashtab[i] = 0;
 	}
 
-	sx->current = NULL;
+	sx->max_threads = 0;
 
 	return 0;
 }
@@ -133,7 +135,7 @@ int sx_init(syntax *const sx)
 int sx_is_correct(syntax *const sx)
 {
 	int is_correct = 1;
-	if (sx->main_ref == 0)
+	if (sx->ref_main == 0)
 	{
 		error(NULL, no_main_in_program);
 		is_correct = 0;
@@ -192,9 +194,32 @@ item_t mem_get(const syntax *const sx, const size_t index)
 	return sx != NULL ? vector_get(&sx->memory, index) : ITEM_MAX;
 }
 
-size_t mem_get_size(const syntax *const sx)
+size_t mem_size(const syntax *const sx)
 {
 	return sx != NULL ? vector_size(&sx->memory) : SIZE_MAX;
+}
+
+
+int stack_push(syntax *const sx, const int value)
+{
+	if (sx == NULL || sx->stack_size == 255)
+	{
+		return -1;
+	}
+
+	sx->stack_size++;
+	sx->stack[sx->stack_size] = value;
+	return 0;
+}
+
+int stack_pop(syntax *const sx)
+{
+	if (sx == NULL || sx->stack_size == -1)
+	{
+		return INT_MAX;
+	}
+
+	return sx->stack[sx->stack_size--];
 }
 
 
@@ -233,11 +258,11 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 
 	if (repr_get_reference(sx, repr) == 0) // это может быть только MAIN
 	{
-		if (sx->main_ref)
+		if (sx->ref_main)
 		{
 			return SIZE_MAX;
 		}
-		sx->main_ref = lastid;
+		sx->ref_main = lastid;
 	}
 
 	// Ссылка на описание с таким же представлением в предыдущем блоке
@@ -579,31 +604,4 @@ int scope_func_exit(syntax *const sx, const size_t decl_ref, const int displ)
 	sx->displ = displ;
 	
 	return 0;
-}
-
-
-int tree_set_node(syntax *const sx, node *const nd)
-{
-	if (sx == NULL || !node_is_correct(nd))
-	{
-		return -1;
-	}
-
-	sx->current = nd;
-	return 0;
-}
-
-int tree_next_node(syntax *const sx)
-{
-	return sx != NULL ? node_set_next(sx->current) : -1;
-}
-
-node *tree_get_node(syntax *const sx)
-{
-	if (sx == NULL || !node_is_correct(sx->current))
-	{
-		return NULL;
-	}
-
-	return sx->current;
 }
