@@ -564,9 +564,13 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			size_t old_break = context->addr_break;
 			size_t old_cond = context->addr_cond;
 
+			node incr = *nd;
+			size_t child_stmt = 0;
+
 			if (ref_from)
 			{
-				expression(sx, nd, 0); // initialization
+				expression(sx, &incr, 0); // initialization
+				child_stmt++;
 			}
 
 			size_t initad = mem_size(sx);
@@ -575,30 +579,25 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 
 			if (ref_cond)
 			{
-				expression(sx, nd, 0); // condition
+				expression(sx, &incr, 0); // condition
 				tocode(sx, BE0);
 				context->addr_break = mem_size(sx);
 				mem_add(sx, 0);
+				child_stmt++;
 			}
 
-			node stmt = *nd;
 			if (ref_incr)
 			{
-				node_set_next(&stmt);
-				while (node_get_amount(&stmt) != 0)
-				{
-					const node next = node_get_child(&stmt, node_get_amount(&stmt) - 1);
-					node_copy(&stmt, &next);
-				}
+				child_stmt++;
 			}
 
-			node_set_next(&stmt); // TExprend
+			node stmt = node_get_child(nd, child_stmt);
 			statement(sx, &stmt, context);
 			addr_end_condition(sx, context);
 
 			if (ref_incr)
 			{
-				expression(sx, nd, 0); // increment
+				expression(sx, &incr, 0); // increment
 			}
 			node_copy(nd, &stmt);
 
