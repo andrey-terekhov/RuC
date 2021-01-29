@@ -3538,7 +3538,7 @@ void block(analyzer *context, int b)
 void function_definition(analyzer *context)
 {
 	int fn = ident_get_displ(context->sx, context->lastid);
-	int pred;
+	size_t pred;
 	int oldrepr = REPRTAB_POS;
 	int ftype;
 	int n;
@@ -3550,7 +3550,7 @@ void function_definition(analyzer *context)
 	n = mode_get(context->sx, context->functype + 2);
 	context->wasret = 0;
 	
-	if ((pred = context->sx->identab[context->lastid]) > 1) // был прототип
+	if ((pred = (size_t)context->sx->identab[context->lastid]) > 1) // был прототип
 	{
 		if (context->functype != ident_get_mode(context->sx, pred))
 		{
@@ -3591,11 +3591,7 @@ void function_definition(analyzer *context)
 	func_set(context->sx, fn, (int)size);
 	totree(context, TFuncdef);
 	totree(context, fid);
-	pred = (int)TREE.size;	// FIXME
-	/*if (TREE.size == vector_size(&TREE))
-	{
-		printf("ghjk\n");
-	}*/
+	pred = vector_size(&TREE);
 	vector_increase(&TREE, 1);
 	REPRTAB_POS = oldrepr;
 
