@@ -1740,11 +1740,12 @@ void unarexpr(analyzer *context)
 				}
 				else if (op == LMINUS)
 				{
-					if (TREE.array[TREE.size - 2] == TConst)
+					const size_t size = vector_size(&TREE);
+					if (vector_get(&TREE, size - 2) == TConst)
 					{
-						TREE.array[TREE.size - 1] *= -1;
+						vector_set(&TREE, vector_size(&TREE) - 1, -vector_get(&TREE, vector_size(&TREE) - 1));
 					}
-					else if (TREE.array[TREE.size - 3] == TConstd)
+					else if (vector_get(&TREE, size - 3) == TConstd)
 					{
 						double_to_tree(&TREE, -double_from_tree(&TREE));
 					}
