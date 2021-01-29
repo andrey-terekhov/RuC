@@ -1503,8 +1503,9 @@ void postexpr(analyzer *context)
 
 			if (context->anst == IDENT) // a[i]
 			{
-				TREE.array[TREE.size - 2] = TSliceident;
-				TREE.array[TREE.size - 1] = context->anstdispl;
+				const size_t size = vector_size(&TREE);
+				vector_set(&TREE, size - 2, TSliceident);
+				vector_set(&TREE, size - 1, context->anstdispl);
 			}
 			else // a[i][j]
 			{
@@ -1546,7 +1547,7 @@ void postexpr(analyzer *context)
 
 			if (context->anst == IDENT)
 			{
-				TREE.array[TREE.size - 2] = TIdenttoval;
+				vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval);
 			}
 			context->anst = ADDR;
 			// pointer  мог быть значением функции (VAL) или, может быть,
@@ -1606,7 +1607,7 @@ void postexpr(analyzer *context)
 						return; // 1
 					}
 				}
-				TREE.array[TREE.size - 1] = context->anstdispl;
+				vector_set(&TREE, vector_size(&TREE) - 1, context->anstdispl);
 			}
 			else // ADDR
 			{
@@ -1704,7 +1705,7 @@ void unarexpr(analyzer *context)
 
 				if (context->anst == IDENT)
 				{
-					TREE.array[TREE.size - 2] = TIdenttoaddr; // &a
+					vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoaddr); // &a
 				}
 
 				context->stackoperands[context->sopnd] = context->ansttype =
@@ -1722,7 +1723,7 @@ void unarexpr(analyzer *context)
 
 				if (context->anst == IDENT)
 				{
-					TREE.array[TREE.size - 2] = TIdenttoval; // *p
+					vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval); // *p
 				}
 
 				context->stackoperands[context->sopnd] = context->ansttype = mode_get(context->sx, context->ansttype + 1);
