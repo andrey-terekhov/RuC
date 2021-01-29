@@ -370,7 +370,7 @@ void binop(analyzer *context, int sp)
 	if (op == LOGOR || op == LOGAND)
 	{
 		totree(context, op);
-		vector_set(&TREE, context->stacklog[sp], vector_size(&TREE));
+		vector_set(&TREE, context->stacklog[sp], (item_t)vector_size(&TREE));
 		vector_increase(&TREE, 1);
 	}
 	else
@@ -2979,7 +2979,7 @@ void statement(analyzer *context)
 				}
 				else
 				{
-					vector_set(&TREE, fromref, vector_size(&TREE));
+					vector_set(&TREE, fromref, (item_t)vector_size(&TREE));
 					expr(context, 0);
 					if (context->error_flag == 5)
 					{
@@ -2996,7 +2996,7 @@ void statement(analyzer *context)
 				}
 				else
 				{
-					vector_set(&TREE, condref, vector_size(&TREE));
+					vector_set(&TREE, condref, (item_t)vector_size(&TREE));
 					exprval(context);
 					if (context->error_flag == 4)
 					{
@@ -3014,7 +3014,7 @@ void statement(analyzer *context)
 				}
 				else
 				{
-					vector_set(&TREE, incrref, vector_size(&TREE));
+					vector_set(&TREE, incrref, (item_t)vector_size(&TREE));
 					expr(context, 0);
 					if (context->error_flag == 5)
 					{
@@ -3026,7 +3026,7 @@ void statement(analyzer *context)
 					mustbe(context, RIGHTBR, no_rightbr_in_for);
 				}
 				flagsemicol = 0;
-				vector_set(&TREE, stmtref, vector_size(&TREE));
+				vector_set(&TREE, stmtref, (item_t)vector_size(&TREE));
 				context->inloop = 1;
 				statement(context);
 			}
