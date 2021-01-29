@@ -32,7 +32,7 @@ typedef struct node node;
 /** Global vars definition */
 typedef struct syntax
 {
-	// mem, pc & iniprocs - usage here only for codes printing
+	// mem, pc, iniprocs & max_threads - usage here only for codes printing
 
 	int mem[MAXMEMSIZE];			/**< Memory */
 	int pc;							/**< Program counter */
@@ -68,14 +68,14 @@ typedef struct syntax
 
 	int maxdispl;					/**< Max displacement */
 	int maxdisplg;					/**< Max displacement */
-	size_t main_ref;				/**< Main function reference */
+	size_t ref_main;				/**< Main function reference */
 
 	int displ;						/**< Stack displacement in current scope */
 	int lg;							/**< Displacement from l (+1) or g (-1) */
 	
 	int keywordsnum;				/**< Number of read keyword */
 
-	node *current; 					/**< Current node during traversing the tree */
+	size_t max_threads;				/**< Max threads count */
 } syntax;
 
 
@@ -147,7 +147,7 @@ int mem_get(const syntax *const sx, const size_t index);
  *
  *	@return	Program counter on success, @c INT_MAX on failure
  */
-size_t mem_get_size(const syntax *const sx);
+size_t mem_size(const syntax *const sx);
 
 
 /**
@@ -427,37 +427,6 @@ int scope_func_enter(syntax *const sx);
  *	@return	@c 0 on success, @c -1 on failure
  */
 int scope_func_exit(syntax *const sx, const size_t decl_ref, const int displ);
-
-  
-/**
- *	Set current node
- *
- *	@param	sx			Syntax structure
- *	@param	nd			Node to set
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int tree_set_node(syntax *const sx, node *const nd);
-
-/**
- *	Set next node in current node
- *
- *	@param	sx			Syntax structure
- *
- *	@return	@c -1 on failure, 
- *			@c  0 on success,
- *			@c  1 on the end of the tree
- */
-int tree_next_node(syntax *const sx);
-
-/**
- *	Get current node
- *
- *	@param	sx			Syntax structure
- *
- *	@return	Current node, @c NULL on failure
- */
-node *tree_get_node(syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */
