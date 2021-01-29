@@ -2212,6 +2212,7 @@ void MStmt_gen()
             break;
         case TFor:
         {
+			tc++; // Здесь был флаг вложенности
             int fromref = tree[tc++], condref = tree[tc++], incrref = tree[tc++],
             stmtref = tree[tc++];
             int oldbreak = adbreak, oldcont = adcont, incrtc, endtc;

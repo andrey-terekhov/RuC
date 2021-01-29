@@ -1812,6 +1812,7 @@ void statement()
                          int fromref, condref, incrref, stmtref;
                          mustbe(LEFTBR, no_leftbr_in_for);
                          totree(TFor);
+                         totree(0);  // Здесь будет флаг вложенности
                          fromref = tc++;
                          condref = tc++;
                          incrref = tc++;

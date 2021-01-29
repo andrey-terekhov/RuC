@@ -176,6 +176,24 @@ void mstatement();
 
 void mblock();
 
+void opt_for_statement()
+{
+	int fromref, condref, incrref, statemref;
+	mcopy();
+	mcopy();
+	fromref = mcopy();
+	condref = mcopy();
+	incrref = mcopy();
+	statemref = mcopy();
+	if (fromref)
+		mexpr();
+	if (condref)
+		mexpr();
+	if (incrref)
+		mexpr();
+	mstatement();
+}
+
 void mstatement()
 {
     t = tree[tc];
@@ -212,22 +230,8 @@ void mstatement()
             mexpr();
             break;
         case TFor:
-        {
-            int fromref, condref, incrref, statemref;
-            mcopy();
-            fromref = mcopy();
-            condref = mcopy();
-            incrref = mcopy();
-            statemref = mcopy();
-            if (fromref)
-                mexpr();
-            if (condref)
-                mexpr();
-            if (incrref)
-                mexpr();
-            mstatement();
+			opt_for_statement();
             break;
-        }
         case TLabel:
             mcopy();
             mcopy();

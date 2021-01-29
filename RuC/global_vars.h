@@ -40,5 +40,6 @@ extern int anst, anstdispl, ansttype, leftansttype;
 extern int bad_printf_placeholder;
 
 extern int cycle_jump_reduce;
+extern int check_nested_for;
 
 #endif
