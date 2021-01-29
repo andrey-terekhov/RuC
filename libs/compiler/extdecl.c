@@ -3592,7 +3592,11 @@ void function_definition(analyzer *context)
 	func_set(context->sx, fn, (int)size);
 	totree(context, TFuncdef);
 	totree(context, fid);
-	pred = (int)TREE.size;
+	pred = (int)TREE.size;	// FIXME
+	if (TREE.size == vector_size(&TREE))
+	{
+		printf("ghjk\n");
+	}
 	vector_increase(&TREE, 1);
 	REPRTAB_POS = oldrepr;
 
@@ -3600,7 +3604,8 @@ void function_definition(analyzer *context)
 
 	// if (ftype == LVOID && TREE.array[TREE.size - 1] != TReturnvoid)
 	// {
-	TREE.size--;
+	vector_remove(&TREE);
+	//TREE.size--;
 	totree(context, TReturnvoid);
 	totree(context, TEnd);
 	// }
