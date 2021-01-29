@@ -115,9 +115,9 @@ static void final_operation(syntax *const sx, node *const nd)
 				{
 					tocode(sx, node_get_arg(nd, 0)); // длина
 				}
-				else if ((op >= REMASS && op <= DIVASS) || (op >= REMASSV && op <= DIVASSV) ||
-						 (op >= ASSR && op <= DIVASSR) || (op >= ASSRV && op <= DIVASSRV) || (op >= POSTINC && op <= DEC) ||
-						 (op >= POSTINCV && op <= DECV) || (op >= POSTINCR && op <= DECR) || (op >= POSTINCRV && op <= DECRV))
+				else if ((op >= REMASS && op <= DIVASS) || (op >= REMASSV && op <= DIVASSV)
+					|| (op >= ASSR && op <= DIVASSR) || (op >= ASSRV && op <= DIVASSRV) || (op >= POSTINC && op <= DEC)
+					|| (op >= POSTINCV && op <= DECV) || (op >= POSTINCR && op <= DECR) || (op >= POSTINCRV && op <= DECRV))
 				{
 					tocode(sx,node_get_arg(nd, 0));
 				}
@@ -157,20 +157,20 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			{
 				tocode(sx, LA);
 				tocode(sx, node_get_arg(nd, 0));
-				break;
 			}
+			break;
 			case TIdenttoval:
 			{
 				tocode(sx, LOAD);
 				tocode(sx, node_get_arg(nd, 0));
-				break;
 			}
+			break;
 			case TIdenttovald:
 			{
 				tocode(sx, LOADD);
 				tocode(sx, node_get_arg(nd, 0));
-				break;
 			}
+			break;
 			case TAddrtoval:
 				tocode(sx, LAT);
 				break;
@@ -181,25 +181,25 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			{
 				tocode(sx, LI);
 				tocode(sx, node_get_arg(nd, 0));
-				break;
 			}
+			break;
 			case TConstd:
 			{
 				tocode(sx, LID);
 				tocode(sx, node_get_arg(nd, 0));
 				tocode(sx, node_get_arg(nd, 1));
-				break;
 			}
+			break;
 			case TString:
 			case TStringd:
 			{
-				const int N = node_get_arg(nd, 0);
-
 				tocode(sx, LI);
-				const size_t res = mem_size(sx) + 4;
-				tocode(sx, (int)res);
+				const size_t reserved = mem_size(sx) + 4;
+				tocode(sx, (int)reserved);
 				tocode(sx, B);
 				mem_increase(sx, 2);
+
+				const int N = node_get_arg(nd, 0);
 				for (int i = 0; i < N; i++)
 				{
 					if (operation == TString)
@@ -209,13 +209,14 @@ static void expression(syntax *const sx, node *const nd, int mode)
 					else
 					{
 						tocode(sx, node_get_arg(nd, 2 * i + 1));
-						tocode(sx, node_get_arg(nd, 2 * i + 1 + 1));
+						tocode(sx, node_get_arg(nd, 2 * i + 2));
 					}
 				}
-				mem_set(sx, res - 1, N);
-				mem_set(sx, res - 2, (int)mem_size(sx));
-				break;
+
+				mem_set(sx, reserved - 1, N);
+				mem_set(sx, reserved - 2, (int)mem_size(sx));
 			}
+			break;
 			case TBeginit:
 			{
 				const int N = node_get_arg(nd, 0);
@@ -227,8 +228,8 @@ static void expression(syntax *const sx, node *const nd, int mode)
 				{
 					expression(sx, nd, 0);
 				}
-				break;
 			}
+			break;
 			case TStructinit:
 			{
 				const int N = node_get_arg(nd, 0);
@@ -236,8 +237,8 @@ static void expression(syntax *const sx, node *const nd, int mode)
 				{
 					expression(sx, nd, 0);
 				}
-				break;
 			}
+			break;
 			case TSliceident:
 			{
 				tocode(sx, LOAD); // параметры - смещение идента и тип элемента
@@ -245,29 +246,29 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			}
 			case TSlice: // параметр - тип элемента
 			{
-				int eltype = node_get_arg(nd, operation == TSlice ? 0 : 1);
+				int type = node_get_arg(nd, operation == TSlice ? 0 : 1);
 
 				expression(sx, nd, 0);
 				tocode(sx, SLICE);
-				tocode(sx, size_of(sx, eltype));
-				if (eltype > 0 && mode_get(sx, eltype) == MARRAY)
+				tocode(sx, size_of(sx, type));
+				if (type > 0 && mode_get(sx, type) == MARRAY)
 				{
 					tocode(sx, LAT);
 				}
-				break;
 			}
+			break;
 			case TSelect:
 			{
 				tocode(sx, SELECT); // SELECT field_displ
 				tocode(sx, node_get_arg(nd, 0));
-				break;
 			}
+			break;
 			case TPrint:
 			{
 				tocode(sx, PRINT);
 				tocode(sx, node_get_arg(nd, 0)); // type
-				break;
 			}
+			break;
 			case TCall1:
 			{
 				tocode(sx, CALL1);
@@ -277,14 +278,14 @@ static void expression(syntax *const sx, node *const nd, int mode)
 				{
 					expression(sx, nd, 0);
 				}
-				break;
 			}
+			break;
 			case TCall2:
 			{
 				tocode(sx, CALL2);
 				tocode(sx, ident_get_displ(sx, node_get_arg(nd, 0)));
-				break;
 			}
+			break;
 			default:
 				was_operation = 0;
 				break;
@@ -304,25 +305,27 @@ static void expression(syntax *const sx, node *const nd, int mode)
 				return;
 			}
 
-			size_t ad = 0;
+			size_t addr = 0;
 			do
 			{
 				tocode(sx, BE0);
-				size_t adelse = mem_size(sx);
+				const size_t addr_else = mem_size(sx);
 				mem_increase(sx, 1);
+
 				expression(sx, nd, 0); // then
 				tocode(sx, B);
-				mem_add(sx, (int)ad);
-				ad = mem_size(sx) - 1;
-				mem_set(sx, adelse, (int)mem_size(sx));
+				mem_add(sx, (int)addr);
+				addr = mem_size(sx) - 1;
+				mem_set(sx, addr_else, (int)mem_size(sx));
+
 				expression(sx, nd, 1); // else или cond
 			} while (node_get_type(nd) == TCondexpr);
 
-			while (ad)
+			while (addr)
 			{
-				int ref = mem_get(sx, ad);
-				mem_set(sx, ad, (int)mem_size(sx));
-				ad = ref;
+				int ref = mem_get(sx, addr);
+				mem_set(sx, addr, (int)mem_size(sx));
+				addr = ref;
 			}
 
 			final_operation(sx, nd);
@@ -511,9 +514,9 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 		break;
 		case TWhile:
 		{
-			size_t old_break = context->addr_break;
-			size_t old_cond = context->addr_cond;
-			size_t addr = mem_size(sx);
+			const size_t old_break = context->addr_break;
+			const size_t old_cond = context->addr_cond;
+			const size_t addr = mem_size(sx);
 
 			context->addr_cond = addr;
 			expression(sx, nd, 0);
@@ -528,43 +531,41 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			tocode(sx, B);
 			tocode(sx, (int)addr);
 			addr_end_break(sx, context);
+
 			context->addr_break = old_break;
 			context->addr_cond = old_cond;
 		}
 		break;
 		case TDo:
 		{
-			size_t old_break = context->addr_break;
-			size_t old_cond = context->addr_cond;
-			size_t addr = mem_size(sx);
-
-			node_set_next(nd);
+			const size_t old_break = context->addr_break;
+			const size_t old_cond = context->addr_cond;
+			const size_t addr = mem_size(sx);
 
 			context->addr_cond = 0;
 			context->addr_break = 0;
 
+			node_set_next(nd);
 			statement(sx, nd, context);
 			addr_end_condition(sx, context);
 
 			expression(sx, nd, 0);
-
 			tocode(sx, BNE0);
 			tocode(sx, (int)addr);
 			addr_end_break(sx, context);
+
 			context->addr_break = old_break;
 			context->addr_cond = old_cond;
 		}
 		break;
 		case TFor:
 		{
-			int ref_from = node_get_arg(nd, 0);
-			int ref_cond = node_get_arg(nd, 1);
-			int ref_incr = node_get_arg(nd, 2);
+			const int ref_from = node_get_arg(nd, 0);
+			const int ref_cond = node_get_arg(nd, 1);
+			const int ref_incr = node_get_arg(nd, 2);
 
-			size_t old_break = context->addr_break;
-			size_t old_cond = context->addr_cond;
-
-			node incr = *nd;
+			node incr;
+			node_copy(&incr, nd);
 			size_t child_stmt = 0;
 
 			if (ref_from)
@@ -573,10 +574,12 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 				child_stmt++;
 			}
 
-			size_t initad = mem_size(sx);
+			const size_t old_break = context->addr_break;
+			const size_t old_cond = context->addr_cond;
 			context->addr_cond = 0;
 			context->addr_break = 0;
 
+			size_t initad = mem_size(sx);
 			if (ref_cond)
 			{
 				expression(sx, &incr, 0); // condition
@@ -604,6 +607,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			tocode(sx, B);
 			tocode(sx, (int)initad);
 			addr_end_break(sx, context);
+
 			context->addr_break = old_break;
 			context->addr_cond = old_cond;
 		}
@@ -650,19 +654,20 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 		{
 			const size_t old_break = context->addr_break;
 			const size_t old_case = context->addr_case;
-
 			context->addr_break = 0;
 			context->addr_case = 0;
 
 			expression(sx, nd, 0);
 			node_set_next(nd); // TExprend
+
 			statement(sx, nd, context);
 			if (context->addr_case > 0)
 			{
 				mem_set(sx, context->addr_case, (int)mem_size(sx));
 			}
-			context->addr_case = old_case;
 			addr_end_break(sx, context);
+
+			context->addr_case = old_case;
 			context->addr_break = old_break;
 		}
 		break;
@@ -673,9 +678,9 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 				mem_set(sx, context->addr_case, (int)mem_size(sx));
 			}
 			tocode(sx, _DOUBLE);
-
 			expression(sx, nd, 0);
 			node_set_next(nd); // TExprend
+
 			tocode(sx, EQEQ);
 			tocode(sx, BE0);
 			context->addr_case = mem_size(sx);
@@ -748,13 +753,11 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 		}
 		break;
 		default:
-		{
 			if (declaration(sx, nd))
 			{
 				expression(sx, nd, -1);
 			}
-		}
-		break;
+			break;
 	}
 }
 
@@ -803,14 +806,12 @@ static int codegen(syntax *const sx)
 				break;
 
 			default:
-			{
 				if (declaration(sx, &root))
 				{
 					error(NULL, node_unexpected, node_get_type(&root));
 					return -1;
 				}
-			}
-			break;
+				break;
 		}
 	}
 
