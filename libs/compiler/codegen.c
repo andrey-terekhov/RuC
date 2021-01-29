@@ -64,14 +64,6 @@ static void addr_end_break(syntax *const sx, address *const context)
 }
 
 
-static void tocode(syntax *const sx, int c)
-{
-	// printf("tocode tc=%zi pc=%zi) %i\n", sx->tc,
-	// mem_size(sx), c);
-	mem_add(sx, c);
-}
-
-
 static void final_operation(syntax *const sx, node *const nd)
 {
 	int op = node_get_type(nd);
@@ -81,45 +73,45 @@ static void final_operation(syntax *const sx, node *const nd)
 		{
 			if (op == ADLOGOR)
 			{
-				tocode(sx, _DOUBLE);
-				tocode(sx, BNE0);
+				mem_add(sx, _DOUBLE);
+				mem_add(sx, BNE0);
 				stack_push(sx, (int)mem_size(sx));
 				mem_increase(sx, 1);
 			}
 			else if (op == ADLOGAND)
 			{
-				tocode(sx, _DOUBLE);
-				tocode(sx, BE0);
+				mem_add(sx, _DOUBLE);
+				mem_add(sx, BE0);
 				stack_push(sx, (int)mem_size(sx));
 				mem_increase(sx, 1);
 			}
 			else
 			{
-				tocode(sx, op);
+				mem_add(sx, op);
 				if (op == LOGOR || op == LOGAND)
 				{
 					mem_set(sx, stack_pop(sx), (int)mem_size(sx));
 				}
 				else if (op == COPY00 || op == COPYST)
 				{
-					tocode(sx, node_get_arg(nd, 0)); // d1
-					tocode(sx, node_get_arg(nd, 1)); // d2
-					tocode(sx, node_get_arg(nd, 2)); // длина
+					mem_add(sx, node_get_arg(nd, 0)); // d1
+					mem_add(sx, node_get_arg(nd, 1)); // d2
+					mem_add(sx, node_get_arg(nd, 2)); // длина
 				}
 				else if (op == COPY01 || op == COPY10 || op == COPY0ST || op == COPY0STASS)
 				{
-					tocode(sx, node_get_arg(nd, 0)); // d1
-					tocode(sx, node_get_arg(nd, 1)); // длина
+					mem_add(sx, node_get_arg(nd, 0)); // d1
+					mem_add(sx, node_get_arg(nd, 1)); // длина
 				}
 				else if (op == COPY11 || op == COPY1ST || op == COPY1STASS)
 				{
-					tocode(sx, node_get_arg(nd, 0)); // длина
+					mem_add(sx, node_get_arg(nd, 0)); // длина
 				}
 				else if ((op >= REMASS && op <= DIVASS) || (op >= REMASSV && op <= DIVASSV)
 					|| (op >= ASSR && op <= DIVASSR) || (op >= ASSRV && op <= DIVASSRV) || (op >= POSTINC && op <= DEC)
 					|| (op >= POSTINCV && op <= DECV) || (op >= POSTINCR && op <= DECR) || (op >= POSTINCRV && op <= DECRV))
 				{
-					tocode(sx,node_get_arg(nd, 0));
+					mem_add(sx,node_get_arg(nd, 0));
 				}
 			}
 		}
@@ -155,48 +147,48 @@ static void expression(syntax *const sx, node *const nd, int mode)
 				break;
 			case TIdenttoaddr:
 			{
-				tocode(sx, LA);
-				tocode(sx, node_get_arg(nd, 0));
+				mem_add(sx, LA);
+				mem_add(sx, node_get_arg(nd, 0));
 			}
 			break;
 			case TIdenttoval:
 			{
-				tocode(sx, LOAD);
-				tocode(sx, node_get_arg(nd, 0));
+				mem_add(sx, LOAD);
+				mem_add(sx, node_get_arg(nd, 0));
 			}
 			break;
 			case TIdenttovald:
 			{
-				tocode(sx, LOADD);
-				tocode(sx, node_get_arg(nd, 0));
+				mem_add(sx, LOADD);
+				mem_add(sx, node_get_arg(nd, 0));
 			}
 			break;
 			case TAddrtoval:
-				tocode(sx, LAT);
+				mem_add(sx, LAT);
 				break;
 			case TAddrtovald:
-				tocode(sx, LATD);
+				mem_add(sx, LATD);
 				break;
 			case TConst:
 			{
-				tocode(sx, LI);
-				tocode(sx, node_get_arg(nd, 0));
+				mem_add(sx, LI);
+				mem_add(sx, node_get_arg(nd, 0));
 			}
 			break;
 			case TConstd:
 			{
-				tocode(sx, LID);
-				tocode(sx, node_get_arg(nd, 0));
-				tocode(sx, node_get_arg(nd, 1));
+				mem_add(sx, LID);
+				mem_add(sx, node_get_arg(nd, 0));
+				mem_add(sx, node_get_arg(nd, 1));
 			}
 			break;
 			case TString:
 			case TStringd:
 			{
-				tocode(sx, LI);
+				mem_add(sx, LI);
 				const size_t reserved = mem_size(sx) + 4;
-				tocode(sx, (int)reserved);
-				tocode(sx, B);
+				mem_add(sx, (int)reserved);
+				mem_add(sx, B);
 				mem_increase(sx, 2);
 
 				const int N = node_get_arg(nd, 0);
@@ -204,12 +196,12 @@ static void expression(syntax *const sx, node *const nd, int mode)
 				{
 					if (operation == TString)
 					{
-						tocode(sx, node_get_arg(nd, i + 1));
+						mem_add(sx, node_get_arg(nd, i + 1));
 					}
 					else
 					{
-						tocode(sx, node_get_arg(nd, 2 * i + 1));
-						tocode(sx, node_get_arg(nd, 2 * i + 2));
+						mem_add(sx, node_get_arg(nd, 2 * i + 1));
+						mem_add(sx, node_get_arg(nd, 2 * i + 2));
 					}
 				}
 
@@ -221,8 +213,8 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			{
 				const int N = node_get_arg(nd, 0);
 
-				tocode(sx, BEGINIT);
-				tocode(sx, N);
+				mem_add(sx, BEGINIT);
+				mem_add(sx, N);
 
 				for (int i = 0; i < N; i++)
 				{
@@ -241,37 +233,37 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			break;
 			case TSliceident:
 			{
-				tocode(sx, LOAD); // параметры - смещение идента и тип элемента
-				tocode(sx, node_get_arg(nd, 0)); // продолжение в след case
+				mem_add(sx, LOAD); // параметры - смещение идента и тип элемента
+				mem_add(sx, node_get_arg(nd, 0)); // продолжение в след case
 			}
 			case TSlice: // параметр - тип элемента
 			{
 				int type = node_get_arg(nd, operation == TSlice ? 0 : 1);
 
 				expression(sx, nd, 0);
-				tocode(sx, SLICE);
-				tocode(sx, size_of(sx, type));
+				mem_add(sx, SLICE);
+				mem_add(sx, size_of(sx, type));
 				if (type > 0 && mode_get(sx, type) == MARRAY)
 				{
-					tocode(sx, LAT);
+					mem_add(sx, LAT);
 				}
 			}
 			break;
 			case TSelect:
 			{
-				tocode(sx, SELECT); // SELECT field_displ
-				tocode(sx, node_get_arg(nd, 0));
+				mem_add(sx, SELECT); // SELECT field_displ
+				mem_add(sx, node_get_arg(nd, 0));
 			}
 			break;
 			case TPrint:
 			{
-				tocode(sx, PRINT);
-				tocode(sx, node_get_arg(nd, 0)); // type
+				mem_add(sx, PRINT);
+				mem_add(sx, node_get_arg(nd, 0)); // type
 			}
 			break;
 			case TCall1:
 			{
-				tocode(sx, CALL1);
+				mem_add(sx, CALL1);
 
 				const int N = node_get_arg(nd, 0);
 				for (int i = 0; i < N; i++)
@@ -282,8 +274,8 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			break;
 			case TCall2:
 			{
-				tocode(sx, CALL2);
-				tocode(sx, ident_get_displ(sx, node_get_arg(nd, 0)));
+				mem_add(sx, CALL2);
+				mem_add(sx, ident_get_displ(sx, node_get_arg(nd, 0)));
 			}
 			break;
 			default:
@@ -308,12 +300,12 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			size_t addr = 0;
 			do
 			{
-				tocode(sx, BE0);
+				mem_add(sx, BE0);
 				const size_t addr_else = mem_size(sx);
 				mem_increase(sx, 1);
 
 				expression(sx, nd, 0); // then
-				tocode(sx, B);
+				mem_add(sx, B);
 				mem_add(sx, (int)addr);
 				addr = mem_size(sx) - 1;
 				mem_set(sx, addr_else, (int)mem_size(sx));
@@ -380,9 +372,9 @@ static void identifier(syntax *const sx, node *const nd)
 	{
 		if (process)
 		{
-			tocode(sx, STRUCTWITHARR);
-			tocode(sx, old_displ);
-			tocode(sx, proc_get(sx, process));
+			mem_add(sx, STRUCTWITHARR);
+			mem_add(sx, old_displ);
+			mem_add(sx, proc_get(sx, process));
 		}
 		if (all) // int a = или struct{} a =
 		{
@@ -391,16 +383,16 @@ static void identifier(syntax *const sx, node *const nd)
 				node_set_next(nd);
 				structure(sx, nd);
 
-				tocode(sx, COPY0STASS);
-				tocode(sx, old_displ);
-				tocode(sx, all); // Общее количество слов
+				mem_add(sx, COPY0STASS);
+				mem_add(sx, old_displ);
+				mem_add(sx, all); // Общее количество слов
 			}
 			else
 			{
 				expression(sx, nd, 0);
 
-				tocode(sx, type == LFLOAT ? ASSRV : ASSV);
-				tocode(sx, old_displ);
+				mem_add(sx, type == LFLOAT ? ASSRV : ASSV);
+				mem_add(sx, old_displ);
 			}
 		}
 	}
@@ -408,24 +400,24 @@ static void identifier(syntax *const sx, node *const nd)
 	{
 		const int length = size_of(sx, type);
 
-		tocode(sx, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
-		tocode(sx, all == 0 ? N : abs(N) - 1);
-		tocode(sx, length);
-		tocode(sx, old_displ);
-		tocode(sx, proc_get(sx, process));
-		tocode(sx, usual);
-		tocode(sx, all);
-		tocode(sx, instruction);
+		mem_add(sx, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
+		mem_add(sx, all == 0 ? N : abs(N) - 1);
+		mem_add(sx, length);
+		mem_add(sx, old_displ);
+		mem_add(sx, proc_get(sx, process));
+		mem_add(sx, usual);
+		mem_add(sx, all);
+		mem_add(sx, instruction);
 
 		if (all) // all == 1, если есть инициализация массива
 		{
 			expression(sx, nd, 0);
 
-			tocode(sx, ARRINIT); // ARRINIT N d all displ usual
-			tocode(sx, abs(N));
-			tocode(sx, length);
-			tocode(sx, old_displ);
-			tocode(sx, usual);	// == 0 с пустыми границами
+			mem_add(sx, ARRINIT); // ARRINIT N d all displ usual
+			mem_add(sx, abs(N));
+			mem_add(sx, length);
+			mem_add(sx, old_displ);
+			mem_add(sx, usual);	// == 0 с пустыми границами
 								// == 1 без пустых границ и без инициализации
 		}
 	}
@@ -450,8 +442,8 @@ static int declaration(syntax *const sx, node *const nd)
 
 		case TStructbeg:
 		{
-			tocode(sx, B);
-			tocode(sx, 0);
+			mem_add(sx, B);
+			mem_add(sx, 0);
 			proc_set(sx, node_get_arg(nd, 0), (int)mem_size(sx));
 		}
 		break;
@@ -459,7 +451,7 @@ static int declaration(syntax *const sx, node *const nd)
 		{
 			const int num_proc = node_get_arg(nd, 0);
 
-			tocode(sx, STOP);
+			mem_add(sx, STOP);
 			mem_set(sx, proc_get(sx, num_proc) - 1, (int)mem_size(sx));
 		}
 		break;
@@ -478,12 +470,12 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 		case NOP:
 			break;
 		case CREATEDIRECTC:
-			tocode(sx, CREATEDIRECTC);
+			mem_add(sx, CREATEDIRECTC);
 			sx->max_threads++;
 			break;
 		case EXITDIRECTC:
 		case EXITC:
-			tocode(sx, EXITC);
+			mem_add(sx, EXITC);
 			break;
 		case TBegin:
 			block(sx, nd, context);
@@ -495,7 +487,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			expression(sx, nd, 0);
 			node_set_next(nd); // TExprend
 
-			tocode(sx, BE0);
+			mem_add(sx, BE0);
 			size_t addr = mem_size(sx);
 			mem_increase(sx, 1);
 			statement(sx, nd, context);
@@ -504,7 +496,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			{
 				node_set_next(nd);
 				mem_set(sx, addr, (int)mem_size(sx) + 2);
-				tocode(sx, B);
+				mem_add(sx, B);
 				addr = mem_size(sx);
 				mem_increase(sx, 1);
 				statement(sx, nd, context);
@@ -522,14 +514,14 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			expression(sx, nd, 0);
 			node_set_next(nd); // TExprend
 
-			tocode(sx, BE0);
+			mem_add(sx, BE0);
 			context->addr_break = mem_size(sx);
 			mem_add(sx, 0);
 			statement(sx, nd, context);
 
 			addr_begin_condition(sx, context, addr);
-			tocode(sx, B);
-			tocode(sx, (int)addr);
+			mem_add(sx, B);
+			mem_add(sx, (int)addr);
 			addr_end_break(sx, context);
 
 			context->addr_break = old_break;
@@ -550,8 +542,8 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			addr_end_condition(sx, context);
 
 			expression(sx, nd, 0);
-			tocode(sx, BNE0);
-			tocode(sx, (int)addr);
+			mem_add(sx, BNE0);
+			mem_add(sx, (int)addr);
 			addr_end_break(sx, context);
 
 			context->addr_break = old_break;
@@ -583,7 +575,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			if (ref_cond)
 			{
 				expression(sx, &incr, 0); // condition
-				tocode(sx, BE0);
+				mem_add(sx, BE0);
 				context->addr_break = mem_size(sx);
 				mem_add(sx, 0);
 				child_stmt++;
@@ -604,8 +596,8 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			}
 			node_copy(nd, &stmt);
 
-			tocode(sx, B);
-			tocode(sx, (int)initad);
+			mem_add(sx, B);
+			mem_add(sx, (int)initad);
 			addr_end_break(sx, context);
 
 			context->addr_break = old_break;
@@ -614,7 +606,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 		break;
 		case TGoto:
 		{
-			tocode(sx, B);
+			mem_add(sx, B);
 
 			const int id_sign = node_get_arg(nd, 0);
 			const size_t id = id_sign > 0 ? id_sign : -id_sign;
@@ -622,14 +614,14 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 
 			if (addr > 0) // метка уже описана
 			{
-				tocode(sx, addr);
+				mem_add(sx, addr);
 			}
 			else // метка еще не описана
 			{
 				ident_set_displ(sx, id, -(int)mem_size(sx));
 
 				// первый раз встретился переход на еще не описанную метку или нет
-				tocode(sx, id_sign < 0 ? 0 : addr);
+				mem_add(sx, id_sign < 0 ? 0 : addr);
 			}
 		}
 		break;
@@ -677,12 +669,12 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			{
 				mem_set(sx, context->addr_case, (int)mem_size(sx));
 			}
-			tocode(sx, _DOUBLE);
+			mem_add(sx, _DOUBLE);
 			expression(sx, nd, 0);
 			node_set_next(nd); // TExprend
 
-			tocode(sx, EQEQ);
-			tocode(sx, BE0);
+			mem_add(sx, EQEQ);
+			mem_add(sx, BE0);
 			context->addr_case = mem_size(sx);
 			mem_increase(sx, 1);
 			statement(sx, nd, context);
@@ -702,46 +694,46 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 		break;
 		case TBreak:
 		{
-			tocode(sx, B);
+			mem_add(sx, B);
 			mem_add(sx, (int)context->addr_break);
 			context->addr_break = mem_size(sx) - 1;
 		}
 		break;
 		case TContinue:
 		{
-			tocode(sx, B);
+			mem_add(sx, B);
 			mem_add(sx, (int)context->addr_cond);
 			context->addr_cond = mem_size(sx) - 1;
 		}
 		break;
 		case TReturnvoid:
-			tocode(sx, RETURNVOID);
+			mem_add(sx, RETURNVOID);
 			break;
 		case TReturnval:
 		{
 			const int value = node_get_arg(nd, 0);
 			expression(sx, nd, 0);
 
-			tocode(sx, RETURNVAL);
-			tocode(sx, value);
+			mem_add(sx, RETURNVAL);
+			mem_add(sx, value);
 		}
 		break;
 		case TPrintid:
 		{
-			tocode(sx, PRINTID);
-			tocode(sx, node_get_arg(nd, 0)); // ссылка в identtab
+			mem_add(sx, PRINTID);
+			mem_add(sx, node_get_arg(nd, 0)); // ссылка в identtab
 		}
 		break;
 		case TPrintf:
 		{
-			tocode(sx, PRINTF);
-			tocode(sx, node_get_arg(nd, 0)); // общий размер того, что надо вывести
+			mem_add(sx, PRINTF);
+			mem_add(sx, node_get_arg(nd, 0)); // общий размер того, что надо вывести
 		}
 		break;
 		case TGetid:
 		{
-			tocode(sx, GETID);
-			tocode(sx, node_get_arg(nd, 0)); // ссылка в identtab
+			mem_add(sx, GETID);
+			mem_add(sx, node_get_arg(nd, 0)); // ссылка в identtab
 		}
 		break;
 		case SETMOTOR:
@@ -749,7 +741,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			expression(sx, nd, 0);
 			expression(sx, nd, 0);
 
-			tocode(sx, SETMOTORC);
+			mem_add(sx, SETMOTORC);
 		}
 		break;
 		default:
@@ -788,8 +780,8 @@ static int codegen(syntax *const sx)
 				const int func = ident_get_displ(sx, ref_ident);
 
 				func_set(sx, func, mem_size(sx));
-				tocode(sx, FUNCBEG);
-				tocode(sx, max_displ);
+				mem_add(sx, FUNCBEG);
+				mem_add(sx, max_displ);
 
 				const size_t old_pc = mem_size(sx);
 				mem_increase(sx, 1);
@@ -815,10 +807,10 @@ static int codegen(syntax *const sx)
 		}
 	}
 
-	tocode(sx, CALL1);
-	tocode(sx, CALL2);
-	tocode(sx, ident_get_displ(sx, sx->ref_main));
-	tocode(sx, STOP);
+	mem_add(sx, CALL1);
+	mem_add(sx, CALL2);
+	mem_add(sx, ident_get_displ(sx, sx->ref_main));
+	mem_add(sx, STOP);
 	return 0;
 }
 
