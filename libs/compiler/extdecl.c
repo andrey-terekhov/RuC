@@ -1159,7 +1159,7 @@ void primaryexpr(analyzer *context)
 					}
 				}
 			}
-		}
+		}n
 		else if (func == RAND)
 		{
 			context->ansttype = context->stackoperands[++context->sopnd] = LFLOAT;
