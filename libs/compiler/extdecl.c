@@ -1876,7 +1876,8 @@ void subexpr(analyzer *context)
 		if (p <= 2)
 		{
 			totree(context, p == 1 ? ADLOGOR : ADLOGAND);
-			ad = TREE.size++;
+			ad = vector_size(&TREE);
+			vector_increase(&TREE, 1);
 		}
 
 		context->stack[context->sp] = p;
@@ -1961,8 +1962,8 @@ void condexpr(analyzer *context)
 			}
 			else
 			{
-				TREE.array[TREE.size] = (item_t)adif;
-				adif = TREE.size++;
+				vector_add(&TREE, (item_t)adif);
+				adif = vector_size(&TREE) - 1;
 			}
 			mustbe(context, COLON, no_colon_in_cond_expr);
 			scanner(context);
@@ -1987,15 +1988,16 @@ void condexpr(analyzer *context)
 		}
 		else
 		{
-			TREE.array[TREE.size] = (item_t)adif;
-			adif = TREE.size++;
+			vector_add(&TREE, (item_t)adif);
+			adif = vector_size(&TREE) - 1;
 		}
 
 		while (adif != 0)
 		{
-			size_t r = (size_t)TREE.array[adif];
-			TREE.array[adif] = TExprend;
-			TREE.array[adif - 1] = is_float(globtype) ? WIDEN : NOP;
+			size_t r = (size_t)TREE.array[adif];	// FIXME
+			//size_t r = (size_t)vector_get(&TREE, adif);
+			vector_set(&TREE, adif, TExprend);
+			vector_set(&TREE, adif - 1, is_float(globtype) ? WIDEN : NOP);
 			adif = r;
 		}
 
@@ -2109,12 +2111,13 @@ void struct_init(analyzer *context, int decl_type)
 
 void exprassnvoid(analyzer *context)
 {
-	size_t t = TREE.array[TREE.size - 2] < 9000 ? TREE.size - 3 : TREE.size - 2;
-	item_t tt = TREE.array[t];
+	const size_t size = vector_size(&TREE);
+	size_t t = vector_get(&TREE, size - 2) < 9000 ? size - 3 : size - 2;
+	item_t tt = vector_get(&TREE, t);
 	if ((tt >= ASS && tt <= DIVASSAT) || (tt >= POSTINC && tt <= DECAT) || (tt >= ASSR && tt <= DIVASSATR) ||
 		(tt >= POSTINCR && tt <= DECATR))
 	{
-		TREE.array[t] += 200;
+		vector_set(&TREE, t, vector_get(&TREE, t) + 200);
 	}
 	--context->sopnd;
 }
