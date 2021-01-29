@@ -1992,13 +1992,12 @@ void condexpr(analyzer *context)
 			adif = vector_size(&TREE) - 1;
 		}
 
-		while (adif != 0)
+		while (adif != 0 && adif <= vector_size(&TREE))
 		{
-			size_t r = (size_t)TREE.array[adif];	// FIXME
-			//size_t r = (size_t)vector_get(&TREE, adif);
+			item_t r = (size_t)vector_get(&TREE, adif);
 			vector_set(&TREE, adif, TExprend);
 			vector_set(&TREE, adif - 1, is_float(globtype) ? WIDEN : NOP);
-			adif = r;
+			adif = (size_t)r;
 		}
 
 		context->stackoperands[context->sopnd] = context->ansttype = globtype;
