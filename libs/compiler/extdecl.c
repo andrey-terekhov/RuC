@@ -370,7 +370,8 @@ void binop(analyzer *context, int sp)
 	if (op == LOGOR || op == LOGAND)
 	{
 		totree(context, op);
-		TREE.array[context->stacklog[sp]] = (int)TREE.size++;
+		vector_set(&TREE, context->stacklog[sp], vector_size(&TREE));
+		vector_increase(&TREE, 1);
 	}
 	else
 	{
@@ -402,7 +403,8 @@ void toval(analyzer *context)
 		{
 			if (context->anst == IDENT)
 			{
-				TREE.size -= 2;
+				vector_remove(&TREE);
+				vector_remove(&TREE);
 				totree(context, COPY0ST);
 				totree(context, context->anstdispl);
 			}
@@ -418,7 +420,10 @@ void toval(analyzer *context)
 	{
 		if (context->anst == IDENT)
 		{
-			TREE.array[TREE.size - 2] = is_float(context->ansttype) ? TIdenttovald : TIdenttoval;
+			vector_set(&TREE, vector_size(&TREE) - 2
+				, is_float(context->ansttype)
+					? TIdenttovald
+					: TIdenttoval);
 		}
 
 		if (!(is_array(context->sx, context->ansttype) || is_pointer(context->sx, context->ansttype)))
@@ -434,7 +439,7 @@ void toval(analyzer *context)
 
 void insertwiden(analyzer *context)
 {
-	TREE.size--;
+	vector_remove(&TREE);
 	totree(context, WIDEN);
 	totree(context, TExprend);
 }
@@ -457,7 +462,8 @@ void actstring(int type, analyzer *context)
 {
 	scanner(context);
 	totree(context, type == LFLOAT ? TStringd : TString);
-	size_t adn = TREE.size++;
+	size_t adn = vector_size(&TREE);
+	vector_increase(&TREE, 1);
 	
 	int n = 0;
 	do
@@ -468,16 +474,17 @@ void actstring(int type, analyzer *context)
 			context->error_flag = 1;
 			return; // 1
 		}
-		if (TREE.array[TREE.size - 3] == TConstd)
+		const size_t size = vector_size(&TREE);
+		if (vector_get(&TREE, size - 3) == TConstd)
 		{
-			TREE.array[TREE.size - 3] = TREE.array[TREE.size - 2];
-			TREE.array[TREE.size - 2] = TREE.array[TREE.size - 1];
-			--TREE.size;
+			vector_set(&TREE, size - 3, vector_get(&TREE, size - 2));
+			vector_set(&TREE, size - 2, vector_get(&TREE, size - 1));
+			vector_remove(&TREE);
 		}
-		else if (TREE.array[TREE.size - 2] == TConst)
+		else if (vector_get(&TREE, size - 2) == TConst)
 		{
-			TREE.array[TREE.size - 2] = TREE.array[TREE.size - 1];
-			--TREE.size;
+			vector_set(&TREE, size - 2, vector_get(&TREE, size - 1));
+			vector_remove(&TREE);
 		}
 		else
 		{
@@ -488,7 +495,7 @@ void actstring(int type, analyzer *context)
 		++n;
 	} while (scanner(context) == COMMA ? scanner(context), 1 : 0);
 
-	TREE.array[adn] = n;
+	vector_set(&TREE, adn, n);
 	if (context->cur != END)
 	{
 		context_error(context, no_comma_or_end);
