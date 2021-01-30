@@ -79,17 +79,6 @@ size_t vector_add(vector *const vec, const item_t value)
 	return vec->size++;
 }
 
-int vector_remove(vector *const vec)
-{
-	if (!vector_is_correct(vec) || vec->size == 0)
-	{
-		return -1;
-	}
-
-	vec->size--;
-	return 0;
-}
-
 int vector_set(vector *const vec, const size_t index, const item_t value)
 {
 	if (!vector_is_correct(vec) || index >= vec->size)
@@ -109,6 +98,16 @@ item_t vector_get(const vector *const vec, const size_t index)
 	}
 
 	return vec->array[index];
+}
+
+item_t vector_remove(vector *const vec)
+{
+	if (!vector_is_correct(vec) || vec->size == 0)
+	{
+		return ITEM_MAX;
+	}
+
+	return vec->array[--vec->size];
 }
 
 

@@ -164,6 +164,16 @@ node node_set_child(node *const nd);
 
 
 /**
+ *	Copy source node to destination
+ *
+ *	@param	dest	Destination node
+ *	@param	src		Source node
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int node_copy(node *const dest, const node *const src);
+
+/**
  *	Check that node is correct
  *
  *	@param	nd		Node structure
