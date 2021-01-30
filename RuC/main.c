@@ -10,7 +10,7 @@
 const char * name =
 //"tests/Mishatest.c";
 
-"tests/mips/printid.c";
+"tests/mips/optimizations/cycle_condition_calculation/test41.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
@@ -54,6 +54,8 @@ int bad_printf_placeholder = 0;
 
 // optimization flags
 int cycle_jump_reduce = 1;
+int cycle_condition_calculation = 1;
+int check_nested_for;
 
 extern void preprocess_file();
 
@@ -87,6 +89,9 @@ int toreprtab(char str[])
 int main(int argc, const char * argv[])
 {
     int i;
+
+    // включение вспомогательных оптимизирующих опций
+    check_nested_for = cycle_condition_calculation;
 
     if (argc != 2){
         printf("Error: not enough argumnts\n");

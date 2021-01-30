@@ -176,6 +176,46 @@ void mstatement();
 
 void mblock();
 
+void mark_nested_for()
+{
+	int flag_nested_for_ref = tc;
+	int temp_tc = tc + 1;
+	while (tree[temp_tc] != TForEnd)
+	{
+		if (tree[temp_tc] == TFor)
+		{
+			return;
+		}
+		temp_tc++;
+	}
+
+	if (tree[temp_tc] == TForEnd)
+		tree[flag_nested_for_ref] = 1;
+}
+
+void opt_for_statement()
+{
+	mcopy();
+	if (check_nested_for)
+	{
+		mark_nested_for();
+		mcopy();
+	}
+
+	int fromref, condref, incrref, stmtref;
+	fromref = mcopy();
+	condref = mcopy();
+	incrref = mcopy();
+	stmtref = mcopy();
+	if (fromref)
+		mexpr();
+	if (condref)
+		mexpr();
+	if (incrref)
+		mexpr();
+	mstatement();
+}
+
 void mstatement()
 {
     t = tree[tc];
@@ -212,22 +252,11 @@ void mstatement()
             mexpr();
             break;
         case TFor:
-        {
-            int fromref, condref, incrref, statemref;
-            mcopy();
-            fromref = mcopy();
-            condref = mcopy();
-            incrref = mcopy();
-            statemref = mcopy();
-            if (fromref)
-                mexpr();
-            if (condref)
-                mexpr();
-            if (incrref)
-                mexpr();
-            mstatement();
+        	opt_for_statement();
             break;
-        }
+		case TForEnd:
+			mcopy();
+			break;
         case TLabel:
             mcopy();
             mcopy();

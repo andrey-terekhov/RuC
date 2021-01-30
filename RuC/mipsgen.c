@@ -34,6 +34,7 @@ int manst, adispl, areg, idp;
 int labnum = 1, stringnum = 1, elselab, flagBC, identref, structdispl;
 int log_real = 2;
 int flag_jump_end_cycle = 0;
+int flag_cond_cycle = 0; // 0 - ничего, 1 - посчитать условия и записать регистр, 2 - условие уже в регистре breg
 // унарные операции LNOT, LOGNOT, -, ++, --, TIdenttoval(*), TIdenttoaddr(&)
 // LNOT nor rd, rs, d0    LOGNOT slti rt, rs, 1   - sub rd, d0, rt
 // *  lw rt, displ(rs) или сразу 0(areg)   & addi rt, areg, adispl или сразу areg
@@ -59,7 +60,7 @@ char *mcodes[] =
 /* 50 */ "", "", "", "", "", "", "", "", "", "",
 /* 60 */ "sll", "", "srl", "sra", "sllv", "", "srlv", "srav", "jr", "jalr",
 /* 70 */ "", "", "", "", "", "", "", "", "", "",
-/* 80 */ "", "", "", "", "", "", "", "", "", "",
+/* 80 */ "bge", "blt", "ble", "bgt", "", "", "", "", "", "",
 /* 90 */ "", "", "add", "addu", "sub", "subu", "and", "or", "xor", "nor",
 /*100 */ "", "", "slt", "sltu", "", "", "", "", "", "",
 /*110 */ "add.s", "sub.s", "mul.s", "div.s", "abs.s", "neg.s", "", "", "", "",
@@ -920,7 +921,14 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 }
                 
                 if (leftanst == AREG && manst == CONST)
-                    tocodeI(addi, t1, lopnd, -num);
+                {
+                	if (flag_cond_cycle == 0)
+                		tocodeI(addi, t1, lopnd, -num);
+                	else if (flag_cond_cycle == 1)
+                		tocodeI(addi, ropnd = breg, d0, num);
+                	else
+                		ropnd = breg;
+                }
                 else
                     // leftanst == AREG && anst == AREG
                     tocodeR(sub, t1, lopnd, ropnd);
@@ -928,24 +936,64 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 if (flag_jump_end_cycle == 0)
                 {
 					if (c == LLT)
-						tocodeJC(mbox == BCF ? bgez : bltz, t1, "ELSE", elselab);
+					{
+						if (flag_cond_cycle)
+							tocodeJEQ(bge, lopnd, ropnd, "ELSE", elselab);
+						else
+							tocodeJC(mbox == BCF ? bgez : bltz, t1, "ELSE", elselab);
+					}
 					else if (c == LGT)
-						tocodeJC(mbox == BCF ? blez : bgtz, t1, "ELSE", elselab);
+					{
+						if (flag_cond_cycle)
+							tocodeJEQ(ble, lopnd, ropnd, "ELSE", elselab);
+						else
+							tocodeJC(mbox == BCF ? blez : bgtz, t1, "ELSE", elselab);
+					}
 					else if (c == LLE)
-						tocodeJC(mbox == BCF ? bgtz : blez, t1, "ELSE", elselab);
+					{
+						if (flag_cond_cycle)
+							tocodeJEQ(bgt, lopnd, ropnd, "ELSE", elselab);
+						else
+							tocodeJC(mbox == BCF ? bgtz : blez, t1, "ELSE", elselab);
+					}
 					else
-						tocodeJC(mbox == BCF ? bltz : bgez, t1, "ELSE", elselab);
+					{
+						if (flag_cond_cycle)
+							tocodeJEQ(blt, lopnd, ropnd, "ELSE", elselab);
+						else
+							tocodeJC(mbox == BCF ? bltz : bgez, t1, "ELSE", elselab);
+					}
                 }
                 else if (flag_jump_end_cycle == 1)
                 {
 					if (c == LLT)
-						tocodeJC(bltz, t1, "BEGLOOP", adcont);
+					{
+						if (flag_cond_cycle == 2)
+							tocodeJEQ(blt, lopnd, ropnd, "BEGLOOP", adcont);
+						else
+							tocodeJC(bltz, t1, "BEGLOOP", adcont);
+					}
 					else if (c == LGT)
-						tocodeJC(bgtz, t1, "BEGLOOP", adcont);
+					{
+						if (flag_cond_cycle == 2)
+							tocodeJEQ(bgt, lopnd, ropnd, "BEGLOOP", adcont);
+						else
+							tocodeJC(bgtz, t1, "BEGLOOP", adcont);
+					}
 					else if (c == LLE)
-						tocodeJC(blez, t1, "BEGLOOP", adcont);
+					{
+						if (flag_cond_cycle == 2)
+							tocodeJEQ(ble, lopnd, ropnd, "BEGLOOP", adcont);
+						else
+							tocodeJC(blez, t1, "BEGLOOP", adcont);
+					}
 					else
-						tocodeJC(bgez, t1, "BEGLOOP", adcont);
+					{
+						if (flag_cond_cycle == 2)
+							tocodeJEQ(bge, lopnd, ropnd, "BEGLOOP", adcont);
+						else
+							tocodeJC(bgez, t1, "BEGLOOP", adcont);
+					}
                 }
                 flagBC = 0;
                 return;
@@ -2212,9 +2260,13 @@ void MStmt_gen()
             break;
         case TFor:
         {
+        	int is_last_nested = 0;
+    		if (check_nested_for)
+    			is_last_nested = tree[tc++]; // Флаг вложенности
             int fromref = tree[tc++], condref = tree[tc++], incrref = tree[tc++],
             stmtref = tree[tc++];
             int oldbreak = adbreak, oldcont = adcont, incrtc, endtc;
+            int cond_reg;
             mbox = BV;
             if (fromref)
                 MExpr_gen();         // init
@@ -2224,8 +2276,17 @@ void MStmt_gen()
             	tocodeL("BEGLOOP", adcont);
             if (condref)
             {
+            	int oldbreg = breg;
                 mbox = BCF;
+                if (cycle_condition_calculation && is_last_nested)
+                {
+                	cond_reg = getreg();
+                	flag_cond_cycle = 1;
+                	breg = cond_reg;
+                }
                 MExpr_gen();         // cond
+                flag_cond_cycle = 0;
+                breg = oldbreg;
             }
             if (cycle_jump_reduce == 1)
             	tocodeL("BEGLOOP", adcont);
@@ -2250,16 +2311,26 @@ void MStmt_gen()
             	tocodeJ(jump, "BEGLOOP", adcont);
             if (cycle_jump_reduce == 1 && condref)
             {
-            	int old_tc = tc;
+            	int old_tc = tc, oldbreg = breg;
             	tc = condref;
                 mbox = BCF;
                 flag_jump_end_cycle = 1;
+                if (cycle_condition_calculation && is_last_nested)
+                {
+                	flag_cond_cycle = 2;
+                	breg = cond_reg;
+                }
                 MExpr_gen();         // cond
                 flag_jump_end_cycle = 0;
+                flag_cond_cycle = 0;
                 tc = old_tc;
+                if (cycle_condition_calculation && is_last_nested)
+                	freereg(cond_reg);
             }
         tocodeL("end", adbreak);
         tocodeL("ELSE", adbreak);
+
+        	tc++; // Здесь был TForEnd
 
             adbreak = oldbreak;
             adcont = oldcont;
