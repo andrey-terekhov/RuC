@@ -19,9 +19,191 @@
 #include "uniprinter.h"
 
 
+static void block(universal_io *const io, syntax *const sx, node *const nd);
+
+static void operand(universal_io *const io, syntax *const sx, node *const nd)
+{
+    if (node_get_type(nd) == NOP || node_get_type(nd) == ADLOGOR || node_get_type(nd) == ADLOGAND)
+        node_set_next(nd);
+    switch (node_get_type(nd))
+    {
+        case TIdent:
+        {
+            node_set_next(nd);
+            break;
+        }
+    }
+}
+
+static void expr(universal_io *const io, syntax *const sx, node *const nd)
+{
+    switch (node_get_type(nd))
+    {
+        // бинарные операции
+        // пока не все, будут вводиться по мере тестирования
+        case LPLUS:
+        case LMINUS:
+        case LMULT:
+        case LDIV:
+        {
+            node_set_next(nd);
+            expr(io, sx, nd);
+            expr(io, sx, nd);
+            break;
+        }
+        // унарные операции
+        // пока не все, будут вводиться по мере тестирования
+        case ASS:
+        case PLUSASS:
+        case MINUSASS:
+        case MULTASS:
+        case DIVASS:
+
+        case ASSV:
+        case PLUSASSV:
+        case MINUSASSV:
+        case MULTASSV:
+        case DIVASSV:
+        {
+            node_set_next(nd);
+            expr(io, sx, nd);
+            break;
+        }
+        default:
+            operand(io, sx, nd);
+    }
+}
+
 static void statement(universal_io *const io, syntax *const sx, node *const nd)
 {
+    switch (node_get_type(nd))
+    {
+        case TBegin:
+        {
+            node_set_next(nd);
+            block(io, sx, nd);
+            break;
+        }
+        case TIf:
+        {
+            int ref_else = node_get_arg(nd, 0);
 
+            node_set_next(nd);
+            expr(io, sx, nd);
+            statement(io, sx, nd);
+            if (ref_else)
+                statement(io, sx, nd);
+            break;
+        }
+        case TSwitch:
+        case TCase:
+        case TDefault:
+        case TWhile:
+        {
+            node_set_next(nd);
+            expr(io, sx, nd);
+            statement(io, sx, nd);
+            break;
+        }
+        case TDo:
+        {
+            node_set_next(nd);
+            statement(io, sx, nd);
+            expr(io, sx, nd);
+            break;
+        }
+        case TFor:
+        {
+            const int ref_from = node_get_arg(nd, 0);
+			const int ref_cond = node_get_arg(nd, 1);
+			const int ref_incr = node_get_arg(nd, 2);
+
+            node_set_next(nd);
+            if (ref_from)
+                expr(io, sx, nd);
+            if (ref_cond)
+                expr(io, sx, nd);
+            if (ref_incr)
+                expr(io, sx, nd);
+            statement(io, sx, nd);
+            break;
+        }
+        case TLabel:
+        {
+            node_set_next(nd);
+            statement(io, sx, nd);
+            break;
+        }
+        case TBreak:
+        case TContinue:
+        case TReturnvoid:
+        case TGoto:
+        {
+            node_set_next(nd);
+            break;
+        }
+        case TReturnval:
+        {
+            node_set_next(nd);
+            expr(io, sx, nd);
+            break;
+        }
+        case TGetid:
+        {
+            // здесь будет печать llvm для чтения
+            node_set_next(nd);
+            break;
+        }
+        case TPrintid:
+        {
+            // здесь будет печать llvm для вывода
+            node_set_next(nd);
+            break;
+        }
+        case TPrintf:
+        {
+            // здесь будет печать llvm для вывода
+            node_set_next(nd);
+            operand(io, sx, nd); // форматная строка
+            do
+            {
+                expr(io, sx, nd);
+            } while (node_get_type(nd) != 0);
+            node_set_next(nd);
+        }
+        // todo обсудить добавление TScanf
+        default:
+            expr(io, sx, nd);
+    }
+}
+
+static void init(universal_io *const io, syntax *const sx, node *const nd)
+{
+    switch (node_get_type(nd))
+    {
+        case TBeginit:
+        {
+            // здесь будет печать llvm с инициализацией массивов
+            int n = node_get_arg(nd, 0);
+
+            node_set_next(nd);
+            for (int i = 0; i < n; i++)
+                expr(io, sx, nd);
+            break;
+        }
+        case TStructinit:
+        {
+            // здесь будет печать llvm с инициализацией структур
+            int n = node_get_arg(nd, 0);
+
+            node_set_next(nd);
+            for (int i = 0; i < n; i++)
+                expr(io, sx, nd);
+            break;
+        }
+        default:
+            expr(io, sx, nd);
+    }
 }
 
 static void block(universal_io *const io, syntax *const sx, node *const nd)
@@ -37,10 +219,24 @@ static void block(universal_io *const io, syntax *const sx, node *const nd)
                 block(io, sx, nd);
                 break;
             }
-            case TDeclarr:  // todo
+            case TDeclarr:
+            {
+                int n = node_get_arg(nd, 0);
+
+                node_set_next(nd);
+                for (int i = 0; i < n; i++)
+                    expr(io, sx, nd);
                 break;
-            case TDeclid:   // todo
+            }
+            case TDeclid:
+            {
+                int all = node_get_arg(nd, 3);
+
+                node_set_next(nd);
+                if (all)
+                    init(io, sx, nd);
                 break;
+            }
             case NOP:
             case TStructbeg:
             case TStructend:
