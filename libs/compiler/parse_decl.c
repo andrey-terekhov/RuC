@@ -841,7 +841,7 @@ void function_definition(parser *const parser, const size_t function_id)
 		const int type = mode_get(parser->sx, parser->function_type + i + 3);
 		const int repr = func_get(parser->sx, function_number + i + 1);
 
-		toidentab(parser, repr, 0, type);
+		toidentab(parser, abs(repr), 0, type);
 	}
 
 	func_set(parser->sx, function_number, parser->sx->tc);
