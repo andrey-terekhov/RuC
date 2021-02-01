@@ -77,7 +77,7 @@ int parse_type_specifier(parser *const parser)
 
 		//case kw_union:
 		case kw_struct:
-			return parse_struct_or_union_specifier(parser);
+			return (int)parse_struct_or_union_specifier(parser);
 
 		default:
 			parser_error(parser, not_decl);
@@ -164,7 +164,7 @@ size_t parse_struct_or_union_specifier(parser *const parser)
  */
 size_t parse_struct_declaration_list(parser *const parser)
 {
-	size_t struct_begin_ref = parser->sx->tc;
+	const size_t struct_begin_ref = parser->sx->tc;
 	totree(parser, TStructbeg);
 
 	int local_modetab[100];
@@ -211,7 +211,7 @@ size_t parse_struct_declaration_list(parser *const parser)
 			if (parser->next_token == l_square)
 			{
 				totree(parser, TDeclarr);
-				size_t adN = parser->sx->tc++;
+				const size_t adN = parser->sx->tc++;
 				type = arrdef(parser, element_type);	// Меняем тип (увеличиваем размерность массива)
 				parser->sx->tree[adN] = parser->arrdim;
 
@@ -219,7 +219,7 @@ size_t parse_struct_declaration_list(parser *const parser)
 				totree(parser, displ);
 				totree(parser, element_type);
 				totree(parser, parser->arrdim);							 // N
-				size_t all = parser->sx->tc++;
+				const size_t all = parser->sx->tc++;
 				parser->sx->tree[all] = 0;						 // all
 				parser->sx->tree[parser->sx->tc++] = parser->was_struct_with_arr; // proc
 				totree(parser, parser->usual);							 // context->usual
@@ -255,7 +255,7 @@ size_t parse_struct_declaration_list(parser *const parser)
 		}
 
 		local_modetab[local_md++] = type;
-		local_modetab[local_md++] = repr;
+		local_modetab[local_md++] = (int)repr;
 		field_number++;
 		displ += szof(parser, type);
 
@@ -839,9 +839,9 @@ void function_definition(parser *const parser, const size_t function_id)
 	for (size_t i = 0; i < param_number; i++)
 	{
 		const int type = mode_get(parser->sx, parser->function_type + i + 3);
-		const size_t repr = func_get(parser->sx, function_number + i + 1);
+		const int repr = func_get(parser->sx, function_number + i + 1);
 
-		toidentab(parser, abs(repr), 0, type);
+		toidentab(parser, repr, 0, type);
 	}
 
 	func_set(parser->sx, function_number, parser->sx->tc);

@@ -35,7 +35,7 @@
 
 // modetab
 
-typedef enum MODE
+typedef enum
 {
 	mode_undefined = 0,
 	mode_integer = -1,
@@ -49,7 +49,7 @@ typedef enum MODE
 	mode_struct = 1002,
 	mode_array = 1003,
 	mode_pointer = 1004,
-} MODE;
+} mode;
 
 
 // Лексемы операций языка С

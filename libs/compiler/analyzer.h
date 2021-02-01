@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 /** Определение глобальных переменных */
-typedef struct analyzer
+typedef struct
 {
 	universal_io *io;					/**< Universal io structure */
 	syntax *sx;							/**< Syntax structure */

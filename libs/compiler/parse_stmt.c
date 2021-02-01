@@ -88,13 +88,12 @@ void parse_labeled_statement(parser *const context)
  */
 void parse_case_statement(parser *const parser)
 {
-	totree(parser, TCase);
-
 	if (!parser->flag_in_switch)
 	{
 		parser_error(parser, case_not_in_switch);
 	}
 
+	totree(parser, TCase);
 	parse_constant_expression(parser);
 
 	if (parser->ansttype == LFLOAT)
@@ -104,7 +103,6 @@ void parse_case_statement(parser *const parser)
 	parser->sopnd--;
 
 	expect_and_consume_token(parser, colon, expected_colon_after_case);
-
 	parse_statement(parser);
 }
 
@@ -118,15 +116,13 @@ void parse_case_statement(parser *const parser)
  */
 void parse_default_statement(parser *const parser)
 {
-	totree(parser, TDefault);
-
 	if (!parser->flag_in_switch)
 	{
 		parser_error(parser, default_not_in_switch);
 	}
 
+	totree(parser, TDefault);
 	expect_and_consume_token(parser, colon, expected_colon_after_default);
-
 	parse_statement(parser);
 }
 
@@ -368,13 +364,12 @@ void parse_goto_statement(parser *const context)
  */
 void parse_continue_statement(parser *const parser)
 {
-	totree(parser, TContinue);
-
 	if (!parser->flag_in_loop)
 	{
 		parser_error(parser, continue_not_in_loop);
 	}
 
+	totree(parser, TContinue);
 	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 
@@ -388,13 +383,12 @@ void parse_continue_statement(parser *const parser)
  */
 void parse_break_statement(parser *const parser)
 {
-	totree(parser, TBreak);
-
 	if (!(parser->flag_in_loop || parser->flag_in_switch))
 	{
 		parser_error(parser, break_not_in_loop_or_switch);
 	}
 
+	totree(parser, TBreak);
 	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 

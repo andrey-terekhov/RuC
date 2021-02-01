@@ -843,7 +843,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 
 	for (size_t i = 0; i < sx->funcnum; i++)
 	{
-		uni_printf(io, "%zi ", func_get(sx, i));
+		uni_printf(io, "%i ", func_get(sx, i));
 	}
 	uni_printf(io, "\n");
 

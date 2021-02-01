@@ -43,7 +43,7 @@ typedef struct syntax
 	size_t predef[FUNCSIZE];		/**< Predefined functions table */
 	int prdf;						/**< Number of predefined functions */
 
-	size_t functions[FUNCSIZE];		/**< Functions table */
+	int functions[FUNCSIZE];		/**< Functions table */
 	size_t funcnum;					/**< Number of functions */
 
 	int identab[MAXIDENTAB];		/**< Identifiers table */
@@ -188,7 +188,7 @@ int func_add(syntax *const sx, const size_t ref);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int func_set(syntax *const sx, const size_t index, const size_t ref);
+int func_set(syntax *const sx, const size_t index, const int ref);
 
 /**
  *	Get an item from functions table by index
@@ -196,9 +196,9 @@ int func_set(syntax *const sx, const size_t index, const size_t ref);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in functions table
  *
- *	@return	Item by index from functions table, @c SIZE_MAX on failure
+ *	@return	Item by index from functions table, @c INT_MAX on failure
  */
-size_t func_get(const syntax *const sx, const size_t index);
+int func_get(const syntax *const sx, const size_t index);
 
 
 /**

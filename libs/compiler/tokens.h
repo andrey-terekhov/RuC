@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-typedef enum TOKEN
+typedef enum
 {
 	eof					= LEOF,			/**< End of file */
 

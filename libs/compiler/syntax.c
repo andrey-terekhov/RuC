@@ -233,7 +233,7 @@ int func_add(syntax *const sx, const size_t ref)
 	return func_set(sx, sx->funcnum - 1, ref);
 }
 
-int func_set(syntax *const sx, const size_t index, const size_t ref)
+int func_set(syntax *const sx, const size_t index, const int ref)
 {
 	if (sx == NULL || index >= sx->funcnum)
 	{
@@ -244,11 +244,11 @@ int func_set(syntax *const sx, const size_t index, const size_t ref)
 	return 0;
 }
 
-size_t func_get(const syntax *const sx, const size_t index)
+int func_get(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || index >= sx->funcnum)
 	{
-		return SIZE_MAX;
+		return INT_MAX;
 	}
 
 	return sx->functions[index];
