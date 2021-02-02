@@ -813,7 +813,7 @@ size_t func_declarator(parser *context, int level, int func_d, int firstdecl)
 	return mode_add(context->sx, loc_modetab, locmd);
 }
 
-void function_definition(parser *const parser, const size_t function_id)
+void parse_function_body(parser *const parser, const size_t function_id)
 {
 	parser->function_type = ident_get_mode(parser->sx, function_id);
 	const size_t function_number = (size_t)ident_get_displ(parser->sx, function_id);
@@ -823,7 +823,7 @@ void function_definition(parser *const parser, const size_t function_id)
 	parser->flag_was_return = 0;
 
 	const int pred = parser->sx->identab[function_id];
-	if (pred > 1) // был прототип
+	if (pred > 1) // Был прототип
 	{
 		if (parser->function_type != ident_get_mode(parser->sx, pred))
 		{
@@ -876,6 +876,57 @@ void function_definition(parser *const parser, const size_t function_id)
 		{
 			parser_error(parser, label_not_declared);
 		}
+	}
+}
+
+/**
+ *	Parse function definition [C99 6.9.1]
+ *
+ *	function-definition:
+ *		declarator declaration-list[opt] compound-statement
+ *
+ *	@param	parser		Parser structure
+ *	@param	type		Return type of a function
+ */
+void parse_function_definition(parser *const parser, int type)
+{
+	const size_t function_num = parser->sx->funcnum++;
+	const size_t function_repr = (size_t)parser->lxr->repr;
+	consume_token(parser);
+	consume_token(parser);
+
+	type = (int)func_declarator(parser, 1, 3, type);
+
+	if (parser->func_def == 0 && parser->next_token == l_brace)
+	{
+		parser->func_def = 1;
+	}
+	else if (parser->func_def == 0)
+	{
+		parser->func_def = 2;
+	}
+
+	const size_t function_id = toidentab(parser, function_repr, (int)function_num, type);
+
+	if (parser->next_token == l_brace)
+	{
+		if (parser->func_def == 1)
+		{
+			parse_function_body(parser, function_id);
+			return;
+		}
+		else
+		{
+			parser_error(parser, func_decl_req_params);
+			skip_until(parser, r_brace);
+			return;
+		}
+	}
+	else if (parser->func_def == 1)
+	{
+		parser_error(parser, function_has_no_body);
+		// На случай, если после неправильного декларатора стоит ';'
+		try_consume_token(parser, semicolon);
 	}
 }
 
@@ -961,44 +1012,8 @@ void parse_external_declaration(parser *const parser)
 		{
 			if (parser->next_token == l_paren)
 			{
-				const size_t function_num = parser->sx->funcnum++;
-				const size_t function_repr = (size_t)parser->lxr->repr;
-				consume_token(parser);
-				consume_token(parser);
-
-				type = (int)func_declarator(parser, 1, 3, type);
-
-				if (parser->func_def == 0 && parser->next_token == l_brace)
-				{
-					parser->func_def = 1;
-				}
-				else if (parser->func_def == 0)
-				{
-					parser->func_def = 2;
-				}
-				
-				const size_t function_id = toidentab(parser, function_repr, (int)function_num, type);
-
-				if (parser->next_token == l_brace)
-				{
-					if (parser->func_def == 1)
-					{
-						function_definition(parser, function_id);
-						return;
-					}
-					else
-					{
-						parser_error(parser, func_decl_req_params);
-						skip_until(parser, r_brace);
-						return;
-					}
-				}
-				else if (parser->func_def == 1)
-				{
-					parser_error(parser, function_has_no_body);
-					// На случай, если после неправильного декларатора стоит ';'
-					try_consume_token(parser, semicolon);
-				}
+				parse_function_definition(parser, type);
+				break;
 			}
 			else if (group_type == LVOID)
 			{
@@ -1021,19 +1036,4 @@ void parse_external_declaration(parser *const parser)
 	{
 		expect_and_consume_token(parser, semicolon, expected_semi_after_decl);
 	}
-}
-
-/** Генерация дерева */
-void ext_decl(parser *const parser)
-{
-	get_char(parser->lxr);
-	get_char(parser->lxr);
-	consume_token(parser);
-
-	do
-	{
-		parse_external_declaration(parser);
-	} while (parser->next_token != eof);
-
-	totree(parser, TEnd);
 }

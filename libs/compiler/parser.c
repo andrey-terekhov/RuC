@@ -174,6 +174,23 @@ void applid(parser *context)
  */
 
 
+int parse(parser *const parser)
+{
+	get_char(parser->lxr);
+	get_char(parser->lxr);
+	consume_token(parser);
+
+	do
+	{
+		parse_external_declaration(parser);
+	} while (parser->next_token != eof);
+
+	totree(parser, TEnd);
+
+	return parser->was_error || parser->lxr->was_error;
+}
+
+
 void parser_error(parser *const parser, const int num, ...)
 {
 	parser->was_error = 1;

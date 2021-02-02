@@ -142,7 +142,5 @@ int analyze(universal_io *const io, syntax *const sx)
 
 	context.io = io;
 	context.lxr->io = io;
-	ext_decl(&context);
-
-	return context.was_error || context.lxr->was_error;
+	return parse(&context);
 }

@@ -25,6 +25,16 @@ extern "C" {
 #endif
 
 /**
+ *	Parse source code to generate syntax structure
+ *
+ *	@param	parser		Parser structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int parse(parser *const parser);
+
+
+/**
  *	Emit an error from parser
  *
  *	@param	parser		Parser structure
@@ -212,7 +222,6 @@ void exprassnval(parser *context);
 void array_init(parser *context, int decl_type);
 int arrdef(parser *context, int t);
 void decl_id(parser *context, int decl_type);
-void ext_decl(parser *const parser);
 
 #ifdef __cplusplus
 } /* extern "C" */
