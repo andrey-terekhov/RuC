@@ -79,6 +79,16 @@ void skip_until(parser *const parser, const unsigned int tokens);
 
 
 /**
+ *	Parse string literal expression [C99 6.5.1]
+ *
+ *	primary-expression:
+ *		string-literal
+ *
+ *	@param	parser	Parser structure
+ */
+void parse_string_literal_expression(parser *const parser);
+
+/**
  *	Parse assignment expression [C99 6.5.16]
  *
  *	assignment-expression:
@@ -184,7 +194,6 @@ int is_float(const int t);
 int is_int(const int t);
 int szof(parser *context, int type);
 void mustbe(parser *context, int what, int e);
-void mustbe_complex(parser *context, int what, int e);
 void totree(parser *context, int op);
 void totreef(parser *context, int op);
 int toidentab(parser *context, size_t repr, int f, int type);
@@ -212,14 +221,13 @@ void subexpr(parser *context);
 int intopassn(int next);
 int opassn(parser *context);
 void condexpr(parser *context);
-void parse_struct_initializer(parser *context, int decl_type);
 void exprassnvoid(parser *context);
 void exprassn(parser *context, int level);
 void expr(parser *context, int level);
 void exprval(parser *context);
 void exprassnval(parser *context);
-void parse_struct_initializer(parser *context, int decl_type);
-void parse_array_initializer(parser *context, int decl_type);
+void parse_struct_initializer(parser *const parser, int type);
+void parse_array_initializer(parser *const parser, int type);
 
 #ifdef __cplusplus
 } /* extern "C" */

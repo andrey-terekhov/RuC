@@ -53,10 +53,9 @@ typedef struct
 	int sp;
 	int sopnd;
 	int lastid;
-	int type;
 	int op;
 	int inass;
-	int arrdim;	 // arrdim - размерность (0-скаляр), д.б. столько выражений-границ
+	int arrdim;	// arrdim - размерность (0-скаляр), д.б. столько выражений-границ
 	int was_struct_with_arr;
 	int usual;	// описание массива без пустых границ
 	int flag_in_switch;
@@ -68,10 +67,8 @@ typedef struct
 	int anst;
 	int ansttype;
 	int anstdispl;
-	int leftansttype; // anst = VAL  - значение на стеке
-	int x;							// useless
-	char32_t bad_printf_placeholder;
-	int onlystrings;	 // только из строк 2 - без границ, 3 - с границами
+	int leftansttype;	// anst = VAL  - значение на стеке
+	int onlystrings;	// только из строк 2 - без границ, 3 - с границами
 
 	int buf_flag;
 	int buf_cur;

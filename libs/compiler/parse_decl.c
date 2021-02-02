@@ -20,7 +20,6 @@
 int parse_type_specifier(parser *const parser);
 size_t parse_struct_or_union_specifier(parser *const parser);
 size_t parse_struct_declaration_list(parser *const parser);
-int arrdef(parser *context, int t);
 
 
 /**
@@ -38,7 +37,7 @@ int arrdef(parser *context, int t);
  *		enum-specifier [TODO]
  *		typedef-name [TODO]
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  *
  *	@return	Standart type or index for modes table
  */
@@ -146,6 +145,59 @@ size_t parse_struct_or_union_specifier(parser *const parser)
 }
 
 /**
+ *	Parse array definition
+ *
+ *	direct-abstract-declarator:
+ *		direct-abstract-declarator[opt] '[' constant-expression[opt] ']'
+ *
+ *	@param	parser		Parser structure
+ *	@param	type		Type of variable in declaration
+ *
+ *	@return	Index for modes table
+ */
+int parse_array_definition(parser *const parser, int type)
+{
+	parser->arrdim = 0;
+	parser->usual = 1;
+
+	if (is_pointer(parser->sx, type))
+	{
+		parser_error(parser, pnt_before_array);
+	}
+
+	while (try_consume_token(parser, l_square))
+	{
+		parser->arrdim++;
+		if (try_consume_token(parser, r_square))
+		{
+			if (parser->next_token == l_square)
+			{
+				// int a[][] = {{1,2,3}, {4,5,6}}; - нельзя;
+				parser_error(parser, empty_init);
+			}
+			parser->usual = 0;
+		}
+		else
+		{
+			parse_constant_expression(parser);
+			if (!is_int(parser->ansttype))
+			{
+				parser_error(parser, array_size_must_be_int);
+			}
+			parser->sopnd--;
+
+			if (!try_consume_token(parser, r_square))
+			{
+				parser_error(parser, wait_right_sq_br);
+				skip_until(parser, r_square | comma | semicolon);
+			}
+		}
+		type = newdecl(parser->sx, mode_array, type);
+	}
+	return type;
+}
+
+/**
  *	Parse struct declaration list [C99 6.7.2.1p2]
  *
  *	struct-declaration-list:
@@ -206,6 +258,7 @@ size_t parse_struct_declaration_list(parser *const parser)
 		}
 
 		const size_t repr = parser->lexer->repr;
+		size_t ref_array_dim = 0;
 		if (parser->next_token == identifier)
 		{
 			consume_token(parser);
@@ -213,38 +266,38 @@ size_t parse_struct_declaration_list(parser *const parser)
 			{
 				totree(parser, TDeclarr);
 				const size_t adN = parser->sx->tc++;
-				type = arrdef(parser, element_type);	// Меняем тип (увеличиваем размерность массива)
+				// Меняем тип (увеличиваем размерность массива)
+				type = parse_array_definition(parser, element_type);
 				parser->sx->tree[adN] = parser->arrdim;
 
 				totree(parser, TDeclid);
 				totree(parser, displ);
 				totree(parser, element_type);
-				totree(parser, parser->arrdim);							 // N
+				totree(parser, parser->arrdim);										// N
 				const size_t all = parser->sx->tc++;
-				parser->sx->tree[all] = 0;						 // all
-				parser->sx->tree[parser->sx->tc++] = parser->was_struct_with_arr; // proc
-				totree(parser, parser->usual);							 // context->usual
-				totree(parser, 1); // признак, что массив в структуре
+				parser->sx->tree[all] = 0;											// all
+				parser->sx->tree[parser->sx->tc++] = parser->was_struct_with_arr;	// proc
+				totree(parser, parser->usual);										// usual
+				totree(parser, 1); // Признак, что массив в структуре
 				wasarr = 1;
 
 				if (parser->next_token == equal)
 				{
 					consume_token(parser);
 					consume_token(parser);
-					if (is_array(parser->sx, type)) // инициализация массива
+					if (is_array(parser->sx, type))
 					{
 						parser->onlystrings = 2;
 						parser->sx->tree[all] = 1;
 						if (!parser->usual)
 						{
-							parser->sx->tree[adN]--; // это уменьшение N в Declarr
+							parser->sx->tree[ref_array_dim]--;
 						}
 						parse_array_initializer(parser, type);
 						if (parser->onlystrings == 1)
 						{
-							parser->sx->tree[all + 2] = parser->usual + 2; // только из строк 2 - без
+							parser->sx->tree[all + 2] = parser->usual + 2;
 						}
-						// границ, 3 - с границами
 					}
 				}
 			}
@@ -388,7 +441,7 @@ void parse_array_initializer(parser *const parser, const int type)
 			{
 				parser->onlystrings = 1;
 			}
-			primaryexpr(parser);
+			parse_string_literal_expression(parser);
 			totree(parser, TExprend);
 		}
 		else
@@ -449,59 +502,6 @@ void parse_array_initializer(parser *const parser, const int type)
 }
 
 /**
- *	Parse array definition
- *
- *	direct-abstract-declarator:
- *		direct-abstract-declarator[opt] '[' constant-expression[opt] ']'
- *
- *	@param	parser		Parser structure
- *	@param	type		Type of variable in declaration
- *
- *	@return	Index for modes table
- */
-int arrdef(parser *const parser, int type)
-{
-	parser->arrdim = 0;
-	parser->usual = 1;
-
-	if (is_pointer(parser->sx, type))
-	{
-		parser_error(parser, pnt_before_array);
-	}
-
-	while (try_consume_token(parser, l_square))
-	{
-		parser->arrdim++;
-		if (try_consume_token(parser, r_square))
-		{
-			if (parser->next_token == l_square)
-			{
-				// int a[][] = {{1,2,3}, {4,5,6}}; - нельзя;
-				parser_error(parser, empty_init);
-			}
-			parser->usual = 0;
-		}
-		else
-		{
-			parse_constant_expression(parser);
-			if (!is_int(parser->ansttype))
-			{
-				parser_error(parser, array_size_must_be_int);
-			}
-			parser->sopnd--;
-
-			if (!try_consume_token(parser, r_square))
-			{
-				parser_error(parser, wait_right_sq_br);
-				skip_until(parser, r_square | comma | semicolon);
-			}
-		}
-		type = newdecl(parser->sx, mode_array, type);
-	}
-	return type;
-}
-
-/**
  *	Parse declarator with optional initializer
  *
  *	init-declarator:
@@ -510,8 +510,8 @@ int arrdef(parser *const parser, int type)
  *	direct-declarator:
  *		identifier
  *
- *	@param	parser	Parser structure
- *	@param	type	Type of variable in declaration
+ *	@param	parser		Parser structure
+ *	@param	type		Type of variable in declaration
  */
 void parse_init_declarator(parser *const parser, int type)
 {
@@ -522,12 +522,12 @@ void parse_init_declarator(parser *const parser, int type)
 	parser->arrdim = 0;
 	const int element_type = type;
 
-	if (parser->next_token == l_square) // это определение массива (может быть многомерным)
+	if (parser->next_token == l_square)
 	{
 		totree(parser, TDeclarr);
 		ref_array_dim = parser->sx->tc++;
 		// Меняем тип (увеличиваем размерность массива)
-		type = arrdef(parser, type);
+		type = parse_array_definition(parser, type);
 		ident_set_mode(parser->sx, old_id, type);
 		parser->sx->tree[ref_array_dim] = parser->arrdim;
 		if ((!parser->usual && parser->next_token != equal))
@@ -545,17 +545,17 @@ void parse_init_declarator(parser *const parser, int type)
 	parser->sx->tree[all] = 0;
 	totree(parser, is_pointer(parser->sx, type) ? 0 : parser->was_struct_with_arr);	// proc
 	totree(parser, parser->usual);													// usual
-	totree(parser, 0);																// массив не в структуре
+	totree(parser, 0);	// Признак того, массив не в структуре
 
 	if (try_consume_token(parser, equal))
 	{
 		consume_token(parser);
 		parser->sx->tree[all] = szof(parser, type);
-		if (is_array(parser->sx, type)) // инициализация массива
+		if (is_array(parser->sx, type))
 		{
 			if (!parser->usual)
 			{
-				parser->sx->tree[ref_array_dim]--; // это уменьшение N в Declarr
+				parser->sx->tree[ref_array_dim]--;
 			}
 
 			parser->onlystrings = 2;
@@ -573,29 +573,29 @@ void parse_init_declarator(parser *const parser, int type)
 }
 
 
-size_t func_declarator(parser *context, int level, int func_d, int firstdecl)
+size_t parse_function_declarator(parser *const parser, const int level, int func_d, const int return_type)
 {
 	// на 1 уровне это может быть определением функции или предописанием, на
 	// остальных уровнях - только декларатором (без идентов)
 
-	int loc_modetab[100];
-	int locmd;
 	int numpar = 0;
-	int ident = 0; // warning C4701: potentially uninitialized local variable used
-	int maybe_fun = 0; // warning C4701: potentially uninitialized local variable used
+	int ident = 0;
+	int maybe_fun = 0;
 	int repeat = 1;
 	int wastype = 0;
 	int old;
+	int type;
 
-	loc_modetab[0] = mode_function;
-	loc_modetab[1] = firstdecl;
-	loc_modetab[2] = 0;
-	locmd = 3;
+	int local_modetab[100];
+	size_t local_md = 3;
+	local_modetab[0] = mode_function;
+	local_modetab[1] = return_type;
+	local_modetab[2] = 0;
 
 	while (repeat)
 	{
-		if (context->curr_token == LVOID || is_int(context->curr_token) || is_float(context->curr_token) ||
-			context->curr_token == LSTRUCT)
+		if (parser->curr_token == LVOID || is_int(parser->curr_token) || is_float(parser->curr_token) ||
+			parser->curr_token == LSTRUCT)
 		{
 			maybe_fun = 0; // м.б. параметр-ф-ция?
 						   // 0 - ничего не было,
@@ -606,61 +606,52 @@ size_t func_declarator(parser *context, int level, int func_d, int firstdecl)
 					   // 1 - был статический идент,
 					   // 2 - был идент-параметр-функция
 			wastype = 1;
-			context->type = parse_type_specifier(context);
-			if (context->was_error == 3)
-			{
-				context->was_error = 2;
-				return 0;
-			}
-			if (context->next_token == LMULT)
+			type = parse_type_specifier(parser);
+			if (parser->next_token == LMULT)
 			{
 				maybe_fun = 1;
-				scanner(context);
-				context->type = context->type == LVOID ? LVOIDASTER : newdecl(context->sx, mode_pointer, context->type);
+				scanner(parser);
+				type = type == LVOID ? LVOIDASTER : newdecl(parser->sx, mode_pointer, type);
 			}
 			if (level)
 			{
-				if (context->next_token == IDENT)
+				if (parser->next_token == IDENT)
 				{
-					scanner(context);
+					scanner(parser);
 					ident = 1;
-					func_add(context->sx, REPRTAB_POS);
+					func_add(parser->sx, parser->lexer->repr);
 				}
 			}
-			else if (context->next_token == IDENT)
+			else if (parser->next_token == IDENT)
 			{
-				parser_error(context, ident_in_declarator);
-				context->was_error = 2;
-				return 0;
+				parser_error(parser, ident_in_declarator);
 			}
 
-			if (context->next_token == LEFTSQBR)
+			if (parser->next_token == LEFTSQBR)
 			{
 				maybe_fun = 2;
 
-				if (is_pointer(context->sx, context->type) && ident == 0)
+				if (is_pointer(parser->sx, type) && ident == 0)
 				{
-					parser_error(context, aster_with_row);
-					context->was_error = 2;
-					return 0;
+					parser_error(parser, aster_with_row);
 				}
 
-				while (context->next_token == LEFTSQBR)
+				while (parser->next_token == LEFTSQBR)
 				{
-					scanner(context);
-					mustbe(context, RIGHTSQBR, wait_right_sq_br);
-					context->type = newdecl(context->sx, mode_array, context->type);
+					scanner(parser);
+					mustbe(parser, RIGHTSQBR, wait_right_sq_br);
+					type = newdecl(parser->sx, mode_array, type);
 				}
 			}
 		}
-		if (context->curr_token == LVOID)
+		if (parser->curr_token == LVOID)
 		{
-			context->type = LVOID;
+			type = LVOID;
 			wastype = 1;
-			if (context->next_token != LEFTBR)
+			if (parser->next_token != LEFTBR)
 			{
-				parser_error(context, par_type_void_with_nofun);
-				context->was_error = 2;
+				parser_error(parser, par_type_void_with_nofun);
+				parser->was_error = 2;
 				return 0;
 			}
 		}
@@ -668,59 +659,59 @@ size_t func_declarator(parser *context, int level, int func_d, int firstdecl)
 		if (wastype)
 		{
 			numpar++;
-			loc_modetab[locmd++] = context->type;
+			local_modetab[local_md++] = type;
 
-			if (context->next_token == LEFTBR)
+			if (parser->next_token == LEFTBR)
 			{
-				scanner(context);
-				mustbe(context, LMULT, wrong_fun_as_param);
-				if (context->next_token == IDENT)
+				scanner(parser);
+				mustbe(parser, LMULT, wrong_fun_as_param);
+				if (parser->next_token == IDENT)
 				{
 					if (level)
 					{
-						scanner(context);
+						scanner(parser);
 						if (ident == 0)
 						{
 							ident = 2;
 						}
 						else
 						{
-							parser_error(context, two_idents_for_1_declarer);
-							context->was_error = 2;
+							parser_error(parser, two_idents_for_1_declarer);
+							parser->was_error = 2;
 							return 0;
 						}
-						func_add(context->sx, -REPRTAB_POS);
+						func_add(parser->sx, -parser->lexer->repr);
 					}
 					else
 					{
-						parser_error(context, ident_in_declarator);
-						context->was_error = 2;
+						parser_error(parser, ident_in_declarator);
+						parser->was_error = 2;
 						return 0;
 					}
 				}
-				mustbe(context, RIGHTBR, no_right_br_in_paramfun);
-				mustbe(context, LEFTBR, wrong_fun_as_param);
-				scanner(context);
+				mustbe(parser, RIGHTBR, no_right_br_in_paramfun);
+				mustbe(parser, LEFTBR, wrong_fun_as_param);
+				scanner(parser);
 				if (maybe_fun == 1)
 				{
-					parser_error(context, aster_before_func);
-					context->was_error = 2;
+					parser_error(parser, aster_before_func);
+					parser->was_error = 2;
 					return 0;
 				}
 				else if (maybe_fun == 2)
 				{
-					parser_error(context, array_before_func);
-					context->was_error = 2;
+					parser_error(parser, array_before_func);
+					parser->was_error = 2;
 					return 0;
 				}
 
-				old = context->func_def;
-				loc_modetab[locmd - 1] = (int)func_declarator(context, 0, 2, context->type);
-				if (context->was_error == 2)
+				old = parser->func_def;
+				local_modetab[local_md - 1] = (int)parse_function_declarator(parser, 0, 2, type);
+				if (parser->was_error == 2)
 				{
 					return 0;
 				}
-				context->func_def = old;
+				parser->func_def = old;
 			}
 			if (func_d == 3)
 			{
@@ -728,48 +719,60 @@ size_t func_declarator(parser *context, int level, int func_d, int firstdecl)
 			}
 			else if (func_d == 2 && ident > 0)
 			{
-				parser_error(context, wait_declarator);
-				context->was_error = 2;
+				parser_error(parser, wait_declarator);
+				parser->was_error = 2;
 				return 0;
 			}
 			else if (func_d == 1 && ident == 0)
 			{
-				parser_error(context, wait_definition);
-				context->was_error = 2;
+				parser_error(parser, wait_definition);
+				parser->was_error = 2;
 				return 0;
 			}
 
-			if (scanner(context) == COMMA)
+			if (scanner(parser) == COMMA)
 			{
-				scanner(context);
+				scanner(parser);
 			}
-			else if (context->curr_token == RIGHTBR)
+			else if (parser->curr_token == RIGHTBR)
 			{
 				repeat = 0;
 			}
 		}
-		else if (context->curr_token == RIGHTBR)
+		else if (parser->curr_token == RIGHTBR)
 		{
 			repeat = 0;
 			func_d = 0;
 		}
 		else
 		{
-			parser_error(context, wrong_param_list);
-			context->buf_cur = context->next_token;
-			context->next_token = context->curr_token;
-			context->curr_token = RIGHTBR;
-			context->buf_flag++;
+			parser_error(parser, wrong_param_list);
+			parser->buf_cur = parser->next_token;
+			parser->next_token = parser->curr_token;
+			parser->curr_token = RIGHTBR;
+			parser->buf_flag++;
 			repeat = 0;
 			func_d = 0;
 		}
 	}
-	context->func_def = func_d;
-	loc_modetab[2] = numpar;
+	parser->func_def = func_d;
+	local_modetab[2] = numpar;
 
-	return mode_add(context->sx, loc_modetab, locmd);
+	return mode_add(parser->sx, local_modetab, local_md);
 }
 
+/**
+ *	Parse function body
+ *
+ *	init-declarator:
+ *		direct-declarator initializer[opt]
+ *
+ *	direct-declarator:
+ *		identifier
+ *
+ *	@param	parser		Parser structure
+ *	@param	function_id	Function number
+ */
 void parse_function_body(parser *const parser, const size_t function_id)
 {
 	parser->function_type = ident_get_mode(parser->sx, function_id);
@@ -852,7 +855,7 @@ void parse_function_definition(parser *const parser, int type)
 	consume_token(parser);
 	consume_token(parser);
 
-	type = (int)func_declarator(parser, 1, 3, type);
+	type = (int)parse_function_declarator(parser, 1, 3, type);
 
 	if (parser->func_def == 0 && parser->next_token == l_brace)
 	{
@@ -941,6 +944,7 @@ void parse_external_declaration(parser *const parser)
 {
 	consume_token(parser);
 	parser->flag_was_type_def = 0;
+	parser->func_def = 3;
 	int group_type = parse_type_specifier(parser);
 
 	if (parser->flag_was_type_def && try_consume_token(parser, semicolon))
@@ -948,7 +952,6 @@ void parse_external_declaration(parser *const parser)
 		return;
 	}
 
-	parser->func_def = 3;
 	do
 	{
 		int type = group_type;

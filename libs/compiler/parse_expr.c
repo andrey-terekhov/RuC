@@ -340,19 +340,7 @@ void primaryexpr(parser *context)
 	}
 	else if (context->curr_token == STRING)
 	{
-		int i;
-
-		totree(context, TString);
-		totree(context, context->lexer->num);
-
-		for (i = 0; i < context->lexer->num; i++)
-		{
-			totree(context, context->lexer->lexstr[i]);
-		}
-
-		context->ansttype = newdecl(context->sx, mode_array, LCHAR);
-		context->stackoperands[++context->sopnd] = context->ansttype;
-		context->anst = VAL;
+		parse_string_literal_expression(context);
 	}
 	else if (context->curr_token == IDENT)
 	{
@@ -1133,10 +1121,6 @@ void postexpr(parser *context)
 		totree(context, lid);
 		context->stackoperands[context->sopnd] = context->ansttype = mode_get(context->sx, leftansttyp + 1);
 		context->anst = VAL;
-		if (is_struct(context->sx, context->ansttype))
-		{
-			context->x -= mode_get(context->sx, context->ansttype + 1) - 1;
-		}
 	}
 
 	while (context->next_token == LEFTSQBR || context->next_token == ARROW || context->next_token == DOT)
@@ -1908,6 +1892,31 @@ void exprassnval(parser *context)
 	}
 	toval(context);
 	totree(context, TExprend);
+}
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+void parse_string_literal_expression(parser *const parser)
+{
+	totree(parser, TString);
+	totree(parser, parser->lexer->num);
+
+	for (size_t i = 0; i < (size_t)parser->lexer->num; i++)
+	{
+		totree(parser, parser->lexer->lexstr[i]);
+	}
+
+	parser->ansttype = newdecl(parser->sx, mode_array, mode_character);
+	parser->stackoperands[++parser->sopnd] = parser->ansttype;
+	parser->anst = VAL;
 }
 
 void parse_constant_expression(parser *const parser)

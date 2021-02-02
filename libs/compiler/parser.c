@@ -106,15 +106,6 @@ void mustbe(parser *context, int what, int e)
 	}
 }
 
-void mustbe_complex(parser *context, int what, int e)
-{
-	if (scanner(context) != what)
-	{
-		parser_error(context, e);
-		context->was_error = e;
-	}
-}
-
 void totree(parser *context, int op)
 {
 	context->sx->tree[context->sx->tc++] = op;
