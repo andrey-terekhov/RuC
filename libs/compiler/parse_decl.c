@@ -239,7 +239,7 @@ size_t parse_struct_declaration_list(parser *const parser)
 						{
 							parser->sx->tree[adN]--; // это уменьшение N в Declarr
 						}
-						array_init(parser, type);
+						parse_array_initializer(parser, type);
 						if (parser->onlystrings == 1)
 						{
 							parser->sx->tree[all + 2] = parser->usual + 2; // только из строк 2 - без
@@ -344,101 +344,112 @@ void parse_struct_initializer(parser *const parser, const int type)
 
 	totree(parser, TStructinit);
 	totree(parser, expected_field_number);
-	consume_token(parser);
 
 	do
 	{
+		consume_token(parser);
 		parse_initializer(parser, mode_get(parser->sx, next_field));
 		next_field += 2;
 		actual_field_number++;
 
-		if (!try_consume_token(parser, comma))
+		if (parser->next_token == r_brace)
+		{
+			break;
+		}
+		else if (!try_consume_token(parser, comma))
 		{
 			parser_error(parser, no_comma_in_init_list);
 			skip_until(parser, comma | r_brace | semicolon);
 		}
-	} while (actual_field_number != expected_field_number && parser->next_token != r_brace);
+	} while (actual_field_number != expected_field_number && parser->next_token != semicolon);
 
 	expect_and_consume_token(parser, r_brace, wait_end);
 	parser->leftansttype = type;
 	totree(parser, TExprend);
 }
 
-void array_init(parser *context, int decl_type)
+/**
+ *	Parse array initializer
+ *
+ *	@param	parser		Parser structure
+ *	@param	type		Index for modes table
+ */
+void parse_array_initializer(parser *const parser, const int type)
 {
-	// сейчас modetab[decl_type] равен MARRAY
-
-	if (is_array(context->sx, decl_type))
+	if (is_array(parser->sx, type))
 	{
-		if (context->curr_token == STRING)
+		if (parser->curr_token == string_literal)
 		{
-			if (context->onlystrings == 0)
+			if (parser->onlystrings == 0)
 			{
-				parser_error(context, string_and_notstring);
+				parser_error(parser, string_and_notstring);
 			}
-			if (context->onlystrings == 2)
+			if (parser->onlystrings == 2)
 			{
-				context->onlystrings = 1;
+				parser->onlystrings = 1;
 			}
-			primaryexpr(context);
-			totree(context, TExprend);
+			primaryexpr(parser);
+			totree(parser, TExprend);
 		}
 		else
 		{
-			if (context->curr_token != BEGIN)
+			if (parser->curr_token != l_brace)
 			{
-				parser_error(context, arr_init_must_start_from_BEGIN);
-				context->buf_cur = context->next_token;
-				context->next_token = context->curr_token;
-				context->curr_token = BEGIN;
-				context->buf_flag++;
+				parser_error(parser, arr_init_must_start_from_BEGIN);
+				skip_until(parser, comma | semicolon);
+				return;
 			}
-			totree(context, TBeginit);
-			size_t ad = context->sx->tc++;
 
+			totree(parser, TBeginit);
+			size_t ad = parser->sx->tc++;
 			int all = 0;
+
 			do
 			{
-				scanner(context);
 				all++;
-				array_init(context, mode_get(context->sx, decl_type + 1));
-			} while (scanner(context) == COMMA);
+				consume_token(parser);
+				parse_array_initializer(parser, mode_get(parser->sx, type + 1));
 
-			if (context->curr_token == END)
-			{
-				context->sx->tree[ad] = all;
-				totree(context, TExprend);
-			}
-			else
-			{
-				parser_error(context, wait_end);
-			}
+				if (parser->next_token == r_brace)
+				{
+					break;
+				}
+				else if (!try_consume_token(parser, comma))
+				{
+					parser_error(parser, no_comma_in_init_list);
+					skip_until(parser, comma | r_brace | semicolon);
+				}
+			} while (parser->next_token != semicolon);
+
+			expect_and_consume_token(parser, r_brace, wait_end);
+			parser->sx->tree[ad] = all;
+			totree(parser, TExprend);
 		}
 	}
-	else if (context->curr_token == BEGIN)
+	else if (parser->curr_token == l_brace)
 	{
-		if (is_struct(context->sx, decl_type))
+		if (is_struct(parser->sx, type))
 		{
-			parse_struct_initializer(context, decl_type);
+			parse_struct_initializer(parser, type);
 		}
 		else
 		{
-			parser_error(context, begin_with_notarray);
+			parser_error(parser, begin_with_notarray);
 		}
 	}
-	else if (context->onlystrings == 1)
+	else if (parser->onlystrings == 1)
 	{
-		parser_error(context, string_and_notstring);
+		parser_error(parser, string_and_notstring);
 	}
 	else
 	{
-		parse_initializer(context, decl_type);
-		context->onlystrings = 0;
+		parse_initializer(parser, type);
+		parser->onlystrings = 0;
 	}
 }
 
 /**
- *	Parse initializer
+ *	Parse array definition
  *
  *	direct-abstract-declarator:
  *		direct-abstract-declarator[opt] '[' constant-expression[opt] ']'
@@ -548,7 +559,7 @@ void parse_init_declarator(parser *const parser, int type)
 			}
 
 			parser->onlystrings = 2;
-			array_init(parser, type);
+			parse_array_initializer(parser, type);
 			if (parser->onlystrings == 1)
 			{
 				parser->sx->tree[all + 2] = parser->usual + 2;

@@ -218,7 +218,8 @@ void exprassn(parser *context, int level);
 void expr(parser *context, int level);
 void exprval(parser *context);
 void exprassnval(parser *context);
-void array_init(parser *context, int decl_type);
+void parse_struct_initializer(parser *context, int decl_type);
+void parse_array_initializer(parser *context, int decl_type);
 
 #ifdef __cplusplus
 } /* extern "C" */

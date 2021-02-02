@@ -1698,7 +1698,7 @@ void exprassn(parser *context, int level)
 		else if (is_array(context->sx, context->leftansttype))
 		{
 			// пока в RuC присваивать массивы нельзя
-			array_init(context, context->leftansttype);
+			parse_array_initializer(context, context->leftansttype);
 			if (context->was_error == 7)
 			{
 				context->was_error = 6;
