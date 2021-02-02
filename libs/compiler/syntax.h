@@ -177,7 +177,7 @@ int proc_get(const syntax *const sx, const size_t index);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int func_add(syntax *const sx, const size_t ref);
+int func_add(syntax *const sx, const int ref);
 
 /**
  *	Set function start reference by index in functions table

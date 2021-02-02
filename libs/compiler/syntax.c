@@ -222,7 +222,7 @@ int proc_get(const syntax *const sx, const size_t index)
 }
 
 
-int func_add(syntax *const sx, const size_t ref)
+int func_add(syntax *const sx, const int ref)
 {
 	if (sx == NULL)
 	{
