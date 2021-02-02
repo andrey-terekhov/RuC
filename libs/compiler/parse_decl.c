@@ -128,7 +128,7 @@ size_t parse_struct_or_union_specifier(parser *const parser)
 
 				if (id == 1)
 				{
-					parser_error(parser, ident_is_not_declared);
+					parser_error(parser, ident_is_not_declared, parser->sx->reprtab, parser->lxr->repr);
 					return mode_undefined;
 				}
 
@@ -874,7 +874,7 @@ void parse_function_body(parser *const parser, const size_t function_id)
 		}
 		if (!parser->sx->identab[parser->gotost[i] + 2])
 		{
-			parser_error(parser, label_not_declared);
+			parser_error(parser, label_not_declared, parser->sx->hash, parser->sx->reprtab, parser->lxr->repr);
 		}
 	}
 }
@@ -1013,7 +1013,6 @@ void parse_external_declaration(parser *const parser)
 			if (parser->next_token == l_paren)
 			{
 				parse_function_definition(parser, type);
-				break;
 			}
 			else if (group_type == LVOID)
 			{

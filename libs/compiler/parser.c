@@ -142,7 +142,7 @@ int toidentab(parser *context, size_t repr, int f, int type)
 	}
 	else if (ret == SIZE_MAX - 1)
 	{
-		parser_error(context, repeated_decl);
+		parser_error(context, repeated_decl, REPRTAB, REPRTAB_POS);
 		context->was_error = 5;
 	}
 	else
@@ -199,31 +199,6 @@ void parser_error(parser *const parser, const int num, ...)
 	va_start(args, num);
 
 	error(parser->io, num, args);
-
-	/*switch (num)
-	{
-		case not_primary:
-			error(context->io, num, context->curr_token);
-			break;
-		case bad_toval:
-			error(context->io, num, context->ansttype);
-			break;
-		case wrong_printf_param_type:
-		case printf_unknown_format_placeholder:
-			error(context->io, num, context->bad_printf_placeholder);
-			break;
-		case repeated_decl:
-		case ident_is_not_declared:
-		case repeated_label:
-		case no_field:
-			error(context->io, num, REPRTAB, REPRTAB_POS);
-			break;
-		case label_not_declared:
-			error(context->io, num, context->sx->hash, REPRTAB, REPRTAB_POS);
-			break;
-		default:
-			error(context->io, num);
-	}*/
 }
 
 void consume_token(parser *const parser)

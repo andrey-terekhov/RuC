@@ -927,7 +927,7 @@ void primaryexpr(parser *context)
 	}
 	else
 	{
-		parser_error(context, not_primary);
+		parser_error(context, not_primary, context->curr_token);
 		context->was_error = 4;
 		return; // 1
 	}
@@ -977,7 +977,7 @@ int find_field(parser *context, int stype)
 	}
 	if (flag)
 	{
-		parser_error(context, no_field);
+		parser_error(context, no_field, REPRTAB, REPRTAB_POS);
 		context->was_error = 5;
 		return 0; // 1
 	}

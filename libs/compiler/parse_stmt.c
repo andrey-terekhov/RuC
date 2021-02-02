@@ -584,7 +584,7 @@ int evaluate_params(parser *context, int num, char32_t formatstr[], int formatty
 
 				default:
 					context->bad_printf_placeholder = fsi;
-					parser_error(context, printf_unknown_format_placeholder);
+					parser_error(context, printf_unknown_format_placeholder, context->bad_printf_placeholder);
 					return 0;
 			}
 		}
@@ -640,7 +640,7 @@ void parse_printf_statement(parser *const context)
 		{
 			// FIXME: для этого заводится отдельное поле в analyzer
 			context->bad_printf_placeholder = placeholders[actual_param_number];
-			parser_error(context, wrong_printf_param_type);
+			parser_error(context, wrong_printf_param_type, context->bad_printf_placeholder);
 		}
 
 		sumsize += szof(context, formattypes[actual_param_number]);
