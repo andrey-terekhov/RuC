@@ -128,7 +128,6 @@ enum ERROR
 	wrong_init,
 	no_field,
 	slice_from_func,
-	bad_toval,
 	wait_end,
 	act_param_not_ident,
 	unassignable,

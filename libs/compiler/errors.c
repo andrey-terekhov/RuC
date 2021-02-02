@@ -398,11 +398,6 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "вырезка элемента из массива, выданного функцией, а функции "
 												  "не могут выдавать массивы");
 			break;
-		case bad_toval:	// need_test
-		{
-			const int ansttype = va_arg(args, int);
-			sprintf(msg, "странный toval ansttype=%i", ansttype);
-		}
 		break;
 		case wait_end: // need_test
 			sprintf(msg, "в инициализации структуры здесь ожидалась правая фигурная "

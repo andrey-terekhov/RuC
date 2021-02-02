@@ -212,16 +212,13 @@ void subexpr(parser *context);
 int intopassn(int next);
 int opassn(parser *context);
 void condexpr(parser *context);
-void inition(parser *context, int decl_type);
-void struct_init(parser *context, int decl_type);
+void parse_struct_initializer(parser *context, int decl_type);
 void exprassnvoid(parser *context);
 void exprassn(parser *context, int level);
 void expr(parser *context, int level);
 void exprval(parser *context);
 void exprassnval(parser *context);
 void array_init(parser *context, int decl_type);
-int arrdef(parser *context, int t);
-void decl_id(parser *context, int decl_type);
 
 #ifdef __cplusplus
 } /* extern "C" */

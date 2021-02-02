@@ -614,13 +614,13 @@ void parse_printf_statement(parser *const context)
 	}
 	scanner(context);	// Для форматирующей строки
 
-	for (int i = 0; i < context->lxr->num; i++)
+	for (int i = 0; i < context->lexer->num; i++)
 	{
-		formatstr[i] = context->lxr->lexstr[i];
+		formatstr[i] = context->lexer->lexstr[i];
 	}
-	formatstr[context->lxr->num] = 0;
+	formatstr[context->lexer->num] = 0;
 
-	int expected_param_number = evaluate_params(context, context->lxr->num, formatstr, formattypes, placeholders);
+	int expected_param_number = evaluate_params(context, context->lexer->num, formatstr, formattypes, placeholders);
 	int actual_param_number = 0;
 	//for (int i = 0; scanner(context) == COMMA; i++)
 	while (context->next_token != RIGHTBR && actual_param_number != expected_param_number)
@@ -660,9 +660,9 @@ void parse_printf_statement(parser *const context)
 	}
 
 	totree(context, TString);
-	totree(context, context->lxr->num);
+	totree(context, context->lexer->num);
 
-	for (int i = 0; i < context->lxr->num; i++)
+	for (int i = 0; i < context->lexer->num; i++)
 	{
 		totree(context, formatstr[i]);
 	}
@@ -700,7 +700,7 @@ void parse_block_item(parser *const parser)
 
 		case identifier:
 		{
-			const size_t id = repr_get_reference(parser->sx, parser->lxr->repr);
+			const size_t id = repr_get_reference(parser->sx, parser->lexer->repr);
 			if (ident_get_displ(parser->sx, id) >= 1000)
 			{
 				parse_inner_declaration(parser);

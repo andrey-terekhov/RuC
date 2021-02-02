@@ -319,21 +319,21 @@ void primaryexpr(parser *context)
 	if (context->curr_token == CHAR_CONST)
 	{
 		totree(context, TConst);
-		totree(context, context->lxr->num);
+		totree(context, context->lexer->num);
 		context->stackoperands[++context->sopnd] = context->ansttype = LCHAR;
 		context->anst = NUMBER;
 	}
 	else if (context->curr_token == INT_CONST)
 	{
 		totree(context, TConst);
-		totree(context, context->lxr->num);
+		totree(context, context->lexer->num);
 		context->stackoperands[++context->sopnd] = context->ansttype = LINT;
 		context->anst = NUMBER;
 	}
 	else if (context->curr_token == FLOAT_CONST)
 	{
 		totree(context, TConstd);
-		memcpy(&context->sx->tree[context->sx->tc], &context->lxr->num_double, sizeof(double));
+		memcpy(&context->sx->tree[context->sx->tc], &context->lexer->num_double, sizeof(double));
 		context->sx->tc += 2;
 		context->stackoperands[++context->sopnd] = context->ansttype = LFLOAT;
 		context->anst = NUMBER;
@@ -343,11 +343,11 @@ void primaryexpr(parser *context)
 		int i;
 
 		totree(context, TString);
-		totree(context, context->lxr->num);
+		totree(context, context->lexer->num);
 
-		for (i = 0; i < context->lxr->num; i++)
+		for (i = 0; i < context->lexer->num; i++)
 		{
-			totree(context, context->lxr->lexstr[i]);
+			totree(context, context->lexer->lexstr[i]);
 		}
 
 		context->ansttype = newdecl(context->sx, mode_array, LCHAR);
@@ -1693,7 +1693,7 @@ void exprassn(parser *context, int level)
 	{
 		if (is_struct(context->sx, context->leftansttype))
 		{
-			struct_init(context, context->leftansttype);
+			parse_struct_initializer(context, context->leftansttype);
 		}
 		else if (is_array(context->sx, context->leftansttype))
 		{

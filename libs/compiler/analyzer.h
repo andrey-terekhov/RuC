@@ -23,7 +23,7 @@
 
 
 #define REPRTAB		(context->sx->reprtab)
-#define REPRTAB_POS (context->lxr->repr)
+#define REPRTAB_POS (context->lexer->repr)
 #define REPRTAB_LEN (context->sx->rp)
 
 
@@ -36,7 +36,7 @@ typedef struct
 {
 	universal_io *io;					/**< Universal io structure */
 	syntax *sx;							/**< Syntax structure */
-	lexer *lxr;							/**< Lexer structure */
+	lexer *lexer;						/**< Lexer structure */
 
 	token curr_token;					/**< Current token */
 	token next_token;					/**< Lookahead token */
@@ -56,9 +56,9 @@ typedef struct
 	int type;
 	int op;
 	int inass;
-	int arrdim;
+	int arrdim;	 // arrdim - размерность (0-скаляр), д.б. столько выражений-границ
 	int was_struct_with_arr;
-	int usual;
+	int usual;	// описание массива без пустых границ
 	int flag_in_switch;
 	int flag_in_loop;
 	int function_type;
@@ -71,7 +71,7 @@ typedef struct
 	int leftansttype; // anst = VAL  - значение на стеке
 	int x;							// useless
 	char32_t bad_printf_placeholder;
-	int onlystrings;
+	int onlystrings;	 // только из строк 2 - без границ, 3 - с границами
 
 	int buf_flag;
 	int buf_cur;

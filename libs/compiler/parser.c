@@ -33,7 +33,7 @@ int scanner(parser *context)
 	context->curr_token = context->next_token;
 	if (!context->buf_flag)
 	{
-		context->next_token = lex(context->lxr);
+		context->next_token = lex(context->lexer);
 	}
 	else
 	{
@@ -176,8 +176,8 @@ void applid(parser *context)
 
 int parse(parser *const parser)
 {
-	get_char(parser->lxr);
-	get_char(parser->lxr);
+	get_char(parser->lexer);
+	get_char(parser->lexer);
 	consume_token(parser);
 
 	do
@@ -187,7 +187,7 @@ int parse(parser *const parser)
 
 	totree(parser, TEnd);
 
-	return parser->was_error || parser->lxr->was_error;
+	return parser->was_error || parser->lexer->was_error;
 }
 
 
@@ -204,7 +204,7 @@ void parser_error(parser *const parser, const int num, ...)
 void consume_token(parser *const parser)
 {
 	parser->curr_token = parser->next_token;
-	parser->next_token = lex(parser->lxr);
+	parser->next_token = lex(parser->lexer);
 }
 
 int try_consume_token(parser *const parser, const token expected)
