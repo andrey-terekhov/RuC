@@ -19,6 +19,8 @@
 #include "uniprinter.h"
 
 
+static void expr(universal_io *const io, syntax *const sx, node *const nd);
+
 static void block(universal_io *const io, syntax *const sx, node *const nd);
 
 static void operand(universal_io *const io, syntax *const sx, node *const nd)
@@ -28,10 +30,66 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd)
     switch (node_get_type(nd))
     {
         case TIdent:
+        case TSelect:
+        case TIdenttoval:
+        case TIdenttovald:
+        case TIdenttoaddr:
+        case TConst:
+        case TConstd:
         {
             node_set_next(nd);
             break;
         }
+        case TString:
+        {
+            // здесь будет печать llvm для строки
+            node_set_next(nd);
+            break;
+        }
+        case TSliceident:
+        {
+            node_set_next(nd);
+            expr(io, sx, nd);
+            while (node_get_type(nd) == TSlice)
+            {
+                node_set_next(nd);
+                expr(io, sx, nd);
+            }
+            break;
+        }
+        case TCall1:
+        {
+            int npar = node_get_arg(nd, 0);
+
+            node_set_next(nd);
+            for (int i = 0; i < npar; i++)
+                expr(io, sx, nd);
+            node_set_next(nd); // TCall2
+            break;
+        }
+        case TBeginit:
+        {
+            // здесь будет печать llvm с инициализацией массивов
+            int n = node_get_arg(nd, 0);
+
+            node_set_next(nd);
+            for (int i = 0; i < n; i++)
+                expr(io, sx, nd);
+            break;
+        }
+        case TStructinit:
+        {
+            // здесь будет печать llvm с инициализацией структур
+            int n = node_get_arg(nd, 0);
+
+            node_set_next(nd);
+            for (int i = 0; i < n; i++)
+                expr(io, sx, nd);
+            break;
+        }
+        default:
+        // отладочная печать, потом здесь будет инициализация какой-нибудь ошибки
+            printf("Ooops, something wrong\n");
     }
 }
 
@@ -67,6 +125,11 @@ static void expr(universal_io *const io, syntax *const sx, node *const nd)
         {
             node_set_next(nd);
             expr(io, sx, nd);
+            break;
+        }
+        case TExprend:
+        {
+            node_set_next(nd);
             break;
         }
         default:
