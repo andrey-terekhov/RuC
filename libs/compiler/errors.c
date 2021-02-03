@@ -647,6 +647,13 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "невозможно добавить аргумент %i для tree[%zi] = %i", arg, i, elem);
 		}
 		break;
+		case node_unexpected:
+		{
+			const int type = va_arg(args, int);
+			sprintf(msg, "недопустимый узел верхнего уровня %i", type);
+
+		}
+		break;
 
 		default:
 			sprintf(msg, "этот код ошибки я прозевал");

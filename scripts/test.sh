@@ -34,7 +34,9 @@ init()
 				echo -e "Keys:"
 				echo -e "\t-h, --help\tTo output help info."
 				echo -e "\t-s, --silence\tFor silence testing."
+				echo -e "\t-f, --fast\tFast testing, Release builds only."
 				echo -e "\t-i, --ignore\tIgnore errors & executing stages."
+				echo -e "\t-r, --remove\tRemove build folder before testing."
 				echo -e "\t-d, --debug\tSwitch on debug tracing."
 				echo -e "\t-v, --virtual\tSet RuC virtual machine release."
 				echo -e "\t-o, --output\tSet output printing time (default = 0.0)."
@@ -44,8 +46,14 @@ init()
 			-s|--silence)
 				silence=$1
 				;;
+			-f|--fast)
+				fast=$1
+				;;
 			-i|--ignore)
 				ignore=$1
+				;;
+			-r|--remove)
+				remove=$1
 				;;
 			-d|--debug)
 				debug=$1
@@ -83,24 +91,32 @@ init()
 
 build_folder()
 {
-	rm -rf build && mkdir build && cd build
+	if ! [[ -z $remove ]] ; then
+		rm -rf build
+	fi
+	mkdir -p build && cd build
 
-	if [[ $OSTYPE != "msys" ]] ; then
-		CMAKE_BUILD_TYPE=-DCMAKE_BUILD_TYPE=Debug
+
+	if [[ -z $fast ]] ; then
+		if [[ $OSTYPE != "msys" ]] ; then
+			CMAKE_BUILD_TYPE=-DCMAKE_BUILD_TYPE=Debug
+		fi
+
+		cmake .. $CMAKE_BUILD_TYPE -DTESTING_EXIT_CODE=$exit_code
+		if ! cmake --build . --config Debug ; then
+			exit 1
+		fi
+
+		if [[ $OSTYPE != "msys" ]] ; then
+			cmake --install . --prefix $dir_install --config Debug
+			rm -rf Debug
+			mv $dir_install/$1 Debug
+		fi
 	fi
 
-
-	cmake .. $CMAKE_BUILD_TYPE -DTESTING_EXIT_CODE=$exit_code
-	if ! cmake --build . --config Debug ; then
-		exit 1
-	fi
-
 	if [[ $OSTYPE != "msys" ]] ; then
-		cmake --install . --prefix $dir_install --config Debug
-		mv $dir_install/$1 Debug
 		CMAKE_BUILD_TYPE=-DCMAKE_BUILD_TYPE=Release
 	fi
-
 
 	cmake .. $CMAKE_BUILD_TYPE -DTESTING_EXIT_CODE=$exit_code
 	if ! cmake --build . --config Release ; then
@@ -109,6 +125,7 @@ build_folder()
 
 	if [[ $OSTYPE != "msys" ]] ; then
 		cmake --install . --prefix $dir_install --config Release
+		rm -rf Release
 		mv $dir_install/$1 Release
 		rm -rf $dir_install
 	fi
@@ -116,14 +133,22 @@ build_folder()
 
 build_vm()
 {
-	rm -rf ruc-vm
-	git clone -b $vm_release --recursive https://github.com/andrey-terekhov/RuC-VM ruc-vm
+	if ! [[ -z $remove ]] ; then
+		rm -rf ruc-vm
+	fi
+
+	if ! [[ -d ruc-vm ]] ; then
+		git clone -b $vm_release --recursive https://github.com/andrey-terekhov/RuC-VM ruc-vm
+		cd ruc-vm
+	else
+		cd ruc-vm
+		git checkout $vm_release
+	fi
 
 	if [[ $OSTYPE != "msys" ]] ; then
 		CMAKE_BUILD_TYPE=-DCMAKE_BUILD_TYPE=Release
 	fi
 
-	cd ruc-vm
 	mkdir -p build && cd build && cmake .. $CMAKE_BUILD_TYPE -DTESTING_EXIT_CODE=$exit_code
 	if ! cmake --build . --config Release ; then
 		exit 1
@@ -145,7 +170,11 @@ build()
 	build_folder ruc
 
 	compiler=./Release/ruc
-	compiler_debug=./Debug/ruc
+	if [[ -z $fast ]] ; then
+		compiler_debug=./Debug/ruc
+	else
+		compiler_debug=$compiler
+	fi
 
 	if [[ -z $ignore ]] ; then
 		build_vm

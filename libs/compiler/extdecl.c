@@ -3259,8 +3259,9 @@ int struct_decl_list(analyzer *context)
 	if (wasarr)
 	{
 		totree(context, TStructend);
-		totree(context, (int)tstrbeg);
-		context->sx->tree[tstrbeg + 1] = context->was_struct_with_arr = context->sx->procd++;
+		totree(context, context->sx->procd);
+		context->sx->tree[tstrbeg + 1] = context->sx->procd;
+		context->was_struct_with_arr = context->sx->procd++;
 	}
 	else
 	{
