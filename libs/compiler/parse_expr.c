@@ -1144,6 +1144,7 @@ void postexpr(parser *context)
 			elem_type = mode_get(context->sx, context->ansttype + 1);
 
 			scanner(context);
+			scanner(context);
 
 			if (context->anst == IDENT) // a[i]
 			{
@@ -1432,17 +1433,28 @@ void unarexpr(parser *context)
 
 void exprinbrkts(parser *context, int er)
 {
-	expect_and_consume_token(context, l_paren, er);
+	mustbe(context, LEFTBR, er);
+	scanner(context);
 	exprval(context);
-	expect_and_consume_token(context, r_paren, er);
+	if (context->was_error == 4)
+	{
+		context->was_error = 3;
+		return; // 1
+	}
+	mustbe(context, RIGHTBR, er);
 }
 
 void exprassninbrkts(parser *context, int er)
 {
-	expect_and_consume_token(context, l_paren, er);
+	mustbe(context, LEFTBR, er);
 	scanner(context);
 	exprassnval(context);
-	expect_and_consume_token(context, l_paren, er);
+	if (context->was_error == 4)
+	{
+		context->was_error = 3;
+		return; // 1
+	}
+	mustbe(context, RIGHTBR, er);
 }
 
 int prio(int op)
@@ -1576,6 +1588,7 @@ void condexpr(parser *context)
 				return; // 1
 			}
 			totree(context, TCondexpr);
+			scanner(context);
 			scanner(context);
 			context->sopnd--;
 			exprval(context); // then
@@ -1859,7 +1872,6 @@ void expr(parser *context, int level)
 
 void exprval(parser *context)
 {
-	scanner(context);
 	expr(context, 1);
 	if (context->was_error == 5)
 	{
@@ -1907,18 +1919,6 @@ void parse_string_literal_expression(parser *const parser)
 	parser->anst = VAL;
 }
 
-void parse_assignment_expression(parser *const parser)
-{
-	exprassnval(parser);
-}
-
-void parse_expression(parser *const parser)
-{
-	expr(parser, 0);
-	exprassnvoid(parser);
-}
-
-
 void parse_constant_expression(parser *const parser)
 {
 	scanner(parser);
@@ -1926,4 +1926,10 @@ void parse_constant_expression(parser *const parser)
 	condexpr(parser);
 	toval(parser);
 	totree(parser, TExprend);
+}
+
+void parse_expression(parser *const parser)
+{
+	expr(parser, 0);
+	exprassnvoid(parser);
 }
