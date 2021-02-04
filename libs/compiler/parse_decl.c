@@ -348,10 +348,8 @@ void parse_initializer(parser *const parser, const int type)
 {
 	if (type < 0 || is_pointer(parser->sx, type) || is_string(parser->sx, type))
 	{
-		exprassn(parser, 1);
-		toval(parser);
+		parse_assignment_expression(parser);
 		parser->sopnd--;
-		totree(parser, TExprend);
 
 		if (is_int(type) && is_float(parser->ansttype))
 		{

@@ -251,7 +251,7 @@ void parse_do_statement(parser *const parser)
  *
  *	for-statement:
  *		'for' '(' expression[opt] ';' expression[opt] ';' expression[opt] ')' statement
- *		'for' '(' declaration expression[opt] ';' expression[opt] ')' statement
+ *		'for' '(' declaration expression[opt] ';' expression[opt] ')' statement [TODO]
  *
  *	@param	parser		Parser structure
  */
@@ -267,19 +267,19 @@ void parse_for_statement(parser *const parser)
 
 	expect_and_consume_token(parser, l_paren, no_leftbr_in_for);
 
-	if (scanner(parser) == semicolon)
+	if (try_consume_token(parser, semicolon))
 	{
 		parser->sx->tree[ref_inition] = 0;
 	}
 	else
 	{
 		parser->sx->tree[ref_inition] = (int)parser->sx->tc;
-		// TODO: в С99 тут может быть объявление
+		consume_token(parser);
 		parse_expression(parser);
 		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
 	}
 
-	if (scanner(parser) == semicolon)
+	if (try_consume_token(parser, semicolon))
 	{
 		parser->sx->tree[ref_condition] = 0;
 	}
@@ -293,13 +293,14 @@ void parse_for_statement(parser *const parser)
 		parser->sopnd--;
 	}
 
-	if (scanner(parser) == r_paren)
+	if (try_consume_token(parser, r_paren))
 	{
 		parser->sx->tree[ref_increment] = 0;
 	}
 	else
 	{
 		parser->sx->tree[ref_increment] = (int)parser->sx->tc;
+		consume_token(parser);
 		parse_expression(parser);
 		expect_and_consume_token(parser, r_paren, no_rightbr_in_for);
 	}
@@ -667,7 +668,7 @@ void parse_printf_statement(parser *const context)
 
 /**
  *	Parse statement or declaration
- *	
+ *
  *	block-item:
  *		statement
  *		declaration

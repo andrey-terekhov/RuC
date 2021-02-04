@@ -184,7 +184,6 @@ void parse_compound_statement(parser *const context, const block_type type);
 
 int scanner(parser *context);
 int newdecl(syntax *const sx, const int type, const int element_type);
-int evaluate_params(parser *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[]);
 int is_function(syntax *const sx, const int t);
 int is_array(syntax *const sx, const int t);
 int is_string(syntax *const sx, const int t);
