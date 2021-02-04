@@ -391,47 +391,31 @@ void parse_break_statement(parser *const parser)
  */
 void parse_return_statement(parser *const parser)
 {
-	const int expected_type = mode_get(parser->sx, parser->function_type + 1);
+	const int return_type = mode_get(parser->sx, parser->function_type + 1);
 	parser->flag_was_return = 1;
 	
 	if (try_consume_token(parser, semicolon))
 	{
 		totree(parser, TReturnvoid);
-		if (!is_void(expected_type))
+		if (!is_void(return_type))
 		{
 			parser_error(parser, no_ret_in_func);
 		}
 	}
 	else
 	{
-		if (expected_type != mode_void_pointer)
+		if (return_type != mode_void_pointer)
 		{
-			if (is_void(expected_type))
+			if (is_void(return_type))
 			{
 				parser_error(parser, notvoidret_in_void_func);
 			}
 
 			totree(parser, TReturnval);
-			totree(parser, szof(parser, expected_type));
+			totree(parser, szof(parser, return_type));
 
 			consume_token(parser);
-			const int actual_type = exprval(parser);
-			parser->sx->tc--;
-			parser->sopnd--;
-
-			if (!is_undefined(expected_type) && !is_undefined(actual_type))
-			{
-				if (is_float(expected_type) && is_int(actual_type))
-				{
-					totree(parser, WIDEN);
-				}
-				else if (expected_type != actual_type)
-				{
-					parser_error(parser, bad_type_in_ret);
-				}
-			}
-
-			totree(parser, TExprend);
+			parse_initializer(parser, return_type);
 			expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 		}
 	}

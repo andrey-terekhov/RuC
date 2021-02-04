@@ -281,9 +281,8 @@ size_t parse_struct_declaration_list(parser *const parser)
 				totree(parser, 1); // Признак, что массив в структуре
 				wasarr = 1;
 
-				if (parser->next_token == equal)
+				if (try_consume_token(parser, equal))
 				{
-					consume_token(parser);
 					consume_token(parser);
 					if (is_array(parser->sx, type))
 					{
@@ -941,10 +940,10 @@ void parse_external_declaration(parser *const parser)
 
 void parse_initializer(parser *const parser, const int type)
 {
-	if (type < 0 || is_pointer(parser->sx, type))
+	if (parser->curr_token != l_brace)
 	{
 		const int expr_type = parse_assignment_expression(parser);
-		if (!is_undefined(expected_type) && !is_undefined(actual_type))
+		if (!is_undefined(expr_type) && !is_undefined(type))
 		{
 			if (is_int(type) && is_float(expr_type))
 			{
