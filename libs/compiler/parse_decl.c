@@ -386,59 +386,52 @@ void parse_struct_initializer(parser *const parser, const int type)
  */
 void parse_array_initializer(parser *const parser, const int type)
 {
-	if (is_array(parser->sx, type))
+	if (parser->curr_token == string_literal)
 	{
-		if (parser->curr_token == string_literal)
+		if (parser->onlystrings == 0)
 		{
-			if (parser->onlystrings == 0)
-			{
-				parser_error(parser, string_and_notstring);
-			}
-			if (parser->onlystrings == 2)
-			{
-				parser->onlystrings = 1;
-			}
-			parse_string_literal_expression(parser);
-			totree(parser, TExprend);
+			parser_error(parser, string_and_notstring);
 		}
-		else
+		if (parser->onlystrings == 2)
 		{
-			if (parser->curr_token != l_brace)
-			{
-				parser_error(parser, arr_init_must_start_from_BEGIN);
-				skip_until(parser, comma | semicolon);
-				return;
-			}
-
-			totree(parser, TBeginit);
-			const size_t ref_list_length = parser->sx->tc++;
-			int list_length = 0;
-
-			do
-			{
-				list_length++;
-				consume_token(parser);
-				parse_initializer(parser, mode_get(parser->sx, type + 1));
-
-				if (parser->next_token == r_brace)
-				{
-					break;
-				}
-				else if (!try_consume_token(parser, comma))
-				{
-					parser_error(parser, no_comma_in_init_list);
-					skip_until(parser, comma | r_brace | semicolon);
-				}
-			} while (parser->next_token != semicolon);
-
-			expect_and_consume_token(parser, r_brace, wait_end);
-			parser->sx->tree[ref_list_length] = list_length;
-			totree(parser, TExprend);
+			parser->onlystrings = 1;
 		}
+		parse_string_literal_expression(parser);
+		totree(parser, TExprend);
 	}
-	else if (parser->onlystrings == 1)
+	else
 	{
-		parser_error(parser, string_and_notstring);
+		if (parser->curr_token != l_brace)
+		{
+			parser_error(parser, arr_init_must_start_from_BEGIN);
+			skip_until(parser, comma | semicolon);
+			return;
+		}
+
+		totree(parser, TBeginit);
+		const size_t ref_list_length = parser->sx->tc++;
+		int list_length = 0;
+
+		do
+		{
+			list_length++;
+			consume_token(parser);
+			parse_initializer(parser, mode_get(parser->sx, type + 1));
+
+			if (parser->next_token == r_brace)
+			{
+				break;
+			}
+			else if (!try_consume_token(parser, comma))
+			{
+				parser_error(parser, no_comma_in_init_list);
+				skip_until(parser, comma | r_brace | semicolon);
+			}
+		} while (parser->next_token != semicolon);
+
+		expect_and_consume_token(parser, r_brace, wait_end);
+		parser->sx->tree[ref_list_length] = list_length;
+		totree(parser, TExprend);
 	}
 }
 
@@ -500,7 +493,7 @@ void parse_init_declarator(parser *const parser, int type)
 			}
 
 			parser->onlystrings = 2;
-			parse_initializer(parser, type);
+			parse_array_initializer(parser, type);
 			if (parser->onlystrings == 1)
 			{
 				parser->sx->tree[all + 2] = parser->usual + 2;
