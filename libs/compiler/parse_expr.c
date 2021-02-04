@@ -926,15 +926,6 @@ void primaryexpr(parser *context)
 	}
 }
 
-void index_check(parser *context)
-{
-	if (!is_int(context->ansttype))
-	{
-		parser_error(context, index_must_be_int);
-		context->was_error = 5;
-	}
-}
-
 int find_field(parser *context, int stype)
 {
 	// выдает смещение до найденного поля или ошибку
@@ -1162,11 +1153,10 @@ void postexpr(parser *context)
 			{
 				return; // 1
 			}
-			index_check(context); // проверка, что индекс int или char
-			if (context->was_error == 5)
+			if (!is_int(context->ansttype))
 			{
+				parser_error(context, index_must_be_int);
 				context->was_error = 4;
-				return; // 1
 			}
 
 			mustbe(context, RIGHTSQBR, no_rightsqbr_in_slice);
@@ -1873,6 +1863,7 @@ int parse_assignment_expression(parser *const parser)
 	exprassn(parser, 1);
 	toval(parser);
 	totree(parser, TExprend);
+	parser->sopnd--;
 	return parser->ansttype;
 }
 
@@ -1883,6 +1874,7 @@ int parse_constant_expression(parser *const parser)
 	condexpr(parser);
 	toval(parser);
 	totree(parser, TExprend);
+	parser->sopnd--;
 	return parser->ansttype;
 }
 

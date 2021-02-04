@@ -95,12 +95,10 @@ void parse_case_statement(parser *const parser)
 
 	totree(parser, TCase);
 	const int condition_type = parse_constant_expression(parser);
-
 	if (!is_int(condition_type) && !is_undefined(condition_type))
 	{
 		parser_error(parser, float_in_switch);
 	}
-	parser->sopnd--;
 
 	expect_and_consume_token(parser, colon, expected_colon_after_case);
 	parse_statement(parser);
@@ -494,7 +492,6 @@ void parse_print_statement(parser *const parser)
 	{
 		parser_error(parser, pointer_in_print);
 	}
-	parser->sopnd--;
 	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 
@@ -633,7 +630,6 @@ void parse_printf_statement(parser *const context)
 		}
 
 		sumsize += szof(context, formattypes[actual_param_number]);
-		--context->sopnd;
 		actual_param_number++;
 		if (context->next_token != COMMA)
 		{

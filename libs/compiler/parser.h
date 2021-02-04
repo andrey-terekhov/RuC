@@ -241,7 +241,6 @@ void mustbeint(parser *context);
 void mustberowofint(parser *context);
 void mustberowoffloat(parser *context);
 void primaryexpr(parser *context);
-void index_check(parser *context);
 int find_field(parser *context, int stype);
 void selectend(parser *context);
 void postexpr(parser *context);

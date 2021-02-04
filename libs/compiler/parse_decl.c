@@ -184,7 +184,6 @@ int parse_array_definition(parser *const parser, int type)
 			{
 				parser_error(parser, array_size_must_be_int);
 			}
-			parser->sopnd--;
 
 			if (!try_consume_token(parser, r_square))
 			{
@@ -945,19 +944,20 @@ void parse_initializer(parser *const parser, const int type)
 	if (type < 0 || is_pointer(parser->sx, type))
 	{
 		const int expr_type = parse_assignment_expression(parser);
-		parser->sopnd--;
-
-		if (is_int(type) && is_float(expr_type))
+		if (!is_undefined(expected_type) && !is_undefined(actual_type))
 		{
-			parser_error(parser, init_int_by_float);
-		}
-		else if (is_float(type) && is_int(expr_type))
-		{
-			insertwiden(parser);
-		}
-		else if (type != expr_type)
-		{
-			parser_error(parser, error_in_initialization);
+			if (is_int(type) && is_float(expr_type))
+			{
+				parser_error(parser, init_int_by_float);
+			}
+			else if (is_float(type) && is_int(expr_type))
+			{
+				insertwiden(parser);
+			}
+			else if (type != expr_type)
+			{
+				parser_error(parser, error_in_initialization);
+			}
 		}
 	}
 	else if (is_struct(parser->sx, type))
