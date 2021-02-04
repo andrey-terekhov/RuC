@@ -99,8 +99,10 @@ void parse_string_literal_expression(parser *const parser);
  *		=  *=  /=  %=  +=  -=  <<=  >>=  &=  ˆ=  |=
  *
  *	@param	parser		Parser structure
+ *
+ *	@return	Type of parsed expression
  */
-void parse_assignment_expression(parser *const parser);
+int parse_assignment_expression(parser *const parser);
 
 /**
  *	Parse expression [C99 6.5.17]
@@ -110,8 +112,22 @@ void parse_assignment_expression(parser *const parser);
  *		expression ',' assignment-expression
  *
  *	@param	parser		Parser structure
+ *
+ *	@return	Type of parsed expression
  */
-void parse_expression(parser *const parser);
+int parse_expression(parser *const parser);
+
+/**
+ *	Parse expression in parenthesis
+ *
+ *	parenthesized-expression:
+ *		'(' expression ')'
+ *
+ *	@param	parser		Parser structure
+ *
+ *	@return	Type of parsed expression
+ */
+int parse_parenthesized_expression(parser *const parser);
 
 /**
  *	Parse constant expression [C99 6.6]
@@ -120,8 +136,10 @@ void parse_expression(parser *const parser);
  *		conditional-expression
  *
  *	@param	parser		Parser structure
+ *
+ *	@return	Type of parsed expression
  */
-void parse_constant_expression(parser *const parser);
+int parse_constant_expression(parser *const parser);
 
 
 /**
@@ -228,7 +246,6 @@ int find_field(parser *context, int stype);
 void selectend(parser *context);
 void postexpr(parser *context);
 void unarexpr(parser *context);
-void exprinbrkts(parser *context, int er);
 void exprassninbrkts(parser *context, int er);
 int prio(int op);
 void subexpr(parser *context);
@@ -238,7 +255,7 @@ void condexpr(parser *context);
 void exprassnvoid(parser *context);
 void exprassn(parser *context, int level);
 void expr(parser *context, int level);
-void exprval(parser *context);
+int exprval(parser *context);
 void exprassnval(parser *context);
 
 #ifdef __cplusplus

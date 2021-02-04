@@ -1431,19 +1431,6 @@ void unarexpr(parser *context)
 	}
 }
 
-void exprinbrkts(parser *context, int er)
-{
-	mustbe(context, LEFTBR, er);
-	scanner(context);
-	exprval(context);
-	if (context->was_error == 4)
-	{
-		context->was_error = 3;
-		return; // 1
-	}
-	mustbe(context, RIGHTBR, er);
-}
-
 int prio(int op)
 {
 	// возвращает 0, если не операция
@@ -1848,11 +1835,12 @@ void expr(parser *context, int level)
 	}
 }
 
-void exprval(parser *context)
+int exprval(parser *context)
 {
 	expr(context, 1);
 	toval(context);
 	totree(context, TExprend);
+	return context->ansttype;
 }
 
 
@@ -1880,24 +1868,37 @@ void parse_string_literal_expression(parser *const parser)
 	parser->anst = VAL;
 }
 
-void parse_assignment_expression(parser *const parser)
+int parse_assignment_expression(parser *const parser)
 {
 	exprassn(parser, 1);
 	toval(parser);
 	totree(parser, TExprend);
+	return parser->ansttype;
 }
 
-void parse_constant_expression(parser *const parser)
+int parse_constant_expression(parser *const parser)
 {
 	scanner(parser);
 	unarexpr(parser);
 	condexpr(parser);
 	toval(parser);
 	totree(parser, TExprend);
+	return parser->ansttype;
 }
 
-void parse_expression(parser *const parser)
+int parse_expression(parser *const parser)
 {
 	expr(parser, 0);
 	exprassnvoid(parser);
+	return parser->ansttype;
+}
+
+int parse_parenthesized_expression(parser *const parser)
+{
+	mustbe(parser, LEFTBR, cond_must_be_in_brkts);
+	scanner(parser);
+	exprval(parser);
+	mustbe(parser, RIGHTBR, cond_must_be_in_brkts);
+	parser->sopnd--;
+	return parser->ansttype;
 }

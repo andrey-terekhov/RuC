@@ -94,9 +94,9 @@ void parse_case_statement(parser *const parser)
 	}
 
 	totree(parser, TCase);
-	parse_constant_expression(parser);
+	const int condition_type = parse_constant_expression(parser);
 
-	if (!is_int(parser->ansttype) && !is_undefined(parser->ansttype))
+	if (!is_int(condition_type) && !is_undefined(condition_type))
 	{
 		parser_error(parser, float_in_switch);
 	}
@@ -144,8 +144,8 @@ void parse_expression_statement(parser *const parser)
  *	Parse if statement [C99 6.8.4.1]
  *
  *	if-statement:
- *		'if' '(' expression ')' statement
- *		'if' '(' expression ')' statement 'else' statement
+ *		'if' parenthesized-expression statement
+ *		'if' parenthesized-expression statement 'else' statement
  *
  *	@param	parser		Parser structure
  */
@@ -154,8 +154,7 @@ void parse_if_statement(parser *const parser)
 	totree(parser, TIf);
 	const size_t ref_else = parser->sx->tc++;
 
-	exprinbrkts(parser, cond_must_be_in_brkts);
-	parser->sopnd--;
+	parse_parenthesized_expression(parser);
 	parse_statement(parser);
 
 	if (try_consume_token(parser, kw_else))
@@ -173,7 +172,7 @@ void parse_if_statement(parser *const parser)
  *	Parse switch statement [C99 6.8.4.2]
  *
  *	switch-statement:
- *		'switch' '(' expression ')' statement
+ *		'switch' parenthesized-expression statement
  *
  *	@param	parser		Parser structure
  */
@@ -182,12 +181,11 @@ void parse_switch_statement(parser *const parser)
 	const int old_in_switch = parser->flag_in_switch;
 	totree(parser, TSwitch);
 
-	exprinbrkts(parser, cond_must_be_in_brkts);
-	if (!is_int(parser->ansttype) && !is_undefined(parser->ansttype))
+	const int condition_type = parse_parenthesized_expression(parser);
+	if (!is_int(condition_type) && !is_undefined(condition_type))
 	{
 		parser_error(parser, float_in_switch);
 	}
-	parser->sopnd--;
 
 	parser->flag_in_switch = 1;
 	parse_statement(parser);
@@ -198,7 +196,7 @@ void parse_switch_statement(parser *const parser)
  *	Parse while statement [C99 6.8.5.1]
  *
  *	while-statement:
- *		'while' '(' expression ')' statement
+ *		'while' parenthesized-expression statement
  *
  *	@param	parser		Parser structure
  */
@@ -207,8 +205,7 @@ void parse_while_statement(parser *const parser)
 	const int old_in_loop = parser->flag_in_loop;
 	totree(parser, TWhile);
 
-	exprinbrkts(parser, cond_must_be_in_brkts);
-	parser->sopnd--;
+	parse_parenthesized_expression(parser);
 
 	parser->flag_in_loop = 1;
 	parse_statement(parser);
@@ -219,7 +216,7 @@ void parse_while_statement(parser *const parser)
  *	Parse do statement [C99 6.8.5.2]
  *
  *	do-statement:
- *		'do' statement 'while' '(' expression ')' ';'
+ *		'do' statement 'while' parenthesized-expression ';'
  *
  *	@param	parser		Parser structure
  */
@@ -234,8 +231,7 @@ void parse_do_statement(parser *const parser)
 
 	if (try_consume_token(parser, kw_while))
 	{
-		exprinbrkts(parser, cond_must_be_in_brkts);
-		parser->sopnd--;
+		parse_parenthesized_expression(parser);
 	}
 	else
 	{
@@ -264,7 +260,6 @@ void parse_for_statement(parser *const parser)
 	const size_t ref_condition = parser->sx->tc++;
 	const size_t ref_increment = parser->sx->tc++;
 	const size_t ref_statement = parser->sx->tc++;
-
 	expect_and_consume_token(parser, l_paren, no_leftbr_in_for);
 
 	if (scanner(parser) == semicolon)
@@ -274,7 +269,6 @@ void parse_for_statement(parser *const parser)
 	else
 	{
 		parser->sx->tree[ref_inition] = (int)parser->sx->tc;
-		// TODO: в С99 тут может быть объявление
 		parse_expression(parser);
 		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
 	}
@@ -399,41 +393,41 @@ void parse_break_statement(parser *const parser)
  */
 void parse_return_statement(parser *const parser)
 {
-	const int return_type = mode_get(parser->sx, parser->function_type + 1);
+	const int expected_type = mode_get(parser->sx, parser->function_type + 1);
 	parser->flag_was_return = 1;
 	
 	if (try_consume_token(parser, semicolon))
 	{
 		totree(parser, TReturnvoid);
-		if (!is_void(return_type))
+		if (!is_void(expected_type))
 		{
 			parser_error(parser, no_ret_in_func);
 		}
 	}
 	else
 	{
-		if (return_type != mode_void_pointer)
+		if (expected_type != mode_void_pointer)
 		{
-			if (is_void(return_type))
+			if (is_void(expected_type))
 			{
 				parser_error(parser, notvoidret_in_void_func);
 			}
 
 			totree(parser, TReturnval);
-			totree(parser, szof(parser, return_type));
+			totree(parser, szof(parser, expected_type));
 
 			consume_token(parser);
-			exprval(parser);
+			const int actual_type = exprval(parser);
 			parser->sx->tc--;
 			parser->sopnd--;
 
-			if (!is_undefined(return_type) && !is_undefined(parser->ansttype))
+			if (!is_undefined(expected_type) && !is_undefined(actual_type))
 			{
-				if (is_float(return_type) && is_int(parser->ansttype))
+				if (is_float(expected_type) && is_int(actual_type))
 				{
 					totree(parser, WIDEN);
 				}
-				else if (return_type != parser->ansttype)
+				else if (expected_type != actual_type)
 				{
 					parser_error(parser, bad_type_in_ret);
 				}
@@ -488,15 +482,15 @@ void parse_print_statement(parser *const parser)
 {
 	expect_and_consume_token(parser, l_paren, print_without_br);
 	consume_token(parser);
-	parse_assignment_expression(parser);
+	const int type = parse_assignment_expression(parser);
 	expect_and_consume_token(parser, r_paren, print_without_br);
 	
 	parser->sx->tc--;
 	totree(parser, TPrint);
-	totree(parser, parser->ansttype);
+	totree(parser, type);
 	totree(parser, TExprend);
 
-	if (is_pointer(parser->sx, parser->ansttype))
+	if (is_pointer(parser->sx, type))
 	{
 		parser_error(parser, pointer_in_print);
 	}
@@ -627,13 +621,13 @@ void parse_printf_statement(parser *const context)
 		scanner(context);
 
 		consume_token(context);
-		parse_assignment_expression(context);
+		const int type = parse_assignment_expression(context);
 
-		if (formattypes[actual_param_number] == LFLOAT && context->ansttype == LINT)
+		if (is_float(formattypes[actual_param_number]) && is_int(type))
 		{
 			insertwiden(context);
 		}
-		else if (formattypes[actual_param_number] != context->ansttype)
+		else if (formattypes[actual_param_number] != type)
 		{
 			parser_error(context, wrong_printf_param_type, placeholders[actual_param_number]);
 		}

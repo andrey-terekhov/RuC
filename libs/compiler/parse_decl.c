@@ -179,8 +179,8 @@ int parse_array_definition(parser *const parser, int type)
 		}
 		else
 		{
-			parse_constant_expression(parser);
-			if (!is_int(parser->ansttype))
+			const int size_type = parse_constant_expression(parser);
+			if (!is_int(size_type))
 			{
 				parser_error(parser, array_size_must_be_int);
 			}
@@ -217,7 +217,7 @@ int parse_array_definition(parser *const parser, int type)
  */
 size_t parse_struct_declaration_list(parser *const parser)
 {
-	const size_t struct_begin_ref = parser->sx->tc;
+	const size_t ref_struct_begin = parser->sx->tc;
 	totree(parser, TStructbeg);
 
 	int local_modetab[100];
@@ -320,13 +320,13 @@ size_t parse_struct_declaration_list(parser *const parser)
 	if (wasarr)
 	{
 		totree(parser, TStructend);
-		totree(parser, (int)struct_begin_ref);
-		parser->sx->tree[struct_begin_ref + 1] = parser->was_struct_with_arr = parser->sx->procd++;
+		totree(parser, (int)ref_struct_begin);
+		parser->sx->tree[ref_struct_begin + 1] = parser->was_struct_with_arr = parser->sx->procd++;
 	}
 	else
 	{
-		parser->sx->tree[struct_begin_ref] = NOP;
-		parser->sx->tree[struct_begin_ref + 1] = NOP;
+		parser->sx->tree[ref_struct_begin] = NOP;
+		parser->sx->tree[ref_struct_begin + 1] = NOP;
 	}
 
 	local_modetab[1] = displ;
@@ -751,7 +751,7 @@ void parse_function_body(parser *const parser, const size_t function_id)
 	totree(parser, TFuncdef);
 	totree(parser, function_id);
 
-	const size_t maxdispl_ref = parser->sx->tc++;
+	const size_t ref_maxdispl = parser->sx->tc++;
 
 	consume_token(parser);
 	parse_compound_statement(parser, FUNCBODY);
@@ -765,7 +765,7 @@ void parse_function_body(parser *const parser, const size_t function_id)
 		parser_error(parser, no_ret_in_func);
 	}
 
-	scope_func_exit(parser->sx, maxdispl_ref, old_displ);
+	scope_func_exit(parser->sx, ref_maxdispl, old_displ);
 
 	for (int i = 0; i < parser->pgotost - 1; i += 2)
 	{
@@ -944,18 +944,18 @@ void parse_initializer(parser *const parser, const int type)
 {
 	if (type < 0 || is_pointer(parser->sx, type))
 	{
-		parse_assignment_expression(parser);
+		const int expr_type = parse_assignment_expression(parser);
 		parser->sopnd--;
 
-		if (is_int(type) && is_float(parser->ansttype))
+		if (is_int(type) && is_float(expr_type))
 		{
 			parser_error(parser, init_int_by_float);
 		}
-		else if (is_float(type) && is_int(parser->ansttype))
+		else if (is_float(type) && is_int(expr_type))
 		{
 			insertwiden(parser);
 		}
-		else if (type != parser->ansttype)
+		else if (type != expr_type)
 		{
 			parser_error(parser, error_in_initialization);
 		}
