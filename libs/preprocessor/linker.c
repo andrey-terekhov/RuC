@@ -59,14 +59,14 @@ void lk_make_path(char *const output, const char *const source, const char *cons
 	strcpy(&output[index], header);
 }
 
-size_t lk_open_include(environment *const env, const char* const header_path)
+size_t lk_open_include(environment *const env, const char* const path)
 {
 	char full_path[MAX_ARG_SIZE];
 
-	lk_make_path(full_path, ws_get_file(env->lk.ws, env->lk.current), header_path, 1);
+	lk_make_path(full_path, ws_get_file(env->lk.ws, env->lk.current), path, 1);
 
-	in_set_file(env->input, full_path);
-	if (!in_is_correct(env->input))
+	
+	if (in_set_file(env->input, full_path))
 	{
 		size_t i = 0;
 		const char *dir;
@@ -74,7 +74,7 @@ size_t lk_open_include(environment *const env, const char* const header_path)
 		do  
 		{
 			dir = ws_get_dir(env->lk.ws, i++);
-			lk_make_path(full_path, dir, header_path, 0);
+			lk_make_path(full_path, dir, path, 0);
 		} while (dir != NULL && in_set_file(env->input, full_path));
 		
 	}
@@ -86,8 +86,8 @@ size_t lk_open_include(environment *const env, const char* const header_path)
 		return SIZE_MAX - 1;
 	}
 
-	size_t const num = ws_get_files_num(env->lk.ws);	
-	size_t index = ws_add_file(env->lk.ws, full_path);
+	const size_t num = ws_get_files_num(env->lk.ws);	
+	const size_t index = ws_add_file(env->lk.ws, full_path);
 
 	if (index < env->lk.count && !env->lk.included[index])
 	{
