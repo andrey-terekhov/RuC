@@ -82,7 +82,9 @@ int if_end(environment *const env)
 				if (checkif < 0)
 				{
 					size_t position = skip_str(env); 
-					macro_error(before_endif, ws_get_file(env->lk.ws, env->lk.current),  env->error_string, env->line, position);
+					macro_error(before_endif
+			, ws_get_file(env->lk.ws, env->lk.current)
+			, env->error_string, env->line, position);
 					return -1;
 				}
 				return 0;
@@ -104,7 +106,9 @@ int if_end(environment *const env)
 	}
 
 	size_t position = skip_str(env); 
-	macro_error(must_be_endif, ws_get_file(env->lk.ws, env->lk.current),  env->error_string, env->line, position);
+	macro_error(must_be_endif
+			, ws_get_file(env->lk.ws, env->lk.current)
+			, env->error_string, env->line, position);
 	return -1;
 }
 
@@ -139,7 +143,9 @@ int if_false(environment *const env)
 	}
 
 	size_t position = skip_str(env); 
-	macro_error(must_be_endif, ws_get_file(env->lk.ws, env->lk.current),  env->error_string, env->line, position);
+	macro_error(must_be_endif
+			, ws_get_file(env->lk.ws, env->lk.current)
+			, env->error_string, env->line, position);
 	return 0;
 }
 
@@ -165,7 +171,9 @@ int if_true(int type_if, environment *const env)
 			if (checkif < 0)
 			{
 				size_t position = skip_str(env); 
-				macro_error(before_endif, ws_get_file(env->lk.ws, env->lk.current),  env->error_string, env->line, position);
+				macro_error(before_endif
+			, ws_get_file(env->lk.ws, env->lk.current)
+			, env->error_string, env->line, position);
 				return -1;
 			}
 
@@ -176,7 +184,9 @@ int if_true(int type_if, environment *const env)
 	if (type_if != SH_IF && env->cur == SH_ELIF)
 	{
 		size_t position = skip_str(env); 
-		macro_error(dont_elif, ws_get_file(env->lk.ws, env->lk.current),  env->error_string, env->line, position);
+		macro_error(dont_elif
+			, ws_get_file(env->lk.ws, env->lk.current)
+			, env->error_string, env->line, position);
 		checkif--;
 		return -1;
 	}
@@ -249,7 +259,9 @@ int if_relis(environment *const env)
 		if (checkif < 0)
 		{
 			size_t position = skip_str(env); 
-			macro_error(before_endif, ws_get_file(env->lk.ws, env->lk.current),  env->error_string, env->line, position);
+			macro_error(before_endif
+			, ws_get_file(env->lk.ws, env->lk.current)
+			, env->error_string, env->line, position);
 			return -1;
 		}
 	}

@@ -78,7 +78,9 @@ int while_collect(environment *const env)
 	}
 
 	size_t position = skip_str(env); 
-	macro_error(must_end_endw, ws_get_file(env->lk.ws, env->lk.current),  env->error_string, env->line, position);
+	macro_error(must_end_endw
+			, ws_get_file(env->lk.ws, env->lk.current)
+			, env->error_string, env->line, position);
 	return -1;
 }
 
@@ -126,7 +128,9 @@ int while_relis(environment *const env)
 			else if (env->curchar == EOF)
 			{
 				size_t position = skip_str(env); 
-				macro_error(must_end_endw, ws_get_file(env->lk.ws, env->lk.current),  env->error_string, env->line, position);
+				macro_error(must_end_endw
+			, ws_get_file(env->lk.ws, env->lk.current)
+			, env->error_string, env->line, position);
 				return -1;
 			}
 			else

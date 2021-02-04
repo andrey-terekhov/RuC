@@ -139,7 +139,9 @@ void m_coment_skip(environment *const env)
 			if (env->curchar == EOF)
 			{
 				size_t position = skip_str(env); 
-				macro_error(comm_not_ended, ws_get_file(env->lk.ws, env->lk.current),  env->error_string, env->line, position);
+				macro_error(comm_not_ended
+			, ws_get_file(env->lk.ws, env->lk.current)
+			, env->error_string, env->line, position);
 				end_line(env);
 				return;
 			}

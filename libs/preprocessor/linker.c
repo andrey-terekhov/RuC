@@ -24,12 +24,8 @@
 #include "utils.h"
 #include "workspace.h"
 #include "uniio.h"
-#include <limits.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <wchar.h>
+
 
 linker lk_create(workspace *const ws)
 {
@@ -164,7 +160,9 @@ int lk_process_include_file(environment *const env)
 		if (env->curchar == EOF)
 		{
 			size_t position = skip_str(env); 
-			macro_error(must_end_quote, ws_get_file(env->lk.ws, env->lk.current), env->error_string, env->line, position);
+			macro_error(must_end_quote
+			, ws_get_file(env->lk.ws, env->lk.current)
+			, env->error_string, env->line, position);
 			return -1;
 		}
 
@@ -244,7 +242,6 @@ int lk_preprocess_all(environment *const env)
 	}
 
 	env->lk.count = ws_get_files_num(env->lk.ws);
-
 	for (size_t i = 0; i < env->lk.count; i++)
 	{
 		if (env->lk.included[i])
