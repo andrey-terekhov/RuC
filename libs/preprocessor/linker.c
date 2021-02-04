@@ -118,6 +118,15 @@ int lk_open_source(environment *const env, size_t index)
 
 int lk_preprocess_file(environment *const env, const size_t number)
 {	
+
+	universal_io in = io_create();
+	env->input = &in;
+
+	if (lk_open_source(env, number))
+	{
+		return -1;
+	}
+
 	size_t old_cur = env->lk.current;
 	env->lk.current = number;
 	size_t old_line = env->line;
@@ -146,6 +155,7 @@ int lk_preprocess_file(environment *const env, const size_t number)
 	env->lk.current = old_cur;
 
 	in_clear(env->input);
+	env->lk.included[number]++;
 
 	return was_error;
 }
@@ -248,13 +258,8 @@ int lk_preprocess_all(environment *const env)
 		{
 			continue;
 		}
-	
-		env->lk.included[i]++;
-		
-		universal_io in = io_create();
-		env->input = &in;
-		
-		if (lk_open_source(env, i) || lk_preprocess_file(env, i))
+
+		if (lk_preprocess_file(env, i))
 		{
 			return -1;
 		}
