@@ -224,7 +224,6 @@ int is_float(const int t);
 int is_int(const int t);
 int is_void(const int t);
 int is_undefined(const int t);
-int szof(parser *context, int type);
 void mustbe(parser *context, int what, int e);
 void totree(parser *context, int op);
 void totreef(parser *context, int op);

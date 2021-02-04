@@ -97,12 +97,6 @@ int is_undefined(const int t)
 	return t == mode_undefined;
 }
 
-int szof(parser *context, int type)
-{
-	return context->next_token == LEFTSQBR ? 1
-	: type == LFLOAT ? 2 : (is_struct(context->sx, type)) ? mode_get(context->sx, type + 1) : 1;
-}
-
 void mustbe(parser *context, int what, int e)
 {
 	if (context->next_token != what)

@@ -942,7 +942,7 @@ int find_field(parser *context, int stype)
 	{
 		int field_type = mode_get(context->sx, stype + 3 + i);
 
-		if (mode_get(context->sx, stype + 4 + i) == REPRTAB_POS)
+		if (mode_get(context->sx, stype + 4 + i) == (int)REPRTAB_POS)
 		{
 			context->stackoperands[context->sopnd] = context->ansttype = field_type;
 			flag = 0;
@@ -950,7 +950,7 @@ int find_field(parser *context, int stype)
 		}
 		else
 		{
-			select_displ += szof(context, field_type);
+			select_displ += size_of(context->sx, field_type);
 		}
 		// прибавляем к суммарному смещению длину поля
 	}
@@ -1213,7 +1213,7 @@ void postexpr(parser *context)
 			}
 			if (context->anst == VAL) // структура - значение функции
 			{
-				int len1 = szof(context, context->ansttype);
+				int len1 = size_of(context->sx, context->ansttype);
 				context->anstdispl = 0;
 				while (context->next_token == DOT)
 				{
@@ -1226,7 +1226,7 @@ void postexpr(parser *context)
 				}
 				totree(context, COPYST);
 				totree(context, context->anstdispl);
-				totree(context, szof(context, context->ansttype));
+				totree(context, size_of(context->sx, context->ansttype));
 				totree(context, len1);
 			}
 			else if (context->anst == IDENT)

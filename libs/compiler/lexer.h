@@ -33,7 +33,7 @@ typedef struct
 	
 	char32_t curr_char;					/**< Current character */
 	char32_t next_char;					/**< Lookahead character */
-	int repr;							/**< Pointer to representation of the read identifier */
+	size_t repr;						/**< Pointer to representation of the read identifier */
 	int num;							/**< Value of the read integer number */
 	double num_double;					/**< Value of the read double number */
 	char32_t lexstr[MAXSTRINGL + 1];	/**< Representation of the read string literal */

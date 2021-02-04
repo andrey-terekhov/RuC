@@ -109,7 +109,7 @@ token lex_identifier_or_keyword(lexer *const lexer)
 	}
 	else
 	{
-		lexer->repr = (int)repr;
+		lexer->repr = repr;
 		return identifier;
 	}
 }

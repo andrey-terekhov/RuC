@@ -33,11 +33,11 @@ void parse_labeled_statement(parser *const context)
 	totree(context, TLabel);
 	for (i = 0; flag && i < context->pgotost - 1; i += 2)
 	{
-		flag = context->sx->identab[context->gotost[i] + 1] != REPRTAB_POS;
+		flag = context->sx->identab[context->gotost[i] + 1] != (int)REPRTAB_POS;
 	}
 	if (flag)
 	{
-		totree(context, id = toidentab(context, (size_t)REPRTAB_POS, 1, 0));
+		totree(context, id = toidentab(context, REPRTAB_POS, 1, 0));
 		if (context->was_error == 5)
 		{
 			context->was_error = 2;
@@ -52,7 +52,7 @@ void parse_labeled_statement(parser *const context)
 	else
 	{
 		id = context->gotost[i - 2];
-		REPRTAB_POS = context->sx->identab[id + 1];
+		REPRTAB_POS = (size_t)context->sx->identab[id + 1];
 		if (context->gotost[i - 1] < 0)
 		{
 			parser_error(context, repeated_label);
@@ -319,14 +319,14 @@ void parse_goto_statement(parser *const context)
 	mustbe(context, IDENT, no_ident_after_goto);
 	for (i = 0; flag && i < context->pgotost - 1; i += 2)
 	{
-		flag = context->sx->identab[context->gotost[i] + 1] != REPRTAB_POS;
+		flag = context->sx->identab[context->gotost[i] + 1] != (int)REPRTAB_POS;
 	}
 	if (flag)
 	{
 		// первый раз встретился переход на метку, которой не было,
 		// в этом случае ссылка на identtab, стоящая после TGoto,
 		// будет отрицательной
-		totree(context, -toidentab(context, (size_t)REPRTAB_POS, 1, 0));
+		totree(context, -toidentab(context, REPRTAB_POS, 1, 0));
 		context->gotost[context->pgotost++] = context->lastid;
 	}
 	else
@@ -385,7 +385,7 @@ void parse_break_statement(parser *const parser)
  *
  *	jump-statement:
  *		'return' expression[opt] ';'
- *		'return' braced-init-list ';' [TODO]
+ *		'return' braced-init-list ';'
  *
  *	@param	parser		Parser structure
  */
@@ -412,7 +412,7 @@ void parse_return_statement(parser *const parser)
 			}
 
 			totree(parser, TReturnval);
-			totree(parser, szof(parser, return_type));
+			totree(parser, size_of(parser->sx, return_type));
 
 			consume_token(parser);
 			parse_initializer(parser, return_type);
@@ -613,7 +613,7 @@ void parse_printf_statement(parser *const context)
 			parser_error(context, wrong_printf_param_type, placeholders[actual_param_number]);
 		}
 
-		sumsize += szof(context, formattypes[actual_param_number]);
+		sumsize += size_of(context->sx, formattypes[actual_param_number]);
 		actual_param_number++;
 		if (context->next_token != COMMA)
 		{

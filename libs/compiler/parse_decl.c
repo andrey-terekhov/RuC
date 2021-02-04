@@ -109,7 +109,7 @@ size_t parse_struct_or_union_specifier(parser *const parser)
 
 		case identifier:
 		{
-			const size_t repr = (size_t)parser->lexer->repr;
+			const size_t repr = parser->lexer->repr;
 			consume_token(parser);
 
 			if (parser->next_token == l_brace)
@@ -310,7 +310,7 @@ size_t parse_struct_declaration_list(parser *const parser)
 		local_modetab[local_md++] = type;
 		local_modetab[local_md++] = (int)repr;
 		field_number++;
-		displ += szof(parser, type);
+		displ += size_of(parser->sx, type);
 
 		expect_and_consume_token(parser, semicolon, no_semicolon_in_struct);
 	} while (!try_consume_token(parser, r_brace));
@@ -449,7 +449,7 @@ void parse_array_initializer(parser *const parser, const int type)
  */
 void parse_init_declarator(parser *const parser, int type)
 {
-	const size_t old_id = toidentab(parser, (size_t)parser->lexer->repr, 0, type);
+	const size_t old_id = toidentab(parser, parser->lexer->repr, 0, type);
 	size_t ref_array_dim = 0;
 
 	parser->usual = 1;
@@ -484,7 +484,7 @@ void parse_init_declarator(parser *const parser, int type)
 	if (try_consume_token(parser, equal))
 	{
 		consume_token(parser);
-		parser->sx->tree[all] = szof(parser, type);
+		parser->sx->tree[all] = size_of(parser->sx, type);
 		if (is_array(parser->sx, type))
 		{
 			if (!parser->usual)
@@ -553,7 +553,7 @@ size_t parse_function_declarator(parser *const parser, const int level, int func
 				{
 					scanner(parser);
 					ident = 1;
-					func_add(parser->sx, parser->lexer->repr);
+					func_add(parser->sx, (int)parser->lexer->repr);
 				}
 			}
 			else if (parser->next_token == IDENT)
@@ -614,7 +614,7 @@ size_t parse_function_declarator(parser *const parser, const int level, int func
 							parser->was_error = 2;
 							return 0;
 						}
-						func_add(parser->sx, -parser->lexer->repr);
+						func_add(parser->sx, -((int)parser->lexer->repr));
 					}
 					else
 					{
@@ -760,7 +760,7 @@ void parse_function_body(parser *const parser, const size_t function_id)
 
 	for (int i = 0; i < parser->pgotost - 1; i += 2)
 	{
-		parser->lexer->repr = parser->sx->identab[parser->gotost[i] + 1];
+		parser->lexer->repr = (size_t)parser->sx->identab[parser->gotost[i] + 1];
 		parser->sx->hash = parser->gotost[i + 1];
 		if (parser->sx->hash < 0)
 		{
@@ -782,14 +782,14 @@ void parse_function_body(parser *const parser, const size_t function_id)
  *	@param	parser		Parser structure
  *	@param	type		Return type of a function
  */
-void parse_function_definition(parser *const parser, int type)
+void parse_function_definition(parser *const parser, const int type)
 {
 	const size_t function_num = parser->sx->funcnum++;
-	const size_t function_repr = (size_t)parser->lexer->repr;
+	const size_t function_repr = parser->lexer->repr;
 	consume_token(parser);
 	consume_token(parser);
 
-	type = (int)parse_function_declarator(parser, 1, 3, type);
+	const int function_mode = (int)parse_function_declarator(parser, 1, 3, type);
 
 	if (parser->func_def == 0 && parser->next_token == l_brace)
 	{
@@ -800,7 +800,7 @@ void parse_function_definition(parser *const parser, int type)
 		parser->func_def = 2;
 	}
 
-	const size_t function_id = toidentab(parser, function_repr, (int)function_num, type);
+	const size_t function_id = toidentab(parser, function_repr, (int)function_num, function_mode);
 
 	if (parser->next_token == l_brace)
 	{
