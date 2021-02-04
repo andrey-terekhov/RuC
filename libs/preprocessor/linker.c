@@ -37,7 +37,7 @@ linker lk_create(workspace *const ws)
 
 	lk.ws = ws;
 	lk.current = MAX_PATHS;
-	lk.count_source = 0;
+	lk.count = 0;
 
 	for (size_t i = 0; i < MAX_PATHS; i++)
 	{
@@ -97,7 +97,7 @@ size_t lk_open_include(environment *const env, const char* const header_path)
 	size_t const num = ws_get_files_num(env->lk.ws);	
 	size_t index = ws_add_file(env->lk.ws, full_path);
 
-	if (index < env->lk.count_source && !env->lk.included[index])
+	if (index < env->lk.count && !env->lk.included[index])
 	{
 		env->lk.included[index]++;
 	}
@@ -243,9 +243,9 @@ int lk_preprocess_all(environment *const env)
 		return -1;
 	}
 
-	env->lk.count_source = ws_get_files_num(env->lk.ws);
+	env->lk.count = ws_get_files_num(env->lk.ws);
 
-	for (size_t i = 0; i < env->lk.count_source; i++)
+	for (size_t i = 0; i < env->lk.count; i++)
 	{
 		if (env->lk.included[i])
 		{

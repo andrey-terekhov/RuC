@@ -16,24 +16,25 @@
 
 #pragma once
 
+#include "workspace.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "workspace.h"
-
-
 typedef struct environment environment;
 
+
+/** Structure for connecting files */
 typedef struct linker
 {
-	workspace *ws;
+	workspace *ws;				/**<Start arguments */
 
-	int included[MAX_PATHS];
+	int included[MAX_PATHS];	/**< List of already added files */	
+	size_t count; 				/**< Number of source files */
 
-	size_t current;
-	
-	size_t count_source;
+	size_t current; 			/**< Index of the current files*/
 } linker;
 
 /**
@@ -59,7 +60,7 @@ int lk_preprocess_all(environment *const env);
  *
  *	@return	@c  0 on success,
  *			@c -1 on file couldn't be opened, 
- *			@c 1 on error inside the file
+ *			@c -2 on error inside the file
  */
 int lk_include(environment *const env);
 
