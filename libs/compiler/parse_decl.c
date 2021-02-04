@@ -942,7 +942,7 @@ void parse_external_declaration(parser *const parser)
 
 void parse_initializer(parser *const parser, const int type)
 {
-	if (type < 0 || is_pointer(parser->sx, type) || is_string(parser->sx, type))
+	if (type < 0 || is_pointer(parser->sx, type))
 	{
 		parse_assignment_expression(parser);
 		parser->sopnd--;
