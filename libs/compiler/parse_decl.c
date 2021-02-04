@@ -584,7 +584,7 @@ size_t parse_function_declarator(parser *const parser, const int level, int func
 	int repeat = 1;
 	int wastype = 0;
 	int old;
-	int type;
+	int type = mode_undefined;
 
 	int local_modetab[100];
 	size_t local_md = 3;

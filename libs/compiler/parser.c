@@ -87,6 +87,16 @@ int is_int(const int t)
 	return t == LINT || t == LLONG || t == LCHAR;
 }
 
+int is_void(const int t)
+{
+	return t == mode_void;
+}
+
+int is_undefined(const int t)
+{
+	return t == mode_undefined;
+}
+
 int szof(parser *context, int type)
 {
 	return context->next_token == LEFTSQBR ? 1

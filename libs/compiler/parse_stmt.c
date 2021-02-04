@@ -96,7 +96,7 @@ void parse_case_statement(parser *const parser)
 	totree(parser, TCase);
 	parse_constant_expression(parser);
 
-	if (parser->ansttype == LFLOAT)
+	if (!is_int(parser->ansttype) && !is_undefined(parser->ansttype))
 	{
 		parser_error(parser, float_in_switch);
 	}
@@ -183,11 +183,10 @@ void parse_switch_statement(parser *const parser)
 	totree(parser, TSwitch);
 
 	exprinbrkts(parser, cond_must_be_in_brkts);
-	if (!is_int(parser->ansttype))
+	if (!is_int(parser->ansttype) && !is_undefined(parser->ansttype))
 	{
 		parser_error(parser, float_in_switch);
 	}
-
 	parser->sopnd--;
 
 	parser->flag_in_switch = 1;
@@ -406,7 +405,7 @@ void parse_return_statement(parser *const parser)
 	if (try_consume_token(parser, semicolon))
 	{
 		totree(parser, TReturnvoid);
-		if (return_type != mode_void)
+		if (!is_void(return_type))
 		{
 			parser_error(parser, no_ret_in_func);
 		}
@@ -415,7 +414,7 @@ void parse_return_statement(parser *const parser)
 	{
 		if (return_type != mode_void_pointer)
 		{
-			if (return_type == mode_void)
+			if (is_void(return_type))
 			{
 				parser_error(parser, notvoidret_in_void_func);
 			}
@@ -428,9 +427,9 @@ void parse_return_statement(parser *const parser)
 			toval(parser);
 			parser->sopnd--;
 
-			if (return_type != mode_undefined && parser->ansttype != mode_undefined)
+			if (!is_undefined(return_type) && !is_undefined(parser->ansttype))
 			{
-				if (return_type == mode_float && parser->ansttype == mode_integer)
+				if (is_float(return_type) && is_int(parser->ansttype))
 				{
 					totree(parser, WIDEN);
 				}
@@ -485,20 +484,20 @@ void parse_printid_statement(parser *const parser)
 }
 
 /**	Parse print statement [RuC] */
-void parse_print_statement(parser *const context)
+void parse_print_statement(parser *const parser)
 {
-	exprassninbrkts(context, print_without_br);
-	context->sx->tc--;
-	totree(context, TPrint);
-	totree(context, context->ansttype);
-	totree(context, TExprend);
+	exprassninbrkts(parser, print_without_br);
+	parser->sx->tc--;
+	totree(parser, TPrint);
+	totree(parser, parser->ansttype);
+	totree(parser, TExprend);
 
-	if (is_pointer(context->sx, context->ansttype))
+	if (is_pointer(parser->sx, parser->ansttype))
 	{
-		parser_error(context, pointer_in_print);
+		parser_error(parser, pointer_in_print);
 	}
-	context->sopnd--;
-	mustbe(context, SEMICOLON, expected_semi_after_stmt);
+	parser->sopnd--;
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 
 /**	Parse getid statement [RuC] */
@@ -668,6 +667,7 @@ void parse_printf_statement(parser *const context)
 
 /**
  *	Parse statement or declaration
+ *	
  *	block-item:
  *		statement
  *		declaration
