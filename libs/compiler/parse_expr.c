@@ -1444,19 +1444,6 @@ void exprinbrkts(parser *context, int er)
 	mustbe(context, RIGHTBR, er);
 }
 
-void exprassninbrkts(parser *context, int er)
-{
-	mustbe(context, LEFTBR, er);
-	scanner(context);
-	exprassnval(context);
-	if (context->was_error == 4)
-	{
-		context->was_error = 3;
-		return; // 1
-	}
-	mustbe(context, RIGHTBR, er);
-}
-
 int prio(int op)
 {
 	// возвращает 0, если не операция
@@ -1675,19 +1662,10 @@ void exprassn(parser *context, int level)
 
 	if (context->curr_token == BEGIN)
 	{
-		if (is_struct(context->sx, context->leftansttype))
+		const int type = context->leftansttype;
+		if (is_struct(context->sx, type) || is_array(context->sx, type))
 		{
-			parse_struct_initializer(context, context->leftansttype);
-		}
-		else if (is_array(context->sx, context->leftansttype))
-		{
-			// пока в RuC присваивать массивы нельзя
-			parse_array_initializer(context, context->leftansttype);
-			if (context->was_error == 7)
-			{
-				context->was_error = 6;
-				return; // 1
-			}
+			parse_initializer(context, type);
 		}
 		else
 		{
@@ -1695,7 +1673,7 @@ void exprassn(parser *context, int level)
 			context->was_error = 6;
 			return; // 1
 		}
-		context->stackoperands[++context->sopnd] = context->ansttype = context->leftansttype;
+		context->stackoperands[++context->sopnd] = context->ansttype = type;
 		context->anst = VAL;
 	}
 	else
@@ -1873,23 +1851,6 @@ void expr(parser *context, int level)
 void exprval(parser *context)
 {
 	expr(context, 1);
-	if (context->was_error == 5)
-	{
-		context->was_error = 4;
-		return; // 1
-	}
-	toval(context);
-	totree(context, TExprend);
-}
-
-void exprassnval(parser *context)
-{
-	exprassn(context, 1);
-	if (context->was_error == 6)
-	{
-		context->was_error = 4;
-		return; // 1
-	}
 	toval(context);
 	totree(context, TExprend);
 }
@@ -1917,6 +1878,13 @@ void parse_string_literal_expression(parser *const parser)
 	parser->ansttype = newdecl(parser->sx, mode_array, mode_character);
 	parser->stackoperands[++parser->sopnd] = parser->ansttype;
 	parser->anst = VAL;
+}
+
+void parse_assignment_expression(parser *const parser)
+{
+	exprassn(parser, 1);
+	toval(parser);
+	totree(parser, TExprend);
 }
 
 void parse_constant_expression(parser *const parser)

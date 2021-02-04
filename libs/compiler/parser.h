@@ -73,7 +73,7 @@ void expect_and_consume_token(parser *const parser, const token expected, const 
  *	Read tokens until one of the specified tokens
  *
  *	@param	parser		Parser structure
- *	@param	tokens		Set of the specified tokens
+ *	@param	tokens		Set of specified tokens
  */
 void skip_until(parser *const parser, const unsigned int tokens);
 
@@ -84,7 +84,7 @@ void skip_until(parser *const parser, const unsigned int tokens);
  *	primary-expression:
  *		string-literal
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_string_literal_expression(parser *const parser);
 
@@ -98,7 +98,7 @@ void parse_string_literal_expression(parser *const parser);
  *	assignment-operator: one of
  *		=  *=  /=  %=  +=  -=  <<=  >>=  &=  ˆ=  |=
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_assignment_expression(parser *const parser);
 
@@ -109,7 +109,7 @@ void parse_assignment_expression(parser *const parser);
  *		assignment-expression
  *		expression ',' assignment-expression
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_expression(parser *const parser);
 
@@ -119,7 +119,7 @@ void parse_expression(parser *const parser);
  *	constant-expression:
  *		conditional-expression
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_constant_expression(parser *const parser);
 
@@ -129,7 +129,7 @@ void parse_constant_expression(parser *const parser);
  *	@note Parses a full declaration, which consists of declaration-specifiers,
  *	some number of declarators, and a semicolon
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_inner_declaration(parser *const parser);
 
@@ -138,9 +138,21 @@ void parse_inner_declaration(parser *const parser);
  *	@note Parses a full declaration, which consists either of declaration-specifiers,
  *	some number of declarators, and a semicolon, or function definition
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_external_declaration(parser *const parser);
+
+/**
+ *	Parse initializer [C99 6.7.8]
+ *
+ *	initializer:
+ *		assignment-expression
+ *		'{' initializer-list '}'
+ *
+ *	@param	parser		Parser structure
+ *	@param	type		Type of variable in declaration
+ */
+void parse_initializer(parser *const parser, const int type);
 
 
 /**
@@ -154,12 +166,12 @@ void parse_external_declaration(parser *const parser);
  *		iteration-statement
  *		jump-statement
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_statement(parser *const context);
 
-/**	The kind of block to parse */
-typedef enum block_type { REGBLOCK, THREAD, SWITCH, FUNCBODY } block_type;
+/**	@enum The kind of block to parse */
+typedef enum { REGBLOCK, THREAD, FUNCBODY } block_type;
 
 /**
  *	Parse '{}' block [C99 6.8.2]
@@ -228,8 +240,6 @@ void exprassn(parser *context, int level);
 void expr(parser *context, int level);
 void exprval(parser *context);
 void exprassnval(parser *context);
-void parse_struct_initializer(parser *const parser, const int type);
-void parse_array_initializer(parser *const parser, const int type);
 
 #ifdef __cplusplus
 } /* extern "C" */

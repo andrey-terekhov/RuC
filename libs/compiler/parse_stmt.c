@@ -422,9 +422,9 @@ void parse_return_statement(parser *const parser)
 			totree(parser, TReturnval);
 			totree(parser, szof(parser, return_type));
 
-			scanner(parser);
-			expr(parser, 1);
-			toval(parser);
+			consume_token(parser);
+			exprval(parser);
+			parser->sx->tc--;
 			parser->sopnd--;
 
 			if (!is_undefined(return_type) && !is_undefined(parser->ansttype))
@@ -486,7 +486,11 @@ void parse_printid_statement(parser *const parser)
 /**	Parse print statement [RuC] */
 void parse_print_statement(parser *const parser)
 {
-	exprassninbrkts(parser, print_without_br);
+	expect_and_consume_token(parser, l_paren, print_without_br);
+	consume_token(parser);
+	parse_assignment_expression(parser);
+	expect_and_consume_token(parser, r_paren, print_without_br);
+	
 	parser->sx->tc--;
 	totree(parser, TPrint);
 	totree(parser, parser->ansttype);
@@ -621,11 +625,9 @@ void parse_printf_statement(parser *const context)
 	while (context->next_token != RIGHTBR && actual_param_number != expected_param_number)
 	{
 		scanner(context);
-		scanner(context);
 
-		exprassn(context, 1);
-		toval(context);
-		totree(context, TExprend);
+		consume_token(context);
+		parse_assignment_expression(context);
 
 		if (formattypes[actual_param_number] == LFLOAT && context->ansttype == LINT)
 		{

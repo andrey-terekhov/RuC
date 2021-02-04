@@ -274,7 +274,8 @@ size_t parse_struct_declaration_list(parser *const parser)
 				totree(parser, displ);
 				totree(parser, element_type);
 				totree(parser, parser->arrdim);										// N
-				const size_t all = parser->sx->tc++;
+				// all - место в дереве, где будет общее количество выражений в инициализации,
+				const size_t all = parser->sx->tc++;	// для массивов - только признак (1) наличия инициализации
 				parser->sx->tree[all] = 0;											// all
 				parser->sx->tree[parser->sx->tc++] = parser->was_struct_with_arr;	// proc
 				totree(parser, parser->usual);										// usual
@@ -293,7 +294,7 @@ size_t parse_struct_declaration_list(parser *const parser)
 						{
 							parser->sx->tree[ref_array_dim]--;
 						}
-						parse_array_initializer(parser, type);
+						parse_initializer(parser, type);
 						if (parser->onlystrings == 1)
 						{
 							parser->sx->tree[all + 2] = parser->usual + 2;
@@ -332,48 +333,6 @@ size_t parse_struct_declaration_list(parser *const parser)
 	local_modetab[2] = (int)field_number * 2;
 
 	return mode_add(parser->sx, local_modetab, local_md);
-}
-
-/**
- *	Parse initializer [C99 6.7.8]
- *
- *	initializer:
- *		assignment-expression
- *		'{' initializer-list '}'
- *
- *	@param	parser		Parser structure
- *	@param	type		Type of variable in declaration
- */
-void parse_initializer(parser *const parser, const int type)
-{
-	if (type < 0 || is_pointer(parser->sx, type) || is_string(parser->sx, type))
-	{
-		exprassn(parser, 1);
-		toval(parser);
-		parser->sopnd--;
-		totree(parser, TExprend);
-
-		if (is_int(type) && is_float(parser->ansttype))
-		{
-			parser_error(parser, init_int_by_float);
-		}
-		else if (is_float(type) && is_int(parser->ansttype))
-		{
-			insertwiden(parser);
-		}
-		else if (type != parser->ansttype)
-		{
-			parser_error(parser, error_in_initialization);
-		}
-	}
-	else if (parser->curr_token == l_brace)
-	{
-		parse_struct_initializer(parser, type);
-	}
-	else
-	{
-		parser_error(parser, wrong_init);
-	}
 }
 
 /**
@@ -454,14 +413,14 @@ void parse_array_initializer(parser *const parser, const int type)
 			}
 
 			totree(parser, TBeginit);
-			size_t ad = parser->sx->tc++;
-			int all = 0;
+			const size_t ref_list_length = parser->sx->tc++;
+			int list_length = 0;
 
 			do
 			{
-				all++;
+				list_length++;
 				consume_token(parser);
-				parse_array_initializer(parser, mode_get(parser->sx, type + 1));
+				parse_initializer(parser, mode_get(parser->sx, type + 1));
 
 				if (parser->next_token == r_brace)
 				{
@@ -475,29 +434,13 @@ void parse_array_initializer(parser *const parser, const int type)
 			} while (parser->next_token != semicolon);
 
 			expect_and_consume_token(parser, r_brace, wait_end);
-			parser->sx->tree[ad] = all;
+			parser->sx->tree[ref_list_length] = list_length;
 			totree(parser, TExprend);
-		}
-	}
-	else if (parser->curr_token == l_brace)
-	{
-		if (is_struct(parser->sx, type))
-		{
-			parse_struct_initializer(parser, type);
-		}
-		else
-		{
-			parser_error(parser, begin_with_notarray);
 		}
 	}
 	else if (parser->onlystrings == 1)
 	{
 		parser_error(parser, string_and_notstring);
-	}
-	else
-	{
-		parse_initializer(parser, type);
-		parser->onlystrings = 0;
 	}
 }
 
@@ -559,7 +502,7 @@ void parse_init_declarator(parser *const parser, int type)
 			}
 
 			parser->onlystrings = 2;
-			parse_array_initializer(parser, type);
+			parse_initializer(parser, type);
 			if (parser->onlystrings == 1)
 			{
 				parser->sx->tree[all + 2] = parser->usual + 2;
@@ -994,5 +937,39 @@ void parse_external_declaration(parser *const parser)
 	if (parser->func_def != 1)
 	{
 		expect_and_consume_token(parser, semicolon, expected_semi_after_decl);
+	}
+}
+
+void parse_initializer(parser *const parser, const int type)
+{
+	if (type < 0 || is_pointer(parser->sx, type) || is_string(parser->sx, type))
+	{
+		parse_assignment_expression(parser);
+		parser->sopnd--;
+
+		if (is_int(type) && is_float(parser->ansttype))
+		{
+			parser_error(parser, init_int_by_float);
+		}
+		else if (is_float(type) && is_int(parser->ansttype))
+		{
+			insertwiden(parser);
+		}
+		else if (type != parser->ansttype)
+		{
+			parser_error(parser, error_in_initialization);
+		}
+	}
+	else if (is_struct(parser->sx, type))
+	{
+		parse_struct_initializer(parser, type);
+	}
+	else if (is_array(parser->sx, type))
+	{
+		parse_array_initializer(parser, type);
+	}
+	else
+	{
+		parser_error(parser, wrong_init);
 	}
 }
