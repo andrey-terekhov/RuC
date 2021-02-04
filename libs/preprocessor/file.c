@@ -18,6 +18,7 @@
 #include "constants.h"
 #include "environment.h"
 #include "error.h"
+#include "linker.h"
 #include "utils.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
@@ -140,7 +141,7 @@ void m_coment_skip(environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(comm_not_ended
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 				end_line(env);
 				return;
@@ -191,7 +192,7 @@ void m_nextch(environment *const env)
 
 			if(env->curchar == '\n')
 			{
-				env_add_comment(env);
+				lk_add_comment(env);
 			}
 			else if (env->curchar == MACROCANGE)
 			{

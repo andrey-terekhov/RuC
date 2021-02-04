@@ -64,6 +64,10 @@ int lk_preprocess_all(environment *const env);
  */
 int lk_include(environment *const env);
 
+const char *lk_get_current(linker* lk);
+
+void lk_add_comment(environment *const env);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

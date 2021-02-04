@@ -16,7 +16,6 @@
 
 #include "environment.h"
 #include "constants.h"
-#include "commenter.h"
 #include "workspace.h"
 #include "file.h"
 #include "error.h"
@@ -26,8 +25,6 @@
 #include "uniio.h"
 #include <stdlib.h>
 #include <string.h>
-
-#define MAX_CMT_SIZE MAX_ARG_SIZE + 32
 
 
 void env_init(environment *const env, workspace *const ws, universal_io *const output)
@@ -113,12 +110,3 @@ void env_clear_error_string(environment *const env)
 	env->position = 0;
 }
 
-void env_add_comment(environment *const env)
-{
-	comment cmt = cmt_create(ws_get_file(env->lk.ws, env->lk.current), env->line);
-
-	char buffer[MAX_CMT_SIZE];
-	cmt_to_string(&cmt, buffer);
-
-	uni_printf(env->output, "%s", buffer);
-}

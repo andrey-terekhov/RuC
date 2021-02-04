@@ -82,7 +82,6 @@ typedef struct environment
 } environment;
 
 void env_init(environment *const env, workspace *const ws, universal_io *const output);
-void env_add_comment(environment *const env);
 void env_clear_error_string(environment *const env);
 
 #ifdef __cplusplus

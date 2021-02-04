@@ -16,16 +16,19 @@
 
 #include "linker.h"
 #include "constants.h"
+#include "commenter.h"
 #include "environment.h"
 #include "file.h"
 #include "logger.h"
 #include "preprocessor.h"
 #include "error.h"
 #include "utils.h"
-#include "workspace.h"
 #include "uniio.h"
+#include "uniprinter.h"
+#include "workspace.h"
 #include <string.h>
 
+#define MAX_CMT_SIZE MAX_ARG_SIZE + 32
 
 linker lk_create(workspace *const ws)
 {
@@ -63,7 +66,7 @@ size_t lk_open_include(environment *const env, const char* const path)
 {
 	char full_path[MAX_ARG_SIZE];
 
-	lk_make_path(full_path, ws_get_file(env->lk.ws, env->lk.current), path, 1);
+	lk_make_path(full_path, lk_get_current(&env->lk), path, 1);
 
 	
 	if (in_set_file(env->input, full_path))
@@ -134,7 +137,7 @@ int lk_preprocess_file(environment *const env, const size_t number)
 
 	if (env->nextchar != '#')
 	{
-		env_add_comment(env);
+		lk_add_comment(env);
 	}
 
 	int was_error = 0; 
@@ -164,7 +167,7 @@ int lk_preprocess_include(environment *const env)
 		{
 			size_t position = skip_str(env); 
 			macro_error(must_end_quote
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 			return -1;
 		}
@@ -214,7 +217,7 @@ int lk_include(environment *const env)
 	if (env->curchar != '\"')
 	{
 		size_t position = skip_str(env); 
-		macro_error(must_start_quote, ws_get_file(env->lk.ws, env->lk.current), env->error_string, env->line, position);
+		macro_error(must_start_quote, lk_get_current(&env->lk), env->error_string, env->line, position);
 		return -1;	
 	}
 
@@ -260,4 +263,19 @@ int lk_preprocess_all(environment *const env)
 	}
 
 	return 0;
+}
+
+const char *lk_get_current(linker* lk)
+{
+	return ws_get_file(lk->ws, lk->current);
+}
+
+void lk_add_comment(environment *const env)
+{
+	comment cmt = cmt_create(lk_get_current(&env->lk), env->line);
+
+	char buffer[MAX_CMT_SIZE];
+	cmt_to_string(&cmt, buffer);
+
+	uni_printf(env->output, "%s", buffer);
 }

@@ -21,6 +21,7 @@
 #include "file.h"
 #include "preprocessor.h"
 #include "error.h"
+#include "linker.h"
 #include "utils.h"
 #include <limits.h>
 #include <math.h>
@@ -83,7 +84,7 @@ int if_end(environment *const env)
 				{
 					size_t position = skip_str(env); 
 					macro_error(before_endif
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 					return -1;
 				}
@@ -107,7 +108,7 @@ int if_end(environment *const env)
 
 	size_t position = skip_str(env); 
 	macro_error(must_be_endif
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 	return -1;
 }
@@ -144,7 +145,7 @@ int if_false(environment *const env)
 
 	size_t position = skip_str(env); 
 	macro_error(must_be_endif
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 	return 0;
 }
@@ -172,7 +173,7 @@ int if_true(int type_if, environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(before_endif
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -185,7 +186,7 @@ int if_true(int type_if, environment *const env)
 	{
 		size_t position = skip_str(env); 
 		macro_error(dont_elif
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 		checkif--;
 		return -1;
@@ -194,7 +195,7 @@ int if_true(int type_if, environment *const env)
 	return if_end(env);
 }
 
-int if_relis(environment *const env)
+int if_realiz(environment *const env)
 {
 	int type_if = env->cur;
 	int flag = if_check(type_if, env); // начало (if)
@@ -260,7 +261,7 @@ int if_relis(environment *const env)
 		{
 			size_t position = skip_str(env); 
 			macro_error(before_endif
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 			return -1;
 		}

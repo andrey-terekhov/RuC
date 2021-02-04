@@ -18,6 +18,7 @@
 #include "define.h"
 #include "file.h"
 #include "error.h"
+#include "linker.h"
 #include "utils.h"
 #include <limits.h>
 #include <math.h>
@@ -57,7 +58,7 @@ double get_digit(environment *const env, int* error)
 		{
 			size_t position = skip_str(env); 
 			macro_error(too_many_nuber
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 			*error = -1;
 			return 0.0;
@@ -103,7 +104,7 @@ double get_digit(environment *const env, int* error)
 		{
 			size_t position = skip_str(env); 
 			macro_error(must_be_digit_after_exp1
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 			*error = -1;
 			return 0.0;
@@ -206,7 +207,7 @@ int get_prior(int r)
 	}
 }
 
-double relis_opiration(double x, double y, int r, int int_flag)
+double realiz_opiration(double x, double y, int r, int int_flag)
 {
 	switch (r)
 	{
@@ -337,7 +338,7 @@ int calculator(int if_flag, environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(not_macro
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -358,7 +359,7 @@ int calculator(int if_flag, environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(after_eval_must_be_ckob
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -373,13 +374,13 @@ int calculator(int if_flag, environment *const env)
 				{
 					size_t position = skip_str(env); 
 					macro_error(incorrect_arithmetic_expression
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 					return -1;
 				}
 
 				int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
-				stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
+				stack[i - 2] = realiz_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
 				op--;
 				i--;
 			}
@@ -404,7 +405,7 @@ int calculator(int if_flag, environment *const env)
 				{
 					size_t position = skip_str(env); 
 					macro_error(not_arithmetic_operations
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 					return -1;
 				}
@@ -412,7 +413,7 @@ int calculator(int if_flag, environment *const env)
 				{
 					size_t position = skip_str(env); 
 					macro_error(not_logical_operations
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 					return -1;
 				}
@@ -420,7 +421,7 @@ int calculator(int if_flag, environment *const env)
 				while (op != 0 && n != 0 && get_prior(operation[op - 1]) >= n)
 				{
 					int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
-					stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
+					stack[i - 2] = realiz_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
 					op--;
 					i--;
 				}
@@ -430,7 +431,7 @@ int calculator(int if_flag, environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(third_party_symbol
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -439,7 +440,7 @@ int calculator(int if_flag, environment *const env)
 		{
 			size_t position = skip_str(env); 
 			macro_error(third_party_symbol
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 			return -1;
 		}
@@ -454,13 +455,13 @@ int calculator(int if_flag, environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(incorrect_arithmetic_expression
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
 
 			int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
-			stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
+			stack[i - 2] = realiz_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
 			op--;
 			i--;
 		}
@@ -478,7 +479,7 @@ int calculator(int if_flag, environment *const env)
 	{
 		size_t position = skip_str(env); 
 		macro_error(in_eval_must_end_parenthesis
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}

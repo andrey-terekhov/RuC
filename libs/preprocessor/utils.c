@@ -19,6 +19,7 @@
 #include "environment.h"
 #include "file.h"
 #include "error.h"
+#include "linker.h"
 #include "utf8.h"
 #include <limits.h>
 #include <math.h>
@@ -87,7 +88,7 @@ int macro_keywords(environment *const env)
 	{
 		size_t position = skip_str(env); 
 		macro_error(after_ident_must_be_space
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 	}*/
 
@@ -212,7 +213,7 @@ int space_end_line(environment *const env)
 		{
 			size_t position = skip_str(env); 
 			macro_error(after_preproces_words_must_be_space
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 			return -1;
 		}

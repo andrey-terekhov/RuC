@@ -126,7 +126,7 @@ int preprocess_words(environment *const env)
 		case SH_MACRO:
 		{
 			env->prep_flag = 1;
-			return define_relis(env);
+			return define_realiz(env);
 		}
 		case SH_UNDEF:
 		{
@@ -139,7 +139,9 @@ int preprocess_words(environment *const env)
 			else
 			{
 				size_t position = skip_str(env); 
-				macro_error(macro_does_not_exist, ws_get_file(env->lk.ws, env->lk.current), env->error_string, env->line, position);
+				macro_error(macro_does_not_exist
+				, lk_get_current(&env->lk)
+				, env->error_string, env->line, position);
 				return -1;
 			}
 		}
@@ -147,11 +149,11 @@ int preprocess_words(environment *const env)
 		case SH_IFDEF:
 		case SH_IFNDEF:
 		{
-			return if_relis(env);
+			return if_realiz(env);
 		}
 		case SH_SET:
 		{
-			return set_relis(env);
+			return set_realiz(env);
 		}
 		case SH_ELSE:
 		case SH_ELIF:
@@ -170,7 +172,7 @@ int preprocess_words(environment *const env)
 			else
 			{
 				size_t position = skip_str(env); 
-				macro_error(after_eval_must_be_ckob, ws_get_file(env->lk.ws, env->lk.current), env->error_string, env->line, position);
+				macro_error(after_eval_must_be_ckob, lk_get_current(&env->lk), env->error_string, env->line, position);
 				return -1;
 			}
 
@@ -191,7 +193,7 @@ int preprocess_words(environment *const env)
 			m_nextch(env);
 
 			env->nextp = 0;
-			int res = while_relis(env);
+			int res = while_realiz(env);
 			if(env->nextch_type != FILETYPE)
 			{
 				m_old_nextch_type(env);
@@ -203,7 +205,7 @@ int preprocess_words(environment *const env)
 		{
 			//output_keywods(env);
 			size_t position = skip_str(env); 
-			macro_error(preproces_words_not_exist, ws_get_file(env->lk.ws, env->lk.current), env->error_string, env->line, position);
+			macro_error(preproces_words_not_exist, lk_get_current(&env->lk), env->error_string, env->line, position);
 			return 0;
 		}
 	}
@@ -228,7 +230,7 @@ int preprocess_scan(environment *const env)
 				if(env->nextchar != '#' && env->nextch_type != WHILETYPE && 
 					env->nextch_type != TEXTTYPE)//curflag
 				{
-					env_add_comment(env);
+					lk_add_comment(env);
 				}
 
 				if(env->cur != SH_INCLUDE && env->cur != SH_ELSE && env->cur != SH_ELIF && env->cur != SH_ENDIF)

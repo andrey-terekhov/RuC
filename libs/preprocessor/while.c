@@ -21,6 +21,7 @@
 #include "file.h"
 #include "preprocessor.h"
 #include "error.h"
+#include "linker.h"
 #include "utils.h"
 #include <limits.h>
 #include <math.h>
@@ -79,12 +80,12 @@ int while_collect(environment *const env)
 
 	size_t position = skip_str(env); 
 	macro_error(must_end_endw
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 	return -1;
 }
 
-int while_relis(environment *const env)
+int while_realiz(environment *const env)
 {
 	int oldernextp = env->nextp;
 	int end = env->wstring[oldernextp + 2];
@@ -120,7 +121,7 @@ int while_relis(environment *const env)
 			if (env->curchar == WHILEBEGIN)
 			{
 				env->nextp--;
-				if(while_relis(env))
+				if(while_realiz(env))
 				{
 					return -1;
 				}
@@ -129,7 +130,7 @@ int while_relis(environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(must_end_endw
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}

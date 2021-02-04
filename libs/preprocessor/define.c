@@ -20,6 +20,7 @@
 #include "environment.h"
 #include "file.h"
 #include "error.h"
+#include "linker.h"
 #include "utils.h"
 #include <limits.h>
 #include <math.h>
@@ -167,7 +168,7 @@ int function_scob_collect(int t, int num, environment *const env)
 	}
 	size_t position = skip_str(env); 
 	macro_error(scob_not_clous
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 	return -1;
 }
@@ -183,7 +184,7 @@ int function_stack_create(int n, environment *const env)
 	{
 		size_t position = skip_str(env); 
 		macro_error(stalpe
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
@@ -205,7 +206,7 @@ int function_stack_create(int n, environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(not_enough_param
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -222,7 +223,7 @@ int function_stack_create(int n, environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(not_enough_param2
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -235,7 +236,7 @@ int function_stack_create(int n, environment *const env)
 
 	size_t position = skip_str(env); 
 	macro_error(scob_not_clous
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 	return -1;
 }
@@ -288,7 +289,7 @@ int to_functionident(environment *const env)
 		{
 			size_t position = skip_str(env); 
 			macro_error(functionid_begins_with_letters
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 			return -1;
 		}
@@ -303,7 +304,7 @@ int to_functionident(environment *const env)
 		{
 			size_t position = skip_str(env); 
 			macro_error(after_functionid_must_be_comma
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 			return -1;
 		}
@@ -312,7 +313,7 @@ int to_functionident(environment *const env)
 	return num;
 }
 
-int function_add_to_macrotext(environment *const env)
+int macrotext_add_function(environment *const env)
 {
 	int j;
 	int flag_macro = 0;
@@ -391,7 +392,7 @@ int function_add_to_macrotext(environment *const env)
 		{
 			size_t position = skip_str(env); 
 			macro_error(not_end_fail_define
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 			return -1;
 		}
@@ -439,7 +440,7 @@ int define_get_from_macrotext(int r, environment *const env)
 	{
 		size_t position = skip_str(env); 
 		macro_error(ident_not_exist
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
@@ -478,7 +479,7 @@ int define_add_to_reprtab(environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(repeat_ident
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -492,7 +493,7 @@ int define_add_to_reprtab(environment *const env)
 	return 0;
 }
 
-int define_add_to_macrotext(int r, environment *const env)
+int macrotext_add_define(int r, environment *const env)
 {
 	int j;
 	int lmp = env->mp;
@@ -506,7 +507,7 @@ int define_add_to_macrotext(int r, environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(not_end_fail_define
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -519,7 +520,7 @@ int define_add_to_macrotext(int r, environment *const env)
 					{
 						size_t position = skip_str(env); 
 						macro_error(after_eval_must_be_ckob
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 						return -1;
 					}
@@ -597,7 +598,7 @@ int define_add_to_macrotext(int r, environment *const env)
 	return 0;
 }
 
-int define_relis(environment *const env)
+int define_realiz(environment *const env)
 {
 	int r;
 
@@ -605,7 +606,7 @@ int define_relis(environment *const env)
 	{
 		size_t position = skip_str(env); 
 		macro_error(ident_begins_with_letters
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
@@ -619,24 +620,24 @@ int define_relis(environment *const env)
 	if (env->curchar == '(' && !r)
 	{
 		m_nextch(env);
-		return function_add_to_macrotext(env);
+		return macrotext_add_function(env);
 	}
 	else if (env->curchar != ' ' && env->curchar != '\n' && env->curchar != '\t')
 	{
 		size_t position = skip_str(env); 
 		macro_error(after_ident_must_be_space
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
 	else
 	{
 		skip_space(env);
-		return define_add_to_macrotext(r, env);
+		return macrotext_add_define(r, env);
 	}
 }
 
-int set_relis(environment *const env)
+int set_realiz(environment *const env)
 {
 	int j;
 
@@ -646,7 +647,7 @@ int set_relis(environment *const env)
 	{
 		size_t position = skip_str(env); 
 		macro_error(ident_begins_with_letters
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
@@ -657,7 +658,7 @@ int set_relis(environment *const env)
 	{
 		size_t position = skip_str(env); 
 		macro_error(functions_cannot_be_changed
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
@@ -665,7 +666,7 @@ int set_relis(environment *const env)
 	{	
 		size_t position = skip_str(env);
 		macro_error(after_ident_must_be_space
-			, ws_get_file(env->lk.ws, env->lk.current)
+			, lk_get_current(&env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
@@ -673,6 +674,6 @@ int set_relis(environment *const env)
 	m_nextch(env);
 	skip_space(env);
 
-	return define_add_to_macrotext(j, env);
+	return macrotext_add_define(j, env);
 }
 //

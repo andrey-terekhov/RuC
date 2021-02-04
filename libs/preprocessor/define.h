@@ -24,8 +24,8 @@ extern "C" {
 #endif
 
 int define_get_from_macrotext(int r, environment *const env);
-int define_relis(environment *const env);
-int set_relis(environment *const env);
+int define_realiz(environment *const env);
+int set_realiz(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */
