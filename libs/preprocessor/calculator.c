@@ -436,6 +436,37 @@ int calculator(int if_flag, environment *const env)
 				return -1;
 			}
 		}
+		else if (opration_flag || env->curchar == '(')
+		{
+			c = check_opiration(env);
+			if (c)
+			{
+				int n = get_prior(c);
+				opration_flag = 0;
+
+				if (n != 0 && if_flag && n > 3)
+				{
+					m_error(not_arithmetic_operations, env);
+				}
+				if (n != 0 && !if_flag && n <= 3)
+				{
+					m_error(not_logical_operations, env);
+				}
+
+				while (op != 0 && n != 0 && get_prior(operation[op - 1]) >= n)
+				{
+					int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
+					stack[i - 2] = relis_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
+					op--;
+					i--;
+				}
+				operation[op++] = c;
+			}
+			else if (env->curchar != '\n')
+			{
+				m_error(3, env);
+			}
+		}
 		else if (env->curchar != '\n')
 		{
 			size_t position = skip_str(env); 

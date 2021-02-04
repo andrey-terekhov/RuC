@@ -73,7 +73,7 @@ typedef struct environment
 	int oldnextp[DIP];
 	int dipp;
 
-	size_t line;
+	int line;
 
 	linker lk;
 
