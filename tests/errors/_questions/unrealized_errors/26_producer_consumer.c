@@ -1,8 +1,8 @@
-#include <stdlib.h>
-#include <stdint.h>
+//#include <stdlib.h>
+//#include <stdint.h>
 #define __STDC_FORMAT_MACROS
-#include <inttypes.h>
-#include "th_static.h"
+//#include <inttypes.h>
+//#include "th_static.h"
 #define BUF_SIZE 10
 #define COUNT_PRODUCE 30
 

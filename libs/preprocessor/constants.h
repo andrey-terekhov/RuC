@@ -20,7 +20,7 @@
 
 #define MAXTAB		100000
 #define LONGSTR		10000
-#define STRIGSIZE	256
+#define STRING_SIZE	256
 #define HASH		256
 #define DIP			10
 #define CONTROLSIZE 250
@@ -64,33 +64,3 @@
 #define SH_EVAL	   -79
 #define SH_INCLUDE -80
 #define SH_FILE	   -81
-
-
-// Коды ошибок
-
-#define just_kill_yourself					365
-#define after_ident_must_be_space1			366
-#define ident_begins_with_s					367
-#define must_be_endif						368
-#define dont_elif							369
-#define preproces_words_not_exist			370
-#define not_enough_param					371
-#define functionid_begins_with_letters		372
-#define after_functionid_must_be_comma		373
-#define stalpe								374
-#define not_relis_if						375
-#define before_endif						376
-#define repeat_ident						377
-#define not_enough_param2					378
-#define not_end_fail_define					379
-#define scob_not_clous						380
-#define after_preproces_words_must_be_space 381
-#define ident_begins_with_letters1			382
-#define ident_not_exist						383
-#define functions_cannot_be_changed			384
-#define after_eval_must_be_ckob				385
-#define too_many_nuber						386
-#define must_be_digit_after_exp1			387
-#define not_arithmetic_operations			389
-#define not_logical_operations				390
-#define comm_not_ended						391

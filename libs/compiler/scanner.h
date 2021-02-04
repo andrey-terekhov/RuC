@@ -16,21 +16,21 @@
 
 #pragma once
 
-#include "context.h"
+#include "analyzer.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void onemore(compiler_context *context);
-int scan(compiler_context *context);
-int getnext(compiler_context *context);
-int scaner(compiler_context *context);
-void nextch(compiler_context *context);
-int letter(compiler_context *);
-int digit(compiler_context *);
-int equal(compiler_context *, int, int);
+void onemore(analyzer *context);
+int scan(analyzer *context);
+int getnext(analyzer *context);
+int scaner(analyzer *context);
+void nextch(analyzer *context);
+int letter(analyzer *);
+int digit(analyzer *);
+int equal(analyzer *, int, int);
 
 #ifdef __cplusplus
 } /* extern "C" */

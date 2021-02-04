@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov
+ *	Copyright 2018 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,29 +16,27 @@
 
 #pragma once
 
-#include "context.h"
+#include "context_var.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- *	Save up a string array to reprtab
- *
- *	@param	context	RuC context
- *	@param	str		Target string
- *
- *	@return	FIXME
- */
-int toreprtab(compiler_context *context, char str[]);
+int equal_reprtab(int i, int j, preprocess_context *context);
+void output_keywods(preprocess_context *context);
+int macro_keywords(preprocess_context *context);
+int collect_mident(preprocess_context *context);
+int find_file(preprocess_context *context, const char *s);
 
-/**
- *	Mode table initialization
- *
- *	@param	context	RuC context
- */
-void init_modetab(compiler_context *context);
+int space_end_line(preprocess_context *context);
+void space_skip(preprocess_context *context);
+void space_skip_str(preprocess_context *context);
+size_t skip_str(preprocess_context *context);
+void skip_file(preprocess_context *context);
+
+int is_letter(preprocess_context *context);
+int is_digit(int a);
 
 #ifdef __cplusplus
 } /* extern "C" */

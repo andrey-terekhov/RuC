@@ -20,8 +20,8 @@
 #include "context_var.h"
 #include "file.h"
 #include "preprocessor.h"
-#include "preprocessor_error.h"
-#include "preprocessor_utils.h"
+#include "error.h"
+#include "utils.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
@@ -29,7 +29,7 @@
 #include <string.h>
 
 
-void while_collect(preprocess_context *context)
+int while_collect(preprocess_context *context)
 {
 	int oldwsp = context->wsp;
 
@@ -56,11 +56,12 @@ void while_collect(preprocess_context *context)
 				while_collect(context);
 			}
 			else if (context->cur == SH_ENDW)
-			{
+			{	
+				context->wstring[context->wsp++] = ' ';
 				context->wstring[oldwsp + 2] = context->wsp;
 				context->cur = 0;
 
-				return;
+				return 0;
 			}
 			else
 			{
@@ -75,13 +76,17 @@ void while_collect(preprocess_context *context)
 		context->wstring[context->wsp++] = context->curchar;
 		m_nextch(context);
 	}
-	m_error(40, context);
+
+	size_t position = skip_str(context); 
+	macro_error(must_end_endw, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+	return -1;
 }
 
-void while_relis(preprocess_context *context)
+int while_relis(preprocess_context *context)
 {
 	int oldernextp = context->nextp;
 	int end = context->wstring[oldernextp + 2];
+	int error = 0;
 
 	context->cur = 0;
 	while (context->wstring[oldernextp] == WHILEBEGIN)
@@ -89,7 +94,10 @@ void while_relis(preprocess_context *context)
 		m_nextch(context);
 		m_change_nextch_type(IFTYPE, context->wstring[context->nextp], context);
 		m_nextch(context);
-		calculator(1, context);
+		if(calculator(1, context))
+		{
+			return -1;
+		}
 		m_old_nextch_type(context);
 
 
@@ -97,7 +105,7 @@ void while_relis(preprocess_context *context)
 		{
 			context->nextp = end;
 			m_nextch(context);
-			return;
+			return 0;
 		}
 
 		m_nextch(context);
@@ -110,17 +118,27 @@ void while_relis(preprocess_context *context)
 			if (context->curchar == WHILEBEGIN)
 			{
 				context->nextp--;
-				while_relis(context);
+				if(while_relis(context))
+				{
+					return -1;
+				}
 			}
 			else if (context->curchar == EOF)
 			{
-				m_error(41, context);
+				size_t position = skip_str(context); 
+				macro_error(must_end_endw, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+				return -1;
 			}
 			else
 			{
-				preprocess_scan(context);
+				error = preprocess_scan(context);
+				if(error)
+				{
+					return error;
+				}
 			}
 		}
 		context->nextp = oldernextp;
 	}
+	return 0;
 }
