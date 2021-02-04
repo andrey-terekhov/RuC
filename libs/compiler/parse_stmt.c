@@ -149,24 +149,23 @@ void parse_expression_statement(parser *const parser)
  *
  *	@param	parser		Parser structure
  */
-void parse_if_statement(parser *const context)
+void parse_if_statement(parser *const parser)
 {
-	totree(context, TIf);
-	size_t else_ref = context->sx->tc++;
+	totree(parser, TIf);
+	const size_t ref_else = parser->sx->tc++;
 
-	exprinbrkts(context, cond_must_be_in_brkts);
-	context->sopnd--;
-	parse_statement(context);
+	exprinbrkts(parser, cond_must_be_in_brkts);
+	parser->sopnd--;
+	parse_statement(parser);
 
-	if (context->next_token == LELSE)
+	if (try_consume_token(parser, kw_else))
 	{
-		scanner(context);
-		context->sx->tree[else_ref] = (int)context->sx->tc;
-		parse_statement(context);
+		parser->sx->tree[ref_else] = (int)parser->sx->tc;
+		parse_statement(parser);
 	}
 	else
 	{
-		context->sx->tree[else_ref] = 0;
+		parser->sx->tree[ref_else] = 0;
 	}
 }
 
@@ -178,23 +177,22 @@ void parse_if_statement(parser *const context)
  *
  *	@param	parser		Parser structure
  */
-void parse_switch_statement(parser *const context)
+void parse_switch_statement(parser *const parser)
 {
-	int old_in_switch = context->flag_in_switch;
-	totree(context, TSwitch);
+	const int old_in_switch = parser->flag_in_switch;
+	totree(parser, TSwitch);
 
-	exprinbrkts(context, cond_must_be_in_brkts);
-	if (!is_int(context->ansttype))
+	exprinbrkts(parser, cond_must_be_in_brkts);
+	if (!is_int(parser->ansttype))
 	{
-		parser_error(context, float_in_switch);
+		parser_error(parser, float_in_switch);
 	}
 
-	context->sopnd--;
-	scanner(context);
-	context->flag_in_switch = 1;
-	parse_compound_statement(context, SWITCH);
+	parser->sopnd--;
 
-	context->flag_in_switch = old_in_switch;
+	parser->flag_in_switch = 1;
+	parse_statement(parser);
+	parser->flag_in_switch = old_in_switch;
 }
 
 /**
@@ -207,11 +205,13 @@ void parse_switch_statement(parser *const context)
  */
 void parse_while_statement(parser *const parser)
 {
-	int old_in_loop = parser->flag_in_loop;
+	const int old_in_loop = parser->flag_in_loop;
 	totree(parser, TWhile);
 
-	parser->flag_in_loop = 1;
 	exprinbrkts(parser, cond_must_be_in_brkts);
+	parser->sopnd--;
+
+	parser->flag_in_loop = 1;
 	parse_statement(parser);
 	parser->flag_in_loop = old_in_loop;
 }
@@ -226,15 +226,15 @@ void parse_while_statement(parser *const parser)
  */
 void parse_do_statement(parser *const parser)
 {
-	int old_in_loop = parser->flag_in_loop;
+	const int old_in_loop = parser->flag_in_loop;
 	totree(parser, TDo);
 
 	parser->flag_in_loop = 1;
 	parse_statement(parser);
+	parser->flag_in_loop = old_in_loop;
 
-	if (parser->next_token == LWHILE)
+	if (try_consume_token(parser, kw_while))
 	{
-		scanner(parser);
 		exprinbrkts(parser, cond_must_be_in_brkts);
 		parser->sopnd--;
 	}
@@ -245,8 +245,6 @@ void parse_do_statement(parser *const parser)
 	}
 
 	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
-	
-	parser->flag_in_loop = old_in_loop;
 }
 
 /**
@@ -258,60 +256,59 @@ void parse_do_statement(parser *const parser)
  *
  *	@param	parser		Parser structure
  */
-void parse_for_statement(parser *const context)
+void parse_for_statement(parser *const parser)
 {
-	int oldinloop = context->flag_in_loop;
+	const int oldinloop = parser->flag_in_loop;
+	totree(parser, TFor);
 
-	totree(context, TFor);
-	size_t inition_ref = context->sx->tc++;
-	size_t condition_ref = context->sx->tc++;
-	size_t increment_ref = context->sx->tc++;
-	size_t statement_ref = context->sx->tc++;
+	const size_t ref_inition = parser->sx->tc++;
+	const size_t ref_condition = parser->sx->tc++;
+	const size_t ref_increment = parser->sx->tc++;
+	const size_t ref_statement = parser->sx->tc++;
 
-	mustbe(context, LEFTBR, no_leftbr_in_for);
+	expect_and_consume_token(parser, l_paren, no_leftbr_in_for);
 
-	if (scanner(context) == SEMICOLON)
+	if (scanner(parser) == semicolon)
 	{
-		context->sx->tree[inition_ref] = 0;
+		parser->sx->tree[ref_inition] = 0;
 	}
 	else
 	{
-		context->sx->tree[inition_ref] = (int)context->sx->tc;
+		parser->sx->tree[ref_inition] = (int)parser->sx->tc;
 		// TODO: в С99 тут может быть объявление
-		expr(context, 0);
-		exprassnvoid(context);
-		mustbe(context, SEMICOLON, no_semicolon_in_for);
+		parse_expression(parser);
+		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
 	}
 
-	if (scanner(context) == SEMICOLON)
+	if (scanner(parser) == semicolon)
 	{
-		context->sx->tree[condition_ref] = 0;
+		parser->sx->tree[ref_condition] = 0;
 	}
 	else
 	{
-		context->sx->tree[condition_ref] = (int)context->sx->tc;
-		exprval(context);
-		context->sopnd--;
-		mustbe(context, SEMICOLON, no_semicolon_in_for);
-		context->sopnd--;
+		parser->sx->tree[ref_condition] = (int)parser->sx->tc;
+		// TODO: parse_condition()
+		exprval(parser);
+		parser->sopnd--;
+		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
+		parser->sopnd--;
 	}
 
-	if (scanner(context) == RIGHTBR)
+	if (scanner(parser) == r_paren)
 	{
-		context->sx->tree[increment_ref] = 0;
+		parser->sx->tree[ref_increment] = 0;
 	}
 	else
 	{
-		context->sx->tree[increment_ref] = (int)context->sx->tc;
-		expr(context, 0);
-		exprassnvoid(context);
-		mustbe(context, RIGHTBR, no_rightbr_in_for);
+		parser->sx->tree[ref_increment] = (int)parser->sx->tc;
+		parse_expression(parser);
+		expect_and_consume_token(parser, r_paren, no_rightbr_in_for);
 	}
 
-	context->sx->tree[statement_ref] = (int)context->sx->tc;
-	context->flag_in_loop = 1;
-	parse_statement(context);
-	context->flag_in_loop = oldinloop;
+	parser->sx->tree[ref_statement] = (int)parser->sx->tc;
+	parser->flag_in_loop = 1;
+	parse_statement(parser);
+	parser->flag_in_loop = oldinloop;
 }
 
 /**
@@ -397,46 +394,54 @@ void parse_break_statement(parser *const parser)
  *
  *	jump-statement:
  *		'return' expression[opt] ';'
- *		'return' braced-init-list ';'
+ *		'return' braced-init-list ';' [TODO]
  *
  *	@param	parser		Parser structure
  */
-void parse_return_statement(parser *const context)
+void parse_return_statement(parser *const parser)
 {
-	int return_type = mode_get(context->sx, context->function_type + 1);
-	context->flag_was_return = 1;
-	if (context->next_token == SEMICOLON)
+	const int return_type = mode_get(parser->sx, parser->function_type + 1);
+	parser->flag_was_return = 1;
+	
+	if (try_consume_token(parser, semicolon))
 	{
-		totree(context, TReturnvoid);
-		scanner(context);
-		if (return_type != LVOID)
-			parser_error(context, no_ret_in_func);
+		totree(parser, TReturnvoid);
+		if (return_type != mode_void)
+		{
+			parser_error(parser, no_ret_in_func);
+		}
 	}
 	else
 	{
-		if (return_type != LVOIDASTER)
+		if (return_type != mode_void_pointer)
 		{
-			if (return_type == LVOID)
+			if (return_type == mode_void)
 			{
-				parser_error(context, notvoidret_in_void_func);
+				parser_error(parser, notvoidret_in_void_func);
 			}
-			totree(context, TReturnval);
-			totree(context, szof(context, return_type));
-			scanner(context);
-			expr(context, 1);
-			toval(context);
-			context->sopnd--;
 
-			if (return_type == LFLOAT && context->ansttype == LINT)
+			totree(parser, TReturnval);
+			totree(parser, szof(parser, return_type));
+
+			scanner(parser);
+			expr(parser, 1);
+			toval(parser);
+			parser->sopnd--;
+
+			if (return_type != mode_undefined && parser->ansttype != mode_undefined)
 			{
-				totree(context, WIDEN);
+				if (return_type == mode_float && parser->ansttype == mode_integer)
+				{
+					totree(parser, WIDEN);
+				}
+				else if (return_type != parser->ansttype)
+				{
+					parser_error(parser, bad_type_in_ret);
+				}
 			}
-			else if (return_type != context->ansttype)
-			{
-				parser_error(context, bad_type_in_ret);
-			}
-			totree(context, TExprend);
-			mustbe(context, SEMICOLON, expected_semi_after_stmt);
+
+			totree(parser, TExprend);
+			expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 		}
 	}
 }
@@ -450,36 +455,32 @@ void parse_create_direct_statement(parser *const parser)
 }
 
 /**	Parse printid statement [RuC] */
-void parse_printid_statement(parser *const context)
+void parse_printid_statement(parser *const parser)
 {
-	mustbe(context, LEFTBR, no_leftbr_in_printid);
+	expect_and_consume_token(parser, l_paren, no_leftbr_in_printid);
 
-	while (context->next_token != RIGHTBR)
+	do
 	{
-		if (context->next_token == IDENT)
+		if (try_consume_token(parser, identifier))
 		{
-			scanner(context);
-			applid(context);
-			totree(context, TPrintid);
-			totree(context, context->lastid);
-		}
-		else
-		{
-			parser_error(context, no_ident_in_printid);
-			skip_until(context, COMMA | RIGHTBR | SEMICOLON);
-		}
-		if (context->next_token == COMMA)
-		{
-			scanner(context);
-		}
-		else
-		{
-			break;
-		}
-	}
+			const size_t id = repr_get_reference(parser->sx, parser->lexer->repr);
+			if (id == 1)
+			{
+				parser_error(parser, ident_is_not_declared);
+			}
 
-	mustbe(context, RIGHTBR, no_rightbr_in_printid);
-	mustbe(context, SEMICOLON, expected_semi_after_stmt);
+			totree(parser, TPrintid);
+			totree(parser, id);
+		}
+		else
+		{
+			parser_error(parser, no_ident_in_printid);
+			skip_until(parser, comma | r_paren | semicolon);
+		}
+	} while (try_consume_token(parser, comma));
+
+	expect_and_consume_token(parser, r_paren, no_rightbr_in_printid);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 
 }
 
@@ -501,36 +502,32 @@ void parse_print_statement(parser *const context)
 }
 
 /**	Parse getid statement [RuC] */
-void parse_getid_statement(parser *const context)
+void parse_getid_statement(parser *const parser)
 {
-	mustbe(context, LEFTBR, no_leftbr_in_getid);
+	expect_and_consume_token(parser, l_paren, no_leftbr_in_getid);
 
-	while (context->next_token != RIGHTBR)
+	do
 	{
-		if (context->next_token == IDENT)
+		if (try_consume_token(parser, identifier))
 		{
-			scanner(context);
-			applid(context);
-			totree(context, TGetid);
-			totree(context, context->lastid);
-		}
-		else
-		{
-			parser_error(context, no_ident_in_getid);
-			skip_until(context, COMMA | RIGHTBR | SEMICOLON);
-		}
-		if (context->next_token == COMMA)
-		{
-			scanner(context);
-		}
-		else
-		{
-			break;
-		}
-	}
+			const size_t id = repr_get_reference(parser->sx, parser->lexer->repr);
+			if (id == 1)
+			{
+				parser_error(parser, ident_is_not_declared);
+			}
 
-	mustbe(context, RIGHTBR, no_rightbr_in_getid);
-	mustbe(context, SEMICOLON, expected_semi_after_stmt);
+			totree(parser, TGetid);
+			totree(parser, id);
+		}
+		else
+		{
+			parser_error(parser, no_ident_in_getid);
+			skip_until(parser, comma | r_paren | semicolon);
+		}
+	} while (try_consume_token(parser, comma));
+
+	expect_and_consume_token(parser, r_paren, no_rightbr_in_printid);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 
 int evaluate_params(parser *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[])
@@ -820,11 +817,9 @@ void parse_compound_statement(parser *const parser, const block_type type)
 {
 	totree(parser, TBegin);
 
-	int old_in_switch = parser->flag_in_switch;
 	int old_displ = 0;
 	int old_lg = 0;
 
-	parser->flag_in_switch = (type == SWITCH);
 	if (type != FUNCBODY)
 	{
 		scope_block_enter(parser->sx, &old_displ, &old_lg);
@@ -852,6 +847,5 @@ void parse_compound_statement(parser *const parser, const block_type type)
 	{
 		scope_block_exit(parser->sx, old_displ, old_lg);
 	}
-	parser->flag_in_switch = old_in_switch;
 	totree(parser, TEnd);
 }
