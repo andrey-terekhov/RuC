@@ -21,6 +21,7 @@
 #include "errors.h"
 #include "preprocessor.h"
 #include "syntax.h"
+#include "tree.h"
 #include "uniio.h"
 #include <stdlib.h>
 
@@ -32,10 +33,12 @@
 
 //#define GENERATE_MACRO
 //#define GENERATE_TABLES
+//#define GENERATE_TREE
 
 
 const char *const DEFAULT_MACRO = "macro.txt";
 const char *const DEFAULT_TREE = "tree.txt";
+const char *const DEFAULT_NEW = "new.txt";
 const char *const DEFAULT_CODES = "codes.txt";
 const char *const DEFAULT_OUTPUT = "export.txt";
 
@@ -66,15 +69,37 @@ int compile_from_io_to_vm(universal_io *const io)
 		return -1;
 	}
 
-	syntax sx = sx_create();
-
-	int ret = analyze(io, &sx);
-#ifdef GENERATE_TABLES
-	tables_and_tree(&sx, DEFAULT_TREE);
-#endif
+	syntax sx;
+	int ret = sx_init(&sx);
 
 	if (!ret)
 	{
+		ret = analyze(io, &sx);
+#ifdef GENERATE_TABLES
+		tables_and_tree(&sx, DEFAULT_TREE);
+#endif
+	}
+	
+	if (!ret)
+	{
+		ret = !sx_is_correct(&sx, io);
+	}
+
+	if (!ret)
+	{
+#ifdef GENERATE_TREE
+		ret = tree_test(&sx)
+			|| tree_test_next(&sx)
+			|| tree_test_recursive(&sx)
+			|| tree_test_copy(&sx);
+		if (ret)
+		{
+			io_erase(io);
+			return ret;
+		}
+		tree_print(&sx, DEFAULT_NEW);
+#endif
+
 		ret = encode_to_vm(io, &sx);
 #ifdef GENERATE_TABLES
 		tables_and_codes(&sx, DEFAULT_CODES);
@@ -97,7 +122,7 @@ int compile_from_io_to_vm(universal_io *const io)
 
 int compile_to_vm(workspace *const ws)
 {
-	if (!ws_is_correct(ws))
+	if (!ws_is_correct(ws) || ws_get_files_num(ws) == 0)
 	{
 		system_error("некорректные входные данные");
 		return -1;

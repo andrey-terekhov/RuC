@@ -144,14 +144,14 @@ void default_log(const char *const tag, const char *const msg, const uint8_t col
 	set_color(color);
 #ifdef _MSC_VER
 	char buffer[MAX_MSG_SIZE];
-	utf8_to_cp1251(tag_log, buffer);
+	utf8_to_cp866(tag_log, buffer);
 	fprintf(stderr, "%s: ", buffer);
 #else
 	fprintf(stderr, "%s: ", tag_log);
 #endif
 
 #ifdef _MSC_VER
-	utf8_to_cp1251(msg, buffer);
+	utf8_to_cp866(msg, buffer);
 	print_msg(color, buffer);
 #else
 	print_msg(color, msg);
@@ -198,10 +198,7 @@ size_t literal(const char *const line, const size_t symbol)
 	size_t j = i;
 
 	char32_t ch = utf8_convert(&line[j]);
-	while (utf8_is_russian(ch) || ch == '_'
-		|| (ch >= '0' && ch <= '9')
-		|| (ch >= 'A' && ch <= 'Z')
-		|| (ch >= 'a' && ch <= 'z'))
+	while (utf8_is_letter(ch) || utf8_is_digit(ch))
 	{
 		i = j;
 		if (j == 0)
@@ -226,10 +223,7 @@ size_t length(const char *const line, const size_t size, const size_t symbol)
 	{
 		const char32_t ch = utf8_convert(&line[i]);
 
-		if (utf8_is_russian(ch) || ch == '_'
-			|| (ch >= '0' && ch <= '9')
-			|| (ch >= 'A' && ch <= 'Z')
-			|| (ch >= 'a' && ch <= 'z'))
+		if (utf8_is_letter(ch) || utf8_is_digit(ch))
 		{
 			i += utf8_symbol_size(line[i]);
 			j++;

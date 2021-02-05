@@ -315,24 +315,27 @@
 
 // Лексемы
 
-#define COMMA	  100
-#define QUEST	  101
-#define COLON	  102
-#define LEFTBR	  103
-#define RIGHTBR	  104
-#define LEFTSQBR  105
-#define RIGHTSQBR 106
-#define STRING	  107
-#define NUMBER	  108
-#define IDENT	  109
-#define BEGIN	  115
-#define END		  116
-#define SEMICOLON 117
-#define LAPOST	  118
-#define LQUOTE	  119
-#define LEOF	  120
-#define ARROW	  121
-#define DOT		  122
+#define COMMA		100
+#define QUEST		101
+#define COLON		102
+#define LEFTBR		103
+#define RIGHTBR		104
+#define LEFTSQBR	105
+#define RIGHTSQBR	106
+#define STRING		107
+#define NUMBER		108
+#define IDENT		109
+#define INT_CONST	112
+#define CHAR_CONST	113
+#define FLOAT_CONST	114
+#define BEGIN		115
+#define END			116
+#define SEMICOLON	117
+#define LAPOST		118
+#define LQUOTE		119
+#define LEOF		120
+#define ARROW		121
+#define DOT			122
 
 
 // Ответы
