@@ -48,7 +48,7 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx, lexer
 /** Занесение ключевых слов в reprtab */
 void read_keywords(analyzer *context)
 {
-	context->sx->keywordsnum = 1;
+	context->sx->keywords = 1;
 	get_char(context->lxr);
 	get_char(context->lxr);
 	while (lex(context->lxr) != LEOF)
@@ -109,7 +109,7 @@ void init_modetab(analyzer *context)
 	context->sx->modetab[19] = 14;
 	context->sx->startmode = 14;
 	context->sx->md = 19;
-	context->sx->keywordsnum = 0;
+	context->sx->keywords = 0;
 	context->line = 1;
 }
 

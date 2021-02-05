@@ -20,9 +20,9 @@
 #include "tree.h"
 
 
-int get_static(syntax *const sx, const int type)
+item_t get_static(syntax *const sx, const int type)
 {
-	const int old_displ = sx->displ;
+	const item_t old_displ = sx->displ;
 	sx->displ += sx->lg * size_of(sx, type);
 
 	if (sx->lg > 0)
@@ -275,12 +275,12 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 	if (type < 0)
 	{
 		// Так как < 0, это функция-параметр
-		ident_set_displ(sx, lastid, -(sx->displ++));
+		ident_set_displ(sx, lastid, -((int)sx->displ++));
 		sx->maxdispl = sx->displ;
 	}
 	else if (type == 0)
 	{
-		ident_set_displ(sx, lastid, get_static(sx, mode));
+		ident_set_displ(sx, lastid, (int)get_static(sx, mode));
 	}
 	else if (type == 1)
 	{
@@ -469,7 +469,7 @@ size_t repr_add(syntax *const sx, const char32_t *const spelling)
 	sx->reprtab[old_repr] = (int)sx->hashtab[hash];
 	sx->hashtab[hash] = old_repr;
 	// 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
-	sx->reprtab[old_repr + 1] = (sx->keywordsnum) ? -((++sx->keywordsnum - 2) / 4) : 1;
+	sx->reprtab[old_repr + 1] = (sx->keywords) ? 0 - (((char32_t)(++sx->keywords) - 2) / 4) : 1;
 	return old_repr;
 }
 
@@ -528,7 +528,7 @@ int repr_set_reference(syntax *const sx, const size_t index, const size_t ref)
 }
 
 
-int scope_block_enter(syntax *const sx, int *const displ, int *const lg)
+int scope_block_enter(syntax *const sx, item_t *const displ, int *const lg)
 {
 	if (sx == NULL || displ == NULL || lg == NULL)
 	{
@@ -541,7 +541,7 @@ int scope_block_enter(syntax *const sx, int *const displ, int *const lg)
 	return 0;
 }
 
-int scope_block_exit(syntax *const sx, const int displ, const int lg)
+int scope_block_exit(syntax *const sx, const item_t displ, const int lg)
 {
 	if (sx == NULL)
 	{
@@ -558,14 +558,14 @@ int scope_block_exit(syntax *const sx, const int displ, const int lg)
 	return 0;
 }
 
-int scope_func_enter(syntax *const sx)
+item_t scope_func_enter(syntax *const sx)
 {
 	if (sx == NULL)
 	{
 		return INT_MAX;
 	}
 
-	const int displ = sx->displ;
+	const item_t displ = sx->displ;
 	sx->curid = sx->id;
 	sx->displ = 3;
 	sx->maxdispl = 3;
@@ -574,7 +574,7 @@ int scope_func_enter(syntax *const sx)
 	return displ;
 }
 
-int scope_func_exit(syntax *const sx, const size_t decl_ref, const int displ)
+int scope_func_exit(syntax *const sx, const size_t decl_ref, const item_t displ)
 {
 	if (sx == NULL || decl_ref >= vector_size(&sx->tree))
 	{

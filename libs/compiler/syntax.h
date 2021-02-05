@@ -58,14 +58,14 @@ typedef struct syntax
 	char32_t reprtab[MAXREPRTAB];	/**< Representations table */
 	size_t rp;						/**< Representations size */
 
-	int maxdispl;					/**< Max displacement */
-	int maxdisplg;					/**< Max displacement */
+	item_t maxdispl;				/**< Max displacement */
+	item_t maxdisplg;				/**< Max displacement */
 	size_t ref_main;				/**< Main function reference */
 
-	int displ;						/**< Stack displacement in current scope */
+	item_t displ;					/**< Stack displacement in current scope */
 	int lg;							/**< Displacement from l (+1) or g (-1) */
 	
-	int keywordsnum;				/**< Number of read keyword */
+	size_t keywords;				/**< Number of read keyword */
 
 	size_t max_threads;				/**< Max threads count */
 } syntax;
@@ -406,7 +406,7 @@ int repr_set_reference(syntax *const sx, const size_t index, const size_t ref);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int scope_block_enter(syntax *const sx, int *const displ, int *const lg);
+int scope_block_enter(syntax *const sx, item_t *const displ, int *const lg);
 
 /**
  *	Exit block scope
@@ -417,7 +417,7 @@ int scope_block_enter(syntax *const sx, int *const displ, int *const lg);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int scope_block_exit(syntax *const sx, const int displ, const int lg);
+int scope_block_exit(syntax *const sx, const item_t displ, const int lg);
 
 /**
  *	Enter function scope
@@ -426,7 +426,7 @@ int scope_block_exit(syntax *const sx, const int displ, const int lg);
  *
  *	@return	Previous stack displacement, @c INT_MAX on failure
  */
-int scope_func_enter(syntax *const sx);
+item_t scope_func_enter(syntax *const sx);
 
 /**
  *	Exit function scope
@@ -437,7 +437,7 @@ int scope_func_enter(syntax *const sx);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int scope_func_exit(syntax *const sx, const size_t decl_ref, const int displ);
+int scope_func_exit(syntax *const sx, const size_t decl_ref, const item_t displ);
 
 #ifdef __cplusplus
 } /* extern "C" */

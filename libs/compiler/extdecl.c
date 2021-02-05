@@ -3445,7 +3445,7 @@ void block(analyzer *context, int b)
 
 	int oldinswitch = context->inswitch;
 	int notended = 1;
-	int olddispl = 0;
+	item_t olddispl = 0;
 	int oldlg = 0;
 	int firstdecl;
 
@@ -3559,7 +3559,7 @@ void function_definition(analyzer *context)
 		ident_set_displ(context->sx, pred, fn);
 	}
 	
-	const int old_displ = scope_func_enter(context->sx);
+	const item_t old_displ = scope_func_enter(context->sx);
 	for (int i = 0; i < n; i++)
 	{
 		context->type = mode_get(context->sx, context->functype + i + 3);
