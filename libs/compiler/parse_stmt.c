@@ -310,18 +310,17 @@ void parse_goto_statement(parser *const parser)
 
 	for (size_t i = 0; i < parser->pgotost; i += 2)
 	{
-		if (ident_get_repr(parser->sx, parser->gotost[i]) == (int)repr)
+		if (repr == (size_t)ident_get_repr(parser->sx, parser->gotost[i]))
 		{
-			const size_t id = (size_t)parser->gotost[i - 2];
-			if (parser->gotost[id + 1] < 0) // Переход на метку уже был
+			const size_t id = (size_t)parser->gotost[i];
+			totree(parser, id);
+			if (parser->gotost[id + 1] >= 0) // Перехода на метку еще не было
 			{
-				totree(parser, id);
-				return;
+				parser->gotost[parser->pgotost++] = id;
+				parser->gotost[parser->pgotost++] = 1; // TODO: здесь должен быть номер строки
 			}
 
-			totree(parser, id);
-			parser->gotost[parser->pgotost++] = id;
-			parser->gotost[parser->pgotost++] = 1; // TODO: здесь должен быть номер строки
+			expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 			return;
 		}
 	}
@@ -333,6 +332,7 @@ void parse_goto_statement(parser *const parser)
 	totree(parser, -id);
 	parser->gotost[parser->pgotost++] = id;
 	parser->gotost[parser->pgotost++] = 1;	// TODO: здесь должен быть номер строки
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 
 /**
