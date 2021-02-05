@@ -41,7 +41,6 @@ typedef struct
 	token curr_token;					/**< Current token */
 	token next_token;					/**< Lookahead token */
 	int line;
-	int flag_was_type_def;
 	int func_def;	// context->func_def = 0 - (),
 					// 1 - определение функции,
 					// 2 - это предописание,
@@ -58,10 +57,7 @@ typedef struct
 	int arrdim;	// arrdim - размерность (0-скаляр), д.б. столько выражений-границ
 	int was_struct_with_arr;
 	int usual;	// описание массива без пустых границ
-	int flag_in_switch;
-	int flag_in_loop;
 	int function_type;
-	int flag_was_return;
 	int gotost[1000];
 	int pgotost;
 	int anst;
@@ -69,6 +65,10 @@ typedef struct
 	int anstdispl;
 	int leftansttype;	// anst = VAL  - значение на стеке
 	int onlystrings;	// только из строк 2 - без границ, 3 - с границами
+	int flag_was_type_def;
+	int flag_in_switch;
+	int flag_in_loop;
+	int flag_was_return;
 
 	int buf_flag;
 	int buf_cur;
