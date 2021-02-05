@@ -40,7 +40,6 @@ typedef struct
 
 	token curr_token;					/**< Current token */
 	token next_token;					/**< Lookahead token */
-	int line;
 	int func_def;	// context->func_def = 0 - (),
 					// 1 - определение функции,
 					// 2 - это предописание,

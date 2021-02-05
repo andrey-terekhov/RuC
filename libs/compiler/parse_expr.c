@@ -17,31 +17,58 @@
 #include "parser.h"
 #include <string.h>
 
-void binop(parser *context, int sp);
-void toval(parser *context);
-void applid(parser *context);
-void actstring(int type, parser *context);
-void mustbestring(parser *context);
-void mustbepointstring(parser *context);
-void mustberow(parser *context);
-void mustbeint(parser *context);
-void mustberowofint(parser *context);
-void mustberowoffloat(parser *context);
-void primaryexpr(parser *context);
-int find_field(parser *context, int stype);
-void selectend(parser *context);
-void postexpr(parser *context);
 void unarexpr(parser *context);
-void exprassninbrkts(parser *context, int er);
-int prio(int op);
-void subexpr(parser *context);
-int intopassn(int next);
-int opassn(parser *context);
-void condexpr(parser *context);
-void exprassnvoid(parser *context);
 void exprassn(parser *context, int level);
 void expr(parser *context, int level);
-void exprassnval(parser *context);
+
+int scanner(parser *context)
+{
+	context->curr_token = context->next_token;
+	if (!context->buf_flag)
+	{
+		context->next_token = lex(context->lexer);
+	}
+	else
+	{
+		context->next_token = context->buf_cur;
+		context->buf_flag--;
+	}
+	return context->curr_token;
+}
+
+void mustbe(parser *context, int what, int e)
+{
+	if (context->next_token != what)
+	{
+		parser_error(context, e);
+		context->curr_token = what;
+	}
+	else
+	{
+		scanner(context);
+	}
+}
+
+void applid(parser *context)
+{
+	context->lastid = REPRTAB[REPRTAB_POS + 1];
+	if (context->lastid == 1)
+	{
+		parser_error(context, ident_is_not_declared);
+		context->was_error = 5;
+	}
+
+}
+
+void totreef(parser *context, int op)
+{
+	context->sx->tree[context->sx->tc++] = op;
+	if (context->ansttype == LFLOAT &&
+		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
+	{
+		context->sx->tree[context->sx->tc - 1] += 50;
+	}
+}
 
 void binop(parser *context, int sp)
 {
@@ -189,7 +216,7 @@ void actstring(int type, parser *context)
 		context->was_error = 1;
 		return; // 1
 	}
-	context->ansttype = newdecl(context->sx, mode_array, type);
+	context->ansttype = to_modetab(context->sx, mode_array, type);
 	context->anst = VAL;
 }
 
@@ -292,7 +319,7 @@ void mustberowofint(parser *context)
 		if (context->ansttype == LINT || context->ansttype == LCHAR)
 		{
 			totree(context, ROWING);
-			context->ansttype = newdecl(context->sx, mode_array, LINT);
+			context->ansttype = to_modetab(context->sx, mode_array, LINT);
 		}
 	}
 	if (!(is_array(context->sx, context->ansttype) &&
@@ -327,7 +354,7 @@ void mustberowoffloat(parser *context)
 		if (context->ansttype == LFLOAT)
 		{
 			totree(context, ROWINGD);
-			context->ansttype = newdecl(context->sx, mode_array, LFLOAT);
+			context->ansttype = to_modetab(context->sx, mode_array, LFLOAT);
 		}
 	}
 
@@ -510,7 +537,7 @@ void primaryexpr(parser *context)
 			else
 			{
 				context->stackoperands[++context->sopnd] = context->ansttype =
-				func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : newdecl(context->sx, mode_array, LCHAR);
+				func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : to_modetab(context->sx, mode_array, LCHAR);
 			}
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
@@ -1367,7 +1394,7 @@ void unarexpr(parser *context)
 				}
 
 				context->stackoperands[context->sopnd] = context->ansttype =
-				newdecl(context->sx, mode_pointer, context->ansttype);
+				to_modetab(context->sx, mode_pointer, context->ansttype);
 				context->anst = VAL;
 			}
 			else if (op == LMULT)
@@ -1867,7 +1894,7 @@ void parse_string_literal_expression(parser *const parser)
 		totree(parser, parser->lexer->lexstr[i]);
 	}
 
-	parser->ansttype = newdecl(parser->sx, mode_array, mode_character);
+	parser->ansttype = to_modetab(parser->sx, mode_array, mode_character);
 	parser->stackoperands[++parser->sopnd] = parser->ansttype;
 	parser->anst = VAL;
 }

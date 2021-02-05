@@ -222,8 +222,8 @@ void parse_compound_statement(parser *const context, const block_type type);
 
 
 
-int scanner(parser *context);
-int newdecl(syntax *const sx, const int type, const int element_type);
+int to_modetab(syntax *const sx, const int type, const int element_type);
+int to_identab(parser *context, size_t repr, int f, int type);
 int is_function(syntax *const sx, const int t);
 int is_array(syntax *const sx, const int t);
 int is_string(syntax *const sx, const int t);
@@ -233,11 +233,8 @@ int is_float(const int t);
 int is_int(const int t);
 int is_void(const int t);
 int is_undefined(const int t);
-void mustbe(parser *context, int what, int e);
 void totree(parser *context, int op);
-void totreef(parser *context, int op);
 void insertwiden(parser *context);
-int toidentab(parser *context, size_t repr, int f, int type);
 
 #ifdef __cplusplus
 } /* extern "C" */

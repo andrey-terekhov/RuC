@@ -34,7 +34,6 @@ parser compiler_context_create(universal_io *const io, syntax *const sx, lexer *
 	context.leftansttype = -1;
 	context.buf_flag = 0;
 	context.was_error = 0;
-	context.line = 1;
 	context.buf_cur = 0;
 	
 	context.anstdispl = 0;
@@ -107,7 +106,6 @@ void init_modetab(parser *context)
 	context->sx->startmode = 14;
 	context->sx->md = 19;
 	context->sx->keywordsnum = 0;
-	context->line = 1;
 	context->sx->tc = 0;
 }
 

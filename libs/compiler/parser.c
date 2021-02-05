@@ -27,23 +27,7 @@ int has_token_set(const unsigned int tokens, const token token)
 	return (tokens & token) != 0;
 }
 
-
-int scanner(parser *context)
-{
-	context->curr_token = context->next_token;
-	if (!context->buf_flag)
-	{
-		context->next_token = lex(context->lexer);
-	}
-	else
-	{
-		context->next_token = context->buf_cur;
-		context->buf_flag--;
-	}
-	return context->curr_token;
-}
-
-int newdecl(syntax *const sx, const int type, const int element_type)
+int to_modetab(syntax *const sx, const int type, const int element_type)
 {
 	int temp[2];
 	temp[0] = type;
@@ -97,66 +81,30 @@ int is_undefined(const int t)
 	return t == mode_undefined;
 }
 
-void mustbe(parser *context, int what, int e)
-{
-	if (context->next_token != what)
-	{
-		parser_error(context, e);
-		context->curr_token = what;
-	}
-	else
-	{
-		scanner(context);
-	}
-}
-
 void totree(parser *context, int op)
 {
 	context->sx->tree[context->sx->tc++] = op;
 }
 
-void totreef(parser *context, int op)
+int to_identab(parser *const parser, const size_t repr, const int f, const int type)
 {
-	context->sx->tree[context->sx->tc++] = op;
-	if (context->ansttype == LFLOAT &&
-		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
-	{
-		context->sx->tree[context->sx->tc - 1] += 50;
-	}
-}
-
-int toidentab(parser *context, size_t repr, int f, int type)
-{
-	const size_t ret = ident_add(context->sx, repr, f, type, context->func_def);
-	context->lastid = 0;
+	const size_t ret = ident_add(parser->sx, repr, f, type, parser->func_def);
+	parser->lastid = 0;
 
 	if (ret == SIZE_MAX)
 	{
-		parser_error(context, redefinition_of_main); //--
-		context->was_error = 5;
+		parser_error(parser, redefinition_of_main);
 	}
 	else if (ret == SIZE_MAX - 1)
 	{
-		parser_error(context, repeated_decl, REPRTAB, REPRTAB_POS);
-		context->was_error = 5;
+		parser_error(parser, repeated_decl, parser->sx->reprtab, repr);
 	}
 	else
 	{
-		context->lastid = (int)ret;
+		parser->lastid = (int)ret;
 	}
 	
-	return context->lastid;
-}
-
-void applid(parser *context)
-{
-	context->lastid = REPRTAB[REPRTAB_POS + 1];
-	if (context->lastid == 1)
-	{
-		parser_error(context, ident_is_not_declared);
-		context->was_error = 5;
-	}
-
+	return parser->lastid;
 }
 
 

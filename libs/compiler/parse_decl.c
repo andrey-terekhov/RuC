@@ -120,7 +120,7 @@ size_t parse_struct_or_union_specifier(parser *const parser)
 			if (parser->next_token == l_brace)
 			{
 				const int mode = parse_struct_declaration_list(parser);
-				const size_t id = toidentab(parser, repr, 1000, mode);
+				const size_t id = to_identab(parser, repr, 1000, mode);
 				ident_set_displ(parser->sx, id, 1000 + parser->was_struct_with_arr);
 
 				parser->flag_was_type_def = 1;
@@ -133,7 +133,7 @@ size_t parse_struct_or_union_specifier(parser *const parser)
 
 				if (id == 1)
 				{
-					parser_error(parser, ident_is_not_declared, parser->sx->reprtab, parser->lexer->repr);
+					parser_error(parser, ident_is_not_declared, parser->sx->reprtab, repr);
 					return mode_undefined;
 				}
 
@@ -196,7 +196,7 @@ int parse_array_definition(parser *const parser, int type)
 				skip_until(parser, r_square | comma | semicolon);
 			}
 		}
-		type = newdecl(parser->sx, mode_array, type);
+		type = to_modetab(parser->sx, mode_array, type);
 	}
 	return type;
 }
@@ -256,7 +256,7 @@ size_t parse_struct_declaration_list(parser *const parser)
 		if (parser->next_token == star)
 		{
 			consume_token(parser);
-			type = newdecl(parser->sx, mode_pointer, element_type);
+			type = to_modetab(parser->sx, mode_pointer, element_type);
 		}
 
 		const size_t repr = parser->lexer->repr;
@@ -452,7 +452,7 @@ void parse_array_initializer(parser *const parser, const int type)
  */
 void parse_init_declarator(parser *const parser, int type)
 {
-	const size_t old_id = toidentab(parser, parser->lexer->repr, 0, type);
+	const size_t old_id = to_identab(parser, parser->lexer->repr, 0, type);
 	size_t ref_array_dim = 0;
 
 	parser->usual = 1;
@@ -547,7 +547,7 @@ size_t parse_function_declarator(parser *const parser, const int level, int func
 				}
 				else
 				{
-					type = newdecl(parser->sx, mode_pointer, type);
+					type = to_modetab(parser->sx, mode_pointer, type);
 				}
 			}
 
@@ -582,7 +582,7 @@ size_t parse_function_declarator(parser *const parser, const int level, int func
 
 				while (try_consume_token(parser, l_square))
 				{
-					type = newdecl(parser->sx, mode_array, type);
+					type = to_modetab(parser->sx, mode_array, type);
 					if (!try_consume_token(parser, r_square))
 					{
 						parser_error(parser, wait_right_sq_br);
@@ -701,7 +701,7 @@ void parse_function_body(parser *const parser, const size_t function_id)
 		const int type = mode_get(parser->sx, parser->function_type + i + 3);
 		const int repr = func_get(parser->sx, function_number + i + 1);
 
-		toidentab(parser, abs(repr), repr > 0 ? 0 : -1, type);
+		to_identab(parser, abs(repr), repr > 0 ? 0 : -1, type);
 	}
 
 	func_set(parser->sx, function_number, parser->sx->tc);
@@ -764,7 +764,7 @@ void parse_function_definition(parser *const parser, const int type)
 		parser->func_def = 2;
 	}
 
-	const size_t function_id = toidentab(parser, function_repr, (int)function_num, function_mode);
+	const size_t function_id = to_identab(parser, function_repr, (int)function_num, function_mode);
 
 	if (parser->next_token == l_brace)
 	{
@@ -819,7 +819,7 @@ void parse_inner_declaration(parser *const parser)
 		if (parser->next_token == star)
 		{
 			consume_token(parser);
-			type = newdecl(parser->sx, mode_pointer, group_type);
+			type = to_modetab(parser->sx, mode_pointer, group_type);
 		}
 
 		if (parser->next_token == identifier)
@@ -860,7 +860,7 @@ void parse_external_declaration(parser *const parser)
 			}
 			else
 			{
-				type = newdecl(parser->sx, mode_pointer, group_type);
+				type = to_modetab(parser->sx, mode_pointer, group_type);
 			}
 		}
 

@@ -37,7 +37,7 @@ void parse_labeled_statement(parser *const context)
 	}
 	if (flag)
 	{
-		totree(context, id = toidentab(context, REPRTAB_POS, 1, 0));
+		totree(context, id = to_identab(context, REPRTAB_POS, 1, 0));
 		if (context->was_error == 5)
 		{
 			context->was_error = 2;
@@ -46,7 +46,7 @@ void parse_labeled_statement(parser *const context)
 		{
 			context->gotost[context->pgotost++] = id; // это определение метки, если она встретилась до
 													  // переходов на нее
-			context->gotost[context->pgotost++] = -context->line;
+			context->gotost[context->pgotost++] = -1;
 		}
 	}
 	else
@@ -55,27 +55,19 @@ void parse_labeled_statement(parser *const context)
 		REPRTAB_POS = (size_t)context->sx->identab[id + 1];
 		if (context->gotost[i - 1] < 0)
 		{
-			parser_error(context, repeated_label);
-			context->was_error = 2;
+			parser_error(context, repeated_label, REPRTAB, REPRTAB_POS);
 		}
 		else
 		{
-			context->gotost[i - 1] = -context->line;
+			context->gotost[i - 1] = -1;
 		}
 		totree(context, id);
 	}
 
-	if (context->was_error == 2)
-	{
-		context->was_error = 1;
-	}
-	else
-	{
-		context->sx->identab[id + 2] = 1;
+	context->sx->identab[id + 2] = 1;
 
-		scanner(context);
-		parse_statement(context);
-	}
+	consume_token(context);
+	parse_statement(context);
 }
 
 /**
@@ -310,36 +302,36 @@ void parse_for_statement(parser *const parser)
  *
  *	@param	parser		Parser structure
  */
-void parse_goto_statement(parser *const context)
+void parse_goto_statement(parser *const parser)
 {
-	int i;
-	int flag = 1;
-	totree(context, TGoto);
+	totree(parser, TGoto);
+	expect_and_consume_token(parser, identifier, no_ident_after_goto);
+	const size_t repr = parser->lexer->repr;
 
-	mustbe(context, IDENT, no_ident_after_goto);
-	for (i = 0; flag && i < context->pgotost - 1; i += 2)
+	for (size_t i = 0; i < (size_t)parser->pgotost - 1; i += 2)
 	{
-		flag = context->sx->identab[context->gotost[i] + 1] != (int)REPRTAB_POS;
-	}
-	if (flag)
-	{
-		// первый раз встретился переход на метку, которой не было,
-		// в этом случае ссылка на identtab, стоящая после TGoto,
-		// будет отрицательной
-		totree(context, -toidentab(context, REPRTAB_POS, 1, 0));
-		context->gotost[context->pgotost++] = context->lastid;
-	}
-	else
-	{
-		int id = context->gotost[i - 2];
-		if (context->gotost[id + 1] < 0) // метка уже была
+		if (ident_get_repr(parser->sx, parser->gotost[i]) == (int)repr)
 		{
-			totree(context, id);
+			const size_t id = (size_t)parser->gotost[i - 2];
+			if (parser->gotost[id + 1] < 0) // Метка уже была
+			{
+				totree(parser, id);
+				return;
+			}
+			totree(parser, id);
+			parser->gotost[parser->pgotost++] = id;
+			parser->gotost[parser->pgotost++] = 1; // TODO: здесь должен быть номер строки
 			return;
 		}
-		totree(context, context->gotost[context->pgotost++] = id);
 	}
-	context->gotost[context->pgotost++] = context->line;
+
+	// Первый раз встретился переход на метку, которой не было,
+	// в этом случае ссылка на identtab, стоящая после TGoto,
+	// будет отрицательной
+	const size_t id = to_identab(parser, repr, 1, 0);
+	totree(parser, -id);
+	parser->gotost[parser->pgotost++] = id;
+	parser->gotost[parser->pgotost++] = 1;
 }
 
 /**
@@ -423,7 +415,7 @@ void parse_return_statement(parser *const parser)
 				}
 				else if (return_type != expr_type)
 				{
-					parser_error(parser, error_in_initialization);
+					parser_error(parser, bad_type_in_ret);
 				}
 			}
 			expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
@@ -556,7 +548,7 @@ size_t evaluate_params(parser *const parser, const size_t length
 
 				case 's':
 				case U'с':
-					formattypes[param_number++] = newdecl(parser->sx, mode_array, mode_character);
+					formattypes[param_number++] = to_modetab(parser->sx, mode_array, mode_character);
 					break;
 
 				case '%':
@@ -604,8 +596,8 @@ void parse_printf_statement(parser *const parser)
 	format_str[format_str_length] = 0;
 	consume_token(parser);	// Для форматирующей строки
 
-	size_t expected_param_number = evaluate_params(parser, format_str_length, format_str, formattypes, placeholders);
 	size_t actual_param_number = 0;
+	const size_t expected_param_number = evaluate_params(parser, format_str_length, format_str, formattypes, placeholders);
 	while (try_consume_token(parser, comma) && actual_param_number != expected_param_number)
 	{
 		consume_token(parser);
@@ -619,7 +611,7 @@ void parse_printf_statement(parser *const parser)
 			parser_error(parser, wrong_printf_param_type, placeholders[actual_param_number]);
 		}
 
-		sumsize += size_of(parser->sx, formattypes[actual_param_number]);
+		sumsize += size_of(parser->sx, type);
 		actual_param_number++;
 	}
 
@@ -805,7 +797,6 @@ void parse_compound_statement(parser *const parser, const block_type type)
 	}
 
 	const token end_token = (type == THREAD) ? kw_exit : r_brace;
-
 	if (try_consume_token(parser, end_token))
 	{
 		// Если это пустой блок
