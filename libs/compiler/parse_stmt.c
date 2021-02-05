@@ -31,7 +31,7 @@ void parse_labeled_statement(parser *const context)
 	int i;
 	int flag = 1;
 	totree(context, TLabel);
-	for (i = 0; flag && i < context->pgotost - 1; i += 2)
+	for (i = 0; flag && i < (int)context->pgotost - 1; i += 2)
 	{
 		flag = context->sx->identab[context->gotost[i] + 1] != (int)REPRTAB_POS;
 	}
@@ -288,10 +288,10 @@ void parse_for_statement(parser *const parser)
 	}
 
 	parser->sx->tree[ref_statement] = (int)parser->sx->tc;
-	const int oldinloop = parser->flag_in_loop;
+	const int old_in_loop = parser->flag_in_loop;
 	parser->flag_in_loop = 1;
 	parse_statement(parser);
-	parser->flag_in_loop = oldinloop;
+	parser->flag_in_loop = old_in_loop;
 }
 
 /**
@@ -308,16 +308,17 @@ void parse_goto_statement(parser *const parser)
 	expect_and_consume_token(parser, identifier, no_ident_after_goto);
 	const size_t repr = parser->lexer->repr;
 
-	for (size_t i = 0; i < (size_t)parser->pgotost - 1; i += 2)
+	for (size_t i = 0; i < parser->pgotost; i += 2)
 	{
 		if (ident_get_repr(parser->sx, parser->gotost[i]) == (int)repr)
 		{
 			const size_t id = (size_t)parser->gotost[i - 2];
-			if (parser->gotost[id + 1] < 0) // Метка уже была
+			if (parser->gotost[id + 1] < 0) // Переход на метку уже был
 			{
 				totree(parser, id);
 				return;
 			}
+
 			totree(parser, id);
 			parser->gotost[parser->pgotost++] = id;
 			parser->gotost[parser->pgotost++] = 1; // TODO: здесь должен быть номер строки
@@ -331,7 +332,7 @@ void parse_goto_statement(parser *const parser)
 	const size_t id = to_identab(parser, repr, 1, 0);
 	totree(parser, -id);
 	parser->gotost[parser->pgotost++] = id;
-	parser->gotost[parser->pgotost++] = 1;
+	parser->gotost[parser->pgotost++] = 1;	// TODO: здесь должен быть номер строки
 }
 
 /**

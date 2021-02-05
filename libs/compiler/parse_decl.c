@@ -724,17 +724,13 @@ void parse_function_body(parser *const parser, const size_t function_id)
 
 	scope_func_exit(parser->sx, ref_maxdispl, old_displ);
 
-	for (int i = 0; i < parser->pgotost - 1; i += 2)
+	for (size_t i = 0; i < parser->pgotost; i += 2)
 	{
-		parser->lexer->repr = (size_t)parser->sx->identab[parser->gotost[i] + 1];
-		parser->sx->hash = parser->gotost[i + 1];
-		if (parser->sx->hash < 0)
-		{
-			parser->sx->hash = -parser->sx->hash;
-		}
+		const size_t repr = ident_get_repr(parser->sx, parser->gotost[i]);
+		const size_t line_number = abs(parser->gotost[i + 1]);
 		if (!parser->sx->identab[parser->gotost[i] + 2])
 		{
-			parser_error(parser, label_not_declared, parser->sx->hash, parser->sx->reprtab, parser->lexer->repr);
+			parser_error(parser, label_not_declared, line_number, parser->sx->reprtab, repr);
 		}
 	}
 }

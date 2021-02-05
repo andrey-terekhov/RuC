@@ -336,8 +336,8 @@ void get_error(const int num, char *const msg, va_list args)
 			break;
 		case label_not_declared:	// need_test
 		{
-			const int hash = va_arg(args, int);
-			index += sprintf(&msg[index], "в строке %i переход на неописанную метку ", hash);
+			const size_t hash = va_arg(args, size_t);
+			index += sprintf(&msg[index], "в строке %zi переход на неописанную метку ", hash);
 			const int *const reprtab = va_arg(args, int *);
 			const size_t pos = va_arg(args, size_t);
 			index += printident(reprtab, pos, &msg[index]);

@@ -58,7 +58,7 @@ typedef struct
 	int usual;	// описание массива без пустых границ
 	int function_type;
 	int gotost[1000];
-	int pgotost;
+	size_t pgotost;
 	int anst;
 	int ansttype;
 	int anstdispl;
