@@ -134,8 +134,8 @@ int lk_preprocess_file(environment *const env, const size_t number)
 
 	get_next_char(env);
 	m_nextch(env);
-
-	if (env->nextchar != '#')
+	
+	if (env->curchar != '#')
 	{
 		lk_add_comment(env);
 	}

@@ -214,7 +214,7 @@ int preprocess_words(environment *const env)
 int preprocess_scan(environment *env)
 {
 	int i;
-
+	printf("!!!!!!!1\n");
 	switch (env->curchar)
 	{
 		case EOF:
@@ -232,7 +232,7 @@ int preprocess_scan(environment *env)
 				{
 					lk_add_comment(env);
 				}
-				if(env->cur != SH_ELSE && env->cur != SH_ELIF && env->cur != SH_ENDIF)
+				if(env->cur != SH_INCLUDE && env->cur != SH_ELSE && env->cur != SH_ELIF && env->cur != SH_ENDIF)
 				{
 					m_nextch(env);
 				}
