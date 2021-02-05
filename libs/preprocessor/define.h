@@ -16,16 +16,16 @@
 
 #pragma once
 
-#include "context_var.h"
+#include "environment.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int define_get_from_macrotext(int r, preprocess_context *context);
-int define_relis(preprocess_context *context);
-int set_relis(preprocess_context *context);
+int define_get_from_macrotext(int r, environment *const env);
+int define_realiz(environment *const env);
+int set_realiz(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

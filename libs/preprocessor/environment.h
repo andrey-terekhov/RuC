@@ -18,6 +18,7 @@
 
 #include "constants.h"
 #include "uniio.h"
+#include "linker.h"
 #include "workspace.h"
 #include <stdio.h>
 
@@ -26,20 +27,8 @@
 extern "C" {
 #endif
 
-
-typedef struct files
+typedef struct environment
 {
-	workspace *ws;
-	int p;
-	int cur;
-	int begin_f;
-	int end_h;
-} files;
-
-typedef struct preprocess_context
-{
-	int include_type;
-
 	int hashtab[256];
 	int reprtab[MAXTAB];
 	int rp;
@@ -86,24 +75,14 @@ typedef struct preprocess_context
 
 	size_t line;
 
-	files fs;
-	int h_flag;
+	linker lk;
 
-	universal_io *io_output;
-	universal_io *io_input;
-} preprocess_context;
+	universal_io *output;
+	universal_io *input;
+} environment;
 
-void preprocess_context_init(preprocess_context *context, workspace *const ws, universal_io *const io, universal_io *const io_input);
-
-void con_files_add_include(files* fs, char *name, int h_flag);
-int con_file_open_sorse(files* fs, preprocess_context *context);
-int con_file_open_hedrs(files* fs, preprocess_context *context);
-int con_file_open_next(files* fs, preprocess_context *context, int h_flag);
-void con_file_close_cur(preprocess_context *context);
-
-void con_file_it_is_end_h(files *fs, int i);
-
-void con_file_print_coment(files *fs, preprocess_context *context);
+void env_init(environment *const env, workspace *const ws, universal_io *const output);
+void env_clear_error_string(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

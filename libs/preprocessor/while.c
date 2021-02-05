@@ -17,10 +17,11 @@
 #include "while.h"
 #include "calculator.h"
 #include "constants.h"
-#include "context_var.h"
+#include "environment.h"
 #include "file.h"
 #include "preprocessor.h"
 #include "error.h"
+#include "linker.h"
 #include "utils.h"
 #include <limits.h>
 #include <math.h>
@@ -29,37 +30,37 @@
 #include <string.h>
 
 
-int while_collect(preprocess_context *context)
+int while_collect(environment *const env)
 {
-	int oldwsp = context->wsp;
+	int oldwsp = env->wsp;
 
-	context->wstring[context->wsp++] = WHILEBEGIN;
-	context->wstring[context->wsp++] = context->ifsp;
-	context->wsp++;
+	env->wstring[env->wsp++] = WHILEBEGIN;
+	env->wstring[env->wsp++] = env->ifsp;
+	env->wsp++;
 
-	while (context->curchar != '\n')
+	while (env->curchar != '\n')
 	{
-		context->ifstring[context->ifsp++] = context->curchar;
-		m_nextch(context);
+		env->ifstring[env->ifsp++] = env->curchar;
+		m_nextch(env);
 	}
-	context->ifstring[context->ifsp++] = '\n';
-	m_nextch(context);
+	env->ifstring[env->ifsp++] = '\n';
+	m_nextch(env);
 
-	while (context->curchar != EOF)
+	while (env->curchar != EOF)
 	{
-		if (context->curchar == '#')
+		if (env->curchar == '#')
 		{
-			context->cur = macro_keywords(context);
+			env->cur = macro_keywords(env);
 
-			if (context->cur == SH_WHILE)
+			if (env->cur == SH_WHILE)
 			{
-				while_collect(context);
+				while_collect(env);
 			}
-			else if (context->cur == SH_ENDW)
+			else if (env->cur == SH_ENDW)
 			{	
-				context->wstring[context->wsp++] = ' ';
-				context->wstring[oldwsp + 2] = context->wsp;
-				context->cur = 0;
+				env->wstring[env->wsp++] = ' ';
+				env->wstring[oldwsp + 2] = env->wsp;
+				env->cur = 0;
 
 				return 0;
 			}
@@ -67,78 +68,82 @@ int while_collect(preprocess_context *context)
 			{
 				int i = 0;
 
-				for (i = 0; i < context->reprtab[context->rp]; i++)
+				for (i = 0; i < env->reprtab[env->rp]; i++)
 				{
-					context->wstring[context->wsp++] = context->reprtab[context->rp + 2 + i];
+					env->wstring[env->wsp++] = env->reprtab[env->rp + 2 + i];
 				}
 			}
 		}
-		context->wstring[context->wsp++] = context->curchar;
-		m_nextch(context);
+		env->wstring[env->wsp++] = env->curchar;
+		m_nextch(env);
 	}
 
-	size_t position = skip_str(context); 
-	macro_error(must_end_endw, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+	size_t position = skip_str(env); 
+	macro_error(must_end_endw
+			, lk_get_current(&env->lk)
+			, env->error_string, env->line, position);
 	return -1;
 }
 
-int while_relis(preprocess_context *context)
+int while_realiz(environment *const env)
 {
-	int oldernextp = context->nextp;
-	int end = context->wstring[oldernextp + 2];
+	int oldernextp = env->nextp;
+	int end = env->wstring[oldernextp + 2];
 	int error = 0;
 
-	context->cur = 0;
-	while (context->wstring[oldernextp] == WHILEBEGIN)
+	env->cur = 0;
+	while (env->wstring[oldernextp] == WHILEBEGIN)
 	{
-		m_nextch(context);
-		m_change_nextch_type(IFTYPE, context->wstring[context->nextp], context);
-		m_nextch(context);
-		if(calculator(1, context))
+		m_nextch(env);
+		m_change_nextch_type(IFTYPE, env->wstring[env->nextp], env);
+		m_nextch(env);
+		if(calculator(1, env))
 		{
 			return -1;
 		}
-		m_old_nextch_type(context);
+		m_old_nextch_type(env);
 
 
-		if (context->cstring[0] == 0)
+		if (env->cstring[0] == 0)
 		{
-			context->nextp = end;
-			m_nextch(context);
+			env->nextp = end;
+			m_nextch(env);
 			return 0;
 		}
 
-		m_nextch(context);
-		m_nextch(context);
-		m_nextch(context);
-		space_skip(context);
+		m_nextch(env);
+		m_nextch(env);
+		m_nextch(env);
+		skip_space(env);
 
-		while (context->nextp != end || context->nextch_type != WHILETYPE)
+		while (env->nextp != end || env->nextch_type != WHILETYPE)
 		{
-			if (context->curchar == WHILEBEGIN)
+			if (env->curchar == WHILEBEGIN)
 			{
-				context->nextp--;
-				if(while_relis(context))
+				env->nextp--;
+				if(while_realiz(env))
 				{
 					return -1;
 				}
 			}
-			else if (context->curchar == EOF)
+			else if (env->curchar == EOF)
 			{
-				size_t position = skip_str(context); 
-				macro_error(must_end_endw, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+				size_t position = skip_str(env); 
+				macro_error(must_end_endw
+			, lk_get_current(&env->lk)
+			, env->error_string, env->line, position);
 				return -1;
 			}
 			else
 			{
-				error = preprocess_scan(context);
+				error = preprocess_scan(env);
 				if(error)
 				{
 					return error;
 				}
 			}
 		}
-		context->nextp = oldernextp;
+		env->nextp = oldernextp;
 	}
 	return 0;
 }
