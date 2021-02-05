@@ -23,7 +23,8 @@
 extern "C" {
 #endif
 
-int calculator(int if_flag, preprocess_context *context);
+int file_read(preprocess_context *context);
+int include_relis(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

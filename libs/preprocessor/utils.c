@@ -16,10 +16,9 @@
 
 #include "utils.h"
 #include "constants.h"
-#include "environment.h"
+#include "context_var.h"
 #include "file.h"
 #include "error.h"
-#include "linker.h"
 #include "utf8.h"
 #include <limits.h>
 #include <math.h>
@@ -28,17 +27,17 @@
 #include <string.h>
 
 
-int equal_reprtab(int i, int j, environment *const env)
+int equal_reprtab(int i, int j, preprocess_context *context)
 {
 	i += 2;
 	j += 2;
 
-	while (env->reprtab[i] == env->reprtab[j])
+	while (context->reprtab[i] == context->reprtab[j])
 	{
 		i++;
 		j++;
 
-		if (env->reprtab[i] == 0 && env->reprtab[j] == 0)
+		if (context->reprtab[i] == 0 && context->reprtab[j] == 0)
 		{
 			return 1;
 		}
@@ -47,86 +46,72 @@ int equal_reprtab(int i, int j, environment *const env)
 	return 0;
 }
 
-void output_keywods(environment *const env)
+void output_keywods(preprocess_context *context)
 {
-	for (int j = 0; j < env->reprtab[env->rp]; j++)
+	for (int j = 0; j < context->reprtab[context->rp]; j++)
 	{
-		m_fprintf(env->reprtab[env->rp + 2 + j], env);
+		m_fprintf(context->reprtab[context->rp + 2 + j], context);
 	}
 }
 
-int is_letter(environment *const env)
+int macro_keywords(preprocess_context *context)
 {
-	return (env->curchar >= 'A' && env->curchar <= 'Z') ||
-		   (env->curchar >= 'a' && env->curchar <= 'z') || env->curchar == '_' ||
-		   utf8_is_russian(env->curchar);
-}
-
-int is_digit(int a)
-{
-	return a >= '0' && a <= '9';
-}
-
-int macro_keywords(environment *const env)
-{
-	int oldrepr = env->rp;
+	int oldrepr = context->rp;
 	int r = 0;
 	int n = 0;
 
-	env->rp += 2;
+	context->rp += 2;
 	int hash = 0;
 	do
 	{
-		hash += env->curchar;
-		env->reprtab[env->rp++] = env->curchar;
+		hash += context->curchar;
+		context->reprtab[context->rp++] = context->curchar;
 		n++;
-		m_nextch(env);
-	} while (is_letter(env) || is_digit(env->curchar));
+		m_nextch(context);
+	} while (utf8_is_letter(context->curchar) || utf8_is_digit(context->curchar));
 
-	/*if (env->curchar != '\n' && env->curchar != ' ' && env->curchar != '\t' && env->curchar != '(' &&
-		env->curchar != '\"')
+	/*if (context->curchar != '\n' && context->curchar != ' ' && context->curchar != '\t' && context->curchar != '(' &&
+		context->curchar != '\"')
 	{
-		size_t position = skip_str(env); 
-		macro_error(after_ident_must_be_space
-			, lk_get_current(&env->lk)
-			, env->error_string, env->line, position);
+		size_t position = skip_str(context); 
+		macro_error(after_ident_must_be_space, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 	}*/
 
 	hash &= 255;
-	env->reprtab[env->rp++] = 0;
-	r = env->hashtab[hash];
+	context->reprtab[context->rp++] = 0;
+	r = context->hashtab[hash];
 	if (r)
 	{
 		do
 		{
-			if (equal_reprtab(r, oldrepr, env))
+			if (equal_reprtab(r, oldrepr, context))
 			{
-				env->rp = oldrepr;
-				env->reprtab[env->rp] = n;
-				return (env->reprtab[r + 1] < 0) ? env->reprtab[r + 1] : 0;
+				context->rp = oldrepr;
+				context->reprtab[context->rp] = n;
+				return (context->reprtab[r + 1] < 0) ? context->reprtab[r + 1] : 0;
 			}
 			else
 			{
-				r = env->reprtab[r];
+				r = context->reprtab[r];
 			}
 		} while (r);
 	}
 
-	env->rp = oldrepr;
-	env->reprtab[env->rp] = n;
+	context->rp = oldrepr;
+	context->reprtab[context->rp] = n;
 	return 0;
 }
 
-int mf_equal(int i, environment *const env)
+int mf_equal(int i, preprocess_context *context)
 {
 	int j = 0;
 	i += 2;
 
-	while (env->reprtab[i] == env->mstring[j])
+	while (context->reprtab[i] == context->mstring[j])
 	{
 		i++;
 		j++;
-		if (env->reprtab[i] == 0 && env->mstring[j] == MACROEND)
+		if (context->reprtab[i] == 0 && context->mstring[j] == MACROEND)
 		{
 			return 1;
 		}
@@ -135,86 +120,84 @@ int mf_equal(int i, environment *const env)
 	return 0;
 }
 
-int collect_mident(environment *const env)
+int collect_mident(preprocess_context *context)
 {
 	int r;
 	int hash = 0;
-	env->msp = 0;
+	context->msp = 0;
 
-	while (is_letter(env) || is_digit(env->curchar))
+	while (utf8_is_letter(context->curchar) || utf8_is_digit(context->curchar))
 	{
-		env->mstring[env->msp++] = env->curchar;
-		hash += env->curchar;
-		m_nextch(env);
+		context->mstring[context->msp++] = context->curchar;
+		hash += context->curchar;
+		m_nextch(context);
 	}
 
-	env->mstring[env->msp] = MACROEND;
+	context->mstring[context->msp] = MACROEND;
 	hash &= 255;
-	r = env->hashtab[hash];
+	r = context->hashtab[hash];
 
 	while (r)
 	{
-		if (r >= env->mfirstrp && mf_equal(r, env))
+		if (r >= context->mfirstrp && mf_equal(r, context))
 		{
-			return (env->macrotext[env->reprtab[r + 1]] != MACROUNDEF) ? r : 0;
+			return (context->macrotext[context->reprtab[r + 1]] != MACROUNDEF) ? r : 0;
 		}
 
-		r = env->reprtab[r];
+		r = context->reprtab[r];
 	}
 
 	return 0;
 }
 
-int find_file(environment *const env, const char *s)
+int find_file(preprocess_context *context, const char *s)
 {
-	int oldrp = env->rp;
-	env->rp += 2;
+	int oldrp = context->rp;
+	context->rp += 2;
 	int r;
 	int hash = 0;
 	int i = 0;
 
 	while (s[i] != '\0')
 	{
-		env->reprtab[env->rp++] = s[i];
+		context->reprtab[context->rp++] = s[i];
 		hash += s[i];
 		i++;
 	}
 
 	hash &= 255;
-	r = env->hashtab[hash];
+	r = context->hashtab[hash];
 
 	while (r)
 	{
-		if (env->reprtab[r + 1] == SH_FILE && equal_reprtab(r, oldrp, env))
+		if (context->reprtab[r + 1] == SH_FILE && equal_reprtab(r, oldrp, context))
 		{
-			env->rp = oldrp;
+			context->rp = oldrp;
 			return 0;
 		}
 
-		r = env->reprtab[r];
+		r = context->reprtab[r];
 	}
 
-	env->reprtab[oldrp] = env->hashtab[hash];
-	env->reprtab[oldrp + 1] = SH_FILE;
-	env->hashtab[hash] = oldrp;
-	env->reprtab[env->rp++] = 0;
+	context->reprtab[oldrp] = context->hashtab[hash];
+	context->reprtab[oldrp + 1] = SH_FILE;
+	context->hashtab[hash] = oldrp;
+	context->reprtab[context->rp++] = 0;
 	return 1;
 }
 
-int space_end_line(environment *const env)
+int space_end_line(preprocess_context *context)
 {
-	while (env->curchar != '\n')
+	while (context->curchar != '\n')
 	{
-		if (env->curchar == ' ' || env->curchar == '\t')
+		if (context->curchar == ' ' || context->curchar == '\t')
 		{
-			m_nextch(env);
+			m_nextch(context);
 		}
 		else
 		{
-			size_t position = skip_str(env); 
-			macro_error(after_preproces_words_must_be_space
-			, lk_get_current(&env->lk)
-			, env->error_string, env->line, position);
+			size_t position = skip_str(context); 
+			macro_error(after_preproces_words_must_be_space, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 			return -1;
 		}
 	}
@@ -222,54 +205,54 @@ int space_end_line(environment *const env)
 	return 0;
 }
 
-void skip_space(environment *const env)
+void space_skip(preprocess_context *context)
 {
-	while (env->curchar == ' ' || env->curchar == '\t')
+	while (context->curchar == ' ' || context->curchar == '\t')
 	{
-		m_nextch(env);
+		m_nextch(context);
 	}
 }
 
-void skip_space_str(environment *const env)
+void space_skip_str(preprocess_context *context)
 {
-	int c = env->curchar;
-	m_fprintf(env->curchar, env);
-	m_nextch(env);
+	int c = context->curchar;
+	m_fprintf(context->curchar, context);
+	m_nextch(context);
 
-	while (env->curchar != c && env->curchar != EOF)
+	while (context->curchar != c && context->curchar != EOF)
 	{
-		if (env->curchar == '\\')
+		if (context->curchar == '\\')
 		{
-			m_fprintf(env->curchar, env);
-			m_nextch(env);
+			m_fprintf(context->curchar, context);
+			m_nextch(context);
 		}
 
-		m_fprintf(env->curchar, env);
-		m_nextch(env);
+		m_fprintf(context->curchar, context);
+		m_nextch(context);
 	}
 
-	if (env->curchar != EOF)
+	if (context->curchar != EOF)
 	{
-		m_fprintf(env->curchar, env);
-		m_nextch(env);
+		m_fprintf(context->curchar, context);
+		m_nextch(context);
 	}
 }
 
-size_t skip_str(environment *const env)
+size_t skip_str(preprocess_context *context)
 {
-	char *line = env->error_string;
+	char *line = context->error_string;
 	size_t position = strlen(line);
-	while (env->curchar != '\n' && env->curchar != EOF)
+	while (context->curchar != '\n' && context->curchar != EOF)
 	{
-		m_nextch(env);
+		m_nextch(context);
 	}
 	return position;
 }
 
-void skip_file(environment *const env)
+void skip_file(preprocess_context *context)
 {
-	while (env->curchar != EOF)
+	while (context->curchar != EOF)
 	{
-		m_nextch(env);
+		m_nextch(context);
 	}
 }

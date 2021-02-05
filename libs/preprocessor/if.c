@@ -17,11 +17,10 @@
 #include "if.h"
 #include "calculator.h"
 #include "constants.h"
-#include "environment.h"
+#include "context_var.h"
 #include "file.h"
 #include "preprocessor.h"
 #include "error.h"
-#include "linker.h"
 #include "utils.h"
 #include <limits.h>
 #include <math.h>
@@ -33,26 +32,27 @@
 int checkif = 0;
 
 
-int if_check(int type_if, environment *const env)
+int if_check(int type_if, preprocess_context *context)
 {
 	int flag = 0;
 
 	if (type_if == SH_IF)
 	{
-		if(calculator(1, env))
+		if(calculator(1, context))
 		{
 			return -1;
 		}
-		return env->cstring[0];
+		return context->cstring[0];
 	}
 	else
 	{
-		if (collect_mident(env))
+		context->msp = 0;
+		if (collect_mident(context))
 		{
 			flag = 1;
 		}
 
-		if(space_end_line(env))
+		if(space_end_line(context))
 		{
 			return -1;
 		}
@@ -68,24 +68,22 @@ int if_check(int type_if, environment *const env)
 	}
 }
 
-int if_end(environment *const env)
+int if_end(preprocess_context *context)
 {
 	int fl_cur;
 
-	while (env->curchar != EOF)
+	while (context->curchar != EOF)
 	{
-		if (env->curchar == '#')
+		if (context->curchar == '#')
 		{
-			fl_cur = macro_keywords(env);
+			fl_cur = macro_keywords(context);
 			if (fl_cur == SH_ENDIF)
 			{
 				checkif--;
 				if (checkif < 0)
 				{
-					size_t position = skip_str(env); 
-					macro_error(before_endif
-			, lk_get_current(&env->lk)
-			, env->error_string, env->line, position);
+					size_t position = skip_str(context); 
+					macro_error(before_endif, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 					return -1;
 				}
 				return 0;
@@ -94,7 +92,7 @@ int if_end(environment *const env)
 			if (fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
 			{
 				checkif++;
-				if(if_end(env))
+				if(if_end(context))
 				{
 					return -1;
 				}
@@ -102,27 +100,25 @@ int if_end(environment *const env)
 		}
 		else
 		{
-			m_nextch(env);
+			m_nextch(context);
 		}
 	}
 
-	size_t position = skip_str(env); 
-	macro_error(must_be_endif
-			, lk_get_current(&env->lk)
-			, env->error_string, env->line, position);
+	size_t position = skip_str(context); 
+	macro_error(must_be_endif, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 	return -1;
 }
 
-int if_false(environment *const env)
+int if_false(preprocess_context *context)
 {
-	int fl_cur = env->cur;
+	int fl_cur = context->cur;
 
-	while (env->curchar != EOF)
+	while (context->curchar != EOF)
 	{
-		if (env->curchar == '#')
+		if (context->curchar == '#')
 		{
-			fl_cur = macro_keywords(env);
-			m_nextch(env);
+			fl_cur = macro_keywords(context);
+			m_nextch(context);
 
 			if (fl_cur == SH_ELSE || fl_cur == SH_ELIF || fl_cur == SH_ENDIF)
 			{
@@ -131,7 +127,7 @@ int if_false(environment *const env)
 
 			if (fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
 			{
-				if(if_end(env))
+				if(if_end(context))
 				{
 					return 0;
 				}
@@ -139,42 +135,38 @@ int if_false(environment *const env)
 		}
 		else
 		{
-			m_nextch(env);
+			m_nextch(context);
 		}
 	}
 
-	size_t position = skip_str(env); 
-	macro_error(must_be_endif
-			, lk_get_current(&env->lk)
-			, env->error_string, env->line, position);
+	size_t position = skip_str(context); 
+	macro_error(must_be_endif, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 	return 0;
 }
 
-int if_true(int type_if, environment *const env)
+int if_true(int type_if, preprocess_context *context)
 {
 	int error = 0;
-	while (env->curchar != EOF)
+	while (context->curchar != EOF)
 	{
-		error = preprocess_scan(env);
+		error = preprocess_scan(context);
 		if(error)
 		{
 			return error;
 		}
 
-		if (env->cur == SH_ELSE || env->cur == SH_ELIF)
+		if (context->cur == SH_ELSE || context->cur == SH_ELIF)
 		{
 			break;
 		}
 
-		if (env->cur == SH_ENDIF)
+		if (context->cur == SH_ENDIF)
 		{
 			checkif--;
 			if (checkif < 0)
 			{
-				size_t position = skip_str(env); 
-				macro_error(before_endif
-			, lk_get_current(&env->lk)
-			, env->error_string, env->line, position);
+				size_t position = skip_str(context); 
+				macro_error(before_endif, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 				return -1;
 			}
 
@@ -182,23 +174,21 @@ int if_true(int type_if, environment *const env)
 		}
 	}
 
-	if (type_if != SH_IF && env->cur == SH_ELIF)
+	if (type_if != SH_IF && context->cur == SH_ELIF)
 	{
-		size_t position = skip_str(env); 
-		macro_error(dont_elif
-			, lk_get_current(&env->lk)
-			, env->error_string, env->line, position);
+		size_t position = skip_str(context); 
+		macro_error(dont_elif, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 		checkif--;
 		return -1;
 	}
 
-	return if_end(env);
+	return if_end(context);
 }
 
-int if_realiz(environment *const env)
+int if_relis(preprocess_context *context)
 {
-	int type_if = env->cur;
-	int flag = if_check(type_if, env); // начало (if)
+	int type_if = context->cur;
+	int flag = if_check(type_if, context); // начало (if)
 	if(flag == -1)
 	{
 		checkif--;
@@ -208,24 +198,24 @@ int if_realiz(environment *const env)
 	checkif++;
 	if (flag)
 	{
-		return if_true(type_if, env);
+		return if_true(type_if, context);
 	}
 	else
 	{
-		int res = if_false(env);
+		int res = if_false(context);
 		if(!res)
 		{
 			checkif--;
 			return -1;
 		}
-		env->cur = res;
+		context->cur = res;
 	}
 
 	
-	while (env->cur == SH_ELIF)
+	while (context->cur == SH_ELIF)
 	{
-		flag = if_check(type_if, env);
-		if(flag == -1 || space_end_line(env))
+		flag = if_check(type_if, context);
+		if(flag == -1 || space_end_line(context))
 		{
 			checkif--;
 			return -1;
@@ -233,36 +223,34 @@ int if_realiz(environment *const env)
 
 		if (flag)
 		{
-			return if_true(type_if, env);
+			return if_true(type_if, context);
 		}
 		else
 		{
-			int res = if_false(env);
+			int res = if_false(context);
 			if(!res)
 			{
 				checkif--;
 				return -1;
 			}
-			env->cur = res;
+			context->cur = res;
 		}
 	}
 	
 
-	if (env->cur == SH_ELSE)
+	if (context->cur == SH_ELSE)
 	{
-		env->cur = 0;
-		return if_true(type_if, env);;
+		context->cur = 0;
+		return if_true(type_if, context);;
 	}
 
-	if (env->cur == SH_ENDIF)
+	if (context->cur == SH_ENDIF)
 	{
 		checkif--;
 		if (checkif < 0)
 		{
-			size_t position = skip_str(env); 
-			macro_error(before_endif
-			, lk_get_current(&env->lk)
-			, env->error_string, env->line, position);
+			size_t position = skip_str(context); 
+			macro_error(before_endif, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
 			return -1;
 		}
 	}

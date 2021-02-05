@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "environment.h"
+#include "context_var.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -34,15 +34,15 @@ extern "C" {
  */
 size_t strlen32(const char32_t *const str);
 
-void m_change_nextch_type(int type, int p, environment *const env);
-void m_old_nextch_type(environment *const env);
+void m_change_nextch_type(int type, int p, preprocess_context *context);
+void m_old_nextch_type(preprocess_context *context);
 
-int get_dipp(environment *const env);
-int get_next_char(environment *const env);
+int get_dipp(preprocess_context *context);
+int get_next_char(preprocess_context *context);
 
-void m_fprintf(int a, environment *const env);
-void pred_fprintf(int a, environment *const env);
-void m_nextch(environment *const env);
+void m_fprintf(int a, preprocess_context *context);
+void pred_fprintf(int a, preprocess_context *context);
+void m_nextch(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

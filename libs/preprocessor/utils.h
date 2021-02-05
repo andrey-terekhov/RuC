@@ -16,27 +16,24 @@
 
 #pragma once
 
-#include "environment.h"
+#include "context_var.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int equal_reprtab(int i, int j, environment *const env);
-void output_keywods(environment *const env);
-int macro_keywords(environment *const env);
-int collect_mident(environment *const env);
-int find_file(environment *const env, const char *s);
+int equal_reprtab(int i, int j, preprocess_context *context);
+void output_keywods(preprocess_context *context);
+int macro_keywords(preprocess_context *context);
+int collect_mident(preprocess_context *context);
+int find_file(preprocess_context *context, const char *s);
 
-int space_end_line(environment *const env);
-void skip_space(environment *const env);
-void skip_space_str(environment *const env);
-size_t skip_str(environment *const env);
-void skip_file(environment *const env);
-
-int is_letter(environment *const env);
-int is_digit(int a);
+int space_end_line(preprocess_context *context);
+void space_skip(preprocess_context *context);
+void space_skip_str(preprocess_context *context);
+size_t skip_str(preprocess_context *context);
+void skip_file(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

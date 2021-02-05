@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include "environment.h"
+#include "context_var.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int while_collect(environment *const env);
-int while_realiz(environment *const env);
+int while_collect(preprocess_context *context);
+int while_relis(preprocess_context *context);
 
 #ifdef __cplusplus
 } /* extern "C" */
