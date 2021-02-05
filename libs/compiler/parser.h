@@ -125,7 +125,7 @@ int parse_expression(parser *const parser);
  *
  *	@return	Type of parsed expression
  */
-int parse_condition(parser *const context);
+int parse_condition(parser *const parser);
 
 /**
  *	Parse expression in parenthesis

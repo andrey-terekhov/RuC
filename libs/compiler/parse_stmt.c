@@ -176,7 +176,6 @@ void parse_if_statement(parser *const parser)
  */
 void parse_switch_statement(parser *const parser)
 {
-	const int old_in_switch = parser->flag_in_switch;
 	totree(parser, TSwitch);
 
 	const int condition_type = parse_parenthesized_expression(parser);
@@ -185,6 +184,7 @@ void parse_switch_statement(parser *const parser)
 		parser_error(parser, float_in_switch);
 	}
 
+	const int old_in_switch = parser->flag_in_switch;
 	parser->flag_in_switch = 1;
 	parse_statement(parser);
 	parser->flag_in_switch = old_in_switch;
@@ -200,11 +200,11 @@ void parse_switch_statement(parser *const parser)
  */
 void parse_while_statement(parser *const parser)
 {
-	const int old_in_loop = parser->flag_in_loop;
 	totree(parser, TWhile);
 
 	parse_parenthesized_expression(parser);
 
+	const int old_in_loop = parser->flag_in_loop;
 	parser->flag_in_loop = 1;
 	parse_statement(parser);
 	parser->flag_in_loop = old_in_loop;
@@ -220,9 +220,9 @@ void parse_while_statement(parser *const parser)
  */
 void parse_do_statement(parser *const parser)
 {
-	const int old_in_loop = parser->flag_in_loop;
 	totree(parser, TDo);
 
+	const int old_in_loop = parser->flag_in_loop;
 	parser->flag_in_loop = 1;
 	parse_statement(parser);
 	parser->flag_in_loop = old_in_loop;
@@ -251,7 +251,6 @@ void parse_do_statement(parser *const parser)
  */
 void parse_for_statement(parser *const parser)
 {
-	const int oldinloop = parser->flag_in_loop;
 	totree(parser, TFor);
 
 	const size_t ref_inition = parser->sx->tc++;
@@ -297,6 +296,7 @@ void parse_for_statement(parser *const parser)
 	}
 
 	parser->sx->tree[ref_statement] = (int)parser->sx->tc;
+	const int oldinloop = parser->flag_in_loop;
 	parser->flag_in_loop = 1;
 	parse_statement(parser);
 	parser->flag_in_loop = oldinloop;
@@ -385,7 +385,6 @@ void parse_break_statement(parser *const parser)
  *
  *	jump-statement:
  *		'return' expression[opt] ';'
- *		'return' braced-init-list ';'
  *
  *	@param	parser		Parser structure
  */
@@ -415,7 +414,18 @@ void parse_return_statement(parser *const parser)
 			totree(parser, size_of(parser->sx, return_type));
 
 			consume_token(parser);
-			parse_initializer(parser, return_type);
+			const int expr_type = parse_assignment_expression(parser);
+			if (!is_undefined(expr_type) && !is_undefined(return_type))
+			{
+				if (is_float(return_type) && is_int(expr_type))
+				{
+					insertwiden(parser);
+				}
+				else if (return_type != expr_type)
+				{
+					parser_error(parser, error_in_initialization);
+				}
+			}
 			expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 		}
 	}
@@ -508,137 +518,130 @@ void parse_getid_statement(parser *const parser)
 	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 
-int evaluate_params(parser *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[])
+size_t evaluate_params(parser *const parser, const size_t length
+	, const char32_t *const formatstr, int *const formattypes, char32_t *const placeholders)
 {
-	int num_of_params = 0;
-	char32_t fsi;
-
-	for (int i = 0; i < num; i++)
+	size_t param_number = 0;
+	for (size_t i = 0; i < length; i++)
 	{
 		if (formatstr[i] == '%')
 		{
-			if (fsi = formatstr[++i], fsi != '%')
+			const char32_t placeholder = formatstr[++i];
+			if (placeholder != '%')
 			{
-				if (num_of_params == MAXPRINTFPARAMS)
+				if (param_number == MAXPRINTFPARAMS)
 				{
-					parser_error(context, too_many_printf_params);
+					parser_error(parser, too_many_printf_params);
 					return 0;
 				}
 
-				placeholders[num_of_params] = fsi;
+				placeholders[param_number] = placeholder;
 			}
-			switch (fsi) // Если добавляется новый спецификатор -- не забыть
-						 // внести его в switch в bad_printf_placeholder
+			switch (placeholder)
 			{
 				case 'i':
-				case 1094: // 'ц'
-					formattypes[num_of_params++] = mode_integer;
+				case U'ц':
+					formattypes[param_number++] = mode_integer;
 					break;
 
 				case 'c':
-				case 1083: // л
-					formattypes[num_of_params++] = mode_character;
+				case U'л':
+					formattypes[param_number++] = mode_character;
 					break;
 
 				case 'f':
-				case 1074: // в
-					formattypes[num_of_params++] = mode_float;
+				case U'в':
+					formattypes[param_number++] = mode_float;
 					break;
 
 				case 's':
-				case 1089: // с
-					formattypes[num_of_params++] = newdecl(context->sx, mode_array, mode_character);
+				case U'с':
+					formattypes[param_number++] = newdecl(parser->sx, mode_array, mode_character);
 					break;
 
 				case '%':
 					break;
 
-				case 0:
-					parser_error(context, printf_no_format_placeholder);
+				case '\0':
+					parser_error(parser, printf_no_format_placeholder);
 					return 0;
 
 				default:
-					parser_error(context, printf_unknown_format_placeholder, fsi);
+					parser_error(parser, printf_unknown_format_placeholder, placeholder);
 					return 0;
 			}
 		}
 	}
 
-	return num_of_params;
+	return param_number;
 }
 
 /**	Parse scanf statement [RuC] */
-void parse_scanf_statement(parser *const context);
+void parse_scanf_statement(parser *const parser);
 
 /**	Parse printf statement [RuC] */
-void parse_printf_statement(parser *const context)
+void parse_printf_statement(parser *const parser)
 {
-	char32_t formatstr[MAXSTRINGL + 1];
-	int formattypes[MAXPRINTFPARAMS];
 	char32_t placeholders[MAXPRINTFPARAMS];
+	char32_t format_str[MAXSTRINGL + 1];
+	int formattypes[MAXPRINTFPARAMS];
 	int sumsize = 0;
 
-	mustbe(context, LEFTBR, no_leftbr_in_printf);
+	expect_and_consume_token(parser, l_paren, no_leftbr_in_printf);
 
-	if (context->next_token != STRING)
+	if (parser->next_token != STRING)
 	{
-		parser_error(context, wrong_first_printf_param);
-		skip_until(context, SEMICOLON);
+		parser_error(parser, wrong_first_printf_param);
+		skip_until(parser, SEMICOLON);
 		return;
 	}
-	scanner(context);	// Для форматирующей строки
 
-	for (int i = 0; i < context->lexer->num; i++)
+	const size_t format_str_length = (size_t)parser->lexer->num;
+	for (size_t i = 0; i < format_str_length; i++)
 	{
-		formatstr[i] = context->lexer->lexstr[i];
+		format_str[i] = parser->lexer->lexstr[i];
 	}
-	formatstr[context->lexer->num] = 0;
+	format_str[format_str_length] = 0;
+	consume_token(parser);	// Для форматирующей строки
 
-	int expected_param_number = evaluate_params(context, context->lexer->num, formatstr, formattypes, placeholders);
-	int actual_param_number = 0;
-	//for (int i = 0; scanner(context) == COMMA; i++)
-	while (context->next_token != RIGHTBR && actual_param_number != expected_param_number)
+	size_t expected_param_number = evaluate_params(parser, format_str_length, format_str, formattypes, placeholders);
+	size_t actual_param_number = 0;
+	while (try_consume_token(parser, comma) && actual_param_number != expected_param_number)
 	{
-		scanner(context);
-
-		consume_token(context);
-		const int type = parse_assignment_expression(context);
-
+		consume_token(parser);
+		const int type = parse_assignment_expression(parser);
 		if (is_float(formattypes[actual_param_number]) && is_int(type))
 		{
-			insertwiden(context);
+			insertwiden(parser);
 		}
 		else if (formattypes[actual_param_number] != type)
 		{
-			parser_error(context, wrong_printf_param_type, placeholders[actual_param_number]);
+			parser_error(parser, wrong_printf_param_type, placeholders[actual_param_number]);
 		}
 
-		sumsize += size_of(context->sx, formattypes[actual_param_number]);
+		sumsize += size_of(parser->sx, formattypes[actual_param_number]);
 		actual_param_number++;
-		if (context->next_token != COMMA)
-		{
-			break;
-		}
 	}
 
-	mustbe(context, RIGHTBR, no_rightbr_in_printf);
+	expect_and_consume_token(parser, r_paren, no_rightbr_in_printf);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 
 	if (actual_param_number != expected_param_number)
 	{
-		parser_error(context, wrong_printf_param_number);
+		parser_error(parser, wrong_printf_param_number);
 	}
 
-	totree(context, TString);
-	totree(context, context->lexer->num);
+	totree(parser, TString);
+	totree(parser, format_str_length);
 
-	for (int i = 0; i < context->lexer->num; i++)
+	for (size_t i = 0; i < format_str_length; i++)
 	{
-		totree(context, formatstr[i]);
+		totree(parser, format_str[i]);
 	}
-	totree(context, TExprend);
+	totree(parser, TExprend);
 
-	totree(context, TPrintf);
-	totree(context, sumsize);
+	totree(parser, TPrintf);
+	totree(parser, sumsize);
 }
 
 /**
@@ -801,7 +804,7 @@ void parse_compound_statement(parser *const parser, const block_type type)
 		scope_block_enter(parser->sx, &old_displ, &old_lg);
 	}
 
-	token end_token = (type == THREAD) ? kw_exit : r_brace;
+	const token end_token = (type == THREAD) ? kw_exit : r_brace;
 
 	if (try_consume_token(parser, end_token))
 	{

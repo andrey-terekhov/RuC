@@ -1899,14 +1899,14 @@ int parse_expression(parser *const parser)
 	return parser->ansttype;
 }
 
-int parse_condition(parser *const context)
+int parse_condition(parser *const parser)
 {
-	scanner(context);
-	expr(context, 1);
-	toval(context);
-	totree(context, TExprend);
-	context->sopnd--;
-	return context->ansttype;
+	scanner(parser);
+	expr(parser, 1);
+	toval(parser);
+	totree(parser, TExprend);
+	parser->sopnd--;
+	return parser->ansttype;
 }
 
 int parse_parenthesized_expression(parser *const parser)

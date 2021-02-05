@@ -925,5 +925,6 @@ void parse_initializer(parser *const parser, const int type)
 	else
 	{
 		parser_error(parser, wrong_init);
+		skip_until(parser, semicolon);
 	}
 }
