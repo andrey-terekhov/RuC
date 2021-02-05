@@ -25,49 +25,46 @@
  *
  *	@param	parser		Parser structure
  */
-void parse_labeled_statement(parser *const context)
+void parse_labeled_statement(parser *const parser)
 {
-	int id;
-	int i;
-	int flag = 1;
-	totree(context, TLabel);
-	for (i = 0; flag && i < (int)context->pgotost - 1; i += 2)
+	totree(parser, TLabel);
+
+	const size_t repr = parser->lexer->repr;
+	// Не проверяем, что это ':', так как по ней узнали,
+	// что это labeled statement
+	consume_token(parser);
+	for (size_t i = 0; i < parser->pgotost; i += 2)
 	{
-		flag = context->sx->identab[context->gotost[i] + 1] != (int)REPRTAB_POS;
-	}
-	if (flag)
-	{
-		totree(context, id = to_identab(context, REPRTAB_POS, 1, 0));
-		if (context->was_error == 5)
+		if (repr == (size_t)ident_get_repr(parser->sx, parser->gotost[i]))
 		{
-			context->was_error = 2;
+			const size_t id = (size_t)parser->gotost[i];
+			const size_t repr = ident_get_repr(parser->sx, id);
+			totree(parser, id);
+
+			if (parser->gotost[i - 1] < 0)
+			{
+				parser_error(parser, repeated_label, parser->sx->reprtab, repr);
+			}
+			else
+			{
+				parser->gotost[i - 1] = -1;
+			}
+
+			ident_set_mode(parser->sx, id, 1);
+			parse_statement(parser);
+			return;
 		}
-		else
-		{
-			context->gotost[context->pgotost++] = id; // это определение метки, если она встретилась до
-													  // переходов на нее
-			context->gotost[context->pgotost++] = -1;
-		}
-	}
-	else
-	{
-		id = context->gotost[i - 2];
-		REPRTAB_POS = (size_t)context->sx->identab[id + 1];
-		if (context->gotost[i - 1] < 0)
-		{
-			parser_error(context, repeated_label, REPRTAB, REPRTAB_POS);
-		}
-		else
-		{
-			context->gotost[i - 1] = -1;
-		}
-		totree(context, id);
 	}
 
-	context->sx->identab[id + 2] = 1;
+	// Это определение метки, если она встретилась до
+	// переходов на нее
+	const size_t id = to_identab(parser, repr, 1, 0);
+	totree(parser, id);
+	parser->gotost[parser->pgotost++] = id;
+	parser->gotost[parser->pgotost++] = -1;	// TODO: здесь должен быть номер строки
 
-	consume_token(context);
-	parse_statement(context);
+	ident_set_mode(parser->sx, id, 1);
+	parse_statement(parser);
 }
 
 /**

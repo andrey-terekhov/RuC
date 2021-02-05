@@ -32,8 +32,8 @@
 
 
 //#define GENERATE_MACRO
-//#define GENERATE_TABLES
-//#define GENERATE_TREE
+#define GENERATE_TABLES
+#define GENERATE_TREE
 
 
 const char *const DEFAULT_MACRO = "macro.txt";

@@ -223,7 +223,7 @@ void parse_compound_statement(parser *const context, const block_type type);
 
 
 int to_modetab(syntax *const sx, const int type, const int element_type);
-int to_identab(parser *context, size_t repr, int f, int type);
+int to_identab(parser *const parser, const size_t repr, const int f, const int type);
 int is_function(syntax *const sx, const int t);
 int is_array(syntax *const sx, const int t);
 int is_string(syntax *const sx, const int t);
