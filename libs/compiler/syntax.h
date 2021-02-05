@@ -44,7 +44,7 @@ typedef struct syntax
 	
 	vector tree;					/**< Tree table */
 
-	int identab[MAXIDENTAB];		/**< Identifiers table */
+	item_t identab[MAXIDENTAB];					/**< Identifiers table */
 	size_t id;						/**< Number of identifiers */
 	size_t curid;					/**< Start of current scope in identifiers table */
 
@@ -63,7 +63,7 @@ typedef struct syntax
 	size_t ref_main;				/**< Main function reference */
 
 	item_t displ;					/**< Stack displacement in current scope */
-	int lg;							/**< Displacement from l (+1) or g (-1) */
+	item_t lg;							/**< Displacement from l (+1) or g (-1) */
 	
 	size_t keywords;				/**< Number of read keyword */
 
@@ -244,7 +244,7 @@ item_t func_get(const syntax *const sx, const size_t index);
  *			@c SIZE_MAX @c - @c 1 on redeclaration
  *			@c SIZE_MAX on redefinition of main
  */
-size_t ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def);
+size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const item_t mode, const int func_def);
 
 /**
  *	Get item representation from identifiers table by index
@@ -252,9 +252,9 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in identifiers table
  *
- *	@return	Identifier index in representations table, @c INT_MAX on failure
+ *	@return	Identifier index in representations table, @c ITEM_MAX on failure
  */
-int ident_get_repr(const syntax *const sx, const size_t index);
+item_t ident_get_repr(const syntax *const sx, const size_t index);
 
 /**
  *	Get item mode from identifiers table by index
@@ -262,9 +262,9 @@ int ident_get_repr(const syntax *const sx, const size_t index);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in identifiers table
  *
- *	@return	Identifier mode, @c INT_MAX on failure
+ *	@return	Identifier mode, @c ITEM_MAX on failure
  */
-int ident_get_mode(const syntax *const sx, const size_t index);
+item_t ident_get_mode(const syntax *const sx, const size_t index);
 
 /**
  *	Get item displacement from identifiers table by index
@@ -272,9 +272,9 @@ int ident_get_mode(const syntax *const sx, const size_t index);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in identifiers table
  *
- *	@return	Identifier displacement, @c INT_MAX on failure
+ *	@return	Identifier displacement, @c ITEM_MAX on failure
  */
-int ident_get_displ(const syntax *const sx, const size_t index);
+item_t ident_get_displ(const syntax *const sx, const size_t index);
 
 /**
  *	Set identifier representation by index in identifiers table
@@ -296,7 +296,7 @@ int ident_set_repr(syntax *const sx, const size_t index, const size_t repr);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int ident_set_mode(syntax *const sx, const size_t index, const int mode);
+int ident_set_mode(syntax *const sx, const size_t index, const item_t mode);
 
 /**
  *	Set identifier displacement by index in identifiers table
@@ -307,7 +307,7 @@ int ident_set_mode(syntax *const sx, const size_t index, const int mode);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int ident_set_displ(syntax *const sx, const size_t index, const int displ);
+int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
 
 
 /**
@@ -319,7 +319,7 @@ int ident_set_displ(syntax *const sx, const size_t index, const int displ);
  *
  *	@return	Mode size
  */
-int size_of(const syntax *const sx, const int mode);
+int size_of(const syntax *const sx, const item_t mode);
 
 /**
  *	Add a new record to modes table
@@ -394,7 +394,7 @@ int repr_get_reference(const syntax *const sx, const size_t index);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int repr_set_reference(syntax *const sx, const size_t index, const size_t ref);
+int repr_set_reference(syntax *const sx, const size_t index, const item_t ref);
 
 
 /**
@@ -406,7 +406,7 @@ int repr_set_reference(syntax *const sx, const size_t index, const size_t ref);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int scope_block_enter(syntax *const sx, item_t *const displ, int *const lg);
+int scope_block_enter(syntax *const sx, item_t *const displ, item_t *const lg);
 
 /**
  *	Exit block scope
@@ -417,7 +417,7 @@ int scope_block_enter(syntax *const sx, item_t *const displ, int *const lg);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int scope_block_exit(syntax *const sx, const item_t displ, const int lg);
+int scope_block_exit(syntax *const sx, const item_t displ, const item_t lg);
 
 /**
  *	Enter function scope

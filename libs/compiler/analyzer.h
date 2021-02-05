@@ -39,7 +39,7 @@ typedef struct analyzer
 	universal_io *io;					/**< Universal io structure */
 	syntax *sx;							/**< Syntax structure */
 	lexer *lxr;							/**< Lexer structure */
-	
+
 	int line;
 	int cur;
 	int next;

@@ -20,7 +20,7 @@
 #include "tree.h"
 
 
-item_t get_static(syntax *const sx, const int type)
+item_t get_static(syntax *const sx, const item_t type)
 {
 	const item_t old_displ = sx->displ;
 	sx->displ += sx->lg * size_of(sx, type);
@@ -108,7 +108,11 @@ int sx_init(syntax *const sx)
 	
 	sx->tree = vector_create(MAXTREESIZE);
 
+	//sx->identab = vector_create(MAXIDENTAB);
+	//vector_increase(&sx->identab, MAXIDENTAB);
 	sx->id = 2;
+	sx->curid = 2;
+
 	sx->md = 1;
 	sx->startmode = 1;
 	sx->rp = 1;
@@ -118,7 +122,6 @@ int sx_init(syntax *const sx)
 
 	sx->maxdispl = 3;
 	sx->displ = -3;
-	sx->curid = 2;
 	sx->lg = -1;
 
 	for (size_t i = 0; i < 256; i++)
@@ -169,6 +172,8 @@ int sx_clear(syntax *const sx)
 	vector_clear(&sx->functions);
 
 	vector_clear(&sx->tree);
+
+	//vector_clear(&sx->identab);
 
 	return 0;
 }
@@ -238,8 +243,11 @@ item_t func_get(const syntax *const sx, const size_t index)
 }
 
 
-size_t ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def)
+size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const item_t mode, const int func_def)
 {
+	//const size_t lastid =sx->id;
+	//vector_set(&sx->identab, lastid, repr_get_reference(sx, repr));
+	//vector_increase(&sx->identab, 4);
 	const size_t lastid = sx->id;
 	sx->identab[lastid] = repr_get_reference(sx, repr);
 	sx->id += 4;
@@ -254,12 +262,13 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 	}
 
 	// Ссылка на описание с таким же представлением в предыдущем блоке
+	//const size_t prev = (size_t)vector_get(&sx->identab, lastid);
 	const size_t prev = sx->identab[lastid];
 	if (prev)
 	{
 		// prev == 0 только для main, эту ссылку портить нельзя
 		// иначе это ссылка на текущее описание с этим представлением
-		repr_set_reference(sx, repr, lastid);
+		repr_set_reference(sx, repr, (item_t)lastid);
 	}
 
 	// Один и тот же идентификатор м.б. переменной и меткой
@@ -275,12 +284,12 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 	if (type < 0)
 	{
 		// Так как < 0, это функция-параметр
-		ident_set_displ(sx, lastid, -((int)sx->displ++));
+		ident_set_displ(sx, lastid, -(sx->displ++));
 		sx->maxdispl = sx->displ;
 	}
 	else if (type == 0)
 	{
-		ident_set_displ(sx, lastid, (int)get_static(sx, mode));
+		ident_set_displ(sx, lastid, get_static(sx, mode));
 	}
 	else if (type == 1)
 	{
@@ -303,6 +312,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 		if (func_def == 2)
 		{
 			// Это предописание функции
+			//vector_set(&sx->identab, lastid + 1, -ident_get_repr(sx, lastid));
 			sx->identab[lastid + 1] = -ident_get_repr(sx, lastid);
 			vector_add(&sx->predef, (item_t)repr);
 		}
@@ -321,34 +331,37 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
 	return lastid;
 }
 
-int ident_get_repr(const syntax *const sx, const size_t index)
+item_t ident_get_repr(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || index >= sx->id)
 	{
-		return INT_MAX;
+		return ITEM_MAX;
 	}
 
 	return sx->identab[index + 1];
+	//return sx != NULL ? vector_get(&sx->identab, index + 1) : ITEM_MAX;
 }
 
-int ident_get_mode(const syntax *const sx, const size_t index)
+item_t ident_get_mode(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || index >= sx->id)
 	{
-		return INT_MAX;
+		return ITEM_MAX;
 	}
 
 	return sx->identab[index + 2];
+	//return sx != NULL ? vector_get(&sx->identab, index + 2) : ITEM_MAX;
 }
 
-int ident_get_displ(const syntax *const sx, const size_t index)
+item_t ident_get_displ(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || index >= sx->id)
 	{
-		return INT_MAX;
+		return ITEM_MAX;
 	}
 
 	return sx->identab[index + 3];
+	//return sx != NULL ? vector_get(&sx->identab, index + 3) : ITEM_MAX;
 }
 
 int ident_set_repr(syntax *const sx, const size_t index, const size_t repr)
@@ -358,11 +371,12 @@ int ident_set_repr(syntax *const sx, const size_t index, const size_t repr)
 		return -1;
 	}
 
-	sx->identab[index + 1] = (int)repr;
+	sx->identab[index + 1] = (item_t)repr;
 	return 0;
+	//return sx != NULL ? vector_set(&sx->identab, index + 1, (item_t)repr) : -1;
 }
 
-int ident_set_mode(syntax *const sx, const size_t index, const int mode)
+int ident_set_mode(syntax *const sx, const size_t index, const item_t mode)
 {
 	if (sx == NULL || index >= sx->id)
 	{
@@ -371,9 +385,10 @@ int ident_set_mode(syntax *const sx, const size_t index, const int mode)
 
 	sx->identab[index + 2] = mode;
 	return 0;
+	//return sx != NULL ? vector_set(&sx->identab, index + 2, mode) : -1;
 }
 
-int ident_set_displ(syntax *const sx, const size_t index, const int displ)
+int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 {
 	if (sx == NULL || index >= sx->id)
 	{
@@ -382,12 +397,13 @@ int ident_set_displ(syntax *const sx, const size_t index, const int displ)
 
 	sx->identab[index + 3] = displ;
 	return 0;
+	//return sx != NULL ? vector_set(&sx->identab, index + 2, displ) : -1;
 }
 
 
-int size_of(const syntax *const sx, const int mode)
+int size_of(const syntax *const sx, const item_t mode)
 {
-	return mode == LFLOAT ? 2 : (mode > 0 && mode_get(sx, mode) == MSTRUCT) ? mode_get(sx, mode + 1) : 1;
+	return mode == LFLOAT ? 2 : (mode > 0 && mode_get(sx, (size_t)mode) == MSTRUCT) ? mode_get(sx, (size_t)mode + 1) : 1;
 }
 
 size_t mode_add(syntax *const sx, const int *const record, const size_t size)
@@ -516,7 +532,7 @@ int repr_get_reference(const syntax *const sx, const size_t index)
 	return sx->reprtab[index + 1];
 }
 
-int repr_set_reference(syntax *const sx, const size_t index, const size_t ref)
+int repr_set_reference(syntax *const sx, const size_t index, const item_t ref)
 {
 	if (sx == NULL || index >= sx->rp)
 	{
@@ -528,29 +544,30 @@ int repr_set_reference(syntax *const sx, const size_t index, const size_t ref)
 }
 
 
-int scope_block_enter(syntax *const sx, item_t *const displ, int *const lg)
+int scope_block_enter(syntax *const sx, item_t *const displ, item_t *const lg)
 {
 	if (sx == NULL || displ == NULL || lg == NULL)
 	{
 		return -1;
 	}
 
-	sx->curid = sx->id;
+	sx->curid =sx->id;
 	*displ = sx->displ;
 	*lg = sx->lg;
 	return 0;
 }
 
-int scope_block_exit(syntax *const sx, const item_t displ, const int lg)
+int scope_block_exit(syntax *const sx, const item_t displ, const item_t lg)
 {
 	if (sx == NULL)
 	{
 		return -1;
 	}
 
-	for (size_t i = sx->id - 4; i >= sx->curid; i -= 4)
+	for (size_t i =sx->id - 4; i >= sx->curid; i -= 4)
 	{
-		repr_set_reference(sx, ident_get_repr(sx, i), sx->identab[i]);
+		repr_set_reference(sx, (size_t)ident_get_repr(sx, i), sx->identab[i]);
+		//repr_set_reference(sx, (size_t)ident_get_repr(sx, i), vector_get(&sx->identab, i));
 	}
 
 	sx->displ = displ;
@@ -566,7 +583,7 @@ item_t scope_func_enter(syntax *const sx)
 	}
 
 	const item_t displ = sx->displ;
-	sx->curid = sx->id;
+	sx->curid =sx->id;
 	sx->displ = 3;
 	sx->maxdispl = 3;
 	sx->lg = 1;
@@ -581,9 +598,10 @@ int scope_func_exit(syntax *const sx, const size_t decl_ref, const item_t displ)
 		return -1;
 	}
 
-	for (size_t i = sx->id - 4; i >= sx->curid; i -= 4)
+	for (size_t i =sx->id - 4; i >= sx->curid; i -= 4)
 	{
-		repr_set_reference(sx, ident_get_repr(sx, i), sx->identab[i]);
+		repr_set_reference(sx, (size_t)ident_get_repr(sx, i), sx->identab[i]);
+		//repr_set_reference(sx, (size_t)ident_get_repr(sx, i), vector_get(&sx->identab, i));
 	}
 
 	sx->curid = 2;	// Все функции описываются на одном уровне

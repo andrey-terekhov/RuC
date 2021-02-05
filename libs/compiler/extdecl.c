@@ -26,7 +26,7 @@ void expr(analyzer *context, int level);
 void exprassn(analyzer *context, int);
 
 void struct_init(analyzer *context, int);
-int gettype(analyzer *context);
+item_t gettype(analyzer *context);
 
 // если b=1, то это просто блок,
 // b = 2 - блок нити,
@@ -54,12 +54,12 @@ int scanner(analyzer *context)
 	return context->cur;
 }
 
-int newdecl(syntax *const sx, const int type, const int element_type)
+item_t newdecl(syntax *const sx, const int type, const item_t element_type)
 {
 	int temp[2];
 	temp[0] = type;
-	temp[1] = element_type;
-	return (int)mode_add(sx, temp, 2);
+	temp[1] = (int)element_type;
+	return (item_t)mode_add(sx, temp, 2);
 }
 
 
@@ -212,7 +212,7 @@ int evaluate_params(analyzer *context, int num, char32_t formatstr[], int format
 
 				case 's':
 				case 1089: // с
-					formattypes[num_of_params++] = newdecl(context->sx, MARRAY, LCHAR);
+					formattypes[num_of_params++] = (int)newdecl(context->sx, MARRAY, LCHAR);
 					break;
 
 				case '%':
@@ -502,7 +502,7 @@ void actstring(int type, analyzer *context)
 		context->error_flag = 1;
 		return; // 1
 	}
-	context->ansttype = newdecl(context->sx, MARRAY, type);
+	context->ansttype = (int)newdecl(context->sx, MARRAY, type);
 	context->anst = VAL;
 }
 
@@ -605,7 +605,7 @@ void mustberowofint(analyzer *context)
 		if (context->ansttype == LINT || context->ansttype == LCHAR)
 		{
 			totree(context, ROWING);
-			context->ansttype = newdecl(context->sx, MARRAY, LINT);
+			context->ansttype = (int)newdecl(context->sx, MARRAY, LINT);
 		}
 	}
 	if (!(is_array(context->sx, context->ansttype) &&
@@ -640,7 +640,7 @@ void mustberowoffloat(analyzer *context)
 		if (context->ansttype == LFLOAT)
 		{
 			totree(context, ROWINGD);
-			context->ansttype = newdecl(context->sx, MARRAY, LFLOAT);
+			context->ansttype = (int)newdecl(context->sx, MARRAY, LFLOAT);
 		}
 	}
 
@@ -687,7 +687,7 @@ void primaryexpr(analyzer *context)
 			totree(context, context->lxr->lexstr[i]);
 		}
 
-		context->ansttype = newdecl(context->sx, MARRAY, LCHAR);
+		context->ansttype = (int)newdecl(context->sx, MARRAY, LCHAR);
 		context->stackoperands[++context->sopnd] = context->ansttype;
 		context->anst = VAL;
 	}
@@ -701,9 +701,9 @@ void primaryexpr(analyzer *context)
 		}
 
 		totree(context, TIdent);
-		context->anstdispl = ident_get_displ(context->sx, context->lastid);
+		context->anstdispl = (int)ident_get_displ(context->sx, context->lastid);
 		totree(context, context->anstdispl);
-		context->ansttype = ident_get_mode(context->sx, context->lastid);
+		context->ansttype = (int)ident_get_mode(context->sx, context->lastid);
 		context->stackoperands[++context->sopnd] = context->ansttype;
 		context->anst = IDENT;
 	}
@@ -834,7 +834,7 @@ void primaryexpr(analyzer *context)
 			else
 			{
 				context->stackoperands[++context->sopnd] = context->ansttype =
-					func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : newdecl(context->sx, MARRAY, LCHAR);
+					func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)newdecl(context->sx, MARRAY, LCHAR);
 			}
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
@@ -1080,7 +1080,7 @@ void primaryexpr(analyzer *context)
 
 				if (func == TCREATE)
 				{
-					int dn;
+					item_t dn;
 
 					if (context->cur != IDENT)
 					{
@@ -1356,7 +1356,7 @@ void postexpr(analyzer *context)
 		int i;
 		int j;
 		int n;
-		int dn;
+		item_t dn;
 		int oldinass = context->inass;
 
 		was_func = 1;
@@ -1395,7 +1395,7 @@ void postexpr(analyzer *context)
 					context->error_flag = 4;
 					return; // 1
 				}
-				if (ident_get_mode(context->sx, context->lastid) != mdj)
+				if ((int)ident_get_mode(context->sx, context->lastid) != mdj)
 				{
 					context_error(context, diff_formal_param_type_and_actual);
 					context->error_flag = 4;
@@ -1709,7 +1709,7 @@ void unarexpr(analyzer *context)
 				}
 
 				context->stackoperands[context->sopnd] = context->ansttype =
-					newdecl(context->sx, MPOINT, context->ansttype);
+					(int)newdecl(context->sx, MPOINT, context->ansttype);
 				context->anst = VAL;
 			}
 			else if (op == LMULT)
@@ -2441,13 +2441,13 @@ void array_init(analyzer *context, int decl_type)
 	}
 }
 
-int arrdef(analyzer *context, int t)
+int arrdef(analyzer *context, item_t t)
 {
 	// вызывается при описании массивов и структур из массивов сразу после idorpnt
 
 	context->arrdim = 0;
 	context->usual = 1; // описание массива без пустых границ
-	if (is_pointer(context->sx, t))
+	if (is_pointer(context->sx, (int)t))
 	{
 		context_error(context, pnt_before_array);
 		context->error_flag = 5;
@@ -2498,7 +2498,7 @@ int arrdef(analyzer *context, int t)
 		}
 		t = newdecl(context->sx, MARRAY, t); // Меняем тип в identtab (увеличиваем размерность массива)
 	}
-	return t;
+	return (int)t;
 }
 
 void decl_id(analyzer *context, int decl_type)
@@ -2629,6 +2629,7 @@ void statement(analyzer *context)
 		totree(context, TLabel);
 		for (i = 0; flag && i < context->pgotost - 1; i += 2)
 		{
+			//flag = vector_get(&context->sx->identab, context->gotost[i] + 1) != REPRTAB_POS;
 			flag = context->sx->identab[context->gotost[i] + 1] != REPRTAB_POS;
 		}
 		if (flag)
@@ -2648,7 +2649,8 @@ void statement(analyzer *context)
 		else
 		{
 			id = context->gotost[i - 2];
-			REPRTAB_POS = context->sx->identab[id + 1];
+			//REPRTAB_POS = (int)vector_get(&context->sx->identab, id + 1);
+			REPRTAB_POS = (int)context->sx->identab[id + 1];
 			if (context->gotost[i - 1] < 0)
 			{
 				context_error(context, repeated_label);
@@ -3045,6 +3047,7 @@ void statement(analyzer *context)
 				totree(context, TGoto);
 				for (i = 0; flag && i < context->pgotost - 1; i += 2)
 				{
+					//flag = vector_get(&context->sx->identab, context->gotost[i] + 1) != REPRTAB_POS;
 					flag = context->sx->identab[context->gotost[i] + 1] != REPRTAB_POS;
 				}
 				if (flag)
@@ -3219,7 +3222,7 @@ void statement(analyzer *context)
 	context->inloop = oldinloop;
 }
 
-int idorpnt(analyzer *context, int e, int t)
+item_t idorpnt(analyzer *context, int e, item_t t)
 {
 	if (context->next == LMULT)
 	{
@@ -3233,8 +3236,8 @@ int idorpnt(analyzer *context, int e, int t)
 int struct_decl_list(analyzer *context)
 {
 	int field_count = 0;
-	int t;
-	int elem_type;
+	item_t t;
+	item_t elem_type;
 	int curdispl = 0;
 	int wasarr = 0;
 	int loc_modetab[100];
@@ -3286,7 +3289,7 @@ int struct_decl_list(analyzer *context)
 			{
 				scanner(context);
 				scanner(context);
-				if (is_array(context->sx, t)) // инициализация массива
+				if (is_array(context->sx, (int)t)) // инициализация массива
 				{
 					context->onlystrings = 2;
 					vector_set(&TREE, all, 1);
@@ -3294,7 +3297,7 @@ int struct_decl_list(analyzer *context)
 					{
 						vector_set(&TREE, adN, vector_get(&TREE, adN) - 1); // это уменьшение N в Declarr
 					}
-					array_init(context, t);
+					array_init(context, (int)t);
 					if (context->error_flag == 7)
 					{
 						context->error_flag = 3;
@@ -3312,10 +3315,10 @@ int struct_decl_list(analyzer *context)
 				}
 			} // конец ASS
 		}	  // конец LEFTSQBR
-		loc_modetab[locmd++] = t;
+		loc_modetab[locmd++] = (int)t;
 		loc_modetab[locmd++] = oldrepr;
 		field_count++;
-		curdispl += szof(context, t);
+		curdispl += szof(context, (int)t);
 		if (scanner(context) != SEMICOLON)
 		{
 			context_error(context, no_semicomma_in_struct);
@@ -3349,7 +3352,7 @@ int struct_decl_list(analyzer *context)
 	return (int)mode_add(context->sx, loc_modetab, locmd);
 }
 
-int gettype(analyzer *context)
+item_t gettype(analyzer *context)
 {
 	// gettype(context) выедает тип (кроме верхних массивов и указателей)
 	// при этом, если такого типа нет в modetab, тип туда заносится;
@@ -3400,7 +3403,7 @@ int gettype(analyzer *context)
 					context->error_flag = 3;
 					return 0; // 1
 				}
-				context->was_struct_with_arr = ident_get_displ(context->sx, l) - 1000;
+				context->was_struct_with_arr = (int)ident_get_displ(context->sx, l) - 1000;
 				return ident_get_mode(context->sx, l);
 			}
 		}
@@ -3426,7 +3429,7 @@ int gettype(analyzer *context)
 			return 0; // 1
 		}
 
-		context->was_struct_with_arr = ident_get_displ(context->sx, context->lastid) - 1000;
+		context->was_struct_with_arr = (int)ident_get_displ(context->sx, context->lastid) - 1000;
 		return ident_get_mode(context->sx, context->lastid);
 	}
 
@@ -3446,8 +3449,8 @@ void block(analyzer *context, int b)
 	int oldinswitch = context->inswitch;
 	int notended = 1;
 	item_t olddispl = 0;
-	int oldlg = 0;
-	int firstdecl;
+	item_t oldlg = 0;
+	item_t firstdecl;
 
 	context->inswitch = b < 0;
 	totree(context, TBegin);
@@ -3475,7 +3478,7 @@ void block(analyzer *context, int b)
 		}
 		do
 		{
-			int temp = idorpnt(context, after_type_must_be_ident, firstdecl);
+			item_t temp = idorpnt(context, after_type_must_be_ident, firstdecl);
 
 			if (context->error_flag == after_type_must_be_ident)
 			{
@@ -3483,7 +3486,7 @@ void block(analyzer *context, int b)
 				break;
 			}
 
-			decl_id(context, temp);
+			decl_id(context, (int)temp);
 			if (context->error_flag == 4)
 			{
 				context->error_flag = 1;
@@ -3536,7 +3539,7 @@ void block(analyzer *context, int b)
 
 void function_definition(analyzer *context)
 {
-	int fn = ident_get_displ(context->sx, context->lastid);
+	item_t fn = ident_get_displ(context->sx, context->lastid);
 	size_t pred;
 	int oldrepr = REPRTAB_POS;
 	int ftype;
@@ -3544,11 +3547,12 @@ void function_definition(analyzer *context)
 	int fid = context->lastid;
 
 	context->pgotost = 0;
-	context->functype = ident_get_mode(context->sx, context->lastid);
+	context->functype = (int)ident_get_mode(context->sx, context->lastid);
 	ftype = mode_get(context->sx, context->functype + 1);
 	n = mode_get(context->sx, context->functype + 2);
 	context->wasret = 0;
 	
+	//if ((pred = (size_t)vector_get(&context->sx->identab, context->lastid)) > 1) // был прототип
 	if ((pred = (size_t)context->sx->identab[context->lastid]) > 1) // был прототип
 	{
 		if (context->functype != ident_get_mode(context->sx, pred))
@@ -3563,7 +3567,7 @@ void function_definition(analyzer *context)
 	for (int i = 0; i < n; i++)
 	{
 		context->type = mode_get(context->sx, context->functype + i + 3);
-		item_t temp = func_get(context->sx, fn + i + 1);
+		item_t temp = func_get(context->sx, (size_t)fn + (size_t)i + 1);
 		if (temp == ITEM_MAX)
 		{
 			context->error_flag = 1;
@@ -3587,7 +3591,7 @@ void function_definition(analyzer *context)
 		}
 	}
 	const size_t size = vector_size(&TREE);
-	func_set(context->sx, fn, (int)size);
+	func_set(context->sx, (size_t)fn, (int)size);
 	totree(context, TFuncdef);
 	totree(context, fid);
 	pred = vector_size(&TREE);
@@ -3613,12 +3617,14 @@ void function_definition(analyzer *context)
 
 	for (int i = 0; i < context->pgotost - 1; i += 2)
 	{
-		REPRTAB_POS = context->sx->identab[context->gotost[i] + 1];
+		//REPRTAB_POS = (int)vector_get(&context->sx->identab, context->gotost[i] + 1);
+		REPRTAB_POS = (int)context->sx->identab[context->gotost[i] + 1];
 		context->sx->hash = context->gotost[i + 1];
 		if (context->sx->hash < 0)
 		{
 			context->sx->hash = -context->sx->hash;
 		}
+		//if (!vector_get(&context->sx->identab, context->gotost[i] + 2))
 		if (!context->sx->identab[context->gotost[i] + 2])
 		{
 			context_error(context, label_not_declared);
@@ -3661,7 +3667,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 					   // 1 - был статический идент,
 					   // 2 - был идент-параметр-функция
 			wastype = 1;
-			context->type = gettype(context);
+			context->type = (int)gettype(context);
 			if (context->error_flag == 3)
 			{
 				context->error_flag = 2;
@@ -3671,7 +3677,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 			{
 				maybe_fun = 1;
 				scanner(context);
-				context->type = context->type == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, context->type);
+				context->type = context->type == LVOID ? LVOIDASTER : (int)newdecl(context->sx, MPOINT, context->type);
 			}
 			if (level)
 			{
@@ -3704,7 +3710,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 				{
 					scanner(context);
 					mustbe(context, RIGHTSQBR, wait_right_sq_br);
-					context->type = newdecl(context->sx, MARRAY, context->type);
+					context->type = (int)newdecl(context->sx, MARRAY, context->type);
 				}
 			}
 		}
@@ -3841,7 +3847,7 @@ void ext_decl(analyzer *context)
 		context->wasstructdef = 0;
 		scanner(context);
 
-		context->firstdecl = gettype(context);
+		context->firstdecl = (int)gettype(context);
 		if (context->error_flag == 3)
 		{
 			context->error_flag = 1;
@@ -3867,7 +3873,7 @@ void ext_decl(analyzer *context)
 			if (context->next == LMULT)
 			{
 				scanner(context);
-				context->type = context->firstdecl == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, context->firstdecl);
+				context->type = context->firstdecl == LVOID ? LVOIDASTER : (int)newdecl(context->sx, MPOINT, context->firstdecl);
 			}
 			mustbe_complex(context, IDENT, after_type_must_be_ident);
 			if (context->error_flag == after_type_must_be_ident)

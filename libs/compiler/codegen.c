@@ -618,7 +618,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			}
 			else // метка еще не описана
 			{
-				ident_set_displ(sx, id, -(int)mem_size(sx));
+				ident_set_displ(sx, id, -(item_t)mem_size(sx));
 
 				// первый раз встретился переход на еще не описанную метку или нет
 				mem_add(sx, id_sign < 0 ? 0 : addr);
@@ -639,7 +639,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 					addr = ref;
 				}
 			}
-			ident_set_displ(sx, (size_t)id, (int)mem_size(sx));
+			ident_set_displ(sx, (size_t)id, (item_t)mem_size(sx));
 		}
 		break;
 		case TSwitch:
@@ -819,8 +819,8 @@ void output_export(universal_io *const io, const syntax *const sx)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n", mem_size(sx), vector_size(&sx->functions), sx->id,
-				   sx->rp, sx->md, sx->maxdisplg, sx->max_threads);
+	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n", mem_size(sx), vector_size(&sx->functions),
+				sx->id, sx->rp, sx->md, sx->maxdisplg, sx->max_threads);
 
 	for (size_t i = 0; i < mem_size(sx); i++)
 	{
@@ -836,7 +836,8 @@ void output_export(universal_io *const io, const syntax *const sx)
 
 	for (size_t i = 0; i < sx->id; i++)
 	{
-		uni_printf(io, "%i ", sx->identab[i]);
+		uni_printf(io, "%" PRIitem " ", sx->identab[i]);
+		//uni_printf(io, "%" PRIitem " ", vector_get(&sx->identab, i));
 	}
 	uni_printf(io, "\n");
 
