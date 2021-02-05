@@ -17,6 +17,31 @@
 #include "parser.h"
 #include <string.h>
 
+void binop(parser *context, int sp);
+void toval(parser *context);
+void applid(parser *context);
+void actstring(int type, parser *context);
+void mustbestring(parser *context);
+void mustbepointstring(parser *context);
+void mustberow(parser *context);
+void mustbeint(parser *context);
+void mustberowofint(parser *context);
+void mustberowoffloat(parser *context);
+void primaryexpr(parser *context);
+int find_field(parser *context, int stype);
+void selectend(parser *context);
+void postexpr(parser *context);
+void unarexpr(parser *context);
+void exprassninbrkts(parser *context, int er);
+int prio(int op);
+void subexpr(parser *context);
+int intopassn(int next);
+int opassn(parser *context);
+void condexpr(parser *context);
+void exprassnvoid(parser *context);
+void exprassn(parser *context, int level);
+void expr(parser *context, int level);
+void exprassnval(parser *context);
 
 void binop(parser *context, int sp)
 {
@@ -1135,7 +1160,6 @@ void postexpr(parser *context)
 			elem_type = mode_get(context->sx, context->ansttype + 1);
 
 			scanner(context);
-			scanner(context);
 
 			if (context->anst == IDENT) // a[i]
 			{
@@ -1148,7 +1172,7 @@ void postexpr(parser *context)
 			}
 
 			totree(context, elem_type);
-			exprval(context);
+			parse_condition(context);
 			if (context->was_error == 4)
 			{
 				return; // 1
@@ -1161,7 +1185,7 @@ void postexpr(parser *context)
 
 			mustbe(context, RIGHTSQBR, no_rightsqbr_in_slice);
 
-			context->stackoperands[--context->sopnd] = context->ansttype = elem_type;
+			context->stackoperands[context->sopnd] = context->ansttype = elem_type;
 			context->anst = ADDR;
 		}
 
@@ -1553,9 +1577,8 @@ void condexpr(parser *context)
 			}
 			totree(context, TCondexpr);
 			scanner(context);
-			scanner(context);
 			context->sopnd--;
-			exprval(context); // then
+			parse_condition(context); // then
 			if (context->was_error == 4)
 			{
 				return; // 1
@@ -1564,7 +1587,6 @@ void condexpr(parser *context)
 			{
 				globtype = context->ansttype;
 			}
-			context->sopnd--;
 			if (is_float(context->ansttype))
 			{
 				globtype = LFLOAT;
@@ -1825,14 +1847,6 @@ void expr(parser *context, int level)
 	}
 }
 
-int exprval(parser *context)
-{
-	expr(context, 1);
-	toval(context);
-	totree(context, TExprend);
-	return context->ansttype;
-}
-
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -1885,12 +1899,20 @@ int parse_expression(parser *const parser)
 	return parser->ansttype;
 }
 
+int parse_condition(parser *const context)
+{
+	scanner(context);
+	expr(context, 1);
+	toval(context);
+	totree(context, TExprend);
+	context->sopnd--;
+	return context->ansttype;
+}
+
 int parse_parenthesized_expression(parser *const parser)
 {
 	mustbe(parser, LEFTBR, cond_must_be_in_brkts);
-	scanner(parser);
-	exprval(parser);
+	parse_condition(parser);
 	mustbe(parser, RIGHTBR, cond_must_be_in_brkts);
-	parser->sopnd--;
 	return parser->ansttype;
 }

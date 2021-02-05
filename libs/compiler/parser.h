@@ -118,6 +118,16 @@ int parse_assignment_expression(parser *const parser);
 int parse_expression(parser *const parser);
 
 /**
+ *	Parse condition
+ *	@note	must be evaluated to a simple value
+ *
+ *	@param	parser		Parser structure
+ *
+ *	@return	Type of parsed expression
+ */
+int parse_condition(parser *const context);
+
+/**
  *	Parse expression in parenthesis
  *
  *	parenthesized-expression:
@@ -214,7 +224,6 @@ void parse_compound_statement(parser *const context, const block_type type);
 
 int scanner(parser *context);
 int newdecl(syntax *const sx, const int type, const int element_type);
-int evaluate_params(parser *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[]);
 int is_function(syntax *const sx, const int t);
 int is_array(syntax *const sx, const int t);
 int is_string(syntax *const sx, const int t);
@@ -227,34 +236,8 @@ int is_undefined(const int t);
 void mustbe(parser *context, int what, int e);
 void totree(parser *context, int op);
 void totreef(parser *context, int op);
-int toidentab(parser *context, size_t repr, int f, int type);
-void binop(parser *context, int sp);
-void toval(parser *context);
 void insertwiden(parser *context);
-void applid(parser *context);
-void actstring(int type, parser *context);
-void mustbestring(parser *context);
-void mustbepointstring(parser *context);
-void mustberow(parser *context);
-void mustbeint(parser *context);
-void mustberowofint(parser *context);
-void mustberowoffloat(parser *context);
-void primaryexpr(parser *context);
-int find_field(parser *context, int stype);
-void selectend(parser *context);
-void postexpr(parser *context);
-void unarexpr(parser *context);
-void exprassninbrkts(parser *context, int er);
-int prio(int op);
-void subexpr(parser *context);
-int intopassn(int next);
-int opassn(parser *context);
-void condexpr(parser *context);
-void exprassnvoid(parser *context);
-void exprassn(parser *context, int level);
-void expr(parser *context, int level);
-int exprval(parser *context);
-void exprassnval(parser *context);
+int toidentab(parser *context, size_t repr, int f, int type);
 
 #ifdef __cplusplus
 } /* extern "C" */

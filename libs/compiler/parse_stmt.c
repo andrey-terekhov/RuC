@@ -260,38 +260,38 @@ void parse_for_statement(parser *const parser)
 	const size_t ref_statement = parser->sx->tc++;
 	expect_and_consume_token(parser, l_paren, no_leftbr_in_for);
 
-	if (scanner(parser) == semicolon)
+	if (try_consume_token(parser, semicolon))
 	{
 		parser->sx->tree[ref_inition] = 0;
 	}
 	else
 	{
 		parser->sx->tree[ref_inition] = (int)parser->sx->tc;
+		consume_token(parser);
 		parse_expression(parser);
 		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
 	}
 
-	if (scanner(parser) == semicolon)
+	if (try_consume_token(parser, semicolon))
 	{
 		parser->sx->tree[ref_condition] = 0;
 	}
 	else
 	{
 		parser->sx->tree[ref_condition] = (int)parser->sx->tc;
-		// TODO: parse_condition()
-		exprval(parser);
-		parser->sopnd--;
+		parse_condition(parser);
 		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
 		parser->sopnd--;
 	}
 
-	if (scanner(parser) == r_paren)
+	if (try_consume_token(parser, r_paren))
 	{
 		parser->sx->tree[ref_increment] = 0;
 	}
 	else
 	{
 		parser->sx->tree[ref_increment] = (int)parser->sx->tc;
+		consume_token(parser);
 		parse_expression(parser);
 		expect_and_consume_token(parser, r_paren, no_rightbr_in_for);
 	}

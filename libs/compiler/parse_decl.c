@@ -616,8 +616,8 @@ size_t parse_function_declarator(parser *const parser, const int level, int func
 						return mode_undefined;
 					}
 				}
-				mustbe(parser, RIGHTBR, no_right_br_in_paramfun);
-				mustbe(parser, LEFTBR, wrong_fun_as_param);
+				expect_and_consume_token(parser, r_paren, no_right_br_in_paramfun);
+				expect_and_consume_token(parser, l_paren, wrong_fun_as_param);
 				if (maybe_fun == 1)
 				{
 					parser_error(parser, aster_before_func);
