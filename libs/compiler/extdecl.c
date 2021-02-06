@@ -54,11 +54,11 @@ int scanner(analyzer *context)
 	return context->cur;
 }
 
-item_t newdecl(syntax *const sx, const int type, const item_t element_type)
+item_t newdecl(syntax *const sx, const item_t type, const item_t element_type)
 {
-	int temp[2];
+	item_t temp[2];
 	temp[0] = type;
-	temp[1] = (int)element_type;
+	temp[1] = element_type;
 	return (item_t)mode_add(sx, temp, 2);
 }
 
@@ -3236,7 +3236,7 @@ int struct_decl_list(analyzer *context)
 	item_t elem_type;
 	int curdispl = 0;
 	int wasarr = 0;
-	int loc_modetab[100];
+	item_t loc_modetab[100];
 	int locmd = 3;
 
 	loc_modetab[0] = MSTRUCT;
@@ -3633,7 +3633,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 	// на 1 уровне это может быть определением функции или предописанием, на
 	// остальных уровнях - только декларатором (без идентов)
 
-	int loc_modetab[100];
+	item_t loc_modetab[100];
 	int locmd;
 	int numpar = 0;
 	int ident = 0; // warning C4701: potentially uninitialized local variable used

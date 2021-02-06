@@ -44,12 +44,11 @@ typedef struct syntax
 	
 	vector tree;					/**< Tree table */
 
-	item_t identab[MAXIDENTAB];					/**< Identifiers table */
+	item_t identab[MAXIDENTAB];		/**< Identifiers table */
 	size_t id;						/**< Number of identifiers */
 	size_t curid;					/**< Start of current scope in identifiers table */
 
 	vector modetab;					/**< Modes table */
-	//size_t md;						/**< Number of modes */
 	size_t startmode;				/**< Start of last record in modetab */
 	
 	size_t hashtab[256];			/**< Hash table for reprtab */
@@ -63,7 +62,7 @@ typedef struct syntax
 	size_t ref_main;				/**< Main function reference */
 
 	item_t displ;					/**< Stack displacement in current scope */
-	item_t lg;							/**< Displacement from l (+1) or g (-1) */
+	item_t lg;						/**< Displacement from l (+1) or g (-1) */
 	
 	size_t keywords;				/**< Number of read keyword */
 
@@ -330,7 +329,7 @@ int size_of(const syntax *const sx, const item_t mode);
  *
  *	@return	Index of the new record in modes table, @c SIZE_MAX on failure
  */
-size_t mode_add(syntax *const sx, const int *const record, const size_t size);
+size_t mode_add(syntax *const sx, const item_t *const record, const size_t size);
 
 /**
  *	Get an item from modes table by index

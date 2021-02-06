@@ -848,7 +848,6 @@ void output_export(universal_io *const io, const syntax *const sx)
 	uni_printf(io, "\n");
 
 	for (size_t i = 0; i < vector_size(&sx->modetab); i++)
-	//for (size_t i = 0; i < sx->md; i++)
 	{
 		uni_printf(io, "%" PRIitem " ", mode_get(sx, i));
 	}
