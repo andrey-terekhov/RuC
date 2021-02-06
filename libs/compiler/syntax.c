@@ -421,10 +421,11 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 		return SIZE_MAX;
 	}
 
-	const size_t md = vector_size(&sx->modetab) - 1;
-	vector_set(&sx->modetab, md, (item_t)sx->startmode);
+	vector_add(&sx->modetab, (item_t)sx->startmode);
+	//const size_t md = vector_size(&sx->modetab) - 1;
+	//vector_set(&sx->modetab, md, (item_t)sx->startmode);
 	//sx->modetab[sx->md] = (item_t)sx->startmode;
-	sx->startmode = md;
+	sx->startmode = vector_size(&sx->modetab) - 1;//md;
 	//sx->startmode = sx->md++;
 
 	for (size_t i = 0; i < size; i++)

@@ -135,7 +135,7 @@ void init_modetab(analyzer *context)
 	vector_add(&context->sx->modetab, LVOIDASTER);
 	vector_add(&context->sx->modetab, 1);
 	vector_add(&context->sx->modetab, LVOIDASTER);
-	vector_add(&context->sx->modetab, 14);
+	//vector_add(&context->sx->modetab, 14);
 	context->sx->startmode = 14;
 	//context->sx->md = 19;
 	context->sx->keywords = 0;
