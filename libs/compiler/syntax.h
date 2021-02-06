@@ -48,8 +48,8 @@ typedef struct syntax
 	size_t id;						/**< Number of identifiers */
 	size_t curid;					/**< Start of current scope in identifiers table */
 
-	item_t modetab[MAXMODETAB];		/**< Modes table */
-	size_t md;						/**< Number of modes */
+	vector modetab;					/**< Modes table */
+	//size_t md;						/**< Number of modes */
 	size_t startmode;				/**< Start of last record in modetab */
 	
 	size_t hashtab[256];			/**< Hash table for reprtab */

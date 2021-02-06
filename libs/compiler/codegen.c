@@ -820,7 +820,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
 	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n", mem_size(sx), vector_size(&sx->functions),
-				sx->id, sx->rp, sx->md, sx->maxdisplg, sx->max_threads);
+				sx->id, sx->rp, vector_size(&sx->modetab) - 1, sx->maxdisplg, sx->max_threads);
 
 	for (size_t i = 0; i < mem_size(sx); i++)
 	{
@@ -847,7 +847,8 @@ void output_export(universal_io *const io, const syntax *const sx)
 	}
 	uni_printf(io, "\n");
 
-	for (size_t i = 0; i < sx->md; i++)
+	for (size_t i = 0; i < vector_size(&sx->modetab) - 1; i++)
+	//for (size_t i = 0; i < sx->md; i++)
 	{
 		uni_printf(io, "%" PRIitem " ", mode_get(sx, i));
 	}

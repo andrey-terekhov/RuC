@@ -83,7 +83,7 @@ size_t toreprtab(analyzer *context, char str[])
 /** Инициализация modetab */
 void init_modetab(analyzer *context)
 {
-	// занесение в modetab описателя struct {int numTh; int inf; }
+	/*// занесение в modetab описателя struct {int numTh; int inf; }
 	context->sx->modetab[1] = 0;
 	context->sx->modetab[2] = MSTRUCT;
 	context->sx->modetab[3] = 2;
@@ -109,6 +109,35 @@ void init_modetab(analyzer *context)
 	context->sx->modetab[19] = 14;
 	context->sx->startmode = 14;
 	context->sx->md = 19;
+	context->sx->keywords = 0;
+	context->line = 1;*/
+
+	// занесение в modetab описателя struct {int numTh; int inf; }
+	vector_add(&context->sx->modetab, 0);
+	vector_add(&context->sx->modetab, MSTRUCT);
+	vector_add(&context->sx->modetab, 2);
+	vector_add(&context->sx->modetab, 4);
+	vector_add(&context->sx->modetab, LINT);
+	vector_add(&context->sx->modetab, (item_t)toreprtab(context, "numTh"));
+	vector_add(&context->sx->modetab, LINT);
+	vector_add(&context->sx->modetab, (item_t)toreprtab(context, "data"));
+
+	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
+	vector_add(&context->sx->modetab, 1);
+	vector_add(&context->sx->modetab, MFUNCTION);
+	vector_add(&context->sx->modetab, LVOID);
+	vector_add(&context->sx->modetab, 1);
+	vector_add(&context->sx->modetab, 2);
+
+	// занесение в modetab описателя функции void* interpreter(void* n)
+	vector_add(&context->sx->modetab, 9);
+	vector_add(&context->sx->modetab, MFUNCTION);
+	vector_add(&context->sx->modetab, LVOIDASTER);
+	vector_add(&context->sx->modetab, 1);
+	vector_add(&context->sx->modetab, LVOIDASTER);
+	vector_add(&context->sx->modetab, 14);
+	context->sx->startmode = 14;
+	//context->sx->md = 19;
 	context->sx->keywords = 0;
 	context->line = 1;
 }

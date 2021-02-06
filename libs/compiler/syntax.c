@@ -40,22 +40,27 @@ item_t get_static(syntax *const sx, const item_t type)
 /**	Check if modes are equal */
 int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
 {
-	if (sx->modetab[first] != sx->modetab[second])
+	if (vector_get(&sx->modetab, first) != vector_get(&sx->modetab, second))
+	//if (sx->modetab[first] != sx->modetab[second])
 	{
 		return 0;
 	}
 
 	size_t length = 1;
-	const item_t mode = sx->modetab[first];
+	const item_t mode = vector_get(&sx->modetab, first);
+	//const item_t mode = sx->modetab[first];
+
 	// Определяем, сколько полей надо сравнивать для различных типов записей
 	if (mode == MSTRUCT || mode == MFUNCTION)
 	{
-		length = 2 + (size_t)sx->modetab[first + 2];
+		length = 2 + (size_t)vector_get(&sx->modetab, first + 2);
+		//length = 2 + (size_t)sx->modetab[first + 2];
 	}
 
 	for (size_t i = 1; i <= length; i++)
 	{
-		if (sx->modetab[first + i] != sx->modetab[second + i])
+		if (vector_get(&sx->modetab, first + i) != vector_get(&sx->modetab, second + i))
+		//if (sx->modetab[first + i] != sx->modetab[second + i])
 		{
 			return 0;
 		}
@@ -113,8 +118,11 @@ int sx_init(syntax *const sx)
 	sx->id = 2;
 	sx->curid = 2;
 
-	sx->md = 1;
+	sx->modetab = vector_create(MAXMODETAB);
+	vector_increase(&sx->modetab, 1);
+	//sx->md = 1;
 	sx->startmode = 1;
+
 	sx->rp = 1;
 
 	sx->maxdisplg = 3;
@@ -413,26 +421,37 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 		return SIZE_MAX;
 	}
 
-	sx->modetab[sx->md] = (item_t)sx->startmode;
-	sx->startmode = sx->md++;
+	const size_t md = vector_size(&sx->modetab) - 1;
+	vector_set(&sx->modetab, md, (item_t)sx->startmode);
+	//sx->modetab[sx->md] = (item_t)sx->startmode;
+	sx->startmode = md;
+	//sx->startmode = sx->md++;
+
 	for (size_t i = 0; i < size; i++)
 	{
-		sx->modetab[sx->md++] = record[i];
+		vector_add(&sx->modetab, record[i]);
+		//sx->modetab[sx->md++] = record[i];
 	}
 
 	// Checking mode duplicates
-	size_t old = (size_t)sx->modetab[sx->startmode];
+	size_t old = (size_t)vector_get(&sx->modetab, sx->startmode);
 	while (old)
 	{
 		if (mode_is_equal(sx, sx->startmode + 1, old + 1))
 		{
-			sx->md = sx->startmode;
-			sx->startmode = (size_t)sx->modetab[sx->startmode];
+			while (vector_size(&sx->modetab) - 1 > sx->startmode)
+			{
+				vector_remove(&sx->modetab);
+			}
+			sx->startmode = (size_t)vector_get(&sx->modetab, sx->startmode);
+			//sx->md = sx->startmode;
+			//sx->startmode = (size_t)sx->modetab[sx->startmode];
 			return old + 1;
 		}
 		else
 		{
-			old = (size_t)sx->modetab[old];
+			old = (size_t)vector_get(&sx->modetab, old);
+			//old = (size_t)sx->modetab[old];
 		}
 	}
 
@@ -441,12 +460,13 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 
 item_t mode_get(const syntax *const sx, const size_t index)
 {
-	if (sx == NULL || index >= sx->md)
+	/*if (sx == NULL || index >= sx->md)
 	{
 		return ITEM_MAX;
 	}
+	return sx->modetab[index];*/
 
-	return sx->modetab[index];
+	return sx != NULL ? vector_get(&sx->modetab, index) : ITEM_MAX;
 }
 
 
