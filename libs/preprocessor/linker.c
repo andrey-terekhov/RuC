@@ -25,10 +25,16 @@
 #include "utils.h"
 #include "uniio.h"
 #include "uniprinter.h"
-#include "workspace.h"
 #include <string.h>
 
+
 #define MAX_CMT_SIZE MAX_ARG_SIZE + 32
+
+const char *lk_get_current(const linker* const lk)
+{
+	return ws_get_file(lk->ws, lk->current);
+}
+
 
 linker lk_create(workspace *const ws)
 {
@@ -105,7 +111,7 @@ size_t lk_open_include(environment *const env, const char* const path)
 	return index;
 }
 
-int lk_open_source(environment *const env, size_t const index)
+int lk_open_source(environment *const env, const size_t index)
 {
 	if (in_set_file(env->input, ws_get_file(env->lk.ws, index)))
 	{
@@ -117,15 +123,7 @@ int lk_open_source(environment *const env, size_t const index)
 
 int lk_preprocess_file(environment *const env, const size_t number)
 {	
-	universal_io in = io_create();
-	env->input = &in;
-
 	env_clear_error_string(env);
-
-	if (lk_open_source(env, number))
-	{
-		return -1;
-	}
 
 	const size_t old_cur = env->lk.current;
 	const size_t old_line = env->line;
@@ -194,7 +192,7 @@ int lk_preprocess_include(environment *const env)
 		flag_io_type++;
 	}
 	
-	const int res = 2 * lk_preprocess_file(env, (size_t)index);
+	const int res = 2 * lk_preprocess_file(env, index);
 	env->input = old_in;
 
 	if (flag_io_type)
@@ -255,19 +253,17 @@ int lk_preprocess_all(environment *const env)
 		{
 			continue;
 		}
+		universal_io input = io_create();
+		env->input = &input;
 
-		if (lk_preprocess_file(env, i))
+		if (lk_open_source(env, i)|| lk_preprocess_file(env, i))
 		{
 			return -1;
 		}
+		in_clear(&input);
 	}
 
 	return 0;
-}
-
-const char *lk_get_current(linker* lk)
-{
-	return ws_get_file(lk->ws, lk->current);
 }
 
 void lk_add_comment(environment *const env)

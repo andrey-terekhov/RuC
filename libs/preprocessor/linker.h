@@ -25,17 +25,17 @@ extern "C" {
 
 typedef struct environment environment;
 
-
 /** Structure for connecting files */
 typedef struct linker
 {
-	workspace *ws;				/**<Start arguments */
+	workspace *ws;				/**<Initial arguments */
 
 	int included[MAX_PATHS];	/**< List of already added files */	
 	size_t count; 				/**< Number of source files */
 
-	size_t current; 			/**< Index of the current files*/
+	size_t current; 			/**< Index of the current file */
 } linker;
+
 
 /**
  *	Create linker structure
@@ -64,9 +64,21 @@ int lk_preprocess_all(environment *const env);
  */
 int lk_include(environment *const env);
 
-const char *lk_get_current(linker* lk);
-
+/**
+ *	Add a comment that indicates line changes in the output
+ *
+ *	@param	env	Preprocessor environment
+ */
 void lk_add_comment(environment *const env);
+
+/**
+ *	Get current file from linkrer
+ *
+ *	@param	lk	Preprocessor linker
+ *
+ *	@return	File
+ */
+const char *lk_get_current(const linker* const lk);
 
 #ifdef __cplusplus
 } /* extern "C" */
