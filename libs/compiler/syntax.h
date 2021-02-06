@@ -48,7 +48,7 @@ typedef struct syntax
 	size_t id;						/**< Number of identifiers */
 	size_t curid;					/**< Start of current scope in identifiers table */
 
-	int modetab[MAXMODETAB];		/**< Modes table */
+	item_t modetab[MAXMODETAB];		/**< Modes table */
 	size_t md;						/**< Number of modes */
 	size_t startmode;				/**< Start of last record in modetab */
 	
@@ -338,9 +338,9 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in modes table
  *
- *	@return	Item by index from modes table, @c INT_MAX on failure
+ *	@return	Item by index from modes table, @c ITEM_MAX on failure
  */
-int mode_get(const syntax *const sx, const size_t index);
+item_t mode_get(const syntax *const sx, const size_t index);
 
 
 /**

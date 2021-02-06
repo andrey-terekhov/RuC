@@ -271,7 +271,7 @@ int is_int(const int t)
 int szof(analyzer *context, int type)
 {
 	return context->next == LEFTSQBR ? 1
-	: type == LFLOAT ? 2 : (is_struct(context->sx, type)) ? mode_get(context->sx, type + 1) : 1;
+	: type == LFLOAT ? 2 : (is_struct(context->sx, type)) ? (int)mode_get(context->sx, type + 1) : 1;
 }
 
 void mustbe(analyzer *context, int what, int e)
@@ -536,7 +536,7 @@ void mustbepointstring(analyzer *context)
 	toval(context);
 	context->sopnd--;
 	if (!(is_pointer(context->sx, context->ansttype) &&
-		  is_string(context->sx, mode_get(context->sx, context->ansttype + 1))))
+		  is_string(context->sx, (int)mode_get(context->sx, context->ansttype + 1))))
 	{
 		context_error(context, not_point_string_in_stanfunc);
 		context->error_flag = 5;
@@ -609,7 +609,7 @@ void mustberowofint(analyzer *context)
 		}
 	}
 	if (!(is_array(context->sx, context->ansttype) &&
-		  is_int(mode_get(context->sx, context->ansttype + 1))))
+		  is_int((int)mode_get(context->sx, context->ansttype + 1))))
 	{
 		context_error(context, not_rowofint_in_stanfunc);
 		context->error_flag = 5;
@@ -645,7 +645,7 @@ void mustberowoffloat(analyzer *context)
 	}
 
 	if (!(is_array(context->sx, context->ansttype) &&
-		  mode_get(context->sx, context->ansttype + 1) == LFLOAT))
+		  (int)mode_get(context->sx, context->ansttype + 1) == LFLOAT))
 	{
 		context_error(context, not_rowoffloat_in_stanfunc);
 		context->error_flag = 5;
@@ -1288,19 +1288,18 @@ int find_field(analyzer *context, int stype)
 {
 	// выдает смещение до найденного поля или ошибку
 
-	int i;
 	int flag = 1;
 	int select_displ = 0;
-	int record_length = mode_get(context->sx, stype + 2);
+	const item_t record_length = mode_get(context->sx, stype + 2);
 
 	scanner(context);
 	mustbe(context, IDENT, after_dot_must_be_ident);
 
-	for (i = 0; i < record_length; i += 2) // тут хранится удвоенное n
+	for (item_t i = 0; i < record_length; i += 2) // тут хранится удвоенное n
 	{
-		int field_type = mode_get(context->sx, stype + 3 + i);
+		int field_type = (int)mode_get(context->sx, stype + 3 + (int)i);
 
-		if (mode_get(context->sx, stype + 4 + i) == REPRTAB_POS)
+		if (mode_get(context->sx, stype + 4 + (int)i) == REPRTAB_POS)
 		{
 			context->stackoperands[context->sopnd] = context->ansttype = field_type;
 			flag = 0;
@@ -1353,9 +1352,8 @@ void postexpr(analyzer *context)
 
 	if (context->next == LEFTBR) // вызов функции
 	{
-		int i;
 		int j;
-		int n;
+		item_t n;
 		item_t dn;
 		int oldinass = context->inass;
 
@@ -1373,9 +1371,9 @@ void postexpr(analyzer *context)
 		totree(context, TCall1);
 		totree(context, n);
 		j = leftansttyp + 3;
-		for (i = 0; i < n; i++) // фактические параметры
+		for (item_t i = 0; i < n; i++) // фактические параметры
 		{
-			int mdj = context->leftansttype = mode_get(context->sx, j); // это вид формального параметра, в
+			int mdj = context->leftansttype = (int)mode_get(context->sx, j); // это вид формального параметра, в
 																   // context->ansttype будет вид фактического
 																   // параметра
 			scanner(context);
@@ -1418,7 +1416,7 @@ void postexpr(analyzer *context)
 			{
 				if (context->cur == BEGIN && is_array(context->sx, mdj))
 				{
-					actstring(mode_get(context->sx, mdj + 1), context), totree(context, TExprend);
+					actstring((int)mode_get(context->sx, mdj + 1), context), totree(context, TExprend);
 					if (context->error_flag == 2)
 					{
 						context->error_flag = 4;
@@ -1470,11 +1468,11 @@ void postexpr(analyzer *context)
 		mustbe(context, RIGHTBR, wrong_number_of_params);
 		totree(context, TCall2);
 		totree(context, lid);
-		context->stackoperands[context->sopnd] = context->ansttype = mode_get(context->sx, leftansttyp + 1);
+		context->stackoperands[context->sopnd] = context->ansttype = (int)mode_get(context->sx, leftansttyp + 1);
 		context->anst = VAL;
 		if (is_struct(context->sx, context->ansttype))
 		{
-			context->x -= mode_get(context->sx, context->ansttype + 1) - 1;
+			context->x -= (int)mode_get(context->sx, context->ansttype + 1) - 1;
 		}
 	}
 
@@ -1482,7 +1480,6 @@ void postexpr(analyzer *context)
 	{
 		while (context->next == LEFTSQBR) // вырезка из массива (возможно, многомерного)
 		{
-			int elem_type;
 			if (was_func)
 			{
 				context_error(context, slice_from_func);
@@ -1496,7 +1493,7 @@ void postexpr(analyzer *context)
 				return; // 1
 			}
 
-			elem_type = mode_get(context->sx, context->ansttype + 1);
+			item_t elem_type = mode_get(context->sx, context->ansttype + 1);
 
 			scanner(context);
 			scanner(context);
@@ -1527,7 +1524,7 @@ void postexpr(analyzer *context)
 
 			mustbe(context, RIGHTSQBR, no_rightsqbr_in_slice);
 
-			context->stackoperands[--context->sopnd] = context->ansttype = elem_type;
+			context->stackoperands[--context->sopnd] = context->ansttype = (int)elem_type;
 			context->anst = ADDR;
 		}
 
@@ -1538,7 +1535,7 @@ void postexpr(analyzer *context)
 			// перед выборкой мог быть вызов функции или вырезка элемента массива
 
 			if (!is_pointer(context->sx, context->ansttype) ||
-				!is_struct(context->sx, mode_get(context->sx, context->ansttype + 1)))
+				!is_struct(context->sx, (int)mode_get(context->sx, context->ansttype + 1)))
 			{
 				context_error(context, get_field_not_from_struct_pointer);
 				context->error_flag = 4;
@@ -1554,7 +1551,7 @@ void postexpr(analyzer *context)
 			totree(context, TSelect); // context->anst уже был ADDR, т.е. адрес
 									  // теперь уже всегда на верхушке стека
 
-			context->ansttype = mode_get(context->sx, context->ansttype + 1);
+			context->ansttype = (int)mode_get(context->sx, context->ansttype + 1);
 			context->anstdispl = find_field(context, context->ansttype);
 			if (context->error_flag == 6)
 			{
@@ -1726,7 +1723,7 @@ void unarexpr(analyzer *context)
 					vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval); // *p
 				}
 
-				context->stackoperands[context->sopnd] = context->ansttype = mode_get(context->sx, context->ansttype + 1);
+				context->stackoperands[context->sopnd] = context->ansttype = (int)mode_get(context->sx, context->ansttype + 1);
 				context->anst = ADDR;
 			}
 			else
@@ -2057,8 +2054,7 @@ void struct_init(analyzer *context, int decl_type)
 	// сейчас modetab[decl_type] равен MSTRUCT
 
 	int next_field = decl_type + 3;
-	int i;
-	int nf = mode_get(context->sx, decl_type + 2) / 2;
+	item_t nf = mode_get(context->sx, decl_type + 2) / 2;
 
 	if (context->cur != BEGIN)
 	{
@@ -2070,10 +2066,10 @@ void struct_init(analyzer *context, int decl_type)
 	}
 	totree(context, TStructinit);
 	totree(context, nf);
-	for (i = 0; i < nf; i++)
+	for (item_t i = 0; i < nf; i++)
 	{
 		scanner(context);
-		inition(context, mode_get(context->sx, next_field));
+		inition(context, (int)mode_get(context->sx, next_field));
 		if (context->error_flag == 5)
 		{
 			context->error_flag = 1;
@@ -2395,7 +2391,7 @@ void array_init(analyzer *context, int decl_type)
 			{
 				scanner(context);
 				all++;
-				array_init(context, mode_get(context->sx, decl_type + 1));
+				array_init(context, (int)mode_get(context->sx, decl_type + 1));
 				if (context->error_flag == 7)
 				{
 					return; // 1
@@ -3107,7 +3103,7 @@ void statement(analyzer *context)
 			break;
 			case LRETURN:
 			{
-				int ftype = mode_get(context->sx, context->functype + 1);
+				item_t ftype = mode_get(context->sx, context->functype + 1);
 				context->wasret = 1;
 				if (context->next == SEMICOLON)
 				{
@@ -3133,7 +3129,7 @@ void statement(analyzer *context)
 							break;
 						}
 						totree(context, TReturnval);
-						totree(context, szof(context, ftype));
+						totree(context, szof(context, (int)ftype));
 						scanner(context);
 						expr(context, 1);
 						if (context->error_flag == 5)
@@ -3542,14 +3538,12 @@ void function_definition(analyzer *context)
 	item_t fn = ident_get_displ(context->sx, context->lastid);
 	size_t pred;
 	int oldrepr = REPRTAB_POS;
-	int ftype;
-	int n;
 	int fid = context->lastid;
 
 	context->pgotost = 0;
 	context->functype = (int)ident_get_mode(context->sx, context->lastid);
-	ftype = mode_get(context->sx, context->functype + 1);
-	n = mode_get(context->sx, context->functype + 2);
+	item_t ftype = mode_get(context->sx, context->functype + 1);
+	item_t n = mode_get(context->sx, context->functype + 2);
 	context->wasret = 0;
 	
 	//if ((pred = (size_t)vector_get(&context->sx->identab, context->lastid)) > 1) // был прототип
@@ -3564,9 +3558,9 @@ void function_definition(analyzer *context)
 	}
 	
 	const item_t old_displ = scope_func_enter(context->sx);
-	for (int i = 0; i < n; i++)
+	for (item_t i = 0; i < n; i++)
 	{
-		context->type = mode_get(context->sx, context->functype + i + 3);
+		context->type = (int)mode_get(context->sx, context->functype + (int)i + 3);
 		item_t temp = func_get(context->sx, (size_t)fn + (size_t)i + 1);
 		if (temp == ITEM_MAX)
 		{

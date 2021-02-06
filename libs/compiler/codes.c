@@ -1449,7 +1449,7 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 	uni_printf(&io, "\n%s\n", "modetab");
 	for (size_t i = 0; i < sx->md; i++)
 	{
-		uni_printf(&io, "md %zi) %i\n", i, sx->modetab[i]);
+		uni_printf(&io, "md %zi) %" PRIitem "\n", i, sx->modetab[i]);
 	}
 
 	/*

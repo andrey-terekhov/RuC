@@ -46,11 +46,11 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 	}
 
 	size_t length = 1;
-	const int mode = sx->modetab[first];
+	const item_t mode = sx->modetab[first];
 	// Определяем, сколько полей надо сравнивать для различных типов записей
 	if (mode == MSTRUCT || mode == MFUNCTION)
 	{
-		length = 2 + sx->modetab[first + 2];
+		length = 2 + (size_t)sx->modetab[first + 2];
 	}
 
 	for (size_t i = 1; i <= length; i++)
@@ -263,7 +263,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const i
 
 	// Ссылка на описание с таким же представлением в предыдущем блоке
 	//const size_t prev = (size_t)vector_get(&sx->identab, lastid);
-	const size_t prev = sx->identab[lastid];
+	const size_t prev = (size_t)sx->identab[lastid];
 	if (prev)
 	{
 		// prev == 0 только для main, эту ссылку портить нельзя
@@ -403,7 +403,7 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 
 int size_of(const syntax *const sx, const item_t mode)
 {
-	return mode == LFLOAT ? 2 : (mode > 0 && mode_get(sx, (size_t)mode) == MSTRUCT) ? mode_get(sx, (size_t)mode + 1) : 1;
+	return mode == LFLOAT ? 2 : (mode > 0 && mode_get(sx, (size_t)mode) == MSTRUCT) ? (int)mode_get(sx, (size_t)mode + 1) : 1;
 }
 
 size_t mode_add(syntax *const sx, const int *const record, const size_t size)
@@ -413,7 +413,7 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 		return SIZE_MAX;
 	}
 
-	sx->modetab[sx->md] = (int) sx->startmode;
+	sx->modetab[sx->md] = (item_t)sx->startmode;
 	sx->startmode = sx->md++;
 	for (size_t i = 0; i < size; i++)
 	{
@@ -421,29 +421,29 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size)
 	}
 
 	// Checking mode duplicates
-	size_t old = sx->modetab[sx->startmode];
+	size_t old = (size_t)sx->modetab[sx->startmode];
 	while (old)
 	{
 		if (mode_is_equal(sx, sx->startmode + 1, old + 1))
 		{
 			sx->md = sx->startmode;
-			sx->startmode = sx->modetab[sx->startmode];
+			sx->startmode = (size_t)sx->modetab[sx->startmode];
 			return old + 1;
 		}
 		else
 		{
-			old = sx->modetab[old];
+			old = (size_t)sx->modetab[old];
 		}
 	}
 
 	return sx->startmode + 1;
 }
 
-int mode_get(const syntax *const sx, const size_t index)
+item_t mode_get(const syntax *const sx, const size_t index)
 {
 	if (sx == NULL || index >= sx->md)
 	{
-		return INT_MAX;
+		return ITEM_MAX;
 	}
 
 	return sx->modetab[index];

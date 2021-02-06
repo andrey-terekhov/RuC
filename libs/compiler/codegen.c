@@ -849,7 +849,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 
 	for (size_t i = 0; i < sx->md; i++)
 	{
-		uni_printf(io, "%i ", mode_get(sx, i));
+		uni_printf(io, "%" PRIitem " ", mode_get(sx, i));
 	}
 	uni_printf(io, "\n");
 }
