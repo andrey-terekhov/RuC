@@ -3543,7 +3543,7 @@ void function_definition(analyzer *context)
 	item_t n = mode_get(context->sx, context->functype + 2);
 	context->wasret = 0;
 	
-	size_t prev = (size_t)vector_get(&context->sx->identab, context->lastid);
+	size_t prev = (size_t)vector_get(&context->sx->identifiers, context->lastid);
 	if (prev > 1) // был прототип
 	{
 		if (context->functype != ident_get_mode(context->sx, prev))

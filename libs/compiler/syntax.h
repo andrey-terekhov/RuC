@@ -44,11 +44,11 @@ typedef struct syntax
 
 	vector tree;					/**< Tree table */
 
-	vector identab;					/**< Identifiers table */
-	size_t curid;					/**< Start of current scope in identifiers table */
+	vector identifiers;				/**< Identifiers table */
+	size_t cur_id;					/**< Start of current scope in identifiers table */
 
-	vector modetab;					/**< Modes table */
-	size_t startmode;				/**< Start of last record in modetab */
+	vector modes;					/**< Modes table */
+	size_t start_mode;				/**< Start of last record in modetab */
 
 
 	size_t hashtab[256];			/**< Hash table for reprtab */
@@ -58,8 +58,8 @@ typedef struct syntax
 	size_t rp;						/**< Representations size */
 
 
-	item_t maxdispl;				/**< Max displacement */
-	item_t maxdisplg;				/**< Max displacement */
+	item_t max_displ;				/**< Max displacement */
+	item_t max_displg;				/**< Max displacement */
 	size_t ref_main;				/**< Main function reference */
 
 	item_t displ;					/**< Stack displacement in current scope */
