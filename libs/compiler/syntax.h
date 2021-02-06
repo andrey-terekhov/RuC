@@ -45,7 +45,6 @@ typedef struct syntax
 	vector tree;					/**< Tree table */
 
 	vector identab;					/**< Identifiers table */
-	//size_t id;						/**< Number of identifiers */
 	size_t curid;					/**< Start of current scope in identifiers table */
 
 	vector modetab;					/**< Modes table */
@@ -286,7 +285,7 @@ item_t ident_get_displ(const syntax *const sx, const size_t index);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int ident_set_repr(syntax *const sx, const size_t index, const size_t repr);
+int ident_set_repr(syntax *const sx, const size_t index, const item_t repr);
 
 /**
  *	Set identifier mode by index in identifiers table

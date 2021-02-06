@@ -2626,8 +2626,6 @@ void statement(analyzer *context)
 		for (i = 0; flag && i < context->pgotost - 1; i += 2)
 		{
 			flag = ident_get_repr(context->sx, context->gotost[i]) != REPRTAB_POS;
-			//flag = vector_get(&context->sx->identab, context->gotost[i] + 1) != REPRTAB_POS;
-			//flag = context->sx->identab[context->gotost[i] + 1] != REPRTAB_POS;
 		}
 		if (flag)
 		{
@@ -2647,8 +2645,6 @@ void statement(analyzer *context)
 		{
 			id = context->gotost[i - 2];
 			REPRTAB_POS = (int)ident_get_repr(context->sx, id);
-			//REPRTAB_POS = (int)vector_get(&context->sx->identab, id + 1);
-			//REPRTAB_POS = (int)context->sx->identab[id + 1];
 			if (context->gotost[i - 1] < 0)
 			{
 				context_error(context, repeated_label);
@@ -3046,8 +3042,6 @@ void statement(analyzer *context)
 				for (i = 0; flag && i < context->pgotost - 1; i += 2)
 				{
 					flag = ident_get_repr(context->sx, context->gotost[i]) != REPRTAB_POS;
-					//flag = vector_get(&context->sx->identab, context->gotost[i] + 1) != REPRTAB_POS;
-					//flag = context->sx->identab[context->gotost[i] + 1] != REPRTAB_POS;
 				}
 				if (flag)
 				{
@@ -3309,7 +3303,7 @@ int struct_decl_list(analyzer *context)
 				}
 				else
 				{
-					// structdispl = context->sx->identab[oldid+3];
+					// structdispl = ident_get_displ(context->sx, oldid);
 					// vector_get(&TREE, all) = inition(context, t);
 				}
 			} // конец ASS
@@ -3551,7 +3545,6 @@ void function_definition(analyzer *context)
 	
 	size_t prev = (size_t)vector_get(&context->sx->identab, context->lastid);
 	if (prev > 1) // был прототип
-	//if ((pred = (size_t)context->sx->identab[context->lastid]) > 1) // был прототип
 	{
 		if (context->functype != ident_get_mode(context->sx, prev))
 		{
@@ -3616,16 +3609,12 @@ void function_definition(analyzer *context)
 	for (int i = 0; i < context->pgotost - 1; i += 2)
 	{
 		REPRTAB_POS = (int)ident_get_repr(context->sx, context->gotost[i]);
-		//REPRTAB_POS = (int)vector_get(&context->sx->identab, context->gotost[i] + 1);
-		//REPRTAB_POS = (int)context->sx->identab[context->gotost[i] + 1];
 		context->sx->hash = context->gotost[i + 1];
 		if (context->sx->hash < 0)
 		{
 			context->sx->hash = -context->sx->hash;
 		}
 		if (!ident_get_mode(context->sx, context->gotost[i]))
-		//if (!vector_get(&context->sx->identab, context->gotost[i] + 2))
-		//if (!context->sx->identab[context->gotost[i] + 2])
 		{
 			context_error(context, label_not_declared);
 			context->error_flag = 1;

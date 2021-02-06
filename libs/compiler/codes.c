@@ -1432,7 +1432,6 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 	{
 		for (size_t j = 0; j < 4; j++)
 		{
-			//uni_printf(&io, "id %zi) %" PRIitem "\n", i + j, sx->identab[i + j]);
 			uni_printf(&io, "id %zi) %" PRIitem "\n", i + j, vector_get(&sx->identab, i + j));
 		}
 		uni_printf(&io, "\n");
