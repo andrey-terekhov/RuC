@@ -2625,8 +2625,9 @@ void statement(analyzer *context)
 		totree(context, TLabel);
 		for (i = 0; flag && i < context->pgotost - 1; i += 2)
 		{
+			flag = ident_get_repr(context->sx, context->gotost[i]) != REPRTAB_POS;
 			//flag = vector_get(&context->sx->identab, context->gotost[i] + 1) != REPRTAB_POS;
-			flag = context->sx->identab[context->gotost[i] + 1] != REPRTAB_POS;
+			//flag = context->sx->identab[context->gotost[i] + 1] != REPRTAB_POS;
 		}
 		if (flag)
 		{
@@ -2645,8 +2646,9 @@ void statement(analyzer *context)
 		else
 		{
 			id = context->gotost[i - 2];
+			REPRTAB_POS = (int)ident_get_repr(context->sx, id);
 			//REPRTAB_POS = (int)vector_get(&context->sx->identab, id + 1);
-			REPRTAB_POS = (int)context->sx->identab[id + 1];
+			//REPRTAB_POS = (int)context->sx->identab[id + 1];
 			if (context->gotost[i - 1] < 0)
 			{
 				context_error(context, repeated_label);
@@ -3043,8 +3045,9 @@ void statement(analyzer *context)
 				totree(context, TGoto);
 				for (i = 0; flag && i < context->pgotost - 1; i += 2)
 				{
+					flag = ident_get_repr(context->sx, context->gotost[i]) != REPRTAB_POS;
 					//flag = vector_get(&context->sx->identab, context->gotost[i] + 1) != REPRTAB_POS;
-					flag = context->sx->identab[context->gotost[i] + 1] != REPRTAB_POS;
+					//flag = context->sx->identab[context->gotost[i] + 1] != REPRTAB_POS;
 				}
 				if (flag)
 				{
@@ -3536,7 +3539,6 @@ void block(analyzer *context, int b)
 void function_definition(analyzer *context)
 {
 	item_t fn = ident_get_displ(context->sx, context->lastid);
-	size_t pred;
 	int oldrepr = REPRTAB_POS;
 	int fid = context->lastid;
 
@@ -3546,15 +3548,16 @@ void function_definition(analyzer *context)
 	item_t n = mode_get(context->sx, context->functype + 2);
 	context->wasret = 0;
 	
-	//if ((pred = (size_t)vector_get(&context->sx->identab, context->lastid)) > 1) // был прототип
-	if ((pred = (size_t)context->sx->identab[context->lastid]) > 1) // был прототип
+	size_t prev = (size_t)vector_get(&context->sx->identab, context->lastid);
+	if (prev > 1) // был прототип
+	//if ((pred = (size_t)context->sx->identab[context->lastid]) > 1) // был прототип
 	{
-		if (context->functype != ident_get_mode(context->sx, pred))
+		if (context->functype != ident_get_mode(context->sx, prev))
 		{
 			context_error(context, decl_and_def_have_diff_type);
 			return; // 1
 		}
-		ident_set_displ(context->sx, pred, fn);
+		ident_set_displ(context->sx, prev, fn);
 	}
 	
 	const item_t old_displ = scope_func_enter(context->sx);
@@ -3588,7 +3591,7 @@ void function_definition(analyzer *context)
 	func_set(context->sx, (size_t)fn, (int)size);
 	totree(context, TFuncdef);
 	totree(context, fid);
-	pred = vector_size(&TREE);
+	prev = vector_size(&TREE);
 	vector_increase(&TREE, 1);
 	REPRTAB_POS = oldrepr;
 
@@ -3607,19 +3610,21 @@ void function_definition(analyzer *context)
 		return; // 1
 	}
 	
-	scope_func_exit(context->sx, pred, old_displ);
+	scope_func_exit(context->sx, prev, old_displ);
 
 	for (int i = 0; i < context->pgotost - 1; i += 2)
 	{
+		REPRTAB_POS = (int)ident_get_repr(context->sx, context->gotost[i]);
 		//REPRTAB_POS = (int)vector_get(&context->sx->identab, context->gotost[i] + 1);
-		REPRTAB_POS = (int)context->sx->identab[context->gotost[i] + 1];
+		//REPRTAB_POS = (int)context->sx->identab[context->gotost[i] + 1];
 		context->sx->hash = context->gotost[i + 1];
 		if (context->sx->hash < 0)
 		{
 			context->sx->hash = -context->sx->hash;
 		}
+		if (!ident_get_mode(context->sx, context->gotost[i]))
 		//if (!vector_get(&context->sx->identab, context->gotost[i] + 2))
-		if (!context->sx->identab[context->gotost[i] + 2])
+		//if (!context->sx->identab[context->gotost[i] + 2])
 		{
 			context_error(context, label_not_declared);
 			context->error_flag = 1;

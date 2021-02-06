@@ -41,21 +41,23 @@ typedef struct syntax
 
 	vector predef;					/**< Predefined functions table */
 	vector functions;				/**< Functions table */
-	
+
 	vector tree;					/**< Tree table */
 
-	item_t identab[MAXIDENTAB];		/**< Identifiers table */
-	size_t id;						/**< Number of identifiers */
+	vector identab;					/**< Identifiers table */
+	//size_t id;						/**< Number of identifiers */
 	size_t curid;					/**< Start of current scope in identifiers table */
 
 	vector modetab;					/**< Modes table */
 	size_t startmode;				/**< Start of last record in modetab */
-	
+
+
 	size_t hashtab[256];			/**< Hash table for reprtab */
 	int hash;						/**< Last value of hash function */
 
 	char32_t reprtab[MAXREPRTAB];	/**< Representations table */
 	size_t rp;						/**< Representations size */
+
 
 	item_t maxdispl;				/**< Max displacement */
 	item_t maxdisplg;				/**< Max displacement */
@@ -63,7 +65,7 @@ typedef struct syntax
 
 	item_t displ;					/**< Stack displacement in current scope */
 	item_t lg;						/**< Displacement from l (+1) or g (-1) */
-	
+
 	size_t keywords;				/**< Number of read keyword */
 
 	size_t max_threads;				/**< Max threads count */
