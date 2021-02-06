@@ -28,7 +28,7 @@
 #include <string.h>
 
 
-int equal_reprtab(int i, int j, environment *env)
+int equal_reprtab(int i, int j, environment *const env)
 {
 	i += 2;
 	j += 2;
@@ -47,7 +47,7 @@ int equal_reprtab(int i, int j, environment *env)
 	return 0;
 }
 
-void output_keywods(environment *env)
+void output_keywods(environment *const env)
 {
 	for (int j = 0; j < env->reprtab[env->rp]; j++)
 	{
@@ -55,7 +55,7 @@ void output_keywods(environment *env)
 	}
 }
 
-int macro_keywords(environment *env)
+int macro_keywords(environment *const env)
 {
 	int oldrepr = env->rp;
 	int r = 0;
@@ -104,7 +104,7 @@ int macro_keywords(environment *env)
 	return 0;
 }
 
-int mf_equal(int i, environment *env)
+int mf_equal(int i, environment *const env)
 {
 	int j = 0;
 	i += 2;
@@ -122,7 +122,7 @@ int mf_equal(int i, environment *env)
 	return 0;
 }
 
-int collect_mident(environment *env)
+int collect_mident(environment *const env)
 {
 	int r;
 	int hash = 0;
@@ -152,7 +152,7 @@ int collect_mident(environment *env)
 	return 0;
 }
 
-int find_file(environment *env, const char *s)
+int find_file(environment *const env, const char *s)
 {
 	int oldrp = env->rp;
 	env->rp += 2;
@@ -188,7 +188,7 @@ int find_file(environment *env, const char *s)
 	return 1;
 }
 
-int space_end_line(environment *env)
+int space_end_line(environment *const env)
 {
 	while (env->curchar != '\n')
 	{
@@ -208,7 +208,7 @@ int space_end_line(environment *env)
 	return 0;
 }
 
-void skip_space(environment *env)
+void skip_space(environment *const env)
 {
 	while (env->curchar == ' ' || env->curchar == '\t')
 	{
@@ -216,7 +216,7 @@ void skip_space(environment *env)
 	}
 }
 
-void skip_space_str(environment *env)
+void skip_space_str(environment *const env)
 {
 	int c = env->curchar;
 	m_fprintf(env->curchar, env);
@@ -241,7 +241,7 @@ void skip_space_str(environment *env)
 	}
 }
 
-size_t skip_str(environment *env)
+size_t skip_str(environment *const env)
 {
 	char *line = env->error_string;
 	size_t position = strlen(line);
@@ -252,7 +252,7 @@ size_t skip_str(environment *env)
 	return position;
 }
 
-void skip_file(environment *env)
+void skip_file(environment *const env)
 {
 	while (env->curchar != EOF)
 	{

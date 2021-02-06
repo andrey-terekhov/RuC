@@ -43,7 +43,7 @@
 const size_t SIZE_OUT_BUFFER = 1024;
 
 
-void to_reprtab(const char str[], int num, environment *env)
+void to_reprtab(const char str[], int num, environment *const env)
 {
 	int i = 0;
 	int oldrepr = env->rp;
@@ -82,7 +82,7 @@ void to_reprtab(const char str[], int num, environment *env)
 	env->hashtab[hash] = oldrepr;
 }
 
-void to_reprtab_full(const char str1[], const char str2[], const char str3[], const char str4[], int num, environment *env)
+void to_reprtab_full(const char str1[], const char str2[], const char str3[], const char str4[], int num, environment *const env)
 {
 	to_reprtab(str1, num, env);
 	to_reprtab(str2, num, env);
@@ -90,7 +90,7 @@ void to_reprtab_full(const char str1[], const char str2[], const char str3[], co
 	to_reprtab(str4, num, env);
 }
 
-void add_keywods(environment *env)
+void add_keywods(environment *const env)
 {
 	to_reprtab_full("MAIN", "main", "ГЛАВНАЯ", "главная", SH_MAIN, env);
 	to_reprtab_full("#DEFINE", "#define", "#ОПРЕД", "#опред", SH_DEFINE, env);
@@ -211,7 +211,7 @@ int preprocess_words(environment *const env)
 	}
 }
 
-int preprocess_scan(environment *env)
+int preprocess_scan(environment *const env)
 {
 	int i;
 	printf("!!!!!!!1\n");

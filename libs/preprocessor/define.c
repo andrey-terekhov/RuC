@@ -29,10 +29,10 @@
 #include <string.h>
 
 
-int define_get_from_macrotext(int r, environment *env);
+int define_get_from_macrotext(int r, environment *const env);
 
 
-int m_equal(environment *env)
+int m_equal(environment *const env)
 {
 	int i = 0;
 	int n = 1;
@@ -67,7 +67,7 @@ int m_equal(environment *env)
 }
 
 // define c параметрами (function)
-int function_scob_collect(int t, int num, environment *env)
+int function_scob_collect(int t, int num, environment *const env)
 {
 	int i;
 
@@ -172,7 +172,7 @@ int function_scob_collect(int t, int num, environment *env)
 	return -1;
 }
 
-int function_stack_create(int n, environment *env)
+int function_stack_create(int n, environment *const env)
 {
 	int num = 0;
 
@@ -236,7 +236,7 @@ int function_stack_create(int n, environment *env)
 	return -1;
 }
 
-int funktionleter(int flag_macro, environment *env)
+int funktionleter(int flag_macro, environment *const env)
 {
 	int n = 0;
 	int i = 0;
@@ -267,7 +267,7 @@ int funktionleter(int flag_macro, environment *env)
 	return 0;
 }
 
-int to_functionident(environment *env)
+int to_functionident(environment *const env)
 {
 	int num = 0;
 	env->csp = 0;
@@ -312,7 +312,7 @@ int to_functionident(environment *env)
 	return num;
 }
 
-int macrotext_add_function(environment *env)
+int macrotext_add_function(environment *const env)
 {
 	int j;
 	int flag_macro = 0;
@@ -414,7 +414,7 @@ int macrotext_add_function(environment *env)
 //
 
 // define
-int define_get_from_macrotext(int r, environment *env)
+int define_get_from_macrotext(const int r, environment *const env)
 {
 	int t = env->reprtab[r + 1];
 
@@ -447,7 +447,7 @@ int define_get_from_macrotext(int r, environment *env)
 	return 0;
 }
 
-int define_add_to_reprtab(environment *env)
+int define_add_to_reprtab(environment *const env)
 {
 	int r;
 	int oldrepr = env->rp;
@@ -491,7 +491,7 @@ int define_add_to_reprtab(environment *env)
 	return 0;
 }
 
-int macrotext_add_define(int r, environment *env)
+int macrotext_add_define(int r, environment *const env)
 {
 	int j;
 	int lmp = env->mp;
@@ -594,7 +594,7 @@ int macrotext_add_define(int r, environment *env)
 	return 0;
 }
 
-int define_realiz(environment *env)
+int define_realiz(environment *const env)
 {
 	int r;
 
@@ -637,7 +637,7 @@ int define_realiz(environment *env)
 	return 0;
 }
 
-int set_realiz(environment *env)
+int set_realiz(environment *const env)
 {
 	int j;
 

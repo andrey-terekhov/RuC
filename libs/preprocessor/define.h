@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-int define_get_from_macrotext(int r, environment *const env);
+int define_get_from_macrotext(const int r, environment *const env);
 int define_realiz(environment *const env);
 int set_realiz(environment *const env);
 

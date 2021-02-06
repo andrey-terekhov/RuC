@@ -30,7 +30,7 @@
 
 int flagint = 1;
 
-double get_digit(environment *env, int* error)
+double get_digit(environment *const env, int* error)
 {
 	double k;
 	int d = 1;
@@ -129,7 +129,7 @@ double get_digit(environment *env, int* error)
 	}
 }
 
-int check_opiration(environment *env)
+int check_opiration(environment *const env)
 {
 	int c = env->curchar;
 
@@ -248,7 +248,7 @@ double realiz_opiration(double x, double y, int r, int int_flag)
 	}
 }
 
-void double_to_string(double x, int int_flag, environment *env)
+void double_to_string(double x, int int_flag, environment *const env)
 {
 	char s[30] = "\0";
 
@@ -283,7 +283,7 @@ void double_to_string(double x, int int_flag, environment *env)
 	}
 }
 
-int calculator(int if_flag, environment *env)
+int calculator(const int if_flag, environment *const env)
 {
 	int i = 0;
 	int op = 0;

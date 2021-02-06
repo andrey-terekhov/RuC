@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-int calculator(int if_flag, environment *const env);
+int calculator(const int if_flag, environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

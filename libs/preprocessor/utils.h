@@ -23,17 +23,17 @@
 extern "C" {
 #endif
 
-int equal_reprtab(int i, int j, environment *env);
-void output_keywods(environment *env);
-int macro_keywords(environment *env);
-int collect_mident(environment *env);
-int find_file(environment *env, const char *s);
+int equal_reprtab(int i, int j, environment *const env);
+void output_keywods(environment *const env);
+int macro_keywords(environment *const env);
+int collect_mident(environment *const env);
+int find_file(environment *const env, const char *s);
 
-int space_end_line(environment *env);
-void skip_space(environment *env);
-void skip_space_str(environment *env);
-size_t skip_str(environment *env);
-void skip_file(environment *env);
+int space_end_line(environment *const env);
+void skip_space(environment *const env);
+void skip_space_str(environment *const env);
+size_t skip_str(environment *const env);
+void skip_file(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */
