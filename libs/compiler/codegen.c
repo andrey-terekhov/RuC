@@ -836,7 +836,6 @@ void output_export(universal_io *const io, const syntax *const sx)
 
 	for (size_t i = 0; i < vector_size(&sx->identab); i++)
 	{
-		//uni_printf(io, "%" PRIitem " ", sx->identab[i]);
 		uni_printf(io, "%" PRIitem " ", vector_get(&sx->identab, i));
 	}
 	uni_printf(io, "\n");
