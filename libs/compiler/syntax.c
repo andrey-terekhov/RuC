@@ -602,7 +602,7 @@ int scope_func_exit(syntax *const sx, const size_t decl_ref, const item_t displ)
 		return -1;
 	}
 
-	for (size_t i = vector_size(&sx->tree) - 4; i >= sx->curid; i -= 4)
+	for (size_t i = vector_size(&sx->identab) - 4; i >= sx->curid; i -= 4)
 	{
 		//repr_set_reference(sx, (size_t)ident_get_repr(sx, i), sx->identab[i]);
 		repr_set_reference(sx, (size_t)ident_get_repr(sx, i), vector_get(&sx->identab, i));

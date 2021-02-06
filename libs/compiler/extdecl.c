@@ -3421,14 +3421,15 @@ item_t gettype(analyzer *context)
 			return 0; // 1
 		}
 
-		if (ident_get_displ(context->sx, context->lastid) < 1000)
+		const item_t displ = ident_get_displ(context->sx, context->lastid);
+		if (displ == ITEM_MAX || displ < 1000)
 		{
 			context_error(context, ident_not_type);
 			context->error_flag = 3;
 			return 0; // 1
 		}
 
-		context->was_struct_with_arr = (int)ident_get_displ(context->sx, context->lastid) - 1000;
+		context->was_struct_with_arr = (int)displ - 1000;
 		return ident_get_mode(context->sx, context->lastid);
 	}
 
