@@ -17,6 +17,8 @@
 #include "compiler.h"
 #include "analyzer.h"
 #include "codegen.h"
+#include "codegen_llvm1.h"
+#include "codegen_llvm2.h"
 #include "codes.h"
 #include "errors.h"
 #include "preprocessor.h"
