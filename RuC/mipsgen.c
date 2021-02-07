@@ -35,6 +35,7 @@ int labnum = 1, stringnum = 1, elselab, flagBC, identref, structdispl;
 int log_real = 2;
 int flag_jump_end_cycle = 0;
 int flag_cond_cycle = 0; // 0 - ничего, 1 - посчитать условия и записать регистр, 2 - условие уже в регистре breg
+int cond_cycle_end_manst = 0;
 // унарные операции LNOT, LOGNOT, -, ++, --, TIdenttoval(*), TIdenttoaddr(&)
 // LNOT nor rd, rs, d0    LOGNOT slti rt, rs, 1   - sub rd, d0, rt
 // *  lw rt, displ(rs) или сразу 0(areg)   & addi rt, areg, adispl или сразу areg
@@ -823,8 +824,19 @@ void MBin_operation(int c)      // бинарная операция (два в�
         leftnum = num;
 
         mbox = BF;
-        MExpr_gen();                                        // правый операнд
-        
+        if (flag_cond_cycle != 2)
+        {
+        	MExpr_gen();                                        // правый операнд
+        	if (manst == AREG)
+        		tocodemove(oldreg, areg);
+        	cond_cycle_end_manst = manst;
+        }
+        else
+        {
+        	manst = cond_cycle_end_manst;
+        	cond_cycle_end_manst = 0;
+        }
+
         if (flagreg)
         {
             if (flagreal)
@@ -977,6 +989,8 @@ void MBin_operation(int c)      // бинарная операция (два в�
                     // leftanst == AREG && anst == AREG
                 	if (!flag_cond_cycle)
                 		tocodeR(sub, t1, lopnd, ropnd);
+                	else
+                		ropnd = breg;
                 	
                 if (flag_jump_end_cycle == 0)
                 {
