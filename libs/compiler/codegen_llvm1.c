@@ -324,7 +324,7 @@ static void block(universal_io *const io, syntax *const sx, node *const nd, info
 }
 
 /** Генерация кодов llvm. Первый проход по дереву */
-static int codegen_llvm2(universal_io *const io, syntax *const sx)
+static int codegen_llvm1(universal_io *const io, syntax *const sx)
 {
     // архитектурно-зависимая часть
     // в дальнейшем в кодогенератор должны передаваться параметры с информацией, 
@@ -366,5 +366,5 @@ int encode_to_llvm1(universal_io *const io, syntax *const sx)
 		return -1;
 	}
 
-	return codegen_llvm2(io, sx);
+	return codegen_llvm1(io, sx);
 }
