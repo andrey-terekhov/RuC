@@ -169,26 +169,28 @@ node node_set_child(node *const nd);
 int node_copy(node *const dest, const node *const src);
 
 /**
- *	Change node order in expression
+ *	Change only node order
  *
  *	@param	fst			First parent node
+ *	@param	fst_index	First child number
  *	@param	snd			Second parent node
+ *	@param	snd_index	Second child number
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int node_order(node *const fst, node *const snd);
+int node_order(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index);
 
 /**
- *	Change node order in expression
+ *	Swap two nodes with children
  *
  *	@param	fst			First parent node
- *	@param	fst_child	First child number
+ *	@param	fst_index	First child number
  *	@param	snd			Second parent node
- *	@param	snd_child	Second child number
+ *	@param	snd_index	Second child number
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int node_swap(node *const fst, const size_t fst_child, node *const snd, const size_t snd_child);
+int node_swap(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index);
 
 /**
  *	Check that node is correct

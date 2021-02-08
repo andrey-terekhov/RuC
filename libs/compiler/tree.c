@@ -731,13 +731,30 @@ int node_copy(node *const dest, const node *const src)
 	return 0;
 }
 
-int node_order(node *const fst, node *const snd)
+int node_order(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index)
 {
+	if (!node_is_correct(fst) || !node_is_correct(snd) || fst->tree != snd->tree)
+	{
+		return -1;
+	}
+
+	node fst_child = node_get_child(fst, fst_index);
+	node snd_child = node_get_child(snd, snd_index);
+
+	vector_swap(fst->tree, fst->type, fst->argc + 1, snd->type, snd->argc + 1);
 	return 0;
 }
 
-int node_swap(node *const fst, const size_t fst_child, node *const snd, const size_t snd_child)
+int node_swap(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index)
 {
+	if (!node_is_correct(fst) || !node_is_correct(snd) || fst->tree != snd->tree)
+	{
+		return -1;
+	}
+
+	node fst_child = node_get_child(fst, fst_index);
+	node snd_child = node_get_child(snd, snd_index);
+
 	return 0;
 }
 
