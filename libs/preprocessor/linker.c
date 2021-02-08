@@ -19,7 +19,6 @@
 #include "commenter.h"
 #include "environment.h"
 #include "file.h"
-#include "logger.h"
 #include "preprocessor.h"
 #include "error.h"
 #include "utils.h"
@@ -29,11 +28,6 @@
 
 
 #define MAX_CMT_SIZE MAX_ARG_SIZE + 32
-
-const char *lk_get_current(const linker *const lk)
-{
-	return ws_get_file(lk->ws, lk->current);
-}
 
 
 linker lk_create(workspace *const ws)
@@ -94,7 +88,7 @@ size_t lk_open_include(environment *const env, const char* const path)
 	if (!in_is_correct(env->input))
 	{
 		in_clear(env->input);
-		log_system_error(full_path, "файл не найден");
+		macro_system_error_tag(full_path, include_file_not_found);
 		return SIZE_MAX - 1;
 	}
 
@@ -118,7 +112,7 @@ int lk_open_source(environment *const env, const size_t index)
 {
 	if (in_set_file(env->input, ws_get_file(env->lk->ws, index)))
 	{
-		log_system_error(lk_get_current(env->lk), "файл не найден");
+		macro_system_error_tag(lk_get_current(env->lk), source_file_not_found);
 		return -1;
 	}
 
@@ -274,4 +268,9 @@ void lk_add_comment(environment *const env)
 	cmt_to_string(&cmt, buffer);
 
 	uni_printf(env->output, "%s", buffer);
+}
+
+const char *lk_get_current(const linker *const lk)
+{
+	return ws_get_file(lk->ws, lk->current);
 }
