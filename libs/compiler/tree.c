@@ -731,6 +731,16 @@ int node_copy(node *const dest, const node *const src)
 	return 0;
 }
 
+int node_order(node *const fst, node *const snd)
+{
+	return 0;
+}
+
+int node_swap(node *const fst, const size_t fst_child, node *const snd, const size_t snd_child)
+{
+	return 0;
+}
+
 int node_is_correct(const node *const nd)
 {
 	return nd != NULL && vector_is_correct(nd->tree);
