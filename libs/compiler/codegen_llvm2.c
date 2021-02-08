@@ -9,7 +9,7 @@
  *
  *	Unless required by applicable law or agreed to in writing, software
  *	distributed under the License is distributed on an "AS IS" BASIS,
- *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressioness or implied.
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
@@ -19,6 +19,11 @@
 #include "uniprinter.h"
 
 
+enum Answer {
+    AREG,               // ответ находится в регистре
+    CONST               // ответ является константой
+};
+
 typedef struct info
 {
     int string_num;
@@ -26,10 +31,12 @@ typedef struct info
     int bvar;           // 0 - переменная в регистре, 1 - переменная в памяти
     int breg;           // передаваемый регистр
     int areg;           // возвращаемый регистр
+    int anum;           // возвращаемая константа
+    int manst;          // тип ответа
 } info;
 
 
-static void expr(universal_io *const io, syntax *const sx, node *const nd, info *const context);
+static void expression(universal_io *const io, syntax *const sx, node *const nd, info *const context);
 
 static void block(universal_io *const io, syntax *const sx, node *const nd, info *const context);
 
@@ -41,18 +48,35 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
     {
         case TIdent:
         case TSelect:
-        case TIdenttoval:
         case TIdenttovald:
         case TIdenttoaddr:
         case TConstd:
             node_set_next(nd);
             break;
+        case TIdenttoval:
+        {
+            int displ = node_get_arg(nd, 0);
+
+            uni_printf(io, " %%.%i = load i32, i32* %%var.%i, align 4\n", context->register_num, displ);
+            context->areg = context->register_num++;
+            context->manst = AREG;
+            node_set_next(nd);
+        }
+        break;
         case TConst:
         {
             int num = node_get_arg(nd, 0);
 
             if (context->bvar == 1)
+            {
                 uni_printf(io, " store i32 %i, i32* %%var.%i, align 4\n", num, context->breg);
+                context->manst = AREG;
+            }
+            else
+            {
+                context->manst = CONST;
+                context->anum = num;
+            }           
 
             node_set_next(nd);
         }
@@ -63,11 +87,11 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
         case TSliceident:
         {
             node_set_next(nd);
-            expr(io, sx, nd, context);
+            expression(io, sx, nd, context);
             while (node_get_type(nd) == TSlice)
             {
                 node_set_next(nd);
-                expr(io, sx, nd, context);
+                expression(io, sx, nd, context);
             }
         }
         break;
@@ -77,7 +101,7 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
 
             node_set_next(nd);
             for (int i = 0; i < npar; i++)
-                expr(io, sx, nd, context);
+                expression(io, sx, nd, context);
             node_set_next(nd); // TCall2
         }
         break;
@@ -88,7 +112,7 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
 
             node_set_next(nd);
             for (int i = 0; i < n; i++)
-                expr(io, sx, nd, context);
+                expression(io, sx, nd, context);
         }
         break;
         case TStructinit:
@@ -98,16 +122,16 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
 
             node_set_next(nd);
             for (int i = 0; i < n; i++)
-                expr(io, sx, nd, context);
+                expression(io, sx, nd, context);
         }
         break;
         default:
         // отладочная печать, потом здесь будет инициализация какой-нибудь ошибки
-            printf("Ooops, something wrong\n");
+            printf("Ooops, something wrong, %li\n", nd->argv);
     }
 }
 
-static void expr(universal_io *const io, syntax *const sx, node *const nd, info *const context)
+static void expression(universal_io *const io, syntax *const sx, node *const nd, info *const context)
 {
     switch (node_get_type(nd))
     {
@@ -119,8 +143,8 @@ static void expr(universal_io *const io, syntax *const sx, node *const nd, info 
         case LDIV:
         {
             node_set_next(nd);
-            expr(io, sx, nd, context);
-            expr(io, sx, nd, context);
+            expression(io, sx, nd, context);
+            expression(io, sx, nd, context);
         }
         break;
         // унарные операции
@@ -138,15 +162,14 @@ static void expr(universal_io *const io, syntax *const sx, node *const nd, info 
         case DIVASSV:
         {
             node_set_next(nd);
-            expr(io, sx, nd, context);
+            expression(io, sx, nd, context);
         }
         break;
-        case TExprend:
-            node_set_next(nd);
-            break;
         default:
             operand(io, sx, nd, context);
     }
+    if (node_get_type(nd) == TExprend)
+        node_set_next(nd);
 }
 
 static void statement(universal_io *const io, syntax *const sx, node *const nd, info *const context)
@@ -164,7 +187,7 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
             int ref_else = node_get_arg(nd, 0);
 
             node_set_next(nd);
-            expr(io, sx, nd, context);
+            expression(io, sx, nd, context);
             statement(io, sx, nd, context);
             if (ref_else)
                 statement(io, sx, nd, context);
@@ -176,7 +199,7 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
         case TWhile:
         {
             node_set_next(nd);
-            expr(io, sx, nd, context);
+            expression(io, sx, nd, context);
             statement(io, sx, nd, context);
         }
         break;
@@ -184,7 +207,7 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
         {
             node_set_next(nd);
             statement(io, sx, nd, context);
-            expr(io, sx, nd, context);
+            expression(io, sx, nd, context);
         }
         break;
         case TFor:
@@ -195,11 +218,11 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
 
             node_set_next(nd);
             if (ref_from)
-                expr(io, sx, nd, context);
+                expression(io, sx, nd, context);
             if (ref_cond)
-                expr(io, sx, nd, context);
+                expression(io, sx, nd, context);
             if (ref_incr)
-                expr(io, sx, nd, context);
+                expression(io, sx, nd, context);
             statement(io, sx, nd, context);
         }
         break;
@@ -219,7 +242,9 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
         {
             node_set_next(nd);
             context->bvar = 0;
-            expr(io, sx, nd, context);
+            expression(io, sx, nd, context);
+            if (context->manst == CONST)
+                uni_printf(io, " ret i32 %i\n", context->anum);
         }
         break;
         case TGetid:
@@ -238,10 +263,11 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
             node_set_next(nd);
             int string_length = node_get_arg(nd, 0);
             node_set_next(nd); // TString
+            node_set_next(nd); // TExprend
             for (int i = 0; i < n; i++)
             {
                 context->bvar = 0;
-                expr(io, sx, nd, context);
+                expression(io, sx, nd, context);
                 args[i] = context->areg;
             }
             uni_printf(io, " %%.%i = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
@@ -253,7 +279,7 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
         break;
         // todo обсудить добавление TScanf
         default:
-            expr(io, sx, nd, context);
+            expression(io, sx, nd, context);
     }
 }
 
@@ -268,7 +294,7 @@ static void init(universal_io *const io, syntax *const sx, node *const nd, info 
 
             node_set_next(nd);
             for (int i = 0; i < n; i++)
-                expr(io, sx, nd, context);
+                expression(io, sx, nd, context);
         }
         break;
         case TStructinit:
@@ -278,11 +304,11 @@ static void init(universal_io *const io, syntax *const sx, node *const nd, info 
 
             node_set_next(nd);
             for (int i = 0; i < n; i++)
-                expr(io, sx, nd, context);
+                expression(io, sx, nd, context);
         }
         break;
         default:
-            expr(io, sx, nd, context);
+            expression(io, sx, nd, context);
     }
 }
 
@@ -297,7 +323,7 @@ static void block(universal_io *const io, syntax *const sx, node *const nd, info
                 int ref_ident = node_get_arg(nd, 0) / 4;
 
                 if (ident_get_mode(sx, ref_ident) == LMAIN)
-                	uni_printf(io, "define void @main(");
+                	uni_printf(io, "define i32 @main(");
                 uni_printf(io, ") {\n");
 
                 node_set_next(nd); // TBegin
@@ -312,7 +338,7 @@ static void block(universal_io *const io, syntax *const sx, node *const nd, info
 
                 node_set_next(nd);
                 for (int i = 0; i < n; i++)
-                    expr(io, sx, nd, context);
+                    expression(io, sx, nd, context);
             }
             break;
             case TDeclid:
