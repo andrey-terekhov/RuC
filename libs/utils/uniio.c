@@ -347,7 +347,7 @@ const char *in_get_buffer(const universal_io *const io)
 
 size_t in_get_position(const universal_io *const io)
 {
-	return in_is_buffer(io) ? io->in_position : 0;
+	return in_is_buffer(io) || in_is_file(io) ? io->in_position : 0;
 }
 
 
