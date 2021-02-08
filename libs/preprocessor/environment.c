@@ -15,11 +15,6 @@
  */
 
 #include "environment.h"
-#include "file.h"
-#include "error.h"
-#include "linker.h"
-#include "logger.h"
-#include "uniprinter.h"
 
 
 void env_init(environment *const env, linker* const lk, universal_io *const output)
