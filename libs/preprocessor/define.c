@@ -594,7 +594,7 @@ int macrotext_add_define(int r, environment *const env)
 	return 0;
 }
 
-int define_realiz(environment *const env)
+int define_implementation(environment *const env)
 {
 	int r;
 
@@ -637,7 +637,7 @@ int define_realiz(environment *const env)
 	return 0;
 }
 
-int set_realiz(environment *const env)
+int set_implementation(environment *const env)
 {
 	int j;
 

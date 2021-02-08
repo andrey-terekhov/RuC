@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 int while_collect(environment *const env);
-int while_realiz(environment *const env);
+int while_implementation(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

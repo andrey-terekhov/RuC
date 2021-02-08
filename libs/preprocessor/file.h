@@ -41,7 +41,6 @@ int get_dipp(environment *const env);
 int get_next_char(environment *const env);
 
 void m_fprintf(int a, environment *const env);
-void pred_fprintf(int a, environment *const env);
 void m_nextch(environment *const env);
 
 #ifdef __cplusplus

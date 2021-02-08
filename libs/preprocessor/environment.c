@@ -15,16 +15,11 @@
  */
 
 #include "environment.h"
-#include "constants.h"
-#include "workspace.h"
 #include "file.h"
 #include "error.h"
 #include "linker.h"
 #include "logger.h"
 #include "uniprinter.h"
-#include "uniio.h"
-#include <stdlib.h>
-#include <string.h>
 
 
 void env_init(environment *const env, linker* const lk, universal_io *const output)

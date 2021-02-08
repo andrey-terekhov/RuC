@@ -198,7 +198,7 @@ int get_prior(int r)
 	}
 }
 
-double realiz_opiration(double x, double y, int r, int int_flag)
+double implementation_opiration(double x, double y, int r, int int_flag)
 {
 	switch (r)
 	{
@@ -368,7 +368,7 @@ int calculator(const int if_flag, environment *const env)
 				}
 
 				int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
-				stack[i - 2] = realiz_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
+				stack[i - 2] = implementation_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
 				op--;
 				i--;
 			}
@@ -407,7 +407,7 @@ int calculator(const int if_flag, environment *const env)
 				while (op != 0 && n != 0 && get_prior(operation[op - 1]) >= n)
 				{
 					int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
-					stack[i - 2] = realiz_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
+					stack[i - 2] = implementation_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
 					op--;
 					i--;
 				}
@@ -444,7 +444,7 @@ int calculator(const int if_flag, environment *const env)
 			}
 
 			int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
-			stack[i - 2] = realiz_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
+			stack[i - 2] = implementation_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
 			op--;
 			i--;
 		}

@@ -47,7 +47,7 @@ int equal_reprtab(int i, int j, environment *const env)
 	return 0;
 }
 
-void output_keywods(environment *const env)
+void output_keywords(environment *const env)
 {
 	for (int j = 0; j < env->reprtab[env->rp]; j++)
 	{

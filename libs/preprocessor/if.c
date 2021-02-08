@@ -195,7 +195,7 @@ int if_true(int type_if, environment *const env)
 	return if_end(env);
 }
 
-int if_realiz(environment *const env)
+int if_implementation(environment *const env)
 {
 	int type_if = env->cur;
 	int flag = if_check(type_if, env); // начало (if)

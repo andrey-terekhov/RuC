@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 int equal_reprtab(int i, int j, environment *const env);
-void output_keywods(environment *const env);
+void output_keywords(environment *const env);
 int macro_keywords(environment *const env);
 int collect_mident(environment *const env);
 int find_file(environment *const env, const char *s);

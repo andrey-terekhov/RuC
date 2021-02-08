@@ -19,8 +19,6 @@
 #include "constants.h"
 #include "uniio.h"
 #include "linker.h"
-#include "workspace.h"
-#include <stdio.h>
 
 
 #ifdef __cplusplus

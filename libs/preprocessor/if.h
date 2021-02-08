@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-int if_realiz(environment *const env);
+int if_implementation(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

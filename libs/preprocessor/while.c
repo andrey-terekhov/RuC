@@ -85,7 +85,7 @@ int while_collect(environment *const env)
 	return -1;
 }
 
-int while_realiz(environment *const env)
+int while_implementation(environment *const env)
 {
 	int oldernextp = env->nextp;
 	int end = env->wstring[oldernextp + 2];
@@ -121,7 +121,7 @@ int while_realiz(environment *const env)
 			if (env->curchar == WHILEBEGIN)
 			{
 				env->nextp--;
-				if(while_realiz(env))
+				if(while_implementation(env))
 				{
 					return -1;
 				}

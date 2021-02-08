@@ -126,7 +126,7 @@ int preprocess_words(environment *const env)
 		case SH_MACRO:
 		{
 			env->prep_flag = 1;
-			return define_realiz(env);
+			return define_implementation(env);
 		}
 		case SH_UNDEF:
 		{
@@ -149,11 +149,11 @@ int preprocess_words(environment *const env)
 		case SH_IFDEF:
 		case SH_IFNDEF:
 		{
-			return if_realiz(env);
+			return if_implementation(env);
 		}
 		case SH_SET:
 		{
-			return set_realiz(env);
+			return set_implementation(env);
 		}
 		case SH_ELSE:
 		case SH_ELIF:
@@ -193,7 +193,7 @@ int preprocess_words(environment *const env)
 			m_nextch(env);
 
 			env->nextp = 0;
-			int res = while_realiz(env);
+			int res = while_implementation(env);
 			if(env->nextch_type != FILETYPE)
 			{
 				m_old_nextch_type(env);
@@ -203,7 +203,7 @@ int preprocess_words(environment *const env)
 		}
 		default:
 		{
-			//output_keywods(env);
+			//output_keywords(env);
 			size_t position = skip_str(env); 
 			macro_error(preproces_words_not_exist, lk_get_current(env->lk), env->error_string, env->line, position);
 			return 0;
@@ -241,7 +241,7 @@ int preprocess_scan(environment *const env)
 			else
 			{
 				// m_nextch(env);
-				output_keywods(env);
+				output_keywords(env);
 			}
 
 			return 0;
