@@ -35,13 +35,6 @@
 #define MAX_FORMAT_SIZE 128
 
 
-int in_func_file(universal_io *const io, const char *const format, va_list args)
-{
-	int ret = vfscanf(io->in_file, format, args);
-	return ret != EOF ? ret : 0;
-}
-
-
 int is_specifier(const char ch)
 {
 	return (ch >= '0' && ch <= '9')
@@ -64,7 +57,20 @@ int is_specifier(const char ch)
 		|| ch == 'n';					// Count
 }
 
-int scan_arg(universal_io *const io, const char *const format, size_t size, void *arg)
+int scan_file_arg(universal_io *const io, const char *const format, const size_t size, void *arg)
+{
+	char buffer[MAX_FORMAT_SIZE];
+	strncpy(buffer, format, size);
+	sprintf(&buffer[size], "%%zn");
+
+	size_t number = 0;
+	int ret = fscanf(io->in_file, buffer, arg, &number);
+	io->in_position += number;
+
+	return number != 0 ? ret : 0;
+}
+
+int scan_buffer_arg(universal_io *const io, const char *const format, const size_t size, void *arg)
 {
 	char buffer[MAX_FORMAT_SIZE];
 	strncpy(buffer, format, size);
@@ -74,15 +80,11 @@ int scan_arg(universal_io *const io, const char *const format, size_t size, void
 	int ret = sscanf(&io->in_buffer[io->in_position], buffer, arg, &number);
 	io->in_position += number;
 
-	if (io->in_position >= io->in_size && number == 0)
-	{
-		return 0;
-	}
-
-	return ret;
+	return io->in_position < io->in_size || number != 0 ? ret : 0;
 }
 
-int in_func_buffer(universal_io *const io, const char *const format, va_list args)
+int in_func_position(universal_io *const io, const char *const format, va_list args
+	, int (*scan_arg)(universal_io *const, const char *const, const size_t, void *))
 {
 	const size_t position = io->in_position;
 	int ret = 0;
@@ -135,6 +137,16 @@ int in_func_buffer(universal_io *const io, const char *const format, va_list arg
 }
 
 
+int in_func_file(universal_io *const io, const char *const format, va_list args)
+{
+	return in_func_position(io, format, args, &scan_file_arg);
+}
+
+int in_func_buffer(universal_io *const io, const char *const format, va_list args)
+{
+	return in_func_position(io, format, args, &scan_buffer_arg);
+}
+
 int in_func_user(universal_io *const io, const char *const format, va_list args)
 {
 	return io->in_user_func(format, args);
@@ -145,7 +157,6 @@ int out_func_file(universal_io *const io, const char *const format, va_list args
 {
 	return vfprintf(io->out_file, format, args);
 }
-
 
 int out_func_buffer(universal_io *const io, const char *const format, va_list args)
 {
@@ -172,7 +183,6 @@ int out_func_buffer(universal_io *const io, const char *const format, va_list ar
 	io->out_buffer = new_buffer;
 	return out_func_buffer(io, format, args);
 }
-
 
 int out_func_user(universal_io *const io, const char *const format, va_list args)
 {
