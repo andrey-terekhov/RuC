@@ -27,7 +27,7 @@
 #define INDENT			"  "
 
 
-size_t elem_get_name(const int elem, const size_t num, char *const buffer)
+size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 {
 	if (buffer == NULL)
 	{
@@ -1274,7 +1274,7 @@ size_t elem_get_name(const int elem, const size_t num, char *const buffer)
 			break;
 
 		default:
-			sprintf(buffer, "%i", elem);
+			sprintf(buffer, "%" PRIitem, elem);
 	}
 
 	if ((num != 0 && !was_switch) || argc < num)
@@ -1293,9 +1293,9 @@ void double_to_io(universal_io *const io, const int64_t fst, const int64_t snd)
 	uni_printf(io, " %f\n", numdouble);
 }
 
-size_t elem_to_io(universal_io *const io, const int *const table, size_t i)
+size_t elem_to_io(universal_io *const io, const vector *const table, size_t i)
 {
-	const int type = table[i++];
+	const item_t type = vector_get(table, i++);
 
 	char buffer[MAX_ELEM_SIZE];
 	size_t argc = elem_get_name(type, 0, buffer);
@@ -1303,7 +1303,7 @@ size_t elem_to_io(universal_io *const io, const int *const table, size_t i)
 
 	if (type == TConstd || type == LID)
 	{
-		double_to_io(io, table[i], table[i + 1]);
+		double_to_io(io, vector_get(table, i), vector_get(table, i + 1));
 		return i + 2;
 	}
 
@@ -1316,24 +1316,24 @@ size_t elem_to_io(universal_io *const io, const int *const table, size_t i)
 			uni_printf(io, " %s=", buffer);
 		}
 
-		uni_printf(io, " %i", table[i++]);
+		uni_printf(io, " %" PRIitem, vector_get(table, i++));
 	}
 	uni_printf(io, "\n");
 
 	if (type == TString)
 	{
-		const size_t n = table[i - 1];
+		const size_t n = (size_t)vector_get(table, i - 1);
 		for (size_t j = 0; j < n; j++)
 		{
-			uni_printf(io, "%i\n", table[i++]);
+			uni_printf(io, "%" PRIitem "\n", vector_get(table, i++));
 		}
 	}
 	else if (type == TStringd)
 	{
-		const size_t n = table[i - 1];
+		const size_t n = (size_t)vector_get(table, i - 1);
 		for (size_t j = 0; j < n; j++)
 		{
-			double_to_io(io, table[i], table[i + 1]);
+			double_to_io(io, vector_get(table, i), vector_get(table, i + 1));
 			i += 2;
 		}
 	}
@@ -1350,7 +1350,7 @@ void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
 	}
 	uni_printf(io, "tc %zi) ", nd->type);
 
-	const int type = node_get_type(nd);
+	const item_t type = node_get_type(nd);
 	char buffer[MAX_ELEM_SIZE];
 	size_t argc = elem_get_name(type, 0, buffer);
 	uni_printf(io, "%s", buffer);
@@ -1371,7 +1371,7 @@ void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
 				uni_printf(io, " %s=", buffer);
 			}
 
-			uni_printf(io, " %i", node_get_arg(nd, i++));
+			uni_printf(io, " %" PRIitem, node_get_arg(nd, i++));
 		}
 		uni_printf(io, "\n");
 
@@ -1399,15 +1399,15 @@ void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
  */
 
 
-void tree_print(syntax *const sx, const char *const path)
+void tree_print(vector *const tree, const char *const path)
 {
 	universal_io io = io_create();
-	if (sx == NULL || out_set_file(&io, path))
+	if (!vector_is_correct(tree) || out_set_file(&io, path))
 	{
 		return;
 	}
 
-	node nd = node_get_root(sx);
+	node nd = node_get_root(tree);
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
 	{
 		node child = node_get_child(&nd, i);
@@ -1428,11 +1428,11 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 	}
 
 	uni_printf(&io, "\n%s\n", "identab");
-	for (size_t i = 2; i < sx->id; i += 4)
+	for (size_t i = 2; i < vector_size(&sx->identifiers); i += 4)
 	{
 		for (size_t j = 0; j < 4; j++)
 		{
-			uni_printf(&io, "id %zi) %i\n", i + j, sx->identab[i + j]);
+			uni_printf(&io, "id %zi) %" PRIitem "\n", i + j, vector_get(&sx->identifiers, i + j));
 		}
 		uni_printf(&io, "\n");
 	}
@@ -1446,26 +1446,26 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 	*/
 
 	uni_printf(&io, "\n%s\n", "modetab");
-	for (size_t i = 0; i < sx->md; i++)
+	for (size_t i = 0; i < vector_size(&sx->modes); i++)
 	{
-		uni_printf(&io, "md %zi) %i\n", i, sx->modetab[i]);
+		uni_printf(&io, "md %zi) %" PRIitem "\n", i, vector_get(&sx->modes, i));
 	}
 
 	/*
 	uni_printf(&io, "\n%s\n", "tree");
 	for (size_t i = 0; i <= tc; i++)
 	{
-		uni_printf(&io, "tc %zi) %i\n", i, sx->tree[i]);
+		uni_printf(&io, "tc %zi) %i\n", i, sx->tree.array[i]);
 	}
 	*/
 
 	uni_printf(&io, "\n");
 
 	size_t i = 0;
-	while (i < sx->tc)
+	while (i < vector_size(&sx->tree))
 	{
 		uni_printf(&io, "tc %zi) ", i);
-		i = elem_to_io(&io, sx->tree, i);
+		i = elem_to_io(&io, &sx->tree, i);
 	}
 
 	io_erase(&io);
@@ -1481,23 +1481,23 @@ void tables_and_codes(const syntax *const sx, const char *const path)
 	}
 
 	uni_printf(&io, "\n\n%s\n", "functions");
-	for (size_t i = 1; i <= sx->funcnum; i++)
+	for (size_t i = 0; i < vector_size(&sx->functions); i++)
 	{
-		uni_printf(&io, "fun %zi) %zi\n", i, sx->functions[i]);
+		uni_printf(&io, "fun %zi) %" PRIitem "\n", i, vector_get(&sx->functions, i));
 	}
 
 	uni_printf(&io, "\n%s\n", "iniprocs");
-	for (size_t i = 1; (int)i <= sx->procd; i++)
+	for (size_t i = 0; i < vector_size(&sx->processes); i++)
 	{
-		uni_printf(&io, "inipr %zi) %i\n", i, sx->iniprocs[i]);
+		uni_printf(&io, "inipr %zi) %" PRIitem "\n", i, vector_get(&sx->processes, i));
 	}
 
 	uni_printf(&io, "\n%s\n", "mem");
 	size_t i = 0;
-	while ((int)i < sx->pc)
+	while (i < vector_size(&sx->memory))
 	{
 		uni_printf(&io, "pc %zi) ", i);
-		i = elem_to_io(&io, sx->mem, i);
+		i = elem_to_io(&io, &sx->memory, i);
 	}
 
 	io_erase(&io);

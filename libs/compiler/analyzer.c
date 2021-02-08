@@ -48,7 +48,7 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx, lexer
 /** Занесение ключевых слов в reprtab */
 void read_keywords(analyzer *context)
 {
-	context->sx->keywordsnum = 1;
+	context->sx->keywords = 1;
 	get_char(context->lxr);
 	get_char(context->lxr);
 	while (lex(context->lxr) != LEOF)
@@ -84,34 +84,32 @@ size_t toreprtab(analyzer *context, char str[])
 void init_modetab(analyzer *context)
 {
 	// занесение в modetab описателя struct {int numTh; int inf; }
-	context->sx->modetab[1] = 0;
-	context->sx->modetab[2] = MSTRUCT;
-	context->sx->modetab[3] = 2;
-	context->sx->modetab[4] = 4;
-	context->sx->modetab[5] = LINT;
-	context->sx->modetab[6] = (int)toreprtab(context, "numTh");
-	context->sx->modetab[7] = LINT;
-	context->sx->modetab[8] = (int)toreprtab(context, "data");
+	vector_add(&context->sx->modes, 0);
+	vector_add(&context->sx->modes, MSTRUCT);
+	vector_add(&context->sx->modes, 2);
+	vector_add(&context->sx->modes, 4);
+	vector_add(&context->sx->modes, LINT);
+	vector_add(&context->sx->modes, (item_t)toreprtab(context, "numTh"));
+	vector_add(&context->sx->modes, LINT);
+	vector_add(&context->sx->modes, (item_t)toreprtab(context, "data"));
 
 	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
-	context->sx->modetab[9] = 1;
-	context->sx->modetab[10] = MFUNCTION;
-	context->sx->modetab[11] = LVOID;
-	context->sx->modetab[12] = 1;
-	context->sx->modetab[13] = 2;
+	vector_add(&context->sx->modes, 1);
+	vector_add(&context->sx->modes, MFUNCTION);
+	vector_add(&context->sx->modes, LVOID);
+	vector_add(&context->sx->modes, 1);
+	vector_add(&context->sx->modes, 2);
 
 	// занесение в modetab описателя функции void* interpreter(void* n)
-	context->sx->modetab[14] = 9;
-	context->sx->modetab[15] = MFUNCTION;
-	context->sx->modetab[16] = LVOIDASTER;
-	context->sx->modetab[17] = 1;
-	context->sx->modetab[18] = LVOIDASTER;
-	context->sx->modetab[19] = 14;
-	context->sx->startmode = 14;
-	context->sx->md = 19;
-	context->sx->keywordsnum = 0;
+	vector_add(&context->sx->modes, 9);
+	vector_add(&context->sx->modes, MFUNCTION);
+	vector_add(&context->sx->modes, LVOIDASTER);
+	vector_add(&context->sx->modes, 1);
+	vector_add(&context->sx->modes, LVOIDASTER);
+
+	context->sx->start_mode = 14;
+	context->sx->keywords = 0;
 	context->line = 1;
-	context->sx->tc = 0;
 }
 
 

@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "uniio.h"
+#include "vector.h"
 
 
 #ifdef __cplusplus
@@ -32,48 +33,39 @@ typedef struct node node;
 /** Global vars definition */
 typedef struct syntax
 {
-	// mem, pc, iniprocs & max_threads - usage here only for codes printing
+	// memory, processes, stack & max_threads - usage here only for codes printing
 
-	int mem[MAXMEMSIZE];			/**< Memory */
-	int pc;							/**< Program counter */
+	vector memory;					/**< Memory table */
+	vector processes;				/**< Init processes table */
+	vector stack;					/**< Stack for logic operations*/
 
-	int stack[256];					/**< Stack for logic operations*/
-	int stack_size;					/**< Size of stack*/
+	vector predef;					/**< Predefined functions table */
+	vector functions;				/**< Functions table */
 
-	int iniprocs[INIPROSIZE];		/**< Init processes */
-	int procd;						/**< Process management daemon */
-	
-	size_t predef[FUNCSIZE];		/**< Predefined functions table */
-	int prdf;						/**< Number of predefined functions */
+	vector tree;					/**< Tree table */
 
-	size_t functions[FUNCSIZE];		/**< Functions table */
-	size_t funcnum;					/**< Number of functions */
+	vector identifiers;				/**< Identifiers table */
+	size_t cur_id;					/**< Start of current scope in identifiers table */
 
-	int identab[MAXIDENTAB];		/**< Identifiers table */
-	size_t id;						/**< Number of identifiers */
-	size_t curid;					/**< Start of current scope in identifiers table */
+	vector modes;					/**< Modes table */
+	size_t start_mode;				/**< Start of last record in modetab */
 
-	int modetab[MAXMODETAB];		/**< Modes table */
-	size_t md;						/**< Number of modes */
-	size_t startmode;				/**< Start of last record in modetab */
-	
-	int tree[MAXTREESIZE];			/**< Tree */
-	size_t tc;						/**< Tree counter */
-	
+
 	size_t hashtab[256];			/**< Hash table for reprtab */
 	int hash;						/**< Last value of hash function */
 
 	char32_t reprtab[MAXREPRTAB];	/**< Representations table */
 	size_t rp;						/**< Representations size */
 
-	int maxdispl;					/**< Max displacement */
-	int maxdisplg;					/**< Max displacement */
+
+	item_t max_displ;				/**< Max displacement */
+	item_t max_displg;				/**< Max displacement */
 	size_t ref_main;				/**< Main function reference */
 
-	int displ;						/**< Stack displacement in current scope */
-	int lg;							/**< Displacement from l (+1) or g (-1) */
-	
-	int keywordsnum;				/**< Number of read keyword */
+	item_t displ;					/**< Stack displacement in current scope */
+	item_t lg;						/**< Displacement from l (+1) or g (-1) */
+
+	size_t keywords;				/**< Number of read keyword */
 
 	size_t max_threads;				/**< Max threads count */
 } syntax;
@@ -92,11 +84,19 @@ int sx_init(syntax *const sx);
  *	Check if syntax structure is correct
  *
  *	@param	sx			Syntax structure
- *	@param	io			Universal io structure
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int sx_is_correct(syntax *const sx, universal_io *const io);
+int sx_is_correct(syntax *const sx);
+
+/**
+ *	Free allocated memory
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int sx_clear(syntax *const sx);
 
 
 /**
@@ -117,7 +117,7 @@ int mem_increase(syntax *const sx, const size_t value);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int mem_add(syntax *const sx, const int value);
+int mem_add(syntax *const sx, const item_t value);
 
 /**
  *	Set value by index in memory table
@@ -128,7 +128,7 @@ int mem_add(syntax *const sx, const int value);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int mem_set(syntax *const sx, const size_t index, const int value);
+int mem_set(syntax *const sx, const size_t index, const item_t value);
 
 /**
  *	Get an item by index from memory table
@@ -136,38 +136,18 @@ int mem_set(syntax *const sx, const size_t index, const int value);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in table
  *
- *	@return	Item by index from table, @c INT_MAX on failure
+ *	@return	Item by index from table, @c ITEM_MAX on failure
  */
-int mem_get(const syntax *const sx, const size_t index);
+item_t mem_get(const syntax *const sx, const size_t index);
 
 /**
  *	Get size of memory table
  *
  *	@param	sx			Syntax structure
  *
- *	@return	Program counter on success, @c INT_MAX on failure
+ *	@return	Program counter on success, @c SIZE_MAX on failure
  */
 size_t mem_size(const syntax *const sx);
-
-
-/**
- *	Push new value to stack
- *
- *	@param	sx			Syntax structure
- *	@param	value		Value to push
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int stack_push(syntax *const sx, const int value);
-
-/**
- *	Pop value from stack
- *
- *	@param	sx			Syntax structure
- *
- *	@return	value, @c INT_MAX on failure
- */
-int stack_pop(syntax *const sx);
 
 
 /**
@@ -179,7 +159,7 @@ int stack_pop(syntax *const sx);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int proc_set(syntax *const sx, const size_t index, const int value);
+int proc_set(syntax *const sx, const size_t index, const item_t value);
 
 /**
  *	Get an item by index from init processes table
@@ -187,9 +167,29 @@ int proc_set(syntax *const sx, const size_t index, const int value);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in table
  *
- *	@return	Item by index from table, @c INT_MAX on failure
+ *	@return	Item by index from table, @c ITEM_MAX on failure
  */
-int proc_get(const syntax *const sx, const size_t index);
+item_t proc_get(const syntax *const sx, const size_t index);
+
+
+/**
+ *	Push new value to stack
+ *
+ *	@param	sx			Syntax structure
+ *	@param	value		Value to push
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int stack_push(syntax *const sx, const item_t value);
+
+/**
+ *	Pop value from stack
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	Value, @c ITEM_MAX on failure
+ */
+item_t stack_pop(syntax *const sx);
 
 
 /**
@@ -200,7 +200,7 @@ int proc_get(const syntax *const sx, const size_t index);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int func_add(syntax *const sx, const size_t ref);
+int func_add(syntax *const sx, const item_t ref);
 
 /**
  *	Set function start reference by index in functions table
@@ -211,7 +211,7 @@ int func_add(syntax *const sx, const size_t ref);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int func_set(syntax *const sx, const size_t index, const size_t ref);
+int func_set(syntax *const sx, const size_t index, const item_t ref);
 
 /**
  *	Get an item from functions table by index
@@ -219,9 +219,9 @@ int func_set(syntax *const sx, const size_t index, const size_t ref);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in functions table
  *
- *	@return	Item by index from functions table, @c SIZE_MAX on failure
+ *	@return	Item by index from functions table, @c ITEM_MAX on failure
  */
-size_t func_get(const syntax *const sx, const size_t index);
+item_t func_get(const syntax *const sx, const size_t index);
 
 
 /**
@@ -244,7 +244,7 @@ size_t func_get(const syntax *const sx, const size_t index);
  *			@c SIZE_MAX @c - @c 1 on redeclaration
  *			@c SIZE_MAX on redefinition of main
  */
-size_t ident_add(syntax *const sx, const size_t repr, const int type, const int mode, const int func_def);
+size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const item_t mode, const int func_def);
 
 /**
  *	Get item representation from identifiers table by index
@@ -252,9 +252,9 @@ size_t ident_add(syntax *const sx, const size_t repr, const int type, const int 
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in identifiers table
  *
- *	@return	Identifier index in representations table, @c INT_MAX on failure
+ *	@return	Identifier index in representations table, @c ITEM_MAX on failure
  */
-int ident_get_repr(const syntax *const sx, const size_t index);
+item_t ident_get_repr(const syntax *const sx, const size_t index);
 
 /**
  *	Get item mode from identifiers table by index
@@ -262,9 +262,9 @@ int ident_get_repr(const syntax *const sx, const size_t index);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in identifiers table
  *
- *	@return	Identifier mode, @c INT_MAX on failure
+ *	@return	Identifier mode, @c ITEM_MAX on failure
  */
-int ident_get_mode(const syntax *const sx, const size_t index);
+item_t ident_get_mode(const syntax *const sx, const size_t index);
 
 /**
  *	Get item displacement from identifiers table by index
@@ -272,9 +272,9 @@ int ident_get_mode(const syntax *const sx, const size_t index);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in identifiers table
  *
- *	@return	Identifier displacement, @c INT_MAX on failure
+ *	@return	Identifier displacement, @c ITEM_MAX on failure
  */
-int ident_get_displ(const syntax *const sx, const size_t index);
+item_t ident_get_displ(const syntax *const sx, const size_t index);
 
 /**
  *	Set identifier representation by index in identifiers table
@@ -285,7 +285,7 @@ int ident_get_displ(const syntax *const sx, const size_t index);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int ident_set_repr(syntax *const sx, const size_t index, const size_t repr);
+int ident_set_repr(syntax *const sx, const size_t index, const item_t repr);
 
 /**
  *	Set identifier mode by index in identifiers table
@@ -296,7 +296,7 @@ int ident_set_repr(syntax *const sx, const size_t index, const size_t repr);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int ident_set_mode(syntax *const sx, const size_t index, const int mode);
+int ident_set_mode(syntax *const sx, const size_t index, const item_t mode);
 
 /**
  *	Set identifier displacement by index in identifiers table
@@ -307,7 +307,7 @@ int ident_set_mode(syntax *const sx, const size_t index, const int mode);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int ident_set_displ(syntax *const sx, const size_t index, const int displ);
+int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
 
 
 /**
@@ -319,7 +319,7 @@ int ident_set_displ(syntax *const sx, const size_t index, const int displ);
  *
  *	@return	Mode size
  */
-int size_of(const syntax *const sx, const int mode);
+int size_of(const syntax *const sx, const item_t mode);
 
 /**
  *	Add a new record to modes table
@@ -330,7 +330,7 @@ int size_of(const syntax *const sx, const int mode);
  *
  *	@return	Index of the new record in modes table, @c SIZE_MAX on failure
  */
-size_t mode_add(syntax *const sx, const int *const record, const size_t size);
+size_t mode_add(syntax *const sx, const item_t *const record, const size_t size);
 
 /**
  *	Get an item from modes table by index
@@ -338,9 +338,9 @@ size_t mode_add(syntax *const sx, const int *const record, const size_t size);
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in modes table
  *
- *	@return	Item by index from modes table, @c INT_MAX on failure
+ *	@return	Item by index from modes table, @c ITEM_MAX on failure
  */
-int mode_get(const syntax *const sx, const size_t index);
+item_t mode_get(const syntax *const sx, const size_t index);
 
 
 /**
@@ -352,6 +352,17 @@ int mode_get(const syntax *const sx, const size_t index);
  *	@return	Index of the new record in representations table, @c SIZE_MAX on failure
  */
 size_t repr_add(syntax *const sx, const char32_t *const spelling);
+
+/**
+ *	Write identificator name from representations table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in representations table
+ *	@param	buffer		Output string
+ *
+ *	@return	Size of сharacter in string, @c SIZE_MAX on failure
+ */
+size_t repr_get_ident(const syntax *const sx, const size_t index, char *const buffer);
 
 /**
  *	Get a representation spelling from table by index
@@ -383,7 +394,7 @@ int repr_get_reference(const syntax *const sx, const size_t index);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int repr_set_reference(syntax *const sx, const size_t index, const size_t ref);
+int repr_set_reference(syntax *const sx, const size_t index, const item_t ref);
 
 
 /**
@@ -395,7 +406,7 @@ int repr_set_reference(syntax *const sx, const size_t index, const size_t ref);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int scope_block_enter(syntax *const sx, int *const displ, int *const lg);
+int scope_block_enter(syntax *const sx, item_t *const displ, item_t *const lg);
 
 /**
  *	Exit block scope
@@ -406,7 +417,7 @@ int scope_block_enter(syntax *const sx, int *const displ, int *const lg);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int scope_block_exit(syntax *const sx, const int displ, const int lg);
+int scope_block_exit(syntax *const sx, const item_t displ, const item_t lg);
 
 /**
  *	Enter function scope
@@ -415,7 +426,7 @@ int scope_block_exit(syntax *const sx, const int displ, const int lg);
  *
  *	@return	Previous stack displacement, @c INT_MAX on failure
  */
-int scope_func_enter(syntax *const sx);
+item_t scope_func_enter(syntax *const sx);
 
 /**
  *	Exit function scope
@@ -426,7 +437,7 @@ int scope_func_enter(syntax *const sx);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int scope_func_exit(syntax *const sx, const size_t decl_ref, const int displ);
+int scope_func_exit(syntax *const sx, const size_t decl_ref, const item_t displ);
 
 #ifdef __cplusplus
 } /* extern "C" */

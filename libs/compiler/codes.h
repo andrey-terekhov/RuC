@@ -17,6 +17,7 @@
 #pragma once
 
 #include "syntax.h"
+#include "vector.h"
 
 
 #ifdef __cplusplus
@@ -26,10 +27,10 @@ extern "C" {
 /**
  *	Output new tree
  *
- *	@param	sx		Syntax structure
+ *	@param	tree	Tree table
  *	@param	path	File path
  */
-void tree_print(syntax *const sx, const char *const path);
+void tree_print(vector *const tree, const char *const path);
 
 
 /**

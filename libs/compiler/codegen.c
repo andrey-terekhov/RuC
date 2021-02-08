@@ -37,8 +37,8 @@ static void addr_begin_condition(syntax *const sx, address *const context, const
 {
 	while (context->addr_cond != addr)
 	{
-		const size_t ref = mem_get(sx, context->addr_cond);
-		mem_set(sx, context->addr_cond, (int)addr);
+		const size_t ref = (size_t)mem_get(sx, context->addr_cond);
+		mem_set(sx, context->addr_cond, (item_t)addr);
 		context->addr_cond = ref;
 	}
 }
@@ -47,8 +47,8 @@ static void addr_end_condition(syntax *const sx, address *const context)
 {
 	while (context->addr_cond)
 	{
-		const size_t ref = mem_get(sx, context->addr_cond);
-		mem_set(sx, context->addr_cond, (int)mem_size(sx));
+		const size_t ref = (size_t)mem_get(sx, context->addr_cond);
+		mem_set(sx, context->addr_cond, (item_t)mem_size(sx));
 		context->addr_cond = ref;
 	}
 }
@@ -57,8 +57,8 @@ static void addr_end_break(syntax *const sx, address *const context)
 {
 	while (context->addr_break)
 	{
-		const size_t ref = mem_get(sx, context->addr_break);
-		mem_set(sx, context->addr_break, (int)mem_size(sx));
+		const size_t ref = (size_t)mem_get(sx, context->addr_break);
+		mem_set(sx, context->addr_break, (item_t)mem_size(sx));
 		context->addr_break = ref;
 	}
 }
@@ -66,7 +66,7 @@ static void addr_end_break(syntax *const sx, address *const context)
 
 static void final_operation(syntax *const sx, node *const nd)
 {
-	int op = node_get_type(nd);
+	item_t op = node_get_type(nd);
 	while (op > 9000)
 	{
 		if (op != NOP)
@@ -75,14 +75,14 @@ static void final_operation(syntax *const sx, node *const nd)
 			{
 				mem_add(sx, _DOUBLE);
 				mem_add(sx, BNE0);
-				stack_push(sx, (int)mem_size(sx));
+				stack_push(sx, (item_t)mem_size(sx));
 				mem_increase(sx, 1);
 			}
 			else if (op == ADLOGAND)
 			{
 				mem_add(sx, _DOUBLE);
 				mem_add(sx, BE0);
-				stack_push(sx, (int)mem_size(sx));
+				stack_push(sx, (item_t)mem_size(sx));
 				mem_increase(sx, 1);
 			}
 			else
@@ -90,7 +90,7 @@ static void final_operation(syntax *const sx, node *const nd)
 				mem_add(sx, op);
 				if (op == LOGOR || op == LOGAND)
 				{
-					mem_set(sx, stack_pop(sx), (int)mem_size(sx));
+					mem_set(sx, (size_t)stack_pop(sx), (item_t)mem_size(sx));
 				}
 				else if (op == COPY00 || op == COPYST)
 				{
@@ -111,7 +111,7 @@ static void final_operation(syntax *const sx, node *const nd)
 					|| (op >= ASSR && op <= DIVASSR) || (op >= ASSRV && op <= DIVASSRV) || (op >= POSTINC && op <= DEC)
 					|| (op >= POSTINCV && op <= DECV) || (op >= POSTINCR && op <= DECR) || (op >= POSTINCRV && op <= DECRV))
 				{
-					mem_add(sx,node_get_arg(nd, 0));
+					mem_add(sx, node_get_arg(nd, 0));
 				}
 			}
 		}
@@ -138,7 +138,7 @@ static void expression(syntax *const sx, node *const nd, int mode)
 
 	while (node_get_type(nd) != TExprend)
 	{
-		const int operation = node_get_type(nd);
+		const item_t operation = node_get_type(nd);
 		int was_operation = 1;
 
 		switch (operation)
@@ -187,36 +187,36 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			{
 				mem_add(sx, LI);
 				const size_t reserved = mem_size(sx) + 4;
-				mem_add(sx, (int)reserved);
+				mem_add(sx, (item_t)reserved);
 				mem_add(sx, B);
 				mem_increase(sx, 2);
 
-				const int N = node_get_arg(nd, 0);
-				for (int i = 0; i < N; i++)
+				const item_t N = node_get_arg(nd, 0);
+				for (item_t i = 0; i < N; i++)
 				{
 					if (operation == TString)
 					{
-						mem_add(sx, node_get_arg(nd, i + 1));
+						mem_add(sx, node_get_arg(nd, (size_t)i + 1));
 					}
 					else
 					{
-						mem_add(sx, node_get_arg(nd, 2 * i + 1));
-						mem_add(sx, node_get_arg(nd, 2 * i + 2));
+						mem_add(sx, node_get_arg(nd, 2 * (size_t)i + 1));
+						mem_add(sx, node_get_arg(nd, 2 * (size_t)i + 2));
 					}
 				}
 
 				mem_set(sx, reserved - 1, N);
-				mem_set(sx, reserved - 2, (int)mem_size(sx));
+				mem_set(sx, reserved - 2, (item_t)mem_size(sx));
 			}
 			break;
 			case TBeginit:
 			{
-				const int N = node_get_arg(nd, 0);
+				const item_t N = node_get_arg(nd, 0);
 
 				mem_add(sx, BEGINIT);
 				mem_add(sx, N);
 
-				for (int i = 0; i < N; i++)
+				for (item_t i = 0; i < N; i++)
 				{
 					expression(sx, nd, 0);
 				}
@@ -224,8 +224,8 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			break;
 			case TStructinit:
 			{
-				const int N = node_get_arg(nd, 0);
-				for (int i = 0; i < N; i++)
+				const item_t N = node_get_arg(nd, 0);
+				for (item_t i = 0; i < N; i++)
 				{
 					expression(sx, nd, 0);
 				}
@@ -238,12 +238,12 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			}
 			case TSlice: // параметр - тип элемента
 			{
-				int type = node_get_arg(nd, operation == TSlice ? 0 : 1);
+				item_t type = node_get_arg(nd, operation == TSlice ? 0 : 1);
 
 				expression(sx, nd, 0);
 				mem_add(sx, SLICE);
-				mem_add(sx, size_of(sx, type));
-				if (type > 0 && mode_get(sx, type) == MARRAY)
+				mem_add(sx, size_of(sx, (int)type));
+				if (type > 0 && mode_get(sx, (size_t)type) == MARRAY)
 				{
 					mem_add(sx, LAT);
 				}
@@ -265,8 +265,8 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			{
 				mem_add(sx, CALL1);
 
-				const int N = node_get_arg(nd, 0);
-				for (int i = 0; i < N; i++)
+				const item_t N = node_get_arg(nd, 0);
+				for (item_t i = 0; i < N; i++)
 				{
 					expression(sx, nd, 0);
 				}
@@ -275,7 +275,7 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			case TCall2:
 			{
 				mem_add(sx, CALL2);
-				mem_add(sx, ident_get_displ(sx, node_get_arg(nd, 0)));
+				mem_add(sx, ident_get_displ(sx, (size_t)node_get_arg(nd, 0)));
 			}
 			break;
 			default:
@@ -306,17 +306,17 @@ static void expression(syntax *const sx, node *const nd, int mode)
 
 				expression(sx, nd, 0); // then
 				mem_add(sx, B);
-				mem_add(sx, (int)addr);
+				mem_add(sx, (item_t)addr);
 				addr = mem_size(sx) - 1;
-				mem_set(sx, addr_else, (int)mem_size(sx));
+				mem_set(sx, addr_else, (item_t)mem_size(sx));
 
 				expression(sx, nd, 1); // else или cond
 			} while (node_get_type(nd) == TCondexpr);
 
 			while (addr)
 			{
-				int ref = mem_get(sx, addr);
-				mem_set(sx, addr, (int)mem_size(sx));
+				const size_t ref = (size_t)mem_get(sx, addr);
+				mem_set(sx, addr, (item_t)mem_size(sx));
 				addr = ref;
 			}
 
@@ -329,10 +329,10 @@ static void structure(syntax *const sx, node *const nd)
 {
 	if (node_get_type(nd) == TStructinit)
 	{
-		const int N = node_get_arg(nd, 0);
+		const item_t N = node_get_arg(nd, 0);
 		node_set_next(nd);
 
-		for (int i = 0; i < N; i++)
+		for (item_t i = 0; i < N; i++)
 		{
 			structure(sx, nd);
 			node_set_next(nd); // TExprend
@@ -346,9 +346,9 @@ static void structure(syntax *const sx, node *const nd)
 
 static void identifier(syntax *const sx, node *const nd)
 {
-	const int old_displ = node_get_arg(nd, 0);
-	const int type = node_get_arg(nd, 1);
-	const int N = node_get_arg(nd, 2);
+	const item_t old_displ = node_get_arg(nd, 0);
+	const item_t type = node_get_arg(nd, 1);
+	const item_t N = node_get_arg(nd, 2);
 
 	/*
 	*	@param	all		Общее кол-во слов в структуре:
@@ -356,16 +356,16 @@ static void identifier(syntax *const sx, node *const nd)
 	*						@c 1 есть инициализатор,
 	*						@c 2 есть инициализатор только из строк
 	*/
-	const int all = node_get_arg(nd, 3);
-	const int process = node_get_arg(nd, 4);
+	const item_t all = node_get_arg(nd, 3);
+	const item_t process = node_get_arg(nd, 4);
 
 	/*
 	*	@param	usual	Для массивов:
 	*						@c 0 с пустыми границами,
 	*						@c 1 без пустых границ
 	*/
-	const int usual = node_get_arg(nd, 5);
-	const int instruction = node_get_arg(nd, 6);
+	const item_t usual = node_get_arg(nd, 5);
+	const item_t instruction = node_get_arg(nd, 6);
 
 
 	if (N == 0) // Обычная переменная int a; или struct point p;
@@ -374,11 +374,11 @@ static void identifier(syntax *const sx, node *const nd)
 		{
 			mem_add(sx, STRUCTWITHARR);
 			mem_add(sx, old_displ);
-			mem_add(sx, proc_get(sx, process));
+			mem_add(sx, proc_get(sx, (size_t)process));
 		}
 		if (all) // int a = или struct{} a =
 		{
-			if (type > 0 && mode_get(sx, type) == MSTRUCT)
+			if (type > 0 && mode_get(sx, (size_t)type) == MSTRUCT)
 			{
 				node_set_next(nd);
 				structure(sx, nd);
@@ -398,13 +398,13 @@ static void identifier(syntax *const sx, node *const nd)
 	}
 	else // Обработка массива int a[N1]...[NN] =
 	{
-		const int length = size_of(sx, type);
+		const item_t length = size_of(sx, (int)type);
 
 		mem_add(sx, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
-		mem_add(sx, all == 0 ? N : abs(N) - 1);
+		mem_add(sx, all == 0 ? N : abs((int)N) - 1);
 		mem_add(sx, length);
 		mem_add(sx, old_displ);
-		mem_add(sx, proc_get(sx, process));
+		mem_add(sx, proc_get(sx, (size_t)process));
 		mem_add(sx, usual);
 		mem_add(sx, all);
 		mem_add(sx, instruction);
@@ -414,7 +414,7 @@ static void identifier(syntax *const sx, node *const nd)
 			expression(sx, nd, 0);
 
 			mem_add(sx, ARRINIT); // ARRINIT N d all displ usual
-			mem_add(sx, abs(N));
+			mem_add(sx, abs((int)N));
 			mem_add(sx, length);
 			mem_add(sx, old_displ);
 			mem_add(sx, usual);	// == 0 с пустыми границами
@@ -429,8 +429,8 @@ static int declaration(syntax *const sx, node *const nd)
 	{
 		case TDeclarr:
 		{
-			const int N = node_get_arg(nd, 0);
-			for (int i = 0; i < N; i++)
+			const item_t N = node_get_arg(nd, 0);
+			for (item_t i = 0; i < N; i++)
 			{
 				expression(sx, nd, 0);
 			}
@@ -444,15 +444,15 @@ static int declaration(syntax *const sx, node *const nd)
 		{
 			mem_add(sx, B);
 			mem_add(sx, 0);
-			proc_set(sx, node_get_arg(nd, 0), (int)mem_size(sx));
+			proc_set(sx, (size_t)node_get_arg(nd, 0), (item_t)mem_size(sx));
 		}
 		break;
 		case TStructend:
 		{
-			const int num_proc = node_get_arg(nd, 0);
+			const size_t num_proc = (size_t)node_get_arg(nd, 0);
 
 			mem_add(sx, STOP);
-			mem_set(sx, proc_get(sx, num_proc) - 1, (int)mem_size(sx));
+			mem_set(sx, (size_t)proc_get(sx, num_proc) - 1, (item_t)mem_size(sx));
 		}
 		break;
 
@@ -482,7 +482,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			break;
 		case TIf:
 		{
-			const int ref_else = node_get_arg(nd, 0);
+			const item_t ref_else = node_get_arg(nd, 0);
 
 			expression(sx, nd, 0);
 			node_set_next(nd); // TExprend
@@ -495,13 +495,13 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			if (ref_else)
 			{
 				node_set_next(nd);
-				mem_set(sx, addr, (int)mem_size(sx) + 2);
+				mem_set(sx, addr, (item_t)mem_size(sx) + 2);
 				mem_add(sx, B);
 				addr = mem_size(sx);
 				mem_increase(sx, 1);
 				statement(sx, nd, context);
 			}
-			mem_set(sx, addr, (int)mem_size(sx));
+			mem_set(sx, addr, (item_t)mem_size(sx));
 		}
 		break;
 		case TWhile:
@@ -521,7 +521,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 
 			addr_begin_condition(sx, context, addr);
 			mem_add(sx, B);
-			mem_add(sx, (int)addr);
+			mem_add(sx, (item_t)addr);
 			addr_end_break(sx, context);
 
 			context->addr_break = old_break;
@@ -532,7 +532,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 		{
 			const size_t old_break = context->addr_break;
 			const size_t old_cond = context->addr_cond;
-			const size_t addr = mem_size(sx);
+			const item_t addr = (item_t)mem_size(sx);
 
 			context->addr_cond = 0;
 			context->addr_break = 0;
@@ -543,7 +543,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 
 			expression(sx, nd, 0);
 			mem_add(sx, BNE0);
-			mem_add(sx, (int)addr);
+			mem_add(sx, addr);
 			addr_end_break(sx, context);
 
 			context->addr_break = old_break;
@@ -552,9 +552,9 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 		break;
 		case TFor:
 		{
-			const int ref_from = node_get_arg(nd, 0);
-			const int ref_cond = node_get_arg(nd, 1);
-			const int ref_incr = node_get_arg(nd, 2);
+			const item_t ref_from = node_get_arg(nd, 0);
+			const item_t ref_cond = node_get_arg(nd, 1);
+			const item_t ref_incr = node_get_arg(nd, 2);
 
 			node incr;
 			node_copy(&incr, nd);
@@ -597,7 +597,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			node_copy(nd, &stmt);
 
 			mem_add(sx, B);
-			mem_add(sx, (int)initad);
+			mem_add(sx, (item_t)initad);
 			addr_end_break(sx, context);
 
 			context->addr_break = old_break;
@@ -608,9 +608,9 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 		{
 			mem_add(sx, B);
 
-			const int id_sign = node_get_arg(nd, 0);
-			const size_t id = id_sign > 0 ? id_sign : -id_sign;
-			const int addr = ident_get_displ(sx, id);
+			const item_t id_sign = node_get_arg(nd, 0);
+			const size_t id = abs((int)id_sign);
+			const item_t addr = ident_get_displ(sx, id);
 
 			if (addr > 0) // метка уже описана
 			{
@@ -618,7 +618,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			}
 			else // метка еще не описана
 			{
-				ident_set_displ(sx, id, -(int)mem_size(sx));
+				ident_set_displ(sx, id, -(item_t)mem_size(sx));
 
 				// первый раз встретился переход на еще не описанную метку или нет
 				mem_add(sx, id_sign < 0 ? 0 : addr);
@@ -627,19 +627,19 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 		break;
 		case TLabel:
 		{
-			const int id = node_get_arg(nd, 0);
-			int addr = ident_get_displ(sx, id);
+			const item_t id = node_get_arg(nd, 0);
+			item_t addr = ident_get_displ(sx, (size_t)id);
 
 			if (addr < 0) // были переходы на метку
 			{
 				while (addr) // проставить ссылку на метку во всех ранних переходах
 				{
-					int ref = mem_get(sx, -addr);
-					mem_set(sx, -addr, (int)mem_size(sx));
+					item_t ref = mem_get(sx, (size_t)(-addr));
+					mem_set(sx, (size_t)(-addr), (item_t)mem_size(sx));
 					addr = ref;
 				}
 			}
-			ident_set_displ(sx, id, (int)mem_size(sx));
+			ident_set_displ(sx, (size_t)id, (item_t)mem_size(sx));
 		}
 		break;
 		case TSwitch:
@@ -655,7 +655,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			statement(sx, nd, context);
 			if (context->addr_case > 0)
 			{
-				mem_set(sx, context->addr_case, (int)mem_size(sx));
+				mem_set(sx, context->addr_case, (item_t)mem_size(sx));
 			}
 			addr_end_break(sx, context);
 
@@ -667,7 +667,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 		{
 			if (context->addr_case)
 			{
-				mem_set(sx, context->addr_case, (int)mem_size(sx));
+				mem_set(sx, context->addr_case, (item_t)mem_size(sx));
 			}
 			mem_add(sx, _DOUBLE);
 			expression(sx, nd, 0);
@@ -684,7 +684,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 		{
 			if (context->addr_case)
 			{
-				mem_set(sx, context->addr_case, (int)mem_size(sx));
+				mem_set(sx, context->addr_case, (item_t)mem_size(sx));
 			}
 			context->addr_case = 0;
 
@@ -695,14 +695,14 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 		case TBreak:
 		{
 			mem_add(sx, B);
-			mem_add(sx, (int)context->addr_break);
+			mem_add(sx, (item_t)context->addr_break);
 			context->addr_break = mem_size(sx) - 1;
 		}
 		break;
 		case TContinue:
 		{
 			mem_add(sx, B);
-			mem_add(sx, (int)context->addr_cond);
+			mem_add(sx, (item_t)context->addr_cond);
 			context->addr_cond = mem_size(sx) - 1;
 		}
 		break;
@@ -711,7 +711,7 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			break;
 		case TReturnval:
 		{
-			const int value = node_get_arg(nd, 0);
+			const item_t value = node_get_arg(nd, 0);
 			expression(sx, nd, 0);
 
 			mem_add(sx, RETURNVAL);
@@ -768,18 +768,18 @@ static int codegen(syntax *const sx)
 {
 	address context;
 
-	node root = node_get_root(sx);
+	node root = node_get_root(&sx->tree);
 	while (node_set_next(&root) == 0)
 	{
 		switch (node_get_type(&root))
 		{
 			case TFuncdef:
 			{
-				const int ref_ident = node_get_arg(&root, 0);
-				const int max_displ = node_get_arg(&root, 1);
-				const int func = ident_get_displ(sx, ref_ident);
+				const item_t ref_ident = node_get_arg(&root, 0);
+				const item_t max_displ = node_get_arg(&root, 1);
+				const size_t func = (size_t)ident_get_displ(sx, (size_t)ref_ident);
 
-				func_set(sx, func, mem_size(sx));
+				func_set(sx, func, (item_t)mem_size(sx));
 				mem_add(sx, FUNCBEG);
 				mem_add(sx, max_displ);
 
@@ -789,7 +789,7 @@ static int codegen(syntax *const sx)
 				node_set_next(&root);
 				block(sx, &root, &context);
 
-				mem_set(sx, old_pc, (int)mem_size(sx));
+				mem_set(sx, old_pc, (item_t)mem_size(sx));
 			}
 			break;
 
@@ -819,24 +819,24 @@ void output_export(universal_io *const io, const syntax *const sx)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%zi %zi %zi %zi %zi %i %zi\n", mem_size(sx), sx->funcnum, sx->id,
-				   sx->rp, sx->md, sx->maxdisplg, sx->max_threads);
+	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n", mem_size(sx), vector_size(&sx->functions),
+				vector_size(&sx->identifiers), sx->rp, vector_size(&sx->modes), sx->max_displg, sx->max_threads);
 
 	for (size_t i = 0; i < mem_size(sx); i++)
 	{
-		uni_printf(io, "%i ", mem_get(sx, i));
+		uni_printf(io, "%" PRIitem " ", mem_get(sx, i));
 	}
 	uni_printf(io, "\n");
 
-	for (size_t i = 0; i < sx->funcnum; i++)
+	for (size_t i = 0; i < vector_size(&sx->functions); i++)
 	{
-		uni_printf(io, "%zi ", func_get(sx, i));
+		uni_printf(io, "%" PRIitem " ", func_get(sx, i));
 	}
 	uni_printf(io, "\n");
 
-	for (size_t i = 0; i < sx->id; i++)
+	for (size_t i = 0; i < vector_size(&sx->identifiers); i++)
 	{
-		uni_printf(io, "%i ", sx->identab[i]);
+		uni_printf(io, "%" PRIitem " ", vector_get(&sx->identifiers, i));
 	}
 	uni_printf(io, "\n");
 
@@ -846,9 +846,9 @@ void output_export(universal_io *const io, const syntax *const sx)
 	}
 	uni_printf(io, "\n");
 
-	for (size_t i = 0; i < sx->md; i++)
+	for (size_t i = 0; i < vector_size(&sx->modes); i++)
 	{
-		uni_printf(io, "%i ", mode_get(sx, i));
+		uni_printf(io, "%" PRIitem " ", mode_get(sx, i));
 	}
 	uni_printf(io, "\n");
 }
