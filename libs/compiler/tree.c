@@ -542,6 +542,7 @@ node node_get_root(vector *const tree)
 	nd.argc = 0;
 	nd.children = 0;
 	nd.amount = 0;
+	nd.parent = SIZE_MAX;
 
 	size_t i = 0;
 	while (i != SIZE_MAX && vector_get(nd.tree, i) != ITEM_MAX)
@@ -578,9 +579,12 @@ node node_get_child(node *const nd, const size_t index)
 		}
 	}
 
-	return nd->type == SIZE_MAX || is_operator(node_get_type(nd))
+	node child = nd->type == SIZE_MAX || is_operator(node_get_type(nd))
 		? node_operator(nd->tree, i)
 		: node_expression(nd->tree, i);
+
+	child.parent = nd->type;
+	return child;
 }
 
 
@@ -711,6 +715,7 @@ node node_set_child(node *const nd)
 	child.children = child.argv + child.argc;
 	child.amount = 0;
 
+	child.parent = nd->type;
 	return child;
 }
 

@@ -36,6 +36,8 @@ typedef struct node
 
 	size_t children;		/**< Reference to children */
 	size_t amount;			/**< Amount of children */
+
+	size_t parent;			/**< Reference to parent */
 } node;
 
 
