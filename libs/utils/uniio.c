@@ -325,12 +325,7 @@ io_func in_get_func(const universal_io *const io)
 
 size_t in_get_path(const universal_io *const io, char *const buffer)
 {
-	if (!in_is_file(io))
-	{
-		return 0;
-	}
-
-	return io_get_path(io->in_file, buffer);
+	return in_is_file(io) ? io_get_path(io->in_file, buffer) : 0;
 }
 
 const char *in_get_buffer(const universal_io *const io)
