@@ -261,6 +261,8 @@ int in_set_file(universal_io *const io, const char *const path)
 		return -1;
 	}
 
+	io->in_position = 0;
+
 	io->in_func = &in_func_file;
 
 	return 0;
@@ -349,6 +351,8 @@ int in_close_file(universal_io *const io)
 	int ret = fclose(io->in_file);
 	io->in_file = NULL;
 
+	io->in_position = 0;
+
 	return ret;
 }
 
@@ -369,15 +373,13 @@ int in_clear(universal_io *const io)
 
 		io->in_size = 0;
 		io->in_position = 0;
-
-		io->in_func = NULL;
 	}
 	else
 	{
-		io->in_func = NULL;
 		io->in_user_func = NULL;
 	}
-	
+
+	io->in_func = NULL;
 	return 0;
 }
 
@@ -522,10 +524,10 @@ int out_clear(universal_io *const io)
 	}
 	else
 	{
-		io->out_func = NULL;
 		io->out_user_func = NULL;
 	}
-	
+
+	io->out_func = NULL;
 	return 0;
 }
 
