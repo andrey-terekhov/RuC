@@ -308,35 +308,6 @@ int in_set_func(universal_io *const io, const io_user_func func)
 	return 0;
 }
 
-int in_set_position(universal_io *const io, const size_t position)
-{
-	if (in_is_buffer(io))
-	{
-		if (position < io->in_size)
-		{
-			io->in_position = position;
-			return 0;
-		}
-
-		return -1;
-	}
-	
-	if (in_is_file(io))
-	{
-		if ((position == 0 && fseek(io->in_file, 0, SEEK_SET) == 0)
-			|| (fseek(io->in_file, (long)(position - 1), SEEK_SET) == 0 && fgetc(io->in_file) != EOF))
-		{
-			io->in_position = position;
-			return 0;
-		}
-		
-		fseek(io->in_file, (long)io->in_position, SEEK_SET);
-		return -1;
-	}
-
-	return -1;
-}
-
 
 int in_is_correct(const universal_io *const io)
 {
