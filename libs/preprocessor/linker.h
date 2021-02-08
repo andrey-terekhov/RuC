@@ -78,7 +78,7 @@ void lk_add_comment(environment *const env);
  *
  *	@return	File
  */
-const char *lk_get_current(const linker* const lk);
+const char *lk_get_current(const linker *const lk);
 
 #ifdef __cplusplus
 } /* extern "C" */

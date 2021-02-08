@@ -30,7 +30,7 @@
 
 #define MAX_CMT_SIZE MAX_ARG_SIZE + 32
 
-const char *lk_get_current(const linker* const lk)
+const char *lk_get_current(const linker *const lk)
 {
 	return ws_get_file(lk->ws, lk->current);
 }
@@ -76,9 +76,7 @@ void lk_make_path(char *const output, const char *const source, const char *cons
 size_t lk_open_include(environment *const env, const char* const path)
 {
 	char full_path[MAX_ARG_SIZE];
-
 	lk_make_path(full_path, lk_get_current(env->lk), path, 1);
-
 	
 	if (in_set_file(env->input, full_path))
 	{
@@ -120,9 +118,12 @@ int lk_open_source(environment *const env, const size_t index)
 {
 	if (in_set_file(env->input, ws_get_file(env->lk->ws, index)))
 	{
-		log_system_error(ws_get_file(env->lk->ws, index), "файл не найден");
+		log_system_error(lk_get_current(env->lk), "файл не найден");
 		return -1;
 	}
+
+	env->lk->included[index] = 1;
+
 	return 0;
 }
 
