@@ -80,7 +80,7 @@ int while_collect(environment *const env)
 
 	size_t position = skip_str(env); 
 	macro_error(must_end_endw
-			, lk_get_current(&env->lk)
+			, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 	return -1;
 }
@@ -130,7 +130,7 @@ int while_realiz(environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(must_end_endw
-			, lk_get_current(&env->lk)
+			, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}

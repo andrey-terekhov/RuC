@@ -42,7 +42,12 @@ linker lk_create(workspace *const ws)
 
 	lk.ws = ws;
 	lk.current = MAX_PATHS;
-	lk.count = 0;
+	lk.count = ws_get_files_num(ws);
+
+	for (size_t i = 0; i < lk.count; i++)
+	{
+		lk.included[i] = 0;
+	}
 
 	return lk;
 }
@@ -72,7 +77,7 @@ size_t lk_open_include(environment *const env, const char* const path)
 {
 	char full_path[MAX_ARG_SIZE];
 
-	lk_make_path(full_path, lk_get_current(&env->lk), path, 1);
+	lk_make_path(full_path, lk_get_current(env->lk), path, 1);
 
 	
 	if (in_set_file(env->input, full_path))
@@ -82,7 +87,7 @@ size_t lk_open_include(environment *const env, const char* const path)
 
 		do  
 		{
-			dir = ws_get_dir(env->lk.ws, i++);
+			dir = ws_get_dir(env->lk->ws, i++);
 			lk_make_path(full_path, dir, path, 0);
 		} while (dir != NULL && in_set_file(env->input, full_path));
 		
@@ -95,14 +100,14 @@ size_t lk_open_include(environment *const env, const char* const path)
 		return SIZE_MAX - 1;
 	}
 
-	const size_t num = ws_get_files_num(env->lk.ws);	
-	const size_t index = ws_add_file(env->lk.ws, full_path);
+	const size_t num = ws_get_files_num(env->lk->ws);	
+	const size_t index = ws_add_file(env->lk->ws, full_path);
 
-	if (index < env->lk.count && !env->lk.included[index])
+	if (index < env->lk->count && !env->lk->included[index])
 	{
-		env->lk.included[index]++;
+		env->lk->included[index]++;
 	}
-	else if (num == ws_get_files_num(env->lk.ws))
+	else if (num == ws_get_files_num(env->lk->ws))
 	{
 		in_clear(env->input);
 		return SIZE_MAX;
@@ -113,9 +118,9 @@ size_t lk_open_include(environment *const env, const char* const path)
 
 int lk_open_source(environment *const env, const size_t index)
 {
-	if (in_set_file(env->input, ws_get_file(env->lk.ws, index)))
+	if (in_set_file(env->input, ws_get_file(env->lk->ws, index)))
 	{
-		log_system_error(ws_get_file(env->lk.ws, index), "файл не найден");
+		log_system_error(ws_get_file(env->lk->ws, index), "файл не найден");
 		return -1;
 	}
 	return 0;
@@ -125,9 +130,9 @@ int lk_preprocess_file(environment *const env, const size_t number)
 {	
 	env_clear_error_string(env);
 
-	const size_t old_cur = env->lk.current;
+	const size_t old_cur = env->lk->current;
 	const size_t old_line = env->line;
-	env->lk.current = number;
+	env->lk->current = number;
 	env->line = 1;
 
 	get_next_char(env);
@@ -147,10 +152,10 @@ int lk_preprocess_file(environment *const env, const size_t number)
 	m_fprintf('\n', env);
 
 	env->line = old_line;
-	env->lk.current = old_cur;
+	env->lk->current = old_cur;
 
 	in_clear(env->input);
-	env->lk.included[number]++;
+	env->lk->included[number]++;
 	return was_error ? -1 : 0;
 }
 
@@ -165,7 +170,7 @@ int lk_preprocess_include(environment *const env)
 		{
 			size_t position = skip_str(env); 
 			macro_error(must_end_quote
-			, lk_get_current(&env->lk)
+			, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 			return -1;
 		}
@@ -215,7 +220,7 @@ int lk_include(environment *const env)
 	if (env->curchar != '\"')
 	{
 		size_t position = skip_str(env); 
-		macro_error(must_start_quote, lk_get_current(&env->lk), env->error_string, env->line, position);
+		macro_error(must_start_quote, lk_get_current(env->lk), env->error_string, env->line, position);
 		return -1;	
 	}
 
@@ -241,15 +246,9 @@ int lk_preprocess_all(environment *const env)
 		return -1;
 	}
 
-	env->lk.count = ws_get_files_num(env->lk.ws);
-	for (size_t i = 0; i < env->lk.count; i++)
+	for (size_t i = 0; i < env->lk->count; i++)
 	{
-		env->lk.included[i] = 0;
-	}
-
-	for (size_t i = 0; i < env->lk.count; i++)
-	{
-		if (env->lk.included[i])
+		if (env->lk->included[i])
 		{
 			continue;
 		}
@@ -268,7 +267,7 @@ int lk_preprocess_all(environment *const env)
 
 void lk_add_comment(environment *const env)
 {
-	comment cmt = cmt_create(lk_get_current(&env->lk), env->line);
+	comment cmt = cmt_create(lk_get_current(env->lk), env->line);
 
 	char buffer[MAX_CMT_SIZE];
 	cmt_to_string(&cmt, buffer);

@@ -84,7 +84,7 @@ int if_end(environment *const env)
 				{
 					size_t position = skip_str(env); 
 					macro_error(before_endif
-			, lk_get_current(&env->lk)
+			, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 					return -1;
 				}
@@ -108,7 +108,7 @@ int if_end(environment *const env)
 
 	size_t position = skip_str(env); 
 	macro_error(must_be_endif
-			, lk_get_current(&env->lk)
+			, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 	return -1;
 }
@@ -145,7 +145,7 @@ int if_false(environment *const env)
 
 	size_t position = skip_str(env); 
 	macro_error(must_be_endif
-			, lk_get_current(&env->lk)
+			, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 	return 0;
 }
@@ -173,7 +173,7 @@ int if_true(int type_if, environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(before_endif
-			, lk_get_current(&env->lk)
+			, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -186,7 +186,7 @@ int if_true(int type_if, environment *const env)
 	{
 		size_t position = skip_str(env); 
 		macro_error(dont_elif
-			, lk_get_current(&env->lk)
+			, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 		checkif--;
 		return -1;
@@ -261,7 +261,7 @@ int if_realiz(environment *const env)
 		{
 			size_t position = skip_str(env); 
 			macro_error(before_endif
-			, lk_get_current(&env->lk)
+			, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 			return -1;
 		}

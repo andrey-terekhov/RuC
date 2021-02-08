@@ -27,11 +27,11 @@
 #include <string.h>
 
 
-void env_init(environment *const env, workspace *const ws, universal_io *const output)
+void env_init(environment *const env, linker* const lk, universal_io *const output)
 {
 	env->output = output;
 
-	env->lk = lk_create(ws);
+	env->lk = lk;
 
 	env->rp = 1;
 	env->mp = 1;

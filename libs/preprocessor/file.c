@@ -141,7 +141,7 @@ void m_coment_skip(environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(comm_not_ended
-			, lk_get_current(&env->lk)
+			, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 				end_line(env);
 				return;

@@ -140,7 +140,7 @@ int preprocess_words(environment *const env)
 			{
 				size_t position = skip_str(env); 
 				macro_error(macro_does_not_exist
-				, lk_get_current(&env->lk)
+				, lk_get_current(env->lk)
 				, env->error_string, env->line, position);
 				return -1;
 			}
@@ -172,7 +172,7 @@ int preprocess_words(environment *const env)
 			else
 			{
 				size_t position = skip_str(env); 
-				macro_error(after_eval_must_be_ckob, lk_get_current(&env->lk), env->error_string, env->line, position);
+				macro_error(after_eval_must_be_ckob, lk_get_current(env->lk), env->error_string, env->line, position);
 				return -1;
 			}
 
@@ -205,7 +205,7 @@ int preprocess_words(environment *const env)
 		{
 			//output_keywods(env);
 			size_t position = skip_str(env); 
-			macro_error(preproces_words_not_exist, lk_get_current(&env->lk), env->error_string, env->line, position);
+			macro_error(preproces_words_not_exist, lk_get_current(env->lk), env->error_string, env->line, position);
 			return 0;
 		}
 	}
@@ -289,8 +289,10 @@ int preprocess_scan(environment *const env)
 
 int macro_form_io(workspace *const ws, universal_io *const output)
 {
+	linker lk = lk_create(ws);
+
 	environment env;
-	env_init(&env, ws, output);
+	env_init(&env, &lk, output);
 
 	add_keywods(&env);
 	env.mfirstrp = env.rp;

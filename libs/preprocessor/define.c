@@ -167,7 +167,7 @@ int function_scob_collect(int t, int num, environment *const env)
 		}
 	}
 	size_t position = skip_str(env); 
-	macro_error(scob_not_clous, lk_get_current(&env->lk)
+	macro_error(scob_not_clous, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 	return -1;
 }
@@ -182,7 +182,7 @@ int function_stack_create(int n, environment *const env)
 	if (env->curchar == ')')
 	{
 		size_t position = skip_str(env); 
-		macro_error(stalpe, lk_get_current(&env->lk)
+		macro_error(stalpe, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
@@ -203,7 +203,7 @@ int function_stack_create(int n, environment *const env)
 			if (num > n)
 			{
 				size_t position = skip_str(env); 
-				macro_error(not_enough_param, lk_get_current(&env->lk)
+				macro_error(not_enough_param, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -219,7 +219,7 @@ int function_stack_create(int n, environment *const env)
 			if (num != n)
 			{
 				size_t position = skip_str(env); 
-				macro_error(not_enough_param2, lk_get_current(&env->lk)
+				macro_error(not_enough_param2, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -231,7 +231,7 @@ int function_stack_create(int n, environment *const env)
 	}
 
 	size_t position = skip_str(env); 
-	macro_error(scob_not_clous, lk_get_current(&env->lk)
+	macro_error(scob_not_clous, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 	return -1;
 }
@@ -288,7 +288,7 @@ int to_functionident(environment *const env)
 		else
 		{
 			size_t position = skip_str(env); 
-			macro_error(functionid_begins_with_letters, lk_get_current(&env->lk)
+			macro_error(functionid_begins_with_letters, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 			return -1;
 		}
@@ -303,7 +303,7 @@ int to_functionident(environment *const env)
 		else if (env->curchar != ')')
 		{
 			size_t position = skip_str(env); 
-			macro_error(after_functionid_must_be_comma, lk_get_current(&env->lk)
+			macro_error(after_functionid_must_be_comma, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 			return -1;
 		}
@@ -390,7 +390,7 @@ int macrotext_add_function(environment *const env)
 		if (env->curchar == EOF)
 		{
 			size_t position = skip_str(env); 
-			macro_error(not_end_fail_define, lk_get_current(&env->lk)
+			macro_error(not_end_fail_define, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 			return -1;
 		}
@@ -439,7 +439,7 @@ int define_get_from_macrotext(const int r, environment *const env)
 	else
 	{
 		size_t position = skip_str(env); 
-		macro_error(ident_not_exist, lk_get_current(&env->lk)
+		macro_error(ident_not_exist, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
@@ -477,7 +477,7 @@ int define_add_to_reprtab(environment *const env)
 			else
 			{
 				size_t position = skip_str(env); 
-				macro_error(repeat_ident, lk_get_current(&env->lk)
+				macro_error(repeat_ident, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -504,7 +504,7 @@ int macrotext_add_define(int r, environment *const env)
 			if (env->curchar == EOF)
 			{
 				size_t position = skip_str(env); 
-				macro_error(not_end_fail_define, lk_get_current(&env->lk)
+				macro_error(not_end_fail_define, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -516,7 +516,7 @@ int macrotext_add_define(int r, environment *const env)
 					if (env->curchar != '(')
 					{
 						size_t position = skip_str(env); 
-						macro_error(after_eval_must_be_ckob, lk_get_current(&env->lk)
+						macro_error(after_eval_must_be_ckob, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 						return -1;
 					}
@@ -601,7 +601,7 @@ int define_realiz(environment *const env)
 	if (!utf8_is_letter(env->curchar))
 	{
 		size_t position = skip_str(env); 
-		macro_error(ident_begins_with_letters, lk_get_current(&env->lk)
+		macro_error(ident_begins_with_letters, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
@@ -625,7 +625,7 @@ int define_realiz(environment *const env)
 	else if (env->curchar != ' ' && env->curchar != '\n' && env->curchar != '\t')
 	{
 		size_t position = skip_str(env); 
-		macro_error(after_ident_must_be_space, lk_get_current(&env->lk)
+		macro_error(after_ident_must_be_space, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
@@ -646,7 +646,7 @@ int set_realiz(environment *const env)
 	if (!utf8_is_letter(env->curchar))
 	{
 		size_t position = skip_str(env); 
-		macro_error(ident_begins_with_letters, lk_get_current(&env->lk)
+		macro_error(ident_begins_with_letters, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
@@ -656,14 +656,14 @@ int set_realiz(environment *const env)
 	if (env->macrotext[env->reprtab[j + 1]] == MACROFUNCTION)
 	{
 		size_t position = skip_str(env); 
-		macro_error(functions_cannot_be_changed, lk_get_current(&env->lk)
+		macro_error(functions_cannot_be_changed, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
 	else if (env->curchar != ' ' && env->curchar != '\t')
 	{	
 		size_t position = skip_str(env);
-		macro_error(after_ident_must_be_space, lk_get_current(&env->lk)
+		macro_error(after_ident_must_be_space, lk_get_current(env->lk)
 			, env->error_string, env->line, position);
 		return -1;
 	}
