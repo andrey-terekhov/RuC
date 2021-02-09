@@ -97,11 +97,7 @@ int sx_init(syntax *const sx)
 		return -1;
 	}
 
-	sx->memory = vector_create(MAXMEMSIZE);
-	vector_increase(&sx->memory, 4);
-	sx->processes = vector_create(INIPROSIZE);
-	vector_increase(&sx->processes, 1);
-	sx->stack = vector_create(256);
+	sx->procd = 1;
 
 	sx->predef = vector_create(FUNCSIZE);
 	sx->functions = vector_create(FUNCSIZE);
@@ -130,8 +126,6 @@ int sx_init(syntax *const sx)
 	{
 		sx->hashtab[i] = 0;
 	}
-
-	sx->max_threads = 0;
 
 	return 0;
 }
@@ -166,10 +160,6 @@ int sx_clear(syntax *const sx)
 		return -1;
 	}
 
-	vector_clear(&sx->memory);
-	vector_clear(&sx->processes);
-	vector_clear(&sx->stack);
-
 	vector_clear(&sx->predef);
 	vector_clear(&sx->functions);
 
@@ -179,54 +169,6 @@ int sx_clear(syntax *const sx)
 	vector_clear(&sx->modes);
 
 	return 0;
-}
-
-
-int mem_increase(syntax *const sx, const size_t size)
-{
-	return sx != NULL ? vector_increase(&sx->memory, size) : -1;
-}
-
-int mem_add(syntax *const sx, const item_t value)
-{
-	return sx != NULL ? vector_add(&sx->memory, value) != SIZE_MAX ? 0 : -1 : -1;
-}
-
-int mem_set(syntax *const sx, const size_t index, const item_t value)
-{
-	return sx != NULL ? vector_set(&sx->memory, index, value) : -1;
-}
-
-item_t mem_get(const syntax *const sx, const size_t index)
-{
-	return sx != NULL ? vector_get(&sx->memory, index) : ITEM_MAX;
-}
-
-size_t mem_size(const syntax *const sx)
-{
-	return sx != NULL ? vector_size(&sx->memory) : SIZE_MAX;
-}
-
-
-int proc_set(syntax *const sx, const size_t index, const item_t value)
-{
-	return sx != NULL ? vector_set(&sx->processes, index, value) : -1;
-}
-
-item_t proc_get(const syntax *const sx, const size_t index)
-{
-	return sx != NULL ? vector_get(&sx->processes, index) : ITEM_MAX;
-}
-
-
-int stack_push(syntax *const sx, const item_t value)
-{
-	return sx != NULL ? vector_add(&sx->stack, value) != SIZE_MAX ? 0 : -1 : -1;
-}
-
-item_t stack_pop(syntax *const sx)
-{
-	return sx != NULL ? vector_remove(&sx->stack) : ITEM_MAX;
 }
 
 

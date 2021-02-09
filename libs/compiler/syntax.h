@@ -33,11 +33,7 @@ typedef struct node node;
 /** Global vars definition */
 typedef struct syntax
 {
-	// memory, processes, stack & max_threads - usage here only for codes printing
-
-	vector memory;					/**< Memory table */
-	vector processes;				/**< Init processes table */
-	vector stack;					/**< Stack for logic operations*/
+	size_t procd;					/**< Process management daemon */
 
 	vector predef;					/**< Predefined functions table */
 	vector functions;				/**< Functions table */
@@ -66,8 +62,6 @@ typedef struct syntax
 	item_t lg;						/**< Displacement from l (+1) or g (-1) */
 
 	size_t keywords;				/**< Number of read keyword */
-
-	size_t max_threads;				/**< Max threads count */
 } syntax;
 
 
@@ -97,99 +91,6 @@ int sx_is_correct(syntax *const sx);
  *	@return	@c 0 on success, @c -1 on failure
  */
 int sx_clear(syntax *const sx);
-
-
-/**
- *	Increase size of memory table by value
- *
- *	@param	sx			Syntax structure
- *	@param	value		Value to increase
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int mem_increase(syntax *const sx, const size_t value);
-
-/**
- *	Add new value to memory table
- *
- *	@param	sx			Syntax structure
- *	@param	value		Value to record
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int mem_add(syntax *const sx, const item_t value);
-
-/**
- *	Set value by index in memory table
- *
- *	@param	sx			Syntax structure
- *	@param	index		Index to record
- *	@param	value		Value to record
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int mem_set(syntax *const sx, const size_t index, const item_t value);
-
-/**
- *	Get an item by index from memory table
- *
- *	@param	sx			Syntax structure
- *	@param	index		Index of record in table
- *
- *	@return	Item by index from table, @c ITEM_MAX on failure
- */
-item_t mem_get(const syntax *const sx, const size_t index);
-
-/**
- *	Get size of memory table
- *
- *	@param	sx			Syntax structure
- *
- *	@return	Program counter on success, @c SIZE_MAX on failure
- */
-size_t mem_size(const syntax *const sx);
-
-
-/**
- *	Set value by index in init processes table
- *
- *	@param	sx			Syntax structure
- *	@param	index		Index to record
- *	@param	value		Value to record
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int proc_set(syntax *const sx, const size_t index, const item_t value);
-
-/**
- *	Get an item by index from init processes table
- *
- *	@param	sx			Syntax structure
- *	@param	index		Index of record in table
- *
- *	@return	Item by index from table, @c ITEM_MAX on failure
- */
-item_t proc_get(const syntax *const sx, const size_t index);
-
-
-/**
- *	Push new value to stack
- *
- *	@param	sx			Syntax structure
- *	@param	value		Value to push
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int stack_push(syntax *const sx, const item_t value);
-
-/**
- *	Pop value from stack
- *
- *	@param	sx			Syntax structure
- *
- *	@return	Value, @c ITEM_MAX on failure
- */
-item_t stack_pop(syntax *const sx);
 
 
 /**

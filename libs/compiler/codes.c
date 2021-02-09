@@ -1472,32 +1472,34 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 }
 
 /** Вывод таблиц и кодов */
-void tables_and_codes(const syntax *const sx, const char *const path)
+void tables_and_codes(const vector *const functions, const vector *const processes, const vector *const memory
+	, const char *const path)
 {
 	universal_io io = io_create();
-	if (sx == NULL || out_set_file(&io, path))
+	if (!vector_is_correct(functions) || !vector_is_correct(processes) || !vector_is_correct(memory)
+		|| out_set_file(&io, path))
 	{
 		return;
 	}
 
 	uni_printf(&io, "\n\n%s\n", "functions");
-	for (size_t i = 0; i < vector_size(&sx->functions); i++)
+	for (size_t i = 0; i < vector_size(functions); i++)
 	{
-		uni_printf(&io, "fun %zi) %" PRIitem "\n", i, vector_get(&sx->functions, i));
+		uni_printf(&io, "fun %zi) %" PRIitem "\n", i, vector_get(functions, i));
 	}
 
 	uni_printf(&io, "\n%s\n", "iniprocs");
-	for (size_t i = 0; i < vector_size(&sx->processes); i++)
+	for (size_t i = 0; i < vector_size(processes); i++)
 	{
-		uni_printf(&io, "inipr %zi) %" PRIitem "\n", i, vector_get(&sx->processes, i));
+		uni_printf(&io, "inipr %zi) %" PRIitem "\n", i, vector_get(processes, i));
 	}
 
 	uni_printf(&io, "\n%s\n", "mem");
 	size_t i = 0;
-	while (i < vector_size(&sx->memory))
+	while (i < vector_size(memory))
 	{
 		uni_printf(&io, "pc %zi) ", i);
-		i = elem_to_io(&io, &sx->memory, i);
+		i = elem_to_io(&io, memory, i);
 	}
 
 	io_erase(&io);

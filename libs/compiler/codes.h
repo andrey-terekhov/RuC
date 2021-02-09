@@ -27,8 +27,8 @@ extern "C" {
 /**
  *	Output new tree
  *
- *	@param	tree	Tree table
- *	@param	path	File path
+ *	@param	tree			Tree table
+ *	@param	path			File path
  */
 void tree_print(vector *const tree, const char *const path);
 
@@ -36,18 +36,23 @@ void tree_print(vector *const tree, const char *const path);
 /**
  *	Output tables and tree
  *
- *	@param	sx		Syntax structure
- *	@param	path	File path
+ *	@param	sx				Syntax structure
+ *	@param	path			File path
  */
 void tables_and_tree(const syntax *const sx, const char *const path);
 
 /**
  *	Output tables and codes
  *
- *	@param	sx		Syntax structure
- *	@param	path	File path
+ *	@param	functions		Functions table
+ *	@param	processes		Init processes table
+ *	@param	memory			Memory table
+ *	@param	path			File path
  */
-void tables_and_codes(const syntax *const sx, const char *const path);
+void tables_and_codes(const vector *const functions
+	, const vector *const processes
+	, const vector *const memory
+	, const char *const path);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -31,15 +31,14 @@
 #endif
 
 
-#define GENERATE_MACRO
-#define GENERATE_TABLES
-#define GENERATE_TREE
+//#define GENERATE_MACRO
+//#define GENERATE_TABLES
+//#define GENERATE_TREE
 
 
 const char *const DEFAULT_MACRO = "macro.txt";
 const char *const DEFAULT_TREE = "tree.txt";
 const char *const DEFAULT_NEW = "new.txt";
-const char *const DEFAULT_CODES = "codes.txt";
 const char *const DEFAULT_OUTPUT = "export.txt";
 
 
@@ -101,9 +100,6 @@ int compile_from_io_to_vm(universal_io *const io)
 #endif
 
 		ret = encode_to_vm(io, &sx);
-#ifdef GENERATE_TABLES
-		tables_and_codes(&sx, DEFAULT_CODES);
-#endif
 	}
 
 	sx_clear(&sx);
