@@ -30,7 +30,7 @@ void parse_labeled_statement(parser *const parser)
 	totree(parser, TLabel);
 
 	const size_t repr = parser->lexer->repr;
-	// Не проверяем, что это ':', так как по ней узнали,
+	// Не проверяем, что это ':', так как по нему узнали,
 	// что это labeled statement
 	consume_token(parser);
 	for (size_t i = 0; i < parser->pgotost; i += 2)
@@ -38,16 +38,16 @@ void parse_labeled_statement(parser *const parser)
 		if (repr == (size_t)ident_get_repr(parser->sx, parser->gotost[i]))
 		{
 			const size_t id = (size_t)parser->gotost[i];
-			const size_t repr = ident_get_repr(parser->sx, id);
 			totree(parser, id);
 
-			if (parser->gotost[i - 1] < 0)
+			if (parser->gotost[i + 1] < 0)
 			{
+				const size_t repr = ident_get_repr(parser->sx, id);
 				parser_error(parser, repeated_label, parser->sx->reprtab, repr);
 			}
 			else
 			{
-				parser->gotost[i - 1] = -1;
+				parser->gotost[i + 1] = -1;	// TODO: здесь должен быть номер строки
 			}
 
 			ident_set_mode(parser->sx, id, 1);
@@ -426,7 +426,7 @@ void parse_create_direct_statement(parser *const parser)
 {
 	totree(parser, CREATEDIRECTC);
 	parse_compound_statement(parser, THREAD);
-	totree(parser, EXITC);
+	totree(parser, EXITDIRECTC);
 }
 
 /**	Parse printid statement [RuC] */
