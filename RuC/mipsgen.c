@@ -36,6 +36,8 @@ int log_real = 2;
 int flag_jump_end_cycle = 0;
 int flag_cond_cycle = 0; // 0 - ничего, 1 - посчитать условия и записать регистр, 2 - условие уже в регистре breg
 int cond_cycle_end_manst = 0;
+int cond_cycle_end_manst_left = 0;
+int cond_cycle_end_left_reg = 0;
 // унарные операции LNOT, LOGNOT, -, ++, --, TIdenttoval(*), TIdenttoaddr(&)
 // LNOT nor rd, rs, d0    LOGNOT slti rt, rs, 1   - sub rd, d0, rt
 // *  lw rt, displ(rs) или сразу 0(areg)   & addi rt, areg, adispl или сразу areg
@@ -811,13 +813,24 @@ void MBin_operation(int c)      // бинарная операция (два в�
         (mbox = BREGF, flagreg = 1,
          breg = flagreal ? getregf() : getreg());
         lopnd = breg;
-        MExpr_gen();                                        // левый операнд
+        if (flag_cond_cycle != 2)
+        {
+        	MExpr_gen();                                        // левый операнд
+        	cond_cycle_end_manst_left = manst;
+        }
+        else
+        {
+        	manst = cond_cycle_end_manst_left;
+        	cond_cycle_end_manst_left = 0;
+        }
         if (manst == AREG)
         {
             lopnd = areg;
             if (mbox ==  BREGF)
                 rez = areg;
         }
+        if (flag_cond_cycle == 2 && manst == AREG)
+        	lopnd = cond_cycle_end_left_reg;
         leftanst = manst;
         leftdispl = adispl;
         leftreg = areg;
@@ -827,7 +840,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
         if (flag_cond_cycle != 2)
         {
         	MExpr_gen();                                        // правый операнд
-        	if (manst == AREG)
+        	if (manst == AREG && cycle_condition_calculation)
         		tocodemove(oldreg, areg);
         	cond_cycle_end_manst = manst;
         }
@@ -908,7 +921,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 	if (flag_cond_cycle == 0)
                 		tocodeI(addi, t1, ropnd, -leftnum);
                 	else if (flag_cond_cycle == 1)
-                		tocodeI(addi, lopnd = breg, d0, num);
+                		tocodeI(addi, cond_cycle_end_left_reg = lopnd = breg, d0, num);
                 	else
                 		lopnd = breg;
 
@@ -981,7 +994,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 	if (flag_cond_cycle == 0)
                 		tocodeI(addi, t1, lopnd, -num);
                 	else if (flag_cond_cycle == 1)
-                		tocodeI(addi, ropnd = breg, d0, num);
+                		tocodeI(addi, ropnd = breg, d0, num), cond_cycle_end_left_reg = lopnd;
                 	else
                 		ropnd = breg;
                 }
@@ -990,7 +1003,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
                 	if (!flag_cond_cycle)
                 		tocodeR(sub, t1, lopnd, ropnd);
                 	else
-                		ropnd = breg;
+                		ropnd = breg, cond_cycle_end_left_reg = lopnd;
                 	
                 if (flag_jump_end_cycle == 0)
                 {

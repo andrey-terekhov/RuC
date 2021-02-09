@@ -10,7 +10,7 @@
 const char * name =
 //"tests/Mishatest.c";
 
-"tests/mips/optimizations/cycle_condition_calculation/test43.c";
+"tests/mips/optimizations/big_matrix.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
