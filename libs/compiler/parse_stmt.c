@@ -42,7 +42,6 @@ void parse_labeled_statement(parser *const parser)
 
 			if (parser->gotost[i + 1] < 0)
 			{
-				const size_t repr = ident_get_repr(parser->sx, id);
 				parser_error(parser, repeated_label, parser->sx->reprtab, repr);
 			}
 			else
