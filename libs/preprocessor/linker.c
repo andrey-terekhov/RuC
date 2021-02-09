@@ -93,15 +93,11 @@ size_t lk_open_include(environment *const env, const char* const path)
 	}
 	
 	const size_t index = ws_add_file(env->lk->ws, full_path);
-
-	if (!env->lk->included[index])
+	if (index == env->lk->count)
 	{
-		if(index == env->lk->count)
-		{
-			env->lk->included[env->lk->count++] = 0;
-		}
+		env->lk->included[env->lk->count++] = 0;
 	}
-	else
+	else if (env->lk->included[index])
 	{
 		in_clear(env->input);
 		return SIZE_MAX;
