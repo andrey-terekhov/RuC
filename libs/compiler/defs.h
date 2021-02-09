@@ -418,14 +418,6 @@
 #define TEXIT		-62
 #define TGETNUM		-63
 
-#define SH_DEFINE -64 // #define
-#define SH_IFDEF  -65 // #ifdef
-#define SH_IFNDEF -66 // #ifndef
-#define SH_IF	  -67 // #if
-#define SH_ELIF	  -68 // #elif
-#define SH_ENDIF  -69 // #endif
-#define SH_ELSE	  -70 // #else
-
 #define WIFI_CONNECT	   -71
 #define BLYNK_AUTORIZATION -72
 #define BLYNK_SEND		   -73

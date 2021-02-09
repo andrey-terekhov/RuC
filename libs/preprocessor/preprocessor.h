@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "context_var.h"
+#include "environment.h"
 #include "dll.h"
 #include "workspace.h"
 
@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 
-int preprocess_scan(preprocess_context *context);
+int preprocess_scan(environment *const env);
 
 
 /**
