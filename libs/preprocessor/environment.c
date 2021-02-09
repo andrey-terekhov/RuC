@@ -63,7 +63,6 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	{
 		env->fchange[i] = 0;
 	}
-
 	
 	for (int i = 0; i < STRING_SIZE * 2; i++)
 	{
@@ -88,4 +87,3 @@ void env_clear_error_string(environment *const env)
 {
 	env->position = 0;
 }
-
