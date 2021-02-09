@@ -325,7 +325,7 @@ void parse_goto_statement(parser *const parser)
 	// в этом случае ссылка на identtab, стоящая после TGoto,
 	// будет отрицательной
 	const size_t id = to_identab(parser, repr, 1, 0);
-	totree(parser, -id);
+	totree(parser, -(int)id);
 	parser->gotost[parser->pgotost++] = id;
 	parser->gotost[parser->pgotost++] = 1;	// TODO: здесь должен быть номер строки
 	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
