@@ -76,10 +76,10 @@ void macro_error(const int num, const char *const path, const char *const code, 
 /**
  *	Emit an error for some problem
  *
- *	@param	num		Error code
  *	@param	tag		Message location
+ *	@param	num		Error code
  */
-void macro_system_error_tag(const char *const tag, const int num);
+void macro_system_error(const char *const tag, const int num);
 
 #ifdef __cplusplus
 } /* extern "C" */

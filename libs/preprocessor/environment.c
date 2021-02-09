@@ -17,7 +17,7 @@
 #include "environment.h"
 
 
-void env_init(environment *const env, linker* const lk, universal_io *const output)
+void env_init(environment *const env, linker *const lk, universal_io *const output)
 {
 	env->output = output;
 
@@ -54,34 +54,23 @@ void env_init(environment *const env, linker* const lk, universal_io *const outp
 	for (int i = 0; i < STRING_SIZE; i++)
 	{
 		env->mstring[i] = 0;
-	}
-
-	for (int i = 0; i < STRING_SIZE; i++)
-	{
 		env->error_string[i] = 0;
+		env->localstack[i] = 0;
+		env->cstring[i] = 0;
 	}
 
-	for (int i = 0; i < STRING_SIZE*3; i++)
+	for (int i = 0; i < STRING_SIZE * 3; i++)
 	{
 		env->fchange[i] = 0;
 	}
 
-	for (int i = 0; i < STRING_SIZE; i++)
-	{
-		env->localstack[i] = 0;
-	}
-
-	for (int i = 0; i < STRING_SIZE; i++)
-	{
-		env->cstring[i] = 0;
-	}
 	
-	for (int i = 0; i < STRING_SIZE*2; i++)
+	for (int i = 0; i < STRING_SIZE * 2; i++)
 	{
 		env->ifstring[i] = 0;
 	}
 
-	for (int i = 0; i < STRING_SIZE*5; i++)
+	for (int i = 0; i < STRING_SIZE * 5; i++)
 	{
 		env->wstring[i] = 0;
 	}

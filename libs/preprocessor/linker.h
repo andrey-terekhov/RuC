@@ -28,10 +28,10 @@ typedef struct environment environment;
 /** Structure for connecting files */
 typedef struct linker
 {
-	workspace *ws;				/**<Initial arguments */
+	workspace *ws;				/**< Initial arguments */
 
 	int included[MAX_PATHS];	/**< List of already added files */	
-	size_t count; 				/**< Number of source files */
+	size_t count; 				/**< Number of added files */
 
 	size_t current; 			/**< Index of the current file */
 } linker;
@@ -65,14 +65,14 @@ int lk_preprocess_all(environment *const env);
 int lk_include(environment *const env);
 
 /**
- *	Add a comment that indicates line changes in the output
+ *	Add a comment to indicate line changes in the output
  *
  *	@param	env	Preprocessor environment
  */
 void lk_add_comment(environment *const env);
 
 /**
- *	Get current file from linkrer
+ *	 Get current file name from linker
  *
  *	@param	lk	Preprocessor linker
  *

@@ -214,7 +214,6 @@ int preprocess_words(environment *const env)
 int preprocess_scan(environment *const env)
 {
 	int i;
-	printf("!!!!!!!1\n");
 	switch (env->curchar)
 	{
 		case EOF:

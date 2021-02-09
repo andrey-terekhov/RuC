@@ -88,18 +88,20 @@ size_t lk_open_include(environment *const env, const char* const path)
 	if (!in_is_correct(env->input))
 	{
 		in_clear(env->input);
-		macro_system_error_tag(full_path, include_file_not_found);
+		macro_system_error(full_path, include_file_not_found);
 		return SIZE_MAX - 1;
 	}
-
-	const size_t num = ws_get_files_num(env->lk->ws);	
+	
 	const size_t index = ws_add_file(env->lk->ws, full_path);
 
-	if (index < env->lk->count && !env->lk->included[index])
+	if (!env->lk->included[index])
 	{
-		env->lk->included[index]++;
+		if(index == env->lk->count)
+		{
+			env->lk->included[env->lk->count++] = 0;
+		}
 	}
-	else if (num == ws_get_files_num(env->lk->ws))
+	else
 	{
 		in_clear(env->input);
 		return SIZE_MAX;
@@ -112,11 +114,9 @@ int lk_open_source(environment *const env, const size_t index)
 {
 	if (in_set_file(env->input, ws_get_file(env->lk->ws, index)))
 	{
-		macro_system_error_tag(lk_get_current(env->lk), source_file_not_found);
+		macro_system_error(lk_get_current(env->lk), source_file_not_found);
 		return -1;
 	}
-
-	env->lk->included[index] = 1;
 
 	return 0;
 }
@@ -124,6 +124,7 @@ int lk_open_source(environment *const env, const size_t index)
 int lk_preprocess_file(environment *const env, const size_t number)
 {	
 	env_clear_error_string(env);
+	env->lk->included[number] = 1;
 
 	const size_t old_cur = env->lk->current;
 	const size_t old_line = env->line;
@@ -247,10 +248,11 @@ int lk_preprocess_all(environment *const env)
 		{
 			continue;
 		}
+
 		universal_io input = io_create();
 		env->input = &input;
 
-		if (lk_open_source(env, i)|| lk_preprocess_file(env, i))
+		if (lk_open_source(env, i) || lk_preprocess_file(env, i))
 		{
 			return -1;
 		}

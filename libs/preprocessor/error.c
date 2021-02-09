@@ -128,7 +128,7 @@ void get_message_error(const int num, char *const msg)
 			sprintf(msg, "исходный файл не найден");
 			break;
 		case include_file_not_found:
-			sprintf(msg, "include файл не найден");
+			sprintf(msg, "заголовочный файл не найден");
 			break;
 		default:
 			sprintf(msg, "не реализованная ошибка №%d", num);
@@ -165,7 +165,7 @@ void macro_error(const int num, const char *const path, const char *const code, 
 	log_error(tag, msg, code, position);
 }
 
-void macro_system_error_tag(const char *const tag, const int num)
+void macro_system_error(const char *const tag, const int num)
 {
 	char msg[ERROR_MSG_SIZE];
 	get_message_error(num, msg);
