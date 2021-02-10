@@ -326,13 +326,13 @@ item_t parse_struct_declaration_list(parser *const parser)
 	if (wasarr)
 	{
 		tree_add(parser->sx, TStructend);
-		tree_add(parser->sx, (item_t)ref_struct_begin);
 		// TODO: сюда бы интерфейс для processes
 		const size_t procd = vector_size(&parser->sx->processes);
 		vector_increase(&parser->sx->processes, 1);
 
+		tree_add(parser->sx, procd);
+		tree_set(parser->sx, ref_struct_begin + 1, procd);
 		parser->was_struct_with_arr = procd;
-		tree_set(parser->sx, ref_struct_begin + 1, parser->was_struct_with_arr);
 	}
 	else
 	{
