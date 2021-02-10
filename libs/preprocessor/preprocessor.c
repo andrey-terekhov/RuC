@@ -15,29 +15,21 @@
  */
 
 #include "preprocessor.h"
-#include "calculator.h"
+#include "parser.h"
 #include "constants.h"
-#include "define.h"
 #include "environment.h"
 #include "error.h"
 #include "file.h"
-#include "if.h"
 #include "uniio.h"
 #include "uniprinter.h"
 #include "utils.h"
 #include "linker.h"
-#include "while.h"
-#include "workspace.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
-
-
-#define H_FILE 1
-#define C_FILE 0
 
 
 const size_t SIZE_OUT_BUFFER = 1024;
@@ -111,180 +103,6 @@ void add_keywods(environment *const env)
 	to_reprtab_full("#EVAL", "#eval", "#ВЫЧИСЛЕНИЕ", "#вычисление", SH_EVAL, env);
 	to_reprtab_full("#INCLUDE", "#include", "#ДОБАВИТЬ", "#добавить", SH_INCLUDE, env);
 }
-
-int preprocess_words(environment *const env)
-{
-
-	skip_space(env);
-	switch (env->cur)
-	{
-		case SH_INCLUDE:
-		{
-			return lk_include(env);
-		}
-		case SH_DEFINE:
-		case SH_MACRO:
-		{
-			env->prep_flag = 1;
-			return define_implementation(env);
-		}
-		case SH_UNDEF:
-		{
-			int k = collect_mident(env);
-			if(k)
-			{
-				env->macrotext[env->reprtab[k + 1]] = MACROUNDEF;
-				return space_end_line(env);
-			}
-			else
-			{
-				size_t position = skip_str(env); 
-				macro_error(macro_does_not_exist
-				, lk_get_current(env->lk)
-				, env->error_string, env->line, position);
-				return -1;
-			}
-		}
-		case SH_IF:
-		case SH_IFDEF:
-		case SH_IFNDEF:
-		{
-			return if_implementation(env);
-		}
-		case SH_SET:
-		{
-			return set_implementation(env);
-		}
-		case SH_ELSE:
-		case SH_ELIF:
-		case SH_ENDIF:
-			return 0;
-		case SH_EVAL:
-		{
-			if (env->curchar == '(')
-			{
-				if(calculator(0, env))
-				{
-					return -1;
-				}
-
-			}
-			else
-			{
-				size_t position = skip_str(env); 
-				macro_error(after_eval_must_be_ckob, lk_get_current(env->lk), env->error_string, env->line, position);
-				return -1;
-			}
-
-			m_change_nextch_type(CTYPE, 0, env);
-			return 0;
-		}
-		case SH_WHILE:
-		{
-			env->wsp = 0;
-			env->ifsp = 0;
-			if(while_collect(env))
-			{
-				return -1;
-			}
-			
-			m_change_nextch_type(WHILETYPE, 0, env);
-			m_nextch(env);
-			m_nextch(env);
-
-			env->nextp = 0;
-			int res = while_implementation(env);
-			if(env->nextch_type != FILETYPE)
-			{
-				m_old_nextch_type(env);
-			}
-
-			return res;
-		}
-		default:
-		{
-			//output_keywords(env);
-			size_t position = skip_str(env); 
-			macro_error(preproces_words_not_exist, lk_get_current(env->lk), env->error_string, env->line, position);
-			return 0;
-		}
-	}
-}
-
-int preprocess_scan(environment *const env)
-{
-	int i;
-	switch (env->curchar)
-	{
-		case EOF:
-			return 0;
-
-		case '#':
-		{
-			env->cur = macro_keywords(env);
-
-			if (env->cur != 0)
-			{
-				int res = preprocess_words(env);
-				if(env->nextchar != '#' && env->nextch_type != WHILETYPE && 
-					env->nextch_type != TEXTTYPE)//curflag
-				{
-					lk_add_comment(env);
-				}
-				if(env->cur != SH_INCLUDE && env->cur != SH_ELSE && env->cur != SH_ELIF && env->cur != SH_ENDIF)
-				{
-					m_nextch(env);
-				}
-				return res;
-			}
-			else
-			{
-				// m_nextch(env);
-				output_keywords(env);
-			}
-
-			return 0;
-		}
-		case '\'':
-		case '\"':
-		{
-			skip_space_str(env);
-			return 0;
-		}
-		case '@':
-		{
-			m_nextch(env);
-			return 0;
-		}
-		default:
-		{
-			if (utf8_is_letter(env->curchar) && env->prep_flag == 1)
-			{
-				int r = collect_mident(env);
-
-				if (r)
-				{
-					return define_get_from_macrotext(r, env);
-				}
-				else
-				{
-					for (i = 0; i < env->msp; i++)
-					{
-						m_fprintf(env->mstring[i], env);
-					}
-				}
-			}
-			else
-			{
-				m_fprintf(env->curchar, env);
-				m_nextch(env);
-			}
-
-			return 0;
-		}
-	}
-}
-
 
 int macro_form_io(workspace *const ws, universal_io *const output)
 {

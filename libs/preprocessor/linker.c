@@ -19,7 +19,7 @@
 #include "commenter.h"
 #include "environment.h"
 #include "file.h"
-#include "preprocessor.h"
+#include "parser.h"
 #include "error.h"
 #include "utils.h"
 #include "uniio.h"
