@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include "commenter.h"
 #include "defs.h"
+#include "item.h"
 #include "logger.h"
 #include "uniio.h"
 #include "utf8.h"
@@ -34,24 +35,8 @@
 #define MAX_INT_LENGTH 12
 
 
-size_t printident(const int *const reprtab, size_t pos, char *const buffer)
-{
-	size_t index = 0;
-
-	pos += 2; // ссылка на reprtab
-	do
-	{
-		index += utf8_to_string(buffer, reprtab[pos++]);
-	} while (reprtab[pos] != 0);
-
-	return index;
-}
-
-
 void get_error(const int num, char *const msg, va_list args)
 {
-	size_t index = 0;
-
 	switch (num)
 	{
 		case bad_character:
@@ -91,11 +76,8 @@ void get_error(const int num, char *const msg, va_list args)
 
 		case predef_but_notdef: // need_test
 		{
-			index += sprintf(&msg[index], "функция ");
-			const int *const reprtab = va_arg(args, int *);
-			const size_t pos = va_arg(args, size_t);
-			index += printident(reprtab, pos, &msg[index]);
-			index += sprintf(&msg[index], " была предопределена, но не описана");
+			const char *const buffer = va_arg(args, char *);
+			sprintf(msg, "функция %s была предопределена, но не описана", buffer);
 		}
 		break;
 
@@ -136,10 +118,8 @@ void get_error(const int num, char *const msg, va_list args)
 			break;
 		case repeated_decl:	// test_exist
 		{
-			index += sprintf(&msg[index], "повторное описание идентификатора ");
-			const int *const reprtab = va_arg(args, int *);
-			const size_t pos = va_arg(args, size_t);
-			index += printident(reprtab, pos, &msg[index]);
+			const char *const buffer = va_arg(args, char *);
+			sprintf(msg, "повторное описание идентификатора %s", buffer);
 		}
 		break;
 		case arr_init_must_start_from_BEGIN: // test_exist
@@ -154,10 +134,8 @@ void get_error(const int num, char *const msg, va_list args)
 			break;
 		case ident_is_not_declared: // test_exist
 		{
-			index += sprintf(&msg[index], "не описан идентификатор ");
-			const int *const reprtab = va_arg(args, int *);
-			const size_t pos = va_arg(args, size_t);
-			index += printident(reprtab, pos, &msg[index]);
+			const char *const buffer = va_arg(args, char *);
+			sprintf(msg, "не описан идентификатор %s", buffer);
 		}
 		break;
 		case no_rightsqbr_in_slice: // test_exist
@@ -337,18 +315,14 @@ void get_error(const int num, char *const msg, va_list args)
 		case label_not_declared:	// need_test
 		{
 			const size_t hash = va_arg(args, size_t);
-			index += sprintf(&msg[index], "в строке %zi переход на неописанную метку ", hash);
-			const int *const reprtab = va_arg(args, int *);
-			const size_t pos = va_arg(args, size_t);
-			index += printident(reprtab, pos, &msg[index]);
+			const char *const buffer = va_arg(args, char *);
+			sprintf(msg, "в строке %zi переход на неописанную метку %s", hash, buffer);
 		}
 		break;
 		case repeated_label: // test_exist
 		{
-			index += sprintf(&msg[index], "повторное описание метки ");
-			const int *const reprtab = va_arg(args, int *);
-			const size_t pos = va_arg(args, size_t);
-			index += printident(reprtab, pos, &msg[index]);
+			const char *const buffer = va_arg(args, char *);
+			sprintf(msg, "повторное описание метки %s", buffer);
 		}
 		break;
 		case operand_is_pointer:	// need_test
@@ -387,11 +361,8 @@ void get_error(const int num, char *const msg, va_list args)
 			break;
 		case no_field:	// test_exist
 		{
-			index += sprintf(&msg[index], "нет такого поля ");
-			const int *const reprtab = va_arg(args, int *);
-			const size_t pos = va_arg(args, size_t);
-			index += printident(reprtab, pos, &msg[index]);
-			index += sprintf(&msg[index], " в структуре");
+			const char *const buffer = va_arg(args, char *);
+			sprintf(msg, "нет такого поля %s в структуре", buffer);
 		}
 		break;
 		case slice_from_func:	// need_test
@@ -470,9 +441,9 @@ void get_error(const int num, char *const msg, va_list args)
 			break;
 		case wrong_printf_param_type: // test_exist
 		{
-			index += sprintf(&msg[index], "тип параметра printf/печатьф не соответствует "
+			size_t index = sprintf(msg, "тип параметра printf/печатьф не соответствует "
 												  "спецификатору: %%");
-			const int bad_printf_placeholder = va_arg(args, int);
+			const char32_t bad_printf_placeholder = va_arg(args, char32_t);
 			index += utf8_to_string(&msg[index], bad_printf_placeholder);
 			switch (bad_printf_placeholder)
 			{
@@ -513,8 +484,8 @@ void get_error(const int num, char *const msg, va_list args)
 			break;
 		case printf_unknown_format_placeholder: // test_exist
 		{
-			index += sprintf(&msg[index], "в printf/печатьф неизвестный спецификатор типа %%");
-			const int bad_printf_placeholder = va_arg(args, int);
+			size_t index = sprintf(msg, "в printf/печатьф неизвестный спецификатор типа %%");
+			const char32_t bad_printf_placeholder = va_arg(args, char32_t);
 			index += utf8_to_string(&msg[index], bad_printf_placeholder);
 		}
 		break;
@@ -580,29 +551,29 @@ void get_error(const int num, char *const msg, va_list args)
 		case tree_expression_not_block:
 		{
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "в выражении встретился оператор вне блока, tree[%zi] = %i", i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "в выражении встретился оператор вне блока, tree[%zi] = %" PRIitem, i, elem);
 		}
 		break;
 		case tree_expression_unknown:
 		{
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "неизвестное выражение, tree[%zi] = %i", i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "неизвестное выражение, tree[%zi] = %" PRIitem, i, elem);
 		}
 		break;
 		case tree_expression_operator:
 		{
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "оператор в выражении, tree[%zi] = %i", i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "оператор в выражении, tree[%zi] = %" PRIitem, i, elem);
 		}
 		break;
 		case tree_expression_no_texprend:
 		{
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "отсутствует TExprend, tree[%zi] = %i", i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "отсутствует TExprend, tree[%zi] = %" PRIitem, i, elem);
 		}
 		break;
 		case tree_no_tend:
@@ -610,33 +581,40 @@ void get_error(const int num, char *const msg, va_list args)
 			break;
 		case tree_unexpected:
 		{
-			const int unexp = va_arg(args, int);
+			const item_t unexp = va_arg(args, item_t);
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "получен %i, ожидался tree[%zi] = %i", unexp, i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "получен %" PRIitem ", ожидался tree[%zi] = %" PRIitem, unexp, i, elem);
 		}
 		break;
 
 		case node_cannot_set_child:
 		{
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "невозможно получить потомка от tree[%zi] = %i", i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "невозможно получить потомка от tree[%zi] = %" PRIitem, i, elem);
 		}
 		break;
 		case node_cannot_set_type:
 		{
-			const int type = va_arg(args, int);
+			const item_t type = va_arg(args, item_t);
 			const size_t i = va_arg(args, size_t);
-			sprintf(msg, "невозможно установить тип %i в tree[%zi]", type, i);
+			sprintf(msg, "невозможно установить тип %" PRIitem " в tree[%zi]", type, i);
 		}
 		break;
 		case node_cannot_add_arg:
 		{
-			const int arg = va_arg(args, int);
+			const item_t arg = va_arg(args, item_t);
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "невозможно добавить аргумент %i для tree[%zi] = %i", arg, i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "невозможно добавить аргумент %" PRIitem " для tree[%zi] = %" PRIitem, arg, i, elem);
+		}
+		break;
+		case node_unexpected:
+		{
+			const int type = va_arg(args, int);
+			sprintf(msg, "недопустимый узел верхнего уровня %i", type);
+
 		}
 		break;
 
@@ -657,8 +635,8 @@ void get_warning(const int num, char *const msg, va_list args)
 		case tree_operator_unknown:
 		{
 			const size_t i = va_arg(args, size_t);
-			const int elem = va_arg(args, int);
-			sprintf(msg, "неизвестный оператор, tree[%zi] = %i", i, elem);
+			const item_t elem = va_arg(args, item_t);
+			sprintf(msg, "неизвестный оператор, tree[%zi] = %" PRIitem, i, elem);
 		}
 		break;
 		case node_argc:

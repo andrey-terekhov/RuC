@@ -45,7 +45,7 @@ parser compiler_context_create(universal_io *const io, syntax *const sx, lexer *
 /** Занесение ключевых слов в reprtab */
 void read_keywords(parser *context)
 {
-	context->sx->keywordsnum = 1;
+	context->sx->keywords = 1;
 	get_char(context->lexer);
 	get_char(context->lexer);
 	while (lex(context->lexer) != LEOF)
@@ -81,32 +81,31 @@ size_t toreprtab(parser *context, char str[])
 void init_modetab(parser *context)
 {
 	// занесение в modetab описателя struct {int numTh; int inf; }
-	context->sx->modetab[1] = 0;
-	context->sx->modetab[2] = mode_struct;
-	context->sx->modetab[3] = 2;
-	context->sx->modetab[4] = 4;
-	context->sx->modetab[5] = context->sx->modetab[7] = mode_integer;
-	context->sx->modetab[6] = (int)toreprtab(context, "numTh");
-	context->sx->modetab[8] = (int)toreprtab(context, "data");
+	vector_add(&context->sx->modes, 0);
+	vector_add(&context->sx->modes, mode_struct);
+	vector_add(&context->sx->modes, 2);
+	vector_add(&context->sx->modes, 4);
+	vector_add(&context->sx->modes, mode_integer);
+	vector_add(&context->sx->modes, (item_t)toreprtab(context, "numTh"));
+	vector_add(&context->sx->modes, mode_integer);
+	vector_add(&context->sx->modes, (item_t)toreprtab(context, "data"));
 
 	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
-	context->sx->modetab[9] = 1;
-	context->sx->modetab[10] = mode_function;
-	context->sx->modetab[11] = mode_void;
-	context->sx->modetab[12] = 1;
-	context->sx->modetab[13] = 2;
+	vector_add(&context->sx->modes, 1);
+	vector_add(&context->sx->modes, mode_function);
+	vector_add(&context->sx->modes, mode_void);
+	vector_add(&context->sx->modes, 1);
+	vector_add(&context->sx->modes, 2);
 
 	// занесение в modetab описателя функции void* interpreter(void* n)
-	context->sx->modetab[14] = 9;
-	context->sx->modetab[15] = mode_function;
-	context->sx->modetab[16] = mode_void_pointer;
-	context->sx->modetab[17] = 1;
-	context->sx->modetab[18] = mode_void_pointer;
-	context->sx->modetab[19] = 14;
-	context->sx->startmode = 14;
-	context->sx->md = 19;
-	context->sx->keywordsnum = 0;
-	context->sx->tc = 0;
+	vector_add(&context->sx->modes, 9);
+	vector_add(&context->sx->modes, mode_function);
+	vector_add(&context->sx->modes, mode_void_pointer);
+	vector_add(&context->sx->modes, 1);
+	vector_add(&context->sx->modes, mode_void_pointer);
+
+	context->sx->start_mode = 14;
+	context->sx->keywords = 0;
 }
 
 

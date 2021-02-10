@@ -17,8 +17,8 @@
 #include "parser.h"
 #include <stdlib.h>
 
-size_t parse_struct_or_union_specifier(parser *const parser);
-size_t parse_struct_declaration_list(parser *const parser);
+item_t parse_struct_or_union_specifier(parser *const parser);
+item_t parse_struct_declaration_list(parser *const parser);
 
 
 /**
@@ -40,7 +40,7 @@ size_t parse_struct_declaration_list(parser *const parser);
  *
  *	@return	Standart type or index for modes table
  */
-int parse_type_specifier(parser *const parser)
+item_t parse_type_specifier(parser *const parser)
 {
 	parser->was_struct_with_arr = 0;
 	switch (parser->next_token)
@@ -66,7 +66,7 @@ int parse_type_specifier(parser *const parser)
 
 		case identifier:
 		{
-			const size_t id = repr_get_reference(parser->sx, parser->lexer->repr);
+			const size_t id = (size_t)repr_get_reference(parser->sx, parser->lexer->repr);
 			consume_token(parser);
 
 			if (ident_get_displ(parser->sx, id) < 1000)
@@ -82,7 +82,7 @@ int parse_type_specifier(parser *const parser)
 		//case kw_union:
 		case kw_struct:
 			consume_token(parser);
-			return (int)parse_struct_or_union_specifier(parser);
+			return parse_struct_or_union_specifier(parser);
 
 		default:
 			parser_error(parser, not_decl);
@@ -105,7 +105,7 @@ int parse_type_specifier(parser *const parser)
  *
  *	@return	@c mode_undefined or index for modes table
  */
-size_t parse_struct_or_union_specifier(parser *const parser)
+item_t parse_struct_or_union_specifier(parser *const parser)
 {
 	switch (parser->next_token)
 	{
@@ -119,7 +119,7 @@ size_t parse_struct_or_union_specifier(parser *const parser)
 
 			if (parser->next_token == l_brace)
 			{
-				const int mode = (int)parse_struct_declaration_list(parser);
+				const item_t mode = parse_struct_declaration_list(parser);
 				const size_t id = to_identab(parser, repr, 1000, mode);
 				ident_set_displ(parser->sx, id, 1000 + parser->was_struct_with_arr);
 
@@ -129,11 +129,13 @@ size_t parse_struct_or_union_specifier(parser *const parser)
 			}
 			else // if (parser->next_token != l_brace)
 			{
-				const size_t id = repr_get_reference(parser->sx, repr);
+				const size_t id = (size_t)repr_get_reference(parser->sx, repr);
 
 				if (id == 1)
 				{
-					parser_error(parser, ident_is_not_declared, parser->sx->reprtab, repr);
+					char buffer[MAXSTRINGL];
+					repr_get_ident(parser->sx, repr, buffer);
+					parser_error(parser, ident_is_not_declared, buffer);
 					return mode_undefined;
 				}
 
@@ -160,7 +162,7 @@ size_t parse_struct_or_union_specifier(parser *const parser)
  *
  *	@return	Index for modes table
  */
-int parse_array_definition(parser *const parser, int type)
+item_t parse_array_definition(parser *const parser, item_t type)
 {
 	parser->arrdim = 0;
 	parser->usual = 1;
@@ -184,7 +186,7 @@ int parse_array_definition(parser *const parser, int type)
 		}
 		else
 		{
-			const int size_type = parse_constant_expression(parser);
+			const item_t size_type = parse_constant_expression(parser);
 			if (!is_int(size_type))
 			{
 				parser_error(parser, array_size_must_be_int);
@@ -198,6 +200,7 @@ int parse_array_definition(parser *const parser, int type)
 		}
 		type = to_modetab(parser->sx, mode_array, type);
 	}
+	
 	return type;
 }
 
@@ -219,19 +222,19 @@ int parse_array_definition(parser *const parser, int type)
  *
  *	@return	@c mode_undefined or index for modes table
  */
-size_t parse_struct_declaration_list(parser *const parser)
+item_t parse_struct_declaration_list(parser *const parser)
 {
-	const size_t ref_struct_begin = parser->sx->tc;
-	totree(parser, TStructbeg);
+	const size_t ref_struct_begin = tree_size(parser->sx);
+	tree_add(parser->sx, TStructbeg);
 
-	int local_modetab[100];
+	item_t local_modetab[100];
 	size_t local_md = 3;
 
 	local_modetab[0] = mode_struct;
-	totree(parser, 0);	// Тут будет номер иниц процедуры
+	tree_add(parser->sx, 0);	// Тут будет номер иниц процедуры
 
 	size_t field_number = 0;
-	int displ = 0;
+	size_t displ = 0;
 	int wasarr = 0;
 
 	consume_token(parser);
@@ -245,14 +248,14 @@ size_t parse_struct_declaration_list(parser *const parser)
 
 	do
 	{
-		int element_type = parse_type_specifier(parser);
+		item_t element_type = parse_type_specifier(parser);
 		if (element_type == mode_void)
 		{
 			parser_error(parser, only_functions_may_have_type_VOID);
 			element_type = mode_undefined;
 		}
 
-		int type = element_type;
+		item_t type = element_type;
 		if (parser->next_token == star)
 		{
 			consume_token(parser);
@@ -260,28 +263,28 @@ size_t parse_struct_declaration_list(parser *const parser)
 		}
 
 		const size_t repr = parser->lexer->repr;
-		size_t ref_array_dim = 0;
 		if (parser->next_token == identifier)
 		{
 			consume_token(parser);
 			if (parser->next_token == l_square)
 			{
-				totree(parser, TDeclarr);
-				const size_t adN = parser->sx->tc++;
+				tree_add(parser->sx, TDeclarr);
+				const size_t ref_array_dim = tree_reserve(parser->sx);
 				// Меняем тип (увеличиваем размерность массива)
 				type = parse_array_definition(parser, element_type);
-				parser->sx->tree[adN] = parser->arrdim;
+				tree_set(parser->sx, ref_array_dim, parser->arrdim);
 
-				totree(parser, TDeclid);
-				totree(parser, displ);
-				totree(parser, element_type);
-				totree(parser, parser->arrdim);										// N
+				tree_add(parser->sx, TDeclid);
+				tree_add(parser->sx, (item_t)displ);
+				tree_add(parser->sx, element_type);
+				tree_add(parser->sx, parser->arrdim);
+
 				// all - место в дереве, где будет общее количество выражений в инициализации,
-				const size_t all = parser->sx->tc++;	// для массивов - только признак (1) наличия инициализации
-				parser->sx->tree[all] = 0;											// all
-				parser->sx->tree[parser->sx->tc++] = parser->was_struct_with_arr;	// proc
-				totree(parser, parser->usual);										// usual
-				totree(parser, 1); // Признак, что массив в структуре
+				const size_t all = tree_reserve(parser->sx);		// для массивов - только признак (1) наличия инициализации
+				tree_set(parser->sx, all, 0);						// all
+				tree_add(parser->sx, parser->was_struct_with_arr);	// proc
+				tree_add(parser->sx, parser->usual);				// usual
+				tree_add(parser->sx, 1);							// Признак, что массив в структуре
 				wasarr = 1;
 
 				if (try_consume_token(parser, equal))
@@ -290,15 +293,17 @@ size_t parse_struct_declaration_list(parser *const parser)
 					if (is_array(parser->sx, type))
 					{
 						parser->onlystrings = 2;
-						parser->sx->tree[all] = 1;
+						tree_set(parser->sx, all, 1);
 						if (!parser->usual)
 						{
-							parser->sx->tree[ref_array_dim]--;
+							tree_set(parser->sx, ref_array_dim, tree_get(parser->sx, ref_array_dim) - 1);
 						}
+
 						parse_initializer(parser, type);
+
 						if (parser->onlystrings == 1)
 						{
-							parser->sx->tree[all + 2] = parser->usual + 2;
+							tree_set(parser->sx, all + 2, parser->usual + 2);
 						}
 					}
 				}
@@ -311,7 +316,7 @@ size_t parse_struct_declaration_list(parser *const parser)
 		}
 
 		local_modetab[local_md++] = type;
-		local_modetab[local_md++] = (int)repr;
+		local_modetab[local_md++] = (item_t)repr;
 		field_number++;
 		displ += size_of(parser->sx, type);
 
@@ -320,20 +325,25 @@ size_t parse_struct_declaration_list(parser *const parser)
 
 	if (wasarr)
 	{
-		totree(parser, TStructend);
-		totree(parser, (int)ref_struct_begin);
-		parser->sx->tree[ref_struct_begin + 1] = parser->was_struct_with_arr = parser->sx->procd++;
+		tree_add(parser->sx, TStructend);
+		tree_add(parser->sx, (item_t)ref_struct_begin);
+		// TODO: сюда бы интерфейс для processes
+		const size_t procd = vector_size(&parser->sx->processes);
+		vector_increase(&parser->sx->processes, 1);
+
+		parser->was_struct_with_arr = procd;
+		tree_set(parser->sx, ref_struct_begin + 1, parser->was_struct_with_arr);
 	}
 	else
 	{
-		parser->sx->tree[ref_struct_begin] = NOP;
-		parser->sx->tree[ref_struct_begin + 1] = NOP;
+		tree_set(parser->sx, ref_struct_begin, NOP);
+		tree_set(parser->sx, ref_struct_begin + 1, NOP);
 	}
 
-	local_modetab[1] = displ;
-	local_modetab[2] = (int)field_number * 2;
+	local_modetab[1] = (item_t)displ;
+	local_modetab[2] = (item_t)field_number * 2;
 
-	return mode_add(parser->sx, local_modetab, local_md);
+	return (item_t)mode_add(parser->sx, local_modetab, local_md);
 }
 
 /**
@@ -342,7 +352,7 @@ size_t parse_struct_declaration_list(parser *const parser)
  *	@param	parser		Parser structure
  *	@param	type		Index for modes table
  */
-void parse_struct_initializer(parser *const parser, const int type)
+void parse_struct_initializer(parser *const parser, const item_t type)
 {
 	if (parser->curr_token != l_brace)
 	{
@@ -355,8 +365,8 @@ void parse_struct_initializer(parser *const parser, const int type)
 	size_t actual_field_number = 0;
 	size_t ref_next_field = type + 3;
 
-	totree(parser, TStructinit);
-	totree(parser, (int)expected_field_number);
+	tree_add(parser->sx, TStructinit);
+	tree_add(parser->sx, (item_t)expected_field_number);
 
 	do
 	{
@@ -377,8 +387,8 @@ void parse_struct_initializer(parser *const parser, const int type)
 	} while (actual_field_number != expected_field_number && parser->next_token != semicolon);
 
 	expect_and_consume_token(parser, r_brace, wait_end);
-	parser->leftansttype = type;
-	totree(parser, TExprend);
+	parser->leftansttype = (int)type;
+	tree_add(parser->sx, TExprend);
 }
 
 /**
@@ -387,7 +397,7 @@ void parse_struct_initializer(parser *const parser, const int type)
  *	@param	parser		Parser structure
  *	@param	type		Index for modes table
  */
-void parse_array_initializer(parser *const parser, const int type)
+void parse_array_initializer(parser *const parser, const item_t type)
 {
 	if (parser->curr_token == string_literal)
 	{
@@ -400,7 +410,7 @@ void parse_array_initializer(parser *const parser, const int type)
 			parser->onlystrings = 1;
 		}
 		parse_string_literal_expression(parser);
-		totree(parser, TExprend);
+		tree_add(parser->sx, TExprend);
 	}
 	else
 	{
@@ -411,9 +421,9 @@ void parse_array_initializer(parser *const parser, const int type)
 			return;
 		}
 
-		totree(parser, TBeginit);
-		const size_t ref_list_length = parser->sx->tc++;
-		int list_length = 0;
+		tree_add(parser->sx, TBeginit);
+		const size_t ref_list_length = tree_reserve(parser->sx);
+		size_t list_length = 0;
 
 		do
 		{
@@ -433,8 +443,9 @@ void parse_array_initializer(parser *const parser, const int type)
 		} while (parser->next_token != semicolon);
 
 		expect_and_consume_token(parser, r_brace, wait_end);
-		parser->sx->tree[ref_list_length] = list_length;
-		totree(parser, TExprend);
+		tree_set(parser->sx, ref_list_length, (item_t)list_length);
+		parser->leftansttype = (int)type;
+		tree_add(parser->sx, TExprend);
 	}
 }
 
@@ -450,56 +461,57 @@ void parse_array_initializer(parser *const parser, const int type)
  *	@param	parser		Parser structure
  *	@param	type		Type of variable in declaration
  */
-void parse_init_declarator(parser *const parser, int type)
+void parse_init_declarator(parser *const parser, item_t type)
 {
 	const size_t old_id = to_identab(parser, parser->lexer->repr, 0, type);
 	size_t ref_array_dim = 0;
 
 	parser->usual = 1;
 	parser->arrdim = 0;
-	const int element_type = type;
+	const item_t element_type = type;
 
 	if (parser->next_token == l_square)
 	{
-		totree(parser, TDeclarr);
-		ref_array_dim = parser->sx->tc++;
+		tree_add(parser->sx, TDeclarr);
+		ref_array_dim = tree_reserve(parser->sx);
 		// Меняем тип (увеличиваем размерность массива)
 		type = parse_array_definition(parser, type);
 		ident_set_mode(parser->sx, old_id, type);
-		parser->sx->tree[ref_array_dim] = parser->arrdim;
+		tree_set(parser->sx, ref_array_dim, parser->arrdim);
 		if ((!parser->usual && parser->next_token != equal))
 		{
 			parser_error(parser, empty_bound_without_init);
 		}
 	}
 
-	totree(parser, TDeclid);
-	totree(parser, ident_get_displ(parser->sx, old_id));							// displ
-	totree(parser, element_type);													// elem_type
-	totree(parser, parser->arrdim);													// N
+	tree_add(parser->sx, TDeclid);
+	tree_add(parser->sx, ident_get_displ(parser->sx, old_id));
+	tree_add(parser->sx, element_type);
+	tree_add(parser->sx, parser->arrdim);
+
 	// all - место в дереве, где будет общее количество выражений в инициализации,
-	size_t all = parser->sx->tc++;	// для массивов - только признак (1) наличия инициализации
-	parser->sx->tree[all] = 0;
-	totree(parser, is_pointer(parser->sx, type) ? 0 : parser->was_struct_with_arr);	// proc
-	totree(parser, parser->usual);													// usual
-	totree(parser, 0);	// Признак того, массив не в структуре
+	const size_t all = tree_reserve(parser->sx);	// для массивов - только признак (1) наличия инициализации
+	tree_set(parser->sx, all, 0);
+	tree_add(parser->sx, is_pointer(parser->sx, type) ? 0 : parser->was_struct_with_arr);
+	tree_add(parser->sx, parser->usual);
+	tree_add(parser->sx, 0);	// Признак того, массив не в структуре
 
 	if (try_consume_token(parser, equal))
 	{
 		consume_token(parser);
-		parser->sx->tree[all] = size_of(parser->sx, type);
+		tree_set(parser->sx, all, (item_t)size_of(parser->sx, type));
 		if (is_array(parser->sx, type))
 		{
 			if (!parser->usual)
 			{
-				parser->sx->tree[ref_array_dim]--;
+				tree_set(parser->sx, ref_array_dim, tree_get(parser->sx, ref_array_dim) - 1);
 			}
 
 			parser->onlystrings = 2;
 			parse_array_initializer(parser, type);
 			if (parser->onlystrings == 1)
 			{
-				parser->sx->tree[all + 2] = parser->usual + 2;
+				tree_set(parser->sx, all + 2, parser->usual + 2);
 			}
 		}
 		else
@@ -514,9 +526,9 @@ void parse_init_declarator(parser *const parser, int type)
  *
  *	@return	@c mode_undefined or index for modes table
  */
-size_t parse_function_declarator(parser *const parser, const int level, int func_d, const int return_type)
+item_t parse_function_declarator(parser *const parser, const int level, int func_d, const item_t return_type)
 {
-	int local_modetab[100];
+	item_t local_modetab[100];
 	size_t local_md = 3;
 	local_modetab[0] = mode_function;
 	local_modetab[1] = return_type;
@@ -536,10 +548,11 @@ size_t parse_function_declarator(parser *const parser, const int level, int func
 								// 0 - ничего не было,
 								// 1 - была *,
 								// 2 - была [
-			int type = parse_type_specifier(parser);
+			item_t type = parse_type_specifier(parser);
 
 			if (parser->next_token == star)
 			{
+				maybe_fun = 1;
 				consume_token(parser);
 				if (type == mode_void)
 				{
@@ -575,6 +588,7 @@ size_t parse_function_declarator(parser *const parser, const int level, int func
 
 			if (parser->next_token == l_square)
 			{
+				maybe_fun = 2;
 				if (is_pointer(parser->sx, type) && flag_was_ident == 0)
 				{
 					parser_error(parser, aster_with_row);
@@ -630,7 +644,7 @@ size_t parse_function_declarator(parser *const parser, const int level, int func
 				}
 
 				const int old_func_def = parser->func_def;
-				type = (int)parse_function_declarator(parser, 0, 2, type);
+				type = parse_function_declarator(parser, 0, 2, type);
 				parser->func_def = old_func_def;
 			}
 			if (func_d == 3)
@@ -663,8 +677,8 @@ size_t parse_function_declarator(parser *const parser, const int level, int func
 		parser->func_def = func_d;
 	}
 
-	local_modetab[2] = (int)param_number;
-	return mode_add(parser->sx, local_modetab, local_md);
+	local_modetab[2] = (item_t)param_number;
+	return (item_t)mode_add(parser->sx, local_modetab, local_md);
 }
 
 /**
@@ -675,49 +689,48 @@ size_t parse_function_declarator(parser *const parser, const int level, int func
  */
 void parse_function_body(parser *const parser, const size_t function_id)
 {
-	parser->function_type = ident_get_mode(parser->sx, function_id);
+	parser->function_mode = ident_get_mode(parser->sx, function_id);
 	const size_t function_number = (size_t)ident_get_displ(parser->sx, function_id);
-	const size_t param_number = (size_t)mode_get(parser->sx, parser->function_type + 2);
+	const size_t param_number = (size_t)mode_get(parser->sx, parser->function_mode + 2);
 
 	parser->pgotost = 0;
 	parser->flag_was_return = 0;
 
-	const int pred = parser->sx->identab[function_id];
-	if (pred > 1) // Был прототип
+	const item_t prev = ident_get_prev(parser->sx, function_id);
+	if (prev > 1) // Был прототип
 	{
-		if (parser->function_type != ident_get_mode(parser->sx, pred))
+		if (parser->function_mode != ident_get_mode(parser->sx, prev))
 		{
 			parser_error(parser, decl_and_def_have_diff_type);
 			skip_until(parser, r_brace);
 			return;
 		}
-		ident_set_displ(parser->sx, pred, (int)function_number);
+		ident_set_displ(parser->sx, prev, (item_t)function_number);
 	}
 
-	const int old_displ = scope_func_enter(parser->sx);
+	const item_t old_displ = scope_func_enter(parser->sx);
 
 	for (size_t i = 0; i < param_number; i++)
 	{
-		const int type = mode_get(parser->sx, parser->function_type + i + 3);
-		const int repr = func_get(parser->sx, function_number + i + 1);
+		const item_t type = mode_get(parser->sx, parser->function_mode + i + 3);
+		const item_t repr = func_get(parser->sx, function_number + i + 1);
 
-		to_identab(parser, abs(repr), repr > 0 ? 0 : -1, type);
+		to_identab(parser, llabs(repr), repr > 0 ? 0 : -1, type);
 	}
 
-	func_set(parser->sx, function_number, (int)parser->sx->tc);
-	totree(parser, TFuncdef);
-	totree(parser, (int)function_id);
+	func_set(parser->sx, function_number, (item_t)tree_size(parser->sx));
+	tree_add(parser->sx, TFuncdef);
+	tree_add(parser->sx, (item_t)function_id);
 
-	const size_t ref_maxdispl = parser->sx->tc++;
+	const size_t ref_maxdispl = tree_reserve(parser->sx);
 
 	consume_token(parser);
 	parse_compound_statement(parser, FUNCBODY);
 
-	parser->sx->tc--;
-	totree(parser, TReturnvoid);
-	totree(parser, TEnd);
+	tree_set(parser->sx, tree_size(parser->sx), TReturnvoid);
+	tree_add(parser->sx, TEnd);
 
-	if (mode_get(parser->sx, parser->function_type + 1) != mode_void && !parser->flag_was_return)
+	if (mode_get(parser->sx, parser->function_mode + 1) != mode_void && !parser->flag_was_return)
 	{
 		parser_error(parser, no_ret_in_func);
 	}
@@ -727,10 +740,12 @@ void parse_function_body(parser *const parser, const size_t function_id)
 	for (size_t i = 0; i < parser->pgotost; i += 2)
 	{
 		const size_t repr = ident_get_repr(parser->sx, parser->gotost[i]);
-		const size_t line_number = abs(parser->gotost[i + 1]);
-		if (!parser->sx->identab[parser->gotost[i] + 2])
+		const size_t line_number = llabs(parser->gotost[i + 1]);
+		if (!ident_get_mode(parser->sx, parser->gotost[i]))
 		{
-			parser_error(parser, label_not_declared, line_number, parser->sx->reprtab, repr);
+			char buffer[MAXSTRINGL];
+			repr_get_ident(parser->sx, repr, buffer);
+			parser_error(parser, label_not_declared, line_number, buffer);
 		}
 	}
 }
@@ -744,12 +759,14 @@ void parse_function_body(parser *const parser, const size_t function_id)
  *	@param	parser		Parser structure
  *	@param	type		Return type of a function
  */
-void parse_function_definition(parser *const parser, const int type)
+void parse_function_definition(parser *const parser, const item_t type)
 {
-	const size_t function_num = parser->sx->funcnum++;
+	// TODO: сюда бы интерфейс для functions
+	const size_t function_num = vector_size(&parser->sx->functions);
+	vector_increase(&parser->sx->functions, 1);
 	const size_t function_repr = parser->lexer->repr;
 	consume_token(parser);
-	const int function_mode = (int)parse_function_declarator(parser, 1, 3, type);
+	const item_t function_mode = parse_function_declarator(parser, 1, 3, type);
 
 	if (parser->func_def == 0 && parser->next_token == l_brace)
 	{
@@ -760,7 +777,7 @@ void parse_function_definition(parser *const parser, const int type)
 		parser->func_def = 2;
 	}
 
-	const size_t function_id = to_identab(parser, function_repr, (int)function_num, function_mode);
+	const size_t function_id = to_identab(parser, function_repr, (item_t)function_num, function_mode);
 
 	if (parser->next_token == l_brace)
 	{
@@ -797,7 +814,7 @@ void parse_function_definition(parser *const parser, const int type)
 void parse_inner_declaration(parser *const parser)
 {
 	parser->flag_was_type_def = 0;
-	int group_type = parse_type_specifier(parser);
+	item_t group_type = parse_type_specifier(parser);
 
 	if (group_type == mode_void)
 	{
@@ -811,7 +828,7 @@ void parse_inner_declaration(parser *const parser)
 
 	do
 	{
-		int type = group_type;
+		item_t type = group_type;
 		if (parser->next_token == star)
 		{
 			consume_token(parser);
@@ -837,7 +854,7 @@ void parse_external_declaration(parser *const parser)
 {
 	parser->flag_was_type_def = 0;
 	parser->func_def = 3;
-	int group_type = parse_type_specifier(parser);
+	const item_t group_type = parse_type_specifier(parser);
 
 	if (parser->flag_was_type_def && try_consume_token(parser, semicolon))
 	{
@@ -846,7 +863,7 @@ void parse_external_declaration(parser *const parser)
 
 	do
 	{
-		int type = group_type;
+		item_t type = group_type;
 		if (parser->next_token == star)
 		{
 			consume_token(parser);
@@ -866,7 +883,7 @@ void parse_external_declaration(parser *const parser)
 			{
 				parse_function_definition(parser, type);
 			}
-			else if (group_type == LVOID)
+			else if (group_type == mode_void)
 			{
 				parser_error(parser, only_functions_may_have_type_VOID);
 			}
@@ -889,11 +906,11 @@ void parse_external_declaration(parser *const parser)
 	}
 }
 
-void parse_initializer(parser *const parser, const int type)
+void parse_initializer(parser *const parser, const item_t type)
 {
 	if (parser->curr_token != l_brace)
 	{
-		const int expr_type = parse_assignment_expression(parser);
+		const item_t expr_type = parse_assignment_expression(parser);
 		if (!is_undefined(expr_type) && !is_undefined(type))
 		{
 			if (is_int(type) && is_float(expr_type))

@@ -15,71 +15,17 @@
  */
 
 #include "tree.h"
+#include "defs.h"
 #include "errors.h"
-#include "logger.h"
 #include <stdint.h>
 #include <stdlib.h>
 
 
-node node_expression(tree *const tree, const size_t index);
-node node_operator(tree *const tree, const size_t index);
+node node_expression(vector *const tree, const size_t index);
+node node_operator(vector *const tree, const size_t index);
 
 
-tree sx_to_tree(syntax *const sx)
-{
-	tree tree;
-	if (sx == NULL)
-	{
-		tree.array = NULL;
-		return tree;
-	}
-
-	tree.array = sx->tree;
-	tree.size = &sx->tc;
-
-	return tree;
-}
-
-
-int tree_is_correct(const tree *const tree)
-{
-	return tree != NULL && tree->array != NULL && tree->size != NULL;
-}
-
-size_t tree_size(const tree *const tree)
-{
-	return tree_is_correct(tree) ? *tree->size : 0;
-}
-
-int tree_add(tree *const tree, const int value)
-{
-	if (!tree_is_correct(tree))
-	{
-		return -1;
-	}
-
-	tree->array[(*tree->size)++] = value;
-	return 0;
-}
-
-int tree_set(tree *const tree, const size_t index, const int value)
-{
-	if (!tree_is_correct(tree) || index > tree_size(tree))
-	{
-		return -1;
-	}
-
-	tree->array[index] = value;
-	return 0;
-}
-
-int tree_get(const tree *const tree, const size_t index)
-{
-	return tree_is_correct(tree) && index < tree_size(tree) ? tree->array[index] : INT_MAX;
-}
-
-
-int is_operator(const int value)
+int is_operator(const item_t value)
 {
 	return value == TFuncdef		// Declarations
 		|| value == TDeclid
@@ -110,7 +56,7 @@ int is_operator(const int value)
 		|| value == EXITDIRECTC;
 }
 
-int is_expression(const int value)
+int is_expression(const item_t value)
 {
 	return value == TBeginit		// Declarations
 		|| value == TStructinit
@@ -136,7 +82,7 @@ int is_expression(const int value)
 		|| value == TExprend;
 }
 
-int is_lexeme(const int value)
+int is_lexeme(const item_t value)
 {
 	return (value >= 9001 && value <= 9595
 		&& value != CREATEDIRECTC
@@ -148,12 +94,12 @@ int is_lexeme(const int value)
 node node_broken()
 {
 	node nd;
-	nd.tree.array = NULL;
+	nd.tree = NULL;
 	return nd;
 }
 
 
-size_t skip_expression(tree *const tree, size_t i)
+size_t skip_expression(vector *const tree, size_t i)
 {
 	node nd = node_expression(tree, i);
 	if (!node_is_correct(&nd))
@@ -170,7 +116,7 @@ size_t skip_expression(tree *const tree, size_t i)
 	return i;
 }
 
-node node_expression(tree *const tree, const size_t index)
+node node_expression(vector *const tree, const size_t index)
 {
 	if (index == SIZE_MAX)
 	{
@@ -179,25 +125,25 @@ node node_expression(tree *const tree, const size_t index)
 
 	node nd;
 
-	nd.tree = *tree;
+	nd.tree = tree;
 	nd.type = index;
 	nd.argv = nd.type + 1;
 
 	nd.argc = 0;
 	nd.amount = 0;
 
-	if (is_operator(tree_get(tree, index)))
+	if (is_operator(vector_get(tree, index)))
 	{
-		error(NULL, tree_expression_not_block, index, tree_get(tree, index));
+		error(NULL, tree_expression_not_block, index, vector_get(tree, index));
 		return node_broken();
 	}
 
-	switch (tree_get(tree, index))
+	switch (vector_get(tree, index))
 	{
 		case TBeginit:		// ArrayInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
 		case TStructinit:	// StructInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
 			nd.argc = 1;
-			nd.amount = node_get_arg(&nd, 0);
+			nd.amount = (size_t)node_get_arg(&nd, 0);
 			break;
 
 		case TAddrtovald:
@@ -229,11 +175,11 @@ node node_expression(tree *const tree, const size_t index)
 
 		case TStringd:		// d - double
 			nd.argc = 1;
-			nd.argc += node_get_arg(&nd, 0) * 2;
+			nd.argc += (size_t)node_get_arg(&nd, 0) * 2;
 			break;
 		case TString:
 			nd.argc = 1;
-			nd.argc += node_get_arg(&nd, 0);
+			nd.argc += (size_t)node_get_arg(&nd, 0);
 			break;
 
 		case TSliceident:
@@ -250,27 +196,27 @@ node node_expression(tree *const tree, const size_t index)
 			return nd;
 
 		case NOP:
-			if (tree_get(tree, index + 1) != TExprend)
+			if (vector_get(tree, index + 1) != TExprend)
 			{
-				error(NULL, tree_expression_no_texprend, index, tree_get(tree, index));
+				error(NULL, tree_expression_no_texprend, index, vector_get(tree, index));
 				return node_broken();
 			}
 			break;
 
 		default:
 		{
-			if (!is_lexeme(tree_get(tree, index)))
+			if (!is_lexeme(vector_get(tree, index)))
 			{
-				error(NULL, tree_expression_unknown, index, tree_get(tree, index));
+				error(NULL, tree_expression_unknown, index, vector_get(tree, index));
 				return node_broken();
 			}
 
 			size_t j = index + 1;
-			while (tree_get(tree, j) != NOP && !is_expression(tree_get(tree, j)) && !is_lexeme(tree_get(tree, j)))
+			while (vector_get(tree, j) != NOP && !is_expression(vector_get(tree, j)) && !is_lexeme(vector_get(tree, j)))
 			{
-				if (is_operator(tree_get(tree, j)))
+				if (is_operator(vector_get(tree, j)))
 				{
-					error(NULL, tree_expression_operator, j, tree_get(tree, j));
+					error(NULL, tree_expression_operator, j, vector_get(tree, j));
 					return node_broken();
 				}
 
@@ -292,13 +238,13 @@ node node_expression(tree *const tree, const size_t index)
 		return node_broken();
 	}
 
-	if (tree_get(tree, j) == NOP || is_expression(tree_get(tree, j)) || is_lexeme(tree_get(tree, j)))
+	if (vector_get(tree, j) == NOP || is_expression(vector_get(tree, j)) || is_lexeme(vector_get(tree, j)))
 	{
 		nd.amount++;
 	}
 	else
 	{
-		error(NULL, tree_expression_no_texprend, j, tree_get(tree, j));
+		error(NULL, tree_expression_no_texprend, j, vector_get(tree, j));
 		return node_broken();
 	}
 
@@ -306,9 +252,9 @@ node node_expression(tree *const tree, const size_t index)
 }
 
 
-size_t skip_operator(tree *const tree, size_t i)
+size_t skip_operator(vector *const tree, size_t i)
 {
-	if (!is_operator(tree_get(tree, i)) && tree_get(tree, i) != NOP)
+	if (!is_operator(vector_get(tree, i)) && vector_get(tree, i) != NOP)
 	{
 		return skip_expression(tree, i);
 	}
@@ -328,7 +274,7 @@ size_t skip_operator(tree *const tree, size_t i)
 	return i;
 }
 
-node node_operator(tree *const tree, const size_t index)
+node node_operator(vector *const tree, const size_t index)
 {
 	if (index == SIZE_MAX)
 	{
@@ -337,14 +283,14 @@ node node_operator(tree *const tree, const size_t index)
 
 	node nd;
 
-	nd.tree = *tree;
+	nd.tree = tree;
 	nd.type = index;
 	nd.argv = nd.type + 1;
 
 	nd.argc = 0;
 	nd.amount = 0;
 
-	switch (tree_get(tree, index))
+	switch (vector_get(tree, index))
 	{
 		case TFuncdef:		// Funcdef: 2 потомка (ссылка на identab, тело функции)
 			nd.argc = 2;
@@ -357,7 +303,7 @@ node node_operator(tree *const tree, const size_t index)
 		case TDeclarr:		// ArrayDecl: n + 2 потомков (размерность массива, n выражений-размеров, инициализатор (может не быть))
 		{
 			nd.argc = 1;
-			nd.amount = node_get_arg(&nd, 0) + 1;
+			nd.amount = (size_t)node_get_arg(&nd, 0) + 1;
 		}
 		break;
 
@@ -365,7 +311,7 @@ node node_operator(tree *const tree, const size_t index)
 		{
 			nd.argc = 1;
 			size_t j = nd.argv + nd.argc;
-			while (j != SIZE_MAX && tree_get(tree, j) != TStructend)
+			while (j != SIZE_MAX && vector_get(tree, j) != TStructend)
 			{
 				j = skip_operator(tree, j);
 				nd.amount++;
@@ -389,7 +335,7 @@ node node_operator(tree *const tree, const size_t index)
 		case TBegin:
 		{
 			size_t j = nd.argv + nd.argc;
-			while (j != SIZE_MAX && tree_get(tree, j) != TEnd)
+			while (j != SIZE_MAX && vector_get(tree, j) != TEnd)
 			{
 				j = skip_operator(tree, j);
 				nd.amount++;
@@ -404,7 +350,7 @@ node node_operator(tree *const tree, const size_t index)
 			{
 				return node_broken();
 			}
-			
+
 		}
 		break;
 		case TEnd:
@@ -412,12 +358,12 @@ node node_operator(tree *const tree, const size_t index)
 
 		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
 			nd.argc = 1;
-			nd.amount = is_expression(tree_get(tree, nd.argv + nd.argc)) || is_lexeme(tree_get(tree, nd.argv + nd.argc)) ? 1 : 0;
+			nd.amount = is_expression(vector_get(tree, nd.argv + nd.argc)) || is_lexeme(vector_get(tree, nd.argv + nd.argc)) ? 1 : 0;
 			break;
 		case TPrintf:		// Printf: n + 2 потомков (форматирующая строка, число параметров, n параметров-выражений)
 		case TGetid:		// GetID: 1 потомок (ссылка на identab)
 							// Scanf: n + 2 потомков (форматирующая строка, число параметров, n параметров-ссылок на identab)
-		
+
 		case TGoto:			// Goto: 1 потомок (ссылка на identab)
 			nd.argc = 1;
 			break;
@@ -470,7 +416,7 @@ node node_operator(tree *const tree, const size_t index)
 		case CREATEDIRECTC:
 		{
 			size_t j = nd.argv + nd.argc;
-			while (j != SIZE_MAX && tree_get(tree, j) != EXITDIRECTC)
+			while (j != SIZE_MAX && vector_get(tree, j) != EXITDIRECTC)
 			{
 				j = skip_operator(tree, j);
 				nd.amount++;
@@ -491,9 +437,9 @@ node node_operator(tree *const tree, const size_t index)
 			break;
 
 		default:
-			if (!is_expression(tree_get(tree, index)) && !is_lexeme(tree_get(tree, index)))
+			if (!is_expression(vector_get(tree, index)) && !is_lexeme(vector_get(tree, index)))
 			{
-				warning(NULL, tree_operator_unknown, index, tree_get(tree, index));
+				warning(NULL, tree_operator_unknown, index, vector_get(tree, index));
 			}
 
 			return node_expression(tree, index);	// CompoundStatement: n + 1 потомков (число потомков, n узлов-операторов)
@@ -512,17 +458,17 @@ size_t node_test_recursive(node *const nd, size_t i)
 		return SIZE_MAX;
 	}
 
-	if (tree_get(&nd->tree, i++) != node_get_type(nd))
+	if (vector_get(nd->tree, i++) != node_get_type(nd))
 	{
-		error(NULL, tree_unexpected, node_get_type(nd), i - 1, tree_get(&nd->tree, i - 1));
+		error(NULL, tree_unexpected, node_get_type(nd), i - 1, vector_get(nd->tree, i - 1));
 		return SIZE_MAX;
 	}
 
-	for (size_t j = 0; node_get_arg(nd, j) != INT_MAX; j++)
+	for (size_t j = 0; node_get_arg(nd, j) != ITEM_MAX; j++)
 	{
-		if (tree_get(&nd->tree, i++) != node_get_arg(nd, j))
+		if (vector_get(nd->tree, i++) != node_get_arg(nd, j))
 		{
-			error(NULL, tree_unexpected, node_get_arg(nd, j), i - 1, tree_get(&nd->tree, i - 1));
+			error(NULL, tree_unexpected, node_get_arg(nd, j), i - 1, vector_get(nd->tree, i - 1));
 			return SIZE_MAX;
 		}
 	}
@@ -550,7 +496,7 @@ int node_test_copy(node *const dest, node *const nd)
 		return -1;
 	}
 
-	for (size_t i = 0; node_get_arg(nd, i) != INT_MAX; i++)
+	for (size_t i = 0; node_get_arg(nd, i) != ITEM_MAX; i++)
 	{
 		if (node_add_arg(&child_dest, node_get_arg(nd, i)))
 		{
@@ -581,16 +527,16 @@ int node_test_copy(node *const dest, node *const nd)
  */
 
 
-node node_get_root(syntax *const sx)
+node node_get_root(vector *const tree)
 {
-	if (sx == NULL)
+	if (!vector_is_correct(tree))
 	{
 		return node_broken();
 	}
 
 	node nd;
 
-	nd.tree = sx_to_tree(sx);
+	nd.tree = tree;
 	nd.type = SIZE_MAX;
 	nd.argv = 0;
 	nd.argc = 0;
@@ -598,9 +544,9 @@ node node_get_root(syntax *const sx)
 	nd.amount = 0;
 
 	size_t i = 0;
-	while (i != SIZE_MAX && tree_get(&nd.tree, i) != INT_MAX)
+	while (i != SIZE_MAX && vector_get(nd.tree, i) != ITEM_MAX)
 	{
-		i = skip_operator(&nd.tree, i);
+		i = skip_operator(nd.tree, i);
 		nd.amount++;
 	}
 
@@ -624,32 +570,17 @@ node node_get_child(node *const nd, const size_t index)
 	{
 		if (nd->type == SIZE_MAX || is_operator(node_get_type(nd)))
 		{
-			i = skip_operator(&nd->tree, i);
+			i = skip_operator(nd->tree, i);
 		}
 		else
 		{
-			i = skip_expression(&nd->tree, i);
+			i = skip_expression(nd->tree, i);
 		}
 	}
 
 	return nd->type == SIZE_MAX || is_operator(node_get_type(nd))
-		? node_operator(&nd->tree, i)
-		: node_expression(&nd->tree, i);
-}
-
-node node_get_next(node *const nd)
-{
-	if (!node_is_correct(nd) || tree_get(&nd->tree, nd->children) == INT_MAX)
-	{
-		return node_broken();
-	}
-
-	if (nd->type == SIZE_MAX)
-	{
-		return node_operator(&nd->tree, 0);
-	}
-
-	return node_operator(&nd->tree, nd->children);
+		? node_operator(nd->tree, i)
+		: node_expression(nd->tree, i);
 }
 
 
@@ -658,18 +589,46 @@ size_t node_get_amount(const node *const nd)
 	return node_is_correct(nd) ? nd->amount : 0;
 }
 
-int node_get_type(const node *const nd)
+item_t node_get_type(const node *const nd)
 {
-	return node_is_correct(nd) && nd->type != SIZE_MAX ? tree_get(&nd->tree, nd->type) : INT_MAX;
+	return node_is_correct(nd) ? vector_get(nd->tree, nd->type) : ITEM_MAX;
 }
 
-int node_get_arg(const node *const nd, const size_t index)
+item_t node_get_arg(const node *const nd, const size_t index)
 {
-	return node_is_correct(nd) && index < nd->argc ? tree_get(&nd->tree, nd->argv + index) : INT_MAX;
+	return node_is_correct(nd) && index < nd->argc ? vector_get(nd->tree, nd->argv + index) : ITEM_MAX;
 }
 
 
-int node_set_type(node *const nd, const int type)
+node node_get_next(node *const nd)
+{
+	if (!node_is_correct(nd) || vector_get(nd->tree, nd->children) == ITEM_MAX)
+	{
+		return node_broken();
+	}
+
+	if (nd->type == SIZE_MAX)
+	{
+		return node_operator(nd->tree, 0);
+	}
+
+	return node_operator(nd->tree, nd->children);
+}
+
+int node_set_next(node *const nd)
+{
+	node next = node_get_next(nd);
+	if (!node_is_correct(&next))
+	{
+		return -1;
+	}
+
+	*nd = next;
+	return 0;
+}
+
+
+int node_set_type(node *const nd, const item_t type)
 {
 	if (!node_is_correct(nd))
 	{
@@ -686,19 +645,19 @@ int node_set_type(node *const nd, const int type)
 		return -3;
 	}
 
-	return nd->type == tree_size(&nd->tree)
-		? tree_add(&nd->tree, type)
-		: tree_set(&nd->tree, nd->type, type);
+	return nd->type != vector_size(nd->tree)
+		? vector_set(nd->tree, nd->type, type)
+		: vector_add(nd->tree, type) != SIZE_MAX ? 0 : -1;
 }
 
-int node_add_arg(node *const nd, const int arg)
+int node_add_arg(node *const nd, const item_t arg)
 {
 	if (!node_is_correct(nd))
 	{
 		return -1;
 	}
 
-	if (node_get_type(nd) == INT_MAX)
+	if (node_get_type(nd) == ITEM_MAX)
 	{
 		return -2;
 	}
@@ -708,8 +667,8 @@ int node_add_arg(node *const nd, const int arg)
 		return -3;
 	}
 
-	const int ret = nd->argv + nd->argc == tree_size(&nd->tree)
-					? tree_add(&nd->tree, arg)
+	const int ret = nd->argv + nd->argc == vector_size(nd->tree)
+					? vector_add(nd->tree, arg) != SIZE_MAX ? 0 : -1
 					: -1;
 	if (!ret)
 	{
@@ -719,19 +678,19 @@ int node_add_arg(node *const nd, const int arg)
 	return ret;
 }
 
-int node_set_arg(node *const nd, const size_t index, const int arg)
+int node_set_arg(node *const nd, const size_t index, const item_t arg)
 {
 	if (!node_is_correct(nd) || index >= nd->argc)
 	{
 		return -1;
 	}
 
-	if (node_get_type(nd) == INT_MAX)
+	if (node_get_type(nd) == ITEM_MAX)
 	{
 		return -2;
 	}
 
-	return tree_set(&nd->tree, nd->argv + index, arg);
+	return vector_set(nd->tree, nd->argv + index, arg);
 }
 
 node node_set_child(node *const nd)
@@ -744,7 +703,7 @@ node node_set_child(node *const nd)
 	node child;
 
 	child.tree = nd->tree;
-	child.type = tree_size(&nd->tree);
+	child.type = vector_size(nd->tree);
 
 	child.argv = child.type + 1;
 	child.argc = 0;
@@ -756,26 +715,35 @@ node node_set_child(node *const nd)
 }
 
 
-int node_is_correct(const node *const nd)
+int node_copy(node *const dest, const node *const src)
 {
-	return nd != NULL && tree_is_correct(&nd->tree);
-}
-
-
-int tree_test(syntax *const sx)
-{
-	if (sx == NULL)
+	if (!node_is_correct(src) || dest == NULL)
 	{
 		return -1;
 	}
 
-	tree tree = sx_to_tree(sx);
+	*dest = *src;
+	return 0;
+}
+
+int node_is_correct(const node *const nd)
+{
+	return nd != NULL && vector_is_correct(nd->tree);
+}
+
+
+int tree_test(vector *const tree)
+{
+	if (!vector_is_correct(tree))
+	{
+		return -1;
+	}
 
 	// Тестирование функций
 	size_t i = 0;
-	while (i != SIZE_MAX && i < tree_size(&tree) - 1)
+	while (i != SIZE_MAX && i < vector_size(tree) - 1)
 	{
-		i = skip_operator(&tree, i);
+		i = skip_operator(tree, i);
 	}
 
 	if (i == SIZE_MAX)
@@ -783,7 +751,7 @@ int tree_test(syntax *const sx)
 		return -1;
 	}
 
-	if (tree_get(&tree, i) == TEnd)
+	if (vector_get(tree, i) == TEnd)
 	{
 		return 0;
 	}
@@ -792,48 +760,47 @@ int tree_test(syntax *const sx)
 	return -1;
 }
 
-int tree_test_next(syntax *const sx)
+int tree_test_next(vector *const tree)
 {
-	if (sx == NULL)
+	if (!vector_is_correct(tree))
 	{
 		return -1;
 	}
 
-	node nd = node_get_root(sx);
-	tree temp = nd.tree;
+	node nd = node_get_root(tree);
 
 	size_t i = 0;
 	nd = node_get_next(&nd);
 	while (node_is_correct(&nd))
 	{
-		if (tree_get(&temp, i++) != node_get_type(&nd))
+		if (vector_get(tree, i++) != node_get_type(&nd))
 		{
-			error(NULL, tree_unexpected, node_get_type(&nd), i - 1, tree_get(&temp, i - 1));
+			error(NULL, tree_unexpected, node_get_type(&nd), i - 1, vector_get(tree, i - 1));
 			return -1;
 		}
 
-		for (size_t j = 0; node_get_arg(&nd, j) != INT_MAX; j++)
+		for (size_t j = 0; node_get_arg(&nd, j) != ITEM_MAX; j++)
 		{
-			if (tree_get(&temp, i++) != node_get_arg(&nd, j))
+			if (vector_get(tree, i++) != node_get_arg(&nd, j))
 			{
-				error(NULL, tree_unexpected, node_get_arg(&nd, j), i - 1, tree_get(&temp, i - 1));
+				error(NULL, tree_unexpected, node_get_arg(&nd, j), i - 1, vector_get(tree, i - 1));
 				return -1;
 			}
 		}
 		nd = node_get_next(&nd);
 	}
 
-	return i == tree_size(&temp) ? 0 : -1;
+	return i == vector_size(tree) ? 0 : -1;
 }
 
-int tree_test_recursive(syntax *const sx)
+int tree_test_recursive(vector *const tree)
 {
-	if (sx == NULL)
+	if (!vector_is_correct(tree))
 	{
 		return -1;
 	}
 
-	node nd = node_get_root(sx);
+	node nd = node_get_root(tree);
 
 	size_t index = 0;
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
@@ -842,42 +809,45 @@ int tree_test_recursive(syntax *const sx)
 		index = node_test_recursive(&child, index);
 	}
 
-	return index != SIZE_MAX && index == tree_size(&nd.tree) ? 0 : -1;
+	return index != SIZE_MAX && index == vector_size(nd.tree) ? 0 : -1;
 }
 
-int tree_test_copy(syntax *const sx)
+int tree_test_copy(vector *const tree)
 {
-	if (sx == NULL)
+	if (!vector_is_correct(tree))
 	{
 		return -1;
 	}
 
-	syntax sx_dest;
-	sx_init(&sx_dest);
+	vector tree_dest = vector_create(0);
 
-	node nd = node_get_root(sx);
-	node nd_dest = node_get_root(&sx_dest);
+	node nd = node_get_root(tree);
+	node nd_dest = node_get_root(&tree_dest);
 
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
 	{
 		node child = node_get_child(&nd, i);
 		if (node_test_copy(&nd_dest, &child))
 		{
+			vector_clear(&tree_dest);
 			return -1;
 		}
 	}
 
 	size_t i = 0;
-	while (i < tree_size(&nd.tree) && i < tree_size(&nd_dest.tree))
+	while (i < vector_size(nd.tree) && i < vector_size(nd_dest.tree))
 	{
-		if (tree_get(&nd.tree, i) != tree_get(&nd_dest.tree, i))
+		if (vector_get(nd.tree, i) != vector_get(nd_dest.tree, i))
 		{
-			error(NULL, tree_unexpected, tree_get(&nd_dest.tree, i), i, tree_get(&nd.tree, i));
+			error(NULL, tree_unexpected, vector_get(nd_dest.tree, i), i, vector_get(nd.tree, i));
+			vector_clear(&tree_dest);
 			return -1;
 		}
 
 		i++;
 	}
 
-	return tree_size(&nd.tree) != tree_size(&nd_dest.tree);
+	const int ret = vector_size(nd.tree) != vector_size(nd_dest.tree);
+	vector_clear(&tree_dest);
+	return ret;
 }

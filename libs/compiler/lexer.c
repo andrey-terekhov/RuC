@@ -335,6 +335,8 @@ lexer create_lexer(universal_io *const io, syntax *const sx)
 	lexer.io = io;
 	lexer.sx = sx;
 	lexer.repr = 0;
+
+	lexer.was_error = 0;
 	
 	return lexer;
 }

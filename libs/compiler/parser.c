@@ -15,10 +15,6 @@
  */
 
 #include "parser.h"
-#include "errors.h"
-#include "defs.h"
-#include "lexer.h"
-#include <string.h>
 
 
 /**	Check if the set of tokens has token in it*/
@@ -27,66 +23,61 @@ int has_token_set(const unsigned int tokens, const token token)
 	return (tokens & token) != 0;
 }
 
-int to_modetab(syntax *const sx, const int type, const int element_type)
+item_t to_modetab(syntax *const sx, const item_t type, const item_t element_type)
 {
-	int temp[2];
+	item_t temp[2];
 	temp[0] = type;
 	temp[1] = element_type;
-	return (int)mode_add(sx, temp, 2);
+	return (item_t)mode_add(sx, temp, 2);
 }
 
 
-int is_function(syntax *const sx, const int t)
+int is_function(syntax *const sx, const item_t t)
 {
 	return t > 0 && mode_get(sx, t) == mode_function;
 }
 
-int is_array(syntax *const sx, const int t)
+int is_array(syntax *const sx, const item_t t)
 {
 	return t > 0 && mode_get(sx, t) == mode_array;
 }
 
-int is_string(syntax *const sx, const int t)
+int is_string(syntax *const sx, const item_t t)
 {
 	return is_array(sx, t) && mode_get(sx, t + 1) == mode_character;
 }
 
-int is_pointer(syntax *const sx, const int t)
+int is_pointer(syntax *const sx, const item_t t)
 {
 	return t > 0 && mode_get(sx, t) == mode_pointer;
 }
 
-int is_struct(syntax *const sx, const int t)
+int is_struct(syntax *const sx, const item_t t)
 {
 	return t > 0 && mode_get(sx, t) == mode_struct;
 }
 
-int is_float(const int t)
+int is_float(const item_t t)
 {
 	return t == LFLOAT || t == LDOUBLE;
 }
 
-int is_int(const int t)
+int is_int(const item_t t)
 {
 	return t == LINT || t == LLONG || t == LCHAR;
 }
 
-int is_void(const int t)
+int is_void(const item_t t)
 {
 	return t == mode_void;
 }
 
-int is_undefined(const int t)
+int is_undefined(const item_t t)
 {
 	return t == mode_undefined;
 }
 
-void totree(parser *context, int op)
-{
-	context->sx->tree[context->sx->tc++] = op;
-}
-
-int to_identab(parser *const parser, const size_t repr, const int f, const int type)
+size_t to_identab(parser *const parser, const size_t repr, const item_t f, const item_t type)
 {
 	const size_t ret = ident_add(parser->sx, repr, f, type, parser->func_def);
 	parser->lastid = 0;
@@ -97,14 +88,16 @@ int to_identab(parser *const parser, const size_t repr, const int f, const int t
 	}
 	else if (ret == SIZE_MAX - 1)
 	{
-		parser_error(parser, repeated_decl, parser->sx->reprtab, repr);
+		char buffer[MAXSTRINGL];
+		repr_get_ident(parser->sx, repr, buffer);
+		parser_error(parser, repeated_decl, buffer);
 	}
 	else
 	{
 		parser->lastid = (int)ret;
 	}
 	
-	return parser->lastid;
+	return ret;
 }
 
 
@@ -128,7 +121,7 @@ int parse(parser *const parser)
 		parse_external_declaration(parser);
 	} while (parser->next_token != eof);
 
-	totree(parser, TEnd);
+	tree_add(parser->sx, TEnd);
 
 	return parser->was_error || parser->lexer->was_error;
 }

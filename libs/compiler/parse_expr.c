@@ -54,20 +54,64 @@ void applid(parser *context)
 	context->lastid = REPRTAB[REPRTAB_POS + 1];
 	if (context->lastid == 1)
 	{
-		parser_error(context, ident_is_not_declared, REPRTAB, REPRTAB_POS);
+		char buffer[MAXSTRINGL];
+		repr_get_ident(context->sx, REPRTAB_POS, buffer);
+		parser_error(context, ident_is_not_declared, buffer);
 		context->was_error = 5;
 	}
 
 }
 
-void totreef(parser *context, int op)
+void totree(parser *context, item_t op)
 {
-	context->sx->tree[context->sx->tc++] = op;
+	vector_add(&TREE, op);
+}
+
+void totreef(parser *context, item_t op)
+{
+	vector_add(&TREE, op);
 	if (context->ansttype == LFLOAT &&
 		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
 	{
-		context->sx->tree[context->sx->tc - 1] += 50;
+		const size_t index = vector_size(&TREE) - 1;
+		vector_set(&TREE, index, vector_get(&TREE, index) + 50);
 	}
+}
+
+int double_to_tree(vector *const tree, const double num)
+{
+	int64_t num64;
+	memcpy(&num64, &num, sizeof(int64_t));
+
+	int32_t fst = num64 & 0x00000000ffffffff;
+	int32_t snd = (num64 & 0xffffffff00000000) >> 32;
+
+#if INT_MIN < ITEM_MIN || INT_MAX > ITEM_MAX
+	if (fst < ITEM_MIN || fst > ITEM_MAX || snd < ITEM_MIN || snd > ITEM_MAX)
+	{
+		return -1;
+	}
+#endif
+
+	size_t ret = vector_add(tree, fst);
+	ret = ret != SIZE_MAX ? vector_add(tree, snd) : SIZE_MAX;
+	return ret == SIZE_MAX;
+}
+
+double double_from_tree(vector *const tree)
+{
+	const size_t index = vector_size(tree) - 2;
+
+	const int64_t fst = (int64_t)vector_get(tree, index) & 0x00000000ffffffff;
+	const int64_t snd = (int64_t)vector_get(tree, index + 1) & 0x00000000ffffffff;
+	int64_t num64 = (snd << 32) | fst;
+
+	vector_remove(tree);
+	vector_remove(tree);
+
+	double num;
+	memcpy(&num, &num64, sizeof(double));
+	return num;
 }
 
 void binop(parser *context, int sp)
@@ -105,7 +149,8 @@ void binop(parser *context, int sp)
 	if (op == LOGOR || op == LOGAND)
 	{
 		totree(context, op);
-		context->sx->tree[context->stacklog[sp]] = (int)context->sx->tc++;
+		vector_set(&TREE, context->stacklog[sp], (item_t)vector_size(&TREE));
+		vector_increase(&TREE, 1);
 	}
 	else
 	{
@@ -137,7 +182,8 @@ void toval(parser *context)
 		{
 			if (context->anst == IDENT)
 			{
-				context->sx->tc -= 2;
+				vector_remove(&TREE);
+				vector_remove(&TREE);
 				totree(context, COPY0ST);
 				totree(context, context->anstdispl);
 			}
@@ -153,7 +199,10 @@ void toval(parser *context)
 	{
 		if (context->anst == IDENT)
 		{
-			context->sx->tree[context->sx->tc - 2] = is_float(context->ansttype) ? TIdenttovald : TIdenttoval;
+			vector_set(&TREE, vector_size(&TREE) - 2
+					   , is_float(context->ansttype)
+					   ? TIdenttovald
+					   : TIdenttoval);
 		}
 
 		if (!(is_array(context->sx, context->ansttype) || is_pointer(context->sx, context->ansttype)))
@@ -169,7 +218,7 @@ void toval(parser *context)
 
 void insertwiden(parser *context)
 {
-	context->sx->tc--;
+	vector_remove(&TREE);
 	totree(context, WIDEN);
 	totree(context, TExprend);
 }
@@ -178,7 +227,8 @@ void actstring(int type, parser *context)
 {
 	scanner(context);
 	totree(context, type == LFLOAT ? TStringd : TString);
-	size_t adn = context->sx->tc++;
+	size_t adn = vector_size(&TREE);
+	vector_increase(&TREE, 1);
 
 	int n = 0;
 	do
@@ -189,16 +239,17 @@ void actstring(int type, parser *context)
 			context->was_error = 1;
 			return; // 1
 		}
-		if (context->sx->tree[context->sx->tc - 3] == TConstd)
+		const size_t size = vector_size(&TREE);
+		if (vector_get(&TREE, size - 3) == TConstd)
 		{
-			context->sx->tree[context->sx->tc - 3] = context->sx->tree[context->sx->tc - 2];
-			context->sx->tree[context->sx->tc - 2] = context->sx->tree[context->sx->tc - 1];
-			--context->sx->tc;
+			vector_set(&TREE, size - 3, vector_get(&TREE, size - 2));
+			vector_set(&TREE, size - 2, vector_get(&TREE, size - 1));
+			vector_remove(&TREE);
 		}
-		else if (context->sx->tree[context->sx->tc - 2] == TConst)
+		else if (vector_get(&TREE, size - 2) == TConst)
 		{
-			context->sx->tree[context->sx->tc - 2] = context->sx->tree[context->sx->tc - 1];
-			--context->sx->tc;
+			vector_set(&TREE, size - 2, vector_get(&TREE, size - 1));
+			vector_remove(&TREE);
 		}
 		else
 		{
@@ -209,14 +260,14 @@ void actstring(int type, parser *context)
 		++n;
 	} while (scanner(context) == COMMA ? scanner(context), 1 : 0);
 
-	context->sx->tree[adn] = n;
+	vector_set(&TREE, adn, n);
 	if (context->curr_token != END)
 	{
 		parser_error(context, no_comma_or_end);
 		context->was_error = 1;
 		return; // 1
 	}
-	context->ansttype = to_modetab(context->sx, mode_array, type);
+	context->ansttype = (int)to_modetab(context->sx, mode_array, type);
 	context->anst = VAL;
 }
 
@@ -319,7 +370,7 @@ void mustberowofint(parser *context)
 		if (context->ansttype == LINT || context->ansttype == LCHAR)
 		{
 			totree(context, ROWING);
-			context->ansttype = to_modetab(context->sx, mode_array, LINT);
+			context->ansttype = (int)to_modetab(context->sx, mode_array, LINT);
 		}
 	}
 	if (!(is_array(context->sx, context->ansttype) &&
@@ -354,7 +405,7 @@ void mustberowoffloat(parser *context)
 		if (context->ansttype == LFLOAT)
 		{
 			totree(context, ROWINGD);
-			context->ansttype = to_modetab(context->sx, mode_array, LFLOAT);
+			context->ansttype = (int)to_modetab(context->sx, mode_array, LFLOAT);
 		}
 	}
 
@@ -385,8 +436,7 @@ void primaryexpr(parser *context)
 	else if (context->curr_token == FLOAT_CONST)
 	{
 		totree(context, TConstd);
-		memcpy(&context->sx->tree[context->sx->tc], &context->lexer->num_double, sizeof(double));
-		context->sx->tc += 2;
+		double_to_tree(&TREE, context->lexer->num_double);
 		context->stackoperands[++context->sopnd] = context->ansttype = LFLOAT;
 		context->anst = NUMBER;
 	}
@@ -404,9 +454,9 @@ void primaryexpr(parser *context)
 		}
 
 		totree(context, TIdent);
-		context->anstdispl = ident_get_displ(context->sx, context->lastid);
+		context->anstdispl = (int)ident_get_displ(context->sx, context->lastid);
 		totree(context, context->anstdispl);
-		context->ansttype = ident_get_mode(context->sx, context->lastid);
+		context->ansttype = (int)ident_get_mode(context->sx, context->lastid);
 		context->stackoperands[++context->sopnd] = context->ansttype;
 		context->anst = IDENT;
 	}
@@ -537,7 +587,7 @@ void primaryexpr(parser *context)
 			else
 			{
 				context->stackoperands[++context->sopnd] = context->ansttype =
-				func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : to_modetab(context->sx, mode_array, LCHAR);
+				func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)to_modetab(context->sx, mode_array, LCHAR);
 			}
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
@@ -783,7 +833,7 @@ void primaryexpr(parser *context)
 
 				if (func == TCREATE)
 				{
-					int dn;
+					item_t dn;
 
 					if (context->curr_token != IDENT)
 					{
@@ -978,23 +1028,31 @@ void primaryexpr(parser *context)
 	}
 }
 
+void index_check(parser *context)
+{
+	if (!is_int(context->ansttype))
+	{
+		parser_error(context, index_must_be_int);
+		context->was_error = 5;
+	}
+}
+
 int find_field(parser *context, int stype)
 {
 	// выдает смещение до найденного поля или ошибку
 
-	int i;
 	int flag = 1;
 	int select_displ = 0;
-	int record_length = mode_get(context->sx, stype + 2);
+	const item_t record_length = mode_get(context->sx, stype + 2);
 
 	scanner(context);
 	mustbe(context, IDENT, after_dot_must_be_ident);
 
-	for (i = 0; i < record_length; i += 2) // тут хранится удвоенное n
+	for (item_t i = 0; i < record_length; i += 2) // тут хранится удвоенное n
 	{
-		int field_type = mode_get(context->sx, stype + 3 + i);
+		int field_type = (int)mode_get(context->sx, stype + 3 + (int)i);
 
-		if (mode_get(context->sx, stype + 4 + i) == (int)REPRTAB_POS)
+		if ((size_t)mode_get(context->sx, stype + 4 + (int)i) == REPRTAB_POS)
 		{
 			context->stackoperands[context->sopnd] = context->ansttype = field_type;
 			flag = 0;
@@ -1002,13 +1060,15 @@ int find_field(parser *context, int stype)
 		}
 		else
 		{
-			select_displ += size_of(context->sx, field_type);
+			select_displ += (int)size_of(context->sx, field_type);
 		}
 		// прибавляем к суммарному смещению длину поля
 	}
 	if (flag)
 	{
-		parser_error(context, no_field, REPRTAB, REPRTAB_POS);
+		char buffer[MAXSTRINGL];
+		repr_get_ident(context->sx, REPRTAB_POS, buffer);
+		parser_error(context, no_field, buffer);
 		context->was_error = 5;
 		return 0; // 1
 	}
@@ -1045,10 +1105,9 @@ void postexpr(parser *context)
 
 	if (context->next_token == LEFTBR) // вызов функции
 	{
-		int i;
 		int j;
-		int n;
-		int dn;
+		item_t n;
+		item_t dn;
 		int oldinass = context->inass;
 
 		was_func = 1;
@@ -1065,11 +1124,11 @@ void postexpr(parser *context)
 		totree(context, TCall1);
 		totree(context, n);
 		j = leftansttyp + 3;
-		for (i = 0; i < n; i++) // фактические параметры
+		for (item_t i = 0; i < n; i++) // фактические параметры
 		{
-			int mdj = context->leftansttype = mode_get(context->sx, j); // это вид формального параметра, в
-																		// context->ansttype будет вид фактического
-																		// параметра
+			int mdj = context->leftansttype = (int)mode_get(context->sx, j); // это вид формального параметра, в
+																			 // context->ansttype будет вид фактического
+																			 // параметра
 			scanner(context);
 			if (is_function(context->sx, mdj))
 			{
@@ -1087,7 +1146,7 @@ void postexpr(parser *context)
 					context->was_error = 4;
 					return; // 1
 				}
-				if (ident_get_mode(context->sx, context->lastid) != mdj)
+				if ((int)ident_get_mode(context->sx, context->lastid) != mdj)
 				{
 					parser_error(context, diff_formal_param_type_and_actual);
 					context->was_error = 4;
@@ -1110,7 +1169,7 @@ void postexpr(parser *context)
 			{
 				if (context->curr_token == BEGIN && is_array(context->sx, mdj))
 				{
-					actstring(mode_get(context->sx, mdj + 1), context), totree(context, TExprend);
+					actstring((int)mode_get(context->sx, mdj + 1), context), totree(context, TExprend);
 					if (context->was_error == 2)
 					{
 						context->was_error = 4;
@@ -1162,7 +1221,7 @@ void postexpr(parser *context)
 		mustbe(context, RIGHTBR, wrong_number_of_params);
 		totree(context, TCall2);
 		totree(context, lid);
-		context->stackoperands[context->sopnd] = context->ansttype = mode_get(context->sx, leftansttyp + 1);
+		context->stackoperands[context->sopnd] = context->ansttype = (int)mode_get(context->sx, leftansttyp + 1);
 		context->anst = VAL;
 	}
 
@@ -1170,7 +1229,6 @@ void postexpr(parser *context)
 	{
 		while (context->next_token == LEFTSQBR) // вырезка из массива (возможно, многомерного)
 		{
-			int elem_type;
 			if (was_func)
 			{
 				parser_error(context, slice_from_func);
@@ -1184,14 +1242,15 @@ void postexpr(parser *context)
 				return; // 1
 			}
 
-			elem_type = mode_get(context->sx, context->ansttype + 1);
+			item_t elem_type = mode_get(context->sx, context->ansttype + 1);
 
 			scanner(context);
 
 			if (context->anst == IDENT) // a[i]
 			{
-				context->sx->tree[context->sx->tc - 2] = TSliceident;
-				context->sx->tree[context->sx->tc - 1] = context->anstdispl;
+				const size_t size = vector_size(&TREE);
+				vector_set(&TREE, size - 2, TSliceident);
+				vector_set(&TREE, size - 1, context->anstdispl);
 			}
 			else // a[i][j]
 			{
@@ -1204,15 +1263,16 @@ void postexpr(parser *context)
 			{
 				return; // 1
 			}
-			if (!is_int(context->ansttype))
+			index_check(context); // проверка, что индекс int или char
+			if (context->was_error == 5)
 			{
-				parser_error(context, index_must_be_int);
 				context->was_error = 4;
+				return; // 1
 			}
 
 			mustbe(context, RIGHTSQBR, no_rightsqbr_in_slice);
 
-			context->stackoperands[context->sopnd] = context->ansttype = elem_type;
+			context->stackoperands[--context->sopnd] = context->ansttype = (int)elem_type;
 			context->anst = ADDR;
 		}
 
@@ -1223,7 +1283,7 @@ void postexpr(parser *context)
 			// перед выборкой мог быть вызов функции или вырезка элемента массива
 
 			if (!is_pointer(context->sx, context->ansttype) ||
-				!is_struct(context->sx, mode_get(context->sx, context->ansttype + 1)))
+				!is_struct(context->sx, (int)mode_get(context->sx, context->ansttype + 1)))
 			{
 				parser_error(context, get_field_not_from_struct_pointer);
 				context->was_error = 4;
@@ -1232,14 +1292,14 @@ void postexpr(parser *context)
 
 			if (context->anst == IDENT)
 			{
-				context->sx->tree[context->sx->tc - 2] = TIdenttoval;
+				vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval);
 			}
 			context->anst = ADDR;
 			// pointer  мог быть значением функции (VAL) или, может быть,
 			totree(context, TSelect); // context->anst уже был ADDR, т.е. адрес
 									  // теперь уже всегда на верхушке стека
 
-			context->ansttype = mode_get(context->sx, context->ansttype + 1);
+			context->ansttype = (int)mode_get(context->sx, context->ansttype + 1);
 			context->anstdispl = find_field(context, context->ansttype);
 			if (context->was_error == 6)
 			{
@@ -1264,7 +1324,7 @@ void postexpr(parser *context)
 			}
 			if (context->anst == VAL) // структура - значение функции
 			{
-				int len1 = size_of(context->sx, context->ansttype);
+				int len1 = (int)size_of(context->sx, context->ansttype);
 				context->anstdispl = 0;
 				while (context->next_token == DOT)
 				{
@@ -1277,7 +1337,7 @@ void postexpr(parser *context)
 				}
 				totree(context, COPYST);
 				totree(context, context->anstdispl);
-				totree(context, size_of(context->sx, context->ansttype));
+				totree(context, (item_t)size_of(context->sx, context->ansttype));
 				totree(context, len1);
 			}
 			else if (context->anst == IDENT)
@@ -1292,7 +1352,7 @@ void postexpr(parser *context)
 						return; // 1
 					}
 				}
-				context->sx->tree[context->sx->tc - 1] = context->anstdispl;
+				vector_set(&TREE, vector_size(&TREE) - 1, context->anstdispl);
 			}
 			else // ADDR
 			{
@@ -1390,11 +1450,11 @@ void unarexpr(parser *context)
 
 				if (context->anst == IDENT)
 				{
-					context->sx->tree[context->sx->tc - 2] = TIdenttoaddr; // &a
+					vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoaddr); // &a
 				}
 
 				context->stackoperands[context->sopnd] = context->ansttype =
-				to_modetab(context->sx, mode_pointer, context->ansttype);
+				(int)to_modetab(context->sx, mode_pointer, context->ansttype);
 				context->anst = VAL;
 			}
 			else if (op == LMULT)
@@ -1408,10 +1468,10 @@ void unarexpr(parser *context)
 
 				if (context->anst == IDENT)
 				{
-					context->sx->tree[context->sx->tc - 2] = TIdenttoval; // *p
+					vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval); // *p
 				}
 
-				context->stackoperands[context->sopnd] = context->ansttype = mode_get(context->sx, context->ansttype + 1);
+				context->stackoperands[context->sopnd] = context->ansttype = (int)mode_get(context->sx, context->ansttype + 1);
 				context->anst = ADDR;
 			}
 			else
@@ -1425,16 +1485,14 @@ void unarexpr(parser *context)
 				}
 				else if (op == LMINUS)
 				{
-					if (context->sx->tree[context->sx->tc - 2] == TConst)
+					const size_t size = vector_size(&TREE);
+					if (vector_get(&TREE, size - 2) == TConst)
 					{
-						context->sx->tree[context->sx->tc - 1] *= -1;
+						vector_set(&TREE, vector_size(&TREE) - 1, -vector_get(&TREE, vector_size(&TREE) - 1));
 					}
-					else if (context->sx->tree[context->sx->tc - 3] == TConstd)
+					else if (vector_get(&TREE, size - 3) == TConstd)
 					{
-						double d;
-						memcpy(&d, &context->sx->tree[context->sx->tc - 2], sizeof(double));
-						d = -d;
-						memcpy(&context->sx->tree[context->sx->tc - 2], &d, sizeof(double));
+						double_to_tree(&TREE, -double_from_tree(&TREE));
 					}
 					else
 					{
@@ -1537,7 +1595,8 @@ void subexpr(parser *context)
 		if (p <= 2)
 		{
 			totree(context, p == 1 ? ADLOGOR : ADLOGAND);
-			ad = context->sx->tc++;
+			ad = vector_size(&TREE);
+			vector_increase(&TREE, 1);
 		}
 
 		context->stack[context->sp] = p;
@@ -1614,14 +1673,15 @@ void condexpr(parser *context)
 			{
 				globtype = context->ansttype;
 			}
+			context->sopnd--;
 			if (is_float(context->ansttype))
 			{
 				globtype = LFLOAT;
 			}
 			else
 			{
-				context->sx->tree[context->sx->tc] = (int)adif;
-				adif = context->sx->tc++;
+				vector_add(&TREE, (item_t)adif);
+				adif = vector_size(&TREE) - 1;
 			}
 			mustbe(context, COLON, no_colon_in_cond_expr);
 			scanner(context);
@@ -1646,16 +1706,16 @@ void condexpr(parser *context)
 		}
 		else
 		{
-			context->sx->tree[context->sx->tc] = (int)adif;
-			adif = context->sx->tc++;
+			vector_add(&TREE, (item_t)adif);
+			adif = vector_size(&TREE) - 1;
 		}
 
-		while (adif != 0)
+		while (adif != 0 && adif <= vector_size(&TREE))
 		{
-			size_t r = context->sx->tree[adif];
-			context->sx->tree[adif] = TExprend;
-			context->sx->tree[adif - 1] = is_float(globtype) ? WIDEN : NOP;
-			adif = r;
+			item_t r = vector_get(&TREE, adif);
+			vector_set(&TREE, adif, TExprend);
+			vector_set(&TREE, adif - 1, is_float(globtype) ? WIDEN : NOP);
+			adif = (size_t)r;
 		}
 
 		context->stackoperands[context->sopnd] = context->ansttype = globtype;
@@ -1668,12 +1728,13 @@ void condexpr(parser *context)
 
 void exprassnvoid(parser *context)
 {
-	size_t t = context->sx->tree[context->sx->tc - 2] < 9000 ? context->sx->tc - 3 : context->sx->tc - 2;
-	int tt = context->sx->tree[t];
+	const size_t size = vector_size(&TREE);
+	size_t t = vector_get(&TREE, size - 2) < 9000 ? size - 3 : size - 2;
+	item_t tt = vector_get(&TREE, t);
 	if ((tt >= ASS && tt <= DIVASSAT) || (tt >= POSTINC && tt <= DECAT) || (tt >= ASSR && tt <= DIVASSATR) ||
 		(tt >= POSTINCR && tt <= DECATR))
 	{
-		context->sx->tree[t] += 200;
+		vector_set(&TREE, t, vector_get(&TREE, t) + 200);
 	}
 	--context->sopnd;
 }
@@ -1886,29 +1947,31 @@ void expr(parser *context, int level)
 
 void parse_string_literal_expression(parser *const parser)
 {
+	int i;
+
 	totree(parser, TString);
 	totree(parser, parser->lexer->num);
 
-	for (size_t i = 0; i < (size_t)parser->lexer->num; i++)
+	for (i = 0; i < parser->lexer->num; i++)
 	{
 		totree(parser, parser->lexer->lexstr[i]);
 	}
 
-	parser->ansttype = to_modetab(parser->sx, mode_array, mode_character);
+	parser->ansttype = (int)to_modetab(parser->sx, mode_array, LCHAR);
 	parser->stackoperands[++parser->sopnd] = parser->ansttype;
 	parser->anst = VAL;
 }
 
-int parse_assignment_expression(parser *const parser)
+item_t parse_assignment_expression(parser *const parser)
 {
 	exprassn(parser, 1);
 	toval(parser);
 	totree(parser, TExprend);
 	parser->sopnd--;
-	return parser->ansttype;
+	return (item_t)parser->ansttype;
 }
 
-int parse_constant_expression(parser *const parser)
+item_t parse_constant_expression(parser *const parser)
 {
 	scanner(parser);
 	unarexpr(parser);
@@ -1916,30 +1979,30 @@ int parse_constant_expression(parser *const parser)
 	toval(parser);
 	totree(parser, TExprend);
 	parser->sopnd--;
-	return parser->ansttype;
+	return (item_t)parser->ansttype;
 }
 
-int parse_expression(parser *const parser)
+item_t parse_expression(parser *const parser)
 {
 	expr(parser, 0);
 	exprassnvoid(parser);
-	return parser->ansttype;
+	return (item_t)parser->ansttype;
 }
 
-int parse_condition(parser *const parser)
+item_t parse_condition(parser *const parser)
 {
 	scanner(parser);
 	expr(parser, 1);
 	toval(parser);
 	totree(parser, TExprend);
 	parser->sopnd--;
-	return parser->ansttype;
+	return (item_t)parser->ansttype;
 }
 
-int parse_parenthesized_expression(parser *const parser)
+item_t parse_parenthesized_expression(parser *const parser)
 {
 	mustbe(parser, LEFTBR, cond_must_be_in_brkts);
 	parse_condition(parser);
 	mustbe(parser, RIGHTBR, cond_must_be_in_brkts);
-	return parser->ansttype;
+	return (item_t)parser->ansttype;
 }

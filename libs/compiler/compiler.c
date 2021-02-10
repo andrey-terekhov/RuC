@@ -82,22 +82,22 @@ int compile_from_io_to_vm(universal_io *const io)
 	
 	if (!ret)
 	{
-		ret = !sx_is_correct(&sx, io);
+		ret = !sx_is_correct(&sx);
 	}
 
 	if (!ret)
 	{
 #ifdef GENERATE_TREE
-		ret = tree_test(&sx)
-			|| tree_test_next(&sx)
-			|| tree_test_recursive(&sx)
-			|| tree_test_copy(&sx);
+		ret = tree_test(&sx.tree)
+			|| tree_test_next(&sx.tree)
+			|| tree_test_recursive(&sx.tree)
+			|| tree_test_copy(&sx.tree);
 		if (ret)
 		{
 			io_erase(io);
 			return ret;
 		}
-		tree_print(&sx, DEFAULT_NEW);
+		tree_print(&sx.tree, DEFAULT_NEW);
 #endif
 
 		ret = encode_to_vm(io, &sx);
@@ -106,6 +106,7 @@ int compile_from_io_to_vm(universal_io *const io)
 #endif
 	}
 
+	sx_clear(&sx);
 	io_erase(io);
 	return ret;
 }
@@ -122,7 +123,7 @@ int compile_from_io_to_vm(universal_io *const io)
 
 int compile_to_vm(workspace *const ws)
 {
-	if (!ws_is_correct(ws))
+	if (!ws_is_correct(ws) || ws_get_files_num(ws) == 0)
 	{
 		system_error("некорректные входные данные");
 		return -1;

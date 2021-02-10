@@ -102,7 +102,7 @@ void parse_string_literal_expression(parser *const parser);
  *
  *	@return	Type of parsed expression
  */
-int parse_assignment_expression(parser *const parser);
+item_t parse_assignment_expression(parser *const parser);
 
 /**
  *	Parse expression [C99 6.5.17]
@@ -115,7 +115,7 @@ int parse_assignment_expression(parser *const parser);
  *
  *	@return	Type of parsed expression
  */
-int parse_expression(parser *const parser);
+item_t parse_expression(parser *const parser);
 
 /**
  *	Parse condition
@@ -125,7 +125,7 @@ int parse_expression(parser *const parser);
  *
  *	@return	Type of parsed expression
  */
-int parse_condition(parser *const parser);
+item_t parse_condition(parser *const parser);
 
 /**
  *	Parse expression in parenthesis
@@ -137,7 +137,7 @@ int parse_condition(parser *const parser);
  *
  *	@return	Type of parsed expression
  */
-int parse_parenthesized_expression(parser *const parser);
+item_t parse_parenthesized_expression(parser *const parser);
 
 /**
  *	Parse constant expression [C99 6.6]
@@ -149,7 +149,7 @@ int parse_parenthesized_expression(parser *const parser);
  *
  *	@return	Type of parsed expression
  */
-int parse_constant_expression(parser *const parser);
+item_t parse_constant_expression(parser *const parser);
 
 
 /**
@@ -180,7 +180,7 @@ void parse_external_declaration(parser *const parser);
  *	@param	parser		Parser structure
  *	@param	type		Type of variable in declaration
  */
-void parse_initializer(parser *const parser, const int type);
+void parse_initializer(parser *const parser, const item_t type);
 
 
 /**
@@ -222,19 +222,18 @@ void parse_compound_statement(parser *const context, const block_type type);
 
 
 
-int to_modetab(syntax *const sx, const int type, const int element_type);
-int to_identab(parser *const parser, const size_t repr, const int f, const int type);
-int is_function(syntax *const sx, const int t);
-int is_array(syntax *const sx, const int t);
-int is_string(syntax *const sx, const int t);
-int is_pointer(syntax *const sx, const int t);
-int is_struct(syntax *const sx, const int t);
-int is_float(const int t);
-int is_int(const int t);
-int is_void(const int t);
-int is_undefined(const int t);
-void totree(parser *context, int op);
-void insertwiden(parser *context);
+item_t to_modetab(syntax *const sx, const item_t type, const item_t element_type);
+size_t to_identab(parser *const parser, const size_t repr, const item_t f, const item_t type);
+int is_function(syntax *const sx, const item_t t);
+int is_array(syntax *const sx, const item_t t);
+int is_string(syntax *const sx, const item_t t);
+int is_pointer(syntax *const sx, const item_t t);
+int is_struct(syntax *const sx, const item_t t);
+int is_float(const item_t t);
+int is_int(const item_t t);
+int is_void(const item_t t);
+int is_undefined(const item_t t);
+void insertwiden(parser *const context);
 
 #ifdef __cplusplus
 } /* extern "C" */

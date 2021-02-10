@@ -27,7 +27,7 @@
  */
 void parse_labeled_statement(parser *const parser)
 {
-	totree(parser, TLabel);
+	tree_add(parser->sx, TLabel);
 
 	const size_t repr = parser->lexer->repr;
 	// Не проверяем, что это ':', так как по нему узнали,
@@ -35,21 +35,23 @@ void parse_labeled_statement(parser *const parser)
 	consume_token(parser);
 	for (size_t i = 0; i < parser->pgotost; i += 2)
 	{
-		if (repr == (size_t)ident_get_repr(parser->sx, parser->gotost[i]))
+		if (repr == (size_t)ident_get_repr(parser->sx, (size_t)parser->gotost[i]))
 		{
-			const size_t id = (size_t)parser->gotost[i];
-			totree(parser, (int)id);
+			const item_t id = parser->gotost[i];
+			tree_add(parser->sx, id);
 
 			if (parser->gotost[i + 1] < 0)
 			{
-				parser_error(parser, repeated_label, parser->sx->reprtab, repr);
+				char buffer[MAXSTRINGL];
+				repr_get_ident(parser->sx, repr, buffer);
+				parser_error(parser, repeated_label, buffer);
 			}
 			else
 			{
 				parser->gotost[i + 1] = -1;	// TODO: здесь должен быть номер строки
 			}
 
-			ident_set_mode(parser->sx, id, 1);
+			ident_set_mode(parser->sx, (size_t)id, 1);
 			parse_statement(parser);
 			return;
 		}
@@ -57,12 +59,12 @@ void parse_labeled_statement(parser *const parser)
 
 	// Это определение метки, если она встретилась до
 	// переходов на нее
-	const size_t id = to_identab(parser, repr, 1, 0);
-	totree(parser, (int)id);
+	const item_t id = (size_t)to_identab(parser, repr, 1, 0);
+	tree_add(parser->sx, id);
 	parser->gotost[parser->pgotost++] = id;
 	parser->gotost[parser->pgotost++] = -1;	// TODO: здесь должен быть номер строки
 
-	ident_set_mode(parser->sx, id, 1);
+	ident_set_mode(parser->sx, (size_t)id, 1);
 	parse_statement(parser);
 }
 
@@ -81,8 +83,8 @@ void parse_case_statement(parser *const parser)
 		parser_error(parser, case_not_in_switch);
 	}
 
-	totree(parser, TCase);
-	const int condition_type = parse_constant_expression(parser);
+	tree_add(parser->sx, TCase);
+	const item_t condition_type = parse_constant_expression(parser);
 	if (!is_int(condition_type) && !is_undefined(condition_type))
 	{
 		parser_error(parser, float_in_switch);
@@ -107,7 +109,7 @@ void parse_default_statement(parser *const parser)
 		parser_error(parser, default_not_in_switch);
 	}
 
-	totree(parser, TDefault);
+	tree_add(parser->sx, TDefault);
 	expect_and_consume_token(parser, colon, expected_colon_after_default);
 	parse_statement(parser);
 }
@@ -137,20 +139,20 @@ void parse_expression_statement(parser *const parser)
  */
 void parse_if_statement(parser *const parser)
 {
-	totree(parser, TIf);
-	const size_t ref_else = parser->sx->tc++;
+	tree_add(parser->sx, TIf);
+	const size_t ref_else = tree_reserve(parser->sx);
 
 	parse_parenthesized_expression(parser);
 	parse_statement(parser);
 
 	if (try_consume_token(parser, kw_else))
 	{
-		parser->sx->tree[ref_else] = (int)parser->sx->tc;
+		tree_set(parser->sx, ref_else, (item_t)tree_size(parser->sx));
 		parse_statement(parser);
 	}
 	else
 	{
-		parser->sx->tree[ref_else] = 0;
+		tree_set(parser->sx, ref_else, 0);
 	}
 }
 
@@ -164,9 +166,9 @@ void parse_if_statement(parser *const parser)
  */
 void parse_switch_statement(parser *const parser)
 {
-	totree(parser, TSwitch);
+	tree_add(parser->sx, TSwitch);
 
-	const int condition_type = parse_parenthesized_expression(parser);
+	const item_t condition_type = parse_parenthesized_expression(parser);
 	if (!is_int(condition_type) && !is_undefined(condition_type))
 	{
 		parser_error(parser, float_in_switch);
@@ -188,7 +190,7 @@ void parse_switch_statement(parser *const parser)
  */
 void parse_while_statement(parser *const parser)
 {
-	totree(parser, TWhile);
+	tree_add(parser->sx, TWhile);
 
 	parse_parenthesized_expression(parser);
 
@@ -208,7 +210,7 @@ void parse_while_statement(parser *const parser)
  */
 void parse_do_statement(parser *const parser)
 {
-	totree(parser, TDo);
+	tree_add(parser->sx, TDo);
 
 	const int old_in_loop = parser->flag_in_loop;
 	parser->flag_in_loop = 1;
@@ -239,21 +241,21 @@ void parse_do_statement(parser *const parser)
  */
 void parse_for_statement(parser *const parser)
 {
-	totree(parser, TFor);
+	tree_add(parser->sx, TFor);
 
-	const size_t ref_inition = parser->sx->tc++;
-	const size_t ref_condition = parser->sx->tc++;
-	const size_t ref_increment = parser->sx->tc++;
-	const size_t ref_statement = parser->sx->tc++;
+	const size_t ref_inition = tree_reserve(parser->sx);
+	const size_t ref_condition = tree_reserve(parser->sx);
+	const size_t ref_increment = tree_reserve(parser->sx);
+	const size_t ref_statement = tree_reserve(parser->sx);
 	expect_and_consume_token(parser, l_paren, no_leftbr_in_for);
 
 	if (try_consume_token(parser, semicolon))
 	{
-		parser->sx->tree[ref_inition] = 0;
+		tree_set(parser->sx, ref_inition, 0);
 	}
 	else
 	{
-		parser->sx->tree[ref_inition] = (int)parser->sx->tc;
+		tree_set(parser->sx, ref_inition, (item_t)tree_size(parser->sx));
 		consume_token(parser);
 		parse_expression(parser);
 		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
@@ -261,11 +263,11 @@ void parse_for_statement(parser *const parser)
 
 	if (try_consume_token(parser, semicolon))
 	{
-		parser->sx->tree[ref_condition] = 0;
+		tree_set(parser->sx, ref_condition, 0);
 	}
 	else
 	{
-		parser->sx->tree[ref_condition] = (int)parser->sx->tc;
+		tree_set(parser->sx, ref_condition, (item_t)tree_size(parser->sx));
 		parse_condition(parser);
 		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
 		parser->sopnd--;
@@ -273,17 +275,17 @@ void parse_for_statement(parser *const parser)
 
 	if (try_consume_token(parser, r_paren))
 	{
-		parser->sx->tree[ref_increment] = 0;
+		tree_set(parser->sx, ref_increment, 0);
 	}
 	else
 	{
-		parser->sx->tree[ref_increment] = (int)parser->sx->tc;
+		tree_set(parser->sx, ref_increment, (item_t)tree_size(parser->sx));
 		consume_token(parser);
 		parse_expression(parser);
 		expect_and_consume_token(parser, r_paren, no_rightbr_in_for);
 	}
 
-	parser->sx->tree[ref_statement] = (int)parser->sx->tc;
+	tree_set(parser->sx, ref_statement, (item_t)tree_size(parser->sx));
 	const int old_in_loop = parser->flag_in_loop;
 	parser->flag_in_loop = 1;
 	parse_statement(parser);
@@ -300,19 +302,19 @@ void parse_for_statement(parser *const parser)
  */
 void parse_goto_statement(parser *const parser)
 {
-	totree(parser, TGoto);
+	tree_add(parser->sx, TGoto);
 	expect_and_consume_token(parser, identifier, no_ident_after_goto);
 	const size_t repr = parser->lexer->repr;
 
 	for (size_t i = 0; i < parser->pgotost; i += 2)
 	{
-		if (repr == (size_t)ident_get_repr(parser->sx, parser->gotost[i]))
+		if (repr == (size_t)ident_get_repr(parser->sx, (size_t)parser->gotost[i]))
 		{
-			const size_t id = (size_t)parser->gotost[i];
-			totree(parser, (int)id);
+			const item_t id = parser->gotost[i];
+			tree_add(parser->sx, id);
 			if (parser->gotost[id + 1] >= 0) // Перехода на метку еще не было
 			{
-				parser->gotost[parser->pgotost++] = (int)id;
+				parser->gotost[parser->pgotost++] = id;
 				parser->gotost[parser->pgotost++] = 1; // TODO: здесь должен быть номер строки
 			}
 
@@ -324,9 +326,9 @@ void parse_goto_statement(parser *const parser)
 	// Первый раз встретился переход на метку, которой не было,
 	// в этом случае ссылка на identtab, стоящая после TGoto,
 	// будет отрицательной
-	const size_t id = to_identab(parser, repr, 1, 0);
-	totree(parser, -(int)id);
-	parser->gotost[parser->pgotost++] = (int)id;
+	const item_t id = (item_t)to_identab(parser, repr, 1, 0);
+	tree_add(parser->sx, -id);
+	parser->gotost[parser->pgotost++] = id;
 	parser->gotost[parser->pgotost++] = 1;	// TODO: здесь должен быть номер строки
 	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
@@ -346,7 +348,7 @@ void parse_continue_statement(parser *const parser)
 		parser_error(parser, continue_not_in_loop);
 	}
 
-	totree(parser, TContinue);
+	tree_add(parser->sx, TContinue);
 	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 
@@ -365,7 +367,7 @@ void parse_break_statement(parser *const parser)
 		parser_error(parser, break_not_in_loop_or_switch);
 	}
 
-	totree(parser, TBreak);
+	tree_add(parser->sx, TBreak);
 	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 
@@ -379,12 +381,12 @@ void parse_break_statement(parser *const parser)
  */
 void parse_return_statement(parser *const parser)
 {
-	const int return_type = mode_get(parser->sx, parser->function_type + 1);
+	const item_t return_type = mode_get(parser->sx, (size_t)parser->function_mode + 1);
 	parser->flag_was_return = 1;
 	
 	if (try_consume_token(parser, semicolon))
 	{
-		totree(parser, TReturnvoid);
+		tree_add(parser->sx, TReturnvoid);
 		if (!is_void(return_type))
 		{
 			parser_error(parser, no_ret_in_func);
@@ -399,11 +401,11 @@ void parse_return_statement(parser *const parser)
 				parser_error(parser, notvoidret_in_void_func);
 			}
 
-			totree(parser, TReturnval);
-			totree(parser, size_of(parser->sx, return_type));
+			tree_add(parser->sx, TReturnval);
+			tree_add(parser->sx, (item_t)size_of(parser->sx, return_type));
 
 			consume_token(parser);
-			const int expr_type = parse_assignment_expression(parser);
+			const item_t expr_type = parse_assignment_expression(parser);
 			if (!is_undefined(expr_type) && !is_undefined(return_type))
 			{
 				if (is_float(return_type) && is_int(expr_type))
@@ -415,6 +417,7 @@ void parse_return_statement(parser *const parser)
 					parser_error(parser, bad_type_in_ret);
 				}
 			}
+
 			expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 		}
 	}
@@ -423,9 +426,9 @@ void parse_return_statement(parser *const parser)
 /**	Parse t_create_direct statement [RuC] */
 void parse_create_direct_statement(parser *const parser)
 {
-	totree(parser, CREATEDIRECTC);
+	tree_add(parser->sx, CREATEDIRECTC);
 	parse_compound_statement(parser, THREAD);
-	totree(parser, EXITDIRECTC);
+	tree_add(parser->sx, EXITDIRECTC);
 }
 
 /**	Parse printid statement [RuC] */
@@ -438,14 +441,16 @@ void parse_printid_statement(parser *const parser)
 		if (try_consume_token(parser, identifier))
 		{
 			const size_t repr = parser->lexer->repr;
-			const size_t id = repr_get_reference(parser->sx, repr);
+			const size_t id = (size_t)repr_get_reference(parser->sx, repr);
 			if (id == 1)
 			{
-				parser_error(parser, ident_is_not_declared, parser->sx->reprtab, repr);
+				char buffer[MAXSTRINGL];
+				repr_get_ident(parser->sx, repr, buffer);
+				parser_error(parser, ident_is_not_declared, buffer);
 			}
 
-			totree(parser, TPrintid);
-			totree(parser, (int)id);
+			tree_add(parser->sx, TPrintid);
+			tree_add(parser->sx, (item_t)id);
 		}
 		else
 		{
@@ -464,18 +469,18 @@ void parse_print_statement(parser *const parser)
 {
 	expect_and_consume_token(parser, l_paren, print_without_br);
 	consume_token(parser);
-	const int type = parse_assignment_expression(parser);
-	expect_and_consume_token(parser, r_paren, print_without_br);
-	
-	parser->sx->tc--;
-	totree(parser, TPrint);
-	totree(parser, type);
-	totree(parser, TExprend);
 
+	const item_t type = parse_assignment_expression(parser);
 	if (is_pointer(parser->sx, type))
 	{
 		parser_error(parser, pointer_in_print);
 	}
+
+	tree_set(parser->sx, tree_size(parser->sx), TPrint);
+	tree_add(parser->sx, type);
+	tree_add(parser->sx, TExprend);
+
+	expect_and_consume_token(parser, r_paren, print_without_br);
 	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 
@@ -489,14 +494,16 @@ void parse_getid_statement(parser *const parser)
 		if (try_consume_token(parser, identifier))
 		{
 			const size_t repr = parser->lexer->repr;
-			const size_t id = repr_get_reference(parser->sx, repr);
+			const size_t id = (size_t)repr_get_reference(parser->sx, repr);
 			if (id == 1)
 			{
-				parser_error(parser, ident_is_not_declared, parser->sx->reprtab, repr);
+				char buffer[MAXSTRINGL];
+				repr_get_ident(parser->sx, repr, buffer);
+				parser_error(parser, ident_is_not_declared, buffer);
 			}
 
-			totree(parser, TGetid);
-			totree(parser, (int)id);
+			tree_add(parser->sx, TGetid);
+			tree_add(parser->sx, (item_t)id);
 		}
 		else
 		{
@@ -510,7 +517,7 @@ void parse_getid_statement(parser *const parser)
 }
 
 size_t evaluate_params(parser *const parser, const size_t length
-	, const char32_t *const formatstr, int *const formattypes, char32_t *const placeholders)
+	, const char32_t *const formatstr, item_t *const formattypes, char32_t *const placeholders)
 {
 	size_t param_number = 0;
 	for (size_t i = 0; i < length; i++)
@@ -575,8 +582,8 @@ void parse_printf_statement(parser *const parser)
 {
 	char32_t placeholders[MAXPRINTFPARAMS];
 	char32_t format_str[MAXSTRINGL + 1];
-	int formattypes[MAXPRINTFPARAMS];
-	int sumsize = 0;
+	item_t formattypes[MAXPRINTFPARAMS];
+	size_t sumsize = 0;
 
 	expect_and_consume_token(parser, l_paren, no_leftbr_in_printf);
 
@@ -600,7 +607,7 @@ void parse_printf_statement(parser *const parser)
 	while (try_consume_token(parser, comma) && actual_param_number != expected_param_number)
 	{
 		consume_token(parser);
-		const int type = parse_assignment_expression(parser);
+		const item_t type = parse_assignment_expression(parser);
 		if (is_float(formattypes[actual_param_number]) && is_int(type))
 		{
 			insertwiden(parser);
@@ -622,17 +629,17 @@ void parse_printf_statement(parser *const parser)
 		parser_error(parser, wrong_printf_param_number);
 	}
 
-	totree(parser, TString);
-	totree(parser, (int)format_str_length);
+	tree_add(parser->sx, TString);
+	tree_add(parser->sx, (item_t)format_str_length);
 
 	for (size_t i = 0; i < format_str_length; i++)
 	{
-		totree(parser, format_str[i]);
+		tree_add(parser->sx, format_str[i]);
 	}
-	totree(parser, TExprend);
+	tree_add(parser->sx, TExprend);
 
-	totree(parser, TPrintf);
-	totree(parser, sumsize);
+	tree_add(parser->sx, TPrintf);
+	tree_add(parser->sx, (item_t)sumsize);
 }
 
 /**
@@ -664,7 +671,7 @@ void parse_block_item(parser *const parser)
 
 		case identifier:
 		{
-			const size_t id = repr_get_reference(parser->sx, parser->lexer->repr);
+			const size_t id = (size_t)repr_get_reference(parser->sx, parser->lexer->repr);
 			if (ident_get_displ(parser->sx, id) >= 1000)
 			{
 				parse_inner_declaration(parser);
@@ -699,7 +706,7 @@ void parse_statement(parser *const parser)
 	switch (parser->curr_token)
 	{
 		case semicolon:
-			totree(parser, NOP);
+			tree_add(parser->sx, NOP);
 			break;
 
 		case kw_case:
@@ -785,10 +792,10 @@ void parse_statement(parser *const parser)
 
 void parse_compound_statement(parser *const parser, const block_type type)
 {
-	totree(parser, TBegin);
+	tree_add(parser->sx, TBegin);
 
-	int old_displ = 0;
-	int old_lg = 0;
+	item_t old_displ = 0;
+	item_t old_lg = 0;
 
 	if (type != FUNCBODY)
 	{
@@ -799,7 +806,7 @@ void parse_compound_statement(parser *const parser, const block_type type)
 	if (try_consume_token(parser, end_token))
 	{
 		// Если это пустой блок
-		totree(parser, NOP);
+		tree_add(parser->sx, NOP);
 	}
 	else
 	{
@@ -816,5 +823,6 @@ void parse_compound_statement(parser *const parser, const block_type type)
 	{
 		scope_block_exit(parser->sx, old_displ, old_lg);
 	}
-	totree(parser, TEnd);
+
+	tree_add(parser->sx, TEnd);
 }

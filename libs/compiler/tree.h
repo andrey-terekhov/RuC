@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "syntax.h"
+#include "vector.h"
 #include <limits.h>
 #include <stddef.h>
 
@@ -25,17 +25,10 @@
 extern "C" {
 #endif
 
-/** Tree reference */
-typedef struct tree
-{
-	int *array;				/**< Reference to table */
-	size_t *size;			/**< Reference to size */
-} tree;
-
 /** Tree node */
 typedef struct node
 {
-	tree tree;				/**< Tree reference */
+	vector *tree;			/**< Tree reference */
 	size_t type;			/**< Node type */
 
 	size_t argv;			/**< Reference to arguments */
@@ -49,11 +42,11 @@ typedef struct node
 /**
  *	Get tree root node
  *
- *	@param	sx		Syntax structure
+ *	@param	tree	Tree table
  *
  *	@return	Root node
  */
-node node_get_root(syntax *const sx);
+node node_get_root(vector *const tree);
 
 /**
  *	Get child from node by index
@@ -64,15 +57,6 @@ node node_get_root(syntax *const sx);
  *	@return	Child node
  */
 node node_get_child(node *const nd, const size_t index);
-
-/**
- *	Get next node from tree traversal in pre-order (NLR)
- *
- *	@param	nd		Current node
- *
- *	@return	Next node
- */
-node node_get_next(node *const nd);
 
 
 /**
@@ -89,9 +73,9 @@ size_t node_get_amount(const node *const nd);
  *
  *	@param	nd		Node structure
  *
- *	@return	Node type, @c INT_MAX on failure
+ *	@return	Node type, @c ITEM_MAX on failure
  */
-int node_get_type(const node *const nd);
+item_t node_get_type(const node *const nd);
 
 /**
  *	Get argument from node by index
@@ -99,9 +83,28 @@ int node_get_type(const node *const nd);
  *	@param	nd		Node structure
  *	@param	index	Argument number
  *
- *	@return	Argument, @c INT_MAX on failure
+ *	@return	Argument, @c ITEM_MAX on failure
  */
-int node_get_arg(const node *const nd, const size_t index);
+item_t node_get_arg(const node *const nd, const size_t index);
+
+
+/**
+ *	Get next node from tree traversal in pre-order (NLR)
+ *
+ *	@param	nd		Current node
+ *
+ *	@return	Next node
+ */
+node node_get_next(node *const nd);
+
+/**
+ *	Set next node to the same one from tree traversal in pre-order (NLR)
+ *
+ *	@param	nd		Current node
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int node_set_next(node *const nd);
 
 
 /**
@@ -115,7 +118,7 @@ int node_get_arg(const node *const nd, const size_t index);
  *			@c -2 on trying to reset the root node,
  *			@c -3 on trying to set non-empty node
  */
-int node_set_type(node *const nd, const int type);
+int node_set_type(node *const nd, const item_t type);
 
 /**
  *	Add new node argument
@@ -128,7 +131,7 @@ int node_set_type(node *const nd, const int type);
  *			@c -2 on root or types not set node,
  *			@c -3 on node with children
  */
-int node_add_arg(node *const nd, const int arg);
+int node_add_arg(node *const nd, const item_t arg);
 
 /**
  *	Set node argument by index
@@ -141,7 +144,7 @@ int node_add_arg(node *const nd, const int arg);
  *			@c -1 on failure,
  *			@c -2 on root or types not set node
  */
-int node_set_arg(node *const nd, const size_t index, const int arg);
+int node_set_arg(node *const nd, const size_t index, const item_t arg);
 
 /**
  *	Set child node
@@ -152,6 +155,16 @@ int node_set_arg(node *const nd, const size_t index, const int arg);
  */
 node node_set_child(node *const nd);
 
+
+/**
+ *	Copy source node to destination
+ *
+ *	@param	dest	Destination node
+ *	@param	src		Source node
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int node_copy(node *const dest, const node *const src);
 
 /**
  *	Check that node is correct
@@ -166,38 +179,38 @@ int node_is_correct(const node *const nd);
 /**
  *	Test tree building
  *
- *	@param	sx		Syntax structure
+ *	@param	tree	Tree table
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int tree_test(syntax *const sx);
+int tree_test(vector *const tree);
 
 /**
  *	Test tree building by node_get_next
  *
- *	@param	sx		Syntax structure
+ *	@param	tree	Tree table
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int tree_test_next(syntax *const sx);
+int tree_test_next(vector *const tree);
 
 /**
  *	Test tree building from tree traversal
  *
- *	@param	sx		Syntax structure
+ *	@param	tree	Tree table
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int tree_test_recursive(syntax *const sx);
+int tree_test_recursive(vector *const tree);
 
 /**
  *	Test tree copying by new interface
  *
- *	@param	sx		Syntax structure
+ *	@param	tree	Tree table
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int tree_test_copy(syntax *const sx);
+int tree_test_copy(vector *const tree);
 
 #ifdef __cplusplus
 } /* extern "C" */

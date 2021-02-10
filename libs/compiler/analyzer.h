@@ -22,6 +22,8 @@
 #include "lexer.h"
 
 
+#define TREE		(context->sx->tree)
+
 #define REPRTAB		(context->sx->reprtab)
 #define REPRTAB_POS (context->lexer->repr)
 #define REPRTAB_LEN (context->sx->rp)
@@ -56,8 +58,8 @@ typedef struct
 	int arrdim;	// arrdim - размерность (0-скаляр), д.б. столько выражений-границ
 	int was_struct_with_arr;
 	int usual;	// описание массива без пустых границ
-	int function_type;
-	int gotost[1000];
+	item_t function_mode;
+	item_t gotost[1000];
 	size_t pgotost;
 	int anst;
 	int ansttype;
