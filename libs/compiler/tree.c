@@ -778,29 +778,54 @@ int node_copy(node *const dest, const node *const src)
 
 int node_order(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index)
 {
-	if (!node_is_correct(fst) || !node_is_correct(snd) || fst->tree != snd->tree)
+	if (!node_is_correct(fst) || !node_is_correct(snd) || fst->tree != snd->tree
+		|| fst_index >= fst->amount || snd_index >= snd->amount)
 	{
 		return -1;
 	}
 
-	node fst_child = node_get_child(fst, fst_index);
-	node snd_child = node_get_child(snd, snd_index);
+	vector *const tree = fst->tree;
 
-	vector_swap(fst->tree, fst_child.type, fst_child.argc + 1, snd_child.type, snd_child.argc + 1);
-	return 0;
+	node temp = node_get_child(fst, fst_index);
+	const size_t fst_child_index = temp.type;
+	const size_t fst_size = temp.argc + 1;
+
+	temp = node_get_child(snd, snd_index);
+	const size_t snd_child_index = temp.type;
+	const size_t snd_size = temp.argc + 1;
+
+	return vector_swap(tree, fst_child_index, fst_size, snd_child_index, snd_size);
 }
 
 int node_swap(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index)
 {
-	if (!node_is_correct(fst) || !node_is_correct(snd) || fst->tree != snd->tree)
+	if (!node_is_correct(fst) || !node_is_correct(snd) || fst->tree != snd->tree
+		|| fst_index >= fst->amount || snd_index >= snd->amount)
 	{
 		return -1;
 	}
 
-	node fst_child = node_get_child(fst, fst_index);
-	node snd_child = node_get_child(snd, snd_index);
+	vector *const tree = fst->tree;
 
-	return 0;
+	node temp = node_get_child(fst, fst_index);
+	const size_t fst_child_index = temp.type;
+
+	while (temp.amount != 0)
+	{
+		temp = node_get_child(&temp, temp.amount - 1);
+	}
+	const size_t fst_size = temp.type - fst_child_index + temp.argc + 1;
+
+	temp = node_get_child(snd, snd_index);
+	const size_t snd_child_index = temp.type;
+
+	while (temp.amount != 0)
+	{
+		temp = node_get_child(&temp, temp.amount - 1);
+	}
+	const size_t snd_size = temp.type - snd_child_index + temp.argc + 1;
+
+	return vector_swap(tree, fst_child_index, fst_size, snd_child_index, snd_size);
 }
 
 int node_is_correct(const node *const nd)
