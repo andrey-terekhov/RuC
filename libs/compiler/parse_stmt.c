@@ -476,7 +476,8 @@ void parse_print_statement(parser *const parser)
 		parser_error(parser, pointer_in_print);
 	}
 
-	tree_set(parser->sx, tree_size(parser->sx), TPrint);
+	vector_remove(&parser->sx->tree);
+	tree_add(parser->sx, TPrint);
 	tree_add(parser->sx, type);
 	tree_add(parser->sx, TExprend);
 
