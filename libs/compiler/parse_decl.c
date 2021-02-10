@@ -119,7 +119,7 @@ size_t parse_struct_or_union_specifier(parser *const parser)
 
 			if (parser->next_token == l_brace)
 			{
-				const int mode = parse_struct_declaration_list(parser);
+				const int mode = (int)parse_struct_declaration_list(parser);
 				const size_t id = to_identab(parser, repr, 1000, mode);
 				ident_set_displ(parser->sx, id, 1000 + parser->was_struct_with_arr);
 
@@ -356,7 +356,7 @@ void parse_struct_initializer(parser *const parser, const int type)
 	size_t ref_next_field = type + 3;
 
 	totree(parser, TStructinit);
-	totree(parser, expected_field_number);
+	totree(parser, (int)expected_field_number);
 
 	do
 	{
@@ -663,7 +663,7 @@ size_t parse_function_declarator(parser *const parser, const int level, int func
 		parser->func_def = func_d;
 	}
 
-	local_modetab[2] = param_number;
+	local_modetab[2] = (int)param_number;
 	return mode_add(parser->sx, local_modetab, local_md);
 }
 
@@ -691,7 +691,7 @@ void parse_function_body(parser *const parser, const size_t function_id)
 			skip_until(parser, r_brace);
 			return;
 		}
-		ident_set_displ(parser->sx, pred, function_number);
+		ident_set_displ(parser->sx, pred, (int)function_number);
 	}
 
 	const int old_displ = scope_func_enter(parser->sx);
@@ -704,9 +704,9 @@ void parse_function_body(parser *const parser, const size_t function_id)
 		to_identab(parser, abs(repr), repr > 0 ? 0 : -1, type);
 	}
 
-	func_set(parser->sx, function_number, parser->sx->tc);
+	func_set(parser->sx, function_number, (int)parser->sx->tc);
 	totree(parser, TFuncdef);
-	totree(parser, function_id);
+	totree(parser, (int)function_id);
 
 	const size_t ref_maxdispl = parser->sx->tc++;
 

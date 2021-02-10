@@ -38,7 +38,7 @@ void parse_labeled_statement(parser *const parser)
 		if (repr == (size_t)ident_get_repr(parser->sx, parser->gotost[i]))
 		{
 			const size_t id = (size_t)parser->gotost[i];
-			totree(parser, id);
+			totree(parser, (int)id);
 
 			if (parser->gotost[i + 1] < 0)
 			{
@@ -58,7 +58,7 @@ void parse_labeled_statement(parser *const parser)
 	// Это определение метки, если она встретилась до
 	// переходов на нее
 	const size_t id = to_identab(parser, repr, 1, 0);
-	totree(parser, id);
+	totree(parser, (int)id);
 	parser->gotost[parser->pgotost++] = id;
 	parser->gotost[parser->pgotost++] = -1;	// TODO: здесь должен быть номер строки
 
@@ -309,10 +309,10 @@ void parse_goto_statement(parser *const parser)
 		if (repr == (size_t)ident_get_repr(parser->sx, parser->gotost[i]))
 		{
 			const size_t id = (size_t)parser->gotost[i];
-			totree(parser, id);
+			totree(parser, (int)id);
 			if (parser->gotost[id + 1] >= 0) // Перехода на метку еще не было
 			{
-				parser->gotost[parser->pgotost++] = id;
+				parser->gotost[parser->pgotost++] = (int)id;
 				parser->gotost[parser->pgotost++] = 1; // TODO: здесь должен быть номер строки
 			}
 
@@ -326,7 +326,7 @@ void parse_goto_statement(parser *const parser)
 	// будет отрицательной
 	const size_t id = to_identab(parser, repr, 1, 0);
 	totree(parser, -(int)id);
-	parser->gotost[parser->pgotost++] = id;
+	parser->gotost[parser->pgotost++] = (int)id;
 	parser->gotost[parser->pgotost++] = 1;	// TODO: здесь должен быть номер строки
 	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
@@ -444,7 +444,7 @@ void parse_printid_statement(parser *const parser)
 			}
 
 			totree(parser, TPrintid);
-			totree(parser, id);
+			totree(parser, (int)id);
 		}
 		else
 		{
@@ -494,7 +494,7 @@ void parse_getid_statement(parser *const parser)
 			}
 
 			totree(parser, TGetid);
-			totree(parser, id);
+			totree(parser, (int)id);
 		}
 		else
 		{
@@ -621,7 +621,7 @@ void parse_printf_statement(parser *const parser)
 	}
 
 	totree(parser, TString);
-	totree(parser, format_str_length);
+	totree(parser, (int)format_str_length);
 
 	for (size_t i = 0; i < format_str_length; i++)
 	{
