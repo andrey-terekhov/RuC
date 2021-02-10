@@ -54,7 +54,7 @@ void applid(parser *context)
 	context->lastid = REPRTAB[REPRTAB_POS + 1];
 	if (context->lastid == 1)
 	{
-		parser_error(context, ident_is_not_declared);
+		parser_error(context, ident_is_not_declared, REPRTAB, REPRTAB_POS);
 		context->was_error = 5;
 	}
 

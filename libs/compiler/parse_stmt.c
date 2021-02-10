@@ -437,10 +437,11 @@ void parse_printid_statement(parser *const parser)
 	{
 		if (try_consume_token(parser, identifier))
 		{
-			const size_t id = repr_get_reference(parser->sx, parser->lexer->repr);
+			const size_t repr = parser->lexer->repr;
+			const size_t id = repr_get_reference(parser->sx, repr);
 			if (id == 1)
 			{
-				parser_error(parser, ident_is_not_declared);
+				parser_error(parser, ident_is_not_declared, parser->sx->reprtab, repr);
 			}
 
 			totree(parser, TPrintid);
@@ -487,10 +488,11 @@ void parse_getid_statement(parser *const parser)
 	{
 		if (try_consume_token(parser, identifier))
 		{
-			const size_t id = repr_get_reference(parser->sx, parser->lexer->repr);
+			const size_t repr = parser->lexer->repr;
+			const size_t id = repr_get_reference(parser->sx, repr);
 			if (id == 1)
 			{
-				parser_error(parser, ident_is_not_declared);
+				parser_error(parser, ident_is_not_declared, parser->sx->reprtab, repr);
 			}
 
 			totree(parser, TGetid);
