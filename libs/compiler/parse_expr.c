@@ -216,7 +216,7 @@ void toval(parser *context)
 	}
 }
 
-void insertwiden(parser *context)
+void insertwiden(parser *const context)
 {
 	vector_remove(&TREE);
 	totree(context, WIDEN);

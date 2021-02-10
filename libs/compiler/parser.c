@@ -34,27 +34,27 @@ item_t to_modetab(syntax *const sx, const item_t type, const item_t element_type
 
 int is_function(syntax *const sx, const item_t t)
 {
-	return t > 0 && mode_get(sx, t) == mode_function;
+	return t > 0 && mode_get(sx, (size_t)t) == mode_function;
 }
 
 int is_array(syntax *const sx, const item_t t)
 {
-	return t > 0 && mode_get(sx, t) == mode_array;
+	return t > 0 && mode_get(sx, (size_t)t) == mode_array;
 }
 
 int is_string(syntax *const sx, const item_t t)
 {
-	return is_array(sx, t) && mode_get(sx, t + 1) == mode_character;
+	return is_array(sx, t) && mode_get(sx, (size_t)t + 1) == mode_character;
 }
 
 int is_pointer(syntax *const sx, const item_t t)
 {
-	return t > 0 && mode_get(sx, t) == mode_pointer;
+	return t > 0 && mode_get(sx, (size_t)t) == mode_pointer;
 }
 
 int is_struct(syntax *const sx, const item_t t)
 {
-	return t > 0 && mode_get(sx, t) == mode_struct;
+	return t > 0 && mode_get(sx, (size_t)t) == mode_struct;
 }
 
 int is_float(const item_t t)

@@ -381,7 +381,7 @@ void parse_break_statement(parser *const parser)
  */
 void parse_return_statement(parser *const parser)
 {
-	const item_t return_type = mode_get(parser->sx, (size_t)parser->function_mode + 1);
+	const item_t return_type = mode_get(parser->sx, parser->function_mode + 1);
 	parser->flag_was_return = 1;
 	
 	if (try_consume_token(parser, semicolon))

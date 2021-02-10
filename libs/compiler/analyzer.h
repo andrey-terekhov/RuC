@@ -58,7 +58,7 @@ typedef struct
 	int arrdim;	// arrdim - размерность (0-скаляр), д.б. столько выражений-границ
 	int was_struct_with_arr;
 	int usual;	// описание массива без пустых границ
-	item_t function_mode;
+	size_t function_mode;
 	item_t gotost[1000];
 	size_t pgotost;
 	int anst;
