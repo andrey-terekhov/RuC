@@ -1272,7 +1272,7 @@ void postexpr(parser *context)
 
 			mustbe(context, RIGHTSQBR, no_rightsqbr_in_slice);
 
-			context->stackoperands[--context->sopnd] = context->ansttype = (int)elem_type;
+			context->stackoperands[context->sopnd] = context->ansttype = (int)elem_type;
 			context->anst = ADDR;
 		}
 
@@ -1663,7 +1663,6 @@ void condexpr(parser *context)
 			}
 			totree(context, TCondexpr);
 			scanner(context);
-			context->sopnd--;
 			parse_condition(context); // then
 			if (context->was_error == 4)
 			{
