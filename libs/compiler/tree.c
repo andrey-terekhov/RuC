@@ -25,6 +25,51 @@ node node_expression(vector *const tree, const size_t index);
 node node_operator(vector *const tree, const size_t index);
 
 
+int vector_swap(vector *const vec, size_t fst_index, size_t fst_size, size_t snd_index, size_t snd_size)
+{
+	if (fst_index > snd_index)
+	{
+		size_t temp = snd_index;
+		snd_index = fst_index;
+		fst_index = temp;
+
+		temp = snd_size;
+		snd_size = fst_size;
+		fst_size = temp;
+	}
+
+	if (fst_index + fst_size > snd_index)
+	{
+		return -1;
+	}
+
+	vector temp = vector_create(snd_index + snd_size - fst_index);
+
+	for (size_t i = snd_index; i < snd_index + snd_size; i++)
+	{
+		vector_add(&temp, vector_get(vec, i));
+	}
+
+	for (size_t i = fst_index + fst_size; i < snd_index; i++)
+	{
+		vector_add(&temp, vector_get(vec, i));
+	}
+
+	for (size_t i = fst_index; i < fst_index + fst_size; i++)
+	{
+		vector_add(&temp, vector_get(vec, i));
+	}
+
+	for (size_t i = 0; i < vector_size(&temp); i++)
+	{
+		vector_set(vec, fst_index + i, vector_get(&temp, i));
+	}
+
+	vector_clear(&temp);
+	return 0;
+}
+
+
 int is_operator(const item_t value)
 {
 	return value == TFuncdef		// Declarations
@@ -741,7 +786,7 @@ int node_order(node *const fst, const size_t fst_index, node *const snd, const s
 	node fst_child = node_get_child(fst, fst_index);
 	node snd_child = node_get_child(snd, snd_index);
 
-	vector_swap(fst->tree, fst->type, fst->argc + 1, snd->type, snd->argc + 1);
+	vector_swap(fst->tree, fst_child.type, fst_child.argc + 1, snd_child.type, snd_child.argc + 1);
 	return 0;
 }
 
