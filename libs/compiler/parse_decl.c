@@ -727,7 +727,8 @@ void parse_function_body(parser *const parser, const size_t function_id)
 	consume_token(parser);
 	parse_compound_statement(parser, FUNCBODY);
 
-	tree_set(parser->sx, tree_size(parser->sx), TReturnvoid);
+	vector_remove(&parser->sx->tree);
+	tree_add(parser->sx, TReturnvoid);
 	tree_add(parser->sx, TEnd);
 
 	if (mode_get(parser->sx, parser->function_mode + 1) != mode_void && !parser->flag_was_return)
