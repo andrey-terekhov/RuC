@@ -150,10 +150,6 @@ void parse_if_statement(parser *const parser)
 		tree_set(parser->sx, ref_else, (item_t)tree_size(parser->sx));
 		parse_statement(parser);
 	}
-	else
-	{
-		tree_set(parser->sx, ref_else, 0);
-	}
 }
 
 /**
@@ -249,11 +245,7 @@ void parse_for_statement(parser *const parser)
 	const size_t ref_statement = tree_reserve(parser->sx);
 	expect_and_consume_token(parser, l_paren, no_leftbr_in_for);
 
-	if (try_consume_token(parser, semicolon))
-	{
-		tree_set(parser->sx, ref_inition, 0);
-	}
-	else
+	if (!try_consume_token(parser, semicolon))
 	{
 		tree_set(parser->sx, ref_inition, (item_t)tree_size(parser->sx));
 		consume_token(parser);
@@ -261,11 +253,7 @@ void parse_for_statement(parser *const parser)
 		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
 	}
 
-	if (try_consume_token(parser, semicolon))
-	{
-		tree_set(parser->sx, ref_condition, 0);
-	}
-	else
+	if (!try_consume_token(parser, semicolon))
 	{
 		tree_set(parser->sx, ref_condition, (item_t)tree_size(parser->sx));
 		parse_condition(parser);
@@ -273,11 +261,7 @@ void parse_for_statement(parser *const parser)
 		parser->sopnd--;
 	}
 
-	if (try_consume_token(parser, r_paren))
-	{
-		tree_set(parser->sx, ref_increment, 0);
-	}
-	else
+	if (!try_consume_token(parser, r_paren))
 	{
 		tree_set(parser->sx, ref_increment, (item_t)tree_size(parser->sx));
 		consume_token(parser);
