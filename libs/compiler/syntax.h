@@ -33,8 +33,6 @@ typedef struct node node;
 /** Global vars definition */
 typedef struct syntax
 {
-	size_t procd;					/**< Process management daemon */
-
 	vector predef;					/**< Predefined functions table */
 	vector functions;				/**< Functions table */
 
@@ -56,12 +54,13 @@ typedef struct syntax
 
 	item_t max_displ;				/**< Max displacement */
 	item_t max_displg;				/**< Max displacement */
-	size_t ref_main;				/**< Main function reference */
 
 	item_t displ;					/**< Stack displacement in current scope */
 	item_t lg;						/**< Displacement from l (+1) or g (-1) */
 
 	size_t keywords;				/**< Number of read keyword */
+	size_t procd;					/**< Process management daemon */
+	size_t ref_main;				/**< Main function reference */
 } syntax;
 
 

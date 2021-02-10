@@ -1427,7 +1427,7 @@ void tables_and_tree(const syntax *const sx, const char *const path)
 		return;
 	}
 
-	uni_printf(&io, "\n%s\n", "identab");
+	uni_printf(&io, "%s\n", "identab");
 	for (size_t i = 2; i < vector_size(&sx->identifiers); i += 4)
 	{
 		for (size_t j = 0; j < 4; j++)
@@ -1482,7 +1482,7 @@ void tables_and_codes(const vector *const functions, const vector *const process
 		return;
 	}
 
-	uni_printf(&io, "\n\n%s\n", "functions");
+	uni_printf(&io, "%s\n", "functions");
 	for (size_t i = 0; i < vector_size(functions); i++)
 	{
 		uni_printf(&io, "fun %zi) %" PRIitem "\n", i, vector_get(functions, i));

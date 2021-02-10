@@ -20,6 +20,9 @@
 #include "uniio.h"
 
 
+//#define GENERATE_CODES
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

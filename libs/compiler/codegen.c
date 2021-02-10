@@ -23,7 +23,6 @@
 #include "uniprinter.h"
 
 
-//#define GENERATE_CODES
 const char *const DEFAULT_CODES = "codes.txt";
 
 const size_t MAX_MEM_SIZE = 100000;
