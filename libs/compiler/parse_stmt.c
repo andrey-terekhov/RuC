@@ -258,7 +258,6 @@ void parse_for_statement(parser *const parser)
 		tree_set(parser->sx, ref_condition, (item_t)tree_size(parser->sx));
 		parse_condition(parser);
 		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
-		parser->sopnd--;
 	}
 
 	if (!try_consume_token(parser, r_paren))

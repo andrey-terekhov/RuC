@@ -166,7 +166,7 @@ int is_float(const item_t mode)
 
 int is_int(const item_t mode)
 {
-	return mode == mode_integer;
+	return mode == mode_integer || mode == mode_character;
 }
 
 int is_void(const item_t mode)
