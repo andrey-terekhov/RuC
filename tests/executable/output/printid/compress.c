@@ -17,7 +17,10 @@ void main()
 
 
 	printid(i);
+	printid(i);
 	printid(и);
+	printid(и);
+	printf("\n");
 
 	printid(ident);
 	printid(идентификатор);
