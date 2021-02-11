@@ -96,7 +96,7 @@ EXPORTED item_t vector_remove(vector *const vec);
 EXPORTED int vector_increase(vector *const vec, const size_t size);
 
 /**
- *	Increase vector size
+ *	Change vector size
  *
  *	@param	vec				Vector structure
  *	@param	size			New vector size
