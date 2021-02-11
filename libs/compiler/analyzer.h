@@ -45,8 +45,7 @@ typedef struct
 
 	size_t function_mode;		/**< Mode of currenty parsed function */
 	size_t array_dimension;		/**< Array dimension counter */
-	item_t gotost[1000];		/**< Labels table */
-	size_t pgotost;				/**< Size of labels table */
+	vector labels;				/**< Labels table */
 
 	/// @c 0 for function without arguments, @c 1 for function definition,
 	/// @c 2 for function declaration, @c 3 for others

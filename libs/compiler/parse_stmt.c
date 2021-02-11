@@ -33,14 +33,14 @@ void parse_labeled_statement(parser *const parser)
 	// Не проверяем, что это ':', так как по нему узнали,
 	// что это labeled statement
 	consume_token(parser);
-	for (size_t i = 0; i < parser->pgotost; i += 2)
+	for (size_t i = 0; i < vector_size(&parser->labels); i += 2)
 	{
-		if (repr == (size_t)ident_get_repr(parser->sx, (size_t)parser->gotost[i]))
+		if (repr == (size_t)ident_get_repr(parser->sx, (size_t)vector_get(&parser->labels, i)))
 		{
-			const item_t id = parser->gotost[i];
+			const item_t id = vector_get(&parser->labels, i);
 			tree_add(parser->sx, id);
 
-			if (parser->gotost[i + 1] < 0)
+			if (vector_get(&parser->labels, i + 1) < 0)
 			{
 				char buffer[MAXSTRINGL];
 				repr_get_ident(parser->sx, repr, buffer);
@@ -48,7 +48,7 @@ void parse_labeled_statement(parser *const parser)
 			}
 			else
 			{
-				parser->gotost[i + 1] = -1;	// TODO: здесь должен быть номер строки
+				vector_set(&parser->labels, i + 1, -1);	// TODO: здесь должен быть номер строки
 			}
 
 			ident_set_mode(parser->sx, (size_t)id, 1);
@@ -61,8 +61,8 @@ void parse_labeled_statement(parser *const parser)
 	// переходов на нее
 	const item_t id = (size_t)to_identab(parser, repr, 1, 0);
 	tree_add(parser->sx, id);
-	parser->gotost[parser->pgotost++] = id;
-	parser->gotost[parser->pgotost++] = -1;	// TODO: здесь должен быть номер строки
+	vector_add(&parser->labels, id);
+	vector_add(&parser->labels, -1);	// TODO: здесь должен быть номер строки
 
 	ident_set_mode(parser->sx, (size_t)id, 1);
 	parse_statement(parser);
@@ -289,16 +289,16 @@ void parse_goto_statement(parser *const parser)
 	expect_and_consume_token(parser, identifier, no_ident_after_goto);
 	const size_t repr = parser->lexer->repr;
 
-	for (size_t i = 0; i < parser->pgotost; i += 2)
+	for (size_t i = 0; i < vector_size(&parser->labels); i += 2)
 	{
-		if (repr == (size_t)ident_get_repr(parser->sx, (size_t)parser->gotost[i]))
+		if (repr == (size_t)ident_get_repr(parser->sx, (size_t)vector_get(&parser->labels, i)))
 		{
-			const item_t id = parser->gotost[i];
+			const item_t id = vector_get(&parser->labels, i);
 			tree_add(parser->sx, id);
-			if (parser->gotost[id + 1] >= 0) // Перехода на метку еще не было
+			if (vector_get(&parser->labels, (size_t)id + 1) >= 0) // Перехода на метку еще не было
 			{
-				parser->gotost[parser->pgotost++] = id;
-				parser->gotost[parser->pgotost++] = 1; // TODO: здесь должен быть номер строки
+				vector_add(&parser->labels, id);
+				vector_add(&parser->labels, 1);	// TODO: здесь должен быть номер строки
 			}
 
 			expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
@@ -311,8 +311,8 @@ void parse_goto_statement(parser *const parser)
 	// будет отрицательной
 	const item_t id = (item_t)to_identab(parser, repr, 1, 0);
 	tree_add(parser->sx, -id);
-	parser->gotost[parser->pgotost++] = id;
-	parser->gotost[parser->pgotost++] = 1;	// TODO: здесь должен быть номер строки
+	vector_add(&parser->labels, id);
+	vector_add(&parser->labels, 1);	// TODO: здесь должен быть номер строки
 	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 
