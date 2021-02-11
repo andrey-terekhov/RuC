@@ -45,16 +45,6 @@ EXPORTED vector vector_create(const size_t alloc);
 
 
 /**
- *	Increase vector size
- *
- *	@param	vec				Vector structure
- *	@param	size			Size to increase
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-EXPORTED int vector_increase(vector *const vec, const size_t size);
-
-/**
  *	Add new value
  *
  *	@param	vec				Vector structure
@@ -94,6 +84,16 @@ EXPORTED item_t vector_get(const vector *const vec, const size_t index);
  */
 EXPORTED item_t vector_remove(vector *const vec);
 
+
+/**
+ *	Increase vector size
+ *
+ *	@param	vec				Vector structure
+ *	@param	size			Size to increase
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+EXPORTED int vector_increase(vector *const vec, const size_t size);
 
 /**
  *	Increase vector size

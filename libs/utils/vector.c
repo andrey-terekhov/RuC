@@ -31,32 +31,15 @@ vector vector_create(const size_t alloc)
 }
 
 
-int vector_increase(vector *const vec, const size_t size)
-{
-	return vector_resize(vec, vec->size + size);
-}
-
 size_t vector_add(vector *const vec, const item_t value)
 {
-	if (!vector_is_correct(vec))
+	if (!vector_is_correct(vec) || vector_resize(vec, vec->size + 1))
 	{
 		return SIZE_MAX;
 	}
 
-	if (vec->size == vec->size_alloc)
-	{
-		item_t *array_new = realloc(vec->array, 2 * vec->size_alloc * sizeof(item_t));
-		if (array_new == NULL)
-		{
-			return SIZE_MAX;
-		}
-
-		vec->size_alloc *= 2;
-		vec->array = array_new;
-	}
-
-	vec->array[vec->size] = value;
-	return vec->size++;
+	vec->array[vec->size - 1] = value;
+	return vec->size;
 }
 
 int vector_set(vector *const vec, const size_t index, const item_t value)
@@ -91,6 +74,11 @@ item_t vector_remove(vector *const vec)
 }
 
 
+int vector_increase(vector *const vec, const size_t size)
+{
+	return vector_resize(vec, vec->size + size);
+}
+
 int vector_resize(vector *const vec, const size_t size)
 {
 	if (!vector_is_correct(vec))
@@ -100,7 +88,7 @@ int vector_resize(vector *const vec, const size_t size)
 
 	if (size > vec->size)
 	{
-		if (vec->size + size > vec->size_alloc)
+		if (size >= vec->size_alloc)
 		{
 			const size_t alloc_new = size > 2 * vec->size_alloc ? size : 2 * vec->size_alloc;
 			item_t *array_new = realloc(vec->array, alloc_new * sizeof(item_t));
@@ -113,7 +101,7 @@ int vector_resize(vector *const vec, const size_t size)
 			vec->array = array_new;
 		}
 
-		memset(&vec->array[vec->size], 0, size * sizeof(item_t));
+		memset(&vec->array[vec->size], 0, (size - vec->size) * sizeof(item_t));
 		vec->size = size;
 		return 0;
 	}
