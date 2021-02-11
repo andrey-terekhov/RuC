@@ -291,7 +291,7 @@ item_t parse_struct_declaration_list(parser *const parser)
 					consume_token(parser);
 					if (is_array(parser->sx, type))
 					{
-						parser->onlystrings = 2;
+						parser->flag_strings_only = 2;
 						tree_set(parser->sx, all, 1);
 						if (!parser->flag_empty_bounds)
 						{
@@ -300,7 +300,7 @@ item_t parse_struct_declaration_list(parser *const parser)
 
 						parse_initializer(parser, type);
 
-						if (parser->onlystrings == 1)
+						if (parser->flag_strings_only == 1)
 						{
 							tree_set(parser->sx, all + 2, parser->flag_empty_bounds + 2);
 						}
@@ -400,13 +400,13 @@ void parse_array_initializer(parser *const parser, const item_t type)
 {
 	if (parser->curr_token == string_literal)
 	{
-		if (parser->onlystrings == 0)
+		if (parser->flag_strings_only == 0)
 		{
 			parser_error(parser, string_and_notstring);
 		}
-		if (parser->onlystrings == 2)
+		if (parser->flag_strings_only == 2)
 		{
-			parser->onlystrings = 1;
+			parser->flag_strings_only = 1;
 		}
 		parse_string_literal_expression(parser);
 		tree_add(parser->sx, TExprend);
@@ -506,9 +506,9 @@ void parse_init_declarator(parser *const parser, item_t type)
 				tree_set(parser->sx, ref_array_dim, tree_get(parser->sx, ref_array_dim) - 1);
 			}
 
-			parser->onlystrings = 2;
+			parser->flag_strings_only = 2;
 			parse_array_initializer(parser, type);
-			if (parser->onlystrings == 1)
+			if (parser->flag_strings_only == 1)
 			{
 				tree_set(parser->sx, all + 2, parser->flag_empty_bounds + 2);
 			}
@@ -693,6 +693,7 @@ void parse_function_body(parser *const parser, const size_t function_id)
 	const size_t param_number = (size_t)mode_get(parser->sx, parser->function_mode + 2);
 
 	parser->flag_was_return = 0;
+	parser->labels = vector_create(100);
 
 	const item_t prev = ident_get_prev(parser->sx, function_id);
 	if (prev > 1) // Был прототип

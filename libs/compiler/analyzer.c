@@ -35,7 +35,6 @@ parser compiler_context_create(universal_io *const io, syntax *const sx, lexer *
 	context.buf_flag = 0;
 	context.was_error = 0;
 	context.buf_cur = 0;
-	context.labels = vector_create(100);
 	
 	context.anstdispl = 0;
 

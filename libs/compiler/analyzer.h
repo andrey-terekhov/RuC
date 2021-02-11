@@ -47,12 +47,6 @@ typedef struct
 	size_t array_dimension;		/**< Array dimension counter */
 	vector labels;				/**< Labels table */
 
-	/// @c 0 for function without arguments, @c 1 for function definition,
-	/// @c 2 for function declaration, @c 3 for others
-	int func_def;
-
-	int onlystrings;			// только из строк 2 - без границ, 3 - с границами
-
 	int stack[100];
 	int stackop[100];
 	int stackoperands[100];
@@ -64,11 +58,16 @@ typedef struct
 	int anstdispl;
 	int leftansttype;
 
-	int lastid;
-	int op;
-	int buf_flag;
-	int buf_cur;
+	int lastid;		// useless
+	int op;			// useless
+	int buf_flag;	// useless
+	int buf_cur;	// useless
 
+	/// @c 0 for function without arguments, @c 1 for function definition,
+	/// @c 2 for function declaration, @c 3 for others
+	int func_def;
+	/** @c 0 for inition not by strings, @c 1 for inition by strings, @c 2 before parsing inition */
+	int flag_strings_only;
 	int flag_array_in_struct;	/**< Flag if parsed struct declaration has an array */
 	int flag_empty_bounds;		/**< Flag if array declaration has empty bounds */
 	int flag_was_return;		/**< Flag if was return in parsed function */
