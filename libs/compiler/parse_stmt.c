@@ -375,34 +375,31 @@ void parse_return_statement(parser *const parser)
 			parser_error(parser, no_ret_in_func);
 		}
 	}
-	else
+	else if (return_type != mode_void_pointer)
 	{
-		if (return_type != mode_void_pointer)
+		if (is_void(return_type))
 		{
-			if (is_void(return_type))
-			{
-				parser_error(parser, notvoidret_in_void_func);
-			}
-
-			tree_add(parser->sx, TReturnval);
-			tree_add(parser->sx, (item_t)size_of(parser->sx, return_type));
-
-			consume_token(parser);
-			const item_t expr_type = parse_assignment_expression(parser);
-			if (!is_undefined(expr_type) && !is_undefined(return_type))
-			{
-				if (is_float(return_type) && is_int(expr_type))
-				{
-					insertwiden(parser);
-				}
-				else if (return_type != expr_type)
-				{
-					parser_error(parser, bad_type_in_ret);
-				}
-			}
-
-			expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+			parser_error(parser, notvoidret_in_void_func);
 		}
+
+		tree_add(parser->sx, TReturnval);
+		tree_add(parser->sx, (item_t)size_of(parser->sx, return_type));
+
+		consume_token(parser);
+		const item_t expr_type = parse_assignment_expression(parser);
+		if (!is_undefined(expr_type) && !is_undefined(return_type))
+		{
+			if (is_float(return_type) && is_int(expr_type))
+			{
+				insert_widen(parser);
+			}
+			else if (return_type != expr_type)
+			{
+				parser_error(parser, bad_type_in_ret);
+			}
+		}
+
+		expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 	}
 }
 
@@ -538,7 +535,7 @@ size_t evaluate_params(parser *const parser, const size_t length
 
 				case 's':
 				case U'с':
-					formattypes[param_number++] = to_modetab(parser->sx, mode_array, mode_character);
+					formattypes[param_number++] = to_modetab(parser, mode_array, mode_character);
 					break;
 
 				case '%':
@@ -594,7 +591,7 @@ void parse_printf_statement(parser *const parser)
 		const item_t type = parse_assignment_expression(parser);
 		if (is_float(formattypes[actual_param_number]) && is_int(type))
 		{
-			insertwiden(parser);
+			insert_widen(parser);
 		}
 		else if (formattypes[actual_param_number] != type)
 		{

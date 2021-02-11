@@ -198,7 +198,7 @@ item_t parse_array_definition(parser *const parser, item_t type)
 				skip_until(parser, r_square | comma | semicolon);
 			}
 		}
-		type = to_modetab(parser->sx, mode_array, type);
+		type = to_modetab(parser, mode_array, type);
 	}
 	
 	return type;
@@ -259,7 +259,7 @@ item_t parse_struct_declaration_list(parser *const parser)
 		if (parser->next_token == star)
 		{
 			consume_token(parser);
-			type = to_modetab(parser->sx, mode_pointer, element_type);
+			type = to_modetab(parser, mode_pointer, element_type);
 		}
 
 		const size_t repr = parser->lexer->repr;
@@ -559,7 +559,7 @@ item_t parse_function_declarator(parser *const parser, const int level, int func
 				}
 				else
 				{
-					type = to_modetab(parser->sx, mode_pointer, type);
+					type = to_modetab(parser, mode_pointer, type);
 				}
 			}
 
@@ -570,7 +570,7 @@ item_t parse_function_declarator(parser *const parser, const int level, int func
 				if (try_consume_token(parser, identifier))
 				{
 					flag_was_ident = 1;
-					func_add(parser->sx, (int)parser->lexer->repr);
+					func_add(parser->sx, (item_t)parser->lexer->repr);
 				}
 			}
 			else if (parser->next_token == identifier)
@@ -595,7 +595,7 @@ item_t parse_function_declarator(parser *const parser, const int level, int func
 
 				while (try_consume_token(parser, l_square))
 				{
-					type = to_modetab(parser->sx, mode_array, type);
+					type = to_modetab(parser, mode_array, type);
 					if (!try_consume_token(parser, r_square))
 					{
 						parser_error(parser, wait_right_sq_br);
@@ -621,7 +621,7 @@ item_t parse_function_declarator(parser *const parser, const int level, int func
 							parser_error(parser, two_idents_for_1_declarer);
 							return mode_undefined;
 						}
-						func_add(parser->sx, -((int)parser->lexer->repr));
+						func_add(parser->sx, -((item_t)parser->lexer->repr));
 					}
 					else
 					{
@@ -834,7 +834,7 @@ void parse_inner_declaration(parser *const parser)
 		if (parser->next_token == star)
 		{
 			consume_token(parser);
-			type = to_modetab(parser->sx, mode_pointer, group_type);
+			type = to_modetab(parser, mode_pointer, group_type);
 		}
 
 		if (parser->next_token == identifier)
@@ -875,7 +875,7 @@ void parse_external_declaration(parser *const parser)
 			}
 			else
 			{
-				type = to_modetab(parser->sx, mode_pointer, group_type);
+				type = to_modetab(parser, mode_pointer, group_type);
 			}
 		}
 
@@ -921,7 +921,7 @@ void parse_initializer(parser *const parser, const item_t type)
 			}
 			else if (is_float(type) && is_int(expr_type))
 			{
-				insertwiden(parser);
+				insert_widen(parser);
 			}
 			else if (type != expr_type)
 			{

@@ -216,13 +216,6 @@ void toval(parser *context)
 	}
 }
 
-void insertwiden(parser *const context)
-{
-	vector_remove(&TREE);
-	totree(context, WIDEN);
-	totree(context, TExprend);
-}
-
 void actstring(int type, parser *context)
 {
 	scanner(context);
@@ -267,7 +260,7 @@ void actstring(int type, parser *context)
 		context->was_error = 1;
 		return; // 1
 	}
-	context->ansttype = (int)to_modetab(context->sx, mode_array, type);
+	context->ansttype = (int)to_modetab(context, mode_array, type);
 	context->anst = VAL;
 }
 
@@ -370,7 +363,7 @@ void mustberowofint(parser *context)
 		if (context->ansttype == LINT || context->ansttype == LCHAR)
 		{
 			totree(context, ROWING);
-			context->ansttype = (int)to_modetab(context->sx, mode_array, LINT);
+			context->ansttype = (int)to_modetab(context, mode_array, LINT);
 		}
 	}
 	if (!(is_array(context->sx, context->ansttype) &&
@@ -405,7 +398,7 @@ void mustberowoffloat(parser *context)
 		if (context->ansttype == LFLOAT)
 		{
 			totree(context, ROWINGD);
-			context->ansttype = (int)to_modetab(context->sx, mode_array, LFLOAT);
+			context->ansttype = (int)to_modetab(context, mode_array, LFLOAT);
 		}
 	}
 
@@ -587,7 +580,7 @@ void primaryexpr(parser *context)
 			else
 			{
 				context->stackoperands[++context->sopnd] = context->ansttype =
-				func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)to_modetab(context->sx, mode_array, LCHAR);
+				func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)to_modetab(context, mode_array, LCHAR);
 			}
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
@@ -1204,7 +1197,7 @@ void postexpr(parser *context)
 
 					if (is_float(mdj) && is_int(context->ansttype))
 					{
-						insertwiden(context);
+						insert_widen(context);
 					}
 					--context->sopnd;
 				}
@@ -1454,7 +1447,7 @@ void unarexpr(parser *context)
 				}
 
 				context->stackoperands[context->sopnd] = context->ansttype =
-				(int)to_modetab(context->sx, mode_pointer, context->ansttype);
+				(int)to_modetab(context, mode_pointer, context->ansttype);
 				context->anst = VAL;
 			}
 			else if (op == LMULT)
@@ -1956,7 +1949,7 @@ void parse_string_literal_expression(parser *const parser)
 		totree(parser, parser->lexer->lexstr[i]);
 	}
 
-	parser->ansttype = (int)to_modetab(parser->sx, mode_array, LCHAR);
+	parser->ansttype = (int)to_modetab(parser, mode_array, LCHAR);
 	parser->stackoperands[++parser->sopnd] = parser->ansttype;
 	parser->anst = VAL;
 }
@@ -1964,17 +1957,6 @@ void parse_string_literal_expression(parser *const parser)
 item_t parse_assignment_expression(parser *const parser)
 {
 	exprassn(parser, 1);
-	toval(parser);
-	totree(parser, TExprend);
-	parser->sopnd--;
-	return (item_t)parser->ansttype;
-}
-
-item_t parse_constant_expression(parser *const parser)
-{
-	scanner(parser);
-	unarexpr(parser);
-	condexpr(parser);
 	toval(parser);
 	totree(parser, TExprend);
 	parser->sopnd--;
@@ -2004,4 +1986,22 @@ item_t parse_parenthesized_expression(parser *const parser)
 	parse_condition(parser);
 	mustbe(parser, RIGHTBR, cond_must_be_in_brkts);
 	return (item_t)parser->ansttype;
+}
+
+item_t parse_constant_expression(parser *const parser)
+{
+	scanner(parser);
+	unarexpr(parser);
+	condexpr(parser);
+	toval(parser);
+	totree(parser, TExprend);
+	parser->sopnd--;
+	return (item_t)parser->ansttype;
+}
+
+void insert_widen(parser *const parser)
+{
+	vector_remove(&parser->sx->tree);
+	totree(parser, WIDEN);
+	totree(parser, TExprend);
 }

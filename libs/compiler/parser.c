@@ -23,83 +23,6 @@ int has_token_set(const unsigned int tokens, const token token)
 	return (tokens & token) != 0;
 }
 
-item_t to_modetab(syntax *const sx, const item_t type, const item_t element_type)
-{
-	item_t temp[2];
-	temp[0] = type;
-	temp[1] = element_type;
-	return (item_t)mode_add(sx, temp, 2);
-}
-
-
-int is_function(syntax *const sx, const item_t t)
-{
-	return t > 0 && mode_get(sx, (size_t)t) == mode_function;
-}
-
-int is_array(syntax *const sx, const item_t t)
-{
-	return t > 0 && mode_get(sx, (size_t)t) == mode_array;
-}
-
-int is_string(syntax *const sx, const item_t t)
-{
-	return is_array(sx, t) && mode_get(sx, (size_t)t + 1) == mode_character;
-}
-
-int is_pointer(syntax *const sx, const item_t t)
-{
-	return t > 0 && mode_get(sx, (size_t)t) == mode_pointer;
-}
-
-int is_struct(syntax *const sx, const item_t t)
-{
-	return t > 0 && mode_get(sx, (size_t)t) == mode_struct;
-}
-
-int is_float(const item_t t)
-{
-	return t == LFLOAT || t == LDOUBLE;
-}
-
-int is_int(const item_t t)
-{
-	return t == LINT || t == LLONG || t == LCHAR;
-}
-
-int is_void(const item_t t)
-{
-	return t == mode_void;
-}
-
-int is_undefined(const item_t t)
-{
-	return t == mode_undefined;
-}
-
-size_t to_identab(parser *const parser, const size_t repr, const item_t f, const item_t type)
-{
-	const size_t ret = ident_add(parser->sx, repr, f, type, parser->func_def);
-	parser->lastid = 0;
-
-	if (ret == SIZE_MAX)
-	{
-		parser_error(parser, redefinition_of_main);
-	}
-	else if (ret == SIZE_MAX - 1)
-	{
-		char buffer[MAXSTRINGL];
-		repr_get_ident(parser->sx, repr, buffer);
-		parser_error(parser, repeated_decl, buffer);
-	}
-	else
-	{
-		parser->lastid = (int)ret;
-	}
-	
-	return ret;
-}
-
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -208,4 +131,82 @@ void skip_until(parser *const parser, const unsigned int tokens)
 				break;
 		}
 	}
+}
+
+
+int is_function(syntax *const sx, const item_t mode)
+{
+	return mode > 0 && mode_get(sx, (size_t)mode) == mode_function;
+}
+
+int is_array(syntax *const sx, const item_t mode)
+{
+	return mode > 0 && mode_get(sx, (size_t)mode) == mode_array;
+}
+
+int is_string(syntax *const sx, const item_t mode)
+{
+	return is_array(sx, mode) && mode_get(sx, (size_t)mode + 1) == mode_character;
+}
+
+int is_pointer(syntax *const sx, const item_t mode)
+{
+	return mode > 0 && mode_get(sx, (size_t)mode) == mode_pointer;
+}
+
+int is_struct(syntax *const sx, const item_t mode)
+{
+	return mode > 0 && mode_get(sx, (size_t)mode) == mode_struct;
+}
+
+int is_float(const item_t mode)
+{
+	return mode == mode_float;
+}
+
+int is_int(const item_t mode)
+{
+	return mode == mode_integer;
+}
+
+int is_void(const item_t mode)
+{
+	return mode == mode_void;
+}
+
+int is_undefined(const item_t mode)
+{
+	return mode == mode_undefined;
+}
+
+
+size_t to_identab(parser *const parser, const size_t repr, const item_t type, const item_t mode)
+{
+	const size_t ret = ident_add(parser->sx, repr, type, mode, parser->func_def);
+	parser->lastid = 0;
+
+	if (ret == SIZE_MAX)
+	{
+		parser_error(parser, redefinition_of_main);
+	}
+	else if (ret == SIZE_MAX - 1)
+	{
+		char buffer[MAXSTRINGL];
+		repr_get_ident(parser->sx, repr, buffer);
+		parser_error(parser, repeated_decl, buffer);
+	}
+	else
+	{
+		parser->lastid = (int)ret;
+	}
+
+	return ret;
+}
+
+item_t to_modetab(parser *const parser, const item_t mode, const item_t element)
+{
+	item_t temp[2];
+	temp[0] = mode;
+	temp[1] = element;
+	return (item_t)mode_add(parser->sx, temp, 2);
 }

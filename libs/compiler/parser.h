@@ -151,6 +151,13 @@ item_t parse_parenthesized_expression(parser *const parser);
  */
 item_t parse_constant_expression(parser *const parser);
 
+/**
+ *	Insert @c WIDEN node
+ *
+ *	@param	parser		Parser structure
+ */
+void insert_widen(parser *const parser);
+
 
 /**
  *	Parse a declaration [C99 6.7]
@@ -215,25 +222,125 @@ typedef enum { REGBLOCK, THREAD, FUNCBODY } block_type;
  *		declaration
  *		statement
  *
- *	@param	parser	Parser structure
+ *	@param	parser		Parser structure
  */
 void parse_compound_statement(parser *const context, const block_type type);
 
 
+/**
+ *	Check if mode is function
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int is_function(syntax *const sx, const item_t mode);
 
+/**
+ *	Check if mode is array
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int is_array(syntax *const sx, const item_t mode);
 
-item_t to_modetab(syntax *const sx, const item_t type, const item_t element_type);
-size_t to_identab(parser *const parser, const size_t repr, const item_t f, const item_t type);
-int is_function(syntax *const sx, const item_t t);
-int is_array(syntax *const sx, const item_t t);
-int is_string(syntax *const sx, const item_t t);
-int is_pointer(syntax *const sx, const item_t t);
-int is_struct(syntax *const sx, const item_t t);
-int is_float(const item_t t);
-int is_int(const item_t t);
-int is_void(const item_t t);
-int is_undefined(const item_t t);
-void insertwiden(parser *const context);
+/**
+ *	Check if mode is array
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int is_string(syntax *const sx, const item_t mode);
+
+/**
+ *	Check if mode is pointer
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int is_pointer(syntax *const sx, const item_t mode);
+
+/**
+ *	Check if mode is struct
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int is_struct(syntax *const sx, const item_t mode);
+
+/**
+ *	Check if mode is floating point
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int is_float(const item_t mode);
+
+/**
+ *	Check if mode is integer
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int is_int(const item_t mode);
+
+/**
+ *	Check if mode is array
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int is_void(const item_t mode);
+
+/**
+ *	Check if mode is undefined
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ */
+int is_undefined(const item_t mode);
+
+/**
+ *	Add new item to identifiers table
+ *
+ *	@param	parser		Parser structure
+ *	@param	repr		New identifier index in representations table
+ *	@param	type		@c -1 for function as parameter,
+ *						@c  0 for variable,
+ *						@c  1 for label,
+ *						@c  funcnum for function,
+ *						@c  >= @c 100 for type specifier
+ *	@param	mode		New identifier mode
+ *
+ *	@return	Index of the last item in identifiers table
+ */
+size_t to_identab(parser *const parser, const size_t repr, const item_t type, const item_t mode);
+
+/**
+ *	Add a new record to modes table
+ *
+ *	@param	parser		Parser structure
+ *	@param	mode		@c mode_pointer or @c mode_array
+ *	@param	element		Type of element
+ *
+ *	@return	Index of the new record in modes table, @c SIZE_MAX on failure
+ */
+item_t to_modetab(parser *const parser, const item_t mode, const item_t element);
 
 #ifdef __cplusplus
 } /* extern "C" */
