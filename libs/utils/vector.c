@@ -19,6 +19,47 @@
 #include <string.h>
 
 
+int change_size(vector *const vec, const size_t size)
+{
+	if (size > vec->size)
+	{
+		if (size > vec->size_alloc)
+		{
+			const size_t alloc_new = size > 2 * vec->size_alloc ? size : 2 * vec->size_alloc;
+			item_t *array_new = realloc(vec->array, alloc_new * sizeof(item_t));
+			if (array_new == NULL)
+			{
+				return -1;
+			}
+
+			vec->size_alloc = alloc_new;
+			vec->array = array_new;
+		}
+
+		memset(&vec->array[vec->size], 0, (size - vec->size) * sizeof(item_t));
+		vec->size = size;
+		return 0;
+	}
+
+	if (size < vec->size)
+	{
+		vec->size = size;
+		return 0;
+	}
+
+	return 0;
+}
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
 vector vector_create(const size_t alloc)
 {
 	vector vec;
@@ -33,7 +74,7 @@ vector vector_create(const size_t alloc)
 
 size_t vector_add(vector *const vec, const item_t value)
 {
-	if (!vector_is_correct(vec) || vector_resize(vec, vec->size + 1))
+	if (!vector_is_correct(vec) || change_size(vec, vec->size + 1))
 	{
 		return SIZE_MAX;
 	}
@@ -76,43 +117,12 @@ item_t vector_remove(vector *const vec)
 
 int vector_increase(vector *const vec, const size_t size)
 {
-	return vector_resize(vec, vec->size + size);
+	return vector_is_correct(vec) ? change_size(vec, vec->size + size) : 0;
 }
 
 int vector_resize(vector *const vec, const size_t size)
 {
-	if (!vector_is_correct(vec))
-	{
-		return -1;
-	}
-
-	if (size > vec->size)
-	{
-		if (size >= vec->size_alloc)
-		{
-			const size_t alloc_new = size > 2 * vec->size_alloc ? size : 2 * vec->size_alloc;
-			item_t *array_new = realloc(vec->array, alloc_new * sizeof(item_t));
-			if (array_new == NULL)
-			{
-				return -1;
-			}
-
-			vec->size_alloc = alloc_new;
-			vec->array = array_new;
-		}
-
-		memset(&vec->array[vec->size], 0, (size - vec->size) * sizeof(item_t));
-		vec->size = size;
-		return 0;
-	}
-
-	if (size < vec->size)
-	{
-		vec->size = size;
-		return 0;
-	}
-
-	return 0;
+	return vector_is_correct(vec) ? change_size(vec, size) : 0;
 }
 
 
