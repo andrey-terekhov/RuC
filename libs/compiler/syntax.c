@@ -383,7 +383,7 @@ size_t repr_add(syntax *const sx, const char32_t *const spelling)
 
 	sx->reprtab[old_repr] = (int)sx->hashtab[hash];
 	sx->hashtab[hash] = old_repr;
-	// 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
+	// Пишется в reprtab: 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
 	sx->reprtab[old_repr + 1] = (sx->keywords) ? 0 - (((char32_t)(++sx->keywords) - 2) / 4) : 1;
 	return old_repr;
 }
