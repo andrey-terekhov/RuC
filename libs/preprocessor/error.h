@@ -57,6 +57,8 @@ enum ERROR
 	must_start_quote,
 	macro_does_not_exist,
 	must_end_endw,
+	include_file_not_found,
+	source_file_not_found,
 };
 
 
@@ -70,6 +72,14 @@ enum ERROR
  *	@param	position	Error position in line
  */
 void macro_error(const int num, const char *const path, const char *const code, const size_t line, size_t position);
+
+/**
+ *	Emit an error for some problem
+ *
+ *	@param	tag		Message location
+ *	@param	num		Error code
+ */
+void macro_system_error(const char *const tag, const int num);
 
 #ifdef __cplusplus
 } /* extern "C" */

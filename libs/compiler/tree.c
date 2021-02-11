@@ -25,6 +25,51 @@ node node_expression(vector *const tree, const size_t index);
 node node_operator(vector *const tree, const size_t index);
 
 
+int vector_swap(vector *const vec, size_t fst_index, size_t fst_size, size_t snd_index, size_t snd_size)
+{
+	if (fst_index > snd_index)
+	{
+		size_t temp = snd_index;
+		snd_index = fst_index;
+		fst_index = temp;
+
+		temp = snd_size;
+		snd_size = fst_size;
+		fst_size = temp;
+	}
+
+	if (fst_index + fst_size > snd_index)
+	{
+		return -1;
+	}
+
+	vector temp = vector_create(snd_index + snd_size - fst_index);
+
+	for (size_t i = snd_index; i < snd_index + snd_size; i++)
+	{
+		vector_add(&temp, vector_get(vec, i));
+	}
+
+	for (size_t i = fst_index + fst_size; i < snd_index; i++)
+	{
+		vector_add(&temp, vector_get(vec, i));
+	}
+
+	for (size_t i = fst_index; i < fst_index + fst_size; i++)
+	{
+		vector_add(&temp, vector_get(vec, i));
+	}
+
+	for (size_t i = 0; i < vector_size(&temp); i++)
+	{
+		vector_set(vec, fst_index + i, vector_get(&temp, i));
+	}
+
+	vector_clear(&temp);
+	return 0;
+}
+
+
 int is_operator(const item_t value)
 {
 	return value == TFuncdef		// Declarations
@@ -542,6 +587,7 @@ node node_get_root(vector *const tree)
 	nd.argc = 0;
 	nd.children = 0;
 	nd.amount = 0;
+	nd.parent = SIZE_MAX;
 
 	size_t i = 0;
 	while (i != SIZE_MAX && vector_get(nd.tree, i) != ITEM_MAX)
@@ -578,9 +624,12 @@ node node_get_child(node *const nd, const size_t index)
 		}
 	}
 
-	return nd->type == SIZE_MAX || is_operator(node_get_type(nd))
+	node child = nd->type == SIZE_MAX || is_operator(node_get_type(nd))
 		? node_operator(nd->tree, i)
 		: node_expression(nd->tree, i);
+
+	child.parent = nd->type;
+	return child;
 }
 
 
@@ -711,6 +760,7 @@ node node_set_child(node *const nd)
 	child.children = child.argv + child.argc;
 	child.amount = 0;
 
+	child.parent = nd->type;
 	return child;
 }
 
@@ -724,6 +774,58 @@ int node_copy(node *const dest, const node *const src)
 
 	*dest = *src;
 	return 0;
+}
+
+int node_order(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index)
+{
+	if (!node_is_correct(fst) || !node_is_correct(snd) || fst->tree != snd->tree
+		|| fst_index >= fst->amount || snd_index >= snd->amount)
+	{
+		return -1;
+	}
+
+	vector *const tree = fst->tree;
+
+	node temp = node_get_child(fst, fst_index);
+	const size_t fst_child_index = temp.type;
+	const size_t fst_size = temp.argc + 1;
+
+	temp = node_get_child(snd, snd_index);
+	const size_t snd_child_index = temp.type;
+	const size_t snd_size = temp.argc + 1;
+
+	return vector_swap(tree, fst_child_index, fst_size, snd_child_index, snd_size);
+}
+
+int node_swap(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index)
+{
+	if (!node_is_correct(fst) || !node_is_correct(snd) || fst->tree != snd->tree
+		|| fst_index >= fst->amount || snd_index >= snd->amount)
+	{
+		return -1;
+	}
+
+	vector *const tree = fst->tree;
+
+	node temp = node_get_child(fst, fst_index);
+	const size_t fst_child_index = temp.type;
+
+	while (temp.amount != 0)
+	{
+		temp = node_get_child(&temp, temp.amount - 1);
+	}
+	const size_t fst_size = temp.type - fst_child_index + temp.argc + 1;
+
+	temp = node_get_child(snd, snd_index);
+	const size_t snd_child_index = temp.type;
+
+	while (temp.amount != 0)
+	{
+		temp = node_get_child(&temp, temp.amount - 1);
+	}
+	const size_t snd_size = temp.type - snd_child_index + temp.argc + 1;
+
+	return vector_swap(tree, fst_child_index, fst_size, snd_child_index, snd_size);
 }
 
 int node_is_correct(const node *const nd)
