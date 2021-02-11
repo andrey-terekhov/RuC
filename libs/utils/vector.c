@@ -111,6 +111,43 @@ item_t vector_remove(vector *const vec)
 }
 
 
+int vector_resize(vector *const vec, const size_t size)
+{
+	if (!vector_is_correct(vec))
+	{
+		return -1;
+	}
+
+	if (size > vec->size)
+	{
+		if (vec->size + size > vec->size_alloc)
+		{
+			const size_t alloc_new = size > 2 * vec->size_alloc ? size : 2 * vec->size_alloc;
+			item_t *array_new = realloc(vec->array, alloc_new * sizeof(item_t));
+			if (array_new == NULL)
+			{
+				return -1;
+			}
+
+			vec->size_alloc = alloc_new;
+			vec->array = array_new;
+		}
+
+		memset(&vec->array[vec->size], 0, size * sizeof(item_t));
+		vec->size = size;
+		return 0;
+	}
+
+	if (size < vec->size)
+	{
+		vec->size = size;
+		return 0;
+	}
+
+	return 0;
+}
+
+
 size_t vector_size(const vector *const vec)
 {
 	return vector_is_correct(vec) ? vec->size : SIZE_MAX;
