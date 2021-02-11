@@ -124,6 +124,12 @@ void get_message_error(const int num, char *const msg)
 		case must_end_endw:
 			sprintf(msg, "цикл должен заканчиваться #ENDW");
 			break;
+		case source_file_not_found:
+			sprintf(msg, "исходный файл не найден");
+			break;
+		case include_file_not_found:
+			sprintf(msg, "заголовочный файл не найден");
+			break;
 		default:
 			sprintf(msg, "не реализованная ошибка №%d", num);
 	}
@@ -157,4 +163,19 @@ void macro_error(const int num, const char *const path, const char *const code, 
 	sprintf(&tag[index], ":%zi", position);
 
 	log_error(tag, msg, code, position);
+}
+
+void macro_system_error(const char *const tag, const int num)
+{
+	char msg[ERROR_MSG_SIZE];
+	get_message_error(num, msg);
+
+	if (tag != NULL)
+	{
+		log_system_error(tag, msg);
+	}
+	else
+	{
+		log_system_error(TAG_MACRO, msg);
+	}
 }

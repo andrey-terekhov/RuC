@@ -61,7 +61,7 @@ void ws_unix_path(const char *const path, char *const buffer)
 
 		if (buffer[j - 1] == '/')
 		{
-			if (j - last == 1 || (j - last == 2 && buffer[last] == '.'))
+			if (j - last == 2 && buffer[last] == '.')
 			{
 				j = last;
 			}

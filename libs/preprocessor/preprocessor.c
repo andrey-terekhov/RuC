@@ -17,15 +17,15 @@
 #include "preprocessor.h"
 #include "calculator.h"
 #include "constants.h"
-#include "context_var.h"
 #include "define.h"
+#include "environment.h"
+#include "error.h"
 #include "file.h"
 #include "if.h"
-#include "include.h"
 #include "uniio.h"
 #include "uniprinter.h"
-#include "error.h"
 #include "utils.h"
+#include "linker.h"
 #include "while.h"
 #include "workspace.h"
 #include <limits.h>
@@ -43,16 +43,16 @@
 const size_t SIZE_OUT_BUFFER = 1024;
 
 
-void to_reprtab(const char str[], int num, preprocess_context *context)
+void to_reprtab(const char str[], int num, environment *const env)
 {
 	int i = 0;
-	int oldrepr = context->rp;
+	int oldrepr = env->rp;
 	int hash = 0;
 	//unsigned char firstchar;
 	//unsigned char secondchar;
 	//int p;
 	int c = 0;
-	context->rp += 2;
+	env->rp += 2;
 
 	while(str[i] != '\0')
 	{
@@ -72,74 +72,76 @@ void to_reprtab(const char str[], int num, preprocess_context *context)
 		i += (int)utf8_symbol_size(str[i]);
 
 		hash += c;
-		context->reprtab[context->rp++] = c;
+		env->reprtab[env->rp++] = c;
 	}
 
 	hash &= 255;
-	context->reprtab[context->rp++] = 0;
-	context->reprtab[oldrepr] = context->hashtab[hash];
-	context->reprtab[oldrepr + 1] = num;
-	context->hashtab[hash] = oldrepr;
+	env->reprtab[env->rp++] = 0;
+	env->reprtab[oldrepr] = env->hashtab[hash];
+	env->reprtab[oldrepr + 1] = num;
+	env->hashtab[hash] = oldrepr;
 }
 
-void to_reprtab_full(const char str1[], const char str2[], const char str3[], const char str4[], int num, preprocess_context *context)
+void to_reprtab_full(const char str1[], const char str2[], const char str3[], const char str4[], int num, environment *const env)
 {
-	to_reprtab(str1, num, context);
-	to_reprtab(str2, num, context);
-	to_reprtab(str3, num, context);
-	to_reprtab(str4, num, context);
+	to_reprtab(str1, num, env);
+	to_reprtab(str2, num, env);
+	to_reprtab(str3, num, env);
+	to_reprtab(str4, num, env);
 }
 
-void add_keywods(preprocess_context *context)
+void add_keywods(environment *const env)
 {
-	to_reprtab_full("MAIN", "main", "ГЛАВНАЯ", "главная", SH_MAIN, context);
-	to_reprtab_full("#DEFINE", "#define", "#ОПРЕД", "#опред", SH_DEFINE, context);
-	to_reprtab_full("#IFDEF", "#ifdef", "#ЕСЛИБЫЛ", "#еслибыл", SH_IFDEF, context);
-	to_reprtab_full("#IFNDEF", "#ifndef", "#ЕСЛИНЕБЫЛ", "#еслинебыл", SH_IFNDEF, context);
-	to_reprtab_full("#IF", "#if", "#ЕСЛИ", "#если", SH_IF, context);
-	to_reprtab_full("#ELIF", "#elif", "#ИНЕСЛИ", "#инесли", SH_ELIF, context);
-	to_reprtab_full("#ENDIF", "#endif", "#КОНЕЦЕСЛИ", "#конецесли", SH_ENDIF, context);
-	to_reprtab_full("#ELSE", "#else", "#ИНАЧЕ", "#иначе", SH_ELSE, context);
-	to_reprtab_full("#MACRO", "#macro", "#МАКРО", "#макро", SH_MACRO, context);
-	to_reprtab_full("#ENDM", "#endm", "#КОНЕЦМ", "#конецм", SH_ENDM, context);
-	to_reprtab_full("#WHILE", "#while", "#ПОКА", "#пока", SH_WHILE, context);
-	to_reprtab_full("#ENDW", "#endw", "#КОНЕЦП", "#конецп", SH_ENDW, context);
-	to_reprtab_full("#SET", "#set", "#ПЕРЕОПРЕД", "#переопред", SH_SET, context);
-	to_reprtab_full("#UNDEF", "#undef", "#ОТМЕНАОПРЕД", "#отменаопред", SH_UNDEF, context);
-	to_reprtab_full("#FOR", "#for", "#ДЛЯ", "#для", SH_FOR, context);
-	to_reprtab_full("#ENDF", "#endf", "#КОНЕЦД", "#конецд", SH_ENDF, context);
-	to_reprtab_full("#EVAL", "#eval", "#ВЫЧИСЛЕНИЕ", "#вычисление", SH_EVAL, context);
-	to_reprtab_full("#INCLUDE", "#include", "#ДОБАВИТЬ", "#добавить", SH_INCLUDE, context);
+	to_reprtab_full("MAIN", "main", "ГЛАВНАЯ", "главная", SH_MAIN, env);
+	to_reprtab_full("#DEFINE", "#define", "#ОПРЕД", "#опред", SH_DEFINE, env);
+	to_reprtab_full("#IFDEF", "#ifdef", "#ЕСЛИБЫЛ", "#еслибыл", SH_IFDEF, env);
+	to_reprtab_full("#IFNDEF", "#ifndef", "#ЕСЛИНЕБЫЛ", "#еслинебыл", SH_IFNDEF, env);
+	to_reprtab_full("#IF", "#if", "#ЕСЛИ", "#если", SH_IF, env);
+	to_reprtab_full("#ELIF", "#elif", "#ИНЕСЛИ", "#инесли", SH_ELIF, env);
+	to_reprtab_full("#ENDIF", "#endif", "#КОНЕЦЕСЛИ", "#конецесли", SH_ENDIF, env);
+	to_reprtab_full("#ELSE", "#else", "#ИНАЧЕ", "#иначе", SH_ELSE, env);
+	to_reprtab_full("#MACRO", "#macro", "#МАКРО", "#макро", SH_MACRO, env);
+	to_reprtab_full("#ENDM", "#endm", "#КОНЕЦМ", "#конецм", SH_ENDM, env);
+	to_reprtab_full("#WHILE", "#while", "#ПОКА", "#пока", SH_WHILE, env);
+	to_reprtab_full("#ENDW", "#endw", "#КОНЕЦП", "#конецп", SH_ENDW, env);
+	to_reprtab_full("#SET", "#set", "#ПЕРЕОПРЕД", "#переопред", SH_SET, env);
+	to_reprtab_full("#UNDEF", "#undef", "#ОТМЕНАОПРЕД", "#отменаопред", SH_UNDEF, env);
+	to_reprtab_full("#FOR", "#for", "#ДЛЯ", "#для", SH_FOR, env);
+	to_reprtab_full("#ENDF", "#endf", "#КОНЕЦД", "#конецд", SH_ENDF, env);
+	to_reprtab_full("#EVAL", "#eval", "#ВЫЧИСЛЕНИЕ", "#вычисление", SH_EVAL, env);
+	to_reprtab_full("#INCLUDE", "#include", "#ДОБАВИТЬ", "#добавить", SH_INCLUDE, env);
 }
 
-int preprocess_words(preprocess_context *context)
+int preprocess_words(environment *const env)
 {
 
-	space_skip(context);
-	switch (context->cur)
+	skip_space(env);
+	switch (env->cur)
 	{
 		case SH_INCLUDE:
 		{
-			return include_relis(context);
+			return lk_include(env);
 		}
 		case SH_DEFINE:
 		case SH_MACRO:
 		{
-			context->prep_flag = 1;
-			return define_relis(context);
+			env->prep_flag = 1;
+			return define_implementation(env);
 		}
 		case SH_UNDEF:
 		{
-			int k = collect_mident(context);
+			int k = collect_mident(env);
 			if(k)
 			{
-				context->macrotext[context->reprtab[k + 1]] = MACROUNDEF;
-				return space_end_line(context);
+				env->macrotext[env->reprtab[k + 1]] = MACROUNDEF;
+				return space_end_line(env);
 			}
 			else
 			{
-				size_t position = skip_str(context); 
-				macro_error(macro_does_not_exist, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+				size_t position = skip_str(env); 
+				macro_error(macro_does_not_exist
+				, lk_get_current(env->lk)
+				, env->error_string, env->line, position);
 				return -1;
 			}
 		}
@@ -147,11 +149,11 @@ int preprocess_words(preprocess_context *context)
 		case SH_IFDEF:
 		case SH_IFNDEF:
 		{
-			return if_relis(context);
+			return if_implementation(env);
 		}
 		case SH_SET:
 		{
-			return set_relis(context);
+			return set_implementation(env);
 		}
 		case SH_ELSE:
 		case SH_ELIF:
@@ -159,9 +161,9 @@ int preprocess_words(preprocess_context *context)
 			return 0;
 		case SH_EVAL:
 		{
-			if (context->curchar == '(')
+			if (env->curchar == '(')
 			{
-				if(calculator(0, context))
+				if(calculator(0, env))
 				{
 					return -1;
 				}
@@ -169,77 +171,76 @@ int preprocess_words(preprocess_context *context)
 			}
 			else
 			{
-				size_t position = skip_str(context); 
-				macro_error(after_eval_must_be_ckob, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+				size_t position = skip_str(env); 
+				macro_error(after_eval_must_be_ckob, lk_get_current(env->lk), env->error_string, env->line, position);
 				return -1;
 			}
 
-			m_change_nextch_type(CTYPE, 0, context);
+			m_change_nextch_type(CTYPE, 0, env);
 			return 0;
 		}
 		case SH_WHILE:
 		{
-			context->wsp = 0;
-			context->ifsp = 0;
-			if(while_collect(context))
+			env->wsp = 0;
+			env->ifsp = 0;
+			if(while_collect(env))
 			{
 				return -1;
 			}
 			
-			m_change_nextch_type(WHILETYPE, 0, context);
-			m_nextch(context);
-			m_nextch(context);
+			m_change_nextch_type(WHILETYPE, 0, env);
+			m_nextch(env);
+			m_nextch(env);
 
-			context->nextp = 0;
-			int res = while_relis(context);
-			if(context->nextch_type != FILETYPE)
+			env->nextp = 0;
+			int res = while_implementation(env);
+			if(env->nextch_type != FILETYPE)
 			{
-				m_old_nextch_type(context);
+				m_old_nextch_type(env);
 			}
 
 			return res;
 		}
 		default:
 		{
-			//output_keywods(context);
-			size_t position = skip_str(context); 
-			macro_error(preproces_words_not_exist, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
+			//output_keywords(env);
+			size_t position = skip_str(env); 
+			macro_error(preproces_words_not_exist, lk_get_current(env->lk), env->error_string, env->line, position);
 			return 0;
 		}
 	}
 }
 
-int preprocess_scan(preprocess_context *context)
+int preprocess_scan(environment *const env)
 {
 	int i;
-
-	switch (context->curchar)
+	switch (env->curchar)
 	{
 		case EOF:
 			return 0;
 
 		case '#':
 		{
-			context->cur = macro_keywords(context);
+			env->cur = macro_keywords(env);
 
-			if (context->cur != 0)
+			if (env->cur != 0)
 			{
-				int res = preprocess_words(context);
-				if(context->nextchar != '#' && context->nextch_type != WHILETYPE && 
-					context->nextch_type != TEXTTYPE)//curflag
+				int res = preprocess_words(env);
+				if(env->nextchar != '#' && env->nextch_type != WHILETYPE && 
+					env->nextch_type != TEXTTYPE)//curflag
 				{
-					con_file_print_coment(&context->fs, context);
+					lk_add_comment(env);
 				}
-				if(context->cur != SH_ELSE && context->cur != SH_ELIF && context->cur != SH_ENDIF)
+				if(env->cur != SH_INCLUDE && env->cur != SH_ELSE && env->cur != SH_ELIF && env->cur != SH_ENDIF)
 				{
-					m_nextch(context);
+					m_nextch(env);
 				}
 				return res;
 			}
 			else
 			{
-				// m_nextch(context);
-				output_keywods(context);
+				// m_nextch(env);
+				output_keywords(env);
 			}
 
 			return 0;
@@ -247,36 +248,36 @@ int preprocess_scan(preprocess_context *context)
 		case '\'':
 		case '\"':
 		{
-			space_skip_str(context);
+			skip_space_str(env);
 			return 0;
 		}
 		case '@':
 		{
-			m_nextch(context);
+			m_nextch(env);
 			return 0;
 		}
 		default:
 		{
-			if (utf8_is_letter(context->curchar) && context->prep_flag == 1)
+			if (utf8_is_letter(env->curchar) && env->prep_flag == 1)
 			{
-				int r = collect_mident(context);
+				int r = collect_mident(env);
 
 				if (r)
 				{
-					return define_get_from_macrotext(r, context);
+					return define_get_from_macrotext(r, env);
 				}
 				else
 				{
-					for (i = 0; i < context->msp; i++)
+					for (i = 0; i < env->msp; i++)
 					{
-						m_fprintf(context->mstring[i], context);
+						m_fprintf(env->mstring[i], env);
 					}
 				}
 			}
 			else
 			{
-				m_fprintf(context->curchar, context);
-				m_nextch(context);
+				m_fprintf(env->curchar, env);
+				m_nextch(env);
 			}
 
 			return 0;
@@ -284,159 +285,18 @@ int preprocess_scan(preprocess_context *context)
 	}
 }
 
-void add_c_file_siple(preprocess_context *context)
+
+int macro_form_io(workspace *const ws, universal_io *const output)
 {
-	while (context->curchar != EOF)
-	{
-		m_nextch(context);
-	}
-}
+	linker lk = lk_create(ws);
 
-void add_c_file(preprocess_context *context)
-{
-	m_nextch(context);
-	while (context->curchar != EOF)
-	{
-		switch (context->curchar)
-		{
-			case EOF:
-			{
-				return;
-			}
-			case ' ':
-			case '\n':
-			case '\t':
-			{
-				m_nextch(context);
-				break;
-			}
-			case '#':
-			{
-				context->cur = macro_keywords(context);
-				if (context->cur == SH_INCLUDE)
-				{
-					include_relis(context);
-				}
-				break;
-			}
-			default:
-			{
-				add_c_file_siple(context);
-				return;
-			}
-		}
-	}
-}
+	environment env;
+	env_init(&env, &lk, output);
 
-void open_files(preprocess_context *context)
-{
-	int i = 0;
-	size_t num = ws_get_files_num(context->fs.ws);
-	const char *temp = ws_get_file(context->fs.ws, i++);
-
-	for(size_t j = 0; j < num; j++)
-	{
-		if (find_file(context, temp))
-		{
-			con_file_open_next(&context->fs, context, C_FILE);
-
-			get_next_char(context);
-
-			if (context->nextchar != EOF)
-			{
-				add_c_file(context);
-				context->position = 0;
-				context->error_string[context->position] = '\0';
-			}
-			con_file_close_cur(context);
-		}
-		temp = ws_get_file(context->fs.ws, i++);
-	}
-
-	con_file_it_is_end_h(&context->fs, i-1);
-}
-
-int preprocess_h_file(preprocess_context *context)
-{
-	context->h_flag = 1;
-	context->include_type = 1;
-	int res = con_file_open_hedrs(&context->fs, context);
-	if(res == 1)
-	{
-		res = file_read(context);
-		
-		if(file_read(context))
-		{
-			return -1;
-		}
-			
-		res = con_file_open_next(&context->fs, context, C_FILE);
-
-		while (res == 1)
-		{
-			if(file_read(context))
-			{
-				return -1;
-			}
-			
-			res = con_file_open_next(&context->fs, context, H_FILE);
-		}
-	}
-	return res;
-}
-
-int preprocess_c_file(preprocess_context *context)
-{
-	context->include_type = 2;
-	context->h_flag = 0;
-	int res = con_file_open_sorse(&context->fs, context);
-	if(res == 1)
-	{
-		if(file_read(context))
-		{
-			return -1;
-		}
-
-		res = con_file_open_next(&context->fs, context, C_FILE);
-
-		while (res == 1)
-		{
-			if(file_read(context))
-			{
-				return -1;
-			}
-			
-			res = con_file_open_next(&context->fs, context, C_FILE);
-		}
-	}
-	return res;
-}
-
-
-int macro_form_io(workspace *const ws, universal_io *const io)
-{
-	universal_io io_input = io_create();
-	preprocess_context context;
-	preprocess_context_init(&context, ws, io, &io_input);
-
-	add_keywods(&context);
-	context.mfirstrp = context.rp;
-
-	open_files(&context);
-
-	if (preprocess_h_file(&context))
-	{
-		return -1;
-	}
-
-	if (preprocess_c_file(&context))
-	{
-		return -1;
-	}
-
-	in_clear(&io_input);
+	add_keywods(&env);
+	env.mfirstrp = env.rp;
 	
-	return 0;
+	return lk_preprocess_all(&env);
 }
 
 /*

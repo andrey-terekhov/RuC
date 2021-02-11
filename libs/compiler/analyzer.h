@@ -22,6 +22,8 @@
 #include "lexer.h"
 
 
+#define TREE		(context->sx->tree)
+
 #define REPRTAB		(context->sx->reprtab)
 #define REPRTAB_POS (context->lxr->repr)
 #define REPRTAB_LEN (context->sx->rp)
@@ -37,7 +39,7 @@ typedef struct analyzer
 	universal_io *io;					/**< Universal io structure */
 	syntax *sx;							/**< Syntax structure */
 	lexer *lxr;							/**< Lexer structure */
-	
+
 	int line;
 	int cur;
 	int next;
