@@ -21,6 +21,7 @@
 #include "errors.h"
 #include "tree.h"
 #include "uniprinter.h"
+#include "utf8.h"
 
 
 const char *const DEFAULT_CODES = "codes.txt";
@@ -36,7 +37,10 @@ typedef struct virtual
 
 	vector memory;					/**< Memory table */
 	vector processes;				/**< Init processes table */
-	vector stack;					/**< Stack for logic operations*/
+	vector stack;					/**< Stack for logic operations */
+
+	vector identifiers;				/**< Local identifiers table */
+	vector representations;			/**< Local representations table */
 
 	size_t max_threads;				/**< Max threads count */
 
@@ -527,6 +531,33 @@ static int declaration(virtual *const vm, node *const nd)
 	return 0;
 }
 
+static void compress_ident(virtual *const vm, const size_t ref)
+{
+	if (vector_get(&vm->sx->identifiers, ref) == ITEM_MAX)
+	{
+		mem_add(vm, ident_get_repr(vm->sx, ref));
+		return;
+	}
+
+	const item_t new_ref = (item_t)vector_size(&vm->identifiers) - 1;
+	vector_add(&vm->identifiers, (item_t)vector_size(&vm->representations) - 2);
+	vector_add(&vm->identifiers, ident_get_mode(vm->sx, ref));
+	vector_add(&vm->identifiers, ident_get_displ(vm->sx, ref));
+
+	char buffer[MAXSTRINGL];
+	repr_get_name(vm->sx, ident_get_repr(vm->sx, ref), buffer);
+
+	for (size_t i = 0; buffer[i] != '\0'; i += utf8_symbol_size(buffer[i]))
+	{
+		vector_add(&vm->representations, (item_t)utf8_convert(&buffer[i]));
+	}
+	vector_add(&vm->representations, '\0');
+
+	vector_set(&vm->sx->identifiers, ref, ITEM_MAX);
+	ident_set_repr(vm->sx, ref, new_ref);
+	mem_add(vm, new_ref);
+}
+
 static void statement(virtual *const vm, node *const nd)
 {
 	switch (node_get_type(nd))
@@ -785,7 +816,7 @@ static void statement(virtual *const vm, node *const nd)
 		case TPrintid:
 		{
 			mem_add(vm, PRINTID);
-			mem_add(vm, node_get_arg(nd, 0)); // ссылка в identtab
+			compress_ident(vm, (size_t)node_get_arg(nd, 0)); // ссылка в identtab
 		}
 		break;
 		case TPrintf:
@@ -797,7 +828,7 @@ static void statement(virtual *const vm, node *const nd)
 		case TGetid:
 		{
 			mem_add(vm, GETID);
-			mem_add(vm, node_get_arg(nd, 0)); // ссылка в identtab
+			compress_ident(vm, (size_t)node_get_arg(nd, 0)); // ссылка в identtab
 		}
 		break;
 		case SETMOTOR:
@@ -884,8 +915,8 @@ void output_export(universal_io *const io, const virtual *const vm)
 	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n"
 		, mem_size(vm)
 		, vector_size(&vm->sx->functions)
-		, vector_size(&vm->sx->identifiers)
-		, vm->sx->rp
+		, vector_size(&vm->identifiers)
+		, vector_size(&vm->representations)
 		, vector_size(&vm->sx->modes)
 		, vm->sx->max_displg, vm->max_threads);
 
@@ -902,15 +933,15 @@ void output_export(universal_io *const io, const virtual *const vm)
 	}
 	uni_printf(io, "\n");
 
-	for (size_t i = 0; i < vector_size(&vm->sx->identifiers); i++)
+	for (size_t i = 0; i < vector_size(&vm->identifiers); i++)
 	{
-		uni_printf(io, "%" PRIitem " ", vector_get(&vm->sx->identifiers, i));
+		uni_printf(io, "%" PRIitem " ", vector_get(&vm->identifiers, i));
 	}
 	uni_printf(io, "\n");
 
-	for (size_t i = 0; i < vm->sx->rp; i++)
+	for (size_t i = 0; i < vector_size(&vm->representations); i++)
 	{
-		uni_printf(io, "%i ", vm->sx->reprtab[i]);
+		uni_printf(io, "%" PRIitem " ", vector_get(&vm->representations, i));
 	}
 	uni_printf(io, "\n");
 
@@ -945,6 +976,10 @@ int encode_to_vm(universal_io *const io, syntax *const sx)
 	vm.processes = vector_create(sx->procd);
 	vm.stack = vector_create(MAX_STACK_SIZE);
 
+	const size_t records = vector_size(&sx->identifiers) / 4;
+	vm.identifiers = vector_create(records * 3);
+	vm.representations = vector_create(records * 8);
+
 	vector_increase(&vm.memory, 4);
 	vector_increase(&vm.processes, sx->procd);
 	vm.max_threads = 0;
@@ -957,11 +992,15 @@ int encode_to_vm(universal_io *const io, syntax *const sx)
 	}
 
 #ifdef GENERATE_CODES
-		tables_and_codes(&sx->functions, &vm.processes, &vm.memory, DEFAULT_CODES);
+	tables_and_codes(&sx->functions, &vm.processes, &vm.memory, DEFAULT_CODES);
 #endif
+
 
 	vector_clear(&vm.memory);
 	vector_clear(&vm.processes);
 	vector_clear(&vm.stack);
+
+	vector_clear(&vm.identifiers);
+	vector_clear(&vm.representations);
 	return ret;
 }

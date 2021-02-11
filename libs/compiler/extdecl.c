@@ -121,14 +121,14 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 		case no_field:
 		{
 			char buffer[MAXSTRINGL];
-			repr_get_ident(context->sx, REPRTAB_POS, buffer);
+			repr_get_name(context->sx, REPRTAB_POS, buffer);
 			error(io, num, buffer);
 		}
 		break;
 		case label_not_declared:
 		{
 			char buffer[MAXSTRINGL];
-			repr_get_ident(context->sx, REPRTAB_POS, buffer);
+			repr_get_name(context->sx, REPRTAB_POS, buffer);
 			error(io, num, context->sx->hash, buffer);
 		}
 		break;
@@ -144,7 +144,7 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 	}
 	else
 	{
-		while(context->temp_tc < vector_size(&TREE))
+		while (context->temp_tc < vector_size(&TREE))
 		{
 			vector_remove(&TREE);
 		}

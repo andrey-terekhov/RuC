@@ -262,7 +262,7 @@ size_t repr_add(syntax *const sx, const char32_t *const spelling);
  *
  *	@return	Size of сharacter in string, @c SIZE_MAX on failure
  */
-size_t repr_get_ident(const syntax *const sx, const size_t index, char *const buffer);
+size_t repr_get_name(const syntax *const sx, const size_t index, char *const buffer);
 
 /**
  *	Get a representation spelling from table by index
