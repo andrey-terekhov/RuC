@@ -33,27 +33,7 @@ vector vector_create(const size_t alloc)
 
 int vector_increase(vector *const vec, const size_t size)
 {
-	if (!vector_is_correct(vec))
-	{
-		return -1;
-	}
-
-	if (vec->size + size > vec->size_alloc)
-	{
-		const size_t alloc_new = vec->size + size > 2 * vec->size_alloc ? vec->size + size : 2 * vec->size_alloc;
-		item_t *array_new = realloc(vec->array, alloc_new * sizeof(item_t));
-		if (array_new == NULL)
-		{
-			return -1;
-		}
-
-		vec->size_alloc = alloc_new;
-		vec->array = array_new;
-	}
-
-	memset(&vec->array[vec->size], 0, size * sizeof(item_t));
-	vec->size += size;
-	return 0;
+	return vector_resize(vec, vec->size + size);
 }
 
 size_t vector_add(vector *const vec, const item_t value)
