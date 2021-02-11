@@ -178,7 +178,7 @@ void toval(parser *context)
 	}
 	else if (is_struct(context->sx, context->ansttype))
 	{
-		if (!context->inass)
+		if (!context->flag_in_assignment)
 		{
 			if (context->anst == IDENT)
 			{
@@ -1108,7 +1108,7 @@ void postexpr(parser *context)
 		int j;
 		item_t n;
 		item_t dn;
-		int oldinass = context->inass;
+		int oldinass = context->flag_in_assignment;
 
 		was_func = 1;
 		scanner(context);
@@ -1178,7 +1178,7 @@ void postexpr(parser *context)
 				}
 				else
 				{
-					context->inass = 0;
+					context->flag_in_assignment = 0;
 					exprassn(context, 1);
 					if (context->was_error == 6)
 					{
@@ -1217,7 +1217,7 @@ void postexpr(parser *context)
 			}
 			j++;
 		}
-		context->inass = oldinass;
+		context->flag_in_assignment = oldinass;
 		mustbe(context, RIGHTBR, wrong_number_of_params);
 		totree(context, TCall2);
 		totree(context, lid);
@@ -1779,7 +1779,7 @@ void exprassn(parser *context, int level)
 	{
 		int opp = context->op;
 		lnext = context->next_token;
-		context->inass = 1;
+		context->flag_in_assignment = 1;
 		scanner(context);
 		scanner(context);
 		exprassn(context, level + 1);
@@ -1787,7 +1787,7 @@ void exprassn(parser *context, int level)
 		{
 			return; // 1
 		}
-		context->inass = 0;
+		context->flag_in_assignment = 0;
 
 		if (leftanst == VAL)
 		{

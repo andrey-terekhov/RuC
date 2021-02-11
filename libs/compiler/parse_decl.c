@@ -42,7 +42,7 @@ item_t parse_struct_declaration_list(parser *const parser);
  */
 item_t parse_type_specifier(parser *const parser)
 {
-	parser->was_struct_with_arr = 0;
+	parser->flag_array_in_struct = 0;
 	switch (parser->next_token)
 	{
 		case kw_void:
@@ -75,7 +75,7 @@ item_t parse_type_specifier(parser *const parser)
 				return mode_undefined;
 			}
 
-			parser->was_struct_with_arr = (int)ident_get_displ(parser->sx, id) - 1000;
+			parser->flag_array_in_struct = (int)ident_get_displ(parser->sx, id) - 1000;
 			return ident_get_mode(parser->sx, id);
 		}
 
@@ -121,7 +121,7 @@ item_t parse_struct_or_union_specifier(parser *const parser)
 			{
 				const item_t mode = parse_struct_declaration_list(parser);
 				const size_t id = to_identab(parser, repr, 1000, mode);
-				ident_set_displ(parser->sx, id, 1000 + parser->was_struct_with_arr);
+				ident_set_displ(parser->sx, id, 1000 + parser->flag_array_in_struct);
 
 				parser->flag_was_type_def = 1;
 
@@ -140,7 +140,7 @@ item_t parse_struct_or_union_specifier(parser *const parser)
 				}
 
 				// TODO: what if it was not a struct name?
-				parser->was_struct_with_arr = (int)ident_get_displ(parser->sx, id) - 1000;
+				parser->flag_array_in_struct = (int)ident_get_displ(parser->sx, id) - 1000;
 				return ident_get_mode(parser->sx, id);
 			}
 		}
@@ -164,8 +164,8 @@ item_t parse_struct_or_union_specifier(parser *const parser)
  */
 item_t parse_array_definition(parser *const parser, item_t type)
 {
-	parser->arrdim = 0;
-	parser->usual = 1;
+	parser->array_dimension = 0;
+	parser->flag_empty_bounds = 1;
 
 	if (is_pointer(parser->sx, type))
 	{
@@ -174,7 +174,7 @@ item_t parse_array_definition(parser *const parser, item_t type)
 
 	while (try_consume_token(parser, l_square))
 	{
-		parser->arrdim++;
+		parser->array_dimension++;
 		if (try_consume_token(parser, r_square))
 		{
 			if (parser->next_token == l_square)
@@ -182,7 +182,7 @@ item_t parse_array_definition(parser *const parser, item_t type)
 				// int a[][] = {{1,2,3}, {4,5,6}}; - нельзя;
 				parser_error(parser, empty_init);
 			}
-			parser->usual = 0;
+			parser->flag_empty_bounds = 0;
 		}
 		else
 		{
@@ -272,18 +272,17 @@ item_t parse_struct_declaration_list(parser *const parser)
 				const size_t ref_array_dim = tree_reserve(parser->sx);
 				// Меняем тип (увеличиваем размерность массива)
 				type = parse_array_definition(parser, element_type);
-				tree_set(parser->sx, ref_array_dim, parser->arrdim);
+				tree_set(parser->sx, ref_array_dim, (item_t)parser->array_dimension);
 
 				tree_add(parser->sx, TDeclid);
 				tree_add(parser->sx, (item_t)displ);
 				tree_add(parser->sx, element_type);
-				tree_add(parser->sx, parser->arrdim);
+				tree_add(parser->sx, (item_t)parser->array_dimension);
 
 				// all - место в дереве, где будет общее количество выражений в инициализации,
 				const size_t all = tree_reserve(parser->sx);		// для массивов - только признак (1) наличия инициализации
-				tree_set(parser->sx, all, 0);						// all
-				tree_add(parser->sx, parser->was_struct_with_arr);	// proc
-				tree_add(parser->sx, parser->usual);				// usual
+				tree_add(parser->sx, parser->flag_array_in_struct);	// proc
+				tree_add(parser->sx, parser->flag_empty_bounds);	// usual
 				tree_add(parser->sx, 1);							// Признак, что массив в структуре
 				wasarr = 1;
 
@@ -294,7 +293,7 @@ item_t parse_struct_declaration_list(parser *const parser)
 					{
 						parser->onlystrings = 2;
 						tree_set(parser->sx, all, 1);
-						if (!parser->usual)
+						if (!parser->flag_empty_bounds)
 						{
 							tree_set(parser->sx, ref_array_dim, tree_get(parser->sx, ref_array_dim) - 1);
 						}
@@ -303,7 +302,7 @@ item_t parse_struct_declaration_list(parser *const parser)
 
 						if (parser->onlystrings == 1)
 						{
-							tree_set(parser->sx, all + 2, parser->usual + 2);
+							tree_set(parser->sx, all + 2, parser->flag_empty_bounds + 2);
 						}
 					}
 				}
@@ -332,7 +331,7 @@ item_t parse_struct_declaration_list(parser *const parser)
 
 		tree_add(parser->sx, procd);
 		tree_set(parser->sx, ref_struct_begin + 1, procd);
-		parser->was_struct_with_arr = procd;
+		parser->flag_array_in_struct = procd;
 	}
 	else
 	{
@@ -466,8 +465,8 @@ void parse_init_declarator(parser *const parser, item_t type)
 	const size_t old_id = to_identab(parser, parser->lexer->repr, 0, type);
 	size_t ref_array_dim = 0;
 
-	parser->usual = 1;
-	parser->arrdim = 0;
+	parser->flag_empty_bounds = 1;
+	parser->array_dimension = 0;
 	const item_t element_type = type;
 
 	if (parser->next_token == l_square)
@@ -477,8 +476,8 @@ void parse_init_declarator(parser *const parser, item_t type)
 		// Меняем тип (увеличиваем размерность массива)
 		type = parse_array_definition(parser, type);
 		ident_set_mode(parser->sx, old_id, type);
-		tree_set(parser->sx, ref_array_dim, parser->arrdim);
-		if ((!parser->usual && parser->next_token != equal))
+		tree_set(parser->sx, ref_array_dim, (item_t)parser->array_dimension);
+		if ((!parser->flag_empty_bounds && parser->next_token != equal))
 		{
 			parser_error(parser, empty_bound_without_init);
 		}
@@ -487,13 +486,13 @@ void parse_init_declarator(parser *const parser, item_t type)
 	tree_add(parser->sx, TDeclid);
 	tree_add(parser->sx, ident_get_displ(parser->sx, old_id));
 	tree_add(parser->sx, element_type);
-	tree_add(parser->sx, parser->arrdim);
+	tree_add(parser->sx, (item_t)parser->array_dimension);
 
 	// all - место в дереве, где будет общее количество выражений в инициализации,
 	const size_t all = tree_reserve(parser->sx);	// для массивов - только признак (1) наличия инициализации
 	tree_set(parser->sx, all, 0);
-	tree_add(parser->sx, is_pointer(parser->sx, type) ? 0 : parser->was_struct_with_arr);
-	tree_add(parser->sx, parser->usual);
+	tree_add(parser->sx, is_pointer(parser->sx, type) ? 0 : parser->flag_array_in_struct);
+	tree_add(parser->sx, parser->flag_empty_bounds);
 	tree_add(parser->sx, 0);	// Признак того, массив не в структуре
 
 	if (try_consume_token(parser, equal))
@@ -502,7 +501,7 @@ void parse_init_declarator(parser *const parser, item_t type)
 		tree_set(parser->sx, all, (item_t)size_of(parser->sx, type));
 		if (is_array(parser->sx, type))
 		{
-			if (!parser->usual)
+			if (!parser->flag_empty_bounds)
 			{
 				tree_set(parser->sx, ref_array_dim, tree_get(parser->sx, ref_array_dim) - 1);
 			}
@@ -511,7 +510,7 @@ void parse_init_declarator(parser *const parser, item_t type)
 			parse_array_initializer(parser, type);
 			if (parser->onlystrings == 1)
 			{
-				tree_set(parser->sx, all + 2, parser->usual + 2);
+				tree_set(parser->sx, all + 2, parser->flag_empty_bounds + 2);
 			}
 		}
 		else
@@ -939,6 +938,6 @@ void parse_initializer(parser *const parser, const item_t type)
 	else
 	{
 		parser_error(parser, wrong_init);
-		skip_until(parser, semicolon);
+		skip_until(parser, comma | semicolon);
 	}
 }

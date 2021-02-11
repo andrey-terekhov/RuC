@@ -496,7 +496,7 @@ void parse_getid_statement(parser *const parser)
 		}
 	} while (try_consume_token(parser, comma));
 
-	expect_and_consume_token(parser, r_paren, no_rightbr_in_printid);
+	expect_and_consume_token(parser, r_paren, no_rightbr_in_getid);
 	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
 }
 

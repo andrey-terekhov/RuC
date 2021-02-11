@@ -36,44 +36,49 @@ extern "C" {
 /** Определение глобальных переменных */
 typedef struct
 {
-	universal_io *io;					/**< Universal io structure */
-	syntax *sx;							/**< Syntax structure */
-	lexer *lexer;						/**< Lexer structure */
+	universal_io *io;			/**< Universal io structure */
+	syntax *sx;					/**< Syntax structure */
+	lexer *lexer;				/**< Lexer structure */
 
-	token curr_token;					/**< Current token */
-	token next_token;					/**< Lookahead token */
-	int func_def;	// context->func_def = 0 - (),
-					// 1 - определение функции,
-					// 2 - это предописание,
-					// 3 - не знаем или вообще не функция
+	token curr_token;			/**< Current token */
+	token next_token;			/**< Lookahead token */
+
+	size_t function_mode;		/**< Mode of currenty parsed function */
+	size_t array_dimension;		/**< Array dimension counter */
+	item_t gotost[1000];		/**< Labels table */
+	size_t pgotost;				/**< Size of labels table */
+
+	/// @c 0 for function without arguments, @c 1 for function definition,
+	/// @c 2 for function declaration, @c 3 for others
+	int func_def;
+
+	int onlystrings;			// только из строк 2 - без границ, 3 - с границами
+
 	int stack[100];
 	int stackop[100];
 	int stackoperands[100];
 	int stacklog[100];
 	int sp;
 	int sopnd;
-	int lastid;
-	int op;
-	int inass;
-	int arrdim;	// arrdim - размерность (0-скаляр), д.б. столько выражений-границ
-	int was_struct_with_arr;
-	int usual;	// описание массива без пустых границ
-	size_t function_mode;
-	item_t gotost[1000];
-	size_t pgotost;
 	int anst;
 	int ansttype;
 	int anstdispl;
-	int leftansttype;	// anst = VAL  - значение на стеке
-	int onlystrings;	// только из строк 2 - без границ, 3 - с границами
-	int flag_was_type_def;
-	int flag_in_switch;
-	int flag_in_loop;
-	int flag_was_return;
+	int leftansttype;
 
+	int lastid;
+	int op;
 	int buf_flag;
 	int buf_cur;
-	int was_error;
+
+	int flag_array_in_struct;	/**< Flag if parsed struct declaration has an array */
+	int flag_empty_bounds;		/**< Flag if array declaration has empty bounds */
+	int flag_was_return;		/**< Flag if was return in parsed function */
+	int flag_in_switch;			/**< Flag if parser is in switch body */
+	int flag_in_assignment;		/**< Flag if parser is in assignment */
+	int flag_in_loop;			/**< Flag if parser is in loop body */
+	int flag_was_type_def;		/**< Flag if was type definition */
+
+	int was_error;				/**< Error flag */
 } parser;
 
 
