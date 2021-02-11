@@ -1745,6 +1745,7 @@ void exprassn(parser *context, int level)
 		if (is_struct(context->sx, type) || is_array(context->sx, type))
 		{
 			parse_initializer(context, type);
+			context->leftansttype = type;
 		}
 		else
 		{

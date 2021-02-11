@@ -386,7 +386,6 @@ void parse_struct_initializer(parser *const parser, const item_t type)
 	} while (actual_field_number != expected_field_number && parser->next_token != semicolon);
 
 	expect_and_consume_token(parser, r_brace, wait_end);
-	parser->leftansttype = (int)type;
 	tree_add(parser->sx, TExprend);
 }
 
@@ -443,7 +442,6 @@ void parse_array_initializer(parser *const parser, const item_t type)
 
 		expect_and_consume_token(parser, r_brace, wait_end);
 		tree_set(parser->sx, ref_list_length, (item_t)list_length);
-		parser->leftansttype = (int)type;
 		tree_add(parser->sx, TExprend);
 	}
 }
