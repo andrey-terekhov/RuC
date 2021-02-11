@@ -692,8 +692,8 @@ void parse_function_body(parser *const parser, const size_t function_id)
 	const size_t function_number = (size_t)ident_get_displ(parser->sx, function_id);
 	const size_t param_number = (size_t)mode_get(parser->sx, parser->function_mode + 2);
 
+	parser->pgotost = 0;
 	parser->flag_was_return = 0;
-	parser->labels = vector_create(100);
 
 	const item_t prev = ident_get_prev(parser->sx, function_id);
 	if (prev > 1) // Был прототип
@@ -737,19 +737,17 @@ void parse_function_body(parser *const parser, const size_t function_id)
 
 	scope_func_exit(parser->sx, ref_maxdispl, old_displ);
 
-	for (size_t i = 0; i < vector_size(&parser->labels); i += 2)
+	for (size_t i = 0; i < parser->pgotost; i += 2)
 	{
-		const size_t repr = (size_t)ident_get_repr(parser->sx, (size_t)vector_get(&parser->labels, i));
-		const size_t line_number = (size_t)llabs(vector_get(&parser->labels, i + 1));
-		if (!ident_get_mode(parser->sx, (size_t)vector_get(&parser->labels, i)))
+		const size_t repr = (size_t)ident_get_repr(parser->sx, (size_t)parser->gotost[i]);
+		const size_t line_number = (size_t)llabs(parser->gotost[i + 1]);
+		if (!ident_get_mode(parser->sx, (size_t)parser->gotost[i]))
 		{
 			char buffer[MAXSTRINGL];
 			repr_get_ident(parser->sx, repr, buffer);
 			parser_error(parser, label_not_declared, line_number, buffer);
 		}
 	}
-
-	vector_clear(&parser->labels);
 }
 
 /**
