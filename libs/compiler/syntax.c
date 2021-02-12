@@ -385,10 +385,7 @@ size_t mode_add(syntax *const sx, const item_t *const record, const size_t size)
 	{
 		if (mode_is_equal(sx, sx->start_mode + 1, old + 1))
 		{
-			while (vector_size(&sx->modes) - 1 > sx->start_mode)
-			{
-				vector_remove(&sx->modes);
-			}
+			vector_resize(&sx->modes, sx->start_mode + 1);
 			sx->start_mode = (size_t)vector_get(&sx->modes, sx->start_mode);
 			return old + 1;
 		}
