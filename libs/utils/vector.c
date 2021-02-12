@@ -39,12 +39,7 @@ int change_size(vector *const vec, const size_t size)
 		memset(&vec->array[vec->size], 0, (size - vec->size) * sizeof(item_t));
 	}
 
-	if (size != vec->size)
-	{
-		vec->size = size;
-		return 0;
-	}
-
+	vec->size = size;
 	return 0;
 }
 
