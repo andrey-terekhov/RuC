@@ -21,7 +21,7 @@
 #include <string.h>
 
 
-int scanner(analyzer *context)
+int scanner(parser *context)
 {
 	context->cur = context->next;
 	if (!context->buf_flag)
@@ -83,7 +83,7 @@ double double_from_tree(vector *const tree)
 	return num;
 }
 
-void context_error(analyzer *const context, const int num) // Вынесено из errors.c
+void context_error(parser *const context, const int num) // Вынесено из errors.c
 {
 	const universal_io *const io = context->io;
 
@@ -185,13 +185,13 @@ int is_int(const int t)
 	return t == LINT || t == LLONG || t == LCHAR;
 }
 
-int szof(analyzer *context, int type)
+int szof(parser *context, int type)
 {
 	return context->next == LEFTSQBR ? 1
 	: type == LFLOAT ? 2 : (is_struct(context->sx, type)) ? (int)mode_get(context->sx, type + 1) : 1;
 }
 
-void mustbe(analyzer *context, int what, int e)
+void mustbe(parser *context, int what, int e)
 {
 	if (context->next != what)
 	{
@@ -204,7 +204,7 @@ void mustbe(analyzer *context, int what, int e)
 	}
 }
 
-void mustbe_complex(analyzer *context, int what, int e)
+void mustbe_complex(parser *context, int what, int e)
 {
 	if (scanner(context) != what)
 	{
@@ -213,12 +213,12 @@ void mustbe_complex(analyzer *context, int what, int e)
 	}
 }
 
-void totree(analyzer *context, item_t op)
+void totree(parser *context, item_t op)
 {
 	vector_add(&TREE, op);
 }
 
-void totreef(analyzer *context, item_t op)
+void totreef(parser *context, item_t op)
 {
 	vector_add(&TREE, op);
 	if (context->ansttype == LFLOAT &&
@@ -229,7 +229,7 @@ void totreef(analyzer *context, item_t op)
 	}
 }
 
-int toidentab(analyzer *context, int f, int type)
+int toidentab(parser *context, int f, int type)
 {
 	const size_t ret = ident_add(context->sx, REPRTAB_POS, f, type, context->func_def);
 	context->lastid = 0;
@@ -253,7 +253,7 @@ int toidentab(analyzer *context, int f, int type)
 }
 
 /** Генерация дерева */
-void ext_decl(analyzer *context)
+void ext_decl(parser *context)
 {
 	get_char(context->lxr);
 	get_char(context->lxr);

@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 
-int scanner(analyzer *context);
+int scanner(parser *context);
 
 item_t newdecl(syntax *const sx, const item_t type, const item_t element_type);
 
@@ -32,9 +32,9 @@ int double_to_tree(vector *const tree, const double num);
 
 double double_from_tree(vector *const tree);
 
-void context_error(analyzer *const context, const int num);
+void context_error(parser *const context, const int num);
 
-int evaluate_params(analyzer *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[]);
+int evaluate_params(parser *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[]);
 
 int is_function(syntax *const sx, const int t);
 
@@ -50,101 +50,101 @@ int is_float(const int t);
 
 int is_int(const int t);
 
-int szof(analyzer *context, int type);
+int szof(parser *context, int type);
 
-void mustbe(analyzer *context, int what, int e);
+void mustbe(parser *context, int what, int e);
 
-void mustbe_complex(analyzer *context, int what, int e);
+void mustbe_complex(parser *context, int what, int e);
 
-void totree(analyzer *context, item_t op);
+void totree(parser *context, item_t op);
 
-void totreef(analyzer *context, item_t op);
+void totreef(parser *context, item_t op);
 
-int toidentab(analyzer *context, int f, int type);
+int toidentab(parser *context, int f, int type);
 
-void binop(analyzer *context, int sp);
+void binop(parser *context, int sp);
 
-void toval(analyzer *context);
+void toval(parser *context);
 
-void insertwiden(analyzer *context);
+void insertwiden(parser *context);
 
-void applid(analyzer *context);
+void applid(parser *context);
 
-void actstring(int type, analyzer *context);
+void actstring(int type, parser *context);
 
-void mustbestring(analyzer *context);
+void mustbestring(parser *context);
 
-void mustbepointstring(analyzer *context);
+void mustbepointstring(parser *context);
 
-void mustberow(analyzer *context);
+void mustberow(parser *context);
 
-void mustbeint(analyzer *context);
+void mustbeint(parser *context);
 
-void mustberowoffloat(analyzer *context);
+void mustberowoffloat(parser *context);
 
-void primaryexpr(analyzer *context);
+void primaryexpr(parser *context);
 
-void index_check(analyzer *context);
+void index_check(parser *context);
 
-int find_field(analyzer *context, int stype);
+int find_field(parser *context, int stype);
 
-void selectend(analyzer *context);
+void selectend(parser *context);
 
 
-void postexpr(analyzer *context);
+void postexpr(parser *context);
 
-void unarexpr(analyzer *context);
+void unarexpr(parser *context);
 
-void exprinbrkts(analyzer *context, int er);
+void exprinbrkts(parser *context, int er);
 
-void exprassninbrkts(analyzer *context, int er);
+void exprassninbrkts(parser *context, int er);
 
 int prio(int op);
 
-void subexpr(analyzer *context);
+void subexpr(parser *context);
 
 int intopassn(int next);
 
-int opassn(analyzer *context);
+int opassn(parser *context);
 
-void condexpr(analyzer *context);
+void condexpr(parser *context);
 
-void inition(analyzer *context, int decl_type);
+void inition(parser *context, int decl_type);
 
-void struct_init(analyzer *context, int decl_type);
+void struct_init(parser *context, int decl_type);
 
-void exprassnvoid(analyzer *context);
+void exprassnvoid(parser *context);
 
-void exprassn(analyzer *context, int level);
+void exprassn(parser *context, int level);
 
-void expr(analyzer *context, int level);
+void expr(parser *context, int level);
 
-void exprval(analyzer *context);
+void exprval(parser *context);
 
-void exprassnval(analyzer *context);
+void exprassnval(parser *context);
 
-void array_init(analyzer *context, int decl_type);
+void array_init(parser *context, int decl_type);
 
-int arrdef(analyzer *context, item_t t);
+int arrdef(parser *context, item_t t);
 
-void decl_id(analyzer *context, int decl_type);
+void decl_id(parser *context, int decl_type);
 
-void statement(analyzer *context);
+void statement(parser *context);
 
-item_t idorpnt(analyzer *context, int e, item_t t);
+item_t idorpnt(parser *context, int e, item_t t);
 
-int struct_decl_list(analyzer *context);
+int struct_decl_list(parser *context);
 
-item_t gettype(analyzer *context);
+item_t gettype(parser *context);
 
 /** Debug from here */
-void block(analyzer *context, int b);
+void block(parser *context, int b);
 
-void function_definition(analyzer *context);
+void function_definition(parser *context);
 
-int func_declarator(analyzer *context, int level, int func_d, int firstdecl);
+int func_declarator(parser *context, int level, int func_d, int firstdecl);
 
-void ext_decl(analyzer *context);
+void ext_decl(parser *context);
 
 #ifdef __cplusplus
 } /* extern "C" */

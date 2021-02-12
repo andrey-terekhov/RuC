@@ -22,9 +22,9 @@
 #include "string.h"
 
 
-analyzer compiler_context_create(universal_io *const io, syntax *const sx, lexer *const lexer)
+parser compiler_context_create(universal_io *const io, syntax *const sx, lexer *const lexer)
 {
-	analyzer context;
+	parser context;
 	context.io = io;
 	context.sx = sx;
 	context.lxr = lexer;
@@ -46,7 +46,7 @@ analyzer compiler_context_create(universal_io *const io, syntax *const sx, lexer
 
 
 /** Занесение ключевых слов в reprtab */
-void read_keywords(analyzer *context)
+void read_keywords(parser *context)
 {
 	context->sx->keywords = 1;
 	get_char(context->lxr);
@@ -58,7 +58,7 @@ void read_keywords(analyzer *context)
 }
 
 
-size_t toreprtab(analyzer *context, char str[])
+size_t toreprtab(parser *context, char str[])
 {
 	int i;
 	size_t oldrepr = REPRTAB_LEN;
@@ -81,7 +81,7 @@ size_t toreprtab(analyzer *context, char str[])
 }
 
 /** Инициализация modetab */
-void init_modetab(analyzer *context)
+void init_modetab(parser *context)
 {
 	// занесение в modetab описателя struct {int numTh; int inf; }
 	vector_add(&context->sx->modes, 0);
@@ -131,7 +131,7 @@ int analyze(universal_io *const io, syntax *const sx)
 
 	universal_io temp = io_create();
 	lexer lexer = create_lexer(&temp, sx);
-	analyzer context = compiler_context_create(&temp, sx, &lexer);
+	parser context = compiler_context_create(&temp, sx, &lexer);
 	
 	in_set_buffer(context.io, KEYWORDS);
 	read_keywords(&context);

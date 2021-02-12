@@ -21,7 +21,7 @@
 #include <string.h>
 
 
-void inition(analyzer *context, int decl_type)
+void inition(parser *context, int decl_type)
 {
 	if (decl_type < 0 || is_pointer(context->sx, decl_type) || // Обработка для базовых типов, указателей
 		(is_string(context->sx, decl_type))) // или строк
@@ -65,7 +65,7 @@ void inition(analyzer *context, int decl_type)
 	}
 }
 
-void struct_init(analyzer *context, int decl_type)
+void struct_init(parser *context, int decl_type)
 {
 	// сейчас modetab[decl_type] равен mode_struct
 
@@ -120,7 +120,7 @@ void struct_init(analyzer *context, int decl_type)
 	context->leftansttype = decl_type;
 }
 
-void array_init(analyzer *context, int decl_type)
+void array_init(parser *context, int decl_type)
 {
 	// сейчас modetab[decl_type] равен mode_array
 
@@ -211,7 +211,7 @@ void array_init(analyzer *context, int decl_type)
 	}
 }
 
-int arrdef(analyzer *context, item_t t)
+int arrdef(parser *context, item_t t)
 {
 	// вызывается при описании массивов и структур из массивов сразу после idorpnt
 
@@ -271,7 +271,7 @@ int arrdef(analyzer *context, item_t t)
 	return (int)t;
 }
 
-void decl_id(analyzer *context, int decl_type)
+void decl_id(parser *context, int decl_type)
 {
 	// вызывается из block и extdecl, только эта процедура реально отводит память
 	// если встретятся массивы (прямо или в структурах), их размеры уже будут в стеке
@@ -357,7 +357,7 @@ void decl_id(analyzer *context, int decl_type)
 	}
 }
 
-item_t idorpnt(analyzer *context, int e, item_t t)
+item_t idorpnt(parser *context, int e, item_t t)
 {
 	if (context->next == LMULT)
 	{
@@ -368,7 +368,7 @@ item_t idorpnt(analyzer *context, int e, item_t t)
 	return t;
 }
 
-int struct_decl_list(analyzer *context)
+int struct_decl_list(parser *context)
 {
 	int field_count = 0;
 	item_t t;
@@ -487,7 +487,7 @@ int struct_decl_list(analyzer *context)
 	return (int)mode_add(context->sx, loc_modetab, locmd);
 }
 
-item_t gettype(analyzer *context)
+item_t gettype(parser *context)
 {
 	// gettype(context) выедает тип (кроме верхних массивов и указателей)
 	// при этом, если такого типа нет в modetab, тип туда заносится;
@@ -575,7 +575,7 @@ item_t gettype(analyzer *context)
 }
 
 
-void function_definition(analyzer *context)
+void function_definition(parser *context)
 {
 	item_t fn = ident_get_displ(context->sx, context->lastid);
 	int oldrepr = REPRTAB_POS;
@@ -667,7 +667,7 @@ void function_definition(analyzer *context)
 	}
 }
 
-int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
+int func_declarator(parser *context, int level, int func_d, int firstdecl)
 {
 	// на 1 уровне это может быть определением функции или предописанием, на
 	// остальных уровнях - только декларатором (без идентов)

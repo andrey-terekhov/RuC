@@ -20,7 +20,7 @@
 #include "lexer.h"
 #include <string.h>
 
-int evaluate_params(analyzer *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[])
+int evaluate_params(parser *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[])
 {
 	int num_of_params = 0;
 	int i = 0;
@@ -84,7 +84,7 @@ int evaluate_params(analyzer *context, int num, char32_t formatstr[], int format
 	return num_of_params;
 }
 
-void statement(analyzer *context)
+void statement(parser *context)
 {
 	int flagsemicol = 1;
 	int oldwasdefault = context->wasdefault;
@@ -717,7 +717,7 @@ void statement(analyzer *context)
 }
 
 /** Debug from here */
-void block(analyzer *context, int b)
+void block(parser *context, int b)
 {
 	// если b=1, то это просто блок,
 	// b = 2 - блок нити,

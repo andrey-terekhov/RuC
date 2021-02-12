@@ -20,7 +20,7 @@
 #include "lexer.h"
 #include <string.h>
 
-void binop(analyzer *context, int sp)
+void binop(parser *context, int sp)
 {
 	int op = context->stackop[sp];
 	int rtype = context->stackoperands[context->sopnd--];
@@ -73,7 +73,7 @@ void binop(analyzer *context, int sp)
 	context->anst = VAL;
 }
 
-void toval(analyzer *context)
+void toval(parser *context)
 {
 	// надо значение положить на стек,
 	// например, чтобы передать параметром
@@ -122,14 +122,14 @@ void toval(analyzer *context)
 	}
 }
 
-void insertwiden(analyzer *context)
+void insertwiden(parser *context)
 {
 	vector_remove(&TREE);
 	totree(context, WIDEN);
 	totree(context, TExprend);
 }
 
-void applid(analyzer *context)
+void applid(parser *context)
 {
 	context->lastid = REPRTAB[REPRTAB_POS + 1];
 	if (context->lastid == 1)
@@ -139,7 +139,7 @@ void applid(analyzer *context)
 	}
 }
 
-void actstring(int type, analyzer *context)
+void actstring(int type, parser *context)
 {
 	scanner(context);
 	totree(context, type == LFLOAT ? TStringd : TString);
@@ -187,7 +187,7 @@ void actstring(int type, analyzer *context)
 	context->anst = VAL;
 }
 
-void mustbestring(analyzer *context)
+void mustbestring(parser *context)
 {
 	scanner(context);
 	exprassn(context, 1);
@@ -205,7 +205,7 @@ void mustbestring(analyzer *context)
 	}
 }
 
-void mustbepointstring(analyzer *context)
+void mustbepointstring(parser *context)
 {
 	scanner(context);
 	exprassn(context, 1);
@@ -225,7 +225,7 @@ void mustbepointstring(analyzer *context)
 	}
 }
 
-void mustberow(analyzer *context)
+void mustberow(parser *context)
 {
 	scanner(context);
 	exprassn(context, 1);
@@ -244,7 +244,7 @@ void mustberow(analyzer *context)
 	}
 }
 
-void mustbeint(analyzer *context)
+void mustbeint(parser *context)
 {
 	scanner(context);
 	exprassn(context, 1);
@@ -262,7 +262,7 @@ void mustbeint(analyzer *context)
 	}
 }
 
-void mustberowofint(analyzer *context)
+void mustberowofint(parser *context)
 {
 	if (scanner(context) == BEGIN)
 	{
@@ -297,7 +297,7 @@ void mustberowofint(analyzer *context)
 	}
 }
 
-void mustberowoffloat(analyzer *context)
+void mustberowoffloat(parser *context)
 {
 	if (scanner(context) == BEGIN)
 	{
@@ -333,7 +333,7 @@ void mustberowoffloat(analyzer *context)
 	}
 }
 
-void primaryexpr(analyzer *context)
+void primaryexpr(parser *context)
 {
 	if (context->cur == CHAR_CONST)
 	{
@@ -956,7 +956,7 @@ void primaryexpr(analyzer *context)
 	}
 }
 
-void index_check(analyzer *context)
+void index_check(parser *context)
 {
 	if (!is_int(context->ansttype))
 	{
@@ -965,7 +965,7 @@ void index_check(analyzer *context)
 	}
 }
 
-int find_field(analyzer *context, int stype)
+int find_field(parser *context, int stype)
 {
 	// выдает смещение до найденного поля или ошибку
 
@@ -1001,7 +1001,7 @@ int find_field(analyzer *context, int stype)
 	return select_displ;
 }
 
-void selectend(analyzer *context)
+void selectend(parser *context)
 {
 	while (context->next == DOT)
 	{
@@ -1020,9 +1020,9 @@ void selectend(analyzer *context)
 	}
 }
 
-void array_init(analyzer *context, int t);
+void array_init(parser *context, int t);
 
-void postexpr(analyzer *context)
+void postexpr(parser *context)
 {
 	int lid;
 	int leftansttyp;
@@ -1332,7 +1332,7 @@ void postexpr(analyzer *context)
 	}
 }
 
-void unarexpr(analyzer *context)
+void unarexpr(parser *context)
 {
 	int op = context->cur;
 	if (context->cur == LNOT || context->cur == LOGNOT || context->cur == LPLUS || context->cur == LMINUS ||
@@ -1463,7 +1463,7 @@ void unarexpr(analyzer *context)
 	}
 }
 
-void exprinbrkts(analyzer *context, int er)
+void exprinbrkts(parser *context, int er)
 {
 	mustbe(context, LEFTBR, er);
 	scanner(context);
@@ -1476,7 +1476,7 @@ void exprinbrkts(analyzer *context, int er)
 	mustbe(context, RIGHTBR, er);
 }
 
-void exprassninbrkts(analyzer *context, int er)
+void exprassninbrkts(parser *context, int er)
 {
 	mustbe(context, LEFTBR, er);
 	scanner(context);
@@ -1531,7 +1531,7 @@ int prio(int op)
 																													 : 0;
 }
 
-void subexpr(analyzer *context)
+void subexpr(parser *context)
 {
 	int oldsp = context->sp;
 	int wasop = 0;
@@ -1590,7 +1590,7 @@ int intopassn(int next)
 	return next == REMASS || next == SHLASS || next == SHRASS || next == ANDASS || next == EXORASS || next == ORASS;
 }
 
-int opassn(analyzer *context)
+int opassn(parser *context)
 {
 	return (context->next == ASS || context->next == MULTASS || context->next == DIVASS || context->next == PLUSASS ||
 			context->next == MINUSASS || intopassn(context->next))
@@ -1598,7 +1598,7 @@ int opassn(analyzer *context)
 			   : 0;
 }
 
-void condexpr(analyzer *context)
+void condexpr(parser *context)
 {
 	int globtype = 0;
 	size_t adif = 0;
@@ -1686,7 +1686,7 @@ void condexpr(analyzer *context)
 	}
 }
 
-void exprassnvoid(analyzer *context)
+void exprassnvoid(parser *context)
 {
 	const size_t size = vector_size(&TREE);
 	size_t t = vector_get(&TREE, size - 2) < 9000 ? size - 3 : size - 2;
@@ -1699,7 +1699,7 @@ void exprassnvoid(analyzer *context)
 	--context->sopnd;
 }
 
-void exprassn(analyzer *context, int level)
+void exprassn(parser *context, int level)
 {
 	int leftanst;
 	int leftanstdispl;
@@ -1877,7 +1877,7 @@ void exprassn(analyzer *context, int level)
 	// в виде unarexpr уже выкушано
 }
 
-void expr(analyzer *context, int level)
+void expr(parser *context, int level)
 {
 	exprassn(context, level);
 	if (context->error_flag == 6)
@@ -1904,7 +1904,7 @@ void expr(analyzer *context, int level)
 	}
 }
 
-void exprval(analyzer *context)
+void exprval(parser *context)
 {
 	expr(context, 1);
 	if (context->error_flag == 5)
@@ -1916,7 +1916,7 @@ void exprval(analyzer *context)
 	totree(context, TExprend);
 }
 
-void exprassnval(analyzer *context)
+void exprassnval(parser *context)
 {
 	exprassn(context, 1);
 	if (context->error_flag == 6)
