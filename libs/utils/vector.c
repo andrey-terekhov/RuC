@@ -72,6 +72,11 @@ vector vector_create(const size_t alloc)
 }
 
 
+int vector_increase(vector *const vec, const size_t size)
+{
+	return vector_is_correct(vec) ? change_size(vec, vec->size + size) : -1;
+}
+
 size_t vector_add(vector *const vec, const item_t value)
 {
 	if (!vector_is_correct(vec) || change_size(vec, vec->size + 1))
@@ -115,16 +120,10 @@ item_t vector_remove(vector *const vec)
 }
 
 
-int vector_increase(vector *const vec, const size_t size)
-{
-	return vector_is_correct(vec) ? change_size(vec, vec->size + size) : 0;
-}
-
 int vector_resize(vector *const vec, const size_t size)
 {
-	return vector_is_correct(vec) ? change_size(vec, size) : 0;
+	return vector_is_correct(vec) ? change_size(vec, size) : -1;
 }
-
 
 size_t vector_size(const vector *const vec)
 {
