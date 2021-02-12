@@ -1,5 +1,5 @@
 /*
- *	Copyright 2016 Andrey Terekhov
+ *	Copyright 2021 Andrey Terekhov, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,852 +14,928 @@
  *	limitations under the License.
  */
 
-#include "extdecl.h"
-#include "errors.h"
-#include "defs.h"
-#include "lexer.h"
-#include <string.h>
+#include "parser.h"
+#include <stdlib.h>
+
+item_t parse_struct_or_union_specifier(parser *const parser);
+item_t parse_struct_declaration_list(parser *const parser);
 
 
-void inition(parser *context, int decl_type)
+/**
+ *	Parse type specifier [C99 6.7.2]
+ *
+ *	type-specifier:
+ *		void
+ *		char
+ *		short
+ *		int
+ *		long
+ *		float
+ *		double
+ *		struct-or-union-specifier
+ *		enum-specifier [TODO]
+ *		typedef-name [TODO]
+ *
+ *	@param	parser		Parser structure
+ *
+ *	@return	Standart type or index for modes table
+ */
+item_t parse_type_specifier(parser *const parser)
 {
-	if (decl_type < 0 || is_pointer(context->sx, decl_type) || // Обработка для базовых типов, указателей
-		(is_string(context->sx, decl_type))) // или строк
+	parser->flag_array_in_struct = 0;
+	switch (parser->next_token)
 	{
-		exprassn(context, 1);
-		if (context->error_flag == 6)
+		case kw_void:
+			consume_token(parser);
+			return mode_void;
+
+		case kw_char:
+			consume_token(parser);
+			return mode_character;
+
+			//case kw_short:
+		case kw_int:
+		case kw_long:
+			consume_token(parser);
+			return mode_integer;
+
+		case kw_float:
+		case kw_double:
+			consume_token(parser);
+			return mode_float;
+
+		case identifier:
 		{
-			context->error_flag = 5;
-			return; // 1
+			const size_t id = (size_t)repr_get_reference(parser->sx, parser->lexer->repr);
+			consume_token(parser);
+
+			if (ident_get_displ(parser->sx, id) < 1000)
+			{
+				parser_error(parser, ident_not_type);
+				return mode_undefined;
+			}
+
+			parser->flag_array_in_struct = (int)ident_get_displ(parser->sx, id) - 1000;
+			return ident_get_mode(parser->sx, id);
 		}
-		toval(context);
-		totree(context, TExprend);
-		// съедаем выражение, его значение будет на стеке
-		context->sopnd--;
-		if (is_int(decl_type) && is_float(context->ansttype))
-		{
-			context_error(context, init_int_by_float);
-			context->error_flag = 5;
-			return; // 1
-		}
-		if (is_float(decl_type) && is_int(context->ansttype))
-		{
-			insertwiden(context);
-		}
-		else if (decl_type != context->ansttype)
-		{
-			context_error(context, error_in_initialization);
-			context->error_flag = 5;
-			return; // 1
-		}
-	}
-	else if (context->cur == BEGIN)
-	{
-		struct_init(context, decl_type);
-	}
-	else
-	{
-		context_error(context, wrong_init);
-		context->error_flag = 5;
-		return; // 1
+
+			//case kw_union:
+		case kw_struct:
+			consume_token(parser);
+			return parse_struct_or_union_specifier(parser);
+
+		default:
+			parser_error(parser, not_decl);
+			return mode_undefined;
 	}
 }
 
-void struct_init(parser *context, int decl_type)
+/**
+ *	Parse struct or union specifier [C99 6.7.2.1p1]
+ *
+ *	struct-or-union-specifier:
+ *		struct-or-union identifier[opt] '{' struct-contents '}'
+ *		struct-or-union identifier
+ *
+ *	struct-or-union:
+ *		'struct'
+ *		'union'
+ *
+ *	@param	parser		Parser structure
+ *
+ *	@return	@c mode_undefined or index for modes table
+ */
+item_t parse_struct_or_union_specifier(parser *const parser)
 {
-	// сейчас modetab[decl_type] равен mode_struct
-
-	int next_field = decl_type + 3;
-	item_t nf = mode_get(context->sx, decl_type + 2) / 2;
-
-	if (context->cur != BEGIN)
+	switch (parser->next_token)
 	{
-		context_error(context, struct_init_must_start_from_BEGIN);
-		context->buf_cur = context->next;
-		context->next = context->cur;
-		context->cur = BEGIN;
-		context->buf_flag++;
-	}
-	totree(context, TStructinit);
-	totree(context, nf);
-	for (item_t i = 0; i < nf; i++)
-	{
-		scanner(context);
-		inition(context, (int)mode_get(context->sx, next_field));
-		if (context->error_flag == 5)
+		case l_brace:
+			return parse_struct_declaration_list(parser);
+
+		case identifier:
 		{
-			context->error_flag = 1;
-			return; // 1
-		}
-		next_field += 2;
-		if (i != nf - 1)
-		{
-			if (context->next == COMMA) // поля инициализации идут через запятую, заканчиваются }
-			{
-				scanner(context);
-			}
-			else
-			{
-				context_error(context, no_comma_in_init_list);
-				context->next = context->cur;
-				context->cur = COMMA;
-			}
-		}
-	}
+			const size_t repr = parser->lexer->repr;
+			consume_token(parser);
 
-	if (context->next == END)
-	{
-		totree(context, TExprend);
-		scanner(context);
-	}
-	else
-	{
-		context_error(context, wait_end);
-		context->cur = END;
-	}
-	context->leftansttype = decl_type;
-}
+			if (parser->next_token == l_brace)
+			{
+				const item_t mode = parse_struct_declaration_list(parser);
+				const size_t id = to_identab(parser, repr, 1000, mode);
+				ident_set_displ(parser->sx, id, 1000 + parser->flag_array_in_struct);
 
-void array_init(parser *context, int decl_type)
-{
-	// сейчас modetab[decl_type] равен mode_array
+				parser->flag_was_type_def = 1;
 
-	if (is_array(context->sx, decl_type))
-	{
-		if (context->cur == STRING)
-		{
-			if (context->onlystrings == 0)
-			{
-				context_error(context, string_and_notstring);
-				context->error_flag = 7;
-				return; // 1
+				return ident_get_mode(parser->sx, id);
 			}
-			if (context->onlystrings == 2)
+			else // if (parser->next_token != l_brace)
 			{
-				context->onlystrings = 1;
-			}
-			primaryexpr(context);
-			if (context->error_flag == 4)
-			{
-				context->error_flag = 7;
-				return; // 1
-			}
-			totree(context, TExprend);
-		}
-		else
-		{
-			if (context->cur != BEGIN)
-			{
-				context_error(context, arr_init_must_start_from_BEGIN);
-				context->buf_cur = context->next;
-				context->next = context->cur;
-				context->cur = BEGIN;
-				context->buf_flag++;
-			}
-			totree(context, TBeginit);
-			size_t ad = vector_size(&TREE);
-			vector_increase(&TREE, 1);
+				const size_t id = (size_t)repr_get_reference(parser->sx, repr);
 
-			int all = 0;
-			do
-			{
-				scanner(context);
-				all++;
-				array_init(context, (int)mode_get(context->sx, decl_type + 1));
-				if (context->error_flag == 7)
+				if (id == 1)
 				{
-					return; // 1
+					char buffer[MAXSTRINGL];
+					repr_get_ident(parser->sx, repr, buffer);
+					parser_error(parser, ident_is_not_declared, buffer);
+					return mode_undefined;
 				}
-			} while (scanner(context) == COMMA);
 
-			if (context->cur == END)
-			{
-				vector_set(&TREE, ad, all);
-				totree(context, TExprend);
-			}
-			else
-			{
-				context_error(context, wait_end);
-				context->error_flag = 7;
-				return; // 1
+				// TODO: what if it was not a struct name?
+				parser->flag_array_in_struct = (int)ident_get_displ(parser->sx, id) - 1000;
+				return ident_get_mode(parser->sx, id);
 			}
 		}
+
+		default:
+			parser_error(parser, wrong_struct);
+			return mode_undefined;
 	}
-	else if (context->cur == BEGIN)
+}
+
+/**
+ *	Parse array definition
+ *
+ *	direct-abstract-declarator:
+ *		direct-abstract-declarator[opt] '[' constant-expression[opt] ']'
+ *
+ *	@param	parser		Parser structure
+ *	@param	type		Type of variable in declaration
+ *
+ *	@return	Index for modes table
+ */
+item_t parse_array_definition(parser *const parser, item_t type)
+{
+	parser->array_dimension = 0;
+	parser->flag_empty_bounds = 1;
+
+	if (is_pointer(parser->sx, type))
 	{
-		if (is_struct(context->sx, decl_type))
+		parser_error(parser, pnt_before_array);
+	}
+
+	while (try_consume_token(parser, l_square))
+	{
+		parser->array_dimension++;
+		if (try_consume_token(parser, r_square))
 		{
-			struct_init(context, decl_type);
+			if (parser->next_token == l_square)
+			{
+				// int a[][] = {{1,2,3}, {4,5,6}}; - нельзя;
+				parser_error(parser, empty_init);
+			}
+			parser->flag_empty_bounds = 0;
 		}
 		else
 		{
-			context_error(context, begin_with_notarray);
-			context->error_flag = 7;
-			return; // 1
+			const item_t size_type = parse_constant_expression(parser);
+			if (!is_int(size_type))
+			{
+				parser_error(parser, array_size_must_be_int);
+			}
+
+			if (!try_consume_token(parser, r_square))
+			{
+				parser_error(parser, wait_right_sq_br);
+				skip_until(parser, r_square | comma | semicolon);
+			}
 		}
+		type = to_modetab(parser, mode_array, type);
 	}
-	else if (context->onlystrings == 1)
-	{
-		context_error(context, string_and_notstring);
-		context->error_flag = 7;
-		return; // 1
-	}
-	else
-	{
-		inition(context, decl_type);
-		context->onlystrings = 0;
-	}
+
+	return type;
 }
 
-int arrdef(parser *context, item_t t)
+/**
+ *	Parse struct declaration list [C99 6.7.2.1p2]
+ *
+ *	struct-declaration-list:
+ *		struct-declaration
+ *		struct-declaration-list struct-declaration
+ *
+ *	struct-declaration:
+ *		type-specifier struct-declarator-list ';'
+ *
+ *	struct-declarator-list:
+ *		declarator
+ *		struct-declarator-list ',' declarator
+ *
+ *	@param	parser		Parser structure
+ *
+ *	@return	@c mode_undefined or index for modes table
+ */
+item_t parse_struct_declaration_list(parser *const parser)
 {
-	// вызывается при описании массивов и структур из массивов сразу после idorpnt
+	const size_t ref_struct_begin = tree_size(parser->sx);
+	tree_add(parser->sx, TStructbeg);
 
-	context->arrdim = 0;
-	context->usual = 1; // описание массива без пустых границ
-	if (is_pointer(context->sx, (int)t))
-	{
-		context_error(context, pnt_before_array);
-		context->error_flag = 5;
-		return 0; // 1
-	}
+	item_t local_modetab[100];
+	size_t local_md = 3;
 
-	while (context->next == LEFTSQBR) // это определение массива (может быть многомерным)
-	{
-		context->arrdim++;
-		scanner(context);
-		if (context->next == RIGHTSQBR)
-		{
-			scanner(context);
-			if (context->next == LEFTSQBR) // int a[][]={{1,2,3}, {4,5,6}} - нельзя;
-			{
-				context_error(context, empty_init); // границы определять по инициализации можно
-				context->error_flag = 5;
-				return 0; // 1
-			}
-			// только по последнему изм.
-			context->usual = 0;
-		}
-		else
-		{
-			scanner(context);
-			unarexpr(context);
-			if (context->error_flag == 7)
-			{
-				context->error_flag = 5;
-				return 0; // 1
-			}
-			condexpr(context);
-			if (context->error_flag == 7)
-			{
-				context->error_flag = 5;
-				return 0; // 1
-			}
-			toval(context);
-			if (!is_int(context->ansttype))
-			{
-				context_error(context, array_size_must_be_int);
-				context->error_flag = 5;
-				return 0; // 1
-			}
-			totree(context, TExprend);
-			context->sopnd--;
-			mustbe(context, RIGHTSQBR, wait_right_sq_br);
-		}
-		t = newdecl(context->sx, mode_array, t); // Меняем тип в identtab (увеличиваем размерность массива)
-	}
-	return (int)t;
-}
+	local_modetab[0] = mode_struct;
+	tree_add(parser->sx, 0);	// Тут будет номер иниц процедуры
 
-void decl_id(parser *context, int decl_type)
-{
-	// вызывается из block и extdecl, только эта процедура реально отводит память
-	// если встретятся массивы (прямо или в структурах), их размеры уже будут в стеке
-
-	int oldid = toidentab(context, 0, decl_type);
-	int elem_type;
-	size_t adN = 0; // warning C4701: potentially uninitialized local variable used
-
-	context->usual = 1;
-	context->arrdim = 0; // arrdim - размерность (0-скаляр), д.б. столько выражений-границ
-	elem_type = decl_type;
-	if (context->error_flag == 5)
-	{
-		context->error_flag = 4;
-		return; // 1
-	}
-
-	if (context->next == LEFTSQBR) // это определение массива (может быть многомерным)
-	{
-		totree(context, TDeclarr);
-		adN = vector_size(&TREE);
-		vector_increase(&TREE, 1);
-		// Меняем тип (увеличиваем размерность массива)
-		decl_type = arrdef(context, decl_type);
-		ident_set_mode(context->sx, oldid, decl_type);
-		vector_set(&TREE, adN, context->arrdim);
-		if (context->error_flag == 5)
-		{
-			context->error_flag = 4;
-			return; // 1
-		}
-		if ((!context->usual && context->next != ASS))
-		{
-			context_error(context, empty_bound_without_init);
-			context->error_flag = 4;
-			return; // 1
-		}
-	}
-	totree(context, TDeclid);
-	totree(context, ident_get_displ(context->sx, oldid));											// displ
-	totree(context, elem_type);																		// elem_type
-	totree(context, context->arrdim);																// N
-	size_t all = vector_size(&TREE);	// all - место в дереве, где будет общее количество выражений в инициализации,
-										// для массивов - только признак (1) наличия инициализации
-	vector_increase(&TREE, 1);
-	vector_set(&TREE, all, 0);
-	vector_add(&TREE, is_pointer(context->sx, decl_type) ? 0 : context->was_struct_with_arr);		// proc
-	totree(context, context->usual);																// context->usual
-	totree(context, 0); // массив не в структуре
-
-	if (context->next == ASS)
-	{
-		scanner(context);
-		scanner(context);
-		vector_set(&TREE, all, szof(context, decl_type));
-		if (is_array(context->sx, decl_type)) // инициализация массива
-		{
-			context->onlystrings = 2;
-			if (!context->usual)
-			{
-				vector_set(&TREE, adN, vector_get(&TREE, adN) - 1); // это уменьшение N в Declarr
-			}
-			array_init(context, decl_type);
-			if (context->error_flag == 7)
-			{
-				context->error_flag = 4;
-				return; // 1
-			}
-			if (context->onlystrings == 1)
-			{
-				vector_set(&TREE, all + 2, context->usual + 2); // только из строк 2 - без границ, 3 - с границами
-			}
-		}
-		else
-		{
-			inition(context, decl_type);
-		}
-	}
-	if (context->error_flag == 5)
-	{
-		context->error_flag = 4;
-		return; // 1
-	}
-}
-
-item_t idorpnt(parser *context, int e, item_t t)
-{
-	if (context->next == LMULT)
-	{
-		scanner(context);
-		t = t == LVOID ? LVOIDASTER : newdecl(context->sx, mode_pointer, t);
-	}
-	mustbe_complex(context, IDENT, e);
-	return t;
-}
-
-int struct_decl_list(parser *context)
-{
-	int field_count = 0;
-	item_t t;
-	item_t elem_type;
-	int curdispl = 0;
+	size_t field_number = 0;
+	size_t displ = 0;
 	int wasarr = 0;
-	item_t loc_modetab[100];
-	int locmd = 3;
 
-	loc_modetab[0] = mode_struct;
-	size_t tstrbeg = vector_size(&TREE);
-	totree(context, TStructbeg);
-	vector_increase(&TREE, 1); // тут будет номер иниц процедуры
-
-	scanner(context);
-	scanner(context);
+	consume_token(parser);
+	if (parser->next_token == r_brace)
+	{
+		//	Что делать с пустой структурой?
+		//	parser_error(parser, empty_struct);
+		consume_token(parser);
+		return mode_undefined;
+	}
 
 	do
 	{
-		int oldrepr;
-		t = elem_type = idorpnt(context, wait_ident_after_semicomma_in_struct, gettype(context));
-		if (context->error_flag == wait_ident_after_semicomma_in_struct || context->error_flag == 3)
+		item_t element_type = parse_type_specifier(parser);
+		if (element_type == mode_void)
 		{
-			context->error_flag = 3;
-			return 0;
+			parser_error(parser, only_functions_may_have_type_VOID);
+			element_type = mode_undefined;
 		}
-		oldrepr = REPRTAB_POS;
-		if (context->next == LEFTSQBR)
-		{
-			totree(context, TDeclarr);
-			size_t adN = vector_size(&TREE);
-			vector_increase(&TREE, 1);
-			t = arrdef(context, elem_type); // Меняем тип (увеличиваем размерность массива)
-			if (context->error_flag == 5)
-			{
-				context->error_flag = 3;
-				return 0;
-			}
-			vector_set(&TREE, adN, context->arrdim);
 
-			totree(context, TDeclid);
-			totree(context, curdispl);
-			totree(context, elem_type);
-			totree(context, context->arrdim);						// N
-			size_t all = vector_size(&TREE);
-			vector_increase(&TREE, 1);
-			vector_set(&TREE, all, 0);								// all
-			vector_add(&TREE, context->was_struct_with_arr);	 	// proc
-			totree(context, context->usual);						// context->usual
-			totree(context, 1); // признак, что массив в структуре
-			wasarr = 1;
-			if (context->next == ASS)
-			{
-				scanner(context);
-				scanner(context);
-				if (is_array(context->sx, (int)t)) // инициализация массива
-				{
-					context->onlystrings = 2;
-					vector_set(&TREE, all, 1);
-					if (!context->usual)
-					{
-						vector_set(&TREE, adN, vector_get(&TREE, adN) - 1); // это уменьшение N в Declarr
-					}
-					array_init(context, (int)t);
-					if (context->error_flag == 7)
-					{
-						context->error_flag = 3;
-						return 0;
-					}
-					if (context->onlystrings == 1)
-					{
-						vector_set(&TREE, all + 2, context->usual + 2);			// только из строк 2 - без границ, 3 - с границами
-					}
-				}
-				else
-				{
-					// structdispl = ident_get_displ(context->sx, oldid);
-					// vector_get(&TREE, all) = inition(context, t);
-				}
-			} // конец ASS
-		}	  // конец LEFTSQBR
-		loc_modetab[locmd++] = (int)t;
-		loc_modetab[locmd++] = oldrepr;
-		field_count++;
-		curdispl += szof(context, (int)t);
-		if (scanner(context) != SEMICOLON)
+		item_t type = element_type;
+		if (parser->next_token == star)
 		{
-			context_error(context, no_semicomma_in_struct);
-			context->buf_cur = context->next;
-			context->next = context->cur;
-			context->cur = BEGIN;
-			context->buf_flag++;
+			consume_token(parser);
+			type = to_modetab(parser, mode_pointer, element_type);
 		}
-	} while (scanner(context) != END);
+
+		const size_t repr = parser->lexer->repr;
+		if (parser->next_token == identifier)
+		{
+			consume_token(parser);
+			if (parser->next_token == l_square)
+			{
+				tree_add(parser->sx, TDeclarr);
+				const size_t ref_array_dim = tree_reserve(parser->sx);
+				// Меняем тип (увеличиваем размерность массива)
+				type = parse_array_definition(parser, element_type);
+				tree_set(parser->sx, ref_array_dim, (item_t)parser->array_dimension);
+
+				tree_add(parser->sx, TDeclid);
+				tree_add(parser->sx, (item_t)displ);
+				tree_add(parser->sx, element_type);
+				tree_add(parser->sx, (item_t)parser->array_dimension);
+
+				// all - место в дереве, где будет общее количество выражений в инициализации,
+				const size_t all = tree_reserve(parser->sx);		// для массивов - только признак (1) наличия инициализации
+				tree_add(parser->sx, parser->flag_array_in_struct);	// proc
+				tree_add(parser->sx, parser->flag_empty_bounds);	// usual
+				tree_add(parser->sx, 1);							// Признак, что массив в структуре
+				wasarr = 1;
+
+				if (try_consume_token(parser, equal))
+				{
+					consume_token(parser);
+					if (is_array(parser->sx, type))
+					{
+						parser->flag_strings_only = 2;
+						tree_set(parser->sx, all, 1);
+						if (!parser->flag_empty_bounds)
+						{
+							tree_set(parser->sx, ref_array_dim, tree_get(parser->sx, ref_array_dim) - 1);
+						}
+
+						parse_initializer(parser, type);
+
+						if (parser->flag_strings_only == 1)
+						{
+							tree_set(parser->sx, all + 2, parser->flag_empty_bounds + 2);
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			parser_error(parser, wait_ident_after_semicolon_in_struct);
+			skip_until(parser, semicolon | r_brace);
+		}
+
+		local_modetab[local_md++] = type;
+		local_modetab[local_md++] = (item_t)repr;
+		field_number++;
+		displ += size_of(parser->sx, type);
+
+		expect_and_consume_token(parser, semicolon, no_semicolon_in_struct);
+	} while (!try_consume_token(parser, r_brace));
 
 	if (wasarr)
 	{
-		totree(context, TStructend);
+		tree_add(parser->sx, TStructend);
+		// TODO: сюда бы интерфейс для processes
+		const size_t procd = vector_size(&parser->sx->processes);
+		vector_increase(&parser->sx->processes, 1);
 
-		const int procd = (int)vector_size(&context->sx->processes);
-		vector_increase(&context->sx->processes, 1);
-
-		totree(context, procd);
-		vector_set(&TREE, tstrbeg + 1, procd);
-		context->was_struct_with_arr = procd;
+		tree_add(parser->sx, procd);
+		tree_set(parser->sx, ref_struct_begin + 1, procd);
+		parser->flag_array_in_struct = procd;
 	}
 	else
 	{
-		vector_set(&TREE, tstrbeg, NOP);
-		vector_set(&TREE, tstrbeg + 1, NOP);
+		tree_set(parser->sx, ref_struct_begin, NOP);
+		tree_set(parser->sx, ref_struct_begin + 1, NOP);
 	}
 
-	loc_modetab[1] = curdispl; // тут длина структуры
-	loc_modetab[2] = field_count * 2;
-	
-	return (int)mode_add(context->sx, loc_modetab, locmd);
+	local_modetab[1] = (item_t)displ;
+	local_modetab[2] = (item_t)field_number * 2;
+
+	return (item_t)mode_add(parser->sx, local_modetab, local_md);
 }
 
-item_t gettype(parser *context)
+/**
+ *	Parse struct initializer
+ *
+ *	@param	parser		Parser structure
+ *	@param	type		Index for modes table
+ */
+void parse_struct_initializer(parser *const parser, const item_t type)
 {
-	// gettype(context) выедает тип (кроме верхних массивов и указателей)
-	// при этом, если такого типа нет в modetab, тип туда заносится;
-	// возвращает отрицательное число(базовый тип), положительное (ссылка на modetab)
-	// или 0, если типа не было
-
-	context->was_struct_with_arr = 0;
-	if (is_int(context->type = context->cur) || is_float(context->type) || context->type == LVOID)
+	if (parser->curr_token != l_brace)
 	{
-		return (context->cur == LLONG ? LINT : context->cur == LDOUBLE ? LFLOAT : context->type);
+		parser_error(parser, struct_init_must_start_from_BEGIN);
+		skip_until(parser, comma | semicolon);
+		return;
 	}
 
-	if (context->type == LSTRUCT)
+	const size_t expected_field_number = (size_t)(mode_get(parser->sx, (size_t)type + 2) / 2);
+	size_t actual_field_number = 0;
+	size_t ref_next_field = (size_t)type + 3;
+
+	tree_add(parser->sx, TStructinit);
+	tree_add(parser->sx, (item_t)expected_field_number);
+
+	do
 	{
-		if (context->next == BEGIN) // struct {
+		consume_token(parser);
+		parse_initializer(parser, mode_get(parser->sx, ref_next_field));
+		ref_next_field += 2;
+		actual_field_number++;
+
+		if (parser->next_token == r_brace)
 		{
-			return (struct_decl_list(context));
+			break;
 		}
-
-		if (context->next == IDENT)
+		else if (!try_consume_token(parser, comma))
 		{
-			int l;
-
-			l = REPRTAB[REPRTAB_POS + 1];
-			scanner(context);
-			if (context->next == BEGIN) // struct key {
-			{
-				// если такое описание уже было, то это ошибка - повторное описание
-				int lid;
-				context->wasstructdef = 1; // это  определение типа (может быть,
-										   // без описания переменных)
-				toidentab(context, 1000, 0);
-				if (context->error_flag == 5)
-				{
-					context->error_flag = 3;
-					return 0; // 1
-				}
-				lid = context->lastid;
-				ident_set_mode(context->sx, lid, struct_decl_list(context));
-				ident_set_displ(context->sx, lid, 1000 + context->was_struct_with_arr);
-				return ident_get_mode(context->sx, lid);
-			}
-			else // struct key это применение типа
-			{
-				if (l == 1)
-				{
-					context_error(context, ident_is_not_declared);
-					context->error_flag = 3;
-					return 0; // 1
-				}
-				context->was_struct_with_arr = (int)ident_get_displ(context->sx, l) - 1000;
-				return ident_get_mode(context->sx, l);
-			}
+			parser_error(parser, no_comma_in_init_list);
+			skip_until(parser, comma | r_brace | semicolon);
 		}
+	} while (actual_field_number != expected_field_number && parser->next_token != semicolon);
 
-		context_error(context, wrong_struct);
-		context->error_flag = 3;
-		return 0; // 1
-	}
-
-	if (context->cur == IDENT)
-	{
-		applid(context);
-		if (context->error_flag == 5)
-		{
-			context->error_flag = 3;
-			return 0; // 1
-		}
-
-		const item_t displ = ident_get_displ(context->sx, context->lastid);
-		if (displ == ITEM_MAX || displ < 1000)
-		{
-			context_error(context, ident_not_type);
-			context->error_flag = 3;
-			return 0; // 1
-		}
-
-		context->was_struct_with_arr = (int)displ - 1000;
-		return ident_get_mode(context->sx, context->lastid);
-	}
-
-	context_error(context, not_decl);
-	context->error_flag = 3;
-	return 0; // 1
+	expect_and_consume_token(parser, r_brace, wait_end);
+	tree_add(parser->sx, TExprend);
 }
 
-
-void function_definition(parser *context)
+/**
+ *	Parse array initializer
+ *
+ *	@param	parser		Parser structure
+ *	@param	type		Index for modes table
+ */
+void parse_array_initializer(parser *const parser, const item_t type)
 {
-	item_t fn = ident_get_displ(context->sx, context->lastid);
-	int oldrepr = REPRTAB_POS;
-	int fid = context->lastid;
-
-	context->pgotost = 0;
-	context->functype = (int)ident_get_mode(context->sx, context->lastid);
-	item_t ftype = mode_get(context->sx, context->functype + 1);
-	item_t n = mode_get(context->sx, context->functype + 2);
-	context->wasret = 0;
-	
-	size_t prev = (size_t)vector_get(&context->sx->identifiers, context->lastid);
-	if (prev > 1) // был прототип
+	if (parser->curr_token == string_literal)
 	{
-		if (context->functype != ident_get_mode(context->sx, prev))
+		if (parser->flag_strings_only == 0)
 		{
-			context_error(context, decl_and_def_have_diff_type);
-			return; // 1
+			parser_error(parser, string_and_notstring);
 		}
-		ident_set_displ(context->sx, prev, fn);
-	}
-	
-	const item_t old_displ = scope_func_enter(context->sx);
-	for (item_t i = 0; i < n; i++)
-	{
-		context->type = (int)mode_get(context->sx, context->functype + (int)i + 3);
-		item_t temp = func_get(context->sx, (size_t)fn + (size_t)i + 1);
-		if (temp == ITEM_MAX)
+		if (parser->flag_strings_only == 2)
 		{
-			context->error_flag = 1;
+			parser->flag_strings_only = 1;
+		}
+		parse_string_literal_expression(parser);
+		tree_add(parser->sx, TExprend);
+	}
+	else
+	{
+		if (parser->curr_token != l_brace)
+		{
+			parser_error(parser, arr_init_must_start_from_BEGIN);
+			skip_until(parser, comma | semicolon);
 			return;
 		}
 
-		REPRTAB_POS = (int)temp;
-		if (REPRTAB_POS > 0)
+		tree_add(parser->sx, TBeginit);
+		const size_t ref_list_length = tree_reserve(parser->sx);
+		size_t list_length = 0;
+
+		do
 		{
-			toidentab(context, 0, context->type);
+			list_length++;
+			consume_token(parser);
+			parse_initializer(parser, mode_get(parser->sx, (size_t)type + 1));
+
+			if (parser->next_token == r_brace)
+			{
+				break;
+			}
+			else if (!try_consume_token(parser, comma))
+			{
+				parser_error(parser, no_comma_in_init_list);
+				skip_until(parser, comma | r_brace | semicolon);
+			}
+		} while (parser->next_token != semicolon);
+
+		expect_and_consume_token(parser, r_brace, wait_end);
+		tree_set(parser->sx, ref_list_length, (item_t)list_length);
+		tree_add(parser->sx, TExprend);
+	}
+}
+
+/**
+ *	Parse declarator with optional initializer
+ *
+ *	init-declarator:
+ *		direct-declarator initializer[opt]
+ *
+ *	direct-declarator:
+ *		identifier
+ *
+ *	@param	parser		Parser structure
+ *	@param	type		Type of variable in declaration
+ */
+void parse_init_declarator(parser *const parser, item_t type)
+{
+	const size_t old_id = to_identab(parser, parser->lexer->repr, 0, type);
+	size_t ref_array_dim = 0;
+
+	parser->flag_empty_bounds = 1;
+	parser->array_dimension = 0;
+	const item_t element_type = type;
+
+	if (parser->next_token == l_square)
+	{
+		tree_add(parser->sx, TDeclarr);
+		ref_array_dim = tree_reserve(parser->sx);
+		// Меняем тип (увеличиваем размерность массива)
+		type = parse_array_definition(parser, type);
+		ident_set_mode(parser->sx, old_id, type);
+		tree_set(parser->sx, ref_array_dim, (item_t)parser->array_dimension);
+		if ((!parser->flag_empty_bounds && parser->next_token != equal))
+		{
+			parser_error(parser, empty_bound_without_init);
+		}
+	}
+
+	tree_add(parser->sx, TDeclid);
+	tree_add(parser->sx, ident_get_displ(parser->sx, old_id));
+	tree_add(parser->sx, element_type);
+	tree_add(parser->sx, (item_t)parser->array_dimension);
+
+	// all - место в дереве, где будет общее количество выражений в инициализации,
+	const size_t all = tree_reserve(parser->sx);	// для массивов - только признак (1) наличия инициализации
+	tree_set(parser->sx, all, 0);
+	tree_add(parser->sx, is_pointer(parser->sx, type) ? 0 : parser->flag_array_in_struct);
+	tree_add(parser->sx, parser->flag_empty_bounds);
+	tree_add(parser->sx, 0);	// Признак того, массив не в структуре
+
+	if (try_consume_token(parser, equal))
+	{
+		consume_token(parser);
+		tree_set(parser->sx, all, (item_t)size_of(parser->sx, type));
+		if (is_array(parser->sx, type))
+		{
+			if (!parser->flag_empty_bounds)
+			{
+				tree_set(parser->sx, ref_array_dim, tree_get(parser->sx, ref_array_dim) - 1);
+			}
+
+			parser->flag_strings_only = 2;
+			parse_array_initializer(parser, type);
+			if (parser->flag_strings_only == 1)
+			{
+				tree_set(parser->sx, all + 2, parser->flag_empty_bounds + 2);
+			}
 		}
 		else
 		{
-			REPRTAB_POS = -REPRTAB_POS;
-			toidentab(context, -1, context->type);
-		}
-		if (context->error_flag == 5)
-		{
-			context->error_flag = 1;
-			return; // 1
-		}
-	}
-	const size_t size = vector_size(&TREE);
-	func_set(context->sx, (size_t)fn, (int)size);
-	totree(context, TFuncdef);
-	totree(context, fid);
-	prev = vector_size(&TREE);
-	vector_increase(&TREE, 1);
-	REPRTAB_POS = oldrepr;
-
-	block(context, 0);
-
-	// if (ftype == LVOID && vector_get(&TREE, vector_size(&TREE) - 1) != TReturnvoid)
-	// {
-	vector_remove(&TREE);
-	totree(context, TReturnvoid);
-	totree(context, TEnd);
-	// }
-	if (ftype != LVOID && !context->wasret)
-	{
-		context_error(context, no_ret_in_func);
-		context->error_flag = 1;
-		return; // 1
-	}
-	
-	scope_func_exit(context->sx, prev, old_displ);
-
-	for (int i = 0; i < context->pgotost - 1; i += 2)
-	{
-		REPRTAB_POS = (int)ident_get_repr(context->sx, context->gotost[i]);
-		context->sx->hash = context->gotost[i + 1];
-		if (context->sx->hash < 0)
-		{
-			context->sx->hash = -context->sx->hash;
-		}
-		if (!ident_get_mode(context->sx, context->gotost[i]))
-		{
-			context_error(context, label_not_declared);
-			context->error_flag = 1;
-			return; // 1
+			parse_initializer(parser, type);
 		}
 	}
 }
 
-int func_declarator(parser *context, int level, int func_d, int firstdecl)
+/**
+ *	Parse function declarator
+ *
+ *	@return	@c mode_undefined or index for modes table
+ */
+item_t parse_function_declarator(parser *const parser, const int level, int func_d, const item_t return_type)
 {
-	// на 1 уровне это может быть определением функции или предописанием, на
-	// остальных уровнях - только декларатором (без идентов)
+	item_t local_modetab[100];
+	size_t local_md = 3;
+	local_modetab[0] = mode_function;
+	local_modetab[1] = return_type;
+	local_modetab[2] = 0;
+	size_t param_number = 0;
 
-	item_t loc_modetab[100];
-	int locmd;
-	int numpar = 0;
-	int ident = 0; // warning C4701: potentially uninitialized local variable used
-	int maybe_fun = 0; // warning C4701: potentially uninitialized local variable used
-	int repeat = 1;
-	int wastype = 0;
-	int old;
-
-	loc_modetab[0] = mode_function;
-	loc_modetab[1] = firstdecl;
-	loc_modetab[2] = 0;
-	locmd = 3;
-
-	while (repeat)
+	if (try_consume_token(parser, r_paren))
 	{
-		if (context->cur == LVOID || is_int(context->cur) || is_float(context->cur) ||
-			context->cur == LSTRUCT)
+		parser->func_def = 0;
+	}
+	else
+	{
+		do
 		{
-			maybe_fun = 0; // м.б. параметр-ф-ция?
-						   // 0 - ничего не было,
-						   // 1 - была *,
-						   // 2 - была [
+			int flag_was_ident = 0;
+			int maybe_fun = 0;	// м.б. параметр-ф-ция?
+								// 0 - ничего не было,
+								// 1 - была *,
+								// 2 - была [
+			item_t type = parse_type_specifier(parser);
 
-			ident = 0; // = 0 - не было идента,
-					   // 1 - был статический идент,
-					   // 2 - был идент-параметр-функция
-			wastype = 1;
-			context->type = (int)gettype(context);
-			if (context->error_flag == 3)
-			{
-				context->error_flag = 2;
-				return 0;
-			}
-			if (context->next == LMULT)
+			if (parser->next_token == star)
 			{
 				maybe_fun = 1;
-				scanner(context);
-				context->type = context->type == LVOID ? LVOIDASTER : (int)newdecl(context->sx, mode_pointer, context->type);
+				consume_token(parser);
+				if (type == mode_void)
+				{
+					type = mode_void_pointer;
+				}
+				else
+				{
+					type = to_modetab(parser, mode_pointer, type);
+				}
 			}
+
+			// На 1 уровне это может быть определением функции или предописанием;
+			// На остальных уровнях - только декларатором (без идентов)
 			if (level)
 			{
-				if (context->next == IDENT)
+				if (try_consume_token(parser, identifier))
 				{
-					scanner(context);
-					ident = 1;
-					func_add(context->sx, REPRTAB_POS);
+					flag_was_ident = 1;
+					func_add(parser->sx, (item_t)parser->lexer->repr);
 				}
 			}
-			else if (context->next == IDENT)
+			else if (parser->next_token == identifier)
 			{
-				context_error(context, ident_in_declarator);
-				context->error_flag = 2;
-				return 0;
+				parser_error(parser, ident_in_declarator);
+				skip_until(parser, r_paren | semicolon);
+				return mode_undefined;
 			}
 
-			if (context->next == LEFTSQBR)
+			if (type == mode_void && parser->next_token != l_paren)
+			{
+				parser_error(parser, par_type_void_with_nofun);
+			}
+
+			if (parser->next_token == l_square)
 			{
 				maybe_fun = 2;
-
-				if (is_pointer(context->sx, context->type) && ident == 0)
+				if (is_pointer(parser->sx, type) && flag_was_ident == 0)
 				{
-					context_error(context, aster_with_row);
-					context->error_flag = 2;
-					return 0;
+					parser_error(parser, aster_with_row);
 				}
 
-				while (context->next == LEFTSQBR)
+				while (try_consume_token(parser, l_square))
 				{
-					scanner(context);
-					mustbe(context, RIGHTSQBR, wait_right_sq_br);
-					context->type = (int)newdecl(context->sx, mode_array, context->type);
+					type = to_modetab(parser, mode_array, type);
+					if (!try_consume_token(parser, r_square))
+					{
+						parser_error(parser, wait_right_sq_br);
+						skip_until(parser, r_square | comma | r_paren | semicolon);
+					}
 				}
 			}
-		}
-		if (context->cur == LVOID)
-		{
-			context->type = LVOID;
-			wastype = 1;
-			if (context->next != LEFTBR)
-			{
-				context_error(context, par_type_void_with_nofun);
-				context->error_flag = 2;
-				return 0;
-			}
-		}
 
-		if (wastype)
-		{
-			numpar++;
-			loc_modetab[locmd++] = context->type;
-
-			if (context->next == LEFTBR)
+			if (try_consume_token(parser, l_paren))
 			{
-				scanner(context);
-				mustbe(context, LMULT, wrong_fun_as_param);
-				if (context->next == IDENT)
+				expect_and_consume_token(parser, star, wrong_fun_as_param);
+				if (parser->next_token == identifier)
 				{
 					if (level)
 					{
-						scanner(context);
-						if (ident == 0)
+						consume_token(parser);
+						if (flag_was_ident == 0)
 						{
-							ident = 2;
+							flag_was_ident = 2;
 						}
 						else
 						{
-							context_error(context, two_idents_for_1_declarer);
-							context->error_flag = 2;
-							return 0;
+							parser_error(parser, two_idents_for_1_declarer);
+							return mode_undefined;
 						}
-						func_add(context->sx, -REPRTAB_POS);
+						func_add(parser->sx, -((item_t)parser->lexer->repr));
 					}
 					else
 					{
-						context_error(context, ident_in_declarator);
-						context->error_flag = 2;
-						return 0;
+						parser_error(parser, ident_in_declarator);
+						return mode_undefined;
 					}
 				}
-				mustbe(context, RIGHTBR, no_right_br_in_paramfun);
-				mustbe(context, LEFTBR, wrong_fun_as_param);
-				scanner(context);
+				expect_and_consume_token(parser, r_paren, no_right_br_in_paramfun);
+				expect_and_consume_token(parser, l_paren, wrong_fun_as_param);
 				if (maybe_fun == 1)
 				{
-					context_error(context, aster_before_func);
-					context->error_flag = 2;
-					return 0;
+					parser_error(parser, aster_before_func);
+					skip_until(parser, comma | r_paren | semicolon);
 				}
 				else if (maybe_fun == 2)
 				{
-					context_error(context, array_before_func);
-					context->error_flag = 2;
-					return 0;
+					parser_error(parser, array_before_func);
+					skip_until(parser, comma | r_paren | semicolon);
 				}
 
-				old = context->func_def;
-				loc_modetab[locmd - 1] = func_declarator(context, 0, 2, context->type);
-				if (context->error_flag == 2)
-				{
-					return 0;
-				}
-				context->func_def = old;
+				const int old_func_def = parser->func_def;
+				type = parse_function_declarator(parser, 0, 2, type);
+				parser->func_def = old_func_def;
 			}
 			if (func_d == 3)
 			{
-				func_d = ident > 0 ? 1 : 2;
+				func_d = flag_was_ident > 0 ? 1 : 2;
 			}
-			else if (func_d == 2 && ident > 0)
+			else if (func_d == 2 && flag_was_ident > 0)
 			{
-				context_error(context, wait_declarator);
-				context->error_flag = 2;
-				return 0;
+				parser_error(parser, wait_declarator);
+				skip_until(parser, r_paren | semicolon);
+				// На случай, если после этого заголовка стоит тело функции
+				if (try_consume_token(parser, l_brace))
+				{
+					skip_until(parser, r_brace);
+				}
+				return mode_undefined;
 			}
-			else if (func_d == 1 && ident == 0)
+			else if (func_d == 1 && flag_was_ident == 0)
 			{
-				context_error(context, wait_definition);
-				context->error_flag = 2;
-				return 0;
+				parser_error(parser, wait_definition);
+				skip_until(parser, r_paren | semicolon);
+				return mode_undefined;
 			}
 
-			if (scanner(context) == COMMA)
-			{
-				scanner(context);
-			}
-			else if (context->cur == RIGHTBR)
-			{
-				repeat = 0;
-			}
-		}
-		else if (context->cur == RIGHTBR)
+			param_number++;
+			local_modetab[local_md++] = type;
+		} while (try_consume_token(parser, comma));
+
+		expect_and_consume_token(parser, r_paren, wrong_param_list);
+		parser->func_def = func_d;
+	}
+
+	local_modetab[2] = (item_t)param_number;
+	return (item_t)mode_add(parser->sx, local_modetab, local_md);
+}
+
+/**
+ *	Parse function body
+ *
+ *	@param	parser		Parser structure
+ *	@param	function_id	Function number
+ */
+void parse_function_body(parser *const parser, const size_t function_id)
+{
+	parser->function_mode = (size_t)ident_get_mode(parser->sx, function_id);
+	const size_t function_number = (size_t)ident_get_displ(parser->sx, function_id);
+	const size_t param_number = (size_t)mode_get(parser->sx, parser->function_mode + 2);
+
+	parser->pgotost = 0;
+	parser->flag_was_return = 0;
+
+	const item_t prev = ident_get_prev(parser->sx, function_id);
+	if (prev > 1) // Был прототип
+	{
+		if (parser->function_mode != (size_t)ident_get_mode(parser->sx, (size_t)prev))
 		{
-			repeat = 0;
-			func_d = 0;
+			parser_error(parser, decl_and_def_have_diff_type);
+			skip_until(parser, r_brace);
+			return;
+		}
+		ident_set_displ(parser->sx, (size_t)prev, (item_t)function_number);
+	}
+
+	const item_t old_displ = scope_func_enter(parser->sx);
+
+	for (size_t i = 0; i < param_number; i++)
+	{
+		const item_t type = mode_get(parser->sx, parser->function_mode + i + 3);
+		const item_t repr = func_get(parser->sx, function_number + i + 1);
+
+		to_identab(parser, (size_t)llabs(repr), repr > 0 ? 0 : -1, type);
+	}
+
+	func_set(parser->sx, function_number, (item_t)tree_size(parser->sx));
+	tree_add(parser->sx, TFuncdef);
+	tree_add(parser->sx, (item_t)function_id);
+
+	const size_t ref_maxdispl = tree_reserve(parser->sx);
+
+	consume_token(parser);
+	parse_compound_statement(parser, FUNCBODY);
+
+	vector_remove(&parser->sx->tree);
+	tree_add(parser->sx, TReturnvoid);
+	tree_add(parser->sx, TEnd);
+
+	if (mode_get(parser->sx, parser->function_mode + 1) != mode_void && !parser->flag_was_return)
+	{
+		parser_error(parser, no_ret_in_func);
+	}
+
+	scope_func_exit(parser->sx, ref_maxdispl, old_displ);
+
+	for (size_t i = 0; i < parser->pgotost; i += 2)
+	{
+		const size_t repr = (size_t)ident_get_repr(parser->sx, (size_t)parser->gotost[i]);
+		const size_t line_number = (size_t)llabs(parser->gotost[i + 1]);
+		if (!ident_get_mode(parser->sx, (size_t)parser->gotost[i]))
+		{
+			char buffer[MAXSTRINGL];
+			repr_get_ident(parser->sx, repr, buffer);
+			parser_error(parser, label_not_declared, line_number, buffer);
+		}
+	}
+}
+
+/**
+ *	Parse function definition [C99 6.9.1]
+ *
+ *	function-definition:
+ *		declarator declaration-list[opt] compound-statement
+ *
+ *	@param	parser		Parser structure
+ *	@param	type		Return type of a function
+ */
+void parse_function_definition(parser *const parser, const item_t type)
+{
+	// TODO: сюда бы интерфейс для functions
+	const size_t function_num = vector_size(&parser->sx->functions);
+	vector_increase(&parser->sx->functions, 1);
+	const size_t function_repr = parser->lexer->repr;
+	consume_token(parser);
+	const item_t function_mode = parse_function_declarator(parser, 1, 3, type);
+
+	if (parser->func_def == 0 && parser->next_token == l_brace)
+	{
+		parser->func_def = 1;
+	}
+	else if (parser->func_def == 0)
+	{
+		parser->func_def = 2;
+	}
+
+	const size_t function_id = to_identab(parser, function_repr, (item_t)function_num, function_mode);
+
+	if (parser->next_token == l_brace)
+	{
+		if (parser->func_def == 1)
+		{
+			parse_function_body(parser, function_id);
+			return;
 		}
 		else
 		{
-			context_error(context, wrong_param_list);
-			context->buf_cur = context->next;
-			context->next = context->cur;
-			context->cur = RIGHTBR;
-			context->buf_flag++;
-			repeat = 0;
-			func_d = 0;
+			parser_error(parser, func_decl_req_params);
+			skip_until(parser, r_brace);
+			return;
 		}
 	}
-	context->func_def = func_d;
-	loc_modetab[2] = numpar;
-	
-	return (int)mode_add(context->sx, loc_modetab, locmd);
+	else if (parser->func_def == 1)
+	{
+		parser_error(parser, function_has_no_body);
+		// На случай, если после неправильного декларатора стоит ';'
+		try_consume_token(parser, semicolon);
+	}
+}
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+void parse_inner_declaration(parser *const parser)
+{
+	parser->flag_was_type_def = 0;
+	item_t group_type = parse_type_specifier(parser);
+
+	if (group_type == mode_void)
+	{
+		parser_error(parser, only_functions_may_have_type_VOID);
+		group_type = mode_undefined;
+	}
+	else if (parser->flag_was_type_def && try_consume_token(parser, semicolon))
+	{
+		return;
+	}
+
+	do
+	{
+		item_t type = group_type;
+		if (parser->next_token == star)
+		{
+			consume_token(parser);
+			type = to_modetab(parser, mode_pointer, group_type);
+		}
+
+		if (parser->next_token == identifier)
+		{
+			consume_token(parser);
+			parse_init_declarator(parser, type);
+		}
+		else
+		{
+			parser_error(parser, after_type_must_be_ident);
+			skip_until(parser, comma | semicolon);
+		}
+	} while (try_consume_token(parser, comma));
+
+	expect_and_consume_token(parser, semicolon, expected_semi_after_decl);
+}
+
+void parse_external_declaration(parser *const parser)
+{
+	parser->flag_was_type_def = 0;
+	parser->func_def = 3;
+	const item_t group_type = parse_type_specifier(parser);
+
+	if (parser->flag_was_type_def && try_consume_token(parser, semicolon))
+	{
+		return;
+	}
+
+	do
+	{
+		item_t type = group_type;
+		if (parser->next_token == star)
+		{
+			consume_token(parser);
+			if (group_type == mode_void)
+			{
+				type = mode_void_pointer;
+			}
+			else
+			{
+				type = to_modetab(parser, mode_pointer, group_type);
+			}
+		}
+
+		if (try_consume_token(parser, identifier))
+		{
+			if (parser->next_token == l_paren)
+			{
+				parse_function_definition(parser, type);
+			}
+			else if (group_type == mode_void)
+			{
+				parser_error(parser, only_functions_may_have_type_VOID);
+			}
+			else
+			{
+				parse_init_declarator(parser, type);
+			}
+		}
+		else
+		{
+			parser_error(parser, after_type_must_be_ident);
+			skip_until(parser, comma | semicolon);
+		}
+
+	} while (try_consume_token(parser, comma));
+
+	if (parser->func_def != 1)
+	{
+		expect_and_consume_token(parser, semicolon, expected_semi_after_decl);
+	}
+}
+
+void parse_initializer(parser *const parser, const item_t type)
+{
+	if (parser->curr_token != l_brace)
+	{
+		const item_t expr_type = parse_assignment_expression(parser);
+		if (!is_undefined(expr_type) && !is_undefined(type))
+		{
+			if (is_int(type) && is_float(expr_type))
+			{
+				parser_error(parser, init_int_by_float);
+			}
+			else if (is_float(type) && is_int(expr_type))
+			{
+				insert_widen(parser);
+			}
+			else if (type != expr_type)
+			{
+				parser_error(parser, error_in_initialization);
+			}
+		}
+	}
+	else if (is_struct(parser->sx, type))
+	{
+		parse_struct_initializer(parser, type);
+	}
+	else if (is_array(parser->sx, type))
+	{
+		parse_array_initializer(parser, type);
+	}
+	else
+	{
+		parser_error(parser, wrong_init);
+		skip_until(parser, comma | semicolon);
+	}
 }

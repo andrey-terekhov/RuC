@@ -1,5 +1,5 @@
 /*
- *	Copyright 2016 Andrey Terekhov
+ *	Copyright 2021 Andrey Terekhov, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,803 +14,796 @@
  *	limitations under the License.
  */
 
-#include "extdecl.h"
-#include "errors.h"
-#include "defs.h"
-#include "lexer.h"
-#include <string.h>
+#include "parser.h"
 
-int evaluate_params(parser *context, int num, char32_t formatstr[], int formattypes[], char32_t placeholders[])
+
+/**
+ *	Parse labeled statement [C99 6.8.1]
+ *
+ *	labeled-statement:
+ *		identifier ':' statement
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_labeled_statement(parser *const parser)
 {
-	int num_of_params = 0;
-	int i = 0;
-	char32_t fsi;
+	tree_add(parser->sx, TLabel);
 
-	//	for (i=0; i<num; i++)
-	//		printf("%c %i\n", formatstr[i], formatstr[i]);
+	const size_t repr = parser->lexer->repr;
+	// Не проверяем, что это ':', так как по нему узнали,
+	// что это labeled statement
+	consume_token(parser);
+	for (size_t i = 0; i < parser->pgotost; i += 2)
+	{
+		if (repr == (size_t)ident_get_repr(parser->sx, (size_t)parser->gotost[i]))
+		{
+			const item_t id = parser->gotost[i];
+			tree_add(parser->sx, id);
 
-	for (i = 0; i < num; i++)
+			if (parser->gotost[i + 1] < 0)
+			{
+				char buffer[MAXSTRINGL];
+				repr_get_ident(parser->sx, repr, buffer);
+				parser_error(parser, repeated_label, buffer);
+			}
+			else
+			{
+				parser->gotost[i + 1] = -1;	// TODO: здесь должен быть номер строки
+			}
+
+			ident_set_mode(parser->sx, (size_t)id, 1);
+			parse_statement(parser);
+			return;
+		}
+	}
+
+	// Это определение метки, если она встретилась до
+	// переходов на нее
+	const item_t id = (size_t)to_identab(parser, repr, 1, 0);
+	tree_add(parser->sx, id);
+	parser->gotost[parser->pgotost++] = id;
+	parser->gotost[parser->pgotost++] = -1;	// TODO: здесь должен быть номер строки
+
+	ident_set_mode(parser->sx, (size_t)id, 1);
+	parse_statement(parser);
+}
+
+/**
+ *	Parse case statement [C99 6.8.1]
+ *
+ *	labeled-statement:
+ *		'case' constant-expression ':' statement
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_case_statement(parser *const parser)
+{
+	if (!parser->flag_in_switch)
+	{
+		parser_error(parser, case_not_in_switch);
+	}
+
+	tree_add(parser->sx, TCase);
+	const item_t condition_type = parse_constant_expression(parser);
+	if (!is_int(condition_type) && !is_undefined(condition_type))
+	{
+		parser_error(parser, float_in_switch);
+	}
+
+	expect_and_consume_token(parser, colon, expected_colon_after_case);
+	parse_statement(parser);
+}
+
+/**
+ *	Parse default statement [C99 6.8.1]
+ *
+ *	labeled-statement:
+ *		'default' ':' statement
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_default_statement(parser *const parser)
+{
+	if (!parser->flag_in_switch)
+	{
+		parser_error(parser, default_not_in_switch);
+	}
+
+	tree_add(parser->sx, TDefault);
+	expect_and_consume_token(parser, colon, expected_colon_after_default);
+	parse_statement(parser);
+}
+
+/**
+ *	Parse expression statement [C99 6.8.3]
+ *
+ *	expression-statement:
+ *		expression ';'
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_expression_statement(parser *const parser)
+{
+	parse_expression(parser);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+}
+
+/**
+ *	Parse if statement [C99 6.8.4.1]
+ *
+ *	if-statement:
+ *		'if' parenthesized-expression statement
+ *		'if' parenthesized-expression statement 'else' statement
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_if_statement(parser *const parser)
+{
+	tree_add(parser->sx, TIf);
+	const size_t ref_else = tree_reserve(parser->sx);
+
+	parse_parenthesized_expression(parser);
+	parse_statement(parser);
+
+	if (try_consume_token(parser, kw_else))
+	{
+		tree_set(parser->sx, ref_else, (item_t)tree_size(parser->sx));
+		parse_statement(parser);
+	}
+}
+
+/**
+ *	Parse switch statement [C99 6.8.4.2]
+ *
+ *	switch-statement:
+ *		'switch' parenthesized-expression statement
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_switch_statement(parser *const parser)
+{
+	tree_add(parser->sx, TSwitch);
+
+	const item_t condition_type = parse_parenthesized_expression(parser);
+	if (!is_int(condition_type) && !is_undefined(condition_type))
+	{
+		parser_error(parser, float_in_switch);
+	}
+
+	const int old_in_switch = parser->flag_in_switch;
+	parser->flag_in_switch = 1;
+	parse_statement(parser);
+	parser->flag_in_switch = old_in_switch;
+}
+
+/**
+ *	Parse while statement [C99 6.8.5.1]
+ *
+ *	while-statement:
+ *		'while' parenthesized-expression statement
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_while_statement(parser *const parser)
+{
+	tree_add(parser->sx, TWhile);
+
+	parse_parenthesized_expression(parser);
+
+	const int old_in_loop = parser->flag_in_loop;
+	parser->flag_in_loop = 1;
+	parse_statement(parser);
+	parser->flag_in_loop = old_in_loop;
+}
+
+/**
+ *	Parse do statement [C99 6.8.5.2]
+ *
+ *	do-statement:
+ *		'do' statement 'while' parenthesized-expression ';'
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_do_statement(parser *const parser)
+{
+	tree_add(parser->sx, TDo);
+
+	const int old_in_loop = parser->flag_in_loop;
+	parser->flag_in_loop = 1;
+	parse_statement(parser);
+	parser->flag_in_loop = old_in_loop;
+
+	if (try_consume_token(parser, kw_while))
+	{
+		parse_parenthesized_expression(parser);
+	}
+	else
+	{
+		parser_error(parser, expected_while);
+		skip_until(parser, semicolon);
+	}
+
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+}
+
+/**
+ *	Parse for statement [C99 6.8.5.3]
+ *
+ *	for-statement:
+ *		'for' '(' expression[opt] ';' expression[opt] ';' expression[opt] ')' statement
+ *		'for' '(' declaration expression[opt] ';' expression[opt] ')' statement
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_for_statement(parser *const parser)
+{
+	tree_add(parser->sx, TFor);
+
+	const size_t ref_inition = tree_reserve(parser->sx);
+	const size_t ref_condition = tree_reserve(parser->sx);
+	const size_t ref_increment = tree_reserve(parser->sx);
+	const size_t ref_statement = tree_reserve(parser->sx);
+	expect_and_consume_token(parser, l_paren, no_leftbr_in_for);
+
+	if (!try_consume_token(parser, semicolon))
+	{
+		tree_set(parser->sx, ref_inition, (item_t)tree_size(parser->sx));
+		consume_token(parser);
+		parse_expression(parser);
+		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
+	}
+
+	if (!try_consume_token(parser, semicolon))
+	{
+		tree_set(parser->sx, ref_condition, (item_t)tree_size(parser->sx));
+		parse_condition(parser);
+		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
+	}
+
+	if (!try_consume_token(parser, r_paren))
+	{
+		tree_set(parser->sx, ref_increment, (item_t)tree_size(parser->sx));
+		consume_token(parser);
+		parse_expression(parser);
+		expect_and_consume_token(parser, r_paren, no_rightbr_in_for);
+	}
+
+	tree_set(parser->sx, ref_statement, (item_t)tree_size(parser->sx));
+	const int old_in_loop = parser->flag_in_loop;
+	parser->flag_in_loop = 1;
+	parse_statement(parser);
+	parser->flag_in_loop = old_in_loop;
+}
+
+/**
+ *	Parse goto statement [C99 6.8.6.1]
+ *
+ *	jump-statement:
+ *		'goto' identifier ';'
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_goto_statement(parser *const parser)
+{
+	tree_add(parser->sx, TGoto);
+	expect_and_consume_token(parser, identifier, no_ident_after_goto);
+	const size_t repr = parser->lexer->repr;
+
+	for (size_t i = 0; i < parser->pgotost; i += 2)
+	{
+		if (repr == (size_t)ident_get_repr(parser->sx, (size_t)parser->gotost[i]))
+		{
+			const item_t id = parser->gotost[i];
+			tree_add(parser->sx, id);
+			if (parser->gotost[id + 1] >= 0) // Перехода на метку еще не было
+			{
+				parser->gotost[parser->pgotost++] = id;
+				parser->gotost[parser->pgotost++] = 1; // TODO: здесь должен быть номер строки
+			}
+
+			expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+			return;
+		}
+	}
+
+	// Первый раз встретился переход на метку, которой не было,
+	// в этом случае ссылка на identtab, стоящая после TGoto,
+	// будет отрицательной
+	const item_t id = (item_t)to_identab(parser, repr, 1, 0);
+	tree_add(parser->sx, -id);
+	parser->gotost[parser->pgotost++] = id;
+	parser->gotost[parser->pgotost++] = 1;	// TODO: здесь должен быть номер строки
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+}
+
+/**
+ *	Parse continue statement [C99 6.8.6.2]
+ *
+ *	jump-statement:
+ *		'continue' ';'
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_continue_statement(parser *const parser)
+{
+	if (!parser->flag_in_loop)
+	{
+		parser_error(parser, continue_not_in_loop);
+	}
+
+	tree_add(parser->sx, TContinue);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+}
+
+/**
+ *	Parse break statement [C99 6.8.6.3]
+ *
+ *	jump-statement:
+ *		'break' ';'
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_break_statement(parser *const parser)
+{
+	if (!(parser->flag_in_loop || parser->flag_in_switch))
+	{
+		parser_error(parser, break_not_in_loop_or_switch);
+	}
+
+	tree_add(parser->sx, TBreak);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+}
+
+/**
+ *	Parse return statement [C99 6.8.6.4]
+ *
+ *	jump-statement:
+ *		'return' expression[opt] ';'
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_return_statement(parser *const parser)
+{
+	const item_t return_type = mode_get(parser->sx, parser->function_mode + 1);
+	parser->flag_was_return = 1;
+
+	if (try_consume_token(parser, semicolon))
+	{
+		tree_add(parser->sx, TReturnvoid);
+		if (!is_void(return_type))
+		{
+			parser_error(parser, no_ret_in_func);
+		}
+	}
+	else if (return_type != mode_void_pointer)
+	{
+		if (is_void(return_type))
+		{
+			parser_error(parser, notvoidret_in_void_func);
+		}
+
+		tree_add(parser->sx, TReturnval);
+		tree_add(parser->sx, (item_t)size_of(parser->sx, return_type));
+
+		consume_token(parser);
+		const item_t expr_type = parse_assignment_expression(parser);
+		if (!is_undefined(expr_type) && !is_undefined(return_type))
+		{
+			if (is_float(return_type) && is_int(expr_type))
+			{
+				insert_widen(parser);
+			}
+			else if (return_type != expr_type)
+			{
+				parser_error(parser, bad_type_in_ret);
+			}
+		}
+
+		expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+	}
+}
+
+/**	Parse t_create_direct statement [RuC] */
+void parse_create_direct_statement(parser *const parser)
+{
+	tree_add(parser->sx, CREATEDIRECTC);
+	parse_compound_statement(parser, THREAD);
+	tree_add(parser->sx, EXITDIRECTC);
+}
+
+/**	Parse printid statement [RuC] */
+void parse_printid_statement(parser *const parser)
+{
+	expect_and_consume_token(parser, l_paren, no_leftbr_in_printid);
+
+	do
+	{
+		if (try_consume_token(parser, identifier))
+		{
+			const size_t repr = parser->lexer->repr;
+			const size_t id = (size_t)repr_get_reference(parser->sx, repr);
+			if (id == 1)
+			{
+				char buffer[MAXSTRINGL];
+				repr_get_ident(parser->sx, repr, buffer);
+				parser_error(parser, ident_is_not_declared, buffer);
+			}
+
+			tree_add(parser->sx, TPrintid);
+			tree_add(parser->sx, (item_t)id);
+		}
+		else
+		{
+			parser_error(parser, no_ident_in_printid);
+			skip_until(parser, comma | r_paren | semicolon);
+		}
+	} while (try_consume_token(parser, comma));
+
+	expect_and_consume_token(parser, r_paren, no_rightbr_in_printid);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+
+}
+
+/**	Parse print statement [RuC] */
+void parse_print_statement(parser *const parser)
+{
+	expect_and_consume_token(parser, l_paren, print_without_br);
+	consume_token(parser);
+
+	const item_t type = parse_assignment_expression(parser);
+	if (is_pointer(parser->sx, type))
+	{
+		parser_error(parser, pointer_in_print);
+	}
+
+	vector_remove(&parser->sx->tree);
+	tree_add(parser->sx, TPrint);
+	tree_add(parser->sx, type);
+	tree_add(parser->sx, TExprend);
+
+	expect_and_consume_token(parser, r_paren, print_without_br);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+}
+
+/**	Parse getid statement [RuC] */
+void parse_getid_statement(parser *const parser)
+{
+	expect_and_consume_token(parser, l_paren, no_leftbr_in_getid);
+
+	do
+	{
+		if (try_consume_token(parser, identifier))
+		{
+			const size_t repr = parser->lexer->repr;
+			const size_t id = (size_t)repr_get_reference(parser->sx, repr);
+			if (id == 1)
+			{
+				char buffer[MAXSTRINGL];
+				repr_get_ident(parser->sx, repr, buffer);
+				parser_error(parser, ident_is_not_declared, buffer);
+			}
+
+			tree_add(parser->sx, TGetid);
+			tree_add(parser->sx, (item_t)id);
+		}
+		else
+		{
+			parser_error(parser, no_ident_in_getid);
+			skip_until(parser, comma | r_paren | semicolon);
+		}
+	} while (try_consume_token(parser, comma));
+
+	expect_and_consume_token(parser, r_paren, no_rightbr_in_getid);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+}
+
+size_t evaluate_params(parser *const parser, const size_t length
+					   , const char32_t *const formatstr, item_t *const formattypes, char32_t *const placeholders)
+{
+	size_t param_number = 0;
+	for (size_t i = 0; i < length; i++)
 	{
 		if (formatstr[i] == '%')
 		{
-			if (fsi = formatstr[++i], fsi != '%')
+			const char32_t placeholder = formatstr[++i];
+			if (placeholder != '%')
 			{
-				if (num_of_params == MAXPRINTFPARAMS)
+				if (param_number == MAXPRINTFPARAMS)
 				{
-					context_error(context, too_many_printf_params);
+					parser_error(parser, too_many_printf_params);
 					return 0;
 				}
 
-				placeholders[num_of_params] = fsi;
+				placeholders[param_number] = placeholder;
 			}
-			switch (fsi) // Если добавляется новый спецификатор -- не забыть
-						 // внести его в switch в bad_printf_placeholder
+			switch (placeholder)
 			{
 				case 'i':
-				case 1094: // 'ц'
-					formattypes[num_of_params++] = LINT;
+				case U'ц':
+					formattypes[param_number++] = mode_integer;
 					break;
 
 				case 'c':
-				case 1083: // л
-					formattypes[num_of_params++] = LCHAR;
+				case U'л':
+					formattypes[param_number++] = mode_character;
 					break;
 
 				case 'f':
-				case 1074: // в
-					formattypes[num_of_params++] = LFLOAT;
+				case U'в':
+					formattypes[param_number++] = mode_float;
 					break;
 
 				case 's':
-				case 1089: // с
-					formattypes[num_of_params++] = (int)newdecl(context->sx, mode_array, LCHAR);
+				case U'с':
+					formattypes[param_number++] = to_modetab(parser, mode_array, mode_character);
 					break;
 
 				case '%':
 					break;
 
-				case 0:
-					context_error(context, printf_no_format_placeholder);
+				case '\0':
+					parser_error(parser, printf_no_format_placeholder);
 					return 0;
 
 				default:
-					context->bad_printf_placeholder = fsi;
-					context_error(context, printf_unknown_format_placeholder);
+					parser_error(parser, printf_unknown_format_placeholder, placeholder);
 					return 0;
 			}
 		}
 	}
 
-	return num_of_params;
+	return param_number;
 }
 
-void statement(parser *context)
+/**	Parse scanf statement [RuC] */
+void parse_scanf_statement(parser *const parser);
+
+/**	Parse printf statement [RuC] */
+void parse_printf_statement(parser *const parser)
 {
-	int flagsemicol = 1;
-	int oldwasdefault = context->wasdefault;
-	int oldinswitch = context->inswitch;
-	int oldinloop = context->inloop;
+	char32_t placeholders[MAXPRINTFPARAMS];
+	char32_t format_str[MAXSTRINGL + 1];
+	item_t formattypes[MAXPRINTFPARAMS];
+	size_t sumsize = 0;
 
-	context->wasdefault = 0;
-	scanner(context);
-	if ((is_int(context->cur) || is_float(context->cur) || context->cur == LVOID ||
-		 context->cur == LSTRUCT) &&
-		context->blockflag)
+	expect_and_consume_token(parser, l_paren, no_leftbr_in_printf);
+
+	if (parser->next_token != STRING)
 	{
-		context_error(context, decl_after_strmt);
-		flagsemicol = 0;
+		parser_error(parser, wrong_first_printf_param);
+		skip_until(parser, SEMICOLON);
+		return;
 	}
-	if (context->cur == BEGIN)
+
+	const size_t format_str_length = (size_t)parser->lexer->num;
+	for (size_t i = 0; i < format_str_length; i++)
 	{
-		flagsemicol = 0;
-		block(context, 1);
+		format_str[i] = parser->lexer->lexstr[i];
 	}
-	else if (context->cur == TCREATEDIRECT)
+	format_str[format_str_length] = 0;
+	consume_token(parser);	// Для форматирующей строки
+
+	size_t actual_param_number = 0;
+	const size_t expected_param_number = evaluate_params(parser, format_str_length, format_str, formattypes, placeholders);
+	while (try_consume_token(parser, comma) && actual_param_number != expected_param_number)
 	{
-		totree(context, CREATEDIRECTC);
-		flagsemicol = 0;
-		block(context, 2);
-		totree(context, EXITDIRECTC);
-	}
-	else if (context->cur == SEMICOLON)
-	{
-		totree(context, NOP);
-		flagsemicol = 0;
-	}
-	else if (context->cur == IDENT && context->next == COLON)
-	{
-		int id;
-		int i;
-		int flag = 1;
-		flagsemicol = 0;
-		totree(context, TLabel);
-		for (i = 0; flag && i < context->pgotost - 1; i += 2)
+		consume_token(parser);
+		const item_t type = parse_assignment_expression(parser);
+		if (is_float(formattypes[actual_param_number]) && is_int(type))
 		{
-			flag = ident_get_repr(context->sx, context->gotost[i]) != (item_t)REPRTAB_POS;
+			insert_widen(parser);
 		}
-		if (flag)
+		else if (formattypes[actual_param_number] != type)
 		{
-			totree(context, id = toidentab(context, 1, 0));
-			if (context->error_flag == 5)
+			parser_error(parser, wrong_printf_param_type, placeholders[actual_param_number]);
+		}
+
+		sumsize += size_of(parser->sx, type);
+		actual_param_number++;
+	}
+
+	expect_and_consume_token(parser, r_paren, no_rightbr_in_printf);
+	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+
+	if (actual_param_number != expected_param_number)
+	{
+		parser_error(parser, wrong_printf_param_number);
+	}
+
+	tree_add(parser->sx, TString);
+	tree_add(parser->sx, (item_t)format_str_length);
+
+	for (size_t i = 0; i < format_str_length; i++)
+	{
+		tree_add(parser->sx, format_str[i]);
+	}
+	tree_add(parser->sx, TExprend);
+
+	tree_add(parser->sx, TPrintf);
+	tree_add(parser->sx, (item_t)sumsize);
+}
+
+/**
+ *	Parse statement or declaration
+ *
+ *	block-item:
+ *		statement
+ *		declaration
+ *
+ *	@param	parser		Parser structure
+ */
+void parse_block_item(parser *const parser)
+{
+	switch (parser->next_token)
+	{
+		case kw_void:
+		case kw_char:
+			//case kw_short:
+		case kw_int:
+		case kw_long:
+		case kw_float:
+		case kw_double:
+		case kw_struct:
+			//case kw_union:
+			//case kw_enum:
+			//case kw_typedef:
+			parse_inner_declaration(parser);
+			return;
+
+		case identifier:
+		{
+			const size_t id = (size_t)repr_get_reference(parser->sx, parser->lexer->repr);
+			if (ident_get_displ(parser->sx, id) >= 1000)
 			{
-				context->error_flag = 2;
+				parse_inner_declaration(parser);
 			}
 			else
 			{
-				context->gotost[context->pgotost++] = id; // это определение метки, если она встретилась до
-														  // переходов на нее
-				context->gotost[context->pgotost++] = -context->line;
+				parse_statement(parser);
 			}
-		}
-		else
-		{
-			id = context->gotost[i - 2];
-			REPRTAB_POS = (int)ident_get_repr(context->sx, id);
-			if (context->gotost[i - 1] < 0)
-			{
-				context_error(context, repeated_label);
-				context->error_flag = 2;
-			}
-			else
-			{
-				context->gotost[i - 1] = -context->line;
-			}
-			totree(context, id);
+			return;
 		}
 
-		if (context->error_flag == 2)
-		{
-			context->error_flag = 1;
-		}
-		else
-		{
-			ident_set_mode(context->sx, id, 1);
+		default:
+			parse_statement(parser);
+			return;
+	}
+}
 
-			scanner(context);
-			statement(context);
-		}
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+void parse_statement(parser *const parser)
+{
+	consume_token(parser);
+
+	switch (parser->curr_token)
+	{
+		case semicolon:
+			tree_add(parser->sx, NOP);
+			break;
+
+		case kw_case:
+			parse_case_statement(parser);
+			break;
+
+		case kw_default:
+			parse_default_statement(parser);
+			break;
+
+		case l_brace:
+			parse_compound_statement(parser, REGBLOCK);
+			break;
+
+		case kw_if:
+			parse_if_statement(parser);
+			break;
+
+		case kw_switch:
+			parse_switch_statement(parser);
+			break;
+
+		case kw_while:
+			parse_while_statement(parser);
+			break;
+
+		case kw_do:
+			parse_do_statement(parser);
+			break;
+
+		case kw_for:
+			parse_for_statement(parser);
+			break;
+
+		case kw_goto:
+			parse_goto_statement(parser);
+			break;
+
+		case kw_continue:
+			parse_continue_statement(parser);
+			break;
+
+		case kw_break:
+			parse_break_statement(parser);
+			break;
+
+		case kw_return:
+			parse_return_statement(parser);
+			break;
+
+		case kw_t_create_direct:
+			parse_create_direct_statement(parser);
+			break;
+
+		case kw_printid:
+			parse_printid_statement(parser);
+			break;
+
+		case kw_printf:
+			parse_printf_statement(parser);
+			break;
+
+		case kw_print:
+			parse_print_statement(parser);
+			break;
+
+		case kw_getid:
+			parse_getid_statement(parser);
+			break;
+
+		case identifier:
+			if (parser->next_token == colon)
+			{
+				parse_labeled_statement(parser);
+				break;
+			}
+
+		default:
+			parse_expression_statement(parser);
+			break;
+	}
+}
+
+void parse_compound_statement(parser *const parser, const block_type type)
+{
+	tree_add(parser->sx, TBegin);
+
+	item_t old_displ = 0;
+	item_t old_lg = 0;
+
+	if (type != FUNCBODY)
+	{
+		scope_block_enter(parser->sx, &old_displ, &old_lg);
+	}
+
+	const token end_token = (type == THREAD) ? kw_exit : r_brace;
+	if (try_consume_token(parser, end_token))
+	{
+		// Если это пустой блок
+		tree_add(parser->sx, NOP);
 	}
 	else
 	{
-		context->blockflag = 1;
-
-		// And here too
-		switch (context->cur)
-		{
-			case PRINT:
-			{
-				exprassninbrkts(context, print_without_br);
-				if (context->error_flag == 3)
-				{
-					context->error_flag = 1;
-					flagsemicol = 0;
-					break;
-				}
-
-				if (vector_size(&TREE) != 0)
-				{
-					vector_remove(&TREE);
-				}
-				totree(context, TPrint);
-				totree(context, context->ansttype);
-				totree(context, TExprend);
-				if (is_pointer(context->sx, context->ansttype))
-				{
-					context_error(context, pointer_in_print);
-					flagsemicol = 0;
-				}
-				context->sopnd--;
-			}
-			break;
-			case PRINTID:
-			{
-				mustbe(context, LEFTBR, no_leftbr_in_printid);
-				do
-				{
-					mustbe(context, IDENT, no_ident_in_printid);
-					context->lastid = REPRTAB[REPRTAB_POS + 1];
-					if (context->lastid == 1)
-					{
-						context_error(context, ident_is_not_declared);
-						context->wasdefault = oldwasdefault;
-						context->inswitch = oldinswitch;
-						context->inloop = oldinloop;
-						return;
-					}
-					totree(context, TPrintid);
-					totree(context, context->lastid);
-				} while (context->next == COMMA ? scanner(context), 1 : 0);
-				mustbe(context, RIGHTBR, no_rightbr_in_printid);
-			}
-			break;
-
-			case PRINTF:
-			{
-				char32_t formatstr[MAXSTRINGL + 1];
-				int formattypes[MAXPRINTFPARAMS];
-				char32_t placeholders[MAXPRINTFPARAMS];
-				int paramnum = 0;
-				int sumsize = 0;
-				int i = 0;
-				int fnum;
-
-				mustbe(context, LEFTBR, no_leftbr_in_printf);
-				if (scanner(context) != STRING) // выкушиваем форматную строку
-				{
-					context_error(context, wrong_first_printf_param);
-					break;
-				}
-
-				for (i = 0; i < context->lxr->num; i++)
-				{
-					formatstr[i] = context->lxr->lexstr[i];
-				}
-				formatstr[context->lxr->num] = 0;
-
-				paramnum = evaluate_params(context, fnum = context->lxr->num, formatstr, formattypes, placeholders);
-
-				if (context->error_flag)
-				{
-					flagsemicol = 0;
-					break;
-				}
-
-				for (i = 0; scanner(context) == COMMA; i++)
-				{
-					if (i >= paramnum)
-					{
-						context_error(context, wrong_printf_param_number);
-						context->error_flag = 2;
-						break;
-					}
-
-					scanner(context);
-
-					exprassn(context, 1);
-					if (context->error_flag == 6)
-					{
-						context->error_flag = 2;
-						break;
-					}
-					toval(context);
-					totree(context, TExprend);
-
-					if (formattypes[i] == LFLOAT && context->ansttype == LINT)
-					{
-						insertwiden(context);
-					}
-					else if (formattypes[i] != context->ansttype)
-					{
-						context->bad_printf_placeholder = placeholders[i];
-						context_error(context, wrong_printf_param_type);
-						context->error_flag = 2;
-						break;
-					}
-
-					sumsize += szof(context, formattypes[i]);
-					--context->sopnd;
-				}
-				if (context->error_flag == 2)
-				{
-					flagsemicol = 0;
-					break;
-				}
-
-				if (context->cur != RIGHTBR)
-				{
-					context_error(context, no_rightbr_in_printf);
-					context->buf_cur = context->next;
-					context->next = context->cur;
-					context->cur = RIGHTBR;
-					context->buf_flag++;
-					break;
-				}
-
-				if (i != paramnum)
-				{
-					context_error(context, wrong_printf_param_number);
-					flagsemicol = 0;
-					break;
-				}
-
-				totree(context, TString);
-				totree(context, fnum);
-
-				for (i = 0; i < fnum; i++)
-				{
-					totree(context, (int)formatstr[i]);
-				}
-				totree(context, TExprend);
-
-				totree(context, TPrintf);
-				totree(context, sumsize);
-			}
-			break;
-
-			case GETID:
-			{
-
-				mustbe(context, LEFTBR, no_leftbr_in_printid);
-				do
-				{
-					mustbe_complex(context, IDENT, no_ident_in_printid);
-					context->lastid = REPRTAB[REPRTAB_POS + 1];
-					if (context->lastid == 1)
-					{
-						context_error(context, ident_is_not_declared);
-						context->error_flag = 2;
-						flagsemicol = 0;
-						break;
-					}
-					if (context->error_flag == no_ident_in_printid)
-					{
-						context->error_flag = 2;
-						flagsemicol = 0;
-						break;
-					}
-					totree(context, TGetid);
-					totree(context, context->lastid);
-				} while (context->next == COMMA ? scanner(context), 1 : 0);
-				if (context->error_flag == 2)
-				{
-					context->error_flag = 1;
-					break;
-				}
-				mustbe(context, RIGHTBR, no_rightbr_in_printid);
-			}
-			break;
-			case LBREAK:
-			{
-				if (!(context->inloop || context->inswitch))
-				{
-					context_error(context, break_not_in_loop_or_switch);
-					flagsemicol = 0;
-					break;
-				}
-				totree(context, TBreak);
-			}
-			break;
-			case LCASE:
-			{
-				if (!context->inswitch)
-				{
-					context_error(context, case_or_default_not_in_switch);
-					break;
-				}
-				if (context->wasdefault)
-				{
-					context_error(context, case_after_default);
-					break;
-				}
-				totree(context, TCase);
-				scanner(context);
-				unarexpr(context);
-				if (context->error_flag == 7)
-				{
-					context->error_flag = 1;
-					break;
-				}
-				condexpr(context);
-				if (context->error_flag == 4)
-				{
-					context->error_flag = 1;
-					break;
-				}
-				toval(context);
-				totree(context, TExprend);
-				if (context->ansttype == LFLOAT)
-				{
-					context_error(context, float_in_switch);
-					break;
-				}
-				context->sopnd--;
-				mustbe(context, COLON, no_colon_in_case);
-				flagsemicol = 0;
-				statement(context);
-			}
-			break;
-			case LCONTINUE:
-			{
-				if (!context->inloop)
-				{
-					context_error(context, continue_not_in_loop);
-					flagsemicol = 0;
-					break;
-				}
-				totree(context, TContinue);
-			}
-			break;
-			case LDEFAULT:
-			{
-				if (!context->inswitch)
-				{
-					context_error(context, case_or_default_not_in_switch);
-					break;
-				}
-				mustbe(context, COLON, no_colon_in_case);
-				context->wasdefault = 1;
-				flagsemicol = 0;
-				totree(context, TDefault);
-				statement(context);
-			}
-			break;
-			case LDO:
-			{
-				context->inloop = 1;
-				totree(context, TDo);
-				statement(context);
-
-				if (context->next == LWHILE)
-				{
-					scanner(context);
-					exprinbrkts(context, cond_must_be_in_brkts);
-					context->sopnd--;
-				}
-				else
-				{
-					context_error(context, wait_while_in_do_stmt);
-					context->cur = LWHILE;
-					exprinbrkts(context, cond_must_be_in_brkts);
-					context->sopnd--;
-				}
-				if (context->error_flag == 3)
-				{
-					context->error_flag = 1;
-					flagsemicol = 0;
-				}
-			}
-			break;
-			case LFOR:
-			{
-				mustbe(context, LEFTBR, no_leftbr_in_for);
-				totree(context, TFor);
-				size_t fromref = vector_size(&TREE);
-				size_t condref = fromref + 1;
-				size_t incrref = condref + 1;
-				size_t stmtref = incrref + 1;
-				vector_increase(&TREE, 4);
-
-				if (scanner(context) == SEMICOLON) // init
-				{
-					vector_set(&TREE, fromref, 0);
-				}
-				else
-				{
-					vector_set(&TREE, fromref, (item_t)vector_size(&TREE));
-					expr(context, 0);
-					if (context->error_flag == 5)
-					{
-						context->error_flag = 1;
-						flagsemicol = 0;
-						break;
-					}
-					exprassnvoid(context);
-					mustbe(context, SEMICOLON, no_semicolon_in_for);
-				}
-				if (scanner(context) == SEMICOLON) // cond
-				{
-					vector_set(&TREE, condref, 0);
-				}
-				else
-				{
-					vector_set(&TREE, condref, (item_t)vector_size(&TREE));
-					exprval(context);
-					if (context->error_flag == 4)
-					{
-						context->error_flag = 1;
-						flagsemicol = 0;
-						break;
-					}
-					context->sopnd--;
-					mustbe(context, SEMICOLON, no_semicolon_in_for);
-					context->sopnd--;
-				}
-				if (scanner(context) == RIGHTBR) // incr
-				{
-					vector_set(&TREE, incrref, 0);
-				}
-				else
-				{
-					vector_set(&TREE, incrref, (item_t)vector_size(&TREE));
-					expr(context, 0);
-					if (context->error_flag == 5)
-					{
-						context->error_flag = 1;
-						flagsemicol = 0;
-						break;
-					}
-					exprassnvoid(context);
-					mustbe(context, RIGHTBR, no_rightbr_in_for);
-				}
-				flagsemicol = 0;
-				vector_set(&TREE, stmtref, (item_t)vector_size(&TREE));
-				context->inloop = 1;
-				statement(context);
-			}
-			break;
-			case LGOTO:
-			{
-				int i;
-				int flag = 1;
-				mustbe_complex(context, IDENT, no_ident_after_goto);
-				if (context->error_flag == no_ident_after_goto)
-				{
-					context->error_flag = 1;
-					flagsemicol = 0;
-					break;
-				}
-				totree(context, TGoto);
-				for (i = 0; flag && i < context->pgotost - 1; i += 2)
-				{
-					flag = ident_get_repr(context->sx, context->gotost[i]) != (item_t)REPRTAB_POS;
-				}
-				if (flag)
-				{
-					// первый раз встретился переход на метку, которой не было,
-					// в этом случае ссылка на identtab, стоящая после TGoto,
-					// будет отрицательной
-					totree(context, -toidentab(context, 1, 0));
-					if (context->error_flag == 5)
-					{
-						context->error_flag = 1;
-						flagsemicol = 0;
-					}
-					else
-					{
-						context->gotost[context->pgotost++] = context->lastid;
-					}
-				}
-				else
-				{
-					int id = context->gotost[i - 2];
-					if (context->gotost[id + 1] < 0) // метка уже была
-					{
-						totree(context, id);
-						break;
-					}
-					totree(context, context->gotost[context->pgotost++] = id);
-				}
-				context->gotost[context->pgotost++] = context->line;
-			}
-			break;
-			case LIF:
-			{
-				totree(context, TIf);
-				size_t elseref = vector_size(&TREE);
-				vector_increase(&TREE, 1);
-				flagsemicol = 0;
-				exprinbrkts(context, cond_must_be_in_brkts);
-				if (context->error_flag == 3)
-				{
-					context->error_flag = 1;
-					break;
-				}
-				context->sopnd--;
-				statement(context);
-				if (context->next == LELSE)
-				{
-					scanner(context);
-					vector_set(&TREE, elseref, (item_t)vector_size(&TREE));;
-					statement(context);
-				}
-				else
-				{
-					vector_set(&TREE, elseref, 0);
-				}
-			}
-			break;
-			case LRETURN:
-			{
-				item_t ftype = mode_get(context->sx, context->functype + 1);
-				context->wasret = 1;
-				if (context->next == SEMICOLON)
-				{
-					if (ftype != LVOID)
-					{
-						context_error(context, no_ret_in_func);
-						break;
-					}
-					totree(context, TReturnvoid);
-				}
-				else
-				{
-					if (ftype == LVOIDASTER)
-					{
-						flagsemicol = 0;
-					}
-					else
-					{
-						if (ftype == LVOID)
-						{
-							context_error(context, notvoidret_in_void_func);
-							flagsemicol = 0;
-							break;
-						}
-						totree(context, TReturnval);
-						totree(context, szof(context, (int)ftype));
-						scanner(context);
-						expr(context, 1);
-						if (context->error_flag == 5)
-						{
-							context->error_flag = 1;
-							flagsemicol = 0;
-							break;
-						}
-						toval(context);
-						context->sopnd--;
-						if (ftype == LFLOAT && context->ansttype == LINT)
-						{
-							totree(context, WIDEN);
-						}
-						else if (ftype != context->ansttype)
-						{
-							context_error(context, bad_type_in_ret);
-							flagsemicol = 0;
-							break;
-						}
-						totree(context, TExprend);
-					}
-				}
-			}
-			break;
-			case LSWITCH:
-			{
-				totree(context, TSwitch);
-				exprinbrkts(context, cond_must_be_in_brkts);
-				if (context->error_flag == 3)
-				{
-					context->error_flag = 1;
-					break;
-				}
-				if (context->ansttype != LCHAR && context->ansttype != LINT)
-				{
-					context_error(context, float_in_switch);
-					flagsemicol = 0;
-					break;
-				}
-				context->sopnd--;
-				scanner(context);
-				context->inswitch = 1;
-				block(context, -1);
-				flagsemicol = 0;
-				context->wasdefault = 0;
-			}
-			break;
-			case LWHILE:
-			{
-				context->inloop = 1;
-				totree(context, TWhile);
-				flagsemicol = 0;
-				exprinbrkts(context, cond_must_be_in_brkts);
-				if (context->error_flag == 3)
-				{
-					context->error_flag = 1;
-					break;
-				}
-				context->sopnd--;
-				statement(context);
-			}
-			break;
-			default:
-				expr(context, 0);
-				if (context->error_flag == 5)
-				{
-					context->error_flag = 1;
-					flagsemicol = 0;
-					break;
-				}
-				exprassnvoid(context);
-		}
-	}
-
-	if (flagsemicol && scanner(context) != SEMICOLON)
-	{
-		context_error(context, no_semicolon_after_stmt);
-		context->buf_cur = context->next;
-		context->next = context->cur;
-		context->cur = SEMICOLON;
-		context->buf_flag++;
-	}
-	context->wasdefault = oldwasdefault;
-	context->inswitch = oldinswitch;
-	context->inloop = oldinloop;
-}
-
-/** Debug from here */
-void block(parser *context, int b)
-{
-	// если b=1, то это просто блок,
-	// b = 2 - блок нити,
-	// b = -1 - блок в switch, иначе
-	// b = 0 - это блок функции
-
-	int oldinswitch = context->inswitch;
-	int notended = 1;
-	item_t olddispl = 0;
-	item_t oldlg = 0;
-	item_t firstdecl;
-
-	context->inswitch = b < 0;
-	totree(context, TBegin);
-	if (b)
-	{
-		scope_block_enter(context->sx, &olddispl, &oldlg);
-	}
-	context->blockflag = 0;
-
-	while (is_int(context->next) || is_float(context->next) || context->next == LSTRUCT ||
-		   context->next == LVOID)
-	{
-		int repeat = 1;
-		scanner(context);
-		firstdecl = gettype(context);
-		if (context->error_flag == 3)
-		{
-			context->error_flag = 1;
-			continue;
-		}
-		if (context->wasstructdef && context->next == SEMICOLON)
-		{
-			scanner(context);
-			continue;
-		}
 		do
 		{
-			item_t temp = idorpnt(context, after_type_must_be_ident, firstdecl);
+			parse_block_item(parser);
+			/* Почему не ловилась ошибка, если в блоке нити встретилась '}'? */
+		} while (parser->next_token != eof && parser->next_token != end_token);
 
-			if (context->error_flag == after_type_must_be_ident)
-			{
-				context->error_flag = 1;
-				break;
-			}
-
-			decl_id(context, (int)temp);
-			if (context->error_flag == 4)
-			{
-				context->error_flag = 1;
-				break;
-			}
-			if (context->next == COMMA)
-			{
-				scanner(context);
-			}
-			else if (context->next == SEMICOLON)
-			{
-				scanner(context);
-				repeat = 0;
-			}
-			else
-			{
-				context_error(context, def_must_end_with_semicomma);
-				context->cur = SEMICOLON;
-				repeat = 0;
-			}
-		} while (repeat);
+		expect_and_consume_token(parser, end_token, expected_end);
 	}
 
-	// кончились описания, пошли операторы до }
-
-	do
+	if (type != FUNCBODY)
 	{
-		if (b == 2 ? context->next == TEXIT : context->next == END)
-		{
-			scanner(context);
-			notended = 0;
-		}
-		else
-		{
-			statement(context);
-			if (context->cur == LEOF && context->error_flag)
-			{
-				return;
-			}
-		}
-	} while (notended);
-
-	if (b)
-	{
-		scope_block_exit(context->sx, olddispl, oldlg);
+		scope_block_exit(parser->sx, old_displ, old_lg);
 	}
-	context->inswitch = oldinswitch;
-	totree(context, TEnd);
+
+	tree_add(parser->sx, TEnd);
 }

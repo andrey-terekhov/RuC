@@ -142,7 +142,10 @@ typedef enum
 	kw_strncmp			= STRNCMP,		/**< 'strncmp'	keyword */
 	kw_strstr			= STRSTR,		/**< 'strstr'	keyword */
 	kw_strlen			= STRLEN,		/**< 'strlen'	keyword */
-	
+
+	kw_t_create_direct	= TCREATEDIRECT,
+	kw_t_exit_direct	= TEXITDIRECT,
+
 	kw_msg_send			= TMSGSEND,		/**< 't_msg_send'		keyword */
 	kw_msg_receive		= TMSGRECEIVE,	/**< 't_msg_receive'	keyword */
 	kw_join				= TJOIN,		/**< 't_join'			keyword */
@@ -155,7 +158,7 @@ typedef enum
 	kw_destroy			= TDESTROY,		/**< 't_destroy'		keyword */
 	kw_exit				= TEXIT,		/**< 't_exit'			keyword */
 	kw_getnum			= TGETNUM,		/**< 't_getnum'			keyword */
-	
+
 	kw_assert			= ASSERT,		/**< 'assert'		keyword */
 	kw_pixel			= PIXEL,		/**< 'pixel'		keyword */
 	kw_line				= LINE,			/**< 'line'			keyword */
@@ -167,7 +170,7 @@ typedef enum
 	kw_icon				= ICON,			/**< 'icon'			keyword */
 	kw_upb				= UPB,			/**< 'upb'			keyword */
 	kw_setsignal		= SETSIGNAL,	/**< 'setsignal'	keyword */
-	
+
 	kw_wifi_connect			= WIFI_CONNECT,			/**< 'wifi_connect'					keyword */
 	kw_blynk_authorization	= BLYNK_AUTORIZATION,	/**< 'blynk_authorization'			keyword */
 	kw_blynk_send			= BLYNK_SEND,			/**< 'blynk_send'					keyword */

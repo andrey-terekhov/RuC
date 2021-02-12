@@ -15,7 +15,7 @@
  */
 
 #include "analyzer.h"
-#include "extdecl.h"
+#include "parser.h"
 #include "keywords.h"
 #include "lexer.h"
 #include "uniio.h"
@@ -27,18 +27,15 @@ parser compiler_context_create(universal_io *const io, syntax *const sx, lexer *
 	parser context;
 	context.io = io;
 	context.sx = sx;
-	context.lxr = lexer;
+	context.lexer = lexer;
 
 	context.sp = 0;
 	context.sopnd = -1;
-	context.blockflag = 1;
 	context.leftansttype = -1;
 	context.buf_flag = 0;
-	context.error_flag = 0;
-	context.line = 1;
+	context.was_error = 0;
 	context.buf_cur = 0;
-	context.temp_tc = 0;
-	
+
 	context.anstdispl = 0;
 
 	return context;
@@ -49,9 +46,9 @@ parser compiler_context_create(universal_io *const io, syntax *const sx, lexer *
 void read_keywords(parser *context)
 {
 	context->sx->keywords = 1;
-	get_char(context->lxr);
-	get_char(context->lxr);
-	while (lex(context->lxr) != LEOF)
+	get_char(context->lexer);
+	get_char(context->lexer);
+	while (lex(context->lexer) != LEOF)
 	{
 		; // чтение ключевых слов
 	}
@@ -88,28 +85,27 @@ void init_modetab(parser *context)
 	vector_add(&context->sx->modes, mode_struct);
 	vector_add(&context->sx->modes, 2);
 	vector_add(&context->sx->modes, 4);
-	vector_add(&context->sx->modes, LINT);
+	vector_add(&context->sx->modes, mode_integer);
 	vector_add(&context->sx->modes, (item_t)toreprtab(context, "numTh"));
-	vector_add(&context->sx->modes, LINT);
+	vector_add(&context->sx->modes, mode_integer);
 	vector_add(&context->sx->modes, (item_t)toreprtab(context, "data"));
 
 	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
 	vector_add(&context->sx->modes, 1);
 	vector_add(&context->sx->modes, mode_function);
-	vector_add(&context->sx->modes, LVOID);
+	vector_add(&context->sx->modes, mode_void);
 	vector_add(&context->sx->modes, 1);
 	vector_add(&context->sx->modes, 2);
 
 	// занесение в modetab описателя функции void* interpreter(void* n)
 	vector_add(&context->sx->modes, 9);
 	vector_add(&context->sx->modes, mode_function);
-	vector_add(&context->sx->modes, LVOIDASTER);
+	vector_add(&context->sx->modes, mode_void_pointer);
 	vector_add(&context->sx->modes, 1);
-	vector_add(&context->sx->modes, LVOIDASTER);
+	vector_add(&context->sx->modes, mode_void_pointer);
 
 	context->sx->start_mode = 14;
 	context->sx->keywords = 0;
-	context->line = 1;
 }
 
 
@@ -132,7 +128,7 @@ int analyze(universal_io *const io, syntax *const sx)
 	universal_io temp = io_create();
 	lexer lexer = create_lexer(&temp, sx);
 	parser context = compiler_context_create(&temp, sx, &lexer);
-	
+
 	in_set_buffer(context.io, KEYWORDS);
 	read_keywords(&context);
 	in_clear(context.io);
@@ -142,8 +138,6 @@ int analyze(universal_io *const io, syntax *const sx)
 	io_erase(&temp);
 
 	context.io = io;
-	context.lxr->io = io;
-	ext_decl(&context);
-
-	return context.error_flag || context.lxr->was_error;
+	context.lexer->io = io;
+	return parse(&context);
 }

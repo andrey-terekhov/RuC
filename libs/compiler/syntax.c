@@ -356,6 +356,11 @@ size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const i
 	return last_id;
 }
 
+item_t ident_get_prev(const syntax *const sx, const size_t index)
+{
+	return sx != NULL ? vector_get(&sx->identifiers, index) : ITEM_MAX;
+}
+
 item_t ident_get_repr(const syntax *const sx, const size_t index)
 {
 	return sx != NULL ? vector_get(&sx->identifiers, index + 1) : ITEM_MAX;

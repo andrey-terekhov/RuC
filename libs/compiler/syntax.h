@@ -298,6 +298,16 @@ size_t tree_reserve(syntax *const sx);
 size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const item_t mode, const int func_def);
 
 /**
+ *	Get index for previous declaration from identifiers table by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return	 index for previous declaration in representations table, @c ITEM_MAX on failure
+ */
+item_t ident_get_prev(const syntax *const sx, const size_t index);
+
+/**
  *	Get item representation from identifiers table by index
  *
  *	@param	sx			Syntax structure

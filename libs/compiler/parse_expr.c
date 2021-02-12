@@ -1,5 +1,5 @@
 /*
- *	Copyright 2016 Andrey Terekhov
+ *	Copyright 2021 Andrey Terekhov, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,11 +14,105 @@
  *	limitations under the License.
  */
 
-#include "extdecl.h"
-#include "errors.h"
-#include "defs.h"
-#include "lexer.h"
+#include "parser.h"
 #include <string.h>
+
+void unarexpr(parser *context);
+void exprassn(parser *context, int level);
+void expr(parser *context, int level);
+
+int scanner(parser *context)
+{
+	context->curr_token = context->next_token;
+	if (!context->buf_flag)
+	{
+		context->next_token = lex(context->lexer);
+	}
+	else
+	{
+		context->next_token = context->buf_cur;
+		context->buf_flag--;
+	}
+	return context->curr_token;
+}
+
+void mustbe(parser *context, int what, int e)
+{
+	if (context->next_token != what)
+	{
+		parser_error(context, e);
+		context->curr_token = what;
+	}
+	else
+	{
+		scanner(context);
+	}
+}
+
+void applid(parser *context)
+{
+	context->lastid = REPRTAB[REPRTAB_POS + 1];
+	if (context->lastid == 1)
+	{
+		char buffer[MAXSTRINGL];
+		repr_get_ident(context->sx, REPRTAB_POS, buffer);
+		parser_error(context, ident_is_not_declared, buffer);
+		context->was_error = 5;
+	}
+
+}
+
+void totree(parser *context, item_t op)
+{
+	vector_add(&TREE, op);
+}
+
+void totreef(parser *context, item_t op)
+{
+	vector_add(&TREE, op);
+	if (context->ansttype == LFLOAT &&
+		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
+	{
+		const size_t index = vector_size(&TREE) - 1;
+		vector_set(&TREE, index, vector_get(&TREE, index) + 50);
+	}
+}
+
+int double_to_tree(vector *const tree, const double num)
+{
+	int64_t num64;
+	memcpy(&num64, &num, sizeof(int64_t));
+
+	int32_t fst = num64 & 0x00000000ffffffff;
+	int32_t snd = (num64 & 0xffffffff00000000) >> 32;
+
+#if INT_MIN < ITEM_MIN || INT_MAX > ITEM_MAX
+	if (fst < ITEM_MIN || fst > ITEM_MAX || snd < ITEM_MIN || snd > ITEM_MAX)
+	{
+		return -1;
+	}
+#endif
+
+	size_t ret = vector_add(tree, fst);
+	ret = ret != SIZE_MAX ? vector_add(tree, snd) : SIZE_MAX;
+	return ret == SIZE_MAX;
+}
+
+double double_from_tree(vector *const tree)
+{
+	const size_t index = vector_size(tree) - 2;
+
+	const int64_t fst = (int64_t)vector_get(tree, index) & 0x00000000ffffffff;
+	const int64_t snd = (int64_t)vector_get(tree, index + 1) & 0x00000000ffffffff;
+	int64_t num64 = (snd << 32) | fst;
+
+	vector_remove(tree);
+	vector_remove(tree);
+
+	double num;
+	memcpy(&num, &num64, sizeof(double));
+	return num;
+}
 
 void binop(parser *context, int sp)
 {
@@ -28,16 +122,16 @@ void binop(parser *context, int sp)
 
 	if (is_pointer(context->sx, ltype) || is_pointer(context->sx, rtype))
 	{
-		context_error(context, operand_is_pointer);
-		context->error_flag = 5;
+		parser_error(context, operand_is_pointer);
+		context->was_error = 5;
 		return; // 1
 	}
 	if ((op == LOGOR || op == LOGAND || op == LOR || op == LEXOR || op == LAND || op == LSHL || op == LSHR ||
 		 op == LREM) &&
 		(is_float(ltype) || is_float(rtype)))
 	{
-		context_error(context, int_op_for_float);
-		context->error_flag = 5;
+		parser_error(context, int_op_for_float);
+		context->was_error = 5;
 		return; // 1
 	}
 	if (is_int(ltype) && is_float(rtype))
@@ -84,7 +178,7 @@ void toval(parser *context)
 	}
 	else if (is_struct(context->sx, context->ansttype))
 	{
-		if (!context->inass)
+		if (!context->flag_in_assignment)
 		{
 			if (context->anst == IDENT)
 			{
@@ -106,9 +200,9 @@ void toval(parser *context)
 		if (context->anst == IDENT)
 		{
 			vector_set(&TREE, vector_size(&TREE) - 2
-				, is_float(context->ansttype)
-					? TIdenttovald
-					: TIdenttoval);
+					   , is_float(context->ansttype)
+					   ? TIdenttovald
+					   : TIdenttoval);
 		}
 
 		if (!(is_array(context->sx, context->ansttype) || is_pointer(context->sx, context->ansttype)))
@@ -122,37 +216,20 @@ void toval(parser *context)
 	}
 }
 
-void insertwiden(parser *context)
-{
-	vector_remove(&TREE);
-	totree(context, WIDEN);
-	totree(context, TExprend);
-}
-
-void applid(parser *context)
-{
-	context->lastid = REPRTAB[REPRTAB_POS + 1];
-	if (context->lastid == 1)
-	{
-		context_error(context, ident_is_not_declared);
-		context->error_flag = 5;
-	}
-}
-
 void actstring(int type, parser *context)
 {
 	scanner(context);
 	totree(context, type == LFLOAT ? TStringd : TString);
 	size_t adn = vector_size(&TREE);
 	vector_increase(&TREE, 1);
-	
+
 	int n = 0;
 	do
 	{
 		exprassn(context, 1);
-		if (context->error_flag == 6)
+		if (context->was_error == 6)
 		{
-			context->error_flag = 1;
+			context->was_error = 1;
 			return; // 1
 		}
 		const size_t size = vector_size(&TREE);
@@ -169,21 +246,21 @@ void actstring(int type, parser *context)
 		}
 		else
 		{
-			context_error(context, wrong_init_in_actparam);
-			context->error_flag = 1;
+			parser_error(context, wrong_init_in_actparam);
+			context->was_error = 1;
 			return; // 1
 		}
 		++n;
 	} while (scanner(context) == COMMA ? scanner(context), 1 : 0);
 
 	vector_set(&TREE, adn, n);
-	if (context->cur != END)
+	if (context->curr_token != END)
 	{
-		context_error(context, no_comma_or_end);
-		context->error_flag = 1;
+		parser_error(context, no_comma_or_end);
+		context->was_error = 1;
 		return; // 1
 	}
-	context->ansttype = (int)newdecl(context->sx, mode_array, type);
+	context->ansttype = (int)to_modetab(context, mode_array, type);
 	context->anst = VAL;
 }
 
@@ -191,17 +268,17 @@ void mustbestring(parser *context)
 {
 	scanner(context);
 	exprassn(context, 1);
-	if (context->error_flag == 6)
+	if (context->was_error == 6)
 	{
-		context->error_flag = 5;
+		context->was_error = 5;
 		return; // 1
 	}
 	toval(context);
 	context->sopnd--;
 	if (!(is_string(context->sx, context->ansttype)))
 	{
-		context_error(context, not_string_in_stanfunc);
-		context->error_flag = 5;
+		parser_error(context, not_string_in_stanfunc);
+		context->was_error = 5;
 	}
 }
 
@@ -209,18 +286,18 @@ void mustbepointstring(parser *context)
 {
 	scanner(context);
 	exprassn(context, 1);
-	if (context->error_flag == 6)
+	if (context->was_error == 6)
 	{
-		context->error_flag = 5;
+		context->was_error = 5;
 		return; // 1
 	}
 	toval(context);
 	context->sopnd--;
 	if (!(is_pointer(context->sx, context->ansttype) &&
-		  is_string(context->sx, (int)mode_get(context->sx, context->ansttype + 1))))
+		  is_string(context->sx, mode_get(context->sx, context->ansttype + 1))))
 	{
-		context_error(context, not_point_string_in_stanfunc);
-		context->error_flag = 5;
+		parser_error(context, not_point_string_in_stanfunc);
+		context->was_error = 5;
 		return; // 1
 	}
 }
@@ -229,9 +306,9 @@ void mustberow(parser *context)
 {
 	scanner(context);
 	exprassn(context, 1);
-	if (context->error_flag == 6)
+	if (context->was_error == 6)
 	{
-		context->error_flag = 5;
+		context->was_error = 5;
 		return; // 1
 	}
 	toval(context);
@@ -239,8 +316,8 @@ void mustberow(parser *context)
 
 	if (!is_array(context->sx, context->ansttype))
 	{
-		context_error(context, not_array_in_stanfunc);
-		context->error_flag = 5;
+		parser_error(context, not_array_in_stanfunc);
+		context->was_error = 5;
 	}
 }
 
@@ -248,17 +325,17 @@ void mustbeint(parser *context)
 {
 	scanner(context);
 	exprassn(context, 1);
-	if (context->error_flag == 6)
+	if (context->was_error == 6)
 	{
-		context->error_flag = 5;
+		context->was_error = 5;
 		return; // 1
 	}
 	toval(context);
 	context->sopnd--;
 	if (context->ansttype != LINT && context->ansttype != LCHAR)
 	{
-		context_error(context, not_int_in_stanfunc);
-		context->error_flag = 5;
+		parser_error(context, not_int_in_stanfunc);
+		context->was_error = 5;
 	}
 }
 
@@ -267,18 +344,18 @@ void mustberowofint(parser *context)
 	if (scanner(context) == BEGIN)
 	{
 		actstring(LINT, context), totree(context, TExprend);
-		if (context->error_flag == 2)
+		if (context->was_error == 2)
 		{
-			context->error_flag = 5;
+			context->was_error = 5;
 			return; // 1
 		}
 	}
 	else
 	{
 		exprassn(context, 1);
-		if (context->error_flag == 6)
+		if (context->was_error == 6)
 		{
-			context->error_flag = 5;
+			context->was_error = 5;
 			return; // 1
 		}
 		toval(context);
@@ -286,14 +363,14 @@ void mustberowofint(parser *context)
 		if (context->ansttype == LINT || context->ansttype == LCHAR)
 		{
 			totree(context, ROWING);
-			context->ansttype = (int)newdecl(context->sx, mode_array, LINT);
+			context->ansttype = (int)to_modetab(context, mode_array, LINT);
 		}
 	}
 	if (!(is_array(context->sx, context->ansttype) &&
-		  is_int((int)mode_get(context->sx, context->ansttype + 1))))
+		  is_int(mode_get(context->sx, context->ansttype + 1))))
 	{
-		context_error(context, not_rowofint_in_stanfunc);
-		context->error_flag = 5;
+		parser_error(context, not_rowofint_in_stanfunc);
+		context->was_error = 5;
 	}
 }
 
@@ -302,18 +379,18 @@ void mustberowoffloat(parser *context)
 	if (scanner(context) == BEGIN)
 	{
 		actstring(LFLOAT, context), totree(context, TExprend);
-		if (context->error_flag == 2)
+		if (context->was_error == 2)
 		{
-			context->error_flag = 5;
+			context->was_error = 5;
 			return; // 1
 		}
 	}
 	else
 	{
 		exprassn(context, 1);
-		if (context->error_flag == 6)
+		if (context->was_error == 6)
 		{
-			context->error_flag = 5;
+			context->was_error = 5;
 			return; // 1
 		}
 		toval(context);
@@ -321,63 +398,51 @@ void mustberowoffloat(parser *context)
 		if (context->ansttype == LFLOAT)
 		{
 			totree(context, ROWINGD);
-			context->ansttype = (int)newdecl(context->sx, mode_array, LFLOAT);
+			context->ansttype = (int)to_modetab(context, mode_array, LFLOAT);
 		}
 	}
 
 	if (!(is_array(context->sx, context->ansttype) &&
-		  (int)mode_get(context->sx, context->ansttype + 1) == LFLOAT))
+		  mode_get(context->sx, context->ansttype + 1) == LFLOAT))
 	{
-		context_error(context, not_rowoffloat_in_stanfunc);
-		context->error_flag = 5;
+		parser_error(context, not_rowoffloat_in_stanfunc);
+		context->was_error = 5;
 	}
 }
 
 void primaryexpr(parser *context)
 {
-	if (context->cur == CHAR_CONST)
+	if (context->curr_token == CHAR_CONST)
 	{
 		totree(context, TConst);
-		totree(context, context->lxr->num);
+		totree(context, context->lexer->num);
 		context->stackoperands[++context->sopnd] = context->ansttype = LCHAR;
 		context->anst = NUMBER;
 	}
-	else if (context->cur == INT_CONST)
+	else if (context->curr_token == INT_CONST)
 	{
 		totree(context, TConst);
-		totree(context, context->lxr->num);
+		totree(context, context->lexer->num);
 		context->stackoperands[++context->sopnd] = context->ansttype = LINT;
 		context->anst = NUMBER;
 	}
-	else if (context->cur == FLOAT_CONST)
+	else if (context->curr_token == FLOAT_CONST)
 	{
 		totree(context, TConstd);
-		double_to_tree(&TREE, context->lxr->num_double);
+		double_to_tree(&TREE, context->lexer->num_double);
 		context->stackoperands[++context->sopnd] = context->ansttype = LFLOAT;
 		context->anst = NUMBER;
 	}
-	else if (context->cur == STRING)
+	else if (context->curr_token == STRING)
 	{
-		int i;
-
-		totree(context, TString);
-		totree(context, context->lxr->num);
-
-		for (i = 0; i < context->lxr->num; i++)
-		{
-			totree(context, context->lxr->lexstr[i]);
-		}
-
-		context->ansttype = (int)newdecl(context->sx, mode_array, LCHAR);
-		context->stackoperands[++context->sopnd] = context->ansttype;
-		context->anst = VAL;
+		parse_string_literal_expression(context);
 	}
-	else if (context->cur == IDENT)
+	else if (context->curr_token == IDENT)
 	{
 		applid(context);
-		if (context->error_flag == 5)
+		if (context->was_error == 5)
 		{
-			context->error_flag = 4;
+			context->was_error = 4;
 			return; // 1
 		}
 
@@ -388,22 +453,22 @@ void primaryexpr(parser *context)
 		context->stackoperands[++context->sopnd] = context->ansttype;
 		context->anst = IDENT;
 	}
-	else if (context->cur == LEFTBR)
+	else if (context->curr_token == LEFTBR)
 	{
-		if (context->next == LVOID)
+		if (context->next_token == LVOID)
 		{
 			scanner(context);
 			mustbe(context, LMULT, no_mult_in_cast);
 			unarexpr(context);
-			if (context->error_flag == 7)
+			if (context->was_error == 7)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 			if (!is_pointer(context->sx, context->ansttype))
 			{
-				context_error(context, not_pointer_in_cast);
-				context->error_flag = 4;
+				parser_error(context, not_pointer_in_cast);
+				context->was_error = 4;
 				return; // 1
 			}
 			mustbe(context, RIGHTBR, no_rightbr_in_cast);
@@ -416,9 +481,9 @@ void primaryexpr(parser *context)
 			int oldsp = context->sp;
 			scanner(context);
 			expr(context, 1);
-			if (context->error_flag == 5)
+			if (context->was_error == 5)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 			mustbe(context, RIGHTBR, wait_rightbr_in_primary);
@@ -428,24 +493,24 @@ void primaryexpr(parser *context)
 			}
 		}
 	}
-	else if (context->cur <= STANDARD_FUNC_START) // стандартная функция
+	else if (context->curr_token <= STANDARD_FUNC_START) // стандартная функция
 	{
-		int func = context->cur;
+		int func = context->curr_token;
 
 		if (scanner(context) != LEFTBR)
 		{
-			context_error(context, no_leftbr_in_stand_func);
-			context->buf_cur = context->next;
-			context->next = context->cur;
-			context->cur = LEFTBR;
+			parser_error(context, no_leftbr_in_stand_func);
+			context->buf_cur = context->next_token;
+			context->next_token = context->curr_token;
+			context->curr_token = LEFTBR;
 			context->buf_flag++;
 		}
 		if (func == ASSERT)
 		{
 			mustbeint(context);
-			if (context->error_flag == 5)
+			if (context->was_error == 5)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 			mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
@@ -461,18 +526,18 @@ void primaryexpr(parser *context)
 			{
 				mustbestring(context);
 			}
-			if (context->error_flag == 5)
+			if (context->was_error == 5)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 			if (func != STRLEN)
 			{
 				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
 				mustbestring(context);
-				if (context->error_flag == 5)
+				if (context->was_error == 5)
 				{
-					context->error_flag = 4;
+					context->was_error = 4;
 					return; // 1
 				}
 				if (func == STRNCPY || func == STRNCAT || func == STRNCMP)
@@ -481,9 +546,9 @@ void primaryexpr(parser *context)
 					mustbeint(context);
 				}
 			}
-			if (context->error_flag == 5)
+			if (context->was_error == 5)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 			if (func < STRNCAT)
@@ -495,9 +560,9 @@ void primaryexpr(parser *context)
 		{
 			// новые функции Фадеева
 			mustbeint(context);
-			if (context->error_flag == 5)
+			if (context->was_error == 5)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 			if (func == SEND_INT || func == SEND_STRING)
@@ -515,7 +580,7 @@ void primaryexpr(parser *context)
 			else
 			{
 				context->stackoperands[++context->sopnd] = context->ansttype =
-					func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)newdecl(context->sx, mode_array, LCHAR);
+				func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)to_modetab(context, mode_array, LCHAR);
 			}
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
@@ -524,9 +589,9 @@ void primaryexpr(parser *context)
 			{
 				// scaner(context);
 				mustberowofint(context);
-				if (context->error_flag == 5)
+				if (context->was_error == 5)
 				{
-					context->error_flag = 4;
+					context->was_error = 4;
 					return; // 1
 				}
 				if (func != CLEAR)
@@ -537,30 +602,30 @@ void primaryexpr(parser *context)
 				if (func == LINE || func == RECTANGLE || func == ELLIPS)
 				{
 					mustbeint(context);
-					if (context->error_flag == 5)
+					if (context->was_error == 5)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
 					mustbeint(context);
-					if (context->error_flag == 5)
+					if (context->was_error == 5)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
 					mustbeint(context);
-					if (context->error_flag == 5)
+					if (context->was_error == 5)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
 					mustbeint(context);
-					if (context->error_flag == 5)
+					if (context->was_error == 5)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 					if (func != LINE)
@@ -573,15 +638,15 @@ void primaryexpr(parser *context)
 				{
 					mustbeint(context);
 					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-					if (context->error_flag == 5)
+					if (context->was_error == 5)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 					mustbeint(context);
-					if (context->error_flag == 5)
+					if (context->was_error == 5)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 					if (func == ICON)
@@ -593,16 +658,16 @@ void primaryexpr(parser *context)
 				else if (func == DRAW_NUMBER || func == DRAW_STRING)
 				{
 					mustbeint(context);
-					if (context->error_flag == 5)
+					if (context->was_error == 5)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
 					mustbeint(context);
-					if (context->error_flag == 5)
+					if (context->was_error == 5)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
@@ -615,9 +680,9 @@ void primaryexpr(parser *context)
 					{
 						scanner(context);
 						exprassn(context, 1);
-						if (context->error_flag == 6)
+						if (context->was_error == 6)
 						{
-							context->error_flag = 4;
+							context->was_error = 4;
 							return; // 1
 						}
 						toval(context);
@@ -628,8 +693,8 @@ void primaryexpr(parser *context)
 						}
 						else if (context->ansttype != LFLOAT)
 						{
-							context_error(context, not_float_in_stanfunc);
-							context->error_flag = 4;
+							parser_error(context, not_float_in_stanfunc);
+							context->was_error = 4;
 							return; // 1
 						}
 					}
@@ -638,16 +703,16 @@ void primaryexpr(parser *context)
 			else if (func == SETSIGNAL)
 			{
 				mustbeint(context);
-				if (context->error_flag == 5)
+				if (context->was_error == 5)
 				{
-					context->error_flag = 4;
+					context->was_error = 4;
 					return; // 1
 				}
 				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
 				mustberowofint(context);
-				if (context->error_flag == 5)
+				if (context->was_error == 5)
 				{
-					context->error_flag = 4;
+					context->was_error = 4;
 					return; // 1
 				}
 				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
@@ -665,9 +730,9 @@ void primaryexpr(parser *context)
 			else
 			{
 				mustbeint(context);
-				if (context->error_flag == 5)
+				if (context->was_error == 5)
 				{
-					context->error_flag = 4;
+					context->was_error = 4;
 					return; // 1
 				}
 				if (func != BLYNK_RECEIVE)
@@ -680,18 +745,18 @@ void primaryexpr(parser *context)
 					else if (func == BLYNK_SEND)
 					{
 						mustbeint(context);
-						if (context->error_flag == 5)
+						if (context->was_error == 5)
 						{
-							context->error_flag = 4;
+							context->was_error = 4;
 							return; // 1
 						}
 					}
 					else if (func == BLYNK_PROPERTY)
 					{
 						mustbestring(context);
-						if (context->error_flag == 5)
+						if (context->was_error == 5)
 						{
-							context->error_flag = 4;
+							context->was_error = 4;
 							return; // 1
 						}
 						mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
@@ -700,16 +765,16 @@ void primaryexpr(parser *context)
 					else // BLYNK_LCD
 					{
 						mustbeint(context);
-						if (context->error_flag == 5)
+						if (context->was_error == 5)
 						{
-							context->error_flag = 4;
+							context->was_error = 4;
 							return; // 1
 						}
 						mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
 						mustbeint(context);
-						if (context->error_flag == 5)
+						if (context->was_error == 5)
 						{
-							context->error_flag = 4;
+							context->was_error = 4;
 							return; // 1
 						}
 						mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
@@ -725,16 +790,16 @@ void primaryexpr(parser *context)
 		else if (func == UPB) // UPB
 		{
 			mustbeint(context);
-			if (context->error_flag == 5)
+			if (context->was_error == 5)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 			mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
 			mustberow(context);
-			if (context->error_flag == 5)
+			if (context->was_error == 5)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 			context->stackoperands[++context->sopnd] = context->ansttype = LINT;
@@ -749,8 +814,8 @@ void primaryexpr(parser *context)
 			{
 				context->anst = VAL;
 				context->ansttype = context->stackoperands[++context->sopnd] =
-					func == TGETNUM ? LINT : 2; // 2 - это ссылка на msg_info
-												//не было параметра,  выдали 1 результат
+				func == TGETNUM ? LINT : 2; // 2 - это ссылка на msg_info
+											//не было параметра,  выдали 1 результат
 			}
 			else
 			{
@@ -763,23 +828,23 @@ void primaryexpr(parser *context)
 				{
 					item_t dn;
 
-					if (context->cur != IDENT)
+					if (context->curr_token != IDENT)
 					{
-						context_error(context, act_param_not_ident);
-						context->error_flag = 4;
+						parser_error(context, act_param_not_ident);
+						context->was_error = 4;
 						return; // 1
 					}
 					applid(context);
-					if (context->error_flag == 5)
+					if (context->was_error == 5)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 					if (ident_get_mode(context->sx, context->lastid) != 15 ||
-						context->error_flag == 5) // 15 - это аргумент типа void* (void*)
+						context->was_error == 5) // 15 - это аргумент типа void* (void*)
 					{
-						context_error(context, wrong_arg_in_create);
-						context->error_flag = 4;
+						parser_error(context, wrong_arg_in_create);
+						context->was_error = 4;
 						return; // 1
 					}
 
@@ -801,9 +866,9 @@ void primaryexpr(parser *context)
 				{
 					context->leftansttype = 2;
 					exprassn(context, 1);
-					if (context->error_flag == 6)
+					if (context->was_error == 6)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 					toval(context);
@@ -812,8 +877,8 @@ void primaryexpr(parser *context)
 					{
 						if (context->ansttype != 2) // 2 - это аргумент типа msg_info (struct{int numTh; int data;})
 						{
-							context_error(context, wrong_arg_in_send);
-							context->error_flag = 4;
+							parser_error(context, wrong_arg_in_send);
+							context->was_error = 4;
 							return; // 1
 						}
 						--context->sopnd;
@@ -822,15 +887,15 @@ void primaryexpr(parser *context)
 					{
 						if (!is_int(context->ansttype))
 						{
-							context_error(context, param_threads_not_int);
-							context->error_flag = 4;
+							parser_error(context, param_threads_not_int);
+							context->was_error = 4;
 							return; // 1
 						}
 						if (func == TSEMCREATE)
 						{
 							context->anst = VAL,
 							context->ansttype = context->stackoperands[context->sopnd] =
-								LINT; // съели 1 параметр, выдали int
+							LINT; // съели 1 параметр, выдали int
 						}
 						else
 						{
@@ -849,9 +914,9 @@ void primaryexpr(parser *context)
 		{
 			scanner(context);
 			exprassn(context, 1);
-			if (context->error_flag == 6)
+			if (context->was_error == 6)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 			toval(context);
@@ -861,9 +926,9 @@ void primaryexpr(parser *context)
 		{
 			scanner(context);
 			exprassn(context, 1);
-			if (context->error_flag == 6)
+			if (context->was_error == 6)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 			toval(context);
@@ -875,17 +940,17 @@ void primaryexpr(parser *context)
 			{
 				if (!is_int(context->ansttype))
 				{
-					context_error(context, param_setmotor_not_int);
-					context->error_flag = 4;
+					parser_error(context, param_setmotor_not_int);
+					context->was_error = 4;
 					return; // 1
 				}
 				mustbe(context, COMMA, no_comma_in_setmotor);
 				if (func == GETDIGSENSOR)
 				{
 					mustberowofint(context);
-					if (context->error_flag == 5)
+					if (context->was_error == 5)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 					context->ansttype = context->stackoperands[++context->sopnd] = LINT;
@@ -894,16 +959,16 @@ void primaryexpr(parser *context)
 				{
 					scanner(context);
 					exprassn(context, 1);
-					if (context->error_flag == 6)
+					if (context->was_error == 6)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 					toval(context);
 					if (!is_int(context->ansttype))
 					{
-						context_error(context, param_setmotor_not_int);
-						context->error_flag = 4;
+						parser_error(context, param_setmotor_not_int);
+						context->was_error = 4;
 						return; // 1
 					}
 					if (func == SETMOTOR || func == VOLTAGE)
@@ -929,15 +994,15 @@ void primaryexpr(parser *context)
 				}
 				if (!is_float(context->ansttype))
 				{
-					context_error(context, bad_param_in_stand_func);
-					context->error_flag = 4;
+					parser_error(context, bad_param_in_stand_func);
+					context->was_error = 4;
 					return; // 1
 				}
 			}
 		}
-		if (context->error_flag == 5)
+		if (context->was_error == 5)
 		{
-			context->error_flag = 4;
+			context->was_error = 4;
 			return; // 1
 		}
 		totree(context, 9500 - func);
@@ -945,13 +1010,13 @@ void primaryexpr(parser *context)
 	}
 	else
 	{
-		context_error(context, not_primary);
-		context->error_flag = 4;
+		parser_error(context, not_primary, context->curr_token);
+		context->was_error = 4;
 		return; // 1
 	}
-	if (context->error_flag == 5)
+	if (context->was_error == 5)
 	{
-		context->error_flag = 4;
+		context->was_error = 4;
 		return; // 1
 	}
 }
@@ -960,8 +1025,8 @@ void index_check(parser *context)
 {
 	if (!is_int(context->ansttype))
 	{
-		context_error(context, index_must_be_int);
-		context->error_flag = 5;
+		parser_error(context, index_must_be_int);
+		context->was_error = 5;
 	}
 }
 
@@ -980,7 +1045,7 @@ int find_field(parser *context, int stype)
 	{
 		int field_type = (int)mode_get(context->sx, stype + 3 + (int)i);
 
-		if (mode_get(context->sx, stype + 4 + (int)i) == (item_t)REPRTAB_POS)
+		if ((size_t)mode_get(context->sx, stype + 4 + (int)i) == REPRTAB_POS)
 		{
 			context->stackoperands[context->sopnd] = context->ansttype = field_type;
 			flag = 0;
@@ -988,14 +1053,16 @@ int find_field(parser *context, int stype)
 		}
 		else
 		{
-			select_displ += szof(context, field_type);
+			select_displ += (int)size_of(context->sx, field_type);
 		}
 		// прибавляем к суммарному смещению длину поля
 	}
 	if (flag)
 	{
-		context_error(context, no_field);
-		context->error_flag = 5;
+		char buffer[MAXSTRINGL];
+		repr_get_ident(context->sx, REPRTAB_POS, buffer);
+		parser_error(context, no_field, buffer);
+		context->was_error = 5;
 		return 0; // 1
 	}
 	return select_displ;
@@ -1003,12 +1070,12 @@ int find_field(parser *context, int stype)
 
 void selectend(parser *context)
 {
-	while (context->next == DOT)
+	while (context->next_token == DOT)
 	{
 		context->anstdispl += find_field(context, context->ansttype);
-		if (context->error_flag == 6)
+		if (context->was_error == 6)
 		{
-			context->error_flag = 5;
+			context->was_error = 5;
 			return; // 1
 		}
 	}
@@ -1020,8 +1087,6 @@ void selectend(parser *context)
 	}
 }
 
-void array_init(parser *context, int t);
-
 void postexpr(parser *context)
 {
 	int lid;
@@ -1031,19 +1096,19 @@ void postexpr(parser *context)
 	lid = context->lastid;
 	leftansttyp = context->ansttype;
 
-	if (context->next == LEFTBR) // вызов функции
+	if (context->next_token == LEFTBR) // вызов функции
 	{
 		int j;
 		item_t n;
 		item_t dn;
-		int oldinass = context->inass;
+		int oldinass = context->flag_in_assignment;
 
 		was_func = 1;
 		scanner(context);
 		if (!is_function(context->sx, leftansttyp))
 		{
-			context_error(context, call_not_from_function);
-			context->error_flag = 4;
+			parser_error(context, call_not_from_function);
+			context->was_error = 4;
 			return; // 1
 		}
 
@@ -1055,29 +1120,29 @@ void postexpr(parser *context)
 		for (item_t i = 0; i < n; i++) // фактические параметры
 		{
 			int mdj = context->leftansttype = (int)mode_get(context->sx, j); // это вид формального параметра, в
-																   // context->ansttype будет вид фактического
-																   // параметра
+																			 // context->ansttype будет вид фактического
+																			 // параметра
 			scanner(context);
 			if (is_function(context->sx, mdj))
 			{
 				// фактическим параметром должна быть функция, в С - это только идентификатор
 
-				if (context->cur != IDENT)
+				if (context->curr_token != IDENT)
 				{
-					context_error(context, act_param_not_ident);
-					context->error_flag = 4;
+					parser_error(context, act_param_not_ident);
+					context->was_error = 4;
 					return; // 1
 				}
 				applid(context);
-				if (context->error_flag == 5)
+				if (context->was_error == 5)
 				{
-					context->error_flag = 4;
+					context->was_error = 4;
 					return; // 1
 				}
 				if ((int)ident_get_mode(context->sx, context->lastid) != mdj)
 				{
-					context_error(context, diff_formal_param_type_and_actual);
-					context->error_flag = 4;
+					parser_error(context, diff_formal_param_type_and_actual);
+					context->was_error = 4;
 					return; // 1
 				}
 				dn = ident_get_displ(context->sx, context->lastid);
@@ -1095,22 +1160,22 @@ void postexpr(parser *context)
 			}
 			else
 			{
-				if (context->cur == BEGIN && is_array(context->sx, mdj))
+				if (context->curr_token == BEGIN && is_array(context->sx, mdj))
 				{
 					actstring((int)mode_get(context->sx, mdj + 1), context), totree(context, TExprend);
-					if (context->error_flag == 2)
+					if (context->was_error == 2)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 				}
 				else
 				{
-					context->inass = 0;
+					context->flag_in_assignment = 0;
 					exprassn(context, 1);
-					if (context->error_flag == 6)
+					if (context->was_error == 6)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 					toval(context);
@@ -1118,65 +1183,60 @@ void postexpr(parser *context)
 
 					if (mdj > 0 && mdj != context->ansttype)
 					{
-						context_error(context, diff_formal_param_type_and_actual);
-						context->error_flag = 4;
+						parser_error(context, diff_formal_param_type_and_actual);
+						context->was_error = 4;
 						return; // 1
 					}
 
 					if (is_int(mdj) && is_float(context->ansttype))
 					{
-						context_error(context, float_instead_int);
-						context->error_flag = 4;
+						parser_error(context, float_instead_int);
+						context->was_error = 4;
 						return; // 1
 					}
 
 					if (is_float(mdj) && is_int(context->ansttype))
 					{
-						insertwiden(context);
+						insert_widen(context);
 					}
 					--context->sopnd;
 				}
 			}
 			if (i < n - 1 && scanner(context) != COMMA)
 			{
-				context_error(context, no_comma_in_act_params);
-				context->error_flag = 4;
+				parser_error(context, no_comma_in_act_params);
+				context->was_error = 4;
 				return; // 1
 			}
 			j++;
 		}
-		context->inass = oldinass;
+		context->flag_in_assignment = oldinass;
 		mustbe(context, RIGHTBR, wrong_number_of_params);
 		totree(context, TCall2);
 		totree(context, lid);
 		context->stackoperands[context->sopnd] = context->ansttype = (int)mode_get(context->sx, leftansttyp + 1);
 		context->anst = VAL;
-		if (is_struct(context->sx, context->ansttype))
-		{
-			context->x -= (int)mode_get(context->sx, context->ansttype + 1) - 1;
-		}
 	}
 
-	while (context->next == LEFTSQBR || context->next == ARROW || context->next == DOT)
+	while (context->next_token == LEFTSQBR || context->next_token == ARROW || context->next_token == DOT)
 	{
-		while (context->next == LEFTSQBR) // вырезка из массива (возможно, многомерного)
+		while (context->next_token == LEFTSQBR) // вырезка из массива (возможно, многомерного)
 		{
 			if (was_func)
 			{
-				context_error(context, slice_from_func);
-				context->error_flag = 4;
+				parser_error(context, slice_from_func);
+				context->was_error = 4;
 				return; // 1
 			}
 			if (!is_array(context->sx, context->ansttype)) // вырезка не из массива
 			{
-				context_error(context, slice_not_from_array);
-				context->error_flag = 4;
+				parser_error(context, slice_not_from_array);
+				context->was_error = 4;
 				return; // 1
 			}
 
 			item_t elem_type = mode_get(context->sx, context->ansttype + 1);
 
-			scanner(context);
 			scanner(context);
 
 			if (context->anst == IDENT) // a[i]
@@ -1191,25 +1251,25 @@ void postexpr(parser *context)
 			}
 
 			totree(context, elem_type);
-			exprval(context);
-			if (context->error_flag == 4)
+			parse_condition(context);
+			if (context->was_error == 4)
 			{
 				return; // 1
 			}
 			index_check(context); // проверка, что индекс int или char
-			if (context->error_flag == 5)
+			if (context->was_error == 5)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 
 			mustbe(context, RIGHTSQBR, no_rightsqbr_in_slice);
 
-			context->stackoperands[--context->sopnd] = context->ansttype = (int)elem_type;
+			context->stackoperands[context->sopnd] = context->ansttype = (int)elem_type;
 			context->anst = ADDR;
 		}
 
-		while (context->next == ARROW)
+		while (context->next_token == ARROW)
 		{
 			// это выборка поля из указателя на структуру, если после
 			// -> больше одной точки подряд, схлопываем в 1 select
@@ -1218,8 +1278,8 @@ void postexpr(parser *context)
 			if (!is_pointer(context->sx, context->ansttype) ||
 				!is_struct(context->sx, (int)mode_get(context->sx, context->ansttype + 1)))
 			{
-				context_error(context, get_field_not_from_struct_pointer);
-				context->error_flag = 4;
+				parser_error(context, get_field_not_from_struct_pointer);
+				context->was_error = 4;
 				return; // 1
 			}
 
@@ -1234,54 +1294,54 @@ void postexpr(parser *context)
 
 			context->ansttype = (int)mode_get(context->sx, context->ansttype + 1);
 			context->anstdispl = find_field(context, context->ansttype);
-			if (context->error_flag == 6)
+			if (context->was_error == 6)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 			selectend(context);
-			if (context->error_flag == 5)
+			if (context->was_error == 5)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 		}
-		if (context->next == DOT)
+		if (context->next_token == DOT)
 
 		{
 			if (!is_struct(context->sx, context->ansttype))
 			{
-				context_error(context, select_not_from_struct);
-				context->error_flag = 4;
+				parser_error(context, select_not_from_struct);
+				context->was_error = 4;
 				return; // 1
 			}
 			if (context->anst == VAL) // структура - значение функции
 			{
-				int len1 = szof(context, context->ansttype);
+				int len1 = (int)size_of(context->sx, context->ansttype);
 				context->anstdispl = 0;
-				while (context->next == DOT)
+				while (context->next_token == DOT)
 				{
 					context->anstdispl += find_field(context, context->ansttype);
-					if (context->error_flag == 6)
+					if (context->was_error == 6)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 				}
 				totree(context, COPYST);
 				totree(context, context->anstdispl);
-				totree(context, szof(context, context->ansttype));
+				totree(context, (item_t)size_of(context->sx, context->ansttype));
 				totree(context, len1);
 			}
 			else if (context->anst == IDENT)
 			{
 				int globid = context->anstdispl < 0 ? -1 : 1;
-				while (context->next == DOT)
+				while (context->next_token == DOT)
 				{
 					context->anstdispl += globid * find_field(context, context->ansttype);
-					if (context->error_flag == 6)
+					if (context->was_error == 6)
 					{
-						context->error_flag = 4;
+						context->was_error = 4;
 						return; // 1
 					}
 				}
@@ -1292,32 +1352,32 @@ void postexpr(parser *context)
 				totree(context, TSelect);
 				context->anstdispl = 0;
 				selectend(context);
-				if (context->error_flag == 5)
+				if (context->was_error == 5)
 				{
-					context->error_flag = 4;
+					context->was_error = 4;
 					return; // 1
 				}
 			}
 		}
 	}
-	if (context->next == INC || context->next == DEC) // a++, a--
+	if (context->next_token == INC || context->next_token == DEC) // a++, a--
 	{
 		int op;
 
 		if (!is_int(context->ansttype) && !is_float(context->ansttype))
 		{
-			context_error(context, wrong_operand);
-			context->error_flag = 4;
+			parser_error(context, wrong_operand);
+			context->was_error = 4;
 			return; // 1
 		}
 
 		if (context->anst != IDENT && context->anst != ADDR)
 		{
-			context_error(context, unassignable_inc);
-			context->error_flag = 4;
+			parser_error(context, unassignable_inc);
+			context->was_error = 4;
 			return; // 1
 		}
-		op = (context->next == INC) ? POSTINC : POSTDEC;
+		op = (context->next_token == INC) ? POSTINC : POSTDEC;
 		if (context->anst == ADDR)
 		{
 			op += 4;
@@ -1334,22 +1394,22 @@ void postexpr(parser *context)
 
 void unarexpr(parser *context)
 {
-	int op = context->cur;
-	if (context->cur == LNOT || context->cur == LOGNOT || context->cur == LPLUS || context->cur == LMINUS ||
-		context->cur == LAND || context->cur == LMULT || context->cur == INC || context->cur == DEC)
+	int op = context->curr_token;
+	if (context->curr_token == LNOT || context->curr_token == LOGNOT || context->curr_token == LPLUS || context->curr_token == LMINUS ||
+		context->curr_token == LAND || context->curr_token == LMULT || context->curr_token == INC || context->curr_token == DEC)
 	{
-		if (context->cur == INC || context->cur == DEC)
+		if (context->curr_token == INC || context->curr_token == DEC)
 		{
 			scanner(context);
 			unarexpr(context);
-			if (context->error_flag == 7)
+			if (context->was_error == 7)
 			{
 				return; // 1
 			}
 			if (context->anst != IDENT && context->anst != ADDR)
 			{
-				context_error(context, unassignable_inc);
-				context->error_flag = 7;
+				parser_error(context, unassignable_inc);
+				context->was_error = 7;
 				return; // 1
 			}
 			if (context->anst == ADDR)
@@ -1367,7 +1427,7 @@ void unarexpr(parser *context)
 		{
 			scanner(context);
 			unarexpr(context);
-			if (context->error_flag == 7)
+			if (context->was_error == 7)
 			{
 				return; // 1
 			}
@@ -1376,8 +1436,8 @@ void unarexpr(parser *context)
 			{
 				if (context->anst == VAL)
 				{
-					context_error(context, wrong_addr);
-					context->error_flag = 7;
+					parser_error(context, wrong_addr);
+					context->was_error = 7;
 					return; // 1
 				}
 
@@ -1387,15 +1447,15 @@ void unarexpr(parser *context)
 				}
 
 				context->stackoperands[context->sopnd] = context->ansttype =
-					(int)newdecl(context->sx, mode_pointer, context->ansttype);
+				(int)to_modetab(context, mode_pointer, context->ansttype);
 				context->anst = VAL;
 			}
 			else if (op == LMULT)
 			{
 				if (!is_pointer(context->sx, context->ansttype))
 				{
-					context_error(context, aster_not_for_pointer);
-					context->error_flag = 7;
+					parser_error(context, aster_not_for_pointer);
+					context->was_error = 7;
 					return; // 1
 				}
 
@@ -1412,8 +1472,8 @@ void unarexpr(parser *context)
 				toval(context);
 				if ((op == LNOT || op == LOGNOT) && context->ansttype == LFLOAT)
 				{
-					context_error(context, int_op_for_float);
-					context->error_flag = 7;
+					parser_error(context, int_op_for_float);
+					context->was_error = 7;
 					return; // 1
 				}
 				else if (op == LMINUS)
@@ -1447,88 +1507,62 @@ void unarexpr(parser *context)
 	else
 	{
 		primaryexpr(context);
-		if (context->error_flag == 4)
+		if (context->was_error == 4)
 		{
-			context->error_flag = 7;
+			context->was_error = 7;
 			return; // 1
 		}
 	}
 
 	postexpr(context); // 0
 	context->stackoperands[context->sopnd] = context->ansttype;
-	if (context->error_flag == 4)
+	if (context->was_error == 4)
 	{
-		context->error_flag = 7;
+		context->was_error = 7;
 		return; // 1
 	}
-}
-
-void exprinbrkts(parser *context, int er)
-{
-	mustbe(context, LEFTBR, er);
-	scanner(context);
-	exprval(context);
-	if (context->error_flag == 4)
-	{
-		context->error_flag = 3;
-		return; // 1
-	}
-	mustbe(context, RIGHTBR, er);
-}
-
-void exprassninbrkts(parser *context, int er)
-{
-	mustbe(context, LEFTBR, er);
-	scanner(context);
-	exprassnval(context);
-	if (context->error_flag == 4)
-	{
-		context->error_flag = 3;
-		return; // 1
-	}
-	mustbe(context, RIGHTBR, er);
 }
 
 int prio(int op)
 {
 	// возвращает 0, если не операция
 	return op == LOGOR
-			   ? 1
-			   : op == LOGAND
-					 ? 2
-					 : op == LOR
-						   ? 3
-						   : op == LEXOR
-								 ? 4
-								 : op == LAND
-									   ? 5
-									   : op == EQEQ
-											 ? 6
-											 : op == NOTEQ
-												   ? 6
-												   : op == LLT
-														 ? 7
-														 : op == LGT
-															   ? 7
-															   : op == LLE
-																	 ? 7
-																	 : op == LGE
-																		   ? 7
-																		   : op == LSHL
-																				 ? 8
-																				 : op == LSHR
-																					   ? 8
-																					   : op == LPLUS
-																							 ? 9
-																							 : op == LMINUS
-																								   ? 9
-																								   : op == LMULT
-																										 ? 10
-																										 : op == LDIV
-																											   ? 10
-																											   : op == LREM
-																													 ? 10
-																													 : 0;
+	? 1
+	: op == LOGAND
+	? 2
+	: op == LOR
+	? 3
+	: op == LEXOR
+	? 4
+	: op == LAND
+	? 5
+	: op == EQEQ
+	? 6
+	: op == NOTEQ
+	? 6
+	: op == LLT
+	? 7
+	: op == LGT
+	? 7
+	: op == LLE
+	? 7
+	: op == LGE
+	? 7
+	: op == LSHL
+	? 8
+	: op == LSHR
+	? 8
+	: op == LPLUS
+	? 9
+	: op == LMINUS
+	? 9
+	: op == LMULT
+	? 10
+	: op == LDIV
+	? 10
+	: op == LREM
+	? 10
+	: 0;
 }
 
 void subexpr(parser *context)
@@ -1536,7 +1570,7 @@ void subexpr(parser *context)
 	int oldsp = context->sp;
 	int wasop = 0;
 
-	int p = prio(context->next);
+	int p = prio(context->next_token);
 	while (p)
 	{
 		wasop = 1;
@@ -1544,7 +1578,7 @@ void subexpr(parser *context)
 		while (context->sp > oldsp && context->stack[context->sp - 1] >= p)
 		{
 			binop(context, --context->sp);
-			if (context->error_flag == 5)
+			if (context->was_error == 5)
 			{
 				return;
 			}
@@ -1560,16 +1594,16 @@ void subexpr(parser *context)
 
 		context->stack[context->sp] = p;
 		context->stacklog[context->sp] = (int)ad;
-		context->stackop[context->sp++] = context->next;
+		context->stackop[context->sp++] = context->next_token;
 		scanner(context);
 		scanner(context);
 		unarexpr(context);
-		if (context->error_flag == 7)
+		if (context->was_error == 7)
 		{
-			context->error_flag = 5;
+			context->was_error = 5;
 			return; // 1
 		}
-		p = prio(context->next);
+		p = prio(context->next_token);
 	}
 	if (wasop)
 	{
@@ -1578,7 +1612,7 @@ void subexpr(parser *context)
 	while (context->sp > oldsp)
 	{
 		binop(context, --context->sp);
-		if (context->error_flag == 5)
+		if (context->was_error == 5)
 		{
 			return;
 		}
@@ -1592,10 +1626,10 @@ int intopassn(int next)
 
 int opassn(parser *context)
 {
-	return (context->next == ASS || context->next == MULTASS || context->next == DIVASS || context->next == PLUSASS ||
-			context->next == MINUSASS || intopassn(context->next))
-			   ? context->op = context->next
-			   : 0;
+	return (context->next_token == ASS || context->next_token == MULTASS || context->next_token == DIVASS || context->next_token == PLUSASS ||
+			context->next_token == MINUSASS || intopassn(context->next_token))
+	? context->op = context->next_token
+	: 0;
 }
 
 void condexpr(parser *context)
@@ -1604,28 +1638,26 @@ void condexpr(parser *context)
 	size_t adif = 0;
 
 	subexpr(context); // logORexpr();
-	if (context->error_flag == 5)
+	if (context->was_error == 5)
 	{
-		context->error_flag = 4;
+		context->was_error = 4;
 		return; // 1
 	}
-	if (context->next == QUEST)
+	if (context->next_token == QUEST)
 	{
-		while (context->next == QUEST)
+		while (context->next_token == QUEST)
 		{
 			toval(context);
 			if (!is_int(context->ansttype))
 			{
-				context_error(context, float_in_condition);
-				context->error_flag = 4;
+				parser_error(context, float_in_condition);
+				context->was_error = 4;
 				return; // 1
 			}
 			totree(context, TCondexpr);
 			scanner(context);
-			scanner(context);
-			context->sopnd--;
-			exprval(context); // then
-			if (context->error_flag == 4)
+			parse_condition(context); // then
+			if (context->was_error == 4)
 			{
 				return; // 1
 			}
@@ -1646,15 +1678,15 @@ void condexpr(parser *context)
 			mustbe(context, COLON, no_colon_in_cond_expr);
 			scanner(context);
 			unarexpr(context);
-			if (context->error_flag == 7)
+			if (context->was_error == 7)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 			subexpr(context); // logORexpr();	else or elif
-			if (context->error_flag == 5)
+			if (context->was_error == 5)
 			{
-				context->error_flag = 4;
+				context->was_error = 4;
 				return; // 1
 			}
 		}
@@ -1672,7 +1704,7 @@ void condexpr(parser *context)
 
 		while (adif != 0 && adif <= vector_size(&TREE))
 		{
-			item_t r = (size_t)vector_get(&TREE, adif);
+			item_t r = vector_get(&TREE, adif);
 			vector_set(&TREE, adif, TExprend);
 			vector_set(&TREE, adif - 1, is_float(globtype) ? WIDEN : NOP);
 			adif = (size_t)r;
@@ -1707,38 +1739,30 @@ void exprassn(parser *context, int level)
 	int rtype;
 	int lnext;
 
-	if (context->cur == BEGIN)
+	if (context->curr_token == BEGIN)
 	{
-		if (is_struct(context->sx, context->leftansttype))
+		const int type = context->leftansttype;
+		if (is_struct(context->sx, type) || is_array(context->sx, type))
 		{
-			struct_init(context, context->leftansttype);
-		}
-		else if (is_array(context->sx, context->leftansttype))
-		{
-			// пока в RuC присваивать массивы нельзя
-			array_init(context, context->leftansttype);
-			if (context->error_flag == 7)
-			{
-				context->error_flag = 6;
-				return; // 1
-			}
+			parse_initializer(context, type);
+			context->leftansttype = type;
 		}
 		else
 		{
-			context_error(context, init_not_struct);
-			context->error_flag = 6;
+			parser_error(context, init_not_struct);
+			context->was_error = 6;
 			return; // 1
 		}
-		context->stackoperands[++context->sopnd] = context->ansttype = context->leftansttype;
+		context->stackoperands[++context->sopnd] = context->ansttype = type;
 		context->anst = VAL;
 	}
 	else
 	{
 		unarexpr(context);
 	}
-	if (context->error_flag == 7)
+	if (context->was_error == 7)
 	{
-		context->error_flag = 6;
+		context->was_error = 6;
 		return; // 1
 	}
 
@@ -1748,21 +1772,21 @@ void exprassn(parser *context, int level)
 	if (opassn(context))
 	{
 		int opp = context->op;
-		lnext = context->next;
-		context->inass = 1;
+		lnext = context->next_token;
+		context->flag_in_assignment = 1;
 		scanner(context);
 		scanner(context);
 		exprassn(context, level + 1);
-		if (context->error_flag == 6)
+		if (context->was_error == 6)
 		{
 			return; // 1
 		}
-		context->inass = 0;
+		context->flag_in_assignment = 0;
 
 		if (leftanst == VAL)
 		{
-			context_error(context, unassignable);
-			context->error_flag = 6;
+			parser_error(context, unassignable);
+			context->was_error = 6;
 			return; // 1
 		}
 		rtype = context->stackoperands[context->sopnd--]; // снимаем типы
@@ -1771,15 +1795,15 @@ void exprassn(parser *context, int level)
 
 		if (intopassn(lnext) && (is_float(ltype) || is_float(rtype)))
 		{
-			context_error(context, int_op_for_float);
-			context->error_flag = 6;
+			parser_error(context, int_op_for_float);
+			context->was_error = 6;
 			return; // 1
 		}
 
 		if (is_array(context->sx, ltype)) // присваивать массив в массив в си нельзя
 		{
-			context_error(context, array_assigment);
-			context->error_flag = 6;
+			parser_error(context, array_assigment);
+			context->was_error = 6;
 			return; // 1
 		}
 
@@ -1787,14 +1811,14 @@ void exprassn(parser *context, int level)
 		{
 			if (ltype != rtype) // типы должны быть равны
 			{
-				context_error(context, type_missmatch);
-				context->error_flag = 6;
+				parser_error(context, type_missmatch);
+				context->was_error = 6;
 				return; // 1
 			}
 			if (opp != ASS) // в структуру можно присваивать только с помощью =
 			{
-				context_error(context, wrong_struct_ass);
-				context->error_flag = 6;
+				parser_error(context, wrong_struct_ass);
+				context->was_error = 6;
 				return; // 1
 			}
 
@@ -1805,7 +1829,7 @@ void exprassn(parser *context, int level)
 			else
 			{
 				opp = leftanst == IDENT ? context->anst == IDENT ? COPY00 : COPY01
-										: context->anst == IDENT ? COPY10 : COPY11;
+				: context->anst == IDENT ? COPY10 : COPY11;
 			}
 			totree(context, opp);
 			if (leftanst == IDENT)
@@ -1824,15 +1848,15 @@ void exprassn(parser *context, int level)
 		{
 			if (is_pointer(context->sx, ltype) && opp != ASS) // в указатель можно присваивать только с помощью =
 			{
-				context_error(context, wrong_struct_ass);
-				context->error_flag = 6;
+				parser_error(context, wrong_struct_ass);
+				context->was_error = 6;
 				return; // 1
 			}
 
 			if (is_int(ltype) && is_float(rtype))
 			{
-				context_error(context, assmnt_float_to_int);
-				context->error_flag = 6;
+				parser_error(context, assmnt_float_to_int);
+				context->was_error = 6;
 				return; // 1
 			}
 
@@ -1845,8 +1869,8 @@ void exprassn(parser *context, int level)
 			if (is_pointer(context->sx, ltype) && is_pointer(context->sx, rtype) && ltype != rtype)
 			{
 				// проверка нужна только для указателей
-				context_error(context, type_missmatch);
-				context->error_flag = 6;
+				parser_error(context, type_missmatch);
+				context->was_error = 6;
 				return; // 1
 			}
 
@@ -1868,9 +1892,9 @@ void exprassn(parser *context, int level)
 	else
 	{
 		condexpr(context); // condexpr учитывает тот факт, что начало выражения
-		if (context->error_flag == 4)
+		if (context->was_error == 4)
 		{
-			context->error_flag = 6;
+			context->was_error = 6;
 			return; // 1
 		}
 	}
@@ -1880,21 +1904,21 @@ void exprassn(parser *context, int level)
 void expr(parser *context, int level)
 {
 	exprassn(context, level);
-	if (context->error_flag == 6)
+	if (context->was_error == 6)
 	{
-		context->error_flag = 5;
+		context->was_error = 5;
 		return; // 1
 	}
-	while (context->next == COMMA)
+	while (context->next_token == COMMA)
 	{
 		exprassnvoid(context);
 		context->sopnd--;
 		scanner(context);
 		scanner(context);
 		exprassn(context, level);
-		if (context->error_flag == 6)
+		if (context->was_error == 6)
 		{
-			context->error_flag = 5;
+			context->was_error = 5;
 			return; // 1
 		}
 	}
@@ -1904,26 +1928,81 @@ void expr(parser *context, int level)
 	}
 }
 
-void exprval(parser *context)
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+void parse_string_literal_expression(parser *const parser)
 {
-	expr(context, 1);
-	if (context->error_flag == 5)
+	int i;
+
+	totree(parser, TString);
+	totree(parser, parser->lexer->num);
+
+	for (i = 0; i < parser->lexer->num; i++)
 	{
-		context->error_flag = 4;
-		return; // 1
+		totree(parser, parser->lexer->lexstr[i]);
 	}
-	toval(context);
-	totree(context, TExprend);
+
+	parser->ansttype = (int)to_modetab(parser, mode_array, LCHAR);
+	parser->stackoperands[++parser->sopnd] = parser->ansttype;
+	parser->anst = VAL;
 }
 
-void exprassnval(parser *context)
+item_t parse_assignment_expression(parser *const parser)
 {
-	exprassn(context, 1);
-	if (context->error_flag == 6)
-	{
-		context->error_flag = 4;
-		return; // 1
-	}
-	toval(context);
-	totree(context, TExprend);
+	exprassn(parser, 1);
+	toval(parser);
+	totree(parser, TExprend);
+	parser->sopnd--;
+	return (item_t)parser->ansttype;
+}
+
+item_t parse_expression(parser *const parser)
+{
+	expr(parser, 0);
+	exprassnvoid(parser);
+	return (item_t)parser->ansttype;
+}
+
+item_t parse_condition(parser *const parser)
+{
+	scanner(parser);
+	expr(parser, 1);
+	toval(parser);
+	totree(parser, TExprend);
+	parser->sopnd--;
+	return (item_t)parser->ansttype;
+}
+
+item_t parse_parenthesized_expression(parser *const parser)
+{
+	mustbe(parser, LEFTBR, cond_must_be_in_brkts);
+	parse_condition(parser);
+	mustbe(parser, RIGHTBR, cond_must_be_in_brkts);
+	return (item_t)parser->ansttype;
+}
+
+item_t parse_constant_expression(parser *const parser)
+{
+	scanner(parser);
+	unarexpr(parser);
+	condexpr(parser);
+	toval(parser);
+	totree(parser, TExprend);
+	parser->sopnd--;
+	return (item_t)parser->ansttype;
+}
+
+void insert_widen(parser *const parser)
+{
+	vector_remove(&parser->sx->tree);
+	totree(parser, WIDEN);
+	totree(parser, TExprend);
 }
