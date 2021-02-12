@@ -85,7 +85,7 @@ void init_modetab(analyzer *context)
 {
 	// занесение в modetab описателя struct {int numTh; int inf; }
 	vector_add(&context->sx->modes, 0);
-	vector_add(&context->sx->modes, MSTRUCT);
+	vector_add(&context->sx->modes, mode_struct);
 	vector_add(&context->sx->modes, 2);
 	vector_add(&context->sx->modes, 4);
 	vector_add(&context->sx->modes, LINT);
@@ -95,14 +95,14 @@ void init_modetab(analyzer *context)
 
 	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
 	vector_add(&context->sx->modes, 1);
-	vector_add(&context->sx->modes, MFUNCTION);
+	vector_add(&context->sx->modes, mode_function);
 	vector_add(&context->sx->modes, LVOID);
 	vector_add(&context->sx->modes, 1);
 	vector_add(&context->sx->modes, 2);
 
 	// занесение в modetab описателя функции void* interpreter(void* n)
 	vector_add(&context->sx->modes, 9);
-	vector_add(&context->sx->modes, MFUNCTION);
+	vector_add(&context->sx->modes, mode_function);
 	vector_add(&context->sx->modes, LVOIDASTER);
 	vector_add(&context->sx->modes, 1);
 	vector_add(&context->sx->modes, LVOIDASTER);

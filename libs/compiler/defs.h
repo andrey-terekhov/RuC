@@ -35,10 +35,21 @@
 
 // modetab
 
-#define MFUNCTION 1001
-#define MSTRUCT	  1002
-#define MARRAY	  1003
-#define MPOINT	  1004
+typedef enum
+{
+	mode_undefined = 0,
+	mode_integer = -1,
+	mode_character = -2,
+	mode_float = -3,
+	mode_void = -6,
+
+	mode_void_pointer = -150,
+	mode_msg_info = 2,
+	mode_function = 1001,
+	mode_struct = 1002,
+	mode_array = 1003,
+	mode_pointer = 1004,
+} mode;
 
 
 // Лексемы операций языка С

@@ -208,7 +208,7 @@ int evaluate_params(analyzer *context, int num, char32_t formatstr[], int format
 
 				case 's':
 				case 1089: // с
-					formattypes[num_of_params++] = (int)newdecl(context->sx, MARRAY, LCHAR);
+					formattypes[num_of_params++] = (int)newdecl(context->sx, mode_array, LCHAR);
 					break;
 
 				case '%':
@@ -231,12 +231,12 @@ int evaluate_params(analyzer *context, int num, char32_t formatstr[], int format
 
 int is_function(syntax *const sx, const int t)
 {
-	return t > 0 && mode_get(sx, t) == MFUNCTION;
+	return t > 0 && mode_get(sx, t) == mode_function;
 }
 
 int is_array(syntax *const sx, const int t)
 {
-	return t > 0 && mode_get(sx, t) == MARRAY;
+	return t > 0 && mode_get(sx, t) == mode_array;
 }
 
 int is_string(syntax *const sx, const int t)
@@ -246,12 +246,12 @@ int is_string(syntax *const sx, const int t)
 
 int is_pointer(syntax *const sx, const int t)
 {
-	return t > 0 && mode_get(sx, t) == MPOINT;
+	return t > 0 && mode_get(sx, t) == mode_pointer;
 }
 
 int is_struct(syntax *const sx, const int t)
 {
-	return t > 0 && mode_get(sx, t) == MSTRUCT;
+	return t > 0 && mode_get(sx, t) == mode_struct;
 }
 
 int is_float(const int t)
@@ -498,7 +498,7 @@ void actstring(int type, analyzer *context)
 		context->error_flag = 1;
 		return; // 1
 	}
-	context->ansttype = (int)newdecl(context->sx, MARRAY, type);
+	context->ansttype = (int)newdecl(context->sx, mode_array, type);
 	context->anst = VAL;
 }
 
@@ -601,7 +601,7 @@ void mustberowofint(analyzer *context)
 		if (context->ansttype == LINT || context->ansttype == LCHAR)
 		{
 			totree(context, ROWING);
-			context->ansttype = (int)newdecl(context->sx, MARRAY, LINT);
+			context->ansttype = (int)newdecl(context->sx, mode_array, LINT);
 		}
 	}
 	if (!(is_array(context->sx, context->ansttype) &&
@@ -636,7 +636,7 @@ void mustberowoffloat(analyzer *context)
 		if (context->ansttype == LFLOAT)
 		{
 			totree(context, ROWINGD);
-			context->ansttype = (int)newdecl(context->sx, MARRAY, LFLOAT);
+			context->ansttype = (int)newdecl(context->sx, mode_array, LFLOAT);
 		}
 	}
 
@@ -683,7 +683,7 @@ void primaryexpr(analyzer *context)
 			totree(context, context->lxr->lexstr[i]);
 		}
 
-		context->ansttype = (int)newdecl(context->sx, MARRAY, LCHAR);
+		context->ansttype = (int)newdecl(context->sx, mode_array, LCHAR);
 		context->stackoperands[++context->sopnd] = context->ansttype;
 		context->anst = VAL;
 	}
@@ -830,7 +830,7 @@ void primaryexpr(analyzer *context)
 			else
 			{
 				context->stackoperands[++context->sopnd] = context->ansttype =
-					func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)newdecl(context->sx, MARRAY, LCHAR);
+					func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)newdecl(context->sx, mode_array, LCHAR);
 			}
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
@@ -1702,7 +1702,7 @@ void unarexpr(analyzer *context)
 				}
 
 				context->stackoperands[context->sopnd] = context->ansttype =
-					(int)newdecl(context->sx, MPOINT, context->ansttype);
+					(int)newdecl(context->sx, mode_pointer, context->ansttype);
 				context->anst = VAL;
 			}
 			else if (op == LMULT)
@@ -2047,7 +2047,7 @@ void inition(analyzer *context, int decl_type)
 
 void struct_init(analyzer *context, int decl_type)
 {
-	// сейчас modetab[decl_type] равен MSTRUCT
+	// сейчас modetab[decl_type] равен mode_struct
 
 	int next_field = decl_type + 3;
 	item_t nf = mode_get(context->sx, decl_type + 2) / 2;
@@ -2344,7 +2344,7 @@ void exprassnval(analyzer *context)
 
 void array_init(analyzer *context, int decl_type)
 {
-	// сейчас modetab[decl_type] равен MARRAY
+	// сейчас modetab[decl_type] равен mode_array
 
 	if (is_array(context->sx, decl_type))
 	{
@@ -2488,7 +2488,7 @@ int arrdef(analyzer *context, item_t t)
 			context->sopnd--;
 			mustbe(context, RIGHTSQBR, wait_right_sq_br);
 		}
-		t = newdecl(context->sx, MARRAY, t); // Меняем тип в identtab (увеличиваем размерность массива)
+		t = newdecl(context->sx, mode_array, t); // Меняем тип в identtab (увеличиваем размерность массива)
 	}
 	return (int)t;
 }
@@ -3216,7 +3216,7 @@ item_t idorpnt(analyzer *context, int e, item_t t)
 	if (context->next == LMULT)
 	{
 		scanner(context);
-		t = t == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, t);
+		t = t == LVOID ? LVOIDASTER : newdecl(context->sx, mode_pointer, t);
 	}
 	mustbe_complex(context, IDENT, e);
 	return t;
@@ -3232,7 +3232,7 @@ int struct_decl_list(analyzer *context)
 	item_t loc_modetab[100];
 	int locmd = 3;
 
-	loc_modetab[0] = MSTRUCT;
+	loc_modetab[0] = mode_struct;
 	size_t tstrbeg = vector_size(&TREE);
 	totree(context, TStructbeg);
 	vector_increase(&TREE, 1); // тут будет номер иниц процедуры
@@ -3633,7 +3633,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 	int wastype = 0;
 	int old;
 
-	loc_modetab[0] = MFUNCTION;
+	loc_modetab[0] = mode_function;
 	loc_modetab[1] = firstdecl;
 	loc_modetab[2] = 0;
 	locmd = 3;
@@ -3662,7 +3662,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 			{
 				maybe_fun = 1;
 				scanner(context);
-				context->type = context->type == LVOID ? LVOIDASTER : (int)newdecl(context->sx, MPOINT, context->type);
+				context->type = context->type == LVOID ? LVOIDASTER : (int)newdecl(context->sx, mode_pointer, context->type);
 			}
 			if (level)
 			{
@@ -3695,7 +3695,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 				{
 					scanner(context);
 					mustbe(context, RIGHTSQBR, wait_right_sq_br);
-					context->type = (int)newdecl(context->sx, MARRAY, context->type);
+					context->type = (int)newdecl(context->sx, mode_array, context->type);
 				}
 			}
 		}
@@ -3858,7 +3858,7 @@ void ext_decl(analyzer *context)
 			if (context->next == LMULT)
 			{
 				scanner(context);
-				context->type = context->firstdecl == LVOID ? LVOIDASTER : (int)newdecl(context->sx, MPOINT, context->firstdecl);
+				context->type = context->firstdecl == LVOID ? LVOIDASTER : (int)newdecl(context->sx, mode_pointer, context->firstdecl);
 			}
 			mustbe_complex(context, IDENT, after_type_must_be_ident);
 			if (context->error_flag == after_type_must_be_ident)

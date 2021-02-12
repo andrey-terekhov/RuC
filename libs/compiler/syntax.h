@@ -225,6 +225,57 @@ item_t func_get(const syntax *const sx, const size_t index);
 
 
 /**
+ *	Add new value to tree
+ *
+ *	@param	sx			Syntax structure
+ *	@param	value		Value to record
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int tree_add(syntax *const sx, const item_t node);
+
+/**
+ *	Set value by index in tree
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index to record
+ *	@param	value		Value to record
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int tree_set(syntax *const sx, const size_t index, const item_t node);
+
+/**
+ *	Get an item from tree by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in tree
+ *
+ *	@return	Item by index from tree, @c ITEM_MAX on failure
+ */
+item_t tree_get(const syntax *const sx, const size_t index);
+
+/**
+ *	Get size of tree
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	Tree counter on success, @c SIZE_MAX on failure
+ */
+size_t tree_size(const syntax *const sx);
+
+/**
+ *	Increase size of tree by value and return previous size
+ *
+ *	@param	sx			Syntax structure
+ *	@param	value		Value to increase
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+size_t tree_reserve(syntax *const sx);
+
+
+/**
  *	Add new item to identifiers table
  *
  *	@param	sx			Syntax structure
@@ -319,7 +370,7 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
  *
  *	@return	Mode size
  */
-int size_of(const syntax *const sx, const item_t mode);
+size_t size_of(const syntax *const sx, const item_t mode);
 
 /**
  *	Add a new record to modes table

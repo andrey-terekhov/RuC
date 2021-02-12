@@ -108,8 +108,8 @@ static void final_operation(syntax *const sx, node *const nd)
 					mem_add(sx, node_get_arg(nd, 0)); // длина
 				}
 				else if ((op >= REMASS && op <= DIVASS) || (op >= REMASSV && op <= DIVASSV)
-					|| (op >= ASSR && op <= DIVASSR) || (op >= ASSRV && op <= DIVASSRV) || (op >= POSTINC && op <= DEC)
-					|| (op >= POSTINCV && op <= DECV) || (op >= POSTINCR && op <= DECR) || (op >= POSTINCRV && op <= DECRV))
+						 || (op >= ASSR && op <= DIVASSR) || (op >= ASSRV && op <= DIVASSRV) || (op >= POSTINC && op <= DEC)
+						 || (op >= POSTINCV && op <= DECV) || (op >= POSTINCR && op <= DECR) || (op >= POSTINCRV && op <= DECRV))
 				{
 					mem_add(sx, node_get_arg(nd, 0));
 				}
@@ -150,7 +150,7 @@ static void expression(syntax *const sx, node *const nd, int mode)
 				mem_add(sx, LA);
 				mem_add(sx, node_get_arg(nd, 0));
 			}
-			break;
+				break;
 			case TIdenttoval:
 			{
 				mem_add(sx, LOAD);
@@ -242,8 +242,8 @@ static void expression(syntax *const sx, node *const nd, int mode)
 
 				expression(sx, nd, 0);
 				mem_add(sx, SLICE);
-				mem_add(sx, size_of(sx, (int)type));
-				if (type > 0 && mode_get(sx, (size_t)type) == MARRAY)
+				mem_add(sx, (item_t)size_of(sx, type));
+				if (type > 0 && mode_get(sx, (size_t)type) == mode_array)
 				{
 					mem_add(sx, LAT);
 				}
@@ -351,19 +351,19 @@ static void identifier(syntax *const sx, node *const nd)
 	const item_t N = node_get_arg(nd, 2);
 
 	/*
-	*	@param	all		Общее кол-во слов в структуре:
-	*						@c 0 нет инициализатора,
-	*						@c 1 есть инициализатор,
-	*						@c 2 есть инициализатор только из строк
-	*/
+	 *	@param	all		Общее кол-во слов в структуре:
+	 *						@c 0 нет инициализатора,
+	 *						@c 1 есть инициализатор,
+	 *						@c 2 есть инициализатор только из строк
+	 */
 	const item_t all = node_get_arg(nd, 3);
 	const item_t process = node_get_arg(nd, 4);
 
 	/*
-	*	@param	usual	Для массивов:
-	*						@c 0 с пустыми границами,
-	*						@c 1 без пустых границ
-	*/
+	 *	@param	usual	Для массивов:
+	 *						@c 0 с пустыми границами,
+	 *						@c 1 без пустых границ
+	 */
 	const item_t usual = node_get_arg(nd, 5);
 	const item_t instruction = node_get_arg(nd, 6);
 
@@ -378,7 +378,7 @@ static void identifier(syntax *const sx, node *const nd)
 		}
 		if (all) // int a = или struct{} a =
 		{
-			if (type > 0 && mode_get(sx, (size_t)type) == MSTRUCT)
+			if (type > 0 && mode_get(sx, (size_t)type) == mode_struct)
 			{
 				node_set_next(nd);
 				structure(sx, nd);
@@ -398,7 +398,7 @@ static void identifier(syntax *const sx, node *const nd)
 	}
 	else // Обработка массива int a[N1]...[NN] =
 	{
-		const item_t length = size_of(sx, (int)type);
+		const item_t length = (item_t)size_of(sx, type);
 
 		mem_add(sx, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
 		mem_add(sx, all == 0 ? N : abs((int)N) - 1);
@@ -820,7 +820,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
 	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n", mem_size(sx), vector_size(&sx->functions),
-				vector_size(&sx->identifiers), sx->rp, vector_size(&sx->modes), sx->max_displg, sx->max_threads);
+			   vector_size(&sx->identifiers), sx->rp, vector_size(&sx->modes), sx->max_displg, sx->max_threads);
 
 	for (size_t i = 0; i < mem_size(sx); i++)
 	{
