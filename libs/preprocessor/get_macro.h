@@ -23,9 +23,15 @@
 extern "C" {
 #endif
 
-int define_get_from_macrotext(const int r, environment *const env);
-int define_implementation(environment *const env);
-int set_implementation(environment *const env);
+/**
+ *	Сhange input to macro replacement text
+ *
+ *	@param	index	Macro Index
+ *	@param	env		Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int get_macro(const int index, environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

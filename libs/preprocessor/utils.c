@@ -16,7 +16,6 @@
 
 #include "utils.h"
 #include "constants.h"
-#include "file.h"
 #include "environment.h"
 #include "error.h"
 #include "linker.h"
@@ -74,8 +73,8 @@ int macro_keywords(environment *const env)
 	/*if (env->curchar != '\n' && env->curchar != ' ' && env->curchar != '\t' && env->curchar != '(' &&
 		env->curchar != '\"')
 	{
-		size_t position = skip_str(env); 
-		macro_error(after_ident_must_be_space, lk_get_current(env->lk)
+		size_t position = env_skip_str(env); 
+		macro_error(after_ident_must_be_space, env_get_current_file(env)
 			, env->error_string, env->line, position);
 	}*/
 
@@ -188,7 +187,7 @@ int find_file(environment *const env, const char *s)
 	return 1;
 }
 
-int space_end_line(environment *const env)
+int skip_space_end_line(environment *const env)
 {
 	while (env->curchar != '\n')
 	{
@@ -198,8 +197,8 @@ int space_end_line(environment *const env)
 		}
 		else
 		{
-			size_t position = skip_str(env); 
-			macro_error(after_preproces_words_must_be_space, lk_get_current(env->lk)
+			size_t position = env_skip_str(env); 
+			macro_error(after_preproces_words_must_be_space, env_get_current_file(env)
 			, env->error_string, env->line, position);
 			return -1;
 		}
@@ -216,7 +215,7 @@ void skip_space(environment *const env)
 	}
 }
 
-void skip_space_str(environment *const env)
+void skip_string(environment *const env)
 {
 	int c = env->curchar;
 	m_fprintf(env->curchar, env);
@@ -239,17 +238,6 @@ void skip_space_str(environment *const env)
 		m_fprintf(env->curchar, env);
 		m_nextch(env);
 	}
-}
-
-size_t skip_str(environment *const env)
-{
-	char *line = env->error_string;
-	size_t position = strlen(line);
-	while (env->curchar != '\n' && env->curchar != EOF)
-	{
-		m_nextch(env);
-	}
-	return position;
 }
 
 void skip_file(environment *const env)

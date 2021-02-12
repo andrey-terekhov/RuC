@@ -19,7 +19,6 @@
 #include "constants.h"
 #include "environment.h"
 #include "error.h"
-#include "file.h"
 #include "uniio.h"
 #include "uniprinter.h"
 #include "utils.h"

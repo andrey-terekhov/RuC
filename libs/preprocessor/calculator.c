@@ -15,10 +15,9 @@
  */
 
 #include "calculator.h"
-#include "define.h"
-#include "file.h"
 #include "environment.h"
 #include "error.h"
+#include "get_macro.h"
 #include "linker.h"
 #include "utils.h"
 #include <limits.h>
@@ -49,8 +48,8 @@ double get_digit(environment *const env, int* error)
 		numdouble = numdouble * 10 + (env->curchar - '0');
 		if (numdouble > (double)INT_MAX)
 		{
-			size_t position = skip_str(env); 
-			macro_error(too_many_nuber, lk_get_current(env->lk)
+			size_t position = env_skip_str(env); 
+			macro_error(too_many_nuber, env_get_current_file(env)
 			, env->error_string, env->line, position);
 			*error = -1;
 			return 0.0;
@@ -94,8 +93,8 @@ double get_digit(environment *const env, int* error)
 
 		if (!utf8_is_digit(env->curchar))
 		{
-			size_t position = skip_str(env); 
-			macro_error(must_be_digit_after_exp1, lk_get_current(env->lk)
+			size_t position = env_skip_str(env); 
+			macro_error(must_be_digit_after_exp1, env_get_current_file(env)
 			, env->error_string, env->line, position);
 			*error = -1;
 			return 0.0;
@@ -283,7 +282,7 @@ void double_to_string(double x, int int_flag, environment *const env)
 	}
 }
 
-int calculator(const int if_flag, environment *const env)
+int calculate(const int logic_flag, environment *const env)
 {
 	int i = 0;
 	int op = 0;
@@ -293,7 +292,7 @@ int calculator(const int if_flag, environment *const env)
 	int operation[10];
 	int opration_flag = 0;
 
-	if (!if_flag)
+	if (!logic_flag)
 	{
 		operation[op++] = '(';
 		m_nextch(env);
@@ -320,35 +319,35 @@ int calculator(const int if_flag, environment *const env)
 
 			if (r)
 			{
-				if(define_get_from_macrotext(r, env))
+				if(get_macro(r, env))
 				{
 					return -1;
 				}
 			}
 			else
 			{
-				size_t position = skip_str(env); 
-				macro_error(not_macro, lk_get_current(env->lk)
+				size_t position = env_skip_str(env); 
+				macro_error(not_macro, env_get_current_file(env)
 			, env->error_string, env->line, position);
 				return -1;
 			}
 		}
-		else if (env->curchar == '#' && if_flag)
+		else if (env->curchar == '#' && logic_flag)
 		{
 			env->cur = macro_keywords(env);
 
 			if (env->cur == SH_EVAL && env->curchar == '(')
 			{
 				
-				if(calculator(0, env))
+				if(calculate(0, env))
 				{
 					return -1;
 				}	
 			}
 			else
 			{
-				size_t position = skip_str(env); 
-				macro_error(after_eval_must_be_ckob, lk_get_current(env->lk)
+				size_t position = env_skip_str(env); 
+				macro_error(after_eval_must_be_ckob, env_get_current_file(env)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -361,8 +360,8 @@ int calculator(const int if_flag, environment *const env)
 			{
 				if (i < 2 || op == 0)
 				{
-					size_t position = skip_str(env); 
-					macro_error(incorrect_arithmetic_expression, lk_get_current(env->lk)
+					size_t position = env_skip_str(env); 
+					macro_error(incorrect_arithmetic_expression, env_get_current_file(env)
 			, env->error_string, env->line, position);
 					return -1;
 				}
@@ -375,7 +374,7 @@ int calculator(const int if_flag, environment *const env)
 			op--;
 			m_nextch(env);
 
-			if (op == 0 && !if_flag)
+			if (op == 0 && !logic_flag)
 			{
 				double_to_string(stack[0], int_flag[0], env);
 				return 0;
@@ -389,17 +388,17 @@ int calculator(const int if_flag, environment *const env)
 				int n = get_prior(c);
 				opration_flag = 0;
 
-				if (n != 0 && if_flag && n > 3)
+				if (n != 0 && logic_flag && n > 3)
 				{
-					size_t position = skip_str(env); 
-					macro_error(not_arithmetic_operations, lk_get_current(env->lk)
+					size_t position = env_skip_str(env); 
+					macro_error(not_arithmetic_operations, env_get_current_file(env)
 			, env->error_string, env->line, position);
 					return -1;
 				}
-				if (n != 0 && !if_flag && n <= 3)
+				if (n != 0 && !logic_flag && n <= 3)
 				{
-					size_t position = skip_str(env); 
-					macro_error(not_logical_operations, lk_get_current(env->lk)
+					size_t position = env_skip_str(env); 
+					macro_error(not_logical_operations, env_get_current_file(env)
 			, env->error_string, env->line, position);
 					return -1;
 				}
@@ -415,30 +414,30 @@ int calculator(const int if_flag, environment *const env)
 			}
 			else if (env->curchar != '\n')
 			{
-				size_t position = skip_str(env); 
-				macro_error(third_party_symbol, lk_get_current(env->lk)
+				size_t position = env_skip_str(env); 
+				macro_error(third_party_symbol, env_get_current_file(env)
 			, env->error_string, env->line, position);
 				return -1;
 			}
 		}
 		else if (env->curchar != '\n')
 		{
-			size_t position = skip_str(env); 
-			macro_error(third_party_symbol, lk_get_current(env->lk)
+			size_t position = env_skip_str(env); 
+			macro_error(third_party_symbol, env_get_current_file(env)
 			, env->error_string, env->line, position);
 			return -1;
 		}
 	}
 
-	if (if_flag)
+	if (logic_flag)
 	{
 		env->csp = 0;
 		while (op > 0)
 		{
 			if (i < 2)
 			{
-				size_t position = skip_str(env); 
-				macro_error(incorrect_arithmetic_expression, lk_get_current(env->lk)
+				size_t position = env_skip_str(env); 
+				macro_error(incorrect_arithmetic_expression, env_get_current_file(env)
 			, env->error_string, env->line, position);
 				return -1;
 			}
@@ -460,8 +459,8 @@ int calculator(const int if_flag, environment *const env)
 	}
 	else
 	{
-		size_t position = skip_str(env); 
-		macro_error(in_eval_must_end_parenthesis, lk_get_current(env->lk)
+		size_t position = env_skip_str(env); 
+		macro_error(in_eval_must_end_parenthesis, env_get_current_file(env)
 			, env->error_string, env->line, position);
 		return -1;
 	}

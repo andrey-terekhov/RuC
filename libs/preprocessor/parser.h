@@ -18,11 +18,18 @@
 
 #include "environment.h"
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
+/**
+ *	Рrocess the next token 
+ *
+ *	@param	env		Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
 int preprocess_scan(environment *const env);
 
 #ifdef __cplusplus

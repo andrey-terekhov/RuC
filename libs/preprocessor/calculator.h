@@ -23,7 +23,15 @@
 extern "C" {
 #endif
 
-int calculator(const int if_flag, environment *const env);
+/**
+ *	Calculate an arithmetic or logical expression.
+ *
+ *	@param	logic_flag	Type expression
+ *	@param	env			Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int calculate(const int logic_flag, environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

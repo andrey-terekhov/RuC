@@ -16,18 +16,13 @@
 
 #include "linker.h"
 #include "constants.h"
-#include "commenter.h"
 #include "environment.h"
-#include "file.h"
-#include "parser.h"
 #include "error.h"
+#include "parser.h"
 #include "utils.h"
 #include "uniio.h"
 #include "uniprinter.h"
 #include <string.h>
-
-
-#define MAX_CMT_SIZE MAX_ARG_SIZE + 32
 
 
 linker lk_create(workspace *const ws)
@@ -70,7 +65,7 @@ void lk_make_path(char *const output, const char *const source, const char *cons
 size_t lk_open_include(environment *const env, const char* const path)
 {
 	char full_path[MAX_ARG_SIZE];
-	lk_make_path(full_path, lk_get_current(env->lk), path, 1);
+	lk_make_path(full_path, env_get_current_file(env), path, 1);
 	
 	if (in_set_file(env->input, full_path))
 	{
@@ -125,6 +120,7 @@ int lk_preprocess_file(environment *const env, const size_t number)
 	const size_t old_cur = env->lk->current;
 	const size_t old_line = env->line;
 	env->lk->current = number;
+	env->curent_path = ws_get_file(env->lk->ws, number);
 	env->line = 1;
 
 	get_next_char(env);
@@ -132,7 +128,7 @@ int lk_preprocess_file(environment *const env, const size_t number)
 	
 	if (env->curchar != '#')
 	{
-		lk_add_comment(env);
+		env_add_comment(env);
 	}
 
 	int was_error = 0; 
@@ -145,6 +141,7 @@ int lk_preprocess_file(environment *const env, const size_t number)
 
 	env->line = old_line;
 	env->lk->current = old_cur;
+	env->curent_path = ws_get_file(env->lk->ws, old_cur);
 
 	in_clear(env->input);
 	return was_error ? -1 : 0;
@@ -159,8 +156,8 @@ int lk_preprocess_include(environment *const env)
 	{
 		if (env->curchar == EOF)
 		{
-			size_t position = skip_str(env); 
-			macro_error(must_end_quote, lk_get_current(env->lk), env->error_string, env->line, position);
+			size_t position = env_skip_str(env); 
+			macro_error(must_end_quote, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
 
@@ -208,8 +205,8 @@ int lk_include(environment *const env)
 
 	if (env->curchar != '\"')
 	{
-		size_t position = skip_str(env); 
-		macro_error(must_start_quote, lk_get_current(env->lk), env->error_string, env->line, position);
+		size_t position = env_skip_str(env); 
+		macro_error(must_start_quote, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;	
 	}
 
@@ -219,7 +216,7 @@ int lk_include(environment *const env)
 	if (res == -2)
 	{
 		skip_file(env);
-		return res;
+		return -1;
 	}
 
 	get_next_char(env);
@@ -253,16 +250,6 @@ int lk_preprocess_all(environment *const env)
 	}
 
 	return 0;
-}
-
-void lk_add_comment(environment *const env)
-{
-	comment cmt = cmt_create(lk_get_current(env->lk), env->line);
-
-	char buffer[MAX_CMT_SIZE];
-	cmt_to_string(&cmt, buffer);
-
-	uni_printf(env->output, "%s", buffer);
 }
 
 const char *lk_get_current(const linker *const lk)

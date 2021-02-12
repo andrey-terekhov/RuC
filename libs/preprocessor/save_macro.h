@@ -17,8 +17,6 @@
 #pragma once
 
 #include "environment.h"
-#include <stddef.h>
-#include <stdint.h>
 
 
 #ifdef __cplusplus
@@ -26,22 +24,22 @@ extern "C" {
 #endif
 
 /**
- *	Length of char32_t string
+ *	Add new macro
  *
- *	@param	str		String
+ *	@param	env	Preprocessor environment
  *
- *	@return	Length of string, @c SIZE_MAX on failure
+ *	@return	@c 0 on success, @c -1 on failure
  */
-size_t strlen32(const char32_t *const str);
+int add_macro(environment *const env);
 
-void m_change_nextch_type(int type, int p, environment *const env);
-void m_old_nextch_type(environment *const env);
-
-int get_dipp(environment *const env);
-int get_next_char(environment *const env);
-
-void m_fprintf(int a, environment *const env);
-void m_nextch(environment *const env);
+/**
+ *	Modify an existing macro
+ *
+ *	@param	env	Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int set_macros(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

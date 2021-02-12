@@ -71,6 +71,8 @@ typedef struct environment
 	int oldnextp[DIP];
 	int dipp;
 
+	char *curent_path;
+
 	size_t line;
 
 	linker *lk;
@@ -81,6 +83,25 @@ typedef struct environment
 
 void env_init(environment *const env, linker *const lk, universal_io *const output);
 void env_clear_error_string(environment *const env);
+char *env_get_current_file(environment *const env);
+
+/**
+ *	Add a comment to indicate line changes in the output
+ *
+ *	@param	env	Preprocessor environment
+ */
+void env_add_comment(environment *const env);
+
+size_t env_skip_str(environment *const env);
+
+void m_change_nextch_type(int type, int p, environment *const env);
+void m_old_nextch_type(environment *const env);
+
+int get_dipp(environment *const env);
+int get_next_char(environment *const env);
+
+void m_fprintf(int a, environment *const env);
+void m_nextch(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -14,9 +14,9 @@
  *	limitations under the License.
  */
 
+#include "constants.h"
 #include "error.h"
 #include "logger.h"
-#include "constants.h"
 #include <stdio.h>
 #include <stddef.h>
 
