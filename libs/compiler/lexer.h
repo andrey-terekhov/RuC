@@ -26,19 +26,19 @@
 extern "C" {
 #endif
 
-typedef struct lexer
+typedef struct
 {
 	universal_io *io;					/**< Universal io structure */
 	syntax *sx;							/**< Syntax structure */
-	
+
 	char32_t curr_char;					/**< Current character */
 	char32_t next_char;					/**< Lookahead character */
-	int repr;							/**< Pointer to representation of the read identifier */
+	size_t repr;						/**< Pointer to representation of the read identifier */
 	int num;							/**< Value of the read integer number */
 	double num_double;					/**< Value of the read double number */
 	char32_t lexstr[MAXSTRINGL + 1];	/**< Representation of the read string literal */
-	
-	int error_flag;						/**< Error flag */
+
+	int was_error;						/**< Error flag */
 } lexer;
 
 /**
@@ -54,20 +54,20 @@ lexer create_lexer(universal_io *const io, syntax *const sx);
 /**
  *	Read next character from io
  *
- *	@param	lxr		Lexer structure
+ *	@param	lexer	Lexer structure
  *
  *	@return	Character
  */
-char32_t get_char(lexer *const lxr);
+char32_t get_char(lexer *const lexer);
 
 /**
  *	Lex next token from io
  *
- *	@param	lxr		Lexer structure
+ *	@param	lexer	Lexer structure
  *
  *	@return	Token
  */
-TOKEN lex(lexer *const lxr);
+token lex(lexer *const lexer);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -1295,7 +1295,7 @@ int find_field(analyzer *context, int stype)
 	{
 		int field_type = (int)mode_get(context->sx, stype + 3 + (int)i);
 
-		if (mode_get(context->sx, stype + 4 + (int)i) == REPRTAB_POS)
+		if (mode_get(context->sx, stype + 4 + (int)i) == (item_t)REPRTAB_POS)
 		{
 			context->stackoperands[context->sopnd] = context->ansttype = field_type;
 			flag = 0;
@@ -2621,7 +2621,7 @@ void statement(analyzer *context)
 		totree(context, TLabel);
 		for (i = 0; flag && i < context->pgotost - 1; i += 2)
 		{
-			flag = ident_get_repr(context->sx, context->gotost[i]) != REPRTAB_POS;
+			flag = ident_get_repr(context->sx, context->gotost[i]) != (item_t)REPRTAB_POS;
 		}
 		if (flag)
 		{
@@ -3037,7 +3037,7 @@ void statement(analyzer *context)
 				totree(context, TGoto);
 				for (i = 0; flag && i < context->pgotost - 1; i += 2)
 				{
-					flag = ident_get_repr(context->sx, context->gotost[i]) != REPRTAB_POS;
+					flag = ident_get_repr(context->sx, context->gotost[i]) != (item_t)REPRTAB_POS;
 				}
 				if (flag)
 				{
