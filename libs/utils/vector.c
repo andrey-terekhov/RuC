@@ -21,27 +21,25 @@
 
 int change_size(vector *const vec, const size_t size)
 {
-	if (size > vec->size)
+	if (size > vec->size_alloc)
 	{
-		if (size > vec->size_alloc)
+		const size_t alloc_new = size > 2 * vec->size_alloc ? size : 2 * vec->size_alloc;
+		item_t *array_new = realloc(vec->array, alloc_new * sizeof(item_t));
+		if (array_new == NULL)
 		{
-			const size_t alloc_new = size > 2 * vec->size_alloc ? size : 2 * vec->size_alloc;
-			item_t *array_new = realloc(vec->array, alloc_new * sizeof(item_t));
-			if (array_new == NULL)
-			{
-				return -1;
-			}
-
-			vec->size_alloc = alloc_new;
-			vec->array = array_new;
+			return -1;
 		}
 
-		memset(&vec->array[vec->size], 0, (size - vec->size) * sizeof(item_t));
-		vec->size = size;
-		return 0;
+		vec->size_alloc = alloc_new;
+		vec->array = array_new;
 	}
 
-	if (size < vec->size)
+	if (size > vec->size)
+	{
+		memset(&vec->array[vec->size], 0, (size - vec->size) * sizeof(item_t));
+	}
+
+	if (size != vec->size)
 	{
 		vec->size = size;
 		return 0;
@@ -85,7 +83,7 @@ size_t vector_add(vector *const vec, const item_t value)
 	}
 
 	vec->array[vec->size - 1] = value;
-	return vec->size;
+	return vec->size - 1;
 }
 
 int vector_set(vector *const vec, const size_t index, const item_t value)
