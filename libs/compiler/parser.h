@@ -233,7 +233,7 @@ void parse_compound_statement(parser *const context, const block_type type);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	@c 1 on function, @c 0 otherwise
  */
 int is_function(syntax *const sx, const item_t mode);
 
@@ -243,17 +243,17 @@ int is_function(syntax *const sx, const item_t mode);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	@c 1 on array, @c 0 otherwise
  */
 int is_array(syntax *const sx, const item_t mode);
 
 /**
- *	Check if mode is array
+ *	Check if mode is string
  *
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	@c 1 on string, @c 0 otherwise
  */
 int is_string(syntax *const sx, const item_t mode);
 
@@ -263,7 +263,7 @@ int is_string(syntax *const sx, const item_t mode);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	@c 1 on pointer, @c 0 otherwise
  */
 int is_pointer(syntax *const sx, const item_t mode);
 
@@ -273,7 +273,7 @@ int is_pointer(syntax *const sx, const item_t mode);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	@c 1 on struct, @c 0 otherwise
  */
 int is_struct(syntax *const sx, const item_t mode);
 
@@ -283,7 +283,7 @@ int is_struct(syntax *const sx, const item_t mode);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	@c 1 on floating point, @c 0 otherwise
  */
 int is_float(const item_t mode);
 
@@ -293,17 +293,17 @@ int is_float(const item_t mode);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	@c 1 on integer, @c 0 otherwise
  */
 int is_int(const item_t mode);
 
 /**
- *	Check if mode is array
+ *	Check if mode is void
  *
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	@c 1 on void, @c 0 otherwise
  */
 int is_void(const item_t mode);
 
@@ -312,6 +312,8 @@ int is_void(const item_t mode);
  *
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
+ *
+ *	@return	@c 1 on undefined, @c 0 otherwise
  */
 int is_undefined(const item_t mode);
 
