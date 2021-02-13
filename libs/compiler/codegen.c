@@ -962,7 +962,7 @@ void output_export(universal_io *const io, const virtual *const vm)
  */
 
 
-int encode_to_vm(universal_io *const io, syntax *const sx)
+int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
 	if (!out_is_correct(io) || sx == NULL)
 	{
@@ -983,6 +983,8 @@ int encode_to_vm(universal_io *const io, syntax *const sx)
 	vector_increase(&vm.memory, 4);
 	vector_increase(&vm.processes, sx->procd);
 	vm.max_threads = 0;
+
+	(void)ws;
 
 
 	const int ret = codegen(&vm);
