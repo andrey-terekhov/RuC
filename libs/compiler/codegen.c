@@ -911,17 +911,27 @@ static int codegen(virtual *const vm)
 }
 
 
-static void output_table(universal_io *const io, const vector *const table)
+static int output_table(universal_io *const io, const vector *const table, const item_status target)
 {
-	for (size_t i = 0; i < vector_size(table); i++)
+	const size_t size = vector_size(table);
+	for (size_t i = 0; i < size; i++)
 	{
-		uni_printf(io, "%" PRIitem " ", vector_get(table, i));
+		const item_t item = vector_get(table, i);
+		if (!item_check_var(target, item))
+		{
+			error(NULL, tables_cannot_be_compressed);
+			return -1;
+		}
+
+		uni_printf(io, "%" PRIitem " ", item);
 	}
+
 	uni_printf(io, "\n");
+	return 0;
 }
 
 /** Вывод таблиц в файл */
-static void output_export(universal_io *const io, const virtual *const vm)
+static int output_export(universal_io *const io, const virtual *const vm)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
@@ -933,11 +943,11 @@ static void output_export(universal_io *const io, const virtual *const vm)
 		, vector_size(&vm->sx->modes)
 		, vm->sx->max_displg, vm->max_threads);
 
-	output_table(io, &vm->memory);
-	output_table(io, &vm->sx->functions);
-	output_table(io, &vm->identifiers);
-	output_table(io, &vm->representations);
-	output_table(io, &vm->sx->modes);
+	return output_table(io, &vm->memory, vm->target)
+		|| output_table(io, &vm->sx->functions, vm->target)
+		|| output_table(io, &vm->identifiers, vm->target)
+		|| output_table(io, &vm->representations, vm->target)
+		|| output_table(io, &vm->sx->modes, vm->target);
 }
 
 
@@ -975,10 +985,10 @@ int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *cons
 	vm.target = item_get_status(ws);
 
 
-	const int ret = codegen(&vm);
+	int ret = codegen(&vm);
 	if (!ret)
 	{
-		output_export(io, &vm);
+		ret = output_export(io, &vm);
 	}
 
 #ifdef GENERATE_CODES
