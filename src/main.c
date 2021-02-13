@@ -28,8 +28,6 @@ const char *name = "../tests/executable/types/int/test_1.c";
 
 int main(int argc, const char *argv[])
 {
-	//printf(""); // Not working without using printf
-
 	workspace ws = ws_parse_args(argc, argv);
 
 	if (argc < 2)
