@@ -152,7 +152,7 @@ int analyze(universal_io *const io, syntax *const sx)
 #ifndef GENERATE_TREE
 	return context.error_flag || context.lxr->error_flag || !sx_is_correct(sx);
 #else
-	tables_and_tree(sx, DEFAULT_TREE);
+	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
 
 	const int ret = context.error_flag || context.lxr->error_flag || !sx_is_correct(sx)
 		|| tree_test(&sx->tree)
@@ -162,7 +162,7 @@ int analyze(universal_io *const io, syntax *const sx)
 
 	if (!ret)
 	{
-		tree_print(&sx->tree, DEFAULT_NEW);
+		tree_print(DEFAULT_NEW, &sx->tree);
 	}
 	return ret;
 #endif

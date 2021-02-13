@@ -992,7 +992,7 @@ int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *cons
 	}
 
 #ifdef GENERATE_CODES
-	tables_and_codes(&sx->functions, &vm.processes, &vm.memory, DEFAULT_CODES);
+	tables_and_codes(DEFAULT_CODES, &sx->functions, &vm.processes, &vm.memory);
 #endif
 
 

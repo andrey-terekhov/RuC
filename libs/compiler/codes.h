@@ -27,32 +27,37 @@ extern "C" {
 /**
  *	Output new tree
  *
- *	@param	tree			Tree table
  *	@param	path			File path
+ *	@param	tree			Tree table
  */
-void tree_print(vector *const tree, const char *const path);
+void tree_print(const char *const path, vector *const tree);
 
 
 /**
  *	Output tables and tree
  *
- *	@param	sx				Syntax structure
  *	@param	path			File path
+ *	@param	identifiers		Identifiers table
+ *	@param	modes			Modes table
+ *	@param	tree			Tree table
  */
-void tables_and_tree(const syntax *const sx, const char *const path);
+void tables_and_tree(const char *const path
+	, const vector *const identifiers
+	, const vector *const modes
+	, const vector *const tree);
 
 /**
  *	Output tables and codes
  *
+ *	@param	path			File path
  *	@param	functions		Functions table
  *	@param	processes		Init processes table
  *	@param	memory			Memory table
- *	@param	path			File path
  */
-void tables_and_codes(const vector *const functions
+void tables_and_codes(const char *const path
+	, const vector *const functions
 	, const vector *const processes
-	, const vector *const memory
-	, const char *const path);
+	, const vector *const memory);
 
 #ifdef __cplusplus
 } /* extern "C" */
