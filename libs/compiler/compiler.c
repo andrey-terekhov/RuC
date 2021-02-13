@@ -33,6 +33,9 @@ const char *const DEFAULT_MACRO = "macro.txt";
 const char *const DEFAULT_OUTPUT = "export.txt";
 
 
+typedef int (*encoder)(universal_io *const io, syntax *const sx);
+
+
 /** Make executable actually executable on best-effort basis (if possible) */
 static void make_executable(const char *const path)
 {
@@ -50,7 +53,7 @@ static void make_executable(const char *const path)
 #endif
 }
 
-int compile_from_io_to_vm(universal_io *const io)
+int compile_from_io(universal_io *const io, const encoder enc)
 {
 	if (!in_is_correct(io) || !out_is_correct(io))
 	{
@@ -64,7 +67,7 @@ int compile_from_io_to_vm(universal_io *const io)
 
 	if (!ret)
 	{
-		ret = encode_to_vm(io, &sx);
+		ret = enc(io, &sx);
 	}
 
 	sx_clear(&sx);
@@ -113,15 +116,16 @@ int compile_to_vm(workspace *const ws)
 
 	out_set_file(&io, ws_get_output(ws));
 
-	int ret = compile_from_io_to_vm(&io);
+	const int ret = compile_from_io(&io, &encode_to_vm);
+#ifndef GENERATE_MACRO
+	free(preprocessing);
+#endif
+
 	if (!ret)
 	{
 		make_executable(ws_get_output(ws));
 	}
 
-#ifndef GENERATE_MACRO
-	free(preprocessing);
-#endif
 	return ret;
 }
 
@@ -137,7 +141,7 @@ int no_macro_compile_to_vm(const char *const path)
 	in_set_file(&io, path);
 	out_set_file(&io, DEFAULT_OUTPUT);
 
-	int ret = compile_from_io_to_vm(&io);
+	const int ret = compile_from_io(&io, &encode_to_vm);
 	if (!ret)
 	{
 		make_executable(DEFAULT_OUTPUT);
