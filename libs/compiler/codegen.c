@@ -19,6 +19,7 @@
 #include "codes.h"
 #include "defs.h"
 #include "errors.h"
+#include "item.h"
 #include "tree.h"
 #include "uniprinter.h"
 #include "utf8.h"
@@ -47,6 +48,8 @@ typedef struct virtual
 	size_t addr_cond;				/**< Condition address */
 	size_t addr_case;				/**< Case operator address */
 	size_t addr_break;				/**< Break operator address */
+
+	item_status target;				/**< Target tables item type */
 } virtual;
 
 
@@ -907,49 +910,34 @@ static int codegen(virtual *const vm)
 	return 0;
 }
 
+
+static void output_table(universal_io *const io, const vector *const table)
+{
+	for (size_t i = 0; i < vector_size(table); i++)
+	{
+		uni_printf(io, "%" PRIitem " ", vector_get(table, i));
+	}
+	uni_printf(io, "\n");
+}
+
 /** Вывод таблиц в файл */
-void output_export(universal_io *const io, const virtual *const vm)
+static void output_export(universal_io *const io, const virtual *const vm)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
 	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n"
-		, mem_size(vm)
+		, vector_size(&vm->memory)
 		, vector_size(&vm->sx->functions)
 		, vector_size(&vm->identifiers)
 		, vector_size(&vm->representations)
 		, vector_size(&vm->sx->modes)
 		, vm->sx->max_displg, vm->max_threads);
 
-
-	for (size_t i = 0; i < mem_size(vm); i++)
-	{
-		uni_printf(io, "%" PRIitem " ", mem_get(vm, i));
-	}
-	uni_printf(io, "\n");
-
-	for (size_t i = 0; i < vector_size(&vm->sx->functions); i++)
-	{
-		uni_printf(io, "%" PRIitem " ", func_get(vm->sx, i));
-	}
-	uni_printf(io, "\n");
-
-	for (size_t i = 0; i < vector_size(&vm->identifiers); i++)
-	{
-		uni_printf(io, "%" PRIitem " ", vector_get(&vm->identifiers, i));
-	}
-	uni_printf(io, "\n");
-
-	for (size_t i = 0; i < vector_size(&vm->representations); i++)
-	{
-		uni_printf(io, "%" PRIitem " ", vector_get(&vm->representations, i));
-	}
-	uni_printf(io, "\n");
-
-	for (size_t i = 0; i < vector_size(&vm->sx->modes); i++)
-	{
-		uni_printf(io, "%" PRIitem " ", mode_get(vm->sx, i));
-	}
-	uni_printf(io, "\n");
+	output_table(io, &vm->memory);
+	output_table(io, &vm->sx->functions);
+	output_table(io, &vm->identifiers);
+	output_table(io, &vm->representations);
+	output_table(io, &vm->sx->modes);
 }
 
 
@@ -984,7 +972,7 @@ int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *cons
 	vector_increase(&vm.processes, sx->procd);
 	vm.max_threads = 0;
 
-	(void)ws;
+	vm.target = item_get_status(ws);
 
 
 	const int ret = codegen(&vm);

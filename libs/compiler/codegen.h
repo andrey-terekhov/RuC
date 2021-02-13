@@ -18,6 +18,7 @@
 
 #include "syntax.h"
 #include "uniio.h"
+#include "workspace.h"
 
 
 //#define GENERATE_CODES
