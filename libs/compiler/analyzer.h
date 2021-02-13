@@ -22,6 +22,8 @@
 #include "lexer.h"
 
 
+//#define GENERATE_TREE
+
 #define TREE		(context->sx->tree)
 
 #define REPRTAB		(context->sx->reprtab)

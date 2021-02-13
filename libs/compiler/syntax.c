@@ -90,44 +90,40 @@ int repr_is_equal(const syntax *const sx, const size_t first, const size_t secon
  */
 
 
-int sx_init(syntax *const sx)
+syntax sx_create()
 {
-	if (sx == NULL)
-	{
-		return -1;
-	}
+	syntax sx;
+	sx.procd = 1;
 
-	sx->procd = 1;
-
-	sx->predef = vector_create(FUNCSIZE);
-	sx->functions = vector_create(FUNCSIZE);
-	vector_increase(&sx->functions, 2);
+	sx.predef = vector_create(FUNCSIZE);
+	sx.functions = vector_create(FUNCSIZE);
+	vector_increase(&sx.functions, 2);
 	
-	sx->tree = vector_create(MAXTREESIZE);
+	sx.tree = vector_create(MAXTREESIZE);
 
-	sx->identifiers = vector_create(MAXIDENTAB);
-	vector_increase(&sx->identifiers, 2);
-	sx->cur_id = 2;
+	sx.identifiers = vector_create(MAXIDENTAB);
+	vector_increase(&sx.identifiers, 2);
+	sx.cur_id = 2;
 
-	sx->modes = vector_create(MAXMODETAB);
-	vector_increase(&sx->modes, 1);
-	sx->start_mode = 1;
+	sx.modes = vector_create(MAXMODETAB);
+	vector_increase(&sx.modes, 1);
+	sx.start_mode = 1;
 
-	sx->rp = 1;
+	sx.rp = 1;
 
-	sx->max_displg = 3;
-	sx->ref_main = 0;
+	sx.max_displg = 3;
+	sx.ref_main = 0;
 
-	sx->max_displ = 3;
-	sx->displ = -3;
-	sx->lg = -1;
+	sx.max_displ = 3;
+	sx.displ = -3;
+	sx.lg = -1;
 
 	for (size_t i = 0; i < 256; i++)
 	{
-		sx->hashtab[i] = 0;
+		sx.hashtab[i] = 0;
 	}
 
-	return 0;
+	return sx;
 }
 
 int sx_is_correct(syntax *const sx)

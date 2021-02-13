@@ -65,13 +65,11 @@ typedef struct syntax
 
 
 /**
- *	Init Syntax structure
+ *	Create Syntax structure
  *
- *	@param	sx			Syntax structure
- *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Syntax structure
  */
-int sx_init(syntax *const sx);
+syntax sx_create();
 
 /**
  *	Check if syntax structure is correct

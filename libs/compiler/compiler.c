@@ -17,11 +17,9 @@
 #include "compiler.h"
 #include "analyzer.h"
 #include "codegen.h"
-#include "codes.h"
 #include "errors.h"
 #include "preprocessor.h"
 #include "syntax.h"
-#include "tree.h"
 #include "uniio.h"
 #include <stdlib.h>
 
@@ -31,14 +29,7 @@
 #endif
 
 
-//#define GENERATE_MACRO
-//#define GENERATE_TABLES
-//#define GENERATE_TREE
-
-
 const char *const DEFAULT_MACRO = "macro.txt";
-const char *const DEFAULT_TREE = "tree.txt";
-const char *const DEFAULT_NEW = "new.txt";
 const char *const DEFAULT_OUTPUT = "export.txt";
 
 
@@ -68,37 +59,11 @@ int compile_from_io_to_vm(universal_io *const io)
 		return -1;
 	}
 
-	syntax sx;
-	int ret = sx_init(&sx);
+	syntax sx = sx_create();
+	int ret = analyze(io, &sx);
 
 	if (!ret)
 	{
-		ret = analyze(io, &sx);
-#ifdef GENERATE_TABLES
-		tables_and_tree(&sx, DEFAULT_TREE);
-#endif
-	}
-	
-	if (!ret)
-	{
-		ret = !sx_is_correct(&sx);
-	}
-
-	if (!ret)
-	{
-#ifdef GENERATE_TREE
-		ret = tree_test(&sx.tree)
-			|| tree_test_next(&sx.tree)
-			|| tree_test_recursive(&sx.tree)
-			|| tree_test_copy(&sx.tree);
-		if (ret)
-		{
-			io_erase(io);
-			return ret;
-		}
-		tree_print(&sx.tree, DEFAULT_NEW);
-#endif
-
 		ret = encode_to_vm(io, &sx);
 	}
 
