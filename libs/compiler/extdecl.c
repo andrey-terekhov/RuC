@@ -91,8 +91,7 @@ double double_from_tree(vector *const tree)
 	const int64_t snd = (int64_t)vector_get(tree, index + 1) & 0x00000000ffffffff;
 	int64_t num64 = (snd << 32) | fst;
 
-	vector_remove(tree);
-	vector_remove(tree);
+	vector_resize(tree, index);
 
 	double num;
 	memcpy(&num, &num64, sizeof(double));
@@ -144,10 +143,7 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 	}
 	else
 	{
-		while (context->temp_tc < vector_size(&TREE))
-		{
-			vector_remove(&TREE);
-		}
+		vector_resize(&TREE, context->temp_tc);
 	}
 
 	/*if (!context->new_line_flag && context->curchar != EOF)
