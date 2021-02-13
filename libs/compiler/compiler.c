@@ -53,6 +53,7 @@ static void make_executable(const char *const path)
 #endif
 }
 
+
 int compile_from_io(universal_io *const io, const encoder enc)
 {
 	if (!in_is_correct(io) || !out_is_correct(io))
@@ -75,17 +76,7 @@ int compile_from_io(universal_io *const io, const encoder enc)
 	return ret;
 }
 
-
-/*
- *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
- *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
- *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
- *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
- *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
- */
-
-
-int compile_to_vm(workspace *const ws)
+int compile_from_ws(workspace *const ws, const encoder enc)
 {
 	if (!ws_is_correct(ws) || ws_get_files_num(ws) == 0)
 	{
@@ -115,12 +106,27 @@ int compile_to_vm(workspace *const ws)
 #endif
 
 	out_set_file(&io, ws_get_output(ws));
+	const int ret = compile_from_io(&io, enc);
 
-	const int ret = compile_from_io(&io, &encode_to_vm);
 #ifndef GENERATE_MACRO
 	free(preprocessing);
 #endif
+	return ret;
+}
 
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+int compile_to_vm(workspace *const ws)
+{
+	const int ret = compile_from_ws(ws, &encode_to_vm);
 	if (!ret)
 	{
 		make_executable(ws_get_output(ws));
