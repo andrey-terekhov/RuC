@@ -911,7 +911,7 @@ static int codegen(virtual *const vm)
 }
 
 
-static int output_table(universal_io *const io, const vector *const table, const item_status target)
+static int output_table(universal_io *const io, const item_status target, const vector *const table)
 {
 	const size_t size = vector_size(table);
 	for (size_t i = 0; i < size; i++)
@@ -943,11 +943,11 @@ static int output_export(universal_io *const io, const virtual *const vm)
 		, vector_size(&vm->sx->modes)
 		, vm->sx->max_displg, vm->max_threads);
 
-	return output_table(io, &vm->memory, vm->target)
-		|| output_table(io, &vm->sx->functions, vm->target)
-		|| output_table(io, &vm->identifiers, vm->target)
-		|| output_table(io, &vm->representations, vm->target)
-		|| output_table(io, &vm->sx->modes, vm->target);
+	return output_table(io, vm->target, &vm->memory)
+		|| output_table(io, vm->target, &vm->sx->functions)
+		|| output_table(io, vm->target, &vm->identifiers)
+		|| output_table(io, vm->target, &vm->representations)
+		|| output_table(io, vm->target, &vm->sx->modes);
 }
 
 
