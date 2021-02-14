@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-typedef struct
+typedef struct lexer
 {
 	universal_io *io;					/**< Universal io structure */
 	syntax *sx;							/**< Syntax structure */
@@ -54,20 +54,20 @@ lexer create_lexer(universal_io *const io, syntax *const sx);
 /**
  *	Read next character from io
  *
- *	@param	lexer	Lexer structure
+ *	@param	lxr		Lexer structure
  *
  *	@return	Character
  */
-char32_t get_char(lexer *const lexer);
+char32_t get_char(lexer *const lxr);
 
 /**
  *	Lex next token from io
  *
- *	@param	lexer	Lexer structure
+ *	@param	lxr		Lexer structure
  *
  *	@return	Token
  */
-token lex(lexer *const lexer);
+token lex(lexer *const lxr);
 
 #ifdef __cplusplus
 } /* extern "C" */
