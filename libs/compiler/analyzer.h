@@ -40,8 +40,8 @@ typedef struct
 	syntax *sx;					/**< Syntax structure */
 	lexer *lexer;				/**< Lexer structure */
 
-	token curr_token;			/**< Current token */
-	token next_token;			/**< Lookahead token */
+	token_t curr_token;			/**< Current token */
+	token_t next_token;			/**< Lookahead token */
 
 	size_t function_mode;		/**< Mode of currenty parsed function */
 	size_t array_dimension;		/**< Array dimension counter */

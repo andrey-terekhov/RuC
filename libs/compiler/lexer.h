@@ -67,7 +67,7 @@ char32_t get_char(lexer *const lxr);
  *
  *	@return	Token
  */
-token lex(lexer *const lxr);
+token_t lex(lexer *const lxr);
 
 #ifdef __cplusplus
 } /* extern "C" */

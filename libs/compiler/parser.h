@@ -57,7 +57,7 @@ void consume_token(parser *const parser);
  *
  *	@return	@c 0, if 'peek token' is expected and consumed, @c 0 otherwise
  */
-int try_consume_token(parser *const parser, const token expected);
+int try_consume_token(parser *const parser, const token_t expected);
 
 /**
  *	Try consume the current 'peek token' and lex the next one
@@ -67,7 +67,7 @@ int try_consume_token(parser *const parser, const token expected);
  *	@param	expected	Expected token to consume
  *	@param	err			Error to emit
  */
-void expect_and_consume_token(parser *const parser, const token expected, const enum ERROR err);
+void expect_and_consume_token(parser *const parser, const token_t expected, const enum ERROR err);
 
 /**
  *	Read tokens until one of the specified tokens

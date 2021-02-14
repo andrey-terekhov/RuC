@@ -18,7 +18,7 @@
 
 
 /**	Check if the set of tokens has token in it*/
-int has_token_set(const unsigned int tokens, const token token)
+int has_token_set(const unsigned int tokens, const token_t token)
 {
 	return (tokens & token) != 0;
 }
@@ -66,7 +66,7 @@ void consume_token(parser *const parser)
 	parser->next_token = lex(parser->lexer);
 }
 
-int try_consume_token(parser *const parser, const token expected)
+int try_consume_token(parser *const parser, const token_t expected)
 {
 	if (parser->next_token == expected)
 	{
@@ -77,7 +77,7 @@ int try_consume_token(parser *const parser, const token expected)
 	return 0;
 }
 
-void expect_and_consume_token(parser *const parser, const token expected, const enum ERROR err)
+void expect_and_consume_token(parser *const parser, const token_t expected, const enum ERROR err)
 {
 	if (!try_consume_token(parser, expected))
 	{

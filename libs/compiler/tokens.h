@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-typedef enum
+typedef enum TOKEN
 {
 	eof					= LEOF,			/**< End of file */
 
@@ -205,7 +205,7 @@ typedef enum
 	sh_eval				= SH_EVAL,		/**< '#eval'	keyword */
 	sh_include			= SH_INCLUDE,	/**< '#include'	keyword */
 	sh_file				= SH_FILE,		/**< '#file'	keyword */
-} token;
+} token_t;
 
 #ifdef __cplusplus
 } /* extern "C" */
