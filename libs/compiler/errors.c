@@ -369,7 +369,6 @@ void get_error(const int num, char *const msg, va_list args)
 			sprintf(msg, "вырезка элемента из массива, выданного функцией, а функции "
 					"не могут выдавать массивы");
 			break;
-			break;
 		case wait_end: // need_test
 			sprintf(msg, "в инициализации структуры здесь ожидалась правая фигурная "
 					"скобка }");
@@ -654,7 +653,7 @@ void get_warning(const int num, char *const msg, va_list args)
 
 
 void output(const universal_io *const io, const char *const msg, const logger system_func
-			, void (*func)(const char *const, const char *const, const char *const, const size_t))
+	, void (*func)(const char *const, const char *const, const char *const, const size_t))
 {
 	char tag[MAX_TAG_SIZE] = TAG_RUC;
 
@@ -668,8 +667,8 @@ void output(const universal_io *const io, const char *const msg, const logger sy
 
 	size_t position = in_get_position(io) - 1;
 	while (position > 0
-		   && (code[position] == ' ' || code[position] == '\t'
-			   || code[position] == '\r' || code[position] == '\n'))
+		&& (code[position] == ' ' || code[position] == '\t'
+			|| code[position] == '\r' || code[position] == '\n'))
 	{
 		position--;
 	}
