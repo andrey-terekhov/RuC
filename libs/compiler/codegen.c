@@ -108,8 +108,8 @@ static void final_operation(syntax *const sx, node *const nd)
 					mem_add(sx, node_get_arg(nd, 0)); // длина
 				}
 				else if ((op >= REMASS && op <= DIVASS) || (op >= REMASSV && op <= DIVASSV)
-						 || (op >= ASSR && op <= DIVASSR) || (op >= ASSRV && op <= DIVASSRV) || (op >= POSTINC && op <= DEC)
-						 || (op >= POSTINCV && op <= DECV) || (op >= POSTINCR && op <= DECR) || (op >= POSTINCRV && op <= DECRV))
+					|| (op >= ASSR && op <= DIVASSR) || (op >= ASSRV && op <= DIVASSRV) || (op >= POSTINC && op <= DEC)
+					|| (op >= POSTINCV && op <= DECV) || (op >= POSTINCR && op <= DECR) || (op >= POSTINCRV && op <= DECRV))
 				{
 					mem_add(sx, node_get_arg(nd, 0));
 				}
@@ -150,7 +150,7 @@ static void expression(syntax *const sx, node *const nd, int mode)
 				mem_add(sx, LA);
 				mem_add(sx, node_get_arg(nd, 0));
 			}
-				break;
+			break;
 			case TIdenttoval:
 			{
 				mem_add(sx, LOAD);
@@ -820,7 +820,7 @@ void output_export(universal_io *const io, const syntax *const sx)
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
 	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n", mem_size(sx), vector_size(&sx->functions),
-			   vector_size(&sx->identifiers), sx->rp, vector_size(&sx->modes), sx->max_displg, sx->max_threads);
+					vector_size(&sx->identifiers), sx->rp, vector_size(&sx->modes), sx->max_displg, sx->max_threads);
 
 	for (size_t i = 0; i < mem_size(sx); i++)
 	{
