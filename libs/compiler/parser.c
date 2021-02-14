@@ -35,8 +35,8 @@ int has_token_set(const unsigned int tokens, const token_t token)
 
 int parse(parser *const parser)
 {
-	get_char(parser->lexer);
-	get_char(parser->lexer);
+	get_char(parser->lxr);
+	get_char(parser->lxr);
 	consume_token(parser);
 
 	do
@@ -46,7 +46,7 @@ int parse(parser *const parser)
 
 	tree_add(parser->sx, TEnd);
 
-	return parser->was_error || parser->lexer->was_error;
+	return parser->was_error || parser->lxr->was_error;
 }
 
 
@@ -63,7 +63,7 @@ void parser_error(parser *const parser, const int num, ...)
 void consume_token(parser *const parser)
 {
 	parser->curr_token = parser->next_token;
-	parser->next_token = lex(parser->lexer);
+	parser->next_token = lex(parser->lxr);
 }
 
 int try_consume_token(parser *const parser, const token_t expected)

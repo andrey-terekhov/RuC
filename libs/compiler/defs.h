@@ -35,7 +35,7 @@
 
 // modetab
 
-typedef enum
+typedef enum MODE
 {
 	mode_undefined = 0,
 	mode_integer = -1,

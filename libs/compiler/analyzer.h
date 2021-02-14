@@ -25,7 +25,7 @@
 #define TREE		(context->sx->tree)
 
 #define REPRTAB		(context->sx->reprtab)
-#define REPRTAB_POS (context->lexer->repr)
+#define REPRTAB_POS (context->lxr->repr)
 #define REPRTAB_LEN (context->sx->rp)
 
 
@@ -34,11 +34,11 @@ extern "C" {
 #endif
 
 /** Определение глобальных переменных */
-typedef struct
+typedef struct parser
 {
 	universal_io *io;			/**< Universal io structure */
 	syntax *sx;					/**< Syntax structure */
-	lexer *lexer;				/**< Lexer structure */
+	lexer *lxr;					/**< Lexer structure */
 
 	token_t curr_token;			/**< Current token */
 	token_t next_token;			/**< Lookahead token */

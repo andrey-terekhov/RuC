@@ -26,7 +26,7 @@ int scanner(parser *context)
 	context->curr_token = context->next_token;
 	if (!context->buf_flag)
 	{
-		context->next_token = lex(context->lexer);
+		context->next_token = lex(context->lxr);
 	}
 	else
 	{
@@ -415,21 +415,21 @@ void primaryexpr(parser *context)
 	if (context->curr_token == CHAR_CONST)
 	{
 		totree(context, TConst);
-		totree(context, context->lexer->num);
+		totree(context, context->lxr->num);
 		context->stackoperands[++context->sopnd] = context->ansttype = LCHAR;
 		context->anst = NUMBER;
 	}
 	else if (context->curr_token == INT_CONST)
 	{
 		totree(context, TConst);
-		totree(context, context->lexer->num);
+		totree(context, context->lxr->num);
 		context->stackoperands[++context->sopnd] = context->ansttype = LINT;
 		context->anst = NUMBER;
 	}
 	else if (context->curr_token == FLOAT_CONST)
 	{
 		totree(context, TConstd);
-		double_to_tree(&TREE, context->lexer->num_double);
+		double_to_tree(&TREE, context->lxr->num_double);
 		context->stackoperands[++context->sopnd] = context->ansttype = LFLOAT;
 		context->anst = NUMBER;
 	}
@@ -1943,11 +1943,11 @@ void parse_string_literal_expression(parser *const parser)
 	int i;
 
 	totree(parser, TString);
-	totree(parser, parser->lexer->num);
+	totree(parser, parser->lxr->num);
 
-	for (i = 0; i < parser->lexer->num; i++)
+	for (i = 0; i < parser->lxr->num; i++)
 	{
-		totree(parser, parser->lexer->lexstr[i]);
+		totree(parser, parser->lxr->lexstr[i]);
 	}
 
 	parser->ansttype = (int)to_modetab(parser, mode_array, LCHAR);

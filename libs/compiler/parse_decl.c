@@ -66,7 +66,7 @@ item_t parse_type_specifier(parser *const parser)
 
 		case identifier:
 		{
-			const size_t id = (size_t)repr_get_reference(parser->sx, parser->lexer->repr);
+			const size_t id = (size_t)repr_get_reference(parser->sx, parser->lxr->repr);
 			consume_token(parser);
 
 			if (ident_get_displ(parser->sx, id) < 1000)
@@ -114,7 +114,7 @@ item_t parse_struct_or_union_specifier(parser *const parser)
 
 		case identifier:
 		{
-			const size_t repr = parser->lexer->repr;
+			const size_t repr = parser->lxr->repr;
 			consume_token(parser);
 
 			if (parser->next_token == l_brace)
@@ -262,7 +262,7 @@ item_t parse_struct_declaration_list(parser *const parser)
 			type = to_modetab(parser, mode_pointer, element_type);
 		}
 
-		const size_t repr = parser->lexer->repr;
+		const size_t repr = parser->lxr->repr;
 		if (parser->next_token == identifier)
 		{
 			consume_token(parser);
@@ -460,7 +460,7 @@ void parse_array_initializer(parser *const parser, const item_t type)
  */
 void parse_init_declarator(parser *const parser, item_t type)
 {
-	const size_t old_id = to_identab(parser, parser->lexer->repr, 0, type);
+	const size_t old_id = to_identab(parser, parser->lxr->repr, 0, type);
 	size_t ref_array_dim = 0;
 
 	parser->flag_empty_bounds = 1;
@@ -568,7 +568,7 @@ item_t parse_function_declarator(parser *const parser, const int level, int func
 				if (try_consume_token(parser, identifier))
 				{
 					flag_was_ident = 1;
-					func_add(parser->sx, (item_t)parser->lexer->repr);
+					func_add(parser->sx, (item_t)parser->lxr->repr);
 				}
 			}
 			else if (parser->next_token == identifier)
@@ -619,7 +619,7 @@ item_t parse_function_declarator(parser *const parser, const int level, int func
 							parser_error(parser, two_idents_for_1_declarer);
 							return mode_undefined;
 						}
-						func_add(parser->sx, -((item_t)parser->lexer->repr));
+						func_add(parser->sx, -((item_t)parser->lxr->repr));
 					}
 					else
 					{
@@ -762,7 +762,7 @@ void parse_function_definition(parser *const parser, const item_t type)
 	// TODO: сюда бы интерфейс для functions
 	const size_t function_num = vector_size(&parser->sx->functions);
 	vector_increase(&parser->sx->functions, 1);
-	const size_t function_repr = parser->lexer->repr;
+	const size_t function_repr = parser->lxr->repr;
 	consume_token(parser);
 	const item_t function_mode = parse_function_declarator(parser, 1, 3, type);
 

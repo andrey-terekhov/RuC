@@ -27,7 +27,7 @@ parser compiler_context_create(universal_io *const io, syntax *const sx, lexer *
 	parser context;
 	context.io = io;
 	context.sx = sx;
-	context.lexer = lexer;
+	context.lxr = lexer;
 
 	context.sp = 0;
 	context.sopnd = -1;
@@ -46,9 +46,9 @@ parser compiler_context_create(universal_io *const io, syntax *const sx, lexer *
 void read_keywords(parser *context)
 {
 	context->sx->keywords = 1;
-	get_char(context->lexer);
-	get_char(context->lexer);
-	while (lex(context->lexer) != LEOF)
+	get_char(context->lxr);
+	get_char(context->lxr);
+	while (lex(context->lxr) != LEOF)
 	{
 		; // чтение ключевых слов
 	}
@@ -138,6 +138,6 @@ int analyze(universal_io *const io, syntax *const sx)
 	io_erase(&temp);
 
 	context.io = io;
-	context.lexer->io = io;
+	context.lxr->io = io;
 	return parse(&context);
 }

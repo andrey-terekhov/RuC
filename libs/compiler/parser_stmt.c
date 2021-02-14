@@ -29,7 +29,7 @@ void parse_labeled_statement(parser *const parser)
 {
 	tree_add(parser->sx, TLabel);
 
-	const size_t repr = parser->lexer->repr;
+	const size_t repr = parser->lxr->repr;
 	// Не проверяем, что это ':', так как по нему узнали,
 	// что это labeled statement
 	consume_token(parser);
@@ -287,7 +287,7 @@ void parse_goto_statement(parser *const parser)
 {
 	tree_add(parser->sx, TGoto);
 	expect_and_consume_token(parser, identifier, no_ident_after_goto);
-	const size_t repr = parser->lexer->repr;
+	const size_t repr = parser->lxr->repr;
 
 	for (size_t i = 0; i < parser->pgotost; i += 2)
 	{
@@ -420,7 +420,7 @@ void parse_printid_statement(parser *const parser)
 	{
 		if (try_consume_token(parser, identifier))
 		{
-			const size_t repr = parser->lexer->repr;
+			const size_t repr = parser->lxr->repr;
 			const size_t id = (size_t)repr_get_reference(parser->sx, repr);
 			if (id == 1)
 			{
@@ -474,7 +474,7 @@ void parse_getid_statement(parser *const parser)
 	{
 		if (try_consume_token(parser, identifier))
 		{
-			const size_t repr = parser->lexer->repr;
+			const size_t repr = parser->lxr->repr;
 			const size_t id = (size_t)repr_get_reference(parser->sx, repr);
 			if (id == 1)
 			{
@@ -575,10 +575,10 @@ void parse_printf_statement(parser *const parser)
 		return;
 	}
 
-	const size_t format_str_length = (size_t)parser->lexer->num;
+	const size_t format_str_length = (size_t)parser->lxr->num;
 	for (size_t i = 0; i < format_str_length; i++)
 	{
-		format_str[i] = parser->lexer->lexstr[i];
+		format_str[i] = parser->lxr->lexstr[i];
 	}
 	format_str[format_str_length] = 0;
 	consume_token(parser);	// Для форматирующей строки
@@ -652,7 +652,7 @@ void parse_block_item(parser *const parser)
 
 		case identifier:
 		{
-			const size_t id = (size_t)repr_get_reference(parser->sx, parser->lexer->repr);
+			const size_t id = (size_t)repr_get_reference(parser->sx, parser->lxr->repr);
 			if (ident_get_displ(parser->sx, id) >= 1000)
 			{
 				parse_inner_declaration(parser);
