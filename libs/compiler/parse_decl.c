@@ -239,7 +239,7 @@ item_t parse_struct_declaration_list(parser *const prs)
 
 	item_t local_modetab[100];
 	size_t local_md = 3;
-	size_t field_number = 0;
+	size_t fields = 0;
 	size_t displ = 0;
 	int was_array = 0;
 
@@ -313,7 +313,7 @@ item_t parse_struct_declaration_list(parser *const prs)
 
 		local_modetab[local_md++] = type;
 		local_modetab[local_md++] = (item_t)repr;
-		field_number++;
+		fields++;
 		displ += size_of(prs->sx, type);
 
 		token_expect_and_consume(prs, semicolon, no_semicolon_in_struct);
@@ -338,7 +338,7 @@ item_t parse_struct_declaration_list(parser *const prs)
 
 	local_modetab[0] = mode_struct;
 	local_modetab[1] = (item_t)displ;
-	local_modetab[2] = (item_t)field_number * 2;
+	local_modetab[2] = (item_t)fields * 2;
 
 	return (item_t)mode_add(prs->sx, local_modetab, local_md);
 }
@@ -358,19 +358,19 @@ void parse_struct_initializer(parser *const prs, const item_t type)
 		return;
 	}
 
-	const size_t expected_field_number = (size_t)(mode_get(prs->sx, (size_t)type + 2) / 2);
-	size_t actual_field_number = 0;
+	const size_t expected_fields = (size_t)(mode_get(prs->sx, (size_t)type + 2) / 2);
+	size_t actual_fields = 0;
 	size_t ref_next_field = (size_t)type + 3;
 
 	tree_add(prs->sx, TStructinit);
-	tree_add(prs->sx, (item_t)expected_field_number);
+	tree_add(prs->sx, (item_t)expected_fields);
 
 	do
 	{
 		token_consume(prs);
 		parse_initializer(prs, mode_get(prs->sx, ref_next_field));
 		ref_next_field += 2;
-		actual_field_number++;
+		actual_fields++;
 
 		if (prs->next_token == r_brace)
 		{
@@ -381,7 +381,7 @@ void parse_struct_initializer(parser *const prs, const item_t type)
 			parser_error(prs, no_comma_in_init_list);
 			token_skip_until(prs, comma | r_brace | semicolon);
 		}
-	} while (actual_field_number != expected_field_number && prs->next_token != semicolon);
+	} while (actual_fields != expected_fields && prs->next_token != semicolon);
 
 	token_expect_and_consume(prs, r_brace, wait_end);
 	tree_add(prs->sx, TExprend);
@@ -524,7 +524,7 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_de
 {
 	item_t local_modetab[100];
 	size_t local_md = 3;
-	size_t param_number = 0;
+	size_t args = 0;
 
 	if (token_try_consume(prs, r_paren))
 	{
@@ -662,7 +662,7 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_de
 				return mode_undefined;
 			}
 
-			param_number++;
+			args++;
 			local_modetab[local_md++] = type;
 		} while (token_try_consume(prs, comma));
 
@@ -672,7 +672,7 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_de
 
 	local_modetab[0] = mode_function;
 	local_modetab[1] = return_type;
-	local_modetab[2] = (item_t)param_number;
+	local_modetab[2] = (item_t)args;
 
 	return (item_t)mode_add(prs->sx, local_modetab, local_md);
 }
