@@ -69,7 +69,7 @@ typedef struct parser
 									 @c 2 for function declaration,
 									 @c 3 for others */
 
-	int flag_strings_only;		/**< @c 0 for non sting initialization,
+	int flag_strings_only;		/**< @c 0 for non-string initialization,
 									 @c 1 for string initialization,
 									 @c 2 for parsing before initialization */
 
