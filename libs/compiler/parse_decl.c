@@ -47,28 +47,28 @@ item_t parse_type_specifier(parser *const prs)
 	switch (prs->next_token)
 	{
 		case kw_void:
-			consume_token(prs);
+			token_consume(prs);
 			return mode_void;
 
 		case kw_char:
-			consume_token(prs);
+			token_consume(prs);
 			return mode_character;
 
 		// case kw_short:
 		case kw_int:
 		case kw_long:
-			consume_token(prs);
+			token_consume(prs);
 			return mode_integer;
 
 		case kw_float:
 		case kw_double:
-			consume_token(prs);
+			token_consume(prs);
 			return mode_float;
 
 		case identifier:
 		{
 			const size_t id = (size_t)repr_get_reference(prs->sx, prs->lxr->repr);
-			consume_token(prs);
+			token_consume(prs);
 
 			if (ident_get_displ(prs->sx, id) < 1000)
 			{
@@ -82,7 +82,7 @@ item_t parse_type_specifier(parser *const prs)
 
 		// case kw_union:
 		case kw_struct:
-			consume_token(prs);
+			token_consume(prs);
 			return parse_struct_or_union_specifier(prs);
 
 		default:
@@ -116,7 +116,7 @@ item_t parse_struct_or_union_specifier(parser *const prs)
 		case identifier:
 		{
 			const size_t repr = prs->lxr->repr;
-			consume_token(prs);
+			token_consume(prs);
 
 			if (prs->next_token == l_brace)
 			{
@@ -172,10 +172,10 @@ item_t parse_array_definition(parser *const prs, item_t type)
 		parser_error(prs, pnt_before_array);
 	}
 
-	while (try_consume_token(prs, l_square))
+	while (token_try_consume(prs, l_square))
 	{
 		prs->array_dimensions++;
-		if (try_consume_token(prs, r_square))
+		if (token_try_consume(prs, r_square))
 		{
 			if (prs->next_token == l_square)
 			{
@@ -192,10 +192,10 @@ item_t parse_array_definition(parser *const prs, item_t type)
 				parser_error(prs, array_size_must_be_int);
 			}
 
-			if (!try_consume_token(prs, r_square))
+			if (!token_try_consume(prs, r_square))
 			{
 				parser_error(prs, wait_right_sq_br);
-				skip_until(prs, r_square | comma | semicolon);
+				token_skip_until(prs, r_square | comma | semicolon);
 			}
 		}
 		type = to_modetab(prs, mode_array, type);
@@ -228,12 +228,12 @@ item_t parse_struct_declaration_list(parser *const prs)
 	tree_add(prs->sx, TStructbeg);
 	tree_add(prs->sx, 0);	// Тут будет номер инициализирующей процедуры
 
-	consume_token(prs);
+	token_consume(prs);
 	if (prs->next_token == r_brace)
 	{
 		// Что делать с пустой структурой?
 		// parser_error(parser, empty_struct);
-		consume_token(prs);
+		token_consume(prs);
 		return mode_undefined;
 	}
 
@@ -255,14 +255,14 @@ item_t parse_struct_declaration_list(parser *const prs)
 		item_t type = element_type;
 		if (prs->next_token == star)
 		{
-			consume_token(prs);
+			token_consume(prs);
 			type = to_modetab(prs, mode_pointer, element_type);
 		}
 
 		const size_t repr = prs->lxr->repr;
 		if (prs->next_token == identifier)
 		{
-			consume_token(prs);
+			token_consume(prs);
 			if (prs->next_token == l_square)
 			{
 				tree_add(prs->sx, TDeclarr);
@@ -283,9 +283,9 @@ item_t parse_struct_declaration_list(parser *const prs)
 				tree_add(prs->sx, 1);							// Признак, что массив в структуре
 				was_array = 1;
 
-				if (try_consume_token(prs, equal))
+				if (token_try_consume(prs, equal))
 				{
-					consume_token(prs);
+					token_consume(prs);
 					if (mode_is_array(prs->sx, type))
 					{
 						prs->flag_strings_only = 2;
@@ -308,7 +308,7 @@ item_t parse_struct_declaration_list(parser *const prs)
 		else
 		{
 			parser_error(prs, wait_ident_after_semicolon_in_struct);
-			skip_until(prs, semicolon | r_brace);
+			token_skip_until(prs, semicolon | r_brace);
 		}
 
 		local_modetab[local_md++] = type;
@@ -316,8 +316,8 @@ item_t parse_struct_declaration_list(parser *const prs)
 		field_number++;
 		displ += size_of(prs->sx, type);
 
-		expect_and_consume_token(prs, semicolon, no_semicolon_in_struct);
-	} while (!try_consume_token(prs, r_brace));
+		token_expect_and_consume(prs, semicolon, no_semicolon_in_struct);
+	} while (!token_try_consume(prs, r_brace));
 
 	if (was_array)
 	{
@@ -354,7 +354,7 @@ void parse_struct_initializer(parser *const prs, const item_t type)
 	if (prs->curr_token != l_brace)
 	{
 		parser_error(prs, struct_init_must_start_from_BEGIN);
-		skip_until(prs, comma | semicolon);
+		token_skip_until(prs, comma | semicolon);
 		return;
 	}
 
@@ -367,7 +367,7 @@ void parse_struct_initializer(parser *const prs, const item_t type)
 
 	do
 	{
-		consume_token(prs);
+		token_consume(prs);
 		parse_initializer(prs, mode_get(prs->sx, ref_next_field));
 		ref_next_field += 2;
 		actual_field_number++;
@@ -376,14 +376,14 @@ void parse_struct_initializer(parser *const prs, const item_t type)
 		{
 			break;
 		}
-		else if (!try_consume_token(prs, comma))
+		else if (!token_try_consume(prs, comma))
 		{
 			parser_error(prs, no_comma_in_init_list);
-			skip_until(prs, comma | r_brace | semicolon);
+			token_skip_until(prs, comma | r_brace | semicolon);
 		}
 	} while (actual_field_number != expected_field_number && prs->next_token != semicolon);
 
-	expect_and_consume_token(prs, r_brace, wait_end);
+	token_expect_and_consume(prs, r_brace, wait_end);
 	tree_add(prs->sx, TExprend);
 }
 
@@ -413,7 +413,7 @@ void parse_array_initializer(parser *const prs, const item_t type)
 	if (prs->curr_token != l_brace)
 	{
 		parser_error(prs, arr_init_must_start_from_BEGIN);
-		skip_until(prs, comma | semicolon);
+		token_skip_until(prs, comma | semicolon);
 		return;
 	}
 
@@ -424,21 +424,21 @@ void parse_array_initializer(parser *const prs, const item_t type)
 	do
 	{
 		list_length++;
-		consume_token(prs);
+		token_consume(prs);
 		parse_initializer(prs, mode_get(prs->sx, (size_t)type + 1));
 
 		if (prs->next_token == r_brace)
 		{
 			break;
 		}
-		else if (!try_consume_token(prs, comma))
+		else if (!token_try_consume(prs, comma))
 		{
 			parser_error(prs, no_comma_in_init_list);
-			skip_until(prs, comma | r_brace | semicolon);
+			token_skip_until(prs, comma | r_brace | semicolon);
 		}
 	} while (prs->next_token != semicolon);
 
-	expect_and_consume_token(prs, r_brace, wait_end);
+	token_expect_and_consume(prs, r_brace, wait_end);
 	tree_set(prs->sx, ref_list_length, (item_t)list_length);
 	tree_add(prs->sx, TExprend);
 }
@@ -490,9 +490,9 @@ void parse_init_declarator(parser *const prs, item_t type)
 	tree_add(prs->sx, prs->flag_empty_bounds);
 	tree_add(prs->sx, 0);	// Признак того, что массив не в структуре
 
-	if (try_consume_token(prs, equal))
+	if (token_try_consume(prs, equal))
 	{
-		consume_token(prs);
+		token_consume(prs);
 		tree_set(prs->sx, all, (item_t)size_of(prs->sx, type));
 		if (mode_is_array(prs->sx, type))
 		{
@@ -520,13 +520,13 @@ void parse_init_declarator(parser *const prs, item_t type)
  *
  *	@return	Index of modes table, @c mode_undefined on failure
  */
-item_t parse_function_declarator(parser *const prs, const int level, int func_d, const item_t return_type)
+item_t parse_function_declarator(parser *const prs, const int level, int func_def, const item_t return_type)
 {
 	item_t local_modetab[100];
 	size_t local_md = 3;
 	size_t param_number = 0;
 
-	if (try_consume_token(prs, r_paren))
+	if (token_try_consume(prs, r_paren))
 	{
 		prs->func_def = 0;
 	}
@@ -543,7 +543,7 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_d,
 			if (prs->next_token == star)
 			{
 				arg_func = 1;
-				consume_token(prs);
+				token_consume(prs);
 				if (type == mode_void)
 				{
 					type = mode_void_pointer;
@@ -559,7 +559,7 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_d,
 			int flag_was_ident = 0;
 			if (level)
 			{
-				if (try_consume_token(prs, identifier))
+				if (token_try_consume(prs, identifier))
 				{
 					flag_was_ident = 1;
 					func_add(prs->sx, (item_t)prs->lxr->repr);
@@ -568,7 +568,7 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_d,
 			else if (prs->next_token == identifier)
 			{
 				parser_error(prs, ident_in_declarator);
-				skip_until(prs, r_paren | semicolon);
+				token_skip_until(prs, r_paren | semicolon);
 				return mode_undefined;
 			}
 
@@ -585,25 +585,25 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_d,
 					parser_error(prs, aster_with_row);
 				}
 
-				while (try_consume_token(prs, l_square))
+				while (token_try_consume(prs, l_square))
 				{
 					type = to_modetab(prs, mode_array, type);
-					if (!try_consume_token(prs, r_square))
+					if (!token_try_consume(prs, r_square))
 					{
 						parser_error(prs, wait_right_sq_br);
-						skip_until(prs, r_square | comma | r_paren | semicolon);
+						token_skip_until(prs, r_square | comma | r_paren | semicolon);
 					}
 				}
 			}
 
-			if (try_consume_token(prs, l_paren))
+			if (token_try_consume(prs, l_paren))
 			{
-				expect_and_consume_token(prs, star, wrong_fun_as_param);
+				token_expect_and_consume(prs, star, wrong_fun_as_param);
 				if (prs->next_token == identifier)
 				{
 					if (level)
 					{
-						consume_token(prs);
+						token_consume(prs);
 						if (flag_was_ident == 0)
 						{
 							flag_was_ident = 2;
@@ -622,51 +622,52 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_d,
 					}
 				}
 
-				expect_and_consume_token(prs, r_paren, no_right_br_in_paramfun);
-				expect_and_consume_token(prs, l_paren, wrong_fun_as_param);
+				token_expect_and_consume(prs, r_paren, no_right_br_in_paramfun);
+				token_expect_and_consume(prs, l_paren, wrong_fun_as_param);
 				if (arg_func == 1)
 				{
 					parser_error(prs, aster_before_func);
-					skip_until(prs, comma | r_paren | semicolon);
+					token_skip_until(prs, comma | r_paren | semicolon);
 				}
 				else if (arg_func == 2)
 				{
 					parser_error(prs, array_before_func);
-					skip_until(prs, comma | r_paren | semicolon);
+					token_skip_until(prs, comma | r_paren | semicolon);
 				}
 
 				const int old_func_def = prs->func_def;
 				type = parse_function_declarator(prs, 0, 2, type);
 				prs->func_def = old_func_def;
 			}
-			if (func_d == 3)
+
+			if (func_def == 3)
 			{
-				func_d = flag_was_ident > 0 ? 1 : 2;
+				func_def = flag_was_ident > 0 ? 1 : 2;
 			}
-			else if (func_d == 2 && flag_was_ident > 0)
+			else if (func_def == 2 && flag_was_ident > 0)
 			{
 				parser_error(prs, wait_declarator);
-				skip_until(prs, r_paren | semicolon);
+				token_skip_until(prs, r_paren | semicolon);
 				// На случай, если после этого заголовка стоит тело функции
-				if (try_consume_token(prs, l_brace))
+				if (token_try_consume(prs, l_brace))
 				{
-					skip_until(prs, r_brace);
+					token_skip_until(prs, r_brace);
 				}
 				return mode_undefined;
 			}
-			else if (func_d == 1 && flag_was_ident == 0)
+			else if (func_def == 1 && flag_was_ident == 0)
 			{
 				parser_error(prs, wait_definition);
-				skip_until(prs, r_paren | semicolon);
+				token_skip_until(prs, r_paren | semicolon);
 				return mode_undefined;
 			}
 
 			param_number++;
 			local_modetab[local_md++] = type;
-		} while (try_consume_token(prs, comma));
+		} while (token_try_consume(prs, comma));
 
-		expect_and_consume_token(prs, r_paren, wrong_param_list);
-		prs->func_def = func_d;
+		token_expect_and_consume(prs, r_paren, wrong_param_list);
+		prs->func_def = func_def;
 	}
 
 	local_modetab[0] = mode_function;
@@ -697,7 +698,7 @@ void parse_function_body(parser *const prs, const size_t function_id)
 		if (prs->function_mode != (size_t)ident_get_mode(prs->sx, (size_t)prev))
 		{
 			parser_error(prs, decl_and_def_have_diff_type);
-			skip_until(prs, r_brace);
+			token_skip_until(prs, r_brace);
 			return;
 		}
 		ident_set_displ(prs->sx, (size_t)prev, (item_t)function_number);
@@ -719,7 +720,7 @@ void parse_function_body(parser *const prs, const size_t function_id)
 
 	const size_t ref_maxdispl = tree_reserve(prs->sx);
 
-	consume_token(prs);
+	token_consume(prs);
 	parse_compound_statement(prs, FUNCBODY);
 
 	vector_remove(&prs->sx->tree);
@@ -760,7 +761,7 @@ void parse_function_definition(parser *const prs, const item_t type)
 	const size_t function_num = func_reserve(prs->sx);
 	const size_t function_repr = prs->lxr->repr;
 
-	consume_token(prs);
+	token_consume(prs);
 	const item_t function_mode = parse_function_declarator(prs, 1, 3, type);
 
 	if (prs->func_def == 0 && prs->next_token == l_brace)
@@ -783,14 +784,14 @@ void parse_function_definition(parser *const prs, const item_t type)
 		else
 		{
 			parser_error(prs, func_decl_req_params);
-			skip_until(prs, r_brace);
+			token_skip_until(prs, r_brace);
 		}
 	}
 	else if (prs->func_def == 1)
 	{
 		parser_error(prs, function_has_no_body);
 		// На тот случай, если после неправильного декларатора стоит ';'
-		try_consume_token(prs, semicolon);
+		token_try_consume(prs, semicolon);
 	}
 }
 
@@ -814,7 +815,7 @@ void parse_inner_declaration(parser *const prs)
 		parser_error(prs, only_functions_may_have_type_VOID);
 		group_type = mode_undefined;
 	}
-	else if (prs->flag_was_type_def && try_consume_token(prs, semicolon))
+	else if (prs->flag_was_type_def && token_try_consume(prs, semicolon))
 	{
 		return;
 	}
@@ -824,23 +825,23 @@ void parse_inner_declaration(parser *const prs)
 		item_t type = group_type;
 		if (prs->next_token == star)
 		{
-			consume_token(prs);
+			token_consume(prs);
 			type = to_modetab(prs, mode_pointer, group_type);
 		}
 
 		if (prs->next_token == identifier)
 		{
-			consume_token(prs);
+			token_consume(prs);
 			parse_init_declarator(prs, type);
 		}
 		else
 		{
 			parser_error(prs, after_type_must_be_ident);
-			skip_until(prs, comma | semicolon);
+			token_skip_until(prs, comma | semicolon);
 		}
-	} while (try_consume_token(prs, comma));
+	} while (token_try_consume(prs, comma));
 
-	expect_and_consume_token(prs, semicolon, expected_semi_after_decl);
+	token_expect_and_consume(prs, semicolon, expected_semi_after_decl);
 }
 
 void parse_external_declaration(parser *const prs)
@@ -849,7 +850,7 @@ void parse_external_declaration(parser *const prs)
 	prs->func_def = 3;
 	const item_t group_type = parse_type_specifier(prs);
 
-	if (prs->flag_was_type_def && try_consume_token(prs, semicolon))
+	if (prs->flag_was_type_def && token_try_consume(prs, semicolon))
 	{
 		return;
 	}
@@ -859,7 +860,7 @@ void parse_external_declaration(parser *const prs)
 		item_t type = group_type;
 		if (prs->next_token == star)
 		{
-			consume_token(prs);
+			token_consume(prs);
 			if (group_type == mode_void)
 			{
 				type = mode_void_pointer;
@@ -870,7 +871,7 @@ void parse_external_declaration(parser *const prs)
 			}
 		}
 
-		if (try_consume_token(prs, identifier))
+		if (token_try_consume(prs, identifier))
 		{
 			if (prs->next_token == l_paren)
 			{
@@ -888,13 +889,13 @@ void parse_external_declaration(parser *const prs)
 		else
 		{
 			parser_error(prs, after_type_must_be_ident);
-			skip_until(prs, comma | semicolon);
+			token_skip_until(prs, comma | semicolon);
 		}
-	} while (try_consume_token(prs, comma));
+	} while (token_try_consume(prs, comma));
 
 	if (prs->func_def != 1)
 	{
-		expect_and_consume_token(prs, semicolon, expected_semi_after_decl);
+		token_expect_and_consume(prs, semicolon, expected_semi_after_decl);
 	}
 }
 
@@ -930,6 +931,6 @@ void parse_initializer(parser *const parser, const item_t type)
 	else
 	{
 		parser_error(parser, wrong_init);
-		skip_until(parser, comma | semicolon);
+		token_skip_until(parser, comma | semicolon);
 	}
 }

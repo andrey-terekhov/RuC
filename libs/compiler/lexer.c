@@ -24,16 +24,16 @@
  *	Emit an error from lexer
  *
  *	@param	lxr			Lexer structure
- *	@param	num			Error code
+ *	@param	err			Error code
  */
-void lexer_error(lexer *const lxr, const int num, ...)
+void lexer_error(lexer *const lxr, const int err, ...)
 {
 	lxr->was_error = 1;
 
 	va_list args;
-	va_start(args, num);
+	va_start(args, err);
 
-	error(lxr->io, num, args);
+	error(lxr->io, err, args);
 }
 
 /**

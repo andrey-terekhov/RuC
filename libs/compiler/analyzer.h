@@ -36,7 +36,6 @@ extern "C" {
 /** Определение глобальных переменных */
 typedef struct parser
 {
-	universal_io *io;			/**< Universal io structure */
 	syntax *sx;					/**< Syntax structure */
 	lexer *lxr;					/**< Lexer structure */
 
