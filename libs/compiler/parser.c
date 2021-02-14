@@ -77,7 +77,7 @@ int try_consume_token(parser *const prs, const token_t expected)
 	return 0;
 }
 
-void expect_and_consume_token(parser *const prs, const token_t expected, const enum ERROR err)
+void expect_and_consume_token(parser *const prs, const token_t expected, const error_t err)
 {
 	if (!try_consume_token(prs, expected))
 	{
@@ -85,7 +85,7 @@ void expect_and_consume_token(parser *const prs, const token_t expected, const e
 	}
 }
 
-void skip_until(parser *const prs, const unsigned int tokens)
+void skip_until(parser *const prs, const uint8_t tokens)
 {
 	while (prs->next_token != eof)
 	{
@@ -134,47 +134,47 @@ void skip_until(parser *const prs, const unsigned int tokens)
 }
 
 
-int is_function(syntax *const sx, const item_t mode)
+int mode_is_function(syntax *const sx, const item_t mode)
 {
 	return mode > 0 && mode_get(sx, (size_t)mode) == mode_function;
 }
 
-int is_array(syntax *const sx, const item_t mode)
+int mode_is_array(syntax *const sx, const item_t mode)
 {
 	return mode > 0 && mode_get(sx, (size_t)mode) == mode_array;
 }
 
-int is_string(syntax *const sx, const item_t mode)
+int mode_is_string(syntax *const sx, const item_t mode)
 {
-	return is_array(sx, mode) && mode_get(sx, (size_t)mode + 1) == mode_character;
+	return mode_is_array(sx, mode) && mode_get(sx, (size_t)mode + 1) == mode_character;
 }
 
-int is_pointer(syntax *const sx, const item_t mode)
+int mode_is_pointer(syntax *const sx, const item_t mode)
 {
 	return mode > 0 && mode_get(sx, (size_t)mode) == mode_pointer;
 }
 
-int is_struct(syntax *const sx, const item_t mode)
+int mode_is_struct(syntax *const sx, const item_t mode)
 {
 	return mode > 0 && mode_get(sx, (size_t)mode) == mode_struct;
 }
 
-int is_float(const item_t mode)
+int mode_is_float(const item_t mode)
 {
 	return mode == mode_float;
 }
 
-int is_int(const item_t mode)
+int mode_is_int(const item_t mode)
 {
 	return mode == mode_integer || mode == mode_character;
 }
 
-int is_void(const item_t mode)
+int mode_is_void(const item_t mode)
 {
 	return mode == mode_void;
 }
 
-int is_undefined(const item_t mode)
+int mode_is_undefined(const item_t mode)
 {
 	return mode == mode_undefined;
 }

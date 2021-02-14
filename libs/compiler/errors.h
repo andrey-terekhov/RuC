@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 /** Errors codes */
-enum ERROR
+typedef enum ERROR
 {
 	// Lexer errors
 	bad_character,						/**< "Bad character in source" */
@@ -190,7 +190,7 @@ enum ERROR
 	node_cannot_set_type,
 	node_cannot_add_arg,
 	node_unexpected,
-};
+} error_t;
 
 /** Warnings codes */
 enum WARNING

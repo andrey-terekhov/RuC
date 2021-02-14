@@ -24,6 +24,9 @@
 extern "C" {
 #endif
 
+/**	The kind of block to parse */
+typedef enum { REGBLOCK, THREAD, FUNCBODY } block_t;
+
 /**
  *	Parse source code to generate syntax structure
  *
@@ -50,7 +53,7 @@ void parser_error(parser *const prs, const int num, ...);
 void consume_token(parser *const prs);
 
 /**
- *	Try consume the current 'peek token' and lex the next one
+ *	Try to consume the current 'peek token' and lex the next one
  *
  *	@param	prs			Parser structure
  *	@param	expected	Expected token to consume
@@ -60,14 +63,14 @@ void consume_token(parser *const prs);
 int try_consume_token(parser *const prs, const token_t expected);
 
 /**
- *	Try consume the current 'peek token' and lex the next one
+ *	Try to consume the current 'peek token' and lex the next one
  *	If that 'peek token' is expected, parser consumes it, otherwise an error is emited
  *
  *	@param	prs			Parser structure
  *	@param	expected	Expected token to consume
  *	@param	err			Error to emit
  */
-void expect_and_consume_token(parser *const prs, const token_t expected, const enum ERROR err);
+void expect_and_consume_token(parser *const prs, const token_t expected, const error_t err);
 
 /**
  *	Read tokens until one of the specified tokens
@@ -75,7 +78,7 @@ void expect_and_consume_token(parser *const prs, const token_t expected, const e
  *	@param	prs			Parser structure
  *	@param	tokens		Set of specified tokens
  */
-void skip_until(parser *const prs, const unsigned int tokens);
+void skip_until(parser *const prs, const uint8_t tokens);
 
 
 /**
@@ -128,7 +131,7 @@ item_t parse_expression(parser *const prs);
 item_t parse_condition(parser *const prs);
 
 /**
- *	Parse expression in parenthesis
+ *	Parse expression in parentheses
  *
  *	parenthesized-expression:
  *		'(' expression ')'
@@ -205,9 +208,6 @@ void parse_initializer(parser *const prs, const item_t type);
  */
 void parse_statement(parser *const prs);
 
-/**	@enum The kind of block to parse */
-typedef enum { REGBLOCK, THREAD, FUNCBODY } block_type;
-
 /**
  *	Parse '{}' block [C99 6.8.2]
  *
@@ -224,7 +224,7 @@ typedef enum { REGBLOCK, THREAD, FUNCBODY } block_type;
  *
  *	@param	prs			Parser structure
  */
-void parse_compound_statement(parser *const prs, const block_type type);
+void parse_compound_statement(parser *const prs, const block_t type);
 
 
 /**
@@ -233,9 +233,9 @@ void parse_compound_statement(parser *const prs, const block_type type);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 1 on function, @c 0 otherwise
+ *	@return	@c 1 on true, @c 0 on false
  */
-int is_function(syntax *const sx, const item_t mode);
+int mode_is_function(syntax *const sx, const item_t mode);
 
 /**
  *	Check if mode is array
@@ -243,9 +243,9 @@ int is_function(syntax *const sx, const item_t mode);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 1 on array, @c 0 otherwise
+ *	@return	@c 1 on true, @c 0 on false
  */
-int is_array(syntax *const sx, const item_t mode);
+int mode_is_array(syntax *const sx, const item_t mode);
 
 /**
  *	Check if mode is string
@@ -253,9 +253,9 @@ int is_array(syntax *const sx, const item_t mode);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 1 on string, @c 0 otherwise
+ *	@return	@c 1 on true, @c 0 on false
  */
-int is_string(syntax *const sx, const item_t mode);
+int mode_is_string(syntax *const sx, const item_t mode);
 
 /**
  *	Check if mode is pointer
@@ -263,9 +263,9 @@ int is_string(syntax *const sx, const item_t mode);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 1 on pointer, @c 0 otherwise
+ *	@return	@c 1 on true, @c 0 on false
  */
-int is_pointer(syntax *const sx, const item_t mode);
+int mode_is_pointer(syntax *const sx, const item_t mode);
 
 /**
  *	Check if mode is struct
@@ -273,9 +273,9 @@ int is_pointer(syntax *const sx, const item_t mode);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 1 on struct, @c 0 otherwise
+ *	@return	@c 1 on true, @c 0 on false
  */
-int is_struct(syntax *const sx, const item_t mode);
+int mode_is_struct(syntax *const sx, const item_t mode);
 
 /**
  *	Check if mode is floating point
@@ -283,9 +283,9 @@ int is_struct(syntax *const sx, const item_t mode);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 1 on floating point, @c 0 otherwise
+ *	@return	@c 1 on true, @c 0 on false
  */
-int is_float(const item_t mode);
+int mode_is_float(const item_t mode);
 
 /**
  *	Check if mode is integer
@@ -293,9 +293,9 @@ int is_float(const item_t mode);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 1 on integer, @c 0 otherwise
+ *	@return	@c 1 on true, @c 0 on false
  */
-int is_int(const item_t mode);
+int mode_is_int(const item_t mode);
 
 /**
  *	Check if mode is void
@@ -303,9 +303,9 @@ int is_int(const item_t mode);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 1 on void, @c 0 otherwise
+ *	@return	@c 1 on true, @c 0 on false
  */
-int is_void(const item_t mode);
+int mode_is_void(const item_t mode);
 
 /**
  *	Check if mode is undefined
@@ -313,9 +313,9 @@ int is_void(const item_t mode);
  *	@param	sx			Syntax structure
  *	@param	mode		Mode for check
  *
- *	@return	@c 1 on undefined, @c 0 otherwise
+ *	@return	@c 1 on true, @c 0 on false
  */
-int is_undefined(const item_t mode);
+int mode_is_undefined(const item_t mode);
 
 /**
  *	Add new item to identifiers table

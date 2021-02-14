@@ -120,7 +120,7 @@ void binop(parser *context, int sp)
 	int rtype = context->stackoperands[context->sopnd--];
 	int ltype = context->stackoperands[context->sopnd];
 
-	if (is_pointer(context->sx, ltype) || is_pointer(context->sx, rtype))
+	if (mode_is_pointer(context->sx, ltype) || mode_is_pointer(context->sx, rtype))
 	{
 		parser_error(context, operand_is_pointer);
 		context->was_error = 5;
@@ -128,21 +128,21 @@ void binop(parser *context, int sp)
 	}
 	if ((op == LOGOR || op == LOGAND || op == LOR || op == LEXOR || op == LAND || op == LSHL || op == LSHR ||
 		 op == LREM) &&
-		(is_float(ltype) || is_float(rtype)))
+		(mode_is_float(ltype) || mode_is_float(rtype)))
 	{
 		parser_error(context, int_op_for_float);
 		context->was_error = 5;
 		return; // 1
 	}
-	if (is_int(ltype) && is_float(rtype))
+	if (mode_is_int(ltype) && mode_is_float(rtype))
 	{
 		totree(context, WIDEN1);
 	}
-	if (is_int(rtype) && is_float(ltype))
+	if (mode_is_int(rtype) && mode_is_float(ltype))
 	{
 		totree(context, WIDEN);
 	}
-	if (is_float(ltype) || is_float(rtype))
+	if (mode_is_float(ltype) || mode_is_float(rtype))
 	{
 		context->ansttype = LFLOAT;
 	}
@@ -176,7 +176,7 @@ void toval(parser *context)
 	{
 		;
 	}
-	else if (is_struct(context->sx, context->ansttype))
+	else if (mode_is_struct(context->sx, context->ansttype))
 	{
 		if (!context->flag_in_assignment)
 		{
@@ -200,16 +200,16 @@ void toval(parser *context)
 		if (context->anst == IDENT)
 		{
 			vector_set(&TREE, vector_size(&TREE) - 2
-					   , is_float(context->ansttype)
+					   , mode_is_float(context->ansttype)
 					   ? TIdenttovald
 					   : TIdenttoval);
 		}
 
-		if (!(is_array(context->sx, context->ansttype) || is_pointer(context->sx, context->ansttype)))
+		if (!(mode_is_array(context->sx, context->ansttype) || mode_is_pointer(context->sx, context->ansttype)))
 		{
 			if (context->anst == ADDR)
 			{
-				totree(context, is_float(context->ansttype) ? TAddrtovald : TAddrtoval);
+				totree(context, mode_is_float(context->ansttype) ? TAddrtovald : TAddrtoval);
 			}
 		}
 		context->anst = VAL;
@@ -275,7 +275,7 @@ void mustbestring(parser *context)
 	}
 	toval(context);
 	context->sopnd--;
-	if (!(is_string(context->sx, context->ansttype)))
+	if (!(mode_is_string(context->sx, context->ansttype)))
 	{
 		parser_error(context, not_string_in_stanfunc);
 		context->was_error = 5;
@@ -293,8 +293,8 @@ void mustbepointstring(parser *context)
 	}
 	toval(context);
 	context->sopnd--;
-	if (!(is_pointer(context->sx, context->ansttype) &&
-		  is_string(context->sx, mode_get(context->sx, context->ansttype + 1))))
+	if (!(mode_is_pointer(context->sx, context->ansttype) &&
+		  mode_is_string(context->sx, mode_get(context->sx, context->ansttype + 1))))
 	{
 		parser_error(context, not_point_string_in_stanfunc);
 		context->was_error = 5;
@@ -314,7 +314,7 @@ void mustberow(parser *context)
 	toval(context);
 	context->sopnd--;
 
-	if (!is_array(context->sx, context->ansttype))
+	if (!mode_is_array(context->sx, context->ansttype))
 	{
 		parser_error(context, not_array_in_stanfunc);
 		context->was_error = 5;
@@ -366,8 +366,8 @@ void mustberowofint(parser *context)
 			context->ansttype = (int)to_modetab(context, mode_array, LINT);
 		}
 	}
-	if (!(is_array(context->sx, context->ansttype) &&
-		  is_int(mode_get(context->sx, context->ansttype + 1))))
+	if (!(mode_is_array(context->sx, context->ansttype) &&
+		  mode_is_int(mode_get(context->sx, context->ansttype + 1))))
 	{
 		parser_error(context, not_rowofint_in_stanfunc);
 		context->was_error = 5;
@@ -402,7 +402,7 @@ void mustberowoffloat(parser *context)
 		}
 	}
 
-	if (!(is_array(context->sx, context->ansttype) &&
+	if (!(mode_is_array(context->sx, context->ansttype) &&
 		  mode_get(context->sx, context->ansttype + 1) == LFLOAT))
 	{
 		parser_error(context, not_rowoffloat_in_stanfunc);
@@ -465,7 +465,7 @@ void primaryexpr(parser *context)
 				context->was_error = 4;
 				return; // 1
 			}
-			if (!is_pointer(context->sx, context->ansttype))
+			if (!mode_is_pointer(context->sx, context->ansttype))
 			{
 				parser_error(context, not_pointer_in_cast);
 				context->was_error = 4;
@@ -687,7 +687,7 @@ void primaryexpr(parser *context)
 						}
 						toval(context);
 						context->sopnd--;
-						if (is_int(context->ansttype))
+						if (mode_is_int(context->ansttype))
 						{
 							totree(context, WIDEN);
 						}
@@ -885,7 +885,7 @@ void primaryexpr(parser *context)
 					}
 					else
 					{
-						if (!is_int(context->ansttype))
+						if (!mode_is_int(context->ansttype))
 						{
 							parser_error(context, param_threads_not_int);
 							context->was_error = 4;
@@ -938,7 +938,7 @@ void primaryexpr(parser *context)
 			// SETMOTOR и VOLTAGE void (int port, int volt)
 			if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR || func == VOLTAGE)
 			{
-				if (!is_int(context->ansttype))
+				if (!mode_is_int(context->ansttype))
 				{
 					parser_error(context, param_setmotor_not_int);
 					context->was_error = 4;
@@ -965,7 +965,7 @@ void primaryexpr(parser *context)
 						return; // 1
 					}
 					toval(context);
-					if (!is_int(context->ansttype))
+					if (!mode_is_int(context->ansttype))
 					{
 						parser_error(context, param_setmotor_not_int);
 						context->was_error = 4;
@@ -981,18 +981,18 @@ void primaryexpr(parser *context)
 					}
 				}
 			}
-			else if (func == ABS && is_int(context->ansttype))
+			else if (func == ABS && mode_is_int(context->ansttype))
 			{
 				func = ABSI;
 			}
 			else
 			{
-				if (is_int(context->ansttype))
+				if (mode_is_int(context->ansttype))
 				{
 					totree(context, WIDEN);
 					context->ansttype = context->stackoperands[context->sopnd] = LFLOAT;
 				}
-				if (!is_float(context->ansttype))
+				if (!mode_is_float(context->ansttype))
 				{
 					parser_error(context, bad_param_in_stand_func);
 					context->was_error = 4;
@@ -1023,7 +1023,7 @@ void primaryexpr(parser *context)
 
 void index_check(parser *context)
 {
-	if (!is_int(context->ansttype))
+	if (!mode_is_int(context->ansttype))
 	{
 		parser_error(context, index_must_be_int);
 		context->was_error = 5;
@@ -1081,7 +1081,7 @@ void selectend(parser *context)
 	}
 
 	totree(context, context->anstdispl);
-	if (is_array(context->sx, context->ansttype) || is_pointer(context->sx, context->ansttype))
+	if (mode_is_array(context->sx, context->ansttype) || mode_is_pointer(context->sx, context->ansttype))
 	{
 		totree(context, TAddrtoval);
 	}
@@ -1105,7 +1105,7 @@ void postexpr(parser *context)
 
 		was_func = 1;
 		scanner(context);
-		if (!is_function(context->sx, leftansttyp))
+		if (!mode_is_function(context->sx, leftansttyp))
 		{
 			parser_error(context, call_not_from_function);
 			context->was_error = 4;
@@ -1123,7 +1123,7 @@ void postexpr(parser *context)
 																			 // context->ansttype будет вид фактического
 																			 // параметра
 			scanner(context);
-			if (is_function(context->sx, mdj))
+			if (mode_is_function(context->sx, mdj))
 			{
 				// фактическим параметром должна быть функция, в С - это только идентификатор
 
@@ -1160,7 +1160,7 @@ void postexpr(parser *context)
 			}
 			else
 			{
-				if (context->curr_token == BEGIN && is_array(context->sx, mdj))
+				if (context->curr_token == BEGIN && mode_is_array(context->sx, mdj))
 				{
 					actstring((int)mode_get(context->sx, mdj + 1), context), totree(context, TExprend);
 					if (context->was_error == 2)
@@ -1188,14 +1188,14 @@ void postexpr(parser *context)
 						return; // 1
 					}
 
-					if (is_int(mdj) && is_float(context->ansttype))
+					if (mode_is_int(mdj) && mode_is_float(context->ansttype))
 					{
 						parser_error(context, float_instead_int);
 						context->was_error = 4;
 						return; // 1
 					}
 
-					if (is_float(mdj) && is_int(context->ansttype))
+					if (mode_is_float(mdj) && mode_is_int(context->ansttype))
 					{
 						insert_widen(context);
 					}
@@ -1228,7 +1228,7 @@ void postexpr(parser *context)
 				context->was_error = 4;
 				return; // 1
 			}
-			if (!is_array(context->sx, context->ansttype)) // вырезка не из массива
+			if (!mode_is_array(context->sx, context->ansttype)) // вырезка не из массива
 			{
 				parser_error(context, slice_not_from_array);
 				context->was_error = 4;
@@ -1275,8 +1275,8 @@ void postexpr(parser *context)
 			// -> больше одной точки подряд, схлопываем в 1 select
 			// перед выборкой мог быть вызов функции или вырезка элемента массива
 
-			if (!is_pointer(context->sx, context->ansttype) ||
-				!is_struct(context->sx, (int)mode_get(context->sx, context->ansttype + 1)))
+			if (!mode_is_pointer(context->sx, context->ansttype) ||
+				!mode_is_struct(context->sx, (int)mode_get(context->sx, context->ansttype + 1)))
 			{
 				parser_error(context, get_field_not_from_struct_pointer);
 				context->was_error = 4;
@@ -1309,7 +1309,7 @@ void postexpr(parser *context)
 		if (context->next_token == DOT)
 
 		{
-			if (!is_struct(context->sx, context->ansttype))
+			if (!mode_is_struct(context->sx, context->ansttype))
 			{
 				parser_error(context, select_not_from_struct);
 				context->was_error = 4;
@@ -1364,7 +1364,7 @@ void postexpr(parser *context)
 	{
 		int op;
 
-		if (!is_int(context->ansttype) && !is_float(context->ansttype))
+		if (!mode_is_int(context->ansttype) && !mode_is_float(context->ansttype))
 		{
 			parser_error(context, wrong_operand);
 			context->was_error = 4;
@@ -1452,7 +1452,7 @@ void unarexpr(parser *context)
 			}
 			else if (op == LMULT)
 			{
-				if (!is_pointer(context->sx, context->ansttype))
+				if (!mode_is_pointer(context->sx, context->ansttype))
 				{
 					parser_error(context, aster_not_for_pointer);
 					context->was_error = 7;
@@ -1648,7 +1648,7 @@ void condexpr(parser *context)
 		while (context->next_token == QUEST)
 		{
 			toval(context);
-			if (!is_int(context->ansttype))
+			if (!mode_is_int(context->ansttype))
 			{
 				parser_error(context, float_in_condition);
 				context->was_error = 4;
@@ -1666,7 +1666,7 @@ void condexpr(parser *context)
 				globtype = context->ansttype;
 			}
 			context->sopnd--;
-			if (is_float(context->ansttype))
+			if (mode_is_float(context->ansttype))
 			{
 				globtype = LFLOAT;
 			}
@@ -1692,7 +1692,7 @@ void condexpr(parser *context)
 		}
 		toval(context);
 		totree(context, TExprend);
-		if (is_float(context->ansttype))
+		if (mode_is_float(context->ansttype))
 		{
 			globtype = LFLOAT;
 		}
@@ -1706,7 +1706,7 @@ void condexpr(parser *context)
 		{
 			item_t r = vector_get(&TREE, adif);
 			vector_set(&TREE, adif, TExprend);
-			vector_set(&TREE, adif - 1, is_float(globtype) ? WIDEN : NOP);
+			vector_set(&TREE, adif - 1, mode_is_float(globtype) ? WIDEN : NOP);
 			adif = (size_t)r;
 		}
 
@@ -1742,7 +1742,7 @@ void exprassn(parser *context, int level)
 	if (context->curr_token == BEGIN)
 	{
 		const int type = context->leftansttype;
-		if (is_struct(context->sx, type) || is_array(context->sx, type))
+		if (mode_is_struct(context->sx, type) || mode_is_array(context->sx, type))
 		{
 			parse_initializer(context, type);
 			context->leftansttype = type;
@@ -1793,21 +1793,21 @@ void exprassn(parser *context, int level)
 														  // операндов со стека
 		ltype = context->stackoperands[context->sopnd];
 
-		if (intopassn(lnext) && (is_float(ltype) || is_float(rtype)))
+		if (intopassn(lnext) && (mode_is_float(ltype) || mode_is_float(rtype)))
 		{
 			parser_error(context, int_op_for_float);
 			context->was_error = 6;
 			return; // 1
 		}
 
-		if (is_array(context->sx, ltype)) // присваивать массив в массив в си нельзя
+		if (mode_is_array(context->sx, ltype)) // присваивать массив в массив в си нельзя
 		{
 			parser_error(context, array_assigment);
 			context->was_error = 6;
 			return; // 1
 		}
 
-		if (is_struct(context->sx, ltype)) // присваивание в структуру
+		if (mode_is_struct(context->sx, ltype)) // присваивание в структуру
 		{
 			if (ltype != rtype) // типы должны быть равны
 			{
@@ -1846,14 +1846,14 @@ void exprassn(parser *context, int level)
 		}
 		else // оба операнда базового типа или указатели
 		{
-			if (is_pointer(context->sx, ltype) && opp != ASS) // в указатель можно присваивать только с помощью =
+			if (mode_is_pointer(context->sx, ltype) && opp != ASS) // в указатель можно присваивать только с помощью =
 			{
 				parser_error(context, wrong_struct_ass);
 				context->was_error = 6;
 				return; // 1
 			}
 
-			if (is_int(ltype) && is_float(rtype))
+			if (mode_is_int(ltype) && mode_is_float(rtype))
 			{
 				parser_error(context, assmnt_float_to_int);
 				context->was_error = 6;
@@ -1861,12 +1861,12 @@ void exprassn(parser *context, int level)
 			}
 
 			toval(context);
-			if (is_int(rtype) && is_float(ltype))
+			if (mode_is_int(rtype) && mode_is_float(ltype))
 			{
 				totree(context, WIDEN);
 				context->ansttype = LFLOAT;
 			}
-			if (is_pointer(context->sx, ltype) && is_pointer(context->sx, rtype) && ltype != rtype)
+			if (mode_is_pointer(context->sx, ltype) && mode_is_pointer(context->sx, rtype) && ltype != rtype)
 			{
 				// проверка нужна только для указателей
 				parser_error(context, type_missmatch);

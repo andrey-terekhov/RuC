@@ -167,7 +167,7 @@ item_t parse_array_definition(parser *const prs, item_t type)
 	prs->array_dimension = 0;
 	prs->flag_empty_bounds = 1;
 
-	if (is_pointer(prs->sx, type))
+	if (mode_is_pointer(prs->sx, type))
 	{
 		parser_error(prs, pnt_before_array);
 	}
@@ -187,7 +187,7 @@ item_t parse_array_definition(parser *const prs, item_t type)
 		else
 		{
 			const item_t size_type = parse_constant_expression(prs);
-			if (!is_int(size_type))
+			if (!mode_is_int(size_type))
 			{
 				parser_error(prs, array_size_must_be_int);
 			}
@@ -289,7 +289,7 @@ item_t parse_struct_declaration_list(parser *const prs)
 				if (try_consume_token(prs, equal))
 				{
 					consume_token(prs);
-					if (is_array(prs->sx, type))
+					if (mode_is_array(prs->sx, type))
 					{
 						prs->flag_strings_only = 2;
 						tree_set(prs->sx, all, 1);
@@ -489,7 +489,7 @@ void parse_init_declarator(parser *const prs, item_t type)
 	// all - место в дереве, где будет общее количество выражений в инициализации,
 	const size_t all = tree_reserve(prs->sx);	// для массивов - только признак (1) наличия инициализации
 	tree_set(prs->sx, all, 0);
-	tree_add(prs->sx, is_pointer(prs->sx, type) ? 0 : prs->flag_array_in_struct);
+	tree_add(prs->sx, mode_is_pointer(prs->sx, type) ? 0 : prs->flag_array_in_struct);
 	tree_add(prs->sx, prs->flag_empty_bounds);
 	tree_add(prs->sx, 0);	// Признак того, массив не в структуре
 
@@ -497,7 +497,7 @@ void parse_init_declarator(parser *const prs, item_t type)
 	{
 		consume_token(prs);
 		tree_set(prs->sx, all, (item_t)size_of(prs->sx, type));
-		if (is_array(prs->sx, type))
+		if (mode_is_array(prs->sx, type))
 		{
 			if (!prs->flag_empty_bounds)
 			{
@@ -586,7 +586,7 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_d,
 			if (prs->next_token == l_square)
 			{
 				maybe_fun = 2;
-				if (is_pointer(prs->sx, type) && flag_was_ident == 0)
+				if (mode_is_pointer(prs->sx, type) && flag_was_ident == 0)
 				{
 					parser_error(prs, aster_with_row);
 				}
@@ -909,13 +909,13 @@ void parse_initializer(parser *const parser, const item_t type)
 	if (parser->curr_token != l_brace)
 	{
 		const item_t expr_type = parse_assignment_expression(parser);
-		if (!is_undefined(expr_type) && !is_undefined(type))
+		if (!mode_is_undefined(expr_type) && !mode_is_undefined(type))
 		{
-			if (is_int(type) && is_float(expr_type))
+			if (mode_is_int(type) && mode_is_float(expr_type))
 			{
 				parser_error(parser, init_int_by_float);
 			}
-			else if (is_float(type) && is_int(expr_type))
+			else if (mode_is_float(type) && mode_is_int(expr_type))
 			{
 				insert_widen(parser);
 			}
@@ -925,11 +925,11 @@ void parse_initializer(parser *const parser, const item_t type)
 			}
 		}
 	}
-	else if (is_struct(parser->sx, type))
+	else if (mode_is_struct(parser->sx, type))
 	{
 		parse_struct_initializer(parser, type);
 	}
-	else if (is_array(parser->sx, type))
+	else if (mode_is_array(parser->sx, type))
 	{
 		parse_array_initializer(parser, type);
 	}
