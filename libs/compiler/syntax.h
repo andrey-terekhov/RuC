@@ -246,7 +246,7 @@ int tree_add(syntax *const sx, const item_t node);
 int tree_set(syntax *const sx, const size_t index, const item_t node);
 
 /**
- *	Get an item from tree by index
+ *	Get an item by index from tree
  *
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in tree
@@ -265,12 +265,11 @@ item_t tree_get(const syntax *const sx, const size_t index);
 size_t tree_size(const syntax *const sx);
 
 /**
- *	Increase size of tree by value and return previous size
+ *	Reserve one element in tree table
  *
  *	@param	sx			Syntax structure
- *	@param	value		Value to increase
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Previous tree size
  */
 size_t tree_reserve(syntax *const sx);
 
@@ -298,12 +297,12 @@ size_t tree_reserve(syntax *const sx);
 size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const item_t mode, const int func_def);
 
 /**
- *	Get index for previous declaration from identifiers table by index
+ *	Get index of previous declaration from identifiers table by index
  *
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in identifiers table
  *
- *	@return	 index for previous declaration in representations table, @c ITEM_MAX on failure
+ *	@return	Index of previous declaration in representations table, @c ITEM_MAX on failure
  */
 item_t ident_get_prev(const syntax *const sx, const size_t index);
 
