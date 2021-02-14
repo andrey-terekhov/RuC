@@ -64,18 +64,22 @@ typedef struct parser
 	int buf_flag;	// useless
 	int buf_cur;	// useless
 
-	/// @c 0 for function without arguments, @c 1 for function definition,
-	/// @c 2 for function declaration, @c 3 for others
-	int func_def;
-	/** @c 0 for inition not by strings, @c 1 for inition by strings, @c 2 before parsing inition */
-	int flag_strings_only;
-	int flag_array_in_struct;	/**< Flag if parsed struct declaration has an array */
-	int flag_empty_bounds;		/**< Flag if array declaration has empty bounds */
-	int flag_was_return;		/**< Flag if was return in parsed function */
-	int flag_in_switch;			/**< Flag if parser is in switch body */
-	int flag_in_assignment;		/**< Flag if parser is in assignment */
-	int flag_in_loop;			/**< Flag if parser is in loop body */
-	int flag_was_type_def;		/**< Flag if was type definition */
+	int func_def;				/**< @c 0 for function without arguments,
+									 @c 1 for function definition,
+									 @c 2 for function declaration,
+									 @c 3 for others */
+
+	int flag_strings_only;		/**< @c 0 for non sting initialization,
+									 @c 1 for string initialization,
+									 @c 2 for parsing before initialization */
+
+	int flag_array_in_struct;	/**< Set, if parsed struct declaration has an array */
+	int flag_empty_bounds;		/**< Set, if array declaration has empty bounds */
+	int flag_was_return;		/**< Set, if was return in parsed function */
+	int flag_in_switch;			/**< Set, if parser is in switch body */
+	int flag_in_assignment;		/**< Set, if parser is in assignment */
+	int flag_in_loop;			/**< Set, if parser is in loop body */
+	int flag_was_type_def;		/**< Set, if was type definition */
 
 	int was_error;				/**< Error flag */
 } parser;
