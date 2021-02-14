@@ -27,55 +27,55 @@ extern "C" {
 /**
  *	Parse source code to generate syntax structure
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int parse(parser *const parser);
+int parse(parser *const prs);
 
 
 /**
  *	Emit an error from parser
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  *	@param	num			Error code
  */
-void parser_error(parser *const parser, const int num, ...);
+void parser_error(parser *const prs, const int num, ...);
 
 /**
  *	Consume the current 'peek token' and lex the next one
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void consume_token(parser *const parser);
+void consume_token(parser *const prs);
 
 /**
  *	Try consume the current 'peek token' and lex the next one
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  *	@param	expected	Expected token to consume
  *
  *	@return	@c 0, if 'peek token' is expected and consumed, @c 0 otherwise
  */
-int try_consume_token(parser *const parser, const token_t expected);
+int try_consume_token(parser *const prs, const token_t expected);
 
 /**
  *	Try consume the current 'peek token' and lex the next one
  *	If that 'peek token' is expected, parser consumes it, otherwise an error is emited
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  *	@param	expected	Expected token to consume
  *	@param	err			Error to emit
  */
-void expect_and_consume_token(parser *const parser, const token_t expected, const enum ERROR err);
+void expect_and_consume_token(parser *const prs, const token_t expected, const enum ERROR err);
 
 /**
  *	Read tokens until one of the specified tokens
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  *	@param	tokens		Set of specified tokens
  */
-void skip_until(parser *const parser, const unsigned int tokens);
+void skip_until(parser *const prs, const unsigned int tokens);
 
 
 /**
@@ -84,9 +84,9 @@ void skip_until(parser *const parser, const unsigned int tokens);
  *	primary-expression:
  *		string-literal
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_string_literal_expression(parser *const parser);
+void parse_string_literal_expression(parser *const prs);
 
 /**
  *	Parse assignment expression [C99 6.5.16]
@@ -98,11 +98,11 @@ void parse_string_literal_expression(parser *const parser);
  *	assignment-operator: one of
  *		=  *=  /=  %=  +=  -=  <<=  >>=  &=  ˆ=  |=
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  *
  *	@return	Type of parsed expression
  */
-item_t parse_assignment_expression(parser *const parser);
+item_t parse_assignment_expression(parser *const prs);
 
 /**
  *	Parse expression [C99 6.5.17]
@@ -111,21 +111,21 @@ item_t parse_assignment_expression(parser *const parser);
  *		assignment-expression
  *		expression ',' assignment-expression
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  *
  *	@return	Type of parsed expression
  */
-item_t parse_expression(parser *const parser);
+item_t parse_expression(parser *const prs);
 
 /**
  *	Parse condition
  *	@note	must be evaluated to a simple value
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  *
  *	@return	Type of parsed expression
  */
-item_t parse_condition(parser *const parser);
+item_t parse_condition(parser *const prs);
 
 /**
  *	Parse expression in parenthesis
@@ -133,11 +133,11 @@ item_t parse_condition(parser *const parser);
  *	parenthesized-expression:
  *		'(' expression ')'
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  *
  *	@return	Type of parsed expression
  */
-item_t parse_parenthesized_expression(parser *const parser);
+item_t parse_parenthesized_expression(parser *const prs);
 
 /**
  *	Parse constant expression [C99 6.6]
@@ -145,18 +145,18 @@ item_t parse_parenthesized_expression(parser *const parser);
  *	constant-expression:
  *		conditional-expression
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  *
  *	@return	Type of parsed expression
  */
-item_t parse_constant_expression(parser *const parser);
+item_t parse_constant_expression(parser *const prs);
 
 /**
  *	Insert @c WIDEN node
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void insert_widen(parser *const parser);
+void insert_widen(parser *const prs);
 
 
 /**
@@ -164,18 +164,18 @@ void insert_widen(parser *const parser);
  *	@note Parses a full declaration, which consists of declaration-specifiers,
  *	some number of declarators, and a semicolon
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_inner_declaration(parser *const parser);
+void parse_inner_declaration(parser *const prs);
 
 /**
  *	Parse a top level declaration [C99 6.7]
  *	@note Parses a full declaration, which consists either of declaration-specifiers,
  *	some number of declarators, and a semicolon, or function definition
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_external_declaration(parser *const parser);
+void parse_external_declaration(parser *const prs);
 
 /**
  *	Parse initializer [C99 6.7.8]
@@ -184,10 +184,10 @@ void parse_external_declaration(parser *const parser);
  *		assignment-expression
  *		'{' initializer-list '}'
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  *	@param	type		Type of variable in declaration
  */
-void parse_initializer(parser *const parser, const item_t type);
+void parse_initializer(parser *const prs, const item_t type);
 
 
 /**
@@ -201,9 +201,9 @@ void parse_initializer(parser *const parser, const item_t type);
  *		iteration-statement
  *		jump-statement
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_statement(parser *const context);
+void parse_statement(parser *const prs);
 
 /**	@enum The kind of block to parse */
 typedef enum { REGBLOCK, THREAD, FUNCBODY } block_type;
@@ -222,9 +222,9 @@ typedef enum { REGBLOCK, THREAD, FUNCBODY } block_type;
  *		declaration
  *		statement
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_compound_statement(parser *const context, const block_type type);
+void parse_compound_statement(parser *const prs, const block_type type);
 
 
 /**
@@ -320,7 +320,7 @@ int is_undefined(const item_t mode);
 /**
  *	Add new item to identifiers table
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  *	@param	repr		New identifier index in representations table
  *	@param	type		@c -1 for function as parameter,
  *						@c  0 for variable,
@@ -331,18 +331,18 @@ int is_undefined(const item_t mode);
  *
  *	@return	Index of the last item in identifiers table
  */
-size_t to_identab(parser *const parser, const size_t repr, const item_t type, const item_t mode);
+size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode);
 
 /**
  *	Add a new record to modes table
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  *	@param	mode		@c mode_pointer or @c mode_array
  *	@param	element		Type of element
  *
  *	@return	Index of the new record in modes table, @c SIZE_MAX on failure
  */
-item_t to_modetab(parser *const parser, const item_t mode, const item_t element);
+item_t to_modetab(parser *const prs, const item_t mode, const item_t element);
 
 #ifdef __cplusplus
 } /* extern "C" */

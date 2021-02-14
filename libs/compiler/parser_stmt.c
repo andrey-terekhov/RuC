@@ -23,49 +23,49 @@
  *	labeled-statement:
  *		identifier ':' statement
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_labeled_statement(parser *const parser)
+void parse_labeled_statement(parser *const prs)
 {
-	tree_add(parser->sx, TLabel);
+	tree_add(prs->sx, TLabel);
 
-	const size_t repr = parser->lxr->repr;
+	const size_t repr = prs->lxr->repr;
 	// Не проверяем, что это ':', так как по нему узнали,
 	// что это labeled statement
-	consume_token(parser);
-	for (size_t i = 0; i < parser->pgotost; i += 2)
+	consume_token(prs);
+	for (size_t i = 0; i < prs->pgotost; i += 2)
 	{
-		if (repr == (size_t)ident_get_repr(parser->sx, (size_t)parser->gotost[i]))
+		if (repr == (size_t)ident_get_repr(prs->sx, (size_t)prs->gotost[i]))
 		{
-			const item_t id = parser->gotost[i];
-			tree_add(parser->sx, id);
+			const item_t id = prs->gotost[i];
+			tree_add(prs->sx, id);
 
-			if (parser->gotost[i + 1] < 0)
+			if (prs->gotost[i + 1] < 0)
 			{
 				char buffer[MAXSTRINGL];
-				repr_get_ident(parser->sx, repr, buffer);
-				parser_error(parser, repeated_label, buffer);
+				repr_get_ident(prs->sx, repr, buffer);
+				parser_error(prs, repeated_label, buffer);
 			}
 			else
 			{
-				parser->gotost[i + 1] = -1;	// TODO: здесь должен быть номер строки
+				prs->gotost[i + 1] = -1;	// TODO: здесь должен быть номер строки
 			}
 
-			ident_set_mode(parser->sx, (size_t)id, 1);
-			parse_statement(parser);
+			ident_set_mode(prs->sx, (size_t)id, 1);
+			parse_statement(prs);
 			return;
 		}
 	}
 
 	// Это определение метки, если она встретилась до
 	// переходов на нее
-	const item_t id = (size_t)to_identab(parser, repr, 1, 0);
-	tree_add(parser->sx, id);
-	parser->gotost[parser->pgotost++] = id;
-	parser->gotost[parser->pgotost++] = -1;	// TODO: здесь должен быть номер строки
+	const item_t id = (size_t)to_identab(prs, repr, 1, 0);
+	tree_add(prs->sx, id);
+	prs->gotost[prs->pgotost++] = id;
+	prs->gotost[prs->pgotost++] = -1;	// TODO: здесь должен быть номер строки
 
-	ident_set_mode(parser->sx, (size_t)id, 1);
-	parse_statement(parser);
+	ident_set_mode(prs->sx, (size_t)id, 1);
+	parse_statement(prs);
 }
 
 /**
@@ -74,24 +74,24 @@ void parse_labeled_statement(parser *const parser)
  *	labeled-statement:
  *		'case' constant-expression ':' statement
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_case_statement(parser *const parser)
+void parse_case_statement(parser *const prs)
 {
-	if (!parser->flag_in_switch)
+	if (!prs->flag_in_switch)
 	{
-		parser_error(parser, case_not_in_switch);
+		parser_error(prs, case_not_in_switch);
 	}
 
-	tree_add(parser->sx, TCase);
-	const item_t condition_type = parse_constant_expression(parser);
+	tree_add(prs->sx, TCase);
+	const item_t condition_type = parse_constant_expression(prs);
 	if (!is_int(condition_type) && !is_undefined(condition_type))
 	{
-		parser_error(parser, float_in_switch);
+		parser_error(prs, float_in_switch);
 	}
 
-	expect_and_consume_token(parser, colon, expected_colon_after_case);
-	parse_statement(parser);
+	expect_and_consume_token(prs, colon, expected_colon_after_case);
+	parse_statement(prs);
 }
 
 /**
@@ -100,18 +100,18 @@ void parse_case_statement(parser *const parser)
  *	labeled-statement:
  *		'default' ':' statement
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_default_statement(parser *const parser)
+void parse_default_statement(parser *const prs)
 {
-	if (!parser->flag_in_switch)
+	if (!prs->flag_in_switch)
 	{
-		parser_error(parser, default_not_in_switch);
+		parser_error(prs, default_not_in_switch);
 	}
 
-	tree_add(parser->sx, TDefault);
-	expect_and_consume_token(parser, colon, expected_colon_after_default);
-	parse_statement(parser);
+	tree_add(prs->sx, TDefault);
+	expect_and_consume_token(prs, colon, expected_colon_after_default);
+	parse_statement(prs);
 }
 
 /**
@@ -120,12 +120,12 @@ void parse_default_statement(parser *const parser)
  *	expression-statement:
  *		expression ';'
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_expression_statement(parser *const parser)
+void parse_expression_statement(parser *const prs)
 {
-	parse_expression(parser);
-	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+	parse_expression(prs);
+	expect_and_consume_token(prs, semicolon, expected_semi_after_stmt);
 }
 
 /**
@@ -135,20 +135,20 @@ void parse_expression_statement(parser *const parser)
  *		'if' parenthesized-expression statement
  *		'if' parenthesized-expression statement 'else' statement
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_if_statement(parser *const parser)
+void parse_if_statement(parser *const prs)
 {
-	tree_add(parser->sx, TIf);
-	const size_t ref_else = tree_reserve(parser->sx);
+	tree_add(prs->sx, TIf);
+	const size_t ref_else = tree_reserve(prs->sx);
 
-	parse_parenthesized_expression(parser);
-	parse_statement(parser);
+	parse_parenthesized_expression(prs);
+	parse_statement(prs);
 
-	if (try_consume_token(parser, kw_else))
+	if (try_consume_token(prs, kw_else))
 	{
-		tree_set(parser->sx, ref_else, (item_t)tree_size(parser->sx));
-		parse_statement(parser);
+		tree_set(prs->sx, ref_else, (item_t)tree_size(prs->sx));
+		parse_statement(prs);
 	}
 }
 
@@ -158,22 +158,22 @@ void parse_if_statement(parser *const parser)
  *	switch-statement:
  *		'switch' parenthesized-expression statement
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_switch_statement(parser *const parser)
+void parse_switch_statement(parser *const prs)
 {
-	tree_add(parser->sx, TSwitch);
+	tree_add(prs->sx, TSwitch);
 
-	const item_t condition_type = parse_parenthesized_expression(parser);
+	const item_t condition_type = parse_parenthesized_expression(prs);
 	if (!is_int(condition_type) && !is_undefined(condition_type))
 	{
-		parser_error(parser, float_in_switch);
+		parser_error(prs, float_in_switch);
 	}
 
-	const int old_in_switch = parser->flag_in_switch;
-	parser->flag_in_switch = 1;
-	parse_statement(parser);
-	parser->flag_in_switch = old_in_switch;
+	const int old_in_switch = prs->flag_in_switch;
+	prs->flag_in_switch = 1;
+	parse_statement(prs);
+	prs->flag_in_switch = old_in_switch;
 }
 
 /**
@@ -182,18 +182,18 @@ void parse_switch_statement(parser *const parser)
  *	while-statement:
  *		'while' parenthesized-expression statement
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_while_statement(parser *const parser)
+void parse_while_statement(parser *const prs)
 {
-	tree_add(parser->sx, TWhile);
+	tree_add(prs->sx, TWhile);
 
-	parse_parenthesized_expression(parser);
+	parse_parenthesized_expression(prs);
 
-	const int old_in_loop = parser->flag_in_loop;
-	parser->flag_in_loop = 1;
-	parse_statement(parser);
-	parser->flag_in_loop = old_in_loop;
+	const int old_in_loop = prs->flag_in_loop;
+	prs->flag_in_loop = 1;
+	parse_statement(prs);
+	prs->flag_in_loop = old_in_loop;
 }
 
 /**
@@ -202,28 +202,28 @@ void parse_while_statement(parser *const parser)
  *	do-statement:
  *		'do' statement 'while' parenthesized-expression ';'
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_do_statement(parser *const parser)
+void parse_do_statement(parser *const prs)
 {
-	tree_add(parser->sx, TDo);
+	tree_add(prs->sx, TDo);
 
-	const int old_in_loop = parser->flag_in_loop;
-	parser->flag_in_loop = 1;
-	parse_statement(parser);
-	parser->flag_in_loop = old_in_loop;
+	const int old_in_loop = prs->flag_in_loop;
+	prs->flag_in_loop = 1;
+	parse_statement(prs);
+	prs->flag_in_loop = old_in_loop;
 
-	if (try_consume_token(parser, kw_while))
+	if (try_consume_token(prs, kw_while))
 	{
-		parse_parenthesized_expression(parser);
+		parse_parenthesized_expression(prs);
 	}
 	else
 	{
-		parser_error(parser, expected_while);
-		skip_until(parser, semicolon);
+		parser_error(prs, expected_while);
+		skip_until(prs, semicolon);
 	}
 
-	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+	expect_and_consume_token(prs, semicolon, expected_semi_after_stmt);
 }
 
 /**
@@ -233,46 +233,46 @@ void parse_do_statement(parser *const parser)
  *		'for' '(' expression[opt] ';' expression[opt] ';' expression[opt] ')' statement
  *		'for' '(' declaration expression[opt] ';' expression[opt] ')' statement
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_for_statement(parser *const parser)
+void parse_for_statement(parser *const prs)
 {
-	tree_add(parser->sx, TFor);
+	tree_add(prs->sx, TFor);
 
-	const size_t ref_inition = tree_reserve(parser->sx);
-	const size_t ref_condition = tree_reserve(parser->sx);
-	const size_t ref_increment = tree_reserve(parser->sx);
-	const size_t ref_statement = tree_reserve(parser->sx);
-	expect_and_consume_token(parser, l_paren, no_leftbr_in_for);
+	const size_t ref_inition = tree_reserve(prs->sx);
+	const size_t ref_condition = tree_reserve(prs->sx);
+	const size_t ref_increment = tree_reserve(prs->sx);
+	const size_t ref_statement = tree_reserve(prs->sx);
+	expect_and_consume_token(prs, l_paren, no_leftbr_in_for);
 
-	if (!try_consume_token(parser, semicolon))
+	if (!try_consume_token(prs, semicolon))
 	{
-		tree_set(parser->sx, ref_inition, (item_t)tree_size(parser->sx));
-		consume_token(parser);
-		parse_expression(parser);
-		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
+		tree_set(prs->sx, ref_inition, (item_t)tree_size(prs->sx));
+		consume_token(prs);
+		parse_expression(prs);
+		expect_and_consume_token(prs, semicolon, no_semicolon_in_for);
 	}
 
-	if (!try_consume_token(parser, semicolon))
+	if (!try_consume_token(prs, semicolon))
 	{
-		tree_set(parser->sx, ref_condition, (item_t)tree_size(parser->sx));
-		parse_condition(parser);
-		expect_and_consume_token(parser, semicolon, no_semicolon_in_for);
+		tree_set(prs->sx, ref_condition, (item_t)tree_size(prs->sx));
+		parse_condition(prs);
+		expect_and_consume_token(prs, semicolon, no_semicolon_in_for);
 	}
 
-	if (!try_consume_token(parser, r_paren))
+	if (!try_consume_token(prs, r_paren))
 	{
-		tree_set(parser->sx, ref_increment, (item_t)tree_size(parser->sx));
-		consume_token(parser);
-		parse_expression(parser);
-		expect_and_consume_token(parser, r_paren, no_rightbr_in_for);
+		tree_set(prs->sx, ref_increment, (item_t)tree_size(prs->sx));
+		consume_token(prs);
+		parse_expression(prs);
+		expect_and_consume_token(prs, r_paren, no_rightbr_in_for);
 	}
 
-	tree_set(parser->sx, ref_statement, (item_t)tree_size(parser->sx));
-	const int old_in_loop = parser->flag_in_loop;
-	parser->flag_in_loop = 1;
-	parse_statement(parser);
-	parser->flag_in_loop = old_in_loop;
+	tree_set(prs->sx, ref_statement, (item_t)tree_size(prs->sx));
+	const int old_in_loop = prs->flag_in_loop;
+	prs->flag_in_loop = 1;
+	parse_statement(prs);
+	prs->flag_in_loop = old_in_loop;
 }
 
 /**
@@ -281,27 +281,27 @@ void parse_for_statement(parser *const parser)
  *	jump-statement:
  *		'goto' identifier ';'
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_goto_statement(parser *const parser)
+void parse_goto_statement(parser *const prs)
 {
-	tree_add(parser->sx, TGoto);
-	expect_and_consume_token(parser, identifier, no_ident_after_goto);
-	const size_t repr = parser->lxr->repr;
+	tree_add(prs->sx, TGoto);
+	expect_and_consume_token(prs, identifier, no_ident_after_goto);
+	const size_t repr = prs->lxr->repr;
 
-	for (size_t i = 0; i < parser->pgotost; i += 2)
+	for (size_t i = 0; i < prs->pgotost; i += 2)
 	{
-		if (repr == (size_t)ident_get_repr(parser->sx, (size_t)parser->gotost[i]))
+		if (repr == (size_t)ident_get_repr(prs->sx, (size_t)prs->gotost[i]))
 		{
-			const item_t id = parser->gotost[i];
-			tree_add(parser->sx, id);
-			if (parser->gotost[id + 1] >= 0) // Перехода на метку еще не было
+			const item_t id = prs->gotost[i];
+			tree_add(prs->sx, id);
+			if (prs->gotost[id + 1] >= 0) // Перехода на метку еще не было
 			{
-				parser->gotost[parser->pgotost++] = id;
-				parser->gotost[parser->pgotost++] = 1; // TODO: здесь должен быть номер строки
+				prs->gotost[prs->pgotost++] = id;
+				prs->gotost[prs->pgotost++] = 1; // TODO: здесь должен быть номер строки
 			}
 
-			expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+			expect_and_consume_token(prs, semicolon, expected_semi_after_stmt);
 			return;
 		}
 	}
@@ -309,11 +309,11 @@ void parse_goto_statement(parser *const parser)
 	// Первый раз встретился переход на метку, которой не было,
 	// в этом случае ссылка на identtab, стоящая после TGoto,
 	// будет отрицательной
-	const item_t id = (item_t)to_identab(parser, repr, 1, 0);
-	tree_add(parser->sx, -id);
-	parser->gotost[parser->pgotost++] = id;
-	parser->gotost[parser->pgotost++] = 1;	// TODO: здесь должен быть номер строки
-	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+	const item_t id = (item_t)to_identab(prs, repr, 1, 0);
+	tree_add(prs->sx, -id);
+	prs->gotost[prs->pgotost++] = id;
+	prs->gotost[prs->pgotost++] = 1;	// TODO: здесь должен быть номер строки
+	expect_and_consume_token(prs, semicolon, expected_semi_after_stmt);
 }
 
 /**
@@ -322,17 +322,17 @@ void parse_goto_statement(parser *const parser)
  *	jump-statement:
  *		'continue' ';'
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_continue_statement(parser *const parser)
+void parse_continue_statement(parser *const prs)
 {
-	if (!parser->flag_in_loop)
+	if (!prs->flag_in_loop)
 	{
-		parser_error(parser, continue_not_in_loop);
+		parser_error(prs, continue_not_in_loop);
 	}
 
-	tree_add(parser->sx, TContinue);
-	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+	tree_add(prs->sx, TContinue);
+	expect_and_consume_token(prs, semicolon, expected_semi_after_stmt);
 }
 
 /**
@@ -341,17 +341,17 @@ void parse_continue_statement(parser *const parser)
  *	jump-statement:
  *		'break' ';'
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_break_statement(parser *const parser)
+void parse_break_statement(parser *const prs)
 {
-	if (!(parser->flag_in_loop || parser->flag_in_switch))
+	if (!(prs->flag_in_loop || prs->flag_in_switch))
 	{
-		parser_error(parser, break_not_in_loop_or_switch);
+		parser_error(prs, break_not_in_loop_or_switch);
 	}
 
-	tree_add(parser->sx, TBreak);
-	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+	tree_add(prs->sx, TBreak);
+	expect_and_consume_token(prs, semicolon, expected_semi_after_stmt);
 }
 
 /**
@@ -360,144 +360,144 @@ void parse_break_statement(parser *const parser)
  *	jump-statement:
  *		'return' expression[opt] ';'
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_return_statement(parser *const parser)
+void parse_return_statement(parser *const prs)
 {
-	const item_t return_type = mode_get(parser->sx, parser->function_mode + 1);
-	parser->flag_was_return = 1;
+	const item_t return_type = mode_get(prs->sx, prs->function_mode + 1);
+	prs->flag_was_return = 1;
 
-	if (try_consume_token(parser, semicolon))
+	if (try_consume_token(prs, semicolon))
 	{
-		tree_add(parser->sx, TReturnvoid);
+		tree_add(prs->sx, TReturnvoid);
 		if (!is_void(return_type))
 		{
-			parser_error(parser, no_ret_in_func);
+			parser_error(prs, no_ret_in_func);
 		}
 	}
 	else if (return_type != mode_void_pointer)
 	{
 		if (is_void(return_type))
 		{
-			parser_error(parser, notvoidret_in_void_func);
+			parser_error(prs, notvoidret_in_void_func);
 		}
 
-		tree_add(parser->sx, TReturnval);
-		tree_add(parser->sx, (item_t)size_of(parser->sx, return_type));
+		tree_add(prs->sx, TReturnval);
+		tree_add(prs->sx, (item_t)size_of(prs->sx, return_type));
 
-		consume_token(parser);
-		const item_t expr_type = parse_assignment_expression(parser);
+		consume_token(prs);
+		const item_t expr_type = parse_assignment_expression(prs);
 		if (!is_undefined(expr_type) && !is_undefined(return_type))
 		{
 			if (is_float(return_type) && is_int(expr_type))
 			{
-				insert_widen(parser);
+				insert_widen(prs);
 			}
 			else if (return_type != expr_type)
 			{
-				parser_error(parser, bad_type_in_ret);
+				parser_error(prs, bad_type_in_ret);
 			}
 		}
 
-		expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+		expect_and_consume_token(prs, semicolon, expected_semi_after_stmt);
 	}
 }
 
 /**	Parse t_create_direct statement [RuC] */
-void parse_create_direct_statement(parser *const parser)
+void parse_create_direct_statement(parser *const prs)
 {
-	tree_add(parser->sx, CREATEDIRECTC);
-	parse_compound_statement(parser, THREAD);
-	tree_add(parser->sx, EXITDIRECTC);
+	tree_add(prs->sx, CREATEDIRECTC);
+	parse_compound_statement(prs, THREAD);
+	tree_add(prs->sx, EXITDIRECTC);
 }
 
 /**	Parse printid statement [RuC] */
-void parse_printid_statement(parser *const parser)
+void parse_printid_statement(parser *const prs)
 {
-	expect_and_consume_token(parser, l_paren, no_leftbr_in_printid);
+	expect_and_consume_token(prs, l_paren, no_leftbr_in_printid);
 
 	do
 	{
-		if (try_consume_token(parser, identifier))
+		if (try_consume_token(prs, identifier))
 		{
-			const size_t repr = parser->lxr->repr;
-			const size_t id = (size_t)repr_get_reference(parser->sx, repr);
+			const size_t repr = prs->lxr->repr;
+			const size_t id = (size_t)repr_get_reference(prs->sx, repr);
 			if (id == 1)
 			{
 				char buffer[MAXSTRINGL];
-				repr_get_ident(parser->sx, repr, buffer);
-				parser_error(parser, ident_is_not_declared, buffer);
+				repr_get_ident(prs->sx, repr, buffer);
+				parser_error(prs, ident_is_not_declared, buffer);
 			}
 
-			tree_add(parser->sx, TPrintid);
-			tree_add(parser->sx, (item_t)id);
+			tree_add(prs->sx, TPrintid);
+			tree_add(prs->sx, (item_t)id);
 		}
 		else
 		{
-			parser_error(parser, no_ident_in_printid);
-			skip_until(parser, comma | r_paren | semicolon);
+			parser_error(prs, no_ident_in_printid);
+			skip_until(prs, comma | r_paren | semicolon);
 		}
-	} while (try_consume_token(parser, comma));
+	} while (try_consume_token(prs, comma));
 
-	expect_and_consume_token(parser, r_paren, no_rightbr_in_printid);
-	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+	expect_and_consume_token(prs, r_paren, no_rightbr_in_printid);
+	expect_and_consume_token(prs, semicolon, expected_semi_after_stmt);
 
 }
 
 /**	Parse print statement [RuC] */
-void parse_print_statement(parser *const parser)
+void parse_print_statement(parser *const prs)
 {
-	expect_and_consume_token(parser, l_paren, print_without_br);
-	consume_token(parser);
+	expect_and_consume_token(prs, l_paren, print_without_br);
+	consume_token(prs);
 
-	const item_t type = parse_assignment_expression(parser);
-	if (is_pointer(parser->sx, type))
+	const item_t type = parse_assignment_expression(prs);
+	if (is_pointer(prs->sx, type))
 	{
-		parser_error(parser, pointer_in_print);
+		parser_error(prs, pointer_in_print);
 	}
 
-	vector_remove(&parser->sx->tree);
-	tree_add(parser->sx, TPrint);
-	tree_add(parser->sx, type);
-	tree_add(parser->sx, TExprend);
+	vector_remove(&prs->sx->tree);
+	tree_add(prs->sx, TPrint);
+	tree_add(prs->sx, type);
+	tree_add(prs->sx, TExprend);
 
-	expect_and_consume_token(parser, r_paren, print_without_br);
-	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+	expect_and_consume_token(prs, r_paren, print_without_br);
+	expect_and_consume_token(prs, semicolon, expected_semi_after_stmt);
 }
 
 /**	Parse getid statement [RuC] */
-void parse_getid_statement(parser *const parser)
+void parse_getid_statement(parser *const prs)
 {
-	expect_and_consume_token(parser, l_paren, no_leftbr_in_getid);
+	expect_and_consume_token(prs, l_paren, no_leftbr_in_getid);
 
 	do
 	{
-		if (try_consume_token(parser, identifier))
+		if (try_consume_token(prs, identifier))
 		{
-			const size_t repr = parser->lxr->repr;
-			const size_t id = (size_t)repr_get_reference(parser->sx, repr);
+			const size_t repr = prs->lxr->repr;
+			const size_t id = (size_t)repr_get_reference(prs->sx, repr);
 			if (id == 1)
 			{
 				char buffer[MAXSTRINGL];
-				repr_get_ident(parser->sx, repr, buffer);
-				parser_error(parser, ident_is_not_declared, buffer);
+				repr_get_ident(prs->sx, repr, buffer);
+				parser_error(prs, ident_is_not_declared, buffer);
 			}
 
-			tree_add(parser->sx, TGetid);
-			tree_add(parser->sx, (item_t)id);
+			tree_add(prs->sx, TGetid);
+			tree_add(prs->sx, (item_t)id);
 		}
 		else
 		{
-			parser_error(parser, no_ident_in_getid);
-			skip_until(parser, comma | r_paren | semicolon);
+			parser_error(prs, no_ident_in_getid);
+			skip_until(prs, comma | r_paren | semicolon);
 		}
-	} while (try_consume_token(parser, comma));
+	} while (try_consume_token(prs, comma));
 
-	expect_and_consume_token(parser, r_paren, no_rightbr_in_getid);
-	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+	expect_and_consume_token(prs, r_paren, no_rightbr_in_getid);
+	expect_and_consume_token(prs, semicolon, expected_semi_after_stmt);
 }
 
-size_t evaluate_params(parser *const parser, const size_t length
+size_t evaluate_params(parser *const prs, const size_t length
 					   , const char32_t *const formatstr, item_t *const formattypes, char32_t *const placeholders)
 {
 	size_t param_number = 0;
@@ -510,7 +510,7 @@ size_t evaluate_params(parser *const parser, const size_t length
 			{
 				if (param_number == MAXPRINTFPARAMS)
 				{
-					parser_error(parser, too_many_printf_params);
+					parser_error(prs, too_many_printf_params);
 					return 0;
 				}
 
@@ -535,18 +535,18 @@ size_t evaluate_params(parser *const parser, const size_t length
 
 				case 's':
 				case U'с':
-					formattypes[param_number++] = to_modetab(parser, mode_array, mode_character);
+					formattypes[param_number++] = to_modetab(prs, mode_array, mode_character);
 					break;
 
 				case '%':
 					break;
 
 				case '\0':
-					parser_error(parser, printf_no_format_placeholder);
+					parser_error(prs, printf_no_format_placeholder);
 					return 0;
 
 				default:
-					parser_error(parser, printf_unknown_format_placeholder, placeholder);
+					parser_error(prs, printf_unknown_format_placeholder, placeholder);
 					return 0;
 			}
 		}
@@ -556,71 +556,71 @@ size_t evaluate_params(parser *const parser, const size_t length
 }
 
 /**	Parse scanf statement [RuC] */
-void parse_scanf_statement(parser *const parser);
+void parse_scanf_statement(parser *const prs);
 
 /**	Parse printf statement [RuC] */
-void parse_printf_statement(parser *const parser)
+void parse_printf_statement(parser *const prs)
 {
 	char32_t placeholders[MAXPRINTFPARAMS];
 	char32_t format_str[MAXSTRINGL + 1];
 	item_t formattypes[MAXPRINTFPARAMS];
 	size_t sumsize = 0;
 
-	expect_and_consume_token(parser, l_paren, no_leftbr_in_printf);
+	expect_and_consume_token(prs, l_paren, no_leftbr_in_printf);
 
-	if (parser->next_token != STRING)
+	if (prs->next_token != STRING)
 	{
-		parser_error(parser, wrong_first_printf_param);
-		skip_until(parser, SEMICOLON);
+		parser_error(prs, wrong_first_printf_param);
+		skip_until(prs, SEMICOLON);
 		return;
 	}
 
-	const size_t format_str_length = (size_t)parser->lxr->num;
+	const size_t format_str_length = (size_t)prs->lxr->num;
 	for (size_t i = 0; i < format_str_length; i++)
 	{
-		format_str[i] = parser->lxr->lexstr[i];
+		format_str[i] = prs->lxr->lexstr[i];
 	}
 	format_str[format_str_length] = 0;
-	consume_token(parser);	// Для форматирующей строки
+	consume_token(prs);	// Для форматирующей строки
 
 	size_t actual_param_number = 0;
-	const size_t expected_param_number = evaluate_params(parser, format_str_length, format_str, formattypes, placeholders);
-	while (try_consume_token(parser, comma) && actual_param_number != expected_param_number)
+	const size_t expected_param_number = evaluate_params(prs, format_str_length, format_str, formattypes, placeholders);
+	while (try_consume_token(prs, comma) && actual_param_number != expected_param_number)
 	{
-		consume_token(parser);
-		const item_t type = parse_assignment_expression(parser);
+		consume_token(prs);
+		const item_t type = parse_assignment_expression(prs);
 		if (is_float(formattypes[actual_param_number]) && is_int(type))
 		{
-			insert_widen(parser);
+			insert_widen(prs);
 		}
 		else if (formattypes[actual_param_number] != type)
 		{
-			parser_error(parser, wrong_printf_param_type, placeholders[actual_param_number]);
+			parser_error(prs, wrong_printf_param_type, placeholders[actual_param_number]);
 		}
 
-		sumsize += size_of(parser->sx, type);
+		sumsize += size_of(prs->sx, type);
 		actual_param_number++;
 	}
 
-	expect_and_consume_token(parser, r_paren, no_rightbr_in_printf);
-	expect_and_consume_token(parser, semicolon, expected_semi_after_stmt);
+	expect_and_consume_token(prs, r_paren, no_rightbr_in_printf);
+	expect_and_consume_token(prs, semicolon, expected_semi_after_stmt);
 
 	if (actual_param_number != expected_param_number)
 	{
-		parser_error(parser, wrong_printf_param_number);
+		parser_error(prs, wrong_printf_param_number);
 	}
 
-	tree_add(parser->sx, TString);
-	tree_add(parser->sx, (item_t)format_str_length);
+	tree_add(prs->sx, TString);
+	tree_add(prs->sx, (item_t)format_str_length);
 
 	for (size_t i = 0; i < format_str_length; i++)
 	{
-		tree_add(parser->sx, format_str[i]);
+		tree_add(prs->sx, format_str[i]);
 	}
-	tree_add(parser->sx, TExprend);
+	tree_add(prs->sx, TExprend);
 
-	tree_add(parser->sx, TPrintf);
-	tree_add(parser->sx, (item_t)sumsize);
+	tree_add(prs->sx, TPrintf);
+	tree_add(prs->sx, (item_t)sumsize);
 }
 
 /**
@@ -630,11 +630,11 @@ void parse_printf_statement(parser *const parser)
  *		statement
  *		declaration
  *
- *	@param	parser		Parser structure
+ *	@param	prs			Parser structure
  */
-void parse_block_item(parser *const parser)
+void parse_block_item(parser *const prs)
 {
-	switch (parser->next_token)
+	switch (prs->next_token)
 	{
 		case kw_void:
 		case kw_char:
@@ -647,25 +647,25 @@ void parse_block_item(parser *const parser)
 			//case kw_union:
 			//case kw_enum:
 			//case kw_typedef:
-			parse_inner_declaration(parser);
+			parse_inner_declaration(prs);
 			return;
 
 		case identifier:
 		{
-			const size_t id = (size_t)repr_get_reference(parser->sx, parser->lxr->repr);
-			if (ident_get_displ(parser->sx, id) >= 1000)
+			const size_t id = (size_t)repr_get_reference(prs->sx, prs->lxr->repr);
+			if (ident_get_displ(prs->sx, id) >= 1000)
 			{
-				parse_inner_declaration(parser);
+				parse_inner_declaration(prs);
 			}
 			else
 			{
-				parse_statement(parser);
+				parse_statement(prs);
 			}
 			return;
 		}
 
 		default:
-			parse_statement(parser);
+			parse_statement(prs);
 			return;
 	}
 }
@@ -680,130 +680,130 @@ void parse_block_item(parser *const parser)
  */
 
 
-void parse_statement(parser *const parser)
+void parse_statement(parser *const prs)
 {
-	consume_token(parser);
+	consume_token(prs);
 
-	switch (parser->curr_token)
+	switch (prs->curr_token)
 	{
 		case semicolon:
-			tree_add(parser->sx, NOP);
+			tree_add(prs->sx, NOP);
 			break;
 
 		case kw_case:
-			parse_case_statement(parser);
+			parse_case_statement(prs);
 			break;
 
 		case kw_default:
-			parse_default_statement(parser);
+			parse_default_statement(prs);
 			break;
 
 		case l_brace:
-			parse_compound_statement(parser, REGBLOCK);
+			parse_compound_statement(prs, REGBLOCK);
 			break;
 
 		case kw_if:
-			parse_if_statement(parser);
+			parse_if_statement(prs);
 			break;
 
 		case kw_switch:
-			parse_switch_statement(parser);
+			parse_switch_statement(prs);
 			break;
 
 		case kw_while:
-			parse_while_statement(parser);
+			parse_while_statement(prs);
 			break;
 
 		case kw_do:
-			parse_do_statement(parser);
+			parse_do_statement(prs);
 			break;
 
 		case kw_for:
-			parse_for_statement(parser);
+			parse_for_statement(prs);
 			break;
 
 		case kw_goto:
-			parse_goto_statement(parser);
+			parse_goto_statement(prs);
 			break;
 
 		case kw_continue:
-			parse_continue_statement(parser);
+			parse_continue_statement(prs);
 			break;
 
 		case kw_break:
-			parse_break_statement(parser);
+			parse_break_statement(prs);
 			break;
 
 		case kw_return:
-			parse_return_statement(parser);
+			parse_return_statement(prs);
 			break;
 
 		case kw_t_create_direct:
-			parse_create_direct_statement(parser);
+			parse_create_direct_statement(prs);
 			break;
 
 		case kw_printid:
-			parse_printid_statement(parser);
+			parse_printid_statement(prs);
 			break;
 
 		case kw_printf:
-			parse_printf_statement(parser);
+			parse_printf_statement(prs);
 			break;
 
 		case kw_print:
-			parse_print_statement(parser);
+			parse_print_statement(prs);
 			break;
 
 		case kw_getid:
-			parse_getid_statement(parser);
+			parse_getid_statement(prs);
 			break;
 
 		case identifier:
-			if (parser->next_token == colon)
+			if (prs->next_token == colon)
 			{
-				parse_labeled_statement(parser);
+				parse_labeled_statement(prs);
 				break;
 			}
 
 		default:
-			parse_expression_statement(parser);
+			parse_expression_statement(prs);
 			break;
 	}
 }
 
-void parse_compound_statement(parser *const parser, const block_type type)
+void parse_compound_statement(parser *const prs, const block_type type)
 {
-	tree_add(parser->sx, TBegin);
+	tree_add(prs->sx, TBegin);
 
 	item_t old_displ = 0;
 	item_t old_lg = 0;
 
 	if (type != FUNCBODY)
 	{
-		scope_block_enter(parser->sx, &old_displ, &old_lg);
+		scope_block_enter(prs->sx, &old_displ, &old_lg);
 	}
 
 	const token_t end_token = (type == THREAD) ? kw_exit : r_brace;
-	if (try_consume_token(parser, end_token))
+	if (try_consume_token(prs, end_token))
 	{
 		// Если это пустой блок
-		tree_add(parser->sx, NOP);
+		tree_add(prs->sx, NOP);
 	}
 	else
 	{
 		do
 		{
-			parse_block_item(parser);
+			parse_block_item(prs);
 			/* Почему не ловилась ошибка, если в блоке нити встретилась '}'? */
-		} while (parser->next_token != eof && parser->next_token != end_token);
+		} while (prs->next_token != eof && prs->next_token != end_token);
 
-		expect_and_consume_token(parser, end_token, expected_end);
+		expect_and_consume_token(prs, end_token, expected_end);
 	}
 
 	if (type != FUNCBODY)
 	{
-		scope_block_exit(parser->sx, old_displ, old_lg);
+		scope_block_exit(prs->sx, old_displ, old_lg);
 	}
 
-	tree_add(parser->sx, TEnd);
+	tree_add(prs->sx, TEnd);
 }

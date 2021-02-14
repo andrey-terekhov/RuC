@@ -17,7 +17,7 @@
 #include "parser.h"
 
 
-/**	Check if the set of tokens has token in it*/
+/** Check if the set of tokens has token in it */
 int has_token_set(const unsigned int tokens, const token_t token)
 {
 	return (tokens & token) != 0;
@@ -33,82 +33,82 @@ int has_token_set(const unsigned int tokens, const token_t token)
  */
 
 
-int parse(parser *const parser)
+int parse(parser *const prs)
 {
-	get_char(parser->lxr);
-	get_char(parser->lxr);
-	consume_token(parser);
+	get_char(prs->lxr);
+	get_char(prs->lxr);
+	consume_token(prs);
 
 	do
 	{
-		parse_external_declaration(parser);
-	} while (parser->next_token != eof);
+		parse_external_declaration(prs);
+	} while (prs->next_token != eof);
 
-	tree_add(parser->sx, TEnd);
+	tree_add(prs->sx, TEnd);
 
-	return parser->was_error || parser->lxr->was_error;
+	return prs->was_error || prs->lxr->was_error;
 }
 
 
-void parser_error(parser *const parser, const int num, ...)
+void parser_error(parser *const prs, const int num, ...)
 {
-	parser->was_error = 1;
+	prs->was_error = 1;
 
 	va_list args;
 	va_start(args, num);
 
-	error(parser->io, num, args);
+	error(prs->io, num, args);
 }
 
-void consume_token(parser *const parser)
+void consume_token(parser *const prs)
 {
-	parser->curr_token = parser->next_token;
-	parser->next_token = lex(parser->lxr);
+	prs->curr_token = prs->next_token;
+	prs->next_token = lex(prs->lxr);
 }
 
-int try_consume_token(parser *const parser, const token_t expected)
+int try_consume_token(parser *const prs, const token_t expected)
 {
-	if (parser->next_token == expected)
+	if (prs->next_token == expected)
 	{
-		consume_token(parser);
+		consume_token(prs);
 		return 1;
 	}
 
 	return 0;
 }
 
-void expect_and_consume_token(parser *const parser, const token_t expected, const enum ERROR err)
+void expect_and_consume_token(parser *const prs, const token_t expected, const enum ERROR err)
 {
-	if (!try_consume_token(parser, expected))
+	if (!try_consume_token(prs, expected))
 	{
-		parser_error(parser, err);
+		parser_error(prs, err);
 	}
 }
 
-void skip_until(parser *const parser, const unsigned int tokens)
+void skip_until(parser *const prs, const unsigned int tokens)
 {
-	while (parser->next_token != eof)
+	while (prs->next_token != eof)
 	{
-		switch (parser->next_token)
+		switch (prs->next_token)
 		{
 			case l_paren:
-				consume_token(parser);
-				skip_until(parser, r_paren);
+				consume_token(prs);
+				skip_until(prs, r_paren);
 				break;
 
 			case l_square:
-				consume_token(parser);
-				skip_until(parser, r_square);
+				consume_token(prs);
+				skip_until(prs, r_square);
 				break;
 
 			case l_brace:
-				consume_token(parser);
-				skip_until(parser, r_brace);
+				consume_token(prs);
+				skip_until(prs, r_brace);
 				break;
 
 			case question:
-				consume_token(parser);
-				skip_until(parser, colon);
+				consume_token(prs);
+				skip_until(prs, colon);
 				break;
 
 			case r_paren:
@@ -116,18 +116,18 @@ void skip_until(parser *const parser, const unsigned int tokens)
 			case r_brace:
 			case colon:
 			case semicolon:
-				if (has_token_set(tokens, parser->next_token))
+				if (has_token_set(tokens, prs->next_token))
 				{
 					return;
 				}
 				else
 				{
-					consume_token(parser);
+					consume_token(prs);
 					break;
 				}
 
 			default:
-				consume_token(parser);
+				consume_token(prs);
 				break;
 		}
 	}
@@ -180,33 +180,33 @@ int is_undefined(const item_t mode)
 }
 
 
-size_t to_identab(parser *const parser, const size_t repr, const item_t type, const item_t mode)
+size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode)
 {
-	const size_t ret = ident_add(parser->sx, repr, type, mode, parser->func_def);
-	parser->lastid = 0;
+	const size_t ret = ident_add(prs->sx, repr, type, mode, prs->func_def);
+	prs->lastid = 0;
 
 	if (ret == SIZE_MAX)
 	{
-		parser_error(parser, redefinition_of_main);
+		parser_error(prs, redefinition_of_main);
 	}
 	else if (ret == SIZE_MAX - 1)
 	{
 		char buffer[MAXSTRINGL];
-		repr_get_ident(parser->sx, repr, buffer);
-		parser_error(parser, repeated_decl, buffer);
+		repr_get_ident(prs->sx, repr, buffer);
+		parser_error(prs, repeated_decl, buffer);
 	}
 	else
 	{
-		parser->lastid = (int)ret;
+		prs->lastid = (int)ret;
 	}
 
 	return ret;
 }
 
-item_t to_modetab(parser *const parser, const item_t mode, const item_t element)
+item_t to_modetab(parser *const prs, const item_t mode, const item_t element)
 {
 	item_t temp[2];
 	temp[0] = mode;
 	temp[1] = element;
-	return (item_t)mode_add(parser->sx, temp, 2);
+	return (item_t)mode_add(prs->sx, temp, 2);
 }
