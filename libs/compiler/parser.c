@@ -18,7 +18,7 @@
 
 
 /** Check if the set of tokens has token in it */
-int has_token_set(const unsigned int tokens, const token_t token)
+int has_token_set(const uint8_t tokens, const token_t token)
 {
 	return (tokens & token) != 0;
 }
