@@ -375,7 +375,7 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
  *	@note	Also used in codegen
  *
  *	@param	sx			Syntax structure
- *	@param	mode		Standart type or index for modes table
+ *	@param	mode		Standard type or index of the modes table
  *
  *	@return	Mode size
  */

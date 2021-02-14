@@ -635,15 +635,15 @@ void parse_block_item(parser *const prs)
 	{
 		case kw_void:
 		case kw_char:
-		//case kw_short:
+		// case kw_short:
 		case kw_int:
 		case kw_long:
 		case kw_float:
 		case kw_double:
 		case kw_struct:
-		//case kw_union:
-		//case kw_enum:
-		//case kw_typedef:
+		// case kw_union:
+		// case kw_enum:
+		// case kw_typedef:
 			parse_inner_declaration(prs);
 			return;
 

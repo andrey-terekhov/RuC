@@ -44,7 +44,7 @@ typedef struct parser
 	token_t next_token;			/**< Lookahead token */
 
 	size_t function_mode;		/**< Mode of currenty parsed function */
-	size_t array_dimension;		/**< Array dimension counter */
+	size_t array_dimensions;		/**< Array dimension counter */
 	item_t gotost[1000];		/**< Labels table */
 	size_t pgotost;				/**< Labels counter */
 

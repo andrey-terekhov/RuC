@@ -118,7 +118,7 @@ typedef enum TOKEN
 	lesslessequal		= SHLASS,		/**< '<<='	punctuator */
 	greatergreaterequal	= SHRASS,		/**< '>>='	punctuator */
 
-	// Standart Functions [RuC]
+	// Standard Functions [RuC]
 	kw_print			= PRINT,		/**< 'print'	keyword	*/
 	kw_printf			= PRINTF,		/**< 'printf'	keyword */
 	kw_printid			= PRINTID,		/**< 'printid'	keyword */
