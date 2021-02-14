@@ -399,16 +399,11 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 
 size_t size_of(const syntax *const sx, const item_t mode)
 {
-	if (mode == mode_float)
-	{
-		return 2;
-	}
-	else if (mode > 0 && mode_get(sx, (size_t)mode) == mode_struct)
-	{
-		return (size_t)mode_get(sx, (size_t)mode + 1);
-	}
-
-	return 1;
+	return mode > 0 && mode_get(sx, (size_t)mode) == mode_struct
+		? (size_t)mode_get(sx, (size_t)mode + 1)
+		: mode == mode_float
+			? 2
+			: 1;
 }
 
 size_t mode_add(syntax *const sx, const item_t *const record, const size_t size)
