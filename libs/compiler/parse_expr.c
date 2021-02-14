@@ -1940,12 +1940,10 @@ void expr(parser *context, int level)
 
 void parse_string_literal_expression(parser *const parser)
 {
-	int i;
-
 	totree(parser, TString);
 	totree(parser, parser->lxr->num);
 
-	for (i = 0; i < parser->lxr->num; i++)
+	for (int i = 0; i < parser->lxr->num; i++)
 	{
 		totree(parser, parser->lxr->lexstr[i]);
 	}

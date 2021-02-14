@@ -245,6 +245,17 @@ item_t func_get(const syntax *const sx, const size_t index)
 	return sx != NULL ? vector_get(&sx->functions, index) : ITEM_MAX;
 }
 
+size_t func_reserve(syntax *const sx)
+{
+	if (sx == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	vector_increase(&sx->functions, 1);
+	return vector_size(&sx->functions) - 1;
+}
+
 
 int tree_add(syntax *const sx, const item_t node)
 {

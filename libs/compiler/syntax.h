@@ -223,6 +223,15 @@ int func_set(syntax *const sx, const size_t index, const item_t ref);
  */
 item_t func_get(const syntax *const sx, const size_t index);
 
+/**
+ *	Reserve one element in functions table
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	Previous functions size
+ */
+size_t func_reserve(syntax *const sx);
+
 
 /**
  *	Add new value to tree

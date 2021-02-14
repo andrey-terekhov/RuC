@@ -757,9 +757,7 @@ void parse_function_body(parser *const prs, const size_t function_id)
  */
 void parse_function_definition(parser *const prs, const item_t type)
 {
-	// TODO: сюда бы интерфейс для functions
-	const size_t function_num = vector_size(&prs->sx->functions);
-	vector_increase(&prs->sx->functions, 1);
+	const size_t function_num = func_reserve(prs->sx);
 	const size_t function_repr = prs->lxr->repr;
 
 	consume_token(prs);
@@ -892,7 +890,6 @@ void parse_external_declaration(parser *const prs)
 			parser_error(prs, after_type_must_be_ident);
 			skip_until(prs, comma | semicolon);
 		}
-
 	} while (try_consume_token(prs, comma));
 
 	if (prs->func_def != 1)
