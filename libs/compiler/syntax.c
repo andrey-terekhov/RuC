@@ -268,8 +268,13 @@ size_t tree_size(const syntax *const sx)
 
 size_t tree_reserve(syntax *const sx)
 {
-	const size_t ret = tree_size(sx);
-	return sx != NULL ? vector_set(&sx->tree, ret, 0), vector_increase(&sx->tree, 1), ret : SIZE_MAX;
+	if (sx == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	vector_increase(&sx->tree, 1);
+	return vector_size(&sx->tree) - 1;
 }
 
 
