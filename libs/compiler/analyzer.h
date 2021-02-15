@@ -22,11 +22,11 @@
 #include "lexer.h"
 
 
-#define TREE		(context->sx->tree)
+#define TREE		(prs->sx->tree)
 
-#define REPRTAB		(context->sx->reprtab)
-#define REPRTAB_POS (context->lxr->repr)
-#define REPRTAB_LEN (context->sx->rp)
+#define REPRTAB		(prs->sx->reprtab)
+#define REPRTAB_POS (prs->lxr->repr)
+#define REPRTAB_LEN (prs->sx->rp)
 
 
 #ifdef __cplusplus

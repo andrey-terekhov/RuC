@@ -25,7 +25,13 @@ extern "C" {
 #endif
 
 /**	The kind of block to parse */
-typedef enum { REGBLOCK, THREAD, FUNCBODY } block_t;
+typedef enum
+{
+	REGBLOCK,
+	THREAD,
+	FUNCBODY
+} block_t;
+
 
 /**
  *	Parse source code to generate syntax structure
@@ -43,14 +49,14 @@ int parse(parser *const prs);
  *	@param	prs			Parser structure
  *	@param	num			Error code
  */
-void parser_error(parser *const prs, const int num, ...);
+void parse_error(parser *const prs, const int num, ...);
 
 /**
  *	Consume the current 'peek token' and lex the next one
  *
  *	@param	prs			Parser structure
  */
-void consume_token(parser *const prs);
+void token_consume(parser *const prs);
 
 /**
  *	Try to consume the current 'peek token' and lex the next one
@@ -58,19 +64,19 @@ void consume_token(parser *const prs);
  *	@param	prs			Parser structure
  *	@param	expected	Expected token to consume
  *
- *	@return	@c 0, if 'peek token' is expected and consumed, @c 0 otherwise
+ *	@return	@c 1, if 'peek token' is expected and consumed, @c 0 otherwise
  */
-int try_consume_token(parser *const prs, const token_t expected);
+int token_try_consume(parser *const prs, const token_t expected);
 
 /**
  *	Try to consume the current 'peek token' and lex the next one
- *	If that 'peek token' is expected, parser consumes it, otherwise an error is emited
+ *	If 'peek token' is expected, parser will consume it, otherwise an error will be emited
  *
  *	@param	prs			Parser structure
  *	@param	expected	Expected token to consume
  *	@param	err			Error to emit
  */
-void expect_and_consume_token(parser *const prs, const token_t expected, const error_t err);
+void token_expect_and_consume(parser *const prs, const token_t expected, const error_t err);
 
 /**
  *	Read tokens until one of the specified tokens
@@ -78,7 +84,7 @@ void expect_and_consume_token(parser *const prs, const token_t expected, const e
  *	@param	prs			Parser structure
  *	@param	tokens		Set of specified tokens
  */
-void skip_until(parser *const prs, const uint8_t tokens);
+void token_skip_until(parser *const prs, const uint8_t tokens);
 
 
 /**
@@ -169,7 +175,7 @@ void insert_widen(parser *const prs);
  *
  *	@param	prs			Parser structure
  */
-void parse_inner_declaration(parser *const prs);
+void parse_declaration_inner(parser *const prs);
 
 /**
  *	Parse a top level declaration [C99 6.7]
@@ -178,7 +184,7 @@ void parse_inner_declaration(parser *const prs);
  *
  *	@param	prs			Parser structure
  */
-void parse_external_declaration(parser *const prs);
+void parse_declaration_external(parser *const prs);
 
 /**
  *	Parse initializer [C99 6.7.8]
@@ -224,7 +230,7 @@ void parse_statement(parser *const prs);
  *
  *	@param	prs			Parser structure
  */
-void parse_compound_statement(parser *const prs, const block_t type);
+void parse_statement_compound(parser *const prs, const block_t type);
 
 
 /**

@@ -17,60 +17,60 @@
 #include "parser.h"
 #include <string.h>
 
-void unarexpr(parser *context);
-void exprassn(parser *context, int level);
-void expr(parser *context, int level);
+void unarexpr(parser *const prs);
+void exprassn(parser *const prs, int level);
+void expr(parser *const prs, int level);
 
-int scanner(parser *context)
+int scanner(parser *const prs)
 {
-	context->curr_token = context->next_token;
-	if (!context->buf_flag)
+	prs->curr_token = prs->next_token;
+	if (!prs->buf_flag)
 	{
-		context->next_token = lex(context->lxr);
+		prs->next_token = lex(prs->lxr);
 	}
 	else
 	{
-		context->next_token = context->buf_cur;
-		context->buf_flag--;
+		prs->next_token = prs->buf_cur;
+		prs->buf_flag--;
 	}
-	return context->curr_token;
+	return prs->curr_token;
 }
 
-void mustbe(parser *context, int what, int e)
+void must_be(parser *const prs, int what, int e)
 {
-	if (context->next_token != what)
+	if (prs->next_token != what)
 	{
-		parser_error(context, e);
-		context->curr_token = what;
+		parse_error(prs, e);
+		prs->curr_token = what;
 	}
 	else
 	{
-		scanner(context);
+		scanner(prs);
 	}
 }
 
-void applid(parser *context)
+void applid(parser *const prs)
 {
-	context->lastid = REPRTAB[REPRTAB_POS + 1];
-	if (context->lastid == 1)
+	prs->lastid = REPRTAB[REPRTAB_POS + 1];
+	if (prs->lastid == 1)
 	{
 		char buffer[MAXSTRINGL];
-		repr_get_ident(context->sx, REPRTAB_POS, buffer);
-		parser_error(context, ident_is_not_declared, buffer);
-		context->was_error = 5;
+		repr_get_ident(prs->sx, REPRTAB_POS, buffer);
+		parse_error(prs, ident_is_not_declared, buffer);
+		prs->was_error = 5;
 	}
 
 }
 
-void totree(parser *context, item_t op)
+void totree(parser *const prs, item_t op)
 {
 	vector_add(&TREE, op);
 }
 
-void totreef(parser *context, item_t op)
+void totreef(parser *const prs, item_t op)
 {
 	vector_add(&TREE, op);
-	if (context->ansttype == LFLOAT &&
+	if (prs->ansttype == LFLOAT &&
 		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
 	{
 		const size_t index = vector_size(&TREE) - 1;
@@ -114,122 +114,122 @@ double double_from_tree(vector *const tree)
 	return num;
 }
 
-void binop(parser *context, int sp)
+void binop(parser *const prs, int sp)
 {
-	int op = context->stackop[sp];
-	int rtype = context->stackoperands[context->sopnd--];
-	int ltype = context->stackoperands[context->sopnd];
+	int op = prs->stackop[sp];
+	int rtype = prs->stackoperands[prs->sopnd--];
+	int ltype = prs->stackoperands[prs->sopnd];
 
-	if (mode_is_pointer(context->sx, ltype) || mode_is_pointer(context->sx, rtype))
+	if (mode_is_pointer(prs->sx, ltype) || mode_is_pointer(prs->sx, rtype))
 	{
-		parser_error(context, operand_is_pointer);
-		context->was_error = 5;
+		parse_error(prs, operand_is_pointer);
+		prs->was_error = 5;
 		return; // 1
 	}
 	if ((op == LOGOR || op == LOGAND || op == LOR || op == LEXOR || op == LAND || op == LSHL || op == LSHR ||
 		 op == LREM) &&
 		(mode_is_float(ltype) || mode_is_float(rtype)))
 	{
-		parser_error(context, int_op_for_float);
-		context->was_error = 5;
+		parse_error(prs, int_op_for_float);
+		prs->was_error = 5;
 		return; // 1
 	}
 	if (mode_is_int(ltype) && mode_is_float(rtype))
 	{
-		totree(context, WIDEN1);
+		totree(prs, WIDEN1);
 	}
 	if (mode_is_int(rtype) && mode_is_float(ltype))
 	{
-		totree(context, WIDEN);
+		totree(prs, WIDEN);
 	}
 	if (mode_is_float(ltype) || mode_is_float(rtype))
 	{
-		context->ansttype = LFLOAT;
+		prs->ansttype = LFLOAT;
 	}
 	if (op == LOGOR || op == LOGAND)
 	{
-		totree(context, op);
-		vector_set(&TREE, context->stacklog[sp], (item_t)vector_size(&TREE));
+		totree(prs, op);
+		vector_set(&TREE, prs->stacklog[sp], (item_t)vector_size(&TREE));
 		vector_increase(&TREE, 1);
 	}
 	else
 	{
-		totreef(context, op);
+		totreef(prs, op);
 	}
 	if (op >= EQEQ && op <= LGE)
 	{
-		context->ansttype = LINT;
+		prs->ansttype = LINT;
 	}
-	context->stackoperands[context->sopnd] = context->ansttype;
+	prs->stackoperands[prs->sopnd] = prs->ansttype;
 	// printf("binop context->sopnd=%i ltype=%i rtype=%i
 	// context->ansttype=%i\n", context->sopnd, ltype, rtype,
 	// context->ansttype);
-	context->anst = VAL;
+	prs->anst = VAL;
 }
 
-void toval(parser *context)
+void toval(parser *const prs)
 {
 	// надо значение положить на стек,
 	// например, чтобы передать параметром
 
-	if (context->anst == VAL || context->anst == NUMBER)
+	if (prs->anst == VAL || prs->anst == NUMBER)
 	{
 		;
 	}
-	else if (mode_is_struct(context->sx, context->ansttype))
+	else if (mode_is_struct(prs->sx, prs->ansttype))
 	{
-		if (!context->flag_in_assignment)
+		if (!prs->flag_in_assignment)
 		{
-			if (context->anst == IDENT)
+			if (prs->anst == IDENT)
 			{
 				vector_remove(&TREE);
 				vector_remove(&TREE);
-				totree(context, COPY0ST);
-				totree(context, context->anstdispl);
+				totree(prs, COPY0ST);
+				totree(prs, prs->anstdispl);
 			}
 			else // тут может быть только ADDR
 			{
-				totree(context, COPY1ST);
+				totree(prs, COPY1ST);
 			}
-			totree(context, mode_get(context->sx, context->ansttype + 1));
-			context->anst = VAL;
+			totree(prs, mode_get(prs->sx, prs->ansttype + 1));
+			prs->anst = VAL;
 		}
 	}
 	else
 	{
-		if (context->anst == IDENT)
+		if (prs->anst == IDENT)
 		{
 			vector_set(&TREE, vector_size(&TREE) - 2
-					   , mode_is_float(context->ansttype)
+					   , mode_is_float(prs->ansttype)
 					   ? TIdenttovald
 					   : TIdenttoval);
 		}
 
-		if (!(mode_is_array(context->sx, context->ansttype) || mode_is_pointer(context->sx, context->ansttype)))
+		if (!(mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype)))
 		{
-			if (context->anst == ADDR)
+			if (prs->anst == ADDR)
 			{
-				totree(context, mode_is_float(context->ansttype) ? TAddrtovald : TAddrtoval);
+				totree(prs, mode_is_float(prs->ansttype) ? TAddrtovald : TAddrtoval);
 			}
 		}
-		context->anst = VAL;
+		prs->anst = VAL;
 	}
 }
 
-void actstring(int type, parser *context)
+void actstring(int type, parser *const prs)
 {
-	scanner(context);
-	totree(context, type == LFLOAT ? TStringd : TString);
+	scanner(prs);
+	totree(prs, type == LFLOAT ? TStringd : TString);
 	size_t adn = vector_size(&TREE);
 	vector_increase(&TREE, 1);
 
 	int n = 0;
 	do
 	{
-		exprassn(context, 1);
-		if (context->was_error == 6)
+		exprassn(prs, 1);
+		if (prs->was_error == 6)
 		{
-			context->was_error = 1;
+			prs->was_error = 1;
 			return; // 1
 		}
 		const size_t size = vector_size(&TREE);
@@ -246,341 +246,341 @@ void actstring(int type, parser *context)
 		}
 		else
 		{
-			parser_error(context, wrong_init_in_actparam);
-			context->was_error = 1;
+			parse_error(prs, wrong_init_in_actparam);
+			prs->was_error = 1;
 			return; // 1
 		}
 		++n;
-	} while (scanner(context) == COMMA ? scanner(context), 1 : 0);
+	} while (scanner(prs) == COMMA ? scanner(prs), 1 : 0);
 
 	vector_set(&TREE, adn, n);
-	if (context->curr_token != END)
+	if (prs->curr_token != END)
 	{
-		parser_error(context, no_comma_or_end);
-		context->was_error = 1;
+		parse_error(prs, no_comma_or_end);
+		prs->was_error = 1;
 		return; // 1
 	}
-	context->ansttype = (int)to_modetab(context, mode_array, type);
-	context->anst = VAL;
+	prs->ansttype = (int)to_modetab(prs, mode_array, type);
+	prs->anst = VAL;
 }
 
-void mustbestring(parser *context)
+void mustbestring(parser *const prs)
 {
-	scanner(context);
-	exprassn(context, 1);
-	if (context->was_error == 6)
+	scanner(prs);
+	exprassn(prs, 1);
+	if (prs->was_error == 6)
 	{
-		context->was_error = 5;
+		prs->was_error = 5;
 		return; // 1
 	}
-	toval(context);
-	context->sopnd--;
-	if (!(mode_is_string(context->sx, context->ansttype)))
+	toval(prs);
+	prs->sopnd--;
+	if (!(mode_is_string(prs->sx, prs->ansttype)))
 	{
-		parser_error(context, not_string_in_stanfunc);
-		context->was_error = 5;
-	}
-}
-
-void mustbepointstring(parser *context)
-{
-	scanner(context);
-	exprassn(context, 1);
-	if (context->was_error == 6)
-	{
-		context->was_error = 5;
-		return; // 1
-	}
-	toval(context);
-	context->sopnd--;
-	if (!(mode_is_pointer(context->sx, context->ansttype) &&
-		  mode_is_string(context->sx, mode_get(context->sx, context->ansttype + 1))))
-	{
-		parser_error(context, not_point_string_in_stanfunc);
-		context->was_error = 5;
-		return; // 1
+		parse_error(prs, not_string_in_stanfunc);
+		prs->was_error = 5;
 	}
 }
 
-void mustberow(parser *context)
+void mustbepointstring(parser *const prs)
 {
-	scanner(context);
-	exprassn(context, 1);
-	if (context->was_error == 6)
+	scanner(prs);
+	exprassn(prs, 1);
+	if (prs->was_error == 6)
 	{
-		context->was_error = 5;
+		prs->was_error = 5;
 		return; // 1
 	}
-	toval(context);
-	context->sopnd--;
-
-	if (!mode_is_array(context->sx, context->ansttype))
+	toval(prs);
+	prs->sopnd--;
+	if (!(mode_is_pointer(prs->sx, prs->ansttype) &&
+		  mode_is_string(prs->sx, mode_get(prs->sx, prs->ansttype + 1))))
 	{
-		parser_error(context, not_array_in_stanfunc);
-		context->was_error = 5;
+		parse_error(prs, not_point_string_in_stanfunc);
+		prs->was_error = 5;
+		return; // 1
 	}
 }
 
-void mustbeint(parser *context)
+void mustberow(parser *const prs)
 {
-	scanner(context);
-	exprassn(context, 1);
-	if (context->was_error == 6)
+	scanner(prs);
+	exprassn(prs, 1);
+	if (prs->was_error == 6)
 	{
-		context->was_error = 5;
+		prs->was_error = 5;
 		return; // 1
 	}
-	toval(context);
-	context->sopnd--;
-	if (context->ansttype != LINT && context->ansttype != LCHAR)
+	toval(prs);
+	prs->sopnd--;
+
+	if (!mode_is_array(prs->sx, prs->ansttype))
 	{
-		parser_error(context, not_int_in_stanfunc);
-		context->was_error = 5;
+		parse_error(prs, not_array_in_stanfunc);
+		prs->was_error = 5;
 	}
 }
 
-void mustberowofint(parser *context)
+void mustbeint(parser *const prs)
 {
-	if (scanner(context) == BEGIN)
+	scanner(prs);
+	exprassn(prs, 1);
+	if (prs->was_error == 6)
 	{
-		actstring(LINT, context), totree(context, TExprend);
-		if (context->was_error == 2)
+		prs->was_error = 5;
+		return; // 1
+	}
+	toval(prs);
+	prs->sopnd--;
+	if (prs->ansttype != LINT && prs->ansttype != LCHAR)
+	{
+		parse_error(prs, not_int_in_stanfunc);
+		prs->was_error = 5;
+	}
+}
+
+void mustberowofint(parser *const prs)
+{
+	if (scanner(prs) == BEGIN)
+	{
+		actstring(LINT, prs), totree(prs, TExprend);
+		if (prs->was_error == 2)
 		{
-			context->was_error = 5;
+			prs->was_error = 5;
 			return; // 1
 		}
 	}
 	else
 	{
-		exprassn(context, 1);
-		if (context->was_error == 6)
+		exprassn(prs, 1);
+		if (prs->was_error == 6)
 		{
-			context->was_error = 5;
+			prs->was_error = 5;
 			return; // 1
 		}
-		toval(context);
-		context->sopnd--;
-		if (context->ansttype == LINT || context->ansttype == LCHAR)
+		toval(prs);
+		prs->sopnd--;
+		if (prs->ansttype == LINT || prs->ansttype == LCHAR)
 		{
-			totree(context, ROWING);
-			context->ansttype = (int)to_modetab(context, mode_array, LINT);
+			totree(prs, ROWING);
+			prs->ansttype = (int)to_modetab(prs, mode_array, LINT);
 		}
 	}
-	if (!(mode_is_array(context->sx, context->ansttype) &&
-		  mode_is_int(mode_get(context->sx, context->ansttype + 1))))
+	if (!(mode_is_array(prs->sx, prs->ansttype) &&
+		  mode_is_int(mode_get(prs->sx, prs->ansttype + 1))))
 	{
-		parser_error(context, not_rowofint_in_stanfunc);
-		context->was_error = 5;
+		parse_error(prs, not_rowofint_in_stanfunc);
+		prs->was_error = 5;
 	}
 }
 
-void mustberowoffloat(parser *context)
+void mustberowoffloat(parser *const prs)
 {
-	if (scanner(context) == BEGIN)
+	if (scanner(prs) == BEGIN)
 	{
-		actstring(LFLOAT, context), totree(context, TExprend);
-		if (context->was_error == 2)
+		actstring(LFLOAT, prs), totree(prs, TExprend);
+		if (prs->was_error == 2)
 		{
-			context->was_error = 5;
+			prs->was_error = 5;
 			return; // 1
 		}
 	}
 	else
 	{
-		exprassn(context, 1);
-		if (context->was_error == 6)
+		exprassn(prs, 1);
+		if (prs->was_error == 6)
 		{
-			context->was_error = 5;
+			prs->was_error = 5;
 			return; // 1
 		}
-		toval(context);
-		context->sopnd--;
-		if (context->ansttype == LFLOAT)
+		toval(prs);
+		prs->sopnd--;
+		if (prs->ansttype == LFLOAT)
 		{
-			totree(context, ROWINGD);
-			context->ansttype = (int)to_modetab(context, mode_array, LFLOAT);
+			totree(prs, ROWINGD);
+			prs->ansttype = (int)to_modetab(prs, mode_array, LFLOAT);
 		}
 	}
 
-	if (!(mode_is_array(context->sx, context->ansttype) &&
-		  mode_get(context->sx, context->ansttype + 1) == LFLOAT))
+	if (!(mode_is_array(prs->sx, prs->ansttype) &&
+		  mode_get(prs->sx, prs->ansttype + 1) == LFLOAT))
 	{
-		parser_error(context, not_rowoffloat_in_stanfunc);
-		context->was_error = 5;
+		parse_error(prs, not_rowoffloat_in_stanfunc);
+		prs->was_error = 5;
 	}
 }
 
-void primaryexpr(parser *context)
+void primaryexpr(parser *const prs)
 {
-	if (context->curr_token == CHAR_CONST)
+	if (prs->curr_token == CHAR_CONST)
 	{
-		totree(context, TConst);
-		totree(context, context->lxr->num);
-		context->stackoperands[++context->sopnd] = context->ansttype = LCHAR;
-		context->anst = NUMBER;
+		totree(prs, TConst);
+		totree(prs, prs->lxr->num);
+		prs->stackoperands[++prs->sopnd] = prs->ansttype = LCHAR;
+		prs->anst = NUMBER;
 	}
-	else if (context->curr_token == INT_CONST)
+	else if (prs->curr_token == INT_CONST)
 	{
-		totree(context, TConst);
-		totree(context, context->lxr->num);
-		context->stackoperands[++context->sopnd] = context->ansttype = LINT;
-		context->anst = NUMBER;
+		totree(prs, TConst);
+		totree(prs, prs->lxr->num);
+		prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
+		prs->anst = NUMBER;
 	}
-	else if (context->curr_token == FLOAT_CONST)
+	else if (prs->curr_token == FLOAT_CONST)
 	{
-		totree(context, TConstd);
-		double_to_tree(&TREE, context->lxr->num_double);
-		context->stackoperands[++context->sopnd] = context->ansttype = LFLOAT;
-		context->anst = NUMBER;
+		totree(prs, TConstd);
+		double_to_tree(&TREE, prs->lxr->num_double);
+		prs->stackoperands[++prs->sopnd] = prs->ansttype = LFLOAT;
+		prs->anst = NUMBER;
 	}
-	else if (context->curr_token == STRING)
+	else if (prs->curr_token == STRING)
 	{
-		parse_string_literal_expression(context);
+		parse_string_literal_expression(prs);
 	}
-	else if (context->curr_token == IDENT)
+	else if (prs->curr_token == IDENT)
 	{
-		applid(context);
-		if (context->was_error == 5)
+		applid(prs);
+		if (prs->was_error == 5)
 		{
-			context->was_error = 4;
+			prs->was_error = 4;
 			return; // 1
 		}
 
-		totree(context, TIdent);
-		context->anstdispl = (int)ident_get_displ(context->sx, context->lastid);
-		totree(context, context->anstdispl);
-		context->ansttype = (int)ident_get_mode(context->sx, context->lastid);
-		context->stackoperands[++context->sopnd] = context->ansttype;
-		context->anst = IDENT;
+		totree(prs, TIdent);
+		prs->anstdispl = (int)ident_get_displ(prs->sx, prs->lastid);
+		totree(prs, prs->anstdispl);
+		prs->ansttype = (int)ident_get_mode(prs->sx, prs->lastid);
+		prs->stackoperands[++prs->sopnd] = prs->ansttype;
+		prs->anst = IDENT;
 	}
-	else if (context->curr_token == LEFTBR)
+	else if (prs->curr_token == LEFTBR)
 	{
-		if (context->next_token == LVOID)
+		if (prs->next_token == LVOID)
 		{
-			scanner(context);
-			mustbe(context, LMULT, no_mult_in_cast);
-			unarexpr(context);
-			if (context->was_error == 7)
+			scanner(prs);
+			must_be(prs, LMULT, no_mult_in_cast);
+			unarexpr(prs);
+			if (prs->was_error == 7)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
-			if (!mode_is_pointer(context->sx, context->ansttype))
+			if (!mode_is_pointer(prs->sx, prs->ansttype))
 			{
-				parser_error(context, not_pointer_in_cast);
-				context->was_error = 4;
+				parse_error(prs, not_pointer_in_cast);
+				prs->was_error = 4;
 				return; // 1
 			}
-			mustbe(context, RIGHTBR, no_rightbr_in_cast);
-			toval(context);
+			must_be(prs, RIGHTBR, no_rightbr_in_cast);
+			toval(prs);
 			// totree(context, CASTC);
-			totree(context, TExprend);
+			totree(prs, TExprend);
 		}
 		else
 		{
-			int oldsp = context->sp;
-			scanner(context);
-			expr(context, 1);
-			if (context->was_error == 5)
+			int oldsp = prs->sp;
+			scanner(prs);
+			expr(prs, 1);
+			if (prs->was_error == 5)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
-			mustbe(context, RIGHTBR, wait_rightbr_in_primary);
-			while (context->sp > oldsp)
+			must_be(prs, RIGHTBR, wait_rightbr_in_primary);
+			while (prs->sp > oldsp)
 			{
-				binop(context, --context->sp);
+				binop(prs, --prs->sp);
 			}
 		}
 	}
-	else if (context->curr_token <= STANDARD_FUNC_START) // стандартная функция
+	else if (prs->curr_token <= STANDARD_FUNC_START) // стандартная функция
 	{
-		int func = context->curr_token;
+		int func = prs->curr_token;
 
-		if (scanner(context) != LEFTBR)
+		if (scanner(prs) != LEFTBR)
 		{
-			parser_error(context, no_leftbr_in_stand_func);
-			context->buf_cur = context->next_token;
-			context->next_token = context->curr_token;
-			context->curr_token = LEFTBR;
-			context->buf_flag++;
+			parse_error(prs, no_leftbr_in_stand_func);
+			prs->buf_cur = prs->next_token;
+			prs->next_token = prs->curr_token;
+			prs->curr_token = LEFTBR;
+			prs->buf_flag++;
 		}
 		if (func == ASSERT)
 		{
-			mustbeint(context);
-			if (context->was_error == 5)
+			mustbeint(prs);
+			if (prs->was_error == 5)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
-			mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-			mustbestring(context);
+			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+			mustbestring(prs);
 		}
 		else if (func <= STRCPY && func >= STRLEN) // функции работы со строками
 		{
 			if (func >= STRNCAT)
 			{
-				mustbepointstring(context);
+				mustbepointstring(prs);
 			}
 			else
 			{
-				mustbestring(context);
+				mustbestring(prs);
 			}
-			if (context->was_error == 5)
+			if (prs->was_error == 5)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
 			if (func != STRLEN)
 			{
-				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-				mustbestring(context);
-				if (context->was_error == 5)
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				mustbestring(prs);
+				if (prs->was_error == 5)
 				{
-					context->was_error = 4;
+					prs->was_error = 4;
 					return; // 1
 				}
 				if (func == STRNCPY || func == STRNCAT || func == STRNCMP)
 				{
-					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint(context);
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(prs);
 				}
 			}
-			if (context->was_error == 5)
+			if (prs->was_error == 5)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
 			if (func < STRNCAT)
 			{
-				context->stackoperands[++context->sopnd] = context->ansttype = LINT;
+				prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
 			}
 		}
 		else if (func >= RECEIVE_STRING && func <= SEND_INT)
 		{
 			// новые функции Фадеева
-			mustbeint(context);
-			if (context->was_error == 5)
+			mustbeint(prs);
+			if (prs->was_error == 5)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
 			if (func == SEND_INT || func == SEND_STRING)
 			{
-				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 				// scaner(context);
-				mustberowofint(context);
+				mustberowofint(prs);
 			}
 			else if (func == SEND_FLOAT)
 			{
-				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 				// scaner(context);
-				mustberowoffloat(context);
+				mustberowoffloat(prs);
 			}
 			else
 			{
-				context->stackoperands[++context->sopnd] = context->ansttype =
-				func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)to_modetab(context, mode_array, LCHAR);
+				prs->stackoperands[++prs->sopnd] = prs->ansttype =
+				func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)to_modetab(prs, mode_array, LCHAR);
 			}
 		}
 		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
@@ -588,113 +588,113 @@ void primaryexpr(parser *context)
 			if (func <= PIXEL && func >= ICON)
 			{
 				// scaner(context);
-				mustberowofint(context);
-				if (context->was_error == 5)
+				mustberowofint(prs);
+				if (prs->was_error == 5)
 				{
-					context->was_error = 4;
+					prs->was_error = 4;
 					return; // 1
 				}
 				if (func != CLEAR)
 				{
-					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 				}
 
 				if (func == LINE || func == RECTANGLE || func == ELLIPS)
 				{
-					mustbeint(context);
-					if (context->was_error == 5)
+					mustbeint(prs);
+					if (prs->was_error == 5)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
-					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint(context);
-					if (context->was_error == 5)
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(prs);
+					if (prs->was_error == 5)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
-					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint(context);
-					if (context->was_error == 5)
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(prs);
+					if (prs->was_error == 5)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
-					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint(context);
-					if (context->was_error == 5)
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(prs);
+					if (prs->was_error == 5)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
 					if (func != LINE)
 					{
-						mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-						mustbeint(context);
+						must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+						mustbeint(prs);
 					}
 				}
 				else if (func == ICON || func == PIXEL)
 				{
-					mustbeint(context);
-					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-					if (context->was_error == 5)
+					mustbeint(prs);
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					if (prs->was_error == 5)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
-					mustbeint(context);
-					if (context->was_error == 5)
+					mustbeint(prs);
+					if (prs->was_error == 5)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
 					if (func == ICON)
 					{
-						mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-						mustbeint(context);
+						must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+						mustbeint(prs);
 					}
 				}
 				else if (func == DRAW_NUMBER || func == DRAW_STRING)
 				{
-					mustbeint(context);
-					if (context->was_error == 5)
+					mustbeint(prs);
+					if (prs->was_error == 5)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
-					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint(context);
-					if (context->was_error == 5)
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(prs);
+					if (prs->was_error == 5)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
-					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 
 					if (func == DRAW_STRING)
 					{
-						mustbestring(context);
+						mustbestring(prs);
 					}
 					else // DRAW_NUMBER
 					{
-						scanner(context);
-						exprassn(context, 1);
-						if (context->was_error == 6)
+						scanner(prs);
+						exprassn(prs, 1);
+						if (prs->was_error == 6)
 						{
-							context->was_error = 4;
+							prs->was_error = 4;
 							return; // 1
 						}
-						toval(context);
-						context->sopnd--;
-						if (mode_is_int(context->ansttype))
+						toval(prs);
+						prs->sopnd--;
+						if (mode_is_int(prs->ansttype))
 						{
-							totree(context, WIDEN);
+							totree(prs, WIDEN);
 						}
-						else if (context->ansttype != LFLOAT)
+						else if (prs->ansttype != LFLOAT)
 						{
-							parser_error(context, not_float_in_stanfunc);
-							context->was_error = 4;
+							parse_error(prs, not_float_in_stanfunc);
+							prs->was_error = 4;
 							return; // 1
 						}
 					}
@@ -702,107 +702,107 @@ void primaryexpr(parser *context)
 			}
 			else if (func == SETSIGNAL)
 			{
-				mustbeint(context);
-				if (context->was_error == 5)
+				mustbeint(prs);
+				if (prs->was_error == 5)
 				{
-					context->was_error = 4;
+					prs->was_error = 4;
 					return; // 1
 				}
-				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-				mustberowofint(context);
-				if (context->was_error == 5)
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				mustberowofint(prs);
+				if (prs->was_error == 5)
 				{
-					context->was_error = 4;
+					prs->was_error = 4;
 					return; // 1
 				}
-				mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-				mustberowofint(context);
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				mustberowofint(prs);
 			}
 			else if (func == WIFI_CONNECT || func == BLYNK_AUTORIZATION || func == BLYNK_NOTIFICATION)
 			{
-				mustbestring(context);
+				mustbestring(prs);
 				if (func == WIFI_CONNECT)
 				{
-					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-					mustbestring(context);
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					mustbestring(prs);
 				}
 			}
 			else
 			{
-				mustbeint(context);
-				if (context->was_error == 5)
+				mustbeint(prs);
+				if (prs->was_error == 5)
 				{
-					context->was_error = 4;
+					prs->was_error = 4;
 					return; // 1
 				}
 				if (func != BLYNK_RECEIVE)
 				{
-					mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 					if (func == BLYNK_TERMINAL)
 					{
-						mustbestring(context);
+						mustbestring(prs);
 					}
 					else if (func == BLYNK_SEND)
 					{
-						mustbeint(context);
-						if (context->was_error == 5)
+						mustbeint(prs);
+						if (prs->was_error == 5)
 						{
-							context->was_error = 4;
+							prs->was_error = 4;
 							return; // 1
 						}
 					}
 					else if (func == BLYNK_PROPERTY)
 					{
-						mustbestring(context);
-						if (context->was_error == 5)
+						mustbestring(prs);
+						if (prs->was_error == 5)
 						{
-							context->was_error = 4;
+							prs->was_error = 4;
 							return; // 1
 						}
-						mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-						mustbestring(context);
+						must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+						mustbestring(prs);
 					}
 					else // BLYNK_LCD
 					{
-						mustbeint(context);
-						if (context->was_error == 5)
+						mustbeint(prs);
+						if (prs->was_error == 5)
 						{
-							context->was_error = 4;
+							prs->was_error = 4;
 							return; // 1
 						}
-						mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-						mustbeint(context);
-						if (context->was_error == 5)
+						must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+						mustbeint(prs);
+						if (prs->was_error == 5)
 						{
-							context->was_error = 4;
+							prs->was_error = 4;
 							return; // 1
 						}
-						mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-						mustbestring(context);
+						must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+						mustbestring(prs);
 					}
 				}
 				else
 				{
-					context->stackoperands[++context->sopnd] = context->ansttype = LINT;
+					prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
 				}
 			}
 		}
 		else if (func == UPB) // UPB
 		{
-			mustbeint(context);
-			if (context->was_error == 5)
+			mustbeint(prs);
+			if (prs->was_error == 5)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
-			mustbe(context, COMMA, no_comma_in_act_params_stanfunc);
-			mustberow(context);
-			if (context->was_error == 5)
+			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+			mustberow(prs);
+			if (prs->was_error == 5)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
-			context->stackoperands[++context->sopnd] = context->ansttype = LINT;
+			prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
 		}
 		else if (func <= TMSGSEND && func >= TGETNUM) // процедуры управления параллельными нитями
 		{
@@ -812,8 +812,8 @@ void primaryexpr(parser *context)
 			}
 			else if (func == TMSGRECEIVE || func == TGETNUM) // getnum int()   msgreceive msg_info()
 			{
-				context->anst = VAL;
-				context->ansttype = context->stackoperands[++context->sopnd] =
+				prs->anst = VAL;
+				prs->ansttype = prs->stackoperands[++prs->sopnd] =
 				func == TGETNUM ? LINT : 2; // 2 - это ссылка на msg_info
 											//не было параметра,  выдали 1 результат
 			}
@@ -822,84 +822,84 @@ void primaryexpr(parser *context)
 				// MSGSEND void(msg_info)  CREATE int(void*(*func)(void*))
 				// SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
 				// у этих процедур 1 параметр
-				scanner(context);
+				scanner(prs);
 
 				if (func == TCREATE)
 				{
 					item_t dn;
 
-					if (context->curr_token != IDENT)
+					if (prs->curr_token != IDENT)
 					{
-						parser_error(context, act_param_not_ident);
-						context->was_error = 4;
+						parse_error(prs, act_param_not_ident);
+						prs->was_error = 4;
 						return; // 1
 					}
-					applid(context);
-					if (context->was_error == 5)
+					applid(prs);
+					if (prs->was_error == 5)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
-					if (ident_get_mode(context->sx, context->lastid) != 15 ||
-						context->was_error == 5) // 15 - это аргумент типа void* (void*)
+					if (ident_get_mode(prs->sx, prs->lastid) != 15 ||
+						prs->was_error == 5) // 15 - это аргумент типа void* (void*)
 					{
-						parser_error(context, wrong_arg_in_create);
-						context->was_error = 4;
+						parse_error(prs, wrong_arg_in_create);
+						prs->was_error = 4;
 						return; // 1
 					}
 
-					context->stackoperands[context->sopnd] = context->ansttype = LINT;
-					dn = ident_get_displ(context->sx, context->lastid);
+					prs->stackoperands[prs->sopnd] = prs->ansttype = LINT;
+					dn = ident_get_displ(prs->sx, prs->lastid);
 					if (dn < 0)
 					{
-						totree(context, TIdenttoval);
-						totree(context, -dn);
+						totree(prs, TIdenttoval);
+						totree(prs, -dn);
 					}
 					else
 					{
-						totree(context, TConst);
-						totree(context, dn);
+						totree(prs, TConst);
+						totree(prs, dn);
 					}
-					context->anst = VAL;
+					prs->anst = VAL;
 				}
 				else
 				{
-					context->leftansttype = 2;
-					exprassn(context, 1);
-					if (context->was_error == 6)
+					prs->leftansttype = 2;
+					exprassn(prs, 1);
+					if (prs->was_error == 6)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
-					toval(context);
+					toval(prs);
 
 					if (func == TMSGSEND)
 					{
-						if (context->ansttype != 2) // 2 - это аргумент типа msg_info (struct{int numTh; int data;})
+						if (prs->ansttype != 2) // 2 - это аргумент типа msg_info (struct{int numTh; int data;})
 						{
-							parser_error(context, wrong_arg_in_send);
-							context->was_error = 4;
+							parse_error(prs, wrong_arg_in_send);
+							prs->was_error = 4;
 							return; // 1
 						}
-						--context->sopnd;
+						--prs->sopnd;
 					}
 					else
 					{
-						if (!mode_is_int(context->ansttype))
+						if (!mode_is_int(prs->ansttype))
 						{
-							parser_error(context, param_threads_not_int);
-							context->was_error = 4;
+							parse_error(prs, param_threads_not_int);
+							prs->was_error = 4;
 							return; // 1
 						}
 						if (func == TSEMCREATE)
 						{
-							context->anst = VAL,
-							context->ansttype = context->stackoperands[context->sopnd] =
+							prs->anst = VAL,
+							prs->ansttype = prs->stackoperands[prs->sopnd] =
 							LINT; // съели 1 параметр, выдали int
 						}
 						else
 						{
-							--context->sopnd; // съели 1 параметр, не выдали
+							--prs->sopnd; // съели 1 параметр, не выдали
 						}
 						// результата
 					}
@@ -908,572 +908,572 @@ void primaryexpr(parser *context)
 		}
 		else if (func == RAND)
 		{
-			context->ansttype = context->stackoperands[++context->sopnd] = LFLOAT;
+			prs->ansttype = prs->stackoperands[++prs->sopnd] = LFLOAT;
 		}
 		else if (func == ROUND)
 		{
-			scanner(context);
-			exprassn(context, 1);
-			if (context->was_error == 6)
+			scanner(prs);
+			exprassn(prs, 1);
+			if (prs->was_error == 6)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
-			toval(context);
-			context->ansttype = context->stackoperands[context->sopnd] = LINT;
+			toval(prs);
+			prs->ansttype = prs->stackoperands[prs->sopnd] = LINT;
 		}
 		else
 		{
-			scanner(context);
-			exprassn(context, 1);
-			if (context->was_error == 6)
+			scanner(prs);
+			exprassn(prs, 1);
+			if (prs->was_error == 6)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
-			toval(context);
+			toval(prs);
 
 			// GETDIGSENSOR int(int port, int pins[]),
 			// GETANSENSOR int (int port, int pin),
 			// SETMOTOR и VOLTAGE void (int port, int volt)
 			if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR || func == VOLTAGE)
 			{
-				if (!mode_is_int(context->ansttype))
+				if (!mode_is_int(prs->ansttype))
 				{
-					parser_error(context, param_setmotor_not_int);
-					context->was_error = 4;
+					parse_error(prs, param_setmotor_not_int);
+					prs->was_error = 4;
 					return; // 1
 				}
-				mustbe(context, COMMA, no_comma_in_setmotor);
+				must_be(prs, COMMA, no_comma_in_setmotor);
 				if (func == GETDIGSENSOR)
 				{
-					mustberowofint(context);
-					if (context->was_error == 5)
+					mustberowofint(prs);
+					if (prs->was_error == 5)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
-					context->ansttype = context->stackoperands[++context->sopnd] = LINT;
+					prs->ansttype = prs->stackoperands[++prs->sopnd] = LINT;
 				}
 				else
 				{
-					scanner(context);
-					exprassn(context, 1);
-					if (context->was_error == 6)
+					scanner(prs);
+					exprassn(prs, 1);
+					if (prs->was_error == 6)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
-					toval(context);
-					if (!mode_is_int(context->ansttype))
+					toval(prs);
+					if (!mode_is_int(prs->ansttype))
 					{
-						parser_error(context, param_setmotor_not_int);
-						context->was_error = 4;
+						parse_error(prs, param_setmotor_not_int);
+						prs->was_error = 4;
 						return; // 1
 					}
 					if (func == SETMOTOR || func == VOLTAGE)
 					{
-						context->sopnd -= 2;
+						prs->sopnd -= 2;
 					}
 					else
 					{
-						--context->sopnd, context->anst = VAL;
+						--prs->sopnd, prs->anst = VAL;
 					}
 				}
 			}
-			else if (func == ABS && mode_is_int(context->ansttype))
+			else if (func == ABS && mode_is_int(prs->ansttype))
 			{
 				func = ABSI;
 			}
 			else
 			{
-				if (mode_is_int(context->ansttype))
+				if (mode_is_int(prs->ansttype))
 				{
-					totree(context, WIDEN);
-					context->ansttype = context->stackoperands[context->sopnd] = LFLOAT;
+					totree(prs, WIDEN);
+					prs->ansttype = prs->stackoperands[prs->sopnd] = LFLOAT;
 				}
-				if (!mode_is_float(context->ansttype))
+				if (!mode_is_float(prs->ansttype))
 				{
-					parser_error(context, bad_param_in_stand_func);
-					context->was_error = 4;
+					parse_error(prs, bad_param_in_stand_func);
+					prs->was_error = 4;
 					return; // 1
 				}
 			}
 		}
-		if (context->was_error == 5)
+		if (prs->was_error == 5)
 		{
-			context->was_error = 4;
+			prs->was_error = 4;
 			return; // 1
 		}
-		totree(context, 9500 - func);
-		mustbe(context, RIGHTBR, no_rightbr_in_stand_func);
+		totree(prs, 9500 - func);
+		must_be(prs, RIGHTBR, no_rightbr_in_stand_func);
 	}
 	else
 	{
-		parser_error(context, not_primary, context->curr_token);
-		context->was_error = 4;
+		parse_error(prs, not_primary, prs->curr_token);
+		prs->was_error = 4;
 		return; // 1
 	}
-	if (context->was_error == 5)
+	if (prs->was_error == 5)
 	{
-		context->was_error = 4;
+		prs->was_error = 4;
 		return; // 1
 	}
 }
 
-void index_check(parser *context)
+void index_check(parser *const prs)
 {
-	if (!mode_is_int(context->ansttype))
+	if (!mode_is_int(prs->ansttype))
 	{
-		parser_error(context, index_must_be_int);
-		context->was_error = 5;
+		parse_error(prs, index_must_be_int);
+		prs->was_error = 5;
 	}
 }
 
-int find_field(parser *context, int stype)
+int find_field(parser *const prs, int stype)
 {
 	// выдает смещение до найденного поля или ошибку
 
 	int flag = 1;
 	int select_displ = 0;
-	const item_t record_length = mode_get(context->sx, stype + 2);
+	const item_t record_length = mode_get(prs->sx, stype + 2);
 
-	scanner(context);
-	mustbe(context, IDENT, after_dot_must_be_ident);
+	scanner(prs);
+	must_be(prs, IDENT, after_dot_must_be_ident);
 
 	for (item_t i = 0; i < record_length; i += 2) // тут хранится удвоенное n
 	{
-		int field_type = (int)mode_get(context->sx, stype + 3 + (int)i);
+		int field_type = (int)mode_get(prs->sx, stype + 3 + (int)i);
 
-		if ((size_t)mode_get(context->sx, stype + 4 + (int)i) == REPRTAB_POS)
+		if ((size_t)mode_get(prs->sx, stype + 4 + (int)i) == REPRTAB_POS)
 		{
-			context->stackoperands[context->sopnd] = context->ansttype = field_type;
+			prs->stackoperands[prs->sopnd] = prs->ansttype = field_type;
 			flag = 0;
 			break;
 		}
 		else
 		{
-			select_displ += (int)size_of(context->sx, field_type);
+			select_displ += (int)size_of(prs->sx, field_type);
 		}
 		// прибавляем к суммарному смещению длину поля
 	}
 	if (flag)
 	{
 		char buffer[MAXSTRINGL];
-		repr_get_ident(context->sx, REPRTAB_POS, buffer);
-		parser_error(context, no_field, buffer);
-		context->was_error = 5;
+		repr_get_ident(prs->sx, REPRTAB_POS, buffer);
+		parse_error(prs, no_field, buffer);
+		prs->was_error = 5;
 		return 0; // 1
 	}
 	return select_displ;
 }
 
-void selectend(parser *context)
+void selectend(parser *const prs)
 {
-	while (context->next_token == DOT)
+	while (prs->next_token == DOT)
 	{
-		context->anstdispl += find_field(context, context->ansttype);
-		if (context->was_error == 6)
+		prs->anstdispl += find_field(prs, prs->ansttype);
+		if (prs->was_error == 6)
 		{
-			context->was_error = 5;
+			prs->was_error = 5;
 			return; // 1
 		}
 	}
 
-	totree(context, context->anstdispl);
-	if (mode_is_array(context->sx, context->ansttype) || mode_is_pointer(context->sx, context->ansttype))
+	totree(prs, prs->anstdispl);
+	if (mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype))
 	{
-		totree(context, TAddrtoval);
+		totree(prs, TAddrtoval);
 	}
 }
 
-void postexpr(parser *context)
+void postexpr(parser *const prs)
 {
 	int lid;
 	int leftansttyp;
 	int was_func = 0;
 
-	lid = context->lastid;
-	leftansttyp = context->ansttype;
+	lid = prs->lastid;
+	leftansttyp = prs->ansttype;
 
-	if (context->next_token == LEFTBR) // вызов функции
+	if (prs->next_token == LEFTBR) // вызов функции
 	{
 		int j;
 		item_t n;
 		item_t dn;
-		int oldinass = context->flag_in_assignment;
+		int oldinass = prs->flag_in_assignment;
 
 		was_func = 1;
-		scanner(context);
-		if (!mode_is_function(context->sx, leftansttyp))
+		scanner(prs);
+		if (!mode_is_function(prs->sx, leftansttyp))
 		{
-			parser_error(context, call_not_from_function);
-			context->was_error = 4;
+			parse_error(prs, call_not_from_function);
+			prs->was_error = 4;
 			return; // 1
 		}
 
-		n = mode_get(context->sx, leftansttyp + 2); // берем количество аргументов функции
+		n = mode_get(prs->sx, leftansttyp + 2); // берем количество аргументов функции
 
-		totree(context, TCall1);
-		totree(context, n);
+		totree(prs, TCall1);
+		totree(prs, n);
 		j = leftansttyp + 3;
 		for (item_t i = 0; i < n; i++) // фактические параметры
 		{
-			int mdj = context->leftansttype = (int)mode_get(context->sx, j); // это вид формального параметра, в
+			int mdj = prs->leftansttype = (int)mode_get(prs->sx, j); // это вид формального параметра, в
 																			 // context->ansttype будет вид фактического
 																			 // параметра
-			scanner(context);
-			if (mode_is_function(context->sx, mdj))
+			scanner(prs);
+			if (mode_is_function(prs->sx, mdj))
 			{
 				// фактическим параметром должна быть функция, в С - это только идентификатор
 
-				if (context->curr_token != IDENT)
+				if (prs->curr_token != IDENT)
 				{
-					parser_error(context, act_param_not_ident);
-					context->was_error = 4;
+					parse_error(prs, act_param_not_ident);
+					prs->was_error = 4;
 					return; // 1
 				}
-				applid(context);
-				if (context->was_error == 5)
+				applid(prs);
+				if (prs->was_error == 5)
 				{
-					context->was_error = 4;
+					prs->was_error = 4;
 					return; // 1
 				}
-				if ((int)ident_get_mode(context->sx, context->lastid) != mdj)
+				if ((int)ident_get_mode(prs->sx, prs->lastid) != mdj)
 				{
-					parser_error(context, diff_formal_param_type_and_actual);
-					context->was_error = 4;
+					parse_error(prs, diff_formal_param_type_and_actual);
+					prs->was_error = 4;
 					return; // 1
 				}
-				dn = ident_get_displ(context->sx, context->lastid);
+				dn = ident_get_displ(prs->sx, prs->lastid);
 				if (dn < 0)
 				{
-					totree(context, TIdenttoval);
-					totree(context, -dn);
+					totree(prs, TIdenttoval);
+					totree(prs, -dn);
 				}
 				else
 				{
-					totree(context, TConst);
-					totree(context, dn);
+					totree(prs, TConst);
+					totree(prs, dn);
 				}
-				totree(context, TExprend);
+				totree(prs, TExprend);
 			}
 			else
 			{
-				if (context->curr_token == BEGIN && mode_is_array(context->sx, mdj))
+				if (prs->curr_token == BEGIN && mode_is_array(prs->sx, mdj))
 				{
-					actstring((int)mode_get(context->sx, mdj + 1), context), totree(context, TExprend);
-					if (context->was_error == 2)
+					actstring((int)mode_get(prs->sx, mdj + 1), prs), totree(prs, TExprend);
+					if (prs->was_error == 2)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
 				}
 				else
 				{
-					context->flag_in_assignment = 0;
-					exprassn(context, 1);
-					if (context->was_error == 6)
+					prs->flag_in_assignment = 0;
+					exprassn(prs, 1);
+					if (prs->was_error == 6)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
-					toval(context);
-					totree(context, TExprend);
+					toval(prs);
+					totree(prs, TExprend);
 
-					if (mdj > 0 && mdj != context->ansttype)
+					if (mdj > 0 && mdj != prs->ansttype)
 					{
-						parser_error(context, diff_formal_param_type_and_actual);
-						context->was_error = 4;
-						return; // 1
-					}
-
-					if (mode_is_int(mdj) && mode_is_float(context->ansttype))
-					{
-						parser_error(context, float_instead_int);
-						context->was_error = 4;
+						parse_error(prs, diff_formal_param_type_and_actual);
+						prs->was_error = 4;
 						return; // 1
 					}
 
-					if (mode_is_float(mdj) && mode_is_int(context->ansttype))
+					if (mode_is_int(mdj) && mode_is_float(prs->ansttype))
 					{
-						insert_widen(context);
+						parse_error(prs, float_instead_int);
+						prs->was_error = 4;
+						return; // 1
 					}
-					--context->sopnd;
+
+					if (mode_is_float(mdj) && mode_is_int(prs->ansttype))
+					{
+						insert_widen(prs);
+					}
+					--prs->sopnd;
 				}
 			}
-			if (i < n - 1 && scanner(context) != COMMA)
+			if (i < n - 1 && scanner(prs) != COMMA)
 			{
-				parser_error(context, no_comma_in_act_params);
-				context->was_error = 4;
+				parse_error(prs, no_comma_in_act_params);
+				prs->was_error = 4;
 				return; // 1
 			}
 			j++;
 		}
-		context->flag_in_assignment = oldinass;
-		mustbe(context, RIGHTBR, wrong_number_of_params);
-		totree(context, TCall2);
-		totree(context, lid);
-		context->stackoperands[context->sopnd] = context->ansttype = (int)mode_get(context->sx, leftansttyp + 1);
-		context->anst = VAL;
+		prs->flag_in_assignment = oldinass;
+		must_be(prs, RIGHTBR, wrong_number_of_params);
+		totree(prs, TCall2);
+		totree(prs, lid);
+		prs->stackoperands[prs->sopnd] = prs->ansttype = (int)mode_get(prs->sx, leftansttyp + 1);
+		prs->anst = VAL;
 	}
 
-	while (context->next_token == LEFTSQBR || context->next_token == ARROW || context->next_token == DOT)
+	while (prs->next_token == LEFTSQBR || prs->next_token == ARROW || prs->next_token == DOT)
 	{
-		while (context->next_token == LEFTSQBR) // вырезка из массива (возможно, многомерного)
+		while (prs->next_token == LEFTSQBR) // вырезка из массива (возможно, многомерного)
 		{
 			if (was_func)
 			{
-				parser_error(context, slice_from_func);
-				context->was_error = 4;
+				parse_error(prs, slice_from_func);
+				prs->was_error = 4;
 				return; // 1
 			}
-			if (!mode_is_array(context->sx, context->ansttype)) // вырезка не из массива
+			if (!mode_is_array(prs->sx, prs->ansttype)) // вырезка не из массива
 			{
-				parser_error(context, slice_not_from_array);
-				context->was_error = 4;
+				parse_error(prs, slice_not_from_array);
+				prs->was_error = 4;
 				return; // 1
 			}
 
-			item_t elem_type = mode_get(context->sx, context->ansttype + 1);
+			item_t elem_type = mode_get(prs->sx, prs->ansttype + 1);
 
-			scanner(context);
+			scanner(prs);
 
-			if (context->anst == IDENT) // a[i]
+			if (prs->anst == IDENT) // a[i]
 			{
 				const size_t size = vector_size(&TREE);
 				vector_set(&TREE, size - 2, TSliceident);
-				vector_set(&TREE, size - 1, context->anstdispl);
+				vector_set(&TREE, size - 1, prs->anstdispl);
 			}
 			else // a[i][j]
 			{
-				totree(context, TSlice);
+				totree(prs, TSlice);
 			}
 
-			totree(context, elem_type);
-			parse_condition(context);
-			if (context->was_error == 4)
+			totree(prs, elem_type);
+			parse_condition(prs);
+			if (prs->was_error == 4)
 			{
 				return; // 1
 			}
-			index_check(context); // проверка, что индекс int или char
-			if (context->was_error == 5)
+			index_check(prs); // проверка, что индекс int или char
+			if (prs->was_error == 5)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
 
-			mustbe(context, RIGHTSQBR, no_rightsqbr_in_slice);
+			must_be(prs, RIGHTSQBR, no_rightsqbr_in_slice);
 
-			context->stackoperands[context->sopnd] = context->ansttype = (int)elem_type;
-			context->anst = ADDR;
+			prs->stackoperands[prs->sopnd] = prs->ansttype = (int)elem_type;
+			prs->anst = ADDR;
 		}
 
-		while (context->next_token == ARROW)
+		while (prs->next_token == ARROW)
 		{
 			// это выборка поля из указателя на структуру, если после
 			// -> больше одной точки подряд, схлопываем в 1 select
 			// перед выборкой мог быть вызов функции или вырезка элемента массива
 
-			if (!mode_is_pointer(context->sx, context->ansttype) ||
-				!mode_is_struct(context->sx, (int)mode_get(context->sx, context->ansttype + 1)))
+			if (!mode_is_pointer(prs->sx, prs->ansttype) ||
+				!mode_is_struct(prs->sx, (int)mode_get(prs->sx, prs->ansttype + 1)))
 			{
-				parser_error(context, get_field_not_from_struct_pointer);
-				context->was_error = 4;
+				parse_error(prs, get_field_not_from_struct_pointer);
+				prs->was_error = 4;
 				return; // 1
 			}
 
-			if (context->anst == IDENT)
+			if (prs->anst == IDENT)
 			{
 				vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval);
 			}
-			context->anst = ADDR;
+			prs->anst = ADDR;
 			// pointer  мог быть значением функции (VAL) или, может быть,
-			totree(context, TSelect); // context->anst уже был ADDR, т.е. адрес
+			totree(prs, TSelect); // context->anst уже был ADDR, т.е. адрес
 									  // теперь уже всегда на верхушке стека
 
-			context->ansttype = (int)mode_get(context->sx, context->ansttype + 1);
-			context->anstdispl = find_field(context, context->ansttype);
-			if (context->was_error == 6)
+			prs->ansttype = (int)mode_get(prs->sx, prs->ansttype + 1);
+			prs->anstdispl = find_field(prs, prs->ansttype);
+			if (prs->was_error == 6)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
-			selectend(context);
-			if (context->was_error == 5)
+			selectend(prs);
+			if (prs->was_error == 5)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
 		}
-		if (context->next_token == DOT)
+		if (prs->next_token == DOT)
 
 		{
-			if (!mode_is_struct(context->sx, context->ansttype))
+			if (!mode_is_struct(prs->sx, prs->ansttype))
 			{
-				parser_error(context, select_not_from_struct);
-				context->was_error = 4;
+				parse_error(prs, select_not_from_struct);
+				prs->was_error = 4;
 				return; // 1
 			}
-			if (context->anst == VAL) // структура - значение функции
+			if (prs->anst == VAL) // структура - значение функции
 			{
-				int len1 = (int)size_of(context->sx, context->ansttype);
-				context->anstdispl = 0;
-				while (context->next_token == DOT)
+				int len1 = (int)size_of(prs->sx, prs->ansttype);
+				prs->anstdispl = 0;
+				while (prs->next_token == DOT)
 				{
-					context->anstdispl += find_field(context, context->ansttype);
-					if (context->was_error == 6)
+					prs->anstdispl += find_field(prs, prs->ansttype);
+					if (prs->was_error == 6)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
 				}
-				totree(context, COPYST);
-				totree(context, context->anstdispl);
-				totree(context, (item_t)size_of(context->sx, context->ansttype));
-				totree(context, len1);
+				totree(prs, COPYST);
+				totree(prs, prs->anstdispl);
+				totree(prs, (item_t)size_of(prs->sx, prs->ansttype));
+				totree(prs, len1);
 			}
-			else if (context->anst == IDENT)
+			else if (prs->anst == IDENT)
 			{
-				int globid = context->anstdispl < 0 ? -1 : 1;
-				while (context->next_token == DOT)
+				int globid = prs->anstdispl < 0 ? -1 : 1;
+				while (prs->next_token == DOT)
 				{
-					context->anstdispl += globid * find_field(context, context->ansttype);
-					if (context->was_error == 6)
+					prs->anstdispl += globid * find_field(prs, prs->ansttype);
+					if (prs->was_error == 6)
 					{
-						context->was_error = 4;
+						prs->was_error = 4;
 						return; // 1
 					}
 				}
-				vector_set(&TREE, vector_size(&TREE) - 1, context->anstdispl);
+				vector_set(&TREE, vector_size(&TREE) - 1, prs->anstdispl);
 			}
 			else // ADDR
 			{
-				totree(context, TSelect);
-				context->anstdispl = 0;
-				selectend(context);
-				if (context->was_error == 5)
+				totree(prs, TSelect);
+				prs->anstdispl = 0;
+				selectend(prs);
+				if (prs->was_error == 5)
 				{
-					context->was_error = 4;
+					prs->was_error = 4;
 					return; // 1
 				}
 			}
 		}
 	}
-	if (context->next_token == INC || context->next_token == DEC) // a++, a--
+	if (prs->next_token == INC || prs->next_token == DEC) // a++, a--
 	{
 		int op;
 
-		if (!mode_is_int(context->ansttype) && !mode_is_float(context->ansttype))
+		if (!mode_is_int(prs->ansttype) && !mode_is_float(prs->ansttype))
 		{
-			parser_error(context, wrong_operand);
-			context->was_error = 4;
+			parse_error(prs, wrong_operand);
+			prs->was_error = 4;
 			return; // 1
 		}
 
-		if (context->anst != IDENT && context->anst != ADDR)
+		if (prs->anst != IDENT && prs->anst != ADDR)
 		{
-			parser_error(context, unassignable_inc);
-			context->was_error = 4;
+			parse_error(prs, unassignable_inc);
+			prs->was_error = 4;
 			return; // 1
 		}
-		op = (context->next_token == INC) ? POSTINC : POSTDEC;
-		if (context->anst == ADDR)
+		op = (prs->next_token == INC) ? POSTINC : POSTDEC;
+		if (prs->anst == ADDR)
 		{
 			op += 4;
 		}
-		scanner(context);
-		totreef(context, op);
-		if (context->anst == IDENT)
+		scanner(prs);
+		totreef(prs, op);
+		if (prs->anst == IDENT)
 		{
-			totree(context, ident_get_displ(context->sx, lid));
+			totree(prs, ident_get_displ(prs->sx, lid));
 		}
-		context->anst = VAL;
+		prs->anst = VAL;
 	}
 }
 
-void unarexpr(parser *context)
+void unarexpr(parser *const prs)
 {
-	int op = context->curr_token;
-	if (context->curr_token == LNOT || context->curr_token == LOGNOT || context->curr_token == LPLUS || context->curr_token == LMINUS ||
-		context->curr_token == LAND || context->curr_token == LMULT || context->curr_token == INC || context->curr_token == DEC)
+	int op = prs->curr_token;
+	if (prs->curr_token == LNOT || prs->curr_token == LOGNOT || prs->curr_token == LPLUS || prs->curr_token == LMINUS ||
+		prs->curr_token == LAND || prs->curr_token == LMULT || prs->curr_token == INC || prs->curr_token == DEC)
 	{
-		if (context->curr_token == INC || context->curr_token == DEC)
+		if (prs->curr_token == INC || prs->curr_token == DEC)
 		{
-			scanner(context);
-			unarexpr(context);
-			if (context->was_error == 7)
+			scanner(prs);
+			unarexpr(prs);
+			if (prs->was_error == 7)
 			{
 				return; // 1
 			}
-			if (context->anst != IDENT && context->anst != ADDR)
+			if (prs->anst != IDENT && prs->anst != ADDR)
 			{
-				parser_error(context, unassignable_inc);
-				context->was_error = 7;
+				parse_error(prs, unassignable_inc);
+				prs->was_error = 7;
 				return; // 1
 			}
-			if (context->anst == ADDR)
+			if (prs->anst == ADDR)
 			{
 				op += 4;
 			}
-			totreef(context, op);
-			if (context->anst == IDENT)
+			totreef(prs, op);
+			if (prs->anst == IDENT)
 			{
-				totree(context, ident_get_displ(context->sx, context->lastid));
+				totree(prs, ident_get_displ(prs->sx, prs->lastid));
 			}
-			context->anst = VAL;
+			prs->anst = VAL;
 		}
 		else
 		{
-			scanner(context);
-			unarexpr(context);
-			if (context->was_error == 7)
+			scanner(prs);
+			unarexpr(prs);
+			if (prs->was_error == 7)
 			{
 				return; // 1
 			}
 
 			if (op == LAND)
 			{
-				if (context->anst == VAL)
+				if (prs->anst == VAL)
 				{
-					parser_error(context, wrong_addr);
-					context->was_error = 7;
+					parse_error(prs, wrong_addr);
+					prs->was_error = 7;
 					return; // 1
 				}
 
-				if (context->anst == IDENT)
+				if (prs->anst == IDENT)
 				{
 					vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoaddr); // &a
 				}
 
-				context->stackoperands[context->sopnd] = context->ansttype =
-				(int)to_modetab(context, mode_pointer, context->ansttype);
-				context->anst = VAL;
+				prs->stackoperands[prs->sopnd] = prs->ansttype =
+				(int)to_modetab(prs, mode_pointer, prs->ansttype);
+				prs->anst = VAL;
 			}
 			else if (op == LMULT)
 			{
-				if (!mode_is_pointer(context->sx, context->ansttype))
+				if (!mode_is_pointer(prs->sx, prs->ansttype))
 				{
-					parser_error(context, aster_not_for_pointer);
-					context->was_error = 7;
+					parse_error(prs, aster_not_for_pointer);
+					prs->was_error = 7;
 					return; // 1
 				}
 
-				if (context->anst == IDENT)
+				if (prs->anst == IDENT)
 				{
 					vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval); // *p
 				}
 
-				context->stackoperands[context->sopnd] = context->ansttype = (int)mode_get(context->sx, context->ansttype + 1);
-				context->anst = ADDR;
+				prs->stackoperands[prs->sopnd] = prs->ansttype = (int)mode_get(prs->sx, prs->ansttype + 1);
+				prs->anst = ADDR;
 			}
 			else
 			{
-				toval(context);
-				if ((op == LNOT || op == LOGNOT) && context->ansttype == LFLOAT)
+				toval(prs);
+				if ((op == LNOT || op == LOGNOT) && prs->ansttype == LFLOAT)
 				{
-					parser_error(context, int_op_for_float);
-					context->was_error = 7;
+					parse_error(prs, int_op_for_float);
+					prs->was_error = 7;
 					return; // 1
 				}
 				else if (op == LMINUS)
@@ -1489,7 +1489,7 @@ void unarexpr(parser *context)
 					}
 					else
 					{
-						totreef(context, UNMINUS);
+						totreef(prs, UNMINUS);
 					}
 				}
 				else if (op == LPLUS)
@@ -1498,27 +1498,27 @@ void unarexpr(parser *context)
 				}
 				else
 				{
-					totree(context, op);
+					totree(prs, op);
 				}
-				context->anst = VAL;
+				prs->anst = VAL;
 			}
 		}
 	}
 	else
 	{
-		primaryexpr(context);
-		if (context->was_error == 4)
+		primaryexpr(prs);
+		if (prs->was_error == 4)
 		{
-			context->was_error = 7;
+			prs->was_error = 7;
 			return; // 1
 		}
 	}
 
-	postexpr(context); // 0
-	context->stackoperands[context->sopnd] = context->ansttype;
-	if (context->was_error == 4)
+	postexpr(prs); // 0
+	prs->stackoperands[prs->sopnd] = prs->ansttype;
+	if (prs->was_error == 4)
 	{
-		context->was_error = 7;
+		prs->was_error = 7;
 		return; // 1
 	}
 }
@@ -1565,20 +1565,20 @@ int prio(int op)
 	: 0;
 }
 
-void subexpr(parser *context)
+void subexpr(parser *const prs)
 {
-	int oldsp = context->sp;
+	int oldsp = prs->sp;
 	int wasop = 0;
 
-	int p = prio(context->next_token);
+	int p = prio(prs->next_token);
 	while (p)
 	{
 		wasop = 1;
-		toval(context);
-		while (context->sp > oldsp && context->stack[context->sp - 1] >= p)
+		toval(prs);
+		while (prs->sp > oldsp && prs->stack[prs->sp - 1] >= p)
 		{
-			binop(context, --context->sp);
-			if (context->was_error == 5)
+			binop(prs, --prs->sp);
+			if (prs->was_error == 5)
 			{
 				return;
 			}
@@ -1587,32 +1587,32 @@ void subexpr(parser *context)
 		size_t ad = 0;
 		if (p <= 2)
 		{
-			totree(context, p == 1 ? ADLOGOR : ADLOGAND);
+			totree(prs, p == 1 ? ADLOGOR : ADLOGAND);
 			ad = vector_size(&TREE);
 			vector_increase(&TREE, 1);
 		}
 
-		context->stack[context->sp] = p;
-		context->stacklog[context->sp] = (int)ad;
-		context->stackop[context->sp++] = context->next_token;
-		scanner(context);
-		scanner(context);
-		unarexpr(context);
-		if (context->was_error == 7)
+		prs->stack[prs->sp] = p;
+		prs->stacklog[prs->sp] = (int)ad;
+		prs->stackop[prs->sp++] = prs->next_token;
+		scanner(prs);
+		scanner(prs);
+		unarexpr(prs);
+		if (prs->was_error == 7)
 		{
-			context->was_error = 5;
+			prs->was_error = 5;
 			return; // 1
 		}
-		p = prio(context->next_token);
+		p = prio(prs->next_token);
 	}
 	if (wasop)
 	{
-		toval(context);
+		toval(prs);
 	}
-	while (context->sp > oldsp)
+	while (prs->sp > oldsp)
 	{
-		binop(context, --context->sp);
-		if (context->was_error == 5)
+		binop(prs, --prs->sp);
+		if (prs->was_error == 5)
 		{
 			return;
 		}
@@ -1624,49 +1624,49 @@ int intopassn(int next)
 	return next == REMASS || next == SHLASS || next == SHRASS || next == ANDASS || next == EXORASS || next == ORASS;
 }
 
-int opassn(parser *context)
+int opassn(parser *const prs)
 {
-	return (context->next_token == ASS || context->next_token == MULTASS || context->next_token == DIVASS || context->next_token == PLUSASS ||
-			context->next_token == MINUSASS || intopassn(context->next_token))
-	? context->op = context->next_token
+	return (prs->next_token == ASS || prs->next_token == MULTASS || prs->next_token == DIVASS || prs->next_token == PLUSASS ||
+			prs->next_token == MINUSASS || intopassn(prs->next_token))
+	? prs->op = prs->next_token
 	: 0;
 }
 
-void condexpr(parser *context)
+void condexpr(parser *const prs)
 {
 	int globtype = 0;
 	size_t adif = 0;
 
-	subexpr(context); // logORexpr();
-	if (context->was_error == 5)
+	subexpr(prs); // logORexpr();
+	if (prs->was_error == 5)
 	{
-		context->was_error = 4;
+		prs->was_error = 4;
 		return; // 1
 	}
-	if (context->next_token == QUEST)
+	if (prs->next_token == QUEST)
 	{
-		while (context->next_token == QUEST)
+		while (prs->next_token == QUEST)
 		{
-			toval(context);
-			if (!mode_is_int(context->ansttype))
+			toval(prs);
+			if (!mode_is_int(prs->ansttype))
 			{
-				parser_error(context, float_in_condition);
-				context->was_error = 4;
+				parse_error(prs, float_in_condition);
+				prs->was_error = 4;
 				return; // 1
 			}
-			totree(context, TCondexpr);
-			scanner(context);
-			parse_condition(context); // then
-			if (context->was_error == 4)
+			totree(prs, TCondexpr);
+			scanner(prs);
+			parse_condition(prs); // then
+			if (prs->was_error == 4)
 			{
 				return; // 1
 			}
 			if (!globtype)
 			{
-				globtype = context->ansttype;
+				globtype = prs->ansttype;
 			}
-			context->sopnd--;
-			if (mode_is_float(context->ansttype))
+			prs->sopnd--;
+			if (mode_is_float(prs->ansttype))
 			{
 				globtype = LFLOAT;
 			}
@@ -1675,24 +1675,24 @@ void condexpr(parser *context)
 				vector_add(&TREE, (item_t)adif);
 				adif = vector_size(&TREE) - 1;
 			}
-			mustbe(context, COLON, no_colon_in_cond_expr);
-			scanner(context);
-			unarexpr(context);
-			if (context->was_error == 7)
+			must_be(prs, COLON, no_colon_in_cond_expr);
+			scanner(prs);
+			unarexpr(prs);
+			if (prs->was_error == 7)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
-			subexpr(context); // logORexpr();	else or elif
-			if (context->was_error == 5)
+			subexpr(prs); // logORexpr();	else or elif
+			if (prs->was_error == 5)
 			{
-				context->was_error = 4;
+				prs->was_error = 4;
 				return; // 1
 			}
 		}
-		toval(context);
-		totree(context, TExprend);
-		if (mode_is_float(context->ansttype))
+		toval(prs);
+		totree(prs, TExprend);
+		if (mode_is_float(prs->ansttype))
 		{
 			globtype = LFLOAT;
 		}
@@ -1710,15 +1710,15 @@ void condexpr(parser *context)
 			adif = (size_t)r;
 		}
 
-		context->stackoperands[context->sopnd] = context->ansttype = globtype;
+		prs->stackoperands[prs->sopnd] = prs->ansttype = globtype;
 	}
 	else
 	{
-		context->stackoperands[context->sopnd] = context->ansttype;
+		prs->stackoperands[prs->sopnd] = prs->ansttype;
 	}
 }
 
-void exprassnvoid(parser *context)
+void exprassnvoid(parser *const prs)
 {
 	const size_t size = vector_size(&TREE);
 	size_t t = vector_get(&TREE, size - 2) < 9000 ? size - 3 : size - 2;
@@ -1728,10 +1728,10 @@ void exprassnvoid(parser *context)
 	{
 		vector_set(&TREE, t, vector_get(&TREE, t) + 200);
 	}
-	--context->sopnd;
+	--prs->sopnd;
 }
 
-void exprassn(parser *context, int level)
+void exprassn(parser *const prs, int level)
 {
 	int leftanst;
 	int leftanstdispl;
@@ -1739,138 +1739,138 @@ void exprassn(parser *context, int level)
 	int rtype;
 	int lnext;
 
-	if (context->curr_token == BEGIN)
+	if (prs->curr_token == BEGIN)
 	{
-		const int type = context->leftansttype;
-		if (mode_is_struct(context->sx, type) || mode_is_array(context->sx, type))
+		const int type = prs->leftansttype;
+		if (mode_is_struct(prs->sx, type) || mode_is_array(prs->sx, type))
 		{
-			parse_initializer(context, type);
-			context->leftansttype = type;
+			parse_initializer(prs, type);
+			prs->leftansttype = type;
 		}
 		else
 		{
-			parser_error(context, init_not_struct);
-			context->was_error = 6;
+			parse_error(prs, init_not_struct);
+			prs->was_error = 6;
 			return; // 1
 		}
-		context->stackoperands[++context->sopnd] = context->ansttype = type;
-		context->anst = VAL;
+		prs->stackoperands[++prs->sopnd] = prs->ansttype = type;
+		prs->anst = VAL;
 	}
 	else
 	{
-		unarexpr(context);
+		unarexpr(prs);
 	}
-	if (context->was_error == 7)
+	if (prs->was_error == 7)
 	{
-		context->was_error = 6;
+		prs->was_error = 6;
 		return; // 1
 	}
 
-	leftanst = context->anst;
-	leftanstdispl = context->anstdispl;
-	context->leftansttype = context->ansttype;
-	if (opassn(context))
+	leftanst = prs->anst;
+	leftanstdispl = prs->anstdispl;
+	prs->leftansttype = prs->ansttype;
+	if (opassn(prs))
 	{
-		int opp = context->op;
-		lnext = context->next_token;
-		context->flag_in_assignment = 1;
-		scanner(context);
-		scanner(context);
-		exprassn(context, level + 1);
-		if (context->was_error == 6)
+		int opp = prs->op;
+		lnext = prs->next_token;
+		prs->flag_in_assignment = 1;
+		scanner(prs);
+		scanner(prs);
+		exprassn(prs, level + 1);
+		if (prs->was_error == 6)
 		{
 			return; // 1
 		}
-		context->flag_in_assignment = 0;
+		prs->flag_in_assignment = 0;
 
 		if (leftanst == VAL)
 		{
-			parser_error(context, unassignable);
-			context->was_error = 6;
+			parse_error(prs, unassignable);
+			prs->was_error = 6;
 			return; // 1
 		}
-		rtype = context->stackoperands[context->sopnd--]; // снимаем типы
+		rtype = prs->stackoperands[prs->sopnd--]; // снимаем типы
 														  // операндов со стека
-		ltype = context->stackoperands[context->sopnd];
+		ltype = prs->stackoperands[prs->sopnd];
 
 		if (intopassn(lnext) && (mode_is_float(ltype) || mode_is_float(rtype)))
 		{
-			parser_error(context, int_op_for_float);
-			context->was_error = 6;
+			parse_error(prs, int_op_for_float);
+			prs->was_error = 6;
 			return; // 1
 		}
 
-		if (mode_is_array(context->sx, ltype)) // присваивать массив в массив в си нельзя
+		if (mode_is_array(prs->sx, ltype)) // присваивать массив в массив в си нельзя
 		{
-			parser_error(context, array_assigment);
-			context->was_error = 6;
+			parse_error(prs, array_assigment);
+			prs->was_error = 6;
 			return; // 1
 		}
 
-		if (mode_is_struct(context->sx, ltype)) // присваивание в структуру
+		if (mode_is_struct(prs->sx, ltype)) // присваивание в структуру
 		{
 			if (ltype != rtype) // типы должны быть равны
 			{
-				parser_error(context, type_missmatch);
-				context->was_error = 6;
+				parse_error(prs, type_missmatch);
+				prs->was_error = 6;
 				return; // 1
 			}
 			if (opp != ASS) // в структуру можно присваивать только с помощью =
 			{
-				parser_error(context, wrong_struct_ass);
-				context->was_error = 6;
+				parse_error(prs, wrong_struct_ass);
+				prs->was_error = 6;
 				return; // 1
 			}
 
-			if (context->anst == VAL)
+			if (prs->anst == VAL)
 			{
 				opp = leftanst == IDENT ? COPY0STASS : COPY1STASS;
 			}
 			else
 			{
-				opp = leftanst == IDENT ? context->anst == IDENT ? COPY00 : COPY01
-				: context->anst == IDENT ? COPY10 : COPY11;
+				opp = leftanst == IDENT ? prs->anst == IDENT ? COPY00 : COPY01
+				: prs->anst == IDENT ? COPY10 : COPY11;
 			}
-			totree(context, opp);
+			totree(prs, opp);
 			if (leftanst == IDENT)
 			{
-				totree(context, leftanstdispl); // displleft
+				totree(prs, leftanstdispl); // displleft
 			}
-			if (context->anst == IDENT)
+			if (prs->anst == IDENT)
 			{
-				totree(context, context->anstdispl); // displright
+				totree(prs, prs->anstdispl); // displright
 			}
-			totree(context, mode_get(context->sx, ltype + 1)); // длина
-			context->anst = leftanst;
-			context->anstdispl = leftanstdispl;
+			totree(prs, mode_get(prs->sx, ltype + 1)); // длина
+			prs->anst = leftanst;
+			prs->anstdispl = leftanstdispl;
 		}
 		else // оба операнда базового типа или указатели
 		{
-			if (mode_is_pointer(context->sx, ltype) && opp != ASS) // в указатель можно присваивать только с помощью =
+			if (mode_is_pointer(prs->sx, ltype) && opp != ASS) // в указатель можно присваивать только с помощью =
 			{
-				parser_error(context, wrong_struct_ass);
-				context->was_error = 6;
+				parse_error(prs, wrong_struct_ass);
+				prs->was_error = 6;
 				return; // 1
 			}
 
 			if (mode_is_int(ltype) && mode_is_float(rtype))
 			{
-				parser_error(context, assmnt_float_to_int);
-				context->was_error = 6;
+				parse_error(prs, assmnt_float_to_int);
+				prs->was_error = 6;
 				return; // 1
 			}
 
-			toval(context);
+			toval(prs);
 			if (mode_is_int(rtype) && mode_is_float(ltype))
 			{
-				totree(context, WIDEN);
-				context->ansttype = LFLOAT;
+				totree(prs, WIDEN);
+				prs->ansttype = LFLOAT;
 			}
-			if (mode_is_pointer(context->sx, ltype) && mode_is_pointer(context->sx, rtype) && ltype != rtype)
+			if (mode_is_pointer(prs->sx, ltype) && mode_is_pointer(prs->sx, rtype) && ltype != rtype)
 			{
 				// проверка нужна только для указателей
-				parser_error(context, type_missmatch);
-				context->was_error = 6;
+				parse_error(prs, type_missmatch);
+				prs->was_error = 6;
 				return; // 1
 			}
 
@@ -1878,53 +1878,53 @@ void exprassn(parser *context, int level)
 			{
 				opp += 11;
 			}
-			totreef(context, opp);
+			totreef(prs, opp);
 			if (leftanst == IDENT)
 			{
-				context->anstdispl = leftanstdispl;
-				totree(context, leftanstdispl);
+				prs->anstdispl = leftanstdispl;
+				totree(prs, leftanstdispl);
 			}
-			context->anst = VAL;
+			prs->anst = VAL;
 		}
-		context->ansttype = ltype;
-		context->stackoperands[context->sopnd] = ltype; // тип результата - на стек
+		prs->ansttype = ltype;
+		prs->stackoperands[prs->sopnd] = ltype; // тип результата - на стек
 	}
 	else
 	{
-		condexpr(context); // condexpr учитывает тот факт, что начало выражения
-		if (context->was_error == 4)
+		condexpr(prs); // condexpr учитывает тот факт, что начало выражения
+		if (prs->was_error == 4)
 		{
-			context->was_error = 6;
+			prs->was_error = 6;
 			return; // 1
 		}
 	}
 	// в виде unarexpr уже выкушано
 }
 
-void expr(parser *context, int level)
+void expr(parser *const prs, int level)
 {
-	exprassn(context, level);
-	if (context->was_error == 6)
+	exprassn(prs, level);
+	if (prs->was_error == 6)
 	{
-		context->was_error = 5;
+		prs->was_error = 5;
 		return; // 1
 	}
-	while (context->next_token == COMMA)
+	while (prs->next_token == COMMA)
 	{
-		exprassnvoid(context);
-		context->sopnd--;
-		scanner(context);
-		scanner(context);
-		exprassn(context, level);
-		if (context->was_error == 6)
+		exprassnvoid(prs);
+		prs->sopnd--;
+		scanner(prs);
+		scanner(prs);
+		exprassn(prs, level);
+		if (prs->was_error == 6)
 		{
-			context->was_error = 5;
+			prs->was_error = 5;
 			return; // 1
 		}
 	}
 	if (level == 0)
 	{
-		totree(context, TExprend);
+		totree(prs, TExprend);
 	}
 }
 
@@ -1938,64 +1938,64 @@ void expr(parser *context, int level)
  */
 
 
-void parse_string_literal_expression(parser *const parser)
+void parse_string_literal_expression(parser *const prs)
 {
-	totree(parser, TString);
-	totree(parser, parser->lxr->num);
+	totree(prs, TString);
+	totree(prs, prs->lxr->num);
 
-	for (int i = 0; i < parser->lxr->num; i++)
+	for (int i = 0; i < prs->lxr->num; i++)
 	{
-		totree(parser, parser->lxr->lexstr[i]);
+		totree(prs, prs->lxr->lexstr[i]);
 	}
 
-	parser->ansttype = (int)to_modetab(parser, mode_array, LCHAR);
-	parser->stackoperands[++parser->sopnd] = parser->ansttype;
-	parser->anst = VAL;
+	prs->ansttype = (int)to_modetab(prs, mode_array, LCHAR);
+	prs->stackoperands[++prs->sopnd] = prs->ansttype;
+	prs->anst = VAL;
 }
 
-item_t parse_assignment_expression(parser *const parser)
+item_t parse_assignment_expression(parser *const prs)
 {
-	exprassn(parser, 1);
-	toval(parser);
-	totree(parser, TExprend);
-	parser->sopnd--;
-	return (item_t)parser->ansttype;
+	exprassn(prs, 1);
+	toval(prs);
+	totree(prs, TExprend);
+	prs->sopnd--;
+	return (item_t)prs->ansttype;
 }
 
-item_t parse_expression(parser *const parser)
+item_t parse_expression(parser *const prs)
 {
-	expr(parser, 0);
-	exprassnvoid(parser);
-	return (item_t)parser->ansttype;
+	expr(prs, 0);
+	exprassnvoid(prs);
+	return (item_t)prs->ansttype;
 }
 
-item_t parse_condition(parser *const parser)
+item_t parse_condition(parser *const prs)
 {
-	scanner(parser);
-	expr(parser, 1);
-	toval(parser);
-	totree(parser, TExprend);
-	parser->sopnd--;
-	return (item_t)parser->ansttype;
+	scanner(prs);
+	expr(prs, 1);
+	toval(prs);
+	totree(prs, TExprend);
+	prs->sopnd--;
+	return (item_t)prs->ansttype;
 }
 
-item_t parse_parenthesized_expression(parser *const parser)
+item_t parse_parenthesized_expression(parser *const prs)
 {
-	mustbe(parser, LEFTBR, cond_must_be_in_brkts);
-	parse_condition(parser);
-	mustbe(parser, RIGHTBR, cond_must_be_in_brkts);
-	return (item_t)parser->ansttype;
+	must_be(prs, LEFTBR, cond_must_be_in_brkts);
+	parse_condition(prs);
+	must_be(prs, RIGHTBR, cond_must_be_in_brkts);
+	return (item_t)prs->ansttype;
 }
 
-item_t parse_constant_expression(parser *const parser)
+item_t parse_constant_expression(parser *const prs)
 {
-	scanner(parser);
-	unarexpr(parser);
-	condexpr(parser);
-	toval(parser);
-	totree(parser, TExprend);
-	parser->sopnd--;
-	return (item_t)parser->ansttype;
+	scanner(prs);
+	unarexpr(prs);
+	condexpr(prs);
+	toval(prs);
+	totree(prs, TExprend);
+	prs->sopnd--;
+	return (item_t)prs->ansttype;
 }
 
 void insert_widen(parser *const parser)

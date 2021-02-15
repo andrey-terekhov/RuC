@@ -22,90 +22,90 @@
 #include "string.h"
 
 
-parser compiler_context_create(universal_io *const io, syntax *const sx, lexer *const lexer)
+parser parser_create(universal_io *const io, syntax *const sx, lexer *const lxr)
 {
-	parser context;
-	context.io = io;
-	context.sx = sx;
-	context.lxr = lexer;
+	parser prs;
+	prs.io = io;
+	prs.sx = sx;
+	prs.lxr = lxr;
 
-	context.sp = 0;
-	context.sopnd = -1;
-	context.leftansttype = -1;
-	context.buf_flag = 0;
-	context.was_error = 0;
-	context.buf_cur = 0;
+	prs.sp = 0;
+	prs.sopnd = -1;
+	prs.leftansttype = -1;
+	prs.buf_flag = 0;
+	prs.was_error = 0;
+	prs.buf_cur = 0;
 
-	context.anstdispl = 0;
+	prs.anstdispl = 0;
 
-	return context;
+	return prs;
 }
 
 
 /** Занесение ключевых слов в reprtab */
-void read_keywords(parser *context)
+void read_keywords(parser *const prs)
 {
-	context->sx->keywords = 1;
-	get_char(context->lxr);
-	get_char(context->lxr);
-	while (lex(context->lxr) != LEOF)
+	prs->sx->keywords = 1;
+	get_char(prs->lxr);
+	get_char(prs->lxr);
+	while (lex(prs->lxr) != LEOF)
 	{
 		; // чтение ключевых слов
 	}
 }
 
 
-size_t toreprtab(parser *context, char str[])
+size_t toreprtab(parser *const prs, char str[])
 {
 	int i;
 	size_t oldrepr = REPRTAB_LEN;
 
-	context->sx->hash = 0;
+	prs->sx->hash = 0;
 
 	REPRTAB_LEN += 2;
 	for (i = 0; str[i] != 0; i++)
 	{
-		context->sx->hash += str[i];
+		prs->sx->hash += str[i];
 		REPRTAB[REPRTAB_LEN++] = str[i];
 	}
-	context->sx->hash &= 255;
+	prs->sx->hash &= 255;
 
 	REPRTAB[REPRTAB_LEN++] = 0;
 
-	REPRTAB[oldrepr] = (int)context->sx->hashtab[context->sx->hash];
+	REPRTAB[oldrepr] = (int)prs->sx->hashtab[prs->sx->hash];
 	REPRTAB[oldrepr + 1] = 1;
-	return context->sx->hashtab[context->sx->hash] = oldrepr;
+	return prs->sx->hashtab[prs->sx->hash] = oldrepr;
 }
 
 /** Инициализация modetab */
-void init_modetab(parser *context)
+void init_modetab(parser *const prs)
 {
 	// занесение в modetab описателя struct {int numTh; int inf; }
-	vector_add(&context->sx->modes, 0);
-	vector_add(&context->sx->modes, mode_struct);
-	vector_add(&context->sx->modes, 2);
-	vector_add(&context->sx->modes, 4);
-	vector_add(&context->sx->modes, mode_integer);
-	vector_add(&context->sx->modes, (item_t)toreprtab(context, "numTh"));
-	vector_add(&context->sx->modes, mode_integer);
-	vector_add(&context->sx->modes, (item_t)toreprtab(context, "data"));
+	vector_add(&prs->sx->modes, 0);
+	vector_add(&prs->sx->modes, mode_struct);
+	vector_add(&prs->sx->modes, 2);
+	vector_add(&prs->sx->modes, 4);
+	vector_add(&prs->sx->modes, mode_integer);
+	vector_add(&prs->sx->modes, (item_t)toreprtab(prs, "numTh"));
+	vector_add(&prs->sx->modes, mode_integer);
+	vector_add(&prs->sx->modes, (item_t)toreprtab(prs, "data"));
 
 	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
-	vector_add(&context->sx->modes, 1);
-	vector_add(&context->sx->modes, mode_function);
-	vector_add(&context->sx->modes, mode_void);
-	vector_add(&context->sx->modes, 1);
-	vector_add(&context->sx->modes, 2);
+	vector_add(&prs->sx->modes, 1);
+	vector_add(&prs->sx->modes, mode_function);
+	vector_add(&prs->sx->modes, mode_void);
+	vector_add(&prs->sx->modes, 1);
+	vector_add(&prs->sx->modes, 2);
 
 	// занесение в modetab описателя функции void* interpreter(void* n)
-	vector_add(&context->sx->modes, 9);
-	vector_add(&context->sx->modes, mode_function);
-	vector_add(&context->sx->modes, mode_void_pointer);
-	vector_add(&context->sx->modes, 1);
-	vector_add(&context->sx->modes, mode_void_pointer);
+	vector_add(&prs->sx->modes, 9);
+	vector_add(&prs->sx->modes, mode_function);
+	vector_add(&prs->sx->modes, mode_void_pointer);
+	vector_add(&prs->sx->modes, 1);
+	vector_add(&prs->sx->modes, mode_void_pointer);
 
-	context->sx->start_mode = 14;
-	context->sx->keywords = 0;
+	prs->sx->start_mode = 14;
+	prs->sx->keywords = 0;
 }
 
 
@@ -127,17 +127,17 @@ int analyze(universal_io *const io, syntax *const sx)
 
 	universal_io temp = io_create();
 	lexer lexer = create_lexer(&temp, sx);
-	parser context = compiler_context_create(&temp, sx, &lexer);
+	parser prs = parser_create(&temp, sx, &lexer);
 
-	in_set_buffer(context.io, KEYWORDS);
-	read_keywords(&context);
-	in_clear(context.io);
+	in_set_buffer(prs.io, KEYWORDS);
+	read_keywords(&prs);
+	in_clear(prs.io);
 
-	init_modetab(&context);
+	init_modetab(&prs);
 
 	io_erase(&temp);
 
-	context.io = io;
-	context.lxr->io = io;
-	return parse(&context);
+	prs.io = io;
+	prs.lxr->io = io;
+	return parse(&prs);
 }
