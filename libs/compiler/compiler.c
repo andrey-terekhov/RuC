@@ -57,7 +57,7 @@ int compile_from_io(const workspace *const ws, universal_io *const io, const enc
 {
 	if (!in_is_correct(io) || !out_is_correct(io))
 	{
-		system_error("некорректные параметры ввода/вывода");
+		error_msg("некорректные параметры ввода/вывода");
 		io_erase(io);
 		return -1;
 	}
@@ -79,7 +79,7 @@ int compile_from_ws(workspace *const ws, const encoder enc)
 {
 	if (!ws_is_correct(ws) || ws_get_files_num(ws) == 0)
 	{
-		system_error("некорректные входные данные");
+		error_msg("некорректные входные данные");
 		return -1;
 	}
 
