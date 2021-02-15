@@ -22,9 +22,10 @@
 #include "string.h"
 
 
-parser compiler_context_create(syntax *const sx, lexer *const lexer)
+parser compiler_context_create(universal_io *const io, syntax *const sx, lexer *const lexer)
 {
 	parser context;
+	context.io = io;
 	context.sx = sx;
 	context.lxr = lexer;
 
@@ -126,16 +127,17 @@ int analyze(universal_io *const io, syntax *const sx)
 
 	universal_io temp = io_create();
 	lexer lexer = create_lexer(&temp, sx);
-	parser context = compiler_context_create(sx, &lexer);
+	parser context = compiler_context_create(&temp, sx, &lexer);
 
-	in_set_buffer(context.lxr->io, KEYWORDS);
+	in_set_buffer(context.io, KEYWORDS);
 	read_keywords(&context);
-	in_clear(context.lxr->io);
+	in_clear(context.io);
 
 	init_modetab(&context);
 
 	io_erase(&temp);
 
+	context.io = io;
 	context.lxr->io = io;
 	return parse(&context);
 }

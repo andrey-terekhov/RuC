@@ -41,17 +41,16 @@ int parse(parser *const prs);
  *	Emit an error from parser
  *
  *	@param	prs			Parser structure
- *	@param	err			Error code
+ *	@param	num			Error code
  */
-void parser_error(parser *const prs, const int err, ...);
-
+void parser_error(parser *const prs, const int num, ...);
 
 /**
  *	Consume the current 'peek token' and lex the next one
  *
  *	@param	prs			Parser structure
  */
-void token_consume(parser *const prs);
+void consume_token(parser *const prs);
 
 /**
  *	Try to consume the current 'peek token' and lex the next one
@@ -59,19 +58,19 @@ void token_consume(parser *const prs);
  *	@param	prs			Parser structure
  *	@param	expected	Expected token to consume
  *
- *	@return	@c 1 on consuming 'peek token', @c 0 on otherwise
+ *	@return	@c 0, if 'peek token' is expected and consumed, @c 0 otherwise
  */
-int token_try_consume(parser *const prs, const token_t expected);
+int try_consume_token(parser *const prs, const token_t expected);
 
 /**
  *	Try to consume the current 'peek token' and lex the next one
- *	If 'peek token' is expected, parser will consume it, otherwise an error will be emited
+ *	If that 'peek token' is expected, parser consumes it, otherwise an error is emited
  *
  *	@param	prs			Parser structure
  *	@param	expected	Expected token to consume
  *	@param	err			Error to emit
  */
-void token_expect_and_consume(parser *const prs, const token_t expected, const error_t err);
+void expect_and_consume_token(parser *const prs, const token_t expected, const error_t err);
 
 /**
  *	Read tokens until one of the specified tokens
@@ -79,7 +78,7 @@ void token_expect_and_consume(parser *const prs, const token_t expected, const e
  *	@param	prs			Parser structure
  *	@param	tokens		Set of specified tokens
  */
-void token_skip_until(parser *const prs, const uint8_t tokens);
+void skip_until(parser *const prs, const uint8_t tokens);
 
 
 /**

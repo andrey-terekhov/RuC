@@ -37,7 +37,7 @@ int parse(parser *const prs)
 {
 	get_char(prs->lxr);
 	get_char(prs->lxr);
-	token_consume(prs);
+	consume_token(prs);
 
 	do
 	{
@@ -50,74 +50,66 @@ int parse(parser *const prs)
 }
 
 
-void parser_error(parser *const prs, const int err, ...)
+void parser_error(parser *const prs, const int num, ...)
 {
 	prs->was_error = 1;
 
 	va_list args;
-	va_start(args, err);
+	va_start(args, num);
 
-	error(prs->lxr->io, err, args);
+	error(prs->io, num, args);
 }
 
-void token_consume(parser *const prs)
+void consume_token(parser *const prs)
 {
 	prs->curr_token = prs->next_token;
 	prs->next_token = lex(prs->lxr);
 }
 
-int token_try_consume(parser *const prs, const token_t expected)
+int try_consume_token(parser *const prs, const token_t expected)
 {
 	if (prs->next_token == expected)
 	{
-		token_consume(prs);
+		consume_token(prs);
 		return 1;
 	}
 
 	return 0;
 }
 
-void token_expect_and_consume(parser *const prs, const token_t expected, const error_t err)
+void expect_and_consume_token(parser *const prs, const token_t expected, const error_t err)
 {
-	if (!token_try_consume(prs, expected))
+	if (!try_consume_token(prs, expected))
 	{
 		parser_error(prs, err);
 	}
 }
 
-void token_skip_until(parser *const prs, const uint8_t tokens)
+void skip_until(parser *const prs, const uint8_t tokens)
 {
 	while (prs->next_token != eof)
 	{
 		switch (prs->next_token)
 		{
 			case l_paren:
-			{
-				token_consume(prs);
-				token_skip_until(prs, r_paren);
-			}
-			break;
+				consume_token(prs);
+				skip_until(prs, r_paren);
+				break;
 
 			case l_square:
-			{
-				token_consume(prs);
-				token_skip_until(prs, r_square);
-			}
-			break;
+				consume_token(prs);
+				skip_until(prs, r_square);
+				break;
 
 			case l_brace:
-			{
-				token_consume(prs);
-				token_skip_until(prs, r_brace);
-			}
-			break;
+				consume_token(prs);
+				skip_until(prs, r_brace);
+				break;
 
 			case question:
-			{
-				token_consume(prs);
-				token_skip_until(prs, colon);
-			}
-			break;
+				consume_token(prs);
+				skip_until(prs, colon);
+				break;
 
 			case r_paren:
 			case r_square:
@@ -130,12 +122,12 @@ void token_skip_until(parser *const prs, const uint8_t tokens)
 				}
 				else
 				{
-					token_consume(prs);
+					consume_token(prs);
 					break;
 				}
 
 			default:
-				token_consume(prs);
+				consume_token(prs);
 				break;
 		}
 	}
