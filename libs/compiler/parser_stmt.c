@@ -42,7 +42,7 @@ void parse_labeled_statement(parser *const prs)
 			if (prs->gotost[i + 1] < 0)
 			{
 				char buffer[MAXSTRINGL];
-				repr_get_ident(prs->sx, repr, buffer);
+				repr_get_name(prs->sx, repr, buffer);
 				parser_error(prs, repeated_label, buffer);
 			}
 			else
@@ -423,7 +423,7 @@ void parse_printid_statement(parser *const prs)
 			if (id == 1)
 			{
 				char buffer[MAXSTRINGL];
-				repr_get_ident(prs->sx, repr, buffer);
+				repr_get_name(prs->sx, repr, buffer);
 				parser_error(prs, ident_is_not_declared, buffer);
 			}
 
@@ -476,7 +476,7 @@ void parse_getid_statement(parser *const prs)
 			if (id == 1)
 			{
 				char buffer[MAXSTRINGL];
-				repr_get_ident(prs->sx, repr, buffer);
+				repr_get_name(prs->sx, repr, buffer);
 				parser_error(prs, ident_is_not_declared, buffer);
 			}
 

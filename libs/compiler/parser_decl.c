@@ -134,7 +134,7 @@ item_t parse_struct_or_union_specifier(parser *const prs)
 				if (id == 1)
 				{
 					char buffer[MAXSTRINGL];
-					repr_get_ident(prs->sx, repr, buffer);
+					repr_get_name(prs->sx, repr, buffer);
 					parser_error(prs, ident_is_not_declared, buffer);
 					return mode_undefined;
 				}
@@ -322,13 +322,9 @@ item_t parse_struct_declaration_list(parser *const prs)
 	if (was_array)
 	{
 		tree_add(prs->sx, TStructend);
-		// TODO: сюда бы интерфейс для processes
-		const size_t procd = vector_size(&prs->sx->processes);
-		vector_increase(&prs->sx->processes, 1);
-
-		tree_add(prs->sx, procd);
-		tree_set(prs->sx, ref_struct_begin + 1, procd);
-		prs->flag_array_in_struct = procd;
+		tree_add(prs->sx, (item_t)prs->sx->procd);
+		tree_set(prs->sx, ref_struct_begin + 1, (item_t)prs->sx->procd);
+		prs->flag_array_in_struct = (int)prs->sx->procd++;
 	}
 	else
 	{
@@ -740,7 +736,7 @@ void parse_function_body(parser *const prs, const size_t function_id)
 		if (!ident_get_mode(prs->sx, (size_t)prs->gotost[i]))
 		{
 			char buffer[MAXSTRINGL];
-			repr_get_ident(prs->sx, repr, buffer);
+			repr_get_name(prs->sx, repr, buffer);
 			parser_error(prs, label_not_declared, line_number, buffer);
 		}
 	}

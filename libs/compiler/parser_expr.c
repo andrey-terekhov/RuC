@@ -55,7 +55,7 @@ void applid(parser *const prs)
 	if (prs->lastid == 1)
 	{
 		char buffer[MAXSTRINGL];
-		repr_get_ident(prs->sx, REPRTAB_POS, buffer);
+		repr_get_name(prs->sx, REPRTAB_POS, buffer);
 		parser_error(prs, ident_is_not_declared, buffer);
 		prs->was_error = 5;
 	}
@@ -1061,7 +1061,7 @@ int find_field(parser *const prs, int stype)
 	if (flag)
 	{
 		char buffer[MAXSTRINGL];
-		repr_get_ident(prs->sx, REPRTAB_POS, buffer);
+		repr_get_name(prs->sx, REPRTAB_POS, buffer);
 		parser_error(prs, no_field, buffer);
 		prs->was_error = 5;
 		return 0; // 1

@@ -56,7 +56,7 @@ void read_keywords(parser *const prs)
 	{
 		; // чтение ключевых слов
 	}
-	context->sx->keywords = 0;
+	prs->sx->keywords = 0;
 }
 
 
