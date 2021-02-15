@@ -383,7 +383,7 @@ static int codegen_llvm2(universal_io *const io, syntax *const sx)
     context.breg = 0;
     context.areg = 0;
 
-    node root = node_get_root(sx);
+    node root = node_get_root(&sx->tree);
     node_set_next(&root);
     block(io, sx, &root, &context);
 
