@@ -661,15 +661,50 @@ void error(const universal_io *const io, const int num, ...)
 	va_list args;
 	va_start(args, num);
 
+	verror(io, num, args);
+
+	va_end(args);
+}
+
+void warning(const universal_io *const io, const int num, ...)
+{
+	va_list args;
+	va_start(args, num);
+
+	vwarning(io, num, args);
+
+	va_end(args);
+}
+
+
+void verror(const universal_io *const io, const int num, va_list args)
+{
+	char msg[MAX_MSG_SIZE];
+	get_error(num, msg, args);
+	output(io, msg, &log_system_error, &log_error);
+}
+
+void vwarning(const universal_io *const io, const int num, va_list args)
+{
+	char msg[MAX_MSG_SIZE];
+	get_warning(num, msg, args);
+	output(io, msg, &log_system_warning, &log_warning);
+}
+
+
+void system_error(const int num, ...)
+{
+	va_list args;
+	va_start(args, num);
+
 	char msg[MAX_MSG_SIZE];
 	get_error(num, msg, args);
 
 	va_end(args);
-
-	output(io, msg, &log_system_error, &log_error);
+	log_system_error(TAG_RUC, msg);
 }
 
-void warning(const universal_io *const io, const int num, ...)
+void system_warning(const int num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -678,28 +713,16 @@ void warning(const universal_io *const io, const int num, ...)
 	get_warning(num, msg, args);
 
 	va_end(args);
-
-	output(io, msg, &log_system_warning, &log_warning);
+	log_system_warning(TAG_RUC, msg);
 }
 
 
-void error_msg(const universal_io *const io, const char *const msg)
-{
-	output(io, msg, &log_system_error, &log_error);
-}
-
-void warning_msg(const universal_io *const io, const char *const msg)
-{
-	output(io, msg, &log_system_warning, &log_warning);
-}
-
-
-void system_error(const char *const msg)
+void error_msg(const char *const msg)
 {
 	log_system_error(TAG_RUC, msg);
 }
 
-void system_warning(const char *const msg)
+void warning_msg(const char *const msg)
 {
 	log_system_warning(TAG_RUC, msg);
 }

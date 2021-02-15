@@ -131,7 +131,7 @@ int sx_is_correct(syntax *const sx)
 	int is_correct = 1;
 	if (sx->ref_main == 0)
 	{
-		error(NULL, no_main_in_program);
+		system_error(no_main_in_program);
 		is_correct = 0;
 	}
 
@@ -141,7 +141,7 @@ int sx_is_correct(syntax *const sx)
 		{
 			char buffer[MAXSTRINGL];
 			repr_get_name(sx, (size_t)vector_get(&sx->predef, i), buffer);
-			error(NULL, predef_but_notdef, buffer);
+			system_error(predef_but_notdef, buffer);
 			is_correct = 0;
 		}
 	}

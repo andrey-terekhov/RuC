@@ -208,50 +208,67 @@ enum WARNING
 /**
  *	Emit an error for some problem
  *
- *	@param	io		Universal io
- *	@param	num		Error number
+ *	@param	io			Universal io
+ *	@param	num			Error number
  */
 void error(const universal_io *const io, const int num, ...);
 
 /**
  *	Emit a warning for some problem
  *
- *	@param	io		Universal io
- *	@param	num		Warning number
+ *	@param	io			Universal io
+ *	@param	num			Warning number
  */
 void warning(const universal_io *const io, const int num, ...);
 
 
 /**
- *	Emit error message
+ *	Emit an error (embedded version)
  *
- *	@param	io		Universal io
- *	@param	msg		Error message
+ *	@param	io			Universal io
+ *	@param	num			Error number
+ *	@param	args		Variable list
  */
-void error_msg(const universal_io *const io, const char *const msg);
+void verror(const universal_io *const io, const int num, va_list args);
 
 /**
- *	Emit warning message
+ *	Emit a warning (embedded version)
  *
- *	@param	io		Universal io
- *	@param	msg		Warning message
+ *	@param	io			Universal io
+ *	@param	num			Warning number
+ *	@param	args		Variable list
  */
-void warning_msg(const universal_io *const io, const char *const msg);
+void vwarning(const universal_io *const io, const int num, va_list args);
 
 
 /**
- *	Emit error by number
+ *	Emit an error by number
  *
- *	@param	msg		Error message
+ *	@param	num			Error number
  */
-void system_error(const char *const msg);
+void system_error(const int num, ...);
 
 /**
- *	Emit warning by number
+ *	Emit a warning by number
  *
- *	@param	msg		Warning message
+ *	@param	num			Warning number
  */
-void system_warning(const char *const msg);
+void system_warning(const int num, ...);
+
+
+/**
+ *	Emit an error message
+ *
+ *	@param	msg			Error message
+ */
+void error_msg(const char *const msg);
+
+/**
+ *	Emit a warning message
+ *
+ *	@param	msg			Warning message
+ */
+void warning_msg(const char *const msg);
 
 #ifdef __cplusplus
 } /* extern "C" */

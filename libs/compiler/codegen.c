@@ -896,7 +896,7 @@ static int codegen(virtual *const vm)
 			default:
 				if (declaration(vm, &root))
 				{
-					error(NULL, node_unexpected, node_get_type(&root));
+					system_error(node_unexpected, node_get_type(&root));
 					return -1;
 				}
 				break;
@@ -919,7 +919,7 @@ static int output_table(universal_io *const io, const item_status target, const 
 		const item_t item = vector_get(table, i);
 		if (!item_check_var(target, item))
 		{
-			error(NULL, tables_cannot_be_compressed);
+			system_error(tables_cannot_be_compressed);
 			return -1;
 		}
 
