@@ -43,7 +43,7 @@ void parse_labeled_statement(parser *const prs)
 			{
 				char buffer[MAXSTRINGL];
 				repr_get_ident(prs->sx, repr, buffer);
-				parse_error(prs, repeated_label, buffer);
+				parser_error(prs, repeated_label, buffer);
 			}
 			else
 			{
@@ -78,14 +78,14 @@ void parse_case_statement(parser *const prs)
 {
 	if (!prs->flag_in_switch)
 	{
-		parse_error(prs, case_not_in_switch);
+		parser_error(prs, case_not_in_switch);
 	}
 
 	tree_add(prs->sx, TCase);
 	const item_t condition_type = parse_constant_expression(prs);
 	if (!mode_is_int(condition_type) && !mode_is_undefined(condition_type))
 	{
-		parse_error(prs, float_in_switch);
+		parser_error(prs, float_in_switch);
 	}
 
 	token_expect_and_consume(prs, colon, expected_colon_after_case);
@@ -104,7 +104,7 @@ void parse_default_statement(parser *const prs)
 {
 	if (!prs->flag_in_switch)
 	{
-		parse_error(prs, default_not_in_switch);
+		parser_error(prs, default_not_in_switch);
 	}
 
 	tree_add(prs->sx, TDefault);
@@ -165,7 +165,7 @@ void parse_switch_statement(parser *const prs)
 	const item_t condition_type = parse_parenthesized_expression(prs);
 	if (!mode_is_int(condition_type) && !mode_is_undefined(condition_type))
 	{
-		parse_error(prs, float_in_switch);
+		parser_error(prs, float_in_switch);
 	}
 
 	const int old_in_switch = prs->flag_in_switch;
@@ -217,7 +217,7 @@ void parse_do_statement(parser *const prs)
 	}
 	else
 	{
-		parse_error(prs, expected_while);
+		parser_error(prs, expected_while);
 		token_skip_until(prs, semicolon);
 	}
 
@@ -326,7 +326,7 @@ void parse_continue_statement(parser *const prs)
 {
 	if (!prs->flag_in_loop)
 	{
-		parse_error(prs, continue_not_in_loop);
+		parser_error(prs, continue_not_in_loop);
 	}
 
 	tree_add(prs->sx, TContinue);
@@ -345,7 +345,7 @@ void parse_break_statement(parser *const prs)
 {
 	if (!(prs->flag_in_loop || prs->flag_in_switch))
 	{
-		parse_error(prs, break_not_in_loop_or_switch);
+		parser_error(prs, break_not_in_loop_or_switch);
 	}
 
 	tree_add(prs->sx, TBreak);
@@ -370,14 +370,14 @@ void parse_return_statement(parser *const prs)
 		tree_add(prs->sx, TReturnvoid);
 		if (!mode_is_void(return_type))
 		{
-			parse_error(prs, no_ret_in_func);
+			parser_error(prs, no_ret_in_func);
 		}
 	}
 	else if (return_type != mode_void_pointer)
 	{
 		if (mode_is_void(return_type))
 		{
-			parse_error(prs, notvoidret_in_void_func);
+			parser_error(prs, notvoidret_in_void_func);
 		}
 
 		tree_add(prs->sx, TReturnval);
@@ -389,11 +389,11 @@ void parse_return_statement(parser *const prs)
 		{
 			if (mode_is_float(return_type) && mode_is_int(expr_type))
 			{
-				parse_expression_insert_widen(prs);
+				insert_widen(prs);
 			}
 			else if (return_type != expr_type)
 			{
-				parse_error(prs, bad_type_in_ret);
+				parser_error(prs, bad_type_in_ret);
 			}
 		}
 
@@ -424,7 +424,7 @@ void parse_printid_statement(parser *const prs)
 			{
 				char buffer[MAXSTRINGL];
 				repr_get_ident(prs->sx, repr, buffer);
-				parse_error(prs, ident_is_not_declared, buffer);
+				parser_error(prs, ident_is_not_declared, buffer);
 			}
 
 			tree_add(prs->sx, TPrintid);
@@ -432,7 +432,7 @@ void parse_printid_statement(parser *const prs)
 		}
 		else
 		{
-			parse_error(prs, no_ident_in_printid);
+			parser_error(prs, no_ident_in_printid);
 			token_skip_until(prs, comma | r_paren | semicolon);
 		}
 	} while (token_try_consume(prs, comma));
@@ -450,7 +450,7 @@ void parse_print_statement(parser *const prs)
 	const item_t type = parse_assignment_expression(prs);
 	if (mode_is_pointer(prs->sx, type))
 	{
-		parse_error(prs, pointer_in_print);
+		parser_error(prs, pointer_in_print);
 	}
 
 	vector_remove(&prs->sx->tree);
@@ -477,7 +477,7 @@ void parse_getid_statement(parser *const prs)
 			{
 				char buffer[MAXSTRINGL];
 				repr_get_ident(prs->sx, repr, buffer);
-				parse_error(prs, ident_is_not_declared, buffer);
+				parser_error(prs, ident_is_not_declared, buffer);
 			}
 
 			tree_add(prs->sx, TGetid);
@@ -485,7 +485,7 @@ void parse_getid_statement(parser *const prs)
 		}
 		else
 		{
-			parse_error(prs, no_ident_in_getid);
+			parser_error(prs, no_ident_in_getid);
 			token_skip_until(prs, comma | r_paren | semicolon);
 		}
 	} while (token_try_consume(prs, comma));
@@ -507,7 +507,7 @@ size_t evaluate_args(parser *const prs, const size_t length, const char32_t *con
 			{
 				if (args == MAXPRINTFPARAMS)
 				{
-					parse_error(prs, too_many_printf_params);
+					parser_error(prs, too_many_printf_params);
 					return 0;
 				}
 
@@ -539,11 +539,11 @@ size_t evaluate_args(parser *const prs, const size_t length, const char32_t *con
 					break;
 
 				case '\0':
-					parse_error(prs, printf_no_format_placeholder);
+					parser_error(prs, printf_no_format_placeholder);
 					return 0;
 
 				default:
-					parse_error(prs, printf_unknown_format_placeholder, placeholder);
+					parser_error(prs, printf_unknown_format_placeholder, placeholder);
 					return 0;
 			}
 		}
@@ -567,7 +567,7 @@ void parse_printf_statement(parser *const prs)
 
 	if (prs->next_token != STRING)
 	{
-		parse_error(prs, wrong_first_printf_param);
+		parser_error(prs, wrong_first_printf_param);
 		token_skip_until(prs, SEMICOLON);
 		return;
 	}
@@ -588,11 +588,11 @@ void parse_printf_statement(parser *const prs)
 		const item_t type = parse_assignment_expression(prs);
 		if (mode_is_float(format_types[actual_args]) && mode_is_int(type))
 		{
-			parse_expression_insert_widen(prs);
+			insert_widen(prs);
 		}
 		else if (format_types[actual_args] != type)
 		{
-			parse_error(prs, wrong_printf_param_type, placeholders[actual_args]);
+			parser_error(prs, wrong_printf_param_type, placeholders[actual_args]);
 		}
 
 		sum_size += size_of(prs->sx, type);
@@ -604,7 +604,7 @@ void parse_printf_statement(parser *const prs)
 
 	if (actual_args != expected_args)
 	{
-		parse_error(prs, wrong_printf_param_number);
+		parser_error(prs, wrong_printf_param_number);
 	}
 
 	tree_add(prs->sx, TString);
@@ -644,7 +644,7 @@ void parse_block_item(parser *const prs)
 		// case kw_union:
 		// case kw_enum:
 		// case kw_typedef:
-			parse_declaration_inner(prs);
+			parse_inner_declaration(prs);
 			return;
 
 		case identifier:
@@ -652,7 +652,7 @@ void parse_block_item(parser *const prs)
 			const size_t id = (size_t)repr_get_reference(prs->sx, prs->lxr->repr);
 			if (ident_get_displ(prs->sx, id) >= 1000)
 			{
-				parse_declaration_inner(prs);
+				parse_inner_declaration(prs);
 			}
 			else
 			{

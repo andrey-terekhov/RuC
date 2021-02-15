@@ -40,7 +40,7 @@ void must_be(parser *const prs, int what, int e)
 {
 	if (prs->next_token != what)
 	{
-		parse_error(prs, e);
+		parser_error(prs, e);
 		prs->curr_token = what;
 	}
 	else
@@ -56,7 +56,7 @@ void applid(parser *const prs)
 	{
 		char buffer[MAXSTRINGL];
 		repr_get_ident(prs->sx, REPRTAB_POS, buffer);
-		parse_error(prs, ident_is_not_declared, buffer);
+		parser_error(prs, ident_is_not_declared, buffer);
 		prs->was_error = 5;
 	}
 
@@ -122,7 +122,7 @@ void binop(parser *const prs, int sp)
 
 	if (mode_is_pointer(prs->sx, ltype) || mode_is_pointer(prs->sx, rtype))
 	{
-		parse_error(prs, operand_is_pointer);
+		parser_error(prs, operand_is_pointer);
 		prs->was_error = 5;
 		return; // 1
 	}
@@ -130,7 +130,7 @@ void binop(parser *const prs, int sp)
 		 op == LREM) &&
 		(mode_is_float(ltype) || mode_is_float(rtype)))
 	{
-		parse_error(prs, int_op_for_float);
+		parser_error(prs, int_op_for_float);
 		prs->was_error = 5;
 		return; // 1
 	}
@@ -246,7 +246,7 @@ void actstring(int type, parser *const prs)
 		}
 		else
 		{
-			parse_error(prs, wrong_init_in_actparam);
+			parser_error(prs, wrong_init_in_actparam);
 			prs->was_error = 1;
 			return; // 1
 		}
@@ -256,7 +256,7 @@ void actstring(int type, parser *const prs)
 	vector_set(&TREE, adn, n);
 	if (prs->curr_token != END)
 	{
-		parse_error(prs, no_comma_or_end);
+		parser_error(prs, no_comma_or_end);
 		prs->was_error = 1;
 		return; // 1
 	}
@@ -277,7 +277,7 @@ void mustbestring(parser *const prs)
 	prs->sopnd--;
 	if (!(mode_is_string(prs->sx, prs->ansttype)))
 	{
-		parse_error(prs, not_string_in_stanfunc);
+		parser_error(prs, not_string_in_stanfunc);
 		prs->was_error = 5;
 	}
 }
@@ -296,7 +296,7 @@ void mustbepointstring(parser *const prs)
 	if (!(mode_is_pointer(prs->sx, prs->ansttype) &&
 		  mode_is_string(prs->sx, mode_get(prs->sx, prs->ansttype + 1))))
 	{
-		parse_error(prs, not_point_string_in_stanfunc);
+		parser_error(prs, not_point_string_in_stanfunc);
 		prs->was_error = 5;
 		return; // 1
 	}
@@ -316,7 +316,7 @@ void mustberow(parser *const prs)
 
 	if (!mode_is_array(prs->sx, prs->ansttype))
 	{
-		parse_error(prs, not_array_in_stanfunc);
+		parser_error(prs, not_array_in_stanfunc);
 		prs->was_error = 5;
 	}
 }
@@ -334,7 +334,7 @@ void mustbeint(parser *const prs)
 	prs->sopnd--;
 	if (prs->ansttype != LINT && prs->ansttype != LCHAR)
 	{
-		parse_error(prs, not_int_in_stanfunc);
+		parser_error(prs, not_int_in_stanfunc);
 		prs->was_error = 5;
 	}
 }
@@ -369,7 +369,7 @@ void mustberowofint(parser *const prs)
 	if (!(mode_is_array(prs->sx, prs->ansttype) &&
 		  mode_is_int(mode_get(prs->sx, prs->ansttype + 1))))
 	{
-		parse_error(prs, not_rowofint_in_stanfunc);
+		parser_error(prs, not_rowofint_in_stanfunc);
 		prs->was_error = 5;
 	}
 }
@@ -405,7 +405,7 @@ void mustberowoffloat(parser *const prs)
 	if (!(mode_is_array(prs->sx, prs->ansttype) &&
 		  mode_get(prs->sx, prs->ansttype + 1) == LFLOAT))
 	{
-		parse_error(prs, not_rowoffloat_in_stanfunc);
+		parser_error(prs, not_rowoffloat_in_stanfunc);
 		prs->was_error = 5;
 	}
 }
@@ -435,7 +435,7 @@ void primaryexpr(parser *const prs)
 	}
 	else if (prs->curr_token == STRING)
 	{
-		parse_string_literal_expression(prs);
+		parse_string_literal(prs);
 	}
 	else if (prs->curr_token == IDENT)
 	{
@@ -467,7 +467,7 @@ void primaryexpr(parser *const prs)
 			}
 			if (!mode_is_pointer(prs->sx, prs->ansttype))
 			{
-				parse_error(prs, not_pointer_in_cast);
+				parser_error(prs, not_pointer_in_cast);
 				prs->was_error = 4;
 				return; // 1
 			}
@@ -499,7 +499,7 @@ void primaryexpr(parser *const prs)
 
 		if (scanner(prs) != LEFTBR)
 		{
-			parse_error(prs, no_leftbr_in_stand_func);
+			parser_error(prs, no_leftbr_in_stand_func);
 			prs->buf_cur = prs->next_token;
 			prs->next_token = prs->curr_token;
 			prs->curr_token = LEFTBR;
@@ -693,7 +693,7 @@ void primaryexpr(parser *const prs)
 						}
 						else if (prs->ansttype != LFLOAT)
 						{
-							parse_error(prs, not_float_in_stanfunc);
+							parser_error(prs, not_float_in_stanfunc);
 							prs->was_error = 4;
 							return; // 1
 						}
@@ -830,7 +830,7 @@ void primaryexpr(parser *const prs)
 
 					if (prs->curr_token != IDENT)
 					{
-						parse_error(prs, act_param_not_ident);
+						parser_error(prs, act_param_not_ident);
 						prs->was_error = 4;
 						return; // 1
 					}
@@ -843,7 +843,7 @@ void primaryexpr(parser *const prs)
 					if (ident_get_mode(prs->sx, prs->lastid) != 15 ||
 						prs->was_error == 5) // 15 - это аргумент типа void* (void*)
 					{
-						parse_error(prs, wrong_arg_in_create);
+						parser_error(prs, wrong_arg_in_create);
 						prs->was_error = 4;
 						return; // 1
 					}
@@ -877,7 +877,7 @@ void primaryexpr(parser *const prs)
 					{
 						if (prs->ansttype != 2) // 2 - это аргумент типа msg_info (struct{int numTh; int data;})
 						{
-							parse_error(prs, wrong_arg_in_send);
+							parser_error(prs, wrong_arg_in_send);
 							prs->was_error = 4;
 							return; // 1
 						}
@@ -887,7 +887,7 @@ void primaryexpr(parser *const prs)
 					{
 						if (!mode_is_int(prs->ansttype))
 						{
-							parse_error(prs, param_threads_not_int);
+							parser_error(prs, param_threads_not_int);
 							prs->was_error = 4;
 							return; // 1
 						}
@@ -940,7 +940,7 @@ void primaryexpr(parser *const prs)
 			{
 				if (!mode_is_int(prs->ansttype))
 				{
-					parse_error(prs, param_setmotor_not_int);
+					parser_error(prs, param_setmotor_not_int);
 					prs->was_error = 4;
 					return; // 1
 				}
@@ -967,7 +967,7 @@ void primaryexpr(parser *const prs)
 					toval(prs);
 					if (!mode_is_int(prs->ansttype))
 					{
-						parse_error(prs, param_setmotor_not_int);
+						parser_error(prs, param_setmotor_not_int);
 						prs->was_error = 4;
 						return; // 1
 					}
@@ -994,7 +994,7 @@ void primaryexpr(parser *const prs)
 				}
 				if (!mode_is_float(prs->ansttype))
 				{
-					parse_error(prs, bad_param_in_stand_func);
+					parser_error(prs, bad_param_in_stand_func);
 					prs->was_error = 4;
 					return; // 1
 				}
@@ -1010,7 +1010,7 @@ void primaryexpr(parser *const prs)
 	}
 	else
 	{
-		parse_error(prs, not_primary, prs->curr_token);
+		parser_error(prs, not_primary, prs->curr_token);
 		prs->was_error = 4;
 		return; // 1
 	}
@@ -1025,7 +1025,7 @@ void index_check(parser *const prs)
 {
 	if (!mode_is_int(prs->ansttype))
 	{
-		parse_error(prs, index_must_be_int);
+		parser_error(prs, index_must_be_int);
 		prs->was_error = 5;
 	}
 }
@@ -1061,7 +1061,7 @@ int find_field(parser *const prs, int stype)
 	{
 		char buffer[MAXSTRINGL];
 		repr_get_ident(prs->sx, REPRTAB_POS, buffer);
-		parse_error(prs, no_field, buffer);
+		parser_error(prs, no_field, buffer);
 		prs->was_error = 5;
 		return 0; // 1
 	}
@@ -1107,7 +1107,7 @@ void postexpr(parser *const prs)
 		scanner(prs);
 		if (!mode_is_function(prs->sx, leftansttyp))
 		{
-			parse_error(prs, call_not_from_function);
+			parser_error(prs, call_not_from_function);
 			prs->was_error = 4;
 			return; // 1
 		}
@@ -1129,7 +1129,7 @@ void postexpr(parser *const prs)
 
 				if (prs->curr_token != IDENT)
 				{
-					parse_error(prs, act_param_not_ident);
+					parser_error(prs, act_param_not_ident);
 					prs->was_error = 4;
 					return; // 1
 				}
@@ -1141,7 +1141,7 @@ void postexpr(parser *const prs)
 				}
 				if ((int)ident_get_mode(prs->sx, prs->lastid) != mdj)
 				{
-					parse_error(prs, diff_formal_param_type_and_actual);
+					parser_error(prs, diff_formal_param_type_and_actual);
 					prs->was_error = 4;
 					return; // 1
 				}
@@ -1183,28 +1183,28 @@ void postexpr(parser *const prs)
 
 					if (mdj > 0 && mdj != prs->ansttype)
 					{
-						parse_error(prs, diff_formal_param_type_and_actual);
+						parser_error(prs, diff_formal_param_type_and_actual);
 						prs->was_error = 4;
 						return; // 1
 					}
 
 					if (mode_is_int(mdj) && mode_is_float(prs->ansttype))
 					{
-						parse_error(prs, float_instead_int);
+						parser_error(prs, float_instead_int);
 						prs->was_error = 4;
 						return; // 1
 					}
 
 					if (mode_is_float(mdj) && mode_is_int(prs->ansttype))
 					{
-						parse_expression_insert_widen(prs);
+						insert_widen(prs);
 					}
 					--prs->sopnd;
 				}
 			}
 			if (i < n - 1 && scanner(prs) != COMMA)
 			{
-				parse_error(prs, no_comma_in_act_params);
+				parser_error(prs, no_comma_in_act_params);
 				prs->was_error = 4;
 				return; // 1
 			}
@@ -1224,13 +1224,13 @@ void postexpr(parser *const prs)
 		{
 			if (was_func)
 			{
-				parse_error(prs, slice_from_func);
+				parser_error(prs, slice_from_func);
 				prs->was_error = 4;
 				return; // 1
 			}
 			if (!mode_is_array(prs->sx, prs->ansttype)) // вырезка не из массива
 			{
-				parse_error(prs, slice_not_from_array);
+				parser_error(prs, slice_not_from_array);
 				prs->was_error = 4;
 				return; // 1
 			}
@@ -1278,7 +1278,7 @@ void postexpr(parser *const prs)
 			if (!mode_is_pointer(prs->sx, prs->ansttype) ||
 				!mode_is_struct(prs->sx, (int)mode_get(prs->sx, prs->ansttype + 1)))
 			{
-				parse_error(prs, get_field_not_from_struct_pointer);
+				parser_error(prs, get_field_not_from_struct_pointer);
 				prs->was_error = 4;
 				return; // 1
 			}
@@ -1311,7 +1311,7 @@ void postexpr(parser *const prs)
 		{
 			if (!mode_is_struct(prs->sx, prs->ansttype))
 			{
-				parse_error(prs, select_not_from_struct);
+				parser_error(prs, select_not_from_struct);
 				prs->was_error = 4;
 				return; // 1
 			}
@@ -1366,14 +1366,14 @@ void postexpr(parser *const prs)
 
 		if (!mode_is_int(prs->ansttype) && !mode_is_float(prs->ansttype))
 		{
-			parse_error(prs, wrong_operand);
+			parser_error(prs, wrong_operand);
 			prs->was_error = 4;
 			return; // 1
 		}
 
 		if (prs->anst != IDENT && prs->anst != ADDR)
 		{
-			parse_error(prs, unassignable_inc);
+			parser_error(prs, unassignable_inc);
 			prs->was_error = 4;
 			return; // 1
 		}
@@ -1408,7 +1408,7 @@ void unarexpr(parser *const prs)
 			}
 			if (prs->anst != IDENT && prs->anst != ADDR)
 			{
-				parse_error(prs, unassignable_inc);
+				parser_error(prs, unassignable_inc);
 				prs->was_error = 7;
 				return; // 1
 			}
@@ -1436,7 +1436,7 @@ void unarexpr(parser *const prs)
 			{
 				if (prs->anst == VAL)
 				{
-					parse_error(prs, wrong_addr);
+					parser_error(prs, wrong_addr);
 					prs->was_error = 7;
 					return; // 1
 				}
@@ -1454,7 +1454,7 @@ void unarexpr(parser *const prs)
 			{
 				if (!mode_is_pointer(prs->sx, prs->ansttype))
 				{
-					parse_error(prs, aster_not_for_pointer);
+					parser_error(prs, aster_not_for_pointer);
 					prs->was_error = 7;
 					return; // 1
 				}
@@ -1472,7 +1472,7 @@ void unarexpr(parser *const prs)
 				toval(prs);
 				if ((op == LNOT || op == LOGNOT) && prs->ansttype == LFLOAT)
 				{
-					parse_error(prs, int_op_for_float);
+					parser_error(prs, int_op_for_float);
 					prs->was_error = 7;
 					return; // 1
 				}
@@ -1650,7 +1650,7 @@ void condexpr(parser *const prs)
 			toval(prs);
 			if (!mode_is_int(prs->ansttype))
 			{
-				parse_error(prs, float_in_condition);
+				parser_error(prs, float_in_condition);
 				prs->was_error = 4;
 				return; // 1
 			}
@@ -1749,7 +1749,7 @@ void exprassn(parser *const prs, int level)
 		}
 		else
 		{
-			parse_error(prs, init_not_struct);
+			parser_error(prs, init_not_struct);
 			prs->was_error = 6;
 			return; // 1
 		}
@@ -1785,7 +1785,7 @@ void exprassn(parser *const prs, int level)
 
 		if (leftanst == VAL)
 		{
-			parse_error(prs, unassignable);
+			parser_error(prs, unassignable);
 			prs->was_error = 6;
 			return; // 1
 		}
@@ -1795,14 +1795,14 @@ void exprassn(parser *const prs, int level)
 
 		if (intopassn(lnext) && (mode_is_float(ltype) || mode_is_float(rtype)))
 		{
-			parse_error(prs, int_op_for_float);
+			parser_error(prs, int_op_for_float);
 			prs->was_error = 6;
 			return; // 1
 		}
 
 		if (mode_is_array(prs->sx, ltype)) // присваивать массив в массив в си нельзя
 		{
-			parse_error(prs, array_assigment);
+			parser_error(prs, array_assigment);
 			prs->was_error = 6;
 			return; // 1
 		}
@@ -1811,13 +1811,13 @@ void exprassn(parser *const prs, int level)
 		{
 			if (ltype != rtype) // типы должны быть равны
 			{
-				parse_error(prs, type_missmatch);
+				parser_error(prs, type_missmatch);
 				prs->was_error = 6;
 				return; // 1
 			}
 			if (opp != ASS) // в структуру можно присваивать только с помощью =
 			{
-				parse_error(prs, wrong_struct_ass);
+				parser_error(prs, wrong_struct_ass);
 				prs->was_error = 6;
 				return; // 1
 			}
@@ -1848,14 +1848,14 @@ void exprassn(parser *const prs, int level)
 		{
 			if (mode_is_pointer(prs->sx, ltype) && opp != ASS) // в указатель можно присваивать только с помощью =
 			{
-				parse_error(prs, wrong_struct_ass);
+				parser_error(prs, wrong_struct_ass);
 				prs->was_error = 6;
 				return; // 1
 			}
 
 			if (mode_is_int(ltype) && mode_is_float(rtype))
 			{
-				parse_error(prs, assmnt_float_to_int);
+				parser_error(prs, assmnt_float_to_int);
 				prs->was_error = 6;
 				return; // 1
 			}
@@ -1869,7 +1869,7 @@ void exprassn(parser *const prs, int level)
 			if (mode_is_pointer(prs->sx, ltype) && mode_is_pointer(prs->sx, rtype) && ltype != rtype)
 			{
 				// проверка нужна только для указателей
-				parse_error(prs, type_missmatch);
+				parser_error(prs, type_missmatch);
 				prs->was_error = 6;
 				return; // 1
 			}
@@ -1938,7 +1938,7 @@ void expr(parser *const prs, int level)
  */
 
 
-void parse_string_literal_expression(parser *const prs)
+void parse_string_literal(parser *const prs)
 {
 	totree(prs, TString);
 	totree(prs, prs->lxr->num);
@@ -1998,7 +1998,7 @@ item_t parse_constant_expression(parser *const prs)
 	return (item_t)prs->ansttype;
 }
 
-void parse_expression_insert_widen(parser *const parser)
+void insert_widen(parser *const parser)
 {
 	vector_remove(&parser->sx->tree);
 	totree(parser, WIDEN);

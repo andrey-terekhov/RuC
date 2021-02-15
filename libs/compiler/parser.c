@@ -18,7 +18,7 @@
 
 
 /** Check if the set of tokens has token in it */
-int has_token_set(const uint8_t tokens, const token_t token)
+int token_check(const uint8_t tokens, const token_t token)
 {
 	return (tokens & token) != 0;
 }
@@ -41,7 +41,7 @@ int parse(parser *const prs)
 
 	do
 	{
-		parse_declaration_external(prs);
+		parse_external_declaration(prs);
 	} while (prs->next_token != eof);
 
 	tree_add(prs->sx, TEnd);
@@ -50,7 +50,7 @@ int parse(parser *const prs)
 }
 
 
-void parse_error(parser *const prs, const int num, ...)
+void parser_error(parser *const prs, const int num, ...)
 {
 	prs->was_error = 1;
 
@@ -81,7 +81,7 @@ void token_expect_and_consume(parser *const prs, const token_t expected, const e
 {
 	if (!token_try_consume(prs, expected))
 	{
-		parse_error(prs, err);
+		parser_error(prs, err);
 	}
 }
 
@@ -116,7 +116,7 @@ void token_skip_until(parser *const prs, const uint8_t tokens)
 			case r_brace:
 			case colon:
 			case semicolon:
-				if (has_token_set(tokens, prs->next_token))
+				if (token_check(tokens, prs->next_token))
 				{
 					return;
 				}
@@ -187,13 +187,13 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
 
 	if (ret == SIZE_MAX)
 	{
-		parse_error(prs, redefinition_of_main);
+		parser_error(prs, redefinition_of_main);
 	}
 	else if (ret == SIZE_MAX - 1)
 	{
 		char buffer[MAXSTRINGL];
 		repr_get_ident(prs->sx, repr, buffer);
-		parse_error(prs, repeated_decl, buffer);
+		parser_error(prs, repeated_decl, buffer);
 	}
 	else
 	{
