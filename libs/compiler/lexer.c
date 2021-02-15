@@ -32,7 +32,9 @@ void lexer_error(lexer *const lxr, const error_t err, ...)
 
 	va_list args;
 	va_start(args, err);
+
 	verror(lxr->io, err, args);
+	
 	va_end(args);
 }
 

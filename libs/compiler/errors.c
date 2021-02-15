@@ -35,7 +35,7 @@
 #define MAX_INT_LENGTH 12
 
 
-void get_error(const int num, char *const msg, va_list args)
+void get_error(const error_t num, char *const msg, va_list args)
 {
 	switch (num)
 	{
@@ -581,13 +581,10 @@ void get_error(const int num, char *const msg, va_list args)
 		case tables_cannot_be_compressed:
 			sprintf(msg, "невозможно сжать таблицы до заданного размера");
 			break;
-
-		default:
-			sprintf(msg, "этот код ошибки я прозевал");
 	}
 }
 
-void get_warning(const int num, char *const msg, va_list args)
+void get_warning(const warning_t num, char *const msg, va_list args)
 {
 	switch (num)
 	{
@@ -609,9 +606,6 @@ void get_warning(const int num, char *const msg, va_list args)
 			sprintf(msg, "несоответствие количества аргументов, tree[%zi] = %s", i, elem);
 		}
 		break;
-
-		default:
-			break;
 	}
 }
 
@@ -656,7 +650,7 @@ void output(const universal_io *const io, const char *const msg, const logger sy
  */
 
 
-void error(const universal_io *const io, const int num, ...)
+void error(const universal_io *const io, const error_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -666,7 +660,7 @@ void error(const universal_io *const io, const int num, ...)
 	va_end(args);
 }
 
-void warning(const universal_io *const io, const int num, ...)
+void warning(const universal_io *const io, const warning_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -677,14 +671,14 @@ void warning(const universal_io *const io, const int num, ...)
 }
 
 
-void verror(const universal_io *const io, const int num, va_list args)
+void verror(const universal_io *const io, const error_t num, va_list args)
 {
 	char msg[MAX_MSG_SIZE];
 	get_error(num, msg, args);
 	output(io, msg, &log_system_error, &log_error);
 }
 
-void vwarning(const universal_io *const io, const int num, va_list args)
+void vwarning(const universal_io *const io, const warning_t num, va_list args)
 {
 	char msg[MAX_MSG_SIZE];
 	get_warning(num, msg, args);
@@ -692,7 +686,7 @@ void vwarning(const universal_io *const io, const int num, va_list args)
 }
 
 
-void system_error(const int num, ...)
+void system_error(const error_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -704,7 +698,7 @@ void system_error(const int num, ...)
 	log_system_error(TAG_RUC, msg);
 }
 
-void system_warning(const int num, ...)
+void system_warning(const warning_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
