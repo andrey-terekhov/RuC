@@ -16,10 +16,14 @@
 
 #include "analyzer.h"
 #include "parser.h"
+#include "codes.h"
 #include "keywords.h"
 #include "lexer.h"
-#include "uniio.h"
-#include "string.h"
+#include "tree.h"
+
+
+const char *const DEFAULT_TREE = "tree.txt";
+const char *const DEFAULT_NEW = "new.txt";
 
 
 parser parser_create(universal_io *const io, syntax *const sx, lexer *const lxr)
@@ -52,6 +56,7 @@ void read_keywords(parser *const prs)
 	{
 		; // чтение ключевых слов
 	}
+	context->sx->keywords = 0;
 }
 
 
@@ -104,7 +109,6 @@ void init_modetab(parser *const prs)
 	vector_add(&prs->sx->modes, mode_void_pointer);
 
 	prs->sx->start_mode = 14;
-	prs->sx->keywords = 0;
 }
 
 
@@ -138,5 +142,23 @@ int analyze(universal_io *const io, syntax *const sx)
 
 	prs.io = io;
 	prs.lxr->io = io;
-	return parse(&prs);
+	parse(&prs);
+
+#ifndef GENERATE_TREE
+	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
+#else
+	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
+
+	const int ret = prs.was_error || prs.lxr->was_error || !sx_is_correct(sx)
+		|| tree_test(&sx->tree)
+		|| tree_test_next(&sx->tree)
+		|| tree_test_recursive(&sx->tree)
+		|| tree_test_copy(&sx->tree);
+
+	if (!ret)
+	{
+		tree_print(DEFAULT_NEW, &sx->tree);
+	}
+	return ret;
+#endif
 }

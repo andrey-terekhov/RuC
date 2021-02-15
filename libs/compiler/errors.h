@@ -190,6 +190,9 @@ typedef enum ERROR
 	node_cannot_set_type,
 	node_cannot_add_arg,
 	node_unexpected,
+
+	// Codegen errors
+	tables_cannot_be_compressed,
 } error_t;
 
 /** Warnings codes */
