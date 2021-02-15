@@ -18,7 +18,7 @@
 
 
 /** Check if the set of tokens has token in it */
-int token_check(const uint8_t tokens, const token_t token)
+int has_token_set(const uint8_t tokens, const token_t token)
 {
 	return (tokens & token) != 0;
 }
@@ -41,7 +41,7 @@ int parse(parser *const prs)
 
 	do
 	{
-		parse_external_declaration(prs);
+		parse_declaration_external(prs);
 	} while (prs->next_token != eof);
 
 	tree_add(prs->sx, TEnd);
@@ -116,7 +116,7 @@ void token_skip_until(parser *const prs, const uint8_t tokens)
 			case r_brace:
 			case colon:
 			case semicolon:
-				if (token_check(tokens, prs->next_token))
+				if (has_token_set(tokens, prs->next_token))
 				{
 					return;
 				}
