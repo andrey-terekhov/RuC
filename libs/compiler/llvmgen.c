@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2021 Andrey Terekhov, Ivan S. Arkhipov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -9,30 +9,31 @@
  *
  *	Unless required by applicable law or agreed to in writing, software
  *	distributed under the License is distributed on an "AS IS" BASIS,
- *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressioness or implied.
+ *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
 
-#include "codegen_llvm2.h"
+#include "llvmgen.h"
 #include "tree.h"
 #include "uniprinter.h"
 
 
-enum Answer {
-    AREG,               // ответ находится в регистре
-    CONST               // ответ является константой
+enum ANSWER 
+{
+    AREG,               /**< Ответ находится в регистре */
+    CONST,              /**< Ответ является константой */
 };
 
 typedef struct info
 {
     int string_num;
     int register_num;
-    int bvar;           // 0 - переменная в регистре, 1 - переменная в памяти
-    int breg;           // передаваемый регистр
-    int areg;           // возвращаемый регистр
-    int anum;           // возвращаемая константа
-    int manst;          // тип ответа
+    int bvar;           /**< 0 - переменная в регистре, 1 - переменная в памяти */
+    int breg;           /**< передаваемый регистр */
+    int areg;           /**< возвращаемый регистр */
+    int anum;           /**< возвращаемая константа */
+    int manst;          /**< тип ответа */
 } info;
 
 
@@ -374,7 +375,7 @@ static void block(universal_io *const io, syntax *const sx, node *const nd, info
 }
 
 /** Генерация кодов llvm. Первый проход по дереву */
-static int codegen_llvm2(universal_io *const io, syntax *const sx)
+static int codegen_llvm(universal_io *const io, syntax *const sx)
 {
     info context;
     context.string_num = 1;
@@ -400,12 +401,12 @@ static int codegen_llvm2(universal_io *const io, syntax *const sx)
  */
 
 
-int encode_to_llvm2(universal_io *const io, syntax *const sx)
+int encode_to_llvm(universal_io *const io, syntax *const sx)
 {
 	if (!out_is_correct(io) || sx == NULL)
 	{
 		return -1;
 	}
 
-	return codegen_llvm2(io, sx);
+	return codegen_llvm(io, sx);
 }

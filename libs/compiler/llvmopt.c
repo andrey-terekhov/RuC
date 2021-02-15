@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2021 Andrey Terekhov, Ivan S. Arkhipov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -9,7 +9,7 @@
  *
  *	Unless required by applicable law or agreed to in writing, software
  *	distributed under the License is distributed on an "AS IS" BASIS,
- *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressioness or implied.
+ *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *	See the License for the specific language governing permissions and
  *	limitations under the License.
  */
@@ -94,11 +94,10 @@ size_t node_recursive(node *const nd, size_t i, universal_io *const io, info *co
 	return i;
 }
 
-/** Генерация кодов llvm. Первый проход по дереву */
-static int codegen_llvm1(universal_io *const io, syntax *const sx, int architecture)
+static int optimize_pass(universal_io *const io, syntax *const sx, int architecture)
 {
     // архитектурно-зависимая часть
-    // наверное, стоит сделать enum
+    // здесь будет обработка флагов
     switch (architecture)
     {
         case 0:
@@ -151,12 +150,12 @@ static int codegen_llvm1(universal_io *const io, syntax *const sx, int architect
  */
 
 
-int encode_to_llvm1(universal_io *const io, syntax *const sx, int architecture)
+int optimize_for_llvm(universal_io *const io, syntax *const sx, int architecture)
 {
 	if (!out_is_correct(io) || sx == NULL)
 	{
 		return -1;
 	}
 
-	return codegen_llvm1(io, sx, architecture);
+	return optimize_pass(io, sx, architecture);
 }

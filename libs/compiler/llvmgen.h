@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2021 Andrey Terekhov, Ivan S. Arkhipov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -25,14 +25,14 @@ extern "C" {
 #endif
 
 /**
- *	First pass of tree to encode to llvm codes
+ *	Encode to low level virtual machine codes
  *
  *	@param	io		        Universal io structure
  *	@param	sx		        Syntax structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int encode_to_llvm2(universal_io *const io, syntax *const sx);
+int encode_to_llvm(universal_io *const io, syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */
