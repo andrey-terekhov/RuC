@@ -50,14 +50,14 @@ int parse(parser *const prs)
 }
 
 
-void parser_error(parser *const prs, const error_t err, ...)
+void parser_error(parser *const prs, const error_t num, ...)
 {
 	prs->was_error = 1;
 
 	va_list args;
-	va_start(args, err);
+	va_start(args, num);
 
-	verror(prs->io, err, args);
+	verror(prs->io, num, args);
 	
 	va_end(args);
 }

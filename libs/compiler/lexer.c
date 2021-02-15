@@ -26,14 +26,14 @@
  *	@param	lxr			Lexer structure
  *	@param	num			Error code
  */
-void lexer_error(lexer *const lxr, const error_t err, ...)
+void lexer_error(lexer *const lxr, const error_t num, ...)
 {
 	lxr->was_error = 1;
 
 	va_list args;
-	va_start(args, err);
+	va_start(args, num);
 
-	verror(lxr->io, err, args);
+	verror(lxr->io, num, args);
 	
 	va_end(args);
 }
