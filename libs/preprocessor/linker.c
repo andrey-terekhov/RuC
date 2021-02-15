@@ -120,7 +120,8 @@ int lk_preprocess_file(environment *const env, const size_t number)
 	const size_t old_cur = env->lk->current;
 	const size_t old_line = env->line;
 	env->lk->current = number;
-	env->curent_path = ws_get_file(env->lk->ws, number);
+	const char *new_path = ws_get_file(env->lk->ws, number);
+	env->curent_path = &new_path;
 	env->line = 1;
 
 	get_next_char(env);
@@ -141,7 +142,8 @@ int lk_preprocess_file(environment *const env, const size_t number)
 
 	env->line = old_line;
 	env->lk->current = old_cur;
-	env->curent_path = ws_get_file(env->lk->ws, old_cur);
+	const char *old_path = ws_get_file(env->lk->ws, old_cur);
+	env->curent_path = &old_path;
 
 	in_clear(env->input);
 	return was_error ? -1 : 0;

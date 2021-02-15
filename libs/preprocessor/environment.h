@@ -71,7 +71,7 @@ typedef struct environment
 	int oldnextp[DIP];
 	int dipp;
 
-	char *curent_path;
+	const char **curent_path;
 
 	size_t line;
 
@@ -83,7 +83,7 @@ typedef struct environment
 
 void env_init(environment *const env, linker *const lk, universal_io *const output);
 void env_clear_error_string(environment *const env);
-char *env_get_current_file(environment *const env);
+const char *env_get_current_file(environment *const env);
 
 /**
  *	Add a comment to indicate line changes in the output

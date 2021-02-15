@@ -100,9 +100,9 @@ void env_clear_error_string(environment *const env)
 	env->position = 0;
 }
 
-char *env_get_current_file(environment *const env)
+const char *env_get_current_file(environment *const env)
 {
-	return env->curent_path;
+	return *env->curent_path;
 }
 
 void env_add_comment(environment *const env)
