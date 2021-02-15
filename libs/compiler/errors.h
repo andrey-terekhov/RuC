@@ -27,35 +27,35 @@ extern "C" {
 typedef enum ERROR
 {
 	// Lexer errors
-	bad_character,						/**< "Bad character in source" */
-	empty_character,					/**< "Empty character constant" */
-	unknown_escape_sequence,			/**< "Unknown escape sequence" */
-	expected_apost_after_char_const,	/**< "Missing terminating ' character" */
-	missing_terminating_quote_char,		/**< "Missing terminating '"' character" */
-	string_too_long,					/**< "String literal exceeds maximum length" */
-	unterminated_block_comment,			/**< "Unterminated block comment" */
+	bad_character,						/**< Bad character in source */
+	empty_character,					/**< Empty character constant */
+	unknown_escape_sequence,			/**< Unknown escape sequence */
+	expected_apost_after_char_const,	/**< Missing terminating ' character */
+	missing_terminating_quote_char,		/**< Missing terminating '"' character */
+	string_too_long,					/**< String literal exceeds maximum length */
+	unterminated_block_comment,			/**< Unterminated block comment */
 
 	// Statement errors
-	expected_semi_after_stmt,			/**< "Expected ';' after statement" */
-	case_not_in_switch,					/**< "'case' statement not in switch statement" */
+	expected_semi_after_stmt,			/**< Expected ';' after statement */
+	case_not_in_switch,					/**< 'case' statement not in switch statement */
 	float_in_switch,
-	expected_colon_after_case,			/**< "Expected ':' after 'case'" */
-	default_not_in_switch,				/**< "'default' statement not in switch statement" */
-	expected_colon_after_default,		/**< "Expected ':' after 'default'" */
-	expected_while,						/**< "Expected 'while' in do/while loop" */
+	expected_colon_after_case,			/**< Expected ':' after 'case' */
+	default_not_in_switch,				/**< 'default' statement not in switch statement */
+	expected_colon_after_default,		/**< Expected ':' after 'default' */
+	expected_while,						/**< Expected 'while' in do/while loop */
 	no_leftbr_in_for,
 	no_semicolon_in_for,
 	no_rightbr_in_for,
 	no_ident_after_goto,
-	continue_not_in_loop,				/**< "'continue' statement not in loop statement" */
-	break_not_in_loop_or_switch,		/**< "'break' statement not in loop or switch statement" */
+	continue_not_in_loop,				/**< 'continue' statement not in loop statement */
+	break_not_in_loop_or_switch,		/**< 'break' statement not in loop or switch statement */
 	no_ret_in_func,
 	bad_type_in_ret,
 	notvoidret_in_void_func,
 
 	// Environment errors
-	no_main_in_program,					/**< "Undefined main" error */
-	predef_but_notdef,					/**< "Undefined function" error */
+	no_main_in_program,					/**< Undefined main */
+	predef_but_notdef,					/**< Undefined function */
 
 	// Other errors
 	after_type_must_be_ident = 201,
@@ -101,8 +101,8 @@ typedef enum ERROR
 	aster_not_for_pointer,
 	aster_with_row,
 	float_in_condition,
-	wrong_fun_as_param,
-	no_right_br_in_paramfun,
+	wrong_func_as_param,
+	no_right_br_in_argfun,
 	par_type_void_with_nofun,
 	ident_in_declarator,
 	array_before_func,

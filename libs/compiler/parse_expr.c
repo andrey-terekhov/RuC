@@ -1197,7 +1197,7 @@ void postexpr(parser *const prs)
 
 					if (mode_is_float(mdj) && mode_is_int(prs->ansttype))
 					{
-						insert_widen(prs);
+						parse_expression_insert_widen(prs);
 					}
 					--prs->sopnd;
 				}
@@ -1998,7 +1998,7 @@ item_t parse_constant_expression(parser *const prs)
 	return (item_t)prs->ansttype;
 }
 
-void insert_widen(parser *const parser)
+void parse_expression_insert_widen(parser *const parser)
 {
 	vector_remove(&parser->sx->tree);
 	totree(parser, WIDEN);

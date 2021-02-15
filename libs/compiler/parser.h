@@ -165,7 +165,7 @@ item_t parse_constant_expression(parser *const prs);
  *
  *	@param	prs			Parser structure
  */
-void insert_widen(parser *const prs);
+void parse_expression_insert_widen(parser *const prs);
 
 
 /**
@@ -322,6 +322,7 @@ int mode_is_void(const item_t mode);
  *	@return	@c 1 on true, @c 0 on false
  */
 int mode_is_undefined(const item_t mode);
+
 
 /**
  *	Add new item to identifiers table

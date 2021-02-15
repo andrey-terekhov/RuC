@@ -598,7 +598,7 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_d,
 
 			if (token_try_consume(prs, l_paren))
 			{
-				token_expect_and_consume(prs, star, wrong_fun_as_param);
+				token_expect_and_consume(prs, star, wrong_func_as_param);
 				if (prs->next_token == identifier)
 				{
 					if (level)
@@ -622,8 +622,8 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_d,
 					}
 				}
 
-				token_expect_and_consume(prs, r_paren, no_right_br_in_paramfun);
-				token_expect_and_consume(prs, l_paren, wrong_fun_as_param);
+				token_expect_and_consume(prs, r_paren, no_right_br_in_argfun);
+				token_expect_and_consume(prs, l_paren, wrong_func_as_param);
 				if (arg_func == 1)
 				{
 					parse_error(prs, aster_before_func);
@@ -911,7 +911,7 @@ void parse_initializer(parser *const prs, const item_t type)
 			}
 			else if (mode_is_float(type) && mode_is_int(expr_type))
 			{
-				insert_widen(prs);
+				parse_expression_insert_widen(prs);
 			}
 			else if (type != expr_type)
 			{

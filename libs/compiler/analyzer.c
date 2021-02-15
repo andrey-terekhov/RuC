@@ -57,13 +57,12 @@ void read_keywords(parser *const prs)
 
 size_t toreprtab(parser *const prs, char str[])
 {
-	int i;
 	size_t oldrepr = REPRTAB_LEN;
 
 	prs->sx->hash = 0;
 
 	REPRTAB_LEN += 2;
-	for (i = 0; str[i] != 0; i++)
+	for (int i = 0; str[i] != '\0'; i++)
 	{
 		prs->sx->hash += str[i];
 		REPRTAB[REPRTAB_LEN++] = str[i];
