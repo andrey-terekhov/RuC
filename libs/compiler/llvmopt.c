@@ -78,11 +78,15 @@ size_t node_recursive(node *const nd, size_t i, universal_io *const io, info *co
                 // перестановка TPrintf
                 // todo подумать, как для всех типов работать будет
                 for (int i = 0; i < n + 1; i++)
+                {
                     node_swap(nd, j-i, nd, j-i-1);
+                }
                 // перестановка TString
                 // todo подумать, как для всех типов работать будет
                 for (int i = 0; i < n; i++)
+                {
                     node_swap(nd, j-i, nd, j-i-1);
+                }
 
                 context->was_printf = 1;
             }

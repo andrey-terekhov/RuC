@@ -31,8 +31,10 @@ enum LOCATION
     LMEM,                           /**< Переменная находится в памяти */
 };
 
-typedef struct info
+typedef struct information
 {
+    universal_io * io;              /**< Вывод */
+    syntax * sx;                    /**< Структура syntax с таблицами */
     int string_num;                 /**< Номер строки */
     int register_num;               /**< Номер регистра */
     int variable_location;          /**< Расположение переменной */
@@ -40,14 +42,14 @@ typedef struct info
     int answer_reg;                 /**< Регистр с ответом */
     int answer_num;                 /**< Константа с ответом */
     int answer_type;                /**< Тип ответа */
-} info;
+} information;
 
 
-static void expression(universal_io *const io, syntax *const sx, node *const nd, info *const context);
+static void expression(node *const nd, information *const info);
 
-static void block(universal_io *const io, syntax *const sx, node *const nd, info *const context);
+static void block(node *const nd, information *const info);
 
-static void operand(universal_io *const io, syntax *const sx, node *const nd, info *const context)
+static void operand(node *const nd, information *const info)
 {
     if (node_get_type(nd) == NOP || node_get_type(nd) == ADLOGOR || node_get_type(nd) == ADLOGAND)
         node_set_next(nd);
@@ -64,9 +66,9 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
         {
             int displ = node_get_arg(nd, 0);
 
-            uni_printf(io, " %%.%i = load i32, i32* %%var.%i, align 4\n", context->register_num, displ);
-            context->answer_reg = context->register_num++;
-            context->answer_type = AREG;
+            uni_printf(info->io, " %%.%i = load i32, i32* %%var.%i, align 4\n", info->register_num, displ);
+            info->answer_reg = info->register_num++;
+            info->answer_type = AREG;
             node_set_next(nd);
         }
         break;
@@ -74,15 +76,15 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
         {
             int num = node_get_arg(nd, 0);
 
-            if (context->variable_location == LMEM)
+            if (info->variable_location == LMEM)
             {
-                uni_printf(io, " store i32 %i, i32* %%var.%i, align 4\n", num, context->request_reg);
-                context->answer_type = AREG;
+                uni_printf(info->io, " store i32 %i, i32* %%var.%i, align 4\n", num, info->request_reg);
+                info->answer_type = AREG;
             }
             else
             {
-                context->answer_type = ACONST;
-                context->answer_num = num;
+                info->answer_type = ACONST;
+                info->answer_num = num;
             }           
 
             node_set_next(nd);
@@ -94,11 +96,11 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
         case TSliceident:
         {
             node_set_next(nd);
-            expression(io, sx, nd, context);
+            expression(nd, info);
             while (node_get_type(nd) == TSlice)
             {
                 node_set_next(nd);
-                expression(io, sx, nd, context);
+                expression(nd, info);
             }
         }
         break;
@@ -108,7 +110,7 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
 
             node_set_next(nd);
             for (int i = 0; i < npar; i++)
-                expression(io, sx, nd, context);
+                expression(nd, info);
             node_set_next(nd); // TCall2
         }
         break;
@@ -119,7 +121,7 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
 
             node_set_next(nd);
             for (int i = 0; i < n; i++)
-                expression(io, sx, nd, context);
+                expression(nd, info);
         }
         break;
         case TStructinit:
@@ -129,7 +131,7 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
 
             node_set_next(nd);
             for (int i = 0; i < n; i++)
-                expression(io, sx, nd, context);
+                expression(nd, info);
         }
         break;
         default:
@@ -138,7 +140,7 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
     }
 }
 
-static void expression(universal_io *const io, syntax *const sx, node *const nd, info *const context)
+static void expression(node *const nd, information *const info)
 {
     switch (node_get_type(nd))
     {
@@ -150,8 +152,8 @@ static void expression(universal_io *const io, syntax *const sx, node *const nd,
         case LDIV:
         {
             node_set_next(nd);
-            expression(io, sx, nd, context);
-            expression(io, sx, nd, context);
+            expression(nd, info);
+            expression(nd, info);
         }
         break;
         // унарные операции
@@ -169,24 +171,24 @@ static void expression(universal_io *const io, syntax *const sx, node *const nd,
         case DIVASSV:
         {
             node_set_next(nd);
-            expression(io, sx, nd, context);
+            expression(nd, info);
         }
         break;
         default:
-            operand(io, sx, nd, context);
+            operand(nd, info);
     }
     if (node_get_type(nd) == TExprend)
         node_set_next(nd);
 }
 
-static void statement(universal_io *const io, syntax *const sx, node *const nd, info *const context)
+static void statement(node *const nd, information *const info)
 {
     switch (node_get_type(nd))
     {
         case TBegin:
         {
             node_set_next(nd);
-            block(io, sx, nd, context);
+            block(nd, info);
         }
         break;
         case TIf:
@@ -194,10 +196,10 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
             int ref_else = node_get_arg(nd, 0);
 
             node_set_next(nd);
-            expression(io, sx, nd, context);
-            statement(io, sx, nd, context);
+            expression(nd, info);
+            statement(nd, info);
             if (ref_else)
-                statement(io, sx, nd, context);
+                statement(nd, info);
         }
         break;
         case TSwitch:
@@ -206,15 +208,15 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
         case TWhile:
         {
             node_set_next(nd);
-            expression(io, sx, nd, context);
-            statement(io, sx, nd, context);
+            expression(nd, info);
+            statement(nd, info);
         }
         break;
         case TDo:
         {
             node_set_next(nd);
-            statement(io, sx, nd, context);
-            expression(io, sx, nd, context);
+            statement(nd, info);
+            expression(nd, info);
         }
         break;
         case TFor:
@@ -225,18 +227,18 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
 
             node_set_next(nd);
             if (ref_from)
-                expression(io, sx, nd, context);
+                expression(nd, info);
             if (ref_cond)
-                expression(io, sx, nd, context);
+                expression(nd, info);
             if (ref_incr)
-                expression(io, sx, nd, context);
-            statement(io, sx, nd, context);
+                expression(nd, info);
+            statement(nd, info);
         }
         break;
         case TLabel:
         {
             node_set_next(nd);
-            statement(io, sx, nd, context);
+            statement(nd, info);
         }
         break;
         case TBreak:
@@ -248,10 +250,10 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
         case TReturnval:
         {
             node_set_next(nd);
-            context->variable_location = LREG;
-            expression(io, sx, nd, context);
-            if (context->answer_type == ACONST)
-                uni_printf(io, " ret i32 %i\n", context->answer_num);
+            info->variable_location = LREG;
+            expression(nd, info);
+            if (info->answer_type == ACONST)
+                uni_printf(info->io, " ret i32 %i\n", info->answer_num);
         }
         break;
         case TGetid:
@@ -273,24 +275,24 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
             node_set_next(nd); // TExprend
             for (int i = 0; i < n; i++)
             {
-                context->variable_location = LREG;
-                expression(io, sx, nd, context);
-                args[i] = context->answer_reg;
+                info->variable_location = LREG;
+                expression(nd, info);
+                args[i] = info->answer_reg;
             }
-            uni_printf(io, " %%.%i = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
-            		"([%i x i8], [%i x i8]* @.str%i, i32 0, i32 0)", context->register_num++, string_length+1, string_length+1, context->string_num++);
+            uni_printf(info->io, " %%.%i = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
+            		"([%i x i8], [%i x i8]* @.str%i, i32 0, i32 0)", info->register_num++, string_length+1, string_length+1, info->string_num++);
             for (int i = 0; i < n; i++)
-                uni_printf(io, ", i32 signext %%.%i", args[i]);
-            uni_printf(io, ")\n");
+                uni_printf(info->io, ", i32 signext %%.%i", args[i]);
+            uni_printf(info->io, ")\n");
         }
         break;
         // todo обсудить добавление TScanf
         default:
-            expression(io, sx, nd, context);
+            expression(nd, info);
     }
 }
 
-static void init(universal_io *const io, syntax *const sx, node *const nd, info *const context)
+static void init(node *const nd, information *const info)
 {
     switch (node_get_type(nd))
     {
@@ -301,7 +303,7 @@ static void init(universal_io *const io, syntax *const sx, node *const nd, info 
 
             node_set_next(nd);
             for (int i = 0; i < n; i++)
-                expression(io, sx, nd, context);
+                expression(nd, info);
         }
         break;
         case TStructinit:
@@ -311,15 +313,15 @@ static void init(universal_io *const io, syntax *const sx, node *const nd, info 
 
             node_set_next(nd);
             for (int i = 0; i < n; i++)
-                expression(io, sx, nd, context);
+                expression(nd, info);
         }
         break;
         default:
-            expression(io, sx, nd, context);
+            expression(nd, info);
     }
 }
 
-static void block(universal_io *const io, syntax *const sx, node *const nd, info *const context)
+static void block(node *const nd, information *const info)
 {
     do
     {
@@ -329,14 +331,14 @@ static void block(universal_io *const io, syntax *const sx, node *const nd, info
             {
                 int ref_ident = node_get_arg(nd, 0) / 4;
 
-                if (ident_get_mode(sx, ref_ident) == LMAIN)
-                	uni_printf(io, "define i32 @main(");
-                uni_printf(io, ") {\n");
+                if (ident_get_mode(info->sx, ref_ident) == LMAIN)
+                	uni_printf(info->io, "define i32 @main(");
+                uni_printf(info->io, ") {\n");
 
                 node_set_next(nd); // TBegin
                 node_set_next(nd);
-                block(io, sx, nd, context);
-                uni_printf(io, "}\n\n");
+                block(nd, info);
+                uni_printf(info->io, "}\n\n");
             }
             break;
             case TDeclarr:
@@ -345,7 +347,7 @@ static void block(universal_io *const io, syntax *const sx, node *const nd, info
 
                 node_set_next(nd);
                 for (int i = 0; i < n; i++)
-                    expression(io, sx, nd, context);
+                    expression(nd, info);
             }
             break;
             case TDeclid:
@@ -357,15 +359,15 @@ static void block(universal_io *const io, syntax *const sx, node *const nd, info
                 {
                     if (eltype == LINT)
                     {
-                        uni_printf(io, " %%var.%i = alloca i32, align 4\n", displ);
-                        context->variable_location = LMEM;
-                        context->request_reg = displ;
+                        uni_printf(info->io, " %%var.%i = alloca i32, align 4\n", displ);
+                        info->variable_location = LMEM;
+                        info->request_reg = displ;
                     }
                 }
 
                 node_set_next(nd);
                 if (all)
-                    init(io, sx, nd, context);
+                    init(nd, info);
             }
             break;
             case NOP:
@@ -374,7 +376,7 @@ static void block(universal_io *const io, syntax *const sx, node *const nd, info
                 node_set_next(nd);
                 break;
             default:
-                statement(io, sx, nd, context);
+                statement(nd, info);
         }
     } while (node_get_type(nd) != TEnd);
     node_set_next(nd); // TEnd   
@@ -383,16 +385,18 @@ static void block(universal_io *const io, syntax *const sx, node *const nd, info
 /** Генерация кодов llvm. Первый проход по дереву */
 static int codegen_llvm(universal_io *const io, syntax *const sx)
 {
-    info context;
-    context.string_num = 1;
-    context.register_num = 1;
-    context.variable_location = LREG;
-    context.request_reg = 0;
-    context.answer_reg = 0;
+    information info;
+    info.io = io;
+    info.sx = sx;
+    info.string_num = 1;
+    info.register_num = 1;
+    info.variable_location = LREG;
+    info.request_reg = 0;
+    info.answer_reg = 0;
 
     node root = node_get_root(&sx->tree);
     node_set_next(&root);
-    block(io, sx, &root, &context);
+    block(&root, &info);
 
     return 0;
 }
