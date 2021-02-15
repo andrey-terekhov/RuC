@@ -405,7 +405,7 @@ void parse_array_initializer(parser *const prs, const item_t type)
 		{
 			prs->flag_strings_only = 1;
 		}
-		parse_string_literal_expression(prs);
+		parse_string_literal(prs);
 		tree_add(prs->sx, TExprend);
 		return;
 	}
@@ -520,7 +520,7 @@ void parse_init_declarator(parser *const prs, item_t type)
  *
  *	@return	Index of modes table, @c mode_undefined on failure
  */
-item_t parse_function_declarator(parser *const prs, const int level, int func_d, const item_t return_type)
+item_t parse_function_declarator(parser *const prs, const int level, int func_def, const item_t return_type)
 {
 	item_t local_modetab[100];
 	size_t local_md = 3;
@@ -639,11 +639,11 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_d,
 				type = parse_function_declarator(prs, 0, 2, type);
 				prs->func_def = old_func_def;
 			}
-			if (func_d == 3)
+			if (func_def == 3)
 			{
-				func_d = flag_was_ident > 0 ? 1 : 2;
+				func_def = flag_was_ident > 0 ? 1 : 2;
 			}
-			else if (func_d == 2 && flag_was_ident > 0)
+			else if (func_def == 2 && flag_was_ident > 0)
 			{
 				parse_error(prs, wait_declarator);
 				token_skip_until(prs, r_paren | semicolon);
@@ -654,7 +654,7 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_d,
 				}
 				return mode_undefined;
 			}
-			else if (func_d == 1 && flag_was_ident == 0)
+			else if (func_def == 1 && flag_was_ident == 0)
 			{
 				parse_error(prs, wait_definition);
 				token_skip_until(prs, r_paren | semicolon);
@@ -666,7 +666,7 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_d,
 		} while (token_try_consume(prs, comma));
 
 		token_expect_and_consume(prs, r_paren, wrong_param_list);
-		prs->func_def = func_d;
+		prs->func_def = func_def;
 	}
 
 	local_modetab[0] = mode_function;
@@ -720,7 +720,7 @@ void parse_function_body(parser *const prs, const size_t function_id)
 	const size_t ref_maxdispl = tree_reserve(prs->sx);
 
 	token_consume(prs);
-	parse_statement_compound(prs, FUNCBODY);
+	parse_compound_statement(prs, FUNCBODY);
 
 	vector_remove(&prs->sx->tree);
 	tree_add(prs->sx, TReturnvoid);
@@ -804,7 +804,7 @@ void parse_function_definition(parser *const prs, const item_t type)
  */
 
 
-void parse_declaration_inner(parser *const prs)
+void parse_inner_declaration(parser *const prs)
 {
 	prs->flag_was_type_def = 0;
 	item_t group_type = parse_type_specifier(prs);
@@ -843,7 +843,7 @@ void parse_declaration_inner(parser *const prs)
 	token_expect_and_consume(prs, semicolon, expected_semi_after_decl);
 }
 
-void parse_declaration_external(parser *const prs)
+void parse_external_declaration(parser *const prs)
 {
 	prs->flag_was_type_def = 0;
 	prs->func_def = 3;
@@ -911,7 +911,7 @@ void parse_initializer(parser *const prs, const item_t type)
 			}
 			else if (mode_is_float(type) && mode_is_int(expr_type))
 			{
-				parse_expression_insert_widen(prs);
+				insert_widen(prs);
 			}
 			else if (type != expr_type)
 			{

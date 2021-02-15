@@ -389,7 +389,7 @@ void parse_return_statement(parser *const prs)
 		{
 			if (mode_is_float(return_type) && mode_is_int(expr_type))
 			{
-				parse_expression_insert_widen(prs);
+				insert_widen(prs);
 			}
 			else if (return_type != expr_type)
 			{
@@ -405,7 +405,7 @@ void parse_return_statement(parser *const prs)
 void parse_create_direct_statement(parser *const prs)
 {
 	tree_add(prs->sx, CREATEDIRECTC);
-	parse_statement_compound(prs, THREAD);
+	parse_compound_statement(prs, THREAD);
 	tree_add(prs->sx, EXITDIRECTC);
 }
 
@@ -588,7 +588,7 @@ void parse_printf_statement(parser *const prs)
 		const item_t type = parse_assignment_expression(prs);
 		if (mode_is_float(format_types[actual_args]) && mode_is_int(type))
 		{
-			parse_expression_insert_widen(prs);
+			insert_widen(prs);
 		}
 		else if (format_types[actual_args] != type)
 		{
@@ -644,7 +644,7 @@ void parse_block_item(parser *const prs)
 		// case kw_union:
 		// case kw_enum:
 		// case kw_typedef:
-			parse_declaration_inner(prs);
+			parse_inner_declaration(prs);
 			return;
 
 		case identifier:
@@ -652,7 +652,7 @@ void parse_block_item(parser *const prs)
 			const size_t id = (size_t)repr_get_reference(prs->sx, prs->lxr->repr);
 			if (ident_get_displ(prs->sx, id) >= 1000)
 			{
-				parse_declaration_inner(prs);
+				parse_inner_declaration(prs);
 			}
 			else
 			{
@@ -695,7 +695,7 @@ void parse_statement(parser *const prs)
 			break;
 
 		case l_brace:
-			parse_statement_compound(prs, REGBLOCK);
+			parse_compound_statement(prs, REGBLOCK);
 			break;
 
 		case kw_if:
@@ -758,7 +758,7 @@ void parse_statement(parser *const prs)
 	}
 }
 
-void parse_statement_compound(parser *const prs, const block_t type)
+void parse_compound_statement(parser *const prs, const block_t type)
 {
 	tree_add(prs->sx, TBegin);
 

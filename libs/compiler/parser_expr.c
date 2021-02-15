@@ -59,7 +59,6 @@ void applid(parser *const prs)
 		parse_error(prs, ident_is_not_declared, buffer);
 		prs->was_error = 5;
 	}
-
 }
 
 void totree(parser *const prs, item_t op)
@@ -67,14 +66,17 @@ void totree(parser *const prs, item_t op)
 	vector_add(&TREE, op);
 }
 
-void totreef(parser *const prs, item_t op)
+void totree_float_operation(parser *const prs, item_t op)
 {
 	vector_add(&TREE, op);
 	if (prs->ansttype == LFLOAT &&
 		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
 	{
-		const size_t index = vector_size(&TREE) - 1;
-		vector_set(&TREE, index, vector_get(&TREE, index) + 50);
+		tree_add(prs->sx, op + 50);
+	}
+	else
+	{
+		tree_add(prs->sx, op);
 	}
 }
 
@@ -114,38 +116,41 @@ double double_from_tree(vector *const tree)
 	return num;
 }
 
-void binop(parser *const prs, int sp)
+void binary_operation(parser *const prs, int sp)
 {
 	int op = prs->stackop[sp];
-	int rtype = prs->stackoperands[prs->sopnd--];
-	int ltype = prs->stackoperands[prs->sopnd];
+	int right = prs->stackoperands[prs->sopnd--];
+	int left = prs->stackoperands[prs->sopnd];
 
-	if (mode_is_pointer(prs->sx, ltype) || mode_is_pointer(prs->sx, rtype))
+	if (mode_is_pointer(prs->sx, left) || mode_is_pointer(prs->sx, right))
 	{
 		parse_error(prs, operand_is_pointer);
 		prs->was_error = 5;
 		return; // 1
 	}
-	if ((op == LOGOR || op == LOGAND || op == LOR || op == LEXOR || op == LAND || op == LSHL || op == LSHR ||
-		 op == LREM) &&
-		(mode_is_float(ltype) || mode_is_float(rtype)))
+
+	if (mode_is_float(left) || mode_is_float(right))
 	{
-		parse_error(prs, int_op_for_float);
-		prs->was_error = 5;
-		return; // 1
-	}
-	if (mode_is_int(ltype) && mode_is_float(rtype))
-	{
-		totree(prs, WIDEN1);
-	}
-	if (mode_is_int(rtype) && mode_is_float(ltype))
-	{
-		totree(prs, WIDEN);
-	}
-	if (mode_is_float(ltype) || mode_is_float(rtype))
-	{
+		if (op == LOGOR || op == LOGAND || op == LOR || op == LEXOR || op == LAND
+			|| op == LSHR || op == LSHL || op == LREM)
+		{
+			parse_error(prs, int_op_for_float);
+			prs->was_error = 5;
+			return; // 1
+		}
+
+		if (mode_is_int(left))
+		{
+			tree_add(prs->sx, WIDEN1);
+		}
+		else if (mode_is_int(right))
+		{
+			tree_add(prs->sx, WIDEN);
+		}
+
 		prs->ansttype = LFLOAT;
 	}
+
 	if (op == LOGOR || op == LOGAND)
 	{
 		totree(prs, op);
@@ -154,29 +159,27 @@ void binop(parser *const prs, int sp)
 	}
 	else
 	{
-		totreef(prs, op);
+		totree_float_operation(prs, op);
 	}
+
 	if (op >= EQEQ && op <= LGE)
 	{
 		prs->ansttype = LINT;
 	}
+
 	prs->stackoperands[prs->sopnd] = prs->ansttype;
-	// printf("binop context->sopnd=%i ltype=%i rtype=%i
-	// context->ansttype=%i\n", context->sopnd, ltype, rtype,
-	// context->ansttype);
 	prs->anst = VAL;
 }
 
 void toval(parser *const prs)
 {
-	// надо значение положить на стек,
-	// например, чтобы передать параметром
-
+	// надо значение положить на стек, например, чтобы передать параметром
 	if (prs->anst == VAL || prs->anst == NUMBER)
 	{
-		;
+		return;
 	}
-	else if (mode_is_struct(prs->sx, prs->ansttype))
+
+	if (mode_is_struct(prs->sx, prs->ansttype))
 	{
 		if (!prs->flag_in_assignment)
 		{
@@ -194,26 +197,19 @@ void toval(parser *const prs)
 			totree(prs, mode_get(prs->sx, prs->ansttype + 1));
 			prs->anst = VAL;
 		}
+		return;
 	}
-	else
-	{
-		if (prs->anst == IDENT)
-		{
-			vector_set(&TREE, vector_size(&TREE) - 2
-					   , mode_is_float(prs->ansttype)
-					   ? TIdenttovald
-					   : TIdenttoval);
-		}
 
-		if (!(mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype)))
-		{
-			if (prs->anst == ADDR)
-			{
-				totree(prs, mode_is_float(prs->ansttype) ? TAddrtovald : TAddrtoval);
-			}
-		}
-		prs->anst = VAL;
+	if (prs->anst == IDENT)
+	{
+		tree_set(prs->sx, tree_size(prs->sx) - 2, mode_is_float(prs->ansttype) ? TIdenttovald : TIdenttoval);
 	}
+
+	if (!mode_is_array(prs->sx, prs->ansttype) && !mode_is_pointer(prs->sx, prs->ansttype) && prs->anst == ADDR)
+	{
+		totree(prs, mode_is_float(prs->ansttype) ? TAddrtovald : TAddrtoval);
+	}
+	prs->anst = VAL;
 }
 
 void actstring(int type, parser *const prs)
@@ -435,7 +431,7 @@ void primaryexpr(parser *const prs)
 	}
 	else if (prs->curr_token == STRING)
 	{
-		parse_string_literal_expression(prs);
+		parse_string_literal(prs);
 	}
 	else if (prs->curr_token == IDENT)
 	{
@@ -489,7 +485,7 @@ void primaryexpr(parser *const prs)
 			must_be(prs, RIGHTBR, wait_rightbr_in_primary);
 			while (prs->sp > oldsp)
 			{
-				binop(prs, --prs->sp);
+				binary_operation(prs, --prs->sp);
 			}
 		}
 	}
@@ -1197,7 +1193,7 @@ void postexpr(parser *const prs)
 
 					if (mode_is_float(mdj) && mode_is_int(prs->ansttype))
 					{
-						parse_expression_insert_widen(prs);
+						insert_widen(prs);
 					}
 					--prs->sopnd;
 				}
@@ -1383,7 +1379,7 @@ void postexpr(parser *const prs)
 			op += 4;
 		}
 		scanner(prs);
-		totreef(prs, op);
+		totree_float_operation(prs, op);
 		if (prs->anst == IDENT)
 		{
 			totree(prs, ident_get_displ(prs->sx, lid));
@@ -1416,7 +1412,7 @@ void unarexpr(parser *const prs)
 			{
 				op += 4;
 			}
-			totreef(prs, op);
+			totree_float_operation(prs, op);
 			if (prs->anst == IDENT)
 			{
 				totree(prs, ident_get_displ(prs->sx, prs->lastid));
@@ -1489,7 +1485,7 @@ void unarexpr(parser *const prs)
 					}
 					else
 					{
-						totreef(prs, UNMINUS);
+						totree_float_operation(prs, UNMINUS);
 					}
 				}
 				else if (op == LPLUS)
@@ -1523,46 +1519,52 @@ void unarexpr(parser *const prs)
 	}
 }
 
-int prio(int op)
+// возвращает 0, если не операция
+int operator_precedence(const token_t operator)
 {
-	// возвращает 0, если не операция
-	return op == LOGOR
-	? 1
-	: op == LOGAND
-	? 2
-	: op == LOR
-	? 3
-	: op == LEXOR
-	? 4
-	: op == LAND
-	? 5
-	: op == EQEQ
-	? 6
-	: op == NOTEQ
-	? 6
-	: op == LLT
-	? 7
-	: op == LGT
-	? 7
-	: op == LLE
-	? 7
-	: op == LGE
-	? 7
-	: op == LSHL
-	? 8
-	: op == LSHR
-	? 8
-	: op == LPLUS
-	? 9
-	: op == LMINUS
-	? 9
-	: op == LMULT
-	? 10
-	: op == LDIV
-	? 10
-	: op == LREM
-	? 10
-	: 0;
+	switch (operator)
+	{
+		case pipepipe:        // '||'
+			return 1;
+
+		case ampamp:          // '&&'
+			return 2;
+
+		case pipe:            // '|'
+			return 3;
+
+		case caret:           // '^'
+			return 4;
+
+		case amp:             // '&'
+			return 5;
+
+		case equalequal:      // '=='
+		case exclaimequal:    // '!='
+			return 6;
+
+		case less:            // '<'
+		case greater:         // '<'
+		case lessequal:       // '<='
+		case greaterequal:    // '>='
+			return 7;
+
+		case lessless:        // '<<'
+		case greatergreater:  // '>>'
+			return 8;
+
+		case plus:            // '+'
+		case minus:           // '-'
+			return 9;
+
+		case star:            // '*'
+		case slash:           // '/'
+		case percent:         // '%'
+			return 10;
+
+		default:
+			return 0;
+	}
 }
 
 void subexpr(parser *const prs)
@@ -1570,14 +1572,14 @@ void subexpr(parser *const prs)
 	int oldsp = prs->sp;
 	int wasop = 0;
 
-	int p = prio(prs->next_token);
+	int p = operator_precedence(prs->next_token);
 	while (p)
 	{
 		wasop = 1;
 		toval(prs);
 		while (prs->sp > oldsp && prs->stack[prs->sp - 1] >= p)
 		{
-			binop(prs, --prs->sp);
+			binary_operation(prs, --prs->sp);
 			if (prs->was_error == 5)
 			{
 				return;
@@ -1603,7 +1605,7 @@ void subexpr(parser *const prs)
 			prs->was_error = 5;
 			return; // 1
 		}
-		p = prio(prs->next_token);
+		p = operator_precedence(prs->next_token);
 	}
 	if (wasop)
 	{
@@ -1611,7 +1613,7 @@ void subexpr(parser *const prs)
 	}
 	while (prs->sp > oldsp)
 	{
-		binop(prs, --prs->sp);
+		binary_operation(prs, --prs->sp);
 		if (prs->was_error == 5)
 		{
 			return;
@@ -1878,7 +1880,7 @@ void exprassn(parser *const prs, int level)
 			{
 				opp += 11;
 			}
-			totreef(prs, opp);
+			totree_float_operation(prs, opp);
 			if (leftanst == IDENT)
 			{
 				prs->anstdispl = leftanstdispl;
@@ -1938,7 +1940,7 @@ void expr(parser *const prs, int level)
  */
 
 
-void parse_string_literal_expression(parser *const prs)
+void parse_string_literal(parser *const prs)
 {
 	totree(prs, TString);
 	totree(prs, prs->lxr->num);
@@ -1998,7 +2000,7 @@ item_t parse_constant_expression(parser *const prs)
 	return (item_t)prs->ansttype;
 }
 
-void parse_expression_insert_widen(parser *const parser)
+void insert_widen(parser *const parser)
 {
 	vector_remove(&parser->sx->tree);
 	totree(parser, WIDEN);

@@ -88,14 +88,14 @@ void token_skip_until(parser *const prs, const uint8_t tokens);
 
 
 /**
- *	Parse string literal expression [C99 6.5.1]
+ *	Parse string literal [C99 6.5.1]
  *
  *	primary-expression:
  *		string-literal
  *
  *	@param	prs			Parser structure
  */
-void parse_string_literal_expression(parser *const prs);
+void parse_string_literal(parser *const prs);
 
 /**
  *	Parse assignment expression [C99 6.5.16]
@@ -165,7 +165,7 @@ item_t parse_constant_expression(parser *const prs);
  *
  *	@param	prs			Parser structure
  */
-void parse_expression_insert_widen(parser *const prs);
+void insert_widen(parser *const prs);
 
 
 /**
@@ -175,7 +175,7 @@ void parse_expression_insert_widen(parser *const prs);
  *
  *	@param	prs			Parser structure
  */
-void parse_declaration_inner(parser *const prs);
+void parse_inner_declaration(parser *const prs);
 
 /**
  *	Parse a top level declaration [C99 6.7]
@@ -184,7 +184,7 @@ void parse_declaration_inner(parser *const prs);
  *
  *	@param	prs			Parser structure
  */
-void parse_declaration_external(parser *const prs);
+void parse_external_declaration(parser *const prs);
 
 /**
  *	Parse initializer [C99 6.7.8]
@@ -230,7 +230,7 @@ void parse_statement(parser *const prs);
  *
  *	@param	prs			Parser structure
  */
-void parse_statement_compound(parser *const prs, const block_t type);
+void parse_compound_statement(parser *const prs, const block_t type);
 
 
 /**
