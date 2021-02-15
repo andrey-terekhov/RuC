@@ -35,13 +35,13 @@ typedef struct information
 {
     universal_io * io;              /**< Вывод */
     syntax * sx;                    /**< Структура syntax с таблицами */
-    int string_num;                 /**< Номер строки */
-    int register_num;               /**< Номер регистра */
-    int variable_location;          /**< Расположение переменной */
-    int request_reg;                /**< Регистр на запрос */
-    int answer_reg;                 /**< Регистр с ответом */
-    int answer_num;                 /**< Константа с ответом */
-    int answer_type;                /**< Тип ответа */
+    item_t string_num;              /**< Номер строки */
+    item_t register_num;            /**< Номер регистра */
+    item_t variable_location;       /**< Расположение переменной */
+    item_t request_reg;             /**< Регистр на запрос */
+    item_t answer_reg;              /**< Регистр с ответом */
+    item_t answer_num;              /**< Константа с ответом */
+    item_t answer_type;             /**< Тип ответа */
 } information;
 
 
@@ -49,10 +49,14 @@ static void expression(node *const nd, information *const info);
 
 static void block(node *const nd, information *const info);
 
+
 static void operand(node *const nd, information *const info)
 {
     if (node_get_type(nd) == NOP || node_get_type(nd) == ADLOGOR || node_get_type(nd) == ADLOGAND)
+    {
         node_set_next(nd);
+    }
+
     switch (node_get_type(nd))
     {
         case TIdent:
@@ -64,9 +68,9 @@ static void operand(node *const nd, information *const info)
             break;
         case TIdenttoval:
         {
-            int displ = node_get_arg(nd, 0);
+            item_t const displ = node_get_arg(nd, 0);
 
-            uni_printf(info->io, " %%.%i = load i32, i32* %%var.%i, align 4\n", info->register_num, displ);
+            uni_printf(info->io, " %%.%li = load i32, i32* %%var.%li, align 4\n", info->register_num, displ);
             info->answer_reg = info->register_num++;
             info->answer_type = AREG;
             node_set_next(nd);
@@ -74,11 +78,11 @@ static void operand(node *const nd, information *const info)
         break;
         case TConst:
         {
-            int num = node_get_arg(nd, 0);
+            item_t const num = node_get_arg(nd, 0);
 
             if (info->variable_location == LMEM)
             {
-                uni_printf(info->io, " store i32 %i, i32* %%var.%i, align 4\n", num, info->request_reg);
+                uni_printf(info->io, " store i32 %li, i32* %%var.%li, align 4\n", num, info->request_reg);
                 info->answer_type = AREG;
             }
             else
@@ -97,6 +101,7 @@ static void operand(node *const nd, information *const info)
         {
             node_set_next(nd);
             expression(nd, info);
+
             while (node_get_type(nd) == TSlice)
             {
                 node_set_next(nd);
@@ -106,10 +111,10 @@ static void operand(node *const nd, information *const info)
         break;
         case TCall1:
         {
-            int npar = node_get_arg(nd, 0);
+            item_t const parameters_num = node_get_arg(nd, 0);
 
             node_set_next(nd);
-            for (int i = 0; i < npar; i++)
+            for (item_t i = 0; i < parameters_num; i++)
                 expression(nd, info);
             node_set_next(nd); // TCall2
         }
@@ -253,7 +258,7 @@ static void statement(node *const nd, information *const info)
             info->variable_location = LREG;
             expression(nd, info);
             if (info->answer_type == ACONST)
-                uni_printf(info->io, " ret i32 %i\n", info->answer_num);
+                uni_printf(info->io, " ret i32 %li\n", info->answer_num);
         }
         break;
         case TGetid:
@@ -279,8 +284,8 @@ static void statement(node *const nd, information *const info)
                 expression(nd, info);
                 args[i] = info->answer_reg;
             }
-            uni_printf(info->io, " %%.%i = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
-            		"([%i x i8], [%i x i8]* @.str%i, i32 0, i32 0)", info->register_num++, string_length+1, string_length+1, info->string_num++);
+            uni_printf(info->io, " %%.%li = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
+            		"([%i x i8], [%i x i8]* @.str%li, i32 0, i32 0)", info->register_num++, string_length+1, string_length+1, info->string_num++);
             for (int i = 0; i < n; i++)
                 uni_printf(info->io, ", i32 signext %%.%i", args[i]);
             uni_printf(info->io, ")\n");
