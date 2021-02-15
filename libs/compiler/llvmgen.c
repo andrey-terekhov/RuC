@@ -21,19 +21,25 @@
 
 enum ANSWER 
 {
-    AREG,               /**< Ответ находится в регистре */
-    CONST,              /**< Ответ является константой */
+    AREG,                           /**< Ответ находится в регистре */
+    ACONST,                         /**< Ответ является константой */
+};
+
+enum LOCATION 
+{
+    LREG,                           /**< Переменная находится в регистре */
+    LMEM,                           /**< Переменная находится в памяти */
 };
 
 typedef struct info
 {
-    int string_num;
-    int register_num;
-    int bvar;           /**< 0 - переменная в регистре, 1 - переменная в памяти */
-    int breg;           /**< передаваемый регистр */
-    int areg;           /**< возвращаемый регистр */
-    int anum;           /**< возвращаемая константа */
-    int manst;          /**< тип ответа */
+    int string_num;                 /**< Номер строки */
+    int register_num;               /**< Номер регистра */
+    int variable_location;          /**< Расположение переменной */
+    int request_reg;                /**< Регистр на запрос */
+    int answer_reg;                 /**< Регистр с ответом */
+    int answer_num;                 /**< Константа с ответом */
+    int answer_type;                /**< Тип ответа */
 } info;
 
 
@@ -59,8 +65,8 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
             int displ = node_get_arg(nd, 0);
 
             uni_printf(io, " %%.%i = load i32, i32* %%var.%i, align 4\n", context->register_num, displ);
-            context->areg = context->register_num++;
-            context->manst = AREG;
+            context->answer_reg = context->register_num++;
+            context->answer_type = AREG;
             node_set_next(nd);
         }
         break;
@@ -68,15 +74,15 @@ static void operand(universal_io *const io, syntax *const sx, node *const nd, in
         {
             int num = node_get_arg(nd, 0);
 
-            if (context->bvar == 1)
+            if (context->variable_location == LMEM)
             {
-                uni_printf(io, " store i32 %i, i32* %%var.%i, align 4\n", num, context->breg);
-                context->manst = AREG;
+                uni_printf(io, " store i32 %i, i32* %%var.%i, align 4\n", num, context->request_reg);
+                context->answer_type = AREG;
             }
             else
             {
-                context->manst = CONST;
-                context->anum = num;
+                context->answer_type = ACONST;
+                context->answer_num = num;
             }           
 
             node_set_next(nd);
@@ -242,10 +248,10 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
         case TReturnval:
         {
             node_set_next(nd);
-            context->bvar = 0;
+            context->variable_location = LREG;
             expression(io, sx, nd, context);
-            if (context->manst == CONST)
-                uni_printf(io, " ret i32 %i\n", context->anum);
+            if (context->answer_type == ACONST)
+                uni_printf(io, " ret i32 %i\n", context->answer_num);
         }
         break;
         case TGetid:
@@ -267,9 +273,9 @@ static void statement(universal_io *const io, syntax *const sx, node *const nd, 
             node_set_next(nd); // TExprend
             for (int i = 0; i < n; i++)
             {
-                context->bvar = 0;
+                context->variable_location = LREG;
                 expression(io, sx, nd, context);
-                args[i] = context->areg;
+                args[i] = context->answer_reg;
             }
             uni_printf(io, " %%.%i = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
             		"([%i x i8], [%i x i8]* @.str%i, i32 0, i32 0)", context->register_num++, string_length+1, string_length+1, context->string_num++);
@@ -352,8 +358,8 @@ static void block(universal_io *const io, syntax *const sx, node *const nd, info
                     if (eltype == LINT)
                     {
                         uni_printf(io, " %%var.%i = alloca i32, align 4\n", displ);
-                        context->bvar = 1;
-                        context->breg = displ;
+                        context->variable_location = LMEM;
+                        context->request_reg = displ;
                     }
                 }
 
@@ -380,9 +386,9 @@ static int codegen_llvm(universal_io *const io, syntax *const sx)
     info context;
     context.string_num = 1;
     context.register_num = 1;
-    context.bvar = 0;
-    context.breg = 0;
-    context.areg = 0;
+    context.variable_location = LREG;
+    context.request_reg = 0;
+    context.answer_reg = 0;
 
     node root = node_get_root(&sx->tree);
     node_set_next(&root);
