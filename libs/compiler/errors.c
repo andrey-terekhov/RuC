@@ -626,6 +626,10 @@ void get_error(const int num, char *const msg, va_list args)
 		}
 		break;
 
+		case tables_cannot_be_compressed:
+			sprintf(msg, "невозможно сжать таблицы до заданного размера");
+			break;
+
 		default:
 			sprintf(msg, "этот код ошибки я прозевал");
 	}

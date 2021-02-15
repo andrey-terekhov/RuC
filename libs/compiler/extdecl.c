@@ -120,14 +120,14 @@ void context_error(analyzer *const context, const int num) // Вынесено �
 		case no_field:
 		{
 			char buffer[MAXSTRINGL];
-			repr_get_ident(context->sx, REPRTAB_POS, buffer);
+			repr_get_name(context->sx, REPRTAB_POS, buffer);
 			error(io, num, buffer);
 		}
 		break;
 		case label_not_declared:
 		{
 			char buffer[MAXSTRINGL];
-			repr_get_ident(context->sx, REPRTAB_POS, buffer);
+			repr_get_name(context->sx, REPRTAB_POS, buffer);
 			error(io, num, context->sx->hash, buffer);
 		}
 		break;
@@ -3321,13 +3321,9 @@ int struct_decl_list(analyzer *context)
 	if (wasarr)
 	{
 		totree(context, TStructend);
-
-		const int procd = (int)vector_size(&context->sx->processes);
-		vector_increase(&context->sx->processes, 1);
-
-		totree(context, procd);
-		vector_set(&TREE, tstrbeg + 1, procd);
-		context->was_struct_with_arr = procd;
+		totree(context, (item_t)context->sx->procd);
+		vector_set(&TREE, tstrbeg + 1, (item_t)context->sx->procd);
+		context->was_struct_with_arr = (int)context->sx->procd++;
 	}
 	else
 	{

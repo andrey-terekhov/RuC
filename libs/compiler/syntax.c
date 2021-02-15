@@ -90,50 +90,40 @@ int repr_is_equal(const syntax *const sx, const size_t first, const size_t secon
  */
 
 
-int sx_init(syntax *const sx)
+syntax sx_create()
 {
-	if (sx == NULL)
-	{
-		return -1;
-	}
+	syntax sx;
+	sx.procd = 1;
 
-	sx->memory = vector_create(MAXMEMSIZE);
-	vector_increase(&sx->memory, 4);
-	sx->processes = vector_create(INIPROSIZE);
-	vector_increase(&sx->processes, 1);
-	sx->stack = vector_create(256);
-
-	sx->predef = vector_create(FUNCSIZE);
-	sx->functions = vector_create(FUNCSIZE);
-	vector_increase(&sx->functions, 2);
+	sx.predef = vector_create(FUNCSIZE);
+	sx.functions = vector_create(FUNCSIZE);
+	vector_increase(&sx.functions, 2);
 	
-	sx->tree = vector_create(MAXTREESIZE);
+	sx.tree = vector_create(MAXTREESIZE);
 
-	sx->identifiers = vector_create(MAXIDENTAB);
-	vector_increase(&sx->identifiers, 2);
-	sx->cur_id = 2;
+	sx.identifiers = vector_create(MAXIDENTAB);
+	vector_increase(&sx.identifiers, 2);
+	sx.cur_id = 2;
 
-	sx->modes = vector_create(MAXMODETAB);
-	vector_increase(&sx->modes, 1);
-	sx->start_mode = 1;
+	sx.modes = vector_create(MAXMODETAB);
+	vector_increase(&sx.modes, 1);
+	sx.start_mode = 1;
 
-	sx->rp = 1;
+	sx.rp = 1;
 
-	sx->max_displg = 3;
-	sx->ref_main = 0;
+	sx.max_displg = 3;
+	sx.ref_main = 0;
 
-	sx->max_displ = 3;
-	sx->displ = -3;
-	sx->lg = -1;
+	sx.max_displ = 3;
+	sx.displ = -3;
+	sx.lg = -1;
 
 	for (size_t i = 0; i < 256; i++)
 	{
-		sx->hashtab[i] = 0;
+		sx.hashtab[i] = 0;
 	}
 
-	sx->max_threads = 0;
-
-	return 0;
+	return sx;
 }
 
 int sx_is_correct(syntax *const sx)
@@ -150,7 +140,7 @@ int sx_is_correct(syntax *const sx)
 		if (vector_get(&sx->predef, i))
 		{
 			char buffer[MAXSTRINGL];
-			repr_get_ident(sx, (size_t)vector_get(&sx->predef, i), buffer);
+			repr_get_name(sx, (size_t)vector_get(&sx->predef, i), buffer);
 			error(NULL, predef_but_notdef, buffer);
 			is_correct = 0;
 		}
@@ -166,10 +156,6 @@ int sx_clear(syntax *const sx)
 		return -1;
 	}
 
-	vector_clear(&sx->memory);
-	vector_clear(&sx->processes);
-	vector_clear(&sx->stack);
-
 	vector_clear(&sx->predef);
 	vector_clear(&sx->functions);
 
@@ -179,54 +165,6 @@ int sx_clear(syntax *const sx)
 	vector_clear(&sx->modes);
 
 	return 0;
-}
-
-
-int mem_increase(syntax *const sx, const size_t size)
-{
-	return sx != NULL ? vector_increase(&sx->memory, size) : -1;
-}
-
-int mem_add(syntax *const sx, const item_t value)
-{
-	return sx != NULL ? vector_add(&sx->memory, value) != SIZE_MAX ? 0 : -1 : -1;
-}
-
-int mem_set(syntax *const sx, const size_t index, const item_t value)
-{
-	return sx != NULL ? vector_set(&sx->memory, index, value) : -1;
-}
-
-item_t mem_get(const syntax *const sx, const size_t index)
-{
-	return sx != NULL ? vector_get(&sx->memory, index) : ITEM_MAX;
-}
-
-size_t mem_size(const syntax *const sx)
-{
-	return sx != NULL ? vector_size(&sx->memory) : SIZE_MAX;
-}
-
-
-int proc_set(syntax *const sx, const size_t index, const item_t value)
-{
-	return sx != NULL ? vector_set(&sx->processes, index, value) : -1;
-}
-
-item_t proc_get(const syntax *const sx, const size_t index)
-{
-	return sx != NULL ? vector_get(&sx->processes, index) : ITEM_MAX;
-}
-
-
-int stack_push(syntax *const sx, const item_t value)
-{
-	return sx != NULL ? vector_add(&sx->stack, value) != SIZE_MAX ? 0 : -1 : -1;
-}
-
-item_t stack_pop(syntax *const sx)
-{
-	return sx != NULL ? vector_remove(&sx->stack) : ITEM_MAX;
 }
 
 
@@ -438,12 +376,12 @@ size_t repr_add(syntax *const sx, const char32_t *const spelling)
 
 	sx->reprtab[old_repr] = (int)sx->hashtab[hash];
 	sx->hashtab[hash] = old_repr;
-	// 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
+	// Пишется в reprtab: 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
 	sx->reprtab[old_repr + 1] = (sx->keywords) ? 0 - (((char32_t)(++sx->keywords) - 2) / 4) : 1;
 	return old_repr;
 }
 
-size_t repr_get_ident(const syntax *const sx, const size_t index, char *const buffer)
+size_t repr_get_name(const syntax *const sx, const size_t index, char *const buffer)
 {
 	if (sx == NULL || index >= sx->rp)
 	{
@@ -454,7 +392,7 @@ size_t repr_get_ident(const syntax *const sx, const size_t index, char *const bu
 	size_t pos = index + 2; // ссылка на reprtab
 	while (sx->reprtab[pos] != '\0')
 	{
-		i += utf8_to_string(buffer, sx->reprtab[pos++]);
+		i += utf8_to_string(&buffer[i], sx->reprtab[pos++]);
 	}
 
 	return i;

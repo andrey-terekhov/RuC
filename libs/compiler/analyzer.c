@@ -15,11 +15,15 @@
  */
 
 #include "analyzer.h"
+#include "codes.h"
 #include "extdecl.h"
 #include "keywords.h"
 #include "lexer.h"
-#include "uniio.h"
-#include "string.h"
+#include "tree.h"
+
+
+const char *const DEFAULT_TREE = "tree.txt";
+const char *const DEFAULT_NEW = "new.txt";
 
 
 analyzer compiler_context_create(universal_io *const io, syntax *const sx, lexer *const lexer)
@@ -55,6 +59,7 @@ void read_keywords(analyzer *context)
 	{
 		; // чтение ключевых слов
 	}
+	context->sx->keywords = 0;
 }
 
 
@@ -108,7 +113,6 @@ void init_modetab(analyzer *context)
 	vector_add(&context->sx->modes, LVOIDASTER);
 
 	context->sx->start_mode = 14;
-	context->sx->keywords = 0;
 	context->line = 1;
 }
 
@@ -145,5 +149,21 @@ int analyze(universal_io *const io, syntax *const sx)
 	context.lxr->io = io;
 	ext_decl(&context);
 
-	return context.error_flag || context.lxr->error_flag;
+#ifndef GENERATE_TREE
+	return context.error_flag || context.lxr->error_flag || !sx_is_correct(sx);
+#else
+	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
+
+	const int ret = context.error_flag || context.lxr->error_flag || !sx_is_correct(sx)
+		|| tree_test(&sx->tree)
+		|| tree_test_next(&sx->tree)
+		|| tree_test_recursive(&sx->tree)
+		|| tree_test_copy(&sx->tree);
+
+	if (!ret)
+	{
+		tree_print(DEFAULT_NEW, &sx->tree);
+	}
+	return ret;
+#endif
 }
