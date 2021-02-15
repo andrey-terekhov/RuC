@@ -49,7 +49,7 @@ int parse(parser *const prs);
  *	@param	prs			Parser structure
  *	@param	num			Error code
  */
-void parser_error(parser *const prs, const int num, ...);
+void parser_error(parser *const prs, const error_t err, ...);
 
 /**
  *	Consume the current 'peek token' and lex the next one

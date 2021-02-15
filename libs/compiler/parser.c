@@ -50,14 +50,14 @@ int parse(parser *const prs)
 }
 
 
-void parser_error(parser *const prs, const int num, ...)
+void parser_error(parser *const prs, const error_t err, ...)
 {
 	prs->was_error = 1;
 
 	va_list args;
-	va_start(args, num);
-
-	error(prs->io, num, args);
+	va_start(args, err);
+	verror(prs->io, err, args);
+	va_end(args);
 }
 
 void token_consume(parser *const prs)
