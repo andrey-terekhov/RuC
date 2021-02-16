@@ -51,6 +51,7 @@ int parse(parser *const prs);
  */
 void parser_error(parser *const prs, const error_t num, ...);
 
+
 /**
  *	Consume the current 'peek token' and lex the next one
  *

@@ -244,10 +244,10 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case aster_with_row:	// need_test
 			sprintf(msg, "операцию * нельзя применять к массивам");
 			break;
-		case wrong_func_as_param: // need_test
+		case wrong_func_as_arg: // need_test
 			sprintf(msg, "неправильная запись функции, передаваемой параметром в другую функцию");
 			break;
-		case no_right_br_in_argfun: // need_test
+		case no_right_br_in_arg_func: // need_test
 			sprintf(msg, "нет ) в функции, передаваемой параметром в другую функцию");
 			break;
 		case par_type_void_with_nofun:	// need_test
