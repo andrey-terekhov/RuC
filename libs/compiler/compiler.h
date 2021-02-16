@@ -20,6 +20,9 @@
 #include "workspace.h"
 
 
+//#define GENERATE_MACRO
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

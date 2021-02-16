@@ -16,55 +16,126 @@
 
 #include "codegen.h"
 #include <stdlib.h>
+#include "codes.h"
 #include "defs.h"
 #include "errors.h"
+#include "item.h"
 #include "tree.h"
 #include "uniprinter.h"
+#include "utf8.h"
 
 
-typedef struct address
+const char *const DEFAULT_CODES = "codes.txt";
+
+const size_t MAX_MEM_SIZE = 100000;
+const size_t MAX_STACK_SIZE = 256;
+
+
+/** Virtual machine environment */
+typedef struct virtual
 {
-	size_t addr_cond;
-	size_t addr_case;
-	size_t addr_break;
-} address;
+	syntax *sx;						/**< Syntax structure */
+
+	vector memory;					/**< Memory table */
+	vector processes;				/**< Init processes table */
+	vector stack;					/**< Stack for logic operations */
+
+	vector identifiers;				/**< Local identifiers table */
+	vector representations;			/**< Local representations table */
+
+	size_t max_threads;				/**< Max threads count */
+
+	size_t addr_cond;				/**< Condition address */
+	size_t addr_case;				/**< Case operator address */
+	size_t addr_break;				/**< Break operator address */
+
+	item_status target;				/**< Target tables item type */
+} virtual;
 
 
-static void block(syntax *const sx, node *const nd, address *const context);
+static void block(virtual *const vm, node *const nd);
 
 
-static void addr_begin_condition(syntax *const sx, address *const context, const size_t addr)
+static inline void mem_increase(virtual *const vm, const size_t size)
 {
-	while (context->addr_cond != addr)
+	vector_increase(&vm->memory, size);
+}
+
+static inline void mem_add(virtual *const vm, const item_t value)
+{
+	vector_add(&vm->memory, value);
+}
+
+static inline void mem_set(virtual *const vm, const size_t index, const item_t value)
+{
+	vector_set(&vm->memory, index, value);
+}
+
+static inline item_t mem_get(const virtual *const vm, const size_t index)
+{
+	return vector_get(&vm->memory, index);
+}
+
+static inline size_t mem_size(const virtual *const vm)
+{
+	return vector_size(&vm->memory);
+}
+
+
+static inline void proc_set(virtual *const vm, const size_t index, const item_t value)
+{
+	vector_set(&vm->processes, index, value);
+}
+
+static inline item_t proc_get(const virtual *const vm, const size_t index)
+{
+	return vector_get(&vm->processes, index);
+}
+
+
+static inline void stack_push(virtual *const vm, const item_t value)
+{
+	vector_add(&vm->stack, value);
+}
+
+static inline item_t stack_pop(virtual *const vm)
+{
+	return vector_remove(&vm->stack);
+}
+
+
+static void addr_begin_condition(virtual *const vm, const size_t addr)
+{
+	while (vm->addr_cond != addr)
 	{
-		const size_t ref = (size_t)mem_get(sx, context->addr_cond);
-		mem_set(sx, context->addr_cond, (item_t)addr);
-		context->addr_cond = ref;
+		const size_t ref = (size_t)mem_get(vm, vm->addr_cond);
+		mem_set(vm, vm->addr_cond, (item_t)addr);
+		vm->addr_cond = ref;
 	}
 }
 
-static void addr_end_condition(syntax *const sx, address *const context)
+static void addr_end_condition(virtual *const vm)
 {
-	while (context->addr_cond)
+	while (vm->addr_cond)
 	{
-		const size_t ref = (size_t)mem_get(sx, context->addr_cond);
-		mem_set(sx, context->addr_cond, (item_t)mem_size(sx));
-		context->addr_cond = ref;
+		const size_t ref = (size_t)mem_get(vm, vm->addr_cond);
+		mem_set(vm, vm->addr_cond, (item_t)mem_size(vm));
+		vm->addr_cond = ref;
 	}
 }
 
-static void addr_end_break(syntax *const sx, address *const context)
+static void addr_end_break(virtual *const vm)
 {
-	while (context->addr_break)
+	while (vm->addr_break)
 	{
-		const size_t ref = (size_t)mem_get(sx, context->addr_break);
-		mem_set(sx, context->addr_break, (item_t)mem_size(sx));
-		context->addr_break = ref;
+		const size_t ref = (size_t)mem_get(vm, vm->addr_break);
+		mem_set(vm, vm->addr_break, (item_t)mem_size(vm));
+		vm->addr_break = ref;
 	}
 }
 
 
-static void final_operation(syntax *const sx, node *const nd)
+static void final_operation(virtual *const vm, node *const nd)
 {
 	item_t op = node_get_type(nd);
 	while (op > 9000)
@@ -73,45 +144,45 @@ static void final_operation(syntax *const sx, node *const nd)
 		{
 			if (op == ADLOGOR)
 			{
-				mem_add(sx, _DOUBLE);
-				mem_add(sx, BNE0);
-				stack_push(sx, (item_t)mem_size(sx));
-				mem_increase(sx, 1);
+				mem_add(vm, _DOUBLE);
+				mem_add(vm, BNE0);
+				stack_push(vm, (item_t)mem_size(vm));
+				mem_increase(vm, 1);
 			}
 			else if (op == ADLOGAND)
 			{
-				mem_add(sx, _DOUBLE);
-				mem_add(sx, BE0);
-				stack_push(sx, (item_t)mem_size(sx));
-				mem_increase(sx, 1);
+				mem_add(vm, _DOUBLE);
+				mem_add(vm, BE0);
+				stack_push(vm, (item_t)mem_size(vm));
+				mem_increase(vm, 1);
 			}
 			else
 			{
-				mem_add(sx, op);
+				mem_add(vm, op);
 				if (op == LOGOR || op == LOGAND)
 				{
-					mem_set(sx, (size_t)stack_pop(sx), (item_t)mem_size(sx));
+					mem_set(vm, (size_t)stack_pop(vm), (item_t)mem_size(vm));
 				}
 				else if (op == COPY00 || op == COPYST)
 				{
-					mem_add(sx, node_get_arg(nd, 0)); // d1
-					mem_add(sx, node_get_arg(nd, 1)); // d2
-					mem_add(sx, node_get_arg(nd, 2)); // длина
+					mem_add(vm, node_get_arg(nd, 0)); // d1
+					mem_add(vm, node_get_arg(nd, 1)); // d2
+					mem_add(vm, node_get_arg(nd, 2)); // длина
 				}
 				else if (op == COPY01 || op == COPY10 || op == COPY0ST || op == COPY0STASS)
 				{
-					mem_add(sx, node_get_arg(nd, 0)); // d1
-					mem_add(sx, node_get_arg(nd, 1)); // длина
+					mem_add(vm, node_get_arg(nd, 0)); // d1
+					mem_add(vm, node_get_arg(nd, 1)); // длина
 				}
 				else if (op == COPY11 || op == COPY1ST || op == COPY1STASS)
 				{
-					mem_add(sx, node_get_arg(nd, 0)); // длина
+					mem_add(vm, node_get_arg(nd, 0)); // длина
 				}
 				else if ((op >= REMASS && op <= DIVASS) || (op >= REMASSV && op <= DIVASSV)
 					|| (op >= ASSR && op <= DIVASSR) || (op >= ASSRV && op <= DIVASSRV) || (op >= POSTINC && op <= DEC)
 					|| (op >= POSTINCV && op <= DECV) || (op >= POSTINCR && op <= DECR) || (op >= POSTINCRV && op <= DECRV))
 				{
-					mem_add(sx, node_get_arg(nd, 0));
+					mem_add(vm, node_get_arg(nd, 0));
 				}
 			}
 		}
@@ -124,12 +195,12 @@ static void final_operation(syntax *const sx, node *const nd)
 /**
  *	Expression generation
  *
- *	@param	sx		Syntax structure
+ *	@param	vm		Virtual machine environment
  *	@param	mode	@c -1 for expression on the same node,
  *					@c  0 for usual expression,
  *					@c  1 for expression in condition
  */
-static void expression(syntax *const sx, node *const nd, int mode)
+static void expression(virtual *const vm, node *const nd, int mode)
 {
 	if (mode != -1)
 	{
@@ -147,78 +218,78 @@ static void expression(syntax *const sx, node *const nd, int mode)
 				break;
 			case TIdenttoaddr:
 			{
-				mem_add(sx, LA);
-				mem_add(sx, node_get_arg(nd, 0));
+				mem_add(vm, LA);
+				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
 			case TIdenttoval:
 			{
-				mem_add(sx, LOAD);
-				mem_add(sx, node_get_arg(nd, 0));
+				mem_add(vm, LOAD);
+				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
 			case TIdenttovald:
 			{
-				mem_add(sx, LOADD);
-				mem_add(sx, node_get_arg(nd, 0));
+				mem_add(vm, LOADD);
+				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
 			case TAddrtoval:
-				mem_add(sx, LAT);
+				mem_add(vm, LAT);
 				break;
 			case TAddrtovald:
-				mem_add(sx, LATD);
+				mem_add(vm, LATD);
 				break;
 			case TConst:
 			{
-				mem_add(sx, LI);
-				mem_add(sx, node_get_arg(nd, 0));
+				mem_add(vm, LI);
+				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
 			case TConstd:
 			{
-				mem_add(sx, LID);
-				mem_add(sx, node_get_arg(nd, 0));
-				mem_add(sx, node_get_arg(nd, 1));
+				mem_add(vm, LID);
+				mem_add(vm, node_get_arg(nd, 0));
+				mem_add(vm, node_get_arg(nd, 1));
 			}
 			break;
 			case TString:
 			case TStringd:
 			{
-				mem_add(sx, LI);
-				const size_t reserved = mem_size(sx) + 4;
-				mem_add(sx, (item_t)reserved);
-				mem_add(sx, B);
-				mem_increase(sx, 2);
+				mem_add(vm, LI);
+				const size_t reserved = mem_size(vm) + 4;
+				mem_add(vm, (item_t)reserved);
+				mem_add(vm, B);
+				mem_increase(vm, 2);
 
 				const item_t N = node_get_arg(nd, 0);
 				for (item_t i = 0; i < N; i++)
 				{
 					if (operation == TString)
 					{
-						mem_add(sx, node_get_arg(nd, (size_t)i + 1));
+						mem_add(vm, node_get_arg(nd, (size_t)i + 1));
 					}
 					else
 					{
-						mem_add(sx, node_get_arg(nd, 2 * (size_t)i + 1));
-						mem_add(sx, node_get_arg(nd, 2 * (size_t)i + 2));
+						mem_add(vm, node_get_arg(nd, 2 * (size_t)i + 1));
+						mem_add(vm, node_get_arg(nd, 2 * (size_t)i + 2));
 					}
 				}
 
-				mem_set(sx, reserved - 1, N);
-				mem_set(sx, reserved - 2, (item_t)mem_size(sx));
+				mem_set(vm, reserved - 1, N);
+				mem_set(vm, reserved - 2, (item_t)mem_size(vm));
 			}
 			break;
 			case TBeginit:
 			{
 				const item_t N = node_get_arg(nd, 0);
 
-				mem_add(sx, BEGINIT);
-				mem_add(sx, N);
+				mem_add(vm, BEGINIT);
+				mem_add(vm, N);
 
 				for (item_t i = 0; i < N; i++)
 				{
-					expression(sx, nd, 0);
+					expression(vm, nd, 0);
 				}
 			}
 			break;
@@ -227,55 +298,55 @@ static void expression(syntax *const sx, node *const nd, int mode)
 				const item_t N = node_get_arg(nd, 0);
 				for (item_t i = 0; i < N; i++)
 				{
-					expression(sx, nd, 0);
+					expression(vm, nd, 0);
 				}
 			}
 			break;
 			case TSliceident:
 			{
-				mem_add(sx, LOAD); // параметры - смещение идента и тип элемента
-				mem_add(sx, node_get_arg(nd, 0)); // продолжение в след case
+				mem_add(vm, LOAD); // параметры - смещение идента и тип элемента
+				mem_add(vm, node_get_arg(nd, 0)); // продолжение в след case
 			}
 			case TSlice: // параметр - тип элемента
 			{
 				item_t type = node_get_arg(nd, operation == TSlice ? 0 : 1);
 
-				expression(sx, nd, 0);
-				mem_add(sx, SLICE);
-				mem_add(sx, size_of(sx, (int)type));
-				if (type > 0 && mode_get(sx, (size_t)type) == MARRAY)
+				expression(vm, nd, 0);
+				mem_add(vm, SLICE);
+				mem_add(vm, (item_t)size_of(vm->sx, type));
+				if (type > 0 && mode_get(vm->sx, (size_t)type) == mode_array)
 				{
-					mem_add(sx, LAT);
+					mem_add(vm, LAT);
 				}
 			}
 			break;
 			case TSelect:
 			{
-				mem_add(sx, SELECT); // SELECT field_displ
-				mem_add(sx, node_get_arg(nd, 0));
+				mem_add(vm, SELECT); // SELECT field_displ
+				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
 			case TPrint:
 			{
-				mem_add(sx, PRINT);
-				mem_add(sx, node_get_arg(nd, 0)); // type
+				mem_add(vm, PRINT);
+				mem_add(vm, node_get_arg(nd, 0)); // type
 			}
 			break;
 			case TCall1:
 			{
-				mem_add(sx, CALL1);
+				mem_add(vm, CALL1);
 
 				const item_t N = node_get_arg(nd, 0);
 				for (item_t i = 0; i < N; i++)
 				{
-					expression(sx, nd, 0);
+					expression(vm, nd, 0);
 				}
 			}
 			break;
 			case TCall2:
 			{
-				mem_add(sx, CALL2);
-				mem_add(sx, ident_get_displ(sx, (size_t)node_get_arg(nd, 0)));
+				mem_add(vm, CALL2);
+				mem_add(vm, ident_get_displ(vm->sx, (size_t)node_get_arg(nd, 0)));
 			}
 			break;
 			default:
@@ -288,7 +359,7 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			node_set_next(nd);
 		}
 
-		final_operation(sx, nd);
+		final_operation(vm, nd);
 
 		if (node_get_type(nd) == TCondexpr)
 		{
@@ -300,32 +371,32 @@ static void expression(syntax *const sx, node *const nd, int mode)
 			size_t addr = 0;
 			do
 			{
-				mem_add(sx, BE0);
-				const size_t addr_else = mem_size(sx);
-				mem_increase(sx, 1);
+				mem_add(vm, BE0);
+				const size_t addr_else = mem_size(vm);
+				mem_increase(vm, 1);
 
-				expression(sx, nd, 0); // then
-				mem_add(sx, B);
-				mem_add(sx, (item_t)addr);
-				addr = mem_size(sx) - 1;
-				mem_set(sx, addr_else, (item_t)mem_size(sx));
+				expression(vm, nd, 0); // then
+				mem_add(vm, B);
+				mem_add(vm, (item_t)addr);
+				addr = mem_size(vm) - 1;
+				mem_set(vm, addr_else, (item_t)mem_size(vm));
 
-				expression(sx, nd, 1); // else или cond
+				expression(vm, nd, 1); // else или cond
 			} while (node_get_type(nd) == TCondexpr);
 
 			while (addr)
 			{
-				const size_t ref = (size_t)mem_get(sx, addr);
-				mem_set(sx, addr, (item_t)mem_size(sx));
+				const size_t ref = (size_t)mem_get(vm, addr);
+				mem_set(vm, addr, (item_t)mem_size(vm));
 				addr = ref;
 			}
 
-			final_operation(sx, nd);
+			final_operation(vm, nd);
 		}
 	}
 }
 
-static void structure(syntax *const sx, node *const nd)
+static void structure(virtual *const vm, node *const nd)
 {
 	if (node_get_type(nd) == TStructinit)
 	{
@@ -334,36 +405,36 @@ static void structure(syntax *const sx, node *const nd)
 
 		for (item_t i = 0; i < N; i++)
 		{
-			structure(sx, nd);
+			structure(vm, nd);
 			node_set_next(nd); // TExprend
 		}
 	}
 	else
 	{
-		expression(sx, nd, -1);
+		expression(vm, nd, -1);
 	}
 }
 
-static void identifier(syntax *const sx, node *const nd)
+static void identifier(virtual *const vm, node *const nd)
 {
 	const item_t old_displ = node_get_arg(nd, 0);
 	const item_t type = node_get_arg(nd, 1);
 	const item_t N = node_get_arg(nd, 2);
 
 	/*
-	*	@param	all		Общее кол-во слов в структуре:
-	*						@c 0 нет инициализатора,
-	*						@c 1 есть инициализатор,
-	*						@c 2 есть инициализатор только из строк
-	*/
+	 *	@param	all		Общее кол-во слов в структуре:
+	 *						@c 0 нет инициализатора,
+	 *						@c 1 есть инициализатор,
+	 *						@c 2 есть инициализатор только из строк
+	 */
 	const item_t all = node_get_arg(nd, 3);
 	const item_t process = node_get_arg(nd, 4);
 
 	/*
-	*	@param	usual	Для массивов:
-	*						@c 0 с пустыми границами,
-	*						@c 1 без пустых границ
-	*/
+	 *	@param	usual	Для массивов:
+	 *						@c 0 с пустыми границами,
+	 *						@c 1 без пустых границ
+	 */
 	const item_t usual = node_get_arg(nd, 5);
 	const item_t instruction = node_get_arg(nd, 6);
 
@@ -372,58 +443,58 @@ static void identifier(syntax *const sx, node *const nd)
 	{
 		if (process)
 		{
-			mem_add(sx, STRUCTWITHARR);
-			mem_add(sx, old_displ);
-			mem_add(sx, proc_get(sx, (size_t)process));
+			mem_add(vm, STRUCTWITHARR);
+			mem_add(vm, old_displ);
+			mem_add(vm, proc_get(vm, (size_t)process));
 		}
 		if (all) // int a = или struct{} a =
 		{
-			if (type > 0 && mode_get(sx, (size_t)type) == MSTRUCT)
+			if (type > 0 && mode_get(vm->sx, (size_t)type) == mode_struct)
 			{
 				node_set_next(nd);
-				structure(sx, nd);
+				structure(vm, nd);
 
-				mem_add(sx, COPY0STASS);
-				mem_add(sx, old_displ);
-				mem_add(sx, all); // Общее количество слов
+				mem_add(vm, COPY0STASS);
+				mem_add(vm, old_displ);
+				mem_add(vm, all); // Общее количество слов
 			}
 			else
 			{
-				expression(sx, nd, 0);
+				expression(vm, nd, 0);
 
-				mem_add(sx, type == LFLOAT ? ASSRV : ASSV);
-				mem_add(sx, old_displ);
+				mem_add(vm, type == LFLOAT ? ASSRV : ASSV);
+				mem_add(vm, old_displ);
 			}
 		}
 	}
 	else // Обработка массива int a[N1]...[NN] =
 	{
-		const item_t length = size_of(sx, (int)type);
+		const item_t length = (item_t)size_of(vm->sx, type);
 
-		mem_add(sx, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
-		mem_add(sx, all == 0 ? N : abs((int)N) - 1);
-		mem_add(sx, length);
-		mem_add(sx, old_displ);
-		mem_add(sx, proc_get(sx, (size_t)process));
-		mem_add(sx, usual);
-		mem_add(sx, all);
-		mem_add(sx, instruction);
+		mem_add(vm, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
+		mem_add(vm, all == 0 ? N : abs((int)N) - 1);
+		mem_add(vm, length);
+		mem_add(vm, old_displ);
+		mem_add(vm, proc_get(vm, (size_t)process));
+		mem_add(vm, usual);
+		mem_add(vm, all);
+		mem_add(vm, instruction);
 
 		if (all) // all == 1, если есть инициализация массива
 		{
-			expression(sx, nd, 0);
+			expression(vm, nd, 0);
 
-			mem_add(sx, ARRINIT); // ARRINIT N d all displ usual
-			mem_add(sx, abs((int)N));
-			mem_add(sx, length);
-			mem_add(sx, old_displ);
-			mem_add(sx, usual);	// == 0 с пустыми границами
+			mem_add(vm, ARRINIT); // ARRINIT N d all displ usual
+			mem_add(vm, abs((int)N));
+			mem_add(vm, length);
+			mem_add(vm, old_displ);
+			mem_add(vm, usual);	// == 0 с пустыми границами
 								// == 1 без пустых границ и без инициализации
 		}
 	}
 }
 
-static int declaration(syntax *const sx, node *const nd)
+static int declaration(virtual *const vm, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
@@ -432,27 +503,27 @@ static int declaration(syntax *const sx, node *const nd)
 			const item_t N = node_get_arg(nd, 0);
 			for (item_t i = 0; i < N; i++)
 			{
-				expression(sx, nd, 0);
+				expression(vm, nd, 0);
 			}
 		}
 		break;
 		case TDeclid:
-			identifier(sx, nd);
+			identifier(vm, nd);
 			break;
 
 		case TStructbeg:
 		{
-			mem_add(sx, B);
-			mem_add(sx, 0);
-			proc_set(sx, (size_t)node_get_arg(nd, 0), (item_t)mem_size(sx));
+			mem_add(vm, B);
+			mem_add(vm, 0);
+			proc_set(vm, (size_t)node_get_arg(nd, 0), (item_t)mem_size(vm));
 		}
 		break;
 		case TStructend:
 		{
 			const size_t num_proc = (size_t)node_get_arg(nd, 0);
 
-			mem_add(sx, STOP);
-			mem_set(sx, (size_t)proc_get(sx, num_proc) - 1, (item_t)mem_size(sx));
+			mem_add(vm, STOP);
+			mem_set(vm, (size_t)proc_get(vm, num_proc) - 1, (item_t)mem_size(vm));
 		}
 		break;
 
@@ -463,91 +534,118 @@ static int declaration(syntax *const sx, node *const nd)
 	return 0;
 }
 
-static void statement(syntax *const sx, node *const nd, address *const context)
+static void compress_ident(virtual *const vm, const size_t ref)
+{
+	if (vector_get(&vm->sx->identifiers, ref) == ITEM_MAX)
+	{
+		mem_add(vm, ident_get_repr(vm->sx, ref));
+		return;
+	}
+
+	const item_t new_ref = (item_t)vector_size(&vm->identifiers) - 1;
+	vector_add(&vm->identifiers, (item_t)vector_size(&vm->representations) - 2);
+	vector_add(&vm->identifiers, ident_get_mode(vm->sx, ref));
+	vector_add(&vm->identifiers, ident_get_displ(vm->sx, ref));
+
+	char buffer[MAXSTRINGL];
+	repr_get_name(vm->sx, (size_t)ident_get_repr(vm->sx, ref), buffer);
+
+	for (size_t i = 0; buffer[i] != '\0'; i += utf8_symbol_size(buffer[i]))
+	{
+		vector_add(&vm->representations, (item_t)utf8_convert(&buffer[i]));
+	}
+	vector_add(&vm->representations, '\0');
+
+	vector_set(&vm->sx->identifiers, ref, ITEM_MAX);
+	ident_set_repr(vm->sx, ref, new_ref);
+	mem_add(vm, new_ref);
+}
+
+static void statement(virtual *const vm, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
 		case NOP:
 			break;
 		case CREATEDIRECTC:
-			mem_add(sx, CREATEDIRECTC);
-			sx->max_threads++;
+			mem_add(vm, CREATEDIRECTC);
+			vm->max_threads++;
 			break;
 		case EXITDIRECTC:
 		case EXITC:
-			mem_add(sx, EXITC);
+			mem_add(vm, EXITC);
 			break;
 		case TBegin:
-			block(sx, nd, context);
+			block(vm, nd);
 			break;
 		case TIf:
 		{
 			const item_t ref_else = node_get_arg(nd, 0);
 
-			expression(sx, nd, 0);
+			expression(vm, nd, 0);
 			node_set_next(nd); // TExprend
 
-			mem_add(sx, BE0);
-			size_t addr = mem_size(sx);
-			mem_increase(sx, 1);
-			statement(sx, nd, context);
+			mem_add(vm, BE0);
+			size_t addr = mem_size(vm);
+			mem_increase(vm, 1);
+			statement(vm, nd);
 
 			if (ref_else)
 			{
 				node_set_next(nd);
-				mem_set(sx, addr, (item_t)mem_size(sx) + 2);
-				mem_add(sx, B);
-				addr = mem_size(sx);
-				mem_increase(sx, 1);
-				statement(sx, nd, context);
+				mem_set(vm, addr, (item_t)mem_size(vm) + 2);
+				mem_add(vm, B);
+				addr = mem_size(vm);
+				mem_increase(vm, 1);
+				statement(vm, nd);
 			}
-			mem_set(sx, addr, (item_t)mem_size(sx));
+			mem_set(vm, addr, (item_t)mem_size(vm));
 		}
 		break;
 		case TWhile:
 		{
-			const size_t old_break = context->addr_break;
-			const size_t old_cond = context->addr_cond;
-			const size_t addr = mem_size(sx);
+			const size_t old_break = vm->addr_break;
+			const size_t old_cond = vm->addr_cond;
+			const size_t addr = mem_size(vm);
 
-			context->addr_cond = addr;
-			expression(sx, nd, 0);
+			vm->addr_cond = addr;
+			expression(vm, nd, 0);
 			node_set_next(nd); // TExprend
 
-			mem_add(sx, BE0);
-			context->addr_break = mem_size(sx);
-			mem_add(sx, 0);
-			statement(sx, nd, context);
+			mem_add(vm, BE0);
+			vm->addr_break = mem_size(vm);
+			mem_add(vm, 0);
+			statement(vm, nd);
 
-			addr_begin_condition(sx, context, addr);
-			mem_add(sx, B);
-			mem_add(sx, (item_t)addr);
-			addr_end_break(sx, context);
+			addr_begin_condition(vm, addr);
+			mem_add(vm, B);
+			mem_add(vm, (item_t)addr);
+			addr_end_break(vm);
 
-			context->addr_break = old_break;
-			context->addr_cond = old_cond;
+			vm->addr_break = old_break;
+			vm->addr_cond = old_cond;
 		}
 		break;
 		case TDo:
 		{
-			const size_t old_break = context->addr_break;
-			const size_t old_cond = context->addr_cond;
-			const item_t addr = (item_t)mem_size(sx);
+			const size_t old_break = vm->addr_break;
+			const size_t old_cond = vm->addr_cond;
+			const item_t addr = (item_t)mem_size(vm);
 
-			context->addr_cond = 0;
-			context->addr_break = 0;
+			vm->addr_cond = 0;
+			vm->addr_break = 0;
 
 			node_set_next(nd);
-			statement(sx, nd, context);
-			addr_end_condition(sx, context);
+			statement(vm, nd);
+			addr_end_condition(vm);
 
-			expression(sx, nd, 0);
-			mem_add(sx, BNE0);
-			mem_add(sx, addr);
-			addr_end_break(sx, context);
+			expression(vm, nd, 0);
+			mem_add(vm, BNE0);
+			mem_add(vm, addr);
+			addr_end_break(vm);
 
-			context->addr_break = old_break;
-			context->addr_cond = old_cond;
+			vm->addr_break = old_break;
+			vm->addr_cond = old_cond;
 		}
 		break;
 		case TFor:
@@ -562,22 +660,22 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 
 			if (ref_from)
 			{
-				expression(sx, &incr, 0); // initialization
+				expression(vm, &incr, 0); // initialization
 				child_stmt++;
 			}
 
-			const size_t old_break = context->addr_break;
-			const size_t old_cond = context->addr_cond;
-			context->addr_cond = 0;
-			context->addr_break = 0;
+			const size_t old_break = vm->addr_break;
+			const size_t old_cond = vm->addr_cond;
+			vm->addr_cond = 0;
+			vm->addr_break = 0;
 
-			size_t initad = mem_size(sx);
+			size_t initad = mem_size(vm);
 			if (ref_cond)
 			{
-				expression(sx, &incr, 0); // condition
-				mem_add(sx, BE0);
-				context->addr_break = mem_size(sx);
-				mem_add(sx, 0);
+				expression(vm, &incr, 0); // condition
+				mem_add(vm, BE0);
+				vm->addr_break = mem_size(vm);
+				mem_add(vm, 0);
 				child_stmt++;
 			}
 
@@ -587,188 +685,186 @@ static void statement(syntax *const sx, node *const nd, address *const context)
 			}
 
 			node stmt = node_get_child(nd, child_stmt);
-			statement(sx, &stmt, context);
-			addr_end_condition(sx, context);
+			statement(vm, &stmt);
+			addr_end_condition(vm);
 
 			if (ref_incr)
 			{
-				expression(sx, &incr, 0); // increment
+				expression(vm, &incr, 0); // increment
 			}
 			node_copy(nd, &stmt);
 
-			mem_add(sx, B);
-			mem_add(sx, (item_t)initad);
-			addr_end_break(sx, context);
+			mem_add(vm, B);
+			mem_add(vm, (item_t)initad);
+			addr_end_break(vm);
 
-			context->addr_break = old_break;
-			context->addr_cond = old_cond;
+			vm->addr_break = old_break;
+			vm->addr_cond = old_cond;
 		}
 		break;
 		case TGoto:
 		{
-			mem_add(sx, B);
+			mem_add(vm, B);
 
 			const item_t id_sign = node_get_arg(nd, 0);
 			const size_t id = abs((int)id_sign);
-			const item_t addr = ident_get_displ(sx, id);
+			const item_t addr = ident_get_displ(vm->sx, id);
 
 			if (addr > 0) // метка уже описана
 			{
-				mem_add(sx, addr);
+				mem_add(vm, addr);
 			}
 			else // метка еще не описана
 			{
-				ident_set_displ(sx, id, -(item_t)mem_size(sx));
+				ident_set_displ(vm->sx, id, -(item_t)mem_size(vm));
 
 				// первый раз встретился переход на еще не описанную метку или нет
-				mem_add(sx, id_sign < 0 ? 0 : addr);
+				mem_add(vm, id_sign < 0 ? 0 : addr);
 			}
 		}
 		break;
 		case TLabel:
 		{
 			const item_t id = node_get_arg(nd, 0);
-			item_t addr = ident_get_displ(sx, (size_t)id);
+			item_t addr = ident_get_displ(vm->sx, (size_t)id);
 
 			if (addr < 0) // были переходы на метку
 			{
 				while (addr) // проставить ссылку на метку во всех ранних переходах
 				{
-					item_t ref = mem_get(sx, (size_t)(-addr));
-					mem_set(sx, (size_t)(-addr), (item_t)mem_size(sx));
+					item_t ref = mem_get(vm, (size_t)(-addr));
+					mem_set(vm, (size_t)(-addr), (item_t)mem_size(vm));
 					addr = ref;
 				}
 			}
-			ident_set_displ(sx, (size_t)id, (item_t)mem_size(sx));
+			ident_set_displ(vm->sx, (size_t)id, (item_t)mem_size(vm));
 		}
 		break;
 		case TSwitch:
 		{
-			const size_t old_break = context->addr_break;
-			const size_t old_case = context->addr_case;
-			context->addr_break = 0;
-			context->addr_case = 0;
+			const size_t old_break = vm->addr_break;
+			const size_t old_case = vm->addr_case;
+			vm->addr_break = 0;
+			vm->addr_case = 0;
 
-			expression(sx, nd, 0);
+			expression(vm, nd, 0);
 			node_set_next(nd); // TExprend
 
-			statement(sx, nd, context);
-			if (context->addr_case > 0)
+			statement(vm, nd);
+			if (vm->addr_case > 0)
 			{
-				mem_set(sx, context->addr_case, (item_t)mem_size(sx));
+				mem_set(vm, vm->addr_case, (item_t)mem_size(vm));
 			}
-			addr_end_break(sx, context);
+			addr_end_break(vm);
 
-			context->addr_case = old_case;
-			context->addr_break = old_break;
+			vm->addr_case = old_case;
+			vm->addr_break = old_break;
 		}
 		break;
 		case TCase:
 		{
-			if (context->addr_case)
+			if (vm->addr_case)
 			{
-				mem_set(sx, context->addr_case, (item_t)mem_size(sx));
+				mem_set(vm, vm->addr_case, (item_t)mem_size(vm));
 			}
-			mem_add(sx, _DOUBLE);
-			expression(sx, nd, 0);
+			mem_add(vm, _DOUBLE);
+			expression(vm, nd, 0);
 			node_set_next(nd); // TExprend
 
-			mem_add(sx, EQEQ);
-			mem_add(sx, BE0);
-			context->addr_case = mem_size(sx);
-			mem_increase(sx, 1);
-			statement(sx, nd, context);
+			mem_add(vm, EQEQ);
+			mem_add(vm, BE0);
+			vm->addr_case = mem_size(vm);
+			mem_increase(vm, 1);
+			statement(vm, nd);
 		}
 		break;
 		case TDefault:
 		{
-			if (context->addr_case)
+			if (vm->addr_case)
 			{
-				mem_set(sx, context->addr_case, (item_t)mem_size(sx));
+				mem_set(vm, vm->addr_case, (item_t)mem_size(vm));
 			}
-			context->addr_case = 0;
+			vm->addr_case = 0;
 
 			node_set_next(nd);
-			statement(sx, nd, context);
+			statement(vm, nd);
 		}
 		break;
 		case TBreak:
 		{
-			mem_add(sx, B);
-			mem_add(sx, (item_t)context->addr_break);
-			context->addr_break = mem_size(sx) - 1;
+			mem_add(vm, B);
+			mem_add(vm, (item_t)vm->addr_break);
+			vm->addr_break = mem_size(vm) - 1;
 		}
 		break;
 		case TContinue:
 		{
-			mem_add(sx, B);
-			mem_add(sx, (item_t)context->addr_cond);
-			context->addr_cond = mem_size(sx) - 1;
+			mem_add(vm, B);
+			mem_add(vm, (item_t)vm->addr_cond);
+			vm->addr_cond = mem_size(vm) - 1;
 		}
 		break;
 		case TReturnvoid:
-			mem_add(sx, RETURNVOID);
+			mem_add(vm, RETURNVOID);
 			break;
 		case TReturnval:
 		{
 			const item_t value = node_get_arg(nd, 0);
-			expression(sx, nd, 0);
+			expression(vm, nd, 0);
 
-			mem_add(sx, RETURNVAL);
-			mem_add(sx, value);
+			mem_add(vm, RETURNVAL);
+			mem_add(vm, value);
 		}
 		break;
 		case TPrintid:
 		{
-			mem_add(sx, PRINTID);
-			mem_add(sx, node_get_arg(nd, 0)); // ссылка в identtab
+			mem_add(vm, PRINTID);
+			compress_ident(vm, (size_t)node_get_arg(nd, 0)); // ссылка в identtab
 		}
 		break;
 		case TPrintf:
 		{
-			mem_add(sx, PRINTF);
-			mem_add(sx, node_get_arg(nd, 0)); // общий размер того, что надо вывести
+			mem_add(vm, PRINTF);
+			mem_add(vm, node_get_arg(nd, 0)); // общий размер того, что надо вывести
 		}
 		break;
 		case TGetid:
 		{
-			mem_add(sx, GETID);
-			mem_add(sx, node_get_arg(nd, 0)); // ссылка в identtab
+			mem_add(vm, GETID);
+			compress_ident(vm, (size_t)node_get_arg(nd, 0)); // ссылка в identtab
 		}
 		break;
 		case SETMOTOR:
 		{
-			expression(sx, nd, 0);
-			expression(sx, nd, 0);
+			expression(vm, nd, 0);
+			expression(vm, nd, 0);
 
-			mem_add(sx, SETMOTORC);
+			mem_add(vm, SETMOTORC);
 		}
 		break;
 		default:
-			if (declaration(sx, nd))
+			if (declaration(vm, nd))
 			{
-				expression(sx, nd, -1);
+				expression(vm, nd, -1);
 			}
 			break;
 	}
 }
 
-static void block(syntax *const sx, node *const nd, address *const context)
+static void block(virtual *const vm, node *const nd)
 {
 	node_set_next(nd); // TBegin
 	while (node_get_type(nd) != TEnd)
 	{
-		statement(sx, nd, context);
+		statement(vm, nd);
 		node_set_next(nd);
 	}
 }
 
 /** Генерация кодов */
-static int codegen(syntax *const sx)
+static int codegen(virtual *const vm)
 {
-	address context;
-
-	node root = node_get_root(&sx->tree);
+	node root = node_get_root(&vm->sx->tree);
 	while (node_set_next(&root) == 0)
 	{
 		switch (node_get_type(&root))
@@ -777,19 +873,19 @@ static int codegen(syntax *const sx)
 			{
 				const item_t ref_ident = node_get_arg(&root, 0);
 				const item_t max_displ = node_get_arg(&root, 1);
-				const size_t func = (size_t)ident_get_displ(sx, (size_t)ref_ident);
+				const size_t func = (size_t)ident_get_displ(vm->sx, (size_t)ref_ident);
 
-				func_set(sx, func, (item_t)mem_size(sx));
-				mem_add(sx, FUNCBEG);
-				mem_add(sx, max_displ);
+				func_set(vm->sx, func, (item_t)mem_size(vm));
+				mem_add(vm, FUNCBEG);
+				mem_add(vm, max_displ);
 
-				const size_t old_pc = mem_size(sx);
-				mem_increase(sx, 1);
+				const size_t old_pc = mem_size(vm);
+				mem_increase(vm, 1);
 
 				node_set_next(&root);
-				block(sx, &root, &context);
+				block(vm, &root);
 
-				mem_set(sx, old_pc, (item_t)mem_size(sx));
+				mem_set(vm, old_pc, (item_t)mem_size(vm));
 			}
 			break;
 
@@ -798,59 +894,60 @@ static int codegen(syntax *const sx)
 				break;
 
 			default:
-				if (declaration(sx, &root))
+				if (declaration(vm, &root))
 				{
-					error(NULL, node_unexpected, node_get_type(&root));
+					system_error(node_unexpected, node_get_type(&root));
 					return -1;
 				}
 				break;
 		}
 	}
 
-	mem_add(sx, CALL1);
-	mem_add(sx, CALL2);
-	mem_add(sx, ident_get_displ(sx, sx->ref_main));
-	mem_add(sx, STOP);
+	mem_add(vm, CALL1);
+	mem_add(vm, CALL2);
+	mem_add(vm, ident_get_displ(vm->sx, vm->sx->ref_main));
+	mem_add(vm, STOP);
+	return 0;
+}
+
+
+static int output_table(universal_io *const io, const item_status target, const vector *const table)
+{
+	const size_t size = vector_size(table);
+	for (size_t i = 0; i < size; i++)
+	{
+		const item_t item = vector_get(table, i);
+		if (!item_check_var(target, item))
+		{
+			system_error(tables_cannot_be_compressed);
+			return -1;
+		}
+
+		uni_printf(io, "%" PRIitem " ", item);
+	}
+
+	uni_printf(io, "\n");
 	return 0;
 }
 
 /** Вывод таблиц в файл */
-void output_export(universal_io *const io, const syntax *const sx)
+static int output_export(universal_io *const io, const virtual *const vm)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n", mem_size(sx), vector_size(&sx->functions),
-				vector_size(&sx->identifiers), sx->rp, vector_size(&sx->modes), sx->max_displg, sx->max_threads);
+	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n"
+		, vector_size(&vm->memory)
+		, vector_size(&vm->sx->functions)
+		, vector_size(&vm->identifiers)
+		, vector_size(&vm->representations)
+		, vector_size(&vm->sx->modes)
+		, vm->sx->max_displg, vm->max_threads);
 
-	for (size_t i = 0; i < mem_size(sx); i++)
-	{
-		uni_printf(io, "%" PRIitem " ", mem_get(sx, i));
-	}
-	uni_printf(io, "\n");
-
-	for (size_t i = 0; i < vector_size(&sx->functions); i++)
-	{
-		uni_printf(io, "%" PRIitem " ", func_get(sx, i));
-	}
-	uni_printf(io, "\n");
-
-	for (size_t i = 0; i < vector_size(&sx->identifiers); i++)
-	{
-		uni_printf(io, "%" PRIitem " ", vector_get(&sx->identifiers, i));
-	}
-	uni_printf(io, "\n");
-
-	for (size_t i = 0; i < sx->rp; i++)
-	{
-		uni_printf(io, "%i ", sx->reprtab[i]);
-	}
-	uni_printf(io, "\n");
-
-	for (size_t i = 0; i < vector_size(&sx->modes); i++)
-	{
-		uni_printf(io, "%" PRIitem " ", mode_get(sx, i));
-	}
-	uni_printf(io, "\n");
+	return output_table(io, vm->target, &vm->memory)
+		|| output_table(io, vm->target, &vm->sx->functions)
+		|| output_table(io, vm->target, &vm->identifiers)
+		|| output_table(io, vm->target, &vm->representations)
+		|| output_table(io, vm->target, &vm->sx->modes);
 }
 
 
@@ -863,18 +960,47 @@ void output_export(universal_io *const io, const syntax *const sx)
  */
 
 
-int encode_to_vm(universal_io *const io, syntax *const sx)
+int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
 	if (!out_is_correct(io) || sx == NULL)
 	{
 		return -1;
 	}
 
-	int ret = codegen(sx);
+	virtual vm;
+	vm.sx = sx;
+
+	vm.memory = vector_create(MAX_MEM_SIZE);
+	vm.processes = vector_create(sx->procd);
+	vm.stack = vector_create(MAX_STACK_SIZE);
+
+	const size_t records = vector_size(&sx->identifiers) / 4;
+	vm.identifiers = vector_create(records * 3);
+	vm.representations = vector_create(records * 8);
+
+	vector_increase(&vm.memory, 4);
+	vector_increase(&vm.processes, sx->procd);
+	vm.max_threads = 0;
+
+	vm.target = item_get_status(ws);
+
+
+	int ret = codegen(&vm);
 	if (!ret)
 	{
-		output_export(io, sx);
+		ret = output_export(io, &vm);
 	}
 
+#ifdef GENERATE_CODES
+	tables_and_codes(DEFAULT_CODES, &sx->functions, &vm.processes, &vm.memory);
+#endif
+
+
+	vector_clear(&vm.memory);
+	vector_clear(&vm.processes);
+	vector_clear(&vm.stack);
+
+	vector_clear(&vm.identifiers);
+	vector_clear(&vm.representations);
 	return ret;
 }

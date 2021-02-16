@@ -179,7 +179,7 @@ node node_expression(vector *const tree, const size_t index)
 
 	if (is_operator(vector_get(tree, index)))
 	{
-		error(NULL, tree_expression_not_block, index, vector_get(tree, index));
+		system_error(tree_expression_not_block, index, vector_get(tree, index));
 		return node_broken();
 	}
 
@@ -243,7 +243,7 @@ node node_expression(vector *const tree, const size_t index)
 		case NOP:
 			if (vector_get(tree, index + 1) != TExprend)
 			{
-				error(NULL, tree_expression_no_texprend, index, vector_get(tree, index));
+				system_error(tree_expression_no_texprend, index, vector_get(tree, index));
 				return node_broken();
 			}
 			break;
@@ -252,7 +252,7 @@ node node_expression(vector *const tree, const size_t index)
 		{
 			if (!is_lexeme(vector_get(tree, index)))
 			{
-				error(NULL, tree_expression_unknown, index, vector_get(tree, index));
+				system_error(tree_expression_unknown, index, vector_get(tree, index));
 				return node_broken();
 			}
 
@@ -261,7 +261,7 @@ node node_expression(vector *const tree, const size_t index)
 			{
 				if (is_operator(vector_get(tree, j)))
 				{
-					error(NULL, tree_expression_operator, j, vector_get(tree, j));
+					system_error(tree_expression_operator, j, vector_get(tree, j));
 					return node_broken();
 				}
 
@@ -289,7 +289,7 @@ node node_expression(vector *const tree, const size_t index)
 	}
 	else
 	{
-		error(NULL, tree_expression_no_texprend, j, vector_get(tree, j));
+		system_error(tree_expression_no_texprend, j, vector_get(tree, j));
 		return node_broken();
 	}
 
@@ -505,7 +505,7 @@ size_t node_test_recursive(node *const nd, size_t i)
 
 	if (vector_get(nd->tree, i++) != node_get_type(nd))
 	{
-		error(NULL, tree_unexpected, node_get_type(nd), i - 1, vector_get(nd->tree, i - 1));
+		system_error(tree_unexpected, node_get_type(nd), i - 1, vector_get(nd->tree, i - 1));
 		return SIZE_MAX;
 	}
 
@@ -513,7 +513,7 @@ size_t node_test_recursive(node *const nd, size_t i)
 	{
 		if (vector_get(nd->tree, i++) != node_get_arg(nd, j))
 		{
-			error(NULL, tree_unexpected, node_get_arg(nd, j), i - 1, vector_get(nd->tree, i - 1));
+			system_error(tree_unexpected, node_get_arg(nd, j), i - 1, vector_get(nd->tree, i - 1));
 			return SIZE_MAX;
 		}
 	}
@@ -531,13 +531,13 @@ int node_test_copy(node *const dest, node *const nd)
 	node child_dest = node_set_child(dest);
 	if (!node_is_correct(&child_dest))
 	{
-		error(NULL, node_cannot_set_child, dest->type, node_get_type(dest));
+		system_error(node_cannot_set_child, dest->type, node_get_type(dest));
 		return -1;
 	}
 
 	if (node_set_type(&child_dest, node_get_type(nd)))
 	{
-		error(NULL, node_cannot_set_type, node_get_type(nd), child_dest.type);
+		system_error(node_cannot_set_type, node_get_type(nd), child_dest.type);
 		return -1;
 	}
 
@@ -545,7 +545,7 @@ int node_test_copy(node *const dest, node *const nd)
 	{
 		if (node_add_arg(&child_dest, node_get_arg(nd, i)))
 		{
-			error(NULL, node_cannot_add_arg, node_get_arg(nd, i), child_dest.type, node_get_type(&child_dest));
+			system_error(node_cannot_add_arg, node_get_arg(nd, i), child_dest.type, node_get_type(&child_dest));
 			return -1;
 		}
 	}
@@ -858,7 +858,7 @@ int tree_test(vector *const tree)
 		return 0;
 	}
 
-	error(NULL, tree_no_tend);
+	system_error(tree_no_tend);
 	return -1;
 }
 
@@ -877,7 +877,7 @@ int tree_test_next(vector *const tree)
 	{
 		if (vector_get(tree, i++) != node_get_type(&nd))
 		{
-			error(NULL, tree_unexpected, node_get_type(&nd), i - 1, vector_get(tree, i - 1));
+			system_error(tree_unexpected, node_get_type(&nd), i - 1, vector_get(tree, i - 1));
 			return -1;
 		}
 
@@ -885,7 +885,7 @@ int tree_test_next(vector *const tree)
 		{
 			if (vector_get(tree, i++) != node_get_arg(&nd, j))
 			{
-				error(NULL, tree_unexpected, node_get_arg(&nd, j), i - 1, vector_get(tree, i - 1));
+				system_error(tree_unexpected, node_get_arg(&nd, j), i - 1, vector_get(tree, i - 1));
 				return -1;
 			}
 		}
@@ -941,7 +941,7 @@ int tree_test_copy(vector *const tree)
 	{
 		if (vector_get(nd.tree, i) != vector_get(nd_dest.tree, i))
 		{
-			error(NULL, tree_unexpected, vector_get(nd_dest.tree, i), i, vector_get(nd.tree, i));
+			system_error(tree_unexpected, vector_get(nd_dest.tree, i), i, vector_get(nd.tree, i));
 			vector_clear(&tree_dest);
 			return -1;
 		}

@@ -118,7 +118,7 @@ typedef enum TOKEN
 	lesslessequal		= SHLASS,		/**< '<<='	punctuator */
 	greatergreaterequal	= SHRASS,		/**< '>>='	punctuator */
 
-	// Standart Functions [RuC]
+	// Standard Functions [RuC]
 	kw_print			= PRINT,		/**< 'print'	keyword	*/
 	kw_printf			= PRINTF,		/**< 'printf'	keyword */
 	kw_printid			= PRINTID,		/**< 'printid'	keyword */
@@ -142,7 +142,10 @@ typedef enum TOKEN
 	kw_strncmp			= STRNCMP,		/**< 'strncmp'	keyword */
 	kw_strstr			= STRSTR,		/**< 'strstr'	keyword */
 	kw_strlen			= STRLEN,		/**< 'strlen'	keyword */
-	
+
+	kw_t_create_direct	= TCREATEDIRECT,
+	kw_t_exit_direct	= TEXITDIRECT,
+
 	kw_msg_send			= TMSGSEND,		/**< 't_msg_send'		keyword */
 	kw_msg_receive		= TMSGRECEIVE,	/**< 't_msg_receive'	keyword */
 	kw_join				= TJOIN,		/**< 't_join'			keyword */
@@ -155,7 +158,7 @@ typedef enum TOKEN
 	kw_destroy			= TDESTROY,		/**< 't_destroy'		keyword */
 	kw_exit				= TEXIT,		/**< 't_exit'			keyword */
 	kw_getnum			= TGETNUM,		/**< 't_getnum'			keyword */
-	
+
 	kw_assert			= ASSERT,		/**< 'assert'		keyword */
 	kw_pixel			= PIXEL,		/**< 'pixel'		keyword */
 	kw_line				= LINE,			/**< 'line'			keyword */
@@ -167,7 +170,7 @@ typedef enum TOKEN
 	kw_icon				= ICON,			/**< 'icon'			keyword */
 	kw_upb				= UPB,			/**< 'upb'			keyword */
 	kw_setsignal		= SETSIGNAL,	/**< 'setsignal'	keyword */
-	
+
 	kw_wifi_connect			= WIFI_CONNECT,			/**< 'wifi_connect'					keyword */
 	kw_blynk_authorization	= BLYNK_AUTORIZATION,	/**< 'blynk_authorization'			keyword */
 	kw_blynk_send			= BLYNK_SEND,			/**< 'blynk_send'					keyword */
@@ -202,7 +205,7 @@ typedef enum TOKEN
 	sh_eval				= SH_EVAL,		/**< '#eval'	keyword */
 	sh_include			= SH_INCLUDE,	/**< '#include'	keyword */
 	sh_file				= SH_FILE,		/**< '#file'	keyword */
-} TOKEN;
+} token_t;
 
 #ifdef __cplusplus
 } /* extern "C" */

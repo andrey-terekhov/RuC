@@ -15,101 +15,111 @@
  */
 
 #include "analyzer.h"
-#include "extdecl.h"
+#include "parser.h"
+#include "codes.h"
 #include "keywords.h"
 #include "lexer.h"
-#include "uniio.h"
-#include "string.h"
+#include "tree.h"
 
 
-analyzer compiler_context_create(universal_io *const io, syntax *const sx, lexer *const lexer)
+const char *const DEFAULT_TREE = "tree.txt";
+const char *const DEFAULT_NEW = "new.txt";
+
+
+static parser parser_create(syntax *const sx, lexer *const lxr)
 {
-	analyzer context;
-	context.io = io;
-	context.sx = sx;
-	context.lxr = lexer;
+	parser prs;
+	prs.sx = sx;
+	prs.lxr = lxr;
 
-	context.sp = 0;
-	context.sopnd = -1;
-	context.blockflag = 1;
-	context.leftansttype = -1;
-	context.buf_flag = 0;
-	context.error_flag = 0;
-	context.line = 1;
-	context.buf_cur = 0;
-	context.temp_tc = 0;
+	prs.sp = 0;
+	prs.sopnd = -1;
+	prs.leftansttype = -1;
+	prs.anstdispl = 0;
 	
-	context.anstdispl = 0;
+	prs.buf_flag = 0;
+	prs.buf_cur = 0;
 
-	return context;
+	prs.flag_in_assignment = 0;
+	prs.was_error = 0;
+
+	return prs;
 }
 
 
 /** Занесение ключевых слов в reprtab */
-void read_keywords(analyzer *context)
+static void init_reprtab(parser *const prs)
 {
-	context->sx->keywords = 1;
-	get_char(context->lxr);
-	get_char(context->lxr);
-	while (lex(context->lxr) != LEOF)
+	universal_io *old_io = prs->lxr->io;
+	universal_io io = io_create();
+	prs->lxr->io = &io;
+
+	in_set_buffer(prs->lxr->io, KEYWORDS);
+	prs->sx->keywords = 1;
+
+	get_char(prs->lxr);
+	get_char(prs->lxr);
+	while (lex(prs->lxr) != LEOF)
 	{
 		; // чтение ключевых слов
 	}
+
+	prs->sx->keywords = 0;
+	in_clear(prs->lxr->io);
+
+	prs->lxr->io = old_io;
 }
 
 
-size_t toreprtab(analyzer *context, char str[])
+static size_t to_reprtab(parser *const prs, const char *const str)
 {
-	int i;
 	size_t oldrepr = REPRTAB_LEN;
 
-	context->sx->hash = 0;
+	prs->sx->hash = 0;
 
 	REPRTAB_LEN += 2;
-	for (i = 0; str[i] != 0; i++)
+	for (size_t i = 0; str[i] != '\0'; i++)
 	{
-		context->sx->hash += str[i];
+		prs->sx->hash += str[i];
 		REPRTAB[REPRTAB_LEN++] = str[i];
 	}
-	context->sx->hash &= 255;
+	prs->sx->hash &= 255;
 
 	REPRTAB[REPRTAB_LEN++] = 0;
 
-	REPRTAB[oldrepr] = (int)context->sx->hashtab[context->sx->hash];
+	REPRTAB[oldrepr] = (int)prs->sx->hashtab[prs->sx->hash];
 	REPRTAB[oldrepr + 1] = 1;
-	return context->sx->hashtab[context->sx->hash] = oldrepr;
+	return prs->sx->hashtab[prs->sx->hash] = oldrepr;
 }
 
 /** Инициализация modetab */
-void init_modetab(analyzer *context)
+static void init_modetab(parser *const prs)
 {
 	// занесение в modetab описателя struct {int numTh; int inf; }
-	vector_add(&context->sx->modes, 0);
-	vector_add(&context->sx->modes, MSTRUCT);
-	vector_add(&context->sx->modes, 2);
-	vector_add(&context->sx->modes, 4);
-	vector_add(&context->sx->modes, LINT);
-	vector_add(&context->sx->modes, (item_t)toreprtab(context, "numTh"));
-	vector_add(&context->sx->modes, LINT);
-	vector_add(&context->sx->modes, (item_t)toreprtab(context, "data"));
+	vector_add(&prs->sx->modes, 0);
+	vector_add(&prs->sx->modes, mode_struct);
+	vector_add(&prs->sx->modes, 2);
+	vector_add(&prs->sx->modes, 4);
+	vector_add(&prs->sx->modes, mode_integer);
+	vector_add(&prs->sx->modes, (item_t)to_reprtab(prs, "numTh"));
+	vector_add(&prs->sx->modes, mode_integer);
+	vector_add(&prs->sx->modes, (item_t)to_reprtab(prs, "data"));
 
 	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
-	vector_add(&context->sx->modes, 1);
-	vector_add(&context->sx->modes, MFUNCTION);
-	vector_add(&context->sx->modes, LVOID);
-	vector_add(&context->sx->modes, 1);
-	vector_add(&context->sx->modes, 2);
+	vector_add(&prs->sx->modes, 1);
+	vector_add(&prs->sx->modes, mode_function);
+	vector_add(&prs->sx->modes, mode_void);
+	vector_add(&prs->sx->modes, 1);
+	vector_add(&prs->sx->modes, 2);
 
 	// занесение в modetab описателя функции void* interpreter(void* n)
-	vector_add(&context->sx->modes, 9);
-	vector_add(&context->sx->modes, MFUNCTION);
-	vector_add(&context->sx->modes, LVOIDASTER);
-	vector_add(&context->sx->modes, 1);
-	vector_add(&context->sx->modes, LVOIDASTER);
+	vector_add(&prs->sx->modes, 9);
+	vector_add(&prs->sx->modes, mode_function);
+	vector_add(&prs->sx->modes, mode_void_pointer);
+	vector_add(&prs->sx->modes, 1);
+	vector_add(&prs->sx->modes, mode_void_pointer);
 
-	context->sx->start_mode = 14;
-	context->sx->keywords = 0;
-	context->line = 1;
+	prs->sx->start_mode = 14;
 }
 
 
@@ -129,21 +139,27 @@ int analyze(universal_io *const io, syntax *const sx)
 		return -1;
 	}
 
-	universal_io temp = io_create();
-	lexer lexer = create_lexer(&temp, sx);
-	analyzer context = compiler_context_create(&temp, sx, &lexer);
-	
-	in_set_buffer(context.io, KEYWORDS);
-	read_keywords(&context);
-	in_clear(context.io);
+	lexer lxr = create_lexer(io, sx);
+	parser prs = parser_create(sx, &lxr);
 
-	init_modetab(&context);
+	init_reprtab(&prs);
+	init_modetab(&prs);
 
-	io_erase(&temp);
+#ifndef GENERATE_TREE
+	return parse(&prs) || !sx_is_correct(sx);
+#else
+	const int ret = parse(&prs) || !sx_is_correct(sx)
+		|| tree_test(&sx->tree)
+		|| tree_test_next(&sx->tree)
+		|| tree_test_recursive(&sx->tree)
+		|| tree_test_copy(&sx->tree);
 
-	context.io = io;
-	context.lxr->io = io;
-	ext_decl(&context);
+	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
 
-	return context.error_flag || context.lxr->error_flag;
+	if (!ret)
+	{
+		tree_print(DEFAULT_NEW, &sx->tree);
+	}
+	return ret;
+#endif
 }
