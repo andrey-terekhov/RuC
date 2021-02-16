@@ -15,20 +15,14 @@
  */
 
 #include "preprocessor.h"
-#include "parser.h"
 #include "constants.h"
 #include "environment.h"
 #include "error.h"
+#include "linker.h"
+#include "parser.h"
 #include "uniio.h"
 #include "uniprinter.h"
 #include "utils.h"
-#include "linker.h"
-#include <limits.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <wchar.h>
 
 
 const size_t SIZE_OUT_BUFFER = 1024;

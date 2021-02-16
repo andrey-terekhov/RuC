@@ -15,18 +15,14 @@
  */
 
 #include "save_macro.h"
-#include "get_macro.h"
 #include "calculator.h"
 #include "constants.h"
 #include "environment.h"
 #include "error.h"
+#include "get_macro.h"
 #include "linker.h"
 #include "utils.h"
-#include <limits.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+
 
 int m_equal(environment *const env)
 {
@@ -424,8 +420,6 @@ int add_macro(environment *const env)
 
 int set_macros(environment *const env)
 {
-	int j;
-
 	skip_space(env);
 
 	if (!utf8_is_letter(env->curchar))
@@ -435,7 +429,7 @@ int set_macros(environment *const env)
 		return -1;
 	}
 
-	j = collect_mident(env);
+	const int j = collect_mident(env);
 
 	if (env->macrotext[env->reprtab[j + 1]] == MACROFUNCTION)
 	{
