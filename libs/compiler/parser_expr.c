@@ -36,7 +36,7 @@ int scanner(parser *const prs)
 		prs->next_token = prs->buf_cur;
 		prs->buf_flag--;
 	}
-	
+
 	return prs->curr_token;
 }
 
@@ -63,7 +63,6 @@ void applid(parser *const prs)
 		parser_error(prs, ident_is_not_declared, buffer);
 		prs->was_error = 5;
 	}
-
 }
 
 void totree(parser *const prs, item_t op)
@@ -76,11 +75,11 @@ void totree_float_operation(parser *const prs, item_t op)
 	if (prs->ansttype == LFLOAT &&
 		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
 	{
-		vector_add(&TREE, op + 50);
+		tree_add(prs->sx, op + 50);
 	}
 	else
 	{
-		vector_add(&TREE, op);
+		tree_add(prs->sx, op);
 	}
 }
 
@@ -176,14 +175,13 @@ void binop(parser *const prs, int sp)
 
 void toval(parser *const prs)
 {
-	// надо значение положить на стек,
-	// например, чтобы передать параметром
-
+	// надо значение положить на стек, например, чтобы передать параметром
 	if (prs->anst == VAL || prs->anst == NUMBER)
 	{
-		;
+		return;
 	}
-	else if (mode_is_struct(prs->sx, prs->ansttype))
+
+	if (mode_is_struct(prs->sx, prs->ansttype))
 	{
 		if (!prs->flag_in_assignment)
 		{
@@ -201,20 +199,19 @@ void toval(parser *const prs)
 			totree(prs, mode_get(prs->sx, prs->ansttype + 1));
 			prs->anst = VAL;
 		}
+		return;
 	}
-	else
-	{
-		if (prs->anst == IDENT)
-		{
-			tree_set(prs->sx, tree_size(prs->sx) - 2, mode_is_float(prs->ansttype) ? TIdenttovald : TIdenttoval);
-		}
 
-		if (!mode_is_array(prs->sx, prs->ansttype) && !mode_is_pointer(prs->sx, prs->ansttype) && prs->anst == ADDR)
-		{
-			totree(prs, mode_is_float(prs->ansttype) ? TAddrtovald : TAddrtoval);
-		}
-		prs->anst = VAL;
+	if (prs->anst == IDENT)
+	{
+		tree_set(prs->sx, tree_size(prs->sx) - 2, mode_is_float(prs->ansttype) ? TIdenttovald : TIdenttoval);
 	}
+
+	if (!mode_is_array(prs->sx, prs->ansttype) && !mode_is_pointer(prs->sx, prs->ansttype) && prs->anst == ADDR)
+	{
+		totree(prs, mode_is_float(prs->ansttype) ? TAddrtovald : TAddrtoval);
+	}
+	prs->anst = VAL;
 }
 
 void actstring(int type, parser *const prs)
