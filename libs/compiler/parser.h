@@ -65,7 +65,7 @@ void token_consume(parser *const prs);
  *	@param	prs			Parser structure
  *	@param	expected	Expected token to consume
  *
- *	@return	@c 1 on consuming 'peek token', @c 0 otherwise
+ *	@return	@c 1 on consuming 'peek token', @c 0 on otherwise
  */
 int token_try_consume(parser *const prs, const token_t expected);
 

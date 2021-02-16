@@ -40,11 +40,11 @@ int scanner(parser *const prs)
 	return prs->curr_token;
 }
 
-void must_be(parser *const prs, int what, int e)
+void must_be(parser *const prs, const token_t what, const error_t num)
 {
 	if (prs->next_token != what)
 	{
-		parser_error(prs, e);
+		parser_error(prs, num);
 		prs->curr_token = what;
 	}
 	else
