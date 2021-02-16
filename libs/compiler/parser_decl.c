@@ -800,7 +800,7 @@ void parse_function_definition(parser *const prs, const item_t type)
  */
 
 
-void parse_inner_declaration(parser *const prs)
+void parse_declaration_inner(parser *const prs)
 {
 	prs->flag_was_type_def = 0;
 	item_t group_type = parse_type_specifier(prs);
@@ -839,7 +839,7 @@ void parse_inner_declaration(parser *const prs)
 	token_expect_and_consume(prs, semicolon, expected_semi_after_decl);
 }
 
-void parse_external_declaration(parser *const prs)
+void parse_declaration_external(parser *const prs)
 {
 	prs->flag_was_type_def = 0;
 	prs->func_def = 3;
@@ -907,7 +907,7 @@ void parse_initializer(parser *const prs, const item_t type)
 			}
 			else if (mode_is_float(type) && mode_is_int(expr_type))
 			{
-				insert_widen(prs);
+				parse_expression_insert_widen(prs);
 			}
 			else if (type != expr_type)
 			{

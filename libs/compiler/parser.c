@@ -41,7 +41,7 @@ int parse(parser *const prs)
 
 	do
 	{
-		parse_external_declaration(prs);
+		parse_declaration_external(prs);
 	} while (prs->next_token != eof);
 
 	tree_add(prs->sx, TEnd);

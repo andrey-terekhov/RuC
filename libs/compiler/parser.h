@@ -166,7 +166,7 @@ item_t parse_condition(parser *const prs);
  *
  *	@param	prs			Parser structure
  */
-void insert_widen(parser *const prs);
+void parse_expression_insert_widen(parser *const prs);
 
 
 /**
@@ -176,7 +176,7 @@ void insert_widen(parser *const prs);
  *
  *	@param	prs			Parser structure
  */
-void parse_inner_declaration(parser *const prs);
+void parse_declaration_inner(parser *const prs);
 
 /**
  *	Parse a top level declaration [C99 6.7]
@@ -185,7 +185,7 @@ void parse_inner_declaration(parser *const prs);
  *
  *	@param	prs			Parser structure
  */
-void parse_external_declaration(parser *const prs);
+void parse_declaration_external(parser *const prs);
 
 /**
  *	Parse initializer [C99 6.7.8]

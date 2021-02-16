@@ -389,7 +389,7 @@ void parse_return_statement(parser *const prs)
 		{
 			if (mode_is_float(return_type) && mode_is_int(expr_type))
 			{
-				insert_widen(prs);
+				parse_expression_insert_widen(prs);
 			}
 			else if (return_type != expr_type)
 			{
@@ -588,7 +588,7 @@ void parse_printf_statement(parser *const prs)
 		const item_t type = parse_assignment_expression(prs);
 		if (mode_is_float(format_types[actual_args]) && mode_is_int(type))
 		{
-			insert_widen(prs);
+			parse_expression_insert_widen(prs);
 		}
 		else if (format_types[actual_args] != type)
 		{
@@ -644,7 +644,7 @@ void parse_block_item(parser *const prs)
 		// case kw_union:
 		// case kw_enum:
 		// case kw_typedef:
-			parse_inner_declaration(prs);
+			parse_declaration_inner(prs);
 			return;
 
 		case identifier:
@@ -652,7 +652,7 @@ void parse_block_item(parser *const prs)
 			const size_t id = (size_t)repr_get_reference(prs->sx, prs->lxr->repr);
 			if (ident_get_displ(prs->sx, id) >= 1000)
 			{
-				parse_inner_declaration(prs);
+				parse_declaration_inner(prs);
 			}
 			else
 			{
