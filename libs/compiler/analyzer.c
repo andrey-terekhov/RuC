@@ -26,9 +26,10 @@ const char *const DEFAULT_TREE = "tree.txt";
 const char *const DEFAULT_NEW = "new.txt";
 
 
-parser parser_create(syntax *const sx, lexer *const lxr)
+parser parser_create(universal_io *const io, syntax *const sx, lexer *const lxr)
 {
 	parser prs;
+	prs.io = io;
 	prs.sx = sx;
 	prs.lxr = lxr;
 
@@ -129,16 +130,17 @@ int analyze(universal_io *const io, syntax *const sx)
 
 	universal_io temp = io_create();
 	lexer lxr = create_lexer(&temp, sx);
-	parser prs = parser_create(sx, &lxr);
+	parser prs = parser_create(&temp, sx, &lxr);
 
-	in_set_buffer(prs.lxr->io, KEYWORDS);
+	in_set_buffer(prs.io, KEYWORDS);
 	read_keywords(&prs);
-	in_clear(prs.lxr->io);
+	in_clear(prs.io);
 
 	init_modetab(&prs);
 
 	io_erase(&temp);
 
+	prs.io = io;
 	prs.lxr->io = io;
 
 #ifndef GENERATE_TREE

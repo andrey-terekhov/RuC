@@ -57,8 +57,8 @@ void parser_error(parser *const prs, const error_t num, ...)
 	va_list args;
 	va_start(args, num);
 
-	verror(prs->lxr->io, num, args);
-	
+	verror(prs->io, num, args);
+
 	va_end(args);
 }
 
