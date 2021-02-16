@@ -211,7 +211,7 @@ typedef enum WARNING
  *	@param	io			Universal io
  *	@param	num			Error number
  */
-void error(const universal_io *const io, const error_t num, ...);
+void error(const universal_io *const io, error_t num, ...);
 
 /**
  *	Emit a warning for some problem
@@ -219,7 +219,7 @@ void error(const universal_io *const io, const error_t num, ...);
  *	@param	io			Universal io
  *	@param	num			Warning number
  */
-void warning(const universal_io *const io, const warning_t num, ...);
+void warning(const universal_io *const io, warning_t num, ...);
 
 
 /**
@@ -246,14 +246,14 @@ void vwarning(const universal_io *const io, const warning_t num, va_list args);
  *
  *	@param	num			Error number
  */
-void system_error(const error_t num, ...);
+void system_error(error_t num, ...);
 
 /**
  *	Emit a warning by number
  *
  *	@param	num			Warning number
  */
-void system_warning(const warning_t num, ...);
+void system_warning(warning_t num, ...);
 
 
 /**
