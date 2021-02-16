@@ -85,6 +85,7 @@ void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, "int", "цел", kw_int);
 	repr_add_keyword(reprtab, "long", "длин", kw_long);
 	// repr_add_keyword(reprtab, "short", "корот", kw_short);
+	repr_add_keyword(reprtab, "struct", "структура", kw_struct);
 	// repr_add_keyword(reprtab, "union", "объединение", kw_union);
 	repr_add_keyword(reprtab, "void", "пусто", kw_void);
 	// repr_add_keyword(reprtab, "signed", "знаковый", kw_signed);

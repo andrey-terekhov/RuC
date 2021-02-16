@@ -29,6 +29,7 @@ typedef enum TOKEN
 
 	// Keywords [C99 6.4.1]
 	kw_main				= LMAIN,		/**< 'main'		keyword */
+	//kw_bool,							/**< 'bool'		keyword */
 	//kw_auto,							/**< 'auto'		keyword */
 	kw_char				= LCHAR,		/**< 'char'		keyword */
 	kw_double			= LDOUBLE,		/**< 'double'	keyword */
