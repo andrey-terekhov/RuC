@@ -107,7 +107,6 @@ const char *env_get_current_file(environment *const env)
 
 void env_add_comment(environment *const env)
 {
-	
 	comment cmt = cmt_create(env_get_current_file(env), env->line);
 
 	char buffer[MAX_CMT_SIZE];
