@@ -20,6 +20,7 @@
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "map.h"
 #include "uniio.h"
 #include "vector.h"
 
@@ -33,34 +34,27 @@ typedef struct node node;
 /** Global vars definition */
 typedef struct syntax
 {
-	vector predef;					/**< Predefined functions table */
-	vector functions;				/**< Functions table */
+	vector predef;				/**< Predefined functions table */
+	vector functions;			/**< Functions table */
 
-	vector tree;					/**< Tree table */
+	vector tree;				/**< Tree table */
 
-	vector identifiers;				/**< Identifiers table */
-	size_t cur_id;					/**< Start of current scope in identifiers table */
+	vector identifiers;			/**< Identifiers table */
+	size_t cur_id;				/**< Start of current scope in identifiers table */
 
-	vector modes;					/**< Modes table */
-	size_t start_mode;				/**< Start of last record in modetab */
+	vector modes;				/**< Modes table */
+	size_t start_mode;			/**< Start of last record in modetab */
 
+	map reprtab;				/**< Representations table */
 
-	size_t hashtab[256];			/**< Hash table for reprtab */
-	int hash;						/**< Last value of hash function */
+	item_t max_displ;			/**< Max displacement */
+	item_t max_displg;			/**< Max displacement */
 
-	char32_t reprtab[MAXREPRTAB];	/**< Representations table */
-	size_t rp;						/**< Representations size */
+	item_t displ;				/**< Stack displacement in current scope */
+	item_t lg;					/**< Displacement from l (+1) or g (-1) */
 
-
-	item_t max_displ;				/**< Max displacement */
-	item_t max_displg;				/**< Max displacement */
-
-	item_t displ;					/**< Stack displacement in current scope */
-	item_t lg;						/**< Displacement from l (+1) or g (-1) */
-
-	size_t keywords;				/**< Number of read keyword */
-	size_t procd;					/**< Process management daemon */
-	size_t ref_main;				/**< Main function reference */
+	size_t procd;				/**< Process management daemon */
+	size_t ref_main;			/**< Main function reference */
 } syntax;
 
 
@@ -311,14 +305,14 @@ item_t mode_get(const syntax *const sx, const size_t index);
 
 
 /**
- *	Add a new record to representations table
+ *	Add a new record to representations table from io or return existing
  *
  *	@param	sx			Syntax structure
- *	@param	spelling	Spelling of new identifier or keyword
+ *	@param	spelling	Unique string key
  *
- *	@return	Index of the new record in representations table, @c SIZE_MAX on failure
+ *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t repr_add(syntax *const sx, const char32_t *const spelling);
+size_t repr_reserve(syntax *const sx, const char32_t *const spelling);
 
 /**
  *	Write identificator name from representations table
@@ -332,25 +326,14 @@ size_t repr_add(syntax *const sx, const char32_t *const spelling);
 size_t repr_get_name(const syntax *const sx, const size_t index, char *const buffer);
 
 /**
- *	Get a representation spelling from table by index
- *
- *	@param	sx			Syntax structure
- *	@param	index		Index of record in representations table
- *	@param	spelling	String for result
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int repr_get_spelling(const syntax *const sx, const size_t index, char32_t *const spelling);
-
-/**
  *	Get a representation reference from table by index
  *
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in representations table
  *
- *	@return	Reference by index from representations table, @c INT_MAX on failure
+ *	@return	Reference by index from representations table, @c ITEM_MAX on failure
  */
-int repr_get_reference(const syntax *const sx, const size_t index);
+item_t repr_get_reference(const syntax *const sx, const size_t index);
 
 /**
  *	Set representation reference by index in table

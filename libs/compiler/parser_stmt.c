@@ -420,7 +420,7 @@ void parse_printid_statement(parser *const prs)
 		{
 			const size_t repr = prs->lxr->repr;
 			const item_t id = repr_get_reference(prs->sx, repr);
-			if (id == 1)
+			if (id == ITEM_MAX)
 			{
 				char buffer[MAXSTRINGL];
 				repr_get_name(prs->sx, repr, buffer);
@@ -473,7 +473,7 @@ void parse_getid_statement(parser *const prs)
 		{
 			const size_t repr = prs->lxr->repr;
 			const item_t id = repr_get_reference(prs->sx, repr);
-			if (id == 1)
+			if (id == ITEM_MAX)
 			{
 				char buffer[MAXSTRINGL];
 				repr_get_name(prs->sx, repr, buffer);

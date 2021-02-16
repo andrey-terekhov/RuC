@@ -17,6 +17,7 @@
 #include "syntax.h"
 #include <stdlib.h>
 #include "errors.h"
+#include "tokens.h"
 #include "tree.h"
 
 
@@ -65,21 +66,124 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 	return 1;
 }
 
-/**	Check if representations are equal */
-int repr_is_equal(const syntax *const sx, const size_t first, const size_t second)
+
+void repr_add_keyword(map *const reprtab, const char *eng_spelling, const char *rus_spelling, const token_t token)
 {
-	size_t i = 2;
-	while (sx->reprtab[first + i] == sx->reprtab[second + i])
-	{
-		i++;
-		if (sx->reprtab[first + i] == 0 && sx->reprtab[second + i] == 0)
-		{
-			return 1;
-		}
-	}
-	return 0;
+	map_add(reprtab, eng_spelling, token);
+	map_add(reprtab, rus_spelling, token);
 }
 
+void repr_init(map *const reprtab)
+{
+	repr_add_keyword(reprtab, "main", "главная", kw_main);
+	// repr_add_keyword(reprtab, "auto", "авто", kw_auto);
+	// repr_add_keyword(reprtab, "bool", "булево", kw_bool);
+	repr_add_keyword(reprtab, "char", "литера", kw_char);
+	repr_add_keyword(reprtab, "double", "двойной", kw_double);
+	// repr_add_keyword(reprtab, "enum", "перечень", kw_enum);
+	repr_add_keyword(reprtab, "float", "вещ", kw_float);
+	repr_add_keyword(reprtab, "int", "цел", kw_int);
+	repr_add_keyword(reprtab, "long", "длин", kw_long);
+	// repr_add_keyword(reprtab, "short", "корот", kw_short);
+	// repr_add_keyword(reprtab, "union", "объединение", kw_union);
+	repr_add_keyword(reprtab, "void", "пусто", kw_void);
+	// repr_add_keyword(reprtab, "signed", "знаковый", kw_signed);
+	// repr_add_keyword(reprtab, "unsigned", "беззнаковый", kw_unsigned);
+	repr_add_keyword(reprtab, "if", "если", kw_if);
+	repr_add_keyword(reprtab, "else", "иначе", kw_else);
+	repr_add_keyword(reprtab, "do", "цикл", kw_do);
+	repr_add_keyword(reprtab, "while", "пока", kw_while);
+	repr_add_keyword(reprtab, "for", "для", kw_for);
+	repr_add_keyword(reprtab, "switch", "выбор", kw_switch);
+	repr_add_keyword(reprtab, "case", "случай", kw_case);
+	repr_add_keyword(reprtab, "default", "умолчание", kw_default);
+	repr_add_keyword(reprtab, "break", "выход", kw_break);
+	repr_add_keyword(reprtab, "continue", "продолжить", kw_continue);
+	// repr_add_keyword(reprtab, "const", "конст", kw_const);
+	repr_add_keyword(reprtab, "goto", "переход", kw_goto);
+	// repr_add_keyword(reprtab, "sizeof", "размер", kw_sizeof);
+	// repr_add_keyword(reprtab, "typedef", "опртипа", kw_typedef);
+	repr_add_keyword(reprtab, "return", "возврат", kw_return);
+	// repr_add_keyword(reprtab, "extern", "внешн", kw_extern);
+	// repr_add_keyword(reprtab, "inline", "встр", kw_inline);
+	// repr_add_keyword(reprtab, "register", "регистровый", kw_register);
+
+	repr_add_keyword(reprtab, "print", "печать", kw_print);
+	repr_add_keyword(reprtab, "printf", "печатьф", kw_printf);
+	repr_add_keyword(reprtab, "printid", "печатьид", kw_printid);
+	repr_add_keyword(reprtab, "scanf", "читатьф", kw_scanf);
+	repr_add_keyword(reprtab, "getid", "читатьид", kw_getid);
+	repr_add_keyword(reprtab, "abs", "абс", kw_abs);
+	repr_add_keyword(reprtab, "sqrt", "квкор", kw_sqrt);
+	repr_add_keyword(reprtab, "exp", "эксп", kw_exp);
+	repr_add_keyword(reprtab, "sin", "син", kw_sin);
+
+	repr_add_keyword(reprtab, "cos", "кос", kw_cos);
+	repr_add_keyword(reprtab, "log", "лог", kw_log);
+	repr_add_keyword(reprtab, "log10", "лог10", kw_log10);
+	repr_add_keyword(reprtab, "asin", "асин", kw_asin);
+	repr_add_keyword(reprtab, "rand", "случ", kw_rand);
+	repr_add_keyword(reprtab, "round", "округл", kw_round);
+	repr_add_keyword(reprtab, "strcpy", "копир_строку", kw_strcpy);
+	repr_add_keyword(reprtab, "strncpy", "копир_н_симв", kw_strncpy);
+	repr_add_keyword(reprtab, "strcat", "конкат_строки", kw_strcat);
+	repr_add_keyword(reprtab, "strncat", "конкат_н_симв", kw_strncat);
+	repr_add_keyword(reprtab, "strcmp", "сравн_строк", kw_strcmp);
+	repr_add_keyword(reprtab, "strncmp", "сравн_н_симв", kw_strncmp);
+	repr_add_keyword(reprtab, "strstr", "нач_подстрок", kw_strstr);
+	repr_add_keyword(reprtab, "strlen", "длина", kw_strlen);
+
+	repr_add_keyword(reprtab, "t_create_direct", "н_создать_непоср", kw_t_create_direct);
+	repr_add_keyword(reprtab, "t_exit_direct", "н_конец_непоср", kw_t_exit_direct);
+
+	repr_add_keyword(reprtab, "t_msg_send", "н_послать", kw_msg_send);
+	repr_add_keyword(reprtab, "t_msg_receive", "н_получить", kw_msg_receive);
+	repr_add_keyword(reprtab, "t_join", "н_присоед", kw_join);
+	repr_add_keyword(reprtab, "t_sleep", "н_спать", kw_sleep);
+	repr_add_keyword(reprtab, "t_sem_create", "н_создать_сем", kw_sem_create);
+	repr_add_keyword(reprtab, "t_sem_wait", "н_вниз_сем", kw_sem_wait);
+	repr_add_keyword(reprtab, "t_sem_post", "н_вверх_сем", kw_sem_post);
+	repr_add_keyword(reprtab, "t_create", "н_создать", kw_create);
+	repr_add_keyword(reprtab, "t_init", "н_начать", kw_init);
+	repr_add_keyword(reprtab, "t_destroy", "н_закончить", kw_destroy);
+	repr_add_keyword(reprtab, "t_exit", "н_конец", kw_exit);
+	repr_add_keyword(reprtab, "t_getnum", "н_номер_нити", kw_getnum);
+
+	repr_add_keyword(reprtab, "assert", "проверить", kw_assert);
+	repr_add_keyword(reprtab, "pixel", "пиксель", kw_pixel);
+	repr_add_keyword(reprtab, "line", "линия", kw_line);
+	repr_add_keyword(reprtab, "rectangle", "прямоугольник", kw_rectangle);
+	repr_add_keyword(reprtab, "ellipse", "эллипс", kw_ellipse);
+	repr_add_keyword(reprtab, "clear", "очистить", kw_clear);
+	repr_add_keyword(reprtab, "draw_string", "нарисовать_строку", kw_draw_string);
+	repr_add_keyword(reprtab, "draw_number", "нарисовать_число", kw_draw_number);
+	repr_add_keyword(reprtab, "icon", "иконка", kw_icon);
+	repr_add_keyword(reprtab, "upb", "кол_во", kw_upb);
+	repr_add_keyword(reprtab, "setsignal", "сигнал", kw_setsignal);
+
+	repr_add_keyword(reprtab, "wifi_connect", "wifi_подключить", kw_wifi_connect);
+	repr_add_keyword(reprtab, "blynk_authorization", "blynk_авторизация", kw_blynk_authorization);
+	repr_add_keyword(reprtab, "blynk_send", "blynk_послать", kw_blynk_send);
+	repr_add_keyword(reprtab, "blynk_receive", "blynk_получить", kw_blynk_receive);
+	repr_add_keyword(reprtab, "blynk_notification", "blynk_уведомление", kw_blynk_notification);
+	repr_add_keyword(reprtab, "blynk_property", "blynk_свойство", kw_blynk_property);
+	repr_add_keyword(reprtab, "blynk_lcd", "blynk_дисплей", kw_blynk_lcd);
+	repr_add_keyword(reprtab, "blynk_terminal", "blynk_терминал", kw_blynk_terminal);
+	repr_add_keyword(reprtab, "send_int_to_robot", "послать_цел_на_робот", kw_send_int);
+	repr_add_keyword(reprtab, "send_float_to_robot", "послать_вещ_на_робот", kw_send_float);
+	repr_add_keyword(reprtab, "send_string_to_robot", "послать_строку_на_робот", kw_send_string);
+	repr_add_keyword(reprtab, "receive_int_from_robot", "получить_цел_от_робота", kw_receive_int);
+	repr_add_keyword(reprtab, "receive_float_from_robot", "получить_вещ_от_робота", kw_receive_float);
+	repr_add_keyword(reprtab, "receive_string_from_robot", "получить_строку_от_робота", kw_receive_string);
+}
+
+map repr_create(const size_t alloc)
+{
+	map reprtab = map_create(alloc);
+	repr_init(&reprtab);
+
+	return reprtab;
+}
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -109,7 +213,7 @@ syntax sx_create()
 	vector_increase(&sx.modes, 1);
 	sx.start_mode = 1;
 
-	sx.rp = 1;
+	sx.reprtab = repr_create(MAXREPRTAB);
 
 	sx.max_displg = 3;
 	sx.ref_main = 0;
@@ -117,11 +221,6 @@ syntax sx_create()
 	sx.max_displ = 3;
 	sx.displ = -3;
 	sx.lg = -1;
-
-	for (size_t i = 0; i < 256; i++)
-	{
-		sx.hashtab[i] = 0;
-	}
 
 	return sx;
 }
@@ -163,6 +262,7 @@ int sx_clear(syntax *const sx)
 
 	vector_clear(&sx->identifiers);
 	vector_clear(&sx->modes);
+	map_clear(&sx->reprtab);
 
 	return 0;
 }
@@ -230,10 +330,11 @@ size_t tree_reserve(syntax *const sx)
 size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const item_t mode, const int func_def)
 {
 	const size_t last_id = vector_size(&sx->identifiers);
-	vector_add(&sx->identifiers, repr_get_reference(sx, repr));
+	const item_t ref = repr_get_reference(sx, repr);
+	vector_add(&sx->identifiers, ref == ITEM_MAX ? 1 : ref);
 	vector_increase(&sx->identifiers, 3);
 
-	if (repr_get_reference(sx, repr) == 0) // это может быть только MAIN
+	if (ref == 0) // это может быть только MAIN
 	{
 		if (sx->ref_main)
 		{
@@ -243,7 +344,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const i
 	}
 
 	// Ссылка на описание с таким же представлением в предыдущем блоке
-	const size_t prev = (size_t)vector_get(&sx->identifiers, last_id);
+	const size_t prev = (size_t)ident_get_prev(sx, last_id);
 	if (prev)
 	{
 		// prev == 0 только для main, эту ссылку портить нельзя
@@ -394,97 +495,37 @@ item_t mode_get(const syntax *const sx, const size_t index)
 }
 
 
-size_t repr_add(syntax *const sx, const char32_t *const spelling)
+size_t repr_reserve(syntax *const sx, const char32_t *const spelling)
 {
-	const size_t old_repr = sx->rp;
-	uint8_t hash = 0;
-	size_t i = 0;
-	sx->rp += 2;
-
-	do
-	{
-		hash += (spelling[i] & 255);
-		sx->reprtab[sx->rp++] = spelling[i];
-	} while (spelling[i++] != 0);
-
-	sx->hash = (int)hash;
-
-	size_t cur_repr = sx->hashtab[hash];
-	if (cur_repr != 0)
-	{
-		do
-		{
-			if (repr_is_equal(sx, cur_repr, old_repr))
-			{
-				sx->rp = old_repr;
-				return cur_repr;
-			}
-			else
-			{
-				cur_repr = sx->reprtab[cur_repr];
-			}
-		} while (cur_repr != 0);
-	}
-
-	sx->reprtab[old_repr] = (int)sx->hashtab[hash];
-	sx->hashtab[hash] = old_repr;
-	// Пишется в reprtab: 0 - только MAIN, (< 0) - ключевые слова, 1 - обычные иденты
-	sx->reprtab[old_repr + 1] = (sx->keywords) ? 0 - (((char32_t)(++sx->keywords) - 2) / 4) : 1;
-	return old_repr;
+	return map_reserve_by_utf8(&sx->reprtab, spelling);
 }
 
 size_t repr_get_name(const syntax *const sx, const size_t index, char *const buffer)
 {
-	if (sx == NULL || index >= sx->rp)
+	const char *spelling = map_to_string(&sx->reprtab, index);
+	if (spelling == NULL)
 	{
 		return SIZE_MAX;
 	}
 
 	size_t i = 0;
-	size_t pos = index + 2; // ссылка на reprtab
-	while (sx->reprtab[pos] != '\0')
+	size_t pos = 0;
+	while (spelling[pos] != '\0')
 	{
-		i += utf8_to_string(&buffer[i], sx->reprtab[pos++]);
+		i += utf8_to_string(&buffer[i], spelling[pos++]);
 	}
 
 	return i;
 }
 
-int repr_get_spelling(const syntax *const sx, const size_t index, char32_t *const spelling)
+item_t repr_get_reference(const syntax *const sx, const size_t index)
 {
-	if (sx == NULL || index >= sx->rp)
-	{
-		return -1;
-	}
-
-	size_t i = 2;
-	do
-	{
-		spelling[i] = sx->reprtab[index + i];
-		i++;
-	} while (sx->reprtab[index + i] != 0);
-	return 0;
-}
-
-int repr_get_reference(const syntax *const sx, const size_t index)
-{
-	if (sx == NULL || index >= sx->rp)
-	{
-		return INT_MAX;
-	}
-
-	return sx->reprtab[index + 1];
+	return map_get_by_index(&sx->reprtab, index);
 }
 
 int repr_set_reference(syntax *const sx, const size_t index, const item_t ref)
 {
-	if (sx == NULL || index >= sx->rp)
-	{
-		return -1;
-	}
-
-	sx->reprtab[index + 1] = (int)ref;
-	return 0;
+	return map_set_by_index(&sx->reprtab, index, ref);
 }
 
 

@@ -55,8 +55,8 @@ void must_be(parser *const prs, const token_t what, const error_t num)
 
 void applid(parser *const prs)
 {
-	prs->lastid = REPRTAB[REPRTAB_POS + 1];
-	if (prs->lastid == 1)
+	prs->lastid = repr_get_reference(prs->sx, prs->lxr->repr);
+	if (prs->lastid == ITEM_MAX)
 	{
 		char buffer[MAXSTRINGL];
 		repr_get_name(prs->sx, REPRTAB_POS, buffer);

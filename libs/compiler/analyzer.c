@@ -17,7 +17,6 @@
 #include "analyzer.h"
 #include "parser.h"
 #include "codes.h"
-#include "keywords.h"
 #include "lexer.h"
 #include "tree.h"
 
@@ -47,49 +46,9 @@ static parser parser_create(syntax *const sx, lexer *const lxr)
 }
 
 
-/** Занесение ключевых слов в reprtab */
-static void init_reprtab(parser *const prs)
-{
-	universal_io *old_io = prs->lxr->io;
-	universal_io io = io_create();
-	prs->lxr->io = &io;
-
-	in_set_buffer(prs->lxr->io, KEYWORDS);
-	prs->sx->keywords = 1;
-
-	get_char(prs->lxr);
-	get_char(prs->lxr);
-	while (lex(prs->lxr) != LEOF)
-	{
-		; // чтение ключевых слов
-	}
-
-	prs->sx->keywords = 0;
-	in_clear(prs->lxr->io);
-
-	prs->lxr->io = old_io;
-}
-
-
 static size_t to_reprtab(parser *const prs, const char *const str)
 {
-	size_t oldrepr = REPRTAB_LEN;
-
-	prs->sx->hash = 0;
-
-	REPRTAB_LEN += 2;
-	for (size_t i = 0; str[i] != '\0'; i++)
-	{
-		prs->sx->hash += str[i];
-		REPRTAB[REPRTAB_LEN++] = str[i];
-	}
-	prs->sx->hash &= 255;
-
-	REPRTAB[REPRTAB_LEN++] = 0;
-
-	REPRTAB[oldrepr] = (int)prs->sx->hashtab[prs->sx->hash];
-	REPRTAB[oldrepr + 1] = 1;
-	return prs->sx->hashtab[prs->sx->hash] = oldrepr;
+	return map_reserve(&prs->sx->reprtab, str);
 }
 
 /** Инициализация modetab */
@@ -142,7 +101,7 @@ int analyze(universal_io *const io, syntax *const sx)
 	lexer lxr = create_lexer(io, sx);
 	parser prs = parser_create(sx, &lxr);
 
-	init_reprtab(&prs);
+	//init_reprtab(&prs);
 	init_modetab(&prs);
 
 #ifndef GENERATE_TREE
