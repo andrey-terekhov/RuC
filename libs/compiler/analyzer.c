@@ -26,7 +26,7 @@ const char *const DEFAULT_TREE = "tree.txt";
 const char *const DEFAULT_NEW = "new.txt";
 
 
-parser parser_create(syntax *const sx, lexer *const lxr)
+static parser parser_create(syntax *const sx, lexer *const lxr)
 {
 	parser prs;
 	prs.sx = sx;
@@ -48,7 +48,7 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 
 
 /** Занесение ключевых слов в reprtab */
-void read_keywords(parser *const prs)
+static void read_keywords(parser *const prs)
 {
 	prs->sx->keywords = 1;
 	get_char(prs->lxr);
@@ -61,7 +61,7 @@ void read_keywords(parser *const prs)
 }
 
 
-size_t toreprtab(parser *const prs, char str[])
+static size_t to_reprtab(parser *const prs, char str[])
 {
 	size_t oldrepr = REPRTAB_LEN;
 
@@ -83,7 +83,7 @@ size_t toreprtab(parser *const prs, char str[])
 }
 
 /** Инициализация modetab */
-void init_modetab(parser *const prs)
+static void init_modetab(parser *const prs)
 {
 	// занесение в modetab описателя struct {int numTh; int inf; }
 	vector_add(&prs->sx->modes, 0);
@@ -91,9 +91,9 @@ void init_modetab(parser *const prs)
 	vector_add(&prs->sx->modes, 2);
 	vector_add(&prs->sx->modes, 4);
 	vector_add(&prs->sx->modes, mode_integer);
-	vector_add(&prs->sx->modes, (item_t)toreprtab(prs, "numTh"));
+	vector_add(&prs->sx->modes, (item_t)to_reprtab(prs, "numTh"));
 	vector_add(&prs->sx->modes, mode_integer);
-	vector_add(&prs->sx->modes, (item_t)toreprtab(prs, "data"));
+	vector_add(&prs->sx->modes, (item_t)to_reprtab(prs, "data"));
 
 	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
 	vector_add(&prs->sx->modes, 1);
