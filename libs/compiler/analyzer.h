@@ -22,7 +22,7 @@
 #include "lexer.h"
 
 
-//#define GENERATE_TREE
+#define GENERATE_TREE
 
 #define TREE		(prs->sx->tree)
 
@@ -45,7 +45,7 @@ typedef struct parser
 	token_t next_token;			/**< Lookahead token */
 
 	size_t function_mode;		/**< Mode of currenty parsed function */
-	size_t array_dimensions;		/**< Array dimension counter */
+	size_t array_dimensions;	/**< Array dimensions counter */
 	item_t gotost[1000];		/**< Labels table */
 	size_t pgotost;				/**< Labels counter */
 

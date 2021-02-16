@@ -128,8 +128,8 @@ int analyze(universal_io *const io, syntax *const sx)
 	}
 
 	universal_io temp = io_create();
-	lexer lexer = create_lexer(&temp, sx);
-	parser prs = parser_create(sx, &lexer);
+	lexer lxr = create_lexer(&temp, sx);
+	parser prs = parser_create(sx, &lxr);
 
 	in_set_buffer(prs.lxr->io, KEYWORDS);
 	read_keywords(&prs);
