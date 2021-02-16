@@ -55,7 +55,7 @@ void must_be(parser *const prs, const token_t what, const error_t num)
 
 void applid(parser *const prs)
 {
-	prs->lastid = repr_get_reference(prs->sx, prs->lxr->repr);
+	prs->lastid = (int)repr_get_reference(prs->sx, prs->lxr->repr);
 	if (prs->lastid == (int)ITEM_MAX)
 	{
 		char buffer[MAXSTRINGL];

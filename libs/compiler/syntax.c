@@ -66,20 +66,6 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 	return 1;
 }
 
-char32_t to_upper(const char32_t ch)
-{
-	if (ch >= 'a' && ch <= 'z')
-	{
-		return ch + ('A' - 'a');
-	}
-
-	if (ch >= U'а' && ch <= U'я')
-	{
-		return ch + (U'А' - U'а');
-	}
-
-	return ch;
-}
 
 void repr_add_keyword(map *const reprtab, const char32_t *eng_spelling, const char32_t *rus_spelling, const token_t token)
 {
@@ -87,7 +73,7 @@ void repr_add_keyword(map *const reprtab, const char32_t *eng_spelling, const ch
 	size_t i;
 	for (i = 0; eng_spelling[i] != 0; i++)
 	{
-		buffer[i] = to_upper(eng_spelling[i]);
+		buffer[i] = utf8_to_upper(eng_spelling[i]);
 	}
 	buffer[i] = '\0';
 	map_add_by_utf8(reprtab, eng_spelling, token);
@@ -95,7 +81,7 @@ void repr_add_keyword(map *const reprtab, const char32_t *eng_spelling, const ch
 
 	for (i = 0; rus_spelling[i] != 0; i++)
 	{
-		buffer[i] = to_upper(rus_spelling[i]);
+		buffer[i] = utf8_to_upper(rus_spelling[i]);
 	}
 	buffer[i] = '\0';
 	map_add_by_utf8(reprtab, rus_spelling, token);
@@ -204,6 +190,11 @@ void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"receive_int_from_robot", U"получить_цел_от_робота", kw_receive_int);
 	repr_add_keyword(reprtab, U"receive_float_from_robot", U"получить_вещ_от_робота", kw_receive_float);
 	repr_add_keyword(reprtab, U"receive_string_from_robot", U"получить_строку_от_робота", kw_receive_string);
+
+	repr_add_keyword(reprtab, U"setmotor", U"мотор", kw_setmotor);
+	repr_add_keyword(reprtab, U"setvoltage", U"устнапряжение", kw_setvoltage);
+	repr_add_keyword(reprtab, U"getdigsensor", U"цифрдатчик", kw_getdigsensor);
+	repr_add_keyword(reprtab, U"getansensor", U"аналогдатчик", kw_getansensor);
 }
 
 map repr_create(const size_t alloc)
