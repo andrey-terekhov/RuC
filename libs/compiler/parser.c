@@ -199,7 +199,7 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
 	}
 	else
 	{
-		prs->lastid = (int)ret;
+		prs->lastid = ret;
 	}
 
 	return ret;

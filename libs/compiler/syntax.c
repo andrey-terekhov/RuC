@@ -175,6 +175,10 @@ void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"icon", U"иконка", kw_icon);
 	repr_add_keyword(reprtab, U"upb", U"кол_во", kw_upb);
 	repr_add_keyword(reprtab, U"setsignal", U"сигнал", kw_setsignal);
+	repr_add_keyword(reprtab, U"setmotor", U"мотор", kw_setmotor);
+	repr_add_keyword(reprtab, U"setvoltage", U"устнапряжение", kw_setvoltage);
+	repr_add_keyword(reprtab, U"getdigsensor", U"цифрдатчик", kw_getdigsensor);
+	repr_add_keyword(reprtab, U"getansensor", U"аналогдатчик", kw_getansensor);
 
 	repr_add_keyword(reprtab, U"wifi_connect", U"wifi_подключить", kw_wifi_connect);
 	repr_add_keyword(reprtab, U"blynk_authorization", U"blynk_авторизация", kw_blynk_authorization);
@@ -190,11 +194,6 @@ void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"receive_int_from_robot", U"получить_цел_от_робота", kw_receive_int);
 	repr_add_keyword(reprtab, U"receive_float_from_robot", U"получить_вещ_от_робота", kw_receive_float);
 	repr_add_keyword(reprtab, U"receive_string_from_robot", U"получить_строку_от_робота", kw_receive_string);
-
-	repr_add_keyword(reprtab, U"setmotor", U"мотор", kw_setmotor);
-	repr_add_keyword(reprtab, U"setvoltage", U"устнапряжение", kw_setvoltage);
-	repr_add_keyword(reprtab, U"getdigsensor", U"цифрдатчик", kw_getdigsensor);
-	repr_add_keyword(reprtab, U"getansensor", U"аналогдатчик", kw_getansensor);
 }
 
 map repr_create(const size_t alloc)

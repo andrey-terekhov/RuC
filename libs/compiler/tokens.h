@@ -170,6 +170,10 @@ typedef enum TOKEN
 	kw_icon				= ICON,			/**< 'icon'			keyword */
 	kw_upb				= UPB,			/**< 'upb'			keyword */
 	kw_setsignal		= SETSIGNAL,	/**< 'setsignal'	keyword */
+	kw_setmotor			= SETMOTOR, 	/**< 'setmotor'		keyword */
+	kw_setvoltage		= VOLTAGE,		/**< 'setvoltage'	keyword */
+	kw_getdigsensor		= GETDIGSENSOR,	/**< 'getdigsensor'	keyword */
+	kw_getansensor		= GETANSENSOR,	/**< 'getansensor'	keyword */
 
 	kw_wifi_connect			= WIFI_CONNECT,			/**< 'wifi_connect'					keyword */
 	kw_blynk_authorization	= BLYNK_AUTORIZATION,	/**< 'blynk_authorization'			keyword */
@@ -185,11 +189,6 @@ typedef enum TOKEN
 	kw_receive_int			= RECEIVE_INT,			/**< 'receive_int_from_robot'		keyword */
 	kw_receive_float		= RECEIVE_FLOAT,		/**< 'receive_float_from_robot'		keyword */
 	kw_receive_string		= RECEIVE_STRING,		/**< 'receive_string_from_robot'	keyword */
-
-	kw_setmotor			= SETMOTOR, 	/**< 'setmotor'	keyword */
-	kw_setvoltage		= VOLTAGE,		/**< 'setvoltage'	keyword */
-	kw_getdigsensor		= GETDIGSENSOR,	/**< 'getdigsensor	'	keyword */
-	kw_getansensor		= GETANSENSOR,	/**< 'getansensor'	keyword */
 } token_t;
 
 #ifdef __cplusplus

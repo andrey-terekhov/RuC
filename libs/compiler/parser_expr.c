@@ -55,8 +55,8 @@ void must_be(parser *const prs, const token_t what, const error_t num)
 
 void applid(parser *const prs)
 {
-	prs->lastid = (int)repr_get_reference(prs->sx, prs->lxr->repr);
-	if (prs->lastid == (int)ITEM_MAX)
+	prs->lastid = repr_get_reference(prs->sx, prs->lxr->repr);
+	if ((item_t)prs->lastid == ITEM_MAX)
 	{
 		char buffer[MAXSTRINGL];
 		repr_get_name(prs->sx, REPRTAB_POS, buffer);
@@ -1092,7 +1092,7 @@ void postexpr(parser *const prs)
 	int leftansttyp;
 	int was_func = 0;
 
-	lid = prs->lastid;
+	lid = (int)prs->lastid;
 	leftansttyp = prs->ansttype;
 
 	if (prs->next_token == LEFTBR) // вызов функции

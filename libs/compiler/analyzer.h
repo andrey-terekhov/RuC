@@ -60,7 +60,7 @@ typedef struct parser
 	int anstdispl;
 	int leftansttype;
 
-	int lastid;		// useless
+	size_t lastid;	// useless
 	int op;			// useless
 	int buf_flag;	// useless
 	int buf_cur;	// useless
