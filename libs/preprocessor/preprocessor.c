@@ -112,7 +112,7 @@ int macro_form_io(workspace *const ws, universal_io *const output)
 
 	add_keywods(&env);
 	env.mfirstrp = env.rp;
-	
+
 	return lk_preprocess_all(&env);
 }
 

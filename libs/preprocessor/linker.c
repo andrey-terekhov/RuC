@@ -114,12 +114,13 @@ int lk_open_source(environment *const env, const size_t index)
 
 int lk_preprocess_file(environment *const env, const size_t number)
 {	
+	
 	env_clear_error_string(env);
 	env->lk->included[number]++;
 
 	const size_t old_cur = env->lk->current;
 	const size_t old_line = env->line;
-	env->lk->current = number; 
+	env->lk->current = number;
 	*env->curent_path = ws_get_file(env->lk->ws, number);
 	env->line = 1;
 
@@ -132,6 +133,7 @@ int lk_preprocess_file(environment *const env, const size_t number)
 	}
 
 	int was_error = 0; 
+	
 	while (env->curchar != EOF)
 	{
 		was_error = preprocess_scan(env) || was_error;

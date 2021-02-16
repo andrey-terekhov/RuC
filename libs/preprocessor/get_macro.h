@@ -24,10 +24,10 @@ extern "C" {
 #endif
 
 /**
- *	Сhange input to macro replacement text
+ *	Change input to macro replacement text
  *
- *	@param	index	Macro Index
- *	@param	env		Preprocessor environment
+ *	@param	index		Macro Index
+ *	@param	env			Preprocessor environment
  *
  *	@return	@c 0 on success, @c -1 on failure
  */

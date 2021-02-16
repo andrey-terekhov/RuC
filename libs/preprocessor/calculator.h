@@ -24,10 +24,10 @@ extern "C" {
 #endif
 
 /**
- *	Calculate an arithmetic or logical expression.
+ *	Calculate an arithmetic or logical expression
  *
- *	@param	logic_flag	Type expression
- *	@param	env			Preprocessor environment
+ *	@param	logic_flag		Type expression
+ *	@param	env				Preprocessor environment
  *
  *	@return	@c 0 on success, @c -1 on failure
  */

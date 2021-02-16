@@ -21,16 +21,10 @@
 #include "error.h"
 #include "linker.h"
 #include "utils.h"
-#include <limits.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-int function_scob_collect(int t, int num, environment *const env)
+
+int function_scob_collect(const int t, const int num, environment *const env)
 {
-	int i;
-
 	while (env->curchar != EOF)
 	{
 		if (utf8_is_letter(env->curchar))
@@ -39,8 +33,8 @@ int function_scob_collect(int t, int num, environment *const env)
 
 			if (r)
 			{
-				int oldcp1 = env->cp;
-				int oldlsp = env->lsp;
+				const int oldcp1 = env->cp;
+				const int oldlsp = env->lsp;
 				int locfchange[STRING_SIZE];
 				int lcp = 0;
 				int ldip;
@@ -66,14 +60,14 @@ int function_scob_collect(int t, int num, environment *const env)
 				env->lsp = oldlsp;
 				env->cp = oldcp1;
 
-				for (i = 0; i < lcp; i++)
+				for (int i = 0; i < lcp; i++)
 				{
 					env->fchange[env->cp++] = locfchange[i];
 				}
 			}
 			else
 			{
-				for (i = 0; i < env->msp; i++)
+				for (int i = 0; i < env->msp; i++)
 				{
 					env->fchange[env->cp++] = env->mstring[i];
 				}
@@ -107,14 +101,14 @@ int function_scob_collect(int t, int num, environment *const env)
 				{
 					return -1;
 				}
-				for (i = 0; i < env->csp; i++)
+				for (int i = 0; i < env->csp; i++)
 				{
 					env->fchange[env->cp++] = env->cstring[i];
 				}
 			}
 			else
 			{
-				for (i = 0; i < env->reprtab[env->rp]; i++)
+				for (int i = 0; i < env->reprtab[env->rp]; i++)
 				{
 					env->fchange[env->cp++] = env->reprtab[env->rp + 2 + i];
 				}
@@ -131,7 +125,7 @@ int function_scob_collect(int t, int num, environment *const env)
 	return -1;
 }
 
-int function_stack_create(int n, environment *const env)
+int function_stack_create(const int n, environment *const env)
 {
 	int num = 0;
 
@@ -198,16 +192,10 @@ int get_macro(const int index, environment *const env)
 	if (index)
 	{
 		env->msp = 0;
-		if (env->macrotext[t] == MACROFUNCTION)
+		if (env->macrotext[t] == MACROFUNCTION && env->macrotext[++t] > -1 
+			&& function_stack_create(env->macrotext[t], env))
 		{
-			if (env->macrotext[++t] > -1)
-			{
-				
-				if(function_stack_create(env->macrotext[t], env))
-				{
-					return -1;
-				}
-			}
+			return -1;
 		}
 
 		m_change_nextch_type(TEXTTYPE, t + 1, env);

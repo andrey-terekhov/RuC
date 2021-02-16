@@ -20,10 +20,6 @@
 #include "error.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
-#include <limits.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #define MAX_CMT_SIZE MAX_ARG_SIZE + 32
@@ -318,6 +314,6 @@ void m_nextch(environment *const env)
 	{
 		env_clear_error_string(env);
 	}
-	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", env->nextch_type,
-	// env->curchar, env->curchar, env->nextchar, env->nextchar);
+	 printf("t = %d curchar = %c, %i nextchar = %c, %i \n", env->nextch_type,
+	 env->curchar, env->curchar, env->nextchar, env->nextchar);
 }
