@@ -17,13 +17,16 @@
 #include "parser.h"
 #include <string.h>
 
+
 void unarexpr(parser *const prs);
 void exprassn(parser *const prs, int level);
 void expr(parser *const prs, int level);
 
+
 int scanner(parser *const prs)
 {
 	prs->curr_token = prs->next_token;
+
 	if (!prs->buf_flag)
 	{
 		prs->next_token = lex(prs->lxr);
@@ -33,6 +36,7 @@ int scanner(parser *const prs)
 		prs->next_token = prs->buf_cur;
 		prs->buf_flag--;
 	}
+	
 	return prs->curr_token;
 }
 
@@ -69,12 +73,14 @@ void totree(parser *const prs, item_t op)
 
 void totree_float_operation(parser *const prs, item_t op)
 {
-	vector_add(&TREE, op);
 	if (prs->ansttype == LFLOAT &&
 		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
 	{
-		const size_t index = vector_size(&TREE) - 1;
-		vector_set(&TREE, index, vector_get(&TREE, index) + 50);
+		vector_add(&TREE, op + 50);
+	}
+	else
+	{
+		vector_add(&TREE, op);
 	}
 }
 
@@ -200,18 +206,12 @@ void toval(parser *const prs)
 	{
 		if (prs->anst == IDENT)
 		{
-			vector_set(&TREE, vector_size(&TREE) - 2
-					   , mode_is_float(prs->ansttype)
-					   ? TIdenttovald
-					   : TIdenttoval);
+			tree_set(prs->sx, tree_size(prs->sx) - 2, mode_is_float(prs->ansttype) ? TIdenttovald : TIdenttoval);
 		}
 
-		if (!(mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype)))
+		if (!mode_is_array(prs->sx, prs->ansttype) && !mode_is_pointer(prs->sx, prs->ansttype) && prs->anst == ADDR)
 		{
-			if (prs->anst == ADDR)
-			{
-				totree(prs, mode_is_float(prs->ansttype) ? TAddrtovald : TAddrtoval);
-			}
+			totree(prs, mode_is_float(prs->ansttype) ? TAddrtovald : TAddrtoval);
 		}
 		prs->anst = VAL;
 	}

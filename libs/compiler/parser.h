@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 /**	The kind of block to parse */
-typedef enum
+typedef enum BLOCK
 {
 	REGBLOCK,
 	THREAD,
@@ -38,7 +38,7 @@ typedef enum
  *
  *	@param	prs			Parser structure
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	@c 0 on success, @c 1 on failure
  */
 int parse(parser *const prs);
 
@@ -65,13 +65,13 @@ void token_consume(parser *const prs);
  *	@param	prs			Parser structure
  *	@param	expected	Expected token to consume
  *
- *	@return	@c 1, if 'peek token' is expected and consumed, @c 0 otherwise
+ *	@return	@c 1 on consuming 'peek token', @c 0 otherwise
  */
 int token_try_consume(parser *const prs, const token_t expected);
 
 /**
  *	Try to consume the current 'peek token' and lex the next one
- *	If 'peek token' is expected, parser will consume it, otherwise an error will be emited
+ *	If 'peek token' is expected, parser will consume it, otherwise an error will be emitted
  *
  *	@param	prs			Parser structure
  *	@param	expected	Expected token to consume
@@ -87,6 +87,19 @@ void token_expect_and_consume(parser *const prs, const token_t expected, const e
  */
 void token_skip_until(parser *const prs, const uint8_t tokens);
 
+
+/**
+ *	Parse expression [C99 6.5.17]
+ *
+ *	expression:
+ *		assignment-expression
+ *		expression ',' assignment-expression
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Type of parsed expression
+ */
+item_t parse_expression(parser *const prs);
 
 /**
  *	Parse string literal [C99 6.5.1]
@@ -115,29 +128,6 @@ void parse_string_literal(parser *const prs);
 item_t parse_assignment_expression(parser *const prs);
 
 /**
- *	Parse expression [C99 6.5.17]
- *
- *	expression:
- *		assignment-expression
- *		expression ',' assignment-expression
- *
- *	@param	prs			Parser structure
- *
- *	@return	Type of parsed expression
- */
-item_t parse_expression(parser *const prs);
-
-/**
- *	Parse condition
- *	@note	must be evaluated to a simple value
- *
- *	@param	prs			Parser structure
- *
- *	@return	Type of parsed expression
- */
-item_t parse_condition(parser *const prs);
-
-/**
  *	Parse expression in parentheses
  *
  *	parenthesized-expression:
@@ -160,6 +150,16 @@ item_t parse_parenthesized_expression(parser *const prs);
  *	@return	Type of parsed expression
  */
 item_t parse_constant_expression(parser *const prs);
+
+/**
+ *	Parse condition
+ *	@note	must be evaluated to a simple value
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Type of parsed expression
+ */
+item_t parse_condition(parser *const prs);
 
 /**
  *	Insert @c WIDEN node
