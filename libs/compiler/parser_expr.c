@@ -55,7 +55,7 @@ void must_be(parser *const prs, const token_t what, const error_t num)
 
 void applid(parser *const prs)
 {
-	prs->lastid = repr_get_reference(prs->sx, prs->lxr->repr);
+	prs->lastid = (size_t)repr_get_reference(prs->sx, prs->lxr->repr);
 	if (prs->lastid == ITEM_MAX)
 	{
 		parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, REPRTAB_POS));
