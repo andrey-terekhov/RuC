@@ -48,27 +48,37 @@ static parser parser_create(syntax *const sx, lexer *const lxr)
 
 
 /** Занесение ключевых слов в reprtab */
-static void read_keywords(parser *const prs)
+static void init_reprtab(parser *const prs)
 {
+	universal_io *old_io = prs->lxr->io;
+	universal_io io = io_create();
+	prs->lxr->io = &io;
+
+	in_set_buffer(prs->lxr->io, KEYWORDS);
 	prs->sx->keywords = 1;
+
 	get_char(prs->lxr);
 	get_char(prs->lxr);
 	while (lex(prs->lxr) != LEOF)
 	{
 		; // чтение ключевых слов
 	}
+
 	prs->sx->keywords = 0;
+	in_clear(prs->lxr->io);
+
+	prs->lxr->io = old_io;
 }
 
 
-static size_t to_reprtab(parser *const prs, char str[])
+static size_t to_reprtab(parser *const prs, const char *const str)
 {
 	size_t oldrepr = REPRTAB_LEN;
 
 	prs->sx->hash = 0;
 
 	REPRTAB_LEN += 2;
-	for (int i = 0; str[i] != '\0'; i++)
+	for (size_t i = 0; str[i] != '\0'; i++)
 	{
 		prs->sx->hash += str[i];
 		REPRTAB[REPRTAB_LEN++] = str[i];
@@ -129,19 +139,11 @@ int analyze(universal_io *const io, syntax *const sx)
 		return -1;
 	}
 
-	universal_io temp = io_create();
-	lexer lxr = create_lexer(&temp, sx);
+	lexer lxr = create_lexer(io, sx);
 	parser prs = parser_create(sx, &lxr);
 
-	in_set_buffer(prs.lxr->io, KEYWORDS);
-	read_keywords(&prs);
-	in_clear(prs.lxr->io);
-
+	init_reprtab(&prs);
 	init_modetab(&prs);
-
-	io_erase(&temp);
-
-	prs.lxr->io = io;
 
 #ifndef GENERATE_TREE
 	return parse(&prs) || !sx_is_correct(sx);
