@@ -907,7 +907,7 @@ void parse_initializer(parser *const prs, const item_t type)
 			}
 			else if (mode_is_float(type) && mode_is_int(expr_type))
 			{
-				parse_expression_insert_widen(prs);
+				parse_insert_widen(prs);
 			}
 			else if (type != expr_type)
 			{

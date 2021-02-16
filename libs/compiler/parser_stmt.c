@@ -389,7 +389,7 @@ void parse_return_statement(parser *const prs)
 		{
 			if (mode_is_float(return_type) && mode_is_int(expr_type))
 			{
-				parse_expression_insert_widen(prs);
+				parse_insert_widen(prs);
 			}
 			else if (return_type != expr_type)
 			{
@@ -588,7 +588,7 @@ void parse_printf_statement(parser *const prs)
 		const item_t type = parse_assignment_expression(prs);
 		if (mode_is_float(format_types[actual_args]) && mode_is_int(type))
 		{
-			parse_expression_insert_widen(prs);
+			parse_insert_widen(prs);
 		}
 		else if (format_types[actual_args] != type)
 		{

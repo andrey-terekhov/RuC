@@ -102,16 +102,6 @@ void token_skip_until(parser *const prs, const uint8_t tokens);
 item_t parse_expression(parser *const prs);
 
 /**
- *	Parse string literal [C99 6.5.1]
- *
- *	primary-expression:
- *		string-literal
- *
- *	@param	prs			Parser structure
- */
-void parse_string_literal(parser *const prs);
-
-/**
  *	Parse assignment expression [C99 6.5.16]
  *
  *	assignment-expression:
@@ -162,11 +152,21 @@ item_t parse_constant_expression(parser *const prs);
 item_t parse_condition(parser *const prs);
 
 /**
+ *	Parse string literal [C99 6.5.1]
+ *
+ *	primary-expression:
+ *		string-literal
+ *
+ *	@param	prs			Parser structure
+ */
+void parse_string_literal(parser *const prs);
+
+/**
  *	Insert @c WIDEN node
  *
  *	@param	prs			Parser structure
  */
-void parse_expression_insert_widen(parser *const prs);
+void parse_insert_widen(parser *const prs);
 
 
 /**

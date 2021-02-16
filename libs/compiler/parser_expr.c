@@ -1195,7 +1195,7 @@ void postexpr(parser *const prs)
 
 					if (mode_is_float(mdj) && mode_is_int(prs->ansttype))
 					{
-						parse_expression_insert_widen(prs);
+						parse_insert_widen(prs);
 					}
 					--prs->sopnd;
 				}
@@ -1941,30 +1941,6 @@ void expr(parser *const prs, int level)
  */
 
 
-void parse_string_literal(parser *const prs)
-{
-	totree(prs, TString);
-	totree(prs, prs->lxr->num);
-
-	for (int i = 0; i < prs->lxr->num; i++)
-	{
-		totree(prs, prs->lxr->lexstr[i]);
-	}
-
-	prs->ansttype = (int)to_modetab(prs, mode_array, LCHAR);
-	prs->stackoperands[++prs->sopnd] = prs->ansttype;
-	prs->anst = VAL;
-}
-
-item_t parse_assignment_expression(parser *const prs)
-{
-	exprassn(prs, 1);
-	toval(prs);
-	totree(prs, TExprend);
-	prs->sopnd--;
-	return (item_t)prs->ansttype;
-}
-
 item_t parse_expression(parser *const prs)
 {
 	expr(prs, 0);
@@ -1972,10 +1948,9 @@ item_t parse_expression(parser *const prs)
 	return (item_t)prs->ansttype;
 }
 
-item_t parse_condition(parser *const prs)
+item_t parse_assignment_expression(parser *const prs)
 {
-	scanner(prs);
-	expr(prs, 1);
+	exprassn(prs, 1);
 	toval(prs);
 	totree(prs, TExprend);
 	prs->sopnd--;
@@ -2001,7 +1976,32 @@ item_t parse_constant_expression(parser *const prs)
 	return (item_t)prs->ansttype;
 }
 
-void parse_expression_insert_widen(parser *const parser)
+item_t parse_condition(parser *const prs)
+{
+	scanner(prs);
+	expr(prs, 1);
+	toval(prs);
+	totree(prs, TExprend);
+	prs->sopnd--;
+	return (item_t)prs->ansttype;
+}
+
+void parse_string_literal(parser *const prs)
+{
+	totree(prs, TString);
+	totree(prs, prs->lxr->num);
+
+	for (int i = 0; i < prs->lxr->num; i++)
+	{
+		totree(prs, prs->lxr->lexstr[i]);
+	}
+
+	prs->ansttype = (int)to_modetab(prs, mode_array, LCHAR);
+	prs->stackoperands[++prs->sopnd] = prs->ansttype;
+	prs->anst = VAL;
+}
+
+void parse_insert_widen(parser *const parser)
 {
 	vector_remove(&parser->sx->tree);
 	totree(parser, WIDEN);
