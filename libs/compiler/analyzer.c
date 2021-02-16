@@ -144,13 +144,13 @@ int analyze(universal_io *const io, syntax *const sx)
 #ifndef GENERATE_TREE
 	return parse(&prs) || !sx_is_correct(sx);
 #else
-	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
-
 	const int ret = parse(&prs) || !sx_is_correct(sx)
 		|| tree_test(&sx->tree)
 		|| tree_test_next(&sx->tree)
 		|| tree_test_recursive(&sx->tree)
 		|| tree_test_copy(&sx->tree);
+
+	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
 
 	if (!ret)
 	{
