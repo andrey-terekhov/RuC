@@ -1009,6 +1009,7 @@ void primaryexpr(parser *const prs)
 	else
 	{
 		parser_error(prs, not_primary, prs->curr_token);
+		prs->ansttype = mode_undefined;
 		prs->was_error = 4;
 		return; // 1
 	}
