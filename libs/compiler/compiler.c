@@ -103,9 +103,6 @@ int compile_from_io_to_vm(universal_io *const io)
 #endif
 
 		ret = encode_to_vm(io, &sx);
-		// ret = optimize_for_llvm(io, &sx, 1);
-		// tree_print(&sx.tree, DEFAULT_NEW);
-		// ret = encode_to_llvm(io, &sx);
 #ifdef GENERATE_TABLES
 		tables_and_codes(&sx, DEFAULT_CODES);
 #endif
