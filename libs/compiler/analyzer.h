@@ -24,11 +24,11 @@
 
 //#define GENERATE_TREE
 
-#define TREE		(context->sx->tree)
+#define TREE		(prs->sx->tree)
 
-#define REPRTAB		(context->sx->reprtab)
-#define REPRTAB_POS (context->lxr->repr)
-#define REPRTAB_LEN (context->sx->rp)
+#define REPRTAB		(prs->sx->reprtab)
+#define REPRTAB_POS (prs->lxr->repr)
+#define REPRTAB_LEN (prs->sx->rp)
 
 
 #ifdef __cplusplus
@@ -36,52 +36,54 @@ extern "C" {
 #endif
 
 /** Определение глобальных переменных */
-typedef struct analyzer
+typedef struct parser
 {
-	universal_io *io;					/**< Universal io structure */
-	syntax *sx;							/**< Syntax structure */
-	lexer *lxr;							/**< Lexer structure */
+	syntax *sx;					/**< Syntax structure */
+	lexer *lxr;					/**< Lexer structure */
 
-	int line;
-	int cur;
-	int next;
-	int wasstructdef;
-	int func_def;
+	token_t curr_token;			/**< Current token */
+	token_t next_token;			/**< Lookahead token */
+
+	size_t function_mode;		/**< Mode of currenty parsed function */
+	size_t array_dimensions;	/**< Array dimensions counter */
+	item_t gotost[1000];		/**< Labels table */
+	size_t pgotost;				/**< Labels counter */
+
 	int stack[100];
 	int stackop[100];
 	int stackoperands[100];
 	int stacklog[100];
 	int sp;
 	int sopnd;
-	int lastid;
-	int type;
-	int op;
-	int inass;
-	int firstdecl;
-	int arrdim;
-	int was_struct_with_arr;
-	int usual;
-	int inswitch;
-	int inloop;
-	int functype;
-	int blockflag;
-	int wasret;
-	int wasdefault;
-	int gotost[1000];
-	int pgotost;
 	int anst;
 	int ansttype;
 	int anstdispl;
-	int leftansttype; // anst = VAL  - значение на стеке
-	int x;							// useless
-	char32_t bad_printf_placeholder;
-	int onlystrings;
+	int leftansttype;
 
-	int buf_flag;
-	int buf_cur;
-	size_t temp_tc;
-	int error_flag;
-} analyzer;
+	int lastid;		// useless
+	int op;			// useless
+	int buf_flag;	// useless
+	int buf_cur;	// useless
+
+	int func_def;				/**< @c 0 for function without arguments,
+									 @c 1 for function definition,
+									 @c 2 for function declaration,
+									 @c 3 for others */
+
+	int flag_strings_only;		/**< @c 0 for non-string initialization,
+									 @c 1 for string initialization,
+									 @c 2 for parsing before initialization */
+
+	int flag_array_in_struct;	/**< Set, if parsed struct declaration has an array */
+	int flag_empty_bounds;		/**< Set, if array declaration has empty bounds */
+	int flag_was_return;		/**< Set, if was return in parsed function */
+	int flag_in_switch;			/**< Set, if parser is in switch body */
+	int flag_in_assignment;		/**< Set, if parser is in assignment */
+	int flag_in_loop;			/**< Set, if parser is in loop body */
+	int flag_was_type_def;		/**< Set, if was type definition */
+
+	int was_error;				/**< Error flag */
+} parser;
 
 
 /**

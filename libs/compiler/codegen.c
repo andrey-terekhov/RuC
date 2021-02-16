@@ -313,8 +313,8 @@ static void expression(virtual *const vm, node *const nd, int mode)
 
 				expression(vm, nd, 0);
 				mem_add(vm, SLICE);
-				mem_add(vm, size_of(vm->sx, (int)type));
-				if (type > 0 && mode_get(vm->sx, (size_t)type) == MARRAY)
+				mem_add(vm, (item_t)size_of(vm->sx, type));
+				if (type > 0 && mode_get(vm->sx, (size_t)type) == mode_array)
 				{
 					mem_add(vm, LAT);
 				}
@@ -422,19 +422,19 @@ static void identifier(virtual *const vm, node *const nd)
 	const item_t N = node_get_arg(nd, 2);
 
 	/*
-	*	@param	all		Общее кол-во слов в структуре:
-	*						@c 0 нет инициализатора,
-	*						@c 1 есть инициализатор,
-	*						@c 2 есть инициализатор только из строк
-	*/
+	 *	@param	all		Общее кол-во слов в структуре:
+	 *						@c 0 нет инициализатора,
+	 *						@c 1 есть инициализатор,
+	 *						@c 2 есть инициализатор только из строк
+	 */
 	const item_t all = node_get_arg(nd, 3);
 	const item_t process = node_get_arg(nd, 4);
 
 	/*
-	*	@param	usual	Для массивов:
-	*						@c 0 с пустыми границами,
-	*						@c 1 без пустых границ
-	*/
+	 *	@param	usual	Для массивов:
+	 *						@c 0 с пустыми границами,
+	 *						@c 1 без пустых границ
+	 */
 	const item_t usual = node_get_arg(nd, 5);
 	const item_t instruction = node_get_arg(nd, 6);
 
@@ -449,7 +449,7 @@ static void identifier(virtual *const vm, node *const nd)
 		}
 		if (all) // int a = или struct{} a =
 		{
-			if (type > 0 && mode_get(vm->sx, (size_t)type) == MSTRUCT)
+			if (type > 0 && mode_get(vm->sx, (size_t)type) == mode_struct)
 			{
 				node_set_next(nd);
 				structure(vm, nd);
@@ -469,7 +469,7 @@ static void identifier(virtual *const vm, node *const nd)
 	}
 	else // Обработка массива int a[N1]...[NN] =
 	{
-		const item_t length = size_of(vm->sx, (int)type);
+		const item_t length = (item_t)size_of(vm->sx, type);
 
 		mem_add(vm, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
 		mem_add(vm, all == 0 ? N : abs((int)N) - 1);

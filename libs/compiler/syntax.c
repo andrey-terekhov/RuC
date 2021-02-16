@@ -49,7 +49,7 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 	const item_t mode = vector_get(&sx->modes, first);
 
 	// Определяем, сколько полей надо сравнивать для различных типов записей
-	if (mode == MSTRUCT || mode == MFUNCTION)
+	if (mode == mode_struct || mode == mode_function)
 	{
 		length = 2 + (size_t)vector_get(&sx->modes, first + 2);
 	}
@@ -183,6 +183,49 @@ item_t func_get(const syntax *const sx, const size_t index)
 	return sx != NULL ? vector_get(&sx->functions, index) : ITEM_MAX;
 }
 
+size_t func_reserve(syntax *const sx)
+{
+	if (sx == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	vector_increase(&sx->functions, 1);
+	return vector_size(&sx->functions) - 1;
+}
+
+
+int tree_add(syntax *const sx, const item_t node)
+{
+	return sx != NULL ? vector_add(&sx->tree, node) != SIZE_MAX ? 0 : -1 : -1;
+}
+
+int tree_set(syntax *const sx, const size_t index, const item_t node)
+{
+	return sx != NULL ? vector_set(&sx->tree, index, node) : -1;
+}
+
+item_t tree_get(const syntax *const sx, const size_t index)
+{
+	return sx != NULL ? vector_get(&sx->tree, index) : ITEM_MAX;
+}
+
+size_t tree_size(const syntax *const sx)
+{
+	return sx != NULL ? vector_size(&sx->tree) : SIZE_MAX;
+}
+
+size_t tree_reserve(syntax *const sx)
+{
+	if (sx == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	vector_increase(&sx->tree, 1);
+	return vector_size(&sx->tree) - 1;
+}
+
 
 size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const item_t mode, const int func_def)
 {
@@ -267,6 +310,11 @@ size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const i
 	return last_id;
 }
 
+item_t ident_get_prev(const syntax *const sx, const size_t index)
+{
+	return sx != NULL ? vector_get(&sx->identifiers, index) : ITEM_MAX;
+}
+
 item_t ident_get_repr(const syntax *const sx, const size_t index)
 {
 	return sx != NULL ? vector_get(&sx->identifiers, index + 1) : ITEM_MAX;
@@ -298,9 +346,13 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 }
 
 
-int size_of(const syntax *const sx, const item_t mode)
+size_t size_of(const syntax *const sx, const item_t mode)
 {
-	return mode == LFLOAT ? 2 : (mode > 0 && mode_get(sx, (size_t)mode) == MSTRUCT) ? (int)mode_get(sx, (size_t)mode + 1) : 1;
+	return mode > 0 && mode_get(sx, (size_t)mode) == mode_struct
+		? (size_t)mode_get(sx, (size_t)mode + 1)
+		: mode == mode_float
+			? 2
+			: 1;
 }
 
 size_t mode_add(syntax *const sx, const item_t *const record, const size_t size)
@@ -478,7 +530,7 @@ item_t scope_func_enter(syntax *const sx)
 	sx->displ = 3;
 	sx->max_displ = 3;
 	sx->lg = 1;
-	
+
 	return displ;
 }
 
@@ -498,6 +550,6 @@ int scope_func_exit(syntax *const sx, const size_t decl_ref, const item_t displ)
 	vector_set(&sx->tree, decl_ref, sx->max_displ);
 	sx->lg = -1;
 	sx->displ = displ;
-	
+
 	return 0;
 }

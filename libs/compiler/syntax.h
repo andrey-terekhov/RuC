@@ -121,6 +121,65 @@ int func_set(syntax *const sx, const size_t index, const item_t ref);
  */
 item_t func_get(const syntax *const sx, const size_t index);
 
+/**
+ *	Reserve one element in functions table
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	Previous functions size
+ */
+size_t func_reserve(syntax *const sx);
+
+
+/**
+ *	Add new value to tree
+ *
+ *	@param	sx			Syntax structure
+ *	@param	value		Value to record
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int tree_add(syntax *const sx, const item_t node);
+
+/**
+ *	Set value by index in tree
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index to record
+ *	@param	value		Value to record
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int tree_set(syntax *const sx, const size_t index, const item_t node);
+
+/**
+ *	Get an item by index from tree
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in tree
+ *
+ *	@return	Item by index from tree, @c ITEM_MAX on failure
+ */
+item_t tree_get(const syntax *const sx, const size_t index);
+
+/**
+ *	Get size of tree
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	Tree counter on success, @c SIZE_MAX on failure
+ */
+size_t tree_size(const syntax *const sx);
+
+/**
+ *	Reserve one element in tree table
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	Previous tree size
+ */
+size_t tree_reserve(syntax *const sx);
+
 
 /**
  *	Add new item to identifiers table
@@ -143,6 +202,16 @@ item_t func_get(const syntax *const sx, const size_t index);
  *			@c SIZE_MAX on redefinition of main
  */
 size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const item_t mode, const int func_def);
+
+/**
+ *	Get index of previous declaration from identifiers table by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return	Index of previous declaration in identifiers table, @c ITEM_MAX on failure
+ */
+item_t ident_get_prev(const syntax *const sx, const size_t index);
 
 /**
  *	Get item representation from identifiers table by index
@@ -213,11 +282,11 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
  *	@note	Also used in codegen
  *
  *	@param	sx			Syntax structure
- *	@param	mode		Standart type or index for modes table
+ *	@param	mode		Standard type or index of the modes table
  *
  *	@return	Mode size
  */
-int size_of(const syntax *const sx, const item_t mode);
+size_t size_of(const syntax *const sx, const item_t mode);
 
 /**
  *	Add a new record to modes table
