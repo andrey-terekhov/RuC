@@ -74,8 +74,7 @@ int macro_keywords(environment *const env)
 		env->curchar != '\"')
 	{
 		size_t position = env_skip_str(env); 
-		macro_error(after_ident_must_be_space, env_get_current_file(env)
-			, env->error_string, env->line, position);
+		macro_error(after_ident_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
 	}*/
 
 	hash &= 255;
@@ -198,8 +197,7 @@ int skip_space_end_line(environment *const env)
 		else
 		{
 			size_t position = env_skip_str(env); 
-			macro_error(after_preproces_words_must_be_space, env_get_current_file(env)
-			, env->error_string, env->line, position);
+			macro_error(after_preproces_words_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
 	}

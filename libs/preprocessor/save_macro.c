@@ -114,8 +114,7 @@ int to_functionident(environment *const env)
 		else
 		{
 			size_t position = env_skip_str(env); 
-			macro_error(functionid_begins_with_letters, env_get_current_file(env)
-			, env->error_string, env->line, position);
+			macro_error(functionid_begins_with_letters, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
 
@@ -129,8 +128,7 @@ int to_functionident(environment *const env)
 		else if (env->curchar != ')')
 		{
 			size_t position = env_skip_str(env); 
-			macro_error(after_functionid_must_be_comma, env_get_current_file(env)
-			, env->error_string, env->line, position);
+			macro_error(after_functionid_must_be_comma, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
 	}
@@ -216,8 +214,7 @@ int macrotext_add_function(environment *const env)
 		if (env->curchar == EOF)
 		{
 			size_t position = env_skip_str(env); 
-			macro_error(not_end_fail_define, env_get_current_file(env)
-			, env->error_string, env->line, position);
+			macro_error(not_end_fail_define, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
 
@@ -270,8 +267,7 @@ int define_add_to_reprtab(environment *const env)
 			else
 			{
 				size_t position = env_skip_str(env); 
-				macro_error(repeat_ident, env_get_current_file(env)
-			, env->error_string, env->line, position);
+				macro_error(repeat_ident, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
 		}
@@ -297,8 +293,7 @@ int macrotext_add_define(int r, environment *const env)
 			if (env->curchar == EOF)
 			{
 				size_t position = env_skip_str(env); 
-				macro_error(not_end_fail_define, env_get_current_file(env)
-			, env->error_string, env->line, position);
+				macro_error(not_end_fail_define, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
 			else if (env->curchar == '#')
@@ -309,8 +304,7 @@ int macrotext_add_define(int r, environment *const env)
 					if (env->curchar != '(')
 					{
 						size_t position = env_skip_str(env); 
-						macro_error(after_eval_must_be_ckob, env_get_current_file(env)
-			, env->error_string, env->line, position);
+						macro_error(after_eval_must_be_ckob, env_get_current_file(env), env->error_string, env->line, position);
 						return -1;
 					}
 
@@ -394,8 +388,7 @@ int add_macro(environment *const env)
 	if (!utf8_is_letter(env->curchar))
 	{
 		size_t position = env_skip_str(env); 
-		macro_error(ident_begins_with_letters, env_get_current_file(env)
-			, env->error_string, env->line, position);
+		macro_error(ident_begins_with_letters, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
 
@@ -418,8 +411,7 @@ int add_macro(environment *const env)
 	else if (env->curchar != ' ' && env->curchar != '\n' && env->curchar != '\t')
 	{
 		size_t position = env_skip_str(env); 
-		macro_error(after_ident_must_be_space, env_get_current_file(env)
-			, env->error_string, env->line, position);
+		macro_error(after_ident_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
 	else
@@ -439,8 +431,7 @@ int set_macros(environment *const env)
 	if (!utf8_is_letter(env->curchar))
 	{
 		size_t position = env_skip_str(env); 
-		macro_error(ident_begins_with_letters, env_get_current_file(env)
-			, env->error_string, env->line, position);
+		macro_error(ident_begins_with_letters, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
 
@@ -449,15 +440,13 @@ int set_macros(environment *const env)
 	if (env->macrotext[env->reprtab[j + 1]] == MACROFUNCTION)
 	{
 		size_t position = env_skip_str(env); 
-		macro_error(functions_cannot_be_changed, env_get_current_file(env)
-			, env->error_string, env->line, position);
+		macro_error(functions_cannot_be_changed, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
 	else if (env->curchar != ' ' && env->curchar != '\t')
 	{	
 		size_t position = env_skip_str(env);
-		macro_error(after_ident_must_be_space, env_get_current_file(env)
-			, env->error_string, env->line, position);
+		macro_error(after_ident_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
 

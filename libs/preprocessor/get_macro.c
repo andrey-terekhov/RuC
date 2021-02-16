@@ -127,8 +127,7 @@ int function_scob_collect(int t, int num, environment *const env)
 		}
 	}
 	size_t position = env_skip_str(env); 
-	macro_error(scob_not_clous, env_get_current_file(env)
-			, env->error_string, env->line, position);
+	macro_error(scob_not_clous, env_get_current_file(env), env->error_string, env->line, position);
 	return -1;
 }
 
@@ -142,8 +141,7 @@ int function_stack_create(int n, environment *const env)
 	if (env->curchar == ')')
 	{
 		size_t position = env_skip_str(env); 
-		macro_error(stalpe, env_get_current_file(env)
-			, env->error_string, env->line, position);
+		macro_error(stalpe, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
 
@@ -163,8 +161,7 @@ int function_stack_create(int n, environment *const env)
 			if (num > n)
 			{
 				size_t position = env_skip_str(env); 
-				macro_error(not_enough_param, env_get_current_file(env)
-			, env->error_string, env->line, position);
+				macro_error(not_enough_param, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
 			m_nextch(env);
@@ -179,8 +176,7 @@ int function_stack_create(int n, environment *const env)
 			if (num != n)
 			{
 				size_t position = env_skip_str(env); 
-				macro_error(not_enough_param2, env_get_current_file(env)
-			, env->error_string, env->line, position);
+				macro_error(not_enough_param2, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
 			m_nextch(env);
@@ -191,8 +187,7 @@ int function_stack_create(int n, environment *const env)
 	}
 
 	size_t position = env_skip_str(env); 
-	macro_error(scob_not_clous, env_get_current_file(env)
-			, env->error_string, env->line, position);
+	macro_error(scob_not_clous, env_get_current_file(env), env->error_string, env->line, position);
 	return -1;
 }
 
@@ -221,8 +216,7 @@ int get_macro(const int index, environment *const env)
 	else
 	{
 		size_t position = env_skip_str(env); 
-		macro_error(ident_not_exist, env_get_current_file(env)
-			, env->error_string, env->line, position);
+		macro_error(ident_not_exist, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
 
