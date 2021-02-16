@@ -85,9 +85,6 @@ int parse(universal_io *const io, syntax *const sx)
 
 	tree_add(prs.sx, TEnd);
 
-	return prs.was_error || prs.lxr->was_error;
-
-
 #ifndef GENERATE_TREE
 	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
 #else
