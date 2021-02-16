@@ -45,7 +45,7 @@ typedef struct syntax
 	vector modes;				/**< Modes table */
 	size_t start_mode;			/**< Start of last record in modetab */
 
-	map reprtab;				/**< Representations table */
+	map representations;		/**< Representations table */
 
 	item_t max_displ;			/**< Max displacement */
 	item_t max_displg;			/**< Max displacement */
@@ -305,25 +305,24 @@ item_t mode_get(const syntax *const sx, const size_t index);
 
 
 /**
- *	Add a new record to representations table from io or return existing
+ *	Add a new record to representations table or return existing
  *
  *	@param	sx			Syntax structure
- *	@param	spelling	Unique string key
+ *	@param	spelling	Unique UTF-8 string key
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
 size_t repr_reserve(syntax *const sx, const char32_t *const spelling);
 
 /**
- *	Write identificator name from representations table
+ *	Get identifier name from representations table
  *
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in representations table
- *	@param	buffer		Output string
  *
- *	@return	Size of сharacter in string, @c SIZE_MAX on failure
+ *	@return	Pointer to name of identifier
  */
-size_t repr_get_name(const syntax *const sx, const size_t index, char *const buffer);
+const char *repr_get_name(const syntax *const sx, const size_t index);
 
 /**
  *	Get a representation reference from table by index

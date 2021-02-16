@@ -55,16 +55,12 @@ void must_be(parser *const prs, const token_t what, const error_t num)
 
 void applid(parser *const prs)
 {
-	const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
-	if (id == ITEM_MAX)
+	prs->lastid = repr_get_reference(prs->sx, prs->lxr->repr);
+	if (prs->lastid == ITEM_MAX)
 	{
-		char buffer[MAXSTRINGL];
-		repr_get_name(prs->sx, REPRTAB_POS, buffer);
-		parser_error(prs, ident_is_not_declared, buffer);
+		parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, REPRTAB_POS));
 		prs->was_error = 5;
 	}
-
-	prs->lastid = (size_t)id;
 }
 
 void totree(parser *const prs, item_t op)
@@ -1060,9 +1056,7 @@ int find_field(parser *const prs, int stype)
 	}
 	if (flag)
 	{
-		char buffer[MAXSTRINGL];
-		repr_get_name(prs->sx, REPRTAB_POS, buffer);
-		parser_error(prs, no_field, buffer);
+		parser_error(prs, no_field, repr_get_name(prs->sx, REPRTAB_POS));
 		prs->was_error = 5;
 		return 0; // 1
 	}

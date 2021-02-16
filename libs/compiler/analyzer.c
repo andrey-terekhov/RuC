@@ -46,11 +46,6 @@ static parser parser_create(syntax *const sx, lexer *const lxr)
 }
 
 
-static size_t to_reprtab(parser *const prs, const char *const str)
-{
-	return map_reserve(&prs->sx->reprtab, str);
-}
-
 /** Инициализация modetab */
 static void init_modetab(parser *const prs)
 {
@@ -60,9 +55,9 @@ static void init_modetab(parser *const prs)
 	vector_add(&prs->sx->modes, 2);
 	vector_add(&prs->sx->modes, 4);
 	vector_add(&prs->sx->modes, mode_integer);
-	vector_add(&prs->sx->modes, (item_t)to_reprtab(prs, "numTh"));
+	vector_add(&prs->sx->modes, (item_t)map_reserve(&prs->sx->representations, "numTh"));
 	vector_add(&prs->sx->modes, mode_integer);
-	vector_add(&prs->sx->modes, (item_t)to_reprtab(prs, "data"));
+	vector_add(&prs->sx->modes, (item_t)map_reserve(&prs->sx->representations, "data"));
 
 	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
 	vector_add(&prs->sx->modes, 1);

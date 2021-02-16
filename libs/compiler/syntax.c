@@ -66,25 +66,55 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 	return 1;
 }
 
+void mode_init(syntax *const sx)
+{
+	vector_increase(&sx->modes, 1);
+	// занесение в modetab описателя struct {int numTh; int inf; }
+	vector_add(&sx->modes, 0);
+	vector_add(&sx->modes, mode_struct);
+	vector_add(&sx->modes, 2);
+	vector_add(&sx->modes, 4);
+	vector_add(&sx->modes, mode_integer);
+	vector_add(&sx->modes, (item_t)map_reserve(&sx->representations, "numTh"));
+	vector_add(&sx->modes, mode_integer);
+	vector_add(&sx->modes, (item_t)map_reserve(&sx->representations, "data"));
 
-void repr_add_keyword(map *const reprtab, const char32_t *eng_spelling, const char32_t *rus_spelling, const token_t token)
+	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
+	vector_add(&sx->modes, 1);
+	vector_add(&sx->modes, mode_function);
+	vector_add(&sx->modes, mode_void);
+	vector_add(&sx->modes, 1);
+	vector_add(&sx->modes, 2);
+
+	// занесение в modetab описателя функции void* interpreter(void* n)
+	vector_add(&sx->modes, 9);
+	vector_add(&sx->modes, mode_function);
+	vector_add(&sx->modes, mode_void_pointer);
+	vector_add(&sx->modes, 1);
+	vector_add(&sx->modes, mode_void_pointer);
+
+	sx->start_mode = 14;
+}
+
+
+void repr_add_keyword(map *const reprtab, const char32_t *eng, const char32_t *rus, const token_t token)
 {
 	char32_t buffer[MAXSTRINGL];
-	size_t i;
-	for (i = 0; eng_spelling[i] != 0; i++)
+
+	buffer[0] = utf8_to_upper(eng[0]);
+	for (size_t i = 1; eng[i - 1] != '\0'; i++)
 	{
-		buffer[i] = utf8_to_upper(eng_spelling[i]);
+		buffer[i] = utf8_to_upper(eng[i]);
 	}
-	buffer[i] = '\0';
-	map_add_by_utf8(reprtab, eng_spelling, token);
+	map_add_by_utf8(reprtab, eng, token);
 	map_add_by_utf8(reprtab, buffer, token);
 
-	for (i = 0; rus_spelling[i] != 0; i++)
+	buffer[0] = utf8_to_upper(rus[0]);
+	for (size_t i = 1; rus[i - 1] != '\0'; i++)
 	{
-		buffer[i] = utf8_to_upper(rus_spelling[i]);
+		buffer[i] = utf8_to_upper(rus[i]);
 	}
-	buffer[i] = '\0';
-	map_add_by_utf8(reprtab, rus_spelling, token);
+	map_add_by_utf8(reprtab, rus, token);
 	map_add_by_utf8(reprtab, buffer, token);
 }
 
@@ -196,13 +226,6 @@ void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"receive_string_from_robot", U"получить_строку_от_робота", kw_receive_string);
 }
 
-map repr_create(const size_t alloc)
-{
-	map reprtab = map_create(alloc);
-	repr_init(&reprtab);
-
-	return reprtab;
-}
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -228,11 +251,11 @@ syntax sx_create()
 	vector_increase(&sx.identifiers, 2);
 	sx.cur_id = 2;
 
-	sx.modes = vector_create(MAXMODETAB);
-	vector_increase(&sx.modes, 1);
-	sx.start_mode = 1;
+	sx.representations = map_create(MAXREPRTAB);
+	repr_init(&sx.representations);
 
-	sx.reprtab = repr_create(MAXREPRTAB);
+	sx.modes = vector_create(MAXMODETAB);
+	mode_init(&sx);
 
 	sx.max_displg = 3;
 	sx.ref_main = 0;
@@ -257,9 +280,7 @@ int sx_is_correct(syntax *const sx)
 	{
 		if (vector_get(&sx->predef, i))
 		{
-			char buffer[MAXSTRINGL];
-			repr_get_name(sx, (size_t)vector_get(&sx->predef, i), buffer);
-			system_error(predef_but_notdef, buffer);
+			system_error(predef_but_notdef, repr_get_name(sx, (size_t)vector_get(&sx->predef, i)));
 			is_correct = 0;
 		}
 	}
@@ -281,7 +302,7 @@ int sx_clear(syntax *const sx)
 
 	vector_clear(&sx->identifiers);
 	vector_clear(&sx->modes);
-	map_clear(&sx->reprtab);
+	map_clear(&sx->representations);
 
 	return 0;
 }
@@ -516,35 +537,22 @@ item_t mode_get(const syntax *const sx, const size_t index)
 
 size_t repr_reserve(syntax *const sx, const char32_t *const spelling)
 {
-	return map_reserve_by_utf8(&sx->reprtab, spelling);
+	return map_reserve_by_utf8(&sx->representations, spelling);
 }
 
-size_t repr_get_name(const syntax *const sx, const size_t index, char *const buffer)
+const char *repr_get_name(const syntax *const sx, const size_t index)
 {
-	const char *spelling = map_to_string(&sx->reprtab, index);
-	if (spelling == NULL)
-	{
-		return SIZE_MAX;
-	}
-
-	size_t i = 0;
-	size_t pos = 0;
-	while (spelling[pos] != '\0')
-	{
-		i += utf8_to_string(&buffer[i], spelling[pos++]);
-	}
-
-	return i;
+	return map_to_string(&sx->representations, index);
 }
 
 item_t repr_get_reference(const syntax *const sx, const size_t index)
 {
-	return map_get_by_index(&sx->reprtab, index);
+	return map_get_by_index(&sx->representations, index);
 }
 
 int repr_set_reference(syntax *const sx, const size_t index, const item_t ref)
 {
-	return map_set_by_index(&sx->reprtab, index, ref);
+	return map_set_by_index(&sx->representations, index, ref);
 }
 
 

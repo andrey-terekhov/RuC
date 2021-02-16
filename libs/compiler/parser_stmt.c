@@ -41,9 +41,7 @@ void parse_labeled_statement(parser *const prs)
 
 			if (prs->gotost[i + 1] < 0)
 			{
-				char buffer[MAXSTRINGL];
-				repr_get_name(prs->sx, repr, buffer);
-				parser_error(prs, repeated_label, buffer);
+				parser_error(prs, repeated_label, repr_get_name(prs->sx, repr));
 			}
 			else
 			{
@@ -422,9 +420,7 @@ void parse_printid_statement(parser *const prs)
 			const item_t id = repr_get_reference(prs->sx, repr);
 			if (id == ITEM_MAX)
 			{
-				char buffer[MAXSTRINGL];
-				repr_get_name(prs->sx, repr, buffer);
-				parser_error(prs, ident_is_not_declared, buffer);
+				parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
 			}
 
 			tree_add(prs->sx, TPrintid);
@@ -475,9 +471,7 @@ void parse_getid_statement(parser *const prs)
 			const item_t id = repr_get_reference(prs->sx, repr);
 			if (id == ITEM_MAX)
 			{
-				char buffer[MAXSTRINGL];
-				repr_get_name(prs->sx, repr, buffer);
-				parser_error(prs, ident_is_not_declared, buffer);
+				parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
 			}
 
 			tree_add(prs->sx, TGetid);

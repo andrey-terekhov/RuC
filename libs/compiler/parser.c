@@ -193,9 +193,7 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
 	}
 	else if (ret == SIZE_MAX - 1)
 	{
-		char buffer[MAXSTRINGL];
-		repr_get_name(prs->sx, repr, buffer);
-		parser_error(prs, repeated_decl, buffer);
+		parser_error(prs, repeated_decl, repr_get_name(prs->sx, repr));
 	}
 	else
 	{
