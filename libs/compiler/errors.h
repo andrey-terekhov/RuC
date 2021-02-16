@@ -196,7 +196,7 @@ typedef enum ERROR
 } error_t;
 
 /** Warnings codes */
-typedef enum WARNING : long int
+typedef enum WARNING
 {
 	too_long_int = 400,
 
