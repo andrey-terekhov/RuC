@@ -202,6 +202,15 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case no_ident_in_printid: // need_test
 			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора");
 			break;
+		case no_leftbr_in_getid: // test_exist
+			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет (");
+			break;
+		case no_rightbr_in_getid: // test_exist
+			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет )");
+			break;
+		case no_ident_in_getid: // need_test
+			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора");
+			break;
 		case float_in_switch: // need_test
 			sprintf(msg, "в условии переключателя можно использовать только типы ЛИТЕРА и ЦЕЛ");
 			break;
@@ -278,7 +287,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "условие должно иметь тип ЦЕЛ или ЛИТЕРА");
 			break;
 		case case_not_in_switch: // need_test
-			sprintf(msg, "метка СЛУЧАЙ или УМОЛЧАНИЕ не в операторе ВЫБОР");
+			sprintf(msg, "метка СЛУЧАЙ не в операторе ВЫБОР");
 			break;
 		case break_not_in_loop_or_switch: // need_test
 			sprintf(msg, "оператор ВЫХОД не в цикле и не в операторе ВЫБОР");
@@ -580,6 +589,12 @@ void get_error(const error_t num, char *const msg, va_list args)
 
 		case tables_cannot_be_compressed:
 			sprintf(msg, "невозможно сжать таблицы до заданного размера");
+			break;
+		case default_not_in_switch:
+			sprintf(msg, "метка УМОЛЧАНИЕ не в операторе ВЫБОР");
+			break;
+		case expected_colon_after_default:
+			sprintf(msg, "после метки УМОЛЧАНИЕ нет :");
 			break;
 	}
 }
