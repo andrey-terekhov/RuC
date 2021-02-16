@@ -649,7 +649,8 @@ void parse_block_item(parser *const prs)
 
 		case identifier:
 		{
-			const size_t id = (size_t)repr_get_reference(prs->sx, prs->lxr->repr);
+			const item_t ref = repr_get_reference(prs->sx, prs->lxr->repr);
+			const size_t id = ref == ITEM_MAX ? 1 : (size_t)ref;
 			if (ident_get_displ(prs->sx, id) >= 1000)
 			{
 				parse_declaration_inner(prs);
