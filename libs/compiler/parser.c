@@ -14,7 +14,9 @@
  *	limitations under the License.
  */
 
+#include "codes.h"
 #include "parser.h"
+#include "tree.h"
 
 
 const char *const DEFAULT_TREE = "tree.txt";
@@ -88,7 +90,7 @@ int parse(universal_io *const io, syntax *const sx)
 #ifndef GENERATE_TREE
 	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
 #else
-	const int ret = prs.was_error || prs.lxr->was_error; || !sx_is_correct(sx)
+	const int ret = prs.was_error || prs.lxr->was_error || !sx_is_correct(sx)
 		|| tree_test(&sx->tree)
 		|| tree_test_next(&sx->tree)
 		|| tree_test_recursive(&sx->tree)
