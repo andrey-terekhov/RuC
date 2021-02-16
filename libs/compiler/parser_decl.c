@@ -129,7 +129,7 @@ item_t parse_struct_or_union_specifier(parser *const prs)
 			}
 			else // if (parser->next_token != l_brace)
 			{
-				const size_t id = (size_t)repr_get_reference(prs->sx, repr);
+				const item_t id = repr_get_reference(prs->sx, repr);
 
 				if (id == ITEM_MAX)
 				{
@@ -138,8 +138,8 @@ item_t parse_struct_or_union_specifier(parser *const prs)
 				}
 
 				// TODO: what if it was not a struct name?
-				prs->flag_array_in_struct = (int)ident_get_displ(prs->sx, id) - 1000;
-				return ident_get_mode(prs->sx, id);
+				prs->flag_array_in_struct = (int)ident_get_displ(prs->sx, (size_t)id) - 1000;
+				return ident_get_mode(prs->sx, (size_t)id);
 			}
 		}
 
