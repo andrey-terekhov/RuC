@@ -66,116 +66,144 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 	return 1;
 }
 
-
-void repr_add_keyword(map *const reprtab, const char *eng_spelling, const char *rus_spelling, const token_t token)
+char32_t to_upper(const char32_t ch)
 {
-	map_add(reprtab, eng_spelling, token);
-	map_add(reprtab, rus_spelling, token);
+	if (ch >= 'a' && ch <= 'z')
+	{
+		return ch + ('A' - 'a');
+	}
+
+	if (ch >= U'а' && ch <= U'я')
+	{
+		return ch + (U'А' - U'а');
+	}
+
+	return ch;
+}
+
+void repr_add_keyword(map *const reprtab, const char32_t *eng_spelling, const char32_t *rus_spelling, const token_t token)
+{
+	char32_t buffer[MAXSTRINGL];
+	size_t i;
+	for (i = 0; eng_spelling[i] != 0; i++)
+	{
+		buffer[i] = to_upper(eng_spelling[i]);
+	}
+	buffer[i] = '\0';
+	map_add_by_utf8(reprtab, eng_spelling, token);
+	map_add_by_utf8(reprtab, buffer, token);
+
+	for (i = 0; rus_spelling[i] != 0; i++)
+	{
+		buffer[i] = to_upper(rus_spelling[i]);
+	}
+	buffer[i] = '\0';
+	map_add_by_utf8(reprtab, rus_spelling, token);
+	map_add_by_utf8(reprtab, buffer, token);
 }
 
 void repr_init(map *const reprtab)
 {
-	repr_add_keyword(reprtab, "main", "главная", kw_main);
-	// repr_add_keyword(reprtab, "auto", "авто", kw_auto);
-	// repr_add_keyword(reprtab, "bool", "булево", kw_bool);
-	repr_add_keyword(reprtab, "char", "литера", kw_char);
-	repr_add_keyword(reprtab, "double", "двойной", kw_double);
-	// repr_add_keyword(reprtab, "enum", "перечень", kw_enum);
-	repr_add_keyword(reprtab, "float", "вещ", kw_float);
-	repr_add_keyword(reprtab, "int", "цел", kw_int);
-	repr_add_keyword(reprtab, "long", "длин", kw_long);
-	// repr_add_keyword(reprtab, "short", "корот", kw_short);
-	repr_add_keyword(reprtab, "struct", "структура", kw_struct);
-	// repr_add_keyword(reprtab, "union", "объединение", kw_union);
-	repr_add_keyword(reprtab, "void", "пусто", kw_void);
-	// repr_add_keyword(reprtab, "signed", "знаковый", kw_signed);
-	// repr_add_keyword(reprtab, "unsigned", "беззнаковый", kw_unsigned);
-	repr_add_keyword(reprtab, "if", "если", kw_if);
-	repr_add_keyword(reprtab, "else", "иначе", kw_else);
-	repr_add_keyword(reprtab, "do", "цикл", kw_do);
-	repr_add_keyword(reprtab, "while", "пока", kw_while);
-	repr_add_keyword(reprtab, "for", "для", kw_for);
-	repr_add_keyword(reprtab, "switch", "выбор", kw_switch);
-	repr_add_keyword(reprtab, "case", "случай", kw_case);
-	repr_add_keyword(reprtab, "default", "умолчание", kw_default);
-	repr_add_keyword(reprtab, "break", "выход", kw_break);
-	repr_add_keyword(reprtab, "continue", "продолжить", kw_continue);
-	// repr_add_keyword(reprtab, "const", "конст", kw_const);
-	repr_add_keyword(reprtab, "goto", "переход", kw_goto);
-	// repr_add_keyword(reprtab, "sizeof", "размер", kw_sizeof);
-	// repr_add_keyword(reprtab, "typedef", "опртипа", kw_typedef);
-	repr_add_keyword(reprtab, "return", "возврат", kw_return);
-	// repr_add_keyword(reprtab, "extern", "внешн", kw_extern);
-	// repr_add_keyword(reprtab, "inline", "встр", kw_inline);
-	// repr_add_keyword(reprtab, "register", "регистровый", kw_register);
+	repr_add_keyword(reprtab, U"main", U"главная", kw_main);
+	// repr_add_keyword(reprtab, U"auto", U"авто", kw_auto);
+	// repr_add_keyword(reprtab, U"bool", U"булево", kw_bool);
+	repr_add_keyword(reprtab, U"char", U"литера", kw_char);
+	repr_add_keyword(reprtab, U"double", U"двойной", kw_double);
+	// repr_add_keyword(reprtab, U"enum", U"перечень", kw_enum);
+	repr_add_keyword(reprtab, U"float", U"вещ", kw_float);
+	repr_add_keyword(reprtab, U"int", U"цел", kw_int);
+	repr_add_keyword(reprtab, U"long", U"длин", kw_long);
+	// repr_add_keyword(reprtab, U"short", U"корот", kw_short);
+	repr_add_keyword(reprtab, U"struct", U"структура", kw_struct);
+	// repr_add_keyword(reprtab, U"union", U"объединение", kw_union);
+	repr_add_keyword(reprtab, U"void", U"пусто", kw_void);
+	// repr_add_keyword(reprtab, U"signed", U"знаковый", kw_signed);
+	// repr_add_keyword(reprtab, U"unsigned", U"беззнаковый", kw_unsigned);
+	repr_add_keyword(reprtab, U"if", U"если", kw_if);
+	repr_add_keyword(reprtab, U"else", U"иначе", kw_else);
+	repr_add_keyword(reprtab, U"do", U"цикл", kw_do);
+	repr_add_keyword(reprtab, U"while", U"пока", kw_while);
+	repr_add_keyword(reprtab, U"for", U"для", kw_for);
+	repr_add_keyword(reprtab, U"switch", U"выбор", kw_switch);
+	repr_add_keyword(reprtab, U"case", U"случай", kw_case);
+	repr_add_keyword(reprtab, U"default", U"умолчание", kw_default);
+	repr_add_keyword(reprtab, U"break", U"выход", kw_break);
+	repr_add_keyword(reprtab, U"continue", U"продолжить", kw_continue);
+	// repr_add_keyword(reprtab, U"const", U"конст", kw_const);
+	repr_add_keyword(reprtab, U"goto", U"переход", kw_goto);
+	// repr_add_keyword(reprtab, U"sizeof", U"размер", kw_sizeof);
+	// repr_add_keyword(reprtab, U"typedef", U"опртипа", kw_typedef);
+	repr_add_keyword(reprtab, U"return", U"возврат", kw_return);
+	// repr_add_keyword(reprtab, U"extern", U"внешн", kw_extern);
+	// repr_add_keyword(reprtab, U"inline", U"встр", kw_inline);
+	// repr_add_keyword(reprtab, U"register", U"регистровый", kw_register);
 
-	repr_add_keyword(reprtab, "print", "печать", kw_print);
-	repr_add_keyword(reprtab, "printf", "печатьф", kw_printf);
-	repr_add_keyword(reprtab, "printid", "печатьид", kw_printid);
-	repr_add_keyword(reprtab, "scanf", "читатьф", kw_scanf);
-	repr_add_keyword(reprtab, "getid", "читатьид", kw_getid);
-	repr_add_keyword(reprtab, "abs", "абс", kw_abs);
-	repr_add_keyword(reprtab, "sqrt", "квкор", kw_sqrt);
-	repr_add_keyword(reprtab, "exp", "эксп", kw_exp);
-	repr_add_keyword(reprtab, "sin", "син", kw_sin);
+	repr_add_keyword(reprtab, U"print", U"печать", kw_print);
+	repr_add_keyword(reprtab, U"printf", U"печатьф", kw_printf);
+	repr_add_keyword(reprtab, U"printid", U"печатьид", kw_printid);
+	repr_add_keyword(reprtab, U"scanf", U"читатьф", kw_scanf);
+	repr_add_keyword(reprtab, U"getid", U"читатьид", kw_getid);
+	repr_add_keyword(reprtab, U"abs", U"абс", kw_abs);
+	repr_add_keyword(reprtab, U"sqrt", U"квкор", kw_sqrt);
+	repr_add_keyword(reprtab, U"exp", U"эксп", kw_exp);
+	repr_add_keyword(reprtab, U"sin", U"син", kw_sin);
+	repr_add_keyword(reprtab, U"cos", U"кос", kw_cos);
+	repr_add_keyword(reprtab, U"log", U"лог", kw_log);
+	repr_add_keyword(reprtab, U"log10", U"лог10", kw_log10);
+	repr_add_keyword(reprtab, U"asin", U"асин", kw_asin);
+	repr_add_keyword(reprtab, U"rand", U"случ", kw_rand);
+	repr_add_keyword(reprtab, U"round", U"округл", kw_round);
+	repr_add_keyword(reprtab, U"strcpy", U"копир_строку", kw_strcpy);
+	repr_add_keyword(reprtab, U"strncpy", U"копир_н_симв", kw_strncpy);
+	repr_add_keyword(reprtab, U"strcat", U"конкат_строки", kw_strcat);
+	repr_add_keyword(reprtab, U"strncat", U"конкат_н_симв", kw_strncat);
+	repr_add_keyword(reprtab, U"strcmp", U"сравн_строк", kw_strcmp);
+	repr_add_keyword(reprtab, U"strncmp", U"сравн_н_симв", kw_strncmp);
+	repr_add_keyword(reprtab, U"strstr", U"нач_подстрок", kw_strstr);
+	repr_add_keyword(reprtab, U"strlen", U"длина", kw_strlen);
 
-	repr_add_keyword(reprtab, "cos", "кос", kw_cos);
-	repr_add_keyword(reprtab, "log", "лог", kw_log);
-	repr_add_keyword(reprtab, "log10", "лог10", kw_log10);
-	repr_add_keyword(reprtab, "asin", "асин", kw_asin);
-	repr_add_keyword(reprtab, "rand", "случ", kw_rand);
-	repr_add_keyword(reprtab, "round", "округл", kw_round);
-	repr_add_keyword(reprtab, "strcpy", "копир_строку", kw_strcpy);
-	repr_add_keyword(reprtab, "strncpy", "копир_н_симв", kw_strncpy);
-	repr_add_keyword(reprtab, "strcat", "конкат_строки", kw_strcat);
-	repr_add_keyword(reprtab, "strncat", "конкат_н_симв", kw_strncat);
-	repr_add_keyword(reprtab, "strcmp", "сравн_строк", kw_strcmp);
-	repr_add_keyword(reprtab, "strncmp", "сравн_н_симв", kw_strncmp);
-	repr_add_keyword(reprtab, "strstr", "нач_подстрок", kw_strstr);
-	repr_add_keyword(reprtab, "strlen", "длина", kw_strlen);
+	repr_add_keyword(reprtab, U"t_create_direct", U"н_создать_непоср", kw_t_create_direct);
+	repr_add_keyword(reprtab, U"t_exit_direct", U"н_конец_непоср", kw_t_exit_direct);
 
-	repr_add_keyword(reprtab, "t_create_direct", "н_создать_непоср", kw_t_create_direct);
-	repr_add_keyword(reprtab, "t_exit_direct", "н_конец_непоср", kw_t_exit_direct);
+	repr_add_keyword(reprtab, U"t_msg_send", U"н_послать", kw_msg_send);
+	repr_add_keyword(reprtab, U"t_msg_receive", U"н_получить", kw_msg_receive);
+	repr_add_keyword(reprtab, U"t_join", U"н_присоед", kw_join);
+	repr_add_keyword(reprtab, U"t_sleep", U"н_спать", kw_sleep);
+	repr_add_keyword(reprtab, U"t_sem_create", U"н_создать_сем", kw_sem_create);
+	repr_add_keyword(reprtab, U"t_sem_wait", U"н_вниз_сем", kw_sem_wait);
+	repr_add_keyword(reprtab, U"t_sem_post", U"н_вверх_сем", kw_sem_post);
+	repr_add_keyword(reprtab, U"t_create", U"н_создать", kw_create);
+	repr_add_keyword(reprtab, U"t_init", U"н_начать", kw_init);
+	repr_add_keyword(reprtab, U"t_destroy", U"н_закончить", kw_destroy);
+	repr_add_keyword(reprtab, U"t_exit", U"н_конец", kw_exit);
+	repr_add_keyword(reprtab, U"t_getnum", U"н_номер_нити", kw_getnum);
 
-	repr_add_keyword(reprtab, "t_msg_send", "н_послать", kw_msg_send);
-	repr_add_keyword(reprtab, "t_msg_receive", "н_получить", kw_msg_receive);
-	repr_add_keyword(reprtab, "t_join", "н_присоед", kw_join);
-	repr_add_keyword(reprtab, "t_sleep", "н_спать", kw_sleep);
-	repr_add_keyword(reprtab, "t_sem_create", "н_создать_сем", kw_sem_create);
-	repr_add_keyword(reprtab, "t_sem_wait", "н_вниз_сем", kw_sem_wait);
-	repr_add_keyword(reprtab, "t_sem_post", "н_вверх_сем", kw_sem_post);
-	repr_add_keyword(reprtab, "t_create", "н_создать", kw_create);
-	repr_add_keyword(reprtab, "t_init", "н_начать", kw_init);
-	repr_add_keyword(reprtab, "t_destroy", "н_закончить", kw_destroy);
-	repr_add_keyword(reprtab, "t_exit", "н_конец", kw_exit);
-	repr_add_keyword(reprtab, "t_getnum", "н_номер_нити", kw_getnum);
+	repr_add_keyword(reprtab, U"assert", U"проверить", kw_assert);
+	repr_add_keyword(reprtab, U"pixel", U"пиксель", kw_pixel);
+	repr_add_keyword(reprtab, U"line", U"линия", kw_line);
+	repr_add_keyword(reprtab, U"rectangle", U"прямоугольник", kw_rectangle);
+	repr_add_keyword(reprtab, U"ellipse", U"эллипс", kw_ellipse);
+	repr_add_keyword(reprtab, U"clear", U"очистить", kw_clear);
+	repr_add_keyword(reprtab, U"draw_string", U"нарисовать_строку", kw_draw_string);
+	repr_add_keyword(reprtab, U"draw_number", U"нарисовать_число", kw_draw_number);
+	repr_add_keyword(reprtab, U"icon", U"иконка", kw_icon);
+	repr_add_keyword(reprtab, U"upb", U"кол_во", kw_upb);
+	repr_add_keyword(reprtab, U"setsignal", U"сигнал", kw_setsignal);
 
-	repr_add_keyword(reprtab, "assert", "проверить", kw_assert);
-	repr_add_keyword(reprtab, "pixel", "пиксель", kw_pixel);
-	repr_add_keyword(reprtab, "line", "линия", kw_line);
-	repr_add_keyword(reprtab, "rectangle", "прямоугольник", kw_rectangle);
-	repr_add_keyword(reprtab, "ellipse", "эллипс", kw_ellipse);
-	repr_add_keyword(reprtab, "clear", "очистить", kw_clear);
-	repr_add_keyword(reprtab, "draw_string", "нарисовать_строку", kw_draw_string);
-	repr_add_keyword(reprtab, "draw_number", "нарисовать_число", kw_draw_number);
-	repr_add_keyword(reprtab, "icon", "иконка", kw_icon);
-	repr_add_keyword(reprtab, "upb", "кол_во", kw_upb);
-	repr_add_keyword(reprtab, "setsignal", "сигнал", kw_setsignal);
-
-	repr_add_keyword(reprtab, "wifi_connect", "wifi_подключить", kw_wifi_connect);
-	repr_add_keyword(reprtab, "blynk_authorization", "blynk_авторизация", kw_blynk_authorization);
-	repr_add_keyword(reprtab, "blynk_send", "blynk_послать", kw_blynk_send);
-	repr_add_keyword(reprtab, "blynk_receive", "blynk_получить", kw_blynk_receive);
-	repr_add_keyword(reprtab, "blynk_notification", "blynk_уведомление", kw_blynk_notification);
-	repr_add_keyword(reprtab, "blynk_property", "blynk_свойство", kw_blynk_property);
-	repr_add_keyword(reprtab, "blynk_lcd", "blynk_дисплей", kw_blynk_lcd);
-	repr_add_keyword(reprtab, "blynk_terminal", "blynk_терминал", kw_blynk_terminal);
-	repr_add_keyword(reprtab, "send_int_to_robot", "послать_цел_на_робот", kw_send_int);
-	repr_add_keyword(reprtab, "send_float_to_robot", "послать_вещ_на_робот", kw_send_float);
-	repr_add_keyword(reprtab, "send_string_to_robot", "послать_строку_на_робот", kw_send_string);
-	repr_add_keyword(reprtab, "receive_int_from_robot", "получить_цел_от_робота", kw_receive_int);
-	repr_add_keyword(reprtab, "receive_float_from_robot", "получить_вещ_от_робота", kw_receive_float);
-	repr_add_keyword(reprtab, "receive_string_from_robot", "получить_строку_от_робота", kw_receive_string);
+	repr_add_keyword(reprtab, U"wifi_connect", U"wifi_подключить", kw_wifi_connect);
+	repr_add_keyword(reprtab, U"blynk_authorization", U"blynk_авторизация", kw_blynk_authorization);
+	repr_add_keyword(reprtab, U"blynk_send", U"blynk_послать", kw_blynk_send);
+	repr_add_keyword(reprtab, U"blynk_receive", U"blynk_получить", kw_blynk_receive);
+	repr_add_keyword(reprtab, U"blynk_notification", U"blynk_уведомление", kw_blynk_notification);
+	repr_add_keyword(reprtab, U"blynk_property", U"blynk_свойство", kw_blynk_property);
+	repr_add_keyword(reprtab, U"blynk_lcd", U"blynk_дисплей", kw_blynk_lcd);
+	repr_add_keyword(reprtab, U"blynk_terminal", U"blynk_терминал", kw_blynk_terminal);
+	repr_add_keyword(reprtab, U"send_int_to_robot", U"послать_цел_на_робот", kw_send_int);
+	repr_add_keyword(reprtab, U"send_float_to_robot", U"послать_вещ_на_робот", kw_send_float);
+	repr_add_keyword(reprtab, U"send_string_to_robot", U"послать_строку_на_робот", kw_send_string);
+	repr_add_keyword(reprtab, U"receive_int_from_robot", U"получить_цел_от_робота", kw_receive_int);
+	repr_add_keyword(reprtab, U"receive_float_from_robot", U"получить_вещ_от_робота", kw_receive_float);
+	repr_add_keyword(reprtab, U"receive_string_from_robot", U"получить_строку_от_робота", kw_receive_string);
 }
 
 map repr_create(const size_t alloc)
