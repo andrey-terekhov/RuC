@@ -55,14 +55,16 @@ void must_be(parser *const prs, const token_t what, const error_t num)
 
 void applid(parser *const prs)
 {
-	prs->lastid = repr_get_reference(prs->sx, prs->lxr->repr);
-	if ((item_t)prs->lastid == ITEM_MAX)
+	const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+	if (id == ITEM_MAX)
 	{
 		char buffer[MAXSTRINGL];
 		repr_get_name(prs->sx, REPRTAB_POS, buffer);
 		parser_error(prs, ident_is_not_declared, buffer);
 		prs->was_error = 5;
 	}
+
+	prs->lastid = (size_t)id;
 }
 
 void totree(parser *const prs, item_t op)
