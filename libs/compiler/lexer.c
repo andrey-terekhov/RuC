@@ -26,7 +26,7 @@
  *	@param	lxr			Lexer structure
  *	@param	num			Error code
  */
-void lexer_error(lexer *const lxr, const error_t num, ...)
+void lexer_error(lexer *const lxr, error_t num, ...)
 {
 	lxr->was_error = 1;
 

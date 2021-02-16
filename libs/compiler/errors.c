@@ -665,7 +665,7 @@ void output(const universal_io *const io, const char *const msg, const logger sy
  */
 
 
-void error(const universal_io *const io, const error_t num, ...)
+void error(const universal_io *const io, error_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -675,7 +675,7 @@ void error(const universal_io *const io, const error_t num, ...)
 	va_end(args);
 }
 
-void warning(const universal_io *const io, const warning_t num, ...)
+void warning(const universal_io *const io, warning_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -701,7 +701,7 @@ void vwarning(const universal_io *const io, const warning_t num, va_list args)
 }
 
 
-void system_error(const error_t num, ...)
+void system_error(error_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -713,7 +713,7 @@ void system_error(const error_t num, ...)
 	log_system_error(TAG_RUC, msg);
 }
 
-void system_warning(const warning_t num, ...)
+void system_warning(warning_t num, ...)
 {
 	va_list args;
 	va_start(args, num);

@@ -50,7 +50,7 @@ int parse(parser *const prs)
 }
 
 
-void parser_error(parser *const prs, const error_t num, ...)
+void parser_error(parser *const prs, error_t num, ...)
 {
 	prs->was_error = 1;
 
