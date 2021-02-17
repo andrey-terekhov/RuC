@@ -21,83 +21,7 @@
 #include "tree.h"
 
 
-item_t get_static(syntax *const sx, const item_t type)
-{
-	const item_t old_displ = sx->displ;
-	sx->displ += sx->lg * size_of(sx, type);
-
-	if (sx->lg > 0)
-	{
-		sx->max_displ = sx->displ > sx->max_displ ? sx->displ : sx->max_displ;
-	}
-	else
-	{
-		sx->max_displg = -sx->displ;
-	}
-
-	return old_displ;
-}
-
-/**	Check if modes are equal */
-int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
-{
-	if (vector_get(&sx->modes, first) != vector_get(&sx->modes, second))
-	{
-		return 0;
-	}
-
-	size_t length = 1;
-	const item_t mode = vector_get(&sx->modes, first);
-
-	// Определяем, сколько полей надо сравнивать для различных типов записей
-	if (mode == mode_struct || mode == mode_function)
-	{
-		length = 2 + (size_t)vector_get(&sx->modes, first + 2);
-	}
-
-	for (size_t i = 1; i <= length; i++)
-	{
-		if (vector_get(&sx->modes, first + i) != vector_get(&sx->modes, second + i))
-		{
-			return 0;
-		}
-	}
-
-	return 1;
-}
-
-void mode_init(syntax *const sx)
-{
-	vector_increase(&sx->modes, 1);
-	// занесение в modetab описателя struct {int numTh; int inf; }
-	vector_add(&sx->modes, 0);
-	vector_add(&sx->modes, mode_struct);
-	vector_add(&sx->modes, 2);
-	vector_add(&sx->modes, 4);
-	vector_add(&sx->modes, mode_integer);
-	vector_add(&sx->modes, (item_t)map_reserve(&sx->representations, "numTh"));
-	vector_add(&sx->modes, mode_integer);
-	vector_add(&sx->modes, (item_t)map_reserve(&sx->representations, "data"));
-
-	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
-	vector_add(&sx->modes, 1);
-	vector_add(&sx->modes, mode_function);
-	vector_add(&sx->modes, mode_void);
-	vector_add(&sx->modes, 1);
-	vector_add(&sx->modes, 2);
-
-	// занесение в modetab описателя функции void* interpreter(void* n)
-	vector_add(&sx->modes, 9);
-	vector_add(&sx->modes, mode_function);
-	vector_add(&sx->modes, mode_void_pointer);
-	vector_add(&sx->modes, 1);
-	vector_add(&sx->modes, mode_void_pointer);
-
-	sx->start_mode = 14;
-}
-
-
-void repr_add_keyword(map *const reprtab, const char32_t *eng, const char32_t *rus, const token_t token)
+void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
 {
 	char32_t buffer[MAXSTRINGL];
 
@@ -224,6 +148,82 @@ void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"receive_int_from_robot", U"получить_цел_от_робота", kw_receive_int);
 	repr_add_keyword(reprtab, U"receive_float_from_robot", U"получить_вещ_от_робота", kw_receive_float);
 	repr_add_keyword(reprtab, U"receive_string_from_robot", U"получить_строку_от_робота", kw_receive_string);
+}
+
+
+void mode_init(syntax *const sx)
+{
+	vector_increase(&sx->modes, 1);
+	// занесение в modetab описателя struct {int numTh; int inf; }
+	vector_add(&sx->modes, 0);
+	vector_add(&sx->modes, mode_struct);
+	vector_add(&sx->modes, 2);
+	vector_add(&sx->modes, 4);
+	vector_add(&sx->modes, mode_integer);
+	vector_add(&sx->modes, (item_t)map_reserve(&sx->representations, "numTh"));
+	vector_add(&sx->modes, mode_integer);
+	vector_add(&sx->modes, (item_t)map_reserve(&sx->representations, "data"));
+
+	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
+	vector_add(&sx->modes, 1);
+	vector_add(&sx->modes, mode_function);
+	vector_add(&sx->modes, mode_void);
+	vector_add(&sx->modes, 1);
+	vector_add(&sx->modes, 2);
+
+	// занесение в modetab описателя функции void* interpreter(void* n)
+	vector_add(&sx->modes, 9);
+	vector_add(&sx->modes, mode_function);
+	vector_add(&sx->modes, mode_void_pointer);
+	vector_add(&sx->modes, 1);
+	vector_add(&sx->modes, mode_void_pointer);
+
+	sx->start_mode = 14;
+}
+
+item_t get_static(syntax *const sx, const item_t type)
+{
+	const item_t old_displ = sx->displ;
+	sx->displ += sx->lg * size_of(sx, type);
+
+	if (sx->lg > 0)
+	{
+		sx->max_displ = sx->displ > sx->max_displ ? sx->displ : sx->max_displ;
+	}
+	else
+	{
+		sx->max_displg = -sx->displ;
+	}
+
+	return old_displ;
+}
+
+/**	Check if modes are equal */
+int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
+{
+	if (vector_get(&sx->modes, first) != vector_get(&sx->modes, second))
+	{
+		return 0;
+	}
+
+	size_t length = 1;
+	const item_t mode = vector_get(&sx->modes, first);
+
+	// Определяем, сколько полей надо сравнивать для различных типов записей
+	if (mode == mode_struct || mode == mode_function)
+	{
+		length = 2 + (size_t)vector_get(&sx->modes, first + 2);
+	}
+
+	for (size_t i = 1; i <= length; i++)
+	{
+		if (vector_get(&sx->modes, first + i) != vector_get(&sx->modes, second + i))
+		{
+			return 0;
+		}
+	}
+
+	return 1;
 }
 
 

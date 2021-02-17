@@ -22,6 +22,7 @@
 const char *const DEFAULT_TREE = "tree.txt";
 const char *const DEFAULT_NEW = "new.txt";
 
+
 /** Check if the set of tokens has token in it */
 int token_check(const uint8_t tokens, const token_t token)
 {

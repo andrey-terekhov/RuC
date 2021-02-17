@@ -36,14 +36,6 @@
 extern "C" {
 #endif
 
-/**	The kind of block to parse */
-typedef enum BLOCK
-{
-	REGBLOCK,
-	THREAD,
-	FUNCBODY
-} block_t;
-
 typedef struct parser
 {
 	syntax *sx;					/**< Syntax structure */
@@ -92,6 +84,14 @@ typedef struct parser
 
 	int was_error;				/**< Error flag */
 } parser;
+
+/**	The kind of block to parse */
+typedef enum BLOCK
+{
+	REGBLOCK,
+	THREAD,
+	FUNCBODY
+} block_t;
 
 
 /**
