@@ -15,7 +15,7 @@
  */
 
 #include "compiler.h"
-#include "analyzer.h"
+#include "parser.h"
 #include "codegen.h"
 #include "errors.h"
 #include "preprocessor.h"
@@ -63,7 +63,7 @@ int compile_from_io(const workspace *const ws, universal_io *const io, const enc
 	}
 
 	syntax sx = sx_create();
-	int ret = analyze(io, &sx);
+	int ret = parse(io, &sx);
 
 	if (!ret)
 	{

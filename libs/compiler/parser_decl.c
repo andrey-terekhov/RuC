@@ -67,17 +67,17 @@ item_t parse_type_specifier(parser *const prs)
 
 		case identifier:
 		{
-			const size_t id = (size_t)repr_get_reference(prs->sx, prs->lxr->repr);
+			const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
 			token_consume(prs);
 
-			if (ident_get_displ(prs->sx, id) < 1000)
+			if (id == ITEM_MAX || ident_get_displ(prs->sx, (size_t)id) < 1000)
 			{
 				parser_error(prs, ident_not_type);
 				return mode_undefined;
 			}
 
-			prs->flag_array_in_struct = (int)ident_get_displ(prs->sx, id) - 1000;
-			return ident_get_mode(prs->sx, id);
+			prs->flag_array_in_struct = (int)ident_get_displ(prs->sx, (size_t)id) - 1000;
+			return ident_get_mode(prs->sx, (size_t)id);
 		}
 
 		// case kw_union:
@@ -129,19 +129,17 @@ item_t parse_struct_or_union_specifier(parser *const prs)
 			}
 			else // if (parser->next_token != l_brace)
 			{
-				const size_t id = (size_t)repr_get_reference(prs->sx, repr);
+				const item_t id = repr_get_reference(prs->sx, repr);
 
-				if (id == 1)
+				if (id == ITEM_MAX)
 				{
-					char buffer[MAXSTRINGL];
-					repr_get_name(prs->sx, repr, buffer);
-					parser_error(prs, ident_is_not_declared, buffer);
+					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
 					return mode_undefined;
 				}
 
 				// TODO: what if it was not a struct name?
-				prs->flag_array_in_struct = (int)ident_get_displ(prs->sx, id) - 1000;
-				return ident_get_mode(prs->sx, id);
+				prs->flag_array_in_struct = (int)ident_get_displ(prs->sx, (size_t)id) - 1000;
+				return ident_get_mode(prs->sx, (size_t)id);
 			}
 		}
 
@@ -735,9 +733,7 @@ void parse_function_body(parser *const prs, const size_t function_id)
 		const size_t line_number = (size_t)llabs(prs->gotost[i + 1]);
 		if (!ident_get_mode(prs->sx, (size_t)prs->gotost[i]))
 		{
-			char buffer[MAXSTRINGL];
-			repr_get_name(prs->sx, repr, buffer);
-			parser_error(prs, label_not_declared, line_number, buffer);
+			parser_error(prs, label_not_declared, line_number, repr_get_name(prs->sx, repr));
 		}
 	}
 }

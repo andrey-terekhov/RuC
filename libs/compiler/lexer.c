@@ -101,17 +101,18 @@ token_t lex_identifier_or_keyword(lexer *const lxr)
 		spelling[length++] = lxr->curr_char;
 		get_char(lxr);
 	} while (utf8_is_letter(lxr->curr_char) || utf8_is_digit(lxr->curr_char));
-	spelling[length] = 0;
+	spelling[length] = '\0';
 
-	const size_t repr = repr_add(lxr->sx, spelling);
-	if (repr_get_reference(lxr->sx, repr) < 0)
-	{
-		return (token_t)repr_get_reference(lxr->sx, repr);
-	}
-	else
+	const size_t repr = repr_reserve(lxr->sx, spelling);
+	const item_t ref = repr_get_reference(lxr->sx, repr);
+	if (ref >= 0)
 	{
 		lxr->repr = repr;
 		return identifier;
+	}
+	else
+	{
+		return (token_t)ref;
 	}
 }
 

@@ -481,6 +481,21 @@ size_t utf8_to_cp1251(const char *const src, char *const dest)
 	return utf8_to_codepage(src, dest, &char_to_cp1251);
 }
 
+char32_t utf8_to_upper(const char32_t symbol)
+{
+	if (symbol >= 'a' && symbol <= 'z')
+	{
+		return symbol + ('A' - 'a');
+	}
+
+	if (symbol >= U'а' && symbol <= U'я')
+	{
+		return symbol + (U'А' - U'а');
+	}
+
+	return symbol;
+}
+
 int utf8_is_russian(const char32_t symbol)
 {
 	return  symbol == U'Ё' || symbol == U'ё'
