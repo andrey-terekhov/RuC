@@ -23,8 +23,8 @@
 
 typedef struct info
 {
-    int string_num;
-	int was_printf;
+    item_t string_num;
+	item_t was_printf;
 } info;
 
 
@@ -58,32 +58,36 @@ size_t node_recursive(node *const nd, size_t i, universal_io *const io, info *co
         {
             case TString:
             {
-                int nstr = node_get_arg(&child, 0);
+                const item_t N = node_get_arg(&child, 0);
 
-                uni_printf(io, "@.str%i = private unnamed_addr constant [%i x i8] c\"", context->string_num++, nstr + 1);
-                for (int i = 0; i < nstr; i++) 
+                uni_printf(io, "@.str%li = private unnamed_addr constant [%li x i8] c\"", context->string_num++, N + 1);
+                for (item_t i = 0; i < N; i++) 
                 {
-                    char c = node_get_arg(&child, i + 1);
+                    const char c = node_get_arg(&child, i + 1);
                     if (c == '\n')
+                    {
                         uni_printf(io, "%s", "\\0A");
+                    }
                     else
+                    {
                         uni_printf(io, "%c", c);
+                    }
                 }
                 uni_printf(io, "\\00\", align 1\n");
             }
             break;
             case TPrintf:
             {
-                int n = node_get_arg(&child, 0);
+                const item_t N = node_get_arg(&child, 0);
                 // перестановка TPrintf
-                // todo подумать, как для всех типов работать будет
-                for (int i = 0; i < n + 1; i++)
+                // TODO: подумать, как для всех типов работать будет
+                for (item_t i = 0; i < N + 1; i++)
                 {
                     node_swap(nd, j-i, nd, j-i-1);
                 }
                 // перестановка TString
-                // todo подумать, как для всех типов работать будет
-                for (int i = 0; i < n; i++)
+                // TODO: подумать, как для всех типов работать будет
+                for (item_t i = 0; i < N; i++)
                 {
                     node_swap(nd, j-i, nd, j-i-1);
                 }
@@ -138,7 +142,9 @@ static int optimize_pass(universal_io *const io, syntax *const sx, int architect
 
     uni_printf(io, "\n");
     if (context.was_printf)
+    {
         uni_printf(io, "declare i32 @printf(i8*, ...)\n");
+    }
     uni_printf(io, "\n");
 
     return index != SIZE_MAX && index == vector_size(nd.tree) ? 0 : -1;
