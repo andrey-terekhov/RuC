@@ -28,7 +28,7 @@ typedef struct info
 } info;
 
 
-size_t node_recursive(node *const nd, size_t i, universal_io *const io, info *const context)
+static size_t node_recursive(node *const nd, size_t i, universal_io *const io, info *const context)
 {
 	if (i == SIZE_MAX)
 	{
@@ -61,9 +61,9 @@ size_t node_recursive(node *const nd, size_t i, universal_io *const io, info *co
                 const item_t N = node_get_arg(&child, 0);
 
                 uni_printf(io, "@.str%li = private unnamed_addr constant [%li x i8] c\"", context->string_num++, N + 1);
-                for (item_t i = 0; i < N; i++) 
+                for (item_t k = 0; k < N; k++) 
                 {
-                    const char c = node_get_arg(&child, i + 1);
+                    const char c = node_get_arg(&child, k + 1);
                     if (c == '\n')
                     {
                         uni_printf(io, "%s", "\\0A");
@@ -81,15 +81,15 @@ size_t node_recursive(node *const nd, size_t i, universal_io *const io, info *co
                 const item_t N = node_get_arg(&child, 0);
                 // перестановка TPrintf
                 // TODO: подумать, как для всех типов работать будет
-                for (item_t i = 0; i < N + 1; i++)
+                for (item_t k = 0; k < N + 1; k++)
                 {
-                    node_swap(nd, j-i, nd, j-i-1);
+                    node_swap(nd, j-k, nd, j-k-1);
                 }
                 // перестановка TString
                 // TODO: подумать, как для всех типов работать будет
-                for (item_t i = 0; i < N; i++)
+                for (item_t k = 0; k < N; k++)
                 {
-                    node_swap(nd, j-i, nd, j-i-1);
+                    node_swap(nd, j-k, nd, j-k-1);
                 }
 
                 context->was_printf = 1;

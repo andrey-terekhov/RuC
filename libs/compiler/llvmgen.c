@@ -289,7 +289,7 @@ static void statement(node *const nd, information *const info)
         case TPrintf:
         {
             const item_t N = node_get_arg(nd, 0);
-            int args[128];
+            item_t args[128];
 
             node_set_next(nd);
             const item_t string_length = node_get_arg(nd, 0);
@@ -312,7 +312,7 @@ static void statement(node *const nd, information *const info)
             {
                 info->request_reg = 0;
                 expression(nd, info);
-                uni_printf(info->io, ", i32 signext %%.%i", args[i]);
+                uni_printf(info->io, ", i32 signext %%.%li", args[i]);
             }
             uni_printf(info->io, ")\n");
         }
