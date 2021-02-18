@@ -23,15 +23,6 @@
 #include "linker.h"
 #include "save_macro.h"
 #include "utils.h"
-#include <limits.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <wchar.h>
-
-
-int checkif = 0;
 
 
 int if_check(int type_if, environment *const env)
@@ -40,7 +31,7 @@ int if_check(int type_if, environment *const env)
 
 	if (type_if == SH_IF)
 	{
-		if(calculate(1, env))
+		if (calculate(1, env))
 		{
 			return -1;
 		}
@@ -53,7 +44,7 @@ int if_check(int type_if, environment *const env)
 			flag = 1;
 		}
 
-		if(skip_space_end_line(env))
+		if (skip_space_end_line(env))
 		{
 			return -1;
 		}
@@ -80,8 +71,8 @@ int if_end(environment *const env)
 			fl_cur = macro_keywords(env);
 			if (fl_cur == SH_ENDIF)
 			{
-				checkif--;
-				if (checkif < 0)
+				env->nested_if--;
+				if (env->nested_if < 0)
 				{
 					size_t position = env_skip_str(env); 
 					macro_error(before_endif, env_get_current_file(env), env->error_string, env->line, position);
@@ -92,8 +83,8 @@ int if_end(environment *const env)
 
 			if (fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
 			{
-				checkif++;
-				if(if_end(env))
+				env->nested_if++;
+				if (if_end(env))
 				{
 					return -1;
 				}
@@ -112,7 +103,7 @@ int if_end(environment *const env)
 
 int if_false(environment *const env)
 {
-	int fl_cur = env->cur;
+	const int fl_cur = env->cur;
 
 	while (env->curchar != EOF)
 	{
@@ -126,12 +117,9 @@ int if_false(environment *const env)
 				return fl_cur;
 			}
 
-			if (fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF)
+			if ((fl_cur == SH_IF || fl_cur == SH_IFDEF || fl_cur == SH_IFNDEF) && if_end(env))
 			{
-				if(if_end(env))
-				{
-					return 0;
-				}
+				return 0;
 			}
 		}
 		else
@@ -145,13 +133,13 @@ int if_false(environment *const env)
 	return 0;
 }
 
-int if_true(int type_if, environment *const env)
+int if_true(const int type_if, environment *const env)
 {
 	int error = 0;
 	while (env->curchar != EOF)
 	{
 		error = preprocess_scan(env);
-		if(error)
+		if (error)
 		{
 			return error;
 		}
@@ -163,8 +151,8 @@ int if_true(int type_if, environment *const env)
 
 		if (env->cur == SH_ENDIF)
 		{
-			checkif--;
-			if (checkif < 0)
+			env->nested_if--;
+			if (env->nested_if < 0)
 			{
 				size_t position = env_skip_str(env); 
 				macro_error(before_endif, env_get_current_file(env), env->error_string, env->line, position);
@@ -179,7 +167,7 @@ int if_true(int type_if, environment *const env)
 	{
 		size_t position = env_skip_str(env); 
 		macro_error(dont_elif, env_get_current_file(env), env->error_string, env->line, position);
-		checkif--;
+		env->nested_if--;
 		return -1;
 	}
 
@@ -188,25 +176,25 @@ int if_true(int type_if, environment *const env)
 
 int if_implementation(environment *const env)
 {
-	int type_if = env->cur;
-	int flag = if_check(type_if, env); // начало (if)
-	if(flag == -1)
+	const int type_if = env->cur;
+	const int truth_flag = if_check(type_if, env); // начало (if)
+	if (truth_flag == -1)
 	{
-		checkif--;
+		env->nested_if--;
 		return -1;
 	}
 
-	checkif++;
-	if (flag)
+	env->nested_if++;
+	if (truth_flag)
 	{
 		return if_true(type_if, env);
 	}
 	else
 	{
-		int res = if_false(env);
-		if(!res)
+		const int res = if_false(env);
+		if (!res)
 		{
-			checkif--;
+			env->nested_if--;
 			return -1;
 		}
 		env->cur = res;
@@ -215,23 +203,23 @@ int if_implementation(environment *const env)
 	
 	while (env->cur == SH_ELIF)
 	{
-		flag = if_check(type_if, env);
-		if(flag == -1 || skip_space_end_line(env))
+		const int el_truth_flag = if_check(type_if, env);
+		if (el_truth_flag == -1 || skip_space_end_line(env))
 		{
-			checkif--;
+			env->nested_if--;
 			return -1;
 		}
 
-		if (flag)
+		if (el_truth_flag)
 		{
 			return if_true(type_if, env);
 		}
 		else
 		{
-			int res = if_false(env);
-			if(!res)
+			const int res = if_false(env);
+			if (!res)
 			{
-				checkif--;
+				env->nested_if--;
 				return -1;
 			}
 			env->cur = res;
@@ -247,8 +235,8 @@ int if_implementation(environment *const env)
 
 	if (env->cur == SH_ENDIF)
 	{
-		checkif--;
-		if (checkif < 0)
+		env->nested_if--;
+		if (env->nested_if < 0)
 		{
 			size_t position = env_skip_str(env); 
 			macro_error(before_endif, env_get_current_file(env), env->error_string, env->line, position);
@@ -261,7 +249,7 @@ int if_implementation(environment *const env)
 
 int while_collect(environment *const env)
 {
-	int oldwsp = env->wsp;
+	const int oldwsp = env->wsp;
 
 	env->wstring[env->wsp++] = WHILEBEGIN;
 	env->wstring[env->wsp++] = env->ifsp;
@@ -295,9 +283,7 @@ int while_collect(environment *const env)
 			}
 			else
 			{
-				int i = 0;
-
-				for (i = 0; i < env->reprtab[env->rp]; i++)
+				for (int i = 0; i < env->reprtab[env->rp]; i++)
 				{
 					env->wstring[env->wsp++] = env->reprtab[env->rp + 2 + i];
 				}
@@ -314,8 +300,8 @@ int while_collect(environment *const env)
 
 int while_implementation(environment *const env)
 {
-	int oldernextp = env->nextp;
-	int end = env->wstring[oldernextp + 2];
+	const int oldernextp = env->nextp;
+	const int end = env->wstring[oldernextp + 2];
 	int error = 0;
 
 	env->cur = 0;
@@ -324,7 +310,7 @@ int while_implementation(environment *const env)
 		m_nextch(env);
 		m_change_nextch_type(IFTYPE, env->wstring[env->nextp], env);
 		m_nextch(env);
-		if(calculate(1, env))
+		if (calculate(1, env))
 		{
 			return -1;
 		}
@@ -348,7 +334,7 @@ int while_implementation(environment *const env)
 			if (env->curchar == WHILEBEGIN)
 			{
 				env->nextp--;
-				if(while_implementation(env))
+				if (while_implementation(env))
 				{
 					return -1;
 				}
@@ -362,7 +348,7 @@ int while_implementation(environment *const env)
 			else
 			{
 				error = preprocess_scan(env);
-				if(error)
+				if (error)
 				{
 					return error;
 				}
@@ -393,7 +379,7 @@ int preprocess_words(environment *const env)
 		case SH_UNDEF:
 		{
 			int k = collect_mident(env);
-			if(k)
+			if (k)
 			{
 				env->macrotext[env->reprtab[k + 1]] = MACROUNDEF;
 				return skip_space_end_line(env);
@@ -423,13 +409,9 @@ int preprocess_words(environment *const env)
 			return 0;
 		case SH_EVAL:
 		{
-			if (env->curchar == '(')
+			if (env->curchar == '(' && calculate(0, env))
 			{
-				if(calculate(0, env))
-				{
-					return -1;
-				}
-
+				return -1;
 			}
 			else
 			{
@@ -445,18 +427,17 @@ int preprocess_words(environment *const env)
 		{
 			env->wsp = 0;
 			env->ifsp = 0;
-			if(while_collect(env))
+			if (while_collect(env))
 			{
 				return -1;
 			}
-			
 			m_change_nextch_type(WHILETYPE, 0, env);
 			m_nextch(env);
 			m_nextch(env);
 
 			env->nextp = 0;
 			int res = while_implementation(env);
-			if(env->nextch_type != FILETYPE)
+			if (env->nextch_type != FILETYPE)
 			{
 				m_old_nextch_type(env);
 			}
@@ -475,7 +456,11 @@ int preprocess_words(environment *const env)
 
 int preprocess_scan(environment *const env)
 {
-	int i;
+	if (env == NULL)
+	{
+		return -1;
+	}
+
 	switch (env->curchar)
 	{
 		case EOF:
@@ -487,13 +472,13 @@ int preprocess_scan(environment *const env)
 
 			if (env->cur != 0)
 			{
-				int res = preprocess_words(env);
-				if(env->nextchar != '#' && env->nextch_type != WHILETYPE && 
+				const int res = preprocess_words(env);
+				if (env->nextchar != '#' && env->nextch_type != WHILETYPE && 
 					env->nextch_type != TEXTTYPE)//curflag
 				{
 					env_add_comment(env);
 				}
-				if(env->cur != SH_INCLUDE && env->cur != SH_ELSE && env->cur != SH_ELIF && env->cur != SH_ENDIF)
+				if (env->cur != SH_INCLUDE && env->cur != SH_ELSE && env->cur != SH_ELIF && env->cur != SH_ENDIF)
 				{
 					m_nextch(env);
 				}
@@ -522,7 +507,7 @@ int preprocess_scan(environment *const env)
 		{
 			if (utf8_is_letter(env->curchar) && env->prep_flag == 1)
 			{
-				int r = collect_mident(env);
+				const int r = collect_mident(env);
 
 				if (r)
 				{
@@ -530,7 +515,7 @@ int preprocess_scan(environment *const env)
 				}
 				else
 				{
-					for (i = 0; i < env->msp; i++)
+					for (int i = 0; i < env->msp; i++)
 					{
 						m_fprintf(env->mstring[i], env);
 					}

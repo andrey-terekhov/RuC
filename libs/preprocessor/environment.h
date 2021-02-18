@@ -71,6 +71,8 @@ typedef struct environment
 	int oldnextp[DIP];
 	int dipp;
 
+	int nested_if;
+
 	const char **curent_path;
 
 	size_t line;

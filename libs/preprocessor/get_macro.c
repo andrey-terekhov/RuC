@@ -40,7 +40,7 @@ int function_scob_collect(const int t, const int num, environment *const env)
 				int ldip;
 
 				env->lsp += num;
-				if(get_macro(r, env))
+				if (get_macro(r, env))
 				{
 					return -1;
 				}
@@ -78,7 +78,7 @@ int function_scob_collect(const int t, const int num, environment *const env)
 			env->fchange[env->cp++] = env->curchar;
 			m_nextch(env);
 			
-			if(function_scob_collect(0, num, env))
+			if (function_scob_collect(0, num, env))
 			{
 				return -1;
 			}
@@ -97,7 +97,7 @@ int function_scob_collect(const int t, const int num, environment *const env)
 		{
 			if (macro_keywords(env) == SH_EVAL && env->curchar == '(')
 			{	
-				if(calculate(0, env))
+				if (calculate(0, env))
 				{
 					return -1;
 				}
@@ -141,7 +141,7 @@ int function_stack_create(const int n, environment *const env)
 
 	while (env->curchar != ')')
 	{
-		if(function_scob_collect(1, num, env))
+		if (function_scob_collect(1, num, env))
 		{
 			return -1;
 		}

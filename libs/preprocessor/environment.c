@@ -48,6 +48,7 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->dipp = 0;
 	env->line = 1;
 	env->position = 0;
+	env->nested_if = 0;
 
 	for (int i = 0; i < HASH; i++)
 	{
@@ -98,11 +99,12 @@ void env_clear_error_string(environment *const env)
 
 const char *env_get_current_file(environment *const env)
 {
-	return *env->curent_path;
+	return ws_get_file(env->lk->ws, env->lk->current);
 }
 
 void env_add_comment(environment *const env)
 {
+	//printf("comm %d, %s \n",env->lk->current, *env->curent_path);
 	comment cmt = cmt_create(env_get_current_file(env), env->line);
 
 	char buffer[MAX_CMT_SIZE];
@@ -264,7 +266,7 @@ void m_nextch(environment *const env)
 			env->curchar = env->macrotext[env->nextp++];
 			env->nextchar = env->macrotext[env->nextp];
 
-			if(env->curchar == '\n')
+			if (env->curchar == '\n')
 			{
 				env_add_comment(env);
 			}

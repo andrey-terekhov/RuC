@@ -74,7 +74,7 @@ int funktionleter(int flag_macro, environment *const env)
 	}
 	else if (!flag_macro && r)
 	{
-		if(get_macro(r, env))
+		if (get_macro(r, env))
 		{
 			return -1;
 		}
@@ -154,7 +154,7 @@ int macrotext_add_function(environment *const env)
 	else
 	{	
 		int res = to_functionident(env);
-		if(res == -1)
+		if (res == -1)
 		{
 			return -1;
 		}
@@ -166,7 +166,7 @@ int macrotext_add_function(environment *const env)
 	{
 		if (utf8_is_letter(env->curchar) && !empty)
 		{
-			if(funktionleter(flag_macro, env))
+			if (funktionleter(flag_macro, env))
 			{
 				return -1;
 			}
@@ -177,7 +177,7 @@ int macrotext_add_function(environment *const env)
 
 			if (!flag_macro && env->cur == SH_EVAL && env->curchar == '(')
 			{
-				if(calculate(0, env))
+				if (calculate(0, env))
 				{
 					return -1;
 				}
@@ -218,7 +218,7 @@ int macrotext_add_function(environment *const env)
 		{
 			m_nextch(env);
 			skip_space_end_line(env);
-			if(skip_space_end_line(env))
+			if (skip_space_end_line(env))
 			{
 				return -1;
 			}
@@ -304,7 +304,7 @@ int macrotext_add_define(int r, environment *const env)
 						return -1;
 					}
 
-					if(calculate(0, env))
+					if (calculate(0, env))
 					{
 						return -1;
 					}
@@ -325,7 +325,7 @@ int macrotext_add_define(int r, environment *const env)
 			else if (env->curchar == '\\')
 			{
 				m_nextch(env);
-				if(skip_space_end_line(env))
+				if (skip_space_end_line(env))
 				{
 					return -1;
 				}
@@ -337,7 +337,7 @@ int macrotext_add_define(int r, environment *const env)
 				int k = collect_mident(env);
 				if (k)
 				{
-					if(get_macro(k, env))
+					if (get_macro(k, env))
 					{
 						return -1;
 					}
@@ -389,7 +389,7 @@ int add_macro(environment *const env)
 	}
 
 	r = define_add_to_reprtab(env);
-	if(r == -1)
+	if (r == -1)
 	{
 		return -1;
 	}
@@ -399,7 +399,7 @@ int add_macro(environment *const env)
 	if (env->curchar == '(' && !r)
 	{
 		m_nextch(env);
-		if(macrotext_add_function(env))
+		if (macrotext_add_function(env))
 		{
 			return -1;
 		}

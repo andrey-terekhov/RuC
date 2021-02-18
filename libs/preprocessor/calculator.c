@@ -305,7 +305,7 @@ int calculate(const int logic_flag, environment *const env)
 			int error = 0;
 			opration_flag = 1;
 			stack[i] = get_digit(env, &error);
-			if(error)
+			if (error)
 			{
 				return -1;
 			}
@@ -317,7 +317,7 @@ int calculate(const int logic_flag, environment *const env)
 
 			if (r)
 			{
-				if(get_macro(r, env))
+				if (get_macro(r, env))
 				{
 					return -1;
 				}
@@ -335,7 +335,7 @@ int calculate(const int logic_flag, environment *const env)
 
 			if (env->cur == SH_EVAL && env->curchar == '(')
 			{
-				if(calculate(0, env))
+				if (calculate(0, env))
 				{
 					return -1;
 				}	
