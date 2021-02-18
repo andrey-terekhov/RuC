@@ -58,19 +58,19 @@ static size_t node_recursive(node *const nd, size_t i, universal_io *const io, i
         {
             case TString:
             {
-                const item_t N = node_get_arg(&child, 0);
+                const size_t N = (size_t)node_get_arg(&child, 0);
 
                 uni_printf(io, "@.str%li = private unnamed_addr constant [%li x i8] c\"", context->string_num++, N + 1);
-                for (item_t k = 0; k < N; k++) 
+                for (size_t k = 0; k < N; k++) 
                 {
-                    const char c = node_get_arg(&child, k + 1);
-                    if (c == '\n')
+                    const char ch = (char)node_get_arg(&child, k + 1);
+                    if (ch == '\n')
                     {
-                        uni_printf(io, "%s", "\\0A");
+                        uni_printf(io, "\\0A");
                     }
                     else
                     {
-                        uni_printf(io, "%c", c);
+                        uni_printf(io, "%c", ch);
                     }
                 }
                 uni_printf(io, "\\00\", align 1\n");
@@ -78,16 +78,16 @@ static size_t node_recursive(node *const nd, size_t i, universal_io *const io, i
             break;
             case TPrintf:
             {
-                const item_t N = node_get_arg(&child, 0);
+                const size_t N = (size_t)node_get_arg(&child, 0);
                 // перестановка TPrintf
                 // TODO: подумать, как для всех типов работать будет
-                for (item_t k = 0; k < N + 1; k++)
+                for (size_t k = 0; k < N + 1; k++)
                 {
                     node_swap(nd, j-k, nd, j-k-1);
                 }
                 // перестановка TString
                 // TODO: подумать, как для всех типов работать будет
-                for (item_t k = 0; k < N; k++)
+                for (size_t k = 0; k < N; k++)
                 {
                     node_swap(nd, j-k, nd, j-k-1);
                 }

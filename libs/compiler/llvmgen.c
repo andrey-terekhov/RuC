@@ -359,7 +359,7 @@ static void block(node *const nd, information *const info)
         {
             case TFuncdef:
             {
-                const item_t ref_ident = node_get_arg(nd, 0) / 4;
+                const size_t ref_ident = (size_t)node_get_arg(nd, 0) / 4;
 
                 if (ident_get_mode(info->sx, ref_ident) == LMAIN)
                 {
