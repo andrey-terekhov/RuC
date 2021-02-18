@@ -22,7 +22,7 @@
 enum ANSWER 
 {
 	AREG,						   /**< Ответ находится в регистре */
-	ACONST,						 /**< Ответ является константой */
+	ACONST,						   /**< Ответ является константой */
 };
 
 enum LOCATION 
@@ -33,15 +33,15 @@ enum LOCATION
 
 typedef struct information
 {
-	universal_io * io;			  /**< Вывод */
-	syntax * sx;					/**< Структура syntax с таблицами */
-	item_t string_num;			  /**< Номер строки */
-	item_t register_num;			/**< Номер регистра */
+	universal_io * io;			   /**< Вывод */
+	syntax * sx;				   /**< Структура syntax с таблицами */
+	item_t string_num;			   /**< Номер строки */
+	item_t register_num;		   /**< Номер регистра */
 	item_t variable_location;	   /**< Расположение переменной */
-	item_t request_reg;			 /**< Регистр на запрос */
-	item_t answer_reg;			  /**< Регистр с ответом */
-	item_t answer_num;			  /**< Константа с ответом */
-	item_t answer_type;			 /**< Тип ответа */
+	item_t request_reg;			   /**< Регистр на запрос */
+	item_t answer_reg;			   /**< Регистр с ответом */
+	item_t answer_num;			   /**< Константа с ответом */
+	item_t answer_type;			   /**< Тип ответа */
 } information;
 
 
