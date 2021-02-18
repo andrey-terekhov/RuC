@@ -50,7 +50,7 @@ void output_keywords(environment *const env)
 {
 	for (int j = 0; j < env->reprtab[env->rp]; j++)
 	{
-		m_fprintf(env->reprtab[env->rp + 2 + j], env);
+		m_fprintf(env,env->reprtab[env->rp + 2 + j]);
 	}
 }
 
@@ -73,7 +73,7 @@ int macro_keywords(environment *const env)
 	/*if (env->curchar != '\n' && env->curchar != ' ' && env->curchar != '\t' && env->curchar != '(' &&
 		env->curchar != '\"')
 	{
-		size_t position = env_skip_str(env); 
+		const size_t position = env_skip_str(env);  
 		macro_error(after_ident_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
 	}*/
 
@@ -150,42 +150,6 @@ int collect_mident(environment *const env)
 	return 0;
 }
 
-int find_file(environment *const env, const char *s)
-{
-	int oldrp = env->rp;
-	env->rp += 2;
-	int r;
-	int hash = 0;
-	int i = 0;
-
-	while (s[i] != '\0')
-	{
-		env->reprtab[env->rp++] = s[i];
-		hash += s[i];
-		i++;
-	}
-
-	hash &= 255;
-	r = env->hashtab[hash];
-
-	while (r)
-	{
-		if (env->reprtab[r + 1] == SH_FILE && equal_reprtab(r, oldrp, env))
-		{
-			env->rp = oldrp;
-			return 0;
-		}
-
-		r = env->reprtab[r];
-	}
-
-	env->reprtab[oldrp] = env->hashtab[hash];
-	env->reprtab[oldrp + 1] = SH_FILE;
-	env->hashtab[hash] = oldrp;
-	env->reprtab[env->rp++] = 0;
-	return 1;
-}
-
 int skip_space_end_line(environment *const env)
 {
 	while (env->curchar != '\n')
@@ -196,7 +160,7 @@ int skip_space_end_line(environment *const env)
 		}
 		else
 		{
-			size_t position = env_skip_str(env); 
+			const size_t position = env_skip_str(env);  
 			macro_error(after_preproces_words_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
@@ -216,24 +180,24 @@ void skip_space(environment *const env)
 void skip_string(environment *const env)
 {
 	int c = env->curchar;
-	m_fprintf(env->curchar, env);
+	m_fprintf(env,env->curchar);
 	m_nextch(env);
 
 	while (env->curchar != c && env->curchar != EOF)
 	{
 		if (env->curchar == '\\')
 		{
-			m_fprintf(env->curchar, env);
+			m_fprintf(env,env->curchar);
 			m_nextch(env);
 		}
 
-		m_fprintf(env->curchar, env);
+		m_fprintf(env,env->curchar);
 		m_nextch(env);
 	}
 
 	if (env->curchar != EOF)
 	{
-		m_fprintf(env->curchar, env);
+		m_fprintf(env,env->curchar);
 		m_nextch(env);
 	}
 }

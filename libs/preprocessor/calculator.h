@@ -31,7 +31,7 @@ extern "C" {
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int calculate(const int logic_flag, environment *const env);
+int calculate(environment *const env, const int logic_flag);
 
 #ifdef __cplusplus
 } /* extern "C" */

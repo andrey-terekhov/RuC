@@ -31,7 +31,7 @@ extern "C" {
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int get_macro(const int index, environment *const env);
+int get_macro(environment *const env, const int index);
 
 #ifdef __cplusplus
 } /* extern "C" */

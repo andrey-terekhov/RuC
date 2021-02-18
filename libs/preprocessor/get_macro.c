@@ -23,13 +23,13 @@
 #include "utils.h"
 
 
-int function_scob_collect(const int t, const int num, environment *const env)
+int function_scob_collect(environment *const env, const int t, const int num)
 {
 	while (env->curchar != EOF)
 	{
 		if (utf8_is_letter(env->curchar))
 		{
-			int r = collect_mident(env);
+			const int r = collect_mident(env);
 
 			if (r)
 			{
@@ -40,7 +40,7 @@ int function_scob_collect(const int t, const int num, environment *const env)
 				int ldip;
 
 				env->lsp += num;
-				if (get_macro(r, env))
+				if (get_macro(env, r))
 				{
 					return -1;
 				}
@@ -78,7 +78,7 @@ int function_scob_collect(const int t, const int num, environment *const env)
 			env->fchange[env->cp++] = env->curchar;
 			m_nextch(env);
 			
-			if (function_scob_collect(0, num, env))
+			if (function_scob_collect(env, 0, num))
 			{
 				return -1;
 			}
@@ -97,7 +97,7 @@ int function_scob_collect(const int t, const int num, environment *const env)
 		{
 			if (macro_keywords(env) == SH_EVAL && env->curchar == '(')
 			{	
-				if (calculate(0, env))
+				if (calculate(env, 0))
 				{
 					return -1;
 				}
@@ -120,12 +120,12 @@ int function_scob_collect(const int t, const int num, environment *const env)
 			m_nextch(env);
 		}
 	}
-	size_t position = env_skip_str(env); 
+	const size_t position = env_skip_str(env);  
 	macro_error(scob_not_clous, env_get_current_file(env), env->error_string, env->line, position);
 	return -1;
 }
 
-int function_stack_create(const int n, environment *const env)
+int function_stack_create(environment *const env, const int n)
 {
 	int num = 0;
 
@@ -134,14 +134,14 @@ int function_stack_create(const int n, environment *const env)
 
 	if (env->curchar == ')')
 	{
-		size_t position = env_skip_str(env); 
+		const size_t position = env_skip_str(env);  
 		macro_error(stalpe, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
 
 	while (env->curchar != ')')
 	{
-		if (function_scob_collect(1, num, env))
+		if (function_scob_collect(env, 1, num))
 		{
 			return -1;
 		}
@@ -154,7 +154,7 @@ int function_stack_create(const int n, environment *const env)
 
 			if (num > n)
 			{
-				size_t position = env_skip_str(env); 
+				const size_t position = env_skip_str(env);  
 				macro_error(not_enough_param, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -169,7 +169,7 @@ int function_stack_create(const int n, environment *const env)
 		{
 			if (num != n)
 			{
-				size_t position = env_skip_str(env); 
+				const size_t position = env_skip_str(env);  
 				macro_error(not_enough_param2, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -180,12 +180,12 @@ int function_stack_create(const int n, environment *const env)
 		}
 	}
 
-	size_t position = env_skip_str(env); 
+	const size_t position = env_skip_str(env);  
 	macro_error(scob_not_clous, env_get_current_file(env), env->error_string, env->line, position);
 	return -1;
 }
 
-int get_macro(const int index, environment *const env)
+int get_macro(environment *const env, const int index)
 {
 	int t = env->reprtab[index + 1];
 
@@ -193,17 +193,17 @@ int get_macro(const int index, environment *const env)
 	{
 		env->msp = 0;
 		if (env->macrotext[t] == MACROFUNCTION && env->macrotext[++t] > -1 
-			&& function_stack_create(env->macrotext[t], env))
+			&& function_stack_create(env, env->macrotext[t]))
 		{
 			return -1;
 		}
 
-		m_change_nextch_type(TEXTTYPE, t + 1, env);
+		m_change_nextch_type(env, TEXTTYPE, t + 1);
 		m_nextch(env);
 	}
 	else
 	{
-		size_t position = env_skip_str(env); 
+		const size_t position = env_skip_str(env);  
 		macro_error(ident_not_exist, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}

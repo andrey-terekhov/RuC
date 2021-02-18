@@ -20,21 +20,15 @@
 #include "get_macro.h"
 #include "linker.h"
 #include "utils.h"
-#include <limits.h>
 #include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-
-int flagint = 1;
 
 double get_digit(environment *const env, int* error)
 {
 	double k;
 	int d = 1;
 
-	flagint = 1;
+	env->flagint = 1;
 	int num = 0;
 	double numdouble = 0.0;
 	if (env->curchar == '-')
@@ -48,7 +42,7 @@ double get_digit(environment *const env, int* error)
 		numdouble = numdouble * 10 + (env->curchar - '0');
 		if (numdouble > (double)INT_MAX)
 		{
-			size_t position = env_skip_str(env); 
+			const size_t position = env_skip_str(env);  
 			macro_error(too_many_nuber, env_get_current_file(env), env->error_string, env->line, position);
 			*error = -1;
 			return 0.0;
@@ -59,7 +53,7 @@ double get_digit(environment *const env, int* error)
 
 	if (env->curchar == '.')
 	{
-		flagint = 0;
+		env->flagint = 0;
 		m_nextch(env);
 		k = 0.1;
 
@@ -80,7 +74,7 @@ double get_digit(environment *const env, int* error)
 		m_nextch(env);
 		if (env->curchar == '-')
 		{
-			flagint = 0;
+			env->flagint = 0;
 			m_nextch(env);
 			sign = -1;
 		}
@@ -92,7 +86,7 @@ double get_digit(environment *const env, int* error)
 
 		if (!utf8_is_digit(env->curchar))
 		{
-			size_t position = env_skip_str(env); 
+			const size_t position = env_skip_str(env);  
 			macro_error(must_be_digit_after_exp1, env_get_current_file(env), env->error_string, env->line, position);
 			*error = -1;
 			return 0.0;
@@ -105,7 +99,7 @@ double get_digit(environment *const env, int* error)
 			m_nextch(env);
 		}
 
-		if (flagint)
+		if (env->flagint)
 		{
 			for (i = 1; i <= power; i++)
 			{
@@ -116,7 +110,7 @@ double get_digit(environment *const env, int* error)
 		numdouble *= pow(10.0, sign * power);
 	}
 
-	if (flagint)
+	if (env->flagint)
 	{
 		return num * d;
 	}
@@ -245,7 +239,7 @@ double implementation_opiration(double x, double y, int r, int int_flag)
 	}
 }
 
-void double_to_string(double x, int int_flag, environment *const env)
+void double_to_string(environment *const env, double x, int int_flag)
 {
 	char s[30] = "\0";
 
@@ -280,21 +274,22 @@ void double_to_string(double x, int int_flag, environment *const env)
 	}
 }
 
-int calculate(const int logic_flag, environment *const env)
+int calculate(environment *const env, const int logic_flag)
 {
-	int i = 0;
 	int op = 0;
-	int c = 0;
-	double stack[10];
-	int int_flag[10];
 	int operation[10];
-	int opration_flag = 0;
 
 	if (!logic_flag)
 	{
 		operation[op++] = '(';
 		m_nextch(env);
 	}
+
+	int i = 0;
+	int c = 0;
+	double stack[10];
+	int int_flag[10];
+	int opration_flag = 0;
 
 	while (env->curchar != '\n')
 	{
@@ -309,7 +304,7 @@ int calculate(const int logic_flag, environment *const env)
 			{
 				return -1;
 			}
-			int_flag[i++] = flagint;
+			int_flag[i++] = env->flagint;
 		}
 		else if (utf8_is_letter(env->curchar))
 		{
@@ -317,14 +312,14 @@ int calculate(const int logic_flag, environment *const env)
 
 			if (r)
 			{
-				if (get_macro(r, env))
+				if (get_macro(env, r))
 				{
 					return -1;
 				}
 			}
 			else
 			{
-				size_t position = env_skip_str(env); 
+				const size_t position = env_skip_str(env);  
 				macro_error(not_macro, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -335,18 +330,18 @@ int calculate(const int logic_flag, environment *const env)
 
 			if (env->cur == SH_EVAL && env->curchar == '(')
 			{
-				if (calculate(0, env))
+				if (calculate(env, 0))
 				{
 					return -1;
 				}	
 			}
 			else
 			{
-				size_t position = env_skip_str(env); 
+				const size_t position = env_skip_str(env);  
 				macro_error(after_eval_must_be_ckob, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
-			m_change_nextch_type(CTYPE, 0, env);
+			m_change_nextch_type(env, CTYPE, 0);
 			m_nextch(env);
 		}
 		else if (env->curchar == ')')
@@ -355,7 +350,7 @@ int calculate(const int logic_flag, environment *const env)
 			{
 				if (i < 2 || op == 0)
 				{
-					size_t position = env_skip_str(env); 
+					const size_t position = env_skip_str(env);  
 					macro_error(incorrect_arithmetic_expression, env_get_current_file(env), env->error_string, env->line, position);
 					return -1;
 				}
@@ -370,7 +365,7 @@ int calculate(const int logic_flag, environment *const env)
 
 			if (op == 0 && !logic_flag)
 			{
-				double_to_string(stack[0], int_flag[0], env);
+				double_to_string(env, stack[0], int_flag[0]);
 				return 0;
 			}
 		}
@@ -384,13 +379,13 @@ int calculate(const int logic_flag, environment *const env)
 
 				if (n != 0 && logic_flag && n > 3)
 				{
-					size_t position = env_skip_str(env); 
+					const size_t position = env_skip_str(env);  
 					macro_error(not_arithmetic_operations, env_get_current_file(env), env->error_string, env->line, position);
 					return -1;
 				}
 				if (n != 0 && !logic_flag && n <= 3)
 				{
-					size_t position = env_skip_str(env); 
+					const size_t position = env_skip_str(env);  
 					macro_error(not_logical_operations, env_get_current_file(env), env->error_string, env->line, position);
 					return -1;
 				}
@@ -406,14 +401,14 @@ int calculate(const int logic_flag, environment *const env)
 			}
 			else if (env->curchar != '\n')
 			{
-				size_t position = env_skip_str(env); 
+				const size_t position = env_skip_str(env);  
 				macro_error(third_party_symbol, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
 		}
 		else if (env->curchar != '\n')
 		{
-			size_t position = env_skip_str(env); 
+			const size_t position = env_skip_str(env);  
 			macro_error(third_party_symbol, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
@@ -426,7 +421,7 @@ int calculate(const int logic_flag, environment *const env)
 		{
 			if (i < 2)
 			{
-				size_t position = env_skip_str(env); 
+				const size_t position = env_skip_str(env);  
 				macro_error(incorrect_arithmetic_expression, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -448,7 +443,7 @@ int calculate(const int logic_flag, environment *const env)
 	}
 	else
 	{
-		size_t position = env_skip_str(env); 
+		const size_t position = env_skip_str(env);  
 		macro_error(in_eval_must_end_parenthesis, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}

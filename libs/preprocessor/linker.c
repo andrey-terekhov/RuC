@@ -121,15 +121,6 @@ int lk_preprocess_file(environment *const env, const size_t number)
 	const size_t old_cur = env->lk->current;
 	const size_t old_line = env->line;
 	env->lk->current = number;
-
-/*#if __linux__
-	const char *cur_path = ws_get_file(env->lk->ws, number);
-	env->curent_path = &cur_path;
-	//printf("linux %d, %s \n",env->lk->current, *env->curent_path);
-#else
-	*env->curent_path = ws_get_file(env->lk->ws, number);
-	//printf("win %d, %s \n",env->lk->current, *env->curent_path);
-#endif*/
 	
 	env->line = 1;
 
@@ -148,20 +139,10 @@ int lk_preprocess_file(environment *const env, const size_t number)
 		was_error = preprocess_scan(env) || was_error;
 	}
 
-	m_fprintf('\n', env);
+	m_fprintf(env,'\n');
 
 	env->line = old_line;
 	env->lk->current = old_cur;
-
-/*#if __linux__
-	
-	const char *old_path = ws_get_file(env->lk->ws, old_cur);
-	env->curent_path = &old_path;
-	printf("linux %d, %s \n",env->lk->current, old_path);
-#else
-	*env->curent_path = ws_get_file(env->lk->ws, old_cur);
-	printf("win %d, %s \n",env->lk->current, *env->curent_path);
-#endif*/
 
 	in_clear(env->input);
 	return was_error ? -1 : 0;
@@ -176,7 +157,7 @@ int lk_preprocess_include(environment *const env)
 	{
 		if (env->curchar == EOF)
 		{
-			size_t position = env_skip_str(env); 
+			const size_t position = env_skip_str(env);  
 			macro_error(must_end_quote, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
@@ -199,7 +180,7 @@ int lk_preprocess_include(environment *const env)
 	int flag_io_type = 0;	
 	if (env->nextch_type != FILETYPE)
 	{
-		m_change_nextch_type(FILETYPE, 0, env);
+		m_change_nextch_type(env, FILETYPE, 0);
 		flag_io_type++;
 	}
 	
@@ -225,7 +206,7 @@ int lk_include(environment *const env)
 
 	if (env->curchar != '\"')
 	{
-		size_t position = env_skip_str(env); 
+		const size_t position = env_skip_str(env);  
 		macro_error(must_start_quote, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;	
 	}

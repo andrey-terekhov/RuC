@@ -28,7 +28,7 @@
 const size_t SIZE_OUT_BUFFER = 1024;
 
 
-void to_reprtab(const char str[], int num, environment *const env)
+void to_reprtab(environment *const env, const char str[], int num)
 {
 	int i = 0;
 	int oldrepr = env->rp;
@@ -67,34 +67,34 @@ void to_reprtab(const char str[], int num, environment *const env)
 	env->hashtab[hash] = oldrepr;
 }
 
-void to_reprtab_full(const char str1[], const char str2[], const char str3[], const char str4[], int num, environment *const env)
+void to_reprtab_full(environment *const env, const char str1[], const char str2[], const char str3[], const char str4[], int num)
 {
-	to_reprtab(str1, num, env);
-	to_reprtab(str2, num, env);
-	to_reprtab(str3, num, env);
-	to_reprtab(str4, num, env);
+	to_reprtab(env, str1, num);
+	to_reprtab(env, str2, num);
+	to_reprtab(env, str3, num);
+	to_reprtab(env, str4, num);
 }
 
 void add_keywods(environment *const env)
 {
-	to_reprtab_full("MAIN", "main", "ГЛАВНАЯ", "главная", SH_MAIN, env);
-	to_reprtab_full("#DEFINE", "#define", "#ОПРЕД", "#опред", SH_DEFINE, env);
-	to_reprtab_full("#IFDEF", "#ifdef", "#ЕСЛИБЫЛ", "#еслибыл", SH_IFDEF, env);
-	to_reprtab_full("#IFNDEF", "#ifndef", "#ЕСЛИНЕБЫЛ", "#еслинебыл", SH_IFNDEF, env);
-	to_reprtab_full("#IF", "#if", "#ЕСЛИ", "#если", SH_IF, env);
-	to_reprtab_full("#ELIF", "#elif", "#ИНЕСЛИ", "#инесли", SH_ELIF, env);
-	to_reprtab_full("#ENDIF", "#endif", "#КОНЕЦЕСЛИ", "#конецесли", SH_ENDIF, env);
-	to_reprtab_full("#ELSE", "#else", "#ИНАЧЕ", "#иначе", SH_ELSE, env);
-	to_reprtab_full("#MACRO", "#macro", "#МАКРО", "#макро", SH_MACRO, env);
-	to_reprtab_full("#ENDM", "#endm", "#КОНЕЦМ", "#конецм", SH_ENDM, env);
-	to_reprtab_full("#WHILE", "#while", "#ПОКА", "#пока", SH_WHILE, env);
-	to_reprtab_full("#ENDW", "#endw", "#КОНЕЦП", "#конецп", SH_ENDW, env);
-	to_reprtab_full("#SET", "#set", "#ПЕРЕОПРЕД", "#переопред", SH_SET, env);
-	to_reprtab_full("#UNDEF", "#undef", "#ОТМЕНАОПРЕД", "#отменаопред", SH_UNDEF, env);
-	to_reprtab_full("#FOR", "#for", "#ДЛЯ", "#для", SH_FOR, env);
-	to_reprtab_full("#ENDF", "#endf", "#КОНЕЦД", "#конецд", SH_ENDF, env);
-	to_reprtab_full("#EVAL", "#eval", "#ВЫЧИСЛЕНИЕ", "#вычисление", SH_EVAL, env);
-	to_reprtab_full("#INCLUDE", "#include", "#ДОБАВИТЬ", "#добавить", SH_INCLUDE, env);
+	to_reprtab_full(env, "MAIN", "main", "ГЛАВНАЯ", "главная", SH_MAIN);
+	to_reprtab_full(env, "#DEFINE", "#define", "#ОПРЕД", "#опред", SH_DEFINE);
+	to_reprtab_full(env, "#IFDEF", "#ifdef", "#ЕСЛИБЫЛ", "#еслибыл", SH_IFDEF);
+	to_reprtab_full(env, "#IFNDEF", "#ifndef", "#ЕСЛИНЕБЫЛ", "#еслинебыл", SH_IFNDEF);
+	to_reprtab_full(env, "#IF", "#if", "#ЕСЛИ", "#если", SH_IF);
+	to_reprtab_full(env, "#ELIF", "#elif", "#ИНЕСЛИ", "#инесли", SH_ELIF);
+	to_reprtab_full(env, "#ENDIF", "#endif", "#КОНЕЦЕСЛИ", "#конецесли", SH_ENDIF);
+	to_reprtab_full(env, "#ELSE", "#else", "#ИНАЧЕ", "#иначе", SH_ELSE);
+	to_reprtab_full(env, "#MACRO", "#macro", "#МАКРО", "#макро", SH_MACRO);
+	to_reprtab_full(env, "#ENDM", "#endm", "#КОНЕЦМ", "#конецм", SH_ENDM);
+	to_reprtab_full(env, "#WHILE", "#while", "#ПОКА", "#пока", SH_WHILE);
+	to_reprtab_full(env, "#ENDW", "#endw", "#КОНЕЦП", "#конецп", SH_ENDW);
+	to_reprtab_full(env, "#SET", "#set", "#ПЕРЕОПРЕД", "#переопред", SH_SET);
+	to_reprtab_full(env, "#UNDEF", "#undef", "#ОТМЕНАОПРЕД", "#отменаопред", SH_UNDEF);
+	to_reprtab_full(env, "#FOR", "#for", "#ДЛЯ", "#для", SH_FOR);
+	to_reprtab_full(env, "#ENDF", "#endf", "#КОНЕЦД", "#конецд", SH_ENDF);
+	to_reprtab_full(env, "#EVAL", "#eval", "#ВЫЧИСЛЕНИЕ", "#вычисление", SH_EVAL);
+	to_reprtab_full(env, "#INCLUDE", "#include", "#ДОБАВИТЬ", "#добавить", SH_INCLUDE);
 }
 
 int macro_form_io(workspace *const ws, universal_io *const output)

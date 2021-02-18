@@ -72,6 +72,7 @@ typedef struct environment
 	int dipp;
 
 	int nested_if;
+	int flagint;
 
 	const char **curent_path;
 
@@ -96,13 +97,13 @@ void env_add_comment(environment *const env);
 
 size_t env_skip_str(environment *const env);
 
-void m_change_nextch_type(int type, int p, environment *const env);
+void m_change_nextch_type(environment *const env, int type, int p);
 void m_old_nextch_type(environment *const env);
 
 int get_dipp(environment *const env);
 int get_next_char(environment *const env);
 
-void m_fprintf(int a, environment *const env);
+void m_fprintf(environment *const env, int a);
 void m_nextch(environment *const env);
 
 #ifdef __cplusplus

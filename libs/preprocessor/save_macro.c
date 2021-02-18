@@ -58,7 +58,7 @@ int m_equal(environment *const env)
 	return 0;
 }
 
-int funktionleter(int flag_macro, environment *const env)
+int funktionleter(environment *const env, int flag_macro)
 {
 	int n = 0;
 	int i = 0;
@@ -74,7 +74,7 @@ int funktionleter(int flag_macro, environment *const env)
 	}
 	else if (!flag_macro && r)
 	{
-		if (get_macro(r, env))
+		if (get_macro(env, r))
 		{
 			return -1;
 		}
@@ -109,7 +109,7 @@ int to_functionident(environment *const env)
 		}
 		else
 		{
-			size_t position = env_skip_str(env); 
+			const size_t position = env_skip_str(env);  
 			macro_error(functionid_begins_with_letters, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
@@ -123,7 +123,7 @@ int to_functionident(environment *const env)
 		}
 		else if (env->curchar != ')')
 		{
-			size_t position = env_skip_str(env); 
+			const size_t position = env_skip_str(env);  
 			macro_error(after_functionid_must_be_comma, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
@@ -166,7 +166,7 @@ int macrotext_add_function(environment *const env)
 	{
 		if (utf8_is_letter(env->curchar) && !empty)
 		{
-			if (funktionleter(flag_macro, env))
+			if (funktionleter(env, flag_macro))
 			{
 				return -1;
 			}
@@ -177,7 +177,7 @@ int macrotext_add_function(environment *const env)
 
 			if (!flag_macro && env->cur == SH_EVAL && env->curchar == '(')
 			{
-				if (calculate(0, env))
+				if (calculate(env, 0))
 				{
 					return -1;
 				}
@@ -209,7 +209,7 @@ int macrotext_add_function(environment *const env)
 
 		if (env->curchar == EOF)
 		{
-			size_t position = env_skip_str(env); 
+			const size_t position = env_skip_str(env);  
 			macro_error(not_end_fail_define, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
@@ -262,7 +262,7 @@ int define_add_to_reprtab(environment *const env)
 			}
 			else
 			{
-				size_t position = env_skip_str(env); 
+				const size_t position = env_skip_str(env);  
 				macro_error(repeat_ident, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -276,7 +276,7 @@ int define_add_to_reprtab(environment *const env)
 	return 0;
 }
 
-int macrotext_add_define(int r, environment *const env)
+int macrotext_add_define(environment *const env, int r)
 {
 	int j;
 	int lmp = env->mp;
@@ -288,7 +288,7 @@ int macrotext_add_define(int r, environment *const env)
 		{
 			if (env->curchar == EOF)
 			{
-				size_t position = env_skip_str(env); 
+				const size_t position = env_skip_str(env);  
 				macro_error(not_end_fail_define, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -299,12 +299,12 @@ int macrotext_add_define(int r, environment *const env)
 				{
 					if (env->curchar != '(')
 					{
-						size_t position = env_skip_str(env); 
+						const size_t position = env_skip_str(env);  
 						macro_error(after_eval_must_be_ckob, env_get_current_file(env), env->error_string, env->line, position);
 						return -1;
 					}
 
-					if (calculate(0, env))
+					if (calculate(env, 0))
 					{
 						return -1;
 					}
@@ -337,7 +337,7 @@ int macrotext_add_define(int r, environment *const env)
 				int k = collect_mident(env);
 				if (k)
 				{
-					if (get_macro(k, env))
+					if (get_macro(env, k))
 					{
 						return -1;
 					}
@@ -383,7 +383,7 @@ int add_macro(environment *const env)
 
 	if (!utf8_is_letter(env->curchar))
 	{
-		size_t position = env_skip_str(env); 
+		const size_t position = env_skip_str(env);  
 		macro_error(ident_begins_with_letters, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
@@ -406,14 +406,14 @@ int add_macro(environment *const env)
 	}
 	else if (env->curchar != ' ' && env->curchar != '\n' && env->curchar != '\t')
 	{
-		size_t position = env_skip_str(env); 
+		const size_t position = env_skip_str(env);  
 		macro_error(after_ident_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
 	else
 	{
 		skip_space(env);
-		return macrotext_add_define(r, env);
+		return macrotext_add_define(env, r);
 	}
 	return 0;
 }
@@ -424,7 +424,7 @@ int set_macros(environment *const env)
 
 	if (!utf8_is_letter(env->curchar))
 	{
-		size_t position = env_skip_str(env); 
+		const size_t position = env_skip_str(env);  
 		macro_error(ident_begins_with_letters, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
@@ -433,13 +433,13 @@ int set_macros(environment *const env)
 
 	if (env->macrotext[env->reprtab[j + 1]] == MACROFUNCTION)
 	{
-		size_t position = env_skip_str(env); 
+		const size_t position = env_skip_str(env);  
 		macro_error(functions_cannot_be_changed, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
 	else if (env->curchar != ' ' && env->curchar != '\t')
 	{	
-		size_t position = env_skip_str(env);
+		const size_t position = env_skip_str(env); 
 		macro_error(after_ident_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
@@ -447,5 +447,5 @@ int set_macros(environment *const env)
 	m_nextch(env);
 	skip_space(env);
 
-	return macrotext_add_define(j, env);
+	return macrotext_add_define(env, j);
 }

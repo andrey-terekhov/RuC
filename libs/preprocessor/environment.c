@@ -49,6 +49,7 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->line = 1;
 	env->position = 0;
 	env->nested_if = 0;
+	env->flagint = 1;
 
 	for (int i = 0; i < HASH; i++)
 	{
@@ -104,7 +105,6 @@ const char *env_get_current_file(environment *const env)
 
 void env_add_comment(environment *const env)
 {
-	//printf("comm %d, %s \n",env->lk->current, *env->curent_path);
 	comment cmt = cmt_create(env_get_current_file(env), env->line);
 
 	char buffer[MAX_CMT_SIZE];
@@ -141,7 +141,7 @@ int get_dipp(environment *const env)
 	return env->dipp;
 }
 
-void m_change_nextch_type(int type, int p, environment *const env)
+void m_change_nextch_type(environment *const env, int type, int p)
 {
 	env->oldcurchar[env->dipp] = env->curchar;
 	env->oldnextchar[env->dipp] = env->nextchar;
@@ -179,7 +179,7 @@ void m_onemore(environment *const env)
 	}
 }
 
-void m_fprintf(int a, environment *const env)
+void m_fprintf(environment *const env, int a)
 {
 	uni_print_char(env->output, a);
 }
@@ -217,7 +217,7 @@ void m_coment_skip(environment *const env)
 
 			if (env->curchar == EOF)
 			{
-				size_t position = env_skip_str(env); 
+				const size_t position = env_skip_str(env);  
 				macro_error(comm_not_ended, env_get_current_file(env), env->error_string, env->line, position);
 				end_line(env);
 				return;
@@ -233,7 +233,7 @@ void m_coment_skip(environment *const env)
 void m_nextch_cange(environment *const env)
 {
 	m_nextch(env);
-	m_change_nextch_type(FTYPE, env->localstack[env->curchar + env->lsp], env);
+	m_change_nextch_type(env, FTYPE, env->localstack[env->curchar + env->lsp]);
 	m_nextch(env);
 }
 
@@ -298,7 +298,6 @@ void m_nextch(environment *const env)
 	else
 	{
 		m_onemore(env);
-
 		m_coment_skip(env);
 
 		if (env->curchar == '\n')
