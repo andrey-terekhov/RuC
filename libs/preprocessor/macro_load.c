@@ -194,18 +194,20 @@ int macros_get(environment *const env, const int index)
 		return -1;
 	}
 
-	const int t = env->reprtab[index + 1];
+	int t = env->reprtab[index + 1];
 
 	env->msp = 0;
-	if (env->macrotext[t] == MACROFUNCTION && env->macrotext[t + 1] > -1 
-		&& function_stack_create(env, env->macrotext[t + 1]))
+	if(env->macrotext[t] == MACROFUNCTION)
 	{
-		return -1;
+		++t;
+		if (env->macrotext[t] > -1 && function_stack_create(env, env->macrotext[t]))
+		{
+			return -1;
+		}
 	}
 
-	m_change_nextch_type(env, TEXTTYPE, t + 2);
+	m_change_nextch_type(env, TEXTTYPE, t + 1);
 	m_nextch(env);
-	
 
 	return 0;
 }
