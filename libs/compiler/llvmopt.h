@@ -25,15 +25,16 @@ extern "C" {
 #endif
 
 /**
- *	Modify tree and encode to low level virtual machine codes
+ *	First tree traversal for optimizing & encoding to low level virtual machine codes
  *
- *	@param	io		        Universal io structure
- *	@param	sx		        Syntax structure
- *	@param	architecture    Architecture parameter
+ *	@param	ws				Compiler workspace
+ *	@param	io				Universal io structure
+ *	@param	sx				Syntax structure
+ *	@param	architecture	Architecture parameter
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int optimize_for_llvm(universal_io *const io, syntax *const sx, int architecture);
+int optimize_for_llvm(const workspace *const ws, universal_io *const io, syntax *const sx, int architecture);
 
 #ifdef __cplusplus
 } /* extern "C" */

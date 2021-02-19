@@ -18,38 +18,17 @@
 #include "errors.h"
 #include "tree.h"
 #include "uniprinter.h"
-#include "vector.h"
 
 
-typedef struct info
+typedef struct information
 {
 	item_t string_num;
 	item_t was_printf;
-} info;
+} information;
 
 
-static size_t node_recursive(node *const nd, size_t i, universal_io *const io, info *const context)
+static size_t node_recursive(node *const nd, size_t i, universal_io *const io, information *const info)
 {
-	if (i == SIZE_MAX)
-	{
-		return SIZE_MAX;
-	}
-
-	if (vector_get(nd->tree, i++) != node_get_type(nd))
-	{
-		error(NULL, tree_unexpected, node_get_type(nd), i - 1, vector_get(nd->tree, i - 1));
-		return SIZE_MAX;
-	}
-
-	for (size_t j = 0; node_get_arg(nd, j) != ITEM_MAX; j++)
-	{
-		if (vector_get(nd->tree, i++) != node_get_arg(nd, j))
-		{
-			error(NULL, tree_unexpected, node_get_arg(nd, j), i - 1, vector_get(nd->tree, i - 1));
-			return SIZE_MAX;
-		}
-	}
-
 	for (size_t j = 0; j < node_get_amount(nd); j++)
 	{
 		node child = node_get_child(nd, j);
@@ -60,7 +39,7 @@ static size_t node_recursive(node *const nd, size_t i, universal_io *const io, i
 			{
 				const size_t N = (size_t)node_get_arg(&child, 0);
 
-				uni_printf(io, "@.str%li = private unnamed_addr constant [%li x i8] c\"", context->string_num++, N + 1);
+				uni_printf(io, "@.str%li = private unnamed_addr constant [%li x i8] c\"", info->string_num++, N + 1);
 				for (size_t k = 0; k < N; k++) 
 				{
 					const char ch = (char)node_get_arg(&child, k + 1);
@@ -92,12 +71,12 @@ static size_t node_recursive(node *const nd, size_t i, universal_io *const io, i
 					node_swap(nd, j-k, nd, j-k-1);
 				}
 
-				context->was_printf = 1;
+				info->was_printf = 1;
 			}
 			break;
 		}
 
-		i = node_recursive(&child, i, io, context);
+		i = node_recursive(&child, i, io, info);
 	}
 	return i;
 }
@@ -122,9 +101,9 @@ static int optimize_pass(universal_io *const io, syntax *const sx, int architect
 		break;
 	}
 
-	info context;
-	context.string_num = 1;
-	context.was_printf = 0;
+	information info;
+	info.string_num = 1;
+	info.was_printf = 0;
 
 	if (!vector_is_correct(&sx->tree))
 	{
@@ -137,11 +116,11 @@ static int optimize_pass(universal_io *const io, syntax *const sx, int architect
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
 	{
 		node child = node_get_child(&nd, i);
-		index = node_recursive(&child, index, io, &context);
+		index = node_recursive(&child, index, io, &info);
 	}
 
 	uni_printf(io, "\n");
-	if (context.was_printf)
+	if (info.was_printf)
 	{
 		uni_printf(io, "declare i32 @printf(i8*, ...)\n");
 	}
@@ -160,7 +139,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx, int architect
  */
 
 
-int optimize_for_llvm(universal_io *const io, syntax *const sx, int architecture)
+int optimize_for_llvm(const workspace *const ws, universal_io *const io, syntax *const sx, int architecture)
 {
 	if (!out_is_correct(io) || sx == NULL)
 	{

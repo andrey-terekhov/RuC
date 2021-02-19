@@ -15,42 +15,43 @@
  */
 
 #include "llvmgen.h"
+#include "llvmopt.h"
 #include "tree.h"
 #include "uniprinter.h"
 
 
-enum ANSWER 
+enum ANSWER
 {
-	AREG,						   /**< Ответ находится в регистре */
-	ACONST,						   /**< Ответ является константой */
+	AREG,								/**< Ответ находится в регистре */
+	ACONST,								/**< Ответ является константой */
 };
 
-enum LOCATION 
+enum LOCATION
 {
-	LREG,						   /**< Переменная находится в регистре */
-	LMEM,						   /**< Переменная находится в памяти */
+	LREG,								/**< Переменная находится в регистре */
+	LMEM,								/**< Переменная находится в памяти */
 };
 
 typedef struct information
 {
-	universal_io * io;			   /**< Вывод */
-	syntax * sx;				   /**< Структура syntax с таблицами */
-	item_t string_num;			   /**< Номер строки */
-	item_t register_num;		   /**< Номер регистра */
-	item_t variable_location;	   /**< Расположение переменной */
-	item_t request_reg;			   /**< Регистр на запрос */
-	item_t answer_reg;			   /**< Регистр с ответом */
-	item_t answer_num;			   /**< Константа с ответом */
-	item_t answer_type;			   /**< Тип ответа */
+	universal_io *io;					/**< Вывод */
+	syntax *sx;							/**< Структура syntax с таблицами */
+	item_t string_num;					/**< Номер строки */
+	item_t register_num;				/**< Номер регистра */
+	enum LOCATION variable_location;	/**< Расположение переменной */
+	item_t request_reg;					/**< Регистр на запрос */
+	item_t answer_reg;					/**< Регистр с ответом */
+	item_t answer_const;				/**< Константа с ответом */
+	enum ANSWER answer_type;			/**< Тип ответа */
 } information;
 
 
-static void expression(node *const nd, information *const info);
+static void expression( information *const info, node *const nd);
 
-static void block(node *const nd, information *const info);
+static void block( information *const info, node *const nd);
 
 
-static void operand(node *const nd, information *const info)
+static void operand( information *const info, node *const nd)
 {
 	if (node_get_type(nd) == NOP || node_get_type(nd) == ADLOGOR || node_get_type(nd) == ADLOGAND)
 	{
@@ -70,7 +71,8 @@ static void operand(node *const nd, information *const info)
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
-			uni_printf(info->io, " %%.%li = load i32, i32* %%var.%li, align 4\n", info->register_num, displ);
+			uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n"
+				, info->register_num, displ);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
 			node_set_next(nd);
@@ -82,14 +84,15 @@ static void operand(node *const nd, information *const info)
 
 			if (info->variable_location == LMEM)
 			{
-				uni_printf(info->io, " store i32 %li, i32* %%var.%li, align 4\n", num, info->request_reg);
+				uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
+					, num, info->request_reg);
 				info->answer_type = AREG;
 			}
 			else
 			{
 				info->answer_type = ACONST;
-				info->answer_num = num;
-			}		   
+				info->answer_const = num;
+			}
 
 			node_set_next(nd);
 		}
@@ -100,23 +103,23 @@ static void operand(node *const nd, information *const info)
 		case TSliceident:
 		{
 			node_set_next(nd);
-			expression(nd, info);
+			expression(info, nd);
 
 			while (node_get_type(nd) == TSlice)
 			{
 				node_set_next(nd);
-				expression(nd, info);
+				expression(info, nd);
 			}
 		}
 		break;
 		case TCall1:
 		{
-			const item_t parameters_num = node_get_arg(nd, 0);
+			const item_t args = node_get_arg(nd, 0);
 
 			node_set_next(nd);
-			for (item_t i = 0; i < parameters_num; i++)
+			for (item_t i = 0; i < args; i++)
 			{
-				expression(nd, info);
+				expression(info, nd);
 			}
 			node_set_next(nd); // TCall2
 		}
@@ -129,7 +132,7 @@ static void operand(node *const nd, information *const info)
 			node_set_next(nd);
 			for (item_t i = 0; i < N; i++)
 			{
-				expression(nd, info);
+				expression(info, nd);
 			}
 		}
 		break;
@@ -141,14 +144,14 @@ static void operand(node *const nd, information *const info)
 			node_set_next(nd);
 			for (item_t i = 0; i < N; i++)
 			{
-				expression(nd, info);
+				expression(info, nd);
 			}
 		}
 		break;
 	}
 }
 
-static void expression(node *const nd, information *const info)
+static void expression( information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
@@ -160,8 +163,8 @@ static void expression(node *const nd, information *const info)
 		case LDIV:
 		{
 			node_set_next(nd);
-			expression(nd, info);
-			expression(nd, info);
+			expression(info, nd);
+			expression(info, nd);
 		}
 		break;
 
@@ -180,11 +183,12 @@ static void expression(node *const nd, information *const info)
 		case DIVASSV:
 		{
 			node_set_next(nd);
-			expression(nd, info);
+			expression(info, nd);
 		}
 		break;
 		default:
-			operand(nd, info);
+			operand(info, nd);
+			break;
 	}
 
 	if (node_get_type(nd) == TExprend)
@@ -193,14 +197,14 @@ static void expression(node *const nd, information *const info)
 	}
 }
 
-static void statement(node *const nd, information *const info)
+static void statement( information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
 		case TBegin:
 		{
 			node_set_next(nd);
-			block(nd, info);
+			block(info, nd);
 		}
 		break;
 		case TIf:
@@ -208,11 +212,11 @@ static void statement(node *const nd, information *const info)
 			const item_t ref_else = node_get_arg(nd, 0);
 
 			node_set_next(nd);
-			expression(nd, info);
-			statement(nd, info);
+			expression(info, nd);
+			statement(info, nd);
 			if (ref_else)
 			{
-				statement(nd, info);
+				statement(info, nd);
 			}
 		}
 		break;
@@ -222,15 +226,15 @@ static void statement(node *const nd, information *const info)
 		case TWhile:
 		{
 			node_set_next(nd);
-			expression(nd, info);
-			statement(nd, info);
+			expression(info, nd);
+			statement(info, nd);
 		}
 		break;
 		case TDo:
 		{
 			node_set_next(nd);
-			statement(nd, info);
-			expression(nd, info);
+			statement(info, nd);
+			expression(info, nd);
 		}
 		break;
 		case TFor:
@@ -242,23 +246,23 @@ static void statement(node *const nd, information *const info)
 			node_set_next(nd);
 			if (ref_from)
 			{
-				expression(nd, info);
+				expression(info, nd);
 			}
 			if (ref_cond)
 			{
-				expression(nd, info);
+				expression(info, nd);
 			}
 			if (ref_incr)
 			{
-				expression(nd, info);
+				expression(info, nd);
 			}
-			statement(nd, info);
+			statement(info, nd);
 		}
 		break;
 		case TLabel:
 		{
 			node_set_next(nd);
-			statement(nd, info);
+			statement(info, nd);
 		}
 		break;
 		case TBreak:
@@ -271,10 +275,10 @@ static void statement(node *const nd, information *const info)
 		{
 			node_set_next(nd);
 			info->variable_location = LREG;
-			expression(nd, info);
+			expression(info, nd);
 			if (info->answer_type == ACONST)
 			{
-				uni_printf(info->io, " ret i32 %li\n", info->answer_num);
+				uni_printf(info->io, " ret i32 %" PRIitem "\n", info->answer_const);
 			}
 		}
 		break;
@@ -298,60 +302,57 @@ static void statement(node *const nd, information *const info)
 			for (item_t i = 0; i < N; i++)
 			{
 				info->variable_location = LREG;
-				expression(nd, info);
+				expression(info, nd);
 				args[i] = info->answer_reg;
 			}
-			uni_printf(info->io, " %%.%li = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
-				"([%li x i8], [%li x i8]* @.str%li, i32 0, i32 0)"
-				, info->register_num++
+
+			uni_printf(info->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
+				"([%" PRIitem " x i8], [%" PRIitem " x i8]* @.str%" PRIitem ", i32 0, i32 0)"
+				, info->register_num
 				, string_length + 1
 				, string_length + 1
-				, info->string_num++);
+				, info->string_num);
+			
+			info->register_num++;
+			info->string_num++;
 
 			for (item_t i = 0; i < N; i++)
 			{
-				info->request_reg = 0;
-				expression(nd, info);
-				uni_printf(info->io, ", i32 signext %%.%li", args[i]);
+				uni_printf(info->io, ", i32 signext %%.%" PRIitem, args[i]);
 			}
+
 			uni_printf(info->io, ")\n");
 		}
 		break;
 		default:
-			expression(nd, info);
+			expression(info, nd);
+			break;
 	}
 }
 
-static void init(node *const nd, information *const info)
+static void init( information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
 		case TBeginit:
-		{
-			// здесь будет печать llvm с инициализацией массивов
-			const item_t N = node_get_arg(nd, 0);
-
-			node_set_next(nd);
-			for (item_t i = 0; i < N; i++)
-				expression(nd, info);
-		}
-		break;
 		case TStructinit:
 		{
-			// здесь будет печать llvm с инициализацией структур
 			const item_t N = node_get_arg(nd, 0);
 
 			node_set_next(nd);
 			for (item_t i = 0; i < N; i++)
-				expression(nd, info);
+			{
+				expression(info, nd);
+			}
 		}
 		break;
 		default:
-			expression(nd, info);
+			expression(info, nd);
+			break;
 	}
 }
 
-static void block(node *const nd, information *const info)
+static void block( information *const info, node *const nd)
 {
 	while (node_get_type(nd) != TEnd)
 	{
@@ -369,7 +370,7 @@ static void block(node *const nd, information *const info)
 
 				node_set_next(nd); // TBegin
 				node_set_next(nd);
-				block(nd, info);
+				block(info, nd);
 				uni_printf(info->io, "}\n\n");
 			}
 			break;
@@ -380,22 +381,22 @@ static void block(node *const nd, information *const info)
 				node_set_next(nd);
 				for (item_t i = 0; i < N; i++)
 				{
-					expression(nd, info);
+					expression(info, nd);
 				}
 			}
 			break;
 			case TDeclid:
 			{
-				const item_t displ = node_get_arg(nd, 0); 
-				const item_t elem_type = node_get_arg(nd, 1); 
-				const item_t N = node_get_arg(nd, 2); 
+				const item_t displ = node_get_arg(nd, 0);
+				const item_t elem_type = node_get_arg(nd, 1);
+				const item_t N = node_get_arg(nd, 2);
 				const item_t all = node_get_arg(nd, 3);
 
 				if (N == 0) // обычная переменная int a; или struct point p;
 				{
 					if (elem_type == LINT)
 					{
-						uni_printf(info->io, " %%var.%li = alloca i32, align 4\n", displ);
+						uni_printf(info->io, " %%var.%" PRIitem " = alloca i32, align 4\n", displ);
 						info->variable_location = LMEM;
 						info->request_reg = displ;
 					}
@@ -404,7 +405,7 @@ static void block(node *const nd, information *const info)
 				node_set_next(nd);
 				if (all)
 				{
-					init(nd, info);
+					init(info, nd);
 				}
 			}
 			break;
@@ -414,10 +415,11 @@ static void block(node *const nd, information *const info)
 				node_set_next(nd);
 				break;
 			default:
-				statement(nd, info);
+				statement(info, nd);
+				break;
 		}
-	} 
-	node_set_next(nd); // TEnd   
+	}
+	node_set_next(nd); // TEnd
 }
 
 
@@ -430,12 +432,9 @@ static void block(node *const nd, information *const info)
  */
 
 
-int encode_to_llvm(universal_io *const io, syntax *const sx)
+int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
-	if (!out_is_correct(io) || sx == NULL)
-	{
-		return -1;
-	}
+	optimize_for_llvm(ws, io, sx, 1);
 
 	information info;
 	info.io = io;
@@ -448,7 +447,7 @@ int encode_to_llvm(universal_io *const io, syntax *const sx)
 
 	node root = node_get_root(&sx->tree);
 	node_set_next(&root);
-	block(&root, &info);
+	block(&info, &root);
 
 	return 0;
 }
