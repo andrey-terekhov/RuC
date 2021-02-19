@@ -960,7 +960,7 @@ static int output_export(universal_io *const io, const virtual *const vm)
 
 int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
-	if (!out_is_correct(io) || sx == NULL)
+	if (!ws_is_correct(ws) || !out_is_correct(io) || sx == NULL)
 	{
 		return -1;
 	}
