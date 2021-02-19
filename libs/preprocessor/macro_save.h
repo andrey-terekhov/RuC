@@ -24,14 +24,22 @@ extern "C" {
 #endif
 
 /**
- *	Change input to macro replacement text
+ *	Add new macro
  *
- *	@param	index		Macro Index
- *	@param	env			Preprocessor environment
+ *	@param	env	Preprocessor environment
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int get_macro(environment *const env, const int index);
+int macros_add(environment *const env);
+
+/**
+ *	Modify an existing macro
+ *
+ *	@param	env	Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int macros_set(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

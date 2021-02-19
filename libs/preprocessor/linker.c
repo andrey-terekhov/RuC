@@ -114,14 +114,12 @@ int lk_open_source(environment *const env, const size_t index)
 
 int lk_preprocess_file(environment *const env, const size_t number)
 {	
-	
 	env_clear_error_string(env);
 	env->lk->included[number]++;
 
 	const size_t old_cur = env->lk->current;
 	const size_t old_line = env->line;
 	env->lk->current = number;
-	
 	env->line = 1;
 
 	get_next_char(env);
@@ -133,13 +131,12 @@ int lk_preprocess_file(environment *const env, const size_t number)
 	}
 
 	int was_error = 0; 
-	
 	while (env->curchar != EOF)
 	{
 		was_error = preprocess_scan(env) || was_error;
 	}
 
-	m_fprintf(env,'\n');
+	m_fprintf(env, '\n');
 
 	env->line = old_line;
 	env->lk->current = old_cur;
@@ -157,7 +154,7 @@ int lk_preprocess_include(environment *const env)
 	{
 		if (env->curchar == EOF)
 		{
-			const size_t position = env_skip_str(env);  
+			const size_t position = env_skip_str(env);
 			macro_error(must_end_quote, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
@@ -206,7 +203,7 @@ int lk_include(environment *const env)
 
 	if (env->curchar != '\"')
 	{
-		const size_t position = env_skip_str(env);  
+		const size_t position = env_skip_str(env);
 		macro_error(must_start_quote, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;	
 	}

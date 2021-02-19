@@ -14,7 +14,7 @@
  *	limitations under the License.
  */
 
-#include "get_macro.h"
+#include "macro_load.h"
 #include "calculator.h"
 #include "constants.h"
 #include "environment.h"
@@ -40,7 +40,7 @@ int function_scob_collect(environment *const env, const int t, const int num)
 				int ldip;
 
 				env->lsp += num;
-				if (get_macro(env, r))
+				if (macros_get(env, r))
 				{
 					return -1;
 				}
@@ -120,7 +120,7 @@ int function_scob_collect(environment *const env, const int t, const int num)
 			m_nextch(env);
 		}
 	}
-	const size_t position = env_skip_str(env);  
+	const size_t position = env_skip_str(env);
 	macro_error(scob_not_clous, env_get_current_file(env), env->error_string, env->line, position);
 	return -1;
 }
@@ -134,7 +134,7 @@ int function_stack_create(environment *const env, const int n)
 
 	if (env->curchar == ')')
 	{
-		const size_t position = env_skip_str(env);  
+		const size_t position = env_skip_str(env);
 		macro_error(stalpe, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
@@ -154,7 +154,7 @@ int function_stack_create(environment *const env, const int n)
 
 			if (num > n)
 			{
-				const size_t position = env_skip_str(env);  
+				const size_t position = env_skip_str(env);
 				macro_error(not_enough_param, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -169,7 +169,7 @@ int function_stack_create(environment *const env, const int n)
 		{
 			if (num != n)
 			{
-				const size_t position = env_skip_str(env);  
+				const size_t position = env_skip_str(env);
 				macro_error(not_enough_param2, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -180,33 +180,32 @@ int function_stack_create(environment *const env, const int n)
 		}
 	}
 
-	const size_t position = env_skip_str(env);  
+	const size_t position = env_skip_str(env);
 	macro_error(scob_not_clous, env_get_current_file(env), env->error_string, env->line, position);
 	return -1;
 }
 
-int get_macro(environment *const env, const int index)
+int macros_get(environment *const env, const int index)
 {
-	int t = env->reprtab[index + 1];
-
-	if (index)
+	if (index == 0)
 	{
-		env->msp = 0;
-		if (env->macrotext[t] == MACROFUNCTION && env->macrotext[++t] > -1 
-			&& function_stack_create(env, env->macrotext[t]))
-		{
-			return -1;
-		}
-
-		m_change_nextch_type(env, TEXTTYPE, t + 1);
-		m_nextch(env);
-	}
-	else
-	{
-		const size_t position = env_skip_str(env);  
+		const size_t position = env_skip_str(env);
 		macro_error(ident_not_exist, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
+
+	const int t = env->reprtab[index + 1];
+
+	env->msp = 0;
+	if (env->macrotext[t] == MACROFUNCTION && env->macrotext[t + 1] > -1 
+		&& function_stack_create(env, env->macrotext[t + 1]))
+	{
+		return -1;
+	}
+
+	m_change_nextch_type(env, TEXTTYPE, t + 2);
+	m_nextch(env);
+	
 
 	return 0;
 }

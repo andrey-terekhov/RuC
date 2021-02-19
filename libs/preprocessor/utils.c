@@ -50,7 +50,7 @@ void output_keywords(environment *const env)
 {
 	for (int j = 0; j < env->reprtab[env->rp]; j++)
 	{
-		m_fprintf(env,env->reprtab[env->rp + 2 + j]);
+		m_fprintf(env, env->reprtab[env->rp + 2 + j]);
 	}
 }
 
@@ -73,7 +73,7 @@ int macro_keywords(environment *const env)
 	/*if (env->curchar != '\n' && env->curchar != ' ' && env->curchar != '\t' && env->curchar != '(' &&
 		env->curchar != '\"')
 	{
-		const size_t position = env_skip_str(env);  
+		const size_t position = env_skip_str(env);
 		macro_error(after_ident_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
 	}*/
 
@@ -160,7 +160,7 @@ int skip_space_end_line(environment *const env)
 		}
 		else
 		{
-			const size_t position = env_skip_str(env);  
+			const size_t position = env_skip_str(env);
 			macro_error(after_preproces_words_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
@@ -180,24 +180,24 @@ void skip_space(environment *const env)
 void skip_string(environment *const env)
 {
 	int c = env->curchar;
-	m_fprintf(env,env->curchar);
+	m_fprintf(env, env->curchar);
 	m_nextch(env);
 
 	while (env->curchar != c && env->curchar != EOF)
 	{
 		if (env->curchar == '\\')
 		{
-			m_fprintf(env,env->curchar);
+			m_fprintf(env, env->curchar);
 			m_nextch(env);
 		}
 
-		m_fprintf(env,env->curchar);
+		m_fprintf(env, env->curchar);
 		m_nextch(env);
 	}
 
 	if (env->curchar != EOF)
 	{
-		m_fprintf(env,env->curchar);
+		m_fprintf(env, env->curchar);
 		m_nextch(env);
 	}
 }

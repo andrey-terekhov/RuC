@@ -17,7 +17,7 @@
 #include "calculator.h"
 #include "environment.h"
 #include "error.h"
-#include "get_macro.h"
+#include "macro_load.h"
 #include "linker.h"
 #include "utils.h"
 #include <math.h>
@@ -42,7 +42,7 @@ double get_digit(environment *const env, int* error)
 		numdouble = numdouble * 10 + (env->curchar - '0');
 		if (numdouble > (double)INT_MAX)
 		{
-			const size_t position = env_skip_str(env);  
+			const size_t position = env_skip_str(env);
 			macro_error(too_many_nuber, env_get_current_file(env), env->error_string, env->line, position);
 			*error = -1;
 			return 0.0;
@@ -86,7 +86,7 @@ double get_digit(environment *const env, int* error)
 
 		if (!utf8_is_digit(env->curchar))
 		{
-			const size_t position = env_skip_str(env);  
+			const size_t position = env_skip_str(env);
 			macro_error(must_be_digit_after_exp1, env_get_current_file(env), env->error_string, env->line, position);
 			*error = -1;
 			return 0.0;
@@ -308,18 +308,18 @@ int calculate(environment *const env, const int logic_flag)
 		}
 		else if (utf8_is_letter(env->curchar))
 		{
-			int r = collect_mident(env);
+			const int r = collect_mident(env);
 
 			if (r)
 			{
-				if (get_macro(env, r))
+				if (macros_get(env, r))
 				{
 					return -1;
 				}
 			}
 			else
 			{
-				const size_t position = env_skip_str(env);  
+				const size_t position = env_skip_str(env);
 				macro_error(not_macro, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -337,7 +337,7 @@ int calculate(environment *const env, const int logic_flag)
 			}
 			else
 			{
-				const size_t position = env_skip_str(env);  
+				const size_t position = env_skip_str(env);
 				macro_error(after_eval_must_be_ckob, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -350,7 +350,7 @@ int calculate(environment *const env, const int logic_flag)
 			{
 				if (i < 2 || op == 0)
 				{
-					const size_t position = env_skip_str(env);  
+					const size_t position = env_skip_str(env);
 					macro_error(incorrect_arithmetic_expression, env_get_current_file(env), env->error_string, env->line, position);
 					return -1;
 				}
@@ -379,13 +379,13 @@ int calculate(environment *const env, const int logic_flag)
 
 				if (n != 0 && logic_flag && n > 3)
 				{
-					const size_t position = env_skip_str(env);  
+					const size_t position = env_skip_str(env);
 					macro_error(not_arithmetic_operations, env_get_current_file(env), env->error_string, env->line, position);
 					return -1;
 				}
 				if (n != 0 && !logic_flag && n <= 3)
 				{
-					const size_t position = env_skip_str(env);  
+					const size_t position = env_skip_str(env);
 					macro_error(not_logical_operations, env_get_current_file(env), env->error_string, env->line, position);
 					return -1;
 				}
@@ -401,14 +401,14 @@ int calculate(environment *const env, const int logic_flag)
 			}
 			else if (env->curchar != '\n')
 			{
-				const size_t position = env_skip_str(env);  
+				const size_t position = env_skip_str(env);
 				macro_error(third_party_symbol, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
 		}
 		else if (env->curchar != '\n')
 		{
-			const size_t position = env_skip_str(env);  
+			const size_t position = env_skip_str(env);
 			macro_error(third_party_symbol, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
@@ -421,7 +421,7 @@ int calculate(environment *const env, const int logic_flag)
 		{
 			if (i < 2)
 			{
-				const size_t position = env_skip_str(env);  
+				const size_t position = env_skip_str(env);
 				macro_error(incorrect_arithmetic_expression, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -443,7 +443,7 @@ int calculate(environment *const env, const int logic_flag)
 	}
 	else
 	{
-		const size_t position = env_skip_str(env);  
+		const size_t position = env_skip_str(env);
 		macro_error(in_eval_must_end_parenthesis, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}

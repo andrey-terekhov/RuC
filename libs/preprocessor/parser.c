@@ -19,9 +19,9 @@
 #include "constants.h"
 #include "environment.h"
 #include "error.h"
-#include "get_macro.h"
+#include "macro_load.h"
 #include "linker.h"
-#include "save_macro.h"
+#include "macro_save.h"
 #include "utils.h"
 
 
@@ -74,7 +74,7 @@ int if_end(environment *const env)
 				env->nested_if--;
 				if (env->nested_if < 0)
 				{
-					const size_t position = env_skip_str(env);  
+					const size_t position = env_skip_str(env);
 					macro_error(before_endif, env_get_current_file(env), env->error_string, env->line, position);
 					return -1;
 				}
@@ -96,7 +96,7 @@ int if_end(environment *const env)
 		}
 	}
 
-	const size_t position = env_skip_str(env);  
+	const size_t position = env_skip_str(env);
 	macro_error(must_be_endif, env_get_current_file(env), env->error_string, env->line, position);
 	return -1;
 }
@@ -128,7 +128,7 @@ int if_false(environment *const env)
 		}
 	}
 
-	const size_t position = env_skip_str(env);  
+	const size_t position = env_skip_str(env);
 	macro_error(must_be_endif, env_get_current_file(env), env->error_string, env->line, position);
 	return 0;
 }
@@ -154,7 +154,7 @@ int if_true(environment *const env, const int type_if)
 			env->nested_if--;
 			if (env->nested_if < 0)
 			{
-				const size_t position = env_skip_str(env);  
+				const size_t position = env_skip_str(env);
 				macro_error(before_endif, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -165,7 +165,7 @@ int if_true(environment *const env, const int type_if)
 
 	if (type_if != SH_IF && env->cur == SH_ELIF)
 	{
-		const size_t position = env_skip_str(env);  
+		const size_t position = env_skip_str(env);
 		macro_error(dont_elif, env_get_current_file(env), env->error_string, env->line, position);
 		env->nested_if--;
 		return -1;
@@ -238,7 +238,7 @@ int if_implementation(environment *const env)
 		env->nested_if--;
 		if (env->nested_if < 0)
 		{
-			const size_t position = env_skip_str(env);  
+			const size_t position = env_skip_str(env);
 			macro_error(before_endif, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
@@ -293,7 +293,7 @@ int while_collect(environment *const env)
 		m_nextch(env);
 	}
 
-	const size_t position = env_skip_str(env);  
+	const size_t position = env_skip_str(env);
 	macro_error(must_end_endw, env_get_current_file(env), env->error_string, env->line, position);
 	return -1;
 }
@@ -341,7 +341,7 @@ int while_implementation(environment *const env)
 			}
 			else if (env->curchar == EOF)
 			{
-				const size_t position = env_skip_str(env);  
+				const size_t position = env_skip_str(env);
 				macro_error(must_end_endw, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -373,7 +373,7 @@ int preprocess_words(environment *const env)
 		case SH_MACRO:
 		{
 			env->prep_flag = 1;
-			return add_macro(env);
+			return macros_add(env);
 		}
 		case SH_UNDEF:
 		{
@@ -385,7 +385,7 @@ int preprocess_words(environment *const env)
 			}
 			else
 			{
-				const size_t position = env_skip_str(env);  
+				const size_t position = env_skip_str(env);
 				macro_error(macro_does_not_exist
 				, env_get_current_file(env)
 				, env->error_string, env->line, position);
@@ -400,7 +400,7 @@ int preprocess_words(environment *const env)
 		}
 		case SH_SET:
 		{
-			return set_macros(env);
+			return macros_set(env);
 		}
 		case SH_ELSE:
 		case SH_ELIF:
@@ -408,14 +408,14 @@ int preprocess_words(environment *const env)
 			return 0;
 		case SH_EVAL:
 		{
-			if (env->curchar == '(' && calculate(env, 0))
+			if (env->curchar != '(')
 			{
+				const size_t position = env_skip_str(env);
+				macro_error(after_eval_must_be_ckob, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
-			else
+			else if(calculate(env, 0))
 			{
-				const size_t position = env_skip_str(env);  
-				macro_error(after_eval_must_be_ckob, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
 
@@ -446,7 +446,7 @@ int preprocess_words(environment *const env)
 		default:
 		{
 			//output_keywords(env);
-			const size_t position = env_skip_str(env);  
+			const size_t position = env_skip_str(env);
 			macro_error(preproces_words_not_exist, env_get_current_file(env), env->error_string, env->line, position);
 			return 0;
 		}
@@ -510,19 +510,19 @@ int preprocess_scan(environment *const env)
 
 				if (r)
 				{
-					return get_macro(env, r);
+					return macros_get(env, r);
 				}
 				else
 				{
 					for (int i = 0; i < env->msp; i++)
 					{
-						m_fprintf(env,env->mstring[i]);
+						m_fprintf(env, env->mstring[i]);
 					}
 				}
 			}
 			else
 			{
-				m_fprintf(env,env->curchar);
+				m_fprintf(env, env->curchar);
 				m_nextch(env);
 			}
 

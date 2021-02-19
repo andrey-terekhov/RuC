@@ -100,6 +100,11 @@ void env_clear_error_string(environment *const env)
 
 const char *env_get_current_file(environment *const env)
 {
+	if(env == NULL)
+	{
+		return NULL;
+	}
+
 	return ws_get_file(env->lk->ws, env->lk->current);
 }
 
@@ -115,8 +120,14 @@ void env_add_comment(environment *const env)
 
 size_t env_skip_str(environment *const env)
 {
+
+	if(env == NULL)
+	{
+		return 0;
+	}
+
 	char *line = env->error_string;
-	size_t position = strlen(line);
+	const size_t position = strlen(line);
 	while (env->curchar != '\n' && env->curchar != EOF)
 	{
 		m_nextch(env);
@@ -217,7 +228,7 @@ void m_coment_skip(environment *const env)
 
 			if (env->curchar == EOF)
 			{
-				const size_t position = env_skip_str(env);  
+				const size_t position = env_skip_str(env);
 				macro_error(comm_not_ended, env_get_current_file(env), env->error_string, env->line, position);
 				end_line(env);
 				return;

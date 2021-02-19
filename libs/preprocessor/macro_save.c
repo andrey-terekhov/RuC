@@ -14,12 +14,12 @@
  *	limitations under the License.
  */
 
-#include "save_macro.h"
+#include "macro_save.h"
 #include "calculator.h"
 #include "constants.h"
 #include "environment.h"
 #include "error.h"
-#include "get_macro.h"
+#include "macro_load.h"
 #include "linker.h"
 #include "utils.h"
 
@@ -74,7 +74,7 @@ int funktionleter(environment *const env, int flag_macro)
 	}
 	else if (!flag_macro && r)
 	{
-		if (get_macro(env, r))
+		if (macros_get(env, r))
 		{
 			return -1;
 		}
@@ -109,7 +109,7 @@ int to_functionident(environment *const env)
 		}
 		else
 		{
-			const size_t position = env_skip_str(env);  
+			const size_t position = env_skip_str(env);
 			macro_error(functionid_begins_with_letters, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
@@ -123,7 +123,7 @@ int to_functionident(environment *const env)
 		}
 		else if (env->curchar != ')')
 		{
-			const size_t position = env_skip_str(env);  
+			const size_t position = env_skip_str(env);
 			macro_error(after_functionid_must_be_comma, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
@@ -209,7 +209,7 @@ int macrotext_add_function(environment *const env)
 
 		if (env->curchar == EOF)
 		{
-			const size_t position = env_skip_str(env);  
+			const size_t position = env_skip_str(env);
 			macro_error(not_end_fail_define, env_get_current_file(env), env->error_string, env->line, position);
 			return -1;
 		}
@@ -262,7 +262,7 @@ int define_add_to_reprtab(environment *const env)
 			}
 			else
 			{
-				const size_t position = env_skip_str(env);  
+				const size_t position = env_skip_str(env);
 				macro_error(repeat_ident, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -288,7 +288,7 @@ int macrotext_add_define(environment *const env, int r)
 		{
 			if (env->curchar == EOF)
 			{
-				const size_t position = env_skip_str(env);  
+				const size_t position = env_skip_str(env);
 				macro_error(not_end_fail_define, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
@@ -299,7 +299,7 @@ int macrotext_add_define(environment *const env, int r)
 				{
 					if (env->curchar != '(')
 					{
-						const size_t position = env_skip_str(env);  
+						const size_t position = env_skip_str(env);
 						macro_error(after_eval_must_be_ckob, env_get_current_file(env), env->error_string, env->line, position);
 						return -1;
 					}
@@ -337,7 +337,7 @@ int macrotext_add_define(environment *const env, int r)
 				int k = collect_mident(env);
 				if (k)
 				{
-					if (get_macro(env, k))
+					if (macros_get(env, k))
 					{
 						return -1;
 					}
@@ -377,13 +377,13 @@ int macrotext_add_define(environment *const env, int r)
 	return 0;
 }
 
-int add_macro(environment *const env)
+int macros_add(environment *const env)
 {
 	int r;
 
 	if (!utf8_is_letter(env->curchar))
 	{
-		const size_t position = env_skip_str(env);  
+		const size_t position = env_skip_str(env);
 		macro_error(ident_begins_with_letters, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
@@ -406,7 +406,7 @@ int add_macro(environment *const env)
 	}
 	else if (env->curchar != ' ' && env->curchar != '\n' && env->curchar != '\t')
 	{
-		const size_t position = env_skip_str(env);  
+		const size_t position = env_skip_str(env);
 		macro_error(after_ident_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
@@ -418,13 +418,13 @@ int add_macro(environment *const env)
 	return 0;
 }
 
-int set_macros(environment *const env)
+int macros_set(environment *const env)
 {
 	skip_space(env);
 
 	if (!utf8_is_letter(env->curchar))
 	{
-		const size_t position = env_skip_str(env);  
+		const size_t position = env_skip_str(env);
 		macro_error(ident_begins_with_letters, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
@@ -433,7 +433,7 @@ int set_macros(environment *const env)
 
 	if (env->macrotext[env->reprtab[j + 1]] == MACROFUNCTION)
 	{
-		const size_t position = env_skip_str(env);  
+		const size_t position = env_skip_str(env);
 		macro_error(functions_cannot_be_changed, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}
