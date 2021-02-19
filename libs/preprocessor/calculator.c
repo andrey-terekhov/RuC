@@ -151,6 +151,7 @@ char get_opiration(const char cur, const char next)
 	case '*':
 	case '/':
 	case '%':
+	case '(':
 		return cur;
 	default:
 		return '\0';
@@ -370,7 +371,7 @@ int calculate(environment *const env, const int logic_flag)
 			if (c)
 			{
 				m_nextch(env);
-				if(c == env->curchar || c == '=')
+				if(c == 'b'|| c == 's' || c == '=' || c == '&'|| c == '|' || c == '!')
 				{
 					m_nextch(env);
 				}
