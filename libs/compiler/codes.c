@@ -1275,6 +1275,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 
 		default:
 			sprintf(buffer, "%" PRIitem, elem);
+			break;
 	}
 
 	if ((num != 0 && !was_switch) || argc < num)

@@ -447,6 +447,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 					break;
 				default:
 					index += sprintf(&msg[index], " -- неизвестный спецификатор");
+					break;
 			}
 		}
 		break;
@@ -595,6 +596,10 @@ void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case expected_colon_after_default:
 			sprintf(msg, "после метки УМОЛЧАНИЕ нет :");
+			break;
+
+		default:
+			sprintf(msg, "неизвестный код ошибки (%i)", num);
 			break;
 	}
 }
