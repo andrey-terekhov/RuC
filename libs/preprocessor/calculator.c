@@ -23,7 +23,7 @@
 #include <math.h>
 
 
-double get_digit(environment *const env, int* error)
+double get_digit(environment *const env, int* error)// Временная замена
 {
 	double k;
 	int d = 1;
@@ -120,49 +120,46 @@ double get_digit(environment *const env, int* error)
 	}
 }
 
-int check_opiration(environment *const env)
+char get_opiration(const char cur, const char next)
 {
-	int c = env->curchar;
-
-	if (c == '|' || c == '&' || c == '=' || c == '!')
+	switch (cur)
 	{
-		if ((env->nextchar == c && c != '!') || (c == '!' && env->nextchar == '='))
+	case '|':
+	case '&':
+	case '=':
+	case '!':
+		if ((next == cur && cur != '!') || (cur == '!' && next == '='))
 		{
-			m_nextch(env);
-			m_nextch(env);
-			return c;
+			return cur;
 		}
 		else
 		{
-			return 0;
+			return '\0';
 		}
-	}
-	else if (c == '>' && env->nextchar == '=')
-	{
-		m_nextch(env);
-		m_nextch(env);
-		return 'b';
-	}
-	else if (c == '>' && env->nextchar == '=')
-	{
-		m_nextch(env);
-		m_nextch(env);
-		return 's';
-	}
-	else if (c == '>' || c == '<' || c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '(')
-	{
-		m_nextch(env);
-		return c;
-	}
-	else
-	{
-		return 0;
+	case '>':
+	case '<':
+		if (cur == '>' && next == '=')
+		{
+			return 'b';
+		}
+		else if (cur == '>' && next == '=')
+		{
+			return 's';
+		}	
+	case '+':
+	case '-':
+	case '*':
+	case '/':
+	case '%':
+		return cur;
+	default:
+		return '\0';
 	}
 }
 
-int get_prior(int r)
+int get_prior(const char opiration)
 {
-	switch (r)
+	switch (opiration)
 	{
 		case '(':
 			return 0;
@@ -189,9 +186,9 @@ int get_prior(int r)
 	}
 }
 
-double implementation_opiration(double x, double y, int r, int int_flag)
+double implementation_opiration(const double x, const double y, const char opiration, const int int_flag)
 {
-	switch (r)
+	switch (opiration)
 	{
 		case '<':
 			return x < y;
@@ -231,7 +228,7 @@ double implementation_opiration(double x, double y, int r, int int_flag)
 			}
 			else
 			{
-				return 0;
+				return x / y;
 			}
 			
 		default:
@@ -239,7 +236,7 @@ double implementation_opiration(double x, double y, int r, int int_flag)
 	}
 }
 
-void double_to_string(environment *const env, double x, int int_flag)
+void double_to_string(environment *const env, const double x, const int int_flag)
 {
 	char s[30] = "\0";
 
@@ -277,7 +274,7 @@ void double_to_string(environment *const env, double x, int int_flag)
 int calculate(environment *const env, const int logic_flag)
 {
 	int op = 0;
-	int operation[10];
+	char operation[10];
 
 	if (!logic_flag)
 	{
@@ -286,11 +283,9 @@ int calculate(environment *const env, const int logic_flag)
 	}
 
 	int i = 0;
-	int c = 0;
 	double stack[10];
 	int int_flag[10];
 	int opration_flag = 0;
-
 	while (env->curchar != '\n')
 	{
 		skip_space(env);
@@ -371,9 +366,14 @@ int calculate(environment *const env, const int logic_flag)
 		}
 		else if (opration_flag || env->curchar == '(')
 		{
-			c = check_opiration(env);
+			const char c = get_opiration(env->curchar, env->nextchar);
 			if (c)
 			{
+				m_nextch(env);
+				if(c == env->curchar || c == '=')
+				{
+					m_nextch(env);
+				}
 				int n = get_prior(c);
 				opration_flag = 0;
 
