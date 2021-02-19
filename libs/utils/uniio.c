@@ -35,13 +35,6 @@
 #define MAX_FORMAT_SIZE 128
 
 
-int in_func_file(universal_io *const io, const char *const format, va_list args)
-{
-	int ret = vfscanf(io->in_file, format, args);
-	return ret != EOF ? ret : 0;
-}
-
-
 int is_specifier(const char ch)
 {
 	return (ch >= '0' && ch <= '9')
@@ -64,7 +57,20 @@ int is_specifier(const char ch)
 		|| ch == 'n';					// Count
 }
 
-int scan_arg(universal_io *const io, const char *const format, size_t size, void *arg)
+int scan_file_arg(universal_io *const io, const char *const format, const size_t size, void *arg)
+{
+	char buffer[MAX_FORMAT_SIZE];
+	strncpy(buffer, format, size);
+	sprintf(&buffer[size], "%%zn");
+
+	size_t number = 0;
+	int ret = fscanf(io->in_file, buffer, arg, &number);
+	io->in_position += number;
+
+	return number != 0 ? ret : 0;
+}
+
+int scan_buffer_arg(universal_io *const io, const char *const format, const size_t size, void *arg)
 {
 	char buffer[MAX_FORMAT_SIZE];
 	strncpy(buffer, format, size);
@@ -74,15 +80,11 @@ int scan_arg(universal_io *const io, const char *const format, size_t size, void
 	int ret = sscanf(&io->in_buffer[io->in_position], buffer, arg, &number);
 	io->in_position += number;
 
-	if (io->in_position >= io->in_size && number == 0)
-	{
-		return 0;
-	}
-
-	return ret;
+	return io->in_position < io->in_size || number != 0 ? ret : 0;
 }
 
-int in_func_buffer(universal_io *const io, const char *const format, va_list args)
+int in_func_position(universal_io *const io, const char *const format, va_list args
+	, int (*scan_arg)(universal_io *const, const char *const, const size_t, void *))
 {
 	const size_t position = io->in_position;
 	int ret = 0;
@@ -135,6 +137,16 @@ int in_func_buffer(universal_io *const io, const char *const format, va_list arg
 }
 
 
+int in_func_file(universal_io *const io, const char *const format, va_list args)
+{
+	return in_func_position(io, format, args, &scan_file_arg);
+}
+
+int in_func_buffer(universal_io *const io, const char *const format, va_list args)
+{
+	return in_func_position(io, format, args, &scan_buffer_arg);
+}
+
 int in_func_user(universal_io *const io, const char *const format, va_list args)
 {
 	return io->in_user_func(format, args);
@@ -145,7 +157,6 @@ int out_func_file(universal_io *const io, const char *const format, va_list args
 {
 	return vfprintf(io->out_file, format, args);
 }
-
 
 int out_func_buffer(universal_io *const io, const char *const format, va_list args)
 {
@@ -172,7 +183,6 @@ int out_func_buffer(universal_io *const io, const char *const format, va_list ar
 	io->out_buffer = new_buffer;
 	return out_func_buffer(io, format, args);
 }
-
 
 int out_func_user(universal_io *const io, const char *const format, va_list args)
 {
@@ -261,6 +271,8 @@ int in_set_file(universal_io *const io, const char *const path)
 		return -1;
 	}
 
+	io->in_position = 0;
+
 	io->in_func = &in_func_file;
 
 	return 0;
@@ -296,6 +308,35 @@ int in_set_func(universal_io *const io, const io_user_func func)
 	return 0;
 }
 
+int in_set_position(universal_io *const io, const size_t position)
+{
+	if (in_is_buffer(io))
+	{
+		if (position < io->in_size)
+		{
+			io->in_position = position;
+			return 0;
+		}
+
+		return -1;
+	}
+	
+	if (in_is_file(io))
+	{
+		if ((position == 0 && fseek(io->in_file, 0, SEEK_SET) == 0)
+			|| (fseek(io->in_file, (long)(position - 1), SEEK_SET) == 0 && fgetc(io->in_file) != EOF))
+		{
+			io->in_position = position;
+			return 0;
+		}
+		
+		fseek(io->in_file, (long)io->in_position, SEEK_SET);
+		return -1;
+	}
+
+	return -1;
+}
+
 
 int in_is_correct(const universal_io *const io)
 {
@@ -325,12 +366,7 @@ io_func in_get_func(const universal_io *const io)
 
 size_t in_get_path(const universal_io *const io, char *const buffer)
 {
-	if (!in_is_file(io))
-	{
-		return 0;
-	}
-
-	return io_get_path(io->in_file, buffer);
+	return in_is_file(io) ? io_get_path(io->in_file, buffer) : 0;
 }
 
 const char *in_get_buffer(const universal_io *const io)
@@ -340,7 +376,7 @@ const char *in_get_buffer(const universal_io *const io)
 
 size_t in_get_position(const universal_io *const io)
 {
-	return in_is_buffer(io) ? io->in_position : 0;
+	return in_is_buffer(io) || in_is_file(io) ? io->in_position : 0;
 }
 
 
@@ -353,6 +389,8 @@ int in_close_file(universal_io *const io)
 
 	int ret = fclose(io->in_file);
 	io->in_file = NULL;
+
+	io->in_position = 0;
 
 	return ret;
 }
@@ -374,15 +412,13 @@ int in_clear(universal_io *const io)
 
 		io->in_size = 0;
 		io->in_position = 0;
-
-		io->in_func = NULL;
 	}
 	else
 	{
-		io->in_func = NULL;
 		io->in_user_func = NULL;
 	}
-	
+
+	io->in_func = NULL;
 	return 0;
 }
 
@@ -527,10 +563,10 @@ int out_clear(universal_io *const io)
 	}
 	else
 	{
-		io->out_func = NULL;
 		io->out_user_func = NULL;
 	}
-	
+
+	io->out_func = NULL;
 	return 0;
 }
 

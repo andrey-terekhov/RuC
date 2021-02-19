@@ -15,13 +15,11 @@
  */
 
 #include "compiler.h"
-#include "analyzer.h"
+#include "parser.h"
 #include "codegen.h"
-#include "codes.h"
 #include "errors.h"
 #include "preprocessor.h"
 #include "syntax.h"
-#include "tree.h"
 #include "uniio.h"
 #include <stdlib.h>
 
@@ -31,16 +29,10 @@
 #endif
 
 
-//#define GENERATE_MACRO
-//#define GENERATE_TABLES
-//#define GENERATE_TREE
-
-
 const char *const DEFAULT_MACRO = "macro.txt";
-const char *const DEFAULT_TREE = "tree.txt";
-const char *const DEFAULT_NEW = "new.txt";
-const char *const DEFAULT_CODES = "codes.txt";
-const char *const DEFAULT_OUTPUT = "export.txt";
+
+
+typedef int (*encoder)(const workspace *const ws, universal_io *const io, syntax *const sx);
 
 
 /** Make executable actually executable on best-effort basis (if possible) */
@@ -60,71 +52,34 @@ static void make_executable(const char *const path)
 #endif
 }
 
-int compile_from_io_to_vm(universal_io *const io)
+
+int compile_from_io(const workspace *const ws, universal_io *const io, const encoder enc)
 {
 	if (!in_is_correct(io) || !out_is_correct(io))
 	{
-		system_error("некорректные параметры ввода/вывода");
+		error_msg("некорректные параметры ввода/вывода");
 		io_erase(io);
 		return -1;
 	}
 
-	syntax sx;
-	int ret = sx_init(&sx);
+	syntax sx = sx_create();
+	int ret = parse(io, &sx);
 
 	if (!ret)
 	{
-		ret = analyze(io, &sx);
-#ifdef GENERATE_TABLES
-		tables_and_tree(&sx, DEFAULT_TREE);
-#endif
-	}
-	
-	if (!ret)
-	{
-		ret = !sx_is_correct(&sx, io);
+		ret = enc(ws, io, &sx);
 	}
 
-	if (!ret)
-	{
-#ifdef GENERATE_TREE
-		ret = tree_test(&sx)
-			|| tree_test_next(&sx)
-			|| tree_test_recursive(&sx)
-			|| tree_test_copy(&sx);
-		if (ret)
-		{
-			io_erase(io);
-			return ret;
-		}
-		tree_print(&sx, DEFAULT_NEW);
-#endif
-
-		ret = encode_to_vm(io, &sx);
-#ifdef GENERATE_TABLES
-		tables_and_codes(&sx, DEFAULT_CODES);
-#endif
-	}
-
+	sx_clear(&sx);
 	io_erase(io);
 	return ret;
 }
 
-
-/*
- *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
- *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
- *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
- *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
- *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
- */
-
-
-int compile_to_vm(workspace *const ws)
+int compile_from_ws(workspace *const ws, const encoder enc)
 {
 	if (!ws_is_correct(ws) || ws_get_files_num(ws) == 0)
 	{
-		system_error("некорректные входные данные");
+		error_msg("некорректные входные данные");
 		return -1;
 	}
 
@@ -150,16 +105,32 @@ int compile_to_vm(workspace *const ws)
 #endif
 
 	out_set_file(&io, ws_get_output(ws));
+	const int ret = compile_from_io(ws, &io, enc);
 
-	int ret = compile_from_io_to_vm(&io);
+#ifndef GENERATE_MACRO
+	free(preprocessing);
+#endif
+	return ret;
+}
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+int compile_to_vm(workspace *const ws)
+{
+	const int ret = compile_from_ws(ws, &encode_to_vm);
 	if (!ret)
 	{
 		make_executable(ws_get_output(ws));
 	}
 
-#ifndef GENERATE_MACRO
-	free(preprocessing);
-#endif
 	return ret;
 }
 
@@ -173,12 +144,15 @@ int no_macro_compile_to_vm(const char *const path)
 {
 	universal_io io = io_create();
 	in_set_file(&io, path);
-	out_set_file(&io, DEFAULT_OUTPUT);
 
-	int ret = compile_from_io_to_vm(&io);
+	workspace ws = ws_create();
+	ws_add_file(&ws, path);
+	out_set_file(&io, ws_get_output(&ws));
+
+	const int ret = compile_from_io(&ws, &io, &encode_to_vm);
 	if (!ret)
 	{
-		make_executable(DEFAULT_OUTPUT);
+		make_executable(ws_get_output(&ws));
 	}
 
 	return ret;

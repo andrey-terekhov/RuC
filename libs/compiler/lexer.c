@@ -23,26 +23,25 @@
 /**
  *	Emit an error from lexer
  *
- *	@param	lxr		Lexer structure
- *	@param	err		Error code
+ *	@param	lxr			Lexer structure
+ *	@param	num			Error code
  */
-void lexer_error(lexer *const lxr, const enum ERROR err)
+void lexer_error(lexer *const lxr, error_t num, ...)
 {
-	lxr->error_flag = 1;
-	if (err == bad_character)
-	{
-		error(lxr->io, err, lxr->curr_char);
-	}
-	else
-	{
-		error(lxr->io, err);
-	}
+	lxr->was_error = 1;
+
+	va_list args;
+	va_start(args, num);
+
+	verror(lxr->io, num, args);
+	
+	va_end(args);
 }
 
 /**
  *	Skip over a series of whitespace characters
  *
- *	@param	lxr		Lexer structure
+ *	@param	lxr			Lexer structure
  */
 void skip_whitespace(lexer *const lxr)
 {
@@ -56,7 +55,7 @@ void skip_whitespace(lexer *const lxr)
 /**
  *	Skip until we find the newline character that terminates the comment
  *
- *	@param	lxr		Lexer structure
+ *	@param	lxr			Lexer structure
  */
 void skip_line_comment(lexer *const lxr)
 {
@@ -69,7 +68,7 @@ void skip_line_comment(lexer *const lxr)
 /**
  *	Skip until we find '*' and '/' that terminates the comment
  *
- *	@param	lxr		Lexer structure
+ *	@param	lxr			Lexer structure
  */
 void skip_block_comment(lexer *const lxr)
 {
@@ -88,11 +87,11 @@ void skip_block_comment(lexer *const lxr)
 /**
  *	Lex identifier or keyword [C99 6.4.1 & 6.4.2]
  *
- *	@param	lxr		Lexer structure
+ *	@param	lxr			Lexer structure
  *
  *	@return	keyword number on keyword, @c identifier on identifier
  */
-TOKEN lex_identifier_or_keyword(lexer *const lxr)
+token_t lex_identifier_or_keyword(lexer *const lxr)
 {
 	char32_t spelling[MAXSTRINGL];
 	size_t length = 0;
@@ -102,47 +101,48 @@ TOKEN lex_identifier_or_keyword(lexer *const lxr)
 		spelling[length++] = lxr->curr_char;
 		get_char(lxr);
 	} while (utf8_is_letter(lxr->curr_char) || utf8_is_digit(lxr->curr_char));
-	spelling[length] = 0;
+	spelling[length] = '\0';
 
-	const size_t repr = repr_add(lxr->sx, spelling);
-	if (repr_get_reference(lxr->sx, repr) < 0)
+	const size_t repr = repr_reserve(lxr->sx, spelling);
+	const item_t ref = repr_get_reference(lxr->sx, repr);
+	if (ref >= 0)
 	{
-		return (TOKEN)repr_get_reference(lxr->sx, repr);
+		lxr->repr = repr;
+		return identifier;
 	}
 	else
 	{
-		lxr->repr = (int)repr;
-		return identifier;
+		return (token_t)ref;
 	}
 }
 
 /**
  *	Lex numeric constant [C99 6.4.4.1 & 6.4.4.2]
  *
- *	@param	lxr		Lexer structure
+ *	@param	lxr			Lexer structure
  *
  *	@return	@c int_constant on integer, @c float_constant on floating point
  */
-TOKEN lex_numeric_constant(lexer *const lxr)
+token_t lex_numeric_constant(lexer *const lxr)
 {
 	int num_int = 0;
 	double num_double = 0.0;
 	int flag_int = 1;
 	int flag_too_long = 0;
-	
+
 	while (utf8_is_digit(lxr->curr_char))
 	{
 		num_int = num_int * 10 + (lxr->curr_char - '0');
 		num_double = num_double * 10 + (lxr->curr_char - '0');
 		get_char(lxr);
 	}
-	
+
 	if (num_double > (double)INT_MAX)
 	{
 		flag_too_long = 1;
 		flag_int = 0;
 	}
-	
+
 	if (lxr->curr_char == '.')
 	{
 		flag_int = 0;
@@ -153,13 +153,13 @@ TOKEN lex_numeric_constant(lexer *const lxr)
 			position_mult *= 0.1;
 		}
 	}
-	
+
 	if (utf8_is_power(lxr->curr_char))
 	{
 		int power = 0;
 		int sign = 1;
 		get_char(lxr);
-		
+
 		if (lxr->curr_char == '-')
 		{
 			flag_int = 0;
@@ -170,19 +170,19 @@ TOKEN lex_numeric_constant(lexer *const lxr)
 		{
 			get_char(lxr);
 		}
-		
+
 		if (!utf8_is_digit(lxr->curr_char))
 		{
 			lexer_error(lxr, must_be_digit_after_exp);
 			return float_constant;
 		}
-		
+
 		while (utf8_is_digit(lxr->curr_char))
 		{
 			power = power * 10 + (lxr->curr_char - '0');
 			get_char(lxr);
 		}
-		
+
 		if (flag_int)
 		{
 			for (int i = 1; i <= power; i++)
@@ -192,7 +192,7 @@ TOKEN lex_numeric_constant(lexer *const lxr)
 		}
 		num_double *= pow(10.0, sign * power);
 	}
-	
+
 	if (flag_int)
 	{
 		lxr->num = num_int;
@@ -245,14 +245,13 @@ char32_t get_next_string_elem(lexer *const lxr)
 
 /**
  *	Lex character constant [C99 6.4.4.4]
- *
  *	@note Lexes the remainder of a character constant after apostrophe
  *
- *	@param	lxr		Lexer structure
+ *	@param	lxr			Lexer structure
  *
  *	@return	@c char_constant
  */
-TOKEN lex_char_constant(lexer *const lxr)
+token_t lex_char_constant(lexer *const lxr)
 {
 	if (get_char(lxr) == '\'')
 	{
@@ -260,9 +259,9 @@ TOKEN lex_char_constant(lexer *const lxr)
 		lxr->num = 0;
 		return char_constant;
 	}
-	
+
 	lxr->num = get_next_string_elem(lxr);
-	
+
 	if (get_char(lxr) == '\'')
 	{
 		get_char(lxr);
@@ -276,14 +275,13 @@ TOKEN lex_char_constant(lexer *const lxr)
 
 /**
  *	Lex string literal [C99 6.4.5]
- *
  *	@note	Lexes the remainder of a string literal after quote mark
  *
- *	@param	lxr		Lexer structure
+ *	@param	lxr			Lexer structure
  *
  *	@return	@c string_literal
  */
-TOKEN lex_string_literal(lexer *const lxr)
+token_t lex_string_literal(lexer *const lxr)
 {
 	size_t length = 0;
 	int flag_too_long_string = 0;
@@ -334,12 +332,12 @@ TOKEN lex_string_literal(lexer *const lxr)
 lexer create_lexer(universal_io *const io, syntax *const sx)
 {
 	lexer lxr;
-
 	lxr.io = io;
 	lxr.sx = sx;
 	lxr.repr = 0;
-	lxr.error_flag = 0;
-	
+
+	lxr.was_error = 0;
+
 	return lxr;
 }
 
@@ -349,22 +347,23 @@ char32_t get_char(lexer *const lxr)
 	{
 		return (char32_t)EOF;
 	}
+
 	lxr->curr_char = lxr->next_char;
 	lxr->next_char = uni_scan_char(lxr->io);
 	return lxr->curr_char;
 }
 
-TOKEN lex(lexer *const lxr)
+token_t lex(lexer *const lxr)
 {
 	if (lxr == NULL)
 	{
 		return eof;
 	}
-	
+
 	skip_whitespace(lxr);
 	switch (lxr->curr_char)
 	{
-		case EOF:
+		case (char32_t)EOF:
 			return eof;
 
 		default:
@@ -376,7 +375,7 @@ TOKEN lex(lexer *const lxr)
 			}
 			else
 			{
-				lexer_error(lxr, bad_character);
+				lexer_error(lxr, bad_character, lxr->curr_char);
 				// Pretending the character didn't exist
 				get_char(lxr);
 				return lex(lxr);

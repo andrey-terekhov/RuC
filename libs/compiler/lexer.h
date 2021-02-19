@@ -30,15 +30,15 @@ typedef struct lexer
 {
 	universal_io *io;					/**< Universal io structure */
 	syntax *sx;							/**< Syntax structure */
-	
+
 	char32_t curr_char;					/**< Current character */
 	char32_t next_char;					/**< Lookahead character */
-	int repr;							/**< Pointer to representation of the read identifier */
+	size_t repr;						/**< Pointer to representation of the read identifier */
 	int num;							/**< Value of the read integer number */
 	double num_double;					/**< Value of the read double number */
 	char32_t lexstr[MAXSTRINGL + 1];	/**< Representation of the read string literal */
-	
-	int error_flag;						/**< Error flag */
+
+	int was_error;						/**< Error flag */
 } lexer;
 
 /**
@@ -67,7 +67,7 @@ char32_t get_char(lexer *const lxr);
  *
  *	@return	Token
  */
-TOKEN lex(lexer *const lxr);
+token_t lex(lexer *const lxr);
 
 #ifdef __cplusplus
 } /* extern "C" */
