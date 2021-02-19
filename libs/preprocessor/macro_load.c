@@ -197,10 +197,10 @@ int macros_get(environment *const env, const int index)
 	int t = env->reprtab[index + 1];
 
 	env->msp = 0;
-	if(env->macrotext[t] == MACROFUNCTION && env->macrotext[t + 1] > -1)
+	if(env->macrotext[t] == MACROFUNCTION)
 	{
 		++t;
-		if (function_stack_create(env, env->macrotext[t]))
+		if (env->macrotext[t] > -1 && function_stack_create(env, env->macrotext[t]))
 		{
 			return -1;
 		}
