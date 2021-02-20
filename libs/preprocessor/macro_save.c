@@ -70,9 +70,12 @@ int fn_check_macros(environment *const env, int flag_macro)
 		env->macrotext[env->macro_prt++] = MACROCANGE;
 		env->macrotext[env->macro_prt++] = num - 1;
 	}
-	else if (!flag_macro && macros_prt && macros_get(env, macros_prt))
+	else if (!flag_macro && macros_prt)
 	{
-		return -1;
+		if(macros_get(env, macros_prt))
+		{
+			return -1;
+		}
 	}
 	else
 	{
@@ -387,10 +390,7 @@ int macros_add(environment *const env)
 	if (env->curchar == '(' && !r)
 	{
 		m_nextch(env);
-		if (macrotext_add_function(env))
-		{
-			return -1;
-		}
+		return macrotext_add_function(env);
 	}
 	else if (env->curchar != ' ' && env->curchar != '\n' && env->curchar != '\t')
 	{
@@ -403,7 +403,6 @@ int macros_add(environment *const env)
 		skip_space(env);
 		return macrotext_add_define(env, r);
 	}
-	return 0;
 }
 
 int macros_set(environment *const env)

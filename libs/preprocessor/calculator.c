@@ -305,16 +305,18 @@ int calculate(environment *const env, const int logic_flag)
 		else if (utf8_is_letter(env->curchar))
 		{
 			const int macros_prt = collect_mident(env);
-			if (macros_prt && macros_get(env, macros_prt))
-			{
-				return -1;
-			}
-			else
+			if (!macros_prt)
 			{
 				const size_t position = env_skip_str(env);
 				macro_error(not_macro, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
+
+			if(macros_get(env, macros_prt))
+			{
+				return -1;
+			}
+
 		}
 		else if (env->curchar == '#' && logic_flag)
 		{
