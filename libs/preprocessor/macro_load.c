@@ -77,7 +77,7 @@ int function_scob_collect(environment *const env, const int t, const int num)
 		{
 			env->fchange[env->cp++] = env->curchar;
 			m_nextch(env);
-			
+
 			if (function_scob_collect(env, 0, num))
 			{
 				return -1;
@@ -96,7 +96,7 @@ int function_scob_collect(environment *const env, const int t, const int num)
 		else if (env->curchar == '#')
 		{
 			if (macro_keywords(env) == SH_EVAL && env->curchar == '(')
-			{	
+			{
 				if (calculate(env, 0))
 				{
 					return -1;

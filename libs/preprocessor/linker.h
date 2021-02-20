@@ -30,7 +30,7 @@ typedef struct linker
 {
 	workspace *ws;				/**< Initial arguments */
 
-	int included[MAX_PATHS];	/**< List of already added files */	
+	int included[MAX_PATHS];	/**< List of already added files */
 	size_t count; 				/**< Number of added files */
 
 	size_t current; 			/**< Index of the current file */

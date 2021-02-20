@@ -152,7 +152,7 @@ int macrotext_add_function(environment *const env)
 		m_nextch(env);
 	}
 	else
-	{	
+	{
 		int res = to_functionident(env);
 		if (res == -1)
 		{
@@ -438,8 +438,8 @@ int macros_set(environment *const env)
 		return -1;
 	}
 	else if (env->curchar != ' ' && env->curchar != '\t')
-	{	
-		const size_t position = env_skip_str(env); 
+	{
+		const size_t position = env_skip_str(env);
 		macro_error(after_ident_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
 		return -1;
 	}

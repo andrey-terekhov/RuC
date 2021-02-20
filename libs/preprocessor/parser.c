@@ -200,7 +200,7 @@ int if_implementation(environment *const env)
 		env->cur = res;
 	}
 
-	
+
 	while (env->cur == SH_ELIF)
 	{
 		const int el_truth_flag = if_check(env, type_if);
@@ -225,7 +225,7 @@ int if_implementation(environment *const env)
 			env->cur = res;
 		}
 	}
-	
+
 
 	if (env->cur == SH_ELSE)
 	{
@@ -274,7 +274,7 @@ int while_collect(environment *const env)
 				while_collect(env);
 			}
 			else if (env->cur == SH_ENDW)
-			{	
+			{
 				env->wstring[env->wsp++] = ' ';
 				env->wstring[oldwsp + 2] = env->wsp;
 				env->cur = 0;
@@ -472,7 +472,7 @@ int preprocess_scan(environment *const env)
 			if (env->cur != 0)
 			{
 				const int res = preprocess_words(env);
-				if (env->nextchar != '#' && env->nextch_type != WHILETYPE && 
+				if (env->nextchar != '#' && env->nextch_type != WHILETYPE &&
 					env->nextch_type != TEXTTYPE)//curflag
 				{
 					env_add_comment(env);

@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 /**
- *	Рrocess the next token 
+ *	Рrocess the next token
  *
  *	@param	env		Preprocessor environment
  *

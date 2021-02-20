@@ -73,7 +73,7 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	{
 		env->fchange[i] = 0;
 	}
-	
+
 	for (int i = 0; i < STRING_SIZE * 2; i++)
 	{
 		env->ifstring[i] = 0;

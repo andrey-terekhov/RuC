@@ -145,7 +145,7 @@ char get_opiration(const char cur, const char next)
 		else if (cur == '>' && next == '=')
 		{
 			return 's';
-		}	
+		}
 	case '+':
 	case '-':
 	case '*':
@@ -231,7 +231,7 @@ double implementation_opiration(const double x, const double y, const char opira
 			{
 				return x / y;
 			}
-			
+
 		default:
 			return 0;
 	}
@@ -329,7 +329,7 @@ int calculate(environment *const env, const int logic_flag)
 				if (calculate(env, 0))
 				{
 					return -1;
-				}	
+				}
 			}
 			else
 			{

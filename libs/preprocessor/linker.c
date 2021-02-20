@@ -58,7 +58,7 @@ void lk_make_path(char *const output, const char *const source, const char *cons
 	{
 		index = sprintf(output, "%s/", source);
 	}
-	
+
 	strcpy(&output[index], header);
 }
 
@@ -66,18 +66,18 @@ size_t lk_open_include(environment *const env, const char* const path)
 {
 	char full_path[MAX_ARG_SIZE];
 	lk_make_path(full_path, env_get_current_file(env), path, 1);
-	
+
 	if (in_set_file(env->input, full_path))
 	{
 		size_t i = 0;
 		const char *dir;
 
-		do  
+		do
 		{
 			dir = ws_get_dir(env->lk->ws, i++);
 			lk_make_path(full_path, dir, path, 0);
 		} while (dir != NULL && in_set_file(env->input, full_path));
-		
+
 	}
 
 	if (!in_is_correct(env->input))
@@ -86,7 +86,7 @@ size_t lk_open_include(environment *const env, const char* const path)
 		macro_system_error(full_path, include_file_not_found);
 		return SIZE_MAX - 1;
 	}
-	
+
 	const size_t index = ws_add_file(env->lk->ws, full_path);
 	if (index == env->lk->count)
 	{
@@ -97,7 +97,7 @@ size_t lk_open_include(environment *const env, const char* const path)
 		in_clear(env->input);
 		return SIZE_MAX;
 	}
-	
+
 	return index;
 }
 
@@ -113,7 +113,7 @@ int lk_open_source(environment *const env, const size_t index)
 }
 
 int lk_preprocess_file(environment *const env, const size_t number)
-{	
+{
 	env_clear_error_string(env);
 	env->lk->included[number]++;
 
@@ -124,13 +124,13 @@ int lk_preprocess_file(environment *const env, const size_t number)
 
 	get_next_char(env);
 	m_nextch(env);
-	
+
 	if (env->curchar != '#')
 	{
 		env_add_comment(env);
 	}
 
-	int was_error = 0; 
+	int was_error = 0;
 	while (env->curchar != EOF)
 	{
 		was_error = preprocess_scan(env) || was_error;
@@ -166,7 +166,7 @@ int lk_preprocess_include(environment *const env)
 	universal_io new_in = io_create();
 	universal_io *old_in = env->input;
 	env->input = &new_in;
-		
+
 	const size_t index = lk_open_include(env, header_path);
 	if (index >= SIZE_MAX - 1)
 	{
@@ -174,13 +174,13 @@ int lk_preprocess_include(environment *const env)
 		return index == SIZE_MAX ? 0 : -1;
 	}
 
-	int flag_io_type = 0;	
+	int flag_io_type = 0;
 	if (env->nextch_type != FILETYPE)
 	{
 		m_change_nextch_type(env, FILETYPE, 0);
 		flag_io_type++;
 	}
-	
+
 	const int res = 2 * lk_preprocess_file(env, index);
 	env->input = old_in;
 
@@ -205,7 +205,7 @@ int lk_include(environment *const env)
 	{
 		const size_t position = env_skip_str(env);
 		macro_error(must_start_quote, env_get_current_file(env), env->error_string, env->line, position);
-		return -1;	
+		return -1;
 	}
 
 	m_nextch(env);
