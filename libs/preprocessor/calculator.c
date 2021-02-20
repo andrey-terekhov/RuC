@@ -367,7 +367,7 @@ int calculate(environment *const env, const int logic_flag)
 		}
 		else if (opration_flag || env->curchar == '(')
 		{
-			const char c = get_opiration(env->curchar, env->nextchar);
+			const char c = get_opiration((char)env->curchar, (char)env->nextchar);
 			if (c)
 			{
 				m_nextch(env);
