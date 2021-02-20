@@ -82,7 +82,7 @@ void get_message_error(const int num, char *const msg)
 		case not_end_fail_define:
 			sprintf(msg, "файл не может закончится до окончания команды '#DEFINE' поставьте перенос строки");
 			break;
-		case scob_not_clous:
+		case scope_not_clous:
 			sprintf(msg, "количество открывающих скобок не соответствует числу закрывающих");
 			break;
 		case after_eval_must_be_ckob:

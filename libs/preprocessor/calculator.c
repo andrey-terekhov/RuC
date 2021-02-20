@@ -244,11 +244,11 @@ void double_to_string(environment *const env, const double x, const int int_flag
 	if (int_flag)
 	{
 		sprintf(s, "%f", x);
-		for (env->csp = 0; env->csp < 20; env->csp++)
+		for (env->calc_prt = 0; env->calc_prt < 20; env->calc_prt++)
 		{
-			env->cstring[env->csp] = s[env->csp];
+			env->cstring[env->calc_prt] = s[env->calc_prt];
 
-			if (s[env->csp] == '.')
+			if (s[env->calc_prt] == '.')
 			{
 				return;
 			}
@@ -259,16 +259,16 @@ void double_to_string(environment *const env, const double x, const int int_flag
 		int l = 0;
 
 		sprintf(s, "%.14lf", x);
-		for (env->csp = 0; env->csp < 20; env->csp++)
+		for (env->calc_prt = 0; env->calc_prt < 20; env->calc_prt++)
 		{
-			env->cstring[env->csp] = s[env->csp];
+			env->cstring[env->calc_prt] = s[env->calc_prt];
 
-			if (s[env->csp] != '0' && utf8_is_digit(s[env->csp]))
+			if (s[env->calc_prt] != '0' && utf8_is_digit(s[env->calc_prt]))
 			{
-				l = env->csp;
+				l = env->calc_prt;
 			}
 		}
-		env->csp = l + 1;
+		env->calc_prt = l + 1;
 	}
 }
 
@@ -304,14 +304,10 @@ int calculate(environment *const env, const int logic_flag)
 		}
 		else if (utf8_is_letter(env->curchar))
 		{
-			const int r = collect_mident(env);
-
-			if (r)
+			const int macros_prt = collect_mident(env);
+			if (macros_prt && macros_get(env, macros_prt))
 			{
-				if (macros_get(env, r))
-				{
-					return -1;
-				}
+				return -1;
 			}
 			else
 			{
@@ -371,7 +367,7 @@ int calculate(environment *const env, const int logic_flag)
 			if (c)
 			{
 				m_nextch(env);
-				if(c == 'b'|| c == 's' || c == '=' || c == '&'|| c == '|' || c == '!')
+				if (c == 'b'|| c == 's' || c == '=' || c == '&'|| c == '|' || c == '!')
 				{
 					m_nextch(env);
 				}
@@ -417,7 +413,7 @@ int calculate(environment *const env, const int logic_flag)
 
 	if (logic_flag)
 	{
-		env->csp = 0;
+		env->calc_prt = 0;
 		while (op > 0)
 		{
 			if (i < 2)

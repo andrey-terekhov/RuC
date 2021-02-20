@@ -32,12 +32,12 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->lk = lk;
 
 	env->rp = 1;
-	env->mp = 1;
-	env->cp = 0;
-	env->lsp = 0;
-	env->csp = 0;
-	env->ifsp = 0;
-	env->wsp = 0;
+	env->macro_prt = 1;
+	env->chg_prt = 0;
+	env->loc_stk_prt = 0;
+	env->calc_prt = 0;
+	env->if_prt = 0;
+	env->w_prt = 0;
 	env->mfirstrp = -1;
 	env->prep_flag = 0;
 	env->nextch_type = FILETYPE;
@@ -45,7 +45,7 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->nextchar = 0;
 	env->cur = 0;
 	env->nextp = 0;
-	env->dipp = 0;
+	env->depth = 0;
 	env->line = 1;
 	env->position = 0;
 	env->nested_if = 0;
@@ -84,7 +84,7 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 		env->wstring[i] = 0;
 	}
 
-	for (int i = 0; i < DIP; i++)
+	for (int i = 0; i < DEPTH; i++)
 	{
 		env->oldcurchar[i] = 0;
 		env->oldnextchar[i] = 0;
@@ -100,12 +100,7 @@ void env_clear_error_string(environment *const env)
 
 const char *env_get_current_file(environment *const env)
 {
-	if(env == NULL)
-	{
-		return NULL;
-	}
-
-	return ws_get_file(env->lk->ws, env->lk->current);
+	return env == NULL ? NULL : ws_get_file(env->lk->ws, env->lk->current);
 }
 
 void env_add_comment(environment *const env)
@@ -120,10 +115,9 @@ void env_add_comment(environment *const env)
 
 size_t env_skip_str(environment *const env)
 {
-
-	if(env == NULL)
+	if (env == NULL)
 	{
-		return 0;
+		return SIZE_MAX;
 	}
 
 	char *line = env->error_string;
@@ -140,36 +134,32 @@ void m_nextch(environment *const env);
 int get_next_char(environment *const env)
 {
 	env->nextchar = uni_scan_char(env->input);
-	if (env->nextchar == U'\r')
-	{
-		return get_next_char(env);
-	}
-	return env->nextchar;
+	return env->nextchar == U'\r' ? get_next_char(env) : env->nextchar;
 }
 
-int get_dipp(environment *const env)
+int get_depth(environment *const env)
 {
-	return env->dipp;
+	return env->depth;
 }
 
 void m_change_nextch_type(environment *const env, int type, int p)
 {
-	env->oldcurchar[env->dipp] = env->curchar;
-	env->oldnextchar[env->dipp] = env->nextchar;
-	env->oldnextch_type[env->dipp] = env->nextch_type;
-	env->oldnextp[env->dipp] = env->nextp;
+	env->oldcurchar[env->depth] = env->curchar;
+	env->oldnextchar[env->depth] = env->nextchar;
+	env->oldnextch_type[env->depth] = env->nextch_type;
+	env->oldnextp[env->depth] = env->nextp;
 	env->nextp = p;
-	env->dipp++;
+	env->depth++;
 	env->nextch_type = type;
 }
 
 void m_old_nextch_type(environment *const env)
 {
-	env->dipp--;
-	env->curchar = env->oldcurchar[env->dipp];
-	env->nextchar = env->oldnextchar[env->dipp];
-	env->nextch_type = env->oldnextch_type[env->dipp];
-	env->nextp = env->oldnextp[env->dipp];
+	env->depth--;
+	env->curchar = env->oldcurchar[env->depth];
+	env->nextchar = env->oldnextchar[env->depth];
+	env->nextch_type = env->oldnextch_type[env->depth];
+	env->nextp = env->oldnextp[env->depth];
 }
 
 void end_line(environment *const env)
@@ -244,7 +234,7 @@ void m_coment_skip(environment *const env)
 void m_nextch_cange(environment *const env)
 {
 	m_nextch(env);
-	m_change_nextch_type(env, FTYPE, env->localstack[env->curchar + env->lsp]);
+	m_change_nextch_type(env, FTYPE, env->localstack[env->curchar + env->loc_stk_prt]);
 	m_nextch(env);
 }
 
@@ -257,22 +247,22 @@ void m_nextch(environment *const env)
 			env->curchar = env->mstring[env->nextp++];
 			env->nextchar = env->mstring[env->nextp];
 		}
-		else if (env->nextch_type == CTYPE && env->nextp < env->csp)
+		else if (env->nextch_type == CTYPE && env->nextp < env->calc_prt)
 		{
 			env->curchar = env->cstring[env->nextp++];
 			env->nextchar = env->cstring[env->nextp];
 		}
-		else if (env->nextch_type == IFTYPE && env->nextp < env->ifsp)
+		else if (env->nextch_type == IFTYPE && env->nextp < env->if_prt)
 		{
 			env->curchar = env->ifstring[env->nextp++];
 			env->nextchar = env->ifstring[env->nextp];
 		}
-		else if (env->nextch_type == WHILETYPE && env->nextp < env->wsp)
+		else if (env->nextch_type == WHILETYPE && env->nextp < env->w_prt)
 		{
 			env->curchar = env->wstring[env->nextp++];
 			env->nextchar = env->wstring[env->nextp];
 		}
-		else if (env->nextch_type == TEXTTYPE && env->nextp < env->mp)
+		else if (env->nextch_type == TEXTTYPE && env->nextp < env->macro_prt)
 		{
 			env->curchar = env->macrotext[env->nextp++];
 			env->nextchar = env->macrotext[env->nextp];

@@ -37,7 +37,7 @@ enum ERROR
 	before_endif,
 	repeat_ident,
 	not_end_fail_define,
-	scob_not_clous,
+	scope_not_clous,
 	after_preproces_words_must_be_space,
 	ident_begins_with_letters,
 	ident_not_exist,

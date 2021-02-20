@@ -32,7 +32,7 @@ typedef struct environment
 	int rp;
 
 	int macrotext[MAXTAB];
-	int mp;
+	int macro_prt;
 
 	char error_string[STRING_SIZE];
 	size_t position;
@@ -41,19 +41,19 @@ typedef struct environment
 	int msp;
 
 	int fchange[STRING_SIZE * 3];
-	int cp;
+	int chg_prt;
 
 	int localstack[STRING_SIZE];
-	int lsp;
+	int loc_stk_prt;
 
 	int cstring[STRING_SIZE];
-	int csp;
+	int calc_prt;
 
 	int ifstring[STRING_SIZE * 2];
-	int ifsp;
+	int if_prt;
 
 	int wstring[STRING_SIZE * 5];
-	int wsp;
+	int w_prt;
 
 	int mfirstrp;
 
@@ -65,11 +65,11 @@ typedef struct environment
 
 	int nextp;
 
-	int oldcurchar[DIP];
-	int oldnextchar[DIP];
-	int oldnextch_type[DIP];
-	int oldnextp[DIP];
-	int dipp;
+	int oldcurchar[DEPTH];
+	int oldnextchar[DEPTH];
+	int oldnextch_type[DEPTH];
+	int oldnextp[DEPTH];
+	int depth;
 
 	int nested_if;
 	int flagint;
@@ -98,7 +98,7 @@ size_t env_skip_str(environment *const env);
 void m_change_nextch_type(environment *const env, int type, int p);
 void m_old_nextch_type(environment *const env);
 
-int get_dipp(environment *const env);
+int get_depth(environment *const env);
 int get_next_char(environment *const env);
 
 void m_fprintf(environment *const env, int a);

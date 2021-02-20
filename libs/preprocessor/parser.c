@@ -249,18 +249,18 @@ int if_implementation(environment *const env)
 
 int while_collect(environment *const env)
 {
-	const int oldwsp = env->wsp;
+	const int oldwsp = env->w_prt;
 
-	env->wstring[env->wsp++] = WHILEBEGIN;
-	env->wstring[env->wsp++] = env->ifsp;
-	env->wsp++;
+	env->wstring[env->w_prt++] = WHILEBEGIN;
+	env->wstring[env->w_prt++] = env->if_prt;
+	env->w_prt++;
 
 	while (env->curchar != '\n')
 	{
-		env->ifstring[env->ifsp++] = env->curchar;
+		env->ifstring[env->if_prt++] = env->curchar;
 		m_nextch(env);
 	}
-	env->ifstring[env->ifsp++] = '\n';
+	env->ifstring[env->if_prt++] = '\n';
 	m_nextch(env);
 
 	while (env->curchar != EOF)
@@ -275,8 +275,8 @@ int while_collect(environment *const env)
 			}
 			else if (env->cur == SH_ENDW)
 			{
-				env->wstring[env->wsp++] = ' ';
-				env->wstring[oldwsp + 2] = env->wsp;
+				env->wstring[env->w_prt++] = ' ';
+				env->wstring[oldwsp + 2] = env->w_prt;
 				env->cur = 0;
 
 				return 0;
@@ -285,11 +285,11 @@ int while_collect(environment *const env)
 			{
 				for (int i = 0; i < env->reprtab[env->rp]; i++)
 				{
-					env->wstring[env->wsp++] = env->reprtab[env->rp + 2 + i];
+					env->wstring[env->w_prt++] = env->reprtab[env->rp + 2 + i];
 				}
 			}
 		}
-		env->wstring[env->wsp++] = env->curchar;
+		env->wstring[env->w_prt++] = env->curchar;
 		m_nextch(env);
 	}
 
@@ -377,10 +377,10 @@ int preprocess_words(environment *const env)
 		}
 		case SH_UNDEF:
 		{
-			int k = collect_mident(env);
-			if (k)
+			const int macros_prt = collect_mident(env);;
+			if (macros_prt)
 			{
-				env->macrotext[env->reprtab[k + 1]] = MACROUNDEF;
+				env->macrotext[env->reprtab[macros_prt + 1]] = MACROUNDEF;
 				return skip_space_end_line(env);
 			}
 			else
@@ -414,7 +414,7 @@ int preprocess_words(environment *const env)
 				macro_error(after_eval_must_be_ckob, env_get_current_file(env), env->error_string, env->line, position);
 				return -1;
 			}
-			else if(calculate(env, 0))
+			else if (calculate(env, 0))
 			{
 				return -1;
 			}
@@ -424,8 +424,8 @@ int preprocess_words(environment *const env)
 		}
 		case SH_WHILE:
 		{
-			env->wsp = 0;
-			env->ifsp = 0;
+			env->w_prt = 0;
+			env->if_prt = 0;
 			if (while_collect(env))
 			{
 				return -1;
@@ -506,11 +506,10 @@ int preprocess_scan(environment *const env)
 		{
 			if (utf8_is_letter(env->curchar) && env->prep_flag == 1)
 			{
-				const int r = collect_mident(env);
-
-				if (r)
+				const int macros_prt = collect_mident(env);
+				if (macros_prt)
 				{
-					return macros_get(env, r);
+					return macros_get(env, macros_prt);
 				}
 				else
 				{

@@ -22,7 +22,7 @@
 #define LONGSTR		10000
 #define STRING_SIZE	256
 #define HASH		256
-#define DIP			10
+#define DEPTH			10
 #define CONTROLSIZE 250
 
 #define CANGEEND	  -6
