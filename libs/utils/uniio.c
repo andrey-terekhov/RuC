@@ -39,9 +39,9 @@ int is_specifier(const char ch)
 {
 	return (ch >= '0' && ch <= '9')
 		|| ch == 'h' || ch == 'l'		// Sub-specifiers
-		|| ch == 'j' || ch == 'z' 
+		|| ch == 'j' || ch == 'z'
 		|| ch == 't' || ch == 'L'
-		|| ch == '*'	
+		|| ch == '*'
 		|| ch == 'i'					// Integer
 		|| ch == 'd' || ch == 'u'		// Decimal integer
 		|| ch == 'o'					// Octal integer
@@ -101,7 +101,7 @@ int in_func_position(universal_io *const io, const char *const format, va_list a
 			{
 				i++;
 				was_count = was_count || format[i] == 'n';
-				
+
 				if (format[i] == '[')
 				{
 					while (format[i] != '\0' && (format[i - 1] == '\\' || format[i] != ']'))
@@ -207,7 +207,7 @@ size_t io_get_path(FILE *const file, char *const buffer)
 #elif __APPLE__
 	return fcntl(fileno(file), F_GETPATH, buffer) != -1 ? strlen(buffer) : 0;
 #else
-	char link[MAX_LINK_SIZE];	
+	char link[MAX_LINK_SIZE];
 	sprintf(link, "/proc/self/fd/%d", fileno(file));
 	int ret = readlink(link, buffer, 256);
 
@@ -264,7 +264,7 @@ int in_set_file(universal_io *const io, const char *const path)
 	{
 		return -1;
 	}
-	
+
 	io->in_file = fopen(path, "rt");
 	if (io->in_file == NULL)
 	{
@@ -289,7 +289,7 @@ int in_set_buffer(universal_io *const io, const char *const buffer)
 
 	io->in_size = strlen(io->in_buffer);
 	io->in_position = 0;
-	
+
 	io->in_func = &in_func_buffer;
 
 	return 0;
@@ -301,7 +301,7 @@ int in_set_func(universal_io *const io, const io_user_func func)
 	{
 		return -1;
 	}
-	
+
 	io->in_user_func = func;
 	io->in_func = &in_func_user;
 
@@ -320,7 +320,7 @@ int in_set_position(universal_io *const io, const size_t position)
 
 		return -1;
 	}
-	
+
 	if (in_is_file(io))
 	{
 		if ((position == 0 && fseek(io->in_file, 0, SEEK_SET) == 0)
@@ -329,7 +329,7 @@ int in_set_position(universal_io *const io, const size_t position)
 			io->in_position = position;
 			return 0;
 		}
-		
+
 		fseek(io->in_file, (long)io->in_position, SEEK_SET);
 		return -1;
 	}
@@ -429,7 +429,7 @@ int out_set_file(universal_io *const io, const char *const path)
 	{
 		return -1;
 	}
-	
+
 	io->out_file = fopen(path, "wt");
 	if (io->out_file == NULL)
 	{
@@ -450,7 +450,7 @@ int out_set_buffer(universal_io *const io, const size_t size)
 
 	io->out_size = size + 1;
 	io->out_buffer = malloc(io->out_size * sizeof(char));
-	
+
 	if (io->out_buffer == NULL)
 	{
 		io->out_size = 0;
@@ -459,7 +459,7 @@ int out_set_buffer(universal_io *const io, const size_t size)
 
 	io->out_buffer[0] = '\0';
 	io->out_position = 0;
-	
+
 	io->out_func = &out_func_buffer;
 
 	return 0;
@@ -471,7 +471,7 @@ int out_set_func(universal_io *const io, const io_user_func func)
 	{
 		return -1;
 	}
-	
+
 	io->out_user_func = func;
 	io->out_func = &out_func_user;
 

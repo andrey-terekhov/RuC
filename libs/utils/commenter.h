@@ -93,7 +93,7 @@ EXPORTED int cmt_is_correct(const comment *const cmt);
  *	Get tag from comment
  *
  *	@param	cmt			Comment
- *	@param	buffer		Tag entry location	
+ *	@param	buffer		Tag entry location
  *
  *	@return Size of tag
  */
@@ -103,7 +103,7 @@ EXPORTED size_t cmt_get_tag(const comment *const cmt, char *const buffer);
  *	Get current code line
  *
  *	@param	cmt			Comment
- *	@param	buffer		Code line entry location	
+ *	@param	buffer		Code line entry location
  *
  *	@return Size of code line
  */
@@ -113,7 +113,7 @@ EXPORTED size_t cmt_get_code_line(const comment *const cmt, char *const buffer);
  *	Get current filename path
  *
  *	@param	cmt			Comment
- *	@param	buffer		Path entry location	
+ *	@param	buffer		Path entry location
  *
  *	@return Size of path
  */

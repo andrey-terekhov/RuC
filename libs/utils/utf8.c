@@ -373,7 +373,7 @@ size_t utf8_symbol_size(const char symbol)
 	{
 		return 3;
 	}
-	
+
 	if ((symbol & 0b11111000) == 0b11110000)
 	{
 		return 4;
@@ -420,7 +420,7 @@ char32_t utf8_convert(const char *const symbol)
 		result |= 0x0000003F /* 0b00111111 */ & symbol[i];
 	}
 
-	return result;	
+	return result;
 }
 
 size_t utf8_to_string(char *const buffer, const char32_t symbol)
@@ -429,7 +429,7 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 	{
 		return 0;
 	}
-	
+
 	if ((symbol & 0xFFFFFF80) == 0x00000000)
 	{
 		buffer[0] = (char)symbol;

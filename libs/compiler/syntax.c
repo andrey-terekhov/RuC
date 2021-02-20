@@ -244,7 +244,7 @@ syntax sx_create()
 	sx.predef = vector_create(FUNCSIZE);
 	sx.functions = vector_create(FUNCSIZE);
 	vector_increase(&sx.functions, 2);
-	
+
 	sx.tree = vector_create(MAXTREESIZE);
 
 	sx.identifiers = vector_create(MAXIDENTAB);

@@ -34,7 +34,7 @@ void lexer_error(lexer *const lxr, error_t num, ...)
 	va_start(args, num);
 
 	verror(lxr->io, num, args);
-	
+
 	va_end(args);
 }
 
