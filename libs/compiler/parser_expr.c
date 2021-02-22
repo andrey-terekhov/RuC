@@ -1389,13 +1389,13 @@ void postexpr(parser *const prs)
 
 void unarexpr(parser *const prs)
 {
-	int op = prs->curr_token;
-	if (prs->curr_token == LNOT || prs->curr_token == LOGNOT || prs->curr_token == LPLUS || prs->curr_token == LMINUS ||
-		prs->curr_token == LAND || prs->curr_token == LMULT || prs->curr_token == INC || prs->curr_token == DEC)
+	int op = prs->token;
+	if (prs->token == LNOT || prs->token == LOGNOT || prs->token == LPLUS || prs->token == LMINUS ||
+		prs->token == LAND || prs->token == LMULT || prs->token == INC || prs->token == DEC)
 	{
+		scanner(prs);
 		if (prs->curr_token == INC || prs->curr_token == DEC)
 		{
-			scanner(prs);
 			unarexpr(prs);
 			if (prs->was_error == 7)
 			{
@@ -1420,7 +1420,6 @@ void unarexpr(parser *const prs)
 		}
 		else
 		{
-			scanner(prs);
 			unarexpr(prs);
 			if (prs->was_error == 7)
 			{
@@ -1501,6 +1500,7 @@ void unarexpr(parser *const prs)
 	}
 	else
 	{
+		token_consume(prs);
 		primaryexpr(prs);
 		if (prs->was_error == 4)
 		{
@@ -1596,7 +1596,6 @@ void subexpr(parser *const prs)
 		prs->stacklog[prs->sp] = (int)ad;
 		prs->stackop[prs->sp++] = prs->token;
 		scanner(prs);
-		scanner(prs);
 		unarexpr(prs);
 		if (prs->was_error == 7)
 		{
@@ -1676,7 +1675,6 @@ void condexpr(parser *const prs)
 				adif = vector_size(&TREE) - 1;
 			}
 			must_be(prs, COLON, no_colon_in_cond_expr);
-			scanner(prs);
 			unarexpr(prs);
 			if (prs->was_error == 7)
 			{
@@ -1758,7 +1756,6 @@ void exprassn(parser *const prs, int level)
 	}
 	else
 	{
-		token_consume(prs);
 		unarexpr(prs);
 	}
 	if (prs->was_error == 7)
@@ -1963,7 +1960,6 @@ item_t parse_parenthesized_expression(parser *const prs)
 
 item_t parse_constant_expression(parser *const prs)
 {
-	scanner(prs);
 	unarexpr(prs);
 	condexpr(prs);
 	toval(prs);
