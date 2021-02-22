@@ -41,6 +41,7 @@ extern int bad_printf_placeholder;
 
 extern int cycle_jump_reduce;
 extern int check_nested_for;
+extern int delay_slot;
 extern int cycle_condition_calculation;
 
 #endif

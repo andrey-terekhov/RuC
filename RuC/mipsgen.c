@@ -959,14 +959,14 @@ void MBin_operation(int c)      // бинарная операция (два в�
     					if (c == LLT)
     					{
 							if (flag_cond_cycle)
-								tocodeJEQ(bgt, ropnd, lopnd, "BEGLOOP", adcont);
+								tocodeJEQ(bne, ropnd, lopnd, "BEGLOOP", adcont);
 							else
 								tocodeJC(bgtz, t1, "BEGLOOP", adcont);
     					}
 						else if (c == LGT)
 						{
 							if (flag_cond_cycle)
-								tocodeJEQ(blt, ropnd, lopnd, "BEGLOOP", adcont);
+								tocodeJEQ(bne, ropnd, lopnd, "BEGLOOP", adcont);
 							else
 								tocodeJC(bltz, t1, "BEGLOOP", adcont);
 						}
@@ -1041,14 +1041,14 @@ void MBin_operation(int c)      // бинарная операция (два в�
 					if (c == LLT)
 					{
 						if (flag_cond_cycle == 2)
-							tocodeJEQ(blt, lopnd, ropnd, "BEGLOOP", adcont);
+							tocodeJEQ(bne, lopnd, ropnd, "BEGLOOP", adcont);
 						else
 							tocodeJC(bltz, t1, "BEGLOOP", adcont);
 					}
 					else if (c == LGT)
 					{
 						if (flag_cond_cycle == 2)
-							tocodeJEQ(bgt, lopnd, ropnd, "BEGLOOP", adcont);
+							tocodeJEQ(bne, lopnd, ropnd, "BEGLOOP", adcont);
 						else
 							tocodeJC(bgtz, t1, "BEGLOOP", adcont);
 					}
@@ -2342,6 +2342,7 @@ void MStmt_gen()
             mbox = BV;
             if (fromref)
                 MExpr_gen();         // init
+            int for_value_reg = areg;	 // for delay slot
             adbreak = elselab = labnum++;
             adcont  = labnum++;
             if (cycle_jump_reduce == 0)
@@ -2357,22 +2358,38 @@ void MStmt_gen()
                 	breg = cond_reg;
                 }
                 MExpr_gen();         // cond
+                if (cycle_condition_calculation && delay_slot && is_last_nested)
+                {
+                	tocodeI(addi, for_value_reg, for_value_reg, -1);
+                	tocodeI(addi, breg, breg, -1);
+                }
                 flag_cond_cycle = 0;
                 breg = oldbreg;
             }
             if (cycle_jump_reduce == 1)
             	tocodeL("BEGLOOP", adcont);
+            if (cycle_condition_calculation && delay_slot && is_last_nested)
+            {
+            	endtc = tc;
+                tc = incrref;
+            tocodeL("CONT", adcont);
+                MExpr_gen();         // incr
+                tc = endtc;
+            }
             if (incrref)
             {
                 mbox = BV;
                 incrtc = incrref;
                 tc = stmtref;
                 MStmt_gen();         // statement
-                endtc = tc;
-                tc = incrtc;
-            tocodeL("CONT", adcont);
-                MExpr_gen();         // incr
-                tc = endtc;
+                if (!(delay_slot && is_last_nested))
+                {
+					endtc = tc;
+					tc = incrtc;
+				tocodeL("CONT", adcont);
+					MExpr_gen();         // incr
+					tc = endtc;
+                }
             }
             else
             {
@@ -2399,6 +2416,8 @@ void MStmt_gen()
                 if (cycle_condition_calculation && is_last_nested)
                 	freereg(cond_reg);
             }
+        	if (cycle_condition_calculation && delay_slot && is_last_nested)
+        		tocodeI(addi, cond_reg, cond_reg, 1);
         tocodeL("end", adbreak);
         tocodeL("ELSE", adbreak);
 
