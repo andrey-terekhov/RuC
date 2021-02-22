@@ -113,12 +113,12 @@ static void architecture(const workspace *const ws, universal_io *const io)
 	const char *flag = ws_get_flag(ws, i);
 	while (flag != NULL)
 	{
-		if (strcmp(flag, "-mipsel") == 0)
+		if (strcmp(flag, "--mipsel") == 0)
 		{
 			uni_printf(io, "target datalayout = \"e-m:m-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S64\"\n");
 			uni_printf(io, "target triple = \"mipsel\"\n\n");
 		}
-		else if (strcmp(flag, "-x86_64-pc-linux-gnu") == 0)
+		else if (strcmp(flag, "--x86_64-pc-linux-gnu") == 0)
 		{
 			uni_printf(io, "target datalayout = \"e-m:e-i64:64-f80:128-n8:16:32:64-S128\"\n");
 			uni_printf(io, "target triple = \"x86_64-pc-linux-gnu\"\n\n");
