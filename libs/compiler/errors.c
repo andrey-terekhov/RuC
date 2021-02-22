@@ -295,7 +295,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case continue_not_in_loop:	// need_test
 			sprintf(msg, "оператор ПРОДОЛЖИТЬ не в цикле");
 			break;
-		case expected_expression:	// need_test
+		case not_primary:	// need_test
 		{
 			const int cur = va_arg(args, int);
 			sprintf(msg, "первичное не может начинаться с лексемы %i", cur);

@@ -225,11 +225,12 @@ item_t parse_condition(parser *const prs);
 /**
  *	Parse string literal [C99 6.5.1]
  *
- *	@param	prs			Parser structure
+ *	primary-expression:
+ *		string-literal
  *
- *	@return	Type of parsed expression
+ *	@param	prs			Parser structure
  */
-item_t parse_string_literal(parser *const prs);
+void parse_string_literal(parser *const prs);
 
 /**
  *	Insert @c WIDEN node

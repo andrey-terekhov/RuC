@@ -111,7 +111,7 @@ typedef enum ERROR
 	two_idents_for_1_declarer,
 	function_has_no_body,
 	diff_formal_param_type_and_actual,
-	expected_expression,
+	not_primary,
 	wrong_operand,
 	must_be_digit_after_exp,
 	label_not_declared,
