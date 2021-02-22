@@ -406,52 +406,73 @@ void mustberowoffloat(parser *const prs)
 }
 
 
-
-void parse_identifier(parser *const prs)
+/**
+ *	Parse identifier [C99 6.5.1p1]
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Type of parsed expression
+ */
+item_t parse_identifier(parser *const prs)
 {
-	scanner(prs);
-	applid(prs);
-	if (prs->was_error == 5)
+	token_consume(prs);
+	const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+	if (id == ITEM_MAX)
 	{
-		prs->was_error = 4;
-		return; // 1
+		parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, prs->lxr->repr));
 	}
 
 	totree(prs, TIdent);
-	prs->anstdispl = (int)ident_get_displ(prs->sx, prs->lastid);
+	prs->anstdispl = (int)ident_get_displ(prs->sx, id);
 	totree(prs, prs->anstdispl);
-	prs->ansttype = (int)ident_get_mode(prs->sx, prs->lastid);
+	prs->ansttype = (int)ident_get_mode(prs->sx, id);
 	prs->stackoperands[++prs->sopnd] = prs->ansttype;
 	prs->anst = IDENT;
+	return prs->ansttype;
 }
 
-void parse_constant(parser *const prs)
+/**
+ *	Parse constant [C99 6.5.1p2]
+ *
+ *	constant:
+ *		character-constant
+ *		integer-constant
+ *		floating-constant
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Type of parsed expression
+ */
+item_t parse_constant(parser *const prs)
 {
-	scanner(prs);
-	if (prs->curr_token == CHAR_CONST)
+	if (prs->token == CHAR_CONST)
 	{
+		scanner(prs);
 		totree(prs, TConst);
 		totree(prs, prs->lxr->num);
 		prs->stackoperands[++prs->sopnd] = prs->ansttype = LCHAR;
 		prs->anst = NUMBER;
 	}
-	else if (prs->curr_token == INT_CONST)
+	else if (prs->token == INT_CONST)
 	{
+		scanner(prs);
 		totree(prs, TConst);
 		totree(prs, prs->lxr->num);
 		prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
 		prs->anst = NUMBER;
 	}
-	else if (prs->curr_token == FLOAT_CONST)
+	else if (prs->token == FLOAT_CONST)
 	{
+		scanner(prs);
 		totree(prs, TConstd);
 		double_to_tree(&TREE, prs->lxr->num_double);
 		prs->stackoperands[++prs->sopnd] = prs->ansttype = LFLOAT;
 		prs->anst = NUMBER;
 	}
+	return prs->ansttype;
 }
 
-void parse_standard_function_call(parser *const prs)
+item_t parse_standard_function_call(parser *const prs)
 {
 	scanner(prs);
 	int func = prs->curr_token;
@@ -467,11 +488,6 @@ void parse_standard_function_call(parser *const prs)
 	if (func == ASSERT)
 	{
 		mustbeint(prs);
-		if (prs->was_error == 5)
-		{
-			prs->was_error = 4;
-			return; // 1
-		}
 		must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 		mustbestring(prs);
 	}
@@ -485,30 +501,15 @@ void parse_standard_function_call(parser *const prs)
 		{
 			mustbestring(prs);
 		}
-		if (prs->was_error == 5)
-		{
-			prs->was_error = 4;
-			return; // 1
-		}
 		if (func != STRLEN)
 		{
 			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 			mustbestring(prs);
-			if (prs->was_error == 5)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
 			if (func == STRNCPY || func == STRNCAT || func == STRNCMP)
 			{
 				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 				mustbeint(prs);
 			}
-		}
-		if (prs->was_error == 5)
-		{
-			prs->was_error = 4;
-			return; // 1
 		}
 		if (func < STRNCAT)
 		{
@@ -519,11 +520,6 @@ void parse_standard_function_call(parser *const prs)
 	{
 		// новые функции Фадеева
 		mustbeint(prs);
-		if (prs->was_error == 5)
-		{
-			prs->was_error = 4;
-			return; // 1
-		}
 		if (func == SEND_INT || func == SEND_STRING)
 		{
 			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
@@ -548,11 +544,6 @@ void parse_standard_function_call(parser *const prs)
 		{
 			// scaner(context);
 			mustberowofint(prs);
-			if (prs->was_error == 5)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
 			if (func != CLEAR)
 			{
 				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
@@ -561,32 +552,12 @@ void parse_standard_function_call(parser *const prs)
 			if (func == LINE || func == RECTANGLE || func == ELLIPS)
 			{
 				mustbeint(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 				mustbeint(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 				mustbeint(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 				mustbeint(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 				if (func != LINE)
 				{
 					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
@@ -597,17 +568,7 @@ void parse_standard_function_call(parser *const prs)
 			{
 				mustbeint(prs);
 				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 				mustbeint(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 				if (func == ICON)
 				{
 					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
@@ -617,18 +578,8 @@ void parse_standard_function_call(parser *const prs)
 			else if (func == DRAW_NUMBER || func == DRAW_STRING)
 			{
 				mustbeint(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 				mustbeint(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 
 				if (func == DRAW_STRING)
@@ -638,11 +589,6 @@ void parse_standard_function_call(parser *const prs)
 				else // DRAW_NUMBER
 				{
 					exprassn(prs, 1);
-					if (prs->was_error == 6)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
 					toval(prs);
 					prs->sopnd--;
 					if (mode_is_int(prs->ansttype))
@@ -652,8 +598,6 @@ void parse_standard_function_call(parser *const prs)
 					else if (prs->ansttype != LFLOAT)
 					{
 						parser_error(prs, not_float_in_stanfunc);
-						prs->was_error = 4;
-						return; // 1
 					}
 				}
 			}
@@ -661,18 +605,8 @@ void parse_standard_function_call(parser *const prs)
 		else if (func == SETSIGNAL)
 		{
 			mustbeint(prs);
-			if (prs->was_error == 5)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
 			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 			mustberowofint(prs);
-			if (prs->was_error == 5)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
 			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 			mustberowofint(prs);
 		}
@@ -688,11 +622,6 @@ void parse_standard_function_call(parser *const prs)
 		else
 		{
 			mustbeint(prs);
-			if (prs->was_error == 5)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
 			if (func != BLYNK_RECEIVE)
 			{
 				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
@@ -703,38 +632,18 @@ void parse_standard_function_call(parser *const prs)
 				else if (func == BLYNK_SEND)
 				{
 					mustbeint(prs);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
 				}
 				else if (func == BLYNK_PROPERTY)
 				{
 					mustbestring(prs);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
 					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 					mustbestring(prs);
 				}
 				else // BLYNK_LCD
 				{
 					mustbeint(prs);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
 					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 					mustbeint(prs);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
 					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 					mustbestring(prs);
 				}
@@ -748,18 +657,8 @@ void parse_standard_function_call(parser *const prs)
 	else if (func == UPB) // UPB
 	{
 		mustbeint(prs);
-		if (prs->was_error == 5)
-		{
-			prs->was_error = 4;
-			return; // 1
-		}
 		must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
 		mustberow(prs);
-		if (prs->was_error == 5)
-		{
-			prs->was_error = 4;
-			return; // 1
-		}
 		prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
 	}
 	else if (func <= TMSGSEND && func >= TGETNUM) // процедуры управления параллельными нитями
@@ -789,21 +688,11 @@ void parse_standard_function_call(parser *const prs)
 				if (prs->curr_token != IDENT)
 				{
 					parser_error(prs, act_param_not_ident);
-					prs->was_error = 4;
-					return; // 1
 				}
 				applid(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
-				if (ident_get_mode(prs->sx, prs->lastid) != 15 ||
-					prs->was_error == 5) // 15 - это аргумент типа void* (void*)
+				if (ident_get_mode(prs->sx, prs->lastid) != 15) // 15 - это аргумент типа void* (void*)
 				{
 					parser_error(prs, wrong_arg_in_create);
-					prs->was_error = 4;
-					return; // 1
 				}
 
 				prs->stackoperands[prs->sopnd] = prs->ansttype = LINT;
@@ -824,11 +713,6 @@ void parse_standard_function_call(parser *const prs)
 			{
 				prs->leftansttype = 2;
 				exprassn(prs, 1);
-				if (prs->was_error == 6)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 				toval(prs);
 
 				if (func == TMSGSEND)
@@ -836,8 +720,6 @@ void parse_standard_function_call(parser *const prs)
 					if (prs->ansttype != 2) // 2 - это аргумент типа msg_info (struct{int numTh; int data;})
 					{
 						parser_error(prs, wrong_arg_in_send);
-						prs->was_error = 4;
-						return; // 1
 					}
 					--prs->sopnd;
 				}
@@ -846,8 +728,6 @@ void parse_standard_function_call(parser *const prs)
 					if (!mode_is_int(prs->ansttype))
 					{
 						parser_error(prs, param_threads_not_int);
-						prs->was_error = 4;
-						return; // 1
 					}
 					if (func == TSEMCREATE)
 					{
@@ -871,22 +751,12 @@ void parse_standard_function_call(parser *const prs)
 	else if (func == ROUND)
 	{
 		exprassn(prs, 1);
-		if (prs->was_error == 6)
-		{
-			prs->was_error = 4;
-			return; // 1
-		}
 		toval(prs);
 		prs->ansttype = prs->stackoperands[prs->sopnd] = LINT;
 	}
 	else
 	{
 		exprassn(prs, 1);
-		if (prs->was_error == 6)
-		{
-			prs->was_error = 4;
-			return; // 1
-		}
 		toval(prs);
 
 		// GETDIGSENSOR int(int port, int pins[]),
@@ -897,34 +767,20 @@ void parse_standard_function_call(parser *const prs)
 			if (!mode_is_int(prs->ansttype))
 			{
 				parser_error(prs, param_setmotor_not_int);
-				prs->was_error = 4;
-				return; // 1
 			}
 			must_be(prs, COMMA, no_comma_in_setmotor);
 			if (func == GETDIGSENSOR)
 			{
 				mustberowofint(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 				prs->ansttype = prs->stackoperands[++prs->sopnd] = LINT;
 			}
 			else
 			{
 				exprassn(prs, 1);
-				if (prs->was_error == 6)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 				toval(prs);
 				if (!mode_is_int(prs->ansttype))
 				{
 					parser_error(prs, param_setmotor_not_int);
-					prs->was_error = 4;
-					return; // 1
 				}
 				if (func == SETMOTOR || func == VOLTAGE)
 				{
@@ -950,18 +806,12 @@ void parse_standard_function_call(parser *const prs)
 			if (!mode_is_float(prs->ansttype))
 			{
 				parser_error(prs, bad_param_in_stand_func);
-				prs->was_error = 4;
-				return; // 1
 			}
 		}
 	}
-	if (prs->was_error == 5)
-	{
-		prs->was_error = 4;
-		return; // 1
-	}
 	totree(prs, 9500 - func);
 	must_be(prs, RIGHTBR, no_rightbr_in_stand_func);
+	return prs->ansttype;
 }
 
 /**
@@ -975,24 +825,23 @@ void parse_standard_function_call(parser *const prs)
  *		standart-function-call [RuC]
  *
  *	@param	prs			Parser structure
+ *
+ *	@return	Type of parsed expression
  */
-void parse_primary_expression(parser *const prs)
+item_t parse_primary_expression(parser *const prs)
 {
 	switch (prs->token)
 	{
 		case identifier:
-			parse_identifier(prs);
-			break;
+			return parse_identifier(prs);
 
 		case char_constant:
 		case int_constant:
 		case float_constant:
-			parse_constant(prs);
-			break;
+			return parse_constant(prs);
 
 		case string_literal:
-			parse_string_literal(prs);
-			break;
+			return parse_string_literal(prs);
 
 		case l_paren:
 			token_consume(prs);
@@ -1001,51 +850,37 @@ void parse_primary_expression(parser *const prs)
 				scanner(prs);
 				must_be(prs, LMULT, no_mult_in_cast);
 				unarexpr(prs);
-				if (prs->was_error == 7)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 				if (!mode_is_pointer(prs->sx, prs->ansttype))
 				{
 					parser_error(prs, not_pointer_in_cast);
-					prs->was_error = 4;
-					return; // 1
 				}
 				must_be(prs, RIGHTBR, no_rightbr_in_cast);
 				toval(prs);
-				// totree(context, CASTC);
 				totree(prs, TExprend);
 			}
 			else
 			{
 				int oldsp = prs->sp;
 				expr(prs, 1);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 				must_be(prs, RIGHTBR, wait_rightbr_in_primary);
 				while (prs->sp > oldsp)
 				{
 					binop(prs, --prs->sp);
 				}
 			}
-			break;
+			return prs->ansttype;
 
 		default:
 			if (prs->token <= STANDARD_FUNC_START)
 			{
-				parse_standard_function_call(prs);
+				return parse_standard_function_call(prs);
 			}
 			else
 			{
-				parser_error(prs, not_primary, prs->curr_token);
-				prs->ansttype = mode_undefined;
-				return;
+				parser_error(prs, expected_expression, prs->token);
+				token_skip_until(prs, r_paren | comma | semicolon);
+				return prs->ansttype = mode_undefined;
 			}
-			break;
 	}
 }
 
@@ -2003,7 +1838,7 @@ item_t parse_condition(parser *const prs)
 	return (item_t)prs->ansttype;
 }
 
-void parse_string_literal(parser *const prs)
+item_t parse_string_literal(parser *const prs)
 {
 	scanner(prs);
 	totree(prs, TString);
@@ -2017,6 +1852,7 @@ void parse_string_literal(parser *const prs)
 	prs->ansttype = (int)to_modetab(prs, mode_array, LCHAR);
 	prs->stackoperands[++prs->sopnd] = prs->ansttype;
 	prs->anst = VAL;
+	return prs->ansttype;
 }
 
 void parse_insert_widen(parser *const parser)

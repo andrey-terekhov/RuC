@@ -279,7 +279,7 @@ char32_t get_next_string_elem(lexer *const lxr)
  *
  *	@return	@c char_constant
  */
-token_t lex_char_constant(lexer *const lxr)
+token_t lex_character_constant(lexer *const lxr)
 {
 	if (read_char(lxr) == '\'')
 	{
@@ -408,7 +408,7 @@ token_t lex(lexer *const lxr)
 
 		// Character Constants [C99 6.4.4.4]
 		case '\'':
-			return lex_char_constant(lxr);
+			return lex_character_constant(lxr);
 
 		// String Literals [C99 6.4.5]
 		case '\"':
