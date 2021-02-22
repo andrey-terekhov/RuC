@@ -15,23 +15,24 @@
  */
 
 #include "llvmopt.h"
-#include "errors.h"
 #include "tree.h"
 #include "uniprinter.h"
+#include <string.h>
 
 
 typedef struct information
 {
-	item_t string_num;
-	item_t was_printf;
+	universal_io *io;					/**< Вывод */
+	item_t string_num;					/**< Номер строки */
+	item_t was_printf;					/**< Флаг наличия printf в исходном коде */
 } information;
 
 
-static size_t node_recursive(node *const nd, size_t i, universal_io *const io, information *const info)
+static void node_recursive(information *const info, node *const nd)
 {
-	for (size_t j = 0; j < node_get_amount(nd); j++)
+	for (size_t i = 0; i < node_get_amount(nd); i++)
 	{
-		node child = node_get_child(nd, j);
+		node child = node_get_child(nd, i);
 
 		switch (node_get_type(&child))
 		{
@@ -39,20 +40,20 @@ static size_t node_recursive(node *const nd, size_t i, universal_io *const io, i
 			{
 				const size_t N = (size_t)node_get_arg(&child, 0);
 
-				uni_printf(io, "@.str%li = private unnamed_addr constant [%li x i8] c\"", info->string_num++, N + 1);
-				for (size_t k = 0; k < N; k++) 
+				uni_printf(info->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\"", info->string_num++, N + 1);
+				for (size_t j = 0; j < N; j++) 
 				{
-					const char ch = (char)node_get_arg(&child, k + 1);
+					const char ch = (char)node_get_arg(&child, j + 1);
 					if (ch == '\n')
 					{
-						uni_printf(io, "\\0A");
+						uni_printf(info->io, "\\0A");
 					}
 					else
 					{
-						uni_printf(io, "%c", ch);
+						uni_printf(info->io, "%c", ch);
 					}
 				}
-				uni_printf(io, "\\00\", align 1\n");
+				uni_printf(info->io, "\\00\", align 1\n");
 			}
 			break;
 			case TPrintf:
@@ -60,15 +61,16 @@ static size_t node_recursive(node *const nd, size_t i, universal_io *const io, i
 				const size_t N = (size_t)node_get_arg(&child, 0);
 				// перестановка TPrintf
 				// TODO: подумать, как для всех типов работать будет
-				for (size_t k = 0; k < N + 1; k++)
+				for (size_t j = 0; j < N + 1; j++)
 				{
-					node_swap(nd, j-k, nd, j-k-1);
+					node_swap(nd, i - j, nd, i - j - 1);
 				}
+
 				// перестановка TString
 				// TODO: подумать, как для всех типов работать будет
-				for (size_t k = 0; k < N; k++)
+				for (size_t j = 0; j < N; j++)
 				{
-					node_swap(nd, j-k, nd, j-k-1);
+					node_swap(nd, i - j, nd, i - j - 1);
 				}
 
 				info->was_printf = 1;
@@ -76,47 +78,23 @@ static size_t node_recursive(node *const nd, size_t i, universal_io *const io, i
 			break;
 		}
 
-		i = node_recursive(&child, i, io, info);
+		node_recursive(info, &child);
 	}
-	return i;
 }
 
-static int optimize_pass(universal_io *const io, syntax *const sx, int architecture)
+static int optimize_pass(universal_io *const io, syntax *const sx)
 {
-	// архитектурно-зависимая часть
-	// здесь будет обработка флагов
-	switch (architecture)
-	{
-		case 0:
-		{
-			uni_printf(io, "target datalayout = \"e-m:m-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S64\"\n");
-			uni_printf(io, "target triple = \"mipsel\"\n\n");
-		}
-		break;
-		case 1:
-		{
-			uni_printf(io, "target datalayout = \"e-m:e-i64:64-f80:128-n8:16:32:64-S128\"\n");
-			uni_printf(io, "target triple = \"x86_64-pc-linux-gnu\"\n\n");
-		}
-		break;
-	}
-
 	information info;
+	info.io = io;
 	info.string_num = 1;
 	info.was_printf = 0;
 
-	if (!vector_is_correct(&sx->tree))
-	{
-		return -1;
-	}
-
 	node nd = node_get_root(&sx->tree);
 	
-	size_t index = 0;
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
 	{
 		node child = node_get_child(&nd, i);
-		index = node_recursive(&child, index, io, &info);
+		node_recursive(&info, &child);
 	}
 
 	uni_printf(io, "\n");
@@ -126,7 +104,27 @@ static int optimize_pass(universal_io *const io, syntax *const sx, int architect
 	}
 	uni_printf(io, "\n");
 
-	return index != SIZE_MAX && index == vector_size(nd.tree) ? 0 : -1;
+	return 0;
+}
+
+static void architecture(const workspace *const ws, universal_io *const io)
+{
+	size_t i = 0;
+	const char *flag = ws_get_flag(ws, i);
+	while (flag != NULL)
+	{
+		if (strcmp(flag, "-mipsel") == 0)
+		{
+			uni_printf(io, "target datalayout = \"e-m:m-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S64\"\n");
+			uni_printf(io, "target triple = \"mipsel\"\n\n");
+		}
+		else if (strcmp(flag, "-x86_64-pc-linux-gnu") == 0)
+		{
+			uni_printf(io, "target datalayout = \"e-m:e-i64:64-f80:128-n8:16:32:64-S128\"\n");
+			uni_printf(io, "target triple = \"x86_64-pc-linux-gnu\"\n\n");
+		}
+		flag = ws_get_flag(ws, ++i);
+	}
 }
 
 
@@ -139,12 +137,14 @@ static int optimize_pass(universal_io *const io, syntax *const sx, int architect
  */
 
 
-int optimize_for_llvm(const workspace *const ws, universal_io *const io, syntax *const sx, int architecture)
+int optimize_for_llvm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
-	if (!out_is_correct(io) || sx == NULL)
+	if (!out_is_correct(io) || !ws_is_correct(ws) || sx == NULL)
 	{
 		return -1;
 	}
 
-	return optimize_pass(io, sx, architecture);
+	architecture(ws, io);
+
+	return optimize_pass(io, sx);
 }

@@ -434,7 +434,7 @@ static void block( information *const info, node *const nd)
 
 int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
-	optimize_for_llvm(ws, io, sx, 1);
+	optimize_for_llvm(ws, io, sx);
 
 	information info;
 	info.io = io;

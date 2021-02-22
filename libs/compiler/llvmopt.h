@@ -30,11 +30,10 @@ extern "C" {
  *	@param	ws				Compiler workspace
  *	@param	io				Universal io structure
  *	@param	sx				Syntax structure
- *	@param	architecture	Architecture parameter
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int optimize_for_llvm(const workspace *const ws, universal_io *const io, syntax *const sx, int architecture);
+int optimize_for_llvm(const workspace *const ws, universal_io *const io, syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */
