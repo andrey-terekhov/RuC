@@ -26,13 +26,13 @@ item_t parse_struct_declaration_list(parser *const prs);
  *	Parse type specifier [C99 6.7.2]
  *
  *	type-specifier:
- *		void
- *		char
- *		short
- *		int
- *		long
- *		float
- *		double
+ *		'void'
+ *		'char'
+ *		'short'
+ *		'int'
+ *		'long'
+ *		'float'
+ *		'double'
  *		struct-or-union-specifier
  *		enum-specifier [TODO]
  *		typedef-name [TODO]
