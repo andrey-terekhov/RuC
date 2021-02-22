@@ -547,9 +547,7 @@ static void compress_ident(virtual *const vm, const size_t ref)
 	vector_add(&vm->identifiers, ident_get_mode(vm->sx, ref));
 	vector_add(&vm->identifiers, ident_get_displ(vm->sx, ref));
 
-	char buffer[MAXSTRINGL];
-	repr_get_name(vm->sx, (size_t)ident_get_repr(vm->sx, ref), buffer);
-
+	const char *buffer = repr_get_name(vm->sx, (size_t)ident_get_repr(vm->sx, ref));
 	for (size_t i = 0; buffer[i] != '\0'; i += utf8_symbol_size(buffer[i]))
 	{
 		vector_add(&vm->representations, (item_t)utf8_convert(&buffer[i]));
@@ -962,7 +960,7 @@ static int output_export(universal_io *const io, const virtual *const vm)
 
 int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
-	if (!out_is_correct(io) || sx == NULL)
+	if (!ws_is_correct(ws) || !out_is_correct(io) || sx == NULL)
 	{
 		return -1;
 	}

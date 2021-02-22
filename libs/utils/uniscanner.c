@@ -52,6 +52,6 @@ char32_t uni_scan_char(universal_io *const io)
 			return (char32_t)EOF;
 		}
 	}
-	
+
 	return utf8_convert(buffer);
 }

@@ -14,13 +14,47 @@
  *	limitations under the License.
  */
 
+#include "codes.h"
 #include "parser.h"
+#include "tree.h"
+
+
+const char *const DEFAULT_TREE = "tree.txt";
+const char *const DEFAULT_NEW = "new.txt";
 
 
 /** Check if the set of tokens has token in it */
 int token_check(const uint8_t tokens, const token_t token)
 {
 	return (tokens & token) != 0;
+}
+
+/**
+ *	Create parser structure
+ *
+ *	@param	sx		Syntax structure
+ *	@param	lxr		Lexer structure
+ *
+ *	@return	Parser structure
+ */
+parser parser_create(syntax *const sx, lexer *const lxr)
+{
+	parser prs;
+	prs.sx = sx;
+	prs.lxr = lxr;
+
+	prs.sp = 0;
+	prs.sopnd = -1;
+	prs.leftansttype = -1;
+	prs.anstdispl = 0;
+
+	prs.buf_flag = 0;
+	prs.buf_cur = 0;
+
+	prs.flag_in_assignment = 0;
+	prs.was_error = 0;
+
+	return prs;
 }
 
 
@@ -33,20 +67,44 @@ int token_check(const uint8_t tokens, const token_t token)
  */
 
 
-int parse(parser *const prs)
+int parse(universal_io *const io, syntax *const sx)
 {
-	get_char(prs->lxr);
-	get_char(prs->lxr);
-	token_consume(prs);
+	if (!in_is_correct(io) || sx == NULL)
+	{
+		return -1;
+	}
+
+	lexer lxr = create_lexer(io, sx);
+	parser prs = parser_create(sx, &lxr);
+
+	get_char(prs.lxr);
+	get_char(prs.lxr);
+	token_consume(&prs);
 
 	do
 	{
-		parse_declaration_external(prs);
-	} while (prs->next_token != eof);
+		parse_declaration_external(&prs);
+	} while (prs.next_token != eof);
 
-	tree_add(prs->sx, TEnd);
+	tree_add(prs.sx, TEnd);
 
-	return prs->was_error || prs->lxr->was_error;
+#ifndef GENERATE_TREE
+	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
+#else
+	const int ret = prs.was_error || prs.lxr->was_error || !sx_is_correct(sx)
+		|| tree_test(&sx->tree)
+		|| tree_test_next(&sx->tree)
+		|| tree_test_recursive(&sx->tree)
+		|| tree_test_copy(&sx->tree);
+
+	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
+
+	if (!ret)
+	{
+		tree_print(DEFAULT_NEW, &sx->tree);
+	}
+	return ret;
+#endif
 }
 
 
@@ -193,13 +251,11 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
 	}
 	else if (ret == SIZE_MAX - 1)
 	{
-		char buffer[MAXSTRINGL];
-		repr_get_name(prs->sx, repr, buffer);
-		parser_error(prs, repeated_decl, buffer);
+		parser_error(prs, repeated_decl, repr_get_name(prs->sx, repr));
 	}
 	else
 	{
-		prs->lastid = (int)ret;
+		prs->lastid = ret;
 	}
 
 	return ret;
