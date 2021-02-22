@@ -31,8 +31,7 @@ typedef struct lexer
 	universal_io *io;					/**< Universal io structure */
 	syntax *sx;							/**< Syntax structure */
 
-	char32_t curr_char;					/**< Current character */
-	char32_t next_char;					/**< Lookahead character */
+	char32_t character;					/**< Current character */
 	size_t repr;						/**< Pointer to representation of the read identifier */
 	int num;							/**< Value of the read integer number */
 	double num_double;					/**< Value of the read double number */

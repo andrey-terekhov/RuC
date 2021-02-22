@@ -38,6 +38,14 @@ void lexer_error(lexer *const lxr, error_t num, ...)
 	va_end(args);
 }
 
+char32_t peek_char(lexer *const lxr)
+{
+	const size_t position = in_get_position(lxr->io);
+	const char32_t result = uni_scan_char(lxr->io);
+	in_set_position(lxr->io, position);
+	return result;
+}
+
 /**
  *	Skip over a series of whitespace characters
  *
@@ -45,8 +53,8 @@ void lexer_error(lexer *const lxr, error_t num, ...)
  */
 void skip_whitespace(lexer *const lxr)
 {
-	while (lxr->curr_char == ' ' || lxr->curr_char == '\t'
-		|| lxr->curr_char == '\n' || lxr->curr_char == '\r')
+	while (lxr->character == ' ' || lxr->character == '\t'
+		|| lxr->character == '\n' || lxr->character == '\r')
 	{
 		get_char(lxr);
 	}
@@ -59,7 +67,7 @@ void skip_whitespace(lexer *const lxr)
  */
 void skip_line_comment(lexer *const lxr)
 {
-	while (lxr->curr_char != '\n' && lxr->next_char != (char32_t)EOF)
+	while (lxr->character != '\n' && lxr->character != (char32_t)EOF)
 	{
 		get_char(lxr);
 	}
@@ -72,9 +80,9 @@ void skip_line_comment(lexer *const lxr)
  */
 void skip_block_comment(lexer *const lxr)
 {
-	while (lxr->curr_char != '*' && lxr->next_char != '/')
+	while (lxr->character != '*' && get_char(lxr) != '/')
 	{
-		if (lxr->next_char == (char32_t)EOF)
+		if (lxr->character == (char32_t)EOF)
 		{
 			lexer_error(lxr, unterminated_block_comment);
 			return;
@@ -98,9 +106,9 @@ token_t lex_identifier_or_keyword(lexer *const lxr)
 
 	do
 	{
-		spelling[length++] = lxr->curr_char;
+		spelling[length++] = lxr->character;
 		get_char(lxr);
-	} while (utf8_is_letter(lxr->curr_char) || utf8_is_digit(lxr->curr_char));
+	} while (utf8_is_letter(lxr->character) || utf8_is_digit(lxr->character));
 	spelling[length] = '\0';
 
 	const size_t repr = repr_reserve(lxr->sx, spelling);
@@ -130,10 +138,10 @@ token_t lex_numeric_constant(lexer *const lxr)
 	int flag_int = 1;
 	int flag_too_long = 0;
 
-	while (utf8_is_digit(lxr->curr_char))
+	while (utf8_is_digit(lxr->character))
 	{
-		num_int = num_int * 10 + (lxr->curr_char - '0');
-		num_double = num_double * 10 + (lxr->curr_char - '0');
+		num_int = num_int * 10 + (lxr->character - '0');
+		num_double = num_double * 10 + (lxr->character - '0');
 		get_char(lxr);
 	}
 
@@ -143,43 +151,43 @@ token_t lex_numeric_constant(lexer *const lxr)
 		flag_int = 0;
 	}
 
-	if (lxr->curr_char == '.')
+	if (lxr->character == '.')
 	{
 		flag_int = 0;
 		double position_mult = 0.1;
 		while (utf8_is_digit(get_char(lxr)))
 		{
-			num_double += (lxr->curr_char - '0') * position_mult;
+			num_double += (lxr->character - '0') * position_mult;
 			position_mult *= 0.1;
 		}
 	}
 
-	if (utf8_is_power(lxr->curr_char))
+	if (utf8_is_power(lxr->character))
 	{
 		int power = 0;
 		int sign = 1;
 		get_char(lxr);
 
-		if (lxr->curr_char == '-')
+		if (lxr->character == '-')
 		{
 			flag_int = 0;
 			get_char(lxr);
 			sign = -1;
 		}
-		else if (lxr->curr_char == '+')
+		else if (lxr->character == '+')
 		{
 			get_char(lxr);
 		}
 
-		if (!utf8_is_digit(lxr->curr_char))
+		if (!utf8_is_digit(lxr->character))
 		{
 			lexer_error(lxr, must_be_digit_after_exp);
 			return float_constant;
 		}
 
-		while (utf8_is_digit(lxr->curr_char))
+		while (utf8_is_digit(lxr->character))
 		{
-			power = power * 10 + (lxr->curr_char - '0');
+			power = power * 10 + (lxr->character - '0');
 			get_char(lxr);
 		}
 
@@ -212,7 +220,7 @@ token_t lex_numeric_constant(lexer *const lxr)
 /**	Get character or escape sequence after '\' */
 char32_t get_next_string_elem(lexer *const lxr)
 {
-	if (lxr->curr_char == '\\')
+	if (lxr->character == '\\')
 	{
 		switch (get_char(lxr))
 		{
@@ -230,16 +238,16 @@ char32_t get_next_string_elem(lexer *const lxr)
 			case '\\':
 			case '\'':
 			case '\"':
-				return lxr->curr_char;
+				return lxr->character;
 
 			default:
 				lexer_error(lxr, unknown_escape_sequence);
-				return lxr->curr_char;
+				return lxr->character;
 		}
 	}
 	else
 	{
-		return lxr->curr_char;
+		return lxr->character;
 	}
 }
 
@@ -285,10 +293,10 @@ token_t lex_string_literal(lexer *const lxr)
 {
 	size_t length = 0;
 	int flag_too_long_string = 0;
-	while (lxr->curr_char == '\"')
+	while (lxr->character == '\"')
 	{
 		get_char(lxr);
-		while (lxr->curr_char != '"' && lxr->curr_char != '\n' && length < MAXSTRINGL)
+		while (lxr->character != '"' && lxr->character != '\n' && length < MAXSTRINGL)
 		{
 			if (!flag_too_long_string)
 			{
@@ -300,12 +308,12 @@ token_t lex_string_literal(lexer *const lxr)
 		{
 			lexer_error(lxr, string_too_long);
 			flag_too_long_string = 1;
-			while (lxr->curr_char != '"' && lxr->curr_char != '\n')
+			while (lxr->character != '"' && lxr->character != '\n')
 			{
 				get_char(lxr);
 			}
 		}
-		if (lxr->curr_char == '"')
+		if (lxr->character == '"')
 		{
 			get_char(lxr);
 		}
@@ -339,7 +347,6 @@ lexer create_lexer(universal_io *const io, syntax *const sx)
 	lxr.was_error = 0;
 
 	get_char(&lxr);
-	get_char(&lxr);
 
 	return lxr;
 }
@@ -351,9 +358,8 @@ char32_t get_char(lexer *const lxr)
 		return (char32_t)EOF;
 	}
 
-	lxr->curr_char = lxr->next_char;
-	lxr->next_char = uni_scan_char(lxr->io);
-	return lxr->curr_char;
+	lxr->character = uni_scan_char(lxr->io);
+	return lxr->character;
 }
 
 token_t lex(lexer *const lxr)
@@ -364,13 +370,13 @@ token_t lex(lexer *const lxr)
 	}
 
 	skip_whitespace(lxr);
-	switch (lxr->curr_char)
+	switch (lxr->character)
 	{
 		case (char32_t)EOF:
 			return eof;
 
 		default:
-			if (utf8_is_letter(lxr->curr_char) || lxr->curr_char == '#')
+			if (utf8_is_letter(lxr->character) || lxr->character == '#')
 			{
 				// Keywords [C99 6.4.1]
 				// Identifiers [C99 6.4.2]
@@ -378,7 +384,7 @@ token_t lex(lexer *const lxr)
 			}
 			else
 			{
-				lexer_error(lxr, bad_character, lxr->curr_char);
+				lexer_error(lxr, bad_character, lxr->character);
 				// Pretending the character didn't exist
 				get_char(lxr);
 				return lex(lxr);
@@ -444,7 +450,7 @@ token_t lex(lexer *const lxr)
 			return comma;
 
 		case '.':
-			if (utf8_is_digit(lxr->next_char))
+			if (utf8_is_digit(peek_char(lxr)))
 			{
 				return lex_numeric_constant(lxr);
 			}
