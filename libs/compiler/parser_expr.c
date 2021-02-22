@@ -25,15 +25,15 @@ void expr(parser *const prs, int level);
 
 int scanner(parser *const prs)
 {
-	prs->curr_token = prs->next_token;
+	prs->curr_token = prs->token;
 
 	if (!prs->buf_flag)
 	{
-		prs->next_token = lex(prs->lxr);
+		prs->token = lex(prs->lxr);
 	}
 	else
 	{
-		prs->next_token = prs->buf_cur;
+		prs->token = prs->buf_cur;
 		prs->buf_flag--;
 	}
 
@@ -42,7 +42,7 @@ int scanner(parser *const prs)
 
 void must_be(parser *const prs, const token_t what, const error_t num)
 {
-	if (prs->next_token != what)
+	if (prs->token != what)
 	{
 		parser_error(prs, num);
 		prs->curr_token = what;
@@ -264,7 +264,6 @@ void actstring(int type, parser *const prs)
 
 void mustbestring(parser *const prs)
 {
-	scanner(prs);
 	exprassn(prs, 1);
 	if (prs->was_error == 6)
 	{
@@ -282,7 +281,6 @@ void mustbestring(parser *const prs)
 
 void mustbepointstring(parser *const prs)
 {
-	scanner(prs);
 	exprassn(prs, 1);
 	if (prs->was_error == 6)
 	{
@@ -302,7 +300,6 @@ void mustbepointstring(parser *const prs)
 
 void mustberow(parser *const prs)
 {
-	scanner(prs);
 	exprassn(prs, 1);
 	if (prs->was_error == 6)
 	{
@@ -321,7 +318,6 @@ void mustberow(parser *const prs)
 
 void mustbeint(parser *const prs)
 {
-	scanner(prs);
 	exprassn(prs, 1);
 	if (prs->was_error == 6)
 	{
@@ -339,8 +335,9 @@ void mustbeint(parser *const prs)
 
 void mustberowofint(parser *const prs)
 {
-	if (scanner(prs) == BEGIN)
+	if (prs->token == BEGIN)
 	{
+		scanner(prs);
 		actstring(LINT, prs), totree(prs, TExprend);
 		if (prs->was_error == 2)
 		{
@@ -374,8 +371,9 @@ void mustberowofint(parser *const prs)
 
 void mustberowoffloat(parser *const prs)
 {
-	if (scanner(prs) == BEGIN)
+	if (prs->token == BEGIN)
 	{
+		scanner(prs);
 		actstring(LFLOAT, prs), totree(prs, TExprend);
 		if (prs->was_error == 2)
 		{
@@ -406,6 +404,518 @@ void mustberowoffloat(parser *const prs)
 		parser_error(prs, not_rowoffloat_in_stanfunc);
 		prs->was_error = 5;
 	}
+}
+
+void parse_standard_function_call(parser *const prs)
+{
+	int func = prs->curr_token;
+
+	if (scanner(prs) != LEFTBR)
+	{
+		parser_error(prs, no_leftbr_in_stand_func);
+		prs->buf_cur = prs->token;
+		prs->token = prs->curr_token;
+		prs->curr_token = LEFTBR;
+		prs->buf_flag++;
+	}
+	if (func == ASSERT)
+	{
+		mustbeint(prs);
+		if (prs->was_error == 5)
+		{
+			prs->was_error = 4;
+			return; // 1
+		}
+		must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+		mustbestring(prs);
+	}
+	else if (func <= STRCPY && func >= STRLEN) // функции работы со строками
+	{
+		if (func >= STRNCAT)
+		{
+			mustbepointstring(prs);
+		}
+		else
+		{
+			mustbestring(prs);
+		}
+		if (prs->was_error == 5)
+		{
+			prs->was_error = 4;
+			return; // 1
+		}
+		if (func != STRLEN)
+		{
+			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+			mustbestring(prs);
+			if (prs->was_error == 5)
+			{
+				prs->was_error = 4;
+				return; // 1
+			}
+			if (func == STRNCPY || func == STRNCAT || func == STRNCMP)
+			{
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				mustbeint(prs);
+			}
+		}
+		if (prs->was_error == 5)
+		{
+			prs->was_error = 4;
+			return; // 1
+		}
+		if (func < STRNCAT)
+		{
+			prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
+		}
+	}
+	else if (func >= RECEIVE_STRING && func <= SEND_INT)
+	{
+		// новые функции Фадеева
+		mustbeint(prs);
+		if (prs->was_error == 5)
+		{
+			prs->was_error = 4;
+			return; // 1
+		}
+		if (func == SEND_INT || func == SEND_STRING)
+		{
+			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+			// scaner(context);
+			mustberowofint(prs);
+		}
+		else if (func == SEND_FLOAT)
+		{
+			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+			// scaner(context);
+			mustberowoffloat(prs);
+		}
+		else
+		{
+			prs->stackoperands[++prs->sopnd] = prs->ansttype =
+			func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)to_modetab(prs, mode_array, LCHAR);
+		}
+	}
+	else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
+	{
+		if (func <= PIXEL && func >= ICON)
+		{
+			// scaner(context);
+			mustberowofint(prs);
+			if (prs->was_error == 5)
+			{
+				prs->was_error = 4;
+				return; // 1
+			}
+			if (func != CLEAR)
+			{
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+			}
+
+			if (func == LINE || func == RECTANGLE || func == ELLIPS)
+			{
+				mustbeint(prs);
+				if (prs->was_error == 5)
+				{
+					prs->was_error = 4;
+					return; // 1
+				}
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				mustbeint(prs);
+				if (prs->was_error == 5)
+				{
+					prs->was_error = 4;
+					return; // 1
+				}
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				mustbeint(prs);
+				if (prs->was_error == 5)
+				{
+					prs->was_error = 4;
+					return; // 1
+				}
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				mustbeint(prs);
+				if (prs->was_error == 5)
+				{
+					prs->was_error = 4;
+					return; // 1
+				}
+				if (func != LINE)
+				{
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(prs);
+				}
+			}
+			else if (func == ICON || func == PIXEL)
+			{
+				mustbeint(prs);
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				if (prs->was_error == 5)
+				{
+					prs->was_error = 4;
+					return; // 1
+				}
+				mustbeint(prs);
+				if (prs->was_error == 5)
+				{
+					prs->was_error = 4;
+					return; // 1
+				}
+				if (func == ICON)
+				{
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(prs);
+				}
+			}
+			else if (func == DRAW_NUMBER || func == DRAW_STRING)
+			{
+				mustbeint(prs);
+				if (prs->was_error == 5)
+				{
+					prs->was_error = 4;
+					return; // 1
+				}
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				mustbeint(prs);
+				if (prs->was_error == 5)
+				{
+					prs->was_error = 4;
+					return; // 1
+				}
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+
+				if (func == DRAW_STRING)
+				{
+					mustbestring(prs);
+				}
+				else // DRAW_NUMBER
+				{
+					exprassn(prs, 1);
+					if (prs->was_error == 6)
+					{
+						prs->was_error = 4;
+						return; // 1
+					}
+					toval(prs);
+					prs->sopnd--;
+					if (mode_is_int(prs->ansttype))
+					{
+						totree(prs, WIDEN);
+					}
+					else if (prs->ansttype != LFLOAT)
+					{
+						parser_error(prs, not_float_in_stanfunc);
+						prs->was_error = 4;
+						return; // 1
+					}
+				}
+			}
+		}
+		else if (func == SETSIGNAL)
+		{
+			mustbeint(prs);
+			if (prs->was_error == 5)
+			{
+				prs->was_error = 4;
+				return; // 1
+			}
+			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+			mustberowofint(prs);
+			if (prs->was_error == 5)
+			{
+				prs->was_error = 4;
+				return; // 1
+			}
+			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+			mustberowofint(prs);
+		}
+		else if (func == WIFI_CONNECT || func == BLYNK_AUTORIZATION || func == BLYNK_NOTIFICATION)
+		{
+			mustbestring(prs);
+			if (func == WIFI_CONNECT)
+			{
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				mustbestring(prs);
+			}
+		}
+		else
+		{
+			mustbeint(prs);
+			if (prs->was_error == 5)
+			{
+				prs->was_error = 4;
+				return; // 1
+			}
+			if (func != BLYNK_RECEIVE)
+			{
+				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				if (func == BLYNK_TERMINAL)
+				{
+					mustbestring(prs);
+				}
+				else if (func == BLYNK_SEND)
+				{
+					mustbeint(prs);
+					if (prs->was_error == 5)
+					{
+						prs->was_error = 4;
+						return; // 1
+					}
+				}
+				else if (func == BLYNK_PROPERTY)
+				{
+					mustbestring(prs);
+					if (prs->was_error == 5)
+					{
+						prs->was_error = 4;
+						return; // 1
+					}
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					mustbestring(prs);
+				}
+				else // BLYNK_LCD
+				{
+					mustbeint(prs);
+					if (prs->was_error == 5)
+					{
+						prs->was_error = 4;
+						return; // 1
+					}
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					mustbeint(prs);
+					if (prs->was_error == 5)
+					{
+						prs->was_error = 4;
+						return; // 1
+					}
+					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					mustbestring(prs);
+				}
+			}
+			else
+			{
+				prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
+			}
+		}
+	}
+	else if (func == UPB) // UPB
+	{
+		mustbeint(prs);
+		if (prs->was_error == 5)
+		{
+			prs->was_error = 4;
+			return; // 1
+		}
+		must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+		mustberow(prs);
+		if (prs->was_error == 5)
+		{
+			prs->was_error = 4;
+			return; // 1
+		}
+		prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
+	}
+	else if (func <= TMSGSEND && func >= TGETNUM) // процедуры управления параллельными нитями
+	{
+		if (func == TINIT || func == TDESTROY || func == TEXIT)
+		{
+			; // void()
+		}
+		else if (func == TMSGRECEIVE || func == TGETNUM) // getnum int()   msgreceive msg_info()
+		{
+			prs->anst = VAL;
+			prs->ansttype = prs->stackoperands[++prs->sopnd] =
+			func == TGETNUM ? LINT : 2; // 2 - это ссылка на msg_info
+										//не было параметра,  выдали 1 результат
+		}
+		else
+		{
+			// MSGSEND void(msg_info)  CREATE int(void*(*func)(void*))
+			// SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
+			// у этих процедур 1 параметр
+
+			if (func == TCREATE)
+			{
+				item_t dn;
+
+				scanner(prs);
+				if (prs->curr_token != IDENT)
+				{
+					parser_error(prs, act_param_not_ident);
+					prs->was_error = 4;
+					return; // 1
+				}
+				applid(prs);
+				if (prs->was_error == 5)
+				{
+					prs->was_error = 4;
+					return; // 1
+				}
+				if (ident_get_mode(prs->sx, prs->lastid) != 15 ||
+					prs->was_error == 5) // 15 - это аргумент типа void* (void*)
+				{
+					parser_error(prs, wrong_arg_in_create);
+					prs->was_error = 4;
+					return; // 1
+				}
+
+				prs->stackoperands[prs->sopnd] = prs->ansttype = LINT;
+				dn = ident_get_displ(prs->sx, prs->lastid);
+				if (dn < 0)
+				{
+					totree(prs, TIdenttoval);
+					totree(prs, -dn);
+				}
+				else
+				{
+					totree(prs, TConst);
+					totree(prs, dn);
+				}
+				prs->anst = VAL;
+			}
+			else
+			{
+				prs->leftansttype = 2;
+				exprassn(prs, 1);
+				if (prs->was_error == 6)
+				{
+					prs->was_error = 4;
+					return; // 1
+				}
+				toval(prs);
+
+				if (func == TMSGSEND)
+				{
+					if (prs->ansttype != 2) // 2 - это аргумент типа msg_info (struct{int numTh; int data;})
+					{
+						parser_error(prs, wrong_arg_in_send);
+						prs->was_error = 4;
+						return; // 1
+					}
+					--prs->sopnd;
+				}
+				else
+				{
+					if (!mode_is_int(prs->ansttype))
+					{
+						parser_error(prs, param_threads_not_int);
+						prs->was_error = 4;
+						return; // 1
+					}
+					if (func == TSEMCREATE)
+					{
+						prs->anst = VAL,
+						prs->ansttype = prs->stackoperands[prs->sopnd] =
+						LINT; // съели 1 параметр, выдали int
+					}
+					else
+					{
+						--prs->sopnd; // съели 1 параметр, не выдали
+					}
+					// результата
+				}
+			}
+		}
+	}
+	else if (func == RAND)
+	{
+		prs->ansttype = prs->stackoperands[++prs->sopnd] = LFLOAT;
+	}
+	else if (func == ROUND)
+	{
+		exprassn(prs, 1);
+		if (prs->was_error == 6)
+		{
+			prs->was_error = 4;
+			return; // 1
+		}
+		toval(prs);
+		prs->ansttype = prs->stackoperands[prs->sopnd] = LINT;
+	}
+	else
+	{
+		exprassn(prs, 1);
+		if (prs->was_error == 6)
+		{
+			prs->was_error = 4;
+			return; // 1
+		}
+		toval(prs);
+
+		// GETDIGSENSOR int(int port, int pins[]),
+		// GETANSENSOR int (int port, int pin),
+		// SETMOTOR и VOLTAGE void (int port, int volt)
+		if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR || func == VOLTAGE)
+		{
+			if (!mode_is_int(prs->ansttype))
+			{
+				parser_error(prs, param_setmotor_not_int);
+				prs->was_error = 4;
+				return; // 1
+			}
+			must_be(prs, COMMA, no_comma_in_setmotor);
+			if (func == GETDIGSENSOR)
+			{
+				mustberowofint(prs);
+				if (prs->was_error == 5)
+				{
+					prs->was_error = 4;
+					return; // 1
+				}
+				prs->ansttype = prs->stackoperands[++prs->sopnd] = LINT;
+			}
+			else
+			{
+				exprassn(prs, 1);
+				if (prs->was_error == 6)
+				{
+					prs->was_error = 4;
+					return; // 1
+				}
+				toval(prs);
+				if (!mode_is_int(prs->ansttype))
+				{
+					parser_error(prs, param_setmotor_not_int);
+					prs->was_error = 4;
+					return; // 1
+				}
+				if (func == SETMOTOR || func == VOLTAGE)
+				{
+					prs->sopnd -= 2;
+				}
+				else
+				{
+					--prs->sopnd, prs->anst = VAL;
+				}
+			}
+		}
+		else if (func == ABS && mode_is_int(prs->ansttype))
+		{
+			func = ABSI;
+		}
+		else
+		{
+			if (mode_is_int(prs->ansttype))
+			{
+				totree(prs, WIDEN);
+				prs->ansttype = prs->stackoperands[prs->sopnd] = LFLOAT;
+			}
+			if (!mode_is_float(prs->ansttype))
+			{
+				parser_error(prs, bad_param_in_stand_func);
+				prs->was_error = 4;
+				return; // 1
+			}
+		}
+	}
+	if (prs->was_error == 5)
+	{
+		prs->was_error = 4;
+		return; // 1
+	}
+	totree(prs, 9500 - func);
+	must_be(prs, RIGHTBR, no_rightbr_in_stand_func);
 }
 
 void primaryexpr(parser *const prs)
@@ -453,7 +963,7 @@ void primaryexpr(parser *const prs)
 	}
 	else if (prs->curr_token == LEFTBR)
 	{
-		if (prs->next_token == LVOID)
+		if (prs->token == LVOID)
 		{
 			scanner(prs);
 			must_be(prs, LMULT, no_mult_in_cast);
@@ -477,7 +987,6 @@ void primaryexpr(parser *const prs)
 		else
 		{
 			int oldsp = prs->sp;
-			scanner(prs);
 			expr(prs, 1);
 			if (prs->was_error == 5)
 			{
@@ -493,518 +1002,7 @@ void primaryexpr(parser *const prs)
 	}
 	else if (prs->curr_token <= STANDARD_FUNC_START) // стандартная функция
 	{
-		int func = prs->curr_token;
-
-		if (scanner(prs) != LEFTBR)
-		{
-			parser_error(prs, no_leftbr_in_stand_func);
-			prs->buf_cur = prs->next_token;
-			prs->next_token = prs->curr_token;
-			prs->curr_token = LEFTBR;
-			prs->buf_flag++;
-		}
-		if (func == ASSERT)
-		{
-			mustbeint(prs);
-			if (prs->was_error == 5)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
-			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-			mustbestring(prs);
-		}
-		else if (func <= STRCPY && func >= STRLEN) // функции работы со строками
-		{
-			if (func >= STRNCAT)
-			{
-				mustbepointstring(prs);
-			}
-			else
-			{
-				mustbestring(prs);
-			}
-			if (prs->was_error == 5)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
-			if (func != STRLEN)
-			{
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-				mustbestring(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
-				if (func == STRNCPY || func == STRNCAT || func == STRNCMP)
-				{
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint(prs);
-				}
-			}
-			if (prs->was_error == 5)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
-			if (func < STRNCAT)
-			{
-				prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
-			}
-		}
-		else if (func >= RECEIVE_STRING && func <= SEND_INT)
-		{
-			// новые функции Фадеева
-			mustbeint(prs);
-			if (prs->was_error == 5)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
-			if (func == SEND_INT || func == SEND_STRING)
-			{
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-				// scaner(context);
-				mustberowofint(prs);
-			}
-			else if (func == SEND_FLOAT)
-			{
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-				// scaner(context);
-				mustberowoffloat(prs);
-			}
-			else
-			{
-				prs->stackoperands[++prs->sopnd] = prs->ansttype =
-				func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)to_modetab(prs, mode_array, LCHAR);
-			}
-		}
-		else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
-		{
-			if (func <= PIXEL && func >= ICON)
-			{
-				// scaner(context);
-				mustberowofint(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
-				if (func != CLEAR)
-				{
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-				}
-
-				if (func == LINE || func == RECTANGLE || func == ELLIPS)
-				{
-					mustbeint(prs);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint(prs);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint(prs);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint(prs);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-					if (func != LINE)
-					{
-						must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-						mustbeint(prs);
-					}
-				}
-				else if (func == ICON || func == PIXEL)
-				{
-					mustbeint(prs);
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-					mustbeint(prs);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-					if (func == ICON)
-					{
-						must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-						mustbeint(prs);
-					}
-				}
-				else if (func == DRAW_NUMBER || func == DRAW_STRING)
-				{
-					mustbeint(prs);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-					mustbeint(prs);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-
-					if (func == DRAW_STRING)
-					{
-						mustbestring(prs);
-					}
-					else // DRAW_NUMBER
-					{
-						scanner(prs);
-						exprassn(prs, 1);
-						if (prs->was_error == 6)
-						{
-							prs->was_error = 4;
-							return; // 1
-						}
-						toval(prs);
-						prs->sopnd--;
-						if (mode_is_int(prs->ansttype))
-						{
-							totree(prs, WIDEN);
-						}
-						else if (prs->ansttype != LFLOAT)
-						{
-							parser_error(prs, not_float_in_stanfunc);
-							prs->was_error = 4;
-							return; // 1
-						}
-					}
-				}
-			}
-			else if (func == SETSIGNAL)
-			{
-				mustbeint(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-				mustberowofint(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-				mustberowofint(prs);
-			}
-			else if (func == WIFI_CONNECT || func == BLYNK_AUTORIZATION || func == BLYNK_NOTIFICATION)
-			{
-				mustbestring(prs);
-				if (func == WIFI_CONNECT)
-				{
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-					mustbestring(prs);
-				}
-			}
-			else
-			{
-				mustbeint(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
-				if (func != BLYNK_RECEIVE)
-				{
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-					if (func == BLYNK_TERMINAL)
-					{
-						mustbestring(prs);
-					}
-					else if (func == BLYNK_SEND)
-					{
-						mustbeint(prs);
-						if (prs->was_error == 5)
-						{
-							prs->was_error = 4;
-							return; // 1
-						}
-					}
-					else if (func == BLYNK_PROPERTY)
-					{
-						mustbestring(prs);
-						if (prs->was_error == 5)
-						{
-							prs->was_error = 4;
-							return; // 1
-						}
-						must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-						mustbestring(prs);
-					}
-					else // BLYNK_LCD
-					{
-						mustbeint(prs);
-						if (prs->was_error == 5)
-						{
-							prs->was_error = 4;
-							return; // 1
-						}
-						must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-						mustbeint(prs);
-						if (prs->was_error == 5)
-						{
-							prs->was_error = 4;
-							return; // 1
-						}
-						must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-						mustbestring(prs);
-					}
-				}
-				else
-				{
-					prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
-				}
-			}
-		}
-		else if (func == UPB) // UPB
-		{
-			mustbeint(prs);
-			if (prs->was_error == 5)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
-			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
-			mustberow(prs);
-			if (prs->was_error == 5)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
-			prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
-		}
-		else if (func <= TMSGSEND && func >= TGETNUM) // процедуры управления параллельными нитями
-		{
-			if (func == TINIT || func == TDESTROY || func == TEXIT)
-			{
-				; // void()
-			}
-			else if (func == TMSGRECEIVE || func == TGETNUM) // getnum int()   msgreceive msg_info()
-			{
-				prs->anst = VAL;
-				prs->ansttype = prs->stackoperands[++prs->sopnd] =
-				func == TGETNUM ? LINT : 2; // 2 - это ссылка на msg_info
-											//не было параметра,  выдали 1 результат
-			}
-			else
-			{
-				// MSGSEND void(msg_info)  CREATE int(void*(*func)(void*))
-				// SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
-				// у этих процедур 1 параметр
-				scanner(prs);
-
-				if (func == TCREATE)
-				{
-					item_t dn;
-
-					if (prs->curr_token != IDENT)
-					{
-						parser_error(prs, act_param_not_ident);
-						prs->was_error = 4;
-						return; // 1
-					}
-					applid(prs);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-					if (ident_get_mode(prs->sx, prs->lastid) != 15 ||
-						prs->was_error == 5) // 15 - это аргумент типа void* (void*)
-					{
-						parser_error(prs, wrong_arg_in_create);
-						prs->was_error = 4;
-						return; // 1
-					}
-
-					prs->stackoperands[prs->sopnd] = prs->ansttype = LINT;
-					dn = ident_get_displ(prs->sx, prs->lastid);
-					if (dn < 0)
-					{
-						totree(prs, TIdenttoval);
-						totree(prs, -dn);
-					}
-					else
-					{
-						totree(prs, TConst);
-						totree(prs, dn);
-					}
-					prs->anst = VAL;
-				}
-				else
-				{
-					prs->leftansttype = 2;
-					exprassn(prs, 1);
-					if (prs->was_error == 6)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-					toval(prs);
-
-					if (func == TMSGSEND)
-					{
-						if (prs->ansttype != 2) // 2 - это аргумент типа msg_info (struct{int numTh; int data;})
-						{
-							parser_error(prs, wrong_arg_in_send);
-							prs->was_error = 4;
-							return; // 1
-						}
-						--prs->sopnd;
-					}
-					else
-					{
-						if (!mode_is_int(prs->ansttype))
-						{
-							parser_error(prs, param_threads_not_int);
-							prs->was_error = 4;
-							return; // 1
-						}
-						if (func == TSEMCREATE)
-						{
-							prs->anst = VAL,
-							prs->ansttype = prs->stackoperands[prs->sopnd] =
-							LINT; // съели 1 параметр, выдали int
-						}
-						else
-						{
-							--prs->sopnd; // съели 1 параметр, не выдали
-						}
-						// результата
-					}
-				}
-			}
-		}
-		else if (func == RAND)
-		{
-			prs->ansttype = prs->stackoperands[++prs->sopnd] = LFLOAT;
-		}
-		else if (func == ROUND)
-		{
-			scanner(prs);
-			exprassn(prs, 1);
-			if (prs->was_error == 6)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
-			toval(prs);
-			prs->ansttype = prs->stackoperands[prs->sopnd] = LINT;
-		}
-		else
-		{
-			scanner(prs);
-			exprassn(prs, 1);
-			if (prs->was_error == 6)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
-			toval(prs);
-
-			// GETDIGSENSOR int(int port, int pins[]),
-			// GETANSENSOR int (int port, int pin),
-			// SETMOTOR и VOLTAGE void (int port, int volt)
-			if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR || func == VOLTAGE)
-			{
-				if (!mode_is_int(prs->ansttype))
-				{
-					parser_error(prs, param_setmotor_not_int);
-					prs->was_error = 4;
-					return; // 1
-				}
-				must_be(prs, COMMA, no_comma_in_setmotor);
-				if (func == GETDIGSENSOR)
-				{
-					mustberowofint(prs);
-					if (prs->was_error == 5)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-					prs->ansttype = prs->stackoperands[++prs->sopnd] = LINT;
-				}
-				else
-				{
-					scanner(prs);
-					exprassn(prs, 1);
-					if (prs->was_error == 6)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-					toval(prs);
-					if (!mode_is_int(prs->ansttype))
-					{
-						parser_error(prs, param_setmotor_not_int);
-						prs->was_error = 4;
-						return; // 1
-					}
-					if (func == SETMOTOR || func == VOLTAGE)
-					{
-						prs->sopnd -= 2;
-					}
-					else
-					{
-						--prs->sopnd, prs->anst = VAL;
-					}
-				}
-			}
-			else if (func == ABS && mode_is_int(prs->ansttype))
-			{
-				func = ABSI;
-			}
-			else
-			{
-				if (mode_is_int(prs->ansttype))
-				{
-					totree(prs, WIDEN);
-					prs->ansttype = prs->stackoperands[prs->sopnd] = LFLOAT;
-				}
-				if (!mode_is_float(prs->ansttype))
-				{
-					parser_error(prs, bad_param_in_stand_func);
-					prs->was_error = 4;
-					return; // 1
-				}
-			}
-		}
-		if (prs->was_error == 5)
-		{
-			prs->was_error = 4;
-			return; // 1
-		}
-		totree(prs, 9500 - func);
-		must_be(prs, RIGHTBR, no_rightbr_in_stand_func);
+		parse_standard_function_call(prs);
 	}
 	else
 	{
@@ -1067,7 +1065,7 @@ int find_field(parser *const prs, int stype)
 
 void selectend(parser *const prs)
 {
-	while (prs->next_token == DOT)
+	while (prs->token == DOT)
 	{
 		prs->anstdispl += find_field(prs, prs->ansttype);
 		if (prs->was_error == 6)
@@ -1093,7 +1091,7 @@ void postexpr(parser *const prs)
 	lid = (int)prs->lastid;
 	leftansttyp = prs->ansttype;
 
-	if (prs->next_token == LEFTBR) // вызов функции
+	if (prs->token == LEFTBR) // вызов функции
 	{
 		int j;
 		item_t n;
@@ -1119,9 +1117,9 @@ void postexpr(parser *const prs)
 			int mdj = prs->leftansttype = (int)mode_get(prs->sx, j); // это вид формального параметра, в
 																			 // context->ansttype будет вид фактического
 																			 // параметра
-			scanner(prs);
 			if (mode_is_function(prs->sx, mdj))
 			{
+				scanner(prs);
 				// фактическим параметром должна быть функция, в С - это только идентификатор
 
 				if (prs->curr_token != IDENT)
@@ -1157,8 +1155,9 @@ void postexpr(parser *const prs)
 			}
 			else
 			{
-				if (prs->curr_token == BEGIN && mode_is_array(prs->sx, mdj))
+				if (prs->token == BEGIN && mode_is_array(prs->sx, mdj))
 				{
+					scanner(prs);
 					actstring((int)mode_get(prs->sx, mdj + 1), prs), totree(prs, TExprend);
 					if (prs->was_error == 2)
 					{
@@ -1215,9 +1214,9 @@ void postexpr(parser *const prs)
 		prs->anst = VAL;
 	}
 
-	while (prs->next_token == LEFTSQBR || prs->next_token == ARROW || prs->next_token == DOT)
+	while (prs->token == LEFTSQBR || prs->token == ARROW || prs->token == DOT)
 	{
-		while (prs->next_token == LEFTSQBR) // вырезка из массива (возможно, многомерного)
+		while (prs->token == LEFTSQBR) // вырезка из массива (возможно, многомерного)
 		{
 			if (was_func)
 			{
@@ -1266,7 +1265,7 @@ void postexpr(parser *const prs)
 			prs->anst = ADDR;
 		}
 
-		while (prs->next_token == ARROW)
+		while (prs->token == ARROW)
 		{
 			// это выборка поля из указателя на структуру, если после
 			// -> больше одной точки подряд, схлопываем в 1 select
@@ -1303,7 +1302,7 @@ void postexpr(parser *const prs)
 				return; // 1
 			}
 		}
-		if (prs->next_token == DOT)
+		if (prs->token == DOT)
 
 		{
 			if (!mode_is_struct(prs->sx, prs->ansttype))
@@ -1316,7 +1315,7 @@ void postexpr(parser *const prs)
 			{
 				int len1 = (int)size_of(prs->sx, prs->ansttype);
 				prs->anstdispl = 0;
-				while (prs->next_token == DOT)
+				while (prs->token == DOT)
 				{
 					prs->anstdispl += find_field(prs, prs->ansttype);
 					if (prs->was_error == 6)
@@ -1333,7 +1332,7 @@ void postexpr(parser *const prs)
 			else if (prs->anst == IDENT)
 			{
 				int globid = prs->anstdispl < 0 ? -1 : 1;
-				while (prs->next_token == DOT)
+				while (prs->token == DOT)
 				{
 					prs->anstdispl += globid * find_field(prs, prs->ansttype);
 					if (prs->was_error == 6)
@@ -1357,7 +1356,7 @@ void postexpr(parser *const prs)
 			}
 		}
 	}
-	if (prs->next_token == INC || prs->next_token == DEC) // a++, a--
+	if (prs->token == INC || prs->token == DEC) // a++, a--
 	{
 		int op;
 
@@ -1374,7 +1373,7 @@ void postexpr(parser *const prs)
 			prs->was_error = 4;
 			return; // 1
 		}
-		op = (prs->next_token == INC) ? POSTINC : POSTDEC;
+		op = (prs->token == INC) ? POSTINC : POSTDEC;
 		if (prs->anst == ADDR)
 		{
 			op += 4;
@@ -1572,7 +1571,7 @@ void subexpr(parser *const prs)
 	int oldsp = prs->sp;
 	int wasop = 0;
 
-	int p = operator_precedence(prs->next_token);
+	int p = operator_precedence(prs->token);
 	while (p)
 	{
 		wasop = 1;
@@ -1596,7 +1595,7 @@ void subexpr(parser *const prs)
 
 		prs->stack[prs->sp] = p;
 		prs->stacklog[prs->sp] = (int)ad;
-		prs->stackop[prs->sp++] = prs->next_token;
+		prs->stackop[prs->sp++] = prs->token;
 		scanner(prs);
 		scanner(prs);
 		unarexpr(prs);
@@ -1605,7 +1604,7 @@ void subexpr(parser *const prs)
 			prs->was_error = 5;
 			return; // 1
 		}
-		p = operator_precedence(prs->next_token);
+		p = operator_precedence(prs->token);
 	}
 	if (wasop)
 	{
@@ -1628,9 +1627,9 @@ int intopassn(int next)
 
 int opassn(parser *const prs)
 {
-	return (prs->next_token == ASS || prs->next_token == MULTASS || prs->next_token == DIVASS || prs->next_token == PLUSASS ||
-			prs->next_token == MINUSASS || intopassn(prs->next_token))
-	? prs->op = prs->next_token
+	return (prs->token == ASS || prs->token == MULTASS || prs->token == DIVASS || prs->token == PLUSASS ||
+			prs->token == MINUSASS || intopassn(prs->token))
+	? prs->op = prs->token
 	: 0;
 }
 
@@ -1645,9 +1644,9 @@ void condexpr(parser *const prs)
 		prs->was_error = 4;
 		return; // 1
 	}
-	if (prs->next_token == QUEST)
+	if (prs->token == QUEST)
 	{
-		while (prs->next_token == QUEST)
+		while (prs->token == QUEST)
 		{
 			toval(prs);
 			if (!mode_is_int(prs->ansttype))
@@ -1741,7 +1740,7 @@ void exprassn(parser *const prs, int level)
 	int rtype;
 	int lnext;
 
-	if (prs->curr_token == BEGIN)
+	if (prs->token == BEGIN)
 	{
 		const int type = prs->leftansttype;
 		if (mode_is_struct(prs->sx, type) || mode_is_array(prs->sx, type))
@@ -1760,6 +1759,7 @@ void exprassn(parser *const prs, int level)
 	}
 	else
 	{
+		token_consume(prs);
 		unarexpr(prs);
 	}
 	if (prs->was_error == 7)
@@ -1774,9 +1774,8 @@ void exprassn(parser *const prs, int level)
 	if (opassn(prs))
 	{
 		int opp = prs->op;
-		lnext = prs->next_token;
+		lnext = prs->token;
 		prs->flag_in_assignment = 1;
-		scanner(prs);
 		scanner(prs);
 		exprassn(prs, level + 1);
 		if (prs->was_error == 6)
@@ -1911,11 +1910,10 @@ void expr(parser *const prs, int level)
 		prs->was_error = 5;
 		return; // 1
 	}
-	while (prs->next_token == COMMA)
+	while (prs->token == COMMA)
 	{
 		exprassnvoid(prs);
 		prs->sopnd--;
-		scanner(prs);
 		scanner(prs);
 		exprassn(prs, level);
 		if (prs->was_error == 6)
@@ -1977,7 +1975,6 @@ item_t parse_constant_expression(parser *const prs)
 
 item_t parse_condition(parser *const prs)
 {
-	scanner(prs);
 	expr(prs, 1);
 	toval(prs);
 	totree(prs, TExprend);

@@ -123,7 +123,6 @@ void parse_default_statement(parser *const prs)
  */
 void parse_expression_statement(parser *const prs)
 {
-	token_consume(prs);
 	parse_expression(prs);
 	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
 }
@@ -253,7 +252,6 @@ void parse_for_statement(parser *const prs)
 	if (!token_try_consume(prs, semicolon))
 	{
 		tree_set(prs->sx, ref_inition, (item_t)tree_size(prs->sx));
-		token_consume(prs);
 		parse_expression(prs);
 		token_expect_and_consume(prs, semicolon, no_semicolon_in_for);
 	}
@@ -268,7 +266,6 @@ void parse_for_statement(parser *const prs)
 	if (!token_try_consume(prs, r_paren))
 	{
 		tree_set(prs->sx, ref_increment, (item_t)tree_size(prs->sx));
-		token_consume(prs);
 		parse_expression(prs);
 		token_expect_and_consume(prs, r_paren, no_rightbr_in_for);
 	}
@@ -394,7 +391,6 @@ void parse_return_statement(parser *const prs)
 		tree_add(prs->sx, TReturnval);
 		tree_add(prs->sx, (item_t)size_of(prs->sx, return_type));
 
-		token_consume(prs);
 		const item_t expr_type = parse_assignment_expression(prs);
 		if (!mode_is_undefined(expr_type) && !mode_is_undefined(return_type))
 		{
@@ -456,7 +452,6 @@ void parse_print_statement(parser *const prs)
 {
 	token_consume(prs); // kw_print
 	token_expect_and_consume(prs, l_paren, print_without_br);
-	token_consume(prs);
 
 	const item_t type = parse_assignment_expression(prs);
 	if (mode_is_pointer(prs->sx, type))
@@ -576,7 +571,7 @@ void parse_printf_statement(parser *const prs)
 
 	token_expect_and_consume(prs, l_paren, no_leftbr_in_printf);
 
-	if (prs->next_token != STRING)
+	if (prs->token != STRING)
 	{
 		parser_error(prs, wrong_first_printf_param);
 		token_skip_until(prs, SEMICOLON);
@@ -595,7 +590,6 @@ void parse_printf_statement(parser *const prs)
 	const size_t expected_args = evaluate_args(prs, format_length, format_str, format_types, placeholders);
 	while (token_try_consume(prs, comma) && actual_args != expected_args)
 	{
-		token_consume(prs);
 		const item_t type = parse_assignment_expression(prs);
 		if (mode_is_float(format_types[actual_args]) && mode_is_int(type))
 		{
@@ -642,7 +636,7 @@ void parse_printf_statement(parser *const prs)
  */
 void parse_block_item(parser *const prs)
 {
-	switch (prs->next_token)
+	switch (prs->token)
 	{
 		case kw_void:
 		case kw_char:
@@ -691,7 +685,7 @@ void parse_block_item(parser *const prs)
 
 void parse_statement(parser *const prs)
 {
-	switch (prs->next_token)
+	switch (prs->token)
 	{
 		case semicolon:
 			token_consume(prs);
@@ -794,7 +788,7 @@ void parse_statement_compound(parser *const prs, const block_t type)
 		{
 			parse_block_item(prs);
 			// Почему не ловилась ошибка, если в блоке нити встретилась '}'?
-		} while (prs->next_token != eof && prs->next_token != end_token);
+		} while (prs->token != eof && prs->token != end_token);
 
 		token_expect_and_consume(prs, end_token, expected_end);
 	}

@@ -82,7 +82,7 @@ int parse(universal_io *const io, syntax *const sx)
 	do
 	{
 		parse_declaration_external(&prs);
-	} while (prs.next_token != eof);
+	} while (prs.token != eof);
 
 	tree_add(prs.sx, TEnd);
 
@@ -120,8 +120,8 @@ void parser_error(parser *const prs, error_t num, ...)
 
 void token_consume(parser *const prs)
 {
-	prs->curr_token = prs->next_token;
-	prs->next_token = lex(prs->lxr);
+	prs->curr_token = prs->token;
+	prs->token = lex(prs->lxr);
 }
 
 token_t token_peek(parser *const prs)
@@ -131,7 +131,7 @@ token_t token_peek(parser *const prs)
 
 int token_try_consume(parser *const prs, const token_t expected)
 {
-	if (prs->next_token == expected)
+	if (prs->token == expected)
 	{
 		token_consume(prs);
 		return 1;
@@ -150,9 +150,9 @@ void token_expect_and_consume(parser *const prs, const token_t expected, const e
 
 void token_skip_until(parser *const prs, const uint8_t tokens)
 {
-	while (prs->next_token != eof)
+	while (prs->token != eof)
 	{
-		switch (prs->next_token)
+		switch (prs->token)
 		{
 			case l_paren:
 				token_consume(prs);
@@ -179,7 +179,7 @@ void token_skip_until(parser *const prs, const uint8_t tokens)
 			case r_brace:
 			case colon:
 			case semicolon:
-				if (token_check(tokens, prs->next_token))
+				if (token_check(tokens, prs->token))
 				{
 					return;
 				}
