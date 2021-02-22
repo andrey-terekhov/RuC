@@ -428,7 +428,6 @@ item_t parse_identifier(parser *const prs)
 	prs->ansttype = (int)ident_get_mode(prs->sx, id);
 	prs->stackoperands[++prs->sopnd] = prs->ansttype;
 	prs->anst = IDENT;
-	prs->lastid = id;
 	return prs->ansttype;
 }
 
