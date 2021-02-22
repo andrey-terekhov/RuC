@@ -27,6 +27,7 @@
  */
 void parse_labeled_statement(parser *const prs)
 {
+	token_consume(prs); // identifier
 	tree_add(prs->sx, TLabel);
 
 	const size_t repr = prs->lxr->repr;
@@ -74,6 +75,7 @@ void parse_labeled_statement(parser *const prs)
  */
 void parse_case_statement(parser *const prs)
 {
+	token_consume(prs); // kw_case
 	if (!prs->flag_in_switch)
 	{
 		parser_error(prs, case_not_in_switch);
@@ -100,6 +102,7 @@ void parse_case_statement(parser *const prs)
  */
 void parse_default_statement(parser *const prs)
 {
+	token_consume(prs); // kw_default
 	if (!prs->flag_in_switch)
 	{
 		parser_error(prs, default_not_in_switch);
@@ -120,6 +123,7 @@ void parse_default_statement(parser *const prs)
  */
 void parse_expression_statement(parser *const prs)
 {
+	token_consume(prs);
 	parse_expression(prs);
 	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
 }
@@ -135,6 +139,7 @@ void parse_expression_statement(parser *const prs)
  */
 void parse_if_statement(parser *const prs)
 {
+	token_consume(prs); // kw_if
 	tree_add(prs->sx, TIf);
 	const size_t ref_else = tree_reserve(prs->sx);
 
@@ -158,6 +163,7 @@ void parse_if_statement(parser *const prs)
  */
 void parse_switch_statement(parser *const prs)
 {
+	token_consume(prs); // kw_switch
 	tree_add(prs->sx, TSwitch);
 
 	const item_t condition_type = parse_parenthesized_expression(prs);
@@ -182,6 +188,7 @@ void parse_switch_statement(parser *const prs)
  */
 void parse_while_statement(parser *const prs)
 {
+	token_consume(prs); // kw_while
 	tree_add(prs->sx, TWhile);
 
 	parse_parenthesized_expression(prs);
@@ -202,6 +209,7 @@ void parse_while_statement(parser *const prs)
  */
 void parse_do_statement(parser *const prs)
 {
+	token_consume(prs); // kw_do
 	tree_add(prs->sx, TDo);
 
 	const int old_in_loop = prs->flag_in_loop;
@@ -233,6 +241,7 @@ void parse_do_statement(parser *const prs)
  */
 void parse_for_statement(parser *const prs)
 {
+	token_consume(prs); // kw_for
 	tree_add(prs->sx, TFor);
 
 	const size_t ref_inition = tree_reserve(prs->sx);
@@ -281,6 +290,7 @@ void parse_for_statement(parser *const prs)
  */
 void parse_goto_statement(parser *const prs)
 {
+	token_consume(prs); // kw_goto
 	tree_add(prs->sx, TGoto);
 	token_expect_and_consume(prs, identifier, no_ident_after_goto);
 	const size_t repr = prs->lxr->repr;
@@ -322,6 +332,7 @@ void parse_goto_statement(parser *const prs)
  */
 void parse_continue_statement(parser *const prs)
 {
+	token_consume(prs); // kw_continue
 	if (!prs->flag_in_loop)
 	{
 		parser_error(prs, continue_not_in_loop);
@@ -341,6 +352,7 @@ void parse_continue_statement(parser *const prs)
  */
 void parse_break_statement(parser *const prs)
 {
+	token_consume(prs); // kw_break
 	if (!(prs->flag_in_loop || prs->flag_in_switch))
 	{
 		parser_error(prs, break_not_in_loop_or_switch);
@@ -360,6 +372,7 @@ void parse_break_statement(parser *const prs)
  */
 void parse_return_statement(parser *const prs)
 {
+	token_consume(prs); // kw_return
 	const item_t return_type = mode_get(prs->sx, prs->function_mode + 1);
 	prs->flag_was_return = 1;
 
@@ -410,6 +423,7 @@ void parse_create_direct_statement(parser *const prs)
 /**	Parse printid statement [RuC] */
 void parse_printid_statement(parser *const prs)
 {
+	token_consume(prs); // kw_printid
 	token_expect_and_consume(prs, l_paren, no_leftbr_in_printid);
 
 	do
@@ -440,6 +454,7 @@ void parse_printid_statement(parser *const prs)
 /**	Parse print statement [RuC] */
 void parse_print_statement(parser *const prs)
 {
+	token_consume(prs); // kw_print
 	token_expect_and_consume(prs, l_paren, print_without_br);
 	token_consume(prs);
 
@@ -461,6 +476,7 @@ void parse_print_statement(parser *const prs)
 /**	Parse getid statement [RuC] */
 void parse_getid_statement(parser *const prs)
 {
+	token_consume(prs); // kw_getid
 	token_expect_and_consume(prs, l_paren, no_leftbr_in_getid);
 
 	do
@@ -552,6 +568,7 @@ void parse_scanf_statement(parser *const prs);
 /**	Parse printf statement [RuC] */
 void parse_printf_statement(parser *const prs)
 {
+	token_consume(prs); // kw_printf
 	char32_t placeholders[MAXPRINTFPARAMS];
 	char32_t format_str[MAXSTRINGL + 1];
 	item_t format_types[MAXPRINTFPARAMS];
@@ -674,9 +691,7 @@ void parse_block_item(parser *const prs)
 
 void parse_statement(parser *const prs)
 {
-	token_consume(prs);
-
-	switch (prs->curr_token)
+	switch (prs->next_token)
 	{
 		case semicolon:
 			tree_add(prs->sx, NOP);
@@ -741,7 +756,7 @@ void parse_statement(parser *const prs)
 			break;
 
 		case identifier:
-			if (prs->next_token == colon)
+			if (token_peek(prs) == colon)
 			{
 				parse_labeled_statement(prs);
 				break;
@@ -755,6 +770,7 @@ void parse_statement(parser *const prs)
 
 void parse_statement_compound(parser *const prs, const block_t type)
 {
+	token_consume(prs); // '{' or kw_create_direct
 	tree_add(prs->sx, TBegin);
 
 	item_t old_displ = 0;

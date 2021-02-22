@@ -713,7 +713,6 @@ void parse_function_body(parser *const prs, const size_t function_id)
 
 	const size_t ref_maxdispl = tree_reserve(prs->sx);
 
-	token_consume(prs);
 	parse_statement_compound(prs, FUNCBODY);
 
 	vector_remove(&prs->sx->tree);
