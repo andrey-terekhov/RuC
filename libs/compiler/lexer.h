@@ -51,15 +51,6 @@ typedef struct lexer
 lexer create_lexer(universal_io *const io, syntax *const sx);
 
 /**
- *	Read next character from io
- *
- *	@param	lxr		Lexer structure
- *
- *	@return	Character
- */
-char32_t get_char(lexer *const lxr);
-
-/**
  *	Lex next token from io
  *
  *	@param	lxr		Lexer structure
