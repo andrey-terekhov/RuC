@@ -405,55 +405,8 @@ void mustberowoffloat(parser *const prs)
 	}
 }
 
-
-
-void parse_identifier(parser *const prs)
-{
-	scanner(prs);
-	applid(prs);
-	if (prs->was_error == 5)
-	{
-		prs->was_error = 4;
-		return; // 1
-	}
-
-	totree(prs, TIdent);
-	prs->anstdispl = (int)ident_get_displ(prs->sx, prs->lastid);
-	totree(prs, prs->anstdispl);
-	prs->ansttype = (int)ident_get_mode(prs->sx, prs->lastid);
-	prs->stackoperands[++prs->sopnd] = prs->ansttype;
-	prs->anst = IDENT;
-}
-
-void parse_constant(parser *const prs)
-{
-	scanner(prs);
-	if (prs->curr_token == CHAR_CONST)
-	{
-		totree(prs, TConst);
-		totree(prs, prs->lxr->num);
-		prs->stackoperands[++prs->sopnd] = prs->ansttype = LCHAR;
-		prs->anst = NUMBER;
-	}
-	else if (prs->curr_token == INT_CONST)
-	{
-		totree(prs, TConst);
-		totree(prs, prs->lxr->num);
-		prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
-		prs->anst = NUMBER;
-	}
-	else if (prs->curr_token == FLOAT_CONST)
-	{
-		totree(prs, TConstd);
-		double_to_tree(&TREE, prs->lxr->num_double);
-		prs->stackoperands[++prs->sopnd] = prs->ansttype = LFLOAT;
-		prs->anst = NUMBER;
-	}
-}
-
 void parse_standard_function_call(parser *const prs)
 {
-	scanner(prs);
 	int func = prs->curr_token;
 
 	if (scanner(prs) != LEFTBR)
@@ -964,88 +917,103 @@ void parse_standard_function_call(parser *const prs)
 	must_be(prs, RIGHTBR, no_rightbr_in_stand_func);
 }
 
-/**
- *	Parse primary expression [C99 6.5.1]
- *
- *	primary-expression:
- *		identifier
- *		constant
- *		string-literal
- *		'(' expression ')'
- *		standart-function-call [RuC]
- *
- *	@param	prs			Parser structure
- */
-void parse_primary_expression(parser *const prs)
+void primaryexpr(parser *const prs)
 {
-	switch (prs->token)
+	if (prs->curr_token == CHAR_CONST)
 	{
-		case identifier:
-			parse_identifier(prs);
-			break;
+		totree(prs, TConst);
+		totree(prs, prs->lxr->num);
+		prs->stackoperands[++prs->sopnd] = prs->ansttype = LCHAR;
+		prs->anst = NUMBER;
+	}
+	else if (prs->curr_token == INT_CONST)
+	{
+		totree(prs, TConst);
+		totree(prs, prs->lxr->num);
+		prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
+		prs->anst = NUMBER;
+	}
+	else if (prs->curr_token == FLOAT_CONST)
+	{
+		totree(prs, TConstd);
+		double_to_tree(&TREE, prs->lxr->num_double);
+		prs->stackoperands[++prs->sopnd] = prs->ansttype = LFLOAT;
+		prs->anst = NUMBER;
+	}
+	else if (prs->curr_token == STRING)
+	{
+		parse_string_literal(prs);
+	}
+	else if (prs->curr_token == IDENT)
+	{
+		applid(prs);
+		if (prs->was_error == 5)
+		{
+			prs->was_error = 4;
+			return; // 1
+		}
 
-		case char_constant:
-		case int_constant:
-		case float_constant:
-			parse_constant(prs);
-			break;
-
-		case string_literal:
-			parse_string_literal(prs);
-			break;
-
-		case l_paren:
-			token_consume(prs);
-			if (prs->token == LVOID)
+		totree(prs, TIdent);
+		prs->anstdispl = (int)ident_get_displ(prs->sx, prs->lastid);
+		totree(prs, prs->anstdispl);
+		prs->ansttype = (int)ident_get_mode(prs->sx, prs->lastid);
+		prs->stackoperands[++prs->sopnd] = prs->ansttype;
+		prs->anst = IDENT;
+	}
+	else if (prs->curr_token == LEFTBR)
+	{
+		if (prs->token == LVOID)
+		{
+			scanner(prs);
+			must_be(prs, LMULT, no_mult_in_cast);
+			unarexpr(prs);
+			if (prs->was_error == 7)
 			{
-				scanner(prs);
-				must_be(prs, LMULT, no_mult_in_cast);
-				unarexpr(prs);
-				if (prs->was_error == 7)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
-				if (!mode_is_pointer(prs->sx, prs->ansttype))
-				{
-					parser_error(prs, not_pointer_in_cast);
-					prs->was_error = 4;
-					return; // 1
-				}
-				must_be(prs, RIGHTBR, no_rightbr_in_cast);
-				toval(prs);
-				// totree(context, CASTC);
-				totree(prs, TExprend);
+				prs->was_error = 4;
+				return; // 1
 			}
-			else
+			if (!mode_is_pointer(prs->sx, prs->ansttype))
 			{
-				int oldsp = prs->sp;
-				expr(prs, 1);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
-				must_be(prs, RIGHTBR, wait_rightbr_in_primary);
-				while (prs->sp > oldsp)
-				{
-					binop(prs, --prs->sp);
-				}
+				parser_error(prs, not_pointer_in_cast);
+				prs->was_error = 4;
+				return; // 1
 			}
-			break;
-
-		default:
-			if (prs->token <= STANDARD_FUNC_START)
+			must_be(prs, RIGHTBR, no_rightbr_in_cast);
+			toval(prs);
+			// totree(context, CASTC);
+			totree(prs, TExprend);
+		}
+		else
+		{
+			int oldsp = prs->sp;
+			expr(prs, 1);
+			if (prs->was_error == 5)
 			{
-				parse_standard_function_call(prs);
+				prs->was_error = 4;
+				return; // 1
 			}
-			else
+			must_be(prs, RIGHTBR, wait_rightbr_in_primary);
+			while (prs->sp > oldsp)
 			{
-				parser_error(prs, not_primary, prs->curr_token);
-				prs->ansttype = mode_undefined;
-				return;
+				binop(prs, --prs->sp);
 			}
-			break;
+		}
+	}
+	else if (prs->curr_token <= STANDARD_FUNC_START) // стандартная функция
+	{
+		parse_standard_function_call(prs);
+	}
+	else
+	{
+		parser_error(prs, not_primary, prs->curr_token);
+		prs->ansttype = mode_undefined;
+		prs->was_error = 4;
+		return; // 1
+	}
+	if (prs->was_error == 5)
+	{
+		prs->was_error = 4;
+		return; // 1
 	}
 }
 
@@ -1532,7 +1500,13 @@ void unarexpr(parser *const prs)
 	}
 	else
 	{
-		parse_primary_expression(prs);
+		token_consume(prs);
+		primaryexpr(prs);
+		if (prs->was_error == 4)
+		{
+			prs->was_error = 7;
+			return; // 1
+		}
 	}
 
 	postexpr(prs); // 0
@@ -2005,7 +1979,6 @@ item_t parse_condition(parser *const prs)
 
 void parse_string_literal(parser *const prs)
 {
-	scanner(prs);
 	totree(prs, TString);
 	totree(prs, prs->lxr->num);
 

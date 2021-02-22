@@ -234,7 +234,7 @@ void parse_do_statement(parser *const prs)
  *
  *	for-statement:
  *		'for' '(' expression[opt] ';' expression[opt] ';' expression[opt] ')' statement
- *		'for' '(' declaration expression[opt] ';' expression[opt] ')' statement [TODO]
+ *		'for' '(' declaration expression[opt] ';' expression[opt] ')' statement
  *
  *	@param	prs			Parser structure
  */
