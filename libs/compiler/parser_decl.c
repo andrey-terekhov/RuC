@@ -715,10 +715,6 @@ void parse_function_body(parser *const prs, const size_t function_id)
 
 	parse_statement_compound(prs, FUNCBODY);
 
-	vector_remove(&prs->sx->tree);
-	tree_add(prs->sx, TReturnvoid);
-	tree_add(prs->sx, TEnd);
-
 	if (mode_get(prs->sx, prs->function_mode + 1) != mode_void && !prs->flag_was_return)
 	{
 		parser_error(prs, no_ret_in_func);

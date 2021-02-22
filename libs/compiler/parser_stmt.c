@@ -694,6 +694,7 @@ void parse_statement(parser *const prs)
 	switch (prs->next_token)
 	{
 		case semicolon:
+			token_consume(prs);
 			tree_add(prs->sx, NOP);
 			break;
 
@@ -801,6 +802,10 @@ void parse_statement_compound(parser *const prs, const block_t type)
 	if (type != FUNCBODY)
 	{
 		scope_block_exit(prs->sx, old_displ, old_lg);
+	}
+	else
+	{
+		tree_add(prs->sx, TReturnvoid);
 	}
 
 	tree_add(prs->sx, TEnd);
