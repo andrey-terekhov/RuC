@@ -216,7 +216,6 @@ void toval(parser *const prs)
 
 void actstring(int type, parser *const prs)
 {
-	scanner(prs);
 	totree(prs, type == LFLOAT ? TStringd : TString);
 	size_t adn = vector_size(&TREE);
 	vector_increase(&TREE, 1);
@@ -249,7 +248,7 @@ void actstring(int type, parser *const prs)
 			return; // 1
 		}
 		++n;
-	} while (scanner(prs) == COMMA ? scanner(prs), 1 : 0);
+	} while (scanner(prs) == COMMA);
 
 	vector_set(&TREE, adn, n);
 	if (prs->curr_token != END)
