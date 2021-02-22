@@ -338,6 +338,9 @@ lexer create_lexer(universal_io *const io, syntax *const sx)
 
 	lxr.was_error = 0;
 
+	get_char(&lxr);
+	get_char(&lxr);
+
 	return lxr;
 }
 

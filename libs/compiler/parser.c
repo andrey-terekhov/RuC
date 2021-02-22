@@ -54,6 +54,8 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.flag_in_assignment = 0;
 	prs.was_error = 0;
 
+	token_consume(&prs);
+
 	return prs;
 }
 
@@ -76,10 +78,6 @@ int parse(universal_io *const io, syntax *const sx)
 
 	lexer lxr = create_lexer(io, sx);
 	parser prs = parser_create(sx, &lxr);
-
-	get_char(prs.lxr);
-	get_char(prs.lxr);
-	token_consume(&prs);
 
 	do
 	{
