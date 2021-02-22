@@ -251,16 +251,14 @@ item_t parse_struct_declaration_list(parser *const prs)
 		}
 
 		item_t type = element_type;
-		if (prs->next_token == star)
+		if (token_try_consume(prs, star))
 		{
-			token_consume(prs);
 			type = to_modetab(prs, mode_pointer, element_type);
 		}
 
 		const size_t repr = prs->lxr->repr;
-		if (prs->next_token == identifier)
+		if (token_try_consume(prs, identifier))
 		{
-			token_consume(prs);
 			if (prs->next_token == l_square)
 			{
 				tree_add(prs->sx, TDeclarr);
@@ -534,10 +532,9 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_de
 									 @c 2 - была '[' */
 			item_t type = parse_type_specifier(prs);
 
-			if (prs->next_token == star)
+			if (token_try_consume(prs, star))
 			{
 				arg_func = 1;
-				token_consume(prs);
 				if (type == mode_void)
 				{
 					type = mode_void_pointer;
@@ -809,15 +806,13 @@ void parse_declaration_inner(parser *const prs)
 	do
 	{
 		item_t type = group_type;
-		if (prs->next_token == star)
+		if (token_try_consume(prs, star))
 		{
-			token_consume(prs);
 			type = to_modetab(prs, mode_pointer, group_type);
 		}
 
-		if (prs->next_token == identifier)
+		if (token_try_consume(prs, identifier))
 		{
-			token_consume(prs);
 			parse_init_declarator(prs, type);
 		}
 		else
