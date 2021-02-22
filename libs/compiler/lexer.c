@@ -654,3 +654,13 @@ token_t lex(lexer *const lxr)
 			}
 	}
 }
+
+token_t peek(lexer *const lxr)
+{
+	const size_t position = in_get_position(lxr->io);
+	const char32_t character = lxr->character;
+	const token_t peek_token = lex(lxr);
+	lxr->character = character;
+	in_set_position(lxr->io, position);
+	return peek_token;
+}

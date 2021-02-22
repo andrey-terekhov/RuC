@@ -55,9 +55,18 @@ lexer create_lexer(universal_io *const io, syntax *const sx);
  *
  *	@param	lxr		Lexer structure
  *
- *	@return	Token
+ *	@return	Lexed token
  */
 token_t lex(lexer *const lxr);
+
+/**
+ *	Peek next token from io
+ *
+ *	@param	lxr		Lexer structure
+ *
+ *	@return	Peeked token
+ */
+token_t peek(lexer *const lxr);
 
 #ifdef __cplusplus
 } /* extern "C" */

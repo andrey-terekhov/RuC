@@ -124,6 +124,11 @@ void token_consume(parser *const prs)
 	prs->next_token = lex(prs->lxr);
 }
 
+token_t token_peek(parser *const prs)
+{
+	return peek(prs->lxr);
+}
+
 int token_try_consume(parser *const prs, const token_t expected)
 {
 	if (prs->next_token == expected)
