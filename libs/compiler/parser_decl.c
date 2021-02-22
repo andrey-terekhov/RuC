@@ -342,8 +342,7 @@ item_t parse_struct_declaration_list(parser *const prs)
  */
 void parse_struct_initializer(parser *const prs, const item_t type)
 {
-	token_consume(prs);
-	if (prs->curr_token != l_brace)
+	if (!token_try_consume(prs, l_brace))
 	{
 		parser_error(prs, struct_init_must_start_from_BEGIN);
 		token_skip_until(prs, comma | semicolon);
@@ -386,8 +385,7 @@ void parse_struct_initializer(parser *const prs, const item_t type)
  */
 void parse_array_initializer(parser *const prs, const item_t type)
 {
-	token_consume(prs);
-	if (prs->curr_token == string_literal)
+	if (prs->token == string_literal)
 	{
 		if (prs->flag_strings_only == 0)
 		{
@@ -397,12 +395,13 @@ void parse_array_initializer(parser *const prs, const item_t type)
 		{
 			prs->flag_strings_only = 1;
 		}
+		token_consume(prs);
 		parse_string_literal(prs);
 		tree_add(prs->sx, TExprend);
 		return;
 	}
 
-	if (prs->curr_token != l_brace)
+	if (!token_try_consume(prs, l_brace))
 	{
 		parser_error(prs, arr_init_must_start_from_BEGIN);
 		token_skip_until(prs, comma | semicolon);
