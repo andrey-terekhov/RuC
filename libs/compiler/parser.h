@@ -36,6 +36,15 @@
 extern "C" {
 #endif
 
+typedef struct anonymous_stack
+{
+	int stackoperands[100];
+	int sopnd;
+	int anst;
+	int ansttype;
+	int anstdispl;
+} anonymous_stack;
+
 typedef struct parser
 {
 	syntax *sx;					/**< Syntax structure */
@@ -44,6 +53,7 @@ typedef struct parser
 	token_t curr_token;
 	token_t token;				/**< Current token */
 
+	anonymous_stack anst;		/**< Anonymous stack */
 	size_t function_mode;		/**< Mode of currenty parsed function */
 	size_t array_dimensions;	/**< Array dimensions counter */
 	item_t gotost[1000];		/**< Labels table */
@@ -51,19 +61,12 @@ typedef struct parser
 
 	int stack[100];
 	int stackop[100];
-	int stackoperands[100];
 	int stacklog[100];
 	int sp;
-	int sopnd;
-	int anst;
-	int ansttype;
-	int anstdispl;
 	int leftansttype;
 
 	size_t lastid;	// useless
 	int op;			// useless
-	int buf_flag;	// useless
-	int buf_cur;	// useless
 
 	int func_def;				/**< @c 0 for function without arguments,
 								 @c 1 for function definition,
@@ -84,6 +87,7 @@ typedef struct parser
 
 	int was_error;				/**< Error flag */
 } parser;
+
 
 /**	The kind of block to parse */
 typedef enum BLOCK

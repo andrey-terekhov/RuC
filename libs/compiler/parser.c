@@ -44,12 +44,9 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.lxr = lxr;
 
 	prs.sp = 0;
-	prs.sopnd = -1;
+	prs.anst.sopnd = -1;
 	prs.leftansttype = -1;
-	prs.anstdispl = 0;
-
-	prs.buf_flag = 0;
-	prs.buf_cur = 0;
+	prs.anst.anstdispl = 0;
 
 	prs.flag_in_assignment = 0;
 	prs.was_error = 0;

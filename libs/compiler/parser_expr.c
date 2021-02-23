@@ -26,16 +26,7 @@ void expr(parser *const prs, int level);
 int scanner(parser *const prs)
 {
 	prs->curr_token = prs->token;
-
-	if (!prs->buf_flag)
-	{
-		prs->token = lex(prs->lxr);
-	}
-	else
-	{
-		prs->token = prs->buf_cur;
-		prs->buf_flag--;
-	}
+	prs->token = lex(prs->lxr);
 
 	return prs->curr_token;
 }
@@ -45,7 +36,6 @@ void must_be(parser *const prs, const token_t what, const error_t num)
 	if (prs->token != what)
 	{
 		parser_error(prs, num);
-		prs->curr_token = what;
 	}
 	else
 	{
@@ -72,7 +62,7 @@ void totree(parser *const prs, item_t op)
 
 void totree_float_operation(parser *const prs, item_t op)
 {
-	if (prs->ansttype == LFLOAT &&
+	if (prs->anst.ansttype == LFLOAT &&
 		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
 	{
 		tree_add(prs->sx, op + 50);
@@ -122,8 +112,8 @@ double double_from_tree(vector *const tree)
 void binop(parser *const prs, int sp)
 {
 	int op = prs->stackop[sp];
-	int right = prs->stackoperands[prs->sopnd--];
-	int left = prs->stackoperands[prs->sopnd];
+	int right = prs->anst.stackoperands[prs->anst.sopnd--];
+	int left = prs->anst.stackoperands[prs->anst.sopnd];
 
 	if (mode_is_pointer(prs->sx, left) || mode_is_pointer(prs->sx, right))
 	{
@@ -151,7 +141,7 @@ void binop(parser *const prs, int sp)
 			tree_add(prs->sx, WIDEN);
 		}
 
-		prs->ansttype = LFLOAT;
+		prs->anst.ansttype = LFLOAT;
 	}
 
 	if (op == LOGOR || op == LOGAND)
@@ -166,52 +156,52 @@ void binop(parser *const prs, int sp)
 	}
 	if (op >= EQEQ && op <= LGE)
 	{
-		prs->ansttype = LINT;
+		prs->anst.ansttype = LINT;
 	}
 
-	prs->stackoperands[prs->sopnd] = prs->ansttype;
-	prs->anst = VAL;
+	prs->anst.stackoperands[prs->anst.sopnd] = prs->anst.ansttype;
+	prs->anst.anst = VAL;
 }
 
 void toval(parser *const prs)
 {
 	// надо значение положить на стек, например, чтобы передать параметром
-	if (prs->anst == VAL || prs->anst == NUMBER)
+	if (prs->anst.anst == VAL || prs->anst.anst == NUMBER)
 	{
 		return;
 	}
 
-	if (mode_is_struct(prs->sx, prs->ansttype))
+	if (mode_is_struct(prs->sx, prs->anst.ansttype))
 	{
 		if (!prs->flag_in_assignment)
 		{
-			if (prs->anst == IDENT)
+			if (prs->anst.anst == IDENT)
 			{
 				vector_remove(&TREE);
 				vector_remove(&TREE);
 				totree(prs, COPY0ST);
-				totree(prs, prs->anstdispl);
+				totree(prs, prs->anst.anstdispl);
 			}
 			else // тут может быть только ADDR
 			{
 				totree(prs, COPY1ST);
 			}
-			totree(prs, mode_get(prs->sx, prs->ansttype + 1));
-			prs->anst = VAL;
+			totree(prs, mode_get(prs->sx, prs->anst.ansttype + 1));
+			prs->anst.anst = VAL;
 		}
 		return;
 	}
 
-	if (prs->anst == IDENT)
+	if (prs->anst.anst == IDENT)
 	{
-		tree_set(prs->sx, tree_size(prs->sx) - 2, mode_is_float(prs->ansttype) ? TIdenttovald : TIdenttoval);
+		tree_set(prs->sx, tree_size(prs->sx) - 2, mode_is_float(prs->anst.ansttype) ? TIdenttovald : TIdenttoval);
 	}
 
-	if (!mode_is_array(prs->sx, prs->ansttype) && !mode_is_pointer(prs->sx, prs->ansttype) && prs->anst == ADDR)
+	if (!mode_is_array(prs->sx, prs->anst.ansttype) && !mode_is_pointer(prs->sx, prs->anst.ansttype) && prs->anst.anst == ADDR)
 	{
-		totree(prs, mode_is_float(prs->ansttype) ? TAddrtovald : TAddrtoval);
+		totree(prs, mode_is_float(prs->anst.ansttype) ? TAddrtovald : TAddrtoval);
 	}
-	prs->anst = VAL;
+	prs->anst.anst = VAL;
 }
 
 void actstring(int type, parser *const prs)
@@ -257,8 +247,8 @@ void actstring(int type, parser *const prs)
 		prs->was_error = 1;
 		return; // 1
 	}
-	prs->ansttype = (int)to_modetab(prs, mode_array, type);
-	prs->anst = VAL;
+	prs->anst.ansttype = (int)to_modetab(prs, mode_array, type);
+	prs->anst.anst = VAL;
 }
 
 void mustbestring(parser *const prs)
@@ -270,8 +260,8 @@ void mustbestring(parser *const prs)
 		return; // 1
 	}
 	toval(prs);
-	prs->sopnd--;
-	if (!(mode_is_string(prs->sx, prs->ansttype)))
+	prs->anst.sopnd--;
+	if (!(mode_is_string(prs->sx, prs->anst.ansttype)))
 	{
 		parser_error(prs, not_string_in_stanfunc);
 		prs->was_error = 5;
@@ -287,9 +277,9 @@ void mustbepointstring(parser *const prs)
 		return; // 1
 	}
 	toval(prs);
-	prs->sopnd--;
-	if (!(mode_is_pointer(prs->sx, prs->ansttype) &&
-		  mode_is_string(prs->sx, mode_get(prs->sx, prs->ansttype + 1))))
+	prs->anst.sopnd--;
+	if (!(mode_is_pointer(prs->sx, prs->anst.ansttype) &&
+		  mode_is_string(prs->sx, mode_get(prs->sx, prs->anst.ansttype + 1))))
 	{
 		parser_error(prs, not_point_string_in_stanfunc);
 		prs->was_error = 5;
@@ -306,9 +296,9 @@ void mustberow(parser *const prs)
 		return; // 1
 	}
 	toval(prs);
-	prs->sopnd--;
+	prs->anst.sopnd--;
 
-	if (!mode_is_array(prs->sx, prs->ansttype))
+	if (!mode_is_array(prs->sx, prs->anst.ansttype))
 	{
 		parser_error(prs, not_array_in_stanfunc);
 		prs->was_error = 5;
@@ -324,8 +314,8 @@ void mustbeint(parser *const prs)
 		return; // 1
 	}
 	toval(prs);
-	prs->sopnd--;
-	if (prs->ansttype != LINT && prs->ansttype != LCHAR)
+	prs->anst.sopnd--;
+	if (prs->anst.ansttype != LINT && prs->anst.ansttype != LCHAR)
 	{
 		parser_error(prs, not_int_in_stanfunc);
 		prs->was_error = 5;
@@ -353,15 +343,15 @@ void mustberowofint(parser *const prs)
 			return; // 1
 		}
 		toval(prs);
-		prs->sopnd--;
-		if (prs->ansttype == LINT || prs->ansttype == LCHAR)
+		prs->anst.sopnd--;
+		if (prs->anst.ansttype == LINT || prs->anst.ansttype == LCHAR)
 		{
 			totree(prs, ROWING);
-			prs->ansttype = (int)to_modetab(prs, mode_array, LINT);
+			prs->anst.ansttype = (int)to_modetab(prs, mode_array, LINT);
 		}
 	}
-	if (!(mode_is_array(prs->sx, prs->ansttype) &&
-		  mode_is_int(mode_get(prs->sx, prs->ansttype + 1))))
+	if (!(mode_is_array(prs->sx, prs->anst.ansttype) &&
+		  mode_is_int(mode_get(prs->sx, prs->anst.ansttype + 1))))
 	{
 		parser_error(prs, not_rowofint_in_stanfunc);
 		prs->was_error = 5;
@@ -389,16 +379,16 @@ void mustberowoffloat(parser *const prs)
 			return; // 1
 		}
 		toval(prs);
-		prs->sopnd--;
-		if (prs->ansttype == LFLOAT)
+		prs->anst.sopnd--;
+		if (prs->anst.ansttype == LFLOAT)
 		{
 			totree(prs, ROWINGD);
-			prs->ansttype = (int)to_modetab(prs, mode_array, LFLOAT);
+			prs->anst.ansttype = (int)to_modetab(prs, mode_array, LFLOAT);
 		}
 	}
 
-	if (!(mode_is_array(prs->sx, prs->ansttype) &&
-		  mode_get(prs->sx, prs->ansttype + 1) == LFLOAT))
+	if (!(mode_is_array(prs->sx, prs->anst.ansttype) &&
+		  mode_get(prs->sx, prs->anst.ansttype + 1) == LFLOAT))
 	{
 		parser_error(prs, not_rowoffloat_in_stanfunc);
 		prs->was_error = 5;
@@ -412,10 +402,6 @@ void parse_standard_function_call(parser *const prs)
 	if (scanner(prs) != LEFTBR)
 	{
 		parser_error(prs, no_leftbr_in_stand_func);
-		prs->buf_cur = prs->token;
-		prs->token = prs->curr_token;
-		prs->curr_token = LEFTBR;
-		prs->buf_flag++;
 	}
 	if (func == ASSERT)
 	{
@@ -465,7 +451,7 @@ void parse_standard_function_call(parser *const prs)
 		}
 		if (func < STRNCAT)
 		{
-			prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
+			prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype = LINT;
 		}
 	}
 	else if (func >= RECEIVE_STRING && func <= SEND_INT)
@@ -491,7 +477,7 @@ void parse_standard_function_call(parser *const prs)
 		}
 		else
 		{
-			prs->stackoperands[++prs->sopnd] = prs->ansttype =
+			prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype =
 			func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)to_modetab(prs, mode_array, LCHAR);
 		}
 	}
@@ -597,12 +583,12 @@ void parse_standard_function_call(parser *const prs)
 						return; // 1
 					}
 					toval(prs);
-					prs->sopnd--;
-					if (mode_is_int(prs->ansttype))
+					prs->anst.sopnd--;
+					if (mode_is_int(prs->anst.ansttype))
 					{
 						totree(prs, WIDEN);
 					}
-					else if (prs->ansttype != LFLOAT)
+					else if (prs->anst.ansttype != LFLOAT)
 					{
 						parser_error(prs, not_float_in_stanfunc);
 						prs->was_error = 4;
@@ -694,7 +680,7 @@ void parse_standard_function_call(parser *const prs)
 			}
 			else
 			{
-				prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
+				prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype = LINT;
 			}
 		}
 	}
@@ -713,7 +699,7 @@ void parse_standard_function_call(parser *const prs)
 			prs->was_error = 4;
 			return; // 1
 		}
-		prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
+		prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype = LINT;
 	}
 	else if (func <= TMSGSEND && func >= TGETNUM) // процедуры управления параллельными нитями
 	{
@@ -723,8 +709,8 @@ void parse_standard_function_call(parser *const prs)
 		}
 		else if (func == TMSGRECEIVE || func == TGETNUM) // getnum int()   msgreceive msg_info()
 		{
-			prs->anst = VAL;
-			prs->ansttype = prs->stackoperands[++prs->sopnd] =
+			prs->anst.anst = VAL;
+			prs->anst.ansttype = prs->anst.stackoperands[++prs->anst.sopnd] =
 			func == TGETNUM ? LINT : 2; // 2 - это ссылка на msg_info
 										//не было параметра,  выдали 1 результат
 		}
@@ -759,7 +745,7 @@ void parse_standard_function_call(parser *const prs)
 					return; // 1
 				}
 
-				prs->stackoperands[prs->sopnd] = prs->ansttype = LINT;
+				prs->anst.stackoperands[prs->anst.sopnd] = prs->anst.ansttype = LINT;
 				dn = ident_get_displ(prs->sx, prs->lastid);
 				if (dn < 0)
 				{
@@ -771,7 +757,7 @@ void parse_standard_function_call(parser *const prs)
 					totree(prs, TConst);
 					totree(prs, dn);
 				}
-				prs->anst = VAL;
+				prs->anst.anst = VAL;
 			}
 			else
 			{
@@ -786,17 +772,17 @@ void parse_standard_function_call(parser *const prs)
 
 				if (func == TMSGSEND)
 				{
-					if (prs->ansttype != 2) // 2 - это аргумент типа msg_info (struct{int numTh; int data;})
+					if (prs->anst.ansttype != 2) // 2 - это аргумент типа msg_info (struct{int numTh; int data;})
 					{
 						parser_error(prs, wrong_arg_in_send);
 						prs->was_error = 4;
 						return; // 1
 					}
-					--prs->sopnd;
+					--prs->anst.sopnd;
 				}
 				else
 				{
-					if (!mode_is_int(prs->ansttype))
+					if (!mode_is_int(prs->anst.ansttype))
 					{
 						parser_error(prs, param_threads_not_int);
 						prs->was_error = 4;
@@ -804,13 +790,13 @@ void parse_standard_function_call(parser *const prs)
 					}
 					if (func == TSEMCREATE)
 					{
-						prs->anst = VAL,
-						prs->ansttype = prs->stackoperands[prs->sopnd] =
+						prs->anst.anst = VAL,
+						prs->anst.ansttype = prs->anst.stackoperands[prs->anst.sopnd] =
 						LINT; // съели 1 параметр, выдали int
 					}
 					else
 					{
-						--prs->sopnd; // съели 1 параметр, не выдали
+						--prs->anst.sopnd; // съели 1 параметр, не выдали
 					}
 					// результата
 				}
@@ -819,7 +805,7 @@ void parse_standard_function_call(parser *const prs)
 	}
 	else if (func == RAND)
 	{
-		prs->ansttype = prs->stackoperands[++prs->sopnd] = LFLOAT;
+		prs->anst.ansttype = prs->anst.stackoperands[++prs->anst.sopnd] = LFLOAT;
 	}
 	else if (func == ROUND)
 	{
@@ -830,7 +816,7 @@ void parse_standard_function_call(parser *const prs)
 			return; // 1
 		}
 		toval(prs);
-		prs->ansttype = prs->stackoperands[prs->sopnd] = LINT;
+		prs->anst.ansttype = prs->anst.stackoperands[prs->anst.sopnd] = LINT;
 	}
 	else
 	{
@@ -847,7 +833,7 @@ void parse_standard_function_call(parser *const prs)
 		// SETMOTOR и VOLTAGE void (int port, int volt)
 		if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR || func == VOLTAGE)
 		{
-			if (!mode_is_int(prs->ansttype))
+			if (!mode_is_int(prs->anst.ansttype))
 			{
 				parser_error(prs, param_setmotor_not_int);
 				prs->was_error = 4;
@@ -862,7 +848,7 @@ void parse_standard_function_call(parser *const prs)
 					prs->was_error = 4;
 					return; // 1
 				}
-				prs->ansttype = prs->stackoperands[++prs->sopnd] = LINT;
+				prs->anst.ansttype = prs->anst.stackoperands[++prs->anst.sopnd] = LINT;
 			}
 			else
 			{
@@ -873,7 +859,7 @@ void parse_standard_function_call(parser *const prs)
 					return; // 1
 				}
 				toval(prs);
-				if (!mode_is_int(prs->ansttype))
+				if (!mode_is_int(prs->anst.ansttype))
 				{
 					parser_error(prs, param_setmotor_not_int);
 					prs->was_error = 4;
@@ -881,26 +867,26 @@ void parse_standard_function_call(parser *const prs)
 				}
 				if (func == SETMOTOR || func == VOLTAGE)
 				{
-					prs->sopnd -= 2;
+					prs->anst.sopnd -= 2;
 				}
 				else
 				{
-					--prs->sopnd, prs->anst = VAL;
+					--prs->anst.sopnd, prs->anst.anst = VAL;
 				}
 			}
 		}
-		else if (func == ABS && mode_is_int(prs->ansttype))
+		else if (func == ABS && mode_is_int(prs->anst.ansttype))
 		{
 			func = ABSI;
 		}
 		else
 		{
-			if (mode_is_int(prs->ansttype))
+			if (mode_is_int(prs->anst.ansttype))
 			{
 				totree(prs, WIDEN);
-				prs->ansttype = prs->stackoperands[prs->sopnd] = LFLOAT;
+				prs->anst.ansttype = prs->anst.stackoperands[prs->anst.sopnd] = LFLOAT;
 			}
-			if (!mode_is_float(prs->ansttype))
+			if (!mode_is_float(prs->anst.ansttype))
 			{
 				parser_error(prs, bad_param_in_stand_func);
 				prs->was_error = 4;
@@ -924,24 +910,24 @@ void primaryexpr(parser *const prs)
 		token_consume(prs);
 		totree(prs, TConst);
 		totree(prs, prs->lxr->num);
-		prs->stackoperands[++prs->sopnd] = prs->ansttype = LCHAR;
-		prs->anst = NUMBER;
+		prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype = LCHAR;
+		prs->anst.anst = NUMBER;
 	}
 	else if (prs->token == INT_CONST)
 	{
 		token_consume(prs);
 		totree(prs, TConst);
 		totree(prs, prs->lxr->num);
-		prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
-		prs->anst = NUMBER;
+		prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype = LINT;
+		prs->anst.anst = NUMBER;
 	}
 	else if (prs->token == FLOAT_CONST)
 	{
 		token_consume(prs);
 		totree(prs, TConstd);
 		double_to_tree(&TREE, prs->lxr->num_double);
-		prs->stackoperands[++prs->sopnd] = prs->ansttype = LFLOAT;
-		prs->anst = NUMBER;
+		prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype = LFLOAT;
+		prs->anst.anst = NUMBER;
 	}
 	else if (prs->token == STRING)
 	{
@@ -958,11 +944,11 @@ void primaryexpr(parser *const prs)
 		}
 
 		totree(prs, TIdent);
-		prs->anstdispl = (int)ident_get_displ(prs->sx, prs->lastid);
-		totree(prs, prs->anstdispl);
-		prs->ansttype = (int)ident_get_mode(prs->sx, prs->lastid);
-		prs->stackoperands[++prs->sopnd] = prs->ansttype;
-		prs->anst = IDENT;
+		prs->anst.anstdispl = (int)ident_get_displ(prs->sx, prs->lastid);
+		totree(prs, prs->anst.anstdispl);
+		prs->anst.ansttype = (int)ident_get_mode(prs->sx, prs->lastid);
+		prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype;
+		prs->anst.anst = IDENT;
 	}
 	else if (prs->token == LEFTBR)
 	{
@@ -977,7 +963,7 @@ void primaryexpr(parser *const prs)
 				prs->was_error = 4;
 				return; // 1
 			}
-			if (!mode_is_pointer(prs->sx, prs->ansttype))
+			if (!mode_is_pointer(prs->sx, prs->anst.ansttype))
 			{
 				parser_error(prs, not_pointer_in_cast);
 				prs->was_error = 4;
@@ -1013,7 +999,7 @@ void primaryexpr(parser *const prs)
 	{
 		token_consume(prs);
 		parser_error(prs, not_primary, prs->token);
-		prs->ansttype = mode_undefined;
+		prs->anst.ansttype = mode_undefined;
 		prs->was_error = 4;
 		return; // 1
 	}
@@ -1021,7 +1007,7 @@ void primaryexpr(parser *const prs)
 
 void index_check(parser *const prs)
 {
-	if (!mode_is_int(prs->ansttype))
+	if (!mode_is_int(prs->anst.ansttype))
 	{
 		parser_error(prs, index_must_be_int);
 		prs->was_error = 5;
@@ -1045,7 +1031,7 @@ int find_field(parser *const prs, int stype)
 
 		if ((size_t)mode_get(prs->sx, stype + 4 + (int)i) == REPRTAB_POS)
 		{
-			prs->stackoperands[prs->sopnd] = prs->ansttype = field_type;
+			prs->anst.stackoperands[prs->anst.sopnd] = prs->anst.ansttype = field_type;
 			flag = 0;
 			break;
 		}
@@ -1068,7 +1054,7 @@ void selectend(parser *const prs)
 {
 	while (prs->token == DOT)
 	{
-		prs->anstdispl += find_field(prs, prs->ansttype);
+		prs->anst.anstdispl += find_field(prs, prs->anst.ansttype);
 		if (prs->was_error == 6)
 		{
 			prs->was_error = 5;
@@ -1076,8 +1062,8 @@ void selectend(parser *const prs)
 		}
 	}
 
-	totree(prs, prs->anstdispl);
-	if (mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype))
+	totree(prs, prs->anst.anstdispl);
+	if (mode_is_array(prs->sx, prs->anst.ansttype) || mode_is_pointer(prs->sx, prs->anst.ansttype))
 	{
 		totree(prs, TAddrtoval);
 	}
@@ -1090,7 +1076,7 @@ void postexpr(parser *const prs)
 	int was_func = 0;
 
 	lid = (int)prs->lastid;
-	leftansttyp = prs->ansttype;
+	leftansttyp = prs->anst.ansttype;
 
 	if (prs->token == LEFTBR) // вызов функции
 	{
@@ -1116,7 +1102,7 @@ void postexpr(parser *const prs)
 		for (item_t i = 0; i < n; i++) // фактические параметры
 		{
 			int mdj = prs->leftansttype = (int)mode_get(prs->sx, j); // это вид формального параметра, в
-																			 // context->ansttype будет вид фактического
+																			 // context->anst.ansttype будет вид фактического
 																			 // параметра
 			if (mode_is_function(prs->sx, mdj))
 			{
@@ -1178,25 +1164,25 @@ void postexpr(parser *const prs)
 					toval(prs);
 					totree(prs, TExprend);
 
-					if (mdj > 0 && mdj != prs->ansttype)
+					if (mdj > 0 && mdj != prs->anst.ansttype)
 					{
 						parser_error(prs, diff_formal_param_type_and_actual);
 						prs->was_error = 4;
 						return; // 1
 					}
 
-					if (mode_is_int(mdj) && mode_is_float(prs->ansttype))
+					if (mode_is_int(mdj) && mode_is_float(prs->anst.ansttype))
 					{
 						parser_error(prs, float_instead_int);
 						prs->was_error = 4;
 						return; // 1
 					}
 
-					if (mode_is_float(mdj) && mode_is_int(prs->ansttype))
+					if (mode_is_float(mdj) && mode_is_int(prs->anst.ansttype))
 					{
 						parse_insert_widen(prs);
 					}
-					--prs->sopnd;
+					--prs->anst.sopnd;
 				}
 			}
 			if (i < n - 1 && scanner(prs) != COMMA)
@@ -1211,8 +1197,8 @@ void postexpr(parser *const prs)
 		must_be(prs, RIGHTBR, wrong_number_of_params);
 		totree(prs, TCall2);
 		totree(prs, lid);
-		prs->stackoperands[prs->sopnd] = prs->ansttype = (int)mode_get(prs->sx, leftansttyp + 1);
-		prs->anst = VAL;
+		prs->anst.stackoperands[prs->anst.sopnd] = prs->anst.ansttype = (int)mode_get(prs->sx, leftansttyp + 1);
+		prs->anst.anst = VAL;
 	}
 
 	while (prs->token == LEFTSQBR || prs->token == ARROW || prs->token == DOT)
@@ -1225,22 +1211,22 @@ void postexpr(parser *const prs)
 				prs->was_error = 4;
 				return; // 1
 			}
-			if (!mode_is_array(prs->sx, prs->ansttype)) // вырезка не из массива
+			if (!mode_is_array(prs->sx, prs->anst.ansttype)) // вырезка не из массива
 			{
 				parser_error(prs, slice_not_from_array);
 				prs->was_error = 4;
 				return; // 1
 			}
 
-			item_t elem_type = mode_get(prs->sx, prs->ansttype + 1);
+			item_t elem_type = mode_get(prs->sx, prs->anst.ansttype + 1);
 
 			scanner(prs);
 
-			if (prs->anst == IDENT) // a[i]
+			if (prs->anst.anst == IDENT) // a[i]
 			{
 				const size_t size = vector_size(&TREE);
 				vector_set(&TREE, size - 2, TSliceident);
-				vector_set(&TREE, size - 1, prs->anstdispl);
+				vector_set(&TREE, size - 1, prs->anst.anstdispl);
 			}
 			else // a[i][j]
 			{
@@ -1262,8 +1248,8 @@ void postexpr(parser *const prs)
 
 			must_be(prs, RIGHTSQBR, no_rightsqbr_in_slice);
 
-			prs->stackoperands[prs->sopnd] = prs->ansttype = (int)elem_type;
-			prs->anst = ADDR;
+			prs->anst.stackoperands[prs->anst.sopnd] = prs->anst.ansttype = (int)elem_type;
+			prs->anst.anst = ADDR;
 		}
 
 		while (prs->token == ARROW)
@@ -1272,25 +1258,25 @@ void postexpr(parser *const prs)
 			// -> больше одной точки подряд, схлопываем в 1 select
 			// перед выборкой мог быть вызов функции или вырезка элемента массива
 
-			if (!mode_is_pointer(prs->sx, prs->ansttype) ||
-				!mode_is_struct(prs->sx, (int)mode_get(prs->sx, prs->ansttype + 1)))
+			if (!mode_is_pointer(prs->sx, prs->anst.ansttype) ||
+				!mode_is_struct(prs->sx, (int)mode_get(prs->sx, prs->anst.ansttype + 1)))
 			{
 				parser_error(prs, get_field_not_from_struct_pointer);
 				prs->was_error = 4;
 				return; // 1
 			}
 
-			if (prs->anst == IDENT)
+			if (prs->anst.anst == IDENT)
 			{
 				vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval);
 			}
-			prs->anst = ADDR;
+			prs->anst.anst = ADDR;
 			// pointer  мог быть значением функции (VAL) или, может быть,
 			totree(prs, TSelect); // context->anst уже был ADDR, т.е. адрес
 									  // теперь уже всегда на верхушке стека
 
-			prs->ansttype = (int)mode_get(prs->sx, prs->ansttype + 1);
-			prs->anstdispl = find_field(prs, prs->ansttype);
+			prs->anst.ansttype = (int)mode_get(prs->sx, prs->anst.ansttype + 1);
+			prs->anst.anstdispl = find_field(prs, prs->anst.ansttype);
 			if (prs->was_error == 6)
 			{
 				prs->was_error = 4;
@@ -1306,19 +1292,19 @@ void postexpr(parser *const prs)
 		if (prs->token == DOT)
 
 		{
-			if (!mode_is_struct(prs->sx, prs->ansttype))
+			if (!mode_is_struct(prs->sx, prs->anst.ansttype))
 			{
 				parser_error(prs, select_not_from_struct);
 				prs->was_error = 4;
 				return; // 1
 			}
-			if (prs->anst == VAL) // структура - значение функции
+			if (prs->anst.anst == VAL) // структура - значение функции
 			{
-				int len1 = (int)size_of(prs->sx, prs->ansttype);
-				prs->anstdispl = 0;
+				int len1 = (int)size_of(prs->sx, prs->anst.ansttype);
+				prs->anst.anstdispl = 0;
 				while (prs->token == DOT)
 				{
-					prs->anstdispl += find_field(prs, prs->ansttype);
+					prs->anst.anstdispl += find_field(prs, prs->anst.ansttype);
 					if (prs->was_error == 6)
 					{
 						prs->was_error = 4;
@@ -1326,28 +1312,28 @@ void postexpr(parser *const prs)
 					}
 				}
 				totree(prs, COPYST);
-				totree(prs, prs->anstdispl);
-				totree(prs, (item_t)size_of(prs->sx, prs->ansttype));
+				totree(prs, prs->anst.anstdispl);
+				totree(prs, (item_t)size_of(prs->sx, prs->anst.ansttype));
 				totree(prs, len1);
 			}
-			else if (prs->anst == IDENT)
+			else if (prs->anst.anst == IDENT)
 			{
-				int globid = prs->anstdispl < 0 ? -1 : 1;
+				int globid = prs->anst.anstdispl < 0 ? -1 : 1;
 				while (prs->token == DOT)
 				{
-					prs->anstdispl += globid * find_field(prs, prs->ansttype);
+					prs->anst.anstdispl += globid * find_field(prs, prs->anst.ansttype);
 					if (prs->was_error == 6)
 					{
 						prs->was_error = 4;
 						return; // 1
 					}
 				}
-				vector_set(&TREE, vector_size(&TREE) - 1, prs->anstdispl);
+				vector_set(&TREE, vector_size(&TREE) - 1, prs->anst.anstdispl);
 			}
 			else // ADDR
 			{
 				totree(prs, TSelect);
-				prs->anstdispl = 0;
+				prs->anst.anstdispl = 0;
 				selectend(prs);
 				if (prs->was_error == 5)
 				{
@@ -1361,31 +1347,31 @@ void postexpr(parser *const prs)
 	{
 		int op;
 
-		if (!mode_is_int(prs->ansttype) && !mode_is_float(prs->ansttype))
+		if (!mode_is_int(prs->anst.ansttype) && !mode_is_float(prs->anst.ansttype))
 		{
 			parser_error(prs, wrong_operand);
 			prs->was_error = 4;
 			return; // 1
 		}
 
-		if (prs->anst != IDENT && prs->anst != ADDR)
+		if (prs->anst.anst != IDENT && prs->anst.anst != ADDR)
 		{
 			parser_error(prs, unassignable_inc);
 			prs->was_error = 4;
 			return; // 1
 		}
 		op = (prs->token == INC) ? POSTINC : POSTDEC;
-		if (prs->anst == ADDR)
+		if (prs->anst.anst == ADDR)
 		{
 			op += 4;
 		}
 		scanner(prs);
 		totree_float_operation(prs, op);
-		if (prs->anst == IDENT)
+		if (prs->anst.anst == IDENT)
 		{
 			totree(prs, ident_get_displ(prs->sx, lid));
 		}
-		prs->anst = VAL;
+		prs->anst.anst = VAL;
 	}
 }
 
@@ -1403,22 +1389,22 @@ void unarexpr(parser *const prs)
 			{
 				return; // 1
 			}
-			if (prs->anst != IDENT && prs->anst != ADDR)
+			if (prs->anst.anst != IDENT && prs->anst.anst != ADDR)
 			{
 				parser_error(prs, unassignable_inc);
 				prs->was_error = 7;
 				return; // 1
 			}
-			if (prs->anst == ADDR)
+			if (prs->anst.anst == ADDR)
 			{
 				op += 4;
 			}
 			totree_float_operation(prs, op);
-			if (prs->anst == IDENT)
+			if (prs->anst.anst == IDENT)
 			{
 				totree(prs, ident_get_displ(prs->sx, prs->lastid));
 			}
-			prs->anst = VAL;
+			prs->anst.anst = VAL;
 		}
 		else
 		{
@@ -1431,43 +1417,43 @@ void unarexpr(parser *const prs)
 
 			if (op == LAND)
 			{
-				if (prs->anst == VAL)
+				if (prs->anst.anst == VAL)
 				{
 					parser_error(prs, wrong_addr);
 					prs->was_error = 7;
 					return; // 1
 				}
 
-				if (prs->anst == IDENT)
+				if (prs->anst.anst == IDENT)
 				{
 					vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoaddr); // &a
 				}
 
-				prs->stackoperands[prs->sopnd] = prs->ansttype =
-				(int)to_modetab(prs, mode_pointer, prs->ansttype);
-				prs->anst = VAL;
+				prs->anst.stackoperands[prs->anst.sopnd] = prs->anst.ansttype =
+				(int)to_modetab(prs, mode_pointer, prs->anst.ansttype);
+				prs->anst.anst = VAL;
 			}
 			else if (op == LMULT)
 			{
-				if (!mode_is_pointer(prs->sx, prs->ansttype))
+				if (!mode_is_pointer(prs->sx, prs->anst.ansttype))
 				{
 					parser_error(prs, aster_not_for_pointer);
 					prs->was_error = 7;
 					return; // 1
 				}
 
-				if (prs->anst == IDENT)
+				if (prs->anst.anst == IDENT)
 				{
 					vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval); // *p
 				}
 
-				prs->stackoperands[prs->sopnd] = prs->ansttype = (int)mode_get(prs->sx, prs->ansttype + 1);
-				prs->anst = ADDR;
+				prs->anst.stackoperands[prs->anst.sopnd] = prs->anst.ansttype = (int)mode_get(prs->sx, prs->anst.ansttype + 1);
+				prs->anst.anst = ADDR;
 			}
 			else
 			{
 				toval(prs);
-				if ((op == LNOT || op == LOGNOT) && prs->ansttype == LFLOAT)
+				if ((op == LNOT || op == LOGNOT) && prs->anst.ansttype == LFLOAT)
 				{
 					parser_error(prs, int_op_for_float);
 					prs->was_error = 7;
@@ -1497,7 +1483,7 @@ void unarexpr(parser *const prs)
 				{
 					totree(prs, op);
 				}
-				prs->anst = VAL;
+				prs->anst.anst = VAL;
 			}
 		}
 	}
@@ -1512,7 +1498,7 @@ void unarexpr(parser *const prs)
 	}
 
 	postexpr(prs); // 0
-	prs->stackoperands[prs->sopnd] = prs->ansttype;
+	prs->anst.stackoperands[prs->anst.sopnd] = prs->anst.ansttype;
 	if (prs->was_error == 4)
 	{
 		prs->was_error = 7;
@@ -1649,7 +1635,7 @@ void condexpr(parser *const prs)
 		while (prs->token == QUEST)
 		{
 			toval(prs);
-			if (!mode_is_int(prs->ansttype))
+			if (!mode_is_int(prs->anst.ansttype))
 			{
 				parser_error(prs, float_in_condition);
 				prs->was_error = 4;
@@ -1664,10 +1650,10 @@ void condexpr(parser *const prs)
 			}
 			if (!globtype)
 			{
-				globtype = prs->ansttype;
+				globtype = prs->anst.ansttype;
 			}
-			prs->sopnd--;
-			if (mode_is_float(prs->ansttype))
+			prs->anst.sopnd--;
+			if (mode_is_float(prs->anst.ansttype))
 			{
 				globtype = LFLOAT;
 			}
@@ -1692,7 +1678,7 @@ void condexpr(parser *const prs)
 		}
 		toval(prs);
 		totree(prs, TExprend);
-		if (mode_is_float(prs->ansttype))
+		if (mode_is_float(prs->anst.ansttype))
 		{
 			globtype = LFLOAT;
 		}
@@ -1710,11 +1696,11 @@ void condexpr(parser *const prs)
 			adif = (size_t)r;
 		}
 
-		prs->stackoperands[prs->sopnd] = prs->ansttype = globtype;
+		prs->anst.stackoperands[prs->anst.sopnd] = prs->anst.ansttype = globtype;
 	}
 	else
 	{
-		prs->stackoperands[prs->sopnd] = prs->ansttype;
+		prs->anst.stackoperands[prs->anst.sopnd] = prs->anst.ansttype;
 	}
 }
 
@@ -1728,7 +1714,7 @@ void exprassnvoid(parser *const prs)
 	{
 		vector_set(&TREE, t, vector_get(&TREE, t) + 200);
 	}
-	--prs->sopnd;
+	--prs->anst.sopnd;
 }
 
 void exprassn(parser *const prs, int level)
@@ -1753,8 +1739,8 @@ void exprassn(parser *const prs, int level)
 			prs->was_error = 6;
 			return; // 1
 		}
-		prs->stackoperands[++prs->sopnd] = prs->ansttype = type;
-		prs->anst = VAL;
+		prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype = type;
+		prs->anst.anst = VAL;
 	}
 	else
 	{
@@ -1766,9 +1752,9 @@ void exprassn(parser *const prs, int level)
 		return; // 1
 	}
 
-	leftanst = prs->anst;
-	leftanstdispl = prs->anstdispl;
-	prs->leftansttype = prs->ansttype;
+	leftanst = prs->anst.anst;
+	leftanstdispl = prs->anst.anstdispl;
+	prs->leftansttype = prs->anst.ansttype;
 	if (opassn(prs))
 	{
 		int opp = prs->op;
@@ -1788,9 +1774,9 @@ void exprassn(parser *const prs, int level)
 			prs->was_error = 6;
 			return; // 1
 		}
-		rtype = prs->stackoperands[prs->sopnd--]; // снимаем типы
+		rtype = prs->anst.stackoperands[prs->anst.sopnd--]; // снимаем типы
 														  // операндов со стека
-		ltype = prs->stackoperands[prs->sopnd];
+		ltype = prs->anst.stackoperands[prs->anst.sopnd];
 
 		if (intopassn(lnext) && (mode_is_float(ltype) || mode_is_float(rtype)))
 		{
@@ -1821,27 +1807,27 @@ void exprassn(parser *const prs, int level)
 				return; // 1
 			}
 
-			if (prs->anst == VAL)
+			if (prs->anst.anst == VAL)
 			{
 				opp = leftanst == IDENT ? COPY0STASS : COPY1STASS;
 			}
 			else
 			{
-				opp = leftanst == IDENT ? prs->anst == IDENT ? COPY00 : COPY01
-				: prs->anst == IDENT ? COPY10 : COPY11;
+				opp = leftanst == IDENT ? prs->anst.anst == IDENT ? COPY00 : COPY01
+				: prs->anst.anst == IDENT ? COPY10 : COPY11;
 			}
 			totree(prs, opp);
 			if (leftanst == IDENT)
 			{
 				totree(prs, leftanstdispl); // displleft
 			}
-			if (prs->anst == IDENT)
+			if (prs->anst.anst == IDENT)
 			{
-				totree(prs, prs->anstdispl); // displright
+				totree(prs, prs->anst.anstdispl); // displright
 			}
 			totree(prs, mode_get(prs->sx, ltype + 1)); // длина
-			prs->anst = leftanst;
-			prs->anstdispl = leftanstdispl;
+			prs->anst.anst = leftanst;
+			prs->anst.anstdispl = leftanstdispl;
 		}
 		else // оба операнда базового типа или указатели
 		{
@@ -1863,7 +1849,7 @@ void exprassn(parser *const prs, int level)
 			if (mode_is_int(rtype) && mode_is_float(ltype))
 			{
 				totree(prs, WIDEN);
-				prs->ansttype = LFLOAT;
+				prs->anst.ansttype = LFLOAT;
 			}
 			if (mode_is_pointer(prs->sx, ltype) && mode_is_pointer(prs->sx, rtype) && ltype != rtype)
 			{
@@ -1880,13 +1866,13 @@ void exprassn(parser *const prs, int level)
 			totree_float_operation(prs, opp);
 			if (leftanst == IDENT)
 			{
-				prs->anstdispl = leftanstdispl;
+				prs->anst.anstdispl = leftanstdispl;
 				totree(prs, leftanstdispl);
 			}
-			prs->anst = VAL;
+			prs->anst.anst = VAL;
 		}
-		prs->ansttype = ltype;
-		prs->stackoperands[prs->sopnd] = ltype; // тип результата - на стек
+		prs->anst.ansttype = ltype;
+		prs->anst.stackoperands[prs->anst.sopnd] = ltype; // тип результата - на стек
 	}
 	else
 	{
@@ -1911,7 +1897,7 @@ void expr(parser *const prs, int level)
 	while (prs->token == COMMA)
 	{
 		exprassnvoid(prs);
-		prs->sopnd--;
+		prs->anst.sopnd--;
 		scanner(prs);
 		exprassn(prs, level);
 		if (prs->was_error == 6)
@@ -1940,7 +1926,7 @@ item_t parse_expression(parser *const prs)
 {
 	expr(prs, 0);
 	exprassnvoid(prs);
-	return (item_t)prs->ansttype;
+	return (item_t)prs->anst.ansttype;
 }
 
 item_t parse_assignment_expression(parser *const prs)
@@ -1948,8 +1934,8 @@ item_t parse_assignment_expression(parser *const prs)
 	exprassn(prs, 1);
 	toval(prs);
 	totree(prs, TExprend);
-	prs->sopnd--;
-	return (item_t)prs->ansttype;
+	prs->anst.sopnd--;
+	return (item_t)prs->anst.ansttype;
 }
 
 item_t parse_parenthesized_expression(parser *const prs)
@@ -1957,7 +1943,7 @@ item_t parse_parenthesized_expression(parser *const prs)
 	must_be(prs, LEFTBR, cond_must_be_in_brkts);
 	parse_condition(prs);
 	must_be(prs, RIGHTBR, cond_must_be_in_brkts);
-	return (item_t)prs->ansttype;
+	return (item_t)prs->anst.ansttype;
 }
 
 item_t parse_constant_expression(parser *const prs)
@@ -1966,8 +1952,8 @@ item_t parse_constant_expression(parser *const prs)
 	condexpr(prs);
 	toval(prs);
 	totree(prs, TExprend);
-	prs->sopnd--;
-	return (item_t)prs->ansttype;
+	prs->anst.sopnd--;
+	return (item_t)prs->anst.ansttype;
 }
 
 item_t parse_condition(parser *const prs)
@@ -1975,8 +1961,8 @@ item_t parse_condition(parser *const prs)
 	expr(prs, 1);
 	toval(prs);
 	totree(prs, TExprend);
-	prs->sopnd--;
-	return (item_t)prs->ansttype;
+	prs->anst.sopnd--;
+	return (item_t)prs->anst.ansttype;
 }
 
 void parse_string_literal(parser *const prs)
@@ -1990,9 +1976,9 @@ void parse_string_literal(parser *const prs)
 		totree(prs, prs->lxr->lexstr[i]);
 	}
 
-	prs->ansttype = (int)to_modetab(prs, mode_array, LCHAR);
-	prs->stackoperands[++prs->sopnd] = prs->ansttype;
-	prs->anst = VAL;
+	prs->anst.ansttype = (int)to_modetab(prs, mode_array, LCHAR);
+	prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype;
+	prs->anst.anst = VAL;
 }
 
 void parse_insert_widen(parser *const parser)
