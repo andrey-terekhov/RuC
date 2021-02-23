@@ -109,6 +109,18 @@ double double_from_tree(vector *const tree)
 	return num;
 }
 
+void anst_push(anonymous_stack *const anst, const item_t type, const item_t mode)
+{
+	anst->stackoperands[++anst->sopnd] = anst->ansttype = (int)mode;
+	anst->anst = (int)type;
+}
+
+item_t anst_pop(anonymous_stack *const anst)
+{
+	--anst->sopnd;
+	return (item_t)anst->ansttype;
+}
+
 void binop(parser *const prs, int sp)
 {
 	int op = prs->stackop[sp];
@@ -910,24 +922,21 @@ void primaryexpr(parser *const prs)
 		token_consume(prs);
 		totree(prs, TConst);
 		totree(prs, prs->lxr->num);
-		prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype = LCHAR;
-		prs->anst.anst = NUMBER;
+		anst_push(&prs->anst, NUMBER, mode_character);
 	}
 	else if (prs->token == INT_CONST)
 	{
 		token_consume(prs);
 		totree(prs, TConst);
 		totree(prs, prs->lxr->num);
-		prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype = LINT;
-		prs->anst.anst = NUMBER;
+		anst_push(&prs->anst, NUMBER, mode_integer);
 	}
 	else if (prs->token == FLOAT_CONST)
 	{
 		token_consume(prs);
 		totree(prs, TConstd);
 		double_to_tree(&TREE, prs->lxr->num_double);
-		prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype = LFLOAT;
-		prs->anst.anst = NUMBER;
+		anst_push(&prs->anst, NUMBER, mode_float);
 	}
 	else if (prs->token == STRING)
 	{
@@ -1714,7 +1723,6 @@ void exprassnvoid(parser *const prs)
 	{
 		vector_set(&TREE, t, vector_get(&TREE, t) + 200);
 	}
-	--prs->anst.sopnd;
 }
 
 void exprassn(parser *const prs, int level)
@@ -1926,7 +1934,7 @@ item_t parse_expression(parser *const prs)
 {
 	expr(prs, 0);
 	exprassnvoid(prs);
-	return (item_t)prs->anst.ansttype;
+	return anst_pop(&prs->anst);
 }
 
 item_t parse_assignment_expression(parser *const prs)
@@ -1934,16 +1942,15 @@ item_t parse_assignment_expression(parser *const prs)
 	exprassn(prs, 1);
 	toval(prs);
 	totree(prs, TExprend);
-	prs->anst.sopnd--;
-	return (item_t)prs->anst.ansttype;
+	return anst_pop(&prs->anst);
 }
 
 item_t parse_parenthesized_expression(parser *const prs)
 {
 	must_be(prs, LEFTBR, cond_must_be_in_brkts);
-	parse_condition(prs);
+	const item_t condition_type = parse_condition(prs);
 	must_be(prs, RIGHTBR, cond_must_be_in_brkts);
-	return (item_t)prs->anst.ansttype;
+	return condition_type;
 }
 
 item_t parse_constant_expression(parser *const prs)
@@ -1952,8 +1959,7 @@ item_t parse_constant_expression(parser *const prs)
 	condexpr(prs);
 	toval(prs);
 	totree(prs, TExprend);
-	prs->anst.sopnd--;
-	return (item_t)prs->anst.ansttype;
+	return anst_pop(&prs->anst);
 }
 
 item_t parse_condition(parser *const prs)
@@ -1961,8 +1967,7 @@ item_t parse_condition(parser *const prs)
 	expr(prs, 1);
 	toval(prs);
 	totree(prs, TExprend);
-	prs->anst.sopnd--;
-	return (item_t)prs->anst.ansttype;
+	return anst_pop(&prs->anst);
 }
 
 void parse_string_literal(parser *const prs)
@@ -1976,9 +1981,7 @@ void parse_string_literal(parser *const prs)
 		totree(prs, prs->lxr->lexstr[i]);
 	}
 
-	prs->anst.ansttype = (int)to_modetab(prs, mode_array, LCHAR);
-	prs->anst.stackoperands[++prs->anst.sopnd] = prs->anst.ansttype;
-	prs->anst.anst = VAL;
+	anst_push(&prs->anst, VAL, to_modetab(prs, mode_array, LCHAR));
 }
 
 void parse_insert_widen(parser *const parser)
