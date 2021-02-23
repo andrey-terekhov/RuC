@@ -395,7 +395,6 @@ void parse_array_initializer(parser *const prs, const item_t type)
 		{
 			prs->flag_strings_only = 1;
 		}
-		token_consume(prs);
 		parse_string_literal(prs);
 		tree_add(prs->sx, TExprend);
 		return;

@@ -919,33 +919,37 @@ void parse_standard_function_call(parser *const prs)
 
 void primaryexpr(parser *const prs)
 {
-	if (prs->curr_token == CHAR_CONST)
+	if (prs->token == CHAR_CONST)
 	{
+		token_consume(prs);
 		totree(prs, TConst);
 		totree(prs, prs->lxr->num);
 		prs->stackoperands[++prs->sopnd] = prs->ansttype = LCHAR;
 		prs->anst = NUMBER;
 	}
-	else if (prs->curr_token == INT_CONST)
+	else if (prs->token == INT_CONST)
 	{
+		token_consume(prs);
 		totree(prs, TConst);
 		totree(prs, prs->lxr->num);
 		prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
 		prs->anst = NUMBER;
 	}
-	else if (prs->curr_token == FLOAT_CONST)
+	else if (prs->token == FLOAT_CONST)
 	{
+		token_consume(prs);
 		totree(prs, TConstd);
 		double_to_tree(&TREE, prs->lxr->num_double);
 		prs->stackoperands[++prs->sopnd] = prs->ansttype = LFLOAT;
 		prs->anst = NUMBER;
 	}
-	else if (prs->curr_token == STRING)
+	else if (prs->token == STRING)
 	{
 		parse_string_literal(prs);
 	}
-	else if (prs->curr_token == IDENT)
+	else if (prs->token == IDENT)
 	{
+		token_consume(prs);
 		applid(prs);
 		if (prs->was_error == 5)
 		{
@@ -960,8 +964,9 @@ void primaryexpr(parser *const prs)
 		prs->stackoperands[++prs->sopnd] = prs->ansttype;
 		prs->anst = IDENT;
 	}
-	else if (prs->curr_token == LEFTBR)
+	else if (prs->token == LEFTBR)
 	{
+		token_consume(prs);
 		if (prs->token == LVOID)
 		{
 			scanner(prs);
@@ -999,19 +1004,16 @@ void primaryexpr(parser *const prs)
 			}
 		}
 	}
-	else if (prs->curr_token <= STANDARD_FUNC_START) // стандартная функция
+	else if (prs->token <= STANDARD_FUNC_START) // стандартная функция
 	{
+		token_consume(prs);
 		parse_standard_function_call(prs);
 	}
 	else
 	{
+		token_consume(prs);
 		parser_error(prs, not_primary, prs->curr_token);
 		prs->ansttype = mode_undefined;
-		prs->was_error = 4;
-		return; // 1
-	}
-	if (prs->was_error == 5)
-	{
 		prs->was_error = 4;
 		return; // 1
 	}
@@ -1500,7 +1502,6 @@ void unarexpr(parser *const prs)
 	}
 	else
 	{
-		token_consume(prs);
 		primaryexpr(prs);
 		if (prs->was_error == 4)
 		{
@@ -1979,6 +1980,7 @@ item_t parse_condition(parser *const prs)
 
 void parse_string_literal(parser *const prs)
 {
+	token_consume(prs);
 	totree(prs, TString);
 	totree(prs, prs->lxr->num);
 
