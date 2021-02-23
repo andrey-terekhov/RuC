@@ -109,10 +109,11 @@ double double_from_tree(vector *const tree)
 	return num;
 }
 
-void anst_push(parser *const prs, const item_t type, const item_t mode)
+item_t anst_push(parser *const prs, const item_t type, const item_t mode)
 {
 	prs->stackoperands[++prs->sopnd] = prs->ansttype = (int)mode;
 	prs->anst = (int)type;
+	return mode;
 }
 
 item_t anst_pop(parser *const prs)
@@ -923,22 +924,23 @@ void parse_standard_function_call(parser *const prs)
  *
  *	@return	Type of parsed expression
  */
-void parse_identifier(parser *const prs)
+item_t parse_identifier(parser *const prs)
 {
-	scanner(prs);
-	applid(prs);
-	if (prs->was_error == 5)
+	token_consume(prs);
+	const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+	if (id == ITEM_MAX)
 	{
-		prs->was_error = 4;
-		return; // 1
+		parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, REPRTAB_POS));
 	}
 
 	totree(prs, TIdent);
-	prs->anstdispl = (int)ident_get_displ(prs->sx, prs->lastid);
+	prs->anstdispl = (int)ident_get_displ(prs->sx, id);
 	totree(prs, prs->anstdispl);
-	prs->ansttype = (int)ident_get_mode(prs->sx, prs->lastid);
-	prs->stackoperands[++prs->sopnd] = prs->ansttype;
-	prs->anst = IDENT;
+
+	const item_t mode = ident_get_mode(prs->sx, id);
+
+	prs->lastid = (size_t)id;
+	return anst_push(prs, IDENT, mode);
 }
 
 /**
@@ -955,28 +957,33 @@ void parse_identifier(parser *const prs)
  */
 item_t parse_constant(parser *const prs)
 {
-	if (prs->token == CHAR_CONST)
+	item_t mode = mode_undefined;
+	switch (prs->token)
 	{
-		token_consume(prs);
-		totree(prs, TConst);
-		totree(prs, prs->lxr->num);
-		anst_push(prs, NUMBER, mode_character);
+		case char_constant:
+			totree(prs, TConst);
+			totree(prs, prs->lxr->num);
+			mode = mode_character;
+			break;
+
+		case int_constant:
+			totree(prs, TConst);
+			totree(prs, prs->lxr->num);
+			mode = mode_integer;
+			break;
+
+		case float_constant:
+			totree(prs, TConstd);
+			double_to_tree(&prs->sx->tree, prs->lxr->num_double);
+			mode = mode_float;
+			break;
+
+		default:
+			break;
 	}
-	else if (prs->token == INT_CONST)
-	{
-		token_consume(prs);
-		totree(prs, TConst);
-		totree(prs, prs->lxr->num);
-		anst_push(prs, NUMBER, mode_integer);
-	}
-	else if (prs->token == FLOAT_CONST)
-	{
-		token_consume(prs);
-		totree(prs, TConstd);
-		double_to_tree(&TREE, prs->lxr->num_double);
-		anst_push(prs, NUMBER, mode_float);
-	}
-	return prs->ansttype;
+
+	token_consume(prs);
+	return anst_push(prs, NUMBER, mode);
 }
 
 /**
@@ -2002,18 +2009,18 @@ item_t parse_condition(parser *const prs)
 	return anst_pop(prs);
 }
 
-void parse_string_literal(parser *const prs)
+item_t parse_string_literal(parser *const prs)
 {
 	token_consume(prs);
 	totree(prs, TString);
 	totree(prs, prs->lxr->num);
 
-	for (int i = 0; i < prs->lxr->num; i++)
+	for (size_t i = 0; i < (size_t)prs->lxr->num; i++)
 	{
 		totree(prs, prs->lxr->lexstr[i]);
 	}
 
-	anst_push(prs, VAL, to_modetab(prs, mode_array, LCHAR));
+	return anst_push(prs, VAL, to_modetab(prs, mode_array, LCHAR));
 }
 
 void parse_insert_widen(parser *const parser)
