@@ -53,7 +53,6 @@ typedef struct parser
 	token_t curr_token;
 	token_t token;				/**< Current token */
 
-	anonymous_stack anst;		/**< Anonymous stack */
 	size_t function_mode;		/**< Mode of currenty parsed function */
 	size_t array_dimensions;	/**< Array dimensions counter */
 	item_t gotost[1000];		/**< Labels table */
@@ -86,6 +85,7 @@ typedef struct parser
 	int flag_was_type_def;		/**< Set, if was type definition */
 
 	int was_error;				/**< Error flag */
+	anonymous_stack anst;		/**< Anonymous stack */
 } parser;
 
 
