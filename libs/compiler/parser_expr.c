@@ -1012,7 +1012,7 @@ void primaryexpr(parser *const prs)
 	else
 	{
 		token_consume(prs);
-		parser_error(prs, not_primary, prs->curr_token);
+		parser_error(prs, not_primary, prs->token);
 		prs->ansttype = mode_undefined;
 		prs->was_error = 4;
 		return; // 1
@@ -1395,9 +1395,9 @@ void unarexpr(parser *const prs)
 	if (prs->token == LNOT || prs->token == LOGNOT || prs->token == LPLUS || prs->token == LMINUS ||
 		prs->token == LAND || prs->token == LMULT || prs->token == INC || prs->token == DEC)
 	{
-		scanner(prs);
-		if (prs->curr_token == INC || prs->curr_token == DEC)
+		if (prs->token == INC || prs->token == DEC)
 		{
+			scanner(prs);
 			unarexpr(prs);
 			if (prs->was_error == 7)
 			{
@@ -1422,6 +1422,7 @@ void unarexpr(parser *const prs)
 		}
 		else
 		{
+			scanner(prs);
 			unarexpr(prs);
 			if (prs->was_error == 7)
 			{
