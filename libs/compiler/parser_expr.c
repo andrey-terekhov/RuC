@@ -19,8 +19,8 @@
 
 
 void unarexpr(parser *const prs);
-void exprassn(parser *const prs, int level);
-void expr(parser *const prs, int level);
+void exprassn(parser *const prs);
+void expr(parser *const prs);
 
 
 int scanner(parser *const prs)
@@ -225,7 +225,7 @@ void actstring(int type, parser *const prs)
 	int n = 0;
 	do
 	{
-		exprassn(prs, 1);
+		exprassn(prs);
 		if (prs->was_error == 6)
 		{
 			prs->was_error = 1;
@@ -265,7 +265,7 @@ void actstring(int type, parser *const prs)
 
 void mustbestring(parser *const prs)
 {
-	exprassn(prs, 1);
+	exprassn(prs);
 	if (prs->was_error == 6)
 	{
 		prs->was_error = 5;
@@ -282,7 +282,7 @@ void mustbestring(parser *const prs)
 
 void mustbepointstring(parser *const prs)
 {
-	exprassn(prs, 1);
+	exprassn(prs);
 	if (prs->was_error == 6)
 	{
 		prs->was_error = 5;
@@ -301,7 +301,7 @@ void mustbepointstring(parser *const prs)
 
 void mustberow(parser *const prs)
 {
-	exprassn(prs, 1);
+	exprassn(prs);
 	if (prs->was_error == 6)
 	{
 		prs->was_error = 5;
@@ -319,7 +319,7 @@ void mustberow(parser *const prs)
 
 void mustbeint(parser *const prs)
 {
-	exprassn(prs, 1);
+	exprassn(prs);
 	if (prs->was_error == 6)
 	{
 		prs->was_error = 5;
@@ -348,7 +348,7 @@ void mustberowofint(parser *const prs)
 	}
 	else
 	{
-		exprassn(prs, 1);
+		exprassn(prs);
 		if (prs->was_error == 6)
 		{
 			prs->was_error = 5;
@@ -384,7 +384,7 @@ void mustberowoffloat(parser *const prs)
 	}
 	else
 	{
-		exprassn(prs, 1);
+		exprassn(prs);
 		if (prs->was_error == 6)
 		{
 			prs->was_error = 5;
@@ -588,7 +588,7 @@ void parse_standard_function_call(parser *const prs)
 				}
 				else // DRAW_NUMBER
 				{
-					exprassn(prs, 1);
+					exprassn(prs);
 					if (prs->was_error == 6)
 					{
 						prs->was_error = 4;
@@ -774,7 +774,7 @@ void parse_standard_function_call(parser *const prs)
 			else
 			{
 				prs->leftansttype = 2;
-				exprassn(prs, 1);
+				exprassn(prs);
 				if (prs->was_error == 6)
 				{
 					prs->was_error = 4;
@@ -821,7 +821,7 @@ void parse_standard_function_call(parser *const prs)
 	}
 	else if (func == ROUND)
 	{
-		exprassn(prs, 1);
+		exprassn(prs);
 		if (prs->was_error == 6)
 		{
 			prs->was_error = 4;
@@ -832,7 +832,7 @@ void parse_standard_function_call(parser *const prs)
 	}
 	else
 	{
-		exprassn(prs, 1);
+		exprassn(prs);
 		if (prs->was_error == 6)
 		{
 			prs->was_error = 4;
@@ -864,7 +864,7 @@ void parse_standard_function_call(parser *const prs)
 			}
 			else
 			{
-				exprassn(prs, 1);
+				exprassn(prs);
 				if (prs->was_error == 6)
 				{
 					prs->was_error = 4;
@@ -986,7 +986,7 @@ void primaryexpr(parser *const prs)
 		else
 		{
 			int oldsp = prs->sp;
-			expr(prs, 1);
+			expr(prs);
 			if (prs->was_error == 5)
 			{
 				prs->was_error = 4;
@@ -1164,7 +1164,7 @@ void postexpr(parser *const prs)
 				else
 				{
 					prs->flag_in_assignment = 0;
-					exprassn(prs, 1);
+					exprassn(prs);
 					if (prs->was_error == 6)
 					{
 						prs->was_error = 4;
@@ -1725,7 +1725,7 @@ void exprassnvoid(parser *const prs)
 	}
 }
 
-void exprassn(parser *const prs, int level)
+void exprassn(parser *const prs)
 {
 	int leftanst;
 	int leftanstdispl;
@@ -1769,7 +1769,7 @@ void exprassn(parser *const prs, int level)
 		lnext = prs->token;
 		prs->flag_in_assignment = 1;
 		scanner(prs);
-		exprassn(prs, level + 1);
+		exprassn(prs);
 		if (prs->was_error == 6)
 		{
 			return; // 1
@@ -1894,29 +1894,15 @@ void exprassn(parser *const prs, int level)
 	// в виде unarexpr уже выкушано
 }
 
-void expr(parser *const prs, int level)
+void expr(parser *const prs)
 {
-	exprassn(prs, level);
-	if (prs->was_error == 6)
-	{
-		prs->was_error = 5;
-		return; // 1
-	}
+	exprassn(prs);
 	while (prs->token == COMMA)
 	{
 		exprassnvoid(prs);
 		prs->sopnd--;
 		scanner(prs);
-		exprassn(prs, level);
-		if (prs->was_error == 6)
-		{
-			prs->was_error = 5;
-			return; // 1
-		}
-	}
-	if (level == 0)
-	{
-		totree(prs, TExprend);
+		exprassn(prs);
 	}
 }
 
@@ -1932,14 +1918,15 @@ void expr(parser *const prs, int level)
 
 item_t parse_expression(parser *const prs)
 {
-	expr(prs, 0);
+	expr(prs);
+	totree(prs, TExprend);
 	exprassnvoid(prs);
 	return anst_pop(prs);
 }
 
 item_t parse_assignment_expression(parser *const prs)
 {
-	exprassn(prs, 1);
+	exprassn(prs);
 	toval(prs);
 	totree(prs, TExprend);
 	return anst_pop(prs);
@@ -1964,7 +1951,7 @@ item_t parse_constant_expression(parser *const prs)
 
 item_t parse_condition(parser *const prs)
 {
-	expr(prs, 1);
+	expr(prs);
 	toval(prs);
 	totree(prs, TExprend);
 	return anst_pop(prs);
