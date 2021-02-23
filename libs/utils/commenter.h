@@ -50,7 +50,7 @@ EXPORTED comment cmt_create(const char *const path, const size_t line);
  *
  *	@param	path		File path
  *	@param	line		Line number
-  *	@param	symbol		Position in line
+ *	@param	symbol		Position in line
  *
  *	@return	Macro comment structure
  */
