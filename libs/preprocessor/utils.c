@@ -48,7 +48,7 @@ int equal_reprtab(int i, int j, environment *const env)
 
 void output_keywords(environment *const env)
 {
-	for (int j = 0; j < env->reprtab[env->rp]; j++)
+	for (size_t j = 0; j < (size_t)env->reprtab[env->rp]; j++)
 	{
 		m_fprintf(env, env->reprtab[env->rp + 2 + j]);
 	}
@@ -73,8 +73,8 @@ int macro_keywords(environment *const env)
 	/*if (env->curchar != '\n' && env->curchar != ' ' && env->curchar != '\t' && env->curchar != '(' &&
 		env->curchar != '\"')
 	{
-		const size_t position = env_skip_str(env);
-		macro_error(after_ident_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
+		
+		env_error(env, after_ident_must_be_space);
 	}*/
 
 	hash &= 255;
@@ -141,7 +141,7 @@ int collect_mident(environment *const env)
 	{
 		if (r >= env->mfirstrp && mf_equal(r, env))
 		{
-			return (env->macrotext[env->reprtab[r + 1]] != MACROUNDEF) ? r : 0;
+			return (env->macros_tab[env->reprtab[r + 1]] != MACROUNDEF) ? r : 0;
 		}
 
 		r = env->reprtab[r];
@@ -150,7 +150,7 @@ int collect_mident(environment *const env)
 	return 0;
 }
 
-int skip_space_end_line(environment *const env)
+int skip_to_end_line(environment *const env)
 {
 	while (env->curchar != '\n')
 	{
@@ -160,8 +160,7 @@ int skip_space_end_line(environment *const env)
 		}
 		else
 		{
-			const size_t position = env_skip_str(env);
-			macro_error(after_preproces_words_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
+			env_error(env, after_preproces_words_must_be_space);
 			return -1;
 		}
 	}
@@ -169,7 +168,7 @@ int skip_space_end_line(environment *const env)
 	return 0;
 }
 
-void skip_space(environment *const env)
+void skip_to_significant_character(environment *const env)
 {
 	while (env->curchar == ' ' || env->curchar == '\t')
 	{
@@ -177,13 +176,13 @@ void skip_space(environment *const env)
 	}
 }
 
-void skip_string(environment *const env)
+int skip_string(environment *const env)
 {
 	int c = env->curchar;
 	m_fprintf(env, env->curchar);
 	m_nextch(env);
 
-	while (env->curchar != c && env->curchar != EOF)
+	while (env->curchar != c && env->curchar != EOF && env->curchar != '\n')
 	{
 		if (env->curchar == '\\')
 		{
@@ -195,11 +194,15 @@ void skip_string(environment *const env)
 		m_nextch(env);
 	}
 
-	if (env->curchar != EOF)
+	if (env->curchar == EOF || env->curchar == '\n')
 	{
-		m_fprintf(env, env->curchar);
-		m_nextch(env);
+		env_error(env, not_ending_string);
+		return -1;
 	}
+
+	m_fprintf(env, env->curchar);
+	m_nextch(env);
+	return 0;
 }
 
 void skip_file(environment *const env)

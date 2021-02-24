@@ -26,12 +26,12 @@ extern "C" {
 /**
  *	Calculate an arithmetic or logical expression
  *
- *	@param	logic_flag		Type expression
- *	@param	env				Preprocessor environment
+ *  @param	env				Preprocessor environment
+ *	@param	type			Type expression
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int calculate(environment *const env, const int logic_flag);
+int calculate(environment *const env, const int type);
 
 #ifdef __cplusplus
 } /* extern "C" */

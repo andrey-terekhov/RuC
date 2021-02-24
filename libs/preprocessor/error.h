@@ -37,7 +37,7 @@ enum ERROR
 	before_endif,
 	repeat_ident,
 	not_end_fail_define,
-	scope_not_clous,
+	scope_not_close,
 	after_preproces_words_must_be_space,
 	ident_begins_with_letters,
 	ident_not_exist,
@@ -59,6 +59,8 @@ enum ERROR
 	must_end_endw,
 	include_file_not_found,
 	source_file_not_found,
+	ws_not_correct,
+	not_ending_string, 
 };
 
 

@@ -99,7 +99,11 @@ void add_keywods(environment *const env)
 
 int macro_form_io(workspace *const ws, universal_io *const output)
 {
-	linker lk = lk_create(ws);
+	linker lk;
+	if(lk_init(&lk, ws))
+	{
+		return -1;
+	}
 
 	environment env;
 	env_init(&env, &lk, output);

@@ -25,7 +25,7 @@
 #define DEPTH			10
 #define CONTROLSIZE 250
 
-#define CANGEEND	  -6
+#define END_PARAMETER	  -6
 #define MACROEND	  -5
 #define MACROUNDEF	  -3
 #define MACROCANGE	  -4

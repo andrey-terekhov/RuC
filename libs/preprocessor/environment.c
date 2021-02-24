@@ -22,6 +22,7 @@
 #include "uniscanner.h"
 #include <string.h>
 
+
 #define MAX_CMT_SIZE MAX_ARG_SIZE + 32
 
 
@@ -32,12 +33,12 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->lk = lk;
 
 	env->rp = 1;
-	env->macro_prt = 1;
-	env->chg_prt = 0;
-	env->loc_stk_prt = 0;
-	env->calc_prt = 0;
-	env->if_prt = 0;
-	env->w_prt = 0;
+	env->macros_tab_size = 1;
+	env->change_size = 0;
+	env->local_stack_size = 0;
+	env->calc_string_size = 0;
+	env->if_string_size = 0;
+	env->while_string_size = 0;
 	env->mfirstrp = -1;
 	env->prep_flag = 0;
 	env->nextch_type = FILETYPE;
@@ -51,40 +52,40 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->nested_if = 0;
 	env->flagint = 1;
 
-	for (int i = 0; i < HASH; i++)
+	for (size_t i = 0; i < HASH; i++)
 	{
 		env->hashtab[i] = 0;
 	}
 
-	for (int i = 0; i < MAXTAB; i++)
+	for (size_t i = 0; i < MAXTAB; i++)
 	{
 		env->reprtab[i] = 0;
 	}
 
-	for (int i = 0; i < STRING_SIZE; i++)
+	for (size_t i = 0; i < STRING_SIZE; i++)
 	{
 		env->mstring[i] = 0;
 		env->error_string[i] = 0;
 		env->localstack[i] = 0;
-		env->cstring[i] = 0;
+		env->calc_string[i] = 0;
 	}
 
-	for (int i = 0; i < STRING_SIZE * 3; i++)
+	for (size_t i = 0; i < STRING_SIZE * 3; i++)
 	{
-		env->fchange[i] = 0;
+		env->change[i] = 0;
 	}
 
-	for (int i = 0; i < STRING_SIZE * 2; i++)
+	for (size_t i = 0; i < STRING_SIZE * 2; i++)
 	{
-		env->ifstring[i] = 0;
+		env->if_string[i] = 0;
 	}
 
-	for (int i = 0; i < STRING_SIZE * 5; i++)
+	for (size_t i = 0; i < STRING_SIZE * 5; i++)
 	{
-		env->wstring[i] = 0;
+		env->while_string[i] = 0;
 	}
 
-	for (int i = 0; i < DEPTH; i++)
+	for (size_t i = 0; i < DEPTH; i++)
 	{
 		env->oldcurchar[i] = 0;
 		env->oldnextchar[i] = 0;
@@ -98,14 +99,14 @@ void env_clear_error_string(environment *const env)
 	env->position = 0;
 }
 
-const char *env_get_current_file(environment *const env)
+const char *env_get_current_path(environment *const env)
 {
 	return env == NULL ? NULL : ws_get_file(env->lk->ws, env->lk->current);
 }
 
 void env_add_comment(environment *const env)
 {
-	comment cmt = cmt_create(env_get_current_file(env), env->line);
+	comment cmt = cmt_create(env_get_current_path(env), env->line);
 
 	char buffer[MAX_CMT_SIZE];
 	cmt_to_string(&cmt, buffer);
@@ -128,8 +129,6 @@ size_t env_skip_str(environment *const env)
 	}
 	return position;
 }
-
-void m_nextch(environment *const env);
 
 int get_next_char(environment *const env)
 {
@@ -218,8 +217,7 @@ void m_coment_skip(environment *const env)
 
 			if (env->curchar == EOF)
 			{
-				const size_t position = env_skip_str(env);
-				macro_error(comm_not_ended, env_get_current_file(env), env->error_string, env->line, position);
+				env_error(env, comm_not_ended);
 				end_line(env);
 				return;
 			}
@@ -234,7 +232,7 @@ void m_coment_skip(environment *const env)
 void m_nextch_cange(environment *const env)
 {
 	m_nextch(env);
-	m_change_nextch_type(env, FTYPE, env->localstack[env->curchar + env->loc_stk_prt]);
+	m_change_nextch_type(env, FTYPE, env->localstack[env->curchar + env->local_stack_size]);
 	m_nextch(env);
 }
 
@@ -247,25 +245,25 @@ void m_nextch(environment *const env)
 			env->curchar = env->mstring[env->nextp++];
 			env->nextchar = env->mstring[env->nextp];
 		}
-		else if (env->nextch_type == CTYPE && env->nextp < env->calc_prt)
+		else if (env->nextch_type == CTYPE && env->nextp < env->calc_string_size)
 		{
-			env->curchar = env->cstring[env->nextp++];
-			env->nextchar = env->cstring[env->nextp];
+			env->curchar = env->calc_string[env->nextp++];
+			env->nextchar = env->calc_string[env->nextp];
 		}
-		else if (env->nextch_type == IFTYPE && env->nextp < env->if_prt)
+		else if (env->nextch_type == IFTYPE && env->nextp < env->if_string_size)
 		{
-			env->curchar = env->ifstring[env->nextp++];
-			env->nextchar = env->ifstring[env->nextp];
+			env->curchar = env->if_string[env->nextp++];
+			env->nextchar = env->if_string[env->nextp];
 		}
-		else if (env->nextch_type == WHILETYPE && env->nextp < env->w_prt)
+		else if (env->nextch_type == WHILETYPE && env->nextp < env->while_string_size)
 		{
-			env->curchar = env->wstring[env->nextp++];
-			env->nextchar = env->wstring[env->nextp];
+			env->curchar = env->while_string[env->nextp++];
+			env->nextchar = env->while_string[env->nextp];
 		}
-		else if (env->nextch_type == TEXTTYPE && env->nextp < env->macro_prt)
+		else if (env->nextch_type == TEXTTYPE && env->nextp < env->macros_tab_size)
 		{
-			env->curchar = env->macrotext[env->nextp++];
-			env->nextchar = env->macrotext[env->nextp];
+			env->curchar = env->macros_tab[env->nextp++];
+			env->nextchar = env->macros_tab[env->nextp];
 
 			if (env->curchar == '\n')
 			{
@@ -282,10 +280,10 @@ void m_nextch(environment *const env)
 		}
 		else if (env->nextch_type == FTYPE)
 		{
-			env->curchar = env->fchange[env->nextp++];
-			env->nextchar = env->fchange[env->nextp];
+			env->curchar = env->change[env->nextp++];
+			env->nextchar = env->change[env->nextp];
 
-			if (env->curchar == CANGEEND)
+			if (env->curchar == END_PARAMETER)
 			{
 				m_old_nextch_type(env);
 				m_nextch(env);
@@ -309,7 +307,7 @@ void m_nextch(environment *const env)
 
 	if (env->curchar != '\n' && env->curchar != EOF)
 	{
-		env->error_string[env->position++] = (char)env->curchar;
+		env->error_string[env->position++] = env->curchar;
 		env->error_string[env->position] = '\0';
 	}
 	else
@@ -318,4 +316,10 @@ void m_nextch(environment *const env)
 	}
 	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", env->nextch_type,
 	// env->curchar, env->curchar, env->nextchar, env->nextchar);
+}
+
+void env_error(environment *const env, const int num)
+{
+	const size_t position = env_skip_str(env);
+	macro_error(num, env_get_current_path(env), env->error_string, env->line, position);
 }

@@ -25,20 +25,25 @@
 #include <string.h>
 
 
-linker lk_create(workspace *const ws)
+int lk_init(linker *const lk, workspace *const ws)
 {
-	linker lk;
-
-	lk.ws = ws;
-	lk.current = MAX_PATHS;
-	lk.count = ws_get_files_num(ws);
-
-	for (size_t i = 0; i < lk.count; i++)
+	if(!ws_is_correct(ws))
 	{
-		lk.included[i] = 0;
+		macro_system_error(NULL, ws_not_correct);
+		return -1;
+	}
+	
+
+	lk->ws = ws;
+	lk->current = MAX_PATHS;
+	lk->count = ws_get_files_num(ws);
+
+	for (size_t i = 0; i < lk->count; i++)
+	{
+		lk->included[i] = 0;
 	}
 
-	return lk;
+	return 0;
 }
 
 void lk_make_path(char *const output, const char *const source, const char *const header, const int is_slash)
@@ -65,7 +70,7 @@ void lk_make_path(char *const output, const char *const source, const char *cons
 size_t lk_open_include(environment *const env, const char* const path)
 {
 	char full_path[MAX_ARG_SIZE];
-	lk_make_path(full_path, env_get_current_file(env), path, 1);
+	lk_make_path(full_path, env_get_current_path(env), path, 1);
 
 	if (in_set_file(env->input, full_path))
 	{
@@ -101,6 +106,11 @@ size_t lk_open_include(environment *const env, const char* const path)
 	return index;
 }
 
+const char *lk_get_current(const linker *const lk)
+{
+	return lk == NULL ? NULL : ws_get_file(lk->ws, lk->current);
+}
+
 int lk_open_source(environment *const env, const size_t index)
 {
 	if (in_set_file(env->input, ws_get_file(env->lk->ws, index)))
@@ -133,7 +143,7 @@ int lk_preprocess_file(environment *const env, const size_t number)
 	int was_error = 0;
 	while (env->curchar != EOF)
 	{
-		was_error = preprocess_scan(env) || was_error;
+		was_error = preprocess_token(env) || was_error;
 	}
 
 	m_fprintf(env, '\n');
@@ -154,8 +164,7 @@ int lk_preprocess_include(environment *const env)
 	{
 		if (env->curchar == EOF)
 		{
-			const size_t position = env_skip_str(env);
-			macro_error(must_end_quote, env_get_current_file(env), env->error_string, env->line, position);
+			env_error(env, must_end_quote);
 			return -1;
 		}
 
@@ -199,12 +208,12 @@ int lk_include(environment *const env)
 		return -1;
 	}
 
-	skip_space(env);
+	skip_to_significant_character(env);
 
 	if (env->curchar != '\"')
 	{
-		const size_t position = env_skip_str(env);
-		macro_error(must_start_quote, env_get_current_file(env), env->error_string, env->line, position);
+		
+		env_error(env, must_start_quote);
 		return -1;
 	}
 
@@ -248,9 +257,4 @@ int lk_preprocess_all(environment *const env)
 	}
 
 	return 0;
-}
-
-const char *lk_get_current(const linker *const lk)
-{
-	return ws_get_file(lk->ws, lk->current);
 }

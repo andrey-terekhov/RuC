@@ -25,7 +25,6 @@
 extern "C" {
 #endif
 
-
 /**
  *	Preprocess files from workspace
  *

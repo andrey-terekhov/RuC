@@ -26,7 +26,7 @@ extern "C" {
 /**
  *	Change input to macro replacement text
  *
- *	@param	index		Macro Index
+ *	@param	index		Pointer to macro in macro_tab
  *	@param	env			Preprocessor environment
  *
  *	@return	@c 0 on success, @c -1 on failure

@@ -23,70 +23,65 @@
 #include "utils.h"
 
 
-int function_scope_collect(environment *const env, const int nesting_flag, const int num)
+int function_scope_collect(environment *const env, const int num, const int flag_in_brackets)
 {
 	while (env->curchar != EOF)
 	{
 		if (utf8_is_letter(env->curchar))
 		{
-			const int macros_prt = collect_mident(env);
-			if (macros_prt)
+			const int macros_ptr = collect_mident(env);
+			if (macros_ptr)
 			{
-				const int old_chg_prt = env->chg_prt;
-				const int old_loc_stk_prt = env->loc_stk_prt;
+				const size_t old_change_size = env->change_size;
+				const size_t old_local_stack_size = env->local_stack_size;
 				int loc_change[STRING_SIZE];
-				int loc_chg_prt = 0;
-				int loc_depth;
 
-				env->loc_stk_prt += num;
-				if (macros_get(env, macros_prt))
+				env->local_stack_size += num;
+				if (macros_get(env, macros_ptr))
 				{
 					return -1;
 				}
-				loc_depth = get_depth(env);
 
-				if (env->nextch_type == FTYPE)
-				{
-					loc_depth--;
-				}
+				const int loc_depth = env->nextch_type == FTYPE ? get_depth(env) - 1 : get_depth(env);
+				size_t loc_change_size = 0;
 
 				while (get_depth(env) >= loc_depth) // 1 переход потому что есть префиксная замена
 				{
-					loc_change[loc_chg_prt++] = env->curchar;
+					loc_change[loc_change_size++] = env->curchar;
 					m_nextch(env);
 				}
 
-				env->loc_stk_prt = old_loc_stk_prt;
-				env->chg_prt = old_chg_prt;
+				env->local_stack_size = old_local_stack_size;
+				env->change_size = old_change_size;
 
-				for (int i = 0; i < loc_chg_prt; i++)
+				for (size_t i = 0; i < loc_change_size; i++)
 				{
-					env->fchange[env->chg_prt++] = loc_change[i];
+					env->change[env->change_size++] = loc_change[i];
 				}
 			}
 			else
 			{
-				for (int i = 0; i < env->msp; i++)
+				for (size_t i = 0; i < env->msp; i++)
 				{
-					env->fchange[env->chg_prt++] = env->mstring[i];
+					env->change[env->change_size++] = env->mstring[i];
 				}
 			}
 		}
 		else if (env->curchar == '(')
 		{
-			env->fchange[env->chg_prt++] = env->curchar;
+			env->change[env->change_size++] = env->curchar;
 			m_nextch(env);
 
-			if (function_scope_collect(env, 0, num))
+			if (function_scope_collect(env, num, 0))
 			{
 				return -1;
 			}
 		}
-		else if (env->curchar == ')' || (nesting_flag == 1 && env->curchar == ','))
+		else if (env->curchar == ')' || (flag_in_brackets == 1 && env->curchar == ','))
 		{
-			if (nesting_flag == 0)
+			if (flag_in_brackets == 0)
 			{
-				env->fchange[env->chg_prt++] = env->curchar;
+				env->change[env->change_size++] = env->curchar;
 				m_nextch(env);
 			}
 
@@ -100,61 +95,59 @@ int function_scope_collect(environment *const env, const int nesting_flag, const
 				{
 					return -1;
 				}
-				for (int i = 0; i < env->calc_prt; i++)
+				for (size_t i = 0; i < env->calc_string_size; i++)
 				{
-					env->fchange[env->chg_prt++] = env->cstring[i];
+					env->change[env->change_size++] = env->calc_string[i];
 				}
 			}
 			else
 			{
-				for (int i = 0; i < env->reprtab[env->rp]; i++)
+				for (size_t i = 0; i < (size_t)env->reprtab[env->rp]; i++)
 				{
-					env->fchange[env->chg_prt++] = env->reprtab[env->rp + 2 + i];
+					env->change[env->change_size++] = env->reprtab[env->rp + 2 + i];
 				}
 			}
 		}
 		else
 		{
-			env->fchange[env->chg_prt++] = env->curchar;
+			env->change[env->change_size++] = env->curchar;
 			m_nextch(env);
 		}
 	}
-	const size_t position = env_skip_str(env);
-	macro_error(scope_not_clous, env_get_current_file(env), env->error_string, env->line, position);
+	
+	env_error(env, scope_not_close);
 	return -1;
 }
 
-int function_stack_create(environment *const env, const int n)
+int function_stack_create(environment *const env, const int number_parameters)
 {
-	int num = 0;
-
 	m_nextch(env);
-	env->localstack[num + env->loc_stk_prt] = env->chg_prt;
 
 	if (env->curchar == ')')
 	{
-		const size_t position = env_skip_str(env);
-		macro_error(stalpe, env_get_current_file(env), env->error_string, env->line, position);
+		env_error(env, stalpe);
 		return -1;
 	}
 
+	int num = 0;
+	env->localstack[num + env->local_stack_size] = env->change_size;
+
 	while (env->curchar != ')')
 	{
-		if (function_scope_collect(env, 1, num))
+		if (function_scope_collect(env, num, 1))
 		{
 			return -1;
 		}
-		env->fchange[env->chg_prt++] = CANGEEND;
+		env->change[env->change_size++] = END_PARAMETER;
 
 		if (env->curchar == ',')
 		{
 			num++;
-			env->localstack[num + env->loc_stk_prt] = env->chg_prt;
+			env->localstack[num + env->local_stack_size] = env->change_size;
 
-			if (num > n)
+			if (num > number_parameters)
 			{
-				const size_t position = env_skip_str(env);
-				macro_error(not_enough_param, env_get_current_file(env), env->error_string, env->line, position);
+				env_error(env, not_enough_param);
 				return -1;
 			}
 			m_nextch(env);
@@ -166,21 +159,19 @@ int function_stack_create(environment *const env, const int n)
 		}
 		else if (env->curchar == ')')
 		{
-			if (num != n)
+			if (num != number_parameters)
 			{
-				const size_t position = env_skip_str(env);
-				macro_error(not_enough_param2, env_get_current_file(env), env->error_string, env->line, position);
+				env_error(env, not_enough_param2);
 				return -1;
 			}
 			m_nextch(env);
 
-			env->chg_prt = env->localstack[env->loc_stk_prt];
+			env->change_size = env->localstack[env->local_stack_size];
 			return 0;
 		}
 	}
-
-	const size_t position = env_skip_str(env);
-	macro_error(scope_not_clous, env_get_current_file(env), env->error_string, env->line, position);
+	
+	env_error(env, scope_not_close);
 	return -1;
 }
 
@@ -188,27 +179,25 @@ int macros_get(environment *const env, const int index)
 {
 	if (index == 0)
 	{
-		const size_t position = env_skip_str(env);
-		macro_error(ident_not_exist, env_get_current_file(env), env->error_string, env->line, position);
+		env_error(env, ident_not_exist);
 		return -1;
 	}
 
-	int loc_macro_prt = env->reprtab[index + 1];
-
 	env->msp = 0;
-	if (env->macrotext[loc_macro_prt++] == MACROFUNCTION)
+
+	int loc_macro_ptr = env->reprtab[index + 1];
+	if (env->macros_tab[loc_macro_ptr++] == MACROFUNCTION)
 	{
-		if (env->macrotext[loc_macro_prt] > -1 && function_stack_create(env, env->macrotext[loc_macro_prt]))
+		if (env->macros_tab[loc_macro_ptr] > -1 && function_stack_create(env, env->macros_tab[loc_macro_ptr]))
 		{
 			return -1;
 		}
 		
-		loc_macro_prt++;
+		loc_macro_ptr++;
 	}
 
-	m_change_nextch_type(env, TEXTTYPE, loc_macro_prt);
+	m_change_nextch_type(env, TEXTTYPE, loc_macro_ptr);
 	m_nextch(env);
 
 	return 0;
 }
-

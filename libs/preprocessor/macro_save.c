@@ -24,73 +24,65 @@
 #include "utils.h"
 
 
-int m_equal(environment *const env)
+size_t m_equal(environment *const env)
 {
-	int i = 0;
-	int n = 1;
-	int j = 0;
-
-	while (j < env->calc_prt)
+	size_t n = 1;
+	for (size_t i = 0; i < env->calc_string_size; i++)
 	{
-		while (env->mstring[i] == env->cstring[j])
+		size_t j = 0;
+		while (env->calc_string[i + j] == env->mstring[j])
 		{
-			i++;
 			j++;
-			if (env->mstring[i] == MACROEND && env->cstring[j] == 0)
+			if (env->calc_string[i + j] == '\0' && env->mstring[j] == MACROEND)
 			{
 				return n;
 			}
 		}
-		i++;
-		j++;
+
+		i += j;
+		while (env->calc_string[i] != '\0')
+		{
+			i++;
+		}
 
 		n++;
-		i = 0;
-		if (env->cstring[j++] != 0)
-		{
-			while (env->cstring[j++] != 0)
-			{
-				;
-			}
-		}
 	}
-
 	return 0;
 }
 
-int fn_check_macros(environment *const env, int flag_macro)
+int func_check_macros(environment *const env, int flag_macro_directive)
 {
-	int num = 0;
 	env->msp = 0;
+	const int macros_ptr = collect_mident(env);
 
-	const int macros_prt = collect_mident(env);
-
-	if ((num = m_equal(env)) != 0)
+	const int num = m_equal(env);
+	if (num != 0)
 	{
-		env->macrotext[env->macro_prt++] = MACROCANGE;
-		env->macrotext[env->macro_prt++] = num - 1;
+		env->macros_tab[env->macros_tab_size++] = MACROCANGE;
+		env->macros_tab[env->macros_tab_size++] = num - 1;
 	}
-	else if (!flag_macro && macros_prt)
+	else if (!flag_macro_directive && macros_ptr)
 	{
-		if(macros_get(env, macros_prt))
+		if (macros_get(env, macros_ptr))
 		{
 			return -1;
 		}
 	}
 	else
 	{
-		for (int i = 0; i < env->msp; i++)
+		for (size_t i = 0; i < env->msp; i++)
 		{
-			env->macrotext[env->macro_prt++] = env->mstring[i];
+			env->macros_tab[env->macros_tab_size++] = env->mstring[i];
 		}
 	}
+
 	return 0;
 }
 
-int fn_add_ident(environment *const env)
+int func_add_ident(environment *const env)
 {
 	int num = 0;
-	env->calc_prt = 0;
+	env->calc_string_size = 0;
 
 	while (env->curchar != ')')
 	{
@@ -100,15 +92,14 @@ int fn_add_ident(environment *const env)
 		{
 			while (utf8_is_letter(env->curchar) || utf8_is_digit(env->curchar))
 			{
-				env->cstring[env->calc_prt++] = env->curchar;
+				env->calc_string[env->calc_string_size++] = env->curchar;
 				m_nextch(env);
 			}
-			env->cstring[env->calc_prt++] = 0;
+			env->calc_string[env->calc_string_size++] = '\0';
 		}
 		else
 		{
-			const size_t position = env_skip_str(env);
-			macro_error(functionid_begins_with_letters, env_get_current_file(env), env->error_string, env->line, position);
+			env_error(env, functionid_begins_with_letters);
 			return -1;
 		}
 
@@ -116,54 +107,49 @@ int fn_add_ident(environment *const env)
 		if (env->curchar == ',')
 		{
 			m_nextch(env);
-			skip_space(env);
+			skip_to_significant_character(env);
 			num++;
 		}
 		else if (env->curchar != ')')
 		{
-			const size_t position = env_skip_str(env);
-			macro_error(after_functionid_must_be_comma, env_get_current_file(env), env->error_string, env->line, position);
+			env_error(env, after_functionid_must_be_comma);
 			return -1;
 		}
 	}
+	
 	m_nextch(env);
 	return num;
 }
 
-int macrotext_add_function(environment *const env)
+int macros_tab_add_func(environment *const env)
 {
-	int flag_macro = 0;
+	const int flag_macro_directive = env->cur == SH_MACRO;
+
+	env->macros_tab[env->macros_tab_size++] = MACROFUNCTION;
+	
 	int empty = 0;
-
-	if (env->cur == SH_MACRO)
-	{
-		flag_macro = 1;
-	}
-
-	env->macrotext[env->macro_prt++] = MACROFUNCTION;
-
 	if (env->curchar == ')')
 	{
-		env->macrotext[env->macro_prt++] = -1;
+		env->macros_tab[env->macros_tab_size++] = -1;
 		empty = 1;
 		m_nextch(env);
 	}
 	else
 	{
-		int res = fn_add_ident(env);
+		const int res = func_add_ident(env);
 		if (res == -1)
 		{
 			return -1;
 		}
-		env->macrotext[env->macro_prt++] = res;
+		env->macros_tab[env->macros_tab_size++] = res;
 	}
-	skip_space(env);
+	skip_to_significant_character(env);
 
-	while ((env->curchar != '\n' || flag_macro) && env->curchar != EOF)
+	while ((env->curchar != '\n' || flag_macro_directive) && env->curchar != EOF)
 	{
 		if (utf8_is_letter(env->curchar) && !empty)
 		{
-			if (fn_check_macros(env, flag_macro))
+			if (func_check_macros(env, flag_macro_directive))
 			{
 				return -1;
 			}
@@ -172,65 +158,70 @@ int macrotext_add_function(environment *const env)
 		{
 			env->cur = macro_keywords(env);
 
-			if (!flag_macro && env->cur == SH_EVAL && env->curchar == '(')
+			if (!flag_macro_directive && env->cur == SH_EVAL && env->curchar == '(')
 			{
 				if (calculate(env, 0))
 				{
 					return -1;
 				}
-				for (int i = 0; i < env->calc_prt; i++)
+				for (size_t i = 0; i < env->calc_string_size; i++)
 				{
-					env->macrotext[env->macro_prt++] = env->cstring[i];
+					env->macros_tab[env->macros_tab_size++] = env->calc_string[i];
 				}
 			}
-			else if (flag_macro && env->cur == SH_ENDM)
+			else if (flag_macro_directive && env->cur == SH_ENDM)
 			{
 				m_nextch(env);
-				env->macrotext[env->macro_prt++] = MACROEND;
+				env->macros_tab[env->macros_tab_size++] = MACROEND;
 				return 0;
 			}
 			else
 			{
 				env->cur = 0;
-				for (int i = 0; i < env->reprtab[env->rp]; i++)
+				for (size_t i = 0; i < (size_t)env->reprtab[env->rp]; i++)
 				{
-					env->macrotext[env->macro_prt++] = env->reprtab[env->rp + 2 + i];
+					env->macros_tab[env->macros_tab_size++] = env->reprtab[env->rp + 2 + i];
 				}
 			}
 		}
 		else
 		{
-			env->macrotext[env->macro_prt++] = env->curchar;
+			env->macros_tab[env->macros_tab_size++] = env->curchar;
 			m_nextch(env);
 		}
 
 		if (env->curchar == EOF)
 		{
-			const size_t position = env_skip_str(env);
-			macro_error(not_end_fail_define, env_get_current_file(env), env->error_string, env->line, position);
+			env_error(env, not_end_fail_define);
 			return -1;
 		}
 
 		if (env->curchar == '\\')
 		{
 			m_nextch(env);
-			skip_space_end_line(env);
-			if (skip_space_end_line(env))
+			skip_to_end_line(env);
+			if (skip_to_end_line(env))
 			{
 				return -1;
 			}
-			//env->macrotext[env->macro_prt++] = '\n';
+			//env->macros_tab[env->macro_ptr++] = '\n';
 			m_nextch(env);
 		}
 	}
 
-	env->macrotext[env->macro_prt++] = MACROEND;
+	env->macros_tab[env->macros_tab_size++] = MACROEND;
 	return 0;
 }
 
 int define_add_to_reprtab(environment *const env)
 {
-	int r;
+	if (!utf8_is_letter(env->curchar))
+	{
+		env_error(env, ident_begins_with_letters);
+		return -1;
+	}
+
+	
 	int oldrepr = env->rp;
 	int hash = 0;
 	env->rp += 2;
@@ -244,21 +235,20 @@ int define_add_to_reprtab(environment *const env)
 
 	hash &= 255;
 	env->reprtab[env->rp++] = 0;
-	r = env->hashtab[hash];
+	int r = env->hashtab[hash];
 
 	while (r)
 	{
 		if (equal_reprtab(r, oldrepr, env))
 		{
-			if (env->macrotext[env->reprtab[r + 1]] == MACROUNDEF)
+			if (env->macros_tab[env->reprtab[r + 1]] == MACROUNDEF)
 			{
 				env->rp = oldrepr;
 				return r;
 			}
 			else
 			{
-				const size_t position = env_skip_str(env);
-				macro_error(repeat_ident, env_get_current_file(env), env->error_string, env->line, position);
+				env_error(env, repeat_ident);
 				return -1;
 			}
 		}
@@ -266,24 +256,23 @@ int define_add_to_reprtab(environment *const env)
 	}
 
 	env->reprtab[oldrepr] = env->hashtab[hash];
-	env->reprtab[oldrepr + 1] = env->macro_prt;
+	env->reprtab[oldrepr + 1] = env->macros_tab_size;
 	env->hashtab[hash] = oldrepr;
 	return 0;
 }
 
-int macrotext_add_define(environment *const env, int rep_prt)
+int macros_tab_add_define(environment *const env, const int rep_ptr)
 {
-	int lmp = env->macro_prt;
+	int old_macros_tab_size = env->macros_tab_size;
 
-	env->macrotext[env->macro_prt++] = MACRODEF;
+	env->macros_tab[env->macros_tab_size++] = MACRODEF;
 	if (env->curchar != '\n')
 	{
 		while (env->curchar != '\n')
 		{
 			if (env->curchar == EOF)
 			{
-				const size_t position = env_skip_str(env);
-				macro_error(not_end_fail_define, env_get_current_file(env), env->error_string, env->line, position);
+				env_error(env, not_end_fail_define);
 				return -1;
 			}
 			else if (env->curchar == '#')
@@ -293,8 +282,7 @@ int macrotext_add_define(environment *const env, int rep_prt)
 				{
 					if (env->curchar != '(')
 					{
-						const size_t position = env_skip_str(env);
-						macro_error(after_eval_must_be_ckob, env_get_current_file(env), env->error_string, env->line, position);
+						env_error(env, after_eval_must_be_ckob);
 						return -1;
 					}
 
@@ -303,83 +291,74 @@ int macrotext_add_define(environment *const env, int rep_prt)
 						return -1;
 					}
 
-					for (int i = 0; i < env->calc_prt; i++)
+					for (size_t i = 0; i < env->calc_string_size; i++)
 					{
-						env->macrotext[env->macro_prt++] = env->cstring[i];
+						env->macros_tab[env->macros_tab_size++] = env->calc_string[i];
 					}
 				}
 				else
 				{
-					for (int i = 0; i < env->reprtab[env->rp]; i++)
+					for (size_t i = 0; i < (size_t)env->reprtab[env->rp]; i++)
 					{
-						env->macrotext[env->macro_prt++] = env->reprtab[env->rp + 2 + i];
+						env->macros_tab[env->macros_tab_size++] = env->reprtab[env->rp + 2 + i];
 					}
 				}
 			}
 			else if (env->curchar == '\\')
 			{
 				m_nextch(env);
-				if (skip_space_end_line(env))
+				if (skip_to_end_line(env))
 				{
 					return -1;
 				}
-				//env->macrotext[env->macro_prt++] = '\n';
+				//env->macros_tab[env->macros_tab_size++] = '\n';
 				m_nextch(env);
 			}
 			else if (utf8_is_letter(env->curchar))
 			{
-				const int macros_prt = collect_mident(env);
-				if (macros_prt && macros_get(env, macros_prt))
+				const int macros_ptr = collect_mident(env);
+				if (macros_ptr && macros_get(env, macros_ptr))
 				{
 					return -1;
 				}
 				else
 				{
-					for (int i = 0; i < env->msp; i++)
+					for (size_t i = 0; i < env->msp; i++)
 					{
-						env->macrotext[env->macro_prt++] = env->mstring[i];
+						env->macros_tab[env->macros_tab_size++] = env->mstring[i];
 					}
 				}
 			}
 			else
 			{
-				env->macrotext[env->macro_prt++] = env->curchar;
+				env->macros_tab[env->macros_tab_size++] = env->curchar;
 				m_nextch(env);
 			}
 		}
 
-		while (env->macrotext[env->macro_prt - 1] == ' ' || env->macrotext[env->macro_prt - 1] == '\t')
+		while (env->macros_tab[env->macros_tab_size - 1] == ' ' || env->macros_tab[env->macros_tab_size - 1] == '\t')
 		{
-			env->macrotext[env->macro_prt - 1] = MACROEND;
-			env->macro_prt--;
+			env->macros_tab[env->macros_tab_size - 1] = MACROEND;
+			env->macros_tab_size--;
 		}
 	}
 	else
 	{
-		env->macrotext[env->macro_prt++] = '0';
+		env->macros_tab[env->macros_tab_size++] = '0';
 	}
 
-	env->macrotext[env->macro_prt++] = MACROEND;
+	env->macros_tab[env->macros_tab_size++] = MACROEND;
 
-	if (rep_prt)
+	if (rep_ptr)
 	{
-		env->reprtab[rep_prt + 1] = lmp;
+		env->reprtab[rep_ptr + 1] = old_macros_tab_size;
 	}
 	return 0;
 }
 
 int macros_add(environment *const env)
 {
-	int r;
-
-	if (!utf8_is_letter(env->curchar))
-	{
-		const size_t position = env_skip_str(env);
-		macro_error(ident_begins_with_letters, env_get_current_file(env), env->error_string, env->line, position);
-		return -1;
-	}
-
-	r = define_add_to_reprtab(env);
+	const int r = define_add_to_reprtab(env);
 	if (r == -1)
 	{
 		return -1;
@@ -390,49 +369,44 @@ int macros_add(environment *const env)
 	if (env->curchar == '(' && !r)
 	{
 		m_nextch(env);
-		return macrotext_add_function(env);
+		return macros_tab_add_func(env);
 	}
 	else if (env->curchar != ' ' && env->curchar != '\n' && env->curchar != '\t')
 	{
-		const size_t position = env_skip_str(env);
-		macro_error(after_ident_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
+		env_error(env, after_ident_must_be_space);
 		return -1;
 	}
 	else
 	{
-		skip_space(env);
-		return macrotext_add_define(env, r);
+		skip_to_significant_character(env);
+		return macros_tab_add_define(env, r);
 	}
 }
 
 int macros_set(environment *const env)
 {
-	skip_space(env);
+	skip_to_significant_character(env);
 
 	if (!utf8_is_letter(env->curchar))
 	{
-		const size_t position = env_skip_str(env);
-		macro_error(ident_begins_with_letters, env_get_current_file(env), env->error_string, env->line, position);
+		env_error(env, ident_begins_with_letters);
 		return -1;
 	}
 
-	const int macros_prt = collect_mident(env);	
-
-	if (env->macrotext[env->reprtab[macros_prt + 1]] == MACROFUNCTION)
+	const int macros_ptr = collect_mident(env);	
+	if (env->macros_tab[env->reprtab[macros_ptr + 1]] == MACROFUNCTION)
 	{
-		const size_t position = env_skip_str(env);
-		macro_error(functions_cannot_be_changed, env_get_current_file(env), env->error_string, env->line, position);
+		env_error(env, functions_cannot_be_changed);
 		return -1;
 	}
 	else if (env->curchar != ' ' && env->curchar != '\t')
 	{
-		const size_t position = env_skip_str(env);
-		macro_error(after_ident_must_be_space, env_get_current_file(env), env->error_string, env->line, position);
+		env_error(env, after_ident_must_be_space);
 		return -1;
 	}
 
 	m_nextch(env);
-	skip_space(env);
+	skip_to_significant_character(env);
 
-	return macrotext_add_define(env, macros_prt);
+	return macros_tab_add_define(env, macros_ptr);
 }

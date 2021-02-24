@@ -82,7 +82,7 @@ void get_message_error(const int num, char *const msg)
 		case not_end_fail_define:
 			sprintf(msg, "файл не может закончится до окончания команды '#DEFINE' поставьте перенос строки");
 			break;
-		case scope_not_clous:
+		case scope_not_close:
 			sprintf(msg, "количество открывающих скобок не соответствует числу закрывающих");
 			break;
 		case after_eval_must_be_ckob:
@@ -129,6 +129,12 @@ void get_message_error(const int num, char *const msg)
 			break;
 		case include_file_not_found:
 			sprintf(msg, "заголовочный файл не найден");
+			break;
+		case ws_not_correct:
+			sprintf(msg, "структура workspace не корекнто задана");
+			break;
+		case not_ending_string:
+			sprintf(msg, "не зкончина строка, где-то пропущен символ \" или \'");
 			break;
 		default:
 			sprintf(msg, "не реализованная ошибка №%d", num);

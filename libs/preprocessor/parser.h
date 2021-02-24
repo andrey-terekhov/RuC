@@ -30,7 +30,7 @@ extern "C" {
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int preprocess_scan(environment *const env);
+int preprocess_token(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */
