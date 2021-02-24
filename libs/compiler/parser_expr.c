@@ -934,10 +934,10 @@ item_t parse_identifier(parser *const prs)
 	}
 
 	totree(prs, TIdent);
-	prs->anstdispl = (int)ident_get_displ(prs->sx, id);
+	prs->anstdispl = (int)ident_get_displ(prs->sx, (size_t)id);
 	totree(prs, prs->anstdispl);
 
-	const item_t mode = ident_get_mode(prs->sx, id);
+	const item_t mode = ident_get_mode(prs->sx, (size_t)id);
 
 	prs->lastid = (size_t)id;
 	return anst_push(prs, IDENT, mode);
