@@ -1199,7 +1199,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 			}
 			else if (mode_is_array(prs->sx, expected_arg_mode) && prs->token == l_brace)
 			{
-				actstring((int)mode_get(prs->sx, expected_arg_mode + 1), prs);
+				actstring((int)mode_get(prs->sx, (size_t)expected_arg_mode + 1), prs);
 				totree(prs, TExprend);
 			}
 			else
