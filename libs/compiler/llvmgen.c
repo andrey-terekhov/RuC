@@ -20,38 +20,40 @@
 #include "uniprinter.h"
 
 
-enum ANSWER
+typedef enum ANSWER
 {
 	AREG,								/**< Ответ находится в регистре */
 	ACONST,								/**< Ответ является константой */
-};
+} answer_t;
 
-enum LOCATION
+typedef enum LOCATION
 {
 	LREG,								/**< Переменная находится в регистре */
 	LMEM,								/**< Переменная находится в памяти */
-};
+} location_t;
 
 typedef struct information
 {
 	universal_io *io;					/**< Вывод */
 	syntax *sx;							/**< Структура syntax с таблицами */
+
 	item_t string_num;					/**< Номер строки */
 	item_t register_num;				/**< Номер регистра */
-	enum LOCATION variable_location;	/**< Расположение переменной */
+	
 	item_t request_reg;					/**< Регистр на запрос */
+	location_t variable_location;		/**< Расположение переменной */
+
 	item_t answer_reg;					/**< Регистр с ответом */
 	item_t answer_const;				/**< Константа с ответом */
-	enum ANSWER answer_type;			/**< Тип ответа */
+	answer_t answer_type;				/**< Тип ответа */
 } information;
 
 
-static void expression( information *const info, node *const nd);
+static void expression(information *const info, node *const nd);
+static void block(information *const info, node *const nd);
 
-static void block( information *const info, node *const nd);
 
-
-static void operand( information *const info, node *const nd)
+static void operand(information *const info, node *const nd)
 {
 	if (node_get_type(nd) == NOP || node_get_type(nd) == ADLOGOR || node_get_type(nd) == ADLOGAND)
 	{
@@ -151,7 +153,7 @@ static void operand( information *const info, node *const nd)
 	}
 }
 
-static void expression( information *const info, node *const nd)
+static void expression(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
@@ -197,7 +199,7 @@ static void expression( information *const info, node *const nd)
 	}
 }
 
-static void statement( information *const info, node *const nd)
+static void statement(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
@@ -330,7 +332,7 @@ static void statement( information *const info, node *const nd)
 	}
 }
 
-static void init( information *const info, node *const nd)
+static void init(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
@@ -352,7 +354,7 @@ static void init( information *const info, node *const nd)
 	}
 }
 
-static void block( information *const info, node *const nd)
+static void block(information *const info, node *const nd)
 {
 	while (node_get_type(nd) != TEnd)
 	{
@@ -434,7 +436,11 @@ static void block( information *const info, node *const nd)
 
 int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
-	optimize_for_llvm(ws, io, sx);
+	const int ret = optimize_for_llvm(ws, io, sx);
+	if (ret)
+	{
+		return -1;
+	}
 
 	information info;
 	info.io = io;

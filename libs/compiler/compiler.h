@@ -38,6 +38,16 @@ EXPORTED int compile_to_vm(workspace *const ws);
 
 
 /**
+ *	Compile LLVM code from workspace
+ *
+ *	@param	ws		Compiler workspace
+ *
+ *	@return	Status code
+ */
+EXPORTED int compile_to_llvm(workspace *const ws);
+
+
+/**
  *	Compile RuC virtual machine code from terminal arguments
  *
  *	@param	argc	Number of command line arguments
@@ -49,26 +59,6 @@ EXPORTED int auto_compile_to_vm(const int argc, const char *const *const argv);
 
 
 /**
- *	Compile RuC virtual machine code with no macro
- *
- *	@param	path	File path
- *
- *	@return	Status code
- */
-EXPORTED int no_macro_compile_to_vm(const char *const path);
-
-
-/**
- *	Compile LLVM code from workspace
- *
- *	@param	ws		Compiler workspace
- *
- *	@return	Status code
- */
-EXPORTED int compile_to_llvm(workspace *const ws);
-
-
-/**
  *	Compile LLVM code from terminal arguments
  *
  *	@param	argc	Number of command line arguments
@@ -77,6 +67,16 @@ EXPORTED int compile_to_llvm(workspace *const ws);
  *	@return	Status code
  */
 EXPORTED int auto_compile_to_llvm(const int argc, const char *const *const argv);
+
+
+/**
+ *	Compile RuC virtual machine code with no macro
+ *
+ *	@param	path	File path
+ *
+ *	@return	Status code
+ */
+EXPORTED int no_macro_compile_to_vm(const char *const path);
 
 
 /**

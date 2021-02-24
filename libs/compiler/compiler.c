@@ -135,11 +135,24 @@ int compile_to_vm(workspace *const ws)
 	return ret;
 }
 
+int compile_to_llvm(workspace *const ws)
+{
+	return compile_from_ws(ws, &encode_to_llvm);
+}
+
+
 int auto_compile_to_vm(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
 	return compile_to_vm(&ws);
 }
+
+int auto_compile_to_llvm(const int argc, const char *const *const argv)
+{
+	workspace ws = ws_parse_args(argc, argv);
+	return compile_to_llvm(&ws);
+}
+
 
 int no_macro_compile_to_vm(const char *const path)
 {
@@ -157,18 +170,6 @@ int no_macro_compile_to_vm(const char *const path)
 	}
 
 	return ret;
-}
-
-
-int compile_to_llvm(workspace *const ws)
-{
-	return compile_from_ws(ws, &encode_to_llvm);
-}
-
-int auto_compile_to_llvm(const int argc, const char *const *const argv)
-{
-	workspace ws = ws_parse_args(argc, argv);
-	return compile_to_llvm(&ws);
 }
 
 int no_macro_compile_to_llvm(const char *const path)

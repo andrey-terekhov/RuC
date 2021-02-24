@@ -18,6 +18,7 @@
 
 #include "syntax.h"
 #include "uniio.h"
+#include "workspace.h"
 
 
 #ifdef __cplusplus
@@ -27,7 +28,7 @@ extern "C" {
 /**
  *	Encode to low level virtual machine codes
  *
- *  @param	ws				Compiler workspace
+ *	@param	ws				Compiler workspace
  *	@param	io				Universal io structure
  *	@param	sx				Syntax structure
  *
