@@ -598,6 +598,10 @@ void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "после метки УМОЛЧАНИЕ нет :");
 			break;
 
+		case functionality_not_ready:
+			sprintf(msg, "эта функциональность ещё не реализована");
+			break;
+
 		default:
 			sprintf(msg, "неизвестный код ошибки (%i)", num);
 			break;

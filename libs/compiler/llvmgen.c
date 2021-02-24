@@ -15,6 +15,7 @@
  */
 
 #include "llvmgen.h"
+#include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
 #include "uniprinter.h"
@@ -39,7 +40,7 @@ typedef struct information
 
 	item_t string_num;					/**< Номер строки */
 	item_t register_num;				/**< Номер регистра */
-	
+
 	item_t request_reg;					/**< Регистр на запрос */
 	location_t variable_location;		/**< Расположение переменной */
 
@@ -150,6 +151,9 @@ static void operand(information *const info, node *const nd)
 			}
 		}
 		break;
+		default:
+			system_error(functionality_not_ready);
+			break;
 	}
 }
 

@@ -193,6 +193,9 @@ typedef enum ERROR
 
 	// Codegen errors
 	tables_cannot_be_compressed,
+
+	// LLVM codegen errors
+	functionality_not_ready,
 } error_t;
 
 /** Warnings codes */
