@@ -155,7 +155,7 @@ static void operand(information *const info, node *const nd)
 		default:
 		{
 			system_error(node_unexpected, node_get_type(nd));
-			exit(0);
+			exit(EXIT_SUCCESS);
 		}
 		break;
 	}
