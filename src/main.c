@@ -33,11 +33,12 @@ int main(int argc, const char *argv[])
 	if (argc < 2)
 	{
 		ws_add_file(&ws, name);
+		ws_set_output(&ws, "export.ll");
 	}
 
 #ifdef TESTING_EXIT_CODE
-	return compile_to_vm(&ws) ? TESTING_EXIT_CODE : 0;
+	return compile_to_llvm(&ws) ? TESTING_EXIT_CODE : 0;
 #else
-	return compile_to_vm(&ws);
+	return compile_to_llvm(&ws);
 #endif
 }
