@@ -15,7 +15,6 @@
  */
 
 #include "llvmgen.h"
-#include <stdlib.h>
 #include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
@@ -150,12 +149,6 @@ static void operand(information *const info, node *const nd)
 			{
 				expression(info, nd);
 			}
-		}
-		break;
-		default:
-		{
-			system_error(node_unexpected, node_get_type(nd));
-			exit(EXIT_SUCCESS);
 		}
 		break;
 	}
@@ -444,8 +437,7 @@ static void block(information *const info, node *const nd)
 
 int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
-	const int ret = optimize_for_llvm(ws, io, sx);
-	if (ret)
+	if (optimize_for_llvm(ws, io, sx))
 	{
 		return -1;
 	}

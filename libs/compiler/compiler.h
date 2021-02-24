@@ -36,7 +36,6 @@ extern "C" {
  */
 EXPORTED int compile_to_vm(workspace *const ws);
 
-
 /**
  *	Compile LLVM code from workspace
  *
@@ -57,7 +56,6 @@ EXPORTED int compile_to_llvm(workspace *const ws);
  */
 EXPORTED int auto_compile_to_vm(const int argc, const char *const *const argv);
 
-
 /**
  *	Compile LLVM code from terminal arguments
  *
@@ -77,7 +75,6 @@ EXPORTED int auto_compile_to_llvm(const int argc, const char *const *const argv)
  *	@return	Status code
  */
 EXPORTED int no_macro_compile_to_vm(const char *const path);
-
 
 /**
  *	Compile LLVM code with no macro
