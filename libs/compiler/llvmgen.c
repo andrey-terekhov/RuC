@@ -15,7 +15,6 @@
  */
 
 #include "llvmgen.h"
-#include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
 #include "uniprinter.h"
