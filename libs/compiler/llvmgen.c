@@ -15,6 +15,7 @@
  */
 
 #include "llvmgen.h"
+#include <stdlib.h>
 #include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
@@ -152,8 +153,11 @@ static void operand(information *const info, node *const nd)
 		}
 		break;
 		default:
-			system_error(functionality_not_ready);
-			break;
+		{
+			system_error(node_unexpected, node_get_type(nd));
+			exit(0);
+		}
+		break;
 	}
 }
 
