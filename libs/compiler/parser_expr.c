@@ -1148,7 +1148,7 @@ void selectend(parser *const prs)
 void parse_function_call(parser *const prs, const size_t function_id)
 {
 	int old_in_assignment = prs->flag_in_assignment;
-	item_t function_mode = anst_pop(prs);
+	const size_t function_mode = (size_t)anst_pop(prs);
 
 	if (!mode_is_function(prs->sx, function_mode))
 	{
@@ -1199,7 +1199,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 			}
 			else if (mode_is_array(prs->sx, expected_arg_mode) && prs->token == l_brace)
 			{
-				actstring((int)mode_get(prs->sx, ref_arg_mode + 1), prs);
+				actstring((int)mode_get(prs->sx, expected_arg_mode + 1), prs);
 				totree(prs, TExprend);
 			}
 			else
@@ -1238,7 +1238,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 
 	prs->flag_in_assignment = old_in_assignment;
 	totree(prs, TCall2);
-	totree(prs, function_id);
+	totree(prs, (item_t)function_id);
 	anst_push(prs, VAL, mode_get(prs->sx, function_mode + 1));
 }
 
@@ -1576,42 +1576,42 @@ int operator_precedence(const token_t operator)
 {
 	switch (operator)
 	{
-		case pipepipe:        // '||'
+		case pipepipe:			// '||'
 			return 1;
 
-		case ampamp:          // '&&'
+		case ampamp:			// '&&'
 			return 2;
 
-		case pipe:            // '|'
+		case pipe:				// '|'
 			return 3;
 
-		case caret:           // '^'
+		case caret:				// '^'
 			return 4;
 
-		case amp:             // '&'
+		case amp:				// '&'
 			return 5;
 
-		case equalequal:      // '=='
-		case exclaimequal:    // '!='
+		case equalequal:		// '=='
+		case exclaimequal:		// '!='
 			return 6;
 
-		case less:            // '<'
-		case greater:         // '<'
-		case lessequal:       // '<='
-		case greaterequal:    // '>='
+		case less:				// '<'
+		case greater:			// '<'
+		case lessequal:			// '<='
+		case greaterequal:		// '>='
 			return 7;
 
-		case lessless:        // '<<'
-		case greatergreater:  // '>>'
+		case lessless:			// '<<'
+		case greatergreater:	// '>>'
 			return 8;
 
-		case plus:            // '+'
-		case minus:           // '-'
+		case plus:				// '+'
+		case minus:				// '-'
 			return 9;
 
-		case star:            // '*'
-		case slash:           // '/'
-		case percent:         // '%'
+		case star:				// '*'
+		case slash:				// '/'
+		case percent:			// '%'
 			return 10;
 
 		default:
