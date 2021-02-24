@@ -15,6 +15,7 @@
  */
 
 #include "parser.h"
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -219,6 +220,7 @@ void toval(parser *const prs)
 
 void actstring(int type, parser *const prs)
 {
+	scanner(prs);
 	totree(prs, type == LFLOAT ? TStringd : TString);
 	size_t adn = vector_size(&TREE);
 	vector_increase(&TREE, 1);
@@ -339,7 +341,6 @@ void mustberowofint(parser *const prs)
 {
 	if (prs->token == BEGIN)
 	{
-		scanner(prs);
 		actstring(LINT, prs), totree(prs, TExprend);
 		if (prs->was_error == 2)
 		{
@@ -375,7 +376,6 @@ void mustberowoffloat(parser *const prs)
 {
 	if (prs->token == BEGIN)
 	{
-		scanner(prs);
 		actstring(LFLOAT, prs), totree(prs, TExprend);
 		if (prs->was_error == 2)
 		{
@@ -922,11 +922,10 @@ void parse_standard_function_call(parser *const prs)
  *
  *	@param	prs			Parser structure
  *
- *	@return	Type of parsed expression
+ *	@return	Index of parsed identifier in identifiers table
  */
-item_t parse_identifier(parser *const prs)
+size_t parse_identifier(parser *const prs)
 {
-	token_consume(prs);
 	const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
 	if (id == ITEM_MAX)
 	{
@@ -940,7 +939,9 @@ item_t parse_identifier(parser *const prs)
 	const item_t mode = ident_get_mode(prs->sx, (size_t)id);
 
 	prs->lastid = (size_t)id;
-	return anst_push(prs, IDENT, mode);
+	token_consume(prs);
+	anst_push(prs, IDENT, mode);
+	return (size_t)id;
 }
 
 /**
@@ -1020,6 +1021,7 @@ void parse_primary_expression(parser *const prs)
 			token_consume(prs);
 			if (prs->token == LVOID)
 			{
+				// TODO: мб перенести в unary или в отдельный cast expression?
 				scanner(prs);
 				must_be(prs, LMULT, no_mult_in_cast);
 				unarexpr(prs);
@@ -1131,136 +1133,138 @@ void selectend(parser *const prs)
 	}
 }
 
-void postexpr(parser *const prs)
+/**
+ *	Parse function call [C99 6.5.2]
+ *
+ *	postfix-expression '(' argument-expression-listopt ')'
+ *
+ *	argument-expression-list:
+ *		assignment-expression
+ *		argument-expression-list ',' assignment-expression
+ *
+ *	@param	prs			Parser structure
+ *	@param	function_id	Index of function identifier in identifiers table
+ */
+void parse_function_call(parser *const prs, const size_t function_id)
 {
-	int lid;
-	int leftansttyp;
-	int was_func = 0;
+	int old_in_assignment = prs->flag_in_assignment;
+	item_t function_mode = anst_pop(prs);
 
-	lid = (int)prs->lastid;
-	leftansttyp = prs->ansttype;
-
-	if (prs->token == LEFTBR) // вызов функции
+	if (!mode_is_function(prs->sx, function_mode))
 	{
-		int j;
-		item_t n;
-		item_t dn;
-		int oldinass = prs->flag_in_assignment;
+		parser_error(prs, call_not_from_function);
+		token_skip_until(prs, r_paren | semicolon);
+		return;
+	}
 
-		was_func = 1;
-		scanner(prs);
-		if (!mode_is_function(prs->sx, leftansttyp))
+	const size_t expected_args = (size_t)mode_get(prs->sx, function_mode + 2);
+	size_t actual_args = 0;
+
+	totree(prs, TCall1);
+	totree(prs, expected_args);
+	size_t ref_arg_mode = function_mode + 3;
+
+	if (token_try_consume(prs, r_paren))
+	{
+		actual_args = 0;
+	}
+	else
+	{
+		do
 		{
-			parser_error(prs, call_not_from_function);
-			prs->was_error = 4;
-			return; // 1
-		}
+			const item_t expected_arg_mode = mode_get(prs->sx, ref_arg_mode);
 
-		n = mode_get(prs->sx, leftansttyp + 2); // берем количество аргументов функции
-
-		totree(prs, TCall1);
-		totree(prs, n);
-		j = leftansttyp + 3;
-		for (item_t i = 0; i < n; i++) // фактические параметры
-		{
-			int mdj = prs->leftansttype = (int)mode_get(prs->sx, j); // это вид формального параметра, в
-																			 // context->anst.ansttype будет вид фактического
-																			 // параметра
-			if (mode_is_function(prs->sx, mdj))
+			if (mode_is_function(prs->sx, expected_arg_mode))
 			{
-				scanner(prs);
-				// фактическим параметром должна быть функция, в С - это только идентификатор
-
-				if (prs->curr_token != IDENT)
+				if (prs->token != identifier)
 				{
 					parser_error(prs, act_param_not_ident);
-					prs->was_error = 4;
-					return; // 1
+					token_skip_until(prs, comma | r_paren | semicolon);
+					continue;
 				}
-				applid(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
-				if ((int)ident_get_mode(prs->sx, prs->lastid) != mdj)
+
+				const size_t id = parse_identifier(prs);
+
+				if (ident_get_mode(prs->sx, id) != expected_arg_mode)
 				{
 					parser_error(prs, diff_formal_param_type_and_actual);
-					prs->was_error = 4;
-					return; // 1
+					token_skip_until(prs, comma | r_paren | semicolon);
+					continue;
 				}
-				dn = ident_get_displ(prs->sx, prs->lastid);
-				if (dn < 0)
-				{
-					totree(prs, TIdenttoval);
-					totree(prs, -dn);
-				}
-				else
-				{
-					totree(prs, TConst);
-					totree(prs, dn);
-				}
+
+				const item_t displ = ident_get_displ(prs->sx, id);
+				totree(prs, displ < 0 ? TIdenttoval : TConst);
+				totree(prs, llabs(displ));
+				totree(prs, TExprend);
+			}
+			else if (mode_is_array(prs->sx, expected_arg_mode) && prs->token == l_brace)
+			{
+				actstring((int)mode_get(prs->sx, ref_arg_mode + 1), prs);
 				totree(prs, TExprend);
 			}
 			else
 			{
-				if (prs->token == BEGIN && mode_is_array(prs->sx, mdj))
-				{
-					scanner(prs);
-					actstring((int)mode_get(prs->sx, mdj + 1), prs), totree(prs, TExprend);
-					if (prs->was_error == 2)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-				}
-				else
-				{
-					prs->flag_in_assignment = 0;
-					exprassn(prs);
-					if (prs->was_error == 6)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
-					toval(prs);
-					totree(prs, TExprend);
+				prs->flag_in_assignment = 0;
+				const item_t actual_arg_mode = parse_assignment_expression(prs);
 
-					if (mdj > 0 && mdj != prs->ansttype)
-					{
-						parser_error(prs, diff_formal_param_type_and_actual);
-						prs->was_error = 4;
-						return; // 1
-					}
-
-					if (mode_is_int(mdj) && mode_is_float(prs->ansttype))
+				if (!mode_is_undefined(expected_arg_mode) && !mode_is_undefined(actual_arg_mode))
+				{
+					if (mode_is_int(expected_arg_mode) && mode_is_float(actual_arg_mode))
 					{
 						parser_error(prs, float_instead_int);
-						prs->was_error = 4;
-						return; // 1
 					}
-
-					if (mode_is_float(mdj) && mode_is_int(prs->ansttype))
+					else if (mode_is_float(expected_arg_mode) && mode_is_int(actual_arg_mode))
 					{
 						parse_insert_widen(prs);
 					}
-					--prs->sopnd;
+					else if (expected_arg_mode != actual_arg_mode)
+					{
+						parser_error(prs, diff_formal_param_type_and_actual);
+					}
 				}
 			}
-			if (i < n - 1 && scanner(prs) != COMMA)
-			{
-				parser_error(prs, no_comma_in_act_params);
-				prs->was_error = 4;
-				return; // 1
-			}
-			j++;
-		}
-		prs->flag_in_assignment = oldinass;
-		must_be(prs, RIGHTBR, wrong_number_of_params);
-		totree(prs, TCall2);
-		totree(prs, lid);
-		prs->stackoperands[prs->sopnd] = prs->ansttype = (int)mode_get(prs->sx, leftansttyp + 1);
-		prs->anst = VAL;
+
+			actual_args++;
+			ref_arg_mode++;
+		} while (token_try_consume(prs, comma));
+
+		token_expect_and_consume(prs, r_paren, wrong_number_of_params);
+	}
+
+	if (expected_args != actual_args)
+	{
+		parser_error(prs, wrong_number_of_params);
+	}
+
+	prs->flag_in_assignment = old_in_assignment;
+	totree(prs, TCall2);
+	totree(prs, function_id);
+	anst_push(prs, VAL, mode_get(prs->sx, function_mode + 1));
+}
+
+/**
+ *	Parse postfix expression [C99 6.5.2]
+ *
+ *	postfix-expression:
+ *		primary-expression
+ *		postfix-expression '[' expression ']'
+ *		postfix-expression '(' argument-expression-listopt ')'
+ *		postfix-expression '.' identifier
+ *		postfix-expression '->' identifier
+ *		postfix-expression '++'
+ *		postfix-expression '--'
+ *
+ *	@param	prs			Parser structure
+ */
+void parse_postfix_expression(parser *const prs)
+{
+	int was_func = 0;
+	int lid = prs->lastid;
+
+	if (token_try_consume(prs, l_paren))
+	{
+		was_func = 1;
+		parse_function_call(prs, lid);
 	}
 
 	while (prs->token == LEFTSQBR || prs->token == ARROW || prs->token == DOT)
@@ -1559,7 +1563,7 @@ void unarexpr(parser *const prs)
 		}
 	}
 
-	postexpr(prs); // 0
+	parse_postfix_expression(prs); // 0
 	prs->stackoperands[prs->sopnd] = prs->ansttype;
 	if (prs->was_error == 4)
 	{
