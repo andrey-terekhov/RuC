@@ -24,12 +24,9 @@ void exprassn(parser *const prs);
 void expr(parser *const prs);
 
 
-int scanner(parser *const prs)
+void scanner(parser *const prs)
 {
-	prs->curr_token = prs->token;
 	prs->token = lex(prs->lxr);
-
-	return prs->curr_token;
 }
 
 void must_be(parser *const prs, const token_t what, const error_t num)
@@ -253,10 +250,10 @@ void actstring(int type, parser *const prs)
 			return; // 1
 		}
 		++n;
-	} while (scanner(prs) == COMMA);
+	} while (token_try_consume(prs, comma));
 
 	vector_set(&TREE, adn, n);
-	if (prs->curr_token != END)
+	if (!token_try_consume(prs, END))
 	{
 		parser_error(prs, no_comma_or_end);
 		prs->was_error = 1;
@@ -413,7 +410,7 @@ void parse_standard_function_call(parser *const prs)
 	int func = prs->token;
 	token_consume(prs);
 
-	if (scanner(prs) != LEFTBR)
+	if (!token_try_consume(prs, LEFTBR))
 	{
 		parser_error(prs, no_leftbr_in_stand_func);
 	}
@@ -738,8 +735,7 @@ void parse_standard_function_call(parser *const prs)
 			{
 				item_t dn;
 
-				scanner(prs);
-				if (prs->curr_token != IDENT)
+				if (!token_try_consume(prs, IDENT))
 				{
 					parser_error(prs, act_param_not_ident);
 					prs->was_error = 4;
@@ -1069,15 +1065,6 @@ void parse_primary_expression(parser *const prs)
 	}
 }
 
-void index_check(parser *const prs)
-{
-	if (!mode_is_int(prs->ansttype))
-	{
-		parser_error(prs, index_must_be_int);
-		prs->was_error = 5;
-	}
-}
-
 int find_field(parser *const prs, int stype)
 {
 	// выдает смещение до найденного поля или ошибку
@@ -1305,9 +1292,9 @@ void parse_postfix_expression(parser *const prs)
 			{
 				return; // 1
 			}
-			index_check(prs); // проверка, что индекс int или char
-			if (prs->was_error == 5)
+			if (!mode_is_int(prs->ansttype))
 			{
+				parser_error(prs, index_must_be_int);
 				prs->was_error = 4;
 				return; // 1
 			}

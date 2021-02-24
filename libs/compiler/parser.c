@@ -117,7 +117,6 @@ void parser_error(parser *const prs, error_t num, ...)
 
 void token_consume(parser *const prs)
 {
-	prs->curr_token = prs->token;
 	prs->token = lex(prs->lxr);
 }
 

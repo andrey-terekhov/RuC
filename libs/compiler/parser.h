@@ -41,7 +41,6 @@ typedef struct parser
 	syntax *sx;					/**< Syntax structure */
 	lexer *lxr;					/**< Lexer structure */
 
-	token_t curr_token;
 	token_t token;				/**< Current token */
 
 	size_t function_mode;		/**< Mode of currenty parsed function */
