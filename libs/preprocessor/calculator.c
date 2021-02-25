@@ -270,10 +270,107 @@ void double_to_string(environment *const env, const double x, const int int_flag
 	}
 }
 
+int calc_macro(environment *const env)
+{
+	const int macros_ptr = collect_mident(env);
+	if (!macros_ptr)
+	{
+		env_error(env, not_macro);
+		return -1;
+	}
+
+	if(macros_get(env, macros_ptr))
+	{
+		return -1;
+	}
+}
+
+int calc_digit(environment *const env, double *stack, int *int_flag, int *i)
+{
+	if (utf8_is_digit(env->curchar) || env->curchar == '-' && utf8_is_digit(env->nextchar))
+	{
+		int error = 0;
+		stack[*i] = get_digit(env, &error);
+		if (error)
+		{
+				return -1;
+		}
+		int_flag[*i++] = env->flagint;
+	}	
+}
+
+int calc_opiration(environment *const env, double *stack, int *int_flag, int *operation, int *op, int *i, const int type)
+{
+	const char c = get_opiration((char)env->curchar, (char)env->nextchar);
+	if(!c)
+	{
+		env_error(env, third_party_symbol);
+		return -1;
+	}
+
+	m_nextch(env);
+	if (c == 'b'|| c == 's' || c == '=' || c == '&'|| c == '|' || c == '!')
+	{
+		m_nextch(env);
+	}
+
+	const int prior = get_prior(c);
+	
+
+	if (type && prior > 3)
+	{
+		env_error(env, not_arithmetic_operations);
+		return -1;
+	}
+	if (!type && prior <= 3)
+	{
+		env_error(env, not_logical_operations);
+		return -1;
+	}
+
+	while (op != 0 && get_prior(operation[*op - 1]) >= prior)
+	{
+		int_flag[*i - 2] = int_flag[*i - 2] && int_flag[*i - 1];
+		stack[*i - 2] = implementation_opiration(stack[*i - 2], stack[*i - 1], operation[*op - 1], int_flag[*i - 2]);
+		op--;
+		i--;
+	}
+
+	operation[*op++] = c;
+}
+
+int calc_close(double *stack, int *int_flag, int *operation, int *op, int *i)
+{
+	int scope_flag = 0;
+
+	if(operation[*op - 1] == ')')
+	{
+		scope_flag++;
+		*op--;
+	}
+
+	while ((scope_flag && operation[*op - 1] != '(' && operation[*op - 1] != '[') || (!scope_flag && op > 0))
+	{
+		if (*i < 2 || *op == 0)
+		{	
+			return -1;
+		}
+
+		int_flag[*i - 2] = int_flag[*i - 2] && int_flag[*i - 1];
+		stack[*i - 2] = implementation_opiration(stack[*i - 2], stack[*i - 1], operation[*op - 1], int_flag[*i - 2]);
+		op--;
+		i--;
+	}
+	op--;
+
+	return 0;
+}
+
 int calculate(environment *const env, const int type)
 {
 	int op = 0;
 	char operation[10];
+	int locl_type = type;
 
 	if (!type)
 	{
@@ -289,68 +386,46 @@ int calculate(environment *const env, const int type)
 	{
 		skip_to_significant_character(env);
 
-		if ((utf8_is_digit(env->curchar) || (env->curchar == '-' && utf8_is_digit(env->nextchar))) && !opration_flag)
+		if(utf8_is_letter(env->curchar))
 		{
-			int error = 0;
-			opration_flag = 1;
-			stack[i] = get_digit(env, &error);
-			if (error)
+			if(calc_macro(env))
 			{
 				return -1;
 			}
-			int_flag[i++] = env->flagint;
 		}
-		else if (utf8_is_letter(env->curchar))
+		else if (env->curchar == '#' && type && !opration_flag)
 		{
-			const int macros_ptr = collect_mident(env);
-			if (!macros_ptr)
+			const int cur = macro_keywords(env);
+			if (cur == SH_EVAL && env->curchar == '(')
 			{
-				env_error(env, not_macro);
-				return -1;
-			}
-
-			if(macros_get(env, macros_ptr))
-			{
-				return -1;
-			}
-
-		}
-		else if (env->curchar == '#' && type)
-		{
-			env->cur = macro_keywords(env);
-
-			if (env->cur == SH_EVAL && env->curchar == '(')
-			{
-				if (calculate(env, 0))
-				{
-					return -1;
-				}
+				locl_type = 0;
+				operation[op++] = '[';
 			}
 			else
 			{
 				env_error(env, after_eval_must_be_ckob);
 				return -1;
 			}
-			m_change_nextch_type(env, CTYPE, 0);
-			m_nextch(env);
 		}
-		else if (env->curchar == ')')
+		else if (env->curchar == '(' && !opration_flag)
 		{
-			while (operation[op - 1] != '(')
+			operation[op++] = '(';
+		}
+		else if (env->curchar == ')' && opration_flag)
+		{
+			operation[op++] = ')';
+			if(calc_close(stack, int_flag, operation, &op, &i))
 			{
-				if (i < 2 || op == 0)
-				{
-					env_error(env, incorrect_arithmetic_expression);
-					return -1;
-				}
-
-				int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
-				stack[i - 2] = implementation_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
-				op--;
-				i--;
+				env_error(env, incorrect_arithmetic_expression);
+				return -1;
 			}
-			op--;
+
 			m_nextch(env);
+
+			if (operation[op] == '[')
+			{
+				locl_type = type;
+			}
 
 			if (op == 0 && !type)
 			{
@@ -358,46 +433,24 @@ int calculate(environment *const env, const int type)
 				return 0;
 			}
 		}
-		else if (opration_flag || env->curchar == '(')
+
+		if(!opration_flag)
 		{
-			const char c = get_opiration((char)env->curchar, (char)env->nextchar);
-			if (c)
+			opration_flag = 1;
+			if(calc_digit(env, stack, int_flag, &i))
 			{
-				m_nextch(env);
-				if (c == 'b'|| c == 's' || c == '=' || c == '&'|| c == '|' || c == '!')
-				{
-					m_nextch(env);
-				}
-				int n = get_prior(c);
-				opration_flag = 0;
-
-				if (n != 0 && type && n > 3)
-				{
-					env_error(env, not_arithmetic_operations);
-					return -1;
-				}
-				if (n != 0 && !type && n <= 3)
-				{
-					env_error(env, not_logical_operations);
-					return -1;
-				}
-
-				while (op != 0 && n != 0 && get_prior(operation[op - 1]) >= n)
-				{
-					int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
-					stack[i - 2] = implementation_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
-					op--;
-					i--;
-				}
-				operation[op++] = c;
-			}
-			else if (env->curchar != '\n')
-			{
-				env_error(env, third_party_symbol);
 				return -1;
 			}
 		}
-		else if (env->curchar != '\n')
+		else if(env->curchar != '\n')
+		{
+			opration_flag = 0;
+			if(calc_opiration(env, stack, int_flag, operation, &op, &i, type))
+			{
+				return -1;
+			}
+		}
+		else
 		{
 			env_error(env, third_party_symbol);
 			return -1;
@@ -406,19 +459,10 @@ int calculate(environment *const env, const int type)
 
 	if (type)
 	{
-		env->calc_string_size = 0;
-		while (op > 0)
+		if(calc_close(stack, int_flag, operation, &op, &i))
 		{
-			if (i < 2)
-			{
-				env_error(env, incorrect_arithmetic_expression);
-				return -1;
-			}
-
-			int_flag[i - 2] = int_flag[i - 2] && int_flag[i - 1];
-			stack[i - 2] = implementation_opiration(stack[i - 2], stack[i - 1], operation[op - 1], int_flag[i - 2]);
-			op--;
-			i--;
+			env_error(env, incorrect_arithmetic_expression);
+			return -1;
 		}
 
 		if (stack[0] == 0)
