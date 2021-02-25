@@ -51,6 +51,7 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->position = 0;
 	env->nested_if = 0;
 	env->flagint = 1;
+	env->error_string[0] = '\0';
 
 	for (size_t i = 0; i < HASH; i++)
 	{
@@ -65,7 +66,6 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	for (size_t i = 0; i < STRING_SIZE; i++)
 	{
 		env->mstring[i] = 0;
-		env->error_string[i] = 0;
 		env->localstack[i] = 0;
 		env->calc_string[i] = 0;
 	}
@@ -121,8 +121,7 @@ size_t env_skip_str(environment *const env)
 		return SIZE_MAX;
 	}
 
-	char *line = env->error_string;
-	const size_t position = strlen(line);
+	const size_t position = strlen(env->error_string);
 	while (env->curchar != '\n' && env->curchar != EOF)
 	{
 		m_nextch(env);
@@ -307,8 +306,7 @@ void m_nextch(environment *const env)
 
 	if (env->curchar != '\n' && env->curchar != EOF)
 	{
-		env->error_string[env->position++] = env->curchar;
-		env->error_string[env->position] = '\0';
+		env->position += utf8_to_string(&env->error_string[env->position], env->curchar);
 	}
 	else
 	{
