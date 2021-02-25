@@ -91,7 +91,7 @@ int function_scope_collect(environment *const env, const int num, const int flag
 		{
 			if (macro_keywords(env) == SH_EVAL && env->curchar == '(')
 			{
-				if (calculate(env, 0))
+				if (calculate(env, ARITHMETIC))
 				{
 					return -1;
 				}

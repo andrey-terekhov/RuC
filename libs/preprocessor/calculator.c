@@ -23,6 +23,10 @@
 #include <math.h>
 
 
+#define STK_SIZE 32
+#define OPN_SIZE STK_SIZE
+
+
 double get_digit(environment *const env, int* error)// Временная замена
 {
 	double k;
@@ -185,7 +189,7 @@ int get_prior(const char opiration)
 	}
 }
 
-double implementation_opiration(const double x, const double y, const char opiration, const int int_flag)
+double calc_count(const double x, const double y, const char opiration, const int is_int)
 {
 	switch (opiration)
 	{
@@ -212,7 +216,7 @@ double implementation_opiration(const double x, const double y, const char opira
 		case '*':
 			return x * y;
 		case '/':
-			if (int_flag)
+			if (is_int)
 			{
 				return (int)x / (int)y;
 			}
@@ -221,7 +225,7 @@ double implementation_opiration(const double x, const double y, const char opira
 				return x / y;
 			}
 		case '%':
-			if (int_flag)
+			if (is_int)
 			{
 				return (int)x % (int)y;
 			}
@@ -235,11 +239,11 @@ double implementation_opiration(const double x, const double y, const char opira
 	}
 }
 
-void double_to_string(environment *const env, const double x, const int int_flag)
+void double_to_string(environment *const env, const double x, const int is_int)
 {
 	char s[30] = "\0";
 
-	if (int_flag)
+	if (is_int)
 	{
 		sprintf(s, "%f", x);
 		for (env->calc_string_size = 0; env->calc_string_size < 20; env->calc_string_size++)
@@ -283,23 +287,26 @@ int calc_macro(environment *const env)
 	{
 		return -1;
 	}
+
+	return 0;
 }
 
-int calc_digit(environment *const env, double *stack, int *int_flag, int *i)
+int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size)
 {
-	if (utf8_is_digit(env->curchar) || env->curchar == '-' && utf8_is_digit(env->nextchar))
+	int error = 0;
+	stack[*stk_size] = get_digit(env, &error);
+	if (error)
 	{
-		int error = 0;
-		stack[*i] = get_digit(env, &error);
-		if (error)
-		{
-				return -1;
-		}
-		int_flag[*i++] = env->flagint;
-	}	
+			return -1;
+	}
+
+	is_int[*stk_size] = env->flagint;
+	*stk_size = *stk_size + 1;
+
+	return 0;
 }
 
-int calc_opiration(environment *const env, double *stack, int *int_flag, int *operation, int *op, int *i, const int type)
+int calc_opiration(environment *const env, double *const stack, int *const is_int, char *const operation, int *op_size, int *stk_size, const int type)
 {
 	const char c = get_opiration((char)env->curchar, (char)env->nextchar);
 	if(!c)
@@ -315,137 +322,157 @@ int calc_opiration(environment *const env, double *stack, int *int_flag, int *op
 	}
 
 	const int prior = get_prior(c);
-	
-
-	if (type && prior > 3)
+	if (type == LOGIC && prior > 3)
 	{
 		env_error(env, not_arithmetic_operations);
 		return -1;
 	}
-	if (!type && prior <= 3)
+	if (type == ARITHMETIC && prior <= 3)
 	{
 		env_error(env, not_logical_operations);
 		return -1;
 	}
 
-	while (op != 0 && get_prior(operation[*op - 1]) >= prior)
+	while (*op_size != 0 && get_prior(operation[*op_size - 1]) >= prior)
 	{
-		int_flag[*i - 2] = int_flag[*i - 2] && int_flag[*i - 1];
-		stack[*i - 2] = implementation_opiration(stack[*i - 2], stack[*i - 1], operation[*op - 1], int_flag[*i - 2]);
-		op--;
-		i--;
+		is_int[*stk_size - 2] = is_int[*stk_size - 2] && is_int[*stk_size - 1];
+		stack[*stk_size - 2] = calc_count(stack[*stk_size - 2], stack[*stk_size - 1], operation[*op_size - 1], is_int[*stk_size - 2]);
+		*op_size = *op_size - 1;
+		*stk_size = *stk_size - 1;
 	}
 
-	operation[*op++] = c;
+	operation[*op_size] = c;
+	*op_size = *op_size + 1;
+
+	return 0;
 }
 
-int calc_close(double *stack, int *int_flag, int *operation, int *op, int *i)
+int calc_close(double *const stack, int *const is_int, const char *operation, int *op_size, int *stk_size)
 {
 	int scope_flag = 0;
-
-	if(operation[*op - 1] == ')')
+	if(operation[*op_size - 1] == ')')
 	{
 		scope_flag++;
-		*op--;
+		*op_size = *op_size - 1;
 	}
 
-	while ((scope_flag && operation[*op - 1] != '(' && operation[*op - 1] != '[') || (!scope_flag && op > 0))
+	while ((scope_flag && operation[*op_size - 1] != '(' && operation[*op_size - 1] != '[') || (!scope_flag && *op_size > 0))
 	{
-		if (*i < 2 || *op == 0)
+		if (*stk_size < 2 || *op_size == 0)
 		{	
 			return -1;
 		}
 
-		int_flag[*i - 2] = int_flag[*i - 2] && int_flag[*i - 1];
-		stack[*i - 2] = implementation_opiration(stack[*i - 2], stack[*i - 1], operation[*op - 1], int_flag[*i - 2]);
-		op--;
-		i--;
+		is_int[*stk_size - 2] = is_int[*stk_size - 2] && is_int[*stk_size - 1];
+		stack[*stk_size - 2] = calc_count(stack[*stk_size - 2], stack[*stk_size - 1], operation[*op_size - 1], is_int[*stk_size - 2]);
+		*op_size = *op_size - 1;
+		*stk_size = *stk_size - 1;
 	}
-	op--;
+
+	*op_size = *op_size - 1;
+	return 0;
+}
+
+int additional_elements(environment *const env, double *const stack, int *const is_int, char *const operation, int *op_size, int *stk_size, int *type, int opration_flag)
+{
+	if(utf8_is_letter(env->curchar))
+	{
+		if(calc_macro(env))
+		{
+			return -1;
+		}
+	}
+	else if (env->curchar == '#' && *type == LOGIC && !opration_flag)
+	{
+		const int cur = macro_keywords(env);
+		if (cur == SH_EVAL && env->curchar == '(')
+		{
+			*type = ARITHMETIC;
+			operation[*op_size] = '[';
+			*op_size = *op_size + 1;
+		}
+		else
+		{
+			env_error(env, after_eval_must_be_ckob);//
+			return -1;
+		}
+	}
+	else if (env->curchar == '(' && !opration_flag)
+	{
+		operation[*op_size] = '(';
+		*op_size = *op_size + 1;
+	}
+	else if (env->curchar == ')' && opration_flag)
+	{
+		printf("!!!!!!!!!!!!!!!!1\n");
+		operation[*op_size] = ')';
+		*op_size = *op_size + 1;
+		if(calc_close(stack, is_int, operation, op_size, stk_size))
+		{
+			env_error(env, incorrect_arithmetic_expression);
+			return -1;
+		}
+
+		m_nextch(env);
+
+		if (operation[*op_size] == '[')
+		{
+			*type = LOGIC;
+		}
+		printf("!!!!!!!!!!!!!!!! %d=0 %d=1\n", *op_size, *type);
+		if (*op_size == 0 && *type == ARITHMETIC)
+		{
+			double_to_string(env, stack[0], is_int[0]);
+			return 1;
+		}
+	}
 
 	return 0;
 }
 
 int calculate(environment *const env, const int type)
 {
-	int op = 0;
-	char operation[10];
+	int op_size = 0;
+	char operation[OPN_SIZE];
 	int locl_type = type;
 
-	if (!type)
+	if (type == ARITHMETIC)
 	{
-		operation[op++] = '(';
+		printf("!!!!!!!!!!!!!!!!1\n");
+		operation[op_size++] = '(';
 		m_nextch(env);
 	}
 
-	int i = 0;
-	double stack[10];
-	int int_flag[10];
+	int stk_size = 0;
+	double stack[STK_SIZE];
+	int is_int[STK_SIZE];
 	int opration_flag = 0;
 	while (env->curchar != '\n')
 	{
 		skip_to_significant_character(env);
-
-		if(utf8_is_letter(env->curchar))
+		printf("!!!!!!!!!!!!!!!!2\n");
+		const int rez = additional_elements(env, stack, is_int, operation, &op_size, &stk_size, &locl_type, opration_flag);
+		if(rez == -1)
 		{
-			if(calc_macro(env))
-			{
-				return -1;
-			}
-		}
-		else if (env->curchar == '#' && type && !opration_flag)
+			return -1;
+		} 
+		else if (rez == 1)
 		{
-			const int cur = macro_keywords(env);
-			if (cur == SH_EVAL && env->curchar == '(')
-			{
-				locl_type = 0;
-				operation[op++] = '[';
-			}
-			else
-			{
-				env_error(env, after_eval_must_be_ckob);
-				return -1;
-			}
-		}
-		else if (env->curchar == '(' && !opration_flag)
-		{
-			operation[op++] = '(';
-		}
-		else if (env->curchar == ')' && opration_flag)
-		{
-			operation[op++] = ')';
-			if(calc_close(stack, int_flag, operation, &op, &i))
-			{
-				env_error(env, incorrect_arithmetic_expression);
-				return -1;
-			}
-
-			m_nextch(env);
-
-			if (operation[op] == '[')
-			{
-				locl_type = type;
-			}
-
-			if (op == 0 && !type)
-			{
-				double_to_string(env, stack[0], int_flag[0]);
-				return 0;
-			}
+			return 0;
 		}
 
-		if(!opration_flag)
+		if(!opration_flag && (utf8_is_digit(env->curchar) || (env->curchar == '-' && utf8_is_digit(env->nextchar))))
 		{
 			opration_flag = 1;
-			if(calc_digit(env, stack, int_flag, &i))
+			if(calc_digit(env, stack, is_int, &stk_size))
 			{
 				return -1;
 			}
 		}
-		else if(env->curchar != '\n')
+		else if(opration_flag)
 		{
 			opration_flag = 0;
-			if(calc_opiration(env, stack, int_flag, operation, &op, &i, type))
+			if(calc_opiration(env, stack, is_int, operation, &op_size, &stk_size, locl_type))
 			{
 				return -1;
 			}
@@ -456,10 +483,11 @@ int calculate(environment *const env, const int type)
 			return -1;
 		}
 	}
+	printf("!!!!!!!!!!!!!!!!1\n");
 
 	if (type)
 	{
-		if(calc_close(stack, int_flag, operation, &op, &i))
+		if(calc_close(stack, is_int, operation, &op_size, &stk_size))
 		{
 			env_error(env, incorrect_arithmetic_expression);
 			return -1;
@@ -479,5 +507,6 @@ int calculate(environment *const env, const int type)
 		env_error(env, in_eval_must_end_parenthesis);
 		return -1;
 	}
+
 	return 0;
 }

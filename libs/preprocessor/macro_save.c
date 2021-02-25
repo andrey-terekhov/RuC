@@ -160,7 +160,7 @@ int macros_tab_add_func(environment *const env)
 
 			if (!flag_macro_directive && env->cur == SH_EVAL && env->curchar == '(')
 			{
-				if (calculate(env, 0))
+				if (calculate(env, ARITHMETIC))
 				{
 					return -1;
 				}
@@ -286,7 +286,7 @@ int macros_tab_add_define(environment *const env, const int rep_ptr)
 						return -1;
 					}
 
-					if (calculate(env, 0))
+					if (calculate(env, ARITHMETIC))
 					{
 						return -1;
 					}
