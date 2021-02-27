@@ -298,20 +298,17 @@ void m_nextch(environment *const env)
 		m_onemore(env);
 		m_coment_skip(env);
 
-		if (env->curchar == '\n')
+		if (env->curchar != '\n' && env->curchar != EOF)
+		{
+			env->position += utf8_to_string(&env->error_string[env->position], env->curchar);
+		}
+		else
 		{
 			end_line(env);
+			env_clear_error_string(env);
 		}
 	}
-
-	if (env->curchar != '\n' && env->curchar != EOF)
-	{
-		env->position += utf8_to_string(&env->error_string[env->position], env->curchar);
-	}
-	else
-	{
-		env_clear_error_string(env);
-	}
+	
 	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", env->nextch_type,
 	// env->curchar, env->curchar, env->nextchar, env->nextchar);
 }

@@ -375,14 +375,7 @@ int calc_close(double *const stack, int *const is_int, const char *operation, in
 
 int additional_elements(environment *const env, double *const stack, int *const is_int, char *const operation, int *op_size, int *stk_size, int *type, int opration_flag)
 {
-	if(utf8_is_letter(env->curchar))
-	{
-		if(calc_macro(env))
-		{
-			return -1;
-		}
-	}
-	else if (env->curchar == '#' && *type == LOGIC && !opration_flag)
+	if (env->curchar == '#' && *type == LOGIC && !opration_flag)
 	{
 		const int cur = macro_keywords(env);
 		if (cur == SH_EVAL && env->curchar == '(')
@@ -390,6 +383,8 @@ int additional_elements(environment *const env, double *const stack, int *const 
 			*type = ARITHMETIC;
 			operation[*op_size] = '[';
 			*op_size = *op_size + 1;
+			m_nextch(env);
+			return 1;
 		}
 		else
 		{
@@ -397,14 +392,26 @@ int additional_elements(environment *const env, double *const stack, int *const 
 			return -1;
 		}
 	}
-	else if (env->curchar == '(' && !opration_flag)
+
+	if(utf8_is_letter(env->curchar))
+	{
+		if(calc_macro(env))
+		{
+			return -1;
+		}
+		return 1;
+	}
+
+	if (env->curchar == '(' && !opration_flag)
 	{
 		operation[*op_size] = '(';
 		*op_size = *op_size + 1;
+		m_nextch(env);
+		return 1;
 	}
-	else if (env->curchar == ')' && opration_flag)
+
+	if (env->curchar == ')' && opration_flag)
 	{
-		printf("!!!!!!!!!!!!!!!!1\n");
 		operation[*op_size] = ')';
 		*op_size = *op_size + 1;
 		if(calc_close(stack, is_int, operation, op_size, stk_size))
@@ -414,20 +421,19 @@ int additional_elements(environment *const env, double *const stack, int *const 
 		}
 
 		m_nextch(env);
-
 		if (operation[*op_size] == '[')
 		{
 			*type = LOGIC;
 		}
-		printf("!!!!!!!!!!!!!!!! %d=0 %d=1\n", *op_size, *type);
 		if (*op_size == 0 && *type == ARITHMETIC)
 		{
 			double_to_string(env, stack[0], is_int[0]);
-			return 1;
+			return 0;
 		}
+		return 1;
 	}
 
-	return 0;
+	return 2;
 }
 
 int calculate(environment *const env, const int type)
@@ -438,7 +444,6 @@ int calculate(environment *const env, const int type)
 
 	if (type == ARITHMETIC)
 	{
-		printf("!!!!!!!!!!!!!!!!1\n");
 		operation[op_size++] = '(';
 		m_nextch(env);
 	}
@@ -450,15 +455,14 @@ int calculate(environment *const env, const int type)
 	while (env->curchar != '\n')
 	{
 		skip_to_significant_character(env);
-		printf("!!!!!!!!!!!!!!!!2\n");
 		const int rez = additional_elements(env, stack, is_int, operation, &op_size, &stk_size, &locl_type, opration_flag);
-		if(rez == -1)
+		if(rez == -1 || rez == 0)
 		{
-			return -1;
+			return rez;
 		} 
 		else if (rez == 1)
 		{
-			return 0;
+			continue;
 		}
 
 		if(!opration_flag && (utf8_is_digit(env->curchar) || (env->curchar == '-' && utf8_is_digit(env->nextchar))))
@@ -469,7 +473,7 @@ int calculate(environment *const env, const int type)
 				return -1;
 			}
 		}
-		else if(opration_flag)
+		else if(opration_flag && env->curchar != '\n')
 		{
 			opration_flag = 0;
 			if(calc_opiration(env, stack, is_int, operation, &op_size, &stk_size, locl_type))
@@ -477,15 +481,14 @@ int calculate(environment *const env, const int type)
 				return -1;
 			}
 		}
-		else
+		else if(env->curchar != '\n')
 		{
 			env_error(env, third_party_symbol);
 			return -1;
 		}
 	}
-	printf("!!!!!!!!!!!!!!!!1\n");
 
-	if (type)
+	if (locl_type == LOGIC)
 	{
 		if(calc_close(stack, is_int, operation, &op_size, &stk_size))
 		{
