@@ -15,6 +15,7 @@
  */
 
 #include "llvmgen.h"
+#include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
 #include "uniprinter.h"
@@ -360,22 +361,6 @@ static void block(information *const info, node *const nd)
 	{
 		switch (node_get_type(nd))
 		{
-			case TFuncdef:
-			{
-				const size_t ref_ident = (size_t)node_get_arg(nd, 0) / 4;
-
-				if (ident_get_mode(info->sx, ref_ident) == LMAIN)
-				{
-					uni_printf(info->io, "define i32 @main(");
-				}
-				uni_printf(info->io, ") {\n");
-
-				node_set_next(nd); // TBegin
-				node_set_next(nd);
-				block(info, nd);
-				uni_printf(info->io, "}\n\n");
-			}
-			break;
 			case TDeclarr:
 			{
 				const item_t N = node_get_arg(nd, 0);
@@ -424,6 +409,49 @@ static void block(information *const info, node *const nd)
 	node_set_next(nd); // TEnd
 }
 
+static int codegen(universal_io *const io, syntax *const sx)
+{
+	information info;
+	info.io = io;
+	info.sx = sx;
+	info.string_num = 1;
+	info.register_num = 1;
+	info.variable_location = LREG;
+	info.request_reg = 0;
+	info.answer_reg = 0;
+
+	node root = node_get_root(&sx->tree);
+	while (node_set_next(&root) == 0)
+	{
+		switch (node_get_type(&root))
+		{
+			case TFuncdef:
+			{
+				const size_t ref_ident = (size_t)node_get_arg(&root, 0) / 4;
+
+				if (ident_get_mode(info.sx, ref_ident) == LMAIN)
+				{
+					uni_printf(info.io, "define i32 @main(");
+				}
+				uni_printf(info.io, ") {\n");
+
+				node_set_next(&root); // TBegin
+				node_set_next(&root);
+				block(&info, &root);
+				uni_printf(info.io, "}\n\n");
+			}
+			break;
+			default:
+			{
+				system_error(node_unexpected, node_get_type(&root));
+				return -1;
+			}
+			break;
+		}
+	}
+	return 0;
+}
+
 
 /*
  *	 __	 __   __	 ______   ______	 ______	 ______   ______	 ______	 ______
@@ -441,18 +469,5 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 		return -1;
 	}
 
-	information info;
-	info.io = io;
-	info.sx = sx;
-	info.string_num = 1;
-	info.register_num = 1;
-	info.variable_location = LREG;
-	info.request_reg = 0;
-	info.answer_reg = 0;
-
-	node root = node_get_root(&sx->tree);
-	node_set_next(&root);
-	block(&info, &root);
-
-	return 0;
+	return codegen(io, sx);
 }
