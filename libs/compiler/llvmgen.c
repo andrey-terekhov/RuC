@@ -151,6 +151,9 @@ static void operand(information *const info, node *const nd)
 			}
 		}
 		break;
+		default:
+			node_set_next(nd);
+			break;
 	}
 }
 
