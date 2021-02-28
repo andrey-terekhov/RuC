@@ -263,11 +263,11 @@ void m_nextch(environment *const env)
 			{
 				env_add_comment(env);
 			}
-			else if (env->curchar == MACROCANGE)
+			else if (env->curchar == MACRO_CANGE)
 			{
 				m_nextch_cange(env);
 			}
-			else if (env->curchar == MACROEND)
+			else if (env->curchar == MACRO_END)
 			{
 				m_old_nextch_type(env);
 			}

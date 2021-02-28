@@ -111,7 +111,7 @@ int mf_equal(int i, environment *const env)
 	{
 		i++;
 		j++;
-		if (env->reprtab[i] == 0 && env->mstring[j] == MACROEND)
+		if (env->reprtab[i] == 0 && env->mstring[j] == MACRO_END)
 		{
 			return 1;
 		}
@@ -133,7 +133,7 @@ int collect_mident(environment *const env)
 		m_nextch(env);
 	}
 
-	env->mstring[env->msp] = MACROEND;
+	env->mstring[env->msp] = MACRO_END;
 	hash &= 255;
 	r = env->hashtab[hash];
 
@@ -141,7 +141,7 @@ int collect_mident(environment *const env)
 	{
 		if (r >= env->mfirstrp && mf_equal(r, env))
 		{
-			return (env->macro_tab[env->reprtab[r + 1]] != MACROUNDEF) ? r : 0;
+			return (env->macro_tab[env->reprtab[r + 1]] != MACRO_UNDEF) ? r : 0;
 		}
 
 		r = env->reprtab[r];

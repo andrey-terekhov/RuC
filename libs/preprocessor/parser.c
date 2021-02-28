@@ -246,7 +246,7 @@ int while_collect(environment *const env)
 {
 	const int oldwsp = env->while_string_size;
 
-	env->while_string[env->while_string_size++] = WHILEBEGIN;
+	env->while_string[env->while_string_size++] = WHILE_BEGIN;
 	env->while_string[env->while_string_size++] = env->if_string_size;
 	env->while_string_size++;
 
@@ -299,7 +299,7 @@ int while_implementation(environment *const env)
 	int error = 0;
 
 	env->cur = 0;
-	while (env->while_string[oldernextp] == WHILEBEGIN)
+	while (env->while_string[oldernextp] == WHILE_BEGIN)
 	{
 		m_nextch(env);
 		m_change_nextch_type(env, IFTYPE, env->while_string[env->nextp]);
@@ -325,7 +325,7 @@ int while_implementation(environment *const env)
 
 		while (env->nextp != end || env->nextch_type != WHILETYPE)
 		{
-			if (env->curchar == WHILEBEGIN)
+			if (env->curchar == WHILE_BEGIN)
 			{
 				env->nextp--;
 				if (while_implementation(env))
@@ -373,7 +373,7 @@ int preprocess_words(environment *const env)
 			const int macro_ptr = collect_mident(env);;
 			if (macro_ptr)
 			{
-				env->macro_tab[env->reprtab[macro_ptr + 1]] = MACROUNDEF;
+				env->macro_tab[env->reprtab[macro_ptr + 1]] = MACRO_UNDEF;
 				return skip_line(env);
 			}
 			else

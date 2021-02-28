@@ -188,7 +188,7 @@ int macro_get(environment *const env, const size_t index)
 	env->msp = 0;
 
 	int loc_macro_ptr = env->reprtab[index + 1];
-	if (env->macro_tab[loc_macro_ptr++] == MACROFUNCTION)
+	if (env->macro_tab[loc_macro_ptr++] == MACRO_FUNCTION)
 	{
 		if (env->macro_tab[loc_macro_ptr] > -1 && function_stack_create(env, env->macro_tab[loc_macro_ptr]))
 		{

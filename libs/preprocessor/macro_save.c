@@ -33,7 +33,7 @@ size_t m_equal(environment *const env)
 		while (env->calc_string[i + j] == env->mstring[j])
 		{
 			j++;
-			if (env->calc_string[i + j] == '\0' && env->mstring[j] == MACROEND)
+			if (env->calc_string[i + j] == '\0' && env->mstring[j] == MACRO_END)
 			{
 				return n;
 			}
@@ -58,7 +58,7 @@ int func_check_macro(environment *const env, int flag_macro_directive)
 	const int num = m_equal(env);
 	if (num != 0)
 	{
-		env->macro_tab[env->macro_tab_size++] = MACROCANGE;
+		env->macro_tab[env->macro_tab_size++] = MACRO_CANGE;
 		env->macro_tab[env->macro_tab_size++] = num - 1;
 	}
 	else if (!flag_macro_directive && macro_ptr)
@@ -125,7 +125,7 @@ int macro_tab_add_func(environment *const env)
 {
 	const int flag_macro_directive = env->cur == SH_MACRO;
 
-	env->macro_tab[env->macro_tab_size++] = MACROFUNCTION;
+	env->macro_tab[env->macro_tab_size++] = MACRO_FUNCTION;
 	
 	int empty = 0;
 	if (env->curchar == ')')
@@ -172,7 +172,7 @@ int macro_tab_add_func(environment *const env)
 			else if (flag_macro_directive && env->cur == SH_ENDM)
 			{
 				m_nextch(env);
-				env->macro_tab[env->macro_tab_size++] = MACROEND;
+				env->macro_tab[env->macro_tab_size++] = MACRO_END;
 				return 0;
 			}
 			else
@@ -209,7 +209,7 @@ int macro_tab_add_func(environment *const env)
 		}
 	}
 
-	env->macro_tab[env->macro_tab_size++] = MACROEND;
+	env->macro_tab[env->macro_tab_size++] = MACRO_END;
 	return 0;
 }
 
@@ -241,7 +241,7 @@ int define_add_to_reprtab(environment *const env)
 	{
 		if (equal_reprtab(r, oldrepr, env))
 		{
-			if (env->macro_tab[env->reprtab[r + 1]] == MACROUNDEF)
+			if (env->macro_tab[env->reprtab[r + 1]] == MACRO_UNDEF)
 			{
 				env->rp = oldrepr;
 				return r;
@@ -265,7 +265,7 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 {
 	int old_macro_tab_size = env->macro_tab_size;
 
-	env->macro_tab[env->macro_tab_size++] = MACRODEF;
+	env->macro_tab[env->macro_tab_size++] = MACRO_DEF;
 	if (env->curchar != '\n')
 	{
 		while (env->curchar != '\n')
@@ -338,7 +338,7 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 
 		while (env->macro_tab[env->macro_tab_size - 1] == ' ' || env->macro_tab[env->macro_tab_size - 1] == '\t')
 		{
-			env->macro_tab[env->macro_tab_size - 1] = MACROEND;
+			env->macro_tab[env->macro_tab_size - 1] = MACRO_END;
 			env->macro_tab_size--;
 		}
 	}
@@ -347,7 +347,7 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 		env->macro_tab[env->macro_tab_size++] = '0';
 	}
 
-	env->macro_tab[env->macro_tab_size++] = MACROEND;
+	env->macro_tab[env->macro_tab_size++] = MACRO_END;
 
 	if (rep_ptr)
 	{
@@ -394,7 +394,7 @@ int macro_set(environment *const env)
 	}
 
 	const int macro_ptr = collect_mident(env);	
-	if (env->macro_tab[env->reprtab[macro_ptr + 1]] == MACROFUNCTION)
+	if (env->macro_tab[env->reprtab[macro_ptr + 1]] == MACRO_FUNCTION)
 	{
 		env_error(env, functions_cannot_be_changed);
 		return -1;

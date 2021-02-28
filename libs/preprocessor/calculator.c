@@ -122,7 +122,7 @@ double get_digit(environment *const env, int* error)// Временная зам
 	}
 }
 
-char get_opiration(const char cur, const char next)
+char get_operation(const char cur, const char next)
 {
 	switch (cur)
 	{
@@ -160,9 +160,9 @@ char get_opiration(const char cur, const char next)
 	}
 }
 
-int get_prior(const char opiration)
+int get_prior(const char operation)
 {
-	switch (opiration)
+	switch (operation)
 	{
 		case '(':
 			return 0;
@@ -189,9 +189,9 @@ int get_prior(const char opiration)
 	}
 }
 
-double calc_count(const double x, const double y, const char opiration, const int is_int)
+double calc_count(const double x, const double y, const char operation, const int is_int)
 {
-	switch (opiration)
+	switch (operation)
 	{
 		case '<':
 			return x < y;
@@ -283,7 +283,7 @@ int calc_macro(environment *const env)
 		return -1;
 	}
 
-	if(macro_get(env, macro_ptr))
+	if (macro_get(env, macro_ptr))
 	{
 		return -1;
 	}
@@ -306,22 +306,22 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 	return 0;
 }
 
-int calc_opiration(environment *const env, double *const stack, int *const is_int, char *const operation, int *op_size, int *stk_size, const int type)
+int calc_operation(environment *const env, double *const stack, int *const is_int, char *const operation, int *op_size, int *stk_size, const int type)
 {
-	const char c = get_opiration((char)env->curchar, (char)env->nextchar);
-	if(!c)
+	const char opr = get_operation((char)env->curchar, (char)env->nextchar);
+	if (!opr)
 	{
 		env_error(env, third_party_symbol);
 		return -1;
 	}
 
 	m_nextch(env);
-	if (c == 'b'|| c == 's' || c == '=' || c == '&'|| c == '|' || c == '!')
+	if (opr == 'b'|| opr == 's' || opr == '=' || opr == '&'|| opr == '|' || opr == '!')
 	{
 		m_nextch(env);
 	}
 
-	const int prior = get_prior(c);
+	const int prior = get_prior(opr);
 	if (type == LOGIC && prior > 3)
 	{
 		env_error(env, not_arithmetic_operations);
@@ -341,7 +341,7 @@ int calc_opiration(environment *const env, double *const stack, int *const is_in
 		*stk_size = *stk_size - 1;
 	}
 
-	operation[*op_size] = c;
+	operation[*op_size] = opr;
 	*op_size = *op_size + 1;
 
 	return 0;
@@ -350,7 +350,7 @@ int calc_opiration(environment *const env, double *const stack, int *const is_in
 int calc_close(double *const stack, int *const is_int, const char *operation, int *op_size, int *stk_size)
 {
 	int scope_flag = 0;
-	if(operation[*op_size - 1] == ')')
+	if (operation[*op_size - 1] == ')')
 	{
 		scope_flag++;
 		*op_size = *op_size - 1;
@@ -373,7 +373,8 @@ int calc_close(double *const stack, int *const is_int, const char *operation, in
 	return 0;
 }
 
-int additional_elements(environment *const env, double *const stack, int *const is_int, char *const operation, int *op_size, int *stk_size, int *type, int opration_flag)
+int additional_elements(environment *const env, double *const stack, int *const is_int
+	, char *const operation , int *op_size, int *stk_size, int *type, int opration_flag)
 {
 	if (env->curchar == '#' && *type == LOGIC && !opration_flag)
 	{
@@ -393,9 +394,9 @@ int additional_elements(environment *const env, double *const stack, int *const 
 		}
 	}
 
-	if(utf8_is_letter(env->curchar))
+	if (utf8_is_letter(env->curchar))
 	{
-		if(calc_macro(env))
+		if (calc_macro(env))
 		{
 			return -1;
 		}
@@ -414,7 +415,7 @@ int additional_elements(environment *const env, double *const stack, int *const 
 	{
 		operation[*op_size] = ')';
 		*op_size = *op_size + 1;
-		if(calc_close(stack, is_int, operation, op_size, stk_size))
+		if (calc_close(stack, is_int, operation, op_size, stk_size))
 		{
 			env_error(env, incorrect_arithmetic_expression);
 			return -1;
@@ -440,7 +441,6 @@ int calculate(environment *const env, const int type)
 {
 	int op_size = 0;
 	char operation[OPN_SIZE];
-	int locl_type = type;
 
 	if (type == ARITHMETIC)
 	{
@@ -452,11 +452,12 @@ int calculate(environment *const env, const int type)
 	double stack[STK_SIZE];
 	int is_int[STK_SIZE];
 	int opration_flag = 0;
+	int locl_type = type;
 	while (env->curchar != '\n')
 	{
 		skip_separators(env);
 		const int rez = additional_elements(env, stack, is_int, operation, &op_size, &stk_size, &locl_type, opration_flag);
-		if(rez == -1 || rez == 0)
+		if (rez == -1 || rez == 0)
 		{
 			return rez;
 		} 
@@ -465,23 +466,23 @@ int calculate(environment *const env, const int type)
 			continue;
 		}
 
-		if(!opration_flag && (utf8_is_digit(env->curchar) || (env->curchar == '-' && utf8_is_digit(env->nextchar))))
+		if (!opration_flag && (utf8_is_digit(env->curchar) || (env->curchar == '-' && utf8_is_digit(env->nextchar))))
 		{
 			opration_flag = 1;
-			if(calc_digit(env, stack, is_int, &stk_size))
+			if (calc_digit(env, stack, is_int, &stk_size))
 			{
 				return -1;
 			}
 		}
-		else if(opration_flag && env->curchar != '\n')
+		else if (opration_flag && env->curchar != '\n')
 		{
 			opration_flag = 0;
-			if(calc_opiration(env, stack, is_int, operation, &op_size, &stk_size, locl_type))
+			if (calc_operation(env, stack, is_int, operation, &op_size, &stk_size, locl_type))
 			{
 				return -1;
 			}
 		}
-		else if(env->curchar != '\n')
+		else if (env->curchar != '\n')
 		{
 			env_error(env, third_party_symbol);
 			return -1;
@@ -490,7 +491,7 @@ int calculate(environment *const env, const int type)
 
 	if (locl_type == LOGIC)
 	{
-		if(calc_close(stack, is_int, operation, &op_size, &stk_size))
+		if (calc_close(stack, is_int, operation, &op_size, &stk_size))
 		{
 			env_error(env, incorrect_arithmetic_expression);
 			return -1;
