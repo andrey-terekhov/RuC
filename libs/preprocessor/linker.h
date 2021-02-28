@@ -38,14 +38,14 @@ typedef struct linker
 
 
 /**
- *	Init linker structure
+ *	Create linker structure
  *
  *	@param	lk		Linker structure
  *	@param	ws		Workspace structure	 
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int lk_init(linker *const lk, workspace *const ws);
+linker lk_create(workspace *const ws);
 
 /**
  *	Preprocess all files from workspace
@@ -65,3 +65,15 @@ int lk_preprocess_all(environment *const env);
  */
 int lk_include(environment *const env);
 
+/**
+ *	 Get current file name from linker
+ *
+ *	@param	lk	Preprocessor linker
+ *
+ *	@return	File
+ */
+const char *lk_get_current(const linker *const lk);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

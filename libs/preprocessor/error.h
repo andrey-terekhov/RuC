@@ -59,8 +59,7 @@ enum ERROR
 	must_end_endw,
 	include_file_not_found,
 	source_file_not_found,
-	ws_not_correct,
-	not_ending_string, 
+	no_string_ending, 
 };
 
 
@@ -69,7 +68,7 @@ enum ERROR
  *
  *	@param	num			Error code
  *	@param	path		Current file path
-  *	@param	code		Error line in current file
+ *	@param	code		Error line in current file
  *	@param	line		Error line number
  *	@param	position	Error position in line
  */

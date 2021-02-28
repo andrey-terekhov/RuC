@@ -30,7 +30,7 @@ extern "C" {
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int macros_add(environment *const env);
+int macro_add(environment *const env);
 
 /**
  *	Modify an existing macro
@@ -39,7 +39,7 @@ int macros_add(environment *const env);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int macros_set(environment *const env);
+int macro_set(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

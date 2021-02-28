@@ -23,27 +23,29 @@
 #include "utils.h"
 
 
-int function_scope_collect(environment *const env, const int num, const int flag_in_brackets)
+int function_scope_collect(environment *const env, const size_t num, const size_t was_bracket)
 {
 	while (env->curchar != EOF)
 	{
 		if (utf8_is_letter(env->curchar))
 		{
-			const int macros_ptr = collect_mident(env);
-			if (macros_ptr)
+			const int macro_ptr = collect_mident(env);
+			if (macro_ptr)
 			{
 				const size_t old_change_size = env->change_size;
 				const size_t old_local_stack_size = env->local_stack_size;
-				int loc_change[STRING_SIZE];
 
 				env->local_stack_size += num;
-				if (macros_get(env, macros_ptr))
+				if (macro_get(env, macro_ptr))
 				{
 					return -1;
 				}
 
-				const int loc_depth = env->nextch_type == FTYPE ? get_depth(env) - 1 : get_depth(env);
+				int loc_change[STRING_SIZE];
 				size_t loc_change_size = 0;
+				const int loc_depth = env->nextch_type == FTYPE
+				? get_depth(env) - 1
+				: get_depth(env);
 
 				while (get_depth(env) >= loc_depth) // 1 переход потому что есть префиксная замена
 				{
@@ -77,9 +79,9 @@ int function_scope_collect(environment *const env, const int num, const int flag
 				return -1;
 			}
 		}
-		else if (env->curchar == ')' || (flag_in_brackets == 1 && env->curchar == ','))
+		else if (env->curchar == ')' || (was_bracket == 1 && env->curchar == ','))
 		{
-			if (flag_in_brackets == 0)
+			if (was_bracket == 0)
 			{
 				env->change[env->change_size++] = env->curchar;
 				m_nextch(env);
@@ -119,7 +121,7 @@ int function_scope_collect(environment *const env, const int num, const int flag
 	return -1;
 }
 
-int function_stack_create(environment *const env, const int number_parameters)
+int function_stack_create(environment *const env, const size_t parameters)
 {
 	m_nextch(env);
 
@@ -129,7 +131,7 @@ int function_stack_create(environment *const env, const int number_parameters)
 		return -1;
 	}
 
-	int num = 0;
+	size_t num = 0;
 	env->localstack[num + env->local_stack_size] = env->change_size;
 
 	while (env->curchar != ')')
@@ -145,7 +147,7 @@ int function_stack_create(environment *const env, const int number_parameters)
 			num++;
 			env->localstack[num + env->local_stack_size] = env->change_size;
 
-			if (num > number_parameters)
+			if (num > parameters)
 			{
 				env_error(env, not_enough_param);
 				return -1;
@@ -159,7 +161,7 @@ int function_stack_create(environment *const env, const int number_parameters)
 		}
 		else if (env->curchar == ')')
 		{
-			if (num != number_parameters)
+			if (num != parameters)
 			{
 				env_error(env, not_enough_param2);
 				return -1;
@@ -175,7 +177,7 @@ int function_stack_create(environment *const env, const int number_parameters)
 	return -1;
 }
 
-int macros_get(environment *const env, const int index)
+int macro_get(environment *const env, const size_t index)
 {
 	if (index == 0)
 	{
@@ -186,9 +188,9 @@ int macros_get(environment *const env, const int index)
 	env->msp = 0;
 
 	int loc_macro_ptr = env->reprtab[index + 1];
-	if (env->macros_tab[loc_macro_ptr++] == MACROFUNCTION)
+	if (env->macro_tab[loc_macro_ptr++] == MACROFUNCTION)
 	{
-		if (env->macros_tab[loc_macro_ptr] > -1 && function_stack_create(env, env->macros_tab[loc_macro_ptr]))
+		if (env->macro_tab[loc_macro_ptr] > -1 && function_stack_create(env, env->macro_tab[loc_macro_ptr]))
 		{
 			return -1;
 		}

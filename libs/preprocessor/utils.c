@@ -141,7 +141,7 @@ int collect_mident(environment *const env)
 	{
 		if (r >= env->mfirstrp && mf_equal(r, env))
 		{
-			return (env->macros_tab[env->reprtab[r + 1]] != MACROUNDEF) ? r : 0;
+			return (env->macro_tab[env->reprtab[r + 1]] != MACROUNDEF) ? r : 0;
 		}
 
 		r = env->reprtab[r];
@@ -150,11 +150,11 @@ int collect_mident(environment *const env)
 	return 0;
 }
 
-int skip_to_end_line(environment *const env)
+int skip_line(environment *const env)
 {
 	while (env->curchar != '\n')
 	{
-		if (env->curchar == ' ' || env->curchar == '\t')
+		if (env->curchar == ' ' || env->curchar == '\t' || env->curchar == '\r')
 		{
 			m_nextch(env);
 		}
@@ -168,7 +168,7 @@ int skip_to_end_line(environment *const env)
 	return 0;
 }
 
-void skip_to_significant_character(environment *const env)
+void skip_separators(environment *const env)
 {
 	while (env->curchar == ' ' || env->curchar == '\t')
 	{
@@ -196,7 +196,7 @@ int skip_string(environment *const env)
 
 	if (env->curchar == EOF || env->curchar == '\n')
 	{
-		env_error(env, not_ending_string);
+		env_error(env, no_string_ending);
 		return -1;
 	}
 

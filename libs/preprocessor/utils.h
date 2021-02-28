@@ -35,21 +35,21 @@ int collect_mident(environment *const env);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int skip_to_end_line(environment *const env);
+int skip_line(environment *const env);
 
 /**
  *	Skip all spaces and tabs up to a significant character
  *
  *	@param	env	Preprocessor environment
  */
-void skip_to_significant_character(environment *const env);
+void skip_separators(environment *const env);
 
 /**
  *	Skip all characters inside quotes
  *
  *	@param	env	Preprocessor environment
  *
- *  @return	@c 0 on success, @c -1 on failure
+ *	@return	@c 0 on success, @c -1 on failure
  */
 int skip_string(environment *const env);
 

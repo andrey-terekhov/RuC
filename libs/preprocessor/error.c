@@ -130,11 +130,8 @@ void get_message_error(const int num, char *const msg)
 		case include_file_not_found:
 			sprintf(msg, "заголовочный файл не найден");
 			break;
-		case ws_not_correct:
-			sprintf(msg, "структура workspace не корекнто задана");
-			break;
-		case not_ending_string:
-			sprintf(msg, "не зкончина строка, где-то пропущен символ \" или \'");
+		case no_string_ending:
+			sprintf(msg, "строка не завершена, пропущен символ \" или \'");
 			break;
 		default:
 			sprintf(msg, "не реализованная ошибка №%d", num);

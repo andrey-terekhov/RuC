@@ -44,7 +44,7 @@ int if_check(environment *const env, int type_if)
 			flag = 1;
 		}
 
-		if (skip_to_end_line(env))
+		if (skip_line(env))
 		{
 			return -1;
 		}
@@ -200,7 +200,7 @@ int if_implementation(environment *const env)
 	while (env->cur == SH_ELIF)
 	{
 		const int el_truth_flag = if_check(env, type_if);
-		if (el_truth_flag == -1 || skip_to_end_line(env))
+		if (el_truth_flag == -1 || skip_line(env))
 		{
 			env->nested_if--;
 			return -1;
@@ -321,7 +321,7 @@ int while_implementation(environment *const env)
 		m_nextch(env);
 		m_nextch(env);
 		m_nextch(env);
-		skip_to_significant_character(env);
+		skip_separators(env);
 
 		while (env->nextp != end || env->nextch_type != WHILETYPE)
 		{
@@ -355,7 +355,7 @@ int while_implementation(environment *const env)
 
 int preprocess_words(environment *const env)
 {
-	skip_to_significant_character(env);
+	skip_separators(env);
 	switch (env->cur)
 	{
 		case SH_INCLUDE:
@@ -366,15 +366,15 @@ int preprocess_words(environment *const env)
 		case SH_MACRO:
 		{
 			env->prep_flag = 1;
-			return macros_add(env);
+			return macro_add(env);
 		}
 		case SH_UNDEF:
 		{
-			const int macros_ptr = collect_mident(env);;
-			if (macros_ptr)
+			const int macro_ptr = collect_mident(env);;
+			if (macro_ptr)
 			{
-				env->macros_tab[env->reprtab[macros_ptr + 1]] = MACROUNDEF;
-				return skip_to_end_line(env);
+				env->macro_tab[env->reprtab[macro_ptr + 1]] = MACROUNDEF;
+				return skip_line(env);
 			}
 			else
 			{
@@ -390,7 +390,7 @@ int preprocess_words(environment *const env)
 		}
 		case SH_SET:
 		{
-			return macros_set(env);
+			return macro_set(env);
 		}
 		case SH_ELSE:
 		case SH_ELIF:
@@ -493,10 +493,10 @@ int preprocess_token(environment *const env)
 		{
 			if (utf8_is_letter(env->curchar) && env->prep_flag == 1)
 			{
-				const int macros_ptr = collect_mident(env);
-				if (macros_ptr)
+				const int macro_ptr = collect_mident(env);
+				if (macro_ptr)
 				{
-					return macros_get(env, macros_ptr);
+					return macro_get(env, macro_ptr);
 				}
 				else
 				{

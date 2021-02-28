@@ -276,14 +276,14 @@ void double_to_string(environment *const env, const double x, const int is_int)
 
 int calc_macro(environment *const env)
 {
-	const int macros_ptr = collect_mident(env);
-	if (!macros_ptr)
+	const int macro_ptr = collect_mident(env);
+	if (!macro_ptr)
 	{
 		env_error(env, not_macro);
 		return -1;
 	}
 
-	if(macros_get(env, macros_ptr))
+	if(macro_get(env, macro_ptr))
 	{
 		return -1;
 	}
@@ -454,7 +454,7 @@ int calculate(environment *const env, const int type)
 	int opration_flag = 0;
 	while (env->curchar != '\n')
 	{
-		skip_to_significant_character(env);
+		skip_separators(env);
 		const int rez = additional_elements(env, stack, is_int, operation, &op_size, &stk_size, &locl_type, opration_flag);
 		if(rez == -1 || rez == 0)
 		{

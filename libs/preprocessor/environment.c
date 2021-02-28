@@ -33,7 +33,7 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->lk = lk;
 
 	env->rp = 1;
-	env->macros_tab_size = 1;
+	env->macro_tab_size = 1;
 	env->change_size = 0;
 	env->local_stack_size = 0;
 	env->calc_string_size = 0;
@@ -99,14 +99,9 @@ void env_clear_error_string(environment *const env)
 	env->position = 0;
 }
 
-const char *env_get_current_path(environment *const env)
-{
-	return env == NULL ? NULL : ws_get_file(env->lk->ws, env->lk->current);
-}
-
 void env_add_comment(environment *const env)
 {
-	comment cmt = cmt_create(env_get_current_path(env), env->line);
+	comment cmt = cmt_create(lk_get_current(env->lk), env->line);
 
 	char buffer[MAX_CMT_SIZE];
 	cmt_to_string(&cmt, buffer);
@@ -259,10 +254,10 @@ void m_nextch(environment *const env)
 			env->curchar = env->while_string[env->nextp++];
 			env->nextchar = env->while_string[env->nextp];
 		}
-		else if (env->nextch_type == TEXTTYPE && env->nextp < env->macros_tab_size)
+		else if (env->nextch_type == TEXTTYPE && env->nextp < env->macro_tab_size)
 		{
-			env->curchar = env->macros_tab[env->nextp++];
-			env->nextchar = env->macros_tab[env->nextp];
+			env->curchar = env->macro_tab[env->nextp++];
+			env->nextchar = env->macro_tab[env->nextp];
 
 			if (env->curchar == '\n')
 			{
@@ -316,5 +311,5 @@ void m_nextch(environment *const env)
 void env_error(environment *const env, const int num)
 {
 	const size_t position = env_skip_str(env);
-	macro_error(num, env_get_current_path(env), env->error_string, env->line, position);
+	macro_error(num, lk_get_current(env->lk), env->error_string, env->line, position);
 }

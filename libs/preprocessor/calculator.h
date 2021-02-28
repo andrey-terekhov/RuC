@@ -30,7 +30,7 @@ extern "C" {
 /**
  *	Calculate an arithmetic or logical expression
  *
- *  @param	env				Preprocessor environment
+ *	@param	env				Preprocessor environment
  *	@param	type			Type expression
  *
  *	@return	@c 0 on success, @c -1 on failure

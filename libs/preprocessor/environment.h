@@ -31,8 +31,8 @@ typedef struct environment
 	int reprtab[MAXTAB];
 	int rp;
 
-	int macros_tab[MAXTAB];
-	size_t macros_tab_size;
+	int macro_tab[MAXTAB];
+	size_t macro_tab_size;
 
 	char error_string[STRING_SIZE];
 	size_t position;
@@ -84,7 +84,6 @@ typedef struct environment
 
 void env_init(environment *const env, linker *const lk, universal_io *const output);
 void env_clear_error_string(environment *const env);
-const char *env_get_current_path(environment *const env);
 
 /**
  *	Add a comment to indicate line changes in the output

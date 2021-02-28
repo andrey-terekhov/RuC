@@ -24,14 +24,14 @@ extern "C" {
 #endif
 
 /**
- *	Change input to macro replacement text
+ *	Index of macro in macro table
  *
  *	@param	index		Pointer to macro in macro_tab
  *	@param	env			Preprocessor environment
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int macros_get(environment *const env, const int index);
+int macro_get(environment *const env, const size_t index);
 
 #ifdef __cplusplus
 } /* extern "C" */
