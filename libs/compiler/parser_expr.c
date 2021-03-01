@@ -279,7 +279,7 @@ void mustbepointstring(parser *const prs)
 {
 	const expr_result expression = parse_assignment_expression(prs);
 	vector_remove(&TREE);
-	if (!(mode_is_pointer(prs->sx, expression.type) && mode_is_string(prs->sx, mode_get(prs->sx, expression.type + 1))))
+	if (!(mode_is_pointer(prs->sx, expression.type) && mode_is_string(prs->sx, mode_get(prs->sx, (size_t)expression.type + 1))))
 	{
 		parser_error(prs, not_point_string_in_stanfunc);
 	}
@@ -697,18 +697,21 @@ void parse_standard_function_call(parser *const prs)
 size_t parse_identifier(parser *const prs)
 {
 	const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+	item_t mode = mode_undefined;
 	if (id == ITEM_MAX)
 	{
 		parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, REPRTAB_POS));
 	}
+	else
+	{
+		mode = ident_get_mode(prs->sx, (size_t)id);
+		prs->anstdispl = (int)ident_get_displ(prs->sx, (size_t)id);
+	}
 
 	totree(prs, TIdent);
-	prs->anstdispl = (int)ident_get_displ(prs->sx, (size_t)id);
 	totree(prs, prs->anstdispl);
 
-	const item_t mode = ident_get_mode(prs->sx, (size_t)id);
-
-	prs->lastid = (size_t)id;
+	prs->lastid = 0;
 	token_consume(prs);
 	anst_push(prs, ident, mode);
 	return (size_t)id;
@@ -822,7 +825,7 @@ void parse_primary_expression(parser *const prs)
 			}
 			else
 			{
-				token_consume(prs);
+				//token_consume(prs);
 				parser_error(prs, expected_expression, prs->token);
 				anst_push(prs, number, mode_undefined);
 				break;
@@ -902,10 +905,11 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	int old_in_assignment = prs->flag_in_assignment;
 	const size_t function_mode = (size_t)anst_pop(prs);
 
-	if (!mode_is_function(prs->sx, function_mode))
+	if (!mode_is_function(prs->sx, function_mode) && !mode_is_undefined(function_mode))
 	{
 		parser_error(prs, call_not_from_function);
 		token_skip_until(prs, r_paren | semicolon);
+		token_try_consume(prs, r_paren);
 		return;
 	}
 
@@ -1013,14 +1017,10 @@ void parse_postfix_expression(parser *const prs)
 			if (was_func)
 			{
 				parser_error(prs, slice_from_func);
-				prs->was_error = 4;
-				return; // 1
 			}
 			if (!mode_is_array(prs->sx, prs->ansttype)) // вырезка не из массива
 			{
 				parser_error(prs, slice_not_from_array);
-				prs->was_error = 4;
-				return; // 1
 			}
 
 			item_t elem_type = mode_get(prs->sx, prs->ansttype + 1);
@@ -1040,15 +1040,9 @@ void parse_postfix_expression(parser *const prs)
 
 			totree(prs, elem_type);
 			parse_condition(prs);
-			if (prs->was_error == 4)
-			{
-				return; // 1
-			}
 			if (!mode_is_int(prs->ansttype))
 			{
 				parser_error(prs, index_must_be_int);
-				prs->was_error = 4;
-				return; // 1
 			}
 
 			must_be(prs, RIGHTSQBR, no_rightsqbr_in_slice);
@@ -1067,8 +1061,6 @@ void parse_postfix_expression(parser *const prs)
 				!mode_is_struct(prs->sx, (int)mode_get(prs->sx, prs->ansttype + 1)))
 			{
 				parser_error(prs, get_field_not_from_struct_pointer);
-				prs->was_error = 4;
-				return; // 1
 			}
 
 			if (prs->anst == IDENT)
@@ -1082,17 +1074,7 @@ void parse_postfix_expression(parser *const prs)
 
 			prs->ansttype = (int)mode_get(prs->sx, prs->ansttype + 1);
 			prs->anstdispl = find_field(prs, prs->ansttype);
-			if (prs->was_error == 6)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
 			selectend(prs);
-			if (prs->was_error == 5)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
 		}
 		if (prs->token == DOT)
 
@@ -1100,8 +1082,6 @@ void parse_postfix_expression(parser *const prs)
 			if (!mode_is_struct(prs->sx, prs->ansttype))
 			{
 				parser_error(prs, select_not_from_struct);
-				prs->was_error = 4;
-				return; // 1
 			}
 			if (prs->anst == VAL) // структура - значение функции
 			{
@@ -1110,11 +1090,6 @@ void parse_postfix_expression(parser *const prs)
 				while (prs->token == DOT)
 				{
 					prs->anstdispl += find_field(prs, prs->ansttype);
-					if (prs->was_error == 6)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
 				}
 				totree(prs, COPYST);
 				totree(prs, prs->anstdispl);
@@ -1127,11 +1102,6 @@ void parse_postfix_expression(parser *const prs)
 				while (prs->token == DOT)
 				{
 					prs->anstdispl += globid * find_field(prs, prs->ansttype);
-					if (prs->was_error == 6)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
 				}
 				vector_set(&TREE, vector_size(&TREE) - 1, prs->anstdispl);
 			}
@@ -1140,11 +1110,6 @@ void parse_postfix_expression(parser *const prs)
 				totree(prs, TSelect);
 				prs->anstdispl = 0;
 				selectend(prs);
-				if (prs->was_error == 5)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
 			}
 		}
 	}
