@@ -107,7 +107,16 @@ double double_from_tree(vector *const tree)
 	return num;
 }
 
-item_t anst_push(parser *const prs, const item_t type, const item_t mode)
+
+typedef enum ANST_VAL
+{
+	ident = IDENT,
+	value = VAL,
+	number = NUMBER,
+	address = ADDR,
+} anst_val;
+
+item_t anst_push(parser *const prs, const anst_val type, const item_t mode)
 {
 	prs->stackoperands[++prs->sopnd] = prs->ansttype = (int)mode;
 	prs->anst = (int)type;
@@ -119,6 +128,12 @@ item_t anst_pop(parser *const prs)
 	--prs->sopnd;
 	return (item_t)prs->ansttype;
 }
+
+anst_val anst_peek(parser *const prs)
+{
+	return prs->anst;
+}
+
 
 void binop(parser *const prs, int sp)
 {
@@ -939,7 +954,7 @@ size_t parse_identifier(parser *const prs)
 
 	prs->lastid = (size_t)id;
 	token_consume(prs);
-	anst_push(prs, IDENT, mode);
+	anst_push(prs, ident, mode);
 	return (size_t)id;
 }
 
@@ -983,7 +998,7 @@ item_t parse_constant(parser *const prs)
 	}
 
 	token_consume(prs);
-	return anst_push(prs, NUMBER, mode);
+	return anst_push(prs, number, mode);
 }
 
 /**
@@ -1062,7 +1077,7 @@ void parse_primary_expression(parser *const prs)
 			{
 				token_consume(prs);
 				parser_error(prs, expected_expression, prs->token);
-				anst_push(prs, NUMBER, mode_undefined);
+				anst_push(prs, number, mode_undefined);
 				break;
 			}
 	}
@@ -1229,7 +1244,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	prs->flag_in_assignment = old_in_assignment;
 	totree(prs, TCall2);
 	totree(prs, (item_t)function_id);
-	anst_push(prs, VAL, mode_get(prs->sx, function_mode + 1));
+	anst_push(prs, value, mode_get(prs->sx, function_mode + 1));
 }
 
 /**
@@ -1410,24 +1425,24 @@ void parse_postfix_expression(parser *const prs)
 			parser_error(prs, wrong_operand);
 		}
 
-		if (prs->anst != IDENT && prs->anst != ADDR)
+		if (anst_peek(prs) != ident && anst_peek(prs) != address)
 		{
 			parser_error(prs, unassignable_inc);
 		}
 
-		if (prs->anst == ADDR)
+		if (anst_peek(prs) == address)
 		{
 			operator += 4;
 		}
 
 		totree_float_operation(prs, operator);
 
-		if (prs->anst == IDENT)
+		if (prs->anst == ident)
 		{
 			totree(prs, ident_get_displ(prs->sx, lid));
 		}
 
-		prs->anst = VAL;
+		prs->anst = value;
 	}
 }
 
@@ -1442,24 +1457,24 @@ void parse_unary_expression(parser *const prs)
 			token_consume(prs);
 			parse_unary_expression(prs);
 
-			if (prs->anst != IDENT && prs->anst != ADDR)
+			if (anst_peek(prs) != ident && anst_peek(prs) != address)
 			{
 				parser_error(prs, unassignable_inc);
 			}
 
-			if (prs->anst == ADDR)
+			if (anst_peek(prs) == address)
 			{
 				operator += 4;
 			}
 
 			totree_float_operation(prs, operator);
 
-			if (prs->anst == IDENT)
+			if (anst_peek(prs) == ident)
 			{
 				totree(prs, ident_get_displ(prs->sx, prs->lastid));
 			}
 
-			prs->anst = VAL;
+			anst_push(prs, value, anst_pop(prs));
 		}
 		break;
 
@@ -1476,18 +1491,17 @@ void parse_unary_expression(parser *const prs)
 			{
 				case amp:
 				{
-					if (prs->anst == VAL)
+					if (anst_peek(prs) == value)
 					{
 						parser_error(prs, wrong_addr);
 					}
 
-					if (prs->anst == IDENT)
+					if (anst_peek(prs) == ident)
 					{
 						vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoaddr); // &a
 					}
 
-					prs->stackoperands[prs->sopnd] = prs->ansttype = (int)to_modetab(prs, mode_pointer, prs->ansttype);
-					prs->anst = VAL;
+					anst_push(prs, value, to_modetab(prs, mode_pointer, anst_pop(prs)));
 				}
 				break;
 
@@ -1503,8 +1517,7 @@ void parse_unary_expression(parser *const prs)
 						vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval); // *p
 					}
 
-					prs->stackoperands[prs->sopnd] = prs->ansttype = (int)mode_get(prs->sx, prs->ansttype + 1);
-					prs->anst = ADDR;
+					anst_push(prs, address, mode_get(prs->sx, anst_pop(prs) + 1));
 				}
 				break;
 
@@ -1539,7 +1552,7 @@ void parse_unary_expression(parser *const prs)
 							totree(prs, operator);
 						}
 
-						prs->anst = VAL;
+						anst_push(prs, value, anst_pop(prs));
 					}
 				}
 				break;
