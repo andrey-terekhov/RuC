@@ -135,7 +135,7 @@ anst_val anst_peek(parser *const prs)
 }
 
 
-void binop(parser *const prs, int sp)
+void binop(parser *const prs, size_t sp)
 {
 	int op = prs->stackop[sp];
 	int right = prs->stackoperands[prs->sopnd--];
@@ -1033,31 +1033,22 @@ void parse_primary_expression(parser *const prs)
 
 		case l_paren:
 			token_consume(prs);
-			if (prs->token == LVOID)
+			if (token_try_consume(prs, kw_void))
 			{
-				// TODO: мб перенести в unary или в отдельный cast expression?
-				scanner(prs);
-				must_be(prs, LMULT, no_mult_in_cast);
+				token_expect_and_consume(prs, star, no_mult_in_cast);
 				parse_unary_expression(prs);
-				if (prs->was_error == 7)
-				{
-					prs->was_error = 4;
-					return; // 1
-				}
+				token_expect_and_consume(prs, r_paren, no_rightbr_in_cast);
+				toval(prs);
+				totree(prs, TExprend);
+
 				if (!mode_is_pointer(prs->sx, prs->ansttype))
 				{
 					parser_error(prs, not_pointer_in_cast);
-					prs->was_error = 4;
-					return; // 1
 				}
-				must_be(prs, RIGHTBR, no_rightbr_in_cast);
-				toval(prs);
-				// totree(context, CASTC);
-				totree(prs, TExprend);
 			}
 			else
 			{
-				int oldsp = prs->sp;
+				const size_t oldsp = prs->sp;
 				expr(prs);
 				must_be(prs, RIGHTBR, wait_rightbr_in_primary);
 				while (prs->sp > oldsp)
@@ -1075,7 +1066,6 @@ void parse_primary_expression(parser *const prs)
 			}
 			else
 			{
-				token_consume(prs);
 				parser_error(prs, expected_expression, prs->token);
 				anst_push(prs, number, mode_undefined);
 				break;
@@ -1247,20 +1237,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	anst_push(prs, value, mode_get(prs->sx, function_mode + 1));
 }
 
-/**
- *	Parse postfix expression [C99 6.5.2]
- *
- *	postfix-expression:
- *		primary-expression
- *		postfix-expression '[' expression ']'
- *		postfix-expression '(' argument-expression-listopt ')'
- *		postfix-expression '.' identifier
- *		postfix-expression '->' identifier
- *		postfix-expression '++'
- *		postfix-expression '--'
- *
- *	@param	prs			Parser structure
- */
+/** Parse postfix expression */
 void parse_postfix_expression(parser *const prs)
 {
 	int was_func = 0;
@@ -1446,6 +1423,7 @@ void parse_postfix_expression(parser *const prs)
 	}
 }
 
+/** Parse unary expression */
 void parse_unary_expression(parser *const prs)
 {
 	token_t operator = prs->token;
@@ -1512,7 +1490,7 @@ void parse_unary_expression(parser *const prs)
 						parser_error(prs, aster_not_for_pointer);
 					}
 
-					if (prs->anst == IDENT)
+					if (anst_peek(prs) == ident)
 					{
 						vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval); // *p
 					}
@@ -1617,7 +1595,7 @@ int operator_precedence(const token_t operator)
 
 void subexpr(parser *const prs)
 {
-	int oldsp = prs->sp;
+	size_t oldsp = prs->sp;
 	int wasop = 0;
 
 	int p = operator_precedence(prs->token);
