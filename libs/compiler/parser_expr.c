@@ -1400,8 +1400,11 @@ void parse_postfix_expression(parser *const prs)
 		}
 	}
 
-	if (token_try_consume(prs, plusplus) || token_try_consume(prs, minusminus))
+	if (prs->token == plusplus || prs->token == minusminus)
 	{
+		int op = (prs->token == plusplus) ? POSTINC : POSTDEC;
+		token_consume(prs);
+
 		if (!mode_is_int(prs->ansttype) && !mode_is_float(prs->ansttype))
 		{
 			parser_error(prs, wrong_operand);
@@ -1411,8 +1414,6 @@ void parse_postfix_expression(parser *const prs)
 		{
 			parser_error(prs, unassignable_inc);
 		}
-
-		int op = (prs->token == plusplus) ? POSTINC : POSTDEC;
 
 		if (prs->anst == ADDR)
 		{
