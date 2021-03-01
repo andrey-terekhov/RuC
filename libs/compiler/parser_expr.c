@@ -1417,11 +1417,13 @@ void parse_postfix_expression(parser *const prs)
 
 		if (prs->anst == ADDR)
 		{
-			totree(prs, op + 4);
+			op += 4;
 		}
-		else
+
+		totree_float_operation(prs, op);
+
+		if (prs->anst == IDENT)
 		{
-			totree_float_operation(prs, op);
 			totree(prs, ident_get_displ(prs->sx, lid));
 		}
 
