@@ -1566,7 +1566,6 @@ void parse_unary_expression(parser *const prs)
 	}
 
 	parse_postfix_expression(prs);
-	prs->stackoperands[prs->sopnd] = prs->ansttype;
 }
 
 int operator_precedence(const token_t operator)
