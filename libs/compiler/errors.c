@@ -178,7 +178,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case no_leftbr_in_for: // test_exist
 			sprintf(msg, "в операторе цикла ДЛЯ нет (");
 			break;
-		case no_semicolon_in_for: // test_exist
+		case expected_semi_for: // test_exist
 			sprintf(msg, "в операторе цикла ДЛЯ нет ;");
 			break;
 		case no_rightbr_in_for: // test_exist

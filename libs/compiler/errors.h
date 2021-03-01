@@ -37,6 +37,9 @@ typedef enum ERROR
 
 	// Statement errors
 	expected_semi_after_stmt,			/**< Expected ';' after statement */
+	expected_lparen_after,
+	expected_rparen_after,
+	label_end_of_compound_statement,
 	case_not_in_switch,					/**< 'case' statement not in switch statement */
 	float_in_switch,
 	expected_colon_after_case,			/**< Expected ':' after 'case' */
@@ -44,7 +47,7 @@ typedef enum ERROR
 	expected_colon_after_default,		/**< Expected ':' after 'default' */
 	expected_while,						/**< Expected 'while' in do/while loop */
 	no_leftbr_in_for,
-	no_semicolon_in_for,
+	expected_semi_for,
 	no_rightbr_in_for,
 	no_ident_after_goto,
 	continue_not_in_loop,				/**< 'continue' statement not in loop statement */

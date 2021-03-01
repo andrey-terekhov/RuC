@@ -76,19 +76,32 @@ void parse_labeled_statement(parser *const prs)
 void parse_case_statement(parser *const prs)
 {
 	token_consume(prs); // kw_case
+	tree_add(prs->sx, TCase);
+
 	if (!prs->flag_in_switch)
 	{
 		parser_error(prs, case_not_in_switch);
 	}
 
-	tree_add(prs->sx, TCase);
-	const item_t condition_type = parse_constant_expression(prs);
-	if (!mode_is_int(condition_type) && !mode_is_undefined(condition_type))
+	const expr_result expression = parse_constant_expression(prs);
+	if (expression.was_error)
+	{
+		token_skip_until(prs, colon | semicolon | r_brace);
+	}
+	else if (!mode_is_int(expression.type) && !mode_is_undefined(expression.type))
 	{
 		parser_error(prs, float_in_switch);
 	}
 
 	token_expect_and_consume(prs, colon, expected_colon_after_case);
+
+	if (prs->token == r_brace)
+	{
+		// switch (X) {... case 4: }
+		parser_error(prs, label_end_of_compound_statement);
+		return;
+	}
+
 	parse_statement(prs);
 }
 
@@ -103,13 +116,22 @@ void parse_case_statement(parser *const prs)
 void parse_default_statement(parser *const prs)
 {
 	token_consume(prs); // kw_default
+	tree_add(prs->sx, TDefault);
+
 	if (!prs->flag_in_switch)
 	{
 		parser_error(prs, default_not_in_switch);
 	}
 
-	tree_add(prs->sx, TDefault);
 	token_expect_and_consume(prs, colon, expected_colon_after_default);
+
+	if (prs->token == r_brace)
+	{
+		// switch (X) {... default: }
+		parser_error(prs, label_end_of_compound_statement);
+		return;
+	}
+
 	parse_statement(prs);
 }
 
@@ -123,8 +145,16 @@ void parse_default_statement(parser *const prs)
  */
 void parse_expression_statement(parser *const prs)
 {
-	parse_expression(prs);
-	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+	const expr_result expression = parse_expression(prs);
+
+	if (expression.was_error)
+	{
+		token_skip_until(prs, semicolon | r_brace);
+	}
+	else
+	{
+		token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+	}
 }
 
 /**
@@ -142,9 +172,28 @@ void parse_if_statement(parser *const prs)
 	tree_add(prs->sx, TIf);
 	const size_t ref_else = tree_reserve(prs->sx);
 
-	parse_parenthesized_expression(prs);
-	parse_statement(prs);
+	if (!token_try_consume(prs, l_paren))
+	{
+		parser_error(prs, expected_lparen_after, kw_if);
+		token_skip_until(prs, semicolon);
+		return;
+	}
 
+	const expr_result condition = parse_condition(prs);
+
+	if (condition.was_error)
+	{
+		token_skip_until(prs, semicolon);
+		return;
+	}
+	else if (!token_try_consume(prs, r_paren))
+	{
+		parser_error(prs, expected_rparen_after, kw_if);
+		prs->token == l_brace ? token_skip_until(prs, r_brace) : token_skip_until(prs, semicolon);
+		return;
+	}
+
+	parse_statement(prs);
 	if (token_try_consume(prs, kw_else))
 	{
 		tree_set(prs->sx, ref_else, (item_t)tree_size(prs->sx));
@@ -165,8 +214,27 @@ void parse_switch_statement(parser *const prs)
 	token_consume(prs); // kw_switch
 	tree_add(prs->sx, TSwitch);
 
-	const item_t condition_type = parse_parenthesized_expression(prs);
-	if (!mode_is_int(condition_type) && !mode_is_undefined(condition_type))
+	if (!token_try_consume(prs, l_paren))
+	{
+		parser_error(prs, expected_lparen_after, kw_switch);
+		token_skip_until(prs, semicolon);
+		return;
+	}
+
+	const expr_result condition = parse_condition(prs);
+
+	if (condition.was_error)
+	{
+		token_skip_until(prs, semicolon);
+		return;
+	}
+	else if (!token_try_consume(prs, r_paren))
+	{
+		parser_error(prs, expected_rparen_after, kw_switch);
+		prs->token == l_brace ? token_skip_until(prs, r_brace) : token_skip_until(prs, semicolon);
+		return;
+	}
+	else if (!mode_is_int(condition.type) && !mode_is_undefined(condition.type))
 	{
 		parser_error(prs, float_in_switch);
 	}
@@ -190,7 +258,26 @@ void parse_while_statement(parser *const prs)
 	token_consume(prs); // kw_while
 	tree_add(prs->sx, TWhile);
 
-	parse_parenthesized_expression(prs);
+	if (!token_try_consume(prs, l_paren))
+	{
+		parser_error(prs, expected_lparen_after, kw_while);
+		token_skip_until(prs, semicolon);
+		return;
+	}
+
+	const expr_result condition = parse_condition(prs);
+
+	if (condition.was_error)
+	{
+		token_skip_until(prs, semicolon);
+		return;
+	}
+	else if (!token_try_consume(prs, r_paren))
+	{
+		parser_error(prs, expected_rparen_after, kw_while);
+		prs->token == l_brace ? token_skip_until(prs, r_brace) : token_skip_until(prs, semicolon);
+		return;
+	}
 
 	const int old_in_loop = prs->flag_in_loop;
 	prs->flag_in_loop = 1;
@@ -218,7 +305,26 @@ void parse_do_statement(parser *const prs)
 
 	if (token_try_consume(prs, kw_while))
 	{
-		parse_parenthesized_expression(prs);
+		if (!token_try_consume(prs, l_paren))
+		{
+			parser_error(prs, expected_lparen_after, kw_while);
+			token_skip_until(prs, semicolon);
+			return;
+		}
+
+		const expr_result condition = parse_condition(prs);
+
+		if (condition.was_error)
+		{
+			token_skip_until(prs, semicolon);
+			return;
+		}
+		else if (!token_try_consume(prs, r_paren))
+		{
+			parser_error(prs, expected_rparen_after, kw_while);
+			token_skip_until(prs, semicolon);
+			return;
+		}
 	}
 	else
 	{
@@ -243,32 +349,71 @@ void parse_for_statement(parser *const prs)
 	token_consume(prs); // kw_for
 	tree_add(prs->sx, TFor);
 
+	if (!token_try_consume(prs, l_paren))
+	{
+		parser_error(prs, expected_lparen_after, kw_for);
+		token_skip_until(prs, semicolon);
+		return;
+	}
+
 	const size_t ref_inition = tree_reserve(prs->sx);
 	const size_t ref_condition = tree_reserve(prs->sx);
 	const size_t ref_increment = tree_reserve(prs->sx);
 	const size_t ref_statement = tree_reserve(prs->sx);
-	token_expect_and_consume(prs, l_paren, no_leftbr_in_for);
 
 	if (!token_try_consume(prs, semicolon))
 	{
+		const expr_result inition = parse_expression(prs);
 		tree_set(prs->sx, ref_inition, (item_t)tree_size(prs->sx));
-		parse_expression(prs);
-		token_expect_and_consume(prs, semicolon, no_semicolon_in_for);
+		if (inition.was_error)
+		{
+			token_skip_until(prs, r_paren | semicolon);
+			token_try_consume(prs, semicolon);
+		}
+		else if (!token_try_consume(prs, semicolon))
+		{
+			parser_error(prs, expected_semi_for);
+			token_skip_until(prs, r_paren | semicolon);
+			token_try_consume(prs, semicolon);
+		}
 	}
 
 	if (!token_try_consume(prs, semicolon))
 	{
+		const expr_result condition = parse_condition(prs);
 		tree_set(prs->sx, ref_condition, (item_t)tree_size(prs->sx));
-		parse_condition(prs);
-		token_expect_and_consume(prs, semicolon, no_semicolon_in_for);
+		if (condition.was_error)
+		{
+			token_skip_until(prs, r_paren | semicolon);
+			token_try_consume(prs, semicolon);
+		}
+		else if (!token_try_consume(prs, semicolon))
+		{
+			parser_error(prs, expected_semi_for);
+			token_skip_until(prs, r_paren | semicolon);
+			token_try_consume(prs, semicolon);
+		}
 	}
 
 	if (!token_try_consume(prs, r_paren))
 	{
+		const expr_result increment = parse_expression(prs);
 		tree_set(prs->sx, ref_increment, (item_t)tree_size(prs->sx));
-		parse_expression(prs);
-		token_expect_and_consume(prs, r_paren, no_rightbr_in_for);
+		if (increment.was_error)
+		{
+			token_skip_until(prs, r_paren | semicolon);
+			token_try_consume(prs, semicolon);
+		}
+		else if (!token_try_consume(prs, r_paren))
+		{
+			parser_error(prs, no_rightbr_in_for);
+			token_skip_until(prs, r_paren | semicolon);
+			token_try_consume(prs, semicolon);
+		}
 	}
+
+	// На тот случай, если при восстановлении остановились на ')'
+	token_try_consume(prs, r_paren);
 
 	tree_set(prs->sx, ref_statement, (item_t)tree_size(prs->sx));
 	const int old_in_loop = prs->flag_in_loop;
@@ -330,13 +475,13 @@ void parse_goto_statement(parser *const prs)
 void parse_continue_statement(parser *const prs)
 {
 	token_consume(prs); // kw_continue
+	tree_add(prs->sx, TContinue);
+	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+
 	if (!prs->flag_in_loop)
 	{
 		parser_error(prs, continue_not_in_loop);
 	}
-
-	tree_add(prs->sx, TContinue);
-	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
 }
 
 /**
@@ -350,13 +495,13 @@ void parse_continue_statement(parser *const prs)
 void parse_break_statement(parser *const prs)
 {
 	token_consume(prs); // kw_break
+	tree_add(prs->sx, TBreak);
+	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+
 	if (!(prs->flag_in_loop || prs->flag_in_switch))
 	{
 		parser_error(prs, break_not_in_loop_or_switch);
 	}
-
-	tree_add(prs->sx, TBreak);
-	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
 }
 
 /**
@@ -391,14 +536,19 @@ void parse_return_statement(parser *const prs)
 		tree_add(prs->sx, TReturnval);
 		tree_add(prs->sx, (item_t)size_of(prs->sx, return_type));
 
-		const item_t expr_type = parse_assignment_expression(prs);
-		if (!mode_is_undefined(expr_type) && !mode_is_undefined(return_type))
+		const expr_result expression = parse_assignment_expression(prs);
+		if (expression.was_error)
 		{
-			if (mode_is_float(return_type) && mode_is_int(expr_type))
+			token_skip_until(prs, semicolon | r_brace);
+			return;
+		}
+		if (!mode_is_undefined(expression.type) && !mode_is_undefined(return_type))
+		{
+			if (mode_is_float(return_type) && mode_is_int(expression.type))
 			{
 				parse_insert_widen(prs);
 			}
-			else if (return_type != expr_type)
+			else if (return_type != expression.type)
 			{
 				parser_error(prs, bad_type_in_ret);
 			}
@@ -453,15 +603,15 @@ void parse_print_statement(parser *const prs)
 	token_consume(prs); // kw_print
 	token_expect_and_consume(prs, l_paren, print_without_br);
 
-	const item_t type = parse_assignment_expression(prs);
-	if (mode_is_pointer(prs->sx, type))
+	const expr_result expression = parse_assignment_expression(prs);
+	if (mode_is_pointer(prs->sx, expression.type))
 	{
 		parser_error(prs, pointer_in_print);
 	}
 
 	vector_remove(&prs->sx->tree);
 	tree_add(prs->sx, TPrint);
-	tree_add(prs->sx, type);
+	tree_add(prs->sx, expression.type);
 	tree_add(prs->sx, TExprend);
 
 	token_expect_and_consume(prs, r_paren, print_without_br);
@@ -590,17 +740,17 @@ void parse_printf_statement(parser *const prs)
 	const size_t expected_args = evaluate_args(prs, format_length, format_str, format_types, placeholders);
 	while (token_try_consume(prs, comma) && actual_args != expected_args)
 	{
-		const item_t type = parse_assignment_expression(prs);
-		if (mode_is_float(format_types[actual_args]) && mode_is_int(type))
+		const expr_result expression = parse_assignment_expression(prs);
+		if (mode_is_float(format_types[actual_args]) && mode_is_int(expression.type))
 		{
 			parse_insert_widen(prs);
 		}
-		else if (format_types[actual_args] != type)
+		else if (format_types[actual_args] != expression.type)
 		{
 			parser_error(prs, wrong_printf_param_type, placeholders[actual_args]);
 		}
 
-		sum_size += size_of(prs->sx, type);
+		sum_size += size_of(prs->sx, expression.type);
 		actual_args++;
 	}
 
@@ -777,21 +927,13 @@ void parse_statement_compound(parser *const prs, const block_t type)
 	}
 
 	const token_t end_token = (type == THREAD) ? kw_exit : r_brace;
-	if (token_try_consume(prs, end_token))
+	while (prs->token != eof && prs->token != end_token)
 	{
-		// Если это пустой блок
-		tree_add(prs->sx, NOP);
+		parse_block_item(prs);
+		// Почему не ловилась ошибка, если в блоке нити встретилась '}'?
 	}
-	else
-	{
-		do
-		{
-			parse_block_item(prs);
-			// Почему не ловилась ошибка, если в блоке нити встретилась '}'?
-		} while (prs->token != eof && prs->token != end_token);
 
-		token_expect_and_consume(prs, end_token, expected_end);
-	}
+	token_expect_and_consume(prs, end_token, expected_end);
 
 	if (type != FUNCBODY)
 	{
