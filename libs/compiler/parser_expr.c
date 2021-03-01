@@ -19,7 +19,7 @@
 #include <string.h>
 
 
-void unarexpr(parser *const prs);
+void parse_unary_expression(parser *const prs);
 void exprassn(parser *const prs);
 void expr(parser *const prs);
 
@@ -1023,7 +1023,7 @@ void parse_primary_expression(parser *const prs)
 				// TODO: мб перенести в unary или в отдельный cast expression?
 				scanner(prs);
 				must_be(prs, LMULT, no_mult_in_cast);
-				unarexpr(prs);
+				parse_unary_expression(prs);
 				if (prs->was_error == 7)
 				{
 					prs->was_error = 4;
@@ -1402,7 +1402,7 @@ void parse_postfix_expression(parser *const prs)
 
 	if (prs->token == plusplus || prs->token == minusminus)
 	{
-		int op = (prs->token == plusplus) ? POSTINC : POSTDEC;
+		int operator = (prs->token == plusplus) ? POSTINC : POSTDEC;
 		token_consume(prs);
 
 		if (!mode_is_int(prs->ansttype) && !mode_is_float(prs->ansttype))
@@ -1417,10 +1417,10 @@ void parse_postfix_expression(parser *const prs)
 
 		if (prs->anst == ADDR)
 		{
-			op += 4;
+			operator += 4;
 		}
 
-		totree_float_operation(prs, op);
+		totree_float_operation(prs, operator);
 
 		if (prs->anst == IDENT)
 		{
@@ -1431,135 +1431,129 @@ void parse_postfix_expression(parser *const prs)
 	}
 }
 
-void unarexpr(parser *const prs)
+void parse_unary_expression(parser *const prs)
 {
-	int op = prs->token;
-	if (prs->token == LNOT || prs->token == LOGNOT || prs->token == LPLUS || prs->token == LMINUS ||
-		prs->token == LAND || prs->token == LMULT || prs->token == INC || prs->token == DEC)
+	token_t operator = prs->token;
+	switch (operator)
 	{
-		if (prs->token == INC || prs->token == DEC)
+		case plusplus:
+		case minusminus:
 		{
-			scanner(prs);
-			unarexpr(prs);
-			if (prs->was_error == 7)
-			{
-				return; // 1
-			}
+			token_consume(prs);
+			parse_unary_expression(prs);
+
 			if (prs->anst != IDENT && prs->anst != ADDR)
 			{
 				parser_error(prs, unassignable_inc);
-				prs->was_error = 7;
-				return; // 1
 			}
+
 			if (prs->anst == ADDR)
 			{
-				op += 4;
+				operator += 4;
 			}
-			totree_float_operation(prs, op);
+
+			totree_float_operation(prs, operator);
+
 			if (prs->anst == IDENT)
 			{
 				totree(prs, ident_get_displ(prs->sx, prs->lastid));
 			}
+
 			prs->anst = VAL;
 		}
-		else
+		break;
+
+		case exclaim:
+		case tilde:
+		case plus:
+		case minus:
+		case amp:
+		case star:
 		{
-			scanner(prs);
-			unarexpr(prs);
-			if (prs->was_error == 7)
+			token_consume(prs);
+			parse_unary_expression(prs);
+			switch (operator)
 			{
-				return; // 1
-			}
-
-			if (op == LAND)
-			{
-				if (prs->anst == VAL)
+				case amp:
 				{
-					parser_error(prs, wrong_addr);
-					prs->was_error = 7;
-					return; // 1
-				}
-
-				if (prs->anst == IDENT)
-				{
-					vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoaddr); // &a
-				}
-
-				prs->stackoperands[prs->sopnd] = prs->ansttype =
-				(int)to_modetab(prs, mode_pointer, prs->ansttype);
-				prs->anst = VAL;
-			}
-			else if (op == LMULT)
-			{
-				if (!mode_is_pointer(prs->sx, prs->ansttype))
-				{
-					parser_error(prs, aster_not_for_pointer);
-					prs->was_error = 7;
-					return; // 1
-				}
-
-				if (prs->anst == IDENT)
-				{
-					vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval); // *p
-				}
-
-				prs->stackoperands[prs->sopnd] = prs->ansttype = (int)mode_get(prs->sx, prs->ansttype + 1);
-				prs->anst = ADDR;
-			}
-			else
-			{
-				toval(prs);
-				if ((op == LNOT || op == LOGNOT) && prs->ansttype == LFLOAT)
-				{
-					parser_error(prs, int_op_for_float);
-					prs->was_error = 7;
-					return; // 1
-				}
-				else if (op == LMINUS)
-				{
-					const size_t size = vector_size(&TREE);
-					if (vector_get(&TREE, size - 2) == TConst)
+					if (prs->anst == VAL)
 					{
-						vector_set(&TREE, vector_size(&TREE) - 1, -vector_get(&TREE, vector_size(&TREE) - 1));
+						parser_error(prs, wrong_addr);
 					}
-					else if (vector_get(&TREE, size - 3) == TConstd)
+
+					if (prs->anst == IDENT)
 					{
-						double_to_tree(&TREE, -double_from_tree(&TREE));
+						vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoaddr); // &a
+					}
+
+					prs->stackoperands[prs->sopnd] = prs->ansttype = (int)to_modetab(prs, mode_pointer, prs->ansttype);
+					prs->anst = VAL;
+				}
+				break;
+
+				case star:
+				{
+					if (!mode_is_pointer(prs->sx, prs->ansttype))
+					{
+						parser_error(prs, aster_not_for_pointer);
+					}
+
+					if (prs->anst == IDENT)
+					{
+						vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval); // *p
+					}
+
+					prs->stackoperands[prs->sopnd] = prs->ansttype = (int)mode_get(prs->sx, prs->ansttype + 1);
+					prs->anst = ADDR;
+				}
+				break;
+
+				default:
+				{
+					toval(prs);
+					if (operator == minus)
+					{
+						const size_t size = vector_size(&TREE);
+						if (vector_get(&TREE, size - 2) == TConst)
+						{
+							vector_set(&TREE, vector_size(&TREE) - 1, -vector_get(&TREE, vector_size(&TREE) - 1));
+						}
+						else if (vector_get(&TREE, size - 3) == TConstd)
+						{
+							double_to_tree(&TREE, -double_from_tree(&TREE));
+						}
+						else
+						{
+							totree_float_operation(prs, UNMINUS);
+						}
 					}
 					else
 					{
-						totree_float_operation(prs, UNMINUS);
+						if ((operator == tilde || operator == exclaim) && mode_is_float(prs->ansttype))
+						{
+							parser_error(prs, int_op_for_float);
+						}
+
+						if (operator != plus)
+						{
+							totree(prs, operator);
+						}
+
+						prs->anst = VAL;
 					}
 				}
-				else if (op == LPLUS)
-				{
-					;
-				}
-				else
-				{
-					totree(prs, op);
-				}
-				prs->anst = VAL;
+				break;
 			}
 		}
-	}
-	else
-	{
-		parse_primary_expression(prs);
-		if (prs->was_error == 4)
-		{
-			prs->was_error = 7;
-			return; // 1
-		}
+		break;
+
+		default:
+			parse_primary_expression(prs);
+			break;
 	}
 
-	parse_postfix_expression(prs); // 0
+	parse_postfix_expression(prs);
 	prs->stackoperands[prs->sopnd] = prs->ansttype;
-	if (prs->was_error == 4)
-	{
-		prs->was_error = 7;
-		return; // 1
-	}
 }
 
 int operator_precedence(const token_t operator)
@@ -1640,7 +1634,7 @@ void subexpr(parser *const prs)
 		prs->stacklog[prs->sp] = (int)ad;
 		prs->stackop[prs->sp++] = prs->token;
 		scanner(prs);
-		unarexpr(prs);
+		parse_unary_expression(prs);
 		if (prs->was_error == 7)
 		{
 			prs->was_error = 5;
@@ -1719,7 +1713,7 @@ void condexpr(parser *const prs)
 				adif = vector_size(&TREE) - 1;
 			}
 			must_be(prs, COLON, no_colon_in_cond_expr);
-			unarexpr(prs);
+			parse_unary_expression(prs);
 			if (prs->was_error == 7)
 			{
 				prs->was_error = 4;
@@ -1799,7 +1793,7 @@ void exprassn(parser *const prs)
 	}
 	else
 	{
-		unarexpr(prs);
+		parse_unary_expression(prs);
 	}
 	if (prs->was_error == 7)
 	{
@@ -1988,7 +1982,7 @@ item_t parse_parenthesized_expression(parser *const prs)
 
 item_t parse_constant_expression(parser *const prs)
 {
-	unarexpr(prs);
+	parse_unary_expression(prs);
 	condexpr(prs);
 	toval(prs);
 	totree(prs, TExprend);
