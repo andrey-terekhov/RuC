@@ -1517,7 +1517,7 @@ void parse_unary_expression(parser *const prs)
 						vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval); // *p
 					}
 
-					anst_push(prs, address, mode_get(prs->sx, anst_pop(prs) + 1));
+					anst_push(prs, address, mode_get(prs->sx, (size_t)anst_pop(prs) + 1));
 				}
 				break;
 
