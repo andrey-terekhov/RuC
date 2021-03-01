@@ -61,8 +61,6 @@ typedef struct parser
 
 	size_t lastid;	// useless
 	int op;			// useless
-	int buf_flag;	// useless
-	int buf_cur;	// useless
 
 	int func_def;				/**< @c 0 for function without arguments,
 								 @c 1 for function definition,

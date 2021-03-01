@@ -407,13 +407,16 @@ void mustberowoffloat(parser *const prs)
 
 void parse_standard_function_call(parser *const prs)
 {
-	int func = prs->token;
+	token_t func = prs->token;
 	token_consume(prs);
 
-	if (!token_try_consume(prs, LEFTBR))
+	if (!token_try_consume(prs, l_paren))
 	{
 		parser_error(prs, no_leftbr_in_stand_func);
+		token_skip_until(prs, r_paren | semicolon);
+		return;
 	}
+	
 	if (func == ASSERT)
 	{
 		mustbeint(prs);
@@ -1396,34 +1399,31 @@ void parse_postfix_expression(parser *const prs)
 			}
 		}
 	}
-	if (prs->token == INC || prs->token == DEC) // a++, a--
-	{
-		int op;
 
+	if (token_try_consume(prs, plusplus) || token_try_consume(prs, minusminus))
+	{
 		if (!mode_is_int(prs->ansttype) && !mode_is_float(prs->ansttype))
 		{
 			parser_error(prs, wrong_operand);
-			prs->was_error = 4;
-			return; // 1
 		}
 
 		if (prs->anst != IDENT && prs->anst != ADDR)
 		{
 			parser_error(prs, unassignable_inc);
-			prs->was_error = 4;
-			return; // 1
 		}
-		op = (prs->token == INC) ? POSTINC : POSTDEC;
+
+		int op = (prs->token == plusplus) ? POSTINC : POSTDEC;
+
 		if (prs->anst == ADDR)
 		{
-			op += 4;
+			totree(prs, op + 4);
 		}
-		scanner(prs);
-		totree_float_operation(prs, op);
-		if (prs->anst == IDENT)
+		else
 		{
+			totree_float_operation(prs, op);
 			totree(prs, ident_get_displ(prs->sx, lid));
 		}
+
 		prs->anst = VAL;
 	}
 }
