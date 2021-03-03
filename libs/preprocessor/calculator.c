@@ -20,6 +20,7 @@
 #include "macro_load.h"
 #include "linker.h"
 #include "utils.h"
+#include "string.h"
 #include <math.h>
 
 
@@ -241,37 +242,27 @@ double calc_count(const double x, const double y, const char operation, const in
 
 void double_to_string(environment *const env, const double x, const int is_int)
 {
-	char s[30] = "\0";
-
 	if (is_int)
 	{
-		sprintf(s, "%f", x);
-		for (env->calc_string_size = 0; env->calc_string_size < 20; env->calc_string_size++)
+		sprintf(env->calc_string, "%f", x);
+		char *dot = strchr(env->calc_string, '.');
+		if(dot != 0)
 		{
-			env->calc_string[env->calc_string_size] = s[env->calc_string_size];
-
-			if (s[env->calc_string_size] == '.')
-			{
-				return;
-			}
+			dot[0] = '\0';
 		}
 	}
 	else
-	{
-		int l = 0;
-
-		sprintf(s, "%.14lf", x);
-		for (env->calc_string_size = 0; env->calc_string_size < 20; env->calc_string_size++)
+	{	
+		sprintf(env->calc_string, "%.14lf", x);
+		size_t lenght = strlen(env->calc_string) - 1;
+		while (env->calc_string[lenght] == '0' || !utf8_is_digit(env->calc_string[lenght]))
 		{
-			env->calc_string[env->calc_string_size] = s[env->calc_string_size];
-
-			if (s[env->calc_string_size] != '0' && utf8_is_digit(s[env->calc_string_size]))
-			{
-				l = env->calc_string_size;
-			}
+			lenght--;
 		}
-		env->calc_string_size = l + 1;
+		env->calc_string[lenght + 1] = '\0';
 	}
+
+	env->calc_string_size = strlen(env->calc_string);
 }
 
 int calc_macro(environment *const env)
@@ -499,11 +490,11 @@ int calculate(environment *const env, const int type)
 
 		if (stack[0] == 0)
 		{
-			env->calc_string[0] = 0;
+			env->calc_string[0] = '0';
 		}
 		else
 		{
-			env->calc_string[0] = 1;
+			env->calc_string[0] = '1';
 		}
 	}
 	else

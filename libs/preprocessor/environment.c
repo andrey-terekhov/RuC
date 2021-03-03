@@ -52,6 +52,7 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->nested_if = 0;
 	env->flagint = 1;
 	env->error_string[0] = '\0';
+	env->calc_string[0] = '\0';
 
 	for (size_t i = 0; i < HASH; i++)
 	{
@@ -67,7 +68,6 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	{
 		env->mstring[i] = 0;
 		env->localstack[i] = 0;
-		env->calc_string[i] = 0;
 	}
 
 	for (size_t i = 0; i < STRING_SIZE * 3; i++)

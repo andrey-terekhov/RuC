@@ -35,7 +35,15 @@ int if_check(environment *const env, int type_if)
 		{
 			return -1;
 		}
-		return env->calc_string[0];
+
+		if (env->calc_string[0] == '0')
+		{
+			return 0;
+		}
+		else
+		{
+			return 1;
+		}
 	}
 	else
 	{
@@ -311,7 +319,7 @@ int while_implementation(environment *const env)
 		m_old_nextch_type(env);
 
 
-		if (env->calc_string[0] == 0)
+		if (env->calc_string[0] == '0')
 		{
 			env->nextp = end;
 			m_nextch(env);

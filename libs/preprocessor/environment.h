@@ -46,7 +46,7 @@ typedef struct environment
 	int localstack[STRING_SIZE];
 	size_t local_stack_size;
 
-	int calc_string[STRING_SIZE];
+	char calc_string[STRING_SIZE];
 	size_t calc_string_size;
 
 	int if_string[STRING_SIZE * 2];
