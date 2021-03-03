@@ -21,7 +21,7 @@
 
 #ifdef __APPLE__
 	#include <stdint.h>
-	
+
 	typedef uint32_t char32_t;
 #else
 	#include <uchar.h>
@@ -89,6 +89,15 @@ EXPORTED size_t utf8_to_cp866(const char *const src, char *const dest);
  *	@return	Size of destination string
  */
 EXPORTED size_t utf8_to_cp1251(const char *const src, char *const dest);
+
+/**
+ *	Convert UTF-8 symbol to upper case
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	Upper case character
+ */
+EXPORTED char32_t utf8_to_upper(const char32_t symbol);
 
 /**
  *	Checks if сharacter is russian letter

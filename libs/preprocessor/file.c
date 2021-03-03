@@ -16,8 +16,9 @@
 
 #include "file.h"
 #include "constants.h"
-#include "context_var.h"
+#include "environment.h"
 #include "error.h"
+#include "linker.h"
 #include "utils.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
@@ -28,7 +29,7 @@
 #include <string.h>
 
 
-void m_nextch(preprocess_context *context);
+void m_nextch(environment *const env);
 
 
 size_t strlen32(const char32_t *const str)
@@ -46,197 +47,199 @@ size_t strlen32(const char32_t *const str)
 	return i;
 }
 
-int get_next_char(preprocess_context *context)
+int get_next_char(environment *const env)
 {
-	context->nextchar = uni_scan_char(context->io_input);
-	if (context->nextchar == U'\r')
+	env->nextchar = uni_scan_char(env->input);
+	if (env->nextchar == U'\r')
 	{
-		return get_next_char(context);
+		return get_next_char(env);
 	}
-	return context->nextchar;
+	return env->nextchar;
 }
 
-int get_dipp(preprocess_context *context)
+int get_dipp(environment *const env)
 {
-	return context->dipp;
+	return env->dipp;
 }
 
-void m_change_nextch_type(int type, int p, preprocess_context *context)
+void m_change_nextch_type(int type, int p, environment *const env)
 {
-	context->oldcurchar[context->dipp] = context->curchar;
-	context->oldnextchar[context->dipp] = context->nextchar;
-	context->oldnextch_type[context->dipp] = context->nextch_type;
-	context->oldnextp[context->dipp] = context->nextp;
-	context->nextp = p;
-	context->dipp++;
-	context->nextch_type = type;
+	env->oldcurchar[env->dipp] = env->curchar;
+	env->oldnextchar[env->dipp] = env->nextchar;
+	env->oldnextch_type[env->dipp] = env->nextch_type;
+	env->oldnextp[env->dipp] = env->nextp;
+	env->nextp = p;
+	env->dipp++;
+	env->nextch_type = type;
 }
 
-void m_old_nextch_type(preprocess_context *context)
+void m_old_nextch_type(environment *const env)
 {
-	context->dipp--;
-	context->curchar = context->oldcurchar[context->dipp];
-	context->nextchar = context->oldnextchar[context->dipp];
-	context->nextch_type = context->oldnextch_type[context->dipp];
-	context->nextp = context->oldnextp[context->dipp];
+	env->dipp--;
+	env->curchar = env->oldcurchar[env->dipp];
+	env->nextchar = env->oldnextchar[env->dipp];
+	env->nextch_type = env->oldnextch_type[env->dipp];
+	env->nextp = env->oldnextp[env->dipp];
 }
 
-void end_line(preprocess_context *context)
+void end_line(environment *const env)
 {
-	context->line++;
+	env->line++;
 }
 
-void m_onemore(preprocess_context *context)
+void m_onemore(environment *const env)
 {
-	context->curchar = context->nextchar;
+	env->curchar = env->nextchar;
 
-	get_next_char(context);
+	get_next_char(env);
 
-	if (context->curchar == EOF)
+	if (env->curchar == EOF)
 	{
-		context->nextchar = EOF;
-		end_line(context);
+		env->nextchar = EOF;
+		end_line(env);
 	}
 }
 
 
-void m_fprintf(int a, preprocess_context *context)
+void m_fprintf(int a, environment *const env)
 {
-	uni_print_char(context->io_output, a);
+	uni_print_char(env->output, a);
 }
 
-void m_coment_skip(preprocess_context *context)
+void m_coment_skip(environment *const env)
 {
-	if (context->curchar == '/' && context->nextchar == '/')
+	if (env->curchar == '/' && env->nextchar == '/')
 	{
 		do
 		{
 			// m_fprintf_com();
-			m_onemore(context);
+			m_onemore(env);
 
-			if (context->curchar == EOF)
+			if (env->curchar == EOF)
 			{
 				return;
 			}
-		} while (context->curchar != '\n');
+		} while (env->curchar != '\n');
 	}
 
-	if (context->curchar == '/' && context->nextchar == '*')
+	if (env->curchar == '/' && env->nextchar == '*')
 	{
 		// m_fprintf_com();
-		m_onemore(context);
+		m_onemore(env);
 		// m_fprintf_com();
 
 		do
 		{
-			m_onemore(context);
+			m_onemore(env);
 			// m_fprintf_com();
-			if (context->curchar == '\n')
+			if (env->curchar == '\n')
 			{
-				end_line(context);
+				end_line(env);
 			}
 
-			if (context->curchar == EOF)
+			if (env->curchar == EOF)
 			{
-				size_t position = skip_str(context); 
-				macro_error(comm_not_ended, ws_get_file(context->fs.ws, context->fs.cur),  context->error_string, context->line, position);
-				end_line(context);
+				size_t position = skip_str(env); 
+				macro_error(comm_not_ended
+			, lk_get_current(env->lk)
+			, env->error_string, env->line, position);
+				end_line(env);
 				return;
 			}
-		} while (context->curchar != '*' || context->nextchar != '/');
+		} while (env->curchar != '*' || env->nextchar != '/');
 
-		m_onemore(context);
+		m_onemore(env);
 		// m_fprintf_com();
-		context->curchar = ' ';
+		env->curchar = ' ';
 	}
 }
 
-void m_nextch_cange(preprocess_context *context)
+void m_nextch_cange(environment *const env)
 {
-	m_nextch(context);
-	m_change_nextch_type(FTYPE, context->localstack[context->curchar + context->lsp], context);
-	m_nextch(context);
+	m_nextch(env);
+	m_change_nextch_type(FTYPE, env->localstack[env->curchar + env->lsp], env);
+	m_nextch(env);
 }
 
-void m_nextch(preprocess_context *context)
+void m_nextch(environment *const env)
 {
-	if (context->nextch_type != FILETYPE && context->nextch_type <= TEXTTYPE)
+	if (env->nextch_type != FILETYPE && env->nextch_type <= TEXTTYPE)
 	{
-		if (context->nextch_type == MTYPE && context->nextp < context->msp)
+		if (env->nextch_type == MTYPE && env->nextp < env->msp)
 		{
-			context->curchar = context->mstring[context->nextp++];
-			context->nextchar = context->mstring[context->nextp];
+			env->curchar = env->mstring[env->nextp++];
+			env->nextchar = env->mstring[env->nextp];
 		}
-		else if (context->nextch_type == CTYPE && context->nextp < context->csp)
+		else if (env->nextch_type == CTYPE && env->nextp < env->csp)
 		{
-			context->curchar = context->cstring[context->nextp++];
-			context->nextchar = context->cstring[context->nextp];
+			env->curchar = env->cstring[env->nextp++];
+			env->nextchar = env->cstring[env->nextp];
 		}
-		else if (context->nextch_type == IFTYPE && context->nextp < context->ifsp)
+		else if (env->nextch_type == IFTYPE && env->nextp < env->ifsp)
 		{
-			context->curchar = context->ifstring[context->nextp++];
-			context->nextchar = context->ifstring[context->nextp];
+			env->curchar = env->ifstring[env->nextp++];
+			env->nextchar = env->ifstring[env->nextp];
 		}
-		else if (context->nextch_type == WHILETYPE && context->nextp < context->wsp)
+		else if (env->nextch_type == WHILETYPE && env->nextp < env->wsp)
 		{
-			context->curchar = context->wstring[context->nextp++];
-			context->nextchar = context->wstring[context->nextp];
+			env->curchar = env->wstring[env->nextp++];
+			env->nextchar = env->wstring[env->nextp];
 		}
-		else if (context->nextch_type == TEXTTYPE && context->nextp < context->mp)
+		else if (env->nextch_type == TEXTTYPE && env->nextp < env->mp)
 		{
-			context->curchar = context->macrotext[context->nextp++];
-			context->nextchar = context->macrotext[context->nextp];
+			env->curchar = env->macrotext[env->nextp++];
+			env->nextchar = env->macrotext[env->nextp];
 
-			if(context->curchar == '\n')
+			if(env->curchar == '\n')
 			{
-				con_file_print_coment(&context->fs, context);
+				lk_add_comment(env);
 			}
-			else if (context->curchar == MACROCANGE)
+			else if (env->curchar == MACROCANGE)
 			{
-				m_nextch_cange(context);
+				m_nextch_cange(env);
 			}
-			else if (context->curchar == MACROEND)
+			else if (env->curchar == MACROEND)
 			{
-				m_old_nextch_type(context);
+				m_old_nextch_type(env);
 			}
 		}
-		else if (context->nextch_type == FTYPE)
+		else if (env->nextch_type == FTYPE)
 		{
-			context->curchar = context->fchange[context->nextp++];
-			context->nextchar = context->fchange[context->nextp];
+			env->curchar = env->fchange[env->nextp++];
+			env->nextchar = env->fchange[env->nextp];
 
-			if (context->curchar == CANGEEND)
+			if (env->curchar == CANGEEND)
 			{
-				m_old_nextch_type(context);
-				m_nextch(context);
+				m_old_nextch_type(env);
+				m_nextch(env);
 			}
 		}
 		else
 		{
-			m_old_nextch_type(context);
+			m_old_nextch_type(env);
 		}
 	}
 	else
 	{
-		m_onemore(context);
+		m_onemore(env);
 
-		m_coment_skip(context);
+		m_coment_skip(env);
 
-		if (context->curchar == '\n')
+		if (env->curchar == '\n')
 		{
-			end_line(context);
+			end_line(env);
 		}
 	}
 
-	if (context->curchar != '\n')
+	if (env->curchar != '\n' && env->curchar != EOF)
 	{
-		context->error_string[context->position++] = (char)context->curchar;
-		context->error_string[context->position] = '\0';
+		env->error_string[env->position++] = (char)env->curchar;
+		env->error_string[env->position] = '\0';
 	}
 	else
 	{
-		context->position = 0;
+		env_clear_error_string(env);
 	}
-	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", context->nextch_type,
-	// context->curchar, context->curchar, context->nextchar, context->nextchar);
+	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", env->nextch_type,
+	// env->curchar, env->curchar, env->nextchar, env->nextchar);
 }

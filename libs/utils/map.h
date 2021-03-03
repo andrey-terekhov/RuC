@@ -78,7 +78,7 @@ EXPORTED size_t map_reserve_by_utf8(map *const as, const char32_t *const key);
  *
  *	@param	as				Map structure
  *	@param	io				Universal io structure
- *	@param	symbol			Next character after key
+ *	@param	last			Next character after key
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
@@ -113,7 +113,7 @@ EXPORTED size_t map_add_by_utf8(map *const as, const char32_t *const key, const 
  *	@param	as				Map structure
  *	@param	io				Universal io structure
  *	@param	value			Value
- *	@param	symbol			Next character after key
+ *	@param	last			Next character after key
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
@@ -148,7 +148,7 @@ EXPORTED size_t map_set_by_utf8(map *const as, const char32_t *const key, const 
  *	@param	as				Map structure
  *	@param	io				Universal io structure
  *	@param	value			New value
- *	@param	symbol			Next character after key
+ *	@param	last			Next character after key
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
@@ -191,7 +191,7 @@ EXPORTED item_t map_get_by_utf8(map *const as, const char32_t *const key);
  *
  *	@param	as				Map structure
  *	@param	io				Universal io structure
- *	@param	symbol			Next character after key
+ *	@param	last			Next character after key
  *
  *	@return	Value, @c ITEM_MAX on failure
  */

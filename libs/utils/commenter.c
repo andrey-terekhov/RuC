@@ -43,7 +43,7 @@ void cmt_parse(comment *const cmt)
 	{
 		return;
 	}
-	
+
 	while (cmt->path[i] >= '0' && cmt->path[i] <= '9')
 	{
 		i++;
@@ -54,7 +54,7 @@ void cmt_parse(comment *const cmt)
 		cmt->line += line - 2;
 		return;
 	}
-	
+
 	size_t symbol = 0;
 	if (sscanf(&(cmt->path[++i]), "%zi", &symbol) != 0)
 	{
@@ -66,7 +66,7 @@ void cmt_parse(comment *const cmt)
 void cmt_reverse(comment *const cmt, const char *const code, const size_t position)
 {
 	const size_t size = strlen(PREFIX);
-	
+
 	size_t i = position;
 	while (i != 0)
 	{
@@ -139,7 +139,7 @@ size_t cmt_to_string(const comment *const cmt, char *const buffer)
 	{
 		return 0;
 	}
-	
+
 	if (cmt->symbol != SIZE_MAX)
 	{
 		return sprintf(buffer, "%s%c%s%c%zi%c%zi\n", PREFIX, SEPARATOR
@@ -157,12 +157,12 @@ comment cmt_search(const char *const code, const size_t position)
 	cmt.line = 1;
 	cmt.symbol = SIZE_MAX;
 	cmt.code = NULL;
-	
+
 	if (code == NULL)
 	{
 		return cmt;
 	}
-	
+
 	size_t i = position;
 	while (i != 0 && code[i - 1] != '\n')
 	{
@@ -193,7 +193,7 @@ size_t cmt_get_tag(const comment *const cmt, char *const buffer)
 	}
 
 	index += sprintf(&buffer[index], ":%zi", cmt->line);
-	
+
 	const size_t first = utf8_to_first_byte(cmt->code, cmt->symbol);
 	size_t symbol = first;
 

@@ -17,7 +17,6 @@
 #pragma once
 
 #include "defs.h"
-#include "constants.h"
 
 
 #ifdef __cplusplus
@@ -30,6 +29,7 @@ typedef enum TOKEN
 
 	// Keywords [C99 6.4.1]
 	kw_main				= LMAIN,		/**< 'main'		keyword */
+	//kw_bool,							/**< 'bool'		keyword */
 	//kw_auto,							/**< 'auto'		keyword */
 	kw_char				= LCHAR,		/**< 'char'		keyword */
 	kw_double			= LDOUBLE,		/**< 'double'	keyword */
@@ -118,7 +118,7 @@ typedef enum TOKEN
 	lesslessequal		= SHLASS,		/**< '<<='	punctuator */
 	greatergreaterequal	= SHRASS,		/**< '>>='	punctuator */
 
-	// Standart Functions [RuC]
+	// Standard Functions [RuC]
 	kw_print			= PRINT,		/**< 'print'	keyword	*/
 	kw_printf			= PRINTF,		/**< 'printf'	keyword */
 	kw_printid			= PRINTID,		/**< 'printid'	keyword */
@@ -142,7 +142,10 @@ typedef enum TOKEN
 	kw_strncmp			= STRNCMP,		/**< 'strncmp'	keyword */
 	kw_strstr			= STRSTR,		/**< 'strstr'	keyword */
 	kw_strlen			= STRLEN,		/**< 'strlen'	keyword */
-	
+
+	kw_t_create_direct	= TCREATEDIRECT,
+	kw_t_exit_direct	= TEXITDIRECT,
+
 	kw_msg_send			= TMSGSEND,		/**< 't_msg_send'		keyword */
 	kw_msg_receive		= TMSGRECEIVE,	/**< 't_msg_receive'	keyword */
 	kw_join				= TJOIN,		/**< 't_join'			keyword */
@@ -155,7 +158,7 @@ typedef enum TOKEN
 	kw_destroy			= TDESTROY,		/**< 't_destroy'		keyword */
 	kw_exit				= TEXIT,		/**< 't_exit'			keyword */
 	kw_getnum			= TGETNUM,		/**< 't_getnum'			keyword */
-	
+
 	kw_assert			= ASSERT,		/**< 'assert'		keyword */
 	kw_pixel			= PIXEL,		/**< 'pixel'		keyword */
 	kw_line				= LINE,			/**< 'line'			keyword */
@@ -167,7 +170,11 @@ typedef enum TOKEN
 	kw_icon				= ICON,			/**< 'icon'			keyword */
 	kw_upb				= UPB,			/**< 'upb'			keyword */
 	kw_setsignal		= SETSIGNAL,	/**< 'setsignal'	keyword */
-	
+	kw_setmotor			= SETMOTOR, 	/**< 'setmotor'		keyword */
+	kw_setvoltage		= VOLTAGE,		/**< 'setvoltage'	keyword */
+	kw_getdigsensor		= GETDIGSENSOR,	/**< 'getdigsensor'	keyword */
+	kw_getansensor		= GETANSENSOR,	/**< 'getansensor'	keyword */
+
 	kw_wifi_connect			= WIFI_CONNECT,			/**< 'wifi_connect'					keyword */
 	kw_blynk_authorization	= BLYNK_AUTORIZATION,	/**< 'blynk_authorization'			keyword */
 	kw_blynk_send			= BLYNK_SEND,			/**< 'blynk_send'					keyword */
@@ -182,27 +189,7 @@ typedef enum TOKEN
 	kw_receive_int			= RECEIVE_INT,			/**< 'receive_int_from_robot'		keyword */
 	kw_receive_float		= RECEIVE_FLOAT,		/**< 'receive_float_from_robot'		keyword */
 	kw_receive_string		= RECEIVE_STRING,		/**< 'receive_string_from_robot'	keyword */
-
-	// Preprocessor keywords [RuC]
-	sh_define			= SH_DEFINE,	/**< '#define'	keyword */
-	sh_ifdef			= SH_IFDEF,		/**< '#ifdeft'	keyword */
-	sh_ifndef			= SH_IFNDEF,	/**< '#ifndef'	keyword */
-	sh_if				= SH_IF,		/**< '#if'		keyword */
-	sh_elif				= SH_ELIF,		/**< '#elif'	keyword */
-	sh_endif			= SH_ENDIF,		/**< '#endif'	keyword */
-	sh_else				= SH_ELSE,		/**< '#else'	keyword */
-	sh_macro			= SH_MACRO,		/**< '#macro'	keyword */
-	sh_endm				= SH_ENDM,		/**< '#endm'	keyword */
-	sh_while			= SH_WHILE,		/**< '#while'	keyword */
-	sh_endw				= SH_ENDW,		/**< '#endw'	keyword */
-	sh_set				= SH_SET,		/**< '#set'		keyword */
-	sh_undef			= SH_UNDEF,		/**< '#undef'	keyword */
-	sh_for				= SH_FOR,		/**< '#for'		keyword */
-	sh_endf				= SH_ENDF,		/**< '#endf'	keyword */
-	sh_eval				= SH_EVAL,		/**< '#eval'	keyword */
-	sh_include			= SH_INCLUDE,	/**< '#include'	keyword */
-	sh_file				= SH_FILE,		/**< '#file'	keyword */
-} TOKEN;
+} token_t;
 
 #ifdef __cplusplus
 } /* extern "C" */
