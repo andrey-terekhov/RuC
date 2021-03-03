@@ -295,7 +295,7 @@ int calc_macro(environment *const env)
 int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size)
 {
 	int rez;
-	if(env->nextch_type != FILETYPE)
+	if(env->nextch_type != FILE_TYPE)
 	{
 		char bufer[STRING_SIZE];
 		size_t bufer_size = 0;
@@ -405,9 +405,9 @@ int calc_close(double *const stack, int *const is_int, const char *operation, in
 }
 
 int additional_elements(environment *const env, double *const stack, int *const is_int
-	, char *const operation , int *op_size, int *stk_size, int *type, int opration_flag)
+	, char *const operation , int *op_size, int *stk_size, int *type, int operation_flag)
 {
-	if (env->curchar == '#' && *type == LOGIC && !opration_flag)
+	if (env->curchar == '#' && *type == LOGIC && !operation_flag)
 	{
 		const int cur = macro_keywords(env);
 		if (cur == SH_EVAL && env->curchar == '(')
@@ -434,7 +434,7 @@ int additional_elements(environment *const env, double *const stack, int *const 
 		return 1;
 	}
 
-	if (env->curchar == '(' && !opration_flag)
+	if (env->curchar == '(' && !operation_flag)
 	{
 		operation[*op_size] = '(';
 		*op_size = *op_size + 1;
@@ -442,7 +442,7 @@ int additional_elements(environment *const env, double *const stack, int *const 
 		return 1;
 	}
 
-	if (env->curchar == ')' && opration_flag)
+	if (env->curchar == ')' && operation_flag)
 	{
 		operation[*op_size] = ')';
 		*op_size = *op_size + 1;
@@ -482,12 +482,12 @@ int calculate(environment *const env, const int type)
 	int stk_size = 0;
 	double stack[STK_SIZE];
 	int is_int[STK_SIZE];
-	int opration_flag = 0;
-	int locl_type = type;
+	int operation_flag = 0;
+	int local_type = type;
 	while (env->curchar != '\n')
 	{
 		skip_separators(env);
-		const int rez = additional_elements(env, stack, is_int, operation, &op_size, &stk_size, &locl_type, opration_flag);
+		const int rez = additional_elements(env, stack, is_int, operation, &op_size, &stk_size, &local_type, operation_flag);
 		if (rez == -1 || rez == 0)
 		{
 			return rez;
@@ -497,18 +497,18 @@ int calculate(environment *const env, const int type)
 			continue;
 		}
 
-		if (!opration_flag && (utf8_is_digit(env->curchar) || (env->curchar == '-' && utf8_is_digit(env->nextchar))))
+		if (!operation_flag && (utf8_is_digit(env->curchar) || (env->curchar == '-' && utf8_is_digit(env->nextchar))))
 		{
-			opration_flag = 1;
+			operation_flag = 1;
 			if (calc_digit(env, stack, is_int, &stk_size))
 			{
 				return -1;
 			}
 		}
-		else if (opration_flag && env->curchar != '\n')
+		else if (operation_flag && env->curchar != '\n')
 		{
-			opration_flag = 0;
-			if (calc_operation(env, stack, is_int, operation, &op_size, &stk_size, locl_type))
+			operation_flag = 0;
+			if (calc_operation(env, stack, is_int, operation, &op_size, &stk_size, local_type))
 			{
 				return -1;
 			}
@@ -520,7 +520,7 @@ int calculate(environment *const env, const int type)
 		}
 	}
 
-	if (locl_type == LOGIC)
+	if (local_type == LOGIC)
 	{
 		if (calc_close(stack, is_int, operation, &op_size, &stk_size))
 		{

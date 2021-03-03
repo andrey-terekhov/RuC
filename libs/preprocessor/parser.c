@@ -310,7 +310,7 @@ int while_implementation(environment *const env)
 	while (env->while_string[oldernextp] == WHILE_BEGIN)
 	{
 		m_nextch(env);
-		m_change_nextch_type(env, IFTYPE, env->while_string[env->nextp]);
+		m_change_nextch_type(env, IF_TYPE, env->while_string[env->nextp]);
 		m_nextch(env);
 		if (calculate(env, LOGIC))
 		{
@@ -331,7 +331,7 @@ int while_implementation(environment *const env)
 		m_nextch(env);
 		skip_separators(env);
 
-		while (env->nextp != end || env->nextch_type != WHILETYPE)
+		while (env->nextp != end || env->nextch_type != WHILE_TYPE)
 		{
 			if (env->curchar == WHILE_BEGIN)
 			{
@@ -416,7 +416,7 @@ int preprocess_words(environment *const env)
 				return -1;
 			}
 
-			m_change_nextch_type(env, CTYPE, 0);
+			m_change_nextch_type(env, CALC_TYPE, 0);
 			return 0;
 		}
 		case SH_WHILE:
@@ -427,13 +427,13 @@ int preprocess_words(environment *const env)
 			{
 				return -1;
 			}
-			m_change_nextch_type(env, WHILETYPE, 0);
+			m_change_nextch_type(env, WHILE_TYPE, 0);
 			m_nextch(env);
 			m_nextch(env);
 
 			env->nextp = 0;
 			int res = while_implementation(env);
-			if (env->nextch_type != FILETYPE)
+			if (env->nextch_type != FILE_TYPE)
 			{
 				m_old_nextch_type(env);
 			}
@@ -468,8 +468,8 @@ int preprocess_token(environment *const env)
 			if (env->cur != 0)
 			{
 				const int res = preprocess_words(env);
-				if (env->nextchar != '#' && env->nextch_type != WHILETYPE &&
-					env->nextch_type != TEXTTYPE)//curflag
+				if (env->nextchar != '#' && env->nextch_type != WHILE_TYPE &&
+					env->nextch_type != MACRO_TEXT_TYPE)//curflag
 				{
 					env_add_comment(env);
 				}

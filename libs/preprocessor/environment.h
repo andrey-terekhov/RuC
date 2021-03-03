@@ -40,8 +40,8 @@ typedef struct environment
 	int mstring[STRING_SIZE];
 	size_t msp;
 
-	int change[STRING_SIZE * 3];
-	size_t change_size;
+	int param[STRING_SIZE * 3];
+	size_t param_size;
 
 	int localstack[STRING_SIZE];
 	size_t local_stack_size;

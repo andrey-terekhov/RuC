@@ -30,15 +30,13 @@
 #define MACRO_FUNCTION	0
 #define MACRO_DEF		1
 
-#define MTYPE				2
-#define CTYPE				3
-#define IFTYPE				4
-#define WHILETYPE			5
-#define FTYPE				6
-#define TEXTTYPE			10
+#define CALC_TYPE			3
+#define IF_TYPE				4
+#define WHILE_TYPE			5
+#define PARAM_TYPE			6
+#define MACRO_TEXT_TYPE		10
+#define FILE_TYPE			0
 #define PREPROCESS_STRING	11
-#define FILETYPE			0
-
 
 // Ключевые слова
 
