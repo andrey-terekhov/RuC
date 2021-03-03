@@ -20,6 +20,8 @@
 #include "macro_load.h"
 #include "linker.h"
 #include "utils.h"
+#include "uniio.h"
+#include "uniscanner.h"
 #include "string.h"
 #include <math.h>
 
@@ -27,100 +29,108 @@
 #define STK_SIZE 32
 #define OPN_SIZE STK_SIZE
 
+#define DOUBLE	0
+#define INT		1
+#define WARNING	-2
+#define ERROR	-1
 
-double get_digit(environment *const env, int* error)// Временная замена
+int get_digit(universal_io *in, double *rez)
 {
-	double k;
-	int d = 1;
+    in_set_position(in, in_get_position(in) - 2);
+	char32_t curchar = uni_scan_char(in);
 
-	env->flagint = 1;
-	int num = 0;
-	double numdouble = 0.0;
-	if (env->curchar == '-')
+	int flag_int = INT;
+	int num_int = 0;
+	int sign = 1;
+	int flag_too_long = 0;
+	double num_double = 0.0;
+
+	if (curchar == '-')
 	{
-		d = -1;
-		m_nextch(env);
+		sign = -1;
+		curchar = uni_scan_char(in);
 	}
 
-	while (utf8_is_digit(env->curchar))
+	while (utf8_is_digit(curchar))
 	{
-		numdouble = numdouble * 10 + (env->curchar - '0');
-		if (numdouble > (double)INT_MAX)
+		num_double = num_double * 10 + (curchar - '0');
+		num_int = num_int * 10 + (curchar - '0');
+		curchar = uni_scan_char(in);
+	}
+
+	if (num_double > (double)INT_MAX)
+	{
+		flag_too_long = 1;
+		flag_int = DOUBLE;
+	}
+
+	if (curchar == '.')
+	{
+		double pow = 0.1;
+		flag_int = DOUBLE;
+		curchar = uni_scan_char(in);
+		while (utf8_is_digit(curchar))
 		{
-			env_error(env, too_many_nuber);
-			*error = -1;
-			return 0.0;
-		}
-		num = num * 10 + (env->curchar - '0');
-		m_nextch(env);
-	}
-
-	if (env->curchar == '.')
-	{
-		env->flagint = 0;
-		m_nextch(env);
-		k = 0.1;
-
-		while (utf8_is_digit(env->curchar))
-		{
-			numdouble += (env->curchar - '0') * k;
-			k *= 0.1;
-			m_nextch(env);
+			num_double += (curchar - '0') * pow;
+			pow *= 0.1;
+			curchar = uni_scan_char(in);
 		}
 	}
 
-	if (utf8_is_power(env->curchar))
+	if (utf8_is_power(curchar))
 	{
 		int power = 0;
-		int sign = 1;
-		int i;
-
-		m_nextch(env);
-		if (env->curchar == '-')
+		int sign_power = 1;
+		curchar = uni_scan_char(in);
+		if (curchar == '-')
 		{
-			env->flagint = 0;
-			m_nextch(env);
-			sign = -1;
+			flag_int = DOUBLE;
+			curchar = uni_scan_char(in);
+			sign_power = -1;
 		}
-		else if (env->curchar == '+')
+		else if (curchar == '+')
 		{
-			m_nextch(env);
+			curchar = uni_scan_char(in);
 		}
 
-
-		if (!utf8_is_digit(env->curchar))
+		if (!utf8_is_digit(curchar))
 		{
-			env_error(env, must_be_digit_after_exp1);
-			*error = -1;
-			return 0.0;
+			return ERROR;
+		}
+		while (utf8_is_digit(curchar))
+		{
+			power = power * 10 + curchar - '0';
+			curchar = uni_scan_char(in);
 		}
 
-
-		while (utf8_is_digit(env->curchar))
+		if (flag_int == INT)
 		{
-			power = power * 10 + env->curchar - '0';
-			m_nextch(env);
-		}
-
-		if (env->flagint)
-		{
-			for (i = 1; i <= power; i++)
+			for (int i = 1; i <= power; i++)
 			{
-				num *= 10;
+				num_int *= 10;
 			}
 		}
 
-		numdouble *= pow(10.0, sign * power);
+		num_double *= pow(10.0, sign_power * power);
 	}
 
-	if (env->flagint)
+	if (flag_int)
 	{
-		return num * d;
+		*rez = num_int * sign;
 	}
 	else
 	{
-		return numdouble * d;
+		*rez = num_double * sign;
 	}
+
+	in_set_position(in, in_get_position(in) - 1);
+
+	if (flag_too_long)
+	{
+		return WARNING;
+	}
+
+	return flag_int;
 }
 
 char get_operation(const char cur, const char next)
@@ -284,14 +294,44 @@ int calc_macro(environment *const env)
 
 int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size)
 {
-	int error = 0;
-	stack[*stk_size] = get_digit(env, &error);
-	if (error)
+	int rez;
+	if(env->nextch_type != FILETYPE)
 	{
-			return -1;
+		char bufer[STRING_SIZE];
+		size_t bufer_size = 0;
+		while (utf8_is_digit(env->curchar) || utf8_is_power(env->curchar) || env->curchar == '-'|| env->curchar == '.')
+		{
+			if(utf8_is_power(env->curchar) &&  env->nextchar == '+')
+			{
+				bufer_size += utf8_to_string(&bufer[bufer_size], env->curchar);
+				m_nextch(env);
+			}
+			bufer_size += utf8_to_string(&bufer[bufer_size], env->curchar);
+			m_nextch(env);
+		}
+
+		universal_io in = io_create();
+		in_set_buffer(&in, bufer);
+		rez = get_digit(&in, &stack[*stk_size]);
+		in_clear(&in);
+	}
+	else
+	{
+		rez = get_digit(env->input, &stack[*stk_size]);
+		m_nextch(env);
+		m_nextch(env);
+	}
+	
+	if (rez == ERROR)
+	{
+		env_error(env, must_be_digit_after_exp1);
+	}
+	else if (rez == WARNING)
+	{
+		env_error(env, too_many_nuber);
 	}
 
-	is_int[*stk_size] = env->flagint;
+	is_int[*stk_size] = rez;
 	*stk_size = *stk_size + 1;
 
 	return 0;
