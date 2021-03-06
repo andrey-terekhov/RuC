@@ -300,8 +300,8 @@ void m_nextch(environment *const env)
 		}
 	}
 	
-	 printf("t = %d curchar = %c, %i nextchar = %c, %i p = %d\n", env->nextch_type,
-	 env->curchar, env->curchar, env->nextchar, env->nextchar, in_get_position(env->input));
+	// printf("t = %d curchar = %c, %i nextchar = %c, %i p = %d\n", env->nextch_type,
+	// env->curchar, env->curchar, env->nextchar, env->nextchar, in_get_position(env->input));
 	 //if (env->curchar != '}' && env->nextchar != EOF)
 	{
 	 //printf("char = %c \n",uni_scan_char(env->input));

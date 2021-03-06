@@ -161,7 +161,7 @@ int lk_preprocess_include(environment *const env)
 		m_nextch(env);
 	}
 
-	universal_io new_in = io_create();
+	universal_io new_in = io_create();//--
 	universal_io *old_in = env->input;
 	env->input = &new_in;
 
@@ -185,7 +185,7 @@ int lk_preprocess_include(environment *const env)
 	if (flag_io_type)
 	{
 		m_old_nextch_type(env);
-	}
+	}//--
 
 	return res;
 }
@@ -208,46 +208,29 @@ int lk_include(environment *const env)
 	m_nextch(env);
 
 	int res = lk_preprocess_include(env);
-	if (res == -2)
+	if (res == -2)//--
 	{
 		skip_file(env);
 		return -1;
 	}
 
 	get_next_char(env);
-	m_nextch(env);
+	m_nextch(env);//--
 
 	return res;
-}
-
-int lk_preprocess_all(environment *const env)
-{
-	if (env == NULL)
-	{
-		return -1;
-	}
-
-	for (size_t i = 0; i < env->lk->count; i++)
-	{
-		if (env->lk->included[i])
-		{
-			continue;
-		}
-
-		universal_io input = io_create();
-		env->input = &input;
-
-		if (lk_open_source(env, i) || lk_preprocess_file(env, i))
-		{
-			return -1;
-		}
-		in_clear(&input);
-	}
-
-	return 0;
 }
 
 const char *lk_get_current(const linker *const lk)
 {
 	return lk == NULL ? NULL : ws_get_file(lk->ws, lk->current);
+}
+
+size_t lk_get_count(const linker *const lk)
+{
+	return lk->count;
+}
+
+int lk_get_included(const linker *const lk, size_t index)
+{
+	return lk->included[index];
 }

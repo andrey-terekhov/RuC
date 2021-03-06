@@ -54,7 +54,7 @@ linker lk_create(workspace *const ws);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int lk_preprocess_all(environment *const env);
+//int lk_preprocess_all(environment *const env);
 
 /**
  *	Include current file from environment to target output
@@ -73,6 +73,14 @@ int lk_include(environment *const env);
  *	@return	File
  */
 const char *lk_get_current(const linker *const lk);
+
+size_t lk_get_count(const linker *const lk);
+
+int lk_get_included(const linker *const lk, size_t index);
+
+int lk_open_source(environment *const env, const size_t index);
+
+int lk_preprocess_file(environment *const env, const size_t number);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -97,6 +97,34 @@ void add_keywods(environment *const env)
 	to_reprtab_full(env, "#INCLUDE", "#include", "#ДОБАВИТЬ", "#добавить", SH_INCLUDE);
 }
 
+int preprocess_all(environment *const env)
+{
+	if (env == NULL)
+	{
+		return -1;
+	}
+
+	for (size_t i = 0; i < lk_get_count(env->lk); i++)
+	{
+		if (lk_get_included(env->lk, i))
+		{
+			continue;
+		}
+
+		universal_io input = io_create();
+		env->input = &input;
+
+		if (lk_open_source(env, i) || lk_preprocess_file(env, i))
+		{
+			return -1;
+		}
+		in_clear(&input);
+	}
+
+	return 0;
+}
+
+
 int macro_form_io(workspace *const ws, universal_io *const output)
 {
 	if(!ws_is_correct(ws))
@@ -112,7 +140,7 @@ int macro_form_io(workspace *const ws, universal_io *const output)
 	add_keywods(&env);
 	env.mfirstrp = env.rp;
 
-	return lk_preprocess_all(&env);
+	return preprocess_all(&env);
 }
 
 /*
