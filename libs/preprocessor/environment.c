@@ -165,6 +165,7 @@ void m_onemore(environment *const env)
 	env->curchar = env->nextchar;
 
 	get_next_char(env);
+	
 
 	if (env->curchar == EOF)
 	{
@@ -299,8 +300,13 @@ void m_nextch(environment *const env)
 		}
 	}
 	
-	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", env->nextch_type,
-	// env->curchar, env->curchar, env->nextchar, env->nextchar);
+	 printf("t = %d curchar = %c, %i nextchar = %c, %i p = %d\n", env->nextch_type,
+	 env->curchar, env->curchar, env->nextchar, env->nextchar, in_get_position(env->input));
+	 //if (env->curchar != '}' && env->nextchar != EOF)
+	{
+	 //printf("char = %c \n",uni_scan_char(env->input));
+	 //in_set_position(env->input, in_get_position(env->input) - 1);
+	}
 }
 
 void env_error(environment *const env, const int num)

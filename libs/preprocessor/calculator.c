@@ -36,9 +36,17 @@
 
 int get_digit(universal_io *in, double *rez)
 {
-    in_set_position(in, in_get_position(in) - 2);
-	char32_t curchar = uni_scan_char(in);
-
+	size_t rez1 = in_get_position(in);
+	char32_t curchar = '*';
+	for(size_t i= rez1 - 5; i < rez1+5; i++)
+	{
+		in_set_position(in, i);
+		curchar = uni_scan_char(in);
+		printf("cur[%d] = %d, %c\n", i, curchar, curchar);
+	}
+	in_set_position(in, rez1 - 2);
+	printf("4 %d\n", in_get_position(in));
+	curchar = uni_scan_char(in);
 	int flag_int = INT;
 	int num_int = 0;
 	int sign = 1;
@@ -56,6 +64,7 @@ int get_digit(universal_io *in, double *rez)
 		num_double = num_double * 10 + (curchar - '0');
 		num_int = num_int * 10 + (curchar - '0');
 		curchar = uni_scan_char(in);
+		printf("++%c, %d\n", curchar, curchar);
 	}
 
 	if (num_double > (double)INT_MAX)
@@ -63,9 +72,10 @@ int get_digit(universal_io *in, double *rez)
 		flag_too_long = 1;
 		flag_int = DOUBLE;
 	}
-
+	printf("7 %d, %c, %d\n", in_get_position(in), curchar, curchar);
 	if (curchar == '.')
 	{
+		printf("8 %d\n", in_get_position(in));
 		double pow = 0.1;
 		flag_int = DOUBLE;
 		curchar = uni_scan_char(in);
@@ -122,8 +132,9 @@ int get_digit(universal_io *in, double *rez)
 	{
 		*rez = num_double * sign;
 	}
-
+	printf("5 %d\n", in_get_position(in));
 	in_set_position(in, in_get_position(in) - 1);
+	printf("6 %d\n", in_get_position(in));
 
 	if (flag_too_long)
 	{
@@ -297,27 +308,30 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 	int rez;
 	if(env->nextch_type != FILE_TYPE)
 	{
-		char bufer[STRING_SIZE];
+		char buffer[STRING_SIZE];
 		size_t bufer_size = 0;
 		while (utf8_is_digit(env->curchar) || utf8_is_power(env->curchar) || env->curchar == '-'|| env->curchar == '.')
 		{
 			if(utf8_is_power(env->curchar) &&  env->nextchar == '+')
 			{
-				bufer_size += utf8_to_string(&bufer[bufer_size], env->curchar);
+				bufer_size += utf8_to_string(&buffer[bufer_size], env->curchar);
 				m_nextch(env);
 			}
-			bufer_size += utf8_to_string(&bufer[bufer_size], env->curchar);
+			bufer_size += utf8_to_string(&buffer[bufer_size], env->curchar);
 			m_nextch(env);
 		}
 
 		universal_io in = io_create();
-		in_set_buffer(&in, bufer);
+		in_set_buffer(&in, buffer);
 		rez = get_digit(&in, &stack[*stk_size]);
 		in_clear(&in);
 	}
 	else
 	{
+		printf("1\n");
+		//m_nextch(env);
 		rez = get_digit(env->input, &stack[*stk_size]);
+		printf("2\n");
 		m_nextch(env);
 		m_nextch(env);
 	}
