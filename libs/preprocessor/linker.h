@@ -48,22 +48,13 @@ typedef struct linker
 linker lk_create(workspace *const ws);
 
 /**
- *	Preprocess all files from workspace
- *
- *	@param	env		Preprocessor environment
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-//int lk_preprocess_all(environment *const env);
-
-/**
  *	Include current file from environment to target output
  *
  *	@param	env		Preprocessor environment
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int lk_include(environment *const env);
+size_t lk_include(environment *const env);
 
 /**
  *	 Get current file name from linker
@@ -72,15 +63,55 @@ int lk_include(environment *const env);
  *
  *	@return	File
  */
-const char *lk_get_current(const linker *const lk);
+const char *lk_get_cur_path(const linker *const lk);
 
+/**
+ *	 Get number of files from linker
+ *
+ *	@param	lk	Preprocessor linker
+ *
+ *	@return	Number of files
+ */
 size_t lk_get_count(const linker *const lk);
 
-int lk_get_included(const linker *const lk, size_t index);
+/**
+ *	 Checks if a file is included
+ *
+ *	@param	lk		Preprocessor linker
+ *	@param	index	File index
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+int lk_is_included(const linker *const lk, size_t index);
 
-int lk_open_source(environment *const env, const size_t index);
+/**
+ *	 Open file from linker
+ *
+ *	@param	lk		Preprocessor linker
+ *	@param	index	File index
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int lk_open_file(environment *const env, const size_t index);
 
-int lk_preprocess_file(environment *const env, const size_t number);
+/**
+ *	 Get current file index from linker
+ *
+ *	@param	lk	Preprocessor linker
+ *
+ *	@return	Index file
+ */
+size_t lk_get_current(const linker *const lk);
+
+/**
+ *	 Set current file from linker
+ *
+ *	@param	lk		Preprocessor linker
+ *	@param	index	File index
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int lk_set_current(linker *const lk, size_t index);
 
 #ifdef __cplusplus
 } /* extern "C" */

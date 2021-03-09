@@ -104,9 +104,10 @@ int preprocess_all(environment *const env)
 		return -1;
 	}
 
-	for (size_t i = 0; i < lk_get_count(env->lk); i++)
+	size_t count = lk_get_count(env->lk);
+	for (size_t i = 0; i < count; i++)
 	{
-		if (lk_get_included(env->lk, i))
+		if (lk_is_included(env->lk, i))
 		{
 			continue;
 		}
@@ -114,7 +115,7 @@ int preprocess_all(environment *const env)
 		universal_io input = io_create();
 		env->input = &input;
 
-		if (lk_open_source(env, i) || lk_preprocess_file(env, i))
+		if (preprocess_file(env, i))
 		{
 			return -1;
 		}

@@ -25,6 +25,9 @@
 #include "utils.h"
 
 
+int preprocess_token(environment *const env);
+
+
 int if_check(environment *const env, int type_if)
 {
 	int flag = 0;
@@ -360,6 +363,50 @@ int while_implementation(environment *const env)
 	return 0;
 }
 
+int parser_include(environment *const env)
+{
+	size_t index = lk_include(env);
+
+	universal_io new_in = io_create();
+	universal_io *old_in = env->input;
+	env->input = &new_in;
+
+	int flag_io_type = 0;
+	if (index >= SIZE_MAX - 1)
+	{
+		env->input = old_in;
+		get_next_char(env);
+		m_nextch(env);
+		return index == SIZE_MAX ? 0 : -1;
+	}
+
+	if (env->nextch_type != FILE_TYPE)
+	{
+		m_change_nextch_type(env, FILE_TYPE, 0);
+		flag_io_type++;
+	}
+
+	const int res = preprocess_file(env, index);
+
+	env->input = old_in;
+
+	if (flag_io_type)
+	{
+		m_old_nextch_type(env);
+	}
+
+	if (res == -1)
+	{
+		skip_file(env);
+		return -1;
+	}
+
+	get_next_char(env);
+	m_nextch(env);
+
+	return 0;
+}
+
 
 int preprocess_words(environment *const env)
 {
@@ -368,7 +415,7 @@ int preprocess_words(environment *const env)
 	{
 		case SH_INCLUDE:
 		{
-			return lk_include(env);
+			return parser_include(env);
 		}
 		case SH_DEFINE:
 		case SH_MACRO:
@@ -524,3 +571,42 @@ int preprocess_token(environment *const env)
 		}
 	}
 }
+
+int preprocess_file(environment *const env, const size_t number)
+{
+	if (lk_open_file(env, number))
+	{
+		return -1;
+	}
+
+	env_clear_error_string(env);
+
+	const size_t old_cur = lk_get_current(env->lk);
+	lk_set_current(env->lk, number);
+	const size_t old_line = env->line;
+	
+	env->line = 1;
+
+	get_next_char(env);
+	m_nextch(env);
+
+	if (env->curchar != '#')
+	{
+		env_add_comment(env);
+	}
+
+	int was_error = 0;
+	while (env->curchar != EOF)
+	{
+		was_error = preprocess_token(env) || was_error;
+	}
+
+	m_fprintf(env, '\n');
+
+	env->line = old_line;
+	lk_set_current(env->lk, old_cur);
+
+	in_clear(env->input);
+	return was_error ? -1 : 0;
+}
+

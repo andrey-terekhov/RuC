@@ -101,7 +101,7 @@ void env_clear_error_string(environment *const env)
 
 void env_add_comment(environment *const env)
 {
-	comment cmt = cmt_create(lk_get_current(env->lk), env->line);
+	comment cmt = cmt_create(lk_get_cur_path(env->lk), env->line);
 
 	char buffer[MAX_CMT_SIZE];
 	cmt_to_string(&cmt, buffer);
@@ -302,15 +302,10 @@ void m_nextch(environment *const env)
 	
 	// printf("t = %d curchar = %c, %i nextchar = %c, %i p = %d\n", env->nextch_type,
 	// env->curchar, env->curchar, env->nextchar, env->nextchar, in_get_position(env->input));
-	 //if (env->curchar != '}' && env->nextchar != EOF)
-	{
-	 //printf("char = %c \n",uni_scan_char(env->input));
-	 //in_set_position(env->input, in_get_position(env->input) - 1);
-	}
 }
 
 void env_error(environment *const env, const int num)
 {
 	const size_t position = env_skip_str(env);
-	macro_error(num, lk_get_current(env->lk), env->error_string, env->line, position);
+	macro_error(num, lk_get_cur_path(env->lk), env->error_string, env->line, position);
 }
