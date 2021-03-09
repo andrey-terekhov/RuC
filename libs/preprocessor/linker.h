@@ -40,10 +40,7 @@ typedef struct linker
 /**
  *	Create linker structure
  *
- *	@param	lk		Linker structure
- *	@param	ws		Workspace structure	 
- *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Linker structure
  */
 linker lk_create(workspace *const ws);
 

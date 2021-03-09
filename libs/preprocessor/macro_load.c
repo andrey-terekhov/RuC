@@ -44,8 +44,8 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 				int loc_change[STRING_SIZE];
 				size_t loc_change_size = 0;
 				const int loc_depth = env->nextch_type == PARAM_TYPE
-				? get_depth(env) - 1
-				: get_depth(env);
+										? get_depth(env) - 1
+										: get_depth(env);
 
 				while (get_depth(env) >= loc_depth) // 1 переход потому что есть префиксная замена
 				{

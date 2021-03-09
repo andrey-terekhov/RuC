@@ -246,7 +246,7 @@ void double_to_string(environment *const env, const double x, const int is_int)
 	{
 		sprintf(env->calc_string, "%f", x);
 		char *dot = strchr(env->calc_string, '.');
-		if(dot != 0)
+		if (dot != 0)
 		{
 			dot[0] = '\0';
 		}

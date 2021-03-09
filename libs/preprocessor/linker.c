@@ -108,6 +108,7 @@ size_t lk_preprocess_include(environment *const env)
 linker lk_create(workspace *const ws)
 {
 	linker lk;
+
 	lk.ws = ws;
 	lk.current = MAX_PATHS;
 	lk.count = ws_get_files_num(ws);
@@ -173,12 +174,12 @@ size_t lk_get_current(const linker *const lk)
 
 int lk_set_current(linker *const lk, size_t index)
 {
-	if(lk == NULL || index > MAX_PATHS)
+	if (lk == NULL || index > MAX_PATHS)
 	{
 		return -1;
 	}
 	lk->current = index;
-	if(!lk->included[index])
+	if (!lk->included[index])
 	{
 		lk->included[index]++;
 	}

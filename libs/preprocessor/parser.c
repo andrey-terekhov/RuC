@@ -391,7 +391,7 @@ int parser_include(environment *const env)
 	env->input = old_in;
 	if (res == -1)
 	{
-		skip_file(env);
+		finish_file(env);
 		return -1;
 	}
 	

@@ -26,7 +26,7 @@ extern "C" {
 /**
  *	Index of macro in macro table
  *
- *	@param	index		Pointer to macro in macro_tab
+ *	@param	index		Index of macro in macro table
  *	@param	env			Preprocessor environment
  *
  *	@return	@c 0 on success, @c -1 on failure
