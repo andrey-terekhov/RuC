@@ -54,11 +54,11 @@ void skip_separators(environment *const env);
 int skip_string(environment *const env);
 
 /**
- *	Skip all characters to the end of the file
+ *	Finish work with the current file 
  *
  *	@param	env	Preprocessor environment
  */
-void skip_file(environment *const env);
+void finish_file(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

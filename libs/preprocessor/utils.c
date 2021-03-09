@@ -205,10 +205,11 @@ int skip_string(environment *const env)
 	return 0;
 }
 
-void skip_file(environment *const env)
+void finish_file(environment *const env)
 {
-	while (env->curchar != EOF)
+	while (env->nextch_type != FILE_TYPE)
 	{
-		m_nextch(env);
+		m_old_nextch_type(env);
 	}
+	env->curchar = EOF;
 }

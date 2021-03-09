@@ -389,16 +389,15 @@ int parser_include(environment *const env)
 	const int res = preprocess_file(env, index);
 
 	env->input = old_in;
-
-	if (flag_io_type)
-	{
-		m_old_nextch_type(env);
-	}
-
 	if (res == -1)
 	{
 		skip_file(env);
 		return -1;
+	}
+	
+	if (flag_io_type)
+	{
+		m_old_nextch_type(env);
 	}
 
 	get_next_char(env);
