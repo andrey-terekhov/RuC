@@ -449,9 +449,9 @@ static int codegen(universal_io *const io, syntax *const sx)
 				system_error(node_unexpected, node_get_type(&root));
 				return -1;
 			}
-			break;
 		}
 	}
+	
 	return 0;
 }
 
