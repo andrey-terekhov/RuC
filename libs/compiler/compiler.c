@@ -32,6 +32,8 @@
 
 const char *const DEFAULT_MACRO = "macro.txt";
 
+const char *const DEFAULT_VM = "export.txt";
+
 
 typedef int (*encoder)(const workspace *const ws, universal_io *const io, syntax *const sx);
 
@@ -139,6 +141,11 @@ int compile(workspace *const ws)
 
 int compile_to_vm(workspace *const ws)
 {
+	if (ws_get_output(ws) == NULL)
+	{
+		ws_set_output(ws, DEFAULT_VM);
+	}
+
 	const int ret = compile_from_ws(ws, &encode_to_vm);
 	if (!ret)
 	{
@@ -169,6 +176,7 @@ int no_macro_compile_to_vm(const char *const path)
 
 	workspace ws = ws_create();
 	ws_add_file(&ws, path);
+	ws_set_output(&ws, DEFAULT_VM);
 	out_set_file(&io, ws_get_output(&ws));
 
 	const int ret = compile_from_io(&ws, &io, &encode_to_vm);

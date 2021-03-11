@@ -217,7 +217,7 @@ EXPORTED size_t ws_get_flags_num(const workspace *const ws);
  *
  *	@param	ws			Workspace structure
  *
- *	@return	Output file name
+ *	@return	Output file name, @c NULL on default
  */
 EXPORTED const char *ws_get_output(const workspace *const ws);
 
