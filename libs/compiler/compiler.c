@@ -32,7 +32,7 @@
 
 const char *const DEFAULT_MACRO = "macro.txt";
 
-const char *const DEFAULT_VM = "export.txt";
+const char *const DEFAULT_VM = "out.ruc";
 
 
 typedef int (*encoder)(const workspace *const ws, universal_io *const io, syntax *const sx);
