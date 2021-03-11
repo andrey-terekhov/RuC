@@ -794,6 +794,24 @@ int node_order(node *const fst, const size_t fst_index, node *const snd, const s
 	const size_t snd_child_index = temp.type;
 	const size_t snd_size = temp.argc + 1;
 
+	if (fst->type >= snd_child_index)
+	{
+		fst->type = fst->type == snd_child_index
+			? fst_child_index + fst_size - snd_size
+			: fst->type + fst_size - snd_size;
+		fst->argv = fst->type + 1;
+		fst->children = fst->argv + fst->argc;
+	}
+
+	if (snd->type >= fst_child_index)
+	{
+		snd->type = snd->type == fst_child_index
+			? snd_child_index + snd_size - fst_size
+			: snd->type + snd_size - fst_size;
+		snd->argv = snd->type + 1;
+		snd->children = snd->argv + snd->argc;
+	}
+
 	return vector_swap(tree, fst_child_index, fst_size, snd_child_index, snd_size);
 }
 
