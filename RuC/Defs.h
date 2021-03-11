@@ -406,6 +406,8 @@
 #define TStructinit -349
 #define TSelect     -350
 #define TForEnd     -351
+#define TIndVar		-352
+#define TSliceInd	-354
 
 
 

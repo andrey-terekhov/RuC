@@ -10,10 +10,83 @@ extern void tablesandtree();
 
 int t, op, opnd, firststruct = 1;
 
+/**
+ *	Индекс в таблице идентификаторов текущего итератора for
+ *	@note мы оптимизируем только циклы с одним итератором
+ */
+int iterator;
+
+/**
+ *	Шаг, с которым увеличивается текущий итератор
+ *	@note мы оптимизируем только инкременты с шагом-константой
+ */
+int step;
+
+/**
+ *	Это массив для выражений вырезок индуцированных переменных
+ *	Формат записи: индекс начала предыдущей записи, флаг, была ли объявлена переменная, выражение для вырезки
+ */
+int ind_vars[MAXIDENTAB];
+
+/**
+ *	Текущий размер таблицы индуцированных переменных
+ */
+int ind_vars_counter, ind_vars_start;
+
+/** Проверяет, одинаковые ли выражения для вырезок индуцированных переменных */
+int ind_vars_equal(int first_ind_var, int second_ind_var)
+{
+	int i = 1;
+
+	do
+	{
+		if (ind_vars[first_ind_var + i] != ind_vars[second_ind_var + i])
+			return 0;
+		i++;
+	} while (ind_vars[first_ind_var + i] != TExprend);
+	return 1;
+}
+
+int ind_var_add(int *record, int length)
+{
+	ind_vars[ind_vars_counter] = ind_vars_start;
+	ind_vars_start = ind_vars_counter++;
+
+	ind_vars[ind_vars_counter++] = 0; // Еще не была объявлена
+	for (int i = 0; i < length; i++)
+	{
+		ind_vars[ind_vars_counter++] = record[i];
+	}
+
+	// Checking duplicates
+	int old = ind_vars[ind_vars_start];
+	while (old)
+	{
+		if (ind_vars_equal(ind_vars_start + 1, old + 1))
+		{
+			ind_vars_counter = ind_vars_start;
+			ind_vars_start = ind_vars[ind_vars_start];
+			return old + 1;
+		}
+		else
+		{
+			old = ind_vars[old];
+		}
+	}
+
+	return ind_vars_start + 1;
+}
+
+
 int mcopy()
 {
 //    printf("tc= %i tree[tc]= %i\n", tc, tree[tc]);
     return mtree[mtc++] = tree[tc++];
+}
+
+void mtotree(int op)
+{
+	mtree[mtc++] = op;
 }
 
 int munop(int t)  // один операнд, возвращает n+1, где n = числу параметров
@@ -193,26 +266,129 @@ void mark_nested_for()
 		tree[flag_nested_for_ref] = 1;
 }
 
+int satistifies_ind_var_pattern(int t)
+{
+	// В рамках оптимизации индуцированных переменных мы оптимизируем только
+	// инкременты вида i++, i--, ++i, --i, i += const и i -= const
+	// Если выражение совпадает с паттерном, то в переменную iterator будет записан id переменной,
+	// а в step - шаг увеличения/уменьшения
+
+	if (tree[t] != TIdent)
+		return 0;
+
+	// Далее только варианты с tree[t] == TIdent
+	if ((tree[t + 2] == POSTINC || tree[t + 2] == INC || tree[t + 2] == POSTDEC || tree[t + 2] == DEC) && tree[t + 3] == TExprend)
+	{
+		// i++ or ++i
+		iterator = tree[t + 1];
+		step = (tree[t + 2] == POSTINC || tree[t + 2] == INC) ? 1 : -1;
+		return 1;
+	}
+	else if (tree[t + 2] == TConst && (tree[t + 4] == PLUSASS || tree[t + 4] == MINUSASS) && tree[t + 3] == TExprend)
+	{
+		// i += const or i -= const
+		iterator = tree[t + 1];
+		step = tree[t + 3] * (tree[t + 4] == PLUSASS ? 1 : -1);
+		return 1;
+	}
+
+	return 0;
+}
+
 void opt_for_statement()
 {
 	mcopy();
+	int has_nested_for = 1;
 	if (check_nested_for)
 	{
 		mark_nested_for();
+		has_nested_for =  1 - tree[tc];
 		mcopy();
 	}
 
-	int fromref, condref, incrref, stmtref;
-	fromref = mcopy();
-	condref = mcopy();
-	incrref = mcopy();
-	stmtref = mcopy();
+	int fromref = mcopy();
+	int condref = mcopy();
+	int incrref = mcopy();
+	/*int stmtref = */mcopy(); // Эта переменная вообще не нужна
+
 	if (fromref)
 		mexpr();
 	if (condref)
 		mexpr();
 	if (incrref)
 		mexpr();
+
+	if (enable_ind_var && !has_nested_for && incrref && satistifies_ind_var_pattern(incrref))
+	{
+		// Если инкремент удовлетворяет паттерну, и нет вложенных циклов, то алгоритм оптимизации следующий:
+		// (это делается за отдельный проход по телу цикла)
+		// Если внутри statement существует вырезка [iterator ± const], то по текущему значению mtc
+		// создаем узлы TIndVar или TIndVarc, а вместо вырезок пишем TSliceInd
+		// Также после цикла необходимо добавить IndVar += step * sizeof(element)
+		//printf("\n\n %i %i\n\n", iterator, step);
+		ind_vars_counter = ind_vars_start = 1;
+		for (int local_tc = tc; tree[local_tc] != TForEnd; local_tc++)
+		{
+			if (tree[local_tc] == TSliceident && tree[local_tc + 3] == TIdenttoval && tree[local_tc + 4] == iterator)
+			{
+				if (tree[local_tc + 5] == TExprend)
+				{
+					// Это вырезка a[iterator]
+
+					// Добавляем в массив переменных вырезку
+					int ind_var_number = ind_var_add(&tree[local_tc], 6);
+
+					if (ind_vars[ind_var_number] == 0)
+					{
+						// Добавляем в оптимизированное дерево объявление индуцированной переменной
+						mtotree(TIndVar);
+						mtotree(ind_var_number);		// Номер индуцированной переменной
+						mtotree(step * 4);				// Шаг инкремента
+						for (int i = 0; i < 6; i++)		// Выражение для вырезки первого элемента
+							mtotree(tree[local_tc + i]);
+						ind_vars[ind_var_number] = 1;
+					}
+
+					// Заменяем в изначальном дереве вырезку на индуцированную вырезку
+					tree[local_tc] = TSliceInd;
+					tree[local_tc + 1] = ind_var_number;
+					tree[local_tc + 2] = NOP;
+					tree[local_tc + 3] = NOP;
+					tree[local_tc + 4] = NOP;
+				}
+				else if (tree[local_tc + 5] == TConst && (tree[local_tc + 7] == LPLUS || tree[local_tc + 7] == LMINUS)
+						 && tree[local_tc + 8] == TExprend)
+				{
+					// Это вырезка a[iterator ± const]
+
+					// Добавляем в массив переменных вырезку
+					int ind_var_number = ind_var_add(&tree[local_tc], 9);
+
+					if (ind_vars[ind_var_number] == 0)
+					{
+						// Добавляем в оптимизированное дерево объявление индуцированной переменной
+						mtotree(TIndVar);
+						mtotree(ind_var_number);		// Номер индуцированной переменной
+						mtotree(step * 4);				// Шаг инкремента
+						for (int i = 0; i < 9; i++)		// Выражение для вырезки первого элемента
+							mtotree(tree[local_tc + i]);
+						ind_vars[ind_var_number] = 1;
+					}
+
+					// Заменяем в изначальном дереве вырезку на индуцированную вырезку
+					tree[local_tc] = TSliceInd;
+					tree[local_tc + 1] = ind_var_number;
+					tree[local_tc + 2] = NOP;
+					tree[local_tc + 3] = NOP;
+					tree[local_tc + 4] = NOP;
+					tree[local_tc + 5] = NOP;
+					tree[local_tc + 6] = NOP;
+					tree[local_tc + 7] = NOP;
+				}
+			}
+
+		}
+	}
 	mstatement();
 }
 
@@ -375,6 +551,13 @@ int operand()
 			mexpr();
         }
     }
+	else if (t == TSliceInd)
+	{
+		mcopy();
+		mcopy();
+		while (tree[tc] == NOP)
+			tc++;
+	}
     else if (t == TCall1)
     {
         int npar;
@@ -496,7 +679,8 @@ void mblock()
 {
     int i, n, all;
     do
-    {        switch (tree[tc])
+    {
+		switch (tree[tc])
         {
             case TFuncdef:
             {

@@ -7,16 +7,7 @@
 
 //#define _CRT_SECURE_NO_WARNINGS
 
-const char * name =
-//"tests/Mishatest.c";
-
-"../tests/mips/for.c";
-
-//"../../../tests/Egor/Macro/for.c";
-
-//"../../../tests/Fadeev/Signal.c";
-
-//"../../../tests/Golovan/dining_philosophers.c";
+const char *name = "/Users/elias/test.c";
 
 #include <stdio.h>
 #include <string.h>
@@ -55,6 +46,7 @@ int bad_printf_placeholder = 0;
 // optimization flags
 int cycle_jump_reduce = 1;
 int check_nested_for = 1;
+int enable_ind_var = 1;
 
 extern void preprocess_file();
 

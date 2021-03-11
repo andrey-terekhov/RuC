@@ -41,5 +41,6 @@ extern int bad_printf_placeholder;
 
 extern int cycle_jump_reduce;
 extern int check_nested_for;
+extern int enable_ind_var;
 
 #endif
