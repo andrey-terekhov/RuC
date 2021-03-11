@@ -34,6 +34,7 @@
 const char *const DEFAULT_MACRO = "macro.txt";
 
 const char *const DEFAULT_VM = "export.txt";
+const char *const DEFAULT_LLVM = "out.ll";
 
 
 typedef int (*encoder)(const workspace *const ws, universal_io *const io, syntax *const sx);
@@ -137,6 +138,10 @@ int compile(workspace *const ws)
 		{
 			return compile_to_vm(ws);
 		}
+		else if (strcmp(flag, "-LLVM") == 0)
+		{
+			return compile_to_llvm(ws);
+		}
 	}
 }
 
@@ -158,6 +163,11 @@ int compile_to_vm(workspace *const ws)
 
 int compile_to_llvm(workspace *const ws)
 {
+	if (ws_get_output(ws) == NULL)
+	{
+		ws_set_output(ws, DEFAULT_LLVM);
+	}
+
 	return compile_from_ws(ws, &encode_to_llvm);
 }
 
@@ -208,6 +218,7 @@ int no_macro_compile_to_llvm(const char *const path)
 
 	workspace ws = ws_create();
 	ws_add_file(&ws, path);
+	ws_set_output(&ws, DEFAULT_LLVM);
 	out_set_file(&io, ws_get_output(&ws));
 
 	return compile_from_io(&ws, &io, &encode_to_llvm);
