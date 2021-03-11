@@ -37,8 +37,8 @@ int main(int argc, const char *argv[])
 	}
 
 #ifdef TESTING_EXIT_CODE
-	return compile_to_llvm(&ws) ? TESTING_EXIT_CODE : 0;
+	return compile(&ws) ? TESTING_EXIT_CODE : 0;
 #else
-	return compile_to_llvm(&ws);
+	return compile(&ws);
 #endif
 }
