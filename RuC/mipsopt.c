@@ -69,9 +69,7 @@ int ind_var_add(int *record, int length)
 			return old + 1;
 		}
 		else
-		{
 			old = ind_vars[old];
-		}
 	}
 
 	return ind_vars_start + 1;
@@ -326,7 +324,7 @@ void opt_for_statement()
 		// создаем узлы TIndVar или TIndVarc, а вместо вырезок пишем TSliceInd
 		// Также после цикла необходимо добавить IndVar += step * sizeof(element)
 		//printf("\n\n %i %i\n\n", iterator, step);
-		ind_vars_counter = ind_vars_start = 1;
+		ind_vars_counter = 3; ind_vars_start = 1;
 		for (int local_tc = tc; tree[local_tc] != TForEnd; local_tc++)
 		{
 			if (tree[local_tc] == TSliceident && tree[local_tc + 3] == TIdenttoval && tree[local_tc + 4] == iterator)
@@ -735,5 +733,8 @@ void mipsopt()
     sp = -1;
     tc = 0;
     mtc = 0;
+	ind_vars[1] = 0;
+	ind_vars[2] = 0;
+	ind_vars[3] = TExprend;
     mblock();
 }
