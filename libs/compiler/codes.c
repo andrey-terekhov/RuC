@@ -1288,7 +1288,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 
 void double_to_io(universal_io *const io, const int64_t fst, const int64_t snd)
 {
-	int64_t num = (snd << 32) | fst;
+	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
 	double numdouble;
 	memcpy(&numdouble, &num, sizeof(double));
 	uni_printf(io, " %f\n", numdouble);
