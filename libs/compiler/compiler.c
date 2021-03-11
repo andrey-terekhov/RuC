@@ -22,6 +22,7 @@
 #include "syntax.h"
 #include "uniio.h"
 #include <stdlib.h>
+#include <string.h>
 
 #ifndef _MSC_VER
 	#include <sys/stat.h>
@@ -123,6 +124,19 @@ int compile_from_ws(workspace *const ws, const encoder enc)
  */
 
 
+int compile(workspace *const ws)
+{
+	for (size_t i = 0; ; i++)
+	{
+		const char *flag = ws_get_flag(ws, i);
+
+		if (flag == NULL || strcmp(flag, "-VM") == 0)
+		{
+			return compile_to_vm(ws);
+		}
+	}
+}
+
 int compile_to_vm(workspace *const ws)
 {
 	const int ret = compile_from_ws(ws, &encode_to_vm);
@@ -134,11 +148,19 @@ int compile_to_vm(workspace *const ws)
 	return ret;
 }
 
+
+int auto_compile(const int argc, const char *const *const argv)
+{
+	workspace ws = ws_parse_args(argc, argv);
+	return compile(&ws);
+}
+
 int auto_compile_to_vm(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
 	return compile_to_vm(&ws);
 }
+
 
 int no_macro_compile_to_vm(const char *const path)
 {
