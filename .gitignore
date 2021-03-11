@@ -101,6 +101,8 @@ Release/
 # RuC
 !keywords.txt
 *.ruc
+*.ll
+*.s
 
 # Sublime workspace files
 *.sublime-workspace
