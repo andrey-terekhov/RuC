@@ -748,9 +748,11 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			break;
 
 		case LOGOR:
+			argc = 1;
 			sprintf(buffer, "||");
 			break;
 		case LOGAND:
+			argc = 1;
 			sprintf(buffer, "&&");
 			break;
 		case ORASS:
@@ -1363,7 +1365,7 @@ void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
 	else
 	{
 		size_t i = 0;
-		while (i < argc && node_get_arg(nd, i) != INT_MAX)
+		while (i < argc && node_get_arg(nd, i) != ITEM_MAX)
 		{
 			elem_get_name(type, i + 1, buffer);
 
@@ -1376,7 +1378,8 @@ void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
 		}
 		uni_printf(io, "\n");
 
-		if (i != argc)
+		if ((node_get_arg(nd, i) != ITEM_MAX && node_get_type(nd) != TString && node_get_type(nd) != TStringd)
+			|| i != argc)
 		{
 			elem_get_name(type, 0, buffer);
 			warning(NULL, node_argc, nd->type, buffer);

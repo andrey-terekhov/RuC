@@ -590,7 +590,7 @@ item_t scope_func_enter(syntax *const sx)
 {
 	if (sx == NULL)
 	{
-		return INT_MAX;
+		return ITEM_MAX;
 	}
 
 	const item_t displ = sx->displ;
