@@ -132,6 +132,7 @@ void get_message_error(const int num, char *const msg)
 			break;
 		default:
 			sprintf(msg, "не реализованная ошибка №%d", num);
+			break;
 	}
 }
 

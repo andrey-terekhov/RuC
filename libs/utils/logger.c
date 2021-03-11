@@ -70,7 +70,7 @@ void set_color(const uint8_t color)
 void print_msg(const uint8_t color, const char *const msg)
 {
 	set_color(COLOR_DEFAULT);
-	
+
 	size_t i = 0;
 	while (msg[i] != '\0' && msg[i] != '\n')
 	{
@@ -344,7 +344,7 @@ void log_warning(const char *const tag, const char *const msg, const char *const
 		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
 		return;
 	}
-	
+
 	char buffer[MAX_MSG_SIZE];
 	splice(buffer, msg, line, symbol);
 
@@ -363,7 +363,7 @@ void log_note(const char *const tag, const char *const msg, const char *const li
 		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
 		return;
 	}
-	
+
 	char buffer[MAX_MSG_SIZE];
 	splice(buffer, msg, line, symbol);
 
@@ -377,7 +377,7 @@ void log_system_error(const char *const tag, const char *const msg)
 	{
 		return;
 	}
-	
+
 	current_error_log(tag, msg);
 }
 
@@ -387,7 +387,7 @@ void log_system_warning(const char *const tag, const char *const msg)
 	{
 		return;
 	}
-	
+
 	current_warning_log(tag, msg);
 }
 
@@ -397,6 +397,6 @@ void log_system_note(const char *const tag, const char *const msg)
 	{
 		return;
 	}
-	
+
 	current_note_log(tag, msg);
 }

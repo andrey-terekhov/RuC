@@ -95,6 +95,15 @@ EXPORTED item_t vector_get(const vector *const vec, const size_t index);
 EXPORTED item_t vector_remove(vector *const vec);
 
 
+/**
+ *	Change vector size
+ *
+ *	@param	vec				Vector structure
+ *	@param	size			New vector size
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+EXPORTED int vector_resize(vector *const vec, const size_t size);
 
 /**
  *	Get vector size

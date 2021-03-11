@@ -1275,6 +1275,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 
 		default:
 			sprintf(buffer, "%" PRIitem, elem);
+			break;
 	}
 
 	if ((num != 0 && !was_switch) || argc < num)
@@ -1365,7 +1366,7 @@ void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
 		while (i < argc && node_get_arg(nd, i) != INT_MAX)
 		{
 			elem_get_name(type, i + 1, buffer);
-			
+
 			if (buffer[0] != '\0')
 			{
 				uni_printf(io, " %s=", buffer);
@@ -1399,7 +1400,7 @@ void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
  */
 
 
-void tree_print(vector *const tree, const char *const path)
+void tree_print(const char *const path, vector *const tree)
 {
 	universal_io io = io_create();
 	if (!vector_is_correct(tree) || out_set_file(&io, path))
@@ -1419,85 +1420,78 @@ void tree_print(vector *const tree, const char *const path)
 
 
 /** Вывод таблиц и дерева */
-void tables_and_tree(const syntax *const sx, const char *const path)
+void tables_and_tree(const char *const path
+	, const vector *const identifiers
+	, const vector *const modes
+	, const vector *const tree)
 {
 	universal_io io = io_create();
-	if (sx == NULL || out_set_file(&io, path))
+	if (!vector_is_correct(identifiers) || !vector_is_correct(modes) || !vector_is_correct(tree)
+		|| out_set_file(&io, path))
 	{
 		return;
 	}
 
-	uni_printf(&io, "\n%s\n", "identab");
-	for (size_t i = 2; i < vector_size(&sx->identifiers); i += 4)
+
+	uni_printf(&io, "%s\n", "identab");
+	for (size_t i = 2; i < vector_size(identifiers); i += 4)
 	{
 		for (size_t j = 0; j < 4; j++)
 		{
-			uni_printf(&io, "id %zi) %" PRIitem "\n", i + j, vector_get(&sx->identifiers, i + j));
+			uni_printf(&io, "id %zi) %" PRIitem "\n", i + j, vector_get(identifiers, i + j));
 		}
 		uni_printf(&io, "\n");
 	}
 
-	/*
-	uni_printf(&io, "\n%s\n", "repr");
-	for (size_t i = 1206; i <= sx->rp; i++)
-	{
-		uni_printf(&io, "rp %zi) %i\n", i, sx->reprtab[i]);
-	}
-	*/
-
 	uni_printf(&io, "\n%s\n", "modetab");
-	for (size_t i = 0; i < vector_size(&sx->modes); i++)
+	for (size_t i = 0; i < vector_size(modes); i++)
 	{
-		uni_printf(&io, "md %zi) %" PRIitem "\n", i, vector_get(&sx->modes, i));
+		uni_printf(&io, "md %zi) %" PRIitem "\n", i, vector_get(modes, i));
 	}
-
-	/*
-	uni_printf(&io, "\n%s\n", "tree");
-	for (size_t i = 0; i <= tc; i++)
-	{
-		uni_printf(&io, "tc %zi) %i\n", i, sx->tree.array[i]);
-	}
-	*/
 
 	uni_printf(&io, "\n");
-
 	size_t i = 0;
-	while (i < vector_size(&sx->tree))
+	while (i < vector_size(tree))
 	{
 		uni_printf(&io, "tc %zi) ", i);
-		i = elem_to_io(&io, &sx->tree, i);
+		i = elem_to_io(&io, tree, i);
 	}
 
 	io_erase(&io);
 }
 
 /** Вывод таблиц и кодов */
-void tables_and_codes(const syntax *const sx, const char *const path)
+void tables_and_codes(const char *const path
+	, const vector *const functions
+	, const vector *const processes
+	, const vector *const memory)
 {
 	universal_io io = io_create();
-	if (sx == NULL || out_set_file(&io, path))
+	if (!vector_is_correct(functions) || !vector_is_correct(processes) || !vector_is_correct(memory)
+		|| out_set_file(&io, path))
 	{
 		return;
 	}
 
-	uni_printf(&io, "\n\n%s\n", "functions");
-	for (size_t i = 0; i < vector_size(&sx->functions); i++)
+
+	uni_printf(&io, "%s\n", "functions");
+	for (size_t i = 0; i < vector_size(functions); i++)
 	{
-		uni_printf(&io, "fun %zi) %" PRIitem "\n", i, vector_get(&sx->functions, i));
+		uni_printf(&io, "fun %zi) %" PRIitem "\n", i, vector_get(functions, i));
 	}
 
 	uni_printf(&io, "\n%s\n", "iniprocs");
-	for (size_t i = 0; i < vector_size(&sx->processes); i++)
+	for (size_t i = 0; i < vector_size(processes); i++)
 	{
-		uni_printf(&io, "inipr %zi) %" PRIitem "\n", i, vector_get(&sx->processes, i));
+		uni_printf(&io, "inipr %zi) %" PRIitem "\n", i, vector_get(processes, i));
 	}
 
 	uni_printf(&io, "\n%s\n", "mem");
 	size_t i = 0;
-	while (i < vector_size(&sx->memory))
+	while (i < vector_size(memory))
 	{
 		uni_printf(&io, "pc %zi) ", i);
-		i = elem_to_io(&io, &sx->memory, i);
+		i = elem_to_io(&io, memory, i);
 	}
 
 	io_erase(&io);
