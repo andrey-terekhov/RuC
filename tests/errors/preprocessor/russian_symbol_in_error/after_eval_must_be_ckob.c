@@ -1,4 +1,4 @@
-#EVAL 2 + 2
+#EVAL привет 2 + 2
 
 int main ()
 {
