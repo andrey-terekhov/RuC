@@ -40,6 +40,8 @@ typedef struct linker
 /**
  *	Create linker structure
  *
+ *	@param	ws		Workspace
+ *
  *	@return	Linker structure
  */
 linker lk_create(workspace *const ws);
