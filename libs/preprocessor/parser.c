@@ -368,7 +368,8 @@ int while_implementation(linker *const lk)
 
 int parser_include(linker *const lk)
 {
-	size_t index = lk_include(env);
+	size_t index = lk_include(lk);
+	environment *env = lk->env;
 
 	universal_io new_in = io_create();
 	universal_io *old_in = env->input;
