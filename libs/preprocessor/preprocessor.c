@@ -128,11 +128,6 @@ int preprocess_all(environment *const env)
 
 int macro_form_io(workspace *const ws, universal_io *const output)
 {
-	if (!ws_is_correct(ws))
-	{
-		return -1;
-	}
-
 	linker lk = lk_create(ws);
 
 	environment env;

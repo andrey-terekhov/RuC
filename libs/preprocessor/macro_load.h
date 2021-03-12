@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 /**
- *	Index of macro in macro table
+ *	Change input to macro replacement text
  *
  *	@param	index		Index of macro in macro table
  *	@param	env			Preprocessor environment

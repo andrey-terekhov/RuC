@@ -25,7 +25,7 @@ extern "C" {
 
 typedef struct environment environment;
 
-/** Structure for connecting files */
+/**	Structure for connecting files */
 typedef struct linker
 {
 	workspace *ws;				/**< Initial arguments */
@@ -54,25 +54,25 @@ linker lk_create(workspace *const ws);
 size_t lk_include(environment *const env);
 
 /**
- *	 Get current file name from linker
+ *	Get current file name from linker
  *
- *	@param	lk	Preprocessor linker
+ *	@param	lk		Preprocessor linker
  *
  *	@return	File
  */
 const char *lk_get_cur_path(const linker *const lk);
 
 /**
- *	 Get number of files from linker
+ *	Get number of files from linker
  *
- *	@param	lk	Preprocessor linker
+ *	@param	lk		Preprocessor linker
  *
  *	@return	Number of files
  */
 size_t lk_get_count(const linker *const lk);
 
 /**
- *	 Checks if a file is included
+ *	Checks if a file is included
  *
  *	@param	lk		Preprocessor linker
  *	@param	index	File index
@@ -82,7 +82,7 @@ size_t lk_get_count(const linker *const lk);
 int lk_is_included(const linker *const lk, size_t index);
 
 /**
- *	 Open file from linker
+ *	Open file from linker
  *
  *	@param	lk		Preprocessor linker
  *	@param	index	File index
@@ -92,16 +92,16 @@ int lk_is_included(const linker *const lk, size_t index);
 int lk_open_file(environment *const env, const size_t index);
 
 /**
- *	 Get current file index from linker
+ *	Get current file index from linker
  *
- *	@param	lk	Preprocessor linker
+ *	@param	lk		Preprocessor linker
  *
  *	@return	Index file
  */
 size_t lk_get_current(const linker *const lk);
 
 /**
- *	 Set current file from linker
+ *	Set current file from linker
  *
  *	@param	lk		Preprocessor linker
  *	@param	index	File index
