@@ -373,7 +373,7 @@ int scope_block_exit(syntax *const sx, const item_t displ, const item_t lg);
  *
  *	@param	sx			Syntax structure
  *
- *	@return	Previous stack displacement, @c INT_MAX on failure
+ *	@return	Previous stack displacement, @c ITEM_MAX on failure
  */
 item_t scope_func_enter(syntax *const sx);
 
