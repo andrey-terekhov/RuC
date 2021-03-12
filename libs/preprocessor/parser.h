@@ -31,7 +31,7 @@ extern "C" {
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int preprocess_file(environment *const env, const size_t number);
+int preprocess_file(linker *const lk, const size_t number);
 
 #ifdef __cplusplus
 } /* extern "C" */

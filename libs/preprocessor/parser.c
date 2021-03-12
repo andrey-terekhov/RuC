@@ -142,8 +142,9 @@ int if_false(environment *const env)
 	return 0;
 }
 
-int if_true(environment *const env, const int type_if)
+int if_true(linker *const lk, const int type_if)
 {
+	environment *env = lk->env;
 	int error = 0;
 	while (env->curchar != EOF)
 	{
@@ -181,8 +182,9 @@ int if_true(environment *const env, const int type_if)
 	return if_end(env);
 }
 
-int if_implementation(environment *const env)
+int if_implementation(linker *const lk)
 {
+	environment *env = lk->env;
 	const int type_if = env->cur;
 	const int truth_flag = if_check(env, type_if); // начало (if)
 	if (truth_flag == -1)
@@ -194,7 +196,7 @@ int if_implementation(environment *const env)
 	env->nested_if++;
 	if (truth_flag)
 	{
-		return if_true(env, type_if);
+		return if_true(lk, type_if);
 	}
 	else
 	{
@@ -219,7 +221,7 @@ int if_implementation(environment *const env)
 
 		if (el_truth_flag)
 		{
-			return if_true(env, type_if);
+			return if_true(lk, type_if);
 		}
 		else
 		{
@@ -237,7 +239,7 @@ int if_implementation(environment *const env)
 	if (env->cur == SH_ELSE)
 	{
 		env->cur = 0;
-		return if_true(env, type_if);;
+		return if_true(lk, type_if);;
 	}
 
 	if (env->cur == SH_ENDIF)
@@ -303,8 +305,9 @@ int while_collect(environment *const env)
 	return -1;
 }
 
-int while_implementation(environment *const env)
+int while_implementation(linker *const lk)
 {
+	environment *env = lk->env;
 	const int oldernextp = env->nextp;
 	const size_t end = (size_t)env->while_string[oldernextp + 2];
 	int error = 0;
@@ -351,7 +354,7 @@ int while_implementation(environment *const env)
 			}
 			else
 			{
-				error = preprocess_token(env);
+				error = preprocess_token(lk);
 				if (error)
 				{
 					return error;
@@ -363,7 +366,7 @@ int while_implementation(environment *const env)
 	return 0;
 }
 
-int parser_include(environment *const env)
+int parser_include(linker *const lk)
 {
 	size_t index = lk_include(env);
 
@@ -407,14 +410,15 @@ int parser_include(environment *const env)
 }
 
 
-int preprocess_words(environment *const env)
+int preprocess_words(linker *const lk)
 {
+	environment *env = lk->env;
 	skip_separators(env);
 	switch (env->cur)
 	{
 		case SH_INCLUDE:
 		{
-			return parser_include(env);
+			return parser_include(lk);
 		}
 		case SH_DEFINE:
 		case SH_MACRO:
@@ -495,13 +499,9 @@ int preprocess_words(environment *const env)
 	}
 }
 
-int preprocess_token(environment *const env)
+int preprocess_token(linker *const lk)
 {
-	if (env == NULL)
-	{
-		return -1;
-	}
-
+	environment *env = lk->env;
 	switch (env->curchar)
 	{
 		case EOF:
@@ -513,7 +513,7 @@ int preprocess_token(environment *const env)
 
 			if (env->cur != 0)
 			{
-				const int res = preprocess_words(env);
+				const int res = preprocess_words(lk);
 				if (env->nextchar != '#' && env->nextch_type != WHILE_TYPE &&
 					env->nextch_type != MACRO_TEXT_TYPE)//curflag
 				{
@@ -571,17 +571,18 @@ int preprocess_token(environment *const env)
 	}
 }
 
-int preprocess_file(environment *const env, const size_t number)
+int preprocess_file(linker *const lk, const size_t number)
 {
-	if (lk_open_file(env, number))
+	environment *env = lk->env;
+	if (lk_open_file(lk, number))
 	{
 		return -1;
 	}
 
 	env_clear_error_string(env);
 
-	const size_t old_cur = lk_get_current(env->lk);
-	lk_set_current(env->lk, number);
+	const size_t old_cur = lk_get_current(lk);
+	lk_set_current(lk, number);
 	const size_t old_line = env->line;
 	
 	env->line = 1;
@@ -603,7 +604,7 @@ int preprocess_file(environment *const env, const size_t number)
 	m_fprintf(env, '\n');
 
 	env->line = old_line;
-	lk_set_current(env->lk, old_cur);
+	lk_set_current(lk, old_cur);
 
 	in_clear(env->input);
 	return was_error ? -1 : 0;

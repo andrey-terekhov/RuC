@@ -46,10 +46,10 @@ void lk_make_path(char *const output, const char *const source, const char *cons
 	strcpy(&output[index], header);
 }
 
-size_t lk_find_include(environment *const env, const char* const path)
+size_t lk_find_include(linker *const lk, const char* const path)
 {
 	char full_path[MAX_ARG_SIZE];
-	lk_make_path(full_path, lk_get_cur_path(env->lk), path, 1);
+	lk_make_path(full_path, lk_get_cur_path(lk), path, 1);
 	universal_io temp_io = io_create();
 	if (in_set_file(&temp_io, full_path))
 	{
@@ -58,7 +58,7 @@ size_t lk_find_include(environment *const env, const char* const path)
 
 		do
 		{
-			dir = ws_get_dir(env->lk->ws, i++);
+			dir = ws_get_dir(lk->ws, i++);
 			lk_make_path(full_path, dir, path, 0);
 		} while (dir != NULL && in_set_file(&temp_io, full_path));
 
@@ -71,13 +71,13 @@ size_t lk_find_include(environment *const env, const char* const path)
 		return SIZE_MAX - 1;
 	}
 
-	const size_t index = ws_add_file(env->lk->ws, full_path);
+	const size_t index = ws_add_file(lk->ws, full_path);
 	in_clear(&temp_io);
-	if (index == env->lk->count)
+	if (index == lk->count)
 	{
-		env->lk->included[env->lk->count++] = 0;
+		lk->included[lk->count++] = 0;
 	}
-	else if (env->lk->included[index])
+	else if (lk->included[index])
 	{
 		return SIZE_MAX;
 	}
@@ -85,8 +85,9 @@ size_t lk_find_include(environment *const env, const char* const path)
 	return index;
 }
 
-size_t lk_preprocess_include(environment *const env)
+size_t lk_preprocess_include(linker *const lk)
 {
+	environment *env = lk->env;
 	char header_path[MAX_ARG_SIZE];
 	size_t i = 0;
 
@@ -102,13 +103,14 @@ size_t lk_preprocess_include(environment *const env)
 		m_nextch(env);
 	}
 
-	return lk_find_include(env, header_path);
+	return lk_find_include(lk, header_path);
 }
 
-linker lk_create(workspace *const ws)
+linker lk_create(workspace *const ws, environment *const env)
 {
 	linker lk;
 
+	lk.env = env;
 	lk.ws = ws;
 	lk.current = MAX_PATHS;
 	lk.count = ws_get_files_num(ws);
@@ -121,19 +123,20 @@ linker lk_create(workspace *const ws)
 	return lk;
 }
 
-int lk_open_file(environment *const env, const size_t index)
+int lk_open_file(linker *const lk, const size_t index)
 {
-	if (in_set_file(env->input, ws_get_file(env->lk->ws, index)))
+	if (in_set_file(lk->env->input, ws_get_file(lk->ws, index)))
 	{
-		macro_system_error(lk_get_cur_path(env->lk), source_file_not_found);
+		macro_system_error(lk_get_cur_path(lk), source_file_not_found);
 		return -1;
 	}
 
 	return 0;
 }
 
-size_t lk_include(environment *const env)
+size_t lk_include(linker *const lk)
 {
+	environment *env = lk->env;
 	if (env == NULL)
 	{
 		return SIZE_MAX - 1;
@@ -149,7 +152,7 @@ size_t lk_include(environment *const env)
 
 	m_nextch(env);
 
-	return lk_preprocess_include(env);
+	return lk_preprocess_include(lk);
 }
 
 const char *lk_get_cur_path(const linker *const lk)

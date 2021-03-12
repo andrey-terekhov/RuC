@@ -26,11 +26,9 @@
 #define MAX_CMT_SIZE MAX_ARG_SIZE + 32
 
 
-void env_init(environment *const env, linker *const lk, universal_io *const output)
+void env_init(environment *const env, universal_io *const output)
 {
 	env->output = output;
-
-	env->lk = lk;
 
 	env->rp = 1;
 	env->macro_tab_size = 1;

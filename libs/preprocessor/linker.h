@@ -34,15 +34,20 @@ typedef struct linker
 	size_t count; 				/**< Number of added files */
 
 	size_t current; 			/**< Index of the current file */
+
+	environment *env;			/**< Preprocessor environment */
 } linker;
 
 
 /**
  *	Create linker structure
  *
+ *	@param	ws		Workspace
+ *	@param	env		Preprocessor environment
+ *
  *	@return	Linker structure
  */
-linker lk_create(workspace *const ws);
+linker lk_create(workspace *const ws, environment *const env);
 
 /**
  *	Include current file from environment to target output
@@ -51,7 +56,7 @@ linker lk_create(workspace *const ws);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-size_t lk_include(environment *const env);
+size_t lk_include(linker *const lk);
 
 /**
  *	Get current file name from linker
@@ -89,7 +94,7 @@ int lk_is_included(const linker *const lk, size_t index);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int lk_open_file(environment *const env, const size_t index);
+int lk_open_file(linker *const lk, const size_t index);
 
 /**
  *	Get current file index from linker
