@@ -1,6 +1,6 @@
 #define перем 1
 
-int main ()
+int main()
 {
 #ifdef перем
 	printf("0\n");

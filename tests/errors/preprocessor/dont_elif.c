@@ -1,6 +1,6 @@
 #define KEK 1
 
-int main ()
+int main()
 {
 #ifdef KEK
 	printf("0\n");

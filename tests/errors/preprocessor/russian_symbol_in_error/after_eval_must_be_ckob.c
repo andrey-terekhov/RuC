@@ -1,6 +1,6 @@
 #EVAL привет 2 + 2
 
-int main ()
+int main()
 {
 	return 0;
 }
