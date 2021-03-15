@@ -87,7 +87,7 @@ static int is_expression(node *const nd)
 
 static void node_recursive(information *const info, node *const nd, syntax *const sx)
 {
-	printf("children = %zi tc = %zi argc = %zi type = %zi\n", nd->children, nd->type, nd->argc, node_get_type(nd));
+	// printf("children = %zi tc = %zi argc = %zi type = %zi\n", nd->children, nd->type, nd->argc, node_get_type(nd));
 	for (size_t i = 0; i < node_get_amount(nd); i++)
 	{
 		node child = node_get_child(nd, i);
@@ -157,54 +157,52 @@ static void node_recursive(information *const info, node *const nd, syntax *cons
 			// printf("operation %zi\n", child.children);
 
 			// это работает только для простых выражений, нужно задействовать ещё node_num
-			printf("\nchange1:\n");
-			printf("first node parent to swap: children = %zi tc = %zi argc = %zi type = %zi child_num = %zi\n", 
-				nd->children, nd->type, nd->argc, node_get_type(nd), i);
-			node child1 = node_get_child(nd, i);
-			printf("first node child to swap: tc = %zi argc = %zi type = %zi \n", 
-				child1.type, child1.argc, node_get_type(&child1));
-			printf("second node parent to swap: children = %zi tc = %zi argc = %zi type = %zi child_num = %zi\n", 
-				second_operand.parent->children, second_operand.parent->type, second_operand.parent->argc, 
-				node_get_type(second_operand.parent), second_operand.child_num);
-			node child2 = node_get_child(second_operand.parent, second_operand.child_num);
-			printf("second node child to swap: tc = %zi argc = %zi type = %zi \n", 
-				child2.type, child2.argc, node_get_type(&child2));
+			// printf("\nchange1:\n");
+			// printf("first node parent to swap: children = %zi tc = %zi argc = %zi type = %zi child_num = %zi\n", 
+			// 	nd->children, nd->type, nd->argc, node_get_type(nd), i);
+			// node child1 = node_get_child(nd, i);
+			// printf("first node child to swap: tc = %zi argc = %zi type = %zi \n", 
+			// 	child1.type, child1.argc, node_get_type(&child1));
+			// printf("second node parent to swap: children = %zi tc = %zi argc = %zi type = %zi child_num = %zi\n", 
+			// 	second_operand.parent->children, second_operand.parent->type, second_operand.parent->argc, 
+			// 	node_get_type(second_operand.parent), second_operand.child_num);
+			// node child2 = node_get_child(second_operand.parent, second_operand.child_num);
+			// printf("second node child to swap: tc = %zi argc = %zi type = %zi \n", 
+			// 	child2.type, child2.argc, node_get_type(&child2));
 
 			node_order(nd, i, second_operand.parent, second_operand.child_num);
 
-			printf("after change1:\n");
-			printf("first node parent to swap: children = %zi tc = %zi argc = %zi type = %zi child_num = %zi\n", 
-				nd->children, nd->type, nd->argc, node_get_type(nd), i);
-			node child11 = node_get_child(nd, i);
-			printf("first node child to swap: tc = %zi argc = %zi type = %zi \n", 
-				child11.type, child11.argc, node_get_type(&child11));
-			printf("second parent node to swap: children = %zi tc = %zi argc = %zi type = %zi child_num = %zi\n", 
-				second_operand.parent->children, second_operand.parent->type, second_operand.parent->argc, 
-				node_get_type(second_operand.parent), second_operand.child_num);
-			node child22 = node_get_child(second_operand.parent, second_operand.child_num);
-			printf("second node child to swap: children = %zi tc = %zi argc = %zi type = %zi \n", 
-				child22.children, child.type, child22.argc, node_get_type(&child22));
+			// printf("after change1:\n");
+			// printf("first node parent to swap: children = %zi tc = %zi argc = %zi type = %zi child_num = %zi\n", 
+			// 	nd->children, nd->type, nd->argc, node_get_type(nd), i);
+			// node child11 = node_get_child(nd, i);
+			// printf("first node child to swap: tc = %zi argc = %zi type = %zi \n", 
+			// 	child11.type, child11.argc, node_get_type(&child11));
+			// printf("second parent node to swap: children = %zi tc = %zi argc = %zi type = %zi child_num = %zi\n", 
+			// 	second_operand.parent->children, second_operand.parent->type, second_operand.parent->argc, 
+			// 	node_get_type(second_operand.parent), second_operand.child_num);
+			// node child22 = node_get_child(second_operand.parent, second_operand.child_num);
+			// printf("second node child to swap: children = %zi tc = %zi argc = %zi type = %zi \n", 
+			// 	child22.children, child.type, child22.argc, node_get_type(&child22));
 
-			// эспериментально-отладочный if
+			// // эспериментально-отладочный if
 			// if (second_operand.node_num == 3)
 			// {
-			// 	printf("first node to swap: children = %zi tc = %zi argc = %zi type = %zi\n", 
-			// 		nd->children, nd->type, nd->argc, node_get_type(nd));
 			// 	node child1 = node_get_child(second_operand.parent, second_operand.child_num); 
-			// 	printf("second node to swap: children = %zi tc = %zi argc = %zi type = %zi\n", 
-			// 		child1.children, child1.type, child1.argc, node_get_type(&child1));
-			// 	tree_print("new01.txt", &(sx->tree));
-			// 	// очень странные дела происходят
-			// 	// node_order(nd, 0, &child1, 0); // в выражениях есть только один потомок
-			// 	// for (size_t tc = 0; tc < sx->tree.size; tc++)
-			// 	// 	printf("tc=%zi, %" PRIitem "\n", tc, sx->tree.array[tc]);
-			// 	// node child2 = node_get_child(&child1, 0); // в выражениях есть только один потомок
-			// 	// printf("child2 %i\n", child2.children);
-			// 	// node_order(nd, i, &child2, 0); // в выражениях есть только один потомок
+			// 	node_order(nd, i, &child1, 0); // в выражениях есть только один потомок
+			// 	node child2 = node_get_child(&child1, 0); // в выражениях есть только один потомок
+			// 	node_order(nd, i, &child2, 0); // в выражениях есть только один потомок
 			// }
+			node child_to_order_second = node_get_child(second_operand.parent, second_operand.child_num);
+			for (size_t j = 0; j < second_operand.node_num - 1; j++)
+			{
+				node_order(nd, i, &child_to_order_second, 0);
+				child_to_order_second = node_get_child(&child_to_order_second, 0);
+			}
 
-			printf("\nchange2\n");
 			node_order(second_operand.parent, second_operand.child_num, first_operand.parent, first_operand.child_num);
+
+			// TODO: сделать перестановки при сложном первом аргументе
 
 			first_operand.node_num = first_operand.node_num + second_operand.node_num + 1;
 			expr_stack_push(info, first_operand);
