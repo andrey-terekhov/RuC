@@ -23,6 +23,7 @@
 #include "syntax.h"
 #include "uniio.h"
 #include <stdlib.h>
+#include <string.h>
 
 #ifndef _MSC_VER
 	#include <sys/stat.h>
@@ -31,6 +32,10 @@
 
 
 const char *const DEFAULT_MACRO = "macro.txt";
+
+const char *const DEFAULT_VM = "out.ruc";
+const char *const DEFAULT_LLVM = "out.ll";
+const char *const DEFAULT_MIPS = "out.s";
 
 
 typedef int (*encoder)(const workspace *const ws, universal_io *const io, syntax *const sx);
@@ -124,8 +129,30 @@ int compile_from_ws(workspace *const ws, const encoder enc)
  */
 
 
+int compile(workspace *const ws)
+{
+	for (size_t i = 0; ; i++)
+	{
+		const char *flag = ws_get_flag(ws, i);
+
+		if (flag == NULL || strcmp(flag, "-VM") == 0)
+		{
+			return compile_to_vm(ws);
+		}
+		else if (strcmp(flag, "-LLVM") == 0)
+		{
+			return compile_to_llvm(ws);
+		}
+	}
+}
+
 int compile_to_vm(workspace *const ws)
 {
+	if (ws_get_output(ws) == NULL)
+	{
+		ws_set_output(ws, DEFAULT_VM);
+	}
+
 	const int ret = compile_from_ws(ws, &encode_to_vm);
 	if (!ret)
 	{
@@ -137,9 +164,21 @@ int compile_to_vm(workspace *const ws)
 
 int compile_to_llvm(workspace *const ws)
 {
+	if (ws_get_output(ws) == NULL)
+	{
+		ws_set_output(ws, DEFAULT_LLVM);
+	}
+
 	return compile_from_ws(ws, &encode_to_llvm);
 }
 
+
+
+int auto_compile(const int argc, const char *const *const argv)
+{
+	workspace ws = ws_parse_args(argc, argv);
+	return compile(&ws);
+}
 
 int auto_compile_to_vm(const int argc, const char *const *const argv)
 {
@@ -161,6 +200,7 @@ int no_macro_compile_to_vm(const char *const path)
 
 	workspace ws = ws_create();
 	ws_add_file(&ws, path);
+	ws_set_output(&ws, DEFAULT_VM);
 	out_set_file(&io, ws_get_output(&ws));
 
 	const int ret = compile_from_io(&ws, &io, &encode_to_vm);
@@ -179,6 +219,7 @@ int no_macro_compile_to_llvm(const char *const path)
 
 	workspace ws = ws_create();
 	ws_add_file(&ws, path);
+	ws_set_output(&ws, DEFAULT_LLVM);
 	out_set_file(&io, ws_get_output(&ws));
 
 	return compile_from_io(&ws, &io, &encode_to_llvm);
