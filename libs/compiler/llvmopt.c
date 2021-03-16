@@ -74,6 +74,8 @@ static expression_t expression_type(node *const nd)
 		case TIdent:
 		case TIdenttoval:
 		case TConst:
+		case TConstd:
+		case TIdenttovald:
 			return OPERAND;
 
 
@@ -93,6 +95,30 @@ static expression_t expression_type(node *const nd)
 		case POSTDECATV:
 		case INCATV:
 		case DECATV:
+
+		case UNMINUS:
+
+		case LNOT:
+		case LOGNOT:
+
+		case POSTINCR:
+		case POSTDECR:
+		case INCR:
+		case DECR:
+		case POSTINCATR:
+		case POSTDECATR:
+		case INCATR:
+		case DECATR:
+		case POSTINCRV:
+		case POSTDECRV:
+		case INCRV:
+		case DECRV:
+		case POSTINCATRV:
+		case POSTDECATRV:
+		case INCATRV:
+		case DECATRV:
+
+		case UNMINUSR:
 			return UNARY_OPERATION;
 
 
@@ -167,6 +193,41 @@ static expression_t expression_type(node *const nd)
 		case LMINUS:
 		case LMULT:
 		case LDIV:
+
+		case ASSR:
+		case PLUSASSR:
+		case MINUSASSR:
+		case MULTASSR:
+		case DIVASSR:
+
+		case ASSATR:
+		case PLUSASSATR:
+		case MINUSASSATR:
+		case MULTASSATR:
+		case DIVASSATR:
+
+		case ASSRV:
+		case PLUSASSRV:
+		case MINUSASSRV:
+		case MULTASSRV:
+		case DIVASSRV:
+
+		case ASSATRV:
+		case PLUSASSATRV:
+		case MINUSASSATRV:
+		case MULTASSATRV:
+		case DIVASSATRV:
+
+		case EQEQR:
+		case NOTEQR:
+		case LLTR:
+		case LGTR:
+		case LLER:
+		case LGER:
+		case LPLUSR:
+		case LMINUSR:
+		case LMULTR:
+		case LDIVR:
 			return BINARY_OPERATION;
 	}
 
@@ -229,6 +290,10 @@ static void node_recursive(information *const info, node *const nd, syntax *cons
 		{
 			expr_node_info node_info = {nd, i, 1};
 			expr_stack_push(info, node_info);
+		}
+		else if (expression_type(&child) == UNARY_OPERATION)
+		{
+			//TODO: написать перестановку для унарной операции
 		}
 		else if (expression_type(&child) == BINARY_OPERATION)
 		{
