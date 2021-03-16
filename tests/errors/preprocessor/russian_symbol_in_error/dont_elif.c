@@ -1,10 +1,10 @@
-#define KEK 1
+#define перем 1
 
 int main()
 {
-#ifdef KEK
+#ifdef перем
 	printf("0\n");
-#elif KEK == 1
+#elif перем == 1
 	printf("1\n");
 #else
 	printf("10\n");

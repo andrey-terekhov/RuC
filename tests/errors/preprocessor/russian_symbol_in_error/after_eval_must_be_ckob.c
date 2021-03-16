@@ -1,5 +1,6 @@
+#EVAL привет 2 + 2
+
 int main()
 {
-	/*printf("qwerty\n");
 	return 0;
 }
