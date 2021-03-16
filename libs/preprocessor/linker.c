@@ -50,18 +50,17 @@ size_t lk_find_include(linker *const lk, const char* const path)
 {
 	char full_path[MAX_ARG_SIZE];
 	lk_make_path(full_path, lk_get_cur_path(lk), path, 1);
+
 	universal_io temp_io = io_create();
 	if (in_set_file(&temp_io, full_path))
 	{
 		size_t i = 0;
 		const char *dir;
-
 		do
 		{
 			dir = ws_get_dir(lk->ws, i++);
 			lk_make_path(full_path, dir, path, 0);
 		} while (dir != NULL && in_set_file(&temp_io, full_path));
-
 	}
 
 	if (!in_is_correct(&temp_io))
@@ -89,8 +88,8 @@ size_t lk_preprocess_include(linker *const lk)
 {
 	environment *env = lk->env;
 	char header_path[MAX_ARG_SIZE];
-	size_t i = 0;
 
+	size_t i = 0;
 	while (env->curchar != '\"')
 	{
 		if (env->curchar == EOF)
@@ -181,7 +180,9 @@ int lk_set_current(linker *const lk, size_t index)
 	{
 		return -1;
 	}
+
 	lk->current = index;
+
 	if (!lk->included[index])
 	{
 		lk->included[index]++;

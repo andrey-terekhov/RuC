@@ -25,7 +25,7 @@
 #include "utils.h"
 
 
-int preprocess_token(environment *const env);
+int preprocess_token(linker *const lk);
 
 
 int if_check(environment *const env, int type_if)
@@ -148,7 +148,7 @@ int if_true(linker *const lk, const int type_if)
 	int error = 0;
 	while (env->curchar != EOF)
 	{
-		error = preprocess_token(env);
+		error = preprocess_token(lk);
 		if (error)
 		{
 			return error;
@@ -342,7 +342,7 @@ int while_implementation(linker *const lk)
 			if (env->curchar == WHILE_BEGIN)
 			{
 				env->nextp--;
-				if (while_implementation(env))
+				if (while_implementation(lk))
 				{
 					return -1;
 				}
@@ -390,7 +390,7 @@ int parser_include(linker *const lk)
 		flag_io_type++;
 	}
 
-	const int res = preprocess_file(env, index);
+	const int res = preprocess_file(lk, index);
 
 	env->input = old_in;
 	if (res == -1)
@@ -445,7 +445,7 @@ int preprocess_words(linker *const lk)
 		case SH_IFDEF:
 		case SH_IFNDEF:
 		{
-			return if_implementation(env);
+			return if_implementation(lk);
 		}
 		case SH_SET:
 		{
@@ -483,7 +483,7 @@ int preprocess_words(linker *const lk)
 			m_nextch(env);
 
 			env->nextp = 0;
-			int res = while_implementation(env);
+			int res = while_implementation(lk);
 			if (env->nextch_type != FILE_TYPE)
 			{
 				m_old_nextch_type(env);
@@ -575,6 +575,7 @@ int preprocess_token(linker *const lk)
 int preprocess_file(linker *const lk, const size_t number)
 {
 	environment *env = lk->env;
+
 	if (lk_open_file(lk, number))
 	{
 		return -1;
@@ -584,13 +585,13 @@ int preprocess_file(linker *const lk, const size_t number)
 
 	const size_t old_cur = lk_get_current(lk);
 	lk_set_current(lk, number);
+
+	env->curent_path = lk_get_cur_path(lk);
 	const size_t old_line = env->line;
-	
 	env->line = 1;
 
 	get_next_char(env);
 	m_nextch(env);
-
 	if (env->curchar != '#')
 	{
 		env_add_comment(env);
@@ -599,13 +600,14 @@ int preprocess_file(linker *const lk, const size_t number)
 	int was_error = 0;
 	while (env->curchar != EOF)
 	{
-		was_error = preprocess_token(env) || was_error;
+		was_error = preprocess_token(lk) || was_error;
 	}
 
 	m_fprintf(env, '\n');
 
 	env->line = old_line;
 	lk_set_current(lk, old_cur);
+	env->curent_path = lk_get_cur_path(lk);
 
 	in_clear(env->input);
 	return was_error ? -1 : 0;

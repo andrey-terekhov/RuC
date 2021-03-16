@@ -74,6 +74,8 @@ typedef struct environment
 	int nested_if;
 	int flagint;
 
+	const char *curent_path;
+
 	size_t line;
 
 	universal_io *output;
