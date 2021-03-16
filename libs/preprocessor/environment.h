@@ -18,7 +18,6 @@
 
 #include "constants.h"
 #include "uniio.h"
-#include "linker.h"
 
 
 #ifdef __cplusplus
