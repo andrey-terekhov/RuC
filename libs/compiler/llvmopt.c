@@ -288,7 +288,10 @@ static void node_recursive(information *const info, node *const nd, syntax *cons
 		// перестановка узлов выражений
 		if (expression_type(&child) == OPERAND)
 		{
-			expr_node_info node_info = {nd, i, 1};
+			expr_node_info node_info;
+			node_info.parent = nd;
+			node_info.child_num = i;
+			node_info.node_num = 1;
 			expr_stack_push(info, node_info);
 		}
 		else if (expression_type(&child) == UNARY_OPERATION)
