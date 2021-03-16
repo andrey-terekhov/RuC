@@ -23,7 +23,7 @@
 #include <string.h>
 
 
-#define MAX_CMT_SIZE MAX_ARG_SIZE + 32
+#define MAX_CMT_SIZE 256
 
 
 void env_init(environment *const env, universal_io *const output)
@@ -109,11 +109,6 @@ void env_add_comment(environment *const env)
 
 size_t env_skip_str(environment *const env)
 {
-	if (env == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	const size_t position = strlen(env->error_string);
 	while (env->curchar != '\n' && env->curchar != EOF)
 	{
