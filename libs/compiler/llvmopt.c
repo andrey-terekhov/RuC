@@ -15,7 +15,6 @@
  */
 
 #include "llvmopt.h"
-#include "codes.h"
 #include "tree.h"
 #include "uniprinter.h"
 #include <string.h>
