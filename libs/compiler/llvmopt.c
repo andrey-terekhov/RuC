@@ -31,27 +31,27 @@ typedef enum EXPRESSION
 
 typedef struct expr_node_info
 {
-	node *parent;						/**< Родитель узла */ 
-	size_t child_num;					/**< Номер ребёнка, которым является узел */
-	size_t node_num;					/**< Количество узлов после данного узла при перестановке */
+	node *parent;										/**< Родитель узла */ 
+	size_t child_num;									/**< Номер ребёнка, которым является узел */
+	size_t node_num;									/**< Количество узлов после данного узла при перестановке */
 } expr_node_info;
 
 typedef struct expr_stack
 {
-	expr_node_info stack[512];			/**< Стек */
-	size_t stack_size;					/**< Размер стека */
+	expr_node_info stack[EXPR_STACK_MAX_SIZE];			/**< Стек */
+	size_t stack_size;									/**< Размер стека */
 } expr_stack;
 
 typedef struct information
 {
-	universal_io *io;					/**< Вывод */
+	universal_io *io;									/**< Вывод */
 
-	item_t string_num;					/**< Номер строки */
-	item_t was_printf;					/**< Флаг наличия printf в исходном коде */
-	expr_stack stack;					/**< Стек для преобразования выражений */
+	item_t string_num;									/**< Номер строки */
+	item_t was_printf;									/**< Флаг наличия printf в исходном коде */
+	expr_stack stack;									/**< Стек для преобразования выражений */
 } information;
 
-// TODO: сделать проверки на размеры массива
+
 static void expr_stack_push(information *const info, expr_node_info const expr_nd)
 {
 	info->stack.stack[info->stack.stack_size++] = expr_nd;
