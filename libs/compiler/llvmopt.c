@@ -21,9 +21,17 @@
 #include <string.h>
 
 
+typedef enum EXPRESSION
+{
+	OPERAND,
+	UNARY_OPERATION,
+	BINARY_OPERATION,
+	NOT_EXPRESSION,
+} expression_t;
+
 typedef struct expr_node_info
 {
-	node *parent;						/**< Родитель узла */ //проблема в указателе при выходе из node_recursive память очищается и он теряется
+	node *parent;						/**< Родитель узла */ 
 	size_t child_num;					/**< Номер ребёнка, которым является узел */
 	size_t node_num;					/**< Количество узлов после данного узла при перестановке */
 } expr_node_info;
@@ -43,7 +51,7 @@ typedef struct information
 	expr_stack stack;					/**< Стек для преобразования выражений */
 } information;
 
-
+// TODO: сделать проверки на размеры массива
 static void expr_stack_push(information *const info, expr_node_info const expr_nd)
 {
 	info->stack.stack[info->stack.stack_size++] = expr_nd;
@@ -59,38 +67,114 @@ static void expr_stack_clear(information *const info)
 	info->stack.stack_size = 0;
 }
 
-static int is_operand(node *const nd)
+static expression_t expression_type(node *const nd)
 {
 	switch (node_get_type(nd))
 	{
 		case TIdent:
 		case TIdenttoval:
 		case TConst:
-			return 1;
-	}
+			return OPERAND;
 
-	return 0;
-}
 
-static int is_expression(node *const nd)
-{
-	switch (node_get_type(nd))
-	{
-		// бинарные операции
+		case POSTINC:
+		case POSTDEC:
+		case INC:
+		case DEC:
+		case POSTINCAT:
+		case POSTDECAT:
+		case INCAT:
+		case DECAT:
+		case POSTINCV:
+		case POSTDECV:
+		case INCV:
+		case DECV:
+		case POSTINCATV:
+		case POSTDECATV:
+		case INCATV:
+		case DECATV:
+			return UNARY_OPERATION;
+
+
+		case REMASS:
+		case SHLASS:
+		case SHRASS:
+		case ANDASS:
+		case EXORASS:
+		case ORASS:
+
+		case ASS:
+		case PLUSASS:
+		case MINUSASS:
+		case MULTASS:
+		case DIVASS:
+
+		case REMASSAT:
+		case SHLASSAT:
+		case SHRASSAT:
+		case ANDASSAT:
+		case EXORASSAT:
+		case ORASSAT:
+
+		case ASSAT:
+		case PLUSASSAT:
+		case MINUSASSAT:
+		case MULTASSAT:
+		case DIVASSAT:
+
+		case REMASSV:
+		case SHLASSV:
+		case SHRASSV:
+		case ANDASSV:
+		case EXORASSV:
+		case ORASSV:
+
 		case ASSV:
+		case PLUSASSV:
+		case MINUSASSV:
+		case MULTASSV:
+		case DIVASSV:
+
+		case REMASSATV:
+		case SHLASSATV:
+		case SHRASSATV:
+		case ANDASSATV:
+		case EXORASSATV:
+		case ORASSATV:
+
+		case ASSATV:
+		case PLUSASSATV:
+		case MINUSASSATV:
+		case MULTASSATV:
+		case DIVASSATV:
+
+		case LREM:
+		case LSHL:
+		case LSHR:
+		case LAND:
+		case LEXOR:
+		case LOR:
+		case LOGAND:
+		case LOGOR:
+
+		case EQEQ:
+		case NOTEQ:
+		case LLT:
+		case LGT:
+		case LLE:
+		case LGE:
 		case LPLUS:
 		case LMINUS:
 		case LMULT:
 		case LDIV:
-			return 2;
+			return BINARY_OPERATION;
 	}
 
-	return 0;
+	return NOT_EXPRESSION;
 }
 
 static void node_recursive(information *const info, node *const nd, syntax *const sx)
 {
-	// printf("children = %zi tc = %zi argc = %zi type = %zi\n", nd->children, nd->type, nd->argc, node_get_type(nd));
 	for (size_t i = 0; i < node_get_amount(nd); i++)
 	{
 		node child = node_get_child(nd, i);
@@ -141,13 +225,12 @@ static void node_recursive(information *const info, node *const nd, syntax *cons
 		}
 
 		// перестановка узлов выражений
-		if (is_operand(&child))
+		if (expression_type(&child) == OPERAND)
 		{
 			expr_node_info node_info = {nd, i, 1};
-			node_copy(node_info.parent, nd);
 			expr_stack_push(info, node_info);
 		}
-		else if (is_expression(&child) == 2)
+		else if (expression_type(&child) == BINARY_OPERATION)
 		{
 			expr_node_info second_operand = expr_stack_pop(info);
 			expr_node_info first_operand = expr_stack_pop(info);
@@ -170,13 +253,15 @@ static void node_recursive(information *const info, node *const nd, syntax *cons
 				child_to_order_first = node_get_child(&child_to_order_first, 0);
 			}
 
+			// добавляем в стек переставленное выражение
 			first_operand.node_num = first_operand.node_num + second_operand.node_num + 1;
 			expr_stack_push(info, first_operand);
 		}
 
 		node_recursive(info, &child, sx);
 
-		if (node_get_type(nd))
+		// если конец выражения, то очищаем стек
+		if (node_get_type(nd) == TExprend)
 		{
 			expr_stack_clear(info);
 		}
