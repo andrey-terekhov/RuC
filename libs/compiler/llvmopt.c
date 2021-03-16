@@ -233,7 +233,7 @@ static expression_t expression_type(node *const nd)
 	return NOT_EXPRESSION;
 }
 
-static void node_recursive(information *const info, node *const nd, syntax *const sx)
+static void node_recursive(information *const info, node *const nd)
 {
 	for (size_t i = 0; i < node_get_amount(nd); i++)
 	{
@@ -338,7 +338,7 @@ static void node_recursive(information *const info, node *const nd, syntax *cons
 			expr_stack_push(info, first_operand);
 		}
 
-		node_recursive(info, &child, sx);
+		node_recursive(info, &child);
 
 		// если конец выражения, то очищаем стек
 		if (node_get_type(nd) == TExprend)
@@ -360,7 +360,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
 	{
 		node child = node_get_child(&nd, i);
-		node_recursive(&info, &child, sx);
+		node_recursive(&info, &child);
 	}
 
 	uni_printf(io, "\n");
