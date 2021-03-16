@@ -20,7 +20,6 @@
 #include "environment.h"
 #include "error.h"
 #include "macro_load.h"
-#include "linker.h"
 #include "macro_save.h"
 #include "utils.h"
 
