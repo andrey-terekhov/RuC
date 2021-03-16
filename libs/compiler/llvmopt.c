@@ -293,7 +293,20 @@ static void node_recursive(information *const info, node *const nd, syntax *cons
 		}
 		else if (expression_type(&child) == UNARY_OPERATION)
 		{
-			//TODO: написать перестановку для унарной операции
+			expr_node_info operand = expr_stack_pop(info);
+
+			// перестановка с операндом
+			node_order(nd, i, operand.parent, operand.child_num);
+			node child_to_order = node_get_child(operand.parent, operand.child_num);
+			for (size_t j = 0; j < operand.node_num - 1; j++)
+			{
+				node_order(nd, i, &child_to_order, 0);
+				child_to_order = node_get_child(&child_to_order, 0);
+			}
+
+			// добавляем в стек переставленное выражение
+			operand.node_num++;
+			expr_stack_push(info, operand);
 		}
 		else if (expression_type(&child) == BINARY_OPERATION)
 		{
