@@ -34,37 +34,36 @@
 #define WARNING	-2
 #define ERROR	-1
 
-int get_digit(universal_io *in, double *rez)
+int get_digit(universal_io *in, double *rez, int cur, int next, int *last)
 {
-	size_t rez1 = in_get_position(in);
-	char32_t curchar = '*';
-	for(size_t i= rez1 - 5; i < rez1+5; i++)
+	if(in == NULL || rez == NULL || (cur != '-'  && !utf8_is_digit(cur)))
 	{
-		in_set_position(in, i);
-		curchar = uni_scan_char(in);
-		printf("cur[%d] = %d, %c\n", i, curchar, curchar);
+		return ERROR;
 	}
-	in_set_position(in, rez1 - 2);
-	printf("4 %d\n", in_get_position(in));
-	curchar = uni_scan_char(in);
+
 	int flag_int = INT;
 	int num_int = 0;
 	int sign = 1;
 	int flag_too_long = 0;
 	double num_double = 0.0;
 
-	if (curchar == '-')
+	if (cur == '-')
 	{
 		sign = -1;
-		curchar = uni_scan_char(in);
 	}
+	else
+	{
+		num_double = num_double * 10 + (cur - '0');
+		num_int = num_int * 10 + (cur - '0');
+	}
+
+	char32_t curchar = next;
 
 	while (utf8_is_digit(curchar))
 	{
 		num_double = num_double * 10 + (curchar - '0');
 		num_int = num_int * 10 + (curchar - '0');
 		curchar = uni_scan_char(in);
-		printf("++%c, %d\n", curchar, curchar);
 	}
 
 	if (num_double > (double)INT_MAX)
@@ -72,10 +71,9 @@ int get_digit(universal_io *in, double *rez)
 		flag_too_long = 1;
 		flag_int = DOUBLE;
 	}
-	printf("7 %d, %c, %d\n", in_get_position(in), curchar, curchar);
+
 	if (curchar == '.')
 	{
-		printf("8 %d\n", in_get_position(in));
 		double pow = 0.1;
 		flag_int = DOUBLE;
 		curchar = uni_scan_char(in);
@@ -132,9 +130,11 @@ int get_digit(universal_io *in, double *rez)
 	{
 		*rez = num_double * sign;
 	}
-	printf("5 %d\n", in_get_position(in));
-	in_set_position(in, in_get_position(in) - 1);
-	printf("6 %d\n", in_get_position(in));
+	
+	if(last != NULL)
+	{
+		*last = curchar;
+	}
 
 	if (flag_too_long)
 	{
@@ -309,45 +309,55 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 	if(env->nextch_type != FILE_TYPE)
 	{
 		char buffer[STRING_SIZE];
-		size_t bufer_size = 0;
-		while (utf8_is_digit(env->curchar) || utf8_is_power(env->curchar) || env->curchar == '-'|| env->curchar == '.')
+		buffer[0] = '\0';
+		size_t buffer_size = 0;
+
+		int cur =  env->curchar;
+		m_nextch(env);
+
+		int next = env->curchar;
+		if (utf8_is_digit(env->curchar))
 		{
-			if(utf8_is_power(env->curchar) &&  env->nextchar == '+')
+			m_nextch(env);
+			while (utf8_is_digit(env->curchar) || utf8_is_power(env->curchar))
 			{
-				bufer_size += utf8_to_string(&buffer[bufer_size], env->curchar);
+				if(utf8_is_power(env->curchar) &&  (env->nextchar == '+' || env->curchar == '-'))
+				{
+					buffer_size += utf8_to_string(&buffer[buffer_size], env->curchar);
+					m_nextch(env);
+				}
+				buffer_size += utf8_to_string(&buffer[buffer_size], env->curchar);
 				m_nextch(env);
 			}
-			bufer_size += utf8_to_string(&buffer[bufer_size], env->curchar);
-			m_nextch(env);
 		}
-
 		universal_io in = io_create();
 		in_set_buffer(&in, buffer);
-		rez = get_digit(&in, &stack[*stk_size]);
+		rez = get_digit(&in, &stack[*stk_size], cur, next, NULL);
 		in_clear(&in);
 	}
 	else
 	{
-		printf("1\n");
-		//m_nextch(env);
-		rez = get_digit(env->input, &stack[*stk_size]);
-		printf("2\n");
-		m_nextch(env);
-		m_nextch(env);
+		rez = get_digit(env->input, &stack[*stk_size], env->curchar, env->nextchar, &env->curchar);
+		get_next_char(env);
 	}
+	
 	
 	if (rez == ERROR)
 	{
 		env_error(env, must_be_digit_after_exp1);
+		return -1;
 	}
 	else if (rez == WARNING)
 	{
-		env_error(env, too_many_nuber);
+		macro_error(too_many_nuber, lk_get_current(env->lk), env->error_string, env->line, env->position);
+		is_int[*stk_size] = DOUBLE;
+	}
+	else
+	{
+		is_int[*stk_size] = rez;
 	}
 
-	is_int[*stk_size] = rez;
 	*stk_size = *stk_size + 1;
-
 	return 0;
 }
 

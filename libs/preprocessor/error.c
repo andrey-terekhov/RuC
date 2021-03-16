@@ -89,7 +89,7 @@ void get_message_error(const int num, char *const msg)
 			sprintf(msg, "сразу после команды '#EVAL' должен быть символ '('");
 			break;
 		case too_many_nuber:
-			sprintf(msg, "слишком большое число");
+			sprintf(msg, "слишком большая целая константа, преобразована в ДЛИН (DOUBLE)");
 			break;
 		case must_be_digit_after_exp1:
 			sprintf(msg, "после экспоненты должно быть число");
