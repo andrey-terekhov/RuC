@@ -144,6 +144,8 @@ void binop(parser *const prs, size_t sp)
 	if (mode_is_pointer(prs->sx, left) || mode_is_pointer(prs->sx, right))
 	{
 		parser_error(prs, operand_is_pointer);
+		prs->was_error = 5;
+		return; // 1
 	}
 
 	if (mode_is_float(left) || mode_is_float(right))
@@ -152,6 +154,8 @@ void binop(parser *const prs, size_t sp)
 			|| op == LSHR || op == LSHL || op == LREM)
 		{
 			parser_error(prs, int_op_for_float);
+			prs->was_error = 5;
+			return; // 1
 		}
 
 		if (mode_is_int(left))
@@ -237,6 +241,11 @@ void actstring(int type, parser *const prs)
 	do
 	{
 		exprassn(prs);
+		if (prs->was_error == 6)
+		{
+			prs->was_error = 1;
+			return; // 1
+		}
 		const size_t size = vector_size(&TREE);
 		if (vector_get(&TREE, size - 3) == TConstd)
 		{
@@ -252,6 +261,8 @@ void actstring(int type, parser *const prs)
 		else
 		{
 			parser_error(prs, wrong_init_in_actparam);
+			prs->was_error = 1;
+			return; // 1
 		}
 		++n;
 	} while (token_try_consume(prs, comma));
@@ -260,6 +271,8 @@ void actstring(int type, parser *const prs)
 	if (!token_try_consume(prs, END))
 	{
 		parser_error(prs, no_comma_or_end);
+		prs->was_error = 1;
+		return; // 1
 	}
 	prs->ansttype = (int)to_modetab(prs, mode_array, type);
 	prs->anst = VAL;
@@ -267,41 +280,72 @@ void actstring(int type, parser *const prs)
 
 void mustbestring(parser *const prs)
 {
-	const item_t type = parse_assignment_expression(prs);
-	vector_remove(&TREE);
-	if (!(mode_is_string(prs->sx, type)))
+	exprassn(prs);
+	if (prs->was_error == 6)
+	{
+		prs->was_error = 5;
+		return; // 1
+	}
+	toval(prs);
+	prs->sopnd--;
+	if (!(mode_is_string(prs->sx, prs->ansttype)))
 	{
 		parser_error(prs, not_string_in_stanfunc);
+		prs->was_error = 5;
 	}
 }
 
 void mustbepointstring(parser *const prs)
 {
-	const item_t type = parse_assignment_expression(prs);
-	vector_remove(&TREE);
-	if (!(mode_is_pointer(prs->sx, type) && mode_is_string(prs->sx, mode_get(prs->sx, type + 1))))
+	exprassn(prs);
+	if (prs->was_error == 6)
+	{
+		prs->was_error = 5;
+		return; // 1
+	}
+	toval(prs);
+	prs->sopnd--;
+	if (!(mode_is_pointer(prs->sx, prs->ansttype) &&
+		  mode_is_string(prs->sx, mode_get(prs->sx, prs->ansttype + 1))))
 	{
 		parser_error(prs, not_point_string_in_stanfunc);
+		prs->was_error = 5;
+		return; // 1
 	}
 }
 
 void mustberow(parser *const prs)
 {
-	const item_t type = parse_assignment_expression(prs);
-	vector_remove(&TREE);
-	if (!mode_is_array(prs->sx, type))
+	exprassn(prs);
+	if (prs->was_error == 6)
+	{
+		prs->was_error = 5;
+		return; // 1
+	}
+	toval(prs);
+	prs->sopnd--;
+
+	if (!mode_is_array(prs->sx, prs->ansttype))
 	{
 		parser_error(prs, not_array_in_stanfunc);
+		prs->was_error = 5;
 	}
 }
 
 void mustbeint(parser *const prs)
 {
-	const item_t type = parse_assignment_expression(prs);
-	vector_remove(&TREE);
-	if (!mode_is_int(type))
+	exprassn(prs);
+	if (prs->was_error == 6)
+	{
+		prs->was_error = 5;
+		return; // 1
+	}
+	toval(prs);
+	prs->sopnd--;
+	if (prs->ansttype != LINT && prs->ansttype != LCHAR)
 	{
 		parser_error(prs, not_int_in_stanfunc);
+		prs->was_error = 5;
 	}
 }
 
@@ -310,20 +354,33 @@ void mustberowofint(parser *const prs)
 	if (prs->token == BEGIN)
 	{
 		actstring(LINT, prs), totree(prs, TExprend);
+		if (prs->was_error == 2)
+		{
+			prs->was_error = 5;
+			return; // 1
+		}
 	}
 	else
 	{
-		const item_t type = parse_assignment_expression(prs);
-		vector_remove(&TREE);
-		if (mode_is_int(type))
+		exprassn(prs);
+		if (prs->was_error == 6)
+		{
+			prs->was_error = 5;
+			return; // 1
+		}
+		toval(prs);
+		prs->sopnd--;
+		if (prs->ansttype == LINT || prs->ansttype == LCHAR)
 		{
 			totree(prs, ROWING);
-			prs->ansttype = (int)to_modetab(prs, mode_array, mode_integer);
+			prs->ansttype = (int)to_modetab(prs, mode_array, LINT);
 		}
 	}
-	if (!(mode_is_array(prs->sx, prs->ansttype) && mode_is_int(mode_get(prs->sx, prs->ansttype + 1))))
+	if (!(mode_is_array(prs->sx, prs->ansttype) &&
+		  mode_is_int(mode_get(prs->sx, prs->ansttype + 1))))
 	{
 		parser_error(prs, not_rowofint_in_stanfunc);
+		prs->was_error = 5;
 	}
 }
 
@@ -682,6 +739,11 @@ void parse_standard_function_call(parser *const prs)
 				parser_error(prs, bad_param_in_stand_func);
 			}
 		}
+	}
+	if (prs->was_error == 5)
+	{
+		prs->was_error = 4;
+		return; // 1
 	}
 	totree(prs, 9500 - func);
 	must_be(prs, RIGHTBR, no_rightbr_in_stand_func);
