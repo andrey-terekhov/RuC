@@ -184,8 +184,8 @@ item_t parse_array_definition(parser *const prs, item_t type)
 		}
 		else
 		{
-			const expr_result size_expression = parse_constant_expression(prs);
-			if (!mode_is_int(size_expression.type))
+			const item_t size_type = parse_constant_expression(prs);
+			if (!mode_is_int(size_type))
 			{
 				parser_error(prs, array_size_must_be_int);
 			}
@@ -880,18 +880,18 @@ void parse_initializer(parser *const prs, const item_t type)
 {
 	if (prs->token != l_brace)
 	{
-		const expr_result expression = parse_assignment_expression(prs);
-		if (!mode_is_undefined(expression.type) && !mode_is_undefined(type))
+		const item_t expr_type = parse_assignment_expression(prs);
+		if (!mode_is_undefined(expr_type) && !mode_is_undefined(type))
 		{
-			if (mode_is_int(type) && mode_is_float(expression.type))
+			if (mode_is_int(type) && mode_is_float(expr_type))
 			{
 				parser_error(prs, init_int_by_float);
 			}
-			else if (mode_is_float(type) && mode_is_int(expression.type))
+			else if (mode_is_float(type) && mode_is_int(expr_type))
 			{
 				parse_insert_widen(prs);
 			}
-			else if (type != expression.type)
+			else if (type != expr_type)
 			{
 				parser_error(prs, error_in_initialization);
 			}

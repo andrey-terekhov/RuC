@@ -267,9 +267,9 @@ void actstring(int type, parser *const prs)
 
 void mustbestring(parser *const prs)
 {
-	const expr_result expression = parse_assignment_expression(prs);
+	const item_t type = parse_assignment_expression(prs);
 	vector_remove(&TREE);
-	if (!(mode_is_string(prs->sx, expression.type)))
+	if (!(mode_is_string(prs->sx, type)))
 	{
 		parser_error(prs, not_string_in_stanfunc);
 	}
@@ -277,9 +277,9 @@ void mustbestring(parser *const prs)
 
 void mustbepointstring(parser *const prs)
 {
-	const expr_result expression = parse_assignment_expression(prs);
+	const item_t type = parse_assignment_expression(prs);
 	vector_remove(&TREE);
-	if (!(mode_is_pointer(prs->sx, expression.type) && mode_is_string(prs->sx, mode_get(prs->sx, expression.type + 1))))
+	if (!(mode_is_pointer(prs->sx, type) && mode_is_string(prs->sx, mode_get(prs->sx, type + 1))))
 	{
 		parser_error(prs, not_point_string_in_stanfunc);
 	}
@@ -287,9 +287,9 @@ void mustbepointstring(parser *const prs)
 
 void mustberow(parser *const prs)
 {
-	const expr_result expression = parse_assignment_expression(prs);
+	const item_t type = parse_assignment_expression(prs);
 	vector_remove(&TREE);
-	if (!mode_is_array(prs->sx, expression.type))
+	if (!mode_is_array(prs->sx, type))
 	{
 		parser_error(prs, not_array_in_stanfunc);
 	}
@@ -297,9 +297,9 @@ void mustberow(parser *const prs)
 
 void mustbeint(parser *const prs)
 {
-	const expr_result expression = parse_assignment_expression(prs);
+	const item_t type = parse_assignment_expression(prs);
 	vector_remove(&TREE);
-	if (!mode_is_int(expression.type))
+	if (!mode_is_int(type))
 	{
 		parser_error(prs, not_int_in_stanfunc);
 	}
@@ -313,9 +313,9 @@ void mustberowofint(parser *const prs)
 	}
 	else
 	{
-		const expr_result expression = parse_assignment_expression(prs);
+		const item_t type = parse_assignment_expression(prs);
 		vector_remove(&TREE);
-		if (mode_is_int(expression.type))
+		if (mode_is_int(type))
 		{
 			totree(prs, ROWING);
 			prs->ansttype = (int)to_modetab(prs, mode_array, mode_integer);
@@ -822,7 +822,6 @@ void parse_primary_expression(parser *const prs)
 			}
 			else
 			{
-				token_consume(prs);
 				parser_error(prs, expected_expression, prs->token);
 				anst_push(prs, number, mode_undefined);
 				break;
@@ -957,19 +956,19 @@ void parse_function_call(parser *const prs, const size_t function_id)
 			else
 			{
 				prs->flag_in_assignment = 0;
-				const expr_result argument = parse_assignment_expression(prs);
+				const item_t actual_arg_mode = parse_assignment_expression(prs);
 
-				if (!mode_is_undefined(expected_arg_mode) && !mode_is_undefined(argument.type))
+				if (!mode_is_undefined(expected_arg_mode) && !mode_is_undefined(actual_arg_mode))
 				{
-					if (mode_is_int(expected_arg_mode) && mode_is_float(argument.type))
+					if (mode_is_int(expected_arg_mode) && mode_is_float(actual_arg_mode))
 					{
 						parser_error(prs, float_instead_int);
 					}
-					else if (mode_is_float(expected_arg_mode) && mode_is_int(argument.type))
+					else if (mode_is_float(expected_arg_mode) && mode_is_int(actual_arg_mode))
 					{
 						parse_insert_widen(prs);
 					}
-					else if (expected_arg_mode != argument.type)
+					else if (expected_arg_mode != actual_arg_mode)
 					{
 						parser_error(prs, diff_formal_param_type_and_actual);
 					}
@@ -1703,66 +1702,45 @@ void expr(parser *const prs)
  */
 
 
-expr_result parse_expression(parser *const prs)
+item_t parse_expression(parser *const prs)
 {
 	expr(prs);
 	totree(prs, TExprend);
 	exprassnvoid(prs);
-	expr_result result;
-	result.was_error = 0;
-	result.type = anst_pop(prs);
-	return result;
+	return anst_pop(prs);
 }
 
-expr_result parse_assignment_expression(parser *const prs)
+item_t parse_assignment_expression(parser *const prs)
 {
 	exprassn(prs);
 	toval(prs);
 	totree(prs, TExprend);
-	expr_result result;
-	result.was_error = 0;
-	result.type = anst_pop(prs);
-	return result;
+	return anst_pop(prs);
 }
 
-expr_result parse_parenthesized_expression(parser *const prs)
+item_t parse_parenthesized_expression(parser *const prs)
 {
 	token_expect_and_consume(prs, l_paren, cond_must_be_in_brkts);
-	const expr_result expr = parse_condition(prs);
-	if (expr.was_error)
-	{
-		token_skip_until(prs, semicolon);
-	}
-	if (!token_try_consume(prs, r_paren))
-	{
-		parser_error(prs, cond_must_be_in_brkts);
-		token_skip_until(prs, semicolon);
-	}
-
-	return expr;
+	const item_t condition_type = parse_condition(prs);
+	token_expect_and_consume(prs, r_paren, cond_must_be_in_brkts);
+	return condition_type;
 }
 
-expr_result parse_constant_expression(parser *const prs)
+item_t parse_constant_expression(parser *const prs)
 {
 	parse_unary_expression(prs);
 	condexpr(prs);
 	toval(prs);
 	totree(prs, TExprend);
-	expr_result result;
-	result.was_error = 0;
-	result.type = anst_pop(prs);
-	return result;
+	return anst_pop(prs);
 }
 
-expr_result parse_condition(parser *const prs)
+item_t parse_condition(parser *const prs)
 {
 	expr(prs);
 	toval(prs);
 	totree(prs, TExprend);
-	expr_result result;
-	result.was_error = 0;
-	result.type = anst_pop(prs);
-	return result;
+	return anst_pop(prs);
 }
 
 item_t parse_string_literal(parser *const prs)

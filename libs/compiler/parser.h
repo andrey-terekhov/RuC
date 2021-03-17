@@ -90,12 +90,6 @@ typedef enum BLOCK
 	FUNCBODY
 } block_t;
 
-typedef struct expr_result
-{
-	item_t type;
-	int was_error;
-} expr_result;
-
 
 /**
  *	Parse source code to generate syntax structure
@@ -173,7 +167,7 @@ void token_skip_until(parser *const prs, const uint8_t tokens);
  *
  *	@return	Type of parsed expression
  */
-expr_result parse_expression(parser *const prs);
+item_t parse_expression(parser *const prs);
 
 /**
  *	Parse assignment expression [C99 6.5.16]
@@ -189,7 +183,7 @@ expr_result parse_expression(parser *const prs);
  *
  *	@return	Type of parsed expression
  */
-expr_result parse_assignment_expression(parser *const prs);
+item_t parse_assignment_expression(parser *const prs);
 
 /**
  *	Parse expression in parentheses
@@ -201,7 +195,7 @@ expr_result parse_assignment_expression(parser *const prs);
  *
  *	@return	Type of parsed expression
  */
-expr_result parse_parenthesized_expression(parser *const prs);
+item_t parse_parenthesized_expression(parser *const prs);
 
 /**
  *	Parse constant expression [C99 6.6]
@@ -213,7 +207,7 @@ expr_result parse_parenthesized_expression(parser *const prs);
  *
  *	@return	Type of parsed expression
  */
-expr_result parse_constant_expression(parser *const prs);
+item_t parse_constant_expression(parser *const prs);
 
 /**
  *	Parse condition
@@ -223,7 +217,7 @@ expr_result parse_constant_expression(parser *const prs);
  *
  *	@return	Type of parsed expression
  */
-expr_result parse_condition(parser *const prs);
+item_t parse_condition(parser *const prs);
 
 /**
  *	Parse string literal [C99 6.5.1]
