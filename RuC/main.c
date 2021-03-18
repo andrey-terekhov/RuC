@@ -7,7 +7,17 @@
 
 //#define _CRT_SECURE_NO_WARNINGS
 
-const char *name = "/Users/elias/test.c";
+const char * name =
+//"tests/Mishatest.c";
+
+"tests/mips/optimizations/big_matrix.c";
+
+//"../../../tests/Egor/Macro/for.c";
+
+//"../../../tests/Fadeev/Signal.c";
+
+//"../../../tests/Golovan/dining_philosophers.c";
+
 
 #include <stdio.h>
 #include <string.h>
@@ -45,8 +55,10 @@ int bad_printf_placeholder = 0;
 
 // optimization flags
 int cycle_jump_reduce = 1;
-int check_nested_for = 1;
-int enable_ind_var = 1;
+int enable_ind_var = 0;
+int cycle_condition_calculation = 1;
+int delay_slot = 1;
+int check_nested_for;
 
 extern void preprocess_file();
 
@@ -80,6 +92,9 @@ int toreprtab(char str[])
 int main(int argc, const char * argv[])
 {
     int i;
+
+    // включение вспомогательных оптимизирующих опций
+    check_nested_for = cycle_condition_calculation;
 
     if (argc != 2){
         printf("Error: not enough argumnts\n");

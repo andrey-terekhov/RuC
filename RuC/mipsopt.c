@@ -259,7 +259,7 @@ void mark_nested_for()
 		}
 		temp_tc++;
 	}
-	
+
 	if (tree[temp_tc] == TForEnd)
 		tree[flag_nested_for_ref] = 1;
 }
@@ -315,7 +315,7 @@ void opt_for_statement()
 		mexpr();
 	if (incrref)
 		mexpr();
-
+  
 	if (enable_ind_var && !has_nested_for && incrref && satistifies_ind_var_pattern(incrref))
 	{
 		// Если инкремент удовлетворяет паттерну, и нет вложенных циклов, то алгоритм оптимизации следующий:
@@ -426,7 +426,7 @@ void mstatement()
             mexpr();
             break;
         case TFor:
-			opt_for_statement();
+        	opt_for_statement();
             break;
 		case TForEnd:
 			mcopy();

@@ -1852,7 +1852,8 @@ void statement()
                          tree[stmtref] = tc;
                          inloop = 1;
                          statement();
-				         totree(TForEnd);
+
+                         totree(TForEnd);
             }
                 break;
             case LGOTO:
