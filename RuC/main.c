@@ -18,6 +18,7 @@ const char * name =
 
 //"../../../tests/Golovan/dining_philosophers.c";
 
+
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
@@ -54,6 +55,7 @@ int bad_printf_placeholder = 0;
 
 // optimization flags
 int cycle_jump_reduce = 1;
+int enable_ind_var = 0;
 int cycle_condition_calculation = 1;
 int delay_slot = 1;
 int check_nested_for;

@@ -2332,9 +2332,9 @@ void MStmt_gen()
             break;
         case TFor:
         {
-        	int is_last_nested = 0;
-    		if (check_nested_for)
-    			is_last_nested = tree[tc++]; // Флаг вложенности
+        	  int is_last_nested = 0;
+    		    if (check_nested_for)
+    			    is_last_nested = tree[tc++]; // Флаг вложенности
             int fromref = tree[tc++], condref = tree[tc++], incrref = tree[tc++],
             stmtref = tree[tc++];
             int oldbreak = adbreak, oldcont = adcont, incrtc, endtc;
@@ -2420,6 +2420,7 @@ void MStmt_gen()
         		tocodeI(addi, cond_reg, cond_reg, 1);
         tocodeL("end", adbreak);
         tocodeL("ELSE", adbreak);
+			tc++; // Здесь был TForEnd
 
         	tc++; // Здесь был TForEnd
 
