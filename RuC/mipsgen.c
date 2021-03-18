@@ -2422,8 +2422,6 @@ void MStmt_gen()
         tocodeL("ELSE", adbreak);
 			tc++; // Здесь был TForEnd
 
-        	tc++; // Здесь был TForEnd
-
             adbreak = oldbreak;
             adcont = oldcont;
         }
