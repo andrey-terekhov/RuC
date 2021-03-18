@@ -36,7 +36,7 @@
 
 int get_digit(universal_io *in, double *rez, int cur, int next, int *last)
 {
-	if(in == NULL || rez == NULL || (cur != '-'  && !utf8_is_digit(cur)))
+	if (in == NULL || rez == NULL || (cur != '-'  && !utf8_is_digit(cur)))
 	{
 		return ERROR;
 	}
@@ -131,7 +131,7 @@ int get_digit(universal_io *in, double *rez, int cur, int next, int *last)
 		*rez = num_double * sign;
 	}
 	
-	if(last != NULL)
+	if (last != NULL)
 	{
 		*last = curchar;
 	}
@@ -306,13 +306,13 @@ int calc_macro(environment *const env)
 int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size)
 {
 	int rez;
-	if(env->nextch_type != FILE_TYPE)
+	if (env->nextch_type != FILE_TYPE)
 	{
 		char buffer[STRING_SIZE];
 		buffer[0] = '\0';
 		size_t buffer_size = 0;
 
-		int cur =  env->curchar;
+		int cur = env->curchar;
 		m_nextch(env);
 
 		int next = env->curchar;
