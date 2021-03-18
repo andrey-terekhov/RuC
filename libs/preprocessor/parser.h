@@ -24,14 +24,13 @@ extern "C" {
 #endif
 
 /**
- *	File  preprocess 
+ *	Рrocess the next token
  *
  *	@param	env		Preprocessor environment
- *	@param	number	File number
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int preprocess_file(environment *const env, const size_t number);
+int preprocess_token(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

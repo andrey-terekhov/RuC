@@ -111,7 +111,7 @@ int mf_equal(int i, environment *const env)
 	{
 		i++;
 		j++;
-		if (env->reprtab[i] == 0 && env->mstring[j] == MACRO_END)
+		if (env->reprtab[i] == 0 && env->mstring[j] == MACROEND)
 		{
 			return 1;
 		}
@@ -133,7 +133,7 @@ int collect_mident(environment *const env)
 		m_nextch(env);
 	}
 
-	env->mstring[env->msp] = MACRO_END;
+	env->mstring[env->msp] = MACROEND;
 	hash &= 255;
 	r = env->hashtab[hash];
 
@@ -141,7 +141,7 @@ int collect_mident(environment *const env)
 	{
 		if (r >= env->mfirstrp && mf_equal(r, env))
 		{
-			return (env->macro_tab[env->reprtab[r + 1]] != MACRO_UNDEF) ? r : 0;
+			return (env->macro_tab[env->reprtab[r + 1]] != MACROUNDEF) ? r : 0;
 		}
 
 		r = env->reprtab[r];
@@ -205,9 +205,9 @@ int skip_string(environment *const env)
 	return 0;
 }
 
-void finish_file(environment *const env)
+void end_of_file(environment *const env)
 {
-	while (env->nextch_type != FILE_TYPE)
+	while (env->nextch_type != FTYPE)
 	{
 		m_old_nextch_type(env);
 	}

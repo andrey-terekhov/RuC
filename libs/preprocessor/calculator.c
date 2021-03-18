@@ -20,7 +20,6 @@
 #include "macro_load.h"
 #include "linker.h"
 #include "utils.h"
-#include "string.h"
 #include <math.h>
 
 
@@ -123,7 +122,7 @@ double get_digit(environment *const env, int* error)// Временная зам
 	}
 }
 
-char get_operation(const char cur, const char next)
+char get_opiration(const char cur, const char next)
 {
 	switch (cur)
 	{
@@ -161,9 +160,9 @@ char get_operation(const char cur, const char next)
 	}
 }
 
-int get_prior(const char operation)
+int get_prior(const char opiration)
 {
-	switch (operation)
+	switch (opiration)
 	{
 		case '(':
 			return 0;
@@ -190,9 +189,9 @@ int get_prior(const char operation)
 	}
 }
 
-double calc_count(const double x, const double y, const char operation, const int is_int)
+double calc_count(const double x, const double y, const char opiration, const int is_int)
 {
-	switch (operation)
+	switch (opiration)
 	{
 		case '<':
 			return x < y;
@@ -242,26 +241,37 @@ double calc_count(const double x, const double y, const char operation, const in
 
 void double_to_string(environment *const env, const double x, const int is_int)
 {
+	char s[30] = "\0";
+
 	if (is_int)
 	{
-		sprintf(env->calc_string, "%f", x);
-		char *dot = strchr(env->calc_string, '.');
-		if (dot != 0)
+		sprintf(s, "%f", x);
+		for (env->calc_string_size = 0; env->calc_string_size < 20; env->calc_string_size++)
 		{
-			dot[0] = '\0';
+			env->calc_string[env->calc_string_size] = s[env->calc_string_size];
+
+			if (s[env->calc_string_size] == '.')
+			{
+				return;
+			}
 		}
 	}
 	else
-	{	
-		sprintf(env->calc_string, "%.14lf", x);
-		size_t lenght = strlen(env->calc_string) - 1;
-		while (env->calc_string[lenght] == '0' || !utf8_is_digit(env->calc_string[lenght]))
-		{
-			lenght--;
-		}
-	}
+	{
+		int l = 0;
 
-	env->calc_string_size = strlen(env->calc_string);
+		sprintf(s, "%.14lf", x);
+		for (env->calc_string_size = 0; env->calc_string_size < 20; env->calc_string_size++)
+		{
+			env->calc_string[env->calc_string_size] = s[env->calc_string_size];
+
+			if (s[env->calc_string_size] != '0' && utf8_is_digit(s[env->calc_string_size]))
+			{
+				l = env->calc_string_size;
+			}
+		}
+		env->calc_string_size = l + 1;
+	}
 }
 
 int calc_macro(environment *const env)
@@ -273,7 +283,7 @@ int calc_macro(environment *const env)
 		return -1;
 	}
 
-	if (macro_get(env, macro_ptr))
+	if(macro_get(env, macro_ptr))
 	{
 		return -1;
 	}
@@ -296,22 +306,22 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 	return 0;
 }
 
-int calc_operation(environment *const env, double *const stack, int *const is_int, char *const operation, int *op_size, int *stk_size, const int type)
+int calc_opiration(environment *const env, double *const stack, int *const is_int, char *const operation, int *op_size, int *stk_size, const int type)
 {
-	const char opr = get_operation((char)env->curchar, (char)env->nextchar);
-	if (!opr)
+	const char c = get_opiration((char)env->curchar, (char)env->nextchar);
+	if(!c)
 	{
 		env_error(env, third_party_symbol);
 		return -1;
 	}
 
 	m_nextch(env);
-	if (opr == 'b'|| opr == 's' || opr == '=' || opr == '&'|| opr == '|' || opr == '!')
+	if (c == 'b'|| c == 's' || c == '=' || c == '&'|| c == '|' || c == '!')
 	{
 		m_nextch(env);
 	}
 
-	const int prior = get_prior(opr);
+	const int prior = get_prior(c);
 	if (type == LOGIC && prior > 3)
 	{
 		env_error(env, not_arithmetic_operations);
@@ -331,7 +341,7 @@ int calc_operation(environment *const env, double *const stack, int *const is_in
 		*stk_size = *stk_size - 1;
 	}
 
-	operation[*op_size] = opr;
+	operation[*op_size] = c;
 	*op_size = *op_size + 1;
 
 	return 0;
@@ -340,7 +350,7 @@ int calc_operation(environment *const env, double *const stack, int *const is_in
 int calc_close(double *const stack, int *const is_int, const char *operation, int *op_size, int *stk_size)
 {
 	int scope_flag = 0;
-	if (operation[*op_size - 1] == ')')
+	if(operation[*op_size - 1] == ')')
 	{
 		scope_flag++;
 		*op_size = *op_size - 1;
@@ -363,10 +373,9 @@ int calc_close(double *const stack, int *const is_int, const char *operation, in
 	return 0;
 }
 
-int additional_elements(environment *const env, double *const stack, int *const is_int
-	, char *const operation , int *op_size, int *stk_size, int *type, int operation_flag)
+int additional_elements(environment *const env, double *const stack, int *const is_int, char *const operation, int *op_size, int *stk_size, int *type, int opration_flag)
 {
-	if (env->curchar == '#' && *type == LOGIC && !operation_flag)
+	if (env->curchar == '#' && *type == LOGIC && !opration_flag)
 	{
 		const int cur = macro_keywords(env);
 		if (cur == SH_EVAL && env->curchar == '(')
@@ -384,16 +393,16 @@ int additional_elements(environment *const env, double *const stack, int *const 
 		}
 	}
 
-	if (utf8_is_letter(env->curchar))
+	if(utf8_is_letter(env->curchar))
 	{
-		if (calc_macro(env))
+		if(calc_macro(env))
 		{
 			return -1;
 		}
 		return 1;
 	}
 
-	if (env->curchar == '(' && !operation_flag)
+	if (env->curchar == '(' && !opration_flag)
 	{
 		operation[*op_size] = '(';
 		*op_size = *op_size + 1;
@@ -401,11 +410,11 @@ int additional_elements(environment *const env, double *const stack, int *const 
 		return 1;
 	}
 
-	if (env->curchar == ')' && operation_flag)
+	if (env->curchar == ')' && opration_flag)
 	{
 		operation[*op_size] = ')';
 		*op_size = *op_size + 1;
-		if (calc_close(stack, is_int, operation, op_size, stk_size))
+		if(calc_close(stack, is_int, operation, op_size, stk_size))
 		{
 			env_error(env, incorrect_arithmetic_expression);
 			return -1;
@@ -431,6 +440,7 @@ int calculate(environment *const env, const int type)
 {
 	int op_size = 0;
 	char operation[OPN_SIZE];
+	int locl_type = type;
 
 	if (type == ARITHMETIC)
 	{
@@ -441,13 +451,12 @@ int calculate(environment *const env, const int type)
 	int stk_size = 0;
 	double stack[STK_SIZE];
 	int is_int[STK_SIZE];
-	int operation_flag = 0;
-	int local_type = type;
+	int opration_flag = 0;
 	while (env->curchar != '\n')
 	{
 		skip_separators(env);
-		const int rez = additional_elements(env, stack, is_int, operation, &op_size, &stk_size, &local_type, operation_flag);
-		if (rez == -1 || rez == 0)
+		const int rez = additional_elements(env, stack, is_int, operation, &op_size, &stk_size, &locl_type, opration_flag);
+		if(rez == -1 || rez == 0)
 		{
 			return rez;
 		} 
@@ -456,32 +465,32 @@ int calculate(environment *const env, const int type)
 			continue;
 		}
 
-		if (!operation_flag && (utf8_is_digit(env->curchar) || (env->curchar == '-' && utf8_is_digit(env->nextchar))))
+		if(!opration_flag && (utf8_is_digit(env->curchar) || (env->curchar == '-' && utf8_is_digit(env->nextchar))))
 		{
-			operation_flag = 1;
-			if (calc_digit(env, stack, is_int, &stk_size))
+			opration_flag = 1;
+			if(calc_digit(env, stack, is_int, &stk_size))
 			{
 				return -1;
 			}
 		}
-		else if (operation_flag && env->curchar != '\n')
+		else if(opration_flag && env->curchar != '\n')
 		{
-			operation_flag = 0;
-			if (calc_operation(env, stack, is_int, operation, &op_size, &stk_size, local_type))
+			opration_flag = 0;
+			if(calc_opiration(env, stack, is_int, operation, &op_size, &stk_size, locl_type))
 			{
 				return -1;
 			}
 		}
-		else if (env->curchar != '\n')
+		else if(env->curchar != '\n')
 		{
 			env_error(env, third_party_symbol);
 			return -1;
 		}
 	}
 
-	if (local_type == LOGIC)
+	if (locl_type == LOGIC)
 	{
-		if (calc_close(stack, is_int, operation, &op_size, &stk_size))
+		if(calc_close(stack, is_int, operation, &op_size, &stk_size))
 		{
 			env_error(env, incorrect_arithmetic_expression);
 			return -1;
@@ -489,11 +498,11 @@ int calculate(environment *const env, const int type)
 
 		if (stack[0] == 0)
 		{
-			env->calc_string[0] = '0';
+			env->calc_string[0] = 0;
 		}
 		else
 		{
-			env->calc_string[0] = '1';
+			env->calc_string[0] = 1;
 		}
 	}
 	else

@@ -25,9 +25,6 @@
 #include "utils.h"
 
 
-int preprocess_token(environment *const env);
-
-
 int if_check(environment *const env, int type_if)
 {
 	int flag = 0;
@@ -38,15 +35,7 @@ int if_check(environment *const env, int type_if)
 		{
 			return -1;
 		}
-
-		if (env->calc_string[0] == '0')
-		{
-			return 0;
-		}
-		else
-		{
-			return 1;
-		}
+		return env->calc_string[0];
 	}
 	else
 	{
@@ -257,7 +246,7 @@ int while_collect(environment *const env)
 {
 	const int oldwsp = env->while_string_size;
 
-	env->while_string[env->while_string_size++] = WHILE_BEGIN;
+	env->while_string[env->while_string_size++] = WHILEBEGIN;
 	env->while_string[env->while_string_size++] = env->if_string_size;
 	env->while_string_size++;
 
@@ -310,10 +299,10 @@ int while_implementation(environment *const env)
 	int error = 0;
 
 	env->cur = 0;
-	while (env->while_string[oldernextp] == WHILE_BEGIN)
+	while (env->while_string[oldernextp] == WHILEBEGIN)
 	{
 		m_nextch(env);
-		m_change_nextch_type(env, IF_TYPE, env->while_string[env->nextp]);
+		m_change_nextch_type(env, IFTYPE, env->while_string[env->nextp]);
 		m_nextch(env);
 		if (calculate(env, LOGIC))
 		{
@@ -322,7 +311,7 @@ int while_implementation(environment *const env)
 		m_old_nextch_type(env);
 
 
-		if (env->calc_string[0] == '0')
+		if (env->calc_string[0] == 0)
 		{
 			env->nextp = end;
 			m_nextch(env);
@@ -334,9 +323,9 @@ int while_implementation(environment *const env)
 		m_nextch(env);
 		skip_separators(env);
 
-		while (env->nextp != end || env->nextch_type != WHILE_TYPE)
+		while (env->nextp != end || env->nextch_type != WHILETYPE)
 		{
-			if (env->curchar == WHILE_BEGIN)
+			if (env->curchar == WHILEBEGIN)
 			{
 				env->nextp--;
 				if (while_implementation(env))
@@ -363,49 +352,6 @@ int while_implementation(environment *const env)
 	return 0;
 }
 
-int parser_include(environment *const env)
-{
-	size_t index = lk_include(env);
-
-	universal_io new_in = io_create();
-	universal_io *old_in = env->input;
-	env->input = &new_in;
-
-	int flag_io_type = 0;
-	if (index >= SIZE_MAX - 1)
-	{
-		env->input = old_in;
-		get_next_char(env);
-		m_nextch(env);
-		return index == SIZE_MAX ? 0 : -1;
-	}
-
-	if (env->nextch_type != FILE_TYPE)
-	{
-		m_change_nextch_type(env, FILE_TYPE, 0);
-		flag_io_type++;
-	}
-
-	const int res = preprocess_file(env, index);
-
-	env->input = old_in;
-	if (res == -1)
-	{
-		finish_file(env);
-		return -1;
-	}
-	
-	if (flag_io_type)
-	{
-		m_old_nextch_type(env);
-	}
-
-	get_next_char(env);
-	m_nextch(env);
-
-	return 0;
-}
-
 
 int preprocess_words(environment *const env)
 {
@@ -414,7 +360,7 @@ int preprocess_words(environment *const env)
 	{
 		case SH_INCLUDE:
 		{
-			return parser_include(env);
+			return lk_include(env);
 		}
 		case SH_DEFINE:
 		case SH_MACRO:
@@ -427,7 +373,7 @@ int preprocess_words(environment *const env)
 			const int macro_ptr = collect_mident(env);;
 			if (macro_ptr)
 			{
-				env->macro_tab[env->reprtab[macro_ptr + 1]] = MACRO_UNDEF;
+				env->macro_tab[env->reprtab[macro_ptr + 1]] = MACROUNDEF;
 				return skip_line(env);
 			}
 			else
@@ -462,7 +408,7 @@ int preprocess_words(environment *const env)
 				return -1;
 			}
 
-			m_change_nextch_type(env, CALC_TYPE, 0);
+			m_change_nextch_type(env, CTYPE, 0);
 			return 0;
 		}
 		case SH_WHILE:
@@ -473,13 +419,13 @@ int preprocess_words(environment *const env)
 			{
 				return -1;
 			}
-			m_change_nextch_type(env, WHILE_TYPE, 0);
+			m_change_nextch_type(env, WHILETYPE, 0);
 			m_nextch(env);
 			m_nextch(env);
 
 			env->nextp = 0;
 			int res = while_implementation(env);
-			if (env->nextch_type != FILE_TYPE)
+			if (env->nextch_type != FILETYPE)
 			{
 				m_old_nextch_type(env);
 			}
@@ -514,8 +460,8 @@ int preprocess_token(environment *const env)
 			if (env->cur != 0)
 			{
 				const int res = preprocess_words(env);
-				if (env->nextchar != '#' && env->nextch_type != WHILE_TYPE &&
-					env->nextch_type != MACRO_TEXT_TYPE)//curflag
+				if (env->nextchar != '#' && env->nextch_type != WHILETYPE &&
+					env->nextch_type != TEXTTYPE)//curflag
 				{
 					env_add_comment(env);
 				}
@@ -570,42 +516,3 @@ int preprocess_token(environment *const env)
 		}
 	}
 }
-
-int preprocess_file(environment *const env, const size_t number)
-{
-	if (lk_open_file(env, number))
-	{
-		return -1;
-	}
-
-	env_clear_error_string(env);
-
-	const size_t old_cur = lk_get_current(env->lk);
-	lk_set_current(env->lk, number);
-	const size_t old_line = env->line;
-	
-	env->line = 1;
-
-	get_next_char(env);
-	m_nextch(env);
-
-	if (env->curchar != '#')
-	{
-		env_add_comment(env);
-	}
-
-	int was_error = 0;
-	while (env->curchar != EOF)
-	{
-		was_error = preprocess_token(env) || was_error;
-	}
-
-	m_fprintf(env, '\n');
-
-	env->line = old_line;
-	lk_set_current(env->lk, old_cur);
-
-	in_clear(env->input);
-	return was_error ? -1 : 0;
-}
-
