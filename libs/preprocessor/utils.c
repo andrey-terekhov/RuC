@@ -207,7 +207,7 @@ int skip_string(environment *const env)
 
 void end_of_file(environment *const env)
 {
-	while (env->nextch_type != FTYPE)
+	while (env->nextch_type != FILETYPE)
 	{
 		m_old_nextch_type(env);
 	}
