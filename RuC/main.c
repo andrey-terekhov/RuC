@@ -54,8 +54,8 @@ int bad_printf_placeholder = 0;
 
 // optimization flags
 int cycle_jump_reduce = 1;
-int cycle_condition_calculation = 1;
-int delay_slot = 1;
+int cycle_condition_calculation = 0;
+int delay_slot = 0;
 int check_nested_for;
 
 extern void preprocess_file();
