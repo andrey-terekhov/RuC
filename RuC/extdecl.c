@@ -1852,6 +1852,7 @@ void statement()
                          tree[stmtref] = tc;
                          inloop = 1;
                          statement();
+
                          totree(TForEnd);
             }
                 break;

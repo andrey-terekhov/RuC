@@ -255,6 +255,13 @@ void tablesandtree()
             case TSlice:
                 fprintf(output, "TSlice elem_type= %i\n", tree[i++]);
                 break;
+			case TIndVar:
+				fprintf(output, "TIndVar number = %i, step = %i\n", tree[i], tree[i+1]);
+				i += 2;
+				break;
+			case TSliceInd:
+				fprintf(output, "TSliceInd %i\n", tree[i++]);
+				break;
 			case TDYNSelect:
 				fprintf(output, "TDYNSelect displ= %i\n", tree[i++]);
 				break;
