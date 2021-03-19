@@ -1,5 +1,5 @@
 int main()
 {
-	printf("qwe\d");
+	printf("привет\d");
 	return 0;
 }
