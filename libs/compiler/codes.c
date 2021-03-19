@@ -15,12 +15,12 @@
  */
 
 #include "codes.h"
+#include <string.h>
 #include "defs.h"
 #include "errors.h"
 #include "tree.h"
 #include "uniio.h"
 #include "uniprinter.h"
-#include <string.h>
 
 
 #define MAX_ELEM_SIZE	32

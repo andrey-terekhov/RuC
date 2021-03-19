@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "vector.h"
 #include <limits.h>
 #include <stddef.h>
+#include "vector.h"
 
 
 #ifdef __cplusplus
