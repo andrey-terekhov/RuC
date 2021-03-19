@@ -19,9 +19,7 @@
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "defs.h"
 #include "map.h"
-#include "uniio.h"
 #include "vector.h"
 
 
