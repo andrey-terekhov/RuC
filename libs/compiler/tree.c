@@ -15,10 +15,10 @@
  */
 
 #include "tree.h"
-#include "defs.h"
-#include "errors.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include "defs.h"
+#include "errors.h"
 
 
 node node_expression(vector *const tree, const size_t index);
