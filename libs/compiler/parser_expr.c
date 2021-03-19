@@ -231,16 +231,31 @@ void actstring(int type, parser *const prs)
 			return; // 1
 		}
 		const size_t size = vector_size(&TREE);
-		if (vector_get(&TREE, size - 3) == TConstd)
+		if (vector_get(&TREE, size - 2) == TConst)
 		{
-			vector_set(&TREE, size - 3, vector_get(&TREE, size - 2));
-			vector_set(&TREE, size - 2, vector_get(&TREE, size - 1));
-			vector_remove(&TREE);
+			const item_t value = vector_remove(&TREE);
+			if (type == LFLOAT)
+			{
+				vector_remove(&TREE);
+				double_to_tree(&TREE, (double)value);
+			}
+			else
+			{
+				vector_set(&TREE, size - 1, value);
+			}
 		}
-		else if (vector_get(&TREE, size - 2) == TConst)
+		else if (vector_get(&TREE, size - 3) == TConstd)
 		{
-			vector_set(&TREE, size - 2, vector_get(&TREE, size - 1));
-			vector_remove(&TREE);
+			const double value = double_from_tree(&TREE);
+			if (type == LFLOAT)
+			{
+				vector_remove(&TREE);
+				double_to_tree(&TREE, value);
+			}
+			else
+			{
+				vector_set(&TREE, size - 1, (item_t)value);
+			}
 		}
 		else
 		{
