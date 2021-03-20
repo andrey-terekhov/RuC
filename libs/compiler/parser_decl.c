@@ -268,9 +268,9 @@ item_t parse_struct_declaration_list(parser *const prs)
 				// Меняем тип (увеличиваем размерность массива)
 				type = parse_array_definition(prs, element_type);
 				tree_set(prs->sx, ref_array_dim, (item_t)prs->array_dimensions);
-				if (!prs->flag_empty_bounds && prs->next_token != equal)
+				if (!prs->flag_empty_bounds)
 				{
-					parser_error(prs, empty_bound_without_init);
+					tree_set(prs->sx, ref_array_dim, tree_get(prs->sx, ref_array_dim) - 1);
 				}
 
 				tree_add(prs->sx, TDeclid);
@@ -292,10 +292,6 @@ item_t parse_struct_declaration_list(parser *const prs)
 					{
 						prs->flag_strings_only = 2;
 						tree_set(prs->sx, all, 1);
-						if (!prs->flag_empty_bounds)
-						{
-							tree_set(prs->sx, ref_array_dim, tree_get(prs->sx, ref_array_dim) - 1);
-						}
 
 						parse_initializer(prs, type);
 
