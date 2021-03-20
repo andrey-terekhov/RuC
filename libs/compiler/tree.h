@@ -118,7 +118,6 @@ int node_set_next(node *const nd);
  *	@return	@c  0 on success,
  *			@c -1 on failure,
  *			@c -2 on trying to reset the root node,
- *			@c -3 on trying to set non-empty node
  */
 int node_set_type(node *const nd, const item_t type);
 

@@ -689,11 +689,6 @@ int node_set_type(node *const nd, const item_t type)
 		return -2;
 	}
 
-	if (nd->argc != 0 || nd->amount != 0)
-	{
-		return -3;
-	}
-
 	return nd->type != vector_size(nd->tree)
 		? vector_set(nd->tree, nd->type, type)
 		: vector_add(nd->tree, type) != SIZE_MAX ? 0 : -1;
