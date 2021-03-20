@@ -88,10 +88,10 @@ int parse(universal_io *const io, syntax *const sx)
 	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
 #else
 	const int ret = prs.was_error || prs.lxr->was_error || !sx_is_correct(sx)
-		/*|| tree_test(&sx->tree)
+		|| tree_test(&sx->tree)
 		|| tree_test_next(&sx->tree)
 		|| tree_test_recursive(&sx->tree)
-		|| tree_test_copy(&sx->tree)*/;
+		|| tree_test_copy(&sx->tree);
 
 	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
 
