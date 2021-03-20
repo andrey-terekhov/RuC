@@ -255,6 +255,7 @@ void actstring(int type, parser *const prs)
 			else
 			{
 				vector_set(&TREE, size - 1, (item_t)value);
+				parser_error(prs, init_int_by_float);
 			}
 		}
 		else
