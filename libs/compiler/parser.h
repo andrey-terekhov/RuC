@@ -20,6 +20,7 @@
 #include "errors.h"
 #include "lexer.h"
 #include "syntax.h"
+#include "tree.h"
 #include "uniio.h"
 
 
@@ -80,6 +81,7 @@ typedef struct parser
 	int flag_was_type_def;		/**< Set, if was type definition */
 
 	int was_error;				/**< Error flag */
+	node nd;
 } parser;
 
 /**	The kind of block to parse */
@@ -164,10 +166,11 @@ void token_skip_until(parser *const prs, const uint8_t tokens);
  *		expression ',' assignment-expression
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *
  *	@return	Type of parsed expression
  */
-item_t parse_expression(parser *const prs);
+item_t parse_expression(parser *const prs, node *const parent);
 
 /**
  *	Parse assignment expression [C99 6.5.16]
@@ -180,10 +183,11 @@ item_t parse_expression(parser *const prs);
  *		=  *=  /=  %=  +=  -=  <<=  >>=  &=  ˆ=  |=
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *
  *	@return	Type of parsed expression
  */
-item_t parse_assignment_expression(parser *const prs);
+item_t parse_assignment_expression(parser *const prs, node *const parent);
 
 /**
  *	Parse expression in parentheses
@@ -192,10 +196,11 @@ item_t parse_assignment_expression(parser *const prs);
  *		'(' expression ')'
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *
  *	@return	Type of parsed expression
  */
-item_t parse_parenthesized_expression(parser *const prs);
+item_t parse_parenthesized_expression(parser *const prs, node *const parent);
 
 /**
  *	Parse constant expression [C99 6.6]
@@ -204,20 +209,22 @@ item_t parse_parenthesized_expression(parser *const prs);
  *		conditional-expression
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *
  *	@return	Type of parsed expression
  */
-item_t parse_constant_expression(parser *const prs);
+item_t parse_constant_expression(parser *const prs, node *const parent);
 
 /**
  *	Parse condition
  *	@note	must be evaluated to a simple value
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *
  *	@return	Type of parsed expression
  */
-item_t parse_condition(parser *const prs);
+item_t parse_condition(parser *const prs, node *const parent);
 
 /**
  *	Parse string literal [C99 6.5.1]
@@ -226,10 +233,11 @@ item_t parse_condition(parser *const prs);
  *		string-literal
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *
  *	@return	Type of parsed expression
  */
-item_t parse_string_literal(parser *const prs);
+item_t parse_string_literal(parser *const prs, node *const parent);
 
 /**
  *	Insert @c WIDEN node
@@ -245,8 +253,9 @@ void parse_insert_widen(parser *const prs);
  *	some number of declarators, and a semicolon
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  */
-void parse_declaration_inner(parser *const prs);
+void parse_declaration_inner(parser *const prs, node *const parent);
 
 /**
  *	Parse a top level declaration [C99 6.7]
@@ -254,8 +263,9 @@ void parse_declaration_inner(parser *const prs);
  *	some number of declarators, and a semicolon, or function definition
  *
  *	@param	prs			Parser structure
+ *	@param	root		Pointer to root node in AST
  */
-void parse_declaration_external(parser *const prs);
+void parse_declaration_external(parser *const prs, node *const root);
 
 /**
  *	Parse initializer [C99 6.7.8]
@@ -265,9 +275,10 @@ void parse_declaration_external(parser *const prs);
  *		'{' initializer-list '}'
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *	@param	type		Type of variable in declaration
  */
-void parse_initializer(parser *const prs, const item_t type);
+void parse_initializer(parser *const prs, node *const parent, const item_t type);
 
 
 /**
@@ -282,8 +293,9 @@ void parse_initializer(parser *const prs, const item_t type);
  *		jump-statement
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  */
-void parse_statement(parser *const prs);
+void parse_statement(parser *const prs, node *const parent);
 
 /**
  *	Parse '{}' block [C99 6.8.2]
@@ -300,8 +312,9 @@ void parse_statement(parser *const prs);
  *		statement
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  */
-void parse_statement_compound(parser *const prs, const block_t type);
+void parse_statement_compound(parser *const prs, node *const parent, const block_t type);
 
 
 /**
@@ -421,6 +434,8 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
  *	@return	Index of the new record in modes table, @c SIZE_MAX on failure
  */
 item_t to_modetab(parser *const prs, const item_t mode, const item_t element);
+
+void totree(parser *const prs, item_t op);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -335,38 +335,6 @@ size_t func_reserve(syntax *const sx)
 }
 
 
-int tree_add(syntax *const sx, const item_t node)
-{
-	return sx != NULL ? vector_add(&sx->tree, node) != SIZE_MAX ? 0 : -1 : -1;
-}
-
-int tree_set(syntax *const sx, const size_t index, const item_t node)
-{
-	return sx != NULL ? vector_set(&sx->tree, index, node) : -1;
-}
-
-item_t tree_get(const syntax *const sx, const size_t index)
-{
-	return sx != NULL ? vector_get(&sx->tree, index) : ITEM_MAX;
-}
-
-size_t tree_size(const syntax *const sx)
-{
-	return sx != NULL ? vector_size(&sx->tree) : SIZE_MAX;
-}
-
-size_t tree_reserve(syntax *const sx)
-{
-	if (sx == NULL)
-	{
-		return SIZE_MAX;
-	}
-
-	vector_increase(&sx->tree, 1);
-	return vector_size(&sx->tree) - 1;
-}
-
-
 size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const item_t mode, const int func_def)
 {
 	const size_t last_id = vector_size(&sx->identifiers);
@@ -602,11 +570,11 @@ item_t scope_func_enter(syntax *const sx)
 	return displ;
 }
 
-int scope_func_exit(syntax *const sx, const size_t decl_ref, const item_t displ)
+item_t scope_func_exit(syntax *const sx, const item_t displ)
 {
-	if (sx == NULL || decl_ref >= vector_size(&sx->tree))
+	if (sx == NULL)
 	{
-		return -1;
+		return ITEM_MAX;
 	}
 
 	for (size_t i = vector_size(&sx->identifiers) - 4; i >= sx->cur_id; i -= 4)
@@ -615,9 +583,8 @@ int scope_func_exit(syntax *const sx, const size_t decl_ref, const item_t displ)
 	}
 
 	sx->cur_id = 2;	// Все функции описываются на одном уровне
-	vector_set(&sx->tree, decl_ref, sx->max_displ);
 	sx->lg = -1;
 	sx->displ = displ;
 
-	return 0;
+	return sx->max_displ;
 }

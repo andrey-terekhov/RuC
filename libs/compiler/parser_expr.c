@@ -53,21 +53,16 @@ void applid(parser *const prs)
 	prs->lastid = (size_t)id;
 }
 
-void totree(parser *const prs, item_t op)
-{
-	vector_add(&TREE, op);
-}
-
 void totree_float_operation(parser *const prs, item_t op)
 {
 	if (prs->ansttype == LFLOAT &&
 		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
 	{
-		tree_add(prs->sx, op + 50);
+		totree(prs, op + 50);
 	}
 	else
 	{
-		tree_add(prs->sx, op);
+		totree(prs, op);
 	}
 }
 
@@ -110,7 +105,7 @@ double double_from_tree(vector *const tree)
 
 typedef enum ANST_VAL
 {
-	ident = IDENT,
+	variable = IDENT,
 	value = VAL,
 	number = NUMBER,
 	address = ADDR,
@@ -160,11 +155,11 @@ void binop(parser *const prs, int sp)
 
 		if (mode_is_int(left))
 		{
-			tree_add(prs->sx, WIDEN1);
+			totree(prs, WIDEN1);
 		}
 		else if (mode_is_int(right))
 		{
-			tree_add(prs->sx, WIDEN);
+			totree(prs, WIDEN);
 		}
 
 		prs->ansttype = LFLOAT;
@@ -220,7 +215,7 @@ void toval(parser *const prs)
 
 	if (prs->anst == IDENT)
 	{
-		tree_set(prs->sx, tree_size(prs->sx) - 2, mode_is_float(prs->ansttype) ? TIdenttovald : TIdenttoval);
+		vector_set(&prs->sx->tree, vector_size(&prs->sx->tree) - 2, mode_is_float(prs->ansttype) ? TIdenttovald : TIdenttoval);
 	}
 
 	if (!mode_is_array(prs->sx, prs->ansttype) && !mode_is_pointer(prs->sx, prs->ansttype) && prs->anst == ADDR)
@@ -778,12 +773,12 @@ void parse_standard_function_call(parser *const prs)
 				if (dn < 0)
 				{
 					totree(prs, TIdenttoval);
-					totree(prs, -dn);
+					node_add_arg(&prs->nd, -dn);
 				}
 				else
 				{
 					totree(prs, TConst);
-					totree(prs, dn);
+					node_add_arg(&prs->nd, -dn);
 				}
 				prs->anst = VAL;
 			}
@@ -948,13 +943,13 @@ size_t parse_identifier(parser *const prs)
 
 	totree(prs, TIdent);
 	prs->anstdispl = (int)ident_get_displ(prs->sx, (size_t)id);
-	totree(prs, prs->anstdispl);
+	node_add_arg(&prs->nd, prs->anstdispl);
 
 	const item_t mode = ident_get_mode(prs->sx, (size_t)id);
 
 	prs->lastid = (size_t)id;
 	token_consume(prs);
-	anst_push(prs, ident, mode);
+	anst_push(prs, variable, mode);
 	return (size_t)id;
 }
 
@@ -977,19 +972,25 @@ item_t parse_constant(parser *const prs)
 	{
 		case char_constant:
 			totree(prs, TConst);
-			totree(prs, prs->lxr->num);
+			node_add_arg(&prs->nd, prs->lxr->num);
 			mode = mode_character;
 			break;
 
 		case int_constant:
 			totree(prs, TConst);
-			totree(prs, prs->lxr->num);
+			node_add_arg(&prs->nd, prs->lxr->num);
 			mode = mode_integer;
 			break;
 
 		case float_constant:
 			totree(prs, TConstd);
-			double_to_tree(&prs->sx->tree, prs->lxr->num_double);
+
+			int64_t num64;
+			memcpy(&num64, &prs->lxr->num_double, sizeof(int64_t));
+			int32_t fst = num64 & 0x00000000ffffffff;
+			int32_t snd = (num64 & 0xffffffff00000000) >> 32;
+			node_add_arg(&prs->nd, fst);
+			node_add_arg(&prs->nd, snd);
 			mode = mode_float;
 			break;
 
@@ -1028,7 +1029,7 @@ void parse_primary_expression(parser *const prs)
 			break;
 
 		case string_literal:
-			parse_string_literal(prs);
+			parse_string_literal(prs, &prs->nd);
 			break;
 
 		case l_paren:
@@ -1166,7 +1167,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	size_t actual_args = 0;
 
 	totree(prs, TCall1);
-	totree(prs, expected_args);
+	node_add_arg(&prs->nd, expected_args);
 	size_t ref_arg_mode = function_mode + 3;
 
 	if (token_try_consume(prs, r_paren))
@@ -1199,7 +1200,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 
 				const item_t displ = ident_get_displ(prs->sx, id);
 				totree(prs, displ < 0 ? TIdenttoval : TConst);
-				totree(prs, llabs(displ));
+				node_add_arg(&prs->nd, llabs(displ));
 				totree(prs, TExprend);
 			}
 			else if (mode_is_array(prs->sx, expected_arg_mode) && prs->token == l_brace)
@@ -1210,7 +1211,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 			else
 			{
 				prs->flag_in_assignment = 0;
-				const item_t actual_arg_mode = parse_assignment_expression(prs);
+				const item_t actual_arg_mode = parse_assignment_expression(prs, &prs->nd);
 
 				if (!mode_is_undefined(expected_arg_mode) && !mode_is_undefined(actual_arg_mode))
 				{
@@ -1243,7 +1244,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 
 	prs->flag_in_assignment = old_in_assignment;
 	totree(prs, TCall2);
-	totree(prs, (item_t)function_id);
+	node_add_arg(&prs->nd, (item_t)function_id);
 	anst_push(prs, value, mode_get(prs->sx, function_mode + 1));
 }
 
@@ -1305,7 +1306,7 @@ void parse_postfix_expression(parser *const prs)
 			}
 
 			totree(prs, elem_type);
-			parse_condition(prs);
+			parse_condition(prs, &prs->nd);
 			if (prs->was_error == 4)
 			{
 				return; // 1
@@ -1425,7 +1426,7 @@ void parse_postfix_expression(parser *const prs)
 			parser_error(prs, wrong_operand);
 		}
 
-		if (anst_peek(prs) != ident && anst_peek(prs) != address)
+		if (anst_peek(prs) != variable && anst_peek(prs) != address)
 		{
 			parser_error(prs, unassignable_inc);
 		}
@@ -1437,7 +1438,7 @@ void parse_postfix_expression(parser *const prs)
 
 		totree_float_operation(prs, operator);
 
-		if (prs->anst == ident)
+		if (prs->anst == variable)
 		{
 			totree(prs, ident_get_displ(prs->sx, lid));
 		}
@@ -1457,7 +1458,7 @@ void parse_unary_expression(parser *const prs)
 			token_consume(prs);
 			parse_unary_expression(prs);
 
-			if (anst_peek(prs) != ident && anst_peek(prs) != address)
+			if (anst_peek(prs) != variable && anst_peek(prs) != address)
 			{
 				parser_error(prs, unassignable_inc);
 			}
@@ -1469,7 +1470,7 @@ void parse_unary_expression(parser *const prs)
 
 			totree_float_operation(prs, operator);
 
-			if (anst_peek(prs) == ident)
+			if (anst_peek(prs) == variable)
 			{
 				totree(prs, ident_get_displ(prs->sx, prs->lastid));
 			}
@@ -1496,7 +1497,7 @@ void parse_unary_expression(parser *const prs)
 						parser_error(prs, wrong_addr);
 					}
 
-					if (anst_peek(prs) == ident)
+					if (anst_peek(prs) == variable)
 					{
 						vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoaddr); // &a
 					}
@@ -1705,7 +1706,7 @@ void condexpr(parser *const prs)
 			}
 			totree(prs, TCondexpr);
 			scanner(prs);
-			parse_condition(prs); // then
+			parse_condition(prs, &prs->nd); // then
 			if (prs->was_error == 4)
 			{
 				return; // 1
@@ -1791,7 +1792,7 @@ void exprassn(parser *const prs)
 		const int type = prs->leftansttype;
 		if (mode_is_struct(prs->sx, type) || mode_is_array(prs->sx, type))
 		{
-			parse_initializer(prs, type);
+			parse_initializer(prs, &prs->nd, type);
 			prs->leftansttype = type;
 		}
 		else
@@ -1968,32 +1969,35 @@ void expr(parser *const prs)
  */
 
 
-item_t parse_expression(parser *const prs)
+item_t parse_expression(parser *const prs, node *const parent)
 {
+	prs->nd = *parent;
 	expr(prs);
 	totree(prs, TExprend);
 	exprassnvoid(prs);
 	return anst_pop(prs);
 }
 
-item_t parse_assignment_expression(parser *const prs)
+item_t parse_assignment_expression(parser *const prs, node *const parent)
 {
+	prs->nd = *parent;
 	exprassn(prs);
 	toval(prs);
 	totree(prs, TExprend);
 	return anst_pop(prs);
 }
 
-item_t parse_parenthesized_expression(parser *const prs)
+item_t parse_parenthesized_expression(parser *const prs, node *const parent)
 {
 	token_expect_and_consume(prs, l_paren, cond_must_be_in_brkts);
-	const item_t condition_type = parse_condition(prs);
+	const item_t condition_type = parse_condition(prs, parent);
 	token_expect_and_consume(prs, r_paren, cond_must_be_in_brkts);
 	return condition_type;
 }
 
-item_t parse_constant_expression(parser *const prs)
+item_t parse_constant_expression(parser *const prs, node *const parent)
 {
+	prs->nd = *parent;
 	parse_unary_expression(prs);
 	condexpr(prs);
 	toval(prs);
@@ -2001,26 +2005,28 @@ item_t parse_constant_expression(parser *const prs)
 	return anst_pop(prs);
 }
 
-item_t parse_condition(parser *const prs)
+item_t parse_condition(parser *const prs, node *const parent)
 {
+	prs->nd = *parent;
 	expr(prs);
 	toval(prs);
 	totree(prs, TExprend);
 	return anst_pop(prs);
 }
 
-item_t parse_string_literal(parser *const prs)
+item_t parse_string_literal(parser *const prs, node *const parent)
 {
+	prs->nd = *parent;
 	token_consume(prs);
 	totree(prs, TString);
-	totree(prs, prs->lxr->num);
+	node_add_arg(&prs->nd, prs->lxr->num);
 
 	for (size_t i = 0; i < (size_t)prs->lxr->num; i++)
 	{
-		totree(prs, prs->lxr->lexstr[i]);
+		node_add_arg(&prs->nd, prs->lxr->lexstr[i]);
 	}
 
-	return anst_push(prs, VAL, to_modetab(prs, mode_array, LCHAR));
+	return anst_push(prs, value, to_modetab(prs, mode_array, mode_character));
 }
 
 void parse_insert_widen(parser *const parser)

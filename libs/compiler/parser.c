@@ -75,22 +75,23 @@ int parse(universal_io *const io, syntax *const sx)
 
 	lexer lxr = create_lexer(io, sx);
 	parser prs = parser_create(sx, &lxr);
+	node root = node_get_root(&sx->tree);
 
 	do
 	{
-		parse_declaration_external(&prs);
+		parse_declaration_external(&prs, &root);
 	} while (prs.token != eof);
 
-	tree_add(prs.sx, TEnd);
+	node_add_child(&root, TEnd);
 
 #ifndef GENERATE_TREE
 	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
 #else
 	const int ret = prs.was_error || prs.lxr->was_error || !sx_is_correct(sx)
-		|| tree_test(&sx->tree)
+		/*|| tree_test(&sx->tree)
 		|| tree_test_next(&sx->tree)
 		|| tree_test_recursive(&sx->tree)
-		|| tree_test_copy(&sx->tree);
+		|| tree_test_copy(&sx->tree)*/;
 
 	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
 
@@ -266,4 +267,10 @@ item_t to_modetab(parser *const prs, const item_t mode, const item_t element)
 	temp[0] = mode;
 	temp[1] = element;
 	return (item_t)mode_add(prs->sx, temp, 2);
+}
+
+void totree(parser *const prs, const item_t op)
+{
+	prs->nd = node_add_child(&prs->nd, op);
+	//vector_add(&TREE, op);
 }

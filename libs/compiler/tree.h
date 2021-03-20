@@ -158,6 +158,9 @@ int node_set_arg(node *const nd, const size_t index, const item_t arg);
 node node_set_child(node *const nd);
 
 
+node node_add_child(node *const nd, const item_t type);
+
+
 /**
  *	Copy source node to destination
  *

@@ -764,6 +764,13 @@ node node_set_child(node *const nd)
 	return child;
 }
 
+node node_add_child(node *const nd, const item_t type)
+{
+	node result = node_set_child(nd);
+	node_set_type(&result, type);
+	return result;
+}
+
 
 int node_copy(node *const dest, const node *const src)
 {
