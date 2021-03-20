@@ -489,7 +489,7 @@ void parse_init_declarator(parser *const prs, node *const parent, item_t type)
 			parse_array_initializer(prs, &nd_decl_arr, type);
 			if (prs->flag_strings_only == 1)
 			{
-				node_set_arg(&nd_decl_arr, 5, prs->flag_empty_bounds + 2);
+				node_set_arg(&nd, 5, prs->flag_empty_bounds + 2);
 			}
 		}
 		else
