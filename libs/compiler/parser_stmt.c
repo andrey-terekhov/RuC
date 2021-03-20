@@ -698,6 +698,7 @@ void parse_statement(parser *const prs, node *const parent)
 	switch (prs->token)
 	{
 		case semicolon:
+			token_consume(prs);
 			node_add_child(parent, NOP);
 			break;
 
