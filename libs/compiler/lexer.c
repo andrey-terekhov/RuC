@@ -26,7 +26,7 @@
  *	@param	lxr			Lexer structure
  *	@param	num			Error code
  */
-void lexer_error(lexer *const lxr, error_t num, ...)
+static void lexer_error(lexer *const lxr, error_t num, ...)
 {
 	lxr->was_error = 1;
 
@@ -39,13 +39,13 @@ void lexer_error(lexer *const lxr, error_t num, ...)
 }
 
 /**
- *	Read next character from io
+ *	Scan next character from io
  *
  *	@param	lxr			Lexer structure
  *
  *	@return	Read character
  */
-char32_t read_char(lexer *const lxr)
+static char32_t scan(lexer *const lxr)
 {
 	lxr->character = uni_scan_char(lxr->io);
 	return lxr->character;
@@ -58,7 +58,7 @@ char32_t read_char(lexer *const lxr)
  *
  *	@return	Peeked character
  */
-char32_t peek_char(lexer *const lxr)
+static char32_t lookahead(lexer *const lxr)
 {
 	const size_t position = in_get_position(lxr->io);
 	const char32_t result = uni_scan_char(lxr->io);
@@ -71,12 +71,12 @@ char32_t peek_char(lexer *const lxr)
  *
  *	@param	lxr			Lexer structure
  */
-void skip_whitespace(lexer *const lxr)
+static void skip_whitespace(lexer *const lxr)
 {
 	while (lxr->character == ' ' || lxr->character == '\t'
 		|| lxr->character == '\n' || lxr->character == '\r')
 	{
-		read_char(lxr);
+		scan(lxr);
 	}
 }
 
@@ -85,11 +85,11 @@ void skip_whitespace(lexer *const lxr)
  *
  *	@param	lxr			Lexer structure
  */
-void skip_line_comment(lexer *const lxr)
+static void skip_line_comment(lexer *const lxr)
 {
 	while (lxr->character != '\n' && lxr->character != (char32_t)EOF)
 	{
-		read_char(lxr);
+		scan(lxr);
 	}
 }
 
@@ -98,18 +98,18 @@ void skip_line_comment(lexer *const lxr)
  *
  *	@param	lxr			Lexer structure
  */
-void skip_block_comment(lexer *const lxr)
+static void skip_block_comment(lexer *const lxr)
 {
-	while (lxr->character != '*' && read_char(lxr) != '/')
+	while (lxr->character != '*' && scan(lxr) != '/')
 	{
 		if (lxr->character == (char32_t)EOF)
 		{
 			lexer_error(lxr, unterminated_block_comment);
 			return;
 		}
-		read_char(lxr);
+		scan(lxr);
 	}
-	read_char(lxr);
+	scan(lxr);
 }
 
 /**
@@ -119,7 +119,7 @@ void skip_block_comment(lexer *const lxr)
  *
  *	@return	keyword number on keyword, @c identifier on identifier
  */
-token_t lex_identifier_or_keyword(lexer *const lxr)
+static token_t lex_identifier_or_keyword(lexer *const lxr)
 {
 	char32_t spelling[MAXSTRINGL];
 	size_t length = 0;
@@ -127,7 +127,7 @@ token_t lex_identifier_or_keyword(lexer *const lxr)
 	do
 	{
 		spelling[length++] = lxr->character;
-		read_char(lxr);
+		scan(lxr);
 	} while (utf8_is_letter(lxr->character) || utf8_is_digit(lxr->character));
 	spelling[length] = '\0';
 
@@ -151,7 +151,7 @@ token_t lex_identifier_or_keyword(lexer *const lxr)
  *
  *	@return	@c int_constant on integer, @c float_constant on floating point
  */
-token_t lex_numeric_constant(lexer *const lxr)
+static token_t lex_numeric_constant(lexer *const lxr)
 {
 	int num_int = 0;
 	double num_double = 0.0;
@@ -162,7 +162,7 @@ token_t lex_numeric_constant(lexer *const lxr)
 	{
 		num_int = num_int * 10 + (lxr->character - '0');
 		num_double = num_double * 10 + (lxr->character - '0');
-		read_char(lxr);
+		scan(lxr);
 	}
 
 	if (num_double > (double)INT_MAX)
@@ -175,7 +175,7 @@ token_t lex_numeric_constant(lexer *const lxr)
 	{
 		flag_int = 0;
 		double position_mult = 0.1;
-		while (utf8_is_digit(read_char(lxr)))
+		while (utf8_is_digit(scan(lxr)))
 		{
 			num_double += (lxr->character - '0') * position_mult;
 			position_mult *= 0.1;
@@ -186,17 +186,17 @@ token_t lex_numeric_constant(lexer *const lxr)
 	{
 		int power = 0;
 		int sign = 1;
-		read_char(lxr);
+		scan(lxr);
 
 		if (lxr->character == '-')
 		{
 			flag_int = 0;
-			read_char(lxr);
+			scan(lxr);
 			sign = -1;
 		}
 		else if (lxr->character == '+')
 		{
-			read_char(lxr);
+			scan(lxr);
 		}
 
 		if (!utf8_is_digit(lxr->character))
@@ -208,7 +208,7 @@ token_t lex_numeric_constant(lexer *const lxr)
 		while (utf8_is_digit(lxr->character))
 		{
 			power = power * 10 + (lxr->character - '0');
-			read_char(lxr);
+			scan(lxr);
 		}
 
 		if (flag_int)
@@ -238,11 +238,11 @@ token_t lex_numeric_constant(lexer *const lxr)
 }
 
 /**	Get character or escape sequence after '\' */
-char32_t get_next_string_elem(lexer *const lxr)
+static char32_t get_next_string_elem(lexer *const lxr)
 {
 	if (lxr->character == '\\')
 	{
-		switch (read_char(lxr))
+		switch (scan(lxr))
 		{
 			case 'n':
 			case U'н':
@@ -279,9 +279,9 @@ char32_t get_next_string_elem(lexer *const lxr)
  *
  *	@return	@c char_constant
  */
-token_t lex_char_constant(lexer *const lxr)
+static token_t lex_char_constant(lexer *const lxr)
 {
-	if (read_char(lxr) == '\'')
+	if (scan(lxr) == '\'')
 	{
 		lexer_error(lxr, empty_character);
 		lxr->num = 0;
@@ -290,9 +290,9 @@ token_t lex_char_constant(lexer *const lxr)
 
 	lxr->num = get_next_string_elem(lxr);
 
-	if (read_char(lxr) == '\'')
+	if (scan(lxr) == '\'')
 	{
-		read_char(lxr);
+		scan(lxr);
 	}
 	else
 	{
@@ -309,20 +309,20 @@ token_t lex_char_constant(lexer *const lxr)
  *
  *	@return	@c string_literal
  */
-token_t lex_string_literal(lexer *const lxr)
+static token_t lex_string_literal(lexer *const lxr)
 {
 	size_t length = 0;
 	int flag_too_long_string = 0;
 	while (lxr->character == '\"')
 	{
-		read_char(lxr);
+		scan(lxr);
 		while (lxr->character != '"' && lxr->character != '\n' && length < MAXSTRINGL)
 		{
 			if (!flag_too_long_string)
 			{
 				lxr->lexstr[length++] = get_next_string_elem(lxr);
 			}
-			read_char(lxr);
+			scan(lxr);
 		}
 		if (length == MAXSTRINGL)
 		{
@@ -330,12 +330,12 @@ token_t lex_string_literal(lexer *const lxr)
 			flag_too_long_string = 1;
 			while (lxr->character != '"' && lxr->character != '\n')
 			{
-				read_char(lxr);
+				scan(lxr);
 			}
 		}
 		if (lxr->character == '"')
 		{
-			read_char(lxr);
+			scan(lxr);
 		}
 		else
 		{
@@ -366,7 +366,7 @@ lexer create_lexer(universal_io *const io, syntax *const sx)
 
 	lxr.was_error = 0;
 
-	read_char(&lxr);
+	scan(&lxr);
 
 	return lxr;
 }
@@ -396,7 +396,7 @@ token_t lex(lexer *const lxr)
 			{
 				lexer_error(lxr, bad_character, lxr->character);
 				// Pretending the character didn't exist
-				read_char(lxr);
+				scan(lxr);
 				return lex(lxr);
 			}
 
@@ -416,64 +416,64 @@ token_t lex(lexer *const lxr)
 
 		// Punctuators [C99 6.4.6]
 		case '?':
-			read_char(lxr);
+			scan(lxr);
 			return question;
 
 		case '[':
-			read_char(lxr);
+			scan(lxr);
 			return l_square;
 
 		case ']':
-			read_char(lxr);
+			scan(lxr);
 			return r_square;
 
 		case '(':
-			read_char(lxr);
+			scan(lxr);
 			return l_paren;
 
 		case ')':
-			read_char(lxr);
+			scan(lxr);
 			return r_paren;
 
 		case '{':
-			read_char(lxr);
+			scan(lxr);
 			return l_brace;
 
 		case '}':
-			read_char(lxr);
+			scan(lxr);
 			return r_brace;
 
 		case '~':
-			read_char(lxr);
+			scan(lxr);
 			return tilde;
 
 		case ':':
-			read_char(lxr);
+			scan(lxr);
 			return colon;
 
 		case ';':
-			read_char(lxr);
+			scan(lxr);
 			return semicolon;
 
 		case ',':
-			read_char(lxr);
+			scan(lxr);
 			return comma;
 
 		case '.':
-			if (utf8_is_digit(peek_char(lxr)))
+			if (utf8_is_digit(lookahead(lxr)))
 			{
 				return lex_numeric_constant(lxr);
 			}
 			else
 			{
-				read_char(lxr);
+				scan(lxr);
 				return period;
 			}
 
 		case '*':
-			if (read_char(lxr) == '=')
+			if (scan(lxr) == '=')
 			{
-				read_char(lxr);
+				scan(lxr);
 				return starequal;
 			}
 			else
@@ -482,9 +482,9 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '!':
-			if (read_char(lxr) == '=')
+			if (scan(lxr) == '=')
 			{
-				read_char(lxr);
+				scan(lxr);
 				return exclaimequal;
 			}
 			else
@@ -493,9 +493,9 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '%':
-			if (read_char(lxr) == '=')
+			if (scan(lxr) == '=')
 			{
-				read_char(lxr);
+				scan(lxr);
 				return percentequal;
 			}
 			else
@@ -504,9 +504,9 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '^':
-			if (read_char(lxr) == '=')
+			if (scan(lxr) == '=')
 			{
-				read_char(lxr);
+				scan(lxr);
 				return caretequal;
 			}
 			else
@@ -515,9 +515,9 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '=':
-			if (read_char(lxr) == '=')
+			if (scan(lxr) == '=')
 			{
-				read_char(lxr);
+				scan(lxr);
 				return equalequal;
 			}
 			else
@@ -526,14 +526,14 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '+':
-			switch (read_char(lxr))
+			switch (scan(lxr))
 			{
 				case '=':
-					read_char(lxr);
+					scan(lxr);
 					return plusequal;
 
 				case '+':
-					read_char(lxr);
+					scan(lxr);
 					return plusplus;
 
 				default:
@@ -541,14 +541,14 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '|':
-			switch (read_char(lxr))
+			switch (scan(lxr))
 			{
 				case '=':
-					read_char(lxr);
+					scan(lxr);
 					return pipeequal;
 
 				case '|':
-					read_char(lxr);
+					scan(lxr);
 					return pipepipe;
 
 				default:
@@ -556,14 +556,14 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '&':
-			switch (read_char(lxr))
+			switch (scan(lxr))
 			{
 				case '=':
-					read_char(lxr);
+					scan(lxr);
 					return ampequal;
 
 				case '&':
-					read_char(lxr);
+					scan(lxr);
 					return ampamp;
 
 				default:
@@ -571,18 +571,18 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '-':
-			switch (read_char(lxr))
+			switch (scan(lxr))
 			{
 				case '=':
-					read_char(lxr);
+					scan(lxr);
 					return minusequal;
 
 				case '-':
-					read_char(lxr);
+					scan(lxr);
 					return minusminus;
 
 				case '>':
-					read_char(lxr);
+					scan(lxr);
 					return arrow;
 
 				default:
@@ -590,12 +590,12 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '<':
-			switch (read_char(lxr))
+			switch (scan(lxr))
 			{
 				case '<':
-					if (read_char(lxr) == '=')
+					if (scan(lxr) == '=')
 					{
-						read_char(lxr);
+						scan(lxr);
 						return lesslessequal;
 					}
 					else
@@ -604,7 +604,7 @@ token_t lex(lexer *const lxr)
 					}
 
 				case '=':
-					read_char(lxr);
+					scan(lxr);
 					return lessequal;
 
 				default:
@@ -612,12 +612,12 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '>':
-			switch (read_char(lxr))
+			switch (scan(lxr))
 			{
 				case '>':
-					if (read_char(lxr) == '=')
+					if (scan(lxr) == '=')
 					{
-						read_char(lxr);
+						scan(lxr);
 						return greatergreaterequal;
 					}
 					else
@@ -626,7 +626,7 @@ token_t lex(lexer *const lxr)
 					}
 
 				case '=':
-					read_char(lxr);
+					scan(lxr);
 					return greaterequal;
 
 				default:
@@ -634,10 +634,10 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '/':
-			switch (read_char(lxr))
+			switch (scan(lxr))
 			{
 				case '=':
-					read_char(lxr);
+					scan(lxr);
 					return slashequal;
 
 				// Comments [C99 6.4.9]

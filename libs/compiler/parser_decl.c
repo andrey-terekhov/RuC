@@ -261,11 +261,12 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 			if (prs->token == l_square)
 			{
 				node nd_decl_arr = node_add_child(&nd, TDeclarr);
-				node_add_child(&nd_decl_arr, 0);
+				node_add_arg(&nd_decl_arr, 0);
 				// Меняем тип (увеличиваем размерность массива)
 				type = parse_array_definition(prs, &nd_decl_arr, element_type);
-				node_set_arg(&nd_decl_arr, 0, (item_t)prs->array_dimensions);
-
+				node_set_arg(&nd_decl_arr, 0, prs->flag_empty_bounds
+							 ? (item_t)prs->array_dimensions
+							 : (item_t)prs->array_dimensions - 1);
 				node nd_decl_id = node_add_child(&nd_decl_arr, TDeclid);
 				node_add_arg(&nd_decl_id, (item_t)displ);
 				node_add_arg(&nd_decl_id, element_type);
@@ -282,12 +283,8 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 					{
 						prs->flag_strings_only = 2;
 						node_set_arg(&nd_decl_id, 3, 1);
-						if (!prs->flag_empty_bounds)
-						{
-							node_set_arg(&nd_decl_arr, 2, node_get_arg(&nd, 2) - 1);
-						}
 
-						parse_initializer(prs, &nd_decl_id, type);
+						parse_initializer(prs, &nd_decl_arr, type);
 						if (prs->flag_strings_only == 1)
 						{
 							node_set_arg(&nd_decl_id, 5, prs->flag_empty_bounds + 2);
