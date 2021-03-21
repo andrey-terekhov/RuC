@@ -225,7 +225,7 @@ void toval(parser *const prs)
 	prs->anst = VAL;
 }
 
-void actstring(int type, parser *const prs)
+void actstring(parser *const prs, int type)
 {
 	scanner(prs);
 	totree(prs, type == LFLOAT ? TStringd : TString);
@@ -242,16 +242,32 @@ void actstring(int type, parser *const prs)
 			return; // 1
 		}
 		const size_t size = vector_size(&TREE);
-		if (vector_get(&TREE, size - 3) == TConstd)
+		if (vector_get(&TREE, size - 2) == TConst)
 		{
-			vector_set(&TREE, size - 3, vector_get(&TREE, size - 2));
-			vector_set(&TREE, size - 2, vector_get(&TREE, size - 1));
-			vector_remove(&TREE);
+			const item_t value = vector_remove(&TREE);
+			if (type == LFLOAT)
+			{
+				vector_remove(&TREE);
+				double_to_tree(&TREE, (double)value);
+			}
+			else
+			{
+				vector_set(&TREE, size - 1, value);
+			}
 		}
-		else if (vector_get(&TREE, size - 2) == TConst)
+		else if (vector_get(&TREE, size - 3) == TConstd)
 		{
-			vector_set(&TREE, size - 2, vector_get(&TREE, size - 1));
-			vector_remove(&TREE);
+			const double value = double_from_tree(&TREE);
+			if (type == LFLOAT)
+			{
+				vector_remove(&TREE);
+				double_to_tree(&TREE, value);
+			}
+			else
+			{
+				vector_set(&TREE, size - 1, (item_t)value);
+				parser_error(prs, init_int_by_float);
+			}
 		}
 		else
 		{
@@ -348,7 +364,7 @@ void mustberowofint(parser *const prs)
 {
 	if (prs->token == BEGIN)
 	{
-		actstring(LINT, prs), totree(prs, TExprend);
+		actstring(prs, LINT), totree(prs, TExprend);
 		if (prs->was_error == 2)
 		{
 			prs->was_error = 5;
@@ -383,7 +399,7 @@ void mustberowoffloat(parser *const prs)
 {
 	if (prs->token == BEGIN)
 	{
-		actstring(LFLOAT, prs), totree(prs, TExprend);
+		actstring(prs, LFLOAT), totree(prs, TExprend);
 		if (prs->was_error == 2)
 		{
 			prs->was_error = 5;
@@ -1167,7 +1183,8 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	size_t actual_args = 0;
 
 	totree(prs, TCall1);
-	node_add_arg(&prs->nd, expected_args);
+	node nd_call = prs->nd;
+	node_add_arg(&nd_call, expected_args);
 	size_t ref_arg_mode = function_mode + 3;
 
 	if (token_try_consume(prs, r_paren))
@@ -1178,6 +1195,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	{
 		do
 		{
+			prs->nd = nd_call;
 			const item_t expected_arg_mode = mode_get(prs->sx, ref_arg_mode);
 
 			if (mode_is_function(prs->sx, expected_arg_mode))
@@ -1205,7 +1223,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 			}
 			else if (mode_is_array(prs->sx, expected_arg_mode) && prs->token == l_brace)
 			{
-				actstring((int)mode_get(prs->sx, (size_t)expected_arg_mode + 1), prs);
+				actstring(prs, (int)mode_get(prs->sx, (size_t)expected_arg_mode + 1));
 				totree(prs, TExprend);
 			}
 			else

@@ -73,8 +73,8 @@ static char32_t lookahead(lexer *const lxr)
  */
 static void skip_whitespace(lexer *const lxr)
 {
-	while (lxr->character == ' ' || lxr->character == '\t'
-		|| lxr->character == '\n' || lxr->character == '\r')
+	while (lxr->character == '\n' || lxr->character == '\r'
+		|| lxr->character == '\t' || lxr->character == ' ')
 	{
 		scan(lxr);
 	}
