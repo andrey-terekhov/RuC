@@ -337,7 +337,9 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 	}
 	else
 	{
-		rez = get_digit(env->input, &stack[*stk_size], env->curchar, env->nextchar, &env->curchar);
+		char32_t last;
+		rez = get_digit(env->input, &stack[*stk_size], env->curchar, env->nextchar, &last);
+		env->curchar = last;
 		get_next_char(env);
 	}
 	
