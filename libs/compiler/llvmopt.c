@@ -15,9 +15,9 @@
  */
 
 #include "llvmopt.h"
+#include <string.h>
 #include "tree.h"
 #include "uniprinter.h"
-#include <string.h>
 
 
 #define MAX_STACK_SIZE	512
@@ -242,112 +242,119 @@ static void node_recursive(information *const info, node *const nd)
 	{
 		node child = node_get_child(nd, i);
 
-		switch (node_get_type(&child))
-		{
-			case TString:
-			{
-				const size_t N = (size_t)node_get_arg(&child, 0);
-				uni_printf(info->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
-					, info->string_num++, N + 1);
-				
-				for (size_t j = 0; j < N; j++) 
-				{
-					const char ch = (char)node_get_arg(&child, j + 1);
-					if (ch == '\n')
-					{
-						uni_printf(info->io, "\\0A");
-					}
-					else
-					{
-						uni_printf(info->io, "%c", ch);
-					}
-				}
-				uni_printf(info->io, "\\00\", align 1\n");
-			}
-			break;
-			case TPrintf:
-			{
-				const size_t N = (size_t)node_get_arg(&child, 0);
-				// перестановка TPrintf
-				// TODO: подумать, как для всех типов работать будет
-				for (size_t j = 0; j < N + 1; j++)
-				{
-					node_swap(nd, i - j, nd, i - j - 1);
-				}
-
-				// перестановка TString
-				// TODO: подумать, как для всех типов работать будет
-				for (size_t j = 0; j < N; j++)
-				{
-					node_swap(nd, i - j, nd, i - j - 1);
-				}
-
-				info->was_printf = 1;
-			}
-			break;
-		}
-
 		// перестановка узлов выражений
-		if (expression_type(&child) == OPERAND)
+		switch (expression_type(&child))
 		{
-			node_info node_info;
-			node_info.parent = nd;
-			node_info.child = i;
-			node_info.depth = 1;
-			stack_push(info, node_info);
-		}
-		else if (expression_type(&child) == UNARY_OPERATION)
-		{
-			node_info operand = stack_pop(info);
-
-			// перестановка с операндом
-			node_order(nd, i, operand.parent, operand.child);
-			node child_to_order = node_get_child(operand.parent, operand.child);
-			for (size_t j = 0; j < operand.depth - 1; j++)
+			case OPERAND:
 			{
-				node_order(nd, i, &child_to_order, 0);
-				child_to_order = node_get_child(&child_to_order, 0);
+				node_info node_info;
+				node_info.parent = nd;
+				node_info.child = i;
+				node_info.depth = 1;
+				stack_push(info, node_info);
 			}
-
-			// добавляем в стек переставленное выражение
-			operand.depth++;
-			stack_push(info, operand);
-		}
-		else if (expression_type(&child) == BINARY_OPERATION)
-		{
-			node_info second_operand = stack_pop(info);
-			node_info first_operand = stack_pop(info);
-
-			// перестановка со вторым операндом
-			node_order(nd, i, second_operand.parent, second_operand.child);
-			node child_to_order_second = node_get_child(second_operand.parent, second_operand.child);
-			for (size_t j = 0; j < second_operand.depth - 1; j++)
+			break;
+			case UNARY_OPERATION:
 			{
-				node_order(nd, i, &child_to_order_second, 0);
-				child_to_order_second = node_get_child(&child_to_order_second, 0);
-			}
+				node_info operand = stack_pop(info);
 
-			// перестановка с первым операндом
-			node_order(second_operand.parent, second_operand.child, first_operand.parent, first_operand.child);
-			node child_to_order_first = node_get_child(first_operand.parent, first_operand.child);
-			for (size_t j = 0; j < first_operand.depth - 1; j++)
+				// перестановка с операндом
+				node_order(nd, i, operand.parent, operand.child);
+				node child_to_order = node_get_child(operand.parent, operand.child);
+				for (size_t j = 0; j < operand.depth - 1; j++)
+				{
+					node_order(nd, i, &child_to_order, 0);
+					child_to_order = node_get_child(&child_to_order, 0);
+				}
+
+				// добавляем в стек переставленное выражение
+				operand.depth++;
+				stack_push(info, operand);
+			}
+			break;
+			case BINARY_OPERATION:
 			{
-				node_order(second_operand.parent, 0, &child_to_order_first, 0);
-				child_to_order_first = node_get_child(&child_to_order_first, 0);
-			}
+				node_info second_operand = stack_pop(info);
+				node_info first_operand = stack_pop(info);
 
-			// добавляем в стек переставленное выражение
-			first_operand.depth = first_operand.depth + second_operand.depth + 1;
-			stack_push(info, first_operand);
+				// перестановка со вторым операндом
+				node_order(nd, i, second_operand.parent, second_operand.child);
+				node child_to_order_second = node_get_child(second_operand.parent, second_operand.child);
+				for (size_t j = 0; j < second_operand.depth - 1; j++)
+				{
+					node_order(nd, i, &child_to_order_second, 0);
+					child_to_order_second = node_get_child(&child_to_order_second, 0);
+				}
+
+				// перестановка с первым операндом
+				node_order(second_operand.parent, second_operand.child, first_operand.parent, first_operand.child);
+				node child_to_order_first = node_get_child(first_operand.parent, first_operand.child);
+				for (size_t j = 0; j < first_operand.depth - 1; j++)
+				{
+					node_order(second_operand.parent, 0, &child_to_order_first, 0);
+					child_to_order_first = node_get_child(&child_to_order_first, 0);
+				}
+
+				// добавляем в стек переставленное выражение
+				first_operand.depth = first_operand.depth + second_operand.depth + 1;
+				stack_push(info, first_operand);
+			}
+			break;
+			case NOT_EXPRESSION:
+			{
+				switch (node_get_type(&child))
+				{
+					case TString:
+					{
+						const size_t N = (size_t)node_get_arg(&child, 0);
+						uni_printf(info->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
+							, info->string_num++, N + 1);
+						
+						for (size_t j = 0; j < N; j++) 
+						{
+							const char ch = (char)node_get_arg(&child, j + 1);
+							if (ch == '\n')
+							{
+								uni_printf(info->io, "\\0A");
+							}
+							else
+							{
+								uni_printf(info->io, "%c", ch);
+							}
+						}
+						uni_printf(info->io, "\\00\", align 1\n");
+					}
+					break;
+					case TPrintf:
+					{
+						const size_t N = (size_t)node_get_arg(&child, 0);
+						// перестановка TPrintf
+						// TODO: подумать, как для всех типов работать будет
+						for (size_t j = 0; j < N + 1; j++)
+						{
+							node_swap(nd, i - j, nd, i - j - 1);
+						}
+
+						// перестановка TString
+						// TODO: подумать, как для всех типов работать будет
+						for (size_t j = 0; j < N; j++)
+						{
+							node_swap(nd, i - j, nd, i - j - 1);
+						}
+
+						info->was_printf = 1;
+					}
+					break;
+					// если конец выражения, то очищаем стек
+					case TExprend:
+						stack_clear(info);
+					break;
+				}
+			}
+			break;
 		}
 
 		node_recursive(info, &child);
-
-		// если конец выражения, то очищаем стек
-		if (node_get_type(nd) == TExprend)
-		{
-			stack_clear(info);
-		}
 	}
 }
 
