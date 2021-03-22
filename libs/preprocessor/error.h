@@ -37,7 +37,7 @@ enum ERROR
 	before_endif,
 	repeat_ident,
 	not_end_fail_define,
-	scob_not_clous,
+	scope_not_close,
 	after_preproces_words_must_be_space,
 	ident_begins_with_letters,
 	ident_not_exist,
@@ -57,6 +57,9 @@ enum ERROR
 	must_start_quote,
 	macro_does_not_exist,
 	must_end_endw,
+	include_file_not_found,
+	source_file_not_found,
+	no_string_ending, 
 };
 
 
@@ -65,11 +68,19 @@ enum ERROR
  *
  *	@param	num			Error code
  *	@param	path		Current file path
-  *	@param	code		Error line in current file
+ *	@param	code		Error line in current file
  *	@param	line		Error line number
  *	@param	position	Error position in line
  */
 void macro_error(const int num, const char *const path, const char *const code, const size_t line, size_t position);
+
+/**
+ *	Emit an error for some problem
+ *
+ *	@param	tag		Message location
+ *	@param	num		Error code
+ */
+void macro_system_error(const char *const tag, const int num);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -1,5 +1,5 @@
 /*
- *	Copyright 2020 Andrey Terekhov, Egor Anikin
+ *	Copyright 2018 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,14 +16,21 @@
 
 #pragma once
 
-#include "context_var.h"
+#include "environment.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int if_relis(preprocess_context *context);
+/**
+ *	Рrocess the next token
+ *
+ *	@param	env		Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int preprocess_token(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

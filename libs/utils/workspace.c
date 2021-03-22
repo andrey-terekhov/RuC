@@ -26,16 +26,13 @@
 #endif
 
 
-const char *const DEFAULT_OUTPUT = "export.txt";
-
-
 void ws_init(workspace *const ws)
 {
 	ws->files_num = 0;
 	ws->dirs_num = 0;
 	ws->flags_num = 0;
 
-	strcpy(ws->output, DEFAULT_OUTPUT);
+	ws->output[0] = '\0';
 	ws->was_error = 0;
 }
 
@@ -61,7 +58,7 @@ void ws_unix_path(const char *const path, char *const buffer)
 
 		if (buffer[j - 1] == '/')
 		{
-			if (j - last == 1 || (j - last == 2 && buffer[last] == '.'))
+			if (j - last == 2 && buffer[last] == '.')
 			{
 				j = last;
 			}
@@ -351,7 +348,7 @@ size_t ws_get_flags_num(const workspace *const ws)
 
 const char *ws_get_output(const workspace *const ws)
 {
-	return ws_is_correct(ws) ? ws->output : NULL;
+	return ws_is_correct(ws) && ws->output[0] != '\0' ? ws->output : NULL;
 }
 
 
@@ -366,7 +363,7 @@ int ws_clear(workspace *const ws)
 	ws->dirs_num = 0;
 	ws->flags_num = 0;
 
-	strcpy(ws->output, DEFAULT_OUTPUT);
+	ws->output[0] = '\0';
 	ws->was_error = 0;
 
 	return 0;

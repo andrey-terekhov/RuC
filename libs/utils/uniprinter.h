@@ -17,8 +17,8 @@
 #pragma once
 
 #include <stdio.h>
-#include "uniio.h"
 #include "dll.h"
+#include "uniio.h"
 
 
 #ifdef __cplusplus

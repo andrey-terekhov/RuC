@@ -25,20 +25,27 @@
 #define SOURCESIZE	10000
 #define LINESSIZE	300
 #define MAXSTRINGL	128
-#define INIPROSIZE	100
 
-#define MAXMEMSIZE		100000
-#define NUMOFTHREADS	10
-#define MAXMEMTHREAD	MAXMEMSIZE / NUMOFTHREADS
 #define MAXPRINTFPARAMS 20
 
 
 // modetab
 
-#define MFUNCTION 1001
-#define MSTRUCT	  1002
-#define MARRAY	  1003
-#define MPOINT	  1004
+enum MODE
+{
+	mode_undefined = 0,
+	mode_integer = -1,
+	mode_character = -2,
+	mode_float = -3,
+	mode_void = -6,
+
+	mode_void_pointer = -150,
+	mode_msg_info = 2,
+	mode_function = 1001,
+	mode_struct = 1002,
+	mode_array = 1003,
+	mode_pointer = 1004,
+};
 
 
 // Лексемы операций языка С
@@ -315,27 +322,30 @@
 
 // Лексемы
 
-#define COMMA		100
 #define QUEST		101
-#define COLON		102
 #define LEFTBR		103
-#define RIGHTBR		104
 #define LEFTSQBR	105
-#define RIGHTSQBR	106
 #define STRING		107
 #define NUMBER		108
 #define IDENT		109
+#define CHAR_CONST	111
 #define INT_CONST	112
-#define CHAR_CONST	113
-#define FLOAT_CONST	114
+#define FLOAT_CONST	113
 #define BEGIN		115
-#define END			116
-#define SEMICOLON	117
 #define LAPOST		118
 #define LQUOTE		119
 #define LEOF		120
 #define ARROW		121
 #define DOT			122
+
+// Такие коды сделаны для функции token_skip_until()
+// Это позволяет передавать несколько аргументов, разделяя их |
+#define COMMA		0b00000001
+#define COLON		0b00000010
+#define RIGHTBR		0b00000100
+#define RIGHTSQBR	0b00001000
+#define END			0b00010000
+#define SEMICOLON	0b00100000
 
 
 // Ответы
@@ -417,14 +427,6 @@
 #define TDESTROY	-61
 #define TEXIT		-62
 #define TGETNUM		-63
-
-#define SH_DEFINE -64 // #define
-#define SH_IFDEF  -65 // #ifdef
-#define SH_IFNDEF -66 // #ifndef
-#define SH_IF	  -67 // #if
-#define SH_ELIF	  -68 // #elif
-#define SH_ENDIF  -69 // #endif
-#define SH_ELSE	  -70 // #else
 
 #define WIFI_CONNECT	   -71
 #define BLYNK_AUTORIZATION -72

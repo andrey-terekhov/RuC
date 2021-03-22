@@ -16,24 +16,49 @@
 
 #pragma once
 
-#include "context_var.h"
+#include "environment.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int equal_reprtab(int i, int j, preprocess_context *context);
-void output_keywods(preprocess_context *context);
-int macro_keywords(preprocess_context *context);
-int collect_mident(preprocess_context *context);
-int find_file(preprocess_context *context, const char *s);
+int equal_reprtab(int i, int j, environment *const env);
+void output_keywords(environment *const env);
+int macro_keywords(environment *const env);
+int collect_mident(environment *const env);
 
-int space_end_line(preprocess_context *context);
-void space_skip(preprocess_context *context);
-void space_skip_str(preprocess_context *context);
-size_t skip_str(preprocess_context *context);
-void skip_file(preprocess_context *context);
+/**
+ *	Skip all spaces and tabs to the end of the line
+ *
+ *	@param	env	Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int skip_line(environment *const env);
+
+/**
+ *	Skip all spaces and tabs up to a significant character
+ *
+ *	@param	env	Preprocessor environment
+ */
+void skip_separators(environment *const env);
+
+/**
+ *	Skip all characters inside quotes
+ *
+ *	@param	env	Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int skip_string(environment *const env);
+
+/**
+ *	Assigning the current character EOF
+ *
+ *	@param	env	Preprocessor environment
+ */
+void end_of_file(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

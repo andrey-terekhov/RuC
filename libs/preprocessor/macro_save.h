@@ -16,9 +16,7 @@
 
 #pragma once
 
-#include "context_var.h"
-#include <stddef.h>
-#include <stdint.h>
+#include "environment.h"
 
 
 #ifdef __cplusplus
@@ -26,23 +24,22 @@ extern "C" {
 #endif
 
 /**
- *	Length of char32_t string
+ *	Add new macro
  *
- *	@param	str		String
+ *	@param	env	Preprocessor environment
  *
- *	@return	Length of string, @c SIZE_MAX on failure
+ *	@return	@c 0 on success, @c -1 on failure
  */
-size_t strlen32(const char32_t *const str);
+int macro_add(environment *const env);
 
-void m_change_nextch_type(int type, int p, preprocess_context *context);
-void m_old_nextch_type(preprocess_context *context);
-
-int get_dipp(preprocess_context *context);
-int get_next_char(preprocess_context *context);
-
-void m_fprintf(int a, preprocess_context *context);
-void pred_fprintf(int a, preprocess_context *context);
-void m_nextch(preprocess_context *context);
+/**
+ *	Modify an existing macro
+ *
+ *	@param	env	Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int macro_set(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

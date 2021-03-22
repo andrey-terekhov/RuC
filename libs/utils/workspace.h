@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include "dll.h"
 
- 
+
 #define MAX_PATHS 128
 #define MAX_FLAGS 32
 #define MAX_ARG_SIZE 256
@@ -158,7 +158,7 @@ EXPORTED int ws_is_correct(const workspace *const ws);
  *	Get file by index from workspase
  *
  *	@param	ws			Workspace structure
-  *	@param	index		File index in list
+ *	@param	index		File index in list
  *
  *	@return	File
  */
@@ -177,7 +177,7 @@ EXPORTED size_t ws_get_files_num(const workspace *const ws);
  *	Get directory by index from workspase
  *
  *	@param	ws			Workspace structure
-  *	@param	index		Directory index in list
+ *	@param	index		Directory index in list
  *
  *	@return	Directory
  */
@@ -196,7 +196,7 @@ EXPORTED size_t ws_get_dirs_num(const workspace *const ws);
  *	Get flag by index from workspase
  *
  *	@param	ws			Workspace structure
-  *	@param	index		Flag index in list
+ *	@param	index		Flag index in list
  *
  *	@return	Flag
  */
@@ -217,7 +217,7 @@ EXPORTED size_t ws_get_flags_num(const workspace *const ws);
  *
  *	@param	ws			Workspace structure
  *
- *	@return	Output file name
+ *	@return	Output file name, @c NULL on default
  */
 EXPORTED const char *ws_get_output(const workspace *const ws);
 

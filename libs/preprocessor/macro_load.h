@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2020 Andrey Terekhov, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,14 +16,22 @@
 
 #pragma once
 
-#include "analyzer.h"
+#include "environment.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void ext_decl(analyzer *context);
+/**
+ *	Change input to macro replacement text
+ *
+ *	@param	index		Index of macro in macro table
+ *	@param	env			Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int macro_get(environment *const env, const size_t index);
 
 #ifdef __cplusplus
 } /* extern "C" */
