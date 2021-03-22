@@ -470,7 +470,14 @@ void parse_print_statement(parser *const prs, node *const parent)
 	}
 
 	//vector_remove(&prs->sx->tree);
-	totree(prs, TPrint);
+	if (node_get_type(&prs->nd) == TExprend)
+	{
+		node_set_type(&prs->nd, TPrint);
+	}
+	else
+	{
+		totree(prs, TPrint);
+	}
 	totree(prs, type);
 	totree(prs, TExprend);
 

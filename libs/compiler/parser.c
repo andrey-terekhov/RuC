@@ -271,12 +271,5 @@ item_t to_modetab(parser *const prs, const item_t mode, const item_t element)
 
 void totree(parser *const prs, const item_t op)
 {
-	if (op == TExprend)
-	{
-		node_add_child(&prs->nd, op);
-	}
-	else
-	{
-		prs->nd = node_add_child(&prs->nd, op);
-	}
+	prs->nd = node_add_child(&prs->nd, op);
 }

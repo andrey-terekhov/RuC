@@ -794,7 +794,7 @@ void parse_standard_function_call(parser *const prs)
 				else
 				{
 					totree(prs, TConst);
-					node_add_arg(&prs->nd, -dn);
+					node_add_arg(&prs->nd, dn);
 				}
 				prs->anst = VAL;
 			}
