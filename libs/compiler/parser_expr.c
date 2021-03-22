@@ -260,6 +260,7 @@ void parse_braced_init_list(parser *const prs, const item_t type)
 		parser_error(prs, no_comma_or_end);
 		token_skip_until(prs, r_brace | semicolon);
 	}
+	anst_pop(prs);
 	anst_push(prs, value, to_modetab(prs, mode_array, type));
 }
 
@@ -1294,6 +1295,7 @@ void parse_postfix_expression(parser *const prs)
 			totree(prs, elem_type);
 			expr(prs);
 			toval(prs);
+			prs->sopnd--;
 			totree(prs, TExprend);
 			if (prs->was_error == 4)
 			{
@@ -1702,6 +1704,7 @@ void condexpr(parser *const prs)
 			scanner(prs);
 			expr(prs); // then
 			toval(prs);
+			prs->sopnd--;
 			totree(prs, TExprend);
 			if (prs->was_error == 4)
 			{
