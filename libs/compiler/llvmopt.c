@@ -274,30 +274,30 @@ static void node_recursive(information *const info, node *const nd)
 			break;
 			case BINARY_OPERATION:
 			{
-				node_info second_operand = stack_pop(info);
-				node_info first_operand = stack_pop(info);
+				node_info snd_operand = stack_pop(info);
+				node_info fst_operand = stack_pop(info);
 
 				// перестановка со вторым операндом
-				node_order(nd, i, second_operand.parent, second_operand.child);
-				node child_to_order_second = node_get_child(second_operand.parent, second_operand.child);
-				for (size_t j = 0; j < second_operand.depth - 1; j++)
+				node_order(nd, i, snd_operand.parent, snd_operand.child);
+				node child_to_order_second = node_get_child(snd_operand.parent, snd_operand.child);
+				for (size_t j = 0; j < snd_operand.depth - 1; j++)
 				{
 					node_order(nd, i, &child_to_order_second, 0);
 					child_to_order_second = node_get_child(&child_to_order_second, 0);
 				}
 
 				// перестановка с первым операндом
-				node_order(second_operand.parent, second_operand.child, first_operand.parent, first_operand.child);
-				node child_to_order_first = node_get_child(first_operand.parent, first_operand.child);
-				for (size_t j = 0; j < first_operand.depth - 1; j++)
+				node_order(snd_operand.parent, snd_operand.child, fst_operand.parent, fst_operand.child);
+				node child_to_order_first = node_get_child(fst_operand.parent, fst_operand.child);
+				for (size_t j = 0; j < fst_operand.depth - 1; j++)
 				{
-					node_order(second_operand.parent, 0, &child_to_order_first, 0);
+					node_order(snd_operand.parent, 0, &child_to_order_first, 0);
 					child_to_order_first = node_get_child(&child_to_order_first, 0);
 				}
 
 				// добавляем в стек переставленное выражение
-				first_operand.depth = first_operand.depth + second_operand.depth + 1;
-				stack_push(info, first_operand);
+				fst_operand.depth += snd_operand.depth + 1;
+				stack_push(info, fst_operand);
 			}
 			break;
 			case NOT_EXPRESSION:
