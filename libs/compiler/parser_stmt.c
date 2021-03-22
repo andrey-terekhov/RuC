@@ -629,17 +629,17 @@ void parse_printf_statement(parser *const prs, node *const parent)
 		parser_error(prs, wrong_printf_param_number);
 	}
 
-	totree(prs, TString);
-	node_add_arg(&prs->nd, (item_t)format_length);
+	node nd_string = node_add_child(parent, TString);
+	node_add_arg(&nd_string, (item_t)format_length);
 
 	for (size_t i = 0; i < format_length; i++)
 	{
-		node_add_arg(&prs->nd, format_str[i]);
+		node_add_arg(&nd_string, format_str[i]);
 	}
-	totree(prs, TExprend);
+	node_add_child(&nd_string, TExprend);
 
-	node nd = node_add_child(parent, TPrintf);
-	node_add_arg(&nd, (item_t)sum_size);
+	node nd_printf = node_add_child(parent, TPrintf);
+	node_add_arg(&nd_printf, (item_t)sum_size);
 }
 
 /**
