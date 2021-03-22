@@ -16,32 +16,27 @@
 
 #pragma once
 
-#define MACRODEBUG 1
-
 #define MAXTAB		100000
 #define LONGSTR		10000
 #define STRING_SIZE	256
 #define HASH		256
-#define DEPTH			10
-#define CONTROLSIZE 250
+#define DEPTH		10
 
-#define END_PARAMETER	  -6
-#define MACROEND	  -5
-#define MACROUNDEF	  -3
-#define MACROCANGE	  -4
-#define WHILEBEGIN	  -2
-#define MACROFUNCTION 0
-#define MACRODEF	  1
+#define END_PARAMETER	-6
+#define MACRO_END		-5
+#define MACRO_UNDEF		-3
+#define MACRO_CANGE		-4
+#define WHILE_BEGIN		-2
+#define MACRO_FUNCTION	0
+#define MACRO_DEF		1
 
-#define MTYPE			  2
-#define CTYPE			  3
-#define IFTYPE			  4
-#define WHILETYPE		  5
-#define FTYPE			  6
-#define TEXTTYPE		  10
-#define PREPROCESS_STRING 11
-#define FILETYPE		  0
-
+#define CALC_TYPE			3
+#define IF_TYPE				4
+#define WHILE_TYPE			5
+#define PARAM_TYPE			6
+#define MACRO_TEXT_TYPE		10
+#define FILE_TYPE			0
+#define PREPROCESS_STRING	11
 
 // Ключевые слова
 

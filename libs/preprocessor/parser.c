@@ -35,7 +35,15 @@ int if_check(environment *const env, int type_if)
 		{
 			return -1;
 		}
-		return env->calc_string[0];
+
+		if (env->calc_string[0] == '0')
+		{
+			return 0;
+		}
+		else
+		{
+			return 1;
+		}
 	}
 	else
 	{
@@ -246,7 +254,7 @@ int while_collect(environment *const env)
 {
 	const int oldwsp = (int)env->while_string_size;
 
-	env->while_string[env->while_string_size++] = WHILEBEGIN;
+	env->while_string[env->while_string_size++] = WHILE_BEGIN;
 	env->while_string[env->while_string_size++] = (int)env->if_string_size;
 	env->while_string_size++;
 
@@ -299,10 +307,10 @@ int while_implementation(environment *const env)
 	int error = 0;
 
 	env->cur = 0;
-	while (env->while_string[oldernextp] == WHILEBEGIN)
+	while (env->while_string[oldernextp] == WHILE_BEGIN)
 	{
 		m_nextch(env);
-		m_change_nextch_type(env, IFTYPE, env->while_string[env->nextp]);
+		m_change_nextch_type(env, IF_TYPE, env->while_string[env->nextp]);
 		m_nextch(env);
 		if (calculate(env, LOGIC))
 		{
@@ -311,7 +319,7 @@ int while_implementation(environment *const env)
 		m_old_nextch_type(env);
 
 
-		if (env->calc_string[0] == 0)
+		if (env->calc_string[0] == '0')
 		{
 			env->nextp = end;
 			m_nextch(env);
@@ -323,9 +331,9 @@ int while_implementation(environment *const env)
 		m_nextch(env);
 		skip_separators(env);
 
-		while (env->nextp != end || env->nextch_type != WHILETYPE)
+		while (env->nextp != end || env->nextch_type != WHILE_TYPE)
 		{
-			if (env->curchar == WHILEBEGIN)
+			if (env->curchar == WHILE_BEGIN)
 			{
 				env->nextp--;
 				if (while_implementation(env))
@@ -373,7 +381,7 @@ int preprocess_words(environment *const env)
 			const int macro_ptr = collect_mident(env);;
 			if (macro_ptr)
 			{
-				env->macro_tab[env->reprtab[macro_ptr + 1]] = MACROUNDEF;
+				env->macro_tab[env->reprtab[macro_ptr + 1]] = MACRO_UNDEF;
 				return skip_line(env);
 			}
 			else
@@ -408,7 +416,7 @@ int preprocess_words(environment *const env)
 				return -1;
 			}
 
-			m_change_nextch_type(env, CTYPE, 0);
+			m_change_nextch_type(env, CALC_TYPE, 0);
 			return 0;
 		}
 		case SH_WHILE:
@@ -419,13 +427,13 @@ int preprocess_words(environment *const env)
 			{
 				return -1;
 			}
-			m_change_nextch_type(env, WHILETYPE, 0);
+			m_change_nextch_type(env, WHILE_TYPE, 0);
 			m_nextch(env);
 			m_nextch(env);
 
 			env->nextp = 0;
 			int res = while_implementation(env);
-			if (env->nextch_type != FILETYPE)
+			if (env->nextch_type != FILE_TYPE)
 			{
 				m_old_nextch_type(env);
 			}
@@ -460,8 +468,8 @@ int preprocess_token(environment *const env)
 			if (env->cur != 0)
 			{
 				const int res = preprocess_words(env);
-				if (env->nextchar != '#' && env->nextch_type != WHILETYPE &&
-					env->nextch_type != TEXTTYPE)//curflag
+				if (env->nextchar != '#' && env->nextch_type != WHILE_TYPE &&
+					env->nextch_type != MACRO_TEXT_TYPE)//curflag
 				{
 					env_add_comment(env);
 				}

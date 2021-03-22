@@ -28,7 +28,6 @@
 linker lk_create(workspace *const ws)
 {
 	linker lk;
-
 	lk.ws = ws;
 	lk.current = MAX_PATHS;
 	lk.count = ws_get_files_num(ws);
@@ -174,9 +173,9 @@ int lk_preprocess_include(environment *const env)
 	}
 
 	int flag_io_type = 0;
-	if (env->nextch_type != FILETYPE)
+	if (env->nextch_type != FILE_TYPE)
 	{
-		m_change_nextch_type(env, FILETYPE, 0);
+		m_change_nextch_type(env, FILE_TYPE, 0);
 		flag_io_type++;
 	}
 

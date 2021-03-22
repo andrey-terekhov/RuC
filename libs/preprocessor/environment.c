@@ -34,14 +34,14 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 
 	env->rp = 1;
 	env->macro_tab_size = 1;
-	env->change_size = 0;
+	env->param_size = 0;
 	env->local_stack_size = 0;
 	env->calc_string_size = 0;
 	env->if_string_size = 0;
 	env->while_string_size = 0;
 	env->mfirstrp = -1;
 	env->prep_flag = 0;
-	env->nextch_type = FILETYPE;
+	env->nextch_type = FILE_TYPE;
 	env->curchar = 0;
 	env->nextchar = 0;
 	env->cur = 0;
@@ -52,6 +52,7 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->nested_if = 0;
 	env->flagint = 1;
 	env->error_string[0] = '\0';
+	env->calc_string[0] = '\0';
 
 	for (size_t i = 0; i < HASH; i++)
 	{
@@ -67,12 +68,11 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	{
 		env->mstring[i] = 0;
 		env->localstack[i] = 0;
-		env->calc_string[i] = 0;
 	}
 
 	for (size_t i = 0; i < STRING_SIZE * 3; i++)
 	{
-		env->change[i] = 0;
+		env->param[i] = 0;
 	}
 
 	for (size_t i = 0; i < STRING_SIZE * 2; i++)
@@ -132,7 +132,7 @@ int get_next_char(environment *const env)
 
 int get_depth(environment *const env)
 {
-	return (int)env->depth;
+	return env->depth;
 }
 
 void m_change_nextch_type(environment *const env, int type, int p)
@@ -140,7 +140,7 @@ void m_change_nextch_type(environment *const env, int type, int p)
 	env->oldcurchar[env->depth] = env->curchar;
 	env->oldnextchar[env->depth] = env->nextchar;
 	env->oldnextch_type[env->depth] = env->nextch_type;
-	env->oldnextp[env->depth] = (int)env->nextp;
+	env->oldnextp[env->depth] = env->nextp;
 	env->nextp = p;
 	env->depth++;
 	env->nextch_type = type;
@@ -165,6 +165,7 @@ void m_onemore(environment *const env)
 	env->curchar = env->nextchar;
 
 	get_next_char(env);
+	
 
 	if (env->curchar == EOF)
 	{
@@ -226,35 +227,30 @@ void m_coment_skip(environment *const env)
 void m_nextch_cange(environment *const env)
 {
 	m_nextch(env);
-	m_change_nextch_type(env, FTYPE, env->localstack[env->curchar + env->local_stack_size]);
+	m_change_nextch_type(env, PARAM_TYPE, env->localstack[env->curchar + env->local_stack_size]);
 	m_nextch(env);
 }
 
 void m_nextch(environment *const env)
 {
-	if (env->nextch_type != FILETYPE && env->nextch_type <= TEXTTYPE)
+	if (env->nextch_type != FILE_TYPE && env->nextch_type <= MACRO_TEXT_TYPE)
 	{
-		if (env->nextch_type == MTYPE && env->nextp < env->msp)
-		{
-			env->curchar = env->mstring[env->nextp++];
-			env->nextchar = env->mstring[env->nextp];
-		}
-		else if (env->nextch_type == CTYPE && env->nextp < env->calc_string_size)
+		if (env->nextch_type == CALC_TYPE && env->nextp < env->calc_string_size)
 		{
 			env->curchar = env->calc_string[env->nextp++];
 			env->nextchar = env->calc_string[env->nextp];
 		}
-		else if (env->nextch_type == IFTYPE && env->nextp < env->if_string_size)
+		else if (env->nextch_type == IF_TYPE && env->nextp < env->if_string_size)
 		{
 			env->curchar = env->if_string[env->nextp++];
 			env->nextchar = env->if_string[env->nextp];
 		}
-		else if (env->nextch_type == WHILETYPE && env->nextp < env->while_string_size)
+		else if (env->nextch_type == WHILE_TYPE && env->nextp < env->while_string_size)
 		{
 			env->curchar = env->while_string[env->nextp++];
 			env->nextchar = env->while_string[env->nextp];
 		}
-		else if (env->nextch_type == TEXTTYPE && env->nextp < env->macro_tab_size)
+		else if (env->nextch_type == MACRO_TEXT_TYPE && env->nextp < env->macro_tab_size)
 		{
 			env->curchar = env->macro_tab[env->nextp++];
 			env->nextchar = env->macro_tab[env->nextp];
@@ -263,19 +259,19 @@ void m_nextch(environment *const env)
 			{
 				env_add_comment(env);
 			}
-			else if (env->curchar == MACROCANGE)
+			else if (env->curchar == MACRO_CANGE)
 			{
 				m_nextch_cange(env);
 			}
-			else if (env->curchar == MACROEND)
+			else if (env->curchar == MACRO_END)
 			{
 				m_old_nextch_type(env);
 			}
 		}
-		else if (env->nextch_type == FTYPE)
+		else if (env->nextch_type == PARAM_TYPE)
 		{
-			env->curchar = env->change[env->nextp++];
-			env->nextchar = env->change[env->nextp];
+			env->curchar = env->param[env->nextp++];
+			env->nextchar = env->param[env->nextp];
 
 			if (env->curchar == END_PARAMETER)
 			{
@@ -304,7 +300,7 @@ void m_nextch(environment *const env)
 		}
 	}
 	
-	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", env->nextch_type,
+	// printf("t = %d curchar = %c, %i nextchar = %c, %i\n", env->nextch_type,
 	// env->curchar, env->curchar, env->nextchar, env->nextchar);
 }
 
