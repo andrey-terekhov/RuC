@@ -22,6 +22,7 @@
 void parse_unary_expression(parser *const prs);
 void exprassn(parser *const prs);
 void expr(parser *const prs);
+item_t parse_constant(parser *const prs);
 
 
 void scanner(parser *const prs)
@@ -66,24 +67,15 @@ void totree_float_operation(parser *const prs, item_t op)
 	}
 }
 
-int double_to_tree(vector *const tree, const double num)
+void double_to_tree(node *const nd, const double num)
 {
 	int64_t num64;
 	memcpy(&num64, &num, sizeof(int64_t));
 
 	int32_t fst = num64 & 0x00000000ffffffff;
 	int32_t snd = (num64 & 0xffffffff00000000) >> 32;
-
-#if INT_MIN < ITEM_MIN || INT_MAX > ITEM_MAX
-	if (fst < ITEM_MIN || fst > ITEM_MAX || snd < ITEM_MIN || snd > ITEM_MAX)
-	{
-		return -1;
-	}
-#endif
-
-	size_t ret = vector_add(tree, fst);
-	ret = ret != SIZE_MAX ? vector_add(tree, snd) : SIZE_MAX;
-	return ret == SIZE_MAX;
+	node_add_arg(nd, fst);
+	node_add_arg(nd, snd);
 }
 
 double double_from_tree(node *const nd)
@@ -220,68 +212,55 @@ void toval(parser *const prs)
 	prs->anst = VAL;
 }
 
-void actstring(parser *const prs, int type)
+void parse_braced_init_list(parser *const prs, const item_t type)
 {
-	scanner(prs);
-	totree(prs, type == LFLOAT ? TStringd : TString);
-	size_t adn = vector_size(&TREE);
-	vector_increase(&TREE, 1);
+	token_consume(prs);
+	totree(prs, type == mode_float ? TStringd : TString);
+	node nd_init_list = prs->nd;
+	node_add_arg(&nd_init_list, 0);
 
-	int n = 0;
+	size_t length = 0;
 	do
 	{
-		exprassn(prs);
-		if (prs->was_error == 6)
+		if (prs->token == int_constant || prs->token == char_constant)
 		{
-			prs->was_error = 1;
-			return; // 1
-		}
-		const size_t size = vector_size(&TREE);
-		if (vector_get(&TREE, size - 2) == TConst)
-		{
-			const item_t value = vector_remove(&TREE);
-			if (type == LFLOAT)
+			if (type == mode_float)
 			{
-				vector_remove(&TREE);
-				double_to_tree(&TREE, (double)value);
+				double_to_tree(&nd_init_list, (double)prs->lxr->num);
 			}
 			else
 			{
-				vector_set(&TREE, size - 1, value);
+				node_add_arg(&nd_init_list, prs->lxr->num);
 			}
+			token_consume(prs);
 		}
-		else if (vector_get(&TREE, size - 3) == TConstd)
+		else if (prs->token == float_constant)
 		{
-			const double value = double_from_tree(&TREE);
-			if (type == LFLOAT)
+			if (type == mode_float)
 			{
-				vector_remove(&TREE);
-				double_to_tree(&TREE, value);
+				double_to_tree(&nd_init_list, prs->lxr->num_double);
 			}
 			else
 			{
-				vector_set(&TREE, size - 1, (item_t)value);
 				parser_error(prs, init_int_by_float);
 			}
+			token_consume(prs);
 		}
 		else
 		{
 			parser_error(prs, wrong_init_in_actparam);
-			prs->was_error = 1;
-			return; // 1
+			token_skip_until(prs, comma | r_brace | semicolon);
 		}
-		++n;
+		length++;
 	} while (token_try_consume(prs, comma));
 
-	vector_set(&TREE, adn, n);
-	if (!token_try_consume(prs, END))
+	node_set_arg(&nd_init_list, 0, length);
+	if (!token_try_consume(prs, r_brace))
 	{
 		parser_error(prs, no_comma_or_end);
-		prs->was_error = 1;
-		return; // 1
+		token_skip_until(prs, r_brace | semicolon);
 	}
-	prs->ansttype = (int)to_modetab(prs, mode_array, type);
-	prs->anst = VAL;
+	anst_push(prs, value, to_modetab(prs, mode_array, type));
 }
 
 void mustbestring(parser *const prs)
@@ -359,7 +338,7 @@ void mustberowofint(parser *const prs)
 {
 	if (prs->token == BEGIN)
 	{
-		actstring(prs, LINT), totree(prs, TExprend);
+		parse_braced_init_list(prs, LINT), totree(prs, TExprend);
 		if (prs->was_error == 2)
 		{
 			prs->was_error = 5;
@@ -394,7 +373,7 @@ void mustberowoffloat(parser *const prs)
 {
 	if (prs->token == BEGIN)
 	{
-		actstring(prs, LFLOAT), totree(prs, TExprend);
+		parse_braced_init_list(prs, LFLOAT), totree(prs, TExprend);
 		if (prs->was_error == 2)
 		{
 			prs->was_error = 5;
@@ -995,13 +974,7 @@ item_t parse_constant(parser *const prs)
 
 		case float_constant:
 			totree(prs, TConstd);
-
-			int64_t num64;
-			memcpy(&num64, &prs->lxr->num_double, sizeof(int64_t));
-			int32_t fst = num64 & 0x00000000ffffffff;
-			int32_t snd = (num64 & 0xffffffff00000000) >> 32;
-			node_add_arg(&prs->nd, fst);
-			node_add_arg(&prs->nd, snd);
+			double_to_tree(&prs->nd, prs->lxr->num_double);
 			mode = mode_float;
 			break;
 
@@ -1218,7 +1191,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 			}
 			else if (mode_is_array(prs->sx, expected_arg_mode) && prs->token == l_brace)
 			{
-				actstring(prs, (int)mode_get(prs->sx, (size_t)expected_arg_mode + 1));
+				parse_braced_init_list(prs, (int)mode_get(prs->sx, (size_t)expected_arg_mode + 1));
 				totree(prs, TExprend);
 			}
 			else
@@ -1319,7 +1292,8 @@ void parse_postfix_expression(parser *const prs)
 			}
 
 			totree(prs, elem_type);
-			parse_condition(prs, &prs->nd);
+			expr(prs);
+			toval(prs);
 			if (prs->was_error == 4)
 			{
 				return; // 1
@@ -1723,7 +1697,8 @@ void condexpr(parser *const prs)
 			}
 			totree(prs, TCondexpr);
 			scanner(prs);
-			parse_condition(prs, &prs->nd); // then
+			expr(prs); // then
+			toval(prs);
 			if (prs->was_error == 4)
 			{
 				return; // 1
