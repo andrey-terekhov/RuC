@@ -21,9 +21,6 @@
 #include "workspace.h"
 
 
-#define EXPR_STACK_MAX_SIZE	512
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif

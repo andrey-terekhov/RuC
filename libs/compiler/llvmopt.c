@@ -20,6 +20,9 @@
 #include <string.h>
 
 
+#define MAX_STACK_SIZE	512
+
+
 typedef enum EXPRESSION
 {
 	OPERAND,
@@ -28,18 +31,12 @@ typedef enum EXPRESSION
 	NOT_EXPRESSION,
 } expression_t;
 
-typedef struct expr_node_info
+typedef struct node_info
 {
 	node *parent;										/**< Родитель узла */ 
-	size_t child_num;									/**< Номер ребёнка, которым является узел */
-	size_t node_num;									/**< Количество узлов после данного узла при перестановке */
-} expr_node_info;
-
-typedef struct expr_stack
-{
-	expr_node_info stack[EXPR_STACK_MAX_SIZE];			/**< Стек */
-	size_t stack_size;									/**< Размер стека */
-} expr_stack;
+	size_t child;										/**< Номер ребёнка, которым является узел */
+	size_t depth;										/**< Количество узлов после данного узла при перестановке */
+} node_info;
 
 typedef struct information
 {
@@ -47,24 +44,27 @@ typedef struct information
 
 	item_t string_num;									/**< Номер строки */
 	item_t was_printf;									/**< Флаг наличия printf в исходном коде */
-	expr_stack stack;									/**< Стек для преобразования выражений */
+
+	node_info stack[MAX_STACK_SIZE];					/**< Стек для преобразования выражений */
+	size_t stack_size;									/**< Размер стека */
 } information;
 
 
-static void expr_stack_push(information *const info, expr_node_info const expr_nd)
+static inline void stack_push(information *const info, node_info nd)
 {
-	info->stack.stack[info->stack.stack_size++] = expr_nd;
+	info->stack[info->stack_size++] = nd;
 }
 
-static expr_node_info expr_stack_pop(information *const info)
+static inline node_info stack_pop(information *const info)
 {
-	return info->stack.stack[--info->stack.stack_size];
+	return info->stack[--info->stack_size];
 }
 
-static void expr_stack_clear(information *const info)
+static inline void stack_clear(information *const info)
 {
-	info->stack.stack_size = 0;
+	info->stack_size = 0;
 }
+
 
 static expression_t expression_type(node *const nd)
 {
@@ -229,7 +229,8 @@ static expression_t expression_type(node *const nd)
 		case LMULTR:
 		case LDIVR:
 			return BINARY_OPERATION;
-			
+
+
 		default:
 			return NOT_EXPRESSION;
 	}
@@ -289,55 +290,55 @@ static void node_recursive(information *const info, node *const nd)
 		// перестановка узлов выражений
 		if (expression_type(&child) == OPERAND)
 		{
-			expr_node_info node_info;
+			node_info node_info;
 			node_info.parent = nd;
-			node_info.child_num = i;
-			node_info.node_num = 1;
-			expr_stack_push(info, node_info);
+			node_info.child = i;
+			node_info.depth = 1;
+			stack_push(info, node_info);
 		}
 		else if (expression_type(&child) == UNARY_OPERATION)
 		{
-			expr_node_info operand = expr_stack_pop(info);
+			node_info operand = stack_pop(info);
 
 			// перестановка с операндом
-			node_order(nd, i, operand.parent, operand.child_num);
-			node child_to_order = node_get_child(operand.parent, operand.child_num);
-			for (size_t j = 0; j < operand.node_num - 1; j++)
+			node_order(nd, i, operand.parent, operand.child);
+			node child_to_order = node_get_child(operand.parent, operand.child);
+			for (size_t j = 0; j < operand.depth - 1; j++)
 			{
 				node_order(nd, i, &child_to_order, 0);
 				child_to_order = node_get_child(&child_to_order, 0);
 			}
 
 			// добавляем в стек переставленное выражение
-			operand.node_num++;
-			expr_stack_push(info, operand);
+			operand.depth++;
+			stack_push(info, operand);
 		}
 		else if (expression_type(&child) == BINARY_OPERATION)
 		{
-			expr_node_info second_operand = expr_stack_pop(info);
-			expr_node_info first_operand = expr_stack_pop(info);
+			node_info second_operand = stack_pop(info);
+			node_info first_operand = stack_pop(info);
 
 			// перестановка со вторым операндом
-			node_order(nd, i, second_operand.parent, second_operand.child_num);
-			node child_to_order_second = node_get_child(second_operand.parent, second_operand.child_num);
-			for (size_t j = 0; j < second_operand.node_num - 1; j++)
+			node_order(nd, i, second_operand.parent, second_operand.child);
+			node child_to_order_second = node_get_child(second_operand.parent, second_operand.child);
+			for (size_t j = 0; j < second_operand.depth - 1; j++)
 			{
 				node_order(nd, i, &child_to_order_second, 0);
 				child_to_order_second = node_get_child(&child_to_order_second, 0);
 			}
 
 			// перестановка с первым операндом
-			node_order(second_operand.parent, second_operand.child_num, first_operand.parent, first_operand.child_num);
-			node child_to_order_first = node_get_child(first_operand.parent, first_operand.child_num);
-			for (size_t j = 0; j < first_operand.node_num - 1; j++)
+			node_order(second_operand.parent, second_operand.child, first_operand.parent, first_operand.child);
+			node child_to_order_first = node_get_child(first_operand.parent, first_operand.child);
+			for (size_t j = 0; j < first_operand.depth - 1; j++)
 			{
 				node_order(second_operand.parent, 0, &child_to_order_first, 0);
 				child_to_order_first = node_get_child(&child_to_order_first, 0);
 			}
 
 			// добавляем в стек переставленное выражение
-			first_operand.node_num = first_operand.node_num + second_operand.node_num + 1;
-			expr_stack_push(info, first_operand);
+			first_operand.depth = first_operand.depth + second_operand.depth + 1;
+			stack_push(info, first_operand);
 		}
 
 		node_recursive(info, &child);
@@ -345,7 +346,7 @@ static void node_recursive(information *const info, node *const nd)
 		// если конец выражения, то очищаем стек
 		if (node_get_type(nd) == TExprend)
 		{
-			expr_stack_clear(info);
+			stack_clear(info);
 		}
 	}
 }
@@ -356,7 +357,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	info.io = io;
 	info.string_num = 1;
 	info.was_printf = 0;
-	info.stack.stack_size = 0;
+	info.stack_size = 0;
 
 	node nd = node_get_root(&sx->tree);
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
