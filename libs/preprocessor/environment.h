@@ -18,7 +18,6 @@
 
 #include "constants.h"
 #include "uniio.h"
-#include "linker.h"
 
 
 #ifdef __cplusplus
@@ -74,15 +73,15 @@ typedef struct environment
 	int nested_if;
 	int flagint;
 
-	size_t line;
+	const char *curent_path;
 
-	linker *lk;
+	size_t line;
 
 	universal_io *output;
 	universal_io *input;
 } environment;
 
-void env_init(environment *const env, linker *const lk, universal_io *const output);
+void env_init(environment *const env, universal_io *const output);
 void env_clear_error_string(environment *const env);
 
 /**

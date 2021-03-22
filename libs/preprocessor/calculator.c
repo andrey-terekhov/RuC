@@ -15,15 +15,15 @@
  */
 
 #include "calculator.h"
+#include <math.h>
+#include <string.h>
+#include <limits.h>
 #include "environment.h"
 #include "error.h"
 #include "macro_load.h"
-#include "linker.h"
 #include "utils.h"
 #include "uniio.h"
 #include "uniscanner.h"
-#include "string.h"
-#include <math.h>
 
 
 #define STK_SIZE 32
@@ -66,7 +66,7 @@ int get_digit(universal_io *in, double *rez, int cur, int next, int *last)
 		curchar = uni_scan_char(in);
 	}
 
-	if (num_double > (double)INT_MAX)
+	if(num_double > (double)INT_MAX)
 	{
 		flag_too_long = 1;
 		flag_int = DOUBLE;
@@ -349,7 +349,7 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 	}
 	else if (rez == WARNING)
 	{
-		macro_error(too_many_nuber, lk_get_current(env->lk), env->error_string, env->line, env->position);
+		macro_error(too_many_nuber, env->curent_path, env->error_string, env->line, env->position);
 		is_int[*stk_size] = DOUBLE;
 	}
 	else

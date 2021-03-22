@@ -23,14 +23,12 @@
 #include <string.h>
 
 
-#define MAX_CMT_SIZE MAX_ARG_SIZE + 32
+#define MAX_CMT_SIZE 256
 
 
-void env_init(environment *const env, linker *const lk, universal_io *const output)
+void env_init(environment *const env, universal_io *const output)
 {
 	env->output = output;
-
-	env->lk = lk;
 
 	env->rp = 1;
 	env->macro_tab_size = 1;
@@ -101,7 +99,7 @@ void env_clear_error_string(environment *const env)
 
 void env_add_comment(environment *const env)
 {
-	comment cmt = cmt_create(lk_get_current(env->lk), env->line);
+	comment cmt = cmt_create(env->curent_path, env->line);
 
 	char buffer[MAX_CMT_SIZE];
 	cmt_to_string(&cmt, buffer);
@@ -111,11 +109,6 @@ void env_add_comment(environment *const env)
 
 size_t env_skip_str(environment *const env)
 {
-	if (env == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	const size_t position = strlen(env->error_string);
 	while (env->curchar != '\n' && env->curchar != EOF)
 	{
@@ -307,5 +300,5 @@ void m_nextch(environment *const env)
 void env_error(environment *const env, const int num)
 {
 	const size_t position = env_skip_str(env);
-	macro_error(num, lk_get_current(env->lk), env->error_string, env->line, position);
+	macro_error(num, env->curent_path, env->error_string, env->line, position);
 }
