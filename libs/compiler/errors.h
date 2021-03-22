@@ -24,17 +24,47 @@ extern "C" {
 #endif
 
 /** Errors codes */
-enum ERROR
+typedef enum ERROR
 {
+	// Lexer errors
+	bad_character,						/**< Bad character in source */
+	empty_character,					/**< Empty character constant */
+	unknown_escape_sequence,			/**< Unknown escape sequence */
+	expected_apost_after_char_const,	/**< Missing terminating ' character */
+	missing_terminating_quote_char,		/**< Missing terminating '"' character */
+	string_too_long,					/**< String literal exceeds maximum length */
+	unterminated_block_comment,			/**< Unterminated block comment */
+
+	// Statement errors
+	expected_semi_after_stmt,			/**< Expected ';' after statement */
+	case_not_in_switch,					/**< 'case' statement not in switch statement */
+	float_in_switch,
+	expected_colon_after_case,			/**< Expected ':' after 'case' */
+	default_not_in_switch,				/**< 'default' statement not in switch statement */
+	expected_colon_after_default,		/**< Expected ':' after 'default' */
+	expected_while,						/**< Expected 'while' in do/while loop */
+	no_leftbr_in_for,
+	no_semicolon_in_for,
+	no_rightbr_in_for,
+	no_ident_after_goto,
+	continue_not_in_loop,				/**< 'continue' statement not in loop statement */
+	break_not_in_loop_or_switch,		/**< 'break' statement not in loop or switch statement */
+	no_ret_in_func,
+	bad_type_in_ret,
+	notvoidret_in_void_func,
+
+	// Environment errors
+	no_main_in_program,					/**< Undefined main */
+	predef_but_notdef,					/**< Undefined function */
+
+	// Other errors
 	after_type_must_be_ident = 201,
 	wait_right_sq_br,
 	only_functions_may_have_type_VOID,
 	decl_and_def_have_diff_type,
 	wrong_param_list,
-	def_must_end_with_semicomma,
+	expected_semi_after_decl,
 	func_decl_req_params,
-	wait_while_in_do_stmt,
-	no_semicolon_after_stmt,
 	cond_must_be_in_brkts,
 	repeated_decl,
 	arr_init_must_start_from_BEGIN,
@@ -51,39 +81,28 @@ enum ERROR
 	unassignable_inc,
 	wrong_addr,
 	no_colon_in_cond_expr,
-	no_colon_in_case,
-	case_after_default,
-	no_ident_after_goto,
-	no_leftbr_in_for,
-	no_semicolon_in_for,
-	no_rightbr_in_for,
 	int_op_for_float,
 	assmnt_float_to_int,
-	more_than_1_main,
-	no_main_in_program,
+	redefinition_of_main,
 	no_leftbr_in_printid,
 	no_rightbr_in_printid,
 	no_ident_in_printid,
-	float_in_switch,
+	no_leftbr_in_getid,
+	no_rightbr_in_getid,
+	no_ident_in_getid,
 	init_int_by_float,
 	no_comma_in_setmotor,
 	param_setmotor_not_int,
 	no_leftbr_in_stand_func,
 	no_rightbr_in_stand_func,
 	bad_param_in_stand_func,
-	no_ret_in_func,
-	bad_type_in_ret,
-	notvoidret_in_void_func,
-	bad_escape_sym,
-	no_right_apost,
-	decl_after_strmt,
-	too_long_string,
+	expected_end,
 	aster_before_func,
 	aster_not_for_pointer,
 	aster_with_row,
 	float_in_condition,
-	wrong_fun_as_param,
-	no_right_br_in_paramfun,
+	wrong_func_as_arg,
+	no_right_br_in_arg_func,
 	par_type_void_with_nofun,
 	ident_in_declarator,
 	array_before_func,
@@ -92,9 +111,6 @@ enum ERROR
 	two_idents_for_1_declarer,
 	function_has_no_body,
 	diff_formal_param_type_and_actual,
-	case_or_default_not_in_switch,
-	break_not_in_loop_or_switch,
-	continue_not_in_loop,
 	not_primary,
 	wrong_operand,
 	must_be_digit_after_exp,
@@ -112,18 +128,16 @@ enum ERROR
 	wrong_init,
 	no_field,
 	slice_from_func,
-	bad_toval,
 	wait_end,
 	act_param_not_ident,
 	unassignable,
 	pnt_before_array,
 	array_size_must_be_int,
-	no_semicomma_in_struct,
-	wait_ident_after_semicomma_in_struct,
+	no_semicolon_in_struct,
+	wait_ident_after_semicolon_in_struct,
 	empty_init,
 	ident_not_type,
 	not_decl,
-	predef_but_notdef,
 	print_without_br,
 	select_not_from_struct,
 	init_not_struct,
@@ -161,62 +175,100 @@ enum ERROR
 
 	not_float_in_stanfunc,
 	not_array_in_stanfunc,
-};
+
+	// Tree parsing errors
+	tree_expression_not_block,
+	tree_expression_unknown,
+	tree_expression_operator,
+	tree_expression_no_texprend,
+
+	// Tree testing errors
+	tree_no_tend,
+	tree_unexpected,
+
+	node_cannot_set_child,
+	node_cannot_set_type,
+	node_cannot_add_arg,
+	node_unexpected,
+
+	// Codegen errors
+	tables_cannot_be_compressed,
+} error_t;
 
 /** Warnings codes */
-enum WARNING
+typedef enum WARNING
 {
 	too_long_int = 400,
-};
+
+	tree_operator_unknown,
+	node_argc,
+} warning_t;
 
 
 /**
  *	Emit an error for some problem
  *
- *	@param	io		Universal io
- *	@param	num		Error number
+ *	@param	io			Universal io
+ *	@param	num			Error number
  */
-void error(const universal_io *const io, const int num, ...);
+void error(const universal_io *const io, error_t num, ...);
 
 /**
  *	Emit a warning for some problem
  *
- *	@param	io		Universal io
- *	@param	num		Warning number
+ *	@param	io			Universal io
+ *	@param	num			Warning number
  */
-void warning(const universal_io *const io, const int num, ...);
+void warning(const universal_io *const io, warning_t num, ...);
 
 
 /**
- *	Emit error message
+ *	Emit an error (embedded version)
  *
- *	@param	io		Universal io
- *	@param	msg		Error message
+ *	@param	io			Universal io
+ *	@param	num			Error number
+ *	@param	args		Variable list
  */
-void error_msg(const universal_io *const io, const char *const msg);
+void verror(const universal_io *const io, const error_t num, va_list args);
 
 /**
- *	Emit warning message
+ *	Emit a warning (embedded version)
  *
- *	@param	io		Universal io
- *	@param	msg		Warning message
+ *	@param	io			Universal io
+ *	@param	num			Warning number
+ *	@param	args		Variable list
  */
-void warning_msg(const universal_io *const io, const char *const msg);
+void vwarning(const universal_io *const io, const warning_t num, va_list args);
 
 
 /**
- *	Emit error by number
+ *	Emit an error by number
  *
- *	@param	msg		Error message
+ *	@param	num			Error number
  */
-void system_error(const char *const msg);
+void system_error(error_t num, ...);
 
 /**
- *	Emit warning by number
+ *	Emit a warning by number
  *
- *	@param	msg		Warning message
+ *	@param	num			Warning number
  */
-void system_warning(const char *const msg);
+void system_warning(warning_t num, ...);
+
+
+/**
+ *	Emit an error message
+ *
+ *	@param	msg			Error message
+ */
+void error_msg(const char *const msg);
+
+/**
+ *	Emit a warning message
+ *
+ *	@param	msg			Warning message
+ */
+void warning_msg(const char *const msg);
 
 #ifdef __cplusplus
 } /* extern "C" */

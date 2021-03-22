@@ -19,8 +19,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include "utf8.h"
 #include "dll.h"
+#include "utf8.h"
 
 
 #ifdef __cplusplus
@@ -112,6 +112,16 @@ EXPORTED int in_set_buffer(universal_io *const io, const char *const buffer);
  *	@return	@c 0 on success, @c -1 on failure
  */
 EXPORTED int in_set_func(universal_io *const io, const io_user_func func);
+
+/**
+ *	Set input position
+ *
+ *	@param	io			Universal io structure
+ *	@param	position	Input position
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+EXPORTED int in_set_position(universal_io *const io, const size_t position);
 
 
 /**

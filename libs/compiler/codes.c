@@ -15,1059 +15,1486 @@
  */
 
 #include "codes.h"
+#include <string.h>
 #include "defs.h"
+#include "errors.h"
+#include "tree.h"
 #include "uniio.h"
 #include "uniprinter.h"
-#include <string.h>
 
 
-/** Вывод таблиц и дерева */
-void tables_and_tree(const syntax *const sx, const char *const path)
+#define MAX_ELEM_SIZE	32
+#define INDENT			"  "
+
+
+size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
+{
+	if (buffer == NULL)
+	{
+		return 0;
+	}
+
+	size_t argc = 0;
+	int was_switch = 0;
+
+	switch (elem)
+	{
+		case TFuncdef:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TFuncdef");
+					break;
+				case 1:
+					sprintf(buffer, "funcn");
+					break;
+				case 2:
+					sprintf(buffer, "maxdispl");
+					break;
+			}
+			break;
+		case TDeclarr:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TDeclarr");
+					break;
+				case 1:
+					sprintf(buffer, "N");
+					break;
+			}
+			break;
+		case TDeclid:
+			argc = 7;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TDeclid");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "eltype");
+					break;
+				case 3:
+					sprintf(buffer, "N");
+					break;
+				case 4:
+					sprintf(buffer, "all");
+					break;
+				case 5:
+					sprintf(buffer, "iniproc");
+					break;
+				case 6:
+					sprintf(buffer, "usual");
+					break;
+				case 7:
+					sprintf(buffer, "instuct");
+					break;
+			}
+			break;
+		case TString:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TString");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case TStringd:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TStringd");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case TCondexpr:
+			sprintf(buffer, "TCondexpr");
+			break;
+		case TBegin:
+			sprintf(buffer, "TBegin");
+			break;
+		case TEnd:
+			sprintf(buffer, "TEnd");
+			break;
+		case TBeginit:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TBeginit");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case TStructinit:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TStructinit");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case TIf:
+			argc = 1;
+			sprintf(buffer, "TIf");
+			break;
+		case TWhile:
+			sprintf(buffer, "TWhile");
+			break;
+		case TDo:
+			sprintf(buffer, "TDo");
+			break;
+		case TFor:
+			argc = 4;
+			sprintf(buffer, "TFor");
+			break;
+		case TSwitch:
+			sprintf(buffer, "TSwitch");
+			break;
+		case TCase:
+			sprintf(buffer, "TCase");
+			break;
+		case TDefault:
+			sprintf(buffer, "TDefault");
+			break;
+		case TBreak:
+			sprintf(buffer, "TBreak");
+			break;
+		case TContinue:
+			sprintf(buffer, "TContinue");
+			break;
+		case TReturnvoid:
+			sprintf(buffer, "TReturn");
+			break;
+		case TReturnval:
+			argc = 1;
+			sprintf(buffer, "TReturnval");
+			break;
+		case TGoto:
+			argc = 1;
+			sprintf(buffer, "TGoto");
+			break;
+		case TIdent:
+			argc = 1;
+			sprintf(buffer, "TIdent");
+			break;
+		case TIdenttoval:
+			argc = 1;
+			sprintf(buffer, "TIdenttoval");
+			break;
+		case TIdenttovald:
+			argc = 1;
+			sprintf(buffer, "TIdenttovald");
+			break;
+		case TFunidtoval:
+			argc = 1;
+			sprintf(buffer, "TFunidtoval");
+			break;
+		case TIdenttoaddr:
+			argc = 1;
+			sprintf(buffer, "TIdenttoaddr");
+			break;
+		case TAddrtoval:
+			sprintf(buffer, "TAddrtoval");
+			break;
+		case TAddrtovald:
+			sprintf(buffer, "TAddrtovald");
+			break;
+		case TExprend:
+			sprintf(buffer, "TExprend");
+			break;
+		case TConst:
+			argc = 1;
+			sprintf(buffer, "TConst");
+			break;
+		case TConstd:
+			argc = 2;
+			sprintf(buffer, "TConstd");
+		break;
+		case TSliceident:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TSliceident");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "type");
+					break;
+			}
+			break;
+		case TSlice:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TSlice");
+					break;
+				case 1:
+					sprintf(buffer, "elem_type");
+					break;
+			}
+			break;
+		case TSelect:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TSelect");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+			}
+			break;
+		case NOP:
+			sprintf(buffer, "NOP");
+			break;
+		case ADLOGAND:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "ADLOGAND");
+					break;
+				case 1:
+					sprintf(buffer, "addr");
+					break;
+			}
+			break;
+		case ADLOGOR:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "ADLOGOR");
+					break;
+				case 1:
+					sprintf(buffer, "addr");
+					break;
+			}
+			break;
+		case COPY00:
+			argc = 3;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY00");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "displright");
+					break;
+				case 3:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY01:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY01");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY10:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY10");
+					break;
+				case 1:
+					sprintf(buffer, "displright");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY11:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY11");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY0ST:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY0ST");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY1ST:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY1ST");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY0STASS:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY0STASS");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY1STASS:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY1STASS");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPYST:
+			argc = 3;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPYST");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+				case 3:
+					sprintf(buffer, "length1");
+					break;
+			}
+			break;
+
+		case TCall1:
+			argc = 1;
+			sprintf(buffer, "TCall1");
+			break;
+		case TCall2:
+			argc = 1;
+			sprintf(buffer, "TCall2");
+			break;
+		case TLabel:
+			argc = 1;
+			sprintf(buffer, "TLabel");
+			break;
+		case TStructbeg:
+			argc = 1;
+			sprintf(buffer, "TStructbeg");
+			break;
+		case TStructend:
+			argc = 1;
+			sprintf(buffer, "TStructend");
+			break;
+		case TPrint:
+			argc = 1;
+			sprintf(buffer, "TPrint");
+			break;
+		case TPrintid:
+			argc = 1;
+			sprintf(buffer, "TPrintid");
+			break;
+		case TPrintf:
+			argc = 1;
+			sprintf(buffer, "TPrintf");
+			break;
+		case TGetid:
+			argc = 1;
+			sprintf(buffer, "TGetid");
+			break;
+		case SETMOTORC:
+			sprintf(buffer, "Setmotor");
+			break;
+		case CREATEC:
+			sprintf(buffer, "TCREATE");
+			break;
+		case CREATEDIRECTC:
+			sprintf(buffer, "TCREATEDIRECT");
+			break;
+		case EXITC:
+			sprintf(buffer, "TEXIT");
+			break;
+		case EXITDIRECTC:
+			sprintf(buffer, "TEXITDIRECT");
+			break;
+		case MSGSENDC:
+			sprintf(buffer, "TMSGSEND");
+			break;
+		case MSGRECEIVEC:
+			sprintf(buffer, "TMSGRECEIVE");
+			break;
+		case JOINC:
+			sprintf(buffer, "TJOIN");
+			break;
+		case SLEEPC:
+			sprintf(buffer, "TSLEEP");
+			break;
+		case SEMCREATEC:
+			sprintf(buffer, "TSEMCREATE");
+			break;
+		case SEMWAITC:
+			sprintf(buffer, "TSEMWAIT");
+			break;
+		case SEMPOSTC:
+			sprintf(buffer, "TSEMPOST");
+			break;
+		case INITC:
+			sprintf(buffer, "INITC");
+			break;
+		case DESTROYC:
+			sprintf(buffer, "DESTROYC");
+			break;
+		case GETNUMC:
+			sprintf(buffer, "GETNUMC");
+			break;
+
+		case PRINT:
+			argc = 1;
+			sprintf(buffer, "PRINT");
+			break;
+		case PRINTID:
+			argc = 1;
+			sprintf(buffer, "PRINTID");
+			break;
+		case PRINTF:
+			argc = 1;
+			sprintf(buffer, "PRINTF");
+			break;
+		case GETID:
+			argc = 1;
+			sprintf(buffer, "GETID");
+			break;
+		case GETDIGSENSORC:
+			sprintf(buffer, "GETDIGSENSOR");
+			break;
+		case GETANSENSORC:
+			sprintf(buffer, "GETANSENSOR");
+			break;
+		case VOLTAGEC:
+			sprintf(buffer, "VOLTAGE");
+			break;
+		case TINIT:
+			sprintf(buffer, "TINIT");
+			break;
+		case TDESTROY:
+			sprintf(buffer, "TDESTROY");
+			break;
+
+		case ABSC:
+			sprintf(buffer, "ABS");
+			break;
+		case ABSIC:
+			sprintf(buffer, "ABSI");
+			break;
+		case SQRTC:
+			sprintf(buffer, "SQRT");
+			break;
+		case EXPC:
+			sprintf(buffer, "EXP");
+			break;
+		case SINC:
+			sprintf(buffer, "SIN");
+			break;
+		case COSC:
+			sprintf(buffer, "COS");
+			break;
+		case LOGC:
+			sprintf(buffer, "LOG");
+			break;
+		case LOG10C:
+			sprintf(buffer, "LOG10");
+			break;
+		case ASINC:
+			sprintf(buffer, "ASIN");
+			break;
+		case RANDC:
+			sprintf(buffer, "RAND");
+			break;
+		case ROUNDC:
+			sprintf(buffer, "ROUND");
+			break;
+
+		case STRCPYC:
+			sprintf(buffer, "STRCPY");
+			break;
+		case STRNCPYC:
+			sprintf(buffer, "STRNCPY");
+			break;
+		case STRCATC:
+			sprintf(buffer, "STRCAT");
+			break;
+		case STRNCATC:
+			sprintf(buffer, "STRNCAT");
+			break;
+		case STRCMPC:
+			sprintf(buffer, "STRCMP");
+			break;
+		case STRNCMPC:
+			sprintf(buffer, "STRNCMP");
+			break;
+		case STRSTRC:
+			sprintf(buffer, "STRSTR");
+			break;
+		case STRLENC:
+			sprintf(buffer, "STRLENC");
+			break;
+
+		case BEGINIT:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "BEGINIT");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case STRUCTWITHARR:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "STRUCTWITHARR");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "iniproc");
+					break;
+			}
+			break;
+		case DEFARR:
+			argc = 7;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "DEFARR");
+					break;
+				case 1:
+					sprintf(buffer, "N");
+					break;
+				case 2:
+					sprintf(buffer, "elem_len");
+					break;
+				case 3:
+					sprintf(buffer, "displ");
+					break;
+				case 4:
+					sprintf(buffer, "iniproc");
+					break;
+				case 5:
+					sprintf(buffer, "usual");
+					break;
+				case 6:
+					sprintf(buffer, "all");
+					break;
+				case 7:
+					sprintf(buffer, "instruct");
+					break;
+			}
+			break;
+		case ARRINIT:
+			argc = 4;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "ARRINIT");
+					break;
+				case 1:
+					sprintf(buffer, "N");
+					break;
+				case 2:
+					sprintf(buffer, "elem_len");
+					break;
+				case 3:
+					sprintf(buffer, "displ");
+					break;
+				case 4:
+					sprintf(buffer, "usual");
+					break;
+			}
+			break;
+		/*
+		case STRUCTINIT:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "STRUCTINIT");
+					break;
+				case 1:
+					sprintf(buffer, "N");
+					break;
+			}
+			break;
+		*/
+		case LI:
+			argc = 1;
+			sprintf(buffer, "LI");
+			break;
+		case LID:
+			argc = 2;
+			sprintf(buffer, "LID");
+			break;
+		case LOAD:
+			argc = 1;
+			sprintf(buffer, "LOAD");
+			break;
+		case LOADD:
+			argc = 1;
+			sprintf(buffer, "LOADD");
+			break;
+		case LAT:
+			sprintf(buffer, "L@");
+			break;
+		case LATD:
+			sprintf(buffer, "L@f");
+			break;
+		case LA:
+			argc = 1;
+			sprintf(buffer, "LA");
+			break;
+
+		case LOGOR:
+			argc = 1;
+			sprintf(buffer, "||");
+			break;
+		case LOGAND:
+			argc = 1;
+			sprintf(buffer, "&&");
+			break;
+		case ORASS:
+			argc = 1;
+			sprintf(buffer, "|=");
+			break;
+		case ORASSAT:
+			sprintf(buffer, "|=@");
+			break;
+		case ORASSV:
+			argc = 1;
+			sprintf(buffer, "|=V");
+			break;
+		case ORASSATV:
+			sprintf(buffer, "|=@V");
+			break;
+		case LOR:
+			sprintf(buffer, "|");
+			break;
+		case EXORASS:
+			argc = 1;
+			sprintf(buffer, "^=");
+			break;
+		case EXORASSAT:
+			sprintf(buffer, "^=@");
+			break;
+		case EXORASSV:
+			argc = 1;
+			sprintf(buffer, "^=V");
+			break;
+		case EXORASSATV:
+			sprintf(buffer, "^=@V");
+			break;
+		case LEXOR:
+			sprintf(buffer, "^");
+			break;
+		case ANDASS:
+			argc = 1;
+			sprintf(buffer, "&=");
+			break;
+		case ANDASSAT:
+			sprintf(buffer, "&=@");
+			break;
+		case ANDASSV:
+			argc = 1;
+			sprintf(buffer, "&=V");
+			break;
+		case ANDASSATV:
+			sprintf(buffer, "&=@V");
+			break;
+		case LAND:
+			sprintf(buffer, "&");
+			break;
+
+		case EQEQ:
+			sprintf(buffer, "==");
+			break;
+		case NOTEQ:
+			sprintf(buffer, "!=");
+			break;
+		case LLT:
+			sprintf(buffer, "<");
+			break;
+		case LGT:
+			sprintf(buffer, ">");
+			break;
+		case LLE:
+			sprintf(buffer, "<=");
+			break;
+		case LGE:
+			sprintf(buffer, ">=");
+			break;
+		case EQEQR:
+			sprintf(buffer, "==f");
+			break;
+		case NOTEQR:
+			sprintf(buffer, "!=f");
+			break;
+		case LLTR:
+			sprintf(buffer, "<f");
+			break;
+		case LGTR:
+			sprintf(buffer, ">f");
+			break;
+		case LLER:
+			sprintf(buffer, "<=f");
+			break;
+		case LGER:
+			sprintf(buffer, ">=f");
+			break;
+
+		case SHRASS:
+			argc = 1;
+			sprintf(buffer, ">>=");
+			break;
+		case SHRASSAT:
+			sprintf(buffer, ">>=@");
+			break;
+		case SHRASSV:
+			argc = 1;
+			sprintf(buffer, ">>=V");
+			break;
+		case SHRASSATV:
+			sprintf(buffer, ">>=@V");
+			break;
+		case LSHR:
+			sprintf(buffer, ">>");
+			break;
+		case SHLASS:
+			argc = 1;
+			sprintf(buffer, "<<=");
+			break;
+		case SHLASSAT:
+			sprintf(buffer, "<<=@");
+			break;
+		case SHLASSV:
+			argc = 1;
+			sprintf(buffer, "<<=V");
+			break;
+		case SHLASSATV:
+			sprintf(buffer, "<<=@V");
+			break;
+		case LSHL:
+			sprintf(buffer, "<<");
+			break;
+
+		case ASS:
+			argc = 1;
+			sprintf(buffer, "=");
+			break;
+		case ASSAT:
+			sprintf(buffer, "=@");
+			break;
+		case ASSV:
+			argc = 1;
+			sprintf(buffer, "=V");
+			break;
+		case ASSATV:
+			sprintf(buffer, "=@V");
+			break;
+
+		case PLUSASS:
+			argc = 1;
+			sprintf(buffer, "+=");
+			break;
+		case PLUSASSAT:
+			sprintf(buffer, "+=@");
+			break;
+		case PLUSASSV:
+			argc = 1;
+			sprintf(buffer, "+=V");
+			break;
+		case PLUSASSATV:
+			sprintf(buffer, "+=@V");
+			break;
+		case LPLUS:
+			sprintf(buffer, "+");
+			break;
+
+		case MINUSASS:
+			argc = 1;
+			sprintf(buffer, "-=");
+			break;
+		case MINUSASSAT:
+			sprintf(buffer, "-=@");
+			break;
+		case MINUSASSV:
+			argc = 1;
+			sprintf(buffer, "-=V");
+			break;
+		case MINUSASSATV:
+			sprintf(buffer, "-=@V");
+			break;
+		case LMINUS:
+			sprintf(buffer, "-");
+			break;
+
+		case MULTASS:
+			argc = 1;
+			sprintf(buffer, "*=");
+			break;
+		case MULTASSAT:
+			sprintf(buffer, "*=@");
+			break;
+		case MULTASSV:
+			argc = 1;
+			sprintf(buffer, "*=V");
+			break;
+		case MULTASSATV:
+			sprintf(buffer, "*=@V");
+			break;
+		case LMULT:
+			sprintf(buffer, "*");
+			break;
+
+		case DIVASS:
+			argc = 1;
+			sprintf(buffer, "/=");
+			break;
+		case DIVASSAT:
+			sprintf(buffer, "/=@");
+			break;
+		case DIVASSV:
+			argc = 1;
+			sprintf(buffer, "/=V");
+			break;
+		case DIVASSATV:
+			sprintf(buffer, "/=@V");
+			break;
+		case LDIV:
+			sprintf(buffer, "/");
+			break;
+
+		case ASSR:
+			argc = 1;
+			sprintf(buffer, "=f");
+			break;
+		case ASSRV:
+			argc = 1;
+			sprintf(buffer, "=fV");
+			break;
+		case ASSATR:
+			sprintf(buffer, "=@f");
+			break;
+		case ASSATRV:
+			sprintf(buffer, "=@fV");
+			break;
+
+		case PLUSASSR:
+			argc = 1;
+			sprintf(buffer, "+=f");
+			break;
+		case PLUSASSATR:
+			sprintf(buffer, "+=@f");
+			break;
+		case PLUSASSRV:
+			argc = 1;
+			sprintf(buffer, "+=fV");
+			break;
+		case PLUSASSATRV:
+			sprintf(buffer, "+=@fV");
+			break;
+		case LPLUSR:
+			sprintf(buffer, "+f");
+			break;
+		case MINUSASSR:
+			argc = 1;
+			sprintf(buffer, "-=f");
+			break;
+		case MINUSASSATR:
+			sprintf(buffer, "-=@f");
+			break;
+		case MINUSASSRV:
+			argc = 1;
+			sprintf(buffer, "-=fV");
+			break;
+		case MINUSASSATRV:
+			sprintf(buffer, "-=@fV");
+			break;
+		case LMINUSR:
+			sprintf(buffer, "-f");
+			break;
+		case MULTASSR:
+			argc = 1;
+			sprintf(buffer, "*=f");
+			break;
+		case MULTASSATR:
+			sprintf(buffer, "*=@f");
+			break;
+		case MULTASSRV:
+			argc = 1;
+			sprintf(buffer, "*=fV");
+			break;
+		case MULTASSATRV:
+			sprintf(buffer, "*=@fV");
+			break;
+		case LMULTR:
+			sprintf(buffer, "*f");
+			break;
+		case DIVASSR:
+			argc = 1;
+			sprintf(buffer, "/=f");
+			break;
+		case DIVASSATR:
+			sprintf(buffer, "/=@f");
+			break;
+		case DIVASSRV:
+			argc = 1;
+			sprintf(buffer, "/=fV");
+			break;
+		case DIVASSATRV:
+			sprintf(buffer, "/=@fV");
+			break;
+		case LDIVR:
+			sprintf(buffer, "/f");
+			break;
+
+		case REMASS:
+			argc = 1;
+			sprintf(buffer, "%%=");
+			break;
+		case REMASSAT:
+			sprintf(buffer, "%%=@");
+			break;
+		case REMASSV:
+			argc = 1;
+			sprintf(buffer, "%%=V");
+			break;
+		case REMASSATV:
+			sprintf(buffer, "%%=@V");
+			break;
+		case LREM:
+			sprintf(buffer, "%%");
+			break;
+
+		case CALL1:
+			sprintf(buffer, "CALL1");
+			break;
+		case CALL2:
+			argc = 1;
+			sprintf(buffer, "CALL2");
+			break;
+		case STOP:
+			sprintf(buffer, "STOP");
+			break;
+		case RETURNVAL:
+			argc = 1;
+			sprintf(buffer, "RETURNVAL");
+			break;
+		case RETURNVOID:
+			sprintf(buffer, "RETURNVOID");
+			break;
+		case B:
+			argc = 1;
+			sprintf(buffer, "B");
+			break;
+		case BE0:
+			argc = 1;
+			sprintf(buffer, "BE0");
+			break;
+		case BNE0:
+			argc = 1;
+			sprintf(buffer, "BNE0");
+			break;
+		case SLICE:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "SLICE");
+					break;
+				case 1:
+					sprintf(buffer, "d");
+					break;
+			}
+			break;
+		case SELECT:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "SELECT");
+					break;
+				case 1:
+					sprintf(buffer, "field_displ");
+					break;
+			}
+			break;
+		case WIDEN:
+			sprintf(buffer, "WIDEN");
+			break;
+		case WIDEN1:
+			sprintf(buffer, "WIDEN1");
+			break;
+		case _DOUBLE:
+			sprintf(buffer, "DOUBLE");
+			break;
+		case INC:
+			argc = 1;
+			sprintf(buffer, "INC");
+			break;
+		case DEC:
+			argc = 1;
+			sprintf(buffer, "DEC");
+			break;
+		case POSTINC:
+			argc = 1;
+			sprintf(buffer, "POSTINC");
+			break;
+		case POSTDEC:
+			argc = 1;
+			sprintf(buffer, "POSTDEC");
+			break;
+		case INCAT:
+			sprintf(buffer, "INC@");
+			break;
+		case DECAT:
+			sprintf(buffer, "DEC@");
+			break;
+		case POSTINCAT:
+			sprintf(buffer, "POSTINC@");
+			break;
+		case POSTDECAT:
+			sprintf(buffer, "POSTDEC@");
+			break;
+		case INCR:
+			argc = 1;
+			sprintf(buffer, "INCf");
+			break;
+		case DECR:
+			argc = 1;
+			sprintf(buffer, "DECf");
+			break;
+		case POSTINCR:
+			argc = 1;
+			sprintf(buffer, "POSTINCf");
+			break;
+		case POSTDECR:
+			argc = 1;
+			sprintf(buffer, "POSTDECf");
+			break;
+		case INCATR:
+			sprintf(buffer, "INC@f");
+			break;
+		case DECATR:
+			sprintf(buffer, "DEC@f");
+			break;
+		case POSTINCATR:
+			sprintf(buffer, "POSTINC@f");
+			break;
+		case POSTDECATR:
+			sprintf(buffer, "POSTDEC@f");
+			break;
+		case INCV:
+			argc = 1;
+			sprintf(buffer, "INCV");
+			break;
+		case DECV:
+			argc = 1;
+			sprintf(buffer, "DECV");
+			break;
+		case POSTINCV:
+			argc = 1;
+			sprintf(buffer, "POSTINCV");
+			break;
+		case POSTDECV:
+			argc = 1;
+			sprintf(buffer, "POSTDECV");
+			break;
+		case INCATV:
+			sprintf(buffer, "INC@V");
+			break;
+		case DECATV:
+			sprintf(buffer, "DEC@V");
+			break;
+		case POSTINCATV:
+			sprintf(buffer, "POSTINC@V");
+			break;
+		case POSTDECATV:
+			sprintf(buffer, "POSTDEC@V");
+			break;
+		case INCRV:
+			argc = 1;
+			sprintf(buffer, "INCfV");
+			break;
+		case DECRV:
+			argc = 1;
+			sprintf(buffer, "DECfV");
+			break;
+		case POSTINCRV:
+			argc = 1;
+			sprintf(buffer, "POSTINCfV");
+			break;
+		case POSTDECRV:
+			argc = 1;
+			sprintf(buffer, "POSTDECfV");
+			break;
+		case INCATRV:
+			sprintf(buffer, "INC@fV");
+			break;
+		case DECATRV:
+			sprintf(buffer, "DEC@fV");
+			break;
+		case POSTINCATRV:
+			sprintf(buffer, "POSTINC@fV");
+			break;
+		case POSTDECATRV:
+			sprintf(buffer, "POSTDEC@fV");
+			break;
+
+		case LNOT:
+			sprintf(buffer, "BITNOT");
+			break;
+		case LOGNOT:
+			sprintf(buffer, "NOT");
+			break;
+		case UNMINUS:
+			sprintf(buffer, "UNMINUS");
+			break;
+		case UNMINUSR:
+			sprintf(buffer, "UNMINUSf");
+			break;
+
+		case FUNCBEG:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "FUNCBEG");
+					break;
+				case 1:
+					sprintf(buffer, "maxdispl");
+					break;
+				case 2:
+					sprintf(buffer, "pc");
+					break;
+			}
+			break;
+
+		default:
+			sprintf(buffer, "%" PRIitem, elem);
+			break;
+	}
+
+	if ((num != 0 && !was_switch) || argc < num)
+	{
+		buffer[0] = '\0';
+	}
+	return argc;
+}
+
+
+void double_to_io(universal_io *const io, const int64_t fst, const int64_t snd)
+{
+	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
+	double numdouble;
+	memcpy(&numdouble, &num, sizeof(double));
+	uni_printf(io, " %f\n", numdouble);
+}
+
+size_t elem_to_io(universal_io *const io, const vector *const table, size_t i)
+{
+	const item_t type = vector_get(table, i++);
+
+	char buffer[MAX_ELEM_SIZE];
+	size_t argc = elem_get_name(type, 0, buffer);
+	uni_printf(io, "%s", buffer);
+
+	if (type == TConstd || type == LID)
+	{
+		double_to_io(io, vector_get(table, i), vector_get(table, i + 1));
+		return i + 2;
+	}
+
+	for (size_t j = 1; j <= argc; j++)
+	{
+		elem_get_name(type, j, buffer);
+
+		if (buffer[0] != '\0')
+		{
+			uni_printf(io, " %s=", buffer);
+		}
+
+		uni_printf(io, " %" PRIitem, vector_get(table, i++));
+	}
+	uni_printf(io, "\n");
+
+	if (type == TString)
+	{
+		const size_t n = (size_t)vector_get(table, i - 1);
+		for (size_t j = 0; j < n; j++)
+		{
+			uni_printf(io, "%" PRIitem "\n", vector_get(table, i++));
+		}
+	}
+	else if (type == TStringd)
+	{
+		const size_t n = (size_t)vector_get(table, i - 1);
+		for (size_t j = 0; j < n; j++)
+		{
+			double_to_io(io, vector_get(table, i), vector_get(table, i + 1));
+			i += 2;
+		}
+	}
+
+	return i;
+}
+
+
+void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
+{
+	for (size_t i = 0; i < tabs; i++)
+	{
+		uni_printf(io, INDENT);
+	}
+	uni_printf(io, "tc %zi) ", nd->type);
+
+	const item_t type = node_get_type(nd);
+	char buffer[MAX_ELEM_SIZE];
+	size_t argc = elem_get_name(type, 0, buffer);
+	uni_printf(io, "%s", buffer);
+
+	if (type == TConstd || type == LID)
+	{
+		double_to_io(io, node_get_arg(nd, 0), node_get_arg(nd, 1));
+	}
+	else
+	{
+		size_t i = 0;
+		while (i < argc && node_get_arg(nd, i) != ITEM_MAX)
+		{
+			elem_get_name(type, i + 1, buffer);
+
+			if (buffer[0] != '\0')
+			{
+				uni_printf(io, " %s=", buffer);
+			}
+
+			uni_printf(io, " %" PRIitem, node_get_arg(nd, i++));
+		}
+		uni_printf(io, "\n");
+
+		if ((node_get_arg(nd, i) != ITEM_MAX && node_get_type(nd) != TString && node_get_type(nd) != TStringd)
+			|| i != argc)
+		{
+			elem_get_name(type, 0, buffer);
+			warning(NULL, node_argc, nd->type, buffer);
+		}
+	}
+
+	for (size_t j = 0; j < node_get_amount(nd); j++)
+	{
+		node child = node_get_child(nd, j);
+		tree_print_recursive(io, &child, tabs + 1);
+	}
+}
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+void tree_print(const char *const path, vector *const tree)
 {
 	universal_io io = io_create();
-	if (sx == NULL || out_set_file(&io, path))
+	if (!vector_is_correct(tree) || out_set_file(&io, path))
 	{
 		return;
 	}
 
-	uni_printf(&io, "\n%s\n", "identab");
-	for (int i = 2; i < sx->id; i += 4)
+	node nd = node_get_root(tree);
+	for (size_t i = 0; i < node_get_amount(&nd); i++)
 	{
-		for (int j = 0; j < 4; j++)
+		node child = node_get_child(&nd, i);
+		tree_print_recursive(&io, &child, 0);
+	}
+
+	io_erase(&io);
+}
+
+
+/** Вывод таблиц и дерева */
+void tables_and_tree(const char *const path
+	, const vector *const identifiers
+	, const vector *const modes
+	, const vector *const tree)
+{
+	universal_io io = io_create();
+	if (!vector_is_correct(identifiers) || !vector_is_correct(modes) || !vector_is_correct(tree)
+		|| out_set_file(&io, path))
+	{
+		return;
+	}
+
+
+	uni_printf(&io, "%s\n", "identab");
+	for (size_t i = 2; i < vector_size(identifiers); i += 4)
+	{
+		for (size_t j = 0; j < 4; j++)
 		{
-			uni_printf(&io, "id %i) %i\n", i + j, sx->identab[i + j]);
+			uni_printf(&io, "id %zi) %" PRIitem "\n", i + j, vector_get(identifiers, i + j));
 		}
 		uni_printf(&io, "\n");
 	}
 
-	/*
-	uni_printf(&io, "\n%s\n", "repr");
-	for (int i = 1206; i <= sx->rp; i++)
-	{
-		uni_printf(&io, "rp %i) %i\n", i, sx->reprtab[i]);
-	}
-	*/
-
 	uni_printf(&io, "\n%s\n", "modetab");
-	for (int i = 0; i < sx->md; i++)
+	for (size_t i = 0; i < vector_size(modes); i++)
 	{
-		uni_printf(&io, "md %i) %i\n", i, sx->modetab[i]);
+		uni_printf(&io, "md %zi) %" PRIitem "\n", i, vector_get(modes, i));
 	}
-
-	/*
-	uni_printf(&io, "\n%s\n", "tree");
-	for (int i = 0; i <= tc; i++)
-	{
-		uni_printf(&io, "tc %i) %i\n", i, sx->tree[i]);
-	}
-	*/
 
 	uni_printf(&io, "\n");
-
-	int i = 0;
-	while (i < sx->tc)
+	size_t i = 0;
+	while (i < vector_size(tree))
 	{
-		uni_printf(&io, "tc %i) ", i);
-		switch (sx->tree[i++])
-		{
-			case TFuncdef:
-				uni_printf(&io, "TFuncdef funcn= %i maxdispl= %i\n", sx->tree[i],
-							   sx->tree[i + 1]);
-				i += 2;
-				break;
-			case TDeclarr:
-				uni_printf(&io, "TDeclarr N= %i\n", sx->tree[i++]);
-				break;
-			case TDeclid:
-				uni_printf(&io,
-							   "TDeclid displ= %i eltype= %i N= %i all= %i iniproc= "
-							   "%i, usual= %i instuct= %i\n",
-							   sx->tree[i], sx->tree[i + 1], sx->tree[i + 2], sx->tree[i + 3],
-							   sx->tree[i + 4], sx->tree[i + 5], sx->tree[i + 6]);
-				i += 7;
-				break;
-			case TString:
-			{
-				int n = sx->tree[i++];
-				uni_printf(&io, "TString n= %i\n", n);
-				for (int j = 0; j < n; ++j)
-				{
-					uni_printf(&io, "%i\n", sx->tree[i++]);
-				}
-			}
-			break;
-			case TStringd:
-			{
-				int n = sx->tree[i++];
-				uni_printf(&io, "TStringd n= %i\n", n);
-				for (int j = 0; j < n; ++j)
-				{
-					double d;
-					memcpy(&d, &sx->tree[i], sizeof(double));
-					i += 2;
-					uni_printf(&io, "%f\n", d);
-				}
-			}
-			break;
-			case TCondexpr:
-				uni_printf(&io, "TCondexpr\n");
-				break;
-			case TBegin:
-				uni_printf(&io, "TBegin\n");
-				break;
-			case TEnd:
-				uni_printf(&io, "TEnd\n");
-				break;
-			case TBeginit:
-				uni_printf(&io, "TBeginit n= %i\n", sx->tree[i++]);
-				break;
-			case TStructinit:
-				uni_printf(&io, "TStructinit n= %i\n", sx->tree[i++]);
-				break;
-			case TIf:
-				uni_printf(&io, "TIf %i\n", sx->tree[i++]);
-				break;
-			case TWhile:
-				uni_printf(&io, "TWhile\n");
-				break;
-			case TDo:
-				uni_printf(&io, "TDo\n");
-				break;
-			case TFor:
-				uni_printf(&io, "TFor %i %i %i %i\n", sx->tree[i], sx->tree[i + 1],
-							   sx->tree[i + 2], sx->tree[i + 3]);
-				i += 4;
-				break;
-			case TSwitch:
-				uni_printf(&io, "TSwitch\n");
-				break;
-			case TCase:
-				uni_printf(&io, "TCase\n");
-				break;
-			case TDefault:
-				uni_printf(&io, "TDefault\n");
-				break;
-			case TBreak:
-				uni_printf(&io, "TBreak\n");
-				break;
-			case TContinue:
-				uni_printf(&io, "TContinue\n");
-				break;
-			case TReturnvoid:
-				uni_printf(&io, "TReturn\n");
-				break;
-			case TReturnval:
-				uni_printf(&io, "TReturnval %i\n", sx->tree[i++]);
-				break;
-			case TGoto:
-				uni_printf(&io, "TGoto %i\n", sx->tree[i++]);
-				break;
-			case TIdent:
-				uni_printf(&io, "TIdent %i\n", sx->tree[i++]);
-				break;
-			case TIdenttoval:
-				uni_printf(&io, "TIdenttoval %i\n", sx->tree[i++]);
-				break;
-			case TIdenttovald:
-				uni_printf(&io, "TIdenttovald %i\n", sx->tree[i++]);
-				break;
-			case TFunidtoval:
-				uni_printf(&io, "TFunidtoval %i\n", sx->tree[i++]);
-				break;
-			case TIdenttoaddr:
-				uni_printf(&io, "TIdenttoaddr %i\n", sx->tree[i++]);
-				break;
-			case TAddrtoval:
-				uni_printf(&io, "TAddrtoval\n");
-				break;
-			case TAddrtovald:
-				uni_printf(&io, "TAddrtovald\n");
-				break;
-			case TExprend:
-				uni_printf(&io, "TExprend\n");
-				break;
-			case TConst:
-				uni_printf(&io, "TConst %i\n", sx->tree[i++]);
-				break;
-			case TConstd:
-			{
-				double numdouble;
-				memcpy(&numdouble, &sx->tree[i], sizeof(double));
-				i += 2;
-				uni_printf(&io, "TConstd %f\n", numdouble);
-			}
-			break;
-			case TSliceident:
-				uni_printf(&io, "TSliceident displ= %i type= %i\n", sx->tree[i],
-							   sx->tree[i + 1]);
-				i += 2;
-				break;
-			case TSlice:
-				uni_printf(&io, "TSlice elem_type= %i\n", sx->tree[i++]);
-				break;
-			case TSelect:
-				uni_printf(&io, "TSelect displ= %i\n", sx->tree[i++]);
-				break;
-			case NOP:
-				uni_printf(&io, "NOP\n");
-				break;
-			case ADLOGAND:
-				uni_printf(&io, "ADLOGAND addr= %i\n", sx->tree[i++]);
-				break;
-			case ADLOGOR:
-				uni_printf(&io, "ADLOGOR addr= %i\n", sx->tree[i++]);
-				break;
-			case COPY00:
-				uni_printf(&io, "COPY00 %i ",
-							   sx->tree[i++]); // displleft
-				uni_printf(&io, "%i ",
-							   sx->tree[i++]); // displright
-				uni_printf(&io, "(%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY01:
-				uni_printf(&io, "COPY01 %i ",
-							   sx->tree[i++]); // displleft
-				uni_printf(&io, "(%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY10:
-				uni_printf(&io, "COPY10 %i ",
-							   sx->tree[i++]); // displright
-				uni_printf(&io, "(%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY11:
-				uni_printf(&io, "COPY11 %i\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY0ST:
-				uni_printf(&io, "COPY0ST %i ",
-							   sx->tree[i++]); // displleft
-				uni_printf(&io, "(%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY1ST:
-				uni_printf(&io, "COPY1ST (%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY0STASS:
-				uni_printf(&io, "COPY0STASS %i ",
-							   sx->tree[i++]); // displleft
-				uni_printf(&io, "(%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPY1STASS:
-				uni_printf(&io, "COPY1STASS (%i)\n",
-							   sx->tree[i++]); // length
-				break;
-			case COPYST:
-				uni_printf(&io, "COPYST %i ",
-							   sx->tree[i++]); // displ
-				uni_printf(&io, "(%i)",
-							   sx->tree[i++]); // length
-				uni_printf(&io, "(%i)\n",
-							   sx->tree[i++]); // length1
-				break;
-
-			case TCall1:
-				uni_printf(&io, "TCall1 %i\n", sx->tree[i++]);
-				break;
-			case TCall2:
-				uni_printf(&io, "TCall2 %i\n", sx->tree[i++]);
-				break;
-			case TLabel:
-				uni_printf(&io, "TLabel %i\n", sx->tree[i++]);
-				break;
-			case TStructbeg:
-				uni_printf(&io, "TStructbeg %i\n", sx->tree[i++]);
-				break;
-			case TStructend:
-				uni_printf(&io, "TStructend %i\n", sx->tree[i++]);
-				break;
-			case TPrint:
-				uni_printf(&io, "TPrint %i\n", sx->tree[i++]);
-				break;
-			case TPrintid:
-				uni_printf(&io, "TPrintid %i\n", sx->tree[i++]);
-				break;
-			case TPrintf:
-				uni_printf(&io, "TPrintf %i\n", sx->tree[i++]);
-				break;
-			case TGetid:
-				uni_printf(&io, "TGetid %i\n", sx->tree[i++]);
-				break;
-			case SETMOTORC:
-				uni_printf(&io, "Setmotor\n");
-				break;
-			case CREATEC:
-				uni_printf(&io, "TCREATE\n");
-				break;
-			case CREATEDIRECTC:
-				uni_printf(&io, "TCREATEDIRECT\n");
-				break;
-			case EXITC:
-				uni_printf(&io, "TEXIT\n");
-				break;
-			case EXITDIRECTC:
-				uni_printf(&io, "TEXITDIRECT\n");
-				break;
-			case MSGSENDC:
-				uni_printf(&io, "TMSGSEND\n");
-				break;
-			case MSGRECEIVEC:
-				uni_printf(&io, "TMSGRECEIVE\n");
-				break;
-			case JOINC:
-				uni_printf(&io, "TJOIN\n");
-				break;
-			case SLEEPC:
-				uni_printf(&io, "TSLEEP\n");
-				break;
-			case SEMCREATEC:
-				uni_printf(&io, "TSEMCREATE\n");
-				break;
-			case SEMWAITC:
-				uni_printf(&io, "TSEMWAIT\n");
-				break;
-			case SEMPOSTC:
-				uni_printf(&io, "TSEMPOST\n");
-				break;
-			case INITC:
-				uni_printf(&io, "INITC\n");
-				break;
-			case DESTROYC:
-				uni_printf(&io, "DESTROYC\n");
-				break;
-			case GETNUMC:
-				uni_printf(&io, "GETNUMC\n");
-				break;
-
-
-			default:
-				uni_printf(&io, "TOper %i\n", sx->tree[i - 1]);
-		}
+		uni_printf(&io, "tc %zi) ", i);
+		i = elem_to_io(&io, tree, i);
 	}
 
 	io_erase(&io);
 }
 
 /** Вывод таблиц и кодов */
-void tables_and_codes(const syntax *const sx, const char *const path)
+void tables_and_codes(const char *const path
+	, const vector *const functions
+	, const vector *const processes
+	, const vector *const memory)
 {
 	universal_io io = io_create();
-	if (sx == NULL || out_set_file(&io, path))
+	if (!vector_is_correct(functions) || !vector_is_correct(processes) || !vector_is_correct(memory)
+		|| out_set_file(&io, path))
 	{
 		return;
 	}
 
-	uni_printf(&io, "\n\n%s\n", "functions");
-	for (int i = 1; i <= sx->funcnum; i++)
+
+	uni_printf(&io, "%s\n", "functions");
+	for (size_t i = 0; i < vector_size(functions); i++)
 	{
-		uni_printf(&io, "fun %i) %i\n", i, sx->functions[i]);
+		uni_printf(&io, "fun %zi) %" PRIitem "\n", i, vector_get(functions, i));
 	}
 
 	uni_printf(&io, "\n%s\n", "iniprocs");
-	for (int i = 1; i <= sx->procd; i++)
+	for (size_t i = 0; i < vector_size(processes); i++)
 	{
-		uni_printf(&io, "inipr %i) %i\n", i, sx->iniprocs[i]);
+		uni_printf(&io, "inipr %zi) %" PRIitem "\n", i, vector_get(processes, i));
 	}
 
 	uni_printf(&io, "\n%s\n", "mem");
-	int i = 0;
-	while (i < sx->pc)
+	size_t i = 0;
+	while (i < vector_size(memory))
 	{
-		uni_printf(&io, "pc %i) ", i);
-		switch (sx->mem[i++])
-		{
-			case PRINT:
-				uni_printf(&io, "PRINT %i\n", sx->mem[i++]);
-				break;
-			case PRINTID:
-				uni_printf(&io, "PRINTID %i\n", sx->mem[i++]);
-				break;
-			case PRINTF:
-				uni_printf(&io, "PRINTF %i\n", sx->mem[i++]);
-				break;
-			case GETID:
-				uni_printf(&io, "GETID %i\n", sx->mem[i++]);
-				break;
-			case SETMOTORC:
-				uni_printf(&io, "SETMOTOR\n");
-				break;
-			case GETDIGSENSORC:
-				uni_printf(&io, "GETDIGSENSOR\n");
-				break;
-			case GETANSENSORC:
-				uni_printf(&io, "GETANSENSOR\n");
-				break;
-			case VOLTAGEC:
-				uni_printf(&io, "VOLTAGE\n");
-				break;
-			case CREATEC:
-				uni_printf(&io, "TCREATE\n");
-				break;
-			case CREATEDIRECTC:
-				uni_printf(&io, "TCREATEDIRECT\n");
-				break;
-			case MSGSENDC:
-				uni_printf(&io, "TMSGSEND\n");
-				break;
-			case EXITC:
-				uni_printf(&io, "TEXIT\n");
-				break;
-			case EXITDIRECTC:
-				uni_printf(&io, "TEXITDIRECT\n");
-				break;
-			case MSGRECEIVEC:
-				uni_printf(&io, "TMSGRECEIVE\n");
-				break;
-			case JOINC:
-				uni_printf(&io, "TJOIN\n");
-				break;
-			case SLEEPC:
-				uni_printf(&io, "TSLEEP\n");
-				break;
-			case SEMCREATEC:
-				uni_printf(&io, "TSEMCREATE\n");
-				break;
-			case SEMWAITC:
-				uni_printf(&io, "TSEMWAIT\n");
-				break;
-			case SEMPOSTC:
-				uni_printf(&io, "TSEMPOST\n");
-				break;
-			case TINIT:
-				uni_printf(&io, "TINIT\n");
-				break;
-			case TDESTROY:
-				uni_printf(&io, "TDESTROY\n");
-				break;
-			case GETNUMC:
-				uni_printf(&io, "GETNUM\n");
-				break;
-
-			case ABSC:
-				uni_printf(&io, "ABS\n");
-				break;
-			case ABSIC:
-				uni_printf(&io, "ABSI\n");
-				break;
-			case SQRTC:
-				uni_printf(&io, "SQRT\n");
-				break;
-			case EXPC:
-				uni_printf(&io, "EXP\n");
-				break;
-			case SINC:
-				uni_printf(&io, "SIN\n");
-				break;
-			case COSC:
-				uni_printf(&io, "COS\n");
-				break;
-			case LOGC:
-				uni_printf(&io, "LOG\n");
-				break;
-			case LOG10C:
-				uni_printf(&io, "LOG10\n");
-				break;
-			case ASINC:
-				uni_printf(&io, "ASIN\n");
-				break;
-			case RANDC:
-				uni_printf(&io, "RAND\n");
-				break;
-			case ROUNDC:
-				uni_printf(&io, "ROUND\n");
-				break;
-
-			case STRCPYC:
-				uni_printf(&io, "STRCPY\n");
-				break;
-			case STRNCPYC:
-				uni_printf(&io, "STRNCPY\n");
-				break;
-			case STRCATC:
-				uni_printf(&io, "STRCAT\n");
-				break;
-			case STRNCATC:
-				uni_printf(&io, "STRNCAT\n");
-				break;
-			case STRCMPC:
-				uni_printf(&io, "STRCMP\n");
-				break;
-			case STRNCMPC:
-				uni_printf(&io, "STRNCMP\n");
-				break;
-			case STRSTRC:
-				uni_printf(&io, "STRSTR\n");
-				break;
-			case STRLENC:
-				uni_printf(&io, "STRLENC\n");
-				break;
-
-			case BEGINIT:
-				uni_printf(&io, "BEGINIT n= %i\n", sx->mem[i++]);
-				break;
-			case STRUCTWITHARR:
-				uni_printf(&io, "STRUCTWITHARR displ= %i ", sx->mem[i++]);
-				uni_printf(&io, "iniproc= %i\n", sx->mem[i++]);
-				break;
-			case DEFARR:
-				uni_printf(&io, "DEFARR N= %i ",
-							   sx->mem[i++]); // N
-				uni_printf(&io, "elem_len= %i ",
-							   sx->mem[i++]); // elem length
-				uni_printf(&io, "displ= %i ",
-							   sx->mem[i++]); // displ
-				uni_printf(&io, "iniproc= %i ",
-							   sx->mem[i++]); // iniproc
-				uni_printf(&io, "usual= %i ",
-							   sx->mem[i++]); // usual
-				uni_printf(&io, "all= %i ",
-							   sx->mem[i++]); // all
-				uni_printf(&io, "instruct= %i\n",
-							   sx->mem[i++]); // instruct
-				break;
-			case ARRINIT:
-				uni_printf(&io, "ARRINIT N= %i ", sx->mem[i++]);
-				uni_printf(&io, "elem_len= %i ", sx->mem[i++]);
-				uni_printf(&io, "displ= %i ", sx->mem[i++]);
-				uni_printf(&io, "usual= %i\n", sx->mem[i++]);
-				break;
-			/*
-			case STRUCTINIT:
-				uni_printf(&io,	"STRUCTINIT N= %i ", sx->mem[i++]);
-				break;
-			*/
-			case NOP:
-				uni_printf(&io, "NOP\n");
-				break;
-			case LI:
-				uni_printf(&io, "LI %i\n", sx->mem[i++]);
-				break;
-			case LID:
-			{
-				double numdouble;
-				memcpy(&numdouble, &sx->mem[i], sizeof(double));
-				i += 2;
-				uni_printf(&io, "LID %.15f\n", numdouble);
-			}
-			break;
-			case LOAD:
-				uni_printf(&io, "LOAD %i\n", sx->mem[i++]);
-				break;
-			case LOADD:
-				uni_printf(&io, "LOADD %i\n", sx->mem[i++]);
-				break;
-			case LAT:
-				uni_printf(&io, "L@\n");
-				break;
-			case LATD:
-				uni_printf(&io, "L@f\n");
-				break;
-			case LA:
-				uni_printf(&io, "LA %i\n", sx->mem[i++]);
-				break;
-
-			case LOGOR:
-				uni_printf(&io, "||\n");
-				break;
-			case LOGAND:
-				uni_printf(&io, "&&\n");
-				break;
-			case ORASS:
-				uni_printf(&io, "|= %i\n", sx->mem[i++]);
-				break;
-			case ORASSAT:
-				uni_printf(&io, "|=@\n");
-				break;
-			case ORASSV:
-				uni_printf(&io, "|=V %i\n", sx->mem[i++]);
-				break;
-			case ORASSATV:
-				uni_printf(&io, "|=@V\n");
-				break;
-			case LOR:
-				uni_printf(&io, "|\n");
-				break;
-			case EXORASS:
-				uni_printf(&io, "^= %i\n", sx->mem[i++]);
-				break;
-			case EXORASSAT:
-				uni_printf(&io, "^=@\n");
-				break;
-			case EXORASSV:
-				uni_printf(&io, "^=V %i\n", sx->mem[i++]);
-				break;
-			case EXORASSATV:
-				uni_printf(&io, "^=@V\n");
-				break;
-			case LEXOR:
-				uni_printf(&io, "^\n");
-				break;
-			case ANDASS:
-				uni_printf(&io, "&= %i\n", sx->mem[i++]);
-				break;
-			case ANDASSAT:
-				uni_printf(&io, "&=@\n");
-				break;
-			case ANDASSV:
-				uni_printf(&io, "&=V %i\n", sx->mem[i++]);
-				break;
-			case ANDASSATV:
-				uni_printf(&io, "&=@V\n");
-				break;
-			case LAND:
-				uni_printf(&io, "&\n");
-				break;
-
-			case EQEQ:
-				uni_printf(&io, "==\n");
-				break;
-			case NOTEQ:
-				uni_printf(&io, "!=\n");
-				break;
-			case LLT:
-				uni_printf(&io, "<\n");
-				break;
-			case LGT:
-				uni_printf(&io, ">\n");
-				break;
-			case LLE:
-				uni_printf(&io, "<=\n");
-				break;
-			case LGE:
-				uni_printf(&io, ">=\n");
-				break;
-			case EQEQR:
-				uni_printf(&io, "==f\n");
-				break;
-			case NOTEQR:
-				uni_printf(&io, "!=f\n");
-				break;
-			case LLTR:
-				uni_printf(&io, "<f\n");
-				break;
-			case LGTR:
-				uni_printf(&io, ">f\n");
-				break;
-			case LLER:
-				uni_printf(&io, "<=f\n");
-				break;
-			case LGER:
-				uni_printf(&io, ">=f\n");
-				break;
-
-			case SHRASS:
-				uni_printf(&io, ">>= %i\n", sx->mem[i++]);
-				break;
-			case SHRASSAT:
-				uni_printf(&io, ">>=@\n");
-				break;
-			case SHRASSV:
-				uni_printf(&io, ">>=V %i\n", sx->mem[i++]);
-				break;
-			case SHRASSATV:
-				uni_printf(&io, ">>=@V\n");
-				break;
-			case LSHR:
-				uni_printf(&io, ">>\n");
-				break;
-			case SHLASS:
-				uni_printf(&io, "<<= %i\n", sx->mem[i++]);
-				break;
-			case SHLASSAT:
-				uni_printf(&io, "<<=@\n");
-				break;
-			case SHLASSV:
-				uni_printf(&io, "<<=V %i\n", sx->mem[i++]);
-				break;
-			case SHLASSATV:
-				uni_printf(&io, "<<=@V\n");
-				break;
-			case LSHL:
-				uni_printf(&io, "<<\n");
-				break;
-
-			case ASS:
-				uni_printf(&io, "= %i\n", sx->mem[i++]);
-				break;
-			case ASSAT:
-				uni_printf(&io, "=@\n");
-				break;
-			case ASSV:
-				uni_printf(&io, "=V %i\n", sx->mem[i++]);
-				break;
-			case ASSATV:
-				uni_printf(&io, "=@V\n");
-				break;
-
-			case PLUSASS:
-				uni_printf(&io, "+= %i\n", sx->mem[i++]);
-				break;
-			case PLUSASSAT:
-				uni_printf(&io, "+=@\n");
-				break;
-			case PLUSASSV:
-				uni_printf(&io, "+=V %i\n", sx->mem[i++]);
-				break;
-			case PLUSASSATV:
-				uni_printf(&io, "+=@V\n");
-				break;
-			case LPLUS:
-				uni_printf(&io, "+\n");
-				break;
-
-			case MINUSASS:
-				uni_printf(&io, "-= %i\n", sx->mem[i++]);
-				break;
-			case MINUSASSAT:
-				uni_printf(&io, "-=@\n");
-				break;
-			case MINUSASSV:
-				uni_printf(&io, "-=V %i\n", sx->mem[i++]);
-				break;
-			case MINUSASSATV:
-				uni_printf(&io, "-=@V\n");
-				break;
-			case LMINUS:
-				uni_printf(&io, "-\n");
-				break;
-
-			case MULTASS:
-				uni_printf(&io, "*= %i\n", sx->mem[i++]);
-				break;
-			case MULTASSAT:
-				uni_printf(&io, "*=@\n");
-				break;
-			case MULTASSV:
-				uni_printf(&io, "*=V %i\n", sx->mem[i++]);
-				break;
-			case MULTASSATV:
-				uni_printf(&io, "*=@V\n");
-				break;
-			case LMULT:
-				uni_printf(&io, "*\n");
-				break;
-
-			case DIVASS:
-				uni_printf(&io, "/= %i\n", sx->mem[i++]);
-				break;
-			case DIVASSAT:
-				uni_printf(&io, "/=@\n");
-				break;
-			case DIVASSV:
-				uni_printf(&io, "/=V %i\n", sx->mem[i++]);
-				break;
-			case DIVASSATV:
-				uni_printf(&io, "/=@V\n");
-				break;
-			case LDIV:
-				uni_printf(&io, "/\n");
-				break;
-
-			case ASSR:
-				uni_printf(&io, "=f %i\n", sx->mem[i++]);
-				break;
-			case ASSRV:
-				uni_printf(&io, "=fV %i\n", sx->mem[i++]);
-				break;
-			case ASSATR:
-				uni_printf(&io, "=@f\n");
-				break;
-			case ASSATRV:
-				uni_printf(&io, "=@fV\n");
-				break;
-
-			case PLUSASSR:
-				uni_printf(&io, "+=f %i\n", sx->mem[i++]);
-				break;
-			case PLUSASSATR:
-				uni_printf(&io, "+=@f\n");
-				break;
-			case PLUSASSRV:
-				uni_printf(&io, "+=fV %i\n", sx->mem[i++]);
-				break;
-			case PLUSASSATRV:
-				uni_printf(&io, "+=@fV\n");
-				break;
-			case LPLUSR:
-				uni_printf(&io, "+f\n");
-				break;
-			case MINUSASSR:
-				uni_printf(&io, "-=f %i\n", sx->mem[i++]);
-				break;
-			case MINUSASSATR:
-				uni_printf(&io, "-=@f\n");
-				break;
-			case MINUSASSRV:
-				uni_printf(&io, "-=fV %i\n", sx->mem[i++]);
-				break;
-			case MINUSASSATRV:
-				uni_printf(&io, "-=@fV\n");
-				break;
-			case LMINUSR:
-				uni_printf(&io, "-f\n");
-				break;
-			case MULTASSR:
-				uni_printf(&io, "*=f %i\n", sx->mem[i++]);
-				break;
-			case MULTASSATR:
-				uni_printf(&io, "*=@f\n");
-				break;
-			case MULTASSRV:
-				uni_printf(&io, "*=fV %i\n", sx->mem[i++]);
-				break;
-			case MULTASSATRV:
-				uni_printf(&io, "*=@fV\n");
-				break;
-			case LMULTR:
-				uni_printf(&io, "*f\n");
-				break;
-			case DIVASSR:
-				uni_printf(&io, "/=f %i\n", sx->mem[i++]);
-				break;
-			case DIVASSATR:
-				uni_printf(&io, "/=@f\n");
-				break;
-			case DIVASSRV:
-				uni_printf(&io, "/=fV %i\n", sx->mem[i++]);
-				break;
-			case DIVASSATRV:
-				uni_printf(&io, "/=@fV\n");
-				break;
-			case LDIVR:
-				uni_printf(&io, "/f\n");
-				break;
-			case COPY00:
-				uni_printf(&io, "COPY00 %i ",
-							   sx->mem[i++]); // displleft
-				uni_printf(&io, "%i ",
-							   sx->mem[i++]); // displright
-				uni_printf(&io, "(%i)\n",
-							   sx->mem[i++]); // length
-				break;
-			case COPY01:
-				uni_printf(&io, "COPY01 %i      ",
-							   sx->mem[i++]); // displleft
-				uni_printf(&io, "(%i)\n",
-							   sx->mem[i++]); // length
-				break;
-			case COPY10:
-				uni_printf(&io, "COPY10      %i ",
-							   sx->mem[i++]); // displright
-				uni_printf(&io, "(%i)\n",
-							   sx->mem[i++]); // length
-				break;
-			case COPY11:
-				uni_printf(&io, "COPY11 %i\n",
-							   sx->mem[i++]); // length
-				break;
-			case COPY0ST:
-				uni_printf(&io, "COPY0ST %i ",
-							   sx->mem[i++]); // displright
-				uni_printf(&io, "(%i)\n",
-							   sx->mem[i++]); // length
-				break;
-			case COPY1ST:
-				uni_printf(&io, "COPY1ST %i\n",
-							   sx->mem[i++]); // length
-				break;
-			case COPY0STASS:
-				uni_printf(&io, "COPY0STASS %i ",
-							   sx->mem[i++]); // displleft
-				uni_printf(&io, "(%i)\n",
-							   sx->mem[i++]); // length
-				break;
-			case COPY1STASS:
-				uni_printf(&io, "COPY1STASS %i\n",
-							   sx->mem[i++]); // length
-				break;
-			case COPYST:
-				uni_printf(&io, "COPYST %i ",
-							   sx->mem[i++]); // displ
-				uni_printf(&io, "(%i)",
-							   sx->mem[i++]); // length
-				uni_printf(&io, "(%i)\n",
-							   sx->mem[i++]); // length1
-				break;
-
-			case REMASS:
-				uni_printf(&io, "%%= %i\n", sx->mem[i++]);
-				break;
-			case REMASSAT:
-				uni_printf(&io, "%%=@\n");
-				break;
-			case REMASSV:
-				uni_printf(&io, "%%=V %i\n", sx->mem[i++]);
-				break;
-			case REMASSATV:
-				uni_printf(&io, "%%=@V\n");
-				break;
-			case LREM:
-				uni_printf(&io, "%%\n");
-				break;
-
-			case CALL1:
-				uni_printf(&io, "CALL1\n");
-				break;
-			case CALL2:
-				uni_printf(&io, "CALL2 ");
-				uni_printf(&io, "%i\n", sx->mem[i++]);
-				break;
-			case STOP:
-				uni_printf(&io, "STOP\n");
-				break;
-			case RETURNVAL:
-				uni_printf(&io, "RETURNVAL %i\n", sx->mem[i++]);
-				break;
-			case RETURNVOID:
-				uni_printf(&io, "RETURNVOID\n");
-				break;
-			case B:
-				uni_printf(&io, "B %i\n", sx->mem[i++]);
-				break;
-			case BE0:
-				uni_printf(&io, "BE0 %i\n", sx->mem[i++]);
-				break;
-			case BNE0:
-				uni_printf(&io, "BNE0 %i\n", sx->mem[i++]);
-				break;
-			case SLICE:
-				uni_printf(&io, "SLICE d= %i\n", sx->mem[i++]);
-				break;
-			case SELECT:
-				uni_printf(&io, "SELECT field_displ= %i\n", sx->mem[i++]);
-				break;
-			case WIDEN:
-				uni_printf(&io, "WIDEN\n");
-				break;
-			case WIDEN1:
-				uni_printf(&io, "WIDEN1\n");
-				break;
-			case _DOUBLE:
-				uni_printf(&io, "DOUBLE\n");
-				break;
-			case INC:
-				uni_printf(&io, "INC %i\n", sx->mem[i++]);
-				break;
-			case DEC:
-				uni_printf(&io, "DEC %i\n", sx->mem[i++]);
-				break;
-			case POSTINC:
-				uni_printf(&io, "POSTINC %i\n", sx->mem[i++]);
-				break;
-			case POSTDEC:
-				uni_printf(&io, "POSTDEC %i\n", sx->mem[i++]);
-				break;
-			case INCAT:
-				uni_printf(&io, "INC@\n");
-				break;
-			case DECAT:
-				uni_printf(&io, "DEC@\n");
-				break;
-			case POSTINCAT:
-				uni_printf(&io, "POSTINC@\n");
-				break;
-			case POSTDECAT:
-				uni_printf(&io, "POSTDEC@\n");
-				break;
-			case INCR:
-				uni_printf(&io, "INCf %i\n", sx->mem[i++]);
-				break;
-			case DECR:
-				uni_printf(&io, "DECf %i\n", sx->mem[i++]);
-				break;
-			case POSTINCR:
-				uni_printf(&io, "POSTINCf %i\n", sx->mem[i++]);
-				break;
-			case POSTDECR:
-				uni_printf(&io, "POSTDECf %i\n", sx->mem[i++]);
-				break;
-			case INCATR:
-				uni_printf(&io, "INC@f\n");
-				break;
-			case DECATR:
-				uni_printf(&io, "DEC@f\n");
-				break;
-			case POSTINCATR:
-				uni_printf(&io, "POSTINC@f\n");
-				break;
-			case POSTDECATR:
-				uni_printf(&io, "POSTDEC@f\n");
-				break;
-			case INCV:
-				uni_printf(&io, "INCV %i\n", sx->mem[i++]);
-				break;
-			case DECV:
-				uni_printf(&io, "DECV %i\n", sx->mem[i++]);
-				break;
-			case POSTINCV:
-				uni_printf(&io, "POSTINCV %i\n", sx->mem[i++]);
-				break;
-			case POSTDECV:
-				uni_printf(&io, "POSTDECV %i\n", sx->mem[i++]);
-				break;
-			case INCATV:
-				uni_printf(&io, "INC@V\n");
-				break;
-			case DECATV:
-				uni_printf(&io, "DEC@V\n");
-				break;
-			case POSTINCATV:
-				uni_printf(&io, "POSTINC@V\n");
-				break;
-			case POSTDECATV:
-				uni_printf(&io, "POSTDEC@V\n");
-				break;
-			case INCRV:
-				uni_printf(&io, "INCfV %i\n", sx->mem[i++]);
-				break;
-			case DECRV:
-				uni_printf(&io, "DECfV %i\n", sx->mem[i++]);
-				break;
-			case POSTINCRV:
-				uni_printf(&io, "POSTINCfV %i\n", sx->mem[i++]);
-				break;
-			case POSTDECRV:
-				uni_printf(&io, "POSTDECfV %i\n", sx->mem[i++]);
-				break;
-			case INCATRV:
-				uni_printf(&io, "INC@fV\n");
-				break;
-			case DECATRV:
-				uni_printf(&io, "DEC@fV\n");
-				break;
-			case POSTINCATRV:
-				uni_printf(&io, "POSTINC@fV\n");
-				break;
-			case POSTDECATRV:
-				uni_printf(&io, "POSTDEC@fV\n");
-				break;
-
-			case LNOT:
-				uni_printf(&io, "BITNOT\n");
-				break;
-			case LOGNOT:
-				uni_printf(&io, "NOT\n");
-				break;
-			case UNMINUS:
-				uni_printf(&io, "UNMINUS\n");
-				break;
-			case UNMINUSR:
-				uni_printf(&io, "UNMINUSf\n");
-				break;
-
-			case FUNCBEG:
-				uni_printf(&io, "FUNCBEG maxdispl= %i ", sx->mem[i++]);
-				uni_printf(&io, "pc= %i\n", sx->mem[i++]);
-				break;
-
-
-			default:
-				uni_printf(&io, "%i\n", sx->mem[i - 1]);
-		}
+		uni_printf(&io, "pc %zi) ", i);
+		i = elem_to_io(&io, memory, i);
 	}
 
 	io_erase(&io);

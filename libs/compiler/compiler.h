@@ -20,9 +20,21 @@
 #include "workspace.h"
 
 
+//#define GENERATE_MACRO
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ *	Compile code from workspace
+ *
+ *	@param	ws		Compiler workspace
+ *
+ *	@return	Status code
+ */
+EXPORTED int compile(workspace *const ws);
 
 /**
  *	Compile RuC virtual machine code from workspace
@@ -33,6 +45,16 @@ extern "C" {
  */
 EXPORTED int compile_to_vm(workspace *const ws);
 
+
+/**
+ *	Compile code from terminal arguments
+ *
+ *	@param	argc	Number of command line arguments
+ *	@param	argv	Command line arguments
+ *
+ *	@return	Status code
+ */
+EXPORTED int auto_compile(const int argc, const char *const *const argv);
 
 /**
  *	Compile RuC virtual machine code from terminal arguments

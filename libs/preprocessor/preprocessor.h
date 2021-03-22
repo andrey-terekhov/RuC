@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "context_var.h"
+#include "environment.h"
 #include "dll.h"
 #include "workspace.h"
 
@@ -24,9 +24,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-int preprocess_scan(preprocess_context *context);
-
 
 /**
  *	Preprocess files from workspace

@@ -22,20 +22,23 @@
 #include "workspace.h"
 
 
-const char *name = "../tests/sleep/threads/russian.c";
+const char *name = "../tests/executable/types/int/test_1.c";
 // "../tests/mips/0test.c";
 
 
 int main(int argc, const char *argv[])
 {
-	//printf(""); // Not working without using printf
-
 	workspace ws = ws_parse_args(argc, argv);
 
 	if (argc < 2)
 	{
 		ws_add_file(&ws, name);
+		ws_set_output(&ws, "export.txt");
 	}
-	
-	return compile_to_vm(&ws);
+
+#ifdef TESTING_EXIT_CODE
+	return compile(&ws) ? TESTING_EXIT_CODE : 0;
+#else
+	return compile(&ws);
+#endif
 }
