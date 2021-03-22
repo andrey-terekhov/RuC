@@ -267,7 +267,7 @@ void double_to_string(environment *const env, const double x, const int is_int)
 
 			if (s[env->calc_string_size] != '0' && utf8_is_digit(s[env->calc_string_size]))
 			{
-				l = env->calc_string_size;
+				l = (int)env->calc_string_size;
 			}
 		}
 		env->calc_string_size = l + 1;

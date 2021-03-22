@@ -244,10 +244,10 @@ int if_implementation(environment *const env)
 
 int while_collect(environment *const env)
 {
-	const int oldwsp = env->while_string_size;
+	const int oldwsp = (int)env->while_string_size;
 
 	env->while_string[env->while_string_size++] = WHILEBEGIN;
-	env->while_string[env->while_string_size++] = env->if_string_size;
+	env->while_string[env->while_string_size++] = (int)env->if_string_size;
 	env->while_string_size++;
 
 	while (env->curchar != '\n')
@@ -271,7 +271,7 @@ int while_collect(environment *const env)
 			else if (env->cur == SH_ENDW)
 			{
 				env->while_string[env->while_string_size++] = ' ';
-				env->while_string[oldwsp + 2] = env->while_string_size;
+				env->while_string[oldwsp + 2] = (int)env->while_string_size;
 				env->cur = 0;
 
 				return 0;
@@ -294,7 +294,7 @@ int while_collect(environment *const env)
 
 int while_implementation(environment *const env)
 {
-	const int oldernextp = env->nextp;
+	const int oldernextp = (int)env->nextp;
 	const size_t end = (size_t)env->while_string[oldernextp + 2];
 	int error = 0;
 

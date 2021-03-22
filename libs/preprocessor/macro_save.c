@@ -55,7 +55,7 @@ int func_check_macro(environment *const env, int flag_macro_directive)
 	env->msp = 0;
 	const int macro_ptr = collect_mident(env);
 
-	const int num = m_equal(env);
+	const int num = (int)m_equal(env);
 	if (num != 0)
 	{
 		env->macro_tab[env->macro_tab_size++] = MACROCANGE;
@@ -256,14 +256,14 @@ int define_add_to_reprtab(environment *const env)
 	}
 
 	env->reprtab[oldrepr] = env->hashtab[hash];
-	env->reprtab[oldrepr + 1] = env->macro_tab_size;
+	env->reprtab[oldrepr + 1] = (int)env->macro_tab_size;
 	env->hashtab[hash] = oldrepr;
 	return 0;
 }
 
 int macro_tab_add_define(environment *const env, const int rep_ptr)
 {
-	int old_macro_tab_size = env->macro_tab_size;
+	int old_macro_tab_size = (int)env->macro_tab_size;
 
 	env->macro_tab[env->macro_tab_size++] = MACRODEF;
 	if (env->curchar != '\n')

@@ -132,7 +132,7 @@ int get_next_char(environment *const env)
 
 int get_depth(environment *const env)
 {
-	return env->depth;
+	return (int)env->depth;
 }
 
 void m_change_nextch_type(environment *const env, int type, int p)
@@ -140,7 +140,7 @@ void m_change_nextch_type(environment *const env, int type, int p)
 	env->oldcurchar[env->depth] = env->curchar;
 	env->oldnextchar[env->depth] = env->nextchar;
 	env->oldnextch_type[env->depth] = env->nextch_type;
-	env->oldnextp[env->depth] = env->nextp;
+	env->oldnextp[env->depth] = (int)env->nextp;
 	env->nextp = p;
 	env->depth++;
 	env->nextch_type = type;

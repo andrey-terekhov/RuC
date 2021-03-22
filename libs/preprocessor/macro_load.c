@@ -132,7 +132,7 @@ int function_stack_create(environment *const env, const size_t parameters)
 	}
 
 	size_t num = 0;
-	env->localstack[num + env->local_stack_size] = env->change_size;
+	env->localstack[num + env->local_stack_size] = (int)env->change_size;
 
 	while (env->curchar != ')')
 	{
@@ -145,7 +145,7 @@ int function_stack_create(environment *const env, const size_t parameters)
 		if (env->curchar == ',')
 		{
 			num++;
-			env->localstack[num + env->local_stack_size] = env->change_size;
+			env->localstack[num + env->local_stack_size] = (int)env->change_size;
 
 			if (num > parameters)
 			{
