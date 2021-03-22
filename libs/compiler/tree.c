@@ -606,7 +606,7 @@ node node_get_root(vector *const tree)
 
 node node_get_child(node *const nd, const size_t index)
 {
-	if (!node_is_correct(nd) || index > nd->amount)
+	if (!node_is_correct(nd) || index >= nd->amount)
 	{
 		return node_broken();
 	}
@@ -848,7 +848,7 @@ int node_swap(node *const fst, const size_t fst_index, node *const snd, const si
 
 int node_remove(node *const nd, const size_t index)
 {
-	if (!node_is_correct(nd) || index > nd->amount)
+	if (!node_is_correct(nd) || index >= nd->amount)
 	{
 		return -1;
 	}
