@@ -174,7 +174,7 @@ void binop(parser *const prs, int sp)
 void toval(parser *const prs)
 {
 	// надо значение положить на стек, например, чтобы передать параметром
-	if (prs->anst == VAL || prs->anst == NUMBER)
+	if (anst_peek(prs) == value || anst_peek(prs) == number)
 	{
 		return;
 	}
@@ -1191,7 +1191,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 			}
 			else if (mode_is_array(prs->sx, expected_arg_mode) && prs->token == l_brace)
 			{
-				parse_braced_init_list(prs, (int)mode_get(prs->sx, (size_t)expected_arg_mode + 1));
+				parse_braced_init_list(prs, mode_get(prs->sx, (size_t)expected_arg_mode + 1));
 				totree(prs, TExprend);
 			}
 			else
@@ -1251,7 +1251,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 void parse_postfix_expression(parser *const prs)
 {
 	int was_func = 0;
-	int lid = prs->lastid;
+	const size_t lid = prs->lastid;
 
 	if (token_try_consume(prs, l_paren))
 	{
@@ -1294,6 +1294,7 @@ void parse_postfix_expression(parser *const prs)
 			totree(prs, elem_type);
 			expr(prs);
 			toval(prs);
+			totree(prs, TExprend);
 			if (prs->was_error == 4)
 			{
 				return; // 1
@@ -1425,9 +1426,9 @@ void parse_postfix_expression(parser *const prs)
 
 		totree_float_operation(prs, operator);
 
-		if (prs->anst == variable)
+		if (anst_peek(prs) == variable)
 		{
-			totree(prs, ident_get_displ(prs->sx, lid));
+			node_add_arg(&prs->nd, ident_get_displ(prs->sx, lid));
 		}
 
 		prs->anst = value;
@@ -1520,7 +1521,9 @@ void parse_unary_expression(parser *const prs)
 						}
 						else if (node_get_type(&prs->nd) == TConstd)
 						{
-							const int64_t constant = -double_from_tree(&prs->nd);
+							const double value = -double_from_tree(&prs->nd);
+							int64_t constant;
+							memcpy(&constant, &value, sizeof(int64_t));
 
 							const int64_t fst = constant & 0x00000000ffffffff;
 							const int64_t snd = (constant & 0xffffffff00000000) >> 32;
@@ -1699,6 +1702,7 @@ void condexpr(parser *const prs)
 			scanner(prs);
 			expr(prs); // then
 			toval(prs);
+			totree(prs, TExprend);
 			if (prs->was_error == 4)
 			{
 				return; // 1

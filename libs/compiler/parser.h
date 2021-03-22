@@ -60,8 +60,8 @@ typedef struct parser
 	int anstdispl;
 	int leftansttype;
 
-	size_t lastid;	// useless
-	int op;			// useless
+	size_t lastid;
+	int op;
 
 	int func_def;				/**< @c 0 for function without arguments,
 								 @c 1 for function definition,
