@@ -846,6 +846,35 @@ int node_swap(node *const fst, const size_t fst_index, node *const snd, const si
 	return vector_swap(tree, fst_child_index, fst_size, snd_child_index, snd_size);
 }
 
+int node_remove(node *const nd, const size_t index)
+{
+	if (!node_is_correct(nd) || index > nd->amount)
+	{
+		return -1;
+	}
+
+	node child = node_get_child(nd, index);
+	const size_t from = child.type;
+
+	while (child.amount != 0)
+	{
+		child = node_get_child(&child, child.amount - 1);
+	}
+	const size_t to = child.type + child.argc + 1;
+
+	if (to == vector_size(nd->tree))
+	{
+		return vector_resize(nd->tree, from);
+	}
+
+	for (size_t i = 0; i < vector_size(nd->tree) - to; i++)
+	{
+		vector_set(nd->tree, from + i, vector_get(nd->tree, to + i));
+	}
+
+	return vector_resize(nd->tree, vector_size(nd->tree) - to + from);
+}
+
 int node_is_correct(const node *const nd)
 {
 	return nd != NULL && vector_is_correct(nd->tree);
