@@ -30,7 +30,7 @@ typedef struct linker
 {
 	workspace *ws;				/**< Initial arguments */
 
-	int included[MAX_PATHS];	/**< List of already added files */	
+	int included[MAX_PATHS];	/**< List of already added files */
 	size_t count; 				/**< Number of added files */
 
 	size_t current; 			/**< Index of the current file */
@@ -39,6 +39,8 @@ typedef struct linker
 
 /**
  *	Create linker structure
+ *
+ *	@param	ws		Workspace structure	 
  *
  *	@return	Linker structure
  */
@@ -58,18 +60,9 @@ int lk_preprocess_all(environment *const env);
  *
  *	@param	env		Preprocessor environment
  *
- *	@return	@c  0 on success,
- *			@c -1 on file couldn't be opened, 
- *			@c -2 on error inside the file
+ *	@return	@c 0 on success, @c -1 on failure
  */
 int lk_include(environment *const env);
-
-/**
- *	Add a comment to indicate line changes in the output
- *
- *	@param	env	Preprocessor environment
- */
-void lk_add_comment(environment *const env);
 
 /**
  *	 Get current file name from linker
