@@ -26,12 +26,15 @@
 #include "utils.h"
 
 
-#define STK_SIZE 32
-#define OPN_SIZE STK_SIZE
-#define DOUBLE	0
-#define INT		1
-#define WARNING	-2
-#define ERROR	-1
+#define STK_SIZE 	32
+#define OPN_SIZE 	STK_SIZE
+#define DOUBLE		0
+#define INT			1
+#define WARNING		-2
+#define ERROR		-1
+#define LOGIC 		0
+#define ARITHMETIC	1
+
 
 int get_digit(universal_io *in, double *rez, char32_t cur, char32_t next, char32_t *last)
 {
@@ -260,12 +263,12 @@ double calc_count(const double x, const double y, const char operation, const in
 	}
 }
 
-void double_to_string(environment *const env, const double x, const int is_int)
+void double_to_string(const double x, const int is_int, char *const arithmetic_rez)
 {
 	if (is_int)
 	{
-		sprintf(env->calc_string, "%f", x);
-		char *dot = strchr(env->calc_string, '.');
+		sprintf(arithmetic_rez, "%f", x);
+		char *dot = strchr(arithmetic_rez, '.');
 		if (dot != 0)
 		{
 			dot[0] = '\0';
@@ -273,16 +276,14 @@ void double_to_string(environment *const env, const double x, const int is_int)
 	}
 	else
 	{	
-		sprintf(env->calc_string, "%.14lf", x);
-		size_t lenght = strlen(env->calc_string) - 1;
-		while (env->calc_string[lenght] == '0' || !utf8_is_digit(env->calc_string[lenght]))
+		sprintf(arithmetic_rez, "%.14lf", x);
+		size_t lenght = strlen(arithmetic_rez) - 1;
+		while (arithmetic_rez[lenght] == '0' || !utf8_is_digit(arithmetic_rez[lenght]))
 		{
 			lenght--;
 		}
-		env->calc_string[lenght + 1] = '\0';
+		arithmetic_rez[lenght + 1] = '\0';
 	}
-
-	env->calc_string_size = strlen(env->calc_string);
 }
 
 int calc_macro(environment *const env)
@@ -482,7 +483,6 @@ int additional_elements(environment *const env, double *const stack, int *const 
 		}
 		if (*op_size == 0 && *type == ARITHMETIC)
 		{
-			double_to_string(env, stack[0], is_int[0]);
 			return 0;
 		}
 		return 1;
@@ -491,13 +491,15 @@ int additional_elements(environment *const env, double *const stack, int *const 
 	return 2;
 }
 
-int calculate(environment *const env, const int type)
+int calculate(environment *const env, char *const arithmetic_rez)
 {
 	int op_size = 0;
 	char operation[OPN_SIZE];
 
-	if (type == ARITHMETIC)
+	int local_type = LOGIC;
+	if (arithmetic_rez != NULL)
 	{
+		local_type = ARITHMETIC;
 		operation[op_size++] = '(';
 		m_nextch(env);
 	}
@@ -506,15 +508,20 @@ int calculate(environment *const env, const int type)
 	double stack[STK_SIZE];
 	int is_int[STK_SIZE];
 	int operation_flag = 0;
-	int local_type = type;
+	
 	while (env->curchar != '\n')
 	{
 		skip_separators(env);
 		const int rez = additional_elements(env, stack, is_int, operation, &op_size, &stk_size, &local_type, operation_flag);
-		if (rez == -1 || rez == 0)
+		if (rez == -1)
 		{
-			return rez;
+			return -1;
 		} 
+		else if(rez == 0)
+		{
+			double_to_string(stack[0], is_int[0], arithmetic_rez);
+			return 0;
+		}
 		else if (rez == 1)
 		{
 			continue;
@@ -551,20 +558,11 @@ int calculate(environment *const env, const int type)
 			return -1;
 		}
 
-		if (stack[0] == 0)
-		{
-			env->calc_string[0] = '0';
-		}
-		else
-		{
-			env->calc_string[0] = '1';
-		}
+		return stack[0] == 0 ? 0 : 1;
 	}
 	else
 	{
 		env_error(env, in_eval_must_end_parenthesis);
 		return -1;
 	}
-
-	return 0;
 }

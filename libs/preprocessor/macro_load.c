@@ -15,6 +15,7 @@
  */
 
 #include "macro_load.h"
+#include <string.h>
 #include "calculator.h"
 #include "constants.h"
 #include "environment.h"
@@ -93,13 +94,16 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 		{
 			if (macro_keywords(env) == SH_EVAL && env->curchar == '(')
 			{
-				if (calculate(env, ARITHMETIC))
+				char buffer[STRING_SIZE];
+				if (calculate(env, buffer))
 				{
 					return -1;
 				}
-				for (size_t i = 0; i < env->calc_string_size; i++)
+
+				size_t lenght = strlen(buffer);
+				for (size_t i = 0; i < lenght; i++)
 				{
-					env->param[env->param_size++] = env->calc_string[i];
+					env->param[env->param_size++] = buffer[i];
 				}
 			}
 			else

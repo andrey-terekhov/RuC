@@ -36,7 +36,6 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->macro_tab_size = 1;
 	env->param_size = 0;
 	env->local_stack_size = 0;
-	env->calc_string_size = 0;
 	env->if_string_size = 0;
 	env->while_string_size = 0;
 	env->mfirstrp = -1;
@@ -52,7 +51,6 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->nested_if = 0;
 	env->flagint = 1;
 	env->error_string[0] = '\0';
-	env->calc_string[0] = '\0';
 
 	for (size_t i = 0; i < HASH; i++)
 	{
@@ -235,12 +233,7 @@ void m_nextch(environment *const env)
 {
 	if (env->nextch_type != FILE_TYPE && env->nextch_type <= MACRO_TEXT_TYPE)
 	{
-		if (env->nextch_type == CALC_TYPE && env->nextp < env->calc_string_size)
-		{
-			env->curchar = env->calc_string[env->nextp++];
-			env->nextchar = env->calc_string[env->nextp];
-		}
-		else if (env->nextch_type == IF_TYPE && env->nextp < env->if_string_size)
+		if (env->nextch_type == IF_TYPE && env->nextp < env->if_string_size)
 		{
 			env->curchar = env->if_string[env->nextp++];
 			env->nextchar = env->if_string[env->nextp];

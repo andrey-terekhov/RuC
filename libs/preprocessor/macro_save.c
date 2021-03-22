@@ -15,12 +15,13 @@
  */
 
 #include "macro_save.h"
+#include <string.h>
 #include "calculator.h"
 #include "constants.h"
 #include "environment.h"
 #include "error.h"
-#include "macro_load.h"
 #include "linker.h"
+#include "macro_load.h"
 #include "utils.h"
 
 
@@ -162,13 +163,16 @@ int macro_tab_add_func(environment *const env)
 
 			if (!flag_macro_directive && env->cur == SH_EVAL && env->curchar == '(')
 			{
-				if (calculate(env, ARITHMETIC))
+				char buffer[STRING_SIZE];
+				if (calculate(env, buffer))
 				{
 					return -1;
 				}
-				for (size_t i = 0; i < env->calc_string_size; i++)
+
+				size_t lenght = strlen(buffer);
+				for (size_t i = 0; i < lenght; i++)
 				{
-					env->macro_tab[env->macro_tab_size++] = env->calc_string[i];
+					env->macro_tab[env->macro_tab_size++] = buffer[i];
 				}
 			}
 			else if (flag_macro_directive && env->cur == SH_ENDM)
@@ -288,14 +292,16 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 						return -1;
 					}
 
-					if (calculate(env, ARITHMETIC))
+					char buffer[STRING_SIZE];
+					if (calculate(env, buffer))
 					{
 						return -1;
 					}
 
-					for (size_t i = 0; i < env->calc_string_size; i++)
+					size_t lenght = strlen(buffer);
+					for (size_t i = 0; i < lenght; i++)
 					{
-						env->macro_tab[env->macro_tab_size++] = env->calc_string[i];
+						env->macro_tab[env->macro_tab_size++] = buffer[i];
 					}
 				}
 				else

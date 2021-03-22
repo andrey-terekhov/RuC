@@ -30,7 +30,6 @@
 #define MACRO_FUNCTION	0
 #define MACRO_DEF		1
 
-#define CALC_TYPE			3
 #define IF_TYPE				4
 #define WHILE_TYPE			5
 #define PARAM_TYPE			6
