@@ -15,26 +15,25 @@
  */
 
 #include "calculator.h"
+#include <math.h>
+#include <string.h>
 #include "environment.h"
 #include "error.h"
-#include "macro_load.h"
 #include "linker.h"
-#include "utils.h"
+#include "macro_load.h"
 #include "uniio.h"
 #include "uniscanner.h"
-#include "string.h"
-#include <math.h>
+#include "utils.h"
 
 
 #define STK_SIZE 32
 #define OPN_SIZE STK_SIZE
-
 #define DOUBLE	0
 #define INT		1
 #define WARNING	-2
 #define ERROR	-1
 
-int get_digit(universal_io *in, double *rez, int cur, int next, int *last)
+int get_digit(universal_io *in, double *rez, char32_t cur, char32_t next, char32_t *last)
 {
 	if (in == NULL || rez == NULL || (cur != '-'  && !utf8_is_digit(cur)))
 	{
@@ -267,7 +266,7 @@ void double_to_string(environment *const env, const double x, const int is_int)
 	{
 		sprintf(env->calc_string, "%f", x);
 		char *dot = strchr(env->calc_string, '.');
-		if(dot != 0)
+		if (dot != 0)
 		{
 			dot[0] = '\0';
 		}
@@ -321,7 +320,7 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 			m_nextch(env);
 			while (utf8_is_digit(env->curchar) || utf8_is_power(env->curchar))
 			{
-				if(utf8_is_power(env->curchar) &&  (env->nextchar == '+' || env->curchar == '-'))
+				if (utf8_is_power(env->curchar) &&  (env->nextchar == '+' || env->curchar == '-'))
 				{
 					buffer_size += utf8_to_string(&buffer[buffer_size], env->curchar);
 					m_nextch(env);
