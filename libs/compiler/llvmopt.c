@@ -229,9 +229,10 @@ static expression_t expression_type(node *const nd)
 		case LMULTR:
 		case LDIVR:
 			return BINARY_OPERATION;
+			
+		default:
+			return NOT_EXPRESSION;
 	}
-
-	return NOT_EXPRESSION;
 }
 
 static void node_recursive(information *const info, node *const nd)
