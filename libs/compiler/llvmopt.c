@@ -247,10 +247,10 @@ static void node_recursive(information *const info, node *const nd)
 		{
 			case OPERAND:
 			{
-				node_info node_info;
-				node_info.parent = nd;
-				node_info.child = i;
-				node_info.depth = 1;
+				node_info node_info = { nd, i, 1 };
+				// node_info.parent = nd;
+				// node_info.child = i;
+				// node_info.depth = 1;
 				stack_push(info, node_info);
 			}
 			break;
