@@ -86,16 +86,11 @@ int double_to_tree(vector *const tree, const double num)
 	return ret == SIZE_MAX;
 }
 
-double double_from_tree(vector *const tree)
+double double_from_tree(node *const nd)
 {
-	const size_t index = vector_size(tree) - 2;
-
-	const int64_t fst = (int64_t)vector_get(tree, index) & 0x00000000ffffffff;
-	const int64_t snd = (int64_t)vector_get(tree, index + 1) & 0x00000000ffffffff;
+	int64_t fst = (int64_t)node_get_arg(nd, 0) & 0x00000000ffffffff;
+	int64_t snd = (int64_t)node_get_arg(nd, 1) & 0x00000000ffffffff;
 	int64_t num64 = (snd << 32) | fst;
-
-	vector_remove(tree);
-	vector_remove(tree);
 
 	double num;
 	memcpy(&num, &num64, sizeof(double));
@@ -1517,7 +1512,7 @@ void parse_unary_expression(parser *const prs)
 
 					if (anst_peek(prs) == variable)
 					{
-						vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoaddr); // &a
+						node_set_type(&prs->nd, TIdenttoaddr);
 					}
 
 					anst_push(prs, value, to_modetab(prs, mode_pointer, anst_pop(prs)));
@@ -1533,7 +1528,7 @@ void parse_unary_expression(parser *const prs)
 
 					if (prs->anst == IDENT)
 					{
-						vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval); // *p
+						node_set_type(&prs->nd, TIdenttoval);
 					}
 
 					anst_push(prs, address, mode_get(prs->sx, (size_t)anst_pop(prs) + 1));
@@ -1545,14 +1540,18 @@ void parse_unary_expression(parser *const prs)
 					toval(prs);
 					if (operator == minus)
 					{
-						const size_t size = vector_size(&TREE);
-						if (vector_get(&TREE, size - 2) == TConst)
+						if (node_get_type(&prs->nd) == TConst)
 						{
-							vector_set(&TREE, vector_size(&TREE) - 1, -vector_get(&TREE, vector_size(&TREE) - 1));
+							node_set_arg(&prs->nd, 0, -node_get_arg(&prs->nd, 0));
 						}
-						else if (vector_get(&TREE, size - 3) == TConstd)
+						else if (node_get_type(&prs->nd) == TConstd)
 						{
-							double_to_tree(&TREE, -double_from_tree(&TREE));
+							const int64_t constant = -double_from_tree(&prs->nd);
+
+							const int64_t fst = constant & 0x00000000ffffffff;
+							const int64_t snd = (constant & 0xffffffff00000000) >> 32;
+							node_set_arg(&prs->nd, 0, fst);
+							node_set_arg(&prs->nd, 1, snd);
 						}
 						else
 						{
