@@ -73,6 +73,7 @@ static expression_t expression_type(node *const nd)
 		case TIdent:
 		case TIdenttoval:
 		case TConst:
+		case TIdenttoaddr:
 		case TConstd:
 		case TIdenttovald:
 			return OPERAND;
