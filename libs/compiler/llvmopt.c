@@ -50,14 +50,14 @@ typedef struct information
 } information;
 
 
-static inline void stack_push(information *const info, node_info nd)
+static inline void stack_push(information *const info, node_info *const nd)
 {
-	info->stack[info->stack_size++] = nd;
+	info->stack[info->stack_size++] = *nd;
 }
 
-static inline node_info stack_pop(information *const info)
+static inline node_info *stack_pop(information *const info)
 {
-	return info->stack[--info->stack_size];
+	return &(info->stack[--info->stack_size]);
 }
 
 static inline void stack_clear(information *const info)
@@ -65,13 +65,13 @@ static inline void stack_clear(information *const info)
 	info->stack_size = 0;
 }
 
-static void transposition(node_info expr, node_info cur)
+static void transposition(node_info *const expr, node_info *const cur)
 {
-	node_order(expr.parent, expr.child, cur.parent, cur.child);
-	node temp = node_get_child(expr.parent, expr.child);
-	for (size_t i = 1; i < expr.depth; i++)
+	node_order(expr->parent, expr->child, cur->parent, cur->child);
+	node temp = node_get_child(expr->parent, expr->child);
+	for (size_t i = 1; i < expr->depth; i++)
 	{
-		node_order(cur.parent, cur.child, &temp, 0);
+		node_order(cur->parent, cur->child, &temp, 0);
 		temp = node_get_child(&temp, 0);
 	}
 }
@@ -302,45 +302,42 @@ static void node_recursive(information *const info, node *const nd)
 			break;
 			default:
 			{
-				node_info nd_info = { nd, i, 1 };
+				node_info nd_info;
+				nd_info.parent = nd;
+				nd_info.child = i;
+				nd_info.depth = 1;
 
 				// перестановка узлов выражений
 				switch (expression_type(&child))
 				{
 					case OPERAND:
-					{
-						node_info node_info;
-						node_info.parent = nd;
-						node_info.child = i;
-						node_info.depth = 1;
-						stack_push(info, node_info);
-					}
+						stack_push(info, &nd_info);
 					break;
 					case UNARY_OPERATION:
 					{
-						node_info operand = stack_pop(info);
+						node_info* operand = stack_pop(info);
 
 						// перестановка с операндом
-						transposition(operand, nd_info);
+						transposition(operand, &nd_info);
 
 						// добавляем в стек переставленное выражение
-						operand.depth++;
+						operand->depth++;
 						stack_push(info, operand);
 					}
 					break;
 					case BINARY_OPERATION:
 					{
-						node_info snd_operand = stack_pop(info);
-						node_info fst_operand = stack_pop(info);
+						node_info* snd_operand = stack_pop(info);
+						node_info* fst_operand = stack_pop(info);
 
 						// перестановка со вторым операндом
-						transposition(snd_operand, nd_info);
+						transposition(snd_operand, &nd_info);
 
 						// перестановка с первым операндом
 						transposition(fst_operand, snd_operand);
 
 						// добавляем в стек переставленное выражение
-						fst_operand.depth += snd_operand.depth + 1;
+						fst_operand->depth += snd_operand->depth + 1;
 						stack_push(info, fst_operand);
 					}
 					break;
