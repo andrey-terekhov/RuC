@@ -306,10 +306,7 @@ static void node_recursive(information *const info, node *const nd)
 
 			default:
 			{
-				node_info nd_info;
-				nd_info.parent = nd;
-				nd_info.child = i;
-				nd_info.depth = 1;
+				node_info nd_info = { nd, i, 1 };
 
 				// перестановка узлов выражений
 				switch (expression_type(&child))
@@ -330,17 +327,17 @@ static void node_recursive(information *const info, node *const nd)
 					break;
 					case BINARY_OPERATION:
 					{
-						node_info* snd_operand = stack_pop(info);
-						node_info* fst_operand = stack_pop(info);
+						node_info *second = stack_pop(info);
+						node_info *first = stack_pop(info);
 
 						// перестановка со вторым операндом
-						transposition(snd_operand, &nd_info);
+						transposition(second, &nd_info);
 
 						// перестановка с первым операндом
-						transposition(fst_operand, snd_operand);
+						transposition(first, second);
 
 						// добавляем в стек переставленное выражение
-						stack_push(info, fst_operand);
+						stack_push(info, first);
 					}
 					break;
 					case NOT_EXPRESSION:
