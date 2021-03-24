@@ -34,32 +34,32 @@ void get_message_error(const int num, char *const msg)
 		case after_preproces_words_must_be_space:
 			sprintf(msg, "после команды препроцессора должен идти перенос строки");
 			break;
-		case after_ident_must_be_space:
-			sprintf(msg, "после идентификатора должен идти ' ' ");
+		case after_ident_must_be_space: // test_exist
+			sprintf(msg, "после идентификатора должен идти ' '");
 			break;
-		case ident_begins_with_letters:
+		case ident_begins_with_letters: // test_exist
 			sprintf(msg, "идентификатор должен начинаться с буквы ");
 			break;
-		case must_be_endif:
-			sprintf(msg, "условный оператор препроцессора должен заканчиваться '#ENDIF' ");
+		case must_be_endif: // test_exist
+			sprintf(msg, "условный оператор препроцессора должен заканчиваться '#ENDIF'");
 			break;
-		case dont_elif:
-			sprintf(msg, "в этом типе условного оператора не может использоваться '#ELIF' ");
+		case dont_elif: // test_exist
+			sprintf(msg, "в этом типе условного оператора не может использоваться '#ELIF'");
 			break;
-		case preproces_words_not_exist:
+		case preproces_words_not_exist: // test_exist
 			sprintf(msg, "в препроцессоре не существует такой команды");
 			break;
-		case not_enough_param:
+		case not_enough_param: // test_exist
 			sprintf(msg, "у этого идентификатора меньше параметров");
 			break;
-		case functionid_begins_with_letters:
+		case functionid_begins_with_letters: // test_exist
 			sprintf(msg, "идентификатор с параметрами должен начинаться с буквы");
 			break;
 		case functions_cannot_be_changed:
 			sprintf(msg, "идентификатор с параметрами нельзя переопределять");
 			break;
-		case after_functionid_must_be_comma:
-			sprintf(msg, "после идентификатора в функции должны быть ')' или ',' потом ' ' ");
+		case after_functionid_must_be_comma: // test_exist
+			sprintf(msg, "после идентификатора в функции должны быть ')' или ',' потом ' '");
 			break;
 		case stalpe:
 			sprintf(msg, "в функции аргументы должны быть описаны через запятую, в скобках");
@@ -67,7 +67,7 @@ void get_message_error(const int num, char *const msg)
 		case before_endif:
 			sprintf(msg, "перед '#ENDIF' должен стоять условный оператор препроцессора");
 			break;
-		case repeat_ident:
+		case repeat_ident: // test_exist
 			sprintf(msg, "этот идентификатор препроцессора уже используется");
 			break;
 		case ident_not_exist:
@@ -85,7 +85,7 @@ void get_message_error(const int num, char *const msg)
 		case scope_not_close:
 			sprintf(msg, "количество открывающих скобок не соответствует числу закрывающих");
 			break;
-		case after_eval_must_be_ckob:
+		case after_eval_must_be_ckob: // test_exist
 			sprintf(msg, "сразу после команды '#EVAL' должен быть символ '('");
 			break;
 		case too_many_nuber:
@@ -109,13 +109,13 @@ void get_message_error(const int num, char *const msg)
 		case third_party_symbol:
 			sprintf(msg, "в строке с вычислениями не должно быть посторонних символов");
 			break;
-		case in_eval_must_end_parenthesis:
+		case in_eval_must_end_parenthesis: // test_exist
 			sprintf(msg, "вычисления внутри директивы #eval должны заканчиваться символом )");
 			break;
 		case must_end_quote:
 			sprintf(msg, "указание имени include файла должно заканчиваться символом \"");
 			break;
-		case must_start_quote:
+		case must_start_quote: // test_exist
 			sprintf(msg, "указание имени include файла должно начинаться символа \"");
 			break;
 		case macro_does_not_exist:
