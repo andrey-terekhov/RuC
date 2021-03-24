@@ -156,7 +156,7 @@ char get_operation(const char32_t cur, const char32_t next)
 	case '!':
 		if ((next == cur && cur != '!') || (cur == '!' && next == '='))
 		{
-			return cur;
+			return (char)cur;
 		}
 		else
 		{
@@ -178,7 +178,7 @@ char get_operation(const char32_t cur, const char32_t next)
 	case '/':
 	case '%':
 	case '(':
-		return cur;
+		return (char)cur;
 	default:
 		return '\0';
 	}
