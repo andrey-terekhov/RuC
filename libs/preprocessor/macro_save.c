@@ -164,7 +164,7 @@ int macro_tab_add_func(environment *const env)
 			if (!flag_macro_directive && env->cur == SH_EVAL && env->curchar == '(')
 			{
 				char buffer[STRING_SIZE];
-				if (calculate(env, buffer))
+				if (calculate_arithmetic(env, buffer))
 				{
 					return -1;
 				}
@@ -293,7 +293,7 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 					}
 
 					char buffer[STRING_SIZE];
-					if (calculate(env, buffer))
+					if (calculate_arithmetic(env, buffer))
 					{
 						return -1;
 					}

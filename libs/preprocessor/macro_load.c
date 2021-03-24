@@ -95,7 +95,7 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 			if (macro_keywords(env) == SH_EVAL && env->curchar == '(')
 			{
 				char buffer[STRING_SIZE];
-				if (calculate(env, buffer))
+				if (calculate_arithmetic(env, buffer))
 				{
 					return -1;
 				}

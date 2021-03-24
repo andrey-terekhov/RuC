@@ -33,7 +33,7 @@ int if_check(environment *const env, int type_if)
 
 	if (type_if == SH_IF)
 	{
-		return calculate(env, NULL);
+		return calculate_logic(env);
 	}
 	else
 	{
@@ -302,15 +302,15 @@ int while_implementation(environment *const env)
 		m_nextch(env);
 		m_change_nextch_type(env, IF_TYPE, env->while_string[env->nextp]);
 		m_nextch(env);
-		int rez = calculate(env, NULL);
-		if (rez == -1)
+		int res = calculate_logic(env);
+		if (res == -1)
 		{
 			return -1;
 		}
 		m_old_nextch_type(env);
 
 
-		if (rez == 0)
+		if (res == 0)
 		{
 			env->nextp = end;
 			m_nextch(env);
@@ -403,7 +403,7 @@ int preprocess_words(environment *const env)
 				return -1;
 			}
 			char buffer[STRING_SIZE];
-			if (calculate(env, buffer))
+			if (calculate_arithmetic(env, buffer))
 			{
 				return -1;
 			}
