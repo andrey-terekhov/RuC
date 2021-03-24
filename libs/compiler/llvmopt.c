@@ -65,6 +65,7 @@ static inline void stack_clear(information *const info)
 	info->stack_size = 0;
 }
 
+
 static void transposition(node_info *const expr, node_info *const cur)
 {
 	node_order(expr->parent, expr->child, cur->parent, cur->child);
@@ -74,6 +75,7 @@ static void transposition(node_info *const expr, node_info *const cur)
 		node_order(cur->parent, cur->child, &temp, 0);
 		temp = node_get_child(&temp, 0);
 	}
+	expr->depth += cur->depth;
 }
 
 
@@ -260,7 +262,7 @@ static void node_recursive(information *const info, node *const nd)
 				const size_t N = (size_t)node_get_arg(&child, 0);
 				uni_printf(info->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
 					, info->string_num++, N + 1);
-						
+
 				for (size_t j = 0; j < N; j++) 
 				{
 					const char ch = (char)node_get_arg(&child, j + 1);
@@ -296,10 +298,12 @@ static void node_recursive(information *const info, node *const nd)
 				info->was_printf = 1;
 			}
 			break;
-			// если конец выражения, то очищаем стек
+
 			case TExprend:
+				// если конец выражения, то очищаем стек
 				stack_clear(info);
-			break;
+				break;
+
 			default:
 			{
 				node_info nd_info;
@@ -312,16 +316,15 @@ static void node_recursive(information *const info, node *const nd)
 				{
 					case OPERAND:
 						stack_push(info, &nd_info);
-					break;
+						break;
 					case UNARY_OPERATION:
 					{
-						node_info* operand = stack_pop(info);
+						node_info *operand = stack_pop(info);
 
 						// перестановка с операндом
 						transposition(operand, &nd_info);
 
 						// добавляем в стек переставленное выражение
-						operand->depth++;
 						stack_push(info, operand);
 					}
 					break;
@@ -337,12 +340,11 @@ static void node_recursive(information *const info, node *const nd)
 						transposition(fst_operand, snd_operand);
 
 						// добавляем в стек переставленное выражение
-						fst_operand->depth += snd_operand->depth + 1;
 						stack_push(info, fst_operand);
 					}
 					break;
 					case NOT_EXPRESSION:
-					break;
+						break;
 				}
 			}
 			break;
