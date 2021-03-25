@@ -1516,7 +1516,7 @@ void parse_unary_expression(parser *const prs)
 						parser_error(prs, aster_not_for_pointer);
 					}
 
-					if (prs->anst == IDENT)
+					if (anst_peek(prs) == variable)
 					{
 						node_set_type(&prs->nd, TIdenttoval);
 					}
@@ -1786,13 +1786,7 @@ void assignment_to_void(parser *const prs)
 
 void parse_assignment_expression_internal(parser *const prs)
 {
-	int leftanst;
-	int leftanstdispl;
-	int ltype;
-	int rtype;
-	int lnext;
-
-	if (prs->token == BEGIN)
+	if (prs->token == l_brace)
 	{
 		const int type = prs->leftansttype;
 		if (mode_is_struct(prs->sx, type) || mode_is_array(prs->sx, type))
@@ -1803,60 +1797,47 @@ void parse_assignment_expression_internal(parser *const prs)
 		else
 		{
 			parser_error(prs, init_not_struct);
-			prs->was_error = 6;
-			return; // 1
 		}
-		prs->stackoperands[++prs->sopnd] = prs->ansttype = type;
-		prs->anst = VAL;
+
+		anst_push(prs, value, type);
 	}
 	else
 	{
 		parse_unary_expression(prs);
 	}
-	if (prs->was_error == 7)
-	{
-		prs->was_error = 6;
-		return; // 1
-	}
 
-	leftanst = prs->anst;
-	leftanstdispl = prs->anstdispl;
+	anst_val leftanst = anst_peek(prs);
+	item_t leftanstdispl = prs->anstdispl;
 	prs->leftansttype = prs->ansttype;
+
 	if (opassn(prs))
 	{
 		int opp = prs->op;
-		lnext = prs->token;
+		int lnext = prs->token;
 		prs->flag_in_assignment = 1;
-		scanner(prs);
+		token_consume(prs);
 		parse_assignment_expression_internal(prs);
-		if (prs->was_error == 6)
-		{
-			return; // 1
-		}
 		prs->flag_in_assignment = 0;
 
-		if (leftanst == VAL)
+		if (leftanst == value)
 		{
 			parser_error(prs, unassignable);
-			prs->was_error = 6;
-			return; // 1
+			return;
 		}
-		rtype = prs->stackoperands[prs->sopnd--]; // снимаем типы
-														  // операндов со стека
-		ltype = prs->stackoperands[prs->sopnd];
+		// Снимаем типы операндов со стека
+		int rtype = prs->stackoperands[prs->sopnd--];
+		int ltype = prs->stackoperands[prs->sopnd];
 
 		if (intopassn(lnext) && (mode_is_float(ltype) || mode_is_float(rtype)))
 		{
 			parser_error(prs, int_op_for_float);
-			prs->was_error = 6;
-			return; // 1
+			return;
 		}
 
 		if (mode_is_array(prs->sx, ltype)) // присваивать массив в массив в си нельзя
 		{
 			parser_error(prs, array_assigment);
-			prs->was_error = 6;
-			return; // 1
+			return;
 		}
 
 		if (mode_is_struct(prs->sx, ltype)) // присваивание в структуру
@@ -1864,8 +1845,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			if (ltype != rtype) // типы должны быть равны
 			{
 				parser_error(prs, type_missmatch);
-				prs->was_error = 6;
-				return; // 1
+				return;
 			}
 			if (opp != ASS) // в структуру можно присваивать только с помощью =
 			{
@@ -1943,14 +1923,9 @@ void parse_assignment_expression_internal(parser *const prs)
 	}
 	else
 	{
-		condexpr(prs); // condexpr учитывает тот факт, что начало выражения
-		if (prs->was_error == 4)
-		{
-			prs->was_error = 6;
-			return; // 1
-		}
+		// condexpr учитывает тот факт, что начало выражения в виде unarexpr уже выкушано
+		condexpr(prs);
 	}
-	// в виде unarexpr уже выкушано
 }
 
 void parse_expression_internal(parser *const prs)
