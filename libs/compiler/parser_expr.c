@@ -112,28 +112,27 @@ anst_val anst_peek(parser *const prs)
 }
 
 
-void binary_operation(parser *const prs, size_t sp)
+void binop(parser *const prs, size_t sp)
 {
-	const int operator = prs->stackop[sp];
-	const item_t right = anst_pop(prs);
-	const item_t left = anst_pop(prs);
-	item_t result_type = mode_undefined;
+	int op = prs->stackop[sp];
+	int right = prs->stackoperands[prs->sopnd--];
+	int left = prs->stackoperands[prs->sopnd];
 
 	if (mode_is_pointer(prs->sx, left) || mode_is_pointer(prs->sx, right))
 	{
 		parser_error(prs, operand_is_pointer);
+		prs->was_error = 5;
+		return; // 1
 	}
-	else if (mode_is_void(left) || mode_is_void(right))
+
+	if (mode_is_float(left) || mode_is_float(right))
 	{
-		parser_error(prs, operand_is_void);
-	}
-	else if (mode_is_float(left) || mode_is_float(right))
-	{
-		result_type = mode_float;
-		if (operator == LOGOR || operator == LOGAND || operator == LOR || operator == LEXOR || operator == LAND
-			|| operator == LSHR || operator == LSHL || operator == LREM)
+		if (op == LOGOR || op == LOGAND || op == LOR || op == LEXOR || op == LAND
+			|| op == LSHR || op == LSHL || op == LREM)
 		{
 			parser_error(prs, int_op_for_float);
+			prs->was_error = 5;
+			return; // 1
 		}
 
 		if (mode_is_int(left))
@@ -144,26 +143,27 @@ void binary_operation(parser *const prs, size_t sp)
 		{
 			totree(prs, WIDEN);
 		}
+
+		prs->ansttype = LFLOAT;
 	}
 
-	if (operator == LOGOR || operator == LOGAND)
+	if (op == LOGOR || op == LOGAND)
 	{
-		// TODO: устранить vector
-		totree(prs, operator);
+		totree(prs, op);
 		vector_set(&TREE, prs->stacklog[sp], (item_t)vector_size(&TREE));
 		vector_increase(&TREE, 1);
 	}
 	else
 	{
-		result_type == mode_float ? totree_float_operation(prs, operator) : totree(prs, operator);
+		totree_float_operation(prs, op);
 	}
-
-	if (operator >= EQEQ && operator <= LGE)
+	if (op >= EQEQ && op <= LGE)
 	{
-		result_type = mode_integer;
+		prs->ansttype = LINT;
 	}
 
-	anst_push(prs, value, result_type);
+	prs->stackoperands[prs->sopnd] = prs->ansttype;
+	prs->anst = VAL;
 }
 
 void toval(parser *const prs)
@@ -1045,7 +1045,7 @@ void parse_primary_expression(parser *const prs)
 				token_expect_and_consume(prs, r_paren, wait_rightbr_in_primary);
 				while (prs->sp > oldsp)
 				{
-					binary_operation(prs, --prs->sp);
+					binop(prs, --prs->sp);
 				}
 			}
 			break;
@@ -1615,7 +1615,7 @@ void subexpr(parser *const prs)
 		toval(prs);
 		while (prs->sp > oldsp && prs->stack[prs->sp - 1] >= p)
 		{
-			binary_operation(prs, --prs->sp);
+			binop(prs, --prs->sp);
 		}
 
 		size_t ad = 0;
@@ -1639,7 +1639,7 @@ void subexpr(parser *const prs)
 	}
 	while (prs->sp > oldsp)
 	{
-		binary_operation(prs, --prs->sp);
+		binop(prs, --prs->sp);
 	}
 }
 

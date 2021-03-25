@@ -320,9 +320,6 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case operand_is_pointer:	// need_test
 			sprintf(msg, "операнд бинарной формулы не может быть указателем");
 			break;
-		case operand_is_void:	// need_test
-			sprintf(msg, "операнд бинарной формулы не может быть типа ПУСТО");
-			break;
 		case pointer_in_print: // test_exist
 			sprintf(msg, "указатели нельзя печатать");
 			break;

@@ -117,7 +117,6 @@ typedef enum ERROR
 	label_not_declared,
 	repeated_label,
 	operand_is_pointer,
-	operand_is_void,
 	pointer_in_print,
 	wrong_struct,
 	after_dot_must_be_ident,
