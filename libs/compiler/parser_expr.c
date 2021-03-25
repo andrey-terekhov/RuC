@@ -67,7 +67,7 @@ void totree_float_operation(parser *const prs, item_t op)
 	}
 }
 
-void double_to_tree(node *const nd, const double num)
+void double_to_tree(node *const nd, const size_t start, const double num)
 {
 	int64_t num64;
 	memcpy(&num64, &num, sizeof(int64_t));
@@ -75,11 +75,11 @@ void double_to_tree(node *const nd, const double num)
 	int32_t fst = num64 & 0x00000000ffffffff;
 	int32_t snd = (num64 & 0xffffffff00000000) >> 32;
 
-	if (node_set_arg(nd, 0, fst) == -1)
+	if (node_set_arg(nd, start, fst) == -1)
 	{
 		node_add_arg(nd, fst);
 	}
-	if (node_set_arg(nd, 1, snd) == -1)
+	if (node_set_arg(nd, start + 1, snd) == -1)
 	{
 		node_add_arg(nd, snd);
 	}
@@ -238,7 +238,7 @@ void parse_braced_init_list(parser *const prs, const item_t type)
 		{
 			if (type == mode_float)
 			{
-				double_to_tree(&nd_init_list, sign * (double)prs->lxr->num);
+				double_to_tree(&nd_init_list, nd_init_list.argc, sign * (double)prs->lxr->num);
 			}
 			else
 			{
@@ -250,7 +250,7 @@ void parse_braced_init_list(parser *const prs, const item_t type)
 		{
 			if (type == mode_float)
 			{
-				double_to_tree(&nd_init_list, sign * prs->lxr->num_double);
+				double_to_tree(&nd_init_list, nd_init_list.argc, sign * prs->lxr->num_double);
 			}
 			else
 			{
@@ -987,7 +987,7 @@ item_t parse_constant(parser *const prs)
 
 		case float_constant:
 			totree(prs, TConstd);
-			double_to_tree(&prs->nd, prs->lxr->num_double);
+			double_to_tree(&prs->nd, 0, prs->lxr->num_double);
 			mode = mode_float;
 			break;
 
@@ -1242,8 +1242,9 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	}
 
 	prs->flag_in_assignment = old_in_assignment;
-	totree(prs, TCall2);
-	node_add_arg(&prs->nd, (item_t)function_id);
+	node nd_call2 = node_add_child(&nd_call, TCall2);
+	node_add_arg(&nd_call2, (item_t)function_id);
+	prs->nd = nd_call2;
 	anst_push(prs, value, mode_get(prs->sx, function_mode + 1));
 }
 
@@ -1535,7 +1536,7 @@ void parse_unary_expression(parser *const prs)
 						}
 						else if (node_get_type(&prs->nd) == TConstd)
 						{
-							double_to_tree(&prs->nd, -double_from_tree(&prs->nd));
+							double_to_tree(&prs->nd, 0, -double_from_tree(&prs->nd));
 						}
 						else
 						{
