@@ -272,8 +272,8 @@ void parse_braced_init_list(parser *const prs, const item_t type)
 		parser_error(prs, no_comma_or_end);
 		token_skip_until(prs, r_brace | semicolon);
 	}
-	anst_pop(prs);
-	anst_push(prs, value, to_modetab(prs, mode_array, type));
+	prs->ansttype = (int)to_modetab(prs, mode_array, type);
+	prs->anst = VAL;
 }
 
 void mustbestring(parser *const prs)
