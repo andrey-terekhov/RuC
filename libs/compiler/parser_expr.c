@@ -74,8 +74,15 @@ void double_to_tree(node *const nd, const double num)
 
 	int32_t fst = num64 & 0x00000000ffffffff;
 	int32_t snd = (num64 & 0xffffffff00000000) >> 32;
-	node_add_arg(nd, fst);
-	node_add_arg(nd, snd);
+
+	if (node_set_arg(nd, 0, fst) == -1)
+	{
+		node_add_arg(nd, fst);
+	}
+	if (node_set_arg(nd, 1, snd) == -1)
+	{
+		node_add_arg(nd, snd);
+	}
 }
 
 double double_from_tree(node *const nd)
@@ -1523,14 +1530,7 @@ void parse_unary_expression(parser *const prs)
 						}
 						else if (node_get_type(&prs->nd) == TConstd)
 						{
-							const double value = -double_from_tree(&prs->nd);
-							int64_t constant;
-							memcpy(&constant, &value, sizeof(int64_t));
-
-							const int64_t fst = constant & 0x00000000ffffffff;
-							const int64_t snd = (constant & 0xffffffff00000000) >> 32;
-							node_set_arg(&prs->nd, 0, fst);
-							node_set_arg(&prs->nd, 1, snd);
+							double_to_tree(&prs->nd, -double_from_tree(&prs->nd));
 						}
 						else
 						{
