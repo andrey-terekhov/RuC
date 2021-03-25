@@ -1874,7 +1874,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			}
 			totree(prs, mode_get(prs->sx, ltype + 1)); // длина
 			prs->anst = leftanst;
-			prs->anstdispl = leftanstdispl;
+			prs->anstdispl = (int)leftanstdispl;
 		}
 		else // оба операнда базового типа или указатели
 		{
@@ -1913,7 +1913,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			totree_float_operation(prs, opp);
 			if (leftanst == IDENT)
 			{
-				prs->anstdispl = leftanstdispl;
+				prs->anstdispl = (int)leftanstdispl;
 				totree(prs, leftanstdispl);
 			}
 			prs->anst = VAL;
