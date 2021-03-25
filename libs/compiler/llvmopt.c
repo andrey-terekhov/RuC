@@ -16,6 +16,7 @@
 
 #include "llvmopt.h"
 #include <string.h>
+#include "errors.h"
 #include "tree.h"
 #include "uniprinter.h"
 
@@ -81,6 +82,7 @@ static int transposition(node_info *const expr, node_info *const cur)
 {
 	if (expr == NULL || cur == NULL)
 	{
+		system_error(transposition_not_possible);
 		return -1;
 	}
 
@@ -388,7 +390,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
 	{
 		node child = node_get_child(&nd, i);
-		if (node_recursive(&info, &child) == -1)
+		if (node_recursive(&info, &child))
 		{
 			return -1;
 		}
