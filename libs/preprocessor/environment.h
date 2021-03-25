@@ -31,29 +31,29 @@ typedef struct environment
 	int reprtab[MAXTAB];
 	int rp;
 
-	int macrotext[MAXTAB];
-	int mp;
+	int macro_tab[MAXTAB];
+	size_t macro_tab_size;
 
 	char error_string[STRING_SIZE];
 	size_t position;
 
 	int mstring[STRING_SIZE];
-	int msp;
+	size_t msp;
 
-	int fchange[STRING_SIZE * 3];
-	int cp;
+	int change[STRING_SIZE * 3];
+	size_t change_size;
 
 	int localstack[STRING_SIZE];
-	int lsp;
+	size_t local_stack_size;
 
-	int cstring[STRING_SIZE];
-	int csp;
+	int calc_string[STRING_SIZE];
+	size_t calc_string_size;
 
-	int ifstring[STRING_SIZE * 2];
-	int ifsp;
+	int if_string[STRING_SIZE * 2];
+	size_t if_string_size;
 
-	int wstring[STRING_SIZE * 5];
-	int wsp;
+	int while_string[STRING_SIZE * 5];
+	size_t while_string_size;
 
 	int mfirstrp;
 
@@ -63,13 +63,16 @@ typedef struct environment
 	int nextch_type;
 	int cur;
 
-	int nextp;
+	size_t nextp;
 
-	int oldcurchar[DIP];
-	int oldnextchar[DIP];
-	int oldnextch_type[DIP];
-	int oldnextp[DIP];
-	int dipp;
+	int oldcurchar[DEPTH];
+	int oldnextchar[DEPTH];
+	int oldnextch_type[DEPTH];
+	int oldnextp[DEPTH];
+	size_t depth;
+
+	int nested_if;
+	int flagint;
 
 	size_t line;
 
@@ -81,6 +84,24 @@ typedef struct environment
 
 void env_init(environment *const env, linker *const lk, universal_io *const output);
 void env_clear_error_string(environment *const env);
+
+/**
+ *	Add a comment to indicate line changes in the output
+ *
+ *	@param	env	Preprocessor environment
+ */
+void env_add_comment(environment *const env);
+
+void m_change_nextch_type(environment *const env, int type, int p);
+void m_old_nextch_type(environment *const env);
+
+int get_depth(environment *const env);
+int get_next_char(environment *const env);
+
+void m_fprintf(environment *const env, int a);
+void m_nextch(environment *const env);
+
+void env_error(environment *const env, const int num);
 
 #ifdef __cplusplus
 } /* extern "C" */

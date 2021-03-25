@@ -14,9 +14,9 @@
  *	limitations under the License.
  */
 
+#include "constants.h"
 #include "error.h"
 #include "logger.h"
-#include "constants.h"
 #include <stdio.h>
 #include <stddef.h>
 
@@ -82,7 +82,7 @@ void get_message_error(const int num, char *const msg)
 		case not_end_fail_define:
 			sprintf(msg, "файл не может закончится до окончания команды '#DEFINE' поставьте перенос строки");
 			break;
-		case scob_not_clous:
+		case scope_not_close:
 			sprintf(msg, "количество открывающих скобок не соответствует числу закрывающих");
 			break;
 		case after_eval_must_be_ckob:
@@ -102,14 +102,14 @@ void get_message_error(const int num, char *const msg)
 			break;
 		case not_macro:
 			sprintf(msg, "идентификатор не является макросом, это недопустимо для данных вычислений");
-			break; 
+			break;
 		case incorrect_arithmetic_expression:
 			sprintf(msg, "неправильно составленное арифметическое выражение, возможно неправильно расставлены скобки");
-			break;  
-		case third_party_symbol: 
+			break;
+		case third_party_symbol:
 			sprintf(msg, "в строке с вычислениями не должно быть посторонних символов");
-			break; 
-		case in_eval_must_end_parenthesis: 
+			break;
+		case in_eval_must_end_parenthesis:
 			sprintf(msg, "вычисления внутри директивы #eval должны заканчиваться символом )");
 			break;
 		case must_end_quote:
@@ -129,6 +129,9 @@ void get_message_error(const int num, char *const msg)
 			break;
 		case include_file_not_found:
 			sprintf(msg, "заголовочный файл не найден");
+			break;
+		case no_string_ending:
+			sprintf(msg, "строка не завершена, пропущен символ \" или \'");
 			break;
 		default:
 			sprintf(msg, "не реализованная ошибка №%d", num);

@@ -19,8 +19,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include "utf8.h"
 #include "dll.h"
+#include "utf8.h"
 
 
 #ifdef __cplusplus
