@@ -117,15 +117,17 @@ void binary_operation(parser *const prs, size_t sp)
 	const int operator = prs->stackop[sp];
 	const item_t right = anst_pop(prs);
 	const item_t left = anst_pop(prs);
-	item_t result_type = mode_undefined;
+	item_t result_type = left;
 
 	if (mode_is_pointer(prs->sx, left) || mode_is_pointer(prs->sx, right))
 	{
 		parser_error(prs, operand_is_pointer);
+		result_type = mode_undefined;
 	}
 	else if (mode_is_void(left) || mode_is_void(right))
 	{
 		parser_error(prs, operand_is_void);
+		result_type = mode_undefined;
 	}
 	else if (mode_is_float(left) || mode_is_float(right))
 	{
