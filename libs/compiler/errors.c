@@ -591,6 +591,9 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case tables_cannot_be_compressed:
 			sprintf(msg, "невозможно сжать таблицы до заданного размера");
 			break;
+		case transposition_not_possible:
+			sprintf(msg, "перестановка узлов невозможна");
+			break;
 		case default_not_in_switch:
 			sprintf(msg, "метка УМОЛЧАНИЕ не в операторе ВЫБОР");
 			break;

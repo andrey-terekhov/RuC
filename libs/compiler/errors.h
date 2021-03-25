@@ -193,6 +193,7 @@ typedef enum ERROR
 
 	// Codegen errors
 	tables_cannot_be_compressed,
+	transposition_not_possible,
 } error_t;
 
 /** Warnings codes */
