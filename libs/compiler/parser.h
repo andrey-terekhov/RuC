@@ -56,8 +56,8 @@ typedef struct parser
 	int sp;
 	int sopnd;
 	int anst;
-	int ansttype;
-	int anstdispl;
+	item_t ansttype;
+	item_t anstdispl;
 	int leftansttype;
 
 	size_t lastid;
