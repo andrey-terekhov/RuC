@@ -77,8 +77,13 @@ static inline void stack_clear(information *const info)
 }
 
 
-static void transposition(node_info *const expr, node_info *const cur)
+static int transposition(node_info *const expr, node_info *const cur)
 {
+	if (expr == NULL || cur == NULL)
+	{
+		return -1;
+	}
+
 	node_order(expr->parent, expr->child, cur->parent, cur->child);
 	node temp = node_get_child(expr->parent, expr->child);
 	for (size_t i = 1; i < expr->depth; i++)
@@ -86,7 +91,9 @@ static void transposition(node_info *const expr, node_info *const cur)
 		node_order(cur->parent, cur->child, &temp, 0);
 		temp = node_get_child(&temp, 0);
 	}
+
 	expr->depth += cur->depth;
+	return 0;
 }
 
 
@@ -262,6 +269,8 @@ static expression_t expression_type(node *const nd)
 
 static int node_recursive(information *const info, node *const nd)
 {
+	int has_error = 0;
+
 	for (size_t i = 0; i < node_get_amount(nd); i++)
 	{
 		node child = node_get_child(nd, i);
@@ -329,19 +338,11 @@ static int node_recursive(information *const info, node *const nd)
 					{
 						node_info *operand = stack_pop(info);
 
-						if (operand == NULL)
-						{
-							return -1;
-						}
-
 						// перестановка с операндом
-						transposition(operand, &nd_info);
+						has_error |= transposition(operand, &nd_info);
 
 						// добавляем в стек переставленное выражение
-						if (stack_push(info, operand) == -1)
-						{
-							return -1;
-						}
+						has_error |=  stack_push(info, operand);
 					}
 					break;
 					case BINARY_OPERATION:
@@ -349,22 +350,14 @@ static int node_recursive(information *const info, node *const nd)
 						node_info *second = stack_pop(info);
 						node_info *first = stack_pop(info);
 
-						if (second == NULL || first == NULL)
-						{
-							return -1;
-						}
-
 						// перестановка со вторым операндом
-						transposition(second, &nd_info);
+						has_error |= transposition(second, &nd_info);
 
 						// перестановка с первым операндом
-						transposition(first, second);
+						has_error |= transposition(first, second);
 
 						// добавляем в стек переставленное выражение
-						if (stack_push(info, first) == -1)
-						{
-							return -1;
-						}
+						has_error |= stack_push(info, first);
 					}
 					break;
 					case NOT_EXPRESSION:
@@ -374,9 +367,9 @@ static int node_recursive(information *const info, node *const nd)
 			break;
 		}
 
-		if (node_recursive(info, &child) == -1)
+		if (has_error || node_recursive(info, &child))
 		{
-			return -1;
+			return has_error;
 		}
 	}
 
