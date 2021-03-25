@@ -229,15 +229,20 @@ void parse_braced_init_list(parser *const prs, const item_t type)
 	size_t length = 0;
 	do
 	{
+		int sign = 1;
+		if (token_try_consume(prs, minus))
+		{
+			sign = -1;
+		}
 		if (prs->token == int_constant || prs->token == char_constant)
 		{
 			if (type == mode_float)
 			{
-				double_to_tree(&nd_init_list, (double)prs->lxr->num);
+				double_to_tree(&nd_init_list, sign * (double)prs->lxr->num);
 			}
 			else
 			{
-				node_add_arg(&nd_init_list, prs->lxr->num);
+				node_add_arg(&nd_init_list, sign * prs->lxr->num);
 			}
 			token_consume(prs);
 		}
@@ -245,7 +250,7 @@ void parse_braced_init_list(parser *const prs, const item_t type)
 		{
 			if (type == mode_float)
 			{
-				double_to_tree(&nd_init_list, prs->lxr->num_double);
+				double_to_tree(&nd_init_list, sign * prs->lxr->num_double);
 			}
 			else
 			{
