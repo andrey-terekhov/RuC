@@ -42,18 +42,6 @@ void must_be(parser *const prs, const token_t what, const error_t num)
 	}
 }
 
-void applid(parser *const prs)
-{
-	const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
-	if (id == ITEM_MAX)
-	{
-		parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, REPRTAB_POS));
-		prs->was_error = 5;
-	}
-
-	prs->lastid = (size_t)id;
-}
-
 void totree_float_operation(parser *const prs, item_t op)
 {
 	if (prs->ansttype == LFLOAT &&
@@ -757,7 +745,14 @@ void parse_standard_function_call(parser *const prs)
 					prs->was_error = 4;
 					return; // 1
 				}
-				applid(prs);
+				const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+				if (id == ITEM_MAX)
+				{
+					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, REPRTAB_POS));
+					prs->was_error = 5;
+				}
+
+				prs->lastid = (size_t)id;
 				if (prs->was_error == 5)
 				{
 					prs->was_error = 4;
@@ -1621,10 +1616,6 @@ void subexpr(parser *const prs)
 		while (prs->sp > oldsp && prs->stack[prs->sp - 1] >= p)
 		{
 			binop(prs, --prs->sp);
-			if (prs->was_error == 5)
-			{
-				return;
-			}
 		}
 
 		size_t ad = 0;
@@ -1640,11 +1631,6 @@ void subexpr(parser *const prs)
 		prs->stackop[prs->sp++] = prs->token;
 		scanner(prs);
 		parse_unary_expression(prs);
-		if (prs->was_error == 7)
-		{
-			prs->was_error = 5;
-			return; // 1
-		}
 		p = operator_precedence(prs->token);
 	}
 	if (wasop)
@@ -1654,10 +1640,6 @@ void subexpr(parser *const prs)
 	while (prs->sp > oldsp)
 	{
 		binop(prs, --prs->sp);
-		if (prs->was_error == 5)
-		{
-			return;
-		}
 	}
 }
 
@@ -1680,11 +1662,6 @@ void condexpr(parser *const prs)
 	size_t adif = 0;
 
 	subexpr(prs); // logORexpr();
-	if (prs->was_error == 5)
-	{
-		prs->was_error = 4;
-		return; // 1
-	}
 	if (prs->token == QUEST)
 	{
 		while (prs->token == QUEST)
@@ -1693,8 +1670,6 @@ void condexpr(parser *const prs)
 			if (!mode_is_int(prs->ansttype))
 			{
 				parser_error(prs, float_in_condition);
-				prs->was_error = 4;
-				return; // 1
 			}
 			totree(prs, TCondexpr);
 			scanner(prs);
@@ -1702,10 +1677,6 @@ void condexpr(parser *const prs)
 			toval(prs);
 			prs->sopnd--;
 			totree(prs, TExprend);
-			if (prs->was_error == 4)
-			{
-				return; // 1
-			}
 			if (!globtype)
 			{
 				globtype = prs->ansttype;
@@ -1722,17 +1693,7 @@ void condexpr(parser *const prs)
 			}
 			must_be(prs, COLON, no_colon_in_cond_expr);
 			parse_unary_expression(prs);
-			if (prs->was_error == 7)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
 			subexpr(prs); // logORexpr();	else or elif
-			if (prs->was_error == 5)
-			{
-				prs->was_error = 4;
-				return; // 1
-			}
 		}
 		toval(prs);
 		totree(prs, TExprend);
@@ -1840,8 +1801,6 @@ void parse_assignment_expression_internal(parser *const prs)
 			if (opp != ASS) // в структуру можно присваивать только с помощью =
 			{
 				parser_error(prs, wrong_struct_ass);
-				prs->was_error = 6;
-				return; // 1
 			}
 
 			if (prs->anst == VAL)
@@ -1871,15 +1830,11 @@ void parse_assignment_expression_internal(parser *const prs)
 			if (mode_is_pointer(prs->sx, ltype) && opp != ASS) // в указатель можно присваивать только с помощью =
 			{
 				parser_error(prs, wrong_struct_ass);
-				prs->was_error = 6;
-				return; // 1
 			}
 
 			if (mode_is_int(ltype) && mode_is_float(rtype))
 			{
 				parser_error(prs, assmnt_float_to_int);
-				prs->was_error = 6;
-				return; // 1
 			}
 
 			toval(prs);
@@ -1892,8 +1847,6 @@ void parse_assignment_expression_internal(parser *const prs)
 			{
 				// проверка нужна только для указателей
 				parser_error(prs, type_missmatch);
-				prs->was_error = 6;
-				return; // 1
 			}
 
 			if (leftanst == ADDR)
