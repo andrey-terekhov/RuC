@@ -240,6 +240,21 @@ item_t parse_condition(parser *const prs, node *const parent);
 item_t parse_string_literal(parser *const prs, node *const parent);
 
 /**
+ *	Parse standard function call
+ *
+ *	@param	prs			Parser structure
+ */
+void parse_standard_function_call(parser *const prs);
+
+/**
+ *	Parse braced initialization list
+ *
+ *	@param	prs			Parser structure
+ *	@param	type		EXpected type of element in list
+ */
+void parse_braced_init_list(parser *const prs, const item_t type);
+
+/**
  *	Insert @c WIDEN node
  *
  *	@param	prs			Parser structure
