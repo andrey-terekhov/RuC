@@ -50,14 +50,25 @@ typedef struct information
 } information;
 
 
-static inline void stack_push(information *const info, node_info *const nd)
+static inline int stack_push(information *const info, node_info *const nd)
 {
+	if (info->stack_size == MAX_STACK_SIZE)
+	{
+		return -1;
+	}
+
 	info->stack[info->stack_size++] = *nd;
+	return 0;
 }
 
 static inline node_info *stack_pop(information *const info)
 {
-	return &(info->stack[--info->stack_size]);
+	if (info->stack_size == 0)
+	{
+		return NULL;
+	}
+
+	return &info->stack[--info->stack_size];
 }
 
 static inline void stack_clear(information *const info)
@@ -249,7 +260,7 @@ static expression_t expression_type(node *const nd)
 	}
 }
 
-static void node_recursive(information *const info, node *const nd)
+static int node_recursive(information *const info, node *const nd)
 {
 	for (size_t i = 0; i < node_get_amount(nd); i++)
 	{
@@ -318,17 +329,30 @@ static void node_recursive(information *const info, node *const nd)
 					{
 						node_info *operand = stack_pop(info);
 
+						if (operand == NULL)
+						{
+							return -1;
+						}
+
 						// перестановка с операндом
 						transposition(operand, &nd_info);
 
 						// добавляем в стек переставленное выражение
-						stack_push(info, operand);
+						if (stack_push(info, operand) == -1)
+						{
+							return -1;
+						}
 					}
 					break;
 					case BINARY_OPERATION:
 					{
 						node_info *second = stack_pop(info);
 						node_info *first = stack_pop(info);
+
+						if (second == NULL || first == NULL)
+						{
+							return -1;
+						}
 
 						// перестановка со вторым операндом
 						transposition(second, &nd_info);
@@ -337,7 +361,10 @@ static void node_recursive(information *const info, node *const nd)
 						transposition(first, second);
 
 						// добавляем в стек переставленное выражение
-						stack_push(info, first);
+						if (stack_push(info, first) == -1)
+						{
+							return -1;
+						}
 					}
 					break;
 					case NOT_EXPRESSION:
@@ -347,8 +374,13 @@ static void node_recursive(information *const info, node *const nd)
 			break;
 		}
 
-		node_recursive(info, &child);
+		if (node_recursive(info, &child) == -1)
+		{
+			return -1;
+		}
 	}
+
+	return 0;
 }
 
 static int optimize_pass(universal_io *const io, syntax *const sx)
@@ -363,7 +395,10 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
 	{
 		node child = node_get_child(&nd, i);
-		node_recursive(&info, &child);
+		if (node_recursive(&info, &child) == -1)
+		{
+			return -1;
+		}
 	}
 
 	uni_printf(io, "\n");
