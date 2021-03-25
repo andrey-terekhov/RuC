@@ -53,7 +53,7 @@ typedef struct parser
 	int stackop[100];
 	int stackoperands[100];
 	int stacklog[100];
-	int sp;
+	size_t sp;
 	int sopnd;
 	int anst;
 	int ansttype;
