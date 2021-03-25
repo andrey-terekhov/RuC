@@ -15,10 +15,10 @@
  */
 
 #include "tree.h"
-#include "defs.h"
-#include "errors.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include "defs.h"
+#include "errors.h"
 
 
 node node_expression(vector *const tree, const size_t index);
@@ -606,7 +606,7 @@ node node_get_root(vector *const tree)
 
 node node_get_child(node *const nd, const size_t index)
 {
-	if (!node_is_correct(nd) || index > nd->amount)
+	if (!node_is_correct(nd) || index >= nd->amount)
 	{
 		return node_broken();
 	}
@@ -796,6 +796,24 @@ int node_order(node *const fst, const size_t fst_index, node *const snd, const s
 	const size_t snd_child_index = temp.type;
 	const size_t snd_size = temp.argc + 1;
 
+	if (fst->type >= snd_child_index)
+	{
+		fst->type = fst->type == snd_child_index
+			? fst_child_index + fst_size - snd_size
+			: fst->type + fst_size - snd_size;
+		fst->argv = fst->type + 1;
+		fst->children = fst->argv + fst->argc;
+	}
+
+	if (snd->type >= fst_child_index)
+	{
+		snd->type = snd->type == fst_child_index
+			? snd_child_index + snd_size - fst_size
+			: snd->type + snd_size - fst_size;
+		snd->argv = snd->type + 1;
+		snd->children = snd->argv + snd->argc;
+	}
+
 	return vector_swap(tree, fst_child_index, fst_size, snd_child_index, snd_size);
 }
 
@@ -828,6 +846,35 @@ int node_swap(node *const fst, const size_t fst_index, node *const snd, const si
 	const size_t snd_size = temp.type - snd_child_index + temp.argc + 1;
 
 	return vector_swap(tree, fst_child_index, fst_size, snd_child_index, snd_size);
+}
+
+int node_remove(node *const nd, const size_t index)
+{
+	if (!node_is_correct(nd) || index >= nd->amount)
+	{
+		return -1;
+	}
+
+	node child = node_get_child(nd, index);
+	const size_t from = child.type;
+
+	while (child.amount != 0)
+	{
+		child = node_get_child(&child, child.amount - 1);
+	}
+	const size_t to = child.type + child.argc + 1;
+
+	if (to == vector_size(nd->tree))
+	{
+		return vector_resize(nd->tree, from);
+	}
+
+	for (size_t i = 0; i < vector_size(nd->tree) - to; i++)
+	{
+		vector_set(nd->tree, from + i, vector_get(nd->tree, to + i));
+	}
+
+	return vector_resize(nd->tree, vector_size(nd->tree) - to + from);
 }
 
 int node_is_correct(const node *const nd)

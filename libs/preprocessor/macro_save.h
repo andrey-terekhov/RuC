@@ -23,7 +23,23 @@
 extern "C" {
 #endif
 
-int if_implementation(environment *const env);
+/**
+ *	Add new macro
+ *
+ *	@param	env	Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int macro_add(environment *const env);
+
+/**
+ *	Modify an existing macro
+ *
+ *	@param	env	Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int macro_set(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

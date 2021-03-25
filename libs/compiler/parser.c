@@ -14,8 +14,8 @@
  *	limitations under the License.
  */
 
-#include "codes.h"
 #include "parser.h"
+#include "codes.h"
 #include "tree.h"
 
 

@@ -16,7 +16,6 @@
 
 #include "utils.h"
 #include "constants.h"
-#include "file.h"
 #include "environment.h"
 #include "error.h"
 #include "linker.h"
@@ -49,9 +48,9 @@ int equal_reprtab(int i, int j, environment *const env)
 
 void output_keywords(environment *const env)
 {
-	for (int j = 0; j < env->reprtab[env->rp]; j++)
+	for (size_t j = 0; j < (size_t)env->reprtab[env->rp]; j++)
 	{
-		m_fprintf(env->reprtab[env->rp + 2 + j], env);
+		m_fprintf(env, env->reprtab[env->rp + 2 + j]);
 	}
 }
 
@@ -74,9 +73,8 @@ int macro_keywords(environment *const env)
 	/*if (env->curchar != '\n' && env->curchar != ' ' && env->curchar != '\t' && env->curchar != '(' &&
 		env->curchar != '\"')
 	{
-		size_t position = skip_str(env); 
-		macro_error(after_ident_must_be_space, lk_get_current(env->lk)
-			, env->error_string, env->line, position);
+		
+		env_error(env, after_ident_must_be_space);
 	}*/
 
 	hash &= 255;
@@ -143,7 +141,7 @@ int collect_mident(environment *const env)
 	{
 		if (r >= env->mfirstrp && mf_equal(r, env))
 		{
-			return (env->macrotext[env->reprtab[r + 1]] != MACROUNDEF) ? r : 0;
+			return (env->macro_tab[env->reprtab[r + 1]] != MACROUNDEF) ? r : 0;
 		}
 
 		r = env->reprtab[r];
@@ -152,55 +150,17 @@ int collect_mident(environment *const env)
 	return 0;
 }
 
-int find_file(environment *const env, const char *s)
-{
-	int oldrp = env->rp;
-	env->rp += 2;
-	int r;
-	int hash = 0;
-	int i = 0;
-
-	while (s[i] != '\0')
-	{
-		env->reprtab[env->rp++] = s[i];
-		hash += s[i];
-		i++;
-	}
-
-	hash &= 255;
-	r = env->hashtab[hash];
-
-	while (r)
-	{
-		if (env->reprtab[r + 1] == SH_FILE && equal_reprtab(r, oldrp, env))
-		{
-			env->rp = oldrp;
-			return 0;
-		}
-
-		r = env->reprtab[r];
-	}
-
-	env->reprtab[oldrp] = env->hashtab[hash];
-	env->reprtab[oldrp + 1] = SH_FILE;
-	env->hashtab[hash] = oldrp;
-	env->reprtab[env->rp++] = 0;
-	return 1;
-}
-
-int space_end_line(environment *const env)
+int skip_line(environment *const env)
 {
 	while (env->curchar != '\n')
 	{
-		if (env->curchar == ' ' || env->curchar == '\t')
+		if (env->curchar == ' ' || env->curchar == '\t' || env->curchar == '\r')
 		{
 			m_nextch(env);
 		}
 		else
 		{
-			size_t position = skip_str(env); 
-			macro_error(after_preproces_words_must_be_space, lk_get_current(env->lk)
-			, env->error_string, env->line, position);
+			env_error(env, after_preproces_words_must_be_space);
 			return -1;
 		}
 	}
@@ -208,7 +168,7 @@ int space_end_line(environment *const env)
 	return 0;
 }
 
-void skip_space(environment *const env)
+void skip_separators(environment *const env)
 {
 	while (env->curchar == ' ' || env->curchar == '\t')
 	{
@@ -216,46 +176,40 @@ void skip_space(environment *const env)
 	}
 }
 
-void skip_space_str(environment *const env)
+int skip_string(environment *const env)
 {
 	int c = env->curchar;
-	m_fprintf(env->curchar, env);
+	m_fprintf(env, env->curchar);
 	m_nextch(env);
 
-	while (env->curchar != c && env->curchar != EOF)
+	while (env->curchar != c && env->curchar != EOF && env->curchar != '\n')
 	{
 		if (env->curchar == '\\')
 		{
-			m_fprintf(env->curchar, env);
+			m_fprintf(env, env->curchar);
 			m_nextch(env);
 		}
 
-		m_fprintf(env->curchar, env);
+		m_fprintf(env, env->curchar);
 		m_nextch(env);
 	}
 
-	if (env->curchar != EOF)
+	if (env->curchar == EOF || env->curchar == '\n')
 	{
-		m_fprintf(env->curchar, env);
-		m_nextch(env);
+		env_error(env, no_string_ending);
+		return -1;
 	}
+
+	m_fprintf(env, env->curchar);
+	m_nextch(env);
+	return 0;
 }
 
-size_t skip_str(environment *const env)
+void end_of_file(environment *const env)
 {
-	char *line = env->error_string;
-	size_t position = strlen(line);
-	while (env->curchar != '\n' && env->curchar != EOF)
+	while (env->nextch_type != FILETYPE)
 	{
-		m_nextch(env);
+		m_old_nextch_type(env);
 	}
-	return position;
-}
-
-void skip_file(environment *const env)
-{
-	while (env->curchar != EOF)
-	{
-		m_nextch(env);
-	}
+	env->curchar = EOF;
 }

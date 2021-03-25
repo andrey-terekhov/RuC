@@ -16,6 +16,7 @@
 
 #include "syntax.h"
 #include <stdlib.h>
+#include "defs.h"
 #include "errors.h"
 #include "tokens.h"
 #include "tree.h"
@@ -558,7 +559,7 @@ item_t scope_func_enter(syntax *const sx)
 {
 	if (sx == NULL)
 	{
-		return INT_MAX;
+		return ITEM_MAX;
 	}
 
 	const item_t displ = sx->displ;

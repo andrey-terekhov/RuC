@@ -429,7 +429,7 @@ void parse_standard_function_call(parser *const prs)
 		token_skip_until(prs, r_paren | semicolon);
 		return;
 	}
-	
+
 	if (func == ASSERT)
 	{
 		mustbeint(prs);
@@ -2021,7 +2021,6 @@ item_t parse_condition(parser *const prs, node *const parent)
 item_t parse_string_literal(parser *const prs, node *const parent)
 {
 	prs->nd = *parent;
-	token_consume(prs);
 	totree(prs, TString);
 	node_add_arg(&prs->nd, prs->lxr->num);
 
@@ -2030,6 +2029,7 @@ item_t parse_string_literal(parser *const prs, node *const parent)
 		node_add_arg(&prs->nd, prs->lxr->lexstr[i]);
 	}
 
+    token_consume(prs);
 	return anst_push(prs, value, to_modetab(prs, mode_array, mode_character));
 }
 

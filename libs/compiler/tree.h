@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "vector.h"
 #include <limits.h>
 #include <stddef.h>
+#include "vector.h"
 
 
 #ifdef __cplusplus
@@ -193,6 +193,16 @@ int node_order(node *const fst, const size_t fst_index, node *const snd, const s
  *	@return	@c 0 on success, @c -1 on failure
  */
 int node_swap(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index);
+
+/**
+ *	Remove child node by index
+ *
+ *	@param	nd			Parrent node
+ *	@param	index		Child number
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int node_remove(node *const nd, const size_t index);
 
 /**
  *	Check that node is correct
