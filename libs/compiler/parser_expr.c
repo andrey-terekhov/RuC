@@ -1666,13 +1666,11 @@ void condexpr(parser *const prs)
 
 void assignment_to_void(parser *const prs)
 {
-	const size_t size = vector_size(&TREE);
-	size_t t = vector_get(&TREE, size - 2) < 9000 ? size - 3 : size - 2;
-	item_t tt = vector_get(&TREE, t);
-	if ((tt >= ASS && tt <= DIVASSAT) || (tt >= POSTINC && tt <= DECAT) || (tt >= ASSR && tt <= DIVASSATR) ||
-		(tt >= POSTINCR && tt <= DECATR))
+	const item_t operation = node_get_type(&prs->nd);
+	if ((operation >= ASS && operation <= DIVASSAT) || (operation >= POSTINC && operation <= DECAT)
+		|| (operation >= ASSR && operation <= DIVASSATR) || (operation >= POSTINCR && operation <= DECATR))
 	{
-		vector_set(&TREE, t, vector_get(&TREE, t) + 200);
+		node_set_type(&prs->nd, node_get_type(&prs->nd) + 200);
 	}
 }
 
@@ -1754,15 +1752,15 @@ void parse_assignment_expression_internal(parser *const prs)
 				: prs->anst == IDENT ? COPY10 : COPY11;
 			}
 			totree(prs, opp);
-			if (leftanst == IDENT)
+			if (leftanst == variable)
 			{
-				totree(prs, leftanstdispl); // displleft
+				node_add_arg(&prs->nd, leftanstdispl);
 			}
-			if (prs->anst == IDENT)
+			if (prs->anst == variable)
 			{
-				totree(prs, prs->anstdispl); // displright
+				node_add_arg(&prs->nd, prs->anstdispl);
 			}
-			totree(prs, mode_get(prs->sx, ltype + 1)); // длина
+			node_add_arg(&prs->nd, mode_get(prs->sx, ltype + 1));
 			prs->anst = leftanst;
 			prs->anstdispl = (int)leftanstdispl;
 		}
@@ -1798,7 +1796,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			if (leftanst == IDENT)
 			{
 				prs->anstdispl = (int)leftanstdispl;
-				totree(prs, leftanstdispl);
+				node_add_arg(&prs->nd, leftanstdispl);
 			}
 			prs->anst = VAL;
 		}
@@ -1837,8 +1835,8 @@ item_t parse_expression(parser *const prs, node *const parent)
 {
 	prs->nd = *parent;
 	parse_expression_internal(prs);
-	totree(prs, TExprend);
 	assignment_to_void(prs);
+	totree(prs, TExprend);
 	return anst_pop(prs);
 }
 
@@ -1893,9 +1891,8 @@ item_t parse_string_literal(parser *const prs, node *const parent)
 	return anst_push(prs, value, to_modetab(prs, mode_array, mode_character));
 }
 
-void parse_insert_widen(parser *const parser)
+void parse_insert_widen(parser *const prs)
 {
-	vector_remove(&parser->sx->tree);
-	totree(parser, WIDEN);
-	totree(parser, TExprend);
+	node_set_type(&prs->nd, WIDEN);
+	totree(prs, TExprend);
 }

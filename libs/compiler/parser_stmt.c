@@ -469,16 +469,8 @@ void parse_print_statement(parser *const prs, node *const parent)
 		parser_error(prs, pointer_in_print);
 	}
 
-	//vector_remove(&prs->sx->tree);
-	if (node_get_type(&prs->nd) == TExprend)
-	{
-		node_set_type(&prs->nd, TPrint);
-	}
-	else
-	{
-		totree(prs, TPrint);
-	}
-	totree(prs, type);
+	node_set_type(&prs->nd, TPrint);
+	node_add_arg(&prs->nd, type);
 	totree(prs, TExprend);
 
 	token_expect_and_consume(prs, r_paren, print_without_br);
