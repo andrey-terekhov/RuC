@@ -1065,52 +1065,39 @@ void parse_primary_expression(parser *const prs)
 	}
 }
 
-int find_field(parser *const prs, int stype)
+item_t find_field(parser *const prs, int stype)
 {
-	// выдает смещение до найденного поля или ошибку
+	token_consume(prs);
 
-	int flag = 1;
-	int select_displ = 0;
-	const item_t record_length = mode_get(prs->sx, stype + 2);
+	item_t select_displ = 0;
+	const size_t record_length = (size_t)mode_get(prs->sx, stype + 2);
+	token_expect_and_consume(prs, identifier, after_dot_must_be_ident);
 
-	scanner(prs);
-	must_be(prs, IDENT, after_dot_must_be_ident);
-
-	for (item_t i = 0; i < record_length; i += 2) // тут хранится удвоенное n
+	for (size_t i = 0; i < record_length; i += 2)
 	{
-		int field_type = (int)mode_get(prs->sx, stype + 3 + (int)i);
+		const item_t field_type = mode_get(prs->sx, stype + 3 + i);
 
-		if ((size_t)mode_get(prs->sx, stype + 4 + (int)i) == REPRTAB_POS)
+		if ((size_t)mode_get(prs->sx, stype + 4 + i) == REPRTAB_POS)
 		{
+			//anst_push(prs, address, field_type);
 			prs->stackoperands[prs->sopnd] = prs->ansttype = field_type;
-			flag = 0;
-			break;
+			return select_displ;
 		}
 		else
 		{
-			select_displ += (int)size_of(prs->sx, field_type);
+			select_displ += (item_t)size_of(prs->sx, field_type);
 		}
-		// прибавляем к суммарному смещению длину поля
 	}
-	if (flag)
-	{
-		parser_error(prs, no_field, repr_get_name(prs->sx, REPRTAB_POS));
-		prs->was_error = 5;
-		return 0; // 1
-	}
-	return select_displ;
+
+	parser_error(prs, no_field, repr_get_name(prs->sx, REPRTAB_POS));
+	return 0;
 }
 
 void selectend(parser *const prs)
 {
-	while (prs->token == DOT)
+	while (prs->token == period)
 	{
 		prs->anstdispl += find_field(prs, prs->ansttype);
-		if (prs->was_error == 6)
-		{
-			prs->was_error = 5;
-			return; // 1
-		}
 	}
 
 	totree(prs, prs->anstdispl);
@@ -1261,20 +1248,11 @@ void parse_postfix_expression(parser *const prs)
 	{
 		while (token_try_consume(prs, l_square))
 		{
-			const item_t array_mode = anst_pop(prs);
 			if (was_func)
 			{
 				parser_error(prs, slice_from_func);
-				token_skip_until(prs, semicolon);
 			}
 
-			if (!mode_is_array(prs->sx, array_mode))
-			{
-				parser_error(prs, slice_not_from_array);
-				token_skip_until(prs, semicolon);
-			}
-
-			const item_t elem_type = mode_get(prs->sx, array_mode + 1);
 			if (anst_peek(prs) == variable)
 			{
 				node_set_type(&prs->nd, TSliceident);
@@ -1284,6 +1262,14 @@ void parse_postfix_expression(parser *const prs)
 			{
 				totree(prs, TSlice);
 			}
+
+			const item_t anst_mode = anst_pop(prs);
+			if (!mode_is_array(prs->sx, anst_mode))
+			{
+				parser_error(prs, slice_not_from_array);
+			}
+
+			const item_t elem_type = mode_get(prs->sx, anst_mode + 1);
 			node_add_arg(&prs->nd, elem_type);
 
 			const item_t index_type = parse_condition(prs, &prs->nd);
@@ -1334,57 +1320,50 @@ void parse_postfix_expression(parser *const prs)
 				return; // 1
 			}
 		}
-		if (prs->token == DOT)
 
+		if (prs->token == period)
 		{
 			if (!mode_is_struct(prs->sx, prs->ansttype))
 			{
 				parser_error(prs, select_not_from_struct);
-				prs->was_error = 4;
-				return; // 1
 			}
-			if (prs->anst == VAL) // структура - значение функции
+
+			if (anst_peek(prs) == value)
 			{
-				int len1 = (int)size_of(prs->sx, prs->ansttype);
-				prs->anstdispl = 0;
-				while (prs->token == DOT)
+				const size_t len = size_of(prs->sx, prs->ansttype);
+				size_t displ = 0;
+				while (prs->token == period)
 				{
-					prs->anstdispl += find_field(prs, prs->ansttype);
-					if (prs->was_error == 6)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
+					displ += find_field(prs, prs->ansttype);
 				}
 				totree(prs, COPYST);
-				totree(prs, prs->anstdispl);
-				totree(prs, (item_t)size_of(prs->sx, prs->ansttype));
-				totree(prs, len1);
+				node_add_arg(&prs->nd, displ);
+				node_add_arg(&prs->nd, (item_t)size_of(prs->sx, prs->ansttype));
+				node_add_arg(&prs->nd, (item_t)len);
 			}
-			else if (prs->anst == IDENT)
+			else if (anst_peek(prs) == variable)
 			{
 				int globid = prs->anstdispl < 0 ? -1 : 1;
-				while (prs->token == DOT)
+				while (prs->token == period)
 				{
 					prs->anstdispl += globid * find_field(prs, prs->ansttype);
-					if (prs->was_error == 6)
-					{
-						prs->was_error = 4;
-						return; // 1
-					}
 				}
 
-				vector_set(&TREE, vector_size(&TREE) - 1, prs->anstdispl);
+				node_set_arg(&prs->nd, 0, prs->anstdispl);
 			}
-			else // ADDR
+			else //if (anst_peek(prs) == address)
 			{
 				totree(prs, TSelect);
-				prs->anstdispl = 0;
-				selectend(prs);
-				if (prs->was_error == 5)
+				size_t displ = 0;
+				while (prs->token == period)
 				{
-					prs->was_error = 4;
-					return; // 1
+					displ += find_field(prs, prs->ansttype);
+				}
+
+				node_add_arg(&prs->nd, displ);
+				if (mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype))
+				{
+					totree(prs, TAddrtoval);
 				}
 			}
 		}
