@@ -1063,11 +1063,11 @@ void parse_primary_expression(parser *const prs)
 	}
 }
 
-item_t find_field(parser *const prs, int stype)
+size_t find_field(parser *const prs, int stype)
 {
 	token_consume(prs);
 
-	item_t select_displ = 0;
+	size_t select_displ = 0;
 	const size_t record_length = (size_t)mode_get(prs->sx, stype + 2);
 	token_expect_and_consume(prs, identifier, after_dot_must_be_ident);
 
@@ -1078,12 +1078,12 @@ item_t find_field(parser *const prs, int stype)
 		if ((size_t)mode_get(prs->sx, stype + 4 + i) == REPRTAB_POS)
 		{
 			//anst_push(prs, address, field_type);
-			prs->stackoperands[prs->sopnd] = prs->ansttype = field_type;
+			prs->stackoperands[prs->sopnd] = prs->ansttype = (int)field_type;
 			return select_displ;
 		}
 		else
 		{
-			select_displ += (item_t)size_of(prs->sx, field_type);
+			select_displ += size_of(prs->sx, field_type);
 		}
 	}
 
@@ -1253,7 +1253,7 @@ void parse_postfix_expression(parser *const prs)
 				parser_error(prs, slice_not_from_array);
 			}
 
-			const item_t elem_type = mode_get(prs->sx, anst_mode + 1);
+			const item_t elem_type = mode_get(prs->sx, (size_t)anst_mode + 1);
 			node_add_arg(&prs->nd, elem_type);
 
 			const item_t index_type = parse_condition(prs, &prs->nd);
