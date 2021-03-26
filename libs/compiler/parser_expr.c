@@ -114,15 +114,13 @@ anst_val anst_peek(parser *const prs)
 
 void binop(parser *const prs, size_t sp)
 {
-	int op = prs->stackop[sp];
-	int right = prs->stackoperands[prs->sopnd--];
-	int left = prs->stackoperands[prs->sopnd];
+	const item_t op = prs->stackop[sp];
+	const item_t right = prs->stackoperands[prs->sopnd--];
+	const item_t left = prs->stackoperands[prs->sopnd];
 
 	if (mode_is_pointer(prs->sx, left) || mode_is_pointer(prs->sx, right))
 	{
 		parser_error(prs, operand_is_pointer);
-		prs->was_error = 5;
-		return; // 1
 	}
 
 	if (mode_is_float(left) || mode_is_float(right))
@@ -131,8 +129,6 @@ void binop(parser *const prs, size_t sp)
 			|| op == LSHR || op == LSHL || op == LREM)
 		{
 			parser_error(prs, int_op_for_float);
-			prs->was_error = 5;
-			return; // 1
 		}
 
 		if (mode_is_int(left))
@@ -168,7 +164,6 @@ void binop(parser *const prs, size_t sp)
 
 void toval(parser *const prs)
 {
-	// надо значение положить на стек, например, чтобы передать параметром
 	if (anst_peek(prs) == value || anst_peek(prs) == number)
 	{
 		return;
@@ -193,13 +188,12 @@ void toval(parser *const prs)
 		return;
 	}
 
-	if (prs->anst == IDENT)
+	if (anst_peek(prs) == variable)
 	{
-		vector_set(&prs->sx->tree, vector_size(&prs->sx->tree) - 2, mode_is_float(prs->ansttype) ? TIdenttovald : TIdenttoval);
-		//node_set_type(&prs->nd, mode_is_float(prs->ansttype) ? TIdenttovald : TIdenttoval);
+		node_set_type(&prs->nd, mode_is_float(prs->ansttype) ? TIdenttovald : TIdenttoval);
 	}
 
-	if (!mode_is_array(prs->sx, prs->ansttype) && !mode_is_pointer(prs->sx, prs->ansttype) && prs->anst == ADDR)
+	if (anst_peek(prs) == address && !mode_is_array(prs->sx, prs->ansttype) && !mode_is_pointer(prs->sx, prs->ansttype))
 	{
 		totree(prs, mode_is_float(prs->ansttype) ? TAddrtovald : TAddrtoval);
 	}
@@ -825,6 +819,10 @@ void parse_standard_function_call(parser *const prs)
 	}
 	else if (func == RAND)
 	{
+		// Здесь была проблема в том, что вызов toval() после парсинга этой функции
+		// перезаписывала id идентификатора в узле TIdent
+		// Намеренно ли при разборе стандартных функций не устанавливается prs->anst?
+		prs->anst = value;
 		prs->ansttype = prs->stackoperands[++prs->sopnd] = LFLOAT;
 	}
 	else if (func == ROUND)
@@ -1678,7 +1676,7 @@ void parse_assignment_expression_internal(parser *const prs)
 {
 	if (prs->token == l_brace)
 	{
-		const int type = prs->leftansttype;
+		const item_t type = prs->leftansttype;
 		if (mode_is_struct(prs->sx, type) || mode_is_array(prs->sx, type))
 		{
 			parse_initializer(prs, &prs->nd, type);
