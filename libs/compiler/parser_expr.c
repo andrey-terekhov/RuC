@@ -85,25 +85,17 @@ double double_from_tree(node *const nd)
 }
 
 
-typedef enum ANST_VAL
-{
-	variable = IDENT,
-	value = VAL,
-	number = NUMBER,
-	address = ADDR,
-} anst_val;
-
 item_t anst_push(parser *const prs, const anst_val type, const item_t mode)
 {
-	prs->stackoperands[++prs->sopnd] = prs->ansttype = (int)mode;
-	prs->anst = (int)type;
+	prs->stackoperands[++prs->sopnd] = prs->ansttype = mode;
+	prs->anst = type;
 	return mode;
 }
 
 item_t anst_pop(parser *const prs)
 {
 	--prs->sopnd;
-	return (item_t)prs->ansttype;
+	return prs->ansttype;
 }
 
 anst_val anst_peek(parser *const prs)
@@ -173,7 +165,7 @@ void toval(parser *const prs)
 	{
 		if (!prs->flag_in_assignment)
 		{
-			if (prs->anst == IDENT)
+			if (anst_peek(prs) == variable)
 			{
 				node_set_type(&prs->nd, COPY0ST);
 				node_set_arg(&prs->nd, 0, prs->anstdispl);
@@ -182,8 +174,8 @@ void toval(parser *const prs)
 			{
 				totree(prs, COPY1ST);
 			}
-			totree(prs, mode_get(prs->sx, prs->ansttype + 1));
-			prs->anst = VAL;
+			totree(prs, mode_get(prs->sx, (size_t)prs->ansttype + 1));
+			prs->anst = value;
 		}
 		return;
 	}
@@ -197,7 +189,7 @@ void toval(parser *const prs)
 	{
 		totree(prs, mode_is_float(prs->ansttype) ? TAddrtovald : TAddrtoval);
 	}
-	prs->anst = VAL;
+	prs->anst = value;
 }
 
 void parse_braced_init_list(parser *const prs, const item_t type)
@@ -285,7 +277,7 @@ void mustbepointstring(parser *const prs)
 	toval(prs);
 	prs->sopnd--;
 	if (!(mode_is_pointer(prs->sx, prs->ansttype) &&
-		  mode_is_string(prs->sx, mode_get(prs->sx, prs->ansttype + 1))))
+		  mode_is_string(prs->sx, mode_get(prs->sx, (size_t)prs->ansttype + 1))))
 	{
 		parser_error(prs, not_point_string_in_stanfunc);
 		prs->was_error = 5;
@@ -356,7 +348,7 @@ void mustberowofint(parser *const prs)
 		}
 	}
 	if (!(mode_is_array(prs->sx, prs->ansttype) &&
-		  mode_is_int(mode_get(prs->sx, prs->ansttype + 1))))
+		  mode_is_int(mode_get(prs->sx, (size_t)prs->ansttype + 1))))
 	{
 		parser_error(prs, not_rowofint_in_stanfunc);
 		prs->was_error = 5;
@@ -392,7 +384,7 @@ void mustberowoffloat(parser *const prs)
 	}
 
 	if (!(mode_is_array(prs->sx, prs->ansttype) &&
-		  mode_get(prs->sx, prs->ansttype + 1) == LFLOAT))
+		  mode_get(prs->sx, (size_t)prs->ansttype + 1) == LFLOAT))
 	{
 		parser_error(prs, not_rowoffloat_in_stanfunc);
 		prs->was_error = 5;
@@ -1063,28 +1055,27 @@ void parse_primary_expression(parser *const prs)
 	}
 }
 
-size_t find_field(parser *const prs, int stype)
+item_t find_field(parser *const prs, const item_t stype)
 {
 	token_consume(prs);
-
-	size_t select_displ = 0;
-	const size_t record_length = (size_t)mode_get(prs->sx, stype + 2);
 	token_expect_and_consume(prs, identifier, after_dot_must_be_ident);
 
-	for (size_t i = 0; i < record_length; i += 2)
+	item_t select_displ = 0;
+	const size_t record_length = (size_t)mode_get(prs->sx, (size_t)stype + 2);
+	for (size_t i = 0; i < record_length; i += 2) // тут хранится удвоенное n
 	{
-		const item_t field_type = mode_get(prs->sx, stype + 3 + i);
+		const item_t field_type = mode_get(prs->sx, (size_t)stype + 3 + i);
 
-		if ((size_t)mode_get(prs->sx, stype + 4 + i) == REPRTAB_POS)
+		if ((size_t)mode_get(prs->sx, (size_t)stype + 4 + i) == REPRTAB_POS)
 		{
-			//anst_push(prs, address, field_type);
-			prs->stackoperands[prs->sopnd] = prs->ansttype = (int)field_type;
+			prs->stackoperands[prs->sopnd] = prs->ansttype = field_type;
 			return select_displ;
 		}
 		else
 		{
-			select_displ += size_of(prs->sx, field_type);
+			select_displ += (item_t)size_of(prs->sx, field_type);
 		}
+		// прибавляем к суммарному смещению длину поля
 	}
 
 	parser_error(prs, no_field, repr_get_name(prs->sx, REPRTAB_POS));
@@ -1263,25 +1254,25 @@ void parse_postfix_expression(parser *const prs)
 			}
 
 			token_expect_and_consume(prs, r_square, no_rightsqbr_in_slice);
-
 			anst_push(prs, address, elem_type);
 		}
 
 		while (prs->token == arrow)
 		{
-			if (!mode_is_pointer(prs->sx, prs->ansttype) || !mode_is_struct(prs->sx, mode_get(prs->sx, prs->ansttype + 1)))
+			if (!mode_is_pointer(prs->sx, prs->ansttype) ||
+				!mode_is_struct(prs->sx, mode_get(prs->sx, (size_t)prs->ansttype + 1)))
 			{
 				parser_error(prs, get_field_not_from_struct_pointer);
 			}
 
-			if (prs->anst == IDENT)
+			if (prs->anst == variable)
 			{
 				node_set_type(&prs->nd, TIdenttoval);
 			}
-			prs->anst = ADDR;
+			prs->anst = address;
 			totree(prs, TSelect);
 
-			prs->ansttype = (int)mode_get(prs->sx, prs->ansttype + 1);
+			prs->ansttype = mode_get(prs->sx, (size_t)prs->ansttype + 1);
 			prs->anstdispl = find_field(prs, prs->ansttype);
 			while (prs->token == period)
 			{
@@ -1305,13 +1296,13 @@ void parse_postfix_expression(parser *const prs)
 			if (anst_peek(prs) == value)
 			{
 				const size_t len = size_of(prs->sx, prs->ansttype);
-				size_t displ = 0;
+				prs->anstdispl = 0;
 				while (prs->token == period)
 				{
-					displ += find_field(prs, prs->ansttype);
+					prs->anstdispl += find_field(prs, prs->ansttype);
 				}
 				totree(prs, COPYST);
-				node_add_arg(&prs->nd, displ);
+				node_add_arg(&prs->nd, prs->anstdispl);
 				node_add_arg(&prs->nd, (item_t)size_of(prs->sx, prs->ansttype));
 				node_add_arg(&prs->nd, (item_t)len);
 			}
@@ -1320,7 +1311,7 @@ void parse_postfix_expression(parser *const prs)
 				int globid = prs->anstdispl < 0 ? -1 : 1;
 				while (prs->token == period)
 				{
-					prs->anstdispl += globid * find_field(prs, prs->ansttype);
+					prs->anstdispl += globid * find_field(prs, (int)prs->ansttype);
 				}
 
 				node_set_arg(&prs->nd, 0, prs->anstdispl);
@@ -1328,13 +1319,13 @@ void parse_postfix_expression(parser *const prs)
 			else //if (anst_peek(prs) == address)
 			{
 				totree(prs, TSelect);
-				size_t displ = 0;
+				prs->anstdispl = 0;
 				while (prs->token == period)
 				{
-					displ += find_field(prs, prs->ansttype);
+					prs->anstdispl += find_field(prs, prs->ansttype);
 				}
 
-				node_add_arg(&prs->nd, displ);
+				node_add_arg(&prs->nd, prs->anstdispl);
 				if (mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype))
 				{
 					totree(prs, TAddrtoval);
@@ -1404,7 +1395,7 @@ void parse_unary_expression(parser *const prs)
 
 			anst_push(prs, value, anst_pop(prs));
 		}
-		break;
+			break;
 
 		case exclaim:
 		case tilde:
@@ -1431,7 +1422,7 @@ void parse_unary_expression(parser *const prs)
 
 					anst_push(prs, value, to_modetab(prs, mode_pointer, anst_pop(prs)));
 				}
-				break;
+					break;
 
 				case star:
 				{
@@ -1447,7 +1438,7 @@ void parse_unary_expression(parser *const prs)
 
 					anst_push(prs, address, mode_get(prs->sx, (size_t)anst_pop(prs) + 1));
 				}
-				break;
+					break;
 
 				default:
 				{
@@ -1482,10 +1473,10 @@ void parse_unary_expression(parser *const prs)
 						anst_push(prs, value, anst_pop(prs));
 					}
 				}
-				break;
+					break;
 			}
 		}
-		break;
+			break;
 
 		default:
 			parse_primary_expression(prs);
@@ -1618,7 +1609,7 @@ void condexpr(parser *const prs)
 			totree(prs, TExprend);
 			if (!globtype)
 			{
-				globtype = prs->ansttype;
+				globtype = (int)prs->ansttype;
 			}
 			prs->sopnd--;
 			if (mode_is_float(prs->ansttype))
@@ -1740,7 +1731,7 @@ void parse_assignment_expression_internal(parser *const prs)
 				parser_error(prs, wrong_struct_ass);
 			}
 
-			if (prs->anst == VAL)
+			if (prs->anst == value)
 			{
 				opp = leftanst == IDENT ? COPY0STASS : COPY1STASS;
 			}
@@ -1798,8 +1789,8 @@ void parse_assignment_expression_internal(parser *const prs)
 			}
 			prs->anst = VAL;
 		}
-		prs->ansttype = (int)ltype;
-		prs->stackoperands[prs->sopnd] = (int)ltype; // тип результата - на стек
+		prs->ansttype = ltype;
+		prs->stackoperands[prs->sopnd] = ltype; // тип результата - на стек
 	}
 	else
 	{
@@ -1885,7 +1876,7 @@ item_t parse_string_literal(parser *const prs, node *const parent)
 		node_add_arg(&prs->nd, prs->lxr->lexstr[i]);
 	}
 
-    token_consume(prs);
+	token_consume(prs);
 	return anst_push(prs, value, to_modetab(prs, mode_array, mode_character));
 }
 

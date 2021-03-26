@@ -37,6 +37,14 @@
 extern "C" {
 #endif
 
+typedef enum ANST_VAL
+{
+	variable = IDENT,
+	value = VAL,
+	number = NUMBER,
+	address = ADDR,
+} anst_val;
+
 typedef struct parser
 {
 	syntax *sx;					/**< Syntax structure */
@@ -55,7 +63,7 @@ typedef struct parser
 	int stacklog[100];
 	size_t sp;
 	int sopnd;
-	int anst;
+	item_t anst;
 	int ansttype;
 	item_t anstdispl;
 	item_t leftansttype;
