@@ -1758,7 +1758,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			{
 				node_add_arg(&prs->nd, prs->anstdispl);
 			}
-			node_add_arg(&prs->nd, mode_get(prs->sx, ltype + 1));
+			node_add_arg(&prs->nd, mode_get(prs->sx, (size_t)ltype + 1));
 			prs->anst = leftanst;
 			prs->anstdispl = (int)leftanstdispl;
 		}
@@ -1798,8 +1798,8 @@ void parse_assignment_expression_internal(parser *const prs)
 			}
 			prs->anst = VAL;
 		}
-		prs->ansttype = ltype;
-		prs->stackoperands[prs->sopnd] = ltype; // тип результата - на стек
+		prs->ansttype = (int)ltype;
+		prs->stackoperands[prs->sopnd] = (int)ltype; // тип результата - на стек
 	}
 	else
 	{
