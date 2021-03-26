@@ -58,13 +58,13 @@ typedef struct parser
 	size_t pgotost;				/**< Labels counter */
 
 	int stack[100];
-	int stackop[100];
-	int stackoperands[100];
+	item_t stackop[100];
+	item_t stackoperands[100];
 	int stacklog[100];
 	size_t sp;
-	int sopnd;
+	item_t sopnd;
 	item_t anst;
-	int ansttype;
+	item_t ansttype;
 	item_t anstdispl;
 	item_t leftansttype;
 
