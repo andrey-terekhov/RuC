@@ -151,7 +151,7 @@ void binop(parser *const prs, size_t sp)
 	}
 
 	prs->stackoperands[prs->sopnd] = prs->ansttype;
-	prs->anst = VAL;
+	prs->anst = value;
 }
 
 void toval(parser *const prs)
@@ -170,7 +170,7 @@ void toval(parser *const prs)
 				node_set_type(&prs->nd, COPY0ST);
 				node_set_arg(&prs->nd, 0, prs->anstdispl);
 			}
-			else // тут может быть только ADDR
+			else // тут может быть только address
 			{
 				totree(prs, COPY1ST);
 			}
@@ -246,7 +246,7 @@ void parse_braced_init_list(parser *const prs, const item_t type)
 		token_skip_until(prs, r_brace | semicolon);
 	}
 	prs->ansttype = (int)to_modetab(prs, mode_array, type);
-	prs->anst = VAL;
+	prs->anst = value;
 }
 
 void mustbestring(parser *const prs)
@@ -709,7 +709,7 @@ void parse_standard_function_call(parser *const prs)
 		}
 		else if (func == TMSGRECEIVE || func == TGETNUM) // getnum int()   msgreceive msg_info()
 		{
-			prs->anst = VAL;
+			prs->anst = value;
 			prs->ansttype = prs->stackoperands[++prs->sopnd] =
 			func == TGETNUM ? LINT : 2; // 2 - это ссылка на msg_info
 										//не было параметра,  выдали 1 результат
@@ -763,7 +763,7 @@ void parse_standard_function_call(parser *const prs)
 					totree(prs, TConst);
 					node_add_arg(&prs->nd, dn);
 				}
-				prs->anst = VAL;
+				prs->anst = value;
 			}
 			else
 			{
@@ -796,7 +796,7 @@ void parse_standard_function_call(parser *const prs)
 					}
 					if (func == TSEMCREATE)
 					{
-						prs->anst = VAL,
+						prs->anst = value,
 						prs->ansttype = prs->stackoperands[prs->sopnd] =
 						LINT; // съели 1 параметр, выдали int
 					}
@@ -881,7 +881,7 @@ void parse_standard_function_call(parser *const prs)
 				}
 				else
 				{
-					--prs->sopnd, prs->anst = VAL;
+					--prs->sopnd, prs->anst = value;
 				}
 			}
 		}
@@ -1733,12 +1733,12 @@ void parse_assignment_expression_internal(parser *const prs)
 
 			if (prs->anst == value)
 			{
-				opp = leftanst == IDENT ? COPY0STASS : COPY1STASS;
+				opp = leftanst == variable ? COPY0STASS : COPY1STASS;
 			}
 			else
 			{
-				opp = leftanst == IDENT ? prs->anst == IDENT ? COPY00 : COPY01
-				: prs->anst == IDENT ? COPY10 : COPY11;
+				opp = leftanst == variable ? prs->anst == variable ? COPY00 : COPY01
+				: prs->anst == variable ? COPY10 : COPY11;
 			}
 			totree(prs, opp);
 			if (leftanst == variable)
@@ -1751,7 +1751,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			}
 			node_add_arg(&prs->nd, mode_get(prs->sx, (size_t)ltype + 1));
 			prs->anst = leftanst;
-			prs->anstdispl = (int)leftanstdispl;
+			prs->anstdispl = leftanstdispl;
 		}
 		else // оба операнда базового типа или указатели
 		{
@@ -1777,17 +1777,17 @@ void parse_assignment_expression_internal(parser *const prs)
 				parser_error(prs, type_missmatch);
 			}
 
-			if (leftanst == ADDR)
+			if (leftanst == address)
 			{
 				opp += 11;
 			}
 			totree_float_operation(prs, opp);
-			if (leftanst == IDENT)
+			if (leftanst == variable)
 			{
-				prs->anstdispl = (int)leftanstdispl;
+				prs->anstdispl = leftanstdispl;
 				node_add_arg(&prs->nd, leftanstdispl);
 			}
-			prs->anst = VAL;
+			prs->anst = value;
 		}
 		prs->ansttype = ltype;
 		prs->stackoperands[prs->sopnd] = ltype; // тип результата - на стек
