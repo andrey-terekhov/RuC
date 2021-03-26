@@ -1093,20 +1093,6 @@ item_t find_field(parser *const prs, int stype)
 	return 0;
 }
 
-void selectend(parser *const prs)
-{
-	while (prs->token == period)
-	{
-		prs->anstdispl += find_field(prs, prs->ansttype);
-	}
-
-	totree(prs, prs->anstdispl);
-	if (mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype))
-	{
-		totree(prs, TAddrtoval);
-	}
-}
-
 /**
  *	Parse function call [C99 6.5.2]
  *
@@ -1283,18 +1269,11 @@ void parse_postfix_expression(parser *const prs)
 			anst_push(prs, address, elem_type);
 		}
 
-		while (prs->token == ARROW)
+		while (prs->token == arrow)
 		{
-			// это выборка поля из указателя на структуру, если после
-			// -> больше одной точки подряд, схлопываем в 1 select
-			// перед выборкой мог быть вызов функции или вырезка элемента массива
-
-			if (!mode_is_pointer(prs->sx, prs->ansttype) ||
-				!mode_is_struct(prs->sx, (int)mode_get(prs->sx, prs->ansttype + 1)))
+			if (!mode_is_pointer(prs->sx, prs->ansttype) || !mode_is_struct(prs->sx, mode_get(prs->sx, prs->ansttype + 1)))
 			{
 				parser_error(prs, get_field_not_from_struct_pointer);
-				prs->was_error = 4;
-				return; // 1
 			}
 
 			if (prs->anst == IDENT)
@@ -1302,22 +1281,19 @@ void parse_postfix_expression(parser *const prs)
 				node_set_type(&prs->nd, TIdenttoval);
 			}
 			prs->anst = ADDR;
-			// pointer  мог быть значением функции (VAL) или, может быть,
-			totree(prs, TSelect); // context->anst уже был ADDR, т.е. адрес
-									  // теперь уже всегда на верхушке стека
+			totree(prs, TSelect);
 
 			prs->ansttype = (int)mode_get(prs->sx, prs->ansttype + 1);
 			prs->anstdispl = find_field(prs, prs->ansttype);
-			if (prs->was_error == 6)
+			while (prs->token == period)
 			{
-				prs->was_error = 4;
-				return; // 1
+				prs->anstdispl += find_field(prs, prs->ansttype);
 			}
-			selectend(prs);
-			if (prs->was_error == 5)
+
+			totree(prs, prs->anstdispl);
+			if (mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype))
 			{
-				prs->was_error = 4;
-				return; // 1
+				totree(prs, TAddrtoval);
 			}
 		}
 
