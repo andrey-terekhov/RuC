@@ -1582,7 +1582,7 @@ void subexpr(parser *const prs)
 	}
 }
 
-int intopassn(int next)
+int intopassn(const item_t next)
 {
 	return next == REMASS || next == SHLASS || next == SHRASS || next == ANDASS || next == EXORASS || next == ORASS;
 }
@@ -1700,8 +1700,8 @@ void parse_assignment_expression_internal(parser *const prs)
 
 	if (opassn(prs))
 	{
-		int opp = prs->op;
-		int lnext = prs->token;
+		item_t opp = prs->op;
+		item_t lnext = prs->token;
 		prs->flag_in_assignment = 1;
 		token_consume(prs);
 		parse_assignment_expression_internal(prs);
@@ -1713,8 +1713,8 @@ void parse_assignment_expression_internal(parser *const prs)
 			return;
 		}
 		// Снимаем типы операндов со стека
-		int rtype = prs->stackoperands[prs->sopnd--];
-		int ltype = prs->stackoperands[prs->sopnd];
+		item_t rtype = prs->stackoperands[prs->sopnd--];
+		item_t ltype = prs->stackoperands[prs->sopnd];
 
 		if (intopassn(lnext) && (mode_is_float(ltype) || mode_is_float(rtype)))
 		{
