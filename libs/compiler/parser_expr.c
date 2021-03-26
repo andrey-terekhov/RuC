@@ -1257,57 +1257,44 @@ void parse_postfix_expression(parser *const prs)
 		parse_function_call(prs, lid);
 	}
 
-	while (prs->token == LEFTSQBR || prs->token == ARROW || prs->token == DOT)
+	while (prs->token == l_square || prs->token == arrow || prs->token == period)
 	{
-		while (prs->token == LEFTSQBR) // вырезка из массива (возможно, многомерного)
+		while (token_try_consume(prs, l_square))
 		{
+			const item_t array_mode = anst_pop(prs);
 			if (was_func)
 			{
 				parser_error(prs, slice_from_func);
-				prs->was_error = 4;
-				return; // 1
+				token_skip_until(prs, semicolon);
 			}
-			if (!mode_is_array(prs->sx, prs->ansttype)) // вырезка не из массива
+
+			if (!mode_is_array(prs->sx, array_mode))
 			{
 				parser_error(prs, slice_not_from_array);
-				prs->was_error = 4;
-				return; // 1
+				token_skip_until(prs, semicolon);
 			}
 
-			item_t elem_type = mode_get(prs->sx, prs->ansttype + 1);
-
-			scanner(prs);
-
-			if (prs->anst == IDENT) // a[i]
+			const item_t elem_type = mode_get(prs->sx, array_mode + 1);
+			if (anst_peek(prs) == variable)
 			{
 				node_set_type(&prs->nd, TSliceident);
 				node_set_arg(&prs->nd, 0, prs->anstdispl);
 			}
-			else // a[i][j]
+			else
 			{
 				totree(prs, TSlice);
 			}
+			node_add_arg(&prs->nd, elem_type);
 
-			totree(prs, elem_type);
-			parse_expression_internal(prs);
-			toval(prs);
-			prs->sopnd--;
-			totree(prs, TExprend);
-			if (prs->was_error == 4)
-			{
-				return; // 1
-			}
-			if (!mode_is_int(prs->ansttype))
+			const item_t index_type = parse_condition(prs, &prs->nd);
+			if (!mode_is_int(index_type))
 			{
 				parser_error(prs, index_must_be_int);
-				prs->was_error = 4;
-				return; // 1
 			}
 
-			must_be(prs, RIGHTSQBR, no_rightsqbr_in_slice);
+			token_expect_and_consume(prs, r_square, no_rightsqbr_in_slice);
 
-			prs->stackoperands[prs->sopnd] = prs->ansttype = (int)elem_type;
-			prs->anst = ADDR;
+			anst_push(prs, address, elem_type);
 		}
 
 		while (prs->token == ARROW)
@@ -1386,6 +1373,7 @@ void parse_postfix_expression(parser *const prs)
 						return; // 1
 					}
 				}
+
 				vector_set(&TREE, vector_size(&TREE) - 1, prs->anstdispl);
 			}
 			else // ADDR
