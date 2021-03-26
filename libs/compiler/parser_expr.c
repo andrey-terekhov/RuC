@@ -180,10 +180,8 @@ void toval(parser *const prs)
 		{
 			if (prs->anst == IDENT)
 			{
-				vector_remove(&TREE);
-				vector_remove(&TREE);
-				totree(prs, COPY0ST);
-				totree(prs, prs->anstdispl);
+				node_set_type(&prs->nd, COPY0ST);
+				node_set_arg(&prs->nd, 0, prs->anstdispl);
 			}
 			else // тут может быть только ADDR
 			{
@@ -198,6 +196,7 @@ void toval(parser *const prs)
 	if (prs->anst == IDENT)
 	{
 		vector_set(&prs->sx->tree, vector_size(&prs->sx->tree) - 2, mode_is_float(prs->ansttype) ? TIdenttovald : TIdenttoval);
+		//node_set_type(&prs->nd, mode_is_float(prs->ansttype) ? TIdenttovald : TIdenttoval);
 	}
 
 	if (!mode_is_array(prs->sx, prs->ansttype) && !mode_is_pointer(prs->sx, prs->ansttype) && prs->anst == ADDR)
@@ -1281,9 +1280,8 @@ void parse_postfix_expression(parser *const prs)
 
 			if (prs->anst == IDENT) // a[i]
 			{
-				const size_t size = vector_size(&TREE);
-				vector_set(&TREE, size - 2, TSliceident);
-				vector_set(&TREE, size - 1, prs->anstdispl);
+				node_set_type(&prs->nd, TSliceident);
+				node_set_arg(&prs->nd, 0, prs->anstdispl);
 			}
 			else // a[i][j]
 			{
@@ -1328,7 +1326,7 @@ void parse_postfix_expression(parser *const prs)
 
 			if (prs->anst == IDENT)
 			{
-				vector_set(&TREE, vector_size(&TREE) - 2, TIdenttoval);
+				node_set_type(&prs->nd, TIdenttoval);
 			}
 			prs->anst = ADDR;
 			// pointer  мог быть значением функции (VAL) или, может быть,
