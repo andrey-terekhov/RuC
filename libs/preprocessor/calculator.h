@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 /**
- *	Calculate arithmetic expression
+ *	Calculate an arithmetic expression
  *
  *	@param	env					Preprocessor environment
  *	@param	result		Buffer to return result arithmetic expression
@@ -33,7 +33,7 @@ extern "C" {
 int calculate_arithmetic(environment *const env, char *const result);
 
 /**
- *	Calculate logical expression
+ *	Calculate a logical expression
  *
  *	@param	env					Preprocessor environment
  *
