@@ -1,4 +1,4 @@
-#define ABC(a b) (a - b)
+#EVAL (2 + 2
 
 int main()
 {
