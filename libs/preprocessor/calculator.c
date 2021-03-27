@@ -146,7 +146,7 @@ int get_digit(universal_io *in, double *res, char32_t cur, char32_t next, char32
 	return flag_int;
 }
 
-char get_operation(const char32_t cur, const char32_t next)
+char32_t get_operation(const char32_t cur, const char32_t next)
 {
 	switch (cur)
 	{
@@ -156,7 +156,7 @@ char get_operation(const char32_t cur, const char32_t next)
 	case '!':
 		if ((next == cur && cur != '!') || (cur == '!' && next == '='))
 		{
-			return (char)cur;
+			return cur;
 		}
 		else
 		{
@@ -184,7 +184,7 @@ char get_operation(const char32_t cur, const char32_t next)
 	}
 }
 
-int get_prior(const char operation)
+int get_prior(const char32_t operation)
 {
 	switch (operation)
 	{
@@ -213,7 +213,7 @@ int get_prior(const char operation)
 	}
 }
 
-double calc_count(const double x, const double y, const char operation, const int is_int)
+double calc_count(const double x, const double y, const char32_t operation, const int is_int)
 {
 	switch (operation)
 	{
@@ -363,10 +363,10 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 	return 0;
 }
 
-int calc_operation(environment *const env, double *const stack, int *const is_int, char *const operation, int *op_size, int *stk_size, const int type)
+int calc_operation(environment *const env, double *const stack, int *const is_int, char32_t *const operation, int *op_size, int *stk_size, const int type)
 {
-	const char opr = get_operation((char)env->curchar, (char)env->nextchar);
-	if (!opr)
+	const char32_t opr = get_operation((char)env->curchar, (char)env->nextchar);
+	if (opr == '\0')
 	{
 		env_error(env, third_party_symbol);
 		return -1;
@@ -404,7 +404,7 @@ int calc_operation(environment *const env, double *const stack, int *const is_in
 	return 0;
 }
 
-int calc_close(double *const stack, int *const is_int, const char *operation, int *op_size, int *stk_size)
+int calc_close(double *const stack, int *const is_int, const char32_t *operation, int *op_size, int *stk_size)
 {
 	int scope_flag = 0;
 	if (operation[*op_size - 1] == ')')
@@ -431,7 +431,7 @@ int calc_close(double *const stack, int *const is_int, const char *operation, in
 }
 
 int additional_elements(environment *const env, double *const stack, int *const is_int
-	, char *const operation , int *op_size, int *stk_size, int *type, int operation_flag)
+	, char32_t *const operation , int *op_size, int *stk_size, int *type, int operation_flag)
 {
 	if (env->curchar == '#' && *type == LOGIC && !operation_flag)
 	{
@@ -496,7 +496,7 @@ int additional_elements(environment *const env, double *const stack, int *const 
 int calculate(environment *const env, char *const result)
 {
 	int op_size = 0;
-	char operation[OPN_SIZE];
+	char32_t operation[OPN_SIZE];
 
 	int expression_type = LOGIC;
 	if (result != NULL)
