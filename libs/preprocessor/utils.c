@@ -102,16 +102,16 @@ int macro_keywords(environment *const env)
 	return 0;
 }
 
-int mf_equal(int i, environment *const env)
+int mf_equal(environment *const env, int i, char32_t *buffer)
 {
-	int j = 0;
+	size_t j = 0;
 	i += 2;
 
-	while (env->reprtab[i] == env->mstring[j])
+	while (env->reprtab[i] == buffer[j])
 	{
 		i++;
 		j++;
-		if (env->reprtab[i] == 0 && env->mstring[j] == MACRO_END)
+		if (env->reprtab[i] == 0 && buffer[j] == MACRO_END)
 		{
 			return 1;
 		}
@@ -120,26 +120,26 @@ int mf_equal(int i, environment *const env)
 	return 0;
 }
 
-int collect_mident(environment *const env)
+int collect_mident(environment *const env, char32_t *buffer)
 {
 	int r;
 	int hash = 0;
-	env->msp = 0;
+	size_t buffer_size = 0;
 
 	while (utf8_is_letter(env->curchar) || utf8_is_digit(env->curchar))
 	{
-		env->mstring[env->msp++] = env->curchar;
+		buffer[buffer_size++] = env->curchar;
 		hash += env->curchar;
 		m_nextch(env);
 	}
 
-	env->mstring[env->msp] = MACRO_END;
+	buffer[buffer_size] = MACRO_END;
 	hash &= 255;
 	r = env->hashtab[hash];
 
 	while (r)
 	{
-		if (r >= env->mfirstrp && mf_equal(r, env))
+		if (mf_equal(env, r, buffer))
 		{
 			return (env->macro_tab[env->reprtab[r + 1]] != MACRO_UNDEF) ? r : 0;
 		}
@@ -207,9 +207,9 @@ int skip_string(environment *const env)
 
 void end_of_file(environment *const env)
 {
-	while (env->nextch_type != FILE_TYPE)
+	while (env_get_io_type(env) != file_type)
 	{
-		m_old_nextch_type(env);
+		env_io_switch_to_old_type(env);
 	}
 	env->curchar = EOF;
 }

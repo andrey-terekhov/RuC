@@ -19,59 +19,55 @@
 #include "constants.h"
 #include "uniio.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+enum IO_TYPE
+{
+	file_type = -1,
+	macro_text_type,
+	param_type,
+	if_type,
+	while_type,
+	all_types,
+};
+
 typedef struct environment
 {
+	
+	//local io struct
+	int *local_io[all_types];
+	size_t local_io_size[all_types];
+
+	int curent_io_type;
+	int *curent_io;
+	int curent_io_prt;
+
+	int macro_tab[MAXTAB];
+	int change[STRING_SIZE * 3];
+
+	int define_stack[STRING_SIZE];
+	size_t define_stack_prt;
+
+	int old_nextchar;
+	int old_io_type[DEPTH];
+	int *old_io[DEPTH];
+	size_t depth_io;
+	//end local io struct
+
 	int hashtab[256];
 	int reprtab[MAXTAB];
 	int rp;
 
-	int macro_tab[MAXTAB];
-	size_t macro_tab_size;
-
 	char error_string[STRING_SIZE];
 	size_t position;
 
-	int mstring[STRING_SIZE];
-	size_t msp;
-
-	int param[STRING_SIZE * 3];
-	size_t param_size;
-
-	int localstack[STRING_SIZE];
-	size_t local_stack_size;
-
-	char calc_string[STRING_SIZE];
-	size_t calc_string_size;
-
-	int if_string[STRING_SIZE * 2];
-	size_t if_string_size;
-
-	int while_string[STRING_SIZE * 5];
-	size_t while_string_size;
-
-	int mfirstrp;
-
-	int prep_flag;
-
 	int curchar, nextchar;
-	int nextch_type;
 	int cur;
 
-	size_t nextp;
-
-	int oldcurchar[DEPTH];
-	int oldnextchar[DEPTH];
-	int oldnextch_type[DEPTH];
-	int oldnextp[DEPTH];
-	size_t depth;
-
 	int nested_if;
-	int flagint;
+	int prep_flag;
 
 	const char *curent_path;
 
@@ -91,10 +87,26 @@ void env_clear_error_string(environment *const env);
  */
 void env_add_comment(environment *const env);
 
-void m_change_nextch_type(environment *const env, int type, int p);
-void m_old_nextch_type(environment *const env);
+int env_get_io_type(environment *const env);
 
-int get_depth(environment *const env);
+size_t env_get_io_size(environment *const env, int type);
+
+int env_set_define_stack_add(environment *const env, int num);
+
+int env_clear_param_define_stack(environment *const env);
+
+int env_get_define_stack_prt(environment *const env);
+
+int env_clear_param(environment *const env, size_t size);
+
+int env_set_define_stack_prt(environment *const env, int num);
+
+int env_io_add_char(environment *const env, int type, int simbol);
+
+int env_io_switch_to_new_type(environment *const env, int type, int prt);
+void env_io_switch_to_old_type(environment *const env);
+
+int env_get_depth_io(environment *const env);
 int get_next_char(environment *const env);
 
 void m_fprintf(environment *const env, int a);

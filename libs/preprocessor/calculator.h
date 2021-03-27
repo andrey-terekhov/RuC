@@ -18,11 +18,6 @@
 
 #include "environment.h"
 
-
-#define LOGIC 		0
-#define ARITHMETIC	1
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,12 +25,21 @@ extern "C" {
 /**
  *	Calculate an arithmetic or logical expression
  *
- *	@param	env				Preprocessor environment
- *	@param	type			Type expression
+ *	@param	env					Preprocessor environment
+ *	@param	result		Buffer to return result arithmetic expression
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	@c 0 success, @c -1 on failure
  */
-int calculate(environment *const env, const int type);
+int calculate_arithmetic(environment *const env, char *const result);
+
+/**
+ *	Calculate an arithmetic or logical expression
+ *
+ *	@param	env					Preprocessor environment
+ *
+ *	@return	@c 1 on true, @c 0 on folse, @c -1 on failure
+ */
+int calculate_logic(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

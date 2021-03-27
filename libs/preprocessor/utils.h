@@ -26,7 +26,7 @@ extern "C" {
 int equal_reprtab(int i, int j, environment *const env);
 void output_keywords(environment *const env);
 int macro_keywords(environment *const env);
-int collect_mident(environment *const env);
+int collect_mident(environment *const env, char32_t *buffer);
 
 /**
  *	Skip all spaces and tabs to the end of the line

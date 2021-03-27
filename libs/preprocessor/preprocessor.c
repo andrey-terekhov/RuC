@@ -129,7 +129,6 @@ int macro_form_io(workspace *const ws, universal_io *const output)
 	linker lk = lk_create(ws, &env);
 
 	add_keywods(&env);
-	env.mfirstrp = env.rp;
 
 	return preprocess_all(&lk);
 }

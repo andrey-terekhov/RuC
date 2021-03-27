@@ -15,6 +15,7 @@
  */
 
 #include "macro_load.h"
+#include <string.h>
 #include "calculator.h"
 #include "constants.h"
 #include "environment.h"
@@ -28,14 +29,15 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 	while (env->curchar != EOF)
 	{
 		if (utf8_is_letter(env->curchar))
-		{
-			const int macro_ptr = collect_mident(env);
+		{	
+			char32_t buffer[STRING_SIZE];
+			const int macro_ptr = collect_mident(env, buffer);
 			if (macro_ptr)
 			{
-				const size_t old_change_size = env->param_size;
-				const size_t old_local_stack_size = env->local_stack_size;
+				const size_t old_param_size = env_get_io_size(env, param_type);
+				const size_t old_define_stack_size = env_get_define_stack_prt(env);
 
-				env->local_stack_size += num;
+				env_set_define_stack_prt(env, num);
 				if (macro_get(env, macro_ptr))
 				{
 					return -1;
@@ -43,35 +45,36 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 
 				int loc_change[STRING_SIZE];
 				size_t loc_change_size = 0;
-				const int loc_depth = env->nextch_type == PARAM_TYPE
-				? get_depth(env) - 1
-				: get_depth(env);
+				const int loc_depth = env_get_io_type(env) == param_type
+				? env_get_depth_io(env) - 1
+				: env_get_depth_io(env);
 
-				while (get_depth(env) >= loc_depth) // 1 переход потому что есть префиксная замена
+				while (env_get_depth_io(env) >= loc_depth) // 1 переход потому что есть префиксная замена
 				{
 					loc_change[loc_change_size++] = env->curchar;
 					m_nextch(env);
 				}
 
-				env->local_stack_size = old_local_stack_size;
-				env->param_size = old_change_size;
+				env_set_define_stack_prt(env, (int)-num);
+				env_clear_param(env, old_param_size);
 
 				for (size_t i = 0; i < loc_change_size; i++)
 				{
-					env->param[env->param_size++] = loc_change[i];
+					env_io_add_char(env, param_type, loc_change[i]);
 				}
 			}
 			else
 			{
-				for (size_t i = 0; i < env->msp; i++)
+				size_t i = 0;
+				while(buffer[i] != MACRO_END)
 				{
-					env->param[env->param_size++] = env->mstring[i];
+					env_io_add_char(env, param_type, buffer[i++]);
 				}
 			}
 		}
 		else if (env->curchar == '(')
 		{
-			env->param[env->param_size++] = env->curchar;
+			env_io_add_char(env, param_type, env->curchar);
 			m_nextch(env);
 
 			if (function_scope_collect(env, num, 0))
@@ -83,7 +86,7 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 		{
 			if (was_bracket == 0)
 			{
-				env->param[env->param_size++] = env->curchar;
+				env_io_add_char(env, param_type, env->curchar);
 				m_nextch(env);
 			}
 
@@ -93,26 +96,29 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 		{
 			if (macro_keywords(env) == SH_EVAL && env->curchar == '(')
 			{
-				if (calculate(env, ARITHMETIC))
+				char buffer[STRING_SIZE];
+				if (calculate_arithmetic(env, buffer))
 				{
 					return -1;
 				}
-				for (size_t i = 0; i < env->calc_string_size; i++)
+
+				size_t lenght = strlen(buffer);
+				for (size_t i = 0; i < lenght; i++)
 				{
-					env->param[env->param_size++] = env->calc_string[i];
+					env_io_add_char(env, param_type, buffer[i]);
 				}
 			}
 			else
 			{
 				for (size_t i = 0; i < (size_t)env->reprtab[env->rp]; i++)
 				{
-					env->param[env->param_size++] = env->reprtab[env->rp + 2 + i];
+					env_io_add_char(env, param_type, env->reprtab[env->rp + 2 + i]);
 				}
 			}
 		}
 		else
 		{
-			env->param[env->param_size++] = env->curchar;
+			env_io_add_char(env, param_type, env->curchar);
 			m_nextch(env);
 		}
 	}
@@ -132,7 +138,7 @@ int function_stack_create(environment *const env, const size_t parameters)
 	}
 
 	size_t num = 0;
-	env->localstack[num + env->local_stack_size] = env->param_size;
+	env_set_define_stack_add(env, num);
 
 	while (env->curchar != ')')
 	{
@@ -140,12 +146,12 @@ int function_stack_create(environment *const env, const size_t parameters)
 		{
 			return -1;
 		}
-		env->param[env->param_size++] = END_PARAMETER;
+		env_io_add_char(env, param_type, END_PARAMETER);
 
 		if (env->curchar == ',')
 		{
 			num++;
-			env->localstack[num + env->local_stack_size] = env->param_size;
+			env_set_define_stack_add(env, num);
 
 			if (num > parameters)
 			{
@@ -168,7 +174,7 @@ int function_stack_create(environment *const env, const size_t parameters)
 			}
 			m_nextch(env);
 
-			env->param_size = env->localstack[env->local_stack_size];
+			env_clear_param_define_stack(env);
 			return 0;
 		}
 	}
@@ -185,8 +191,6 @@ int macro_get(environment *const env, const size_t index)
 		return -1;
 	}
 
-	env->msp = 0;
-
 	int loc_macro_ptr = env->reprtab[index + 1];
 	if (env->macro_tab[loc_macro_ptr++] == MACRO_FUNCTION)
 	{
@@ -198,7 +202,7 @@ int macro_get(environment *const env, const size_t index)
 		loc_macro_ptr++;
 	}
 
-	m_change_nextch_type(env, MACRO_TEXT_TYPE, loc_macro_ptr);
+	env_io_switch_to_new_type(env, macro_text_type, loc_macro_ptr);
 	m_nextch(env);
 
 	return 0;

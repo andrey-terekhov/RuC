@@ -15,12 +15,15 @@
  */
 
 #include "parser.h"
+#include <string.h>
 #include "calculator.h"
 #include "constants.h"
 #include "environment.h"
 #include "error.h"
+#include "linker.h"
 #include "macro_load.h"
 #include "macro_save.h"
+#include "uniprinter.h"
 #include "utils.h"
 
 
@@ -33,23 +36,12 @@ int if_check(environment *const env, int type_if)
 
 	if (type_if == SH_IF)
 	{
-		if (calculate(env, LOGIC))
-		{
-			return -1;
-		}
-
-		if (env->calc_string[0] == '0')
-		{
-			return 0;
-		}
-		else
-		{
-			return 1;
-		}
+		return calculate_logic(env);
 	}
 	else
 	{
-		if (collect_mident(env))
+		char32_t buffer[STRING_SIZE];
+		if (collect_mident(env, buffer))
 		{
 			flag = 1;
 		}
@@ -256,35 +248,33 @@ int if_implementation(linker *const lk)
 
 int while_collect(environment *const env)
 {
-	const int oldwsp = (int)env->while_string_size;
+	const int oldwsp = (int)env_get_io_size(env, while_type);
 
-	env->while_string[env->while_string_size++] = WHILE_BEGIN;
-	env->while_string[env->while_string_size++] = (int)env->if_string_size;
-	env->while_string_size++;
+	env_io_add_char(env, while_type, WHILE_BEGIN);
+	env_io_add_char(env, while_type, (int)env_get_io_size(env, if_type));
 
 	while (env->curchar != '\n')
 	{
-		env->if_string[env->if_string_size++] = env->curchar;
+		env_io_add_char(env, if_type, env->curchar);
 		m_nextch(env);
 	}
-	env->if_string[env->if_string_size++] = '\n';
+	env_io_add_char(env, if_type, '\n');
 	m_nextch(env);
 
 	while (env->curchar != EOF)
 	{
 		if (env->curchar == '#')
 		{
-			env->cur = macro_keywords(env);
+			int cur = macro_keywords(env);
 
-			if (env->cur == SH_WHILE)
+			if (cur == SH_WHILE)
 			{
 				while_collect(env);
 			}
-			else if (env->cur == SH_ENDW)
+			else if (cur == SH_ENDW)
 			{
-				env->while_string[env->while_string_size++] = ' ';
-				env->while_string[oldwsp + 2] = (int)env->while_string_size;
-				env->cur = 0;
+				env_io_add_char(env, while_type, WHILE_END);
+				env_io_add_char(env, while_type, WHILE_END);
 
 				return 0;
 			}
@@ -292,11 +282,12 @@ int while_collect(environment *const env)
 			{
 				for (size_t i = 0; i < (size_t)env->reprtab[env->rp]; i++)
 				{
-					env->while_string[env->while_string_size++] = env->reprtab[env->rp + 2 + i];
+					env_io_add_char(env, while_type, env->reprtab[env->rp + 2 + i]);
 				}
 			}
 		}
-		env->while_string[env->while_string_size++] = env->curchar;
+
+		env_io_add_char(env, while_type, env->curchar);
 		m_nextch(env);
 	}
 
@@ -307,40 +298,39 @@ int while_collect(environment *const env)
 int while_implementation(linker *const lk)
 {
 	environment *env = lk->env;
-	const int oldernextp = (int)env->nextp;
-	const size_t end = (size_t)env->while_string[oldernextp + 2];
+	const int begin = env->curchar;
 	int error = 0;
 
-	env->cur = 0;
-	while (env->while_string[oldernextp] == WHILE_BEGIN)
+	while (begin == WHILE_BEGIN)
 	{
 		m_nextch(env);
-		m_change_nextch_type(env, IF_TYPE, env->while_string[env->nextp]);
+		env_io_switch_to_new_type(env, if_type, env->curchar);
 		m_nextch(env);
-		if (calculate(env, LOGIC))
+		int res = calculate_logic(env);
+		if (res == -1)
 		{
 			return -1;
 		}
-		m_old_nextch_type(env);
+		env_io_switch_to_old_type(env);
 
-
-		if (env->calc_string[0] == '0')
+		if (res == 0)
 		{
-			env->nextp = end;
 			m_nextch(env);
 			return 0;
 		}
+		else
+		{
+			env->nextp = oldernextp;
+		}
 
-		m_nextch(env);
 		m_nextch(env);
 		m_nextch(env);
 		skip_separators(env);
 
-		while (env->nextp != end || env->nextch_type != WHILE_TYPE)
+		while (env->curchar != WHILE_END && env_get_io_type(env) == while_type)
 		{
 			if (env->curchar == WHILE_BEGIN)
 			{
-				env->nextp--;
 				if (while_implementation(lk))
 				{
 					return -1;
@@ -360,7 +350,6 @@ int while_implementation(linker *const lk)
 				}
 			}
 		}
-		env->nextp = oldernextp;
 	}
 	return 0;
 }
@@ -383,9 +372,9 @@ int parser_include(linker *const lk)
 		return index == SIZE_MAX ? 0 : -1;
 	}
 
-	if (env->nextch_type != FILE_TYPE)
+	if (env_get_io_type(env) != file_type)
 	{
-		m_change_nextch_type(env, FILE_TYPE, 0);
+		env_io_switch_to_new_type(env, file_type, 0);
 		flag_io_type++;
 	}
 
@@ -400,7 +389,7 @@ int parser_include(linker *const lk)
 	
 	if (flag_io_type)
 	{
-		m_old_nextch_type(env);
+		env_io_switch_to_old_type(env);
 	}
 
 	get_next_char(env);
@@ -428,7 +417,8 @@ int preprocess_words(linker *const lk)
 		}
 		case SH_UNDEF:
 		{
-			const int macro_ptr = collect_mident(env);;
+			char32_t buffer[STRING_SIZE];
+			const int macro_ptr = collect_mident(env, buffer);
 			if (macro_ptr)
 			{
 				env->macro_tab[env->reprtab[macro_ptr + 1]] = MACRO_UNDEF;
@@ -461,31 +451,32 @@ int preprocess_words(linker *const lk)
 				env_error(env, after_eval_must_be_ckob);
 				return -1;
 			}
-			else if (calculate(env, ARITHMETIC))
+			char buffer[STRING_SIZE];
+			if (calculate_arithmetic(env, buffer))
 			{
 				return -1;
 			}
 
-			m_change_nextch_type(env, CALC_TYPE, 0);
+			uni_printf(env->output, "%s", buffer);
 			return 0;
 		}
 		case SH_WHILE:
 		{
-			env->while_string_size = 0;
-			env->if_string_size = 0;
+			int if_io[STRING_SIZE * 2];
+			int while_io[STRING_SIZE * 5];
 			if (while_collect(env))
 			{
 				return -1;
 			}
-			m_change_nextch_type(env, WHILE_TYPE, 0);
+			env_io_switch_to_new_type(env, while_type, 0);
 			m_nextch(env);
 			m_nextch(env);
 
 			env->nextp = 0;
 			int res = while_implementation(lk);
-			if (env->nextch_type != FILE_TYPE)
+			if (env_get_io_type(env) != file_type)
 			{
-				m_old_nextch_type(env);
+				env_io_switch_to_old_type(env);
 			}
 
 			return res;
@@ -514,8 +505,8 @@ int preprocess_token(linker *const lk)
 			if (env->cur != 0)
 			{
 				const int res = preprocess_words(lk);
-				if (env->nextchar != '#' && env->nextch_type != WHILE_TYPE &&
-					env->nextch_type != MACRO_TEXT_TYPE)//curflag
+				if (env->nextchar != '#' && env_get_io_type(env) != while_type &&
+					env_get_io_type(env) != macro_text_type)//curflag
 				{
 					env_add_comment(env);
 				}
@@ -547,17 +538,15 @@ int preprocess_token(linker *const lk)
 		{
 			if (utf8_is_letter(env->curchar) && env->prep_flag == 1)
 			{
-				const int macro_ptr = collect_mident(env);
+				char32_t buffer[STRING_SIZE];
+				const int macro_ptr = collect_mident(env, buffer);
 				if (macro_ptr)
 				{
 					return macro_get(env, macro_ptr);
 				}
 				else
 				{
-					for (size_t i = 0; i < env->msp; i++)
-					{
-						m_fprintf(env, env->mstring[i]);
-					}
+					uni_printf(env->output, "%s", buffer);
 				}
 			}
 			else
