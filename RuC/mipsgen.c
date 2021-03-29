@@ -112,6 +112,15 @@ int isregsf(int r)
 #define memory_overflow   6
 #define wrong_number_of_elems 7
 
+struct ind_var
+{
+	int id;
+	int step;
+	int reg;
+};
+
+struct ind_var ind_var_info[10];
+
 void merror(int type)
 {
     switch (type)
@@ -2022,6 +2031,22 @@ void MPrimary()
                     MExpr_gen();
             }
                 break;
+            case TIndVar:
+            {
+            	struct ind_var a;
+            	a.id = tree[tc++];
+            	a.step = tree[tc++];
+            	// пока так, потом здесь будет счётчик, а не 0
+            	ind_var_info[0] = a;
+            }
+            	break;
+            case TSliceInd:
+            {
+            	// Должен быть поиск по id + нужно изменение индекса по шагу сделать
+            	tc++;
+            	areg = ind_var_info[0].reg;
+            }
+            	break;
             case TSliceident:
             {
                 int olddispl, oldareg, oldbox = mbox, oldreg = breg, eltype;
@@ -2065,7 +2090,7 @@ void MPrimary()
 					mbox = BF;                       // rez - это C0
 					MExpr_gen();
 					tocodeB(lw, rez, olddispl, oldareg);
-					MExpr_gen();
+//					MExpr_gen(); // откуда вообще этот вызов?
 					if (manst == CONST)
 					{
 						if (num > 32768)
@@ -2358,6 +2383,20 @@ void MStmt_gen()
                 	breg = cond_reg;
                 }
                 MExpr_gen();         // cond
+                if (enable_ind_var)
+                {
+                	endtc = tc;
+                	tc = stmtref;
+                	tc++; // TBegin
+                	printf("tc=%i\n", tc);
+                	MExpr_gen(); // TIndVar
+                	MExpr_gen(); // TSliceident
+                	printf("tc=%i areg=%i\n", tc, areg);
+                	// Пока так, потом будет не 0, а счётчик
+                	ind_var_info[0].reg = areg;
+                	stmtref = tc;
+                	tc = endtc;
+                }
                 if (cycle_condition_calculation && delay_slot && is_last_nested)
                 {
                 	tocodeI(addi, for_value_reg, for_value_reg, -1);
@@ -2381,6 +2420,7 @@ void MStmt_gen()
                 mbox = BV;
                 incrtc = incrref;
                 tc = stmtref;
+                printf("tc=%i\n", tc);
                 MStmt_gen();         // statement
                 if (!(delay_slot && is_last_nested))
                 {
@@ -2420,7 +2460,10 @@ void MStmt_gen()
         		tocodeI(addi, cond_reg, cond_reg, 1);
         tocodeL("end", adbreak);
         tocodeL("ELSE", adbreak);
+        	if (enable_ind_var)
+        		tc++; // TEnd
 			tc++; // Здесь был TForEnd
+			printf("tc=%i\n", tc);
 
             adbreak = oldbreak;
             adcont = oldcont;

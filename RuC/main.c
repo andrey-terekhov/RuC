@@ -10,7 +10,7 @@
 const char * name =
 //"tests/Mishatest.c";
 
-"tests/mips/optimizations/big_matrix.c";
+"tests/mips/optimizations/ind_var/test11.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
@@ -54,10 +54,10 @@ int anst, anstdispl, ansttype, leftansttype = -1;
 int bad_printf_placeholder = 0;
 
 // optimization flags
-int cycle_jump_reduce = 0;
+int cycle_jump_reduce = 1;
 int enable_ind_var = 1;
-int cycle_condition_calculation = 0;
-int delay_slot = 0;
+int cycle_condition_calculation = 1;
+int delay_slot = 1;
 int check_nested_for;
 
 extern void preprocess_file();
