@@ -3531,9 +3531,9 @@ int enum_decl_list(analyzer *context, int enumType, int ENUM_TYPE)
 		oldrepr = REPRTAB_POS;
 		loc_modetab[locmd++] = t;
 		loc_modetab[locmd++] = oldrepr;
+        // TODO
 		if (context->cur == IDENT && ENUM_TYPE == MENUM)
 		{
-			// TODO
 			int oldid = toidentab(context, 0, LENUM);
 			totree(context, TDeclid);
 			totree(context, context->sx->identab[oldid + 3]);
