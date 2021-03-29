@@ -8,5 +8,5 @@ int main()
 
 void fun()
 {
-	
+
 }

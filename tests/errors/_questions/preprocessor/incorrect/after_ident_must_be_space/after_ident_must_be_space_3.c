@@ -1,4 +1,4 @@
-#define ABC(a b) (a - b)
+#defineABC 1
 
 int main()
 {

@@ -75,11 +75,11 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 
-## VSCode
+# VSCode
 .vscode/*
 *.code-workspace
 
-## Xcode
+# Xcode
 xcuserdata/
 build*/
 DerivedData/
@@ -92,6 +92,9 @@ Release/
 *.mode2v3
 *.perspectivev3
 *.xcodeproj
+
+# Windows
+desktop.ini
 
 # macOS
 .DS_Store

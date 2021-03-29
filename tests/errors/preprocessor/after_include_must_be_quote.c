@@ -1,4 +1,4 @@
-#defineABC 1
+#include dont_elif.c"
 
 int main ()
 {
