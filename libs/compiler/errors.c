@@ -87,7 +87,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case wait_right_sq_br: // test_exist
 			sprintf(msg, "ожидалась ]");
 			break;
-		case only_functions_may_have_type_VOID: // need_test
+		case only_functions_may_have_type_VOID: // test_exist
 			sprintf(msg, "только функции могут иметь тип ПУСТО");
 			break;
 		case decl_and_def_have_diff_type:	// test_exist
