@@ -328,7 +328,7 @@ int toidentab(analyzer *context, int f, int type)
 	}
 
 	context->sx->identab[context->sx->id + 1] = REPRTAB_POS; // ссылка на представление
-	if (f == -2)									 // #define
+	if (f == -2)											 // #define
 	{
 		context->sx->identab[context->sx->id + 2] = 1;
 		context->sx->identab[context->sx->id + 3] = type; // это целое число, определенное по #define
@@ -336,17 +336,17 @@ int toidentab(analyzer *context, int f, int type)
 	else // дальше тип или ссылка на modetab (для функций и структур)
 	{
 		context->sx->identab[context->sx->id + 2] = type; // тип -1 int, -2 char, -3 float, -4 long, -5 double,
-												  // если тип > 0, то это ссылка на modetab
+														  // если тип > 0, то это ссылка на modetab
 		if (f == 1)
 		{
 			context->sx->identab[context->sx->id + 2] = 0; // 0, если первым встретился goto, когда встретим метку,
-												   // поставим 1
+														   // поставим 1
 			context->sx->identab[context->sx->id + 3] = 0; // при генерации кода когда встретим метку, поставим pc
 		}
 		else if (f >= 1000)
 		{
 			context->sx->identab[context->sx->id + 3] = f; // это описание типа, если f > 1000, то f-1000 - это номер
-												   // иниц проц
+														   // иниц проц
 		}
 		else if (f)
 		{
@@ -653,8 +653,7 @@ void mustberowofint(analyzer *context)
 			context->ansttype = newdecl(context->sx, MARRAY, LINT);
 		}
 	}
-	if (!(is_array(context->sx, context->ansttype) &&
-		  is_int(mode_get(context->sx, context->ansttype + 1))))
+	if (!(is_array(context->sx, context->ansttype) && is_int(mode_get(context->sx, context->ansttype + 1))))
 	{
 		context_error(context, not_rowofint_in_stanfunc);
 		context->error_flag = 5;
@@ -689,8 +688,7 @@ void mustberowoffloat(analyzer *context)
 		}
 	}
 
-	if (!(is_array(context->sx, context->ansttype) &&
-		  mode_get(context->sx, context->ansttype + 1) == LFLOAT))
+	if (!(is_array(context->sx, context->ansttype) && mode_get(context->sx, context->ansttype + 1) == LFLOAT))
 	{
 		context_error(context, not_rowoffloat_in_stanfunc);
 		context->error_flag = 5;
@@ -2760,8 +2758,7 @@ void statement(analyzer *context)
 
 	context->wasdefault = 0;
 	scaner(context);
-	if ((is_int(context->cur) || is_float(context->cur) || context->cur == LVOID ||
-		 context->cur == LSTRUCT) &&
+	if ((is_int(context->cur) || is_float(context->cur) || context->cur == LVOID || context->cur == LSTRUCT) &&
 		context->blockflag)
 	{
 		context_error(context, decl_after_strmt);
@@ -3555,23 +3552,27 @@ int enum_decl_list(analyzer *context, int enumType, int ENUM_TYPE)
 			{
 				quan = context->num;
 			}
+			else
+			{
+				context_error(context, type_in_enum);
+			}
 			// TODO
-			// if (ENUM_TYPE == MENUM)
-			// {
-			//     context->sx->tree[all] = szof(context, t);
-			//     inition(context, t);
-			// }
-			//            else
-			//                error(type_in_enum);
+			if (ENUM_TYPE == MENUM)
+			{
+				context->sx->tree[all] = szof(context, t);
+				inition(context, t);
+			}
+
 		}
 		// TODO
-		// else if ((context->next == END || context->next == COMMA) && ENUM_TYPE == MENUM)
-		// {
-		//  	analyzer context_tmp = *context;
-		//  	context_tmp.cur = NUMBER;
-		//  	context->sx->tree[all] = szof(context, t);
-		//  	inition(&context_tmp, t);
-		// }
+		else if ((context->next == END || context->next == COMMA) && ENUM_TYPE == MENUM)
+		{
+			analyzer context_tmp = *context;
+			context_tmp.cur = NUMBER;
+			context_tmp.ansttype = t;
+			context->sx->tree[all] = szof(context, t);
+			inition(&context_tmp, t);
+		}
 		loc_modetab[locmd++] = quan++;
 		field_count++;
 		curdispl += szof(context, t);
