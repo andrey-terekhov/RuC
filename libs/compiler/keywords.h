@@ -122,7 +122,8 @@ const char *const KEYWORDS =
 	"RECEIVE_INT_FROM_ROBOT receive_int_from_robot ПОЛУЧИТЬ_ЦЕЛ_ОТ_РОБОТА получить_цел_от_робота\n"
 	"RECEIVE_FLOAT_FROM_ROBOT receive_float_from_robot ПОЛУЧИТЬ_ВЕЩ_ОТ_РОБОТА получить_вещ_от_робота\n"
 	"RECEIVE_STRING_FROM_ROBOT receive_string_from_robot ПОЛУЧИТЬ_СТРОКУ_ОТ_РОБОТА получить_строку_от_робота\n"
-	"ASSERT assert ПРОВЕРИТЬ проверить\n";
+	"ASSERT assert ПРОВЕРИТЬ проверить\n"
+	"CLASS class КЛАСС класс\n";
 
 #ifdef __cplusplus
 } /* extern "C" */

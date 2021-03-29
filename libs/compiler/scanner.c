@@ -525,7 +525,11 @@ int scan(analyzer *context)
 		}
 		case ':':
 		{
-			nextch(context);
+            nextch(context);
+            if (context->curchar == ':') {
+                nextch(context);
+                return CLNCLN;
+            }
 			return COLON;
 		}
 		case '.':

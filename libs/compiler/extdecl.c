@@ -15,16 +15,16 @@
  */
 
 #include "extdecl.h"
-#include "errors.h"
 #include "defs.h"
+#include "errors.h"
 #include "scanner.h"
 #include <string.h>
 
+static int enum_field_type = -1;
 
 void exprassnval(analyzer *);
 void expr(analyzer *context, int level);
 void exprassn(analyzer *context, int);
-
 void struct_init(analyzer *context, int);
 int gettype(analyzer *context);
 
@@ -34,6 +34,21 @@ int gettype(analyzer *context);
 // b = 0 - это блок функции
 void block(analyzer *context, int b);
 
+
+// Функция проверяющая можно ли использовать Never NULL pointer
+int checkNPoint(analyzer *const context, int left, int right)
+{
+	if (left < 0 || right < 0)
+	{
+		return 0;
+	}
+
+	if (mode_get(context->sx, left) == MPOINT && mode_get(context->sx, right) == MNPOINT)
+	{
+		return mode_get(context->sx, left + 1) == mode_get(context->sx, right + 1);
+	}
+	return 0;
+}
 
 int newdecl(syntax *const sx, const int type, const int element_type)
 {
@@ -177,12 +192,22 @@ int is_string(syntax *const sx, const int t)
 
 int is_pointer(syntax *const sx, const int t)
 {
-	return t > 0 && mode_get(sx, t) == MPOINT;
+	return t > 0 && (mode_get(sx, t) == MPOINT || mode_get(sx, t) == MNPOINT);
 }
 
 int is_struct(syntax *const sx, const int t)
 {
 	return t > 0 && mode_get(sx, t) == MSTRUCT;
+}
+
+int is_enum(syntax *const sx, const int t)
+{
+	return t > 0 && mode_get(sx, t) == MENUM;
+}
+
+int is_enum_class(syntax *const sx, const int t)
+{
+	return t > 0 && mode_get(sx, t) == MENUMCLASS;
 }
 
 int is_float(const int t)
@@ -1302,25 +1327,76 @@ void index_check(analyzer *context)
 	}
 }
 
+int check_field(analyzer *context, int stype, int ENUM_TYPE)
+{
+	int i;
+	int flag = 1;
+	int step = mode_get(context->sx, stype) == MENUMCLASS ? 3 : 2;
+	int record_length = mode_get(context->sx, stype + 2);
+	int repr_tmp = context->sx->repr;
+
+	if (ENUM_TYPE == MENUMCLASS)
+	{
+		scaner(context);
+		mustbe(context, IDENT, after_dot_must_be_ident);
+	}
+
+	for (i = 0; i < record_length; i += step) // тут хранится удвоенное n
+	{
+		int field_type = mode_get(context->sx, stype + 3 + i);
+
+		if (mode_get(context->sx, stype + 4 + i) == REPRTAB_POS)
+		{
+			if (mode_get(context->sx, stype) == MENUMCLASS)
+			{
+				context->stackoperands[context->sopnd] = context->ansttype = LENUM;
+				enum_field_type = field_type;
+			}
+			else
+			{
+				context->stackoperands[context->sopnd] = context->ansttype = field_type;
+			}
+			flag = 0;
+			break;
+		}
+	}
+	context->sx->repr = repr_tmp;
+	if (flag)
+	{
+		context_error(context, no_field);
+		context->error_flag = 5;
+		return 0; // 1
+	}
+	return 0;
+}
+
 int find_field(analyzer *context, int stype)
 {
 	// выдает смещение до найденного поля или ошибку
-
 	int i;
 	int flag = 1;
+	int step = mode_get(context->sx, stype) == MENUMCLASS ? 3 : 2;
 	int select_displ = 0;
 	int record_length = mode_get(context->sx, stype + 2);
 
 	scaner(context);
 	mustbe(context, IDENT, after_dot_must_be_ident);
 
-	for (i = 0; i < record_length; i += 2) // тут хранится удвоенное n
+	for (i = 0; i < record_length; i += step) // тут хранится удвоенное n
 	{
 		int field_type = mode_get(context->sx, stype + 3 + i);
 
 		if (mode_get(context->sx, stype + 4 + i) == REPRTAB_POS)
 		{
-			context->stackoperands[context->sopnd] = context->ansttype = field_type;
+			if (mode_get(context->sx, stype) == MENUMCLASS)
+			{
+				context->stackoperands[context->sopnd] = context->ansttype = LENUM;
+				enum_field_type = field_type;
+			}
+			else
+			{
+				context->stackoperands[context->sopnd] = context->ansttype = field_type;
+			}
 			flag = 0;
 			break;
 		}
@@ -1337,6 +1413,22 @@ int find_field(analyzer *context, int stype)
 		return 0; // 1
 	}
 	return select_displ;
+}
+
+int find_value_enum(analyzer *context, int stype, int sname)
+{
+	int i;
+	for (i = 0; i < mode_get(context->sx, stype + 2); i += 3)
+	{
+		if (mode_get(context->sx, stype + 4 + i) == sname)
+		{
+			return mode_get(context->sx, stype + 5 + i);
+		}
+	}
+
+	context_error(context, no_field);
+	context->error_flag = 5;
+	return 0; // 1
 }
 
 void selectend(analyzer *context)
@@ -1455,7 +1547,7 @@ void postexpr(analyzer *context)
 					toval(context);
 					totree(context, TExprend);
 
-					if (mdj > 0 && mdj != context->ansttype)
+					if (mdj > 0 && mdj != context->ansttype && !checkNPoint(context, mdj, context->ansttype))
 					{
 						context_error(context, diff_formal_param_type_and_actual);
 						context->error_flag = 4;
@@ -1569,7 +1661,7 @@ void postexpr(analyzer *context)
 			context->anst = ADDR;
 			// pointer  мог быть значением функции (VAL) или, может быть,
 			totree(context, TSelect); // context->anst уже был ADDR, т.е. адрес
-									  // теперь уже всегда на верхушке стека
+			// теперь уже всегда на верхушке стека
 
 			context->ansttype = mode_get(context->sx, context->ansttype + 1);
 			context->sx->anstdispl = find_field(context, context->ansttype);
@@ -1586,7 +1678,6 @@ void postexpr(analyzer *context)
 			}
 		}
 		if (context->next == DOT)
-
 		{
 			if (!is_struct(context->sx, context->ansttype))
 			{
@@ -1638,6 +1729,21 @@ void postexpr(analyzer *context)
 				}
 			}
 		}
+	}
+	if (context->next == CLNCLN)
+	{
+		if (!is_enum_class(context->sx, context->ansttype))
+		{
+			context_error(context, select_not_from_enum);
+			context->error_flag = 5;
+		}
+		int globid = context->sx->anstdispl < 0 ? -1 : 1;
+		while (context->next == CLNCLN)
+		{
+			context->sx->anstdispl += globid * find_field(context, context->ansttype);
+		}
+		context->sx->tree[context->sx->tc - 2] = TConst;
+		context->sx->tree[context->sx->tc - 1] = find_value_enum(context, leftansttyp, REPRTAB_POS);
 	}
 	if (context->next == INC || context->next == DEC) // a++, a--
 	{
@@ -1726,7 +1832,7 @@ void unarexpr(analyzer *context)
 				}
 
 				context->stackoperands[context->sopnd] = context->ansttype =
-					newdecl(context->sx, MPOINT, context->ansttype);
+					newdecl(context->sx, MNPOINT, context->ansttype);
 				context->anst = VAL;
 			}
 			else if (op == LMULT)
@@ -2029,9 +2135,16 @@ void condexpr(analyzer *context)
 
 void inition(analyzer *context, int decl_type)
 {
-	if (decl_type < 0 || is_pointer(context->sx, decl_type) || // Обработка для базовых типов, указателей
+	if (decl_type < 0 || is_enum(context->sx, decl_type) || is_enum_class(context->sx, decl_type) ||
+		is_pointer(context->sx, decl_type) || // Обработка для базовых типов, указателей
 		(is_string(context->sx, decl_type))) // или строк
 	{
+		if (is_enum(context->sx, decl_type) || is_enum_class(context->sx, decl_type))
+		{
+			analyzer tmp_context = *context;
+			check_field(&tmp_context, decl_type, mode_get(context->sx, decl_type));
+			decl_type = LENUM;
+		}
 		exprassn(context, 1);
 		if (context->error_flag == 6)
 		{
@@ -2042,6 +2155,10 @@ void inition(analyzer *context, int decl_type)
 		totree(context, TExprend);
 		// съедаем выражение, его значение будет на стеке
 		context->sopnd--;
+		if (decl_type != LENUM && context->ansttype == LENUM)
+		{
+			context->ansttype = enum_field_type;
+		}
 		if (is_int(decl_type) && is_float(context->ansttype))
 		{
 			context_error(context, init_int_by_float);
@@ -2052,7 +2169,7 @@ void inition(analyzer *context, int decl_type)
 		{
 			insertwiden(context);
 		}
-		else if (decl_type != context->ansttype)
+		else if (decl_type != context->ansttype && !checkNPoint(context, decl_type, context->ansttype))
 		{
 			context_error(context, error_in_initialization);
 			context->error_flag = 5;
@@ -2190,8 +2307,24 @@ void exprassn(analyzer *context, int level)
 		int opp = context->op;
 		lnext = context->next;
 		context->inass = 1;
+
+		int decl_type = context->stackoperands[context->sopnd];
 		scaner(context);
 		scaner(context);
+
+		if (is_enum_class(context->sx, decl_type))
+		{
+			if (context->cur != IDENT)
+			{
+				printf("Error\n");
+			}
+			else
+			{
+				analyzer tmp_context = *context;
+				check_field(&tmp_context, decl_type, mode_get(context->sx, decl_type));
+			}
+		}
+
 		exprassn(context, level + 1);
 		if (context->error_flag == 6)
 		{
@@ -2208,6 +2341,18 @@ void exprassn(analyzer *context, int level)
 		rtype = context->stackoperands[context->sopnd--]; // снимаем типы
 														  // операндов со стека
 		ltype = context->stackoperands[context->sopnd];
+
+		if (ltype == LENUM)
+		{
+			context_error(context, array_assigment);
+			context->error_flag = 6;
+			return;
+		}
+
+		if (rtype > 0 && mode_get(context->sx, rtype) == MENUMCLASS)
+		{
+			rtype = ltype = enum_field_type;
+		}
 
 		if (intopassn(lnext) && (is_float(ltype) || is_float(rtype)))
 		{
@@ -2565,6 +2710,12 @@ void decl_id(analyzer *context, int decl_type)
 	totree(context, context->usual);																  // context->usual
 	totree(context, 0); // массив не в структуре
 
+	if (mode_get(context->sx, decl_type) == MNPOINT && context->next != ASS)
+	{
+		//        error(not_init_not_null_pointer);
+		printf("Error Point\n");
+	}
+
 	if (context->next == ASS)
 	{
 		scaner(context);
@@ -2654,7 +2805,7 @@ void statement(analyzer *context)
 			else
 			{
 				context->gotost[context->pgotost++] = id; // это определение метки, если она встретилась до
-														  // переходов на нее
+				// переходов на нее
 				context->gotost[context->pgotost++] = -context->line;
 			}
 		}
@@ -2840,7 +2991,6 @@ void statement(analyzer *context)
 
 			case GETID:
 			{
-
 				mustbe(context, LEFTBR, no_leftbr_in_printid);
 				do
 				{
@@ -3155,7 +3305,7 @@ void statement(analyzer *context)
 						{
 							totree(context, WIDEN);
 						}
-						else if (ftype != context->ansttype)
+						else if (ftype != context->ansttype && !checkNPoint(context, ftype, context->ansttype))
 						{
 							context_error(context, bad_type_in_ret);
 							flagsemicol = 0;
@@ -3236,6 +3386,11 @@ int idorpnt(analyzer *context, int e, int t)
 		scaner(context);
 		t = t == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, t);
 	}
+	if (context->next == LAND)
+	{
+		scaner(context);
+		t = t == LVOID ? LVOIDASTER : newdecl(context->sx, MNPOINT, t);
+	}
 	mustbe_complex(context, IDENT, e);
 	return t;
 }
@@ -3286,10 +3441,10 @@ int struct_decl_list(analyzer *context)
 			totree(context, TDeclid);
 			totree(context, curdispl);
 			totree(context, elem_type);
-			totree(context, context->arrdim);							 // N
+			totree(context, context->arrdim);									 // N
 			context->sx->tree[all = context->sx->tc++] = 0;						 // all
 			context->sx->tree[context->sx->tc++] = context->was_struct_with_arr; // proc
-			totree(context, context->usual);							 // context->usual
+			totree(context, context->usual);									 // context->usual
 			totree(context, 1); // признак, что массив в структуре
 			wasarr = 1;
 			if (context->next == ASS)
@@ -3351,7 +3506,106 @@ int struct_decl_list(analyzer *context)
 
 	loc_modetab[1] = curdispl; // тут длина структуры
 	loc_modetab[2] = field_count * 2;
-	
+
+	return (int)mode_add(context->sx, loc_modetab, locmd);
+}
+
+int enum_decl_list(analyzer *context, int enumType, int ENUM_TYPE)
+{
+	int field_count = 0;
+	int t;
+	int elem_type;
+	int curdispl = 0;
+	int tstrbeg;
+	int loc_modetab[100];
+	int locmd = 3;
+	int quan = 0;
+	int all;
+	loc_modetab[0] = ENUM_TYPE;
+	tstrbeg = context->sx->tc;
+	totree(context, TEnumbeg);
+	context->sx->tree[context->sx->tc++] = 0; // тут будет номер иниц процедуры
+	scaner(context);
+	scaner(context);
+	t = elem_type = enumType == LLONG ? LINT : enumType;
+	do
+	{
+		int oldrepr;
+		oldrepr = REPRTAB_POS;
+		loc_modetab[locmd++] = t;
+		loc_modetab[locmd++] = oldrepr;
+		if (context->cur == IDENT && ENUM_TYPE == MENUM)
+		{
+			// TODO
+			int oldid = toidentab(context, 0, LENUM);
+			totree(context, TDeclid);
+			totree(context, context->sx->identab[oldid + 3]);
+			totree(context, elem_type);
+			totree(context, context->arrdim);
+			context->sx->tree[all = context->sx->tc++] = 0;
+			context->sx->tree[context->sx->tc++] = is_pointer(context->sx, LENUM) ? 0 : context->was_struct_with_arr;
+			totree(context, context->usual);
+			totree(context, 0);
+		}
+		if (context->next == ASS)
+		{
+			scaner(context);
+			scaner(context);
+			if (context->cur == NUMBER && elem_type == context->ansttype)
+			{
+				quan = context->num;
+			}
+			// TODO
+			// if (ENUM_TYPE == MENUM)
+			// {
+			//     context->sx->tree[all] = szof(context, t);
+			//     inition(context, t);
+			// }
+			//            else
+			//                error(type_in_enum);
+		}
+		// TODO
+		// else if ((context->next == END || context->next == COMMA) && ENUM_TYPE == MENUM)
+		// {
+		//  	analyzer context_tmp = *context;
+		//  	context_tmp.cur = NUMBER;
+		//  	context->sx->tree[all] = szof(context, t);
+		//  	inition(&context_tmp, t);
+		// }
+		loc_modetab[locmd++] = quan++;
+		field_count++;
+		curdispl += szof(context, t);
+		if (context->next != END)
+		{
+			if (context->next == SEMICOLON)
+			{
+				context_error(context, semicomma_in_enum);
+				context->error_flag = 5;
+			}
+			else if (scaner(context) != COMMA)
+			{
+				printf("TEST: %d\n", context->cur);
+				context_error(context, not_comma_in_enum);
+				context->error_flag = 5;
+			}
+			if (context->next != IDENT)
+			{
+				context_error(context, def_in_enum);
+				context->error_flag = 5;
+			}
+		}
+	} while (scaner(context) != END);
+
+	context->sx->tree[tstrbeg] = NOP;
+	context->sx->tree[tstrbeg + 1] = NOP;
+
+	loc_modetab[1] = curdispl;
+	loc_modetab[2] = field_count * 3;
+
+	//    mode_get(context->sx, md] = startmode;
+	//    startmode = md++;
+	//    for (i = 0; i < locmd; i++)
+	//        modetab[md++] = loc_modetab[i];
 	return (int)mode_add(context->sx, loc_modetab, locmd);
 }
 
@@ -3367,7 +3621,76 @@ int gettype(analyzer *context)
 	{
 		return (context->cur == LLONG ? LINT : context->cur == LDOUBLE ? LFLOAT : context->type);
 	}
+	if (context->type == LENUM)
+	{
+		int enum_type_field = -1;
+		int ENUM_TYPE;
+		if (context->next == LCLASS)
+		{
+			scaner(context);
+			ENUM_TYPE = MENUMCLASS;
+		}
+		else
+		{
+			ENUM_TYPE = MENUM;
+		}
 
+		if (context->next == BEGIN)
+		{
+			return (enum_decl_list(context, enum_type_field, ENUM_TYPE));
+		}
+		else if (context->next == COLON)
+		{
+			scaner(context);
+			scaner(context);
+			if (!is_int(context->cur))
+			{
+				context_error(context, not_decl);
+				context->error_flag = 5;
+			}
+			enum_type_field = context->cur;
+			return (enum_decl_list(context, enum_type_field, ENUM_TYPE));
+		}
+		else if (context->next == IDENT)
+		{
+			int l = REPRTAB[REPRTAB_POS + 1];
+			scaner(context);
+			if (context->next == COLON)
+			{
+				scaner(context);
+				scaner(context);
+				if (!is_int(context->cur))
+				{
+					context_error(context, not_decl);
+					context->error_flag = 5;
+				}
+				enum_type_field = context->cur;
+			}
+
+			if (context->next == BEGIN) // struct key {
+			{
+				// если такое описание уже было, то это ошибка - повторное описание
+				int lid;
+				context->wasstructdef = 1; // это  определение типа (может быть, без описания переменных)
+				toidentab(context, 1000, 0);
+				lid = context->lastid;
+				context->sx->identab[lid + 2] = enum_decl_list(context, enum_type_field, ENUM_TYPE);
+				context->sx->identab[lid + 3] = 1000 + context->was_struct_with_arr;
+				return context->sx->identab[lid + 2];
+			}
+			else
+			{
+				if (l == 1)
+				{
+					context_error(context, ident_is_not_declared);
+					context->error_flag = 5;
+				}
+				context->was_struct_with_arr = context->sx->identab[l + 3] - 1000;
+				return (context->sx->identab[l + 2]);
+			}
+		}
+		return 0;
+	}
 	if (context->type == LSTRUCT)
 	{
 		if (context->next == BEGIN) // struct {
@@ -3386,7 +3709,7 @@ int gettype(analyzer *context)
 				// если такое описание уже было, то это ошибка - повторное описание
 				int lid;
 				context->wasstructdef = 1; // это  определение типа (может быть,
-										   // без описания переменных)
+				// без описания переменных)
 				toidentab(context, 1000, 0);
 				if (context->error_flag == 5)
 				{
@@ -3464,7 +3787,7 @@ void block(analyzer *context, int b)
 	}
 	context->blockflag = 0;
 
-	while (is_int(context->next) || is_float(context->next) || context->next == LSTRUCT ||
+	while (is_int(context->next) || is_float(context->next) || context->next == LSTRUCT || context->next == LENUM ||
 		   context->next == LVOID)
 	{
 		int repeat = 1;
@@ -3655,7 +3978,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 	int loc_modetab[100];
 	int locmd;
 	int numpar = 0;
-	int ident = 0; // warning C4701: potentially uninitialized local variable used
+	int ident = 0;	   // warning C4701: potentially uninitialized local variable used
 	int maybe_fun = 0; // warning C4701: potentially uninitialized local variable used
 	int repeat = 1;
 	int wastype = 0;
@@ -3668,17 +3991,16 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 
 	while (repeat)
 	{
-		if (context->cur == LVOID || is_int(context->cur) || is_float(context->cur) ||
-			context->cur == LSTRUCT)
+		if (context->cur == LVOID || is_int(context->cur) || is_float(context->cur) || context->cur == LSTRUCT)
 		{
 			maybe_fun = 0; // м.б. параметр-ф-ция?
-						   // 0 - ничего не было,
-						   // 1 - была *,
-						   // 2 - была [
+			// 0 - ничего не было,
+			// 1 - была *,
+			// 2 - была [
 
 			ident = 0; // = 0 - не было идента,
-					   // 1 - был статический идент,
-					   // 2 - был идент-параметр-функция
+			// 1 - был статический идент,
+			// 2 - был идент-параметр-функция
 			wastype = 1;
 			context->type = gettype(context);
 			if (context->error_flag == 3)
@@ -3691,6 +4013,12 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 				maybe_fun = 1;
 				scaner(context);
 				context->type = context->type == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, context->type);
+			}
+			if (context->next == LAND)
+			{
+				maybe_fun = 1;
+				scaner(context);
+				context->type = context->type == LVOID ? LVOIDASTER : newdecl(context->sx, MNPOINT, context->type);
 			}
 			if (level)
 			{
@@ -3840,7 +4168,7 @@ int func_declarator(analyzer *context, int level, int func_d, int firstdecl)
 	}
 	context->func_def = func_d;
 	loc_modetab[2] = numpar;
-	
+
 	return (int)mode_add(context->sx, loc_modetab, locmd);
 }
 
@@ -3850,7 +4178,7 @@ void ext_decl(analyzer *context)
 	getnext(context);
 	nextch(context);
 	context->next = scan(context);
-	
+
 	int i;
 	context->temp_tc = context->sx->tc;
 	do // top levext_declel описания переменных и функций до конца файла
@@ -3874,9 +4202,9 @@ void ext_decl(analyzer *context)
 		}
 
 		context->func_def = 3; // context->func_def = 0 - (),
-							   // 1 - определение функции,
-							   // 2 - это предописание,
-							   // 3 - не знаем или вообще не функция
+		// 1 - определение функции,
+		// 2 - это предописание,
+		// 3 - не знаем или вообще не функция
 
 		//	if (firstdecl == 0)
 		//		firstdecl = LINT;
@@ -3887,7 +4215,14 @@ void ext_decl(analyzer *context)
 			if (context->next == LMULT)
 			{
 				scaner(context);
-				context->type = context->firstdecl == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, context->firstdecl);
+				context->type =
+					context->firstdecl == LVOID ? LVOIDASTER : newdecl(context->sx, MPOINT, context->firstdecl);
+			}
+			if (context->next == LAND)
+			{
+				scaner(context);
+				context->type =
+					context->firstdecl == LVOID ? LVOIDASTER : newdecl(context->sx, MNPOINT, context->firstdecl);
 			}
 			mustbe_complex(context, IDENT, after_type_must_be_ident);
 			if (context->error_flag == after_type_must_be_ident)
