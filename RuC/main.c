@@ -54,10 +54,10 @@ int anst, anstdispl, ansttype, leftansttype = -1;
 int bad_printf_placeholder = 0;
 
 // optimization flags
-int cycle_jump_reduce = 1;
-int enable_ind_var = 0;
-int cycle_condition_calculation = 1;
-int delay_slot = 1;
+int cycle_jump_reduce = 0;
+int enable_ind_var = 1;
+int cycle_condition_calculation = 0;
+int delay_slot = 0;
 int check_nested_for;
 
 extern void preprocess_file();
@@ -94,7 +94,7 @@ int main(int argc, const char * argv[])
     int i;
 
     // включение вспомогательных оптимизирующих опций
-    check_nested_for = cycle_condition_calculation;
+    check_nested_for = cycle_condition_calculation || enable_ind_var;
 
     if (argc != 2){
         printf("Error: not enough argumnts\n");
