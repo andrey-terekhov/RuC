@@ -47,27 +47,28 @@ void totree_float_operation(parser *const prs, item_t op)
 	if (prs->ansttype == LFLOAT &&
 		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
 	{
-		totree(prs, op + 50);
+		to_tree(prs, op + 50);
 	}
 	else
 	{
-		totree(prs, op);
+		to_tree(prs, op);
 	}
 }
 
-void double_to_tree(node *const nd, const size_t start, const double num)
+void double_to_tree(node *const nd, const size_t index, const double num)
 {
 	int64_t num64;
 	memcpy(&num64, &num, sizeof(int64_t));
 
-	int32_t fst = num64 & 0x00000000ffffffff;
-	int32_t snd = (num64 & 0xffffffff00000000) >> 32;
+	const int32_t fst = num64 & 0x00000000ffffffff;
+	const int32_t snd = (num64 & 0xffffffff00000000) >> 32;
 
-	if (node_set_arg(nd, start, fst) == -1)
+	if (node_set_arg(nd, index, fst))
 	{
 		node_add_arg(nd, fst);
+		node_add_arg(nd, snd);
 	}
-	if (node_set_arg(nd, start + 1, snd) == -1)
+	else if (node_set_arg(nd, index + 1, snd))
 	{
 		node_add_arg(nd, snd);
 	}
@@ -75,9 +76,9 @@ void double_to_tree(node *const nd, const size_t start, const double num)
 
 double double_from_tree(node *const nd)
 {
-	int64_t fst = (int64_t)node_get_arg(nd, 0) & 0x00000000ffffffff;
-	int64_t snd = (int64_t)node_get_arg(nd, 1) & 0x00000000ffffffff;
-	int64_t num64 = (snd << 32) | fst;
+	const int64_t fst = (int64_t)node_get_arg(nd, 0) & 0x00000000ffffffff;
+	const int64_t snd = (int64_t)node_get_arg(nd, 1) & 0x00000000ffffffff;
+	const int64_t num64 = (snd << 32) | fst;
 
 	double num;
 	memcpy(&num, &num64, sizeof(double));
@@ -96,6 +97,7 @@ item_t anst_pop(parser *const prs)
 {
 	--prs->sopnd;
 	return prs->ansttype;
+	// return prs->stackoperands[prs->sopnd--];
 }
 
 anst_val anst_peek(parser *const prs)
@@ -109,6 +111,8 @@ void binop(parser *const prs, size_t sp)
 	const item_t op = prs->stackop[sp];
 	const item_t right = prs->stackoperands[prs->sopnd--];
 	const item_t left = prs->stackoperands[prs->sopnd];
+	//const item_t right = anst_pop(prs);
+	//const item_t left = anst_pop(prs);
 
 	if (mode_is_pointer(prs->sx, left) || mode_is_pointer(prs->sx, right))
 	{
@@ -125,11 +129,11 @@ void binop(parser *const prs, size_t sp)
 
 		if (mode_is_int(left))
 		{
-			totree(prs, WIDEN1);
+			to_tree(prs, WIDEN1);
 		}
 		else if (mode_is_int(right))
 		{
-			totree(prs, WIDEN);
+			to_tree(prs, WIDEN);
 		}
 
 		prs->ansttype = LFLOAT;
@@ -137,7 +141,7 @@ void binop(parser *const prs, size_t sp)
 
 	if (op == LOGOR || op == LOGAND)
 	{
-		totree(prs, op);
+		to_tree(prs, op);
 		vector_set(&TREE, prs->stacklog[sp], (item_t)vector_size(&TREE));
 		vector_increase(&TREE, 1);
 	}
@@ -152,6 +156,7 @@ void binop(parser *const prs, size_t sp)
 
 	prs->stackoperands[prs->sopnd] = prs->ansttype;
 	prs->anst = value;
+	// anst_push(prs, value, prs->ansttype);
 }
 
 void toval(parser *const prs)
@@ -172,9 +177,10 @@ void toval(parser *const prs)
 			}
 			else // тут может быть только address
 			{
-				totree(prs, COPY1ST);
+				to_tree(prs, COPY1ST);
 			}
-			totree(prs, mode_get(prs->sx, (size_t)prs->ansttype + 1));
+
+			node_add_arg(&prs->nd, mode_get(prs->sx, (size_t)prs->ansttype + 1));
 			prs->anst = value;
 		}
 		return;
@@ -187,7 +193,7 @@ void toval(parser *const prs)
 
 	if (anst_peek(prs) == address && !mode_is_array(prs->sx, prs->ansttype) && !mode_is_pointer(prs->sx, prs->ansttype))
 	{
-		totree(prs, mode_is_float(prs->ansttype) ? TAddrtovald : TAddrtoval);
+		to_tree(prs, mode_is_float(prs->ansttype) ? TAddrtovald : TAddrtoval);
 	}
 	prs->anst = value;
 }
@@ -195,18 +201,15 @@ void toval(parser *const prs)
 void parse_braced_init_list(parser *const prs, const item_t type)
 {
 	token_consume(prs);
-	totree(prs, type == mode_float ? TStringd : TString);
+	to_tree(prs, type == mode_float ? TStringd : TString);
 	node nd_init_list = prs->nd;
 	node_add_arg(&nd_init_list, 0);
 
 	size_t length = 0;
 	do
 	{
-		int sign = 1;
-		if (token_try_consume(prs, minus))
-		{
-			sign = -1;
-		}
+		const int sign = token_try_consume(prs, minus) ? -1 : 1;
+		
 		if (prs->token == int_constant || prs->token == char_constant)
 		{
 			if (type == mode_float)
@@ -324,7 +327,7 @@ void mustberowofint(parser *const prs)
 {
 	if (prs->token == BEGIN)
 	{
-		parse_braced_init_list(prs, LINT), totree(prs, TExprend);
+		parse_braced_init_list(prs, LINT), to_tree(prs, TExprend);
 		if (prs->was_error == 2)
 		{
 			prs->was_error = 5;
@@ -343,7 +346,7 @@ void mustberowofint(parser *const prs)
 		prs->sopnd--;
 		if (prs->ansttype == LINT || prs->ansttype == LCHAR)
 		{
-			totree(prs, ROWING);
+			to_tree(prs, ROWING);
 			prs->ansttype = (int)to_modetab(prs, mode_array, LINT);
 		}
 	}
@@ -359,7 +362,7 @@ void mustberowoffloat(parser *const prs)
 {
 	if (prs->token == BEGIN)
 	{
-		parse_braced_init_list(prs, LFLOAT), totree(prs, TExprend);
+		parse_braced_init_list(prs, LFLOAT), to_tree(prs, TExprend);
 		if (prs->was_error == 2)
 		{
 			prs->was_error = 5;
@@ -378,7 +381,7 @@ void mustberowoffloat(parser *const prs)
 		prs->sopnd--;
 		if (prs->ansttype == LFLOAT)
 		{
-			totree(prs, ROWINGD);
+			to_tree(prs, ROWINGD);
 			prs->ansttype = (int)to_modetab(prs, mode_array, LFLOAT);
 		}
 	}
@@ -586,7 +589,7 @@ void parse_standard_function_call(parser *const prs)
 					prs->sopnd--;
 					if (mode_is_int(prs->ansttype))
 					{
-						totree(prs, WIDEN);
+						to_tree(prs, WIDEN);
 					}
 					else if (prs->ansttype != LFLOAT)
 					{
@@ -755,12 +758,12 @@ void parse_standard_function_call(parser *const prs)
 				dn = ident_get_displ(prs->sx, prs->lastid);
 				if (dn < 0)
 				{
-					totree(prs, TIdenttoval);
+					to_tree(prs, TIdenttoval);
 					node_add_arg(&prs->nd, -dn);
 				}
 				else
 				{
-					totree(prs, TConst);
+					to_tree(prs, TConst);
 					node_add_arg(&prs->nd, dn);
 				}
 				prs->anst = value;
@@ -893,7 +896,7 @@ void parse_standard_function_call(parser *const prs)
 		{
 			if (mode_is_int(prs->ansttype))
 			{
-				totree(prs, WIDEN);
+				to_tree(prs, WIDEN);
 				prs->ansttype = prs->stackoperands[prs->sopnd] = LFLOAT;
 			}
 			if (!mode_is_float(prs->ansttype))
@@ -909,7 +912,7 @@ void parse_standard_function_call(parser *const prs)
 		prs->was_error = 4;
 		return; // 1
 	}
-	totree(prs, 9500 - func);
+	to_tree(prs, 9500 - func);
 	must_be(prs, RIGHTBR, no_rightbr_in_stand_func);
 }
 
@@ -928,7 +931,7 @@ size_t parse_identifier(parser *const prs)
 		parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, REPRTAB_POS));
 	}
 
-	totree(prs, TIdent);
+	to_tree(prs, TIdent);
 	prs->anstdispl = (int)ident_get_displ(prs->sx, (size_t)id);
 	node_add_arg(&prs->nd, prs->anstdispl);
 
@@ -958,19 +961,19 @@ item_t parse_constant(parser *const prs)
 	switch (prs->token)
 	{
 		case char_constant:
-			totree(prs, TConst);
+			to_tree(prs, TConst);
 			node_add_arg(&prs->nd, prs->lxr->num);
 			mode = mode_character;
 			break;
 
 		case int_constant:
-			totree(prs, TConst);
+			to_tree(prs, TConst);
 			node_add_arg(&prs->nd, prs->lxr->num);
 			mode = mode_integer;
 			break;
 
 		case float_constant:
-			totree(prs, TConstd);
+			to_tree(prs, TConstd);
 			double_to_tree(&prs->nd, 0, prs->lxr->num_double);
 			mode = mode_float;
 			break;
@@ -1025,7 +1028,7 @@ void parse_primary_expression(parser *const prs)
 				}
 				token_expect_and_consume(prs, r_paren, no_rightbr_in_cast);
 				toval(prs);
-				totree(prs, TExprend);
+				to_tree(prs, TExprend);
 			}
 			else
 			{
@@ -1109,7 +1112,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	const size_t expected_args = (size_t)mode_get(prs->sx, function_mode + 2);
 	size_t actual_args = 0;
 
-	totree(prs, TCall1);
+	to_tree(prs, TCall1);
 	node nd_call = prs->nd;
 	node_add_arg(&nd_call, expected_args);
 	size_t ref_arg_mode = function_mode + 3;
@@ -1144,14 +1147,14 @@ void parse_function_call(parser *const prs, const size_t function_id)
 				}
 
 				const item_t displ = ident_get_displ(prs->sx, id);
-				totree(prs, displ < 0 ? TIdenttoval : TConst);
+				to_tree(prs, displ < 0 ? TIdenttoval : TConst);
 				node_add_arg(&prs->nd, llabs(displ));
-				totree(prs, TExprend);
+				to_tree(prs, TExprend);
 			}
 			else if (mode_is_array(prs->sx, expected_arg_mode) && prs->token == l_brace)
 			{
 				parse_braced_init_list(prs, mode_get(prs->sx, (size_t)expected_arg_mode + 1));
-				totree(prs, TExprend);
+				to_tree(prs, TExprend);
 			}
 			else
 			{
@@ -1235,7 +1238,7 @@ void parse_postfix_expression(parser *const prs)
 			}
 			else
 			{
-				totree(prs, TSlice);
+				to_tree(prs, TSlice);
 			}
 
 			const item_t anst_mode = anst_pop(prs);
@@ -1270,7 +1273,7 @@ void parse_postfix_expression(parser *const prs)
 				node_set_type(&prs->nd, TIdenttoval);
 			}
 			prs->anst = address;
-			totree(prs, TSelect);
+			to_tree(prs, TSelect);
 
 			prs->ansttype = mode_get(prs->sx, (size_t)prs->ansttype + 1);
 			prs->anstdispl = find_field(prs, prs->ansttype);
@@ -1279,10 +1282,10 @@ void parse_postfix_expression(parser *const prs)
 				prs->anstdispl += find_field(prs, prs->ansttype);
 			}
 
-			totree(prs, prs->anstdispl);
+			to_tree(prs, prs->anstdispl);
 			if (mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype))
 			{
-				totree(prs, TAddrtoval);
+				to_tree(prs, TAddrtoval);
 			}
 		}
 
@@ -1301,7 +1304,7 @@ void parse_postfix_expression(parser *const prs)
 				{
 					prs->anstdispl += find_field(prs, prs->ansttype);
 				}
-				totree(prs, COPYST);
+				to_tree(prs, COPYST);
 				node_add_arg(&prs->nd, prs->anstdispl);
 				node_add_arg(&prs->nd, (item_t)size_of(prs->sx, prs->ansttype));
 				node_add_arg(&prs->nd, (item_t)len);
@@ -1318,7 +1321,7 @@ void parse_postfix_expression(parser *const prs)
 			}
 			else //if (anst_peek(prs) == address)
 			{
-				totree(prs, TSelect);
+				to_tree(prs, TSelect);
 				prs->anstdispl = 0;
 				while (prs->token == period)
 				{
@@ -1328,7 +1331,7 @@ void parse_postfix_expression(parser *const prs)
 				node_add_arg(&prs->nd, prs->anstdispl);
 				if (mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype))
 				{
-					totree(prs, TAddrtoval);
+					to_tree(prs, TAddrtoval);
 				}
 			}
 		}
@@ -1390,7 +1393,7 @@ void parse_unary_expression(parser *const prs)
 
 			if (anst_peek(prs) == variable)
 			{
-				totree(prs, ident_get_displ(prs->sx, prs->lastid));
+				to_tree(prs, ident_get_displ(prs->sx, prs->lastid));
 			}
 
 			anst_push(prs, value, anst_pop(prs));
@@ -1467,7 +1470,7 @@ void parse_unary_expression(parser *const prs)
 
 						if (operator != plus)
 						{
-							totree(prs, operator);
+							to_tree(prs, operator);
 						}
 
 						anst_push(prs, value, anst_pop(prs));
@@ -1551,7 +1554,7 @@ void subexpr(parser *const prs)
 		size_t ad = 0;
 		if (p <= 2)
 		{
-			totree(prs, p == 1 ? ADLOGOR : ADLOGAND);
+			to_tree(prs, p == 1 ? ADLOGOR : ADLOGAND);
 			ad = vector_size(&TREE);
 			vector_increase(&TREE, 1);
 		}
@@ -1601,12 +1604,12 @@ void condexpr(parser *const prs)
 			{
 				parser_error(prs, float_in_condition);
 			}
-			totree(prs, TCondexpr);
+			to_tree(prs, TCondexpr);
 			scanner(prs);
 			parse_expression_internal(prs); // then
 			toval(prs);
 			prs->sopnd--;
-			totree(prs, TExprend);
+			to_tree(prs, TExprend);
 			if (!globtype)
 			{
 				globtype = (int)prs->ansttype;
@@ -1626,7 +1629,7 @@ void condexpr(parser *const prs)
 			subexpr(prs); // logORexpr();	else or elif
 		}
 		toval(prs);
-		totree(prs, TExprend);
+		to_tree(prs, TExprend);
 		if (mode_is_float(prs->ansttype))
 		{
 			globtype = LFLOAT;
@@ -1740,7 +1743,7 @@ void parse_assignment_expression_internal(parser *const prs)
 				opp = leftanst == variable ? prs->anst == variable ? COPY00 : COPY01
 				: prs->anst == variable ? COPY10 : COPY11;
 			}
-			totree(prs, opp);
+			to_tree(prs, opp);
 			if (leftanst == variable)
 			{
 				node_add_arg(&prs->nd, leftanstdispl);
@@ -1768,7 +1771,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			toval(prs);
 			if (mode_is_int(rtype) && mode_is_float(ltype))
 			{
-				totree(prs, WIDEN);
+				to_tree(prs, WIDEN);
 				prs->ansttype = LFLOAT;
 			}
 			if (mode_is_pointer(prs->sx, ltype) && mode_is_pointer(prs->sx, rtype) && ltype != rtype)
@@ -1825,7 +1828,7 @@ item_t parse_expression(parser *const prs, node *const parent)
 	prs->nd = *parent;
 	parse_expression_internal(prs);
 	assignment_to_void(prs);
-	totree(prs, TExprend);
+	to_tree(prs, TExprend);
 	return anst_pop(prs);
 }
 
@@ -1834,7 +1837,7 @@ item_t parse_assignment_expression(parser *const prs, node *const parent)
 	prs->nd = *parent;
 	parse_assignment_expression_internal(prs);
 	toval(prs);
-	totree(prs, TExprend);
+	to_tree(prs, TExprend);
 	return anst_pop(prs);
 }
 
@@ -1852,7 +1855,7 @@ item_t parse_constant_expression(parser *const prs, node *const parent)
 	parse_unary_expression(prs);
 	condexpr(prs);
 	toval(prs);
-	totree(prs, TExprend);
+	to_tree(prs, TExprend);
 	return anst_pop(prs);
 }
 
@@ -1861,14 +1864,14 @@ item_t parse_condition(parser *const prs, node *const parent)
 	prs->nd = *parent;
 	parse_expression_internal(prs);
 	toval(prs);
-	totree(prs, TExprend);
+	to_tree(prs, TExprend);
 	return anst_pop(prs);
 }
 
 item_t parse_string_literal(parser *const prs, node *const parent)
 {
 	prs->nd = *parent;
-	totree(prs, TString);
+	to_tree(prs, TString);
 	node_add_arg(&prs->nd, prs->lxr->num);
 
 	for (size_t i = 0; i < (size_t)prs->lxr->num; i++)
@@ -1882,6 +1885,7 @@ item_t parse_string_literal(parser *const prs, node *const parent)
 
 void parse_insert_widen(parser *const prs)
 {
+	// Сейчас последней нодой в поддереве выражения является TExprend, просто меняем ее тип
 	node_set_type(&prs->nd, WIDEN);
-	totree(prs, TExprend);
+	to_tree(prs, TExprend);
 }

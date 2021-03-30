@@ -269,7 +269,7 @@ item_t to_modetab(parser *const prs, const item_t mode, const item_t element)
 	return (item_t)mode_add(prs->sx, temp, 2);
 }
 
-void totree(parser *const prs, const item_t op)
+void to_tree(parser *const prs, const item_t op)
 {
 	prs->nd = node_add_child(&prs->nd, op);
 }

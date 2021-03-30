@@ -250,6 +250,7 @@ void parse_for_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_for
 	node nd = node_add_child(parent, TFor);
+
 	node_add_arg(&nd, 0); // ref_inition
 	node_add_arg(&nd, 0); // ref_condition
 	node_add_arg(&nd, 0); // ref_increment
@@ -469,9 +470,10 @@ void parse_print_statement(parser *const prs, node *const parent)
 		parser_error(prs, pointer_in_print);
 	}
 
+	// Сейчас последней нодой в поддереве выражения является TExprend, просто меняем ее тип
 	node_set_type(&prs->nd, TPrint);
 	node_add_arg(&prs->nd, type);
-	totree(prs, TExprend);
+	to_tree(prs, TExprend);
 
 	token_expect_and_consume(prs, r_paren, print_without_br);
 	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);

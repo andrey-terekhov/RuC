@@ -271,7 +271,7 @@ void parse_declaration_inner(parser *const prs, node *const parent);
  *	some number of declarators, and a semicolon, or function definition
  *
  *	@param	prs			Parser structure
- *	@param	root		Pointer to root node in AST
+ *	@param	root		Root node in AST
  */
 void parse_declaration_external(parser *const prs, node *const root);
 
@@ -443,7 +443,13 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
  */
 item_t to_modetab(parser *const prs, const item_t mode, const item_t element);
 
-void totree(parser *const prs, const item_t op);
+/**
+ *	Add a new node to expression subtree
+ *
+ *	@param	prs			Parser structure
+ *	@param	op			Type of the new node
+ */
+void to_tree(parser *const prs, const item_t op);
 
 #ifdef __cplusplus
 } /* extern "C" */

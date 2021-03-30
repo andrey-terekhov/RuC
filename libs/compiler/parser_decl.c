@@ -38,6 +38,7 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent);
  *		typedef-name [TODO]
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *
  *	@return	Standard type or index of the modes table
  */
@@ -103,6 +104,7 @@ item_t parse_type_specifier(parser *const prs, node *const parent)
  *		'union'
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *
  *	@return	Index of modes table, @c mode_undefined on failure
  */
@@ -156,6 +158,7 @@ item_t parse_struct_or_union_specifier(parser *const prs, node *const parent)
  *		direct-abstract-declarator[opt] '[' constant-expression[opt] ']'
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *	@param	type		Type of variable in declaration
  *
  *	@return	Index of the modes table
@@ -217,6 +220,7 @@ item_t parse_array_definition(parser *const prs, node *const parent, item_t type
  *		struct-declarator-list ',' declarator
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *
  *	@return	Index of modes table, @c mode_undefined on failure
  */
@@ -331,6 +335,7 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent)
  *	Parse struct initializer
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *	@param	type		Index of the modes table
  */
 void parse_struct_initializer(parser *const prs, node *const parent, const item_t type)
@@ -347,8 +352,8 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
 	size_t actual_fields = 0;
 	size_t ref_next_field = (size_t)type + 3;
 
-	totree(prs, TStructinit);
-	totree(prs, (item_t)expected_fields);
+	to_tree(prs, TStructinit);
+	node_add_arg(&prs->nd, (item_t)expected_fields);
 
 	do
 	{
@@ -368,13 +373,14 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
 	} while (actual_fields != expected_fields && prs->token != semicolon);
 
 	token_expect_and_consume(prs, r_brace, wait_end);
-	totree(prs, TExprend);
+	to_tree(prs, TExprend);
 }
 
 /**
  *	Parse array initializer
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *	@param	type		Index of the modes table
  */
 void parse_array_initializer(parser *const prs, node *const parent, const item_t type)
@@ -391,7 +397,7 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 			prs->flag_strings_only = 1;
 		}
 		parse_string_literal(prs, parent);
-		totree(prs, TExprend);
+		to_tree(prs, TExprend);
 		return;
 	}
 
@@ -402,7 +408,7 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 		return;
 	}
 
-	totree(prs, TBeginit);
+	to_tree(prs, TBeginit);
 	node nd = prs->nd;
 	node_add_arg(&nd, 0);
 	size_t list_length = 0;
@@ -425,7 +431,7 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 
 	token_expect_and_consume(prs, r_brace, wait_end);
 	node_set_arg(&nd, 0, (item_t)list_length);
-	totree(prs, TExprend);
+	to_tree(prs, TExprend);
 }
 
 /**
@@ -438,6 +444,7 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
  *		identifier
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *	@param	type		Type of variable in declaration
  */
 void parse_init_declarator(parser *const prs, node *const parent, item_t type)
@@ -453,8 +460,9 @@ void parse_init_declarator(parser *const prs, node *const parent, item_t type)
 	if (prs->token == l_square)
 	{
 		nd_decl_arr = node_add_child(parent, TDeclarr);
-		is_array = 1;
 		node_add_arg(&nd_decl_arr, 0); // Здесь будет размерность
+		is_array = 1;
+
 		// Меняем тип (увеличиваем размерность массива)
 		type = parse_array_definition(prs, &nd_decl_arr, type);
 		ident_set_mode(prs->sx, old_id, type);
@@ -662,9 +670,10 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_de
  *	Parse function body
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *	@param	function_id	Function number
  */
-void parse_function_body(parser *const prs, node *const parent_node, const size_t function_id)
+void parse_function_body(parser *const prs, node *const parent, const size_t function_id)
 {
 	prs->function_mode = (size_t)ident_get_mode(prs->sx, function_id);
 	const size_t function_number = (size_t)ident_get_displ(prs->sx, function_id);
@@ -695,8 +704,8 @@ void parse_function_body(parser *const prs, node *const parent_node, const size_
 		to_identab(prs, (size_t)llabs(repr), repr > 0 ? 0 : -1, type);
 	}
 
-	func_set(prs->sx, function_number, 0/*(item_t)tree_size(prs->sx)*/); // TODO: Это вообще нужно?
-	node nd = node_add_child(parent_node, TFuncdef);
+	func_set(prs->sx, function_number, (item_t)vector_size(&prs->sx->tree)); // Ссылка на расположение в дереве
+	node nd = node_add_child(parent, TFuncdef);
 	node_add_arg(&nd, (item_t)function_id);
 	node_add_arg(&nd, 0); // for max_displ
 
@@ -728,9 +737,10 @@ void parse_function_body(parser *const prs, node *const parent_node, const size_
  *		declarator declaration-list[opt] compound-statement
  *
  *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
  *	@param	type		Return type of a function
  */
-void parse_function_definition(parser *const prs, node *const parent_node, const item_t type)
+void parse_function_definition(parser *const prs, node *const parent, const item_t type)
 {
 	const size_t function_num = func_reserve(prs->sx);
 	const size_t function_repr = prs->lxr->repr;
@@ -753,7 +763,7 @@ void parse_function_definition(parser *const prs, node *const parent_node, const
 	{
 		if (prs->func_def == 1)
 		{
-			parse_function_body(prs, parent_node, function_id);
+			parse_function_body(prs, parent, function_id);
 		}
 		else
 		{
