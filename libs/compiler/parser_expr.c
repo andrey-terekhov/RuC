@@ -1438,17 +1438,18 @@ void parse_unary_expression(parser *const prs)
 
 				case star:
 				{
-					if (!mode_is_pointer(prs->sx, prs->ansttype))
-					{
-						parser_error(prs, aster_not_for_pointer);
-					}
-
 					if (anst_peek(prs) == variable)
 					{
 						node_set_type(&prs->nd, TIdenttoval);
 					}
 
-					anst_push(prs, address, mode_get(prs->sx, (size_t)anst_pop(prs) + 1));
+					const item_t type = anst_pop(prs);
+					if (!mode_is_pointer(prs->sx, type))
+					{
+						parser_error(prs, aster_not_for_pointer);
+					}
+
+					anst_push(prs, address, mode_get(prs->sx, (size_t)type + 1));
 				}
 				break;
 
@@ -1472,17 +1473,18 @@ void parse_unary_expression(parser *const prs)
 					}
 					else
 					{
-						if ((operator == tilde || operator == exclaim) && mode_is_float(prs->ansttype))
-						{
-							parser_error(prs, int_op_for_float);
-						}
-
 						if (operator != plus)
 						{
 							to_tree(prs, operator);
 						}
 
-						anst_push(prs, value, anst_pop(prs));
+						const item_t type = anst_pop(prs);
+						if ((operator == tilde || operator == exclaim) && mode_is_float(type))
+						{
+							parser_error(prs, int_op_for_float);
+						}
+
+						anst_push(prs, value, type);
 					}
 				}
 				break;
