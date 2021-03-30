@@ -1467,7 +1467,7 @@ void parse_unary_expression(parser *const prs)
 						}
 						else if (node_get_type(&prs->nd) == TConstd)
 						{
-							node_set_double(&prs->nd, 0, node_get_double(&prs->nd, 0));
+							node_set_double(&prs->nd, 0, -node_get_double(&prs->nd, 0));
 						}
 						else
 						{
