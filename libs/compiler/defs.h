@@ -326,8 +326,6 @@ enum MODE
 #define LEFTBR		103
 #define LEFTSQBR	105
 #define STRING		107
-#define NUMBER		108
-#define IDENT		109
 #define CHAR_CONST	111
 #define INT_CONST	112
 #define FLOAT_CONST	113
@@ -350,8 +348,10 @@ enum MODE
 
 // Ответы
 
-#define VAL	 110
-#define ADDR 111
+#define NUMBER	108
+#define IDENT	109
+#define VAL	 	110
+#define ADDR 	111
 
 
 // Ключевые слова

@@ -1604,46 +1604,50 @@ void parse_conditional_expression(parser *const prs)
 {
 	subexpr(prs); // logORexpr();
 
-	if (prs->token == QUEST)
+	if (prs->token == question)
 	{
-		int globtype = 0;
+		item_t globtype = 0;
 		size_t adif = 0;
-		while (prs->token == QUEST)
+
+		while (token_try_consume(prs, question))
 		{
 			toval(prs);
-			if (!mode_is_int(prs->ansttype))
+			if (!mode_is_int(anst_pop(prs)))
 			{
 				parser_error(prs, float_in_condition);
 			}
+
 			to_tree(prs, TCondexpr);
-			scanner(prs);
-			parse_expression_internal(prs); // then
-			toval(prs);
-			prs->sopnd--;
-			to_tree(prs, TExprend);
+			node nd_condexpr = prs->nd;
+			const item_t expr_type = parse_condition(prs, &nd_condexpr); // then
+
 			if (!globtype)
 			{
-				globtype = (int)prs->ansttype;
+				globtype = expr_type;
 			}
-			prs->sopnd--;
-			if (mode_is_float(prs->ansttype))
+
+			if (mode_is_float(expr_type))
 			{
-				globtype = LFLOAT;
+				globtype = mode_float;
 			}
 			else
 			{
 				vector_add(&TREE, (item_t)adif);
 				adif = vector_size(&TREE) - 1;
 			}
-			must_be(prs, COLON, no_colon_in_cond_expr);
+
+			token_expect_and_consume(prs, colon, no_colon_in_cond_expr);
+			prs->nd = nd_condexpr;
 			parse_unary_expression(prs);
 			subexpr(prs); // logORexpr();	else or elif
 		}
+
 		toval(prs);
 		to_tree(prs, TExprend);
-		if (mode_is_float(prs->ansttype))
+
+		if (mode_is_float(anst_pop(prs)))
 		{
-			globtype = LFLOAT;
+			globtype = mode_float;
 		}
 		else
 		{
@@ -1659,7 +1663,7 @@ void parse_conditional_expression(parser *const prs)
 			adif = (size_t)r;
 		}
 
-		prs->stackoperands[prs->sopnd] = prs->ansttype = globtype;
+		anst_push(prs, value, globtype);
 	}
 }
 
