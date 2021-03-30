@@ -15,6 +15,7 @@
  */
 
 #include "llvmgen.h"
+#include "codes.h"
 #include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
@@ -31,7 +32,15 @@ typedef enum LOCATION
 {
 	LREG,								/**< Переменная находится в регистре */
 	LMEM,								/**< Переменная находится в памяти */
+	LFREE,								/**< Свободный запрос на значение */
 } location_t;
+
+typedef enum OPERATION
+{
+	UNARY_OPERATION,
+	BINARY_OPERATION,
+	NOT_OPERATION,
+} operation_t;
 
 typedef struct information
 {
@@ -53,6 +62,167 @@ typedef struct information
 static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
+
+static operation_t operation_type(node *const nd)
+{
+	switch (node_get_type(nd))
+	{
+		case POSTINC:
+		case POSTDEC:
+		case INC:
+		case DEC:
+		case POSTINCAT:
+		case POSTDECAT:
+		case INCAT:
+		case DECAT:
+		case POSTINCV:
+		case POSTDECV:
+		case INCV:
+		case DECV:
+		case POSTINCATV:
+		case POSTDECATV:
+		case INCATV:
+		case DECATV:
+
+		case UNMINUS:
+
+		case LNOT:
+		case LOGNOT:
+
+		case POSTINCR:
+		case POSTDECR:
+		case INCR:
+		case DECR:
+		case POSTINCATR:
+		case POSTDECATR:
+		case INCATR:
+		case DECATR:
+		case POSTINCRV:
+		case POSTDECRV:
+		case INCRV:
+		case DECRV:
+		case POSTINCATRV:
+		case POSTDECATRV:
+		case INCATRV:
+		case DECATRV:
+
+		case UNMINUSR:
+			return UNARY_OPERATION;
+
+
+		case REMASS:
+		case SHLASS:
+		case SHRASS:
+		case ANDASS:
+		case EXORASS:
+		case ORASS:
+
+		case ASS:
+		case PLUSASS:
+		case MINUSASS:
+		case MULTASS:
+		case DIVASS:
+
+		case REMASSAT:
+		case SHLASSAT:
+		case SHRASSAT:
+		case ANDASSAT:
+		case EXORASSAT:
+		case ORASSAT:
+
+		case ASSAT:
+		case PLUSASSAT:
+		case MINUSASSAT:
+		case MULTASSAT:
+		case DIVASSAT:
+
+		case REMASSV:
+		case SHLASSV:
+		case SHRASSV:
+		case ANDASSV:
+		case EXORASSV:
+		case ORASSV:
+
+		case ASSV:
+		case PLUSASSV:
+		case MINUSASSV:
+		case MULTASSV:
+		case DIVASSV:
+
+		case REMASSATV:
+		case SHLASSATV:
+		case SHRASSATV:
+		case ANDASSATV:
+		case EXORASSATV:
+		case ORASSATV:
+
+		case ASSATV:
+		case PLUSASSATV:
+		case MINUSASSATV:
+		case MULTASSATV:
+		case DIVASSATV:
+
+		case LREM:
+		case LSHL:
+		case LSHR:
+		case LAND:
+		case LEXOR:
+		case LOR:
+		case LOGAND:
+		case LOGOR:
+
+		case EQEQ:
+		case NOTEQ:
+		case LLT:
+		case LGT:
+		case LLE:
+		case LGE:
+		case LPLUS:
+		case LMINUS:
+		case LMULT:
+		case LDIV:
+
+		case ASSR:
+		case PLUSASSR:
+		case MINUSASSR:
+		case MULTASSR:
+		case DIVASSR:
+
+		case ASSATR:
+		case PLUSASSATR:
+		case MINUSASSATR:
+		case MULTASSATR:
+		case DIVASSATR:
+
+		case ASSRV:
+		case PLUSASSRV:
+		case MINUSASSRV:
+		case MULTASSRV:
+		case DIVASSRV:
+
+		case ASSATRV:
+		case PLUSASSATRV:
+		case MINUSASSATRV:
+		case MULTASSATRV:
+		case DIVASSATRV:
+
+		case EQEQR:
+		case NOTEQR:
+		case LLTR:
+		case LGTR:
+		case LLER:
+		case LGER:
+		case LPLUSR:
+		case LMINUSR:
+		case LMULTR:
+		case LDIVR:
+			return BINARY_OPERATION;
+
+
+		default:
+			return NOT_OPERATION;
+	}
+}
 
 static void operand(information *const info, node *const nd)
 {
@@ -157,42 +327,61 @@ static void operand(information *const info, node *const nd)
 	}
 }
 
-static void expression(information *const info, node *const nd)
+static void unary_operation(information *const info, node *const nd)
+{
+	node_set_next(nd);
+	expression(info, nd);
+}
+
+static void binary_operation(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		// бинарные операции
-		// пока не все, будут вводиться по мере тестирования
-		case LPLUS:
-		case LMINUS:
-		case LMULT:
-		case LDIV:
-		{
-			node_set_next(nd);
-			expression(info, nd);
-			expression(info, nd);
-		}
-		break;
-
-		// унарные операции
-		// пока не все, будут вводиться по мере тестирования
 		case ASS:
-		case PLUSASS:
-		case MINUSASS:
-		case MULTASS:
-		case DIVASS:
-
 		case ASSV:
-		case PLUSASSV:
-		case MINUSASSV:
-		case MULTASSV:
-		case DIVASSV:
 		{
+			const item_t displ = node_get_arg(nd, 0);
+
 			node_set_next(nd);
+			node_set_next(nd); // TIdent
+
+			info->variable_location = LFREE;
 			expression(info, nd);
+
+			if (info->answer_type == AREG)
+			{
+				// TODO подумать, может стоит выделить store в отдельную функцию tocode_store
+				uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
+					, info->answer_reg, displ);
+			}
+			else // ACONST
+			{
+				uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
+					, info->answer_const, displ);
+			}
 		}
 		break;
 		default:
+		{
+			node_set_next(nd);
+			expression(info, nd);
+			expression(info, nd);
+		}
+		break;
+	}
+}
+
+static void expression(information *const info, node *const nd)
+{
+	switch (operation_type(nd))
+	{
+		case UNARY_OPERATION:
+			unary_operation(info, nd);
+		break;
+		case BINARY_OPERATION:
+			binary_operation(info, nd);
+		break;
+		case NOT_OPERATION:
 			operand(info, nd);
 			break;
 	}
@@ -469,6 +658,7 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	{
 		return -1;
 	}
+	tree_print("new1.txt", &(sx->tree));
 
 	return codegen(io, sx);
 }
