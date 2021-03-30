@@ -108,9 +108,7 @@ item_t anst_push(parser *const prs, const anst_val type, const item_t mode)
 
 item_t anst_pop(parser *const prs)
 {
-	--prs->sopnd;
-	return prs->ansttype;
-	// return prs->stackoperands[prs->sopnd--];
+	return prs->stackoperands[prs->sopnd--];
 }
 
 anst_val anst_peek(parser *const prs)
@@ -122,10 +120,8 @@ anst_val anst_peek(parser *const prs)
 void binop(parser *const prs, size_t sp)
 {
 	const item_t op = prs->stackop[sp];
-	const item_t right = prs->stackoperands[prs->sopnd--];
-	const item_t left = prs->stackoperands[prs->sopnd];
-	//const item_t right = anst_pop(prs);
-	//const item_t left = anst_pop(prs);
+	const item_t right = anst_pop(prs);
+	const item_t left = anst_pop(prs);
 
 	if (mode_is_pointer(prs->sx, left) || mode_is_pointer(prs->sx, right))
 	{
@@ -167,9 +163,7 @@ void binop(parser *const prs, size_t sp)
 		prs->ansttype = LINT;
 	}
 
-	prs->stackoperands[prs->sopnd] = prs->ansttype;
-	prs->anst = value;
-	// anst_push(prs, value, prs->ansttype);
+	 anst_push(prs, value, prs->ansttype);
 }
 
 void toval(parser *const prs)
@@ -1575,7 +1569,7 @@ void subexpr(parser *const prs)
 		prs->stack[prs->sp] = p;
 		prs->stacklog[prs->sp] = (int)ad;
 		prs->stackop[prs->sp++] = prs->token;
-		scanner(prs);
+		token_consume(prs);
 		parse_unary_expression(prs);
 		p = operator_precedence(prs->token);
 	}
@@ -1720,8 +1714,8 @@ void parse_assignment_expression_internal(parser *const prs)
 			return;
 		}
 		// Снимаем типы операндов со стека
-		item_t rtype = prs->stackoperands[prs->sopnd--];
-		item_t ltype = prs->stackoperands[prs->sopnd];
+		const item_t rtype = anst_pop(prs);
+		const item_t ltype = anst_pop(prs);
 
 		if (intopassn(lnext) && (mode_is_float(ltype) || mode_is_float(rtype)))
 		{
@@ -1805,8 +1799,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			}
 			prs->anst = value;
 		}
-		prs->ansttype = ltype;
-		prs->stackoperands[prs->sopnd] = ltype; // тип результата - на стек
+		anst_push(prs, prs->anst, ltype);
 	}
 	else
 	{
