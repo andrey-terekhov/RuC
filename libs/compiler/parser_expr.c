@@ -1160,8 +1160,8 @@ void parse_function_call(parser *const prs, const size_t function_id)
 				}
 
 				const item_t displ = ident_get_displ(prs->sx, id);
-				to_tree(prs, displ < 0 ? TIdenttoval : TConst);
-				node_add_arg(&prs->nd, llabs(displ));
+				node_set_type(&prs->nd, displ < 0 ? TIdenttoval : TConst);
+				node_set_arg(&prs->nd, 0, llabs(displ));
 				to_tree(prs, TExprend);
 			}
 			else if (mode_is_array(prs->sx, expected_arg_mode) && prs->token == l_brace)
