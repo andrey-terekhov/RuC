@@ -1411,7 +1411,7 @@ void parse_unary_expression(parser *const prs)
 
 			anst_push(prs, value, anst_pop(prs));
 		}
-			break;
+		break;
 
 		case exclaim:
 		case tilde:
@@ -1438,7 +1438,7 @@ void parse_unary_expression(parser *const prs)
 
 					anst_push(prs, value, to_modetab(prs, mode_pointer, anst_pop(prs)));
 				}
-					break;
+				break;
 
 				case star:
 				{
@@ -1454,7 +1454,7 @@ void parse_unary_expression(parser *const prs)
 
 					anst_push(prs, address, mode_get(prs->sx, (size_t)anst_pop(prs) + 1));
 				}
-					break;
+				break;
 
 				default:
 				{
@@ -1489,10 +1489,10 @@ void parse_unary_expression(parser *const prs)
 						anst_push(prs, value, anst_pop(prs));
 					}
 				}
-					break;
+				break;
 			}
 		}
-			break;
+		break;
 
 		default:
 			parse_primary_expression(prs);
