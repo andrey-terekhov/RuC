@@ -1078,7 +1078,9 @@ item_t find_field(parser *const prs, const item_t stype)
 
 		if ((size_t)mode_get(prs->sx, (size_t)stype + 4 + i) == prs->lxr->repr)
 		{
-			prs->stackoperands[prs->sopnd] = prs->ansttype = field_type;
+			const anst_val peek = anst_peek(prs);
+			anst_pop(prs);
+			anst_push(prs, peek, field_type);
 			return select_displ;
 		}
 		else
