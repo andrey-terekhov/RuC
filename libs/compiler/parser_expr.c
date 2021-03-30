@@ -1406,7 +1406,7 @@ void parse_unary_expression(parser *const prs)
 
 			if (anst_peek(prs) == variable)
 			{
-				to_tree(prs, ident_get_displ(prs->sx, prs->lastid));
+				node_add_arg(&prs->nd, ident_get_displ(prs->sx, prs->lastid));
 			}
 
 			anst_push(prs, value, anst_pop(prs));
