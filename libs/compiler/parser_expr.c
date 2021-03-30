@@ -1600,14 +1600,14 @@ int opassn(parser *const prs)
 	: 0;
 }
 
-void condexpr(parser *const prs)
+void parse_conditional_expression(parser *const prs)
 {
-	int globtype = 0;
-	size_t adif = 0;
-
 	subexpr(prs); // logORexpr();
+
 	if (prs->token == QUEST)
 	{
+		int globtype = 0;
+		size_t adif = 0;
 		while (prs->token == QUEST)
 		{
 			toval(prs);
@@ -1660,10 +1660,6 @@ void condexpr(parser *const prs)
 		}
 
 		prs->stackoperands[prs->sopnd] = prs->ansttype = globtype;
-	}
-	else
-	{
-		prs->stackoperands[prs->sopnd] = prs->ansttype;
 	}
 }
 
@@ -1808,7 +1804,7 @@ void parse_assignment_expression_internal(parser *const prs)
 	else
 	{
 		// condexpr учитывает тот факт, что начало выражения в виде unarexpr уже выкушано
-		condexpr(prs);
+		parse_conditional_expression(prs);
 	}
 }
 
@@ -1863,7 +1859,7 @@ item_t parse_constant_expression(parser *const prs, node *const parent)
 {
 	prs->nd = *parent;
 	parse_unary_expression(prs);
-	condexpr(prs);
+	parse_conditional_expression(prs);
 	toval(prs);
 	to_tree(prs, TExprend);
 	return anst_pop(prs);
