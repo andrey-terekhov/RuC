@@ -1329,7 +1329,7 @@ int check_field(analyzer *context, int stype, int ENUM_TYPE)
 {
 	int i;
 	int flag = 1;
-	int step = mode_get(context->sx, stype) == MENUMCLASS ? 3 : 2;
+	int step = 3;
 	int record_length = mode_get(context->sx, stype + 2);
 	int repr_tmp = context->sx->repr;
 
@@ -1341,19 +1341,8 @@ int check_field(analyzer *context, int stype, int ENUM_TYPE)
 
 	for (i = 0; i < record_length; i += step) // тут хранится удвоенное n
 	{
-		int field_type = mode_get(context->sx, stype + 3 + i);
-
 		if (mode_get(context->sx, stype + 4 + i) == REPRTAB_POS)
 		{
-			if (mode_get(context->sx, stype) == MENUMCLASS)
-			{
-				context->stackoperands[context->sopnd] = context->ansttype = LENUM;
-				enum_field_type = field_type;
-			}
-			else
-			{
-				context->stackoperands[context->sopnd] = context->ansttype = field_type;
-			}
 			flag = 0;
 			break;
 		}
@@ -2310,11 +2299,14 @@ void exprassn(analyzer *context, int level)
 		scaner(context);
 		scaner(context);
 
-		if (is_enum_class(context->sx, decl_type))
+		if (is_enum(context->sx, decl_type) || is_enum_class(context->sx, decl_type))
 		{
 			if (context->cur != IDENT)
 			{
-				printf("Error\n");
+			    // TODO
+                context_error(context, unassignable);
+                context->error_flag = 6;
+                return;
 			}
 			else
 			{
@@ -2342,7 +2334,7 @@ void exprassn(analyzer *context, int level)
 
 		if (ltype == LENUM)
 		{
-			context_error(context, array_assigment);
+			context_error(context, ban_on_the_change_enum_field);
 			context->error_flag = 6;
 			return;
 		}
@@ -2710,8 +2702,9 @@ void decl_id(analyzer *context, int decl_type)
 
 	if (mode_get(context->sx, decl_type) == MNPOINT && context->next != ASS)
 	{
-		//        error(not_init_not_null_pointer);
-		printf("Error Point\n");
+	    context_error(context, not_init_not_null_pointer);
+        return;
+
 	}
 
 	if (context->next == ASS)
@@ -3585,7 +3578,6 @@ int enum_decl_list(analyzer *context, int enumType, int ENUM_TYPE)
 			}
 			else if (scaner(context) != COMMA)
 			{
-				printf("TEST: %d\n", context->cur);
 				context_error(context, not_comma_in_enum);
 				context->error_flag = 5;
 			}
@@ -3603,10 +3595,6 @@ int enum_decl_list(analyzer *context, int enumType, int ENUM_TYPE)
 	loc_modetab[1] = curdispl;
 	loc_modetab[2] = field_count * 3;
 
-	//    mode_get(context->sx, md] = startmode;
-	//    startmode = md++;
-	//    for (i = 0; i < locmd; i++)
-	//        modetab[md++] = loc_modetab[i];
 	return (int)mode_add(context->sx, loc_modetab, locmd);
 }
 
