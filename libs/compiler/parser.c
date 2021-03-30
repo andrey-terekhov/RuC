@@ -273,3 +273,8 @@ void to_tree(parser *const prs, const item_t op)
 {
 	prs->nd = node_add_child(&prs->nd, op);
 }
+
+item_t tree_reference(parser *const prs)
+{
+	return (item_t)vector_size(&prs->sx->tree);
+}

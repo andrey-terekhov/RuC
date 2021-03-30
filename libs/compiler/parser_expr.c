@@ -55,10 +55,23 @@ void totree_float_operation(parser *const prs, item_t op)
 	}
 }
 
-void double_to_tree(node *const nd, const size_t index, const double num)
+
+void node_add_double(node *const nd, const double value)
 {
 	int64_t num64;
-	memcpy(&num64, &num, sizeof(int64_t));
+	memcpy(&num64, &value, sizeof(int64_t));
+
+	const int32_t fst = num64 & 0x00000000ffffffff;
+	const int32_t snd = (num64 & 0xffffffff00000000) >> 32;
+
+	node_add_arg(nd, fst);
+	node_add_arg(nd, snd);
+}
+
+void node_set_double(node *const nd, const size_t index, const double value)
+{
+	int64_t num64;
+	memcpy(&num64, &value, sizeof(int64_t));
 
 	const int32_t fst = num64 & 0x00000000ffffffff;
 	const int32_t snd = (num64 & 0xffffffff00000000) >> 32;
@@ -74,10 +87,10 @@ void double_to_tree(node *const nd, const size_t index, const double num)
 	}
 }
 
-double double_from_tree(node *const nd)
+double node_get_double(node *const nd, const size_t index)
 {
-	const int64_t fst = (int64_t)node_get_arg(nd, 0) & 0x00000000ffffffff;
-	const int64_t snd = (int64_t)node_get_arg(nd, 1) & 0x00000000ffffffff;
+	const int64_t fst = (int64_t)node_get_arg(nd, index) & 0x00000000ffffffff;
+	const int64_t snd = (int64_t)node_get_arg(nd, index + 1) & 0x00000000ffffffff;
 	const int64_t num64 = (snd << 32) | fst;
 
 	double num;
@@ -209,12 +222,12 @@ void parse_braced_init_list(parser *const prs, const item_t type)
 	do
 	{
 		const int sign = token_try_consume(prs, minus) ? -1 : 1;
-		
+
 		if (prs->token == int_constant || prs->token == char_constant)
 		{
 			if (type == mode_float)
 			{
-				double_to_tree(&nd_init_list, nd_init_list.argc, sign * (double)prs->lxr->num);
+				node_add_double(&nd_init_list, sign * (double)prs->lxr->num);
 			}
 			else
 			{
@@ -226,7 +239,7 @@ void parse_braced_init_list(parser *const prs, const item_t type)
 		{
 			if (type == mode_float)
 			{
-				double_to_tree(&nd_init_list, nd_init_list.argc, sign * prs->lxr->num_double);
+				node_add_double(&nd_init_list, sign * prs->lxr->num_double);
 			}
 			else
 			{
@@ -736,7 +749,7 @@ void parse_standard_function_call(parser *const prs)
 				const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
 				if (id == ITEM_MAX)
 				{
-					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, REPRTAB_POS));
+					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, prs->lxr->repr));
 					prs->was_error = 5;
 				}
 
@@ -928,7 +941,7 @@ size_t parse_identifier(parser *const prs)
 	const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
 	if (id == ITEM_MAX)
 	{
-		parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, REPRTAB_POS));
+		parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, prs->lxr->repr));
 	}
 
 	to_tree(prs, TIdent);
@@ -974,7 +987,7 @@ item_t parse_constant(parser *const prs)
 
 		case float_constant:
 			to_tree(prs, TConstd);
-			double_to_tree(&prs->nd, 0, prs->lxr->num_double);
+			node_set_double(&prs->nd, 0, prs->lxr->num_double);
 			mode = mode_float;
 			break;
 
@@ -1069,7 +1082,7 @@ item_t find_field(parser *const prs, const item_t stype)
 	{
 		const item_t field_type = mode_get(prs->sx, (size_t)stype + 3 + i);
 
-		if ((size_t)mode_get(prs->sx, (size_t)stype + 4 + i) == REPRTAB_POS)
+		if ((size_t)mode_get(prs->sx, (size_t)stype + 4 + i) == prs->lxr->repr)
 		{
 			prs->stackoperands[prs->sopnd] = prs->ansttype = field_type;
 			return select_displ;
@@ -1081,7 +1094,7 @@ item_t find_field(parser *const prs, const item_t stype)
 		// прибавляем к суммарному смещению длину поля
 	}
 
-	parser_error(prs, no_field, repr_get_name(prs->sx, REPRTAB_POS));
+	parser_error(prs, no_field, repr_get_name(prs->sx, prs->lxr->repr));
 	return 0;
 }
 
@@ -1454,7 +1467,7 @@ void parse_unary_expression(parser *const prs)
 						}
 						else if (node_get_type(&prs->nd) == TConstd)
 						{
-							double_to_tree(&prs->nd, 0, -double_from_tree(&prs->nd));
+							node_set_double(&prs->nd, 0, node_get_double(&prs->nd, 0));
 						}
 						else
 						{

@@ -24,13 +24,9 @@
 #include "uniio.h"
 
 
-#define GENERATE_TREE
+//#define GENERATE_TREE
 
 #define TREE		(prs->sx->tree)
-
-#define REPRTAB		(prs->sx->reprtab)
-#define REPRTAB_POS (prs->lxr->repr)
-#define REPRTAB_LEN (prs->sx->rp)
 
 
 #ifdef __cplusplus
@@ -450,6 +446,15 @@ item_t to_modetab(parser *const prs, const item_t mode, const item_t element);
  *	@param	op			Type of the new node
  */
 void to_tree(parser *const prs, const item_t op);
+
+/**
+ *	Create tree reference for backward compatibility
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Tree reference
+ */
+item_t tree_reference(parser *const prs);
 
 #ifdef __cplusplus
 } /* extern "C" */
