@@ -338,16 +338,17 @@ static void assertion_expression(information *const info, node *const nd)
 	info->variable_location = LFREE;
 	expression(info, nd);
 
-	if (info->answer_type == AREG)
-	{
-		item_t result = info->answer_reg;
+	item_t result = info->answer_reg;
 
-		if (assertion_type != ASS && assertion_type != ASSV)
+	if (assertion_type != ASS && assertion_type != ASSV)
+	{
+		// TODO подумать, может стоит выделить load в отдельную функцию tocode_load
+		uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n"
+			, info->register_num, displ);
+		info->register_num++;
+
+		if (info->answer_type == AREG)
 		{
-			// TODO подумать, может стоит выделить load в отдельную функцию tocode_load
-			uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n"
-				, info->register_num, displ);
-			info->register_num++;
 			switch (assertion_type)
 			{
 				case PLUSASS:
@@ -356,17 +357,44 @@ static void assertion_expression(information *const info, node *const nd)
 					uni_printf(info->io, " %%.%" PRIitem " = add nsw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
 						, info->register_num, info->register_num - 1, info->answer_reg);
 					break;
+				case MINUSASS:
+				case MINUSASSV:
+					// TODO подумать, может стоит выделить арифметику в отдельную функцию tocode_arithmetic
+					uni_printf(info->io, " %%.%" PRIitem " = sub nsw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
+						, info->register_num, info->register_num - 1, info->answer_reg);
+					break;
 			}
-			
-			result = info->register_num;
-			info->register_num++;
 		}
+		else // ACONST
+		{
+			switch (assertion_type)
+			{
+				case PLUSASS:
+				case PLUSASSV:
+					// TODO подумать, может стоит выделить арифметику в отдельную функцию tocode_arithmetic
+					uni_printf(info->io, " %%.%" PRIitem " = add nsw i32 %%.%" PRIitem ", %" PRIitem "\n"
+						, info->register_num, info->register_num - 1, info->answer_const);
+					break;
+				case MINUSASS:
+				case MINUSASSV:
+					// TODO подумать, может стоит выделить арифметику в отдельную функцию tocode_arithmetic
+					uni_printf(info->io, " %%.%" PRIitem " = sub nsw i32 %%.%" PRIitem ", %" PRIitem "\n"
+						, info->register_num, info->register_num - 1, info->answer_const);
+					break;
+			}
+		}
+			
+		result = info->register_num;
+		info->register_num++;
+	}
 
+	if (info->answer_type == AREG || (assertion_type != ASS && assertion_type != ASSV))
+	{
 		// TODO подумать, может стоит выделить store в отдельную функцию tocode_store
 		uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
 			, result, displ);
 	}
-	else // ACONST
+	else // ACONST && =
 	{
 		uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
 			, info->answer_const, displ);
@@ -387,49 +415,10 @@ static void binary_operation(information *const info, node *const nd)
 		case ASSV:
 		case PLUSASS:
 		case PLUSASSV:
+		case MINUSASS:
+		case MINUSASSV:
 			assertion_expression(info, nd);
 			break;
-		// case PLUSASS:
-		// case PLUSASSV:
-		// {
-		// 	const item_t displ = node_get_arg(nd, 0);
-
-		// 	node_set_next(nd);
-		// 	node_set_next(nd); // TIdent
-
-		// 	info->variable_location = LFREE;
-		// 	expression(info, nd);
-
-		// 	if (info->answer_type == AREG)
-		// 	{
-		// 		// TODO подумать, может стоит выделить load в отдельную функцию tocode_load
-		// 		uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n"
-		// 			, info->register_num, displ);
-		// 		info->register_num++;
-		// 		// TODO подумать, может стоит выделить арифметику в отдельную функцию tocode_arithmetic
-		// 		uni_printf(info->io, " %%.%" PRIitem " = add nsw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
-		// 			, info->register_num, info->register_num - 1, info->answer_reg);
-		// 		// TODO подумать, может стоит выделить store в отдельную функцию tocode_store
-		// 		uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
-		// 			, info->register_num, displ);
-		// 		info->register_num++;
-		// 	}
-		// 	else // ACONST
-		// 	{
-		// 		// TODO подумать, может стоит выделить load в отдельную функцию tocode_load
-		// 		uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n"
-		// 			, info->register_num, displ);
-		// 		info->register_num++;
-		// 		// TODO подумать, может стоит выделить арифметику в отдельную функцию tocode_arithmetic
-		// 		uni_printf(info->io, " %%.%" PRIitem " = add nsw i32 %%.%" PRIitem ", %" PRIitem "\n"
-		// 			, info->register_num, info->register_num - 1, info->answer_const);
-		// 		// TODO подумать, может стоит выделить store в отдельную функцию tocode_store
-		// 		uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
-		// 			, info->register_num, displ);
-		// 		info->register_num++;
-		// 	}
-		// }
-		// break;
 		default:
 		{
 			node_set_next(nd);
