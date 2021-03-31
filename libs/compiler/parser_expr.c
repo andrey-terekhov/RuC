@@ -42,9 +42,9 @@ void must_be(parser *const prs, const token_t what, const error_t num)
 	}
 }
 
-void totree_float_operation(parser *const prs, item_t op)
+void totree_float_operation(parser *const prs, const item_t type, const item_t op)
 {
-	if (prs->ansttype == LFLOAT &&
+	if (type == mode_float &&
 		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
 	{
 		to_tree(prs, op + 50);
@@ -156,7 +156,7 @@ void binop(parser *const prs, size_t sp)
 	}
 	else
 	{
-		totree_float_operation(prs, op);
+		totree_float_operation(prs, prs->ansttype, op);
 	}
 	if (op >= EQEQ && op <= LGE)
 	{
@@ -1351,29 +1351,33 @@ void parse_postfix_expression(parser *const prs)
 		int operator = (prs->token == plusplus) ? POSTINC : POSTDEC;
 		token_consume(prs);
 
-		if (!mode_is_int(prs->ansttype) && !mode_is_float(prs->ansttype))
-		{
-			parser_error(prs, wrong_operand);
-		}
-
-		if (anst_peek(prs) != variable && anst_peek(prs) != address)
-		{
-			parser_error(prs, unassignable_inc);
-		}
-
+		int flag_variable = 0;
 		if (anst_peek(prs) == address)
 		{
 			operator += 4;
 		}
+		else if (anst_peek(prs) == variable)
+		{
+			flag_variable = 1;
+		}
+		else
+		{
+			parser_error(prs, unassignable_inc);
+		}
 
-		totree_float_operation(prs, operator);
+		const item_t type = anst_pop(prs);
+		if (!mode_is_int(type) && !mode_is_float(type))
+		{
+			parser_error(prs, wrong_operand);
+		}
 
-		if (anst_peek(prs) == variable)
+		anst_push(prs, value, type);
+		totree_float_operation(prs, type, operator);
+
+		if (flag_variable == 1)
 		{
 			node_add_arg(&prs->nd, ident_get_displ(prs->sx, lid));
 		}
-
-		prs->anst = value;
 	}
 }
 
@@ -1388,24 +1392,33 @@ void parse_unary_expression(parser *const prs)
 			token_consume(prs);
 			parse_unary_expression(prs);
 
-			if (anst_peek(prs) != variable && anst_peek(prs) != address)
-			{
-				parser_error(prs, unassignable_inc);
-			}
-
+			int flag_variable = 0;
 			if (anst_peek(prs) == address)
 			{
 				operator += 4;
 			}
+			else if (anst_peek(prs) == variable)
+			{
+				flag_variable = 1;
+			}
+			else
+			{
+				parser_error(prs, unassignable_inc);
+			}
 
-			totree_float_operation(prs, operator);
+			const item_t type = anst_pop(prs);
+			if (!mode_is_int(type) && !mode_is_float(type))
+			{
+				parser_error(prs, wrong_operand);
+			}
 
-			if (anst_peek(prs) == variable)
+			anst_push(prs, value, type);
+			totree_float_operation(prs, type, operator);
+
+			if (flag_variable == 1)
 			{
 				node_add_arg(&prs->nd, ident_get_displ(prs->sx, prs->lastid));
 			}
-
-			anst_push(prs, value, anst_pop(prs));
 		}
 		break;
 
@@ -1468,7 +1481,7 @@ void parse_unary_expression(parser *const prs)
 						}
 						else
 						{
-							totree_float_operation(prs, UNMINUS);
+							totree_float_operation(prs, prs->ansttype, UNMINUS);
 						}
 					}
 					else
@@ -1715,7 +1728,7 @@ void parse_assignment_expression_internal(parser *const prs)
 	if (is_assignment_operator(prs->token))
 	{
 		const anst_val leftanst = anst_peek(prs);
-		const item_t leftanstdispl = prs->anstdispl;
+		const item_t target_displ = prs->anstdispl;
 		item_t operator = prs->token;
 		token_consume(prs);
 
@@ -1729,6 +1742,8 @@ void parse_assignment_expression_internal(parser *const prs)
 		}
 		// Снимаем типы операндов со стека
 		const item_t rtype = anst_pop(prs);
+
+		const anst_val righttanst = anst_peek(prs);
 		const item_t ltype = anst_pop(prs);
 
 		if (is_int_assignment_operator(operator) && (mode_is_float(ltype) || mode_is_float(rtype)))
@@ -1751,27 +1766,27 @@ void parse_assignment_expression_internal(parser *const prs)
 				parser_error(prs, wrong_struct_ass);
 			}
 
-			if (prs->anst == value)
+			if (righttanst == value)
 			{
 				operator = leftanst == variable ? COPY0STASS : COPY1STASS;
 			}
 			else
 			{
-				operator = leftanst == variable ? prs->anst == variable ? COPY00 : COPY01
-				: prs->anst == variable ? COPY10 : COPY11;
+				operator = leftanst == variable ? righttanst == variable ? COPY00 : COPY01
+				: righttanst == variable ? COPY10 : COPY11;
 			}
 
 			to_tree(prs, operator);
 			if (leftanst == variable)
 			{
-				node_add_arg(&prs->nd, leftanstdispl);
+				node_add_arg(&prs->nd, target_displ);
 			}
-			if (prs->anst == variable)
+			if (righttanst == variable)
 			{
 				node_add_arg(&prs->nd, prs->anstdispl);
 			}
 			node_add_arg(&prs->nd, mode_get(prs->sx, (size_t)ltype + 1));
-			prs->anstdispl = leftanstdispl;
+			prs->anstdispl = target_displ;
 			anst_push(prs, leftanst, ltype);
 		}
 		else // оба операнда базового типа или указатели
@@ -1802,11 +1817,11 @@ void parse_assignment_expression_internal(parser *const prs)
 			{
 				operator += 11;
 			}
-			totree_float_operation(prs, operator);
+			totree_float_operation(prs, prs->ansttype, operator);
 			if (leftanst == variable)
 			{
-				prs->anstdispl = leftanstdispl;
-				node_add_arg(&prs->nd, leftanstdispl);
+				prs->anstdispl = target_displ;
+				node_add_arg(&prs->nd, target_displ);
 			}
 			anst_push(prs, value, ltype);
 		}
