@@ -1547,30 +1547,7 @@ int operator_precedence(const token_t operator)
 	}
 }
 
-int is_int_assignment_operator(const token_t operator)
-{
-	switch (operator)
-	{
-		case percentequal:			// '%='
-		case lesslessequal:			// '<<='
-		case greatergreaterequal:	// '>>='
-		case ampequal:				// '&='
-		case pipeequal:				// '|='
-		case caretequal:			// '^='
-			return 1;
-
-		default:
-			return 0;
-	}
-}
-
-int is_assignment_operator(const token_t operator)
-{
-	return operator == equal || operator == starequal || operator == slashequal || operator == plusequal
-		|| operator == minusequal || is_int_assignment_operator(operator);
-}
-
-void parse_subexpression(parser *const prs)
+void subexpr(parser *const prs)
 {
 	size_t oldsp = prs->sp;
 	int wasop = 0;
@@ -1610,9 +1587,22 @@ void parse_subexpression(parser *const prs)
 	}
 }
 
+int intopassn(const item_t next)
+{
+	return next == REMASS || next == SHLASS || next == SHRASS || next == ANDASS || next == EXORASS || next == ORASS;
+}
+
+int opassn(parser *const prs)
+{
+	return (prs->token == ASS || prs->token == MULTASS || prs->token == DIVASS || prs->token == PLUSASS ||
+			prs->token == MINUSASS || intopassn(prs->token))
+	? prs->op = prs->token
+	: 0;
+}
+
 void parse_conditional_expression(parser *const prs)
 {
-	parse_subexpression(prs); // logORexpr();
+	subexpr(prs); // logORexpr();
 
 	if (prs->token == question)
 	{
@@ -1649,7 +1639,7 @@ void parse_conditional_expression(parser *const prs)
 			token_expect_and_consume(prs, colon, no_colon_in_cond_expr);
 			prs->nd = nd_condexpr;
 			parse_unary_expression(prs);
-			parse_subexpression(prs); // logORexpr();	else or elif
+			subexpr(prs); // logORexpr();	else or elif
 		}
 
 		toval(prs);
@@ -1713,9 +1703,10 @@ void parse_assignment_expression_internal(parser *const prs)
 	item_t leftanstdispl = prs->anstdispl;
 	prs->leftansttype = prs->ansttype;
 
-	if (is_assignment_operator(prs->token))
+	if (opassn(prs))
 	{
-		item_t opp = prs->token;
+		item_t opp = prs->op;
+		item_t lnext = prs->token;
 		prs->flag_in_assignment = 1;
 		token_consume(prs);
 		parse_assignment_expression_internal(prs);
@@ -1730,7 +1721,7 @@ void parse_assignment_expression_internal(parser *const prs)
 		const item_t rtype = anst_pop(prs);
 		const item_t ltype = anst_pop(prs);
 
-		if (is_int_assignment_operator(opp) && (mode_is_float(ltype) || mode_is_float(rtype)))
+		if (intopassn(lnext) && (mode_is_float(ltype) || mode_is_float(rtype)))
 		{
 			parser_error(prs, int_op_for_float);
 			return;
