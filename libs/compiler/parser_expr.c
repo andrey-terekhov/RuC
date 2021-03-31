@@ -149,43 +149,49 @@ void binary_operation(parser *const prs, size_t sp)
 	anst_push(prs, value, result_type);
 }
 
-void toval(parser *const prs)
+void to_value(parser *const prs)
 {
-	if (anst_peek(prs) == value || anst_peek(prs) == number)
+	switch (anst_peek(prs))
 	{
-		return;
-	}
-
-	if (mode_is_struct(prs->sx, prs->ansttype))
-	{
-		if (!prs->flag_in_assignment)
+		case variable:
 		{
-			if (anst_peek(prs) == variable)
+			const item_t type = anst_pop(prs);
+			if (mode_is_struct(prs->sx, type) && !prs->flag_in_assignment)
 			{
 				node_set_type(&prs->nd, COPY0ST);
 				node_set_arg(&prs->nd, 0, prs->anstdispl);
+				node_add_arg(&prs->nd, mode_get(prs->sx, (size_t)type + 1));
 			}
-			else // тут может быть только address
+			else
+			{
+				node_set_type(&prs->nd, mode_is_float(type) ? TIdenttovald : TIdenttoval);
+			}
+
+			anst_push(prs, value, type);
+			return;
+		}
+
+		case address:
+		{
+			const item_t type = anst_pop(prs);
+			if (mode_is_struct(prs->sx, type) && !prs->flag_in_assignment)
 			{
 				to_tree(prs, COPY1ST);
+				node_add_arg(&prs->nd, mode_get(prs->sx, (size_t)type + 1));
+			}
+			else if (!mode_is_array(prs->sx, type) && !mode_is_pointer(prs->sx, type))
+			{
+				to_tree(prs, mode_is_float(type) ? TAddrtovald : TAddrtoval);
 			}
 
-			node_add_arg(&prs->nd, mode_get(prs->sx, (size_t)prs->ansttype + 1));
-			prs->anst = value;
+			anst_push(prs, value, type);
+			return;
 		}
-		return;
-	}
 
-	if (anst_peek(prs) == variable)
-	{
-		node_set_type(&prs->nd, mode_is_float(prs->ansttype) ? TIdenttovald : TIdenttoval);
+		case value:
+		case number:
+			return;
 	}
-
-	if (anst_peek(prs) == address && !mode_is_array(prs->sx, prs->ansttype) && !mode_is_pointer(prs->sx, prs->ansttype))
-	{
-		to_tree(prs, mode_is_float(prs->ansttype) ? TAddrtovald : TAddrtoval);
-	}
-	prs->anst = value;
 }
 
 item_t parse_braced_init_list(parser *const prs, const item_t type)
@@ -246,7 +252,7 @@ item_t parse_braced_init_list(parser *const prs, const item_t type)
 void mustbestring(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
-	toval(prs);
+	to_value(prs);
 	if (!(mode_is_string(prs->sx, anst_pop(prs))))
 	{
 		parser_error(prs, not_string_in_stanfunc);
@@ -256,7 +262,7 @@ void mustbestring(parser *const prs)
 void mustbepointstring(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
-	toval(prs);
+	to_value(prs);
 	const item_t type = anst_pop(prs);
 	if (!(mode_is_pointer(prs->sx, type) && mode_is_string(prs->sx, mode_get(prs->sx, (size_t)type + 1))))
 	{
@@ -267,7 +273,7 @@ void mustbepointstring(parser *const prs)
 void mustberow(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
-	toval(prs);
+	to_value(prs);
 	if (!mode_is_array(prs->sx, anst_pop(prs)))
 	{
 		parser_error(prs, not_array_in_stanfunc);
@@ -277,7 +283,7 @@ void mustberow(parser *const prs)
 void mustbeint(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
-	toval(prs);
+	to_value(prs);
 	if (!mode_is_int(anst_pop(prs)))
 	{
 		parser_error(prs, not_int_in_stanfunc);
@@ -294,7 +300,7 @@ void mustberowofint(parser *const prs)
 	else
 	{
 		parse_assignment_expression_internal(prs);
-		toval(prs);
+		to_value(prs);
 		type = anst_pop(prs);
 		if (mode_is_int(type))
 		{
@@ -319,7 +325,7 @@ void mustberowoffloat(parser *const prs)
 	else
 	{
 		parse_assignment_expression_internal(prs);
-		toval(prs);
+		to_value(prs);
 		type = anst_pop(prs);
 		if (mode_is_float(type))
 		{
@@ -447,7 +453,7 @@ void parse_standard_function_call(parser *const prs)
 				else // DRAW_NUMBER
 				{
 					parse_assignment_expression_internal(prs);
-					toval(prs);
+					to_value(prs);
 					prs->sopnd--;
 					if (mode_is_int(prs->ansttype))
 					{
@@ -576,7 +582,7 @@ void parse_standard_function_call(parser *const prs)
 			{
 				prs->leftansttype = 2;
 				parse_assignment_expression_internal(prs);
-				toval(prs);
+				to_value(prs);
 
 				if (func == TMSGSEND)
 				{
@@ -618,13 +624,13 @@ void parse_standard_function_call(parser *const prs)
 	else if (func == ROUND)
 	{
 		parse_assignment_expression_internal(prs);
-		toval(prs);
+		to_value(prs);
 		prs->ansttype = prs->stackoperands[prs->sopnd] = LINT;
 	}
 	else
 	{
 		parse_assignment_expression_internal(prs);
-		toval(prs);
+		to_value(prs);
 
 		// GETDIGSENSOR int(int port, int pins[]),
 		// GETANSENSOR int (int port, int pin),
@@ -644,7 +650,7 @@ void parse_standard_function_call(parser *const prs)
 			else
 			{
 				parse_assignment_expression_internal(prs);
-				toval(prs);
+				to_value(prs);
 				if (!mode_is_int(prs->ansttype))
 				{
 					parser_error(prs, param_setmotor_not_int);
@@ -791,7 +797,7 @@ void parse_primary_expression(parser *const prs)
 					parser_error(prs, not_pointer_in_cast);
 				}
 				token_expect_and_consume(prs, r_paren, no_rightbr_in_cast);
-				toval(prs);
+				to_value(prs);
 				to_tree(prs, TExprend);
 			}
 			else
@@ -814,9 +820,9 @@ void parse_primary_expression(parser *const prs)
 			}
 			else
 			{
-				token_consume(prs);
 				parser_error(prs, expected_expression, prs->token);
 				anst_push(prs, number, mode_undefined);
+				token_consume(prs);
 				break;
 			}
 	}
@@ -1228,7 +1234,7 @@ void parse_unary_expression(parser *const prs)
 
 				default:
 				{
-					toval(prs);
+					to_value(prs);
 					if (operator == minus)
 					{
 						if (node_get_type(&prs->nd) == TConst)
@@ -1355,7 +1361,7 @@ void parse_subexpression(parser *const prs)
 	while (p)
 	{
 		wasop = 1;
-		toval(prs);
+		to_value(prs);
 		while (prs->sp > oldsp && prs->stack[prs->sp - 1] >= p)
 		{
 			binary_operation(prs, --prs->sp);
@@ -1378,7 +1384,7 @@ void parse_subexpression(parser *const prs)
 	}
 	if (wasop)
 	{
-		toval(prs);
+		to_value(prs);
 	}
 	while (prs->sp > oldsp)
 	{
@@ -1397,7 +1403,7 @@ void parse_conditional_expression(parser *const prs)
 
 		while (token_try_consume(prs, question))
 		{
-			toval(prs);
+			to_value(prs);
 			if (!mode_is_int(anst_pop(prs)))
 			{
 				parser_error(prs, float_in_condition);
@@ -1428,7 +1434,7 @@ void parse_conditional_expression(parser *const prs)
 			parse_subexpression(prs); // logORexpr();	else or elif
 		}
 
-		toval(prs);
+		to_value(prs);
 		to_tree(prs, TExprend);
 
 		if (mode_is_float(anst_pop(prs)))
@@ -1565,8 +1571,10 @@ void parse_assignment_expression_internal(parser *const prs)
 				parser_error(prs, assmnt_float_to_int);
 			}
 
-			toval(prs);
-			if (mode_is_int(rtype) && mode_is_float(ltype))
+			anst_push(prs, righttanst, rtype);
+			to_value(prs);
+			anst_pop(prs);
+			if (mode_is_float(ltype) && mode_is_int(rtype))
 			{
 				to_tree(prs, WIDEN);
 				result_type = mode_float;
@@ -1631,7 +1639,7 @@ item_t parse_assignment_expression(parser *const prs, node *const parent)
 {
 	prs->nd = *parent;
 	parse_assignment_expression_internal(prs);
-	toval(prs);
+	to_value(prs);
 	to_tree(prs, TExprend);
 	return anst_pop(prs);
 }
@@ -1649,7 +1657,7 @@ item_t parse_constant_expression(parser *const prs, node *const parent)
 	prs->nd = *parent;
 	parse_unary_expression(prs);
 	parse_conditional_expression(prs);
-	toval(prs);
+	to_value(prs);
 	to_tree(prs, TExprend);
 	return anst_pop(prs);
 }
@@ -1658,7 +1666,7 @@ item_t parse_condition(parser *const prs, node *const parent)
 {
 	prs->nd = *parent;
 	parse_expression_internal(prs);
-	toval(prs);
+	to_value(prs);
 	to_tree(prs, TExprend);
 	return anst_pop(prs);
 }
