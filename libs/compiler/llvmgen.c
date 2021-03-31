@@ -327,6 +327,52 @@ static void operand(information *const info, node *const nd)
 	}
 }
 
+static void assertion_expression(information *const info, node *const nd)
+{
+	const item_t displ = node_get_arg(nd, 0);
+	const item_t assertion_type = node_get_type(nd);
+
+	node_set_next(nd);
+	node_set_next(nd); // TIdent
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+
+	if (info->answer_type == AREG)
+	{
+		item_t result = info->answer_reg;
+
+		if (assertion_type != ASS && assertion_type != ASSV)
+		{
+			// TODO подумать, может стоит выделить load в отдельную функцию tocode_load
+			uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n"
+				, info->register_num, displ);
+			info->register_num++;
+			switch (assertion_type)
+			{
+				case PLUSASS:
+				case PLUSASSV:
+					// TODO подумать, может стоит выделить арифметику в отдельную функцию tocode_arithmetic
+					uni_printf(info->io, " %%.%" PRIitem " = add nsw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
+						, info->register_num, info->register_num - 1, info->answer_reg);
+					break;
+			}
+			
+			result = info->register_num;
+			info->register_num++;
+		}
+
+		// TODO подумать, может стоит выделить store в отдельную функцию tocode_store
+		uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
+			, result, displ);
+	}
+	else // ACONST
+	{
+		uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
+			, info->answer_const, displ);
+	}
+}
+
 static void unary_operation(information *const info, node *const nd)
 {
 	node_set_next(nd);
@@ -339,28 +385,51 @@ static void binary_operation(information *const info, node *const nd)
 	{
 		case ASS:
 		case ASSV:
-		{
-			const item_t displ = node_get_arg(nd, 0);
+		case PLUSASS:
+		case PLUSASSV:
+			assertion_expression(info, nd);
+			break;
+		// case PLUSASS:
+		// case PLUSASSV:
+		// {
+		// 	const item_t displ = node_get_arg(nd, 0);
 
-			node_set_next(nd);
-			node_set_next(nd); // TIdent
+		// 	node_set_next(nd);
+		// 	node_set_next(nd); // TIdent
 
-			info->variable_location = LFREE;
-			expression(info, nd);
+		// 	info->variable_location = LFREE;
+		// 	expression(info, nd);
 
-			if (info->answer_type == AREG)
-			{
-				// TODO подумать, может стоит выделить store в отдельную функцию tocode_store
-				uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
-					, info->answer_reg, displ);
-			}
-			else // ACONST
-			{
-				uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
-					, info->answer_const, displ);
-			}
-		}
-		break;
+		// 	if (info->answer_type == AREG)
+		// 	{
+		// 		// TODO подумать, может стоит выделить load в отдельную функцию tocode_load
+		// 		uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n"
+		// 			, info->register_num, displ);
+		// 		info->register_num++;
+		// 		// TODO подумать, может стоит выделить арифметику в отдельную функцию tocode_arithmetic
+		// 		uni_printf(info->io, " %%.%" PRIitem " = add nsw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
+		// 			, info->register_num, info->register_num - 1, info->answer_reg);
+		// 		// TODO подумать, может стоит выделить store в отдельную функцию tocode_store
+		// 		uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
+		// 			, info->register_num, displ);
+		// 		info->register_num++;
+		// 	}
+		// 	else // ACONST
+		// 	{
+		// 		// TODO подумать, может стоит выделить load в отдельную функцию tocode_load
+		// 		uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n"
+		// 			, info->register_num, displ);
+		// 		info->register_num++;
+		// 		// TODO подумать, может стоит выделить арифметику в отдельную функцию tocode_arithmetic
+		// 		uni_printf(info->io, " %%.%" PRIitem " = add nsw i32 %%.%" PRIitem ", %" PRIitem "\n"
+		// 			, info->register_num, info->register_num - 1, info->answer_const);
+		// 		// TODO подумать, может стоит выделить store в отдельную функцию tocode_store
+		// 		uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
+		// 			, info->register_num, displ);
+		// 		info->register_num++;
+		// 	}
+		// }
+		// break;
 		default:
 		{
 			node_set_next(nd);
