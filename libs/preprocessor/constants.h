@@ -22,14 +22,12 @@
 #define HASH		256
 #define DEPTH		10
 
-#define END_PARAMETER	-6
-#define MACRO_END		-5
-#define MACRO_UNDEF		-3
-#define MACRO_CANGE		-4
-#define WHILE_BEGIN		-2
-#define WHILE_END		EOF
-#define MACRO_FUNCTION	0
-#define MACRO_DEF		1
+#define MACRO_CANGE		'\r'
+
+#define MACRO_UNDEF		(char32_t)3
+#define MACRO_FUNCTION	(char32_t)2
+#define MACRO_DEF		(char32_t)1
+
 
 // Ключевые слова
 

@@ -64,8 +64,8 @@ int macro_keywords(environment *const env)
 	int hash = 0;
 	do
 	{
-		hash += env->curchar;
-		env->reprtab[env->rp++] = env->curchar;
+		hash += (int)env->curchar;
+		env->reprtab[env->rp++] = (int)env->curchar;
 		n++;
 		m_nextch(env);
 	} while (utf8_is_letter(env->curchar) || utf8_is_digit(env->curchar));
@@ -107,11 +107,11 @@ int mf_equal(environment *const env, int i, char32_t *buffer)
 	size_t j = 0;
 	i += 2;
 
-	while (env->reprtab[i] == buffer[j])
+	while (env->reprtab[i] == (int)buffer[j])
 	{
 		i++;
 		j++;
-		if (env->reprtab[i] == 0 && buffer[j] == MACRO_END)
+		if (env->reprtab[i] == 0 && (int)buffer[j] == '\0')
 		{
 			return 1;
 		}
@@ -133,7 +133,7 @@ int collect_mident(environment *const env, char32_t *buffer)
 		m_nextch(env);
 	}
 
-	buffer[buffer_size] = MACRO_END;
+	buffer[buffer_size] = '\0';
 	hash &= 255;
 	r = env->hashtab[hash];
 
@@ -141,7 +141,8 @@ int collect_mident(environment *const env, char32_t *buffer)
 	{
 		if (mf_equal(env, r, buffer))
 		{
-			return (env->macro_tab[env->reprtab[r + 1]] != MACRO_UNDEF) ? r : 0;
+			return (env_io_get_char(env, macro_text_type, (size_t)env->reprtab[r + 1]) != MACRO_UNDEF 
+				&& env->reprtab[r + 1] != SH_MAIN) ? r : 0;
 		}
 
 		r = env->reprtab[r];
@@ -178,11 +179,11 @@ void skip_separators(environment *const env)
 
 int skip_string(environment *const env)
 {
-	int c = env->curchar;
+	char32_t c = env->curchar;
 	m_fprintf(env, env->curchar);
 	m_nextch(env);
 
-	while (env->curchar != c && env->curchar != EOF && env->curchar != '\n')
+	while (env->curchar != c && env->curchar != (char32_t)EOF && env->curchar != '\n')
 	{
 		if (env->curchar == '\\')
 		{
@@ -194,7 +195,7 @@ int skip_string(environment *const env)
 		m_nextch(env);
 	}
 
-	if (env->curchar == EOF || env->curchar == '\n')
+	if (env->curchar == (char32_t)EOF || env->curchar == '\n')
 	{
 		env_error(env, no_string_ending);
 		return -1;
@@ -207,9 +208,9 @@ int skip_string(environment *const env)
 
 void end_of_file(environment *const env)
 {
-	while (env_get_io_type(env) != file_type)
+	while (env_io_get_type(env) != file_type)
 	{
 		env_io_switch_to_old_type(env);
 	}
-	env->curchar = EOF;
+	env_curchar_set(env, (char32_t)EOF);
 }

@@ -35,25 +35,27 @@ enum IO_TYPE
 
 typedef struct environment
 {
-	
 	//local io struct
-	int *local_io[all_types];
+	char32_t *local_io[all_types];
 	size_t local_io_size[all_types];
 
 	int curent_io_type;
-	int *curent_io;
-	int curent_io_prt;
+	char32_t *curent_io;
+	size_t curent_io_prt;
 
-	int macro_tab[MAXTAB];
-	int change[STRING_SIZE * 3];
+	char32_t macro_tab[MAXTAB];
+	char32_t param[STRING_SIZE * 3];
 
-	int define_stack[STRING_SIZE];
+	size_t define_stack[STRING_SIZE];
 	size_t define_stack_prt;
 
-	int old_nextchar;
+	char32_t old_nextchar;
+	char32_t old_curchar;
 	int old_io_type[DEPTH];
-	int *old_io[DEPTH];
+	char32_t *old_io[DEPTH];
 	size_t depth_io;
+
+	char32_t curchar, nextchar;
 	//end local io struct
 
 	int hashtab[256];
@@ -62,57 +64,67 @@ typedef struct environment
 
 	char error_string[STRING_SIZE];
 	size_t position;
-
-	int curchar, nextchar;
-	int cur;
-
-	int nested_if;
-	int prep_flag;
-
 	const char *curent_path;
 
+	
+	int cur;
+	int nested_if;
+	int prep_flag;
 	size_t line;
 
-	universal_io *output;
 	universal_io *input;
+	universal_io *output;
+	
 } environment;
 
 void env_init(environment *const env, universal_io *const output);
-void env_clear_error_string(environment *const env);
 
+int env_set_file_input(environment *const env, universal_io *input);
+universal_io *env_get_file_input(environment *const env);
+
+int env_io_set(environment *const env, char32_t *io, int type);
+int env_io_switch_to_new_type(environment *const env, int type, size_t prt);
+void env_io_switch_to_old_type(environment *const env);
+int env_io_clear(environment *const env, int type);//
+
+int env_io_add_char(environment *const env, int type, char32_t simbol);
+int env_io_set_char(environment *const env, int type, size_t prt, char32_t simbol);
+char32_t env_io_get_char(environment *const env, int type, size_t prt);
+char32_t env_get_curchar(environment *const env);
+char32_t env_get_nextchar(environment *const env);
+void m_nextch(environment *const env);
+
+int env_io_get_type(environment *const env);
+size_t env_io_get_size(environment *const env, int type);
+int env_io_get_depth(environment *const env);
+size_t env_io_get_prt(environment *const env);
+
+int env_clear_param_define_stack(environment *const env);//
+int env_clear_param(environment *const env, size_t size);//
+
+int env_macro_ident_end(environment *const env);//
+
+
+int env_set_define_stack_add(environment *const env, int num);//
+size_t env_get_define_stack_prt(environment *const env);//
+int env_set_define_stack_prt(environment *const env, int num);//
+
+int env_curchar_set(environment *const env, char32_t c);//
+
+void env_clear_error_string(environment *const env);//
+void env_error(environment *const env, const int num);
+
+char32_t get_next_char(environment *const env);//
+
+
+
+void m_fprintf(environment *const env, int a);
 /**
  *	Add a comment to indicate line changes in the output
  *
  *	@param	env	Preprocessor environment
  */
 void env_add_comment(environment *const env);
-
-int env_get_io_type(environment *const env);
-
-size_t env_get_io_size(environment *const env, int type);
-
-int env_set_define_stack_add(environment *const env, int num);
-
-int env_clear_param_define_stack(environment *const env);
-
-int env_get_define_stack_prt(environment *const env);
-
-int env_clear_param(environment *const env, size_t size);
-
-int env_set_define_stack_prt(environment *const env, int num);
-
-int env_io_add_char(environment *const env, int type, int simbol);
-
-int env_io_switch_to_new_type(environment *const env, int type, int prt);
-void env_io_switch_to_old_type(environment *const env);
-
-int env_get_depth_io(environment *const env);
-int get_next_char(environment *const env);
-
-void m_fprintf(environment *const env, int a);
-void m_nextch(environment *const env);
-
-void env_error(environment *const env, const int num);
 
 #ifdef __cplusplus
 } /* extern "C" */

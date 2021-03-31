@@ -92,7 +92,7 @@ size_t lk_preprocess_include(linker *const lk)
 	size_t i = 0;
 	while (env->curchar != '\"')
 	{
-		if (env->curchar == EOF)
+		if (env->curchar == (char32_t)EOF)
 		{
 			env_error(env, must_end_quote);
 			return SIZE_MAX - 1;

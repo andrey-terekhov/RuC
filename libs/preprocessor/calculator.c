@@ -307,16 +307,16 @@ int calc_macro(environment *const env)
 int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size)
 {
 	int res;
-	if (env_get_io_type(env) != file_type)
+	if (env_io_get_type(env) != file_type)
 	{
 		char buffer[STRING_SIZE];
 		buffer[0] = '\0';
 		size_t buffer_size = 0;
 
-		int cur = env->curchar;
+		char32_t cur = env->curchar;
 		m_nextch(env);
 
-		int next = env->curchar;
+		char32_t next = env->curchar;
 		if (utf8_is_digit(env->curchar))
 		{
 			m_nextch(env);
@@ -340,11 +340,10 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 	{
 		char32_t last;
 		res = get_digit(env->input, &stack[*stk_size], env->curchar, env->nextchar, &last);
-		env->curchar = last;
+		env_curchar_set(env, last);
 		get_next_char(env);
 	}
-	
-	
+
 	if (res == ERROR)
 	{
 		env_error(env, must_be_digit_after_exp1);
@@ -366,7 +365,7 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 
 int calc_operation(environment *const env, double *const stack, int *const is_int, char *const operation, int *op_size, int *stk_size, const int type)
 {
-	const char opr = get_operation((char)env->curchar, (char)env->nextchar);
+	const char opr = get_operation(env->curchar, env->nextchar);
 	if (!opr)
 	{
 		env_error(env, third_party_symbol);

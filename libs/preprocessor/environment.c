@@ -34,15 +34,15 @@ void env_init(environment *const env, universal_io *const output)
 	env->curent_io = NULL;
 	env->depth_io = 0;
 	env->curent_io_prt = 0;
+	env->define_stack_prt = 0;
+
 	env->local_io[macro_text_type] = env->macro_tab;
-	env->local_io[param_type] = env->change;
+	env->local_io[param_type] = env->param;
 	env->local_io[if_type] = NULL;
 	env->local_io[while_type] = NULL;
-	env->define_stack_prt = 0;
-	env->depth_io = 0;
 
-	env->curchar = 0;
-	env->nextchar = 0;
+	env->curchar = '\0';
+	env->nextchar = '\0';
 	env->cur = 0;
 	
 	env->line = 1;
@@ -57,6 +57,7 @@ void env_init(environment *const env, universal_io *const output)
 		env->local_io_size[i] = 0;
 	}
 	env->local_io_size[macro_text_type] = 1;
+	env->local_io_size[if_type] = 1;
 
 
 	for (size_t i = 0; i < HASH; i++)
@@ -70,9 +71,15 @@ void env_init(environment *const env, universal_io *const output)
 	}
 }
 
-void env_clear_error_string(environment *const env)
+int env_io_set_char(environment *const env, int type, size_t prt, char32_t simbol)
 {
-	env->position = 0;
+	env->local_io[type][prt] = simbol;
+	return 0;
+}
+
+char32_t env_io_get_char(environment *const env, int type, size_t prt)
+{
+	return env->local_io[type][prt];
 }
 
 void env_add_comment(environment *const env)
@@ -85,33 +92,38 @@ void env_add_comment(environment *const env)
 	uni_printf(env->output, "%s", buffer);
 }
 
+void env_clear_error_string(environment *const env)
+{
+	env->position = 0;
+}
+
 size_t env_skip_str(environment *const env)
 {
 	const size_t position = strlen(env->error_string);
-	while (env->curchar != '\n' && env->curchar != EOF)
+	while (env->curchar != '\n' && env->curchar != (char32_t)EOF)
 	{
 		m_nextch(env);
 	}
 	return position;
 }
 
-int get_next_char(environment *const env)
+char32_t get_next_char(environment *const env)
 {
 	env->nextchar = uni_scan_char(env->input);
 	return env->nextchar == U'\r' ? get_next_char(env) : env->nextchar;
 }
 
-int env_get_depth_io(environment *const env)
+int env_io_get_depth(environment *const env)
 {
 	return env->depth_io;
 }
 
-int env_get_io_type(environment *const env)
+int env_io_get_type(environment *const env)
 {
 	return env->curent_io_type;
 }
 
-size_t env_get_io_size(environment *const env, int type)
+size_t env_io_get_size(environment *const env, int type)
 {
 	if(env == NULL || type >= all_types || type <= file_type)
 	{
@@ -120,11 +132,11 @@ size_t env_get_io_size(environment *const env, int type)
 	return env->local_io_size[type];
 }
 
-int env_get_define_stack_prt(environment *const env)
+size_t env_get_define_stack_prt(environment *const env)
 {
 	if(env == NULL)
 	{
-		return -1;
+		return STRING_SIZE;
 	}
 	return env->define_stack_prt;
 }
@@ -132,53 +144,78 @@ int env_get_define_stack_prt(environment *const env)
 int env_clear_param(environment *const env, size_t size)
 {
 	env->local_io_size[param_type] = size;
+	return 0;
 }
 
 int env_clear_param_define_stack(environment *const env)
 {
 	env->local_io_size[param_type] = env->define_stack[env->define_stack_prt];
+	return 0;
 }
 
 int env_set_define_stack_prt(environment *const env, int num)
 {
 	env->define_stack_prt += num;
+	return 0;
 }
 
 int env_set_define_stack_add(environment *const env, int num)
 {
 	env->define_stack[env->define_stack_prt + num] = env->local_io_size[param_type];
+	return 0;
 }
 
-int env_io_add_char(environment *const env, int type, int simbol)
+int env_io_add_char(environment *const env, int type, char32_t simbol)
 {
 	env->local_io[type][env->local_io_size[type]++] = simbol;
+	return 0;
 }
 
 int env_macro_ident_end(environment *const env)
 {
-	int *macro_io = env->local_io[macro_text_type];
+	char32_t *macro_io = env->local_io[macro_text_type];
 	while (macro_io[env->local_io_size[macro_text_type] - 1] == ' ' 
 			|| macro_io[env->local_io_size[macro_text_type] - 1] == '\t')
 	{
 		env->local_io_size[macro_text_type]--;
 	}
-	macro_io[env->local_io_size[macro_text_type]++] = MACRO_END;
+	macro_io[env->local_io_size[macro_text_type]++] = '\0';
+	return 0;
 }
 
-int env_io_switch_to_new_type(environment *const env, int type, int prt)//new
+void env_curchar_chec(environment *const env)
 {
-	if(env->curent_io_type != file_type && prt < env->local_io_size[type])
+	if (env->curent_io_type == macro_text_type  && env->curchar == '\n')
+	{
+		env_add_comment(env);
+	}
+	else if (env->curent_io_type == macro_text_type  && env->curchar == MACRO_CANGE)
+	{
+		size_t num_param = (size_t) env->nextchar;
+		env->curent_io_prt += 2;
+		env_io_switch_to_new_type(env, param_type, env->define_stack[num_param + env->define_stack_prt]);
+	}
+	else if (env->curchar == '\0')
+	{
+		env_io_switch_to_old_type(env);
+	}
+}
+
+int env_io_switch_to_new_type(environment *const env, int type, size_t prt)
+{
+	if (type != file_type && type != param_type && prt >= env->local_io_size[type])
 	{
 		return -1;
 	}
 
 	if(env->curent_io_type == file_type)
 	{
+		env->old_curchar = env->curchar;
 		env->old_nextchar = env->nextchar;
 	}
 
 	env->old_io_type[env->depth_io] = env->curent_io_type;
-	env->old_io[env->depth_io] = env->curent_io;
+	env->old_io[env->depth_io] = &env->curent_io[env->curent_io_prt-2];
 
 	env->depth_io++;
 	env->curent_io_type = type;
@@ -187,13 +224,45 @@ int env_io_switch_to_new_type(environment *const env, int type, int prt)//new
 	if(type != file_type)
 	{
 		env->curent_io = &env->local_io[type][prt];
+		env->curchar = env->curent_io[env->curent_io_prt++];
 		env->nextchar = env->curent_io[env->curent_io_prt++];
+		env_curchar_chec(env);
 	}
 	else
 	{
 		env->curent_io = NULL;
 	}
+	//printf("new t = %d curchar = %c, %i nextchar = %c, %i; prt = %d\n", env->curent_io_type,
+	//env->curchar, env->curchar, env->nextchar, env->nextchar, env->curent_io_prt);
 
+	return 0;
+}
+
+int env_curchar_set(environment *const env, char32_t c)
+{
+	env->curchar = c;
+	return 0;
+}
+
+int env_io_clear(environment *const env, int type)
+{
+	if (type != if_type && type != while_type)
+	{
+		return -1;
+	}
+
+	env->local_io_size[type] = 0;
+	return 0;
+}
+
+int env_io_set(environment *const env, char32_t *io, int type)
+{
+	if (type != if_type && type != while_type)
+	{
+		return -1;
+	}
+
+	env->local_io[type] = io;
 	return 0;
 }
 
@@ -206,24 +275,28 @@ void env_io_switch_to_old_type(environment *const env)
 
 	if(env->curent_io_type != file_type)
 	{
-		env->nextchar = env->curent_io[1];
+		env->curchar = env->curent_io[env->curent_io_prt++];
+		env->nextchar = env->curent_io[env->curent_io_prt++];
+		env_curchar_chec(env);
 	}
 	else
 	{
+		env->curchar = env->old_curchar;
 		env->nextchar = env->old_nextchar;
 	}
+
+	//printf("old t = %d curchar = %c, %i nextchar = %c, %i; prt = %d\n", env->curent_io_type,
+	//env->curchar, env->curchar, env->nextchar, env->nextchar, env->curent_io_prt);
 }
 
 void m_onemore(environment *const env)
 {
 	env->curchar = env->nextchar;
-
 	get_next_char(env);
-	
 
-	if (env->curchar == EOF)
+	if (env->curchar == (char32_t)EOF)
 	{
-		env->nextchar = EOF;
+		env->nextchar = (char32_t)EOF;
 	}
 }
 
@@ -241,7 +314,7 @@ void m_coment_skip(environment *const env)
 			// m_fprintf_com();
 			m_onemore(env);
 
-			if (env->curchar == EOF)
+			if (env->curchar == (char32_t)EOF)
 			{
 				return;
 			}
@@ -263,7 +336,7 @@ void m_coment_skip(environment *const env)
 				env->line++;
 			}
 
-			if (env->curchar == EOF)
+			if (env->curchar == (char32_t)EOF)
 			{
 				env_error(env, comm_not_ended);
 				env->line++;
@@ -279,56 +352,38 @@ void m_coment_skip(environment *const env)
 
 void m_nextch(environment *const env)
 {
+	env->curchar = env->nextchar;
+
 	if (env->curent_io_type != file_type)
 	{
-		env->curchar = env->nextchar;
 		env->nextchar = env->curent_io[env->curent_io_prt++];
+		env_curchar_chec(env);
+		//printf("t = %d curchar = %c, %i nextchar = %c, %i; prt = %d\n", env->curent_io_type,
+		//env->curchar, env->curchar, env->nextchar, env->nextchar, env->curent_io_prt);
 
-		if(env->curent_io_type == macro_text_type)
-		{
-			if (env->curchar == '\n')
-			{
-				env_add_comment(env);
-			}
-			else if (env->curchar == MACRO_CANGE)
-			{
-				m_nextch(env);
-				env_io_switch_to_new_type(env, param_type, env->define_stack[env->curchar + env->define_stack_prt]);
-				m_nextch(env);
-			}
-			else if (env->curchar == MACRO_END)
-			{
-				env_io_switch_to_old_type(env);
-			}
-		}
-		else if (env->curent_io_type == param_type && env->curchar == END_PARAMETER)
-		{
-			env_io_switch_to_old_type(env);
-			m_nextch(env);
-		}
-		else if(env->nextchar == '\0')
-		{
-			env_io_switch_to_old_type(env);
-		}
+		return;
+	}
+
+	get_next_char(env);
+
+	m_coment_skip(env);
+	if (env->curchar == (char32_t)EOF)
+	{
+		env->nextchar = (char32_t)EOF;
+	}
+
+	if (env->curchar != '\n' && env->curchar != (char32_t)EOF)
+	{
+		env->position += utf8_to_string(&env->error_string[env->position], env->curchar);
 	}
 	else
 	{
-		m_onemore(env);
-		m_coment_skip(env);
-
-		if (env->curchar != '\n' && env->curchar != EOF)
-		{
-			env->position += utf8_to_string(&env->error_string[env->position], env->curchar);
-		}
-		else
-		{
-			env->line++;
-			env_clear_error_string(env);
-		}
+		env->line++;
+		env->position = 0;
 	}
 	
-	// printf("t = %d curchar = %c, %i nextchar = %c, %i\n", env->nextch_type,
-	// env->curchar, env->curchar, env->nextchar, env->nextchar);
+	printf("t = %d curchar = %c, %i nextchar = %c, %i; prt = %d\n", env->curent_io_type,
+	env->curchar, env->curchar, env->nextchar, env->nextchar, env->curent_io_prt);
 }
 
 void env_error(environment *const env, const int num)
