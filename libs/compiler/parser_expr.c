@@ -25,29 +25,11 @@ void parse_expression_internal(parser *const prs);
 item_t parse_constant(parser *const prs);
 
 
-void scanner(parser *const prs)
-{
-	prs->token = lex(prs->lxr);
-}
-
-void must_be(parser *const prs, const token_t what, const error_t num)
-{
-	if (prs->token != what)
-	{
-		parser_error(prs, num);
-	}
-	else
-	{
-		scanner(prs);
-	}
-}
-
 void totree_float_operation(parser *const prs, const item_t type, const item_t op)
 {
-	if (type == mode_float &&
-		((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS)))
+	if ((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS))
 	{
-		to_tree(prs, op + 50);
+		to_tree(prs, type == mode_float ? op + 50 : op);
 	}
 	else
 	{
@@ -117,18 +99,19 @@ anst_val anst_peek(parser *const prs)
 }
 
 
-void binop(parser *const prs, size_t sp)
+void binary_operation(parser *const prs, size_t sp)
 {
 	const item_t op = prs->stackop[sp];
-	const item_t right = anst_pop(prs);
-	const item_t left = anst_pop(prs);
+	const item_t rtype = anst_pop(prs);
+	const item_t ltype = anst_pop(prs);
+	item_t result_type = rtype;
 
-	if (mode_is_pointer(prs->sx, left) || mode_is_pointer(prs->sx, right))
+	if (mode_is_pointer(prs->sx, ltype) || mode_is_pointer(prs->sx, rtype))
 	{
 		parser_error(prs, operand_is_pointer);
 	}
 
-	if (mode_is_float(left) || mode_is_float(right))
+	if (mode_is_float(ltype) || mode_is_float(rtype))
 	{
 		if (op == LOGOR || op == LOGAND || op == LOR || op == LEXOR || op == LAND
 			|| op == LSHR || op == LSHL || op == LREM)
@@ -136,16 +119,16 @@ void binop(parser *const prs, size_t sp)
 			parser_error(prs, int_op_for_float);
 		}
 
-		if (mode_is_int(left))
+		if (mode_is_int(ltype))
 		{
 			to_tree(prs, WIDEN1);
 		}
-		else if (mode_is_int(right))
+		else if (mode_is_int(rtype))
 		{
 			to_tree(prs, WIDEN);
 		}
 
-		prs->ansttype = LFLOAT;
+		result_type = mode_float;
 	}
 
 	if (op == LOGOR || op == LOGAND)
@@ -156,14 +139,14 @@ void binop(parser *const prs, size_t sp)
 	}
 	else
 	{
-		totree_float_operation(prs, prs->ansttype, op);
+		totree_float_operation(prs, result_type, op);
 	}
 	if (op >= EQEQ && op <= LGE)
 	{
-		prs->ansttype = LINT;
+		result_type = mode_integer;
 	}
 
-	 anst_push(prs, value, prs->ansttype);
+	 anst_push(prs, value, result_type);
 }
 
 void toval(parser *const prs)
@@ -323,7 +306,6 @@ void mustberowofint(parser *const prs)
 	if (!(mode_is_array(prs->sx, type) && mode_is_int(mode_get(prs->sx, (size_t)type + 1))))
 	{
 		parser_error(prs, not_rowofint_in_stanfunc);
-		prs->was_error = 5;
 	}
 }
 
@@ -372,7 +354,7 @@ void parse_standard_function_call(parser *const prs)
 			prs->was_error = 4;
 			return; // 1
 		}
-		must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+		token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 		mustbestring(prs);
 	}
 	else if (func <= STRCPY && func >= STRLEN) // функции работы со строками
@@ -392,7 +374,7 @@ void parse_standard_function_call(parser *const prs)
 		}
 		if (func != STRLEN)
 		{
-			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+			token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 			mustbestring(prs);
 			if (prs->was_error == 5)
 			{
@@ -401,7 +383,7 @@ void parse_standard_function_call(parser *const prs)
 			}
 			if (func == STRNCPY || func == STRNCAT || func == STRNCMP)
 			{
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 				mustbeint(prs);
 			}
 		}
@@ -426,13 +408,13 @@ void parse_standard_function_call(parser *const prs)
 		}
 		if (func == SEND_INT || func == SEND_STRING)
 		{
-			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+			token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 			// scaner(context);
 			mustberowofint(prs);
 		}
 		else if (func == SEND_FLOAT)
 		{
-			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+			token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 			// scaner(context);
 			mustberowoffloat(prs);
 		}
@@ -455,7 +437,7 @@ void parse_standard_function_call(parser *const prs)
 			}
 			if (func != CLEAR)
 			{
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 			}
 
 			if (func == LINE || func == RECTANGLE || func == ELLIPS)
@@ -466,21 +448,21 @@ void parse_standard_function_call(parser *const prs)
 					prs->was_error = 4;
 					return; // 1
 				}
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 				mustbeint(prs);
 				if (prs->was_error == 5)
 				{
 					prs->was_error = 4;
 					return; // 1
 				}
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 				mustbeint(prs);
 				if (prs->was_error == 5)
 				{
 					prs->was_error = 4;
 					return; // 1
 				}
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 				mustbeint(prs);
 				if (prs->was_error == 5)
 				{
@@ -489,14 +471,14 @@ void parse_standard_function_call(parser *const prs)
 				}
 				if (func != LINE)
 				{
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 					mustbeint(prs);
 				}
 			}
 			else if (func == ICON || func == PIXEL)
 			{
 				mustbeint(prs);
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 				if (prs->was_error == 5)
 				{
 					prs->was_error = 4;
@@ -510,7 +492,7 @@ void parse_standard_function_call(parser *const prs)
 				}
 				if (func == ICON)
 				{
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 					mustbeint(prs);
 				}
 			}
@@ -522,14 +504,14 @@ void parse_standard_function_call(parser *const prs)
 					prs->was_error = 4;
 					return; // 1
 				}
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 				mustbeint(prs);
 				if (prs->was_error == 5)
 				{
 					prs->was_error = 4;
 					return; // 1
 				}
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 
 				if (func == DRAW_STRING)
 				{
@@ -566,14 +548,14 @@ void parse_standard_function_call(parser *const prs)
 				prs->was_error = 4;
 				return; // 1
 			}
-			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+			token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 			mustberowofint(prs);
 			if (prs->was_error == 5)
 			{
 				prs->was_error = 4;
 				return; // 1
 			}
-			must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+			token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 			mustberowofint(prs);
 		}
 		else if (func == WIFI_CONNECT || func == BLYNK_AUTORIZATION || func == BLYNK_NOTIFICATION)
@@ -581,7 +563,7 @@ void parse_standard_function_call(parser *const prs)
 			mustbestring(prs);
 			if (func == WIFI_CONNECT)
 			{
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 				mustbestring(prs);
 			}
 		}
@@ -595,7 +577,7 @@ void parse_standard_function_call(parser *const prs)
 			}
 			if (func != BLYNK_RECEIVE)
 			{
-				must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+				token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 				if (func == BLYNK_TERMINAL)
 				{
 					mustbestring(prs);
@@ -617,7 +599,7 @@ void parse_standard_function_call(parser *const prs)
 						prs->was_error = 4;
 						return; // 1
 					}
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 					mustbestring(prs);
 				}
 				else // BLYNK_LCD
@@ -628,14 +610,14 @@ void parse_standard_function_call(parser *const prs)
 						prs->was_error = 4;
 						return; // 1
 					}
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 					mustbeint(prs);
 					if (prs->was_error == 5)
 					{
 						prs->was_error = 4;
 						return; // 1
 					}
-					must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+					token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 					mustbestring(prs);
 				}
 			}
@@ -653,7 +635,7 @@ void parse_standard_function_call(parser *const prs)
 			prs->was_error = 4;
 			return; // 1
 		}
-		must_be(prs, COMMA, no_comma_in_act_params_stanfunc);
+		token_expect_and_consume(prs, COMMA, no_comma_in_act_params_stanfunc);
 		mustberow(prs);
 		if (prs->was_error == 5)
 		{
@@ -810,7 +792,7 @@ void parse_standard_function_call(parser *const prs)
 				prs->was_error = 4;
 				return; // 1
 			}
-			must_be(prs, COMMA, no_comma_in_setmotor);
+			token_expect_and_consume(prs, COMMA, no_comma_in_setmotor);
 			if (func == GETDIGSENSOR)
 			{
 				mustberowofint(prs);
@@ -871,7 +853,7 @@ void parse_standard_function_call(parser *const prs)
 		return; // 1
 	}
 	to_tree(prs, 9500 - func);
-	must_be(prs, RIGHTBR, no_rightbr_in_stand_func);
+	token_expect_and_consume(prs, RIGHTBR, no_rightbr_in_stand_func);
 }
 
 /**
@@ -995,7 +977,7 @@ void parse_primary_expression(parser *const prs)
 				token_expect_and_consume(prs, r_paren, wait_rightbr_in_primary);
 				while (prs->sp > oldsp)
 				{
-					binop(prs, --prs->sp);
+					binary_operation(prs, --prs->sp);
 				}
 			}
 			break;
@@ -1435,7 +1417,9 @@ void parse_unary_expression(parser *const prs)
 						}
 						else
 						{
-							totree_float_operation(prs, prs->ansttype, UNMINUS);
+							const item_t type = anst_pop(prs);
+							totree_float_operation(prs, type, UNMINUS);
+							anst_push(prs, value, type);
 						}
 					}
 					else
@@ -1550,7 +1534,7 @@ void parse_subexpression(parser *const prs)
 		toval(prs);
 		while (prs->sp > oldsp && prs->stack[prs->sp - 1] >= p)
 		{
-			binop(prs, --prs->sp);
+			binary_operation(prs, --prs->sp);
 		}
 
 		size_t ad = 0;
@@ -1574,7 +1558,7 @@ void parse_subexpression(parser *const prs)
 	}
 	while (prs->sp > oldsp)
 	{
-		binop(prs, --prs->sp);
+		binary_operation(prs, --prs->sp);
 	}
 }
 
