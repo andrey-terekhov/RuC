@@ -183,7 +183,7 @@ void macro_warning(const int num, const char *const path, const char *const code
 void macro_system_error(const char *const tag, const int num)
 {
 	char msg[ERROR_MSG_SIZE];
-	get_message_error(num, msg);
+	get_message(num, msg);
 
 	if (tag != NULL)
 	{
