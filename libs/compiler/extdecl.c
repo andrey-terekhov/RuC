@@ -2419,7 +2419,8 @@ void exprassn(analyzer *context, int level)
 				totree(context, WIDEN);
 				context->ansttype = LFLOAT;
 			}
-			if (is_pointer(context->sx, ltype) && is_pointer(context->sx, rtype) && ltype != rtype)
+			if (is_pointer(context->sx, ltype) && is_pointer(context->sx, rtype) &&
+			    !checkNPoint(context, ltype, rtype))
 			{
 				// проверка нужна только для указателей
 				context_error(context, type_missmatch);
