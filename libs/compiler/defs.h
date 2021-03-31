@@ -346,14 +346,6 @@ enum MODE
 #define SEMICOLON	0b00100000
 
 
-// Ответы
-
-#define NUMBER	108
-#define IDENT	109
-#define VAL	 	110
-#define ADDR 	111
-
-
 // Ключевые слова
 
 #define LMAIN	0

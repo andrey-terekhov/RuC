@@ -33,13 +33,8 @@
 extern "C" {
 #endif
 
-typedef enum ANST_VAL
-{
-	variable = IDENT,
-	value = VAL,
-	number = NUMBER,
-	address = ADDR,
-} anst_val;
+/** Type of operand on top of anonymous stack */
+typedef enum { variable, value, number, address } anst_val;
 
 typedef struct parser
 {

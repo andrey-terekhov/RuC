@@ -63,7 +63,7 @@ typedef enum TOKEN
 	//kw_register,						/**< 'register'	keyword */
 
 	// Identifiers [C99 6.4.2]
-	identifier			= IDENT,		/**< Identifier [C99 6.4.2] */
+	identifier			= 109,		/**< Identifier [C99 6.4.2] */
 
 	// Constants [C99 6.4.4]
 	int_constant		= INT_CONST,	/**< Integer Constant [C99 6.4.4.1] */
