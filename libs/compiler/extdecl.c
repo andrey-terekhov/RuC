@@ -1332,6 +1332,7 @@ int check_field(analyzer *context, int stype, int ENUM_TYPE)
 	int step = 3;
 	int record_length = mode_get(context->sx, stype + 2);
 	int repr_tmp = context->sx->repr;
+    size_t in_position_tmp = context->io->in_position;
 
 	if (ENUM_TYPE == MENUMCLASS)
 	{
@@ -1348,6 +1349,7 @@ int check_field(analyzer *context, int stype, int ENUM_TYPE)
 		}
 	}
 	context->sx->repr = repr_tmp;
+	context->io->in_position = in_position_tmp;
 	if (flag)
 	{
 		context_error(context, no_field);
