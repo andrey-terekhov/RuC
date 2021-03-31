@@ -3,6 +3,6 @@
 int main() {
     int num = 5;
     int &pointer = &num;
-    int *ptr = pointer;g
+    int *ptr = pointer;
     return 0;
 }
