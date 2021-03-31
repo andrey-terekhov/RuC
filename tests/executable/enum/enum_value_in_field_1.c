@@ -4,6 +4,6 @@ enum Color : int { r = 5, g, b = 2};
 
 int main() {
 	int i = g;
-	printf("%d\n", i);
+	print(i);
 	return 0;
 }

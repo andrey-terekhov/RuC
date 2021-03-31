@@ -2144,9 +2144,9 @@ void inition(analyzer *context, int decl_type)
 		totree(context, TExprend);
 		// съедаем выражение, его значение будет на стеке
 		context->sopnd--;
-		if (decl_type != LENUM && context->ansttype == LENUM)
+		if (is_int(decl_type) && context->ansttype == LENUM)
 		{
-			context->ansttype = enum_field_type;
+			context->ansttype = decl_type;
 		}
 		if (is_int(decl_type) && is_float(context->ansttype))
 		{
