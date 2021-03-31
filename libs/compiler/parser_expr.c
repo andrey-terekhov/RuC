@@ -205,7 +205,7 @@ void toval(parser *const prs)
 	prs->anst = value;
 }
 
-void parse_braced_init_list(parser *const prs, const item_t type)
+item_t parse_braced_init_list(parser *const prs, const item_t type)
 {
 	token_consume(prs);
 	to_tree(prs, type == mode_float ? TStringd : TString);
@@ -250,13 +250,14 @@ void parse_braced_init_list(parser *const prs, const item_t type)
 	} while (token_try_consume(prs, comma));
 
 	node_set_arg(&nd_init_list, 0, length);
+	to_tree(prs, TExprend);
 	if (!token_try_consume(prs, r_brace))
 	{
 		parser_error(prs, no_comma_or_end);
 		token_skip_until(prs, r_brace | semicolon);
 	}
 
-	anst_push(prs, value, to_modetab(prs, mode_array, type));
+	return to_modetab(prs, mode_array, type);
 }
 
 void mustbestring(parser *const prs)
@@ -303,21 +304,19 @@ void mustbeint(parser *const prs)
 void mustberowofint(parser *const prs)
 {
 	item_t type;
-	if (prs->token == BEGIN)
+	if (prs->token == l_brace)
 	{
-		parse_braced_init_list(prs, LINT);
-		to_tree(prs, TExprend);
-		type = anst_pop(prs);
+		type = parse_braced_init_list(prs, mode_integer);
 	}
 	else
 	{
 		parse_assignment_expression_internal(prs);
 		toval(prs);
 		type = anst_pop(prs);
-		if (type == LINT || type == LCHAR)
+		if (mode_is_int(type))
 		{
 			to_tree(prs, ROWING);
-			type = to_modetab(prs, mode_array, LINT);
+			type = to_modetab(prs, mode_array, mode_integer);
 		}
 	}
 
@@ -331,28 +330,25 @@ void mustberowofint(parser *const prs)
 void mustberowoffloat(parser *const prs)
 {
 	item_t type;
-	if (prs->token == BEGIN)
+	if (prs->token == l_brace)
 	{
-		parse_braced_init_list(prs, LFLOAT);
-		to_tree(prs, TExprend);
-		type = anst_pop(prs);
+		type = parse_braced_init_list(prs, mode_float);
 	}
 	else
 	{
 		parse_assignment_expression_internal(prs);
 		toval(prs);
 		type = anst_pop(prs);
-		if (type == LFLOAT)
+		if (mode_is_float(type))
 		{
 			to_tree(prs, ROWINGD);
-			type = to_modetab(prs, mode_array, LFLOAT);
+			type = to_modetab(prs, mode_array, mode_float);
 		}
 	}
 
-	if (!(mode_is_array(prs->sx, type) && mode_get(prs->sx, (size_t)type + 1) == LFLOAT))
+	if (!(mode_is_array(prs->sx, type) && mode_get(prs->sx, (size_t)type + 1) == mode_float))
 	{
 		parser_error(prs, not_rowoffloat_in_stanfunc);
-		prs->was_error = 5;
 	}
 }
 
@@ -1118,7 +1114,6 @@ void parse_function_call(parser *const prs, const size_t function_id)
 			else if (mode_is_array(prs->sx, expected_arg_mode) && prs->token == l_brace)
 			{
 				parse_braced_init_list(prs, mode_get(prs->sx, (size_t)expected_arg_mode + 1));
-				to_tree(prs, TExprend);
 			}
 			else
 			{
