@@ -139,10 +139,11 @@ void get_message_error(const int num, char *const msg)
 	}
 }
 
-void macro_error(const int num, const char *const path, const char *const code, const size_t line, size_t position)
+void output(const int num, const char *const path, const char *const code, const size_t line, size_t position
+, void (*func)(const char *const, const char *const, const char *const, const size_t))
 {
 	char msg[ERROR_MSG_SIZE];
-	get_message_error(num, msg);
+	get_message(num, msg);
 
 	if (path == NULL)
 	{
@@ -166,7 +167,17 @@ void macro_error(const int num, const char *const path, const char *const code, 
 	}
 	sprintf(&tag[index], ":%zi", position);
 
-	log_error(tag, msg, code, position);
+	func(tag, msg, code, position);
+}
+
+void macro_error(const int num, const char *const path, const char *const code, const size_t line, size_t position)
+{
+	output(num, path, code, line, position, &log_error);
+}
+
+void macro_warning(const int num, const char *const path, const char *const code, const size_t line, size_t position)
+{
+	output(num, path, code, line, position, &log_warning);
 }
 
 void macro_system_error(const char *const tag, const int num)
