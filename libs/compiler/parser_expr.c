@@ -1271,31 +1271,35 @@ void parse_postfix_expression(parser *const prs)
 
 		while (prs->token == arrow)
 		{
-			if (!mode_is_pointer(prs->sx, prs->ansttype) ||
-				!mode_is_struct(prs->sx, mode_get(prs->sx, (size_t)prs->ansttype + 1)))
+			if (anst_peek(prs) == variable)
+			{
+				node_set_type(&prs->nd, TIdenttoval);
+			}
+
+			item_t type = anst_pop(prs);
+			if (!(mode_is_pointer(prs->sx, type) && mode_is_struct(prs->sx, mode_get(prs->sx, (size_t)type + 1))))
 			{
 				parser_error(prs, get_field_not_from_struct_pointer);
 			}
 
-			if (prs->anst == variable)
-			{
-				node_set_type(&prs->nd, TIdenttoval);
-			}
-			prs->anst = address;
 			to_tree(prs, TSelect);
 
-			prs->ansttype = mode_get(prs->sx, (size_t)prs->ansttype + 1);
-			prs->anstdispl = find_field(prs, prs->ansttype);
+			type = mode_get(prs->sx, (size_t)type + 1);
+			prs->anstdispl = find_field(prs, type);
 			while (prs->token == period)
 			{
-				prs->anstdispl += find_field(prs, prs->ansttype);
+				prs->anstdispl += find_field(prs, type);
 			}
 
+			// Функция поиска нужного поля передаст его тип через анонимный стек
+			type = anst_pop(prs);
 			to_tree(prs, prs->anstdispl);
-			if (mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype))
+			if (mode_is_array(prs->sx, type) || mode_is_pointer(prs->sx, type))
 			{
 				to_tree(prs, TAddrtoval);
 			}
+
+			anst_push(prs, address, type);
 		}
 
 		if (prs->token == period)
@@ -1727,8 +1731,13 @@ void parse_assignment_expression_internal(parser *const prs)
 
 	if (is_assignment_operator(prs->token))
 	{
-		const anst_val leftanst = anst_peek(prs);
 		const item_t target_displ = prs->anstdispl;
+		const anst_val leftanst = anst_peek(prs);
+		if (leftanst == value)
+		{
+			parser_error(prs, unassignable);
+		}
+
 		item_t operator = prs->token;
 		token_consume(prs);
 
@@ -1736,14 +1745,9 @@ void parse_assignment_expression_internal(parser *const prs)
 		parse_assignment_expression_internal(prs);
 		prs->flag_in_assignment = 0;
 
-		if (leftanst == value)
-		{
-			parser_error(prs, unassignable);
-		}
 		// Снимаем типы операндов со стека
-		const item_t rtype = anst_pop(prs);
-
 		const anst_val righttanst = anst_peek(prs);
+		const item_t rtype = anst_pop(prs);
 		const item_t ltype = anst_pop(prs);
 
 		if (is_int_assignment_operator(operator) && (mode_is_float(ltype) || mode_is_float(rtype)))
@@ -1791,7 +1795,8 @@ void parse_assignment_expression_internal(parser *const prs)
 		}
 		else // оба операнда базового типа или указатели
 		{
-			if (mode_is_pointer(prs->sx, ltype) && operator != equal) // в указатель можно присваивать только с помощью =
+			// В указатель можно присваивать только с помощью '='
+			if (mode_is_pointer(prs->sx, ltype) && operator != equal)
 			{
 				parser_error(prs, wrong_struct_ass);
 			}
