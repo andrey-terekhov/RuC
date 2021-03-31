@@ -15,6 +15,9 @@
  */
 
 #include "constants.h"
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdint.h>
 #include "error.h"
 #include "logger.h"
 #include <stdio.h>
@@ -139,7 +142,7 @@ void get_message(const int num, char *const msg)
 	}
 }
 
-void output(const int num, const char *const path, const char *const code, const size_t line, size_t position
+void macro_output(const int num, const char *const path, const char *const code, const size_t line, size_t position
 , void (*func)(const char *const, const char *const, const char *const, const size_t))
 {
 	char msg[ERROR_MSG_SIZE];
@@ -172,12 +175,12 @@ void output(const int num, const char *const path, const char *const code, const
 
 void macro_error(const int num, const char *const path, const char *const code, const size_t line, size_t position)
 {
-	output(num, path, code, line, position, &log_error);
+	macro_output(num, path, code, line, position, &log_error);
 }
 
 void macro_warning(const int num, const char *const path, const char *const code, const size_t line, size_t position)
 {
-	output(num, path, code, line, position, &log_warning);
+	macro_output(num, path, code, line, position, &log_warning);
 }
 
 void macro_system_error(const char *const tag, const int num)
