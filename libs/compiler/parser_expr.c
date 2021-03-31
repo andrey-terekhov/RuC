@@ -835,6 +835,11 @@ item_t find_field(parser *const prs, const item_t stype)
 
 	item_t select_displ = 0;
 	const size_t record_length = (size_t)mode_get(prs->sx, (size_t)stype + 2);
+	if (record_length == (size_t)ITEM_MAX)
+	{
+		return 0;
+	}
+
 	for (size_t i = 0; i < record_length; i += 2) // тут хранится удвоенное n
 	{
 		const item_t field_type = mode_get(prs->sx, (size_t)stype + 3 + i);
@@ -1038,30 +1043,27 @@ void parse_postfix_expression(parser *const prs)
 				node_set_type(&prs->nd, TIdenttoval);
 			}
 
-			item_t type = anst_pop(prs);
-			if (!(mode_is_pointer(prs->sx, type) && mode_is_struct(prs->sx, mode_get(prs->sx, (size_t)type + 1))))
+			if (!(mode_is_pointer(prs->sx, prs->ansttype) && mode_is_struct(prs->sx, mode_get(prs->sx, (size_t)prs->ansttype + 1))))
 			{
 				parser_error(prs, get_field_not_from_struct_pointer);
 			}
 
 			to_tree(prs, TSelect);
 
-			type = mode_get(prs->sx, (size_t)type + 1);
-			prs->anstdispl = find_field(prs, type);
+			prs->ansttype = mode_get(prs->sx, (size_t)prs->ansttype + 1);
+			prs->anstdispl = find_field(prs, prs->ansttype);
 			while (prs->token == period)
 			{
-				prs->anstdispl += find_field(prs, type);
+				prs->anstdispl += find_field(prs, prs->ansttype);
 			}
 
-			// Функция поиска нужного поля передаст его тип через анонимный стек
-			type = anst_pop(prs);
 			to_tree(prs, prs->anstdispl);
-			if (mode_is_array(prs->sx, type) || mode_is_pointer(prs->sx, type))
+			if (mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype))
 			{
 				to_tree(prs, TAddrtoval);
 			}
 
-			anst_push(prs, address, type);
+			anst_push(prs, address, prs->ansttype);
 		}
 
 		if (prs->token == period)
@@ -1089,7 +1091,7 @@ void parse_postfix_expression(parser *const prs)
 				int globid = prs->anstdispl < 0 ? -1 : 1;
 				while (prs->token == period)
 				{
-					prs->anstdispl += globid * find_field(prs, (int)prs->ansttype);
+					prs->anstdispl += globid * find_field(prs, prs->ansttype);
 				}
 
 				node_set_arg(&prs->nd, 0, prs->anstdispl);
@@ -1542,7 +1544,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			else
 			{
 				operator = leftanst == variable ? righttanst == variable ? COPY00 : COPY01
-				: righttanst == variable ? COPY10 : COPY11;
+					: righttanst == variable ? COPY10 : COPY11;
 			}
 
 			to_tree(prs, operator);
@@ -1571,9 +1573,13 @@ void parse_assignment_expression_internal(parser *const prs)
 				parser_error(prs, assmnt_float_to_int);
 			}
 
+			// Здесь мы используем стек, чтобы передать в to_value тип и вид значения
+			// Это не очень красивый вариант, но рабочий: мы точно знаем, где эти тип и вид взять
+			// TODO: придумать вариант красивее
 			anst_push(prs, righttanst, rtype);
 			to_value(prs);
 			anst_pop(prs);
+			
 			if (mode_is_float(ltype) && mode_is_int(rtype))
 			{
 				to_tree(prs, WIDEN);
