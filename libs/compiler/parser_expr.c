@@ -255,110 +255,73 @@ void parse_braced_init_list(parser *const prs, const item_t type)
 		parser_error(prs, no_comma_or_end);
 		token_skip_until(prs, r_brace | semicolon);
 	}
-	prs->ansttype = (int)to_modetab(prs, mode_array, type);
-	prs->anst = value;
+
+	anst_push(prs, value, to_modetab(prs, mode_array, type));
 }
 
 void mustbestring(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
-	if (prs->was_error == 6)
-	{
-		prs->was_error = 5;
-		return; // 1
-	}
 	toval(prs);
-	prs->sopnd--;
-	if (!(mode_is_string(prs->sx, prs->ansttype)))
+	if (!(mode_is_string(prs->sx, anst_pop(prs))))
 	{
 		parser_error(prs, not_string_in_stanfunc);
-		prs->was_error = 5;
 	}
 }
 
 void mustbepointstring(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
-	if (prs->was_error == 6)
-	{
-		prs->was_error = 5;
-		return; // 1
-	}
 	toval(prs);
-	prs->sopnd--;
-	if (!(mode_is_pointer(prs->sx, prs->ansttype) &&
-		  mode_is_string(prs->sx, mode_get(prs->sx, (size_t)prs->ansttype + 1))))
+	const item_t type = anst_pop(prs);
+	if (!(mode_is_pointer(prs->sx, type) && mode_is_string(prs->sx, mode_get(prs->sx, (size_t)type + 1))))
 	{
 		parser_error(prs, not_point_string_in_stanfunc);
-		prs->was_error = 5;
-		return; // 1
 	}
 }
 
 void mustberow(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
-	if (prs->was_error == 6)
-	{
-		prs->was_error = 5;
-		return; // 1
-	}
 	toval(prs);
-	prs->sopnd--;
-
-	if (!mode_is_array(prs->sx, prs->ansttype))
+	if (!mode_is_array(prs->sx, anst_pop(prs)))
 	{
 		parser_error(prs, not_array_in_stanfunc);
-		prs->was_error = 5;
 	}
 }
 
 void mustbeint(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
-	if (prs->was_error == 6)
-	{
-		prs->was_error = 5;
-		return; // 1
-	}
 	toval(prs);
-	prs->sopnd--;
-	if (prs->ansttype != LINT && prs->ansttype != LCHAR)
+	if (!mode_is_int(anst_pop(prs)))
 	{
 		parser_error(prs, not_int_in_stanfunc);
-		prs->was_error = 5;
 	}
 }
 
 void mustberowofint(parser *const prs)
 {
+	item_t type;
 	if (prs->token == BEGIN)
 	{
-		parse_braced_init_list(prs, LINT), to_tree(prs, TExprend);
-		if (prs->was_error == 2)
-		{
-			prs->was_error = 5;
-			return; // 1
-		}
+		parse_braced_init_list(prs, LINT);
+		to_tree(prs, TExprend);
+		type = anst_pop(prs);
 	}
 	else
 	{
 		parse_assignment_expression_internal(prs);
-		if (prs->was_error == 6)
-		{
-			prs->was_error = 5;
-			return; // 1
-		}
 		toval(prs);
-		prs->sopnd--;
-		if (prs->ansttype == LINT || prs->ansttype == LCHAR)
+		type = anst_pop(prs);
+		if (type == LINT || type == LCHAR)
 		{
 			to_tree(prs, ROWING);
-			prs->ansttype = (int)to_modetab(prs, mode_array, LINT);
+			type = to_modetab(prs, mode_array, LINT);
 		}
 	}
-	if (!(mode_is_array(prs->sx, prs->ansttype) &&
-		  mode_is_int(mode_get(prs->sx, (size_t)prs->ansttype + 1))))
+
+	if (!(mode_is_array(prs->sx, type) && mode_is_int(mode_get(prs->sx, (size_t)type + 1))))
 	{
 		parser_error(prs, not_rowofint_in_stanfunc);
 		prs->was_error = 5;
@@ -367,34 +330,26 @@ void mustberowofint(parser *const prs)
 
 void mustberowoffloat(parser *const prs)
 {
+	item_t type;
 	if (prs->token == BEGIN)
 	{
-		parse_braced_init_list(prs, LFLOAT), to_tree(prs, TExprend);
-		if (prs->was_error == 2)
-		{
-			prs->was_error = 5;
-			return; // 1
-		}
+		parse_braced_init_list(prs, LFLOAT);
+		to_tree(prs, TExprend);
+		type = anst_pop(prs);
 	}
 	else
 	{
 		parse_assignment_expression_internal(prs);
-		if (prs->was_error == 6)
-		{
-			prs->was_error = 5;
-			return; // 1
-		}
 		toval(prs);
-		prs->sopnd--;
-		if (prs->ansttype == LFLOAT)
+		type = anst_pop(prs);
+		if (type == LFLOAT)
 		{
 			to_tree(prs, ROWINGD);
-			prs->ansttype = (int)to_modetab(prs, mode_array, LFLOAT);
+			type = to_modetab(prs, mode_array, LFLOAT);
 		}
 	}
 
-	if (!(mode_is_array(prs->sx, prs->ansttype) &&
-		  mode_get(prs->sx, (size_t)prs->ansttype + 1) == LFLOAT))
+	if (!(mode_is_array(prs->sx, type) && mode_get(prs->sx, (size_t)type + 1) == LFLOAT))
 	{
 		parser_error(prs, not_rowoffloat_in_stanfunc);
 		prs->was_error = 5;
