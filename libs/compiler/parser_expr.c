@@ -1507,6 +1507,7 @@ void parse_assignment_expression_internal(parser *const prs)
 		const anst_val righttanst = anst_peek(prs);
 		const item_t rtype = anst_pop(prs);
 		const item_t ltype = anst_pop(prs);
+		item_t result_type = rtype;
 
 		if (is_int_assignment_operator(operator) && (mode_is_float(ltype) || mode_is_float(rtype)))
 		{
@@ -1568,7 +1569,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			if (mode_is_int(rtype) && mode_is_float(ltype))
 			{
 				to_tree(prs, WIDEN);
-				prs->ansttype = LFLOAT;
+				result_type = mode_float;
 			}
 			if (mode_is_pointer(prs->sx, ltype) && mode_is_pointer(prs->sx, rtype) && ltype != rtype)
 			{
@@ -1580,7 +1581,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			{
 				operator += 11;
 			}
-			totree_float_operation(prs, prs->ansttype, operator);
+			totree_float_operation(prs, result_type, operator);
 			if (leftanst == variable)
 			{
 				prs->anstdispl = target_displ;
