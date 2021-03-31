@@ -1,16 +1,21 @@
 // Проверка условного оператора с типом перечисления
 
-enum Color : char {
+enum Color : char
+{
 	red = 'r',
 	green = 'g',
 	blue = 'b'
 };
 
-int main() {
+int main()
+{
 	enum Color clr = red;
-	if (clr == green) {
+	if (clr == green)
+	{
 		printf("Что то не так\n");
-	} else {
+	}
+	else
+	{
 		printf("Действительно blue != green\n");
 	}
 	return 0;

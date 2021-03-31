@@ -8,8 +8,8 @@ language: c
 
 matrix:
   include:
-    - name: "Windows 1809"
-      os: windows
+#    - name: "Windows 1809"
+#      os: windows
     - name: "macOS 10.15.5"
       os: osx
       osx_image: xcode12

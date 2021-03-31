@@ -1,6 +1,12 @@
-enum class Color : char { red = 'r', green = 'g', blue = 'b' } car, house;
+enum class Color : char
+{
+	red = 'r',
+	green = 'g',
+	blue = 'b'
+} car, house;
 
-int main() {
+int main()
+{
 	char num1 = Color::red, num2 = Color::red;
 	char &poiner_1 = &num1;
 	char &poiner_2 = &num2;

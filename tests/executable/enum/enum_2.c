@@ -1,11 +1,13 @@
 // Проверка изменения типа поля тип перечисления
 
-enum Color : char {
+enum Color : char
+{
 	red = 'r',
 	green = 'g',
 	blue = 'b'
 } tmp;
 
-int main() {
+int main()
+{
 	return 0;
 }

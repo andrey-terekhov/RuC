@@ -1,7 +1,13 @@
 // Проверка объявления типа анонимного перечисления
 
-enum {a, b, c} tmp;
+enum
+{
+	a,
+	b,
+	c
+} tmp;
 
-int main() {
+int main()
+{
 	return 0;
 }

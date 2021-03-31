@@ -1,16 +1,21 @@
 // Проверка условного оператора с типом перечисления класса
 
-enum class Color : char {
+enum class Color : char
+{
 	red = 'r',
 	green = 'g',
 	blue = 'b'
 };
 
-int main() {
+int main()
+{
 	enum Color clr = Color::red;
-	if (clr == Color::green) {
+	if (clr == Color::green)
+	{
 		printf("Что то не так\n");
-	} else {
+	}
+	else
+	{
 		printf("Действительно blue != green\n");
 	}
 	return 0;
