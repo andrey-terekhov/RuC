@@ -15,12 +15,15 @@
  */
 
 #include "parser.h"
+#include <string.h>
 #include "calculator.h"
 #include "constants.h"
 #include "environment.h"
 #include "error.h"
+#include "linker.h"
 #include "macro_load.h"
 #include "macro_save.h"
+#include "uniprinter.h"
 #include "utils.h"
 
 
@@ -33,19 +36,7 @@ int if_check(environment *const env, int type_if)
 
 	if (type_if == SH_IF)
 	{
-		if (calculate(env, LOGIC))
-		{
-			return -1;
-		}
-
-		if (env->calc_string[0] == '0')
-		{
-			return 0;
-		}
-		else
-		{
-			return 1;
-		}
+		return calculate_logic(env);
 	}
 	else
 	{
@@ -317,14 +308,15 @@ int while_implementation(linker *const lk)
 		m_nextch(env);
 		m_change_nextch_type(env, IF_TYPE, env->while_string[env->nextp]);
 		m_nextch(env);
-		if (calculate(env, LOGIC))
+		int res = calculate_logic(env);
+		if (res == -1)
 		{
 			return -1;
 		}
 		m_old_nextch_type(env);
 
 
-		if (env->calc_string[0] == '0')
+		if (res == 0)
 		{
 			env->nextp = end;
 			m_nextch(env);
@@ -461,12 +453,13 @@ int preprocess_words(linker *const lk)
 				env_error(env, after_eval_must_be_ckob);
 				return -1;
 			}
-			else if (calculate(env, ARITHMETIC))
+			char buffer[STRING_SIZE];
+			if (calculate_arithmetic(env, buffer))
 			{
 				return -1;
 			}
 
-			m_change_nextch_type(env, CALC_TYPE, 0);
+			uni_printf(env->output, "%s", buffer);
 			return 0;
 		}
 		case SH_WHILE:
