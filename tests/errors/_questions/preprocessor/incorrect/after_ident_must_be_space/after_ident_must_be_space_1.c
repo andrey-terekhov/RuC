@@ -1,7 +1,6 @@
-#EVAL (2+2
+#includedont_elif.c"
 
 int main()
 {
 	return 0;
 }
-
