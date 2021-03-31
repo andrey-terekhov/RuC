@@ -27,7 +27,7 @@
 #define ERROR_MSG_SIZE	STRING_SIZE
 
 
-void get_message_error(const int num, char *const msg)
+void get_message(const int num, char *const msg)
 {
 	switch (num)
 	{
