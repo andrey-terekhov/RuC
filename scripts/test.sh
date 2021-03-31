@@ -79,7 +79,7 @@ init()
 	failure=0
 	timeout=0
 
-	if [[ $OSTYPE == "darwin" ]] ; then
+	if [[ $OSTYPE == "darwin"* ]] ; then
 		runner="gtimeout $wait_for"
 	else
 		runner="timeout $wait_for"
