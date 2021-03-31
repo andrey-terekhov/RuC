@@ -22,6 +22,9 @@
 #include "uniprinter.h"
 
 
+#define ARITHMETIC_NUMBER 4
+
+
 typedef enum ANSWER
 {
 	AREG,								/**< Ответ находится в регистре */
@@ -42,25 +45,67 @@ typedef enum OPERATION
 	NOT_OPERATION,
 } operation_t;
 
+typedef enum ARITHMETIC
+{
+	add_llvm,
+	sub_llvm,
+	mul_llvm,
+	sdiv_llvm,
+} arithmetic_t;
+
 typedef struct information
 {
-	universal_io *io;					/**< Вывод */
-	syntax *sx;							/**< Структура syntax с таблицами */
+	universal_io *io;							/**< Вывод */
+	syntax *sx;									/**< Структура syntax с таблицами */
+	char *arith[ARITHMETIC_NUMBER];				/**< Массив с арифметическими операциями */
 
-	item_t string_num;					/**< Номер строки */
-	item_t register_num;				/**< Номер регистра */
+	item_t string_num;							/**< Номер строки */
+	item_t register_num;						/**< Номер регистра */
 
-	item_t request_reg;					/**< Регистр на запрос */
-	location_t variable_location;		/**< Расположение переменной */
+	item_t request_reg;							/**< Регистр на запрос */
+	location_t variable_location;				/**< Расположение переменной */
 
-	item_t answer_reg;					/**< Регистр с ответом */
-	item_t answer_const;				/**< Константа с ответом */
-	answer_t answer_type;				/**< Тип ответа */
+	item_t answer_reg;							/**< Регистр с ответом */
+	item_t answer_const;						/**< Константа с ответом */
+	answer_t answer_type;						/**< Тип ответа */
 } information;
 
 
 static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
+
+
+static void tocode_arithmetic_reg_reg(information *const info, item_t result, 
+										arithmetic_t operation, item_t argument1, item_t argument2)
+{
+	if (operation != sdiv_llvm)
+	{
+		uni_printf(info->io, " %%.%" PRIitem " = %s nsw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
+			, result, info->arith[operation], argument1, argument2);
+	}
+	else
+	{
+		uni_printf(info->io, " %%.%" PRIitem " = %s i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
+			, result, info->arith[operation], argument1, argument2);
+	}
+	
+}
+
+static void tocode_arithmetic_reg_const(information *const info, item_t result, 
+										arithmetic_t operation, item_t argument1, item_t argument2)
+{
+	if (operation != sdiv_llvm)
+	{
+		uni_printf(info->io, " %%.%" PRIitem " = %s nsw i32 %%.%" PRIitem ", %" PRIitem "\n"
+			, result, info->arith[operation], argument1, argument2);
+	}
+	else
+	{
+				uni_printf(info->io, " %%.%" PRIitem " = %s i32 %%.%" PRIitem ", %" PRIitem "\n"
+			, result, info->arith[operation], argument1, argument2);
+	}
+	
+}
 
 
 static operation_t operation_type(node *const nd)
@@ -353,15 +398,23 @@ static void assertion_expression(information *const info, node *const nd)
 			{
 				case PLUSASS:
 				case PLUSASSV:
-					// TODO подумать, может стоит выделить арифметику в отдельную функцию tocode_arithmetic
-					uni_printf(info->io, " %%.%" PRIitem " = add nsw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
-						, info->register_num, info->register_num - 1, info->answer_reg);
+					tocode_arithmetic_reg_reg(info, info->register_num, add_llvm, 
+													info->register_num - 1, info->answer_reg);
 					break;
 				case MINUSASS:
 				case MINUSASSV:
-					// TODO подумать, может стоит выделить арифметику в отдельную функцию tocode_arithmetic
-					uni_printf(info->io, " %%.%" PRIitem " = sub nsw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
-						, info->register_num, info->register_num - 1, info->answer_reg);
+					tocode_arithmetic_reg_reg(info, info->register_num, sub_llvm, 
+													info->register_num - 1, info->answer_reg);
+					break;
+				case MULTASS:
+				case MULTASSV:
+					tocode_arithmetic_reg_reg(info, info->register_num, mul_llvm, 
+													info->register_num - 1, info->answer_reg);
+					break;
+				case DIVASS:
+				case DIVASSV:
+					tocode_arithmetic_reg_reg(info, info->register_num, sdiv_llvm, 
+													info->register_num - 1, info->answer_reg);
 					break;
 			}
 		}
@@ -371,15 +424,23 @@ static void assertion_expression(information *const info, node *const nd)
 			{
 				case PLUSASS:
 				case PLUSASSV:
-					// TODO подумать, может стоит выделить арифметику в отдельную функцию tocode_arithmetic
-					uni_printf(info->io, " %%.%" PRIitem " = add nsw i32 %%.%" PRIitem ", %" PRIitem "\n"
-						, info->register_num, info->register_num - 1, info->answer_const);
+					tocode_arithmetic_reg_const(info, info->register_num, add_llvm, 
+													info->register_num - 1, info->answer_const);
 					break;
 				case MINUSASS:
 				case MINUSASSV:
-					// TODO подумать, может стоит выделить арифметику в отдельную функцию tocode_arithmetic
-					uni_printf(info->io, " %%.%" PRIitem " = sub nsw i32 %%.%" PRIitem ", %" PRIitem "\n"
-						, info->register_num, info->register_num - 1, info->answer_const);
+					tocode_arithmetic_reg_const(info, info->register_num, sub_llvm, 
+													info->register_num - 1, info->answer_const);
+					break;
+				case MULTASS:
+				case MULTASSV:
+					tocode_arithmetic_reg_const(info, info->register_num, mul_llvm, 
+													info->register_num - 1, info->answer_const);
+					break;
+				case DIVASS:
+				case DIVASSV:
+					tocode_arithmetic_reg_const(info, info->register_num, sdiv_llvm, 
+													info->register_num - 1, info->answer_const);
 					break;
 			}
 		}
@@ -413,10 +474,15 @@ static void binary_operation(information *const info, node *const nd)
 	{
 		case ASS:
 		case ASSV:
+
 		case PLUSASS:
 		case PLUSASSV:
 		case MINUSASS:
 		case MINUSASSV:
+		case MULTASS:
+		case MULTASSV:
+		case DIVASS:
+		case DIVASSV:
 			assertion_expression(info, nd);
 			break;
 		default:
@@ -669,6 +735,11 @@ static int codegen(universal_io *const io, syntax *const sx)
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
+
+	info.arith[add_llvm] = "add";
+	info.arith[sub_llvm] = "sub";
+	info.arith[mul_llvm] = "mul";
+	info.arith[sdiv_llvm] = "sdiv";
 
 	node root = node_get_root(&sx->tree);
 	while (node_set_next(&root) == 0)
