@@ -1564,20 +1564,12 @@ int is_int_assignment_operator(const item_t operator)
 	}
 }
 
-int is_assignment_operator(parser *const prs)
-{
-	return (prs->token == ASS || prs->token == MULTASS || prs->token == DIVASS || prs->token == PLUSASS ||
-			prs->token == MINUSASS || is_int_assignment_operator(prs->token))
-	? prs->op = prs->token
-	: 0;
-}
 
-/*
 int is_assignment_operator(const token_t operator)
 {
 	return operator == equal || operator == starequal || operator == slashequal || operator == plusequal
-	|| operator == minusequal || is_int_assignment_operator(operator);
-}*/
+		|| operator == minusequal || is_int_assignment_operator(operator);
+}
 
 void parse_subexpression(parser *const prs)
 {
@@ -1722,12 +1714,12 @@ void parse_assignment_expression_internal(parser *const prs)
 	item_t leftanstdispl = prs->anstdispl;
 	prs->leftansttype = prs->ansttype;
 
-	if (is_assignment_operator(prs))
+	if (is_assignment_operator(prs->token))
 	{
-		item_t opp = prs->op;
-		item_t lnext = prs->token;
-		prs->flag_in_assignment = 1;
+		item_t opp = prs->token;
 		token_consume(prs);
+		
+		prs->flag_in_assignment = 1;
 		parse_assignment_expression_internal(prs);
 		prs->flag_in_assignment = 0;
 
@@ -1740,7 +1732,7 @@ void parse_assignment_expression_internal(parser *const prs)
 		const item_t rtype = anst_pop(prs);
 		const item_t ltype = anst_pop(prs);
 
-		if (is_int_assignment_operator(lnext) && (mode_is_float(ltype) || mode_is_float(rtype)))
+		if (is_int_assignment_operator(opp) && (mode_is_float(ltype) || mode_is_float(rtype)))
 		{
 			parser_error(prs, int_op_for_float);
 			return;
