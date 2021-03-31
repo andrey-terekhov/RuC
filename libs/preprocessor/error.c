@@ -27,110 +27,110 @@
 #define ERROR_MSG_SIZE	STRING_SIZE
 
 
-void get_message(const int num, char *const msg)
+void get_message_error(const int num, char *const msg)
 {
 	switch (num)
 	{
-		case after_preproces_words_must_be_space: // test_exist
+		case after_preproces_words_must_be_space:
 			sprintf(msg, "после команды препроцессора должен идти перенос строки");
 			break;
-		case after_ident_must_be_space: // test_exist
-			sprintf(msg, "после идентификатора должен идти ' '");
+		case after_ident_must_be_space:
+			sprintf(msg, "после идентификатора должен идти ' ' ");
 			break;
-		case ident_begins_with_letters: // test_exist
+		case ident_begins_with_letters:
 			sprintf(msg, "идентификатор должен начинаться с буквы ");
 			break;
-		case must_be_endif: // test_exist
-			sprintf(msg, "условный оператор препроцессора должен заканчиваться '#ENDIF'");
+		case must_be_endif:
+			sprintf(msg, "условный оператор препроцессора должен заканчиваться '#ENDIF' ");
 			break;
-		case dont_elif: // test_exist
-			sprintf(msg, "в этом типе условного оператора не может использоваться '#ELIF'");
+		case dont_elif:
+			sprintf(msg, "в этом типе условного оператора не может использоваться '#ELIF' ");
 			break;
-		case preproces_words_not_exist: // test_exist
+		case preproces_words_not_exist:
 			sprintf(msg, "в препроцессоре не существует такой команды");
 			break;
-		case not_enough_param: // test_exist
+		case not_enough_param:
 			sprintf(msg, "у этого идентификатора меньше параметров");
 			break;
-		case functionid_begins_with_letters: // test_exist
+		case functionid_begins_with_letters:
 			sprintf(msg, "идентификатор с параметрами должен начинаться с буквы");
 			break;
-		case functions_cannot_be_changed: // need_test
+		case functions_cannot_be_changed:
 			sprintf(msg, "идентификатор с параметрами нельзя переопределять");
 			break;
-		case after_functionid_must_be_comma: // test_exist
-			sprintf(msg, "после идентификатора в функции должны быть ')' или ',' потом ' '");
+		case after_functionid_must_be_comma:
+			sprintf(msg, "после идентификатора в функции должны быть ')' или ',' потом ' ' ");
 			break;
-		case stalpe: // need_test
+		case stalpe:
 			sprintf(msg, "в функции аргументы должны быть описаны через запятую, в скобках");
 			break;
-		case before_endif: // need_test
+		case before_endif:
 			sprintf(msg, "перед '#ENDIF' должен стоять условный оператор препроцессора");
 			break;
-		case repeat_ident: // test_exist
+		case repeat_ident:
 			sprintf(msg, "этот идентификатор препроцессора уже используется");
 			break;
-		case ident_not_exist: // need_test
+		case ident_not_exist:
 			sprintf(msg, "данный идентификатор препроцессора не существует");
 			break;
-		case comm_not_ended: // need_test
+		case comm_not_ended:
 			sprintf(msg, "комментарий, начавшийся с /* , не закрыт");
 			break;
-		case not_enough_param2: // need_test
+		case not_enough_param2:
 			sprintf(msg, "у этой функции больше параметров");
 			break;
-		case not_end_fail_define: // need_test
+		case not_end_fail_define:
 			sprintf(msg, "файл не может закончится до окончания команды '#DEFINE' поставьте перенос строки");
 			break;
-		case scope_not_close: // need_test
+		case scope_not_close:
 			sprintf(msg, "количество открывающих скобок не соответствует числу закрывающих");
 			break;
-		case after_eval_must_be_ckob: // test_exist
+		case after_eval_must_be_ckob:
 			sprintf(msg, "сразу после команды '#EVAL' должен быть символ '('");
 			break;
-		case too_many_nuber: // need_test
-			sprintf(msg, "слишком большое число");
+		case too_many_nuber:
+			sprintf(msg, "слишком большая целая константа, преобразована в ДЛИН (DOUBLE)");
 			break;
-		case must_be_digit_after_exp1: // need_test
+		case must_be_digit_after_exp1:
 			sprintf(msg, "после экспоненты должно быть число");
 			break;
-		case not_arithmetic_operations: // need_test
+		case not_arithmetic_operations:
 			sprintf(msg, "все арифметические операции должны быть внутри команды '#EVAL()'");
 			break;
-		case not_logical_operations: // need_test
+		case not_logical_operations:
 			sprintf(msg, "внутри команды '#EVAL()' не должно быть логических операций");
 			break;
-		case not_macro: // need_test
+		case not_macro:
 			sprintf(msg, "идентификатор не является макросом, это недопустимо для данных вычислений");
 			break;
-		case incorrect_arithmetic_expression: // need_test
+		case incorrect_arithmetic_expression:
 			sprintf(msg, "неправильно составленное арифметическое выражение, возможно неправильно расставлены скобки");
 			break;
-		case third_party_symbol: // need_test
+		case third_party_symbol:
 			sprintf(msg, "в строке с вычислениями не должно быть посторонних символов");
 			break;
-		case in_eval_must_end_parenthesis: // test_exist
+		case in_eval_must_end_parenthesis:
 			sprintf(msg, "вычисления внутри директивы #eval должны заканчиваться символом )");
 			break;
-		case must_end_quote: // need_test
+		case must_end_quote:
 			sprintf(msg, "указание имени include файла должно заканчиваться символом \"");
 			break;
-		case must_start_quote: // test_exist
+		case must_start_quote:
 			sprintf(msg, "указание имени include файла должно начинаться символа \"");
 			break;
-		case macro_does_not_exist: // need_test
+		case macro_does_not_exist:
 			sprintf(msg, "такого макроса не существует");
 			break;
-		case must_end_endw: // need_test
+		case must_end_endw:
 			sprintf(msg, "цикл должен заканчиваться #ENDW");
 			break;
-		case source_file_not_found: // need_test
+		case source_file_not_found:
 			sprintf(msg, "исходный файл не найден");
 			break;
-		case include_file_not_found: // need_test
+		case include_file_not_found:
 			sprintf(msg, "заголовочный файл не найден");
 			break;
-		case no_string_ending: // need_test
+		case no_string_ending:
 			sprintf(msg, "строка не завершена, пропущен символ \" или \'");
 			break;
 		default:
@@ -139,11 +139,10 @@ void get_message(const int num, char *const msg)
 	}
 }
 
-void output(const int num, const char *const path, const char *const code, const size_t line, size_t position
-, void (*func)(const char *const, const char *const, const char *const, const size_t))
+void macro_error(const int num, const char *const path, const char *const code, const size_t line, size_t position)
 {
 	char msg[ERROR_MSG_SIZE];
-	get_message(num, msg);
+	get_message_error(num, msg);
 
 	if (path == NULL)
 	{
@@ -167,23 +166,13 @@ void output(const int num, const char *const path, const char *const code, const
 	}
 	sprintf(&tag[index], ":%zi", position);
 
-	func(tag, msg, code, position);
-}
-
-void macro_error(const int num, const char *const path, const char *const code, const size_t line, size_t position)
-{
-	output(num, path, code, line, position, &log_error);
-}
-
-void macro_warning(const int num, const char *const path, const char *const code, const size_t line, size_t position)
-{
-	output(num, path, code, line, position, &log_warning);
+	log_error(tag, msg, code, position);
 }
 
 void macro_system_error(const char *const tag, const int num)
 {
 	char msg[ERROR_MSG_SIZE];
-	get_message(num, msg);
+	get_message_error(num, msg);
 
 	if (tag != NULL)
 	{

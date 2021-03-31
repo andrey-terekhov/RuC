@@ -68,7 +68,7 @@ int get_digit(universal_io *in, double *res, char32_t cur, char32_t next, char32
 		curchar = uni_scan_char(in);
 	}
 
-	if(num_double > (double)INT_MAX)
+	if (num_double > (double)INT_MAX)
 	{
 		flag_too_long = 1;
 		flag_int = DOUBLE;
@@ -150,37 +150,37 @@ char32_t get_operation(const char32_t cur, const char32_t next)
 {
 	switch (cur)
 	{
-		case '|':
-		case '&':
-		case '=':
-		case '!':
-			if ((next == cur && cur != '!') || (cur == '!' && next == '='))
-			{
-				return cur;
-			}
-			else
-			{
-				return '\0';
-			}
-		case '>':
-		case '<':
-			if (cur == '>' && next == '=')
-			{
-				return 'b';
-			}
-			else if (cur == '>' && next == '=')
-			{
-				return 's';
-			}
-		case '+':
-		case '-':
-		case '*':
-		case '/':
-		case '%':
-		case '(':
+	case '|':
+	case '&':
+	case '=':
+	case '!':
+		if ((next == cur && cur != '!') || (cur == '!' && next == '='))
+		{
 			return cur;
-		default:
+		}
+		else
+		{
 			return '\0';
+		}
+	case '>':
+	case '<':
+		if (cur == '>' && next == '=')
+		{
+			return 'b';
+		}
+		else if (cur == '>' && next == '=')
+		{
+			return 's';
+		}
+	case '+':
+	case '-':
+	case '*':
+	case '/':
+	case '%':
+	case '(':
+		return (char)cur;
+	default:
+		return '\0';
 	}
 }
 
@@ -351,7 +351,7 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 	}
 	else if (res == WARNING)
 	{
-		macro_warning(too_many_nuber, env->curent_path, env->error_string, env->line, env->position);
+		macro_error(too_many_nuber, lk_get_current(env->lk), env->error_string, env->line, env->position);
 		is_int[*stk_size] = DOUBLE;
 	}
 	else
@@ -365,7 +365,7 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 
 int calc_operation(environment *const env, double *const stack, int *const is_int, char32_t *const operation, int *op_size, int *stk_size, const int type)
 {
-	const char32_t opr = get_operation(env->curchar, env->nextchar);
+	const char32_t opr = get_operation((char)env->curchar, (char)env->nextchar);
 	if (opr == '\0')
 	{
 		env_error(env, third_party_symbol);

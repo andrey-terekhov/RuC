@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "linker.h"
+#include "environment.h"
 
 
 #ifdef __cplusplus
@@ -30,7 +30,7 @@ extern "C" {
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int preprocess_file(linker *const lk, const size_t number);
+int preprocess_token(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

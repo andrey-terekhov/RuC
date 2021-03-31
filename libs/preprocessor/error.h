@@ -75,17 +75,6 @@ enum ERROR
 void macro_error(const int num, const char *const path, const char *const code, const size_t line, size_t position);
 
 /**
- *	Emit an warning for some situation 
- *
- *	@param	num			Error code
- *	@param	path		Current file path
- *	@param	code		Error line in current file
- *	@param	line		Error line number
- *	@param	position	Error position in line
- */
-void macro_warning(const int num, const char *const path, const char *const code, const size_t line, size_t position);
-
-/**
  *	Emit an error for some problem
  *
  *	@param	tag		Message location
