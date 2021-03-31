@@ -1710,15 +1710,15 @@ void parse_assignment_expression_internal(parser *const prs)
 		parse_unary_expression(prs);
 	}
 
-	anst_val leftanst = anst_peek(prs);
-	item_t leftanstdispl = prs->anstdispl;
 	prs->leftansttype = prs->ansttype;
 
 	if (is_assignment_operator(prs->token))
 	{
-		item_t opp = prs->token;
+		const anst_val leftanst = anst_peek(prs);
+		const item_t leftanstdispl = prs->anstdispl;
+		item_t operator = prs->token;
 		token_consume(prs);
-		
+
 		prs->flag_in_assignment = 1;
 		parse_assignment_expression_internal(prs);
 		prs->flag_in_assignment = 0;
@@ -1726,46 +1726,42 @@ void parse_assignment_expression_internal(parser *const prs)
 		if (leftanst == value)
 		{
 			parser_error(prs, unassignable);
-			return;
 		}
 		// Снимаем типы операндов со стека
 		const item_t rtype = anst_pop(prs);
 		const item_t ltype = anst_pop(prs);
 
-		if (is_int_assignment_operator(opp) && (mode_is_float(ltype) || mode_is_float(rtype)))
+		if (is_int_assignment_operator(operator) && (mode_is_float(ltype) || mode_is_float(rtype)))
 		{
 			parser_error(prs, int_op_for_float);
-			return;
 		}
-
-		if (mode_is_array(prs->sx, ltype)) // присваивать массив в массив в си нельзя
+		else if (mode_is_array(prs->sx, ltype))
 		{
 			parser_error(prs, array_assigment);
-			return;
 		}
-
-		if (mode_is_struct(prs->sx, ltype)) // присваивание в структуру
+		else if (mode_is_struct(prs->sx, ltype))
 		{
 			if (ltype != rtype) // типы должны быть равны
 			{
 				parser_error(prs, type_missmatch);
-				return;
 			}
-			if (opp != ASS) // в структуру можно присваивать только с помощью =
+
+			if (operator != equal) // в структуру можно присваивать только с помощью =
 			{
 				parser_error(prs, wrong_struct_ass);
 			}
 
 			if (prs->anst == value)
 			{
-				opp = leftanst == variable ? COPY0STASS : COPY1STASS;
+				operator = leftanst == variable ? COPY0STASS : COPY1STASS;
 			}
 			else
 			{
-				opp = leftanst == variable ? prs->anst == variable ? COPY00 : COPY01
+				operator = leftanst == variable ? prs->anst == variable ? COPY00 : COPY01
 				: prs->anst == variable ? COPY10 : COPY11;
 			}
-			to_tree(prs, opp);
+
+			to_tree(prs, operator);
 			if (leftanst == variable)
 			{
 				node_add_arg(&prs->nd, leftanstdispl);
@@ -1775,12 +1771,12 @@ void parse_assignment_expression_internal(parser *const prs)
 				node_add_arg(&prs->nd, prs->anstdispl);
 			}
 			node_add_arg(&prs->nd, mode_get(prs->sx, (size_t)ltype + 1));
-			prs->anst = leftanst;
 			prs->anstdispl = leftanstdispl;
+			anst_push(prs, leftanst, ltype);
 		}
 		else // оба операнда базового типа или указатели
 		{
-			if (mode_is_pointer(prs->sx, ltype) && opp != ASS) // в указатель можно присваивать только с помощью =
+			if (mode_is_pointer(prs->sx, ltype) && operator != equal) // в указатель можно присваивать только с помощью =
 			{
 				parser_error(prs, wrong_struct_ass);
 			}
@@ -1804,21 +1800,20 @@ void parse_assignment_expression_internal(parser *const prs)
 
 			if (leftanst == address)
 			{
-				opp += 11;
+				operator += 11;
 			}
-			totree_float_operation(prs, opp);
+			totree_float_operation(prs, operator);
 			if (leftanst == variable)
 			{
 				prs->anstdispl = leftanstdispl;
 				node_add_arg(&prs->nd, leftanstdispl);
 			}
-			prs->anst = value;
+			anst_push(prs, value, ltype);
 		}
-		anst_push(prs, prs->anst, ltype);
 	}
 	else
 	{
-		// condexpr учитывает тот факт, что начало выражения в виде unarexpr уже выкушано
+		// Эта функция учитывает тот факт, что начало в виде унарного выражения уже выкушано
 		parse_conditional_expression(prs);
 	}
 }
