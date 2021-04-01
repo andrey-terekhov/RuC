@@ -49,9 +49,9 @@ typedef struct parser
 	item_t labels[1000];		/**< Labels table */
 	size_t labels_counter;		/**< Labels counter */
 
-	int stack[100];
-	item_t stackop[100];
-	int stacklog[100];
+	uint8_t stack[100];			/**< Operator precedences */
+	token_t stackop[100];		/**< Operator codes */
+	int stacklog[100];			/**< Operator addresses */
 	item_t stackoperands[100];	/**< Operands stack */
 	size_t sp;
 
