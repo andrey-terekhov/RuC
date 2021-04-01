@@ -226,9 +226,6 @@ item_t parse_array_definition(parser *const prs, node *const parent, item_t type
  */
 item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 {
-	node nd = node_add_child(parent, TStructbeg);
-	node_add_arg(&nd, 0); // Тут будет номер инициализирующей процедуры
-
 	token_consume(prs);
 	if (prs->token == r_brace)
 	{
@@ -242,6 +239,8 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 	size_t local_md = 3;
 	size_t fields = 0;
 	size_t displ = 0;
+
+	node nd;
 	int was_array = 0;
 
 	do
@@ -264,6 +263,13 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 		{
 			if (prs->token == l_square)
 			{
+				if (!was_array)
+				{
+					nd = node_add_child(parent, TStructbeg);
+					node_add_arg(&nd, 0); // Тут будет номер инициализирующей процедуры
+					was_array = 1;
+				}
+
 				node nd_decl_arr = node_add_child(&nd, TDeclarr);
 				node_add_arg(&nd_decl_arr, 0);
 				// Меняем тип (увеличиваем размерность массива)
@@ -279,7 +285,6 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 				node_add_arg(&nd_decl_id, prs->flag_array_in_struct);	// proc
 				node_add_arg(&nd_decl_id, prs->flag_empty_bounds);		// usual
 				node_add_arg(&nd_decl_id, 1);							// Признак, что массив в структуре
-				was_array = 1;
 
 				if (token_try_consume(prs, equal))
 				{
@@ -317,11 +322,6 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 		node_add_arg(&nd_struct_end, (item_t)prs->sx->procd);
 		node_set_arg(&nd, 0, (item_t)prs->sx->procd);
 		prs->flag_array_in_struct = (int)prs->sx->procd++;
-	}
-	else
-	{
-		node_set_type(&nd, NOP);
-		node_set_arg(&nd, 0, NOP);
 	}
 
 	local_modetab[0] = mode_struct;

@@ -24,9 +24,11 @@
 #include "uniio.h"
 
 
-#define GENERATE_TREE
+// #define GENERATE_TREE
 
-#define TREE		(prs->sx->tree)
+#define TREE			(prs->sx->tree)
+#define MAXLABELS		10000
+#define MAXSTACKSIZE	100
 
 
 #ifdef __cplusplus
@@ -34,54 +36,54 @@ extern "C" {
 #endif
 
 /** Type of operand on top of anonymous stack */
-typedef enum { variable, value, number, address } anst_val;
+typedef enum { variable, value, number, address } operand_type;
 
 typedef struct parser
 {
-	syntax *sx;					/**< Syntax structure */
-	lexer *lxr;					/**< Lexer structure */
-	node nd;					/**< Node for expression subtree */
+	syntax *sx;							/**< Syntax structure */
+	lexer *lxr;							/**< Lexer structure */
+	node nd;							/**< Node for expression subtree */
 
-	token_t token;				/**< Current token */
+	token_t token;						/**< Current token */
 
-	size_t function_mode;		/**< Mode of currenty parsed function */
-	size_t array_dimensions;	/**< Array dimensions counter */
-	item_t labels[1000];		/**< Labels table */
-	size_t labels_counter;		/**< Labels counter */
+	size_t function_mode;				/**< Mode of currenty parsed function */
+	size_t array_dimensions;			/**< Array dimensions counter */
+	item_t labels[MAXLABELS];			/**< Labels table */
+	size_t labels_counter;				/**< Labels counter */
 
-	uint8_t stack[100];			/**< Operator precedences */
-	token_t stackop[100];		/**< Operator codes */
-	int stacklog[100];			/**< Operator addresses */
-	item_t stackoperands[100];	/**< Operands stack */
+	uint8_t stack[MAXSTACKSIZE];		/**< Operator precedences */
+	token_t stackop[MAXSTACKSIZE];		/**< Operator codes */
+	int stacklog[MAXSTACKSIZE];			/**< Operator addresses */
+	item_t stackoperands[MAXSTACKSIZE];	/**< Operands stack */
 	size_t sp;
 
-	item_t sopnd;				/**< Operands counter */
-	anst_val anst;				/**< Type of the top operand of anonimous stack */
-	item_t ansttype;			/**< Mode of the top operand of anonimous stack */
+	item_t sopnd;						/**< Operands counter */
+	operand_type anst;					/**< Type of the top operand of anonimous stack */
+	item_t ansttype;					/**< Mode of the top operand of anonimous stack */
 
-	item_t leftansttype;		/**< Mode of the LHS part of assignmnet expression */
-	size_t lastid;				/**< Index of the last read identifier */
-	item_t anstdispl;			/**< Displacement of the operand */
+	item_t leftansttype;				/**< Mode of the LHS part of assignmnet expression */
+	size_t lastid;						/**< Index of the last read identifier */
+	item_t anstdispl;					/**< Displacement of the operand */
 	int op; // TODO: убрать поле
 
-	int func_def;				/**< @c 0 for function without arguments,
-								 @c 1 for function definition,
-								 @c 2 for function declaration,
-								 @c 3 for others */
+	int func_def;						/**< @c 0 for function without arguments,
+										 @c 1 for function definition,
+										 @c 2 for function declaration,
+										 @c 3 for others */
 
-	int flag_strings_only;		/**< @c 0 for non-string initialization,
-								 @c 1 for string initialization,
-								 @c 2 for parsing before initialization */
+	int flag_strings_only;				/**< @c 0 for non-string initialization,
+										 @c 1 for string initialization,
+										 @c 2 for parsing before initialization */
 
-	int flag_array_in_struct;	/**< Set, if parsed struct declaration has an array */
-	int flag_empty_bounds;		/**< Set, if array declaration has empty bounds */
-	int flag_was_return;		/**< Set, if was return in parsed function */
-	int flag_in_switch;			/**< Set, if parser is in switch body */
-	int flag_in_assignment;		/**< Set, if parser is in assignment */
-	int flag_in_loop;			/**< Set, if parser is in loop body */
-	int flag_was_type_def;		/**< Set, if was type definition */
+	int flag_array_in_struct;			/**< Set, if parsed struct declaration has an array */
+	int flag_empty_bounds;				/**< Set, if array declaration has empty bounds */
+	int flag_was_return;				/**< Set, if was return in parsed function */
+	int flag_in_switch;					/**< Set, if parser is in switch body */
+	int flag_in_assignment;				/**< Set, if parser is in assignment */
+	int flag_in_loop;					/**< Set, if parser is in loop body */
+	int flag_was_type_def;				/**< Set, if was type definition */
 
-	int was_error;				/**< Error flag */
+	int was_error;						/**< Error flag */
 } parser;
 
 /**	The kind of block to parse */
