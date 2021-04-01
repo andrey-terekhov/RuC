@@ -454,6 +454,7 @@ void parse_init_declarator(parser *const prs, node *const parent, item_t type)
 	prs->flag_empty_bounds = 1;
 	prs->array_dimensions = 0;
 	const item_t element_type = type;
+	
 	node nd_decl_arr;
 	int is_array = 0;
 
