@@ -22,7 +22,7 @@
 #include "uniprinter.h"
 
 
-#define ARITHMETIC_NUMBER 4
+#define ARITHMETIC_NUMBER 10
 
 
 typedef enum ANSWER
@@ -50,7 +50,14 @@ typedef enum ARITHMETIC
 	add_llvm,
 	sub_llvm,
 	mul_llvm,
+
 	sdiv_llvm,
+	srem_llvm,
+	shl_llvm,
+	ashr_llvm,
+	and_llvm,
+	xor_llvm,
+	or_llvm,
 } arithmetic_t;
 
 typedef struct information
@@ -78,7 +85,7 @@ static void block(information *const info, node *const nd);
 static void tocode_arithmetic_reg_reg(information *const info, item_t result, 
 										arithmetic_t operation, item_t argument1, item_t argument2)
 {
-	if (operation != sdiv_llvm)
+	if (operation < sdiv_llvm)
 	{
 		uni_printf(info->io, " %%.%" PRIitem " = %s nsw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
 			, result, info->arith[operation], argument1, argument2);
@@ -94,14 +101,14 @@ static void tocode_arithmetic_reg_reg(information *const info, item_t result,
 static void tocode_arithmetic_reg_const(information *const info, item_t result, 
 										arithmetic_t operation, item_t argument1, item_t argument2)
 {
-	if (operation != sdiv_llvm)
+	if (operation < sdiv_llvm)
 	{
 		uni_printf(info->io, " %%.%" PRIitem " = %s nsw i32 %%.%" PRIitem ", %" PRIitem "\n"
 			, result, info->arith[operation], argument1, argument2);
 	}
 	else
 	{
-				uni_printf(info->io, " %%.%" PRIitem " = %s i32 %%.%" PRIitem ", %" PRIitem "\n"
+		uni_printf(info->io, " %%.%" PRIitem " = %s i32 %%.%" PRIitem ", %" PRIitem "\n"
 			, result, info->arith[operation], argument1, argument2);
 	}
 	
@@ -392,6 +399,8 @@ static void assertion_expression(information *const info, node *const nd)
 			, info->register_num, displ);
 		info->register_num++;
 
+		// TODO Слишком много повторяющих вызовов
+		// Сделать один switch для типа операции, а потом в зависимости от типа ответа сделать один if с вызовом
 		if (info->answer_type == AREG)
 		{
 			switch (assertion_type)
@@ -414,6 +423,36 @@ static void assertion_expression(information *const info, node *const nd)
 				case DIVASS:
 				case DIVASSV:
 					tocode_arithmetic_reg_reg(info, info->register_num, sdiv_llvm, 
+													info->register_num - 1, info->answer_reg);
+					break;
+				case REMASS:
+				case REMASSV:
+					tocode_arithmetic_reg_reg(info, info->register_num, srem_llvm, 
+													info->register_num - 1, info->answer_reg);
+					break;
+				case SHLASS:
+				case SHLASSV:
+					tocode_arithmetic_reg_reg(info, info->register_num, shl_llvm, 
+													info->register_num - 1, info->answer_reg);
+					break;
+				case SHRASS:
+				case SHRASSV:
+					tocode_arithmetic_reg_reg(info, info->register_num, ashr_llvm, 
+													info->register_num - 1, info->answer_reg);
+					break;
+				case ANDASS:
+				case ANDASSV:
+					tocode_arithmetic_reg_reg(info, info->register_num, and_llvm, 
+													info->register_num - 1, info->answer_reg);
+					break;
+				case EXORASS:
+				case EXORASSV:
+					tocode_arithmetic_reg_reg(info, info->register_num, xor_llvm, 
+													info->register_num - 1, info->answer_reg);
+					break;
+				case ORASS:
+				case ORASSV:
+					tocode_arithmetic_reg_reg(info, info->register_num, or_llvm, 
 													info->register_num - 1, info->answer_reg);
 					break;
 			}
@@ -440,6 +479,36 @@ static void assertion_expression(information *const info, node *const nd)
 				case DIVASS:
 				case DIVASSV:
 					tocode_arithmetic_reg_const(info, info->register_num, sdiv_llvm, 
+													info->register_num - 1, info->answer_const);
+					break;
+				case REMASS:
+				case REMASSV:
+					tocode_arithmetic_reg_const(info, info->register_num, srem_llvm, 
+													info->register_num - 1, info->answer_const);
+					break;
+				case SHLASS:
+				case SHLASSV:
+					tocode_arithmetic_reg_const(info, info->register_num, shl_llvm, 
+													info->register_num - 1, info->answer_const);
+					break;
+				case SHRASS:
+				case SHRASSV:
+					tocode_arithmetic_reg_const(info, info->register_num, ashr_llvm, 
+													info->register_num - 1, info->answer_const);
+					break;
+				case ANDASS:
+				case ANDASSV:
+					tocode_arithmetic_reg_const(info, info->register_num, and_llvm, 
+													info->register_num - 1, info->answer_const);
+					break;
+				case EXORASS:
+				case EXORASSV:
+					tocode_arithmetic_reg_const(info, info->register_num, xor_llvm, 
+													info->register_num - 1, info->answer_const);
+					break;
+				case ORASS:
+				case ORASSV:
+					tocode_arithmetic_reg_const(info, info->register_num, or_llvm, 
 													info->register_num - 1, info->answer_const);
 					break;
 			}
@@ -483,6 +552,19 @@ static void binary_operation(information *const info, node *const nd)
 		case MULTASSV:
 		case DIVASS:
 		case DIVASSV:
+
+		case REMASS:
+		case REMASSV:
+		case SHLASS:
+		case SHLASSV:
+		case SHRASS:
+		case SHRASSV:
+		case ANDASS:
+		case ANDASSV:
+		case EXORASS:
+		case EXORASSV:
+		case ORASS:
+		case ORASSV:
 			assertion_expression(info, nd);
 			break;
 		default:
@@ -740,6 +822,12 @@ static int codegen(universal_io *const io, syntax *const sx)
 	info.arith[sub_llvm] = "sub";
 	info.arith[mul_llvm] = "mul";
 	info.arith[sdiv_llvm] = "sdiv";
+	info.arith[srem_llvm] = "srem";
+	info.arith[shl_llvm] = "shl";
+	info.arith[ashr_llvm] = "ashr";
+	info.arith[and_llvm] = "and";
+	info.arith[xor_llvm] = "xor";
+	info.arith[or_llvm] = "or";
 
 	node root = node_get_root(&sx->tree);
 	while (node_set_next(&root) == 0)
