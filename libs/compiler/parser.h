@@ -24,7 +24,7 @@
 #include "uniio.h"
 
 
-//#define GENERATE_TREE
+#define GENERATE_TREE
 
 #define TREE		(prs->sx->tree)
 
@@ -40,26 +40,28 @@ typedef struct parser
 {
 	syntax *sx;					/**< Syntax structure */
 	lexer *lxr;					/**< Lexer structure */
+	node nd;					/**< Node for expression subtree */
 
 	token_t token;				/**< Current token */
 
 	size_t function_mode;		/**< Mode of currenty parsed function */
 	size_t array_dimensions;	/**< Array dimensions counter */
-	item_t gotost[1000];		/**< Labels table */
-	size_t pgotost;				/**< Labels counter */
+	item_t labels[1000];		/**< Labels table */
+	size_t labels_counter;		/**< Labels counter */
 
 	int stack[100];
 	item_t stackop[100];
-	item_t stackoperands[100];
 	int stacklog[100];
+	item_t stackoperands[100];	/**< Operands stack */
 	size_t sp;
-	item_t sopnd;
-	item_t anst;
-	item_t ansttype;
-	item_t anstdispl;
-	item_t leftansttype;
 
-	size_t lastid;
+	item_t sopnd;				/**< Operands counter */
+	anst_val anst;				/**< Type of the top operand of anonimous stack */
+	item_t ansttype;			/**< Mode of the top operand of anonimous stack */
+
+	item_t leftansttype;		/**< Mode of the LHS part of assignmnet expression */
+	size_t lastid;				/**< Index of the last read identifier */
+	item_t anstdispl;			/**< Displacement of the operand */
 	int op; // TODO: убрать поле
 
 	int func_def;				/**< @c 0 for function without arguments,
@@ -80,7 +82,6 @@ typedef struct parser
 	int flag_was_type_def;		/**< Set, if was type definition */
 
 	int was_error;				/**< Error flag */
-	node nd;
 } parser;
 
 /**	The kind of block to parse */

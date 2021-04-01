@@ -679,7 +679,7 @@ void parse_function_body(parser *const prs, node *const parent, const size_t fun
 	const size_t function_number = (size_t)ident_get_displ(prs->sx, function_id);
 	const size_t param_number = (size_t)mode_get(prs->sx, prs->function_mode + 2);
 
-	prs->pgotost = 0;
+	prs->labels_counter = 0;
 	prs->flag_was_return = 0;
 
 	const item_t prev = ident_get_prev(prs->sx, function_id);
@@ -719,11 +719,11 @@ void parse_function_body(parser *const prs, node *const parent, const size_t fun
 	const item_t max_displ = scope_func_exit(prs->sx, old_displ);
 	node_set_arg(&nd, 1, max_displ);
 
-	for (size_t i = 0; i < prs->pgotost; i += 2)
+	for (size_t i = 0; i < prs->labels_counter; i += 2)
 	{
-		const size_t repr = (size_t)ident_get_repr(prs->sx, (size_t)prs->gotost[i]);
-		const size_t line_number = (size_t)llabs(prs->gotost[i + 1]);
-		if (!ident_get_mode(prs->sx, (size_t)prs->gotost[i]))
+		const size_t repr = (size_t)ident_get_repr(prs->sx, (size_t)prs->labels[i]);
+		const size_t line_number = (size_t)llabs(prs->labels[i + 1]);
+		if (!ident_get_mode(prs->sx, (size_t)prs->labels[i]))
 		{
 			parser_error(prs, label_not_declared, line_number, repr_get_name(prs->sx, repr));
 		}
