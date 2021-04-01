@@ -510,6 +510,14 @@ void parse_init_declarator(parser *const prs, node *const parent, item_t type)
 /**
  *	Parse function declarator
  *
+ *	@param	prs			Parser structure
+ *	@param	level		Level of declarator
+ *	@param	func_def	@c 0 for function without arguments,
+ *						@c 1 for function definition,
+ *						@c 2 for function declaration,
+ *						@c 3 for others
+ *	@param	return_type	Return type of declarated function
+ *
  *	@return	Index of modes table, @c mode_undefined on failure
  */
 item_t parse_function_declarator(parser *const prs, const int level, int func_def, const item_t return_type)

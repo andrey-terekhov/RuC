@@ -24,7 +24,7 @@
 #include "uniio.h"
 
 
-// #define GENERATE_TREE
+#define GENERATE_TREE
 
 #define TREE			(prs->sx->tree)
 #define MAXLABELS		10000
@@ -55,7 +55,7 @@ typedef struct parser
 	token_t stackop[MAXSTACKSIZE];		/**< Operator codes */
 	int stacklog[MAXSTACKSIZE];			/**< Operator addresses */
 	item_t stackoperands[MAXSTACKSIZE];	/**< Operands stack */
-	size_t sp;
+	size_t sp;							/**< Operators counter */
 
 	item_t sopnd;						/**< Operands counter */
 	operand_type anst;					/**< Type of the top operand of anonimous stack */
