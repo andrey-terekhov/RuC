@@ -828,13 +828,16 @@ void parse_primary_expression(parser *const prs)
 	}
 }
 
-item_t find_field(parser *const prs, const item_t stype)
+/** Кушает токены к вырезкам, берет тип структуры со стека и кладет тип поля в стек */
+item_t find_field(parser *const prs)
 {
 	token_consume(prs);
 	token_expect_and_consume(prs, identifier, after_dot_must_be_ident);
 
+	const anst_val peek = anst_peek(prs);
+	const item_t type = anst_pop(prs);
 	item_t select_displ = 0;
-	const size_t record_length = (size_t)mode_get(prs->sx, (size_t)stype + 2);
+	const size_t record_length = (size_t)mode_get(prs->sx, (size_t)type + 2);
 	if ((item_t)record_length == ITEM_MAX)
 	{
 		return 0;
@@ -842,12 +845,10 @@ item_t find_field(parser *const prs, const item_t stype)
 
 	for (size_t i = 0; i < record_length; i += 2)
 	{
-		const item_t field_type = mode_get(prs->sx, (size_t)stype + 3 + i);
+		const item_t field_type = mode_get(prs->sx, (size_t)type + 3 + i);
 
-		if ((size_t)mode_get(prs->sx, (size_t)stype + 4 + i) == prs->lxr->repr)
+		if ((size_t)mode_get(prs->sx, (size_t)type + 4 + i) == prs->lxr->repr)
 		{
-			const anst_val peek = anst_peek(prs);
-			anst_pop(prs);
 			anst_push(prs, peek, field_type);
 			return select_displ;
 		}
@@ -1043,73 +1044,90 @@ void parse_postfix_expression(parser *const prs)
 				node_set_type(&prs->nd, TIdenttoval);
 			}
 
-			if (!(mode_is_pointer(prs->sx, prs->ansttype) && mode_is_struct(prs->sx, mode_get(prs->sx, (size_t)prs->ansttype + 1))))
+			to_tree(prs, TSelect);
+
+			// Здесь мы ожидаем указатель, снимаем указатель со стека и кладем саму структуру
+			const item_t type = anst_pop(prs);
+			if (!(mode_is_pointer(prs->sx, type) && mode_is_struct(prs->sx, mode_get(prs->sx, (size_t)type + 1))))
 			{
 				parser_error(prs, get_field_not_from_struct_pointer);
 			}
 
-			to_tree(prs, TSelect);
-
-			prs->ansttype = mode_get(prs->sx, (size_t)prs->ansttype + 1);
-			prs->anstdispl = find_field(prs, prs->ansttype);
+			anst_push(prs, address, mode_get(prs->sx, (size_t)type + 1));
+			prs->anstdispl = find_field(prs);
 			while (prs->token == period)
 			{
-				prs->anstdispl += find_field(prs, prs->ansttype);
+				prs->anstdispl += find_field(prs);
 			}
 
 			to_tree(prs, prs->anstdispl);
-			if (mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype))
+
+			// find_field вернула тип результата через стек, проверим его и вернем обратно
+			const item_t field_type = anst_pop(prs);
+			if (mode_is_array(prs->sx, field_type) || mode_is_pointer(prs->sx, field_type))
 			{
 				to_tree(prs, TAddrtoval);
 			}
 
-			anst_push(prs, address, prs->ansttype);
+			anst_push(prs, address, field_type);
 		}
 
 		if (prs->token == period)
 		{
-			if (!mode_is_struct(prs->sx, prs->ansttype))
+			const anst_val peek = anst_peek(prs);
+			const item_t type = anst_pop(prs);
+			if (!mode_is_struct(prs->sx, type))
 			{
 				parser_error(prs, select_not_from_struct);
 			}
 
-			if (anst_peek(prs) == value)
+			if (peek == value)
 			{
-				const size_t len = size_of(prs->sx, prs->ansttype);
+				const size_t len = size_of(prs->sx, type);
+				anst_push(prs, value, type);
 				prs->anstdispl = 0;
 				while (prs->token == period)
 				{
-					prs->anstdispl += find_field(prs, prs->ansttype);
+					prs->anstdispl += find_field(prs);
 				}
+
+				const item_t field_type = anst_pop(prs);
 				to_tree(prs, COPYST);
 				node_add_arg(&prs->nd, prs->anstdispl);
-				node_add_arg(&prs->nd, (item_t)size_of(prs->sx, prs->ansttype));
+				node_add_arg(&prs->nd, (item_t)size_of(prs->sx, field_type));
 				node_add_arg(&prs->nd, (item_t)len);
+				anst_push(prs, value, field_type);
 			}
-			else if (anst_peek(prs) == variable)
+			else if (peek == variable)
 			{
 				int globid = prs->anstdispl < 0 ? -1 : 1;
+				anst_push(prs, variable, type);
 				while (prs->token == period)
 				{
-					prs->anstdispl += globid * find_field(prs, prs->ansttype);
+					prs->anstdispl += globid * find_field(prs);
 				}
 
 				node_set_arg(&prs->nd, 0, prs->anstdispl);
 			}
-			else //if (anst_peek(prs) == address)
+			else //if (peek == address)
 			{
 				to_tree(prs, TSelect);
+				anst_push(prs, variable, type);
 				prs->anstdispl = 0;
 				while (prs->token == period)
 				{
-					prs->anstdispl += find_field(prs, prs->ansttype);
+					prs->anstdispl += find_field(prs);
 				}
 
 				node_add_arg(&prs->nd, prs->anstdispl);
-				if (mode_is_array(prs->sx, prs->ansttype) || mode_is_pointer(prs->sx, prs->ansttype))
+				// find_field вернула тип результата через стек, проверим его и вернем обратно
+				const item_t field_type = anst_pop(prs);
+				if (mode_is_array(prs->sx, field_type) || mode_is_pointer(prs->sx, field_type))
 				{
 					to_tree(prs, TAddrtoval);
 				}
+
+				anst_push(prs, address, field_type);
 			}
 		}
 	}
