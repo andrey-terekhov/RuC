@@ -399,119 +399,59 @@ static void assertion_expression(information *const info, node *const nd)
 			, info->register_num, displ);
 		info->register_num++;
 
-		// TODO Слишком много повторяющих вызовов
-		// Сделать один switch для типа операции, а потом в зависимости от типа ответа сделать один if с вызовом
+		arithmetic_t operation = add_llvm;
+		switch (assertion_type)
+		{
+			case PLUSASS:
+			case PLUSASSV:
+				operation = add_llvm;
+				break;
+			case MINUSASS:
+			case MINUSASSV:
+				operation = sub_llvm;
+				break;
+			case MULTASS:
+			case MULTASSV:
+				operation = mul_llvm;
+				break;
+			case DIVASS:
+			case DIVASSV:
+				operation = sdiv_llvm;
+				break;
+			case REMASS:
+			case REMASSV:
+				operation = srem_llvm;
+				break;
+			case SHLASS:
+			case SHLASSV:
+				operation = shl_llvm;
+				break;
+			case SHRASS:
+			case SHRASSV:
+				operation = ashr_llvm;
+				break;
+			case ANDASS:
+			case ANDASSV:
+				operation = and_llvm;
+				break;
+			case EXORASS:
+			case EXORASSV:
+				operation = xor_llvm;
+				break;
+			case ORASS:
+			case ORASSV:
+				operation = or_llvm;
+				break;
+		}
 		if (info->answer_type == AREG)
 		{
-			switch (assertion_type)
-			{
-				case PLUSASS:
-				case PLUSASSV:
-					tocode_arithmetic_reg_reg(info, info->register_num, add_llvm, 
+			tocode_arithmetic_reg_reg(info, info->register_num, operation, 
 													info->register_num - 1, info->answer_reg);
-					break;
-				case MINUSASS:
-				case MINUSASSV:
-					tocode_arithmetic_reg_reg(info, info->register_num, sub_llvm, 
-													info->register_num - 1, info->answer_reg);
-					break;
-				case MULTASS:
-				case MULTASSV:
-					tocode_arithmetic_reg_reg(info, info->register_num, mul_llvm, 
-													info->register_num - 1, info->answer_reg);
-					break;
-				case DIVASS:
-				case DIVASSV:
-					tocode_arithmetic_reg_reg(info, info->register_num, sdiv_llvm, 
-													info->register_num - 1, info->answer_reg);
-					break;
-				case REMASS:
-				case REMASSV:
-					tocode_arithmetic_reg_reg(info, info->register_num, srem_llvm, 
-													info->register_num - 1, info->answer_reg);
-					break;
-				case SHLASS:
-				case SHLASSV:
-					tocode_arithmetic_reg_reg(info, info->register_num, shl_llvm, 
-													info->register_num - 1, info->answer_reg);
-					break;
-				case SHRASS:
-				case SHRASSV:
-					tocode_arithmetic_reg_reg(info, info->register_num, ashr_llvm, 
-													info->register_num - 1, info->answer_reg);
-					break;
-				case ANDASS:
-				case ANDASSV:
-					tocode_arithmetic_reg_reg(info, info->register_num, and_llvm, 
-													info->register_num - 1, info->answer_reg);
-					break;
-				case EXORASS:
-				case EXORASSV:
-					tocode_arithmetic_reg_reg(info, info->register_num, xor_llvm, 
-													info->register_num - 1, info->answer_reg);
-					break;
-				case ORASS:
-				case ORASSV:
-					tocode_arithmetic_reg_reg(info, info->register_num, or_llvm, 
-													info->register_num - 1, info->answer_reg);
-					break;
-			}
 		}
 		else // ACONST
 		{
-			switch (assertion_type)
-			{
-				case PLUSASS:
-				case PLUSASSV:
-					tocode_arithmetic_reg_const(info, info->register_num, add_llvm, 
+			tocode_arithmetic_reg_const(info, info->register_num, operation, 
 													info->register_num - 1, info->answer_const);
-					break;
-				case MINUSASS:
-				case MINUSASSV:
-					tocode_arithmetic_reg_const(info, info->register_num, sub_llvm, 
-													info->register_num - 1, info->answer_const);
-					break;
-				case MULTASS:
-				case MULTASSV:
-					tocode_arithmetic_reg_const(info, info->register_num, mul_llvm, 
-													info->register_num - 1, info->answer_const);
-					break;
-				case DIVASS:
-				case DIVASSV:
-					tocode_arithmetic_reg_const(info, info->register_num, sdiv_llvm, 
-													info->register_num - 1, info->answer_const);
-					break;
-				case REMASS:
-				case REMASSV:
-					tocode_arithmetic_reg_const(info, info->register_num, srem_llvm, 
-													info->register_num - 1, info->answer_const);
-					break;
-				case SHLASS:
-				case SHLASSV:
-					tocode_arithmetic_reg_const(info, info->register_num, shl_llvm, 
-													info->register_num - 1, info->answer_const);
-					break;
-				case SHRASS:
-				case SHRASSV:
-					tocode_arithmetic_reg_const(info, info->register_num, ashr_llvm, 
-													info->register_num - 1, info->answer_const);
-					break;
-				case ANDASS:
-				case ANDASSV:
-					tocode_arithmetic_reg_const(info, info->register_num, and_llvm, 
-													info->register_num - 1, info->answer_const);
-					break;
-				case EXORASS:
-				case EXORASSV:
-					tocode_arithmetic_reg_const(info, info->register_num, xor_llvm, 
-													info->register_num - 1, info->answer_const);
-					break;
-				case ORASS:
-				case ORASSV:
-					tocode_arithmetic_reg_const(info, info->register_num, or_llvm, 
-													info->register_num - 1, info->answer_const);
-					break;
-			}
 		}
 			
 		result = info->register_num;
