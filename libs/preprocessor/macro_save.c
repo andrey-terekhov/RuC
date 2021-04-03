@@ -329,7 +329,7 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 				{
 					return -1;
 				}
-				else
+				else if(!macro_ptr)
 				{
 					size_t i = 0;
 					while((int)buffer[i] != '\0')

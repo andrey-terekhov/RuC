@@ -280,8 +280,7 @@ int while_collect(environment *const env)
 			{
 				env_io_set_char(env, while_type, while_begin_prt, (char32_t)env_io_get_size(env, while_type));
 				env_io_add_char(env, while_type, WHILE_END);
-				env_io_add_char(env, while_type, WHILE_END);
-
+				//env_io_add_char(env, while_type, WHILE_END);
 				return 0;
 			}
 			else
@@ -301,14 +300,14 @@ int while_collect(environment *const env)
 	return -1;
 }
 
-int while_implementation(linker *const lk)
+int while_implementation(linker *const lk, size_t begin_pred)
 {
 	environment *env = lk->env;
 	m_nextch(env);
 	size_t end = (size_t)env->curchar;
 	m_nextch(env);
 	size_t if_prt = env->curchar;
-	size_t begin  = (size_t)env->curent_io_prt;
+	size_t begin  = env->curent_io_prt + begin_pred -1;
 	while (1)
 	{
 		env_io_switch_to_new_type(env, if_type, if_prt);
@@ -331,15 +330,15 @@ int while_implementation(linker *const lk)
 
 		skip_separators(env);
 
-		while (env->curchar != WHILE_END && env_io_get_type(env) == while_type)
+		while (env->curchar != WHILE_END)
 		{
-			
 			if (env->curchar == WHILE_BEGIN)
 			{
-				if (while_implementation(lk))
+				if (while_implementation(lk, begin))
 				{
 					return -1;
 				}
+				m_nextch(env);
 			}
 			else if (env->curchar == (char32_t)EOF)
 			{
@@ -479,14 +478,15 @@ int preprocess_words(linker *const lk)
 
 			env_io_switch_to_new_type(env, while_type, 0);
 
-			int res = while_implementation(lk);
+			int res = while_implementation(lk, 0);
 			if (env_io_get_type(env) != file_type)
 			{
 				env_io_switch_to_old_type(env);
 			}
 
 			env_io_clear(env, if_type);
-			env_io_clear(env, while_type); 
+			env_io_clear(env, while_type);
+			env_io_add_char(env, if_type, '\0'); 
 			return res;
 		}
 		default:

@@ -382,8 +382,8 @@ void m_nextch(environment *const env)
 		env->position = 0;
 	}
 	
-	printf("t = %d curchar = %c, %i nextchar = %c, %i; prt = %d\n", env->curent_io_type,
-	env->curchar, env->curchar, env->nextchar, env->nextchar, env->curent_io_prt);
+	//printf("t = %d curchar = %c, %i nextchar = %c, %i; prt = %ld\n", env->curent_io_type,
+	//env->curchar, env->curchar, env->nextchar, env->nextchar, env->curent_io_prt);
 }
 
 void env_error(environment *const env, const int num)
