@@ -2440,7 +2440,7 @@ void MStmt_gen()
                 mbox = BV;
                 incrtc = incrref;
                 tc = stmtref;
-                //printf("tc=%i\n", tc);
+                printf("tc=%i\n", tc);
                 MStmt_gen();         // statement
                 if (!(delay_slot && is_last_nested))
                 {
@@ -2469,6 +2469,9 @@ void MStmt_gen()
                 	flag_cond_cycle = 2;
                 	breg = cond_reg;
                 }
+                // увеличение индуцированных переменных
+                if (enable_ind_var)
+                	tocodeI(addi, ind_var_info[0].reg, ind_var_info[0].reg, ind_var_info[0].step * 4);
                 MExpr_gen();         // cond
                 flag_jump_end_cycle = 0;
                 flag_cond_cycle = 0;
