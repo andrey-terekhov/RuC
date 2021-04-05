@@ -395,7 +395,7 @@ static void operand(information *const info, node *const nd)
 	}
 }
 
-static void assertion_expression(information *const info, node *const nd)
+static void assignment_expression(information *const info, node *const nd)
 {
 	const item_t displ = node_get_arg(nd, 0);
 	const item_t assertion_type = node_get_type(nd);
@@ -631,7 +631,7 @@ static void binary_operation(information *const info, node *const nd)
 		case EXORASSV:
 		case ORASS:
 		case ORASSV:
-			assertion_expression(info, nd);
+			assignment_expression(info, nd);
 			break;
 		case LPLUS:
 		case LMINUS:
