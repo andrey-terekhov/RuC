@@ -38,6 +38,7 @@ int flag_cond_cycle = 0; // 0 - ничего, 1 - посчитать услов�
 int cond_cycle_end_manst = 0;
 int cond_cycle_end_manst_left = 0;
 int cond_cycle_end_left_reg = 0;
+int delay_slot_inc = 1; // если ++ в цикле, то 1, если -- в цикле, то -1
 // унарные операции LNOT, LOGNOT, -, ++, --, TIdenttoval(*), TIdenttoaddr(&)
 // LNOT nor rd, rs, d0    LOGNOT slti rt, rs, 1   - sub rd, d0, rt
 // *  lw rt, displ(rs) или сразу 0(areg)   & addi rt, areg, adispl или сразу areg
@@ -1540,6 +1541,12 @@ void MUnar_expr(int c)
                     rareg = breg = identab[idp+3];
                     if (c == INC || c == POSTINC)
                     {
+                    	if (delay_slot && delay_slot_inc == 0)
+                    	{
+                    		delay_slot_inc = 1;
+                    		return;
+                    	}
+
                         if (c == POSTINC)
                             tocodemove(t0, rareg);
                         tocodeI(addi, rareg, rareg, 1);
@@ -1559,6 +1566,12 @@ void MUnar_expr(int c)
                     }
                     else if (c == DEC || c == POSTDEC)
                     {
+                    	if (delay_slot && delay_slot_inc == 0)
+                    	{
+                    		delay_slot_inc = -1;
+                    		return;
+                    	}
+
                         if (c == POSTDEC)
                             tocodemove(t0, rareg);
                         tocodeI(addi, rareg, rareg, -1);
@@ -2399,8 +2412,15 @@ void MStmt_gen()
                 }
                 if (cycle_condition_calculation && delay_slot && is_last_nested)
                 {
-                	tocodeI(addi, for_value_reg, for_value_reg, -1);
-                	tocodeI(addi, breg, breg, -1);
+                	endtc = tc;
+                    tc = incrref;
+                    delay_slot_inc = 0;
+                    int cond = breg;
+                    MExpr_gen();         // incr
+                    tc = endtc;
+
+                	tocodeI(addi, for_value_reg, for_value_reg, -delay_slot_inc); // тут иногда 1
+                	tocodeI(addi, cond, cond, -delay_slot_inc); // тут иногда 1
                 }
                 flag_cond_cycle = 0;
                 breg = oldbreg;
@@ -2420,7 +2440,7 @@ void MStmt_gen()
                 mbox = BV;
                 incrtc = incrref;
                 tc = stmtref;
-                printf("tc=%i\n", tc);
+                //printf("tc=%i\n", tc);
                 MStmt_gen();         // statement
                 if (!(delay_slot && is_last_nested))
                 {
@@ -2457,13 +2477,12 @@ void MStmt_gen()
                 	freereg(cond_reg);
             }
         	if (cycle_condition_calculation && delay_slot && is_last_nested)
-        		tocodeI(addi, cond_reg, cond_reg, 1);
+        		tocodeI(addi, cond_reg, cond_reg, delay_slot_inc); // тут иногда -1
         tocodeL("end", adbreak);
         tocodeL("ELSE", adbreak);
         	if (enable_ind_var)
         		tc++; // TEnd
 			tc++; // Здесь был TForEnd
-			printf("tc=%i\n", tc);
 
             adbreak = oldbreak;
             adcont = oldcont;

@@ -10,7 +10,7 @@
 const char * name =
 //"tests/Mishatest.c";
 
-"tests/mips/optimizations/ind_var/test11.c";
+"tests/mips/optimizations/delay_slot/test43.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
@@ -55,7 +55,7 @@ int bad_printf_placeholder = 0;
 
 // optimization flags
 int cycle_jump_reduce = 1;
-int enable_ind_var = 1;
+int enable_ind_var = 0;
 int cycle_condition_calculation = 1;
 int delay_slot = 1;
 int check_nested_for;

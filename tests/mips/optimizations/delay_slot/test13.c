@@ -1,4 +1,3 @@
-// неправильный вывод, проверить
 void main()
 {
 	register int i, j;
