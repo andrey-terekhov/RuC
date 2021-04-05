@@ -114,6 +114,22 @@ static void tocode_arithmetic_reg_const(information *const info, item_t result,
 	
 }
 
+static void tocode_arithmetic_const_reg(information *const info, item_t result, 
+										arithmetic_t operation, item_t argument1, item_t argument2)
+{
+	if (operation < sdiv_llvm)
+	{
+		uni_printf(info->io, " %%.%" PRIitem " = %s nsw i32 %" PRIitem ", %%.%" PRIitem "\n"
+			, result, info->arith[operation], argument1, argument2);
+	}
+	else
+	{
+		uni_printf(info->io, " %%.%" PRIitem " = %s i32 %" PRIitem ", %%.%" PRIitem "\n"
+			, result, info->arith[operation], argument1, argument2);
+	}
+	
+}
+
 
 static operation_t operation_type(node *const nd)
 {
@@ -443,6 +459,7 @@ static void assertion_expression(information *const info, node *const nd)
 				operation = or_llvm;
 				break;
 		}
+
 		if (info->answer_type == AREG)
 		{
 			tocode_arithmetic_reg_reg(info, info->register_num, operation, 
@@ -454,8 +471,7 @@ static void assertion_expression(information *const info, node *const nd)
 													info->register_num - 1, info->answer_const);
 		}
 			
-		result = info->register_num;
-		info->register_num++;
+		result = info->register_num++;
 	}
 
 	if (info->answer_type == AREG || (assertion_type != ASS && assertion_type != ASSV))
@@ -469,6 +485,56 @@ static void assertion_expression(information *const info, node *const nd)
 		uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
 			, info->answer_const, displ);
 	}
+}
+
+static void arithmetic_expression(information *const info, node *const nd)
+{
+	const item_t operation_type = node_get_type(nd);
+	node_set_next(nd);
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+	answer_t left_type = info->answer_type;
+	item_t left_reg = info->answer_reg;
+	item_t left_const = info->answer_const;
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+	answer_t right_type = info->answer_type;
+	item_t right_reg = info->answer_reg;
+	item_t right_const = info->answer_const;
+
+	arithmetic_t operation = add_llvm;
+	switch (operation_type)
+	{
+		case LPLUS:
+		{
+			info->answer_const = left_const + right_const;
+			operation = add_llvm;
+		}
+		break;
+	}
+
+	if (left_type == AREG && right_type == AREG)
+	{
+		tocode_arithmetic_reg_reg(info, info->register_num, operation, left_reg, right_reg);
+	}
+	else if (left_type == AREG && right_type == ACONST)
+	{
+		tocode_arithmetic_reg_const(info, info->register_num, operation, left_reg, right_const);
+	}
+	else if (left_type == ACONST && right_type == AREG)
+	{
+		tocode_arithmetic_const_reg(info, info->register_num, operation, left_const, right_reg);
+	}
+	else // if (left_type == ACONST && right_type == ACONST)
+	{
+		info->answer_type = ACONST;
+		return;
+	}
+
+	info->answer_type = AREG;
+	info->answer_reg = info->register_num++;
 }
 
 static void unary_operation(information *const info, node *const nd)
@@ -506,6 +572,9 @@ static void binary_operation(information *const info, node *const nd)
 		case ORASS:
 		case ORASSV:
 			assertion_expression(info, nd);
+			break;
+		case LPLUS:
+			arithmetic_expression(info, nd);
 			break;
 		default:
 		{
