@@ -513,6 +513,66 @@ static void arithmetic_expression(information *const info, node *const nd)
 			operation = add_llvm;
 		}
 		break;
+		case LMINUS:
+		{
+			info->answer_const = left_const - right_const;
+			operation = sub_llvm;
+		}
+		break;
+		case LMULT:
+		{
+			info->answer_const = left_const * right_const;
+			operation = mul_llvm;
+		}
+		break;
+		case LDIV:
+		{
+			if (right_const != 0)
+			{
+				info->answer_const = left_const / right_const;
+			}
+			operation = sdiv_llvm;
+		}
+		break;
+		case LREM:
+		{
+			if (right_const != 0)
+			{
+				info->answer_const = left_const % right_const;
+			}
+			operation = srem_llvm;
+		}
+		break;
+		case LSHL:
+		{
+			info->answer_const = left_const << right_const;
+			operation = shl_llvm;
+		}
+		break;
+		case LSHR:
+		{
+			info->answer_const = left_const >> right_const;
+			operation = ashr_llvm;
+		}
+		break;
+		case LAND:
+		{
+			info->answer_const = left_const & right_const;
+			operation = and_llvm;
+		}
+		break;
+		case LEXOR:
+		{
+			info->answer_const = left_const ^ right_const;
+			operation = xor_llvm;
+		}
+		break;
+		case LOR:
+		{
+			info->answer_const = left_const | right_const;
+			operation = or_llvm;
+		}
+		break;
 	}
 
 	if (left_type == AREG && right_type == AREG)
@@ -574,6 +634,16 @@ static void binary_operation(information *const info, node *const nd)
 			assertion_expression(info, nd);
 			break;
 		case LPLUS:
+		case LMINUS:
+		case LMULT:
+		case LDIV:
+
+		case LREM:
+		case LSHL:
+		case LSHR:
+		case LAND:
+		case LEXOR:
+		case LOR:
 			arithmetic_expression(info, nd);
 			break;
 		default:
