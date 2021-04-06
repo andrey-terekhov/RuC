@@ -130,6 +130,24 @@ static void tocode_arithmetic_const_reg(information *const info, item_t result,
 	
 }
 
+static void tocode_load(information *const info, item_t result, item_t displ)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n"
+				, result, displ);
+}
+
+static void tocode_store_reg(information *const info, item_t reg, item_t displ)
+{
+	uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
+			, reg, displ);
+}
+
+static void tocode_store_const(information *const info, item_t arg, item_t displ)
+{
+	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
+			, arg, displ);
+}
+
 
 static operation_t operation_type(node *const nd)
 {
@@ -312,8 +330,7 @@ static void operand(information *const info, node *const nd)
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
-			uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n"
-				, info->register_num, displ);
+			tocode_load(info, info->register_num, displ);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
 			node_set_next(nd);
@@ -325,8 +342,7 @@ static void operand(information *const info, node *const nd)
 
 			if (info->variable_location == LMEM)
 			{
-				uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
-					, num, info->request_reg);
+				tocode_store_const(info, num, info->request_reg);
 				info->answer_type = AREG;
 			}
 			else
@@ -410,9 +426,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (assertion_type != ASS && assertion_type != ASSV)
 	{
-		// TODO подумать, может стоит выделить load в отдельную функцию tocode_load
-		uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n"
-			, info->register_num, displ);
+		tocode_load(info, info->register_num, displ);
 		info->register_num++;
 
 		arithmetic_t operation = add_llvm;
@@ -476,14 +490,11 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (info->answer_type == AREG || (assertion_type != ASS && assertion_type != ASSV))
 	{
-		// TODO подумать, может стоит выделить store в отдельную функцию tocode_store
-		uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
-			, result, displ);
+		tocode_store_reg(info, result, displ);
 	}
 	else // ACONST && =
 	{
-		uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
-			, info->answer_const, displ);
+		tocode_store_const(info, info->answer_const, displ);
 	}
 }
 
@@ -597,10 +608,47 @@ static void arithmetic_expression(information *const info, node *const nd)
 	info->answer_reg = info->register_num++;
 }
 
+static void inc_dec_expression(information *const info, node *const nd)
+{
+	const item_t displ = node_get_arg(nd, 0);
+	const item_t operation_type = node_get_type(nd);
+
+	node_set_next(nd);
+	node_set_next(nd); // TIdent
+
+	switch (operation_type)
+	{
+		case POSTINC:
+		case POSTINCV:
+		{
+			tocode_load(info, info->register_num, displ);
+
+			info->answer_type = AREG;
+			info->answer_reg = info->register_num++;
+
+			tocode_arithmetic_reg_const(info, info->register_num, add_llvm, info->register_num - 1, 1);
+			tocode_store_reg(info, info->register_num, displ);
+			info->register_num++;
+		}
+		break;
+	}
+}
+
 static void unary_operation(information *const info, node *const nd)
 {
-	node_set_next(nd);
-	expression(info, nd);
+	switch (node_get_type(nd))
+	{
+		case POSTINC:
+		case POSTINCV:
+			inc_dec_expression(info, nd);
+			break;
+		default:
+		{
+			node_set_next(nd);
+			expression(info, nd);
+		}
+		break;
+	}
 }
 
 static void binary_operation(information *const info, node *const nd)
