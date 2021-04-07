@@ -43,7 +43,7 @@ enum ERROR
 	ident_not_exists,
 	functions_cannot_be_changed,
 	after_eval_must_be_parenthesis,
-	too_many_nuber,
+	large_value,
 	arithmetic_operations_must_be_in_eval,
 	logical_operations_are_prohibited_in_eval,
 	comm_not_ended,

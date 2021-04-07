@@ -31,26 +31,23 @@ void get_message_error(const int num, char *const msg)
 {
 	switch (num)
 	{
+		case preprocess_word_not_exists: // test_exist preproces_words_not_exist
+			sprintf(msg, "в препроцессоре не существует такой команды");
+			break;
 		case after_preproces_words_must_be_space: // test_exist
 			sprintf(msg, "после команды препроцессора должен идти перенос строки");
 			break;
 		case ident_must_begins_with_letter: // test_exist ident_begins_with_letters
 			sprintf(msg, "идентификатор должен начинаться с буквы ");
 			break;
+		case ident_is_repeated: // test_exist repeat_ident
+			sprintf(msg, "этот идентификатор препроцессора уже используется");
+			break;
 		case after_ident_must_be_space: // test_exist
 			sprintf(msg, "после идентификатора должен идти ' '");
 			break;
-		case must_be_endif: // test_exist
-			sprintf(msg, "условный оператор препроцессора должен заканчиваться '#ENDIF'");
-			break;
-		case needless_elif: // test_exist dont_elif
-			sprintf(msg, "в этом типе условного оператора не может использоваться '#ELIF'");
-			break;
-		case preprocess_word_not_exists: // test_exist preproces_words_not_exist
-			sprintf(msg, "в препроцессоре не существует такой команды");
-			break;
-		case more_than_enough_arguments: // test_exist not_enough_param
-			sprintf(msg, "у этого идентификатора меньше параметров");
+		case stalpe: // need_test
+			sprintf(msg, "в функции аргументы должны быть описаны через запятую, в скобках");
 			break;
 		case functionid_must_begins_with_letter: // test_exist functionid_begins_with_letters
 			sprintf(msg, "аргументы идентификатора с параметрами должены начинаться с буквы");
@@ -61,38 +58,47 @@ void get_message_error(const int num, char *const msg)
 		case after_functionid_must_be_comma: // test_exist
 			sprintf(msg, "после аргумента в функции должны быть ')' или ',' потом ' '");
 			break;
-		case stalpe: // need_test
-			sprintf(msg, "в функции аргументы должны быть описаны через запятую, в скобках");
-			break;
-		case extra_endif: // need_test
-			sprintf(msg, "перед '#ENDIF' должен стоять условный оператор препроцессора");
-			break;
-		case ident_is_repeated: // test_exist repeat_ident
-			sprintf(msg, "этот идентификатор препроцессора уже используется");
-			break;
 		case ident_not_exists: // need_test
 			sprintf(msg, "данный идентификатор препроцессора не существует");
 			break;
-		case comm_not_ended: // need_test
-			sprintf(msg, "комментарий, начавшийся с /* , не закрыт");
+		case more_than_enough_arguments: // test_exist not_enough_param
+			sprintf(msg, "у этого идентификатора меньше параметров");
 			break;
 		case not_enough_arguments: // need_test
 			sprintf(msg, "у этой функции больше параметров");
 			break;
-		case define_at_the_end: // need_test
-			sprintf(msg, "файл не может закончится до окончания команды '#DEFINE' поставьте перенос строки");
+		case must_be_string_ending: // need_test
+			sprintf(msg, "строка не завершена, пропущен символ \" или \'");
 			break;
-		case invalid_parenthesis_entry: // need_test
-			sprintf(msg, "количество открывающих скобок не соответствует числу закрывающих");
-			break;
-		case after_eval_must_be_parenthesis: // test_exist after_eval_must_be_ckob
-			sprintf(msg, "сразу после команды '#EVAL' должен быть символ '('");
-			break;
-		case too_many_nuber: // need_test
+		case large_value: // need_test
 			sprintf(msg, "слишком большое число");
 			break;
 		case after_exp_must_be_digit: // need_test
 			sprintf(msg, "после экспоненты должно быть число");
+			break;
+		case invalid_parenthesis_entry: // need_test
+			sprintf(msg, "количество открывающих скобок не соответствует числу закрывающих");
+			break;
+		case comm_not_ended: // need_test
+			sprintf(msg, "комментарий, начавшийся с /* , не закрыт");
+			break;
+		case define_at_the_end: // need_test
+			sprintf(msg, "файл не может закончится до окончания команды '#DEFINE' поставьте перенос строки");
+			break;
+		case must_be_endif: // test_exist
+			sprintf(msg, "условный оператор препроцессора должен заканчиваться '#ENDIF'");
+			break;
+		case needless_elif: // test_exist dont_elif
+			sprintf(msg, "в этом типе условного оператора не может использоваться '#ELIF'");
+			break;
+		case extra_endif: // need_test
+			sprintf(msg, "перед '#ENDIF' должен стоять условный оператор препроцессора");
+			break;
+		case after_eval_must_be_parenthesis: // test_exist after_eval_must_be_ckob
+			sprintf(msg, "сразу после команды '#EVAL' должен быть символ '('");
+			break;
+		case eval_must_end_with_parenthesis: // test_exist in_eval_must_end_parenthesis
+			sprintf(msg, "вычисления внутри директивы #eval должны заканчиваться символом )");
 			break;
 		case arithmetic_operations_must_be_in_eval: // need_test
 			sprintf(msg, "все арифметические операции должны быть внутри команды '#EVAL()'");
@@ -109,20 +115,11 @@ void get_message_error(const int num, char *const msg)
 		case third_party_symbol: // need_test
 			sprintf(msg, "в строке с вычислениями не должно быть посторонних символов");
 			break;
-		case eval_must_end_with_parenthesis: // test_exist in_eval_must_end_parenthesis
-			sprintf(msg, "вычисления внутри директивы #eval должны заканчиваться символом )");
-			break;
-		case file_name_must_end_with_quote: // need_test
-			sprintf(msg, "указание имени include файла должно заканчиваться символом \"");
-			break;
 		case file_name_must_start_with_quote: // test_exist must_start_quote
 			sprintf(msg, "указание имени include файла должно начинаться символа \"");
 			break;
-		case macro_not_exists: // need_test
-			sprintf(msg, "такого макроса не существует");
-			break;
-		case cicle_must_end_with_endw: // need_test
-			sprintf(msg, "цикл должен заканчиваться #ENDW");
+		case file_name_must_end_with_quote: // need_test
+			sprintf(msg, "указание имени include файла должно заканчиваться символом \"");
 			break;
 		case source_file_not_found: // need_test
 			sprintf(msg, "исходный файл не найден");
@@ -130,8 +127,11 @@ void get_message_error(const int num, char *const msg)
 		case included_file_not_found: // need_test
 			sprintf(msg, "заголовочный файл не найден");
 			break;
-		case must_be_string_ending: // need_test
-			sprintf(msg, "строка не завершена, пропущен символ \" или \'");
+		case macro_not_exists: // need_test
+			sprintf(msg, "такого макроса не существует");
+			break;
+		case cicle_must_end_with_endw: // need_test
+			sprintf(msg, "цикл должен заканчиваться #ENDW");
 			break;
 		default:
 			sprintf(msg, "не реализованная ошибка №%d", num);

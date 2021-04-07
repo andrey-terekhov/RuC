@@ -46,7 +46,7 @@ double get_digit(environment *const env, int* error)// Временная зам
 		numdouble = numdouble * 10 + (env->curchar - '0');
 		if (numdouble > (double)INT_MAX)
 		{
-			env_error(env, too_many_nuber);
+			env_error(env, large_value);
 			*error = -1;
 			return 0.0;
 		}
