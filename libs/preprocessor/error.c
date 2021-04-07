@@ -64,7 +64,7 @@ void get_message_error(const int num, char *const msg)
 		case more_than_enough_arguments: // test_exist not_enough_param
 			sprintf(msg, "у этого идентификатора меньше параметров");
 			break;
-		case not_enough_arguments: // need_test
+		case not_enough_arguments: // test_exist
 			sprintf(msg, "у этой функции больше параметров");
 			break;
 		case must_be_string_ending: // need_test
@@ -73,16 +73,16 @@ void get_message_error(const int num, char *const msg)
 		case large_value: // need_test
 			sprintf(msg, "слишком большое число");
 			break;
-		case after_exp_must_be_digit: // need_test
+		case after_exp_must_be_digit: // test_exist
 			sprintf(msg, "после экспоненты должно быть число");
 			break;
 		case invalid_parenthesis_entry: // need_test
 			sprintf(msg, "количество открывающих скобок не соответствует числу закрывающих");
 			break;
-		case comm_not_ended: // need_test
+		case comm_not_ended: // test_exist
 			sprintf(msg, "комментарий, начавшийся с /* , не закрыт");
 			break;
-		case define_at_the_end: // need_test
+		case define_at_the_end: // test_exist
 			sprintf(msg, "файл не может закончится до окончания команды '#DEFINE' поставьте перенос строки");
 			break;
 		case must_be_endif: // test_exist
@@ -103,34 +103,34 @@ void get_message_error(const int num, char *const msg)
 		case arithmetic_operations_must_be_in_eval: // need_test
 			sprintf(msg, "все арифметические операции должны быть внутри команды '#EVAL()'");
 			break;
-		case logical_operations_are_prohibited_in_eval: // need_test
+		case logical_operations_are_prohibited_in_eval: // test_exist
 			sprintf(msg, "внутри команды '#EVAL()' не должно быть логических операций");
 			break;
-		case ident_not_macro: // need_test
+		case ident_not_macro: // test_exist
 			sprintf(msg, "идентификатор не является макросом, это недопустимо для данных вычислений");
 			break;
 		case incorrect_arithmetic_expression: // need_test
 			sprintf(msg, "неправильно составленное арифметическое выражение, возможно неправильно расставлены скобки");
 			break;
-		case third_party_symbol: // need_test
+		case third_party_symbol: // test_exist
 			sprintf(msg, "в строке с вычислениями не должно быть посторонних символов");
 			break;
 		case file_name_must_start_with_quote: // test_exist must_start_quote
 			sprintf(msg, "указание имени include файла должно начинаться символа \"");
 			break;
-		case file_name_must_end_with_quote: // need_test
+		case file_name_must_end_with_quote: // test_exist
 			sprintf(msg, "указание имени include файла должно заканчиваться символом \"");
 			break;
 		case source_file_not_found: // need_test
 			sprintf(msg, "исходный файл не найден");
 			break;
-		case included_file_not_found: // need_test
+		case included_file_not_found: // test_exist
 			sprintf(msg, "заголовочный файл не найден");
 			break;
 		case macro_not_exists: // need_test
 			sprintf(msg, "такого макроса не существует");
 			break;
-		case cicle_must_end_with_endw: // need_test
+		case cicle_must_end_with_endw: // test_exist
 			sprintf(msg, "цикл должен заканчиваться #ENDW");
 			break;
 		default:
