@@ -99,7 +99,7 @@ int func_add_ident(environment *const env)
 		}
 		else
 		{
-			env_error(env, functionid_begins_with_letters);
+			env_error(env, functionid_must_begins_with_letter);
 			return -1;
 		}
 
@@ -192,7 +192,7 @@ int macro_tab_add_func(environment *const env)
 
 		if (env->curchar == EOF)
 		{
-			env_error(env, not_end_fail_define);
+			env_error(env, define_at_the_end);
 			return -1;
 		}
 
@@ -217,7 +217,7 @@ int define_add_to_reprtab(environment *const env)
 {
 	if (!utf8_is_letter(env->curchar))
 	{
-		env_error(env, ident_begins_with_letters);
+		env_error(env, ident_must_begins_with_letter);
 		return -1;
 	}
 
@@ -248,7 +248,7 @@ int define_add_to_reprtab(environment *const env)
 			}
 			else
 			{
-				env_error(env, repeat_ident);
+				env_error(env, ident_is_repeated);
 				return -1;
 			}
 		}
@@ -272,7 +272,7 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 		{
 			if (env->curchar == EOF)
 			{
-				env_error(env, not_end_fail_define);
+				env_error(env, define_at_the_end);
 				return -1;
 			}
 			else if (env->curchar == '#')
@@ -282,7 +282,7 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 				{
 					if (env->curchar != '(')
 					{
-						env_error(env, after_eval_must_be_ckob);
+						env_error(env, after_eval_must_be_parenthesis);
 						return -1;
 					}
 
@@ -389,7 +389,7 @@ int macro_set(environment *const env)
 
 	if (!utf8_is_letter(env->curchar))
 	{
-		env_error(env, ident_begins_with_letters);
+		env_error(env, ident_must_begins_with_letter);
 		return -1;
 	}
 

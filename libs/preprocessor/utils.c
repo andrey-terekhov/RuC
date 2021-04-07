@@ -196,7 +196,7 @@ int skip_string(environment *const env)
 
 	if (env->curchar == EOF || env->curchar == '\n')
 	{
-		env_error(env, no_string_ending);
+		env_error(env, must_be_string_ending);
 		return -1;
 	}
 

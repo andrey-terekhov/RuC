@@ -117,7 +117,7 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 		}
 	}
 	
-	env_error(env, scope_not_close);
+	env_error(env, invalid_parenthesis_entry);
 	return -1;
 }
 
@@ -149,7 +149,7 @@ int function_stack_create(environment *const env, const size_t parameters)
 
 			if (num > parameters)
 			{
-				env_error(env, not_enough_param);
+				env_error(env, more_than_enough_arguments);
 				return -1;
 			}
 			m_nextch(env);
@@ -163,7 +163,7 @@ int function_stack_create(environment *const env, const size_t parameters)
 		{
 			if (num != parameters)
 			{
-				env_error(env, not_enough_param2);
+				env_error(env, not_enough_arguments);
 				return -1;
 			}
 			m_nextch(env);
@@ -173,7 +173,7 @@ int function_stack_create(environment *const env, const size_t parameters)
 		}
 	}
 	
-	env_error(env, scope_not_close);
+	env_error(env, invalid_parenthesis_entry);
 	return -1;
 }
 
@@ -181,7 +181,7 @@ int macro_get(environment *const env, const size_t index)
 {
 	if (index == 0)
 	{
-		env_error(env, ident_not_exist);
+		env_error(env, ident_not_exists);
 		return -1;
 	}
 
