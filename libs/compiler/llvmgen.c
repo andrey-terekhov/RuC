@@ -15,7 +15,6 @@
  */
 
 #include "llvmgen.h"
-#include "codes.h"
 #include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
@@ -654,6 +653,17 @@ static void unary_operation(information *const info, node *const nd)
 		case DECV:
 			inc_dec_expression(info, nd);
 			break;
+		case UNMINUS:
+		{
+			node_set_next(nd);
+
+			info->variable_location = LREG;
+			expression(info, nd);
+
+			tocode_arithmetic_const_reg(info, info->register_num, sub_llvm, 0, info->answer_reg);
+			info->answer_reg = info->register_num++;
+		}
+		break;
 		default:
 		{
 			node_set_next(nd);
@@ -1014,7 +1024,6 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	{
 		return -1;
 	}
-	tree_print("new1.txt", &(sx->tree));
 
 	return codegen(io, sx);
 }
