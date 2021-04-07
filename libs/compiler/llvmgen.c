@@ -616,22 +616,28 @@ static void inc_dec_expression(information *const info, node *const nd)
 	node_set_next(nd);
 	node_set_next(nd); // TIdent
 
+	tocode_load(info, info->register_num, displ);
+	info->answer_type = AREG;
+	info->answer_reg = info->register_num++;
 	switch (operation_type)
 	{
+		case INC:
+		case INCV:
+			info->answer_reg = info->register_num;
 		case POSTINC:
 		case POSTINCV:
-		{
-			tocode_load(info, info->register_num, displ);
-
-			info->answer_type = AREG;
-			info->answer_reg = info->register_num++;
-
 			tocode_arithmetic_reg_const(info, info->register_num, add_llvm, info->register_num - 1, 1);
-			tocode_store_reg(info, info->register_num, displ);
-			info->register_num++;
-		}
-		break;
+			break;
+		case DEC:
+		case DECV:
+			info->answer_reg = info->register_num;
+		case POSTDEC:
+		case POSTDECV:
+			tocode_arithmetic_reg_const(info, info->register_num, sub_llvm, info->register_num - 1, 1);
+			break;
 	}
+	tocode_store_reg(info, info->register_num, displ);
+	info->register_num++;
 }
 
 static void unary_operation(information *const info, node *const nd)
@@ -640,6 +646,12 @@ static void unary_operation(information *const info, node *const nd)
 	{
 		case POSTINC:
 		case POSTINCV:
+		case POSTDEC:
+		case POSTDECV:
+		case INC:
+		case INCV:
+		case DEC:
+		case DECV:
 			inc_dec_expression(info, nd);
 			break;
 		default:
