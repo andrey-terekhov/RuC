@@ -67,19 +67,17 @@ typedef struct parser
 
 	token_t token;						/**< Current token */
 
-	size_t function_mode;				/**< Mode of currenty parsed function */
-	size_t array_dimensions;			/**< Array dimensions counter */
-
 	item_t labels[MAX_LABELS];			/**< Labels table */
 	size_t labels_size;					/**< Labels counter */
 
 	operator_t operators[MAX_STACK];	/**< Operator stack */
 	size_t operators_size;				/**< Operators counter */
 
+	size_t function_mode;				/**< Mode of currenty parsed function */
+	size_t array_dimensions;			/**< Array dimensions counter */
 	item_t left_mode;					/**< Mode of the left part of assignment expression */
 	size_t last_id;						/**< Index of the last read identifier */
 	item_t operand_displ;				/**< Displacement of the operand */
-	int op; // TODO: убрать поле
 
 	int func_def;						/**< @c 0 for function without arguments,
 										 @c 1 for function definition,
