@@ -1415,7 +1415,8 @@ void parse_subexpression(parser *const prs)
 			vector_increase(&TREE, 1);
 		}
 
-		prs->stackop[prs->sp++] = (operator_t){precedence, prs->token, addr};
+		operator_t operator = (operator_t){precedence, prs->token, addr};
+		prs->stackop[prs->sp++] = operator;
 		token_consume(prs);
 		parse_unary_expression(prs);
 		precedence = operator_precedence(prs->token);
