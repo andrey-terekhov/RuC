@@ -35,16 +35,35 @@
 extern "C" {
 #endif
 
+typedef struct operator
+{
+	uint8_t precedence;	/**< Operator precedence */
+	token_t token;		/**< Operator token */
+	size_t addr;		/**< Operator address in AST */
+} operator_t;
+
 /** Type of operand on top of anonymous stack */
-typedef enum OPERAND { variable, value, number, address } operand_t;
-typedef struct operator { uint8_t precedence; token_t token; size_t addr; } operator_t;
-typedef struct anonymous_stack {vector operands; operand_t type; } anonymous_stack;
+typedef enum OPERAND
+{
+	variable_t,	/**< Variable */
+	value_t,	/**< Value */
+	number_t,	/**< Number */
+	address_t	/**< Address */
+} operand_t;
+
+/** Anonymous stack */
+typedef struct anonymous_stack
+{
+	vector operands;	/**< Operands stack */
+	operand_t type;		/**< Type of the top operand in anonymous stack */
+} anonymous_stack;
 
 typedef struct parser
 {
 	syntax *sx;							/**< Syntax structure */
 	lexer *lxr;							/**< Lexer structure */
 	node nd;							/**< Node for expression subtree */
+	anonymous_stack anst;				/**< Operands stack */
 
 	token_t token;						/**< Current token */
 
@@ -54,11 +73,7 @@ typedef struct parser
 	size_t labels_size;					/**< Labels counter */
 
 	operator_t operators[MAX_STACK];	/**< Operator stack */
-	anonymous_stack anst;				/**< Operands stack */
 	size_t operators_size;				/**< Operators counter */
-	//item_t operands_size;				/**< Operands counter */
-	//operand_t anst;						/**< Type of the top operand in anonymous stack */
-	//item_t ansttype;					/**< Mode of the top operand in anonymous stack */
 
 	item_t leftansttype;				/**< Mode of the left part of assignment expression */
 	size_t last_id;						/**< Index of the last read identifier */

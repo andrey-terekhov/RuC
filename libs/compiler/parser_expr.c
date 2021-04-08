@@ -141,14 +141,14 @@ void binary_operation(parser *const prs, const operator_t operator)
 		result_mode = mode_integer;
 	}
 
-	anst_push(prs, value, result_mode);
+	anst_push(prs, value_t, result_mode);
 }
 
 void to_value(parser *const prs)
 {
 	switch (anst_peek(prs))
 	{
-		case variable:
+		case variable_t:
 		{
 			const item_t type = anst_pop(prs);
 			if (mode_is_struct(prs->sx, type) && !prs->flag_in_assignment)
@@ -162,11 +162,11 @@ void to_value(parser *const prs)
 				node_set_type(&prs->nd, mode_is_float(type) ? TIdenttovald : TIdenttoval);
 			}
 
-			anst_push(prs, value, type);
+			anst_push(prs, value_t, type);
 		}
 		break;
 
-		case address:
+		case address_t:
 		{
 			const item_t type = anst_pop(prs);
 			if (mode_is_struct(prs->sx, type) && !prs->flag_in_assignment)
@@ -179,12 +179,12 @@ void to_value(parser *const prs)
 				to_tree(prs, mode_is_float(type) ? TAddrtovald : TAddrtoval);
 			}
 
-			anst_push(prs, value, type);
+			anst_push(prs, value_t, type);
 		}
 		break;
 
-		case value:
-		case number:
+		case value_t:
+		case number_t:
 			break;
 	}
 }
@@ -375,7 +375,7 @@ void parse_standard_function_call(parser *const prs)
 		must_be_int(prs);
 		token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 		must_be_string(prs);
-		anst_push(prs, value, mode_void);
+		anst_push(prs, value_t, mode_void);
 	}
 	else if (func <= kw_strcpy && func >= kw_strlen) // функции работы со строками
 	{
@@ -401,11 +401,11 @@ void parse_standard_function_call(parser *const prs)
 
 		if (func < kw_strncat)
 		{
-			anst_push(prs, value, mode_integer);
+			anst_push(prs, value_t, mode_integer);
 		}
 		else
 		{
-			anst_push(prs, value, mode_void);
+			anst_push(prs, value_t, mode_void);
 		}
 	}
 	else if (func >= kw_receive_string && func <= kw_send_int)
@@ -416,17 +416,17 @@ void parse_standard_function_call(parser *const prs)
 		{
 			token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 			must_be_row_of_int(prs);
-			anst_push(prs, value, mode_void);
+			anst_push(prs, value_t, mode_void);
 		}
 		else if (func == kw_send_float)
 		{
 			token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 			must_be_row_of_float(prs);
-			anst_push(prs, value, mode_void);
+			anst_push(prs, value_t, mode_void);
 		}
 		else
 		{
-			anst_push(prs, value, func == kw_receive_int
+			anst_push(prs, value_t, func == kw_receive_int
 					  ? mode_integer : func == kw_receive_float
 					  ? mode_float : to_modetab(prs, mode_array, mode_character));
 		}
@@ -483,7 +483,7 @@ void parse_standard_function_call(parser *const prs)
 					must_be_float(prs);
 				}
 			}
-			anst_push(prs, value, mode_void);
+			anst_push(prs, value_t, mode_void);
 		}
 		else if (func == kw_setsignal)
 		{
@@ -492,7 +492,7 @@ void parse_standard_function_call(parser *const prs)
 			must_be_row_of_int(prs);
 			token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 			must_be_row_of_int(prs);
-			anst_push(prs, value, mode_void);
+			anst_push(prs, value_t, mode_void);
 		}
 		else if (func == kw_wifi_connect || func == kw_blynk_authorization || func == kw_blynk_notification)
 		{
@@ -502,7 +502,7 @@ void parse_standard_function_call(parser *const prs)
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 				must_be_string(prs);
 			}
-			anst_push(prs, value, mode_void);
+			anst_push(prs, value_t, mode_void);
 		}
 		else
 		{
@@ -532,11 +532,11 @@ void parse_standard_function_call(parser *const prs)
 					token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 					must_be_string(prs);
 				}
-				anst_push(prs, value, mode_void);
+				anst_push(prs, value_t, mode_void);
 			}
 			else
 			{
-				anst_push(prs, value, mode_integer);
+				anst_push(prs, value_t, mode_integer);
 			}
 		}
 	}
@@ -545,17 +545,17 @@ void parse_standard_function_call(parser *const prs)
 		must_be_int(prs);
 		token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 		must_be_row(prs);
-		anst_push(prs, value, mode_integer);
+		anst_push(prs, value_t, mode_integer);
 	}
 	else if (func <= kw_msg_send && func >= kw_getnum) // процедуры управления параллельными нитями
 	{
 		if (func == kw_init || func == kw_destroy || func == kw_exit)
 		{
-			anst_push(prs, value, mode_void);
+			anst_push(prs, value_t, mode_void);
 		}
 		else if (func == kw_msg_receive || func == kw_getnum) // getnum int()   msgreceive msg_info()
 		{
-			anst_push(prs, value, func == kw_getnum ? mode_integer : mode_msg_info);
+			anst_push(prs, value_t, func == kw_getnum ? mode_integer : mode_msg_info);
 		}
 		else
 		{
@@ -593,14 +593,14 @@ void parse_standard_function_call(parser *const prs)
 					to_tree(prs, TConst);
 					node_add_arg(&prs->nd, displ);
 				}
-				anst_push(prs, value, mode_integer);
+				anst_push(prs, value_t, mode_integer);
 			}
 			else
 			{
 				if (func == kw_msg_send)
 				{
 					parse_initializer(prs, &prs->nd, mode_msg_info);
-					anst_push(prs, value, mode_void);
+					anst_push(prs, value_t, mode_void);
 				}
 				else
 				{
@@ -608,11 +608,11 @@ void parse_standard_function_call(parser *const prs)
 
 					if (func == kw_sem_create)
 					{
-						anst_push(prs, value, mode_integer);
+						anst_push(prs, value_t, mode_integer);
 					}
 					else
 					{
-						anst_push(prs, value, mode_void);
+						anst_push(prs, value_t, mode_void);
 					}
 				}
 			}
@@ -620,12 +620,12 @@ void parse_standard_function_call(parser *const prs)
 	}
 	else if (func == kw_rand)
 	{
-		anst_push(prs, value, mode_float);
+		anst_push(prs, value_t, mode_float);
 	}
 	else if (func == kw_round)
 	{
 		must_be_float(prs);
-		anst_push(prs, value, mode_integer);
+		anst_push(prs, value_t, mode_integer);
 	}
 	else if (func == kw_getdigsensor || func == kw_getansensor || func == kw_setmotor || func == kw_setvoltage)
 	{
@@ -638,18 +638,18 @@ void parse_standard_function_call(parser *const prs)
 		if (func == kw_getdigsensor)
 		{
 			must_be_row_of_int(prs);
-			anst_push(prs, value, mode_integer);
+			anst_push(prs, value_t, mode_integer);
 		}
 		else
 		{
 			must_be_int(prs);
 			if (func == kw_setmotor || func == kw_setvoltage)
 			{
-				anst_push(prs, value, mode_void);
+				anst_push(prs, value_t, mode_void);
 			}
 			else
 			{
-				anst_push(prs, value, mode_void);
+				anst_push(prs, value_t, mode_void);
 			}
 		}
 	}
@@ -660,17 +660,17 @@ void parse_standard_function_call(parser *const prs)
 		if (anst_pop(prs) == mode_integer)
 		{
 			func = ABSI;
-			anst_push(prs, value, mode_integer);
+			anst_push(prs, value_t, mode_integer);
 		}
 		else
 		{
-			anst_push(prs, value, mode_float);
+			anst_push(prs, value_t, mode_float);
 		}
 	}
 	else
 	{
 		must_be_float(prs);
-		anst_push(prs, value, mode_float);
+		anst_push(prs, value_t, mode_float);
 	}
 
 	to_tree(prs, 9500 - func);
@@ -700,7 +700,7 @@ size_t parse_identifier(parser *const prs)
 
 	prs->last_id = id;
 	token_consume(prs);
-	anst_push(prs, variable, mode);
+	anst_push(prs, variable_t, mode);
 	return id;
 }
 
@@ -750,7 +750,7 @@ item_t parse_constant(parser *const prs)
 	}
 
 	token_consume(prs);
-	return anst_push(prs, number, mode);
+	return anst_push(prs, number_t, mode);
 }
 
 /**
@@ -824,7 +824,7 @@ void parse_primary_expression(parser *const prs)
 			else
 			{
 				parser_error(prs, expected_expression, prs->token);
-				anst_push(prs, number, mode_undefined);
+				anst_push(prs, number_t, mode_undefined);
 				token_consume(prs);
 			}
 			break;
@@ -970,7 +970,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	node nd_call2 = node_add_child(&nd_call, TCall2);
 	node_add_arg(&nd_call2, (item_t)function_id);
 	node_copy(&prs->nd, &nd_call2);
-	anst_push(prs, value, mode_get(prs->sx, function_mode + 1));
+	anst_push(prs, value_t, mode_get(prs->sx, function_mode + 1));
 }
 
 /**
@@ -1007,7 +1007,7 @@ void parse_postfix_expression(parser *const prs)
 				parser_error(prs, slice_from_func);
 			}
 
-			if (anst_peek(prs) == variable)
+			if (anst_peek(prs) == variable_t)
 			{
 				node_set_type(&prs->nd, TSliceident);
 				node_set_arg(&prs->nd, 0, prs->anstdispl);
@@ -1033,12 +1033,12 @@ void parse_postfix_expression(parser *const prs)
 			}
 
 			token_expect_and_consume(prs, r_square, no_rightsqbr_in_slice);
-			anst_push(prs, address, elem_type);
+			anst_push(prs, address_t, elem_type);
 		}
 
 		while (prs->token == arrow)
 		{
-			if (anst_peek(prs) == variable)
+			if (anst_peek(prs) == variable_t)
 			{
 				node_set_type(&prs->nd, TIdenttoval);
 			}
@@ -1052,7 +1052,7 @@ void parse_postfix_expression(parser *const prs)
 				parser_error(prs, get_field_not_from_struct_pointer);
 			}
 
-			anst_push(prs, address, mode_get(prs->sx, (size_t)type + 1));
+			anst_push(prs, address_t, mode_get(prs->sx, (size_t)type + 1));
 			prs->anstdispl = find_field(prs);
 			while (prs->token == period)
 			{
@@ -1068,7 +1068,7 @@ void parse_postfix_expression(parser *const prs)
 				to_tree(prs, TAddrtoval);
 			}
 
-			anst_push(prs, address, field_type);
+			anst_push(prs, address_t, field_type);
 		}
 
 		if (prs->token == period)
@@ -1080,10 +1080,10 @@ void parse_postfix_expression(parser *const prs)
 				parser_error(prs, select_not_from_struct);
 			}
 
-			if (peek == value)
+			if (peek == value_t)
 			{
 				const size_t length = size_of(prs->sx, type);
-				anst_push(prs, value, type);
+				anst_push(prs, value_t, type);
 				prs->anstdispl = 0;
 				while (prs->token == period)
 				{
@@ -1095,12 +1095,12 @@ void parse_postfix_expression(parser *const prs)
 				node_add_arg(&prs->nd, prs->anstdispl);
 				node_add_arg(&prs->nd, (item_t)size_of(prs->sx, field_type));
 				node_add_arg(&prs->nd, (item_t)length);
-				anst_push(prs, value, field_type);
+				anst_push(prs, value_t, field_type);
 			}
-			else if (peek == variable)
+			else if (peek == variable_t)
 			{
 				int is_global = prs->anstdispl < 0 ? -1 : 1;
-				anst_push(prs, variable, type);
+				anst_push(prs, variable_t, type);
 				while (prs->token == period)
 				{
 					prs->anstdispl += is_global * find_field(prs);
@@ -1111,7 +1111,7 @@ void parse_postfix_expression(parser *const prs)
 			else //if (peek == address)
 			{
 				to_tree(prs, TSelect);
-				anst_push(prs, variable, type);
+				anst_push(prs, variable_t, type);
 				prs->anstdispl = 0;
 				while (prs->token == period)
 				{
@@ -1126,7 +1126,7 @@ void parse_postfix_expression(parser *const prs)
 					to_tree(prs, TAddrtoval);
 				}
 
-				anst_push(prs, address, field_type);
+				anst_push(prs, address_t, field_type);
 			}
 		}
 	}
@@ -1137,11 +1137,11 @@ void parse_postfix_expression(parser *const prs)
 		token_consume(prs);
 
 		int is_variable = 0;
-		if (anst_peek(prs) == address)
+		if (anst_peek(prs) == address_t)
 		{
 			operator += 4;
 		}
-		else if (anst_peek(prs) == variable)
+		else if (anst_peek(prs) == variable_t)
 		{
 			is_variable = 1;
 		}
@@ -1156,7 +1156,7 @@ void parse_postfix_expression(parser *const prs)
 			parser_error(prs, wrong_operand);
 		}
 
-		anst_push(prs, value, type);
+		anst_push(prs, value_t, type);
 		totree_float_operation(prs, type, operator);
 
 		if (is_variable)
@@ -1178,11 +1178,11 @@ void parse_unary_expression(parser *const prs)
 			parse_unary_expression(prs);
 
 			int is_variable = 0;
-			if (anst_peek(prs) == address)
+			if (anst_peek(prs) == address_t)
 			{
 				operator += 4;
 			}
-			else if (anst_peek(prs) == variable)
+			else if (anst_peek(prs) == variable_t)
 			{
 				is_variable = 1;
 			}
@@ -1197,7 +1197,7 @@ void parse_unary_expression(parser *const prs)
 				parser_error(prs, wrong_operand);
 			}
 
-			anst_push(prs, value, type);
+			anst_push(prs, value_t, type);
 			totree_float_operation(prs, type, operator);
 
 			if (is_variable)
@@ -1220,23 +1220,23 @@ void parse_unary_expression(parser *const prs)
 			{
 				case amp:
 				{
-					if (anst_peek(prs) == value)
+					if (anst_peek(prs) == value_t)
 					{
 						parser_error(prs, wrong_addr);
 					}
 
-					if (anst_peek(prs) == variable)
+					if (anst_peek(prs) == variable_t)
 					{
 						node_set_type(&prs->nd, TIdenttoaddr);
 					}
 
-					anst_push(prs, value, to_modetab(prs, mode_pointer, anst_pop(prs)));
+					anst_push(prs, value_t, to_modetab(prs, mode_pointer, anst_pop(prs)));
 				}
 				break;
 
 				case star:
 				{
-					if (anst_peek(prs) == variable)
+					if (anst_peek(prs) == variable_t)
 					{
 						node_set_type(&prs->nd, TIdenttoval);
 					}
@@ -1247,7 +1247,7 @@ void parse_unary_expression(parser *const prs)
 						parser_error(prs, aster_not_for_pointer);
 					}
 
-					anst_push(prs, address, mode_get(prs->sx, (size_t)type + 1));
+					anst_push(prs, address_t, mode_get(prs->sx, (size_t)type + 1));
 				}
 				break;
 
@@ -1268,7 +1268,7 @@ void parse_unary_expression(parser *const prs)
 						{
 							const item_t type = anst_pop(prs);
 							totree_float_operation(prs, type, UNMINUS);
-							anst_push(prs, value, type);
+							anst_push(prs, value_t, type);
 						}
 					}
 					else
@@ -1284,7 +1284,7 @@ void parse_unary_expression(parser *const prs)
 							parser_error(prs, int_op_for_float);
 						}
 
-						anst_push(prs, value, type);
+						anst_push(prs, value_t, type);
 					}
 				}
 				break;
@@ -1493,7 +1493,7 @@ void parse_conditional_expression(parser *const prs)
 			addr_if = ref;
 		}
 
-		anst_push(prs, value, global_type);
+		anst_push(prs, value_t, global_type);
 	}
 }
 
@@ -1524,7 +1524,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			parser_error(prs, init_not_struct);
 		}
 
-		anst_push(prs, value, type);
+		anst_push(prs, value_t, type);
 		return;
 	}
 
@@ -1537,7 +1537,7 @@ void parse_assignment_expression_internal(parser *const prs)
 	{
 		const item_t target_displ = prs->anstdispl;
 		const operand_t left_type = anst_peek(prs);
-		if (left_type == value)
+		if (left_type == value_t)
 		{
 			parser_error(prs, unassignable);
 		}
@@ -1575,25 +1575,25 @@ void parse_assignment_expression_internal(parser *const prs)
 				parser_error(prs, wrong_struct_ass);
 			}
 
-			if (right_type == value)
+			if (right_type == value_t)
 			{
-				operator = left_type == variable ? COPY0STASS : COPY1STASS;
+				operator = left_type == variable_t ? COPY0STASS : COPY1STASS;
 			}
 			else
 			{
-				operator = left_type == variable
-					? right_type == variable
+				operator = left_type == variable_t
+					? right_type == variable_t
 						? COPY00 : COPY01
-					: right_type == variable
+					: right_type == variable_t
 						? COPY10 : COPY11;
 			}
 
 			to_tree(prs, operator);
-			if (left_type == variable)
+			if (left_type == variable_t)
 			{
 				node_add_arg(&prs->nd, target_displ);
 			}
-			if (right_type == variable)
+			if (right_type == variable_t)
 			{
 				node_add_arg(&prs->nd, prs->anstdispl);
 			}
@@ -1632,17 +1632,17 @@ void parse_assignment_expression_internal(parser *const prs)
 				parser_error(prs, type_missmatch);
 			}
 
-			if (left_type == address)
+			if (left_type == address_t)
 			{
 				operator += 11;
 			}
 			totree_float_operation(prs, result_mode, operator);
-			if (left_type == variable)
+			if (left_type == variable_t)
 			{
 				prs->anstdispl = target_displ;
 				node_add_arg(&prs->nd, target_displ);
 			}
-			anst_push(prs, value, left_mode);
+			anst_push(prs, value_t, left_mode);
 		}
 	}
 	else
@@ -1730,7 +1730,7 @@ item_t parse_string_literal(parser *const prs, node *const parent)
 	}
 
 	token_consume(prs);
-	return anst_push(prs, value, to_modetab(prs, mode_array, mode_character));
+	return anst_push(prs, value_t, to_modetab(prs, mode_array, mode_character));
 }
 
 void parse_insert_widen(parser *const prs)
