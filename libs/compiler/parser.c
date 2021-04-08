@@ -43,8 +43,8 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.sx = sx;
 	prs.lxr = lxr;
 
-	prs.sp = 0;
-	prs.sopnd = -1;
+	prs.operators_size = 0;
+	prs.operands_size = -1;
 	prs.leftansttype = -1;
 	prs.anstdispl = 0;
 

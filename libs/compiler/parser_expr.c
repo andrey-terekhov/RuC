@@ -60,15 +60,8 @@ void node_set_double(node *const nd, const size_t index, const double value)
 	const int32_t fst = num64 & 0x00000000ffffffff;
 	const int32_t snd = (num64 & 0xffffffff00000000) >> 32;
 
-	if (node_set_arg(nd, index, fst))
-	{
-		node_add_arg(nd, fst);
-		node_add_arg(nd, snd);
-	}
-	else if (node_set_arg(nd, index + 1, snd))
-	{
-		node_add_arg(nd, snd);
-	}
+	node_set_arg(nd, index, fst);
+	node_set_arg(nd, index + 1, snd);
 }
 
 double node_get_double(node *const nd, const size_t index)
@@ -85,14 +78,15 @@ double node_get_double(node *const nd, const size_t index)
 
 item_t anst_push(parser *const prs, const operand_t type, const item_t mode)
 {
-	prs->operands[++prs->sopnd] = prs->ansttype = mode;
+	prs->operands[++prs->operands_size] = mode;
+	prs->ansttype = mode;
 	prs->anst = type;
 	return mode;
 }
 
 item_t anst_pop(parser *const prs)
 {
-	return prs->operands[prs->sopnd--];
+	return prs->operands[prs->operands_size--];
 }
 
 operand_t anst_peek(parser *const prs)
@@ -137,7 +131,7 @@ void binary_operation(parser *const prs, const operator_t operator)
 	{
 		to_tree(prs, token);
 		vector_set(&TREE, operator.addr, (item_t)vector_size(&TREE));
-		vector_increase(&TREE, 1);
+		node_add_arg(&prs->nd, 0);
 	}
 	else
 	{
@@ -200,7 +194,8 @@ item_t parse_braced_init_list(parser *const prs, const item_t type)
 {
 	token_consume(prs);
 	to_tree(prs, type == mode_float ? TStringd : TString);
-	node nd_init_list = prs->nd;
+	node nd_init_list;
+	node_copy(&nd_init_list, &prs->nd);
 	node_add_arg(&nd_init_list, 0);
 
 	size_t length = 0;
@@ -256,7 +251,7 @@ void must_be_string(parser *const prs)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 	
-	if (!(mode_is_string(prs->sx, anst_pop(prs))))
+	if (!mode_is_string(prs->sx, anst_pop(prs)))
 	{
 		parser_error(prs, not_string_in_stanfunc);
 	}
@@ -386,7 +381,7 @@ void parse_standard_function_call(parser *const prs)
 		}
 		if (func < STRNCAT)
 		{
-			prs->operands[++prs->sopnd] = prs->ansttype = LINT;
+			prs->operands[++prs->operands_size] = prs->ansttype = LINT;
 		}
 	}
 	else if (func >= RECEIVE_STRING && func <= SEND_INT)
@@ -405,7 +400,7 @@ void parse_standard_function_call(parser *const prs)
 		}
 		else
 		{
-			prs->operands[++prs->sopnd] = prs->ansttype =
+			prs->operands[++prs->operands_size] = prs->ansttype =
 			func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)to_modetab(prs, mode_array, LCHAR);
 		}
 	}
@@ -460,7 +455,7 @@ void parse_standard_function_call(parser *const prs)
 				{
 					parse_assignment_expression_internal(prs);
 					to_value(prs);
-					prs->sopnd--;
+					prs->operands_size--;
 					if (mode_is_int(prs->ansttype))
 					{
 						to_tree(prs, WIDEN);
@@ -520,7 +515,7 @@ void parse_standard_function_call(parser *const prs)
 			}
 			else
 			{
-				prs->operands[++prs->sopnd] = prs->ansttype = LINT;
+				prs->operands[++prs->operands_size] = prs->ansttype = LINT;
 			}
 		}
 	}
@@ -529,7 +524,7 @@ void parse_standard_function_call(parser *const prs)
 		must_be_int(prs);
 		token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 		must_be_row(prs);
-		prs->operands[++prs->sopnd] = prs->ansttype = LINT;
+		prs->operands[++prs->operands_size] = prs->ansttype = LINT;
 	}
 	else if (func <= TMSGSEND && func >= TGETNUM) // процедуры управления параллельными нитями
 	{
@@ -540,7 +535,7 @@ void parse_standard_function_call(parser *const prs)
 		else if (func == TMSGRECEIVE || func == TGETNUM) // getnum int()   msgreceive msg_info()
 		{
 			prs->anst = value;
-			prs->ansttype = prs->operands[++prs->sopnd] =
+			prs->ansttype = prs->operands[++prs->operands_size] =
 			func == TGETNUM ? LINT : 2; // 2 - это ссылка на msg_info
 										//не было параметра,  выдали 1 результат
 		}
@@ -570,7 +565,7 @@ void parse_standard_function_call(parser *const prs)
 					parser_error(prs, wrong_arg_in_create);
 				}
 
-				prs->operands[prs->sopnd] = prs->ansttype = LINT;
+				prs->operands[prs->operands_size] = prs->ansttype = LINT;
 				dn = ident_get_displ(prs->sx, prs->lastid);
 				if (dn < 0)
 				{
@@ -596,7 +591,7 @@ void parse_standard_function_call(parser *const prs)
 					{
 						parser_error(prs, wrong_arg_in_send);
 					}
-					--prs->sopnd;
+					--prs->operands_size;
 				}
 				else
 				{
@@ -607,12 +602,12 @@ void parse_standard_function_call(parser *const prs)
 					if (func == TSEMCREATE)
 					{
 						prs->anst = value,
-						prs->ansttype = prs->operands[prs->sopnd] =
+						prs->ansttype = prs->operands[prs->operands_size] =
 						LINT; // съели 1 параметр, выдали int
 					}
 					else
 					{
-						--prs->sopnd; // съели 1 параметр, не выдали
+						--prs->operands_size; // съели 1 параметр, не выдали
 					}
 					// результата
 				}
@@ -625,13 +620,13 @@ void parse_standard_function_call(parser *const prs)
 		// перезаписывала id идентификатора в узле TIdent
 		// Намеренно ли при разборе стандартных функций не устанавливается prs->anst?
 		prs->anst = value;
-		prs->ansttype = prs->operands[++prs->sopnd] = LFLOAT;
+		prs->ansttype = prs->operands[++prs->operands_size] = LFLOAT;
 	}
 	else if (func == ROUND)
 	{
 		parse_assignment_expression_internal(prs);
 		to_value(prs);
-		prs->ansttype = prs->operands[prs->sopnd] = LINT;
+		prs->ansttype = prs->operands[prs->operands_size] = LINT;
 	}
 	else
 	{
@@ -651,7 +646,7 @@ void parse_standard_function_call(parser *const prs)
 			if (func == GETDIGSENSOR)
 			{
 				must_be_row_of_int(prs);
-				prs->ansttype = prs->operands[++prs->sopnd] = LINT;
+				prs->ansttype = prs->operands[++prs->operands_size] = LINT;
 			}
 			else
 			{
@@ -663,11 +658,11 @@ void parse_standard_function_call(parser *const prs)
 				}
 				if (func == SETMOTOR || func == VOLTAGE)
 				{
-					prs->sopnd -= 2;
+					prs->operands_size -= 2;
 				}
 				else
 				{
-					--prs->sopnd, prs->anst = value;
+					--prs->operands_size, prs->anst = value;
 				}
 			}
 		}
@@ -680,7 +675,7 @@ void parse_standard_function_call(parser *const prs)
 			if (mode_is_int(prs->ansttype))
 			{
 				to_tree(prs, WIDEN);
-				prs->ansttype = prs->operands[prs->sopnd] = LFLOAT;
+				prs->ansttype = prs->operands[prs->operands_size] = LFLOAT;
 			}
 			if (!mode_is_float(prs->ansttype))
 			{
@@ -816,12 +811,12 @@ void parse_primary_expression(parser *const prs)
 			}
 			else
 			{
-				const size_t oldsp = prs->sp;
+				const size_t oldsp = prs->operators_size;
 				parse_expression_internal(prs);
 				token_expect_and_consume(prs, r_paren, wait_rightbr_in_primary);
-				while (prs->sp > oldsp)
+				while (prs->operators_size > oldsp)
 				{
-					binary_operation(prs, prs->operators[--prs->sp]);
+					binary_operation(prs, prs->operators[--prs->operators_size]);
 				}
 			}
 		}
@@ -906,6 +901,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 
 	to_tree(prs, TCall1);
 	node nd_call = prs->nd;
+	node_copy(&nd_call, &prs->nd);
 	node_add_arg(&nd_call, expected_args);
 	size_t ref_arg_mode = function_mode + 3;
 
@@ -1394,7 +1390,7 @@ int is_assignment_operator(const token_t operator)
 
 void parse_subexpression(parser *const prs)
 {
-	size_t oldsp = prs->sp;
+	size_t oldsp = prs->operators_size;
 	int wasop = 0;
 
 	uint8_t precedence = operator_precedence(prs->token);
@@ -1402,24 +1398,24 @@ void parse_subexpression(parser *const prs)
 	{
 		wasop = 1;
 		to_value(prs);
-		while (prs->sp > oldsp && prs->operators[prs->sp - 1].precedence >= precedence)
+		while (prs->operators_size > oldsp && prs->operators[prs->operators_size - 1].precedence >= precedence)
 		{
-			binary_operation(prs, prs->operators[--prs->sp]);
+			binary_operation(prs, prs->operators[--prs->operators_size]);
 		}
 
 		size_t addr = 0;
 		if (precedence <= 2)
 		{
 			to_tree(prs, precedence == 1 ? ADLOGOR : ADLOGAND);
-			addr = vector_size(&TREE);
-			vector_increase(&TREE, 1);
+			addr = tree_reference(prs);
+			node_add_arg(&prs->nd, 0);
 		}
 
 		operator_t operator;
 		operator.precedence = precedence;
 		operator.token = prs->token;
 		operator.addr = addr;
-		prs->operators[prs->sp++] = operator;
+		prs->operators[prs->operators_size++] = operator;
 
 		token_consume(prs);
 		parse_unary_expression(prs);
@@ -1429,9 +1425,9 @@ void parse_subexpression(parser *const prs)
 	{
 		to_value(prs);
 	}
-	while (prs->sp > oldsp)
+	while (prs->operators_size > oldsp)
 	{
-		binary_operation(prs, prs->operators[--prs->sp]);
+		binary_operation(prs, prs->operators[--prs->operators_size]);
 	}
 }
 

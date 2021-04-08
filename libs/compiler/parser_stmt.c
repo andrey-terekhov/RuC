@@ -33,7 +33,7 @@ void parse_labeled_statement(parser *const prs, node *const parent)
 	const size_t repr = prs->lxr->repr;
 	// Не проверяем, что это ':', так как по нему узнали, что это labeled statement
 	token_consume(prs);
-	for (size_t i = 0; i < prs->labels_counter; i += 2)
+	for (size_t i = 0; i < prs->labels_size; i += 2)
 	{
 		if (repr == (size_t)ident_get_repr(prs->sx, (size_t)prs->labels[i]))
 		{
@@ -58,8 +58,8 @@ void parse_labeled_statement(parser *const prs, node *const parent)
 	// Это определение метки, если она встретилась до переходов на нее
 	const item_t id = (size_t)to_identab(prs, repr, 1, 0);
 	node_add_arg(&nd, id);
-	prs->labels[prs->labels_counter++] = id;
-	prs->labels[prs->labels_counter++] = -1;	// TODO: здесь должен быть номер строки
+	prs->labels[prs->labels_size++] = id;
+	prs->labels[prs->labels_size++] = -1;	// TODO: здесь должен быть номер строки
 
 	ident_set_mode(prs->sx, (size_t)id, 1);
 	parse_statement(prs, &nd);
@@ -301,7 +301,7 @@ void parse_goto_statement(parser *const prs, node *const parent)
 	token_expect_and_consume(prs, identifier, no_ident_after_goto);
 	const size_t repr = prs->lxr->repr;
 
-	for (size_t i = 0; i < prs->labels_counter; i += 2)
+	for (size_t i = 0; i < prs->labels_size; i += 2)
 	{
 		if (repr == (size_t)ident_get_repr(prs->sx, (size_t)prs->labels[i]))
 		{
@@ -309,8 +309,8 @@ void parse_goto_statement(parser *const prs, node *const parent)
 			node_add_arg(&nd, id);
 			if (prs->labels[id + 1] >= 0) // Перехода на метку еще не было
 			{
-				prs->labels[prs->labels_counter++] = id;
-				prs->labels[prs->labels_counter++] = 1; // TODO: здесь должен быть номер строки
+				prs->labels[prs->labels_size++] = id;
+				prs->labels[prs->labels_size++] = 1; // TODO: здесь должен быть номер строки
 			}
 
 			token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
@@ -323,8 +323,8 @@ void parse_goto_statement(parser *const prs, node *const parent)
 	// будет отрицательной
 	const item_t id = (item_t)to_identab(prs, repr, 1, 0);
 	node_add_arg(&nd, -id);
-	prs->labels[prs->labels_counter++] = id;
-	prs->labels[prs->labels_counter++] = 1;	// TODO: здесь должен быть номер строки
+	prs->labels[prs->labels_size++] = id;
+	prs->labels[prs->labels_size++] = 1;	// TODO: здесь должен быть номер строки
 	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
 }
 
