@@ -583,10 +583,10 @@ void parse_printf_statement(parser *const prs, node *const parent)
 
 	token_expect_and_consume(prs, l_paren, no_leftbr_in_printf);
 
-	if (prs->token != STRING)
+	if (prs->token != string_literal)
 	{
 		parser_error(prs, wrong_first_printf_param);
-		token_skip_until(prs, SEMICOLON);
+		token_skip_until(prs, semicolon);
 		return;
 	}
 

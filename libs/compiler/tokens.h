@@ -25,65 +25,67 @@ extern "C" {
 
 typedef enum TOKEN
 {
-	eof					= LEOF,			/**< End of file */
+	eof					= 120,			/**< End of file */
 
 	// Keywords [C99 6.4.1]
-	kw_main				= LMAIN,		/**< 'main'		keyword */
+	kw_main				= 0,			/**< 'main'		keyword */
 	//kw_bool,							/**< 'bool'		keyword */
 	//kw_auto,							/**< 'auto'		keyword */
-	kw_char				= LCHAR,		/**< 'char'		keyword */
-	kw_double			= LDOUBLE,		/**< 'double'	keyword */
+	kw_char				= -2,			/**< 'char'		keyword */
+	kw_double			= -5,			/**< 'double'	keyword */
 	//kw_enum,							/**< 'enum'		keyword */
-	kw_float			= LFLOAT,		/**< 'float'	keyword */
-	kw_int				= LINT,			/**< 'int'		keyword	*/
-	kw_long				= LLONG,		/**< 'long'		keyword */
+	kw_float			= -3,			/**< 'float'	keyword */
+	kw_int				= -1,			/**< 'int'		keyword	*/
+	kw_long				= -4,			/**< 'long'		keyword */
 	//kw_short,							/**< 'short'	keyword */
-	kw_struct			= LSTRUCT,		/**< 'struct'	keyword */
+	kw_struct			= -14,			/**< 'struct'	keyword */
 	//kw_union,							/**< 'union'	keyword */
-	kw_void				= LVOID,		/**< 'void'		keyword */
+	kw_void				= -6,			/**< 'void'		keyword */
 	//kw_signed,						/**< 'signed'	keyword */
 	//kw_unsigned,						/**< 'unsigned'	keyword */
-	kw_if				= LIF,			/**< 'if'		keyword */
-	kw_else				= LELSE,		/**< 'else'		keyword */
-	kw_do				= LDO,			/**< 'do'		keyword */
-	kw_while			= LWHILE,		/**< 'while'	keyword */
-	kw_for				= LFOR,			/**< 'for'		keyword */
-	kw_switch			= LSWITCH,		/**< 'switch'	keyword */
-	kw_case				= LCASE,		/**< 'case'		keyword */
-	kw_default			= LDEFAULT,		/**< 'default'	keyword */
-	kw_break			= LBREAK,		/**< 'break'	keyword */
-	kw_continue			= LCONTINUE,	/**< 'continue'	keyword */
+	kw_if				= -18,			/**< 'if'		keyword */
+	kw_else				= -12,			/**< 'else'		keyword */
+	kw_do				= -11,			/**< 'do'		keyword */
+	kw_while			= -22,			/**< 'while'	keyword */
+	kw_for				= -16,			/**< 'for'		keyword */
+	kw_switch			= -21,			/**< 'switch'	keyword */
+	kw_case				= -8,			/**< 'case'		keyword */
+	kw_default			= -10,			/**< 'default'	keyword */
+	kw_break			= -7,			/**< 'break'	keyword */
+	kw_continue			= -9,			/**< 'continue'	keyword */
 	//kw_const,							/**< 'const'	keyword */
-	kw_goto				= LGOTO,		/**< 'goto'		keyword */
+	kw_goto				= -17,			/**< 'goto'		keyword */
 	//kw_sizeof,						/**< 'sizeof'	keyword */
 	//kw_typedef,						/**< 'typedef'	keyword */
-	kw_return			= LRETURN,		/**< 'return'	keyword */
+	kw_return			= -19,			/**< 'return'	keyword */
 	//kw_extern,						/**< 'extern'	keyword */
 	//kw_inline,						/**< 'inline'	keyword */
 	//kw_register,						/**< 'register'	keyword */
 
 	// Identifiers [C99 6.4.2]
-	identifier			= 109,		/**< Identifier [C99 6.4.2] */
+	identifier			= 109,			/**< Identifier [C99 6.4.2] */
 
 	// Constants [C99 6.4.4]
-	int_constant		= INT_CONST,	/**< Integer Constant [C99 6.4.4.1] */
-	float_constant		= FLOAT_CONST,	/**< Floating Constant [C99 6.4.4.2] */
-	char_constant		= CHAR_CONST,	/**< Character Constant [C99 6.4.4.4] */
-	string_literal		= STRING,		/**< String Literal [C99 6.4.5] */
+	int_constant		= 112,			/**< Integer Constant [C99 6.4.4.1] */
+	float_constant		= 113,			/**< Floating Constant [C99 6.4.4.2] */
+	char_constant		= 111,			/**< Character Constant [C99 6.4.4.4] */
+	string_literal		= 107,			/**< String Literal [C99 6.4.5] */
 
 	// Punctuators [C99 6.4.6]
-	question			= QUEST,		/**< '?'	punctuator */
-	l_square			= LEFTSQBR,		/**< '['	punctuator */
-	r_square			= RIGHTSQBR,	/**< ']'	punctuator */
-	l_paren				= LEFTBR,		/**< '('	punctuator */
-	r_paren				= RIGHTBR,		/**< ')'	punctuator */
-	l_brace				= BEGIN,		/**< '{'	punctuator */
-	r_brace				= END,			/**< '}'	punctuator */
+	// Такие коды сделаны для функции token_skip_until()
+	// Это позволяет передавать несколько аргументов, разделяя их |
+	question			= 101,			/**< '?'	punctuator */
+	l_square			= 105,			/**< '['	punctuator */
+	r_square			= 0b00001000,	/**< ']'	punctuator */
+	l_paren				= 103,			/**< '('	punctuator */
+	r_paren				= 0b00000100,	/**< ')'	punctuator */
+	l_brace				= 115,			/**< '{'	punctuator */
+	r_brace				= 0b00010000,	/**< '}'	punctuator */
 	tilde				= LNOT,			/**< '~'	punctuator */
-	colon				= COLON,		/**< ':'	punctuator */
-	semicolon			= SEMICOLON,	/**< ';'	punctuator */
-	comma				= COMMA,		/**< ','	punctuator */
-	period				= DOT,			/**< '.'	punctuator */
+	colon				= 0b00000010,	/**< ':'	punctuator */
+	semicolon			= 0b00100000,	/**< ';'	punctuator */
+	comma				= 0b00000001,	/**< ','	punctuator */
+	period				= 122,			/**< '.'	punctuator */
 	plus				= LPLUS,		/**< '+'	punctuator */
 	minus				= LMINUS,		/**< '-'	punctuator */
 	star				= LMULT,		/**< '*'	punctuator */
@@ -96,7 +98,7 @@ typedef enum TOKEN
 	equal				= ASS,			/**< '='	punctuator */
 	less				= LLT,			/**< '<'	punctuator */
 	greater				= LGT,			/**< '>'	punctuator */
-	arrow				= ARROW,		/**< '->'	punctuator */
+	arrow				= 121,			/**< '->'	punctuator */
 	plusequal			= PLUSASS,		/**< '+='	punctuator */
 	plusplus			= INC,			/**< '++'	punctuator */
 	minusequal			= MINUSASS,		/**< '-='	punctuator */
@@ -119,76 +121,77 @@ typedef enum TOKEN
 	greatergreaterequal	= SHRASS,		/**< '>>='	punctuator */
 
 	// Standard Functions [RuC]
-	kw_print			= PRINT,		/**< 'print'	keyword	*/
-	kw_printf			= PRINTF,		/**< 'printf'	keyword */
-	kw_printid			= PRINTID,		/**< 'printid'	keyword */
-	kw_scanf			= SCANF,		/**< 'scanf'	keyword */
-	kw_getid			= GETID,		/**< 'getid'	keyword */
-	kw_abs				= ABS,			/**< 'abs'		keyword */
-	kw_sqrt				= SQRT,			/**< 'sqrt'		keyword */
-	kw_exp				= EXP,			/**< 'exp'		keyword */
-	kw_sin				= SIN,			/**< 'sin'		keyword */
-	kw_cos				= COS,			/**< 'cos'		keyword */
-	kw_log				= LOG,			/**< 'log'		keyword */
-	kw_log10			= LOG10,		/**< 'log10'	keyword */
-	kw_asin				= ASIN,			/**< 'asin'		keyword */
-	kw_rand				= RAND,			/**< 'rand'		keyword */
-	kw_round			= ROUND,		/**< 'round'	keyword */
-	kw_strcpy			= STRCPY,		/**< 'strcpy'	keyword */
-	kw_strncpy			= STRNCPY,		/**< 'strncpy'	keyword */
-	kw_strcat			= STRCAT,		/**< 'strcat'	keyword */
-	kw_strncat			= STRNCAT,		/**< 'strncat'	keyword */
-	kw_strcmp			= STRCMP,		/**< 'strcmp'	keyword */
-	kw_strncmp			= STRNCMP,		/**< 'strncmp'	keyword */
-	kw_strstr			= STRSTR,		/**< 'strstr'	keyword */
-	kw_strlen			= STRLEN,		/**< 'strlen'	keyword */
+	kw_print			= -24,			/**< 'print'	keyword	*/
+	kw_printf			= -25,			/**< 'printf'	keyword */
+	kw_printid			= -23,			/**< 'printid'	keyword */
+	kw_scanf			= -26,			/**< 'scanf'	keyword */
+	kw_getid			= -27,			/**< 'getid'	keyword */
+#define STANDARD_FUNC_START -30
+	kw_abs				= -34,			/**< 'abs'		keyword */
+	kw_sqrt				= -35,			/**< 'sqrt'		keyword */
+	kw_exp				= -36,			/**< 'exp'		keyword */
+	kw_sin				= -37,			/**< 'sin'		keyword */
+	kw_cos				= -38,			/**< 'cos'		keyword */
+	kw_log				= -39,			/**< 'log'		keyword */
+	kw_log10			= -40,			/**< 'log10'	keyword */
+	kw_asin				= -41,			/**< 'asin'		keyword */
+	kw_rand				= -42,			/**< 'rand'		keyword */
+	kw_round			= -43,			/**< 'round'	keyword */
+	kw_strcpy			= -44,			/**< 'strcpy'	keyword */
+	kw_strncpy			= -45,			/**< 'strncpy'	keyword */
+	kw_strcat			= -46,			/**< 'strcat'	keyword */
+	kw_strncat			= -47,			/**< 'strncat'	keyword */
+	kw_strcmp			= -48,			/**< 'strcmp'	keyword */
+	kw_strncmp			= -49,			/**< 'strncmp'	keyword */
+	kw_strstr			= -50,			/**< 'strstr'	keyword */
+	kw_strlen			= -51,			/**< 'strlen'	keyword */
 
-	kw_t_create_direct	= TCREATEDIRECT,
-	kw_t_exit_direct	= TEXITDIRECT,
+	kw_t_create_direct	= -28,
+	kw_t_exit_direct	= -29,
 
-	kw_msg_send			= TMSGSEND,		/**< 't_msg_send'		keyword */
-	kw_msg_receive		= TMSGRECEIVE,	/**< 't_msg_receive'	keyword */
-	kw_join				= TJOIN,		/**< 't_join'			keyword */
-	kw_sleep			= TSLEEP,		/**< 't_sleep'			keyword */
-	kw_sem_create		= TSEMCREATE,	/**< 't_sem_create'		keyword */
-	kw_sem_wait			= TSEMWAIT,		/**< 't_sem_wait'		keyword */
-	kw_sem_post			= TSEMPOST,		/**< 't_sem_post'		keyword */
-	kw_create			= TCREATE,		/**< 't_create'			keyword */
-	kw_init				= TINIT,		/**< 't_init'			keyword */
-	kw_destroy			= TDESTROY,		/**< 't_destroy'		keyword */
-	kw_exit				= TEXIT,		/**< 't_exit'			keyword */
-	kw_getnum			= TGETNUM,		/**< 't_getnum'			keyword */
+	kw_msg_send			= -52,			/**< 't_msg_send'		keyword */
+	kw_msg_receive		= -53,			/**< 't_msg_receive'	keyword */
+	kw_join				= -54,			/**< 't_join'			keyword */
+	kw_sleep			= -55,			/**< 't_sleep'			keyword */
+	kw_sem_create		= -56,			/**< 't_sem_create'		keyword */
+	kw_sem_wait			= -57,			/**< 't_sem_wait'		keyword */
+	kw_sem_post			= -58,			/**< 't_sem_post'		keyword */
+	kw_create			= -59,			/**< 't_create'			keyword */
+	kw_init				= -60,			/**< 't_init'			keyword */
+	kw_destroy			= -61,			/**< 't_destroy'		keyword */
+	kw_exit				= -62,			/**< 't_exit'			keyword */
+	kw_getnum			= -63,			/**< 't_getnum'			keyword */
 
-	kw_assert			= ASSERT,		/**< 'assert'		keyword */
-	kw_pixel			= PIXEL,		/**< 'pixel'		keyword */
-	kw_line				= LINE,			/**< 'line'			keyword */
-	kw_rectangle		= RECTANGLE,	/**< 'rectangle'	keyword */
-	kw_ellipse			= ELLIPS,		/**< 'ellipse'		keyword */
-	kw_clear			= CLEAR,		/**< 'clear'		keyword */
-	kw_draw_string		= DRAW_STRING,	/**< 'draw_string'	keyword */
-	kw_draw_number		= DRAW_NUMBER,	/**< 'draw_number'	keyword */
-	kw_icon				= ICON,			/**< 'icon'			keyword */
-	kw_upb				= UPB,			/**< 'upb'			keyword */
-	kw_setsignal		= SETSIGNAL,	/**< 'setsignal'	keyword */
-	kw_setmotor			= SETMOTOR, 	/**< 'setmotor'		keyword */
-	kw_setvoltage		= VOLTAGE,		/**< 'setvoltage'	keyword */
-	kw_getdigsensor		= GETDIGSENSOR,	/**< 'getdigsensor'	keyword */
-	kw_getansensor		= GETANSENSOR,	/**< 'getansensor'	keyword */
+	kw_assert			= -95,			/**< 'assert'		keyword */
+	kw_pixel			= -80,			/**< 'pixel'		keyword */
+	kw_line				= -81,			/**< 'line'			keyword */
+	kw_rectangle		= -82,			/**< 'rectangle'	keyword */
+	kw_ellipse			= -83,			/**< 'ellipse'		keyword */
+	kw_clear			= -84,			/**< 'clear'		keyword */
+	kw_draw_string		= -85,			/**< 'draw_string'	keyword */
+	kw_draw_number		= -86,			/**< 'draw_number'	keyword */
+	kw_icon				= -87,			/**< 'icon'			keyword */
+	kw_upb				= -88,			/**< 'upb'			keyword */
+	kw_setsignal		= -79,			/**< 'setsignal'	keyword */
+	kw_setmotor			= -30, 			/**< 'setmotor'		keyword */
+	kw_setvoltage		= -33,			/**< 'setvoltage'	keyword */
+	kw_getdigsensor		= -31,			/**< 'getdigsensor'	keyword */
+	kw_getansensor		= -32,			/**< 'getansensor'	keyword */
 
-	kw_wifi_connect			= WIFI_CONNECT,			/**< 'wifi_connect'					keyword */
-	kw_blynk_authorization	= BLYNK_AUTORIZATION,	/**< 'blynk_authorization'			keyword */
-	kw_blynk_send			= BLYNK_SEND,			/**< 'blynk_send'					keyword */
-	kw_blynk_receive		= BLYNK_RECEIVE,		/**< 'blynk_receive'				keyword */
-	kw_blynk_notification	= BLYNK_NOTIFICATION,	/**< 'blynk_notification'			keyword */
-	kw_blynk_property		= BLYNK_PROPERTY,		/**< 'blynk_property'				keyword */
-	kw_blynk_lcd			= BLYNK_LCD,			/**< 'blynk_lcd'					keyword */
-	kw_blynk_terminal		= BLYNK_TERMINAL,		/**< 'blynk_terminal'				keyword */
-	kw_send_int				= SEND_INT,				/**< 'send_int_to_robot'			keyword */
-	kw_send_float			= SEND_FLOAT,			/**< 'send_float_to_robot'			keyword */
-	kw_send_string			= SEND_STRING,			/**< 'send_string_to_robot'			keyword */
-	kw_receive_int			= RECEIVE_INT,			/**< 'receive_int_from_robot'		keyword */
-	kw_receive_float		= RECEIVE_FLOAT,		/**< 'receive_float_from_robot'		keyword */
-	kw_receive_string		= RECEIVE_STRING,		/**< 'receive_string_from_robot'	keyword */
+	kw_wifi_connect			= -71,		/**< 'wifi_connect'					keyword */
+	kw_blynk_authorization	= -72,		/**< 'blynk_authorization'			keyword */
+	kw_blynk_send			= -73,		/**< 'blynk_send'					keyword */
+	kw_blynk_receive		= -74,		/**< 'blynk_receive'				keyword */
+	kw_blynk_notification	= -75,		/**< 'blynk_notification'			keyword */
+	kw_blynk_property		= -76,		/**< 'blynk_property'				keyword */
+	kw_blynk_lcd			= -77,		/**< 'blynk_lcd'					keyword */
+	kw_blynk_terminal		= -78,		/**< 'blynk_terminal'				keyword */
+	kw_send_int				= -89,		/**< 'send_int_to_robot'			keyword */
+	kw_send_float			= -90,		/**< 'send_float_to_robot'			keyword */
+	kw_send_string			= -91,		/**< 'send_string_to_robot'			keyword */
+	kw_receive_int			= -92,		/**< 'receive_int_from_robot'		keyword */
+	kw_receive_float		= -93,		/**< 'receive_float_from_robot'		keyword */
+	kw_receive_string		= -94,		/**< 'receive_string_from_robot'	keyword */
 } token_t;
 
 #ifdef __cplusplus

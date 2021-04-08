@@ -462,7 +462,7 @@ static void identifier(virtual *const vm, node *const nd)
 			{
 				expression(vm, nd, 0);
 
-				mem_add(vm, type == LFLOAT ? ASSRV : ASSV);
+				mem_add(vm, type == mode_float ? ASSRV : ASSV);
 				mem_add(vm, old_displ);
 			}
 		}

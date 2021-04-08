@@ -78,15 +78,14 @@ double node_get_double(node *const nd, const size_t index)
 
 item_t anst_push(parser *const prs, const operand_t type, const item_t mode)
 {
-	prs->operands[++prs->operands_size] = mode;
-	prs->ansttype = mode;
+	prs->operands[prs->operands_size++] = mode;
 	prs->anst = type;
 	return mode;
 }
 
 item_t anst_pop(parser *const prs)
 {
-	return prs->operands[prs->operands_size--];
+	return prs->operands[--prs->operands_size];
 }
 
 operand_t anst_peek(parser *const prs)
@@ -291,6 +290,22 @@ void must_be_int(parser *const prs)
 	}
 }
 
+void must_be_float(parser *const prs)
+{
+	parse_assignment_expression_internal(prs);
+	to_value(prs);
+
+	item_t type = anst_pop(prs);
+	if (mode_is_int(type))
+	{
+		to_tree(prs, WIDEN);
+	}
+	else if (!mode_is_float(type))
+	{
+		parser_error(prs, bad_param_in_stand_func);
+	}
+}
+
 void must_be_row_of_int(parser *const prs)
 {
 	item_t type;
@@ -355,15 +370,16 @@ void parse_standard_function_call(parser *const prs)
 		return;
 	}
 
-	if (func == ASSERT)
+	if (func == kw_assert)
 	{
 		must_be_int(prs);
 		token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 		must_be_string(prs);
+		anst_push(prs, value, mode_void);
 	}
-	else if (func <= STRCPY && func >= STRLEN) // функции работы со строками
+	else if (func <= kw_strcpy && func >= kw_strlen) // функции работы со строками
 	{
-		if (func >= STRNCAT)
+		if (func >= kw_strncat)
 		{
 			must_be_point_string(prs);
 		}
@@ -372,53 +388,60 @@ void parse_standard_function_call(parser *const prs)
 			must_be_string(prs);
 		}
 
-		if (func != STRLEN)
+		if (func != kw_strlen)
 		{
 			token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 			must_be_string(prs);
-			if (func == STRNCPY || func == STRNCAT || func == STRNCMP)
+			if (func == kw_strncpy || func == kw_strncat || func == kw_strncmp)
 			{
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 				must_be_int(prs);
 			}
 		}
 
-		if (func < STRNCAT)
+		if (func < kw_strncat)
 		{
-			prs->operands[++prs->operands_size] = prs->ansttype = LINT;
-		}
-	}
-	else if (func >= RECEIVE_STRING && func <= SEND_INT)
-	{
-		// новые функции Фадеева
-		must_be_int(prs);
-		if (func == SEND_INT || func == SEND_STRING)
-		{
-			token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
-			must_be_row_of_int(prs);
-		}
-		else if (func == SEND_FLOAT)
-		{
-			token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
-			must_be_row_of_float(prs);
+			anst_push(prs, value, mode_integer);
 		}
 		else
 		{
-			prs->operands[++prs->operands_size] = prs->ansttype =
-			func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)to_modetab(prs, mode_array, LCHAR);
+			anst_push(prs, value, mode_void);
 		}
 	}
-	else if (func >= ICON && func <= WIFI_CONNECT) // функции Фадеева
+	else if (func >= kw_receive_string && func <= kw_send_int)
 	{
-		if (func <= PIXEL && func >= ICON)
+		// новые функции Фадеева
+		must_be_int(prs);
+		if (func == kw_send_int || func == kw_send_string)
+		{
+			token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
+			must_be_row_of_int(prs);
+			anst_push(prs, value, mode_void);
+		}
+		else if (func == kw_send_float)
+		{
+			token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
+			must_be_row_of_float(prs);
+			anst_push(prs, value, mode_void);
+		}
+		else
+		{
+			anst_push(prs, value, func == kw_receive_int
+					  ? mode_integer : func == kw_receive_float
+					  ? mode_float : to_modetab(prs, mode_array, mode_character));
+		}
+	}
+	else if (func >= kw_icon && func <= kw_wifi_connect) // функции Фадеева
+	{
+		if (func <= kw_pixel && func >= kw_icon)
 		{
 			must_be_row_of_int(prs);
-			if (func != CLEAR)
+			if (func != kw_clear)
 			{
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 			}
 
-			if (func == LINE || func == RECTANGLE || func == ELLIPS)
+			if (func == kw_line || func == kw_rectangle || func == kw_ellipse)
 			{
 				must_be_int(prs);
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
@@ -427,88 +450,81 @@ void parse_standard_function_call(parser *const prs)
 				must_be_int(prs);
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 				must_be_int(prs);
-				if (func != LINE)
+				if (func != kw_line)
 				{
 					token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 					must_be_int(prs);
 				}
 			}
-			else if (func == ICON || func == PIXEL)
+			else if (func == kw_icon || func == kw_pixel)
 			{
 				must_be_int(prs);
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 				must_be_int(prs);
-				if (func == ICON)
+				if (func == kw_icon)
 				{
 					token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 					must_be_int(prs);
 				}
 			}
-			else if (func == DRAW_NUMBER || func == DRAW_STRING)
+			else if (func == kw_draw_number || func == kw_draw_string)
 			{
 				must_be_int(prs);
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 				must_be_int(prs);
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 
-				if (func == DRAW_STRING)
+				if (func == kw_draw_string)
 				{
 					must_be_string(prs);
 				}
-				else // DRAW_NUMBER
+				else // kw_draw_number
 				{
-					parse_assignment_expression_internal(prs);
-					to_value(prs);
-					prs->operands_size--;
-					if (mode_is_int(prs->ansttype))
-					{
-						to_tree(prs, WIDEN);
-					}
-					else if (prs->ansttype != LFLOAT)
-					{
-						parser_error(prs, not_float_in_stanfunc);
-					}
+					must_be_float(prs);
 				}
 			}
+			anst_push(prs, value, mode_void);
 		}
-		else if (func == SETSIGNAL)
+		else if (func == kw_setsignal)
 		{
 			must_be_int(prs);
 			token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 			must_be_row_of_int(prs);
 			token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 			must_be_row_of_int(prs);
+			anst_push(prs, value, mode_void);
 		}
-		else if (func == WIFI_CONNECT || func == BLYNK_AUTORIZATION || func == BLYNK_NOTIFICATION)
+		else if (func == kw_wifi_connect || func == kw_blynk_authorization || func == kw_blynk_notification)
 		{
 			must_be_string(prs);
-			if (func == WIFI_CONNECT)
+			if (func == kw_wifi_connect)
 			{
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 				must_be_string(prs);
 			}
+			anst_push(prs, value, mode_void);
 		}
 		else
 		{
 			must_be_int(prs);
-			if (func != BLYNK_RECEIVE)
+			if (func != kw_blynk_receive)
 			{
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
-				if (func == BLYNK_TERMINAL)
+				if (func == kw_blynk_terminal)
 				{
 					must_be_string(prs);
 				}
-				else if (func == BLYNK_SEND)
+				else if (func == kw_blynk_send)
 				{
 					must_be_int(prs);
 				}
-				else if (func == BLYNK_PROPERTY)
+				else if (func == kw_blynk_property)
 				{
 					must_be_string(prs);
 					token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 					must_be_string(prs);
 				}
-				else // BLYNK_LCD
+				else // kw_blynk_lcd
 				{
 					must_be_int(prs);
 					token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
@@ -516,32 +532,30 @@ void parse_standard_function_call(parser *const prs)
 					token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 					must_be_string(prs);
 				}
+				anst_push(prs, value, mode_void);
 			}
 			else
 			{
-				prs->operands[++prs->operands_size] = prs->ansttype = LINT;
+				anst_push(prs, value, mode_integer);
 			}
 		}
 	}
-	else if (func == UPB) // UPB
+	else if (func == kw_upb)
 	{
 		must_be_int(prs);
 		token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 		must_be_row(prs);
-		prs->operands[++prs->operands_size] = prs->ansttype = LINT;
+		anst_push(prs, value, mode_integer);
 	}
-	else if (func <= TMSGSEND && func >= TGETNUM) // процедуры управления параллельными нитями
+	else if (func <= kw_msg_send && func >= kw_getnum) // процедуры управления параллельными нитями
 	{
-		if (func == TINIT || func == TDESTROY || func == TEXIT)
+		if (func == kw_init || func == kw_destroy || func == kw_exit)
 		{
-			; // void()
+			anst_push(prs, value, mode_void);
 		}
-		else if (func == TMSGRECEIVE || func == TGETNUM) // getnum int()   msgreceive msg_info()
+		else if (func == kw_msg_receive || func == kw_getnum) // getnum int()   msgreceive msg_info()
 		{
-			prs->anst = value;
-			prs->ansttype = prs->operands[++prs->operands_size] =
-			func == TGETNUM ? LINT : 2; // 2 - это ссылка на msg_info
-										//не было параметра,  выдали 1 результат
+			anst_push(prs, value, func == kw_getnum ? mode_integer : mode_msg_info);
 		}
 		else
 		{
@@ -549,7 +563,7 @@ void parse_standard_function_call(parser *const prs)
 			// SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
 			// у этих процедур 1 параметр
 
-			if (func == TCREATE)
+			if (func == kw_create)
 			{
 				if (!token_try_consume(prs, identifier))
 				{
@@ -563,12 +577,11 @@ void parse_standard_function_call(parser *const prs)
 				}
 
 				prs->last_id = (size_t)id;
-				if (ident_get_mode(prs->sx, prs->last_id) != 15) // 15 - это аргумент типа void* (void*)
+				if (ident_get_mode(prs->sx, prs->last_id) != mode_void_pointer)
 				{
 					parser_error(prs, wrong_arg_in_create);
 				}
 
-				prs->operands[prs->operands_size] = prs->ansttype = LINT;
 				item_t displ = ident_get_displ(prs->sx, prs->last_id);
 				if (displ < 0)
 				{
@@ -580,119 +593,88 @@ void parse_standard_function_call(parser *const prs)
 					to_tree(prs, TConst);
 					node_add_arg(&prs->nd, displ);
 				}
-				prs->anst = value;
+				anst_push(prs, value, mode_integer);
 			}
 			else
 			{
-				prs->leftansttype = 2;
-				parse_assignment_expression_internal(prs);
-				to_value(prs);
-
-				if (func == TMSGSEND)
+				if (func == kw_msg_send)
 				{
-					if (prs->ansttype != 2) // 2 - это аргумент типа msg_info (struct{int numTh; int data;})
-					{
-						parser_error(prs, wrong_arg_in_send);
-					}
-					--prs->operands_size;
+					parse_initializer(prs, &prs->nd, mode_msg_info);
+					anst_push(prs, value, mode_void);
 				}
 				else
 				{
-					if (!mode_is_int(prs->ansttype))
-					{
-						parser_error(prs, param_threads_not_int);
-					}
+					must_be_int(prs);
 
-					if (func == TSEMCREATE)
+					if (func == kw_sem_create)
 					{
-						prs->anst = value,
-						prs->ansttype = prs->operands[prs->operands_size] =
-						LINT; // съели 1 параметр, выдали int
+						anst_push(prs, value, mode_integer);
 					}
 					else
 					{
-						--prs->operands_size; // съели 1 параметр, не выдали
+						anst_push(prs, value, mode_void);
 					}
-					// результата
 				}
 			}
 		}
 	}
-	else if (func == RAND)
+	else if (func == kw_rand)
 	{
-		// Здесь была проблема в том, что вызов toval() после парсинга этой функции
-		// перезаписывала id идентификатора в узле TIdent
-		// Намеренно ли при разборе стандартных функций не устанавливается prs->anst?
-		prs->anst = value;
-		prs->ansttype = prs->operands[++prs->operands_size] = LFLOAT;
+		anst_push(prs, value, mode_float);
 	}
-	else if (func == ROUND)
+	else if (func == kw_round)
 	{
-		parse_assignment_expression_internal(prs);
-		to_value(prs);
-		prs->ansttype = prs->operands[prs->operands_size] = LINT;
+		must_be_float(prs);
+		anst_push(prs, value, mode_integer);
 	}
-	else
+	else if (func == kw_getdigsensor || func == kw_getansensor || func == kw_setmotor || func == kw_setvoltage)
 	{
-		parse_assignment_expression_internal(prs);
-		to_value(prs);
-
 		// GETDIGSENSOR int(int port, int pins[]),
 		// GETANSENSOR int (int port, int pin),
 		// SETMOTOR и VOLTAGE void (int port, int volt)
-		if (func == GETDIGSENSOR || func == GETANSENSOR || func == SETMOTOR || func == VOLTAGE)
-		{
-			if (!mode_is_int(prs->ansttype))
-			{
-				parser_error(prs, param_setmotor_not_int);
-			}
-			token_expect_and_consume(prs, comma, no_comma_in_setmotor);
+		must_be_int(prs);
+		token_expect_and_consume(prs, comma, no_comma_in_setmotor);
 
-			if (func == GETDIGSENSOR)
-			{
-				must_be_row_of_int(prs);
-				prs->ansttype = prs->operands[++prs->operands_size] = LINT;
-			}
-			else
-			{
-				parse_assignment_expression_internal(prs);
-				to_value(prs);
-				if (!mode_is_int(prs->ansttype))
-				{
-					parser_error(prs, param_setmotor_not_int);
-				}
-
-				if (func == SETMOTOR || func == VOLTAGE)
-				{
-					prs->operands_size -= 2;
-				}
-				else
-				{
-					--prs->operands_size, prs->anst = value;
-				}
-			}
-		}
-		else if (func == ABS && mode_is_int(prs->ansttype))
+		if (func == kw_getdigsensor)
 		{
-			func = ABSI;
+			must_be_row_of_int(prs);
+			anst_push(prs, value, mode_integer);
 		}
 		else
 		{
-			if (mode_is_int(prs->ansttype))
+			must_be_int(prs);
+			if (func == kw_setmotor || func == kw_setvoltage)
 			{
-				to_tree(prs, WIDEN);
-				prs->ansttype = prs->operands[prs->operands_size] = LFLOAT;
+				anst_push(prs, value, mode_void);
 			}
-
-			if (!mode_is_float(prs->ansttype))
+			else
 			{
-				parser_error(prs, bad_param_in_stand_func);
+				anst_push(prs, value, mode_void);
 			}
 		}
 	}
+	else if (func == kw_abs)
+	{
+		parse_assignment_expression_internal(prs);
+		to_value(prs);
+		if (anst_pop(prs) == mode_integer)
+		{
+			func = ABSI;
+			anst_push(prs, value, mode_integer);
+		}
+		else
+		{
+			anst_push(prs, value, mode_float);
+		}
+	}
+	else
+	{
+		must_be_float(prs);
+		anst_push(prs, value, mode_float);
+	}
 
 	to_tree(prs, 9500 - func);
-	token_expect_and_consume(prs, RIGHTBR, no_rightbr_in_stand_func);
+	token_expect_and_consume(prs, r_paren, no_rightbr_in_stand_func);
 }
 
 /**
@@ -807,13 +789,17 @@ void parse_primary_expression(parser *const prs)
 			if (token_try_consume(prs, kw_void))
 			{
 				token_expect_and_consume(prs, star, no_mult_in_cast);
+
 				parse_unary_expression(prs);
-				if (!mode_is_pointer(prs->sx, prs->ansttype))
+				operand_t type = anst_peek(prs);
+				item_t mode = anst_pop(prs);
+				if (!mode_is_pointer(prs->sx, mode))
 				{
 					parser_error(prs, not_pointer_in_cast);
 				}
 
 				token_expect_and_consume(prs, r_paren, no_rightbr_in_cast);
+				anst_push(prs, type, mode);
 				to_value(prs);
 				to_tree(prs, TExprend);
 			}
@@ -1539,13 +1525,13 @@ void parse_assignment_expression_internal(parser *const prs)
 		}
 
 		anst_push(prs, value, type);
-	}
-	else
-	{
-		parse_unary_expression(prs);
+		return;
 	}
 
-	prs->leftansttype = prs->ansttype;
+	parse_unary_expression(prs);
+	operand_t type = anst_peek(prs);
+	prs->leftansttype = anst_pop(prs);
+	anst_push(prs, type, prs->leftansttype);
 
 	if (is_assignment_operator(prs->token))
 	{
