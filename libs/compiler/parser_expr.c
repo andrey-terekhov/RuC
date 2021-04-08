@@ -108,8 +108,8 @@ void binary_operation(parser *const prs, const operator_t operator)
 
 	if (mode_is_float(left_mode) || mode_is_float(right_mode))
 	{
-		if (token == LOGOR || token == LOGAND || token == LOR || token == LEXOR || token == LAND
-			|| token == LSHR || token == LSHL || token == LREM)
+		if (token == pipepipe || token == ampamp || token == pipe || token == caret || token == amp
+			|| token == greatergreater || token == lessless || token == percent)
 		{
 			parser_error(prs, int_op_for_float);
 		}
@@ -126,7 +126,7 @@ void binary_operation(parser *const prs, const operator_t operator)
 		result_mode = mode_float;
 	}
 
-	if (token == LOGOR || token == LOGAND)
+	if (token == pipepipe || token == ampamp)
 	{
 		to_tree(prs, token);
 		vector_set(&TREE, operator.addr, tree_reference(prs));
@@ -136,7 +136,7 @@ void binary_operation(parser *const prs, const operator_t operator)
 	{
 		totree_float_operation(prs, result_mode, token);
 	}
-	if (token >= EQEQ && token <= LGE)
+	if (token >= equalequal && token <= greaterequal)
 	{
 		result_mode = mode_integer;
 	}
