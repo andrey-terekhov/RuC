@@ -413,7 +413,7 @@ static void operand(information *const info, node *const nd)
 static void assignment_expression(information *const info, node *const nd)
 {
 	const item_t displ = node_get_arg(nd, 0);
-	const item_t assertion_type = node_get_type(nd);
+	const item_t assignment_type = node_get_type(nd);
 
 	node_set_next(nd);
 	node_set_next(nd); // TIdent
@@ -423,13 +423,13 @@ static void assignment_expression(information *const info, node *const nd)
 
 	item_t result = info->answer_reg;
 
-	if (assertion_type != ASS && assertion_type != ASSV)
+	if (assignment_type != ASS && assignment_type != ASSV)
 	{
 		tocode_load(info, info->register_num, displ);
 		info->register_num++;
 
 		arithmetic_t operation = add_llvm;
-		switch (assertion_type)
+		switch (assignment_type)
 		{
 			case PLUSASS:
 			case PLUSASSV:
@@ -487,7 +487,7 @@ static void assignment_expression(information *const info, node *const nd)
 		result = info->register_num++;
 	}
 
-	if (info->answer_type == AREG || (assertion_type != ASS && assertion_type != ASSV))
+	if (info->answer_type == AREG || (assignment_type != ASS && assignment_type != ASSV))
 	{
 		tocode_store_reg(info, result, displ);
 	}
