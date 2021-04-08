@@ -27,8 +27,8 @@
 #define GENERATE_TREE
 
 #define TREE			(prs->sx->tree)
-#define MAXLABELS		10000
-#define MAXSTACKSIZE	100
+#define MAX_LABELS		10000
+#define MAX_STACK		100
 
 
 #ifdef __cplusplus
@@ -49,11 +49,11 @@ typedef struct parser
 
 	size_t function_mode;				/**< Mode of currenty parsed function */
 	size_t array_dimensions;			/**< Array dimensions counter */
-	item_t labels[MAXLABELS];			/**< Labels table */
+	item_t labels[MAX_LABELS];			/**< Labels table */
 	size_t labels_counter;				/**< Labels counter */
 
-	operator_t operators[MAXSTACKSIZE];	/**< Operator stack */
-	item_t operands[MAXSTACKSIZE];		/**< Operands stack */
+	operator_t operators[MAX_STACK];	/**< Operator stack */
+	item_t operands[MAX_STACK];			/**< Operands stack */
 	size_t sp;							/**< Operators counter */
 	item_t sopnd;						/**< Operands counter */
 	operand_t anst;						/**< Type of the top operand of anonimous stack */
