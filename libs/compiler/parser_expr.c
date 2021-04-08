@@ -100,16 +100,6 @@ operand_t anst_peek(parser *const prs)
 	return prs->anst;
 }
 
-void operator_stack_push(parser *const prs, const operator_t operator)
-{
-	prs->stackop[prs->sp++] = operator;
-}
-
-operator_t operator_stack_pop(parser *const prs)
-{
-	return prs->stackop[--prs->sp];
-}
-
 
 void binary_operation(parser *const prs, const operator_t operator)
 {
@@ -831,7 +821,7 @@ void parse_primary_expression(parser *const prs)
 				token_expect_and_consume(prs, r_paren, wait_rightbr_in_primary);
 				while (prs->sp > oldsp)
 				{
-					binary_operation(prs, operator_stack_pop(prs));// --prs->sp);
+					binary_operation(prs, prs->stackop[--prs->sp]);
 				}
 			}
 		}
@@ -1414,7 +1404,7 @@ void parse_subexpression(parser *const prs)
 		to_value(prs);
 		while (prs->sp > oldsp && prs->stackop[prs->sp - 1].precedence >= precedence)
 		{
-			binary_operation(prs, operator_stack_pop(prs));
+			binary_operation(prs, prs->stackop[--prs->sp]);
 		}
 
 		size_t addr = 0;
@@ -1425,8 +1415,7 @@ void parse_subexpression(parser *const prs)
 			vector_increase(&TREE, 1);
 		}
 
-
-		operator_stack_push(prs, (operator_t){precedence, prs->token, addr});
+		prs->stackop[prs->sp++] = (operator_t){precedence, prs->token, addr};
 		token_consume(prs);
 		parse_unary_expression(prs);
 		precedence = operator_precedence(prs->token);
@@ -1437,7 +1426,7 @@ void parse_subexpression(parser *const prs)
 	}
 	while (prs->sp > oldsp)
 	{
-		binary_operation(prs, operator_stack_pop(prs));
+		binary_operation(prs, prs->stackop[--prs->sp]);
 	}
 }
 
