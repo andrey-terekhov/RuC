@@ -130,7 +130,7 @@ void binary_operation(parser *const prs, const operator_t operator)
 	if (token == LOGOR || token == LOGAND)
 	{
 		to_tree(prs, token);
-		vector_set(&TREE, operator.addr, (item_t)vector_size(&TREE));
+		vector_set(&TREE, operator.addr, tree_reference(prs));
 		node_add_arg(&prs->nd, 0);
 	}
 	else
