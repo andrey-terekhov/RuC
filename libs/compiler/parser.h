@@ -36,7 +36,7 @@ extern "C" {
 #endif
 
 /** Type of operand on top of anonymous stack */
-typedef enum { variable, value, number, address } operand_type;
+typedef enum OPERAND { variable, value, number, address } operand_t;
 
 typedef struct parser
 {
@@ -58,7 +58,7 @@ typedef struct parser
 	size_t sp;							/**< Operators counter */
 
 	item_t sopnd;						/**< Operands counter */
-	operand_type anst;					/**< Type of the top operand of anonimous stack */
+	operand_t anst;						/**< Type of the top operand of anonimous stack */
 	item_t ansttype;					/**< Mode of the top operand of anonimous stack */
 
 	item_t leftansttype;				/**< Mode of the LHS part of assignmnet expression */

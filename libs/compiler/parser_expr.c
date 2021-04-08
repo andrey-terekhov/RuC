@@ -81,7 +81,7 @@ double node_get_double(node *const nd, const size_t index)
 }
 
 
-item_t anst_push(parser *const prs, const operand_type type, const item_t mode)
+item_t anst_push(parser *const prs, const operand_t type, const item_t mode)
 {
 	prs->stackoperands[++prs->sopnd] = prs->ansttype = mode;
 	prs->anst = type;
@@ -93,7 +93,7 @@ item_t anst_pop(parser *const prs)
 	return prs->stackoperands[prs->sopnd--];
 }
 
-operand_type anst_peek(parser *const prs)
+operand_t anst_peek(parser *const prs)
 {
 	return prs->anst;
 }
@@ -834,7 +834,7 @@ item_t find_field(parser *const prs)
 	token_consume(prs);
 	token_expect_and_consume(prs, identifier, after_dot_must_be_ident);
 
-	const operand_type peek = anst_peek(prs);
+	const operand_t peek = anst_peek(prs);
 	const item_t type = anst_pop(prs);
 	item_t select_displ = 0;
 	const size_t record_length = (size_t)mode_get(prs->sx, (size_t)type + 2);
@@ -1074,7 +1074,7 @@ void parse_postfix_expression(parser *const prs)
 
 		if (prs->token == period)
 		{
-			const operand_type peek = anst_peek(prs);
+			const operand_t peek = anst_peek(prs);
 			const item_t type = anst_pop(prs);
 			if (!mode_is_struct(prs->sx, type))
 			{
@@ -1516,7 +1516,7 @@ void parse_assignment_expression_internal(parser *const prs)
 	if (is_assignment_operator(prs->token))
 	{
 		const item_t target_displ = prs->anstdispl;
-		const operand_type leftanst = anst_peek(prs);
+		const operand_t leftanst = anst_peek(prs);
 		if (leftanst == value)
 		{
 			parser_error(prs, unassignable);
@@ -1530,7 +1530,7 @@ void parse_assignment_expression_internal(parser *const prs)
 		prs->flag_in_assignment = 0;
 
 		// Снимаем типы операндов со стека
-		const operand_type righttanst = anst_peek(prs);
+		const operand_t righttanst = anst_peek(prs);
 		const item_t rtype = anst_pop(prs);
 		const item_t ltype = anst_pop(prs);
 		item_t result_type = rtype;
