@@ -694,7 +694,7 @@ void parse_standard_function_call(parser *const prs)
 size_t parse_identifier(parser *const prs)
 {
 	const size_t id = (size_t)repr_get_reference(prs->sx, prs->lxr->repr);
-	if ((item_t)id == ITEM_MAX)
+	if (id == ITEM_MAX)
 	{
 		parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, prs->lxr->repr));
 	}
