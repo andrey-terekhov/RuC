@@ -100,10 +100,20 @@ operand_t anst_peek(parser *const prs)
 	return prs->anst;
 }
 
-
-void binary_operation(parser *const prs, const size_t stack_pointer)
+void operator_stack_push(parser *const prs, const operator_t operator)
 {
-	const item_t op = prs->stackop[stack_pointer].token;
+	prs->stackop[prs->sp++] = operator;
+}
+
+operator_t operator_stack_pop(parser *const prs)
+{
+	return prs->stackop[--prs->sp];
+}
+
+
+void binary_operation(parser *const prs, const operator_t operator)
+{
+	const token_t token = operator.token;
 	const item_t rtype = anst_pop(prs);
 	const item_t ltype = anst_pop(prs);
 	item_t result_type = rtype;
@@ -115,8 +125,8 @@ void binary_operation(parser *const prs, const size_t stack_pointer)
 
 	if (mode_is_float(ltype) || mode_is_float(rtype))
 	{
-		if (op == LOGOR || op == LOGAND || op == LOR || op == LEXOR || op == LAND
-			|| op == LSHR || op == LSHL || op == LREM)
+		if (token == LOGOR || token == LOGAND || token == LOR || token == LEXOR || token == LAND
+			|| token == LSHR || token == LSHL || token == LREM)
 		{
 			parser_error(prs, int_op_for_float);
 		}
@@ -133,17 +143,17 @@ void binary_operation(parser *const prs, const size_t stack_pointer)
 		result_type = mode_float;
 	}
 
-	if (op == LOGOR || op == LOGAND)
+	if (token == LOGOR || token == LOGAND)
 	{
-		to_tree(prs, op);
-		vector_set(&TREE, prs->stackop[stack_pointer].addr, (item_t)vector_size(&TREE));
+		to_tree(prs, token);
+		vector_set(&TREE, operator.addr, (item_t)vector_size(&TREE));
 		vector_increase(&TREE, 1);
 	}
 	else
 	{
-		totree_float_operation(prs, result_type, op);
+		totree_float_operation(prs, result_type, token);
 	}
-	if (op >= EQEQ && op <= LGE)
+	if (token >= EQEQ && token <= LGE)
 	{
 		result_type = mode_integer;
 	}
@@ -821,7 +831,7 @@ void parse_primary_expression(parser *const prs)
 				token_expect_and_consume(prs, r_paren, wait_rightbr_in_primary);
 				while (prs->sp > oldsp)
 				{
-					binary_operation(prs, --prs->sp);
+					binary_operation(prs, operator_stack_pop(prs));// --prs->sp);
 				}
 			}
 		}
@@ -1397,31 +1407,29 @@ void parse_subexpression(parser *const prs)
 	size_t oldsp = prs->sp;
 	int wasop = 0;
 
-	uint8_t p = operator_precedence(prs->token);
-	while (p)
+	uint8_t precedence = operator_precedence(prs->token);
+	while (precedence)
 	{
 		wasop = 1;
 		to_value(prs);
-		while (prs->sp > oldsp && prs->stackop[prs->sp - 1].precedence >= p)
+		while (prs->sp > oldsp && prs->stackop[prs->sp - 1].precedence >= precedence)
 		{
-			binary_operation(prs, --prs->sp);
+			binary_operation(prs, operator_stack_pop(prs));
 		}
 
-		size_t ad = 0;
-		if (p <= 2)
+		size_t addr = 0;
+		if (precedence <= 2)
 		{
-			to_tree(prs, p == 1 ? ADLOGOR : ADLOGAND);
-			ad = vector_size(&TREE);
+			to_tree(prs, precedence == 1 ? ADLOGOR : ADLOGAND);
+			addr = vector_size(&TREE);
 			vector_increase(&TREE, 1);
 		}
 
 
-		prs->stackop[prs->sp].precedence = p;
-		prs->stackop[prs->sp].addr = (int)ad;
-		prs->stackop[prs->sp++].token = prs->token;
+		operator_stack_push(prs, (operator_t){precedence, prs->token, addr});
 		token_consume(prs);
 		parse_unary_expression(prs);
-		p = operator_precedence(prs->token);
+		precedence = operator_precedence(prs->token);
 	}
 	if (wasop)
 	{
@@ -1429,7 +1437,7 @@ void parse_subexpression(parser *const prs)
 	}
 	while (prs->sp > oldsp)
 	{
-		binary_operation(prs, --prs->sp);
+		binary_operation(prs, operator_stack_pop(prs));
 	}
 }
 

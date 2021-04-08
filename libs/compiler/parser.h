@@ -52,7 +52,7 @@ typedef struct parser
 	item_t labels[MAXLABELS];			/**< Labels table */
 	size_t labels_counter;				/**< Labels counter */
 
-	operator_t stackop[MAXSTACKSIZE];		/**< Operator stack */
+	operator_t stackop[MAXSTACKSIZE];	/**< Operator stack */
 	item_t stackoperands[MAXSTACKSIZE];	/**< Operands stack */
 	size_t sp;							/**< Operators counter */
 
