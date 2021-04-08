@@ -347,7 +347,7 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
 		return;
 	}
 
-	prs->nd = *parent;
+	node_copy(&prs->nd, parent);
 	const size_t expected_fields = (size_t)(mode_get(prs->sx, (size_t)type + 2) / 2);
 	size_t actual_fields = 0;
 	size_t ref_next_field = (size_t)type + 3;
@@ -385,7 +385,7 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
  */
 void parse_array_initializer(parser *const prs, node *const parent, const item_t type)
 {
-	prs->nd = *parent;
+	node_copy(&prs->nd, parent);
 	if (prs->token == string_literal)
 	{
 		if (prs->flag_strings_only == 0)

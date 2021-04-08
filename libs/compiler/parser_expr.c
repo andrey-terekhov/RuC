@@ -913,7 +913,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	{
 		do
 		{
-			prs->nd = nd_call;
+			node_copy(&prs->nd, &nd_call);
 			const item_t expected_arg_mode = mode_get(prs->sx, ref_arg_mode);
 
 			if (mode_is_function(prs->sx, expected_arg_mode))
@@ -980,7 +980,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	prs->flag_in_assignment = old_in_assignment;
 	node nd_call2 = node_add_child(&nd_call, TCall2);
 	node_add_arg(&nd_call2, (item_t)function_id);
-	prs->nd = nd_call2;
+	node_copy(&prs->nd, &nd_call2);
 	anst_push(prs, value, mode_get(prs->sx, function_mode + 1));
 }
 
@@ -1472,7 +1472,7 @@ void parse_conditional_expression(parser *const prs)
 			}
 
 			token_expect_and_consume(prs, colon, no_colon_in_cond_expr);
-			prs->nd = nd_condexpr;
+			node_copy(&prs->nd, &nd_condexpr);
 			parse_unary_expression(prs);
 			parse_subexpression(prs); // logORexpr();	else or elif
 		}
@@ -1680,7 +1680,7 @@ void parse_expression_internal(parser *const prs)
 
 item_t parse_expression(parser *const prs, node *const parent)
 {
-	prs->nd = *parent;
+	node_copy(&prs->nd, parent);
 	parse_expression_internal(prs);
 	assignment_to_void(prs);
 	to_tree(prs, TExprend);
@@ -1689,7 +1689,7 @@ item_t parse_expression(parser *const prs, node *const parent)
 
 item_t parse_assignment_expression(parser *const prs, node *const parent)
 {
-	prs->nd = *parent;
+	node_copy(&prs->nd, parent);
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 	to_tree(prs, TExprend);
@@ -1706,7 +1706,7 @@ item_t parse_parenthesized_expression(parser *const prs, node *const parent)
 
 item_t parse_constant_expression(parser *const prs, node *const parent)
 {
-	prs->nd = *parent;
+	node_copy(&prs->nd, parent);
 	parse_unary_expression(prs);
 	parse_conditional_expression(prs);
 	to_value(prs);
@@ -1716,7 +1716,7 @@ item_t parse_constant_expression(parser *const prs, node *const parent)
 
 item_t parse_condition(parser *const prs, node *const parent)
 {
-	prs->nd = *parent;
+	node_copy(&prs->nd, parent);
 	parse_expression_internal(prs);
 	to_value(prs);
 	to_tree(prs, TExprend);
@@ -1725,7 +1725,7 @@ item_t parse_condition(parser *const prs, node *const parent)
 
 item_t parse_string_literal(parser *const prs, node *const parent)
 {
-	prs->nd = *parent;
+	node_copy(&prs->nd, parent);
 	to_tree(prs, TString);
 	node_add_arg(&prs->nd, prs->lxr->num);
 
