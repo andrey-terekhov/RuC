@@ -207,7 +207,7 @@ item_t parse_braced_init_list(parser *const prs, const item_t type)
 		{
 			if (type == mode_float)
 			{
-				node_add_double(&nd_init_list, sign * (double)prs->lxr->num);
+				node_add_double(&nd_init_list, sign * prs->lxr->num);
 			}
 			else
 			{
