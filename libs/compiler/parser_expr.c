@@ -1407,7 +1407,7 @@ void parse_subexpression(parser *const prs)
 		if (precedence <= 2)
 		{
 			to_tree(prs, precedence == 1 ? ADLOGOR : ADLOGAND);
-			addr = tree_reference(prs);
+			addr = (size_t)tree_reference(prs);
 			node_add_arg(&prs->nd, 0);
 		}
 
