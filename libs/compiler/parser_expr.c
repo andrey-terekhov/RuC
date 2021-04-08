@@ -170,8 +170,8 @@ void to_value(parser *const prs)
 			}
 
 			anst_push(prs, value, type);
-			return;
 		}
+		break;
 
 		case address:
 		{
@@ -187,12 +187,12 @@ void to_value(parser *const prs)
 			}
 
 			anst_push(prs, value, type);
-			return;
 		}
+		break;
 
 		case value:
 		case number:
-			return;
+			break;
 	}
 }
 
@@ -733,22 +733,28 @@ item_t parse_constant(parser *const prs)
 	switch (prs->token)
 	{
 		case char_constant:
+		{
 			to_tree(prs, TConst);
 			node_add_arg(&prs->nd, prs->lxr->num);
 			mode = mode_character;
-			break;
+		}
+		break;
 
 		case int_constant:
+		{
 			to_tree(prs, TConst);
 			node_add_arg(&prs->nd, prs->lxr->num);
 			mode = mode_integer;
-			break;
+		}
+		break;
 
 		case float_constant:
+		{
 			to_tree(prs, TConstd);
-			node_set_double(&prs->nd, 0, prs->lxr->num_double);
+			node_add_double(&prs->nd, prs->lxr->num_double);
 			mode = mode_float;
-			break;
+		}
+		break;
 
 		default:
 			break;
@@ -789,6 +795,7 @@ void parse_primary_expression(parser *const prs)
 			break;
 
 		case l_paren:
+		{
 			token_consume(prs);
 			if (token_try_consume(prs, kw_void))
 			{
@@ -798,6 +805,7 @@ void parse_primary_expression(parser *const prs)
 				{
 					parser_error(prs, not_pointer_in_cast);
 				}
+
 				token_expect_and_consume(prs, r_paren, no_rightbr_in_cast);
 				to_value(prs);
 				to_tree(prs, TExprend);
@@ -812,21 +820,21 @@ void parse_primary_expression(parser *const prs)
 					binary_operation(prs, --prs->sp);
 				}
 			}
-			break;
+		}
+		break;
 
 		default:
 			if (prs->token <= STANDARD_FUNC_START)
 			{
 				parse_standard_function_call(prs);
-				break;
 			}
 			else
 			{
 				parser_error(prs, expected_expression, prs->token);
 				anst_push(prs, number, mode_undefined);
 				token_consume(prs);
-				break;
 			}
+			break;
 	}
 }
 
@@ -838,13 +846,13 @@ item_t find_field(parser *const prs)
 
 	const operand_t peek = anst_peek(prs);
 	const item_t type = anst_pop(prs);
-	item_t select_displ = 0;
 	const size_t record_length = (size_t)mode_get(prs->sx, (size_t)type + 2);
 	if ((item_t)record_length == ITEM_MAX)
 	{
 		return 0;
 	}
 
+	item_t select_displ = 0;
 	for (size_t i = 0; i < record_length; i += 2)
 	{
 		const item_t field_type = mode_get(prs->sx, (size_t)type + 3 + i);
@@ -897,11 +905,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	node_add_arg(&nd_call, expected_args);
 	size_t ref_arg_mode = function_mode + 3;
 
-	if (token_try_consume(prs, r_paren))
-	{
-		actual_args = 0;
-	}
-	else
+	if (!token_try_consume(prs, r_paren))
 	{
 		do
 		{
@@ -1136,7 +1140,7 @@ void parse_postfix_expression(parser *const prs)
 
 	if (prs->token == plusplus || prs->token == minusminus)
 	{
-		int operator = (prs->token == plusplus) ? POSTINC : POSTDEC;
+		int operator = prs->token == plusplus ? POSTINC : POSTDEC;
 		token_consume(prs);
 
 		int is_variable = 0;
