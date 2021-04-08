@@ -103,7 +103,7 @@ operand_t anst_peek(parser *const prs)
 
 void binary_operation(parser *const prs, const size_t stack_pointer)
 {
-	const item_t op = prs->stackop[stack_pointer];
+	const item_t op = prs->stackop[stack_pointer].token;
 	const item_t rtype = anst_pop(prs);
 	const item_t ltype = anst_pop(prs);
 	item_t result_type = rtype;
@@ -136,7 +136,7 @@ void binary_operation(parser *const prs, const size_t stack_pointer)
 	if (op == LOGOR || op == LOGAND)
 	{
 		to_tree(prs, op);
-		vector_set(&TREE, prs->stacklog[stack_pointer], (item_t)vector_size(&TREE));
+		vector_set(&TREE, prs->stackop[stack_pointer].addr, (item_t)vector_size(&TREE));
 		vector_increase(&TREE, 1);
 	}
 	else
@@ -1402,7 +1402,7 @@ void parse_subexpression(parser *const prs)
 	{
 		wasop = 1;
 		to_value(prs);
-		while (prs->sp > oldsp && prs->stack[prs->sp - 1] >= p)
+		while (prs->sp > oldsp && prs->stackop[prs->sp - 1].precedence >= p)
 		{
 			binary_operation(prs, --prs->sp);
 		}
@@ -1415,9 +1415,10 @@ void parse_subexpression(parser *const prs)
 			vector_increase(&TREE, 1);
 		}
 
-		prs->stack[prs->sp] = p;
-		prs->stacklog[prs->sp] = (int)ad;
-		prs->stackop[prs->sp++] = prs->token;
+
+		prs->stackop[prs->sp].precedence = p;
+		prs->stackop[prs->sp].addr = (int)ad;
+		prs->stackop[prs->sp++].token = prs->token;
 		token_consume(prs);
 		parse_unary_expression(prs);
 		p = operator_precedence(prs->token);

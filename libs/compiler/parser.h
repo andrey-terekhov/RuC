@@ -37,6 +37,7 @@ extern "C" {
 
 /** Type of operand on top of anonymous stack */
 typedef enum OPERAND { variable, value, number, address } operand_t;
+typedef struct operator { uint8_t precedence; token_t token; size_t addr; } operator_t;
 
 typedef struct parser
 {
@@ -51,9 +52,7 @@ typedef struct parser
 	item_t labels[MAXLABELS];			/**< Labels table */
 	size_t labels_counter;				/**< Labels counter */
 
-	uint8_t stack[MAXSTACKSIZE];		/**< Operator precedences */
-	token_t stackop[MAXSTACKSIZE];		/**< Operator codes */
-	int stacklog[MAXSTACKSIZE];			/**< Operator addresses */
+	operator_t stackop[MAXSTACKSIZE];		/**< Operator stack */
 	item_t stackoperands[MAXSTACKSIZE];	/**< Operands stack */
 	size_t sp;							/**< Operators counter */
 
@@ -61,7 +60,7 @@ typedef struct parser
 	operand_t anst;						/**< Type of the top operand of anonimous stack */
 	item_t ansttype;					/**< Mode of the top operand of anonimous stack */
 
-	item_t leftansttype;				/**< Mode of the LHS part of assignmnet expression */
+	item_t leftansttype;				/**< Mode of the LHS part of assignment expression */
 	size_t lastid;						/**< Index of the last read identifier */
 	item_t anstdispl;					/**< Displacement of the operand */
 	int op; // TODO: убрать поле
@@ -432,7 +431,7 @@ item_t to_modetab(parser *const prs, const item_t mode, const item_t element);
  *	Add a new node to expression subtree
  *
  *	@param	prs			Parser structure
- *	@param	op			Type of the new node
+ *	@param	op			New node type
  */
 void to_tree(parser *const prs, const item_t op);
 
