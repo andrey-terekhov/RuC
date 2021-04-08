@@ -38,6 +38,7 @@ extern "C" {
 /** Type of operand on top of anonymous stack */
 typedef enum OPERAND { variable, value, number, address } operand_t;
 typedef struct operator { uint8_t precedence; token_t token; size_t addr; } operator_t;
+typedef struct anonymous_stack {vector operands; operand_t type; } anonymous_stack;
 
 typedef struct parser
 {
@@ -53,11 +54,11 @@ typedef struct parser
 	size_t labels_size;					/**< Labels counter */
 
 	operator_t operators[MAX_STACK];	/**< Operator stack */
-	item_t operands[MAX_STACK];			/**< Operands stack */
+	anonymous_stack anst;				/**< Operands stack */
 	size_t operators_size;				/**< Operators counter */
-	item_t operands_size;				/**< Operands counter */
-	operand_t anst;						/**< Type of the top operand in anonymous stack */
-	item_t ansttype;					/**< Mode of the top operand in anonymous stack */
+	//item_t operands_size;				/**< Operands counter */
+	//operand_t anst;						/**< Type of the top operand in anonymous stack */
+	//item_t ansttype;					/**< Mode of the top operand in anonymous stack */
 
 	item_t leftansttype;				/**< Mode of the left part of assignment expression */
 	size_t last_id;						/**< Index of the last read identifier */

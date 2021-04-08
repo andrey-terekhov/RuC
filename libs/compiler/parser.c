@@ -44,13 +44,13 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.lxr = lxr;
 
 	prs.operators_size = 0;
-	prs.operands_size = -1;
 	prs.leftansttype = -1;
 	prs.anstdispl = 0;
 
 	prs.flag_in_assignment = 0;
 	prs.was_error = 0;
 
+	prs.anst.operands = vector_create(1);
 	token_consume(&prs);
 
 	return prs;
