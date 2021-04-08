@@ -123,15 +123,6 @@ void parser_error(parser *const prs, error_t num, ...);
 void token_consume(parser *const prs);
 
 /**
- *	Look ahead and return next token without consuming any tokens
- *
- *	@param	prs			Parser structure
- *
- *	@return	Peeked token
- */
-token_t token_peek(parser *const prs);
-
-/**
  *	Try to consume the current 'peek token' and lex the next one
  *
  *	@param	prs			Parser structure

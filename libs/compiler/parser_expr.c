@@ -255,6 +255,7 @@ void must_be_string(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
+	
 	if (!(mode_is_string(prs->sx, anst_pop(prs))))
 	{
 		parser_error(prs, not_string_in_stanfunc);
@@ -265,6 +266,7 @@ void must_be_point_string(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
+
 	const item_t type = anst_pop(prs);
 	if (!(mode_is_pointer(prs->sx, type) && mode_is_string(prs->sx, mode_get(prs->sx, (size_t)type + 1))))
 	{
@@ -276,6 +278,7 @@ void must_be_row(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
+
 	if (!mode_is_array(prs->sx, anst_pop(prs)))
 	{
 		parser_error(prs, not_array_in_stanfunc);
@@ -286,6 +289,7 @@ void must_be_int(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
+
 	if (!mode_is_int(anst_pop(prs)))
 	{
 		parser_error(prs, not_int_in_stanfunc);

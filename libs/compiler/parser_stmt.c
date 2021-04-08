@@ -763,7 +763,7 @@ void parse_statement(parser *const prs, node *const parent)
 			break;
 
 		case identifier:
-			if (token_peek(prs) == colon)
+			if (peek(prs->lxr) == colon)
 			{
 				parse_labeled_statement(prs, parent);
 				break;
