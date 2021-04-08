@@ -52,15 +52,15 @@ typedef struct parser
 	item_t labels[MAXLABELS];			/**< Labels table */
 	size_t labels_counter;				/**< Labels counter */
 
-	operator_t stackop[MAXSTACKSIZE];	/**< Operator stack */
-	item_t stackoperands[MAXSTACKSIZE];	/**< Operands stack */
+	operator_t operators[MAXSTACKSIZE];	/**< Operator stack */
 	size_t sp;							/**< Operators counter */
 
+	item_t operands[MAXSTACKSIZE];		/**< Operands stack */
 	item_t sopnd;						/**< Operands counter */
 	operand_t anst;						/**< Type of the top operand of anonimous stack */
 	item_t ansttype;					/**< Mode of the top operand of anonimous stack */
 
-	item_t leftansttype;				/**< Mode of the LHS part of assignment expression */
+	item_t leftansttype;				/**< Mode of the left part of assignment expression */
 	size_t lastid;						/**< Index of the last read identifier */
 	item_t anstdispl;					/**< Displacement of the operand */
 	int op; // TODO: убрать поле

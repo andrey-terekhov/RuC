@@ -85,14 +85,14 @@ double node_get_double(node *const nd, const size_t index)
 
 item_t anst_push(parser *const prs, const operand_t type, const item_t mode)
 {
-	prs->stackoperands[++prs->sopnd] = prs->ansttype = mode;
+	prs->operands[++prs->sopnd] = prs->ansttype = mode;
 	prs->anst = type;
 	return mode;
 }
 
 item_t anst_pop(parser *const prs)
 {
-	return prs->stackoperands[prs->sopnd--];
+	return prs->operands[prs->sopnd--];
 }
 
 operand_t anst_peek(parser *const prs)
@@ -386,7 +386,7 @@ void parse_standard_function_call(parser *const prs)
 		}
 		if (func < STRNCAT)
 		{
-			prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
+			prs->operands[++prs->sopnd] = prs->ansttype = LINT;
 		}
 	}
 	else if (func >= RECEIVE_STRING && func <= SEND_INT)
@@ -405,7 +405,7 @@ void parse_standard_function_call(parser *const prs)
 		}
 		else
 		{
-			prs->stackoperands[++prs->sopnd] = prs->ansttype =
+			prs->operands[++prs->sopnd] = prs->ansttype =
 			func == RECEIVE_INT ? LINT : func == RECEIVE_FLOAT ? LFLOAT : (int)to_modetab(prs, mode_array, LCHAR);
 		}
 	}
@@ -520,7 +520,7 @@ void parse_standard_function_call(parser *const prs)
 			}
 			else
 			{
-				prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
+				prs->operands[++prs->sopnd] = prs->ansttype = LINT;
 			}
 		}
 	}
@@ -529,7 +529,7 @@ void parse_standard_function_call(parser *const prs)
 		must_be_int(prs);
 		token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 		must_be_row(prs);
-		prs->stackoperands[++prs->sopnd] = prs->ansttype = LINT;
+		prs->operands[++prs->sopnd] = prs->ansttype = LINT;
 	}
 	else if (func <= TMSGSEND && func >= TGETNUM) // процедуры управления параллельными нитями
 	{
@@ -540,7 +540,7 @@ void parse_standard_function_call(parser *const prs)
 		else if (func == TMSGRECEIVE || func == TGETNUM) // getnum int()   msgreceive msg_info()
 		{
 			prs->anst = value;
-			prs->ansttype = prs->stackoperands[++prs->sopnd] =
+			prs->ansttype = prs->operands[++prs->sopnd] =
 			func == TGETNUM ? LINT : 2; // 2 - это ссылка на msg_info
 										//не было параметра,  выдали 1 результат
 		}
@@ -570,7 +570,7 @@ void parse_standard_function_call(parser *const prs)
 					parser_error(prs, wrong_arg_in_create);
 				}
 
-				prs->stackoperands[prs->sopnd] = prs->ansttype = LINT;
+				prs->operands[prs->sopnd] = prs->ansttype = LINT;
 				dn = ident_get_displ(prs->sx, prs->lastid);
 				if (dn < 0)
 				{
@@ -607,7 +607,7 @@ void parse_standard_function_call(parser *const prs)
 					if (func == TSEMCREATE)
 					{
 						prs->anst = value,
-						prs->ansttype = prs->stackoperands[prs->sopnd] =
+						prs->ansttype = prs->operands[prs->sopnd] =
 						LINT; // съели 1 параметр, выдали int
 					}
 					else
@@ -625,13 +625,13 @@ void parse_standard_function_call(parser *const prs)
 		// перезаписывала id идентификатора в узле TIdent
 		// Намеренно ли при разборе стандартных функций не устанавливается prs->anst?
 		prs->anst = value;
-		prs->ansttype = prs->stackoperands[++prs->sopnd] = LFLOAT;
+		prs->ansttype = prs->operands[++prs->sopnd] = LFLOAT;
 	}
 	else if (func == ROUND)
 	{
 		parse_assignment_expression_internal(prs);
 		to_value(prs);
-		prs->ansttype = prs->stackoperands[prs->sopnd] = LINT;
+		prs->ansttype = prs->operands[prs->sopnd] = LINT;
 	}
 	else
 	{
@@ -651,7 +651,7 @@ void parse_standard_function_call(parser *const prs)
 			if (func == GETDIGSENSOR)
 			{
 				must_be_row_of_int(prs);
-				prs->ansttype = prs->stackoperands[++prs->sopnd] = LINT;
+				prs->ansttype = prs->operands[++prs->sopnd] = LINT;
 			}
 			else
 			{
@@ -680,7 +680,7 @@ void parse_standard_function_call(parser *const prs)
 			if (mode_is_int(prs->ansttype))
 			{
 				to_tree(prs, WIDEN);
-				prs->ansttype = prs->stackoperands[prs->sopnd] = LFLOAT;
+				prs->ansttype = prs->operands[prs->sopnd] = LFLOAT;
 			}
 			if (!mode_is_float(prs->ansttype))
 			{
@@ -821,7 +821,7 @@ void parse_primary_expression(parser *const prs)
 				token_expect_and_consume(prs, r_paren, wait_rightbr_in_primary);
 				while (prs->sp > oldsp)
 				{
-					binary_operation(prs, prs->stackop[--prs->sp]);
+					binary_operation(prs, prs->operators[--prs->sp]);
 				}
 			}
 		}
@@ -1402,9 +1402,9 @@ void parse_subexpression(parser *const prs)
 	{
 		wasop = 1;
 		to_value(prs);
-		while (prs->sp > oldsp && prs->stackop[prs->sp - 1].precedence >= precedence)
+		while (prs->sp > oldsp && prs->operators[prs->sp - 1].precedence >= precedence)
 		{
-			binary_operation(prs, prs->stackop[--prs->sp]);
+			binary_operation(prs, prs->operators[--prs->sp]);
 		}
 
 		size_t addr = 0;
@@ -1419,8 +1419,8 @@ void parse_subexpression(parser *const prs)
 		operator.precedence = precedence;
 		operator.token = prs->token;
 		operator.addr = addr;
-		prs->stackop[prs->sp++] = operator;
-		
+		prs->operators[prs->sp++] = operator;
+
 		token_consume(prs);
 		parse_unary_expression(prs);
 		precedence = operator_precedence(prs->token);
@@ -1431,7 +1431,7 @@ void parse_subexpression(parser *const prs)
 	}
 	while (prs->sp > oldsp)
 	{
-		binary_operation(prs, prs->stackop[--prs->sp]);
+		binary_operation(prs, prs->operators[--prs->sp]);
 	}
 }
 
