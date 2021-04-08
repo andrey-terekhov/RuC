@@ -39,16 +39,16 @@ typedef struct operator
 {
 	uint8_t precedence;	/**< Operator precedence */
 	token_t token;		/**< Operator token */
-	size_t addr;		/**< Operator address in AST */
+	size_t address;		/**< Operator address in AST */
 } operator_t;
 
 /** Type of operand on top of anonymous stack */
 typedef enum OPERAND
 {
-	variable_t,	/**< Variable */
-	value_t,	/**< Value */
-	number_t,	/**< Number */
-	address_t	/**< Address */
+	variable_t,			/**< Variable */
+	value_t,			/**< Value */
+	number_t,			/**< Number */
+	address_t			/**< Address */
 } operand_t;
 
 /** Anonymous stack */
@@ -63,21 +63,22 @@ typedef struct parser
 	syntax *sx;							/**< Syntax structure */
 	lexer *lxr;							/**< Lexer structure */
 	node nd;							/**< Node for expression subtree */
-	anonymous_stack anst;				/**< Operands stack */
+	anonymous_stack anon_stack;			/**< Anonymous stack */
 
 	token_t token;						/**< Current token */
 
 	size_t function_mode;				/**< Mode of currenty parsed function */
 	size_t array_dimensions;			/**< Array dimensions counter */
+
 	item_t labels[MAX_LABELS];			/**< Labels table */
 	size_t labels_size;					/**< Labels counter */
 
 	operator_t operators[MAX_STACK];	/**< Operator stack */
 	size_t operators_size;				/**< Operators counter */
 
-	item_t leftansttype;				/**< Mode of the left part of assignment expression */
+	item_t left_mode;					/**< Mode of the left part of assignment expression */
 	size_t last_id;						/**< Index of the last read identifier */
-	item_t anstdispl;					/**< Displacement of the operand */
+	item_t operand_displ;				/**< Displacement of the operand */
 	int op; // TODO: убрать поле
 
 	int func_def;						/**< @c 0 for function without arguments,

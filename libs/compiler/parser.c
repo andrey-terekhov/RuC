@@ -44,13 +44,13 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.lxr = lxr;
 
 	prs.operators_size = 0;
-	prs.leftansttype = -1;
-	prs.anstdispl = 0;
+	prs.left_mode = -1;
+	prs.operand_displ = 0;
 
 	prs.flag_in_assignment = 0;
 	prs.was_error = 0;
 
-	prs.anst.operands = vector_create(1);
+	prs.anon_stack.operands = vector_create(1);
 	token_consume(&prs);
 
 	return prs;
@@ -264,9 +264,9 @@ item_t to_modetab(parser *const prs, const item_t mode, const item_t element)
 	return (item_t)mode_add(prs->sx, temp, 2);
 }
 
-void to_tree(parser *const prs, const item_t op)
+void to_tree(parser *const prs, const item_t operation)
 {
-	prs->nd = node_add_child(&prs->nd, op);
+	prs->nd = node_add_child(&prs->nd, operation);
 }
 
 item_t tree_reference(parser *const prs)

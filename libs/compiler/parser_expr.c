@@ -25,17 +25,17 @@ void parse_expression_internal(parser *const prs);
 item_t parse_constant(parser *const prs);
 
 
-void totree_float_operation(parser *const prs, const item_t type, const item_t op)
+void to_tree_float_operation(parser *const prs, const item_t type, const item_t operation)
 {
-	if ((op >= ASS && op <= DIVASS)
-		|| (op >= ASSAT && op <= DIVASSAT)
-		|| (op >= EQEQ && op <= UNMINUS))
+	if ((operation >= ASS && operation <= DIVASS)
+		|| (operation >= ASSAT && operation <= DIVASSAT)
+		|| (operation >= EQEQ && operation <= UNMINUS))
 	{
-		to_tree(prs, type == mode_float ? op + 50 : op);
+		to_tree(prs, type == mode_float ? operation + 50 : operation);
 	}
 	else
 	{
-		to_tree(prs, op);
+		to_tree(prs, operation);
 	}
 }
 
@@ -78,19 +78,19 @@ double node_get_double(node *const nd, const size_t index)
 
 item_t anst_push(parser *const prs, const operand_t type, const item_t mode)
 {
-	vector_add(&prs->anst.operands, mode);
-	prs->anst.type = type;
+	vector_add(&prs->anon_stack.operands, mode);
+	prs->anon_stack.type = type;
 	return mode;
 }
 
 item_t anst_pop(parser *const prs)
 {
-	return vector_remove(&prs->anst.operands);
+	return vector_remove(&prs->anon_stack.operands);
 }
 
 operand_t anst_peek(parser *const prs)
 {
-	return prs->anst.type;
+	return prs->anon_stack.type;
 }
 
 
@@ -129,12 +129,12 @@ void binary_operation(parser *const prs, const operator_t operator)
 	if (token == pipepipe || token == ampamp)
 	{
 		to_tree(prs, token);
-		vector_set(&TREE, operator.addr, tree_reference(prs));
+		vector_set(&TREE, operator.address, tree_reference(prs));
 		node_add_arg(&prs->nd, 0);
 	}
 	else
 	{
-		totree_float_operation(prs, result_mode, token);
+		to_tree_float_operation(prs, result_mode, token);
 	}
 	if (token >= equalequal && token <= greaterequal)
 	{
@@ -154,7 +154,7 @@ void to_value(parser *const prs)
 			if (mode_is_struct(prs->sx, type) && !prs->flag_in_assignment)
 			{
 				node_set_type(&prs->nd, COPY0ST);
-				node_set_arg(&prs->nd, 0, prs->anstdispl);
+				node_set_arg(&prs->nd, 0, prs->operand_displ);
 				node_add_arg(&prs->nd, mode_get(prs->sx, (size_t)type + 1));
 			}
 			else
@@ -450,6 +450,7 @@ void parse_standard_function_call(parser *const prs)
 				must_be_int(prs);
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 				must_be_int(prs);
+
 				if (func != kw_line)
 				{
 					token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
@@ -461,6 +462,7 @@ void parse_standard_function_call(parser *const prs)
 				must_be_int(prs);
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 				must_be_int(prs);
+
 				if (func == kw_icon)
 				{
 					token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
@@ -497,11 +499,13 @@ void parse_standard_function_call(parser *const prs)
 		else if (func == kw_wifi_connect || func == kw_blynk_authorization || func == kw_blynk_notification)
 		{
 			must_be_string(prs);
+
 			if (func == kw_wifi_connect)
 			{
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 				must_be_string(prs);
 			}
+
 			anst_push(prs, value_t, mode_void);
 		}
 		else
@@ -510,6 +514,7 @@ void parse_standard_function_call(parser *const prs)
 			if (func != kw_blynk_receive)
 			{
 				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
+
 				if (func == kw_blynk_terminal)
 				{
 					must_be_string(prs);
@@ -532,6 +537,7 @@ void parse_standard_function_call(parser *const prs)
 					token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 					must_be_string(prs);
 				}
+
 				anst_push(prs, value_t, mode_void);
 			}
 			else
@@ -593,6 +599,7 @@ void parse_standard_function_call(parser *const prs)
 					to_tree(prs, TConst);
 					node_add_arg(&prs->nd, displ);
 				}
+
 				anst_push(prs, value_t, mode_integer);
 			}
 			else
@@ -693,8 +700,8 @@ size_t parse_identifier(parser *const prs)
 	}
 
 	to_tree(prs, TIdent);
-	prs->anstdispl = ident_get_displ(prs->sx, id);
-	node_add_arg(&prs->nd, prs->anstdispl);
+	prs->operand_displ = ident_get_displ(prs->sx, id);
+	node_add_arg(&prs->nd, prs->operand_displ);
 
 	const item_t mode = ident_get_mode(prs->sx, id);
 
@@ -1010,7 +1017,7 @@ void parse_postfix_expression(parser *const prs)
 			if (anst_peek(prs) == variable_t)
 			{
 				node_set_type(&prs->nd, TSliceident);
-				node_set_arg(&prs->nd, 0, prs->anstdispl);
+				node_set_arg(&prs->nd, 0, prs->operand_displ);
 			}
 			else
 			{
@@ -1053,13 +1060,13 @@ void parse_postfix_expression(parser *const prs)
 			}
 
 			anst_push(prs, address_t, mode_get(prs->sx, (size_t)type + 1));
-			prs->anstdispl = find_field(prs);
+			prs->operand_displ = find_field(prs);
 			while (prs->token == period)
 			{
-				prs->anstdispl += find_field(prs);
+				prs->operand_displ += find_field(prs);
 			}
 
-			to_tree(prs, prs->anstdispl);
+			to_tree(prs, prs->operand_displ);
 
 			// find_field вернула тип результата через стек, проверим его и вернем обратно
 			const item_t field_type = anst_pop(prs);
@@ -1084,41 +1091,41 @@ void parse_postfix_expression(parser *const prs)
 			{
 				const size_t length = size_of(prs->sx, type);
 				anst_push(prs, value_t, type);
-				prs->anstdispl = 0;
+				prs->operand_displ = 0;
 				while (prs->token == period)
 				{
-					prs->anstdispl += find_field(prs);
+					prs->operand_displ += find_field(prs);
 				}
 
 				const item_t field_type = anst_pop(prs);
 				to_tree(prs, COPYST);
-				node_add_arg(&prs->nd, prs->anstdispl);
+				node_add_arg(&prs->nd, prs->operand_displ);
 				node_add_arg(&prs->nd, (item_t)size_of(prs->sx, field_type));
 				node_add_arg(&prs->nd, (item_t)length);
 				anst_push(prs, value_t, field_type);
 			}
 			else if (peek == variable_t)
 			{
-				int is_global = prs->anstdispl < 0 ? -1 : 1;
+				int is_global = prs->operand_displ < 0 ? -1 : 1;
 				anst_push(prs, variable_t, type);
 				while (prs->token == period)
 				{
-					prs->anstdispl += is_global * find_field(prs);
+					prs->operand_displ += is_global * find_field(prs);
 				}
 
-				node_set_arg(&prs->nd, 0, prs->anstdispl);
+				node_set_arg(&prs->nd, 0, prs->operand_displ);
 			}
 			else //if (peek == address)
 			{
 				to_tree(prs, TSelect);
 				anst_push(prs, variable_t, type);
-				prs->anstdispl = 0;
+				prs->operand_displ = 0;
 				while (prs->token == period)
 				{
-					prs->anstdispl += find_field(prs);
+					prs->operand_displ += find_field(prs);
 				}
 
-				node_add_arg(&prs->nd, prs->anstdispl);
+				node_add_arg(&prs->nd, prs->operand_displ);
 				// find_field вернула тип результата через стек, проверим его и вернем обратно
 				const item_t field_type = anst_pop(prs);
 				if (mode_is_array(prs->sx, field_type) || mode_is_pointer(prs->sx, field_type))
@@ -1157,7 +1164,7 @@ void parse_postfix_expression(parser *const prs)
 		}
 
 		anst_push(prs, value_t, type);
-		totree_float_operation(prs, type, operator);
+		to_tree_float_operation(prs, type, operator);
 
 		if (is_variable)
 		{
@@ -1198,7 +1205,7 @@ void parse_unary_expression(parser *const prs)
 			}
 
 			anst_push(prs, value_t, type);
-			totree_float_operation(prs, type, operator);
+			to_tree_float_operation(prs, type, operator);
 
 			if (is_variable)
 			{
@@ -1267,7 +1274,7 @@ void parse_unary_expression(parser *const prs)
 						else
 						{
 							const item_t type = anst_pop(prs);
-							totree_float_operation(prs, type, UNMINUS);
+							to_tree_float_operation(prs, type, UNMINUS);
 							anst_push(prs, value_t, type);
 						}
 					}
@@ -1408,7 +1415,7 @@ void parse_subexpression(parser *const prs)
 		operator_t operator;
 		operator.precedence = precedence;
 		operator.token = prs->token;
-		operator.addr = addr;
+		operator.address = addr;
 		prs->operators[prs->operators_size++] = operator;
 
 		token_consume(prs);
@@ -1513,11 +1520,11 @@ void parse_assignment_expression_internal(parser *const prs)
 {
 	if (prs->token == l_brace)
 	{
-		const item_t type = prs->leftansttype;
+		const item_t type = prs->left_mode;
 		if (mode_is_struct(prs->sx, type) || mode_is_array(prs->sx, type))
 		{
 			parse_initializer(prs, &prs->nd, type);
-			prs->leftansttype = type;
+			prs->left_mode = type;
 		}
 		else
 		{
@@ -1530,12 +1537,12 @@ void parse_assignment_expression_internal(parser *const prs)
 
 	parse_unary_expression(prs);
 	operand_t type = anst_peek(prs);
-	prs->leftansttype = anst_pop(prs);
-	anst_push(prs, type, prs->leftansttype);
+	prs->left_mode = anst_pop(prs);
+	anst_push(prs, type, prs->left_mode);
 
 	if (is_assignment_operator(prs->token))
 	{
-		const item_t target_displ = prs->anstdispl;
+		const item_t target_displ = prs->operand_displ;
 		const operand_t left_type = anst_peek(prs);
 		if (left_type == value_t)
 		{
@@ -1595,10 +1602,10 @@ void parse_assignment_expression_internal(parser *const prs)
 			}
 			if (right_type == variable_t)
 			{
-				node_add_arg(&prs->nd, prs->anstdispl);
+				node_add_arg(&prs->nd, prs->operand_displ);
 			}
 			node_add_arg(&prs->nd, mode_get(prs->sx, (size_t)left_mode + 1));
-			prs->anstdispl = target_displ;
+			prs->operand_displ = target_displ;
 			anst_push(prs, left_type, left_mode);
 		}
 		else // оба операнда базового типа или указатели
@@ -1636,10 +1643,10 @@ void parse_assignment_expression_internal(parser *const prs)
 			{
 				operator += 11;
 			}
-			totree_float_operation(prs, result_mode, operator);
+			to_tree_float_operation(prs, result_mode, operator);
 			if (left_type == variable_t)
 			{
-				prs->anstdispl = target_displ;
+				prs->operand_displ = target_displ;
 				node_add_arg(&prs->nd, target_displ);
 			}
 			anst_push(prs, value_t, left_mode);
