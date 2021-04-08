@@ -27,7 +27,9 @@ item_t parse_constant(parser *const prs);
 
 void totree_float_operation(parser *const prs, const item_t type, const item_t op)
 {
-	if ((op >= ASS && op <= DIVASS) || (op >= ASSAT && op <= DIVASSAT) || (op >= EQEQ && op <= UNMINUS))
+	if ((op >= ASS && op <= DIVASS)
+		|| (op >= ASSAT && op <= DIVASSAT)
+		|| (op >= EQEQ && op <= UNMINUS))
 	{
 		to_tree(prs, type == mode_float ? op + 50 : op);
 	}
@@ -1137,14 +1139,14 @@ void parse_postfix_expression(parser *const prs)
 		int operator = (prs->token == plusplus) ? POSTINC : POSTDEC;
 		token_consume(prs);
 
-		int flag_variable = 0;
+		int is_variable = 0;
 		if (anst_peek(prs) == address)
 		{
 			operator += 4;
 		}
 		else if (anst_peek(prs) == variable)
 		{
-			flag_variable = 1;
+			is_variable = 1;
 		}
 		else
 		{
@@ -1160,7 +1162,7 @@ void parse_postfix_expression(parser *const prs)
 		anst_push(prs, value, type);
 		totree_float_operation(prs, type, operator);
 
-		if (flag_variable == 1)
+		if (is_variable)
 		{
 			node_add_arg(&prs->nd, ident_get_displ(prs->sx, lid));
 		}
@@ -1178,14 +1180,14 @@ void parse_unary_expression(parser *const prs)
 			token_consume(prs);
 			parse_unary_expression(prs);
 
-			int flag_variable = 0;
+			int is_variable = 0;
 			if (anst_peek(prs) == address)
 			{
 				operator += 4;
 			}
 			else if (anst_peek(prs) == variable)
 			{
-				flag_variable = 1;
+				is_variable = 1;
 			}
 			else
 			{
@@ -1201,7 +1203,7 @@ void parse_unary_expression(parser *const prs)
 			anst_push(prs, value, type);
 			totree_float_operation(prs, type, operator);
 
-			if (flag_variable == 1)
+			if (is_variable)
 			{
 				node_add_arg(&prs->nd, ident_get_displ(prs->sx, prs->lastid));
 			}
@@ -1492,8 +1494,10 @@ void parse_conditional_expression(parser *const prs)
 void assignment_to_void(parser *const prs)
 {
 	const item_t operation = node_get_type(&prs->nd);
-	if ((operation >= ASS && operation <= DIVASSAT) || (operation >= POSTINC && operation <= DECAT)
-		|| (operation >= ASSR && operation <= DIVASSATR) || (operation >= POSTINCR && operation <= DECATR))
+	if ((operation >= ASS && operation <= DIVASSAT)
+		|| (operation >= POSTINC && operation <= DECAT)
+		|| (operation >= ASSR && operation <= DIVASSATR)
+		|| (operation >= POSTINCR && operation <= DECATR))
 	{
 		node_set_type(&prs->nd, node_get_type(&prs->nd) + 200);
 	}
@@ -1571,8 +1575,11 @@ void parse_assignment_expression_internal(parser *const prs)
 			}
 			else
 			{
-				operator = leftanst == variable ? righttanst == variable ? COPY00 : COPY01
-					: righttanst == variable ? COPY10 : COPY11;
+				operator = leftanst == variable
+					? righttanst == variable
+						? COPY00 : COPY01
+					: righttanst == variable
+						? COPY10 : COPY11;
 			}
 
 			to_tree(prs, operator);
@@ -1711,7 +1718,7 @@ item_t parse_string_literal(parser *const prs, node *const parent)
 	to_tree(prs, TString);
 	node_add_arg(&prs->nd, prs->lxr->num);
 
-	for (size_t i = 0; i < (size_t)prs->lxr->num; i++)
+	for (int i = 0; i < prs->lxr->num; i++)
 	{
 		node_add_arg(&prs->nd, prs->lxr->lexstr[i]);
 	}
