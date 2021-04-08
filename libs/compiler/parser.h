@@ -56,8 +56,8 @@ typedef struct parser
 	item_t operands[MAX_STACK];			/**< Operands stack */
 	size_t sp;							/**< Operators counter */
 	item_t sopnd;						/**< Operands counter */
-	operand_t anst;						/**< Type of the top operand of anonimous stack */
-	item_t ansttype;					/**< Mode of the top operand of anonimous stack */
+	operand_t anst;						/**< Type of the top operand in anonymous stack */
+	item_t ansttype;					/**< Mode of the top operand in anonymous stack */
 
 	item_t leftansttype;				/**< Mode of the left part of assignment expression */
 	size_t lastid;						/**< Index of the last read identifier */
