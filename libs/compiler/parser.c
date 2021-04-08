@@ -238,7 +238,7 @@ int mode_is_undefined(const item_t mode)
 size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode)
 {
 	const size_t ret = ident_add(prs->sx, repr, type, mode, prs->func_def);
-	prs->lastid = 0;
+	prs->last_id = 0;
 
 	if (ret == SIZE_MAX)
 	{
@@ -250,7 +250,7 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
 	}
 	else
 	{
-		prs->lastid = ret;
+		prs->last_id = ret;
 	}
 
 	return ret;

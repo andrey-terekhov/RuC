@@ -60,7 +60,7 @@ typedef struct parser
 	item_t ansttype;					/**< Mode of the top operand in anonymous stack */
 
 	item_t leftansttype;				/**< Mode of the left part of assignment expression */
-	size_t lastid;						/**< Index of the last read identifier */
+	size_t last_id;						/**< Index of the last read identifier */
 	item_t anstdispl;					/**< Displacement of the operand */
 	int op; // TODO: убрать поле
 
