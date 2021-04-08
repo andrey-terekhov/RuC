@@ -847,7 +847,7 @@ item_t find_field(parser *const prs)
 	const operand_t peek = anst_peek(prs);
 	const size_t type = (size_t)anst_pop(prs);
 	const size_t record_length = (size_t)mode_get(prs->sx, type + 2);
-	if ((item_t)record_length == ITEM_MAX)
+	if (record_length == ITEM_MAX)
 	{
 		return 0;
 	}
