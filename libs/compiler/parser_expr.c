@@ -1348,7 +1348,7 @@ uint8_t operator_precedence(const token_t operator)
 	}
 }
 
-int is_int_assignment_operator(const item_t operator)
+int is_int_assignment_operator(const token_t operator)
 {
 	switch (operator)
 	{
@@ -1368,8 +1368,18 @@ int is_int_assignment_operator(const item_t operator)
 
 int is_assignment_operator(const token_t operator)
 {
-	return operator == equal || operator == starequal || operator == slashequal || operator == plusequal
-		|| operator == minusequal || is_int_assignment_operator(operator);
+	switch (operator)
+	{
+		case equal:					// '='
+		case starequal:				// '*='
+		case slashequal:			// '/='
+		case plusequal:				// '+='
+		case minusequal:			// '-='
+			return 1;
+
+		default:
+			return is_int_assignment_operator(operator);
+	}
 }
 
 void parse_subexpression(parser *const prs)
