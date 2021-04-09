@@ -186,7 +186,7 @@ typedef enum ERROR
 	tree_no_tend,
 	tree_unexpected,
 
-	node_cannot_set_child,
+	node_cannot_add_child,
 	node_cannot_set_type,
 	node_cannot_add_arg,
 	node_unexpected,
