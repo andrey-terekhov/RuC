@@ -1442,7 +1442,7 @@ void parse_conditional_expression(parser *const prs)
 	if (prs->token == question)
 	{
 		item_t global_type = 0;
-		size_t addr_if = TExprend;
+		size_t addr_if = (size_t)TExprend;
 
 		while (token_try_consume(prs, question))
 		{
@@ -1499,7 +1499,7 @@ void parse_conditional_expression(parser *const prs)
 			node node_addr = node_load(&TREE, addr_if);
 			node_set_type(&node_addr, mode_is_float(global_type) ? WIDEN : NOP);
 			node node_addr2 = node_get_child(&node_addr, 0);
-			addr_if = node_get_type(&node_addr2);
+			addr_if = (size_t)node_get_type(&node_addr2);
 			node_set_type(&node_addr2, TExprend);
 		}
 
