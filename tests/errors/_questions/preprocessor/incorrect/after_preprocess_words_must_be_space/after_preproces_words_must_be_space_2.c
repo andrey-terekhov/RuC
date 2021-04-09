@@ -1,8 +1,8 @@
 #define KEK 1
-int main ()
+int main()
 {
-	#if KEK==0 printf("0\n");
-	#elif KEK==1
+	#if KEK == 0 printf("0\n");
+	#elif KEK == 1
 		printf("1\n");
 	#else
 		printf("10\n");
