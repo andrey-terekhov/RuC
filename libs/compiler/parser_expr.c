@@ -1404,18 +1404,16 @@ void parse_subexpression(parser *const prs)
 			binary_operation(prs, prs->operators[--prs->operators_size]);
 		}
 
-		node addr = {};
 		if (priority <= 2)
 		{
 			to_tree(prs, priority == 1 ? ADLOGOR : ADLOGAND);
 			node_add_arg(&prs->nd, 0);
-			node_copy(&addr, &prs->nd);
 		}
 
 		operator_t operator;
 		operator.priority = priority;
 		operator.token = prs->token;
-		node_copy(&operator.nd, &addr);
+		node_copy(&operator.nd, &prs->nd);
 		prs->operators[prs->operators_size++] = operator;
 
 		token_consume(prs);
