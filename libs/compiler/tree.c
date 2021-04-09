@@ -765,6 +765,23 @@ int node_copy(node *const dest, const node *const src)
 	return 0;
 }
 
+size_t node_save(node *const nd)
+{
+	return node_is_correct(nd) ? nd->type : SIZE_MAX;
+}
+
+node node_load(vector *const tree, const size_t index)
+{
+	if (!vector_is_correct(tree) || index >= vector_size(tree))
+	{
+		return node_broken();
+	}
+
+	return is_operator(vector_get(tree, index))
+		? node_operator(tree, index)
+		: node_expression(tree, index);
+}
+
 int node_order(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index)
 {
 	if (!node_is_correct(fst) || !node_is_correct(snd) || fst->tree != snd->tree

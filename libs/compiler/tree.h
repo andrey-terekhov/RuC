@@ -167,6 +167,25 @@ int node_set_arg(node *const nd, const size_t index, const item_t arg);
 int node_copy(node *const dest, const node *const src);
 
 /**
+ *	Save internal node index
+ *
+ *	@param	nd			Node structure
+ *
+ *	@return	Internal index, @c SIZE_MAX on failure
+ */
+size_t node_save(node *const nd);
+
+/**
+ *	Rebuild node by internal index
+ *
+ *	@param	tree		Tree table
+ *	@param	index		Internal index
+ *
+ *	@return	Rebuilt node
+ */
+node node_load(vector *const tree, const size_t index);
+
+/**
  *	Change only node order
  *
  *	@param	fst			First parent node
