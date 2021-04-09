@@ -1467,9 +1467,8 @@ void parse_conditional_expression(parser *const prs)
 			}
 			else
 			{
-				const size_t ref = (size_t)tree_reference(prs);	// эта строка потом уйдет
 				node_add_arg(&prs->nd, (item_t)addr_if);
-				addr_if = ref;
+				addr_if = node_save(&prs->nd) + 1;
 			}
 
 			token_expect_and_consume(prs, colon, no_colon_in_cond_expr);
@@ -1487,12 +1486,11 @@ void parse_conditional_expression(parser *const prs)
 		}
 		else
 		{
-			const size_t ref = (size_t)tree_reference(prs);
 			node_add_arg(&prs->nd, (item_t)addr_if);
-			addr_if = ref;
+			addr_if = node_save(&prs->nd) + 1;
 		}
 
-		while (addr_if != 0 && addr_if <= vector_size(&TREE))
+		while (addr_if != 0)
 		{
 			const size_t ref = (size_t)vector_get(&TREE, addr_if);
 			vector_set(&TREE, addr_if - 1, mode_is_float(global_type) ? WIDEN : NOP);
