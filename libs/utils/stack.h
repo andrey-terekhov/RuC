@@ -34,7 +34,7 @@ typedef vector stack;
  *
  *	@return	Stack structure
  */
-EXPORTED inline stack stack_create(const size_t alloc)
+inline stack stack_create(const size_t alloc)
 {
 	return vector_create(alloc);
 }
@@ -48,7 +48,7 @@ EXPORTED inline stack stack_create(const size_t alloc)
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED inline int stack_push(stack *const stk, const item_t value)
+inline int stack_push(stack *const stk, const item_t value)
 {
 	return vector_add(stk, value) != SIZE_MAX ? 0 : -1;
 }
@@ -60,7 +60,7 @@ EXPORTED inline int stack_push(stack *const stk, const item_t value)
  *
  *	@return	Value, @c ITEM_MAX on failure
  */
-EXPORTED inline item_t stack_pop(stack *const stk)
+inline item_t stack_pop(stack *const stk)
 {
 	return vector_remove(stk);
 }
@@ -72,7 +72,7 @@ EXPORTED inline item_t stack_pop(stack *const stk)
  *
  *	@return	Value, @c ITEM_MAX on failure
  */
-EXPORTED inline item_t stack_peek(const stack *const stk)
+inline item_t stack_peek(const stack *const stk)
 {
 	return vector_get(stk, vector_size(stk) - 1);
 }
@@ -85,7 +85,7 @@ EXPORTED inline item_t stack_peek(const stack *const stk)
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED inline int stack_reset(stack *const stk)
+inline int stack_reset(stack *const stk)
 {
 	return vector_resize(stk, 0);
 }
@@ -97,7 +97,7 @@ EXPORTED inline int stack_reset(stack *const stk)
  *
  *	@return	Size of stack, @c SIZE_MAX on failure
  */
-EXPORTED inline size_t stack_size(const stack *const stk)
+inline size_t stack_size(const stack *const stk)
 {
 	return vector_size(stk);
 }
@@ -109,7 +109,7 @@ EXPORTED inline size_t stack_size(const stack *const stk)
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED inline int stack_is_correct(const stack *const stk)
+inline int stack_is_correct(const stack *const stk)
 {
 	return vector_is_correct(stk);
 }
@@ -122,7 +122,7 @@ EXPORTED inline int stack_is_correct(const stack *const stk)
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED inline int stack_clear(stack *const stk)
+inline int stack_clear(stack *const stk)
 {
 	return vector_clear(stk);
 }
