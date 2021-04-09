@@ -37,9 +37,9 @@ extern "C" {
 
 typedef struct operator
 {
-	uint8_t priority;	/**< Operator precedence */
+	uint8_t priority;	/**< Operator priority */
 	token_t token;		/**< Operator token */
-	size_t address;		/**< Operator address in AST */
+	node nd;			/**< Operator node in AST */
 } operator_t;
 
 /** Type of operand on top of anonymous stack */
