@@ -21,8 +21,30 @@
 #include "errors.h"
 
 
+const item_t REF_MASK = (item_t)0b11 << (8 * sizeof(item_t) - 2);
+const item_t REF_LABEL = (item_t)0b10 << (8 * sizeof(item_t) - 2);
+
+
 node node_expression(vector *const tree, const size_t index);
 node node_operator(vector *const tree, const size_t index);
+
+
+static inline int is_ref(const item_t value)
+{
+	return (REF_MASK & value) == REF_LABEL;
+}
+
+static inline item_t to_ref(const item_t value)
+{
+	return (~REF_MASK & value) | REF_LABEL;
+}
+
+static inline item_t from_ref(const item_t value)
+{
+	return is_ref(value)
+		? ~REF_MASK & value
+		: value;
+}
 
 
 int vector_swap(vector *const vec, size_t fst_index, size_t fst_size, size_t snd_index, size_t snd_size)
@@ -132,7 +154,8 @@ int is_lexeme(const item_t value)
 	return (value >= 9001 && value <= 9595
 		&& value != CREATEDIRECTC
 		&& value != EXITDIRECTC)
-		|| value == ABSIC;
+		|| value == ABSIC
+		|| is_ref(value);
 }
 
 
@@ -728,7 +751,7 @@ int node_add_arg(node *const nd, const item_t arg)
 	}
 
 	const int ret = nd->argv + nd->argc == vector_size(nd->tree)
-					? vector_add(nd->tree, arg) != SIZE_MAX ? 0 : -1
+					? vector_add(nd->tree, from_ref(arg)) != SIZE_MAX ? 0 : -1
 					: -1;
 	if (!ret)
 	{
@@ -750,7 +773,7 @@ int node_set_arg(node *const nd, const size_t index, const item_t arg)
 		return -2;
 	}
 
-	return vector_set(nd->tree, nd->argv + index, arg);
+	return vector_set(nd->tree, nd->argv + index, from_ref(arg));
 }
 
 
@@ -767,19 +790,22 @@ int node_copy(node *const dest, const node *const src)
 
 size_t node_save(node *const nd)
 {
-	return node_is_correct(nd) ? nd->type : SIZE_MAX;
+	return node_is_correct(nd)
+		? (size_t)to_ref(nd->type)
+		: SIZE_MAX;
 }
 
 node node_load(vector *const tree, const size_t index)
 {
-	if (!vector_is_correct(tree) || index >= vector_size(tree))
+	const size_t i = (size_t)from_ref(index);
+	if (!vector_is_correct(tree) || i >= vector_size(tree))
 	{
 		return node_broken();
 	}
 
-	return is_operator(vector_get(tree, index))
-		? node_operator(tree, index)
-		: node_expression(tree, index);
+	return is_operator(vector_get(tree, i))
+		? node_operator(tree, i)
+		: node_expression(tree, i);
 }
 
 int node_order(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index)
