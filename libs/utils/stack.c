@@ -17,45 +17,14 @@
 #include "stack.h"
 
 
-stack stack_create(const size_t alloc)
-{
-	return vector_create(alloc);
-}
+extern stack stack_create(const size_t alloc);
 
+extern int stack_push(stack *const stk, const item_t value);
+extern item_t stack_pop(stack *const stk);
+extern item_t stack_peek(const stack *const stk);
 
-int stack_push(stack *const stk, const item_t value)
-{
-	return vector_add(stk, value) != SIZE_MAX ? 0 : -1;
-}
+extern int stack_reset(stack *const stk);
+extern size_t stack_size(const stack *const stk);
+extern int stack_is_correct(const stack *const stk);
 
-item_t stack_pop(stack *const stk)
-{
-	return vector_remove(stk);
-}
-
-item_t stack_peek(const stack *const stk)
-{
-	return vector_get(stk, vector_size(stk) - 1);
-}
-
-
-int stack_reset(stack *const stk)
-{
-	return vector_resize(stk, 0);
-}
-
-size_t stack_size(const stack *const stk)
-{
-	return vector_size(stk);
-}
-
-int stack_is_correct(const stack *const stk)
-{
-	return vector_is_correct(stk);
-}
-
-
-int stack_clear(stack *const stk)
-{
-	return vector_clear(stk);
-}
+extern int stack_clear(stack *const stk);

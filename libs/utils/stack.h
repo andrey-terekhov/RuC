@@ -34,7 +34,10 @@ typedef vector stack;
  *
  *	@return	Stack structure
  */
-EXPORTED stack stack_create(const size_t alloc);
+EXPORTED inline stack stack_create(const size_t alloc)
+{
+	return vector_create(alloc);
+}
 
 
 /**
@@ -45,7 +48,10 @@ EXPORTED stack stack_create(const size_t alloc);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int stack_push(stack *const stk, const item_t value);
+EXPORTED inline int stack_push(stack *const stk, const item_t value)
+{
+	return vector_add(stk, value) != SIZE_MAX ? 0 : -1;
+}
 
 /**
  *	Pop value
@@ -54,7 +60,10 @@ EXPORTED int stack_push(stack *const stk, const item_t value);
  *
  *	@return	Value, @c ITEM_MAX on failure
  */
-EXPORTED item_t stack_pop(stack *const stk);
+EXPORTED inline item_t stack_pop(stack *const stk)
+{
+	return vector_remove(stk);
+}
 
 /**
  *	Peek value
@@ -63,7 +72,10 @@ EXPORTED item_t stack_pop(stack *const stk);
  *
  *	@return	Value, @c ITEM_MAX on failure
  */
-EXPORTED item_t stack_peek(const stack *const stk);
+EXPORTED inline item_t stack_peek(const stack *const stk)
+{
+	return vector_get(stk, vector_size(stk) - 1);
+}
 
 
 /**
@@ -73,7 +85,10 @@ EXPORTED item_t stack_peek(const stack *const stk);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int stack_reset(stack *const stk);
+EXPORTED inline int stack_reset(stack *const stk)
+{
+	return vector_resize(stk, 0);
+}
 
 /**
  *	Get stack size
@@ -82,7 +97,10 @@ EXPORTED int stack_reset(stack *const stk);
  *
  *	@return	Size of stack, @c SIZE_MAX on failure
  */
-EXPORTED size_t stack_size(const stack *const stk);
+EXPORTED inline size_t stack_size(const stack *const stk)
+{
+	return vector_size(stk);
+}
 
 /**
  *	Check that stack is correct
@@ -91,7 +109,10 @@ EXPORTED size_t stack_size(const stack *const stk);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int stack_is_correct(const stack *const stk);
+EXPORTED inline int stack_is_correct(const stack *const stk)
+{
+	return vector_is_correct(stk);
+}
 
 
 /**
@@ -101,7 +122,10 @@ EXPORTED int stack_is_correct(const stack *const stk);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int stack_clear(stack *const stk);
+EXPORTED inline int stack_clear(stack *const stk)
+{
+	return vector_clear(stk);
+}
 
 #ifdef __cplusplus
 } /* extern "C" */
