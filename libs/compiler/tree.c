@@ -261,6 +261,7 @@ node node_expression(vector *const tree, const size_t index)
 
 		case TExprend:
 			nd.children = nd.argv + nd.argc;
+			nd.amount = is_ref(vector_get(tree, index + 1)) ? 1 : 0;
 			return nd;
 
 		case NOP:
@@ -280,7 +281,7 @@ node node_expression(vector *const tree, const size_t index)
 			}
 
 			size_t j = index + 1;
-			while (vector_get(tree, j) != NOP && !is_expression(vector_get(tree, j)) && !is_lexeme(vector_get(tree, j)))
+			while (j < vector_size(tree) && vector_get(tree, j) != NOP && !is_expression(vector_get(tree, j)) && !is_lexeme(vector_get(tree, j)))
 			{
 				if (is_operator(vector_get(tree, j)))
 				{
@@ -292,6 +293,7 @@ node node_expression(vector *const tree, const size_t index)
 				j++;
 			}
 		}
+		break;
 	}
 
 	nd.children = nd.argv + nd.argc;
@@ -310,7 +312,7 @@ node node_expression(vector *const tree, const size_t index)
 	{
 		nd.amount++;
 	}
-	else
+	else if (j < vector_size(tree))
 	{
 		system_error(tree_expression_no_texprend, j, vector_get(tree, j));
 		return node_broken();

@@ -1432,6 +1432,9 @@ void parse_subexpression(parser *const prs)
 	}
 }
 
+extern item_t REF_MASK;
+extern item_t REF_LABEL;
+
 void parse_conditional_expression(parser *const prs)
 {
 	parse_subexpression(prs); // logORexpr();
@@ -1439,7 +1442,7 @@ void parse_conditional_expression(parser *const prs)
 	if (prs->token == question)
 	{
 		item_t global_type = 0;
-		size_t addr_if = 0;
+		size_t addr_if = TExprend;
 
 		while (token_try_consume(prs, question))
 		{
@@ -1465,9 +1468,9 @@ void parse_conditional_expression(parser *const prs)
 			}
 			else
 			{
-				//node_add_arg(&prs->nd, (item_t)addr_if);
-				to_tree(prs, (item_t)addr_if);
+				const item_t old_addr_if = addr_if;
 				addr_if = node_save(&prs->nd);
+				to_tree(prs, (item_t)old_addr_if);
 			}
 
 			token_expect_and_consume(prs, colon, no_colon_in_cond_expr);
@@ -1477,7 +1480,8 @@ void parse_conditional_expression(parser *const prs)
 		}
 
 		to_value(prs);
-		to_tree(prs, TExprend);
+		// Это особый случай, когда после TExprend мы храним дополнительную информацию
+		prs->nd = node_add_child(&prs->nd, TExprend);
 
 		if (mode_is_float(anst_pop(prs)))
 		{
@@ -1485,18 +1489,18 @@ void parse_conditional_expression(parser *const prs)
 		}
 		else
 		{
-			//node_add_arg(&prs->nd, (item_t)addr_if);
-			to_tree(prs, (item_t)addr_if);
+			const item_t old_addr_if = addr_if;
 			addr_if = node_save(&prs->nd);
+			to_tree(prs, (item_t)old_addr_if);
 		}
 
-		while (addr_if != 0)
+		while ((item_t)addr_if != ITEM_MAX)
 		{
 			node node_addr = node_load(&TREE, addr_if);
-			addr_if = node_get_type(&node_addr);
 			node_set_type(&node_addr, mode_is_float(global_type) ? WIDEN : NOP);
-			node_addr = node_get_child(&node_addr, 0);
-			node_set_type(&node_addr, TExprend);
+			node node_addr2 = node_get_child(&node_addr, 0);
+			addr_if = node_get_type(&node_addr2);
+			node_set_type(&node_addr2, TExprend);
 		}
 
 		anst_push(prs, value_t, global_type);
