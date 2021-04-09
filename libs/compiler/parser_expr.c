@@ -1465,8 +1465,9 @@ void parse_conditional_expression(parser *const prs)
 			}
 			else
 			{
-				node_add_arg(&prs->nd, (item_t)addr_if);
-				addr_if = node_save(&prs->nd) + 1;
+				//node_add_arg(&prs->nd, (item_t)addr_if);
+				to_tree(prs, (item_t)addr_if);
+				addr_if = node_save(&prs->nd);
 			}
 
 			token_expect_and_consume(prs, colon, no_colon_in_cond_expr);
@@ -1484,16 +1485,18 @@ void parse_conditional_expression(parser *const prs)
 		}
 		else
 		{
-			node_add_arg(&prs->nd, (item_t)addr_if);
-			addr_if = node_save(&prs->nd) + 1;
+			//node_add_arg(&prs->nd, (item_t)addr_if);
+			to_tree(prs, (item_t)addr_if);
+			addr_if = node_save(&prs->nd);
 		}
 
 		while (addr_if != 0)
 		{
-			const size_t ref = (size_t)vector_get(&TREE, addr_if);
-			vector_set(&TREE, addr_if - 1, mode_is_float(global_type) ? WIDEN : NOP);
-			vector_set(&TREE, addr_if, TExprend);
-			addr_if = ref;
+			node node_addr = node_load(&TREE, addr_if);
+			addr_if = node_get_type(&node_addr);
+			node_set_type(&node_addr, mode_is_float(global_type) ? WIDEN : NOP);
+			node_addr = node_get_child(&node_addr, 0);
+			node_set_type(&node_addr, TExprend);
 		}
 
 		anst_push(prs, value_t, global_type);
