@@ -1307,7 +1307,7 @@ void parse_unary_expression(parser *const prs)
 	parse_postfix_expression(prs);
 }
 
-uint8_t operator_precedence(const token_t operator)
+uint8_t operator_priority(const token_t operator)
 {
 	switch (operator)
 	{
@@ -1393,34 +1393,34 @@ void parse_subexpression(parser *const prs)
 	size_t old_operators_size = prs->operators_size;
 	int was_operator = 0;
 
-	uint8_t precedence = operator_precedence(prs->token);
-	while (precedence)
+	uint8_t priority = operator_priority(prs->token);
+	while (priority)
 	{
 		was_operator = 1;
 		to_value(prs);
 		while (prs->operators_size > old_operators_size
-			   && prs->operators[prs->operators_size - 1].precedence >= precedence)
+			   && prs->operators[prs->operators_size - 1].priority >= priority)
 		{
 			binary_operation(prs, prs->operators[--prs->operators_size]);
 		}
 
 		size_t addr = 0;
-		if (precedence <= 2)
+		if (priority <= 2)
 		{
-			to_tree(prs, precedence == 1 ? ADLOGOR : ADLOGAND);
+			to_tree(prs, priority == 1 ? ADLOGOR : ADLOGAND);
 			addr = (size_t)tree_reference(prs);
 			node_add_arg(&prs->nd, 0);
 		}
 
 		operator_t operator;
-		operator.precedence = precedence;
+		operator.priority = priority;
 		operator.token = prs->token;
 		operator.address = addr;
 		prs->operators[prs->operators_size++] = operator;
 
 		token_consume(prs);
 		parse_unary_expression(prs);
-		precedence = operator_precedence(prs->token);
+		priority = operator_priority(prs->token);
 	}
 
 	if (was_operator)

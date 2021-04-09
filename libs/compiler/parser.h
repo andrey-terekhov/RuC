@@ -37,7 +37,7 @@ extern "C" {
 
 typedef struct operator
 {
-	uint8_t precedence;	/**< Operator precedence */
+	uint8_t priority;	/**< Operator precedence */
 	token_t token;		/**< Operator token */
 	size_t address;		/**< Operator address in AST */
 } operator_t;
