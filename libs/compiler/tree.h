@@ -108,6 +108,16 @@ int node_set_next(node *const nd);
 
 
 /**
+ *	Add child node
+ *
+ *	@param	nd			Current node
+ *	@param	type		Child node type
+ *
+ *	@return	Child node
+ */
+node node_add_child(node *const nd, const item_t type);
+
+/**
  *	Set node type
  *
  *	@param	nd			Node structure
@@ -115,8 +125,7 @@ int node_set_next(node *const nd);
  *
  *	@return	@c  0 on success,
  *			@c -1 on failure,
- *			@c -2 on trying to reset the root node,
- *			@c -3 on trying to set non-empty node
+ *			@c -2 on trying to reset the root node
  */
 int node_set_type(node *const nd, const item_t type);
 
@@ -128,7 +137,7 @@ int node_set_type(node *const nd, const item_t type);
  *
  *	@return	@c  0 on success,
  *			@c -1 on failure,
- *			@c -2 on root or types not set node,
+ *			@c -2 on root,
  *			@c -3 on node with children
  */
 int node_add_arg(node *const nd, const item_t arg);
@@ -142,18 +151,9 @@ int node_add_arg(node *const nd, const item_t arg);
  *
  *	@return	@c  0 on success,
  *			@c -1 on failure,
- *			@c -2 on root or types not set node
+ *			@c -2 on root
  */
 int node_set_arg(node *const nd, const size_t index, const item_t arg);
-
-/**
- *	Set child node
- *
- *	@param	nd			Current node
- *
- *	@return	Child node
- */
-node node_set_child(node *const nd);
 
 
 /**

@@ -528,7 +528,7 @@ size_t node_test_recursive(node *const nd, size_t i)
 
 int node_test_copy(node *const dest, node *const nd)
 {
-	node child_dest = node_set_child(dest);
+	node child_dest = node_add_child(dest, node_get_type(nd));
 	if (!node_is_correct(&child_dest))
 	{
 		system_error(node_cannot_set_child, dest->type, node_get_type(dest));
@@ -673,6 +673,28 @@ int node_set_next(node *const nd)
 }
 
 
+node node_add_child(node *const nd, const item_t type)
+{
+	if (!node_is_correct(nd))
+	{
+		return node_broken();
+	}
+
+	node child;
+
+	child.tree = nd->tree;
+	child.type = vector_add(nd->tree, type);
+
+	child.argv = child.type + 1;
+	child.argc = 0;
+
+	child.children = child.argv + child.argc;
+	child.amount = 0;
+
+	nd->amount++;
+	return child;
+}
+
 int node_set_type(node *const nd, const item_t type)
 {
 	if (!node_is_correct(nd))
@@ -685,14 +707,7 @@ int node_set_type(node *const nd, const item_t type)
 		return -2;
 	}
 
-	if (nd->argc != 0 || nd->amount != 0)
-	{
-		return -3;
-	}
-
-	return nd->type != vector_size(nd->tree)
-		? vector_set(nd->tree, nd->type, type)
-		: vector_add(nd->tree, type) != SIZE_MAX ? 0 : -1;
+	return vector_set(nd->tree, nd->type, type);
 }
 
 int node_add_arg(node *const nd, const item_t arg)
@@ -736,27 +751,6 @@ int node_set_arg(node *const nd, const size_t index, const item_t arg)
 	}
 
 	return vector_set(nd->tree, nd->argv + index, arg);
-}
-
-node node_set_child(node *const nd)
-{
-	if (!node_is_correct(nd))
-	{
-		return node_broken();
-	}
-
-	node child;
-
-	child.tree = nd->tree;
-	child.type = vector_size(nd->tree);
-
-	child.argv = child.type + 1;
-	child.argc = 0;
-
-	child.children = child.argv + child.argc;
-	child.amount = 0;
-
-	return child;
 }
 
 
@@ -859,6 +853,7 @@ int node_remove(node *const nd, const size_t index)
 
 	if (to == vector_size(nd->tree))
 	{
+		nd->amount--;
 		return vector_resize(nd->tree, from);
 	}
 
@@ -867,6 +862,7 @@ int node_remove(node *const nd, const size_t index)
 		vector_set(nd->tree, from + i, vector_get(nd->tree, to + i));
 	}
 
+	nd->amount--;
 	return vector_resize(nd->tree, vector_size(nd->tree) - to + from);
 }
 
