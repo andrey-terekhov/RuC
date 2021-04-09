@@ -517,6 +517,12 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case not_array_in_stanfunc:	// need_test
 			sprintf(msg, "в этой операции этот параметр должен иметь тип массив");
 			break;
+		case default_not_in_switch:
+			sprintf(msg, "метка УМОЛЧАНИЕ не в операторе ВЫБОР");
+			break;
+		case expected_colon_after_default:
+			sprintf(msg, "после метки УМОЛЧАНИЕ нет :");
+			break;
 
 		case tree_expression_not_block:
 		{
@@ -558,11 +564,11 @@ void get_error(const error_t num, char *const msg, va_list args)
 		}
 		break;
 
-		case node_cannot_set_child:
+		case node_cannot_add_child:
 		{
 			const size_t i = va_arg(args, size_t);
 			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "невозможно получить потомка от tree[%zi] = %" PRIitem, i, elem);
+			sprintf(msg, "невозможно добавить потомка к tree[%zi] = %" PRIitem, i, elem);
 		}
 		break;
 		case node_cannot_set_type:
@@ -590,12 +596,6 @@ void get_error(const error_t num, char *const msg, va_list args)
 
 		case tables_cannot_be_compressed:
 			sprintf(msg, "невозможно сжать таблицы до заданного размера");
-			break;
-		case default_not_in_switch:
-			sprintf(msg, "метка УМОЛЧАНИЕ не в операторе ВЫБОР");
-			break;
-		case expected_colon_after_default:
-			sprintf(msg, "после метки УМОЛЧАНИЕ нет :");
 			break;
 
 		default:

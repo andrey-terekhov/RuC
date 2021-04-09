@@ -531,7 +531,7 @@ int node_test_copy(node *const dest, node *const nd)
 	node child_dest = node_add_child(dest, node_get_type(nd));
 	if (!node_is_correct(&child_dest))
 	{
-		system_error(node_cannot_set_child, dest->type, node_get_type(dest));
+		system_error(node_cannot_add_child, dest->type, node_get_type(dest));
 		return -1;
 	}
 
