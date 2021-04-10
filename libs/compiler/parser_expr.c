@@ -249,7 +249,7 @@ void must_be_string(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
-	
+
 	if (!mode_is_string(prs->sx, anst_pop(prs)))
 	{
 		parser_error(prs, not_string_in_stanfunc);
@@ -1432,9 +1432,6 @@ void parse_subexpression(parser *const prs)
 	}
 }
 
-extern item_t REF_MASK;
-extern item_t REF_LABEL;
-
 void parse_conditional_expression(parser *const prs)
 {
 	parse_subexpression(prs); // logORexpr();
@@ -1502,16 +1499,23 @@ void parse_conditional_expression(parser *const prs)
 			to_tree(prs, old_addr_if);
 		}
 
+		anst_push(prs, value_t, global_type);
+
+		if (prs->was_error)
+		{
+			// Если были ошибки, то нет смысла ставить в дереве нужные адреса
+			// Кроме того, никто не гарантирует правильных адресов, можем уйти в бесконечный цикл
+			return;
+		}
+
 		while (addr_if != TExprend)
 		{
 			node node_addr = node_load(&TREE, (size_t)addr_if);
 			node_set_type(&node_addr, mode_is_float(global_type) ? WIDEN : NOP);
-			node node_addr2 = node_get_child(&node_addr, 0);
-			addr_if = node_get_type(&node_addr2);
-			node_set_type(&node_addr2, TExprend);
+			node_addr = node_get_child(&node_addr, 0);
+			addr_if = node_get_type(&node_addr);
+			node_set_type(&node_addr, TExprend);
 		}
-
-		anst_push(prs, value_t, global_type);
 	}
 }
 
