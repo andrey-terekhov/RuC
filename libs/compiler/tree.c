@@ -20,9 +20,13 @@
 #include "defs.h"
 #include "errors.h"
 
+#ifndef min
+	#define min(a,b) (((a)<(b))?(a):(b))
+#endif
 
-const item_t REF_MASK = (item_t)0b11 << (8 * sizeof(item_t) - 2);
-const item_t REF_LABEL = (item_t)0b10 << (8 * sizeof(item_t) - 2);
+
+const item_t REF_MASK = (item_t)0b11111111 << (8 * min(sizeof(item_t), sizeof(size_t)) - 8);
+const item_t REF_LABEL = (item_t)0b10010010<< (8 * min(sizeof(item_t), sizeof(size_t)) - 8);
 
 
 node node_expression(vector *const tree, const size_t index);
