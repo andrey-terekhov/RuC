@@ -21,9 +21,6 @@
 #include "uniprinter.h"
 
 
-#define ARITHMETIC_NUMBER 10
-
-
 typedef enum ANSWER
 {
 	AREG,								/**< Ответ находится в регистре */
@@ -37,33 +34,10 @@ typedef enum LOCATION
 	LFREE,								/**< Свободный запрос на значение */
 } location_t;
 
-typedef enum OPERATION
-{
-	UNARY_OPERATION,
-	BINARY_OPERATION,
-	NOT_OPERATION,
-} operation_t;
-
-typedef enum ARITHMETIC
-{
-	add_llvm,
-	sub_llvm,
-	mul_llvm,
-
-	sdiv_llvm,
-	srem_llvm,
-	shl_llvm,
-	ashr_llvm,
-	and_llvm,
-	xor_llvm,
-	or_llvm,
-} arithmetic_t;
-
 typedef struct information
 {
 	universal_io *io;							/**< Вывод */
 	syntax *sx;									/**< Структура syntax с таблицами */
-	char *arith[ARITHMETIC_NUMBER];				/**< Массив с арифметическими операциями */
 
 	item_t string_num;							/**< Номер строки */
 	item_t register_num;						/**< Номер регистра */
@@ -81,74 +55,453 @@ static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
 
-static void tocode_arithmetic_reg_reg(information *const info, item_t result, 
-										arithmetic_t operation, item_t argument1, item_t argument2)
+static void operation_to_io(universal_io *const io, const item_t type)
 {
-	if (operation < sdiv_llvm)
+	switch (type)
 	{
-		uni_printf(info->io, " %%.%" PRIitem " = %s nsw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
-			, result, info->arith[operation], argument1, argument2);
+		case POSTINC:
+		case POSTINCV:
+		case PLUSASS:
+		case PLUSASSV:
+		case LPLUS:
+			uni_printf(io, "add nsw");
+			break;
+
+		case POSTDEC:
+		case POSTDECV:
+		case MINUSASS:
+		case MINUSASSV:
+		case LMINUS:
+		case UNMINUS:
+			uni_printf(io, "sub nsw");
+			break;
+
+		case MULTASS:
+		case MULTASSV:
+		case LMULT:
+			uni_printf(io, "mul nsw");
+			break;
+
+		case DIVASS:
+		case DIVASSV:
+		case LDIV:
+			uni_printf(io, "sdiv");
+			break;
+
+		case REMASS:
+		case REMASSV:
+		case LREM:
+			uni_printf(io, "srem");
+			break;
+
+		case SHLASS:
+		case SHLASSV:
+		case LSHL:
+			uni_printf(io, "shl");
+			break;
+
+		case SHRASS:
+		case SHRASSV:
+		case LSHR:
+			uni_printf(io, "ashr");
+			break;
+
+		case ANDASS:
+		case ANDASSV:
+		case LAND:
+			uni_printf(io, "and");
+			break;
+
+		case EXORASS:
+		case EXORASSV:
+		case LEXOR:
+			uni_printf(io, "xor");
+			break;
+
+		case ORASS:
+		case ORASSV:
+		case LOR:
+			uni_printf(io, "or");
+			break;
 	}
-	else
+}
+
+static void to_code_arithmetic_reg_reg(information *const info, item_t type, item_t fst, item_t snd)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->io, type);
+	uni_printf(info->io, " i32 %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
+}
+
+static void to_code_arithmetic_reg_const(information *const info, item_t type, item_t fst, item_t snd)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->io, type);
+	uni_printf(info->io, " i32 %%.%" PRIitem ", %" PRIitem "\n", fst, snd);
+}
+
+static void to_code_arithmetic_const_reg(information *const info, item_t type, item_t fst, item_t snd)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->io, type);
+	uni_printf(info->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
+}
+
+static inline void to_code_load(information *const info, item_t result, item_t displ)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n", result, displ);
+}
+
+static inline void to_code_store_reg(information *const info, item_t reg, item_t displ)
+{
+	uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", reg, displ);
+}
+
+static inline void to_code_store_const(information *const info, item_t arg, item_t displ)
+{
+	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", arg, displ);
+}
+
+
+static void operand(information *const info, node *const nd)
+{
+	if (node_get_type(nd) == NOP || node_get_type(nd) == ADLOGOR || node_get_type(nd) == ADLOGAND)
 	{
-		uni_printf(info->io, " %%.%" PRIitem " = %s i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
-			, result, info->arith[operation], argument1, argument2);
+		node_set_next(nd);
 	}
+
+	switch (node_get_type(nd))
+	{
+		case TIdent:
+		case TSelect:
+		case TIdenttovald:
+		case TIdenttoaddr:
+		case TConstd:
+			node_set_next(nd);
+			break;
+		case TIdenttoval:
+		{
+			const item_t displ = node_get_arg(nd, 0);
+
+			to_code_load(info, info->register_num, displ);
+			info->answer_reg = info->register_num++;
+			info->answer_type = AREG;
+			node_set_next(nd);
+		}
+		break;
+		case TConst:
+		{
+			const item_t num = node_get_arg(nd, 0);
+
+			if (info->variable_location == LMEM)
+			{
+				to_code_store_const(info, num, info->request_reg);
+				info->answer_type = AREG;
+			}
+			else
+			{
+				info->answer_type = ACONST;
+				info->answer_const = num;
+			}
+
+			node_set_next(nd);
+		}
+		break;
+		case TString:
+			node_set_next(nd);
+			break;
+		case TSliceident:
+		{
+			node_set_next(nd);
+			expression(info, nd);
+
+			while (node_get_type(nd) == TSlice)
+			{
+				node_set_next(nd);
+				expression(info, nd);
+			}
+		}
+		break;
+		case TCall1:
+		{
+			const item_t args = node_get_arg(nd, 0);
+
+			node_set_next(nd);
+			for (item_t i = 0; i < args; i++)
+			{
+				expression(info, nd);
+			}
+			node_set_next(nd); // TCall2
+		}
+		break;
+		case TBeginit:
+		{
+			// здесь будет печать llvm с инициализацией массивов
+			const item_t N = node_get_arg(nd, 0);
+
+			node_set_next(nd);
+			for (item_t i = 0; i < N; i++)
+			{
+				expression(info, nd);
+			}
+		}
+		break;
+		case TStructinit:
+		{
+			// здесь будет печать llvm с инициализацией структур
+			const item_t N = node_get_arg(nd, 0);
+
+			node_set_next(nd);
+			for (item_t i = 0; i < N; i++)
+			{
+				expression(info, nd);
+			}
+		}
+		break;
+		default:
+			node_set_next(nd);
+			break;
+	}
+}
+
+static void assignment_expression(information *const info, node *const nd)
+{
+	const item_t displ = node_get_arg(nd, 0);
+	const item_t assignment_type = node_get_type(nd);
+
+	node_set_next(nd);
+	node_set_next(nd); // TIdent
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+
+	item_t result = info->answer_reg;
+
+	if (assignment_type != ASS && assignment_type != ASSV)
+	{
+		to_code_load(info, info->register_num, displ);
+		info->register_num++;
+
+		if (info->answer_type == AREG)
+		{
+			to_code_arithmetic_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg);
+		}
+		else // ACONST
+		{
+			to_code_arithmetic_reg_const(info, assignment_type, info->register_num - 1, info->answer_const);
+		}
+			
+		result = info->register_num++;
+	}
+
+	if (info->answer_type == AREG || (assignment_type != ASS && assignment_type != ASSV))
+	{
+		to_code_store_reg(info, result, displ);
+	}
+	else // ACONST && =
+	{
+		to_code_store_const(info, info->answer_const, displ);
+	}
+}
+
+static void arithmetic_expression(information *const info, node *const nd)
+{
+	const item_t operation_type = node_get_type(nd);
+	node_set_next(nd);
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+	const answer_t left_type = info->answer_type;
+	const item_t left_reg = info->answer_reg;
+	const item_t left_const = info->answer_const;
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+	const answer_t right_type = info->answer_type;
+	const item_t right_reg = info->answer_reg;
+	const item_t right_const = info->answer_const;
+
+	if (left_type == AREG && right_type == AREG)
+	{
+		to_code_arithmetic_reg_reg(info, operation_type, left_reg, right_reg);
+	}
+	else if (left_type == AREG && right_type == ACONST)
+	{
+		to_code_arithmetic_reg_const(info, operation_type, left_reg, right_const);
+	}
+	else if (left_type == ACONST && right_type == AREG)
+	{
+		to_code_arithmetic_const_reg(info, operation_type, left_const, right_reg);
+	}
+	else // if (left_type == ACONST && right_type == ACONST)
+	{
+		info->answer_type = ACONST;
+
+		switch (operation_type)
+		{
+			case LPLUS:
+				info->answer_const = left_const + right_const;
+				break;
+			case LMINUS:
+				info->answer_const = left_const - right_const;
+				break;
+			case LMULT:
+				info->answer_const = left_const * right_const;
+				break;
+			case LDIV:
+				info->answer_const = left_const / right_const;
+				break;
+			case LREM:
+				info->answer_const = left_const % right_const;
+				break;
+			case LSHL:
+				info->answer_const = left_const << right_const;
+				break;
+			case LSHR:
+				info->answer_const = left_const >> right_const;
+				break;
+			case LAND:
+				info->answer_const = left_const & right_const;
+				break;
+			case LEXOR:
+				info->answer_const = left_const ^ right_const;
+				break;
+			case LOR:
+				info->answer_const = left_const | right_const;
+				break;
+		}
+		return;
+	}
+
+	info->answer_type = AREG;
+	info->answer_reg = info->register_num++;
+}
+
+// Обрабатываются операции инкремента/декремента и постинкремента/постдекремента
+static void inc_dec_expression(information *const info, node *const nd)
+{
+	const item_t displ = node_get_arg(nd, 0);
+	const item_t operation_type = node_get_type(nd);
+
+	node_set_next(nd);
+	node_set_next(nd); // TIdent
+
+	to_code_load(info, info->register_num, displ);
+	info->answer_type = AREG;
+	info->answer_reg = info->register_num++;
 	
-}
-
-static void tocode_arithmetic_reg_const(information *const info, item_t result, 
-										arithmetic_t operation, item_t argument1, item_t argument2)
-{
-	if (operation < sdiv_llvm)
+	switch (operation_type)
 	{
-		uni_printf(info->io, " %%.%" PRIitem " = %s nsw i32 %%.%" PRIitem ", %" PRIitem "\n"
-			, result, info->arith[operation], argument1, argument2);
+		case INC:
+		case INCV:
+		case DEC:
+		case DECV:
+			info->answer_reg = info->register_num;
+		case POSTINC:
+		case POSTINCV:
+		case POSTDEC:
+		case POSTDECV:
+			to_code_arithmetic_reg_const(info, operation_type, info->register_num - 1, 1);
+			break;
 	}
-	else
+
+	to_code_store_reg(info, info->register_num, displ);
+	info->register_num++;
+}
+
+static void unary_operation(information *const info, node *const nd)
+{
+	switch (node_get_type(nd))
 	{
-		uni_printf(info->io, " %%.%" PRIitem " = %s i32 %%.%" PRIitem ", %" PRIitem "\n"
-			, result, info->arith[operation], argument1, argument2);
+		case POSTINC:
+		case POSTINCV:
+		case POSTDEC:
+		case POSTDECV:
+		case INC:
+		case INCV:
+		case DEC:
+		case DECV:
+			inc_dec_expression(info, nd);
+			break;
+		case UNMINUS:
+		{
+			node_set_next(nd);
+
+			info->variable_location = LREG;
+			expression(info, nd);
+
+			to_code_arithmetic_const_reg(info, UNMINUS, 0, info->answer_reg);
+			info->answer_type = AREG;
+			info->answer_reg = info->register_num++;
+		}
+		break;
+		default:
+		{
+			node_set_next(nd);
+			expression(info, nd);
+		}
+		break;
 	}
-	
 }
 
-static void tocode_arithmetic_const_reg(information *const info, item_t result, 
-										arithmetic_t operation, item_t argument1, item_t argument2)
+static void binary_operation(information *const info, node *const nd)
 {
-	if (operation < sdiv_llvm)
+	switch (node_get_type(nd))
 	{
-		uni_printf(info->io, " %%.%" PRIitem " = %s nsw i32 %" PRIitem ", %%.%" PRIitem "\n"
-			, result, info->arith[operation], argument1, argument2);
+		case ASS:
+		case ASSV:
+
+		case PLUSASS:
+		case PLUSASSV:
+		case MINUSASS:
+		case MINUSASSV:
+		case MULTASS:
+		case MULTASSV:
+		case DIVASS:
+		case DIVASSV:
+
+		case REMASS:
+		case REMASSV:
+		case SHLASS:
+		case SHLASSV:
+		case SHRASS:
+		case SHRASSV:
+		case ANDASS:
+		case ANDASSV:
+		case EXORASS:
+		case EXORASSV:
+		case ORASS:
+		case ORASSV:
+			assignment_expression(info, nd);
+			break;
+
+
+		case LPLUS:
+		case LMINUS:
+		case LMULT:
+		case LDIV:
+
+		case LREM:
+		case LSHL:
+		case LSHR:
+		case LAND:
+		case LEXOR:
+		case LOR:
+			arithmetic_expression(info, nd);
+			break;
+
+
+		default:
+		{
+			node_set_next(nd);
+			expression(info, nd);
+			expression(info, nd);
+		}
+		break;
 	}
-	else
-	{
-		uni_printf(info->io, " %%.%" PRIitem " = %s i32 %" PRIitem ", %%.%" PRIitem "\n"
-			, result, info->arith[operation], argument1, argument2);
-	}
-	
 }
 
-static void tocode_load(information *const info, item_t result, item_t displ)
-{
-	uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n"
-				, result, displ);
-}
-
-static void tocode_store_reg(information *const info, item_t reg, item_t displ)
-{
-	uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
-			, reg, displ);
-}
-
-static void tocode_store_const(information *const info, item_t arg, item_t displ)
-{
-	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
-			, arg, displ);
-}
-
-
-static operation_t operation_type(node *const nd)
+static void expression(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
@@ -192,7 +545,8 @@ static operation_t operation_type(node *const nd)
 		case DECATRV:
 
 		case UNMINUSR:
-			return UNARY_OPERATION;
+			unary_operation(info, nd);
+			break;
 
 
 		case REMASS:
@@ -301,442 +655,11 @@ static operation_t operation_type(node *const nd)
 		case LMINUSR:
 		case LMULTR:
 		case LDIVR:
-			return BINARY_OPERATION;
-
-
-		default:
-			return NOT_OPERATION;
-	}
-}
-
-static void operand(information *const info, node *const nd)
-{
-	if (node_get_type(nd) == NOP || node_get_type(nd) == ADLOGOR || node_get_type(nd) == ADLOGAND)
-	{
-		node_set_next(nd);
-	}
-
-	switch (node_get_type(nd))
-	{
-		case TIdent:
-		case TSelect:
-		case TIdenttovald:
-		case TIdenttoaddr:
-		case TConstd:
-			node_set_next(nd);
-			break;
-		case TIdenttoval:
-		{
-			const item_t displ = node_get_arg(nd, 0);
-
-			tocode_load(info, info->register_num, displ);
-			info->answer_reg = info->register_num++;
-			info->answer_type = AREG;
-			node_set_next(nd);
-		}
-		break;
-		case TConst:
-		{
-			const item_t num = node_get_arg(nd, 0);
-
-			if (info->variable_location == LMEM)
-			{
-				tocode_store_const(info, num, info->request_reg);
-				info->answer_type = AREG;
-			}
-			else
-			{
-				info->answer_type = ACONST;
-				info->answer_const = num;
-			}
-
-			node_set_next(nd);
-		}
-		break;
-		case TString:
-			node_set_next(nd);
-			break;
-		case TSliceident:
-		{
-			node_set_next(nd);
-			expression(info, nd);
-
-			while (node_get_type(nd) == TSlice)
-			{
-				node_set_next(nd);
-				expression(info, nd);
-			}
-		}
-		break;
-		case TCall1:
-		{
-			const item_t args = node_get_arg(nd, 0);
-
-			node_set_next(nd);
-			for (item_t i = 0; i < args; i++)
-			{
-				expression(info, nd);
-			}
-			node_set_next(nd); // TCall2
-		}
-		break;
-		case TBeginit:
-		{
-			// здесь будет печать llvm с инициализацией массивов
-			const item_t N = node_get_arg(nd, 0);
-
-			node_set_next(nd);
-			for (item_t i = 0; i < N; i++)
-			{
-				expression(info, nd);
-			}
-		}
-		break;
-		case TStructinit:
-		{
-			// здесь будет печать llvm с инициализацией структур
-			const item_t N = node_get_arg(nd, 0);
-
-			node_set_next(nd);
-			for (item_t i = 0; i < N; i++)
-			{
-				expression(info, nd);
-			}
-		}
-		break;
-		default:
-			node_set_next(nd);
-			break;
-	}
-}
-
-static void assignment_expression(information *const info, node *const nd)
-{
-	const item_t displ = node_get_arg(nd, 0);
-	const item_t assignment_type = node_get_type(nd);
-
-	node_set_next(nd);
-	node_set_next(nd); // TIdent
-
-	info->variable_location = LFREE;
-	expression(info, nd);
-
-	item_t result = info->answer_reg;
-
-	if (assignment_type != ASS && assignment_type != ASSV)
-	{
-		tocode_load(info, info->register_num, displ);
-		info->register_num++;
-
-		arithmetic_t operation = add_llvm;
-		switch (assignment_type)
-		{
-			case PLUSASS:
-			case PLUSASSV:
-				operation = add_llvm;
-				break;
-			case MINUSASS:
-			case MINUSASSV:
-				operation = sub_llvm;
-				break;
-			case MULTASS:
-			case MULTASSV:
-				operation = mul_llvm;
-				break;
-			case DIVASS:
-			case DIVASSV:
-				operation = sdiv_llvm;
-				break;
-			case REMASS:
-			case REMASSV:
-				operation = srem_llvm;
-				break;
-			case SHLASS:
-			case SHLASSV:
-				operation = shl_llvm;
-				break;
-			case SHRASS:
-			case SHRASSV:
-				operation = ashr_llvm;
-				break;
-			case ANDASS:
-			case ANDASSV:
-				operation = and_llvm;
-				break;
-			case EXORASS:
-			case EXORASSV:
-				operation = xor_llvm;
-				break;
-			case ORASS:
-			case ORASSV:
-				operation = or_llvm;
-				break;
-		}
-
-		if (info->answer_type == AREG)
-		{
-			tocode_arithmetic_reg_reg(info, info->register_num, operation, 
-													info->register_num - 1, info->answer_reg);
-		}
-		else // ACONST
-		{
-			tocode_arithmetic_reg_const(info, info->register_num, operation, 
-													info->register_num - 1, info->answer_const);
-		}
-			
-		result = info->register_num++;
-	}
-
-	if (info->answer_type == AREG || (assignment_type != ASS && assignment_type != ASSV))
-	{
-		tocode_store_reg(info, result, displ);
-	}
-	else // ACONST && =
-	{
-		tocode_store_const(info, info->answer_const, displ);
-	}
-}
-
-static void arithmetic_expression(information *const info, node *const nd)
-{
-	const item_t operation_type = node_get_type(nd);
-	node_set_next(nd);
-
-	info->variable_location = LFREE;
-	expression(info, nd);
-	answer_t left_type = info->answer_type;
-	item_t left_reg = info->answer_reg;
-	item_t left_const = info->answer_const;
-
-	info->variable_location = LFREE;
-	expression(info, nd);
-	answer_t right_type = info->answer_type;
-	item_t right_reg = info->answer_reg;
-	item_t right_const = info->answer_const;
-
-	arithmetic_t operation = add_llvm;
-	switch (operation_type)
-	{
-		case LPLUS:
-		{
-			info->answer_const = left_const + right_const;
-			operation = add_llvm;
-		}
-		break;
-		case LMINUS:
-		{
-			info->answer_const = left_const - right_const;
-			operation = sub_llvm;
-		}
-		break;
-		case LMULT:
-		{
-			info->answer_const = left_const * right_const;
-			operation = mul_llvm;
-		}
-		break;
-		case LDIV:
-		{
-			if (right_const != 0)
-			{
-				info->answer_const = left_const / right_const;
-			}
-			operation = sdiv_llvm;
-		}
-		break;
-		case LREM:
-		{
-			if (right_const != 0)
-			{
-				info->answer_const = left_const % right_const;
-			}
-			operation = srem_llvm;
-		}
-		break;
-		case LSHL:
-		{
-			info->answer_const = left_const << right_const;
-			operation = shl_llvm;
-		}
-		break;
-		case LSHR:
-		{
-			info->answer_const = left_const >> right_const;
-			operation = ashr_llvm;
-		}
-		break;
-		case LAND:
-		{
-			info->answer_const = left_const & right_const;
-			operation = and_llvm;
-		}
-		break;
-		case LEXOR:
-		{
-			info->answer_const = left_const ^ right_const;
-			operation = xor_llvm;
-		}
-		break;
-		case LOR:
-		{
-			info->answer_const = left_const | right_const;
-			operation = or_llvm;
-		}
-		break;
-	}
-
-	if (left_type == AREG && right_type == AREG)
-	{
-		tocode_arithmetic_reg_reg(info, info->register_num, operation, left_reg, right_reg);
-	}
-	else if (left_type == AREG && right_type == ACONST)
-	{
-		tocode_arithmetic_reg_const(info, info->register_num, operation, left_reg, right_const);
-	}
-	else if (left_type == ACONST && right_type == AREG)
-	{
-		tocode_arithmetic_const_reg(info, info->register_num, operation, left_const, right_reg);
-	}
-	else // if (left_type == ACONST && right_type == ACONST)
-	{
-		info->answer_type = ACONST;
-		return;
-	}
-
-	info->answer_type = AREG;
-	info->answer_reg = info->register_num++;
-}
-
-static void inc_dec_expression(information *const info, node *const nd)
-{
-	const item_t displ = node_get_arg(nd, 0);
-	const item_t operation_type = node_get_type(nd);
-
-	node_set_next(nd);
-	node_set_next(nd); // TIdent
-
-	tocode_load(info, info->register_num, displ);
-	info->answer_type = AREG;
-	info->answer_reg = info->register_num++;
-	switch (operation_type)
-	{
-		case INC:
-		case INCV:
-			info->answer_reg = info->register_num;
-		case POSTINC:
-		case POSTINCV:
-			tocode_arithmetic_reg_const(info, info->register_num, add_llvm, info->register_num - 1, 1);
-			break;
-		case DEC:
-		case DECV:
-			info->answer_reg = info->register_num;
-		case POSTDEC:
-		case POSTDECV:
-			tocode_arithmetic_reg_const(info, info->register_num, sub_llvm, info->register_num - 1, 1);
-			break;
-	}
-	tocode_store_reg(info, info->register_num, displ);
-	info->register_num++;
-}
-
-static void unary_operation(information *const info, node *const nd)
-{
-	switch (node_get_type(nd))
-	{
-		case POSTINC:
-		case POSTINCV:
-		case POSTDEC:
-		case POSTDECV:
-		case INC:
-		case INCV:
-		case DEC:
-		case DECV:
-			inc_dec_expression(info, nd);
-			break;
-		case UNMINUS:
-		{
-			node_set_next(nd);
-
-			info->variable_location = LREG;
-			expression(info, nd);
-
-			tocode_arithmetic_const_reg(info, info->register_num, sub_llvm, 0, info->answer_reg);
-			info->answer_reg = info->register_num++;
-		}
-		break;
-		default:
-		{
-			node_set_next(nd);
-			expression(info, nd);
-		}
-		break;
-	}
-}
-
-static void binary_operation(information *const info, node *const nd)
-{
-	switch (node_get_type(nd))
-	{
-		case ASS:
-		case ASSV:
-
-		case PLUSASS:
-		case PLUSASSV:
-		case MINUSASS:
-		case MINUSASSV:
-		case MULTASS:
-		case MULTASSV:
-		case DIVASS:
-		case DIVASSV:
-
-		case REMASS:
-		case REMASSV:
-		case SHLASS:
-		case SHLASSV:
-		case SHRASS:
-		case SHRASSV:
-		case ANDASS:
-		case ANDASSV:
-		case EXORASS:
-		case EXORASSV:
-		case ORASS:
-		case ORASSV:
-			assignment_expression(info, nd);
-			break;
-		case LPLUS:
-		case LMINUS:
-		case LMULT:
-		case LDIV:
-
-		case LREM:
-		case LSHL:
-		case LSHR:
-		case LAND:
-		case LEXOR:
-		case LOR:
-			arithmetic_expression(info, nd);
-			break;
-		default:
-		{
-			node_set_next(nd);
-			expression(info, nd);
-			expression(info, nd);
-		}
-		break;
-	}
-}
-
-static void expression(information *const info, node *const nd)
-{
-	switch (operation_type(nd))
-	{
-		case UNARY_OPERATION:
-			unary_operation(info, nd);
-		break;
-		case BINARY_OPERATION:
 			binary_operation(info, nd);
-		break;
-		case NOT_OPERATION:
+			break;
+
+
+		default:
 			operand(info, nd);
 			break;
 	}
@@ -966,17 +889,6 @@ static int codegen(universal_io *const io, syntax *const sx)
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
-
-	info.arith[add_llvm] = "add";
-	info.arith[sub_llvm] = "sub";
-	info.arith[mul_llvm] = "mul";
-	info.arith[sdiv_llvm] = "sdiv";
-	info.arith[srem_llvm] = "srem";
-	info.arith[shl_llvm] = "shl";
-	info.arith[ashr_llvm] = "ashr";
-	info.arith[and_llvm] = "and";
-	info.arith[xor_llvm] = "xor";
-	info.arith[or_llvm] = "or";
 
 	node root = node_get_root(&sx->tree);
 	while (node_set_next(&root) == 0)
