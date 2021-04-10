@@ -19,6 +19,7 @@
 #include "defs.h"
 #include "errors.h"
 #include "lexer.h"
+#include "stack.h"
 #include "syntax.h"
 #include "tree.h"
 #include "uniio.h"
@@ -54,7 +55,7 @@ typedef enum OPERAND
 /** Anonymous stack */
 typedef struct anonymous_stack
 {
-	vector operands;	/**< Operands stack */
+	stack operands;		/**< Operands stack */
 	operand_t type;		/**< Type of the top operand in anonymous stack */
 } anonymous_stack;
 

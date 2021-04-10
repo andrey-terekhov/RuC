@@ -78,14 +78,14 @@ double node_get_double(node *const nd, const size_t index)
 
 item_t anst_push(parser *const prs, const operand_t type, const item_t mode)
 {
-	vector_add(&prs->anon_stack.operands, mode);
+	stack_push(&prs->anon_stack.operands, mode);
 	prs->anon_stack.type = type;
 	return mode;
 }
 
 item_t anst_pop(parser *const prs)
 {
-	return vector_remove(&prs->anon_stack.operands);
+	return stack_pop(&prs->anon_stack.operands);
 }
 
 operand_t anst_peek(parser *const prs)
