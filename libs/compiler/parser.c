@@ -50,7 +50,7 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.flag_in_assignment = 0;
 	prs.was_error = 0;
 
-	prs.anon_stack.operands = vector_create(1);
+	prs.anon_stack.operands = stack_create(1);
 	token_consume(&prs);
 
 	return prs;
