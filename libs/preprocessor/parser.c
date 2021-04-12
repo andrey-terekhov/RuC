@@ -299,7 +299,7 @@ int while_implementation(environment *const env)
 	while (env->while_string[oldernextp] == WHILE_BEGIN)
 	{
 		m_nextch(env);
-		m_change_nextch_type(env, IF_TYPE, env->while_string[env->nextp]);
+		m_change_nextch_type(env, IF_TYPE, (size_t)env->while_string[env->nextp]);
 		m_nextch(env);
 		const int res = calculate_logic(env);
 		if (res == -1)

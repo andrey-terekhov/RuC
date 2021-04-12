@@ -43,7 +43,7 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 
 				int loc_change[STRING_SIZE];
 				size_t loc_change_size = 0;
-				const int loc_depth = env->nextch_type == PARAM_TYPE
+				const size_t loc_depth = env->nextch_type == PARAM_TYPE
 				? get_depth(env) - 1
 				: get_depth(env);
 
@@ -194,7 +194,7 @@ int macro_get(environment *const env, const size_t index)
 
 	env->msp = 0;
 
-	int loc_macro_ptr = env->reprtab[index + 1];
+	size_t loc_macro_ptr = env->reprtab[index + 1];
 	if (env->macro_tab[loc_macro_ptr++] == MACRO_FUNCTION)
 	{
 		if (env->macro_tab[loc_macro_ptr] > -1 && function_stack_create(env, env->macro_tab[loc_macro_ptr]))

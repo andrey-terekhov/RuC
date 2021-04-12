@@ -43,7 +43,7 @@ typedef struct environment
 	int args[STRING_SIZE * 3];
 	size_t args_size;
 
-	int localstack[STRING_SIZE];
+	size_t localstack[STRING_SIZE];
 	size_t local_stack_size;
 
 	int if_string[STRING_SIZE * 2];
@@ -65,7 +65,7 @@ typedef struct environment
 	int oldcurchar[DEPTH];
 	int oldnextchar[DEPTH];
 	int oldnextch_type[DEPTH];
-	int oldnextp[DEPTH];
+	size_t oldnextp[DEPTH];
 	size_t depth;
 
 	int nested_if;
@@ -89,10 +89,10 @@ void env_clear_error_string(environment *const env);
  */
 void env_add_comment(environment *const env);
 
-void m_change_nextch_type(environment *const env, int type, int p);
+void m_change_nextch_type(environment *const env, int type, size_t p);
 void m_old_nextch_type(environment *const env);
 
-int get_depth(environment *const env);
+size_t get_depth(environment *const env);
 int get_next_char(environment *const env);
 
 void m_fprintf(environment *const env, int a);

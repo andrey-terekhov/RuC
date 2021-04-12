@@ -58,11 +58,11 @@ int func_check_macro(environment *const env, int flag_macro_directive, const cha
 {
 	env->msp = 0;
 	const int macro_ptr = collect_mident(env);
-	const int num = m_equal(env, param_str);
+	const size_t num = m_equal(env, param_str);
 	if (num != 0)
 	{
 		env->macro_tab[env->macro_tab_size++] = MACRO_CANGE;
-		env->macro_tab[env->macro_tab_size++] = num - 1;
+		env->macro_tab[env->macro_tab_size++] = (int)num - 1;
 	}
 	else if (!flag_macro_directive && macro_ptr)
 	{
@@ -82,7 +82,7 @@ int func_check_macro(environment *const env, int flag_macro_directive, const cha
 	return 0;
 }
 
-int func_add_ident(environment *const env, char32_t *const temp_str)
+size_t func_add_ident(environment *const env, char32_t *const temp_str)
 {
 	size_t num = 0;
 	size_t temp_str_size = 0;
@@ -103,7 +103,7 @@ int func_add_ident(environment *const env, char32_t *const temp_str)
 		else
 		{
 			env_error(env, functionid_begins_with_letters);
-			return -1;
+			return SIZE_MAX;
 		}
 
 		env->msp = 0;
@@ -116,7 +116,7 @@ int func_add_ident(environment *const env, char32_t *const temp_str)
 		else if (env->curchar != ')')
 		{
 			env_error(env, after_functionid_must_be_comma);
-			return -1;
+			return SIZE_MAX;
 		}
 	}
 	temp_str[temp_str_size++] = '\0';
@@ -141,12 +141,12 @@ int macro_tab_add_func(environment *const env)
 	}
 	else
 	{
-		const int res = func_add_ident(env, temp_str);
-		if (res == -1)
+		const size_t res = func_add_ident(env, temp_str);
+		if (res == SIZE_MAX)
 		{
 			return -1;
 		}
-		env->macro_tab[env->macro_tab_size++] = res;
+		env->macro_tab[env->macro_tab_size++] = (int)res;
 	}
 	skip_separators(env);
 

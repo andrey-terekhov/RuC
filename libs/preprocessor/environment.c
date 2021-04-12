@@ -128,12 +128,12 @@ int get_next_char(environment *const env)
 	return env->nextchar == U'\r' ? get_next_char(env) : env->nextchar;
 }
 
-int get_depth(environment *const env)
+size_t get_depth(environment *const env)
 {
 	return env->depth;
 }
 
-void m_change_nextch_type(environment *const env, int type, int p)
+void m_change_nextch_type(environment *const env, int type, size_t p)
 {
 	env->oldcurchar[env->depth] = env->curchar;
 	env->oldnextchar[env->depth] = env->nextchar;
