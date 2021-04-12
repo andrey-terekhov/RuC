@@ -34,7 +34,7 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 
 	env->rp = 1;
 	env->macro_tab_size = 1;
-	env->param_size = 0;
+	env->args_size = 0;
 	env->local_stack_size = 0;
 	env->if_string_size = 0;
 	env->while_string_size = 0;
@@ -70,7 +70,7 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 
 	for (size_t i = 0; i < STRING_SIZE * 3; i++)
 	{
-		env->param[i] = 0;
+		env->args[i] = 0;
 	}
 
 	for (size_t i = 0; i < STRING_SIZE * 2; i++)
@@ -262,8 +262,8 @@ void m_nextch(environment *const env)
 		}
 		else if (env->nextch_type == PARAM_TYPE)
 		{
-			env->curchar = env->param[env->nextp++];
-			env->nextchar = env->param[env->nextp];
+			env->curchar = env->args[env->nextp++];
+			env->nextchar = env->args[env->nextp];
 
 			if (env->curchar == END_PARAMETER)
 			{

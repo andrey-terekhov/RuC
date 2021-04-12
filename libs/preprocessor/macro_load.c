@@ -32,7 +32,7 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 			const int macro_ptr = collect_mident(env);
 			if (macro_ptr)
 			{
-				const size_t old_change_size = env->param_size;
+				const size_t old_change_size = env->args_size;
 				const size_t old_local_stack_size = env->local_stack_size;
 
 				env->local_stack_size += num;
@@ -54,24 +54,24 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 				}
 
 				env->local_stack_size = old_local_stack_size;
-				env->param_size = old_change_size;
+				env->args_size = old_change_size;
 
 				for (size_t i = 0; i < loc_change_size; i++)
 				{
-					env->param[env->param_size++] = loc_change[i];
+					env->args[env->args_size++] = loc_change[i];
 				}
 			}
 			else
 			{
 				for (size_t i = 0; i < env->msp; i++)
 				{
-					env->param[env->param_size++] = env->mstring[i];
+					env->args[env->args_size++] = env->mstring[i];
 				}
 			}
 		}
 		else if (env->curchar == '(')
 		{
-			env->param[env->param_size++] = env->curchar;
+			env->args[env->args_size++] = env->curchar;
 			m_nextch(env);
 
 			if (function_scope_collect(env, num, 0))
@@ -83,7 +83,7 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 		{
 			if (was_bracket == 0)
 			{
-				env->param[env->param_size++] = env->curchar;
+				env->args[env->args_size++] = env->curchar;
 				m_nextch(env);
 			}
 
@@ -105,7 +105,7 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 				size_t i = 0;
 				while (buffer[i] != '\0')
 				{
-					env->param[env->param_size++] = buffer[i];
+					env->args[env->args_size++] = buffer[i];
 					i++;
 				}
 			}
@@ -113,13 +113,13 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 			{
 				for (size_t i = 0; i < (size_t)env->reprtab[env->rp]; i++)
 				{
-					env->param[env->param_size++] = env->reprtab[env->rp + 2 + i];
+					env->args[env->args_size++] = env->reprtab[env->rp + 2 + i];
 				}
 			}
 		}
 		else
 		{
-			env->param[env->param_size++] = env->curchar;
+			env->args[env->args_size++] = env->curchar;
 			m_nextch(env);
 		}
 	}
@@ -139,7 +139,7 @@ int function_stack_create(environment *const env, const size_t parameters)
 	}
 
 	size_t num = 0;
-	env->localstack[num + env->local_stack_size] = env->param_size;
+	env->localstack[num + env->local_stack_size] = env->args_size;
 
 	while (env->curchar != ')')
 	{
@@ -147,12 +147,12 @@ int function_stack_create(environment *const env, const size_t parameters)
 		{
 			return -1;
 		}
-		env->param[env->param_size++] = END_PARAMETER;
+		env->args[env->args_size++] = END_PARAMETER;
 
 		if (env->curchar == ',')
 		{
 			num++;
-			env->localstack[num + env->local_stack_size] = env->param_size;
+			env->localstack[num + env->local_stack_size] = env->args_size;
 
 			if (num > parameters)
 			{
@@ -175,7 +175,7 @@ int function_stack_create(environment *const env, const size_t parameters)
 			}
 			m_nextch(env);
 
-			env->param_size = env->localstack[env->local_stack_size];
+			env->args_size = env->localstack[env->local_stack_size];
 			return 0;
 		}
 	}
