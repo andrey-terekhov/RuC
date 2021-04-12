@@ -26,125 +26,24 @@
 #include "utils.h"
 
 
-#define STK_SIZE 	32
-#define OPN_SIZE 	STK_SIZE
-#define DOUBLE		0
-#define INT			1
-#define WARNING		-2
-#define ERROR		-1
+#define STACK_SIZE 	32
+#define OPERATION_SIZE 	STACK_SIZE
+
 #define LOGIC 		0
 #define ARITHMETIC	1
 
+#define  LESS_EQUAL 'l'
+#define  GREATER_EQUAL 'g'
 
-int get_digit(universal_io *in, double *res, char32_t cur, char32_t next, char32_t *last)
+
+typedef struct calculator_struct
 {
-	if (in == NULL || res == NULL || (cur != '-'  && !utf8_is_digit(cur)))
-	{
-		return ERROR;
-	}
+	size_t op_size;
+	char32_t operation[OPERATION_SIZE];
+	size_t stk_size;
+	int stack[STACK_SIZE];
+} calculator_struct;
 
-	int flag_int = INT;
-	int num_int = 0;
-	int sign = 1;
-	int flag_too_long = 0;
-	double num_double = 0.0;
-
-	if (cur == '-')
-	{
-		sign = -1;
-	}
-	else
-	{
-		num_double = num_double * 10 + (cur - '0');
-		num_int = num_int * 10 + (cur - '0');
-	}
-
-	char32_t curchar = next;
-
-	while (utf8_is_digit(curchar))
-	{
-		num_double = num_double * 10 + (curchar - '0');
-		num_int = num_int * 10 + (curchar - '0');
-		curchar = uni_scan_char(in);
-	}
-
-	if (num_double > (double)INT_MAX)
-	{
-		flag_too_long = 1;
-		flag_int = DOUBLE;
-	}
-
-	if (curchar == '.')
-	{
-		double pow = 0.1;
-		flag_int = DOUBLE;
-		curchar = uni_scan_char(in);
-		while (utf8_is_digit(curchar))
-		{
-			num_double += (curchar - '0') * pow;
-			pow *= 0.1;
-			curchar = uni_scan_char(in);
-		}
-	}
-
-	if (utf8_is_power(curchar))
-	{
-		int power = 0;
-		int sign_power = 1;
-		curchar = uni_scan_char(in);
-		if (curchar == '-')
-		{
-			flag_int = DOUBLE;
-			curchar = uni_scan_char(in);
-			sign_power = -1;
-		}
-		else if (curchar == '+')
-		{
-			curchar = uni_scan_char(in);
-		}
-
-		if (!utf8_is_digit(curchar))
-		{
-			return ERROR;
-		}
-		while (utf8_is_digit(curchar))
-		{
-			power = power * 10 + curchar - '0';
-			curchar = uni_scan_char(in);
-		}
-
-		if (flag_int == INT)
-		{
-			for (int i = 1; i <= power; i++)
-			{
-				num_int *= 10;
-			}
-		}
-
-		num_double *= pow(10.0, sign_power * power);
-	}
-
-	if (flag_int)
-	{
-		*res = num_int * sign;
-	}
-	else
-	{
-		*res = num_double * sign;
-	}
-	
-	if (last != NULL)
-	{
-		*last = curchar;
-	}
-
-	if (flag_too_long)
-	{
-		return WARNING;
-	}
-
-	return flag_int;
-}
 
 char32_t get_operation(const char32_t cur, const char32_t next)
 {
@@ -153,8 +52,16 @@ char32_t get_operation(const char32_t cur, const char32_t next)
 		case '|':
 		case '&':
 		case '=':
+			if (next == cur)
+			{
+				return cur;
+			}
+			else
+			{
+				return '\0';
+			}
 		case '!':
-			if ((next == cur && cur != '!') || (cur == '!' && next == '='))
+			if ( next == '=')
 			{
 				return cur;
 			}
@@ -164,13 +71,13 @@ char32_t get_operation(const char32_t cur, const char32_t next)
 			}
 		case '>':
 		case '<':
-			if (cur == '>' && next == '=')
+			if (cur == '<' && next == '=')
 			{
-				return 'b';
+				return LESS_EQUAL;
 			}
 			else if (cur == '>' && next == '=')
 			{
-				return 's';
+				return GREATER_EQUAL;
 			}
 		case '+':
 		case '-':
@@ -184,36 +91,50 @@ char32_t get_operation(const char32_t cur, const char32_t next)
 	}
 }
 
-int get_prior(const char32_t operation)
+int get_priority(const char32_t operation, const int type)
 {
-	switch (operation)
+	if(type == LOGIC)
 	{
-		case '(':
-			return 0;
-		case '|':
-			return 1;
-		case '&':
-			return 2;
-		case '<':
-		case '>':
-		case 's':
-		case 'b':
-		case '=':
-		case '!':
-			return 3;
-		case '+':
-		case '-':
-			return 4;
-		case '*':
-		case '/':
-		case '%':
-			return 5;
-		default:
-			return 0;
+		switch (operation)
+		{
+			case '(':
+				return 0;
+			case '|':
+				return 1;
+			case '&':
+				return 2;
+			case '<':
+			case '>':
+			case LESS_EQUAL:
+			case GREATER_EQUAL:
+			case '=':
+			case '!':
+				return 3;
+			default:
+				return -1;
+		}
 	}
+	else
+	{
+		switch (operation)
+		{
+			case '(':
+				return 0;
+			case '+':
+			case '-':
+				return 4;
+			case '*':
+			case '/':
+			case '%':
+				return 5;
+			default:
+				return -1;
+		}
+	}
+	
 }
 
-double calc_count(const double x, const double y, const char32_t operation, const int is_int)
+int calc_count(const int x, const int y, const char32_t operation)
 {
 	switch (operation)
 	{
@@ -221,9 +142,9 @@ double calc_count(const double x, const double y, const char32_t operation, cons
 			return x < y;
 		case '>':
 			return x > y;
-		case 's':
+		case LESS_EQUAL:
 			return x <= y;
-		case 'b':
+		case GREATER_EQUAL:
 			return x >= y;
 		case '=':
 			return x == y;
@@ -240,49 +161,11 @@ double calc_count(const double x, const double y, const char32_t operation, cons
 		case '*':
 			return x * y;
 		case '/':
-			if (is_int)
-			{
-				return (int)x / (int)y;
-			}
-			else
-			{
-				return x / y;
-			}
+			return x / y;
 		case '%':
-			if (is_int)
-			{
-				return (int)x % (int)y;
-			}
-			else
-			{
-				return x / y;
-			}
-
+			return x % y;
 		default:
 			return 0;
-	}
-}
-
-void double_to_string(const double x, const int is_int, char *const arithmetic_res)
-{
-	if (is_int)
-	{
-		sprintf(arithmetic_res, "%f", x);
-		char *dot = strchr(arithmetic_res, '.');
-		if (dot != 0)
-		{
-			dot[0] = '\0';
-		}
-	}
-	else
-	{	
-		sprintf(arithmetic_res, "%.14lf", x);
-		size_t lenght = strlen(arithmetic_res) - 1;
-		while (arithmetic_res[lenght] == '0' || !utf8_is_digit(arithmetic_res[lenght]))
-		{
-			lenght--;
-		}
-		arithmetic_res[lenght + 1] = '\0';
 	}
 }
 
@@ -303,67 +186,45 @@ int calc_macro(environment *const env)
 	return 0;
 }
 
-int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size)
+int calc_digit(environment *const env, calculator_struct *const calc)
 {
-	int res;
-	if (env->nextch_type != FILE_TYPE)
+	if (env->curchar == '#')
 	{
-		char buffer[STRING_SIZE];
-		buffer[0] = '\0';
-		size_t buffer_size = 0;
-
-		int cur = env->curchar;
-		m_nextch(env);
-
-		int next = env->curchar;
-		if (utf8_is_digit(env->curchar))
+		const int cur = macro_keywords(env);
+		if (cur == SH_EVAL && env->curchar == '(')
 		{
-			m_nextch(env);
-			while (utf8_is_digit(env->curchar) || utf8_is_power(env->curchar))
+			if (calculate_arithmetic(env, &calc->stack[calc->stk_size]))
 			{
-				if (utf8_is_power(env->curchar) &&  (env->nextchar == '+' || env->curchar == '-'))
-				{
-					buffer_size += utf8_to_string(&buffer[buffer_size], env->curchar);
-					m_nextch(env);
-				}
-				buffer_size += utf8_to_string(&buffer[buffer_size], env->curchar);
-				m_nextch(env);
+				return -1;
 			}
+			calc->stk_size++;
+			return 0;
 		}
-		universal_io in = io_create();
-		in_set_buffer(&in, buffer);
-		res = get_digit(&in, &stack[*stk_size], cur, next, NULL);
-		in_clear(&in);
-	}
-	else
-	{
-		char32_t last;
-		res = get_digit(env->input, &stack[*stk_size], env->curchar, env->nextchar, &last);
-		env->curchar = last;
-		get_next_char(env);
-	}
-	
-	
-	if (res == ERROR)
-	{
-		env_error(env, must_be_digit_after_exp1);
-		return -1;
-	}
-	else if (res == WARNING)
-	{
-		macro_warning(too_many_nuber, lk_get_current(env->lk), env->error_string, env->line, env->position);
-		is_int[*stk_size] = DOUBLE;
-	}
-	else
-	{
-		is_int[*stk_size] = res;
+		else
+		{
+			env_error(env, after_eval_must_be_ckob);
+			return -1;
+		}
 	}
 
-	*stk_size = *stk_size + 1;
+	int num = 0;
+	int sign = 1;
+
+	if (env->curchar == '-')
+	{
+		sign = -1;
+	}
+	while (utf8_is_digit(env->curchar))
+	{
+		num = num * 10 + (env->curchar - '0');
+		m_nextch(env);
+	}
+
+	calc->stack[calc->stk_size++] = num * sign;
 	return 0;
 }
 
-int calc_operation(environment *const env, double *const stack, int *const is_int, char32_t *const operation, int *op_size, int *stk_size, const int type)
+int calc_operation(environment *const env, calculator_struct *const calc, const int type)
 {
 	const char32_t opr = get_operation(env->curchar, env->nextchar);
 	if (opr == '\0')
@@ -378,79 +239,57 @@ int calc_operation(environment *const env, double *const stack, int *const is_in
 		m_nextch(env);
 	}
 
-	const int prior = get_prior(opr);
-	if (type == LOGIC && prior > 3)
+	const int priority = get_priority(opr, type);
+	if (type == LOGIC && priority == -1)
 	{
 		env_error(env, not_arithmetic_operations);
 		return -1;
 	}
-	if (type == ARITHMETIC && prior <= 3)
+	if (type == ARITHMETIC && priority == -1)
 	{
 		env_error(env, not_logical_operations);
 		return -1;
 	}
 
-	while (*op_size != 0 && get_prior(operation[*op_size - 1]) >= prior)
+	while (calc->op_size != 0 && get_priority(calc->operation[calc->op_size - 1], type) >= priority)
 	{
-		is_int[*stk_size - 2] = is_int[*stk_size - 2] && is_int[*stk_size - 1];
-		stack[*stk_size - 2] = calc_count(stack[*stk_size - 2], stack[*stk_size - 1], operation[*op_size - 1], is_int[*stk_size - 2]);
-		*op_size = *op_size - 1;
-		*stk_size = *stk_size - 1;
+		calc->stack[calc->stk_size - 2] = calc_count(calc->stack[calc->stk_size - 2], calc->stack[calc->stk_size - 1], calc->operation[calc->op_size - 1]);
+		calc->op_size--;
+		calc->stk_size--;
 	}
 
-	operation[*op_size] = opr;
-	*op_size = *op_size + 1;
+	calc->operation[calc->op_size++] = opr;
 
 	return 0;
 }
 
-int calc_close(double *const stack, int *const is_int, const char32_t *operation, int *op_size, int *stk_size)
+int calc_close(calculator_struct *const calc)
 {
 	int scope_flag = 0;
-	if (operation[*op_size - 1] == ')')
+	if (calc->operation[calc->op_size - 1] == ')')
 	{
 		scope_flag++;
-		*op_size = *op_size - 1;
+		calc->op_size = calc->op_size - 1;
 	}
 
-	while ((scope_flag && operation[*op_size - 1] != '(' && operation[*op_size - 1] != '[') || (!scope_flag && *op_size > 0))
+	while ((scope_flag && calc->operation[calc->op_size - 1] != '(') || (!scope_flag && calc->op_size > 0))
 	{
-		if (*stk_size < 2 || *op_size == 0)
+		if (calc->stk_size < 2 || calc->op_size == 0)
 		{	
 			return -1;
 		}
 
-		is_int[*stk_size - 2] = is_int[*stk_size - 2] && is_int[*stk_size - 1];
-		stack[*stk_size - 2] = calc_count(stack[*stk_size - 2], stack[*stk_size - 1], operation[*op_size - 1], is_int[*stk_size - 2]);
-		*op_size = *op_size - 1;
-		*stk_size = *stk_size - 1;
+		calc->stack[calc->stk_size - 2] = calc_count(calc->stack[calc->stk_size - 2], calc->stack[calc->stk_size - 1], calc->operation[calc->op_size - 1]);
+		calc->op_size--;
+		calc->stk_size--;
 	}
 
-	*op_size = *op_size - 1;
+	calc->op_size--;
 	return 0;
 }
 
-int additional_elements(environment *const env, double *const stack, int *const is_int
-	, char32_t *const operation , int *op_size, int *stk_size, int *type, int operation_flag)
+int additional_elements(environment *const env, calculator_struct *const calc, const int type, const int operation_flag)
 {
-	if (env->curchar == '#' && *type == LOGIC && !operation_flag)
-	{
-		const int cur = macro_keywords(env);
-		if (cur == SH_EVAL && env->curchar == '(')
-		{
-			*type = ARITHMETIC;
-			operation[*op_size] = '[';
-			*op_size = *op_size + 1;
-			m_nextch(env);
-			return 1;
-		}
-		else
-		{
-			env_error(env, after_eval_must_be_ckob);//
-			return -1;
-		}
-	}
-
 	if (utf8_is_letter(env->curchar))
 	{
 		if (calc_macro(env))
@@ -462,28 +301,22 @@ int additional_elements(environment *const env, double *const stack, int *const 
 
 	if (env->curchar == '(' && !operation_flag)
 	{
-		operation[*op_size] = '(';
-		*op_size = *op_size + 1;
+		calc->operation[calc->op_size++] = '(';
 		m_nextch(env);
 		return 1;
 	}
 
 	if (env->curchar == ')' && operation_flag)
 	{
-		operation[*op_size] = ')';
-		*op_size = *op_size + 1;
-		if (calc_close(stack, is_int, operation, op_size, stk_size))
+		calc->operation[calc->op_size++] = ')';
+		if (calc_close(calc))
 		{
 			env_error(env, incorrect_arithmetic_expression);
 			return -1;
 		}
 
 		m_nextch(env);
-		if (operation[*op_size] == '[')
-		{
-			*type = LOGIC;
-		}
-		if (*op_size == 0 && *type == ARITHMETIC)
+		if (calc->op_size == 0 && type == ARITHMETIC)
 		{
 			return 0;
 		}
@@ -493,35 +326,36 @@ int additional_elements(environment *const env, double *const stack, int *const 
 	return 2;
 }
 
-int calculate(environment *const env, char *const result)
+int calculate(environment *const env, int *const result)
 {
-	int op_size = 0;
-	char32_t operation[OPN_SIZE];
+	
+	calculator_struct calc;
+	calc.op_size = 0;
+	calc.stk_size = 0;
 
 	int expression_type = LOGIC;
 	if (result != NULL)
 	{
 		expression_type = ARITHMETIC;
-		operation[op_size++] = '(';
+		calc.operation[calc.op_size++] = '(';
 		m_nextch(env);
 	}
 
-	int stk_size = 0;
-	double stack[STK_SIZE];
-	int is_int[STK_SIZE];
+	
 	int operation_flag = 0;
 	
 	while (env->curchar != '\n')
 	{
 		skip_separators(env);
-		const int res = additional_elements(env, stack, is_int, operation, &op_size, &stk_size, &expression_type, operation_flag);
+		const int res = additional_elements(env, &calc, expression_type, operation_flag);
 		if (res == -1)
 		{
 			return -1;
 		} 
 		else if(res == 0)
 		{
-			double_to_string(stack[0], is_int[0], result);
+			
+			*result = calc.stack[0];
 			return 0;
 		}
 		else if (res == 1)
@@ -529,18 +363,16 @@ int calculate(environment *const env, char *const result)
 			continue;
 		}
 
-		if (!operation_flag && (utf8_is_digit(env->curchar) || (env->curchar == '-' && utf8_is_digit(env->nextchar))))
+		if (!operation_flag && (utf8_is_digit(env->curchar) || (env->curchar == '-' && utf8_is_digit(env->nextchar))
+			|| (env->curchar == '#' && expression_type == LOGIC)))
 		{
 			operation_flag = 1;
-			if (calc_digit(env, stack, is_int, &stk_size))
-			{
-				return -1;
-			}
+			calc_digit(env, &calc);
 		}
 		else if (operation_flag && env->curchar != '\n')
 		{
 			operation_flag = 0;
-			if (calc_operation(env, stack, is_int, operation, &op_size, &stk_size, expression_type))
+			if (calc_operation(env, &calc, expression_type))
 			{
 				return -1;
 			}
@@ -554,13 +386,13 @@ int calculate(environment *const env, char *const result)
 
 	if (expression_type == LOGIC)
 	{
-		if (calc_close(stack, is_int, operation, &op_size, &stk_size))
+		if (calc_close(&calc))
 		{
 			env_error(env, incorrect_arithmetic_expression);
 			return -1;
 		}
 
-		return stack[0] == 0 ? 0 : 1;
+		return calc.stack[0] == 0 ? 0 : 1;
 	}
 	else
 	{
@@ -569,7 +401,7 @@ int calculate(environment *const env, char *const result)
 	}
 }
 
-int calculate_arithmetic(environment *const env, char *const result)
+int calculate_arithmetic(environment *const env, int *const result)
 {
 	return calculate(env, result);
 }

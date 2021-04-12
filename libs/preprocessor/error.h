@@ -43,12 +43,10 @@ enum ERROR
 	ident_not_exist,
 	functions_cannot_be_changed,
 	after_eval_must_be_ckob,
-	too_many_nuber,
 	not_arithmetic_operations,
 	not_logical_operations,
 	comm_not_ended,
 	not_enough_param2,
-	must_be_digit_after_exp1,
 	not_macro,
 	incorrect_arithmetic_expression,
 	third_party_symbol,
@@ -75,13 +73,13 @@ enum ERROR
 void macro_error(const int num, const char *const path, const char *const code, const size_t line, size_t position);
 
 /**
- *	Emit an warning for some situation 
+ *	Emit an warning for some reason 
  *
- *	@param	num			Error code
+ *	@param	num			Warning code
  *	@param	path		Current file path
- *	@param	code		Error line in current file
- *	@param	line		Error line number
- *	@param	position	Error position in line
+ *	@param	code		Warning line in current file
+ *	@param	line		Warning line number
+ *	@param	position	Warning position in line
  */
 void macro_warning(const int num, const char *const path, const char *const code, const size_t line, size_t position);
 

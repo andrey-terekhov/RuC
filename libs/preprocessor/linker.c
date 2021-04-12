@@ -28,6 +28,7 @@
 linker lk_create(workspace *const ws)
 {
 	linker lk;
+
 	lk.ws = ws;
 	lk.current = MAX_PATHS;
 	lk.count = ws_get_files_num(ws);

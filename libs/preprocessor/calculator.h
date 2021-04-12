@@ -25,19 +25,21 @@ extern "C" {
 /**
  *	Calculate an arithmetic expression
  *
- *	@param	env					Preprocessor environment
- *	@param	result		Buffer to return result arithmetic expression
+ *	@param	env				Preprocessor environment
+ *	@param	buffer			Buffer for result of arithmetic expression
  *
  *	@return	@c 0 success, @c -1 on failure
  */
-int calculate_arithmetic(environment *const env, char *const result);
+int calculate_arithmetic(environment *const env, int *const buffer);
 
 /**
  *	Calculate a logical expression
  *
- *	@param	env					Preprocessor environment
+ *	@param	env				Preprocessor environment
  *
- *	@return	@c 1 on true, @c 0 on folse, @c -1 on failure
+ *	@return	@c 1 on true,
+ *			@c 0 on folse,
+ *			@c -1 on failure
  */
 int calculate_logic(environment *const env);
 

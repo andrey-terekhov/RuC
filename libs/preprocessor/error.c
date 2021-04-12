@@ -15,7 +15,6 @@
  */
 
 #include "constants.h"
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
 #include "error.h"
@@ -30,7 +29,17 @@
 #define ERROR_MSG_SIZE	STRING_SIZE
 
 
-void get_message(const int num, char *const msg)
+void get_message_warning(const int num, char *const msg)
+{
+	switch (num)
+	{
+		default:
+			sprintf(msg, "неизвестный код предупреждения (%i)", num);
+			break;
+	}
+}
+
+void get_message_error(const int num, char *const msg)
 {
 	switch (num)
 	{
@@ -38,16 +47,16 @@ void get_message(const int num, char *const msg)
 			sprintf(msg, "после команды препроцессора должен идти перенос строки");
 			break;
 		case after_ident_must_be_space:
-			sprintf(msg, "после идентификатора должен идти ' ' ");
+			sprintf(msg, "после идентификатора должен идти ' '");
 			break;
 		case ident_begins_with_letters:
 			sprintf(msg, "идентификатор должен начинаться с буквы ");
 			break;
 		case must_be_endif:
-			sprintf(msg, "условный оператор препроцессора должен заканчиваться '#ENDIF' ");
+			sprintf(msg, "условный оператор препроцессора должен заканчиваться '#ENDIF'");
 			break;
 		case dont_elif:
-			sprintf(msg, "в этом типе условного оператора не может использоваться '#ELIF' ");
+			sprintf(msg, "в этом типе условного оператора не может использоваться '#ELIF'");
 			break;
 		case preproces_words_not_exist:
 			sprintf(msg, "в препроцессоре не существует такой команды");
@@ -62,7 +71,7 @@ void get_message(const int num, char *const msg)
 			sprintf(msg, "идентификатор с параметрами нельзя переопределять");
 			break;
 		case after_functionid_must_be_comma:
-			sprintf(msg, "после идентификатора в функции должны быть ')' или ',' потом ' ' ");
+			sprintf(msg, "после идентификатора в функции должны быть ')' или ',' потом ' '");
 			break;
 		case stalpe:
 			sprintf(msg, "в функции аргументы должны быть описаны через запятую, в скобках");
@@ -90,12 +99,6 @@ void get_message(const int num, char *const msg)
 			break;
 		case after_eval_must_be_ckob:
 			sprintf(msg, "сразу после команды '#EVAL' должен быть символ '('");
-			break;
-		case too_many_nuber:
-			sprintf(msg, "слишком большая целая константа, преобразована в ДЛИН (DOUBLE)");
-			break;
-		case must_be_digit_after_exp1:
-			sprintf(msg, "после экспоненты должно быть число");
 			break;
 		case not_arithmetic_operations:
 			sprintf(msg, "все арифметические операции должны быть внутри команды '#EVAL()'");
@@ -137,16 +140,14 @@ void get_message(const int num, char *const msg)
 			sprintf(msg, "строка не завершена, пропущен символ \" или \'");
 			break;
 		default:
-			sprintf(msg, "не реализованная ошибка №%d", num);
+			sprintf(msg, "неизвестный код ошибки (%i)", num);
 			break;
 	}
 }
 
-void macro_output(const int num, const char *const path, const char *const code, const size_t line, size_t position
-, void (*func)(const char *const, const char *const, const char *const, const size_t))
+void macro_output(const char *const msg, const char *const path, const char *const code, const size_t line, size_t position
+	, void (*func)(const char *const, const char *const, const char *const, const size_t))
 {
-	char msg[ERROR_MSG_SIZE];
-	get_message(num, msg);
 
 	if (path == NULL)
 	{
@@ -175,18 +176,22 @@ void macro_output(const int num, const char *const path, const char *const code,
 
 void macro_error(const int num, const char *const path, const char *const code, const size_t line, size_t position)
 {
-	macro_output(num, path, code, line, position, &log_error);
+	char msg[ERROR_MSG_SIZE];
+	get_message_error(num, msg);
+	macro_output(msg, path, code, line, position, &log_error);
 }
 
 void macro_warning(const int num, const char *const path, const char *const code, const size_t line, size_t position)
 {
-	macro_output(num, path, code, line, position, &log_warning);
+	char msg[ERROR_MSG_SIZE];
+	get_message_warning(num, msg);
+	macro_output(msg, path, code, line, position, &log_warning);
 }
 
 void macro_system_error(const char *const tag, const int num)
 {
 	char msg[ERROR_MSG_SIZE];
-	get_message(num, msg);
+	get_message_error(num, msg);
 
 	if (tag != NULL)
 	{

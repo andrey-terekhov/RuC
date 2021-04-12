@@ -28,10 +28,10 @@ extern "C" {
 typedef struct environment
 {
 	int hashtab[256];
-	int reprtab[MAXTAB];
+	int reprtab[TABLE_SIZE];
 	int rp;
 
-	int macro_tab[MAXTAB];
+	int macro_tab[TABLE_SIZE];
 	size_t macro_tab_size;
 
 	char error_string[STRING_SIZE];

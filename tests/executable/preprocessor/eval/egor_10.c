@@ -1,8 +1,8 @@
-#define s #eval(1.25 * (1.3 - 1) + 31/5) 
+#define s #eval(125 * (13 - 10) + (31/5)*1000) 
 
 void main()
 {
- assert((s - 6.375)*(s - 6.375) < 0.01, "fail1");
+ assert(s == 6375, "fail1");
 }
 
 

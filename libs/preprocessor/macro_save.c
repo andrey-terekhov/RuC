@@ -15,7 +15,6 @@
  */
 
 #include "macro_save.h"
-#include <string.h>
 #include "calculator.h"
 #include "constants.h"
 #include "environment.h"
@@ -25,24 +24,27 @@
 #include "utils.h"
 
 
-size_t m_equal(environment *const env, int *temp_str)
+#define PARAM_END '\r'
+
+
+size_t m_equal(environment *const env, const char32_t *const param_str)
 {
 	size_t n = 1;
 	size_t i = 0;
-	while (temp_str[i] != -1)
+	while (param_str[i] != '\0')
 	{
 		size_t j = 0;
-		while (temp_str[i + j] == env->mstring[j])
+		while ((int)param_str[i + j] == env->mstring[j])
 		{
 			j++;
-			if (temp_str[i + j] == 0 && env->mstring[j] == MACRO_END)
+			if (param_str[i + j] == PARAM_END && env->mstring[j] == MACRO_END)
 			{
 				return n;
 			}
 		}
 
 		i += j;
-		while (temp_str[i] != 0)
+		while (param_str[i] != PARAM_END)
 		{
 			i++;
 		}
@@ -52,11 +54,11 @@ size_t m_equal(environment *const env, int *temp_str)
 	return 0;
 }
 
-int func_check_macro(environment *const env, int flag_macro_directive, int *temp_str)
+int func_check_macro(environment *const env, int flag_macro_directive, const char32_t *const param_str)
 {
 	env->msp = 0;
 	const int macro_ptr = collect_mident(env);
-	const int num = m_equal(env, temp_str);
+	const int num = m_equal(env, param_str);
 	if (num != 0)
 	{
 		env->macro_tab[env->macro_tab_size++] = MACRO_CANGE;
@@ -80,10 +82,10 @@ int func_check_macro(environment *const env, int flag_macro_directive, int *temp
 	return 0;
 }
 
-int func_add_ident(environment *const env, int *temp_str)
+int func_add_ident(environment *const env, char32_t *const temp_str)
 {
-	int num = 0;
-	int temp_str_size = 0;
+	size_t num = 0;
+	size_t temp_str_size = 0;
 
 	while (env->curchar != ')')
 	{
@@ -96,7 +98,7 @@ int func_add_ident(environment *const env, int *temp_str)
 				temp_str[temp_str_size++] = env->curchar;
 				m_nextch(env);
 			}
-			temp_str[temp_str_size++] = 0;
+			temp_str[temp_str_size++] = PARAM_END;
 		}
 		else
 		{
@@ -117,7 +119,7 @@ int func_add_ident(environment *const env, int *temp_str)
 			return -1;
 		}
 	}
-	temp_str[temp_str_size++] = -1;
+	temp_str[temp_str_size++] = '\0';
 	
 	m_nextch(env);
 	return num;
@@ -130,7 +132,7 @@ int macro_tab_add_func(environment *const env)
 	env->macro_tab[env->macro_tab_size++] = MACRO_FUNCTION;
 	
 	int empty = 0;
-	int temp_str[STRING_SIZE];
+	char32_t temp_str[STRING_SIZE];
 	if (env->curchar == ')')
 	{
 		env->macro_tab[env->macro_tab_size++] = -1;
@@ -163,16 +165,20 @@ int macro_tab_add_func(environment *const env)
 
 			if (!flag_macro_directive && env->cur == SH_EVAL && env->curchar == '(')
 			{
-				char buffer[STRING_SIZE];
-				if (calculate_arithmetic(env, buffer))
+				int calculate_res;
+				if (calculate_arithmetic(env, &calculate_res))
 				{
 					return -1;
 				}
 
-				size_t lenght = strlen(buffer);
-				for (size_t i = 0; i < lenght; i++)
+				char buffer[STRING_SIZE];
+				sprintf(buffer, "%d", calculate_res);
+
+				size_t i = 0;
+				while (buffer[i] != '\0') 
 				{
 					env->macro_tab[env->macro_tab_size++] = buffer[i];
+					i++;
 				}
 			}
 			else if (flag_macro_directive && env->cur == SH_ENDM)
@@ -292,17 +298,22 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 						return -1;
 					}
 
-					char buffer[STRING_SIZE];
-					if (calculate_arithmetic(env, buffer))
+					int calculate_res;
+					if (calculate_arithmetic(env, &calculate_res))
 					{
 						return -1;
 					}
 
-					size_t lenght = strlen(buffer);
-					for (size_t i = 0; i < lenght; i++)
+					char buffer[STRING_SIZE];
+					sprintf(buffer, "%d", calculate_res);
+
+					size_t i = 0;
+					while (buffer[i] != '\0') 
 					{
 						env->macro_tab[env->macro_tab_size++] = buffer[i];
+						i++;
 					}
+					
 				}
 				else
 				{

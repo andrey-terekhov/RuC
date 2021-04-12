@@ -1,8 +1,7 @@
-#define s #eval(9 / 4.0)
+#define A 10
+#define s #eval(A / 3) 
 
 void main()
 {
- assert((s - 2.25)*(s - 2.25) < 0.01, "fail1");
+ assert(s == 3, "fail1");
 }
-
-

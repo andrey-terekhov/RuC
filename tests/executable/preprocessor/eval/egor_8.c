@@ -1,8 +1,8 @@
-#define s #eval(1.25 * 1.3)
+#define A 10
+#define sum(a,b) a + b
+#define s #eval( sum(A, A) / 3) 
 
 void main()
 {
- assert((s - 1.625)*(s - 1.625) < 0.01, "fail1");
+ assert(s == 13, "fail1");
 }
-
-

@@ -16,10 +16,8 @@
 
 #pragma once
 
-#define MAXTAB		100000
-#define LONGSTR		10000
+#define TABLE_SIZE		100000
 #define STRING_SIZE	256
-#define HASH		256
 #define DEPTH		10
 
 #define END_PARAMETER	-6

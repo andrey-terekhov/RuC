@@ -15,7 +15,6 @@
  */
 
 #include "parser.h"
-#include <string.h>
 #include "calculator.h"
 #include "constants.h"
 #include "environment.h"
@@ -302,7 +301,7 @@ int while_implementation(environment *const env)
 		m_nextch(env);
 		m_change_nextch_type(env, IF_TYPE, env->while_string[env->nextp]);
 		m_nextch(env);
-		int res = calculate_logic(env);
+		const int res = calculate_logic(env);
 		if (res == -1)
 		{
 			return -1;
@@ -402,13 +401,13 @@ int preprocess_words(environment *const env)
 				env_error(env, after_eval_must_be_ckob);
 				return -1;
 			}
-			char buffer[STRING_SIZE];
-			if (calculate_arithmetic(env, buffer))
+			int calculate_res;
+			if (calculate_arithmetic(env, &calculate_res))
 			{
 				return -1;
 			}
 
-			uni_printf(env->output, "%s", buffer);
+			uni_printf(env->output, "%d", calculate_res);
 			return 0;
 		}
 		case SH_WHILE:
@@ -461,7 +460,7 @@ int preprocess_token(environment *const env)
 			{
 				const int res = preprocess_words(env);
 				if (env->nextchar != '#' && env->nextch_type != WHILE_TYPE &&
-					env->nextch_type != MACRO_TEXT_TYPE)//curflag
+					env->nextch_type != MACRO_TEXT_TYPE)
 				{
 					env_add_comment(env);
 				}

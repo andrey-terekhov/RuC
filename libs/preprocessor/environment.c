@@ -52,12 +52,12 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->flagint = 1;
 	env->error_string[0] = '\0';
 
-	for (size_t i = 0; i < HASH; i++)
+	for (size_t i = 0; i < 256; i++)
 	{
 		env->hashtab[i] = 0;
 	}
 
-	for (size_t i = 0; i < MAXTAB; i++)
+	for (size_t i = 0; i < TABLE_SIZE; i++)
 	{
 		env->reprtab[i] = 0;
 	}
@@ -163,7 +163,6 @@ void m_onemore(environment *const env)
 	env->curchar = env->nextchar;
 
 	get_next_char(env);
-	
 
 	if (env->curchar == EOF)
 	{
