@@ -15,16 +15,18 @@
  */
 
 #include "llvmgen.h"
+#include "codes.h"
 #include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
 #include "uniprinter.h"
 
-
+// TODO: необходимо прописать обработку ALOGIC в арифметических действиях и подумать, а нужен ли этот тип
 typedef enum ANSWER
 {
 	AREG,								/**< Ответ находится в регистре */
 	ACONST,								/**< Ответ является константой */
+	ALOGIC,								/**< Ответ является логическим значением */
 } answer_t;
 
 typedef enum LOCATION
@@ -41,6 +43,7 @@ typedef struct information
 
 	item_t string_num;							/**< Номер строки */
 	item_t register_num;						/**< Номер регистра */
+	item_t label_num;							/**< Номер метки */
 
 	item_t request_reg;							/**< Регистр на запрос */
 	location_t variable_location;				/**< Расположение переменной */
@@ -123,9 +126,27 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case LOR:
 			uni_printf(io, "or");
 			break;
+		case EQEQ:
+			uni_printf(io, "icmp eq");
+			break;
+		case NOTEQ:
+			uni_printf(io, "icmp ne");
+			break;
+		case LLT:
+			uni_printf(io, "icmp slt");
+			break;
+		case LGT:
+			uni_printf(io, "icmp sgt");
+			break;
+		case LLE:
+			uni_printf(io, "icmp sle");
+			break;
+		case LGE:
+			uni_printf(io, "icmp sge");
+			break;
 	}
 }
-
+// TODO: подумать над переименованием этих функций, так как они обрабатывают и логические операции
 static void to_code_arithmetic_reg_reg(information *const info, item_t type, item_t fst, item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
@@ -376,6 +397,41 @@ static void arithmetic_expression(information *const info, node *const nd)
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 }
+// TODO: подумать, а нужна ли эта функция, очень похожа на arithmetic_expression
+// TODO: добавить работу с константами
+static void logic_expression(information *const info, node *const nd)
+{
+	const item_t operation_type = node_get_type(nd);
+	node_set_next(nd);
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+	const answer_t left_type = info->answer_type;
+	const item_t left_reg = info->answer_reg;
+	const item_t left_const = info->answer_const;
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+	const answer_t right_type = info->answer_type;
+	const item_t right_reg = info->answer_reg;
+	const item_t right_const = info->answer_const;
+
+	if (left_type == AREG && right_type == AREG)
+	{
+		to_code_arithmetic_reg_reg(info, operation_type, left_reg, right_reg);
+	}
+	else if (left_type == AREG && right_type == ACONST)
+	{
+		to_code_arithmetic_reg_const(info, operation_type, left_reg, right_const);
+	}
+	else if (left_type == ACONST && right_type == AREG)
+	{
+		to_code_arithmetic_const_reg(info, operation_type, left_const, right_reg);
+	}
+
+	info->answer_type = ALOGIC;
+	info->answer_reg = info->register_num++;
+}
 
 // Обрабатываются операции инкремента/декремента и постинкремента/постдекремента
 static void inc_dec_expression(information *const info, node *const nd)
@@ -488,6 +544,16 @@ static void binary_operation(information *const info, node *const nd)
 		case LEXOR:
 		case LOR:
 			arithmetic_expression(info, nd);
+			break;
+
+
+		case EQEQ:
+		case NOTEQ:
+		case LLT:
+		case LGT:
+		case LLE:
+		case LGE:
+			logic_expression(info, nd);
 			break;
 
 
@@ -683,14 +749,31 @@ static void statement(information *const info, node *const nd)
 		case TIf:
 		{
 			const item_t ref_else = node_get_arg(nd, 0);
+			const item_t label = info->label_num++;
 
 			node_set_next(nd);
+
+			info->variable_location = LFREE;
 			expression(info, nd);
+			// TODO: сделать обработку других ответов
+			// TODO: подумать, надо ли выносить команды меток и переходов в отдельные функции
+			if (info->answer_type == ALOGIC)
+			{
+				uni_printf(info->io, " br i1 %%.%" PRIitem ", label %%if%" PRIitem ", label %%else%" PRIitem "\n", 
+					info->answer_reg, label, label);
+			}
+			uni_printf(info->io, " if%" PRIitem ":\n", label);
+
 			statement(info, nd);
+			uni_printf(info->io, " br label %%end%" PRIitem "\n", label);
+			uni_printf(info->io, " else%" PRIitem ":\n", label);
 			if (ref_else)
 			{
 				statement(info, nd);
 			}
+
+			uni_printf(info->io, " br label %%end%" PRIitem "\n", label);
+			uni_printf(info->io, " end%" PRIitem ":\n", label);
 		}
 		break;
 		case TSwitch:
@@ -886,6 +969,7 @@ static int codegen(universal_io *const io, syntax *const sx)
 	info.sx = sx;
 	info.string_num = 1;
 	info.register_num = 1;
+	info.label_num = 1;
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
@@ -936,6 +1020,7 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	{
 		return -1;
 	}
+	tree_print("new1.txt", &(sx->tree));
 
 	return codegen(io, sx);
 }
