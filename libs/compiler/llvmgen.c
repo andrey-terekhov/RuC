@@ -31,7 +31,7 @@ typedef enum LOCATION
 {
 	LREG,								/**< Переменная находится в регистре */
 	LMEM,								/**< Переменная находится в памяти */
-	LFREE,								/**< Свободный запрос на значение */
+	LFREE,								/**< Свободный запрос значения */
 } location_t;
 
 typedef struct information
