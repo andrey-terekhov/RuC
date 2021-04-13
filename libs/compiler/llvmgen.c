@@ -31,27 +31,136 @@ typedef enum LOCATION
 {
 	LREG,								/**< Переменная находится в регистре */
 	LMEM,								/**< Переменная находится в памяти */
+	LFREE,								/**< Свободный запрос на значение */
 } location_t;
 
 typedef struct information
 {
-	universal_io *io;					/**< Вывод */
-	syntax *sx;							/**< Структура syntax с таблицами */
+	universal_io *io;							/**< Вывод */
+	syntax *sx;									/**< Структура syntax с таблицами */
 
-	item_t string_num;					/**< Номер строки */
-	item_t register_num;				/**< Номер регистра */
+	item_t string_num;							/**< Номер строки */
+	item_t register_num;						/**< Номер регистра */
 
-	item_t request_reg;					/**< Регистр на запрос */
-	location_t variable_location;		/**< Расположение переменной */
+	item_t request_reg;							/**< Регистр на запрос */
+	location_t variable_location;				/**< Расположение переменной */
 
-	item_t answer_reg;					/**< Регистр с ответом */
-	item_t answer_const;				/**< Константа с ответом */
-	answer_t answer_type;				/**< Тип ответа */
+	item_t answer_reg;							/**< Регистр с ответом */
+	item_t answer_const;						/**< Константа с ответом */
+	answer_t answer_type;						/**< Тип ответа */
 } information;
 
 
 static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
+
+
+static void operation_to_io(universal_io *const io, const item_t type)
+{
+	switch (type)
+	{
+		case POSTINC:
+		case POSTINCV:
+		case PLUSASS:
+		case PLUSASSV:
+		case LPLUS:
+			uni_printf(io, "add nsw");
+			break;
+
+		case POSTDEC:
+		case POSTDECV:
+		case MINUSASS:
+		case MINUSASSV:
+		case LMINUS:
+		case UNMINUS:
+			uni_printf(io, "sub nsw");
+			break;
+
+		case MULTASS:
+		case MULTASSV:
+		case LMULT:
+			uni_printf(io, "mul nsw");
+			break;
+
+		case DIVASS:
+		case DIVASSV:
+		case LDIV:
+			uni_printf(io, "sdiv");
+			break;
+
+		case REMASS:
+		case REMASSV:
+		case LREM:
+			uni_printf(io, "srem");
+			break;
+
+		case SHLASS:
+		case SHLASSV:
+		case LSHL:
+			uni_printf(io, "shl");
+			break;
+
+		case SHRASS:
+		case SHRASSV:
+		case LSHR:
+			uni_printf(io, "ashr");
+			break;
+
+		case ANDASS:
+		case ANDASSV:
+		case LAND:
+			uni_printf(io, "and");
+			break;
+
+		case EXORASS:
+		case EXORASSV:
+		case LEXOR:
+			uni_printf(io, "xor");
+			break;
+
+		case ORASS:
+		case ORASSV:
+		case LOR:
+			uni_printf(io, "or");
+			break;
+	}
+}
+
+static void to_code_arithmetic_reg_reg(information *const info, item_t type, item_t fst, item_t snd)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->io, type);
+	uni_printf(info->io, " i32 %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
+}
+
+static void to_code_arithmetic_reg_const(information *const info, item_t type, item_t fst, item_t snd)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->io, type);
+	uni_printf(info->io, " i32 %%.%" PRIitem ", %" PRIitem "\n", fst, snd);
+}
+
+static void to_code_arithmetic_const_reg(information *const info, item_t type, item_t fst, item_t snd)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->io, type);
+	uni_printf(info->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
+}
+
+static inline void to_code_load(information *const info, item_t result, item_t displ)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n", result, displ);
+}
+
+static inline void to_code_store_reg(information *const info, item_t reg, item_t displ)
+{
+	uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", reg, displ);
+}
+
+static inline void to_code_store_const(information *const info, item_t arg, item_t displ)
+{
+	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", arg, displ);
+}
 
 
 static void operand(information *const info, node *const nd)
@@ -74,8 +183,7 @@ static void operand(information *const info, node *const nd)
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
-			uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n"
-				, info->register_num, displ);
+			to_code_load(info, info->register_num, displ);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
 			node_set_next(nd);
@@ -87,8 +195,7 @@ static void operand(information *const info, node *const nd)
 
 			if (info->variable_location == LMEM)
 			{
-				uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
-					, num, info->request_reg);
+				to_code_store_const(info, num, info->request_reg);
 				info->answer_type = AREG;
 			}
 			else
@@ -157,41 +264,401 @@ static void operand(information *const info, node *const nd)
 	}
 }
 
-static void expression(information *const info, node *const nd)
+static void assignment_expression(information *const info, node *const nd)
+{
+	const item_t displ = node_get_arg(nd, 0);
+	const item_t assignment_type = node_get_type(nd);
+
+	node_set_next(nd);
+	node_set_next(nd); // TIdent
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+
+	item_t result = info->answer_reg;
+
+	if (assignment_type != ASS && assignment_type != ASSV)
+	{
+		to_code_load(info, info->register_num, displ);
+		info->register_num++;
+
+		if (info->answer_type == AREG)
+		{
+			to_code_arithmetic_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg);
+		}
+		else // ACONST
+		{
+			to_code_arithmetic_reg_const(info, assignment_type, info->register_num - 1, info->answer_const);
+		}
+			
+		result = info->register_num++;
+	}
+
+	if (info->answer_type == AREG || (assignment_type != ASS && assignment_type != ASSV))
+	{
+		to_code_store_reg(info, result, displ);
+	}
+	else // ACONST && =
+	{
+		to_code_store_const(info, info->answer_const, displ);
+	}
+}
+
+static void arithmetic_expression(information *const info, node *const nd)
+{
+	const item_t operation_type = node_get_type(nd);
+	node_set_next(nd);
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+	const answer_t left_type = info->answer_type;
+	const item_t left_reg = info->answer_reg;
+	const item_t left_const = info->answer_const;
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+	const answer_t right_type = info->answer_type;
+	const item_t right_reg = info->answer_reg;
+	const item_t right_const = info->answer_const;
+
+	if (left_type == AREG && right_type == AREG)
+	{
+		to_code_arithmetic_reg_reg(info, operation_type, left_reg, right_reg);
+	}
+	else if (left_type == AREG && right_type == ACONST)
+	{
+		to_code_arithmetic_reg_const(info, operation_type, left_reg, right_const);
+	}
+	else if (left_type == ACONST && right_type == AREG)
+	{
+		to_code_arithmetic_const_reg(info, operation_type, left_const, right_reg);
+	}
+	else // if (left_type == ACONST && right_type == ACONST)
+	{
+		info->answer_type = ACONST;
+
+		switch (operation_type)
+		{
+			case LPLUS:
+				info->answer_const = left_const + right_const;
+				break;
+			case LMINUS:
+				info->answer_const = left_const - right_const;
+				break;
+			case LMULT:
+				info->answer_const = left_const * right_const;
+				break;
+			case LDIV:
+				info->answer_const = left_const / right_const;
+				break;
+			case LREM:
+				info->answer_const = left_const % right_const;
+				break;
+			case LSHL:
+				info->answer_const = left_const << right_const;
+				break;
+			case LSHR:
+				info->answer_const = left_const >> right_const;
+				break;
+			case LAND:
+				info->answer_const = left_const & right_const;
+				break;
+			case LEXOR:
+				info->answer_const = left_const ^ right_const;
+				break;
+			case LOR:
+				info->answer_const = left_const | right_const;
+				break;
+		}
+		return;
+	}
+
+	info->answer_type = AREG;
+	info->answer_reg = info->register_num++;
+}
+
+// Обрабатываются операции инкремента/декремента и постинкремента/постдекремента
+static void inc_dec_expression(information *const info, node *const nd)
+{
+	const item_t displ = node_get_arg(nd, 0);
+	const item_t operation_type = node_get_type(nd);
+
+	node_set_next(nd);
+	node_set_next(nd); // TIdent
+
+	to_code_load(info, info->register_num, displ);
+	info->answer_type = AREG;
+	info->answer_reg = info->register_num++;
+	
+	switch (operation_type)
+	{
+		case INC:
+		case INCV:
+		case DEC:
+		case DECV:
+			info->answer_reg = info->register_num;
+		case POSTINC:
+		case POSTINCV:
+		case POSTDEC:
+		case POSTDECV:
+			to_code_arithmetic_reg_const(info, operation_type, info->register_num - 1, 1);
+			break;
+	}
+
+	to_code_store_reg(info, info->register_num, displ);
+	info->register_num++;
+}
+
+static void unary_operation(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		// бинарные операции
-		// пока не все, будут вводиться по мере тестирования
+		case POSTINC:
+		case POSTINCV:
+		case POSTDEC:
+		case POSTDECV:
+		case INC:
+		case INCV:
+		case DEC:
+		case DECV:
+			inc_dec_expression(info, nd);
+			break;
+		case UNMINUS:
+		{
+			node_set_next(nd);
+
+			info->variable_location = LREG;
+			expression(info, nd);
+
+			to_code_arithmetic_const_reg(info, UNMINUS, 0, info->answer_reg);
+			info->answer_type = AREG;
+			info->answer_reg = info->register_num++;
+		}
+		break;
+		default:
+		{
+			node_set_next(nd);
+			expression(info, nd);
+		}
+		break;
+	}
+}
+
+static void binary_operation(information *const info, node *const nd)
+{
+	switch (node_get_type(nd))
+	{
+		case ASS:
+		case ASSV:
+
+		case PLUSASS:
+		case PLUSASSV:
+		case MINUSASS:
+		case MINUSASSV:
+		case MULTASS:
+		case MULTASSV:
+		case DIVASS:
+		case DIVASSV:
+
+		case REMASS:
+		case REMASSV:
+		case SHLASS:
+		case SHLASSV:
+		case SHRASS:
+		case SHRASSV:
+		case ANDASS:
+		case ANDASSV:
+		case EXORASS:
+		case EXORASSV:
+		case ORASS:
+		case ORASSV:
+			assignment_expression(info, nd);
+			break;
+
+
 		case LPLUS:
 		case LMINUS:
 		case LMULT:
 		case LDIV:
+
+		case LREM:
+		case LSHL:
+		case LSHR:
+		case LAND:
+		case LEXOR:
+		case LOR:
+			arithmetic_expression(info, nd);
+			break;
+
+
+		default:
 		{
 			node_set_next(nd);
 			expression(info, nd);
 			expression(info, nd);
 		}
 		break;
+	}
+}
 
-		// унарные операции
-		// пока не все, будут вводиться по мере тестирования
+static void expression(information *const info, node *const nd)
+{
+	switch (node_get_type(nd))
+	{
+		case POSTINC:
+		case POSTDEC:
+		case INC:
+		case DEC:
+		case POSTINCAT:
+		case POSTDECAT:
+		case INCAT:
+		case DECAT:
+		case POSTINCV:
+		case POSTDECV:
+		case INCV:
+		case DECV:
+		case POSTINCATV:
+		case POSTDECATV:
+		case INCATV:
+		case DECATV:
+
+		case UNMINUS:
+
+		case LNOT:
+		case LOGNOT:
+
+		case POSTINCR:
+		case POSTDECR:
+		case INCR:
+		case DECR:
+		case POSTINCATR:
+		case POSTDECATR:
+		case INCATR:
+		case DECATR:
+		case POSTINCRV:
+		case POSTDECRV:
+		case INCRV:
+		case DECRV:
+		case POSTINCATRV:
+		case POSTDECATRV:
+		case INCATRV:
+		case DECATRV:
+
+		case UNMINUSR:
+			unary_operation(info, nd);
+			break;
+
+
+		case REMASS:
+		case SHLASS:
+		case SHRASS:
+		case ANDASS:
+		case EXORASS:
+		case ORASS:
+
 		case ASS:
 		case PLUSASS:
 		case MINUSASS:
 		case MULTASS:
 		case DIVASS:
 
+		case REMASSAT:
+		case SHLASSAT:
+		case SHRASSAT:
+		case ANDASSAT:
+		case EXORASSAT:
+		case ORASSAT:
+
+		case ASSAT:
+		case PLUSASSAT:
+		case MINUSASSAT:
+		case MULTASSAT:
+		case DIVASSAT:
+
+		case REMASSV:
+		case SHLASSV:
+		case SHRASSV:
+		case ANDASSV:
+		case EXORASSV:
+		case ORASSV:
+
 		case ASSV:
 		case PLUSASSV:
 		case MINUSASSV:
 		case MULTASSV:
 		case DIVASSV:
-		{
-			node_set_next(nd);
-			expression(info, nd);
-		}
-		break;
+
+		case REMASSATV:
+		case SHLASSATV:
+		case SHRASSATV:
+		case ANDASSATV:
+		case EXORASSATV:
+		case ORASSATV:
+
+		case ASSATV:
+		case PLUSASSATV:
+		case MINUSASSATV:
+		case MULTASSATV:
+		case DIVASSATV:
+
+		case LREM:
+		case LSHL:
+		case LSHR:
+		case LAND:
+		case LEXOR:
+		case LOR:
+		case LOGAND:
+		case LOGOR:
+
+		case EQEQ:
+		case NOTEQ:
+		case LLT:
+		case LGT:
+		case LLE:
+		case LGE:
+		case LPLUS:
+		case LMINUS:
+		case LMULT:
+		case LDIV:
+
+		case ASSR:
+		case PLUSASSR:
+		case MINUSASSR:
+		case MULTASSR:
+		case DIVASSR:
+
+		case ASSATR:
+		case PLUSASSATR:
+		case MINUSASSATR:
+		case MULTASSATR:
+		case DIVASSATR:
+
+		case ASSRV:
+		case PLUSASSRV:
+		case MINUSASSRV:
+		case MULTASSRV:
+		case DIVASSRV:
+
+		case ASSATRV:
+		case PLUSASSATRV:
+		case MINUSASSATRV:
+		case MULTASSATRV:
+		case DIVASSATRV:
+
+		case EQEQR:
+		case NOTEQR:
+		case LLTR:
+		case LGTR:
+		case LLER:
+		case LGER:
+		case LPLUSR:
+		case LMINUSR:
+		case LMULTR:
+		case LDIVR:
+			binary_operation(info, nd);
+			break;
+
+
 		default:
 			operand(info, nd);
 			break;
