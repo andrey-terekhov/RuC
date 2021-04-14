@@ -173,7 +173,7 @@ int node_copy(node *const dest, const node *const src);
  *
  *	@return	Internal index, @c SIZE_MAX on failure
  */
-size_t node_save(node *const nd);
+size_t node_save(const node *const nd);
 
 /**
  *	Rebuild node by internal index

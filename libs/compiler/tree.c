@@ -21,12 +21,12 @@
 #include "errors.h"
 
 #ifndef min
-	#define min(a,b) (((a)<(b))?(a):(b))
+	#define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
 
 const item_t REF_MASK = (item_t)0b11111111 << (8 * min(sizeof(item_t), sizeof(size_t)) - 8);
-const item_t REF_LABEL = (item_t)0b10010010<< (8 * min(sizeof(item_t), sizeof(size_t)) - 8);
+const item_t REF_LABEL = (item_t)0b10010010 << (8 * min(sizeof(item_t), sizeof(size_t)) - 8);
 
 
 node node_expression(vector *const tree, const size_t index);
@@ -794,7 +794,7 @@ int node_copy(node *const dest, const node *const src)
 	return 0;
 }
 
-size_t node_save(node *const nd)
+size_t node_save(const node *const nd)
 {
 	return node_is_correct(nd)
 		? (size_t)to_ref(nd->type)
