@@ -25,7 +25,7 @@
 #include "uniio.h"
 
 
-// #define GENERATE_TREE
+//#define GENERATE_TREE
 
 
 #ifdef __cplusplus
@@ -437,15 +437,6 @@ item_t to_modetab(parser *const prs, const item_t mode, const item_t element);
  *	@param	op			New node type
  */
 void to_tree(parser *const prs, const item_t op);
-
-/**
- *	Create tree reference of last child for backward compatibility
- *
- *	@param	nd			Parent node
- *
- *	@return	Tree reference
- */
-item_t tree_reference(node *const nd);
 
 #ifdef __cplusplus
 } /* extern "C" */

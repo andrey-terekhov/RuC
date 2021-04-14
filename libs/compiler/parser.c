@@ -286,9 +286,3 @@ void to_tree(parser *const prs, const item_t operation)
 {
 	prs->nd = node_add_child(&prs->nd, operation);
 }
-
-item_t tree_reference(node *const nd)
-{
-	node child = node_get_child(nd, node_get_amount(nd) - 1);
-	return (item_t)node_save(&child);
-}

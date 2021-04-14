@@ -151,8 +151,8 @@ void parse_if_statement(parser *const prs, node *const parent)
 
 	if (token_try_consume(prs, kw_else))
 	{
+		node_set_arg(&nd, 0, 1);
 		parse_statement(prs, &nd);
-		node_set_arg(&nd, 0, tree_reference(&nd));
 	}
 }
 
@@ -254,27 +254,27 @@ void parse_for_statement(parser *const prs, node *const parent)
 	node_add_arg(&nd, 0); // ref_inition
 	node_add_arg(&nd, 0); // ref_condition
 	node_add_arg(&nd, 0); // ref_increment
-	node_add_arg(&nd, 0); // ref_statement
+	node_add_arg(&nd, 1); // ref_statement
 	token_expect_and_consume(prs, l_paren, no_leftbr_in_for);
 
 	if (!token_try_consume(prs, semicolon))
 	{
+		node_set_arg(&nd, 0, 1); // ref_inition
 		parse_expression(prs, &nd);
-		node_set_arg(&nd, 0, tree_reference(&nd)); // ref_inition
 		token_expect_and_consume(prs, semicolon, no_semicolon_in_for);
 	}
 
 	if (!token_try_consume(prs, semicolon))
 	{
+		node_set_arg(&nd, 1, 1); // ref_condition
 		parse_condition(prs, &nd);
-		node_set_arg(&nd, 1, tree_reference(&nd)); // ref_condition
 		token_expect_and_consume(prs, semicolon, no_semicolon_in_for);
 	}
 
 	if (!token_try_consume(prs, r_paren))
 	{
+		node_set_arg(&nd, 2, 1); // ref_increment
 		parse_expression(prs, &nd);
-		node_set_arg(&nd, 2, tree_reference(&nd)); // ref_increment
 		token_expect_and_consume(prs, r_paren, no_rightbr_in_for);
 	}
 
@@ -282,7 +282,6 @@ void parse_for_statement(parser *const prs, node *const parent)
 	prs->flag_in_loop = 1;
 	parse_statement(prs, &nd);
 	prs->flag_in_loop = old_in_loop;
-	node_set_arg(&nd, 3, tree_reference(&nd)); // ref_statement
 }
 
 /**
