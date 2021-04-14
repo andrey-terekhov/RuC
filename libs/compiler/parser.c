@@ -22,6 +22,9 @@
 const char *const DEFAULT_TREE = "tree.txt";
 const char *const DEFAULT_NEW = "new.txt";
 
+const size_t MAX_LABELS = 10000;
+const size_t MAX_STACK = 100;
+
 
 /** Check if the set of tokens has token in it */
 int token_check(const uint8_t tokens, const token_t token)
@@ -43,18 +46,30 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.sx = sx;
 	prs.lxr = lxr;
 
-	prs.sp = 0;
-	prs.sopnd = -1;
-	prs.leftansttype = -1;
-	prs.anstdispl = 0;
-
-	prs.buf_flag = 0;
-	prs.buf_cur = 0;
+	prs.left_mode = -1;
+	prs.operand_displ = 0;
 
 	prs.flag_in_assignment = 0;
 	prs.was_error = 0;
 
+	prs.labels = vector_create(MAX_LABELS);
+	prs.stk.priorities = stack_create(MAX_STACK);
+	prs.stk.tokens = stack_create(MAX_STACK);
+	prs.stk.nodes = stack_create(MAX_STACK);
+	prs.anonymous = stack_create(MAX_STACK);
+	token_consume(&prs);
+
 	return prs;
+}
+
+void parser_clear(parser *const prs)
+{
+	vector_clear(&prs->labels);
+	stack_clear(&prs->anonymous);
+
+	stack_clear(&prs->stk.priorities);
+	stack_clear(&prs->stk.tokens);
+	stack_clear(&prs->stk.nodes);
 }
 
 
@@ -76,17 +91,16 @@ int parse(universal_io *const io, syntax *const sx)
 
 	lexer lxr = create_lexer(io, sx);
 	parser prs = parser_create(sx, &lxr);
-
-	get_char(prs.lxr);
-	get_char(prs.lxr);
-	token_consume(&prs);
+	node root = node_get_root(&sx->tree);
 
 	do
 	{
-		parse_declaration_external(&prs);
-	} while (prs.next_token != eof);
+		parse_declaration_external(&prs, &root);
+	} while (prs.token != eof);
 
-	tree_add(prs.sx, TEnd);
+	node_add_child(&root, TEnd);
+
+	parser_clear(&prs);
 
 #ifndef GENERATE_TREE
 	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
@@ -122,13 +136,12 @@ void parser_error(parser *const prs, error_t num, ...)
 
 void token_consume(parser *const prs)
 {
-	prs->curr_token = prs->next_token;
-	prs->next_token = lex(prs->lxr);
+	prs->token = lex(prs->lxr);
 }
 
 int token_try_consume(parser *const prs, const token_t expected)
 {
-	if (prs->next_token == expected)
+	if (prs->token == expected)
 	{
 		token_consume(prs);
 		return 1;
@@ -147,9 +160,9 @@ void token_expect_and_consume(parser *const prs, const token_t expected, const e
 
 void token_skip_until(parser *const prs, const uint8_t tokens)
 {
-	while (prs->next_token != eof)
+	while (prs->token != eof)
 	{
-		switch (prs->next_token)
+		switch (prs->token)
 		{
 			case l_paren:
 				token_consume(prs);
@@ -176,7 +189,7 @@ void token_skip_until(parser *const prs, const uint8_t tokens)
 			case r_brace:
 			case colon:
 			case semicolon:
-				if (token_check(tokens, prs->next_token))
+				if (token_check(tokens, prs->token))
 				{
 					return;
 				}
@@ -243,7 +256,7 @@ int mode_is_undefined(const item_t mode)
 size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode)
 {
 	const size_t ret = ident_add(prs->sx, repr, type, mode, prs->func_def);
-	prs->lastid = 0;
+	prs->last_id = 0;
 
 	if (ret == SIZE_MAX)
 	{
@@ -255,7 +268,7 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
 	}
 	else
 	{
-		prs->lastid = ret;
+		prs->last_id = ret;
 	}
 
 	return ret;
@@ -267,4 +280,15 @@ item_t to_modetab(parser *const prs, const item_t mode, const item_t element)
 	temp[0] = mode;
 	temp[1] = element;
 	return (item_t)mode_add(prs->sx, temp, 2);
+}
+
+void to_tree(parser *const prs, const item_t operation)
+{
+	prs->nd = node_add_child(&prs->nd, operation);
+}
+
+item_t tree_reference(node *const nd)
+{
+	node child = node_get_child(nd, node_get_amount(nd) - 1);
+	return (item_t)node_save(&child);
 }
