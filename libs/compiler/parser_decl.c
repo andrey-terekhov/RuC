@@ -409,10 +409,11 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 	}
 
 	to_tree(prs, TBeginit);
-	node nd;
-	node_copy(&nd, &prs->nd);
-	node_add_arg(&nd, 0);
+	node_add_arg(&prs->nd, 0);
 	size_t list_length = 0;
+
+	node beginit;
+	node_copy(&beginit, &prs->nd);
 
 	do
 	{
@@ -431,7 +432,7 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 	} while (prs->token != semicolon);
 
 	token_expect_and_consume(prs, r_brace, wait_end);
-	node_set_arg(&nd, 0, (item_t)list_length);
+	node_set_arg(&beginit, 0, (item_t)list_length);
 	to_tree(prs, TExprend);
 }
 

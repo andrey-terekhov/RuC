@@ -64,7 +64,7 @@ void node_set_double(node *const nd, const size_t index, const double value)
 	node_set_arg(nd, index + 1, snd);
 }
 
-double node_get_double(node *const nd, const size_t index)
+double node_get_double(const node *const nd, const size_t index)
 {
 	const int64_t fst = (int64_t)node_get_arg(nd, index) & 0x00000000ffffffff;
 	const int64_t snd = (int64_t)node_get_arg(nd, index + 1) & 0x00000000ffffffff;
