@@ -21,7 +21,7 @@
 #include "tree.h"
 #include "uniprinter.h"
 
-// TODO: необходимо прописать обработку ALOGIC в арифметических действиях и подумать, а нужен ли этот тип
+
 typedef enum ANSWER
 {
 	AREG,								/**< Ответ находится в регистре */
@@ -146,22 +146,22 @@ static void operation_to_io(universal_io *const io, const item_t type)
 			break;
 	}
 }
-// TODO: подумать над переименованием этих функций, так как они обрабатывают и логические операции
-static void to_code_arithmetic_reg_reg(information *const info, item_t type, item_t fst, item_t snd)
+
+static void to_code_operation_reg_reg(information *const info, item_t type, item_t fst, item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, type);
 	uni_printf(info->io, " i32 %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_arithmetic_reg_const(information *const info, item_t type, item_t fst, item_t snd)
+static void to_code_operation_reg_const(information *const info, item_t type, item_t fst, item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, type);
 	uni_printf(info->io, " i32 %%.%" PRIitem ", %" PRIitem "\n", fst, snd);
 }
 
-static void to_code_arithmetic_const_reg(information *const info, item_t type, item_t fst, item_t snd)
+static void to_code_operation_const_reg(information *const info, item_t type, item_t fst, item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, type);
@@ -181,6 +181,27 @@ static inline void to_code_store_reg(information *const info, item_t reg, item_t
 static inline void to_code_store_const(information *const info, item_t arg, item_t displ)
 {
 	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", arg, displ);
+}
+
+static inline void to_code_zext_to(information *const info, item_t arg)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = zext i1 %%.%" PRIitem " to i32\n", info->register_num, arg);
+}
+
+static inline void to_code_label(information *const info, item_t label_num)
+{
+	uni_printf(info->io, " label%" PRIitem ":\n", label_num);
+}
+
+static inline void to_code_unconditional_branch(information *const info, item_t label_num)
+{
+	uni_printf(info->io, " br label %%label%" PRIitem "\n", label_num);
+}
+
+static inline void to_code_conditional_branch(information *const info, item_t reg, item_t label_true, item_t label_false)
+{
+	uni_printf(info->io, " br i1 %%.%" PRIitem ", label %%label%" PRIitem ", label %%label%" PRIitem "\n", 
+		reg, label_true, label_false);
 }
 
 
@@ -296,6 +317,13 @@ static void assignment_expression(information *const info, node *const nd)
 	info->variable_location = LFREE;
 	expression(info, nd);
 
+	if (info->answer_type == ALOGIC)
+	{
+		to_code_zext_to(info, info->answer_reg);
+		info->answer_type = AREG;
+		info->answer_reg = info->register_num++;
+	}
+
 	item_t result = info->answer_reg;
 
 	if (assignment_type != ASS && assignment_type != ASSV)
@@ -305,11 +333,11 @@ static void assignment_expression(information *const info, node *const nd)
 
 		if (info->answer_type == AREG)
 		{
-			to_code_arithmetic_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg);
+			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg);
 		}
 		else // ACONST
 		{
-			to_code_arithmetic_reg_const(info, assignment_type, info->register_num - 1, info->answer_const);
+			to_code_operation_reg_const(info, assignment_type, info->register_num - 1, info->answer_const);
 		}
 			
 		result = info->register_num++;
@@ -332,27 +360,43 @@ static void arithmetic_expression(information *const info, node *const nd)
 
 	info->variable_location = LFREE;
 	expression(info, nd);
+
+	if (info->answer_type == ALOGIC)
+	{
+		to_code_zext_to(info, info->answer_reg);
+		info->answer_type = AREG;
+		info->answer_reg = info->register_num++;
+	}
+
 	const answer_t left_type = info->answer_type;
 	const item_t left_reg = info->answer_reg;
 	const item_t left_const = info->answer_const;
 
 	info->variable_location = LFREE;
 	expression(info, nd);
+
+	if (info->answer_type == ALOGIC)
+	{
+		to_code_zext_to(info, info->answer_reg);
+		info->answer_type = AREG;
+		info->answer_reg = info->register_num++;
+	}
+
 	const answer_t right_type = info->answer_type;
 	const item_t right_reg = info->answer_reg;
 	const item_t right_const = info->answer_const;
 
 	if (left_type == AREG && right_type == AREG)
 	{
-		to_code_arithmetic_reg_reg(info, operation_type, left_reg, right_reg);
+		to_code_operation_reg_reg(info, operation_type, left_reg, right_reg);
 	}
 	else if (left_type == AREG && right_type == ACONST)
 	{
-		to_code_arithmetic_reg_const(info, operation_type, left_reg, right_const);
+		to_code_operation_reg_const(info, operation_type, left_reg, right_const);
 	}
 	else if (left_type == ACONST && right_type == AREG)
 	{
-		to_code_arithmetic_const_reg(info, operation_type, left_const, right_reg);
+		to_code_operation_const_reg(info, operation_type, left_const, right_reg);
 	}
 	else // if (left_type == ACONST && right_type == ACONST)
 	{
@@ -398,7 +442,6 @@ static void arithmetic_expression(information *const info, node *const nd)
 	info->answer_reg = info->register_num++;
 }
 // TODO: подумать, а нужна ли эта функция, очень похожа на arithmetic_expression
-// TODO: добавить работу с константами
 static void logic_expression(information *const info, node *const nd)
 {
 	const item_t operation_type = node_get_type(nd);
@@ -406,27 +449,70 @@ static void logic_expression(information *const info, node *const nd)
 
 	info->variable_location = LFREE;
 	expression(info, nd);
+
+	if (info->answer_type == ALOGIC)
+	{
+		to_code_zext_to(info, info->answer_reg);
+		info->answer_type = AREG;
+		info->answer_reg = info->register_num++;
+	}
+
 	const answer_t left_type = info->answer_type;
 	const item_t left_reg = info->answer_reg;
 	const item_t left_const = info->answer_const;
 
 	info->variable_location = LFREE;
 	expression(info, nd);
+
+	if (info->answer_type == ALOGIC)
+	{
+		to_code_zext_to(info, info->answer_reg);
+		info->answer_type = AREG;
+		info->answer_reg = info->register_num++;
+	}
+
 	const answer_t right_type = info->answer_type;
 	const item_t right_reg = info->answer_reg;
 	const item_t right_const = info->answer_const;
 
 	if (left_type == AREG && right_type == AREG)
 	{
-		to_code_arithmetic_reg_reg(info, operation_type, left_reg, right_reg);
+		to_code_operation_reg_reg(info, operation_type, left_reg, right_reg);
 	}
 	else if (left_type == AREG && right_type == ACONST)
 	{
-		to_code_arithmetic_reg_const(info, operation_type, left_reg, right_const);
+		to_code_operation_reg_const(info, operation_type, left_reg, right_const);
 	}
 	else if (left_type == ACONST && right_type == AREG)
 	{
-		to_code_arithmetic_const_reg(info, operation_type, left_const, right_reg);
+		to_code_operation_const_reg(info, operation_type, left_const, right_reg);
+	}
+	else // if (left_type == ACONST && right_type == ACONST)
+	{
+		info->answer_type = ACONST;
+
+		switch (operation_type)
+		{
+			case EQEQ:
+				info->answer_const = left_const == right_const;
+				break;
+			case NOTEQ:
+				info->answer_const = left_const != right_const;
+				break;
+			case LLT:
+				info->answer_const = left_const < right_const;
+				break;
+			case LGT:
+				info->answer_const = left_const > right_const;
+				break;
+			case LLE:
+				info->answer_const = left_const <= right_const;
+				break;
+			case LGE:
+				info->answer_const = left_const >= right_const;
+				break;
+		}
+		return;
 	}
 
 	info->answer_type = ALOGIC;
@@ -457,7 +543,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 		case POSTINCV:
 		case POSTDEC:
 		case POSTDECV:
-			to_code_arithmetic_reg_const(info, operation_type, info->register_num - 1, 1);
+			to_code_operation_reg_const(info, operation_type, info->register_num - 1, 1);
 			break;
 	}
 
@@ -486,7 +572,13 @@ static void unary_operation(information *const info, node *const nd)
 			info->variable_location = LREG;
 			expression(info, nd);
 
-			to_code_arithmetic_const_reg(info, UNMINUS, 0, info->answer_reg);
+			if (info->answer_type == ALOGIC)
+			{
+				to_code_zext_to(info, info->answer_reg);
+				info->answer_reg = info->register_num++;
+			}
+
+			to_code_operation_const_reg(info, UNMINUS, 0, info->answer_reg);
 			info->answer_type = AREG;
 			info->answer_reg = info->register_num++;
 		}
@@ -555,6 +647,21 @@ static void binary_operation(information *const info, node *const nd)
 		case LGE:
 			logic_expression(info, nd);
 			break;
+
+// TODO: доделать, нужен переход
+		case LOGOR:
+		{
+			node_set_next(nd);
+			expression(info, nd);
+
+			if (node_get_type(nd) == ADLOGOR)
+			{
+				node_set_next(nd);
+			}
+
+			expression(info, nd);
+		}
+		break;
 
 
 		default:
@@ -749,31 +856,31 @@ static void statement(information *const info, node *const nd)
 		case TIf:
 		{
 			const item_t ref_else = node_get_arg(nd, 0);
-			const item_t label = info->label_num++;
+			const item_t label_if = info->label_num++;
+			const item_t label_else = info->label_num++;
+			const item_t label_end = info->label_num++;
 
 			node_set_next(nd);
 
 			info->variable_location = LFREE;
 			expression(info, nd);
 			// TODO: сделать обработку других ответов
-			// TODO: подумать, надо ли выносить команды меток и переходов в отдельные функции
 			if (info->answer_type == ALOGIC)
 			{
-				uni_printf(info->io, " br i1 %%.%" PRIitem ", label %%if%" PRIitem ", label %%else%" PRIitem "\n", 
-					info->answer_reg, label, label);
+				to_code_conditional_branch(info, info->answer_reg, label_if, label_else);
 			}
-			uni_printf(info->io, " if%" PRIitem ":\n", label);
+			to_code_label(info, label_if);
 
 			statement(info, nd);
-			uni_printf(info->io, " br label %%end%" PRIitem "\n", label);
-			uni_printf(info->io, " else%" PRIitem ":\n", label);
+			to_code_unconditional_branch(info, label_end);
+			to_code_label(info, label_else);
 			if (ref_else)
 			{
 				statement(info, nd);
 			}
 
-			uni_printf(info->io, " br label %%end%" PRIitem "\n", label);
-			uni_printf(info->io, " end%" PRIitem ":\n", label);
+			to_code_unconditional_branch(info, label_end);
+			to_code_label(info, label_end);
 		}
 		break;
 		case TSwitch:
