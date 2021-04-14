@@ -66,6 +66,12 @@ size_t operators_size(const parser *const prs)
 	return stack_size(&prs->operators.tokens);
 }
 
+int operands_push(parser *const prs, const operand_t type, const item_t mode)
+{
+	prs->last_type = type;
+	return stack_push(&prs->operands, mode);
+}
+
 
 void node_add_double(node *const nd, const double value)
 {
@@ -118,29 +124,11 @@ void float_operation(parser *const prs, const item_t type, const item_t operatio
 }
 
 
-item_t anst_push(parser *const prs, const operand_t type, const item_t mode)
-{
-	stack_push(&prs->anon_stack.operands, mode);
-	prs->anon_stack.type = type;
-	return mode;
-}
-
-item_t anst_pop(parser *const prs)
-{
-	return stack_pop(&prs->anon_stack.operands);
-}
-
-operand_t anst_peek(parser *const prs)
-{
-	return prs->anon_stack.type;
-}
-
-
 void binary_operation(parser *const prs, operator operator)
 {
 	const token_t token = operator.token;
-	const item_t right_mode = anst_pop(prs);
-	const item_t left_mode = anst_pop(prs);
+	const item_t right_mode = stack_pop(&prs->operands);
+	const item_t left_mode = stack_pop(&prs->operands);
 	item_t result_mode = right_mode;
 
 	if (mode_is_pointer(prs->sx, left_mode) || mode_is_pointer(prs->sx, right_mode))
@@ -184,16 +172,16 @@ void binary_operation(parser *const prs, operator operator)
 		result_mode = mode_integer;
 	}
 
-	anst_push(prs, VALUE, result_mode);
+	operands_push(prs, VALUE, result_mode);
 }
 
 void to_value(parser *const prs)
 {
-	switch (anst_peek(prs))
+	switch (prs->last_type)
 	{
 		case VARIABLE:
 		{
-			const item_t type = anst_pop(prs);
+			const item_t type = stack_pop(&prs->operands);
 			if (mode_is_struct(prs->sx, type) && !prs->flag_in_assignment)
 			{
 				node_set_type(&prs->nd, COPY0ST);
@@ -205,13 +193,13 @@ void to_value(parser *const prs)
 				node_set_type(&prs->nd, mode_is_float(type) ? TIdenttovald : TIdenttoval);
 			}
 
-			anst_push(prs, VALUE, type);
+			operands_push(prs, VALUE, type);
 		}
 		break;
 
 		case ADDRESS:
 		{
-			const item_t type = anst_pop(prs);
+			const item_t type = stack_pop(&prs->operands);
 			if (mode_is_struct(prs->sx, type) && !prs->flag_in_assignment)
 			{
 				to_tree(prs, COPY1ST);
@@ -222,7 +210,7 @@ void to_value(parser *const prs)
 				to_tree(prs, mode_is_float(type) ? TAddrtovald : TAddrtoval);
 			}
 
-			anst_push(prs, VALUE, type);
+			operands_push(prs, VALUE, type);
 		}
 		break;
 
@@ -293,7 +281,7 @@ void must_be_string(parser *const prs)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 
-	if (!mode_is_string(prs->sx, anst_pop(prs)))
+	if (!mode_is_string(prs->sx, stack_pop(&prs->operands)))
 	{
 		parser_error(prs, not_string_in_stanfunc);
 	}
@@ -304,7 +292,7 @@ void must_be_point_string(parser *const prs)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 
-	const item_t type = anst_pop(prs);
+	const item_t type = stack_pop(&prs->operands);
 	if (!(mode_is_pointer(prs->sx, type) && mode_is_string(prs->sx, mode_get(prs->sx, (size_t)type + 1))))
 	{
 		parser_error(prs, not_point_string_in_stanfunc);
@@ -316,7 +304,7 @@ void must_be_row(parser *const prs)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 
-	if (!mode_is_array(prs->sx, anst_pop(prs)))
+	if (!mode_is_array(prs->sx, stack_pop(&prs->operands)))
 	{
 		parser_error(prs, not_array_in_stanfunc);
 	}
@@ -327,7 +315,7 @@ void must_be_int(parser *const prs)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 
-	if (!mode_is_int(anst_pop(prs)))
+	if (!mode_is_int(stack_pop(&prs->operands)))
 	{
 		parser_error(prs, not_int_in_stanfunc);
 	}
@@ -338,7 +326,7 @@ void must_be_float(parser *const prs)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 
-	const item_t type = anst_pop(prs);
+	const item_t type = stack_pop(&prs->operands);
 	if (mode_is_int(type))
 	{
 		to_tree(prs, WIDEN);
@@ -361,7 +349,7 @@ void must_be_row_of_int(parser *const prs)
 		parse_assignment_expression_internal(prs);
 		to_value(prs);
 
-		type = anst_pop(prs);
+		type = stack_pop(&prs->operands);
 		if (mode_is_int(type))
 		{
 			to_tree(prs, ROWING);
@@ -387,7 +375,7 @@ void must_be_row_of_float(parser *const prs)
 		parse_assignment_expression_internal(prs);
 		to_value(prs);
 
-		type = anst_pop(prs);
+		type = stack_pop(&prs->operands);
 		if (mode_is_float(type))
 		{
 			to_tree(prs, ROWINGD);
@@ -418,7 +406,7 @@ void parse_standard_function_call(parser *const prs)
 		must_be_int(prs);
 		token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 		must_be_string(prs);
-		anst_push(prs, VALUE, mode_void);
+		operands_push(prs, VALUE, mode_void);
 	}
 	else if (func <= kw_strcpy && func >= kw_strlen) // функции работы со строками
 	{
@@ -444,11 +432,11 @@ void parse_standard_function_call(parser *const prs)
 
 		if (func < kw_strncat)
 		{
-			anst_push(prs, VALUE, mode_integer);
+			operands_push(prs, VALUE, mode_integer);
 		}
 		else
 		{
-			anst_push(prs, VALUE, mode_void);
+			operands_push(prs, VALUE, mode_void);
 		}
 	}
 	else if (func >= kw_receive_string && func <= kw_send_int)
@@ -459,17 +447,17 @@ void parse_standard_function_call(parser *const prs)
 		{
 			token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 			must_be_row_of_int(prs);
-			anst_push(prs, VALUE, mode_void);
+			operands_push(prs, VALUE, mode_void);
 		}
 		else if (func == kw_send_float)
 		{
 			token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 			must_be_row_of_float(prs);
-			anst_push(prs, VALUE, mode_void);
+			operands_push(prs, VALUE, mode_void);
 		}
 		else
 		{
-			anst_push(prs, VALUE, func == kw_receive_int
+			operands_push(prs, VALUE, func == kw_receive_int
 				? mode_integer : func == kw_receive_float
 				? mode_float : to_modetab(prs, mode_array, mode_character));
 		}
@@ -528,7 +516,7 @@ void parse_standard_function_call(parser *const prs)
 					must_be_float(prs);
 				}
 			}
-			anst_push(prs, VALUE, mode_void);
+			operands_push(prs, VALUE, mode_void);
 		}
 		else if (func == kw_setsignal)
 		{
@@ -537,7 +525,7 @@ void parse_standard_function_call(parser *const prs)
 			must_be_row_of_int(prs);
 			token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 			must_be_row_of_int(prs);
-			anst_push(prs, VALUE, mode_void);
+			operands_push(prs, VALUE, mode_void);
 		}
 		else if (func == kw_wifi_connect || func == kw_blynk_authorization || func == kw_blynk_notification)
 		{
@@ -549,7 +537,7 @@ void parse_standard_function_call(parser *const prs)
 				must_be_string(prs);
 			}
 
-			anst_push(prs, VALUE, mode_void);
+			operands_push(prs, VALUE, mode_void);
 		}
 		else
 		{
@@ -581,11 +569,11 @@ void parse_standard_function_call(parser *const prs)
 					must_be_string(prs);
 				}
 
-				anst_push(prs, VALUE, mode_void);
+				operands_push(prs, VALUE, mode_void);
 			}
 			else
 			{
-				anst_push(prs, VALUE, mode_integer);
+				operands_push(prs, VALUE, mode_integer);
 			}
 		}
 	}
@@ -594,17 +582,17 @@ void parse_standard_function_call(parser *const prs)
 		must_be_int(prs);
 		token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
 		must_be_row(prs);
-		anst_push(prs, VALUE, mode_integer);
+		operands_push(prs, VALUE, mode_integer);
 	}
 	else if (func <= kw_msg_send && func >= kw_getnum) // процедуры управления параллельными нитями
 	{
 		if (func == kw_init || func == kw_destroy || func == kw_exit)
 		{
-			anst_push(prs, VALUE, mode_void);
+			operands_push(prs, VALUE, mode_void);
 		}
 		else if (func == kw_msg_receive || func == kw_getnum) // getnum int(), msgreceive msg_info()
 		{
-			anst_push(prs, VALUE, func == kw_getnum ? mode_integer : mode_msg_info);
+			operands_push(prs, VALUE, func == kw_getnum ? mode_integer : mode_msg_info);
 		}
 		else
 		{
@@ -643,14 +631,14 @@ void parse_standard_function_call(parser *const prs)
 					node_add_arg(&prs->nd, displ);
 				}
 
-				anst_push(prs, VALUE, mode_integer);
+				operands_push(prs, VALUE, mode_integer);
 			}
 			else
 			{
 				if (func == kw_msg_send)
 				{
 					parse_initializer(prs, &prs->nd, mode_msg_info);
-					anst_push(prs, VALUE, mode_void);
+					operands_push(prs, VALUE, mode_void);
 				}
 				else
 				{
@@ -658,11 +646,11 @@ void parse_standard_function_call(parser *const prs)
 
 					if (func == kw_sem_create)
 					{
-						anst_push(prs, VALUE, mode_integer);
+						operands_push(prs, VALUE, mode_integer);
 					}
 					else
 					{
-						anst_push(prs, VALUE, mode_void);
+						operands_push(prs, VALUE, mode_void);
 					}
 				}
 			}
@@ -670,12 +658,12 @@ void parse_standard_function_call(parser *const prs)
 	}
 	else if (func == kw_rand)
 	{
-		anst_push(prs, VALUE, mode_float);
+		operands_push(prs, VALUE, mode_float);
 	}
 	else if (func == kw_round)
 	{
 		must_be_float(prs);
-		anst_push(prs, VALUE, mode_integer);
+		operands_push(prs, VALUE, mode_integer);
 	}
 	else if (func == kw_getdigsensor || func == kw_getansensor || func == kw_setmotor || func == kw_setvoltage)
 	{
@@ -688,18 +676,18 @@ void parse_standard_function_call(parser *const prs)
 		if (func == kw_getdigsensor)
 		{
 			must_be_row_of_int(prs);
-			anst_push(prs, VALUE, mode_integer);
+			operands_push(prs, VALUE, mode_integer);
 		}
 		else
 		{
 			must_be_int(prs);
 			if (func == kw_setmotor || func == kw_setvoltage)
 			{
-				anst_push(prs, VALUE, mode_void);
+				operands_push(prs, VALUE, mode_void);
 			}
 			else
 			{
-				anst_push(prs, VALUE, mode_void);
+				operands_push(prs, VALUE, mode_void);
 			}
 		}
 	}
@@ -708,20 +696,20 @@ void parse_standard_function_call(parser *const prs)
 		parse_assignment_expression_internal(prs);
 		to_value(prs);
 
-		if (anst_pop(prs) == mode_integer)
+		if (stack_pop(&prs->operands) == mode_integer)
 		{
 			func = ABSI;
-			anst_push(prs, VALUE, mode_integer);
+			operands_push(prs, VALUE, mode_integer);
 		}
 		else
 		{
-			anst_push(prs, VALUE, mode_float);
+			operands_push(prs, VALUE, mode_float);
 		}
 	}
 	else
 	{
 		must_be_float(prs);
-		anst_push(prs, VALUE, mode_float);
+		operands_push(prs, VALUE, mode_float);
 	}
 
 	to_tree(prs, 9500 - func);
@@ -751,7 +739,7 @@ size_t parse_identifier(parser *const prs)
 
 	prs->last_id = id;
 	token_consume(prs);
-	anst_push(prs, VARIABLE, mode);
+	operands_push(prs, VARIABLE, mode);
 	return id;
 }
 
@@ -801,7 +789,7 @@ item_t parse_constant(parser *const prs)
 	}
 
 	token_consume(prs);
-	return anst_push(prs, NUMBER, mode);
+	return operands_push(prs, NUMBER, mode);
 }
 
 /**
@@ -842,15 +830,15 @@ void parse_primary_expression(parser *const prs)
 				token_expect_and_consume(prs, star, no_mult_in_cast);
 
 				parse_unary_expression(prs);
-				const operand_t type = anst_peek(prs);
-				const item_t mode = anst_pop(prs);
+				const operand_t type = prs->last_type;
+				const item_t mode = stack_pop(&prs->operands);
 				if (!mode_is_pointer(prs->sx, mode))
 				{
 					parser_error(prs, not_pointer_in_cast);
 				}
 
 				token_expect_and_consume(prs, r_paren, no_rightbr_in_cast);
-				anst_push(prs, type, mode);
+				operands_push(prs, type, mode);
 				to_value(prs);
 				to_tree(prs, TExprend);
 			}
@@ -875,7 +863,7 @@ void parse_primary_expression(parser *const prs)
 			else
 			{
 				parser_error(prs, expected_expression, prs->token);
-				anst_push(prs, NUMBER, mode_undefined);
+				operands_push(prs, NUMBER, mode_undefined);
 				token_consume(prs);
 			}
 			break;
@@ -888,8 +876,8 @@ item_t find_field(parser *const prs)
 	token_consume(prs);
 	token_expect_and_consume(prs, identifier, after_dot_must_be_ident);
 
-	const operand_t peek = anst_peek(prs);
-	const size_t type = (size_t)anst_pop(prs);
+	const operand_t peek = prs->last_type;
+	const size_t type = (size_t)stack_pop(&prs->operands);
 	const size_t record_length = (size_t)mode_get(prs->sx, type + 2);
 	if (record_length == ITEM_MAX)
 	{
@@ -903,7 +891,7 @@ item_t find_field(parser *const prs)
 
 		if ((size_t)mode_get(prs->sx, type + 4 + i) == prs->lxr->repr)
 		{
-			anst_push(prs, peek, field_type);
+			operands_push(prs, peek, field_type);
 			return select_displ;
 		}
 		else
@@ -932,7 +920,7 @@ item_t find_field(parser *const prs)
 void parse_function_call(parser *const prs, const size_t function_id)
 {
 	const int old_in_assignment = prs->flag_in_assignment;
-	const size_t function_mode = (size_t)anst_pop(prs);
+	const size_t function_mode = (size_t)stack_pop(&prs->operands);
 
 	if (!mode_is_function(prs->sx, function_mode))
 	{
@@ -1021,7 +1009,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	node nd_call2 = node_add_child(&nd_call, TCall2);
 	node_add_arg(&nd_call2, (item_t)function_id);
 	node_copy(&prs->nd, &nd_call2);
-	anst_push(prs, VALUE, mode_get(prs->sx, function_mode + 1));
+	operands_push(prs, VALUE, mode_get(prs->sx, function_mode + 1));
 }
 
 /**
@@ -1058,7 +1046,7 @@ void parse_postfix_expression(parser *const prs)
 				parser_error(prs, slice_from_func);
 			}
 
-			if (anst_peek(prs) == VARIABLE)
+			if (prs->last_type == VARIABLE)
 			{
 				node_set_type(&prs->nd, TSliceident);
 				node_set_arg(&prs->nd, 0, prs->operand_displ);
@@ -1068,7 +1056,7 @@ void parse_postfix_expression(parser *const prs)
 				to_tree(prs, TSlice);
 			}
 
-			const item_t mode = anst_pop(prs);
+			const item_t mode = stack_pop(&prs->operands);
 			if (!mode_is_array(prs->sx, mode))
 			{
 				parser_error(prs, slice_not_from_array);
@@ -1084,12 +1072,12 @@ void parse_postfix_expression(parser *const prs)
 			}
 
 			token_expect_and_consume(prs, r_square, no_rightsqbr_in_slice);
-			anst_push(prs, ADDRESS, elem_type);
+			operands_push(prs, ADDRESS, elem_type);
 		}
 
 		while (prs->token == arrow)
 		{
-			if (anst_peek(prs) == VARIABLE)
+			if (prs->last_type == VARIABLE)
 			{
 				node_set_type(&prs->nd, TIdenttoval);
 			}
@@ -1097,13 +1085,13 @@ void parse_postfix_expression(parser *const prs)
 			to_tree(prs, TSelect);
 
 			// Здесь мы ожидаем указатель, снимаем указатель со стека и кладем саму структуру
-			const item_t type = anst_pop(prs);
+			const item_t type = stack_pop(&prs->operands);
 			if (!(mode_is_pointer(prs->sx, type) && mode_is_struct(prs->sx, mode_get(prs->sx, (size_t)type + 1))))
 			{
 				parser_error(prs, get_field_not_from_struct_pointer);
 			}
 
-			anst_push(prs, ADDRESS, mode_get(prs->sx, (size_t)type + 1));
+			operands_push(prs, ADDRESS, mode_get(prs->sx, (size_t)type + 1));
 			prs->operand_displ = find_field(prs);
 			while (prs->token == period)
 			{
@@ -1113,19 +1101,19 @@ void parse_postfix_expression(parser *const prs)
 			to_tree(prs, prs->operand_displ);
 
 			// find_field вернула тип результата через стек, проверим его и вернем обратно
-			const item_t field_type = anst_pop(prs);
+			const item_t field_type = stack_pop(&prs->operands);
 			if (mode_is_array(prs->sx, field_type) || mode_is_pointer(prs->sx, field_type))
 			{
 				to_tree(prs, TAddrtoval);
 			}
 
-			anst_push(prs, ADDRESS, field_type);
+			operands_push(prs, ADDRESS, field_type);
 		}
 
 		if (prs->token == period)
 		{
-			const operand_t peek = anst_peek(prs);
-			const item_t type = anst_pop(prs);
+			const operand_t peek = prs->last_type;
+			const item_t type = stack_pop(&prs->operands);
 			if (!mode_is_struct(prs->sx, type))
 			{
 				parser_error(prs, select_not_from_struct);
@@ -1134,24 +1122,24 @@ void parse_postfix_expression(parser *const prs)
 			if (peek == VALUE)
 			{
 				const size_t length = size_of(prs->sx, type);
-				anst_push(prs, VALUE, type);
+				operands_push(prs, VALUE, type);
 				prs->operand_displ = 0;
 				while (prs->token == period)
 				{
 					prs->operand_displ += find_field(prs);
 				}
 
-				const item_t field_type = anst_pop(prs);
+				const item_t field_type = stack_pop(&prs->operands);
 				to_tree(prs, COPYST);
 				node_add_arg(&prs->nd, prs->operand_displ);
 				node_add_arg(&prs->nd, (item_t)size_of(prs->sx, field_type));
 				node_add_arg(&prs->nd, (item_t)length);
-				anst_push(prs, VALUE, field_type);
+				operands_push(prs, VALUE, field_type);
 			}
 			else if (peek == VARIABLE)
 			{
 				const item_t sign = prs->operand_displ < 0 ? -1 : 1;
-				anst_push(prs, VARIABLE, type);
+				operands_push(prs, VARIABLE, type);
 				while (prs->token == period)
 				{
 					prs->operand_displ += sign * find_field(prs);
@@ -1162,7 +1150,7 @@ void parse_postfix_expression(parser *const prs)
 			else //if (peek == address)
 			{
 				to_tree(prs, TSelect);
-				anst_push(prs, VARIABLE, type);
+				operands_push(prs, VARIABLE, type);
 				prs->operand_displ = 0;
 				while (prs->token == period)
 				{
@@ -1171,13 +1159,13 @@ void parse_postfix_expression(parser *const prs)
 
 				node_add_arg(&prs->nd, prs->operand_displ);
 				// find_field вернула тип результата через стек, проверим его и вернем обратно
-				const item_t field_type = anst_pop(prs);
+				const item_t field_type = stack_pop(&prs->operands);
 				if (mode_is_array(prs->sx, field_type) || mode_is_pointer(prs->sx, field_type))
 				{
 					to_tree(prs, TAddrtoval);
 				}
 
-				anst_push(prs, ADDRESS, field_type);
+				operands_push(prs, ADDRESS, field_type);
 			}
 		}
 	}
@@ -1188,11 +1176,11 @@ void parse_postfix_expression(parser *const prs)
 		token_consume(prs);
 
 		int is_variable = 0;
-		if (anst_peek(prs) == ADDRESS)
+		if (prs->last_type == ADDRESS)
 		{
 			operator += 4;
 		}
-		else if (anst_peek(prs) == VARIABLE)
+		else if (prs->last_type == VARIABLE)
 		{
 			is_variable = 1;
 		}
@@ -1201,13 +1189,13 @@ void parse_postfix_expression(parser *const prs)
 			parser_error(prs, unassignable_inc);
 		}
 
-		const item_t type = anst_pop(prs);
+		const item_t type = stack_pop(&prs->operands);
 		if (!mode_is_int(type) && !mode_is_float(type))
 		{
 			parser_error(prs, wrong_operand);
 		}
 
-		anst_push(prs, VALUE, type);
+		operands_push(prs, VALUE, type);
 		float_operation(prs, type, operator);
 
 		if (is_variable)
@@ -1229,11 +1217,11 @@ void parse_unary_expression(parser *const prs)
 			parse_unary_expression(prs);
 
 			int is_variable = 0;
-			if (anst_peek(prs) == ADDRESS)
+			if (prs->last_type == ADDRESS)
 			{
 				operator += 4;
 			}
-			else if (anst_peek(prs) == VARIABLE)
+			else if (prs->last_type == VARIABLE)
 			{
 				is_variable = 1;
 			}
@@ -1242,13 +1230,13 @@ void parse_unary_expression(parser *const prs)
 				parser_error(prs, unassignable_inc);
 			}
 
-			const item_t type = anst_pop(prs);
+			const item_t type = stack_pop(&prs->operands);
 			if (!mode_is_int(type) && !mode_is_float(type))
 			{
 				parser_error(prs, wrong_operand);
 			}
 
-			anst_push(prs, VALUE, type);
+			operands_push(prs, VALUE, type);
 			float_operation(prs, type, operator);
 
 			if (is_variable)
@@ -1271,34 +1259,34 @@ void parse_unary_expression(parser *const prs)
 			{
 				case amp:
 				{
-					if (anst_peek(prs) == VALUE)
+					if (prs->last_type == VALUE)
 					{
 						parser_error(prs, wrong_addr);
 					}
 
-					if (anst_peek(prs) == VARIABLE)
+					if (prs->last_type == VARIABLE)
 					{
 						node_set_type(&prs->nd, TIdenttoaddr);
 					}
 
-					anst_push(prs, VALUE, to_modetab(prs, mode_pointer, anst_pop(prs)));
+					operands_push(prs, VALUE, to_modetab(prs, mode_pointer, stack_pop(&prs->operands)));
 				}
 				break;
 
 				case star:
 				{
-					if (anst_peek(prs) == VARIABLE)
+					if (prs->last_type == VARIABLE)
 					{
 						node_set_type(&prs->nd, TIdenttoval);
 					}
 
-					const item_t type = anst_pop(prs);
+					const item_t type = stack_pop(&prs->operands);
 					if (!mode_is_pointer(prs->sx, type))
 					{
 						parser_error(prs, aster_not_for_pointer);
 					}
 
-					anst_push(prs, ADDRESS, mode_get(prs->sx, (size_t)type + 1));
+					operands_push(prs, ADDRESS, mode_get(prs->sx, (size_t)type + 1));
 				}
 				break;
 
@@ -1317,9 +1305,9 @@ void parse_unary_expression(parser *const prs)
 						}
 						else
 						{
-							const item_t type = anst_pop(prs);
+							const item_t type = stack_pop(&prs->operands);
 							float_operation(prs, type, UNMINUS);
-							anst_push(prs, VALUE, type);
+							operands_push(prs, VALUE, type);
 						}
 					}
 					else
@@ -1329,13 +1317,13 @@ void parse_unary_expression(parser *const prs)
 							to_tree(prs, operator);
 						}
 
-						const item_t type = anst_pop(prs);
+						const item_t type = stack_pop(&prs->operands);
 						if ((operator == tilde || operator == exclaim) && mode_is_float(type))
 						{
 							parser_error(prs, int_op_for_float);
 						}
 
-						anst_push(prs, VALUE, type);
+						operands_push(prs, VALUE, type);
 					}
 				}
 				break;
@@ -1483,7 +1471,7 @@ void parse_conditional_expression(parser *const prs)
 		while (token_try_consume(prs, question))
 		{
 			to_value(prs);
-			if (!mode_is_int(anst_pop(prs)))
+			if (!mode_is_int(stack_pop(&prs->operands)))
 			{
 				parser_error(prs, float_in_condition);
 			}
@@ -1524,7 +1512,7 @@ void parse_conditional_expression(parser *const prs)
 		// Это особый случай, когда после TExprend мы храним дополнительную информацию
 		prs->nd = node_add_child(&prs->nd, TExprend);
 
-		if (mode_is_float(anst_pop(prs)))
+		if (mode_is_float(stack_pop(&prs->operands)))
 		{
 			global_type = mode_float;
 		}
@@ -1540,7 +1528,7 @@ void parse_conditional_expression(parser *const prs)
 			to_tree(prs, old_addr_if);
 		}
 
-		anst_push(prs, VALUE, global_type);
+		operands_push(prs, VALUE, global_type);
 
 		if (prs->was_error)
 		{
@@ -1588,19 +1576,19 @@ void parse_assignment_expression_internal(parser *const prs)
 			parser_error(prs, init_not_struct);
 		}
 
-		anst_push(prs, VALUE, type);
+		operands_push(prs, VALUE, type);
 		return;
 	}
 
 	parse_unary_expression(prs);
-	const operand_t type = anst_peek(prs);
-	prs->left_mode = anst_pop(prs);
-	anst_push(prs, type, prs->left_mode);
+	const operand_t type = prs->last_type;
+	prs->left_mode = stack_pop(&prs->operands);
+	operands_push(prs, type, prs->left_mode);
 
 	if (is_assignment_operator(prs->token))
 	{
 		const item_t target_displ = prs->operand_displ;
-		const operand_t left_type = anst_peek(prs);
+		const operand_t left_type = prs->last_type;
 		if (left_type == VALUE)
 		{
 			parser_error(prs, unassignable);
@@ -1614,9 +1602,9 @@ void parse_assignment_expression_internal(parser *const prs)
 		prs->flag_in_assignment = 0;
 
 		// Снимаем типы операндов со стека
-		const operand_t right_type = anst_peek(prs);
-		const item_t right_mode = anst_pop(prs);
-		const item_t left_mode = anst_pop(prs);
+		const operand_t right_type = prs->last_type;
+		const item_t right_mode = stack_pop(&prs->operands);
+		const item_t left_mode = stack_pop(&prs->operands);
 		item_t result_mode = right_mode;
 
 		if (is_int_assignment_operator(operator) && (mode_is_float(left_mode) || mode_is_float(right_mode)))
@@ -1663,7 +1651,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			}
 			node_add_arg(&prs->nd, mode_get(prs->sx, (size_t)left_mode + 1));
 			prs->operand_displ = target_displ;
-			anst_push(prs, left_type, left_mode);
+			operands_push(prs, left_type, left_mode);
 		}
 		else // оба операнда базового типа или указатели
 		{
@@ -1681,9 +1669,9 @@ void parse_assignment_expression_internal(parser *const prs)
 			// Здесь мы используем стек, чтобы передать в to_value тип и вид значения
 			// Это не очень красивый вариант, но рабочий: мы точно знаем, где эти тип и вид взять
 			// TODO: придумать вариант красивее
-			anst_push(prs, right_type, right_mode);
+			operands_push(prs, right_type, right_mode);
 			to_value(prs);
-			anst_pop(prs);
+			stack_pop(&prs->operands);
 
 			if (mode_is_float(left_mode) && mode_is_int(right_mode))
 			{
@@ -1706,7 +1694,7 @@ void parse_assignment_expression_internal(parser *const prs)
 				prs->operand_displ = target_displ;
 				node_add_arg(&prs->nd, target_displ);
 			}
-			anst_push(prs, VALUE, left_mode);
+			operands_push(prs, VALUE, left_mode);
 		}
 	}
 	else
@@ -1722,7 +1710,7 @@ void parse_expression_internal(parser *const prs)
 	while (token_try_consume(prs, comma))
 	{
 		assignment_to_void(prs);
-		anst_pop(prs);
+		stack_pop(&prs->operands);
 		parse_assignment_expression_internal(prs);
 	}
 }
@@ -1743,7 +1731,7 @@ item_t parse_expression(parser *const prs, node *const parent)
 	parse_expression_internal(prs);
 	assignment_to_void(prs);
 	to_tree(prs, TExprend);
-	return anst_pop(prs);
+	return stack_pop(&prs->operands);
 }
 
 item_t parse_assignment_expression(parser *const prs, node *const parent)
@@ -1752,7 +1740,7 @@ item_t parse_assignment_expression(parser *const prs, node *const parent)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 	to_tree(prs, TExprend);
-	return anst_pop(prs);
+	return stack_pop(&prs->operands);
 }
 
 item_t parse_parenthesized_expression(parser *const prs, node *const parent)
@@ -1770,7 +1758,7 @@ item_t parse_constant_expression(parser *const prs, node *const parent)
 	parse_conditional_expression(prs);
 	to_value(prs);
 	to_tree(prs, TExprend);
-	return anst_pop(prs);
+	return stack_pop(&prs->operands);
 }
 
 item_t parse_condition(parser *const prs, node *const parent)
@@ -1779,7 +1767,7 @@ item_t parse_condition(parser *const prs, node *const parent)
 	parse_expression_internal(prs);
 	to_value(prs);
 	to_tree(prs, TExprend);
-	return anst_pop(prs);
+	return stack_pop(&prs->operands);
 }
 
 item_t parse_string_literal(parser *const prs, node *const parent)
@@ -1794,7 +1782,7 @@ item_t parse_string_literal(parser *const prs, node *const parent)
 	}
 
 	token_consume(prs);
-	return anst_push(prs, VALUE, to_modetab(prs, mode_array, mode_character));
+	return operands_push(prs, VALUE, to_modetab(prs, mode_array, mode_character));
 }
 
 void parse_insert_widen(parser *const prs)

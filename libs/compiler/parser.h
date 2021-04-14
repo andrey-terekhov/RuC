@@ -52,14 +52,6 @@ typedef enum BLOCK
 	FUNCBODY
 } block_t;
 
-
-/** Anonymous stack */
-typedef struct anonymous_stack
-{
-	stack operands;		/**< Operands stack */
-	operand_t type;		/**< Type of the top operand in anonymous stack */
-} anonymous_stack;
-
 /** Operators stack */
 typedef struct operators_stack
 {
@@ -73,15 +65,15 @@ typedef struct parser
 {
 	syntax *sx;							/**< Syntax structure */
 	lexer *lxr;							/**< Lexer structure */
-	node nd;							/**< Node for expression subtree */
-	anonymous_stack anon_stack;			/**< Anonymous stack */
-
-	token_t token;						/**< Current token */
 
 	vector labels;						/**< Labels table */
-
+	stack operands;						/**< Operands stack */
 	operators_stack operators;			/**< Operators stack */
 
+	node nd;							/**< Node for expression subtree */
+
+	token_t token;						/**< Current token */
+	operand_t last_type;				/**< Type of last added operand to the operands stack */
 	size_t function_mode;				/**< Mode of current parsed function */
 	size_t array_dimensions;			/**< Array dimensions counter */
 	item_t left_mode;					/**< Mode of the left part of assignment expression */

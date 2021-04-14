@@ -53,7 +53,7 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.operators.priorities = stack_create(MAX_STACK);
 	prs.operators.tokens = stack_create(MAX_STACK);
 	prs.operators.nodes = stack_create(MAX_STACK);
-	prs.anon_stack.operands = stack_create(MAX_STACK);
+	prs.operands = stack_create(MAX_STACK);
 	token_consume(&prs);
 
 	return prs;
@@ -62,7 +62,7 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 void parser_clear(parser *const prs)
 {
 	vector_clear(&prs->labels);
-	stack_clear(&prs->anon_stack.operands);
+	stack_clear(&prs->operands);
 
 	stack_clear(&prs->operators.priorities);
 	stack_clear(&prs->operators.tokens);
