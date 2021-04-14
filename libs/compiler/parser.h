@@ -35,14 +35,23 @@
 extern "C" {
 #endif
 
-/** Type of operand on top of anonymous stack */
+/** Type of operands on the anonymous stack */
 typedef enum OPERAND
 {
-	variable_t,			/**< Variable */
-	value_t,			/**< Value */
-	number_t,			/**< Number */
-	address_t			/**< Address */
+	VARIABLE,		/**< Variable operand */
+	VALUE,			/**< Value operand */
+	NUMBER,			/**< Number operand */
+	ADDRESS,		/**< Address operand */
 } operand_t;
+
+/**	The kind of block to parse */
+typedef enum BLOCK
+{
+	REGBLOCK,
+	THREAD,
+	FUNCBODY
+} block_t;
+
 
 /** Anonymous stack */
 typedef struct anonymous_stack
@@ -51,7 +60,7 @@ typedef struct anonymous_stack
 	operand_t type;		/**< Type of the top operand in anonymous stack */
 } anonymous_stack;
 
-/**< Operators stack */
+/** Operators stack */
 typedef struct operators_stack
 {
 	stack priorities;	/**< Operator priority stack */
@@ -59,6 +68,7 @@ typedef struct operators_stack
 	stack nodes;		/**< Operator node stack */
 } operators_stack;
 
+/** Parser structure */
 typedef struct parser
 {
 	syntax *sx;							/**< Syntax structure */
@@ -98,14 +108,6 @@ typedef struct parser
 
 	int was_error;						/**< Error flag */
 } parser;
-
-/**	The kind of block to parse */
-typedef enum BLOCK
-{
-	REGBLOCK,
-	THREAD,
-	FUNCBODY
-} block_t;
 
 
 /**

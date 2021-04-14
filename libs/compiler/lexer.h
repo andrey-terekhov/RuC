@@ -26,6 +26,7 @@
 extern "C" {
 #endif
 
+/** Lexer structure */
 typedef struct lexer
 {
 	universal_io *io;					/**< Universal io structure */
