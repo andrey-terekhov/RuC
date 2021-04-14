@@ -43,9 +43,9 @@ operator operators_pop(parser *const prs)
 {
 	operator op;
 
-	op.priority = stack_pop(&prs->operators.priorities);
+	op.priority = (uint8_t)stack_pop(&prs->operators.priorities);
 	op.token = stack_pop(&prs->operators.tokens);
-	op.nd = node_load(&prs->sx->tree, stack_pop(&prs->operators.nodes));
+	op.nd = node_load(&prs->sx->tree, (size_t)stack_pop(&prs->operators.nodes));
 
 	return op;
 }
@@ -54,9 +54,9 @@ operator operators_peek(parser *const prs)
 {
 	operator op;
 
-	op.priority = stack_peek(&prs->operators.priorities);
+	op.priority = (uint8_t)stack_peek(&prs->operators.priorities);
 	op.token = stack_peek(&prs->operators.tokens);
-	op.nd = node_load(&prs->sx->tree, stack_peek(&prs->operators.nodes));
+	op.nd = node_load(&prs->sx->tree, (size_t)stack_peek(&prs->operators.nodes));
 
 	return op;
 }
