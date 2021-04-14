@@ -287,7 +287,15 @@ void to_tree(parser *const prs, const item_t operation)
 	prs->nd = node_add_child(&prs->nd, operation);
 }
 
-item_t tree_reference(parser *const prs)
+/**
+ *	Create tree reference of last child for backward compatibility
+ *
+ *	@param	nd			Parent node
+ *
+ *	@return	Tree reference
+ */
+item_t tree_reference(node *const nd)
 {
-	return (item_t)vector_size(&prs->sx->tree);
+	node child = node_get_child(nd, node_get_amount(nd) - 1);
+	return (item_t)node_save(&child);
 }

@@ -152,9 +152,7 @@ void parse_if_statement(parser *const prs, node *const parent)
 	if (token_try_consume(prs, kw_else))
 	{
 		parse_statement(prs, &nd);
-
-		node child = node_get_child(&nd, 0);
-		node_set_arg(&nd, 0, node_save(&child));
+		node_set_arg(&nd, 0, tree_reference(&nd));
 	}
 }
 
@@ -261,30 +259,30 @@ void parse_for_statement(parser *const prs, node *const parent)
 
 	if (!token_try_consume(prs, semicolon))
 	{
-		node_set_arg(&nd, 0, tree_reference(prs)); // ref_inition
 		parse_expression(prs, &nd);
+		node_set_arg(&nd, 0, tree_reference(&nd)); // ref_inition
 		token_expect_and_consume(prs, semicolon, no_semicolon_in_for);
 	}
 
 	if (!token_try_consume(prs, semicolon))
 	{
-		node_set_arg(&nd, 1, tree_reference(prs)); // ref_condition
 		parse_condition(prs, &nd);
+		node_set_arg(&nd, 1, tree_reference(&nd)); // ref_condition
 		token_expect_and_consume(prs, semicolon, no_semicolon_in_for);
 	}
 
 	if (!token_try_consume(prs, r_paren))
 	{
-		node_set_arg(&nd, 2, tree_reference(prs)); // ref_increment
 		parse_expression(prs, &nd);
+		node_set_arg(&nd, 2, tree_reference(&nd)); // ref_increment
 		token_expect_and_consume(prs, r_paren, no_rightbr_in_for);
 	}
 
-	node_set_arg(&nd, 3, tree_reference(prs)); // ref_statement
 	const int old_in_loop = prs->flag_in_loop;
 	prs->flag_in_loop = 1;
 	parse_statement(prs, &nd);
 	prs->flag_in_loop = old_in_loop;
+	node_set_arg(&nd, 3, tree_reference(&nd)); // ref_statement
 }
 
 /**
@@ -309,7 +307,7 @@ void parse_goto_statement(parser *const prs, node *const parent)
 		{
 			const item_t id = vector_get(&prs->labels, i);
 			node_add_arg(&nd, id);
-			if (vector_get(&prs->labels, id + 1) >= 0) // Перехода на метку еще не было
+			if (vector_get(&prs->labels, (size_t)id + 1) >= 0) // Перехода на метку еще не было
 			{
 				vector_add(&prs->labels, id);
 				vector_add(&prs->labels, 1);	// TODO: здесь должен быть номер строки

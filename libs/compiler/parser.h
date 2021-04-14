@@ -440,13 +440,13 @@ item_t to_modetab(parser *const prs, const item_t mode, const item_t element);
 void to_tree(parser *const prs, const item_t op);
 
 /**
- *	Create tree reference for backward compatibility
+ *	Create tree reference of last child for backward compatibility
  *
- *	@param	prs			Parser structure
+ *	@param	nd			Parent node
  *
  *	@return	Tree reference
  */
-item_t tree_reference(parser *const prs);
+item_t tree_reference(node *const nd);
 
 #ifdef __cplusplus
 } /* extern "C" */
