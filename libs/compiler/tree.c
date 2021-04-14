@@ -795,7 +795,7 @@ int node_copy(node *const dest, const node *const src)
 	return 0;
 }
 
-size_t node_save(node *const nd)
+size_t node_save(const node *const nd)
 {
 	return node_is_correct(nd)
 		? (size_t)to_ref(nd->type)
