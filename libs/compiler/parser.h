@@ -46,8 +46,9 @@ typedef enum BLOCK
 {
 	REGBLOCK,
 	THREAD,
-	FUNCBODY
+	FUNCBODY,
 } block_t;
+
 
 /** Operators stack */
 typedef struct operators
@@ -230,10 +231,8 @@ item_t parse_condition(parser *const prs, node *const parent);
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
- *
- *	@return	Type of parsed expression
  */
-item_t parse_string_literal(parser *const prs, node *const parent);
+void parse_string_literal(parser *const prs, node *const parent);
 
 /**
  *	Insert @c WIDEN node
