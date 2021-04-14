@@ -53,10 +53,10 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.was_error = 0;
 
 	prs.labels = vector_create(MAX_LABELS);
-	prs.operators.priorities = stack_create(MAX_STACK);
-	prs.operators.tokens = stack_create(MAX_STACK);
-	prs.operators.nodes = stack_create(MAX_STACK);
-	prs.operands = stack_create(MAX_STACK);
+	prs.stk.priorities = stack_create(MAX_STACK);
+	prs.stk.tokens = stack_create(MAX_STACK);
+	prs.stk.nodes = stack_create(MAX_STACK);
+	prs.anonymous = stack_create(MAX_STACK);
 	token_consume(&prs);
 
 	return prs;
@@ -65,11 +65,11 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 void parser_clear(parser *const prs)
 {
 	vector_clear(&prs->labels);
-	stack_clear(&prs->operands);
+	stack_clear(&prs->anonymous);
 
-	stack_clear(&prs->operators.priorities);
-	stack_clear(&prs->operators.tokens);
-	stack_clear(&prs->operators.nodes);
+	stack_clear(&prs->stk.priorities);
+	stack_clear(&prs->stk.tokens);
+	stack_clear(&prs->stk.nodes);
 }
 
 

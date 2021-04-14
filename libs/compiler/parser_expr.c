@@ -34,18 +34,18 @@ typedef struct operator
 
 int operators_push(parser *const prs, const uint8_t priority, const token_t token, const node *const nd)
 {
-	return stack_push(&prs->operators.priorities, priority)
-		|| stack_push(&prs->operators.tokens, token)
-		|| stack_push(&prs->operators.nodes, node_save(nd));
+	return stack_push(&prs->stk.priorities, priority)
+		|| stack_push(&prs->stk.tokens, token)
+		|| stack_push(&prs->stk.nodes, node_save(nd));
 }
 
 operator operators_pop(parser *const prs)
 {
 	operator op;
 
-	op.priority = (uint8_t)stack_pop(&prs->operators.priorities);
-	op.token = stack_pop(&prs->operators.tokens);
-	op.nd = node_load(&prs->sx->tree, (size_t)stack_pop(&prs->operators.nodes));
+	op.priority = (uint8_t)stack_pop(&prs->stk.priorities);
+	op.token = stack_pop(&prs->stk.tokens);
+	op.nd = node_load(&prs->sx->tree, (size_t)stack_pop(&prs->stk.nodes));
 
 	return op;
 }
@@ -54,22 +54,22 @@ operator operators_peek(parser *const prs)
 {
 	operator op;
 
-	op.priority = (uint8_t)stack_peek(&prs->operators.priorities);
-	op.token = stack_peek(&prs->operators.tokens);
-	op.nd = node_load(&prs->sx->tree, (size_t)stack_peek(&prs->operators.nodes));
+	op.priority = (uint8_t)stack_peek(&prs->stk.priorities);
+	op.token = stack_peek(&prs->stk.tokens);
+	op.nd = node_load(&prs->sx->tree, (size_t)stack_peek(&prs->stk.nodes));
 
 	return op;
 }
 
 size_t operators_size(const parser *const prs)
 {
-	return stack_size(&prs->operators.tokens);
+	return stack_size(&prs->stk.tokens);
 }
 
 int operands_push(parser *const prs, const operand_t type, const item_t mode)
 {
 	prs->last_type = type;
-	return stack_push(&prs->operands, mode);
+	return stack_push(&prs->anonymous, mode);
 }
 
 
@@ -127,8 +127,8 @@ void float_operation(parser *const prs, const item_t type, const item_t operatio
 void binary_operation(parser *const prs, operator operator)
 {
 	const token_t token = operator.token;
-	const item_t right_mode = stack_pop(&prs->operands);
-	const item_t left_mode = stack_pop(&prs->operands);
+	const item_t right_mode = stack_pop(&prs->anonymous);
+	const item_t left_mode = stack_pop(&prs->anonymous);
 	item_t result_mode = right_mode;
 
 	if (mode_is_pointer(prs->sx, left_mode) || mode_is_pointer(prs->sx, right_mode))
@@ -181,7 +181,7 @@ void to_value(parser *const prs)
 	{
 		case VARIABLE:
 		{
-			const item_t type = stack_pop(&prs->operands);
+			const item_t type = stack_pop(&prs->anonymous);
 			if (mode_is_struct(prs->sx, type) && !prs->flag_in_assignment)
 			{
 				node_set_type(&prs->nd, COPY0ST);
@@ -199,7 +199,7 @@ void to_value(parser *const prs)
 
 		case ADDRESS:
 		{
-			const item_t type = stack_pop(&prs->operands);
+			const item_t type = stack_pop(&prs->anonymous);
 			if (mode_is_struct(prs->sx, type) && !prs->flag_in_assignment)
 			{
 				to_tree(prs, COPY1ST);
@@ -282,7 +282,7 @@ void must_be_string(parser *const prs)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 
-	if (!mode_is_string(prs->sx, stack_pop(&prs->operands)))
+	if (!mode_is_string(prs->sx, stack_pop(&prs->anonymous)))
 	{
 		parser_error(prs, not_string_in_stanfunc);
 	}
@@ -293,7 +293,7 @@ void must_be_point_string(parser *const prs)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 
-	const item_t type = stack_pop(&prs->operands);
+	const item_t type = stack_pop(&prs->anonymous);
 	if (!(mode_is_pointer(prs->sx, type) && mode_is_string(prs->sx, mode_get(prs->sx, (size_t)type + 1))))
 	{
 		parser_error(prs, not_point_string_in_stanfunc);
@@ -305,7 +305,7 @@ void must_be_row(parser *const prs)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 
-	if (!mode_is_array(prs->sx, stack_pop(&prs->operands)))
+	if (!mode_is_array(prs->sx, stack_pop(&prs->anonymous)))
 	{
 		parser_error(prs, not_array_in_stanfunc);
 	}
@@ -316,7 +316,7 @@ void must_be_int(parser *const prs)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 
-	if (!mode_is_int(stack_pop(&prs->operands)))
+	if (!mode_is_int(stack_pop(&prs->anonymous)))
 	{
 		parser_error(prs, not_int_in_stanfunc);
 	}
@@ -327,7 +327,7 @@ void must_be_float(parser *const prs)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 
-	const item_t type = stack_pop(&prs->operands);
+	const item_t type = stack_pop(&prs->anonymous);
 	if (mode_is_int(type))
 	{
 		to_tree(prs, WIDEN);
@@ -350,7 +350,7 @@ void must_be_row_of_int(parser *const prs)
 		parse_assignment_expression_internal(prs);
 		to_value(prs);
 
-		type = stack_pop(&prs->operands);
+		type = stack_pop(&prs->anonymous);
 		if (mode_is_int(type))
 		{
 			to_tree(prs, ROWING);
@@ -376,7 +376,7 @@ void must_be_row_of_float(parser *const prs)
 		parse_assignment_expression_internal(prs);
 		to_value(prs);
 
-		type = stack_pop(&prs->operands);
+		type = stack_pop(&prs->anonymous);
 		if (mode_is_float(type))
 		{
 			to_tree(prs, ROWINGD);
@@ -697,7 +697,7 @@ void parse_standard_function_call(parser *const prs)
 		parse_assignment_expression_internal(prs);
 		to_value(prs);
 
-		if (stack_pop(&prs->operands) == mode_integer)
+		if (stack_pop(&prs->anonymous) == mode_integer)
 		{
 			func = ABSI;
 			operands_push(prs, VALUE, mode_integer);
@@ -832,7 +832,7 @@ void parse_primary_expression(parser *const prs)
 
 				parse_unary_expression(prs);
 				const operand_t type = prs->last_type;
-				const item_t mode = stack_pop(&prs->operands);
+				const item_t mode = stack_pop(&prs->anonymous);
 				if (!mode_is_pointer(prs->sx, mode))
 				{
 					parser_error(prs, not_pointer_in_cast);
@@ -878,7 +878,7 @@ item_t find_field(parser *const prs)
 	token_expect_and_consume(prs, identifier, after_dot_must_be_ident);
 
 	const operand_t peek = prs->last_type;
-	const size_t type = (size_t)stack_pop(&prs->operands);
+	const size_t type = (size_t)stack_pop(&prs->anonymous);
 	const size_t record_length = (size_t)mode_get(prs->sx, type + 2);
 	if (record_length == ITEM_MAX)
 	{
@@ -921,7 +921,7 @@ item_t find_field(parser *const prs)
 void parse_function_call(parser *const prs, const size_t function_id)
 {
 	const int old_in_assignment = prs->flag_in_assignment;
-	const size_t function_mode = (size_t)stack_pop(&prs->operands);
+	const size_t function_mode = (size_t)stack_pop(&prs->anonymous);
 
 	if (!mode_is_function(prs->sx, function_mode))
 	{
@@ -1058,7 +1058,7 @@ void parse_postfix_expression(parser *const prs)
 				to_tree(prs, TSlice);
 			}
 
-			const item_t mode = stack_pop(&prs->operands);
+			const item_t mode = stack_pop(&prs->anonymous);
 			if (!mode_is_array(prs->sx, mode))
 			{
 				parser_error(prs, slice_not_from_array);
@@ -1087,7 +1087,7 @@ void parse_postfix_expression(parser *const prs)
 			to_tree(prs, TSelect);
 
 			// Здесь мы ожидаем указатель, снимаем указатель со стека и кладем саму структуру
-			const item_t type = stack_pop(&prs->operands);
+			const item_t type = stack_pop(&prs->anonymous);
 			if (!(mode_is_pointer(prs->sx, type) && mode_is_struct(prs->sx, mode_get(prs->sx, (size_t)type + 1))))
 			{
 				parser_error(prs, get_field_not_from_struct_pointer);
@@ -1103,7 +1103,7 @@ void parse_postfix_expression(parser *const prs)
 			to_tree(prs, prs->operand_displ);
 
 			// find_field вернула тип результата через стек, проверим его и вернем обратно
-			const item_t field_type = stack_pop(&prs->operands);
+			const item_t field_type = stack_pop(&prs->anonymous);
 			if (mode_is_array(prs->sx, field_type) || mode_is_pointer(prs->sx, field_type))
 			{
 				to_tree(prs, TAddrtoval);
@@ -1115,7 +1115,7 @@ void parse_postfix_expression(parser *const prs)
 		if (prs->token == period)
 		{
 			const operand_t peek = prs->last_type;
-			const item_t type = stack_pop(&prs->operands);
+			const item_t type = stack_pop(&prs->anonymous);
 			if (!mode_is_struct(prs->sx, type))
 			{
 				parser_error(prs, select_not_from_struct);
@@ -1131,7 +1131,7 @@ void parse_postfix_expression(parser *const prs)
 					prs->operand_displ += find_field(prs);
 				}
 
-				const item_t field_type = stack_pop(&prs->operands);
+				const item_t field_type = stack_pop(&prs->anonymous);
 				to_tree(prs, COPYST);
 				node_add_arg(&prs->nd, prs->operand_displ);
 				node_add_arg(&prs->nd, (item_t)size_of(prs->sx, field_type));
@@ -1161,7 +1161,7 @@ void parse_postfix_expression(parser *const prs)
 
 				node_add_arg(&prs->nd, prs->operand_displ);
 				// find_field вернула тип результата через стек, проверим его и вернем обратно
-				const item_t field_type = stack_pop(&prs->operands);
+				const item_t field_type = stack_pop(&prs->anonymous);
 				if (mode_is_array(prs->sx, field_type) || mode_is_pointer(prs->sx, field_type))
 				{
 					to_tree(prs, TAddrtoval);
@@ -1191,7 +1191,7 @@ void parse_postfix_expression(parser *const prs)
 			parser_error(prs, unassignable_inc);
 		}
 
-		const item_t type = stack_pop(&prs->operands);
+		const item_t type = stack_pop(&prs->anonymous);
 		if (!mode_is_int(type) && !mode_is_float(type))
 		{
 			parser_error(prs, wrong_operand);
@@ -1232,7 +1232,7 @@ void parse_unary_expression(parser *const prs)
 				parser_error(prs, unassignable_inc);
 			}
 
-			const item_t type = stack_pop(&prs->operands);
+			const item_t type = stack_pop(&prs->anonymous);
 			if (!mode_is_int(type) && !mode_is_float(type))
 			{
 				parser_error(prs, wrong_operand);
@@ -1271,7 +1271,7 @@ void parse_unary_expression(parser *const prs)
 						node_set_type(&prs->nd, TIdenttoaddr);
 					}
 
-					operands_push(prs, VALUE, to_modetab(prs, mode_pointer, stack_pop(&prs->operands)));
+					operands_push(prs, VALUE, to_modetab(prs, mode_pointer, stack_pop(&prs->anonymous)));
 				}
 				break;
 
@@ -1282,7 +1282,7 @@ void parse_unary_expression(parser *const prs)
 						node_set_type(&prs->nd, TIdenttoval);
 					}
 
-					const item_t type = stack_pop(&prs->operands);
+					const item_t type = stack_pop(&prs->anonymous);
 					if (!mode_is_pointer(prs->sx, type))
 					{
 						parser_error(prs, aster_not_for_pointer);
@@ -1307,7 +1307,7 @@ void parse_unary_expression(parser *const prs)
 						}
 						else
 						{
-							const item_t type = stack_pop(&prs->operands);
+							const item_t type = stack_pop(&prs->anonymous);
 							float_operation(prs, type, UNMINUS);
 							operands_push(prs, VALUE, type);
 						}
@@ -1319,7 +1319,7 @@ void parse_unary_expression(parser *const prs)
 							to_tree(prs, operator);
 						}
 
-						const item_t type = stack_pop(&prs->operands);
+						const item_t type = stack_pop(&prs->anonymous);
 						if ((operator == tilde || operator == exclaim) && mode_is_float(type))
 						{
 							parser_error(prs, int_op_for_float);
@@ -1473,7 +1473,7 @@ void parse_conditional_expression(parser *const prs)
 		while (token_try_consume(prs, question))
 		{
 			to_value(prs);
-			if (!mode_is_int(stack_pop(&prs->operands)))
+			if (!mode_is_int(stack_pop(&prs->anonymous)))
 			{
 				parser_error(prs, float_in_condition);
 			}
@@ -1514,7 +1514,7 @@ void parse_conditional_expression(parser *const prs)
 		// Это особый случай, когда после TExprend мы храним дополнительную информацию
 		prs->nd = node_add_child(&prs->nd, TExprend);
 
-		if (mode_is_float(stack_pop(&prs->operands)))
+		if (mode_is_float(stack_pop(&prs->anonymous)))
 		{
 			global_type = mode_float;
 		}
@@ -1584,7 +1584,7 @@ void parse_assignment_expression_internal(parser *const prs)
 
 	parse_unary_expression(prs);
 	const operand_t type = prs->last_type;
-	prs->left_mode = stack_pop(&prs->operands);
+	prs->left_mode = stack_pop(&prs->anonymous);
 	operands_push(prs, type, prs->left_mode);
 
 	if (is_assignment_operator(prs->token))
@@ -1605,8 +1605,8 @@ void parse_assignment_expression_internal(parser *const prs)
 
 		// Снимаем типы операндов со стека
 		const operand_t right_type = prs->last_type;
-		const item_t right_mode = stack_pop(&prs->operands);
-		const item_t left_mode = stack_pop(&prs->operands);
+		const item_t right_mode = stack_pop(&prs->anonymous);
+		const item_t left_mode = stack_pop(&prs->anonymous);
 		item_t result_mode = right_mode;
 
 		if (is_int_assignment_operator(operator) && (mode_is_float(left_mode) || mode_is_float(right_mode)))
@@ -1673,7 +1673,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			// TODO: придумать вариант красивее
 			operands_push(prs, right_type, right_mode);
 			to_value(prs);
-			stack_pop(&prs->operands);
+			stack_pop(&prs->anonymous);
 
 			if (mode_is_float(left_mode) && mode_is_int(right_mode))
 			{
@@ -1712,7 +1712,7 @@ void parse_expression_internal(parser *const prs)
 	while (token_try_consume(prs, comma))
 	{
 		assignment_to_void(prs);
-		stack_pop(&prs->operands);
+		stack_pop(&prs->anonymous);
 		parse_assignment_expression_internal(prs);
 	}
 }
@@ -1733,7 +1733,7 @@ item_t parse_expression(parser *const prs, node *const parent)
 	parse_expression_internal(prs);
 	assignment_to_void(prs);
 	to_tree(prs, TExprend);
-	return stack_pop(&prs->operands);
+	return stack_pop(&prs->anonymous);
 }
 
 item_t parse_assignment_expression(parser *const prs, node *const parent)
@@ -1742,7 +1742,7 @@ item_t parse_assignment_expression(parser *const prs, node *const parent)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 	to_tree(prs, TExprend);
-	return stack_pop(&prs->operands);
+	return stack_pop(&prs->anonymous);
 }
 
 item_t parse_parenthesized_expression(parser *const prs, node *const parent)
@@ -1760,7 +1760,7 @@ item_t parse_constant_expression(parser *const prs, node *const parent)
 	parse_conditional_expression(prs);
 	to_value(prs);
 	to_tree(prs, TExprend);
-	return stack_pop(&prs->operands);
+	return stack_pop(&prs->anonymous);
 }
 
 item_t parse_condition(parser *const prs, node *const parent)
@@ -1769,7 +1769,7 @@ item_t parse_condition(parser *const prs, node *const parent)
 	parse_expression_internal(prs);
 	to_value(prs);
 	to_tree(prs, TExprend);
-	return stack_pop(&prs->operands);
+	return stack_pop(&prs->anonymous);
 }
 
 item_t parse_string_literal(parser *const prs, node *const parent)
