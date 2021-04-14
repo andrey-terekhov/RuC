@@ -319,19 +319,145 @@ enum MODE
 
 #define ASSERTC 9595
 
+
+// Лексемы
+
+#define QUEST		101
+#define LEFTBR		103
+#define LEFTSQBR	105
+#define STRING		107
+#define NUMBER		108
+#define IDENT		109
+#define CHAR_CONST	111
+#define INT_CONST	112
+#define FLOAT_CONST	113
+#define BEGIN		115
+#define LAPOST		118
+#define LQUOTE		119
+#define LEOF		120
+#define ARROW		121
+#define DOT			122
+
+// Такие коды сделаны для функции token_skip_until()
+// Это позволяет передавать несколько аргументов, разделяя их |
+#define COMMA		0b00000001
+#define COLON		0b00000010
+#define RIGHTBR		0b00000100
+#define RIGHTSQBR	0b00001000
+#define END			0b00010000
+#define SEMICOLON	0b00100000
+
+
+// Ответы
+
+#define VAL	 110
+#define ADDR 111
+
+
 // Ключевые слова
 
+#define LMAIN	0
+#define LINT	-1
+#define LCHAR	-2
+#define LFLOAT	-3
+#define LLONG	-4
+#define LDOUBLE -5
+#define LVOID	-6
+
+#define LBREAK		  -7
+#define LCASE		  -8
+#define LCONTINUE	  -9
+#define LDEFAULT	  -10
+#define LDO			  -11
+#define LELSE		  -12
+#define LENUM		  -13
+#define LSTRUCT		  -14
+#define LTYPEDEF	  -15
+#define LFOR		  -16
+#define LGOTO		  -17
+#define LIF			  -18
+#define LRETURN		  -19
+#define LSIZEOF		  -20
+#define LSWITCH		  -21
+#define LWHILE		  -22
 #define PRINTID		  -23
 #define PRINT		  -24
 #define PRINTF		  -25
 #define SCANF		  -26
 #define GETID		  -27
+#define TCREATEDIRECT -28
+#define TEXITDIRECT	  -29
 
+#define STANDARD_FUNC_START -30
 #define SETMOTOR			-30
+#define GETDIGSENSOR		-31
+#define GETANSENSOR			-32
+#define VOLTAGE				-33
 
+#define ABS	  -34
+#define SQRT  -35
+#define EXP	  -36
+#define SIN	  -37
+#define COS	  -38
+#define LOG	  -39
+#define LOG10 -40
+#define ASIN  -41
+#define RAND  -42
+#define ROUND -43
+
+#define STRCPY	-44
+#define STRNCPY -45
+#define STRCAT	-46
+#define STRNCAT -47
+#define STRCMP	-48
+#define STRNCMP -49
+#define STRSTR	-50
+#define STRLEN	-51
+
+
+#define TMSGSEND	-52
+#define TMSGRECEIVE -53
+#define TJOIN		-54
+#define TSLEEP		-55
+#define TSEMCREATE	-56
+#define TSEMWAIT	-57
+#define TSEMPOST	-58
+#define TCREATE		-59
 #define TINIT		-60
 #define TDESTROY	-61
+#define TEXIT		-62
+#define TGETNUM		-63
 
+#define WIFI_CONNECT	   -71
+#define BLYNK_AUTORIZATION -72
+#define BLYNK_SEND		   -73
+#define BLYNK_RECEIVE	   -74
+#define BLYNK_NOTIFICATION -75
+#define BLYNK_PROPERTY	   -76
+#define BLYNK_LCD		   -77
+#define BLYNK_TERMINAL	   -78
+
+#define SETSIGNAL	   -79
+#define PIXEL		   -80
+#define LINE		   -81
+#define RECTANGLE	   -82
+#define ELLIPS		   -83
+#define CLEAR		   -84
+#define DRAW_STRING	   -85
+#define DRAW_NUMBER	   -86
+#define ICON		   -87
+#define UPB			   -88
+#define SEND_INT	   -89
+#define SEND_FLOAT	   -90
+#define SEND_STRING	   -91
+#define RECEIVE_INT	   -92
+#define RECEIVE_FLOAT  -93
+#define RECEIVE_STRING -94
+
+#define ASSERT -95
+
+
+#define LVOIDASTER -150
 #define ABSI	   -151
 
 
