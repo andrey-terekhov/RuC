@@ -160,8 +160,11 @@ void binary_operation(parser *const prs, operator operator)
 	if (token == pipepipe || token == ampamp)
 	{
 		to_tree(prs, token);
-		to_tree(prs, 0);
+		node_add_arg(&prs->nd, 0); // FIXME: useless
+
+		// FIXME: just remove it after MIPS integration
 		node_set_arg(&operator.nd, 0, node_save(&prs->nd));
+		node_set_arg(&operator.nd, 0, node_get_arg(&operator.nd, 0) + 1);
 	}
 	else
 	{
@@ -1439,7 +1442,7 @@ void parse_subexpression(parser *const prs)
 		if (priority <= 2)
 		{
 			to_tree(prs, priority == 1 ? ADLOGOR : ADLOGAND);
-			node_add_arg(&prs->nd, 0);
+			node_add_arg(&prs->nd, 0); // FIXME: useless
 		}
 
 		operators_push(prs, priority, prs->token, &prs->nd);
