@@ -35,13 +35,6 @@
 extern "C" {
 #endif
 
-typedef struct operator
-{
-	uint8_t priority;	/**< Operator priority */
-	token_t token;		/**< Operator token */
-	node nd;			/**< Operator node in AST */
-} operator_t;
-
 /** Type of operand on top of anonymous stack */
 typedef enum OPERAND
 {
@@ -58,6 +51,14 @@ typedef struct anonymous_stack
 	operand_t type;		/**< Type of the top operand in anonymous stack */
 } anonymous_stack;
 
+/**< Operators stack */
+typedef struct operators_stack
+{
+	stack priorities;	/**< Operator priority stack */
+	stack tokens;		/**< Operator token stack */
+	stack nodes;		/**< Operator node stack */
+} operators_stack;
+
 typedef struct parser
 {
 	syntax *sx;							/**< Syntax structure */
@@ -70,8 +71,7 @@ typedef struct parser
 	item_t labels[MAX_LABELS];			/**< Labels table */
 	size_t labels_size;					/**< Labels counter */
 
-	operator_t operators[MAX_STACK];	/**< Operator stack */
-	size_t operators_size;				/**< Operators counter */
+	operators_stack operators;			/**< Operators stack */
 
 	size_t function_mode;				/**< Mode of current parsed function */
 	size_t array_dimensions;			/**< Array dimensions counter */

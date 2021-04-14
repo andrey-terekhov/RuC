@@ -24,19 +24,46 @@ void parse_assignment_expression_internal(parser *const prs);
 void parse_expression_internal(parser *const prs);
 item_t parse_constant(parser *const prs);
 
-
-void to_tree_float_operation(parser *const prs, const item_t type, const item_t operation)
+/** Operator stack member */
+typedef struct operator
 {
-	if ((operation >= ASS && operation <= DIVASS)
-		|| (operation >= ASSAT && operation <= DIVASSAT)
-		|| (operation >= EQEQ && operation <= UNMINUS))
-	{
-		to_tree(prs, type == mode_float ? operation + 50 : operation);
-	}
-	else
-	{
-		to_tree(prs, operation);
-	}
+	uint8_t priority;	/**< Operator priority */
+	token_t token;		/**< Operator token */
+	node nd;			/**< Operator node in AST */
+} operator;
+
+int operators_push(parser *const prs, const uint8_t priority, const token_t token, const node *const nd)
+{
+	return stack_push(&prs->operators.priorities, priority)
+		|| stack_push(&prs->operators.tokens, token)
+		|| stack_push(&prs->operators.nodes, node_save(nd));
+}
+
+operator operators_pop(parser *const prs)
+{
+	operator op;
+
+	op.priority = stack_pop(&prs->operators.priorities);
+	op.token = stack_pop(&prs->operators.tokens);
+	op.nd = node_load(&prs->sx->tree, stack_pop(&prs->operators.nodes));
+
+	return op;
+}
+
+operator operators_peek(parser *const prs)
+{
+	operator op;
+
+	op.priority = stack_peek(&prs->operators.priorities);
+	op.token = stack_peek(&prs->operators.tokens);
+	op.nd = node_load(&prs->sx->tree, stack_peek(&prs->operators.nodes));
+
+	return op;
+}
+
+size_t operators_size(const parser *const prs)
+{
+	return stack_size(&prs->operators.tokens);
 }
 
 
@@ -76,6 +103,21 @@ double node_get_double(const node *const nd, const size_t index)
 }
 
 
+void float_operation(parser *const prs, const item_t type, const item_t operation)
+{
+	if ((operation >= ASS && operation <= DIVASS)
+		|| (operation >= ASSAT && operation <= DIVASSAT)
+		|| (operation >= EQEQ && operation <= UNMINUS))
+	{
+		to_tree(prs, type == mode_float ? operation + 50 : operation);
+	}
+	else
+	{
+		to_tree(prs, operation);
+	}
+}
+
+
 item_t anst_push(parser *const prs, const operand_t type, const item_t mode)
 {
 	stack_push(&prs->anon_stack.operands, mode);
@@ -94,7 +136,7 @@ operand_t anst_peek(parser *const prs)
 }
 
 
-void binary_operation(parser *const prs, operator_t operator)
+void binary_operation(parser *const prs, operator operator)
 {
 	const token_t token = operator.token;
 	const item_t right_mode = anst_pop(prs);
@@ -134,7 +176,7 @@ void binary_operation(parser *const prs, operator_t operator)
 	}
 	else
 	{
-		to_tree_float_operation(prs, result_mode, token);
+		float_operation(prs, result_mode, token);
 	}
 
 	if (token >= equalequal && token <= greaterequal)
@@ -814,12 +856,12 @@ void parse_primary_expression(parser *const prs)
 			}
 			else
 			{
-				const size_t old_operators_size = prs->operators_size;
+				const size_t old_operators_size = operators_size(prs);
 				parse_expression_internal(prs);
 				token_expect_and_consume(prs, r_paren, wait_rightbr_in_primary);
-				while (prs->operators_size > old_operators_size)
+				while (operators_size(prs) > old_operators_size)
 				{
-					binary_operation(prs, prs->operators[--prs->operators_size]);
+					binary_operation(prs, operators_pop(prs));
 				}
 			}
 		}
@@ -1166,7 +1208,7 @@ void parse_postfix_expression(parser *const prs)
 		}
 
 		anst_push(prs, value_t, type);
-		to_tree_float_operation(prs, type, operator);
+		float_operation(prs, type, operator);
 
 		if (is_variable)
 		{
@@ -1207,7 +1249,7 @@ void parse_unary_expression(parser *const prs)
 			}
 
 			anst_push(prs, value_t, type);
-			to_tree_float_operation(prs, type, operator);
+			float_operation(prs, type, operator);
 
 			if (is_variable)
 			{
@@ -1276,7 +1318,7 @@ void parse_unary_expression(parser *const prs)
 						else
 						{
 							const item_t type = anst_pop(prs);
-							to_tree_float_operation(prs, type, UNMINUS);
+							float_operation(prs, type, UNMINUS);
 							anst_push(prs, value_t, type);
 						}
 					}
@@ -1392,7 +1434,7 @@ int is_assignment_operator(const token_t operator)
 
 void parse_subexpression(parser *const prs)
 {
-	size_t old_operators_size = prs->operators_size;
+	size_t old_operators_size = operators_size(prs);
 	int was_operator = 0;
 
 	uint8_t priority = operator_priority(prs->token);
@@ -1400,10 +1442,9 @@ void parse_subexpression(parser *const prs)
 	{
 		was_operator = 1;
 		to_value(prs);
-		while (prs->operators_size > old_operators_size
-			&& prs->operators[prs->operators_size - 1].priority >= priority)
+		while (operators_size(prs) > old_operators_size && operators_peek(prs).priority >= priority)
 		{
-			binary_operation(prs, prs->operators[--prs->operators_size]);
+			binary_operation(prs, operators_pop(prs));
 		}
 
 		if (priority <= 2)
@@ -1412,11 +1453,7 @@ void parse_subexpression(parser *const prs)
 			node_add_arg(&prs->nd, 0);
 		}
 
-		operator_t operator;
-		operator.priority = priority;
-		operator.token = prs->token;
-		node_copy(&operator.nd, &prs->nd);
-		prs->operators[prs->operators_size++] = operator;
+		operators_push(prs, priority, prs->token, &prs->nd);
 
 		token_consume(prs);
 		parse_unary_expression(prs);
@@ -1428,9 +1465,9 @@ void parse_subexpression(parser *const prs)
 		to_value(prs);
 	}
 
-	while (prs->operators_size > old_operators_size)
+	while (operators_size(prs) > old_operators_size)
 	{
-		binary_operation(prs, prs->operators[--prs->operators_size]);
+		binary_operation(prs, operators_pop(prs));
 	}
 }
 
@@ -1663,7 +1700,7 @@ void parse_assignment_expression_internal(parser *const prs)
 			{
 				operator += 11;
 			}
-			to_tree_float_operation(prs, result_mode, operator);
+			float_operation(prs, result_mode, operator);
 			if (left_type == variable_t)
 			{
 				prs->operand_displ = target_displ;

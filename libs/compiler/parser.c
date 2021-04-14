@@ -43,17 +43,28 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.sx = sx;
 	prs.lxr = lxr;
 
-	prs.operators_size = 0;
 	prs.left_mode = -1;
 	prs.operand_displ = 0;
 
 	prs.flag_in_assignment = 0;
 	prs.was_error = 0;
 
+	prs.operators.priorities = stack_create(MAX_STACK);
+	prs.operators.tokens = stack_create(MAX_STACK);
+	prs.operators.nodes = stack_create(MAX_STACK);
 	prs.anon_stack.operands = stack_create(MAX_STACK);
 	token_consume(&prs);
 
 	return prs;
+}
+
+void parser_clear(parser *const prs)
+{
+	stack_clear(&prs->anon_stack.operands);
+
+	stack_clear(&prs->operators.priorities);
+	stack_clear(&prs->operators.tokens);
+	stack_clear(&prs->operators.nodes);
 }
 
 
@@ -83,6 +94,8 @@ int parse(universal_io *const io, syntax *const sx)
 	} while (prs.token != eof);
 
 	node_add_child(&root, TEnd);
+
+	parser_clear(&prs);
 
 #ifndef GENERATE_TREE
 	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
