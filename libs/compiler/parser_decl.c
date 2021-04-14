@@ -714,10 +714,11 @@ void parse_function_body(parser *const prs, node *const parent, const size_t fun
 		to_identab(prs, (size_t)llabs(repr), repr > 0 ? 0 : -1, type);
 	}
 
-	func_set(prs->sx, function_number, tree_reference(prs)); // Ссылка на расположение в дереве
 	node nd = node_add_child(parent, TFuncdef);
 	node_add_arg(&nd, (item_t)function_id);
 	node_add_arg(&nd, 0); // for max_displ
+
+	func_set(prs->sx, function_number, node_save(&nd)); // Ссылка на расположение в дереве
 
 	parse_statement_compound(prs, &nd, FUNCBODY);
 

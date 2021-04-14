@@ -136,6 +136,7 @@ void binary_operation(parser *const prs, operator_t operator)
 	{
 		to_tree_float_operation(prs, result_mode, token);
 	}
+
 	if (token >= equalequal && token <= greaterequal)
 	{
 		result_mode = mode_integer;
@@ -295,7 +296,7 @@ void must_be_float(parser *const prs)
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
 
-	item_t type = anst_pop(prs);
+	const item_t type = anst_pop(prs);
 	if (mode_is_int(type))
 	{
 		to_tree(prs, WIDEN);
@@ -427,8 +428,8 @@ void parse_standard_function_call(parser *const prs)
 		else
 		{
 			anst_push(prs, value_t, func == kw_receive_int
-					  ? mode_integer : func == kw_receive_float
-					  ? mode_float : to_modetab(prs, mode_array, mode_character));
+				? mode_integer : func == kw_receive_float
+				? mode_float : to_modetab(prs, mode_array, mode_character));
 		}
 	}
 	else if (func >= kw_icon && func <= kw_wifi_connect) // функции Фадеева
@@ -559,7 +560,7 @@ void parse_standard_function_call(parser *const prs)
 		{
 			anst_push(prs, value_t, mode_void);
 		}
-		else if (func == kw_msg_receive || func == kw_getnum) // getnum int()   msgreceive msg_info()
+		else if (func == kw_msg_receive || func == kw_getnum) // getnum int(), msgreceive msg_info()
 		{
 			anst_push(prs, value_t, func == kw_getnum ? mode_integer : mode_msg_info);
 		}
@@ -588,7 +589,7 @@ void parse_standard_function_call(parser *const prs)
 					parser_error(prs, wrong_arg_in_create);
 				}
 
-				item_t displ = ident_get_displ(prs->sx, prs->last_id);
+				const item_t displ = ident_get_displ(prs->sx, prs->last_id);
 				if (displ < 0)
 				{
 					to_tree(prs, TIdenttoval);
@@ -664,6 +665,7 @@ void parse_standard_function_call(parser *const prs)
 	{
 		parse_assignment_expression_internal(prs);
 		to_value(prs);
+
 		if (anst_pop(prs) == mode_integer)
 		{
 			func = ABSI;
@@ -798,8 +800,8 @@ void parse_primary_expression(parser *const prs)
 				token_expect_and_consume(prs, star, no_mult_in_cast);
 
 				parse_unary_expression(prs);
-				operand_t type = anst_peek(prs);
-				item_t mode = anst_pop(prs);
+				const operand_t type = anst_peek(prs);
+				const item_t mode = anst_pop(prs);
 				if (!mode_is_pointer(prs->sx, mode))
 				{
 					parser_error(prs, not_pointer_in_cast);
@@ -887,7 +889,7 @@ item_t find_field(parser *const prs)
  */
 void parse_function_call(parser *const prs, const size_t function_id)
 {
-	int old_in_assignment = prs->flag_in_assignment;
+	const int old_in_assignment = prs->flag_in_assignment;
 	const size_t function_mode = (size_t)anst_pop(prs);
 
 	if (!mode_is_function(prs->sx, function_mode))
@@ -996,8 +998,8 @@ void parse_function_call(parser *const prs, const size_t function_id)
  */
 void parse_postfix_expression(parser *const prs)
 {
-	int was_func = 0;
 	const size_t last_id = prs->last_id;
+	int was_func = 0;
 
 	if (token_try_consume(prs, l_paren))
 	{
@@ -1106,11 +1108,11 @@ void parse_postfix_expression(parser *const prs)
 			}
 			else if (peek == variable_t)
 			{
-				int is_global = prs->operand_displ < 0 ? -1 : 1;
+				const item_t sign = prs->operand_displ < 0 ? -1 : 1;
 				anst_push(prs, variable_t, type);
 				while (prs->token == period)
 				{
-					prs->operand_displ += is_global * find_field(prs);
+					prs->operand_displ += sign * find_field(prs);
 				}
 
 				node_set_arg(&prs->nd, 0, prs->operand_displ);
@@ -1140,7 +1142,7 @@ void parse_postfix_expression(parser *const prs)
 
 	if (prs->token == plusplus || prs->token == minusminus)
 	{
-		int operator = prs->token == plusplus ? POSTINC : POSTDEC;
+		item_t operator = prs->token == plusplus ? POSTINC : POSTDEC;
 		token_consume(prs);
 
 		int is_variable = 0;
@@ -1399,7 +1401,7 @@ void parse_subexpression(parser *const prs)
 		was_operator = 1;
 		to_value(prs);
 		while (prs->operators_size > old_operators_size
-			   && prs->operators[prs->operators_size - 1].priority >= priority)
+			&& prs->operators[prs->operators_size - 1].priority >= priority)
 		{
 			binary_operation(prs, prs->operators[--prs->operators_size]);
 		}
@@ -1469,6 +1471,7 @@ void parse_conditional_expression(parser *const prs)
 				{
 					node_set_type(&prs->nd, NOP);
 				}
+
 				const item_t old_addr_if = addr_if;
 				addr_if = (item_t)node_save(&prs->nd);
 				to_tree(prs, old_addr_if);
@@ -1494,6 +1497,7 @@ void parse_conditional_expression(parser *const prs)
 			{
 				node_set_type(&prs->nd, NOP);
 			}
+
 			const item_t old_addr_if = addr_if;
 			addr_if = (item_t)node_save(&prs->nd);
 			to_tree(prs, old_addr_if);
@@ -1510,8 +1514,9 @@ void parse_conditional_expression(parser *const prs)
 
 		while (addr_if != TExprend)
 		{
-			node node_addr = node_load(&TREE, (size_t)addr_if);
+			node node_addr = node_load(&prs->sx->tree, (size_t)addr_if);
 			node_set_type(&node_addr, mode_is_float(global_type) ? WIDEN : NOP);
+
 			node_addr = node_get_child(&node_addr, 0);
 			addr_if = node_get_type(&node_addr);
 			node_set_type(&node_addr, TExprend);
@@ -1551,7 +1556,7 @@ void parse_assignment_expression_internal(parser *const prs)
 	}
 
 	parse_unary_expression(prs);
-	operand_t type = anst_peek(prs);
+	const operand_t type = anst_peek(prs);
 	prs->left_mode = anst_pop(prs);
 	anst_push(prs, type, prs->left_mode);
 

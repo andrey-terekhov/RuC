@@ -151,8 +151,10 @@ void parse_if_statement(parser *const prs, node *const parent)
 
 	if (token_try_consume(prs, kw_else))
 	{
-		node_set_arg(&nd, 0, tree_reference(prs));
 		parse_statement(prs, &nd);
+
+		node child = node_get_child(&nd, 0);
+		node_set_arg(&nd, 0, node_save(&child));
 	}
 }
 
