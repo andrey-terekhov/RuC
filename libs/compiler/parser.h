@@ -27,9 +27,6 @@
 
 // #define GENERATE_TREE
 
-#define MAX_LABELS		10000
-#define MAX_STACK		100
-
 
 #ifdef __cplusplus
 extern "C" {

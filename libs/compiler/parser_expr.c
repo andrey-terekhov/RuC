@@ -224,9 +224,10 @@ item_t parse_braced_init_list(parser *const prs, const item_t type)
 {
 	token_consume(prs);
 	to_tree(prs, type == mode_float ? TStringd : TString);
+	node_add_arg(&prs->nd, 0);
+
 	node nd_init_list;
 	node_copy(&nd_init_list, &prs->nd);
-	node_add_arg(&nd_init_list, 0);
 
 	size_t length = 0;
 	do
@@ -930,13 +931,14 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	}
 
 	const size_t expected_args = (size_t)mode_get(prs->sx, function_mode + 2);
+	size_t ref_arg_mode = function_mode + 3;
 	size_t actual_args = 0;
 
 	to_tree(prs, TCall1);
+	node_add_arg(&prs->nd, expected_args);
+
 	node nd_call;
 	node_copy(&nd_call, &prs->nd);
-	node_add_arg(&nd_call, expected_args);
-	size_t ref_arg_mode = function_mode + 3;
 
 	if (!token_try_consume(prs, r_paren))
 	{
