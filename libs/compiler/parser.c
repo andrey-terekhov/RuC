@@ -49,6 +49,7 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.flag_in_assignment = 0;
 	prs.was_error = 0;
 
+	prs.labels = vector_create(MAX_LABELS);
 	prs.operators.priorities = stack_create(MAX_STACK);
 	prs.operators.tokens = stack_create(MAX_STACK);
 	prs.operators.nodes = stack_create(MAX_STACK);
@@ -60,6 +61,7 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 
 void parser_clear(parser *const prs)
 {
+	vector_clear(&prs->labels);
 	stack_clear(&prs->anon_stack.operands);
 
 	stack_clear(&prs->operators.priorities);

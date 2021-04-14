@@ -78,8 +78,7 @@ typedef struct parser
 
 	token_t token;						/**< Current token */
 
-	item_t labels[MAX_LABELS];			/**< Labels table */
-	size_t labels_size;					/**< Labels counter */
+	vector labels;						/**< Labels table */
 
 	operators_stack operators;			/**< Operators stack */
 
