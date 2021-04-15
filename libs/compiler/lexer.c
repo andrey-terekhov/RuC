@@ -133,7 +133,7 @@ static token_t lex_identifier_or_keyword(lexer *const lxr)
 
 	const size_t repr = repr_reserve(lxr->sx, spelling);
 	const item_t ref = repr_get_reference(lxr->sx, repr);
-	if (ref >= 0)
+	if (ref >= 0 && repr != ITEM_MAX)
 	{
 		lxr->repr = repr;
 		return identifier;

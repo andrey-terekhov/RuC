@@ -340,7 +340,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const i
 {
 	const size_t last_id = vector_size(&sx->identifiers);
 	const item_t ref = repr_get_reference(sx, repr);
-	vector_add(&sx->identifiers, ref == ITEM_MAX ? 1 : ref);
+	vector_add(&sx->identifiers, ref);
 	vector_increase(&sx->identifiers, 3);
 
 	if (ref == 0) // это может быть только MAIN
@@ -362,7 +362,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const i
 	}
 
 	// Один и тот же идентификатор м.б. переменной и меткой
-	if (type != 1 && prev >= sx->cur_id && (func_def != 1 || ident_get_repr(sx, prev) > 0))
+	if (type != 1 && prev != ITEM_MAX && prev >= sx->cur_id && (func_def != 1 || ident_get_repr(sx, prev) > 0))
 	{
 		// Только определение функции может иметь 2 описания, то есть иметь предописание
 		return SIZE_MAX - 1;
@@ -547,8 +547,7 @@ int scope_block_exit(syntax *const sx, const item_t displ, const item_t lg)
 
 	for (size_t i = vector_size(&sx->identifiers) - 4; i >= sx->cur_id; i -= 4)
 	{
-		const item_t prev = ident_get_prev(sx, i);
-		repr_set_reference(sx, (size_t)ident_get_repr(sx, i), prev == 1 ? ITEM_MAX : prev);
+		repr_set_reference(sx, (size_t)ident_get_repr(sx, i), ident_get_prev(sx, i));
 	}
 
 	sx->displ = displ;
