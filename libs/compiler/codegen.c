@@ -648,7 +648,11 @@ static void statement(virtual *const vm, node *const nd)
 
 			if (ref_from)
 			{
-				expression(vm, &incr, 0); // initialization
+				node_set_next(&incr);
+				if (declaration(vm, &incr))
+				{
+					expression(vm, &incr, -1);
+				}
 				child_stmt++;
 			}
 

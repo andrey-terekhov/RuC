@@ -294,11 +294,13 @@ void parse_for_statement(parser *const prs, node *const parent)
 	node_add_arg(&nd, 1); // ref_statement
 	token_expect_and_consume(prs, l_paren, no_leftbr_in_for);
 
+	item_t old_displ;
+	item_t old_lg;
+	scope_block_enter(prs->sx, &old_displ, &old_lg);
 	if (!token_try_consume(prs, semicolon))
 	{
 		node_set_arg(&nd, 0, 1); // ref_inition
-		parse_expression(prs, &nd);
-		token_expect_and_consume(prs, semicolon, no_semicolon_in_for);
+		is_declaration_specifier(prs) ? parse_declaration_inner(prs, &nd) : parse_expression_statement(prs, &nd);
 	}
 
 	if (!token_try_consume(prs, semicolon))
@@ -317,8 +319,17 @@ void parse_for_statement(parser *const prs, node *const parent)
 
 	const int old_in_loop = prs->flag_in_loop;
 	prs->flag_in_loop = 1;
-	parse_statement(prs, &nd);
+	if (prs->token == l_brace)
+	{
+		parse_statement_compound(prs, &nd, FORBLOCK);
+	}
+	else
+	{
+		parse_statement(prs, &nd);
+	}
+
 	prs->flag_in_loop = old_in_loop;
+	scope_block_exit(prs->sx, old_displ, old_lg);
 }
 
 /**
@@ -771,7 +782,7 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 	item_t old_displ = 0;
 	item_t old_lg = 0;
 
-	if (type != FUNCBODY)
+	if (type != FUNCBODY && type != FORBLOCK)
 	{
 		scope_block_enter(prs->sx, &old_displ, &old_lg);
 	}
@@ -788,13 +799,13 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 		token_expect_and_consume(prs, end_token, expected_end);
 	}
 
-	if (type != FUNCBODY)
-	{
-		scope_block_exit(prs->sx, old_displ, old_lg);
-	}
-	else
+	if (type == FUNCBODY)
 	{
 		node_add_child(&nd_block, TReturnvoid);
+	}
+	else if (type != FORBLOCK)
+	{
+		scope_block_exit(prs->sx, old_displ, old_lg);
 	}
 
 	node_add_child(&nd_block, TEnd);

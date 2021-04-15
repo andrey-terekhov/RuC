@@ -25,7 +25,7 @@
 #include "uniio.h"
 
 
-//#define GENERATE_TREE
+#define GENERATE_TREE
 
 
 #ifdef __cplusplus
@@ -47,6 +47,7 @@ typedef enum BLOCK
 	REGBLOCK,
 	THREAD,
 	FUNCBODY,
+	FORBLOCK,
 } block_t;
 
 

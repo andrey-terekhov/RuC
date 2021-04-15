@@ -547,7 +547,8 @@ int scope_block_exit(syntax *const sx, const item_t displ, const item_t lg)
 
 	for (size_t i = vector_size(&sx->identifiers) - 4; i >= sx->cur_id; i -= 4)
 	{
-		repr_set_reference(sx, (size_t)ident_get_repr(sx, i), vector_get(&sx->identifiers, i));
+		const item_t prev = ident_get_prev(sx, i);
+		repr_set_reference(sx, (size_t)ident_get_repr(sx, i), prev == 1 ? ITEM_MAX : prev);
 	}
 
 	sx->displ = displ;
