@@ -51,6 +51,9 @@ typedef struct information
 	item_t answer_reg;							/**< Регистр с ответом */
 	item_t answer_const;						/**< Константа с ответом */
 	answer_t answer_type;						/**< Тип ответа */
+
+	item_t label_if;							/**< Метка if */
+	item_t label_else;							/**< Метка else */
 } information;
 
 
@@ -648,13 +651,49 @@ static void binary_operation(information *const info, node *const nd)
 			logic_expression(info, nd);
 			break;
 
-// TODO: доделать, нужен переход
+// TODO: подумать над объединением LOGOR и LOGAND
+// TODO: рассмотреть более сложные условия: потестировать LOGOR и сделать LOGAND
 		case LOGOR:
 		{
+			const item_t label_next = info->label_num++;
+			const item_t old_label_else = info->label_else;
+
+			info->label_else = label_next;
 			node_set_next(nd);
 			expression(info, nd);
 
+			// TODO: сделать обработку других ответов
+			if (info->answer_type == ALOGIC)
+			{
+				to_code_conditional_branch(info, info->answer_reg, info->label_if, label_next);
+			}
+
+			to_code_label(info, label_next);
+			info->label_else = old_label_else;
+
 			if (node_get_type(nd) == ADLOGOR)
+			{
+				node_set_next(nd);
+			}
+
+			expression(info, nd);
+		}
+		break;
+		case LOGAND:
+		{
+			const item_t label_next = info->label_num++;
+
+			node_set_next(nd);
+			expression(info, nd);
+
+			// TODO: сделать обработку других ответов
+			if (info->answer_type == ALOGIC)
+			{
+				to_code_conditional_branch(info, info->answer_reg, label_next, info->label_else);
+			}
+			to_code_label(info, label_next);
+
+			if (node_get_type(nd) == ADLOGAND)
 			{
 				node_set_next(nd);
 			}
@@ -859,6 +898,9 @@ static void statement(information *const info, node *const nd)
 			const item_t label_if = info->label_num++;
 			const item_t label_else = info->label_num++;
 			const item_t label_end = info->label_num++;
+
+			info->label_if = label_if;
+			info->label_else = label_else;
 
 			node_set_next(nd);
 
