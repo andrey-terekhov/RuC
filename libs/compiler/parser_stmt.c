@@ -297,7 +297,15 @@ void parse_for_statement(parser *const prs, node *const parent)
 	if (!token_try_consume(prs, semicolon))
 	{
 		node_set_arg(&nd, 0, 1); // ref_inition
-		is_declaration_specifier(prs) ? parse_declaration_inner(prs, &nd) : parse_expression_statement(prs, &nd);
+		if (is_declaration_specifier(prs))
+		{
+			parse_declaration_inner(prs, &nd);
+		}
+		else
+		{
+			parse_expression(prs, &nd);
+			token_expect_and_consume(prs, r_paren, no_semicolon_in_for);
+		}
 	}
 
 	if (!token_try_consume(prs, semicolon))
@@ -790,7 +798,14 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 		while (prs->token != eof && prs->token != end_token)
 		{
 			// Почему не ловилась ошибка, если в блоке нити встретилась '}'?
-			is_declaration_specifier(prs) ? parse_declaration_inner(prs, &nd_block) : parse_statement(prs, &nd_block);
+			if (is_declaration_specifier(prs))
+			{
+				parse_declaration_inner(prs, &nd_block);
+			}
+			else
+			{
+				parse_statement(prs, &nd_block);
+			}
 		}
 
 		token_expect_and_consume(prs, end_token, expected_end);
