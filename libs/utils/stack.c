@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2021 Andrey Terekhov, Victor Y. Fadeev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,31 +14,17 @@
  *	limitations under the License.
  */
 
-#ifdef _MSC_VER
-	#pragma comment(linker, "/STACK:268435456")
-#endif
-
-#include "compiler.h"
-#include "workspace.h"
+#include "stack.h"
 
 
-const char *name = "../tests/executable/structures/SELECT_9459.c";
-// "../tests/mips/0test.c";
+extern stack stack_create(const size_t alloc);
 
+extern int stack_push(stack *const stk, const item_t value);
+extern item_t stack_pop(stack *const stk);
+extern item_t stack_peek(const stack *const stk);
 
-int main(int argc, const char *argv[])
-{
-	workspace ws = ws_parse_args(argc, argv);
+extern int stack_reset(stack *const stk);
+extern size_t stack_size(const stack *const stk);
+extern int stack_is_correct(const stack *const stk);
 
-	if (argc < 2)
-	{
-		ws_add_file(&ws, name);
-		ws_set_output(&ws, "export.txt");
-	}
-
-#ifdef TESTING_EXIT_CODE
-	return compile(&ws) ? TESTING_EXIT_CODE : 0;
-#else
-	return compile(&ws);
-#endif
-}
+extern int stack_clear(stack *const stk);
