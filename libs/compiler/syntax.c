@@ -362,7 +362,8 @@ size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const i
 	}
 
 	// Один и тот же идентификатор м.б. переменной и меткой
-	if (type != 1 && prev != ITEM_MAX && prev >= sx->cur_id && (func_def != 1 || ident_get_repr(sx, prev) > 0))
+	if (type != 1 && ident_get_prev(sx, last_id) != ITEM_MAX
+		&& prev >= sx->cur_id && (func_def != 1 || ident_get_repr(sx, prev) > 0))
 	{
 		// Только определение функции может иметь 2 описания, то есть иметь предописание
 		return SIZE_MAX - 1;
