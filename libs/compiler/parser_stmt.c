@@ -304,7 +304,7 @@ void parse_for_statement(parser *const prs, node *const parent)
 		else
 		{
 			parse_expression(prs, &nd);
-			token_expect_and_consume(prs, r_paren, no_semicolon_in_for);
+			token_expect_and_consume(prs, semicolon, no_semicolon_in_for);
 		}
 	}
 
