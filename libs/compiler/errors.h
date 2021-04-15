@@ -111,7 +111,7 @@ typedef enum ERROR
 	two_idents_for_1_declarer,
 	function_has_no_body,
 	diff_formal_param_type_and_actual,
-	not_primary,
+	expected_expression,
 	wrong_operand,
 	must_be_digit_after_exp,
 	label_not_declared,
@@ -186,7 +186,7 @@ typedef enum ERROR
 	tree_no_tend,
 	tree_unexpected,
 
-	node_cannot_set_child,
+	node_cannot_add_child,
 	node_cannot_set_type,
 	node_cannot_add_arg,
 	node_unexpected,

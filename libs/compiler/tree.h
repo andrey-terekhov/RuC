@@ -36,8 +36,6 @@ typedef struct node
 
 	size_t children;		/**< Reference to children */
 	size_t amount;			/**< Amount of children */
-
-	size_t parent;			/**< Reference to parent */
 } node;
 
 
@@ -110,6 +108,16 @@ int node_set_next(node *const nd);
 
 
 /**
+ *	Add child node
+ *
+ *	@param	nd			Current node
+ *	@param	type		Child node type
+ *
+ *	@return	Child node
+ */
+node node_add_child(node *const nd, const item_t type);
+
+/**
  *	Set node type
  *
  *	@param	nd			Node structure
@@ -117,8 +125,7 @@ int node_set_next(node *const nd);
  *
  *	@return	@c  0 on success,
  *			@c -1 on failure,
- *			@c -2 on trying to reset the root node,
- *			@c -3 on trying to set non-empty node
+ *			@c -2 on trying to reset the root node
  */
 int node_set_type(node *const nd, const item_t type);
 
@@ -130,7 +137,7 @@ int node_set_type(node *const nd, const item_t type);
  *
  *	@return	@c  0 on success,
  *			@c -1 on failure,
- *			@c -2 on root or types not set node,
+ *			@c -2 on root,
  *			@c -3 on node with children
  */
 int node_add_arg(node *const nd, const item_t arg);
@@ -144,18 +151,9 @@ int node_add_arg(node *const nd, const item_t arg);
  *
  *	@return	@c  0 on success,
  *			@c -1 on failure,
- *			@c -2 on root or types not set node
+ *			@c -2 on root
  */
 int node_set_arg(node *const nd, const size_t index, const item_t arg);
-
-/**
- *	Set child node
- *
- *	@param	nd			Current node
- *
- *	@return	Child node
- */
-node node_set_child(node *const nd);
 
 
 /**
@@ -167,6 +165,25 @@ node node_set_child(node *const nd);
  *	@return	@c 0 on success, @c -1 on failure
  */
 int node_copy(node *const dest, const node *const src);
+
+/**
+ *	Save internal node index
+ *
+ *	@param	nd			Node structure
+ *
+ *	@return	Internal index, @c SIZE_MAX on failure
+ */
+size_t node_save(const node *const nd);
+
+/**
+ *	Rebuild node by internal index
+ *
+ *	@param	tree		Tree table
+ *	@param	index		Internal index
+ *
+ *	@return	Rebuilt node
+ */
+node node_load(vector *const tree, const size_t index);
 
 /**
  *	Change only node order
