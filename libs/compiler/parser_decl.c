@@ -227,11 +227,9 @@ item_t parse_array_definition(parser *const prs, node *const parent, item_t type
 item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 {
 	token_consume(prs);
-	if (prs->token == r_brace)
+	if (token_try_consume(prs, r_brace))
 	{
-		// Что делать с пустой структурой?
-		// parser_error(parser, empty_struct);
-		token_consume(prs);
+		parser_error(prs, empty_struct);
 		return mode_undefined;
 	}
 
