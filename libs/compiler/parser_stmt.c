@@ -16,6 +16,43 @@
 
 #include "parser.h"
 
+/** Check if current token is part of a declaration specifier */
+int is_declaration_specifier(parser *const prs)
+{
+	switch (prs->token)
+	{
+		case kw_void:
+		case kw_char:
+		// case kw_short:
+		case kw_int:
+		case kw_long:
+		case kw_float:
+		case kw_double:
+		case kw_struct:
+		// case kw_union:
+		// case kw_enum:
+		// case kw_typedef:
+			return 1;
+
+		case identifier:
+		{
+			const item_t ref = repr_get_reference(prs->sx, prs->lxr->repr);
+			const size_t id = ref == ITEM_MAX ? 1 : (size_t)ref;
+			if (ident_get_displ(prs->sx, id) >= 1000)
+			{
+				return 1;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+
+		default:
+			return 0;
+
+	}
+}
 
 /**
  *	Parse labeled statement [C99 6.8.1]
@@ -636,54 +673,6 @@ void parse_printf_statement(parser *const prs, node *const parent)
 	node_add_arg(&nd_printf, (item_t)sum_size);
 }
 
-/**
- *	Parse statement or declaration
- *
- *	block-item:
- *		statement
- *		declaration
- *
- *	@param	prs			Parser structure
- */
-void parse_block_item(parser *const prs, node *const parent)
-{
-	switch (prs->token)
-	{
-		case kw_void:
-		case kw_char:
-		// case kw_short:
-		case kw_int:
-		case kw_long:
-		case kw_float:
-		case kw_double:
-		case kw_struct:
-		// case kw_union:
-		// case kw_enum:
-		// case kw_typedef:
-			parse_declaration_inner(prs, parent);
-			return;
-
-		case identifier:
-		{
-			const item_t ref = repr_get_reference(prs->sx, prs->lxr->repr);
-			const size_t id = ref == ITEM_MAX ? 1 : (size_t)ref;
-			if (ident_get_displ(prs->sx, id) >= 1000)
-			{
-				parse_declaration_inner(prs, parent);
-			}
-			else
-			{
-				parse_statement(prs, parent);
-			}
-			return;
-		}
-
-		default:
-			parse_statement(prs, parent);
-			return;
-	}
-}
-
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -793,7 +782,7 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 		while (prs->token != eof && prs->token != end_token)
 		{
 			// Почему не ловилась ошибка, если в блоке нити встретилась '}'?
-			parse_block_item(prs, &nd_block);
+			is_declaration_specifier(prs) ? parse_declaration_inner(prs, &nd_block) : parse_statement(prs, &nd_block);
 		}
 
 		token_expect_and_consume(prs, end_token, expected_end);
