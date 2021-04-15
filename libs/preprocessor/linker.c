@@ -83,7 +83,7 @@ size_t lk_open_include(environment *const env, const char* const path)
 	if (!in_is_correct(env->input))
 	{
 		in_clear(env->input);
-		macro_system_error(full_path, include_file_not_found);
+		macro_system_error(full_path, included_file_not_found);
 		return SIZE_MAX - 1;
 	}
 
@@ -154,7 +154,7 @@ int lk_preprocess_include(environment *const env)
 	{
 		if (env->curchar == EOF)
 		{
-			env_error(env, must_end_quote);
+			env_error(env, file_name_must_end_with_quote);
 			return -1;
 		}
 
@@ -202,7 +202,7 @@ int lk_include(environment *const env)
 
 	if (env->curchar != '\"')
 	{
-		env_error(env, must_start_quote);
+		env_error(env, file_name_must_start_with_quote);
 		return -1;
 	}
 

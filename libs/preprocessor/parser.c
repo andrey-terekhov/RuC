@@ -74,7 +74,7 @@ int if_end(environment *const env)
 				env->nested_if--;
 				if (env->nested_if < 0)
 				{
-					env_error(env, before_endif);
+					env_error(env, extra_endif);
 					return -1;
 				}
 				return 0;
@@ -152,7 +152,7 @@ int if_true(environment *const env, const int type_if)
 			env->nested_if--;
 			if (env->nested_if < 0)
 			{
-				env_error(env, before_endif);
+				env_error(env, extra_endif);
 				return -1;
 			}
 
@@ -162,7 +162,7 @@ int if_true(environment *const env, const int type_if)
 
 	if (type_if != SH_IF && env->cur == SH_ELIF)
 	{
-		env_error(env, dont_elif);
+		env_error(env, needless_elif);
 		env->nested_if--;
 		return -1;
 	}
@@ -234,7 +234,7 @@ int if_implementation(environment *const env)
 		env->nested_if--;
 		if (env->nested_if < 0)
 		{
-			env_error(env, before_endif);
+			env_error(env, extra_endif);
 			return -1;
 		}
 	}
@@ -288,7 +288,7 @@ int while_collect(environment *const env)
 		m_nextch(env);
 	}
 
-	env_error(env, must_end_endw);
+	env_error(env, cicle_must_end_with_endw);
 	return -1;
 }
 
@@ -335,7 +335,7 @@ int while_implementation(environment *const env)
 			}
 			else if (env->curchar == EOF)
 			{
-				env_error(env, must_end_endw);
+				env_error(env, cicle_must_end_with_endw);
 				return -1;
 			}
 			else
@@ -378,7 +378,7 @@ int preprocess_words(environment *const env)
 			}
 			else
 			{
-				env_error(env, macro_does_not_exist);
+				env_error(env, macro_not_exists);
 				return -1;
 			}
 		}
@@ -400,7 +400,7 @@ int preprocess_words(environment *const env)
 		{
 			if (env->curchar != '(')
 			{
-				env_error(env, after_eval_must_be_ckob);
+				env_error(env, after_eval_must_be_parenthesis);
 				return -1;
 			}
 			else if (calculate(env, ARITHMETIC))
@@ -435,7 +435,7 @@ int preprocess_words(environment *const env)
 		default:
 		{
 			//output_keywords(env);
-			env_error(env, preproces_words_not_exist);
+			env_error(env, preprocess_word_not_exists);
 			return 0;
 		}
 	}

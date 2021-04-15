@@ -1,4 +1,4 @@
-#inc "dont_elif.c"
+#inc "needless_elif.c"
 
 int main()
 {

@@ -1,4 +1,4 @@
-#includedont_elif.c"
+#includeneedless_elif.c"
 
 int main()
 {

@@ -46,7 +46,7 @@ double get_digit(environment *const env, int* error)// Временная зам
 		numdouble = numdouble * 10 + (env->curchar - '0');
 		if (numdouble > (double)INT_MAX)
 		{
-			env_error(env, too_many_nuber);
+			env_error(env, large_value);
 			*error = -1;
 			return 0.0;
 		}
@@ -89,7 +89,7 @@ double get_digit(environment *const env, int* error)// Временная зам
 
 		if (!utf8_is_digit(env->curchar))
 		{
-			env_error(env, must_be_digit_after_exp1);
+			env_error(env, after_exp_must_be_digit);
 			*error = -1;
 			return 0.0;
 		}
@@ -279,7 +279,7 @@ int calc_macro(environment *const env)
 	const int macro_ptr = collect_mident(env);
 	if (!macro_ptr)
 	{
-		env_error(env, not_macro);
+		env_error(env, ident_not_macro);
 		return -1;
 	}
 
@@ -324,12 +324,12 @@ int calc_opiration(environment *const env, double *const stack, int *const is_in
 	const int prior = get_prior(c);
 	if (type == LOGIC && prior > 3)
 	{
-		env_error(env, not_arithmetic_operations);
+		env_error(env, arithmetic_operations_must_be_in_eval);
 		return -1;
 	}
 	if (type == ARITHMETIC && prior <= 3)
 	{
-		env_error(env, not_logical_operations);
+		env_error(env, logical_operations_are_prohibited_in_eval);
 		return -1;
 	}
 
@@ -388,7 +388,7 @@ int additional_elements(environment *const env, double *const stack, int *const 
 		}
 		else
 		{
-			env_error(env, after_eval_must_be_ckob);//
+			env_error(env, after_eval_must_be_parenthesis);//
 			return -1;
 		}
 	}
@@ -507,7 +507,7 @@ int calculate(environment *const env, const int type)
 	}
 	else
 	{
-		env_error(env, in_eval_must_end_parenthesis);
+		env_error(env, eval_must_end_with_parenthesis);
 		return -1;
 	}
 
