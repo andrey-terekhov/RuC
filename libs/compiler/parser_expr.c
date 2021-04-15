@@ -730,21 +730,21 @@ void parse_standard_function_call(parser *const prs)
  */
 size_t parse_identifier(parser *const prs)
 {
-	const size_t id = (size_t)repr_get_reference(prs->sx, prs->lxr->repr);
-	if (id == ITEM_MAX)
+	const item_t ref = repr_get_reference(prs->sx, prs->lxr->repr);
+	if (ref == ITEM_MAX)
 	{
 		parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, prs->lxr->repr));
 	}
 
 	to_tree(prs, TIdent);
+
+	const size_t id = (size_t)ref;
 	prs->operand_displ = ident_get_displ(prs->sx, id);
 	node_add_arg(&prs->nd, prs->operand_displ);
 
-	const item_t mode = ident_get_mode(prs->sx, id);
-
 	prs->last_id = id;
 	token_consume(prs);
-	operands_push(prs, VARIABLE, mode);
+	operands_push(prs, VARIABLE, ident_get_mode(prs->sx, id));
 	return id;
 }
 

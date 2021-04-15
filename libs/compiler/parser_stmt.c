@@ -36,16 +36,13 @@ int is_declaration_specifier(parser *const prs)
 
 		case identifier:
 		{
-			const item_t ref = repr_get_reference(prs->sx, prs->lxr->repr);
-			const size_t id = ref == ITEM_MAX ? 1 : (size_t)ref;
-			if (ident_get_displ(prs->sx, id) >= 1000)
-			{
-				return 1;
-			}
-			else
+			const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+			if (id == ITEM_MAX)
 			{
 				return 0;
 			}
+
+			return ident_get_displ(prs->sx, (size_t)id) >= 1000;
 		}
 
 		default:
