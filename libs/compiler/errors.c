@@ -50,15 +50,15 @@ void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "пустая символьная константа");
 			break;
 
-		case unknown_escape_sequence:	//test_exist
+		case unknown_escape_sequence:	// test_exist
 			sprintf(msg, "неизвестный служебный символ");
 			break;
 
-		case expected_apost_after_char_const: // need_test
+		case expected_apost_after_char_const: // test_exist
 			sprintf(msg, "символьная константа не заканчивается символом '");
 			break;
 
-		case missing_terminating_quote_char:
+		case missing_terminating_quote_char: // need_test
 			sprintf(msg, "строка не заканчивается символом \"");
 			break;
 
@@ -74,7 +74,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "в каждой программе должна быть ГЛАВНАЯ функция");
 			break;
 
-		case predef_but_notdef: // need_test
+		case predef_but_notdef: // test_exist
 		{
 			const char *const buffer = va_arg(args, char *);
 			sprintf(msg, "функция %s была предопределена, но не описана", buffer);
@@ -93,7 +93,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case decl_and_def_have_diff_type:	// test_exist
 			sprintf(msg, "прототип функции и ее описание имеют разные типы");
 			break;
-		case wrong_param_list: // need_test
+		case wrong_param_list: // test_exist
 			sprintf(msg, "неправильный список параметров");
 			break;
 		case expected_semi_after_decl: // test_exist
@@ -127,7 +127,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case struct_init_must_start_from_BEGIN: // need_test
 			sprintf(msg, "инициализация структуры должна начинаться со {");
 			break;
-		case no_comma_in_init_list: // need_test
+		case no_comma_in_init_list: // test_exist
 			sprintf(msg, "между элементами инициализации массива или структуры должна быть ,");
 			break;
 		case ident_is_not_declared: // test_exist
@@ -259,7 +259,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case no_right_br_in_arg_func: // need_test
 			sprintf(msg, "нет ) в функции, передаваемой параметром в другую функцию");
 			break;
-		case par_type_void_with_nofun:	// need_test
+		case par_type_void_with_nofun:	// test_exist
 			sprintf(msg, "в параметре функции тип пусто может быть только у параметра-функции");
 			break;
 		case ident_in_declarator:	// need_test
