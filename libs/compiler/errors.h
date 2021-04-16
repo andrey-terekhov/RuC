@@ -59,6 +59,7 @@ typedef enum ERROR
 
 	// Other errors
 	after_type_must_be_ident = 201,
+	empty_struct,
 	wait_right_sq_br,
 	only_functions_may_have_type_VOID,
 	decl_and_def_have_diff_type,
