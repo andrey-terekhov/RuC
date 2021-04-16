@@ -121,6 +121,7 @@ struct ind_var
 };
 
 struct ind_var ind_var_info[10];
+int ind_var_number;
 
 void merror(int type)
 {
@@ -2049,15 +2050,18 @@ void MPrimary()
             	struct ind_var a;
             	a.id = tree[tc++];
             	a.step = tree[tc++];
-            	// пока так, потом здесь будет счётчик, а не 0
-            	ind_var_info[0] = a;
+            	ind_var_info[ind_var_number++] = a;
             }
             	break;
             case TSliceInd:
             {
             	// Должен быть поиск по id + нужно изменение индекса по шагу сделать
-            	tc++;
-            	areg = ind_var_info[0].reg;
+            	int id = tree[tc++];
+            	for (int i = 0; i <= ind_var_number; i++)
+            	{
+            		if (ind_var_info[i].id == id)
+            			areg = ind_var_info[i].reg;
+            	}
             }
             	break;
             case TSliceident:
@@ -2396,17 +2400,19 @@ void MStmt_gen()
                 	breg = cond_reg;
                 }
                 MExpr_gen();         // cond
-                if (enable_ind_var)
+                if (enable_ind_var && is_last_nested)
                 {
                 	endtc = tc;
                 	tc = stmtref;
                 	tc++; // TBegin
-                	printf("tc=%i\n", tc);
-                	MExpr_gen(); // TIndVar
-                	MExpr_gen(); // TSliceident
-                	printf("tc=%i areg=%i\n", tc, areg);
-                	// Пока так, потом будет не 0, а счётчик
-                	ind_var_info[0].reg = areg;
+                	while (tree[tc] == TIndVar)
+                	{
+						breg = getreg();
+						mbox = BREG;
+						MExpr_gen(); // TIndVar
+						MExpr_gen(); // TSliceident
+						ind_var_info[ind_var_number - 1].reg = areg;
+                	}
                 	stmtref = tc;
                 	tc = endtc;
                 }
@@ -2415,7 +2421,7 @@ void MStmt_gen()
                 	endtc = tc;
                     tc = incrref;
                     delay_slot_inc = 0;
-                    int cond = breg;
+                    int cond = cond_reg;
                     MExpr_gen();         // incr
                     tc = endtc;
 
@@ -2440,8 +2446,8 @@ void MStmt_gen()
                 mbox = BV;
                 incrtc = incrref;
                 tc = stmtref;
-                printf("tc=%i\n", tc);
                 MStmt_gen();         // statement
+//                MStmt_gen();         // statement пока для test2
                 if (!(delay_slot && is_last_nested))
                 {
 					endtc = tc;
@@ -2471,7 +2477,10 @@ void MStmt_gen()
                 }
                 // увеличение индуцированных переменных
                 if (enable_ind_var)
-                	tocodeI(addi, ind_var_info[0].reg, ind_var_info[0].reg, ind_var_info[0].step * 4);
+                {
+                	for (int i = 0; i < ind_var_number; i++)
+                		tocodeI(addi, ind_var_info[i].reg, ind_var_info[i].reg, ind_var_info[i].step * 4);
+                }
                 MExpr_gen();         // cond
                 flag_jump_end_cycle = 0;
                 flag_cond_cycle = 0;
@@ -2483,8 +2492,13 @@ void MStmt_gen()
         		tocodeI(addi, cond_reg, cond_reg, delay_slot_inc); // тут иногда -1
         tocodeL("end", adbreak);
         tocodeL("ELSE", adbreak);
-        	if (enable_ind_var)
+        	if (ind_var_number != 0)
+        	{
         		tc++; // TEnd
+        		for (int i = 0; i < ind_var_number; i++)
+        			freereg(ind_var_info[i].reg);
+        		ind_var_number = 0;
+        	}
 			tc++; // Здесь был TForEnd
 
             adbreak = oldbreak;
@@ -2940,6 +2954,7 @@ void mipsgen()
  //   maxdisplg = (maxdisplg + 2) * 4;
     tc = 0;
     notrobot = 0;
+    ind_var_number = 0;
     if (wasmain == 0)
         error(no_main_in_program);
 
