@@ -355,6 +355,13 @@ static int node_recursive(information *const info, node *const nd)
 						// перестановка со вторым операндом
 						has_error |= transposition(second, &nd_info);
 
+						// надо переставить second с родителем
+						if (node_get_type(second->parent) == ADLOGOR || node_get_type(second->parent) == ADLOGAND)
+						{
+							node_info log_info = { second->parent, 1, 1 };
+							has_error |= transposition(second, &log_info);
+						}
+
 						// перестановка с первым операндом
 						has_error |= transposition(first, second);
 

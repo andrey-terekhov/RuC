@@ -652,7 +652,6 @@ static void binary_operation(information *const info, node *const nd)
 			break;
 
 // TODO: подумать над объединением LOGOR и LOGAND
-// TODO: рассмотреть более сложные условия: потестировать LOGOR и сделать LOGAND
 		case LOGOR:
 		{
 			const item_t label_next = info->label_num++;
@@ -671,18 +670,15 @@ static void binary_operation(information *const info, node *const nd)
 			to_code_label(info, label_next);
 			info->label_else = old_label_else;
 
-			if (node_get_type(nd) == ADLOGOR)
-			{
-				node_set_next(nd);
-			}
-
 			expression(info, nd);
 		}
 		break;
 		case LOGAND:
 		{
 			const item_t label_next = info->label_num++;
+			const item_t old_label_if = info->label_if;
 
+			info->label_if = label_next;
 			node_set_next(nd);
 			expression(info, nd);
 
@@ -691,12 +687,9 @@ static void binary_operation(information *const info, node *const nd)
 			{
 				to_code_conditional_branch(info, info->answer_reg, label_next, info->label_else);
 			}
-			to_code_label(info, label_next);
 
-			if (node_get_type(nd) == ADLOGAND)
-			{
-				node_set_next(nd);
-			}
+			to_code_label(info, label_next);
+			info->label_if = old_label_if;
 
 			expression(info, nd);
 		}
