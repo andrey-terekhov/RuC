@@ -16,6 +16,40 @@
 
 #include "parser.h"
 
+/** Check if current token is part of a declaration specifier */
+int is_declaration_specifier(parser *const prs)
+{
+	switch (prs->token)
+	{
+		case kw_void:
+		case kw_char:
+		// case kw_short:
+		case kw_int:
+		case kw_long:
+		case kw_float:
+		case kw_double:
+		case kw_struct:
+		// case kw_union:
+		// case kw_enum:
+		// case kw_typedef:
+			return 1;
+
+		case identifier:
+		{
+			const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+			if (id == ITEM_MAX)
+			{
+				return 0;
+			}
+
+			return ident_get_displ(prs->sx, (size_t)id) >= 1000;
+		}
+
+		default:
+			return 0;
+
+	}
+}
 
 /**
  *	Parse labeled statement [C99 6.8.1]
@@ -257,11 +291,21 @@ void parse_for_statement(parser *const prs, node *const parent)
 	node_add_arg(&nd, 1); // ref_statement
 	token_expect_and_consume(prs, l_paren, no_leftbr_in_for);
 
+	item_t old_displ;
+	item_t old_lg;
+	scope_block_enter(prs->sx, &old_displ, &old_lg);
 	if (!token_try_consume(prs, semicolon))
 	{
 		node_set_arg(&nd, 0, 1); // ref_inition
-		parse_expression(prs, &nd);
-		token_expect_and_consume(prs, semicolon, no_semicolon_in_for);
+		if (is_declaration_specifier(prs))
+		{
+			parse_declaration_inner(prs, &nd);
+		}
+		else
+		{
+			parse_expression(prs, &nd);
+			token_expect_and_consume(prs, semicolon, no_semicolon_in_for);
+		}
 	}
 
 	if (!token_try_consume(prs, semicolon))
@@ -280,8 +324,17 @@ void parse_for_statement(parser *const prs, node *const parent)
 
 	const int old_in_loop = prs->flag_in_loop;
 	prs->flag_in_loop = 1;
-	parse_statement(prs, &nd);
+	if (prs->token == l_brace)
+	{
+		parse_statement_compound(prs, &nd, FORBLOCK);
+	}
+	else
+	{
+		parse_statement(prs, &nd);
+	}
+
 	prs->flag_in_loop = old_in_loop;
+	scope_block_exit(prs->sx, old_displ, old_lg);
 }
 
 /**
@@ -636,54 +689,6 @@ void parse_printf_statement(parser *const prs, node *const parent)
 	node_add_arg(&nd_printf, (item_t)sum_size);
 }
 
-/**
- *	Parse statement or declaration
- *
- *	block-item:
- *		statement
- *		declaration
- *
- *	@param	prs			Parser structure
- */
-void parse_block_item(parser *const prs, node *const parent)
-{
-	switch (prs->token)
-	{
-		case kw_void:
-		case kw_char:
-		// case kw_short:
-		case kw_int:
-		case kw_long:
-		case kw_float:
-		case kw_double:
-		case kw_struct:
-		// case kw_union:
-		// case kw_enum:
-		// case kw_typedef:
-			parse_declaration_inner(prs, parent);
-			return;
-
-		case identifier:
-		{
-			const item_t ref = repr_get_reference(prs->sx, prs->lxr->repr);
-			const size_t id = ref == ITEM_MAX ? 1 : (size_t)ref;
-			if (ident_get_displ(prs->sx, id) >= 1000)
-			{
-				parse_declaration_inner(prs, parent);
-			}
-			else
-			{
-				parse_statement(prs, parent);
-			}
-			return;
-		}
-
-		default:
-			parse_statement(prs, parent);
-			return;
-	}
-}
-
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -782,7 +787,7 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 	item_t old_displ = 0;
 	item_t old_lg = 0;
 
-	if (type != FUNCBODY)
+	if (type != FUNCBODY && type != FORBLOCK)
 	{
 		scope_block_enter(prs->sx, &old_displ, &old_lg);
 	}
@@ -793,19 +798,26 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 		while (prs->token != eof && prs->token != end_token)
 		{
 			// Почему не ловилась ошибка, если в блоке нити встретилась '}'?
-			parse_block_item(prs, &nd_block);
+			if (is_declaration_specifier(prs))
+			{
+				parse_declaration_inner(prs, &nd_block);
+			}
+			else
+			{
+				parse_statement(prs, &nd_block);
+			}
 		}
 
 		token_expect_and_consume(prs, end_token, expected_end);
 	}
 
-	if (type != FUNCBODY)
-	{
-		scope_block_exit(prs->sx, old_displ, old_lg);
-	}
-	else
+	if (type == FUNCBODY)
 	{
 		node_add_child(&nd_block, TReturnvoid);
+	}
+	else if (type != FORBLOCK)
+	{
+		scope_block_exit(prs->sx, old_displ, old_lg);
 	}
 
 	node_add_child(&nd_block, TEnd);
