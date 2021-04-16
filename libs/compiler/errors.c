@@ -523,6 +523,9 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case expected_colon_after_default:
 			sprintf(msg, "после метки УМОЛЧАНИЕ нет :");
 			break;
+		case empty_struct:
+			sprintf(msg, "структура должна иметь поля");
+			break;
 
 		case tree_expression_not_block:
 		{
