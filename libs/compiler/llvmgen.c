@@ -586,6 +586,18 @@ static void unary_operation(information *const info, node *const nd)
 			info->answer_reg = info->register_num++;
 		}
 		break;
+		case LOGNOT:
+		{
+			const item_t old_label_if = info->label_if;
+			const item_t old_label_else = info->label_else;
+
+			node_set_next(nd);
+			expression(info, nd);
+			info->label_if = old_label_else;
+			info->label_else = old_label_if;
+		}
+			break;
+		// TODO: забыл сделать битовое отрицание, нужно доделать
 		default:
 		{
 			node_set_next(nd);
@@ -652,6 +664,7 @@ static void binary_operation(information *const info, node *const nd)
 			break;
 
 // TODO: подумать над объединением LOGOR и LOGAND
+// TODO: c LOGNOT некорректно устанавливаются метки
 		case LOGOR:
 		{
 			const item_t label_next = info->label_num++;
@@ -664,7 +677,7 @@ static void binary_operation(information *const info, node *const nd)
 			// TODO: сделать обработку других ответов
 			if (info->answer_type == ALOGIC)
 			{
-				to_code_conditional_branch(info, info->answer_reg, info->label_if, label_next);
+				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
 			}
 
 			to_code_label(info, label_next);
@@ -685,7 +698,7 @@ static void binary_operation(information *const info, node *const nd)
 			// TODO: сделать обработку других ответов
 			if (info->answer_type == ALOGIC)
 			{
-				to_code_conditional_branch(info, info->answer_reg, label_next, info->label_else);
+				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
 			}
 
 			to_code_label(info, label_next);
@@ -902,7 +915,7 @@ static void statement(information *const info, node *const nd)
 			// TODO: сделать обработку других ответов
 			if (info->answer_type == ALOGIC)
 			{
-				to_code_conditional_branch(info, info->answer_reg, label_if, label_else);
+				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
 			}
 			to_code_label(info, label_if);
 
