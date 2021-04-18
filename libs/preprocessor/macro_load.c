@@ -55,7 +55,7 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 					env_scan_next_char(env);
 				}
 
-				env_move_macro_stack_prt(env, (int)-(num));
+				env_move_macro_stack_prt(env, (int)(-num));
 				env_io_clear(env, param_type, old_param_size);
 				env_io_clear(env, define_stack_type, old_define_stack_size);
 

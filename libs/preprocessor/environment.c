@@ -103,7 +103,7 @@ char32_t env_io_get_char(environment *const env, int type, size_t prt)
 	if (env == NULL || type < macro_text_type || type >= all_types
 		|| env->local_io[type] == NULL || prt > env->local_io_size[type])
 	{
-		return EOF;
+		return (char32_t)EOF;
 	}
 	return env->local_io[type][prt];
 }
@@ -116,7 +116,7 @@ char32_t env_get_curchar(environment *const env)
 	}
 	else
 	{
-		return EOF;
+		return (char32_t)EOF;
 	}
 }
 
@@ -128,7 +128,7 @@ char32_t env_get_nextchar(environment *const env)
 	}
 	else
 	{
-		return EOF;
+		return (char32_t)EOF;
 	}
 }
 
@@ -190,7 +190,7 @@ size_t env_io_get_size(environment *const env, int type)
 {
 	if (env == NULL || type >= all_types || type <= file_type)
 	{
-		return -1;
+		return SIZE_MAX;
 	}
 	return env->local_io_size[type];
 }
