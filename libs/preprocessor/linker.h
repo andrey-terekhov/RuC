@@ -59,13 +59,14 @@ linker lk_create(workspace *const ws, environment *const env);
 size_t lk_include(linker *const lk);
 
 /**
- *	Get current file name from linker
+ *	Get file name from linker
  *
  *	@param	lk		Preprocessor linker
+ *	@param	num		File index
  *
  *	@return	File
  */
-const char *lk_get_cur_path(const linker *const lk);
+const char *lk_get_path(const linker *const lk, size_t num);
 
 /**
  *	Get number of files from linker

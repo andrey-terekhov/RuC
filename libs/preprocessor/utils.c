@@ -64,14 +64,14 @@ int macro_keywords(environment *const env)
 	int hash = 0;
 	do
 	{
-		hash += (int)env->curchar;
-		env->reprtab[env->rp++] = (int)env->curchar;
+		hash += (int)env_get_curchar(env);
+		env->reprtab[env->rp++] = (int)env_get_curchar(env);
 		n++;
-		m_nextch(env);
-	} while (utf8_is_letter(env->curchar) || utf8_is_digit(env->curchar));
+		env_scan_next_char(env);
+	} while (utf8_is_letter(env_get_curchar(env)) || utf8_is_digit(env_get_curchar(env)));
 
-	/*if (env->curchar != '\n' && env->curchar != ' ' && env->curchar != '\t' && env->curchar != '(' &&
-		env->curchar != '\"')
+	/*if (env_get_curchar(env) != '\n' && env_get_curchar(env) != ' ' && env_get_curchar(env) != '\t' && env_get_curchar(env) != '(' &&
+		env_get_curchar(env) != '\"')
 	{
 		
 		env_error(env, after_ident_must_be_space);
@@ -126,11 +126,11 @@ int collect_mident(environment *const env, char32_t *buffer)
 	int hash = 0;
 	size_t buffer_size = 0;
 
-	while (utf8_is_letter(env->curchar) || utf8_is_digit(env->curchar))
+	while (utf8_is_letter(env_get_curchar(env)) || utf8_is_digit(env_get_curchar(env)))
 	{
-		buffer[buffer_size++] = env->curchar;
-		hash += env->curchar;
-		m_nextch(env);
+		buffer[buffer_size++] = env_get_curchar(env);
+		hash += env_get_curchar(env);
+		env_scan_next_char(env);
 	}
 
 	buffer[buffer_size] = '\0';
@@ -153,11 +153,11 @@ int collect_mident(environment *const env, char32_t *buffer)
 
 int skip_line(environment *const env)
 {
-	while (env->curchar != '\n')
+	while (env_get_curchar(env) != '\n')
 	{
-		if (env->curchar == ' ' || env->curchar == '\t' || env->curchar == '\r')
+		if (env_get_curchar(env) == ' ' || env_get_curchar(env) == '\t' || env_get_curchar(env) == '\r')
 		{
-			m_nextch(env);
+			env_scan_next_char(env);
 		}
 		else
 		{
@@ -171,38 +171,38 @@ int skip_line(environment *const env)
 
 void skip_separators(environment *const env)
 {
-	while (env->curchar == ' ' || env->curchar == '\t')
+	while (env_get_curchar(env) == ' ' || env_get_curchar(env) == '\t')
 	{
-		m_nextch(env);
+		env_scan_next_char(env);
 	}
 }
 
 int skip_string(environment *const env)
 {
-	char32_t c = env->curchar;
-	m_fprintf(env, env->curchar);
-	m_nextch(env);
+	char32_t c = env_get_curchar(env);
+	m_fprintf(env, env_get_curchar(env));
+	env_scan_next_char(env);
 
-	while (env->curchar != c && env->curchar != (char32_t)EOF && env->curchar != '\n')
+	while (env_get_curchar(env) != c && env_get_curchar(env) != (char32_t)EOF && env_get_curchar(env) != '\n')
 	{
-		if (env->curchar == '\\')
+		if (env_get_curchar(env) == '\\')
 		{
-			m_fprintf(env, env->curchar);
-			m_nextch(env);
+			m_fprintf(env, env_get_curchar(env));
+			env_scan_next_char(env);
 		}
 
-		m_fprintf(env, env->curchar);
-		m_nextch(env);
+		m_fprintf(env, env_get_curchar(env));
+		env_scan_next_char(env);
 	}
 
-	if (env->curchar == (char32_t)EOF || env->curchar == '\n')
+	if (env_get_curchar(env) == (char32_t)EOF || env_get_curchar(env) == '\n')
 	{
 		env_error(env, no_string_ending);
 		return -1;
 	}
 
-	m_fprintf(env, env->curchar);
-	m_nextch(env);
+	m_fprintf(env, env_get_curchar(env));
+	env_scan_next_char(env);
 	return 0;
 }
 
@@ -210,7 +210,6 @@ void end_of_file(environment *const env)
 {
 	while (env_io_get_type(env) != file_type)
 	{
-		env_io_switch_to_old_type(env);
+		env_io_back_to_previous(env);
 	}
-	env_curchar_set(env, (char32_t)EOF);
 }

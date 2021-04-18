@@ -70,9 +70,9 @@ int if_end(environment *const env)
 {
 	int fl_cur;
 
-	while (env->curchar != (char32_t)EOF)
+	while (env_get_curchar(env) != (char32_t)EOF)
 	{
-		if (env->curchar == '#')
+		if (env_get_curchar(env) == '#')
 		{
 			fl_cur = macro_keywords(env);
 			if (fl_cur == SH_ENDIF)
@@ -97,7 +97,7 @@ int if_end(environment *const env)
 		}
 		else
 		{
-			m_nextch(env);
+			env_scan_next_char(env);
 		}
 	}
 
@@ -109,12 +109,12 @@ int if_false(environment *const env)
 {
 	int fl_cur = env->cur;
 
-	while (env->curchar != (char32_t)EOF)
+	while (env_get_curchar(env) != (char32_t)EOF)
 	{
-		if (env->curchar == '#')
+		if (env_get_curchar(env) == '#')
 		{
 			fl_cur = macro_keywords(env);
-			m_nextch(env);
+			env_scan_next_char(env);
 
 			if (fl_cur == SH_ELSE || fl_cur == SH_ELIF || fl_cur == SH_ENDIF)
 			{
@@ -128,7 +128,7 @@ int if_false(environment *const env)
 		}
 		else
 		{
-			m_nextch(env);
+			env_scan_next_char(env);
 		}
 	}
 
@@ -141,7 +141,7 @@ int if_true(linker *const lk, const int type_if)
 {
 	environment *env = lk->env;
 	int error = 0;
-	while (env->curchar != (char32_t)EOF)
+	while (env_get_curchar(env) != (char32_t)EOF)
 	{
 		error = preprocess_token(lk);
 		if (error)
@@ -258,17 +258,17 @@ int while_collect(environment *const env)
 	env_io_add_char(env, while_type, (char32_t)env_io_get_size(env, if_type));
 	
 
-	while (env->curchar != '\n')
+	while (env_get_curchar(env) != '\n')
 	{
-		env_io_add_char(env, if_type, env->curchar);
-		m_nextch(env);
+		env_io_add_char(env, if_type, env_get_curchar(env));
+		env_scan_next_char(env);
 	}
 	env_io_add_char(env, if_type, '\n');
-	m_nextch(env);
+	env_scan_next_char(env);
 
-	while (env->curchar != (char32_t)EOF)
+	while (env_get_curchar(env) != (char32_t)EOF)
 	{
-		if (env->curchar == '#')
+		if (env_get_curchar(env) == '#')
 		{
 			int cur = macro_keywords(env);
 
@@ -292,8 +292,8 @@ int while_collect(environment *const env)
 			}
 		}
 
-		env_io_add_char(env, while_type, env->curchar);
-		m_nextch(env);
+		env_io_add_char(env, while_type, env_get_curchar(env));
+		env_scan_next_char(env);
 	}
 
 	env_error(env, must_end_endw);
@@ -303,16 +303,16 @@ int while_collect(environment *const env)
 int while_implementation(linker *const lk, size_t begin_pred)
 {
 	environment *env = lk->env;
-	m_nextch(env);
-	size_t end = (size_t)env->curchar;
-	m_nextch(env);
-	size_t if_prt = env->curchar;
-	size_t begin  = env->curent_io_prt + begin_pred -1;
+	env_scan_next_char(env);
+	size_t end = (size_t)env_get_curchar(env);
+	env_scan_next_char(env);
+	size_t if_prt = env_get_curchar(env);
+	size_t begin  = env_io_get_prt(env) + begin_pred -1;
 	while (1)
 	{
-		env_io_switch_to_new_type(env, if_type, if_prt);
+		env_io_switch_to_new(env, if_type, if_prt);
 		int res = calculate_logic(env);
-		env_io_switch_to_old_type(env);
+		env_io_back_to_previous(env);
 
 		if (res == -1)
 		{
@@ -320,27 +320,27 @@ int while_implementation(linker *const lk, size_t begin_pred)
 		}
 		if (res == 0)
 		{
-			env_io_switch_to_old_type(env);
-			env_io_switch_to_new_type(env, while_type, end);
+			env_io_back_to_previous(env);
+			env_io_switch_to_new(env, while_type, end);
 			return 0;
 		}
 
-		env_io_switch_to_old_type(env);
-		env_io_switch_to_new_type(env, while_type, begin);
+		env_io_back_to_previous(env);
+		env_io_switch_to_new(env, while_type, begin);
 
 		skip_separators(env);
 
-		while (env->curchar != WHILE_END)
+		while (env_get_curchar(env) != WHILE_END)
 		{
-			if (env->curchar == WHILE_BEGIN)
+			if (env_get_curchar(env) == WHILE_BEGIN)
 			{
 				if (while_implementation(lk, begin))
 				{
 					return -1;
 				}
-				m_nextch(env);
+				env_scan_next_char(env);
 			}
-			else if (env->curchar == (char32_t)EOF)
+			else if (env_get_curchar(env) == (char32_t)EOF)
 			{
 				env_error(env, must_end_endw);
 				return -1;
@@ -363,28 +363,23 @@ int parser_include(linker *const lk)
 	size_t index = lk_include(lk);
 	environment *env = lk->env;
 
-	universal_io new_in = io_create();
-	universal_io *old_in = env->input;
-	env->input = &new_in;
-
-	int flag_io_type = 0;
 	if (index >= SIZE_MAX - 1)
 	{
-		env->input = old_in;
-		get_next_char(env);
-		m_nextch(env);
+		env_scan_next_char(env);
 		return index == SIZE_MAX ? 0 : -1;
 	}
 
+	int flag_io_type = 0;
 	if (env_io_get_type(env) != file_type)
 	{
-		env_io_switch_to_new_type(env, file_type, 0);
+		env_io_switch_to_new(env, file_type, 0);
 		flag_io_type++;
 	}
 
+	
+
 	const int res = preprocess_file(lk, index);
 
-	env->input = old_in;
 	if (res == -1)
 	{
 		end_of_file(env);
@@ -393,11 +388,11 @@ int parser_include(linker *const lk)
 	
 	if (flag_io_type)
 	{
-		env_io_switch_to_old_type(env);
+		env_io_back_to_previous(env);
 	}
 
-	get_next_char(env);
-	m_nextch(env);
+	env_scan_next_char(env);
+	env_scan_next_char(env);
 
 	return 0;
 }
@@ -416,7 +411,6 @@ int preprocess_words(linker *const lk)
 		case SH_DEFINE:
 		case SH_MACRO:
 		{
-			env->prep_flag = 1;
 			return macro_add(env);
 		}
 		case SH_UNDEF:
@@ -450,7 +444,7 @@ int preprocess_words(linker *const lk)
 			return 0;
 		case SH_EVAL:
 		{
-			if (env->curchar != '(')
+			if (env_get_curchar(env) != '(')
 			{
 				env_error(env, after_eval_must_be_ckob);
 				return -1;
@@ -461,7 +455,7 @@ int preprocess_words(linker *const lk)
 				return -1;
 			}
 
-			uni_printf(env->output, "%s", buffer);
+			uni_printf(env_get_file_output(env), "%s", buffer);
 			return 0;
 		}
 		case SH_WHILE:
@@ -476,16 +470,16 @@ int preprocess_words(linker *const lk)
 				return -1;
 			}
 
-			env_io_switch_to_new_type(env, while_type, 0);
+			env_io_switch_to_new(env, while_type, 0);
 
 			int res = while_implementation(lk, 0);
 			if (env_io_get_type(env) != file_type)
 			{
-				env_io_switch_to_old_type(env);
+				env_io_back_to_previous(env);
 			}
 
-			env_io_clear(env, if_type);
-			env_io_clear(env, while_type);
+			env_io_clear(env, if_type, 0);
+			env_io_clear(env, while_type, 0);
 			env_io_add_char(env, if_type, '\0'); 
 			return res;
 		}
@@ -501,7 +495,7 @@ int preprocess_words(linker *const lk)
 int preprocess_token(linker *const lk)
 {
 	environment *env = lk->env;
-	switch (env->curchar)
+	switch (env_get_curchar(env))
 	{
 		case (char32_t)EOF:
 			return 0;
@@ -513,14 +507,14 @@ int preprocess_token(linker *const lk)
 			if (env->cur != 0)
 			{
 				const int res = preprocess_words(lk);
-				if (env->nextchar != '#' && env_io_get_type(env) != while_type &&
+				if (env_get_nextchar(env) != '#' && env_io_get_type(env) != while_type &&
 					env_io_get_type(env) != macro_text_type)//curflag
 				{
 					env_add_comment(env);
 				}
 				if (env->cur != SH_INCLUDE && env->cur != SH_ELSE && env->cur != SH_ELIF && env->cur != SH_ENDIF)
 				{
-					m_nextch(env);
+					env_scan_next_char(env);
 				}
 				return res;
 			}
@@ -539,12 +533,12 @@ int preprocess_token(linker *const lk)
 		}
 		case '@':
 		{
-			m_nextch(env);
+			env_scan_next_char(env);
 			return 0;
 		}
 		default:
 		{
-			if (utf8_is_letter(env->curchar) && env->prep_flag == 1)
+			if (utf8_is_letter(env_get_curchar(env)))
 			{
 				char32_t buffer[STRING_SIZE];
 				const int macro_ptr = collect_mident(env, buffer);
@@ -564,8 +558,8 @@ int preprocess_token(linker *const lk)
 			}
 			else
 			{
-				m_fprintf(env, env->curchar);
-				m_nextch(env);
+				m_fprintf(env, env_get_curchar(env));
+				env_scan_next_char(env);
 			}
 
 			return 0;
@@ -577,29 +571,30 @@ int preprocess_file(linker *const lk, const size_t number)
 {
 	environment *env = lk->env;
 
+	universal_io new_in = io_create();
+	universal_io *old_in = env_get_file_input(env);
+	env_set_file_input(env, &new_in, lk_get_path(lk, number));
+
 	if (lk_open_file(lk, number))
 	{
 		return -1;
 	}
 
-	env_clear_error_string(env);
-
 	const size_t old_cur = lk_get_current(lk);
 	lk_set_current(lk, number);
 
-	env->curent_path = lk_get_cur_path(lk);
 	const size_t old_line = env->line;
 	env->line = 1;
 
-	get_next_char(env);
-	m_nextch(env);
-	if (env->curchar != '#')
+	env_scan_next_char(env);
+	env_scan_next_char(env);
+	if (env_get_curchar(env) != '#')
 	{
 		env_add_comment(env);
 	}
 
 	int was_error = 0;
-	while (env->curchar != (char32_t)EOF)
+	while (env_get_curchar(env) != (char32_t)EOF)
 	{
 		was_error = preprocess_token(lk) || was_error;
 	}
@@ -608,9 +603,9 @@ int preprocess_file(linker *const lk, const size_t number)
 
 	env->line = old_line;
 	lk_set_current(lk, old_cur);
-	env->curent_path = lk_get_cur_path(lk);
 
-	in_clear(env->input);
+	in_clear(env_get_file_input(env));
+	env_set_file_input(env, old_in, lk_get_path(lk, old_cur));
 	return was_error ? -1 : 0;
 }
 

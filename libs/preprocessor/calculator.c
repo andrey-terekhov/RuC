@@ -313,22 +313,22 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 		buffer[0] = '\0';
 		size_t buffer_size = 0;
 
-		char32_t cur = env->curchar;
-		m_nextch(env);
+		char32_t cur = env_get_curchar(env);
+		env_scan_next_char(env);
 
-		char32_t next = env->curchar;
-		if (utf8_is_digit(env->curchar))
+		char32_t next = env_get_curchar(env);
+		if (utf8_is_digit(env_get_curchar(env)))
 		{
-			m_nextch(env);
-			while (utf8_is_digit(env->curchar) || utf8_is_power(env->curchar))
+			env_scan_next_char(env);
+			while (utf8_is_digit(env_get_curchar(env)) || utf8_is_power(env_get_curchar(env)))
 			{
-				if (utf8_is_power(env->curchar) &&  (env->nextchar == '+' || env->curchar == '-'))
+				if (utf8_is_power(env_get_curchar(env)) &&  (env->nextchar == '+' || env_get_curchar(env) == '-'))
 				{
-					buffer_size += utf8_to_string(&buffer[buffer_size], env->curchar);
-					m_nextch(env);
+					buffer_size += utf8_to_string(&buffer[buffer_size], env_get_curchar(env));
+					env_scan_next_char(env);
 				}
-				buffer_size += utf8_to_string(&buffer[buffer_size], env->curchar);
-				m_nextch(env);
+				buffer_size += utf8_to_string(&buffer[buffer_size], env_get_curchar(env));
+				env_scan_next_char(env);
 			}
 		}
 		universal_io in = io_create();
@@ -339,9 +339,9 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 	else
 	{
 		char32_t last;
-		res = get_digit(env->input, &stack[*stk_size], env->curchar, env->nextchar, &last);
-		env_curchar_set(env, last);
-		get_next_char(env);
+		res = get_digit(env->input, &stack[*stk_size], env_get_curchar(env), env->nextchar, &last);
+		env_scan_next_char(env);
+		env->curchar = last;
 	}
 
 	if (res == ERROR)
@@ -351,7 +351,7 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 	}
 	else if (res == WARNING)
 	{
-		macro_error(too_many_nuber, env->curent_path, env->error_string, env->line, env->position);
+		macro_error(too_many_nuber, env->curent_path, env->error_string, env->line, env->error_string_size);
 		is_int[*stk_size] = DOUBLE;
 	}
 	else
@@ -365,17 +365,17 @@ int calc_digit(environment *const env, double *stack, int *is_int, int *stk_size
 
 int calc_operation(environment *const env, double *const stack, int *const is_int, char *const operation, int *op_size, int *stk_size, const int type)
 {
-	const char opr = get_operation(env->curchar, env->nextchar);
+	const char opr = get_operation(env_get_curchar(env), env->nextchar);
 	if (!opr)
 	{
 		env_error(env, third_party_symbol);
 		return -1;
 	}
 
-	m_nextch(env);
+	env_scan_next_char(env);
 	if (opr == 'b'|| opr == 's' || opr == '=' || opr == '&'|| opr == '|' || opr == '!')
 	{
-		m_nextch(env);
+		env_scan_next_char(env);
 	}
 
 	const int prior = get_prior(opr);
@@ -433,15 +433,15 @@ int calc_close(double *const stack, int *const is_int, const char *operation, in
 int additional_elements(environment *const env, double *const stack, int *const is_int
 	, char *const operation , int *op_size, int *stk_size, int *type, int operation_flag)
 {
-	if (env->curchar == '#' && *type == LOGIC && !operation_flag)
+	if (env_get_curchar(env) == '#' && *type == LOGIC && !operation_flag)
 	{
 		const int cur = macro_keywords(env);
-		if (cur == SH_EVAL && env->curchar == '(')
+		if (cur == SH_EVAL && env_get_curchar(env) == '(')
 		{
 			*type = ARITHMETIC;
 			operation[*op_size] = '[';
 			*op_size = *op_size + 1;
-			m_nextch(env);
+			env_scan_next_char(env);
 			return 1;
 		}
 		else
@@ -451,7 +451,7 @@ int additional_elements(environment *const env, double *const stack, int *const 
 		}
 	}
 
-	if (utf8_is_letter(env->curchar))
+	if (utf8_is_letter(env_get_curchar(env)))
 	{
 		if (calc_macro(env))
 		{
@@ -460,15 +460,15 @@ int additional_elements(environment *const env, double *const stack, int *const 
 		return 1;
 	}
 
-	if (env->curchar == '(' && !operation_flag)
+	if (env_get_curchar(env) == '(' && !operation_flag)
 	{
 		operation[*op_size] = '(';
 		*op_size = *op_size + 1;
-		m_nextch(env);
+		env_scan_next_char(env);
 		return 1;
 	}
 
-	if (env->curchar == ')' && operation_flag)
+	if (env_get_curchar(env) == ')' && operation_flag)
 	{
 		operation[*op_size] = ')';
 		*op_size = *op_size + 1;
@@ -478,7 +478,7 @@ int additional_elements(environment *const env, double *const stack, int *const 
 			return -1;
 		}
 
-		m_nextch(env);
+		env_scan_next_char(env);
 		if (operation[*op_size] == '[')
 		{
 			*type = LOGIC;
@@ -503,7 +503,7 @@ int calculate(environment *const env, char *const result)
 	{
 		expression_type = ARITHMETIC;
 		operation[op_size++] = '(';
-		m_nextch(env);
+		env_scan_next_char(env);
 	}
 
 	int stk_size = 0;
@@ -511,7 +511,7 @@ int calculate(environment *const env, char *const result)
 	int is_int[STK_SIZE];
 	int operation_flag = 0;
 	
-	while (env->curchar != '\n')
+	while (env_get_curchar(env) != '\n')
 	{
 		skip_separators(env);
 		const int res = additional_elements(env, stack, is_int, operation, &op_size, &stk_size, &expression_type, operation_flag);
@@ -529,7 +529,7 @@ int calculate(environment *const env, char *const result)
 			continue;
 		}
 
-		if (!operation_flag && (utf8_is_digit(env->curchar) || (env->curchar == '-' && utf8_is_digit(env->nextchar))))
+		if (!operation_flag && (utf8_is_digit(env_get_curchar(env)) || (env_get_curchar(env) == '-' && utf8_is_digit(env->nextchar))))
 		{
 			operation_flag = 1;
 			if (calc_digit(env, stack, is_int, &stk_size))
@@ -537,7 +537,7 @@ int calculate(environment *const env, char *const result)
 				return -1;
 			}
 		}
-		else if (operation_flag && env->curchar != '\n')
+		else if (operation_flag && env_get_curchar(env) != '\n')
 		{
 			operation_flag = 0;
 			if (calc_operation(env, stack, is_int, operation, &op_size, &stk_size, expression_type))
@@ -545,7 +545,7 @@ int calculate(environment *const env, char *const result)
 				return -1;
 			}
 		}
-		else if (env->curchar != '\n')
+		else if (env_get_curchar(env) != '\n')
 		{
 			env_error(env, third_party_symbol);
 			return -1;

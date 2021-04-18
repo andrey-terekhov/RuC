@@ -86,14 +86,14 @@ int func_add_ident(environment *const env, char32_t *temp_str)
 	int num = 0;
 	int temp_str_size = 0;
 
-	while (env->curchar != ')')
+	while (env_get_curchar(env) != ')')
 	{
-		if (utf8_is_letter(env->curchar))
+		if (utf8_is_letter(env_get_curchar(env)))
 		{
-			while (utf8_is_letter(env->curchar) || utf8_is_digit(env->curchar))
+			while (utf8_is_letter(env_get_curchar(env)) || utf8_is_digit(env_get_curchar(env)))
 			{
-				temp_str[temp_str_size++] = env->curchar;
-				m_nextch(env);
+				temp_str[temp_str_size++] = env_get_curchar(env);
+				env_scan_next_char(env);
 			}
 			temp_str[temp_str_size++] = (char32_t)0;
 		}
@@ -103,13 +103,13 @@ int func_add_ident(environment *const env, char32_t *temp_str)
 			return -1;
 		}
 
-		if (env->curchar == ',')
+		if (env_get_curchar(env) == ',')
 		{
-			m_nextch(env);
+			env_scan_next_char(env);
 			skip_separators(env);
 			num++;
 		}
-		else if (env->curchar != ')')
+		else if (env_get_curchar(env) != ')')
 		{
 			env_error(env, after_functionid_must_be_comma);
 			return -1;
@@ -117,23 +117,21 @@ int func_add_ident(environment *const env, char32_t *temp_str)
 	}
 	temp_str[temp_str_size++] = (char32_t)-1;
 	
-	m_nextch(env);
+	env_scan_next_char(env);
 	return num;
 }
 
 int macro_tab_add_func(environment *const env)
 {
 	const int flag_macro_directive = env->cur == SH_MACRO;
-
 	env_io_add_char(env, macro_text_type, MACRO_FUNCTION);
-	
 	int empty = 0;
 	char32_t temp_str[STRING_SIZE];
-	if (env->curchar == ')')
+	if (env_get_curchar(env) == ')')
 	{
 		env_io_add_char(env, macro_text_type, (char32_t)-1);//war
 		empty = 1;
-		m_nextch(env);
+		env_scan_next_char(env);
 	}
 	else
 	{
@@ -147,20 +145,20 @@ int macro_tab_add_func(environment *const env)
 
 	skip_separators(env);
 
-	while ((env->curchar != '\n' || flag_macro_directive) && env->curchar != (char32_t)EOF)
+	while ((env_get_curchar(env) != '\n' || flag_macro_directive) && env_get_curchar(env) != (char32_t)EOF)
 	{
-		if (utf8_is_letter(env->curchar) && !empty)
+		if (utf8_is_letter(env_get_curchar(env)) && !empty)
 		{
 			if (func_check_macro(env, flag_macro_directive, temp_str))
 			{
 				return -1;
 			}
 		}
-		else if (env->curchar == '#')
+		else if (env_get_curchar(env) == '#')
 		{
 			env->cur = macro_keywords(env);
 
-			if (!flag_macro_directive && env->cur == SH_EVAL && env->curchar == '(')
+			if (!flag_macro_directive && env->cur == SH_EVAL && env_get_curchar(env) == '(')
 			{
 				char buffer[STRING_SIZE];
 				if (calculate_arithmetic(env, buffer))
@@ -176,7 +174,7 @@ int macro_tab_add_func(environment *const env)
 			}
 			else if (flag_macro_directive && env->cur == SH_ENDM)
 			{
-				m_nextch(env);
+				env_scan_next_char(env);
 				env_io_add_char(env, macro_text_type, '\0');
 				return 0;
 			}
@@ -191,26 +189,26 @@ int macro_tab_add_func(environment *const env)
 		}
 		else
 		{
-			env_io_add_char(env, macro_text_type, env->curchar);
-			m_nextch(env);
+			env_io_add_char(env, macro_text_type, env_get_curchar(env));
+			env_scan_next_char(env);
 		}
 
-		if (env->curchar == (char32_t)EOF)
+		if (env_get_curchar(env) == (char32_t)EOF)
 		{
 			env_error(env, not_end_fail_define);
 			return -1;
 		}
 
-		if (env->curchar == '\\')
+		if (env_get_curchar(env) == '\\')
 		{
-			m_nextch(env);
+			env_scan_next_char(env);
 			skip_line(env);
 			if (skip_line(env))
 			{
 				return -1;
 			}
 			//env->macro_tab[env->macro_ptr++] = '\n';
-			m_nextch(env);
+			env_scan_next_char(env);
 		}
 	}
 
@@ -220,7 +218,7 @@ int macro_tab_add_func(environment *const env)
 
 int define_add_to_reprtab(environment *const env)
 {
-	if (!utf8_is_letter(env->curchar))
+	if (!utf8_is_letter(env_get_curchar(env)))
 	{
 		env_error(env, ident_begins_with_letters);
 		return -1;
@@ -233,10 +231,10 @@ int define_add_to_reprtab(environment *const env)
 
 	do
 	{
-		hash += (int)env->curchar;
-		env->reprtab[env->rp++] = (int)env->curchar;
-		m_nextch(env);
-	} while (utf8_is_letter(env->curchar) || utf8_is_digit(env->curchar));
+		hash += (int)env_get_curchar(env);
+		env->reprtab[env->rp++] = (int)env_get_curchar(env);
+		env_scan_next_char(env);
+	} while (utf8_is_letter(env_get_curchar(env)) || utf8_is_digit(env_get_curchar(env)));
 
 	hash &= 255;
 	env->reprtab[env->rp++] = 0;
@@ -271,21 +269,21 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 	int old_macro_tab_size = (int)env_io_get_size(env, macro_text_type);
 
 	env_io_add_char(env, macro_text_type, MACRO_DEF);
-	if (env->curchar != '\n')
+	if (env_get_curchar(env) != '\n')
 	{
-		while (env->curchar != '\n')
+		while (env_get_curchar(env) != '\n')
 		{
-			if (env->curchar == (char32_t)EOF)
+			if (env_get_curchar(env) == (char32_t)EOF)
 			{
 				env_error(env, not_end_fail_define);
 				return -1;
 			}
-			else if (env->curchar == '#')
+			else if (env_get_curchar(env) == '#')
 			{
 				env->cur = macro_keywords(env);
 				if (env->cur == SH_EVAL)
 				{
-					if (env->curchar != '(')
+					if (env_get_curchar(env) != '(')
 					{
 						env_error(env, after_eval_must_be_ckob);
 						return -1;
@@ -311,17 +309,17 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 					}
 				}
 			}
-			else if (env->curchar == '\\')
+			else if (env_get_curchar(env) == '\\')
 			{
-				m_nextch(env);
+				env_scan_next_char(env);
 				if (skip_line(env))
 				{
 					return -1;
 				}
 				//env_io_add_char(env, macro_text_type, '\n');
-				m_nextch(env);
+				env_scan_next_char(env);
 			}
-			else if (utf8_is_letter(env->curchar))
+			else if (utf8_is_letter(env_get_curchar(env)))
 			{
 				char32_t buffer[STRING_SIZE];
 				const int macro_ptr = collect_mident(env, buffer);
@@ -329,7 +327,7 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 				{
 					return -1;
 				}
-				else if(!macro_ptr)
+				else if (!macro_ptr)
 				{
 					size_t i = 0;
 					while((int)buffer[i] != '\0')
@@ -340,8 +338,8 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 			}
 			else
 			{
-				env_io_add_char(env, macro_text_type, env->curchar);
-				m_nextch(env);
+				env_io_add_char(env, macro_text_type, env_get_curchar(env));
+				env_scan_next_char(env);
 			}
 		}
 
@@ -352,7 +350,14 @@ int macro_tab_add_define(environment *const env, const int rep_ptr)
 		env_io_add_char(env, macro_text_type, '0');
 	}
 
-	env_macro_ident_end(env);
+	size_t i = env_io_get_size(env, macro_text_type) - 1;
+	while (env_io_get_char(env, macro_text_type, i) == ' ' 
+		|| env_io_get_char(env, macro_text_type, i) == '\t')
+	{
+		i--;
+	}
+	env_io_clear(env, macro_text_type, i+1);
+	env_io_add_char(env, macro_text_type, '\0');
 
 	if (rep_ptr)
 	{
@@ -369,12 +374,12 @@ int macro_add(environment *const env)
 		return -1;
 	}
 
-	if (env->curchar == '(' && !r)
+	if (env_get_curchar(env) == '(' && !r)
 	{
-		m_nextch(env);
+		env_scan_next_char(env);
 		return macro_tab_add_func(env);
 	}
-	else if (env->curchar != ' ' && env->curchar != '\n' && env->curchar != '\t')
+	else if (env_get_curchar(env) != ' ' && env_get_curchar(env) != '\n' && env_get_curchar(env) != '\t')
 	{
 		env_error(env, after_ident_must_be_space);
 		return -1;
@@ -390,7 +395,7 @@ int macro_set(environment *const env)
 {
 	skip_separators(env);
 
-	if (!utf8_is_letter(env->curchar))
+	if (!utf8_is_letter(env_get_curchar(env)))
 	{
 		env_error(env, ident_begins_with_letters);
 		return -1;
@@ -403,13 +408,13 @@ int macro_set(environment *const env)
 		env_error(env, functions_cannot_be_changed);
 		return -1;
 	}
-	else if (env->curchar != ' ' && env->curchar != '\t')
+	else if (env_get_curchar(env) != ' ' && env_get_curchar(env) != '\t')
 	{
 		env_error(env, after_ident_must_be_space);
 		return -1;
 	}
 
-	m_nextch(env);
+	env_scan_next_char(env);
 	skip_separators(env);
 
 	return macro_tab_add_define(env, macro_ptr);

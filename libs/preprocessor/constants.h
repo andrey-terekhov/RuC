@@ -16,17 +16,17 @@
 
 #pragma once
 
-#define MAXTAB		100000
-#define LONGSTR		10000
-#define STRING_SIZE	256
-#define HASH		256
-#define DEPTH		10
+#define MAXTAB			100000
+#define LONGSTR			10000
+#define STRING_SIZE		256
+#define HASH			256
+#define DEPTH_IO_SISE	10
 
 #define MACRO_CANGE		'\r'
 
-#define MACRO_UNDEF		(char32_t)3
-#define MACRO_FUNCTION	(char32_t)2
-#define MACRO_DEF		(char32_t)1
+#define MACRO_UNDEF		'u'
+#define MACRO_FUNCTION	'f'
+#define MACRO_DEF		'd'
 
 
 // Ключевые слова

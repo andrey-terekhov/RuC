@@ -26,17 +26,18 @@
 
 int function_scope_collect(environment *const env, const size_t num, const size_t was_bracket)
 {
-	while (env->curchar != (char32_t)EOF)
+	while (env_get_curchar(env) != (char32_t)EOF)
 	{
-		if (utf8_is_letter(env->curchar))
+		if (utf8_is_letter(env_get_curchar(env)))
 		{	
 			char32_t buffer[STRING_SIZE];
 			const int macro_ptr = collect_mident(env, buffer);
 			if (macro_ptr)
 			{
 				const size_t old_param_size = env_io_get_size(env, param_type);
+				const size_t old_define_stack_size = env_io_get_size(env, define_stack_type);
 
-				env_set_define_stack_prt(env, num);
+				env_move_macro_stack_prt(env, num);
 				if (macro_get(env, macro_ptr))
 				{
 					return -1;
@@ -44,18 +45,21 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 
 				char32_t loc_change[STRING_SIZE];
 				size_t loc_change_size = 0;
-				const int loc_depth = env_io_get_type(env) == param_type
+				const size_t loc_depth = env_io_get_type(env) == param_type
 				? env_io_get_depth(env) - 1
 				: env_io_get_depth(env);
 
 				while (env_io_get_depth(env) >= loc_depth) // 1 переход потому что есть префиксная замена
 				{
-					loc_change[loc_change_size++] = env->curchar;
-					m_nextch(env);
+					loc_change[loc_change_size++] = env_get_curchar(env);
+					env_scan_next_char(env);
 				}
 
-				env_set_define_stack_prt(env, (int)-num);
-				env_clear_param(env, old_param_size);
+				env_move_macro_stack_prt(env, (int)-(num));
+				env_io_clear(env, param_type, old_param_size);
+				env_io_clear(env, define_stack_type, old_define_stack_size);
+
+				//env_clear_param(env, old_param_size);
 
 				for (size_t i = 0; i < loc_change_size; i++)
 				{
@@ -71,28 +75,28 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 				}
 			}
 		}
-		else if (env->curchar == '(')
+		else if (env_get_curchar(env) == '(')
 		{
-			env_io_add_char(env, param_type, env->curchar);
-			m_nextch(env);
+			env_io_add_char(env, param_type, env_get_curchar(env));
+			env_scan_next_char(env);
 
 			if (function_scope_collect(env, num, 0))
 			{
 				return -1;
 			}
 		}
-		else if (env->curchar == ')' || (was_bracket == 1 && env->curchar == ','))
+		else if (env_get_curchar(env) == ')' || (was_bracket == 1 && env_get_curchar(env) == ','))
 		{
 			if (was_bracket == 0)
 			{
-				env_io_add_char(env, param_type, env->curchar);
-				m_nextch(env);
+				env_io_add_char(env, param_type, env_get_curchar(env));
+				env_scan_next_char(env);
 			}
 			return 0;
 		}
-		else if (env->curchar == '#')
+		else if (env_get_curchar(env) == '#')
 		{
-			if (macro_keywords(env) == SH_EVAL && env->curchar == '(')
+			if (macro_keywords(env) == SH_EVAL && env_get_curchar(env) == '(')
 			{
 				char buffer[STRING_SIZE];
 				if (calculate_arithmetic(env, buffer))
@@ -116,8 +120,8 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 		}
 		else
 		{
-			env_io_add_char(env, param_type, env->curchar);
-			m_nextch(env);
+			env_io_add_char(env, param_type, env_get_curchar(env));
+			env_scan_next_char(env);
 		}
 	}
 	
@@ -127,17 +131,19 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 
 int function_stack_create(environment *const env, const size_t parameters)
 {
-	m_nextch(env);
+	env_io_clear(env, define_stack_type, env_get_macro_stack_prt(env));
+	env_io_clear(env, param_type, env_io_get_char(env, define_stack_type, env_get_macro_stack_prt(env)));
+	env_scan_next_char(env);
 
-	if (env->curchar == ')')
+	if (env_get_curchar(env) == ')')
 	{
 		env_error(env, stalpe);
 		return -1;
 	}
 
 	size_t num = 0;
-	env_set_define_stack_add(env, num);
-	while (env->curchar != ')')
+	env_io_add_char(env, define_stack_type, (char32_t)env_io_get_size(env, param_type));
+	while (env_get_curchar(env) != ')')
 	{
 		if (function_scope_collect(env, num, 1))
 		{
@@ -145,33 +151,30 @@ int function_stack_create(environment *const env, const size_t parameters)
 		}
 		env_io_add_char(env, param_type, '\0');
 
-		if (env->curchar == ',')
+		if (env_get_curchar(env) == ',')
 		{
 			num++;
-			env_set_define_stack_add(env, num);
-
+			env_io_add_char(env, define_stack_type, (char32_t)env_io_get_size(env, param_type));
 			if (num > parameters)
 			{
 				env_error(env, not_enough_param);
 				return -1;
 			}
-			m_nextch(env);
+			env_scan_next_char(env);
 
-			if (env->curchar == ' ')
+			if (env_get_curchar(env) == ' ')
 			{
-				m_nextch(env);
+				env_scan_next_char(env);
 			}
 		}
-		else if (env->curchar == ')')
+		else if (env_get_curchar(env) == ')')
 		{
 			if (num != parameters)
 			{
 				env_error(env, not_enough_param2);
 				return -1;
 			}
-			m_nextch(env);
-
-			env_clear_param_define_stack(env);
+			env_scan_next_char(env);
 			return 0;
 		}
 	}
@@ -198,8 +201,7 @@ int macro_get(environment *const env, const size_t index)
 		}
 		loc_macro_ptr++;
 	}
-
-	env_io_switch_to_new_type(env, macro_text_type, loc_macro_ptr);
+	env_io_switch_to_new(env, macro_text_type, loc_macro_ptr);
 
 	return 0;
 }

@@ -107,14 +107,14 @@ int preprocess_all(linker *const lk)
 			continue;
 		}
 
-		universal_io input = io_create();
-		lk->env->input = &input;
+		//universal_io input = io_create();
+		//env_set_file_input(lk->env, &input);
 
 		if (preprocess_file(lk, i))
 		{
 			return -1;
 		}
-		in_clear(&input);
+		//in_clear(&input);
 	}
 
 	return 0;
