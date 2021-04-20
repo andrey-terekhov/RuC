@@ -23,7 +23,7 @@
 #include "uniio.h"
 
 
-//#define GENERATE_TREE
+#define GENERATE_TREE
 
 #define TREE		(prs->sx->tree)
 

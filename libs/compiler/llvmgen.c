@@ -592,9 +592,9 @@ static void unary_operation(information *const info, node *const nd)
 			const item_t old_label_else = info->label_else;
 
 			node_set_next(nd);
-			expression(info, nd);
 			info->label_if = old_label_else;
 			info->label_else = old_label_if;
+			expression(info, nd);
 		}
 			break;
 		// TODO: забыл сделать битовое отрицание, нужно доделать
@@ -663,35 +663,23 @@ static void binary_operation(information *const info, node *const nd)
 			logic_expression(info, nd);
 			break;
 
-// TODO: подумать над объединением LOGOR и LOGAND
-// TODO: c LOGNOT некорректно устанавливаются метки
+
 		case LOGOR:
-		{
-			const item_t label_next = info->label_num++;
-			const item_t old_label_else = info->label_else;
-
-			info->label_else = label_next;
-			node_set_next(nd);
-			expression(info, nd);
-
-			// TODO: сделать обработку других ответов
-			if (info->answer_type == ALOGIC)
-			{
-				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
-			}
-
-			to_code_label(info, label_next);
-			info->label_else = old_label_else;
-
-			expression(info, nd);
-		}
-		break;
 		case LOGAND:
 		{
 			const item_t label_next = info->label_num++;
 			const item_t old_label_if = info->label_if;
+			const item_t old_label_else = info->label_else;
 
-			info->label_if = label_next;
+			if (node_get_type(nd) == LOGOR)
+			{
+				info->label_else = label_next;
+			}
+			else // (node_get_type(nd) == LOGAND)
+			{
+				info->label_if = label_next;
+			}
+			
 			node_set_next(nd);
 			expression(info, nd);
 
@@ -703,6 +691,7 @@ static void binary_operation(information *const info, node *const nd)
 
 			to_code_label(info, label_next);
 			info->label_if = old_label_if;
+			info->label_else = old_label_else;
 
 			expression(info, nd);
 		}
@@ -898,6 +887,7 @@ static void statement(information *const info, node *const nd)
 			block(info, nd);
 		}
 		break;
+		// TODO: без else могут возникнуть проблемы, исправить
 		case TIf:
 		{
 			const item_t ref_else = node_get_arg(nd, 0);
@@ -912,11 +902,29 @@ static void statement(information *const info, node *const nd)
 
 			info->variable_location = LFREE;
 			expression(info, nd);
-			// TODO: сделать обработку других ответов
 			if (info->answer_type == ALOGIC)
 			{
 				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
 			}
+			else if (info->answer_type == ACONST)
+			{
+				if (info->answer_const == 0)
+				{
+					to_code_unconditional_branch(info, info->label_else);
+				}
+				else
+				{
+					to_code_unconditional_branch(info, info->label_if);
+				}			
+			}
+			// TODO: подумать, как это получше написать
+			else // if (info->answer_type == AREG)
+			{
+				to_code_operation_reg_const(info, NOTEQ, info->answer_reg, 0);
+				info->answer_reg = info->register_num++;
+				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
+			}
+			
 			to_code_label(info, label_if);
 
 			statement(info, nd);
@@ -934,18 +942,64 @@ static void statement(information *const info, node *const nd)
 		case TSwitch:
 		case TCase:
 		case TDefault:
-		case TWhile:
 		{
 			node_set_next(nd);
 			expression(info, nd);
 			statement(info, nd);
 		}
 		break;
+		// TODO: проверить на вложенность циклов
+		case TWhile:
+		{
+			const item_t label_condition = info->label_num++;
+			const item_t label_body = info->label_num++;
+			const item_t label_end = info->label_num++;
+
+			to_code_unconditional_branch(info, label_condition);
+			to_code_label(info, label_condition);
+			info->label_if = label_body;
+			info->label_else = label_end;
+
+			node_set_next(nd);
+
+			info->variable_location = LFREE;
+			expression(info, nd);
+			// TODO: сделать обработку других ответов
+			if (info->answer_type == ALOGIC)
+			{
+				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
+			}
+			to_code_label(info, label_body);
+
+			statement(info, nd);
+
+			to_code_unconditional_branch(info, label_condition);
+			to_code_label(info, label_end);
+		}
+		break;
 		case TDo:
 		{
+			const item_t label_loop = info->label_num++;
+			const item_t label_end = info->label_num++;
+
 			node_set_next(nd);
+
+			to_code_unconditional_branch(info, label_loop);
+			to_code_label(info, label_loop);
+			info->label_if = label_loop;
+			info->label_else = label_end;
+
 			statement(info, nd);
+
+			info->variable_location = LFREE;
 			expression(info, nd);
+			// TODO: сделать обработку других ответов
+			if (info->answer_type == ALOGIC)
+			{
+				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
+			}
+
+			to_code_label(info, label_end);
 		}
 		break;
 		case TFor:
