@@ -91,7 +91,18 @@ void mtotree(int op)
 void insert_tree(int index, int op)
 {
 	for (int i = tree_size; i >= index; i--)
+	{
 		tree[i+1] = tree[i];
+		// Если есть еще затронутые циклы for, то им нужно сдвинуть ссылки на дерево
+		// Костыль, но в будущих итерациях эта функция не понадобится, поэтому пока останется так
+		if (tree[i+1] == TFor)
+		{
+			tree[i+2+check_nested_for]++;
+			tree[i+3+check_nested_for]++;
+			tree[i+4+check_nested_for]++;
+			tree[i+5+check_nested_for]++;
+		}
+	}
 
 	tree[index] = op;
 	tree_size++;
@@ -100,7 +111,18 @@ void insert_tree(int index, int op)
 void remove_tree(int index)
 {
 	for (int i = index; i < tree_size; i++)
+	{
+		// Если есть еще затронутые циклы for, то им нужно сдвинуть ссылки на дерево
+		// Костыль, но в будущих итерациях эта функция не понадобится, поэтому пока останется так
+		if (tree[i+1] == TFor)
+		{
+			tree[i+2+check_nested_for]--;
+			tree[i+3+check_nested_for]--;
+			tree[i+4+check_nested_for]--;
+			tree[i+5+check_nested_for]--;
+		}
 		tree[i] = tree[i+1];
+	}
 
 	tree_size--;
 }
@@ -367,7 +389,7 @@ void opt_for_statement()
 	if (check_nested_for)
 	{
 		mark_nested_for();
-		has_nested_for =  1 - tree[tc];
+		has_nested_for = 1 - tree[tc];
 		mcopy();
 	}
 
