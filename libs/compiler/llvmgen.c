@@ -207,6 +207,33 @@ static inline void to_code_conditional_branch(information *const info, item_t re
 		reg, label_true, label_false);
 }
 
+static void check_type_and_branch(information *const info)
+{
+	switch (info->answer_type)
+	{
+		case ACONST:
+		{
+			if (info->answer_const == 0)
+			{
+				to_code_unconditional_branch(info, info->label_else);
+			}
+			else
+			{
+				to_code_unconditional_branch(info, info->label_if);
+			}
+		}
+		break;
+		case AREG:
+		{
+			to_code_operation_reg_const(info, NOTEQ, info->answer_reg, 0);
+			info->answer_reg = info->register_num++;
+		}
+		case ALOGIC:
+			to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
+			break;
+	}
+}
+
 
 static void operand(information *const info, node *const nd)
 {
@@ -887,10 +914,11 @@ static void statement(information *const info, node *const nd)
 			block(info, nd);
 		}
 		break;
-		// TODO: без else могут возникнуть проблемы, исправить
 		case TIf:
 		{
 			const item_t ref_else = node_get_arg(nd, 0);
+			const item_t old_label_if = info->label_if;
+			const item_t old_label_else = info->label_else;
 			const item_t label_if = info->label_num++;
 			const item_t label_else = info->label_num++;
 			const item_t label_end = info->label_num++;
@@ -902,28 +930,8 @@ static void statement(information *const info, node *const nd)
 
 			info->variable_location = LFREE;
 			expression(info, nd);
-			if (info->answer_type == ALOGIC)
-			{
-				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
-			}
-			else if (info->answer_type == ACONST)
-			{
-				if (info->answer_const == 0)
-				{
-					to_code_unconditional_branch(info, info->label_else);
-				}
-				else
-				{
-					to_code_unconditional_branch(info, info->label_if);
-				}			
-			}
-			// TODO: подумать, как это получше написать
-			else // if (info->answer_type == AREG)
-			{
-				to_code_operation_reg_const(info, NOTEQ, info->answer_reg, 0);
-				info->answer_reg = info->register_num++;
-				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
-			}
+
+			check_type_and_branch(info);
 			
 			to_code_label(info, label_if);
 
@@ -937,6 +945,9 @@ static void statement(information *const info, node *const nd)
 
 			to_code_unconditional_branch(info, label_end);
 			to_code_label(info, label_end);
+
+			info->label_if = old_label_if;
+			info->label_else = old_label_else;
 		}
 		break;
 		case TSwitch:
@@ -948,9 +959,10 @@ static void statement(information *const info, node *const nd)
 			statement(info, nd);
 		}
 		break;
-		// TODO: проверить на вложенность циклов
 		case TWhile:
 		{
+			const item_t old_label_if = info->label_if;
+			const item_t old_label_else = info->label_else;
 			const item_t label_condition = info->label_num++;
 			const item_t label_body = info->label_num++;
 			const item_t label_end = info->label_num++;
@@ -964,21 +976,24 @@ static void statement(information *const info, node *const nd)
 
 			info->variable_location = LFREE;
 			expression(info, nd);
-			// TODO: сделать обработку других ответов
-			if (info->answer_type == ALOGIC)
-			{
-				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
-			}
+
+			check_type_and_branch(info);
+
 			to_code_label(info, label_body);
 
 			statement(info, nd);
 
 			to_code_unconditional_branch(info, label_condition);
 			to_code_label(info, label_end);
+
+			info->label_if = old_label_if;
+			info->label_else = old_label_else;
 		}
 		break;
 		case TDo:
 		{
+			const item_t old_label_if = info->label_if;
+			const item_t old_label_else = info->label_else;
 			const item_t label_loop = info->label_num++;
 			const item_t label_end = info->label_num++;
 
@@ -993,35 +1008,50 @@ static void statement(information *const info, node *const nd)
 
 			info->variable_location = LFREE;
 			expression(info, nd);
-			// TODO: сделать обработку других ответов
-			if (info->answer_type == ALOGIC)
-			{
-				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
-			}
+
+			check_type_and_branch(info);
 
 			to_code_label(info, label_end);
+
+			info->label_if = old_label_if;
+			info->label_else = old_label_else;
 		}
 		break;
+		// TODO: доделать for
 		case TFor:
 		{
 			const item_t ref_from = node_get_arg(nd, 0);
 			const item_t ref_cond = node_get_arg(nd, 1);
 			const item_t ref_incr = node_get_arg(nd, 2);
+			const item_t label_condition = info->label_num++;
+			const item_t label_body = info->label_num++;
+			const item_t label_incr = info->label_num++;
+			const item_t label_end = info->label_num++;
 
 			node_set_next(nd);
 			if (ref_from)
 			{
 				expression(info, nd);
 			}
+
+			to_code_unconditional_branch(info, label_condition);
+			to_code_label(info, label_condition);
+
 			if (ref_cond)
 			{
 				expression(info, nd);
 			}
+
+			to_code_label(info, label_incr);
+
 			if (ref_incr)
 			{
 				expression(info, nd);
 			}
+
+			to_code_label(info, label_body);
 			statement(info, nd);
+			to_code_label(info, label_end);
 		}
 		break;
 		case TLabel:
