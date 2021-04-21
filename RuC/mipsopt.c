@@ -83,11 +83,6 @@ int mcopy()
     return mtree[mtc++] = tree[tc++];
 }
 
-void mtotree(int op)
-{
-	mtree[mtc++] = op;
-}
-
 void insert_tree(int index, int op)
 {
 	for (int i = tree_size; i >= index; i--)
@@ -110,6 +105,7 @@ void insert_tree(int index, int op)
 
 void remove_tree(int index)
 {
+	tree_size--;
 	for (int i = index; i < tree_size; i++)
 	{
 		// Если есть еще затронутые циклы for, то им нужно сдвинуть ссылки на дерево
@@ -123,8 +119,6 @@ void remove_tree(int index)
 		}
 		tree[i] = tree[i+1];
 	}
-
-	tree_size--;
 }
 
 int munop(int t)  // один операнд, возвращает n+1, где n = числу параметров
@@ -378,7 +372,6 @@ int satistifies_ind_slice_pattern(const int slice_start)
 			return 0;
 	}
 
-	// Вообще вроде проверка не нужна, но мне лень сейчас думать
 	return i - slice_start;
 }
 
@@ -412,7 +405,7 @@ void opt_for_statement()
 		// (это делается за отдельный проход по телу цикла)
 		// Если внутри statement существует вырезка, удовлетворяющая условию, то по текущему значению mtc
 		// создаем узлы TIndVar, а вместо вырезок пишем TSliceInd
-		// TODO: Также после цикла необходимо добавить IndVar += step * sizeof(element)
+		// TODO: Также после цикла необходимо добавить IndVar += step x sizeof(element)
 		ind_vars_counter = 3; ind_vars_start = 1;
 		for (int local_tc = tc; tree[local_tc] != TForEnd; local_tc++)
 		{
@@ -437,7 +430,7 @@ void opt_for_statement()
 						local_tc++;
 					}
 					// Добавляем в конец узла TIndVar узел TExprend как признак конца
-					insert_tree(tc_stmtref + 3 + slice_length, TExprend);
+					//insert_tree(tc_stmtref + 3 + slice_length, TExprend);
 					// Помечаем, что этот узел уже был
 					ind_vars[ind_var_number] = 1;
 				}
@@ -445,7 +438,7 @@ void opt_for_statement()
 				// Затем заменяем вырезку в оригинальном дереве на TSliceInd
 				tree[local_tc] = TSliceInd;
 				tree[local_tc + 1] = ind_var_number;
-				for (int i = 1; i < slice_length; i++)
+				for (int i = 2; i < slice_length; i++)
 					remove_tree(local_tc + 2);
 			}
 		}
