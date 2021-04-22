@@ -22,8 +22,7 @@
 #include "workspace.h"
 
 
-const char *name = "../tests/executable/types/int/test_1.c";
-// "../tests/mips/0test.c";
+const char *name = "../tests/executable/output/printid/traverse.c";
 
 
 int main(int argc, const char *argv[])
