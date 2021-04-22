@@ -693,7 +693,7 @@ static void binary_operation(information *const info, node *const nd)
 			logic_expression(info, nd);
 			break;
 
-
+		// TODO: протестировать и при необходимости реализовать случай, когда && и || есть в арифметических выражениях
 		case LOGOR:
 		case LOGAND:
 		{
