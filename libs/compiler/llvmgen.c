@@ -65,6 +65,8 @@ static void operation_to_io(universal_io *const io, const item_t type)
 {
 	switch (type)
 	{
+		case INC:
+		case INCV:
 		case POSTINC:
 		case POSTINCV:
 		case PLUSASS:
@@ -73,6 +75,8 @@ static void operation_to_io(universal_io *const io, const item_t type)
 			uni_printf(io, "add nsw");
 			break;
 
+		case DEC:
+		case DECV:
 		case POSTDEC:
 		case POSTDECV:
 		case MINUSASS:
@@ -471,7 +475,7 @@ static void arithmetic_expression(information *const info, node *const nd)
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 }
-// TODO: подумать, а нужна ли эта функция, очень похожа на arithmetic_expression
+// TODO: а нужна ли эта функция, очень похожа на arithmetic_expression
 static void logic_expression(information *const info, node *const nd)
 {
 	const item_t operation_type = node_get_type(nd);
@@ -711,6 +715,7 @@ static void binary_operation(information *const info, node *const nd)
 			expression(info, nd);
 
 			// TODO: сделать обработку других ответов
+			// постараться использовать функцию check_type_and_branch
 			if (info->answer_type == ALOGIC)
 			{
 				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
@@ -967,12 +972,13 @@ static void statement(information *const info, node *const nd)
 			const item_t label_body = info->label_num++;
 			const item_t label_end = info->label_num++;
 
-			to_code_unconditional_branch(info, label_condition);
-			to_code_label(info, label_condition);
 			info->label_if = label_body;
 			info->label_else = label_end;
 
 			node_set_next(nd);
+
+			to_code_unconditional_branch(info, label_condition);
+			to_code_label(info, label_condition);
 
 			info->variable_location = LFREE;
 			expression(info, nd);
@@ -997,12 +1003,13 @@ static void statement(information *const info, node *const nd)
 			const item_t label_loop = info->label_num++;
 			const item_t label_end = info->label_num++;
 
+			info->label_if = label_loop;
+			info->label_else = label_end;
+
 			node_set_next(nd);
 
 			to_code_unconditional_branch(info, label_loop);
 			to_code_label(info, label_loop);
-			info->label_if = label_loop;
-			info->label_else = label_end;
 
 			statement(info, nd);
 
@@ -1017,18 +1024,25 @@ static void statement(information *const info, node *const nd)
 			info->label_else = old_label_else;
 		}
 		break;
-		// TODO: доделать for
+		// TODO: проверялось, только если в for присутствуют все блоки: инициализация, условие, модификация
+		// нужно проверить и реализовать случаи, когда какие-нибудь из этих блоков отсутсвуют
 		case TFor:
 		{
 			const item_t ref_from = node_get_arg(nd, 0);
 			const item_t ref_cond = node_get_arg(nd, 1);
 			const item_t ref_incr = node_get_arg(nd, 2);
+			const item_t old_label_if = info->label_if;
+			const item_t old_label_else = info->label_else;
 			const item_t label_condition = info->label_num++;
 			const item_t label_body = info->label_num++;
 			const item_t label_incr = info->label_num++;
 			const item_t label_end = info->label_num++;
 
+			info->label_if = label_body;
+			info->label_else = label_end;
+
 			node_set_next(nd);
+
 			if (ref_from)
 			{
 				expression(info, nd);
@@ -1041,17 +1055,24 @@ static void statement(information *const info, node *const nd)
 			{
 				expression(info, nd);
 			}
-
+			// TODO: проверить разные типы условий: const, reg
+			check_type_and_branch(info);
 			to_code_label(info, label_incr);
 
 			if (ref_incr)
 			{
 				expression(info, nd);
 			}
+			to_code_unconditional_branch(info, label_condition);
 
 			to_code_label(info, label_body);
+
 			statement(info, nd);
+			to_code_unconditional_branch(info, label_incr);
 			to_code_label(info, label_end);
+
+			info->label_if = old_label_if;
+			info->label_else = old_label_else;
 		}
 		break;
 		case TLabel:
