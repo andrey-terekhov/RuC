@@ -2446,8 +2446,10 @@ void MStmt_gen()
                 mbox = BV;
                 incrtc = incrref;
                 tc = stmtref;
-                MStmt_gen();         // statement
-//                MStmt_gen();         // statement пока для test2
+                if (enable_ind_var && is_last_nested)
+                	mcompstmt_gen();         // statement
+                else
+                	MStmt_gen();			// statement
                 if (!(delay_slot && is_last_nested))
                 {
 					endtc = tc;
@@ -2494,7 +2496,6 @@ void MStmt_gen()
         tocodeL("ELSE", adbreak);
         	if (ind_var_number != 0)
         	{
-        		tc++; // TEnd
         		for (int i = 0; i < ind_var_number; i++)
         			freereg(ind_var_info[i].reg);
         		ind_var_number = 0;
