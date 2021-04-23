@@ -46,7 +46,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		}
 		break;
 
-		case empty_character:
+		case empty_character:	// test_exist
 			sprintf(msg, "пустая символьная константа");
 			break;
 
@@ -58,7 +58,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "символьная константа не заканчивается символом '");
 			break;
 
-		case missing_terminating_quote_char: // need_test
+		case missing_terminating_quote_char: // test_exist
 			sprintf(msg, "строка не заканчивается символом \"");
 			break;
 
@@ -66,7 +66,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "слишком длинная строка (больше, чем MAXSTRINGL)");
 			break;
 
-		case unterminated_block_comment:
+		case unterminated_block_comment: // test_exist
 			sprintf(msg, "блочный комментарий не окончен");
 			break;
 

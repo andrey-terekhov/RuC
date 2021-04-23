@@ -1,6 +1,6 @@
 void main()
 {
-	int А [100;
+	int А[100;
 	int b = 10;
 
 	printid(А);
