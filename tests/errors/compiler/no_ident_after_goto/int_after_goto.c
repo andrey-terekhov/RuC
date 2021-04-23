@@ -1,4 +1,4 @@
 void main()
 {
-	#IFNOTDEF
+	goto 1;
 }

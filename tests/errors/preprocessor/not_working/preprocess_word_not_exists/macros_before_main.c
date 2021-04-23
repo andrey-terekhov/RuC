@@ -1,4 +1,4 @@
-#defineABC 1
+#inc "needless_elif.c"
 
 int main()
 {

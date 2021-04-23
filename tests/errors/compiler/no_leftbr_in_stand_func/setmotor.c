@@ -1,4 +1,4 @@
 void main()
 {
-	#IFNOTDEF
+	setmotor 1);
 }

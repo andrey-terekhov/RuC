@@ -1,4 +1,6 @@
+struct st {};
+
 void main()
 {
-	#IFNOTDEF
+
 }

@@ -1,4 +1,4 @@
-#includeneedless_elif.c"
+#define KEK=
 
 int main()
 {

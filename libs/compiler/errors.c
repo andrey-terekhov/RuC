@@ -172,7 +172,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case expected_colon_after_case: // test_exist
 			sprintf(msg, "после выражения в выборе нет :");
 			break;
-		case no_ident_after_goto: // need_test
+		case no_ident_after_goto: // test_exist
 			sprintf(msg, "после goto должна быть метка, т.е. идентификатор");
 			break;
 		case no_leftbr_in_for: // test_exist
@@ -199,7 +199,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case no_rightbr_in_printid: // test_exist
 			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет )");
 			break;
-		case no_ident_in_printid: // need_test
+		case no_ident_in_printid: // test_exist
 			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора");
 			break;
 		case no_leftbr_in_getid: // test_exist
@@ -208,10 +208,10 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case no_rightbr_in_getid: // test_exist
 			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет )");
 			break;
-		case no_ident_in_getid: // need_test
+		case no_ident_in_getid: // test_exist
 			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора");
 			break;
-		case float_in_switch: // need_test
+		case float_in_switch: // test_exist
 			sprintf(msg, "в условии переключателя можно использовать только типы ЛИТЕРА и ЦЕЛ");
 			break;
 		case init_int_by_float:	// test_exist
@@ -220,13 +220,13 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case must_be_digit_after_exp:	// test_exist
 			sprintf(msg, "должна быть цифра после e");
 			break;
-		case no_comma_in_setmotor: // need_test
+		case no_comma_in_setmotor: // test_exist
 			sprintf(msg, "в команде управления роботом после первого параметра нет ,");
 			break;
-		case param_setmotor_not_int:	// need_test
+		case param_setmotor_not_int:	// not_used
 			sprintf(msg, "в командах МОТОР, УСТНАПРЯЖЕНИЕ, ЦИФРДАТЧИК и АНАЛОГДАТЧИК параметры должны быть целыми");
 			break;
-		case no_leftbr_in_stand_func: // need_test
+		case no_leftbr_in_stand_func: // test_exist
 			sprintf(msg, "в вызове стандартной функции нет (");
 			break;
 		case no_rightbr_in_stand_func: // test_exist
@@ -523,7 +523,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case expected_colon_after_default:
 			sprintf(msg, "после метки УМОЛЧАНИЕ нет :");
 			break;
-		case empty_struct:
+		case empty_struct:	// test_exist
 			sprintf(msg, "структура должна иметь поля");
 			break;
 

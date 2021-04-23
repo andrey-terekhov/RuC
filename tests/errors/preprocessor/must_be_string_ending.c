@@ -1,4 +1,5 @@
+char a[] = "dd
 void main()
 {
-	#IFNOTDEF
+
 }

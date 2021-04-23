@@ -46,13 +46,13 @@ void get_message_error(const int num, char *const msg)
 		case after_ident_must_be_space: // test_exist
 			sprintf(msg, "после идентификатора должен идти ' '");
 			break;
-		case stalpe: // need_test
+		case stalpe: // test_exist
 			sprintf(msg, "в функции аргументы должны быть описаны через запятую, в скобках");
 			break;
 		case functionid_must_begins_with_letter: // test_exist functionid_begins_with_letters
 			sprintf(msg, "аргументы идентификатора с параметрами должены начинаться с буквы");
 			break;
-		case functions_cannot_be_changed: // need_test
+		case functions_cannot_be_changed: // test_exist
 			sprintf(msg, "идентификатор с параметрами нельзя переопределять");
 			break;
 		case after_functionid_must_be_comma: // test_exist
@@ -67,16 +67,16 @@ void get_message_error(const int num, char *const msg)
 		case not_enough_arguments: // test_exist
 			sprintf(msg, "у этой функции больше параметров");
 			break;
-		case must_be_string_ending: // need_test
+		case must_be_string_ending: // test_exist
 			sprintf(msg, "строка не завершена, пропущен символ \" или \'");
 			break;
-		case large_value: // need_test
+		case large_value: // test_exist
 			sprintf(msg, "слишком большое число");
 			break;
 		case after_exp_must_be_digit: // test_exist
 			sprintf(msg, "после экспоненты должно быть число");
 			break;
-		case invalid_parenthesis_entry: // need_test
+		case invalid_parenthesis_entry: // test_exist
 			sprintf(msg, "количество открывающих скобок не соответствует числу закрывающих");
 			break;
 		case comm_not_ended: // test_exist
@@ -91,7 +91,7 @@ void get_message_error(const int num, char *const msg)
 		case needless_elif: // test_exist dont_elif
 			sprintf(msg, "в этом типе условного оператора не может использоваться '#ELIF'");
 			break;
-		case extra_endif: // need_test
+		case extra_endif: // test_exist
 			sprintf(msg, "перед '#ENDIF' должен стоять условный оператор препроцессора");
 			break;
 		case after_eval_must_be_parenthesis: // test_exist after_eval_must_be_ckob
@@ -100,7 +100,7 @@ void get_message_error(const int num, char *const msg)
 		case eval_must_end_with_parenthesis: // test_exist in_eval_must_end_parenthesis
 			sprintf(msg, "вычисления внутри директивы #eval должны заканчиваться символом )");
 			break;
-		case arithmetic_operations_must_be_in_eval: // need_test
+		case arithmetic_operations_must_be_in_eval: // test_exist
 			sprintf(msg, "все арифметические операции должны быть внутри команды '#EVAL()'");
 			break;
 		case logical_operations_are_prohibited_in_eval: // test_exist

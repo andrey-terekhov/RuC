@@ -1,4 +1,4 @@
 void main()
 {
-	#IFNOTDEF
+	exp 1);
 }
