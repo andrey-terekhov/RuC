@@ -283,16 +283,16 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case diff_formal_param_type_and_actual:	// need_test
 			sprintf(msg, "типы формального и фактического параметров различаются");
 			break;
-		case float_in_condition:	// need_test
+		case float_in_condition:	// test_exist
 			sprintf(msg, "условие должно иметь тип ЦЕЛ или ЛИТЕРА");
 			break;
-		case case_not_in_switch: // need_test
+		case case_not_in_switch: // test_exist
 			sprintf(msg, "метка СЛУЧАЙ не в операторе ВЫБОР");
 			break;
-		case break_not_in_loop_or_switch: // need_test
+		case break_not_in_loop_or_switch: // test_exist
 			sprintf(msg, "оператор ВЫХОД не в цикле и не в операторе ВЫБОР");
 			break;
-		case continue_not_in_loop:	// need_test
+		case continue_not_in_loop:	// test_exist
 			sprintf(msg, "оператор ПРОДОЛЖИТЬ не в цикле");
 			break;
 		case expected_expression:	// need_test
@@ -304,7 +304,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case wrong_operand:	// need_test
 			sprintf(msg, "операнд операции может иметь только тип ЦЕЛ, ЛИТ или ВЕЩ");
 			break;
-		case label_not_declared:	// need_test
+		case label_not_declared:	// test_exist
 		{
 			const size_t hash = va_arg(args, size_t);
 			const char *const buffer = va_arg(args, char *);
@@ -329,7 +329,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case after_dot_must_be_ident: // test_exist
 			sprintf(msg, "после . или -> должен быть идентификатор-имя поля структуры");
 			break;
-		case get_field_not_from_struct_pointer:	// need_test
+		case get_field_not_from_struct_pointer:	// test_exist
 			sprintf(msg, "применять операцию -> можно только к указателю на структуру");
 			break;
 
@@ -342,10 +342,10 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case array_assigment:	//test_exist
 			sprintf(msg, "присваивание в массив запрещено");
 			break;
-		case wrong_struct_ass:	// need_test
+		case wrong_struct_ass:	// test_exist
 			sprintf(msg, "для структур и указателей допустима только операция присваивания =");
 			break;
-		case wrong_init:	//test_exist
+		case wrong_init:	//need_test
 			sprintf(msg, "переменные такого типа нельзя инициализировать");
 			break;
 		case no_field:	// test_exist
@@ -357,13 +357,13 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case slice_from_func:	// need_test
 			sprintf(msg, "вырезка элемента из массива, выданного функцией, а функции не могут выдавать массивы");
 			break;
-		case wait_end: // need_test
+		case wait_end: // test_exist
 			sprintf(msg, "в инициализации структуры здесь ожидалась правая фигурная скобка }");
 			break;
 		case act_param_not_ident:	// test_exist
 			sprintf(msg, "фактическим параметром-функцией может быть только идентификатор");
 			break;
-		case unassignable:	// need_test
+		case unassignable:	// test_exist
 			sprintf(msg, "в левой части присваивания стоит что-то, чему нельзя присваивать");
 			break;
 		case pnt_before_array:	// test_exist
@@ -372,7 +372,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case array_size_must_be_int:	// test_exist
 			sprintf(msg, "размер массива может иметь тип только ЦЕЛ или ЛИТЕРА");
 			break;
-		case no_semicolon_in_struct:	// need_test
+		case no_semicolon_in_struct:	// test_exist
 			sprintf(msg, "описание поля структуры должно заканчиваться ;");
 			break;
 		case wait_ident_after_semicolon_in_struct: // test_exist

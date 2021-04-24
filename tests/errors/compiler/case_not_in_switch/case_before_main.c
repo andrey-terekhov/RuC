@@ -1,0 +1,6 @@
+case
+
+void main()
+{
+
+}
