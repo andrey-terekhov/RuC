@@ -1,5 +1,6 @@
 int main() 
 {	
-	draw_number(1.1);
+	int a,b;
+	strcmp(a,b);
 	return 0;
 }

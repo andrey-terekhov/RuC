@@ -1,0 +1,6 @@
+default
+
+void main()
+{
+
+}

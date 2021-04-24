@@ -11,6 +11,5 @@ int main()
 	struct id structura;
 	int structu;
 	structu.year;
-	//hh // нужно раскомментить для корректного чтения дальнейшего кода
 	return 0;
 }

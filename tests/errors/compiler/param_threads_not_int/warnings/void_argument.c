@@ -1,5 +1,6 @@
 int main() 
 {	
-	draw_number(1.1);
+	void a;
+	t_sleep(a);
 	return 0;
 }

@@ -1,6 +1,5 @@
 int main()
 {
-	int a = {1, 2};
-	// fg
+	int a = { 1, 2 };
 	return 0;
 }

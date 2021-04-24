@@ -481,7 +481,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case empty_bound_without_init:	// test_exist
 			sprintf(msg, "в описании массива границы не указаны, а инициализации нет");
 			break;
-		case begin_with_notarray:	// need_test
+		case begin_with_notarray:	// test_exist
 			sprintf(msg, "инициализация, начинающаяся с {, должна соответствовать массиву или структуре");
 			break;
 		case string_and_notstring:	// need_test
@@ -490,10 +490,10 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case wrong_init_in_actparam:	//test_exist
 			sprintf(msg, "в инициализаторе-фактическом параметре функции могут быть только константы");
 			break;
-		case no_comma_or_end:	// need_test
+		case no_comma_or_end:	// test_exist
 			sprintf(msg, "в инициализаторе ожидали , или }");
 			break;
-		case no_comma_in_act_params_stanfunc: // need_test
+		case no_comma_in_act_params_stanfunc: // test_exist
 			sprintf(msg, "в операции над строками после параметра нет , ");
 			break;
 		case not_string_in_stanfunc:	// test_exist
@@ -505,19 +505,19 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case not_float_in_stanfunc:	// need_test
 			sprintf(msg, "в этой операции этот параметр должен иметь тип ВЕЩ");
 			break;
-		case not_point_string_in_stanfunc:	// need_test
+		case not_point_string_in_stanfunc:	// test_exist
 			sprintf(msg, "в этой операции над строками первый параметр должен быть указателем на строку");
 			break;
 		case not_rowofint_in_stanfunc:	// test_exist
 			sprintf(msg, "в этой операции этот параметр должен иметь тип массив целых");
 			break;
-		case not_rowoffloat_in_stanfunc:	// need_test
+		case not_rowoffloat_in_stanfunc:	// test_exist
 			sprintf(msg, "в этой операции этот параметр должен иметь тип массив вещ");
 			break;
 		case not_array_in_stanfunc:	// need_test
 			sprintf(msg, "в этой операции этот параметр должен иметь тип массив");
 			break;
-		case default_not_in_switch:
+		case default_not_in_switch:	// test_exist
 			sprintf(msg, "метка УМОЛЧАНИЕ не в операторе ВЫБОР");
 			break;
 		case expected_colon_after_default:	// test_exist
