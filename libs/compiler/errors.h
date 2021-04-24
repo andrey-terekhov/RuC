@@ -51,7 +51,7 @@ typedef enum ERROR
 	break_not_in_loop_or_switch,		/**< 'break' statement not in loop or switch statement */
 	no_ret_in_func,
 	bad_type_in_ret,
-	notvoidret_in_void_func,
+	not_void_ret_in_void_func,
 
 	// Environment errors
 	no_main_in_program,					/**< Undefined main */

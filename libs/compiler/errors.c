@@ -124,7 +124,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case arr_init_must_start_from_BEGIN: // test_exist
 			sprintf(msg, "инициализация массива должна начинаться со {");
 			break;
-		case struct_init_must_start_from_BEGIN: // need_test
+		case struct_init_must_start_from_BEGIN: // test_exist
 			sprintf(msg, "инициализация структуры должна начинаться со {");
 			break;
 		case no_comma_in_init_list: // test_exist
@@ -194,22 +194,22 @@ void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "в программе может быть только 1 идентификатор ГЛАВНАЯ");
 			break;
 		case no_leftbr_in_printid: // test_exist
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет (");
+			sprintf(msg, "в команде ПЕЧАТЬИД нет (");
 			break;
 		case no_rightbr_in_printid: // test_exist
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет )");
+			sprintf(msg, "в команде ПЕЧАТЬИД нет )");
 			break;
 		case no_ident_in_printid: // test_exist
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора");
+			sprintf(msg, "в команде ПЕЧАТЬИД нет идентификатора");
 			break;
 		case no_leftbr_in_getid: // test_exist
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет (");
+			sprintf(msg, "в команде ЧИТАТЬИД нет (");
 			break;
 		case no_rightbr_in_getid: // test_exist
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет )");
+			sprintf(msg, "в команде ЧИТАТЬИД нет )");
 			break;
 		case no_ident_in_getid: // test_exist
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора");
+			sprintf(msg, "в команде ЧИТАТЬИД нет идентификатора");
 			break;
 		case float_in_switch: // test_exist
 			sprintf(msg, "в условии переключателя можно использовать только типы ЛИТЕРА и ЦЕЛ");
@@ -223,7 +223,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case no_comma_in_setmotor: // test_exist
 			sprintf(msg, "в команде управления роботом после первого параметра нет ,");
 			break;
-		case param_setmotor_not_int:	// not_used
+		case param_setmotor_not_int:	// need_test not_used
 			sprintf(msg, "в командах МОТОР, УСТНАПРЯЖЕНИЕ, ЦИФРДАТЧИК и АНАЛОГДАТЧИК параметры должны быть целыми");
 			break;
 		case no_leftbr_in_stand_func: // test_exist
@@ -241,16 +241,16 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case bad_type_in_ret: // test_exist
 			sprintf(msg, "в функции, возвращающей целое или литерное значение, оператор ВОЗВРАТ со значением ВЕЩ");
 			break;
-		case notvoidret_in_void_func: // test_exist
+		case not_void_ret_in_void_func: // test_exist
 			sprintf(msg, "в функции, возвращающей пустое значение, оператор ВОЗВРАТ со значением");
 			break;
-		case aster_before_func:	// need_test
+		case aster_before_func:	// test_exist
 			sprintf(msg, "* перед описанием функции");
 			break;
 		case aster_not_for_pointer:	// test_exist
 			sprintf(msg, "операция * применяется не к указателю");
 			break;
-		case aster_with_row:	// need_test
+		case aster_with_row:	// test_exist
 			sprintf(msg, "операцию * нельзя применять к массивам");
 			break;
 		case wrong_func_as_arg: // need_test
@@ -265,7 +265,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case ident_in_declarator:	// need_test
 			sprintf(msg, "в деклараторах (предописаниях) могут быть только типы, но без идентификаторов-параметров");
 			break;
-		case array_before_func: // need_test
+		case array_before_func: // test_exist
 			sprintf(msg, "функция не может выдавать значение типа массив");
 			break;
 		case wait_definition: // need_test
@@ -520,7 +520,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case default_not_in_switch:
 			sprintf(msg, "метка УМОЛЧАНИЕ не в операторе ВЫБОР");
 			break;
-		case expected_colon_after_default:
+		case expected_colon_after_default:	// test_exist
 			sprintf(msg, "после метки УМОЛЧАНИЕ нет :");
 			break;
 		case empty_struct:	// test_exist

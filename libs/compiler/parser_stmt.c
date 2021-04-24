@@ -449,7 +449,7 @@ void parse_return_statement(parser *const prs, node *const parent)
 	{
 		if (mode_is_void(return_type))
 		{
-			parser_error(prs, notvoidret_in_void_func);
+			parser_error(prs, not_void_ret_in_void_func);
 		}
 
 		node nd = node_add_child(parent, TReturnval);

@@ -5,7 +5,7 @@ int func ()
 
 int func2 (int a)
 {
-   return a*a;
+   return a * a;
 }
 
 void func3 (int i, int *j)
@@ -45,7 +45,7 @@ void func3 (int i, int *j)
       j++;
       if (i == 1) 
          break;
-   } while (i!=10);
+   } while (i != 10);
    
    print("j  11");
    printid(j);

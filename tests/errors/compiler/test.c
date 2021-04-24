@@ -1,4 +1,9 @@
 void main()
 {
-	char a = '';
+	int arr[10];
+	if (arr)
+	{
+		print(arr);
+	}
+	ВЫХОД;
 }
