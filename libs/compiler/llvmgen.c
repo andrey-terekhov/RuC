@@ -57,7 +57,7 @@ typedef struct information
 
 
 static void expression(information *const info, node *const nd);
-static void block(information *const info, node *const nd);
+static void block(information *const info, node *const nd, int mode);
 
 
 static void operation_to_io(universal_io *const io, const item_t type)
@@ -913,10 +913,7 @@ static void statement(information *const info, node *const nd)
 	switch (node_get_type(nd))
 	{
 		case TBegin:
-		{
-			node_set_next(nd);
-			block(info, nd);
-		}
+			block(info, nd, 0);
 		break;
 		case TIf:
 		{
@@ -1167,8 +1164,9 @@ static void init(information *const info, node *const nd)
 	}
 }
 
-static void block(information *const info, node *const nd)
+static void block(information *const info, node *const nd, int mode)
 {
+	node_set_next(nd); // TBegin
 	while (node_get_type(nd) != TEnd)
 	{
 		switch (node_get_type(nd))
@@ -1218,7 +1216,11 @@ static void block(information *const info, node *const nd)
 				break;
 		}
 	}
-	node_set_next(nd); // TEnd
+
+	if (mode != -1)
+	{
+		node_set_next(nd); // TEnd
+	}
 }
 
 static int codegen(universal_io *const io, syntax *const sx)
@@ -1248,12 +1250,13 @@ static int codegen(universal_io *const io, syntax *const sx)
 				}
 				uni_printf(info.io, ") {\n");
 
-				node_set_next(&root); // TBegin
 				node_set_next(&root);
-				block(&info, &root);
+				block(&info, &root, -1);
 				uni_printf(info.io, "}\n\n");
 			}
 			break;
+			case TEnd:
+				break;
 			default:
 				system_error(node_unexpected, node_get_type(&root));
 				return -1;
