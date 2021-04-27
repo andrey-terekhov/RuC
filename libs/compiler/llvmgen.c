@@ -315,6 +315,12 @@ static void operand(information *const info, node *const nd)
 			{
 				uni_printf(info->io, " call void @func%zi(", ref_ident);
 			}
+			else if (func_type == LINT)
+			{
+				uni_printf(info->io, " %%.%" PRIitem " = call i32 @func%zi(", info->register_num, ref_ident);
+				info->answer_type = AREG;
+				info->answer_reg = info->register_num++;
+			}
 			// тут будет ещё перечисление аргументов
 			uni_printf(info->io, ")\n");
 		}
@@ -1103,6 +1109,7 @@ static void statement(information *const info, node *const nd)
 			node_set_next(nd);
 			info->variable_location = LREG;
 			expression(info, nd);
+			// TODO: добавить обработку других ответов
 			if (info->answer_type == ACONST)
 			{
 				uni_printf(info->io, " ret i32 %" PRIitem "\n", info->answer_const);
@@ -1268,6 +1275,10 @@ static int codegen(universal_io *const io, syntax *const sx)
 				else if (func_type == LVOID)
 				{
 					uni_printf(info.io, "define void @func%zi(", ref_ident);
+				}
+				else if (func_type == LINT)
+				{
+					uni_printf(info.io, "define i32 @func%zi(", ref_ident);
 				}
 				uni_printf(info.io, ") {\n");
 
