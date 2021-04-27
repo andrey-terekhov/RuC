@@ -18,3 +18,7 @@ endif()
 
 # Add sources
 add_subdirectory(src)
+
+
+# Set Visual Studio startup project
+set_property (DIRECTORY PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
