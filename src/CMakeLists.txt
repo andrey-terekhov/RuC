@@ -15,10 +15,10 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 					COMMAND ${CMAKE_COMMAND} -E copy
 					"${CMAKE_SOURCE_DIR}\\keywords.txt"
-					"${CMAKE_BINARY_DIR}\\$<IF:$<CONFIG:Debug>,Debug,Release>\\keywords.txt")
+					"${CMAKE_BINARY_DIR}\\$<IF:$<CONFIG:Debug>,Debug,Release>")
 else()
 	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 				COMMAND ${CMAKE_COMMAND} -E copy
 				"${CMAKE_SOURCE_DIR}\\keywords.txt"
-				"${CMAKE_BINARY_DIR}\\keywords.txt")
+				"${CMAKE_BINARY_DIR}")
 endif()
