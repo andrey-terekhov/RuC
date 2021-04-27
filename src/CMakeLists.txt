@@ -17,10 +17,10 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 					"${CMAKE_SOURCE_DIR}/keywords.txt"
 					"${CMAKE_BINARY_DIR}/$<IF:$<CONFIG:Debug>,Debug,Release>")
 else()
-	target_link_libraries(${PROJECT_NAME} m)
-
 	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 				COMMAND ${CMAKE_COMMAND} -E copy
 				"${CMAKE_SOURCE_DIR}/keywords.txt"
 				"${CMAKE_BINARY_DIR}")
+
+	target_link_libraries(${PROJECT_NAME} m)
 endif()
