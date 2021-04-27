@@ -84,6 +84,25 @@ int toreprtab(char str[])
     return hashtab[hash] = oldrepr;
 }
 
+FILE *keywords(const char *const exec)
+{
+    char path[256];
+    int last_slash = 0;
+
+    for (int i = 0; exec[i] != '\0'; i++)
+    {
+        if (exec[i] == '\\' || exec[i] == '/')
+        {
+            last_slash = i;
+        }
+
+        path[i] = exec[i];
+    }
+
+    strcpy(&path[last_slash + 1], "keywords.txt");
+    return fopen(path, "r");
+}
+
 int main(int argc, const char * argv[])
 {
     int i;
@@ -100,7 +119,7 @@ int main(int argc, const char * argv[])
     // занесение ключевых слов в reprtab
     keywordsnum = 1;
     
-    input =  fopen("keywords.txt", "r");
+    input = keywords(argv[0]);
     if (input == NULL)
     {
         printf(" не найден файл %s\n", "keywords.txt");
