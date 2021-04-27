@@ -1,13 +1,13 @@
 //
-//  Defs.h
+//  defs.h
 //  RuC
 //
 //  Created by Andrey Terekhov on 03/06/14.
 //  Copyright (c) 2014 Andrey Terekhov. All rights reserved.
 //
 
-#ifndef RuC_Defs_h
-#define RuC_Defs_h
+#ifndef RuC_defs_h
+#define RuC_defs_h
 
 #define MAXREPRTAB   10000
 #define MAXIDENTAB   10000

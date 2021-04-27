@@ -21,7 +21,7 @@ const char * name =
 #include <wchar.h>
 #include <stdlib.h>
 
-#include "Defs.h"
+#include "defs.h"
 
 // Определение глобальных переменных
 

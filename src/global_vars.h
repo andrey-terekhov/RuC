@@ -11,7 +11,7 @@
 #ifndef RuC_global_vars_h
 #define RuC_global_vars_h
 
-#include "Defs.h"
+#include "defs.h"
 
 extern FILE *input;
 extern FILE *output;
