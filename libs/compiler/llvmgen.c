@@ -306,7 +306,17 @@ static void operand(information *const info, node *const nd)
 			{
 				expression(info, nd);
 			}
+
+			const size_t ref_ident = (size_t)node_get_arg(nd, 0);
+			const item_t func_type = mode_get(info->sx, ident_get_mode(info->sx, ref_ident) + 1);
+
 			node_set_next(nd); // TCall2
+			if (func_type == LVOID)
+			{
+				uni_printf(info->io, " call void @func%zi(", ref_ident);
+			}
+			// тут будет ещё перечисление аргументов
+			uni_printf(info->io, ")\n");
 		}
 		break;
 		case TBeginit:
@@ -1079,10 +1089,15 @@ static void statement(information *const info, node *const nd)
 		break;
 		case TBreak:
 		case TContinue:
-		case TReturnvoid:
 		case TGoto:
 			node_set_next(nd);
 			break;
+		case TReturnvoid:
+		{
+			node_set_next(nd);
+			uni_printf(info->io, " ret void\n");
+		}
+		break;
 		case TReturnval:
 		{
 			node_set_next(nd);
@@ -1092,6 +1107,7 @@ static void statement(information *const info, node *const nd)
 			{
 				uni_printf(info->io, " ret i32 %" PRIitem "\n", info->answer_const);
 			}
+			node_set_next(nd); // TReturnvoid
 		}
 		break;
 		case TGetid:
@@ -1242,11 +1258,16 @@ static int codegen(universal_io *const io, syntax *const sx)
 		{
 			case TFuncdef:
 			{
-				const size_t ref_ident = (size_t)node_get_arg(&root, 0) / 4;
+				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
+				const item_t func_type = mode_get(info.sx, ident_get_mode(info.sx, ref_ident) + 1);
 
-				if (ident_get_mode(info.sx, ref_ident) == LMAIN)
+				if (ident_get_prev(info.sx, ref_ident) == LMAIN)
 				{
 					uni_printf(info.io, "define i32 @main(");
+				}
+				else if (func_type == LVOID)
+				{
+					uni_printf(info.io, "define void @func%zi(", ref_ident);
 				}
 				uni_printf(info.io, ") {\n");
 
