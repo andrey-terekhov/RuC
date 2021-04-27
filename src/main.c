@@ -5,8 +5,6 @@
 //
 // http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
 
-//#define _CRT_SECURE_NO_WARNINGS
-
 const char * name =
 //"tests/Mishatest.c";
 

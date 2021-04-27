@@ -5,7 +5,7 @@
 //  Created by Andrey Terekhov on 04/08/14.
 //  Copyright (c) 2014 Andrey Terekhov. All rights reserved.
 //
-#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
