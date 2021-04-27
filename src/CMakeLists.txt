@@ -14,11 +14,13 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 					COMMAND ${CMAKE_COMMAND} -E copy
-					"${CMAKE_SOURCE_DIR}\\keywords.txt"
-					"${CMAKE_BINARY_DIR}\\$<IF:$<CONFIG:Debug>,Debug,Release>")
+					"${CMAKE_SOURCE_DIR}/keywords.txt"
+					"${CMAKE_BINARY_DIR}/$<IF:$<CONFIG:Debug>,Debug,Release>")
 else()
+	target_link_libraries(${PROJECT_NAME} m)
+
 	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 				COMMAND ${CMAKE_COMMAND} -E copy
-				"${CMAKE_SOURCE_DIR}\\keywords.txt"
+				"${CMAKE_SOURCE_DIR}/keywords.txt"
 				"${CMAKE_BINARY_DIR}")
 endif()
