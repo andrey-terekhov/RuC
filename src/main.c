@@ -98,13 +98,13 @@ FILE *keywords(const char *const exec)
     {
         if (exec[i] == '\\' || exec[i] == '/')
         {
-            last_slash = i;
+            last_slash = i + 1;
         }
 
         path[i] = exec[i];
     }
 
-    strcpy(&path[last_slash + 1], "keywords.txt");
+    strcpy(&path[last_slash], "keywords.txt");
     return fopen(path, "r");
 }
 
