@@ -1832,6 +1832,8 @@ void statement()
                          int fromref, condref, incrref, stmtref;
                          mustbe(LEFTBR, no_leftbr_in_for);
                          totree(TFor);
+                         if (check_nested_for)
+                             totree(0);  // Здесь будет флаг вложенности
                          fromref = tc++;
                          condref = tc++;
                          incrref = tc++;
@@ -1870,6 +1872,7 @@ void statement()
                          tree[stmtref] = tc;
                          inloop = 1;
                          statement();
+                         totree(TForEnd);
             }
                 break;
             case LGOTO:

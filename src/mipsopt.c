@@ -229,6 +229,8 @@ void mstatement()
         {
             int fromref, condref, incrref, statemref;
             mcopy();
+            if (check_nested_for)
+                mcopy();
             fromref = mcopy();
             condref = mcopy();
             incrref = mcopy();
@@ -242,6 +244,9 @@ void mstatement()
             mstatement();
             break;
         }
+		case TForEnd:
+            mcopy();
+            break;
         case TLabel:
             mcopy();
             mcopy();
