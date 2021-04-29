@@ -29,8 +29,7 @@ else()
 						"$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:-posix>"
 						"$<$<NOT:$<OR:$<CXX_COMPILER_ID:AppleClang,Clang>,$<CONFIG:Debug>>>:-s>"
 						"$<$<NOT:$<CONFIG:Debug>>:-O2>"
-						"$<$<CONFIG:Debug>:-g>"
-						"$<$<CONFIG:Debug>:-Og>")
+						"$<$<CONFIG:Debug>:-g>")
 
 	# Set _POSIX_C_SOURCE to declare ‘readlink’ function
 	add_compile_definitions("$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:_POSIX_C_SOURCE=200112L>")
