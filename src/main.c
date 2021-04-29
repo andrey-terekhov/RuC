@@ -1,29 +1,32 @@
-//  RuC
-//
-//  Created by Andrey Terekhov on 24/Apr/16.
-//  Copyright (c) 2015 Andrey Terekhov. All rights reserved.
-//
-// http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
-
-//#define _CRT_SECURE_NO_WARNINGS
-
-const char * name =
-//"tests/Mishatest.c";
-
-"tests/mips/printid.c";
-
-//"../../../tests/Egor/Macro/for.c";
-
-//"../../../tests/Fadeev/Signal.c";
-
-//"../../../tests/Golovan/dining_philosophers.c";
+/*
+ *	Copyright 2015 Andrey Terekhov
+ *
+ *	Licensed under the Apache License, Version 2.0 (the "License");
+ *	you may not use this file except in compliance with the License.
+ *	You may obtain a copy of the License at
+ *
+ *		http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *	Unless required by applicable law or agreed to in writing, software
+ *	distributed under the License is distributed on an "AS IS" BASIS,
+ *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *	See the License for the specific language governing permissions and
+ *	limitations under the License.
+ */
 
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
 #include <stdlib.h>
+#include "defs.h"
 
-#include "Defs.h"
+
+const char *name = "tests/mips/printid.c";
+// "tests/Mishatest.c";
+// "../../../tests/Egor/Macro/for.c";
+// "../../../tests/Fadeev/Signal.c";
+// "../../../tests/Golovan/dining_philosophers.c";
+
 
 // Определение глобальных переменных
 
@@ -55,6 +58,7 @@ int bad_printf_placeholder = 0;
 // optimization flags
 int cycle_jump_reduce = 1;
 
+
 extern void preprocess_file();
 
 extern void tablesandtree();
@@ -66,6 +70,7 @@ extern void error(int ernum);
 extern void mipsopt();
 extern void mipsgen();
 extern void ext_decl();
+
 
 int toreprtab(char str[])
 {
@@ -84,6 +89,25 @@ int toreprtab(char str[])
     return hashtab[hash] = oldrepr;
 }
 
+FILE *keywords(const char *const exec)
+{
+    char path[256];
+    int last_slash = 0;
+
+    for (int i = 0; exec[i] != '\0'; i++)
+    {
+        if (exec[i] == '\\' || exec[i] == '/')
+        {
+            last_slash = i + 1;
+        }
+
+        path[i] = exec[i];
+    }
+
+    strcpy(&path[last_slash], "keywords.txt");
+    return fopen(path, "r");
+}
+
 int main(int argc, const char * argv[])
 {
     int i;
@@ -100,7 +124,7 @@ int main(int argc, const char * argv[])
     // занесение ключевых слов в reprtab
     keywordsnum = 1;
     
-    input =  fopen("keywords.txt", "r");
+    input = keywords(argv[0]);
     if (input == NULL)
     {
         printf(" не найден файл %s\n", "keywords.txt");
@@ -212,4 +236,3 @@ int main(int argc, const char * argv[])
    
     return 0;
 }
-
