@@ -15,6 +15,7 @@
  */
 
 #include "llvmgen.h"
+#include "codes.h"
 #include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
@@ -1109,10 +1110,14 @@ static void statement(information *const info, node *const nd)
 			node_set_next(nd);
 			info->variable_location = LREG;
 			expression(info, nd);
-			// TODO: добавить обработку других ответов
+			// TODO: добавить обработку других ответов (ALOGIC)
 			if (info->answer_type == ACONST)
 			{
 				uni_printf(info->io, " ret i32 %" PRIitem "\n", info->answer_const);
+			}
+			else if (info->answer_type == AREG)
+			{
+				uni_printf(info->io, " ret i32 %%.%" PRIitem "\n", info->answer_reg);
 			}
 			node_set_next(nd); // TReturnvoid
 		}
@@ -1314,6 +1319,7 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	{
 		return -1;
 	}
+	tree_print("new1.txt", &(sx->tree));
 
 	return codegen(io, sx);
 }

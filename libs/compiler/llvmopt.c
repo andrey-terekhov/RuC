@@ -109,6 +109,7 @@ static expression_t expression_type(node *const nd)
 		case TIdenttoaddr:
 		case TConstd:
 		case TIdenttovald:
+		case TCall1:
 			return OPERAND;
 
 
@@ -334,8 +335,16 @@ static int node_recursive(information *const info, node *const nd)
 				switch (expression_type(&child))
 				{
 					case OPERAND:
+					{
+						// TODO: а какая depth, если у вызова есть аргументы?
+						// это пока временное решение, с наличием агрументов будет другая реализация
+						if (node_get_type(&child) == TCall1)
+						{
+							nd_info.depth = 2;
+						}
 						stack_push(info, &nd_info);
-						break;
+					}
+					break;
 					case UNARY_OPERATION:
 					{
 						node_info *operand = stack_pop(info);
