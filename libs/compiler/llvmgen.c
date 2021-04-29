@@ -311,11 +311,11 @@ static void operand(information *const info, node *const nd)
 			const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
 
 			node_set_next(nd); // TCall2
-			if (func_type == LVOID)
+			if (func_type == mode_void)
 			{
 				uni_printf(info->io, " call void @func%zi(", ref_ident);
 			}
-			else if (func_type == LINT)
+			else if (func_type == mode_integer)
 			{
 				uni_printf(info->io, " %%.%" PRIitem " = call i32 @func%zi(", info->register_num, ref_ident);
 				info->answer_type = AREG;
@@ -1218,7 +1218,7 @@ static void block(information *const info, node *const nd, int mode)
 
 				if (N == 0) // обычная переменная int a; или struct point p;
 				{
-					if (elem_type == LINT)
+					if (elem_type == mode_integer)
 					{
 						uni_printf(info->io, " %%var.%" PRIitem " = alloca i32, align 4\n", displ);
 						info->variable_location = LMEM;
@@ -1276,11 +1276,11 @@ static int codegen(universal_io *const io, syntax *const sx)
 				{
 					uni_printf(info.io, "define i32 @main(");
 				}
-				else if (func_type == LVOID)
+				else if (func_type == mode_void)
 				{
 					uni_printf(info.io, "define void @func%zi(", ref_ident);
 				}
-				else if (func_type == LINT)
+				else if (func_type == mode_integer)
 				{
 					uni_printf(info.io, "define i32 @func%zi(", ref_ident);
 				}
