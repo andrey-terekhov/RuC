@@ -692,7 +692,7 @@ void parse_function_body(parser *const prs, node *const parent, const size_t fun
 	prs->flag_was_return = 0;
 
 	const item_t prev = ident_get_prev(prs->sx, function_id);
-	if (prev > 1 && prev != ITEM_MAX) // Был прототип
+	if (prev > 1 && prev != ITEM_MAX - 1) // Был прототип
 	{
 		if (prs->function_mode != (size_t)ident_get_mode(prs->sx, (size_t)prev))
 		{
