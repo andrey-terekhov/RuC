@@ -15,7 +15,6 @@
  */
 
 #include "llvmgen.h"
-#include "codes.h"
 #include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
@@ -309,7 +308,7 @@ static void operand(information *const info, node *const nd)
 			}
 
 			const size_t ref_ident = (size_t)node_get_arg(nd, 0);
-			const item_t func_type = mode_get(info->sx, ident_get_mode(info->sx, ref_ident) + 1);
+			const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
 
 			node_set_next(nd); // TCall2
 			if (func_type == LVOID)
@@ -1271,7 +1270,7 @@ static int codegen(universal_io *const io, syntax *const sx)
 			case TFuncdef:
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
-				const item_t func_type = mode_get(info.sx, ident_get_mode(info.sx, ref_ident) + 1);
+				const item_t func_type = mode_get(info.sx, (size_t)ident_get_mode(info.sx, ref_ident) + 1);
 
 				if (ident_get_prev(info.sx, ref_ident) == LMAIN)
 				{
@@ -1319,7 +1318,6 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	{
 		return -1;
 	}
-	tree_print("new1.txt", &(sx->tree));
 
 	return codegen(io, sx);
 }
