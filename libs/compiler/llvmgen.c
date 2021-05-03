@@ -21,6 +21,10 @@
 #include "uniprinter.h"
 
 
+#define MAX_ARRAY_DIMENSION		5
+#define MAX_ARRAY_DISPL			10000
+
+
 typedef enum ANSWER
 {
 	AREG,								/**< Ответ находится в регистре */
@@ -34,6 +38,13 @@ typedef enum LOCATION
 	LMEM,								/**< Переменная находится в памяти */
 	LFREE,								/**< Свободный запрос значения */
 } location_t;
+
+typedef struct array_info
+{
+	item_t dimention;							/**< Размерность массива */
+	item_t is_static;							/**< Если массив статический, то 1, иначе 0 */
+	item_t borders[MAX_ARRAY_DIMENSION];		/**< Граница массива: константы или номера регистров */
+} array_info;
 
 typedef struct information
 {
@@ -53,6 +64,12 @@ typedef struct information
 
 	item_t label_if;							/**< Метка if */
 	item_t label_else;							/**< Метка else */
+
+	array_info current_array_info;				/**< Информация о текущем объявляемом массиве */
+	// TODO: хороша ли такая форма хранения информации о массивах?
+	// С одной стороны, arrays_info очень разреженный, что плохо
+	// С другой стороны, очень удобный доступ по displ, так как оно известно при вырезках 
+	array_info arrays_info[MAX_ARRAY_DISPL];	/**< Информация о массивах. Доступ осуществляется по displ */
 } information;
 
 
@@ -209,6 +226,23 @@ static inline void to_code_conditional_branch(information *const info, item_t re
 	uni_printf(info->io, " br i1 %%.%" PRIitem ", label %%label%" PRIitem ", label %%label%" PRIitem "\n", 
 		reg, label_true, label_false);
 }
+
+static void to_code_alloc_array(information *const info, item_t id)
+{
+	uni_printf(info->io, " %%arr.%" PRIitem " = alloca ", id);
+
+	for (item_t i = 0; i < info->arrays_info[id].dimention; i++)
+	{
+		uni_printf(info->io, "[%" PRIitem " x ", info->arrays_info[id].borders[i]);
+	}
+	uni_printf(info->io, "i32");
+	for (item_t i = 0; i < info->arrays_info[id].dimention; i++)
+	{
+		uni_printf(info->io, "]");
+	}
+	uni_printf(info->io, ", align 4\n");
+}
+
 
 static void check_type_and_branch(information *const info)
 {
@@ -1203,9 +1237,25 @@ static void block(information *const info, node *const nd, int mode)
 				const item_t N = node_get_arg(nd, 0);
 
 				node_set_next(nd);
+				info->current_array_info.dimention = N;
+				info->current_array_info.is_static = 1;
 				for (item_t i = 0; i < N; i++)
 				{
+					info->variable_location = LFREE;
 					expression(info, nd);
+
+					// TODO: а если часть границ статическая, а часть динамическая?
+					// наверное, в таком случае границы надо хранить в раздельных массивах
+					// но об этом потом
+					if (info->answer_type == ACONST)
+					{
+						info->current_array_info.borders[i] = info->answer_const;
+					}
+					else // if (info->answer_type == ARER) динамический массив
+					{
+						info->current_array_info.borders[i] = info->answer_reg;
+						info->current_array_info.is_static = 1;
+					}			
 				}
 			}
 			break;
@@ -1225,6 +1275,12 @@ static void block(information *const info, node *const nd, int mode)
 						info->request_reg = displ;
 					}
 				}
+				else // массивы
+				{
+					info->arrays_info[displ] = info->current_array_info;
+					to_code_alloc_array(info, displ);
+				}
+				
 
 				node_set_next(nd);
 				if (all)
