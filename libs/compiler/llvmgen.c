@@ -15,6 +15,7 @@
  */
 
 #include "llvmgen.h"
+#include "codes.h"
 #include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
@@ -227,7 +228,7 @@ static inline void to_code_conditional_branch(information *const info, item_t re
 		reg, label_true, label_false);
 }
 
-static void to_code_alloc_array(information *const info, item_t id)
+static void to_code_alloc_array_static(information *const info, item_t id)
 {
 	uni_printf(info->io, " %%arr.%" PRIitem " = alloca ", id);
 
@@ -241,6 +242,18 @@ static void to_code_alloc_array(information *const info, item_t id)
 		uni_printf(info->io, "]");
 	}
 	uni_printf(info->io, ", align 4\n");
+}
+
+static void to_code_alloc_array_dynamic(information *const info, item_t id)
+{
+	// команды сохранения состояния стека
+	uni_printf(info->io, " %%dyn.%" PRIitem " = alloca i8*, align 4\n", id);
+	uni_printf(info->io, " %%.%" PRIitem " = call i8* @llvm.stacksave()\n", info->register_num);
+	uni_printf(info->io, " store i8* %%.%" PRIitem ", i8** %%dyn.%" PRIitem ", align 4\n", info->register_num, id);
+	info->register_num++;
+	// выделение памяти на стеке
+	// TODO: пока для одного измерения, позже нужно сделать для нескольких измерений
+	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca i32, i32 %%.%" PRIitem ", align 4\n", id, info->arrays_info[id].borders[0]);
 }
 
 
@@ -1254,7 +1267,7 @@ static void block(information *const info, node *const nd, int mode)
 					else // if (info->answer_type == ARER) динамический массив
 					{
 						info->current_array_info.borders[i] = info->answer_reg;
-						info->current_array_info.is_static = 1;
+						info->current_array_info.is_static = 0;
 					}			
 				}
 			}
@@ -1278,7 +1291,16 @@ static void block(information *const info, node *const nd, int mode)
 				else // массивы
 				{
 					info->arrays_info[displ] = info->current_array_info;
-					to_code_alloc_array(info, displ);
+					if (info->current_array_info.is_static == 1)
+					{
+						to_code_alloc_array_static(info, displ);
+					}
+					else
+					{
+						// TODO: нужно ещё сделать восстановление стека после выделения памяти
+						to_code_alloc_array_dynamic(info, displ);
+					}
+					
 				}
 				
 
@@ -1374,6 +1396,7 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	{
 		return -1;
 	}
+	tree_print("new1.txt", &(sx->tree));
 
 	return codegen(io, sx);
 }
