@@ -43,6 +43,7 @@ typedef enum LOCATION
 typedef struct array_info
 {
 	item_t dimention;							/**< Размерность массива */
+	// TODO: может лучше enum, а не 1 и 0?
 	item_t is_static;							/**< Если массив статический, то 1, иначе 0 */
 	item_t borders[MAX_ARRAY_DIMENSION];		/**< Граница массива: константы или номера регистров */
 } array_info;
@@ -71,6 +72,8 @@ typedef struct information
 	// С одной стороны, arrays_info очень разреженный, что плохо
 	// С другой стороны, очень удобный доступ по displ, так как оно известно при вырезках 
 	array_info arrays_info[MAX_ARRAY_DISPL];	/**< Информация о массивах. Доступ осуществляется по displ */
+	// TODO: может лучше enum, а не 1 и 0?
+	item_t flag_dynamic;						/**< Если в функции были динамические массивы, то 1, иначе 0 */
 } information;
 
 
@@ -244,16 +247,30 @@ static void to_code_alloc_array_static(information *const info, item_t id)
 	uni_printf(info->io, ", align 4\n");
 }
 
-static void to_code_alloc_array_dynamic(information *const info, item_t id)
+static void to_code_save_stack(information *const info)
 {
 	// команды сохранения состояния стека
-	uni_printf(info->io, " %%dyn.%" PRIitem " = alloca i8*, align 4\n", id);
+	// TODO: потестировать для динамических массиво в разных функциях
+	// есть подозрение, что один регистр dyn нельзя использовать
+	uni_printf(info->io, " %%dyn = alloca i8*, align 4\n");
 	uni_printf(info->io, " %%.%" PRIitem " = call i8* @llvm.stacksave()\n", info->register_num);
-	uni_printf(info->io, " store i8* %%.%" PRIitem ", i8** %%dyn.%" PRIitem ", align 4\n", info->register_num, id);
+	uni_printf(info->io, " store i8* %%.%" PRIitem ", i8** %%dyn, align 4\n", info->register_num);
 	info->register_num++;
+}
+
+static void to_code_alloc_array_dynamic(information *const info, item_t id)
+{
 	// выделение памяти на стеке
 	// TODO: пока для одного измерения, позже нужно сделать для нескольких измерений
 	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca i32, i32 %%.%" PRIitem ", align 4\n", id, info->arrays_info[id].borders[0]);
+}
+
+static void to_code_restore_stack(information *const info)
+{
+	// команды восстановления состояния стека
+	uni_printf(info->io, " %%.%" PRIitem " = load i8*, i8** %%dyn, align 4\n", info->register_num);
+	uni_printf(info->io, " call void @llvm.stackrestore(i8* %%.%" PRIitem ")\n", info->register_num);
+	info->register_num++;
 }
 
 
@@ -1147,12 +1164,22 @@ static void statement(information *const info, node *const nd)
 			break;
 		case TReturnvoid:
 		{
+			if (info->flag_dynamic == 1)
+			{
+				to_code_restore_stack(info);
+			}
+
 			node_set_next(nd);
 			uni_printf(info->io, " ret void\n");
 		}
 		break;
 		case TReturnval:
 		{
+			if (info->flag_dynamic == 1)
+			{
+				to_code_restore_stack(info);
+			}
+
 			node_set_next(nd);
 			info->variable_location = LREG;
 			expression(info, nd);
@@ -1298,11 +1325,14 @@ static void block(information *const info, node *const nd, int mode)
 					else
 					{
 						// TODO: нужно ещё сделать восстановление стека после выделения памяти
+						if (info->flag_dynamic == 0)
+						{
+							to_code_save_stack(info);
+						}
 						to_code_alloc_array_dynamic(info, displ);
-					}
-					
+						info->flag_dynamic = 1;
+					}	
 				}
-				
 
 				node_set_next(nd);
 				if (all)
@@ -1330,6 +1360,7 @@ static void block(information *const info, node *const nd, int mode)
 
 static int codegen(universal_io *const io, syntax *const sx)
 {
+	item_t to_declare_stack_functions = 0;
 	information info;
 	info.io = io;
 	info.sx = sx;
@@ -1339,6 +1370,7 @@ static int codegen(universal_io *const io, syntax *const sx)
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
+	info.flag_dynamic = 0;
 
 	node root = node_get_root(&sx->tree);
 	while (node_set_next(&root) == 0)
@@ -1367,6 +1399,12 @@ static int codegen(universal_io *const io, syntax *const sx)
 				node_set_next(&root);
 				block(&info, &root, -1);
 				uni_printf(info.io, "}\n\n");
+
+				if (info.flag_dynamic == 1)
+				{
+					to_declare_stack_functions = 1;
+				}
+				info.flag_dynamic = 0;
 			}
 			break;
 			case TEnd:
@@ -1375,6 +1413,12 @@ static int codegen(universal_io *const io, syntax *const sx)
 				system_error(node_unexpected, node_get_type(&root));
 				return -1;
 		}
+	}
+
+	if (to_declare_stack_functions == 1)
+	{
+		uni_printf(info.io, "declare i8* @llvm.stacksave()\n");
+		uni_printf(info.io, "declare void @llvm.stackrestore(i8*)\n");
 	}
 	
 	return 0;
