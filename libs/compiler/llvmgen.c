@@ -15,7 +15,6 @@
  */
 
 #include "llvmgen.h"
-#include "codes.h"
 #include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
@@ -250,8 +249,6 @@ static void to_code_alloc_array_static(information *const info, item_t id)
 static void to_code_save_stack(information *const info)
 {
 	// команды сохранения состояния стека
-	// TODO: потестировать для динамических массиво в разных функциях
-	// есть подозрение, что один регистр dyn нельзя использовать
 	uni_printf(info->io, " %%dyn = alloca i8*, align 4\n");
 	uni_printf(info->io, " %%.%" PRIitem " = call i8* @llvm.stacksave()\n", info->register_num);
 	uni_printf(info->io, " store i8* %%.%" PRIitem ", i8** %%dyn, align 4\n", info->register_num);
@@ -261,8 +258,15 @@ static void to_code_save_stack(information *const info)
 static void to_code_alloc_array_dynamic(information *const info, item_t id)
 {
 	// выделение памяти на стеке
-	// TODO: пока для одного измерения, позже нужно сделать для нескольких измерений
-	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca i32, i32 %%.%" PRIitem ", align 4\n", id, info->arrays_info[id].borders[0]);
+	item_t to_alloc = info->arrays_info[id].borders[0];
+
+	for (item_t i = 1; i < info->arrays_info[id].dimention; i++)
+	{
+		uni_printf(info->io, " %%.%" PRIitem " = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n", 
+			info->register_num, to_alloc, info->arrays_info[id].borders[i]);
+		to_alloc = info->register_num++;
+	}
+	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca i32, i32 %%.%" PRIitem ", align 4\n", id, to_alloc);	
 }
 
 static void to_code_restore_stack(information *const info)
@@ -1440,7 +1444,6 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	{
 		return -1;
 	}
-	tree_print("new1.txt", &(sx->tree));
 
 	return codegen(io, sx);
 }
