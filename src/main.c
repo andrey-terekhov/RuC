@@ -21,11 +21,7 @@
 #include "defs.h"
 
 
-const char *name = "tests/mips/printid.c";
-// "tests/Mishatest.c";
-// "../../../tests/Egor/Macro/for.c";
-// "../../../tests/Fadeev/Signal.c";
-// "../../../tests/Golovan/dining_philosophers.c";
+const char *name = "/Users/elias/test.c";
 
 
 // Определение глобальных переменных
@@ -227,7 +223,7 @@ int main(int argc, const char * argv[])
     tablesandtree();
     fclose(output);                   // файл с деревом после mipsopt
 
-	optimize();
+//	optimize();
 
 	for (i=0; i<mtc; i++)
 		tree[i] = mtree[i];

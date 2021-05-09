@@ -24,7 +24,7 @@ int t, op, opnd, firststruct = 1;
 extern void tablesandtree();
 
 
-int mcopy()
+static int mcopy()
 {
 //    printf("tc= %i tree[tc]= %i\n", tc, tree[tc]);
     return mtree[mtc++] = tree[tc++];

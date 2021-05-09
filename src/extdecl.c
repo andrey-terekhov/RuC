@@ -1854,7 +1854,6 @@ void statement()
                              tree[condref] = tc;
                              expr(0, 1);
                              toval();
-                             totree(TExprend);
                              sopnd--;
                              mustbe(SEMICOLON, no_semicolon_in_for);
                              sopnd--;

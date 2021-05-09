@@ -413,6 +413,10 @@
 #define TStructinit -349
 #define TSelect     -350
 #define TForEnd     -351
+#define TIndVar     -352
+#define TSliceInd	-353
+// Это узел, который скипается при копировании дерева
+#define TSkip		-354
 
 
 
