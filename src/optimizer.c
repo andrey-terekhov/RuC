@@ -103,7 +103,7 @@ void mtotree(int op)
 static int mcopy()
 {
 	// Пропускаем все узлы TSkip, которые встретим
-	while (tree[tc] == TSkip) index_correction++, tc++;
+	while (tree[tc] == TSkip) index_correction--, tc++;
 	
 	// Правим ссылки TFor
 	if (tree[tc] == TFor)
@@ -116,47 +116,6 @@ static int mcopy()
 	
 	// Копируем узел
 	return mtree[mtc++] = tree[tc++];
-}
-
-
-/** Добавить узел в дерево по индексу */
-void insert_tree(int index, int op)
-{
-	for (int i = tree_size; i >= index; i--)
-	{
-		tree[i+1] = tree[i];
-		// Если есть еще затронутые циклы for, то им нужно сдвинуть ссылки на дерево
-		// Костыль, но в будущих итерациях эта функция не понадобится, поэтому пока останется так
-		if (tree[i+1] == TFor)
-		{
-			tree[i+2+check_nested_for]++;
-			tree[i+3+check_nested_for]++;
-			tree[i+4+check_nested_for]++;
-			tree[i+5+check_nested_for]++;
-		}
-	}
-
-	tree[index] = op;
-	tree_size++;
-}
-
-/** Удалить узел из дерева по индексу */
-void remove_tree(int index)
-{
-	tree_size--;
-	for (int i = index; i < tree_size; i++)
-	{
-		// Если есть еще затронутые циклы for, то им нужно сдвинуть ссылки на дерево
-		// Костыль, но в будущих итерациях эта функция не понадобится, поэтому пока останется так
-		if (tree[i+1] == TFor)
-		{
-			tree[i+2+check_nested_for]--;
-			tree[i+3+check_nested_for]--;
-			tree[i+4+check_nested_for]--;
-			tree[i+5+check_nested_for]--;
-		}
-		tree[i] = tree[i+1];
-	}
 }
 
 /** Проверить, существуют ли вложенные циклы for */
@@ -260,6 +219,8 @@ int check_constant_expression(const int start_tc, const int end_tc)
 		
 		local_tc++;
 	}
+	
+	return 1;
 }
 
 /**
@@ -280,16 +241,16 @@ int check_controlling_expression(int start_tc, int end_tc)
 		case LLE + 1000:
 		case LGT + 1000:
 		case LGE + 1000:
-			if (tree[start_tc+1] == TIdent && tree[start_tc+2] == iterator && tree[start_tc+3] == TExprend)
+			if (tree[start_tc+1] == TIdenttoval && tree[start_tc+2] == iterator)
 			{
 				// Это если слева от оператора сравнения стоит индуктивная переменная
 				// Разворачивать условие не нужно, просто проверить правую часть
 				// Копируем все без изменений
 				while (tc != end_tc) mcopy();
 				// А результат выдаст эта функция
-				return check_constant_expression(start_tc+4, end_tc-1);
+				return check_constant_expression(start_tc+3, end_tc-1);
 			}
-			else if (tree[end_tc-3] == TIdent && tree[end_tc-2] == iterator && tree[end_tc-1] == TExprend)
+			else if (tree[end_tc-2] == TIdenttoval && tree[end_tc-1] == iterator)
 			{
 				// Это если справа от оператора сравнения стоит индуктивная переменная
 				// Разворачиваем оператор
@@ -317,9 +278,9 @@ int check_controlling_expression(int start_tc, int end_tc)
 				mtotree(TIdent); mtotree(iterator); mtotree(TExprend);
 				
 				// Бывшую левую часть без изменений копируем в правую часть
-				while (tc != end_tc-3) mcopy();
+				while (tc != end_tc-2) mcopy();
 				// А результат выдаст эта функция
-				return check_constant_expression(start_tc+1, end_tc-3);
+				return check_constant_expression(start_tc+1, end_tc-2);
 			}
 			
 		// Если это не выражение сравнения, то мы его не оптимизируем
@@ -332,9 +293,8 @@ int check_controlling_expression(int start_tc, int end_tc)
 /**
  *	Проверить, подходит ли третья часть выражения для индуцированных переменных
  *	Подходят только i++, i--, ++i, --i, i += const, i -= const
- *	Функция гарантирует, что tc будет указывать на начало следующего выражения
  */
-int check_iterator_expression(int start_tc, int end_tc)
+int check_increment_expression(int start_tc, int end_tc)
 {
 	int result;
 	switch (tree[start_tc])
@@ -366,8 +326,6 @@ int check_iterator_expression(int start_tc, int end_tc)
 			break;
 	}
 
-	// Копируем без изменений
-	while (tc != end_tc) mcopy();
 	return result;
 }
 
@@ -479,7 +437,9 @@ void optimize_for_statement()
 	int has_nested_for = 1;
 	int nice_condition = 0;
 	int nice_increment = 0;
-	for_start = mcopy(); // TFor
+	iterator = -1; // Чтобы не было пересечений
+	for_start = mtc;
+	mcopy(); // TFor
 
 	if (check_nested_for)
 	{
@@ -494,21 +454,33 @@ void optimize_for_statement()
 	int statement = mcopy();
 
 	if (inition)
+	{
+		int end_inition = condition ? condition : increment ? increment : statement;
 		// Копируем первую часть условия for без изменений
-		do mcopy(); while (tree[tc] != TExprend);
-
-	if (condition)
-		// Проверяем, вычислимо ли условие цикла перед циклом
-		// Функция гарантирует, что tc будет указывать на начало следующего выражения
-		nice_condition = check_controlling_expression(condition, increment);
-
+		while (tc != end_inition) mcopy();
+	}
+	
+	// Сначала проверяем выражение инкремента, так как нам нужно знать итератор для вычисления условия перед циклом
 	if (increment)
+	{
 		// Проверяем, подходит ли выражение-инкремент для оптимизации индуцированных переменных
 		// Функция гарантирует, что tc будет указывать на начало следующего выражения
-		nice_increment = check_iterator_expression(increment, statement);
+		nice_increment = check_increment_expression(increment, statement);
+	}
+	
+	if (condition)
+	{
+		int end_condition = increment ? increment : statement;
+		// Проверяем, вычислимо ли условие цикла перед циклом
+		// Функция гарантирует, что tc будет указывать на начало следующего выражения
+		nice_condition = check_controlling_expression(condition, end_condition);
+	}
 
-	// Начало блока for, т.е. место, куда будут вписываться узлы объявлений
-	int for_scope_start = tree[tc] == TBegin ? tc+1: tc;
+	if (increment)
+	{
+		// Копируем без изменений
+		while (tc != statement) mcopy();
+	}
 	
 	// Ставим в дерево флажок, что можно оптимизировать условие
 	if (cycle_condition_calculation && nice_condition) tree[for_start+1] = 2;
@@ -545,6 +517,7 @@ void optimize_for_statement()
 					// Помечаем, что этот узел уже был
 					ind_vars[ind_var_number] = 1;
 					
+					// Коррекция индекса - мы добавили в дерево узлы
 					index_correction += 3 + slice_length;
 				}
 				
@@ -560,10 +533,10 @@ void optimize_for_statement()
 	
 	// Редукция индуктивной переменной
 	// Делаем эту оптимизацию только если можно посчитать условие заранее
-	if (tree[for_start+check_nested_for] == 2)
+	if (ind_var_reduction && tree[for_start+check_nested_for] == 2)
 	{
 		// М.б. стоит в другом порядке, но тут просто для наглядности
-		tree[for_start+check_nested_for] = 3;
+		mtree[for_start+check_nested_for] = 3;
 		// Идем по телу цилка и смотрим, используется ли она
 		int local_tc = tree[for_start+check_nested_for+4];
 		while (tree[local_tc] != TForEnd)
@@ -572,9 +545,11 @@ void optimize_for_statement()
 				&& tree[local_tc+1] == iterator)
 			{
 				// Нельзя редуцировать переменную
-				tree[for_start+check_nested_for] = 2;
+				mtree[for_start+check_nested_for] = 2;
 				break;
 			}
+			
+			local_tc++;
 		}
 	}
 	
@@ -587,6 +562,7 @@ void optimize_for_statement()
 void optimize()
 {
 	tree_size = tc;
+	tc = mtc = 0;
 
 	// Это начальное заполнение таблицы индуцированных переменных
 	// На самом деле это костыль, но лень пока придумывать что-то другое
@@ -595,7 +571,7 @@ void optimize()
 	ind_vars[3] = TExprend;
 
 	// В рамках данной работы оптимизируем только циклы for
-	for (tc = 0; tc < tree_size; tc++)
+	while (tc < tree_size)
 		if (tree[tc] == TFor)
 			optimize_for_statement();
 		else

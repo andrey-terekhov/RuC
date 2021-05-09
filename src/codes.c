@@ -180,6 +180,16 @@ void tablesandtree()
 					i += 4;
 				}
 				break;
+			case TForEnd:
+				fprintf(output, "TForEnd\n");
+				break;
+			case TIndVar:
+				fprintf(output, "TIndVar number = %i, step = %i\n", tree[i], tree[i+1]);
+				i += 2;
+				break;
+			case TSliceInd:
+				fprintf(output, "TSliceInd %i\n", tree[i++]);
+				break;
             case TSwitch:
                 fprintf(output, "TSwitch\n");
                 break;

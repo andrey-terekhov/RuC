@@ -54,9 +54,10 @@ int bad_printf_placeholder = 0;
 // optimization flags
 int cycle_jump_reduce = 0;
 int enable_ind_var = 1;
-int cycle_condition_calculation = 0;
+int cycle_condition_calculation = 1;
 int delay_slot = 0;
 int check_nested_for = 0;
+int ind_var_reduction = 1;
 
 
 extern void preprocess_file();
@@ -114,7 +115,7 @@ int main(int argc, const char * argv[])
     int i;
 
 	// включение вспомогательных оптимизирующих опций
-	check_nested_for = cycle_condition_calculation || enable_ind_var;
+	check_nested_for = cycle_condition_calculation || enable_ind_var || ind_var_reduction;
 
     if (argc != 2){
         printf("Error: not enough argumnts\n");
@@ -223,7 +224,7 @@ int main(int argc, const char * argv[])
     tablesandtree();
     fclose(output);                   // файл с деревом после mipsopt
 
-//	optimize();
+	optimize();
 
 	for (i=0; i<mtc; i++)
 		tree[i] = mtree[i];
