@@ -1,14 +1,21 @@
-//
-//  Defs.h
-//  RuC
-//
-//  Created by Andrey Terekhov on 03/06/14.
-//  Copyright (c) 2014 Andrey Terekhov. All rights reserved.
-//
+/*
+ *	Copyright 2014 Andrey Terekhov
+ *
+ *	Licensed under the Apache License, Version 2.0 (the "License");
+ *	you may not use this file except in compliance with the License.
+ *	You may obtain a copy of the License at
+ *
+ *		http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *	Unless required by applicable law or agreed to in writing, software
+ *	distributed under the License is distributed on an "AS IS" BASIS,
+ *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *	See the License for the specific language governing permissions and
+ *	limitations under the License.
+ */
 
-#ifndef RuC_Defs_h
-#define RuC_Defs_h
-#include <pthread.h>
+#pragma once
+
 
 #define MAXREPRTAB   10000
 #define MAXIDENTAB   10000
@@ -190,45 +197,45 @@
 #define ABSIC     9651
 #define CASTC     9526
 
-#define CREATEDIRECTC 9500-TCREATEDIRECT
-#define EXITDIRECTC   9500-TEXITDIRECT
+#define CREATEDIRECTC	(9500 - TCREATEDIRECT)
+#define EXITDIRECTC		(9500 - TEXITDIRECT)
 
-#define SETMOTORC 9500-SETMOTOR
-#define GETDIGSENSORC 9500-GETDIGSENSOR
-#define GETANSENSORC  9500-GETANSENSOR
-#define VOLTAGEC      9500-VOLTAGE
-#define ABSC      9500-ABS
-#define SQRTC     9500-SQRT
-#define EXPC      9500-EXP
-#define SINC      9500-SIN
-#define COSC      9500-COS
-#define LOGC      9500-LOG
-#define LOG10C    9500-LOG10
-#define ASINC     9500-ASIN
-#define RANDC     9500-RAND
-#define ROUNDC    9500-ROUND
+#define SETMOTORC		(9500 - SETMOTOR)
+#define GETDIGSENSORC	(9500 - GETDIGSENSOR)
+#define GETANSENSORC	(9500 - GETANSENSOR)
+#define VOLTAGEC		(9500 - VOLTAGE)
+#define ABSC			(9500 - ABS)
+#define SQRTC			(9500 - SQRT)
+#define EXPC			(9500 - EXP)
+#define SINC			(9500 - SIN)
+#define COSC			(9500 - COS)
+#define LOGC			(9500 - LOG)
+#define LOG10C			(9500 - LOG10)
+#define ASINC			(9500 - ASIN)
+#define RANDC			(9500 - RAND)
+#define ROUNDC			(9500 - ROUND)
 
-#define STRCPYC   9500-STRCPY
-#define STRNCPYC  9500-STRNCPY
-#define STRCATC   9500-STRCAT
-#define STRNCATC  9500-STRNCAT
-#define STRCMPC   9500-STRCMP
-#define STRNCMPC  9500-STRNCMP
-#define STRSTRC   9500-STRSTR
-#define STRLENC   9500-STRLEN
+#define STRCPYC			(9500 - STRCPY)
+#define STRNCPYC		(9500 - STRNCPY)
+#define STRCATC			(9500 - STRCAT)
+#define STRNCATC		(9500 - STRNCAT)
+#define STRCMPC			(9500 - STRCMP)
+#define STRNCMPC		(9500 - STRNCMP)
+#define STRSTRC			(9500 - STRSTR)
+#define STRLENC			(9500 - STRLEN)
 
-#define MSGSENDC  9500-TMSGSEND
-#define MSGRECEIVEC 9500-TMSGRECEIVE
-#define JOINC     9500-TJOIN
-#define SLEEPC    9500-TSLEEP
-#define SEMCREATEC  9500-TSEMCREATE
-#define SEMWAITC  9500-TSEMWAIT
-#define SEMPOSTC  9500-TSEMPOST
-#define CREATEC   9500-TCREATE
-#define INITC     9500-TINIT
-#define DESTROYC  9500-TDESTROY
-#define EXITC     9500-TEXIT
-#define GETNUMC   9500-TGETNUM
+#define MSGSENDC		(9500 - TMSGSEND)
+#define MSGRECEIVEC		(9500 - TMSGRECEIVE)
+#define JOINC			(9500 - TJOIN)
+#define SLEEPC			(9500 - TSLEEP)
+#define SEMCREATEC		(9500 - TSEMCREATE)
+#define SEMWAITC		(9500 - TSEMWAIT)
+#define SEMPOSTC		(9500 - TSEMPOST)
+#define CREATEC			(9500 - TCREATE)
+#define INITC			(9500 - TINIT)
+#define DESTROYC		(9500 - TDESTROY)
+#define EXITC			(9500 - TEXIT)
+#define GETNUMC			(9500 - TGETNUM)
 
 
 // Лексемы
@@ -406,8 +413,10 @@
 #define TStructinit -349
 #define TSelect     -350
 #define TForEnd     -351
-#define TIndVar		-352
-#define TSliceInd	-354
+#define TIndVar     -352
+#define TSliceInd	-353
+// Это узел, который скипается при копировании дерева
+#define TSkip		-354
 
 
 
@@ -695,5 +704,3 @@
 #define c_lt_s  131
 #define c_le_s  132
 #define cvt_s_w 133
-
-#endif

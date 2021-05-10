@@ -3,7 +3,7 @@ CFLAGS=-c -Wall -DROBOTS
 LDFLAGS=
 LIBS=-lm -lpthread
 
-SRCDIR=RuC
+SRCDIR=src
 OBJDIR=obj
 
 SOURCES=$(wildcard $(SRCDIR)/*.c)
