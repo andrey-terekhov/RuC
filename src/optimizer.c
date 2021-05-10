@@ -109,10 +109,10 @@ static int mcopy()
 	// Правим ссылки TFor
 	if (tree[tc] == TFor)
 	{
+		tree[tc+1+check_nested_for] += index_correction;
 		tree[tc+2+check_nested_for] += index_correction;
 		tree[tc+3+check_nested_for] += index_correction;
 		tree[tc+4+check_nested_for] += index_correction;
-		tree[tc+5+check_nested_for] += index_correction;
 	}
 
 	// Копируем узел
@@ -467,10 +467,11 @@ void optimize_for_statement()
 		return;
 	}
 
-	int inition	  = mcopy();
-	int condition = mcopy();
-	int increment = mcopy();
-	int statement = mcopy();
+	// Здесь коррекция индексов нужна, потому что выражения проверяются в изначальном дереве
+	int inition	  = mcopy() - index_correction;
+	int condition = mcopy() - index_correction;
+	int increment = mcopy() - index_correction;
+	int statement = mcopy() - index_correction;
 
 	if (inition)
 	{
