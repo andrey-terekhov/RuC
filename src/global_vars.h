@@ -1,17 +1,24 @@
-//
-//  global_vars.h
-//  RuC
-//
-//  Created by Andrey Terekhov on 03/06/14.
-//  Copyright (c) 2014 Andrey Terekhov. All rights reserved.
-///Users/ant/Desktop/RuC/RuC/main.c
+/*
+ *	Copyright 2014 Andrey Terekhov
+ *
+ *	Licensed under the Apache License, Version 2.0 (the "License");
+ *	you may not use this file except in compliance with the License.
+ *	You may obtain a copy of the License at
+ *
+ *		http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *	Unless required by applicable law or agreed to in writing, software
+ *	distributed under the License is distributed on an "AS IS" BASIS,
+ *	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *	See the License for the specific language governing permissions and
+ *	limitations under the License.
+ */
+
+#pragma once
 
 #include <stdio.h>
+#include "defs.h"
 
-#ifndef RuC_global_vars_h
-#define RuC_global_vars_h
-
-#include "Defs.h"
 
 extern FILE *input;
 extern FILE *output;
@@ -39,10 +46,6 @@ extern int anst, anstdispl, ansttype, leftansttype;
 
 extern int bad_printf_placeholder;
 
-extern int cycle_jump_reduce;
-extern int check_nested_for;
-extern int enable_ind_var;
-extern int delay_slot;
-extern int cycle_condition_calculation;
+extern int cycle_jump_reduce, check_nested_for, enable_ind_var, delay_slot, cycle_condition_calculation, ind_var_reduction;
 
-#endif
+extern int defarr[MAXIDENTAB];
