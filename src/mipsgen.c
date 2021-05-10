@@ -2061,7 +2061,6 @@ void MPrimary()
             {
             	struct ind_var a;
             	a.id = tree[tc++];
-            	a.step = tree[tc++];
             	ind_var_info[ind_var_number++] = a;
             }
             	break;
@@ -2416,12 +2415,15 @@ void MStmt_gen()
                 {
                 	endtc = tc;
                 	tc = stmtref;
-                	tc++; // TBegin
                 	while (tree[tc] == TIndVar)
                 	{
 						breg = getreg();
-						mbox = BREG;
 						MExpr_gen(); // TIndVar
+						mbox = BF;
+						MExpr_gen(); // Шаг;
+						if (manst == CONST)
+							ind_var_info[ind_var_number - 1].step = num;
+						mbox = BREG;
 						MExpr_gen(); // TSliceident
 						ind_var_info[ind_var_number - 1].reg = areg;
                 	}
@@ -2458,10 +2460,7 @@ void MStmt_gen()
                 mbox = BV;
                 incrtc = incrref;
                 tc = stmtref;
-                if (enable_ind_var && is_last_nested)
-                	mcompstmt_gen();         // statement
-                else
-                	MStmt_gen();			// statement
+                MStmt_gen();			// statement
                 if (!(delay_slot && is_last_nested))
                 {
 					endtc = tc;

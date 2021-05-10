@@ -22,7 +22,7 @@
 #include "defs.h"
 
 
-const char *name = "/home/ivan-arhipych/RuC/tests/mips/optimizations/cycle_condition_calculation/test11.c";
+const char *name = "/home/ivan-arhipych/RuC/tests/mips/optimizations/ind_var/test5.c";
 
 
 // Определение глобальных переменных
@@ -56,9 +56,9 @@ int bad_printf_placeholder = 0;
 
 // optimization flags
 int cycle_jump_reduce = 1;
-int enable_ind_var = 0;
+int enable_ind_var = 1;
 int cycle_condition_calculation = 1;
-int delay_slot = 0;
+int delay_slot = 1;
 int check_nested_for = 0;
 int ind_var_reduction = 0;
 
