@@ -19,73 +19,6 @@
 
 
 int t, op, opnd, firststruct = 1;
-int tree_size;
-
-/**
- *	Индекс в таблице идентификаторов текущего итератора for
- *	@note мы оптимизируем только циклы с одним итератором
- */
-int iterator;
-
-/**
- *	Шаг, с которым увеличивается текущий итератор
- *	@note мы оптимизируем только инкременты с шагом-константой
- */
-int step;
-
-/**
- *	Это массив для выражений вырезок индуцированных переменных
- *	Формат записи: индекс начала предыдущей записи, флаг, была ли объявлена переменная, выражение для вырезки
- */
-int ind_vars[MAXIDENTAB];
-
-/**
- *	Текущий размер таблицы индуцированных переменных
- */
-int ind_vars_counter, ind_vars_start;
-
-/** Проверяет, одинаковые ли выражения для вырезок индуцированных переменных */
-int ind_vars_equal(int first_ind_var, int second_ind_var)
-{
-	int i = 1;
-
-	do
-	{
-		if (ind_vars[first_ind_var + i] != ind_vars[second_ind_var + i])
-			return 0;
-		i++;
-	} while (ind_vars[first_ind_var + i] != TExprend);
-	return 1;
-}
-
-int ind_var_add(int *record, int length)
-{
-	ind_vars[ind_vars_counter] = ind_vars_start;
-	ind_vars_start = ind_vars_counter++;
-
-	ind_vars[ind_vars_counter++] = 0; // Еще не была объявлена
-	for (int i = 0; i < length; i++)
-	{
-		ind_vars[ind_vars_counter++] = record[i];
-	}
-
-	// Checking duplicates
-	int old = ind_vars[ind_vars_start];
-	while (old)
-	{
-		if (ind_vars_equal(ind_vars_start + 1, old + 1))
-		{
-			ind_vars_counter = ind_vars_start;
-			ind_vars_start = ind_vars[ind_vars_start];
-			return old + 1;
-		}
-		else
-			old = ind_vars[old];
-	}
-
-	return ind_vars_start + 1;
-}
-
 
 
 extern void tablesandtree();
@@ -95,44 +28,6 @@ static int mcopy()
 {
 //    printf("tc= %i tree[tc]= %i\n", tc, tree[tc]);
     return mtree[mtc++] = tree[tc++];
-}
-
-void insert_tree(int index, int op)
-{
-	for (int i = tree_size; i >= index; i--)
-	{
-		tree[i+1] = tree[i];
-		// Если есть еще затронутые циклы for, то им нужно сдвинуть ссылки на дерево
-		// Костыль, но в будущих итерациях эта функция не понадобится, поэтому пока останется так
-		if (tree[i+1] == TFor)
-		{
-			tree[i+2+check_nested_for]++;
-			tree[i+3+check_nested_for]++;
-			tree[i+4+check_nested_for]++;
-			tree[i+5+check_nested_for]++;
-		}
-	}
-
-	tree[index] = op;
-	tree_size++;
-}
-
-void remove_tree(int index)
-{
-	tree_size--;
-	for (int i = index; i < tree_size; i++)
-	{
-		// Если есть еще затронутые циклы for, то им нужно сдвинуть ссылки на дерево
-		// Костыль, но в будущих итерациях эта функция не понадобится, поэтому пока останется так
-		if (tree[i+1] == TFor)
-		{
-			tree[i+2+check_nested_for]--;
-			tree[i+3+check_nested_for]--;
-			tree[i+4+check_nested_for]--;
-			tree[i+5+check_nested_for]--;
-		}
-		tree[i] = tree[i+1];
-	}
 }
 
 int munop(int t)  // один операнд, возвращает n+1, где n = числу параметров
@@ -294,172 +189,6 @@ int operand();
 void mstatement();
 
 void mblock();
-
-void mark_nested_for()
-{
-	int flag_nested_for_ref = tc;
-	int temp_tc = tc + 1;
-	while (tree[temp_tc] != TForEnd)
-	{
-		if (tree[temp_tc] == TFor)
-		{
-			return;
-		}
-		temp_tc++;
-	}
-
-	if (tree[temp_tc] == TForEnd)
-		tree[flag_nested_for_ref] = 1;
-}
-
-int satistifies_ind_var_pattern(int t)
-{
-	// В рамках оптимизации индуцированных переменных мы оптимизируем только
-	// инкременты вида i++, i--, ++i, --i, i += const и i -= const
-	// Если выражение совпадает с паттерном, то в переменную iterator будет записан id переменной,
-	// а в step - шаг увеличения/уменьшения
-
-	if (tree[t] != TIdent)
-		return 0;
-
-	// Далее только варианты с tree[t] == TIdent
-	if ((tree[t + 2] == POSTINC || tree[t + 2] == INC || tree[t + 2] == POSTDEC || tree[t + 2] == DEC) && tree[t + 3] == TExprend)
-	{
-		// i++ or ++i
-		iterator = tree[t + 1];
-		step = (tree[t + 2] == POSTINC || tree[t + 2] == INC) ? 1 : -1;
-		return 1;
-	}
-	else if (tree[t + 2] == TConst && (tree[t + 4] == PLUSASS || tree[t + 4] == MINUSASS) && tree[t + 3] == TExprend)
-	{
-		// i += const or i -= const
-		iterator = tree[t + 1];
-		step = tree[t + 3] * (tree[t + 4] == PLUSASS ? 1 : -1);
-		return 1;
-	}
-
-	return 0;
-}
-
-/** Возвращает длину записи вырезки, если подходит, иначе 0 */
-int satistifies_ind_slice_pattern(const int slice_start)
-{
-	int i = slice_start;
-
-	// Для начала нужно проверить, что это вырезка из массива
-	if (tree[i] != TSliceident)
-		return 0;
-
-	i += 3;
-	// Если это вырезка константой a[const]
-	if (tree[i] == TConst && tree[i+2] == TExprend)
-		i += 3;
-	// Если это вырезка идентификатором a[identifier]
-	else if (tree[i] == TIdenttoval && tree[i+2] == TExprend)
-		// TODO: вставить сюда проверку постоянства tree[i+1] или равенства итератору
-		i += 3;
-	// Если это вырезка выражением a[identifier ± const]
-	else if (tree[i] == TIdenttoval && tree[i+2] == TConst && (tree[i+4] == LPLUS || tree[i+4] == LMINUS) && tree[i+5] == TExprend)
-		// TODO: вставить сюда проверку постоянства tree[i+1] или равенства итератору
-		i += 6;
-	else
-		return 0;
-
-	// Здесь мы не проверяем правильность постоения дерева, доверяем парсеру
-	while (tree[i] == TSlice)
-	{
-		// Пропускаем поля с доп. информацией
-		i += 2;
-
-		// Если это вырезка константой a[const]
-		if (tree[i] == TConst && tree[i+2] == TExprend)
-			i += 3;
-		// Если это вырезка идентификатором a[identifier]
-		else if (tree[i] == TIdenttoval && tree[i+2] == TExprend)
-			// TODO: вставить сюда проверку постоянства tree[i+1] или равенства итератору
-			i += 3;
-		// Если это вырезка выражением a[identifier ± const]
-		else if (tree[i] == TIdenttoval && tree[i+2] == TConst && (tree[i+4] == LPLUS || tree[i+4] == LMINUS) && tree[i+5] == TExprend)
-			// TODO: вставить сюда проверку постоянства tree[i+1] или равенства итератору
-			i += 6;
-		else
-			return 0;
-	}
-
-	return i - slice_start;
-}
-
-void opt_for_statement()
-{
-	mcopy();
-	int has_nested_for = 1;
-	if (check_nested_for)
-	{
-		mark_nested_for();
-		has_nested_for = 1 - tree[tc];
-		mcopy();
-	}
-
-	int fromref = mcopy();
-	int condref = mcopy();
-	int incrref = mcopy();
-	int tc_stmtref = tree[tree[tc]] == TBegin ? tree[tc] + 1: tree[tc];
-	/*int stmtref = */mcopy(); // Эта переменная вообще не нужна
-
-	if (fromref)
-		mexpr();
-	if (condref)
-		mexpr();
-	if (incrref)
-		mexpr();
-  
-	if (enable_ind_var && !has_nested_for && incrref && satistifies_ind_var_pattern(incrref))
-	{
-		// Если инкремент удовлетворяет паттерну, и нет вложенных циклов, то алгоритм оптимизации следующий:
-		// (это делается за отдельный проход по телу цикла)
-		// Если внутри statement существует вырезка, удовлетворяющая условию, то по текущему значению mtc
-		// создаем узлы TIndVar, а вместо вырезок пишем TSliceInd
-		// TODO: Также после цикла необходимо добавить IndVar += step x sizeof(element)
-		ind_vars_counter = 3; ind_vars_start = 1;
-		for (int local_tc = tc; tree[local_tc] != TForEnd; local_tc++)
-		{
-			int slice_length = satistifies_ind_slice_pattern(local_tc);
-			if (slice_length > 0)
-			{
-				// Добавляем в массив переменных вырезку
-				int ind_var_number = ind_var_add(&tree[local_tc], slice_length);
-
-				// Если такой еще не было
-				if (ind_vars[ind_var_number] == 0)
-				{
-					// То добавляем узел TIndVar с этой вырезкой в tree
-					insert_tree(tc_stmtref, TIndVar);
-					insert_tree(tc_stmtref+1, ind_var_number);
-					insert_tree(tc_stmtref+2, step); // Это значение, на которое увеличивается инкремент
-					local_tc += 3;
-					// Копируем выражение для вырезки
-					for (int i = 0; i < slice_length; i++)
-					{
-						insert_tree(tc_stmtref + 3 + i, tree[local_tc + i]);
-						local_tc++;
-					}
-					// Добавляем в конец узла TIndVar узел TExprend как признак конца
-					//insert_tree(tc_stmtref + 3 + slice_length, TExprend);
-					// Помечаем, что этот узел уже был
-					ind_vars[ind_var_number] = 1;
-				}
-
-				// Затем заменяем вырезку в оригинальном дереве на TSliceInd
-				tree[local_tc] = TSliceInd;
-				tree[local_tc + 1] = ind_var_number;
-				for (int i = 2; i < slice_length; i++)
-					remove_tree(local_tc + 2);
-			}
-		}
-	}
-
-	mstatement();
-}
 
 void mstatement()
 {
@@ -636,11 +365,6 @@ int operand()
 			mexpr();
         }
     }
-	else if (t == TSliceInd)
-	{
-		mcopy();
-		mcopy();         	 // ind var number
-	}
     else if (t == TCall1)
     {
         int npar;
@@ -762,8 +486,7 @@ void mblock()
 {
     int i, n, all;
     do
-    {
-		switch (tree[tc])
+    {        switch (tree[tc])
         {
             case TFuncdef:
             {
@@ -797,14 +520,6 @@ void mblock()
                     init();
                 break;
             }
-			case TIndVar:
-			{
-				mcopy();
-				mcopy();
-				mcopy();
-				operand();
-				break;
-			}
             case NOP:
                 mcopy();     // NOP
                 break;
@@ -823,12 +538,8 @@ void mblock()
 
 void mipsopt()
 {
-	tree_size = tc;
     sp = -1;
     tc = 0;
     mtc = 0;
-	ind_vars[1] = 0;
-	ind_vars[2] = 0;
-	ind_vars[3] = TExprend;
     mblock();
 }
