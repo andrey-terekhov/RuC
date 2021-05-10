@@ -184,8 +184,7 @@ void tablesandtree()
 				fprintf(output, "TForEnd\n");
 				break;
 			case TIndVar:
-				fprintf(output, "TIndVar number = %i, step = %i\n", tree[i], tree[i+1]);
-				i += 2;
+				fprintf(output, "TIndVar number = %i\n", tree[i++]);
 				break;
 			case TSliceInd:
 				fprintf(output, "TSliceInd %i\n", tree[i++]);

@@ -1529,6 +1529,7 @@ void decl_id(int decl_type)    // вызывается из block и extdecl, т
     
     if (next == LEFTSQBR)      // это определение массива (может быть многомерным)
     {
+		defarr[identab[oldid+3]] = tc;
         totree(TDeclarr);
         adN = tc++;
         elem_len = szof(decl_type);

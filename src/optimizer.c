@@ -97,6 +97,7 @@ int ind_var_add(int *record, int length)
 
 void mtotree(int op)
 {
+	index_correction++;
 	mtree[mtc++] = op;
 }
 
@@ -104,7 +105,7 @@ static int mcopy()
 {
 	// Пропускаем все узлы TSkip, которые встретим
 	while (tree[tc] == TSkip) index_correction--, tc++;
-	
+
 	// Правим ссылки TFor
 	if (tree[tc] == TFor)
 	{
@@ -113,7 +114,7 @@ static int mcopy()
 		tree[tc+4+check_nested_for] += index_correction;
 		tree[tc+5+check_nested_for] += index_correction;
 	}
-	
+
 	// Копируем узел
 	return mtree[mtc++] = tree[tc++];
 }
@@ -141,7 +142,7 @@ int check_constant_identifier(int id)
 	// Начинаем проверку с условия выхода из цикла,
 	// так как в инициализации можно менять значение этой переменной
 	int local_tc = tree[for_start + check_nested_for + 2];
-	
+
 	while (tree[local_tc] != TForEnd)
 	{
 		if (tree[local_tc] == TIdent && tree[local_tc+1] == id)
@@ -167,16 +168,16 @@ int check_constant_identifier(int id)
 				case MINUSASS   + 1000:
 				case MULTASS    + 1000:
 				case DIVASS     + 1000:
-						
+
 					return 0;
-					
+
 				default:
 					break;
 			}
 		}
 		else if (tree[local_tc] == TIdenttoaddr && tree[local_tc+1] == id)
 			return 0;
-		
+
 		local_tc++;
 	}
 	return 1;
@@ -206,20 +207,20 @@ int check_constant_expression(const int start_tc, const int end_tc)
 			case TCall1:
 			case TSliceident:
 				return 0;
-			
+
 			case TIdent:
 				// Если значение идентификатора не может измениться, то продолжаем
 				if (check_constant_identifier(tree[local_tc])) break;
 				// Иначе возвращаем 0
 				else return 0;
-				
+
 			default:
 				break;
 		}
-		
+
 		local_tc++;
 	}
-	
+
 	return 1;
 }
 
@@ -273,16 +274,16 @@ int check_controlling_expression(int start_tc, int end_tc)
 						mtotree(LLE + 1000);
 						break;
 				}
-				
+
 				// Ставим в левую часть индуктивную переменную
-				mtotree(TIdent); mtotree(iterator); mtotree(TExprend);
-				
+				mtotree(TIdent); mtotree(iterator);
+
 				// Бывшую левую часть без изменений копируем в правую часть
 				while (tc != end_tc-2) mcopy();
 				// А результат выдаст эта функция
 				return check_constant_expression(start_tc+1, end_tc-2);
 			}
-			
+
 		// Если это не выражение сравнения, то мы его не оптимизируем
 		default:
 			while (tc != end_tc) mcopy();
@@ -293,10 +294,10 @@ int check_controlling_expression(int start_tc, int end_tc)
 /**
  *	Проверить, подходит ли третья часть выражения для индуцированных переменных
  *	Подходят только i++, i--, ++i, --i, i += const, i -= const
+ *	TODO: надо еще проверить, что в теле и в условии окончания этой переменной не присваивается значение
  */
 int check_increment_expression(int start_tc, int end_tc)
 {
-	int result;
 	switch (tree[start_tc])
 	{
 		case POSTINC:
@@ -308,7 +309,7 @@ int check_increment_expression(int start_tc, int end_tc)
 				int op = (tree[start_tc] == POSTINC || tree[start_tc] == INC) ? INC : DEC;
 				iterator = tree[start_tc+2];
 				step = op == INC ? 1 : -1;
-				result = 1;
+				return 1;
 			}
 			break;
 
@@ -318,22 +319,19 @@ int check_increment_expression(int start_tc, int end_tc)
 			{
 				iterator = tree[start_tc+2];
 				step = tree[start_tc+4] * (tree[start_tc] == PLUSASS + 1000 ? 1 : -1);
-				result = 1;
+				return 1;
 			}
 
 		default:
-			result = 0;
-			break;
+			return 0;
 	}
-
-	return result;
 }
 
 /**
  *	Проверяет, подходит ли вырезка для индуцированной переменной
  *	Возвращает длину вырезки, если подходит, иначе 0
  */
-int check_slice_expression(const int slice_start)
+int check_slice_expression(const int slice_start, int *dimension)
 {
 	int i = slice_start;
 	int was_iterator = 0;
@@ -342,6 +340,7 @@ int check_slice_expression(const int slice_start)
 	if (tree[i] != TSliceident)
 		return 0;
 
+	int dim = 1;
 	// Тут много избыточного кода, но сейчас не до этого
 	i += 3;
 	// Если это вырезка константой a[const]
@@ -356,7 +355,10 @@ int check_slice_expression(const int slice_start)
 			if (was_iterator)
 				return 0;
 			else
+			{
+				*dimension = dim;
 				was_iterator = 1;
+			}
 		}
 		else if (!check_constant_identifier(tree[i+1]))
 			return 0;
@@ -373,7 +375,10 @@ int check_slice_expression(const int slice_start)
 			if (was_iterator)
 				return 0;
 			else
+			{
+				*dimension = dim;
 				was_iterator = 1;
+			}
 		}
 		else if (!check_constant_identifier(tree[i+1]))
 			return 0;
@@ -386,6 +391,7 @@ int check_slice_expression(const int slice_start)
 	// Здесь мы не проверяем правильность постоения дерева, доверяем парсеру
 	while (tree[i] == TSlice)
 	{
+		dim++;
 		// Пропускаем поля с доп. информацией
 		i += 2;
 
@@ -401,7 +407,10 @@ int check_slice_expression(const int slice_start)
 				if (was_iterator)
 					return 0;
 				else
-					was_iterator = 1;
+				{
+				 *dimension = dim;
+				 was_iterator = 1;
+				}
 			}
 			else if (!check_constant_identifier(tree[i+1]))
 				return 0;
@@ -409,7 +418,7 @@ int check_slice_expression(const int slice_start)
 			i += 3;
 		}
 		// Если это вырезка выражением a[identifier ± const]
-		if ((tree[i] == LPLUS + 1000 || tree[i] == LMINUS + 1000)
+		else if ((tree[i] == LPLUS + 1000 || tree[i] == LMINUS + 1000)
 				 && tree[i+1] == TIdenttoval && tree[i+3] == TConst && tree[i+5] == TExprend)
 		{
 			// Проверка постоянства tree[i+1] или равенство итератору
@@ -418,7 +427,10 @@ int check_slice_expression(const int slice_start)
 				if (was_iterator)
 					return 0;
 				else
-					was_iterator = 1;
+				{
+				 *dimension = dim;
+				 was_iterator = 1;
+				}
 			}
 			else if (!check_constant_identifier(tree[i+1]))
 				return 0;
@@ -459,15 +471,14 @@ void optimize_for_statement()
 		// Копируем первую часть условия for без изменений
 		while (tc != end_inition) mcopy();
 	}
-	
+
 	// Сначала проверяем выражение инкремента, так как нам нужно знать итератор для вычисления условия перед циклом
 	if (increment)
 	{
 		// Проверяем, подходит ли выражение-инкремент для оптимизации индуцированных переменных
-		// Функция гарантирует, что tc будет указывать на начало следующего выражения
 		nice_increment = check_increment_expression(increment, statement);
 	}
-	
+
 	if (condition)
 	{
 		int end_condition = increment ? increment : statement;
@@ -480,8 +491,16 @@ void optimize_for_statement()
 	{
 		// Копируем без изменений
 		while (tc != statement) mcopy();
+
+		// Если инкремент хороший и реализуется постинкрементов/постдекрементом,
+		// то заменим его на преинкремент/предекремент
+		if (nice_increment)
+		{
+			if (mtree[increment] == POSTINC) mtree[increment] = INC;
+			else if (mtree[increment] == POSTDEC) mtree[increment] = DEC;
+		}
 	}
-	
+
 	// Ставим в дерево флажок, что можно оптимизировать условие
 	if (cycle_condition_calculation && nice_condition) tree[for_start+1] = 2;
 	// Оптимизация индуцированных переменных
@@ -495,7 +514,8 @@ void optimize_for_statement()
 				continue;
 			}
 
-			int slice_length = check_slice_expression(local_tc);
+			int dim; // Это измерение, по которому будет произведена вырезка
+			int slice_length = check_slice_expression(local_tc, &dim);
 			if (slice_length > 0)
 			{
 				// Добавляем в массив переменных вырезку
@@ -506,21 +526,48 @@ void optimize_for_statement()
 					// То добавляем узел TIndVar с этой вырезкой в mtree
 					mtotree(TIndVar);
 					mtotree(ind_var_number);
-					mtotree(step); // TODO: подсчет шага
+
+					// Подсчет шага для индуцированной переменной
+					int arrdef_tc = defarr[ind_vars[ind_var_number+2]];
+					int N = tree[arrdef_tc+1]; // Это сколько всего измерений у массива
+					if (N - dim == 0)
+					{
+						// Если это вырезка по последнему измерению, тогда важен только шаг инкремента
+						mtotree(TConst);
+						mtotree(step);
+					}
+					else
+					{
+						// Иначе нужно высчитывать размер шага
+						arrdef_tc += 2; // Сдвигаем индекс на 2 для пропуска TDeclarr
+						// Пропускаем выражения-инициализаторы для старших размерностей
+						for (int i = 0; i < dim; i++) do arrdef_tc++; while (tree[arrdef_tc] != TExprend);
+						// Это знаки умножений для подсчета шага
+						for (int i = 0; i < N - dim; i++) mtotree(LMULT + 1000);
+						mtotree(TConst);
+						mtotree(step);
+						for (int i = 0; i < N - dim; i++)
+						{
+							arrdef_tc++;
+							while (tree[arrdef_tc] != TExprend)
+							{
+								mtotree(tree[arrdef_tc]);
+								arrdef_tc++;
+							}
+						}
+					}
+
+					mtotree(TExprend); // Окончание выражения для шага
+
 					// Копируем выражение для вырезки
 					for (int i = 0; i < slice_length; i++)
 					{
 						mtotree(tree[local_tc + i]);
 					}
-					// Добавляем в конец узла TIndVar узел TExprend как признак конца
-					//insert_tree(tc_stmtref + 3 + slice_length, TExprend);
 					// Помечаем, что этот узел уже был
 					ind_vars[ind_var_number] = 1;
-					
-					// Коррекция индекса - мы добавили в дерево узлы
-					index_correction += 3 + slice_length;
 				}
-				
+
 				// Заменяем выражение для вырезки индуцированной переменной
 				// Делаем это в изначальном дереве, потом узлы TSkip пропустятся при копировании
 				tree[local_tc] = TSliceInd;
@@ -530,12 +577,12 @@ void optimize_for_statement()
 			}
 		}
 	}
-	
+
 	// Редукция индуктивной переменной
 	// Делаем эту оптимизацию только если можно посчитать условие заранее
 	if (ind_var_reduction && tree[for_start+check_nested_for] == 2)
 	{
-		// М.б. стоит в другом порядке, но тут просто для наглядности
+		// М.б. стоит деать присваивания в другом порядке, но тут просто для наглядности
 		mtree[for_start+check_nested_for] = 3;
 		// Идем по телу цилка и смотрим, используется ли она
 		int local_tc = tree[for_start+check_nested_for+4];
@@ -548,11 +595,11 @@ void optimize_for_statement()
 				mtree[for_start+check_nested_for] = 2;
 				break;
 			}
-			
+
 			local_tc++;
 		}
 	}
-	
+
 	// Просто копируем тело цикла
 	do mcopy(); while (tree[tc] != TForEnd);
 }
@@ -577,3 +624,5 @@ void optimize()
 		else
 			mcopy();
 }
+
+

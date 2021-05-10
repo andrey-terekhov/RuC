@@ -47,7 +47,9 @@ int tree[MAXTREESIZE], tc=0, mtree[MAXTREESIZE], mtc=0,
 int adcont, adbreak, adcase, adandor, switchreg;
 int predef[FUNCSIZE], prdf = -1, emptyarrdef;
 int gotost[1000], pgotost, regis;
-int anst, anstdispl, ansttype, leftansttype = -1;   
+int anst, anstdispl, ansttype, leftansttype = -1;
+
+int defarr[MAXIDENTAB];
 
 int bad_printf_placeholder = 0;
 
