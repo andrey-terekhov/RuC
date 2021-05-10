@@ -401,7 +401,7 @@ int operand()
     else if (t == TIdenttoval || t == TIdenttovalc || t == TIdenttovalf ||
              t == TIdenttoaddr || t == TConst || t == TConstc || t == TConstf)
     {
-        if (t != TConst && is_static_array == 1 && t != TExprend)
+        if (t != TConst && is_static_array == 1)
         	is_static_array = 0;
         mcopy();
         mcopy();
