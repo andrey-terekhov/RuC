@@ -460,6 +460,13 @@ void optimize_for_statement()
 		mcopy();
 	}
 
+	if (has_nested_for)
+	{
+		while (tree[tc] != TFor)
+			mcopy();
+		return;
+	}
+
 	int inition	  = mcopy();
 	int condition = mcopy();
 	int increment = mcopy();
@@ -502,7 +509,7 @@ void optimize_for_statement()
 	}
 
 	// Ставим в дерево флажок, что можно оптимизировать условие
-	if (cycle_condition_calculation && nice_condition) tree[for_start+1] = 2;
+	if (cycle_condition_calculation && !has_nested_for && nice_condition) tree[for_start+1] = 2;
 	// Оптимизация индуцированных переменных
 	if (enable_ind_var && !has_nested_for && nice_increment)
 	{
