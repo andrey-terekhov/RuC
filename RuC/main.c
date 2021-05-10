@@ -8,9 +8,9 @@
 //#define _CRT_SECURE_NO_WARNINGS
 
 const char * name =
-//"tests/Mishatest.c";
+//"tests/totest.c";
 
-"tests/mips/optimizations/ind_var/test2.c";
+"tests/mips/optimizations/cycle_jump_reduce/test11.c";
 
 //"../../../tests/Egor/Macro/for.c";
 
@@ -54,10 +54,10 @@ int anst, anstdispl, ansttype, leftansttype = -1;
 int bad_printf_placeholder = 0;
 
 // optimization flags
-int cycle_jump_reduce = 1;
-int enable_ind_var = 1;
-int cycle_condition_calculation = 1;
-int delay_slot = 1;
+int cycle_jump_reduce = 0;
+int enable_ind_var = 0;
+int cycle_condition_calculation = 0;
+int delay_slot = 0;
 int check_nested_for;
 
 extern void preprocess_file();
