@@ -1,0 +1,10 @@
+
+void main()
+{
+	register int i;
+
+	for (i = 0; i != 10; ++i)
+		printid(i);	
+}
+
+

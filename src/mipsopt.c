@@ -19,6 +19,7 @@
 
 
 int t, op, opnd, firststruct = 1;
+int is_static_array = 0;
 
 
 extern void tablesandtree();
@@ -326,6 +327,7 @@ int operand()
     }
     n1 = tc;
     t = tree[tc];
+    	
     if (t == TIdent)
     {
         mcopy();
@@ -399,6 +401,8 @@ int operand()
     else if (t == TIdenttoval || t == TIdenttovalc || t == TIdenttovalf ||
              t == TIdenttoaddr || t == TConst || t == TConstc || t == TConstf)
     {
+        if (t != TConst && is_static_array == 1)
+        	is_static_array = 0;
         mcopy();
         mcopy();
     }
@@ -502,6 +506,7 @@ void mblock()
             {
                 mcopy();     // TDeclarr
                 n= mcopy();
+                is_static_array = 1;
                 for (i=0; i<n; i++)
                     mexpr();
                 break;
@@ -509,9 +514,17 @@ void mblock()
             case TDeclid:
             {
                 mcopy();    // TDeclid
-                mcopy();    // displ
+                int ident = mcopy();    // displ
                 mcopy();    // type_elem
-                mcopy();    // N
+                int N = mcopy();    // N
+                if (N != 0)
+                {
+                    if (is_static_array == 1)
+                    	printf("Я массив с ident = %i статический\n", ident);
+                    else
+                    	printf("Я массив с ident = %i динамический\n", ident);
+                    is_static_array = 0;
+                }
                 all = mcopy();
                 mcopy();    // iniproc
                 mcopy();    // usual

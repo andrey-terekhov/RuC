@@ -668,6 +668,12 @@
 #define srav     67        // srav rd, rt, rs      rd = rt >> [rs]4:0        arithmetic
 #define jr       68        // jr rs                PC = rs
 #define jalr     69        // jalr rs
+
+#define bge		 80		   // bge rs, rt, label    if rs >= rt
+#define blt		 81		   // blt rs, rt, label    if rs < rt
+#define ble		 82		   // ble rs, rt, label    if rs <= rt
+#define bgt		 83		   // bgt rs, rt, label    if rs > rt
+
 #define add      92        // add rd, rs, rt       rd = rs + rt
 #define addu     93        // addu rd, rs, rt      rd = rs + rt              unsigned
 #define sub      94        // sub rd, rs, rt       rd = rs - rt
@@ -678,6 +684,7 @@
 #define nor      99        // nor rd, rs, rt       rd = ~(rs | rt)
 #define slt     102        // slt rd, rs, rt       rd = rs < rt ? 1 : 0
 #define sltu    103        // sltu rd, rs, rt      rd = rs < rt ? 1 : 0      unsigned
+
 
 //вещественные числа
 #define add_s   110
