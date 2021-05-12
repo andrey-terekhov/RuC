@@ -34,9 +34,10 @@
 #define BV     6     // значение не нужно
 
 // ответы
-#define AREG  1      // in areg register number
-#define AMEM  2      // in adispl and areg address
-#define CONST 3      // in num int or char const
+#define AREG  			1      // in areg register number
+#define AMEM  			2      // in adispl and areg address
+#define CONST 			3      // in num int or char const
+#define CONST_DOUBLE 	4	   // in numdouble double const
 
 #define DISPL0 80
 
@@ -356,6 +357,7 @@ void MASSExpr(int c, int leftanst, int leftdispl, int leftreg)
     if ((c > ASSR && c <= DIVASSR) || (c > ASSATR && c <= DIVASSATR))
     {
         int rez = mbox <= 2 ? breg : ft0;
+		
         if (leftanst == AMEM)
         {
             tocodeB(lwc1, ft1, leftdispl, leftreg);   // исходное значение
@@ -371,7 +373,7 @@ void MASSExpr(int c, int leftanst, int leftdispl, int leftreg)
             
             tocodeB(swc1, areg = rez, leftdispl, leftreg);
         }
-        else
+        else //if (leftanst == AREG)
         {
             // leftanst == AREG
             if (c == PLUSASSR || c == PLUSASSATR)
@@ -517,6 +519,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
     int oldbox = mbox, oldreg = breg, oldelselab = elselab;
     int leftanst, leftdispl, leftreg, leftnum, rightanst;
     int rez, lopnd, ropnd, flagreal = 2, flagreg = 0;
+	float leftnumf;
 //    printf("bin form tc= %i mbox= %i manst= %i\n", tc, mbox, manst);
     switch (c)
     {
@@ -672,6 +675,12 @@ void MBin_operation(int c)      // бинарная операция (два в�
                    rareg = mbox <= 2 ? breg : t0;
                    tocodeI(addi, rareg, d0, num);
                }
+				if (manst == CONST_DOUBLE)
+				{
+					rareg = mbox <= 2 ? breg : ft0;
+					tocodeLI_S(li_d, rareg, numf);
+				}
+					
                tocodeB(c == ASSR ? swc1 : sw, rareg, leftdispl, leftreg);
                if (mbox == BREG /*&& manst == AREG*/ && breg != rareg)
                    tocodemove(breg, rareg);
@@ -1059,6 +1068,7 @@ void MBin_operation(int c)      // бинарная операция (два в�
     leftdispl = adispl;
     leftreg = areg;
     leftnum = num;
+	leftnumf = numf;
 
     mbox = BF;
     MExpr_gen();                                        // правый операнд
@@ -1077,6 +1087,60 @@ void MBin_operation(int c)      // бинарная операция (два в�
 
     manst = AREG;
     areg = rez;
+	
+	// отдельно обработка вещественных чисел
+	if (leftanst == CONST_DOUBLE && rightanst == CONST_DOUBLE)
+	{
+		// constant propagation
+		switch (c) {
+			case LPLUSR:
+				numf = leftnumf + numf;
+				break;
+			case LMINUSR:
+				numf = leftnumf - numf;
+				break;
+			case LMULTR:
+				numf = leftnumf * numf;
+				break;
+			case LDIVR:
+				numf = leftnumf / numf;
+				break;
+			case EQEQR:
+				numf = leftnumf == numf;
+				break;
+			case NOTEQR:
+				numf = leftnumf != numf;
+				break;
+			case LLTR:
+				numf = leftnumf < numf;
+				break;
+			case LGTR:
+				numf = leftnumf > numf;
+				break;
+			case LLER:
+				numf = leftnumf <= numf;
+				break;
+			case LGER:
+				numf = leftnumf >= numf;
+				break;
+				
+			default:
+				break;
+		}
+		manst = CONST_DOUBLE;
+		return;
+	}
+	else if (leftanst == CONST_DOUBLE && rightanst == AREG)
+	{
+		tocodeLI_S(li_d, lopnd, numf);
+		leftanst = AREG;
+	}
+	else if (leftanst == AREG && rightanst == CONST_DOUBLE)
+	{
+		tocodeLI_S(li_d, ropnd, numf);
+		rightanst = AREG;
+	}
+	
     if (leftanst == CONST && rightanst == CONST)
     {
         switch (c)
@@ -1837,15 +1901,17 @@ void MPrimary()
                     }
                     else
                     {
-                        manst = AREG;
+//                        manst = AREG;
+						manst = CONST_DOUBLE;
                         areg = mbox <= 2 ? breg : ft0;
-                        tocodeLI_S(li_s, areg, numf);
+//                        tocodeLI_S(li_s, areg, numf);
                     }
                     break;
             case TConstd:
             	areg = mbox <= 2 ? breg : ft0;
                 memcpy(&numdouble, &tree[tc], sizeof(double));
                 tc += 2;
+				manst = CONST_DOUBLE;
                 tocodeLI_S(li_d, areg, numdouble);
             	manst = AREG;
                 break;
