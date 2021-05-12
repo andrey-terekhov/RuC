@@ -350,6 +350,7 @@ int check_slice_expression(const int slice_start, int *dimension)
 	else if (tree[i] == TIdenttoval && tree[i+2] == TExprend)
 	{
 		// Проверка постоянства tree[i+1] или равенство итератору
+		printf("%i %i", tree[i+1], iterator);
 		if (tree[i+1] == iterator)
 		{
 			if (was_iterator)
@@ -450,7 +451,8 @@ void optimize_for_statement()
 	int nice_condition = 0;
 	int nice_increment = 0;
 	iterator = -1; // Чтобы не было пересечений
-	for_start = mtc;
+	for_start = tc;
+	int m_for_start = mtc;
 	mcopy(); // TFor
 
 	if (check_nested_for)
@@ -591,16 +593,16 @@ void optimize_for_statement()
 	if (ind_var_reduction && tree[for_start+check_nested_for] == 2)
 	{
 		// М.б. стоит деать присваивания в другом порядке, но тут просто для наглядности
-		mtree[for_start+check_nested_for] = 3;
+		mtree[m_for_start+check_nested_for] = 3;
 		// Идем по телу цилка и смотрим, используется ли она
-		int local_tc = tree[for_start+check_nested_for+4];
+		int local_tc = tree[m_for_start+check_nested_for+4];
 		while (tree[local_tc] != TForEnd)
 		{
 			if ((tree[local_tc] == TIdent || tree[local_tc] == TIdenttoval || tree[local_tc] == TIdenttoaddr)
 				&& tree[local_tc+1] == iterator)
 			{
 				// Нельзя редуцировать переменную
-				mtree[for_start+check_nested_for] = 2;
+				mtree[m_for_start+check_nested_for] = 2;
 				break;
 			}
 
