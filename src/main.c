@@ -22,7 +22,8 @@
 #include "defs.h"
 
 
-const char *name = "/home/ivan-arhipych/RuC/tests/mips/optimizations/ind_var/test_dyn2.c";
+const char *name = //"/home/ivan-arhipych/RuC/tests/mips/optimizations/ind_var/test_dyn2.c";
+		"/home/ivan-arhipych/RuC/tests/mips/float.c";
 
 
 // Определение глобальных переменных
