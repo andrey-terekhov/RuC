@@ -2492,7 +2492,12 @@ void MStmt_gen()
                 if (enable_ind_var)
                 {
                 	for (int i = 0; i < ind_var_number; i++)
-                		tocodeI(addi, ind_var_info[i].reg, ind_var_info[i].reg, ind_var_info[i].step * 4);
+                	{
+                		if (ind_var_info[i].step == 1)
+                			tocodeI(addi, ind_var_info[i].reg, ind_var_info[i].reg, ind_var_info[i].step * 4);
+                		else
+                			tocodeI(addi, ind_var_info[i].reg, ind_var_info[i].reg, -(ind_var_info[i].step + 1) * 4);
+                	}
                 }
                 MExpr_gen();         // cond
                 flag_jump_end_cycle = 0;
