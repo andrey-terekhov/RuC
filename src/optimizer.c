@@ -601,7 +601,6 @@ void optimize_for_statement()
 		mtree[m_for_start+check_nested_for] = 3;
 		// Идем по телу цилка и смотрим, используется ли она
 		int local_tc = body_tc;
-		printf("%i\n", local_tc);
 		while (local_tc != end_tc)
 		{
 			if ((mtree[local_tc] == TIdent || mtree[local_tc] == TIdenttoval || mtree[local_tc] == TIdenttoaddr)
