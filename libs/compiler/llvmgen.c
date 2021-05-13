@@ -15,6 +15,7 @@
  */
 
 #include "llvmgen.h"
+#include "codes.h"
 #include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
@@ -24,7 +25,7 @@
 #define MAX_ARRAY_DIMENSION		5
 #define MAX_ARRAY_DISPL			10000
 
-
+// TODO: нужно создать enum для типов и передавать его в функции to_code
 typedef enum ANSWER
 {
 	AREG,								/**< Ответ находится в регистре */
@@ -72,12 +73,12 @@ typedef struct information
 	// С другой стороны, очень удобный доступ по displ, так как оно известно при вырезках 
 	array_info arrays_info[MAX_ARRAY_DISPL];	/**< Информация о массивах. Доступ осуществляется по displ */
 	// TODO: может лучше enum, а не 1 и 0?
-	item_t flag_dynamic;						/**< Если в функции были динамические массивы, то 1, иначе 0 */
+	int was_dynamic;							/**< Если в функции были динамические массивы, то @c 1, иначе @c 0 */
 } information;
 
 
 static void expression(information *const info, node *const nd);
-static void block(information *const info, node *const nd, int mode);
+static void block(information *const info, node *const nd);
 
 
 static void operation_to_io(universal_io *const io, const item_t type)
@@ -283,17 +284,8 @@ static void check_type_and_branch(information *const info)
 	switch (info->answer_type)
 	{
 		case ACONST:
-		{
-			if (info->answer_const == 0)
-			{
-				to_code_unconditional_branch(info, info->label_else);
-			}
-			else
-			{
-				to_code_unconditional_branch(info, info->label_if);
-			}
-		}
-		break;
+			to_code_unconditional_branch(info, info->answer_const ? info->label_if : info->label_else);
+			break;
 		case AREG:
 		{
 			to_code_operation_reg_const(info, NOTEQ, info->answer_reg, 0);
@@ -997,7 +989,10 @@ static void statement(information *const info, node *const nd)
 	switch (node_get_type(nd))
 	{
 		case TBegin:
-			block(info, nd, 0);
+		{
+			block(info, nd);
+			node_set_next(nd); // TEnd
+		}
 		break;
 		case TIf:
 		{
@@ -1168,7 +1163,7 @@ static void statement(information *const info, node *const nd)
 			break;
 		case TReturnvoid:
 		{
-			if (info->flag_dynamic == 1)
+			if (info->was_dynamic == 1)
 			{
 				to_code_restore_stack(info);
 			}
@@ -1179,7 +1174,7 @@ static void statement(information *const info, node *const nd)
 		break;
 		case TReturnval:
 		{
-			if (info->flag_dynamic == 1)
+			if (info->was_dynamic == 1)
 			{
 				to_code_restore_stack(info);
 			}
@@ -1269,7 +1264,7 @@ static void init(information *const info, node *const nd)
 	}
 }
 
-static void block(information *const info, node *const nd, int mode)
+static void block(information *const info, node *const nd)
 {
 	node_set_next(nd); // TBegin
 	while (node_get_type(nd) != TEnd)
@@ -1312,12 +1307,17 @@ static void block(information *const info, node *const nd, int mode)
 
 				if (N == 0) // обычная переменная int a; или struct point p;
 				{
+					// TODO: может switch сделать, когда больше типов добавляться будет
 					if (elem_type == mode_integer)
 					{
 						uni_printf(info->io, " %%var.%" PRIitem " = alloca i32, align 4\n", displ);
-						info->variable_location = LMEM;
-						info->request_reg = displ;
 					}
+					else if (elem_type == mode_float)
+					{
+						uni_printf(info->io, " %%var.%" PRIitem " = alloca double, align 4\n", displ);
+					}
+					info->variable_location = LMEM;
+					info->request_reg = displ;
 				}
 				else // массивы
 				{
@@ -1329,12 +1329,12 @@ static void block(information *const info, node *const nd, int mode)
 					else
 					{
 						// TODO: нужно ещё сделать восстановление стека после выделения памяти
-						if (info->flag_dynamic == 0)
+						if (info->was_dynamic == 0)
 						{
 							to_code_save_stack(info);
 						}
 						to_code_alloc_array_dynamic(info, displ);
-						info->flag_dynamic = 1;
+						info->was_dynamic = 1;
 					}	
 				}
 
@@ -1355,11 +1355,6 @@ static void block(information *const info, node *const nd, int mode)
 				break;
 		}
 	}
-
-	if (mode != -1)
-	{
-		node_set_next(nd); // TEnd
-	}
 }
 
 static int codegen(universal_io *const io, syntax *const sx)
@@ -1374,7 +1369,7 @@ static int codegen(universal_io *const io, syntax *const sx)
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
-	info.flag_dynamic = 0;
+	info.was_dynamic = 0;
 
 	node root = node_get_root(&sx->tree);
 	while (node_set_next(&root) == 0)
@@ -1401,14 +1396,14 @@ static int codegen(universal_io *const io, syntax *const sx)
 				uni_printf(info.io, ") {\n");
 
 				node_set_next(&root);
-				block(&info, &root, -1);
+				block(&info, &root);
 				uni_printf(info.io, "}\n\n");
 
-				if (info.flag_dynamic == 1)
+				if (info.was_dynamic == 1)
 				{
 					to_declare_stack_functions = 1;
 				}
-				info.flag_dynamic = 0;
+				info.was_dynamic = 0;
 			}
 			break;
 			case TEnd:
@@ -1444,6 +1439,7 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	{
 		return -1;
 	}
+	tree_print("new1.txt", &(sx->tree));
 
 	return codegen(io, sx);
 }
