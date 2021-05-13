@@ -350,7 +350,6 @@ int check_slice_expression(const int slice_start, int *dimension)
 	else if (tree[i] == TIdenttoval && tree[i+2] == TExprend)
 	{
 		// Проверка постоянства tree[i+1] или равенство итератору
-		printf("%i %i", tree[i+1], iterator);
 		if (tree[i+1] == iterator)
 		{
 			if (was_iterator)
@@ -588,6 +587,12 @@ void optimize_for_statement()
 		}
 	}
 
+	int body_tc = mtc;
+
+	// Просто копируем тело цикла
+	do mcopy(); while (tree[tc] != TForEnd);
+	int end_tc = mtc;
+
 	// Редукция индуктивной переменной
 	// Делаем эту оптимизацию только если можно посчитать условие заранее
 	if (ind_var_reduction && tree[for_start+check_nested_for] == 2)
@@ -595,11 +600,11 @@ void optimize_for_statement()
 		// М.б. стоит деать присваивания в другом порядке, но тут просто для наглядности
 		mtree[m_for_start+check_nested_for] = 3;
 		// Идем по телу цилка и смотрим, используется ли она
-		int local_tc = tree[m_for_start+check_nested_for+4];
-		while (tree[local_tc] != TForEnd)
+		int local_tc = body_tc;
+		while (local_tc != end_tc)
 		{
-			if ((tree[local_tc] == TIdent || tree[local_tc] == TIdenttoval || tree[local_tc] == TIdenttoaddr)
-				&& tree[local_tc+1] == iterator)
+			if ((mtree[local_tc] == TIdent || mtree[local_tc] == TIdenttoval || mtree[local_tc] == TIdenttoaddr)
+				&& mtree[local_tc+1] == iterator)
 			{
 				// Нельзя редуцировать переменную
 				mtree[m_for_start+check_nested_for] = 2;
@@ -609,9 +614,6 @@ void optimize_for_statement()
 			local_tc++;
 		}
 	}
-
-	// Просто копируем тело цикла
-	do mcopy(); while (tree[tc] != TForEnd);
 }
 
 
