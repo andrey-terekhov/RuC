@@ -240,20 +240,12 @@ static void to_code_alloc_array_static(information *const info, item_t id)
 		uni_printf(info->io, "[%" PRIitem " x ", info->arrays_info[id].borders[i]);
 	}
 	uni_printf(info->io, "i32");
+
 	for (item_t i = 0; i < info->arrays_info[id].dimention; i++)
 	{
 		uni_printf(info->io, "]");
 	}
 	uni_printf(info->io, ", align 4\n");
-}
-
-static void to_code_save_stack(information *const info)
-{
-	// команды сохранения состояния стека
-	uni_printf(info->io, " %%dyn = alloca i8*, align 4\n");
-	uni_printf(info->io, " %%.%" PRIitem " = call i8* @llvm.stacksave()\n", info->register_num);
-	uni_printf(info->io, " store i8* %%.%" PRIitem ", i8** %%dyn, align 4\n", info->register_num);
-	info->register_num++;
 }
 
 static void to_code_alloc_array_dynamic(information *const info, item_t id)
@@ -270,7 +262,16 @@ static void to_code_alloc_array_dynamic(information *const info, item_t id)
 	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca i32, i32 %%.%" PRIitem ", align 4\n", id, to_alloc);	
 }
 
-static void to_code_restore_stack(information *const info)
+static void to_code_stack_save(information *const info)
+{
+	// команды сохранения состояния стека
+	uni_printf(info->io, " %%dyn = alloca i8*, align 4\n");
+	uni_printf(info->io, " %%.%" PRIitem " = call i8* @llvm.stacksave()\n", info->register_num);
+	uni_printf(info->io, " store i8* %%.%" PRIitem ", i8** %%dyn, align 4\n", info->register_num);
+	info->register_num++;
+}
+
+static void to_code_stack_load(information *const info)
 {
 	// команды восстановления состояния стека
 	uni_printf(info->io, " %%.%" PRIitem " = load i8*, i8** %%dyn, align 4\n", info->register_num);
@@ -1165,7 +1166,7 @@ static void statement(information *const info, node *const nd)
 		{
 			if (info->was_dynamic == 1)
 			{
-				to_code_restore_stack(info);
+				to_code_stack_load(info);
 			}
 
 			node_set_next(nd);
@@ -1176,7 +1177,7 @@ static void statement(information *const info, node *const nd)
 		{
 			if (info->was_dynamic == 1)
 			{
-				to_code_restore_stack(info);
+				to_code_stack_load(info);
 			}
 
 			node_set_next(nd);
@@ -1331,7 +1332,7 @@ static void block(information *const info, node *const nd)
 						// TODO: нужно ещё сделать восстановление стека после выделения памяти
 						if (info->was_dynamic == 0)
 						{
-							to_code_save_stack(info);
+							to_code_stack_save(info);
 						}
 						to_code_alloc_array_dynamic(info, displ);
 						info->was_dynamic = 1;
