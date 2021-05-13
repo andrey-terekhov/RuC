@@ -473,7 +473,6 @@ void optimize_for_statement()
 	int condition = mcopy() - index_correction;
 	int increment = mcopy() - index_correction;
 	int statement = mcopy() - index_correction;
-	int body_tc = statement;
 
 	if (inition)
 	{
@@ -588,10 +587,11 @@ void optimize_for_statement()
 		}
 	}
 
-	body_tc = mtc;
+	int body_tc = mtc;
 
 	// Просто копируем тело цикла
 	do mcopy(); while (tree[tc] != TForEnd);
+	int end_tc = mtc;
 
 	// Редукция индуктивной переменной
 	// Делаем эту оптимизацию только если можно посчитать условие заранее
@@ -602,7 +602,7 @@ void optimize_for_statement()
 		// Идем по телу цилка и смотрим, используется ли она
 		int local_tc = body_tc;
 		printf("%i\n", local_tc);
-		while (mtree[local_tc] != TForEnd)
+		while (local_tc != end_tc)
 		{
 			if ((mtree[local_tc] == TIdent || mtree[local_tc] == TIdenttoval || mtree[local_tc] == TIdenttoaddr)
 				&& mtree[local_tc+1] == iterator)
