@@ -3,91 +3,58 @@
 #	*****************
 #	*	compiling	*	—	required compiling stage
 #	*****************
-#	*				* \
-#	*****************	—	optional custom stages
-#	*				* /
+#	*				*
+#	*		...		*	—	optional custom stages
+#	*				*
 #	*****************
-#	*	execution	*	—	required exec stage, if no need set to not supported
+#	*	execution	*	—	required exec stage, if no need set to unsupported
 #	*****************
 #
 #	—————————————————————————————————
-#	| 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |	—	binary representation of exit code
+#	| 0 | 0 | 0 | 0 | 0 | 0 | 1 | 1 |	—	binary representation of exit code
 #	—————————————————————————————————
-#	  \   /   \   /   \   /   \   /
-#		|		|		|		|
-#		 e		 s		 f		 c
-#		  x		  n		  s		  o
-#		   e	   d	   t	   m
-#			c						p
+#	  \					  /	  \	  /
+#		—————————————————		—
+#		   stage number		exit code
 #
 #	0b00 == 0	—	success code
 #	0b01 == 1	—	failure code
 #	0b10 == 2	—	timeout code
-#	0b11 == 3	—	not supported
+#	0b11 == 3	—	unsupported code
 
 
 init()
 {
-	exit_code=1
-	vm_exec=export.txt
-
-	vm_release=master
-	output_time=0.0
-	wait_for=2
-
-	dir_install=./install
-	dir_test=../tests
-	dir_error=../tests/errors
-	dir_exec=../tests/executable
-
-	subdir_error=errors
-	subdir_warning=warnings
-	subdir_include=include
-
-	while ! [[ -z $1 ]]
-	do
-		case $1 in
-			-h|--help)
-				echo -e "Usage: ./${0##*/} [KEY] ..."
-				echo -e "Description:"
-				echo -e "\tThis script tests all files from \"$dir_test\" directory."
-				echo -e "\tFolder \"$dir_error\" should contain tests with expected error."
-				echo -e "\tExecutable tests should be in \"$dir_exec\" directory."
-				echo -e "\tTo ignore invalid tests output, use \"*/$subdir_warning/*\" subdirectory."
-				echo -e "\tFor tests with expected runtime error, use \"*/$subdir_error/*\" subdirectory."
-				echo -e "\tFor multi-file tests, use \"*/$subdir_include/*\" subdirectory."
-				echo -e "\tFailed tests for debug build only will be marked with \"(Debug)\"."
-				echo -e "Keys:"
-				echo -e "\t-h, --help\tTo output help info."
-				echo -e "\t-v, --virtual\tSet RuC virtual machine release."
-				echo -e "\t-w, --wait\tSet waiting time for timeout result (default = 2)."
-				exit 0
-				;;
-			-v|--virtual)
-				vm_release=$2
-				shift
-				;;
-			-w|--wait)
-				wait_for=$2
-				shift
-				;;
-		esac
-		shift
-	done
-
-	success=0
-	warning=0
-	failure=0
-	timeout=0
-
-	if [[ $OSTYPE == "darwin"* ]] ; then
-		runner="gtimeout $wait_for"
-	else
-		runner="timeout $wait_for"
-	fi
-
-	log=tmp
-	buf=buf
+	case $1 in
+		-h|--help)
+			echo -e "Usage: ./${0##*/} [KEY / COMPILER] ..."
+			echo -e "Description:"
+			echo -e "\tThis script build and execute RuC code on virtual machine."
+			echo -e "Keys:"
+			echo -e "\t-h, --help\tTo output help info."
+			echo -e "\t-t, --tag\tGet script tag."
+			echo -e "\t-s, --stage\tGet stage name by number."
+			exit 0
+			;;
+		-t|--tag)
+			echo -e "VM"
+			exit 0
+			;;
+		-s|--stage)
+			case $2 in
+				0)
+					echo -e "compiling"
+					;;
+				1)
+					echo -e "execution"
+					;;
+				*)
+					exit 1
+					;;
+			esac
+			exit 0
+			;;
+	esac
 }
 
 main()
