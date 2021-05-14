@@ -325,30 +325,37 @@ int node_remove(node *const nd, const size_t index)
 	if (index == 0)
 	{
 		child = node_get_child(nd, index);
-		if (node_get_amount(nd) == 1)
+		vector_set(nd->tree, ref_get_amount(nd), (item_t)node_get_amount(nd) - 1);
+
+		if (node_get_amount(nd) != 1)
 		{
-			
+			vector_set(nd->tree, ref_get_children(nd), vector_get(nd->tree, ref_get_next(&child)));
 		}
+#ifdef BUFFERING
 		else
 		{
-			vector_set(nd->tree, nd->index + 2 + node_get_argc(nd))
+			node_update(nd);
 		}
-		
+#endif
 	}
 	else
 	{
 		child = node_get_child(nd, index - 1);
-		const size_t reference = (size_t)vector_get(nd->tree, child.index - 2);
-		vector_set(nd->tree, child.index - 2, vector_get(nd->tree, reference - 2));
+		const size_t reference = (size_t)vector_get(nd->tree, ref_get_next(&child));
+		vector_set(nd->tree, ref_get_next(&child), vector_get(nd->tree, reference - 2));
 
 #ifdef BUFFERING
-	node_update(&child);
+		node_update(&child);
 #endif
 
 		child.index = reference;
+		vector_set(nd->tree, ref_get_amount(nd), (item_t)node_get_amount(nd) - 1);
 	}
-
-	vector_set(nd->tree, nd->index + 1 + node_get_argc(nd), node_get_amount(nd) - 1);
+	
+	if (node_get_amount(&child) == 0 && ref_get_children == vector_size(nd->tree) - 1)
+	{
+		vector_resize(nd->tree, ref_get_next(&child));
+	}
 
 	return 0;
 }
