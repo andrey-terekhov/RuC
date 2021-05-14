@@ -226,12 +226,12 @@ int node_set_type(node *const nd, const item_t type)
 		return -1;
 	}
 
-	if (nd->type == SIZE_MAX)
+	if (nd->index == 0)
 	{
 		return -2;
 	}
 
-	return vector_set(nd->tree, nd->type, type);
+	return vector_set(nd->tree, nd->index - 1, type);
 }
 
 int node_add_arg(node *const nd, const item_t arg)
@@ -264,17 +264,17 @@ int node_add_arg(node *const nd, const item_t arg)
 
 int node_set_arg(node *const nd, const size_t index, const item_t arg)
 {
-	if (!node_is_correct(nd) || index >= nd->argc)
+	if (!node_is_correct(nd) || index >= node_get_argc(nd))
 	{
 		return -1;
 	}
 
-	if (node_get_type(nd) == ITEM_MAX)
+	if (nd->index == 0)
 	{
 		return -2;
 	}
 
-	return vector_set(nd->tree, nd->argv + index, from_ref(arg));
+	return vector_set(nd->tree, nd->index + 1 + index, arg);
 }
 
 
