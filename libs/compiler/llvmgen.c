@@ -210,9 +210,16 @@ static inline void to_code_store_const(information *const info, item_t arg, item
 	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", arg, displ);
 }
 
-static inline void to_code_zext_to(information *const info, item_t arg)
+static inline void to_code_try_zext_to(information *const info)
 {
-	uni_printf(info->io, " %%.%" PRIitem " = zext i1 %%.%" PRIitem " to i32\n", info->register_num, arg);
+	if (info->answer_type != ALOGIC)
+	{
+		return;
+	}
+
+	uni_printf(info->io, " %%.%" PRIitem " = zext i1 %%.%" PRIitem " to i32\n", info->register_num, info->answer_reg);
+	info->answer_type = AREG;
+	info->answer_reg = info->register_num++;
 }
 
 static inline void to_code_label(information *const info, item_t label_num)
@@ -427,12 +434,7 @@ static void assignment_expression(information *const info, node *const nd)
 	info->variable_location = LFREE;
 	expression(info, nd);
 
-	if (info->answer_type == ALOGIC)
-	{
-		to_code_zext_to(info, info->answer_reg);
-		info->answer_type = AREG;
-		info->answer_reg = info->register_num++;
-	}
+	to_code_try_zext_to(info);
 
 	item_t result = info->answer_reg;
 
@@ -471,12 +473,7 @@ static void arithmetic_expression(information *const info, node *const nd)
 	info->variable_location = LFREE;
 	expression(info, nd);
 
-	if (info->answer_type == ALOGIC)
-	{
-		to_code_zext_to(info, info->answer_reg);
-		info->answer_type = AREG;
-		info->answer_reg = info->register_num++;
-	}
+	to_code_try_zext_to(info);
 
 	const answer_t left_type = info->answer_type;
 	const item_t left_reg = info->answer_reg;
@@ -485,12 +482,7 @@ static void arithmetic_expression(information *const info, node *const nd)
 	info->variable_location = LFREE;
 	expression(info, nd);
 
-	if (info->answer_type == ALOGIC)
-	{
-		to_code_zext_to(info, info->answer_reg);
-		info->answer_type = AREG;
-		info->answer_reg = info->register_num++;
-	}
+	to_code_try_zext_to(info);
 
 	const answer_t right_type = info->answer_type;
 	const item_t right_reg = info->answer_reg;
@@ -560,12 +552,7 @@ static void logic_expression(information *const info, node *const nd)
 	info->variable_location = LFREE;
 	expression(info, nd);
 
-	if (info->answer_type == ALOGIC)
-	{
-		to_code_zext_to(info, info->answer_reg);
-		info->answer_type = AREG;
-		info->answer_reg = info->register_num++;
-	}
+	to_code_try_zext_to(info);
 
 	const answer_t left_type = info->answer_type;
 	const item_t left_reg = info->answer_reg;
@@ -574,12 +561,7 @@ static void logic_expression(information *const info, node *const nd)
 	info->variable_location = LFREE;
 	expression(info, nd);
 
-	if (info->answer_type == ALOGIC)
-	{
-		to_code_zext_to(info, info->answer_reg);
-		info->answer_type = AREG;
-		info->answer_reg = info->register_num++;
-	}
+	to_code_try_zext_to(info);
 
 	const answer_t right_type = info->answer_type;
 	const item_t right_reg = info->answer_reg;
@@ -682,11 +664,7 @@ static void unary_operation(information *const info, node *const nd)
 			info->variable_location = LREG;
 			expression(info, nd);
 
-			if (info->answer_type == ALOGIC)
-			{
-				to_code_zext_to(info, info->answer_reg);
-				info->answer_reg = info->register_num++;
-			}
+			to_code_try_zext_to(info);
 
 			to_code_operation_const_reg(info, UNMINUS, 0, info->answer_reg);
 			info->answer_type = AREG;
