@@ -203,24 +203,57 @@ size_t node_save(const node *const nd)
 
 node node_load(vector *const tree, const size_t index)
 {
+	if (!vector_is_correct(tree) || index >= vector_size(tree))
+	{
+		return node_broken();
+	}
+
 	node nd = { tree, index };
-	return node_is_correct(&nd) ? nd : node_broken();
+	return nd;
 }
 
 int node_order(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index)
 {
-	node fst_child = node_get_child(fst, fst_index);
-	node snd_child = node_get_child(snd, snd_index);
-	if (!node_is_correct(&fst_child) || !node_is_correct(&snd_child) || fst->tree != snd->tree)
+	vector *const tree = fst->tree;
+	if (!node_is_correct(fst) || !node_is_correct(snd) || tree != snd->tree
+		|| fst_index >= node_get_amount(fst) || snd_index >= node_get_amount(snd))
 	{
 		return -1;
 	}
 
-	vector_swap(fst->tree, fst_index - 1, snd_index - 1);
-	vector_swap(fst->tree, fst_index + 2 + vector_get(fst->tree, fst_index + 1)
-		, snd_index + 2 + vector_get(fst->tree, snd_index + 1));
-	vector_swap(fst->tree, fst_index + 3 + vector_get(fst->tree, fst_index + 1)
-		, snd_index + 3 + vector_get(fst->tree, snd_index + 1));
+	size_t reference;
+
+	node fst_child;
+	if (fst_index == 0)
+	{
+		fst_child = node_get_child(fst, fst_index);
+		reference = fst->index + 3 + vector_get(tree, fst->index + 1);
+	}
+	else
+	{
+		fst_child = node_get_child(fst, fst_index - 1);
+		reference = fst_child.index - 1;
+		fst_child.index = vector_get(tree, reference);
+	}
+
+	node snd_child;
+	if (snd_index == 0)
+	{
+		snd_child = node_get_child(snd, snd_index);
+		vector_swap(tree, reference, snd->index + 3 + vector_get(tree, snd->index + 1));
+	}
+	else
+	{
+		snd_child = node_get_child(snd, snd_index - 1);
+		vector_swap(tree, reference, snd_child.index - 1);
+		snd_child.index = vector_get(tree, reference);
+	}
+
+	vector_swap(tree, fst_index - 1, snd_index - 1);
+	vector_swap(tree, fst_index + 2 + vector_get(tree, fst_index + 1)
+		, snd_index + 2 + vector_get(tree, snd_index + 1));
+	vector_swap(tree, fst_index + 3 + vector_get(tree, fst_index + 1)
+		, snd_index + 3 + vector_get(tree, snd_index + 1));
 
 	return 0;
 }
@@ -248,7 +281,5 @@ int node_remove(node *const nd, const size_t index)
 
 int node_is_correct(const node *const nd)
 {
-	return nd != NULL && vector_is_correct(nd->tree)
-		&& ((nd->index != 0 && nd->index + 3 + vector_get(nd->tree, nd->index + 1) < vector_size(nd->tree))
-			|| (nd->index == 0 && vector_size(nd->tree) > 0));
+	return nd != NULL && vector_is_correct(nd->tree);
 }
