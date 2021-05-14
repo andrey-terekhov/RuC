@@ -19,6 +19,21 @@
 //#include <stdlib.h>
 
 
+inline int is_negative(const item_t value)
+{
+	return value >> (8 * sizeof(item_t) - 1);
+}
+
+inline item_t from_negative(const item_t value)
+{
+#if ITEM_MIN == 0
+	return value != 0 ? ITEM_MAX - value + 1 : 0;
+#else
+	return -value;
+#endif
+}
+
+
 inline node node_broken()
 {
 	node nd = { NULL, SIZE_MAX };
@@ -123,12 +138,19 @@ node node_get_root(vector *const tree)
 
 node node_get_child(node *const nd, const size_t index)
 {
-	if (!node_is_correct(nd) || index >= nd->amount)
+	if (!node_is_correct(nd) || index >= node_get_amount(nd))
 	{
 		return node_broken();
 	}
 
-	return nd;
+	size_t child_index = ref_get_children(nd);
+	for (size_t i = 0; i < index; i++)
+	{
+		child_index = (size_t)vector_get(nd->tree, child_index - 2);
+	}
+
+	node child = { nd->tree, child_index };
+	return child;
 }
 
 node node_get_parent(node *const nd)
@@ -138,7 +160,14 @@ node node_get_parent(node *const nd)
 		return node_broken();
 	}
 
-	return nd;
+	item_t index = vector_get(nd->tree, ref_get_next(nd));
+	while (!is_negative(index) && index != 0)
+	{
+		index = vector_get(nd->tree, (size_t)index - 2);
+	}
+
+	node parent = { nd->tree, from_negative(index) };
+	return parent;
 }
 
 
