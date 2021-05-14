@@ -537,7 +537,9 @@ void optimize_for_statement()
 					mtotree(ind_var_number);
 
 					// Подсчет шага для индуцированной переменной
-					int arrdef_tc = defarr[ind_vars[ind_var_number+2]];
+					int arr_displ = ind_vars[ind_var_number+2];
+					int arrdef_tc = defarr[arr_displ];
+					int is_static = defarr[arr_displ+1];
 					int N = tree[arrdef_tc+1]; // Это сколько всего измерений у массива
 					if (N - dim == 0)
 					{
@@ -547,22 +549,35 @@ void optimize_for_statement()
 					}
 					else
 					{
-						// Иначе нужно высчитывать размер шага
-						arrdef_tc += 2; // Сдвигаем индекс на 2 для пропуска TDeclarr
-						// Пропускаем выражения-инициализаторы для старших размерностей
-						for (int i = 0; i < dim; i++) do arrdef_tc++; while (tree[arrdef_tc] != TExprend);
-						// Это знаки умножений для подсчета шага
-						for (int i = 0; i < N - dim; i++) mtotree(LMULT + 1000);
-						mtotree(TConst);
-						mtotree(step);
-						for (int i = 0; i < N - dim; i++)
+						if (is_static)
 						{
-							arrdef_tc++;
-							while (tree[arrdef_tc] != TExprend)
+							// Иначе нужно высчитывать размер шага
+							arrdef_tc += 2; // Сдвигаем индекс на 2 для пропуска TDeclarr
+							// Пропускаем выражения-инициализаторы для старших размерностей
+							for (int i = 0; i < dim; i++) do arrdef_tc++; while (tree[arrdef_tc] != TExprend);
+							// Это знаки умножений для подсчета шага
+							for (int i = 0; i < N - dim; i++) mtotree(LMULT + 1000);
+							mtotree(TConst);
+							mtotree(step);
+							for (int i = 0; i < N - dim; i++)
 							{
-								mtotree(tree[arrdef_tc]);
 								arrdef_tc++;
+								while (tree[arrdef_tc] != TExprend)
+								{
+									mtotree(tree[arrdef_tc]);
+									arrdef_tc++;
+								}
 							}
+						}
+						else
+						{
+							mtotree(LMULT + 1000);
+							mtotree(TConst);
+							mtotree(step);
+
+							mtotree(TDynArrBound);
+							mtotree(arr_displ);
+							mtotree(N - dim);
 						}
 					}
 

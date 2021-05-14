@@ -189,6 +189,10 @@ void tablesandtree()
 			case TSliceInd:
 				fprintf(output, "TSliceInd %i\n", tree[i++]);
 				break;
+			case TDynArrBound:
+				fprintf(output, "TDynArrBound displ=%i dim=%i\n", tree[i], tree[i+1]);
+				i+=2;
+				break;
             case TSwitch:
                 fprintf(output, "TSwitch\n");
                 break;
