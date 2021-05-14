@@ -66,15 +66,6 @@ node node_get_parent(node *const nd);
 
 
 /**
- *	Get amount of children
- *
- *	@param	nd			Node structure
- *
- *	@return	Amount of children
- */
-size_t node_get_amount(const node *const nd);
-
-/**
  *	Get type of node
  *
  *	@param	nd			Node structure
@@ -82,6 +73,15 @@ size_t node_get_amount(const node *const nd);
  *	@return	Node type, @c ITEM_MAX on failure
  */
 item_t node_get_type(const node *const nd);
+
+/**
+ *	Get amount of arguments
+ *
+ *	@param	nd			Node structure
+ *
+ *	@return	Amount of arguments
+ */
+size_t node_get_argc(const node *const nd);
 
 /**
  *	Get argument from node by index
@@ -92,6 +92,15 @@ item_t node_get_type(const node *const nd);
  *	@return	Argument, @c ITEM_MAX on failure
  */
 item_t node_get_arg(const node *const nd, const size_t index);
+
+/**
+ *	Get amount of children
+ *
+ *	@param	nd			Node structure
+ *
+ *	@return	Amount of children
+ */
+size_t node_get_amount(const node *const nd);
 
 
 /**
