@@ -519,6 +519,7 @@ void mblock()
                 int N = mcopy();    // N
                 if (N != 0)
                 {
+					defarr[identab[ident+3]+1] = is_static_array;
                     if (is_static_array == 1)
                     	printf("Я массив с ident = %i статический\n", ident);
                     else

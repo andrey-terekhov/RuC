@@ -415,8 +415,9 @@
 #define TForEnd     -351
 #define TIndVar     -352
 #define TSliceInd	-353
+#define TDynArrBound - 354
 // Это узел, который скипается при копировании дерева
-#define TSkip		-354
+#define TSkip		-355
 
 
 
