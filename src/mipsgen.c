@@ -129,12 +129,17 @@ int isregsf(int r)
 struct ind_var
 {
 	int id;
+	int is_static;
 	int step;
 	int reg;
 };
 
 struct ind_var ind_var_info[10];
 int ind_var_number;
+
+int cur_dyn_arr_info[5];	// информация текущего объявляемого массива
+int is_dyn;					// является ли текущий объявляемый массив динамическим
+int dyn_arr_info[10000][5]; // доступ к информации осуществляется по displ, хранятся смещение относительно gp, где в памяти хранится граница
 
 void merror(int type)
 {
@@ -2002,6 +2007,14 @@ void MPrimary()
                 tocodeLI_S(li_d, areg, numdouble);
             	manst = AREG;
                 break;
+            case TDynArrBound:
+            {
+            	int displ = tree[tc++], dim = tree[tc++];
+            	areg = mbox <= 2 ? breg : t1;
+            	manst = AREG;
+            	tocodeB(lw, areg, dyn_arr_info[displ][dim-1], gp);
+            }
+            	break;
             case TString:
             case TStringc:
             case TStringf:
@@ -2250,6 +2263,7 @@ void MDeclarr()
         MExpr_gen();
         if (manst == CONST)
         {
+        	is_dyn = 0;
             if (num < 0)
             {
                 tocodeI(addi, a0, d0, wrong_number_of_elems);
@@ -2262,6 +2276,10 @@ void MDeclarr()
         }
         else
         {
+        	// сохранение информации для оптимизации индуцированных переменных
+        	cur_dyn_arr_info[i] = displ;
+        	is_dyn = 1;
+        	
             tocodeJC(bgez, t0, "DECLARR", labnum);
             tocodeI(addi, a0, d0, wrong_number_of_elems);
             tocodeJ(jal, "ERROR", -1);
@@ -2434,7 +2452,20 @@ void MStmt_gen()
 						mbox = BF;
 						MExpr_gen(); // Шаг;
 						if (manst == CONST)
+						{
+							ind_var_info[ind_var_number - 1].is_static = 1;
 							ind_var_info[ind_var_number - 1].step = num;
+						}
+						else
+						{
+							tocodemove(t0 + 7, areg);
+							areg = t0 + 7;
+							tocodeI(addi, areg, areg, 1);
+							tocodeI(addi, t1, d0, 4);
+							tocodeR(mul, areg, areg, t1);
+							ind_var_info[ind_var_number - 1].is_static = 0;
+							ind_var_info[ind_var_number - 1].step = areg;
+						}
 						mbox = BREG;
 						MExpr_gen(); // TSliceident
 						ind_var_info[ind_var_number - 1].reg = areg;
@@ -2453,10 +2484,18 @@ void MStmt_gen()
                     else
                     {
                         tocodemove(left_reg_cond, cond_reg);
-                    	if (ind_var_info[0].step == 1)
-                    		tocodeI(addi, t1, d0, ind_var_info[0].step * 4);
-                    	else
-                    		tocodeI(addi, t1, d0, -(ind_var_info[0].step + 1) * 4);
+                        if (ind_var_info[0].is_static)
+                        {
+							if (ind_var_info[0].step == 1)
+								tocodeI(addi, t1, d0, ind_var_info[0].step * 4);
+							else
+								tocodeI(addi, t1, d0, -(ind_var_info[0].step + 1) * 4);
+                        }
+                        else
+                        {
+                        	tocodeI(addi, t1, d0, -4);
+                        	tocodeR(mul, t1, t1, ind_var_info[0].step);
+                        }
                     	tocodeR(mul, cond, cond, t1);
                     	tocodeR(add, cond, cond, ind_var_info[0].reg);
                     	left_reg_cond = ind_var_info[0].reg;
@@ -2520,10 +2559,17 @@ void MStmt_gen()
                 {
                 	for (int i = 0; i < ind_var_number; i++)
                 	{
-                		if (ind_var_info[i].step == 1)
-                			tocodeI(addi, ind_var_info[i].reg, ind_var_info[i].reg, ind_var_info[i].step * 4);
+                		if (ind_var_info[i].is_static)
+                		{
+							if (ind_var_info[i].step == 1)
+								tocodeI(addi, ind_var_info[i].reg, ind_var_info[i].reg, ind_var_info[i].step * 4);
+							else
+								tocodeI(addi, ind_var_info[i].reg, ind_var_info[i].reg, -(ind_var_info[i].step + 1) * 4);
+                		}
                 		else
-                			tocodeI(addi, ind_var_info[i].reg, ind_var_info[i].reg, -(ind_var_info[i].step + 1) * 4);
+                		{
+                			tocodeR(sub, ind_var_info[i].reg, ind_var_info[i].reg, ind_var_info[i].step);
+                		}
                 	}
                 }
                 MExpr_gen();         // cond
@@ -2973,6 +3019,11 @@ void MDeclid_gen()
     }
     else                                // Обработка массива int a[N1]...[NN] =
     {
+    	if (is_dyn) // сохранение информации о динамическом массиве
+    	{
+    		for (int i = 0; i < 5; i++)
+    			dyn_arr_info[identab[oldid + 3]][i] = cur_dyn_arr_info[i];
+    	}
         tocodeI(addi, a0, d0, all == 0 ? N : N-1);
         tocodeI(addi, a1, d0, element_len);
         tocodeI(addi, a2, d0, ardispl);
