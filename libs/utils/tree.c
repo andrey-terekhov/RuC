@@ -24,15 +24,6 @@ inline int is_negative(const item_t value)
 	return value >> (8 * sizeof(item_t) - 1);
 }
 
-inline item_t from_negative(const item_t value)
-{
-#if ITEM_MIN == 0
-	return value != 0 ? ITEM_MAX - value + 1 : 0;
-#else
-	return -value;
-#endif
-}
-
 
 inline node node_broken()
 {
@@ -166,7 +157,7 @@ node node_get_parent(node *const nd)
 		index = vector_get(nd->tree, (size_t)index - 2);
 	}
 
-	node parent = { nd->tree, from_negative(index) };
+	node parent = { nd->tree, ~index + 1 };
 	return parent;
 }
 
@@ -241,25 +232,22 @@ int node_add_arg(node *const nd, const item_t arg)
 		return -1;
 	}
 
-	if (node_get_type(nd) == ITEM_MAX)
+	if (node_get_amount(nd) != 0)
 	{
 		return -2;
 	}
 
-	if (nd->amount != 0)
-	{
-		return -3;
-	}
+	vector_set(nd->tree, ref_get_amount(nd), arg);
 
-	const int ret = nd->argv + nd->argc == vector_size(nd->tree)
-					? vector_add(nd->tree, from_ref(arg)) != SIZE_MAX ? 0 : -1
-					: -1;
-	if (!ret)
-	{
-		nd->argc++;
-	}
+#ifdef BUFFERING
+	vector_add(nd->tree, vector_get(nd, ref_get_next(nd)));
+	vector_set(nd->tree, ref_get_next(nd), 0);
+#else
+	vector_add(nd->tree, 0);
+#endif
 
-	return ret;
+	vector_set(nd->tree, nd->index, vector_get(nd->tree, nd->index) + 1);
+	return 0;
 }
 
 int node_set_arg(node *const nd, const size_t index, const item_t arg)
@@ -267,11 +255,6 @@ int node_set_arg(node *const nd, const size_t index, const item_t arg)
 	if (!node_is_correct(nd) || index >= node_get_argc(nd))
 	{
 		return -1;
-	}
-
-	if (nd->index == 0)
-	{
-		return -2;
 	}
 
 	return vector_set(nd->tree, nd->index + 1 + index, arg);

@@ -152,8 +152,7 @@ int node_set_type(node *const nd, const item_t type);
  *
  *	@return	@c  0 on success,
  *			@c -1 on failure,
- *			@c -2 on root,
- *			@c -3 on node with children
+ *			@c -2 on node with children
  */
 int node_add_arg(node *const nd, const item_t arg);
 
@@ -164,9 +163,7 @@ int node_add_arg(node *const nd, const item_t arg);
  *	@param	index		Argument number
  *	@param	arg			Node argument
  *
- *	@return	@c  0 on success,
- *			@c -1 on failure,
- *			@c -2 on root
+ *	@return	@c  0 on success, @c -1 on failure
  */
 int node_set_arg(node *const nd, const size_t index, const item_t arg);
 
