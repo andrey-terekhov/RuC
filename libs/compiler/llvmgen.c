@@ -15,7 +15,6 @@
  */
 
 #include "llvmgen.h"
-#include "codes.h"
 #include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
@@ -64,8 +63,8 @@ typedef struct information
 	item_t answer_const;						/**< Константа с ответом */
 	answer_t answer_type;						/**< Тип ответа */
 
-	item_t label_if;							/**< Метка if */
-	item_t label_else;							/**< Метка else */
+	item_t label_true;							/**< Метка перехода при true */
+	item_t label_false;							/**< Метка перехода при false */
 
 	array_info current_array_info;				/**< Информация о текущем объявляемом массиве */
 	// TODO: хороша ли такая форма хранения информации о массивах?
@@ -210,7 +209,7 @@ static inline void to_code_store_const(information *const info, item_t arg, item
 	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", arg, displ);
 }
 
-static inline void to_code_try_zext_to(information *const info)
+static void to_code_try_zext_to(information *const info)
 {
 	if (info->answer_type != ALOGIC)
 	{
@@ -292,7 +291,7 @@ static void check_type_and_branch(information *const info)
 	switch (info->answer_type)
 	{
 		case ACONST:
-			to_code_unconditional_branch(info, info->answer_const ? info->label_if : info->label_else);
+			to_code_unconditional_branch(info, info->answer_const ? info->label_true : info->label_false);
 			break;
 		case AREG:
 		{
@@ -300,7 +299,7 @@ static void check_type_and_branch(information *const info)
 			info->answer_reg = info->register_num++;
 		}
 		case ALOGIC:
-			to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
+			to_code_conditional_branch(info, info->answer_reg, info->label_true, info->label_false);
 			break;
 	}
 }
@@ -536,55 +535,7 @@ static void arithmetic_expression(information *const info, node *const nd)
 			case LOR:
 				info->answer_const = left_const | right_const;
 				break;
-		}
-		return;
-	}
 
-	info->answer_type = AREG;
-	info->answer_reg = info->register_num++;
-}
-// TODO: а нужна ли эта функция, очень похожа на arithmetic_expression
-static void logic_expression(information *const info, node *const nd)
-{
-	const item_t operation_type = node_get_type(nd);
-	node_set_next(nd);
-
-	info->variable_location = LFREE;
-	expression(info, nd);
-
-	to_code_try_zext_to(info);
-
-	const answer_t left_type = info->answer_type;
-	const item_t left_reg = info->answer_reg;
-	const item_t left_const = info->answer_const;
-
-	info->variable_location = LFREE;
-	expression(info, nd);
-
-	to_code_try_zext_to(info);
-
-	const answer_t right_type = info->answer_type;
-	const item_t right_reg = info->answer_reg;
-	const item_t right_const = info->answer_const;
-
-	if (left_type == AREG && right_type == AREG)
-	{
-		to_code_operation_reg_reg(info, operation_type, left_reg, right_reg);
-	}
-	else if (left_type == AREG && right_type == ACONST)
-	{
-		to_code_operation_reg_const(info, operation_type, left_reg, right_const);
-	}
-	else if (left_type == ACONST && right_type == AREG)
-	{
-		to_code_operation_const_reg(info, operation_type, left_const, right_reg);
-	}
-	else // if (left_type == ACONST && right_type == ACONST)
-	{
-		info->answer_type = ACONST;
-
-		switch (operation_type)
-		{
 			case EQEQ:
 				info->answer_const = left_const == right_const;
 				break;
@@ -607,7 +558,6 @@ static void logic_expression(information *const info, node *const nd)
 		return;
 	}
 
-	info->answer_type = ALOGIC;
 	info->answer_reg = info->register_num++;
 }
 
@@ -673,12 +623,11 @@ static void unary_operation(information *const info, node *const nd)
 		break;
 		case LOGNOT:
 		{
-			const item_t old_label_if = info->label_if;
-			const item_t old_label_else = info->label_else;
+			const item_t temp = info->label_true;
+			info->label_true =  info->label_false;
+			info->label_false = temp;
 
 			node_set_next(nd);
-			info->label_if = old_label_else;
-			info->label_else = old_label_if;
 			expression(info, nd);
 		}
 			break;
@@ -735,8 +684,11 @@ static void binary_operation(information *const info, node *const nd)
 		case LAND:
 		case LEXOR:
 		case LOR:
+		{
 			arithmetic_expression(info, nd);
-			break;
+			info->answer_type = AREG;
+		}
+		break;
 
 
 		case EQEQ:
@@ -745,24 +697,27 @@ static void binary_operation(information *const info, node *const nd)
 		case LGT:
 		case LLE:
 		case LGE:
-			logic_expression(info, nd);
-			break;
+		{
+			arithmetic_expression(info, nd);
+			info->answer_type = ALOGIC;
+		}
+		break;
 
 		// TODO: протестировать и при необходимости реализовать случай, когда && и || есть в арифметических выражениях
 		case LOGOR:
 		case LOGAND:
 		{
 			const item_t label_next = info->label_num++;
-			const item_t old_label_if = info->label_if;
-			const item_t old_label_else = info->label_else;
+			const item_t old_label_if = info->label_true;
+			const item_t old_label_else = info->label_false;
 
 			if (node_get_type(nd) == LOGOR)
 			{
-				info->label_else = label_next;
+				info->label_false = label_next;
 			}
 			else // (node_get_type(nd) == LOGAND)
 			{
-				info->label_if = label_next;
+				info->label_true = label_next;
 			}
 			
 			node_set_next(nd);
@@ -772,12 +727,12 @@ static void binary_operation(information *const info, node *const nd)
 			// постараться использовать функцию check_type_and_branch
 			if (info->answer_type == ALOGIC)
 			{
-				to_code_conditional_branch(info, info->answer_reg, info->label_if, info->label_else);
+				to_code_conditional_branch(info, info->answer_reg, info->label_true, info->label_false);
 			}
 
 			to_code_label(info, label_next);
-			info->label_if = old_label_if;
-			info->label_else = old_label_else;
+			info->label_true = old_label_if;
+			info->label_false = old_label_else;
 
 			expression(info, nd);
 		}
@@ -976,27 +931,26 @@ static void statement(information *const info, node *const nd)
 		case TIf:
 		{
 			const item_t ref_else = node_get_arg(nd, 0);
-			const item_t old_label_if = info->label_if;
-			const item_t old_label_else = info->label_else;
+			const item_t old_label_if = info->label_true;
+			const item_t old_label_else = info->label_false;
 			const item_t label_if = info->label_num++;
 			const item_t label_else = info->label_num++;
 			const item_t label_end = info->label_num++;
 
-			info->label_if = label_if;
-			info->label_else = label_else;
+			info->label_true = label_if;
+			info->label_false = label_else;
 
 			node_set_next(nd);
-
 			info->variable_location = LFREE;
 			expression(info, nd);
 
 			check_type_and_branch(info);
 			
 			to_code_label(info, label_if);
-
 			statement(info, nd);
 			to_code_unconditional_branch(info, label_end);
 			to_code_label(info, label_else);
+
 			if (ref_else)
 			{
 				statement(info, nd);
@@ -1005,8 +959,8 @@ static void statement(information *const info, node *const nd)
 			to_code_unconditional_branch(info, label_end);
 			to_code_label(info, label_end);
 
-			info->label_if = old_label_if;
-			info->label_else = old_label_else;
+			info->label_true = old_label_if;
+			info->label_false = old_label_else;
 		}
 		break;
 		case TSwitch:
@@ -1020,51 +974,45 @@ static void statement(information *const info, node *const nd)
 		break;
 		case TWhile:
 		{
-			const item_t old_label_if = info->label_if;
-			const item_t old_label_else = info->label_else;
+			const item_t old_label_if = info->label_true;
+			const item_t old_label_else = info->label_false;
 			const item_t label_condition = info->label_num++;
 			const item_t label_body = info->label_num++;
 			const item_t label_end = info->label_num++;
 
-			info->label_if = label_body;
-			info->label_else = label_end;
+			info->label_true = label_body;
+			info->label_false = label_end;
 
 			node_set_next(nd);
-
 			to_code_unconditional_branch(info, label_condition);
 			to_code_label(info, label_condition);
-
 			info->variable_location = LFREE;
 			expression(info, nd);
 
 			check_type_and_branch(info);
 
 			to_code_label(info, label_body);
-
 			statement(info, nd);
-
 			to_code_unconditional_branch(info, label_condition);
 			to_code_label(info, label_end);
 
-			info->label_if = old_label_if;
-			info->label_else = old_label_else;
+			info->label_true = old_label_if;
+			info->label_false = old_label_else;
 		}
 		break;
 		case TDo:
 		{
-			const item_t old_label_if = info->label_if;
-			const item_t old_label_else = info->label_else;
+			const item_t old_label_if = info->label_true;
+			const item_t old_label_else = info->label_false;
 			const item_t label_loop = info->label_num++;
 			const item_t label_end = info->label_num++;
 
-			info->label_if = label_loop;
-			info->label_else = label_end;
+			info->label_true = label_loop;
+			info->label_false = label_end;
 
 			node_set_next(nd);
-
 			to_code_unconditional_branch(info, label_loop);
 			to_code_label(info, label_loop);
-
 			statement(info, nd);
 
 			info->variable_location = LFREE;
@@ -1074,8 +1022,8 @@ static void statement(information *const info, node *const nd)
 
 			to_code_label(info, label_end);
 
-			info->label_if = old_label_if;
-			info->label_else = old_label_else;
+			info->label_true = old_label_if;
+			info->label_false = old_label_else;
 		}
 		break;
 		// TODO: проверялось, только если в for присутствуют все блоки: инициализация, условие, модификация
@@ -1085,15 +1033,15 @@ static void statement(information *const info, node *const nd)
 			const item_t ref_from = node_get_arg(nd, 0);
 			const item_t ref_cond = node_get_arg(nd, 1);
 			const item_t ref_incr = node_get_arg(nd, 2);
-			const item_t old_label_if = info->label_if;
-			const item_t old_label_else = info->label_else;
+			const item_t old_label_if = info->label_true;
+			const item_t old_label_else = info->label_false;
 			const item_t label_condition = info->label_num++;
 			const item_t label_body = info->label_num++;
 			const item_t label_incr = info->label_num++;
 			const item_t label_end = info->label_num++;
 
-			info->label_if = label_body;
-			info->label_else = label_end;
+			info->label_true = label_body;
+			info->label_false = label_end;
 
 			node_set_next(nd);
 
@@ -1111,22 +1059,21 @@ static void statement(information *const info, node *const nd)
 			}
 			// TODO: проверить разные типы условий: const, reg
 			check_type_and_branch(info);
-			to_code_label(info, label_incr);
 
+			to_code_label(info, label_incr);
 			if (ref_incr)
 			{
 				expression(info, nd);
 			}
+
 			to_code_unconditional_branch(info, label_condition);
-
 			to_code_label(info, label_body);
-
 			statement(info, nd);
 			to_code_unconditional_branch(info, label_incr);
 			to_code_label(info, label_end);
 
-			info->label_if = old_label_if;
-			info->label_else = old_label_else;
+			info->label_true = old_label_if;
+			info->label_false = old_label_else;
 		}
 		break;
 		case TLabel:
@@ -1142,7 +1089,7 @@ static void statement(information *const info, node *const nd)
 			break;
 		case TReturnvoid:
 		{
-			if (info->was_dynamic == 1)
+			if (info->was_dynamic)
 			{
 				to_code_stack_load(info);
 			}
@@ -1153,7 +1100,7 @@ static void statement(information *const info, node *const nd)
 		break;
 		case TReturnval:
 		{
-			if (info->was_dynamic == 1)
+			if (info->was_dynamic)
 			{
 				to_code_stack_load(info);
 			}
@@ -1161,6 +1108,7 @@ static void statement(information *const info, node *const nd)
 			node_set_next(nd);
 			info->variable_location = LREG;
 			expression(info, nd);
+
 			// TODO: добавить обработку других ответов (ALOGIC)
 			if (info->answer_type == ACONST)
 			{
@@ -1301,14 +1249,14 @@ static void block(information *const info, node *const nd)
 				else // массивы
 				{
 					info->arrays_info[displ] = info->current_array_info;
-					if (info->current_array_info.is_static == 1)
+					if (info->current_array_info.is_static)
 					{
 						to_code_alloc_array_static(info, displ);
 					}
 					else
 					{
 						// TODO: нужно ещё сделать восстановление стека после выделения памяти
-						if (info->was_dynamic == 0)
+						if (!info->was_dynamic)
 						{
 							to_code_stack_save(info);
 						}
@@ -1338,7 +1286,6 @@ static void block(information *const info, node *const nd)
 
 static int codegen(universal_io *const io, syntax *const sx)
 {
-	item_t to_declare_stack_functions = 0;
 	information info;
 	info.io = io;
 	info.sx = sx;
@@ -1348,9 +1295,9 @@ static int codegen(universal_io *const io, syntax *const sx)
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
-	info.was_dynamic = 0;
 
 	node root = node_get_root(&sx->tree);
+	int was_stack_functions = 0;
 	while (node_set_next(&root) == 0)
 	{
 		switch (node_get_type(&root))
@@ -1359,6 +1306,7 @@ static int codegen(universal_io *const io, syntax *const sx)
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
 				const item_t func_type = mode_get(info.sx, (size_t)ident_get_mode(info.sx, ref_ident) + 1);
+				info.was_dynamic = 0;
 
 				if (ident_get_prev(info.sx, ref_ident) == LMAIN)
 				{
@@ -1378,11 +1326,7 @@ static int codegen(universal_io *const io, syntax *const sx)
 				block(&info, &root);
 				uni_printf(info.io, "}\n\n");
 
-				if (info.was_dynamic == 1)
-				{
-					to_declare_stack_functions = 1;
-				}
-				info.was_dynamic = 0;
+				was_stack_functions |= info.was_dynamic;
 			}
 			break;
 			case TEnd:
@@ -1393,7 +1337,7 @@ static int codegen(universal_io *const io, syntax *const sx)
 		}
 	}
 
-	if (to_declare_stack_functions == 1)
+	if (was_stack_functions)
 	{
 		uni_printf(info.io, "declare i8* @llvm.stacksave()\n");
 		uni_printf(info.io, "declare void @llvm.stackrestore(i8*)\n");
@@ -1418,7 +1362,6 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	{
 		return -1;
 	}
-	tree_print("new1.txt", &(sx->tree));
 
 	return codegen(io, sx);
 }
