@@ -306,7 +306,7 @@ int node_add_arg(node *const nd, const item_t arg)
 	vector_set(nd->tree, ref_get_amount(nd), arg);
 
 #ifdef BUFFERING
-	vector_add(nd->tree, vector_get(nd, ref_get_children(nd)));
+	vector_add(nd->tree, vector_get(nd->tree, ref_get_children(nd)));
 	vector_set(nd->tree, ref_get_children(nd), 0);
 #else
 	vector_add(nd->tree, 0);
