@@ -1345,13 +1345,13 @@ size_t elem_to_io(universal_io *const io, const vector *const table, size_t i)
 }
 
 
-void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
+size_t tree_print_recursive(universal_io *const io, node *const nd, size_t index, size_t tabs)
 {
 	for (size_t i = 0; i < tabs; i++)
 	{
 		uni_printf(io, INDENT);
 	}
-	uni_printf(io, "tc %zi) ", nd->type);
+	uni_printf(io, "tc %zi) ", index);
 
 	const item_t type = node_get_type(nd);
 	char buffer[MAX_ELEM_SIZE];
@@ -1382,15 +1382,18 @@ void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
 			|| i != argc)
 		{
 			elem_get_name(type, 0, buffer);
-			warning(NULL, node_argc, nd->type, buffer);
+			warning(NULL, node_argc, index, buffer);
 		}
 	}
 
+	index += argc + 1;
 	for (size_t j = 0; j < node_get_amount(nd); j++)
 	{
 		node child = node_get_child(nd, j);
-		tree_print_recursive(io, &child, tabs + 1);
+		index = tree_print_recursive(io, &child, index, tabs + 1);
 	}
+
+	return index;
 }
 
 
@@ -1411,11 +1414,12 @@ void tree_print(const char *const path, vector *const tree)
 		return;
 	}
 
+	size_t index = 0;
 	node nd = node_get_root(tree);
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
 	{
 		node child = node_get_child(&nd, i);
-		tree_print_recursive(&io, &child, 0);
+		index = tree_print_recursive(&io, &child, index, 0);
 	}
 
 	io_erase(&io);
