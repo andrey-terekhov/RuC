@@ -183,9 +183,43 @@ size_t node_get_amount(const node *const nd)
 }
 
 
-node node_get_next(node *const nd);
+node node_get_next(node *const nd)
+{
+	if (!node_is_correct(nd))
+	{
+		return node_broken();
+	}
 
-int node_set_next(node *const nd);
+	node next = { nd->tree, ref_get_children(nd) };
+
+#ifndef BUFFERING
+	if (node_get_amount(nd) == 0)
+	{
+		item_t index = vector_get(nd->tree, ref_get_next(nd));
+		while (is_negative(index))
+		{
+			// Get next reference from parent
+			index = vector_get(nd->tree, (~index + 1) - 2);
+		}
+
+		next.index = index;
+	}
+#endif
+
+	return next;
+}
+
+int node_set_next(node *const nd)
+{
+	node next = node_get_next(nd);
+	if (!node_is_correct(&next))
+	{
+		return -1;
+	}
+
+	*nd = next;
+	return 0;
+}
 
 
 node node_add_child(node *const nd, const item_t type)
