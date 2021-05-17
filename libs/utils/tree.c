@@ -24,11 +24,11 @@ inline int is_negative(const item_t value)
 	return value >> (8 * sizeof(item_t) - 1);
 }
 
-
-inline node node_broken()
+void vector_swap(vector *const vec, size_t fst, size_t snd)
 {
-	node nd = { NULL, SIZE_MAX };
-	return nd;
+	const item_t temp = vector_get(vec, fst);
+	vector_set(vec, fst, vector_get(vec, snd));
+	vector_set(vec, snd, temp);
 }
 
 
@@ -53,11 +53,10 @@ inline size_t ref_get_children(const node *const nd)
 }
 
 
-void vector_swap(vector *const vec, size_t fst, size_t snd)
+inline node node_broken()
 {
-	const item_t temp = vector_get(vec, fst);
-	vector_set(vec, fst, vector_get(vec, snd));
-	vector_set(vec, snd, temp);
+	node nd = { NULL, SIZE_MAX };
+	return nd;
 }
 
 int node_displ(node *fst, const size_t fst_index, node *snd, const size_t snd_index)
@@ -97,6 +96,24 @@ int node_displ(node *fst, const size_t fst_index, node *snd, const size_t snd_in
 
 	vector_swap(tree, ref_get_next(fst), ref_get_next(snd));
 	return 0;
+}
+
+void node_update(node *const nd)
+{
+	node last = *nd;
+	while (node_get_amount(&last) != 0)
+	{
+		last = node_get_child(&last, node_get_amount(&last) - 1);
+	}
+
+	item_t index = vector_get(nd->tree, ref_get_next(nd));
+	while (is_negative(index))
+	{
+		// Get next reference from parent
+		index = vector_get(nd->tree, (~index + 1) - 2);
+	}
+
+	vector_set(nd->tree, ref_get_children(&last), index);
 }
 
 
@@ -206,7 +223,7 @@ node node_get_next(node *const nd)
 	}
 #endif
 
-	return next;
+	return next.index != 0 ? next : node_broken();
 }
 
 int node_set_next(node *const nd)
