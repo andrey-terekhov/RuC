@@ -347,7 +347,7 @@ size_t node_save(const node *const nd)
 
 node node_load(vector *const tree, const size_t index)
 {
-	if (!vector_is_correct(tree) || vector_get(tree, index) >= (item_t)vector_size(tree) - index - 2)
+	if (!vector_is_correct(tree) || vector_get(tree, index) >= (item_t)(vector_size(tree) - index - 2))
 	{
 		return node_broken();
 	}
@@ -381,8 +381,6 @@ int node_swap(node *const fst, const size_t fst_index, node *const snd, const si
 	{
 		return -1;
 	}
-
-	vector *const tree = fst->tree;
 
 #ifdef BUFFERING
 	node_update(&fst_child);
@@ -430,7 +428,7 @@ int node_remove(node *const nd, const size_t index)
 		vector_set(nd->tree, ref_get_amount(nd), (item_t)node_get_amount(nd) - 1);
 	}
 	
-	if (node_get_amount(&child) == 0 && ref_get_children == vector_size(nd->tree) - 1)
+	if (node_get_amount(&child) == 0 && ref_get_children(&child) == vector_size(nd->tree) - 1)
 	{
 		vector_resize(nd->tree, ref_get_next(&child));
 	}
