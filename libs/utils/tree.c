@@ -195,18 +195,33 @@ node node_add_child(node *const nd, const item_t type)
 		return node_broken();
 	}
 
-	node child;
+	vector_add(nd->tree, ~nd->index + 1);
+	vector_add(nd->tree, type);
+	node child = { nd->tree, vector_add(nd->tree, 0) };
+	vector_add(nd->tree, 0);
+	vector_add(nd->tree, 0);
 
-	child.tree = nd->tree;
-	child.type = vector_add(nd->tree, type);
+	const size_t amount = node_get_amount(nd);
+	vector_set(nd->tree, ref_get_amount(nd), amount + 1);
 
-	child.argv = child.type + 1;
-	child.argc = 0;
+	if (amount == 0)
+	{
+		vector_set(nd->tree, ref_get_children(nd), child.index);
+	}
+	else
+	{
+		node prev = node_get_child(nd, amount - 1);
+		vector_set(nd->tree, ref_get_next(&prev), child.index);
 
-	child.children = child.argv + child.argc;
-	child.amount = 0;
+#ifdef BUFFERING
+		node_update(&prev);
+#endif
+	}
 
-	nd->amount++;
+#ifdef BUFFERING
+	node_update(&child);
+#endif
+
 	return child;
 }
 
@@ -240,8 +255,8 @@ int node_add_arg(node *const nd, const item_t arg)
 	vector_set(nd->tree, ref_get_amount(nd), arg);
 
 #ifdef BUFFERING
-	vector_add(nd->tree, vector_get(nd, ref_get_next(nd)));
-	vector_set(nd->tree, ref_get_next(nd), 0);
+	vector_add(nd->tree, vector_get(nd, ref_get_children(nd)));
+	vector_set(nd->tree, ref_get_children(nd), 0);
 #else
 	vector_add(nd->tree, 0);
 #endif
