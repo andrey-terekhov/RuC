@@ -151,7 +151,7 @@ node node_get_child(node *const nd, const size_t index)
 		return node_broken();
 	}
 
-	size_t child_index = ref_get_children(nd);
+	size_t child_index = (size_t)vector_get(nd->tree, ref_get_children(nd));
 	for (size_t i = 0; i < index; i++)
 	{
 		child_index = (size_t)vector_get(nd->tree, child_index - 2);
@@ -207,7 +207,7 @@ node node_get_next(node *const nd)
 		return node_broken();
 	}
 
-	node next = { nd->tree, ref_get_children(nd) };
+	node next = { nd->tree, (size_t)vector_get(nd->tree, ref_get_children(nd)) };
 
 #ifndef BUFFERING
 	if (node_get_amount(nd) == 0)
