@@ -3121,6 +3121,12 @@ void mipsgen()
 
     fprintf(output, "\n\t.globl\tmain\n");
     fprintf(output, "\t.ent\tmain\n\t.type\tmain, @function\nmain:\n");
+    
+	// инициализация gp
+	printf("\tlui $28, %%hi(__gnu_local_gp)\n");
+	fprintf(output, "\tlui $28, %%hi(__gnu_local_gp)\n");
+	printf("\taddiu $28, $28, %%lo(__gnu_local_gp)\n");
+	fprintf(output, "\taddiu $28, $28, %%lo(__gnu_local_gp)\n");
 
     tocodemove(fp, stp);
     tocodeI(addi, fp, fp, -4);
