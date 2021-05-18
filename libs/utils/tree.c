@@ -110,7 +110,7 @@ void node_update(node *const nd)
 	while (is_negative(index))
 	{
 		// Get next reference from parent
-		index = vector_get(nd->tree, (~index + 1) - 2);
+		index = vector_get(nd->tree, (size_t)(~index + 1) - 2);
 	}
 
 	vector_set(nd->tree, ref_get_children(&last), index);
@@ -174,7 +174,7 @@ node node_get_parent(node *const nd)
 		index = vector_get(nd->tree, (size_t)index - 2);
 	}
 
-	node parent = { nd->tree, ~index + 1 };
+	node parent = { nd->tree, (size_t)(~index + 1) };
 	return parent;
 }
 
@@ -216,10 +216,10 @@ node node_get_next(node *const nd)
 		while (is_negative(index))
 		{
 			// Get next reference from parent
-			index = vector_get(nd->tree, (~index + 1) - 2);
+			index = vector_get(nd->tree, (size_t)(~index + 1) - 2);
 		}
 
-		next.index = index;
+		next.index = (size_t)index;
 	}
 #endif
 

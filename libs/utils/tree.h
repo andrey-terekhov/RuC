@@ -43,7 +43,7 @@ typedef struct node
  *
  *	@return	Root node
  */
-node node_get_root(vector *const tree);
+EXPORTED node node_get_root(vector *const tree);
 
 /**
  *	Get child from node by index
@@ -53,7 +53,7 @@ node node_get_root(vector *const tree);
  *
  *	@return	Child node
  */
-node node_get_child(node *const nd, const size_t index);
+EXPORTED node node_get_child(node *const nd, const size_t index);
 
 /**
  *	Get parent of node
@@ -62,7 +62,7 @@ node node_get_child(node *const nd, const size_t index);
  *
  *	@return	Parent node
  */
-node node_get_parent(node *const nd);
+EXPORTED node node_get_parent(node *const nd);
 
 
 /**
@@ -72,7 +72,7 @@ node node_get_parent(node *const nd);
  *
  *	@return	Node type, @c ITEM_MAX on failure
  */
-item_t node_get_type(const node *const nd);
+EXPORTED item_t node_get_type(const node *const nd);
 
 /**
  *	Get amount of arguments
@@ -81,7 +81,7 @@ item_t node_get_type(const node *const nd);
  *
  *	@return	Amount of arguments
  */
-size_t node_get_argc(const node *const nd);
+EXPORTED size_t node_get_argc(const node *const nd);
 
 /**
  *	Get argument from node by index
@@ -91,7 +91,7 @@ size_t node_get_argc(const node *const nd);
  *
  *	@return	Argument, @c ITEM_MAX on failure
  */
-item_t node_get_arg(const node *const nd, const size_t index);
+EXPORTED item_t node_get_arg(const node *const nd, const size_t index);
 
 /**
  *	Get amount of children
@@ -100,7 +100,7 @@ item_t node_get_arg(const node *const nd, const size_t index);
  *
  *	@return	Amount of children
  */
-size_t node_get_amount(const node *const nd);
+EXPORTED size_t node_get_amount(const node *const nd);
 
 
 /**
@@ -110,7 +110,7 @@ size_t node_get_amount(const node *const nd);
  *
  *	@return	Next node
  */
-node node_get_next(node *const nd);
+EXPORTED node node_get_next(node *const nd);
 
 /**
  *	Set next node to the same one from tree traversal in pre-order (NLR)
@@ -119,7 +119,7 @@ node node_get_next(node *const nd);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int node_set_next(node *const nd);
+EXPORTED int node_set_next(node *const nd);
 
 
 /**
@@ -130,7 +130,7 @@ int node_set_next(node *const nd);
  *
  *	@return	Child node
  */
-node node_add_child(node *const nd, const item_t type);
+EXPORTED node node_add_child(node *const nd, const item_t type);
 
 /**
  *	Set node type
@@ -142,7 +142,7 @@ node node_add_child(node *const nd, const item_t type);
  *			@c -1 on failure,
  *			@c -2 on trying to reset the root node
  */
-int node_set_type(node *const nd, const item_t type);
+EXPORTED int node_set_type(node *const nd, const item_t type);
 
 /**
  *	Add new node argument
@@ -154,7 +154,7 @@ int node_set_type(node *const nd, const item_t type);
  *			@c -1 on failure,
  *			@c -2 on node with children
  */
-int node_add_arg(node *const nd, const item_t arg);
+EXPORTED int node_add_arg(node *const nd, const item_t arg);
 
 /**
  *	Set node argument by index
@@ -165,7 +165,7 @@ int node_add_arg(node *const nd, const item_t arg);
  *
  *	@return	@c  0 on success, @c -1 on failure
  */
-int node_set_arg(node *const nd, const size_t index, const item_t arg);
+EXPORTED int node_set_arg(node *const nd, const size_t index, const item_t arg);
 
 
 /**
@@ -176,7 +176,7 @@ int node_set_arg(node *const nd, const size_t index, const item_t arg);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int node_copy(node *const dest, const node *const src);
+EXPORTED int node_copy(node *const dest, const node *const src);
 
 /**
  *	Save internal node index
@@ -185,7 +185,7 @@ int node_copy(node *const dest, const node *const src);
  *
  *	@return	Internal index, @c SIZE_MAX on failure
  */
-size_t node_save(const node *const nd);
+EXPORTED size_t node_save(const node *const nd);
 
 /**
  *	Rebuild node by internal index
@@ -195,7 +195,7 @@ size_t node_save(const node *const nd);
  *
  *	@return	Rebuilt node
  */
-node node_load(vector *const tree, const size_t index);
+EXPORTED node node_load(vector *const tree, const size_t index);
 
 /**
  *	Change only node order
@@ -207,7 +207,7 @@ node node_load(vector *const tree, const size_t index);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int node_order(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index);
+EXPORTED int node_order(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index);
 
 /**
  *	Swap two nodes with children
@@ -219,7 +219,7 @@ int node_order(node *const fst, const size_t fst_index, node *const snd, const s
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int node_swap(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index);
+EXPORTED int node_swap(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index);
 
 /**
  *	Remove child node by index
@@ -229,7 +229,7 @@ int node_swap(node *const fst, const size_t fst_index, node *const snd, const si
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int node_remove(node *const nd, const size_t index);
+EXPORTED int node_remove(node *const nd, const size_t index);
 
 /**
  *	Check that node is correct
@@ -238,7 +238,7 @@ int node_remove(node *const nd, const size_t index);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int node_is_correct(const node *const nd);
+EXPORTED int node_is_correct(const node *const nd);
 
 #ifdef __cplusplus
 } /* extern "C" */
