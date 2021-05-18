@@ -22,7 +22,7 @@
 #include "defs.h"
 
 
-const char *name = "/home/ivan-arhipych/RuC/tests/mips/optimizations/ind_var_reduction/test1.c";
+const char *name = "../tests/mips/printid.c";
 //		"/home/ivan-arhipych/RuC/tests/mips/float.c";
 
 
@@ -56,12 +56,12 @@ int defarr[MAXIDENTAB];
 int bad_printf_placeholder = 0;
 
 // optimization flags
-int cycle_jump_reduce = 1;
-int enable_ind_var = 1;
-int cycle_condition_calculation = 1;
-int delay_slot = 1;
+int cycle_jump_reduce = 0;
+int enable_ind_var = 0;
+int cycle_condition_calculation = 0;
+int delay_slot = 0;
 int check_nested_for;
-int ind_var_reduction = 1;
+int ind_var_reduction = 0;
 
 extern void preprocess_file();
 
@@ -103,13 +103,13 @@ FILE *keywords(const char *const exec)
     {
         if (exec[i] == '\\' || exec[i] == '/')
         {
-            last_slash = i;
+        	last_slash = i + 1;
         }
 
         path[i] = exec[i];
     }
 
-    strcpy(&path[last_slash + 1], "keywords.txt");
+    strcpy(&path[last_slash], "keywords.txt");
     return fopen(path, "r");
 }
 
@@ -244,6 +244,13 @@ int main(int argc, const char * argv[])
     fprintf(output, "\t.section .mdebug.abi32\n\t.previous\n\t.nan\tlegacy\n");
     fprintf(output, "\t.module fp=xx\n\t.module nooddspreg\n\t.abicalls\n");
     fprintf(output, "\t.option pic0\n\t.text\n\t.align 2\n");
+    
+
+	// инициализация gp
+	printf("\tlui $28, %%hi(__gnu_local_gp)\n");
+	fprintf(output, "\tlui $28, %%hi(__gnu_local_gp)\n");
+	printf("\taddiu $28, $28, %%lo(__gnu_local_gp)\n");
+	fprintf(output, "\taddiu $28, $28, %%lo(__gnu_local_gp)\n");
 
     mipsgen();                       
     
