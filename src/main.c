@@ -23,7 +23,10 @@
 
 
 const char *name = "../tests/mips/printid.c";
-//		"/home/ivan-arhipych/RuC/tests/mips/float.c";
+// "tests/Mishatest.c";
+// "../../../tests/Egor/Macro/for.c";
+// "../../../tests/Fadeev/Signal.c";
+// "../../../tests/Golovan/dining_philosophers.c";
 
 
 // Определение глобальных переменных
@@ -103,7 +106,7 @@ FILE *keywords(const char *const exec)
     {
         if (exec[i] == '\\' || exec[i] == '/')
         {
-        	last_slash = i + 1;
+            last_slash = i + 1;
         }
 
         path[i] = exec[i];
@@ -244,7 +247,7 @@ int main(int argc, const char * argv[])
     fprintf(output, "\t.section .mdebug.abi32\n\t.previous\n\t.nan\tlegacy\n");
     fprintf(output, "\t.module fp=xx\n\t.module nooddspreg\n\t.abicalls\n");
     fprintf(output, "\t.option pic0\n\t.text\n\t.align 2\n");
-    
+	
 	// инициализация gp
 	printf("\tlui $28, %%hi(__gnu_local_gp)\n");
 	fprintf(output, "\tlui $28, %%hi(__gnu_local_gp)\n");
