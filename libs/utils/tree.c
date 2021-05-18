@@ -246,7 +246,7 @@ node node_add_child(node *const nd, const item_t type)
 		return node_broken();
 	}
 
-	vector_add(nd->tree, ~nd->index + 1);
+	vector_add(nd->tree, ~(item_t)nd->index + 1);
 	vector_add(nd->tree, type);
 	node child = { nd->tree, vector_add(nd->tree, 0) };
 	vector_add(nd->tree, 0);
