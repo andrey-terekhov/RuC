@@ -245,7 +245,6 @@ int main(int argc, const char * argv[])
     fprintf(output, "\t.module fp=xx\n\t.module nooddspreg\n\t.abicalls\n");
     fprintf(output, "\t.option pic0\n\t.text\n\t.align 2\n");
     
-
 	// инициализация gp
 	printf("\tlui $28, %%hi(__gnu_local_gp)\n");
 	fprintf(output, "\tlui $28, %%hi(__gnu_local_gp)\n");
