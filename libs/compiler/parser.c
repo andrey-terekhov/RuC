@@ -19,7 +19,7 @@
 #include "old_tree.h"
 
 
-const char *const DEFAULT_TREE = "old_tree.txt";
+const char *const DEFAULT_TREE = "tree.txt";
 
 const size_t MAX_LABELS = 10000;
 const size_t MAX_STACK = 100;
