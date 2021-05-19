@@ -21,6 +21,9 @@
 #include "vector.h"
 
 
+#define OLD_TREE
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

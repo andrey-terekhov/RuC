@@ -19,8 +19,7 @@
 #include "old_tree.h"
 
 
-const char *const DEFAULT_TREE = "tree.txt";
-const char *const DEFAULT_NEW = "new.txt";
+const char *const DEFAULT_TREE = "old_tree.txt";
 
 const size_t MAX_LABELS = 10000;
 const size_t MAX_STACK = 100;
@@ -99,25 +98,20 @@ int parse(universal_io *const io, syntax *const sx)
 	} while (prs.token != eof);
 
 	node_add_child(&root, TEnd);
-
 	parser_clear(&prs);
 
-#ifndef GENERATE_TREE
-	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
-#else
-	const int ret = prs.was_error || prs.lxr->was_error || !sx_is_correct(sx)
+#ifdef GENERATE_TREE
+	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
+#endif
+
+#if defined(GENERATE_TREE) && defined(OLD_TREE)
+	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx)
 		|| tree_test(&sx->tree)
 		|| tree_test_next(&sx->tree)
 		|| tree_test_recursive(&sx->tree)
 		|| tree_test_copy(&sx->tree);
-
-	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
-
-	if (!ret)
-	{
-		tree_print(DEFAULT_NEW, &sx->tree);
-	}
-	return ret;
+#else
+	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
 #endif
 }
 

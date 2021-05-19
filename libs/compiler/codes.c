@@ -1406,31 +1406,11 @@ size_t tree_print_recursive(universal_io *const io, node *const nd, size_t index
  */
 
 
-void tree_print(const char *const path, vector *const tree)
-{
-	universal_io io = io_create();
-	if (!vector_is_correct(tree) || out_set_file(&io, path))
-	{
-		return;
-	}
-
-	size_t index = 0;
-	node nd = node_get_root(tree);
-	for (size_t i = 0; i < node_get_amount(&nd); i++)
-	{
-		node child = node_get_child(&nd, i);
-		index = tree_print_recursive(&io, &child, index, 0);
-	}
-
-	io_erase(&io);
-}
-
-
 /** Вывод таблиц и дерева */
 void tables_and_tree(const char *const path
 	, const vector *const identifiers
 	, const vector *const modes
-	, const vector *const tree)
+	, vector *const tree)
 {
 	universal_io io = io_create();
 	if (!vector_is_correct(identifiers) || !vector_is_correct(modes) || !vector_is_correct(tree)
@@ -1457,12 +1437,21 @@ void tables_and_tree(const char *const path
 	}
 
 	uni_printf(&io, "\n");
-	size_t i = 0;
-	while (i < vector_size(tree))
+	size_t index = 0;
+#ifdef OLD_TREE
+	while (index < vector_size(tree))
 	{
-		uni_printf(&io, "tc %zi) ", i);
-		i = elem_to_io(&io, tree, i);
+		uni_printf(&io, "tc %zi) ", index);
+		index = elem_to_io(&io, tree, index);
 	}
+#else
+	node nd = node_get_root(tree);
+	for (size_t i = 0; i < node_get_amount(&nd); i++)
+	{
+		node child = node_get_child(&nd, i);
+		index = tree_print_recursive(&io, &child, index, 0);
+	}
+#endif
 
 	io_erase(&io);
 }
