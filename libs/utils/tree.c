@@ -59,6 +59,24 @@ inline node node_broken()
 	return nd;
 }
 
+void node_update(node *const nd)
+{
+	node last = *nd;
+	while (node_get_amount(&last) != 0)
+	{
+		last = node_get_child(&last, node_get_amount(&last) - 1);
+	}
+
+	item_t index = vector_get(nd->tree, ref_get_next(nd));
+	while (is_negative(index))
+	{
+		// Get next reference from parent
+		index = vector_get(nd->tree, (size_t)(~index + 1) - 2);
+	}
+
+	vector_set(nd->tree, ref_get_children(&last), index);
+}
+
 int node_displ(node *fst, const size_t fst_index, node *snd, const size_t snd_index)
 {
 	if (!node_is_correct(fst) || !node_is_correct(snd) || fst->tree != snd->tree
@@ -66,6 +84,11 @@ int node_displ(node *fst, const size_t fst_index, node *snd, const size_t snd_in
 	{
 		return -1;
 	}
+
+#ifdef BUFFERING
+	node fst_child = node_get_child(fst, fst_index - 1);
+	node snd_child = node_get_child(snd, snd_index - 1);
+#endif
 
 	vector *const tree = fst->tree;
 	size_t reference;
@@ -84,8 +107,9 @@ int node_displ(node *fst, const size_t fst_index, node *snd, const size_t snd_in
 
 	if (snd_index == 0)
 	{
-		vector_swap(tree, reference, ref_get_children(snd));
+		const size_t temp = ref_get_children(snd);
 		*snd = node_get_child(snd, snd_index);
+		vector_swap(tree, reference, temp);
 	}
 	else
 	{
@@ -95,25 +119,20 @@ int node_displ(node *fst, const size_t fst_index, node *snd, const size_t snd_in
 	}
 
 	vector_swap(tree, ref_get_next(fst), ref_get_next(snd));
+
+#ifdef BUFFERING
+	if (fst_index != 0)
+	{
+		node_update(&fst_child);
+	}
+
+	if (snd_index != 0)
+	{
+		node_update(&snd_child);
+	}
+#endif
+
 	return 0;
-}
-
-void node_update(node *const nd)
-{
-	node last = *nd;
-	while (node_get_amount(&last) != 0)
-	{
-		last = node_get_child(&last, node_get_amount(&last) - 1);
-	}
-
-	item_t index = vector_get(nd->tree, ref_get_next(nd));
-	while (is_negative(index))
-	{
-		// Get next reference from parent
-		index = vector_get(nd->tree, (size_t)(~index + 1) - 2);
-	}
-
-	vector_set(nd->tree, ref_get_children(&last), index);
 }
 
 
@@ -358,7 +377,7 @@ node node_load(vector *const tree, const size_t index)
 
 int node_order(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index)
 {
-	node fst_child = *fst;	
+	node fst_child = *fst;
 	node snd_child = *snd;
 
 	if (node_displ(&fst_child, fst_index, &snd_child, snd_index))
@@ -368,6 +387,11 @@ int node_order(node *const fst, const size_t fst_index, node *const snd, const s
 
 	vector_swap(fst->tree, ref_get_amount(&fst_child), ref_get_amount(&snd_child));
 	vector_swap(fst->tree, ref_get_children(&fst_child), ref_get_children(&snd_child));
+
+#ifdef BUFFERING
+	node_update(&fst_child);
+	node_update(&snd_child);
+#endif
 
 	return 0;
 }
