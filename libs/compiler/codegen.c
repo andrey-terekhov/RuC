@@ -21,7 +21,7 @@
 #include "errors.h"
 #include "item.h"
 #include "stack.h"
-#include "tree.h"
+#include "old_tree.h"
 #include "uniprinter.h"
 #include "utf8.h"
 

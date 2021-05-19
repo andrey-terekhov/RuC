@@ -1101,7 +1101,7 @@ void parse_postfix_expression(parser *const prs)
 				prs->operand_displ += find_field(prs);
 			}
 
-			to_tree(prs, prs->operand_displ);
+			node_add_arg(&prs->nd, prs->operand_displ);
 
 			// find_field вернула тип результата через стек, проверим его и вернем обратно
 			const item_t field_type = stack_pop(&prs->anonymous);
