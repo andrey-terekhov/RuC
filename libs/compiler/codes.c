@@ -1420,7 +1420,7 @@ void tables_and_tree(const char *const path
 	}
 
 
-	uni_printf(&io, "%s\n", "identab");
+	uni_printf(&io, "identab\n");
 	for (size_t i = 2; i < vector_size(identifiers); i += 4)
 	{
 		for (size_t j = 0; j < 4; j++)
@@ -1430,26 +1430,26 @@ void tables_and_tree(const char *const path
 		uni_printf(&io, "\n");
 	}
 
-	uni_printf(&io, "\n%s\n", "modetab");
+	uni_printf(&io, "\nmodetab\n");
 	for (size_t i = 0; i < vector_size(modes); i++)
 	{
 		uni_printf(&io, "md %zi) %" PRIitem "\n", i, vector_get(modes, i));
 	}
 
-	uni_printf(&io, "\n");
-	size_t index = 0;
+	uni_printf(&io, "\n\ntree\n");
+	size_t i = 0;
 #ifdef OLD_TREE
-	while (index < vector_size(tree))
+	while (i < vector_size(tree))
 	{
-		uni_printf(&io, "tc %zi) ", index);
-		index = elem_to_io(&io, tree, index);
+		uni_printf(&io, "tc %zi) ", i);
+		i = elem_to_io(&io, tree, i);
 	}
 #else
 	node nd = node_get_root(tree);
-	for (size_t i = 0; i < node_get_amount(&nd); i++)
+	for (size_t j = 0; j < node_get_amount(&nd); j++)
 	{
-		node child = node_get_child(&nd, i);
-		index = tree_print_recursive(&io, &child, index, 0);
+		node child = node_get_child(&nd, j);
+		i = tree_print_recursive(&io, &child, i, 0);
 	}
 #endif
 
@@ -1470,19 +1470,19 @@ void tables_and_codes(const char *const path
 	}
 
 
-	uni_printf(&io, "%s\n", "functions");
+	uni_printf(&io, "functions\n");
 	for (size_t i = 0; i < vector_size(functions); i++)
 	{
 		uni_printf(&io, "fun %zi) %" PRIitem "\n", i, vector_get(functions, i));
 	}
 
-	uni_printf(&io, "\n%s\n", "iniprocs");
+	uni_printf(&io, "\n\niniprocs\n");
 	for (size_t i = 0; i < vector_size(processes); i++)
 	{
 		uni_printf(&io, "inipr %zi) %" PRIitem "\n", i, vector_get(processes, i));
 	}
 
-	uni_printf(&io, "\n%s\n", "mem");
+	uni_printf(&io, "\n\nmem\n");
 	size_t i = 0;
 	while (i < vector_size(memory))
 	{
