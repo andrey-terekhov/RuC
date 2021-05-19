@@ -15,16 +15,18 @@
  */
 
 #include "llvmgen.h"
+#include "codes.h"
 #include "errors.h"
 #include "llvmopt.h"
 #include "tree.h"
 #include "uniprinter.h"
+#include <string.h>
 
 
 #define MAX_ARRAY_DIMENSION		5
 #define MAX_ARRAY_DISPL			10000
 
-// TODO: нужно создать enum для типов и передавать его в функции to_code
+
 typedef enum ANSWER
 {
 	AREG,								/**< Ответ находится в регистре */
@@ -38,6 +40,13 @@ typedef enum LOCATION
 	LMEM,								/**< Переменная находится в памяти */
 	LFREE,								/**< Свободный запрос значения */
 } location_t;
+
+// TODO: за типом ответа пока следится только в TIdenttoval и TIdenttovald, а надо везде
+typedef enum TYPES
+{
+	I32,								/**< int */
+	DOUBLE,								/**< double */
+} type_t;
 
 typedef struct array_info
 {
@@ -62,6 +71,7 @@ typedef struct information
 	item_t answer_reg;							/**< Регистр с ответом */
 	item_t answer_const;						/**< Константа с ответом */
 	answer_t answer_type;						/**< Тип ответа */
+	type_t answer_reg_type;						/**< Тип значения в регистре */
 
 	item_t label_true;							/**< Метка перехода при true */
 	item_t label_false;							/**< Метка перехода при false */
@@ -79,6 +89,28 @@ typedef struct information
 static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
+
+static double to_double(const int64_t fst, const int64_t snd)
+{
+	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
+	double numdouble;
+	memcpy(&numdouble, &num, sizeof(double));
+	
+	return numdouble;
+}
+
+static void type_to_io(universal_io *const io, const type_t type)
+{
+	switch (type)
+	{
+		case I32:
+			uni_printf(io, "i32");
+			break;
+		case DOUBLE:
+			uni_printf(io, "double");
+			break;
+	}
+}
 
 static void operation_to_io(universal_io *const io, const item_t type)
 {
@@ -194,9 +226,13 @@ static void to_code_operation_const_reg(information *const info, item_t type, it
 	uni_printf(info->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static inline void to_code_load(information *const info, item_t result, item_t displ)
+static void to_code_load(information *const info, item_t result, item_t displ, type_t type)
 {
-	uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n", result, displ);
+	uni_printf(info->io, " %%.%" PRIitem " = load ", result);
+	type_to_io(info->io, type);
+	uni_printf(info->io, ", ");
+	type_to_io(info->io, type);
+	uni_printf(info->io, "* %%var.%" PRIitem ", align 4\n", displ);
 }
 
 static inline void to_code_store_reg(information *const info, item_t reg, item_t displ)
@@ -204,9 +240,14 @@ static inline void to_code_store_reg(information *const info, item_t reg, item_t
 	uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", reg, displ);
 }
 
-static inline void to_code_store_const(information *const info, item_t arg, item_t displ)
+static inline void to_code_store_const_i32(information *const info, item_t arg, item_t displ)
 {
 	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", arg, displ);
+}
+
+static void to_code_store_const_double(information *const info, item_t arg1, item_t arg2, item_t displ)
+{
+	uni_printf(info->io, " store double %f, double* %%var.%" PRIitem ", align 4\n", to_double(arg1, arg2), displ);
 }
 
 static void to_code_try_zext_to(information *const info)
@@ -316,18 +357,28 @@ static void operand(information *const info, node *const nd)
 	{
 		case TIdent:
 		case TSelect:
-		case TIdenttovald:
 		case TIdenttoaddr:
-		case TConstd:
 			node_set_next(nd);
 			break;
 		case TIdenttoval:
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
-			to_code_load(info, info->register_num, displ);
+			to_code_load(info, info->register_num, displ, I32);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
+			info->answer_reg_type = I32;
+			node_set_next(nd);
+		}
+		break;
+		case TIdenttovald:
+		{
+			const item_t displ = node_get_arg(nd, 0);
+
+			to_code_load(info, info->register_num, displ, DOUBLE);
+			info->answer_reg = info->register_num++;
+			info->answer_type = AREG;
+			info->answer_reg_type = DOUBLE;
 			node_set_next(nd);
 		}
 		break;
@@ -337,13 +388,28 @@ static void operand(information *const info, node *const nd)
 
 			if (info->variable_location == LMEM)
 			{
-				to_code_store_const(info, num, info->request_reg);
+				to_code_store_const_i32(info, num, info->request_reg);
 				info->answer_type = AREG;
 			}
 			else
 			{
 				info->answer_type = ACONST;
 				info->answer_const = num;
+			}
+
+			node_set_next(nd);
+		}
+		break;
+		case TConstd:
+		{
+			if (info->variable_location == LMEM)
+			{
+				to_code_store_const_double(info, node_get_arg(nd, 0), node_get_arg(nd, 1), info->request_reg);
+				info->answer_type = AREG;
+			}
+			else
+			{
+				// TODO: обработать этот случай аналогично TConst
 			}
 
 			node_set_next(nd);
@@ -439,7 +505,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (assignment_type != ASS && assignment_type != ASSV)
 	{
-		to_code_load(info, info->register_num, displ);
+		to_code_load(info, info->register_num, displ, I32);
 		info->register_num++;
 
 		if (info->answer_type == AREG)
@@ -460,7 +526,7 @@ static void assignment_expression(information *const info, node *const nd)
 	}
 	else // ACONST && =
 	{
-		to_code_store_const(info, info->answer_const, displ);
+		to_code_store_const_i32(info, info->answer_const, displ);
 	}
 }
 
@@ -570,7 +636,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 	node_set_next(nd);
 	node_set_next(nd); // TIdent
 
-	to_code_load(info, info->register_num, displ);
+	to_code_load(info, info->register_num, displ, I32);
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 	
@@ -1133,6 +1199,7 @@ static void statement(information *const info, node *const nd)
 		{
 			const item_t N = node_get_arg(nd, 0);
 			item_t args[128];
+			type_t args_type[128];
 
 			node_set_next(nd);
 			const item_t string_length = node_get_arg(nd, 0);
@@ -1143,6 +1210,7 @@ static void statement(information *const info, node *const nd)
 				info->variable_location = LREG;
 				expression(info, nd);
 				args[i] = info->answer_reg;
+				args_type[i] = info->answer_reg_type;
 			}
 
 			uni_printf(info->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
@@ -1157,7 +1225,9 @@ static void statement(information *const info, node *const nd)
 
 			for (item_t i = 0; i < N; i++)
 			{
-				uni_printf(info->io, ", i32 signext %%.%" PRIitem, args[i]);
+				uni_printf(info->io, ", ");
+				type_to_io(info->io, args_type[i]);
+				uni_printf(info->io, " signext %%.%" PRIitem, args[i]);
 			}
 
 			uni_printf(info->io, ")\n");
@@ -1217,7 +1287,7 @@ static void block(information *const info, node *const nd)
 					{
 						info->current_array_info.borders[i] = info->answer_const;
 					}
-					else // if (info->answer_type == ARER) динамический массив
+					else // if (info->answer_type == AREG) динамический массив
 					{
 						info->current_array_info.borders[i] = info->answer_reg;
 						info->current_array_info.is_static = 0;
@@ -1255,7 +1325,6 @@ static void block(information *const info, node *const nd)
 					}
 					else
 					{
-						// TODO: нужно ещё сделать восстановление стека после выделения памяти
 						if (!info->was_dynamic)
 						{
 							to_code_stack_save(info);
@@ -1295,6 +1364,7 @@ static int codegen(universal_io *const io, syntax *const sx)
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
+	info.answer_reg_type = I32;
 
 	node root = node_get_root(&sx->tree);
 	int was_stack_functions = 0;
@@ -1362,6 +1432,7 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	{
 		return -1;
 	}
+	tree_print("new1.txt", &(sx->tree));
 
 	return codegen(io, sx);
 }
