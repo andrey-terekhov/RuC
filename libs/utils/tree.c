@@ -30,11 +30,6 @@ void vector_swap(vector *const vec, size_t fst, size_t snd)
 }
 
 
-static inline int ref_set_next(node *const nd, const item_t value)
-{
-	return vector_set(nd->tree, nd->index - 2, value);
-}
-
 static inline size_t ref_get_next(const node *const nd)
 {
 	return nd->index - 2;
@@ -50,6 +45,19 @@ static inline size_t ref_get_children(const node *const nd)
 	return nd->index + 2 + (size_t)vector_get(nd->tree, nd->index);
 }
 
+static inline int ref_set_next(node *const nd, const item_t value)
+{
+	return vector_set(nd->tree, ref_get_next(nd), value);
+}
+
+static inline int ref_set_amount(node *const nd, const item_t value)
+{
+	return vector_set(nd->tree, ref_get_amount(nd), value);
+}
+static inline int ref_set_children(node *const nd, const item_t value)
+{
+	return vector_set(nd->tree, ref_get_children(nd), value);
+}
 
 static inline node node_broken()
 {
@@ -72,7 +80,7 @@ void node_update(node *const nd)
 		index = vector_get(nd->tree, (size_t)(~index + 1) - 2);
 	}
 
-	vector_set(nd->tree, ref_get_children(&last), index);
+	ref_set_children(&last, index);
 }
 
 int node_displ(node *fst, const size_t fst_index, node *snd, const size_t snd_index)
@@ -270,16 +278,16 @@ node node_add_child(node *const nd, const item_t type)
 	vector_add(nd->tree, 0);
 
 	const size_t amount = node_get_amount(nd);
-	vector_set(nd->tree, ref_get_amount(nd), amount + 1);
+	ref_set_amount(nd, amount + 1);
 
 	if (amount == 0)
 	{
-		vector_set(nd->tree, ref_get_children(nd), child.index);
+		ref_set_children(nd, child.index);
 	}
 	else
 	{
 		node prev = node_get_child(nd, amount - 1);
-		vector_set(nd->tree, ref_get_next(&prev), child.index);
+		ref_set_next(&prev, child.index);
 
 #ifdef BUFFERING
 		node_update(&prev);
@@ -320,11 +328,11 @@ int node_add_arg(node *const nd, const item_t arg)
 		return -2;
 	}
 
-	vector_set(nd->tree, ref_get_amount(nd), arg);
+	ref_set_amount(nd, arg);
 
 #ifdef BUFFERING
 	vector_add(nd->tree, vector_get(nd->tree, ref_get_children(nd)));
-	vector_set(nd->tree, ref_get_children(nd), 0);
+	ref_set_children(nd, 0);
 #else
 	vector_add(nd->tree, 0);
 #endif
@@ -423,11 +431,11 @@ int node_remove(node *const nd, const size_t index)
 	if (index == 0)
 	{
 		child = node_get_child(nd, index);
-		vector_set(nd->tree, ref_get_amount(nd), (item_t)node_get_amount(nd) - 1);
+		ref_set_amount(nd, (item_t)node_get_amount(nd) - 1);
 
 		if (node_get_amount(nd) != 0)
 		{
-			vector_set(nd->tree, ref_get_children(nd), vector_get(nd->tree, ref_get_next(&child)));
+			ref_set_children(nd, vector_get(nd->tree, ref_get_next(&child)));
 		}
 #ifdef BUFFERING
 		else
@@ -440,14 +448,14 @@ int node_remove(node *const nd, const size_t index)
 	{
 		child = node_get_child(nd, index - 1);
 		const size_t reference = (size_t)vector_get(nd->tree, ref_get_next(&child));
-		vector_set(nd->tree, ref_get_next(&child), vector_get(nd->tree, reference - 2));
+		ref_set_next(&child, vector_get(nd->tree, reference - 2));
 
 #ifdef BUFFERING
 		node_update(&child);
 #endif
 
 		child.index = reference;
-		vector_set(nd->tree, ref_get_amount(nd), (item_t)node_get_amount(nd) - 1);
+		ref_set_amount(nd, (item_t)node_get_amount(nd) - 1);
 	}
 	
 	if (node_get_amount(&child) == 0 && ref_get_children(&child) == vector_size(nd->tree) - 1)
