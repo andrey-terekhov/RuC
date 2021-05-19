@@ -403,7 +403,7 @@ int node_remove(node *const nd, const size_t index)
 		child = node_get_child(nd, index);
 		vector_set(nd->tree, ref_get_amount(nd), (item_t)node_get_amount(nd) - 1);
 
-		if (node_get_amount(nd) != 1)
+		if (node_get_amount(nd) != 0)
 		{
 			vector_set(nd->tree, ref_get_children(nd), vector_get(nd->tree, ref_get_next(&child)));
 		}
