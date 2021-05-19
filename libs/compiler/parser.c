@@ -16,7 +16,7 @@
 
 #include "parser.h"
 #include "codes.h"
-#include "tree.h"
+#include "old_tree.h"
 
 
 const char *const DEFAULT_TREE = "tree.txt";

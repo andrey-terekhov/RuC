@@ -18,7 +18,7 @@
 #include <string.h>
 #include "defs.h"
 #include "errors.h"
-#include "tree.h"
+#include "old_tree.h"
 #include "uniio.h"
 #include "uniprinter.h"
 

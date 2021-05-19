@@ -14,7 +14,7 @@
  *	limitations under the License.
  */
 
-#include "tree.h"
+#include "old_tree.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include "defs.h"

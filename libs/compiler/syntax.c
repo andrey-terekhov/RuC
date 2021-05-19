@@ -19,7 +19,7 @@
 #include "defs.h"
 #include "errors.h"
 #include "tokens.h"
-#include "tree.h"
+#include "old_tree.h"
 
 
 void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)

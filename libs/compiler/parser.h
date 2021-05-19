@@ -21,7 +21,7 @@
 #include "lexer.h"
 #include "stack.h"
 #include "syntax.h"
-#include "tree.h"
+#include "old_tree.h"
 #include "uniio.h"
 
 
