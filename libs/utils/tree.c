@@ -15,11 +15,9 @@
  */
 
 #include "tree.h"
-//#include <stdint.h>
-//#include <stdlib.h>
 
 
-inline int is_negative(const item_t value)
+static inline int is_negative(const item_t value)
 {
 	return value >> (8 * sizeof(item_t) - 1);
 }
@@ -32,28 +30,28 @@ void vector_swap(vector *const vec, size_t fst, size_t snd)
 }
 
 
-inline int ref_set_next(node *const nd, const item_t value)
+static inline int ref_set_next(node *const nd, const item_t value)
 {
 	return vector_set(nd->tree, nd->index - 2, value);
 }
 
-inline size_t ref_get_next(const node *const nd)
+static inline size_t ref_get_next(const node *const nd)
 {
 	return nd->index - 2;
 }
 
-inline size_t ref_get_amount(const node *const nd)
+static inline size_t ref_get_amount(const node *const nd)
 {
 	return nd->index + 1 + (size_t)vector_get(nd->tree, nd->index);
 }
 
-inline size_t ref_get_children(const node *const nd)
+static inline size_t ref_get_children(const node *const nd)
 {
 	return nd->index + 2 + (size_t)vector_get(nd->tree, nd->index);
 }
 
 
-inline node node_broken()
+static inline node node_broken()
 {
 	node nd = { NULL, SIZE_MAX };
 	return nd;
