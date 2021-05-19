@@ -21,6 +21,8 @@
 #include "errors.h"
 
 
+#ifdef OLD_TREE
+
 #ifndef min
 	#define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
@@ -1041,3 +1043,5 @@ int tree_test_copy(vector *const tree)
 	vector_clear(&tree_dest);
 	return ret;
 }
+
+#endif

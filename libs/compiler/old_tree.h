@@ -16,12 +16,14 @@
 
 #pragma once
 
-#include <limits.h>
-#include <stddef.h>
-#include "vector.h"
-
-
 #define OLD_TREE
+
+#ifndef OLD_TREE
+	#include "tree.h"
+#else
+	#include <limits.h>
+	#include <stddef.h>
+	#include "vector.h"
 
 
 #ifdef __cplusplus
@@ -270,4 +272,6 @@ int tree_test_copy(vector *const tree);
 
 #ifdef __cplusplus
 } /* extern "C" */
+#endif
+
 #endif
