@@ -1529,6 +1529,7 @@ void decl_id(int decl_type)    // вызывается из block и extdecl, т
     
     if (next == LEFTSQBR)      // это определение массива (может быть многомерным)
     {
+		defarr[identab[oldid+3]] = tc;
         totree(TDeclarr);
         adN = tc++;
         elem_len = szof(decl_type);
@@ -1832,6 +1833,8 @@ void statement()
                          int fromref, condref, incrref, stmtref;
                          mustbe(LEFTBR, no_leftbr_in_for);
                          totree(TFor);
+                         if (check_nested_for)
+                             totree(0);  // Здесь будет флаг вложенности
                          fromref = tc++;
                          condref = tc++;
                          incrref = tc++;
@@ -1852,7 +1855,6 @@ void statement()
                              tree[condref] = tc;
                              expr(0, 1);
                              toval();
-                             totree(TExprend);
                              sopnd--;
                              mustbe(SEMICOLON, no_semicolon_in_for);
                              sopnd--;
@@ -1870,6 +1872,7 @@ void statement()
                          tree[stmtref] = tc;
                          inloop = 1;
                          statement();
+                         totree(TForEnd);
             }
                 break;
             case LGOTO:

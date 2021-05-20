@@ -14,6 +14,7 @@
  *	limitations under the License.
  */
 
+
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
@@ -21,7 +22,7 @@
 #include "defs.h"
 
 
-const char *name = "../tests/mips/printid.c";
+const char *name = "/home/ivan-arhipych/RuC/tests/mips/float.c";
 // "tests/Mishatest.c";
 // "../../../tests/Egor/Macro/for.c";
 // "../../../tests/Fadeev/Signal.c";
@@ -51,13 +52,19 @@ int tree[MAXTREESIZE], tc=0, mtree[MAXTREESIZE], mtc=0,
 int adcont, adbreak, adcase, adandor, switchreg;
 int predef[FUNCSIZE], prdf = -1, emptyarrdef;
 int gotost[1000], pgotost, regis;
-int anst, anstdispl, ansttype, leftansttype = -1;   
+int anst, anstdispl, ansttype, leftansttype = -1;
+
+int defarr[MAXIDENTAB];
 
 int bad_printf_placeholder = 0;
 
 // optimization flags
-int cycle_jump_reduce = 1;
-
+int cycle_jump_reduce = 0;
+int enable_ind_var = 0;
+int cycle_condition_calculation = 0;
+int delay_slot = 0;
+int check_nested_for;
+int ind_var_reduction = 0;
 
 extern void preprocess_file();
 
@@ -68,6 +75,7 @@ extern int  nextch();
 extern int  scan();
 extern void error(int ernum);
 extern void mipsopt();
+extern void optimize();
 extern void mipsgen();
 extern void ext_decl();
 
@@ -111,6 +119,8 @@ FILE *keywords(const char *const exec)
 int main(int argc, const char * argv[])
 {
     int i;
+
+	check_nested_for = cycle_condition_calculation || enable_ind_var || ind_var_reduction;
 
     if (argc != 2){
         printf("Error: not enough argumnts\n");
@@ -219,6 +229,16 @@ int main(int argc, const char * argv[])
     tablesandtree();
     fclose(output);                   // файл с деревом после mipsopt
 
+	optimize();
+
+	for (i=0; i<mtc; i++)
+		tree[i] = mtree[i];
+
+	output = fopen("optimized.txt", "wt");
+	tc = mtc;
+	tablesandtree();
+	fclose(output);                   // файл с деревом после оптимизаций
+
     output = fopen("mcode.s", "wt");
     
     printf("\t.file \"%s\"\n", name);
@@ -227,12 +247,6 @@ int main(int argc, const char * argv[])
     fprintf(output, "\t.section .mdebug.abi32\n\t.previous\n\t.nan\tlegacy\n");
     fprintf(output, "\t.module fp=xx\n\t.module nooddspreg\n\t.abicalls\n");
     fprintf(output, "\t.option pic0\n\t.text\n\t.align 2\n");
-	
-	// инициализация gp
-	printf("\tlui $28, %%hi(__gnu_local_gp)\n");
-	fprintf(output, "\tlui $28, %%hi(__gnu_local_gp)\n");
-	printf("\taddiu $28, $28, %%lo(__gnu_local_gp)\n");
-	fprintf(output, "\taddiu $28, $28, %%lo(__gnu_local_gp)\n");
 
     mipsgen();                       
     

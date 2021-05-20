@@ -169,9 +169,30 @@ void tablesandtree()
                 fprintf(output, "TDo\n");
                 break;
             case TFor:
-                fprintf(output, "TFor %i %i %i %i\n", tree[i], tree[i+1], tree[i+2], tree[i+3]);
-				i += 4;
-                break;
+				if (check_nested_for)
+				{
+					fprintf(output, "TFor %i %i %i %i %i\n", tree[i], tree[i+1], tree[i+2], tree[i+3], tree[i+4]);
+					i += 5;
+				}
+				else
+				{
+					fprintf(output, "TFor %i %i %i %i\n", tree[i], tree[i+1], tree[i+2], tree[i+3]);
+					i += 4;
+				}
+				break;
+			case TForEnd:
+				fprintf(output, "TForEnd\n");
+				break;
+			case TIndVar:
+				fprintf(output, "TIndVar number = %i\n", tree[i++]);
+				break;
+			case TSliceInd:
+				fprintf(output, "TSliceInd %i\n", tree[i++]);
+				break;
+			case TDynArrBound:
+				fprintf(output, "TDynArrBound displ=%i dim=%i\n", tree[i], tree[i+1]);
+				i+=2;
+				break;
             case TSwitch:
                 fprintf(output, "TSwitch\n");
                 break;
