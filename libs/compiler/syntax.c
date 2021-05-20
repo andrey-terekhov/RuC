@@ -149,6 +149,11 @@ void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"receive_int_from_robot", U"получить_цел_от_робота", kw_receive_int);
 	repr_add_keyword(reprtab, U"receive_float_from_robot", U"получить_вещ_от_робота", kw_receive_float);
 	repr_add_keyword(reprtab, U"receive_string_from_robot", U"получить_строку_от_робота", kw_receive_string);
+
+	repr_add_keyword(reprtab, U"fopen", U"фоткрыть", kw_fopen);
+	repr_add_keyword(reprtab, U"fclose", U"фзакрыть", kw_fclose);
+	repr_add_keyword(reprtab, U"fprintf", U"фписать", kw_fprintf);
+	repr_add_keyword(reprtab, U"fscanf", U"фчитать", kw_fscanf);
 }
 
 
