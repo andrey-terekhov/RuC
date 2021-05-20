@@ -21,7 +21,7 @@
 #include "workspace.h"
 
 
-//#define GENERATE_CODES
+#define GENERATE_CODES
 
 
 #ifdef __cplusplus
