@@ -16,18 +16,13 @@
 
 #include "linker.h"
 #include "constants.h"
-#include "commenter.h"
 #include "environment.h"
-#include "file.h"
-#include "preprocessor.h"
 #include "error.h"
+#include "parser.h"
 #include "utils.h"
 #include "uniio.h"
 #include "uniprinter.h"
 #include <string.h>
-
-
-#define MAX_CMT_SIZE MAX_ARG_SIZE + 32
 
 
 linker lk_create(workspace *const ws)
@@ -63,7 +58,7 @@ void lk_make_path(char *const output, const char *const source, const char *cons
 	{
 		index = sprintf(output, "%s/", source);
 	}
-	
+
 	strcpy(&output[index], header);
 }
 
@@ -71,18 +66,18 @@ size_t lk_open_include(environment *const env, const char* const path)
 {
 	char full_path[MAX_ARG_SIZE];
 	lk_make_path(full_path, lk_get_current(env->lk), path, 1);
-	
+
 	if (in_set_file(env->input, full_path))
 	{
 		size_t i = 0;
 		const char *dir;
 
-		do  
+		do
 		{
 			dir = ws_get_dir(env->lk->ws, i++);
 			lk_make_path(full_path, dir, path, 0);
 		} while (dir != NULL && in_set_file(env->input, full_path));
-		
+
 	}
 
 	if (!in_is_correct(env->input))
@@ -91,7 +86,7 @@ size_t lk_open_include(environment *const env, const char* const path)
 		macro_system_error(full_path, include_file_not_found);
 		return SIZE_MAX - 1;
 	}
-	
+
 	const size_t index = ws_add_file(env->lk->ws, full_path);
 	if (index == env->lk->count)
 	{
@@ -102,7 +97,7 @@ size_t lk_open_include(environment *const env, const char* const path)
 		in_clear(env->input);
 		return SIZE_MAX;
 	}
-	
+
 	return index;
 }
 
@@ -118,7 +113,7 @@ int lk_open_source(environment *const env, const size_t index)
 }
 
 int lk_preprocess_file(environment *const env, const size_t number)
-{	
+{
 	env_clear_error_string(env);
 	env->lk->included[number]++;
 
@@ -129,19 +124,19 @@ int lk_preprocess_file(environment *const env, const size_t number)
 
 	get_next_char(env);
 	m_nextch(env);
-	
+
 	if (env->curchar != '#')
 	{
-		lk_add_comment(env);
+		env_add_comment(env);
 	}
 
-	int was_error = 0; 
+	int was_error = 0;
 	while (env->curchar != EOF)
 	{
-		was_error = preprocess_scan(env) || was_error;
+		was_error = preprocess_token(env) || was_error;
 	}
 
-	m_fprintf('\n', env);
+	m_fprintf(env, '\n');
 
 	env->line = old_line;
 	env->lk->current = old_cur;
@@ -159,8 +154,7 @@ int lk_preprocess_include(environment *const env)
 	{
 		if (env->curchar == EOF)
 		{
-			size_t position = skip_str(env); 
-			macro_error(must_end_quote, lk_get_current(env->lk), env->error_string, env->line, position);
+			env_error(env, must_end_quote);
 			return -1;
 		}
 
@@ -171,7 +165,7 @@ int lk_preprocess_include(environment *const env)
 	universal_io new_in = io_create();
 	universal_io *old_in = env->input;
 	env->input = &new_in;
-		
+
 	const size_t index = lk_open_include(env, header_path);
 	if (index >= SIZE_MAX - 1)
 	{
@@ -179,13 +173,13 @@ int lk_preprocess_include(environment *const env)
 		return index == SIZE_MAX ? 0 : -1;
 	}
 
-	int flag_io_type = 0;	
+	int flag_io_type = 0;
 	if (env->nextch_type != FILETYPE)
 	{
-		m_change_nextch_type(FILETYPE, 0, env);
+		m_change_nextch_type(env, FILETYPE, 0);
 		flag_io_type++;
 	}
-	
+
 	const int res = 2 * lk_preprocess_file(env, index);
 	env->input = old_in;
 
@@ -204,13 +198,12 @@ int lk_include(environment *const env)
 		return -1;
 	}
 
-	skip_space(env);
+	skip_separators(env);
 
 	if (env->curchar != '\"')
 	{
-		size_t position = skip_str(env); 
-		macro_error(must_start_quote, lk_get_current(env->lk), env->error_string, env->line, position);
-		return -1;	
+		env_error(env, must_start_quote);
+		return -1;
 	}
 
 	m_nextch(env);
@@ -218,8 +211,8 @@ int lk_include(environment *const env)
 	int res = lk_preprocess_include(env);
 	if (res == -2)
 	{
-		skip_file(env);
-		return res;
+		end_of_file(env);
+		return -1;
 	}
 
 	get_next_char(env);
@@ -255,17 +248,7 @@ int lk_preprocess_all(environment *const env)
 	return 0;
 }
 
-void lk_add_comment(environment *const env)
-{
-	comment cmt = cmt_create(lk_get_current(env->lk), env->line);
-
-	char buffer[MAX_CMT_SIZE];
-	cmt_to_string(&cmt, buffer);
-
-	uni_printf(env->output, "%s", buffer);
-}
-
 const char *lk_get_current(const linker *const lk)
 {
-	return ws_get_file(lk->ws, lk->current);
+	return lk == NULL ? NULL : ws_get_file(lk->ws, lk->current);
 }

@@ -17,8 +17,8 @@
 #pragma once
 
 #include "defs.h"
-#include "tokens.h"
 #include "syntax.h"
+#include "tokens.h"
 #include "uniio.h"
 
 
@@ -26,13 +26,13 @@
 extern "C" {
 #endif
 
+/** Lexer structure */
 typedef struct lexer
 {
 	universal_io *io;					/**< Universal io structure */
 	syntax *sx;							/**< Syntax structure */
 
-	char32_t curr_char;					/**< Current character */
-	char32_t next_char;					/**< Lookahead character */
+	char32_t character;					/**< Current character */
 	size_t repr;						/**< Pointer to representation of the read identifier */
 	int num;							/**< Value of the read integer number */
 	double num_double;					/**< Value of the read double number */
@@ -52,22 +52,22 @@ typedef struct lexer
 lexer create_lexer(universal_io *const io, syntax *const sx);
 
 /**
- *	Read next character from io
- *
- *	@param	lxr		Lexer structure
- *
- *	@return	Character
- */
-char32_t get_char(lexer *const lxr);
-
-/**
  *	Lex next token from io
  *
  *	@param	lxr		Lexer structure
  *
- *	@return	Token
+ *	@return	Lexed token
  */
 token_t lex(lexer *const lxr);
+
+/**
+ *	Peek next token from io
+ *
+ *	@param	lxr		Lexer structure
+ *
+ *	@return	Peeked token
+ */
+token_t peek(lexer *const lxr);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -27,13 +27,38 @@ int equal_reprtab(int i, int j, environment *const env);
 void output_keywords(environment *const env);
 int macro_keywords(environment *const env);
 int collect_mident(environment *const env);
-int find_file(environment *const env, const char *s);
 
-int space_end_line(environment *const env);
-void skip_space(environment *const env);
-void skip_space_str(environment *const env);
-size_t skip_str(environment *const env);
-void skip_file(environment *const env);
+/**
+ *	Skip all spaces and tabs to the end of the line
+ *
+ *	@param	env	Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int skip_line(environment *const env);
+
+/**
+ *	Skip all spaces and tabs up to a significant character
+ *
+ *	@param	env	Preprocessor environment
+ */
+void skip_separators(environment *const env);
+
+/**
+ *	Skip all characters inside quotes
+ *
+ *	@param	env	Preprocessor environment
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int skip_string(environment *const env);
+
+/**
+ *	Assigning the current character EOF
+ *
+ *	@param	env	Preprocessor environment
+ */
+void end_of_file(environment *const env);
 
 #ifdef __cplusplus
 } /* extern "C" */

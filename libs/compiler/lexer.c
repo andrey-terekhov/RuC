@@ -26,7 +26,7 @@
  *	@param	lxr			Lexer structure
  *	@param	num			Error code
  */
-void lexer_error(lexer *const lxr, error_t num, ...)
+static void lexer_error(lexer *const lxr, error_t num, ...)
 {
 	lxr->was_error = 1;
 
@@ -39,16 +39,44 @@ void lexer_error(lexer *const lxr, error_t num, ...)
 }
 
 /**
+ *	Scan next character from io
+ *
+ *	@param	lxr			Lexer structure
+ *
+ *	@return	Read character
+ */
+static char32_t scan(lexer *const lxr)
+{
+	lxr->character = uni_scan_char(lxr->io);
+	return lxr->character;
+}
+
+/**
+ *	Peek next character from io
+ *
+ *	@param	lxr			Lexer structure
+ *
+ *	@return	Peeked character
+ */
+static char32_t lookahead(lexer *const lxr)
+{
+	const size_t position = in_get_position(lxr->io);
+	const char32_t result = uni_scan_char(lxr->io);
+	in_set_position(lxr->io, position);
+	return result;
+}
+
+/**
  *	Skip over a series of whitespace characters
  *
  *	@param	lxr			Lexer structure
  */
-void skip_whitespace(lexer *const lxr)
+static void skip_whitespace(lexer *const lxr)
 {
-	while (lxr->curr_char == ' ' || lxr->curr_char == '\t'
-		|| lxr->curr_char == '\n' || lxr->curr_char == '\r')
+	while (lxr->character == '\n' || lxr->character == '\r'
+		|| lxr->character == '\t' || lxr->character == ' ')
 	{
-		get_char(lxr);
+		scan(lxr);
 	}
 }
 
@@ -57,11 +85,11 @@ void skip_whitespace(lexer *const lxr)
  *
  *	@param	lxr			Lexer structure
  */
-void skip_line_comment(lexer *const lxr)
+static void skip_line_comment(lexer *const lxr)
 {
-	while (lxr->curr_char != '\n' && lxr->next_char != (char32_t)EOF)
+	while (lxr->character != '\n' && lxr->character != (char32_t)EOF)
 	{
-		get_char(lxr);
+		scan(lxr);
 	}
 }
 
@@ -70,18 +98,18 @@ void skip_line_comment(lexer *const lxr)
  *
  *	@param	lxr			Lexer structure
  */
-void skip_block_comment(lexer *const lxr)
+static void skip_block_comment(lexer *const lxr)
 {
-	while (lxr->curr_char != '*' && lxr->next_char != '/')
+	while (lxr->character != '*' && scan(lxr) != '/')
 	{
-		if (lxr->next_char == (char32_t)EOF)
+		if (lxr->character == (char32_t)EOF)
 		{
 			lexer_error(lxr, unterminated_block_comment);
 			return;
 		}
-		get_char(lxr);
+		scan(lxr);
 	}
-	get_char(lxr);
+	scan(lxr);
 }
 
 /**
@@ -91,21 +119,21 @@ void skip_block_comment(lexer *const lxr)
  *
  *	@return	keyword number on keyword, @c identifier on identifier
  */
-token_t lex_identifier_or_keyword(lexer *const lxr)
+static token_t lex_identifier_or_keyword(lexer *const lxr)
 {
 	char32_t spelling[MAXSTRINGL];
 	size_t length = 0;
 
 	do
 	{
-		spelling[length++] = lxr->curr_char;
-		get_char(lxr);
-	} while (utf8_is_letter(lxr->curr_char) || utf8_is_digit(lxr->curr_char));
+		spelling[length++] = lxr->character;
+		scan(lxr);
+	} while (utf8_is_letter(lxr->character) || utf8_is_digit(lxr->character));
 	spelling[length] = '\0';
 
 	const size_t repr = repr_reserve(lxr->sx, spelling);
 	const item_t ref = repr_get_reference(lxr->sx, repr);
-	if (ref >= 0)
+	if (ref >= 0 && repr != ITEM_MAX)
 	{
 		lxr->repr = repr;
 		return identifier;
@@ -123,18 +151,18 @@ token_t lex_identifier_or_keyword(lexer *const lxr)
  *
  *	@return	@c int_constant on integer, @c float_constant on floating point
  */
-token_t lex_numeric_constant(lexer *const lxr)
+static token_t lex_numeric_constant(lexer *const lxr)
 {
 	int num_int = 0;
 	double num_double = 0.0;
 	int flag_int = 1;
 	int flag_too_long = 0;
 
-	while (utf8_is_digit(lxr->curr_char))
+	while (utf8_is_digit(lxr->character))
 	{
-		num_int = num_int * 10 + (lxr->curr_char - '0');
-		num_double = num_double * 10 + (lxr->curr_char - '0');
-		get_char(lxr);
+		num_int = num_int * 10 + (lxr->character - '0');
+		num_double = num_double * 10 + (lxr->character - '0');
+		scan(lxr);
 	}
 
 	if (num_double > (double)INT_MAX)
@@ -143,44 +171,44 @@ token_t lex_numeric_constant(lexer *const lxr)
 		flag_int = 0;
 	}
 
-	if (lxr->curr_char == '.')
+	if (lxr->character == '.')
 	{
 		flag_int = 0;
 		double position_mult = 0.1;
-		while (utf8_is_digit(get_char(lxr)))
+		while (utf8_is_digit(scan(lxr)))
 		{
-			num_double += (lxr->curr_char - '0') * position_mult;
+			num_double += (lxr->character - '0') * position_mult;
 			position_mult *= 0.1;
 		}
 	}
 
-	if (utf8_is_power(lxr->curr_char))
+	if (utf8_is_power(lxr->character))
 	{
 		int power = 0;
 		int sign = 1;
-		get_char(lxr);
+		scan(lxr);
 
-		if (lxr->curr_char == '-')
+		if (lxr->character == '-')
 		{
 			flag_int = 0;
-			get_char(lxr);
+			scan(lxr);
 			sign = -1;
 		}
-		else if (lxr->curr_char == '+')
+		else if (lxr->character == '+')
 		{
-			get_char(lxr);
+			scan(lxr);
 		}
 
-		if (!utf8_is_digit(lxr->curr_char))
+		if (!utf8_is_digit(lxr->character))
 		{
 			lexer_error(lxr, must_be_digit_after_exp);
 			return float_constant;
 		}
 
-		while (utf8_is_digit(lxr->curr_char))
+		while (utf8_is_digit(lxr->character))
 		{
-			power = power * 10 + (lxr->curr_char - '0');
-			get_char(lxr);
+			power = power * 10 + (lxr->character - '0');
+			scan(lxr);
 		}
 
 		if (flag_int)
@@ -210,11 +238,11 @@ token_t lex_numeric_constant(lexer *const lxr)
 }
 
 /**	Get character or escape sequence after '\' */
-char32_t get_next_string_elem(lexer *const lxr)
+static char32_t get_next_string_elem(lexer *const lxr)
 {
-	if (lxr->curr_char == '\\')
+	if (lxr->character == '\\')
 	{
-		switch (get_char(lxr))
+		switch (scan(lxr))
 		{
 			case 'n':
 			case U'н':
@@ -230,16 +258,16 @@ char32_t get_next_string_elem(lexer *const lxr)
 			case '\\':
 			case '\'':
 			case '\"':
-				return lxr->curr_char;
+				return lxr->character;
 
 			default:
 				lexer_error(lxr, unknown_escape_sequence);
-				return lxr->curr_char;
+				return lxr->character;
 		}
 	}
 	else
 	{
-		return lxr->curr_char;
+		return lxr->character;
 	}
 }
 
@@ -251,9 +279,9 @@ char32_t get_next_string_elem(lexer *const lxr)
  *
  *	@return	@c char_constant
  */
-token_t lex_char_constant(lexer *const lxr)
+static token_t lex_char_constant(lexer *const lxr)
 {
-	if (get_char(lxr) == '\'')
+	if (scan(lxr) == '\'')
 	{
 		lexer_error(lxr, empty_character);
 		lxr->num = 0;
@@ -262,9 +290,9 @@ token_t lex_char_constant(lexer *const lxr)
 
 	lxr->num = get_next_string_elem(lxr);
 
-	if (get_char(lxr) == '\'')
+	if (scan(lxr) == '\'')
 	{
-		get_char(lxr);
+		scan(lxr);
 	}
 	else
 	{
@@ -281,33 +309,33 @@ token_t lex_char_constant(lexer *const lxr)
  *
  *	@return	@c string_literal
  */
-token_t lex_string_literal(lexer *const lxr)
+static token_t lex_string_literal(lexer *const lxr)
 {
 	size_t length = 0;
 	int flag_too_long_string = 0;
-	while (lxr->curr_char == '\"')
+	while (lxr->character == '\"')
 	{
-		get_char(lxr);
-		while (lxr->curr_char != '"' && lxr->curr_char != '\n' && length < MAXSTRINGL)
+		scan(lxr);
+		while (lxr->character != '"' && lxr->character != '\n' && length < MAXSTRINGL)
 		{
 			if (!flag_too_long_string)
 			{
 				lxr->lexstr[length++] = get_next_string_elem(lxr);
 			}
-			get_char(lxr);
+			scan(lxr);
 		}
 		if (length == MAXSTRINGL)
 		{
 			lexer_error(lxr, string_too_long);
 			flag_too_long_string = 1;
-			while (lxr->curr_char != '"' && lxr->curr_char != '\n')
+			while (lxr->character != '"' && lxr->character != '\n')
 			{
-				get_char(lxr);
+				scan(lxr);
 			}
 		}
-		if (lxr->curr_char == '"')
+		if (lxr->character == '"')
 		{
-			get_char(lxr);
+			scan(lxr);
 		}
 		else
 		{
@@ -338,20 +366,11 @@ lexer create_lexer(universal_io *const io, syntax *const sx)
 
 	lxr.was_error = 0;
 
+	scan(&lxr);
+
 	return lxr;
 }
 
-char32_t get_char(lexer *const lxr)
-{
-	if (lxr == NULL)
-	{
-		return (char32_t)EOF;
-	}
-
-	lxr->curr_char = lxr->next_char;
-	lxr->next_char = uni_scan_char(lxr->io);
-	return lxr->curr_char;
-}
 
 token_t lex(lexer *const lxr)
 {
@@ -361,13 +380,13 @@ token_t lex(lexer *const lxr)
 	}
 
 	skip_whitespace(lxr);
-	switch (lxr->curr_char)
+	switch (lxr->character)
 	{
 		case (char32_t)EOF:
 			return eof;
 
 		default:
-			if (utf8_is_letter(lxr->curr_char) || lxr->curr_char == '#')
+			if (utf8_is_letter(lxr->character) || lxr->character == '#')
 			{
 				// Keywords [C99 6.4.1]
 				// Identifiers [C99 6.4.2]
@@ -375,9 +394,9 @@ token_t lex(lexer *const lxr)
 			}
 			else
 			{
-				lexer_error(lxr, bad_character, lxr->curr_char);
+				lexer_error(lxr, bad_character, lxr->character);
 				// Pretending the character didn't exist
-				get_char(lxr);
+				scan(lxr);
 				return lex(lxr);
 			}
 
@@ -397,64 +416,64 @@ token_t lex(lexer *const lxr)
 
 		// Punctuators [C99 6.4.6]
 		case '?':
-			get_char(lxr);
+			scan(lxr);
 			return question;
 
 		case '[':
-			get_char(lxr);
+			scan(lxr);
 			return l_square;
 
 		case ']':
-			get_char(lxr);
+			scan(lxr);
 			return r_square;
 
 		case '(':
-			get_char(lxr);
+			scan(lxr);
 			return l_paren;
 
 		case ')':
-			get_char(lxr);
+			scan(lxr);
 			return r_paren;
 
 		case '{':
-			get_char(lxr);
+			scan(lxr);
 			return l_brace;
 
 		case '}':
-			get_char(lxr);
+			scan(lxr);
 			return r_brace;
 
 		case '~':
-			get_char(lxr);
+			scan(lxr);
 			return tilde;
 
 		case ':':
-			get_char(lxr);
+			scan(lxr);
 			return colon;
 
 		case ';':
-			get_char(lxr);
+			scan(lxr);
 			return semicolon;
 
 		case ',':
-			get_char(lxr);
+			scan(lxr);
 			return comma;
 
 		case '.':
-			if (utf8_is_digit(lxr->next_char))
+			if (utf8_is_digit(lookahead(lxr)))
 			{
 				return lex_numeric_constant(lxr);
 			}
 			else
 			{
-				get_char(lxr);
+				scan(lxr);
 				return period;
 			}
 
 		case '*':
-			if (get_char(lxr) == '=')
+			if (scan(lxr) == '=')
 			{
-				get_char(lxr);
+				scan(lxr);
 				return starequal;
 			}
 			else
@@ -463,9 +482,9 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '!':
-			if (get_char(lxr) == '=')
+			if (scan(lxr) == '=')
 			{
-				get_char(lxr);
+				scan(lxr);
 				return exclaimequal;
 			}
 			else
@@ -474,9 +493,9 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '%':
-			if (get_char(lxr) == '=')
+			if (scan(lxr) == '=')
 			{
-				get_char(lxr);
+				scan(lxr);
 				return percentequal;
 			}
 			else
@@ -485,9 +504,9 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '^':
-			if (get_char(lxr) == '=')
+			if (scan(lxr) == '=')
 			{
-				get_char(lxr);
+				scan(lxr);
 				return caretequal;
 			}
 			else
@@ -496,9 +515,9 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '=':
-			if (get_char(lxr) == '=')
+			if (scan(lxr) == '=')
 			{
-				get_char(lxr);
+				scan(lxr);
 				return equalequal;
 			}
 			else
@@ -507,14 +526,14 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '+':
-			switch (get_char(lxr))
+			switch (scan(lxr))
 			{
 				case '=':
-					get_char(lxr);
+					scan(lxr);
 					return plusequal;
 
 				case '+':
-					get_char(lxr);
+					scan(lxr);
 					return plusplus;
 
 				default:
@@ -522,14 +541,14 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '|':
-			switch (get_char(lxr))
+			switch (scan(lxr))
 			{
 				case '=':
-					get_char(lxr);
+					scan(lxr);
 					return pipeequal;
 
 				case '|':
-					get_char(lxr);
+					scan(lxr);
 					return pipepipe;
 
 				default:
@@ -537,14 +556,14 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '&':
-			switch (get_char(lxr))
+			switch (scan(lxr))
 			{
 				case '=':
-					get_char(lxr);
+					scan(lxr);
 					return ampequal;
 
 				case '&':
-					get_char(lxr);
+					scan(lxr);
 					return ampamp;
 
 				default:
@@ -552,18 +571,18 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '-':
-			switch (get_char(lxr))
+			switch (scan(lxr))
 			{
 				case '=':
-					get_char(lxr);
+					scan(lxr);
 					return minusequal;
 
 				case '-':
-					get_char(lxr);
+					scan(lxr);
 					return minusminus;
 
 				case '>':
-					get_char(lxr);
+					scan(lxr);
 					return arrow;
 
 				default:
@@ -571,12 +590,12 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '<':
-			switch (get_char(lxr))
+			switch (scan(lxr))
 			{
 				case '<':
-					if (get_char(lxr) == '=')
+					if (scan(lxr) == '=')
 					{
-						get_char(lxr);
+						scan(lxr);
 						return lesslessequal;
 					}
 					else
@@ -585,7 +604,7 @@ token_t lex(lexer *const lxr)
 					}
 
 				case '=':
-					get_char(lxr);
+					scan(lxr);
 					return lessequal;
 
 				default:
@@ -593,12 +612,12 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '>':
-			switch (get_char(lxr))
+			switch (scan(lxr))
 			{
 				case '>':
-					if (get_char(lxr) == '=')
+					if (scan(lxr) == '=')
 					{
-						get_char(lxr);
+						scan(lxr);
 						return greatergreaterequal;
 					}
 					else
@@ -607,7 +626,7 @@ token_t lex(lexer *const lxr)
 					}
 
 				case '=':
-					get_char(lxr);
+					scan(lxr);
 					return greaterequal;
 
 				default:
@@ -615,10 +634,10 @@ token_t lex(lexer *const lxr)
 			}
 
 		case '/':
-			switch (get_char(lxr))
+			switch (scan(lxr))
 			{
 				case '=':
-					get_char(lxr);
+					scan(lxr);
 					return slashequal;
 
 				// Comments [C99 6.4.9]
@@ -634,4 +653,14 @@ token_t lex(lexer *const lxr)
 					return slash;
 			}
 	}
+}
+
+token_t peek(lexer *const lxr)
+{
+	const size_t position = in_get_position(lxr->io);
+	const char32_t character = lxr->character;
+	const token_t peek_token = lex(lxr);
+	lxr->character = character;
+	in_set_position(lxr->io, position);
+	return peek_token;
 }
