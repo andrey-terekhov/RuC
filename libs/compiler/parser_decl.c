@@ -261,19 +261,19 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 			{
 				if (!was_array)
 				{
-					nd = node_add_child(parent, TStructbeg);
+					nd = node_add_child(parent, ND_DECL_STRUCT);
 					node_add_arg(&nd, 0); // Тут будет номер инициализирующей процедуры
 					was_array = 1;
 				}
 
-				node nd_decl_arr = node_add_child(&nd, TDeclarr);
+				node nd_decl_arr = node_add_child(&nd, ND_DECL_ARR);
 				node_add_arg(&nd_decl_arr, 0);
 				// Меняем тип (увеличиваем размерность массива)
 				type = parse_array_definition(prs, &nd_decl_arr, element_type);
 				node_set_arg(&nd_decl_arr, 0, prs->flag_empty_bounds
 							 ? (item_t)prs->array_dimensions
 							 : (item_t)prs->array_dimensions - 1);
-				node nd_decl_id = node_add_child(&nd_decl_arr, TDeclid);
+				node nd_decl_id = node_add_child(&nd_decl_arr, ND_DECL_ID);
 				node_add_arg(&nd_decl_id, (item_t)displ);
 				node_add_arg(&nd_decl_id, element_type);
 				node_add_arg(&nd_decl_id, (item_t)prs->array_dimensions);
@@ -348,7 +348,7 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
 	size_t actual_fields = 0;
 	size_t ref_next_field = (size_t)type + 3;
 
-	to_tree(prs, TStructinit);
+	to_tree(prs, ND_STRUCT_INIT);
 	node_add_arg(&prs->nd, (item_t)expected_fields);
 
 	do
@@ -404,7 +404,7 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 		return;
 	}
 
-	to_tree(prs, TBeginit);
+	to_tree(prs, ND_ARRAY_INIT);
 	node_add_arg(&prs->nd, 0);
 	size_t list_length = 0;
 
@@ -458,7 +458,7 @@ void parse_init_declarator(parser *const prs, node *const parent, item_t type)
 
 	if (prs->token == TOK_LSQUARE)
 	{
-		nd_decl_arr = node_add_child(parent, TDeclarr);
+		nd_decl_arr = node_add_child(parent, ND_DECL_ARR);
 		node_add_arg(&nd_decl_arr, 0); // Здесь будет размерность
 		is_array = 1;
 
@@ -472,7 +472,7 @@ void parse_init_declarator(parser *const prs, node *const parent, item_t type)
 		}
 	}
 
-	node nd = node_add_child(is_array ? &nd_decl_arr : parent, TDeclid);
+	node nd = node_add_child(is_array ? &nd_decl_arr : parent, ND_DECL_ID);
 	node_add_arg(&nd, ident_get_displ(prs->sx, old_id));
 	node_add_arg(&nd, element_type);
 	node_add_arg(&nd, (item_t)prs->array_dimensions);
@@ -711,7 +711,7 @@ void parse_function_body(parser *const prs, node *const parent, const size_t fun
 		to_identab(prs, (size_t)llabs(repr), repr > 0 ? 0 : -1, type);
 	}
 
-	node nd = node_add_child(parent, TFuncdef);
+	node nd = node_add_child(parent, ND_FUNC_DEF);
 	node_add_arg(&nd, (item_t)function_id);
 	node_add_arg(&nd, 0); // for max_displ
 
