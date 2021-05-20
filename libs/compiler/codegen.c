@@ -129,7 +129,7 @@ static void addr_end_break(virtual *const vm)
 
 static void final_operation(virtual *const vm, node *const nd)
 {
-	item_t op = node_get_type(nd);
+	node_t op = node_get_type(nd);
 	while (op > 9000)
 	{
 		if (op != ND_NULL)
@@ -150,8 +150,7 @@ static void final_operation(virtual *const vm, node *const nd)
 			}
 			else
 			{
-				// TODO: to_instruction()
-				mem_add(vm, (instruction_t)op);
+				mem_add(vm, node_to_instruction(op));
 				if (op == ND_LOGOR || op == ND_LOGAND)
 				{
 					mem_set(vm, (size_t)stack_pop(&vm->stk), (item_t)mem_size(vm));
@@ -171,10 +170,7 @@ static void final_operation(virtual *const vm, node *const nd)
 				{
 					mem_add(vm, node_get_arg(nd, 0)); // длина
 				}
-				else if ((op >= ND_REMASS && op <= ND_DIVASS) || (op >= ND_REMASSV && op <= ND_DIVASSV)
-					|| (op >= ND_ASSR && op <= ND_DIVASSR) || (op >= ND_ASSRV && op <= ND_DIVASSRV)
-					|| (op >= ND_POSTINC && op <= ND_DEC) || (op >= ND_POSTINCV && op <= ND_DECV)
-					|| (op >= ND_POSTINCR && op <= ND_DECR) || (op >= ND_POSTINCRV && op <= ND_DECRV))
+				else if (node_is_assignment_operator(op))
 				{
 					mem_add(vm, node_get_arg(nd, 0));
 				}

@@ -167,7 +167,7 @@ typedef enum INSTURCTION
 	IC_INCAT,			/**< "INC@" instruction code */
 	IC_DECAT,			/**< "DEC@" instruction code */
 	IC_UNMINUS,			/**< "UNMINUS" instruction code */
-	IC_NOT,				/**< "BITNOT" instruction code */
+	IC_NOT = 9052,		/**< "BITNOT" instruction code */
 	IC_LOGNOT,			/**< "NOT" instruction code */
 
 	IC_ASSR = 9057,		/**< "=f" instruction code */

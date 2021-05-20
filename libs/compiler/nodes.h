@@ -17,6 +17,7 @@
 #pragma once
 
 #include "defs.h"
+#include "instructions.h"
 
 
 #ifdef __cplusplus
@@ -276,6 +277,11 @@ typedef enum NODE
 	ND_INCATRV			= INCATRV,			/**< "INC@fV" node */
 	ND_DECATRV			= DECATRV,			/**< "DEC@fV" node */
 } node_t;
+
+
+instruction_t node_to_instruction(const node_t node);
+
+int node_is_assignment_operator(const node_t node);
 
 #ifdef __cplusplus
 } /* extern "C" */
