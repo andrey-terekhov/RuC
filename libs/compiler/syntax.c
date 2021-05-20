@@ -120,29 +120,8 @@ void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"t_getnum", U"н_номер_нити", kw_getnum);
 
 	repr_add_keyword(reprtab, U"assert", U"проверить", kw_assert);
-	repr_add_keyword(reprtab, U"pixel", U"пиксель", kw_pixel);
-	repr_add_keyword(reprtab, U"line", U"линия", kw_line);
-	repr_add_keyword(reprtab, U"rectangle", U"прямоугольник", kw_rectangle);
-	repr_add_keyword(reprtab, U"ellipse", U"эллипс", kw_ellipse);
-	repr_add_keyword(reprtab, U"clear", U"очистить", kw_clear);
-	repr_add_keyword(reprtab, U"draw_string", U"нарисовать_строку", kw_draw_string);
-	repr_add_keyword(reprtab, U"draw_number", U"нарисовать_число", kw_draw_number);
-	repr_add_keyword(reprtab, U"icon", U"иконка", kw_icon);
 	repr_add_keyword(reprtab, U"upb", U"кол_во", kw_upb);
-	repr_add_keyword(reprtab, U"setsignal", U"сигнал", kw_setsignal);
-	repr_add_keyword(reprtab, U"setmotor", U"мотор", kw_setmotor);
-	repr_add_keyword(reprtab, U"setvoltage", U"устнапряжение", kw_setvoltage);
-	repr_add_keyword(reprtab, U"getdigsensor", U"цифрдатчик", kw_getdigsensor);
-	repr_add_keyword(reprtab, U"getansensor", U"аналогдатчик", kw_getansensor);
 
-	repr_add_keyword(reprtab, U"wifi_connect", U"wifi_подключить", kw_wifi_connect);
-	repr_add_keyword(reprtab, U"blynk_authorization", U"blynk_авторизация", kw_blynk_authorization);
-	repr_add_keyword(reprtab, U"blynk_send", U"blynk_послать", kw_blynk_send);
-	repr_add_keyword(reprtab, U"blynk_receive", U"blynk_получить", kw_blynk_receive);
-	repr_add_keyword(reprtab, U"blynk_notification", U"blynk_уведомление", kw_blynk_notification);
-	repr_add_keyword(reprtab, U"blynk_property", U"blynk_свойство", kw_blynk_property);
-	repr_add_keyword(reprtab, U"blynk_lcd", U"blynk_дисплей", kw_blynk_lcd);
-	repr_add_keyword(reprtab, U"blynk_terminal", U"blynk_терминал", kw_blynk_terminal);
 	repr_add_keyword(reprtab, U"send_int_to_robot", U"послать_цел_на_робот", kw_send_int);
 	repr_add_keyword(reprtab, U"send_float_to_robot", U"послать_вещ_на_робот", kw_send_float);
 	repr_add_keyword(reprtab, U"send_string_to_robot", U"послать_строку_на_робот", kw_send_string);

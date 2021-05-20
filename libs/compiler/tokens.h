@@ -146,6 +146,8 @@ typedef enum TOKEN
 	kw_t_create_direct	= TCREATEDIRECT,
 	kw_t_exit_direct	= TEXITDIRECT,
 
+	kw_assert			= ASSERT,		/**< 'assert'		keyword */
+	kw_upb				= UPB,			/**< 'upb'			keyword */
 	kw_msg_send			= TMSGSEND,		/**< 't_msg_send'		keyword */
 	kw_msg_receive		= TMSGRECEIVE,	/**< 't_msg_receive'	keyword */
 	kw_join				= TJOIN,		/**< 't_join'			keyword */
@@ -158,31 +160,7 @@ typedef enum TOKEN
 	kw_destroy			= TDESTROY,		/**< 't_destroy'		keyword */
 	kw_exit				= TEXIT,		/**< 't_exit'			keyword */
 	kw_getnum			= TGETNUM,		/**< 't_getnum'			keyword */
-
-	kw_assert			= ASSERT,		/**< 'assert'		keyword */
-	kw_pixel			= PIXEL,		/**< 'pixel'		keyword */
-	kw_line				= LINE,			/**< 'line'			keyword */
-	kw_rectangle		= RECTANGLE,	/**< 'rectangle'	keyword */
-	kw_ellipse			= ELLIPS,		/**< 'ellipse'		keyword */
-	kw_clear			= CLEAR,		/**< 'clear'		keyword */
-	kw_draw_string		= DRAW_STRING,	/**< 'draw_string'	keyword */
-	kw_draw_number		= DRAW_NUMBER,	/**< 'draw_number'	keyword */
-	kw_icon				= ICON,			/**< 'icon'			keyword */
-	kw_upb				= UPB,			/**< 'upb'			keyword */
-	kw_setsignal		= SETSIGNAL,	/**< 'setsignal'	keyword */
-	kw_setmotor			= SETMOTOR, 	/**< 'setmotor'		keyword */
-	kw_setvoltage		= VOLTAGE,		/**< 'setvoltage'	keyword */
-	kw_getdigsensor		= GETDIGSENSOR,	/**< 'getdigsensor'	keyword */
-	kw_getansensor		= GETANSENSOR,	/**< 'getansensor'	keyword */
-
-	kw_wifi_connect			= WIFI_CONNECT,			/**< 'wifi_connect'					keyword */
-	kw_blynk_authorization	= BLYNK_AUTORIZATION,	/**< 'blynk_authorization'			keyword */
-	kw_blynk_send			= BLYNK_SEND,			/**< 'blynk_send'					keyword */
-	kw_blynk_receive		= BLYNK_RECEIVE,		/**< 'blynk_receive'				keyword */
-	kw_blynk_notification	= BLYNK_NOTIFICATION,	/**< 'blynk_notification'			keyword */
-	kw_blynk_property		= BLYNK_PROPERTY,		/**< 'blynk_property'				keyword */
-	kw_blynk_lcd			= BLYNK_LCD,			/**< 'blynk_lcd'					keyword */
-	kw_blynk_terminal		= BLYNK_TERMINAL,		/**< 'blynk_terminal'				keyword */
+	
 	kw_send_int				= SEND_INT,				/**< 'send_int_to_robot'			keyword */
 	kw_send_float			= SEND_FLOAT,			/**< 'send_float_to_robot'			keyword */
 	kw_send_string			= SEND_STRING,			/**< 'send_string_to_robot'			keyword */
