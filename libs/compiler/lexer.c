@@ -16,6 +16,7 @@
 
 #include "lexer.h"
 #include <math.h>
+#include <string.h>
 #include "errors.h"
 #include "uniscanner.h"
 
