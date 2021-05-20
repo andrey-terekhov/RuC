@@ -136,7 +136,7 @@ static token_t lex_identifier_or_keyword(lexer *const lxr)
 	if (ref >= 0 && repr != ITEM_MAX)
 	{
 		lxr->repr = repr;
-		return identifier;
+		return TOK_IDENTIFIER;
 	}
 	else
 	{
@@ -202,7 +202,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 		if (!utf8_is_digit(lxr->character))
 		{
 			lexer_error(lxr, must_be_digit_after_exp);
-			return float_constant;
+			return TOK_FLOAT_CONST;
 		}
 
 		while (utf8_is_digit(lxr->character))
@@ -224,7 +224,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 	if (flag_int)
 	{
 		lxr->num = num_int;
-		return int_constant;
+		return TOK_INT_CONST;
 	}
 	else
 	{
@@ -233,7 +233,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 		{
 			warning(lxr->io, too_long_int);
 		}
-		return float_constant;
+		return TOK_FLOAT_CONST;
 	}
 }
 
@@ -285,7 +285,7 @@ static token_t lex_char_constant(lexer *const lxr)
 	{
 		lexer_error(lxr, empty_character);
 		lxr->num = 0;
-		return char_constant;
+		return TOK_CHAR_CONST;
 	}
 
 	lxr->num = get_next_string_elem(lxr);
@@ -298,7 +298,7 @@ static token_t lex_char_constant(lexer *const lxr)
 	{
 		lexer_error(lxr, expected_apost_after_char_const);
 	}
-	return char_constant;
+	return TOK_CHAR_CONST;
 }
 
 /**
@@ -344,7 +344,7 @@ static token_t lex_string_literal(lexer *const lxr)
 		skip_whitespace(lxr);
 	}
 	lxr->num = (int)length;
-	return string_literal;
+	return TOK_STRING;
 }
 
 
@@ -376,14 +376,14 @@ token_t lex(lexer *const lxr)
 {
 	if (lxr == NULL)
 	{
-		return eof;
+		return TOK_EOF;
 	}
 
 	skip_whitespace(lxr);
 	switch (lxr->character)
 	{
 		case (char32_t)EOF:
-			return eof;
+			return TOK_EOF;
 
 		default:
 			if (utf8_is_letter(lxr->character) || lxr->character == '#')
@@ -417,47 +417,47 @@ token_t lex(lexer *const lxr)
 		// Punctuators [C99 6.4.6]
 		case '?':
 			scan(lxr);
-			return question;
+			return TOK_QUESTION;
 
 		case '[':
 			scan(lxr);
-			return l_square;
+			return TOK_LSQUARE;
 
 		case ']':
 			scan(lxr);
-			return r_square;
+			return TOK_RSQUARE;
 
 		case '(':
 			scan(lxr);
-			return l_paren;
+			return TOK_LPAREN;
 
 		case ')':
 			scan(lxr);
-			return r_paren;
+			return TOK_RPAREN;
 
 		case '{':
 			scan(lxr);
-			return l_brace;
+			return TOK_LBRACE;
 
 		case '}':
 			scan(lxr);
-			return r_brace;
+			return TOK_RBRACE;
 
 		case '~':
 			scan(lxr);
-			return tilde;
+			return TOK_TILDE;
 
 		case ':':
 			scan(lxr);
-			return colon;
+			return TOK_COLON;
 
 		case ';':
 			scan(lxr);
-			return semicolon;
+			return TOK_SEMICOLON;
 
 		case ',':
 			scan(lxr);
-			return comma;
+			return TOK_COMMA;
 
 		case '.':
 			if (utf8_is_digit(lookahead(lxr)))
@@ -467,62 +467,62 @@ token_t lex(lexer *const lxr)
 			else
 			{
 				scan(lxr);
-				return period;
+				return TOK_PERIOD;
 			}
 
 		case '*':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return starequal;
+				return TOK_STAREQUAL;
 			}
 			else
 			{
-				return star;
+				return TOK_STAR;
 			}
 
 		case '!':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return exclaimequal;
+				return TOK_EXCLAIMEQUAL;
 			}
 			else
 			{
-				return exclaim;
+				return TOK_EXCLAIM;
 			}
 
 		case '%':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return percentequal;
+				return TOK_PERCENTEQUAL;
 			}
 			else
 			{
-				return percent;
+				return TOK_PERCENT;
 			}
 
 		case '^':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return caretequal;
+				return TOK_CARETEQUAL;
 			}
 			else
 			{
-				return caret;
+				return TOK_CARET;
 			}
 
 		case '=':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return equalequal;
+				return TOK_EQUALEQUAL;
 			}
 			else
 			{
-				return equal;
+				return TOK_EQUAL;
 			}
 
 		case '+':
@@ -530,14 +530,14 @@ token_t lex(lexer *const lxr)
 			{
 				case '=':
 					scan(lxr);
-					return plusequal;
+					return TOK_PLUSEQUAL;
 
 				case '+':
 					scan(lxr);
-					return plusplus;
+					return TOK_PLUSPLUS;
 
 				default:
-					return plus;
+					return TOK_PLUS;
 			}
 
 		case '|':
@@ -545,14 +545,14 @@ token_t lex(lexer *const lxr)
 			{
 				case '=':
 					scan(lxr);
-					return pipeequal;
+					return TOK_PIPEEQUAL;
 
 				case '|':
 					scan(lxr);
-					return pipepipe;
+					return TOK_PIPEPIPE;
 
 				default:
-					return pipe;
+					return TOK_PIPE;
 			}
 
 		case '&':
@@ -560,14 +560,14 @@ token_t lex(lexer *const lxr)
 			{
 				case '=':
 					scan(lxr);
-					return ampequal;
+					return TOK_AMPEQUAL;
 
 				case '&':
 					scan(lxr);
-					return ampamp;
+					return TOK_AMPAMP;
 
 				default:
-					return amp;
+					return TOK_AMP;
 			}
 
 		case '-':
@@ -575,18 +575,18 @@ token_t lex(lexer *const lxr)
 			{
 				case '=':
 					scan(lxr);
-					return minusequal;
+					return TOK_MINUSEQUAL;
 
 				case '-':
 					scan(lxr);
-					return minusminus;
+					return TOK_MINUSMINUS;
 
 				case '>':
 					scan(lxr);
-					return arrow;
+					return TOK_ARROW;
 
 				default:
-					return minus;
+					return TOK_MINUS;
 			}
 
 		case '<':
@@ -596,19 +596,19 @@ token_t lex(lexer *const lxr)
 					if (scan(lxr) == '=')
 					{
 						scan(lxr);
-						return lesslessequal;
+						return TOK_LESSLESSEQUAL;
 					}
 					else
 					{
-						return lessless;
+						return TOK_LESSLESS;
 					}
 
 				case '=':
 					scan(lxr);
-					return lessequal;
+					return TOK_LESSEQUAL;
 
 				default:
-					return less;
+					return TOK_LESS;
 			}
 
 		case '>':
@@ -618,19 +618,19 @@ token_t lex(lexer *const lxr)
 					if (scan(lxr) == '=')
 					{
 						scan(lxr);
-						return greatergreaterequal;
+						return TOK_GREATERGREATEREQUAL;
 					}
 					else
 					{
-						return greatergreater;
+						return TOK_GREATERGREATER;
 					}
 
 				case '=':
 					scan(lxr);
-					return greaterequal;
+					return TOK_GREATEREQUAL;
 
 				default:
-					return greater;
+					return TOK_GREATER;
 			}
 
 		case '/':
@@ -638,7 +638,7 @@ token_t lex(lexer *const lxr)
 			{
 				case '=':
 					scan(lxr);
-					return slashequal;
+					return TOK_SLASHEQUAL;
 
 				// Comments [C99 6.4.9]
 				case '/':
@@ -650,7 +650,7 @@ token_t lex(lexer *const lxr)
 					return lex(lxr);
 
 				default:
-					return slash;
+					return TOK_SLASH;
 			}
 	}
 }

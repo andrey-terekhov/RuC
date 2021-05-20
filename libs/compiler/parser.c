@@ -95,7 +95,7 @@ int parse(universal_io *const io, syntax *const sx)
 	do
 	{
 		parse_declaration_external(&prs, &root);
-	} while (prs.token != eof);
+	} while (prs.token != TOK_EOF);
 
 	node_add_child(&root, TEnd);
 	parser_clear(&prs);
@@ -154,35 +154,35 @@ void token_expect_and_consume(parser *const prs, const token_t expected, const e
 
 void token_skip_until(parser *const prs, const uint8_t tokens)
 {
-	while (prs->token != eof)
+	while (prs->token != TOK_EOF)
 	{
 		switch (prs->token)
 		{
-			case l_paren:
+			case TOK_LPAREN:
 				token_consume(prs);
-				token_skip_until(prs, r_paren);
+				token_skip_until(prs, TOK_RPAREN);
 				break;
 
-			case l_square:
+			case TOK_LSQUARE:
 				token_consume(prs);
-				token_skip_until(prs, r_square);
+				token_skip_until(prs, TOK_RSQUARE);
 				break;
 
-			case l_brace:
+			case TOK_LBRACE:
 				token_consume(prs);
-				token_skip_until(prs, r_brace);
+				token_skip_until(prs, TOK_RBRACE);
 				break;
 
-			case question:
+			case TOK_QUESTION:
 				token_consume(prs);
-				token_skip_until(prs, colon);
+				token_skip_until(prs, TOK_COLON);
 				break;
 
-			case r_paren:
-			case r_square:
-			case r_brace:
-			case colon:
-			case semicolon:
+			case TOK_RPAREN:
+			case TOK_RSQUARE:
+			case TOK_RBRACE:
+			case TOK_COLON:
+			case TOK_SEMICOLON:
 				if (token_check(tokens, prs->token))
 				{
 					return;
