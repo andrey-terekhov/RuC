@@ -314,7 +314,7 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 
 	if (was_array)
 	{
-		node nd_struct_end = node_add_child(parent, TStructend);
+		node nd_struct_end = node_add_child(parent, ND_DECL_STRUCT_END);
 		node_add_arg(&nd_struct_end, (item_t)prs->sx->procd);
 		node_set_arg(&nd, 0, (item_t)prs->sx->procd);
 		prs->flag_array_in_struct = (int)prs->sx->procd++;
@@ -369,7 +369,7 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
 	} while (actual_fields != expected_fields && prs->token != TOK_SEMICOLON);
 
 	token_expect_and_consume(prs, TOK_RBRACE, wait_end);
-	to_tree(prs, TExprend);
+	to_tree(prs, ND_EXPRESSION_END);
 }
 
 /**
@@ -393,7 +393,7 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 			prs->flag_strings_only = 1;
 		}
 		parse_string_literal(prs, parent);
-		to_tree(prs, TExprend);
+		to_tree(prs, ND_EXPRESSION_END);
 		return;
 	}
 
@@ -429,7 +429,7 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 
 	token_expect_and_consume(prs, TOK_RBRACE, wait_end);
 	node_set_arg(&beginit, 0, (item_t)list_length);
-	to_tree(prs, TExprend);
+	to_tree(prs, ND_EXPRESSION_END);
 }
 
 /**

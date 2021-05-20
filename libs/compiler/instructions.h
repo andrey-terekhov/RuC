@@ -178,7 +178,7 @@ typedef enum INSTURCTION
 	IC_ASSATR = 9068,	/**< "=@f" instruction code */
 	IC_PLUSASSATR,		/**< "+=@f" instruction code */
 	IC_MINUSASSATR,		/**< "-=@f" instruction code */
-	IC_MULTSASSATR,		/**< "*=@f" instruction code */
+	IC_MULTASSATR,		/**< "*=@f" instruction code */
 	IC_DIVASSATR,		/**< "/=@f" instruction code */
 
 	IC_EQEQR = 9081,	/**< "==f" instruction code */
