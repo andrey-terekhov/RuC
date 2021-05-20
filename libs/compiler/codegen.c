@@ -20,6 +20,7 @@
 #include "defs.h"
 #include "errors.h"
 #include "item.h"
+#include "instructions.h"
 #include "stack.h"
 #include "old_tree.h"
 #include "uniprinter.h"
@@ -134,21 +135,22 @@ static void final_operation(virtual *const vm, node *const nd)
 		{
 			if (op == ADLOGOR)
 			{
-				mem_add(vm, _DOUBLE);
-				mem_add(vm, BNE0);
+				mem_add(vm, IC__DOUBLE);
+				mem_add(vm, IC_BNE0);
 				stack_push(&vm->stk, (item_t)mem_size(vm));
 				mem_increase(vm, 1);
 			}
 			else if (op == ADLOGAND)
 			{
-				mem_add(vm, _DOUBLE);
-				mem_add(vm, BE0);
+				mem_add(vm, IC__DOUBLE);
+				mem_add(vm, IC_BE0);
 				stack_push(&vm->stk, (item_t)mem_size(vm));
 				mem_increase(vm, 1);
 			}
 			else
 			{
-				mem_add(vm, op);
+				// TODO: to_instruction()
+				mem_add(vm, (instruction_t)op);
 				if (op == LOGOR || op == LOGAND)
 				{
 					mem_set(vm, (size_t)stack_pop(&vm->stk), (item_t)mem_size(vm));
@@ -208,37 +210,37 @@ static void expression(virtual *const vm, node *const nd, int mode)
 				break;
 			case TIdenttoaddr:
 			{
-				mem_add(vm, LA);
+				mem_add(vm, IC_LA);
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
 			case TIdenttoval:
 			{
-				mem_add(vm, LOAD);
+				mem_add(vm, IC_LOAD);
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
 			case TIdenttovald:
 			{
-				mem_add(vm, LOADD);
+				mem_add(vm, IC_LOADD);
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
 			case TAddrtoval:
-				mem_add(vm, LAT);
+				mem_add(vm, IC_LAT);
 				break;
 			case TAddrtovald:
-				mem_add(vm, LATD);
+				mem_add(vm, IC_LATD);
 				break;
 			case TConst:
 			{
-				mem_add(vm, LI);
+				mem_add(vm, IC_LI);
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
 			case TConstd:
 			{
-				mem_add(vm, LID);
+				mem_add(vm, IC_LID);
 				mem_add(vm, node_get_arg(nd, 0));
 				mem_add(vm, node_get_arg(nd, 1));
 			}
@@ -246,10 +248,10 @@ static void expression(virtual *const vm, node *const nd, int mode)
 			case TString:
 			case TStringd:
 			{
-				mem_add(vm, LI);
+				mem_add(vm, IC_LI);
 				const size_t reserved = mem_size(vm) + 4;
 				mem_add(vm, (item_t)reserved);
-				mem_add(vm, B);
+				mem_add(vm, IC_B);
 				mem_increase(vm, 2);
 
 				const item_t N = node_get_arg(nd, 0);
@@ -274,7 +276,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 			{
 				const item_t N = node_get_arg(nd, 0);
 
-				mem_add(vm, BEGINIT);
+				mem_add(vm, IC_BEGINIT);
 				mem_add(vm, N);
 
 				for (item_t i = 0; i < N; i++)
@@ -294,7 +296,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 			break;
 			case TSliceident:
 			{
-				mem_add(vm, LOAD); // параметры - смещение идента и тип элемента
+				mem_add(vm, IC_LOAD); // параметры - смещение идента и тип элемента
 				mem_add(vm, node_get_arg(nd, 0)); // продолжение в след case
 			}
 			case TSlice: // параметр - тип элемента
@@ -302,29 +304,29 @@ static void expression(virtual *const vm, node *const nd, int mode)
 				item_t type = node_get_arg(nd, operation == TSlice ? 0 : 1);
 
 				expression(vm, nd, 0);
-				mem_add(vm, SLICE);
+				mem_add(vm, IC_SLICE);
 				mem_add(vm, (item_t)size_of(vm->sx, type));
 				if (type > 0 && mode_get(vm->sx, (size_t)type) == mode_array)
 				{
-					mem_add(vm, LAT);
+					mem_add(vm, IC_LAT);
 				}
 			}
 			break;
 			case TSelect:
 			{
-				mem_add(vm, SELECT); // SELECT field_displ
+				mem_add(vm, IC_SELECT); // SELECT field_displ
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
 			case TPrint:
 			{
-				mem_add(vm, PRINT);
+				mem_add(vm, IC_PRINT);
 				mem_add(vm, node_get_arg(nd, 0)); // type
 			}
 			break;
 			case TCall1:
 			{
-				mem_add(vm, CALL1);
+				mem_add(vm, IC_CALL1);
 
 				const item_t N = node_get_arg(nd, 0);
 				for (item_t i = 0; i < N; i++)
@@ -335,7 +337,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 			break;
 			case TCall2:
 			{
-				mem_add(vm, CALL2);
+				mem_add(vm, IC_CALL2);
 				mem_add(vm, ident_get_displ(vm->sx, (size_t)node_get_arg(nd, 0)));
 			}
 			break;
@@ -361,12 +363,12 @@ static void expression(virtual *const vm, node *const nd, int mode)
 			size_t addr = 0;
 			do
 			{
-				mem_add(vm, BE0);
+				mem_add(vm, IC_BE0);
 				const size_t addr_else = mem_size(vm);
 				mem_increase(vm, 1);
 
 				expression(vm, nd, 0); // then
-				mem_add(vm, B);
+				mem_add(vm, IC_B);
 				mem_add(vm, (item_t)addr);
 				addr = mem_size(vm) - 1;
 				mem_set(vm, addr_else, (item_t)mem_size(vm));
@@ -433,7 +435,7 @@ static void identifier(virtual *const vm, node *const nd)
 	{
 		if (process)
 		{
-			mem_add(vm, STRUCTWITHARR);
+			mem_add(vm, IC_STRUCTWITHARR);
 			mem_add(vm, old_displ);
 			mem_add(vm, proc_get(vm, (size_t)process));
 		}
@@ -444,7 +446,7 @@ static void identifier(virtual *const vm, node *const nd)
 				node_set_next(nd);
 				structure(vm, nd);
 
-				mem_add(vm, COPY0STASS);
+				mem_add(vm, IC_COPY0STASS);
 				mem_add(vm, old_displ);
 				mem_add(vm, all); // Общее количество слов
 			}
@@ -452,7 +454,7 @@ static void identifier(virtual *const vm, node *const nd)
 			{
 				expression(vm, nd, 0);
 
-				mem_add(vm, type == LFLOAT ? ASSRV : ASSV);
+				mem_add(vm, type == mode_float ? IC_ASSRV : IC_ASSV);
 				mem_add(vm, old_displ);
 			}
 		}
@@ -461,7 +463,7 @@ static void identifier(virtual *const vm, node *const nd)
 	{
 		const item_t length = (item_t)size_of(vm->sx, type);
 
-		mem_add(vm, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
+		mem_add(vm, IC_DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
 		mem_add(vm, all == 0 ? N : abs((int)N) - 1);
 		mem_add(vm, length);
 		mem_add(vm, old_displ);
@@ -474,7 +476,7 @@ static void identifier(virtual *const vm, node *const nd)
 		{
 			expression(vm, nd, 0);
 
-			mem_add(vm, ARRINIT); // ARRINIT N d all displ usual
+			mem_add(vm, IC_ARRINIT); // ARRINIT N d all displ usual
 			mem_add(vm, abs((int)N));
 			mem_add(vm, length);
 			mem_add(vm, old_displ);
@@ -503,7 +505,7 @@ static int declaration(virtual *const vm, node *const nd)
 
 		case TStructbeg:
 		{
-			mem_add(vm, B);
+			mem_add(vm, IC_B);
 			mem_add(vm, 0);
 			proc_set(vm, (size_t)node_get_arg(nd, 0), (item_t)mem_size(vm));
 		}
@@ -512,7 +514,7 @@ static int declaration(virtual *const vm, node *const nd)
 		{
 			const size_t num_proc = (size_t)node_get_arg(nd, 0);
 
-			mem_add(vm, STOP);
+			mem_add(vm, IC_STOP);
 			mem_set(vm, (size_t)proc_get(vm, num_proc) - 1, (item_t)mem_size(vm));
 		}
 		break;
@@ -556,12 +558,11 @@ static void statement(virtual *const vm, node *const nd)
 		case NOP:
 			break;
 		case CREATEDIRECTC:
-			mem_add(vm, CREATEDIRECTC);
+			mem_add(vm, IC_CREATEDIRECT);
 			vm->max_threads++;
 			break;
 		case EXITDIRECTC:
-		case EXITC:
-			mem_add(vm, EXITC);
+			mem_add(vm, IC_EXITDIRECT);
 			break;
 		case TBegin:
 			block(vm, nd);
@@ -573,7 +574,7 @@ static void statement(virtual *const vm, node *const nd)
 			expression(vm, nd, 0);
 			node_set_next(nd); // TExprend
 
-			mem_add(vm, BE0);
+			mem_add(vm, IC_BE0);
 			size_t addr = mem_size(vm);
 			mem_increase(vm, 1);
 			statement(vm, nd);
@@ -582,7 +583,7 @@ static void statement(virtual *const vm, node *const nd)
 			{
 				node_set_next(nd);
 				mem_set(vm, addr, (item_t)mem_size(vm) + 2);
-				mem_add(vm, B);
+				mem_add(vm, IC_B);
 				addr = mem_size(vm);
 				mem_increase(vm, 1);
 				statement(vm, nd);
@@ -600,13 +601,13 @@ static void statement(virtual *const vm, node *const nd)
 			expression(vm, nd, 0);
 			node_set_next(nd); // TExprend
 
-			mem_add(vm, BE0);
+			mem_add(vm, IC_BE0);
 			vm->addr_break = mem_size(vm);
 			mem_add(vm, 0);
 			statement(vm, nd);
 
 			addr_begin_condition(vm, addr);
-			mem_add(vm, B);
+			mem_add(vm, IC_B);
 			mem_add(vm, (item_t)addr);
 			addr_end_break(vm);
 
@@ -628,7 +629,7 @@ static void statement(virtual *const vm, node *const nd)
 			addr_end_condition(vm);
 
 			expression(vm, nd, 0);
-			mem_add(vm, BNE0);
+			mem_add(vm, IC_BNE0);
 			mem_add(vm, addr);
 			addr_end_break(vm);
 
@@ -665,7 +666,7 @@ static void statement(virtual *const vm, node *const nd)
 			if (ref_cond)
 			{
 				expression(vm, &incr, 0); // condition
-				mem_add(vm, BE0);
+				mem_add(vm, IC_BE0);
 				vm->addr_break = mem_size(vm);
 				mem_add(vm, 0);
 				child_stmt++;
@@ -686,7 +687,7 @@ static void statement(virtual *const vm, node *const nd)
 			}
 			node_copy(nd, &stmt);
 
-			mem_add(vm, B);
+			mem_add(vm, IC_B);
 			mem_add(vm, (item_t)initad);
 			addr_end_break(vm);
 
@@ -696,7 +697,7 @@ static void statement(virtual *const vm, node *const nd)
 		break;
 		case TGoto:
 		{
-			mem_add(vm, B);
+			mem_add(vm, IC_B);
 
 			const item_t id_sign = node_get_arg(nd, 0);
 			const size_t id = abs((int)id_sign);
@@ -759,12 +760,12 @@ static void statement(virtual *const vm, node *const nd)
 			{
 				mem_set(vm, vm->addr_case, (item_t)mem_size(vm));
 			}
-			mem_add(vm, _DOUBLE);
+			mem_add(vm, IC__DOUBLE);
 			expression(vm, nd, 0);
 			node_set_next(nd); // TExprend
 
-			mem_add(vm, EQEQ);
-			mem_add(vm, BE0);
+			mem_add(vm, IC_EQEQ);
+			mem_add(vm, IC_BE0);
 			vm->addr_case = mem_size(vm);
 			mem_increase(vm, 1);
 			statement(vm, nd);
@@ -784,54 +785,46 @@ static void statement(virtual *const vm, node *const nd)
 		break;
 		case TBreak:
 		{
-			mem_add(vm, B);
+			mem_add(vm, IC_B);
 			mem_add(vm, (item_t)vm->addr_break);
 			vm->addr_break = mem_size(vm) - 1;
 		}
 		break;
 		case TContinue:
 		{
-			mem_add(vm, B);
+			mem_add(vm, IC_B);
 			mem_add(vm, (item_t)vm->addr_cond);
 			vm->addr_cond = mem_size(vm) - 1;
 		}
 		break;
 		case TReturnvoid:
-			mem_add(vm, RETURNVOID);
+			mem_add(vm, IC_RETURNVOID);
 			break;
 		case TReturnval:
 		{
 			const item_t value = node_get_arg(nd, 0);
 			expression(vm, nd, 0);
 
-			mem_add(vm, RETURNVAL);
+			mem_add(vm, IC_RETURNVAL);
 			mem_add(vm, value);
 		}
 		break;
 		case TPrintid:
 		{
-			mem_add(vm, PRINTID);
+			mem_add(vm, IC_PRINTID);
 			compress_ident(vm, (size_t)node_get_arg(nd, 0)); // ссылка в identtab
 		}
 		break;
 		case TPrintf:
 		{
-			mem_add(vm, PRINTF);
+			mem_add(vm, IC_PRINTF);
 			mem_add(vm, node_get_arg(nd, 0)); // общий размер того, что надо вывести
 		}
 		break;
 		case TGetid:
 		{
-			mem_add(vm, GETID);
+			mem_add(vm, IC_GETID);
 			compress_ident(vm, (size_t)node_get_arg(nd, 0)); // ссылка в identtab
-		}
-		break;
-		case SETMOTOR:
-		{
-			expression(vm, nd, 0);
-			expression(vm, nd, 0);
-
-			mem_add(vm, SETMOTORC);
 		}
 		break;
 		default:
@@ -868,7 +861,7 @@ static int codegen(virtual *const vm)
 				const size_t func = (size_t)ident_get_displ(vm->sx, (size_t)ref_ident);
 
 				func_set(vm->sx, func, (item_t)mem_size(vm));
-				mem_add(vm, FUNCBEG);
+				mem_add(vm, IC_FUNCBEG);
 				mem_add(vm, max_displ);
 
 				const size_t old_pc = mem_size(vm);
@@ -895,10 +888,10 @@ static int codegen(virtual *const vm)
 		}
 	}
 
-	mem_add(vm, CALL1);
-	mem_add(vm, CALL2);
+	mem_add(vm, IC_CALL1);
+	mem_add(vm, IC_CALL2);
 	mem_add(vm, ident_get_displ(vm->sx, vm->sx->ref_main));
-	mem_add(vm, STOP);
+	mem_add(vm, IC_STOP);
 	return 0;
 }
 
