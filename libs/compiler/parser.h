@@ -26,9 +26,6 @@
 #include "workspace.h"
 
 
-//#define GENERATE_TREE
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif

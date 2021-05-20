@@ -102,7 +102,7 @@ int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
 
 	parser_clear(&prs);
 
-#ifndef GENERATE_TREE
+#ifdef NDEBUG
 	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
 #else
 	const int ret = prs.was_error || prs.lxr->was_error || !sx_is_correct(sx)
