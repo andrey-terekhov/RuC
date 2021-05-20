@@ -33,6 +33,7 @@ int main(int argc, const char *argv[])
 	if (argc < 2)
 	{
 		ws_add_file(&ws, name);
+		ws_add_flag(&ws, "-Wno");
 		ws_set_output(&ws, "export.txt");
 	}
 
