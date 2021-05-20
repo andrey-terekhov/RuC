@@ -251,21 +251,25 @@ static void operation_to_io(universal_io *const io, const item_t type)
 
 		case PLUSASSR:
 		case PLUSASSRV:
+		case LPLUSR:
 			uni_printf(io, "fadd");
 			break;
 
 		case MINUSASSR:
 		case MINUSASSRV:
+		case LMINUSR:
 			uni_printf(io, "fsub");
 			break;
 
 		case MULTASSR:
 		case MULTASSRV:
+		case LMULTR:
 			uni_printf(io, "fmul");
 			break;
 		
 		case DIVASSR:
 		case DIVASSRV:
+		case LDIVR:
 			uni_printf(io, "fdiv");
 			break;
 	}
@@ -294,11 +298,18 @@ static void to_code_operation_reg_const_double(information *const info, item_t t
 	uni_printf(info->io, " double %%.%" PRIitem ", %f\n", fst, snd);
 }
 
-static void to_code_operation_const_reg(information *const info, item_t type, item_t fst, item_t snd)
+static void to_code_operation_const_reg_i32(information *const info, item_t type, item_t fst, item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, type);
 	uni_printf(info->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
+}
+
+static void to_code_operation_const_reg_double(information *const info, item_t type, double fst, item_t snd)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->io, type);
+	uni_printf(info->io, " double %f, %%.%" PRIitem "\n", fst, snd);
 }
 
 static void to_code_load(information *const info, item_t result, item_t displ, type_t type)
@@ -647,6 +658,7 @@ static void arithmetic_expression(information *const info, node *const nd)
 	const answer_t left_type = info->answer_type;
 	const item_t left_reg = info->answer_reg;
 	const item_t left_const = info->answer_const;
+	const double left_const_double = info->answer_const_double;
 
 	info->variable_location = LFREE;
 	expression(info, nd);
@@ -656,18 +668,49 @@ static void arithmetic_expression(information *const info, node *const nd)
 	const answer_t right_type = info->answer_type;
 	const item_t right_reg = info->answer_reg;
 	const item_t right_const = info->answer_const;
+	const double right_const_double = info->answer_const_double;
+
+	if (is_double(operation_type))
+	{
+		info->answer_value_type = DOUBLE;
+	}
+	else
+	{
+		info->answer_value_type = I32;
+	}
 
 	if (left_type == AREG && right_type == AREG)
 	{
-		to_code_operation_reg_reg(info, operation_type, left_reg, right_reg, I32);
+		if (!is_double(operation_type))
+		{
+			to_code_operation_reg_reg(info, operation_type, left_reg, right_reg, I32);
+		}
+		else // double
+		{
+			to_code_operation_reg_reg(info, operation_type, left_reg, right_reg, DOUBLE);
+		}
 	}
 	else if (left_type == AREG && right_type == ACONST)
 	{
-		to_code_operation_reg_const_i32(info, operation_type, left_reg, right_const);
+		if (!is_double(operation_type))
+		{
+			to_code_operation_reg_const_i32(info, operation_type, left_reg, right_const);
+		}
+		else // double
+		{
+			to_code_operation_reg_const_double(info, operation_type, left_reg, right_const_double);
+		}
 	}
 	else if (left_type == ACONST && right_type == AREG)
 	{
-		to_code_operation_const_reg(info, operation_type, left_const, right_reg);
+		if (!is_double(operation_type))
+		{
+			to_code_operation_const_reg_i32(info, operation_type, left_const, right_reg);
+		}
+		else // double
+		{
+			to_code_operation_const_reg_double(info, operation_type, left_const_double, right_reg);
+		}
 	}
 	else // if (left_type == ACONST && right_type == ACONST)
 	{
@@ -724,11 +767,25 @@ static void arithmetic_expression(information *const info, node *const nd)
 			case LGE:
 				info->answer_const = left_const >= right_const;
 				break;
+
+			case LPLUSR:
+				info->answer_const_double = left_const_double + right_const_double;
+				break;
+			case LMINUSR:
+				info->answer_const_double = left_const_double - right_const_double;
+				break;
+			case LMULTR:
+				info->answer_const_double = left_const_double * right_const_double;
+				break;
+			case LDIVR:
+				info->answer_const_double = left_const_double / right_const_double;
+				break;
 		}
 		return;
 	}
-
+	
 	info->answer_reg = info->register_num++;
+	info->answer_type = AREG;
 }
 
 // Обрабатываются операции инкремента/декремента и постинкремента/постдекремента
@@ -786,7 +843,7 @@ static void unary_operation(information *const info, node *const nd)
 
 			to_code_try_zext_to(info);
 
-			to_code_operation_const_reg(info, UNMINUS, 0, info->answer_reg);
+			to_code_operation_const_reg_i32(info, UNMINUS, 0, info->answer_reg);
 			info->answer_type = AREG;
 			info->answer_reg = info->register_num++;
 		}
@@ -866,10 +923,12 @@ static void binary_operation(information *const info, node *const nd)
 		case LAND:
 		case LEXOR:
 		case LOR:
-		{
+
+		case LPLUSR:
+		case LMINUSR:
+		case LMULTR:
+		case LDIVR:
 			arithmetic_expression(info, nd);
-			info->answer_type = AREG;
-		}
 		break;
 
 
@@ -881,7 +940,10 @@ static void binary_operation(information *const info, node *const nd)
 		case LGE:
 		{
 			arithmetic_expression(info, nd);
-			info->answer_type = ALOGIC;
+			if (info->answer_type == AREG)
+			{
+				info->answer_type = ALOGIC;
+			}
 		}
 		break;
 
