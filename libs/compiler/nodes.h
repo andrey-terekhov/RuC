@@ -59,32 +59,32 @@ typedef enum NODE
 	ND_STRUCT_INIT		= TStructinit,		/**< Struct inition node */
 
 	// End nodes
-	ND_BLOCK_END		= TEnd,
-	ND_DECL_STRUCT_END	= TStructend,
-	ND_EXPRESSION_END	= TExprend,
+	ND_BLOCK_END		= TEnd,				/**< End of block node */
+	ND_DECL_STRUCT_END	= TStructend,		/**< End of struct declaration node */
+	ND_EXPRESSION_END	= TExprend,			/**< End of expression node */
 
 	// Expressions
-	ND_CONDITIONAL		= TCondexpr,
+	ND_CONDITIONAL		= TCondexpr,		/**< Ternary operator node */
 	ND_WIDEN			= WIDEN,			/**< "WIDEN" node */
 	ND_WIDEN1			= WIDEN1,			/**< "WIDEN1" node */
 	ND_STRINGINIT		= STRINGINIT,		/**< "STRINGINIT" node */
-	ND_STRING			= TString,
-	ND_STRINGD			= TStringd,
-	ND_ADLOGOR			= ADLOGOR,
-	ND_ADLOGAND			= ADLOGAND,
-	ND_IDENT			= TIdent,
-	ND_IDENTTOADDR		= TIdenttoaddr,
-	ND_IDENTTOVAL		= TIdenttoval,
-	ND_IDENTTOVALD		= TIdenttovald,
-	ND_ADDRTOVAL		= TAddrtoval,
-	ND_ADDRTOVALD		= TAddrtovald,
-	ND_CONST			= TConst,
-	ND_CONSTD			= TConstd,
-	ND_SLICE			= TSlice,
-	ND_SLICEIDENT		= TSliceident,
-	ND_SELECT			= TSelect,
-	ND_CALL1			= TCall1,
-	ND_CALL2			= TCall2,
+	ND_STRING			= TString,			/**< String literal node */
+	ND_STRINGD			= TStringd,			/**< Row of doubles node */
+	ND_ADLOGOR			= ADLOGOR,			/**< "ADLOGOR" node */
+	ND_ADLOGAND			= ADLOGAND,			/**< "ADLOGAND" node */
+	ND_IDENT			= TIdent,			/**< Identifier node */
+	ND_IDENTTOADDR		= TIdenttoaddr,		/**< Identifier to address node */
+	ND_IDENTTOVAL		= TIdenttoval,		/**< Value of integer variable node */
+	ND_IDENTTOVALD		= TIdenttovald,		/**< Value of double variable node */
+	ND_ADDRTOVAL		= TAddrtoval,		/**< Address to integer value node */
+	ND_ADDRTOVALD		= TAddrtovald,		/**< Address to double value node */
+	ND_CONST			= TConst,			/**< Integer constant node */
+	ND_CONSTD			= TConstd,			/**< Double constant node node */
+	ND_SLICE			= TSlice,			/**< Slice node */
+	ND_SLICEIDENT		= TSliceident,		/**< Slice from identifier node */
+	ND_SELECT			= TSelect,			/**< Select node */
+	ND_CALL1			= TCall1,			/**< "Call1" node */
+	ND_CALL2			= TCall2,			/**< "Call2" node */
 	ND_ROWING			= ROWING,			/**< "ROWING" node */
 	ND_ROWINGD			= ROWINGD,			/**< "ROWINGD" node */
 
@@ -280,16 +280,58 @@ typedef enum NODE
 } node_t;
 
 
+/**
+ * Convert node type to corresponding instruction code
+ *
+ * @param	node	Node type
+ *
+ * @returns	Instruction code
+ */
 instruction_t node_to_instruction(const node_t node);
 
+/**
+ * Convert token type to corresponding node type
+ *
+ * @param	token	Token type
+ *
+ * @returns	Node type
+ */
 node_t token_to_node(const token_t token);
 
+/**
+ * Convert operator to corresponding address version
+ *
+ * @param	node	Operator
+ *
+ * @returns	Address version operator
+ */
 node_t node_at_operator(const node_t node);
 
+/**
+ * Convert operator to corresponding void version
+ *
+ * @param	node	Operator
+ *
+ * @returns	Void version operator
+ */
 node_t node_void_operator(const node_t node);
 
+/**
+ * Convert operator to corresponding float version
+ *
+ * @param	node	Operator
+ *
+ * @returns	Float version operator
+ */
 node_t node_float_operator(const node_t node);
 
+/**
+ * Check if node type is assignment operator
+ *
+ * @param	node	Node type
+ *
+ * @returns	@c 1 on assignment operator
+ */
 int node_is_assignment_operator(const node_t node);
 
 #ifdef __cplusplus
