@@ -135,8 +135,8 @@ typedef enum TOKEN
 	TOK_CREATEDIRECT		= TCREATEDIRECT,
 	TOK_EXITDIRECT			= TEXITDIRECT,
 
-	TOK_MSGSEND				= TMSGSEND,		/**< 't_msg_send'		keyword */
-	TOK_MSGRECEIVE			= TMSGRECEIVE,	/**< 't_msg_receive'	keyword */
+	TOK_MSG_SEND			= TMSGSEND,		/**< 't_msg_send'		keyword */
+	TOK_MSG_RECEIVE			= TMSGRECEIVE,	/**< 't_msg_receive'	keyword */
 	TOK_JOIN				= TJOIN,		/**< 't_join'			keyword */
 	TOK_SLEEP				= TSLEEP,		/**< 't_sleep'			keyword */
 	TOK_SEMCREATE			= TSEMCREATE,	/**< 't_sem_create'		keyword */

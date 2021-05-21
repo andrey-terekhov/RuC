@@ -111,17 +111,32 @@ double node_get_double(const node *const nd, const size_t index)
 }
 
 
-void float_operation(parser *const prs, const item_t type, const item_t operation)
+void float_operation(parser *const prs, const item_t type, const node_t operation)
 {
-	if ((operation >= ASS && operation <= DIVASS)
-		|| (operation >= ASSAT && operation <= DIVASSAT)
-		|| (operation >= EQEQ && operation <= UNMINUS))
+	if (mode_is_float(type))
 	{
-		to_tree(prs, type == mode_float ? operation + 50 : operation);
+		to_tree(prs, node_float_operator(operation));
 	}
 	else
 	{
 		to_tree(prs, operation);
+	}
+}
+
+int is_integer_operator(const token_t operator)
+{
+	switch (operator)
+	{
+		case TOK_EQUALEQUAL:
+		case TOK_EXCLAIMEQUAL:
+		case TOK_LESS:
+		case TOK_LESSEQUAL:
+		case TOK_GREATER:
+		case TOK_GREATEREQUAL:
+			return 1;
+
+		default:
+			return 0;
 	}
 }
 
@@ -159,7 +174,7 @@ void binary_operation(parser *const prs, operator operator)
 
 	if (token == TOK_PIPEPIPE || token == TOK_AMPAMP)
 	{
-		to_tree(prs, token);
+		to_tree(prs, token_to_node(token));
 		node_add_arg(&prs->nd, 0); // FIXME: useless
 
 		// FIXME: just remove it after MIPS integration
@@ -168,10 +183,10 @@ void binary_operation(parser *const prs, operator operator)
 	}
 	else
 	{
-		float_operation(prs, result_mode, token);
+		float_operation(prs, result_mode, token_to_node(token));
 	}
 
-	if (token >= TOK_EQUALEQUAL && token <= TOK_GREATEREQUAL)
+	if (is_integer_operator(token))
 	{
 		result_mode = mode_integer;
 	}
@@ -227,7 +242,7 @@ void to_value(parser *const prs)
 item_t parse_braced_init_list(parser *const prs, const item_t type)
 {
 	token_consume(prs);
-	to_tree(prs, type == mode_float ? ND_STRINGD : ND_STRING);
+	to_tree(prs, mode_is_float(type) ? ND_STRINGD : ND_STRING);
 	node_add_arg(&prs->nd, 0);
 
 	node nd_init_list;
@@ -240,7 +255,7 @@ item_t parse_braced_init_list(parser *const prs, const item_t type)
 
 		if (prs->token == TOK_INT_CONST || prs->token == TOK_CHAR_CONST)
 		{
-			if (type == mode_float)
+			if (mode_is_float(type))
 			{
 				node_add_double(&nd_init_list, sign * prs->lxr->num);
 			}
@@ -252,7 +267,7 @@ item_t parse_braced_init_list(parser *const prs, const item_t type)
 		}
 		else if (prs->token == TOK_FLOAT_CONST)
 		{
-			if (type == mode_float)
+			if (mode_is_float(type))
 			{
 				node_add_double(&nd_init_list, sign * prs->lxr->num_double);
 			}
@@ -406,179 +421,220 @@ void parse_standard_function_call(parser *const prs)
 		return;
 	}
 
-	if (func == TOK_ASSERT)
+	switch (func)
 	{
-		must_be_int(prs);
-		token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
-		must_be_string(prs);
-		operands_push(prs, VALUE, mode_void);
-	}
-	else if (func <= TOK_STRCPY && func >= TOK_STRLEN) // функции работы со строками
-	{
-		if (func >= TOK_STRNCAT)
+		case TOK_ASSERT:
 		{
-			must_be_point_string(prs);
-		}
-		else
-		{
-			must_be_string(prs);
-		}
-
-		if (func != TOK_STRLEN)
-		{
+			must_be_int(prs);
 			token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
 			must_be_string(prs);
-			if (func == TOK_STRNCPY || func == TOK_STRNCAT || func == TOK_STRNCMP)
+			operands_push(prs, VALUE, mode_void);
+		}
+		break;
+
+		case TOK_STRCPY:
+		case TOK_STRNCPY:
+		case TOK_STRCAT:
+		case TOK_STRNCAT:
+		case TOK_STRCMP:
+		case TOK_STRNCMP:
+		case TOK_STRSTR:
+		case TOK_STRLEN:
+		{
+			if (func == TOK_STRCPY || func == TOK_STRNCPY || func == TOK_STRCAT || func == TOK_STRNCAT)
+			{
+				must_be_point_string(prs);
+			}
+			else
+			{
+				must_be_string(prs);
+			}
+
+			if (func != TOK_STRLEN)
 			{
 				token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
-				must_be_int(prs);
+				must_be_string(prs);
+				if (func == TOK_STRNCPY || func == TOK_STRNCAT || func == TOK_STRNCMP)
+				{
+					token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
+					must_be_int(prs);
+				}
 			}
-		}
 
-		if (func < TOK_STRNCAT)
-		{
-			operands_push(prs, VALUE, mode_integer);
-		}
-		else
-		{
-			operands_push(prs, VALUE, mode_void);
-		}
-	}
-	else if (func >= TOK_RECEIVE_STRING && func <= TOK_SEND_INT)
-	{
-		// новые функции Фадеева
-		must_be_int(prs);
-		if (func == TOK_SEND_INT || func == TOK_SEND_STRING)
-		{
-			token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
-			must_be_row_of_int(prs);
-			operands_push(prs, VALUE, mode_void);
-		}
-		else if (func == TOK_SEND_FLOAT)
-		{
-			token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
-			must_be_row_of_float(prs);
-			operands_push(prs, VALUE, mode_void);
-		}
-		else
-		{
-			operands_push(prs, VALUE, func == TOK_RECEIVE_INT
-				? mode_integer : func == TOK_RECEIVE_FLOAT
-				? mode_float : to_modetab(prs, mode_array, mode_character));
-		}
-	}
-	else if (func == TOK_UPB)
-	{
-		must_be_int(prs);
-		token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
-		must_be_row(prs);
-		operands_push(prs, VALUE, mode_integer);
-	}
-	else if (func <= TOK_MSGSEND && func >= TOK_GETNUM) // процедуры управления параллельными нитями
-	{
-		if (func == TOK_INIT || func == TOK_DESTROY || func == TOK_EXIT)
-		{
-			operands_push(prs, VALUE, mode_void);
-		}
-		else if (func == TOK_MSGRECEIVE || func == TOK_GETNUM) // getnum int(), msgreceive msg_info()
-		{
-			operands_push(prs, VALUE, func == TOK_GETNUM ? mode_integer : mode_msg_info);
-		}
-		else
-		{
-			// MSGSEND void(msg_info)  CREATE int(void*(*func)(void*))
-			// SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
-			// у этих процедур 1 параметр
-
-			if (func == TOK_CREATE)
+			if (func == TOK_STRCMP || func == TOK_STRNCMP || func == TOK_STRSTR || func == TOK_STRLEN)
 			{
-				if (!token_try_consume(prs, TOK_IDENTIFIER))
-				{
-					parser_error(prs, act_param_not_ident);
-				}
-
-				const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
-				if (id == ITEM_MAX)
-				{
-					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, prs->lxr->repr));
-				}
-
-				prs->last_id = (size_t)id;
-				if (ident_get_mode(prs->sx, prs->last_id) != mode_void_pointer)
-				{
-					parser_error(prs, wrong_arg_in_create);
-				}
-
-				const item_t displ = ident_get_displ(prs->sx, prs->last_id);
-				if (displ < 0)
-				{
-					to_tree(prs, ND_IDENTTOVAL);
-					node_add_arg(&prs->nd, -displ);
-				}
-				else
-				{
-					to_tree(prs, ND_CONST);
-					node_add_arg(&prs->nd, displ);
-				}
-
 				operands_push(prs, VALUE, mode_integer);
 			}
 			else
 			{
-				if (func == TOK_MSGSEND)
-				{
-					parse_initializer(prs, &prs->nd, mode_msg_info);
-					operands_push(prs, VALUE, mode_void);
-				}
-				else
-				{
-					must_be_int(prs);
+				operands_push(prs, VALUE, mode_void);
+			}
+		}
+		break;
 
-					if (func == TOK_SEMCREATE)
+		case TOK_SEND_INT:
+		case TOK_SEND_FLOAT:
+		case TOK_SEND_STRING:
+		case TOK_RECEIVE_INT:
+		case TOK_RECEIVE_FLOAT:
+		case TOK_RECEIVE_STRING:
+		{
+			// новые функции Фадеева
+			must_be_int(prs);
+			if (func == TOK_SEND_INT || func == TOK_SEND_STRING)
+			{
+				token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
+				must_be_row_of_int(prs);
+				operands_push(prs, VALUE, mode_void);
+			}
+			else if (func == TOK_SEND_FLOAT)
+			{
+				token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
+				must_be_row_of_float(prs);
+				operands_push(prs, VALUE, mode_void);
+			}
+			else
+			{
+				operands_push(prs, VALUE, func == TOK_RECEIVE_INT
+							  ? mode_integer : func == TOK_RECEIVE_FLOAT
+							  ? mode_float : to_modetab(prs, mode_array, mode_character));
+			}
+		}
+		break;
+
+		case TOK_UPB:
+		{
+			must_be_int(prs);
+			token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
+			must_be_row(prs);
+			operands_push(prs, VALUE, mode_integer);
+		}
+		break;
+
+		case TOK_MSG_SEND:
+		case TOK_MSG_RECEIVE:
+		case TOK_JOIN:
+		case TOK_SLEEP:
+		case TOK_SEMCREATE:
+		case TOK_SEMWAIT:
+		case TOK_SEMPOST:
+		case TOK_CREATE:
+		case TOK_INIT:
+		case TOK_DESTROY:
+		case TOK_EXIT:
+		case TOK_GETNUM:
+		{
+			if (func == TOK_INIT || func == TOK_DESTROY || func == TOK_EXIT)
+			{
+				operands_push(prs, VALUE, mode_void);
+			}
+			else if (func == TOK_MSG_RECEIVE || func == TOK_GETNUM) // getnum int(), msgreceive msg_info()
+			{
+				operands_push(prs, VALUE, func == TOK_GETNUM ? mode_integer : mode_msg_info);
+			}
+			else
+			{
+				// MSGSEND void(msg_info)  CREATE int(void*(*func)(void*))
+				// SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
+				// у этих процедур 1 параметр
+
+				if (func == TOK_CREATE)
+				{
+					if (!token_try_consume(prs, TOK_IDENTIFIER))
 					{
-						operands_push(prs, VALUE, mode_integer);
+						parser_error(prs, act_param_not_ident);
+					}
+
+					const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+					if (id == ITEM_MAX)
+					{
+						parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, prs->lxr->repr));
+					}
+
+					prs->last_id = (size_t)id;
+					if (ident_get_mode(prs->sx, prs->last_id) != mode_void_pointer)
+					{
+						parser_error(prs, wrong_arg_in_create);
+					}
+
+					const item_t displ = ident_get_displ(prs->sx, prs->last_id);
+					if (displ < 0)
+					{
+						to_tree(prs, ND_IDENTTOVAL);
+						node_add_arg(&prs->nd, -displ);
 					}
 					else
 					{
+						to_tree(prs, ND_CONST);
+						node_add_arg(&prs->nd, displ);
+					}
+
+					operands_push(prs, VALUE, mode_integer);
+				}
+				else
+				{
+					if (func == TOK_MSG_SEND)
+					{
+						parse_initializer(prs, &prs->nd, mode_msg_info);
 						operands_push(prs, VALUE, mode_void);
+					}
+					else
+					{
+						must_be_int(prs);
+
+						if (func == TOK_SEMCREATE)
+						{
+							operands_push(prs, VALUE, mode_integer);
+						}
+						else
+						{
+							operands_push(prs, VALUE, mode_void);
+						}
 					}
 				}
 			}
 		}
-	}
-	else if (func == TOK_RAND)
-	{
-		operands_push(prs, VALUE, mode_float);
-	}
-	else if (func == TOK_ROUND)
-	{
-		must_be_float(prs);
-		operands_push(prs, VALUE, mode_integer);
-	}
-	else if (func == TOK_ABS)
-	{
-		parse_assignment_expression_internal(prs);
-		to_value(prs);
+		break;
 
-		if (stack_pop(&prs->anonymous) == mode_integer)
+		case TOK_RAND:
+			operands_push(prs, VALUE, mode_float);
+			break;
+
+		case TOK_ROUND:
 		{
+			must_be_float(prs);
 			operands_push(prs, VALUE, mode_integer);
-			to_tree(prs, ND_ABSI);
-			token_expect_and_consume(prs, TOK_RPAREN, no_rightbr_in_stand_func);
-			return;
 		}
-		else
+		break;
+
+		case TOK_ABS:
 		{
+			parse_assignment_expression_internal(prs);
+			to_value(prs);
+
+			if (stack_pop(&prs->anonymous) == mode_integer)
+			{
+				operands_push(prs, VALUE, mode_integer);
+				to_tree(prs, ND_ABSI);
+				token_expect_and_consume(prs, TOK_RPAREN, no_rightbr_in_stand_func);
+				return;
+			}
+			else
+			{
+				operands_push(prs, VALUE, mode_float);
+			}
+		}
+		break;
+
+		default:
+		{
+			must_be_float(prs);
 			operands_push(prs, VALUE, mode_float);
 		}
-	}
-	else
-	{
-		must_be_float(prs);
-		operands_push(prs, VALUE, mode_float);
+		break;
 	}
 
-	to_tree(prs, 9500 - func);
+	to_tree(prs, token_to_node(func));
 	token_expect_and_consume(prs, TOK_RPAREN, no_rightbr_in_stand_func);
 }
 
@@ -1036,13 +1092,13 @@ void parse_postfix_expression(parser *const prs)
 
 	if (prs->token == TOK_PLUSPLUS || prs->token == TOK_MINUSMINUS)
 	{
-		item_t operator = prs->token == TOK_PLUSPLUS ? ND_POSTINC : ND_POSTDEC;
+		node_t operator = prs->token == TOK_PLUSPLUS ? ND_POSTINC : ND_POSTDEC;
 		token_consume(prs);
 
 		int is_variable = 0;
 		if (prs->last_type == ADDRESS)
 		{
-			operator += 4;
+			operator = node_at_operator(operator);
 		}
 		else if (prs->last_type == VARIABLE)
 		{
@@ -1079,11 +1135,12 @@ void parse_unary_expression(parser *const prs)
 		{
 			token_consume(prs);
 			parse_unary_expression(prs);
+			node_t node_type = token_to_node(operator);
 
 			int is_variable = 0;
 			if (prs->last_type == ADDRESS)
 			{
-				operator += 4;
+				node_type = node_at_operator(node_type);
 			}
 			else if (prs->last_type == VARIABLE)
 			{
@@ -1101,7 +1158,7 @@ void parse_unary_expression(parser *const prs)
 			}
 
 			operands_push(prs, VALUE, type);
-			float_operation(prs, type, operator);
+			float_operation(prs, type, node_type);
 
 			if (is_variable)
 			{
@@ -1178,7 +1235,7 @@ void parse_unary_expression(parser *const prs)
 					{
 						if (operator != TOK_PLUS)
 						{
-							to_tree(prs, operator);
+							to_tree(prs, token_to_node(operator));
 						}
 
 						const item_t type = stack_pop(&prs->anonymous);
@@ -1415,14 +1472,7 @@ void parse_conditional_expression(parser *const prs)
 
 void assignment_to_void(parser *const prs)
 {
-	const item_t operation = node_get_type(&prs->nd);
-	if ((operation >= ASS && operation <= DIVASSAT)
-		|| (operation >= POSTINC && operation <= DECAT)
-		|| (operation >= ASSR && operation <= DIVASSATR)
-		|| (operation >= POSTINCR && operation <= DECATR))
-	{
-		node_set_type(&prs->nd, node_get_type(&prs->nd) + 200);
-	}
+	node_set_type(&prs->nd, node_void_operator((node_t)node_get_type(&prs->nd)));
 }
 
 void parse_assignment_expression_internal(parser *const prs)
@@ -1458,7 +1508,8 @@ void parse_assignment_expression_internal(parser *const prs)
 			parser_error(prs, unassignable);
 		}
 
-		item_t operator = prs->token;
+		token_t operator = prs->token;
+		node_t node_type = token_to_node(operator);
 		token_consume(prs);
 
 		prs->flag_in_assignment = 1;
@@ -1493,18 +1544,18 @@ void parse_assignment_expression_internal(parser *const prs)
 
 			if (right_type == VALUE)
 			{
-				operator = left_type == VARIABLE ? ND_COPY0STASS : ND_COPY1STASS;
+				node_type = left_type == VARIABLE ? ND_COPY0STASS : ND_COPY1STASS;
 			}
 			else
 			{
-				operator = left_type == VARIABLE
+				node_type = left_type == VARIABLE
 					? right_type == VARIABLE
 						? ND_COPY00 : ND_COPY01
 					: right_type == VARIABLE
 						? ND_COPY10 : ND_COPY11;
 			}
 
-			to_tree(prs, operator);
+			to_tree(prs, node_type);
 			if (left_type == VARIABLE)
 			{
 				node_add_arg(&prs->nd, target_displ);
@@ -1550,9 +1601,9 @@ void parse_assignment_expression_internal(parser *const prs)
 
 			if (left_type == ADDRESS)
 			{
-				operator += 11;
+				node_type = node_at_operator(node_type);
 			}
-			float_operation(prs, result_mode, operator);
+			float_operation(prs, result_mode, node_type);
 			if (left_type == VARIABLE)
 			{
 				prs->operand_displ = target_displ;

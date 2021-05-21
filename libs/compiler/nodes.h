@@ -17,6 +17,7 @@
 #pragma once
 
 #include "defs.h"
+#include "tokens.h"
 #include "instructions.h"
 
 
@@ -280,6 +281,14 @@ typedef enum NODE
 
 
 instruction_t node_to_instruction(const node_t node);
+
+node_t token_to_node(const token_t token);
+
+node_t node_at_operator(const node_t node);
+
+node_t node_void_operator(const node_t node);
+
+node_t node_float_operator(const node_t node);
 
 int node_is_assignment_operator(const node_t node);
 

@@ -93,8 +93,8 @@ void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"t_create_direct", U"н_создать_непоср", TOK_CREATEDIRECT);
 	repr_add_keyword(reprtab, U"t_exit_direct", U"н_конец_непоср", TOK_EXITDIRECT);
 
-	repr_add_keyword(reprtab, U"t_msg_send", U"н_послать", TOK_MSGSEND);
-	repr_add_keyword(reprtab, U"t_msg_receive", U"н_получить", TOK_MSGRECEIVE);
+	repr_add_keyword(reprtab, U"t_msg_send", U"н_послать", TOK_MSG_SEND);
+	repr_add_keyword(reprtab, U"t_msg_receive", U"н_получить", TOK_MSG_RECEIVE);
 	repr_add_keyword(reprtab, U"t_join", U"н_присоед", TOK_JOIN);
 	repr_add_keyword(reprtab, U"t_sleep", U"н_спать", TOK_SLEEP);
 	repr_add_keyword(reprtab, U"t_sem_create", U"н_создать_сем", TOK_SEMCREATE);
