@@ -82,14 +82,14 @@ void parser_clear(parser *const prs)
  */
 
 
-int parse(universal_io *const io, syntax *const sx)
+int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
-	if (!in_is_correct(io) || sx == NULL)
+	if (!ws_is_correct(ws) || !in_is_correct(io) || sx == NULL)
 	{
 		return -1;
 	}
 
-	lexer lxr = create_lexer(io, sx);
+	lexer lxr = create_lexer(ws, io, sx);
 	parser prs = parser_create(sx, &lxr);
 	node root = node_get_root(&sx->tree);
 
@@ -102,7 +102,7 @@ int parse(universal_io *const io, syntax *const sx)
 
 	parser_clear(&prs);
 
-#ifndef GENERATE_TREE
+#ifdef NDEBUG
 	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
 #else
 	const int ret = prs.was_error || prs.lxr->was_error || !sx_is_correct(sx)
@@ -124,12 +124,16 @@ int parse(universal_io *const io, syntax *const sx)
 
 void parser_error(parser *const prs, error_t num, ...)
 {
-	prs->was_error = 1;
+	if (prs->lxr->disable_recovery && (prs->lxr->was_error || prs->was_error))
+	{
+		return;
+	}
 
 	va_list args;
 	va_start(args, num);
 
 	verror(prs->lxr->io, num, args);
+	prs->was_error = 1;
 
 	va_end(args);
 }
