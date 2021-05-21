@@ -23,6 +23,9 @@
 #include "vector.h"
 
 
+#define MAXSTRINGL	128
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
