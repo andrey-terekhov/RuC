@@ -34,7 +34,7 @@ enum IO_TYPE
 	all_types,
 };
 
-typedef struct environment				/**< Universal io structure */
+typedef struct environment				/**< Data structure required throughout the preprocessing stage */
 {
 	//local io struct
 	char32_t *local_io[all_types];		/**< Pointers to the beginning of all io preprocessor */
@@ -44,16 +44,16 @@ typedef struct environment				/**< Universal io structure */
 	char32_t *curent_io;				/**< Pointer to the beginning of сurrent io preprocessor */
 	size_t curent_io_prt;				/**< Pointer to the current character */
 
-	char32_t macro_tab[MAXTAB];			/**< Io storing macro replacement texts */
-	char32_t args[STRING_SIZE * 3];		/**< Io storing parameter texts */
-	char32_t macro_stack[STRING_SIZE];	/**< Io storing a pointer to the beginning of the parameter text */
-	size_t macro_stack_prt;				/**< Pointer to the current character in io preprocessor*/
+	char32_t macro_tab[MAXTAB];			/**< Macro replacement texts */
+	char32_t args[STRING_SIZE * 3];		/**< Parameter texts */
+	char32_t macro_stack[STRING_SIZE];	/**< Stack of pointers to the beginning of the parameter text  */
+	size_t macro_stack_prt;				/**< Pointer to the beginning of the parameter stack of the current macro */
 
 	char32_t old_nextchar;				/**< Next symbol received from the file */
 	char32_t old_curchar;				/**< Сurrent symbol received from the file */
-	int old_io_type[DEPTH_IO_SISE];		/**< Types of nested io */
-	char32_t *old_io[DEPTH_IO_SISE];	/**< Pointers of nested io */
-	size_t depth_io;					/**< Number of occurrences of io */
+	int old_io_type[DEPTH_IO_SISE];		/**< Types of nested io preprocessor */
+	char32_t *old_io[DEPTH_IO_SISE];	/**< Pointers of nested io preprocessor */
+	size_t depth_io;					/**< Number of occurrences of io preprocessor */
 
 	char32_t curchar;					/**< Сurrent symbol */
 	char32_t nextchar;					/**< Next symbol */
@@ -77,6 +77,14 @@ typedef struct environment				/**< Universal io structure */
 	
 } environment;
 
+/**
+ *	Initialize environment structure
+ *
+ *	@param	evn			Environment structure
+ *	@param	output		Output structure
+ *
+ *	@return	@c 0 on success, @c 1 on failure
+ */
 void env_init(environment *const env, universal_io *const output);
 
 /**
@@ -112,8 +120,8 @@ universal_io *env_get_file_output(environment *const env);
  *	Set io preprocessor
  *
  *	@param	evn			Environment structure
- *	@param	buffer		io buffer
- *	@param	type		Type io preprocessor
+ *	@param	buffer		Io buffer
+ *	@param	type		Type of io preprocessor
  *
  *	@return	@c 0 on success, @c 1 on failure
  */
@@ -123,8 +131,8 @@ int env_io_set(environment *const env, char32_t *buffer, int type);
  *	Switch input to new io preprocessor
  *
  *	@param	evn			Environment structure
- *	@param	type		Type io preprocessor
- *	@param	prt			Pointer to a character in preprocess io
+ *	@param	type		Type of io preprocessor
+ *	@param	prt			Pointer to the character in preprocess io
  *
  *	@return	@c 0 on success, @c 1 on failure
  */
@@ -140,10 +148,10 @@ int env_io_switch_to_new(environment *const env, int type, size_t prt);
 int env_io_back_to_previous(environment *const env);
 
 /**
- *	Clear the io preprocessor after the specified character
+ *	Clear io preprocessor after specified location
  *
  *	@param	evn			Environment structure
- *	@param	type		Type io preprocessor
+ *	@param	type		Type of io preprocessor
  *	@param	size		New size io preprocessor
  *
  *	@return	@c 0 on success, @c 1 on failure
@@ -154,7 +162,7 @@ int env_io_clear(environment *const env, int type, size_t size);
  *	Adding symbol to io preprocessor
  *
  *	@param	evn			Environment structure
- *	@param	type		Type io preprocessor
+ *	@param	type		Type of io preprocessor
  *	@param	simbol		Сharacter to add
  *
  *	@return	@c 0 on success, @c 1 on failure
@@ -165,8 +173,8 @@ int env_io_add_char(environment *const env, int type, char32_t simbol);
  *	Set the symbol in the io preprocessor to the specified location
  *
  *	@param	evn			Environment structure
- *	@param	type		Type io preprocessor
- *	@param	prt			Pointer to a character in preprocess io
+ *	@param	type		Type of io preprocessor
+ *	@param	prt			Pointer to the character in preprocess io
  *	@param	simbol		Сharacter to insert
  *
  *	@return	@c 0 on success, @c 1 on failure
@@ -177,8 +185,8 @@ int env_io_set_char(environment *const env, int type, size_t prt, char32_t simbo
  *	Get symbol to io preprocessor
  *
  *	@param	evn			Environment structure
- *	@param	type		Type io preprocessor
- *	@param	prt			Pointer to a character in preprocess io
+ *	@param	type		Type of io preprocessor
+ *	@param	prt			Pointer to the character in preprocess io
  *
  *	@return	Desired symbol , @c EOF on failure
  */
@@ -214,7 +222,7 @@ void env_scan_next_char(environment *const env);
  *
  *	@param	evn			Environment structure
  *
- *	@return	Type io preprocessor, @c all_types on failure
+ *	@return	Type of io preprocessor, @c all_types on failure
  */
 int env_io_get_type(environment *const env);
 
@@ -222,7 +230,7 @@ int env_io_get_type(environment *const env);
  *	Get size of io preprocessor
  *
  *	@param	evn			Environment structure
- *	@param	type		Type io preprocessor
+ *	@param	type		Type of io preprocessor
  *
  *	@return	Preprocessor io size, @c SIZE_MAX on failure
  */
@@ -238,7 +246,7 @@ size_t env_io_get_size(environment *const env, int type);
 size_t env_io_get_depth(environment *const env);
 
 /**
- *	Get a pointer to the current character in io preprocessor
+ *	Get the pointer to the current character in io preprocessor
  *
  *	@param	evn			Environment structure
  *
@@ -247,7 +255,7 @@ size_t env_io_get_depth(environment *const env);
 size_t env_io_get_prt(environment *const env);
 
 /**
- *	Get a pointer to the start of the current macro parameter stack
+ *	Get the pointer to the start of the current macro parameter stack
  *
  *	@param	evn			Environment structure
  *
@@ -256,7 +264,7 @@ size_t env_io_get_prt(environment *const env);
 size_t env_get_macro_stack_prt(environment *const env);
 
 /**
- *	Move a pointer to the start of the current macro parameter stack
+ *	Move the pointer to the start of the current macro parameter stack
  *
  *	@param	evn			Environment structure
  *	@param	num			Аdded value 
@@ -278,7 +286,7 @@ int env_error(environment *const env, const int num);
 void m_fprintf(environment *const env, int a);
 
 /**
- *	Add a comment to indicate line changes in the output
+ *	Add the comment to indicate line changes in the output
  *
  *	@param	env	Preprocessor environment
  *

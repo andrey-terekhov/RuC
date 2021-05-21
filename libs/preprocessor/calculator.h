@@ -26,7 +26,7 @@ extern "C" {
  *	Calculate an arithmetic or logical expression
  *
  *	@param	env					Preprocessor environment
- *	@param	result		Buffer to return result arithmetic expression
+ *	@param	result				Аrithmetic expression result
  *
  *	@return	@c 0 success, @c -1 on failure
  */
