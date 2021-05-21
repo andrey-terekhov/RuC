@@ -60,10 +60,14 @@ logger current_note_log = &default_note_log;
 
 void set_color(const uint8_t color)
 {
-#ifdef _MSC_VER
-	SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE), color);
+#if defined(NDEBUG) || !defined(__APPLE__)
+	#ifdef _MSC_VER
+		SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE), color);
+	#else
+		fprintf(stderr, "\x1B[1;%im", color);
+	#endif
 #else
-	fprintf(stderr, "\x1B[1;%im", color);
+	(void)color;
 #endif
 }
 

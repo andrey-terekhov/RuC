@@ -68,7 +68,7 @@ int compile_from_io(const workspace *const ws, universal_io *const io, const enc
 	}
 
 	syntax sx = sx_create();
-	int ret = parse(io, &sx);
+	int ret = parse(ws, io, &sx);
 
 	if (!ret)
 	{
