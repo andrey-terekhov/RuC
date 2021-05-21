@@ -381,7 +381,6 @@ enum MODE
 #define TCREATEDIRECT -28
 #define TEXITDIRECT	  -29
 
-#define STANDARD_FUNC_START -30
 #define SETMOTOR			-30
 #define GETDIGSENSOR		-31
 #define GETANSENSOR			-32
@@ -502,43 +501,3 @@ enum MODE
 #define TStructinit	 -343
 
 
-// коды команд MIPS
-
-#define bltz  1	  // bltz rs, label		if rs < 0					bgez rs, label	if rs >= 0
-#define jump  2	  // j label
-#define jal	  3	  // jal label
-#define beq	  4	  // beq rs, rt, label	if rs == rt
-#define bne	  5	  // bne rs, rt, label	if rs != rt
-#define blez  6	  // blez rs, label		if rs <= 0
-#define bgtz  7	  // bgtz rs, label		if rs > 0
-#define addi  8	  // addi rt, rs, imm		rt = rs + SignImm
-#define addiu 9	  // addiu rt, rs, imm	rt = rs + SignImm			no overflow
-#define slti  10  // slti rt, rs, imm		rt = rs < SignImm ? 1 : 0
-#define sltiu 11  // sltiu rt, rs, imm	rt = rs < SignImm ? 1 : 0	unsigned
-#define andi  12  // andi rt, rs, imm		rt = rs & ZeroImm
-#define ori	  13  // ori rt, rs, imm		rt = rs | ZeroImm
-#define xori  14  // xori rt, rs, imm		rt = rs ^ ZeroImm
-#define lui	  15  // lui rt, imm			rt = {imm, 16'b0}
-#define li	  115 // li rt, imm(32)		это псевдокоманда (lui + ori)
-#define mul	  28  // mul rd, rs, rt		rd = rs * rt
-#define lw	  35  // lw rt, imm(rs)		rt = [Address]
-#define sw	  43  // sw rt, imm(rs)		[Address] = rt
-
-#define sll	 60	 // sll rd, rt, shamt	rd = rt << shsmt
-#define srl	 62	 // srl rd, rt, shamt	rd = rt >> shsmt
-#define sra	 63	 // sra rd, rt, shamt	rd = rt >> shsmt			arithmetic
-#define sllv 64	 // sllv rd, rt, rs		rd = rt << [rs]4:0
-#define srlv 66	 // srlv rd, rt, rs		rd = rt >> [rs]4:0
-#define srav 67	 // srav rd, rt, rs		rd = rt >> [rs]4:0			arithmetic
-#define jr	 68	 // jr rs				PC = rs
-#define jalr 69	 // jalr rs
-#define add	 92	 // add rd, rs, rt		rd = rs + rt
-#define addu 93	 // addu rd, rs, rt		rd = rs + rt				unsigned
-#define sub	 94	 // sub rd, rs, rt		rd = rs - rt
-#define subu 95	 // subu rd, rs, rt		rd = rs - rt				unsigned
-#define and 96	 // and rd, rs, rt		rd = ts & rt
-#define or 97	 // or rd, rs, rt		rd = ts | rt
-#define xor 98	 // xor rd, rs, rt		rd = ts ^ rt
-#define nor	 99	 // nor rd, rs, rt		rd = ~(rs | rt)
-#define slt	 102 // slt rd, rs, rt		rd = rs < rt ? 1 : 0
-#define sltu 103 // sltu rd, rs, rt		rd = rs < rt ? 1 : 0		unsigned

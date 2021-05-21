@@ -775,7 +775,7 @@ void parse_primary_expression(parser *const prs)
 		break;
 
 		default:
-			if (prs->token <= STANDARD_FUNC_START)
+			if (prs->token >= STANDARD_FUNC_START && prs->token <= STANDARD_FUNC_END)
 			{
 				parse_standard_function_call(prs);
 			}
