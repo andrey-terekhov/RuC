@@ -21,6 +21,12 @@
 #include "tokens.h"
 #include "old_tree.h"
 
+const size_t REPRESENTATIONS_SIZE = 10000;
+const size_t MODES_SIZE = 1000;
+const size_t TREE_SIZE = 10000;
+const size_t IDENTIFIERS_SIZE = 10000;
+const size_t FUNCTIONS_SIZE = 100;
+
 
 void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
 {
@@ -208,20 +214,20 @@ syntax sx_create()
 	syntax sx;
 	sx.procd = 1;
 
-	sx.predef = vector_create(FUNCSIZE);
-	sx.functions = vector_create(FUNCSIZE);
+	sx.predef = vector_create(FUNCTIONS_SIZE);
+	sx.functions = vector_create(FUNCTIONS_SIZE);
 	vector_increase(&sx.functions, 2);
 
-	sx.tree = vector_create(MAXTREESIZE);
+	sx.tree = vector_create(TREE_SIZE);
 
-	sx.identifiers = vector_create(MAXIDENTAB);
+	sx.identifiers = vector_create(IDENTIFIERS_SIZE);
 	vector_increase(&sx.identifiers, 2);
 	sx.cur_id = 2;
 
-	sx.representations = map_create(MAXREPRTAB);
+	sx.representations = map_create(REPRESENTATIONS_SIZE);
 	repr_init(&sx.representations);
 
-	sx.modes = vector_create(MAXMODETAB);
+	sx.modes = vector_create(MODES_SIZE);
 	mode_init(&sx);
 
 	sx.max_displg = 3;

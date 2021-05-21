@@ -16,18 +16,4 @@
 
 #pragma once
 
-#define MAXREPRTAB	10000
-#define MAXIDENTAB	10000
-#define MAXTREESIZE 10000
-#define MAXMODETAB	1000
-#define MAXBOUNDS	100
-#define FUNCSIZE	100
-#define SOURCESIZE	10000
-#define LINESSIZE	300
 #define MAXSTRINGL	128
-
-
-
-// modetab
-
-
