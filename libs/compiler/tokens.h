@@ -25,7 +25,7 @@ extern "C" {
 
 typedef enum TOKEN
 {
-	TOK_EOF		= LEOF,				/**< End of file */
+	TOK_EOF		= -1,				/**< End of file */
 
 	// Keywords [C99 6.4.1]
 	TOK_MAIN	= 0,				/**< 'main'		keyword */

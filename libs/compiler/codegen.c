@@ -130,7 +130,7 @@ static void addr_end_break(virtual *const vm)
 static void final_operation(virtual *const vm, node *const nd)
 {
 	node_t op = node_get_type(nd);
-	while (op > 9000)
+	while (op > 8000)
 	{
 		if (op != ND_NULL)
 		{

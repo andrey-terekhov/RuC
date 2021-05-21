@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include "defs.h"
 #include "errors.h"
+#include "nodes.h"
 
 
 #ifdef OLD_TREE
@@ -101,67 +102,67 @@ int vector_swap(vector *const vec, size_t fst_index, size_t fst_size, size_t snd
 
 int is_operator(const item_t value)
 {
-	return value == TFuncdef		// Declarations
-		|| value == TDeclid
-		|| value == TDeclarr
-		|| value == TStructbeg
-		|| value == TStructend
+	return value == ND_FUNC_DEF		// Declarations
+		|| value == ND_DECL_ID
+		|| value == ND_DECL_ARR
+		|| value == ND_DECL_STRUCT
+		|| value == ND_DECL_STRUCT_END
 
-		|| value == TBegin			// Operators
-		|| value == TEnd
-		|| value == TPrintid
-		|| value == TPrintf
-		|| value == TGetid
-		|| value == TGoto
-		|| value == TLabel
-		|| value == TIf
-		|| value == TFor
-		|| value == TDo
-		|| value == TWhile
-		|| value == TSwitch
-		|| value == TCase
-		|| value == TDefault
-		|| value == TReturnval
-		|| value == TReturnvoid
-		|| value == TBreak
-		|| value == TContinue
+		|| value == ND_BLOCK			// Operators
+		|| value == ND_BLOCK_END
+		|| value == ND_PRINTID
+		|| value == ND_PRINTF
+		|| value == ND_GETID
+		|| value == ND_GOTO
+		|| value == ND_LABEL
+		|| value == ND_IF
+		|| value == ND_FOR
+		|| value == ND_DO
+		|| value == ND_WHILE
+		|| value == ND_SWITCH
+		|| value == ND_CASE
+		|| value == ND_DEFAULT
+		|| value == ND_RETURN_VAL
+		|| value == ND_RETURN_VOID
+		|| value == ND_BREAK
+		|| value == ND_CONTINUE
 
-		|| value == CREATEDIRECTC	// Lexemes
-		|| value == EXITDIRECTC;
+		|| value == ND_CREATEDIRECT	// Lexemes
+		|| value == ND_EXITDIRECT;
 }
 
 int is_expression(const item_t value)
 {
-	return value == TBeginit		// Declarations
-		|| value == TStructinit
+	return value == ND_ARRAY_INIT		// Declarations
+		|| value == ND_STRUCT_INIT
 
-		|| value == TPrint			// Operator
+		|| value == ND_PRINT			// Operator
 
-		|| value == TCondexpr		// Expressions
-		|| value == TSelect
-		|| value == TAddrtoval
-		|| value == TAddrtovald
-		|| value == TIdenttoval
-		|| value == TIdenttovald
-		|| value == TIdenttoaddr
-		|| value == TIdent
-		|| value == TConst
-		|| value == TConstd
-		|| value == TString
-		|| value == TStringd
-		|| value == TSliceident
-		|| value == TSlice
-		|| value == TCall1
-		|| value == TCall2
-		|| value == TExprend;
+		|| value == ND_CONDITIONAL		// Expressions
+		|| value == ND_SELECT
+		|| value == ND_ADDRTOVAL
+		|| value == ND_ADDRTOVALD
+		|| value == ND_IDENTTOVAL
+		|| value == ND_IDENTTOVALD
+		|| value == ND_IDENTTOADDR
+		|| value == ND_IDENT
+		|| value == ND_CONST
+		|| value == ND_CONSTD
+		|| value == ND_STRING
+		|| value == ND_STRINGD
+		|| value == ND_SLICEIDENT
+		|| value == ND_SLICE
+		|| value == ND_CALL1
+		|| value == ND_CALL2
+		|| value == ND_EXPRESSION_END;
 }
 
 int is_lexeme(const item_t value)
 {
-	return (value >= 9001 && value <= 9595
-		&& value != CREATEDIRECTC
-		&& value != EXITDIRECTC)
-		|| value == ABSIC
+	return (value >= ND_REMASS && value <= ND_ASSERT
+		&& value != ND_CREATEDIRECT
+		&& value != ND_EXITDIRECT)
+		|| value == ND_ABSI
 		|| is_ref(value);
 }
 
@@ -215,64 +216,64 @@ node node_expression(vector *const tree, const size_t index)
 
 	switch (vector_get(tree, index))
 	{
-		case TBeginit:		// ArrayInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
-		case TStructinit:	// StructInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
+		case ND_ARRAY_INIT:		// ArrayInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
+		case ND_STRUCT_INIT:	// StructInit: n + 1 потомков (размерность инициализатора, n выражений-инициализаторов)
 			nd.argc = 1;
 			nd.amount = (size_t)node_get_arg(&nd, 0);
 			break;
 
-		case TAddrtovald:
-		case TAddrtoval:
+		case ND_ADDRTOVAL:
+		case ND_ADDRTOVALD:
 
-		case TCondexpr:
+		case ND_CONDITIONAL:
 			break;
 
-		case TConstd:		// d - double
+		case ND_CONSTD:		// d - double
 			nd.argc = 2;
 			break;
-		case TConst:
-		case TSelect:
+		case ND_CONST:
+		case ND_SELECT:
 
-		case TPrint:		// Print: 2 потомка (тип значения, выражение)
+		case ND_PRINT:		// Print: 2 потомка (тип значения, выражение)
 
-		case TIdenttoaddr:
-		case TIdenttovald:
-		case TIdenttoval:
+		case ND_IDENTTOADDR:
+		case ND_IDENTTOVALD:
+		case ND_IDENTTOVAL:
 
-		case TCall1:
+		case ND_CALL1:
 			nd.argc = 1;
 			break;
-		case TCall2:
+		case ND_CALL2:
 
-		case TIdent:
+		case ND_IDENT:
 			nd.argc = 1;
 			break;
 
-		case TStringd:		// d - double
+		case ND_STRINGD:		// d - double
 			nd.argc = 1;
 			nd.argc += (size_t)node_get_arg(&nd, 0) * 2;
 			break;
-		case TString:
+		case ND_STRING:
 			nd.argc = 1;
 			nd.argc += (size_t)node_get_arg(&nd, 0);
 			break;
 
-		case TSliceident:
+		case ND_SLICEIDENT:
 			nd.argc = 2;
 			nd.amount = 1;
 			break;
-		case TSlice:
+		case ND_SLICE:
 			nd.argc = 1;
 			nd.amount = 1;
 			break;
 
-		case TExprend:
+		case ND_EXPRESSION_END:
 			nd.children = nd.argv + nd.argc;
 			nd.amount = is_ref(vector_get(tree, index + 1)) ? 1 : 0;
 			return nd;
 
-		case NOP:
-			if (vector_get(tree, index + 1) != TExprend)
+		case ND_NULL:
+			if (vector_get(tree, index + 1) != ND_EXPRESSION_END)
 			{
 				system_error(tree_expression_no_texprend, index, vector_get(tree, index));
 				return node_broken();
@@ -288,7 +289,7 @@ node node_expression(vector *const tree, const size_t index)
 			}
 
 			size_t j = index + 1;
-			while (j < vector_size(tree) && vector_get(tree, j) != NOP && !is_expression(vector_get(tree, j)) && !is_lexeme(vector_get(tree, j)))
+			while (j < vector_size(tree) && vector_get(tree, j) != ND_NULL && !is_expression(vector_get(tree, j)) && !is_lexeme(vector_get(tree, j)))
 			{
 				if (is_operator(vector_get(tree, j)))
 				{
@@ -315,7 +316,7 @@ node node_expression(vector *const tree, const size_t index)
 		return node_broken();
 	}
 
-	if (vector_get(tree, j) == NOP || is_expression(vector_get(tree, j)) || is_lexeme(vector_get(tree, j)))
+	if (vector_get(tree, j) == ND_NULL || is_expression(vector_get(tree, j)) || is_lexeme(vector_get(tree, j)))
 	{
 		nd.amount++;
 	}
@@ -331,7 +332,7 @@ node node_expression(vector *const tree, const size_t index)
 
 size_t skip_operator(vector *const tree, size_t i)
 {
-	if (!is_operator(vector_get(tree, i)) && vector_get(tree, i) != NOP)
+	if (!is_operator(vector_get(tree, i)) && vector_get(tree, i) != ND_NULL)
 	{
 		return skip_expression(tree, i);
 	}
@@ -369,26 +370,26 @@ node node_operator(vector *const tree, const size_t index)
 
 	switch (vector_get(tree, index))
 	{
-		case TFuncdef:		// Funcdef: 2 потомка (ссылка на identab, тело функции)
+		case ND_FUNC_DEF:		// Funcdef: 2 потомка (ссылка на identab, тело функции)
 			nd.argc = 2;
 			nd.amount = 1;
 			break;
-		case TDeclid:		// IdentDecl: 6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
+		case ND_DECL_ID:		// IdentDecl: 6 потомков (ссылка на identab, тип элемента, размерность, all, usual, выражение-инициализатор (может не быть))
 			nd.argc = 7;
 			nd.amount = node_get_arg(&nd, 3) ? 1 : 0;	// по all можно определить наличие TExprend
 			break;
-		case TDeclarr:		// ArrayDecl: n + 2 потомков (размерность массива, n выражений-размеров, инициализатор (может не быть))
+		case ND_DECL_ARR:		// ArrayDecl: n + 2 потомков (размерность массива, n выражений-размеров, инициализатор (может не быть))
 		{
 			nd.argc = 1;
 			nd.amount = (size_t)node_get_arg(&nd, 0) + 1;
 		}
 		break;
 
-		case TStructbeg:	// StructDecl: n + 2 потомков (размерность структуры, n объявлений полей, инициализатор (может не быть))
+		case ND_DECL_STRUCT:	// StructDecl: n + 2 потомков (размерность структуры, n объявлений полей, инициализатор (может не быть))
 		{
 			nd.argc = 1;
 			size_t j = nd.argv + nd.argc;
-			while (j != SIZE_MAX && vector_get(tree, j) != TStructend)
+			while (j != SIZE_MAX && vector_get(tree, j) != ND_DECL_STRUCT_END)
 			{
 				j = skip_operator(tree, j);
 				nd.amount++;
@@ -405,14 +406,14 @@ node node_operator(vector *const tree, const size_t index)
 			}
 		}
 		break;
-		case TStructend:
+		case ND_DECL_STRUCT_END:
 			nd.argc = 1;
 			break;
 
-		case TBegin:
+		case ND_BLOCK:
 		{
 			size_t j = nd.argv + nd.argc;
-			while (j != SIZE_MAX && vector_get(tree, j) != TEnd)
+			while (j != SIZE_MAX && vector_get(tree, j) != ND_BLOCK_END)
 			{
 				j = skip_operator(tree, j);
 				nd.amount++;
@@ -430,31 +431,31 @@ node node_operator(vector *const tree, const size_t index)
 
 		}
 		break;
-		case TEnd:
+		case ND_BLOCK_END:
 			break;
 
-		case TPrintid:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
+		case ND_PRINTID:		// PrintID: 2 потомка (ссылка на reprtab, ссылка на identab)
 			nd.argc = 1;
 			nd.amount = is_expression(vector_get(tree, nd.argv + nd.argc)) || is_lexeme(vector_get(tree, nd.argv + nd.argc)) ? 1 : 0;
 			break;
-		case TPrintf:		// Printf: n + 2 потомков (форматирующая строка, число параметров, n параметров-выражений)
-		case TGetid:		// GetID: 1 потомок (ссылка на identab)
+		case ND_PRINTF:		// Printf: n + 2 потомков (форматирующая строка, число параметров, n параметров-выражений)
+		case ND_GETID:		// GetID: 1 потомок (ссылка на identab)
 							// Scanf: n + 2 потомков (форматирующая строка, число параметров, n параметров-ссылок на identab)
 
-		case TGoto:			// Goto: 1 потомок (ссылка на identab)
+		case ND_GOTO:			// Goto: 1 потомок (ссылка на identab)
 			nd.argc = 1;
 			break;
-		case TLabel:		// LabeledStatement: 2 потомка (ссылка на identab, тело оператора)
+		case ND_LABEL:		// LabeledStatement: 2 потомка (ссылка на identab, тело оператора)
 			nd.argc = 1;
 			nd.amount = 1;
 			break;
 
-		case TIf:			// If: 3 потомка (условие, тело-then, тело-else) - ветка else присутствует не всегда, здесь предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
+		case ND_IF:			// If: 3 потомка (условие, тело-then, тело-else) - ветка else присутствует не всегда, здесь предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
 			nd.argc = 1;
 			nd.amount = node_get_arg(&nd, 0) != 0 ? 3 : 2;
 			break;
 
-		case TFor:			// For: 4 потомка (выражение или объявление, условие окончания, выражение-инкремент, тело цикла); - первые 3 ветки присутствуют не всегда,  здесь также предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
+		case ND_FOR:			// For: 4 потомка (выражение или объявление, условие окончания, выражение-инкремент, тело цикла); - первые 3 ветки присутствуют не всегда,  здесь также предлагается не добавлять лишних узлов-индикаторов, а просто проверять, указывает на 0 или нет
 			nd.argc = 4;
 			nd.amount = 1;
 
@@ -466,34 +467,34 @@ node node_operator(vector *const tree, const size_t index)
 				}
 			}
 			break;
-		case TDo:			// Do: 2 потомка (тело цикла, условие)
+		case ND_DO:			// Do: 2 потомка (тело цикла, условие)
 			nd.amount = 2;
 			break;
-		case TWhile:		// While: 2 потомка (условие, тело цикла)
+		case ND_WHILE:		// While: 2 потомка (условие, тело цикла)
 
-		case TSwitch:		// Switch: 2 потомка (условие, тело оператора)
-		case TCase:			// Case: 2 потомка (условие, тело оператора)
+		case ND_SWITCH:		// Switch: 2 потомка (условие, тело оператора)
+		case ND_CASE:			// Case: 2 потомка (условие, тело оператора)
 			nd.amount = 2;
 			break;
-		case TDefault:		// Default: 1 потомок (тело оператора)
+		case ND_DEFAULT:		// Default: 1 потомок (тело оператора)
 			nd.amount = 1;
 			break;
 
-		case TReturnval:	// ReturnValue: 2 потомка (тип значения, выражение)
+		case ND_RETURN_VAL:	// ReturnValue: 2 потомка (тип значения, выражение)
 			nd.argc = 1;
 			nd.amount = 1;
 			break;
-		case TReturnvoid:	// ReturnVoid: нет потомков
-		case TBreak:		// Break: нет потомков
-		case TContinue:		// Continue: нет потомков
+		case ND_RETURN_VOID:	// ReturnVoid: нет потомков
+		case ND_BREAK:		// Break: нет потомков
+		case ND_CONTINUE:		// Continue: нет потомков
 
-		case NOP:			// NoOperation: 0 потомков
+		case ND_NULL:			// NoOperation: 0 потомков
 			break;
 
-		case CREATEDIRECTC:
+		case ND_CREATEDIRECT:
 		{
 			size_t j = nd.argv + nd.argc;
-			while (j != SIZE_MAX && vector_get(tree, j) != EXITDIRECTC)
+			while (j != SIZE_MAX && vector_get(tree, j) != ND_EXITDIRECT)
 			{
 				j = skip_operator(tree, j);
 				nd.amount++;
@@ -510,7 +511,7 @@ node node_operator(vector *const tree, const size_t index)
 			}
 		}
 		break;
-		case EXITDIRECTC:
+		case ND_EXITDIRECT:
 			break;
 
 		default:
@@ -943,7 +944,7 @@ int tree_test(vector *const tree)
 		return -1;
 	}
 
-	if (vector_get(tree, i) == TEnd)
+	if (vector_get(tree, i) == ND_BLOCK_END)
 	{
 		return 0;
 	}

@@ -97,7 +97,7 @@ int parse(universal_io *const io, syntax *const sx)
 		parse_declaration_external(&prs, &root);
 	} while (prs.token != TOK_EOF);
 
-	node_add_child(&root, TEnd);
+	node_add_child(&root, ND_BLOCK_END);
 	parser_clear(&prs);
 
 #ifdef GENERATE_TREE

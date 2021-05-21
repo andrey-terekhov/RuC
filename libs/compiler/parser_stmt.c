@@ -16,6 +16,9 @@
 
 #include "parser.h"
 
+#define MAXPRINTFPARAMS 20
+
+
 /** Check if current token is part of a declaration specifier */
 int is_declaration_specifier(parser *const prs)
 {
@@ -572,7 +575,7 @@ size_t evaluate_args(parser *const prs, const size_t length, const char32_t *con
 			{
 				if (args == MAXPRINTFPARAMS)
 				{
-					parser_error(prs, too_many_printf_params);
+					parser_error(prs, too_many_printf_params, MAXPRINTFPARAMS);
 					return 0;
 				}
 
@@ -816,5 +819,5 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 		scope_block_exit(prs->sx, old_displ, old_lg);
 	}
 
-	node_add_child(&nd_block, TEnd);
+	node_add_child(&nd_block, ND_BLOCK_END);
 }

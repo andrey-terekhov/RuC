@@ -465,9 +465,11 @@ void get_error(const error_t num, char *const msg, va_list args)
 		}
 		break;
 		case too_many_printf_params: // test_exist
-			sprintf(msg, "максимально в printf/печатьф можно выводить %i значений",
-					MAXPRINTFPARAMS);
-			break;
+		{
+			const size_t MAXPRINTFPARAMS = va_arg(args, size_t);
+			sprintf(msg, "максимально в printf/печатьф можно выводить %zu значений", MAXPRINTFPARAMS);
+		}
+		break;
 
 		case no_mult_in_cast: // need_test
 			sprintf(msg, "нет * в cast (приведении)");

@@ -27,310 +27,311 @@ extern "C" {
 
 typedef enum NODE
 {
-	// Statements
-	ND_LABEL			= TLabel,			/**< Label statement node */
-	ND_CASE				= TCase,			/**< Case statement node */
-	ND_DEFAULT			= TDefault,			/**< Default statement node */
-	ND_BLOCK			= TBegin,			/**< Compound statement node */
-	ND_NULL				= NOP,				/**< Null statement node */
-	ND_IF				= TIf,				/**< If statement node */
-	ND_SWITCH			= TSwitch,			/**< Switch statement node */
-	ND_WHILE			= TWhile,			/**< While statement node */
-	ND_DO				= TDo,				/**< Do statement node */
-	ND_FOR				= TFor,				/**< For statement node */
-	ND_GOTO				= TGoto,			/**< Goto statement node */
-	ND_CONTINUE			= TContinue,		/**< Continue statement node */
-	ND_BREAK			= TBreak,			/**< Break statement node */
-	ND_RETURN_VOID		= TReturnvoid,		/**< Void return statement node */
-	ND_RETURN_VAL		= TReturnval,		/**< Valued return statement node */
-	ND_CREATEDIRECT		= CREATEDIRECTC,	/**< Create direct statement node */
-	ND_EXITDIRECT		= EXITDIRECTC,		/**< Exit direct statement node */
-	ND_PRINTID			= TPrintid,			/**< Printid statement node */
-	ND_PRINT			= TPrint,			/**< Print statement node */
-	ND_GETID			= TGetid,			/**< Getid statement node */
-	ND_PRINTF			= TPrintf,			/**< Printf statement node */
+	// Statement
+	ND_LABEL = 7000,	/**< Label statement node */
+	ND_CASE,			/**< Case statement node */
+	ND_DEFAULT,			/**< Default statement node */
+	ND_BLOCK,			/**< Compound statement node */
+	ND_IF,				/**< If statement node */
+	ND_SWITCH,			/**< Switch statement node */
+	ND_WHILE,			/**< While statement node */
+	ND_DO,				/**< Do statement node */
+	ND_FOR,				/**< For statement node */
+	ND_GOTO,			/**< Goto statement node */
+	ND_CONTINUE,		/**< Continue statement node */
+	ND_BREAK,			/**< Break statement node */
+	ND_RETURN_VOID,		/**< Void return statement node */
+	ND_RETURN_VAL,		/**< Valued return statement node */
+	ND_CREATEDIRECT,	/**< Create direct statement node */
+	ND_EXITDIRECT,		/**< Exit direct statement node */
+	ND_PRINTID,			/**< Printid statement node */
+	ND_PRINT,			/**< Print statement node */
+	ND_GETID,			/**< Getid statement node */
+	ND_PRINTF,			/**< Printf statement node */
 
 	// Declarations
-	ND_DECL_ID			= TDeclid,			/**< Identifier declaration node */
-	ND_DECL_ARR			= TDeclarr,			/**< Array declaration node */
-	ND_DECL_STRUCT		= TStructbeg,		/**< Struct declaration node */
-	ND_FUNC_DEF			= TFuncdef,			/**< Function definition node */
-	ND_ARRAY_INIT		= TBeginit,			/**< Array inition node */
-	ND_STRUCT_INIT		= TStructinit,		/**< Struct inition node */
+	ND_DECL_ID,			/**< Identifier declaration node */
+	ND_DECL_ARR,		/**< Array declaration node */
+	ND_DECL_STRUCT,		/**< Struct declaration node */
+	ND_FUNC_DEF,		/**< Function definition node */
+	ND_ARRAY_INIT,		/**< Array inition node */
+	ND_STRUCT_INIT,		/**< Struct inition node */
 
 	// End nodes
-	ND_BLOCK_END		= TEnd,				/**< End of block node */
-	ND_DECL_STRUCT_END	= TStructend,		/**< End of struct declaration node */
-	ND_EXPRESSION_END	= TExprend,			/**< End of expression node */
+	ND_BLOCK_END,		/**< End of block node */
+	ND_DECL_STRUCT_END,	/**< End of struct declaration node */
+	ND_EXPRESSION_END,	/**< End of expression node */
 
 	// Expressions
-	ND_CONDITIONAL		= TCondexpr,		/**< Ternary operator node */
-	ND_WIDEN			= WIDEN,			/**< "WIDEN" node */
-	ND_WIDEN1			= WIDEN1,			/**< "WIDEN1" node */
-	ND_STRINGINIT		= STRINGINIT,		/**< "STRINGINIT" node */
-	ND_STRING			= TString,			/**< String literal node */
-	ND_STRINGD			= TStringd,			/**< Row of doubles node */
-	ND_ADLOGOR			= ADLOGOR,			/**< "ADLOGOR" node */
-	ND_ADLOGAND			= ADLOGAND,			/**< "ADLOGAND" node */
-	ND_IDENT			= TIdent,			/**< Identifier node */
-	ND_IDENTTOADDR		= TIdenttoaddr,		/**< Identifier to address node */
-	ND_IDENTTOVAL		= TIdenttoval,		/**< Value of integer variable node */
-	ND_IDENTTOVALD		= TIdenttovald,		/**< Value of double variable node */
-	ND_ADDRTOVAL		= TAddrtoval,		/**< Address to integer value node */
-	ND_ADDRTOVALD		= TAddrtovald,		/**< Address to double value node */
-	ND_CONST			= TConst,			/**< Integer constant node */
-	ND_CONSTD			= TConstd,			/**< Double constant node node */
-	ND_SLICE			= TSlice,			/**< Slice node */
-	ND_SLICEIDENT		= TSliceident,		/**< Slice from identifier node */
-	ND_SELECT			= TSelect,			/**< Select node */
-	ND_CALL1			= TCall1,			/**< "Call1" node */
-	ND_CALL2			= TCall2,			/**< "Call2" node */
-	ND_ROWING			= ROWING,			/**< "ROWING" node */
-	ND_ROWINGD			= ROWINGD,			/**< "ROWINGD" node */
-
-	// Standard functions
-	ND_COPY00			= COPY00,			/**< "COPY00" node */
-	ND_COPY01			= COPY01,			/**< "COPY01" node */
-	ND_COPY10			= COPY10,			/**< "COPY10" node */
-	ND_COPY11			= COPY11,			/**< "COPY11" node */
-	ND_COPY0ST			= COPY0ST,			/**< "COPY0ST" node */
-	ND_COPY1ST			= COPY1ST,			/**< "COPY1ST" node */
-	ND_COPY0STASS		= COPY0STASS,		/**< "COPY0STASS" node */
-	ND_COPY1STASS		= COPY1STASS,		/**< "COPY1STASS" node */
-	ND_COPYST			= COPYST,			/**< "COPYST" node */
-
-	ND_ABSI				= ABSIC,			/**< "ABSI" node */
-	ND_ABS				= ABSC,				/**< "ABS" node */
-	ND_SQRT				= SQRTC,			/**< "SQRT" node */
-	ND_EXP				= EXPC,				/**< "EXP" node */
-	ND_SIN				= SINC,				/**< "SIN" node */
-	ND_COS				= COSC,				/**< "COS" node */
-	ND_LOG				= LOGC,				/**< "LOG" node */
-	ND_LOG10			= LOG10C,			/**< "LOG10" node */
-	ND_ASIN				= ASINC,			/**< "ASIN" node */
-	ND_RAND				= RANDC,			/**< "RAND" node */
-	ND_ROUND			= ROUNDC,			/**< "ROUND" node */
-
-	ND_STRCPY			= STRCPYC,			/**< "STRCPY" node */
-	ND_STRNCPY			= STRNCPYC,			/**< "STRNCPY" node */
-	ND_STRCAT			= STRCATC,			/**< "STRCAT" node */
-	ND_STRNCAT			= STRNCATC,			/**< "STRNCAT" node */
-	ND_STRCMP			= STRCMPC,			/**< "STRCMP" node */
-	ND_STRNCMP			= STRNCMPC,			/**< "STRNCMP" node */
-	ND_STRSTR			= STRSTRC,			/**< "STRSTR" node */
-	ND_STRLEN			= STRLENC,			/**< "STRLEN" node */
-
-	ND_MSG_SEND			= MSGSENDC,			/**< "MSG_SEND" node */
-	ND_MSG_RECEIVE		= MSGRECEIVEC,		/**< "MSG_RECEIVE" node */
-	ND_JOIN				= JOINC,			/**< "JOIN" node */
-	ND_SLEEP			= SLEEPC,			/**< "SLEEP" node */
-	ND_SEMCREATE		= SEMCREATEC,		/**< "SEMCREATE" node */
-	ND_SEMWAIT			= SEMWAITC,			/**< "SEMWAIT" node */
-	ND_SEMPOST			= SEMPOSTC,			/**< "SEMPOST" node */
-	ND_CREATE			= CREATEC,			/**< "CREATE" node */
-	ND_INIT				= INITC,			/**< "INIT" node */
-	ND_DESTROY			= DESTROYC,			/**< "DESTROY" node */
-	ND_EXIT				= EXITC,			/**< "EXIT" node */
-	ND_GETNUM			= GETNUMC,			/**< "GETNUM" node */
-
-	ND_UPB				= UPBC,				/**< "UPB" node */
-	ND_SEND_INT			= SEND_INTC,		/**< "SEND_INT" node */
-	ND_SEND_FLOAT		= SEND_FLOATC,		/**< "SEND_FLOAT" node */
-	ND_SEND_STRING		= SEND_STRINGC,		/**< "SEND_STRING" node */
-	ND_RECEIVE_INT		= RECEIVE_INTC,		/**< "RECEIVE_INT" node */
-	ND_RECEIVE_FLOAT	= RECEIVE_FLOATC,	/**< "RECEIVE_FLOAT" node */
-	ND_RECEIVE_STRING	= RECEIVE_STRINGC,	/**< "RECEIVE_STRING" node */
-	ND_ASSERT			= ASSERTC,			/**< "ASSERT" node */
+	ND_CONDITIONAL,		/**< Ternary operator node */
+	ND_STRING,			/**< String literal node */
+	ND_STRINGD,			/**< Row of doubles node */
+	ND_IDENT,			/**< Identifier node */
+	ND_IDENTTOADDR,		/**< Identifier to address node */
+	ND_IDENTTOVAL,		/**< Value of integer variable node */
+	ND_IDENTTOVALD,		/**< Value of double variable node */
+	ND_ADDRTOVAL,		/**< Address to integer value node */
+	ND_ADDRTOVALD,		/**< Address to double value node */
+	ND_CONST,			/**< Integer constant node */
+	ND_CONSTD,			/**< Double constant node node */
+	ND_SLICE,			/**< Slice node */
+	ND_SLICEIDENT,		/**< Slice from identifier node */
+	ND_SELECT,			/**< Select node */
+	ND_CALL1,			/**< "Call1" node */
+	ND_CALL2,			/**< "Call2" node */
 
 	// Operators
-	ND_REMASS			= REMASS,			/**< "%=" node */
-	ND_SHLASS			= SHLASS,			/**< "<<=" node */
-	ND_SHRASS			= SHRASS,			/**< ">>=" node */
-	ND_ANDASS			= ANDASS,			/**< "&=" node */
-	ND_EXORASS			= EXORASS,			/**< "^=" node */
-	ND_ORASS			= ORASS,			/**< "|=" node */
-	ND_ASS				= ASS,				/**< "=" node */
-	ND_PLUSASS			= PLUSASS,			/**< "+=" node */
-	ND_MINUSASS			= MINUSASS,			/**< "-=" node */
-	ND_MULTASS			= MULTASS,			/**< "*=" node */
-	ND_DIVASS			= DIVASS,			/**< "/=" node */
-	ND_REMASSAT			= REMASSAT,			/**< "%=@" node */
-	ND_SHLASSAT			= SHLASSAT,			/**< "<<=@" node */
-	ND_SHRASSAT			= SHRASSAT,			/**< ">>=@" node */
-	ND_ANDASSAT			= ANDASSAT,			/**< "&=@" node */
-	ND_EXORASSAT		= EXORASSAT,		/**< "^=@" node */
-	ND_ORASSAT			= ORASSAT,			/**< "|=@" node */
-	ND_ASSAT			= ASSAT,			/**< "=@" node */
-	ND_PLUSASSAT		= PLUSASSAT,		/**< "+=@" node */
-	ND_MINUSASSAT		= MINUSASSAT,		/**< "-=@" node */
-	ND_MULTASSAT		= MULTASSAT,		/**< "*=@" node */
-	ND_DIVASSAT			= DIVASSAT,			/**< "/=@" node */
-	ND_REM				= LREM,				/**< "%" node */
-	ND_SHL				= LSHL,				/**< "<<" node */
-	ND_SHR				= LSHR,				/**< ">>" node */
-	ND_AND				= LAND,				/**< "&" node */
-	ND_EXOR				= LEXOR,			/**< "^" node */
-	ND_OR				= LOR,				/**< "|" node */
-	ND_LOGAND			= LOGAND,			/**< "&&" node */
-	ND_LOGOR			= LOGOR,			/**< "||" node */
-	ND_EQEQ				= EQEQ,				/**< "==" node */
-	ND_NOTEQ			= NOTEQ,			/**< "!=" node */
-	ND_LT				= LLT,				/**< "<" node */
-	ND_GT				= LGT,				/**< ">" node */
-	ND_LE				= LLE,				/**< "<=" node */
-	ND_GE				= LGE,				/**< ">=" node */
-	ND_PLUS				= LPLUS,			/**< "+" node */
-	ND_MINUS			= LMINUS,			/**< "-" node */
-	ND_MULT				= LMULT,			/**< "*" node */
-	ND_DIV				= LDIV,				/**< "/" node */
-	ND_POSTINC			= POSTINC,			/**< "POSTINC" node */
-	ND_POSTDEC			= POSTDEC,			/**< "POSTDEC" node */
-	ND_INC				= INC,				/**< "INC" node */
-	ND_DEC				= DEC,				/**< "DEC" node */
-	ND_POSTINCAT		= POSTINCAT,		/**< "POSTINC@" node */
-	ND_POSTDECAT		= POSTDECAT,		/**< "POSTDEC@" node */
-	ND_INCAT			= INCAT,			/**< "INC@" node */
-	ND_DECAT			= DECAT,			/**< "DEC@" node */
-	ND_UNMINUS			= UNMINUS,			/**< "UNMINUS" node */
-	ND_NOT				= LNOT,				/**< "BITNOT" node */
-	ND_LOGNOT			= LOGNOT,			/**< "NOT" node */
+	ND_REMASS = 8001,	/**< "%=" node */
+	ND_SHLASS,			/**< "<<=" node */
+	ND_SHRASS,			/**< ">>=" node */
+	ND_ANDASS,			/**< "&=" node */
+	ND_EXORASS,			/**< "^=" node */
+	ND_ORASS,			/**< "|=" node */
+	ND_ASS,				/**< "=" node */
+	ND_PLUSASS,			/**< "+=" node */
+	ND_MINUSASS,		/**< "-=" node */
+	ND_MULTASS,			/**< "*=" node */
+	ND_DIVASS,			/**< "/=" node */
+	ND_REMASSAT,		/**< "%=@" node */
+	ND_SHLASSAT,		/**< "<<=@" node */
+	ND_SHRASSAT,		/**< ">>=@" node */
+	ND_ANDASSAT,		/**< "&=@" node */
+	ND_EXORASSAT,		/**< "^=@" node */
+	ND_ORASSAT,			/**< "|=@" node */
+	ND_ASSAT,			/**< "=@" node */
+	ND_PLUSASSAT,		/**< "+=@" node */
+	ND_MINUSASSAT,		/**< "-=@" node */
+	ND_MULTASSAT,		/**< "*=@" node */
+	ND_DIVASSAT,		/**< "/=@" node */
+	ND_REM,				/**< "%" node */
+	ND_SHL,				/**< "<<" node */
+	ND_SHR,				/**< ">>" node */
+	ND_AND,				/**< "&" node */
+	ND_EXOR,			/**< "^" node */
+	ND_OR,				/**< "|" node */
+	ND_LOGAND,			/**< "&&" node */
+	ND_LOGOR,			/**< "||" node */
+	ND_EQEQ,			/**< "==" node */
+	ND_NOTEQ,			/**< "!=" node */
+	ND_LT,				/**< "<" node */
+	ND_GT,				/**< ">" node */
+	ND_LE,				/**< "<=" node */
+	ND_GE,				/**< ">=" node */
+	ND_PLUS,			/**< "+" node */
+	ND_MINUS,			/**< "-" node */
+	ND_MULT,			/**< "*" node */
+	ND_DIV,				/**< "/" node */
+	ND_POSTINC,			/**< "POSTINC" node */
+	ND_POSTDEC,			/**< "POSTDEC" node */
+	ND_INC,				/**< "INC" node */
+	ND_DEC,				/**< "DEC" node */
+	ND_POSTINCAT,		/**< "POSTINC@" node */
+	ND_POSTDECAT,		/**< "POSTDEC@" node */
+	ND_INCAT,			/**< "INC@" node */
+	ND_DECAT,			/**< "DEC@" node */
+	ND_UNMINUS,			/**< "UNMINUS" node */
+	ND_NOT = 8052,		/**< "BITNOT" node */
+	ND_LOGNOT,			/**< "NOT" node */
 
-	ND_ASSR				= ASSR,				/**< "=f" node */
-	ND_PLUSASSR			= PLUSASSR,			/**< "+=f" node */
-	ND_MINUSASSR		= MINUSASSR,		/**< "-=f" node */
-	ND_MULTASSR			= MULTASSR,			/**< "*=f" node */
-	ND_DIVASSR			= DIVASSR,			/**< "/=f" node */
-	ND_ASSATR			= ASSATR ,			/**< "=@f" node */
-	ND_PLUSASSATR		= PLUSASSATR,		/**< "+=@f" node */
-	ND_MINUSASSATR		= MINUSASSATR,		/**< "-=@f" node */
-	ND_MULTASSATR		= MULTASSATR,		/**< "*=@f" node */
-	ND_DIVASSATR		= DIVASSATR,		/**< "/=@f" node */
+	ND_ASSR = 8057,		/**< "=f" node */
+	ND_PLUSASSR,		/**< "+=f" node */
+	ND_MINUSASSR,		/**< "-=f" node */
+	ND_MULTASSR,		/**< "*=f" node */
+	ND_DIVASSR,			/**< "/=f" node */
+	ND_ASSATR = 8068,	/**< "=@f" node */
+	ND_PLUSASSATR,		/**< "+=@f" node */
+	ND_MINUSASSATR,		/**< "-=@f" node */
+	ND_MULTASSATR,		/**< "*=@f" node */
+	ND_DIVASSATR,		/**< "/=@f" node */
 
-	ND_EQEQR			= EQEQR,			/**< "==f" node */
-	ND_NOTEQR			= NOTEQR,			/**< "!=f" node */
-	ND_LTR				= LLTR,				/**< "<f" node */
-	ND_GTR				= LGTR,				/**< ">f" node */
-	ND_LER				= LLER,				/**< "<=f" node */
-	ND_GER				= LGER,				/**< ">=f" node */
-	ND_PLUSR			= LPLUSR,			/**< "+f" node */
-	ND_MINUSR			= LMINUSR,			/**< "-f" node */
-	ND_MULTR			= LMULTR,			/**< "*f" node */
-	ND_DIVR				= LDIVR,			/**< "/f" node */
-	ND_POSTINCR			= POSTINCR,			/**< "POSTINCf" node */
-	ND_POSTDECR			= POSTDECR,			/**< "POSTDECf" node */
-	ND_INCR				= INCR,				/**< "INCf" node */
-	ND_DECR				= DECR,				/**< "DECf" node */
-	ND_POSTINCATR		= POSTINCATR,		/**< "POSTINC@f" node */
-	ND_POSTDECATR		= POSTDECATR,		/**< "POSTDEC@f" node */
-	ND_INCATR			= INCATR,			/**< "INC@f" node */
-	ND_DECATR			= DECATR,			/**< "DEC@f" node */
-	ND_UNMINUSR			= UNMINUSR,			/**< "UNIMINUSf" node */
+	ND_EQEQR = 8081,	/**< "==f" node */
+	ND_NOTEQR,			/**< "!=f" node */
+	ND_LTR,				/**< "<f" node */
+	ND_GTR,				/**< ">f" node */
+	ND_LER,				/**< "<=f" node */
+	ND_GER,				/**< ">=f" node */
+	ND_PLUSR,			/**< "+f" node */
+	ND_MINUSR,			/**< "-f" node */
+	ND_MULTR,			/**< "*f" node */
+	ND_DIVR,			/**< "/f" node */
+	ND_POSTINCR,		/**< "POSTINCf" node */
+	ND_POSTDECR,		/**< "POSTDECf" node */
+	ND_INCR,			/**< "INCf" node */
+	ND_DECR,			/**< "DECf" node */
+	ND_POSTINCATR,		/**< "POSTINC@f" node */
+	ND_POSTDECATR,		/**< "POSTDEC@f" node */
+	ND_INCATR,			/**< "INC@f" node */
+	ND_DECATR,			/**< "DEC@f" node */
+	ND_UNMINUSR,		/**< "UNIMINUSf" node */
 
-	ND_REMASSV			= REMASSV,			/**< "%=V" node */
-	ND_SHLASSV			= SHLASSV,			/**< "<<=V" node */
-	ND_SHRASSV			= SHRASSV,			/**< ">>=V" node */
-	ND_ANDASSV			= ANDASSV,			/**< "&=V" node */
-	ND_EXORASSV			= EXORASSV,			/**< "^=V" node */
-	ND_ORASSV			= ORASSV,			/**< "|=V" node */
-	ND_ASSV				= ASSV,				/**< "=V" node */
-	ND_PLUSASSV			= PLUSASSV,			/**< "+=V" node */
-	ND_MINUSASSV		= MINUSASSV,		/**< "-=V" node */
-	ND_MULTASSV			= MULTASSV,			/**< "*=V" node */
-	ND_DIVASSV			= DIVASSV,			/**< "/=V" node */
-	ND_REMASSATV		= REMASSATV,		/**< "%=@V" node */
-	ND_SHLASSATV		= SHLASSATV,		/**< "<<=@V" node */
-	ND_SHRASSATV		= SHRASSATV,		/**< ">>=@V" node */
-	ND_ANDASSATV		= ANDASSATV,		/**< "&=@V" node */
-	ND_EXORASSATV		= EXORASSATV,		/**< "^=@V" node */
-	ND_ORASSATV			= ORASSATV,			/**< "|=@V" node */
-	ND_ASSATV			= ASSATV,			/**< "=@V" node */
-	ND_PLUSASSATV		= PLUSASSATV,		/**< "+=@V" node */
-	ND_MINUSASSATV		= MINUSASSATV,		/**< "-=@V" node */
-	ND_MULTASSATV		= MULTASSATV,		/**< "*=@V" node */
-	ND_DIVASSATV		= DIVASSATV,		/**< "/=@V" node */
+	ND_REMASSV = 8201,	/**< "%=V" node */
+	ND_SHLASSV,			/**< "<<=V" node */
+	ND_SHRASSV,			/**< ">>=V" node */
+	ND_ANDASSV,			/**< "&=V" node */
+	ND_EXORASSV,		/**< "^=V" node */
+	ND_ORASSV,			/**< "|=V" node */
+	ND_ASSV,			/**< "=V" node */
+	ND_PLUSASSV,		/**< "+=V" node */
+	ND_MINUSASSV,		/**< "-=V" node */
+	ND_MULTASSV,		/**< "*=V" node */
+	ND_DIVASSV,			/**< "/=V" node */
+	ND_REMASSATV,		/**< "%=@V" node */
+	ND_SHLASSATV,		/**< "<<=@V" node */
+	ND_SHRASSATV,		/**< ">>=@V" node */
+	ND_ANDASSATV,		/**< "&=@V" node */
+	ND_EXORASSATV,		/**< "^=@V" node */
+	ND_ORASSATV,		/**< "|=@V" node */
+	ND_ASSATV,			/**< "=@V" node */
+	ND_PLUSASSATV,		/**< "+=@V" node */
+	ND_MINUSASSATV,		/**< "-=@V" node */
+	ND_MULTASSATV,		/**< "*=@V" node */
+	ND_DIVASSATV,		/**< "/=@V" node */
 
-	ND_ASSRV			= ASSRV,			/**< "=fV" node */
-	ND_PLUSASSRV		= PLUSASSRV,		/**< "+=fV" node */
-	ND_MINUSASSRV		= MINUSASSRV,		/**< "-=fV" node */
-	ND_MULTASSRV		= MULTASSRV,		/**< *=fV" node */
-	ND_DIVASSRV			= DIVASSRV,			/**< "/=fV" node */
-	ND_ASSATRV			= ASSATRV,			/**< "=@fV" node */
-	ND_PLUSASSATRV		= PLUSASSATRV,		/**< "+=@fV" node */
-	ND_MINUSASSATRV		= MINUSASSATRV,		/**< "-=@fV" node */
-	ND_MULTASSATRV		= MULTASSATRV,		/**< *=@fV" node */
-	ND_DIVASSATRV		= DIVASSATRV,		/**< "/=@fV" node */
+	ND_ASSRV = 8257,	/**< "=fV" node */
+	ND_PLUSASSRV,		/**< "+=fV" node */
+	ND_MINUSASSRV,		/**< "-=fV" node */
+	ND_MULTASSRV,		/**< *=fV" node */
+	ND_DIVASSRV,		/**< "/=fV" node */
+	ND_ASSATRV = 8268,	/**< "=@fV" node */
+	ND_PLUSASSATRV,		/**< "+=@fV" node */
+	ND_MINUSASSATRV,	/**< "-=@fV" node */
+	ND_MULTASSATRV,		/**< *=@fV" node */
+	ND_DIVASSATRV,		/**< "/=@fV" node */
 
-	ND_POSTINCV			= POSTINCV,			/**< "POSTINCV" node */
-	ND_POSTDECV			= POSTDECV,			/**< "POSTDECV" node */
-	ND_INCV				= INCV,				/**< "INCV" node */
-	ND_DECV				= DECV,				/**< "DECV" node */
-	ND_POSTINCATV		= POSTINCATV,		/**< "POSTINC@V" node */
-	ND_POSTDECATV		= POSTDECATV,		/**< "POSTDEC@V" node */
-	ND_INCATV			= INCATV,			/**< "INC@V" node */
-	ND_DECATV			= DECATV,			/**< "DEC@V" node */
+	ND_POSTINCV = 8241,	/**< "POSTINCV" node */
+	ND_POSTDECV,		/**< "POSTDECV" node */
+	ND_INCV,			/**< "INCV" node */
+	ND_DECV,			/**< "DECV" node */
+	ND_POSTINCATV,		/**< "POSTINC@V" node */
+	ND_POSTDECATV,		/**< "POSTDEC@V" node */
+	ND_INCATV,			/**< "INC@V" node */
+	ND_DECATV,			/**< "DEC@V" node */
 
-	ND_POSTINCRV		= POSTINCRV,		/**< "POSTINCfV" node */
-	ND_POSTDECRV		= POSTDECRV,		/**< "POSTDECfV" node */
-	ND_INCRV			= INCRV,			/**< "INCfV" node */
-	ND_DECRV			= DECRV,			/**< "DECfV" node */
-	ND_POSTINCATRV		= POSTINCATRV,		/**< "POSTINC@fV" node */
-	ND_POSTDECATRV		= POSTDECATRV,		/**< "POSTDEC@fV" node */
-	ND_INCATRV			= INCATRV,			/**< "INC@fV" node */
-	ND_DECATRV			= DECATRV,			/**< "DEC@fV" node */
+	ND_POSTINCRV = 8291,/**< "POSTINCfV" node */
+	ND_POSTDECRV,		/**< "POSTDECfV" node */
+	ND_INCRV,			/**< "INCfV" node */
+	ND_DECRV,			/**< "DECfV" node */
+	ND_POSTINCATRV,		/**< "POSTINC@fV" node */
+	ND_POSTDECATRV,		/**< "POSTDEC@fV" node */
+	ND_INCATRV,			/**< "INC@fV" node */
+	ND_DECATRV,			/**< "DEC@fV" node */
+
+	ND_NULL,			/**< Empty node */
+	ND_WIDEN,			/**< "WIDEN" node */
+	ND_WIDEN1,			/**< "WIDEN1" node */
+	ND_STRINGINIT,		/**< "STRINGINIT" node */
+	ND_ADLOGOR,			/**< "ADLOGOR" node */
+	ND_ADLOGAND,		/**< "ADLOGAND" node */
+	ND_ROWING,			/**< "ROWING" node */
+	ND_ROWINGD,			/**< "ROWINGD" node */
+
+	// Standard functions
+	ND_COPY00,			/**< "COPY00" node */
+	ND_COPY01,			/**< "COPY01" node */
+	ND_COPY10,			/**< "COPY10" node */
+	ND_COPY11,			/**< "COPY11" node */
+	ND_COPY0ST,			/**< "COPY0ST" node */
+	ND_COPY1ST,			/**< "COPY1ST" node */
+	ND_COPY0STASS,		/**< "COPY0STASS" node */
+	ND_COPY1STASS,		/**< "COPY1STASS" node */
+	ND_COPYST,			/**< "COPYST" node */
+
+	ND_ABSI,			/**< "ABSI" node */
+	ND_ABS,				/**< "ABS" node */
+	ND_SQRT,			/**< "SQRT" node */
+	ND_EXP,				/**< "EXP" node */
+	ND_SIN,				/**< "SIN" node */
+	ND_COS,				/**< "COS" node */
+	ND_LOG,				/**< "LOG" node */
+	ND_LOG10,			/**< "LOG10" node */
+	ND_ASIN,			/**< "ASIN" node */
+	ND_RAND,			/**< "RAND" node */
+	ND_ROUND,			/**< "ROUND" node */
+
+	ND_STRCPY,			/**< "STRCPY" node */
+	ND_STRNCPY,			/**< "STRNCPY" node */
+	ND_STRCAT,			/**< "STRCAT" node */
+	ND_STRNCAT,			/**< "STRNCAT" node */
+	ND_STRCMP,			/**< "STRCMP" node */
+	ND_STRNCMP,			/**< "STRNCMP" node */
+	ND_STRSTR,			/**< "STRSTR" node */
+	ND_STRLEN,			/**< "STRLEN" node */
+
+	ND_MSG_SEND,		/**< "MSG_SEND" node */
+	ND_MSG_RECEIVE,		/**< "MSG_RECEIVE" node */
+	ND_JOIN,			/**< "JOIN" node */
+	ND_SLEEP,			/**< "SLEEP" node */
+	ND_SEMCREATE,		/**< "SEMCREATE" node */
+	ND_SEMWAIT,			/**< "SEMWAIT" node */
+	ND_SEMPOST,			/**< "SEMPOST" node */
+	ND_CREATE,			/**< "CREATE" node */
+	ND_INIT,			/**< "INIT" node */
+	ND_DESTROY,			/**< "DESTROY" node */
+	ND_EXIT,			/**< "EXIT" node */
+	ND_GETNUM,			/**< "GETNUM" node */
+
+	ND_UPB,				/**< "UPB" node */
+	ND_SEND_INT,		/**< "SEND_INT" node */
+	ND_SEND_FLOAT,		/**< "SEND_FLOAT" node */
+	ND_SEND_STRING,		/**< "SEND_STRING" node */
+	ND_RECEIVE_INT,		/**< "RECEIVE_INT" node */
+	ND_RECEIVE_FLOAT,	/**< "RECEIVE_FLOAT" node */
+	ND_RECEIVE_STRING,	/**< "RECEIVE_STRING" node */
+	ND_ASSERT,			/**< "ASSERT" node */
 } node_t;
 
 
 /**
- * Convert node type to corresponding instruction code
+ *	Convert node type to corresponding instruction code
  *
- * @param	node	Node type
+ *	@param	node	Node type
  *
- * @returns	Instruction code
+ *	@return	Instruction code
  */
 instruction_t node_to_instruction(const node_t node);
 
 /**
- * Convert token type to corresponding node type
+ *	Convert token type to corresponding node type
  *
- * @param	token	Token type
+ *	@param	token	Token type
  *
- * @returns	Node type
+ *	@return	Node type
  */
 node_t token_to_node(const token_t token);
 
 /**
- * Convert operator to corresponding address version
+ *	Convert operator to corresponding address version
  *
- * @param	node	Operator
+ *	@param	node	Operator
  *
- * @returns	Address version operator
+ *	@return	Address version operator
  */
 node_t node_at_operator(const node_t node);
 
 /**
- * Convert operator to corresponding void version
+ *	Convert operator to corresponding void version
  *
- * @param	node	Operator
+ *	@param	node	Operator
  *
- * @returns	Void version operator
+ *	@return	Void version operator
  */
 node_t node_void_operator(const node_t node);
 
 /**
- * Convert operator to corresponding float version
+ *	Convert operator to corresponding float version
  *
- * @param	node	Operator
+ *	@param	node	Operator
  *
- * @returns	Float version operator
+ *	@return	Float version operator
  */
 node_t node_float_operator(const node_t node);
 
 /**
- * Check if node type is assignment operator
+ *	Check if node type is assignment operator
  *
- * @param	node	Node type
+ *	@param	node	Node type
  *
- * @returns	@c 1 on assignment operator
+ *	@return	@c 1 on assignment operator
  */
 int node_is_assignment_operator(const node_t node);
 
