@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "commenter.h"
-#include "defs.h"
 #include "item.h"
 #include "logger.h"
 #include "uniio.h"
@@ -33,6 +32,7 @@
 #define MAX_LINE_SIZE MAXSTRINGL * 4
 
 #define MAX_INT_LENGTH 12
+#define MAXSTRINGL	128
 
 
 void get_error(const error_t num, char *const msg, va_list args)

@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "defs.h"
 #include "errors.h"
 #include "lexer.h"
 #include "nodes.h"

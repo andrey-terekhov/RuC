@@ -17,7 +17,6 @@
 #include "codegen.h"
 #include <stdlib.h>
 #include "codes.h"
-#include "defs.h"
 #include "errors.h"
 #include "item.h"
 #include "instructions.h"

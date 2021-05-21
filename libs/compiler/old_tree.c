@@ -17,7 +17,6 @@
 #include "old_tree.h"
 #include <stdint.h>
 #include <stdlib.h>
-#include "defs.h"
 #include "errors.h"
 #include "nodes.h"
 

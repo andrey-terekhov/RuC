@@ -16,7 +16,6 @@
 
 #include "codes.h"
 #include <string.h>
-#include "defs.h"
 #include "errors.h"
 #include "nodes.h"
 #include "old_tree.h"

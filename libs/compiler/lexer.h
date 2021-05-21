@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "defs.h"
 #include "syntax.h"
 #include "tokens.h"
 #include "uniio.h"

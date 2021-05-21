@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "defs.h"
 
 
 #ifdef __cplusplus

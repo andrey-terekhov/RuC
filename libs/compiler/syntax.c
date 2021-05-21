@@ -16,7 +16,6 @@
 
 #include "syntax.h"
 #include <stdlib.h>
-#include "defs.h"
 #include "errors.h"
 #include "tokens.h"
 #include "old_tree.h"
