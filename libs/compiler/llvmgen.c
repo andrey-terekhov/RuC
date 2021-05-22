@@ -286,6 +286,7 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case MINUSASSR:
 		case MINUSASSRV:
 		case LMINUSR:
+		case UNMINUSR:
 			uni_printf(io, "fsub");
 			break;
 
@@ -299,6 +300,25 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case DIVASSRV:
 		case LDIVR:
 			uni_printf(io, "fdiv");
+			break;
+
+		case EQEQR:
+			uni_printf(io, "fcmp oeq");
+			break;
+		case NOTEQR:
+			uni_printf(io, "fcmp one");
+			break;
+		case LLTR:
+			uni_printf(io, "fcmp olt");
+			break;
+		case LGTR:
+			uni_printf(io, "fcmp ogt");
+			break;
+		case LLER:
+			uni_printf(io, "fcmp ole");
+			break;
+		case LGER:
+			uni_printf(io, "fcmp oge");
 			break;
 	}
 }
@@ -396,7 +416,7 @@ static inline void to_code_conditional_branch(information *const info, item_t re
 		reg, label_true, label_false);
 }
 
-static void to_code_alloc_array_static(information *const info, item_t id)
+static void to_code_alloc_array_static(information *const info, item_t id, type_t type)
 {
 	uni_printf(info->io, " %%arr.%" PRIitem " = alloca ", id);
 
@@ -404,7 +424,8 @@ static void to_code_alloc_array_static(information *const info, item_t id)
 	{
 		uni_printf(info->io, "[%" PRIitem " x ", info->arrays_info[id].borders[i]);
 	}
-	uni_printf(info->io, "i32");
+
+	type_to_io(info->io, type);
 
 	for (item_t i = 0; i < info->arrays_info[id].dimention; i++)
 	{
@@ -575,6 +596,14 @@ static void operand(information *const info, node *const nd)
 			{
 				uni_printf(info->io, " %%.%" PRIitem " = call i32 @func%zi(", info->register_num, ref_ident);
 				info->answer_type = AREG;
+				info->answer_value_type = I32;
+				info->answer_reg = info->register_num++;
+			}
+			else if (func_type == mode_float)
+			{
+				uni_printf(info->io, " %%.%" PRIitem " = call double @func%zi(", info->register_num, ref_ident);
+				info->answer_type = AREG;
+				info->answer_value_type = DOUBLE;
 				info->answer_reg = info->register_num++;
 			}
 			// тут будет ещё перечисление аргументов
@@ -808,6 +837,25 @@ static void arithmetic_expression(information *const info, node *const nd)
 			case LDIVR:
 				info->answer_const_double = left_const_double / right_const_double;
 				break;
+
+			case EQEQR:
+				info->answer_const = left_const_double == right_const_double;
+				break;
+			case NOTEQR:
+				info->answer_const = left_const_double != right_const_double;
+				break;
+			case LLTR:
+				info->answer_const = left_const_double < right_const_double;
+				break;
+			case LGTR:
+				info->answer_const = left_const_double > right_const_double;
+				break;
+			case LLER:
+				info->answer_const = left_const_double <= right_const_double;
+				break;
+			case LGER:
+				info->answer_const = left_const_double >= right_const_double;
+				break;
 		}
 		return;
 	}
@@ -894,6 +942,7 @@ static void unary_operation(information *const info, node *const nd)
 			break;
 		case UNMINUS:
 		case LNOT:
+		case UNMINUSR:
 		{
 			const item_t operation_type = node_get_type(nd);
 			node_set_next(nd);
@@ -903,13 +952,19 @@ static void unary_operation(information *const info, node *const nd)
 
 			to_code_try_zext_to(info);
 
+			info->answer_value_type = I32;
 			if (operation_type == UNMINUS)
 			{
 				to_code_operation_const_reg_i32(info, UNMINUS, 0, info->answer_reg);
 			}
-			else // LNOT
+			else if (operation_type == LNOT) 
 			{
 				to_code_operation_reg_const_i32(info, LNOT, info->answer_reg, -1);
+			}
+			else // UNMINUSR
+			{
+				to_code_operation_const_reg_double(info, UNMINUSR, 0, info->answer_reg);
+				info->answer_value_type = DOUBLE;
 			}
 
 			info->answer_type = AREG;
@@ -1005,11 +1060,22 @@ static void binary_operation(information *const info, node *const nd)
 		case LGT:
 		case LLE:
 		case LGE:
+
+		case EQEQR:
+		case NOTEQR:
+		case LLTR:
+		case LGTR:
+		case LLER:
+		case LGER:
 		{
 			arithmetic_expression(info, nd);
 			if (info->answer_type == AREG)
 			{
 				info->answer_type = ALOGIC;
+			}
+			else // ACONST 
+			{
+				info->answer_value_type = I32;
 			}
 		}
 		break;
@@ -1421,13 +1487,19 @@ static void statement(information *const info, node *const nd)
 			expression(info, nd);
 
 			// TODO: добавить обработку других ответов (ALOGIC)
-			if (info->answer_type == ACONST)
+			if (info->answer_type == ACONST && info->answer_value_type == I32)
 			{
 				uni_printf(info->io, " ret i32 %" PRIitem "\n", info->answer_const);
 			}
+			else if (info->answer_type == ACONST && info->answer_value_type == DOUBLE)
+			{
+				uni_printf(info->io, " ret double %f\n", info->answer_const_double);
+			}
 			else if (info->answer_type == AREG)
 			{
-				uni_printf(info->io, " ret i32 %%.%" PRIitem "\n", info->answer_reg);
+				uni_printf(info->io, " ret ");
+				type_to_io(info->io, info->answer_value_type);
+				uni_printf(info->io, " %%.%" PRIitem "\n", info->answer_reg);
 			}
 			node_set_next(nd); // TReturnvoid
 		}
@@ -1564,9 +1636,19 @@ static void block(information *const info, node *const nd)
 				else // массивы
 				{
 					info->arrays_info[displ] = info->current_array_info;
+
+					if (elem_type == mode_integer)
+					{
+						info->answer_value_type = I32;
+					}
+					else if (elem_type == mode_float)
+					{
+						info->answer_value_type = DOUBLE;
+					}
+
 					if (info->current_array_info.is_static)
 					{
-						to_code_alloc_array_static(info, displ);
+						to_code_alloc_array_static(info, displ, info->answer_value_type);
 					}
 					else
 					{
@@ -1574,6 +1656,7 @@ static void block(information *const info, node *const nd)
 						{
 							to_code_stack_save(info);
 						}
+						// TODO: сделать объявление массивов double, после вырезки
 						to_code_alloc_array_dynamic(info, displ);
 						info->was_dynamic = 1;
 					}	
@@ -1634,6 +1717,10 @@ static int codegen(universal_io *const io, syntax *const sx)
 				else if (func_type == mode_integer)
 				{
 					uni_printf(info.io, "define i32 @func%zi(", ref_ident);
+				}
+				else if (func_type == mode_float)
+				{
+					uni_printf(info.io, "define double @func%zi(", ref_ident);
 				}
 				uni_printf(info.io, ") {\n");
 
