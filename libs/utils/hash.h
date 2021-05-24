@@ -128,7 +128,7 @@ inline const item_t hash_get_key(const hash *const hs, const size_t index)
  */
 inline int hash_is_correct(const hash *const hs)
 {
-	return vector_is_correct(hs);
+	return vector_is_correct(hs) && vector_size(hs) >= MAX_HASH;
 }
 
 

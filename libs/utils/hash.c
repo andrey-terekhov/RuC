@@ -26,9 +26,38 @@ extern int hash_is_correct(const hash *const hs);
 extern int hash_clear(hash *const hs);
 
 
-inline size_t get_hash(const item_t key)
+static inline size_t get_hash(const item_t key)
 {
 	return (size_t)key % MAX_HASH;
+}
+
+static size_t get_index(const hash *const hs, const item_t key)
+{
+	if (!hash_is_correct(hs))
+	{
+		return SIZE_MAX;
+	}
+
+	size_t index = get_hash(key);
+	item_t next = vector_get(hs, index);
+	if (next == 0)
+	{
+		return index;
+	}
+
+	index = SIZE_MAX;
+	while (next != ITEM_MAX && next != 0)
+	{
+		index = (size_t)next;
+		if (vector_get(hs, index + 1) == key)
+		{
+			return index;
+		}
+
+		next = vector_get(hs, index);
+	}
+
+	return index;
 }
 
 
@@ -51,22 +80,10 @@ hash hash_create(const size_t alloc)
 
 size_t hash_add(hash *const hs, const item_t key, const size_t amount)
 {
-	size_t index = get_hash(key);
-
+	const size_t index = get_index(hs, key);
 	if (vector_get(hs, index) != 0)
 	{
-		index = (size_t)vector_get(hs, index);
-	}
-
-	while (vector_get(hs, index) != 0)
-	{
-		const item_t value = vector_get(hs, index + 1);
-		if (index == (size_t)ITEM_MAX || value == ITEM_MAX || value == key)
-		{
-			return SIZE_MAX;
-		}
-
-		index = (size_t)vector_get(hs, index);
+		return SIZE_MAX;
 	}
 
 	const size_t size = vector_size(hs);
@@ -78,7 +95,24 @@ size_t hash_add(hash *const hs, const item_t key, const size_t amount)
 	return size;
 }
 
-size_t hash_set(hash *const hs, const item_t key, const size_t num, const item_t value);
+size_t hash_set(hash *const hs, const item_t key, const size_t num, const item_t value)
+{
+	const size_t index = get_index(hs, key);
+	if (index == SIZE_MAX || vector_get(hs, index) == 0)
+	{
+		return SIZE_MAX;
+	}
 
-item_t hash_get(hash *const hs, const item_t key, const size_t num);
+	return hash_set_by_index(hs, index, num, value) == 0 ? index : SIZE_MAX;
+}
 
+item_t hash_get(hash *const hs, const item_t key, const size_t num)
+{
+	const size_t index = get_index(hs, key);
+	if (index == SIZE_MAX || vector_get(hs, index) == 0)
+	{
+		return SIZE_MAX;
+	}
+
+	return hash_get_by_index(hs, index, num);
+}
