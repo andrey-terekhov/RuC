@@ -45,19 +45,18 @@ static size_t get_index(const hash *const hs, const item_t key)
 		return index;
 	}
 
-	index = SIZE_MAX;
 	while (next != ITEM_MAX && next != 0)
 	{
-		index = (size_t)next;
-		if (vector_get(hs, index + 1) == key)
+		if (vector_get(hs, (size_t)next + 1) == key)
 		{
 			return index;
 		}
 
+		index = (size_t)next;
 		next = vector_get(hs, index);
 	}
 
-	return index;
+	return next != ITEM_MAX ? index : SIZE_MAX;
 }
 
 
@@ -97,22 +96,22 @@ size_t hash_add(hash *const hs, const item_t key, const size_t amount)
 
 size_t hash_set(hash *const hs, const item_t key, const size_t num, const item_t value)
 {
-	const size_t index = get_index(hs, key);
-	if (index == SIZE_MAX || vector_get(hs, index) == 0)
+	const item_t index = vector_get(hs, get_index(hs, key));
+	if (index == 0 || index == ITEM_MAX)
 	{
 		return SIZE_MAX;
 	}
 
-	return hash_set_by_index(hs, index, num, value) == 0 ? index : SIZE_MAX;
+	return hash_set_by_index(hs, (size_t)index, num, value) == 0 ? (size_t)index : SIZE_MAX;
 }
 
 item_t hash_get(hash *const hs, const item_t key, const size_t num)
 {
-	const size_t index = get_index(hs, key);
-	if (index == SIZE_MAX || vector_get(hs, index) == 0)
+	const item_t index = vector_get(hs, get_index(hs, key));
+	if (index == 0 || index == ITEM_MAX)
 	{
-		return SIZE_MAX;
+		return ITEM_MAX;
 	}
 
-	return hash_get_by_index(hs, index, num);
+	return hash_get_by_index(hs, (size_t)index, num);
 }
