@@ -14,12 +14,14 @@
  *	limitations under the License.
  */
 
-#include "tree.h"
+#include "old_tree.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include "defs.h"
 #include "errors.h"
 
+
+#ifdef OLD_TREE
 
 #ifndef min
 	#define min(a, b) (((a) < (b)) ? (a) : (b))
@@ -1041,3 +1043,5 @@ int tree_test_copy(vector *const tree)
 	vector_clear(&tree_dest);
 	return ret;
 }
+
+#endif

@@ -21,7 +21,7 @@
 #include "errors.h"
 #include "item.h"
 #include "stack.h"
-#include "tree.h"
+#include "old_tree.h"
 #include "uniprinter.h"
 #include "utf8.h"
 
@@ -983,7 +983,7 @@ int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *cons
 		ret = output_export(io, &vm);
 	}
 
-#ifdef GENERATE_CODES
+#ifndef NDEBUG
 	tables_and_codes(DEFAULT_CODES, &sx->functions, &vm.processes, &vm.memory);
 #endif
 

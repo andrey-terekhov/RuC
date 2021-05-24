@@ -80,6 +80,9 @@ typedef struct environment
 
 	universal_io *output;
 	universal_io *input;
+
+	int disable_recovery;
+	int was_error;
 } environment;
 
 void env_init(environment *const env, linker *const lk, universal_io *const output);
