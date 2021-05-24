@@ -113,7 +113,7 @@ inline item_t hash_get_by_index(hash *const hs, const size_t index, const size_t
  *
  *	@return	Key, @c ITEM_MAX on failure
  */
-inline const item_t hash_get_key(const hash *const hs, const size_t index)
+inline item_t hash_get_key(const hash *const hs, const size_t index)
 {
 	return vector_get(hs, index + 1);
 }
