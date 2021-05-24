@@ -17,10 +17,11 @@
 #include "hash.h"
 
 
-extern int hash_set_by_index(hash *const hs, const size_t index, const size_t num, const item_t value);
-
-extern item_t hash_get_by_index(hash *const hs, const size_t index, const size_t num);
 extern item_t hash_get_key(const hash *const hs, const size_t index);
+extern size_t hash_get_amount_by_index(const hash *const hs, const size_t index);
+extern item_t hash_get_by_index(const hash *const hs, const size_t index, const size_t num);
+
+extern int hash_set_by_index(hash *const hs, const size_t index, const size_t num, const item_t value);
 
 extern int hash_is_correct(const hash *const hs);
 extern int hash_clear(hash *const hs);
@@ -94,6 +95,28 @@ size_t hash_add(hash *const hs, const item_t key, const size_t amount)
 	return size;
 }
 
+size_t hash_get_amount(const hash *const hs, const item_t key)
+{
+	const item_t index = vector_get(hs, get_index(hs, key));
+	if (index == 0 || index == ITEM_MAX)
+	{
+		return SIZE_MAX;
+	}
+
+	return hash_get_amount_by_index(hs, (size_t)index);
+}
+
+item_t hash_get(const hash *const hs, const item_t key, const size_t num)
+{
+	const item_t index = vector_get(hs, get_index(hs, key));
+	if (index == 0 || index == ITEM_MAX)
+	{
+		return ITEM_MAX;
+	}
+
+	return hash_get_by_index(hs, (size_t)index, num);
+}
+
 size_t hash_set(hash *const hs, const item_t key, const size_t num, const item_t value)
 {
 	const item_t index = vector_get(hs, get_index(hs, key));
@@ -103,15 +126,4 @@ size_t hash_set(hash *const hs, const item_t key, const size_t num, const item_t
 	}
 
 	return hash_set_by_index(hs, (size_t)index, num, value) == 0 ? (size_t)index : SIZE_MAX;
-}
-
-item_t hash_get(hash *const hs, const item_t key, const size_t num)
-{
-	const item_t index = vector_get(hs, get_index(hs, key));
-	if (index == 0 || index == ITEM_MAX)
-	{
-		return ITEM_MAX;
-	}
-
-	return hash_get_by_index(hs, (size_t)index, num);
 }

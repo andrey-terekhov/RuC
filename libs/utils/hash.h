@@ -46,11 +46,32 @@ EXPORTED hash hash_create(const size_t alloc);
  *
  *	@param	hs				Hash table
  *	@param	key				Unique key
- *	@param	amount			Values amomunt
+ *	@param	amount			Values amount
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
 EXPORTED size_t hash_add(hash *const hs, const item_t key, const size_t amount);
+
+/**
+ *	Get values amount by key
+ *
+ *	@param	hs				Hash table
+ *	@param	key				Unique key
+ *
+ *	@return	Values amount, @c 0 on failure
+ */
+EXPORTED size_t hash_get_amount(const hash *const hs, const item_t key);
+
+/**
+ *	Get value by key
+ *
+ *	@param	hs				Hash table
+ *	@param	key				Unique key
+ *	@param	num				Value number
+ *
+ *	@return	Value, @c ITEM_MAX on failure
+ */
+EXPORTED item_t hash_get(const hash *const hs, const item_t key, const size_t num);
 
 /**
  *	Set new value by existing key
@@ -64,46 +85,6 @@ EXPORTED size_t hash_add(hash *const hs, const item_t key, const size_t amount);
  */
 EXPORTED size_t hash_set(hash *const hs, const item_t key, const size_t num, const item_t value);
 
-/**
- *	Set new value by index
- *
- *	@param	hs				Hash table
- *	@param	index			Record index
- *	@param	num				Value number
- *	@param	value			New value
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-inline int hash_set_by_index(hash *const hs, const size_t index, const size_t num, const item_t value)
-{
-	return num < (size_t)vector_get(hs, index + 2) ? vector_set(hs, index + 3 + num, value) : -1;
-}
-
-
-/**
- *	Get value by key
- *
- *	@param	hs				Hash table
- *	@param	key				Unique key
- *	@param	num				Value number
- *
- *	@return	Value, @c ITEM_MAX on failure
- */
-EXPORTED item_t hash_get(hash *const hs, const item_t key, const size_t num);
-
-/**
- *	Get value by index
- *
- *	@param	hs				Hash table
- *	@param	index			Record index
- *	@param	num				Value number
- *
- *	@return	Value, @c ITEM_MAX on failure
- */
-inline item_t hash_get_by_index(hash *const hs, const size_t index, const size_t num)
-{
-	return num < (size_t)vector_get(hs, index + 2) ? vector_get(hs, index + 3 + num) : ITEM_MAX;
-}
 
 /**
  *	Return key by index
@@ -116,6 +97,49 @@ inline item_t hash_get_by_index(hash *const hs, const size_t index, const size_t
 inline item_t hash_get_key(const hash *const hs, const size_t index)
 {
 	return vector_get(hs, index + 1);
+}
+
+/**
+ *	Get values amount by index
+ *
+ *	@param	hs				Hash table
+ *	@param	index			Record index
+ *
+ *	@return	Values amount, @c 0 on failure
+ */
+inline size_t hash_get_amount_by_index(const hash *const hs, const size_t index)
+{
+	const item_t amount = vector_get(hs, index + 2);
+	return amount != ITEM_MAX ? (size_t)amount : 0;
+}
+
+/**
+ *	Get value by index
+ *
+ *	@param	hs				Hash table
+ *	@param	index			Record index
+ *	@param	num				Value number
+ *
+ *	@return	Value, @c ITEM_MAX on failure
+ */
+inline item_t hash_get_by_index(const hash *const hs, const size_t index, const size_t num)
+{
+	return num < hash_get_amount_by_index(hs, index) ? vector_get(hs, index + 3 + num) : ITEM_MAX;
+}
+
+/**
+ *	Set new value by index
+ *
+ *	@param	hs				Hash table
+ *	@param	index			Record index
+ *	@param	num				Value number
+ *	@param	value			New value
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+inline int hash_set_by_index(hash *const hs, const size_t index, const size_t num, const item_t value)
+{
+	return num < hash_get_amount_by_index(hs, index) ? vector_set(hs, index + 3 + num, value) : -1;
 }
 
 
