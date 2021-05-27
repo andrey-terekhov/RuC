@@ -129,7 +129,7 @@ static void addr_end_break(virtual *const vm)
 static void final_operation(virtual *const vm, node *const nd)
 {
 	node_t op = node_get_type(nd);
-	while (op > 8000)
+	while (op >= FINAL_OPERATION_START && op <= FINAL_OPERATION_END)
 	{
 		if (op != ND_NULL)
 		{
@@ -160,12 +160,12 @@ static void final_operation(virtual *const vm, node *const nd)
 					mem_add(vm, node_get_arg(nd, 1)); // d2
 					mem_add(vm, node_get_arg(nd, 2)); // длина
 				}
-				else if (op == ND_COPY01 || op == ND_COPY10 || op == ND_COPY0ST || op == ND_COPY0STASS)
+				else if (op == ND_COPY01 || op == ND_COPY10 || op == ND_COPY0ST || op == ND_COPY0STASSIGN)
 				{
 					mem_add(vm, node_get_arg(nd, 0)); // d1
 					mem_add(vm, node_get_arg(nd, 1)); // длина
 				}
-				else if (op == ND_COPY11 || op == ND_COPY1ST || op == ND_COPY1STASS)
+				else if (op == ND_COPY11 || op == ND_COPY1ST || op == ND_COPY1STASSIGN)
 				{
 					mem_add(vm, node_get_arg(nd, 0)); // длина
 				}

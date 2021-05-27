@@ -1544,7 +1544,7 @@ void parse_assignment_expression_internal(parser *const prs)
 
 			if (right_type == VALUE)
 			{
-				node_type = left_type == VARIABLE ? ND_COPY0STASS : ND_COPY1STASS;
+				node_type = left_type == VARIABLE ? ND_COPY0STASSIGN : ND_COPY1STASSIGN;
 			}
 			else
 			{

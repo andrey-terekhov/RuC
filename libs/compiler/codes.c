@@ -397,7 +397,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_COPY0STASS:
+		case ND_COPY0STASSIGN:
 			argc = 2;
 			was_switch = 1;
 			switch (num)
@@ -413,7 +413,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_COPY1STASS:
+		case ND_COPY1STASSIGN:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -726,21 +726,21 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			argc = 1;
 			sprintf(buffer, "&&");
 			break;
-		case ND_ORASS:
+		case ND_ORASSIGN:
 		case IC_ORASS:
 			argc = 1;
 			sprintf(buffer, "|=");
 			break;
-		case ND_ORASSAT:
+		case ND_ORASSIGNAT:
 		case IC_ORASSAT:
 			sprintf(buffer, "|=@");
 			break;
-		case ND_ORASSV:
+		case ND_ORASSIGNV:
 		case IC_ORASSV:
 			argc = 1;
 			sprintf(buffer, "|=V");
 			break;
-		case ND_ORASSATV:
+		case ND_ORASSIGNATV:
 		case IC_ORASSATV:
 			sprintf(buffer, "|=@V");
 			break;
@@ -748,43 +748,43 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 		case IC_OR:
 			sprintf(buffer, "|");
 			break;
-		case ND_EXORASS:
+		case ND_XORASSIGN:
 		case IC_EXORASS:
 			argc = 1;
 			sprintf(buffer, "^=");
 			break;
-		case ND_EXORASSAT:
+		case ND_XORASSIGNAT:
 		case IC_EXORASSAT:
 			sprintf(buffer, "^=@");
 			break;
-		case ND_EXORASSV:
+		case ND_XORASSIGNV:
 		case IC_EXORASSV:
 			argc = 1;
 			sprintf(buffer, "^=V");
 			break;
-		case ND_EXORASSATV:
+		case ND_XORASSIGNATV:
 		case IC_EXORASSATV:
 			sprintf(buffer, "^=@V");
 			break;
-		case ND_EXOR:
+		case ND_XOR:
 		case IC_EXOR:
 			sprintf(buffer, "^");
 			break;
-		case ND_ANDASS:
+		case ND_ANDASSIGN:
 		case IC_ANDASS:
 			argc = 1;
 			sprintf(buffer, "&=");
 			break;
-		case ND_ANDASSAT:
+		case ND_ANDASSIGNAT:
 		case IC_ANDASSAT:
 			sprintf(buffer, "&=@");
 			break;
-		case ND_ANDASSV:
+		case ND_ANDASSIGNV:
 		case IC_ANDASSV:
 			argc = 1;
 			sprintf(buffer, "&=V");
 			break;
-		case ND_ANDASSATV:
+		case ND_ANDASSIGNATV:
 		case IC_ANDASSATV:
 			sprintf(buffer, "&=@V");
 			break;
@@ -793,11 +793,11 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			sprintf(buffer, "&");
 			break;
 
-		case ND_EQEQ:
+		case ND_EQ:
 		case IC_EQEQ:
 			sprintf(buffer, "==");
 			break;
-		case ND_NOTEQ:
+		case ND_NE:
 		case IC_NOTEQ:
 			sprintf(buffer, "!=");
 			break;
@@ -817,11 +817,11 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 		case IC_GE:
 			sprintf(buffer, ">=");
 			break;
-		case ND_EQEQR:
+		case ND_EQR:
 		case IC_EQEQR:
 			sprintf(buffer, "==f");
 			break;
-		case ND_NOTEQR:
+		case ND_NER:
 		case IC_NOTEQR:
 			sprintf(buffer, "!=f");
 			break;
@@ -842,21 +842,21 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			sprintf(buffer, ">=f");
 			break;
 
-		case ND_SHRASS:
+		case ND_SHRASSIGN:
 		case IC_SHRASS:
 			argc = 1;
 			sprintf(buffer, ">>=");
 			break;
-		case ND_SHRASSAT:
+		case ND_SHRASSIGNAT:
 		case IC_SHRASSAT:
 			sprintf(buffer, ">>=@");
 			break;
-		case ND_SHRASSV:
+		case ND_SHRASSIGNV:
 		case IC_SHRASSV:
 			argc = 1;
 			sprintf(buffer, ">>=V");
 			break;
-		case ND_SHRASSATV:
+		case ND_SHRASSIGNATV:
 		case IC_SHRASSATV:
 			sprintf(buffer, ">>=@V");
 			break;
@@ -864,21 +864,21 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 		case IC_SHR:
 			sprintf(buffer, ">>");
 			break;
-		case ND_SHLASS:
+		case ND_SHLASSIGN:
 		case IC_SHLASS:
 			argc = 1;
 			sprintf(buffer, "<<=");
 			break;
-		case ND_SHLASSAT:
+		case ND_SHLASSIGNAT:
 		case IC_SHLASSAT:
 			sprintf(buffer, "<<=@");
 			break;
-		case ND_SHLASSV:
+		case ND_SHLASSIGNV:
 		case IC_SHLASSV:
 			argc = 1;
 			sprintf(buffer, "<<=V");
 			break;
-		case ND_SHLASSATV:
+		case ND_SHLASSIGNATV:
 		case IC_SHLASSATV:
 			sprintf(buffer, "<<=@V");
 			break;
@@ -887,109 +887,109 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			sprintf(buffer, "<<");
 			break;
 
-		case ND_ASS:
+		case ND_ASSIGN:
 		case IC_ASS:
 			argc = 1;
 			sprintf(buffer, "=");
 			break;
-		case ND_ASSAT:
+		case ND_ASSIGNAT:
 		case IC_ASSAT:
 			sprintf(buffer, "=@");
 			break;
-		case ND_ASSV:
+		case ND_ASSIGNV:
 		case IC_ASSV:
 			argc = 1;
 			sprintf(buffer, "=V");
 			break;
-		case ND_ASSATV:
+		case ND_ASSIGNATV:
 		case IC_ASSATV:
 			sprintf(buffer, "=@V");
 			break;
 
-		case ND_PLUSASS:
+		case ND_ADDASSIGN:
 		case IC_PLUSASS:
 			argc = 1;
 			sprintf(buffer, "+=");
 			break;
-		case ND_PLUSASSAT:
+		case ND_ADDASSIGNAT:
 		case IC_PLUSASSAT:
 			sprintf(buffer, "+=@");
 			break;
-		case ND_PLUSASSV:
+		case ND_ADDASSIGNV:
 		case IC_PLUSASSV:
 			argc = 1;
 			sprintf(buffer, "+=V");
 			break;
-		case ND_PLUSASSATV:
+		case ND_ADDASSIGNATV:
 		case IC_PLUSASSATV:
 			sprintf(buffer, "+=@V");
 			break;
-		case ND_PLUS:
+		case ND_ADD:
 		case IC_PLUS:
 			sprintf(buffer, "+");
 			break;
 
-		case ND_MINUSASS:
+		case ND_SUBASSIGN:
 		case IC_MINUSASS:
 			argc = 1;
 			sprintf(buffer, "-=");
 			break;
-		case ND_MINUSASSAT:
+		case ND_SUBASSIGNAT:
 		case IC_MINUSASSAT:
 			sprintf(buffer, "-=@");
 			break;
-		case ND_MINUSASSV:
+		case ND_SUBASSIGNV:
 		case IC_MINUSASSV:
 			argc = 1;
 			sprintf(buffer, "-=V");
 			break;
-		case ND_MINUSASSATV:
+		case ND_SUBASSIGNATV:
 		case IC_MINUSASSATV:
 			sprintf(buffer, "-=@V");
 			break;
-		case ND_MINUS:
+		case ND_SUB:
 		case IC_MINUS:
 			sprintf(buffer, "-");
 			break;
 
-		case ND_MULTASS:
+		case ND_MULASSIGN:
 		case IC_MULTASS:
 			argc = 1;
 			sprintf(buffer, "*=");
 			break;
-		case ND_MULTASSAT:
+		case ND_MULASSIGNAT:
 		case IC_MULTASSAT:
 			sprintf(buffer, "*=@");
 			break;
-		case ND_MULTASSV:
+		case ND_MULASSIGNV:
 		case IC_MULTASSV:
 			argc = 1;
 			sprintf(buffer, "*=V");
 			break;
-		case ND_MULTASSATV:
+		case ND_MULASSIGNATV:
 		case IC_MULTASSATV:
 			sprintf(buffer, "*=@V");
 			break;
-		case ND_MULT:
+		case ND_MUL:
 		case IC_MULT:
 			sprintf(buffer, "*");
 			break;
 
-		case ND_DIVASS:
+		case ND_DIVASSIGN:
 		case IC_DIVASS:
 			argc = 1;
 			sprintf(buffer, "/=");
 			break;
-		case ND_DIVASSAT:
+		case ND_DIVASSIGNAT:
 		case IC_DIVASSAT:
 			sprintf(buffer, "/=@");
 			break;
-		case ND_DIVASSV:
+		case ND_DIVASSIGNV:
 		case IC_DIVASSV:
 			argc = 1;
 			sprintf(buffer, "/=V");
 			break;
-		case ND_DIVASSATV:
+		case ND_DIVASSIGNATV:
 		case IC_DIVASSATV:
 			sprintf(buffer, "/=@V");
 			break;
@@ -998,106 +998,106 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			sprintf(buffer, "/");
 			break;
 
-		case ND_ASSR:
+		case ND_ASSIGNR:
 		case IC_ASSR:
 			argc = 1;
 			sprintf(buffer, "=f");
 			break;
-		case ND_ASSRV:
+		case ND_ASSIGNRV:
 		case IC_ASSRV:
 			argc = 1;
 			sprintf(buffer, "=fV");
 			break;
-		case ND_ASSATR:
+		case ND_ASSIGNATR:
 		case IC_ASSATR:
 			sprintf(buffer, "=@f");
 			break;
-		case ND_ASSATRV:
+		case ND_ASSIGNATRV:
 		case IC_ASSATRV:
 			sprintf(buffer, "=@fV");
 			break;
 
-		case ND_PLUSASSR:
+		case ND_ADDASSIGNR:
 		case IC_PLUSASSR:
 			argc = 1;
 			sprintf(buffer, "+=f");
 			break;
-		case ND_PLUSASSATR:
+		case ND_ADDASSIGNATR:
 		case IC_PLUSASSATR:
 			sprintf(buffer, "+=@f");
 			break;
-		case ND_PLUSASSRV:
+		case ND_ADDASSIGNRV:
 		case IC_PLUSASSRV:
 			argc = 1;
 			sprintf(buffer, "+=fV");
 			break;
-		case ND_PLUSASSATRV:
+		case ND_ADDASSIGNATRV:
 		case IC_PLUSASSATRV:
 			sprintf(buffer, "+=@fV");
 			break;
-		case ND_PLUSR:
+		case ND_ADDR:
 		case IC_PLUSR:
 			sprintf(buffer, "+f");
 			break;
-		case ND_MINUSASSR:
+		case ND_SUBASSIGNR:
 		case IC_MINUSASSR:
 			argc = 1;
 			sprintf(buffer, "-=f");
 			break;
-		case ND_MINUSASSATR:
+		case ND_SUBASSIGNATR:
 		case IC_MINUSASSATR:
 			sprintf(buffer, "-=@f");
 			break;
-		case ND_MINUSASSRV:
+		case ND_SUBASSIGNRV:
 		case IC_MINUSASSRV:
 			argc = 1;
 			sprintf(buffer, "-=fV");
 			break;
-		case ND_MINUSASSATRV:
+		case ND_SUBASSIGNATRV:
 		case IC_MINUSASSATRV:
 			sprintf(buffer, "-=@fV");
 			break;
-		case ND_MINUSR:
+		case ND_SUBR:
 		case IC_MINUSR:
 			sprintf(buffer, "-f");
 			break;
-		case ND_MULTASSR:
+		case ND_MULASSIGNR:
 		case IC_MULTASSR:
 			argc = 1;
 			sprintf(buffer, "*=f");
 			break;
-		case ND_MULTASSATR:
+		case ND_MULASSIGNATR:
 		case IC_MULTASSATR:
 			sprintf(buffer, "*=@f");
 			break;
-		case ND_MULTASSRV:
+		case ND_MULASSIGNRV:
 		case IC_MULTASSRV:
 			argc = 1;
 			sprintf(buffer, "*=fV");
 			break;
-		case ND_MULTASSATRV:
+		case ND_MULASSIGNATRV:
 		case IC_MULTASSATRV:
 			sprintf(buffer, "*=@fV");
 			break;
-		case ND_MULTR:
+		case ND_MULR:
 		case IC_MULTR:
 			sprintf(buffer, "*f");
 			break;
-		case ND_DIVASSR:
+		case ND_DIVASSIGNR:
 		case IC_DIVASSR:
 			argc = 1;
 			sprintf(buffer, "/=f");
 			break;
-		case ND_DIVASSATR:
+		case ND_DIVASSIGNATR:
 		case IC_DIVASSATR:
 			sprintf(buffer, "/=@f");
 			break;
-		case ND_DIVASSRV:
+		case ND_DIVASSIGNRV:
 		case IC_DIVASSRV:
 			argc = 1;
 			sprintf(buffer, "/=fV");
 			break;
-		case ND_DIVASSATRV:
+		case ND_DIVASSIGNATRV:
 		case IC_DIVASSATRV:
 			sprintf(buffer, "/=@fV");
 			break;
@@ -1106,21 +1106,21 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			sprintf(buffer, "/f");
 			break;
 
-		case ND_REMASS:
+		case ND_REMASSIGN:
 		case IC_REMASS:
 			argc = 1;
 			sprintf(buffer, "%%=");
 			break;
-		case ND_REMASSAT:
+		case ND_REMASSIGNAT:
 		case IC_REMASSAT:
 			sprintf(buffer, "%%=@");
 			break;
-		case ND_REMASSV:
+		case ND_REMASSIGNV:
 		case IC_REMASSV:
 			argc = 1;
 			sprintf(buffer, "%%=V");
 			break;
-		case ND_REMASSATV:
+		case ND_REMASSIGNATV:
 		case IC_REMASSATV:
 			sprintf(buffer, "%%=@V");
 			break;
@@ -1195,12 +1195,12 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 		case IC__DOUBLE:
 			sprintf(buffer, "DOUBLE");
 			break;
-		case ND_INC:
+		case ND_PREINC:
 		case IC_INC:
 			argc = 1;
 			sprintf(buffer, "INC");
 			break;
-		case ND_DEC:
+		case ND_PREDEC:
 		case IC_DEC:
 			argc = 1;
 			sprintf(buffer, "DEC");
@@ -1215,11 +1215,11 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			argc = 1;
 			sprintf(buffer, "POSTDEC");
 			break;
-		case ND_INCAT:
+		case ND_PREINCAT:
 		case IC_INCAT:
 			sprintf(buffer, "INC@");
 			break;
-		case ND_DECAT:
+		case ND_PREDECAT:
 		case IC_DECAT:
 			sprintf(buffer, "DEC@");
 			break;
@@ -1231,12 +1231,12 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 		case IC_POSTDECAT:
 			sprintf(buffer, "POSTDEC@");
 			break;
-		case ND_INCR:
+		case ND_PREINCR:
 		case IC_INCR:
 			argc = 1;
 			sprintf(buffer, "INCf");
 			break;
-		case ND_DECR:
+		case ND_PREDECR:
 		case IC_DECR:
 			argc = 1;
 			sprintf(buffer, "DECf");
@@ -1251,11 +1251,11 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			argc = 1;
 			sprintf(buffer, "POSTDECf");
 			break;
-		case ND_INCATR:
+		case ND_PREINCATR:
 		case IC_INCATR:
 			sprintf(buffer, "INC@f");
 			break;
-		case ND_DECATR:
+		case ND_PREDECATR:
 		case IC_DECATR:
 			sprintf(buffer, "DEC@f");
 			break;
@@ -1267,12 +1267,12 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 		case IC_POSTDECATR:
 			sprintf(buffer, "POSTDEC@f");
 			break;
-		case ND_INCV:
+		case ND_PREINCV:
 		case IC_INCV:
 			argc = 1;
 			sprintf(buffer, "INCV");
 			break;
-		case ND_DECV:
+		case ND_PREDECV:
 		case IC_DECV:
 			argc = 1;
 			sprintf(buffer, "DECV");
@@ -1287,11 +1287,11 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			argc = 1;
 			sprintf(buffer, "POSTDECV");
 			break;
-		case ND_INCATV:
+		case ND_PREINCATV:
 		case IC_INCATV:
 			sprintf(buffer, "INC@V");
 			break;
-		case ND_DECATV:
+		case ND_PREDECATV:
 		case IC_DECATV:
 			sprintf(buffer, "DEC@V");
 			break;
@@ -1303,12 +1303,12 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 		case IC_POSTDECATV:
 			sprintf(buffer, "POSTDEC@V");
 			break;
-		case ND_INCRV:
+		case ND_PREINCRV:
 		case IC_INCRV:
 			argc = 1;
 			sprintf(buffer, "INCfV");
 			break;
-		case ND_DECRV:
+		case ND_PREDECRV:
 		case IC_DECRV:
 			argc = 1;
 			sprintf(buffer, "DECfV");
@@ -1323,11 +1323,11 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			argc = 1;
 			sprintf(buffer, "POSTDECfV");
 			break;
-		case ND_INCATRV:
+		case ND_PREINCATRV:
 		case IC_INCATRV:
 			sprintf(buffer, "INC@fV");
 			break;
-		case ND_DECATRV:
+		case ND_PREDECATRV:
 		case IC_DECATRV:
 			sprintf(buffer, "DEC@fV");
 			break;

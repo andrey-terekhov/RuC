@@ -158,11 +158,7 @@ int is_expression(const item_t value)
 
 int is_lexeme(const item_t value)
 {
-	return (value >= ND_REMASS && value <= ND_ASSERT
-		&& value != ND_CREATEDIRECT
-		&& value != ND_EXITDIRECT)
-		|| value == ND_ABSI
-		|| is_ref(value);
+	return (value >= FINAL_OPERATION_START && value <= FINAL_OPERATION_END) || is_ref(value);
 }
 
 

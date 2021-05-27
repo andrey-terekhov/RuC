@@ -33,8 +33,8 @@ instruction_t node_to_instruction(const node_t node)
 		case ND_COPY11:			return IC_COPY11;
 		case ND_COPY0ST:		return IC_COPY0ST;
 		case ND_COPY1ST:		return IC_COPY1ST;
-		case ND_COPY0STASS:		return IC_COPY0STASS;
-		case ND_COPY1STASS:		return IC_COPY1STASS;
+		case ND_COPY0STASSIGN:	return IC_COPY0STASS;
+		case ND_COPY1STASSIGN:	return IC_COPY1STASS;
 		case ND_COPYST:			return IC_COPYST;
 		case ND_CREATEDIRECT:	return IC_CREATEDIRECT;
 		case ND_EXITDIRECT:		return IC_EXITDIRECT;
@@ -81,134 +81,134 @@ instruction_t node_to_instruction(const node_t node)
 		case ND_PRINTF:			return IC_PRINTF;
 		case ND_PRINT:			return IC_PRINT;
 		case ND_PRINTID:		return IC_PRINTID;
-		case ND_REMASS:			return IC_REMASS;
-		case ND_SHLASS:			return IC_SHLASS;
-		case ND_SHRASS:			return IC_SHRASS;
-		case ND_ANDASS:			return IC_ANDASS;
-		case ND_EXORASS:		return IC_EXORASS;
-		case ND_ORASS:			return IC_ORASS;
-		case ND_ASS:			return IC_ASS;
-		case ND_PLUSASS:		return IC_PLUSASS;
-		case ND_MINUSASS:		return IC_MINUSASS;
-		case ND_MULTASS:		return IC_MULTASS;
-		case ND_DIVASS:			return IC_DIVASS;
-		case ND_REMASSAT:		return IC_REMASSAT;
-		case ND_SHLASSAT:		return IC_SHLASSAT;
-		case ND_SHRASSAT:		return IC_SHRASSAT;
-		case ND_ANDASSAT:		return IC_ANDASSAT;
-		case ND_EXORASSAT:		return IC_EXORASSAT;
-		case ND_ORASSAT:		return IC_ORASSAT;
-		case ND_ASSAT:			return IC_ASSAT;
-		case ND_PLUSASSAT:		return IC_PLUSASSAT;
-		case ND_MINUSASSAT:		return IC_MINUSASSAT;
-		case ND_MULTASSAT:		return IC_MULTASSAT;
-		case ND_DIVASSAT:		return IC_DIVASSAT;
+		case ND_REMASSIGN:		return IC_REMASS;
+		case ND_SHLASSIGN:		return IC_SHLASS;
+		case ND_SHRASSIGN:		return IC_SHRASS;
+		case ND_ANDASSIGN:		return IC_ANDASS;
+		case ND_XORASSIGN:		return IC_EXORASS;
+		case ND_ORASSIGN:		return IC_ORASS;
+		case ND_ASSIGN:			return IC_ASS;
+		case ND_ADDASSIGN:		return IC_PLUSASS;
+		case ND_SUBASSIGN:		return IC_MINUSASS;
+		case ND_MULASSIGN:		return IC_MULTASS;
+		case ND_DIVASSIGN:		return IC_DIVASS;
+		case ND_REMASSIGNAT:	return IC_REMASSAT;
+		case ND_SHLASSIGNAT:	return IC_SHLASSAT;
+		case ND_SHRASSIGNAT:	return IC_SHRASSAT;
+		case ND_ANDASSIGNAT:	return IC_ANDASSAT;
+		case ND_XORASSIGNAT:	return IC_EXORASSAT;
+		case ND_ORASSIGNAT:		return IC_ORASSAT;
+		case ND_ASSIGNAT:		return IC_ASSAT;
+		case ND_ADDASSIGNAT:	return IC_PLUSASSAT;
+		case ND_SUBASSIGNAT:	return IC_MINUSASSAT;
+		case ND_MULASSIGNAT:	return IC_MULTASSAT;
+		case ND_DIVASSIGNAT:	return IC_DIVASSAT;
 		case ND_REM:			return IC_REM;
 		case ND_SHL:			return IC_SHL;
 		case ND_SHR:			return IC_SHR;
 		case ND_AND:			return IC_AND;
-		case ND_EXOR:			return IC_EXOR;
+		case ND_XOR:			return IC_EXOR;
 		case ND_OR:				return IC_OR;
 		case ND_LOGAND:			return IC_LOGAND;
 		case ND_LOGOR:			return IC_LOGOR;
-		case ND_EQEQ:			return IC_EQEQ;
-		case ND_NOTEQ:			return IC_NOTEQ;
+		case ND_EQ:				return IC_EQEQ;
+		case ND_NE:				return IC_NOTEQ;
 		case ND_LT:				return IC_LT;
 		case ND_GT:				return IC_GT;
 		case ND_LE:				return IC_LE;
 		case ND_GE:				return IC_GE;
-		case ND_PLUS:			return IC_PLUS;
-		case ND_MINUS:			return IC_MINUS;
-		case ND_MULT:			return IC_MULT;
+		case ND_ADD:			return IC_PLUS;
+		case ND_SUB:			return IC_MINUS;
+		case ND_MUL:			return IC_MULT;
 		case ND_DIV:			return IC_DIV;
 		case ND_POSTINC:		return IC_POSTINC;
 		case ND_POSTDEC:		return IC_POSTDEC;
-		case ND_INC:			return IC_INC;
-		case ND_DEC:			return IC_DEC;
+		case ND_PREINC:			return IC_INC;
+		case ND_PREDEC:			return IC_DEC;
 		case ND_POSTINCAT:		return IC_POSTINCAT;
 		case ND_POSTDECAT:		return IC_POSTDECAT;
-		case ND_INCAT:			return IC_INCAT;
-		case ND_DECAT:			return IC_DECAT;
+		case ND_PREINCAT:		return IC_INCAT;
+		case ND_PREDECAT:		return IC_DECAT;
 		case ND_UNMINUS:		return IC_UNMINUS;
 		case ND_NOT:			return IC_NOT;
 		case ND_LOGNOT:			return IC_LOGNOT;
-		case ND_ASSR:			return IC_ASSR;
-		case ND_PLUSASSR:		return IC_PLUSASSR;
-		case ND_MINUSASSR:		return IC_MINUSASSR;
-		case ND_MULTASSR:		return IC_MULTASSR;
-		case ND_DIVASSR:		return IC_DIVASSR;
-		case ND_ASSATR:			return IC_ASSATR;
-		case ND_PLUSASSATR:		return IC_PLUSASSATR;
-		case ND_MINUSASSATR:	return IC_MINUSASSATR;
-		case ND_MULTASSATR:		return IC_MULTASSATR;
-		case ND_DIVASSATR:		return IC_DIVASSATR;
-		case ND_EQEQR:			return IC_EQEQR;
-		case ND_NOTEQR:			return IC_NOTEQR;
+		case ND_ASSIGNR:		return IC_ASSR;
+		case ND_ADDASSIGNR:		return IC_PLUSASSR;
+		case ND_SUBASSIGNR:		return IC_MINUSASSR;
+		case ND_MULASSIGNR:		return IC_MULTASSR;
+		case ND_DIVASSIGNR:		return IC_DIVASSR;
+		case ND_ASSIGNATR:		return IC_ASSATR;
+		case ND_ADDASSIGNATR:	return IC_PLUSASSATR;
+		case ND_SUBASSIGNATR:	return IC_MINUSASSATR;
+		case ND_MULASSIGNATR:	return IC_MULTASSATR;
+		case ND_DIVASSIGNATR:	return IC_DIVASSATR;
+		case ND_EQR:			return IC_EQEQR;
+		case ND_NER:			return IC_NOTEQR;
 		case ND_LTR:			return IC_LTR;
 		case ND_GTR:			return IC_GTR;
 		case ND_LER:			return IC_LER;
 		case ND_GER:			return IC_GER;
-		case ND_PLUSR:			return IC_PLUSR;
-		case ND_MINUSR:			return IC_MINUSR;
-		case ND_MULTR:			return IC_MULTR;
+		case ND_ADDR:			return IC_PLUSR;
+		case ND_SUBR:			return IC_MINUSR;
+		case ND_MULR:			return IC_MULTR;
 		case ND_DIVR:			return IC_DIVR;
 		case ND_POSTINCR:		return IC_POSTINCR;
 		case ND_POSTDECR:		return IC_POSTDECR;
-		case ND_INCR:			return IC_INCR;
-		case ND_DECR:			return IC_DECR;
+		case ND_PREINCR:		return IC_INCR;
+		case ND_PREDECR:		return IC_DECR;
 		case ND_POSTINCATR:		return IC_POSTINCATR;
 		case ND_POSTDECATR:		return IC_POSTDECATR;
-		case ND_INCATR:			return IC_INCATR;
-		case ND_DECATR:			return IC_DECATR;
+		case ND_PREINCATR:		return IC_INCATR;
+		case ND_PREDECATR:		return IC_DECATR;
 		case ND_UNMINUSR:		return IC_UNMINUSR;
-		case ND_REMASSV:		return IC_REMASSV;
-		case ND_SHLASSV:		return IC_SHLASSV;
-		case ND_SHRASSV:		return IC_SHRASSV;
-		case ND_ANDASSV:		return IC_ANDASSV;
-		case ND_EXORASSV:		return IC_EXORASSV;
-		case ND_ORASSV:			return IC_ORASSV;
-		case ND_ASSV:			return IC_ASSV;
-		case ND_PLUSASSV:		return IC_PLUSASSV;
-		case ND_MINUSASSV:		return IC_MINUSASSV;
-		case ND_MULTASSV:		return IC_MULTASSV;
-		case ND_DIVASSV:		return IC_DIVASSV;
-		case ND_REMASSATV:		return IC_REMASSATV;
-		case ND_SHLASSATV:		return IC_SHLASSATV;
-		case ND_SHRASSATV:		return IC_SHRASSATV;
-		case ND_ANDASSATV:		return IC_ANDASSATV;
-		case ND_EXORASSATV:		return IC_EXORASSATV;
-		case ND_ORASSATV:		return IC_ORASSATV;
-		case ND_ASSATV:			return IC_ASSATV;
-		case ND_PLUSASSATV:		return IC_PLUSASSATV;
-		case ND_MINUSASSATV:	return IC_MINUSASSATV;
-		case ND_MULTASSATV:		return IC_MULTASSATV;
-		case ND_DIVASSATV:		return IC_DIVASSATV;
-		case ND_ASSRV:			return IC_ASSRV;
-		case ND_PLUSASSRV:		return IC_PLUSASSRV;
-		case ND_MINUSASSRV:		return IC_MINUSASSRV;
-		case ND_MULTASSRV:		return IC_MULTASSRV;
-		case ND_DIVASSRV:		return IC_DIVASSRV;
-		case ND_ASSATRV:		return IC_ASSATRV;
-		case ND_PLUSASSATRV:	return IC_PLUSASSATRV;
-		case ND_MINUSASSATRV:	return IC_MINUSASSATRV;
-		case ND_MULTASSATRV:	return IC_MULTASSATRV;
-		case ND_DIVASSATRV:		return IC_DIVASSATRV;
+		case ND_REMASSIGNV:		return IC_REMASSV;
+		case ND_SHLASSIGNV:		return IC_SHLASSV;
+		case ND_SHRASSIGNV:		return IC_SHRASSV;
+		case ND_ANDASSIGNV:		return IC_ANDASSV;
+		case ND_XORASSIGNV:		return IC_EXORASSV;
+		case ND_ORASSIGNV:		return IC_ORASSV;
+		case ND_ASSIGNV:		return IC_ASSV;
+		case ND_ADDASSIGNV:		return IC_PLUSASSV;
+		case ND_SUBASSIGNV:		return IC_MINUSASSV;
+		case ND_MULASSIGNV:		return IC_MULTASSV;
+		case ND_DIVASSIGNV:		return IC_DIVASSV;
+		case ND_REMASSIGNATV:	return IC_REMASSATV;
+		case ND_SHLASSIGNATV:	return IC_SHLASSATV;
+		case ND_SHRASSIGNATV:	return IC_SHRASSATV;
+		case ND_ANDASSIGNATV:	return IC_ANDASSATV;
+		case ND_XORASSIGNATV:	return IC_EXORASSATV;
+		case ND_ORASSIGNATV:	return IC_ORASSATV;
+		case ND_ASSIGNATV:		return IC_ASSATV;
+		case ND_ADDASSIGNATV:	return IC_PLUSASSATV;
+		case ND_SUBASSIGNATV:	return IC_MINUSASSATV;
+		case ND_MULASSIGNATV:	return IC_MULTASSATV;
+		case ND_DIVASSIGNATV:	return IC_DIVASSATV;
+		case ND_ASSIGNRV:		return IC_ASSRV;
+		case ND_ADDASSIGNRV:	return IC_PLUSASSRV;
+		case ND_SUBASSIGNRV:	return IC_MINUSASSRV;
+		case ND_MULASSIGNRV:	return IC_MULTASSRV;
+		case ND_DIVASSIGNRV:	return IC_DIVASSRV;
+		case ND_ASSIGNATRV:		return IC_ASSATRV;
+		case ND_ADDASSIGNATRV:	return IC_PLUSASSATRV;
+		case ND_SUBASSIGNATRV:	return IC_MINUSASSATRV;
+		case ND_MULASSIGNATRV:	return IC_MULTASSATRV;
+		case ND_DIVASSIGNATRV:	return IC_DIVASSATRV;
 		case ND_POSTINCV:		return IC_POSTINCV;
 		case ND_POSTDECV:		return IC_POSTDECV;
-		case ND_INCV:			return IC_INCV;
-		case ND_DECV:			return IC_DECV;
+		case ND_PREINCV:		return IC_INCV;
+		case ND_PREDECV:		return IC_DECV;
 		case ND_POSTINCATV:		return IC_POSTINCATV;
 		case ND_POSTDECATV:		return IC_POSTDECATV;
-		case ND_INCATV:			return IC_INCATV;
-		case ND_DECATV:			return IC_DECATV;
+		case ND_PREINCATV:		return IC_INCATV;
+		case ND_PREDECATV:		return IC_DECATV;
 		case ND_POSTINCRV:		return IC_POSTINCRV;
 		case ND_POSTDECRV:		return IC_POSTDECRV;
-		case ND_INCRV:			return IC_INCRV;
-		case ND_DECRV:			return IC_DECRV;
+		case ND_PREINCRV:		return IC_INCRV;
+		case ND_PREDECRV:		return IC_DECRV;
 		case ND_POSTINCATRV:	return IC_POSTINCATRV;
 		case ND_POSTDECATRV:	return IC_POSTDECATRV;
-		case ND_INCATRV:		return IC_INCATRV;
-		case ND_DECATRV:		return IC_DECATRV;
+		case ND_PREINCATRV:		return IC_INCATRV;
+		case ND_PREDECATRV:		return IC_DECATRV;
 		default:				return 0;
 	}
 }
@@ -218,38 +218,38 @@ node_t token_to_node(const token_t token)
 	switch (token)
 	{
 		case TOK_TILDE:					return ND_NOT;
-		case TOK_PLUS:					return ND_PLUS;
-		case TOK_MINUS:					return ND_MINUS;
-		case TOK_STAR:					return ND_MULT;
+		case TOK_PLUS:					return ND_ADD;
+		case TOK_MINUS:					return ND_SUB;
+		case TOK_STAR:					return ND_MUL;
 		case TOK_SLASH:					return ND_DIV;
 		case TOK_PERCENT:				return ND_REM;
 		case TOK_EXCLAIM:				return ND_LOGNOT;
-		case TOK_CARET:					return ND_EXOR;
+		case TOK_CARET:					return ND_XOR;
 		case TOK_PIPE:					return ND_OR;
 		case TOK_AMP:					return ND_AND;
-		case TOK_EQUAL:					return ND_ASS;
+		case TOK_EQUAL:					return ND_ASSIGN;
 		case TOK_LESS:					return ND_LT;
 		case TOK_GREATER:				return ND_GT;
-		case TOK_PLUSEQUAL:				return ND_PLUSASS;
-		case TOK_PLUSPLUS:				return ND_INC;
-		case TOK_MINUSEQUAL:			return ND_MINUSASS;
-		case TOK_MINUSMINUS:			return ND_DEC;
-		case TOK_STAREQUAL:				return ND_MULTASS;
-		case TOK_SLASHEQUAL:			return ND_DIVASS;
-		case TOK_PERCENTEQUAL:			return ND_REMASS;
-		case TOK_EXCLAIMEQUAL:			return ND_NOTEQ;
-		case TOK_CARETEQUAL:			return ND_EXORASS;
-		case TOK_PIPEEQUAL:				return ND_ORASS;
+		case TOK_PLUSEQUAL:				return ND_ADDASSIGN;
+		case TOK_PLUSPLUS:				return ND_PREINC;
+		case TOK_MINUSEQUAL:			return ND_SUBASSIGN;
+		case TOK_MINUSMINUS:			return ND_PREDEC;
+		case TOK_STAREQUAL:				return ND_MULASSIGN;
+		case TOK_SLASHEQUAL:			return ND_DIVASSIGN;
+		case TOK_PERCENTEQUAL:			return ND_REMASSIGN;
+		case TOK_EXCLAIMEQUAL:			return ND_NE;
+		case TOK_CARETEQUAL:			return ND_XORASSIGN;
+		case TOK_PIPEEQUAL:				return ND_ORASSIGN;
 		case TOK_PIPEPIPE:				return ND_LOGOR;
-		case TOK_AMPEQUAL:				return ND_ANDASS;
+		case TOK_AMPEQUAL:				return ND_ANDASSIGN;
 		case TOK_AMPAMP:				return ND_LOGAND;
-		case TOK_EQUALEQUAL:			return ND_EQEQ;
+		case TOK_EQUALEQUAL:			return ND_EQ;
 		case TOK_LESSEQUAL:				return ND_LE;
 		case TOK_LESSLESS:				return ND_SHL;
 		case TOK_GREATEREQUAL:			return ND_GE;
 		case TOK_GREATERGREATER:		return ND_SHR;
-		case TOK_LESSLESSEQUAL:			return ND_SHLASS;
-		case TOK_GREATERGREATEREQUAL:	return ND_SHRASS;
+		case TOK_LESSLESSEQUAL:			return ND_SHLASSIGN;
+		case TOK_GREATERGREATEREQUAL:	return ND_SHRASSIGN;
 
 		case TOK_ABS:					return ND_ABS;
 		case TOK_SQRT:					return ND_SQRT;
@@ -299,22 +299,22 @@ node_t node_at_operator(const node_t node)
 {
 	switch (node)
 	{
-		case ND_INC:		return ND_INCAT;
-		case ND_DEC:		return ND_DECAT;
+		case ND_PREINC:		return ND_PREINCAT;
+		case ND_PREDEC:		return ND_PREDECAT;
 		case ND_POSTINC:	return ND_POSTINCAT;
 		case ND_POSTDEC:	return ND_POSTDECAT;
 
-		case ND_REMASS:		return ND_REMASSAT;
-		case ND_SHLASS:		return ND_SHLASSAT;
-		case ND_SHRASS:		return ND_SHRASSAT;
-		case ND_ANDASS:		return ND_ANDASSAT;
-		case ND_EXORASS:	return ND_EXORASSAT;
-		case ND_ORASS:		return ND_ORASSAT;
-		case ND_ASS:		return ND_ASSAT;
-		case ND_PLUSASS:	return ND_PLUSASSAT;
-		case ND_MINUSASS:	return ND_MINUSASSAT;
-		case ND_MULTASS:	return ND_MULTASSAT;
-		case ND_DIVASS:		return ND_DIVASSAT;
+		case ND_REMASSIGN:	return ND_REMASSIGNAT;
+		case ND_SHLASSIGN:	return ND_SHLASSIGNAT;
+		case ND_SHRASSIGN:	return ND_SHRASSIGNAT;
+		case ND_ANDASSIGN:	return ND_ANDASSIGNAT;
+		case ND_XORASSIGN:	return ND_XORASSIGNAT;
+		case ND_ORASSIGN:	return ND_ORASSIGNAT;
+		case ND_ASSIGN:		return ND_ASSIGNAT;
+		case ND_ADDASSIGN:	return ND_ADDASSIGNAT;
+		case ND_SUBASSIGN:	return ND_SUBASSIGNAT;
+		case ND_MULASSIGN:	return ND_MULASSIGNAT;
+		case ND_DIVASSIGN:	return ND_DIVASSIGNAT;
 
 		default: 			return 0;
 	}
@@ -322,10 +322,10 @@ node_t node_at_operator(const node_t node)
 
 node_t node_void_operator(const node_t node)
 {
-	if ((node >= ND_ASS && node <= ND_DIVASSAT)
-		|| (node >= ND_POSTINC && node <= ND_DECAT)
-		|| (node >= ND_ASSR && node <= ND_DIVASSATR)
-		|| (node >= ND_POSTINCR && node <= ND_DECATR))
+	if ((node >= ND_ASSIGN && node <= ND_DIVASSIGNAT)
+		|| (node >= ND_POSTINC && node <= ND_PREDECAT)
+		|| (node >= ND_ASSIGNR && node <= ND_DIVASSIGNATR)
+		|| (node >= ND_POSTINCR && node <= ND_PREDECATR))
 	{
 		return node + 200;
 	}
@@ -337,9 +337,9 @@ node_t node_void_operator(const node_t node)
 
 node_t node_float_operator(const node_t node)
 {
-	if ((node >= ND_ASS && node <= ND_DIVASS)
-		|| (node >= ND_ASSAT && node <= ND_DIVASSAT)
-		|| (node >= ND_EQEQ && node <= ND_UNMINUS))
+	if ((node >= ND_ASSIGN && node <= ND_DIVASSIGN)
+		|| (node >= ND_ASSIGNAT && node <= ND_DIVASSIGNAT)
+		|| (node >= ND_EQ && node <= ND_UNMINUS))
 	{
 		return node + 50;
 	}
@@ -351,10 +351,10 @@ node_t node_float_operator(const node_t node)
 
 int node_is_assignment_operator(const node_t op)
 {
-	if ((op >= ND_REMASS && op <= ND_DIVASS) || (op >= ND_REMASSV && op <= ND_DIVASSV)
-		|| (op >= ND_ASSR && op <= ND_DIVASSR) || (op >= ND_ASSRV && op <= ND_DIVASSRV)
-		|| (op >= ND_POSTINC && op <= ND_DEC) || (op >= ND_POSTINCV && op <= ND_DECV)
-		|| (op >= ND_POSTINCR && op <= ND_DECR) || (op >= ND_POSTINCRV && op <= ND_DECRV))
+	if ((op >= ND_REMASSIGN && op <= ND_DIVASSIGN) || (op >= ND_REMASSIGNV && op <= ND_DIVASSIGNV)
+		|| (op >= ND_ASSIGNR && op <= ND_DIVASSIGNR) || (op >= ND_ASSIGNRV && op <= ND_DIVASSIGNRV)
+		|| (op >= ND_POSTINC && op <= ND_PREDEC) || (op >= ND_POSTINCV && op <= ND_PREDECV)
+		|| (op >= ND_POSTINCR && op <= ND_PREDECR) || (op >= ND_POSTINCRV && op <= ND_PREDECRV))
 	{
 		return 1;
 	}
