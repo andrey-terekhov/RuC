@@ -16,9 +16,33 @@
 
 #include "lexer.h"
 #include <math.h>
+#include <string.h>
 #include "errors.h"
 #include "uniscanner.h"
 
+
+/**
+ *	Check if error recovery disabled
+ *
+ *	@param	ws			Compiler workspace
+ *
+ *	@return	Recovery status
+ */
+static inline int is_recovery_disabled(const workspace *const ws)
+{
+	for (size_t i = 0; ; i++)
+	{
+		const char *flag = ws_get_flag(ws, i);
+		if (flag == NULL)
+		{
+			return 0;
+		}
+		else if (strcmp(flag, "-Wno") == 0)
+		{
+			return 1;
+		}
+	}
+}
 
 /**
  *	Emit an error from lexer
@@ -28,12 +52,16 @@
  */
 static void lexer_error(lexer *const lxr, error_t num, ...)
 {
-	lxr->was_error = 1;
+	if (lxr->disable_recovery && lxr->was_error)
+	{
+		return;
+	}
 
 	va_list args;
 	va_start(args, num);
 
 	verror(lxr->io, num, args);
+	lxr->was_error = 1;
 
 	va_end(args);
 }
@@ -357,13 +385,14 @@ static token_t lex_string_literal(lexer *const lxr)
  */
 
 
-lexer create_lexer(universal_io *const io, syntax *const sx)
+lexer create_lexer(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
 	lexer lxr;
 	lxr.io = io;
 	lxr.sx = sx;
 	lxr.repr = 0;
 
+	lxr.disable_recovery = is_recovery_disabled(ws);
 	lxr.was_error = 0;
 
 	scan(&lxr);

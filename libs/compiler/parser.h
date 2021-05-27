@@ -23,9 +23,7 @@
 #include "syntax.h"
 #include "old_tree.h"
 #include "uniio.h"
-
-
-#define GENERATE_TREE
+#include "workspace.h"
 
 
 #ifdef __cplusplus
@@ -103,12 +101,13 @@ typedef struct parser
 /**
  *	Parse source code to generate syntax structure
  *
+ *	@param	ws			Compiler workspace
  *	@param	io			Universal io structure
  *	@param	sx			Syntax structure
  *
  *	@return	@c 0 on success, @c 1 on failure
  */
-int parse(universal_io *const io, syntax *const sx);
+int parse(const workspace *const ws, universal_io *const io, syntax *const sx);
 
 
 /**

@@ -37,18 +37,20 @@ typedef struct lexer
 	double num_double;					/**< Value of the read double number */
 	char32_t lexstr[MAXSTRINGL + 1];	/**< Representation of the read string literal */
 
+	int disable_recovery;				/**< Disable error recovery & multiple output */
 	int was_error;						/**< Error flag */
 } lexer;
 
 /**
  *	Create lexer structure
  *
+ *	@param	ws		Compiler workspace
  *	@param	io		Universal io structure
  *	@param	sx		Syntax structure
  *
  *	@return	Lexer structure
  */
-lexer create_lexer(universal_io *const io, syntax *const sx);
+lexer create_lexer(const workspace *const ws, universal_io *const io, syntax *const sx);
 
 /**
  *	Lex next token from io
