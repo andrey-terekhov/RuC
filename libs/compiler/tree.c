@@ -156,7 +156,7 @@ int is_expression(const item_t value)
 
 int is_lexeme(const item_t value)
 {
-	return (value >= 9001 && value <= 9595
+	return (value >= 9001 && value <= 9599
 		&& value != CREATEDIRECTC
 		&& value != EXITDIRECTC)
 		|| value == ABSIC

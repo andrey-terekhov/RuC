@@ -149,11 +149,12 @@ void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"receive_int_from_robot", U"получить_цел_от_робота", kw_receive_int);
 	repr_add_keyword(reprtab, U"receive_float_from_robot", U"получить_вещ_от_робота", kw_receive_float);
 	repr_add_keyword(reprtab, U"receive_string_from_robot", U"получить_строку_от_робота", kw_receive_string);
-
+	
+	repr_add_keyword(reprtab, U"file", U"файл", kw_double);
 	repr_add_keyword(reprtab, U"fopen", U"фоткрыть", kw_fopen);
 	repr_add_keyword(reprtab, U"fclose", U"фзакрыть", kw_fclose);
 	repr_add_keyword(reprtab, U"fprintf", U"фписать", kw_fprintf);
-	repr_add_keyword(reprtab, U"fscanf", U"фчитать", kw_fscanf);
+	repr_add_keyword(reprtab, U"fgetc", U"фсимвол", kw_fgetc);
 }
 
 
@@ -161,7 +162,7 @@ void mode_init(syntax *const sx)
 {
 	vector_increase(&sx->modes, 1);
 	// занесение в modetab описателя struct {int numTh; int inf; }
-	vector_add(&sx->modes, 0);
+	sx->start_mode = vector_add(&sx->modes, 0);
 	vector_add(&sx->modes, mode_struct);
 	vector_add(&sx->modes, 2);
 	vector_add(&sx->modes, 4);
@@ -171,20 +172,18 @@ void mode_init(syntax *const sx)
 	vector_add(&sx->modes, (item_t)map_reserve(&sx->representations, "data"));
 
 	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
-	vector_add(&sx->modes, 1);
+	sx->start_mode = vector_add(&sx->modes, sx->start_mode);
 	vector_add(&sx->modes, mode_function);
 	vector_add(&sx->modes, mode_void);
 	vector_add(&sx->modes, 1);
 	vector_add(&sx->modes, 2);
-
+	
 	// занесение в modetab описателя функции void* interpreter(void* n)
-	vector_add(&sx->modes, 9);
+	sx->start_mode = vector_add(&sx->modes, sx->start_mode);
 	vector_add(&sx->modes, mode_function);
 	vector_add(&sx->modes, mode_void_pointer);
 	vector_add(&sx->modes, 1);
 	vector_add(&sx->modes, mode_void_pointer);
-
-	sx->start_mode = 14;
 }
 
 item_t get_static(syntax *const sx, const item_t type)

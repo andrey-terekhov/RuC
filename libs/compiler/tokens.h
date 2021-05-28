@@ -190,10 +190,10 @@ typedef enum TOKEN
 	kw_receive_float		= RECEIVE_FLOAT,		/**< 'receive_float_from_robot'		keyword */
 	kw_receive_string		= RECEIVE_STRING,		/**< 'receive_string_from_robot'	keyword */
 
-	kw_fopen,										/**< 'fopen'	keyword */
-	kw_fclose,										/**< 'fclose'	keyword */
-	kw_fprintf,										/**< 'fprintf'	keyword */
-	kw_fscanf,										/**< 'fscanf'	keyword */
+	kw_fopen				= -96,					/**< 'fopen'	keyword */
+	kw_fclose				= -97,					/**< 'fclose'	keyword */
+	kw_fprintf				= -98,					/**< 'fprintf'	keyword */
+	kw_fgetc				= -99,					/**< 'fscanf'	keyword */
 } token_t;
 
 #ifdef __cplusplus

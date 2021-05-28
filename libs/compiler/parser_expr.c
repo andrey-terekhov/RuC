@@ -444,6 +444,27 @@ void parse_standard_function_call(parser *const prs)
 			operands_push(prs, VALUE, mode_void);
 		}
 	}
+	else if (func == kw_fopen || func == kw_fclose
+			 || func == kw_fprintf || func == kw_fgetc)
+	{
+		if (func == kw_fopen)
+		{
+			must_be_string(prs);
+			operands_push(prs, VALUE, mode_float);
+		}
+		else
+		{
+			must_be_float(prs);
+			
+			if (func == kw_fprintf)
+			{
+				token_expect_and_consume(prs, comma, no_comma_in_act_params_stanfunc);
+				must_be_string(prs);
+			}
+			
+			operands_push(prs, VALUE, func == kw_fgetc ? mode_character : mode_void);
+		}
+	}
 	else if (func >= kw_receive_string && func <= kw_send_int)
 	{
 		// новые функции Фадеева
