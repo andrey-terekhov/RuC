@@ -43,7 +43,7 @@ typedef enum LOCATION
 typedef enum ARRAY_INFO
 {
 	DIMENSION,								/**< Размерность массива */
-	IS_STATIC,								/**< Если массив статический, то 1, иначе 0 */
+	IS_STATIC,								/**< Если массив статический, то @c 1, иначе @c 0 */
 	BORDERS,								/**< Граница массива: константы или номера регистров */
 } array_info_t;
 
