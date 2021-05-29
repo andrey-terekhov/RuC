@@ -1068,7 +1068,7 @@ static void binary_operation(information *const info, node *const nd)
 		case LGER:
 		{
 			integral_expression(info, nd, ALOGIC);
-
+			
 			if (info->answer_type == ACONST)
 			{
 				info->answer_value_type = I32;
