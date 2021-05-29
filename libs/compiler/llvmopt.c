@@ -345,7 +345,6 @@ static int node_recursive(information *const info, node *const nd)
 					{
 						// TODO: а какая depth, если у вызова есть аргументы?
 						// это пока временное решение, с наличием агрументов будет другая реализация
-						// TODO: что-то не так при перестановке с x = func1d(); TIdent в начале выражения, а не после =
 						if (node_get_type(&child) == TCall1)
 						{
 							nd_info.depth = 2;
