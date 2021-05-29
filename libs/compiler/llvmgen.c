@@ -244,7 +244,7 @@ static void to_code_alloc_array_static(information *const info, const item_t id)
 
 	for (item_t i = 0; i < hash_get(&(info->arrays_info), id, DIMENSION); i++)
 	{
-		uni_printf(info->io, "[%" PRIitem " x ", hash_get(&(info->arrays_info), id, BORDERS + i));
+		uni_printf(info->io, "[%" PRIitem " x ", hash_get(&(info->arrays_info), id, BORDERS + (size_t)i));
 	}
 	uni_printf(info->io, "i32");
 
@@ -263,7 +263,7 @@ static void to_code_alloc_array_dynamic(information *const info, const item_t id
 	for (item_t i = 1; i < hash_get(&(info->arrays_info), id, DIMENSION); i++)
 	{
 		uni_printf(info->io, " %%.%" PRIitem " = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n", 
-			info->register_num, to_alloc, hash_get(&(info->arrays_info), id, BORDERS + i));
+			info->register_num, to_alloc, hash_get(&(info->arrays_info), id, BORDERS + (size_t)i));
 		to_alloc = info->register_num++;
 	}
 	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca i32, i32 %%.%" PRIitem ", align 4\n", id, to_alloc);	
