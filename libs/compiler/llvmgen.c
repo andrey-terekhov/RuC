@@ -16,13 +16,14 @@
 
 #include "llvmgen.h"
 #include "errors.h"
+#include "hash.h"
 #include "llvmopt.h"
 #include "tree.h"
 #include "uniprinter.h"
 
 
 #define MAX_ARRAY_DIMENSION		5
-#define MAX_ARRAY_DISPL			10000
+#define HASH_TABLE_SIZE			1024
 
 // TODO: нужно создать enum для типов и передавать его в функции to_code
 typedef enum ANSWER
@@ -39,39 +40,40 @@ typedef enum LOCATION
 	LFREE,								/**< Свободный запрос значения */
 } location_t;
 
-typedef struct array_info
+typedef enum ARRAY_INFO
 {
-	item_t dimention;							/**< Размерность массива */
-	// TODO: может лучше enum, а не 1 и 0?
-	item_t is_static;							/**< Если массив статический, то 1, иначе 0 */
-	item_t borders[MAX_ARRAY_DIMENSION];		/**< Граница массива: константы или номера регистров */
-} array_info;
+	DIMENSION,								/**< Размерность массива */
+	IS_STATIC,								/**< Если массив статический, то 1, иначе 0 */
+	BORDERS,								/**< Граница массива: константы или номера регистров */
+} array_info_t;
 
 typedef struct information
 {
-	universal_io *io;							/**< Вывод */
-	syntax *sx;									/**< Структура syntax с таблицами */
+	universal_io *io;									/**< Вывод */
+	syntax *sx;											/**< Структура syntax с таблицами */
 
-	item_t string_num;							/**< Номер строки */
-	item_t register_num;						/**< Номер регистра */
-	item_t label_num;							/**< Номер метки */
+	item_t string_num;									/**< Номер строки */
+	item_t register_num;								/**< Номер регистра */
+	item_t label_num;									/**< Номер метки */
 
-	item_t request_reg;							/**< Регистр на запрос */
-	location_t variable_location;				/**< Расположение переменной */
+	item_t request_reg;									/**< Регистр на запрос */
+	location_t variable_location;						/**< Расположение переменной */
 
-	item_t answer_reg;							/**< Регистр с ответом */
-	item_t answer_const;						/**< Константа с ответом */
-	answer_t answer_type;						/**< Тип ответа */
+	item_t answer_reg;									/**< Регистр с ответом */
+	item_t answer_const;								/**< Константа с ответом */
+	answer_t answer_type;								/**< Тип ответа */
 
-	item_t label_true;							/**< Метка перехода при true */
-	item_t label_false;							/**< Метка перехода при false */
+	item_t label_true;									/**< Метка перехода при true */
+	item_t label_false;									/**< Метка перехода при false */
 
-	array_info current_array_info;				/**< Информация о текущем объявляемом массиве */
-	// TODO: хороша ли такая форма хранения информации о массивах?
-	// С одной стороны, arrays_info очень разреженный, что плохо
-	// С другой стороны, очень удобный доступ по displ, так как оно известно при вырезках 
-	array_info arrays_info[MAX_ARRAY_DISPL];	/**< Информация о массивах. Доступ осуществляется по displ */
-	int was_dynamic;							/**< Если в функции были динамические массивы, то @c 1, иначе @c 0 */
+	item_t current_array_dimention;						/**< Размерность текущего массива */
+	item_t current_array_is_static;						/**< Если текущий массив статический, то @c 1, иначе @c 0 */
+	item_t current_array_borders[MAX_ARRAY_DIMENSION];	/**< Границы текущего массива: константы или номера регистров */
+	/**< Хеш таблица с информацией о массивах
+	 * Ключ -- displ 
+	 * Содержит размерность массива, флаг статичности и границы массива */
+	hash arrays_info;									
+	int was_dynamic;									/**< Если в функции были динамические массивы, то @c 1, иначе @c 0 */
 } information;
 
 
@@ -240,13 +242,13 @@ static void to_code_alloc_array_static(information *const info, const item_t id)
 {
 	uni_printf(info->io, " %%arr.%" PRIitem " = alloca ", id);
 
-	for (item_t i = 0; i < info->arrays_info[id].dimention; i++)
+	for (item_t i = 0; i < hash_get(&(info->arrays_info), id, DIMENSION); i++)
 	{
-		uni_printf(info->io, "[%" PRIitem " x ", info->arrays_info[id].borders[i]);
+		uni_printf(info->io, "[%" PRIitem " x ", hash_get(&(info->arrays_info), id, BORDERS + i));
 	}
 	uni_printf(info->io, "i32");
 
-	for (item_t i = 0; i < info->arrays_info[id].dimention; i++)
+	for (item_t i = 0; i < hash_get(&(info->arrays_info), id, DIMENSION); i++)
 	{
 		uni_printf(info->io, "]");
 	}
@@ -256,12 +258,12 @@ static void to_code_alloc_array_static(information *const info, const item_t id)
 static void to_code_alloc_array_dynamic(information *const info, const item_t id)
 {
 	// выделение памяти на стеке
-	item_t to_alloc = info->arrays_info[id].borders[0];
+	item_t to_alloc = hash_get(&(info->arrays_info), id, BORDERS);
 
-	for (item_t i = 1; i < info->arrays_info[id].dimention; i++)
+	for (item_t i = 1; i < hash_get(&(info->arrays_info), id, DIMENSION); i++)
 	{
 		uni_printf(info->io, " %%.%" PRIitem " = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n", 
-			info->register_num, to_alloc, info->arrays_info[id].borders[i]);
+			info->register_num, to_alloc, hash_get(&(info->arrays_info), id, BORDERS + i));
 		to_alloc = info->register_num++;
 	}
 	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca i32, i32 %%.%" PRIitem ", align 4\n", id, to_alloc);	
@@ -1199,8 +1201,8 @@ static void block(information *const info, node *const nd)
 				const item_t N = node_get_arg(nd, 0);
 
 				node_set_next(nd);
-				info->current_array_info.dimention = N;
-				info->current_array_info.is_static = 1;
+				info->current_array_dimention = N;
+				info->current_array_is_static = 1;
 				for (item_t i = 0; i < N; i++)
 				{
 					info->variable_location = LFREE;
@@ -1211,12 +1213,12 @@ static void block(information *const info, node *const nd)
 					// но об этом потом
 					if (info->answer_type == ACONST)
 					{
-						info->current_array_info.borders[i] = info->answer_const;
+						info->current_array_borders[i] = info->answer_const;
 					}
 					else // if (info->answer_type == ARER) динамический массив
 					{
-						info->current_array_info.borders[i] = info->answer_reg;
-						info->current_array_info.is_static = 0;
+						info->current_array_borders[i] = info->answer_reg;
+						info->current_array_is_static = 0;
 					}			
 				}
 			}
@@ -1244,8 +1246,15 @@ static void block(information *const info, node *const nd)
 				}
 				else // массивы
 				{
-					info->arrays_info[displ] = info->current_array_info;
-					if (info->current_array_info.is_static)
+					hash_add(&(info->arrays_info), displ, 2 + MAX_ARRAY_DIMENSION);
+					hash_set(&(info->arrays_info), displ, DIMENSION, info->current_array_dimention);
+					hash_set(&(info->arrays_info), displ, IS_STATIC, info->current_array_is_static);
+					for (int i = 0; i < info->current_array_dimention; i++)
+					{
+						hash_set(&(info->arrays_info), displ, BORDERS + i, info->current_array_borders[i]);
+					}
+
+					if (info->current_array_is_static)
 					{
 						to_code_alloc_array_static(info, displ);
 					}
@@ -1291,6 +1300,7 @@ static int codegen(universal_io *const io, syntax *const sx)
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
+	info.arrays_info = hash_create(HASH_TABLE_SIZE);
 
 	int was_stack_functions = 0;
 	node root = node_get_root(&sx->tree);
