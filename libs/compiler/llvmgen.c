@@ -40,7 +40,7 @@ typedef enum LOCATION
 	LFREE,								/**< Свободный запрос значения */
 } location_t;
 
-// TODO: надо везде следить за типом
+// TODO: за типом ответа пока следится только в TIdenttoval и TIdenttovald, а надо везде
 typedef enum TYPES
 {
 	I32,								/**< int */
@@ -97,51 +97,6 @@ static double to_double(const int64_t fst, const int64_t snd)
 	memcpy(&numdouble, &num, sizeof(double));
 	
 	return numdouble;
-}
-// TODO: по-хорошему, подобное Илья должен был сделать и не в рамках кодогенератора, надо бы ему напомнить
-static int is_double(const item_t operation)
-{
-	switch (operation)
-	{
-		case ASSR:
-		case PLUSASSR:
-		case MINUSASSR:
-		case MULTASSR:
-		case DIVASSR:
-
-		case ASSATR:
-		case PLUSASSATR:
-		case MINUSASSATR:
-		case MULTASSATR:
-		case DIVASSATR:
-
-		case ASSRV:
-		case PLUSASSRV:
-		case MINUSASSRV:
-		case MULTASSRV:
-		case DIVASSRV:
-
-		case ASSATRV:
-		case PLUSASSATRV:
-		case MINUSASSATRV:
-		case MULTASSATRV:
-		case DIVASSATRV:
-
-		case EQEQR:
-		case NOTEQR:
-		case LLTR:
-		case LGTR:
-		case LLER:
-		case LGER:
-		case LPLUSR:
-		case LMINUSR:
-		case LMULTR:
-		case LDIVR:
-			return 1;
-	
-		default:
-			return 0;
-	}
 }
 
 static void type_to_io(universal_io *const io, const type_t type)
@@ -229,7 +184,6 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case LOR:
 			uni_printf(io, "or");
 			break;
-
 		case EQEQ:
 			uni_printf(io, "icmp eq");
 			break;
@@ -248,50 +202,21 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case LGE:
 			uni_printf(io, "icmp sge");
 			break;
-
-		case PLUSASSR:
-		case PLUSASSRV:
-			uni_printf(io, "fadd");
-			break;
-
-		case MINUSASSR:
-		case MINUSASSRV:
-			uni_printf(io, "fsub");
-			break;
-
-		case MULTASSR:
-		case MULTASSRV:
-			uni_printf(io, "fmul");
-			break;
-		
-		case DIVASSR:
-		case DIVASSRV:
-			uni_printf(io, "fdiv");
-			break;
 	}
 }
 
-static void to_code_operation_reg_reg(information *const info, item_t operation_type, item_t fst, item_t snd, type_t type)
+static void to_code_operation_reg_reg(information *const info, item_t type, item_t fst, item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->io, operation_type);
-	uni_printf(info->io, " ");
-	type_to_io(info->io, type);
-	uni_printf(info->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
+	operation_to_io(info->io, type);
+	uni_printf(info->io, " i32 %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_operation_reg_const_i32(information *const info, item_t type, item_t fst, item_t snd)
+static void to_code_operation_reg_const(information *const info, item_t type, item_t fst, item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, type);
 	uni_printf(info->io, " i32 %%.%" PRIitem ", %" PRIitem "\n", fst, snd);
-}
-
-static void to_code_operation_reg_const_double(information *const info, item_t type, item_t fst, double snd)
-{
-	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->io, type);
-	uni_printf(info->io, " double %%.%" PRIitem ", %f\n", fst, snd);
 }
 
 static void to_code_operation_const_reg(information *const info, item_t type, item_t fst, item_t snd)
@@ -415,7 +340,7 @@ static void check_type_and_branch(information *const info)
 			break;
 		case AREG:
 		{
-			to_code_operation_reg_const_i32(info, NOTEQ, info->answer_reg, 0);
+			to_code_operation_reg_const(info, NOTEQ, info->answer_reg, 0);
 			info->answer_reg = info->register_num++;
 		}
 		case ALOGIC:
@@ -571,8 +496,7 @@ static void operand(information *const info, node *const nd)
 			break;
 	}
 }
-// TODO: сейчас тут зависимость по типу от типа выражения справа
-// а если слева double, а справа int? или обработка widen всё исправит? надо потестить
+
 static void assignment_expression(information *const info, node *const nd)
 {
 	const item_t displ = node_get_arg(nd, 0);
@@ -590,28 +514,16 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (assignment_type != ASS && assignment_type != ASSV && assignment_type != ASSR && assignment_type != ASSRV)
 	{
-		if (is_double(assignment_type))
-		{
-			to_code_load(info, info->register_num, displ, DOUBLE);
-		}
-		else
-		{
-			to_code_load(info, info->register_num, displ, I32);
-		}
-		
+		to_code_load(info, info->register_num, displ, I32);
 		info->register_num++;
 
 		if (info->answer_type == AREG)
 		{
-			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg, info->answer_value_type);
+			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg);
 		}
-		else if (info->answer_value_type == I32)// ACONST
+		else // ACONST
 		{
-			to_code_operation_reg_const_i32(info, assignment_type, info->register_num - 1, info->answer_const);
-		}
-		else
-		{
-			to_code_operation_reg_const_double(info, assignment_type, info->register_num - 1, info->answer_const_double);
+			to_code_operation_reg_const(info, assignment_type, info->register_num - 1, info->answer_const);
 		}
 			
 		result = info->register_num++;
@@ -619,7 +531,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (info->answer_type == AREG || (assignment_type != ASS && assignment_type != ASSV && assignment_type != ASSR && assignment_type != ASSRV))
 	{
-		to_code_store_reg(info, result, displ, info->answer_value_type);
+		to_code_store_reg(info, result, displ, info->answer_value_type); // TODO: правильно ли тут с типом, надо потестить
 	}
 	else // ACONST && =
 	{
@@ -659,11 +571,11 @@ static void arithmetic_expression(information *const info, node *const nd)
 
 	if (left_type == AREG && right_type == AREG)
 	{
-		to_code_operation_reg_reg(info, operation_type, left_reg, right_reg, I32);
+		to_code_operation_reg_reg(info, operation_type, left_reg, right_reg);
 	}
 	else if (left_type == AREG && right_type == ACONST)
 	{
-		to_code_operation_reg_const_i32(info, operation_type, left_reg, right_const);
+		to_code_operation_reg_const(info, operation_type, left_reg, right_const);
 	}
 	else if (left_type == ACONST && right_type == AREG)
 	{
@@ -755,7 +667,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 		case POSTINCV:
 		case POSTDEC:
 		case POSTDECV:
-			to_code_operation_reg_const_i32(info, operation_type, info->register_num - 1, 1);
+			to_code_operation_reg_const(info, operation_type, info->register_num - 1, 1);
 			break;
 	}
 
@@ -842,15 +754,6 @@ static void binary_operation(information *const info, node *const nd)
 
 		case ASSR:
 		case ASSRV:
-
-		case PLUSASSR:
-		case PLUSASSRV:
-		case MINUSASSR:
-		case MINUSASSRV:
-		case MULTASSR:
-		case MULTASSRV:
-		case DIVASSR:
-		case DIVASSRV:
 			assignment_expression(info, nd);
 			break;
 
