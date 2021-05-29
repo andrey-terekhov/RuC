@@ -632,7 +632,7 @@ static void unary_operation(information *const info, node *const nd)
 			node_set_next(nd);
 			expression(info, nd);
 		}
-			break;
+		break;
 		// TODO: забыл сделать битовое отрицание, нужно доделать
 		default:
 		{
