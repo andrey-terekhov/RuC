@@ -137,25 +137,6 @@ static int is_double(const item_t operation)
 		case LMINUSR:
 		case LMULTR:
 		case LDIVR:
-
-		case POSTINCR:
-		case POSTDECR:
-		case INCR:
-		case DECR:
-		case POSTINCATR:
-		case POSTDECATR:
-		case INCATR:
-		case DECATR:
-		case POSTINCRV:
-		case POSTDECRV:
-		case INCRV:
-		case DECRV:
-		case POSTINCATRV:
-		case POSTDECATRV:
-		case INCATRV:
-		case DECATRV:
-
-		case UNMINUSR:
 			return 1;
 	
 		default:
@@ -269,20 +250,12 @@ static void operation_to_io(universal_io *const io, const item_t type)
 			uni_printf(io, "icmp sge");
 			break;
 
-		case INCR:
-		case INCRV:
-		case POSTINCR:
-		case POSTINCRV:
 		case PLUSASSR:
 		case PLUSASSRV:
 		case LPLUSR:
 			uni_printf(io, "fadd");
 			break;
 
-		case DECR:
-		case DECRV:
-		case POSTDECR:
-		case POSTDECRV:
 		case MINUSASSR:
 		case MINUSASSRV:
 		case LMINUSR:
@@ -825,16 +798,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 	node_set_next(nd);
 	node_set_next(nd); // TIdent
 
-	if (is_double(operation_type))
-	{
-		info->answer_value_type = DOUBLE;
-	}
-	else
-	{
-		info->answer_value_type = I32;
-	}
-
-	to_code_load(info, info->register_num, displ, info->answer_value_type);
+	to_code_load(info, info->register_num, displ, I32);
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 	
@@ -851,21 +815,9 @@ static void inc_dec_expression(information *const info, node *const nd)
 		case POSTDECV:
 			to_code_operation_reg_const_i32(info, operation_type, info->register_num - 1, 1);
 			break;
-
-		case INCR:
-		case INCRV:
-		case DECR:
-		case DECRV:
-			info->answer_reg = info->register_num;
-		case POSTINCR:
-		case POSTINCRV:
-		case POSTDECR:
-		case POSTDECRV:
-			to_code_operation_reg_const_double(info, operation_type, info->register_num - 1, 1.0);
-			break;
 	}
 
-	to_code_store_reg(info, info->register_num, displ, info->answer_value_type);
+	to_code_store_reg(info, info->register_num, displ, I32);
 	info->register_num++;
 }
 
@@ -881,15 +833,6 @@ static void unary_operation(information *const info, node *const nd)
 		case INCV:
 		case DEC:
 		case DECV:
-
-		case POSTINCR:
-		case POSTINCRV:
-		case POSTDECR:
-		case POSTDECRV:
-		case INCR:
-		case INCRV:
-		case DECR:
-		case DECRV:
 			inc_dec_expression(info, nd);
 			break;
 		case UNMINUS:
