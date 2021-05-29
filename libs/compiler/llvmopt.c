@@ -303,27 +303,20 @@ static int node_recursive(information *const info, node *const nd)
 			break;
 			case TPrintf:
 			{
-				size_t N = (size_t)node_get_arg(&child, 0);
+				const size_t N = (size_t)node_get_arg(&child, 0);
 				// перестановка TPrintf
+				// TODO: подумать, как для всех типов работать будет
 				for (size_t j = 0; j < N + 1; j++)
 				{
 					node_swap(nd, i - j, nd, i - j - 1);
-
-					node child_to_swap = node_get_child(nd, i - j);
-					if (node_get_type(&child_to_swap) == TIdenttovald)
-					{
-						N--;
-					}
 				}
 
 				// перестановка TString
+				// TODO: подумать, как для всех типов работать будет
 				for (size_t j = 0; j < N; j++)
 				{
 					node_swap(nd, i - j, nd, i - j - 1);
 				}
-
-				node printf_node = node_get_child(nd, i - N - 1);
-				node_set_arg(&printf_node, 0, N);
 
 				info->was_printf = 1;
 			}
