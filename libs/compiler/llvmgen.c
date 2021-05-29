@@ -69,9 +69,8 @@ typedef struct information
 
 	item_t answer_reg;							/**< Регистр с ответом */
 	item_t answer_const;						/**< Константа с ответом */
-	double answer_const_double;					/**< Константа с ответом типа double */
 	answer_t answer_type;						/**< Тип ответа */
-	type_t answer_value_type;					/**< Тип значения */
+	type_t answer_reg_type;						/**< Тип значения в регистре */
 
 	item_t label_true;							/**< Метка перехода при true */
 	item_t label_false;							/**< Метка перехода при false */
@@ -235,13 +234,9 @@ static void to_code_load(information *const info, item_t result, item_t displ, t
 	uni_printf(info->io, "* %%var.%" PRIitem ", align 4\n", displ);
 }
 
-static void to_code_store_reg(information *const info, item_t reg, item_t displ, type_t type)
+static inline void to_code_store_reg(information *const info, item_t reg, item_t displ)
 {
-	uni_printf(info->io, " store ");
-	type_to_io(info->io, type);
-	uni_printf(info->io, " %%.%" PRIitem ", ", reg);
-	type_to_io(info->io, type);
-	uni_printf(info->io, "* %%var.%" PRIitem ", align 4\n", displ);
+	uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", reg, displ);
 }
 
 static inline void to_code_store_const_i32(information *const info, item_t arg, item_t displ)
@@ -249,9 +244,9 @@ static inline void to_code_store_const_i32(information *const info, item_t arg, 
 	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", arg, displ);
 }
 
-static void to_code_store_const_double(information *const info, double arg, item_t displ)
+static void to_code_store_const_double(information *const info, item_t arg1, item_t arg2, item_t displ)
 {
-	uni_printf(info->io, " store double %f, double* %%var.%" PRIitem ", align 4\n", arg, displ);
+	uni_printf(info->io, " store double %f, double* %%var.%" PRIitem ", align 4\n", to_double(arg1, arg2), displ);
 }
 
 static void to_code_try_zext_to(information *const info)
@@ -371,7 +366,7 @@ static void operand(information *const info, node *const nd)
 			to_code_load(info, info->register_num, displ, I32);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
-			info->answer_value_type = I32;
+			info->answer_reg_type = I32;
 			node_set_next(nd);
 		}
 		break;
@@ -382,7 +377,7 @@ static void operand(information *const info, node *const nd)
 			to_code_load(info, info->register_num, displ, DOUBLE);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
-			info->answer_value_type = DOUBLE;
+			info->answer_reg_type = DOUBLE;
 			node_set_next(nd);
 		}
 		break;
@@ -399,7 +394,6 @@ static void operand(information *const info, node *const nd)
 			{
 				info->answer_type = ACONST;
 				info->answer_const = num;
-				info->answer_value_type = I32;
 			}
 
 			node_set_next(nd);
@@ -407,18 +401,14 @@ static void operand(information *const info, node *const nd)
 		break;
 		case TConstd:
 		{
-			const double num = to_double(node_get_arg(nd, 0), node_get_arg(nd, 1));
-
 			if (info->variable_location == LMEM)
 			{
-				to_code_store_const_double(info, num, info->request_reg);
+				to_code_store_const_double(info, node_get_arg(nd, 0), node_get_arg(nd, 1), info->request_reg);
 				info->answer_type = AREG;
 			}
 			else
 			{
-				info->answer_type = ACONST;
-				info->answer_const_double = num;
-				info->answer_value_type = DOUBLE;
+				// TODO: обработать этот случай аналогично TConst
 			}
 
 			node_set_next(nd);
@@ -512,7 +502,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 	item_t result = info->answer_reg;
 
-	if (assignment_type != ASS && assignment_type != ASSV && assignment_type != ASSR && assignment_type != ASSRV)
+	if (assignment_type != ASS && assignment_type != ASSV)
 	{
 		to_code_load(info, info->register_num, displ, I32);
 		info->register_num++;
@@ -529,20 +519,13 @@ static void assignment_expression(information *const info, node *const nd)
 		result = info->register_num++;
 	}
 
-	if (info->answer_type == AREG || (assignment_type != ASS && assignment_type != ASSV && assignment_type != ASSR && assignment_type != ASSRV))
+	if (info->answer_type == AREG || (assignment_type != ASS && assignment_type != ASSV))
 	{
-		to_code_store_reg(info, result, displ, info->answer_value_type); // TODO: правильно ли тут с типом, надо потестить
+		to_code_store_reg(info, result, displ);
 	}
 	else // ACONST && =
 	{
-		if (info->answer_value_type == I32)
-		{
-			to_code_store_const_i32(info, info->answer_const, displ);
-		}
-		else // if (info->answer_value_type == DOUBLE)
-		{
-			to_code_store_const_double(info, info->answer_const_double, displ);
-		}
+		to_code_store_const_i32(info, info->answer_const, displ);
 	}
 }
 
@@ -671,7 +654,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, displ, I32);
+	to_code_store_reg(info, info->register_num, displ);
 	info->register_num++;
 }
 
@@ -751,9 +734,6 @@ static void binary_operation(information *const info, node *const nd)
 		case EXORASSV:
 		case ORASS:
 		case ORASSV:
-
-		case ASSR:
-		case ASSRV:
 			assignment_expression(info, nd);
 			break;
 
@@ -1229,7 +1209,7 @@ static void statement(information *const info, node *const nd)
 				info->variable_location = LREG;
 				expression(info, nd);
 				args[i] = info->answer_reg;
-				args_type[i] = info->answer_value_type;
+				args_type[i] = info->answer_reg_type;
 			}
 
 			uni_printf(info->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
@@ -1383,7 +1363,7 @@ static int codegen(universal_io *const io, syntax *const sx)
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
-	info.answer_value_type = I32;
+	info.answer_reg_type = I32;
 
 	node root = node_get_root(&sx->tree);
 	int was_stack_functions = 0;
