@@ -81,6 +81,7 @@ typedef struct information
 	// С одной стороны, arrays_info очень разреженный, что плохо
 	// С другой стороны, очень удобный доступ по displ, так как оно известно при вырезках 
 	array_info arrays_info[MAX_ARRAY_DISPL];	/**< Информация о массивах. Доступ осуществляется по displ */
+	// TODO: может лучше enum, а не 1 и 0?
 	int was_dynamic;							/**< Если в функции были динамические массивы, то @c 1, иначе @c 0 */
 } information;
 
@@ -415,7 +416,7 @@ static inline void to_code_conditional_branch(information *const info, item_t re
 		reg, label_true, label_false);
 }
 
-static void to_code_alloc_array_static(information *const info, const item_t id, type_t type)
+static void to_code_alloc_array_static(information *const info, item_t id, type_t type)
 {
 	uni_printf(info->io, " %%arr.%" PRIitem " = alloca ", id);
 
@@ -433,7 +434,7 @@ static void to_code_alloc_array_static(information *const info, const item_t id,
 	uni_printf(info->io, ", align 4\n");
 }
 
-static void to_code_alloc_array_dynamic(information *const info, const item_t id)
+static void to_code_alloc_array_dynamic(information *const info, item_t id)
 {
 	// выделение памяти на стеке
 	item_t to_alloc = info->arrays_info[id].borders[0];
@@ -701,7 +702,7 @@ static void assignment_expression(information *const info, node *const nd)
 	}
 }
 
-static void integral_expression(information *const info, node *const nd, const answer_t type)
+static void arithmetic_expression(information *const info, node *const nd)
 {
 	const item_t operation_type = node_get_type(nd);
 	node_set_next(nd);
@@ -860,7 +861,7 @@ static void integral_expression(information *const info, node *const nd, const a
 	}
 	
 	info->answer_reg = info->register_num++;
-	info->answer_type = type;
+	info->answer_type = AREG;
 }
 
 // Обрабатываются операции инкремента/декремента и постинкремента/постдекремента
@@ -979,7 +980,7 @@ static void unary_operation(information *const info, node *const nd)
 			node_set_next(nd);
 			expression(info, nd);
 		}
-		break;
+			break;
 		default:
 		{
 			node_set_next(nd);
@@ -1049,7 +1050,7 @@ static void binary_operation(information *const info, node *const nd)
 		case LMINUSR:
 		case LMULTR:
 		case LDIVR:
-			integral_expression(info, nd, AREG);
+			arithmetic_expression(info, nd);
 		break;
 
 
@@ -1067,9 +1068,12 @@ static void binary_operation(information *const info, node *const nd)
 		case LLER:
 		case LGER:
 		{
-			integral_expression(info, nd, ALOGIC);
-			
-			if (info->answer_type == ACONST)
+			arithmetic_expression(info, nd);
+			if (info->answer_type == AREG)
+			{
+				info->answer_type = ALOGIC;
+			}
+			else // ACONST 
 			{
 				info->answer_value_type = I32;
 			}
@@ -1081,8 +1085,8 @@ static void binary_operation(information *const info, node *const nd)
 		case LOGAND:
 		{
 			const item_t label_next = info->label_num++;
-			const item_t old_label_true = info->label_true;
-			const item_t old_label_false = info->label_false;
+			const item_t old_label_if = info->label_true;
+			const item_t old_label_else = info->label_false;
 
 			if (node_get_type(nd) == LOGOR)
 			{
@@ -1104,8 +1108,8 @@ static void binary_operation(information *const info, node *const nd)
 			}
 
 			to_code_label(info, label_next);
-			info->label_true = old_label_true;
-			info->label_false = old_label_false;
+			info->label_true = old_label_if;
+			info->label_false = old_label_else;
 
 			expression(info, nd);
 		}
@@ -1304,8 +1308,8 @@ static void statement(information *const info, node *const nd)
 		case TIf:
 		{
 			const item_t ref_else = node_get_arg(nd, 0);
-			const item_t old_label_true = info->label_true;
-			const item_t old_label_false = info->label_false;
+			const item_t old_label_if = info->label_true;
+			const item_t old_label_else = info->label_false;
 			const item_t label_if = info->label_num++;
 			const item_t label_else = info->label_num++;
 			const item_t label_end = info->label_num++;
@@ -1332,8 +1336,8 @@ static void statement(information *const info, node *const nd)
 			to_code_unconditional_branch(info, label_end);
 			to_code_label(info, label_end);
 
-			info->label_true = old_label_true;
-			info->label_false = old_label_false;
+			info->label_true = old_label_if;
+			info->label_false = old_label_else;
 		}
 		break;
 		case TSwitch:
@@ -1347,8 +1351,8 @@ static void statement(information *const info, node *const nd)
 		break;
 		case TWhile:
 		{
-			const item_t old_label_true = info->label_true;
-			const item_t old_label_false = info->label_false;
+			const item_t old_label_if = info->label_true;
+			const item_t old_label_else = info->label_false;
 			const item_t label_condition = info->label_num++;
 			const item_t label_body = info->label_num++;
 			const item_t label_end = info->label_num++;
@@ -1369,14 +1373,14 @@ static void statement(information *const info, node *const nd)
 			to_code_unconditional_branch(info, label_condition);
 			to_code_label(info, label_end);
 
-			info->label_true = old_label_true;
-			info->label_false = old_label_false;
+			info->label_true = old_label_if;
+			info->label_false = old_label_else;
 		}
 		break;
 		case TDo:
 		{
-			const item_t old_label_true = info->label_true;
-			const item_t old_label_false = info->label_false;
+			const item_t old_label_if = info->label_true;
+			const item_t old_label_else = info->label_false;
 			const item_t label_loop = info->label_num++;
 			const item_t label_end = info->label_num++;
 
@@ -1395,8 +1399,8 @@ static void statement(information *const info, node *const nd)
 
 			to_code_label(info, label_end);
 
-			info->label_true = old_label_true;
-			info->label_false = old_label_false;
+			info->label_true = old_label_if;
+			info->label_false = old_label_else;
 		}
 		break;
 		// TODO: проверялось, только если в for присутствуют все блоки: инициализация, условие, модификация
@@ -1406,8 +1410,8 @@ static void statement(information *const info, node *const nd)
 			const item_t ref_from = node_get_arg(nd, 0);
 			const item_t ref_cond = node_get_arg(nd, 1);
 			const item_t ref_incr = node_get_arg(nd, 2);
-			const item_t old_label_true = info->label_true;
-			const item_t old_label_false = info->label_false;
+			const item_t old_label_if = info->label_true;
+			const item_t old_label_else = info->label_false;
 			const item_t label_condition = info->label_num++;
 			const item_t label_body = info->label_num++;
 			const item_t label_incr = info->label_num++;
@@ -1445,8 +1449,8 @@ static void statement(information *const info, node *const nd)
 			to_code_unconditional_branch(info, label_incr);
 			to_code_label(info, label_end);
 
-			info->label_true = old_label_true;
-			info->label_false = old_label_false;
+			info->label_true = old_label_if;
+			info->label_false = old_label_else;
 		}
 		break;
 		case TLabel:
@@ -1690,8 +1694,8 @@ static int codegen(universal_io *const io, syntax *const sx)
 	info.answer_reg = 0;
 	info.answer_value_type = I32;
 
-	int was_stack_functions = 0;
 	node root = node_get_root(&sx->tree);
+	int was_stack_functions = 0;
 	while (node_set_next(&root) == 0)
 	{
 		switch (node_get_type(&root))
