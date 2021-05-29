@@ -221,7 +221,6 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case EXORASS:
 		case EXORASSV:
 		case LEXOR:
-		case LNOT:
 			uni_printf(io, "xor");
 			break;
 
@@ -836,9 +835,7 @@ static void unary_operation(information *const info, node *const nd)
 			inc_dec_expression(info, nd);
 			break;
 		case UNMINUS:
-		case LNOT:
 		{
-			const item_t operation_type = node_get_type(nd);
 			node_set_next(nd);
 
 			info->variable_location = LREG;
@@ -846,15 +843,7 @@ static void unary_operation(information *const info, node *const nd)
 
 			to_code_try_zext_to(info);
 
-			if (operation_type == UNMINUS)
-			{
-				to_code_operation_const_reg_i32(info, UNMINUS, 0, info->answer_reg);
-			}
-			else // LNOT
-			{
-				to_code_operation_reg_const_i32(info, LNOT, info->answer_reg, -1);
-			}
-
+			to_code_operation_const_reg_i32(info, UNMINUS, 0, info->answer_reg);
 			info->answer_type = AREG;
 			info->answer_reg = info->register_num++;
 		}
@@ -869,6 +858,7 @@ static void unary_operation(information *const info, node *const nd)
 			expression(info, nd);
 		}
 			break;
+		// TODO: забыл сделать битовое отрицание, нужно доделать
 		default:
 		{
 			node_set_next(nd);
