@@ -1206,10 +1206,10 @@ static void block(information *const info, node *const nd)
 				}
 
 				const item_t displ = node_get_arg(&id, 0);
-				const size_t index = hash_add(&info->arrays, displ, 1 + N);
+				const size_t index = hash_add(&info->arrays, displ, 1 + (size_t)N);
 
 				node_set_next(nd);
-				for (item_t i = 0; i < N; i++)
+				for (size_t i = 0; i < (size_t)N; i++)
 				{
 					info->variable_location = LFREE;
 					expression(info, nd);
