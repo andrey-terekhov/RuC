@@ -133,14 +133,14 @@ static void final_operation(virtual *const vm, node *const nd)
 	{
 		if (op != ND_NULL)
 		{
-			if (op == ND_ADLOGOR)
+			if (op == ND_AD_LOG_OR)
 			{
 				mem_add(vm, IC__DOUBLE);
 				mem_add(vm, IC_BNE0);
 				stack_push(&vm->stk, (item_t)mem_size(vm));
 				mem_increase(vm, 1);
 			}
-			else if (op == ND_ADLOGAND)
+			else if (op == ND_AD_LOG_AND)
 			{
 				mem_add(vm, IC__DOUBLE);
 				mem_add(vm, IC_BE0);
@@ -150,7 +150,7 @@ static void final_operation(virtual *const vm, node *const nd)
 			else
 			{
 				mem_add(vm, (instruction_t)op);
-				if (op == ND_LOGOR || op == ND_LOGAND)
+				if (op == ND_LOG_OR || op == ND_LOG_AND)
 				{
 					mem_set(vm, (size_t)stack_pop(&vm->stk), (item_t)mem_size(vm));
 				}
@@ -160,16 +160,16 @@ static void final_operation(virtual *const vm, node *const nd)
 					mem_add(vm, node_get_arg(nd, 1)); // d2
 					mem_add(vm, node_get_arg(nd, 2)); // длина
 				}
-				else if (op == ND_COPY01 || op == ND_COPY10 || op == ND_COPY0ST || op == ND_COPY0STASSIGN)
+				else if (op == ND_COPY01 || op == ND_COPY10 || op == ND_COPY0ST || op == ND_COPY0ST_ASSIGN)
 				{
 					mem_add(vm, node_get_arg(nd, 0)); // d1
 					mem_add(vm, node_get_arg(nd, 1)); // длина
 				}
-				else if (op == ND_COPY11 || op == ND_COPY1ST || op == ND_COPY1STASSIGN)
+				else if (op == ND_COPY11 || op == ND_COPY1ST || op == ND_COPY1ST_ASSIGN)
 				{
 					mem_add(vm, node_get_arg(nd, 0)); // длина
 				}
-				else if (node_is_assignment_operator(op))
+				else if (node_is_assignment(op))
 				{
 					mem_add(vm, node_get_arg(nd, 0));
 				}
@@ -196,7 +196,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 		node_set_next(nd);
 	}
 
-	while (node_get_type(nd) != ND_EXPRESSION_END)
+	while (node_get_type(nd) != ND_EXPR_END)
 	{
 		const node_t operation = node_get_type(nd);
 		int was_operation = 1;
@@ -205,28 +205,28 @@ static void expression(virtual *const vm, node *const nd, int mode)
 		{
 			case ND_IDENT:
 				break;
-			case ND_IDENTTOADDR:
+			case ND_IDENT_TO_ADDR:
 			{
 				mem_add(vm, IC_LA);
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
-			case ND_IDENTTOVAL:
+			case ND_IDENT_TO_VAL:
 			{
 				mem_add(vm, IC_LOAD);
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
-			case ND_IDENTTOVALD:
+			case ND_IDENT_TO_VAL_D:
 			{
 				mem_add(vm, IC_LOADD);
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
-			case ND_ADDRTOVAL:
+			case ND_ADDR_TO_VAL:
 				mem_add(vm, IC_LAT);
 				break;
-			case ND_ADDRTOVALD:
+			case ND_ADDR_TO_VAL_D:
 				mem_add(vm, IC_LATD);
 				break;
 			case ND_CONST:
@@ -235,7 +235,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
-			case ND_CONSTD:
+			case ND_CONST_D:
 			{
 				mem_add(vm, IC_LID);
 				mem_add(vm, node_get_arg(nd, 0));
@@ -291,7 +291,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 				}
 			}
 			break;
-			case ND_SLICEIDENT:
+			case ND_SLICE_IDENT:
 			{
 				mem_add(vm, IC_LOAD); // параметры - смещение идента и тип элемента
 				mem_add(vm, node_get_arg(nd, 0)); // продолжение в след case
@@ -554,11 +554,11 @@ static void statement(virtual *const vm, node *const nd)
 	{
 		case ND_NULL:
 			break;
-		case ND_CREATEDIRECT:
+		case ND_CREATE_DIRECT:
 			mem_add(vm, IC_CREATEDIRECT);
 			vm->max_threads++;
 			break;
-		case ND_EXITDIRECT:
+		case ND_EXIT_DIRECT:
 			mem_add(vm, IC_EXITDIRECT);
 			break;
 		case ND_BLOCK:

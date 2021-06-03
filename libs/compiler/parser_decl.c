@@ -369,7 +369,7 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
 	} while (actual_fields != expected_fields && prs->token != TK_SEMICOLON);
 
 	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
-	to_tree(prs, ND_EXPRESSION_END);
+	to_tree(prs, ND_EXPR_END);
 }
 
 /**
@@ -393,7 +393,7 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 			prs->flag_strings_only = 1;
 		}
 		parse_string_literal(prs, parent);
-		to_tree(prs, ND_EXPRESSION_END);
+		to_tree(prs, ND_EXPR_END);
 		return;
 	}
 
@@ -429,7 +429,7 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 
 	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
 	node_set_arg(&beginit, 0, (item_t)list_length);
-	to_tree(prs, ND_EXPRESSION_END);
+	to_tree(prs, ND_EXPR_END);
 }
 
 /**

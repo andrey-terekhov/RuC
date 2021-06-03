@@ -474,9 +474,9 @@ void parse_return_statement(parser *const prs, node *const parent)
 /**	Parse t_create_direct statement [RuC] */
 void parse_create_direct_statement(parser *const prs, node *const parent)
 {
-	node nd_create = node_add_child(parent, ND_CREATEDIRECT);
+	node nd_create = node_add_child(parent, ND_CREATE_DIRECT);
 	parse_statement_compound(prs, &nd_create, THREAD);
-	node_add_child(&nd_create, ND_EXITDIRECT);
+	node_add_child(&nd_create, ND_EXIT_DIRECT);
 }
 
 /**	Parse printid statement [RuC] */
@@ -522,10 +522,10 @@ void parse_print_statement(parser *const prs, node *const parent)
 		parser_error(prs, pointer_in_print);
 	}
 
-	// Сейчас последней нодой в поддереве выражения является ND_EXPRESSION_END, просто меняем ее тип
+	// Сейчас последней нодой в поддереве выражения является ND_EXPR_END, просто меняем ее тип
 	node_set_type(&prs->nd, ND_PRINT);
 	node_add_arg(&prs->nd, type);
-	to_tree(prs, ND_EXPRESSION_END);
+	to_tree(prs, ND_EXPR_END);
 
 	token_expect_and_consume(prs, TK_R_PAREN, print_without_br);
 	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
@@ -682,7 +682,7 @@ void parse_printf_statement(parser *const prs, node *const parent)
 	{
 		node_add_arg(&nd_string, format_str[i]);
 	}
-	node_add_child(&nd_string, ND_EXPRESSION_END);
+	node_add_child(&nd_string, ND_EXPR_END);
 
 	node nd_printf = node_add_child(parent, ND_PRINTF);
 	node_add_arg(&nd_printf, (item_t)sum_size);
