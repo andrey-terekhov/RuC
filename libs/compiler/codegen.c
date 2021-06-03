@@ -129,7 +129,7 @@ static void addr_end_break(virtual *const vm)
 static void final_operation(virtual *const vm, node *const nd)
 {
 	node_t op = node_get_type(nd);
-	while (op >= FINAL_OPERATION_START && op <= FINAL_OPERATION_END)
+	while (op >= BEGIN_FINAL_OPERATION && op <= END_FINAL_OPERATION)
 	{
 		if (op != ND_NULL)
 		{
@@ -149,7 +149,7 @@ static void final_operation(virtual *const vm, node *const nd)
 			}
 			else
 			{
-				mem_add(vm, node_to_instruction(op));
+				mem_add(vm, (instruction_t)op);
 				if (op == ND_LOGOR || op == ND_LOGAND)
 				{
 					mem_set(vm, (size_t)stack_pop(&vm->stk), (item_t)mem_size(vm));
