@@ -339,6 +339,10 @@ static int node_recursive(information *const info, node *const nd)
 				if (info->slice_depth == 0)
 				{
 					stack_clear(info, 0);
+					if (info->last_depth > 1)
+					{
+						info->last_depth--;
+					}
 				}
 				// если вырезка не переставлена, то надо изменить глубину
 				else if (info->last_depth <= 1)
