@@ -16,7 +16,7 @@
 
 #include "parser.h"
 
-#define MAXPRINTFPARAMS 20
+#define MAX_PRINTF_ARGS 20
 
 
 /** Check if current token is part of a declaration specifier */
@@ -573,9 +573,9 @@ size_t evaluate_args(parser *const prs, const size_t length, const char32_t *con
 			const char32_t placeholder = format_str[++i];
 			if (placeholder != '%')
 			{
-				if (args == MAXPRINTFPARAMS)
+				if (args == MAX_PRINTF_ARGS)
 				{
-					parser_error(prs, too_many_printf_params, MAXPRINTFPARAMS);
+					parser_error(prs, too_many_printf_params, MAX_PRINTF_ARGS);
 					return 0;
 				}
 
@@ -627,9 +627,9 @@ void parse_scanf_statement(parser *const prs, node *const parent);
 void parse_printf_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_printf
-	char32_t placeholders[MAXPRINTFPARAMS];
-	char32_t format_str[MAXSTRINGL + 1];
-	item_t format_types[MAXPRINTFPARAMS];
+	char32_t placeholders[MAX_PRINTF_ARGS];
+	char32_t format_str[MAX_STRING_LENGTH + 1];
+	item_t format_types[MAX_PRINTF_ARGS];
 	size_t sum_size = 0;
 
 	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_printf);

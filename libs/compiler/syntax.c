@@ -20,6 +20,7 @@
 #include "tokens.h"
 #include "old_tree.h"
 
+
 const size_t REPRESENTATIONS_SIZE = 10000;
 const size_t IDENTIFIERS_SIZE = 10000;
 const size_t FUNCTIONS_SIZE = 100;
@@ -29,7 +30,7 @@ const size_t TREE_SIZE = 10000;
 
 void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
 {
-	char32_t buffer[MAXSTRINGL];
+	char32_t buffer[MAX_STRING_LENGTH];
 
 	buffer[0] = utf8_to_upper(eng[0]);
 	for (size_t i = 1; eng[i - 1] != '\0'; i++)

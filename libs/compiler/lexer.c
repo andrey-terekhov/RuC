@@ -149,7 +149,7 @@ static void skip_block_comment(lexer *const lxr)
  */
 static token_t lex_identifier_or_keyword(lexer *const lxr)
 {
-	char32_t spelling[MAXSTRINGL];
+	char32_t spelling[MAX_STRING_LENGTH];
 	size_t length = 0;
 
 	do
@@ -344,7 +344,7 @@ static token_t lex_string_literal(lexer *const lxr)
 	while (lxr->character == '\"')
 	{
 		scan(lxr);
-		while (lxr->character != '"' && lxr->character != '\n' && length < MAXSTRINGL)
+		while (lxr->character != '"' && lxr->character != '\n' && length < MAX_STRING_LENGTH)
 		{
 			if (!flag_too_long_string)
 			{
@@ -352,7 +352,7 @@ static token_t lex_string_literal(lexer *const lxr)
 			}
 			scan(lxr);
 		}
-		if (length == MAXSTRINGL)
+		if (length == MAX_STRING_LENGTH)
 		{
 			lexer_error(lxr, string_too_long);
 			flag_too_long_string = 1;

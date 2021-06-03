@@ -28,17 +28,17 @@ extern "C" {
 /** Lexer structure */
 typedef struct lexer
 {
-	universal_io *io;					/**< Universal io structure */
-	syntax *sx;							/**< Syntax structure */
+	universal_io *io;						/**< Universal io structure */
+	syntax *sx;								/**< Syntax structure */
 
-	char32_t character;					/**< Current character */
-	size_t repr;						/**< Pointer to representation of the read identifier */
-	int num;							/**< Value of the read integer number */
-	double num_double;					/**< Value of the read double number */
-	char32_t lexstr[MAXSTRINGL + 1];	/**< Representation of the read string literal */
+	char32_t character;						/**< Current character */
+	size_t repr;							/**< Pointer to representation of the read identifier */
+	int num;								/**< Value of the read integer number */
+	double num_double;						/**< Value of the read double number */
+	char32_t lexstr[MAX_STRING_LENGTH + 1];	/**< Representation of the read string literal */
 
-	int disable_recovery;				/**< Disable error recovery & multiple output */
-	int was_error;						/**< Error flag */
+	int disable_recovery;					/**< Disable error recovery & multiple output */
+	int was_error;							/**< Error flag */
 } lexer;
 
 /**

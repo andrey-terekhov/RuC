@@ -23,7 +23,7 @@
 #include "vector.h"
 
 
-#define MAXSTRINGL	128
+#define MAX_STRING_LENGTH	128
 
 
 #ifdef __cplusplus
@@ -32,22 +32,23 @@ extern "C" {
 
 typedef struct node node;
 
-/**< Modes */
+/** Modes */
 enum MODE
 {
-	mode_undefined = 0,
-	mode_integer = -1,
-	mode_character = -2,
-	mode_float = -3,
 	mode_void = -6,
+	mode_float = -3,
+	mode_character,
+	mode_integer,
+	mode_undefined,
 
-	mode_void_pointer = 15,
 	mode_msg_info = 2,
-	mode_function = 1001,
-	mode_struct = 1002,
-	mode_array = 1003,
-	mode_pointer = 1004,
+	mode_void_pointer = 15,
+	mode_function,
+	mode_struct,
+	mode_array,
+	mode_pointer,
 };
+
 
 /** Global vars definition */
 typedef struct syntax

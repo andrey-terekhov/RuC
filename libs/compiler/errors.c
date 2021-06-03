@@ -467,7 +467,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case too_many_printf_params: // test_exist
 		{
 			const size_t MAXPRINTFPARAMS = va_arg(args, size_t);
-			sprintf(msg, "максимально в printf/печатьф можно выводить %zu значений", MAXPRINTFPARAMS);
+			sprintf(msg, "максимально в printf/печатьф можно выводить %zi значений", MAXPRINTFPARAMS);
 		}
 		break;
 
