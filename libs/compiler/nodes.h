@@ -26,62 +26,9 @@ extern "C" {
 
 typedef enum NODE
 {
-	// Statement
-	ND_LABEL = 7000,		/**< Label statement node */
-	ND_CASE,				/**< Case statement node */
-	ND_DEFAULT,				/**< Default statement node */
-	ND_BLOCK,				/**< Compound statement node */
-	ND_IF,					/**< If statement node */
-	ND_SWITCH,				/**< Switch statement node */
-	ND_WHILE,				/**< While statement node */
-	ND_DO,					/**< Do statement node */
-	ND_FOR,					/**< For statement node */
-	ND_GOTO,				/**< Goto statement node */
-	ND_CONTINUE,			/**< Continue statement node */
-	ND_BREAK,				/**< Break statement node */
-	ND_RETURN_VOID,			/**< Void return statement node */
-	ND_RETURN_VAL,			/**< Valued return statement node */
-	ND_CREATEDIRECT,		/**< Create direct statement node */
-	ND_EXITDIRECT,			/**< Exit direct statement node */
-	ND_PRINTID,				/**< Printid statement node */
-	ND_PRINT,				/**< Print statement node */
-	ND_GETID,				/**< Getid statement node */
-	ND_PRINTF,				/**< Printf statement node */
-
-	// Declarations
-	ND_DECL_ID,				/**< Identifier declaration node */
-	ND_DECL_ARR,			/**< Array declaration node */
-	ND_DECL_STRUCT,			/**< Struct declaration node */
-	ND_FUNC_DEF,			/**< Function definition node */
-	ND_ARRAY_INIT,			/**< Array inition node */
-	ND_STRUCT_INIT,			/**< Struct inition node */
-
-	// End nodes
-	ND_BLOCK_END,			/**< End of block node */
-	ND_DECL_STRUCT_END,		/**< End of struct declaration node */
-	ND_EXPRESSION_END,		/**< End of expression node */
-
-	// Expressions
-	ND_CONDITIONAL,			/**< Ternary operator node */
-	ND_STRING,				/**< String literal node */
-	ND_STRINGD,				/**< Row of doubles node */
-	ND_IDENT,				/**< Identifier node */
-	ND_IDENTTOADDR,			/**< Identifier to address node */
-	ND_IDENTTOVAL,			/**< Value of integer variable node */
-	ND_IDENTTOVALD,			/**< Value of double variable node */
-	ND_ADDRTOVAL,			/**< Address to integer value node */
-	ND_ADDRTOVALD,			/**< Address to double value node */
-	ND_CONST,				/**< Integer constant node */
-	ND_CONSTD,				/**< Double constant node node */
-	ND_SLICE,				/**< Slice node */
-	ND_SLICEIDENT,			/**< Slice from identifier node */
-	ND_SELECT,				/**< Select node */
-	ND_CALL1,				/**< "Call1" node */
-	ND_CALL2,				/**< "Call2" node */
-
 	BEGIN_FINAL_OPERATION,
 
-	ND_ADLOGAND,			/**< "ADLOGAND" node */
+	ND_ADLOGAND = 7000,			/**< "ADLOGAND" node */
 	ND_ADLOGOR,				/**< "ADLOGOR" node */
 	ND_NULL				= IC_NOP,				/**< Empty node */
 	ND_WIDEN1			= IC_WIDEN1,			/**< "WIDEN1" node */
@@ -305,7 +252,60 @@ typedef enum NODE
 	ND_ORASSIGNV		= IC_ORASSV,			/**< "|=V" node */
 	ND_ORASSIGNATV		= IC_ORASSATV,			/**< "|=@V" node */
 
-	END_FINAL_OPERATION = 10000,
+	END_FINAL_OPERATION = MAX_INSTRUCTION_CODE,
+
+	// Statement
+	ND_LABEL,				/**< Label statement node */
+	ND_CASE,				/**< Case statement node */
+	ND_DEFAULT,				/**< Default statement node */
+	ND_BLOCK,				/**< Compound statement node */
+	ND_IF,					/**< If statement node */
+	ND_SWITCH,				/**< Switch statement node */
+	ND_WHILE,				/**< While statement node */
+	ND_DO,					/**< Do statement node */
+	ND_FOR,					/**< For statement node */
+	ND_GOTO,				/**< Goto statement node */
+	ND_CONTINUE,			/**< Continue statement node */
+	ND_BREAK,				/**< Break statement node */
+	ND_RETURN_VOID,			/**< Void return statement node */
+	ND_RETURN_VAL,			/**< Valued return statement node */
+	ND_CREATEDIRECT,		/**< Create direct statement node */
+	ND_EXITDIRECT,			/**< Exit direct statement node */
+	ND_PRINTID,				/**< Printid statement node */
+	ND_PRINT,				/**< Print statement node */
+	ND_GETID,				/**< Getid statement node */
+	ND_PRINTF,				/**< Printf statement node */
+
+	// Declarations
+	ND_DECL_ID,				/**< Identifier declaration node */
+	ND_DECL_ARR,			/**< Array declaration node */
+	ND_DECL_STRUCT,			/**< Struct declaration node */
+	ND_FUNC_DEF,			/**< Function definition node */
+	ND_ARRAY_INIT,			/**< Array inition node */
+	ND_STRUCT_INIT,			/**< Struct inition node */
+
+	// End nodes
+	ND_BLOCK_END,			/**< End of block node */
+	ND_DECL_STRUCT_END,		/**< End of struct declaration node */
+	ND_EXPRESSION_END,		/**< End of expression node */
+
+	// Expressions
+	ND_CONDITIONAL,			/**< Ternary operator node */
+	ND_STRING,				/**< String literal node */
+	ND_STRINGD,				/**< Row of doubles node */
+	ND_IDENT,				/**< Identifier node */
+	ND_IDENTTOADDR,			/**< Identifier to address node */
+	ND_IDENTTOVAL,			/**< Value of integer variable node */
+	ND_IDENTTOVALD,			/**< Value of double variable node */
+	ND_ADDRTOVAL,			/**< Address to integer value node */
+	ND_ADDRTOVALD,			/**< Address to double value node */
+	ND_CONST,				/**< Integer constant node */
+	ND_CONSTD,				/**< Double constant node node */
+	ND_SLICE,				/**< Slice node */
+	ND_SLICEIDENT,			/**< Slice from identifier node */
+	ND_SELECT,				/**< Select node */
+	ND_CALL1,				/**< "Call1" node */
+	ND_CALL2,				/**< "Call2" node */
 } node_t;
 
 

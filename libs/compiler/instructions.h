@@ -23,93 +23,6 @@ extern "C" {
 
 typedef enum INSTURCTION
 {
-	IC_NOP = 9453,		/**< "NOP" instruction code */
-	IC_DEFARR,			/**< "DEFARR" instruction code */
-	IC_LI,				/**< "LI" instruction code */
-	IC_LID,				/**< "LID" instruction code */
-	IC_LOAD,			/**< "LOAD" instruction code */
-	IC_LOADD,			/**< "LOADD" instruction code */
-	IC_LAT,				/**< "L@" instruction code */
-	IC_LATD,			/**< "L@f" instruction code */
-	IC_STOP,			/**< "STOP" instruction code */
-	IC_SELECT,			/**< "SELECT" instruction code */
-	IC_FUNCBEG,			/**< "FUNCBEG" instruction code */
-	IC_LA,				/**< "LA" instruction code */
-	IC_CALL1,			/**< "CALL1" instruction code */
-	IC_CALL2,			/**< "CALL2" instruction code */
-	IC_RETURNVAL,		/**< "RETURNVAL" instruction code */
-	IC_RETURNVOID,		/**< "RETURNVOID" instruction code */
-	IC_B,				/**< "B" instruction code */
-	IC_BE0,				/**< "BE0" instruction code */
-	IC_BNE0,			/**< "BNE0" instruction code */
-	IC_SLICE,			/**< "SLICE" instruction code */
-	IC_WIDEN,			/**< "WIDEN" instruction code */
-	IC_WIDEN1,			/**< "WIDEN1" instruction code */
-	IC__DOUBLE,			/**< "_DOUBLE" instruction code */
-	IC_STRINGINIT,		/**< "STRINGINIT" instruction code */
-	IC_ARRINIT,			/**< "ARRINIT" instruction code */
-	IC_STRUCTWITHARR,	/**< "STRUCTWITHARR" instruction code */
-
-	IC_BEGINIT = 9481,	/**< "BEGINIT" instruction code */
-	IC_ROWING,			/**< "ROWING" instruction code */
-	IC_ROWINGD,			/**< "ROWINGD" instruction code */
-
-	IC_COPY00 = 9300,	/**< "COPY00" instruction code */
-	IC_COPY01,			/**< "COPY01" instruction code */
-	IC_COPY10,			/**< "COPY10" instruction code */
-	IC_COPY11,			/**< "COPY11" instruction code */
-	IC_COPY0ST,			/**< "COPY0ST" instruction code */
-	IC_COPY1ST,			/**< "COPY1ST" instruction code */
-	IC_COPY0STASS,		/**< "COPY0STASS" instruction code */
-	IC_COPY1STASS,		/**< "COPY1STASS" instruction code */
-	IC_COPYST,			/**< "COPYST" instruction code */
-
-	IC_CREATEDIRECT = 9528,	/**< "CREATEDIRECT" instruction code */
-	IC_EXITDIRECT,			/**< "EXITDIRECT" instruction code */
-
-	IC_ABSI	= 9651,		/**< "ABSI" instruction code */
-	IC_ABS	= 9534,		/**< "ABS" instruction code */
-	IC_SQRT,			/**< "SQRT" instruction code */
-	IC_EXP,				/**< "EXP" instruction code */
-	IC_SIN,				/**< "SIN" instruction code */
-	IC_COS,				/**< "COS" instruction code */
-	IC_LOG,				/**< "LOG" instruction code */
-	IC_LOG10,			/**< "LOG10" instruction code */
-	IC_ASIN,			/**< "ASIN" instruction code */
-	IC_RAND,			/**< "RAND" instruction code */
-	IC_ROUND,			/**< "ROUND" instruction code */
-
-	IC_STRCPY = 9544,	/**< "STRCPY" instruction code */
-	IC_STRNCPY,			/**< "STRNCPY" instruction code */
-	IC_STRCAT,			/**< "STRCAT" instruction code */
-	IC_STRNCAT,			/**< "STRNCAT" instruction code */
-	IC_STRCMP,			/**< "STRCMP" instruction code */
-	IC_STRNCMP,			/**< "STRNCMP" instruction code */
-	IC_STRSTR,			/**< "STRSTR" instruction code */
-	IC_STRLEN,			/**< "STRLEN" instruction code */
-
-	IC_MSG_SEND = 9552,	/**< "MSG_SEND" instruction code */
-	IC_MSG_RECEIVE,		/**< "MSG_RECEIVE" instruction code */
-	IC_JOIN,			/**< "JOIN" instruction code */
-	IC_SLEEP,			/**< "SLEEP" instruction code */
-	IC_SEMCREATE,		/**< "SEMCREATE" instruction code */
-	IC_SEMWAIT,			/**< "SEMWAIT" instruction code */
-	IC_SEMPOST,			/**< "SEMPOST" instruction code */
-	IC_CREATE,			/**< "CREATE" instruction code */
-	IC_INIT,			/**< "INIT" instruction code */
-	IC_DESTROY,			/**< "DESTROY" instruction code */
-	IC_EXIT,			/**< "EXIT" instruction code */
-	IC_GETNUM,			/**< "GETNUM" instruction code */
-
-	IC_UPB = 9588,		/**< "UPB" instruction code */
-	IC_SEND_INT,		/**< "SEND_INT" instruction code */
-	IC_SEND_FLOAT,		/**< "SEND_FLOAT" instruction code */
-	IC_SEND_STRING,		/**< "SEND_STRING" instruction code */
-	IC_RECEIVE_INT,		/**< "RECEIVE_INT" instruction code */
-	IC_RECEIVE_FLOAT,	/**< "RECEIVE_FLOAT" instruction code */
-	IC_RECEIVE_STRING,	/**< "RECEIVE_STRING" instruction code */
-	IC_ASSERT,			/**< "ASSERT" instruction code */
-
 	IC_GETID = -27,		/**< "GETID" instruction code */
 	IC_SCANF,			/**< "SCANF" instruction code */
 	IC_PRINTF,			/**< "PRINTF" instruction code */
@@ -250,6 +163,95 @@ typedef enum INSTURCTION
 	IC_POSTDECATRV,		/**< "POSTDEC@fV" instruction code */
 	IC_INCATRV,			/**< "INC@fV" instruction code */
 	IC_DECATRV,			/**< "DEC@fV" instruction code */
+
+	IC_NOP = 9453,		/**< "NOP" instruction code */
+	IC_DEFARR,			/**< "DEFARR" instruction code */
+	IC_LI,				/**< "LI" instruction code */
+	IC_LID,				/**< "LID" instruction code */
+	IC_LOAD,			/**< "LOAD" instruction code */
+	IC_LOADD,			/**< "LOADD" instruction code */
+	IC_LAT,				/**< "L@" instruction code */
+	IC_LATD,			/**< "L@f" instruction code */
+	IC_STOP,			/**< "STOP" instruction code */
+	IC_SELECT,			/**< "SELECT" instruction code */
+	IC_FUNCBEG,			/**< "FUNCBEG" instruction code */
+	IC_LA,				/**< "LA" instruction code */
+	IC_CALL1,			/**< "CALL1" instruction code */
+	IC_CALL2,			/**< "CALL2" instruction code */
+	IC_RETURNVAL,		/**< "RETURNVAL" instruction code */
+	IC_RETURNVOID,		/**< "RETURNVOID" instruction code */
+	IC_B,				/**< "B" instruction code */
+	IC_BE0,				/**< "BE0" instruction code */
+	IC_BNE0,			/**< "BNE0" instruction code */
+	IC_SLICE,			/**< "SLICE" instruction code */
+	IC_WIDEN,			/**< "WIDEN" instruction code */
+	IC_WIDEN1,			/**< "WIDEN1" instruction code */
+	IC__DOUBLE,			/**< "_DOUBLE" instruction code */
+	IC_STRINGINIT,		/**< "STRINGINIT" instruction code */
+	IC_ARRINIT,			/**< "ARRINIT" instruction code */
+	IC_STRUCTWITHARR,	/**< "STRUCTWITHARR" instruction code */
+
+	IC_BEGINIT = 9481,	/**< "BEGINIT" instruction code */
+	IC_ROWING,			/**< "ROWING" instruction code */
+	IC_ROWINGD,			/**< "ROWINGD" instruction code */
+
+	IC_COPY00 = 9300,	/**< "COPY00" instruction code */
+	IC_COPY01,			/**< "COPY01" instruction code */
+	IC_COPY10,			/**< "COPY10" instruction code */
+	IC_COPY11,			/**< "COPY11" instruction code */
+	IC_COPY0ST,			/**< "COPY0ST" instruction code */
+	IC_COPY1ST,			/**< "COPY1ST" instruction code */
+	IC_COPY0STASS,		/**< "COPY0STASS" instruction code */
+	IC_COPY1STASS,		/**< "COPY1STASS" instruction code */
+	IC_COPYST,			/**< "COPYST" instruction code */
+
+	IC_CREATEDIRECT = 9528,	/**< "CREATEDIRECT" instruction code */
+	IC_EXITDIRECT,			/**< "EXITDIRECT" instruction code */
+
+	IC_ABS	= 9534,		/**< "ABS" instruction code */
+	IC_SQRT,			/**< "SQRT" instruction code */
+	IC_EXP,				/**< "EXP" instruction code */
+	IC_SIN,				/**< "SIN" instruction code */
+	IC_COS,				/**< "COS" instruction code */
+	IC_LOG,				/**< "LOG" instruction code */
+	IC_LOG10,			/**< "LOG10" instruction code */
+	IC_ASIN,			/**< "ASIN" instruction code */
+	IC_RAND,			/**< "RAND" instruction code */
+	IC_ROUND,			/**< "ROUND" instruction code */
+
+	IC_STRCPY = 9544,	/**< "STRCPY" instruction code */
+	IC_STRNCPY,			/**< "STRNCPY" instruction code */
+	IC_STRCAT,			/**< "STRCAT" instruction code */
+	IC_STRNCAT,			/**< "STRNCAT" instruction code */
+	IC_STRCMP,			/**< "STRCMP" instruction code */
+	IC_STRNCMP,			/**< "STRNCMP" instruction code */
+	IC_STRSTR,			/**< "STRSTR" instruction code */
+	IC_STRLEN,			/**< "STRLEN" instruction code */
+
+	IC_MSG_SEND = 9552,	/**< "MSG_SEND" instruction code */
+	IC_MSG_RECEIVE,		/**< "MSG_RECEIVE" instruction code */
+	IC_JOIN,			/**< "JOIN" instruction code */
+	IC_SLEEP,			/**< "SLEEP" instruction code */
+	IC_SEMCREATE,		/**< "SEMCREATE" instruction code */
+	IC_SEMWAIT,			/**< "SEMWAIT" instruction code */
+	IC_SEMPOST,			/**< "SEMPOST" instruction code */
+	IC_CREATE,			/**< "CREATE" instruction code */
+	IC_INIT,			/**< "INIT" instruction code */
+	IC_DESTROY,			/**< "DESTROY" instruction code */
+	IC_EXIT,			/**< "EXIT" instruction code */
+	IC_GETNUM,			/**< "GETNUM" instruction code */
+
+	IC_UPB = 9588,		/**< "UPB" instruction code */
+	IC_SEND_INT,		/**< "SEND_INT" instruction code */
+	IC_SEND_FLOAT,		/**< "SEND_FLOAT" instruction code */
+	IC_SEND_STRING,		/**< "SEND_STRING" instruction code */
+	IC_RECEIVE_INT,		/**< "RECEIVE_INT" instruction code */
+	IC_RECEIVE_FLOAT,	/**< "RECEIVE_FLOAT" instruction code */
+	IC_RECEIVE_STRING,	/**< "RECEIVE_STRING" instruction code */
+	IC_ASSERT,			/**< "ASSERT" instruction code */
+	IC_ABSI	= 9651,		/**< "ABSI" instruction code */
+	
+	MAX_INSTRUCTION_CODE,
 } instruction_t;
 
 #ifdef __cplusplus

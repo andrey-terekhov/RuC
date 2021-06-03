@@ -198,7 +198,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 
 	while (node_get_type(nd) != ND_EXPRESSION_END)
 	{
-		const item_t operation = node_get_type(nd);
+		const node_t operation = node_get_type(nd);
 		int was_operation = 1;
 
 		switch (operation)
