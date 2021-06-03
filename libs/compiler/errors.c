@@ -600,6 +600,9 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case expected_colon_after_default:
 			sprintf(msg, "после метки УМОЛЧАНИЕ нет :");
 			break;
+		case array_borders_cannot_be_static_dynamic:
+			sprintf(msg, "массив не может иметь статические и динамические границы");
+			break;
 
 		default:
 			sprintf(msg, "неизвестный код ошибки (%i)", num);

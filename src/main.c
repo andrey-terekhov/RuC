@@ -30,8 +30,6 @@ int main(int argc, const char *argv[])
 {
 	workspace ws = ws_parse_args(argc, argv);
 
-	ws_add_flag(&ws, "-LLVM");
-
 	if (argc < 2)
 	{
 		ws_add_file(&ws, name);
