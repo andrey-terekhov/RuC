@@ -43,28 +43,28 @@ typedef enum LOCATION
 
 typedef struct information
 {
-	universal_io *io;									/**< Вывод */
-	syntax *sx;											/**< Структура syntax с таблицами */
+	universal_io *io;					/**< Вывод */
+	syntax *sx;							/**< Структура syntax с таблицами */
 
-	item_t string_num;									/**< Номер строки */
-	item_t register_num;								/**< Номер регистра */
-	item_t label_num;									/**< Номер метки */
+	item_t string_num;					/**< Номер строки */
+	item_t register_num;				/**< Номер регистра */
+	item_t label_num;					/**< Номер метки */
 
-	item_t request_reg;									/**< Регистр на запрос */
-	location_t variable_location;						/**< Расположение переменной */
+	item_t request_reg;					/**< Регистр на запрос */
+	location_t variable_location;		/**< Расположение переменной */
 
-	item_t answer_reg;									/**< Регистр с ответом */
-	item_t answer_const;								/**< Константа с ответом */
-	answer_t answer_type;								/**< Тип ответа */
+	item_t answer_reg;					/**< Регистр с ответом */
+	item_t answer_const;				/**< Константа с ответом */
+	answer_t answer_type;				/**< Тип ответа */
 
-	item_t label_true;									/**< Метка перехода при true */
-	item_t label_false;									/**< Метка перехода при false */
+	item_t label_true;					/**< Метка перехода при true */
+	item_t label_false;					/**< Метка перехода при false */
 
-	hash arrays;	/**< Хеш таблица с информацией о массивах:
-							@с key		 - смещение массива
-							@c value[0]	 - флаг статичности
-							@c value[1..MAX] - границы массива */									
-	int was_dynamic;									/**< Если в функции были динамические массивы, то @c 1, иначе @c 0 */
+	hash arrays;						/**< Хеш таблица с информацией о массивах:
+												@с key		 - смещение массива
+												@c value[0]	 - флаг статичности
+												@c value[1..MAX] - границы массива */									
+	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
 } information;
 
 
@@ -1287,6 +1287,7 @@ static int codegen(information *const info)
 {
 	int was_stack_functions = 0;
 	node root = node_get_root(&info->sx->tree);
+
 	while (node_set_next(&root) == 0)
 	{
 		switch (node_get_type(&root))
@@ -1319,7 +1320,6 @@ static int codegen(information *const info)
 			}
 			break;
 			case TEnd:
-				hash_clear(&info->arrays);
 				break;
 			default:
 				system_error(node_unexpected, node_get_type(&root));
@@ -1332,7 +1332,6 @@ static int codegen(information *const info)
 		uni_printf(info->io, "declare i8* @llvm.stacksave()\n");
 		uni_printf(info->io, "declare void @llvm.stackrestore(i8*)\n");
 	}
-	hash_clear(&info->arrays);
 	
 	return 0;
 }
@@ -1363,7 +1362,11 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
+
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
-	return codegen(&info);
+	const int ret = codegen(&info);
+	hash_clear(&info.arrays);
+
+	return ret;
 }
