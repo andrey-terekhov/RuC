@@ -127,12 +127,12 @@ int is_integer_operator(const token_t operator)
 {
 	switch (operator)
 	{
-		case TOK_EQUALEQUAL:
-		case TOK_EXCLAIMEQUAL:
-		case TOK_LESS:
-		case TOK_LESSEQUAL:
-		case TOK_GREATER:
-		case TOK_GREATEREQUAL:
+		case TK_EQUAL_EQUAL:
+		case TK_EXCLAIM_EQUAL:
+		case TK_LESS:
+		case TK_LESS_EQUAL:
+		case TK_GREATER:
+		case TK_GREATER_EQUAL:
 			return 1;
 
 		default:
@@ -154,8 +154,8 @@ void binary_operation(parser *const prs, operator operator)
 
 	if (mode_is_float(left_mode) || mode_is_float(right_mode))
 	{
-		if (token == TOK_PIPEPIPE || token == TOK_AMPAMP || token == TOK_PIPE || token == TOK_CARET || token == TOK_AMP
-			|| token == TOK_GREATERGREATER || token == TOK_LESSLESS || token == TOK_PERCENT)
+		if (token == TK_PIPE_PIPE || token == TK_AMP_AMP || token == TK_PIPE || token == TK_CARET || token == TK_AMP
+			|| token == TK_GREATER_GREATER || token == TK_LESS_LESS || token == TK_PERCENT)
 		{
 			parser_error(prs, int_op_for_float);
 		}
@@ -172,7 +172,7 @@ void binary_operation(parser *const prs, operator operator)
 		result_mode = mode_float;
 	}
 
-	if (token == TOK_PIPEPIPE || token == TOK_AMPAMP)
+	if (token == TK_PIPE_PIPE || token == TK_AMP_AMP)
 	{
 		to_tree(prs, token_to_node(token));
 		node_add_arg(&prs->nd, 0); // FIXME: useless
@@ -251,9 +251,9 @@ item_t parse_braced_init_list(parser *const prs, const item_t type)
 	size_t length = 0;
 	do
 	{
-		const int sign = token_try_consume(prs, TOK_MINUS) ? -1 : 1;
+		const int sign = token_try_consume(prs, TK_MINUS) ? -1 : 1;
 
-		if (prs->token == TOK_INT_CONST || prs->token == TOK_CHAR_CONST)
+		if (prs->token == TK_INT_CONST || prs->token == TK_CHAR_CONST)
 		{
 			if (mode_is_float(type))
 			{
@@ -265,7 +265,7 @@ item_t parse_braced_init_list(parser *const prs, const item_t type)
 			}
 			token_consume(prs);
 		}
-		else if (prs->token == TOK_FLOAT_CONST)
+		else if (prs->token == TK_FLOAT_CONST)
 		{
 			if (mode_is_float(type))
 			{
@@ -280,17 +280,17 @@ item_t parse_braced_init_list(parser *const prs, const item_t type)
 		else
 		{
 			parser_error(prs, wrong_init_in_actparam);
-			token_skip_until(prs, TOK_COMMA | TOK_RBRACE | TOK_SEMICOLON);
+			token_skip_until(prs, TK_COMMA | TK_R_BRACE | TK_SEMICOLON);
 		}
 		length++;
-	} while (token_try_consume(prs, TOK_COMMA));
+	} while (token_try_consume(prs, TK_COMMA));
 
 	node_set_arg(&nd_init_list, 0, length);
 	to_tree(prs, ND_EXPRESSION_END);
-	if (!token_try_consume(prs, TOK_RBRACE))
+	if (!token_try_consume(prs, TK_R_BRACE))
 	{
 		parser_error(prs, no_comma_or_end);
-		token_skip_until(prs, TOK_RBRACE | TOK_SEMICOLON);
+		token_skip_until(prs, TK_R_BRACE | TK_SEMICOLON);
 	}
 
 	return to_modetab(prs, mode_array, type);
@@ -360,7 +360,7 @@ void must_be_float(parser *const prs)
 void must_be_row_of_int(parser *const prs)
 {
 	item_t type;
-	if (prs->token == TOK_LBRACE)
+	if (prs->token == TK_L_BRACE)
 	{
 		type = parse_braced_init_list(prs, mode_integer);
 	}
@@ -386,7 +386,7 @@ void must_be_row_of_int(parser *const prs)
 void must_be_row_of_float(parser *const prs)
 {
 	item_t type;
-	if (prs->token == TOK_LBRACE)
+	if (prs->token == TK_L_BRACE)
 	{
 		type = parse_braced_init_list(prs, mode_float);
 	}
@@ -414,34 +414,34 @@ void parse_standard_function_call(parser *const prs)
 	const token_t func = prs->token;
 	token_consume(prs);
 
-	if (!token_try_consume(prs, TOK_LPAREN))
+	if (!token_try_consume(prs, TK_L_PAREN))
 	{
 		parser_error(prs, no_leftbr_in_stand_func);
-		token_skip_until(prs, TOK_RPAREN | TOK_SEMICOLON);
+		token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
 		return;
 	}
 
 	switch (func)
 	{
-		case TOK_ASSERT:
+		case TK_ASSERT:
 		{
 			must_be_int(prs);
-			token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
+			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
 			must_be_string(prs);
 			operands_push(prs, VALUE, mode_void);
 		}
 		break;
 
-		case TOK_STRCPY:
-		case TOK_STRNCPY:
-		case TOK_STRCAT:
-		case TOK_STRNCAT:
-		case TOK_STRCMP:
-		case TOK_STRNCMP:
-		case TOK_STRSTR:
-		case TOK_STRLEN:
+		case TK_STRCPY:
+		case TK_STRNCPY:
+		case TK_STRCAT:
+		case TK_STRNCAT:
+		case TK_STRCMP:
+		case TK_STRNCMP:
+		case TK_STRSTR:
+		case TK_STRLEN:
 		{
-			if (func == TOK_STRCPY || func == TOK_STRNCPY || func == TOK_STRCAT || func == TOK_STRNCAT)
+			if (func == TK_STRCPY || func == TK_STRNCPY || func == TK_STRCAT || func == TK_STRNCAT)
 			{
 				must_be_point_string(prs);
 			}
@@ -450,18 +450,18 @@ void parse_standard_function_call(parser *const prs)
 				must_be_string(prs);
 			}
 
-			if (func != TOK_STRLEN)
+			if (func != TK_STRLEN)
 			{
-				token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
+				token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
 				must_be_string(prs);
-				if (func == TOK_STRNCPY || func == TOK_STRNCAT || func == TOK_STRNCMP)
+				if (func == TK_STRNCPY || func == TK_STRNCAT || func == TK_STRNCMP)
 				{
-					token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
+					token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
 					must_be_int(prs);
 				}
 			}
 
-			if (func == TOK_STRCMP || func == TOK_STRNCMP || func == TOK_STRSTR || func == TOK_STRLEN)
+			if (func == TK_STRCMP || func == TK_STRNCMP || func == TK_STRSTR || func == TK_STRLEN)
 			{
 				operands_push(prs, VALUE, mode_integer);
 			}
@@ -472,65 +472,65 @@ void parse_standard_function_call(parser *const prs)
 		}
 		break;
 
-		case TOK_SEND_INT:
-		case TOK_SEND_FLOAT:
-		case TOK_SEND_STRING:
-		case TOK_RECEIVE_INT:
-		case TOK_RECEIVE_FLOAT:
-		case TOK_RECEIVE_STRING:
+		case TK_ROBOT_SEND_INT:
+		case TK_ROBOT_SEND_FLOAT:
+		case TK_ROBOT_SEND_STRING:
+		case TK_ROBOT_RECEIVE_INT:
+		case TK_ROBOT_RECEIVE_FLOAT:
+		case TK_ROBOT_RECEIVE_STRING:
 		{
 			// новые функции Фадеева
 			must_be_int(prs);
-			if (func == TOK_SEND_INT || func == TOK_SEND_STRING)
+			if (func == TK_ROBOT_SEND_INT || func == TK_ROBOT_SEND_STRING)
 			{
-				token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
+				token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
 				must_be_row_of_int(prs);
 				operands_push(prs, VALUE, mode_void);
 			}
-			else if (func == TOK_SEND_FLOAT)
+			else if (func == TK_ROBOT_SEND_FLOAT)
 			{
-				token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
+				token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
 				must_be_row_of_float(prs);
 				operands_push(prs, VALUE, mode_void);
 			}
 			else
 			{
-				operands_push(prs, VALUE, func == TOK_RECEIVE_INT
-							  ? mode_integer : func == TOK_RECEIVE_FLOAT
+				operands_push(prs, VALUE, func == TK_ROBOT_RECEIVE_INT
+							  ? mode_integer : func == TK_ROBOT_RECEIVE_FLOAT
 							  ? mode_float : to_modetab(prs, mode_array, mode_character));
 			}
 		}
 		break;
 
-		case TOK_UPB:
+		case TK_UPB:
 		{
 			must_be_int(prs);
-			token_expect_and_consume(prs, TOK_COMMA, no_comma_in_act_params_stanfunc);
+			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
 			must_be_row(prs);
 			operands_push(prs, VALUE, mode_integer);
 		}
 		break;
 
-		case TOK_MSG_SEND:
-		case TOK_MSG_RECEIVE:
-		case TOK_JOIN:
-		case TOK_SLEEP:
-		case TOK_SEMCREATE:
-		case TOK_SEMWAIT:
-		case TOK_SEMPOST:
-		case TOK_CREATE:
-		case TOK_INIT:
-		case TOK_DESTROY:
-		case TOK_EXIT:
-		case TOK_GETNUM:
+		case TK_MSG_SEND:
+		case TK_MSG_RECEIVE:
+		case TK_JOIN:
+		case TK_SLEEP:
+		case TK_SEM_CREATE:
+		case TK_SEM_WAIT:
+		case TK_SEM_POST:
+		case TK_CREATE:
+		case TK_INIT:
+		case TK_DESTROY:
+		case TK_EXIT:
+		case TK_GETNUM:
 		{
-			if (func == TOK_INIT || func == TOK_DESTROY || func == TOK_EXIT)
+			if (func == TK_INIT || func == TK_DESTROY || func == TK_EXIT)
 			{
 				operands_push(prs, VALUE, mode_void);
 			}
-			else if (func == TOK_MSG_RECEIVE || func == TOK_GETNUM) // getnum int(), msgreceive msg_info()
+			else if (func == TK_MSG_RECEIVE || func == TK_GETNUM) // getnum int(), msgreceive msg_info()
 			{
-				operands_push(prs, VALUE, func == TOK_GETNUM ? mode_integer : mode_msg_info);
+				operands_push(prs, VALUE, func == TK_GETNUM ? mode_integer : mode_msg_info);
 			}
 			else
 			{
@@ -538,9 +538,9 @@ void parse_standard_function_call(parser *const prs)
 				// SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
 				// у этих процедур 1 параметр
 
-				if (func == TOK_CREATE)
+				if (func == TK_CREATE)
 				{
-					if (!token_try_consume(prs, TOK_IDENTIFIER))
+					if (!token_try_consume(prs, TK_IDENTIFIER))
 					{
 						parser_error(prs, act_param_not_ident);
 					}
@@ -573,7 +573,7 @@ void parse_standard_function_call(parser *const prs)
 				}
 				else
 				{
-					if (func == TOK_MSG_SEND)
+					if (func == TK_MSG_SEND)
 					{
 						parse_initializer(prs, &prs->nd, mode_msg_info);
 						operands_push(prs, VALUE, mode_void);
@@ -582,7 +582,7 @@ void parse_standard_function_call(parser *const prs)
 					{
 						must_be_int(prs);
 
-						if (func == TOK_SEMCREATE)
+						if (func == TK_SEM_CREATE)
 						{
 							operands_push(prs, VALUE, mode_integer);
 						}
@@ -596,18 +596,18 @@ void parse_standard_function_call(parser *const prs)
 		}
 		break;
 
-		case TOK_RAND:
+		case TK_RAND:
 			operands_push(prs, VALUE, mode_float);
 			break;
 
-		case TOK_ROUND:
+		case TK_ROUND:
 		{
 			must_be_float(prs);
 			operands_push(prs, VALUE, mode_integer);
 		}
 		break;
 
-		case TOK_ABS:
+		case TK_ABS:
 		{
 			parse_assignment_expression_internal(prs);
 			to_value(prs);
@@ -616,7 +616,7 @@ void parse_standard_function_call(parser *const prs)
 			{
 				operands_push(prs, VALUE, mode_integer);
 				to_tree(prs, ND_ABSI);
-				token_expect_and_consume(prs, TOK_RPAREN, no_rightbr_in_stand_func);
+				token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
 				return;
 			}
 			else
@@ -635,7 +635,7 @@ void parse_standard_function_call(parser *const prs)
 	}
 
 	to_tree(prs, token_to_node(func));
-	token_expect_and_consume(prs, TOK_RPAREN, no_rightbr_in_stand_func);
+	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
 }
 
 /**
@@ -679,7 +679,7 @@ void parse_constant(parser *const prs)
 	item_t mode = mode_undefined;
 	switch (prs->token)
 	{
-		case TOK_CHAR_CONST:
+		case TK_CHAR_CONST:
 		{
 			to_tree(prs, ND_CONST);
 			node_add_arg(&prs->nd, prs->lxr->num);
@@ -687,7 +687,7 @@ void parse_constant(parser *const prs)
 		}
 		break;
 
-		case TOK_INT_CONST:
+		case TK_INT_CONST:
 		{
 			to_tree(prs, ND_CONST);
 			node_add_arg(&prs->nd, prs->lxr->num);
@@ -695,7 +695,7 @@ void parse_constant(parser *const prs)
 		}
 		break;
 
-		case TOK_FLOAT_CONST:
+		case TK_FLOAT_CONST:
 		{
 			to_tree(prs, ND_CONSTD);
 			node_add_double(&prs->nd, prs->lxr->num_double);
@@ -715,7 +715,7 @@ void parse_constant(parser *const prs)
  *	Parse primary expression [C99 6.5.1]
  *
  *	primary-expression:
- *		TOK_IDENTIFIER
+ *		TK_IDENTIFIER
  *		constant
  *		string-literal
  *		'(' expression ')'
@@ -727,26 +727,26 @@ void parse_primary_expression(parser *const prs)
 {
 	switch (prs->token)
 	{
-		case TOK_IDENTIFIER:
+		case TK_IDENTIFIER:
 			parse_identifier(prs);
 			break;
 
-		case TOK_CHAR_CONST:
-		case TOK_INT_CONST:
-		case TOK_FLOAT_CONST:
+		case TK_CHAR_CONST:
+		case TK_INT_CONST:
+		case TK_FLOAT_CONST:
 			parse_constant(prs);
 			break;
 
-		case TOK_STRING:
+		case TK_STRING:
 			parse_string_literal(prs, &prs->nd);
 			break;
 
-		case TOK_LPAREN:
+		case TK_L_PAREN:
 		{
 			token_consume(prs);
-			if (token_try_consume(prs, TOK_VOID))
+			if (token_try_consume(prs, TK_VOID))
 			{
-				token_expect_and_consume(prs, TOK_STAR, no_mult_in_cast);
+				token_expect_and_consume(prs, TK_STAR, no_mult_in_cast);
 
 				parse_unary_expression(prs);
 				const operand_t type = prs->last_type;
@@ -756,7 +756,7 @@ void parse_primary_expression(parser *const prs)
 					parser_error(prs, not_pointer_in_cast);
 				}
 
-				token_expect_and_consume(prs, TOK_RPAREN, no_rightbr_in_cast);
+				token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_cast);
 				operands_push(prs, type, mode);
 				to_value(prs);
 				to_tree(prs, ND_EXPRESSION_END);
@@ -765,7 +765,7 @@ void parse_primary_expression(parser *const prs)
 			{
 				const size_t old_operators_size = operators_size(prs);
 				parse_expression_internal(prs);
-				token_expect_and_consume(prs, TOK_RPAREN, wait_rightbr_in_primary);
+				token_expect_and_consume(prs, TK_R_PAREN, wait_rightbr_in_primary);
 				while (old_operators_size < operators_size(prs))
 				{
 					binary_operation(prs, operators_pop(prs));
@@ -775,7 +775,7 @@ void parse_primary_expression(parser *const prs)
 		break;
 
 		default:
-			if (prs->token >= STANDARD_FUNC_START && prs->token <= STANDARD_FUNC_END)
+			if (prs->token >= BEGIN_STANDARD_FUNC && prs->token <= END_STANDARD_FUNC)
 			{
 				parse_standard_function_call(prs);
 			}
@@ -793,7 +793,7 @@ void parse_primary_expression(parser *const prs)
 item_t find_field(parser *const prs)
 {
 	token_consume(prs);
-	token_expect_and_consume(prs, TOK_IDENTIFIER, after_dot_must_be_ident);
+	token_expect_and_consume(prs, TK_IDENTIFIER, after_dot_must_be_ident);
 
 	const operand_t peek = prs->last_type;
 	const size_t type = (size_t)stack_pop(&prs->anonymous);
@@ -834,7 +834,7 @@ item_t find_field(parser *const prs)
  *		argument-expression-list ',' assignment-expression
  *
  *	@param	prs			Parser structure
- *	@param	function_id	Index of function TOK_IDENTIFIER in TOK_IDENTIFIERs table
+ *	@param	function_id	Index of function TK_IDENTIFIER in TK_IDENTIFIERs table
  */
 void parse_function_call(parser *const prs, const size_t function_id)
 {
@@ -844,7 +844,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	if (!mode_is_function(prs->sx, function_mode))
 	{
 		parser_error(prs, call_not_from_function);
-		token_skip_until(prs, TOK_RPAREN | TOK_SEMICOLON);
+		token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
 		return;
 	}
 
@@ -858,7 +858,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	node nd_call;
 	node_copy(&nd_call, &prs->nd);
 
-	if (!token_try_consume(prs, TOK_RPAREN))
+	if (!token_try_consume(prs, TK_R_PAREN))
 	{
 		do
 		{
@@ -867,10 +867,10 @@ void parse_function_call(parser *const prs, const size_t function_id)
 
 			if (mode_is_function(prs->sx, expected_arg_mode))
 			{
-				if (prs->token != TOK_IDENTIFIER)
+				if (prs->token != TK_IDENTIFIER)
 				{
 					parser_error(prs, act_param_not_ident);
-					token_skip_until(prs, TOK_COMMA | TOK_RPAREN | TOK_SEMICOLON);
+					token_skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
 					continue;
 				}
 
@@ -878,7 +878,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 				if (ident_get_mode(prs->sx, id) != expected_arg_mode)
 				{
 					parser_error(prs, diff_formal_param_type_and_actual);
-					token_skip_until(prs, TOK_COMMA | TOK_RPAREN | TOK_SEMICOLON);
+					token_skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
 					continue;
 				}
 
@@ -887,7 +887,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 				node_set_arg(&prs->nd, 0, llabs(displ));
 				to_tree(prs, ND_EXPRESSION_END);
 			}
-			else if (mode_is_array(prs->sx, expected_arg_mode) && prs->token == TOK_LBRACE)
+			else if (mode_is_array(prs->sx, expected_arg_mode) && prs->token == TK_L_BRACE)
 			{
 				parse_braced_init_list(prs, mode_get(prs->sx, (size_t)expected_arg_mode + 1));
 			}
@@ -915,9 +915,9 @@ void parse_function_call(parser *const prs, const size_t function_id)
 
 			actual_args++;
 			ref_arg_mode++;
-		} while (token_try_consume(prs, TOK_COMMA));
+		} while (token_try_consume(prs, TK_COMMA));
 
-		token_expect_and_consume(prs, TOK_RPAREN, wrong_number_of_params);
+		token_expect_and_consume(prs, TK_R_PAREN, wrong_number_of_params);
 	}
 
 	if (expected_args != actual_args)
@@ -951,15 +951,15 @@ void parse_postfix_expression(parser *const prs)
 	const size_t last_id = prs->last_id;
 	int was_func = 0;
 
-	if (token_try_consume(prs, TOK_LPAREN))
+	if (token_try_consume(prs, TK_L_PAREN))
 	{
 		was_func = 1;
 		parse_function_call(prs, last_id);
 	}
 
-	while (prs->token == TOK_LSQUARE || prs->token == TOK_ARROW || prs->token == TOK_PERIOD)
+	while (prs->token == TK_L_SQUARE || prs->token == TK_ARROW || prs->token == TK_PERIOD)
 	{
-		while (token_try_consume(prs, TOK_LSQUARE))
+		while (token_try_consume(prs, TK_L_SQUARE))
 		{
 			if (was_func)
 			{
@@ -991,11 +991,11 @@ void parse_postfix_expression(parser *const prs)
 				parser_error(prs, index_must_be_int);
 			}
 
-			token_expect_and_consume(prs, TOK_RSQUARE, no_rightsqbr_in_slice);
+			token_expect_and_consume(prs, TK_R_SQUARE, no_rightsqbr_in_slice);
 			operands_push(prs, ADDRESS, elem_type);
 		}
 
-		while (prs->token == TOK_ARROW)
+		while (prs->token == TK_ARROW)
 		{
 			if (prs->last_type == VARIABLE)
 			{
@@ -1013,7 +1013,7 @@ void parse_postfix_expression(parser *const prs)
 
 			operands_push(prs, ADDRESS, mode_get(prs->sx, (size_t)type + 1));
 			prs->operand_displ = find_field(prs);
-			while (prs->token == TOK_PERIOD)
+			while (prs->token == TK_PERIOD)
 			{
 				prs->operand_displ += find_field(prs);
 			}
@@ -1030,7 +1030,7 @@ void parse_postfix_expression(parser *const prs)
 			operands_push(prs, ADDRESS, field_type);
 		}
 
-		if (prs->token == TOK_PERIOD)
+		if (prs->token == TK_PERIOD)
 		{
 			const operand_t peek = prs->last_type;
 			const item_t type = stack_pop(&prs->anonymous);
@@ -1044,7 +1044,7 @@ void parse_postfix_expression(parser *const prs)
 				const size_t length = size_of(prs->sx, type);
 				operands_push(prs, VALUE, type);
 				prs->operand_displ = 0;
-				while (prs->token == TOK_PERIOD)
+				while (prs->token == TK_PERIOD)
 				{
 					prs->operand_displ += find_field(prs);
 				}
@@ -1060,7 +1060,7 @@ void parse_postfix_expression(parser *const prs)
 			{
 				const item_t sign = prs->operand_displ < 0 ? -1 : 1;
 				operands_push(prs, VARIABLE, type);
-				while (prs->token == TOK_PERIOD)
+				while (prs->token == TK_PERIOD)
 				{
 					prs->operand_displ += sign * find_field(prs);
 				}
@@ -1072,7 +1072,7 @@ void parse_postfix_expression(parser *const prs)
 				to_tree(prs, ND_SELECT);
 				operands_push(prs, VARIABLE, type);
 				prs->operand_displ = 0;
-				while (prs->token == TOK_PERIOD)
+				while (prs->token == TK_PERIOD)
 				{
 					prs->operand_displ += find_field(prs);
 				}
@@ -1090,9 +1090,9 @@ void parse_postfix_expression(parser *const prs)
 		}
 	}
 
-	if (prs->token == TOK_PLUSPLUS || prs->token == TOK_MINUSMINUS)
+	if (prs->token == TK_PLUS_PLUS || prs->token == TK_MINUS_MINUS)
 	{
-		node_t operator = prs->token == TOK_PLUSPLUS ? ND_POSTINC : ND_POSTDEC;
+		node_t operator = prs->token == TK_PLUS_PLUS ? ND_POSTINC : ND_POSTDEC;
 		token_consume(prs);
 
 		int is_variable = 0;
@@ -1130,8 +1130,8 @@ void parse_unary_expression(parser *const prs)
 	token_t operator = prs->token;
 	switch (operator)
 	{
-		case TOK_PLUSPLUS:
-		case TOK_MINUSMINUS:
+		case TK_PLUS_PLUS:
+		case TK_MINUS_MINUS:
 		{
 			token_consume(prs);
 			parse_unary_expression(prs);
@@ -1167,18 +1167,18 @@ void parse_unary_expression(parser *const prs)
 		}
 		break;
 
-		case TOK_EXCLAIM:
-		case TOK_TILDE:
-		case TOK_PLUS:
-		case TOK_MINUS:
-		case TOK_AMP:
-		case TOK_STAR:
+		case TK_EXCLAIM:
+		case TK_TILDE:
+		case TK_PLUS:
+		case TK_MINUS:
+		case TK_AMP:
+		case TK_STAR:
 		{
 			token_consume(prs);
 			parse_unary_expression(prs);
 			switch (operator)
 			{
-				case TOK_AMP:
+				case TK_AMP:
 				{
 					if (prs->last_type == VALUE)
 					{
@@ -1194,7 +1194,7 @@ void parse_unary_expression(parser *const prs)
 				}
 				break;
 
-				case TOK_STAR:
+				case TK_STAR:
 				{
 					if (prs->last_type == VARIABLE)
 					{
@@ -1214,7 +1214,7 @@ void parse_unary_expression(parser *const prs)
 				default:
 				{
 					to_value(prs);
-					if (operator == TOK_MINUS)
+					if (operator == TK_MINUS)
 					{
 						if (node_get_type(&prs->nd) == ND_CONST)
 						{
@@ -1233,13 +1233,13 @@ void parse_unary_expression(parser *const prs)
 					}
 					else
 					{
-						if (operator != TOK_PLUS)
+						if (operator != TK_PLUS)
 						{
 							to_tree(prs, token_to_node(operator));
 						}
 
 						const item_t type = stack_pop(&prs->anonymous);
-						if ((operator == TOK_TILDE || operator == TOK_EXCLAIM) && mode_is_float(type))
+						if ((operator == TK_TILDE || operator == TK_EXCLAIM) && mode_is_float(type))
 						{
 							parser_error(prs, int_op_for_float);
 						}
@@ -1264,42 +1264,42 @@ uint8_t operator_priority(const token_t operator)
 {
 	switch (operator)
 	{
-		case TOK_PIPEPIPE:			// '||'
+		case TK_PIPE_PIPE:			// '||'
 			return 1;
 
-		case TOK_AMPAMP:			// '&&'
+		case TK_AMP_AMP:			// '&&'
 			return 2;
 
-		case TOK_PIPE:				// '|'
+		case TK_PIPE:				// '|'
 			return 3;
 
-		case TOK_CARET:				// '^'
+		case TK_CARET:				// '^'
 			return 4;
 
-		case TOK_AMP:				// '&'
+		case TK_AMP:				// '&'
 			return 5;
 
-		case TOK_EQUALEQUAL:		// '=='
-		case TOK_EXCLAIMEQUAL:		// '!='
+		case TK_EQUAL_EQUAL:		// '=='
+		case TK_EXCLAIM_EQUAL:		// '!='
 			return 6;
 
-		case TOK_LESS:				// '<'
-		case TOK_GREATER:			// '<'
-		case TOK_LESSEQUAL:			// '<='
-		case TOK_GREATEREQUAL:		// '>='
+		case TK_LESS:				// '<'
+		case TK_GREATER:			// '<'
+		case TK_LESS_EQUAL:			// '<='
+		case TK_GREATER_EQUAL:		// '>='
 			return 7;
 
-		case TOK_LESSLESS:			// '<<'
-		case TOK_GREATERGREATER:	// '>>'
+		case TK_LESS_LESS:			// '<<'
+		case TK_GREATER_GREATER:	// '>>'
 			return 8;
 
-		case TOK_PLUS:				// '+'
-		case TOK_MINUS:				// '-'
+		case TK_PLUS:				// '+'
+		case TK_MINUS:				// '-'
 			return 9;
 
-		case TOK_STAR:				// '*'
-		case TOK_SLASH:				// '/'
-		case TOK_PERCENT:			// '%'
+		case TK_STAR:				// '*'
+		case TK_SLASH:				// '/'
+		case TK_PERCENT:			// '%'
 			return 10;
 
 		default:
@@ -1311,12 +1311,12 @@ int is_int_assignment_operator(const token_t operator)
 {
 	switch (operator)
 	{
-		case TOK_PERCENTEQUAL:			// '%='
-		case TOK_LESSLESSEQUAL:			// '<<='
-		case TOK_GREATERGREATEREQUAL:	// '>>='
-		case TOK_AMPEQUAL:				// '&='
-		case TOK_PIPEEQUAL:				// '|='
-		case TOK_CARETEQUAL:			// '^='
+		case TK_PERCENT_EQUAL:			// '%='
+		case TK_LESS_LESS_EQUAL:			// '<<='
+		case TK_GREATER_GREATER_EQUAL:	// '>>='
+		case TK_AMP_EQUAL:				// '&='
+		case TK_PIPE_EQUAL:				// '|='
+		case TK_CARET_EQUAL:			// '^='
 			return 1;
 
 		default:
@@ -1329,11 +1329,11 @@ int is_assignment_operator(const token_t operator)
 {
 	switch (operator)
 	{
-		case TOK_EQUAL:					// '='
-		case TOK_STAREQUAL:				// '*='
-		case TOK_SLASHEQUAL:			// '/='
-		case TOK_PLUSEQUAL:				// '+='
-		case TOK_MINUSEQUAL:			// '-='
+		case TK_EQUAL:					// '='
+		case TK_STAR_EQUAL:				// '*='
+		case TK_SLASH_EQUAL:			// '/='
+		case TK_PLUS_EQUAL:				// '+='
+		case TK_MINUS_EQUAL:			// '-='
 			return 1;
 
 		default:
@@ -1384,12 +1384,12 @@ void parse_conditional_expression(parser *const prs)
 {
 	parse_subexpression(prs); // logORexpr();
 
-	if (prs->token == TOK_QUESTION)
+	if (prs->token == TK_QUESTION)
 	{
 		item_t global_type = 0;
 		item_t addr_if = ND_EXPRESSION_END;
 
-		while (token_try_consume(prs, TOK_QUESTION))
+		while (token_try_consume(prs, TK_QUESTION))
 		{
 			to_value(prs);
 			if (!mode_is_int(stack_pop(&prs->anonymous)))
@@ -1423,7 +1423,7 @@ void parse_conditional_expression(parser *const prs)
 				to_tree(prs, old_addr_if);
 			}
 
-			token_expect_and_consume(prs, TOK_COLON, no_colon_in_cond_expr);
+			token_expect_and_consume(prs, TK_COLON, no_colon_in_cond_expr);
 			node_copy(&prs->nd, &nd_condexpr);
 			parse_unary_expression(prs);
 			parse_subexpression(prs); // logORexpr();	else or elif
@@ -1477,7 +1477,7 @@ void assignment_to_void(parser *const prs)
 
 void parse_assignment_expression_internal(parser *const prs)
 {
-	if (prs->token == TOK_LBRACE)
+	if (prs->token == TK_L_BRACE)
 	{
 		const item_t type = prs->left_mode;
 		if (mode_is_struct(prs->sx, type) || mode_is_array(prs->sx, type))
@@ -1537,7 +1537,7 @@ void parse_assignment_expression_internal(parser *const prs)
 				parser_error(prs, type_missmatch);
 			}
 
-			if (operator != TOK_EQUAL) // в структуру можно присваивать только с помощью =
+			if (operator != TK_EQUAL) // в структуру можно присваивать только с помощью =
 			{
 				parser_error(prs, wrong_struct_ass);
 			}
@@ -1571,7 +1571,7 @@ void parse_assignment_expression_internal(parser *const prs)
 		else // оба операнда базового типа или указатели
 		{
 			// В указатель можно присваивать только с помощью '='
-			if (mode_is_pointer(prs->sx, left_mode) && operator != TOK_EQUAL)
+			if (mode_is_pointer(prs->sx, left_mode) && operator != TK_EQUAL)
 			{
 				parser_error(prs, wrong_struct_ass);
 			}
@@ -1622,7 +1622,7 @@ void parse_assignment_expression_internal(parser *const prs)
 void parse_expression_internal(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
-	while (token_try_consume(prs, TOK_COMMA))
+	while (token_try_consume(prs, TK_COMMA))
 	{
 		assignment_to_void(prs);
 		stack_pop(&prs->anonymous);
@@ -1660,9 +1660,9 @@ item_t parse_assignment_expression(parser *const prs, node *const parent)
 
 item_t parse_parenthesized_expression(parser *const prs, node *const parent)
 {
-	token_expect_and_consume(prs, TOK_LPAREN, cond_must_be_in_brkts);
+	token_expect_and_consume(prs, TK_L_PAREN, cond_must_be_in_brkts);
 	const item_t condition_type = parse_condition(prs, parent);
-	token_expect_and_consume(prs, TOK_RPAREN, cond_must_be_in_brkts);
+	token_expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
 	return condition_type;
 }
 
