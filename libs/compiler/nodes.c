@@ -18,7 +18,6 @@
 #include "stdio.h"
 
 
-static const size_t DISPL_TO_ADDR = 4;
 static const size_t DISPL_TO_FLOAT = 50;
 static const size_t DISPL_TO_VOID = 200;
 
@@ -108,22 +107,21 @@ node_t node_to_address_ver(const node_t node)
 {
 	switch (node)
 	{
-		case ND_PREINC:
-		case ND_PREDEC:
-		case ND_POSTINC:
-		case ND_POSTDEC:
-		case ND_REM_ASSIGN:
-		case ND_SHL_ASSIGN:
-		case ND_SHR_ASSIGN:
-		case ND_AND_ASSIGN:
-		case ND_XOR_ASSIGN:
-		case ND_OR_ASSIGN:
-		case ND_ASSIGN:
-		case ND_ADD_ASSIGN:
-		case ND_SUB_ASSIGN:
-		case ND_MUL_ASSIGN:
-		case ND_DIV_ASSIGN:
-			return node + DISPL_TO_ADDR;
+		case ND_PREINC:		return ND_PREINC_AT;
+		case ND_PREDEC:		return ND_PREDEC_AT;
+		case ND_POSTINC:	return ND_POSTINC_AT;
+		case ND_POSTDEC:	return ND_POSTDEC_AT;
+		case ND_REM_ASSIGN:	return ND_REM_ASSIGN_AT;
+		case ND_SHL_ASSIGN:	return ND_SHL_ASSIGN_AT;
+		case ND_SHR_ASSIGN:	return ND_SHR_ASSIGN_AT;
+		case ND_AND_ASSIGN:	return ND_AND_ASSIGN_AT;
+		case ND_XOR_ASSIGN:	return ND_XOR_ASSIGN_AT;
+		case ND_OR_ASSIGN:	return ND_OR_ASSIGN_AT;
+		case ND_ASSIGN:		return ND_ASSIGN_AT;
+		case ND_ADD_ASSIGN:	return ND_ADD_ASSIGN_AT;
+		case ND_SUB_ASSIGN:	return ND_SUB_ASSIGN_AT;
+		case ND_MUL_ASSIGN:	return ND_MUL_ASSIGN_AT;
+		case ND_DIV_ASSIGN:	return ND_DIV_ASSIGN_AT;
 
 		default:
 			return node;
