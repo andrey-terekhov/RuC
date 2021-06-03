@@ -413,8 +413,11 @@ static void operand(information *const info, node *const nd)
 		}
 		break;
 		default:
+		{
+			system_error(node_unexpected, node_get_type(nd));
 			node_set_next(nd);
-			break;
+		}
+		break;
 	}
 }
 
