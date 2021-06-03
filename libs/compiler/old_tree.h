@@ -16,7 +16,7 @@
 
 #pragma once
 
-#define OLD_TREE
+//#define OLD_TREE
 
 #ifndef OLD_TREE
 	#include "tree.h"
