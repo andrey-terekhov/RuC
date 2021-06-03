@@ -15,6 +15,7 @@
  */
 
 #include "llvmgen.h"
+#include "codes.h"
 #include "defs.h"
 #include "errors.h"
 #include "hash.h"
@@ -1353,6 +1354,7 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	{
 		return -1;
 	}
+	tables_and_tree("tree1.txt", &(sx->predef), &(sx->modes), &(sx->tree));
 
 	information info;
 	info.io = io;
@@ -1365,7 +1367,7 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	info.answer_reg = 0;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
-	
+
 	const int ret = codegen(&info);
 
 	hash_clear(&info.arrays);
