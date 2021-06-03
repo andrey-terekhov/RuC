@@ -20,7 +20,8 @@
 #include "defs.h"
 #include "errors.h"
 #include "item.h"
-#include "tree.h"
+#include "stack.h"
+#include "old_tree.h"
 #include "uniprinter.h"
 #include "utf8.h"
 
@@ -38,7 +39,7 @@ typedef struct virtual
 
 	vector memory;					/**< Memory table */
 	vector processes;				/**< Init processes table */
-	vector stack;					/**< Stack for logic operations */
+	stack stk;						/**< Stack for logic operations */
 
 	vector identifiers;				/**< Local identifiers table */
 	vector representations;			/**< Local representations table */
@@ -93,17 +94,6 @@ static inline item_t proc_get(const virtual *const vm, const size_t index)
 }
 
 
-static inline void stack_push(virtual *const vm, const item_t value)
-{
-	vector_add(&vm->stack, value);
-}
-
-static inline item_t stack_pop(virtual *const vm)
-{
-	return vector_remove(&vm->stack);
-}
-
-
 static void addr_begin_condition(virtual *const vm, const size_t addr)
 {
 	while (vm->addr_cond != addr)
@@ -146,14 +136,14 @@ static void final_operation(virtual *const vm, node *const nd)
 			{
 				mem_add(vm, _DOUBLE);
 				mem_add(vm, BNE0);
-				stack_push(vm, (item_t)mem_size(vm));
+				stack_push(&vm->stk, (item_t)mem_size(vm));
 				mem_increase(vm, 1);
 			}
 			else if (op == ADLOGAND)
 			{
 				mem_add(vm, _DOUBLE);
 				mem_add(vm, BE0);
-				stack_push(vm, (item_t)mem_size(vm));
+				stack_push(&vm->stk, (item_t)mem_size(vm));
 				mem_increase(vm, 1);
 			}
 			else
@@ -161,7 +151,7 @@ static void final_operation(virtual *const vm, node *const nd)
 				mem_add(vm, op);
 				if (op == LOGOR || op == LOGAND)
 				{
-					mem_set(vm, (size_t)stack_pop(vm), (item_t)mem_size(vm));
+					mem_set(vm, (size_t)stack_pop(&vm->stk), (item_t)mem_size(vm));
 				}
 				else if (op == COPY00 || op == COPYST)
 				{
@@ -658,7 +648,11 @@ static void statement(virtual *const vm, node *const nd)
 
 			if (ref_from)
 			{
-				expression(vm, &incr, 0); // initialization
+				node_set_next(&incr);
+				if (declaration(vm, &incr))
+				{
+					expression(vm, &incr, -1);
+				}
 				child_stmt++;
 			}
 
@@ -970,7 +964,7 @@ int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *cons
 
 	vm.memory = vector_create(MAX_MEM_SIZE);
 	vm.processes = vector_create(sx->procd);
-	vm.stack = vector_create(MAX_STACK_SIZE);
+	vm.stk = stack_create(MAX_STACK_SIZE);
 
 	const size_t records = vector_size(&sx->identifiers) / 4;
 	vm.identifiers = vector_create(records * 3);
@@ -989,14 +983,14 @@ int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *cons
 		ret = output_export(io, &vm);
 	}
 
-#ifdef GENERATE_CODES
+#ifndef NDEBUG
 	tables_and_codes(DEFAULT_CODES, &sx->functions, &vm.processes, &vm.memory);
 #endif
 
 
 	vector_clear(&vm.memory);
 	vector_clear(&vm.processes);
-	vector_clear(&vm.stack);
+	stack_clear(&vm.stk);
 
 	vector_clear(&vm.identifiers);
 	vector_clear(&vm.representations);

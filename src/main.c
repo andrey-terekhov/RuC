@@ -22,7 +22,7 @@
 #include "workspace.h"
 
 
-const char *name = "../tests/executable/types/int/test_1.c";
+const char *name = "../tests/executable/structures/SELECT_9459.c";
 // "../tests/mips/0test.c";
 
 
@@ -33,6 +33,7 @@ int main(int argc, const char *argv[])
 	if (argc < 2)
 	{
 		ws_add_file(&ws, name);
+		ws_add_flag(&ws, "-Wno");
 		ws_set_output(&ws, "export.txt");
 	}
 

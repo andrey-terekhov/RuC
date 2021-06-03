@@ -16,12 +16,10 @@
 
 #pragma once
 
-#include "defs.h"
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
 #include "map.h"
-#include "uniio.h"
 #include "vector.h"
 
 
@@ -123,56 +121,6 @@ item_t func_get(const syntax *const sx, const size_t index);
  *	@return	Previous functions size
  */
 size_t func_reserve(syntax *const sx);
-
-
-/**
- *	Add new value to tree
- *
- *	@param	sx			Syntax structure
- *	@param	value		Value to record
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int tree_add(syntax *const sx, const item_t node);
-
-/**
- *	Set value by index in tree
- *
- *	@param	sx			Syntax structure
- *	@param	index		Index to record
- *	@param	value		Value to record
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int tree_set(syntax *const sx, const size_t index, const item_t node);
-
-/**
- *	Get an item by index from tree
- *
- *	@param	sx			Syntax structure
- *	@param	index		Index of record in tree
- *
- *	@return	Item by index from tree, @c ITEM_MAX on failure
- */
-item_t tree_get(const syntax *const sx, const size_t index);
-
-/**
- *	Get size of tree
- *
- *	@param	sx			Syntax structure
- *
- *	@return	Tree counter on success, @c SIZE_MAX on failure
- */
-size_t tree_size(const syntax *const sx);
-
-/**
- *	Reserve one element in tree table
- *
- *	@param	sx			Syntax structure
- *
- *	@return	Previous tree size
- */
-size_t tree_reserve(syntax *const sx);
 
 
 /**
@@ -381,12 +329,11 @@ item_t scope_func_enter(syntax *const sx);
  *	Exit function scope
  *
  *	@param	sx			Syntax structure
- *	@param	decl_ref	Reference to function declaration in the tree
  *	@param	displ		Stack displacement at the start of the scope
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Max displacement of the function, @c ITEM_MAX on failure
  */
-int scope_func_exit(syntax *const sx, const size_t decl_ref, const item_t displ);
+item_t scope_func_exit(syntax *const sx, const item_t displ);
 
 #ifdef __cplusplus
 } /* extern "C" */

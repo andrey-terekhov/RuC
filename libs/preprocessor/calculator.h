@@ -19,11 +19,23 @@
 #include "environment.h"
 
 
+#define LOGIC 		0
+#define ARITHMETIC	1
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int calculator(const int if_flag, environment *const env);
+/**
+ *	Calculate an arithmetic or logical expression
+ *
+ *	@param	env				Preprocessor environment
+ *	@param	type			Type expression
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int calculate(environment *const env, const int type);
 
 #ifdef __cplusplus
 } /* extern "C" */
