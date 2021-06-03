@@ -188,14 +188,24 @@ static void to_code_operation_const_reg(information *const info, item_t type, it
 	uni_printf(info->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static inline void to_code_load(information *const info, item_t result, item_t displ)
+static inline void to_code_load(information *const info, item_t result, item_t displ, item_t mode_array)
 {
-	uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n", result, displ);
+	uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%", result);
+	if (!mode_array)
+	{
+		uni_printf(info->io, "var");
+	}
+	uni_printf(info->io, ".%" PRIitem ", align 4\n", displ);
 }
 
-static inline void to_code_store_reg(information *const info, item_t reg, item_t displ)
+static inline void to_code_store_reg(information *const info, item_t reg, item_t displ, item_t mode_array)
 {
-	uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", reg, displ);
+	uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%", reg);
+	if (!mode_array)
+	{
+		uni_printf(info->io, "var");
+	}
+	uni_printf(info->io, ".%" PRIitem ", align 4\n", displ);
 }
 
 static inline void to_code_store_const(information *const info, item_t arg, item_t displ)
@@ -281,6 +291,68 @@ static void to_code_stack_load(information *const info)
 	info->register_num++;
 }
 
+static void to_code_slice(information *const info, const item_t id, const item_t num, const item_t cur_dimention, 
+							const item_t prev_slice, const item_t reg_mode)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
+	const int is_static = hash_get(&info->arrays, id, IS_STATIC);
+	const item_t dimention = hash_get_amount(&info->arrays, id) - 1;
+
+	if (is_static)
+	{
+		for (item_t i = dimention - cur_dimention; i < dimention; i++)
+		{
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, id, 1 + i));
+		}
+		uni_printf(info->io, "i32");
+
+		for (item_t i = dimention - cur_dimention; i < dimention; i++)
+		{
+			uni_printf(info->io, "]");
+		}
+		uni_printf(info->io, ", ");
+
+		for (item_t i = dimention - cur_dimention; i < dimention; i++)
+		{
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, id, 1 + i));
+		}
+		uni_printf(info->io, "i32");
+
+		for (item_t i = dimention - cur_dimention; i < dimention; i++)
+		{
+			uni_printf(info->io, "]");
+		}
+
+		if (dimention == cur_dimention)
+		{
+			uni_printf(info->io, "* %%arr.%" PRIitem ", i32 0", id);
+		}
+		else
+		{
+			uni_printf(info->io, "* %%.%" PRIitem ", i32 0", prev_slice);
+		}
+	}
+	else
+	{
+		if (dimention == cur_dimention)
+		{
+			uni_printf(info->io, "i32, i32* %%dynarr.%" PRIitem, id);
+		}
+		else
+		{
+			uni_printf(info->io, "i32, i32* %%.%" PRIitem, prev_slice);
+		}
+	}
+
+	uni_printf(info->io, ", i32 ");
+	if (reg_mode)
+	{
+		uni_printf(info->io, "%%.");
+	}
+	uni_printf(info->io, "%" PRIitem "\n", num);
+	info->register_num++;
+}
+
 
 static void check_type_and_branch(information *const info)
 {
@@ -321,7 +393,7 @@ static void operand(information *const info, node *const nd)
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
-			to_code_load(info, info->register_num, displ);
+			to_code_load(info, info->register_num, displ, 0);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
 			node_set_next(nd);
@@ -350,14 +422,37 @@ static void operand(information *const info, node *const nd)
 			break;
 		case TSliceident:
 		{
+			const item_t displ = node_get_arg(nd, 0);
+			item_t cur_dimention = hash_get_amount(&info->arrays, displ) - 1;
+			const location_t location = info->variable_location;
 			node_set_next(nd);
+
+			info->variable_location = LFREE;
 			expression(info, nd);
+
+			if (info->answer_type == ACONST)
+			{
+				to_code_slice(info, displ, info->answer_const, cur_dimention, 0, 0);
+			}
+			else if (info->answer_type == AREG)
+			{
+				to_code_slice(info, displ, info->answer_reg, cur_dimention, 0, 1);
+			}
 
 			while (node_get_type(nd) == TSlice)
 			{
 				node_set_next(nd);
 				expression(info, nd);
 			}
+
+			if (location != LMEM)
+			{
+				to_code_load(info, info->register_num, info->register_num - 1, 1);
+				info->register_num++;
+			}
+
+			info->answer_reg = info->register_num - 1;
+			info->answer_type = AREG;
 		}
 		break;
 		case TCall1:
@@ -413,11 +508,31 @@ static void operand(information *const info, node *const nd)
 		}
 		break;
 		default:
-		{
-			system_error(node_unexpected, node_get_type(nd));
 			node_set_next(nd);
-		}
-		break;
+			break;
+	}
+}
+
+// TODO: попробовать объединить с assignment_expression
+static void assignment_array_expression(information *const info, node *const nd)
+{
+	// const item_t assignment_type = node_get_type(nd);
+	node_set_next(nd);
+
+	info->variable_location = LMEM;
+	operand(info, nd); // TSliceident
+	item_t memory_reg = info->answer_reg;
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+
+	to_code_try_zext_to(info);
+
+	item_t result = info->answer_reg;
+
+	if (info->answer_type == AREG)
+	{
+		to_code_store_reg(info, result, memory_reg, 1);
 	}
 }
 
@@ -438,7 +553,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (assignment_type != ASS && assignment_type != ASSV)
 	{
-		to_code_load(info, info->register_num, displ);
+		to_code_load(info, info->register_num, displ, 0);
 		info->register_num++;
 
 		if (info->answer_type == AREG)
@@ -455,7 +570,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (info->answer_type == AREG || (assignment_type != ASS && assignment_type != ASSV))
 	{
-		to_code_store_reg(info, result, displ);
+		to_code_store_reg(info, result, displ, 0);
 	}
 	else // ACONST && =
 	{
@@ -570,7 +685,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 	node_set_next(nd);
 	node_set_next(nd); // TIdent
 
-	to_code_load(info, info->register_num, displ);
+	to_code_load(info, info->register_num, displ, 0);
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 	
@@ -589,7 +704,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, displ);
+	to_code_store_reg(info, info->register_num, displ, 0);
 	info->register_num++;
 }
 
@@ -670,6 +785,21 @@ static void binary_operation(information *const info, node *const nd)
 		case ORASS:
 		case ORASSV:
 			assignment_expression(info, nd);
+			break;
+
+
+		case ASSAT:
+		case PLUSASSAT:
+		case MINUSASSAT:
+		case MULTASSAT:
+		case DIVASSAT:
+
+		case ASSATV:
+		case PLUSASSATV:
+		case MINUSASSATV:
+		case MULTASSATV:
+		case DIVASSATV:
+			assignment_array_expression(info, nd);
 			break;
 
 
@@ -1353,6 +1483,7 @@ static int codegen(information *const info)
 
 int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
+	tables_and_tree("tree.txt", &(sx->predef), &(sx->modes), &(sx->tree));
 	if (optimize_for_llvm(ws, io, sx))
 	{
 		return -1;
