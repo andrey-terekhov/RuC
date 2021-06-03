@@ -85,6 +85,8 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case PLUSASS:
 		case PLUSASSV:
 		case LPLUS:
+		case PLUSASSAT:
+		case PLUSASSATV:
 			uni_printf(io, "add nsw");
 			break;
 
@@ -96,18 +98,24 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case MINUSASSV:
 		case LMINUS:
 		case UNMINUS:
+		case MINUSASSAT:
+		case MINUSASSATV:
 			uni_printf(io, "sub nsw");
 			break;
 
 		case MULTASS:
 		case MULTASSV:
 		case LMULT:
+		case MULTASSAT:
+		case MULTASSATV:
 			uni_printf(io, "mul nsw");
 			break;
 
 		case DIVASS:
 		case DIVASSV:
 		case LDIV:
+		case DIVASSAT:
+		case DIVASSATV:
 			uni_printf(io, "sdiv");
 			break;
 
@@ -208,9 +216,14 @@ static inline void to_code_store_reg(information *const info, item_t reg, item_t
 	uni_printf(info->io, ".%" PRIitem ", align 4\n", displ);
 }
 
-static inline void to_code_store_const(information *const info, item_t arg, item_t displ)
+static inline void to_code_store_const(information *const info, item_t arg, item_t displ, item_t mode_array)
 {
-	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", arg, displ);
+	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%", arg);
+	if (!mode_array)
+	{
+		uni_printf(info->io, "var");
+	}
+	uni_printf(info->io, ".%" PRIitem ", align 4\n", displ);
 }
 
 static void to_code_try_zext_to(information *const info)
@@ -405,7 +418,7 @@ static void operand(information *const info, node *const nd)
 
 			if (info->variable_location == LMEM)
 			{
-				to_code_store_const(info, num, info->request_reg);
+				to_code_store_const(info, num, info->request_reg, 0);
 				info->answer_type = AREG;
 			}
 			else
@@ -516,7 +529,7 @@ static void operand(information *const info, node *const nd)
 // TODO: попробовать объединить с assignment_expression
 static void assignment_array_expression(information *const info, node *const nd)
 {
-	// const item_t assignment_type = node_get_type(nd);
+	const item_t assignment_type = node_get_type(nd);
 	node_set_next(nd);
 
 	info->variable_location = LMEM;
@@ -530,9 +543,31 @@ static void assignment_array_expression(information *const info, node *const nd)
 
 	item_t result = info->answer_reg;
 
+	if (assignment_type != ASSAT && assignment_type != ASSATV)
+	{
+		to_code_load(info, info->register_num, memory_reg, 1);
+		info->register_num++;
+
+		if (info->answer_type == AREG)
+		{
+			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg);
+		}
+		else // ACONST
+		{
+			to_code_operation_reg_const(info, assignment_type, info->register_num - 1, info->answer_const);
+		}
+
+		result = info->register_num++;
+		info->answer_type = AREG;
+	}
+
 	if (info->answer_type == AREG)
 	{
 		to_code_store_reg(info, result, memory_reg, 1);
+	}
+	else // ACONST && =
+	{
+		to_code_store_const(info, info->answer_const, memory_reg, 1);
 	}
 }
 
@@ -574,7 +609,7 @@ static void assignment_expression(information *const info, node *const nd)
 	}
 	else // ACONST && =
 	{
-		to_code_store_const(info, info->answer_const, displ);
+		to_code_store_const(info, info->answer_const, displ, 0);
 	}
 }
 
