@@ -23,6 +23,8 @@
 
 
 const size_t HASH_TABLE_SIZE = 1024;
+const size_t IS_STATIC = 0;
+
 
 // TODO: нужно создать enum для типов и передавать его в функции to_code
 typedef enum ANSWER
@@ -38,12 +40,6 @@ typedef enum LOCATION
 	LMEM,								/**< Переменная находится в памяти */
 	LFREE,								/**< Свободный запрос значения */
 } location_t;
-
-typedef enum ARRAY_INFO
-{
-	IS_STATIC = 0,							/**< Если массив статический, то @c 1, иначе @c 0 */
-	BORDERS,								/**< Граница массива: константы или номера регистров */
-} array_info_t;
 
 typedef struct information
 {
@@ -65,9 +61,9 @@ typedef struct information
 	item_t label_false;									/**< Метка перехода при false */
 
 	hash arrays;	/**< Хеш таблица с информацией о массивах:
-			@с key		 - смещение массива
-			@c value[0]	 - флаг статичности
-			@c value[1..MAX] - границы массива */									
+							@с key		 - смещение массива
+							@c value[0]	 - флаг статичности
+							@c value[1..MAX] - границы массива */									
 	int was_dynamic;									/**< Если в функции были динамические массивы, то @c 1, иначе @c 0 */
 } information;
 
@@ -235,17 +231,16 @@ static inline void to_code_conditional_branch(information *const info, item_t re
 
 static void to_code_alloc_array_static(information *const info, const size_t index)
 {
-	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-
 	uni_printf(info->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
 
-	for (size_t i = 0; i < dim; i++)
+	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+	for (size_t i = 1; i <= dim; i++)
 	{
-		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, BORDERS + i));
+		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
 	}
 	uni_printf(info->io, "i32");
 
-	for (size_t i = 0; i < dim; i++)
+	for (size_t i = 1; i <= dim; i++)
 	{
 		uni_printf(info->io, "]");
 	}
@@ -254,15 +249,14 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 
 static void to_code_alloc_array_dynamic(information *const info, const size_t index)
 {
-	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-
 	// выделение памяти на стеке
-	item_t to_alloc = hash_get_by_index(&info->arrays, index, BORDERS);
+	item_t to_alloc = hash_get_by_index(&info->arrays, index, 1);
 
-	for (size_t i = 1; i < dim; i++)
+	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+	for (size_t i = 2; i <= dim; i++)
 	{
-		uni_printf(info->io, " %%.%" PRIitem " = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n", 
-			info->register_num, to_alloc, hash_get_by_index(&info->arrays, index, BORDERS + i));
+		uni_printf(info->io, " %%.%" PRIitem " = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n",
+			info->register_num, to_alloc, hash_get_by_index(&info->arrays, index, i));
 		to_alloc = info->register_num++;
 	}
 	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca i32, i32 %%.%" PRIitem ", align 4\n", hash_get_key(&info->arrays, index), to_alloc);	
@@ -1195,9 +1189,6 @@ static void block(information *const info, node *const nd)
 		{
 			case TDeclarr:
 			{
-				const item_t N = node_get_arg(nd, 0);
-				item_t current_array_is_static = 1;
-
 				node id = node_get_child(nd, node_get_amount(nd) - 1);
 				if (node_get_type(&id) != TDeclid)
 				{
@@ -1205,40 +1196,38 @@ static void block(information *const info, node *const nd)
 				}
 
 				const item_t displ = node_get_arg(&id, 0);
-				const size_t index = hash_add(&info->arrays, displ, 1 + (size_t)N);
+				const size_t N = (size_t)node_get_arg(&id, 2);
+				const size_t index = hash_add(&info->arrays, displ, 1 + N);
+				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
 				node_set_next(nd);
-				for (size_t i = 0; i < (size_t)N; i++)
+				for (size_t i = 1; i <= N; i++)
 				{
 					info->variable_location = LFREE;
 					expression(info, nd);
 
-					// TODO: а если часть границ статическая, а часть динамическая?
-					// наверное, в таком случае границы надо хранить в раздельных массивах
-					// но об этом потом
 					if (info->answer_type == ACONST)
 					{
-						if (!current_array_is_static)
+						if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
 						{
 							system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
 						}
 
-						hash_set_by_index(&info->arrays, index, BORDERS + i, info->answer_const);
+						hash_set_by_index(&info->arrays, index, i, info->answer_const);
 					}
 					else // if (info->answer_type == AREG) динамический массив
 					{
-						if (current_array_is_static && i != 0)
+						if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
 						{
 							system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
 						}
 
-						hash_set_by_index(&info->arrays, index, BORDERS + i, info->answer_reg);
-						current_array_is_static = 0;
+						hash_set_by_index(&info->arrays, index, i, info->answer_reg);
+						hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
 					}			
 				}
-				hash_set_by_index(&(info->arrays), index, IS_STATIC, current_array_is_static);
 
-				if (current_array_is_static)
+				if (hash_get_by_index(&info->arrays, index, IS_STATIC))
 				{
 					to_code_alloc_array_static(info, index);
 				}
@@ -1294,21 +1283,10 @@ static void block(information *const info, node *const nd)
 	}
 }
 
-static int codegen(universal_io *const io, syntax *const sx)
+static int codegen(information *const info)
 {
-	information info;
-	info.io = io;
-	info.sx = sx;
-	info.string_num = 1;
-	info.register_num = 1;
-	info.label_num = 1;
-	info.variable_location = LREG;
-	info.request_reg = 0;
-	info.answer_reg = 0;
-	info.arrays = hash_create(HASH_TABLE_SIZE);
-
 	int was_stack_functions = 0;
-	node root = node_get_root(&sx->tree);
+	node root = node_get_root(&info->sx->tree);
 	while (node_set_next(&root) == 0)
 	{
 		switch (node_get_type(&root))
@@ -1316,31 +1294,32 @@ static int codegen(universal_io *const io, syntax *const sx)
 			case TFuncdef:
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
-				const item_t func_type = mode_get(info.sx, (size_t)ident_get_mode(info.sx, ref_ident) + 1);
-				info.was_dynamic = 0;
+				const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
+				info->was_dynamic = 0;
 
-				if (ident_get_prev(info.sx, ref_ident) == LMAIN)
+				if (ident_get_prev(info->sx, ref_ident) == LMAIN)
 				{
-					uni_printf(info.io, "define i32 @main(");
+					uni_printf(info->io, "define i32 @main(");
 				}
 				else if (func_type == mode_void)
 				{
-					uni_printf(info.io, "define void @func%zi(", ref_ident);
+					uni_printf(info->io, "define void @func%zi(", ref_ident);
 				}
 				else if (func_type == mode_integer)
 				{
-					uni_printf(info.io, "define i32 @func%zi(", ref_ident);
+					uni_printf(info->io, "define i32 @func%zi(", ref_ident);
 				}
-				uni_printf(info.io, ") {\n");
+				uni_printf(info->io, ") {\n");
 
 				node_set_next(&root);
-				block(&info, &root);
-				uni_printf(info.io, "}\n\n");
+				block(info, &root);
+				uni_printf(info->io, "}\n\n");
 
-				was_stack_functions |= info.was_dynamic;
+				was_stack_functions |= info->was_dynamic;
 			}
 			break;
 			case TEnd:
+				hash_clear(&info->arrays);
 				break;
 			default:
 				system_error(node_unexpected, node_get_type(&root));
@@ -1350,11 +1329,10 @@ static int codegen(universal_io *const io, syntax *const sx)
 
 	if (was_stack_functions)
 	{
-		uni_printf(info.io, "declare i8* @llvm.stacksave()\n");
-		uni_printf(info.io, "declare void @llvm.stackrestore(i8*)\n");
+		uni_printf(info->io, "declare i8* @llvm.stacksave()\n");
+		uni_printf(info->io, "declare void @llvm.stackrestore(i8*)\n");
 	}
-
-	hash_clear(&info.arrays);
+	hash_clear(&info->arrays);
 	
 	return 0;
 }
@@ -1376,5 +1354,16 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 		return -1;
 	}
 
-	return codegen(io, sx);
+	information info;
+	info.io = io;
+	info.sx = sx;
+	info.string_num = 1;
+	info.register_num = 1;
+	info.label_num = 1;
+	info.variable_location = LREG;
+	info.request_reg = 0;
+	info.answer_reg = 0;
+	info.arrays = hash_create(HASH_TABLE_SIZE);
+
+	return codegen(&info);
 }
