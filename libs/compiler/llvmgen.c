@@ -1364,7 +1364,6 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	info.answer_reg = 0;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
-
 	const int ret = codegen(&info);
 	hash_clear(&info.arrays);
 
