@@ -17,6 +17,8 @@
 #include "nodes.h"
 #include "stdio.h"
 
+static const size_t DISPL_TO_FLOAT = 50;
+static const size_t DISPL_TO_VOID = 200;
 
 node_t token_to_node(const token_t token)
 {
@@ -132,7 +134,7 @@ node_t node_void_operator(const node_t node)
 		|| (node >= ND_ASSIGNR && node <= ND_DIVASSIGNATR)
 		|| (node >= ND_POSTINCR && node <= ND_PREDECATR))
 	{
-		return node + 200;
+		return node + DISPL_TO_VOID;
 	}
 	else
 	{
@@ -146,7 +148,7 @@ node_t node_float_operator(const node_t node)
 		|| (node >= ND_ASSIGNAT && node <= ND_DIVASSIGNAT)
 		|| (node >= ND_EQ && node <= ND_UNMINUS))
 	{
-		return node + 50;
+		return node + DISPL_TO_FLOAT;
 	}
 	else
 	{
