@@ -25,9 +25,6 @@
 extern "C" {
 #endif
 
-int preprocess_scan(environment *const env);
-
-
 /**
  *	Preprocess files from workspace
  *

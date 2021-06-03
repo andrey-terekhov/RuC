@@ -21,9 +21,6 @@
 #include "workspace.h"
 
 
-//#define GENERATE_CODES
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif

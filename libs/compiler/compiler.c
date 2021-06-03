@@ -15,15 +15,15 @@
  */
 
 #include "compiler.h"
-#include "parser.h"
+#include <stdlib.h>
+#include <string.h>
 #include "codegen.h"
 #include "errors.h"
 #include "llvmgen.h"
+#include "parser.h"
 #include "preprocessor.h"
 #include "syntax.h"
 #include "uniio.h"
-#include <stdlib.h>
-#include <string.h>
 
 #ifndef _MSC_VER
 	#include <sys/stat.h>
@@ -69,7 +69,7 @@ int compile_from_io(const workspace *const ws, universal_io *const io, const enc
 	}
 
 	syntax sx = sx_create();
-	int ret = parse(io, &sx);
+	int ret = parse(ws, io, &sx);
 
 	if (!ret)
 	{

@@ -39,7 +39,7 @@ enum MODE
 	mode_float = -3,
 	mode_void = -6,
 
-	mode_void_pointer = -150,
+	mode_void_pointer = 15,
 	mode_msg_info = 2,
 	mode_function = 1001,
 	mode_struct = 1002,
@@ -326,7 +326,6 @@ enum MODE
 #define LEFTBR		103
 #define LEFTSQBR	105
 #define STRING		107
-#define NUMBER		108
 #define IDENT		109
 #define CHAR_CONST	111
 #define INT_CONST	112
@@ -346,12 +345,6 @@ enum MODE
 #define RIGHTSQBR	0b00001000
 #define END			0b00010000
 #define SEMICOLON	0b00100000
-
-
-// Ответы
-
-#define VAL	 110
-#define ADDR 111
 
 
 // Ключевые слова

@@ -15,12 +15,12 @@
  */
 
 #include "codes.h"
+#include <string.h>
 #include "defs.h"
 #include "errors.h"
-#include "tree.h"
+#include "old_tree.h"
 #include "uniio.h"
 #include "uniprinter.h"
-#include <string.h>
 
 
 #define MAX_ELEM_SIZE	32
@@ -1345,13 +1345,13 @@ size_t elem_to_io(universal_io *const io, const vector *const table, size_t i)
 }
 
 
-void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
+size_t tree_print_recursive(universal_io *const io, node *const nd, size_t index, size_t tabs)
 {
 	for (size_t i = 0; i < tabs; i++)
 	{
 		uni_printf(io, INDENT);
 	}
-	uni_printf(io, "tc %zi) ", nd->type);
+	uni_printf(io, "tc %zi) ", index);
 
 	const item_t type = node_get_type(nd);
 	char buffer[MAX_ELEM_SIZE];
@@ -1382,15 +1382,18 @@ void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
 			|| i != argc)
 		{
 			elem_get_name(type, 0, buffer);
-			warning(NULL, node_argc, nd->type, buffer);
+			warning(NULL, node_argc, index, buffer);
 		}
 	}
 
+	index += argc + 1;
 	for (size_t j = 0; j < node_get_amount(nd); j++)
 	{
 		node child = node_get_child(nd, j);
-		tree_print_recursive(io, &child, tabs + 1);
+		index = tree_print_recursive(io, &child, index, tabs + 1);
 	}
+
+	return index;
 }
 
 
@@ -1403,30 +1406,11 @@ void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
  */
 
 
-void tree_print(const char *const path, vector *const tree)
-{
-	universal_io io = io_create();
-	if (!vector_is_correct(tree) || out_set_file(&io, path))
-	{
-		return;
-	}
-
-	node nd = node_get_root(tree);
-	for (size_t i = 0; i < node_get_amount(&nd); i++)
-	{
-		node child = node_get_child(&nd, i);
-		tree_print_recursive(&io, &child, 0);
-	}
-
-	io_erase(&io);
-}
-
-
 /** Вывод таблиц и дерева */
 void tables_and_tree(const char *const path
 	, const vector *const identifiers
 	, const vector *const modes
-	, const vector *const tree)
+	, vector *const tree)
 {
 	universal_io io = io_create();
 	if (!vector_is_correct(identifiers) || !vector_is_correct(modes) || !vector_is_correct(tree)
@@ -1436,7 +1420,7 @@ void tables_and_tree(const char *const path
 	}
 
 
-	uni_printf(&io, "%s\n", "identab");
+	uni_printf(&io, "identab\n");
 	for (size_t i = 2; i < vector_size(identifiers); i += 4)
 	{
 		for (size_t j = 0; j < 4; j++)
@@ -1446,19 +1430,28 @@ void tables_and_tree(const char *const path
 		uni_printf(&io, "\n");
 	}
 
-	uni_printf(&io, "\n%s\n", "modetab");
+	uni_printf(&io, "\nmodetab\n");
 	for (size_t i = 0; i < vector_size(modes); i++)
 	{
 		uni_printf(&io, "md %zi) %" PRIitem "\n", i, vector_get(modes, i));
 	}
 
-	uni_printf(&io, "\n");
+	uni_printf(&io, "\n\ntree\n");
 	size_t i = 0;
+#ifdef OLD_TREE
 	while (i < vector_size(tree))
 	{
 		uni_printf(&io, "tc %zi) ", i);
 		i = elem_to_io(&io, tree, i);
 	}
+#else
+	node nd = node_get_root(tree);
+	for (size_t j = 0; j < node_get_amount(&nd); j++)
+	{
+		node child = node_get_child(&nd, j);
+		i = tree_print_recursive(&io, &child, i, 0);
+	}
+#endif
 
 	io_erase(&io);
 }
@@ -1477,19 +1470,19 @@ void tables_and_codes(const char *const path
 	}
 
 
-	uni_printf(&io, "%s\n", "functions");
+	uni_printf(&io, "functions\n");
 	for (size_t i = 0; i < vector_size(functions); i++)
 	{
 		uni_printf(&io, "fun %zi) %" PRIitem "\n", i, vector_get(functions, i));
 	}
 
-	uni_printf(&io, "\n%s\n", "iniprocs");
+	uni_printf(&io, "\n\niniprocs\n");
 	for (size_t i = 0; i < vector_size(processes); i++)
 	{
 		uni_printf(&io, "inipr %zi) %" PRIitem "\n", i, vector_get(processes, i));
 	}
 
-	uni_printf(&io, "\n%s\n", "mem");
+	uni_printf(&io, "\n\nmem\n");
 	size_t i = 0;
 	while (i < vector_size(memory))
 	{
