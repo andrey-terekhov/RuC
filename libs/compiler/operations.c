@@ -15,21 +15,21 @@
  */
 
 #include "operations.h"
+#include "errors.h"
 
 
 static const size_t DISPL_TO_VOID = 200;
 
-operation_t token_to_node(const token_t token)
+
+operation_t token_to_binary(const token_t token)
 {
 	switch (token)
 	{
-		case TK_TILDE:					return OP_NOT;
 		case TK_PLUS:					return OP_ADD;
 		case TK_MINUS:					return OP_SUB;
 		case TK_STAR:					return OP_MUL;
 		case TK_SLASH:					return OP_DIV;
 		case TK_PERCENT:				return OP_REM;
-		case TK_EXCLAIM:				return OP_LOG_NOT;
 		case TK_CARET:					return OP_XOR;
 		case TK_PIPE:					return OP_OR;
 		case TK_AMP:					return OP_AND;
@@ -37,9 +37,7 @@ operation_t token_to_node(const token_t token)
 		case TK_LESS:					return OP_LT;
 		case TK_GREATER:				return OP_GT;
 		case TK_PLUS_EQUAL:				return OP_ADD_ASSIGN;
-		case TK_PLUS_PLUS:				return OP_PREINC;
 		case TK_MINUS_EQUAL:			return OP_SUB_ASSIGN;
-		case TK_MINUS_MINUS:			return OP_PREDEC;
 		case TK_STAR_EQUAL:				return OP_MUL_ASSIGN;
 		case TK_SLASH_EQUAL:			return OP_DIV_ASSIGN;
 		case TK_PERCENT_EQUAL:			return OP_REM_ASSIGN;
@@ -57,6 +55,31 @@ operation_t token_to_node(const token_t token)
 		case TK_LESS_LESS_EQUAL:		return OP_SHL_ASSIGN;
 		case TK_GREATER_GREATER_EQUAL:	return OP_SHR_ASSIGN;
 
+		default:
+			system_error(node_unexpected);
+			return 0;
+	}
+}
+
+operation_t token_to_unary(const token_t token)
+{
+	switch (token)
+	{
+		case TK_TILDE:					return OP_NOT;
+		case TK_EXCLAIM:				return OP_LOG_NOT;
+		case TK_PLUS_PLUS:				return OP_PREINC;
+		case TK_MINUS_MINUS:			return OP_PREDEC;
+
+		default:
+			system_error(node_unexpected);
+			return 0;
+	}
+}
+
+operation_t token_to_function(const token_t token)
+{
+	switch (token)
+	{
 		case TK_ABS:					return OP_ABS;
 		case TK_SQRT:					return OP_SQRT;
 		case TK_EXP:					return OP_EXP;
@@ -97,7 +120,10 @@ operation_t token_to_node(const token_t token)
 		case TK_ROBOT_RECEIVE_INT:		return OP_RECEIVE_INT;
 		case TK_ROBOT_RECEIVE_FLOAT:	return OP_RECEIVE_FLOAT;
 		case TK_ROBOT_RECEIVE_STRING:	return OP_RECEIVE_STRING;
-		default:						return 0;
+
+		default:
+			system_error(node_unexpected);
+			return 0;
 	}
 }
 

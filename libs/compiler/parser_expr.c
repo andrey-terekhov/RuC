@@ -174,7 +174,7 @@ void binary_operation(parser *const prs, operator operator)
 
 	if (token == TK_PIPE_PIPE || token == TK_AMP_AMP)
 	{
-		to_tree(prs, token_to_node(token));
+		to_tree(prs, token_to_binary(token));
 		node_add_arg(&prs->nd, 0); // FIXME: useless
 
 		// FIXME: just remove it after MIPS integration
@@ -183,7 +183,7 @@ void binary_operation(parser *const prs, operator operator)
 	}
 	else
 	{
-		float_operation(prs, result_mode, token_to_node(token));
+		float_operation(prs, result_mode, token_to_binary(token));
 	}
 
 	if (is_integer_operator(token))
@@ -593,7 +593,7 @@ void parse_standard_function_call(parser *const prs)
 		operands_push(prs, VALUE, mode_float);
 	}
 
-	to_tree(prs, token_to_node(func));
+	to_tree(prs, token_to_function(func));
 	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
 }
 
@@ -674,7 +674,7 @@ void parse_constant(parser *const prs)
  *	Parse primary expression [C99 6.5.1]
  *
  *	primary-expression:
- *		TK_IDENTIFIER
+ *		identifier
  *		constant
  *		string-literal
  *		'(' expression ')'
@@ -793,7 +793,7 @@ item_t find_field(parser *const prs)
  *		argument-expression-list ',' assignment-expression
  *
  *	@param	prs			Parser structure
- *	@param	function_id	Index of function TK_IDENTIFIER in TK_IDENTIFIERs table
+ *	@param	function_id	Index of function identifier in identifiers table
  */
 void parse_function_call(parser *const prs, const size_t function_id)
 {
@@ -1094,7 +1094,7 @@ void parse_unary_expression(parser *const prs)
 		{
 			token_consume(prs);
 			parse_unary_expression(prs);
-			operation_t node_type = token_to_node(operator);
+			operation_t node_type = token_to_unary(operator);
 
 			int is_variable = 0;
 			if (prs->last_type == ADDRESS)
@@ -1194,7 +1194,7 @@ void parse_unary_expression(parser *const prs)
 					{
 						if (operator != TK_PLUS)
 						{
-							to_tree(prs, token_to_node(operator));
+							to_tree(prs, token_to_unary(operator));
 						}
 
 						const item_t type = stack_pop(&prs->anonymous);
@@ -1468,7 +1468,7 @@ void parse_assignment_expression_internal(parser *const prs)
 		}
 
 		token_t operator = prs->token;
-		operation_t node_type = token_to_node(operator);
+		operation_t node_type = token_to_binary(operator);
 		token_consume(prs);
 
 		prs->flag_in_assignment = 1;

@@ -314,13 +314,31 @@ typedef enum OPERATION
 
 
 /**
- *	Convert token type to corresponding node type
+ *	Convert token to corresponding binary operator
  *
- *	@param	token	Token type
+ *	@param	token	Token
  *
- *	@return	Operation type
+ *	@return	Operation
  */
-operation_t token_to_node(const token_t token);
+operation_t token_to_binary(const token_t token);
+
+/**
+ *	Convert token to corresponding unary operator
+ *
+ *	@param	token	Token
+ *
+ *	@return	Operation
+ */
+operation_t token_to_unary(const token_t token);
+
+/**
+ *	Convert token to corresponding function operator
+ *
+ *	@param	token	Token
+ *
+ *	@return	Operation
+ */
+operation_t token_to_function(const token_t token);
 
 /**
  *	Convert Operation to corresponding address version
