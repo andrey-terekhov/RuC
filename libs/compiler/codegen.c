@@ -129,7 +129,7 @@ static void addr_end_break(virtual *const vm)
 static void final_operation(virtual *const vm, node *const nd)
 {
 	operation_t op = node_get_type(nd);
-	while (op >= BEGIN_FINAL_OPERATION && op <= EOP_FINAL_OPERATION)
+	while (op >= BEGIN_FINAL_OPERATION && op <= END_FINAL_OPERATION)
 	{
 		if (op != OP_NULL)
 		{

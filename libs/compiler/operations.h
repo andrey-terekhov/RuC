@@ -29,9 +29,9 @@ static const size_t DISPL_TO_FLOAT = 50;
 
 typedef enum OPERATION
 {
-	BEGIN_FINAL_OPERATION,
+	BEGIN_FINAL_OPERATION	= 7000,
 
-	OP_AD_LOG_AND 			= 7000,					/**< 'ADLOGAND' node */
+	OP_AD_LOG_AND,									/**< 'ADLOGAND' node */
 	OP_AD_LOG_OR,									/**< 'ADLOGOR' node */
 	OP_NULL					= IC_NOP,				/**< Empty node */
 	OP_WIDEN1				= IC_WIDEN1,			/**< 'WIDEN1' node */
@@ -255,7 +255,7 @@ typedef enum OPERATION
 	OP_OR_ASSIGN_V			= IC_ORASSV,			/**< '|=V' node */
 	OP_OR_ASSIGN_AT_V		= IC_ORASSATV,			/**< '|=@V' node */
 
-	EOP_FINAL_OPERATION = MAX_INSTRUCTION_CODE,
+	END_FINAL_OPERATION		= MAX_INSTRUCTION_CODE,
 
 	// Statement
 	OP_LABEL,				/**< Label statement node */

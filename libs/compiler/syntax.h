@@ -33,15 +33,15 @@ typedef struct node node;
 /** Modes */
 enum MODE
 {
-	mode_void = -6,
-	mode_float = -3,
+	mode_void			= -6,
+	mode_float			= -3,
 	mode_character,
 	mode_integer,
 	mode_undefined,
 
-	mode_msg_info = 2,
-	mode_void_pointer = 15,
-	mode_function,
+	mode_msg_info 		= 2,
+	mode_void_pointer	= 15,
+	mode_function		= 1001,
 	mode_struct,
 	mode_array,
 	mode_pointer,
