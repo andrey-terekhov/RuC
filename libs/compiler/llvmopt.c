@@ -289,6 +289,11 @@ static int node_recursive(information *const info, node *const nd)
 	{
 		node child = node_get_child(nd, i);
 
+		if (node_get_type(&child) == TBegin)
+		{
+			stack_clear(info, 0);
+		}
+
 		switch (node_get_type(&child))
 		{
 			case TString:
@@ -335,10 +340,8 @@ static int node_recursive(information *const info, node *const nd)
 
 			case TExprend:
 			{
-				// если конец выражения, то очищаем стек
 				if (info->slice_depth == 0)
 				{
-					stack_clear(info, 0);
 					if (info->last_depth > 1)
 					{
 						info->last_depth--;
@@ -347,11 +350,11 @@ static int node_recursive(information *const info, node *const nd)
 				// если вырезка не переставлена, то надо изменить глубину
 				else if (info->last_depth <= 1)
 				{
-					// node texprend_child = node_get_child(&child, 0);
-					// if (node_get_type(&texprend_child) == TSlice)
-					// {
-					// 	break;
-					// }
+					node texprend_child = node_get_child(&child, 0);
+					if (node_get_type(&texprend_child) == TSlice)
+					{
+						break;
+					}
 
 					stack_clear(info, info->slice_stack_size);
 
@@ -393,6 +396,12 @@ static int node_recursive(information *const info, node *const nd)
 					{
 						node_info *operand = stack_pop(info);
 
+						if (node_get_type(nd_info.parent) == TAddrtoval)
+						{
+							node_info log_info = { nd_info.parent, 1, 1 };
+							has_error |= transposition(&nd_info, &log_info);
+						}
+
 						// перестановка с операндом
 						has_error |= transposition(operand, &nd_info);
 
@@ -407,11 +416,18 @@ static int node_recursive(information *const info, node *const nd)
 						node_info *second = stack_pop(info);
 						node_info *first = stack_pop(info);
 
+						if (node_get_type(nd_info.parent) == TAddrtoval)
+						{
+							node_info log_info = { nd_info.parent, 1, 1 };
+							has_error |= transposition(&nd_info, &log_info);
+						}
+
 						// перестановка со вторым операндом
 						has_error |= transposition(second, &nd_info);
 
 						// надо переставить second с родителем
-						if (node_get_type(second->parent) == ADLOGOR || node_get_type(second->parent) == ADLOGAND)
+						if (node_get_type(second->parent) == ADLOGOR || node_get_type(second->parent) == ADLOGAND
+							|| node_get_type(second->parent) == TAddrtoval)
 						{
 							node_info log_info = { second->parent, 1, 1 };
 							has_error |= transposition(second, &log_info);

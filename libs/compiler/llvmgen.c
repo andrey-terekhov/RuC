@@ -443,6 +443,21 @@ static void operand(information *const info, node *const nd)
 			info->variable_location = LFREE;
 			expression(info, nd);
 
+			// // TODO: пока только для динамических массивов размерности 2
+			// if (!hash_get(&info->arrays, displ, IS_STATIC))
+			// {
+			// 	if (info->answer_type == ACONST)
+			// 	{
+			// 		to_code_operation_const_reg(info, LMULT, info->answer_const, hash_get(&info->arrays, displ, 1));
+			// 	}
+			// 	if (info->answer_type == AREG)
+			// 	{
+			// 		to_code_operation_reg_reg(info, LMULT, info->answer_reg, hash_get(&info->arrays, displ, 1));
+			// 	}
+			// 	info->answer_type = AREG;
+			// 	info->answer_reg = info->register_num++;
+			// }
+
 			if (info->answer_type == ACONST)
 			{
 				to_code_slice(info, displ, info->answer_const, cur_dimention, 0, 0);
@@ -452,10 +467,28 @@ static void operand(information *const info, node *const nd)
 				to_code_slice(info, displ, info->answer_reg, cur_dimention, 0, 1);
 			}
 
+			item_t prev_slice = info->register_num - 1;
 			while (node_get_type(nd) == TSlice)
 			{
 				node_set_next(nd);
+				info->variable_location = LFREE;
 				expression(info, nd);
+				cur_dimention--;
+
+				if (info->answer_type == ACONST)
+				{
+					to_code_slice(info, displ, info->answer_const, cur_dimention, prev_slice, 0);
+				}
+				else if (info->answer_type == AREG)
+				{
+					to_code_slice(info, displ, info->answer_reg, cur_dimention, prev_slice, 1);
+				}
+				prev_slice = info->register_num - 1;
+			}
+
+			if (node_get_type(nd) == TAddrtoval) // может это замена LMEM?
+			{
+				node_set_next(nd);
 			}
 
 			if (location != LMEM)
