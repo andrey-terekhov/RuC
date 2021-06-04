@@ -112,7 +112,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_STRINGD:
+		case ND_STRING_D:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -1294,7 +1294,7 @@ size_t elem_to_io(universal_io *const io, const vector *const table, size_t i)
 			uni_printf(io, "%" PRIitem "\n", vector_get(table, i++));
 		}
 	}
-	else if (type == ND_STRINGD)
+	else if (type == ND_STRING_D)
 	{
 		const size_t n = (size_t)vector_get(table, i - 1);
 		for (size_t j = 0; j < n; j++)
@@ -1341,7 +1341,7 @@ size_t tree_print_recursive(universal_io *const io, node *const nd, size_t index
 		}
 		uni_printf(io, "\n");
 
-		if ((node_get_arg(nd, i) != ITEM_MAX && node_get_type(nd) != ND_STRING && node_get_type(nd) != ND_STRINGD)
+		if ((node_get_arg(nd, i) != ITEM_MAX && node_get_type(nd) != ND_STRING && node_get_type(nd) != ND_STRING_D)
 			|| i != argc)
 		{
 			elem_get_name(type, 0, buffer);

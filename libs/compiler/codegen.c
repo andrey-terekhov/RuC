@@ -243,7 +243,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 			}
 			break;
 			case ND_STRING:
-			case ND_STRINGD:
+			case ND_STRING_D:
 			{
 				mem_add(vm, IC_LI);
 				const size_t reserved = mem_size(vm) + 4;
