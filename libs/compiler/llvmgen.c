@@ -443,20 +443,20 @@ static void operand(information *const info, node *const nd)
 			info->variable_location = LFREE;
 			expression(info, nd);
 
-			// // TODO: пока только для динамических массивов размерности 2
-			// if (!hash_get(&info->arrays, displ, IS_STATIC))
-			// {
-			// 	if (info->answer_type == ACONST)
-			// 	{
-			// 		to_code_operation_const_reg(info, LMULT, info->answer_const, hash_get(&info->arrays, displ, 1));
-			// 	}
-			// 	if (info->answer_type == AREG)
-			// 	{
-			// 		to_code_operation_reg_reg(info, LMULT, info->answer_reg, hash_get(&info->arrays, displ, 1));
-			// 	}
-			// 	info->answer_type = AREG;
-			// 	info->answer_reg = info->register_num++;
-			// }
+			// TODO: пока только для динамических массивов размерности 2
+			if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimention == 2)
+			{
+				if (info->answer_type == ACONST)
+				{
+					to_code_operation_const_reg(info, LMULT, info->answer_const, hash_get(&info->arrays, displ, 2));
+				}
+				if (info->answer_type == AREG)
+				{
+					to_code_operation_reg_reg(info, LMULT, info->answer_reg, hash_get(&info->arrays, displ, 2));
+				}
+				info->answer_type = AREG;
+				info->answer_reg = info->register_num++;
+			}
 
 			if (info->answer_type == ACONST)
 			{
