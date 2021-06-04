@@ -306,10 +306,10 @@ typedef enum NODE
 	ND_ADDR_TO_VAL,			/**< Address to integer value node */
 	ND_CONST,				/**< Integer constant node */
 
-	ND_STRING_D			= ND_STRING + DISPL_TO_FLOAT,		/**< Row of doubles node */
-	ND_IDENT_TO_VAL_D	= ND_IDENT_TO_VAL + DISPL_TO_FLOAT,	/**< Value of double variable node */
-	ND_ADDR_TO_VAL_D	= ND_ADDR_TO_VAL + DISPL_TO_FLOAT,	/**< Address to double value node */
-	ND_CONST_D			= ND_CONST + DISPL_TO_FLOAT,		/**< Double constant node node */
+	ND_STRING_D,			/**< Row of doubles node */
+	ND_IDENT_TO_VAL_D,		/**< Value of double variable node */
+	ND_ADDR_TO_VAL_D,		/**< Address to double value node */
+	ND_CONST_D,				/**< Double constant node node */
 } node_t;
 
 

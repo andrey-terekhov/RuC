@@ -135,23 +135,35 @@ node_t node_to_void_ver(const node_t node)
 	{
 		return node + DISPL_TO_VOID;
 	}
-	else
-	{
-		return node;
-	}
+
+	return node;
 }
 
 node_t node_to_float_ver(const node_t node)
 {
 	if ((node >= ND_ASSIGN && node <= ND_DIV_ASSIGN)
 		|| (node >= ND_ASSIGN_AT && node <= ND_DIV_ASSIGN_AT)
-		|| (node >= ND_EQ && node <= ND_UNMINUS)
-		|| node == ND_STRING || node == ND_IDENT_TO_VAL || node == ND_ADDR_TO_VAL || node == ND_CONST)
+		|| (node >= ND_EQ && node <= ND_UNMINUS))
 	{
 		return node + DISPL_TO_FLOAT;
 	}
+	else
+	{
+		switch (node)
+		{
+			case ND_STRING:
+				return ND_STRING_D;
+			case ND_IDENT_TO_VAL:
+				return ND_IDENT_TO_VAL_D;
+			case ND_ADDR_TO_VAL:
+				return ND_ADDR_TO_VAL_D;
+			case ND_CONST:
+				return ND_CONST_D;
 
-	return node;
+			default:
+				return node;
+		}
+	}
 }
 
 int node_is_assignment(const node_t op)
