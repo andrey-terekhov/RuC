@@ -154,8 +154,8 @@ void binary_operation(parser *const prs, operator operator)
 
 	if (mode_is_float(left_mode) || mode_is_float(right_mode))
 	{
-		if (token == TK_PIPE_PIPE || token == TK_AMP_AMP || token == TK_PIPE || token == TK_CARET || token == TK_AMP
-			|| token == TK_GREATER_GREATER || token == TK_LESS_LESS || token == TK_PERCENT)
+		if (token == TK_PIPE_PIPE || token == TK_AMP_AMP || token == TK_PIPE || token == TK_CARET
+			|| token == TK_AMP || token == TK_GREATER_GREATER || token == TK_LESS_LESS || token == TK_PERCENT)
 		{
 			parser_error(prs, int_op_for_float);
 		}
@@ -421,217 +421,176 @@ void parse_standard_function_call(parser *const prs)
 		return;
 	}
 
-	switch (func)
+	if (func == TK_ASSERT)
 	{
-		case TK_ASSERT:
+		must_be_int(prs);
+		token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
+		must_be_string(prs);
+		operands_push(prs, VALUE, mode_void);
+	}
+	else if (func >= BEGIN_STR_TK && func <= END_STR_TK)
+	{
+		if (func == TK_STRCPY || func == TK_STRNCPY || func == TK_STRCAT || func == TK_STRNCAT)
 		{
-			must_be_int(prs);
+			must_be_point_string(prs);
+		}
+		else
+		{
+			must_be_string(prs);
+		}
+
+		if (func != TK_STRLEN)
+		{
 			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
 			must_be_string(prs);
-			operands_push(prs, VALUE, mode_void);
-		}
-		break;
-
-		case TK_STRCPY:
-		case TK_STRNCPY:
-		case TK_STRCAT:
-		case TK_STRNCAT:
-		case TK_STRCMP:
-		case TK_STRNCMP:
-		case TK_STRSTR:
-		case TK_STRLEN:
-		{
-			if (func == TK_STRCPY || func == TK_STRNCPY || func == TK_STRCAT || func == TK_STRNCAT)
-			{
-				must_be_point_string(prs);
-			}
-			else
-			{
-				must_be_string(prs);
-			}
-
-			if (func != TK_STRLEN)
+			if (func == TK_STRNCPY || func == TK_STRNCAT || func == TK_STRNCMP)
 			{
 				token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-				must_be_string(prs);
-				if (func == TK_STRNCPY || func == TK_STRNCAT || func == TK_STRNCMP)
-				{
-					token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-					must_be_int(prs);
-				}
-			}
-
-			if (func == TK_STRCMP || func == TK_STRNCMP || func == TK_STRSTR || func == TK_STRLEN)
-			{
-				operands_push(prs, VALUE, mode_integer);
-			}
-			else
-			{
-				operands_push(prs, VALUE, mode_void);
+				must_be_int(prs);
 			}
 		}
-		break;
 
-		case TK_ROBOT_SEND_INT:
-		case TK_ROBOT_SEND_FLOAT:
-		case TK_ROBOT_SEND_STRING:
-		case TK_ROBOT_RECEIVE_INT:
-		case TK_ROBOT_RECEIVE_FLOAT:
-		case TK_ROBOT_RECEIVE_STRING:
+		if (func == TK_STRCMP || func == TK_STRNCMP || func == TK_STRSTR || func == TK_STRLEN)
 		{
-			// новые функции Фадеева
-			must_be_int(prs);
-			if (func == TK_ROBOT_SEND_INT || func == TK_ROBOT_SEND_STRING)
-			{
-				token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-				must_be_row_of_int(prs);
-				operands_push(prs, VALUE, mode_void);
-			}
-			else if (func == TK_ROBOT_SEND_FLOAT)
-			{
-				token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-				must_be_row_of_float(prs);
-				operands_push(prs, VALUE, mode_void);
-			}
-			else
-			{
-				operands_push(prs, VALUE, func == TK_ROBOT_RECEIVE_INT
-							  ? mode_integer : func == TK_ROBOT_RECEIVE_FLOAT
-							  ? mode_float : to_modetab(prs, mode_array, mode_character));
-			}
-		}
-		break;
-
-		case TK_UPB:
-		{
-			must_be_int(prs);
-			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-			must_be_row(prs);
 			operands_push(prs, VALUE, mode_integer);
 		}
-		break;
-
-		case TK_MSG_SEND:
-		case TK_MSG_RECEIVE:
-		case TK_JOIN:
-		case TK_SLEEP:
-		case TK_SEM_CREATE:
-		case TK_SEM_WAIT:
-		case TK_SEM_POST:
-		case TK_CREATE:
-		case TK_INIT:
-		case TK_DESTROY:
-		case TK_EXIT:
-		case TK_GETNUM:
+		else
 		{
-			if (func == TK_INIT || func == TK_DESTROY || func == TK_EXIT)
-			{
-				operands_push(prs, VALUE, mode_void);
-			}
-			else if (func == TK_MSG_RECEIVE || func == TK_GETNUM) // getnum int(), msgreceive msg_info()
-			{
-				operands_push(prs, VALUE, func == TK_GETNUM ? mode_integer : mode_msg_info);
-			}
-			else
-			{
-				// MSGSEND void(msg_info)  CREATE int(void*(*func)(void*))
-				// SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
-				// у этих процедур 1 параметр
+			operands_push(prs, VALUE, mode_void);
+		}
+	}
+	else if (func >= BEGIN_ROBOT_TK && func <= END_ROBOT_TK)
+	{
+		// новые функции Фадеева
+		must_be_int(prs);
+		if (func == TK_ROBOT_SEND_INT || func == TK_ROBOT_SEND_STRING)
+		{
+			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
+			must_be_row_of_int(prs);
+			operands_push(prs, VALUE, mode_void);
+		}
+		else if (func == TK_ROBOT_SEND_FLOAT)
+		{
+			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
+			must_be_row_of_float(prs);
+			operands_push(prs, VALUE, mode_void);
+		}
+		else
+		{
+			operands_push(prs, VALUE, func == TK_ROBOT_RECEIVE_INT
+						  ? mode_integer : func == TK_ROBOT_RECEIVE_FLOAT
+						  ? mode_float : to_modetab(prs, mode_array, mode_character));
+		}
+	}
+	else if (func >= BEGIN_THREAD_TK && func <= END_THREAD_TK)
+	{
+		if (func == TK_INIT || func == TK_DESTROY || func == TK_EXIT)
+		{
+			operands_push(prs, VALUE, mode_void);
+		}
+		else if (func == TK_MSG_RECEIVE || func == TK_GETNUM) // getnum int(), msgreceive msg_info()
+		{
+			operands_push(prs, VALUE, func == TK_GETNUM ? mode_integer : mode_msg_info);
+		}
+		else
+		{
+			// MSGSEND void(msg_info)  CREATE int(void*(*func)(void*))
+			// SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
+			// у этих процедур 1 параметр
 
-				if (func == TK_CREATE)
+			if (func == TK_CREATE)
+			{
+				if (!token_try_consume(prs, TK_IDENTIFIER))
 				{
-					if (!token_try_consume(prs, TK_IDENTIFIER))
-					{
-						parser_error(prs, act_param_not_ident);
-					}
+					parser_error(prs, act_param_not_ident);
+				}
 
-					const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
-					if (id == ITEM_MAX)
-					{
-						parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, prs->lxr->repr));
-					}
+				const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+				if (id == ITEM_MAX)
+				{
+					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, prs->lxr->repr));
+				}
 
-					prs->last_id = (size_t)id;
-					if (ident_get_mode(prs->sx, prs->last_id) != mode_void_pointer)
-					{
-						parser_error(prs, wrong_arg_in_create);
-					}
+				prs->last_id = (size_t)id;
+				if (ident_get_mode(prs->sx, prs->last_id) != mode_void_pointer)
+				{
+					parser_error(prs, wrong_arg_in_create);
+				}
 
-					const item_t displ = ident_get_displ(prs->sx, prs->last_id);
-					if (displ < 0)
-					{
-						to_tree(prs, OP_IDENT_TO_VAL);
-						node_add_arg(&prs->nd, -displ);
-					}
-					else
-					{
-						to_tree(prs, OP_CONST);
-						node_add_arg(&prs->nd, displ);
-					}
-
-					operands_push(prs, VALUE, mode_integer);
+				const item_t displ = ident_get_displ(prs->sx, prs->last_id);
+				if (displ < 0)
+				{
+					to_tree(prs, OP_IDENT_TO_VAL);
+					node_add_arg(&prs->nd, -displ);
 				}
 				else
 				{
-					if (func == TK_MSG_SEND)
+					to_tree(prs, OP_CONST);
+					node_add_arg(&prs->nd, displ);
+				}
+
+				operands_push(prs, VALUE, mode_integer);
+			}
+			else
+			{
+				if (func == TK_MSG_SEND)
+				{
+					parse_initializer(prs, &prs->nd, mode_msg_info);
+					operands_push(prs, VALUE, mode_void);
+				}
+				else
+				{
+					must_be_int(prs);
+
+					if (func == TK_SEM_CREATE)
 					{
-						parse_initializer(prs, &prs->nd, mode_msg_info);
-						operands_push(prs, VALUE, mode_void);
+						operands_push(prs, VALUE, mode_integer);
 					}
 					else
 					{
-						must_be_int(prs);
-
-						if (func == TK_SEM_CREATE)
-						{
-							operands_push(prs, VALUE, mode_integer);
-						}
-						else
-						{
-							operands_push(prs, VALUE, mode_void);
-						}
+						operands_push(prs, VALUE, mode_void);
 					}
 				}
 			}
 		}
-		break;
-
-		case TK_RAND:
+	}
+	else if (func == TK_UPB)
+	{
+		must_be_int(prs);
+		token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
+		must_be_row(prs);
+		operands_push(prs, VALUE, mode_integer);
+	}
+	else if (func == TK_RAND)
+	{
 			operands_push(prs, VALUE, mode_float);
-			break;
+	}
+	else if (func == TK_ROUND)
+	{
+		must_be_float(prs);
+		operands_push(prs, VALUE, mode_integer);
+	}
+	else if (func == TK_ABS)
+	{
+		parse_assignment_expression_internal(prs);
+		to_value(prs);
 
-		case TK_ROUND:
+		if (stack_pop(&prs->anonymous) == mode_integer)
 		{
-			must_be_float(prs);
 			operands_push(prs, VALUE, mode_integer);
+			to_tree(prs, OP_ABSI);
+			token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
+			return;
 		}
-		break;
-
-		case TK_ABS:
+		else
 		{
-			parse_assignment_expression_internal(prs);
-			to_value(prs);
-
-			if (stack_pop(&prs->anonymous) == mode_integer)
-			{
-				operands_push(prs, VALUE, mode_integer);
-				to_tree(prs, OP_ABSI);
-				token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
-				return;
-			}
-			else
-			{
-				operands_push(prs, VALUE, mode_float);
-			}
-		}
-		break;
-
-		default:
-		{
-			must_be_float(prs);
 			operands_push(prs, VALUE, mode_float);
 		}
-		break;
+	}
+	else
+	{
+		must_be_float(prs);
+		operands_push(prs, VALUE, mode_float);
 	}
 
 	to_tree(prs, token_to_node(func));

@@ -122,6 +122,13 @@ typedef enum TOKEN
 	TK_ASIN,						/**< 'asin'		keyword */
 	TK_RAND,						/**< 'rand'		keyword */
 	TK_ROUND,						/**< 'round'	keyword */
+	TK_ASSERT,						/**< 'assert'	keyword */
+	TK_UPB,							/**< 'upb'		keyword */
+	TK_CREATE_DIRECT,				/**< 't_create_direct'	keyword */
+	TK_EXIT_DIRECT,					/**< 't_exit_direct'	keyword */
+
+	BEGIN_STR_TK,
+
 	TK_STRCPY,						/**< 'strcpy'	keyword */
 	TK_STRNCPY,						/**< 'strncpy'	keyword */
 	TK_STRCAT,						/**< 'strcat'	keyword */
@@ -130,11 +137,11 @@ typedef enum TOKEN
 	TK_STRNCMP,						/**< 'strncmp'	keyword */
 	TK_STRSTR,						/**< 'strstr'	keyword */
 	TK_STRLEN,						/**< 'strlen'	keyword */
-	TK_ASSERT,						/**< 'assert'	keyword */
-	TK_UPB,							/**< 'upb'		keyword */
 
-	TK_CREATE_DIRECT,				/**< 't_create_direct'	keyword */
-	TK_EXIT_DIRECT,					/**< 't_exit_direct'	keyword */
+	END_STR_TK,
+	
+	
+	BEGIN_THREAD_TK,
 
 	TK_MSG_SEND,					/**< 't_msg_send'		keyword */
 	TK_MSG_RECEIVE,					/**< 't_msg_receive'	keyword */
@@ -149,12 +156,19 @@ typedef enum TOKEN
 	TK_EXIT,						/**< 't_exit'			keyword */
 	TK_GETNUM,						/**< 't_getnum'			keyword */
 
+	END_THREAD_TK,
+
+
+	BEGIN_ROBOT_TK,
+
 	TK_ROBOT_SEND_INT,				/**< 'send_int_to_robot'			keyword */
 	TK_ROBOT_SEND_FLOAT,			/**< 'send_float_to_robot'			keyword */
 	TK_ROBOT_SEND_STRING,			/**< 'send_string_to_robot'			keyword */
 	TK_ROBOT_RECEIVE_INT,			/**< 'receive_int_from_robot'		keyword */
 	TK_ROBOT_RECEIVE_FLOAT,			/**< 'receive_float_from_robot'		keyword */
 	TK_ROBOT_RECEIVE_STRING,		/**< 'receive_string_from_robot'	keyword */
+
+	END_ROBOT_TK,
 
 	END_STANDARD_FUNC
 } token_t;
