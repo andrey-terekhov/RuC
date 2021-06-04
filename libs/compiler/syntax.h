@@ -270,6 +270,96 @@ size_t mode_add(syntax *const sx, const item_t *const record, const size_t size)
  */
 item_t mode_get(const syntax *const sx, const size_t index);
 
+/**
+ *	Check if mode is function
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+int mode_is_function(syntax *const sx, const item_t mode);
+
+/**
+ *	Check if mode is array
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+int mode_is_array(syntax *const sx, const item_t mode);
+
+/**
+ *	Check if mode is string
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+int mode_is_string(syntax *const sx, const item_t mode);
+
+/**
+ *	Check if mode is pointer
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+int mode_is_pointer(syntax *const sx, const item_t mode);
+
+/**
+ *	Check if mode is struct
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+int mode_is_struct(syntax *const sx, const item_t mode);
+
+/**
+ *	Check if mode is floating point
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+int mode_is_float(const item_t mode);
+
+/**
+ *	Check if mode is integer
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+int mode_is_int(const item_t mode);
+
+/**
+ *	Check if mode is void
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+int mode_is_void(const item_t mode);
+
+/**
+ *	Check if mode is undefined
+ *
+ *	@param	sx			Syntax structure
+ *	@param	mode		Mode for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+int mode_is_undefined(const item_t mode);
+
 
 /**
  *	Add a new record to representations table or return existing
