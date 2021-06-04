@@ -169,7 +169,7 @@ static void final_operation(virtual *const vm, node *const nd)
 				{
 					mem_add(vm, node_get_arg(nd, 0)); // длина
 				}
-				else if (node_is_assignment(op))
+				else if (operation_is_assignment(op))
 				{
 					mem_add(vm, node_get_arg(nd, 0));
 				}

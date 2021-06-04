@@ -341,40 +341,40 @@ operation_t token_to_unary(const token_t token);
 operation_t token_to_function(const token_t token);
 
 /**
- *	Convert Operation to corresponding address version
+ *	Convert operation to corresponding address version
  *
- *	@param	node	Operator
+ *	@param	operation	Operator
  *
  *	@return	Address version operator
  */
-operation_t node_to_address_ver(const operation_t node);
+operation_t operation_to_address_ver(const operation_t operation);
 
 /**
- *	Convert Operation to corresponding void version
+ *	Convert operation to corresponding void version
  *
- *	@param	node	Operator
+ *	@param	operation	Operator
  *
  *	@return	Void version operator
  */
-operation_t node_to_void_ver(const operation_t node);
+operation_t operation_to_void_ver(const operation_t operation);
 
 /**
- *	Convert Operation to corresponding float version
+ *	Convert operation to corresponding float version
  *
- *	@param	node	Operator
+ *	@param	operation	Operator
  *
  *	@return	Float version operator
  */
-operation_t node_to_float_ver(const operation_t node);
+operation_t operation_to_float_ver(const operation_t operation);
 
 /**
- *	Check if node type is assignment Operation
+ *	Check if node type is assignment operation
  *
- *	@param	node	Node type
+ *	@param	operation	Operator type
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int node_is_assignment(const operation_t node);
+int operation_is_assignment(const operation_t operation);
 
 #ifdef __cplusplus
 } /* extern "C" */

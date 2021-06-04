@@ -127,9 +127,9 @@ operation_t token_to_function(const token_t token)
 	}
 }
 
-operation_t node_to_address_ver(const operation_t node)
+operation_t operation_to_address_ver(const operation_t operation)
 {
-	switch (node)
+	switch (operation)
 	{
 		case OP_PREINC:		return OP_PREINC_AT;
 		case OP_PREDEC:		return OP_PREDEC_AT;
@@ -148,34 +148,34 @@ operation_t node_to_address_ver(const operation_t node)
 		case OP_DIV_ASSIGN:	return OP_DIV_ASSIGN_AT;
 
 		default:
-			return node;
+			return operation;
 	}
 }
 
-operation_t node_to_void_ver(const operation_t node)
+operation_t operation_to_void_ver(const operation_t operation)
 {
-	if ((node >= OP_ASSIGN && node <= OP_DIV_ASSIGN_AT)
-		|| (node >= OP_POSTINC && node <= OP_PREDEC_AT)
-		|| (node >= OP_ASSIGN_R && node <= OP_DIV_ASSIGN_AT_R)
-		|| (node >= OP_POSTINC_R && node <= OP_PREDEC_AT_R))
+	if ((operation >= OP_ASSIGN && operation <= OP_DIV_ASSIGN_AT)
+		|| (operation >= OP_POSTINC && operation <= OP_PREDEC_AT)
+		|| (operation >= OP_ASSIGN_R && operation <= OP_DIV_ASSIGN_AT_R)
+		|| (operation >= OP_POSTINC_R && operation <= OP_PREDEC_AT_R))
 	{
-		return node + DISPL_TO_VOID;
+		return operation + DISPL_TO_VOID;
 	}
 
-	return node;
+	return operation;
 }
 
-operation_t node_to_float_ver(const operation_t node)
+operation_t operation_to_float_ver(const operation_t operation)
 {
-	if ((node >= OP_ASSIGN && node <= OP_DIV_ASSIGN)
-		|| (node >= OP_ASSIGN_AT && node <= OP_DIV_ASSIGN_AT)
-		|| (node >= OP_EQ && node <= OP_UNMINUS))
+	if ((operation >= OP_ASSIGN && operation <= OP_DIV_ASSIGN)
+		|| (operation >= OP_ASSIGN_AT && operation <= OP_DIV_ASSIGN_AT)
+		|| (operation >= OP_EQ && operation <= OP_UNMINUS))
 	{
-		return node + DISPL_TO_FLOAT;
+		return operation + DISPL_TO_FLOAT;
 	}
 	else
 	{
-		switch (node)
+		switch (operation)
 		{
 			case OP_STRING:
 				return OP_STRING_D;
@@ -187,12 +187,12 @@ operation_t node_to_float_ver(const operation_t node)
 				return OP_CONST_D;
 
 			default:
-				return node;
+				return operation;
 		}
 	}
 }
 
-int node_is_assignment(const operation_t op)
+int operation_is_assignment(const operation_t op)
 {
 	return ((op >= OP_REM_ASSIGN && op <= OP_DIV_ASSIGN) || (op >= OP_REM_ASSIGN_V && op <= OP_DIV_ASSIGN_V)
 		|| (op >= OP_ASSIGN_R && op <= OP_DIV_ASSIGN_R) || (op >= OP_ASSIGN_R_V && op <= OP_DIV_ASSIGN_R_V)

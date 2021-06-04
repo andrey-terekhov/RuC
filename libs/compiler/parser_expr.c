@@ -115,7 +115,7 @@ void float_operation(parser *const prs, const item_t type, const operation_t ope
 {
 	if (mode_is_float(type))
 	{
-		to_tree(prs, node_to_float_ver(operation));
+		to_tree(prs, operation_to_float_ver(operation));
 	}
 	else
 	{
@@ -209,7 +209,7 @@ void to_value(parser *const prs)
 			}
 			else
 			{
-				node_set_type(&prs->nd, mode_is_float(type) ? node_to_float_ver(OP_IDENT_TO_VAL) : OP_IDENT_TO_VAL);
+				node_set_type(&prs->nd, mode_is_float(type) ? operation_to_float_ver(OP_IDENT_TO_VAL) : OP_IDENT_TO_VAL);
 			}
 
 			operands_push(prs, VALUE, type);
@@ -1057,7 +1057,7 @@ void parse_postfix_expression(parser *const prs)
 		int is_variable = 0;
 		if (prs->last_type == ADDRESS)
 		{
-			operator = node_to_address_ver(operator);
+			operator = operation_to_address_ver(operator);
 		}
 		else if (prs->last_type == VARIABLE)
 		{
@@ -1094,12 +1094,12 @@ void parse_unary_expression(parser *const prs)
 		{
 			token_consume(prs);
 			parse_unary_expression(prs);
-			operation_t node_type = token_to_unary(operator);
+			operation_t operation_type = token_to_unary(operator);
 
 			int is_variable = 0;
 			if (prs->last_type == ADDRESS)
 			{
-				node_type = node_to_address_ver(node_type);
+				operation_type = operation_to_address_ver(operation_type);
 			}
 			else if (prs->last_type == VARIABLE)
 			{
@@ -1117,7 +1117,7 @@ void parse_unary_expression(parser *const prs)
 			}
 
 			operands_push(prs, VALUE, type);
-			float_operation(prs, type, node_type);
+			float_operation(prs, type, operation_type);
 
 			if (is_variable)
 			{
@@ -1431,7 +1431,7 @@ void parse_conditional_expression(parser *const prs)
 
 void assignment_to_void(parser *const prs)
 {
-	node_set_type(&prs->nd, node_to_void_ver(node_get_type(&prs->nd)));
+	node_set_type(&prs->nd, operation_to_void_ver(node_get_type(&prs->nd)));
 }
 
 void parse_assignment_expression_internal(parser *const prs)
@@ -1468,7 +1468,7 @@ void parse_assignment_expression_internal(parser *const prs)
 		}
 
 		token_t operator = prs->token;
-		operation_t node_type = token_to_binary(operator);
+		operation_t operation_type = token_to_binary(operator);
 		token_consume(prs);
 
 		prs->flag_in_assignment = 1;
@@ -1503,18 +1503,18 @@ void parse_assignment_expression_internal(parser *const prs)
 
 			if (right_type == VALUE)
 			{
-				node_type = left_type == VARIABLE ? OP_COPY0ST_ASSIGN : OP_COPY1ST_ASSIGN;
+				operation_type = left_type == VARIABLE ? OP_COPY0ST_ASSIGN : OP_COPY1ST_ASSIGN;
 			}
 			else
 			{
-				node_type = left_type == VARIABLE
+				operation_type = left_type == VARIABLE
 					? right_type == VARIABLE
 						? OP_COPY00 : OP_COPY01
 					: right_type == VARIABLE
 						? OP_COPY10 : OP_COPY11;
 			}
 
-			to_tree(prs, node_type);
+			to_tree(prs, operation_type);
 			if (left_type == VARIABLE)
 			{
 				node_add_arg(&prs->nd, target_displ);
@@ -1560,9 +1560,9 @@ void parse_assignment_expression_internal(parser *const prs)
 
 			if (left_type == ADDRESS)
 			{
-				node_type = node_to_address_ver(node_type);
+				operation_type = operation_to_address_ver(operation_type);
 			}
-			float_operation(prs, result_mode, node_type);
+			float_operation(prs, result_mode, operation_type);
 			if (left_type == VARIABLE)
 			{
 				prs->operand_displ = target_displ;
