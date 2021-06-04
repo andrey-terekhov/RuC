@@ -39,7 +39,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 
 	switch (elem)
 	{
-		case ND_FUNC_DEF:
+		case OP_FUNC_DEF:
 			argc = 2;
 			was_switch = 1;
 			switch (num)
@@ -55,7 +55,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_DECL_ARR:
+		case OP_DECL_ARR:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -68,7 +68,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_DECL_ID:
+		case OP_DECL_ID:
 			argc = 7;
 			was_switch = 1;
 			switch (num)
@@ -99,7 +99,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_STRING:
+		case OP_STRING:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -112,7 +112,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_STRING_D:
+		case OP_STRING_D:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -125,16 +125,16 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_CONDITIONAL:
+		case OP_CONDITIONAL:
 			sprintf(buffer, "TCondexpr");
 			break;
-		case ND_BLOCK:
+		case OP_BLOCK:
 			sprintf(buffer, "TBegin");
 			break;
-		case ND_BLOCK_END:
+		case OP_BLOCK_END:
 			sprintf(buffer, "TEnd");
 			break;
-		case ND_ARRAY_INIT:
+		case OP_ARRAY_INIT:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -147,7 +147,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_STRUCT_INIT:
+		case OP_STRUCT_INIT:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -160,80 +160,80 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_IF:
+		case OP_IF:
 			argc = 1;
 			sprintf(buffer, "TIf");
 			break;
-		case ND_WHILE:
+		case OP_WHILE:
 			sprintf(buffer, "TWhile");
 			break;
-		case ND_DO:
+		case OP_DO:
 			sprintf(buffer, "TDo");
 			break;
-		case ND_FOR:
+		case OP_FOR:
 			argc = 4;
 			sprintf(buffer, "TFor");
 			break;
-		case ND_SWITCH:
+		case OP_SWITCH:
 			sprintf(buffer, "TSwitch");
 			break;
-		case ND_CASE:
+		case OP_CASE:
 			sprintf(buffer, "TCase");
 			break;
-		case ND_DEFAULT:
+		case OP_DEFAULT:
 			sprintf(buffer, "TDefault");
 			break;
-		case ND_BREAK:
+		case OP_BREAK:
 			sprintf(buffer, "TBreak");
 			break;
-		case ND_CONTINUE:
+		case OP_CONTINUE:
 			sprintf(buffer, "TContinue");
 			break;
-		case ND_RETURN_VOID:
+		case OP_RETURN_VOID:
 			sprintf(buffer, "TReturn");
 			break;
-		case ND_RETURN_VAL:
+		case OP_RETURN_VAL:
 			argc = 1;
 			sprintf(buffer, "TReturnval");
 			break;
-		case ND_GOTO:
+		case OP_GOTO:
 			argc = 1;
 			sprintf(buffer, "TGoto");
 			break;
-		case ND_IDENT:
+		case OP_IDENT:
 			argc = 1;
 			sprintf(buffer, "TIdent");
 			break;
-		case ND_IDENT_TO_VAL:
+		case OP_IDENT_TO_VAL:
 			argc = 1;
 			sprintf(buffer, "TIdenttoval");
 			break;
-		case ND_IDENT_TO_VAL_D:
+		case OP_IDENT_TO_VAL_D:
 			argc = 1;
 			sprintf(buffer, "TIdenttovald");
 			break;
-		case ND_IDENT_TO_ADDR:
+		case OP_IDENT_TO_ADDR:
 			argc = 1;
 			sprintf(buffer, "TIdenttoaddr");
 			break;
-		case ND_ADDR_TO_VAL:
+		case OP_ADDR_TO_VAL:
 			sprintf(buffer, "TAddrtoval");
 			break;
-		case ND_ADDR_TO_VAL_D:
+		case OP_ADDR_TO_VAL_D:
 			sprintf(buffer, "TAddrtovald");
 			break;
-		case ND_EXPR_END:
+		case OP_EXPR_END:
 			sprintf(buffer, "TExprend");
 			break;
-		case ND_CONST:
+		case OP_CONST:
 			argc = 1;
 			sprintf(buffer, "TConst");
 			break;
-		case ND_CONST_D:
+		case OP_CONST_D:
 			argc = 2;
 			sprintf(buffer, "TConstd");
 		break;
-		case ND_SLICE_IDENT:
+		case OP_SLICE_IDENT:
 			argc = 2;
 			was_switch = 1;
 			switch (num)
@@ -249,7 +249,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_SLICE:
+		case OP_SLICE:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -262,7 +262,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_SELECT:
+		case OP_SELECT:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -275,10 +275,10 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_NULL:
+		case OP_NULL:
 			sprintf(buffer, "NOP");
 			break;
-		case ND_AD_LOG_AND:
+		case OP_AD_LOG_AND:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -291,7 +291,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_AD_LOG_OR:
+		case OP_AD_LOG_OR:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -304,7 +304,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_COPY00:
+		case OP_COPY00:
 			argc = 3;
 			was_switch = 1;
 			switch (num)
@@ -323,7 +323,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_COPY01:
+		case OP_COPY01:
 			argc = 2;
 			was_switch = 1;
 			switch (num)
@@ -339,7 +339,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_COPY10:
+		case OP_COPY10:
 			argc = 2;
 			was_switch = 1;
 			switch (num)
@@ -355,7 +355,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_COPY11:
+		case OP_COPY11:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -368,7 +368,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_COPY0ST:
+		case OP_COPY0ST:
 			argc = 2;
 			was_switch = 1;
 			switch (num)
@@ -384,7 +384,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_COPY1ST:
+		case OP_COPY1ST:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -397,7 +397,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_COPY0ST_ASSIGN:
+		case OP_COPY0ST_ASSIGN:
 			argc = 2;
 			was_switch = 1;
 			switch (num)
@@ -413,7 +413,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_COPY1ST_ASSIGN:
+		case OP_COPY1ST_ASSIGN:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -426,7 +426,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_COPYST:
+		case OP_COPYST:
 			argc = 3;
 			was_switch = 1;
 			switch (num)
@@ -446,82 +446,82 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			}
 			break;
 
-		case ND_CALL1:
+		case OP_CALL1:
 			argc = 1;
 			sprintf(buffer, "TCall1");
 			break;
-		case ND_CALL2:
+		case OP_CALL2:
 			argc = 1;
 			sprintf(buffer, "TCall2");
 			break;
-		case ND_LABEL:
+		case OP_LABEL:
 			argc = 1;
 			sprintf(buffer, "TLabel");
 			break;
-		case ND_DECL_STRUCT:
+		case OP_DECL_STRUCT:
 			argc = 1;
 			sprintf(buffer, "TStructbeg");
 			break;
-		case ND_DECL_STRUCT_END:
+		case OP_DECL_STRUCT_END:
 			argc = 1;
 			sprintf(buffer, "TStructend");
 			break;
-		case ND_PRINT:
+		case OP_PRINT:
 			argc = 1;
 			sprintf(buffer, "TPrint");
 			break;
-		case ND_PRINTID:
+		case OP_PRINTID:
 			argc = 1;
 			sprintf(buffer, "TPrintid");
 			break;
-		case ND_PRINTF:
+		case OP_PRINTF:
 			argc = 1;
 			sprintf(buffer, "TPrintf");
 			break;
-		case ND_GETID:
+		case OP_GETID:
 			argc = 1;
 			sprintf(buffer, "TGetid");
 			break;
-		case ND_CREATE:
+		case OP_CREATE:
 			sprintf(buffer, "TCREATE");
 			break;
-		case ND_CREATE_DIRECT:
+		case OP_CREATE_DIRECT:
 			sprintf(buffer, "TCREATEDIRECT");
 			break;
-		case ND_EXIT:
+		case OP_EXIT:
 			sprintf(buffer, "TEXIT");
 			break;
-		case ND_EXIT_DIRECT:
+		case OP_EXIT_DIRECT:
 			sprintf(buffer, "TEXITDIRECT");
 			break;
-		case ND_MSG_SEND:
+		case OP_MSG_SEND:
 			sprintf(buffer, "TMSGSEND");
 			break;
-		case ND_MSG_RECEIVE:
+		case OP_MSG_RECEIVE:
 			sprintf(buffer, "TMSGRECEIVE");
 			break;
-		case ND_JOIN:
+		case OP_JOIN:
 			sprintf(buffer, "TJOIN");
 			break;
-		case ND_SLEEP:
+		case OP_SLEEP:
 			sprintf(buffer, "TSLEEP");
 			break;
-		case ND_SEM_CREATE:
+		case OP_SEM_CREATE:
 			sprintf(buffer, "TSEMCREATE");
 			break;
-		case ND_SEM_WAIT:
+		case OP_SEM_WAIT:
 			sprintf(buffer, "TSEMWAIT");
 			break;
-		case ND_SEM_POST:
+		case OP_SEM_POST:
 			sprintf(buffer, "TSEMPOST");
 			break;
-		case ND_INIT:
+		case OP_INIT:
 			sprintf(buffer, "INITC");
 			break;
-		case ND_DESTROY:
+		case OP_DESTROY:
 			sprintf(buffer, "DESTROYC");
 			break;
-		case ND_GETNUM:
+		case OP_GETNUM:
 			sprintf(buffer, "GETNUMC");
 			break;
 
@@ -542,62 +542,62 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			sprintf(buffer, "GETID");
 			break;
 
-		case ND_ABS:
+		case OP_ABS:
 			sprintf(buffer, "ABS");
 			break;
-		case ND_ABSI:
+		case OP_ABSI:
 			sprintf(buffer, "ABSI");
 			break;
-		case ND_SQRT:
+		case OP_SQRT:
 			sprintf(buffer, "SQRT");
 			break;
-		case ND_EXP:
+		case OP_EXP:
 			sprintf(buffer, "EXP");
 			break;
-		case ND_SIN:
+		case OP_SIN:
 			sprintf(buffer, "SIN");
 			break;
-		case ND_COS:
+		case OP_COS:
 			sprintf(buffer, "COS");
 			break;
-		case ND_LOG:
+		case OP_LOG:
 			sprintf(buffer, "LOG");
 			break;
-		case ND_LOG10:
+		case OP_LOG10:
 			sprintf(buffer, "LOG10");
 			break;
-		case ND_ASIN:
+		case OP_ASIN:
 			sprintf(buffer, "ASIN");
 			break;
-		case ND_RAND:
+		case OP_RAND:
 			sprintf(buffer, "RAND");
 			break;
-		case ND_ROUND:
+		case OP_ROUND:
 			sprintf(buffer, "ROUND");
 			break;
 
-		case ND_STRCPY:
+		case OP_STRCPY:
 			sprintf(buffer, "STRCPY");
 			break;
-		case ND_STRNCPY:
+		case OP_STRNCPY:
 			sprintf(buffer, "STRNCPY");
 			break;
-		case ND_STRCAT:
+		case OP_STRCAT:
 			sprintf(buffer, "STRCAT");
 			break;
-		case ND_STRNCAT:
+		case OP_STRNCAT:
 			sprintf(buffer, "STRNCAT");
 			break;
-		case ND_STRCMP:
+		case OP_STRCMP:
 			sprintf(buffer, "STRCMP");
 			break;
-		case ND_STRNCMP:
+		case OP_STRNCMP:
 			sprintf(buffer, "STRNCMP");
 			break;
-		case ND_STRSTR:
+		case OP_STRSTR:
 			sprintf(buffer, "STRSTR");
 			break;
-		case ND_STRLEN:
+		case OP_STRLEN:
 			sprintf(buffer, "STRLENC");
 			break;
 
@@ -710,324 +710,324 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			sprintf(buffer, "LA");
 			break;
 
-		case ND_LOG_OR:
+		case OP_LOG_OR:
 			argc = 1;
 			sprintf(buffer, "||");
 			break;
-		case ND_LOG_AND:
+		case OP_LOG_AND:
 			argc = 1;
 			sprintf(buffer, "&&");
 			break;
-		case ND_OR_ASSIGN:
+		case OP_OR_ASSIGN:
 			argc = 1;
 			sprintf(buffer, "|=");
 			break;
-		case ND_OR_ASSIGN_AT:
+		case OP_OR_ASSIGN_AT:
 			sprintf(buffer, "|=@");
 			break;
-		case ND_OR_ASSIGN_V:
+		case OP_OR_ASSIGN_V:
 			argc = 1;
 			sprintf(buffer, "|=V");
 			break;
-		case ND_OR_ASSIGN_AT_V:
+		case OP_OR_ASSIGN_AT_V:
 			sprintf(buffer, "|=@V");
 			break;
-		case ND_OR:
+		case OP_OR:
 			sprintf(buffer, "|");
 			break;
-		case ND_XOR_ASSIGN:
+		case OP_XOR_ASSIGN:
 			argc = 1;
 			sprintf(buffer, "^=");
 			break;
-		case ND_XOR_ASSIGN_AT:
+		case OP_XOR_ASSIGN_AT:
 			sprintf(buffer, "^=@");
 			break;
-		case ND_XOR_ASSIGN_V:
+		case OP_XOR_ASSIGN_V:
 			argc = 1;
 			sprintf(buffer, "^=V");
 			break;
-		case ND_XOR_ASSIGN_AT_V:
+		case OP_XOR_ASSIGN_AT_V:
 			sprintf(buffer, "^=@V");
 			break;
-		case ND_XOR:
+		case OP_XOR:
 			sprintf(buffer, "^");
 			break;
-		case ND_AND_ASSIGN:
+		case OP_AOP_ASSIGN:
 			argc = 1;
 			sprintf(buffer, "&=");
 			break;
-		case ND_AND_ASSIGN_AT:
+		case OP_AOP_ASSIGN_AT:
 			sprintf(buffer, "&=@");
 			break;
-		case ND_AND_ASSIGN_V:
+		case OP_AOP_ASSIGN_V:
 			argc = 1;
 			sprintf(buffer, "&=V");
 			break;
-		case ND_AND_ASSIGN_AT_V:
+		case OP_AOP_ASSIGN_AT_V:
 			sprintf(buffer, "&=@V");
 			break;
-		case ND_AND:
+		case OP_AND:
 			sprintf(buffer, "&");
 			break;
 
-		case ND_EQ:
+		case OP_EQ:
 			sprintf(buffer, "==");
 			break;
-		case ND_NE:
+		case OP_NE:
 			sprintf(buffer, "!=");
 			break;
-		case ND_LT:
+		case OP_LT:
 			sprintf(buffer, "<");
 			break;
-		case ND_GT:
+		case OP_GT:
 			sprintf(buffer, ">");
 			break;
-		case ND_LE:
+		case OP_LE:
 			sprintf(buffer, "<=");
 			break;
-		case ND_GE:
+		case OP_GE:
 			sprintf(buffer, ">=");
 			break;
-		case ND_EQ_R:
+		case OP_EQ_R:
 			sprintf(buffer, "==f");
 			break;
-		case ND_NE_R:
+		case OP_NE_R:
 			sprintf(buffer, "!=f");
 			break;
-		case ND_LT_R:
+		case OP_LT_R:
 			sprintf(buffer, "<f");
 			break;
-		case ND_GT_R:
+		case OP_GT_R:
 			sprintf(buffer, ">f");
 			break;
-		case ND_LE_R:
+		case OP_LE_R:
 			sprintf(buffer, "<=f");
 			break;
-		case ND_GE_R:
+		case OP_GE_R:
 			sprintf(buffer, ">=f");
 			break;
 
-		case ND_SHR_ASSIGN:
+		case OP_SHR_ASSIGN:
 			argc = 1;
 			sprintf(buffer, ">>=");
 			break;
-		case ND_SHR_ASSIGN_AT:
+		case OP_SHR_ASSIGN_AT:
 			sprintf(buffer, ">>=@");
 			break;
-		case ND_SHR_ASSIGN_V:
+		case OP_SHR_ASSIGN_V:
 			argc = 1;
 			sprintf(buffer, ">>=V");
 			break;
-		case ND_SHR_ASSIGN_AT_V:
+		case OP_SHR_ASSIGN_AT_V:
 			sprintf(buffer, ">>=@V");
 			break;
-		case ND_SHR:
+		case OP_SHR:
 			sprintf(buffer, ">>");
 			break;
-		case ND_SHL_ASSIGN:
+		case OP_SHL_ASSIGN:
 			argc = 1;
 			sprintf(buffer, "<<=");
 			break;
-		case ND_SHL_ASSIGN_AT:
+		case OP_SHL_ASSIGN_AT:
 			sprintf(buffer, "<<=@");
 			break;
-		case ND_SHL_ASSIGN_V:
+		case OP_SHL_ASSIGN_V:
 			argc = 1;
 			sprintf(buffer, "<<=V");
 			break;
-		case ND_SHL_ASSIGN_AT_V:
+		case OP_SHL_ASSIGN_AT_V:
 			sprintf(buffer, "<<=@V");
 			break;
-		case ND_SHL:
+		case OP_SHL:
 			sprintf(buffer, "<<");
 			break;
 
-		case ND_ASSIGN:
+		case OP_ASSIGN:
 			argc = 1;
 			sprintf(buffer, "=");
 			break;
-		case ND_ASSIGN_AT:
+		case OP_ASSIGN_AT:
 			sprintf(buffer, "=@");
 			break;
-		case ND_ASSIGN_V:
+		case OP_ASSIGN_V:
 			argc = 1;
 			sprintf(buffer, "=V");
 			break;
-		case ND_ASSIGN_AT_V:
+		case OP_ASSIGN_AT_V:
 			sprintf(buffer, "=@V");
 			break;
 
-		case ND_ADD_ASSIGN:
+		case OP_ADD_ASSIGN:
 			argc = 1;
 			sprintf(buffer, "+=");
 			break;
-		case ND_ADD_ASSIGN_AT:
+		case OP_ADD_ASSIGN_AT:
 			sprintf(buffer, "+=@");
 			break;
-		case ND_ADD_ASSIGN_V:
+		case OP_ADD_ASSIGN_V:
 			argc = 1;
 			sprintf(buffer, "+=V");
 			break;
-		case ND_ADD_ASSIGN_AT_V:
+		case OP_ADD_ASSIGN_AT_V:
 			sprintf(buffer, "+=@V");
 			break;
-		case ND_ADD:
+		case OP_ADD:
 			sprintf(buffer, "+");
 			break;
 
-		case ND_SUB_ASSIGN:
+		case OP_SUB_ASSIGN:
 			argc = 1;
 			sprintf(buffer, "-=");
 			break;
-		case ND_SUB_ASSIGN_AT:
+		case OP_SUB_ASSIGN_AT:
 			sprintf(buffer, "-=@");
 			break;
-		case ND_SUB_ASSIGN_V:
+		case OP_SUB_ASSIGN_V:
 			argc = 1;
 			sprintf(buffer, "-=V");
 			break;
-		case ND_SUB_ASSIGN_AT_V:
+		case OP_SUB_ASSIGN_AT_V:
 			sprintf(buffer, "-=@V");
 			break;
-		case ND_SUB:
+		case OP_SUB:
 			sprintf(buffer, "-");
 			break;
 
-		case ND_MUL_ASSIGN:
+		case OP_MUL_ASSIGN:
 			argc = 1;
 			sprintf(buffer, "*=");
 			break;
-		case ND_MUL_ASSIGN_AT:
+		case OP_MUL_ASSIGN_AT:
 			sprintf(buffer, "*=@");
 			break;
-		case ND_MUL_ASSIGN_V:
+		case OP_MUL_ASSIGN_V:
 			argc = 1;
 			sprintf(buffer, "*=V");
 			break;
-		case ND_MUL_ASSIGN_AT_V:
+		case OP_MUL_ASSIGN_AT_V:
 			sprintf(buffer, "*=@V");
 			break;
-		case ND_MUL:
+		case OP_MUL:
 			sprintf(buffer, "*");
 			break;
 
-		case ND_DIV_ASSIGN:
+		case OP_DIV_ASSIGN:
 			argc = 1;
 			sprintf(buffer, "/=");
 			break;
-		case ND_DIV_ASSIGN_AT:
+		case OP_DIV_ASSIGN_AT:
 			sprintf(buffer, "/=@");
 			break;
-		case ND_DIV_ASSIGN_V:
+		case OP_DIV_ASSIGN_V:
 			argc = 1;
 			sprintf(buffer, "/=V");
 			break;
-		case ND_DIV_ASSIGN_AT_V:
+		case OP_DIV_ASSIGN_AT_V:
 			sprintf(buffer, "/=@V");
 			break;
-		case ND_DIV:
+		case OP_DIV:
 			sprintf(buffer, "/");
 			break;
 
-		case ND_ASSIGN_R:
+		case OP_ASSIGN_R:
 			argc = 1;
 			sprintf(buffer, "=f");
 			break;
-		case ND_ASSIGN_R_V:
+		case OP_ASSIGN_R_V:
 			argc = 1;
 			sprintf(buffer, "=fV");
 			break;
-		case ND_ASSIGN_AT_R:
+		case OP_ASSIGN_AT_R:
 			sprintf(buffer, "=@f");
 			break;
-		case ND_ASSIGN_AT_R_V:
+		case OP_ASSIGN_AT_R_V:
 			sprintf(buffer, "=@fV");
 			break;
 
-		case ND_ADD_ASSIGN_R:
+		case OP_ADD_ASSIGN_R:
 			argc = 1;
 			sprintf(buffer, "+=f");
 			break;
-		case ND_ADD_ASSIGN_AT_R:
+		case OP_ADD_ASSIGN_AT_R:
 			sprintf(buffer, "+=@f");
 			break;
-		case ND_ADD_ASSIGN_R_V:
+		case OP_ADD_ASSIGN_R_V:
 			argc = 1;
 			sprintf(buffer, "+=fV");
 			break;
-		case ND_ADD_ASSIGN_AT_R_V:
+		case OP_ADD_ASSIGN_AT_R_V:
 			sprintf(buffer, "+=@fV");
 			break;
-		case ND_ADD_R:
+		case OP_ADD_R:
 			sprintf(buffer, "+f");
 			break;
-		case ND_SUB_ASSIGN_R:
+		case OP_SUB_ASSIGN_R:
 			argc = 1;
 			sprintf(buffer, "-=f");
 			break;
-		case ND_SUB_ASSIGN_AT_R:
+		case OP_SUB_ASSIGN_AT_R:
 			sprintf(buffer, "-=@f");
 			break;
-		case ND_SUB_ASSIGN_R_V:
+		case OP_SUB_ASSIGN_R_V:
 			argc = 1;
 			sprintf(buffer, "-=fV");
 			break;
-		case ND_SUB_ASSIGN_AT_R_V:
+		case OP_SUB_ASSIGN_AT_R_V:
 			sprintf(buffer, "-=@fV");
 			break;
-		case ND_SUB_R:
+		case OP_SUB_R:
 			sprintf(buffer, "-f");
 			break;
-		case ND_MUL_ASSIGN_R:
+		case OP_MUL_ASSIGN_R:
 			argc = 1;
 			sprintf(buffer, "*=f");
 			break;
-		case ND_MUL_ASSIGN_AT_R:
+		case OP_MUL_ASSIGN_AT_R:
 			sprintf(buffer, "*=@f");
 			break;
-		case ND_MUL_ASSIGN_R_V:
+		case OP_MUL_ASSIGN_R_V:
 			argc = 1;
 			sprintf(buffer, "*=fV");
 			break;
-		case ND_MUL_ASSIGN_AT_R_V:
+		case OP_MUL_ASSIGN_AT_R_V:
 			sprintf(buffer, "*=@fV");
 			break;
-		case ND_MUL_R:
+		case OP_MUL_R:
 			sprintf(buffer, "*f");
 			break;
-		case ND_DIV_ASSIGN_R:
+		case OP_DIV_ASSIGN_R:
 			argc = 1;
 			sprintf(buffer, "/=f");
 			break;
-		case ND_DIV_ASSIGN_AT_R:
+		case OP_DIV_ASSIGN_AT_R:
 			sprintf(buffer, "/=@f");
 			break;
-		case ND_DIV_ASSIGN_R_V:
+		case OP_DIV_ASSIGN_R_V:
 			argc = 1;
 			sprintf(buffer, "/=fV");
 			break;
-		case ND_DIV_ASSIGN_AT_R_V:
+		case OP_DIV_ASSIGN_AT_R_V:
 			sprintf(buffer, "/=@fV");
 			break;
-		case ND_DIV_R:
+		case OP_DIV_R:
 			sprintf(buffer, "/f");
 			break;
 
-		case ND_REM_ASSIGN:
+		case OP_REM_ASSIGN:
 			argc = 1;
 			sprintf(buffer, "%%=");
 			break;
-		case ND_REM_ASSIGN_AT:
+		case OP_REM_ASSIGN_AT:
 			sprintf(buffer, "%%=@");
 			break;
-		case ND_REM_ASSIGN_V:
+		case OP_REM_ASSIGN_V:
 			argc = 1;
 			sprintf(buffer, "%%=V");
 			break;
-		case ND_REM_ASSIGN_AT_V:
+		case OP_REM_ASSIGN_AT_V:
 			sprintf(buffer, "%%=@V");
 			break;
-		case ND_REM:
+		case OP_REM:
 			sprintf(buffer, "%%");
 			break;
 
@@ -1086,138 +1086,138 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case ND_WIDEN:
+		case OP_WIDEN:
 			sprintf(buffer, "WIDEN");
 			break;
-		case ND_WIDEN1:
+		case OP_WIDEN1:
 			sprintf(buffer, "WIDEN1");
 			break;
 		case IC__DOUBLE:
 			sprintf(buffer, "DOUBLE");
 			break;
-		case ND_PREINC:
+		case OP_PREINC:
 			argc = 1;
 			sprintf(buffer, "INC");
 			break;
-		case ND_PREDEC:
+		case OP_PREDEC:
 			argc = 1;
 			sprintf(buffer, "DEC");
 			break;
-		case ND_POSTINC:
+		case OP_POSTINC:
 			argc = 1;
 			sprintf(buffer, "POSTINC");
 			break;
-		case ND_POSTDEC:
+		case OP_POSTDEC:
 			argc = 1;
 			sprintf(buffer, "POSTDEC");
 			break;
-		case ND_PREINC_AT:
+		case OP_PREINC_AT:
 			sprintf(buffer, "INC@");
 			break;
-		case ND_PREDEC_AT:
+		case OP_PREDEC_AT:
 			sprintf(buffer, "DEC@");
 			break;
-		case ND_POSTINC_AT:
+		case OP_POSTINC_AT:
 			sprintf(buffer, "POSTINC@");
 			break;
-		case ND_POSTDEC_AT:
+		case OP_POSTDEC_AT:
 			sprintf(buffer, "POSTDEC@");
 			break;
-		case ND_PREINC_R:
+		case OP_PREINC_R:
 			argc = 1;
 			sprintf(buffer, "INCf");
 			break;
-		case ND_PREDEC_R:
+		case OP_PREDEC_R:
 			argc = 1;
 			sprintf(buffer, "DECf");
 			break;
-		case ND_POSTINC_R:
+		case OP_POSTINC_R:
 			argc = 1;
 			sprintf(buffer, "POSTINCf");
 			break;
-		case ND_POSTDEC_R:
+		case OP_POSTDEC_R:
 			argc = 1;
 			sprintf(buffer, "POSTDECf");
 			break;
-		case ND_PREINC_AT_R:
+		case OP_PREINC_AT_R:
 			sprintf(buffer, "INC@f");
 			break;
-		case ND_PREDEC_AT_R:
+		case OP_PREDEC_AT_R:
 			sprintf(buffer, "DEC@f");
 			break;
-		case ND_POSTINC_AT_R:
+		case OP_POSTINC_AT_R:
 			sprintf(buffer, "POSTINC@f");
 			break;
-		case ND_POSTDEC_AT_R:
+		case OP_POSTDEC_AT_R:
 			sprintf(buffer, "POSTDEC@f");
 			break;
-		case ND_PREINC_V:
+		case OP_PREINC_V:
 			argc = 1;
 			sprintf(buffer, "INCV");
 			break;
-		case ND_PREDEC_V:
+		case OP_PREDEC_V:
 			argc = 1;
 			sprintf(buffer, "DECV");
 			break;
-		case ND_POSTINC_V:
+		case OP_POSTINC_V:
 			argc = 1;
 			sprintf(buffer, "POSTINCV");
 			break;
-		case ND_POSTDEC_V:
+		case OP_POSTDEC_V:
 			argc = 1;
 			sprintf(buffer, "POSTDECV");
 			break;
-		case ND_PREINC_AT_V:
+		case OP_PREINC_AT_V:
 			sprintf(buffer, "INC@V");
 			break;
-		case ND_PREDEC_AT_V:
+		case OP_PREDEC_AT_V:
 			sprintf(buffer, "DEC@V");
 			break;
-		case ND_POSTINC_AT_V:
+		case OP_POSTINC_AT_V:
 			sprintf(buffer, "POSTINC@V");
 			break;
-		case ND_POSTDEC_AT_V:
+		case OP_POSTDEC_AT_V:
 			sprintf(buffer, "POSTDEC@V");
 			break;
-		case ND_PREINC_R_V:
+		case OP_PREINC_R_V:
 			argc = 1;
 			sprintf(buffer, "INCfV");
 			break;
-		case ND_PREDEC_R_V:
+		case OP_PREDEC_R_V:
 			argc = 1;
 			sprintf(buffer, "DECfV");
 			break;
-		case ND_POSTINC_R_V:
+		case OP_POSTINC_R_V:
 			argc = 1;
 			sprintf(buffer, "POSTINCfV");
 			break;
-		case ND_POSTDEC_R_V:
+		case OP_POSTDEC_R_V:
 			argc = 1;
 			sprintf(buffer, "POSTDECfV");
 			break;
-		case ND_PREINC_AT_R_V:
+		case OP_PREINC_AT_R_V:
 			sprintf(buffer, "INC@fV");
 			break;
-		case ND_PREDEC_AT_R_V:
+		case OP_PREDEC_AT_R_V:
 			sprintf(buffer, "DEC@fV");
 			break;
-		case ND_POSTINC_AT_R_V:
+		case OP_POSTINC_AT_R_V:
 			sprintf(buffer, "POSTINC@fV");
 			break;
-		case ND_POSTDEC_AT_R_V:
+		case OP_POSTDEC_AT_R_V:
 			sprintf(buffer, "POSTDEC@fV");
 			break;
 
-		case ND_NOT:
+		case OP_NOT:
 			sprintf(buffer, "BITNOT");
 			break;
-		case ND_LOG_NOT:
+		case OP_LOG_NOT:
 			sprintf(buffer, "NOT");
 			break;
-		case ND_UNMINUS:
+		case OP_UNMINUS:
 			sprintf(buffer, "UNMINUS");
 			break;
-		case ND_UNMINUS_R:
+		case OP_UNMINUS_R:
 			sprintf(buffer, "UNMINUSf");
 			break;
 
@@ -1267,7 +1267,7 @@ size_t elem_to_io(universal_io *const io, const vector *const table, size_t i)
 	size_t argc = elem_get_name(type, 0, buffer);
 	uni_printf(io, "%s", buffer);
 
-	if (type == ND_CONST || type == IC_LID)
+	if (type == OP_CONST || type == IC_LID)
 	{
 		double_to_io(io, vector_get(table, i), vector_get(table, i + 1));
 		return i + 2;
@@ -1286,7 +1286,7 @@ size_t elem_to_io(universal_io *const io, const vector *const table, size_t i)
 	}
 	uni_printf(io, "\n");
 
-	if (type == ND_STRING)
+	if (type == OP_STRING)
 	{
 		const size_t n = (size_t)vector_get(table, i - 1);
 		for (size_t j = 0; j < n; j++)
@@ -1294,7 +1294,7 @@ size_t elem_to_io(universal_io *const io, const vector *const table, size_t i)
 			uni_printf(io, "%" PRIitem "\n", vector_get(table, i++));
 		}
 	}
-	else if (type == ND_STRING_D)
+	else if (type == OP_STRING_D)
 	{
 		const size_t n = (size_t)vector_get(table, i - 1);
 		for (size_t j = 0; j < n; j++)
@@ -1321,7 +1321,7 @@ size_t tree_print_recursive(universal_io *const io, node *const nd, size_t index
 	size_t argc = elem_get_name(type, 0, buffer);
 	uni_printf(io, "%s", buffer);
 
-	if (type == ND_CONST_D || type == IC_LID)
+	if (type == OP_CONST_D || type == IC_LID)
 	{
 		double_to_io(io, node_get_arg(nd, 0), node_get_arg(nd, 1));
 	}
@@ -1341,7 +1341,7 @@ size_t tree_print_recursive(universal_io *const io, node *const nd, size_t index
 		}
 		uni_printf(io, "\n");
 
-		if ((node_get_arg(nd, i) != ITEM_MAX && node_get_type(nd) != ND_STRING && node_get_type(nd) != ND_STRING_D)
+		if ((node_get_arg(nd, i) != ITEM_MAX && node_get_type(nd) != OP_STRING && node_get_type(nd) != OP_STRING_D)
 			|| i != argc)
 		{
 			elem_get_name(type, 0, buffer);

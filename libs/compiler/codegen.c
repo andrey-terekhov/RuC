@@ -128,19 +128,19 @@ static void addr_end_break(virtual *const vm)
 
 static void final_operation(virtual *const vm, node *const nd)
 {
-	node_t op = node_get_type(nd);
-	while (op >= BEGIN_FINAL_OPERATION && op <= END_FINAL_OPERATION)
+	operation_t op = node_get_type(nd);
+	while (op >= BEGIN_FINAL_OPERATION && op <= EOP_FINAL_OPERATION)
 	{
-		if (op != ND_NULL)
+		if (op != OP_NULL)
 		{
-			if (op == ND_AD_LOG_OR)
+			if (op == OP_AD_LOG_OR)
 			{
 				mem_add(vm, IC__DOUBLE);
 				mem_add(vm, IC_BNE0);
 				stack_push(&vm->stk, (item_t)mem_size(vm));
 				mem_increase(vm, 1);
 			}
-			else if (op == ND_AD_LOG_AND)
+			else if (op == OP_AD_LOG_AND)
 			{
 				mem_add(vm, IC__DOUBLE);
 				mem_add(vm, IC_BE0);
@@ -150,22 +150,22 @@ static void final_operation(virtual *const vm, node *const nd)
 			else
 			{
 				mem_add(vm, (instruction_t)op);
-				if (op == ND_LOG_OR || op == ND_LOG_AND)
+				if (op == OP_LOG_OR || op == OP_LOG_AND)
 				{
 					mem_set(vm, (size_t)stack_pop(&vm->stk), (item_t)mem_size(vm));
 				}
-				else if (op == ND_COPY00 || op == ND_COPYST)
+				else if (op == OP_COPY00 || op == OP_COPYST)
 				{
 					mem_add(vm, node_get_arg(nd, 0)); // d1
 					mem_add(vm, node_get_arg(nd, 1)); // d2
 					mem_add(vm, node_get_arg(nd, 2)); // длина
 				}
-				else if (op == ND_COPY01 || op == ND_COPY10 || op == ND_COPY0ST || op == ND_COPY0ST_ASSIGN)
+				else if (op == OP_COPY01 || op == OP_COPY10 || op == OP_COPY0ST || op == OP_COPY0ST_ASSIGN)
 				{
 					mem_add(vm, node_get_arg(nd, 0)); // d1
 					mem_add(vm, node_get_arg(nd, 1)); // длина
 				}
-				else if (op == ND_COPY11 || op == ND_COPY1ST || op == ND_COPY1ST_ASSIGN)
+				else if (op == OP_COPY11 || op == OP_COPY1ST || op == OP_COPY1ST_ASSIGN)
 				{
 					mem_add(vm, node_get_arg(nd, 0)); // длина
 				}
@@ -196,54 +196,54 @@ static void expression(virtual *const vm, node *const nd, int mode)
 		node_set_next(nd);
 	}
 
-	while (node_get_type(nd) != ND_EXPR_END)
+	while (node_get_type(nd) != OP_EXPR_END)
 	{
-		const node_t operation = node_get_type(nd);
+		const operation_t operation = node_get_type(nd);
 		int was_operation = 1;
 
 		switch (operation)
 		{
-			case ND_IDENT:
+			case OP_IDENT:
 				break;
-			case ND_IDENT_TO_ADDR:
+			case OP_IDENT_TO_ADDR:
 			{
 				mem_add(vm, IC_LA);
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
-			case ND_IDENT_TO_VAL:
+			case OP_IDENT_TO_VAL:
 			{
 				mem_add(vm, IC_LOAD);
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
-			case ND_IDENT_TO_VAL_D:
+			case OP_IDENT_TO_VAL_D:
 			{
 				mem_add(vm, IC_LOADD);
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
-			case ND_ADDR_TO_VAL:
+			case OP_ADDR_TO_VAL:
 				mem_add(vm, IC_LAT);
 				break;
-			case ND_ADDR_TO_VAL_D:
+			case OP_ADDR_TO_VAL_D:
 				mem_add(vm, IC_LATD);
 				break;
-			case ND_CONST:
+			case OP_CONST:
 			{
 				mem_add(vm, IC_LI);
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
-			case ND_CONST_D:
+			case OP_CONST_D:
 			{
 				mem_add(vm, IC_LID);
 				mem_add(vm, node_get_arg(nd, 0));
 				mem_add(vm, node_get_arg(nd, 1));
 			}
 			break;
-			case ND_STRING:
-			case ND_STRING_D:
+			case OP_STRING:
+			case OP_STRING_D:
 			{
 				mem_add(vm, IC_LI);
 				const size_t reserved = mem_size(vm) + 4;
@@ -254,7 +254,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 				const item_t N = node_get_arg(nd, 0);
 				for (item_t i = 0; i < N; i++)
 				{
-					if (operation == ND_STRING)
+					if (operation == OP_STRING)
 					{
 						mem_add(vm, node_get_arg(nd, (size_t)i + 1));
 					}
@@ -269,7 +269,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 				mem_set(vm, reserved - 2, (item_t)mem_size(vm));
 			}
 			break;
-			case ND_ARRAY_INIT:
+			case OP_ARRAY_INIT:
 			{
 				const item_t N = node_get_arg(nd, 0);
 
@@ -282,7 +282,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 				}
 			}
 			break;
-			case ND_STRUCT_INIT:
+			case OP_STRUCT_INIT:
 			{
 				const item_t N = node_get_arg(nd, 0);
 				for (item_t i = 0; i < N; i++)
@@ -291,14 +291,14 @@ static void expression(virtual *const vm, node *const nd, int mode)
 				}
 			}
 			break;
-			case ND_SLICE_IDENT:
+			case OP_SLICE_IDENT:
 			{
 				mem_add(vm, IC_LOAD); // параметры - смещение идента и тип элемента
 				mem_add(vm, node_get_arg(nd, 0)); // продолжение в след case
 			}
-			case ND_SLICE: // параметр - тип элемента
+			case OP_SLICE: // параметр - тип элемента
 			{
-				item_t type = node_get_arg(nd, operation == ND_SLICE ? 0 : 1);
+				item_t type = node_get_arg(nd, operation == OP_SLICE ? 0 : 1);
 
 				expression(vm, nd, 0);
 				mem_add(vm, IC_SLICE);
@@ -309,19 +309,19 @@ static void expression(virtual *const vm, node *const nd, int mode)
 				}
 			}
 			break;
-			case ND_SELECT:
+			case OP_SELECT:
 			{
 				mem_add(vm, IC_SELECT); // SELECT field_displ
 				mem_add(vm, node_get_arg(nd, 0));
 			}
 			break;
-			case ND_PRINT:
+			case OP_PRINT:
 			{
 				mem_add(vm, IC_PRINT);
 				mem_add(vm, node_get_arg(nd, 0)); // type
 			}
 			break;
-			case ND_CALL1:
+			case OP_CALL1:
 			{
 				mem_add(vm, IC_CALL1);
 
@@ -332,7 +332,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 				}
 			}
 			break;
-			case ND_CALL2:
+			case OP_CALL2:
 			{
 				mem_add(vm, IC_CALL2);
 				mem_add(vm, ident_get_displ(vm->sx, (size_t)node_get_arg(nd, 0)));
@@ -350,7 +350,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 
 		final_operation(vm, nd);
 
-		if (node_get_type(nd) == ND_CONDITIONAL)
+		if (node_get_type(nd) == OP_CONDITIONAL)
 		{
 			if (mode == 1)
 			{
@@ -371,7 +371,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 				mem_set(vm, addr_else, (item_t)mem_size(vm));
 
 				expression(vm, nd, 1); // else или cond
-			} while (node_get_type(nd) == ND_CONDITIONAL);
+			} while (node_get_type(nd) == OP_CONDITIONAL);
 
 			while (addr)
 			{
@@ -387,7 +387,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 
 static void structure(virtual *const vm, node *const nd)
 {
-	if (node_get_type(nd) == ND_STRUCT_INIT)
+	if (node_get_type(nd) == OP_STRUCT_INIT)
 	{
 		const item_t N = node_get_arg(nd, 0);
 		node_set_next(nd);
@@ -487,7 +487,7 @@ static int declaration(virtual *const vm, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case ND_DECL_ARR:
+		case OP_DECL_ARR:
 		{
 			const item_t N = node_get_arg(nd, 0);
 			for (item_t i = 0; i < N; i++)
@@ -496,18 +496,18 @@ static int declaration(virtual *const vm, node *const nd)
 			}
 		}
 		break;
-		case ND_DECL_ID:
+		case OP_DECL_ID:
 			identifier(vm, nd);
 			break;
 
-		case ND_DECL_STRUCT:
+		case OP_DECL_STRUCT:
 		{
 			mem_add(vm, IC_B);
 			mem_add(vm, 0);
 			proc_set(vm, (size_t)node_get_arg(nd, 0), (item_t)mem_size(vm));
 		}
 		break;
-		case ND_DECL_STRUCT_END:
+		case OP_DECL_STRUCT_END:
 		{
 			const size_t num_proc = (size_t)node_get_arg(nd, 0);
 
@@ -552,19 +552,19 @@ static void statement(virtual *const vm, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case ND_NULL:
+		case OP_NULL:
 			break;
-		case ND_CREATE_DIRECT:
+		case OP_CREATE_DIRECT:
 			mem_add(vm, IC_CREATEDIRECT);
 			vm->max_threads++;
 			break;
-		case ND_EXIT_DIRECT:
+		case OP_EXIT_DIRECT:
 			mem_add(vm, IC_EXITDIRECT);
 			break;
-		case ND_BLOCK:
+		case OP_BLOCK:
 			block(vm, nd);
 			break;
-		case ND_IF:
+		case OP_IF:
 		{
 			const item_t ref_else = node_get_arg(nd, 0);
 
@@ -588,7 +588,7 @@ static void statement(virtual *const vm, node *const nd)
 			mem_set(vm, addr, (item_t)mem_size(vm));
 		}
 		break;
-		case ND_WHILE:
+		case OP_WHILE:
 		{
 			const size_t old_break = vm->addr_break;
 			const size_t old_cond = vm->addr_cond;
@@ -612,7 +612,7 @@ static void statement(virtual *const vm, node *const nd)
 			vm->addr_cond = old_cond;
 		}
 		break;
-		case ND_DO:
+		case OP_DO:
 		{
 			const size_t old_break = vm->addr_break;
 			const size_t old_cond = vm->addr_cond;
@@ -634,7 +634,7 @@ static void statement(virtual *const vm, node *const nd)
 			vm->addr_cond = old_cond;
 		}
 		break;
-		case ND_FOR:
+		case OP_FOR:
 		{
 			const item_t ref_from = node_get_arg(nd, 0);
 			const item_t ref_cond = node_get_arg(nd, 1);
@@ -692,7 +692,7 @@ static void statement(virtual *const vm, node *const nd)
 			vm->addr_cond = old_cond;
 		}
 		break;
-		case ND_GOTO:
+		case OP_GOTO:
 		{
 			mem_add(vm, IC_B);
 
@@ -713,7 +713,7 @@ static void statement(virtual *const vm, node *const nd)
 			}
 		}
 		break;
-		case ND_LABEL:
+		case OP_LABEL:
 		{
 			const item_t id = node_get_arg(nd, 0);
 			item_t addr = ident_get_displ(vm->sx, (size_t)id);
@@ -730,7 +730,7 @@ static void statement(virtual *const vm, node *const nd)
 			ident_set_displ(vm->sx, (size_t)id, (item_t)mem_size(vm));
 		}
 		break;
-		case ND_SWITCH:
+		case OP_SWITCH:
 		{
 			const size_t old_break = vm->addr_break;
 			const size_t old_case = vm->addr_case;
@@ -751,7 +751,7 @@ static void statement(virtual *const vm, node *const nd)
 			vm->addr_break = old_break;
 		}
 		break;
-		case ND_CASE:
+		case OP_CASE:
 		{
 			if (vm->addr_case)
 			{
@@ -768,7 +768,7 @@ static void statement(virtual *const vm, node *const nd)
 			statement(vm, nd);
 		}
 		break;
-		case ND_DEFAULT:
+		case OP_DEFAULT:
 		{
 			if (vm->addr_case)
 			{
@@ -780,24 +780,24 @@ static void statement(virtual *const vm, node *const nd)
 			statement(vm, nd);
 		}
 		break;
-		case ND_BREAK:
+		case OP_BREAK:
 		{
 			mem_add(vm, IC_B);
 			mem_add(vm, (item_t)vm->addr_break);
 			vm->addr_break = mem_size(vm) - 1;
 		}
 		break;
-		case ND_CONTINUE:
+		case OP_CONTINUE:
 		{
 			mem_add(vm, IC_B);
 			mem_add(vm, (item_t)vm->addr_cond);
 			vm->addr_cond = mem_size(vm) - 1;
 		}
 		break;
-		case ND_RETURN_VOID:
+		case OP_RETURN_VOID:
 			mem_add(vm, IC_RETURNVOID);
 			break;
-		case ND_RETURN_VAL:
+		case OP_RETURN_VAL:
 		{
 			const item_t value = node_get_arg(nd, 0);
 			expression(vm, nd, 0);
@@ -806,19 +806,19 @@ static void statement(virtual *const vm, node *const nd)
 			mem_add(vm, value);
 		}
 		break;
-		case ND_PRINTID:
+		case OP_PRINTID:
 		{
 			mem_add(vm, IC_PRINTID);
 			compress_ident(vm, (size_t)node_get_arg(nd, 0)); // ссылка в identtab
 		}
 		break;
-		case ND_PRINTF:
+		case OP_PRINTF:
 		{
 			mem_add(vm, IC_PRINTF);
 			mem_add(vm, node_get_arg(nd, 0)); // общий размер того, что надо вывести
 		}
 		break;
-		case ND_GETID:
+		case OP_GETID:
 		{
 			mem_add(vm, IC_GETID);
 			compress_ident(vm, (size_t)node_get_arg(nd, 0)); // ссылка в identtab
@@ -836,7 +836,7 @@ static void statement(virtual *const vm, node *const nd)
 static void block(virtual *const vm, node *const nd)
 {
 	node_set_next(nd); // TBegin
-	while (node_get_type(nd) != ND_BLOCK_END)
+	while (node_get_type(nd) != OP_BLOCK_END)
 	{
 		statement(vm, nd);
 		node_set_next(nd);
@@ -851,7 +851,7 @@ static int codegen(virtual *const vm)
 	{
 		switch (node_get_type(&root))
 		{
-			case ND_FUNC_DEF:
+			case OP_FUNC_DEF:
 			{
 				const item_t ref_ident = node_get_arg(&root, 0);
 				const item_t max_displ = node_get_arg(&root, 1);
@@ -871,8 +871,8 @@ static int codegen(virtual *const vm)
 			}
 			break;
 
-			case ND_NULL:
-			case ND_BLOCK_END:
+			case OP_NULL:
+			case OP_BLOCK_END:
 				break;
 
 			default:

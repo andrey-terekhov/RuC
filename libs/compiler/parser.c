@@ -97,7 +97,7 @@ int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
 		parse_declaration_external(&prs, &root);
 	} while (prs.token != TK_EOF);
 
-	node_add_child(&root, ND_BLOCK_END);
+	node_add_child(&root, OP_BLOCK_END);
 	parser_clear(&prs);
 
 #ifndef NDEBUG
