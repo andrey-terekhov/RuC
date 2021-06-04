@@ -209,7 +209,7 @@ void to_value(parser *const prs)
 			}
 			else
 			{
-				node_set_type(&prs->nd, mode_is_float(type) ? ND_IDENT_TO_VAL_D : ND_IDENT_TO_VAL);
+				node_set_type(&prs->nd, mode_is_float(type) ? node_to_float_ver(ND_IDENT_TO_VAL) : ND_IDENT_TO_VAL);
 			}
 
 			operands_push(prs, VALUE, type);
@@ -226,7 +226,7 @@ void to_value(parser *const prs)
 			}
 			else if (!mode_is_array(prs->sx, type) && !mode_is_pointer(prs->sx, type))
 			{
-				to_tree(prs, mode_is_float(type) ? ND_ADDR_TO_VAL_D : ND_ADDR_TO_VAL);
+				float_operation(prs, type, ND_ADDR_TO_VAL);
 			}
 
 			operands_push(prs, VALUE, type);
@@ -242,7 +242,7 @@ void to_value(parser *const prs)
 item_t parse_braced_init_list(parser *const prs, const item_t type)
 {
 	token_consume(prs);
-	to_tree(prs, mode_is_float(type) ? ND_STRINGD : ND_STRING);
+	float_operation(prs, type, ND_STRING);
 	node_add_arg(&prs->nd, 0);
 
 	node nd_init_list;
@@ -1312,7 +1312,7 @@ int is_int_assignment_operator(const token_t operator)
 	switch (operator)
 	{
 		case TK_PERCENT_EQUAL:			// '%='
-		case TK_LESS_LESS_EQUAL:			// '<<='
+		case TK_LESS_LESS_EQUAL:		// '<<='
 		case TK_GREATER_GREATER_EQUAL:	// '>>='
 		case TK_AMP_EQUAL:				// '&='
 		case TK_PIPE_EQUAL:				// '|='

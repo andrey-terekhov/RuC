@@ -15,10 +15,8 @@
  */
 
 #include "nodes.h"
-#include "stdio.h"
 
 
-static const size_t DISPL_TO_FLOAT = 50;
 static const size_t DISPL_TO_VOID = 200;
 
 node_t token_to_node(const token_t token)
@@ -147,7 +145,8 @@ node_t node_to_float_ver(const node_t node)
 {
 	if ((node >= ND_ASSIGN && node <= ND_DIV_ASSIGN)
 		|| (node >= ND_ASSIGN_AT && node <= ND_DIV_ASSIGN_AT)
-		|| (node >= ND_EQ && node <= ND_UNMINUS))
+		|| (node >= ND_EQ && node <= ND_UNMINUS)
+		|| node == ND_STRING || node == ND_IDENT_TO_VAL || node == ND_ADDR_TO_VAL || node == ND_CONST)
 	{
 		return node + DISPL_TO_FLOAT;
 	}

@@ -17,12 +17,15 @@
 #pragma once
 
 #include "tokens.h"
+#include <stdio.h>
 #include "instructions.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+static const size_t DISPL_TO_FLOAT = 50;
 
 typedef enum NODE
 {
@@ -291,21 +294,22 @@ typedef enum NODE
 
 	// Expressions
 	ND_CONDITIONAL,			/**< Ternary operator node */
-	ND_STRING,				/**< String literal node */
-	ND_STRINGD,				/**< Row of doubles node */
 	ND_IDENT,				/**< Identifier node */
 	ND_IDENT_TO_ADDR,		/**< Identifier to address node */
-	ND_IDENT_TO_VAL,		/**< Value of integer variable node */
-	ND_IDENT_TO_VAL_D,		/**< Value of double variable node */
-	ND_ADDR_TO_VAL,			/**< Address to integer value node */
-	ND_ADDR_TO_VAL_D,		/**< Address to double value node */
-	ND_CONST,				/**< Integer constant node */
-	ND_CONST_D,				/**< Double constant node node */
 	ND_SLICE,				/**< Slice node */
 	ND_SLICE_IDENT,			/**< Slice from identifier node */
 	ND_SELECT,				/**< Select node */
 	ND_CALL1,				/**< 'Call1' node */
 	ND_CALL2,				/**< 'Call2' node */
+	ND_STRING,				/**< String literal node */
+	ND_IDENT_TO_VAL,		/**< Value of integer variable node */
+	ND_ADDR_TO_VAL,			/**< Address to integer value node */
+	ND_CONST,				/**< Integer constant node */
+
+	ND_STRING_D			= ND_STRING + DISPL_TO_FLOAT,		/**< Row of doubles node */
+	ND_IDENT_TO_VAL_D	= ND_IDENT_TO_VAL + DISPL_TO_FLOAT,	/**< Value of double variable node */
+	ND_ADDR_TO_VAL_D	= ND_ADDR_TO_VAL + DISPL_TO_FLOAT,	/**< Address to double value node */
+	ND_CONST_D			= ND_CONST + DISPL_TO_FLOAT,		/**< Double constant node node */
 } node_t;
 
 
