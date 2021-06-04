@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "errors.h"
-#include "nodes.h"
+#include "operations.h"
 
 
 #ifdef OLD_TREE

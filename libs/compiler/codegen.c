@@ -20,7 +20,7 @@
 #include "errors.h"
 #include "item.h"
 #include "instructions.h"
-#include "nodes.h"
+#include "operations.h"
 #include "stack.h"
 #include "old_tree.h"
 #include "uniprinter.h"

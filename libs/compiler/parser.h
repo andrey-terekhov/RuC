@@ -18,10 +18,10 @@
 
 #include "errors.h"
 #include "lexer.h"
-#include "nodes.h"
 #include "stack.h"
 #include "syntax.h"
 #include "old_tree.h"
+#include "operations.h"
 #include "uniio.h"
 #include "workspace.h"
 
