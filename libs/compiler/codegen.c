@@ -1,5 +1,5 @@
 /*
- *	Copyright 2015 Andrey Terekhov
+ *	Copyright 2015 Andrey Terekhov, Victor Y. Fadeev, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@
 #include "stack.h"
 #include "old_tree.h"
 #include "uniprinter.h"
-#include "utf8.h"
 
 
 const char *const DEFAULT_CODES = "codes.txt";
@@ -33,8 +32,8 @@ const size_t MAX_MEM_SIZE = 100000;
 const size_t MAX_STACK_SIZE = 256;
 
 
-/** Virtual machine environment */
-typedef struct virtual
+/** Virtual machine codes emitter */
+typedef struct codegenerator
 {
 	syntax *sx;						/**< Syntax structure */
 
@@ -52,848 +51,43 @@ typedef struct virtual
 	size_t addr_break;				/**< Break operator address */
 
 	item_status target;				/**< Target tables item type */
-} virtual;
-
-
-static void block(virtual *const vm, node *const nd);
-
-
-static inline void mem_increase(virtual *const vm, const size_t size)
-{
-	vector_increase(&vm->memory, size);
-}
-
-static inline void mem_add(virtual *const vm, const item_t value)
-{
-	vector_add(&vm->memory, value);
-}
-
-static inline void mem_set(virtual *const vm, const size_t index, const item_t value)
-{
-	vector_set(&vm->memory, index, value);
-}
-
-static inline item_t mem_get(const virtual *const vm, const size_t index)
-{
-	return vector_get(&vm->memory, index);
-}
-
-static inline size_t mem_size(const virtual *const vm)
-{
-	return vector_size(&vm->memory);
-}
-
-
-static inline void proc_set(virtual *const vm, const size_t index, const item_t value)
-{
-	vector_set(&vm->processes, index, value);
-}
-
-static inline item_t proc_get(const virtual *const vm, const size_t index)
-{
-	return vector_get(&vm->processes, index);
-}
-
-
-static void addr_begin_condition(virtual *const vm, const size_t addr)
-{
-	while (vm->addr_cond != addr)
-	{
-		const size_t ref = (size_t)mem_get(vm, vm->addr_cond);
-		mem_set(vm, vm->addr_cond, (item_t)addr);
-		vm->addr_cond = ref;
-	}
-}
-
-static void addr_end_condition(virtual *const vm)
-{
-	while (vm->addr_cond)
-	{
-		const size_t ref = (size_t)mem_get(vm, vm->addr_cond);
-		mem_set(vm, vm->addr_cond, (item_t)mem_size(vm));
-		vm->addr_cond = ref;
-	}
-}
-
-static void addr_end_break(virtual *const vm)
-{
-	while (vm->addr_break)
-	{
-		const size_t ref = (size_t)mem_get(vm, vm->addr_break);
-		mem_set(vm, vm->addr_break, (item_t)mem_size(vm));
-		vm->addr_break = ref;
-	}
-}
-
-
-static void final_operation(virtual *const vm, node *const nd)
-{
-	operation_t op = node_get_type(nd);
-	while (op >= BEGIN_FINAL_OPERATION && op <= END_FINAL_OPERATION)
-	{
-		if (op != OP_NULL)
-		{
-			if (op == OP_AD_LOG_OR)
-			{
-				mem_add(vm, IC__DOUBLE);
-				mem_add(vm, IC_BNE0);
-				stack_push(&vm->stk, (item_t)mem_size(vm));
-				mem_increase(vm, 1);
-			}
-			else if (op == OP_AD_LOG_AND)
-			{
-				mem_add(vm, IC__DOUBLE);
-				mem_add(vm, IC_BE0);
-				stack_push(&vm->stk, (item_t)mem_size(vm));
-				mem_increase(vm, 1);
-			}
-			else
-			{
-				mem_add(vm, (instruction_t)op);
-				if (op == OP_LOG_OR || op == OP_LOG_AND)
-				{
-					mem_set(vm, (size_t)stack_pop(&vm->stk), (item_t)mem_size(vm));
-				}
-				else if (op == OP_COPY00 || op == OP_COPYST)
-				{
-					mem_add(vm, node_get_arg(nd, 0)); // d1
-					mem_add(vm, node_get_arg(nd, 1)); // d2
-					mem_add(vm, node_get_arg(nd, 2)); // длина
-				}
-				else if (op == OP_COPY01 || op == OP_COPY10 || op == OP_COPY0ST || op == OP_COPY0ST_ASSIGN)
-				{
-					mem_add(vm, node_get_arg(nd, 0)); // d1
-					mem_add(vm, node_get_arg(nd, 1)); // длина
-				}
-				else if (op == OP_COPY11 || op == OP_COPY1ST || op == OP_COPY1ST_ASSIGN)
-				{
-					mem_add(vm, node_get_arg(nd, 0)); // длина
-				}
-				else if (operation_is_assignment(op))
-				{
-					mem_add(vm, node_get_arg(nd, 0));
-				}
-			}
-		}
-
-		node_set_next(nd);
-		op = node_get_type(nd);
-	}
-}
+	int was_error;					/**< Error flag */
+} codegenerator;
 
 /**
- *	Expression generation
+ *	Create virtual machine codes emitter structure
  *
- *	@param	vm		Virtual machine environment
- *	@param	mode	@c -1 for expression on the same node,
- *					@c  0 for usual expression,
- *					@c  1 for expression in condition
+ *	@param	ws		Compiler workspace
+ *	@param	sx		Syntax structure
+ *
+ *	@return	Virtual machine environment structure
  */
-static void expression(virtual *const vm, node *const nd, int mode)
+static codegenerator cg_create(const workspace *const ws, syntax *const sx)
 {
-	if (mode != -1)
-	{
-		node_set_next(nd);
-	}
+	codegenerator cg;
+	cg.sx = sx;
 
-	while (node_get_type(nd) != OP_EXPR_END)
-	{
-		const operation_t operation = node_get_type(nd);
-		int was_operation = 1;
+	cg.memory = vector_create(MAX_MEM_SIZE);
+	cg.processes = vector_create(sx->procd);
+	cg.stk = stack_create(MAX_STACK_SIZE);
 
-		switch (operation)
-		{
-			case OP_IDENT:
-				break;
-			case OP_IDENT_TO_ADDR:
-			{
-				mem_add(vm, IC_LA);
-				mem_add(vm, node_get_arg(nd, 0));
-			}
-			break;
-			case OP_IDENT_TO_VAL:
-			{
-				mem_add(vm, IC_LOAD);
-				mem_add(vm, node_get_arg(nd, 0));
-			}
-			break;
-			case OP_IDENT_TO_VAL_D:
-			{
-				mem_add(vm, IC_LOADD);
-				mem_add(vm, node_get_arg(nd, 0));
-			}
-			break;
-			case OP_ADDR_TO_VAL:
-				mem_add(vm, IC_LAT);
-				break;
-			case OP_ADDR_TO_VAL_D:
-				mem_add(vm, IC_LATD);
-				break;
-			case OP_CONST:
-			{
-				mem_add(vm, IC_LI);
-				mem_add(vm, node_get_arg(nd, 0));
-			}
-			break;
-			case OP_CONST_D:
-			{
-				mem_add(vm, IC_LID);
-				mem_add(vm, node_get_arg(nd, 0));
-				mem_add(vm, node_get_arg(nd, 1));
-			}
-			break;
-			case OP_STRING:
-			case OP_STRING_D:
-			{
-				mem_add(vm, IC_LI);
-				const size_t reserved = mem_size(vm) + 4;
-				mem_add(vm, (item_t)reserved);
-				mem_add(vm, IC_B);
-				mem_increase(vm, 2);
+	const size_t records = vector_size(&sx->identifiers) / 4;
+	cg.identifiers = vector_create(records * 3);
+	cg.representations = vector_create(records * 8);
 
-				const item_t N = node_get_arg(nd, 0);
-				for (item_t i = 0; i < N; i++)
-				{
-					if (operation == OP_STRING)
-					{
-						mem_add(vm, node_get_arg(nd, (size_t)i + 1));
-					}
-					else
-					{
-						mem_add(vm, node_get_arg(nd, 2 * (size_t)i + 1));
-						mem_add(vm, node_get_arg(nd, 2 * (size_t)i + 2));
-					}
-				}
+	vector_increase(&cg.memory, 4);
+	vector_increase(&cg.processes, sx->procd);
+	cg.max_threads = 0;
 
-				mem_set(vm, reserved - 1, N);
-				mem_set(vm, reserved - 2, (item_t)mem_size(vm));
-			}
-			break;
-			case OP_ARRAY_INIT:
-			{
-				const item_t N = node_get_arg(nd, 0);
+	cg.target = item_get_status(ws);
 
-				mem_add(vm, IC_BEGINIT);
-				mem_add(vm, N);
+	cg.was_error = 0;
 
-				for (item_t i = 0; i < N; i++)
-				{
-					expression(vm, nd, 0);
-				}
-			}
-			break;
-			case OP_STRUCT_INIT:
-			{
-				const item_t N = node_get_arg(nd, 0);
-				for (item_t i = 0; i < N; i++)
-				{
-					expression(vm, nd, 0);
-				}
-			}
-			break;
-			case OP_SLICE_IDENT:
-			{
-				mem_add(vm, IC_LOAD); // параметры - смещение идента и тип элемента
-				mem_add(vm, node_get_arg(nd, 0)); // продолжение в след case
-			}
-			case OP_SLICE: // параметр - тип элемента
-			{
-				item_t type = node_get_arg(nd, operation == OP_SLICE ? 0 : 1);
-
-				expression(vm, nd, 0);
-				mem_add(vm, IC_SLICE);
-				mem_add(vm, (item_t)size_of(vm->sx, type));
-				if (type > 0 && mode_get(vm->sx, (size_t)type) == mode_array)
-				{
-					mem_add(vm, IC_LAT);
-				}
-			}
-			break;
-			case OP_SELECT:
-			{
-				mem_add(vm, IC_SELECT); // SELECT field_displ
-				mem_add(vm, node_get_arg(nd, 0));
-			}
-			break;
-			case OP_PRINT:
-			{
-				mem_add(vm, IC_PRINT);
-				mem_add(vm, node_get_arg(nd, 0)); // type
-			}
-			break;
-			case OP_CALL1:
-			{
-				mem_add(vm, IC_CALL1);
-
-				const item_t N = node_get_arg(nd, 0);
-				for (item_t i = 0; i < N; i++)
-				{
-					expression(vm, nd, 0);
-				}
-			}
-			break;
-			case OP_CALL2:
-			{
-				mem_add(vm, IC_CALL2);
-				mem_add(vm, ident_get_displ(vm->sx, (size_t)node_get_arg(nd, 0)));
-			}
-			break;
-			default:
-				was_operation = 0;
-				break;
-		}
-
-		if (was_operation)
-		{
-			node_set_next(nd);
-		}
-
-		final_operation(vm, nd);
-
-		if (node_get_type(nd) == OP_CONDITIONAL)
-		{
-			if (mode == 1)
-			{
-				return;
-			}
-
-			size_t addr = 0;
-			do
-			{
-				mem_add(vm, IC_BE0);
-				const size_t addr_else = mem_size(vm);
-				mem_increase(vm, 1);
-
-				expression(vm, nd, 0); // then
-				mem_add(vm, IC_B);
-				mem_add(vm, (item_t)addr);
-				addr = mem_size(vm) - 1;
-				mem_set(vm, addr_else, (item_t)mem_size(vm));
-
-				expression(vm, nd, 1); // else или cond
-			} while (node_get_type(nd) == OP_CONDITIONAL);
-
-			while (addr)
-			{
-				const size_t ref = (size_t)mem_get(vm, addr);
-				mem_set(vm, addr, (item_t)mem_size(vm));
-				addr = ref;
-			}
-
-			final_operation(vm, nd);
-		}
-	}
+	return cg;
 }
 
-static void structure(virtual *const vm, node *const nd)
-{
-	if (node_get_type(nd) == OP_STRUCT_INIT)
-	{
-		const item_t N = node_get_arg(nd, 0);
-		node_set_next(nd);
-
-		for (item_t i = 0; i < N; i++)
-		{
-			structure(vm, nd);
-			node_set_next(nd); // TExprend
-		}
-	}
-	else
-	{
-		expression(vm, nd, -1);
-	}
-}
-
-static void identifier(virtual *const vm, node *const nd)
-{
-	const item_t old_displ = node_get_arg(nd, 0);
-	const item_t type = node_get_arg(nd, 1);
-	const item_t N = node_get_arg(nd, 2);
-
-	/*
-	 *	@param	all		Общее кол-во слов в структуре:
-	 *						@c 0 нет инициализатора,
-	 *						@c 1 есть инициализатор,
-	 *						@c 2 есть инициализатор только из строк
-	 */
-	const item_t all = node_get_arg(nd, 3);
-	const item_t process = node_get_arg(nd, 4);
-
-	/*
-	 *	@param	usual	Для массивов:
-	 *						@c 0 с пустыми границами,
-	 *						@c 1 без пустых границ
-	 */
-	const item_t usual = node_get_arg(nd, 5);
-	const item_t instruction = node_get_arg(nd, 6);
-
-
-	if (N == 0) // Обычная переменная int a; или struct point p;
-	{
-		if (process)
-		{
-			mem_add(vm, IC_STRUCTWITHARR);
-			mem_add(vm, old_displ);
-			mem_add(vm, proc_get(vm, (size_t)process));
-		}
-		if (all) // int a = или struct{} a =
-		{
-			if (type > 0 && mode_get(vm->sx, (size_t)type) == mode_struct)
-			{
-				node_set_next(nd);
-				structure(vm, nd);
-
-				mem_add(vm, IC_COPY0STASS);
-				mem_add(vm, old_displ);
-				mem_add(vm, all); // Общее количество слов
-			}
-			else
-			{
-				expression(vm, nd, 0);
-
-				mem_add(vm, type == mode_float ? IC_ASSRV : IC_ASSV);
-				mem_add(vm, old_displ);
-			}
-		}
-	}
-	else // Обработка массива int a[N1]...[NN] =
-	{
-		const item_t length = (item_t)size_of(vm->sx, type);
-
-		mem_add(vm, IC_DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
-		mem_add(vm, all == 0 ? N : abs((int)N) - 1);
-		mem_add(vm, length);
-		mem_add(vm, old_displ);
-		mem_add(vm, proc_get(vm, (size_t)process));
-		mem_add(vm, usual);
-		mem_add(vm, all);
-		mem_add(vm, instruction);
-
-		if (all) // all == 1, если есть инициализация массива
-		{
-			expression(vm, nd, 0);
-
-			mem_add(vm, IC_ARRINIT); // ARRINIT N d all displ usual
-			mem_add(vm, abs((int)N));
-			mem_add(vm, length);
-			mem_add(vm, old_displ);
-			mem_add(vm, usual);	// == 0 с пустыми границами
-								// == 1 без пустых границ и без инициализации
-		}
-	}
-}
-
-static int declaration(virtual *const vm, node *const nd)
-{
-	switch (node_get_type(nd))
-	{
-		case OP_DECL_ARR:
-		{
-			const item_t N = node_get_arg(nd, 0);
-			for (item_t i = 0; i < N; i++)
-			{
-				expression(vm, nd, 0);
-			}
-		}
-		break;
-		case OP_DECL_ID:
-			identifier(vm, nd);
-			break;
-
-		case OP_DECL_STRUCT:
-		{
-			mem_add(vm, IC_B);
-			mem_add(vm, 0);
-			proc_set(vm, (size_t)node_get_arg(nd, 0), (item_t)mem_size(vm));
-		}
-		break;
-		case OP_DECL_STRUCT_END:
-		{
-			const size_t num_proc = (size_t)node_get_arg(nd, 0);
-
-			mem_add(vm, IC_STOP);
-			mem_set(vm, (size_t)proc_get(vm, num_proc) - 1, (item_t)mem_size(vm));
-		}
-		break;
-
-		default:
-			return -1;
-	}
-
-	return 0;
-}
-
-static void compress_ident(virtual *const vm, const size_t ref)
-{
-	if (vector_get(&vm->sx->identifiers, ref) == ITEM_MAX)
-	{
-		mem_add(vm, ident_get_repr(vm->sx, ref));
-		return;
-	}
-
-	const item_t new_ref = (item_t)vector_size(&vm->identifiers) - 1;
-	vector_add(&vm->identifiers, (item_t)vector_size(&vm->representations) - 2);
-	vector_add(&vm->identifiers, ident_get_mode(vm->sx, ref));
-	vector_add(&vm->identifiers, ident_get_displ(vm->sx, ref));
-
-	const char *buffer = repr_get_name(vm->sx, (size_t)ident_get_repr(vm->sx, ref));
-	for (size_t i = 0; buffer[i] != '\0'; i += utf8_symbol_size(buffer[i]))
-	{
-		vector_add(&vm->representations, (item_t)utf8_convert(&buffer[i]));
-	}
-	vector_add(&vm->representations, '\0');
-
-	vector_set(&vm->sx->identifiers, ref, ITEM_MAX);
-	ident_set_repr(vm->sx, ref, new_ref);
-	mem_add(vm, new_ref);
-}
-
-static void statement(virtual *const vm, node *const nd)
-{
-	switch (node_get_type(nd))
-	{
-		case OP_NULL:
-			break;
-		case OP_CREATE_DIRECT:
-			mem_add(vm, IC_CREATEDIRECT);
-			vm->max_threads++;
-			break;
-		case OP_EXIT_DIRECT:
-			mem_add(vm, IC_EXITDIRECT);
-			break;
-		case OP_BLOCK:
-			block(vm, nd);
-			break;
-		case OP_IF:
-		{
-			const item_t ref_else = node_get_arg(nd, 0);
-
-			expression(vm, nd, 0);
-			node_set_next(nd); // TExprend
-
-			mem_add(vm, IC_BE0);
-			size_t addr = mem_size(vm);
-			mem_increase(vm, 1);
-			statement(vm, nd);
-
-			if (ref_else)
-			{
-				node_set_next(nd);
-				mem_set(vm, addr, (item_t)mem_size(vm) + 2);
-				mem_add(vm, IC_B);
-				addr = mem_size(vm);
-				mem_increase(vm, 1);
-				statement(vm, nd);
-			}
-			mem_set(vm, addr, (item_t)mem_size(vm));
-		}
-		break;
-		case OP_WHILE:
-		{
-			const size_t old_break = vm->addr_break;
-			const size_t old_cond = vm->addr_cond;
-			const size_t addr = mem_size(vm);
-
-			vm->addr_cond = addr;
-			expression(vm, nd, 0);
-			node_set_next(nd); // TExprend
-
-			mem_add(vm, IC_BE0);
-			vm->addr_break = mem_size(vm);
-			mem_add(vm, 0);
-			statement(vm, nd);
-
-			addr_begin_condition(vm, addr);
-			mem_add(vm, IC_B);
-			mem_add(vm, (item_t)addr);
-			addr_end_break(vm);
-
-			vm->addr_break = old_break;
-			vm->addr_cond = old_cond;
-		}
-		break;
-		case OP_DO:
-		{
-			const size_t old_break = vm->addr_break;
-			const size_t old_cond = vm->addr_cond;
-			const item_t addr = (item_t)mem_size(vm);
-
-			vm->addr_cond = 0;
-			vm->addr_break = 0;
-
-			node_set_next(nd);
-			statement(vm, nd);
-			addr_end_condition(vm);
-
-			expression(vm, nd, 0);
-			mem_add(vm, IC_BNE0);
-			mem_add(vm, addr);
-			addr_end_break(vm);
-
-			vm->addr_break = old_break;
-			vm->addr_cond = old_cond;
-		}
-		break;
-		case OP_FOR:
-		{
-			const item_t ref_from = node_get_arg(nd, 0);
-			const item_t ref_cond = node_get_arg(nd, 1);
-			const item_t ref_incr = node_get_arg(nd, 2);
-
-			node incr;
-			node_copy(&incr, nd);
-			size_t child_stmt = 0;
-
-			if (ref_from)
-			{
-				node_set_next(&incr);
-				if (declaration(vm, &incr))
-				{
-					expression(vm, &incr, -1);
-				}
-				child_stmt++;
-			}
-
-			const size_t old_break = vm->addr_break;
-			const size_t old_cond = vm->addr_cond;
-			vm->addr_cond = 0;
-			vm->addr_break = 0;
-
-			size_t initad = mem_size(vm);
-			if (ref_cond)
-			{
-				expression(vm, &incr, 0); // condition
-				mem_add(vm, IC_BE0);
-				vm->addr_break = mem_size(vm);
-				mem_add(vm, 0);
-				child_stmt++;
-			}
-
-			if (ref_incr)
-			{
-				child_stmt++;
-			}
-
-			node stmt = node_get_child(nd, child_stmt);
-			statement(vm, &stmt);
-			addr_end_condition(vm);
-
-			if (ref_incr)
-			{
-				expression(vm, &incr, 0); // increment
-			}
-			node_copy(nd, &stmt);
-
-			mem_add(vm, IC_B);
-			mem_add(vm, (item_t)initad);
-			addr_end_break(vm);
-
-			vm->addr_break = old_break;
-			vm->addr_cond = old_cond;
-		}
-		break;
-		case OP_GOTO:
-		{
-			mem_add(vm, IC_B);
-
-			const item_t id_sign = node_get_arg(nd, 0);
-			const size_t id = abs((int)id_sign);
-			const item_t addr = ident_get_displ(vm->sx, id);
-
-			if (addr > 0) // метка уже описана
-			{
-				mem_add(vm, addr);
-			}
-			else // метка еще не описана
-			{
-				ident_set_displ(vm->sx, id, -(item_t)mem_size(vm));
-
-				// первый раз встретился переход на еще не описанную метку или нет
-				mem_add(vm, id_sign < 0 ? 0 : addr);
-			}
-		}
-		break;
-		case OP_LABEL:
-		{
-			const item_t id = node_get_arg(nd, 0);
-			item_t addr = ident_get_displ(vm->sx, (size_t)id);
-
-			if (addr < 0) // были переходы на метку
-			{
-				while (addr) // проставить ссылку на метку во всех ранних переходах
-				{
-					item_t ref = mem_get(vm, (size_t)(-addr));
-					mem_set(vm, (size_t)(-addr), (item_t)mem_size(vm));
-					addr = ref;
-				}
-			}
-			ident_set_displ(vm->sx, (size_t)id, (item_t)mem_size(vm));
-		}
-		break;
-		case OP_SWITCH:
-		{
-			const size_t old_break = vm->addr_break;
-			const size_t old_case = vm->addr_case;
-			vm->addr_break = 0;
-			vm->addr_case = 0;
-
-			expression(vm, nd, 0);
-			node_set_next(nd); // TExprend
-
-			statement(vm, nd);
-			if (vm->addr_case > 0)
-			{
-				mem_set(vm, vm->addr_case, (item_t)mem_size(vm));
-			}
-			addr_end_break(vm);
-
-			vm->addr_case = old_case;
-			vm->addr_break = old_break;
-		}
-		break;
-		case OP_CASE:
-		{
-			if (vm->addr_case)
-			{
-				mem_set(vm, vm->addr_case, (item_t)mem_size(vm));
-			}
-			mem_add(vm, IC__DOUBLE);
-			expression(vm, nd, 0);
-			node_set_next(nd); // TExprend
-
-			mem_add(vm, IC_EQEQ);
-			mem_add(vm, IC_BE0);
-			vm->addr_case = mem_size(vm);
-			mem_increase(vm, 1);
-			statement(vm, nd);
-		}
-		break;
-		case OP_DEFAULT:
-		{
-			if (vm->addr_case)
-			{
-				mem_set(vm, vm->addr_case, (item_t)mem_size(vm));
-			}
-			vm->addr_case = 0;
-
-			node_set_next(nd);
-			statement(vm, nd);
-		}
-		break;
-		case OP_BREAK:
-		{
-			mem_add(vm, IC_B);
-			mem_add(vm, (item_t)vm->addr_break);
-			vm->addr_break = mem_size(vm) - 1;
-		}
-		break;
-		case OP_CONTINUE:
-		{
-			mem_add(vm, IC_B);
-			mem_add(vm, (item_t)vm->addr_cond);
-			vm->addr_cond = mem_size(vm) - 1;
-		}
-		break;
-		case OP_RETURN_VOID:
-			mem_add(vm, IC_RETURNVOID);
-			break;
-		case OP_RETURN_VAL:
-		{
-			const item_t value = node_get_arg(nd, 0);
-			expression(vm, nd, 0);
-
-			mem_add(vm, IC_RETURNVAL);
-			mem_add(vm, value);
-		}
-		break;
-		case OP_PRINTID:
-		{
-			mem_add(vm, IC_PRINTID);
-			compress_ident(vm, (size_t)node_get_arg(nd, 0)); // ссылка в identtab
-		}
-		break;
-		case OP_PRINTF:
-		{
-			mem_add(vm, IC_PRINTF);
-			mem_add(vm, node_get_arg(nd, 0)); // общий размер того, что надо вывести
-		}
-		break;
-		case OP_GETID:
-		{
-			mem_add(vm, IC_GETID);
-			compress_ident(vm, (size_t)node_get_arg(nd, 0)); // ссылка в identtab
-		}
-		break;
-		default:
-			if (declaration(vm, nd))
-			{
-				expression(vm, nd, -1);
-			}
-			break;
-	}
-}
-
-static void block(virtual *const vm, node *const nd)
-{
-	node_set_next(nd); // TBegin
-	while (node_get_type(nd) != OP_BLOCK_END)
-	{
-		statement(vm, nd);
-		node_set_next(nd);
-	}
-}
-
-/** Генерация кодов */
-static int codegen(virtual *const vm)
-{
-	node root = node_get_root(&vm->sx->tree);
-	while (node_set_next(&root) == 0)
-	{
-		switch (node_get_type(&root))
-		{
-			case OP_FUNC_DEF:
-			{
-				const item_t ref_ident = node_get_arg(&root, 0);
-				const item_t max_displ = node_get_arg(&root, 1);
-				const size_t func = (size_t)ident_get_displ(vm->sx, (size_t)ref_ident);
-
-				func_set(vm->sx, func, (item_t)mem_size(vm));
-				mem_add(vm, IC_FUNCBEG);
-				mem_add(vm, max_displ);
-
-				const size_t old_pc = mem_size(vm);
-				mem_increase(vm, 1);
-
-				node_set_next(&root);
-				block(vm, &root);
-
-				mem_set(vm, old_pc, (item_t)mem_size(vm));
-			}
-			break;
-
-			case OP_NULL:
-			case OP_BLOCK_END:
-				break;
-
-			default:
-				if (declaration(vm, &root))
-				{
-					system_error(node_unexpected, node_get_type(&root));
-					return -1;
-				}
-				break;
-		}
-	}
-
-	mem_add(vm, IC_CALL1);
-	mem_add(vm, IC_CALL2);
-	mem_add(vm, ident_get_displ(vm->sx, vm->sx->ref_main));
-	mem_add(vm, IC_STOP);
-	return 0;
-}
-
-
-static int output_table(universal_io *const io, const item_status target, const vector *const table)
+/** Print table */
+static int print_table(universal_io *const io, const item_status target, const vector *const table)
 {
 	const size_t size = vector_size(table);
 	for (size_t i = 0; i < size; i++)
@@ -912,24 +106,1067 @@ static int output_table(universal_io *const io, const item_status target, const 
 	return 0;
 }
 
-/** Вывод таблиц в файл */
-static int output_export(universal_io *const io, const virtual *const vm)
+/**
+ *	Export codes for virtual machine
+ *
+ *	@param	io		Universal io structure
+ *	@param	ws		Compiler workspace
+ */
+static int cg_export(universal_io *const io, const codegenerator *const cg)
 {
-	uni_printf(io, "#!/usr/bin/ruc-vm\n");
+	uni_printf(io, "#!/usr/bin/ruc-cg\n");
 
 	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n"
-		, vector_size(&vm->memory)
-		, vector_size(&vm->sx->functions)
-		, vector_size(&vm->identifiers)
-		, vector_size(&vm->representations)
-		, vector_size(&vm->sx->modes)
-		, vm->sx->max_displg, vm->max_threads);
+		, vector_size(&cg->memory)
+		, vector_size(&cg->sx->functions)
+		, vector_size(&cg->identifiers)
+		, vector_size(&cg->representations)
+		, vector_size(&cg->sx->modes)
+		, cg->sx->max_displg, cg->max_threads);
 
-	return output_table(io, vm->target, &vm->memory)
-		|| output_table(io, vm->target, &vm->sx->functions)
-		|| output_table(io, vm->target, &vm->identifiers)
-		|| output_table(io, vm->target, &vm->representations)
-		|| output_table(io, vm->target, &vm->sx->modes);
+	return print_table(io, cg->target, &cg->memory)
+		|| print_table(io, cg->target, &cg->sx->functions)
+		|| print_table(io, cg->target, &cg->identifiers)
+		|| print_table(io, cg->target, &cg->representations)
+		|| print_table(io, cg->target, &cg->sx->modes);
+}
+
+/**
+ *	Clear virtual machine environment structure
+ *
+ *	@param	ws		Compiler workspace
+ */
+static void cg_clear(codegenerator *const cg)
+{
+	vector_clear(&cg->memory);
+	vector_clear(&cg->processes);
+	stack_clear(&cg->stk);
+
+	vector_clear(&cg->identifiers);
+	vector_clear(&cg->representations);
+}
+
+
+static void emit_statement(codegenerator *const cg, const node *const nd);
+
+
+static inline void mem_increase(codegenerator *const cg, const size_t size)
+{
+	vector_increase(&cg->memory, size);
+}
+
+static inline void mem_add(codegenerator *const cg, const item_t value)
+{
+	vector_add(&cg->memory, value);
+}
+
+static inline void mem_set(codegenerator *const cg, const size_t index, const item_t value)
+{
+	vector_set(&cg->memory, index, value);
+}
+
+static inline item_t mem_get(const codegenerator *const cg, const size_t index)
+{
+	return vector_get(&cg->memory, index);
+}
+
+static inline size_t mem_size(const codegenerator *const cg)
+{
+	return vector_size(&cg->memory);
+}
+
+static inline size_t mem_reserve(codegenerator *const cg)
+{
+	vector_increase(&cg->memory, 1);
+	return mem_size(cg) - 1;
+}
+
+
+static inline void proc_set(codegenerator *const cg, const size_t index, const item_t value)
+{
+	vector_set(&cg->processes, index, value);
+}
+
+static inline item_t proc_get(const codegenerator *const cg, const size_t index)
+{
+	return vector_get(&cg->processes, index);
+}
+
+
+static void addr_begin_condition(codegenerator *const cg, const size_t addr)
+{
+	while (cg->addr_cond != addr)
+	{
+		const size_t ref = (size_t)mem_get(cg, cg->addr_cond);
+		mem_set(cg, cg->addr_cond, (item_t)addr);
+		cg->addr_cond = ref;
+	}
+}
+
+static void addr_end_condition(codegenerator *const cg)
+{
+	while (cg->addr_cond)
+	{
+		const size_t ref = (size_t)mem_get(cg, cg->addr_cond);
+		mem_set(cg, cg->addr_cond, (item_t)mem_size(cg));
+		cg->addr_cond = ref;
+	}
+}
+
+static void addr_end_break(codegenerator *const cg)
+{
+	while (cg->addr_break)
+	{
+		const size_t ref = (size_t)mem_get(cg, cg->addr_break);
+		mem_set(cg, cg->addr_break, (item_t)mem_size(cg));
+		cg->addr_break = ref;
+	}
+}
+
+
+static void compress_ident(codegenerator *const cg, const size_t ref)
+{
+	if (vector_get(&cg->sx->identifiers, ref) == ITEM_MAX)
+	{
+		mem_add(cg, ident_get_repr(cg->sx, ref));
+		return;
+	}
+
+	const item_t new_ref = (item_t)vector_size(&cg->identifiers) - 1;
+	vector_add(&cg->identifiers, (item_t)vector_size(&cg->representations) - 2);
+	vector_add(&cg->identifiers, ident_get_mode(cg->sx, ref));
+	vector_add(&cg->identifiers, ident_get_displ(cg->sx, ref));
+
+	const char *buffer = repr_get_name(cg->sx, (size_t)ident_get_repr(cg->sx, ref));
+	for (size_t i = 0; buffer[i] != '\0'; i += utf8_symbol_size(buffer[i]))
+	{
+		vector_add(&cg->representations, (item_t)utf8_convert(&buffer[i]));
+	}
+	vector_add(&cg->representations, '\0');
+
+	vector_set(&cg->sx->identifiers, ref, ITEM_MAX);
+	ident_set_repr(cg->sx, ref, new_ref);
+	mem_add(cg, new_ref);
+}
+
+
+static void final_operation(codegenerator *const cg, node *const nd)
+{
+	operation_t op = node_get_type(nd);
+	while (op >= BEGIN_FINAL_OPERATION && op <= END_FINAL_OPERATION)
+	{
+		if (op != OP_NULL)
+		{
+			if (op == OP_AD_LOG_OR)
+			{
+				mem_add(cg, IC__DOUBLE);
+				mem_add(cg, IC_BNE0);
+				stack_push(&cg->stk, (item_t)mem_size(cg));
+				mem_increase(cg, 1);
+			}
+			else if (op == OP_AD_LOG_AND)
+			{
+				mem_add(cg, IC__DOUBLE);
+				mem_add(cg, IC_BE0);
+				stack_push(&cg->stk, (item_t)mem_size(cg));
+				mem_increase(cg, 1);
+			}
+			else
+			{
+				mem_add(cg, (instruction_t)op);
+				if (op == OP_LOG_OR || op == OP_LOG_AND)
+				{
+					mem_set(cg, (size_t)stack_pop(&cg->stk), (item_t)mem_size(cg));
+				}
+				else if (op == OP_COPY00 || op == OP_COPYST)
+				{
+					mem_add(cg, node_get_arg(nd, 0)); // d1
+					mem_add(cg, node_get_arg(nd, 1)); // d2
+					mem_add(cg, node_get_arg(nd, 2)); // длина
+				}
+				else if (op == OP_COPY01 || op == OP_COPY10 || op == OP_COPY0ST || op == OP_COPY0ST_ASSIGN)
+				{
+					mem_add(cg, node_get_arg(nd, 0)); // d1
+					mem_add(cg, node_get_arg(nd, 1)); // длина
+				}
+				else if (op == OP_COPY11 || op == OP_COPY1ST || op == OP_COPY1ST_ASSIGN)
+				{
+					mem_add(cg, node_get_arg(nd, 0)); // длина
+				}
+				else if (operation_is_assignment(op))
+				{
+					mem_add(cg, node_get_arg(nd, 0));
+				}
+			}
+		}
+
+		node_set_next(nd);
+		op = node_get_type(nd);
+	}
+}
+
+/**
+ *	Expression generation
+ *
+ *	@param	cg		Virtual machine environment
+ *	@param	mode	@c -1 for expression on the same node,
+ *					@c  0 for usual expression,
+ *					@c  1 for expression in condition
+ */
+static void expression(codegenerator *const cg, node *const nd, int mode)
+{
+	while (node_get_type(nd) != OP_EXPR_END)
+	{
+		const operation_t operation = node_get_type(nd);
+		int was_operation = 1;
+
+		switch (operation)
+		{
+			case OP_IDENT:
+				break;
+			case OP_IDENT_TO_ADDR:
+			{
+				mem_add(cg, IC_LA);
+				mem_add(cg, node_get_arg(nd, 0));
+			}
+			break;
+			case OP_IDENT_TO_VAL:
+			{
+				mem_add(cg, IC_LOAD);
+				mem_add(cg, node_get_arg(nd, 0));
+			}
+			break;
+			case OP_IDENT_TO_VAL_D:
+			{
+				mem_add(cg, IC_LOADD);
+				mem_add(cg, node_get_arg(nd, 0));
+			}
+			break;
+			case OP_ADDR_TO_VAL:
+				mem_add(cg, IC_LAT);
+				break;
+			case OP_ADDR_TO_VAL_D:
+				mem_add(cg, IC_LATD);
+				break;
+			case OP_CONST:
+			{
+				mem_add(cg, IC_LI);
+				mem_add(cg, node_get_arg(nd, 0));
+			}
+			break;
+			case OP_CONST_D:
+			{
+				mem_add(cg, IC_LID);
+				mem_add(cg, node_get_arg(nd, 0));
+				mem_add(cg, node_get_arg(nd, 1));
+			}
+			break;
+			case OP_STRING:
+			case OP_STRING_D:
+			{
+				mem_add(cg, IC_LI);
+				const size_t reserved = mem_size(cg) + 4;
+				mem_add(cg, (item_t)reserved);
+				mem_add(cg, IC_B);
+				mem_increase(cg, 2);
+
+				const item_t N = node_get_arg(nd, 0);
+				for (item_t i = 0; i < N; i++)
+				{
+					if (operation == OP_STRING)
+					{
+						mem_add(cg, node_get_arg(nd, (size_t)i + 1));
+					}
+					else
+					{
+						mem_add(cg, node_get_arg(nd, 2 * (size_t)i + 1));
+						mem_add(cg, node_get_arg(nd, 2 * (size_t)i + 2));
+					}
+				}
+
+				mem_set(cg, reserved - 1, N);
+				mem_set(cg, reserved - 2, (item_t)mem_size(cg));
+			}
+			break;
+			case OP_ARRAY_INIT:
+			{
+				const item_t N = node_get_arg(nd, 0);
+
+				mem_add(cg, IC_BEGINIT);
+				mem_add(cg, N);
+
+				for (item_t i = 0; i < N; i++)
+				{
+					node_set_next(nd);
+					expression(cg, nd, 0);
+				}
+			}
+			break;
+			case OP_STRUCT_INIT:
+			{
+				const item_t N = node_get_arg(nd, 0);
+				for (item_t i = 0; i < N; i++)
+				{
+					node_set_next(nd);
+					expression(cg, nd, 0);
+				}
+			}
+			break;
+			case OP_SLICE_IDENT:
+			{
+				mem_add(cg, IC_LOAD); // параметры - смещение идента и тип элемента
+				mem_add(cg, node_get_arg(nd, 0)); // продолжение в след case
+			}
+			case OP_SLICE: // параметр - тип элемента
+			{
+				item_t type = node_get_arg(nd, operation == OP_SLICE ? 0 : 1);
+
+				node_set_next(nd);
+				expression(cg, nd, 0);
+				mem_add(cg, IC_SLICE);
+				mem_add(cg, (item_t)size_of(cg->sx, type));
+				if (type > 0 && mode_get(cg->sx, (size_t)type) == mode_array)
+				{
+					mem_add(cg, IC_LAT);
+				}
+			}
+			break;
+			case OP_SELECT:
+			{
+				mem_add(cg, IC_SELECT); // SELECT field_displ
+				mem_add(cg, node_get_arg(nd, 0));
+			}
+			break;
+			case OP_PRINT:
+			{
+				mem_add(cg, IC_PRINT);
+				mem_add(cg, node_get_arg(nd, 0)); // type
+			}
+			break;
+			case OP_CALL1:
+			{
+				mem_add(cg, IC_CALL1);
+
+				const item_t N = node_get_arg(nd, 0);
+				for (item_t i = 0; i < N; i++)
+				{
+					node_set_next(nd);
+					expression(cg, nd, 0);
+				}
+			}
+			break;
+			case OP_CALL2:
+			{
+				mem_add(cg, IC_CALL2);
+				mem_add(cg, ident_get_displ(cg->sx, (size_t)node_get_arg(nd, 0)));
+			}
+			break;
+			default:
+				was_operation = 0;
+				break;
+		}
+
+		if (was_operation)
+		{
+			node_set_next(nd);
+		}
+
+		final_operation(cg, nd);
+
+		if (node_get_type(nd) == OP_CONDITIONAL)
+		{
+			if (mode == 1)
+			{
+				return;
+			}
+
+			size_t addr = 0;
+			do
+			{
+				mem_add(cg, IC_BE0);
+				const size_t addr_else = mem_size(cg);
+				mem_increase(cg, 1);
+
+				node_set_next(nd);
+				expression(cg, nd, 0); // then
+				mem_add(cg, IC_B);
+				mem_add(cg, (item_t)addr);
+				addr = mem_size(cg) - 1;
+				mem_set(cg, addr_else, (item_t)mem_size(cg));
+
+				node_set_next(nd);
+				expression(cg, nd, 1); // else или cond
+			} while (node_get_type(nd) == OP_CONDITIONAL);
+
+			while (addr)
+			{
+				const size_t ref = (size_t)mem_get(cg, addr);
+				mem_set(cg, addr, (item_t)mem_size(cg));
+				addr = ref;
+			}
+
+			final_operation(cg, nd);
+		}
+	}
+}
+
+/**
+ *	Emit expression [C99 6.5]
+ *
+ *	@note	Это переходник под старый expression(), который использует set_next()
+ *	TODO:	переписать генерацию выражений
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_expression(codegenerator *const cg, const node *const nd)
+{
+	node internal_node;
+	node_copy(&internal_node, nd);
+	expression(cg, &internal_node, 0);
+}
+
+/**
+ *	Emit declaration [C99 6.7]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_declaration(codegenerator *const cg, const node *const nd)
+{
+	switch (node_get_type(nd))
+	{
+		case OP_FUNC_DEF:
+		{
+			const size_t ref_func = (size_t)ident_get_displ(cg->sx, (size_t)node_get_arg(nd, 0));
+			func_set(cg->sx, ref_func, (item_t)mem_size(cg));
+
+			mem_add(cg, IC_FUNCBEG);
+			mem_add(cg, node_get_arg(nd, 1));
+
+			const size_t old_pc = mem_reserve(cg);
+
+			const node func_body = node_get_child(nd, 0);
+			emit_statement(cg, &func_body);
+
+			mem_set(cg, old_pc, (item_t)mem_size(cg));
+		}
+		break;
+
+		case OP_DECL_ID:
+		{
+			const item_t old_displ = node_get_arg(nd, 0);
+			const item_t mode = node_get_arg(nd, 1);
+			const item_t process = node_get_arg(nd, 4);
+
+			if (process)
+			{
+				mem_add(cg, IC_STRUCTWITHARR);
+				mem_add(cg, old_displ);
+				mem_add(cg, proc_get(cg, (size_t)process));
+			}
+
+			const node initializer = node_get_child(nd, 0);
+			if (node_is_correct(&initializer)) // int a = или struct{} a =
+			{
+				emit_expression(cg, &initializer);
+
+				if (mode_is_struct(cg->sx, mode))
+				{
+					mem_add(cg, IC_COPY0STASS);
+					mem_add(cg, old_displ);
+					mem_add(cg, node_get_arg(nd, 3)); // Общее количество слов
+				}
+				else
+				{
+					mem_add(cg, mode_is_float(mode) ? IC_ASSRV : IC_ASSV);
+					mem_add(cg, old_displ);
+				}
+			}
+		}
+		break;
+
+		case OP_DECL_ARR:
+		{
+			const size_t bounds = (size_t)node_get_arg(nd, 0);
+			for (size_t i = 0; i < bounds; i++)
+			{
+				const node expression = node_get_child(nd, i);
+				emit_expression(cg, &expression);
+			}
+
+			const node decl_id = node_get_child(nd, bounds);
+
+			int has_initializer = 0;
+			const node initializer = node_get_child(nd, bounds + 1);
+			if (node_is_correct(&initializer))
+			{
+				has_initializer = 1;
+			}
+
+			mem_add(cg, IC_DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
+
+			const item_t dimensions = node_get_arg(&decl_id, 2);
+			mem_add(cg, has_initializer ? dimensions - 1 : dimensions);
+
+			const item_t length = (item_t)size_of(cg->sx, node_get_arg(&decl_id, 1));
+			mem_add(cg, length);
+
+			const item_t old_displ = node_get_arg(&decl_id, 0);
+			mem_add(cg, old_displ);
+			mem_add(cg, proc_get(cg, (size_t)node_get_arg(&decl_id, 4)));
+
+			/*
+			 *	@param	usual	Для массивов:
+			 *						@c 0 с пустыми границами,
+			 *						@c 1 без пустых границ
+			 */
+			const item_t usual = node_get_arg(&decl_id, 5);
+			mem_add(cg, usual);
+			mem_add(cg, node_get_arg(&decl_id, 3));
+			mem_add(cg, node_get_arg(&decl_id, 6));
+
+			if (has_initializer)
+			{
+				emit_expression(cg, &initializer);
+
+				mem_add(cg, IC_ARRINIT);
+				mem_add(cg, dimensions);
+				mem_add(cg, length);
+				mem_add(cg, old_displ);
+				mem_add(cg, usual);
+			}
+		}
+		break;
+
+		case OP_DECL_STRUCT:
+		{
+			mem_add(cg, IC_B);
+			mem_add(cg, 0);
+			proc_set(cg, (size_t)node_get_arg(nd, 0), (item_t)mem_size(cg));
+
+			const size_t children = node_get_amount(nd);
+			for (size_t i = 0; i < children - 1; i++)
+			{
+				const node child = node_get_child(nd, i);
+				emit_declaration(cg, &child);
+			}
+
+			const node decl_end = node_get_child(nd, children - 1);
+			const size_t num_proc = (size_t)node_get_arg(&decl_end, 0);
+
+			mem_add(cg, IC_STOP);
+			mem_set(cg, (size_t)proc_get(cg, num_proc) - 1, (item_t)mem_size(cg));
+		}
+		break;
+
+		case OP_BLOCK_END:
+			// Это старый признак конца программы
+			// TODO: убрать, когда уберем OP_BLOCK_END
+			break;
+
+		default:
+			system_error(node_unexpected, node_get_type(nd));
+			cg->was_error = 1;
+			break;
+	}
+}
+
+/**
+ *	Emit labeled statement [C99 6.8.1]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_labeled_statement(codegenerator *const cg, const node *const nd)
+{
+	const item_t label_id = node_get_arg(nd, 0);
+	item_t addr = ident_get_displ(cg->sx, (size_t)label_id);
+
+	if (addr < 0)
+	{
+		// Были переходы на метку
+		while (addr)
+		{
+			// Проставить ссылку на метку во всех ранних переходах
+			const item_t ref = mem_get(cg, (size_t)(-addr));
+			mem_set(cg, (size_t)(-addr), (item_t)mem_size(cg));
+			addr = ref;
+		}
+	}
+
+	ident_set_displ(cg->sx, (size_t)label_id, (item_t)mem_size(cg));
+}
+
+/**
+ *	Emit case statement [C99 6.8.1]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_case_statement(codegenerator *const cg, const node *const nd)
+{
+	if (cg->addr_case)
+	{
+		mem_set(cg, cg->addr_case, (item_t)mem_size(cg));
+	}
+
+	mem_add(cg, IC__DOUBLE);
+
+	const node expression = node_get_child(nd, 0);
+	emit_expression(cg, &expression);
+
+	mem_add(cg, IC_EQEQ);
+	mem_add(cg, IC_BE0);
+	cg->addr_case = mem_reserve(cg);
+
+	const node statement = node_get_child(nd, 1);
+	emit_statement(cg, &statement);
+}
+
+/**
+ *	Emit default statement [C99 6.8.1]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_default_statement(codegenerator *const cg, const node *const nd)
+{
+	if (cg->addr_case)
+	{
+		mem_set(cg, cg->addr_case, (item_t)mem_size(cg));
+	}
+	cg->addr_case = 0;
+
+	const node statement = node_get_child(nd, 0);
+	emit_statement(cg, &statement);
+}
+
+/**
+ *	Emit compound statement [C99 6.8.2]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_block(codegenerator *const cg, const node *const nd)
+{
+	const size_t block_items = node_get_amount(nd);
+	for (size_t i = 0; i < block_items; i++)
+	{
+		const node block_item = node_get_child(nd, i);
+		emit_statement(cg, &block_item);
+	}
+}
+
+/**
+ *	Emit if statement [C99 6.8.4.1]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_if_statement(codegenerator *const cg, const node *const nd)
+{
+	const node condition = node_get_child(nd, 0);
+	emit_expression(cg, &condition);
+	mem_add(cg, IC_BE0);
+	size_t addr = mem_reserve(cg);
+
+	const node then_stmt = node_get_child(nd, 1);
+	emit_statement(cg, &then_stmt);
+
+	const node else_stmt = node_get_child(nd, 2);
+	if (node_is_correct(&else_stmt))
+	{
+		mem_set(cg, addr, (item_t)mem_size(cg) + 2);
+		mem_add(cg, IC_B);
+		addr = mem_reserve(cg);
+
+		emit_statement(cg, &else_stmt);
+	}
+
+	mem_set(cg, addr, (item_t)mem_size(cg));
+}
+
+/**
+ *	Emit switch statement [C99 6.8.4.2]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_switch_statement(codegenerator *const cg, const node *const nd)
+{
+	const size_t old_addr_break = cg->addr_break;
+	const size_t old_addr_case = cg->addr_case;
+	cg->addr_break = 0;
+	cg->addr_case = 0;
+
+	const node condition = node_get_child(nd, 0);
+	emit_expression(cg, &condition);
+
+	const node statement = node_get_child(nd, 1);
+	emit_statement(cg, &statement);
+
+	if (cg->addr_case > 0)
+	{
+		mem_set(cg, cg->addr_case, (item_t)mem_size(cg));
+	}
+	addr_end_break(cg);
+
+	cg->addr_case = old_addr_case;
+	cg->addr_break = old_addr_break;
+}
+
+/**
+ *	Emit while statement [C99 6.8.5.1]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_while_statement(codegenerator *const cg, const node *const nd)
+{
+	const size_t old_addr_break = cg->addr_break;
+	const size_t old_addr_cond = cg->addr_cond;
+	const size_t addr = mem_size(cg);
+	cg->addr_cond = addr;
+
+	const node condition = node_get_child(nd, 0);
+	emit_expression(cg, &condition);
+
+	mem_add(cg, IC_BE0);
+	cg->addr_break = mem_size(cg);
+	mem_add(cg, 0);
+
+	const node statement = node_get_child(nd, 1);
+	emit_statement(cg, &statement);
+
+	addr_begin_condition(cg, addr);
+	mem_add(cg, IC_B);
+	mem_add(cg, (item_t)addr);
+	addr_end_break(cg);
+
+	cg->addr_break = old_addr_break;
+	cg->addr_cond = old_addr_cond;
+}
+
+/**
+ *	Emit do statement [C99 6.8.5.2]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_do_statement(codegenerator *const cg, const node *const nd)
+{
+	const size_t old_addr_break = cg->addr_break;
+	const size_t old_addr_cond = cg->addr_cond;
+	const item_t addr = (item_t)mem_size(cg);
+
+	cg->addr_cond = 0;
+	cg->addr_break = 0;
+
+	const node statement = node_get_child(nd, 0);
+	emit_statement(cg, &statement);
+	addr_end_condition(cg);
+
+	const node expression = node_get_child(nd, 1);
+	emit_expression(cg, &expression);
+	mem_add(cg, IC_BNE0);
+	mem_add(cg, addr);
+	addr_end_break(cg);
+
+	cg->addr_break = old_addr_break;
+	cg->addr_cond = old_addr_cond;
+}
+
+/**
+ *	Emit for statement [C99 6.8.5.3]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_for_statement(codegenerator *const cg, const node *const nd)
+{
+	int child = 0;
+
+	const int has_inition = (int)node_get_arg(nd, 0);
+	if (has_inition)
+	{
+		// Предполагая, что дерево правильно построено
+		const node inition = node_get_child(nd, child++);
+		emit_statement(cg, &inition);
+	}
+
+	const size_t old_addr_break = cg->addr_break;
+	const size_t old_addr_cond = cg->addr_cond;
+	cg->addr_cond = 0;
+	cg->addr_break = 0;
+
+	const size_t addr_inition = mem_size(cg);
+	const int has_condition = (int)node_get_arg(nd, 1);
+	if (has_condition)
+	{
+		const node condition = node_get_child(nd, child++);
+		emit_expression(cg, &condition);
+		mem_add(cg, IC_BE0);
+		cg->addr_break = mem_size(cg);
+		mem_add(cg, 0);
+	}
+
+	const int has_increment = (int)node_get_arg(nd, 2);
+
+	const node statement = node_get_child(nd, child + has_increment);
+	emit_statement(cg, &statement);
+	addr_end_condition(cg);
+
+	if (has_increment)
+	{
+		const node increment = node_get_child(nd, child);
+		emit_expression(cg, &increment);
+	}
+
+	mem_add(cg, IC_B);
+	mem_add(cg, (item_t)addr_inition);
+	addr_end_break(cg);
+
+	cg->addr_break = old_addr_break;
+	cg->addr_cond = old_addr_cond;
+}
+
+/**
+ *	Emit goto statement [C99 6.8.6.1]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_goto_statement(codegenerator *const cg, const node *const nd)
+{
+	mem_add(cg, IC_B);
+
+	const item_t label_id = node_get_arg(nd, 0);
+	const size_t id = (size_t)llabs(label_id);
+	const item_t addr = ident_get_displ(cg->sx, id);
+
+	if (addr > 0)
+	{
+		// Метка уже описана
+		mem_add(cg, addr);
+	}
+	else
+	{
+		// Метка еще не описана
+		ident_set_displ(cg->sx, id, -(item_t)mem_size(cg));
+
+		// Первый раз встретился переход на еще не описанную метку или нет
+		mem_add(cg, label_id < 0 ? 0 : addr);
+	}
+}
+
+/**
+ *	Emit continue statement [C99 6.8.6.2]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_continue_statement(codegenerator *const cg, const node *const nd)
+{
+	(void)nd;
+	mem_add(cg, IC_B);
+	mem_add(cg, (item_t)cg->addr_cond);
+	cg->addr_cond = mem_size(cg) - 1;
+}
+
+/**
+ *	Emit break statement [C99 6.8.6.3]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_break_statement(codegenerator *const cg, const node *const nd)
+{
+	(void)nd;
+	mem_add(cg, IC_B);
+	mem_add(cg, (item_t)cg->addr_break);
+	cg->addr_break = mem_size(cg) - 1;
+}
+
+/**
+ *	Emit return statement [C99 6.8.6.4]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_return_statement(codegenerator *const cg, const node *const nd)
+{
+	if (node_get_amount(nd))
+	{
+		const node expression = node_get_child(nd, 0);
+		emit_expression(cg, &expression);
+
+		mem_add(cg, IC_RETURNVAL);
+		mem_add(cg, node_get_arg(nd, 0));
+	}
+	else
+	{
+		mem_add(cg, IC_RETURNVOID);
+	}
+}
+
+/**
+ *	Emit t_create_direct statement [RuC]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_thread(codegenerator *const cg, const node *const nd)
+{
+	mem_add(cg, IC_CREATEDIRECT);
+	cg->max_threads++;
+
+	const size_t thread_items = node_get_amount(nd);
+	for (size_t i = 0; i < thread_items; i++)
+	{
+		const node thread_item = node_get_child(nd, i);
+		emit_statement(cg, &thread_item);
+	}
+
+	mem_add(cg, IC_EXITDIRECT);
+}
+
+/**
+ *	Emit printid statement [RuC]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_printid_statement(codegenerator *const cg, const node *const nd)
+{
+	mem_add(cg, IC_PRINTID);
+	compress_ident(cg, (size_t)node_get_arg(nd, 0)); // Ссылка в identtab
+}
+
+/**
+ *	Emit getid statement [RuC]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_getid_statement(codegenerator *const cg, const node *const nd)
+{
+	mem_add(cg, IC_GETID);
+	compress_ident(cg, (size_t)node_get_arg(nd, 0)); //Сссылка в identtab
+}
+
+/**
+ *	Emit printf statement [RuC]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_printf_statement(codegenerator *const cg, const node *const nd)
+{
+	mem_add(cg, IC_PRINTF);
+	mem_add(cg, node_get_arg(nd, 0)); // Общий размер того, что надо вывести
+}
+
+/**
+ *	Emit statement [C99 6.8]
+ *
+ *	@param	cg			Virtual machine environment
+ *	@param	nd			Node in AST
+ */
+static void emit_statement(codegenerator *const cg, const node *const nd)
+{
+	switch (node_get_type(nd))
+	{
+		case OP_LABEL:
+			emit_labeled_statement(cg, nd);
+			break;
+
+		case OP_CASE:
+			emit_case_statement(cg, nd);
+			break;
+
+		case OP_DEFAULT:
+			emit_default_statement(cg, nd);
+			break;
+
+		case OP_BLOCK:
+			emit_block(cg, nd);
+			break;
+
+		case OP_NULL:
+			break;
+
+		case OP_IF:
+			emit_if_statement(cg, nd);
+			break;
+
+		case OP_SWITCH:
+			emit_switch_statement(cg, nd);
+			break;
+
+		case OP_WHILE:
+			emit_while_statement(cg, nd);
+			break;
+
+		case OP_DO:
+			emit_do_statement(cg, nd);
+			break;
+
+		case OP_FOR:
+			emit_for_statement(cg, nd);
+			break;
+
+		case OP_GOTO:
+			emit_goto_statement(cg, nd);
+			break;
+
+		case OP_CONTINUE:
+			emit_continue_statement(cg, nd);
+			break;
+
+		case OP_BREAK:
+			emit_break_statement(cg, nd);
+			break;
+
+		case OP_RETURN_VAL:
+		case OP_RETURN_VOID:
+			emit_return_statement(cg, nd);
+			break;
+
+		case OP_CREATE_DIRECT:
+		case OP_CREATE:
+			emit_thread(cg, nd);
+			break;
+
+		case OP_PRINTID:
+			emit_printid_statement(cg, nd);
+			break;
+
+		case OP_GETID:
+			emit_getid_statement(cg, nd);
+			break;
+
+		case OP_PRINTF:
+			emit_printf_statement(cg, nd);
+			break;
+
+		case OP_BLOCK_END:
+		case OP_EXIT_DIRECT:
+		case OP_EXIT:
+			// Пока что это чтобы не менять дерево
+			// Но на самом деле такие узлы не нужны, так как реализация дерева знает количество потомков
+			break;
+
+		case OP_DECL_ID:
+		case OP_DECL_ARR:
+		case OP_DECL_STRUCT:
+			emit_declaration(cg, nd);
+			break;
+
+		default:
+			emit_expression(cg, nd);
+			break;
+	}
 }
 
 
@@ -949,40 +1186,26 @@ int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *cons
 		return -1;
 	}
 
-	virtual vm;
-	vm.sx = sx;
-
-	vm.memory = vector_create(MAX_MEM_SIZE);
-	vm.processes = vector_create(sx->procd);
-	vm.stk = stack_create(MAX_STACK_SIZE);
-
-	const size_t records = vector_size(&sx->identifiers) / 4;
-	vm.identifiers = vector_create(records * 3);
-	vm.representations = vector_create(records * 8);
-
-	vector_increase(&vm.memory, 4);
-	vector_increase(&vm.processes, sx->procd);
-	vm.max_threads = 0;
-
-	vm.target = item_get_status(ws);
-
-
-	int ret = codegen(&vm);
-	if (!ret)
+	codegenerator cg = cg_create(ws, sx);
+	const node root = node_get_root(&cg.sx->tree);
+	const size_t items = node_get_amount(&root);
+	for (size_t i = 0; i < items && !cg.was_error; i++)
 	{
-		ret = output_export(io, &vm);
+		const node item = node_get_child(&root, i);
+		emit_declaration(&cg, &item);
 	}
 
+	mem_add(&cg, IC_CALL1);
+	mem_add(&cg, IC_CALL2);
+	mem_add(&cg, ident_get_displ(cg.sx, cg.sx->ref_main));
+	mem_add(&cg, IC_STOP);
+
+	int ret = cg.was_error || cg_export(io, &cg);
+
 #ifndef NDEBUG
-	tables_and_codes(DEFAULT_CODES, &sx->functions, &vm.processes, &vm.memory);
+	tables_and_codes(DEFAULT_CODES, &sx->functions, &cg.processes, &cg.memory);
 #endif
 
-
-	vector_clear(&vm.memory);
-	vector_clear(&vm.processes);
-	stack_clear(&vm.stk);
-
-	vector_clear(&vm.identifiers);
-	vector_clear(&vm.representations);
+	cg_clear(&cg);
 	return ret;
 }
