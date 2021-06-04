@@ -169,7 +169,7 @@ node node_get_root(vector *const tree)
 	return nd;
 }
 
-node node_get_child(node *const nd, const size_t index)
+node node_get_child(const node *const nd, const size_t index)
 {
 	if (!node_is_correct(nd) || index >= node_get_amount(nd))
 	{
@@ -186,7 +186,7 @@ node node_get_child(node *const nd, const size_t index)
 	return child;
 }
 
-node node_get_parent(node *const nd)
+node node_get_parent(const node *const nd)
 {
 	if (!node_is_correct(nd))
 	{

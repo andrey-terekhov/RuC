@@ -631,7 +631,7 @@ node node_get_root(vector *const tree)
 	return nd;
 }
 
-node node_get_child(node *const nd, const size_t index)
+node node_get_child(const node *const nd, const size_t index)
 {
 	if (!node_is_correct(nd) || index >= nd->amount)
 	{

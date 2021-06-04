@@ -53,7 +53,7 @@ EXPORTED node node_get_root(vector *const tree);
  *
  *	@return	Child node
  */
-EXPORTED node node_get_child(node *const nd, const size_t index);
+EXPORTED node node_get_child(const node *const nd, const size_t index);
 
 /**
  *	Get parent of node
@@ -62,7 +62,7 @@ EXPORTED node node_get_child(node *const nd, const size_t index);
  *
  *	@return	Parent node
  */
-EXPORTED node node_get_parent(node *const nd);
+EXPORTED node node_get_parent(const node *const nd);
 
 
 /**
