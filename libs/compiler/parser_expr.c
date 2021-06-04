@@ -1472,7 +1472,7 @@ void parse_conditional_expression(parser *const prs)
 
 void assignment_to_void(parser *const prs)
 {
-	node_set_type(&prs->nd, node_to_void_ver((node_t)node_get_type(&prs->nd)));
+	node_set_type(&prs->nd, node_to_void_ver(node_get_type(&prs->nd)));
 }
 
 void parse_assignment_expression_internal(parser *const prs)
