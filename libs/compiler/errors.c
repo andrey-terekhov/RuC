@@ -27,12 +27,11 @@
 
 #define TAG_RUC "ruc"
 
-#define MAX_TAG_SIZE MAXSTRINGL
-#define MAX_MSG_SIZE MAXSTRINGL * 4
-#define MAX_LINE_SIZE MAXSTRINGL * 4
+#define MAX_TAG_SIZE MAX_STRING_LENGTH
+#define MAX_MSG_SIZE MAX_STRING_LENGTH * 4
+#define MAX_LINE_SIZE MAX_STRING_LENGTH * 4
 
 #define MAX_INT_LENGTH 12
-#define MAXSTRINGL	128
 
 
 void get_error(const error_t num, char *const msg, va_list args)
