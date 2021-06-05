@@ -114,7 +114,7 @@ static int print_table(universal_io *const io, const item_status target, const v
  */
 static int cg_export(universal_io *const io, const codegenerator *const cg)
 {
-	uni_printf(io, "#!/usr/bin/ruc-cg\n");
+	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
 	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n"
 		, vector_size(&cg->memory)
