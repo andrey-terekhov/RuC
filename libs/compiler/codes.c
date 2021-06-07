@@ -1095,116 +1095,116 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 		case IC_DUPLICATE:
 			sprintf(buffer, "DOUBLE");
 			break;
-		case OP_PREINC:
+		case OP_PRE_INC:
 			argc = 1;
 			sprintf(buffer, "INC");
 			break;
-		case OP_PREDEC:
+		case OP_PRE_DEC:
 			argc = 1;
 			sprintf(buffer, "DEC");
 			break;
-		case OP_POSTINC:
+		case OP_POST_INC:
 			argc = 1;
 			sprintf(buffer, "POSTINC");
 			break;
-		case OP_POSTDEC:
+		case OP_POST_DEC:
 			argc = 1;
 			sprintf(buffer, "POSTDEC");
 			break;
-		case OP_PREINC_AT:
+		case OP_PRE_INC_AT:
 			sprintf(buffer, "INC@");
 			break;
-		case OP_PREDEC_AT:
+		case OP_PRE_DEC_AT:
 			sprintf(buffer, "DEC@");
 			break;
-		case OP_POSTINC_AT:
+		case OP_POST_INC_AT:
 			sprintf(buffer, "POSTINC@");
 			break;
-		case OP_POSTDEC_AT:
+		case OP_POST_DEC_AT:
 			sprintf(buffer, "POSTDEC@");
 			break;
-		case OP_PREINC_R:
+		case OP_PRE_INC_R:
 			argc = 1;
 			sprintf(buffer, "INCf");
 			break;
-		case OP_PREDEC_R:
+		case OP_PRE_DEC_R:
 			argc = 1;
 			sprintf(buffer, "DECf");
 			break;
-		case OP_POSTINC_R:
+		case OP_POST_INC_R:
 			argc = 1;
 			sprintf(buffer, "POSTINCf");
 			break;
-		case OP_POSTDEC_R:
+		case OP_POST_DEC_R:
 			argc = 1;
 			sprintf(buffer, "POSTDECf");
 			break;
-		case OP_PREINC_AT_R:
+		case OP_PRE_INC_AT_R:
 			sprintf(buffer, "INC@f");
 			break;
-		case OP_PREDEC_AT_R:
+		case OP_PRE_DEC_AT_R:
 			sprintf(buffer, "DEC@f");
 			break;
-		case OP_POSTINC_AT_R:
+		case OP_POST_INC_AT_R:
 			sprintf(buffer, "POSTINC@f");
 			break;
-		case OP_POSTDEC_AT_R:
+		case OP_POST_DEC_AT_R:
 			sprintf(buffer, "POSTDEC@f");
 			break;
-		case OP_PREINC_V:
+		case OP_PRE_INC_V:
 			argc = 1;
 			sprintf(buffer, "INCV");
 			break;
-		case OP_PREDEC_V:
+		case OP_PRE_DEC_V:
 			argc = 1;
 			sprintf(buffer, "DECV");
 			break;
-		case OP_POSTINC_V:
+		case OP_POST_INC_V:
 			argc = 1;
 			sprintf(buffer, "POSTINCV");
 			break;
-		case OP_POSTDEC_V:
+		case OP_POST_DEC_V:
 			argc = 1;
 			sprintf(buffer, "POSTDECV");
 			break;
-		case OP_PREINC_AT_V:
+		case OP_PRE_INC_AT_V:
 			sprintf(buffer, "INC@V");
 			break;
-		case OP_PREDEC_AT_V:
+		case OP_PRE_DEC_AT_V:
 			sprintf(buffer, "DEC@V");
 			break;
-		case OP_POSTINC_AT_V:
+		case OP_POST_INC_AT_V:
 			sprintf(buffer, "POSTINC@V");
 			break;
-		case OP_POSTDEC_AT_V:
+		case OP_POST_DEC_AT_V:
 			sprintf(buffer, "POSTDEC@V");
 			break;
-		case OP_PREINC_R_V:
+		case OP_PRE_INC_R_V:
 			argc = 1;
 			sprintf(buffer, "INCfV");
 			break;
-		case OP_PREDEC_R_V:
+		case OP_PRE_DEC_R_V:
 			argc = 1;
 			sprintf(buffer, "DECfV");
 			break;
-		case OP_POSTINC_R_V:
+		case OP_POST_INC_R_V:
 			argc = 1;
 			sprintf(buffer, "POSTINCfV");
 			break;
-		case OP_POSTDEC_R_V:
+		case OP_POST_DEC_R_V:
 			argc = 1;
 			sprintf(buffer, "POSTDECfV");
 			break;
-		case OP_PREINC_AT_R_V:
+		case OP_PRE_INC_AT_R_V:
 			sprintf(buffer, "INC@fV");
 			break;
-		case OP_PREDEC_AT_R_V:
+		case OP_PRE_DEC_AT_R_V:
 			sprintf(buffer, "DEC@fV");
 			break;
-		case OP_POSTINC_AT_R_V:
+		case OP_POST_INC_AT_R_V:
 			sprintf(buffer, "POSTINC@fV");
 			break;
-		case OP_POSTDEC_AT_R_V:
+		case OP_POST_DEC_AT_R_V:
 			sprintf(buffer, "POSTDEC@fV");
 			break;
 

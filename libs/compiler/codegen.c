@@ -443,7 +443,7 @@ static void identifier(virtual *const vm, node *const nd)
 				node_set_next(nd);
 				structure(vm, nd);
 
-				mem_add(vm, IC_COPY0STASS);
+				mem_add(vm, IC_COPY0ST_ASSIGN);
 				mem_add(vm, old_displ);
 				mem_add(vm, all); // Общее количество слов
 			}
@@ -451,7 +451,7 @@ static void identifier(virtual *const vm, node *const nd)
 			{
 				expression(vm, nd, 0);
 
-				mem_add(vm, type == mode_float ? IC_ASSRV : IC_ASSV);
+				mem_add(vm, type == mode_float ? IC_ASSIGN_R_V : IC_ASSIGN_V);
 				mem_add(vm, old_displ);
 			}
 		}
@@ -761,7 +761,7 @@ static void statement(virtual *const vm, node *const nd)
 			expression(vm, nd, 0);
 			node_set_next(nd); // TExprend
 
-			mem_add(vm, IC_EQEQ);
+			mem_add(vm, IC_EQ);
 			mem_add(vm, IC_BE0);
 			vm->addr_case = mem_size(vm);
 			mem_increase(vm, 1);

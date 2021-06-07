@@ -68,8 +68,8 @@ operation_t token_to_unary(const token_t token)
 	{
 		case TK_TILDE:					return OP_NOT;
 		case TK_EXCLAIM:				return OP_LOG_NOT;
-		case TK_PLUS_PLUS:				return OP_PREINC;
-		case TK_MINUS_MINUS:			return OP_PREDEC;
+		case TK_PLUS_PLUS:				return OP_PRE_INC;
+		case TK_MINUS_MINUS:			return OP_PRE_DEC;
 
 		default:
 			system_error(node_unexpected);
@@ -132,10 +132,10 @@ operation_t operation_to_address_ver(const operation_t operation)
 {
 	switch (operation)
 	{
-		case OP_PREINC:		return OP_PREINC_AT;
-		case OP_PREDEC:		return OP_PREDEC_AT;
-		case OP_POSTINC:	return OP_POSTINC_AT;
-		case OP_POSTDEC:	return OP_POSTDEC_AT;
+		case OP_PRE_INC:	return OP_PRE_INC_AT;
+		case OP_PRE_DEC:	return OP_PRE_DEC_AT;
+		case OP_POST_INC:	return OP_POST_INC_AT;
+		case OP_POST_DEC:	return OP_POST_DEC_AT;
 		case OP_REM_ASSIGN:	return OP_REM_ASSIGN_AT;
 		case OP_SHL_ASSIGN:	return OP_SHL_ASSIGN_AT;
 		case OP_SHR_ASSIGN:	return OP_SHR_ASSIGN_AT;
@@ -156,9 +156,9 @@ operation_t operation_to_address_ver(const operation_t operation)
 operation_t operation_to_void_ver(const operation_t operation)
 {
 	return (operation >= OP_ASSIGN && operation <= OP_DIV_ASSIGN_AT)
-		|| (operation >= OP_POSTINC && operation <= OP_PREDEC_AT)
+		|| (operation >= OP_POST_INC && operation <= OP_PRE_DEC_AT)
 		|| (operation >= OP_ASSIGN_R && operation <= OP_DIV_ASSIGN_AT_R)
-		|| (operation >= OP_POSTINC_R && operation <= OP_PREDEC_AT_R)
+		|| (operation >= OP_POST_INC_R && operation <= OP_PRE_DEC_AT_R)
 			? operation + DISPL_TO_VOID
 			: operation;
 }
@@ -191,8 +191,8 @@ int operation_is_assignment(const operation_t op)
 		|| (op >= OP_REM_ASSIGN_V && op <= OP_DIV_ASSIGN_V)
 		|| (op >= OP_ASSIGN_R && op <= OP_DIV_ASSIGN_R)
 		|| (op >= OP_ASSIGN_R_V && op <= OP_DIV_ASSIGN_R_V)
-		|| (op >= OP_POSTINC && op <= OP_PREDEC)
-		|| (op >= OP_POSTINC_V && op <= OP_PREDEC_V)
-		|| (op >= OP_POSTINC_R && op <= OP_PREDEC_R)
-		|| (op >= OP_POSTINC_R_V && op <= OP_PREDEC_R_V);
+		|| (op >= OP_POST_INC && op <= OP_PRE_DEC)
+		|| (op >= OP_POST_INC_V && op <= OP_PRE_DEC_V)
+		|| (op >= OP_POST_INC_R && op <= OP_PRE_DEC_R)
+		|| (op >= OP_POST_INC_R_V && op <= OP_PRE_DEC_R_V);
 }

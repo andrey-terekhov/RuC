@@ -391,7 +391,7 @@ void must_be_row_of_float(parser *const prs)
 		type = stack_pop(&prs->anonymous);
 		if (mode_is_float(type))
 		{
-			to_tree(prs, OP_ROWINGD);
+			to_tree(prs, OP_ROWING_D);
 			type = to_modetab(prs, mode_array, mode_float);
 		}
 	}
@@ -1047,7 +1047,7 @@ void parse_postfix_expression(parser *const prs)
 
 	if (prs->token == TK_PLUS_PLUS || prs->token == TK_MINUS_MINUS)
 	{
-		operation_t operator = prs->token == TK_PLUS_PLUS ? OP_POSTINC : OP_POSTDEC;
+		operation_t operator = prs->token == TK_PLUS_PLUS ? OP_POST_INC : OP_POST_DEC;
 		token_consume(prs);
 
 		int is_variable = 0;
