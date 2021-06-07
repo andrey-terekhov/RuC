@@ -18,6 +18,7 @@
 #include "errors.h"
 
 
+static const size_t DISPL_TO_FLOAT = 50;
 static const size_t DISPL_TO_VOID = 200;
 
 
@@ -45,7 +46,7 @@ operation_t token_to_binary(const token_t token)
 		case TK_CARET_EQUAL:			return OP_XOR_ASSIGN;
 		case TK_PIPE_EQUAL:				return OP_OR_ASSIGN;
 		case TK_PIPE_PIPE:				return OP_LOG_OR;
-		case TK_AMP_EQUAL:				return OP_AOP_ASSIGN;
+		case TK_AMP_EQUAL:				return OP_AND_ASSIGN;
 		case TK_AMP_AMP:				return OP_LOG_AND;
 		case TK_EQUAL_EQUAL:			return OP_EQ;
 		case TK_LESS_EQUAL:				return OP_LE;
@@ -114,12 +115,12 @@ operation_t token_to_function(const token_t token)
 		case TK_DESTROY:				return OP_DESTROY;
 		case TK_EXIT:					return OP_EXIT;
 		case TK_GETNUM:					return OP_GETNUM;
-		case TK_ROBOT_SEND_INT:			return OP_SEND_INT;
-		case TK_ROBOT_SEND_FLOAT:		return OP_SEND_FLOAT;
-		case TK_ROBOT_SEND_STRING:		return OP_SEND_STRING;
-		case TK_ROBOT_RECEIVE_INT:		return OP_RECEIVE_INT;
-		case TK_ROBOT_RECEIVE_FLOAT:	return OP_RECEIVE_FLOAT;
-		case TK_ROBOT_RECEIVE_STRING:	return OP_RECEIVE_STRING;
+		case TK_ROBOT_SEND_INT:			return OP_ROBOT_SEND_INT;
+		case TK_ROBOT_SEND_FLOAT:		return OP_ROBOT_SEND_FLOAT;
+		case TK_ROBOT_SEND_STRING:		return OP_ROBOT_SEND_STRING;
+		case TK_ROBOT_RECEIVE_INT:		return OP_ROBOT_RECEIVE_INT;
+		case TK_ROBOT_RECEIVE_FLOAT:	return OP_ROBOT_RECEIVE_FLOAT;
+		case TK_ROBOT_RECEIVE_STRING:	return OP_ROBOT_RECEIVE_STRING;
 
 		default:
 			system_error(node_unexpected);
@@ -138,7 +139,7 @@ operation_t operation_to_address_ver(const operation_t operation)
 		case OP_REM_ASSIGN:	return OP_REM_ASSIGN_AT;
 		case OP_SHL_ASSIGN:	return OP_SHL_ASSIGN_AT;
 		case OP_SHR_ASSIGN:	return OP_SHR_ASSIGN_AT;
-		case OP_AOP_ASSIGN:	return OP_AOP_ASSIGN_AT;
+		case OP_AND_ASSIGN:	return OP_AND_ASSIGN_AT;
 		case OP_XOR_ASSIGN:	return OP_XOR_ASSIGN_AT;
 		case OP_OR_ASSIGN:	return OP_OR_ASSIGN_AT;
 		case OP_ASSIGN:		return OP_ASSIGN_AT;
@@ -154,48 +155,44 @@ operation_t operation_to_address_ver(const operation_t operation)
 
 operation_t operation_to_void_ver(const operation_t operation)
 {
-	if ((operation >= OP_ASSIGN && operation <= OP_DIV_ASSIGN_AT)
+	return (operation >= OP_ASSIGN && operation <= OP_DIV_ASSIGN_AT)
 		|| (operation >= OP_POSTINC && operation <= OP_PREDEC_AT)
 		|| (operation >= OP_ASSIGN_R && operation <= OP_DIV_ASSIGN_AT_R)
-		|| (operation >= OP_POSTINC_R && operation <= OP_PREDEC_AT_R))
-	{
-		return operation + DISPL_TO_VOID;
-	}
-
-	return operation;
+		|| (operation >= OP_POSTINC_R && operation <= OP_PREDEC_AT_R)
+			? operation + DISPL_TO_VOID
+			: operation;
 }
 
 operation_t operation_to_float_ver(const operation_t operation)
 {
-	if ((operation >= OP_ASSIGN && operation <= OP_DIV_ASSIGN)
-		|| (operation >= OP_ASSIGN_AT && operation <= OP_DIV_ASSIGN_AT)
-		|| (operation >= OP_EQ && operation <= OP_UNMINUS))
+	switch (operation)
 	{
-		return operation + DISPL_TO_FLOAT;
-	}
-	else
-	{
-		switch (operation)
-		{
-			case OP_STRING:
-				return OP_STRING_D;
-			case OP_IDENT_TO_VAL:
-				return OP_IDENT_TO_VAL_D;
-			case OP_ADDR_TO_VAL:
-				return OP_ADDR_TO_VAL_D;
-			case OP_CONST:
-				return OP_CONST_D;
+		case OP_STRING:
+			return OP_STRING_D;
+		case OP_IDENT_TO_VAL:
+			return OP_IDENT_TO_VAL_D;
+		case OP_ADDR_TO_VAL:
+			return OP_ADDR_TO_VAL_D;
+		case OP_CONST:
+			return OP_CONST_D;
 
-			default:
-				return operation;
-		}
+		default:
+			return (operation >= OP_ASSIGN && operation <= OP_DIV_ASSIGN)
+				|| (operation >= OP_ASSIGN_AT && operation <= OP_DIV_ASSIGN_AT)
+				|| (operation >= OP_EQ && operation <= OP_UNMINUS)
+					? operation + DISPL_TO_FLOAT
+					: operation;
 	}
 }
 
 int operation_is_assignment(const operation_t op)
 {
-	return ((op >= OP_REM_ASSIGN && op <= OP_DIV_ASSIGN) || (op >= OP_REM_ASSIGN_V && op <= OP_DIV_ASSIGN_V)
-		|| (op >= OP_ASSIGN_R && op <= OP_DIV_ASSIGN_R) || (op >= OP_ASSIGN_R_V && op <= OP_DIV_ASSIGN_R_V)
-		|| (op >= OP_POSTINC && op <= OP_PREDEC) || (op >= OP_POSTINC_V && op <= OP_PREDEC_V)
-		|| (op >= OP_POSTINC_R && op <= OP_PREDEC_R) || (op >= OP_POSTINC_R_V && op <= OP_PREDEC_R_V));
+	return (op >= OP_REM_ASSIGN && op <= OP_DIV_ASSIGN)
+		|| (op >= OP_REM_ASSIGN_V && op <= OP_DIV_ASSIGN_V)
+		|| (op >= OP_ASSIGN_R && op <= OP_DIV_ASSIGN_R)
+		|| (op >= OP_ASSIGN_R_V && op <= OP_DIV_ASSIGN_R_V)
+		|| (op >= OP_POSTINC && op <= OP_PREDEC)
+		|| (op >= OP_POSTINC_V && op <= OP_PREDEC_V)
+		|| (op >= OP_POSTINC_R && op <= OP_PREDEC_R)
+		|| (op >= OP_POSTINC_R_V && op <= OP_PREDEC_R_V);
 }

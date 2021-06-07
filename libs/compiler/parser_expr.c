@@ -113,14 +113,7 @@ double node_get_double(const node *const nd, const size_t index)
 
 void float_operation(parser *const prs, const item_t type, const operation_t operation)
 {
-	if (mode_is_float(type))
-	{
-		to_tree(prs, operation_to_float_ver(operation));
-	}
-	else
-	{
-		to_tree(prs, operation);
-	}
+	to_tree(prs, mode_is_float(type) ? operation_to_float_ver(operation) : operation);
 }
 
 int is_integer_operator(const token_t operator)
@@ -428,7 +421,7 @@ void parse_standard_function_call(parser *const prs)
 		must_be_string(prs);
 		operands_push(prs, VALUE, mode_void);
 	}
-	else if (func >= BEGIN_STR_TK && func <= END_STR_TK)
+	else if (func > BEGIN_TK_STR && func < END_TK_STR)
 	{
 		if (func == TK_STRCPY || func == TK_STRNCPY || func == TK_STRCAT || func == TK_STRNCAT)
 		{
@@ -459,7 +452,7 @@ void parse_standard_function_call(parser *const prs)
 			operands_push(prs, VALUE, mode_void);
 		}
 	}
-	else if (func >= BEGIN_ROBOT_TK && func <= END_ROBOT_TK)
+	else if (func > BEGIN_TK_ROBOT && func < END_TK_ROBOT)
 	{
 		// новые функции Фадеева
 		must_be_int(prs);
@@ -478,11 +471,14 @@ void parse_standard_function_call(parser *const prs)
 		else
 		{
 			operands_push(prs, VALUE, func == TK_ROBOT_RECEIVE_INT
-						  ? mode_integer : func == TK_ROBOT_RECEIVE_FLOAT
-						  ? mode_float : to_modetab(prs, mode_array, mode_character));
+							? mode_integer
+							: func == TK_ROBOT_RECEIVE_FLOAT
+								? mode_float
+								: to_modetab(prs, mode_array, mode_character));
+
 		}
 	}
-	else if (func >= BEGIN_THREAD_TK && func <= END_THREAD_TK)
+	else if (func > BEGIN_TK_THREAD && func < END_TK_THREAD)
 	{
 		if (func == TK_INIT || func == TK_DESTROY || func == TK_EXIT)
 		{
@@ -734,7 +730,7 @@ void parse_primary_expression(parser *const prs)
 		break;
 
 		default:
-			if (prs->token >= BEGIN_STANDARD_FUNC && prs->token <= END_STANDARD_FUNC)
+			if (prs->token > BEGIN_TK_FUNC && prs->token < END_TK_FUNC)
 			{
 				parse_standard_function_call(prs);
 			}
@@ -1086,20 +1082,20 @@ void parse_postfix_expression(parser *const prs)
 
 void parse_unary_expression(parser *const prs)
 {
-	token_t operator = prs->token;
-	switch (operator)
+	token_t token = prs->token;
+	switch (token)
 	{
 		case TK_PLUS_PLUS:
 		case TK_MINUS_MINUS:
 		{
 			token_consume(prs);
 			parse_unary_expression(prs);
-			operation_t operation_type = token_to_unary(operator);
+			operation_t operator = token_to_unary(token);
 
 			int is_variable = 0;
 			if (prs->last_type == ADDRESS)
 			{
-				operation_type = operation_to_address_ver(operation_type);
+				operator = operation_to_address_ver(operator);
 			}
 			else if (prs->last_type == VARIABLE)
 			{
@@ -1117,7 +1113,7 @@ void parse_unary_expression(parser *const prs)
 			}
 
 			operands_push(prs, VALUE, type);
-			float_operation(prs, type, operation_type);
+			float_operation(prs, type, operator);
 
 			if (is_variable)
 			{
@@ -1135,7 +1131,7 @@ void parse_unary_expression(parser *const prs)
 		{
 			token_consume(prs);
 			parse_unary_expression(prs);
-			switch (operator)
+			switch (token)
 			{
 				case TK_AMP:
 				{
@@ -1173,7 +1169,7 @@ void parse_unary_expression(parser *const prs)
 				default:
 				{
 					to_value(prs);
-					if (operator == TK_MINUS)
+					if (token == TK_MINUS)
 					{
 						if (node_get_type(&prs->nd) == OP_CONST)
 						{
@@ -1192,13 +1188,13 @@ void parse_unary_expression(parser *const prs)
 					}
 					else
 					{
-						if (operator != TK_PLUS)
+						if (token != TK_PLUS)
 						{
-							to_tree(prs, token_to_unary(operator));
+							to_tree(prs, token_to_unary(token));
 						}
 
 						const item_t type = stack_pop(&prs->anonymous);
-						if ((operator == TK_TILDE || operator == TK_EXCLAIM) && mode_is_float(type))
+						if ((token == TK_TILDE || token == TK_EXCLAIM) && mode_is_float(type))
 						{
 							parser_error(prs, int_op_for_float);
 						}
@@ -1467,8 +1463,8 @@ void parse_assignment_expression_internal(parser *const prs)
 			parser_error(prs, unassignable);
 		}
 
-		token_t operator = prs->token;
-		operation_t operation_type = token_to_binary(operator);
+		token_t token = prs->token;
+		operation_t operator = token_to_binary(token);
 		token_consume(prs);
 
 		prs->flag_in_assignment = 1;
@@ -1481,7 +1477,7 @@ void parse_assignment_expression_internal(parser *const prs)
 		const item_t left_mode = stack_pop(&prs->anonymous);
 		item_t result_mode = right_mode;
 
-		if (is_int_assignment_operator(operator) && (mode_is_float(left_mode) || mode_is_float(right_mode)))
+		if (is_int_assignment_operator(token) && (mode_is_float(left_mode) || mode_is_float(right_mode)))
 		{
 			parser_error(prs, int_op_for_float);
 		}
@@ -1496,25 +1492,25 @@ void parse_assignment_expression_internal(parser *const prs)
 				parser_error(prs, type_missmatch);
 			}
 
-			if (operator != TK_EQUAL) // в структуру можно присваивать только с помощью =
+			if (token != TK_EQUAL) // в структуру можно присваивать только с помощью =
 			{
 				parser_error(prs, wrong_struct_ass);
 			}
 
 			if (right_type == VALUE)
 			{
-				operation_type = left_type == VARIABLE ? OP_COPY0ST_ASSIGN : OP_COPY1ST_ASSIGN;
+				operator = left_type == VARIABLE ? OP_COPY0ST_ASSIGN : OP_COPY1ST_ASSIGN;
 			}
 			else
 			{
-				operation_type = left_type == VARIABLE
+				operator = left_type == VARIABLE
 					? right_type == VARIABLE
 						? OP_COPY00 : OP_COPY01
 					: right_type == VARIABLE
 						? OP_COPY10 : OP_COPY11;
 			}
 
-			to_tree(prs, operation_type);
+			to_tree(prs, operator);
 			if (left_type == VARIABLE)
 			{
 				node_add_arg(&prs->nd, target_displ);
@@ -1530,7 +1526,7 @@ void parse_assignment_expression_internal(parser *const prs)
 		else // оба операнда базового типа или указатели
 		{
 			// В указатель можно присваивать только с помощью '='
-			if (mode_is_pointer(prs->sx, left_mode) && operator != TK_EQUAL)
+			if (mode_is_pointer(prs->sx, left_mode) && token != TK_EQUAL)
 			{
 				parser_error(prs, wrong_struct_ass);
 			}
@@ -1560,9 +1556,9 @@ void parse_assignment_expression_internal(parser *const prs)
 
 			if (left_type == ADDRESS)
 			{
-				operation_type = operation_to_address_ver(operation_type);
+				operator = operation_to_address_ver(operator);
 			}
-			float_operation(prs, result_mode, operation_type);
+			float_operation(prs, result_mode, operator);
 			if (left_type == VARIABLE)
 			{
 				prs->operand_displ = target_displ;

@@ -752,18 +752,18 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 		case OP_XOR:
 			sprintf(buffer, "^");
 			break;
-		case OP_AOP_ASSIGN:
+		case OP_AND_ASSIGN:
 			argc = 1;
 			sprintf(buffer, "&=");
 			break;
-		case OP_AOP_ASSIGN_AT:
+		case OP_AND_ASSIGN_AT:
 			sprintf(buffer, "&=@");
 			break;
-		case OP_AOP_ASSIGN_V:
+		case OP_AND_ASSIGN_V:
 			argc = 1;
 			sprintf(buffer, "&=V");
 			break;
-		case OP_AOP_ASSIGN_AT_V:
+		case OP_AND_ASSIGN_AT_V:
 			sprintf(buffer, "&=@V");
 			break;
 		case OP_AND:
@@ -1092,7 +1092,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 		case OP_WIDEN1:
 			sprintf(buffer, "WIDEN1");
 			break;
-		case IC__DOUBLE:
+		case IC_DUPLICATE:
 			sprintf(buffer, "DOUBLE");
 			break;
 		case OP_PREINC:

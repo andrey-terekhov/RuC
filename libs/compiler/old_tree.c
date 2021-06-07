@@ -158,7 +158,7 @@ int is_expression(const item_t value)
 
 int is_lexeme(const item_t value)
 {
-	return (value >= BEGIN_FINAL_OPERATION && value <= END_FINAL_OPERATION) || is_ref(value);
+	return (value > BEGIN_OP_FINAL && value < END_OP_FINAL) || is_ref(value);
 }
 
 

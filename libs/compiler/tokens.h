@@ -24,10 +24,12 @@ extern "C" {
 
 typedef enum TOKEN
 {
-	TK_EOF		= -1,				/**< End of file */
+	// 'main' в RuC - ключевое слово
+	TK_MAIN,						/**< 'main'		keyword */
+
+	TK_EOF,							/**< End of file */
 
 	// Keywords [C99 6.4.1]
-	TK_MAIN	= 0,					/**< 'main'		keyword */
 	TK_CHAR	= -200,					/**< 'char'		keyword */
 	TK_DOUBLE,						/**< 'double'	keyword */
 	TK_FLOAT,						/**< 'float'	keyword */
@@ -105,7 +107,7 @@ typedef enum TOKEN
 	TK_GREATER_GREATER_EQUAL,		/**< '>>='	punctuator */
 
 	// Standard Functions [RuC]
-	BEGIN_STANDARD_FUNC,
+	BEGIN_TK_FUNC,
 	
 	TK_PRINT,						/**< 'print'	keyword	*/
 	TK_PRINTF,						/**< 'printf'	keyword */
@@ -127,8 +129,7 @@ typedef enum TOKEN
 	TK_CREATE_DIRECT,				/**< 't_create_direct'	keyword */
 	TK_EXIT_DIRECT,					/**< 't_exit_direct'	keyword */
 
-	BEGIN_STR_TK,
-
+	BEGIN_TK_STR,
 	TK_STRCPY,						/**< 'strcpy'	keyword */
 	TK_STRNCPY,						/**< 'strncpy'	keyword */
 	TK_STRCAT,						/**< 'strcat'	keyword */
@@ -137,12 +138,9 @@ typedef enum TOKEN
 	TK_STRNCMP,						/**< 'strncmp'	keyword */
 	TK_STRSTR,						/**< 'strstr'	keyword */
 	TK_STRLEN,						/**< 'strlen'	keyword */
-
-	END_STR_TK,
+	END_TK_STR,
 	
-	
-	BEGIN_THREAD_TK,
-
+	BEGIN_TK_THREAD,
 	TK_MSG_SEND,					/**< 't_msg_send'		keyword */
 	TK_MSG_RECEIVE,					/**< 't_msg_receive'	keyword */
 	TK_JOIN,						/**< 't_join'			keyword */
@@ -155,22 +153,18 @@ typedef enum TOKEN
 	TK_DESTROY,						/**< 't_destroy'		keyword */
 	TK_EXIT,						/**< 't_exit'			keyword */
 	TK_GETNUM,						/**< 't_getnum'			keyword */
+	END_TK_THREAD,
 
-	END_THREAD_TK,
-
-
-	BEGIN_ROBOT_TK,
-
+	BEGIN_TK_ROBOT,
 	TK_ROBOT_SEND_INT,				/**< 'send_int_to_robot'			keyword */
 	TK_ROBOT_SEND_FLOAT,			/**< 'send_float_to_robot'			keyword */
 	TK_ROBOT_SEND_STRING,			/**< 'send_string_to_robot'			keyword */
 	TK_ROBOT_RECEIVE_INT,			/**< 'receive_int_from_robot'		keyword */
 	TK_ROBOT_RECEIVE_FLOAT,			/**< 'receive_float_from_robot'		keyword */
 	TK_ROBOT_RECEIVE_STRING,		/**< 'receive_string_from_robot'	keyword */
+	END_TK_ROBOT,
 
-	END_ROBOT_TK,
-
-	END_STANDARD_FUNC
+	END_TK_FUNC
 } token_t;
 
 #ifdef __cplusplus

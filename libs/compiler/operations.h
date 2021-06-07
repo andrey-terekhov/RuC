@@ -17,7 +17,7 @@
 #pragma once
 
 #include "tokens.h"
-#include <stdio.h>
+#include <stddef.h>
 #include "instructions.h"
 
 
@@ -25,18 +25,15 @@
 extern "C" {
 #endif
 
-static const size_t DISPL_TO_FLOAT = 50;
-
 typedef enum OPERATION
 {
-	BEGIN_FINAL_OPERATION	= 7000,
+	BEGIN_OP_FINAL			= 7000,
 
 	OP_AD_LOG_AND,									/**< 'ADLOGAND' node */
 	OP_AD_LOG_OR,									/**< 'ADLOGOR' node */
 	OP_NULL					= IC_NOP,				/**< Empty node */
 	OP_WIDEN1				= IC_WIDEN1,			/**< 'WIDEN1' node */
 	OP_WIDEN				= IC_WIDEN,				/**< 'WIDEN' node */
-	OP_STRINGINIT			= IC_STRINGINIT,		/**< 'STRINGINIT' node */
 	OP_ROWING				= IC_ROWING,			/**< 'ROWING' node */
 	OP_ROWINGD				= IC_ROWINGD,			/**< 'ROWINGD' node */
 	OP_ASSERT				= IC_ASSERT,			/**< 'ASSERT' node */
@@ -91,12 +88,12 @@ typedef enum OPERATION
 	OP_GETNUM				= IC_GETNUM,			/**< 'GETNUM' node */
 
 	// Robot functions
-	OP_SEND_INT				= IC_SEND_INT,			/**< 'SEND_INT' node */
-	OP_SEND_FLOAT			= IC_SEND_FLOAT,		/**< 'SEND_FLOAT' node */
-	OP_SEND_STRING			= IC_SEND_STRING,		/**< 'SEND_STRING' node */
-	OP_RECEIVE_INT			= IC_RECEIVE_INT,		/**< 'RECEIVE_INT' node */
-	OP_RECEIVE_FLOAT		= IC_RECEIVE_FLOAT,		/**< 'RECEIVE_FLOAT' node */
-	OP_RECEIVE_STRING		= IC_RECEIVE_STRING,	/**< 'RECEIVE_STRING' node */
+	OP_ROBOT_SEND_INT		= IC_SEND_INT,			/**< 'SEND_INT' node */
+	OP_ROBOT_SEND_FLOAT		= IC_SEND_FLOAT,		/**< 'SEND_FLOAT' node */
+	OP_ROBOT_SEND_STRING	= IC_SEND_STRING,		/**< 'SEND_STRING' node */
+	OP_ROBOT_RECEIVE_INT	= IC_RECEIVE_INT,		/**< 'RECEIVE_INT' node */
+	OP_ROBOT_RECEIVE_FLOAT	= IC_RECEIVE_FLOAT,		/**< 'RECEIVE_FLOAT' node */
+	OP_ROBOT_RECEIVE_STRING	= IC_RECEIVE_STRING,	/**< 'RECEIVE_STRING' node */
 
 	// Unary operators
 	OP_NOT					= IC_NOT,				/**< 'BITNOT' node */
@@ -240,10 +237,10 @@ typedef enum OPERATION
 	OP_SHR_ASSIGN_V			= IC_SHRASSV,			/**< '>>=V' node */
 	OP_SHR_ASSIGN_AT_V		= IC_SHRASSATV,			/**< '>>=@V' node */
 
-	OP_AOP_ASSIGN			= IC_ANDASS,			/**< '&=' node */
-	OP_AOP_ASSIGN_AT		= IC_ANDASSAT,			/**< '&=@' node */
-	OP_AOP_ASSIGN_V			= IC_ANDASSV,			/**< '&=V' node */
-	OP_AOP_ASSIGN_AT_V		= IC_ANDASSATV,			/**< '&=@V' node */
+	OP_AND_ASSIGN			= IC_ANDASS,			/**< '&=' node */
+	OP_AND_ASSIGN_AT		= IC_ANDASSAT,			/**< '&=@' node */
+	OP_AND_ASSIGN_V			= IC_ANDASSV,			/**< '&=V' node */
+	OP_AND_ASSIGN_AT_V		= IC_ANDASSATV,			/**< '&=@V' node */
 
 	OP_XOR_ASSIGN			= IC_EXORASS,			/**< '^=' node */
 	OP_XOR_ASSIGN_AT		= IC_EXORASSAT,			/**< '^=@' node */
@@ -255,7 +252,7 @@ typedef enum OPERATION
 	OP_OR_ASSIGN_V			= IC_ORASSV,			/**< '|=V' node */
 	OP_OR_ASSIGN_AT_V		= IC_ORASSATV,			/**< '|=@V' node */
 
-	END_FINAL_OPERATION		= MAX_INSTRUCTION_CODE,
+	END_OP_FINAL			= MAX_INSTRUCTION_CODE,
 
 	// Statement
 	OP_LABEL,				/**< Label statement node */
@@ -314,63 +311,63 @@ typedef enum OPERATION
 
 
 /**
- *	Convert token to corresponding binary operator
+ *	Convert token to corresponding binary operation type
  *
  *	@param	token	Token
  *
- *	@return	Operation
+ *	@return	Corresponding operation type
  */
 operation_t token_to_binary(const token_t token);
 
 /**
- *	Convert token to corresponding unary operator
+ *	Convert token to corresponding unary operation type
  *
  *	@param	token	Token
  *
- *	@return	Operation
+ *	@return	Corresponding operation type
  */
 operation_t token_to_unary(const token_t token);
 
 /**
- *	Convert token to corresponding function operator
+ *	Convert token to corresponding function operation type
  *
  *	@param	token	Token
  *
- *	@return	Operation
+ *	@return	Corresponding operation type
  */
 operation_t token_to_function(const token_t token);
 
 /**
- *	Convert operation to corresponding address version
+ *	Convert to corresponding address version operation
  *
- *	@param	operation	Operator
+ *	@param	operation	Operation
  *
- *	@return	Address version operator
+ *	@return	Address version operation
  */
 operation_t operation_to_address_ver(const operation_t operation);
 
 /**
- *	Convert operation to corresponding void version
+ *	Convert to corresponding void version operation
  *
- *	@param	operation	Operator
+ *	@param	operation	Operation
  *
- *	@return	Void version operator
+ *	@return	Void version operation
  */
 operation_t operation_to_void_ver(const operation_t operation);
 
 /**
- *	Convert operation to corresponding float version
+ *	Convert to corresponding float version operation
  *
- *	@param	operation	Operator
+ *	@param	operation	Operation
  *
- *	@return	Float version operator
+ *	@return	Float version operation
  */
 operation_t operation_to_float_ver(const operation_t operation);
 
 /**
- *	Check if node type is assignment operation
+ *	Check if operation type is assignment
  *
- *	@param	operation	Operator type
+ *	@param	operation	Operation
  *
  *	@return	@c 1 on true, @c 0 on false
  */

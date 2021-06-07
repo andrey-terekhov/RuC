@@ -129,20 +129,20 @@ static void addr_end_break(virtual *const vm)
 static void final_operation(virtual *const vm, node *const nd)
 {
 	operation_t op = node_get_type(nd);
-	while (op >= BEGIN_FINAL_OPERATION && op <= END_FINAL_OPERATION)
+	while (op > BEGIN_OP_FINAL && op < END_OP_FINAL)
 	{
 		if (op != OP_NULL)
 		{
 			if (op == OP_AD_LOG_OR)
 			{
-				mem_add(vm, IC__DOUBLE);
+				mem_add(vm, IC_DUPLICATE);
 				mem_add(vm, IC_BNE0);
 				stack_push(&vm->stk, (item_t)mem_size(vm));
 				mem_increase(vm, 1);
 			}
 			else if (op == OP_AD_LOG_AND)
 			{
-				mem_add(vm, IC__DOUBLE);
+				mem_add(vm, IC_DUPLICATE);
 				mem_add(vm, IC_BE0);
 				stack_push(&vm->stk, (item_t)mem_size(vm));
 				mem_increase(vm, 1);
@@ -757,7 +757,7 @@ static void statement(virtual *const vm, node *const nd)
 			{
 				mem_set(vm, vm->addr_case, (item_t)mem_size(vm));
 			}
-			mem_add(vm, IC__DOUBLE);
+			mem_add(vm, IC_DUPLICATE);
 			expression(vm, nd, 0);
 			node_set_next(nd); // TExprend
 
