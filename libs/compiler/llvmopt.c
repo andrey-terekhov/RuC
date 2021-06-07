@@ -289,7 +289,8 @@ static int node_recursive(information *const info, node *const nd)
 	{
 		node child = node_get_child(nd, i);
 
-		if (node_get_type(&child) == TBegin)
+		// Очищаем полностью стек, если родитель -- блок
+		if (node_get_type(nd) == TBegin)
 		{
 			stack_clear(info, 0);
 		}
@@ -342,12 +343,13 @@ static int node_recursive(information *const info, node *const nd)
 			{
 				if (info->slice_depth == 0)
 				{
+					// При обходе после перестановки нужно учитывать и TExprend
 					if (info->last_depth > 1)
 					{
 						info->last_depth--;
 					}
 				}
-				// если вырезка не переставлена, то надо изменить глубину
+				// если вырезка не переставлена, то надо частично очистить стек и изменить глубину TSliceident
 				else if (info->last_depth <= 1)
 				{
 					node texprend_child = node_get_child(&child, 0);
@@ -369,7 +371,7 @@ static int node_recursive(information *const info, node *const nd)
 
 			default:
 			{
-				// если уже в переставленных, то с ними ничего делать не надо
+				// если узел в переставленном выражении, то ничего делать не надо
 				if (info->last_depth > 1)
 				{
 					info->last_depth--;
@@ -449,6 +451,8 @@ static int node_recursive(information *const info, node *const nd)
 			break;
 		}
 
+		// если встретили вырезку, надо запомнить состояние стека для дальнейшего восстановления
+		// и установить начальную глубину вырезки
 		if (node_get_type(&child) == TSliceident && info->last_depth <= 1)
 		{
 			info->slice_depth = 1;

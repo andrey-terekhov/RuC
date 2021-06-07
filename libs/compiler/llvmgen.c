@@ -15,7 +15,6 @@
  */
 
 #include "llvmgen.h"
-#include "codes.h"
 #include "defs.h"
 #include "errors.h"
 #include "hash.h"
@@ -486,7 +485,8 @@ static void operand(information *const info, node *const nd)
 				prev_slice = info->register_num - 1;
 			}
 
-			if (node_get_type(nd) == TAddrtoval) // может это замена LMEM?
+			// TODO: может это замена LMEM? Подумать, когда будут реализовываться указатели
+			if (node_get_type(nd) == TAddrtoval)
 			{
 				node_set_next(nd);
 			}
@@ -1551,12 +1551,10 @@ static int codegen(information *const info)
 
 int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
-	tables_and_tree("tree.txt", &(sx->predef), &(sx->modes), &(sx->tree));
 	if (optimize_for_llvm(ws, io, sx))
 	{
 		return -1;
 	}
-	tables_and_tree("tree1.txt", &(sx->predef), &(sx->modes), &(sx->tree));
 
 	information info;
 	info.io = io;
