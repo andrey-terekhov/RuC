@@ -308,14 +308,14 @@ static void to_code_slice(information *const info, const item_t id, const item_t
 							const item_t prev_slice, const item_t reg_mode)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
-	const int is_static = hash_get(&info->arrays, id, IS_STATIC);
+	const int is_static = (int)hash_get(&info->arrays, id, IS_STATIC);
 	const item_t dimention = hash_get_amount(&info->arrays, id) - 1;
 
 	if (is_static)
 	{
 		for (item_t i = dimention - cur_dimention; i < dimention; i++)
 		{
-			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, id, 1 + i));
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, id, 1 + (size_t)i));
 		}
 		uni_printf(info->io, "i32");
 
@@ -327,7 +327,7 @@ static void to_code_slice(information *const info, const item_t id, const item_t
 
 		for (item_t i = dimention - cur_dimention; i < dimention; i++)
 		{
-			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, id, 1 + i));
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, id, 1 + (size_t)i));
 		}
 		uni_printf(info->io, "i32");
 
