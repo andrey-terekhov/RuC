@@ -1221,7 +1221,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			sprintf(buffer, "UNMINUSf");
 			break;
 
-		case IC_FUNCBEG:
+		case IC_FUNC_BEG:
 			argc = 2;
 			was_switch = 1;
 			switch (num)

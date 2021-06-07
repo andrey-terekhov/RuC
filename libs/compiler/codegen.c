@@ -555,11 +555,11 @@ static void statement(virtual *const vm, node *const nd)
 		case OP_NULL:
 			break;
 		case OP_CREATE_DIRECT:
-			mem_add(vm, IC_CREATEDIRECT);
+			mem_add(vm, IC_CREATE_DIRECT);
 			vm->max_threads++;
 			break;
 		case OP_EXIT_DIRECT:
-			mem_add(vm, IC_EXITDIRECT);
+			mem_add(vm, IC_EXIT_DIRECT);
 			break;
 		case OP_BLOCK:
 			block(vm, nd);
@@ -858,7 +858,7 @@ static int codegen(virtual *const vm)
 				const size_t func = (size_t)ident_get_displ(vm->sx, (size_t)ref_ident);
 
 				func_set(vm->sx, func, (item_t)mem_size(vm));
-				mem_add(vm, IC_FUNCBEG);
+				mem_add(vm, IC_FUNC_BEG);
 				mem_add(vm, max_displ);
 
 				const size_t old_pc = mem_size(vm);
