@@ -27,10 +27,10 @@ typedef enum TOKEN
 	// 'main' в RuC - ключевое слово
 	TK_MAIN,						/**< 'main'		keyword */
 
-	TK_EOF,							/**< End of file */
+	TK_EOF = -200,					/**< End of file */
 
 	// Keywords [C99 6.4.1]
-	TK_CHAR	= -200,					/**< 'char'		keyword */
+	TK_CHAR,						/**< 'char'		keyword */
 	TK_DOUBLE,						/**< 'double'	keyword */
 	TK_FLOAT,						/**< 'float'	keyword */
 	TK_INT,							/**< 'int'		keyword	*/
