@@ -601,7 +601,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 			sprintf(buffer, "STRLENC");
 			break;
 
-		case IC_BEGINIT:
+		case IC_BEG_INIT:
 			argc = 1;
 			was_switch = 1;
 			switch (num)
@@ -614,7 +614,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case IC_STRUCTWITHARR:
+		case IC_STRUCT_WITH_ARR:
 			argc = 2;
 			was_switch = 1;
 			switch (num)
@@ -661,7 +661,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case IC_ARRINIT:
+		case IC_ARR_INIT:
 			argc = 4;
 			was_switch = 1;
 			switch (num)
@@ -1041,11 +1041,11 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 		case IC_STOP:
 			sprintf(buffer, "STOP");
 			break;
-		case IC_RETURNVAL:
+		case IC_RETURN_VAL:
 			argc = 1;
 			sprintf(buffer, "RETURNVAL");
 			break;
-		case IC_RETURNVOID:
+		case IC_RETURN_VOID:
 			sprintf(buffer, "RETURNVOID");
 			break;
 		case IC_B:

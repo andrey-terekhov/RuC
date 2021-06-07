@@ -273,7 +273,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 			{
 				const item_t N = node_get_arg(nd, 0);
 
-				mem_add(vm, IC_BEGINIT);
+				mem_add(vm, IC_BEG_INIT);
 				mem_add(vm, N);
 
 				for (item_t i = 0; i < N; i++)
@@ -432,7 +432,7 @@ static void identifier(virtual *const vm, node *const nd)
 	{
 		if (process)
 		{
-			mem_add(vm, IC_STRUCTWITHARR);
+			mem_add(vm, IC_STRUCT_WITH_ARR);
 			mem_add(vm, old_displ);
 			mem_add(vm, proc_get(vm, (size_t)process));
 		}
@@ -473,7 +473,7 @@ static void identifier(virtual *const vm, node *const nd)
 		{
 			expression(vm, nd, 0);
 
-			mem_add(vm, IC_ARRINIT); // ARRINIT N d all displ usual
+			mem_add(vm, IC_ARR_INIT); // ARRINIT N d all displ usual
 			mem_add(vm, abs((int)N));
 			mem_add(vm, length);
 			mem_add(vm, old_displ);
@@ -795,14 +795,14 @@ static void statement(virtual *const vm, node *const nd)
 		}
 		break;
 		case OP_RETURN_VOID:
-			mem_add(vm, IC_RETURNVOID);
+			mem_add(vm, IC_RETURN_VOID);
 			break;
 		case OP_RETURN_VAL:
 		{
 			const item_t value = node_get_arg(nd, 0);
 			expression(vm, nd, 0);
 
-			mem_add(vm, IC_RETURNVAL);
+			mem_add(vm, IC_RETURN_VAL);
 			mem_add(vm, value);
 		}
 		break;

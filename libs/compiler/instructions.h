@@ -174,12 +174,12 @@ typedef enum INSTURCTION
 	IC_LATD,					/**< 'L@f' instruction code */
 	IC_STOP,					/**< 'STOP' instruction code */
 	IC_SELECT,					/**< 'SELECT' instruction code */
-	IC_FUNCBEG,					/**< 'FUNCBEG' instruction code */
+	IC_FUNC_BEG,				/**< 'FUNCBEG' instruction code */
 	IC_LA,						/**< 'LA' instruction code */
 	IC_CALL1,					/**< 'CALL1' instruction code */
 	IC_CALL2,					/**< 'CALL2' instruction code */
-	IC_RETURNVAL,				/**< 'RETURNVAL' instruction code */
-	IC_RETURNVOID,				/**< 'RETURNVOID' instruction code */
+	IC_RETURN_VAL,				/**< 'RETURNVAL' instruction code */
+	IC_RETURN_VOID,				/**< 'RETURNVOID' instruction code */
 	IC_B,						/**< 'B' instruction code */
 	IC_BE0,						/**< 'BE0' instruction code */
 	IC_BNE0,					/**< 'BNE0' instruction code */
@@ -187,11 +187,11 @@ typedef enum INSTURCTION
 	IC_WIDEN,					/**< 'WIDEN' instruction code */
 	IC_WIDEN1,					/**< 'WIDEN1' instruction code */
 	IC_DUPLICATE,				/**< '_DOUBLE' instruction code */
-	IC_STRINGINIT,				/**< 'STRINGINIT' instruction code */
-	IC_ARRINIT,					/**< 'ARRINIT' instruction code */
-	IC_STRUCTWITHARR,			/**< 'STRUCTWITHARR' instruction code */
+	IC_STRING_INIT,				/**< 'STRINGINIT' instruction code */
+	IC_ARR_INIT,				/**< 'ARRINIT' instruction code */
+	IC_STRUCT_WITH_ARR,			/**< 'STRUCTWITHARR' instruction code */
 
-	IC_BEGINIT = 9481,			/**< 'BEGINIT' instruction code */
+	IC_BEG_INIT = 9481,			/**< 'BEGINIT' instruction code */
 	IC_ROWING,					/**< 'ROWING' instruction code */
 	IC_ROWING_D,				/**< 'ROWINGD' instruction code */
 
@@ -205,8 +205,8 @@ typedef enum INSTURCTION
 	IC_COPY1ST_ASSIGN,			/**< 'COPY1STASS' instruction code */
 	IC_COPYST,					/**< 'COPYST' instruction code */
 
-	IC_CREATEDIRECT = 9528,		/**< 'CREATEDIRECT' instruction code */
-	IC_EXITDIRECT,				/**< 'EXITDIRECT' instruction code */
+	IC_CREATE_DIRECT = 9528,	/**< 'CREATEDIRECT' instruction code */
+	IC_EXIT_DIRECT,				/**< 'EXITDIRECT' instruction code */
 
 	IC_ABS	= 9534,				/**< 'ABS' instruction code */
 	IC_SQRT,					/**< 'SQRT' instruction code */
