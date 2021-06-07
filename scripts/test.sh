@@ -3,7 +3,9 @@
 init()
 {
 	exit_code=1
-	vm_exec=export.txt
+	# vm_exec=export.txt
+	vm_exec=export.ll
+	clang_output=output
 
 	vm_release=master
 	output_time=0.0
@@ -176,9 +178,9 @@ build()
 		compiler_debug=$compiler
 	fi
 
-	if [[ -z $ignore ]] ; then
-		build_vm
-	fi
+	# if [[ -z $ignore ]] ; then
+	# 	build_vm
+	# fi
 }
 
 run()
@@ -258,8 +260,9 @@ message_failure()
 execution()
 {
 	if [[ $path == $dir_exec/* ]] ; then
-		action="execution"
-		run $interpreter $interpreter_debug $vm_exec
+		action="clang exe"
+		# run $interpreter $interpreter_debug $vm_exec
+		clang $vm_exec -o $clang_output
 
 		case $? in
 			0)
@@ -350,7 +353,7 @@ compiling()
 {
 	if [[ -z $ignore || $path != $dir_error/* ]] ; then
 		action="compiling"
-		run $compiler $compiler_debug $sources -o $vm_exec
+		run $compiler $compiler_debug $sources -LLVM -o $vm_exec
 
 		case $? in
 			0)
@@ -371,6 +374,7 @@ compiling()
 						else
 							let success++
 						fi
+						# let success++
 					fi
 				fi
 				;;
