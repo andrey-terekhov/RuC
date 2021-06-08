@@ -21,7 +21,7 @@
 
 
 /** Check if current token is part of a declaration specifier */
-int is_declaration_specifier(parser *const prs)
+bool is_declaration_specifier(parser *const prs)
 {
 	switch (prs->token)
 	{
@@ -435,7 +435,7 @@ void parse_return_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_return
 	const item_t return_type = mode_get(prs->sx, prs->function_mode + 1);
-	prs->flag_was_return = 1;
+	prs->was_return = true;
 
 	if (token_try_consume(prs, TK_SEMICOLON))
 	{

@@ -79,23 +79,23 @@ typedef struct parser
 	size_t array_dimensions;			/**< Array dimensions counter */
 
 	int func_def;						/**< @c 0 for function without arguments,
-										 @c 1 for function definition,
-										 @c 2 for function declaration,
-										 @c 3 for others */
+											@c 1 for function definition,
+											@c 2 for function declaration,
+											@c 3 for others */
 
 	int flag_strings_only;				/**< @c 0 for non-string initialization,
-										 @c 1 for string initialization,
-										 @c 2 for parsing before initialization */
+											@c 1 for string initialization,
+											@c 2 for parsing before initialization */
 
 	int flag_array_in_struct;			/**< Set, if parsed struct declaration has an array */
 	int flag_empty_bounds;				/**< Set, if array declaration has empty bounds */
-	int flag_was_return;				/**< Set, if was return in parsed function */
 	int flag_in_switch;					/**< Set, if parser is in switch body */
 	int flag_in_assignment;				/**< Set, if parser is in assignment */
 	int flag_in_loop;					/**< Set, if parser is in loop body */
-	int flag_was_type_def;				/**< Set, if was type definition */
 
-	int was_error;						/**< Error flag */
+	bool was_return;					/**< Set, if was return in parsed function */
+	bool was_type_def;					/**< Set, if was type definition */
+	bool was_error;						/**< Error flag */
 } parser;
 
 
@@ -321,7 +321,7 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int mode_is_function(syntax *const sx, const item_t mode);
+bool mode_is_function(syntax *const sx, const item_t mode);
 
 /**
  *	Check if mode is array
@@ -331,7 +331,7 @@ int mode_is_function(syntax *const sx, const item_t mode);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int mode_is_array(syntax *const sx, const item_t mode);
+bool mode_is_array(syntax *const sx, const item_t mode);
 
 /**
  *	Check if mode is string
@@ -341,7 +341,7 @@ int mode_is_array(syntax *const sx, const item_t mode);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int mode_is_string(syntax *const sx, const item_t mode);
+bool mode_is_string(syntax *const sx, const item_t mode);
 
 /**
  *	Check if mode is pointer
@@ -351,7 +351,7 @@ int mode_is_string(syntax *const sx, const item_t mode);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int mode_is_pointer(syntax *const sx, const item_t mode);
+bool mode_is_pointer(syntax *const sx, const item_t mode);
 
 /**
  *	Check if mode is struct
@@ -361,7 +361,7 @@ int mode_is_pointer(syntax *const sx, const item_t mode);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int mode_is_struct(syntax *const sx, const item_t mode);
+bool mode_is_struct(syntax *const sx, const item_t mode);
 
 /**
  *	Check if mode is floating point
@@ -371,7 +371,7 @@ int mode_is_struct(syntax *const sx, const item_t mode);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int mode_is_float(const item_t mode);
+bool mode_is_float(const item_t mode);
 
 /**
  *	Check if mode is integer
@@ -381,7 +381,7 @@ int mode_is_float(const item_t mode);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int mode_is_int(const item_t mode);
+bool mode_is_int(const item_t mode);
 
 /**
  *	Check if mode is void
@@ -391,7 +391,7 @@ int mode_is_int(const item_t mode);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int mode_is_void(const item_t mode);
+bool mode_is_void(const item_t mode);
 
 /**
  *	Check if mode is undefined
@@ -401,7 +401,7 @@ int mode_is_void(const item_t mode);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int mode_is_undefined(const item_t mode);
+bool mode_is_undefined(const item_t mode);
 
 
 /**

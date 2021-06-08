@@ -33,7 +33,7 @@ void ws_init(workspace *const ws)
 	ws->flags_num = 0;
 
 	ws->output[0] = '\0';
-	ws->was_error = 0;
+	ws->was_error = false;
 }
 
 void ws_add_error(workspace *const ws)
@@ -43,7 +43,7 @@ void ws_add_error(workspace *const ws)
 		return;
 	}
 
-	ws->was_error = 1;
+	ws->was_error = true;
 }
 
 void ws_unix_path(const char *const path, char *const buffer)

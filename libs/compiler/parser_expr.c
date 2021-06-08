@@ -116,7 +116,7 @@ void float_operation(parser *const prs, const item_t type, const operation_t ope
 	to_tree(prs, mode_is_float(type) ? operation_to_float_ver(operation) : operation);
 }
 
-int is_integer_operator(const token_t operator)
+bool is_integer_operator(const token_t operator)
 {
 	switch (operator)
 	{
@@ -126,10 +126,10 @@ int is_integer_operator(const token_t operator)
 		case TK_LESS_EQUAL:
 		case TK_GREATER:
 		case TK_GREATER_EQUAL:
-			return 1;
+			return true;
 
 		default:
-			return 0;
+			return false;
 	}
 }
 
@@ -904,11 +904,11 @@ void parse_function_call(parser *const prs, const size_t function_id)
 void parse_postfix_expression(parser *const prs)
 {
 	const size_t last_id = prs->last_id;
-	int was_func = 0;
+	bool was_func = false;
 
 	if (token_try_consume(prs, TK_L_PAREN))
 	{
-		was_func = 1;
+		was_func = true;
 		parse_function_call(prs, last_id);
 	}
 
@@ -1050,14 +1050,14 @@ void parse_postfix_expression(parser *const prs)
 		operation_t operator = prs->token == TK_PLUS_PLUS ? OP_POST_INC : OP_POST_DEC;
 		token_consume(prs);
 
-		int is_variable = 0;
+		bool is_variable = false;
 		if (prs->last_type == ADDRESS)
 		{
 			operator = operation_to_address_ver(operator);
 		}
 		else if (prs->last_type == VARIABLE)
 		{
-			is_variable = 1;
+			is_variable = true;
 		}
 		else
 		{
@@ -1092,14 +1092,14 @@ void parse_unary_expression(parser *const prs)
 			parse_unary_expression(prs);
 			operation_t operator = token_to_unary(token);
 
-			int is_variable = 0;
+			bool is_variable = false;
 			if (prs->last_type == ADDRESS)
 			{
 				operator = operation_to_address_ver(operator);
 			}
 			else if (prs->last_type == VARIABLE)
 			{
-				is_variable = 1;
+				is_variable = true;
 			}
 			else
 			{
@@ -1262,7 +1262,7 @@ uint8_t operator_priority(const token_t operator)
 	}
 }
 
-int is_int_assignment_operator(const token_t operator)
+bool is_int_assignment_operator(const token_t operator)
 {
 	switch (operator)
 	{
@@ -1272,15 +1272,15 @@ int is_int_assignment_operator(const token_t operator)
 		case TK_AMP_EQUAL:				// '&='
 		case TK_PIPE_EQUAL:				// '|='
 		case TK_CARET_EQUAL:			// '^='
-			return 1;
+			return true;
 
 		default:
-			return 0;
+			return false;
 	}
 }
 
 
-int is_assignment_operator(const token_t operator)
+bool is_assignment_operator(const token_t operator)
 {
 	switch (operator)
 	{
@@ -1289,7 +1289,7 @@ int is_assignment_operator(const token_t operator)
 		case TK_SLASH_EQUAL:			// '/='
 		case TK_PLUS_EQUAL:				// '+='
 		case TK_MINUS_EQUAL:			// '-='
-			return 1;
+			return true;
 
 		default:
 			return is_int_assignment_operator(operator);
@@ -1299,12 +1299,12 @@ int is_assignment_operator(const token_t operator)
 void parse_subexpression(parser *const prs)
 {
 	size_t old_operators_size = operators_size(prs);
-	int was_operator = 0;
+	bool was_operator = false;
 
 	uint8_t priority = operator_priority(prs->token);
 	while (priority)
 	{
-		was_operator = 1;
+		was_operator = true;
 		to_value(prs);
 		while (old_operators_size < operators_size(prs) && priority <= operators_peek(prs).priority)
 		{
