@@ -314,7 +314,7 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 
 	if (was_array)
 	{
-		node nd_struct_end = node_add_child(parent, OP_DECL_STRUCT_END);
+		node nd_struct_end = node_add_child(&nd, OP_DECL_STRUCT_END);
 		node_add_arg(&nd_struct_end, (item_t)prs->sx->procd);
 		node_set_arg(&nd, 0, (item_t)prs->sx->procd);
 		prs->flag_array_in_struct = (int)prs->sx->procd++;
@@ -343,17 +343,16 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
 		return;
 	}
 
-	node_copy(&prs->nd, parent);
 	const size_t expected_fields = (size_t)(mode_get(prs->sx, (size_t)type + 2) / 2);
 	size_t actual_fields = 0;
 	size_t ref_next_field = (size_t)type + 3;
 
-	to_tree(prs, OP_STRUCT_INIT);
-	node_add_arg(&prs->nd, (item_t)expected_fields);
+	node nd_struct_init = node_add_child(parent, OP_STRUCT_INIT);
+	node_add_arg(&nd_struct_init, (item_t)expected_fields);
 
 	do
 	{
-		parse_initializer(prs, &prs->nd, mode_get(prs->sx, ref_next_field));
+		parse_initializer(prs, &nd_struct_init, mode_get(prs->sx, ref_next_field));
 		ref_next_field += 2;
 		actual_fields++;
 
@@ -369,7 +368,10 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
 	} while (actual_fields != expected_fields && prs->token != TK_SEMICOLON);
 
 	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
-	to_tree(prs, OP_EXPR_END);
+	node_add_child(&nd_struct_init, OP_EXPR_END);
+
+	// Это для продолжения выражений, если инициализатор был вызван не для объявления
+	node_copy(&prs->nd, &nd_struct_init);
 }
 
 /**
@@ -381,7 +383,6 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
  */
 void parse_array_initializer(parser *const prs, node *const parent, const item_t type)
 {
-	node_copy(&prs->nd, parent);
 	if (prs->token == TK_STRING)
 	{
 		if (prs->flag_strings_only == 0)
@@ -404,17 +405,15 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 		return;
 	}
 
-	to_tree(prs, OP_ARRAY_INIT);
-	node_add_arg(&prs->nd, 0);
 	size_t list_length = 0;
 
-	node beginit;
-	node_copy(&beginit, &prs->nd);
+	node nd_arr_init = node_add_child(parent, OP_ARRAY_INIT);
+	node_add_arg(&nd_arr_init, 0);
 
 	do
 	{
 		list_length++;
-		parse_initializer(prs, &prs->nd, mode_get(prs->sx, (size_t)type + 1));
+		parse_initializer(prs, &nd_arr_init, mode_get(prs->sx, (size_t)type + 1));
 
 		if (prs->token == TK_R_BRACE)
 		{
@@ -428,8 +427,11 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 	} while (prs->token != TK_SEMICOLON);
 
 	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
-	node_set_arg(&beginit, 0, (item_t)list_length);
-	to_tree(prs, OP_EXPR_END);
+	node_set_arg(&nd_arr_init, 0, (item_t)list_length);
+	node_add_child(&nd_arr_init, OP_EXPR_END);
+
+	// Это для продолжения выражений, если инициализатор был вызван не для объявления
+	node_copy(&prs->nd, &nd_arr_init);
 }
 
 /**
@@ -452,7 +454,7 @@ void parse_init_declarator(parser *const prs, node *const parent, item_t type)
 	prs->flag_empty_bounds = 1;
 	prs->array_dimensions = 0;
 	const item_t element_type = type;
-	
+
 	node nd_decl_arr;
 	int is_array = 0;
 
