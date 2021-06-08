@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "commenter.h"
-#include "defs.h"
 #include "item.h"
 #include "logger.h"
 #include "uniio.h"
@@ -28,9 +27,9 @@
 
 #define TAG_RUC "ruc"
 
-#define MAX_TAG_SIZE MAXSTRINGL
-#define MAX_MSG_SIZE MAXSTRINGL * 4
-#define MAX_LINE_SIZE MAXSTRINGL * 4
+#define MAX_TAG_SIZE 128
+#define MAX_MSG_SIZE MAX_TAG_SIZE * 4
+#define MAX_LINE_SIZE MAX_TAG_SIZE * 4
 
 #define MAX_INT_LENGTH 12
 
@@ -464,10 +463,12 @@ void get_error(const error_t num, char *const msg, va_list args)
 			index += utf8_to_string(&msg[index], bad_printf_placeholder);
 		}
 		break;
-		case too_many_printf_params: // test_exist
-			sprintf(msg, "максимально в printf/печатьф можно выводить %i значений",
-					MAXPRINTFPARAMS);
-			break;
+		case too_many_printf_args: // test_exist
+		{
+			const size_t MAX_PRINTF_ARGS = va_arg(args, size_t);
+			sprintf(msg, "максимально в printf/печатьф можно выводить %zi значений", MAX_PRINTF_ARGS);
+		}
+		break;
 
 		case no_mult_in_cast: // need_test
 			sprintf(msg, "нет * в cast (приведении)");

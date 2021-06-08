@@ -17,7 +17,6 @@
 #include "lexer.h"
 #include <math.h>
 #include <string.h>
-#include "errors.h"
 #include "uniscanner.h"
 
 
@@ -149,7 +148,7 @@ static void skip_block_comment(lexer *const lxr)
  */
 static token_t lex_identifier_or_keyword(lexer *const lxr)
 {
-	char32_t spelling[MAXSTRINGL];
+	char32_t spelling[MAX_STRING_LENGTH];
 	size_t length = 0;
 
 	do
@@ -164,7 +163,7 @@ static token_t lex_identifier_or_keyword(lexer *const lxr)
 	if (ref >= 0 && repr != ITEM_MAX)
 	{
 		lxr->repr = repr;
-		return identifier;
+		return TK_IDENTIFIER;
 	}
 	else
 	{
@@ -230,7 +229,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 		if (!utf8_is_digit(lxr->character))
 		{
 			lexer_error(lxr, must_be_digit_after_exp);
-			return float_constant;
+			return TK_FLOAT_CONST;
 		}
 
 		while (utf8_is_digit(lxr->character))
@@ -252,7 +251,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 	if (flag_int)
 	{
 		lxr->num = num_int;
-		return int_constant;
+		return TK_INT_CONST;
 	}
 	else
 	{
@@ -261,7 +260,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 		{
 			warning(lxr->io, too_long_int);
 		}
-		return float_constant;
+		return TK_FLOAT_CONST;
 	}
 }
 
@@ -313,7 +312,7 @@ static token_t lex_char_constant(lexer *const lxr)
 	{
 		lexer_error(lxr, empty_character);
 		lxr->num = 0;
-		return char_constant;
+		return TK_CHAR_CONST;
 	}
 
 	lxr->num = get_next_string_elem(lxr);
@@ -326,7 +325,7 @@ static token_t lex_char_constant(lexer *const lxr)
 	{
 		lexer_error(lxr, expected_apost_after_char_const);
 	}
-	return char_constant;
+	return TK_CHAR_CONST;
 }
 
 /**
@@ -344,7 +343,7 @@ static token_t lex_string_literal(lexer *const lxr)
 	while (lxr->character == '\"')
 	{
 		scan(lxr);
-		while (lxr->character != '"' && lxr->character != '\n' && length < MAXSTRINGL)
+		while (lxr->character != '"' && lxr->character != '\n' && length < MAX_STRING_LENGTH)
 		{
 			if (!flag_too_long_string)
 			{
@@ -352,7 +351,7 @@ static token_t lex_string_literal(lexer *const lxr)
 			}
 			scan(lxr);
 		}
-		if (length == MAXSTRINGL)
+		if (length == MAX_STRING_LENGTH)
 		{
 			lexer_error(lxr, string_too_long);
 			flag_too_long_string = 1;
@@ -372,7 +371,7 @@ static token_t lex_string_literal(lexer *const lxr)
 		skip_whitespace(lxr);
 	}
 	lxr->num = (int)length;
-	return string_literal;
+	return TK_STRING;
 }
 
 
@@ -405,14 +404,14 @@ token_t lex(lexer *const lxr)
 {
 	if (lxr == NULL)
 	{
-		return eof;
+		return TK_EOF;
 	}
 
 	skip_whitespace(lxr);
 	switch (lxr->character)
 	{
 		case (char32_t)EOF:
-			return eof;
+			return TK_EOF;
 
 		default:
 			if (utf8_is_letter(lxr->character) || lxr->character == '#')
@@ -446,47 +445,47 @@ token_t lex(lexer *const lxr)
 		// Punctuators [C99 6.4.6]
 		case '?':
 			scan(lxr);
-			return question;
+			return TK_QUESTION;
 
 		case '[':
 			scan(lxr);
-			return l_square;
+			return TK_L_SQUARE;
 
 		case ']':
 			scan(lxr);
-			return r_square;
+			return TK_R_SQUARE;
 
 		case '(':
 			scan(lxr);
-			return l_paren;
+			return TK_L_PAREN;
 
 		case ')':
 			scan(lxr);
-			return r_paren;
+			return TK_R_PAREN;
 
 		case '{':
 			scan(lxr);
-			return l_brace;
+			return TK_L_BRACE;
 
 		case '}':
 			scan(lxr);
-			return r_brace;
+			return TK_R_BRACE;
 
 		case '~':
 			scan(lxr);
-			return tilde;
+			return TK_TILDE;
 
 		case ':':
 			scan(lxr);
-			return colon;
+			return TK_COLON;
 
 		case ';':
 			scan(lxr);
-			return semicolon;
+			return TK_SEMICOLON;
 
 		case ',':
 			scan(lxr);
-			return comma;
+			return TK_COMMA;
 
 		case '.':
 			if (utf8_is_digit(lookahead(lxr)))
@@ -496,62 +495,62 @@ token_t lex(lexer *const lxr)
 			else
 			{
 				scan(lxr);
-				return period;
+				return TK_PERIOD;
 			}
 
 		case '*':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return starequal;
+				return TK_STAR_EQUAL;
 			}
 			else
 			{
-				return star;
+				return TK_STAR;
 			}
 
 		case '!':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return exclaimequal;
+				return TK_EXCLAIM_EQUAL;
 			}
 			else
 			{
-				return exclaim;
+				return TK_EXCLAIM;
 			}
 
 		case '%':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return percentequal;
+				return TK_PERCENT_EQUAL;
 			}
 			else
 			{
-				return percent;
+				return TK_PERCENT;
 			}
 
 		case '^':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return caretequal;
+				return TK_CARET_EQUAL;
 			}
 			else
 			{
-				return caret;
+				return TK_CARET;
 			}
 
 		case '=':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return equalequal;
+				return TK_EQUAL_EQUAL;
 			}
 			else
 			{
-				return equal;
+				return TK_EQUAL;
 			}
 
 		case '+':
@@ -559,14 +558,14 @@ token_t lex(lexer *const lxr)
 			{
 				case '=':
 					scan(lxr);
-					return plusequal;
+					return TK_PLUS_EQUAL;
 
 				case '+':
 					scan(lxr);
-					return plusplus;
+					return TK_PLUS_PLUS;
 
 				default:
-					return plus;
+					return TK_PLUS;
 			}
 
 		case '|':
@@ -574,14 +573,14 @@ token_t lex(lexer *const lxr)
 			{
 				case '=':
 					scan(lxr);
-					return pipeequal;
+					return TK_PIPE_EQUAL;
 
 				case '|':
 					scan(lxr);
-					return pipepipe;
+					return TK_PIPE_PIPE;
 
 				default:
-					return pipe;
+					return TK_PIPE;
 			}
 
 		case '&':
@@ -589,14 +588,14 @@ token_t lex(lexer *const lxr)
 			{
 				case '=':
 					scan(lxr);
-					return ampequal;
+					return TK_AMP_EQUAL;
 
 				case '&':
 					scan(lxr);
-					return ampamp;
+					return TK_AMP_AMP;
 
 				default:
-					return amp;
+					return TK_AMP;
 			}
 
 		case '-':
@@ -604,18 +603,18 @@ token_t lex(lexer *const lxr)
 			{
 				case '=':
 					scan(lxr);
-					return minusequal;
+					return TK_MINUS_EQUAL;
 
 				case '-':
 					scan(lxr);
-					return minusminus;
+					return TK_MINUS_MINUS;
 
 				case '>':
 					scan(lxr);
-					return arrow;
+					return TK_ARROW;
 
 				default:
-					return minus;
+					return TK_MINUS;
 			}
 
 		case '<':
@@ -625,19 +624,19 @@ token_t lex(lexer *const lxr)
 					if (scan(lxr) == '=')
 					{
 						scan(lxr);
-						return lesslessequal;
+						return TK_LESS_LESS_EQUAL;
 					}
 					else
 					{
-						return lessless;
+						return TK_LESS_LESS;
 					}
 
 				case '=':
 					scan(lxr);
-					return lessequal;
+					return TK_LESS_EQUAL;
 
 				default:
-					return less;
+					return TK_LESS;
 			}
 
 		case '>':
@@ -647,19 +646,19 @@ token_t lex(lexer *const lxr)
 					if (scan(lxr) == '=')
 					{
 						scan(lxr);
-						return greatergreaterequal;
+						return TK_GREATER_GREATER_EQUAL;
 					}
 					else
 					{
-						return greatergreater;
+						return TK_GREATER_GREATER;
 					}
 
 				case '=':
 					scan(lxr);
-					return greaterequal;
+					return TK_GREATER_EQUAL;
 
 				default:
-					return greater;
+					return TK_GREATER;
 			}
 
 		case '/':
@@ -667,7 +666,7 @@ token_t lex(lexer *const lxr)
 			{
 				case '=':
 					scan(lxr);
-					return slashequal;
+					return TK_SLASH_EQUAL;
 
 				// Comments [C99 6.4.9]
 				case '/':
@@ -679,7 +678,7 @@ token_t lex(lexer *const lxr)
 					return lex(lxr);
 
 				default:
-					return slash;
+					return TK_SLASH;
 			}
 	}
 }

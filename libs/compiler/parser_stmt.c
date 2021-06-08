@@ -16,25 +16,25 @@
 
 #include "parser.h"
 
+
+#define MAX_PRINTF_ARGS 20
+
+
 /** Check if current token is part of a declaration specifier */
 int is_declaration_specifier(parser *const prs)
 {
 	switch (prs->token)
 	{
-		case kw_void:
-		case kw_char:
-		// case kw_short:
-		case kw_int:
-		case kw_long:
-		case kw_float:
-		case kw_double:
-		case kw_struct:
-		// case kw_union:
-		// case kw_enum:
-		// case kw_typedef:
+		case TK_VOID:
+		case TK_CHAR:
+		case TK_INT:
+		case TK_LONG:
+		case TK_FLOAT:
+		case TK_DOUBLE:
+		case TK_STRUCT:
 			return 1;
 
-		case identifier:
+		case TK_IDENTIFIER:
 		{
 			const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
 			if (id == ITEM_MAX)
@@ -63,7 +63,7 @@ int is_declaration_specifier(parser *const prs)
 void parse_labeled_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // identifier
-	node nd = node_add_child(parent, TLabel);
+	node nd = node_add_child(parent, OP_LABEL);
 	const size_t repr = prs->lxr->repr;
 	// Не проверяем, что это ':', так как по нему узнали, что это labeled statement
 	token_consume(prs);
@@ -116,14 +116,14 @@ void parse_case_statement(parser *const prs, node *const parent)
 	}
 
 	token_consume(prs); // kw_case
-	node nd = node_add_child(parent, TCase);
+	node nd = node_add_child(parent, OP_CASE);
 	const item_t condition_type = parse_constant_expression(prs, &nd);
 	if (!mode_is_int(condition_type) && !mode_is_undefined(condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
 
-	token_expect_and_consume(prs, colon, expected_colon_after_case);
+	token_expect_and_consume(prs, TK_COLON, expected_colon_after_case);
 	parse_statement(prs, &nd);
 }
 
@@ -144,8 +144,8 @@ void parse_default_statement(parser *const prs, node *const parent)
 	}
 
 	token_consume(prs); // kw_default
-	node nd = node_add_child(parent, TDefault);
-	token_expect_and_consume(prs, colon, expected_colon_after_default);
+	node nd = node_add_child(parent, OP_DEFAULT);
+	token_expect_and_consume(prs, TK_COLON, expected_colon_after_default);
 	parse_statement(prs, &nd);
 }
 
@@ -161,7 +161,7 @@ void parse_default_statement(parser *const prs, node *const parent)
 void parse_expression_statement(parser *const prs, node *const parent)
 {
 	parse_expression(prs, parent);
-	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
 /**
@@ -177,13 +177,13 @@ void parse_expression_statement(parser *const prs, node *const parent)
 void parse_if_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_if
-	node nd = node_add_child(parent, TIf);
+	node nd = node_add_child(parent, OP_IF);
 	node_add_arg(&nd, 0); // ref_else
 
 	parse_parenthesized_expression(prs, &nd);
 	parse_statement(prs, &nd);
 
-	if (token_try_consume(prs, kw_else))
+	if (token_try_consume(prs, TK_ELSE))
 	{
 		node_set_arg(&nd, 0, 1);
 		parse_statement(prs, &nd);
@@ -202,7 +202,7 @@ void parse_if_statement(parser *const prs, node *const parent)
 void parse_switch_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_switch
-	node nd = node_add_child(parent, TSwitch);
+	node nd = node_add_child(parent, OP_SWITCH);
 
 	const item_t condition_type = parse_parenthesized_expression(prs, &nd);
 	if (!mode_is_int(condition_type) && !mode_is_undefined(condition_type))
@@ -228,7 +228,7 @@ void parse_switch_statement(parser *const prs, node *const parent)
 void parse_while_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_while
-	node nd = node_add_child(parent, TWhile);
+	node nd = node_add_child(parent, OP_WHILE);
 
 	parse_parenthesized_expression(prs, &nd);
 
@@ -250,24 +250,24 @@ void parse_while_statement(parser *const prs, node *const parent)
 void parse_do_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_do
-	node nd = node_add_child(parent, TDo);
+	node nd = node_add_child(parent, OP_DO);
 
 	const int old_in_loop = prs->flag_in_loop;
 	prs->flag_in_loop = 1;
 	parse_statement(prs, &nd);
 	prs->flag_in_loop = old_in_loop;
 
-	if (token_try_consume(prs, kw_while))
+	if (token_try_consume(prs, TK_WHILE))
 	{
 		parse_parenthesized_expression(prs, &nd);
 	}
 	else
 	{
 		parser_error(prs, expected_while);
-		token_skip_until(prs, semicolon);
+		token_skip_until(prs, TK_SEMICOLON);
 	}
 
-	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
 /**
@@ -283,18 +283,18 @@ void parse_do_statement(parser *const prs, node *const parent)
 void parse_for_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_for
-	node nd = node_add_child(parent, TFor);
+	node nd = node_add_child(parent, OP_FOR);
 
 	node_add_arg(&nd, 0); // ref_inition
 	node_add_arg(&nd, 0); // ref_condition
 	node_add_arg(&nd, 0); // ref_increment
 	node_add_arg(&nd, 1); // ref_statement
-	token_expect_and_consume(prs, l_paren, no_leftbr_in_for);
+	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_for);
 
 	item_t old_displ;
 	item_t old_lg;
 	scope_block_enter(prs->sx, &old_displ, &old_lg);
-	if (!token_try_consume(prs, semicolon))
+	if (!token_try_consume(prs, TK_SEMICOLON))
 	{
 		node_set_arg(&nd, 0, 1); // ref_inition
 		if (is_declaration_specifier(prs))
@@ -304,27 +304,27 @@ void parse_for_statement(parser *const prs, node *const parent)
 		else
 		{
 			parse_expression(prs, &nd);
-			token_expect_and_consume(prs, semicolon, no_semicolon_in_for);
+			token_expect_and_consume(prs, TK_SEMICOLON, no_semicolon_in_for);
 		}
 	}
 
-	if (!token_try_consume(prs, semicolon))
+	if (!token_try_consume(prs, TK_SEMICOLON))
 	{
 		node_set_arg(&nd, 1, 1); // ref_condition
 		parse_condition(prs, &nd);
-		token_expect_and_consume(prs, semicolon, no_semicolon_in_for);
+		token_expect_and_consume(prs, TK_SEMICOLON, no_semicolon_in_for);
 	}
 
-	if (!token_try_consume(prs, r_paren))
+	if (!token_try_consume(prs, TK_R_PAREN))
 	{
 		node_set_arg(&nd, 2, 1); // ref_increment
 		parse_expression(prs, &nd);
-		token_expect_and_consume(prs, r_paren, no_rightbr_in_for);
+		token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_for);
 	}
 
 	const int old_in_loop = prs->flag_in_loop;
 	prs->flag_in_loop = 1;
-	if (prs->token == l_brace)
+	if (prs->token == TK_L_BRACE)
 	{
 		parse_statement_compound(prs, &nd, FORBLOCK);
 	}
@@ -349,8 +349,8 @@ void parse_for_statement(parser *const prs, node *const parent)
 void parse_goto_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_goto
-	node nd = node_add_child(parent, TGoto);
-	token_expect_and_consume(prs, identifier, no_ident_after_goto);
+	node nd = node_add_child(parent, OP_GOTO);
+	token_expect_and_consume(prs, TK_IDENTIFIER, no_ident_after_goto);
 	const size_t repr = prs->lxr->repr;
 
 	for (size_t i = 0; i < vector_size(&prs->labels); i += 2)
@@ -365,7 +365,7 @@ void parse_goto_statement(parser *const prs, node *const parent)
 				vector_add(&prs->labels, 1);	// TODO: здесь должен быть номер строки
 			}
 
-			token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+			token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 			return;
 		}
 	}
@@ -377,7 +377,7 @@ void parse_goto_statement(parser *const prs, node *const parent)
 	node_add_arg(&nd, -id);
 	vector_add(&prs->labels, id);
 	vector_add(&prs->labels, 1);	// TODO: здесь должен быть номер строки
-	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
 /**
@@ -397,8 +397,8 @@ void parse_continue_statement(parser *const prs, node *const parent)
 	}
 
 	token_consume(prs); // kw_continue
-	node_add_child(parent, TContinue);
-	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+	node_add_child(parent, OP_CONTINUE);
+	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
 /**
@@ -418,8 +418,8 @@ void parse_break_statement(parser *const prs, node *const parent)
 	}
 
 	token_consume(prs); // kw_break
-	node_add_child(parent, TBreak);
-	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+	node_add_child(parent, OP_BREAK);
+	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
 /**
@@ -437,9 +437,9 @@ void parse_return_statement(parser *const prs, node *const parent)
 	const item_t return_type = mode_get(prs->sx, prs->function_mode + 1);
 	prs->flag_was_return = 1;
 
-	if (token_try_consume(prs, semicolon))
+	if (token_try_consume(prs, TK_SEMICOLON))
 	{
-		node_add_child(parent, TReturnvoid);
+		node_add_child(parent, OP_RETURN_VOID);
 		if (!mode_is_void(return_type))
 		{
 			parser_error(prs, no_ret_in_func);
@@ -452,7 +452,7 @@ void parse_return_statement(parser *const prs, node *const parent)
 			parser_error(prs, notvoidret_in_void_func);
 		}
 
-		node nd = node_add_child(parent, TReturnval);
+		node nd = node_add_child(parent, OP_RETURN_VAL);
 		node_add_arg(&nd, (item_t)size_of(prs->sx, return_type));
 
 		const item_t expr_type = parse_assignment_expression(prs, &nd);
@@ -468,27 +468,27 @@ void parse_return_statement(parser *const prs, node *const parent)
 			}
 		}
 
-		token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+		token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 	}
 }
 
 /**	Parse t_create_direct statement [RuC] */
 void parse_create_direct_statement(parser *const prs, node *const parent)
 {
-	node nd_create = node_add_child(parent, CREATEDIRECTC);
+	node nd_create = node_add_child(parent, OP_CREATE_DIRECT);
 	parse_statement_compound(prs, &nd_create, THREAD);
-	node_add_child(&nd_create, EXITDIRECTC);
+	node_add_child(&nd_create, OP_EXIT_DIRECT);
 }
 
 /**	Parse printid statement [RuC] */
 void parse_printid_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_printid
-	token_expect_and_consume(prs, l_paren, no_leftbr_in_printid);
+	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_printid);
 
 	do
 	{
-		if (token_try_consume(prs, identifier))
+		if (token_try_consume(prs, TK_IDENTIFIER))
 		{
 			const size_t repr = prs->lxr->repr;
 			const item_t id = repr_get_reference(prs->sx, repr);
@@ -497,25 +497,25 @@ void parse_printid_statement(parser *const prs, node *const parent)
 				parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
 			}
 
-			node nd = node_add_child(parent, TPrintid);
+			node nd = node_add_child(parent, OP_PRINTID);
 			node_add_arg(&nd, id);
 		}
 		else
 		{
 			parser_error(prs, no_ident_in_printid);
-			token_skip_until(prs, comma | r_paren | semicolon);
+			token_skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
 		}
-	} while (token_try_consume(prs, comma));
+	} while (token_try_consume(prs, TK_COMMA));
 
-	token_expect_and_consume(prs, r_paren, no_rightbr_in_printid);
-	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_printid);
+	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
 /**	Parse print statement [RuC] */
 void parse_print_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_print
-	token_expect_and_consume(prs, l_paren, print_without_br);
+	token_expect_and_consume(prs, TK_L_PAREN, print_without_br);
 
 	const item_t type = parse_assignment_expression(prs, parent);
 	if (mode_is_pointer(prs->sx, type))
@@ -523,24 +523,24 @@ void parse_print_statement(parser *const prs, node *const parent)
 		parser_error(prs, pointer_in_print);
 	}
 
-	// Сейчас последней нодой в поддереве выражения является TExprend, просто меняем ее тип
-	node_set_type(&prs->nd, TPrint);
+	// Сейчас последней нодой в поддереве выражения является OP_EXPR_END, просто меняем ее тип
+	node_set_type(&prs->nd, OP_PRINT);
 	node_add_arg(&prs->nd, type);
-	to_tree(prs, TExprend);
+	to_tree(prs, OP_EXPR_END);
 
-	token_expect_and_consume(prs, r_paren, print_without_br);
-	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+	token_expect_and_consume(prs, TK_R_PAREN, print_without_br);
+	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
 /**	Parse getid statement [RuC] */
 void parse_getid_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_getid
-	token_expect_and_consume(prs, l_paren, no_leftbr_in_getid);
+	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_getid);
 
 	do
 	{
-		if (token_try_consume(prs, identifier))
+		if (token_try_consume(prs, TK_IDENTIFIER))
 		{
 			const size_t repr = prs->lxr->repr;
 			const item_t id = repr_get_reference(prs->sx, repr);
@@ -549,18 +549,18 @@ void parse_getid_statement(parser *const prs, node *const parent)
 				parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
 			}
 
-			node nd = node_add_child(parent, TGetid);
+			node nd = node_add_child(parent, OP_GETID);
 			node_add_arg(&nd, id);
 		}
 		else
 		{
 			parser_error(prs, no_ident_in_getid);
-			token_skip_until(prs, comma | r_paren | semicolon);
+			token_skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
 		}
-	} while (token_try_consume(prs, comma));
+	} while (token_try_consume(prs, TK_COMMA));
 
-	token_expect_and_consume(prs, r_paren, no_rightbr_in_getid);
-	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_getid);
+	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
 size_t evaluate_args(parser *const prs, const size_t length, const char32_t *const format_str
@@ -574,9 +574,9 @@ size_t evaluate_args(parser *const prs, const size_t length, const char32_t *con
 			const char32_t placeholder = format_str[++i];
 			if (placeholder != '%')
 			{
-				if (args == MAXPRINTFPARAMS)
+				if (args == MAX_PRINTF_ARGS)
 				{
-					parser_error(prs, too_many_printf_params);
+					parser_error(prs, too_many_printf_args, (size_t)MAX_PRINTF_ARGS);
 					return 0;
 				}
 
@@ -628,17 +628,17 @@ void parse_scanf_statement(parser *const prs, node *const parent);
 void parse_printf_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_printf
-	char32_t placeholders[MAXPRINTFPARAMS];
-	char32_t format_str[MAXSTRINGL + 1];
-	item_t format_types[MAXPRINTFPARAMS];
+	char32_t placeholders[MAX_PRINTF_ARGS];
+	char32_t format_str[MAX_STRING_LENGTH + 1];
+	item_t format_types[MAX_PRINTF_ARGS];
 	size_t sum_size = 0;
 
-	token_expect_and_consume(prs, l_paren, no_leftbr_in_printf);
+	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_printf);
 
-	if (prs->token != string_literal)
+	if (prs->token != TK_STRING)
 	{
 		parser_error(prs, wrong_first_printf_param);
-		token_skip_until(prs, semicolon);
+		token_skip_until(prs, TK_SEMICOLON);
 		return;
 	}
 
@@ -652,7 +652,7 @@ void parse_printf_statement(parser *const prs, node *const parent)
 
 	size_t actual_args = 0;
 	const size_t expected_args = evaluate_args(prs, format_length, format_str, format_types, placeholders);
-	while (token_try_consume(prs, comma) && actual_args != expected_args)
+	while (token_try_consume(prs, TK_COMMA) && actual_args != expected_args)
 	{
 		const item_t type = parse_assignment_expression(prs, parent);
 		if (mode_is_float(format_types[actual_args]) && mode_is_int(type))
@@ -668,24 +668,24 @@ void parse_printf_statement(parser *const prs, node *const parent)
 		actual_args++;
 	}
 
-	token_expect_and_consume(prs, r_paren, no_rightbr_in_printf);
-	token_expect_and_consume(prs, semicolon, expected_semi_after_stmt);
+	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_printf);
+	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 
 	if (actual_args != expected_args)
 	{
 		parser_error(prs, wrong_printf_param_number);
 	}
 
-	node nd_string = node_add_child(parent, TString);
+	node nd_string = node_add_child(parent, OP_STRING);
 	node_add_arg(&nd_string, (item_t)format_length);
 
 	for (size_t i = 0; i < format_length; i++)
 	{
 		node_add_arg(&nd_string, format_str[i]);
 	}
-	node_add_child(&nd_string, TExprend);
+	node_add_child(&nd_string, OP_EXPR_END);
 
-	node nd_printf = node_add_child(parent, TPrintf);
+	node nd_printf = node_add_child(parent, OP_PRINTF);
 	node_add_arg(&nd_printf, (item_t)sum_size);
 }
 
@@ -703,71 +703,71 @@ void parse_statement(parser *const prs, node *const parent)
 {
 	switch (prs->token)
 	{
-		case semicolon:
+		case TK_SEMICOLON:
 			token_consume(prs);
-			node_add_child(parent, NOP);
+			node_add_child(parent, OP_NOP);
 			break;
 
-		case kw_case:
+		case TK_CASE:
 			parse_case_statement(prs, parent);
 			break;
-		case kw_default:
+		case TK_DEFAULT:
 			parse_default_statement(prs, parent);
 			break;
 
-		case l_brace:
+		case TK_L_BRACE:
 			parse_statement_compound(prs, parent, REGBLOCK);
 			break;
 
-		case kw_if:
+		case TK_IF:
 			parse_if_statement(prs, parent);
 			break;
-		case kw_switch:
+		case TK_SWITCH:
 			parse_switch_statement(prs, parent);
 			break;
 
-		case kw_while:
+		case TK_WHILE:
 			parse_while_statement(prs, parent);
 			break;
-		case kw_do:
+		case TK_DO:
 			parse_do_statement(prs, parent);
 			break;
-		case kw_for:
+		case TK_FOR:
 			parse_for_statement(prs, parent);
 			break;
 
-		case kw_goto:
+		case TK_GOTO:
 			parse_goto_statement(prs, parent);
 			break;
-		case kw_continue:
+		case TK_CONTINUE:
 			parse_continue_statement(prs, parent);
 			break;
-		case kw_break:
+		case TK_BREAK:
 			parse_break_statement(prs, parent);
 			break;
-		case kw_return:
+		case TK_RETURN:
 			parse_return_statement(prs, parent);
 			break;
 
-		case kw_t_create_direct:
+		case TK_CREATE_DIRECT:
 			parse_create_direct_statement(prs, parent);
 			break;
 
-		case kw_printid:
+		case TK_PRINTID:
 			parse_printid_statement(prs, parent);
 			break;
-		case kw_printf:
+		case TK_PRINTF:
 			parse_printf_statement(prs, parent);
 			break;
-		case kw_print:
+		case TK_PRINT:
 			parse_print_statement(prs, parent);
 			break;
-		case kw_getid:
+		case TK_GETID:
 			parse_getid_statement(prs, parent);
 			break;
 
-		case identifier:
-			if (peek(prs->lxr) == colon)
+		case TK_IDENTIFIER:
+			if (peek(prs->lxr) == TK_COLON)
 			{
 				parse_labeled_statement(prs, parent);
 				break;
@@ -782,7 +782,7 @@ void parse_statement(parser *const prs, node *const parent)
 void parse_statement_compound(parser *const prs, node *const parent, const block_t type)
 {
 	token_consume(prs); // '{' or kw_create_direct
-	node nd_block = node_add_child(parent, TBegin);
+	node nd_block = node_add_child(parent, OP_BLOCK);
 
 	item_t old_displ = 0;
 	item_t old_lg = 0;
@@ -792,10 +792,10 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 		scope_block_enter(prs->sx, &old_displ, &old_lg);
 	}
 
-	const token_t end_token = (type == THREAD) ? kw_exit : r_brace;
+	const token_t end_token = (type == THREAD) ? TK_EXIT : TK_R_BRACE;
 	if (!token_try_consume(prs, end_token))
 	{
-		while (prs->token != eof && prs->token != end_token)
+		while (prs->token != TK_EOF && prs->token != end_token)
 		{
 			// Почему не ловилась ошибка, если в блоке нити встретилась '}'?
 			if (is_declaration_specifier(prs))
@@ -813,12 +813,12 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 
 	if (type == FUNCBODY)
 	{
-		node_add_child(&nd_block, TReturnvoid);
+		node_add_child(&nd_block, OP_RETURN_VOID);
 	}
 	else if (type != FORBLOCK)
 	{
 		scope_block_exit(prs->sx, old_displ, old_lg);
 	}
 
-	node_add_child(&nd_block, TEnd);
+	node_add_child(&nd_block, OP_BLOCK_END);
 }
