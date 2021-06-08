@@ -25,8 +25,7 @@ extern "C" {
 
 typedef enum TOKEN
 {
-	TK_MAIN = 0,					/**< 'main'		keyword */
-
+	TK_MAIN = 0,					/**< The main function token */
 	TK_EOF = SHRT_MIN,				/**< End of file */
 
 	// Keywords [C99 6.4.1]
