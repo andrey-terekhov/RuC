@@ -226,7 +226,7 @@ EXPORTED const char *map_to_string(const map *const as, const size_t index);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int map_is_correct(const map *const as);
+EXPORTED bool map_is_correct(const map *const as);
 
 
 /**

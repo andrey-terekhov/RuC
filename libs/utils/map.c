@@ -467,7 +467,7 @@ const char *map_to_string(const map *const as, const size_t index)
 	return &as->keys[as->values[index].ref];
 }
 
-int map_is_correct(const map *const as)
+bool map_is_correct(const map *const as)
 {
 	return as != NULL && as->values != NULL && as->keys != NULL;
 }
