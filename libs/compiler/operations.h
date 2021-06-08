@@ -27,7 +27,7 @@ extern "C" {
 
 typedef enum OPERATION
 {
-	BEGIN_OP_FINAL			= 7000,
+	BEGIN_OP_FINAL			= 8000,
 
 	OP_NOP					= IC_NOP,					/**< Empty node */
 	OP_WIDEN1				= IC_WIDEN1,				/**< 'WIDEN1' node */
