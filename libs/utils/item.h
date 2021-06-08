@@ -129,7 +129,7 @@ EXPORTED item_t item_get_max(const item_status status);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int item_check_var(const item_status status, const item_t var);
+EXPORTED bool item_check_var(const item_status status, const item_t var);
 
 #ifdef __cplusplus
 } /* extern "C" */
