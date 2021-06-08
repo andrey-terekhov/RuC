@@ -1,5 +1,5 @@
 float f (int q)
-{     
+{    
             	float s=0;
 	int i;
 	for (i=0;i<q;i++)
@@ -26,7 +26,7 @@ void main ()
     getid(q);
     getid(n);
     for ( i=0;i<50;i++)
-    	N[i]=0;  
+    	N[i]=0; 
     for ( j=0; j<n; j++)
       {
             a=f(q) * 50;
@@ -35,5 +35,5 @@ void main ()
        //   print(b);
       }
         print(N);
- 
+
 }

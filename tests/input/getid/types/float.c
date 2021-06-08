@@ -5,6 +5,6 @@ int main()
 
 	getid(a);
 	print(log(a));
-	
+
 	return 0;
 }

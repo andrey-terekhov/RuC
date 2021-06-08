@@ -26,7 +26,7 @@ void trav()     // ex[beg] - узел, с которого будем спуск
 		while (n!=0);
 	}
 }
-	
+
 int main()
 {
 	printid(ex);

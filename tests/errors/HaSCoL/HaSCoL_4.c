@@ -5,16 +5,16 @@ begin
 in  inp(int(15), int(15), int(15), int(15));
 out ans(int(15));
 #define DSP 14         // число умножений в 1 такте
-#define B  830    	// число брамов 
+#define B  830    	// число брамов
 #define L 3 		// число слоев
-#define N  4		// число нейронов д.б. кратно 4 
+#define N  4		// число нейронов д.б. кратно 4
 #define M  8		// число входов д.б. кратно 4
 #define logMiN 2
 #define MiN #eval(DSP/N)       // кол-во умножений в такт в каждом нейроне
 #define rot #eval(M/MiN)       // сколько потребуется итераций для всех умножений
 #if #eval(rot*MiN) != M//!!!! $eval
 #set rot #eval(rot+1)
-#endif                                                         
+#endif                                                        
 #define MM #eval(rot*MiN)
 //-- M N MM MiN logMiN rot
 #define concat(a,b) a@b

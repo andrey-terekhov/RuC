@@ -1,5 +1,5 @@
 //#include <stdio.h>
-//#include <math.h> 
+//#include <math.h>
 
 #define BUFF_SIZE 20
 
@@ -53,7 +53,7 @@ int parse_number(float* ptr_output_number)
 
 				if (INPUT_BUFF[i] >= '0' && INPUT_BUFF[i] <= '9')
 				{
-					*ptr_output_number = 
+					*ptr_output_number =
 					*ptr_output_number*10 + INPUT_BUFF[i] - '0';
 					break;
 				}
@@ -65,7 +65,7 @@ int parse_number(float* ptr_output_number)
 			case 2:
 				if (INPUT_BUFF[i] >= '0' && INPUT_BUFF[i] <= '9')
 				{
-					*ptr_output_number = 
+					*ptr_output_number =
 					*ptr_output_number + (INPUT_BUFF[i] - '0')*pow(10,exponent);
 					exponent--;
 					break;
@@ -84,20 +84,20 @@ int parse_number(float* ptr_output_number)
 
 void show_error_messsage(int error_code)
 {
-	printf("Parse error: in symbol %c at %d position\n", 
+	printf("Parse error: in symbol %c at %d position\n",
 		INPUT_BUFF[error_code], error_code);
 }
 
 int main(int argc, char const *argv[])
 {
-	printf("Maximum digits in number: %d\nTo change this number edit souce code\n", 
+	printf("Maximum digits in number: %d\nTo change this number edit souce code\n",
 		BUFF_SIZE);
 
 	float result_number = 0;
 
 	fgets(INPUT_BUFF, sizeof INPUT_BUFF, stdin);
 
-	INPUT_BUFF[BUFF_SIZE] = '\n';      // provide valid line	
+	INPUT_BUFF[BUFF_SIZE] = '\n';      // provide valid line
 
 	int result_code = parse_number(&result_number);
 

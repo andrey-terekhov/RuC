@@ -13,6 +13,6 @@ void main ()
                 a[j] = a[j + 1];
                 a[j + 1] = h;
             }
-        
+       
         printid(a);
 }

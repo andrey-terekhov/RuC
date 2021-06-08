@@ -404,7 +404,7 @@ int node_order(node *const fst, const size_t fst_index, node *const snd, const s
 
 int node_swap(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index)
 {
-	node fst_child = *fst;	
+	node fst_child = *fst;
 	node snd_child = *snd;
 
 	if (node_displ(&fst_child, fst_index, &snd_child, snd_index))
@@ -457,7 +457,7 @@ int node_remove(node *const nd, const size_t index)
 		child.index = reference;
 		ref_set_amount(nd, (item_t)node_get_amount(nd) - 1);
 	}
-	
+
 	if (node_get_amount(&child) == 0 && ref_get_children(&child) == vector_size(nd->tree) - 1)
 	{
 		vector_resize(nd->tree, ref_get_next(&child));

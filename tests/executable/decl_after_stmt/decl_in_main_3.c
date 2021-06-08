@@ -1,6 +1,6 @@
 void func3 (int i)
 {
-	printid (i);  
+	printid (i); 
 }
 
    int main()

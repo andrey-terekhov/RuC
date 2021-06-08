@@ -8,14 +8,14 @@ float f (float x)
 
 
 void main()
-{   
+{  
     getid (a);
     getid (b);
     n = 25;
     S0 = 1;
     S = 0;
     while (abs (S - S0) > eps)
-        {   
+        {  
             float x1, x2, h;
             L = (abs (a - b)) / n;
             x2 = a;

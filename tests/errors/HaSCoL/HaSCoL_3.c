@@ -1,6 +1,6 @@
 
 #define DSP 14         // число умножений в 1 такте
-#define N  4		
+#define N  4	
 #define MiN #eval(DSP/N)       // сколько потребуется итераций для всех умножений
 
 #define concat(a,b) a@b

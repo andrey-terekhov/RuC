@@ -16,6 +16,6 @@ void main()
     print("a 3.000000");
     printid(a);
     /* sin(3.14/2)=1, cos(0)=1, sqrt(1.e2)=10, abs(-2.72)=2.72, abs(-3)=3 */
-    
+   
 }
 

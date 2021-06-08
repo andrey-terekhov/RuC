@@ -1,17 +1,17 @@
 int glob = 5;
 
-struct B 
+struct B
 {
   int x;
 };
 
-struct A 
+struct A
 {
   struct B inner[glob];
 };
 
 
-int main() 
+int main()
 {
   struct A a1[5];
   glob = 6;

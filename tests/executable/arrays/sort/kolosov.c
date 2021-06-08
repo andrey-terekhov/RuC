@@ -11,5 +11,5 @@ void main()
                 A[j] = A[j + 1];
                 A[j + 1] = c;
             }
-    printid(A);    
+    printid(A);   
 }

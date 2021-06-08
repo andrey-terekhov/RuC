@@ -2,13 +2,13 @@
 {
    int i = 0, j = 10;
 
-   if (i > j) 
+   if (i > j)
       printid(i);
-   else 
+   else
       printid(j);
    print ("j  10");
 
-   if (11 != 10) 
+   if (11 != 10)
    {
       i = 1;
    }
@@ -16,14 +16,14 @@
    printid(i);
 
    j = 9;
-   if (14 > 15) 
+   if (14 > 15)
       j = 15;
    print ("j  9");
    printid(j);
 
-   if (11 == 11) 
+   if (11 == 11)
       j=2;
-   else 
+   else
    {
       i = 2 + 1;
       j = i;

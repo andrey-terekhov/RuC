@@ -22,7 +22,7 @@ void main ()
           case 'д':
                B[4]++;
                break;
-       default: 
+       default:
         break;
       }
          print(B);

@@ -59,7 +59,7 @@ enum ERROR
 	must_end_endw,
 	include_file_not_found,
 	source_file_not_found,
-	no_string_ending, 
+	no_string_ending,
 };
 
 

@@ -17,7 +17,7 @@
         #endif
         #set j #eval(j + 1)
     #endw
-    #undef j 
+    #undef j
 #endm
 
 #if #eval(A + B) == #eval(C + D) || A > C

@@ -1,4 +1,4 @@
-void main() 
+void main()
 {
     int x = 3;
     char str[1];

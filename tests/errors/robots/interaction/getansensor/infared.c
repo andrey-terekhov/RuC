@@ -64,11 +64,11 @@ float pi = 3.141592653589793;
 
 int main()
 {
-	
+
 	while (!(getansensor(INFARED, A0) > 0)) {
 		t_sleep(10);
 	}
-	
+
 	return 0;
 
 }

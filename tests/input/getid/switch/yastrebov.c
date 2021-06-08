@@ -1,31 +1,31 @@
 void main()
-{	
+{
 	int i;
-	char s[20]; 
+	char s[20];
 	int a[5];
 	getid (s);
 	printid (s);
-	for (i=0;i<20;i++) 
+	for (i=0;i<20;i++)
 	{
 		switch (s[i])
 		{
-			case 'а' : 
+			case 'а' :
 				a[0]++;
 				break;
-			case 'б' : 
+			case 'б' :
 				a[1]++;
 				break;
-			case 'в' : 
+			case 'в' :
 				a[2]++;
 				break;
 			case 'г' :
 				 a[3]++;
 				break;
-			case 'д' : 
+			case 'д' :
 				a[4]++;
-				break;	
+				break;
 		}
 	}
 		print (a);
-		
+	
 }

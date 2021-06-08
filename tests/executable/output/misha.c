@@ -1,4 +1,4 @@
-void main() 
+void main()
 {
     char str[] = "asdf";
 

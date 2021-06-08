@@ -2,6 +2,6 @@ void main()
 {
     struct point
 	{
-	int ; 
+	int ;
 	};
 }

@@ -10,7 +10,7 @@ void MAIN()
 
     strcat(&b, "bc");
     printid(b);
-    
+   
     a = '\0';
     i = a;
     printid(i);

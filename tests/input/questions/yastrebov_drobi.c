@@ -3,7 +3,7 @@ int okrug (double x)
 	if (round (x)<=x)
 		return round (x);
 	else
-		return round (x)-1 ; 
+		return round (x)-1 ;
 }
 
 void main()
@@ -21,7 +21,7 @@ void main()
 	printid(a0);
 	while ( a2 != (2*a0) )
 	{
-		a2=okrug ( (n+D)/T ); 
+		a2=okrug ( (n+D)/T );
 		D = -D + T*a2;
 		T= (N-D*D)/T;
 		i++;

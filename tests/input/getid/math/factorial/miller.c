@@ -1,11 +1,11 @@
 int f(int res)
   {
-  if ((res - 1) >= 1) 
+  if ((res - 1) >= 1)
     {
       res = res * f(res - 1);
       return res;
-    }  
-  else 
+    } 
+  else
     return 1;
 }
 
@@ -13,13 +13,13 @@ int f(int res)
 void main()
 {
   int n;
-  
+ 
   print("������� �����");
   getid(n);
   print("��������� �����\n");
-  
+ 
   if (f(n)>0)
     print(f(n));
-  else       
+  else      
     print("Incorrectly");
 }

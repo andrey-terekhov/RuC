@@ -14,4 +14,4 @@ void main()
     while (GETDIGSENSOR(33, {1, num2, 3}) < 10)
         SETMOTOR(num2, 20);
 }
-    
+   

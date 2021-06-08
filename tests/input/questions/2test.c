@@ -14,13 +14,13 @@ void main()
 
     getid (a);
     getid (b);
-    
+   
     while (a + i * d < b)
     {
         S += d * f(a + i * d);
         i++;
-    } 
-    printid (S); 
-}    
+    }
+    printid (S);
+}   
 
 

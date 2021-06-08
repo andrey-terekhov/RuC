@@ -126,7 +126,7 @@ int if_false(environment *const env)
 		}
 	}
 
-	
+
 	env_error(env, must_be_endif);
 	return 0;
 }

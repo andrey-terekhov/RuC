@@ -322,7 +322,7 @@ void m_nextch(environment *const env)
 			env_clear_error_string(env);
 		}
 	}
-	
+
 	// printf("t = %d curchar = %c, %i nextchar = %c, %i \n", env->nextch_type,
 	// env->curchar, env->curchar, env->nextchar, env->nextchar);
 }

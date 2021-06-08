@@ -7,10 +7,10 @@ struct point_t {
 {
    struct point_t A;
    float distance;
- 
+
    A.x = 10;
    A.y = 20;
- 
+
    distance = sqrt((float) (A.x*A.x + A.y*A.y));
 
    print ("distance  22.360680");

@@ -4,7 +4,7 @@
 
     getid(c);
     printid(c);
-    
+   
     getid(s);
     printid(s);
 }

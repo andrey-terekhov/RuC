@@ -6,9 +6,9 @@ int main()
       i++;
       goto lbl;
    }
-   
+  
    print ("i  10");
-   printid (i);  
+   printid (i); 
 
    return 0;
 }

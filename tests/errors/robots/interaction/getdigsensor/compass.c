@@ -16,7 +16,7 @@ int z;
 
 int main()
 {
-	
+
 	x = getdigsensor(X_COMPASS, { D0, D0 });
 	y = getdigsensor(Y_COMPASS, { D0, D0 });
 	z = getdigsensor(Z_COMPASS, { D0, D0 });

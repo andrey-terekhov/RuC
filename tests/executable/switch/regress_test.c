@@ -2,7 +2,7 @@ int main()
 {
    int i = 0, j = 1;
 
-   switch (i) 
+   switch (i)
    {
       case -1:
          j++;
@@ -19,7 +19,7 @@ int main()
    print ("j  3");
    printid(j);
 
-   switch (i) 
+   switch (i)
    {
       case 1: j--; break;
       case 2: j--; break;

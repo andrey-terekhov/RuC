@@ -5,7 +5,7 @@ void main()
     goto l3;
     a = 1;
     goto l3;
-    
+   
     l2:
         a = 2;
 

@@ -1,6 +1,6 @@
 int main()
 {
-	float a; 
+	float a;
 	a = 12ef45;
 	return 0;
 }

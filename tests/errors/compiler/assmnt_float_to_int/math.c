@@ -43,6 +43,6 @@ int main()
    c = asin(0.43);
    print ("c  0.444493");
    printid(c);
-   
+  
    return 0;
 }

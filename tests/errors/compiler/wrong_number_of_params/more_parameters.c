@@ -33,20 +33,20 @@ void func3 (int i, int *j)
 
    func(i, &j);
    print ("j  5");
-   printid (j);  
+   printid (j); 
 
    i = 8; j = 0;
-   do 
+   do
    {
       j++;
       i--;
-      if (i % 2 == 0) 
+      if (i % 2 == 0)
          continue;
       j++;
-      if (i == 1) 
+      if (i == 1)
          break;
    } while (i!=10);
-   
+  
    print("j  11");
    printid(j);
    print("i  1");
@@ -54,7 +54,7 @@ void func3 (int i, int *j)
 
    for (i = 0; i < 10; i++)
    {
-      if (i == 5) 
+      if (i == 5)
          break;
    }
 

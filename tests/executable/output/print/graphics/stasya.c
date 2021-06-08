@@ -23,7 +23,7 @@ void main()
 	{
 		for (j = 0; j < 50; j++)
 		ekr[i][j]=' ';
-		
+	
 		x = i;
 		x = f(x / 50) * 50;
 		if ((x > -1) && (x < 50))

@@ -35,7 +35,7 @@ void* work_thread(void *arg )
 int main(int argc, char **argv)
 {
 	t_init();
-	
+
 	for (int i = 0; i < N; i++)
 	{ t_createDetached(work_thread); }
 	int sum = t_msg_recieve().data;

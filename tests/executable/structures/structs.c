@@ -3,7 +3,7 @@ struct line {struct point pt1; struct point pt2 [1];} line1, line2;
 
 void main()
 {
-    
+   
     struct point p, p1;
     p1.x = 1;
     p1.y = 2;

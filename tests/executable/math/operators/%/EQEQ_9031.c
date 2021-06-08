@@ -6,10 +6,10 @@ void main()
    do {
       j++;
       i--;
-      if (i % 2 == 0) 
+      if (i % 2 == 0)
          continue;
       j++;
-      if (i == 1) 
+      if (i == 1)
          break;
    } while (i != 10);
    print("i 1");

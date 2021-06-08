@@ -1,4 +1,4 @@
-int main() 
+int main()
 {
 	int a[2] = {2, 3}, r;
 	r = a[1] *= a[0];

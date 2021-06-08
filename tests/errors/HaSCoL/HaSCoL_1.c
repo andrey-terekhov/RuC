@@ -5,16 +5,16 @@ begin
 in  inp(int(15), int(15), int(15), int(15));
 out ans(int(15));
 #define DSP 14         // число умножений в 1 такте
-#define B  830    	// число брамов 
+#define B  830    	// число брамов
 #define L 3 		// число слоев
-#define N  4		// число нейронов д.б. кратно 4 
+#define N  4		// число нейронов д.б. кратно 4
 #define M  8		// число входов д.б. кратно 4
 #define logMiN 2
 #define MiN #eval(DSP/N)       // кол-во умножений в такт в каждом нейроне
 #define rot #eval(M/MiN)       // сколько потребуется итераций для всех умножений
 #if #eval(rot*MiN) != M//!!!! $eval
 #set rot #eval(rot+1)
-#endif                                                         
+#endif                                                        
 #define MM #eval(rot*MiN)
 -- M N MM MiN logMiN rot
 #define concat(a,b) a@b//!!!!
@@ -25,7 +25,7 @@ out ans(int(15));
 
 data JT, JK, JD, J, II: uint(10),
 irot, layer: uint(4),
-tab: [0..15:uint(4)]int(15), 
+tab: [0..15:uint(4)]int(15),
 bram: [0..B: uint(10)][0..1023: uint(10)]int(15)
 
 #define macroIN ,IN(j)//!!!!
@@ -33,11 +33,11 @@ bram: [0..B: uint(10)][0..1023: uint(10)]int(15)
 
 #macro loopj(M,loopbody)
 #define j 0
-#while j < M   
+#while j < M  
 loopbody
 #set j #eval(j+1)
 #endw
-#undef j 
+#undef j
 #endm
 
 loopj(MM, macroIN)
@@ -57,7 +57,7 @@ loopj(N, macroS)
 #undef i
 
 : int(15);
-#define macroS0 | S(j):=0 
+#define macroS0 | S(j):=0
 init
 {
 JT:=0 | JK:=0 | JD:=0 | II:=0 | J:=0 | irot:=0 | layer:=1//!!!!ошибка
@@ -70,12 +70,12 @@ tab[JT]:=a | tab[JT+1]:=b | tab[JT+2]:=c | tab[JT+3]:=d | JT:=JT + 4
 
 elif JK < #eval(rot * N) then
 bram[II][JK]:=a | bram[II+1][JK]:=b | bram[II+2][JK]:=c | bram[II+3][JK]:=d | II:=II+4 |
-if II == #eval(MiN*N-4) then II:=0 | JK:=JK + 1 else II:=II+4 fi 
+if II == #eval(MiN*N-4) then II:=0 | JK:=JK + 1 else II:=II+4 fi
 
 elif JD < M
 #define j 4
 #while j < M
-IN(#eval(j-4)) := IN(j) | IN(#eval(j-3)) := IN(#eval(j+1)) | 
+IN(#eval(j-4)) := IN(j) | IN(#eval(j-3)) := IN(#eval(j+1)) |
 IN(#eval(j-2)) := IN(#eval(j+2)) | IN(#eval(j-1)) := IN(#eval(j+3)) |
 #set j #eval(j+4)
 #endw
@@ -87,7 +87,7 @@ while layer < L
 do
 while irot < rot
 do
- 
+
 #define j 0
 #while j < MiN
 #define i 0
@@ -101,7 +101,7 @@ R(i,j):=IN(j) |
 #undef j
 
 #macro macroShift() IN(j):=IN(#eval(MiN+j)) |#endm //!!!! раньше было не хорошо
- 
+
 loopj(#eval(MM-MiN), macroShift)
 #macro readbram() A(i,j) = bram[#eval(j*N+i)][J] |#endm//!!!!
 
@@ -145,7 +145,7 @@ first:=0 |irot:= irot + 1 | J:=J + 1;//ошибка
  R(i,j):=R(i,j) + R(i,#eval(j+step)) |
 #endif
 
-#set i #eval(i+1)                                      
+#set i #eval(i+1)                                     
 #endw
 #undef i
 #set j #eval(j+2*step)
@@ -167,7 +167,7 @@ irot:=0 |
 // вычисляем значение пороговой функции и выдаем результаты на след слой
 #define i 0
 #while i < N
-let s = 
+let s =
 if   S(i) < m4 then tab[0]
 elif S(i) > p4 then tab[15]
 else tab[S(i){3:6}]

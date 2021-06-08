@@ -8,7 +8,7 @@ void main()
     print(x[0] * y); // 0.0314
     print(x[0] / y); // 314
     print("\n");
-    
+   
     x[0] += y;       // 3.15
     printid(x);
     x[0] -= y;       // 3.14
@@ -18,7 +18,7 @@ void main()
     x[0] /= y;       // 3/14
     printid(x);
     print("\n");
-    
+   
     z = x[0] += y;   // 3.15
     printid(z);
     z = x[0] -= y;   // 3.14

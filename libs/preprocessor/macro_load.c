@@ -116,7 +116,7 @@ int function_scope_collect(environment *const env, const size_t num, const size_
 			m_nextch(env);
 		}
 	}
-	
+
 	env_error(env, scope_not_close);
 	return -1;
 }
@@ -172,7 +172,7 @@ int function_stack_create(environment *const env, const size_t parameters)
 			return 0;
 		}
 	}
-	
+
 	env_error(env, scope_not_close);
 	return -1;
 }
@@ -194,7 +194,7 @@ int macro_get(environment *const env, const size_t index)
 		{
 			return -1;
 		}
-		
+	
 		loc_macro_ptr++;
 	}
 

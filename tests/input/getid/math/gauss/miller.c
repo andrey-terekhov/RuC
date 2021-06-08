@@ -11,12 +11,12 @@ void main()
 
         print("������� �������");
         getid(a);
-        
-        for (z = 0; z < n; z++)   
+       
+        for (z = 0; z < n; z++)  
         {
-            for (i = z; i < n; i++) 
-                if (a[i][z]!=0)		
-                { 
+            for (i = z; i < n; i++)
+                if (a[i][z]!=0)	
+                {
                     for (t = 0; t < n + 1; t++)
                     {
                         p = a[i][t];
@@ -25,23 +25,23 @@ void main()
                     }
                 }
 
-            for(k = z + 1; k < n; k++) 
-            { 
+            for(k = z + 1; k < n; k++)
+            {
                 m = a[k][z] / a[z][z];
-                
-                for (i = z; i < n + 1;i++) 
+               
+                for (i = z; i < n + 1;i++)
                 {
                     a[k][i] = a[k][i] - m * a[z][i];
                 }
-            }			
+            }		
         }
         p = 0;
         b[n - 1] = a[n - 1][n] / a[n - 1][n - 1];
-        
-        for (i = n - 2; i >= 0; i--) 
+       
+        for (i = n - 2; i >= 0; i--)
         {
             p = a[i][n];
-            for (k = i + 1; k < n; k++) 
+            for (k = i + 1; k < n; k++)
                 p = p - a[i][k] * b[k];
 
             b[i] = p / a[i][i];

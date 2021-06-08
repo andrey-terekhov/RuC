@@ -1,4 +1,4 @@
-int main() 
+int main()
 {
 	float	a = 2, b = 3;
 	a = log(b);

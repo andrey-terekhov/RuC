@@ -14,5 +14,5 @@ void main ()
                         A[j+1]=tmp;
                     }
         printid(A);
-    }		               
+    }		              
 }

@@ -107,7 +107,7 @@ typedef enum TOKEN
 
 	// Standard Functions [RuC]
 	BEGIN_TK_FUNC,
-	
+
 	TK_PRINT,						/**< 'print'	keyword	*/
 	TK_PRINTF,						/**< 'printf'	keyword */
 	TK_PRINTID,						/**< 'printid'	keyword */
@@ -138,7 +138,7 @@ typedef enum TOKEN
 	TK_STRSTR,						/**< 'strstr'	keyword */
 	TK_STRLEN,						/**< 'strlen'	keyword */
 	END_TK_STR,
-	
+
 	BEGIN_TK_THREAD,
 	TK_MSG_SEND,					/**< 't_msg_send'		keyword */
 	TK_MSG_RECEIVE,					/**< 't_msg_receive'	keyword */

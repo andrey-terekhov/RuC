@@ -73,7 +73,7 @@ int macro_keywords(environment *const env)
 	/*if (env->curchar != '\n' && env->curchar != ' ' && env->curchar != '\t' && env->curchar != '(' &&
 		env->curchar != '\"')
 	{
-		
+	
 		env_error(env, after_ident_must_be_space);
 	}*/
 

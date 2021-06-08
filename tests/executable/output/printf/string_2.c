@@ -1,4 +1,4 @@
-void main() 
+void main()
 {
     printf("str = %s", "a string");
 }

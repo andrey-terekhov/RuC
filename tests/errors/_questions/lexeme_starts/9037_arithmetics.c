@@ -1,6 +1,6 @@
 void main()
 {
-	int x = ; 
+	int x = ;
 	+ 23;        //bad arithmetics
 	printid(x);
 }

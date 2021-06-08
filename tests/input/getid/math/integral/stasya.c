@@ -23,7 +23,7 @@ void main ()
 //            printid(n);
 //            printid(sum);
             n *= 2;
-        }	
+        }
         printid(sum);
     }
 }

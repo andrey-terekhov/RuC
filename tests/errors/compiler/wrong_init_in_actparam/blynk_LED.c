@@ -15,22 +15,22 @@ int red;
 
 int main()
 {
-	
+
 	wifi_connect("wifi", "pass");
-	
+
 	blynk_authorization("auth");
-	
+
 	while (1) {
 		red = blynk_receive(V0);
-		
+	
 		green = blynk_receive(V1);
-		
+	
 		blue = blynk_receive(V2);
-		
+	
 		setsignal(RGB, { D22, D21 }, { red, green, blue, 0, 0, 0, 0 });
-		
+	
 		t_sleep(250);
-		
+	
 	}
 	return 0;
 
