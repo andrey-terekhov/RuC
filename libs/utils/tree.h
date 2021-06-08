@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <limits.h>
-#include <stddef.h>
 #include "vector.h"
 
 

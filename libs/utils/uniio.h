@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 #include "dll.h"
 #include "utf8.h"
 

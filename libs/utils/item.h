@@ -18,6 +18,7 @@
 
 #include <inttypes.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include "dll.h"
 #include "workspace.h"
