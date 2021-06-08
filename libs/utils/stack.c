@@ -25,6 +25,6 @@ extern item_t stack_peek(const stack *const stk);
 
 extern int stack_reset(stack *const stk);
 extern size_t stack_size(const stack *const stk);
-extern int stack_is_correct(const stack *const stk);
+extern bool stack_is_correct(const stack *const stk);
 
 extern int stack_clear(stack *const stk);
