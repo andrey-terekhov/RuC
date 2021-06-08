@@ -132,7 +132,7 @@ EXPORTED int in_set_position(universal_io *const io, const size_t position);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int in_is_correct(const universal_io *const io);
+EXPORTED bool in_is_correct(const universal_io *const io);
 
 /**
  *	Check that current input option is file
@@ -141,7 +141,7 @@ EXPORTED int in_is_correct(const universal_io *const io);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int in_is_file(const universal_io *const io);
+EXPORTED bool in_is_file(const universal_io *const io);
 
 /**
  *	Check that current input option is buffer
@@ -150,7 +150,7 @@ EXPORTED int in_is_file(const universal_io *const io);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int in_is_buffer(const universal_io *const io);
+EXPORTED bool in_is_buffer(const universal_io *const io);
 
 /**
  *	Check that current input option is function
@@ -159,7 +159,7 @@ EXPORTED int in_is_buffer(const universal_io *const io);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int in_is_func(const universal_io *const io);
+EXPORTED bool in_is_func(const universal_io *const io);
 
 
 /**
@@ -257,7 +257,7 @@ EXPORTED int out_set_func(universal_io *const io, const io_user_func func);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int out_is_correct(const universal_io *const io);
+EXPORTED bool out_is_correct(const universal_io *const io);
 
 /**
  *	Check that current output option is file
@@ -266,7 +266,7 @@ EXPORTED int out_is_correct(const universal_io *const io);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int out_is_file(const universal_io *const io);
+EXPORTED bool out_is_file(const universal_io *const io);
 
 /**
  *	Check that current output option is buffer
@@ -275,7 +275,7 @@ EXPORTED int out_is_file(const universal_io *const io);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int out_is_buffer(const universal_io *const io);
+EXPORTED bool out_is_buffer(const universal_io *const io);
 
 /**
  *	Check that current output option is function
@@ -284,7 +284,7 @@ EXPORTED int out_is_buffer(const universal_io *const io);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int out_is_func(const universal_io *const io);
+EXPORTED bool out_is_func(const universal_io *const io);
 
 
 /**

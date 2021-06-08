@@ -35,7 +35,7 @@
 #define MAX_FORMAT_SIZE 128
 
 
-int is_specifier(const char ch)
+bool is_specifier(const char ch)
 {
 	return (ch >= '0' && ch <= '9')
 		|| ch == 'h' || ch == 'l'		// Sub-specifiers
@@ -95,7 +95,7 @@ int in_func_position(universal_io *const io, const char *const format, va_list a
 	{
 		if (format[i] == '%')
 		{
-			int was_count = 0;
+			bool was_count = false;
 
 			while (is_specifier(format[i + 1]))
 			{
@@ -338,22 +338,22 @@ int in_set_position(universal_io *const io, const size_t position)
 }
 
 
-int in_is_correct(const universal_io *const io)
+bool in_is_correct(const universal_io *const io)
 {
 	return io != NULL && (in_is_file(io) || in_is_buffer(io) || in_is_func(io));
 }
 
-int in_is_file(const universal_io *const io)
+bool in_is_file(const universal_io *const io)
 {
 	return io != NULL && io->in_file != NULL;
 }
 
-int in_is_buffer(const universal_io *const io)
+bool in_is_buffer(const universal_io *const io)
 {
 	return io != NULL && io->in_buffer != NULL;
 }
 
-int in_is_func(const universal_io *const io)
+bool in_is_func(const universal_io *const io)
 {
 	return io != NULL && io->in_user_func != NULL;
 }
@@ -479,22 +479,22 @@ int out_set_func(universal_io *const io, const io_user_func func)
 }
 
 
-int out_is_correct(const universal_io *const io)
+bool out_is_correct(const universal_io *const io)
 {
 	return io != NULL && (out_is_file(io) || out_is_buffer(io) || out_is_func(io));;
 }
 
-int out_is_file(const universal_io *const io)
+bool out_is_file(const universal_io *const io)
 {
 	return io != NULL && io->out_file != NULL;
 }
 
-int out_is_buffer(const universal_io *const io)
+bool out_is_buffer(const universal_io *const io)
 {
 	return io != NULL && io->out_buffer != NULL;
 }
 
-int out_is_func(const universal_io *const io)
+bool out_is_func(const universal_io *const io)
 {
 	return io != NULL && io->out_user_func != NULL;
 }
