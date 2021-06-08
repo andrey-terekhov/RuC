@@ -705,7 +705,7 @@ void parse_statement(parser *const prs, node *const parent)
 	{
 		case TK_SEMICOLON:
 			token_consume(prs);
-			node_add_child(parent, OP_NULL);
+			node_add_child(parent, OP_NOP);
 			break;
 
 		case TK_CASE:

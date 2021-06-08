@@ -267,7 +267,7 @@ node node_expression(vector *const tree, const size_t index)
 			nd.amount = is_ref(vector_get(tree, index + 1)) ? 1 : 0;
 			return nd;
 
-		case OP_NULL:
+		case OP_NOP:
 			if (vector_get(tree, index + 1) != OP_EXPR_END)
 			{
 				system_error(tree_expression_no_texprend, index, vector_get(tree, index));
@@ -284,7 +284,7 @@ node node_expression(vector *const tree, const size_t index)
 			}
 
 			size_t j = index + 1;
-			while (j < vector_size(tree) && vector_get(tree, j) != OP_NULL && !is_expression(vector_get(tree, j)) && !is_lexeme(vector_get(tree, j)))
+			while (j < vector_size(tree) && vector_get(tree, j) != OP_NOP && !is_expression(vector_get(tree, j)) && !is_lexeme(vector_get(tree, j)))
 			{
 				if (is_operator(vector_get(tree, j)))
 				{
@@ -311,7 +311,7 @@ node node_expression(vector *const tree, const size_t index)
 		return node_broken();
 	}
 
-	if (vector_get(tree, j) == OP_NULL || is_expression(vector_get(tree, j)) || is_lexeme(vector_get(tree, j)))
+	if (vector_get(tree, j) == OP_NOP || is_expression(vector_get(tree, j)) || is_lexeme(vector_get(tree, j)))
 	{
 		nd.amount++;
 	}
@@ -327,7 +327,7 @@ node node_expression(vector *const tree, const size_t index)
 
 size_t skip_operator(vector *const tree, size_t i)
 {
-	if (!is_operator(vector_get(tree, i)) && vector_get(tree, i) != OP_NULL)
+	if (!is_operator(vector_get(tree, i)) && vector_get(tree, i) != OP_NOP)
 	{
 		return skip_expression(tree, i);
 	}
@@ -483,7 +483,7 @@ node node_operator(vector *const tree, const size_t index)
 		case OP_BREAK:		// Break: нет потомков
 		case OP_CONTINUE:		// Continue: нет потомков
 
-		case OP_NULL:			// NoOperation: 0 потомков
+		case OP_NOP:			// NoOperation: 0 потомков
 			break;
 
 		case OP_CREATE_DIRECT:

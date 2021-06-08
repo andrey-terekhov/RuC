@@ -131,7 +131,7 @@ static void final_operation(virtual *const vm, node *const nd)
 	operation_t op = node_get_type(nd);
 	while (op > BEGIN_OP_FINAL && op < END_OP_FINAL)
 	{
-		if (op != OP_NULL)
+		if (op != OP_NOP)
 		{
 			if (op == OP_AD_LOG_OR)
 			{
@@ -552,7 +552,7 @@ static void statement(virtual *const vm, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case OP_NULL:
+		case OP_NOP:
 			break;
 		case OP_CREATE_DIRECT:
 			mem_add(vm, IC_CREATE_DIRECT);
@@ -871,7 +871,7 @@ static int codegen(virtual *const vm)
 			}
 			break;
 
-			case OP_NULL:
+			case OP_NOP:
 			case OP_BLOCK_END:
 				break;
 

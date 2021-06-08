@@ -275,7 +275,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 					break;
 			}
 			break;
-		case OP_NULL:
+		case OP_NOP:
 			sprintf(buffer, "NOP");
 			break;
 		case OP_AD_LOG_AND:

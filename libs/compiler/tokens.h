@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <limits.h>
 
 
 #ifdef __cplusplus
@@ -24,10 +25,9 @@ extern "C" {
 
 typedef enum TOKEN
 {
-	// 'main' в RuC - ключевое слово
-	TK_MAIN,						/**< 'main'		keyword */
+	TK_MAIN = 0,					/**< 'main'		keyword */
 
-	TK_EOF = -200,					/**< End of file */
+	TK_EOF = SHRT_MIN,				/**< End of file */
 
 	// Keywords [C99 6.4.1]
 	TK_CHAR,						/**< 'char'		keyword */
@@ -69,7 +69,7 @@ typedef enum TOKEN
 	TK_COMMA		= 0b00001000,	/**< ','	punctuator */
 	TK_COLON		= 0b00010000,	/**< ':'	punctuator */
 	TK_SEMICOLON	= 0b00100000,	/**< ';'	punctuator */
-	TK_QUESTION 	= -100,			/**< '?'	punctuator */
+	TK_QUESTION 	= TK_L_BRACE+1,	/**< '?'	punctuator */
 	TK_TILDE,						/**< '~'	punctuator */
 	TK_PERIOD,						/**< '.'	punctuator */
 	TK_PLUS,						/**< '+'	punctuator */

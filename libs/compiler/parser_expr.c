@@ -1370,7 +1370,7 @@ void parse_conditional_expression(parser *const prs)
 			{
 				if (addr_if == OP_EXPR_END)
 				{
-					node_set_type(&prs->nd, OP_NULL);
+					node_set_type(&prs->nd, OP_NOP);
 				}
 
 				const item_t old_addr_if = addr_if;
@@ -1396,7 +1396,7 @@ void parse_conditional_expression(parser *const prs)
 		{
 			if (addr_if == OP_EXPR_END)
 			{
-				node_set_type(&prs->nd, OP_NULL);
+				node_set_type(&prs->nd, OP_NOP);
 			}
 
 			const item_t old_addr_if = addr_if;
@@ -1416,7 +1416,7 @@ void parse_conditional_expression(parser *const prs)
 		while (addr_if != OP_EXPR_END)
 		{
 			node node_addr = node_load(&prs->sx->tree, (size_t)addr_if);
-			node_set_type(&node_addr, mode_is_float(global_type) ? OP_WIDEN : OP_NULL);
+			node_set_type(&node_addr, mode_is_float(global_type) ? OP_WIDEN : OP_NOP);
 
 			node_addr = node_get_child(&node_addr, 0);
 			addr_if = node_get_type(&node_addr);

@@ -29,7 +29,7 @@ typedef enum OPERATION
 {
 	BEGIN_OP_FINAL			= 7000,
 
-	OP_NULL					= IC_NOP,					/**< Empty node */
+	OP_NOP					= IC_NOP,					/**< Empty node */
 	OP_WIDEN1				= IC_WIDEN1,				/**< 'WIDEN1' node */
 	OP_WIDEN				= IC_WIDEN,					/**< 'WIDEN' node */
 	OP_ROWING				= IC_ROWING,				/**< 'ROWING' node */
