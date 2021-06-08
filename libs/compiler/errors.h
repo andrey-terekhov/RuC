@@ -18,8 +18,6 @@
 
 #include "uniio.h"
 
-#define MAX_STRING_LENGTH	128
-
 
 #ifdef __cplusplus
 extern "C" {

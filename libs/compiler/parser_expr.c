@@ -471,10 +471,10 @@ void parse_standard_function_call(parser *const prs)
 		else
 		{
 			operands_push(prs, VALUE, func == TK_ROBOT_RECEIVE_INT
-							? mode_integer
-							: func == TK_ROBOT_RECEIVE_FLOAT
-								? mode_float
-								: to_modetab(prs, mode_array, mode_character));
+											? mode_integer
+											: func == TK_ROBOT_RECEIVE_FLOAT
+												? mode_float
+												: to_modetab(prs, mode_array, mode_character));
 
 		}
 	}

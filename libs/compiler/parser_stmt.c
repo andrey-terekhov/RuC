@@ -17,7 +17,7 @@
 #include "parser.h"
 
 
-#define MAX_PRINTF_ARGS (size_t)20
+#define MAX_PRINTF_ARGS 20
 
 
 /** Check if current token is part of a declaration specifier */
@@ -576,7 +576,7 @@ size_t evaluate_args(parser *const prs, const size_t length, const char32_t *con
 			{
 				if (args == MAX_PRINTF_ARGS)
 				{
-					parser_error(prs, too_many_printf_args, MAX_PRINTF_ARGS);
+					parser_error(prs, too_many_printf_args, (size_t)MAX_PRINTF_ARGS);
 					return 0;
 				}
 

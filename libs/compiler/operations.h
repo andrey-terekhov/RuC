@@ -29,8 +29,6 @@ typedef enum OPERATION
 {
 	BEGIN_OP_FINAL			= 7000,
 
-	OP_AD_LOG_AND,										/**< 'ADLOGAND' node */
-	OP_AD_LOG_OR,										/**< 'ADLOGOR' node */
 	OP_NULL					= IC_NOP,					/**< Empty node */
 	OP_WIDEN1				= IC_WIDEN1,				/**< 'WIDEN1' node */
 	OP_WIDEN				= IC_WIDEN,					/**< 'WIDEN' node */
@@ -252,7 +250,9 @@ typedef enum OPERATION
 	OP_OR_ASSIGN_V			= IC_OR_ASSIGN_V,			/**< '|=V' node */
 	OP_OR_ASSIGN_AT_V		= IC_OR_ASSIGN_AT_V,		/**< '|=@V' node */
 
-	END_OP_FINAL			= MAX_INSTRUCTION_CODE,
+	OP_AD_LOG_AND			= MAX_INSTRUCTION_CODE,		/**< 'ADLOGAND' node */
+	OP_AD_LOG_OR,										/**< 'ADLOGOR' node */
+	END_OP_FINAL,
 
 	// Statement
 	OP_LABEL,				/**< Label statement node */
@@ -311,56 +311,56 @@ typedef enum OPERATION
 
 
 /**
- *	Convert token to corresponding binary operation type
+ *	Convert token to corresponding binary operation
  *
  *	@param	token	Token
  *
- *	@return	Corresponding operation type
+ *	@return	Binary operation
  */
 operation_t token_to_binary(const token_t token);
 
 /**
- *	Convert token to corresponding unary operation type
+ *	Convert token to corresponding unary operation
  *
  *	@param	token	Token
  *
- *	@return	Corresponding operation type
+ *	@return	Unary operation
  */
 operation_t token_to_unary(const token_t token);
 
 /**
- *	Convert token to corresponding function operation type
+ *	Convert token to corresponding function operation
  *
  *	@param	token	Token
  *
- *	@return	Corresponding operation type
+ *	@return	Function operation
  */
 operation_t token_to_function(const token_t token);
 
 /**
- *	Convert to corresponding address version operation
+ *	Convert to corresponding address version of operation
  *
  *	@param	operation	Operation
  *
- *	@return	Address version operation
+ *	@return	Address version of operation
  */
 operation_t operation_to_address_ver(const operation_t operation);
 
 /**
- *	Convert to corresponding void version operation
+ *	Convert to corresponding void version of operation
  *
  *	@param	operation	Operation
  *
- *	@return	Void version operation
+ *	@return	Void version of operation
  */
 operation_t operation_to_void_ver(const operation_t operation);
 
 /**
- *	Convert to corresponding float version operation
+ *	Convert to corresponding float version of operation
  *
  *	@param	operation	Operation
  *
- *	@return	Float version operation
+ *	@return	Float version of operation
  */
 operation_t operation_to_float_ver(const operation_t operation);
 
