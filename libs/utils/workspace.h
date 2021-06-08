@@ -45,7 +45,7 @@ typedef struct workspace
 	size_t flags_num;						/**< Number of flags */
 
 	char output[MAX_ARG_SIZE];				/**< Output file name */
-	int was_error;							/**< @c 0 if no errors */
+	bool was_error;							/**< @c 0 if no errors */
 } workspace;
 
 
@@ -152,7 +152,7 @@ EXPORTED int ws_set_output(workspace *const ws, const char *const path);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int ws_is_correct(const workspace *const ws);
+EXPORTED bool ws_is_correct(const workspace *const ws);
 
 
 /**
