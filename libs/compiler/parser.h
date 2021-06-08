@@ -95,7 +95,7 @@ typedef struct parser
 
 	bool was_return;					/**< Set, if was return in parsed function */
 	bool was_type_def;					/**< Set, if was type definition */
-	bool was_error;						/**< Error flag */
+	bool was_error;						/**< Set, if was error */
 } parser;
 
 
