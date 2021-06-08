@@ -16,7 +16,7 @@
 
 #pragma once
 
-#define OLD_TREE
+//#define OLD_TREE
 
 #ifndef OLD_TREE
 	#include "tree.h"
@@ -61,7 +61,7 @@ node node_get_root(vector *const tree);
  *
  *	@return	Child node
  */
-node node_get_child(node *const nd, const size_t index);
+node node_get_child(const node *const nd, const size_t index);
 
 
 /**
