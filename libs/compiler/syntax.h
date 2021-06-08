@@ -19,8 +19,12 @@
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "errors.h"
 #include "map.h"
 #include "vector.h"
+
+
+#define MAX_STRING_LENGTH 128
 
 
 #ifdef __cplusplus
@@ -28,6 +32,24 @@ extern "C" {
 #endif
 
 typedef struct node node;
+
+/** Modes */
+enum MODE
+{
+	mode_void			= -6,
+	mode_float			= -3,
+	mode_character,
+	mode_integer,
+	mode_undefined,
+
+	mode_msg_info 		= 2,
+	mode_void_pointer	= 15,
+	mode_function		= 1001,
+	mode_struct,
+	mode_array,
+	mode_pointer,
+};
+
 
 /** Global vars definition */
 typedef struct syntax
