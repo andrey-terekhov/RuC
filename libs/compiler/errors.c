@@ -307,7 +307,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		{
 			const size_t hash = va_arg(args, size_t);
 			const char *const buffer = va_arg(args, char *);
-			sprintf(msg, "в строке %zi переход на неописанную метку %s", hash, buffer);
+			sprintf(msg, "в строке %zu переход на неописанную метку %s", hash, buffer);
 		}
 		break;
 		case repeated_label: // test_exist
@@ -466,7 +466,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 		case too_many_printf_args: // test_exist
 		{
 			const size_t MAX_PRINTF_ARGS = va_arg(args, size_t);
-			sprintf(msg, "максимально в printf/печатьф можно выводить %zi значений", MAX_PRINTF_ARGS);
+			sprintf(msg, "максимально в printf/печатьф можно выводить %zu значений", MAX_PRINTF_ARGS);
 		}
 		break;
 
@@ -532,28 +532,28 @@ void get_error(const error_t num, char *const msg, va_list args)
 		{
 			const size_t i = va_arg(args, size_t);
 			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "в выражении встретился оператор вне блока, tree[%zi] = %" PRIitem, i, elem);
+			sprintf(msg, "в выражении встретился оператор вне блока, tree[%zu] = %" PRIitem, i, elem);
 		}
 		break;
 		case tree_expression_unknown:
 		{
 			const size_t i = va_arg(args, size_t);
 			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "неизвестное выражение, tree[%zi] = %" PRIitem, i, elem);
+			sprintf(msg, "неизвестное выражение, tree[%zu] = %" PRIitem, i, elem);
 		}
 		break;
 		case tree_expression_operator:
 		{
 			const size_t i = va_arg(args, size_t);
 			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "оператор в выражении, tree[%zi] = %" PRIitem, i, elem);
+			sprintf(msg, "оператор в выражении, tree[%zu] = %" PRIitem, i, elem);
 		}
 		break;
 		case tree_expression_no_texprend:
 		{
 			const size_t i = va_arg(args, size_t);
 			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "отсутствует TExprend, tree[%zi] = %" PRIitem, i, elem);
+			sprintf(msg, "отсутствует TExprend, tree[%zu] = %" PRIitem, i, elem);
 		}
 		break;
 		case tree_no_tend:
@@ -564,7 +564,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 			const item_t unexp = va_arg(args, item_t);
 			const size_t i = va_arg(args, size_t);
 			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "получен %" PRIitem ", ожидался tree[%zi] = %" PRIitem, unexp, i, elem);
+			sprintf(msg, "получен %" PRIitem ", ожидался tree[%zu] = %" PRIitem, unexp, i, elem);
 		}
 		break;
 
@@ -572,14 +572,14 @@ void get_error(const error_t num, char *const msg, va_list args)
 		{
 			const size_t i = va_arg(args, size_t);
 			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "невозможно добавить потомка к tree[%zi] = %" PRIitem, i, elem);
+			sprintf(msg, "невозможно добавить потомка к tree[%zu] = %" PRIitem, i, elem);
 		}
 		break;
 		case node_cannot_set_type:
 		{
 			const item_t type = va_arg(args, item_t);
 			const size_t i = va_arg(args, size_t);
-			sprintf(msg, "невозможно установить тип %" PRIitem " в tree[%zi]", type, i);
+			sprintf(msg, "невозможно установить тип %" PRIitem " в tree[%zu]", type, i);
 		}
 		break;
 		case node_cannot_add_arg:
@@ -587,7 +587,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 			const item_t arg = va_arg(args, item_t);
 			const size_t i = va_arg(args, size_t);
 			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "невозможно добавить аргумент %" PRIitem " для tree[%zi] = %" PRIitem, arg, i, elem);
+			sprintf(msg, "невозможно добавить аргумент %" PRIitem " для tree[%zu] = %" PRIitem, arg, i, elem);
 		}
 		break;
 		case node_unexpected:
@@ -620,14 +620,14 @@ void get_warning(const warning_t num, char *const msg, va_list args)
 		{
 			const size_t i = va_arg(args, size_t);
 			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "неизвестный оператор, tree[%zi] = %" PRIitem, i, elem);
+			sprintf(msg, "неизвестный оператор, tree[%zu] = %" PRIitem, i, elem);
 		}
 		break;
 		case node_argc:
 		{
 			const size_t i = va_arg(args, size_t);
 			const char *elem = va_arg(args, char *);
-			sprintf(msg, "несоответствие количества аргументов, tree[%zi] = %s", i, elem);
+			sprintf(msg, "несоответствие количества аргументов, tree[%zu] = %s", i, elem);
 		}
 		break;
 	}
