@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include "tokens.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include "instructions.h"
+#include "tokens.h"
 
 
 #ifdef __cplusplus
