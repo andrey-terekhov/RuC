@@ -475,9 +475,9 @@ void parse_return_statement(parser *const prs, node *const parent)
 /**	Parse t_create_direct statement [RuC] */
 void parse_create_direct_statement(parser *const prs, node *const parent)
 {
-	node nd_create = node_add_child(parent, OP_CREATE_DIRECT);
-	parse_statement_compound(prs, &nd_create, THREAD);
-	node_add_child(&nd_create, OP_EXIT_DIRECT);
+	node nd = node_add_child(parent, OP_CREATE_DIRECT);
+	parse_statement_compound(prs, &nd, THREAD);
+	node_add_child(&nd, OP_EXIT_DIRECT);
 }
 
 /**	Parse printid statement [RuC] */

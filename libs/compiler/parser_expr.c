@@ -810,14 +810,14 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	to_tree(prs, OP_CALL1);
 	node_add_arg(&prs->nd, expected_args);
 
-	node nd_call;
-	node_copy(&nd_call, &prs->nd);
+	node nd_call1;
+	node_copy(&nd_call1, &prs->nd);
 
 	if (!token_try_consume(prs, TK_R_PAREN))
 	{
 		do
 		{
-			node_copy(&prs->nd, &nd_call);
+			node_copy(&prs->nd, &nd_call1);
 			const item_t expected_arg_mode = mode_get(prs->sx, ref_arg_mode);
 
 			if (mode_is_function(prs->sx, expected_arg_mode))
@@ -881,7 +881,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
 	}
 
 	prs->flag_in_assignment = old_in_assignment;
-	node nd_call2 = node_add_child(&nd_call, OP_CALL2);
+	node nd_call2 = node_add_child(&nd_call1, OP_CALL2);
 	node_add_arg(&nd_call2, (item_t)function_id);
 	node_copy(&prs->nd, &nd_call2);
 	operands_push(prs, VALUE, mode_get(prs->sx, function_mode + 1));
@@ -1353,9 +1353,9 @@ void parse_conditional_expression(parser *const prs)
 			}
 
 			to_tree(prs, OP_CONDITIONAL);
-			node nd_condexpr;
-			node_copy(&nd_condexpr, &prs->nd);
-			const item_t expr_type = parse_condition(prs, &nd_condexpr); // then
+			node nd_conditional;
+			node_copy(&nd_conditional, &prs->nd);
+			const item_t expr_type = parse_condition(prs, &nd_conditional); // then
 
 			if (!global_type)
 			{
@@ -1379,7 +1379,7 @@ void parse_conditional_expression(parser *const prs)
 			}
 
 			token_expect_and_consume(prs, TK_COLON, no_colon_in_cond_expr);
-			node_copy(&prs->nd, &nd_condexpr);
+			node_copy(&prs->nd, &nd_conditional);
 			parse_unary_expression(prs);
 			parse_subexpression(prs); // logORexpr();	else or elif
 		}

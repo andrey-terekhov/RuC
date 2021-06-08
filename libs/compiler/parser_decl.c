@@ -347,12 +347,12 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
 	size_t actual_fields = 0;
 	size_t ref_next_field = (size_t)type + 3;
 
-	node struct_init = node_add_child(parent, OP_STRUCT_INIT);
-	node_add_arg(&struct_init, (item_t)expected_fields);
+	node nd_struct_init = node_add_child(parent, OP_STRUCT_INIT);
+	node_add_arg(&nd_struct_init, (item_t)expected_fields);
 
 	do
 	{
-		parse_initializer(prs, &struct_init, mode_get(prs->sx, ref_next_field));
+		parse_initializer(prs, &nd_struct_init, mode_get(prs->sx, ref_next_field));
 		ref_next_field += 2;
 		actual_fields++;
 
@@ -368,10 +368,10 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
 	} while (actual_fields != expected_fields && prs->token != TK_SEMICOLON);
 
 	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
-	node_add_child(&struct_init, OP_EXPR_END);
+	node_add_child(&nd_struct_init, OP_EXPR_END);
 
 	// Это для продолжения выражений, если инициализатор был вызван не для объявления
-	node_copy(&prs->nd, &struct_init);
+	node_copy(&prs->nd, &nd_struct_init);
 }
 
 /**
@@ -407,13 +407,13 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 
 	size_t list_length = 0;
 
-	node arr_init = node_add_child(parent, OP_ARRAY_INIT);
-	node_add_arg(&arr_init, 0);
+	node nd_arr_init = node_add_child(parent, OP_ARRAY_INIT);
+	node_add_arg(&nd_arr_init, 0);
 
 	do
 	{
 		list_length++;
-		parse_initializer(prs, &arr_init, mode_get(prs->sx, (size_t)type + 1));
+		parse_initializer(prs, &nd_arr_init, mode_get(prs->sx, (size_t)type + 1));
 
 		if (prs->token == TK_R_BRACE)
 		{
@@ -427,11 +427,11 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 	} while (prs->token != TK_SEMICOLON);
 
 	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
-	node_set_arg(&arr_init, 0, (item_t)list_length);
-	node_add_child(&arr_init, OP_EXPR_END);
+	node_set_arg(&nd_arr_init, 0, (item_t)list_length);
+	node_add_child(&nd_arr_init, OP_EXPR_END);
 
 	// Это для продолжения выражений, если инициализатор был вызван не для объявления
-	node_copy(&prs->nd, &arr_init);
+	node_copy(&prs->nd, &nd_arr_init);
 }
 
 /**
