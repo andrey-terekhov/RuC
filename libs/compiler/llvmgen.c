@@ -298,25 +298,25 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 
 	if (hash_get(&info->arrays, displ, IS_STATIC))
 	{
-		for (item_t i = dimentions - cur_dimention; i < dimentions; i++)
+		for (item_t i = 1 + dimentions - cur_dimention; i <= dimentions; i++)
 		{
-			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, 1 + (size_t)i));
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
 		}
 		uni_printf(info->io, "i32");
 
-		for (item_t i = dimentions - cur_dimention; i < dimentions; i++)
+		for (item_t i = 1 + dimentions - cur_dimention; i <= dimentions; i++)
 		{
 			uni_printf(info->io, "]");
 		}
 		uni_printf(info->io, ", ");
 
-		for (item_t i = dimentions - cur_dimention; i < dimentions; i++)
+		for (item_t i = 1 + dimentions - cur_dimention; i <= dimentions; i++)
 		{
-			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, 1 + (size_t)i));
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
 		}
 		uni_printf(info->io, "i32");
 
-		for (item_t i = dimentions - cur_dimention; i < dimentions; i++)
+		for (item_t i = 1 + dimentions - cur_dimention; i <= dimentions; i++)
 		{
 			uni_printf(info->io, "]");
 		}
@@ -330,16 +330,13 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 			uni_printf(info->io, "* %%.%" PRIitem ", i32 0", prev_slice);
 		}
 	}
+	else if (dimentions == cur_dimention)
+	{
+		uni_printf(info->io, "i32, i32* %%dynarr.%" PRIitem, displ);
+	}
 	else
 	{
-		if (dimentions == cur_dimention)
-		{
-			uni_printf(info->io, "i32, i32* %%dynarr.%" PRIitem, displ);
-		}
-		else
-		{
 			uni_printf(info->io, "i32, i32* %%.%" PRIitem, prev_slice);
-		}
 	}
 
 	uni_printf(info->io, ", i32 ");
