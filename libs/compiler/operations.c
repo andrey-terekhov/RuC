@@ -185,7 +185,7 @@ operation_t operation_to_float_ver(const operation_t operation)
 	}
 }
 
-int operation_is_assignment(const operation_t op)
+bool operation_is_assignment(const operation_t op)
 {
 	return (op >= OP_REM_ASSIGN && op <= OP_DIV_ASSIGN)
 		|| (op >= OP_REM_ASSIGN_V && op <= OP_DIV_ASSIGN_V)
