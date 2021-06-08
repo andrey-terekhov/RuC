@@ -205,52 +205,6 @@ void token_skip_until(parser *const prs, const uint8_t tokens)
 }
 
 
-int mode_is_function(syntax *const sx, const item_t mode)
-{
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_function;
-}
-
-int mode_is_array(syntax *const sx, const item_t mode)
-{
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_array;
-}
-
-int mode_is_string(syntax *const sx, const item_t mode)
-{
-	return mode_is_array(sx, mode) && mode_get(sx, (size_t)mode + 1) == mode_character;
-}
-
-int mode_is_pointer(syntax *const sx, const item_t mode)
-{
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_pointer;
-}
-
-int mode_is_struct(syntax *const sx, const item_t mode)
-{
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_struct;
-}
-
-int mode_is_float(const item_t mode)
-{
-	return mode == mode_float;
-}
-
-int mode_is_int(const item_t mode)
-{
-	return mode == mode_integer || mode == mode_character;
-}
-
-int mode_is_void(const item_t mode)
-{
-	return mode == mode_void;
-}
-
-int mode_is_undefined(const item_t mode)
-{
-	return mode == mode_undefined;
-}
-
-
 size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode)
 {
 	const size_t ret = ident_add(prs->sx, repr, type, mode, prs->func_def);

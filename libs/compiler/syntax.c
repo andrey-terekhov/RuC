@@ -475,6 +475,51 @@ item_t mode_get(const syntax *const sx, const size_t index)
 	return sx != NULL ? vector_get(&sx->modes, index) : ITEM_MAX;
 }
 
+int mode_is_function(syntax *const sx, const item_t mode)
+{
+	return mode > 0 && mode_get(sx, (size_t)mode) == mode_function;
+}
+
+int mode_is_array(syntax *const sx, const item_t mode)
+{
+	return mode > 0 && mode_get(sx, (size_t)mode) == mode_array;
+}
+
+int mode_is_string(syntax *const sx, const item_t mode)
+{
+	return mode_is_array(sx, mode) && mode_get(sx, (size_t)mode + 1) == mode_character;
+}
+
+int mode_is_pointer(syntax *const sx, const item_t mode)
+{
+	return mode > 0 && mode_get(sx, (size_t)mode) == mode_pointer;
+}
+
+int mode_is_struct(syntax *const sx, const item_t mode)
+{
+	return mode > 0 && mode_get(sx, (size_t)mode) == mode_struct;
+}
+
+int mode_is_float(const item_t mode)
+{
+	return mode == mode_float;
+}
+
+int mode_is_int(const item_t mode)
+{
+	return mode == mode_integer || mode == mode_character;
+}
+
+int mode_is_void(const item_t mode)
+{
+	return mode == mode_void;
+}
+
+int mode_is_undefined(const item_t mode)
+{
+	return mode == mode_undefined;
+}
+
 
 size_t repr_reserve(syntax *const sx, const char32_t *const spelling)
 {
