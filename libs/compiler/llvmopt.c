@@ -77,9 +77,9 @@ static inline node_info *stack_pop(information *const info)
 	return &info->stack[--info->stack_size];
 }
 
-static inline void stack_clear(information *const info, const int mode)
+static inline void stack_resize(information *const info, const int size)
 {
-	info->stack_size = mode;
+	info->stack_size = size;
 }
 
 
@@ -292,7 +292,7 @@ static int node_recursive(information *const info, node *const nd)
 		// Очищаем полностью стек, если родитель -- блок
 		if (node_get_type(nd) == TBegin)
 		{
-			stack_clear(info, 0);
+			stack_resize(info, 0);
 		}
 
 		switch (node_get_type(&child))
@@ -349,16 +349,16 @@ static int node_recursive(information *const info, node *const nd)
 						info->last_depth--;
 					}
 				}
-				// если вырезка не переставлена, то надо частично очистить стек и изменить глубину TSliceident
 				else if (info->last_depth <= 1)
 				{
-					node texprend_child = node_get_child(&child, 0);
-					if (node_get_type(&texprend_child) == TSlice)
+					// если вырезка не переставлена, то надо частично очистить стек и изменить глубину TSliceident
+					node TExprend_child = node_get_child(&child, 0);
+					if (node_get_type(&TExprend_child) == TSlice)
 					{
 						break;
 					}
 
-					stack_clear(info, info->slice_stack_size);
+					stack_resize(info, info->slice_stack_size);
 
 					node_info *slice_info = stack_pop(info);
 
