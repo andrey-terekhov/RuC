@@ -163,7 +163,7 @@ typedef enum TOKEN
 	TK_ROBOT_RECEIVE_STRING,		/**< 'receive_string_from_robot'	keyword */
 	END_TK_ROBOT,
 
-	END_TK_FUNC
+	END_TK_FUNC,
 } token_t;
 
 #ifdef __cplusplus
