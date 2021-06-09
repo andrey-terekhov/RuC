@@ -58,7 +58,7 @@ EXPORTED node node_get_child(node *const nd, const size_t index);
 /**
  *	Get parent of node
  *
- *	@param	nd			Parent node
+ *	@param	nd			Current node
  *
  *	@return	Parent node
  */
@@ -125,7 +125,7 @@ EXPORTED int node_set_next(node *const nd);
 /**
  *	Add child node
  *
- *	@param	nd			Current node
+ *	@param	nd			Parent node
  *	@param	type		Child node type
  *
  *	@return	Child node
