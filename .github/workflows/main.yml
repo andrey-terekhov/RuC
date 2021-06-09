@@ -11,9 +11,9 @@ jobs:
   Testing-on-MacOS:
     runs-on: macos-latest
     steps:
-      - uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '12.0.1'
+#       - uses: maxim-lobanov/setup-xcode@v1
+#         with:
+#           xcode-version: '12.0.1'
       - uses: actions/checkout@v1
       - name: Run test script
         run: ./scripts/test.sh
