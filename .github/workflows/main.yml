@@ -9,7 +9,7 @@ jobs:
         run: ./scripts/test.sh
         shell: bash
   Testing-on-MacOS:
-    runs-on: macos-11
+    runs-on: macos-latest
     steps:
 #       - uses: maxim-lobanov/setup-xcode@v1
 #         with:
