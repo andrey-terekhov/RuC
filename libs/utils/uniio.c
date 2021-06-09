@@ -35,7 +35,7 @@
 #define MAX_FORMAT_SIZE 128
 
 
-int is_specifier(const char ch)
+static inline int is_specifier(const char ch)
 {
 	return (ch >= '0' && ch <= '9')
 		|| ch == 'h' || ch == 'l'		// Sub-specifiers
@@ -57,7 +57,7 @@ int is_specifier(const char ch)
 		|| ch == 'n';					// Count
 }
 
-int scan_file_arg(universal_io *const io, const char *const format, const size_t size, void *arg)
+static int scan_file_arg(universal_io *const io, const char *const format, const size_t size, void *arg)
 {
 	char buffer[MAX_FORMAT_SIZE];
 	strncpy(buffer, format, size);
@@ -70,7 +70,7 @@ int scan_file_arg(universal_io *const io, const char *const format, const size_t
 	return number != 0 ? ret : 0;
 }
 
-int scan_buffer_arg(universal_io *const io, const char *const format, const size_t size, void *arg)
+static int scan_buffer_arg(universal_io *const io, const char *const format, const size_t size, void *arg)
 {
 	char buffer[MAX_FORMAT_SIZE];
 	strncpy(buffer, format, size);
@@ -83,7 +83,7 @@ int scan_buffer_arg(universal_io *const io, const char *const format, const size
 	return io->in_position < io->in_size || number != 0 ? ret : 0;
 }
 
-int in_func_position(universal_io *const io, const char *const format, va_list args
+static int in_func_position(universal_io *const io, const char *const format, va_list args
 	, int (*scan_arg)(universal_io *const, const char *const, const size_t, void *))
 {
 	const size_t position = io->in_position;
@@ -137,28 +137,28 @@ int in_func_position(universal_io *const io, const char *const format, va_list a
 }
 
 
-int in_func_file(universal_io *const io, const char *const format, va_list args)
+static inline int in_func_file(universal_io *const io, const char *const format, va_list args)
 {
 	return in_func_position(io, format, args, &scan_file_arg);
 }
 
-int in_func_buffer(universal_io *const io, const char *const format, va_list args)
+static inline int in_func_buffer(universal_io *const io, const char *const format, va_list args)
 {
 	return in_func_position(io, format, args, &scan_buffer_arg);
 }
 
-int in_func_user(universal_io *const io, const char *const format, va_list args)
+static inline int in_func_user(universal_io *const io, const char *const format, va_list args)
 {
 	return io->in_user_func(format, args);
 }
 
 
-int out_func_file(universal_io *const io, const char *const format, va_list args)
+static inline int out_func_file(universal_io *const io, const char *const format, va_list args)
 {
 	return vfprintf(io->out_file, format, args);
 }
 
-int out_func_buffer(universal_io *const io, const char *const format, va_list args)
+static int out_func_buffer(universal_io *const io, const char *const format, va_list args)
 {
 	va_list local;
 	va_copy(local, args);
@@ -184,13 +184,13 @@ int out_func_buffer(universal_io *const io, const char *const format, va_list ar
 	return out_func_buffer(io, format, args);
 }
 
-int out_func_user(universal_io *const io, const char *const format, va_list args)
+static inline int out_func_user(universal_io *const io, const char *const format, va_list args)
 {
 	return io->out_user_func(format, args);
 }
 
 
-size_t io_get_path(FILE *const file, char *const buffer)
+static size_t io_get_path(FILE *const file, char *const buffer)
 {
 #ifdef _MSC_VER
 	GetFinalPathNameByHandleA((HANDLE)_get_osfhandle(_fileno(file)), buffer, MAX_PATH, FILE_NAME_NORMALIZED);

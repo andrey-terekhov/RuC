@@ -48,9 +48,9 @@ const char *const ERROR_LOGGER_ARG_NULL = "NULL указатель на стро
 const char *const ERROR_LOGGER_ARG_MULTILINE  = "многострочный входной параметр";
 
 
-void default_error_log(const char *const tag, const char *const msg);
-void default_warning_log(const char *const tag, const char *const msg);
-void default_note_log(const char *const tag, const char *const msg);
+static inline void default_error_log(const char *const tag, const char *const msg);
+static inline void default_warning_log(const char *const tag, const char *const msg);
+static inline void default_note_log(const char *const tag, const char *const msg);
 
 
 logger current_error_log = &default_error_log;
@@ -58,7 +58,7 @@ logger current_warning_log = &default_warning_log;
 logger current_note_log = &default_note_log;
 
 
-void set_color(const uint8_t color)
+static void set_color(const uint8_t color)
 {
 #if defined(NDEBUG) || !defined(__APPLE__)
 	#ifdef _MSC_VER
@@ -71,7 +71,7 @@ void set_color(const uint8_t color)
 #endif
 }
 
-void print_msg(const uint8_t color, const char *const msg)
+static void print_msg(const uint8_t color, const char *const msg)
 {
 	set_color(COLOR_DEFAULT);
 
@@ -140,7 +140,7 @@ void print_msg(const uint8_t color, const char *const msg)
 }
 
 
-void default_log(const char *const tag, const char *const msg, const uint8_t color, const char *const tag_log)
+static void default_log(const char *const tag, const char *const msg, const uint8_t color, const char *const tag_log)
 {
 	set_color(COLOR_TAG);
 	fprintf(stderr, "%s: ", tag);
@@ -162,23 +162,23 @@ void default_log(const char *const tag, const char *const msg, const uint8_t col
 #endif
 }
 
-void default_error_log(const char *const tag, const char *const msg)
+static inline void default_error_log(const char *const tag, const char *const msg)
 {
 	default_log(tag, msg, COLOR_ERROR, TAG_ERROR);
 }
 
-void default_warning_log(const char *const tag, const char *const msg)
+static inline void default_warning_log(const char *const tag, const char *const msg)
 {
 	default_log(tag, msg, COLOR_WARNING, TAG_WARNING);
 }
 
-void default_note_log(const char *const tag, const char *const msg)
+static inline void default_note_log(const char *const tag, const char *const msg)
 {
 	default_log(tag, msg, COLOR_NOTE, TAG_NOTE);
 }
 
 
-int check_tag_msg(const char *const tag, const char *const msg)
+static int check_tag_msg(const char *const tag, const char *const msg)
 {
 	if (tag == NULL || msg == NULL)
 	{
@@ -196,7 +196,7 @@ int check_tag_msg(const char *const tag, const char *const msg)
 }
 
 
-size_t literal(const char *const line, const size_t symbol)
+static size_t literal(const char *const line, const size_t symbol)
 {
 	size_t i = utf8_to_first_byte(line, symbol);
 	size_t j = i;
@@ -218,7 +218,7 @@ size_t literal(const char *const line, const size_t symbol)
 }
 
 
-size_t length(const char *const line, const size_t size, const size_t symbol)
+static size_t length(const char *const line, const size_t size, const size_t symbol)
 {
 	size_t i = symbol;
 	size_t j = i;
@@ -240,7 +240,7 @@ size_t length(const char *const line, const size_t size, const size_t symbol)
 	return symbol >= size ? 0 : j == symbol ? 1 : j - symbol;
 }
 
-void splice(char *const buffer, const char *const msg, const char *const line, const size_t symbol)
+static void splice(char *const buffer, const char *const msg, const char *const line, const size_t symbol)
 {
 	size_t cur = sprintf(buffer, "%s\n", msg);
 

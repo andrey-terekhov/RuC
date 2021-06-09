@@ -25,7 +25,7 @@ const char *const PREFIX = "// #";
 const char SEPARATOR = ' ';
 
 
-void cmt_parse(comment *const cmt)
+static void cmt_parse(comment *const cmt)
 {
 	size_t i = 0;
 	while (cmt->path[i] != '\0' && cmt->path[i] != '\n' && cmt->path[i] != SEPARATOR)
@@ -63,7 +63,7 @@ void cmt_parse(comment *const cmt)
 	}
 }
 
-void cmt_reverse(comment *const cmt, const char *const code, const size_t position)
+static void cmt_reverse(comment *const cmt, const char *const code, const size_t position)
 {
 	const size_t size = strlen(PREFIX);
 
