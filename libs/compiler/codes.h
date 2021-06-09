@@ -16,15 +16,48 @@
 
 #pragma once
 
-#include "context.h"
+#include "syntax.h"
+#include "vector.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void tablesandcode(compiler_context *context);
-void tablesandtree(compiler_context *context);
+/**
+ *	Output new tree
+ *
+ *	@param	path			File path
+ *	@param	tree			Tree table
+ */
+void tree_print(const char *const path, vector *const tree);
+
+
+/**
+ *	Output tables and tree
+ *
+ *	@param	path			File path
+ *	@param	identifiers		Identifiers table
+ *	@param	modes			Modes table
+ *	@param	tree			Tree table
+ */
+void tables_and_tree(const char *const path
+	, const vector *const identifiers
+	, const vector *const modes
+	, const vector *const tree);
+
+/**
+ *	Output tables and codes
+ *
+ *	@param	path			File path
+ *	@param	functions		Functions table
+ *	@param	processes		Init processes table
+ *	@param	memory			Memory table
+ */
+void tables_and_codes(const char *const path
+	, const vector *const functions
+	, const vector *const processes
+	, const vector *const memory);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -1,26 +1,42 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.13.5)
 
 project(ruc)
 
-
-option(ANALYSIS_ENABLED "Enable static analysis of input files" OFF)
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(TEST_INPUTS_DIR ${PROJECT_SOURCE_DIR}/tests)
 
 # Put all libraries to one folder
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-if(MSVC)
-	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+# Set RPATH for searching dynamic libraries in the same folder
+set(CMAKE_INSTALL_RPATH $ORIGIN @loader_path)
+set(CMAKE_SKIP_BUILD_RPATH TRUE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+
+if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+	# Starting in Visual Studio 2019 version 16.8, you may specify /std:c11
+	add_compile_options(/W4 /WX /wd4204 /wd5105 /utf-8
+						"$<$<VERSION_GREATER_EQUAL:MSVC_VERSION,1928>:/std:c11>"
+						"$<$<NOT:$<CONFIG:Debug>>:/O2>"
+						"$<$<CONFIG:Debug>:/Od>")
+
+	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
-	add_compile_options(-Werror=return-type -g)
+	# Add POSIX flag to declare ‘fileno’ function
+	# Enable -s flag for Release build to remove code info from exec
+	add_compile_options(-Werror=return-type -Wall -Wextra -Wno-implicit-fallthrough -std=c11
+						"$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:-posix>"
+						"$<$<NOT:$<OR:$<CXX_COMPILER_ID:AppleClang,Clang>,$<CONFIG:Debug>>>:-s>"
+						"$<$<NOT:$<CONFIG:Debug>>:-O2>"
+						"$<$<CONFIG:Debug>:-g>")
+
+	# Set _POSIX_C_SOURCE to declare ‘readlink’ function
+	add_compile_definitions("$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:_POSIX_C_SOURCE=200112L>")
 endif()
 
-if(ANALYSIS_ENABLED)
-	include(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/aspsimple.cmake)
-endif()
+# Disable asserts for Release build
+add_compile_definitions("$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
 
 
 # Add libraries
@@ -30,16 +46,20 @@ add_subdirectory(libs)
 add_subdirectory(src)
 
 
-enable_testing()
-set(TEST_TIMEOUT 1)
-file(GLOB TEST_INPUTS "${TEST_INPUTS_DIR}/*.c"
-						"${TEST_INPUTS_DIR}/*/*.c"
-						"${TEST_INPUTS_DIR}/*/*/*.c"
-						"${TEST_INPUTS_DIR}/*/*/*/*.c")
+function(get_all_targets _targets _dir)
+	get_property(_subdirs DIRECTORY ${_dir} PROPERTY SUBDIRECTORIES)
 
-foreach(TEST_INPUT ${TEST_INPUTS})
-	add_test(NAME ${TEST_INPUT}
-			 COMMAND "./ruc" ${TEST_INPUT}
-			 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
-	set_tests_properties(${TEST_INPUT} PROPERTIES TIMEOUT ${TEST_TIMEOUT})
-endforeach(TEST_INPUT)
+	foreach(_subdir IN LISTS _subdirs)
+		get_all_targets(${_targets} ${_subdir})
+	endforeach()
+
+	get_property(_sub_targets DIRECTORY ${_dir} PROPERTY BUILDSYSTEM_TARGETS)
+	set(${_targets} ${${_targets}} ${_sub_targets} PARENT_SCOPE)
+endfunction()
+
+
+# Set install parameters
+get_all_targets(targets .)
+install(TARGETS ${targets}
+		RUNTIME DESTINATION ${PROJECT_NAME}
+		LIBRARY DESTINATION ${PROJECT_NAME})

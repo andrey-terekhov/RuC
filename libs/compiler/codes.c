@@ -15,1076 +15,1487 @@
  */
 
 #include "codes.h"
-#include "global.h"
-#include <stdio.h>
 #include <string.h>
+#include "defs.h"
+#include "errors.h"
+#include "tree.h"
+#include "uniio.h"
+#include "uniprinter.h"
 
 
-void tablesandtree(compiler_context *context)
+#define MAX_ELEM_SIZE	32
+#define INDENT			"  "
+
+
+size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 {
-	int i;
-	int j;
-	int n;
-	double d;
-	/*int k = context->before_source_p;
-
-	printer_printf(&context->output_options, "\n%s\n", "source");
-
-	while (j < k)
+	if (buffer == NULL)
 	{
-		printer_printf(&context->output_options, "line %i) ", i);
-		while (j < k && context->before_source[j] != '\n')
-		{
-			printer_printchar(&context->output_options, context->before_source[j]);
-			j++;
-		}
-		i++;
+		return 0;
 	}
-	/*for (i = 1; i < context->line; i++)
+
+	size_t argc = 0;
+	int was_switch = 0;
+
+	switch (elem)
 	{
-		printer_printf(&context->output_options, "line %i) ", i);
-		for (j = context->lines[i]; j < context->lines[i + 1]; j++)
+		case TFuncdef:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TFuncdef");
+					break;
+				case 1:
+					sprintf(buffer, "funcn");
+					break;
+				case 2:
+					sprintf(buffer, "maxdispl");
+					break;
+			}
+			break;
+		case TDeclarr:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TDeclarr");
+					break;
+				case 1:
+					sprintf(buffer, "N");
+					break;
+			}
+			break;
+		case TDeclid:
+			argc = 7;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TDeclid");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "eltype");
+					break;
+				case 3:
+					sprintf(buffer, "N");
+					break;
+				case 4:
+					sprintf(buffer, "all");
+					break;
+				case 5:
+					sprintf(buffer, "iniproc");
+					break;
+				case 6:
+					sprintf(buffer, "usual");
+					break;
+				case 7:
+					sprintf(buffer, "instuct");
+					break;
+			}
+			break;
+		case TString:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TString");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case TStringd:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TStringd");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case TCondexpr:
+			sprintf(buffer, "TCondexpr");
+			break;
+		case TBegin:
+			sprintf(buffer, "TBegin");
+			break;
+		case TEnd:
+			sprintf(buffer, "TEnd");
+			break;
+		case TBeginit:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TBeginit");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case TStructinit:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TStructinit");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case TIf:
+			argc = 1;
+			sprintf(buffer, "TIf");
+			break;
+		case TWhile:
+			sprintf(buffer, "TWhile");
+			break;
+		case TDo:
+			sprintf(buffer, "TDo");
+			break;
+		case TFor:
+			argc = 4;
+			sprintf(buffer, "TFor");
+			break;
+		case TSwitch:
+			sprintf(buffer, "TSwitch");
+			break;
+		case TCase:
+			sprintf(buffer, "TCase");
+			break;
+		case TDefault:
+			sprintf(buffer, "TDefault");
+			break;
+		case TBreak:
+			sprintf(buffer, "TBreak");
+			break;
+		case TContinue:
+			sprintf(buffer, "TContinue");
+			break;
+		case TReturnvoid:
+			sprintf(buffer, "TReturn");
+			break;
+		case TReturnval:
+			argc = 1;
+			sprintf(buffer, "TReturnval");
+			break;
+		case TGoto:
+			argc = 1;
+			sprintf(buffer, "TGoto");
+			break;
+		case TIdent:
+			argc = 1;
+			sprintf(buffer, "TIdent");
+			break;
+		case TIdenttoval:
+			argc = 1;
+			sprintf(buffer, "TIdenttoval");
+			break;
+		case TIdenttovald:
+			argc = 1;
+			sprintf(buffer, "TIdenttovald");
+			break;
+		case TFunidtoval:
+			argc = 1;
+			sprintf(buffer, "TFunidtoval");
+			break;
+		case TIdenttoaddr:
+			argc = 1;
+			sprintf(buffer, "TIdenttoaddr");
+			break;
+		case TAddrtoval:
+			sprintf(buffer, "TAddrtoval");
+			break;
+		case TAddrtovald:
+			sprintf(buffer, "TAddrtovald");
+			break;
+		case TExprend:
+			sprintf(buffer, "TExprend");
+			break;
+		case TConst:
+			argc = 1;
+			sprintf(buffer, "TConst");
+			break;
+		case TConstd:
+			argc = 2;
+			sprintf(buffer, "TConstd");
+		break;
+		case TSliceident:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TSliceident");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "type");
+					break;
+			}
+			break;
+		case TSlice:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TSlice");
+					break;
+				case 1:
+					sprintf(buffer, "elem_type");
+					break;
+			}
+			break;
+		case TSelect:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TSelect");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+			}
+			break;
+		case NOP:
+			sprintf(buffer, "NOP");
+			break;
+		case ADLOGAND:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "ADLOGAND");
+					break;
+				case 1:
+					sprintf(buffer, "addr");
+					break;
+			}
+			break;
+		case ADLOGOR:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "ADLOGOR");
+					break;
+				case 1:
+					sprintf(buffer, "addr");
+					break;
+			}
+			break;
+		case COPY00:
+			argc = 3;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY00");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "displright");
+					break;
+				case 3:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY01:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY01");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY10:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY10");
+					break;
+				case 1:
+					sprintf(buffer, "displright");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY11:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY11");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY0ST:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY0ST");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY1ST:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY1ST");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY0STASS:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY0STASS");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPY1STASS:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY1STASS");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case COPYST:
+			argc = 3;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPYST");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+				case 3:
+					sprintf(buffer, "length1");
+					break;
+			}
+			break;
+
+		case TCall1:
+			argc = 1;
+			sprintf(buffer, "TCall1");
+			break;
+		case TCall2:
+			argc = 1;
+			sprintf(buffer, "TCall2");
+			break;
+		case TLabel:
+			argc = 1;
+			sprintf(buffer, "TLabel");
+			break;
+		case TStructbeg:
+			argc = 1;
+			sprintf(buffer, "TStructbeg");
+			break;
+		case TStructend:
+			argc = 1;
+			sprintf(buffer, "TStructend");
+			break;
+		case TPrint:
+			argc = 1;
+			sprintf(buffer, "TPrint");
+			break;
+		case TPrintid:
+			argc = 1;
+			sprintf(buffer, "TPrintid");
+			break;
+		case TPrintf:
+			argc = 1;
+			sprintf(buffer, "TPrintf");
+			break;
+		case TGetid:
+			argc = 1;
+			sprintf(buffer, "TGetid");
+			break;
+		case SETMOTORC:
+			sprintf(buffer, "Setmotor");
+			break;
+		case CREATEC:
+			sprintf(buffer, "TCREATE");
+			break;
+		case CREATEDIRECTC:
+			sprintf(buffer, "TCREATEDIRECT");
+			break;
+		case EXITC:
+			sprintf(buffer, "TEXIT");
+			break;
+		case EXITDIRECTC:
+			sprintf(buffer, "TEXITDIRECT");
+			break;
+		case MSGSENDC:
+			sprintf(buffer, "TMSGSEND");
+			break;
+		case MSGRECEIVEC:
+			sprintf(buffer, "TMSGRECEIVE");
+			break;
+		case JOINC:
+			sprintf(buffer, "TJOIN");
+			break;
+		case SLEEPC:
+			sprintf(buffer, "TSLEEP");
+			break;
+		case SEMCREATEC:
+			sprintf(buffer, "TSEMCREATE");
+			break;
+		case SEMWAITC:
+			sprintf(buffer, "TSEMWAIT");
+			break;
+		case SEMPOSTC:
+			sprintf(buffer, "TSEMPOST");
+			break;
+		case INITC:
+			sprintf(buffer, "INITC");
+			break;
+		case DESTROYC:
+			sprintf(buffer, "DESTROYC");
+			break;
+		case GETNUMC:
+			sprintf(buffer, "GETNUMC");
+			break;
+
+		case PRINT:
+			argc = 1;
+			sprintf(buffer, "PRINT");
+			break;
+		case PRINTID:
+			argc = 1;
+			sprintf(buffer, "PRINTID");
+			break;
+		case PRINTF:
+			argc = 1;
+			sprintf(buffer, "PRINTF");
+			break;
+		case GETID:
+			argc = 1;
+			sprintf(buffer, "GETID");
+			break;
+		case GETDIGSENSORC:
+			sprintf(buffer, "GETDIGSENSOR");
+			break;
+		case GETANSENSORC:
+			sprintf(buffer, "GETANSENSOR");
+			break;
+		case VOLTAGEC:
+			sprintf(buffer, "VOLTAGE");
+			break;
+		case TINIT:
+			sprintf(buffer, "TINIT");
+			break;
+		case TDESTROY:
+			sprintf(buffer, "TDESTROY");
+			break;
+
+		case ABSC:
+			sprintf(buffer, "ABS");
+			break;
+		case ABSIC:
+			sprintf(buffer, "ABSI");
+			break;
+		case SQRTC:
+			sprintf(buffer, "SQRT");
+			break;
+		case EXPC:
+			sprintf(buffer, "EXP");
+			break;
+		case SINC:
+			sprintf(buffer, "SIN");
+			break;
+		case COSC:
+			sprintf(buffer, "COS");
+			break;
+		case LOGC:
+			sprintf(buffer, "LOG");
+			break;
+		case LOG10C:
+			sprintf(buffer, "LOG10");
+			break;
+		case ASINC:
+			sprintf(buffer, "ASIN");
+			break;
+		case RANDC:
+			sprintf(buffer, "RAND");
+			break;
+		case ROUNDC:
+			sprintf(buffer, "ROUND");
+			break;
+
+		case STRCPYC:
+			sprintf(buffer, "STRCPY");
+			break;
+		case STRNCPYC:
+			sprintf(buffer, "STRNCPY");
+			break;
+		case STRCATC:
+			sprintf(buffer, "STRCAT");
+			break;
+		case STRNCATC:
+			sprintf(buffer, "STRNCAT");
+			break;
+		case STRCMPC:
+			sprintf(buffer, "STRCMP");
+			break;
+		case STRNCMPC:
+			sprintf(buffer, "STRNCMP");
+			break;
+		case STRSTRC:
+			sprintf(buffer, "STRSTR");
+			break;
+		case STRLENC:
+			sprintf(buffer, "STRLENC");
+			break;
+
+		case BEGINIT:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "BEGINIT");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case STRUCTWITHARR:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "STRUCTWITHARR");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "iniproc");
+					break;
+			}
+			break;
+		case DEFARR:
+			argc = 7;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "DEFARR");
+					break;
+				case 1:
+					sprintf(buffer, "N");
+					break;
+				case 2:
+					sprintf(buffer, "elem_len");
+					break;
+				case 3:
+					sprintf(buffer, "displ");
+					break;
+				case 4:
+					sprintf(buffer, "iniproc");
+					break;
+				case 5:
+					sprintf(buffer, "usual");
+					break;
+				case 6:
+					sprintf(buffer, "all");
+					break;
+				case 7:
+					sprintf(buffer, "instruct");
+					break;
+			}
+			break;
+		case ARRINIT:
+			argc = 4;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "ARRINIT");
+					break;
+				case 1:
+					sprintf(buffer, "N");
+					break;
+				case 2:
+					sprintf(buffer, "elem_len");
+					break;
+				case 3:
+					sprintf(buffer, "displ");
+					break;
+				case 4:
+					sprintf(buffer, "usual");
+					break;
+			}
+			break;
+		/*
+		case STRUCTINIT:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "STRUCTINIT");
+					break;
+				case 1:
+					sprintf(buffer, "N");
+					break;
+			}
+			break;
+		*/
+		case LI:
+			argc = 1;
+			sprintf(buffer, "LI");
+			break;
+		case LID:
+			argc = 2;
+			sprintf(buffer, "LID");
+			break;
+		case LOAD:
+			argc = 1;
+			sprintf(buffer, "LOAD");
+			break;
+		case LOADD:
+			argc = 1;
+			sprintf(buffer, "LOADD");
+			break;
+		case LAT:
+			sprintf(buffer, "L@");
+			break;
+		case LATD:
+			sprintf(buffer, "L@f");
+			break;
+		case LA:
+			argc = 1;
+			sprintf(buffer, "LA");
+			break;
+
+		case LOGOR:
+			argc = 1;
+			sprintf(buffer, "||");
+			break;
+		case LOGAND:
+			argc = 1;
+			sprintf(buffer, "&&");
+			break;
+		case ORASS:
+			argc = 1;
+			sprintf(buffer, "|=");
+			break;
+		case ORASSAT:
+			sprintf(buffer, "|=@");
+			break;
+		case ORASSV:
+			argc = 1;
+			sprintf(buffer, "|=V");
+			break;
+		case ORASSATV:
+			sprintf(buffer, "|=@V");
+			break;
+		case LOR:
+			sprintf(buffer, "|");
+			break;
+		case EXORASS:
+			argc = 1;
+			sprintf(buffer, "^=");
+			break;
+		case EXORASSAT:
+			sprintf(buffer, "^=@");
+			break;
+		case EXORASSV:
+			argc = 1;
+			sprintf(buffer, "^=V");
+			break;
+		case EXORASSATV:
+			sprintf(buffer, "^=@V");
+			break;
+		case LEXOR:
+			sprintf(buffer, "^");
+			break;
+		case ANDASS:
+			argc = 1;
+			sprintf(buffer, "&=");
+			break;
+		case ANDASSAT:
+			sprintf(buffer, "&=@");
+			break;
+		case ANDASSV:
+			argc = 1;
+			sprintf(buffer, "&=V");
+			break;
+		case ANDASSATV:
+			sprintf(buffer, "&=@V");
+			break;
+		case LAND:
+			sprintf(buffer, "&");
+			break;
+
+		case EQEQ:
+			sprintf(buffer, "==");
+			break;
+		case NOTEQ:
+			sprintf(buffer, "!=");
+			break;
+		case LLT:
+			sprintf(buffer, "<");
+			break;
+		case LGT:
+			sprintf(buffer, ">");
+			break;
+		case LLE:
+			sprintf(buffer, "<=");
+			break;
+		case LGE:
+			sprintf(buffer, ">=");
+			break;
+		case EQEQR:
+			sprintf(buffer, "==f");
+			break;
+		case NOTEQR:
+			sprintf(buffer, "!=f");
+			break;
+		case LLTR:
+			sprintf(buffer, "<f");
+			break;
+		case LGTR:
+			sprintf(buffer, ">f");
+			break;
+		case LLER:
+			sprintf(buffer, "<=f");
+			break;
+		case LGER:
+			sprintf(buffer, ">=f");
+			break;
+
+		case SHRASS:
+			argc = 1;
+			sprintf(buffer, ">>=");
+			break;
+		case SHRASSAT:
+			sprintf(buffer, ">>=@");
+			break;
+		case SHRASSV:
+			argc = 1;
+			sprintf(buffer, ">>=V");
+			break;
+		case SHRASSATV:
+			sprintf(buffer, ">>=@V");
+			break;
+		case LSHR:
+			sprintf(buffer, ">>");
+			break;
+		case SHLASS:
+			argc = 1;
+			sprintf(buffer, "<<=");
+			break;
+		case SHLASSAT:
+			sprintf(buffer, "<<=@");
+			break;
+		case SHLASSV:
+			argc = 1;
+			sprintf(buffer, "<<=V");
+			break;
+		case SHLASSATV:
+			sprintf(buffer, "<<=@V");
+			break;
+		case LSHL:
+			sprintf(buffer, "<<");
+			break;
+
+		case ASS:
+			argc = 1;
+			sprintf(buffer, "=");
+			break;
+		case ASSAT:
+			sprintf(buffer, "=@");
+			break;
+		case ASSV:
+			argc = 1;
+			sprintf(buffer, "=V");
+			break;
+		case ASSATV:
+			sprintf(buffer, "=@V");
+			break;
+
+		case PLUSASS:
+			argc = 1;
+			sprintf(buffer, "+=");
+			break;
+		case PLUSASSAT:
+			sprintf(buffer, "+=@");
+			break;
+		case PLUSASSV:
+			argc = 1;
+			sprintf(buffer, "+=V");
+			break;
+		case PLUSASSATV:
+			sprintf(buffer, "+=@V");
+			break;
+		case LPLUS:
+			sprintf(buffer, "+");
+			break;
+
+		case MINUSASS:
+			argc = 1;
+			sprintf(buffer, "-=");
+			break;
+		case MINUSASSAT:
+			sprintf(buffer, "-=@");
+			break;
+		case MINUSASSV:
+			argc = 1;
+			sprintf(buffer, "-=V");
+			break;
+		case MINUSASSATV:
+			sprintf(buffer, "-=@V");
+			break;
+		case LMINUS:
+			sprintf(buffer, "-");
+			break;
+
+		case MULTASS:
+			argc = 1;
+			sprintf(buffer, "*=");
+			break;
+		case MULTASSAT:
+			sprintf(buffer, "*=@");
+			break;
+		case MULTASSV:
+			argc = 1;
+			sprintf(buffer, "*=V");
+			break;
+		case MULTASSATV:
+			sprintf(buffer, "*=@V");
+			break;
+		case LMULT:
+			sprintf(buffer, "*");
+			break;
+
+		case DIVASS:
+			argc = 1;
+			sprintf(buffer, "/=");
+			break;
+		case DIVASSAT:
+			sprintf(buffer, "/=@");
+			break;
+		case DIVASSV:
+			argc = 1;
+			sprintf(buffer, "/=V");
+			break;
+		case DIVASSATV:
+			sprintf(buffer, "/=@V");
+			break;
+		case LDIV:
+			sprintf(buffer, "/");
+			break;
+
+		case ASSR:
+			argc = 1;
+			sprintf(buffer, "=f");
+			break;
+		case ASSRV:
+			argc = 1;
+			sprintf(buffer, "=fV");
+			break;
+		case ASSATR:
+			sprintf(buffer, "=@f");
+			break;
+		case ASSATRV:
+			sprintf(buffer, "=@fV");
+			break;
+
+		case PLUSASSR:
+			argc = 1;
+			sprintf(buffer, "+=f");
+			break;
+		case PLUSASSATR:
+			sprintf(buffer, "+=@f");
+			break;
+		case PLUSASSRV:
+			argc = 1;
+			sprintf(buffer, "+=fV");
+			break;
+		case PLUSASSATRV:
+			sprintf(buffer, "+=@fV");
+			break;
+		case LPLUSR:
+			sprintf(buffer, "+f");
+			break;
+		case MINUSASSR:
+			argc = 1;
+			sprintf(buffer, "-=f");
+			break;
+		case MINUSASSATR:
+			sprintf(buffer, "-=@f");
+			break;
+		case MINUSASSRV:
+			argc = 1;
+			sprintf(buffer, "-=fV");
+			break;
+		case MINUSASSATRV:
+			sprintf(buffer, "-=@fV");
+			break;
+		case LMINUSR:
+			sprintf(buffer, "-f");
+			break;
+		case MULTASSR:
+			argc = 1;
+			sprintf(buffer, "*=f");
+			break;
+		case MULTASSATR:
+			sprintf(buffer, "*=@f");
+			break;
+		case MULTASSRV:
+			argc = 1;
+			sprintf(buffer, "*=fV");
+			break;
+		case MULTASSATRV:
+			sprintf(buffer, "*=@fV");
+			break;
+		case LMULTR:
+			sprintf(buffer, "*f");
+			break;
+		case DIVASSR:
+			argc = 1;
+			sprintf(buffer, "/=f");
+			break;
+		case DIVASSATR:
+			sprintf(buffer, "/=@f");
+			break;
+		case DIVASSRV:
+			argc = 1;
+			sprintf(buffer, "/=fV");
+			break;
+		case DIVASSATRV:
+			sprintf(buffer, "/=@fV");
+			break;
+		case LDIVR:
+			sprintf(buffer, "/f");
+			break;
+
+		case REMASS:
+			argc = 1;
+			sprintf(buffer, "%%=");
+			break;
+		case REMASSAT:
+			sprintf(buffer, "%%=@");
+			break;
+		case REMASSV:
+			argc = 1;
+			sprintf(buffer, "%%=V");
+			break;
+		case REMASSATV:
+			sprintf(buffer, "%%=@V");
+			break;
+		case LREM:
+			sprintf(buffer, "%%");
+			break;
+
+		case CALL1:
+			sprintf(buffer, "CALL1");
+			break;
+		case CALL2:
+			argc = 1;
+			sprintf(buffer, "CALL2");
+			break;
+		case STOP:
+			sprintf(buffer, "STOP");
+			break;
+		case RETURNVAL:
+			argc = 1;
+			sprintf(buffer, "RETURNVAL");
+			break;
+		case RETURNVOID:
+			sprintf(buffer, "RETURNVOID");
+			break;
+		case B:
+			argc = 1;
+			sprintf(buffer, "B");
+			break;
+		case BE0:
+			argc = 1;
+			sprintf(buffer, "BE0");
+			break;
+		case BNE0:
+			argc = 1;
+			sprintf(buffer, "BNE0");
+			break;
+		case SLICE:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "SLICE");
+					break;
+				case 1:
+					sprintf(buffer, "d");
+					break;
+			}
+			break;
+		case SELECT:
+			argc = 1;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "SELECT");
+					break;
+				case 1:
+					sprintf(buffer, "field_displ");
+					break;
+			}
+			break;
+		case WIDEN:
+			sprintf(buffer, "WIDEN");
+			break;
+		case WIDEN1:
+			sprintf(buffer, "WIDEN1");
+			break;
+		case _DOUBLE:
+			sprintf(buffer, "DOUBLE");
+			break;
+		case INC:
+			argc = 1;
+			sprintf(buffer, "INC");
+			break;
+		case DEC:
+			argc = 1;
+			sprintf(buffer, "DEC");
+			break;
+		case POSTINC:
+			argc = 1;
+			sprintf(buffer, "POSTINC");
+			break;
+		case POSTDEC:
+			argc = 1;
+			sprintf(buffer, "POSTDEC");
+			break;
+		case INCAT:
+			sprintf(buffer, "INC@");
+			break;
+		case DECAT:
+			sprintf(buffer, "DEC@");
+			break;
+		case POSTINCAT:
+			sprintf(buffer, "POSTINC@");
+			break;
+		case POSTDECAT:
+			sprintf(buffer, "POSTDEC@");
+			break;
+		case INCR:
+			argc = 1;
+			sprintf(buffer, "INCf");
+			break;
+		case DECR:
+			argc = 1;
+			sprintf(buffer, "DECf");
+			break;
+		case POSTINCR:
+			argc = 1;
+			sprintf(buffer, "POSTINCf");
+			break;
+		case POSTDECR:
+			argc = 1;
+			sprintf(buffer, "POSTDECf");
+			break;
+		case INCATR:
+			sprintf(buffer, "INC@f");
+			break;
+		case DECATR:
+			sprintf(buffer, "DEC@f");
+			break;
+		case POSTINCATR:
+			sprintf(buffer, "POSTINC@f");
+			break;
+		case POSTDECATR:
+			sprintf(buffer, "POSTDEC@f");
+			break;
+		case INCV:
+			argc = 1;
+			sprintf(buffer, "INCV");
+			break;
+		case DECV:
+			argc = 1;
+			sprintf(buffer, "DECV");
+			break;
+		case POSTINCV:
+			argc = 1;
+			sprintf(buffer, "POSTINCV");
+			break;
+		case POSTDECV:
+			argc = 1;
+			sprintf(buffer, "POSTDECV");
+			break;
+		case INCATV:
+			sprintf(buffer, "INC@V");
+			break;
+		case DECATV:
+			sprintf(buffer, "DEC@V");
+			break;
+		case POSTINCATV:
+			sprintf(buffer, "POSTINC@V");
+			break;
+		case POSTDECATV:
+			sprintf(buffer, "POSTDEC@V");
+			break;
+		case INCRV:
+			argc = 1;
+			sprintf(buffer, "INCfV");
+			break;
+		case DECRV:
+			argc = 1;
+			sprintf(buffer, "DECfV");
+			break;
+		case POSTINCRV:
+			argc = 1;
+			sprintf(buffer, "POSTINCfV");
+			break;
+		case POSTDECRV:
+			argc = 1;
+			sprintf(buffer, "POSTDECfV");
+			break;
+		case INCATRV:
+			sprintf(buffer, "INC@fV");
+			break;
+		case DECATRV:
+			sprintf(buffer, "DEC@fV");
+			break;
+		case POSTINCATRV:
+			sprintf(buffer, "POSTINC@fV");
+			break;
+		case POSTDECATRV:
+			sprintf(buffer, "POSTDEC@fV");
+			break;
+
+		case LNOT:
+			sprintf(buffer, "BITNOT");
+			break;
+		case LOGNOT:
+			sprintf(buffer, "NOT");
+			break;
+		case UNMINUS:
+			sprintf(buffer, "UNMINUS");
+			break;
+		case UNMINUSR:
+			sprintf(buffer, "UNMINUSf");
+			break;
+
+		case FUNCBEG:
+			argc = 2;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "FUNCBEG");
+					break;
+				case 1:
+					sprintf(buffer, "maxdispl");
+					break;
+				case 2:
+					sprintf(buffer, "pc");
+					break;
+			}
+			break;
+
+		default:
+			sprintf(buffer, "%" PRIitem, elem);
+			break;
+	}
+
+	if ((num != 0 && !was_switch) || argc < num)
+	{
+		buffer[0] = '\0';
+	}
+	return argc;
+}
+
+
+void double_to_io(universal_io *const io, const int64_t fst, const int64_t snd)
+{
+	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
+	double numdouble;
+	memcpy(&numdouble, &num, sizeof(double));
+	uni_printf(io, " %f\n", numdouble);
+}
+
+size_t elem_to_io(universal_io *const io, const vector *const table, size_t i)
+{
+	const item_t type = vector_get(table, i++);
+
+	char buffer[MAX_ELEM_SIZE];
+	size_t argc = elem_get_name(type, 0, buffer);
+	uni_printf(io, "%s", buffer);
+
+	if (type == TConstd || type == LID)
+	{
+		double_to_io(io, vector_get(table, i), vector_get(table, i + 1));
+		return i + 2;
+	}
+
+	for (size_t j = 1; j <= argc; j++)
+	{
+		elem_get_name(type, j, buffer);
+
+		if (buffer[0] != '\0')
 		{
-			printer_printchar(&context->output_options, context->source[j]);
+			uni_printf(io, " %s=", buffer);
+		}
+
+		uni_printf(io, " %" PRIitem, vector_get(table, i++));
+	}
+	uni_printf(io, "\n");
+
+	if (type == TString)
+	{
+		const size_t n = (size_t)vector_get(table, i - 1);
+		for (size_t j = 0; j < n; j++)
+		{
+			uni_printf(io, "%" PRIitem "\n", vector_get(table, i++));
 		}
 	}
-	printer_printf(&context->output_options, "\n");*/
-
-	printer_printf(&context->output_options, "\n%s\n", "identab");
-
-	i = 2;
-	while (i < context->id)
+	else if (type == TStringd)
 	{
-		for (j = 0; j < 4; j++)
+		const size_t n = (size_t)vector_get(table, i - 1);
+		for (size_t j = 0; j < n; j++)
 		{
-			printer_printf(&context->output_options, "id %i) %i\n", i + j, context->identab[i + j]);
+			double_to_io(io, vector_get(table, i), vector_get(table, i + 1));
+			i += 2;
 		}
-		printer_printf(&context->output_options, "\n");
-		i += 4;
 	}
-	/*
-		printer_printf(&context->output_options, "\n%s\n", "repr");
-		for (i = 1206; i <= rp; i++)
-			printer_printf(&context->output_options, "rp %i) %i\n", i,
-			reprtab[i]);
-	*/
-	printer_printf(&context->output_options, "\n%s\n", "modetab");
-	for (i = 0; i < context->md; i++)
-	{
-		printer_printf(&context->output_options, "md %i) %i\n", i, context->modetab[i]);
-	}
-	/*
-		printer_printf(&context->output_options, "\n%s\n", "tree");
-		for (i=0; i<=tc; i++)
-			printer_printf(&context->output_options, "tc %i) %i\n", i,
-			context->tree[i]);
-	*/
-	printer_printf(&context->output_options, "\n");
 
-	i = 0;
-	while (i < context->tc)
+	return i;
+}
+
+
+void tree_print_recursive(universal_io *const io, node *const nd, size_t tabs)
+{
+	for (size_t i = 0; i < tabs; i++)
 	{
-		printer_printf(&context->output_options, "tc %i) ", i);
-		switch (context->tree[i++])
+		uni_printf(io, INDENT);
+	}
+	uni_printf(io, "tc %zi) ", nd->type);
+
+	const item_t type = node_get_type(nd);
+	char buffer[MAX_ELEM_SIZE];
+	size_t argc = elem_get_name(type, 0, buffer);
+	uni_printf(io, "%s", buffer);
+
+	if (type == TConstd || type == LID)
+	{
+		double_to_io(io, node_get_arg(nd, 0), node_get_arg(nd, 1));
+	}
+	else
+	{
+		size_t i = 0;
+		while (i < argc && node_get_arg(nd, i) != ITEM_MAX)
 		{
-			case TFuncdef:
-				printer_printf(&context->output_options, "TFuncdef funcn= %i maxdispl= %i\n", context->tree[i],
-							   context->tree[i + 1]);
-				i += 2;
-				break;
-			case TDeclarr:
-				printer_printf(&context->output_options, "TDeclarr N= %i\n", context->tree[i++]);
-				break;
-			case TDeclid:
-				printer_printf(&context->output_options,
-							   "TDeclid displ= %i eltype= %i N= %i all= %i iniproc= "
-							   "%i, usual= %i instuct= %i\n",
-							   context->tree[i], context->tree[i + 1], context->tree[i + 2], context->tree[i + 3],
-							   context->tree[i + 4], context->tree[i + 5], context->tree[i + 6]);
-				i += 7;
-				break;
-			case TString:
-				printer_printf(&context->output_options, "TString n= %i\n", n = context->tree[i++]);
-				for (j = 0; j < n; ++j)
-				{
-					printer_printf(&context->output_options, "%i\n", context->tree[i++]);
-				}
-				break;
-			case TStringd:
-				printer_printf(&context->output_options, "TStringd n= %i\n", context->tree[i++]);
-				for (j = 0; j < n; ++j)
-				{
-					memcpy(&d, &context->tree[i], sizeof(double));
-					i += 2;
-					printer_printf(&context->output_options, "%f\n", d);
-				}
-				break;
-			case TCondexpr:
-				printer_printf(&context->output_options, "TCondexpr\n");
-				break;
-			case TBegin:
-				printer_printf(&context->output_options, "TBegin\n");
-				break;
-			case TEnd:
-				printer_printf(&context->output_options, "TEnd\n");
-				break;
-			case TBeginit:
-				printer_printf(&context->output_options, "TBeginit n= %i\n", context->tree[i++]);
-				break;
-			case TStructinit:
-				printer_printf(&context->output_options, "TStructinit n= %i\n", context->tree[i++]);
-				break;
-			case TIf:
-				printer_printf(&context->output_options, "TIf %i\n", context->tree[i++]);
-				break;
-			case TWhile:
-				printer_printf(&context->output_options, "TWhile\n");
-				break;
-			case TDo:
-				printer_printf(&context->output_options, "TDo\n");
-				break;
-			case TFor:
-				printer_printf(&context->output_options, "TFor %i %i %i %i\n", context->tree[i], context->tree[i + 1],
-							   context->tree[i + 2], context->tree[i + 3]);
-				i += 4;
-				break;
-			case TSwitch:
-				printer_printf(&context->output_options, "TSwitch\n");
-				break;
-			case TCase:
-				printer_printf(&context->output_options, "TCase\n");
-				break;
-			case TDefault:
-				printer_printf(&context->output_options, "TDefault\n");
-				break;
-			case TBreak:
-				printer_printf(&context->output_options, "TBreak\n");
-				break;
-			case TContinue:
-				printer_printf(&context->output_options, "TContinue\n");
-				break;
-			case TReturnvoid:
-				printer_printf(&context->output_options, "TReturn\n");
-				break;
-			case TReturnval:
-				printer_printf(&context->output_options, "TReturnval %i\n", context->tree[i++]);
-				break;
-			case TGoto:
-				printer_printf(&context->output_options, "TGoto %i\n", context->tree[i++]);
-				break;
-			case TIdent:
-				printer_printf(&context->output_options, "TIdent %i\n", context->tree[i++]);
-				break;
-			case TIdenttoval:
-				printer_printf(&context->output_options, "TIdenttoval %i\n", context->tree[i++]);
-				break;
-			case TIdenttovald:
-				printer_printf(&context->output_options, "TIdenttovald %i\n", context->tree[i++]);
-				break;
-			case TFunidtoval:
-				printer_printf(&context->output_options, "TFunidtoval %i\n", context->tree[i++]);
-				break;
-			case TIdenttoaddr:
-				printer_printf(&context->output_options, "TIdenttoaddr %i\n", context->tree[i++]);
-				break;
-			case TAddrtoval:
-				printer_printf(&context->output_options, "TAddrtoval\n");
-				break;
-			case TAddrtovald:
-				printer_printf(&context->output_options, "TAddrtovald\n");
-				break;
-			case TExprend:
-				printer_printf(&context->output_options, "TExprend\n");
-				break;
-			case TConst:
-				printer_printf(&context->output_options, "TConst %i\n", context->tree[i++]);
-				break;
-			case TConstd:
-				memcpy(&context->numdouble, &context->tree[i], sizeof(double));
-				i += 2;
-				printer_printf(&context->output_options, "TConstd %f\n", context->numdouble);
-				break;
-			case TSliceident:
-				printer_printf(&context->output_options, "TSliceident displ= %i type= %i\n", context->tree[i],
-							   context->tree[i + 1]);
-				i += 2;
-				break;
-			case TSlice:
-				printer_printf(&context->output_options, "TSlice elem_type= %i\n", context->tree[i++]);
-				break;
-			case TSelect:
-				printer_printf(&context->output_options, "TSelect displ= %i\n", context->tree[i++]);
-				break;
-			case NOP:
-				printer_printf(&context->output_options, "NOP\n");
-				break;
-			case ADLOGAND:
-				printer_printf(&context->output_options, "ADLOGAND addr= %i\n", context->tree[i++]);
-				break;
-			case ADLOGOR:
-				printer_printf(&context->output_options, "ADLOGOR addr= %i\n", context->tree[i++]);
-				break;
-			case COPY00:
-				printer_printf(&context->output_options, "COPY00 %i ",
-							   context->tree[i++]); // displleft
-				printer_printf(&context->output_options, "%i ",
-							   context->tree[i++]); // displright
-				printer_printf(&context->output_options, "(%i)\n",
-							   context->tree[i++]); // length
-				break;
-			case COPY01:
-				printer_printf(&context->output_options, "COPY01 %i ",
-							   context->tree[i++]); // displleft
-				printer_printf(&context->output_options, "(%i)\n",
-							   context->tree[i++]); // length
-				break;
-			case COPY10:
-				printer_printf(&context->output_options, "COPY10 %i ",
-							   context->tree[i++]); // displright
-				printer_printf(&context->output_options, "(%i)\n",
-							   context->tree[i++]); // length
-				break;
-			case COPY11:
-				printer_printf(&context->output_options, "COPY11 %i\n",
-							   context->tree[i++]); // length
-				break;
-			case COPY0ST:
-				printer_printf(&context->output_options, "COPY0ST %i ",
-							   context->tree[i++]); // displleft
-				printer_printf(&context->output_options, "(%i)\n",
-							   context->tree[i++]); // length
-				break;
-			case COPY1ST:
-				printer_printf(&context->output_options, "COPY1ST (%i)\n",
-							   context->tree[i++]); // length
-				break;
-			case COPY0STASS:
-				printer_printf(&context->output_options, "COPY0STASS %i ",
-							   context->tree[i++]); // displleft
-				printer_printf(&context->output_options, "(%i)\n",
-							   context->tree[i++]); // length
-				break;
-			case COPY1STASS:
-				printer_printf(&context->output_options, "COPY1STASS (%i)\n",
-							   context->tree[i++]); // length
-				break;
-			case COPYST:
-				printer_printf(&context->output_options, "COPYST %i ",
-							   context->tree[i++]); // displ
-				printer_printf(&context->output_options, "(%i)",
-							   context->tree[i++]); // length
-				printer_printf(&context->output_options, "(%i)\n",
-							   context->tree[i++]); // length1
-				break;
+			elem_get_name(type, i + 1, buffer);
 
-			case TCall1:
-				printer_printf(&context->output_options, "TCall1 %i\n", context->tree[i++]);
-				break;
-			case TCall2:
-				printer_printf(&context->output_options, "TCall2 %i\n", context->tree[i++]);
-				break;
-			case TLabel:
-				printer_printf(&context->output_options, "TLabel %i\n", context->tree[i++]);
-				break;
-			case TStructbeg:
-				printer_printf(&context->output_options, "TStructbeg %i\n", context->tree[i++]);
-				break;
-			case TStructend:
-				printer_printf(&context->output_options, "TStructend %i\n", context->tree[i++]);
-				break;
-			case TPrint:
-				printer_printf(&context->output_options, "TPrint %i\n", context->tree[i++]);
-				break;
-			case TPrintid:
-				printer_printf(&context->output_options, "TPrintid %i\n", context->tree[i++]);
-				break;
-			case TPrintf:
-				printer_printf(&context->output_options, "TPrintf %i\n", context->tree[i++]);
-				break;
-			case TGetid:
-				printer_printf(&context->output_options, "TGetid %i\n", context->tree[i++]);
-				break;
-			case SETMOTORC:
-				printer_printf(&context->output_options, "Setmotor\n");
-				break;
-			case CREATEC:
-				printer_printf(&context->output_options, "TCREATE\n");
-				break;
-			case CREATEDIRECTC:
-				printer_printf(&context->output_options, "TCREATEDIRECT\n");
-				break;
-			case EXITC:
-				printer_printf(&context->output_options, "TEXIT\n");
-				break;
-			case EXITDIRECTC:
-				printer_printf(&context->output_options, "TEXITDIRECT\n");
-				break;
-			case MSGSENDC:
-				printer_printf(&context->output_options, "TMSGSEND\n");
-				break;
-			case MSGRECEIVEC:
-				printer_printf(&context->output_options, "TMSGRECEIVE\n");
-				break;
-			case JOINC:
-				printer_printf(&context->output_options, "TJOIN\n");
-				break;
-			case SLEEPC:
-				printer_printf(&context->output_options, "TSLEEP\n");
-				break;
-			case SEMCREATEC:
-				printer_printf(&context->output_options, "TSEMCREATE\n");
-				break;
-			case SEMWAITC:
-				printer_printf(&context->output_options, "TSEMWAIT\n");
-				break;
-			case SEMPOSTC:
-				printer_printf(&context->output_options, "TSEMPOST\n");
-				break;
-			case INITC:
-				printer_printf(&context->output_options, "INITC\n");
-				break;
-			case DESTROYC:
-				printer_printf(&context->output_options, "DESTROYC\n");
-				break;
-			case GETNUMC:
-				printer_printf(&context->output_options, "GETNUMC\n");
-				break;
+			if (buffer[0] != '\0')
+			{
+				uni_printf(io, " %s=", buffer);
+			}
 
-
-			default:
-				printer_printf(&context->output_options, "TOper %i\n", context->tree[i - 1]);
+			uni_printf(io, " %" PRIitem, node_get_arg(nd, i++));
 		}
+		uni_printf(io, "\n");
+
+		if ((node_get_arg(nd, i) != ITEM_MAX && node_get_type(nd) != TString && node_get_type(nd) != TStringd)
+			|| i != argc)
+		{
+			elem_get_name(type, 0, buffer);
+			warning(NULL, node_argc, nd->type, buffer);
+		}
+	}
+
+	for (size_t j = 0; j < node_get_amount(nd); j++)
+	{
+		node child = node_get_child(nd, j);
+		tree_print_recursive(io, &child, tabs + 1);
 	}
 }
 
-void tablesandcode(compiler_context *context)
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+void tree_print(const char *const path, vector *const tree)
 {
-	int i = 1;
-	int j = 0;
-	/*int k = context->before_source_p;
-	printer_printf(&context->output_options, "\n%s\n", "source");
-	while (j < k)
+	universal_io io = io_create();
+	if (!vector_is_correct(tree) || out_set_file(&io, path))
 	{
-		printer_printf(&context->output_options, "line %i) ", i);
-		while (j < k && context->before_source[j] != '\n')
+		return;
+	}
+
+	node nd = node_get_root(tree);
+	for (size_t i = 0; i < node_get_amount(&nd); i++)
+	{
+		node child = node_get_child(&nd, i);
+		tree_print_recursive(&io, &child, 0);
+	}
+
+	io_erase(&io);
+}
+
+
+/** Вывод таблиц и дерева */
+void tables_and_tree(const char *const path
+	, const vector *const identifiers
+	, const vector *const modes
+	, const vector *const tree)
+{
+	universal_io io = io_create();
+	if (!vector_is_correct(identifiers) || !vector_is_correct(modes) || !vector_is_correct(tree)
+		|| out_set_file(&io, path))
+	{
+		return;
+	}
+
+
+	uni_printf(&io, "%s\n", "identab");
+	for (size_t i = 2; i < vector_size(identifiers); i += 4)
+	{
+		for (size_t j = 0; j < 4; j++)
 		{
-			printer_printchar(&context->output_options, context->before_source[j]);
-			j++;
+			uni_printf(&io, "id %zi) %" PRIitem "\n", i + j, vector_get(identifiers, i + j));
 		}
-		i++;
+		uni_printf(&io, "\n");
 	}
 
-	/*for (i = 1; i < context->line; i++)
+	uni_printf(&io, "\n%s\n", "modetab");
+	for (size_t i = 0; i < vector_size(modes); i++)
 	{
-		printer_printf(&context->output_options, "line %i) ", i);
-		for (j = context->lines[i]; j < context->lines[i + 1]; j++)
-		{
-			printer_printchar(&context->output_options, context->source[j]);
-		}
-	}*/
-
-	printer_printf(&context->output_options, "\n\n%s\n", "functions");
-	for (i = 1; i <= context->funcnum; i++)
-	{
-		printer_printf(&context->output_options, "fun %i) %i\n", i, context->functions[i]);
+		uni_printf(&io, "md %zi) %" PRIitem "\n", i, vector_get(modes, i));
 	}
 
-	printer_printf(&context->output_options, "\n%s\n", "iniprocs");
-	for (i = 1; i <= context->procd; i++)
+	uni_printf(&io, "\n");
+	size_t i = 0;
+	while (i < vector_size(tree))
 	{
-		printer_printf(&context->output_options, "inipr %i) %i\n", i, context->iniprocs[i]);
+		uni_printf(&io, "tc %zi) ", i);
+		i = elem_to_io(&io, tree, i);
 	}
 
-	printer_printf(&context->output_options, "\n%s\n", "mem");
-	i = 0;
-	while (i < context->pc)
+	io_erase(&io);
+}
+
+/** Вывод таблиц и кодов */
+void tables_and_codes(const char *const path
+	, const vector *const functions
+	, const vector *const processes
+	, const vector *const memory)
+{
+	universal_io io = io_create();
+	if (!vector_is_correct(functions) || !vector_is_correct(processes) || !vector_is_correct(memory)
+		|| out_set_file(&io, path))
 	{
-		printer_printf(&context->output_options, "pc %i) ", i);
-		switch (context->mem[i++])
-		{
-			case PRINT:
-				printer_printf(&context->output_options, "PRINT %i\n", context->mem[i++]);
-				break;
-			case PRINTID:
-				printer_printf(&context->output_options, "PRINTID %i\n", context->mem[i++]);
-				break;
-			case PRINTF:
-				printer_printf(&context->output_options, "PRINTF %i\n", context->mem[i++]);
-				break;
-			case GETID:
-				printer_printf(&context->output_options, "GETID %i\n", context->mem[i++]);
-				break;
-			case SETMOTORC:
-				printer_printf(&context->output_options, "SETMOTOR\n");
-				break;
-			case GETDIGSENSORC:
-				printer_printf(&context->output_options, "GETDIGSENSOR\n");
-				break;
-			case GETANSENSORC:
-				printer_printf(&context->output_options, "GETANSENSOR\n");
-				break;
-			case VOLTAGEC:
-				printer_printf(&context->output_options, "VOLTAGE\n");
-				break;
-			case CREATEC:
-				printer_printf(&context->output_options, "TCREATE\n");
-				break;
-			case CREATEDIRECTC:
-				printer_printf(&context->output_options, "TCREATEDIRECT\n");
-				break;
-			case MSGSENDC:
-				printer_printf(&context->output_options, "TMSGSEND\n");
-				break;
-			case EXITC:
-				printer_printf(&context->output_options, "TEXIT\n");
-				break;
-			case EXITDIRECTC:
-				printer_printf(&context->output_options, "TEXITDIRECT\n");
-				break;
-			case MSGRECEIVEC:
-				printer_printf(&context->output_options, "TMSGRECEIVE\n");
-				break;
-			case JOINC:
-				printer_printf(&context->output_options, "TJOIN\n");
-				break;
-			case SLEEPC:
-				printer_printf(&context->output_options, "TSLEEP\n");
-				break;
-			case SEMCREATEC:
-				printer_printf(&context->output_options, "TSEMCREATE\n");
-				break;
-			case SEMWAITC:
-				printer_printf(&context->output_options, "TSEMWAIT\n");
-				break;
-			case SEMPOSTC:
-				printer_printf(&context->output_options, "TSEMPOST\n");
-				break;
-			case TINIT:
-				printer_printf(&context->output_options, "TINIT\n");
-				break;
-			case TDESTROY:
-				printer_printf(&context->output_options, "TDESTROY\n");
-				break;
-			case GETNUMC:
-				printer_printf(&context->output_options, "GETNUM\n");
-				break;
-
-			case ABSC:
-				printer_printf(&context->output_options, "ABS\n");
-				break;
-			case ABSIC:
-				printer_printf(&context->output_options, "ABSI\n");
-				break;
-			case SQRTC:
-				printer_printf(&context->output_options, "SQRT\n");
-				break;
-			case EXPC:
-				printer_printf(&context->output_options, "EXP\n");
-				break;
-			case SINC:
-				printer_printf(&context->output_options, "SIN\n");
-				break;
-			case COSC:
-				printer_printf(&context->output_options, "COS\n");
-				break;
-			case LOGC:
-				printer_printf(&context->output_options, "LOG\n");
-				break;
-			case LOG10C:
-				printer_printf(&context->output_options, "LOG10\n");
-				break;
-			case ASINC:
-				printer_printf(&context->output_options, "ASIN\n");
-				break;
-			case RANDC:
-				printer_printf(&context->output_options, "RAND\n");
-				break;
-			case ROUNDC:
-				printer_printf(&context->output_options, "ROUND\n");
-				break;
-
-			case STRCPYC:
-				printer_printf(&context->output_options, "STRCPY\n");
-				break;
-			case STRNCPYC:
-				printer_printf(&context->output_options, "STRNCPY\n");
-				break;
-			case STRCATC:
-				printer_printf(&context->output_options, "STRCAT\n");
-				break;
-			case STRNCATC:
-				printer_printf(&context->output_options, "STRNCAT\n");
-				break;
-			case STRCMPC:
-				printer_printf(&context->output_options, "STRCMP\n");
-				break;
-			case STRNCMPC:
-				printer_printf(&context->output_options, "STRNCMP\n");
-				break;
-			case STRSTRC:
-				printer_printf(&context->output_options, "STRSTR\n");
-				break;
-			case STRLENC:
-				printer_printf(&context->output_options, "STRLENC\n");
-				break;
-
-			case BEGINIT:
-				printer_printf(&context->output_options, "BEGINIT n= %i\n", context->mem[i++]);
-				break;
-			case STRUCTWITHARR:
-				printer_printf(&context->output_options, "STRUCTWITHARR displ= %i ", context->mem[i++]);
-				printer_printf(&context->output_options, "iniproc= %i\n", context->mem[i++]);
-				break;
-			case DEFARR:
-				printer_printf(&context->output_options, "DEFARR N= %i ",
-							   context->mem[i++]); // N
-				printer_printf(&context->output_options, "elem_len= %i ",
-							   context->mem[i++]); // elem length
-				printer_printf(&context->output_options, "displ= %i ",
-							   context->mem[i++]); // displ
-				printer_printf(&context->output_options, "iniproc= %i ",
-							   context->mem[i++]); // iniproc
-				printer_printf(&context->output_options, "usual= %i ",
-							   context->mem[i++]); // usual
-				printer_printf(&context->output_options, "all= %i ",
-							   context->mem[i++]); // all
-				printer_printf(&context->output_options, "instruct= %i\n",
-							   context->mem[i++]); // instruct
-				break;
-			case ARRINIT:
-				printer_printf(&context->output_options, "ARRINIT N= %i ", context->mem[i++]);
-				printer_printf(&context->output_options, "elem_len= %i ", context->mem[i++]);
-				printer_printf(&context->output_options, "displ= %i ", context->mem[i++]);
-				printer_printf(&context->output_options, "usual= %i\n", context->mem[i++]);
-				break;
-			//	case STRUCTINIT:
-			//		printer_printf(&context->output_options,
-			//		"STRUCTINIT N= %i ", context->mem[i++]);
-			//		break;
-			case NOP:
-				printer_printf(&context->output_options, "NOP\n");
-				break;
-			case LI:
-				printer_printf(&context->output_options, "LI %i\n", context->mem[i++]);
-				break;
-			case LID:
-				memcpy(&context->numdouble, &context->mem[i], sizeof(double));
-				i += 2;
-				printer_printf(&context->output_options, "LID %.15f\n", context->numdouble);
-				break;
-			case LOAD:
-				printer_printf(&context->output_options, "LOAD %i\n", context->mem[i++]);
-				break;
-			case LOADD:
-				printer_printf(&context->output_options, "LOADD %i\n", context->mem[i++]);
-				break;
-			case LAT:
-				printer_printf(&context->output_options, "L@\n");
-				break;
-			case LATD:
-				printer_printf(&context->output_options, "L@f\n");
-				break;
-			case LA:
-				printer_printf(&context->output_options, "LA %i\n", context->mem[i++]);
-				break;
-
-			case LOGOR:
-				printer_printf(&context->output_options, "||\n");
-				break;
-			case LOGAND:
-				printer_printf(&context->output_options, "&&\n");
-				break;
-			case ORASS:
-				printer_printf(&context->output_options, "|= %i\n", context->mem[i++]);
-				break;
-			case ORASSAT:
-				printer_printf(&context->output_options, "|=@\n");
-				break;
-			case ORASSV:
-				printer_printf(&context->output_options, "|=V %i\n", context->mem[i++]);
-				break;
-			case ORASSATV:
-				printer_printf(&context->output_options, "|=@V\n");
-				break;
-			case LOR:
-				printer_printf(&context->output_options, "|\n");
-				break;
-			case EXORASS:
-				printer_printf(&context->output_options, "^= %i\n", context->mem[i++]);
-				break;
-			case EXORASSAT:
-				printer_printf(&context->output_options, "^=@\n");
-				break;
-			case EXORASSV:
-				printer_printf(&context->output_options, "^=V %i\n", context->mem[i++]);
-				break;
-			case EXORASSATV:
-				printer_printf(&context->output_options, "^=@V\n");
-				break;
-			case LEXOR:
-				printer_printf(&context->output_options, "^\n");
-				break;
-			case ANDASS:
-				printer_printf(&context->output_options, "&= %i\n", context->mem[i++]);
-				break;
-			case ANDASSAT:
-				printer_printf(&context->output_options, "&=@\n");
-				break;
-			case ANDASSV:
-				printer_printf(&context->output_options, "&=V %i\n", context->mem[i++]);
-				break;
-			case ANDASSATV:
-				printer_printf(&context->output_options, "&=@V\n");
-				break;
-			case LAND:
-				printer_printf(&context->output_options, "&\n");
-				break;
-
-			case EQEQ:
-				printer_printf(&context->output_options, "==\n");
-				break;
-			case NOTEQ:
-				printer_printf(&context->output_options, "!=\n");
-				break;
-			case LLT:
-				printer_printf(&context->output_options, "<\n");
-				break;
-			case LGT:
-				printer_printf(&context->output_options, ">\n");
-				break;
-			case LLE:
-				printer_printf(&context->output_options, "<=\n");
-				break;
-			case LGE:
-				printer_printf(&context->output_options, ">=\n");
-				break;
-			case EQEQR:
-				printer_printf(&context->output_options, "==f\n");
-				break;
-			case NOTEQR:
-				printer_printf(&context->output_options, "!=f\n");
-				break;
-			case LLTR:
-				printer_printf(&context->output_options, "<f\n");
-				break;
-			case LGTR:
-				printer_printf(&context->output_options, ">f\n");
-				break;
-			case LLER:
-				printer_printf(&context->output_options, "<=f\n");
-				break;
-			case LGER:
-				printer_printf(&context->output_options, ">=f\n");
-				break;
-
-			case SHRASS:
-				printer_printf(&context->output_options, ">>= %i\n", context->mem[i++]);
-				break;
-			case SHRASSAT:
-				printer_printf(&context->output_options, ">>=@\n");
-				break;
-			case SHRASSV:
-				printer_printf(&context->output_options, ">>=V %i\n", context->mem[i++]);
-				break;
-			case SHRASSATV:
-				printer_printf(&context->output_options, ">>=@V\n");
-				break;
-			case LSHR:
-				printer_printf(&context->output_options, ">>\n");
-				break;
-			case SHLASS:
-				printer_printf(&context->output_options, "<<= %i\n", context->mem[i++]);
-				break;
-			case SHLASSAT:
-				printer_printf(&context->output_options, "<<=@\n");
-				break;
-			case SHLASSV:
-				printer_printf(&context->output_options, "<<=V %i\n", context->mem[i++]);
-				break;
-			case SHLASSATV:
-				printer_printf(&context->output_options, "<<=@V\n");
-				break;
-			case LSHL:
-				printer_printf(&context->output_options, "<<\n");
-				break;
-
-			case ASS:
-				printer_printf(&context->output_options, "= %i\n", context->mem[i++]);
-				break;
-			case ASSAT:
-				printer_printf(&context->output_options, "=@\n");
-				break;
-			case ASSV:
-				printer_printf(&context->output_options, "=V %i\n", context->mem[i++]);
-				break;
-			case ASSATV:
-				printer_printf(&context->output_options, "=@V\n");
-				break;
-
-			case PLUSASS:
-				printer_printf(&context->output_options, "+= %i\n", context->mem[i++]);
-				break;
-			case PLUSASSAT:
-				printer_printf(&context->output_options, "+=@\n");
-				break;
-			case PLUSASSV:
-				printer_printf(&context->output_options, "+=V %i\n", context->mem[i++]);
-				break;
-			case PLUSASSATV:
-				printer_printf(&context->output_options, "+=@V\n");
-				break;
-			case LPLUS:
-				printer_printf(&context->output_options, "+\n");
-				break;
-
-			case MINUSASS:
-				printer_printf(&context->output_options, "-= %i\n", context->mem[i++]);
-				break;
-			case MINUSASSAT:
-				printer_printf(&context->output_options, "-=@\n");
-				break;
-			case MINUSASSV:
-				printer_printf(&context->output_options, "-=V %i\n", context->mem[i++]);
-				break;
-			case MINUSASSATV:
-				printer_printf(&context->output_options, "-=@V\n");
-				break;
-			case LMINUS:
-				printer_printf(&context->output_options, "-\n");
-				break;
-
-			case MULTASS:
-				printer_printf(&context->output_options, "*= %i\n", context->mem[i++]);
-				break;
-			case MULTASSAT:
-				printer_printf(&context->output_options, "*=@\n");
-				break;
-			case MULTASSV:
-				printer_printf(&context->output_options, "*=V %i\n", context->mem[i++]);
-				break;
-			case MULTASSATV:
-				printer_printf(&context->output_options, "*=@V\n");
-				break;
-			case LMULT:
-				printer_printf(&context->output_options, "*\n");
-				break;
-
-			case DIVASS:
-				printer_printf(&context->output_options, "/= %i\n", context->mem[i++]);
-				break;
-			case DIVASSAT:
-				printer_printf(&context->output_options, "/=@\n");
-				break;
-			case DIVASSV:
-				printer_printf(&context->output_options, "/=V %i\n", context->mem[i++]);
-				break;
-			case DIVASSATV:
-				printer_printf(&context->output_options, "/=@V\n");
-				break;
-			case LDIV:
-				printer_printf(&context->output_options, "/\n");
-				break;
-
-			case ASSR:
-				printer_printf(&context->output_options, "=f %i\n", context->mem[i++]);
-				break;
-			case ASSRV:
-				printer_printf(&context->output_options, "=fV %i\n", context->mem[i++]);
-				break;
-			case ASSATR:
-				printer_printf(&context->output_options, "=@f\n");
-				break;
-			case ASSATRV:
-				printer_printf(&context->output_options, "=@fV\n");
-				break;
-
-			case PLUSASSR:
-				printer_printf(&context->output_options, "+=f %i\n", context->mem[i++]);
-				break;
-			case PLUSASSATR:
-				printer_printf(&context->output_options, "+=@f\n");
-				break;
-			case PLUSASSRV:
-				printer_printf(&context->output_options, "+=fV %i\n", context->mem[i++]);
-				break;
-			case PLUSASSATRV:
-				printer_printf(&context->output_options, "+=@fV\n");
-				break;
-			case LPLUSR:
-				printer_printf(&context->output_options, "+f\n");
-				break;
-			case MINUSASSR:
-				printer_printf(&context->output_options, "-=f %i\n", context->mem[i++]);
-				break;
-			case MINUSASSATR:
-				printer_printf(&context->output_options, "-=@f\n");
-				break;
-			case MINUSASSRV:
-				printer_printf(&context->output_options, "-=fV %i\n", context->mem[i++]);
-				break;
-			case MINUSASSATRV:
-				printer_printf(&context->output_options, "-=@fV\n");
-				break;
-			case LMINUSR:
-				printer_printf(&context->output_options, "-f\n");
-				break;
-			case MULTASSR:
-				printer_printf(&context->output_options, "*=f %i\n", context->mem[i++]);
-				break;
-			case MULTASSATR:
-				printer_printf(&context->output_options, "*=@f\n");
-				break;
-			case MULTASSRV:
-				printer_printf(&context->output_options, "*=fV %i\n", context->mem[i++]);
-				break;
-			case MULTASSATRV:
-				printer_printf(&context->output_options, "*=@fV\n");
-				break;
-			case LMULTR:
-				printer_printf(&context->output_options, "*f\n");
-				break;
-			case DIVASSR:
-				printer_printf(&context->output_options, "/=f %i\n", context->mem[i++]);
-				break;
-			case DIVASSATR:
-				printer_printf(&context->output_options, "/=@f\n");
-				break;
-			case DIVASSRV:
-				printer_printf(&context->output_options, "/=fV %i\n", context->mem[i++]);
-				break;
-			case DIVASSATRV:
-				printer_printf(&context->output_options, "/=@fV\n");
-				break;
-			case LDIVR:
-				printer_printf(&context->output_options, "/f\n");
-				break;
-			case COPY00:
-				printer_printf(&context->output_options, "COPY00 %i ",
-							   context->mem[i++]); // displleft
-				printer_printf(&context->output_options, "%i ",
-							   context->mem[i++]); // displright
-				printer_printf(&context->output_options, "(%i)\n",
-							   context->mem[i++]); // length
-				break;
-			case COPY01:
-				printer_printf(&context->output_options, "COPY01 %i      ",
-							   context->mem[i++]); // displleft
-				printer_printf(&context->output_options, "(%i)\n",
-							   context->mem[i++]); // length
-				break;
-			case COPY10:
-				printer_printf(&context->output_options, "COPY10      %i ",
-							   context->mem[i++]); // displright
-				printer_printf(&context->output_options, "(%i)\n",
-							   context->mem[i++]); // length
-				break;
-			case COPY11:
-				printer_printf(&context->output_options, "COPY11 %i\n",
-							   context->mem[i++]); // length
-				break;
-			case COPY0ST:
-				printer_printf(&context->output_options, "COPY0ST %i ",
-							   context->mem[i++]); // displright
-				printer_printf(&context->output_options, "(%i)\n",
-							   context->mem[i++]); // length
-				break;
-			case COPY1ST:
-				printer_printf(&context->output_options, "COPY1ST %i\n",
-							   context->mem[i++]); // length
-				break;
-			case COPY0STASS:
-				printer_printf(&context->output_options, "COPY0STASS %i ",
-							   context->mem[i++]); // displleft
-				printer_printf(&context->output_options, "(%i)\n",
-							   context->mem[i++]); // length
-				break;
-			case COPY1STASS:
-				printer_printf(&context->output_options, "COPY1STASS %i\n",
-							   context->mem[i++]); // length
-				break;
-			case COPYST:
-				printer_printf(&context->output_options, "COPYST %i ",
-							   context->mem[i++]); // displ
-				printer_printf(&context->output_options, "(%i)",
-							   context->mem[i++]); // length
-				printer_printf(&context->output_options, "(%i)\n",
-							   context->mem[i++]); // length1
-				break;
-
-			case REMASS:
-				printer_printf(&context->output_options, "%%= %i\n", context->mem[i++]);
-				break;
-			case REMASSAT:
-				printer_printf(&context->output_options, "%%=@\n");
-				break;
-			case REMASSV:
-				printer_printf(&context->output_options, "%%=V %i\n", context->mem[i++]);
-				break;
-			case REMASSATV:
-				printer_printf(&context->output_options, "%%=@V\n");
-				break;
-			case LREM:
-				printer_printf(&context->output_options, "%%\n");
-				break;
-
-			case CALL1:
-				printer_printf(&context->output_options, "CALL1\n");
-				break;
-			case CALL2:
-				printer_printf(&context->output_options, "CALL2 ");
-				printer_printf(&context->output_options, "%i\n", context->mem[i++]);
-				break;
-			case STOP:
-				printer_printf(&context->output_options, "STOP\n");
-				break;
-			case RETURNVAL:
-				printer_printf(&context->output_options, "RETURNVAL %i\n", context->mem[i++]);
-				break;
-			case RETURNVOID:
-				printer_printf(&context->output_options, "RETURNVOID\n");
-				break;
-			case B:
-				printer_printf(&context->output_options, "B %i\n", context->mem[i++]);
-				break;
-			case BE0:
-				printer_printf(&context->output_options, "BE0 %i\n", context->mem[i++]);
-				break;
-			case BNE0:
-				printer_printf(&context->output_options, "BNE0 %i\n", context->mem[i++]);
-				break;
-			case SLICE:
-				printer_printf(&context->output_options, "SLICE d= %i\n", context->mem[i++]);
-				break;
-			case SELECT:
-				printer_printf(&context->output_options, "SELECT field_displ= %i\n", context->mem[i++]);
-				break;
-			case WIDEN:
-				printer_printf(&context->output_options, "WIDEN\n");
-				break;
-			case WIDEN1:
-				printer_printf(&context->output_options, "WIDEN1\n");
-				break;
-			case _DOUBLE:
-				printer_printf(&context->output_options, "DOUBLE\n");
-				break;
-			case INC:
-				printer_printf(&context->output_options, "INC %i\n", context->mem[i++]);
-				break;
-			case DEC:
-				printer_printf(&context->output_options, "DEC %i\n", context->mem[i++]);
-				break;
-			case POSTINC:
-				printer_printf(&context->output_options, "POSTINC %i\n", context->mem[i++]);
-				break;
-			case POSTDEC:
-				printer_printf(&context->output_options, "POSTDEC %i\n", context->mem[i++]);
-				break;
-			case INCAT:
-				printer_printf(&context->output_options, "INC@\n");
-				break;
-			case DECAT:
-				printer_printf(&context->output_options, "DEC@\n");
-				break;
-			case POSTINCAT:
-				printer_printf(&context->output_options, "POSTINC@\n");
-				break;
-			case POSTDECAT:
-				printer_printf(&context->output_options, "POSTDEC@\n");
-				break;
-			case INCR:
-				printer_printf(&context->output_options, "INCf %i\n", context->mem[i++]);
-				break;
-			case DECR:
-				printer_printf(&context->output_options, "DECf %i\n", context->mem[i++]);
-				break;
-			case POSTINCR:
-				printer_printf(&context->output_options, "POSTINCf %i\n", context->mem[i++]);
-				break;
-			case POSTDECR:
-				printer_printf(&context->output_options, "POSTDECf %i\n", context->mem[i++]);
-				break;
-			case INCATR:
-				printer_printf(&context->output_options, "INC@f\n");
-				break;
-			case DECATR:
-				printer_printf(&context->output_options, "DEC@f\n");
-				break;
-			case POSTINCATR:
-				printer_printf(&context->output_options, "POSTINC@f\n");
-				break;
-			case POSTDECATR:
-				printer_printf(&context->output_options, "POSTDEC@f\n");
-				break;
-			case INCV:
-				printer_printf(&context->output_options, "INCV %i\n", context->mem[i++]);
-				break;
-			case DECV:
-				printer_printf(&context->output_options, "DECV %i\n", context->mem[i++]);
-				break;
-			case POSTINCV:
-				printer_printf(&context->output_options, "POSTINCV %i\n", context->mem[i++]);
-				break;
-			case POSTDECV:
-				printer_printf(&context->output_options, "POSTDECV %i\n", context->mem[i++]);
-				break;
-			case INCATV:
-				printer_printf(&context->output_options, "INC@V\n");
-				break;
-			case DECATV:
-				printer_printf(&context->output_options, "DEC@V\n");
-				break;
-			case POSTINCATV:
-				printer_printf(&context->output_options, "POSTINC@V\n");
-				break;
-			case POSTDECATV:
-				printer_printf(&context->output_options, "POSTDEC@V\n");
-				break;
-			case INCRV:
-				printer_printf(&context->output_options, "INCfV %i\n", context->mem[i++]);
-				break;
-			case DECRV:
-				printer_printf(&context->output_options, "DECfV %i\n", context->mem[i++]);
-				break;
-			case POSTINCRV:
-				printer_printf(&context->output_options, "POSTINCfV %i\n", context->mem[i++]);
-				break;
-			case POSTDECRV:
-				printer_printf(&context->output_options, "POSTDECfV %i\n", context->mem[i++]);
-				break;
-			case INCATRV:
-				printer_printf(&context->output_options, "INC@fV\n");
-				break;
-			case DECATRV:
-				printer_printf(&context->output_options, "DEC@fV\n");
-				break;
-			case POSTINCATRV:
-				printer_printf(&context->output_options, "POSTINC@fV\n");
-				break;
-			case POSTDECATRV:
-				printer_printf(&context->output_options, "POSTDEC@fV\n");
-				break;
-
-			case LNOT:
-				printer_printf(&context->output_options, "BITNOT\n");
-				break;
-			case LOGNOT:
-				printer_printf(&context->output_options, "NOT\n");
-				break;
-			case UNMINUS:
-				printer_printf(&context->output_options, "UNMINUS\n");
-				break;
-			case UNMINUSR:
-				printer_printf(&context->output_options, "UNMINUSf\n");
-				break;
-
-			case FUNCBEG:
-				printer_printf(&context->output_options, "FUNCBEG maxdispl= %i ", context->mem[i++]);
-				printer_printf(&context->output_options, "pc= %i\n", context->mem[i++]);
-				break;
-
-
-			default:
-				printer_printf(&context->output_options, "%i\n", context->mem[i - 1]);
-		}
+		return;
 	}
+
+
+	uni_printf(&io, "%s\n", "functions");
+	for (size_t i = 0; i < vector_size(functions); i++)
+	{
+		uni_printf(&io, "fun %zi) %" PRIitem "\n", i, vector_get(functions, i));
+	}
+
+	uni_printf(&io, "\n%s\n", "iniprocs");
+	for (size_t i = 0; i < vector_size(processes); i++)
+	{
+		uni_printf(&io, "inipr %zi) %" PRIitem "\n", i, vector_get(processes, i));
+	}
+
+	uni_printf(&io, "\n%s\n", "mem");
+	size_t i = 0;
+	while (i < vector_size(memory))
+	{
+		uni_printf(&io, "pc %zi) ", i);
+		i = elem_to_io(&io, memory, i);
+	}
+
+	io_erase(&io);
 }

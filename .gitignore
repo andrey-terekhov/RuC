@@ -75,11 +75,11 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 
-## VSCode
+# VSCode
 .vscode/*
 *.code-workspace
 
-## Xcode
+# Xcode
 xcuserdata/
 build*/
 DerivedData/
@@ -93,6 +93,9 @@ Release/
 *.perspectivev3
 *.xcodeproj
 
+# Windows
+desktop.ini
+
 # macOS
 .DS_Store
 .AppleDouble
@@ -100,6 +103,9 @@ Release/
 
 # RuC
 !keywords.txt
+*.ruc
+*.ll
+*.s
 
 # Sublime workspace files
 *.sublime-workspace

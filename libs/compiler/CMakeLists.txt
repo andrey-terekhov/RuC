@@ -1,17 +1,18 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.13.5)
 
 project(compiler)
 
 
-file(GLOB SRC "*.c" "preprocessor/*.c")
-add_library(${PROJECT_NAME} SHARED ${SRC})
-target_include_directories(${PROJECT_NAME} PUBLIC
-	${CMAKE_CURRENT_SOURCE_DIR}/preprocessor
-	${CMAKE_CURRENT_SOURCE_DIR})
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.c")
+file(GLOB_RECURSE HDR CONFIGURE_DEPENDS "*.h")
 
-target_link_libraries(${PROJECT_NAME} utils)
+source_group("\\" FILES ${SRC} ${HDR})
+add_library(${PROJECT_NAME} SHARED ${SRC} ${HDR})
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
-if(NOT MSVC)
+target_link_libraries(${PROJECT_NAME} preprocessor utils)
+
+if(NOT CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	target_link_libraries(${PROJECT_NAME} m)
 endif()
