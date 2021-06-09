@@ -34,7 +34,7 @@
 #define MAX_INT_LENGTH 12
 
 
-void get_error(const error_t num, char *const msg, va_list args)
+static void get_error(const error_t num, char *const msg, va_list args)
 {
 	switch (num)
 	{
@@ -608,7 +608,7 @@ void get_error(const error_t num, char *const msg, va_list args)
 	}
 }
 
-void get_warning(const warning_t num, char *const msg, va_list args)
+static void get_warning(const warning_t num, char *const msg, va_list args)
 {
 	switch (num)
 	{
@@ -634,7 +634,7 @@ void get_warning(const warning_t num, char *const msg, va_list args)
 }
 
 
-void output(const universal_io *const io, const char *const msg, const logger system_func
+static void output(const universal_io *const io, const char *const msg, const logger system_func
 	, void (*func)(const char *const, const char *const, const char *const, const size_t))
 {
 	char tag[MAX_TAG_SIZE] = TAG_RUC;

@@ -26,7 +26,7 @@ const size_t MAX_STACK = 100;
 
 
 /** Check if the set of tokens has token in it */
-int token_check(const uint8_t tokens, const token_t token)
+static inline int token_check(const uint8_t tokens, const token_t token)
 {
 	return (tokens & token) != 0;
 }
@@ -39,7 +39,7 @@ int token_check(const uint8_t tokens, const token_t token)
  *
  *	@return	Parser structure
  */
-parser parser_create(syntax *const sx, lexer *const lxr)
+static inline parser parser_create(syntax *const sx, lexer *const lxr)
 {
 	parser prs;
 	prs.sx = sx;
@@ -61,7 +61,7 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	return prs;
 }
 
-void parser_clear(parser *const prs)
+static inline void parser_clear(parser *const prs)
 {
 	vector_clear(&prs->labels);
 	stack_clear(&prs->anonymous);

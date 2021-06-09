@@ -72,7 +72,7 @@ static void lexer_error(lexer *const lxr, error_t num, ...)
  *
  *	@return	Read character
  */
-static char32_t scan(lexer *const lxr)
+static inline char32_t scan(lexer *const lxr)
 {
 	lxr->character = uni_scan_char(lxr->io);
 	return lxr->character;
@@ -98,7 +98,7 @@ static char32_t lookahead(lexer *const lxr)
  *
  *	@param	lxr			Lexer structure
  */
-static void skip_whitespace(lexer *const lxr)
+static inline void skip_whitespace(lexer *const lxr)
 {
 	while (lxr->character == '\n' || lxr->character == '\r'
 		|| lxr->character == '\t' || lxr->character == ' ')
@@ -112,7 +112,7 @@ static void skip_whitespace(lexer *const lxr)
  *
  *	@param	lxr			Lexer structure
  */
-static void skip_line_comment(lexer *const lxr)
+static inline void skip_line_comment(lexer *const lxr)
 {
 	while (lxr->character != '\n' && lxr->character != (char32_t)EOF)
 	{
@@ -125,7 +125,7 @@ static void skip_line_comment(lexer *const lxr)
  *
  *	@param	lxr			Lexer structure
  */
-static void skip_block_comment(lexer *const lxr)
+static inline void skip_block_comment(lexer *const lxr)
 {
 	while (lxr->character != '*' && scan(lxr) != '/')
 	{
@@ -265,7 +265,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 }
 
 /**	Get character or escape sequence after '\' */
-static char32_t get_next_string_elem(lexer *const lxr)
+static inline char32_t get_next_string_elem(lexer *const lxr)
 {
 	if (lxr->character == '\\')
 	{

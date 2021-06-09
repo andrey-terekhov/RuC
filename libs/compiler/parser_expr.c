@@ -28,20 +28,20 @@ typedef struct operator
 } operator;
 
 
-void parse_unary_expression(parser *const prs);
-void parse_assignment_expression_internal(parser *const prs);
-void parse_expression_internal(parser *const prs);
-void parse_constant(parser *const prs);
+static void parse_unary_expression(parser *const prs);
+static void parse_assignment_expression_internal(parser *const prs);
+static void parse_expression_internal(parser *const prs);
+static void parse_constant(parser *const prs);
 
 
-int operators_push(parser *const prs, const uint8_t priority, const token_t token, const node *const nd)
+static inline int operators_push(parser *const prs, const uint8_t priority, const token_t token, const node *const nd)
 {
 	return stack_push(&prs->stk.priorities, priority)
 		|| stack_push(&prs->stk.tokens, token)
 		|| stack_push(&prs->stk.nodes, node_save(nd));
 }
 
-operator operators_pop(parser *const prs)
+static operator operators_pop(parser *const prs)
 {
 	operator op;
 
@@ -52,7 +52,7 @@ operator operators_pop(parser *const prs)
 	return op;
 }
 
-operator operators_peek(parser *const prs)
+static operator operators_peek(parser *const prs)
 {
 	operator op;
 
@@ -63,19 +63,19 @@ operator operators_peek(parser *const prs)
 	return op;
 }
 
-size_t operators_size(const parser *const prs)
+static inline size_t operators_size(const parser *const prs)
 {
 	return stack_size(&prs->stk.tokens);
 }
 
-int operands_push(parser *const prs, const operand_t type, const item_t mode)
+static inline int operands_push(parser *const prs, const operand_t type, const item_t mode)
 {
 	prs->last_type = type;
 	return stack_push(&prs->anonymous, mode);
 }
 
 
-void node_add_double(node *const nd, const double value)
+static void node_add_double(node *const nd, const double value)
 {
 	int64_t num64;
 	memcpy(&num64, &value, sizeof(int64_t));
@@ -87,7 +87,7 @@ void node_add_double(node *const nd, const double value)
 	node_add_arg(nd, snd);
 }
 
-void node_set_double(node *const nd, const size_t index, const double value)
+static void node_set_double(node *const nd, const size_t index, const double value)
 {
 	int64_t num64;
 	memcpy(&num64, &value, sizeof(int64_t));
@@ -99,7 +99,7 @@ void node_set_double(node *const nd, const size_t index, const double value)
 	node_set_arg(nd, index + 1, snd);
 }
 
-double node_get_double(const node *const nd, const size_t index)
+static double node_get_double(const node *const nd, const size_t index)
 {
 	const int64_t fst = (int64_t)node_get_arg(nd, index) & 0x00000000ffffffff;
 	const int64_t snd = (int64_t)node_get_arg(nd, index + 1) & 0x00000000ffffffff;
@@ -111,12 +111,12 @@ double node_get_double(const node *const nd, const size_t index)
 }
 
 
-void float_operation(parser *const prs, const item_t type, const operation_t operation)
+static inline void float_operation(parser *const prs, const item_t type, const operation_t operation)
 {
 	to_tree(prs, mode_is_float(type) ? operation_to_float_ver(operation) : operation);
 }
 
-int is_integer_operator(const token_t operator)
+static inline int is_integer_operator(const token_t operator)
 {
 	switch (operator)
 	{
@@ -133,7 +133,7 @@ int is_integer_operator(const token_t operator)
 	}
 }
 
-void binary_operation(parser *const prs, operator operator)
+static void binary_operation(parser *const prs, operator operator)
 {
 	const token_t token = operator.token;
 	const item_t right_mode = stack_pop(&prs->anonymous);
@@ -187,7 +187,7 @@ void binary_operation(parser *const prs, operator operator)
 	operands_push(prs, VALUE, result_mode);
 }
 
-void to_value(parser *const prs)
+static void to_value(parser *const prs)
 {
 	switch (prs->last_type)
 	{
@@ -232,7 +232,7 @@ void to_value(parser *const prs)
 	}
 }
 
-item_t parse_braced_init_list(parser *const prs, const item_t type)
+static item_t parse_braced_init_list(parser *const prs, const item_t type)
 {
 	token_consume(prs);
 	float_operation(prs, type, OP_STRING);
@@ -289,7 +289,7 @@ item_t parse_braced_init_list(parser *const prs, const item_t type)
 	return to_modetab(prs, mode_array, type);
 }
 
-void must_be_string(parser *const prs)
+static void must_be_string(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
@@ -300,7 +300,7 @@ void must_be_string(parser *const prs)
 	}
 }
 
-void must_be_point_string(parser *const prs)
+static void must_be_point_string(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
@@ -312,7 +312,7 @@ void must_be_point_string(parser *const prs)
 	}
 }
 
-void must_be_row(parser *const prs)
+static void must_be_row(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
@@ -323,7 +323,7 @@ void must_be_row(parser *const prs)
 	}
 }
 
-void must_be_int(parser *const prs)
+static void must_be_int(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
@@ -334,7 +334,7 @@ void must_be_int(parser *const prs)
 	}
 }
 
-void must_be_float(parser *const prs)
+static void must_be_float(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
 	to_value(prs);
@@ -350,7 +350,7 @@ void must_be_float(parser *const prs)
 	}
 }
 
-void must_be_row_of_int(parser *const prs)
+static void must_be_row_of_int(parser *const prs)
 {
 	item_t type;
 	if (prs->token == TK_L_BRACE)
@@ -376,7 +376,7 @@ void must_be_row_of_int(parser *const prs)
 	}
 }
 
-void must_be_row_of_float(parser *const prs)
+static void must_be_row_of_float(parser *const prs)
 {
 	item_t type;
 	if (prs->token == TK_L_BRACE)
@@ -402,7 +402,7 @@ void must_be_row_of_float(parser *const prs)
 	}
 }
 
-void parse_standard_function_call(parser *const prs)
+static void parse_standard_function_call(parser *const prs)
 {
 	const token_t func = prs->token;
 	token_consume(prs);
@@ -600,7 +600,7 @@ void parse_standard_function_call(parser *const prs)
  *
  *	@return	Index of parsed identifier in identifiers table
  */
-size_t parse_identifier(parser *const prs)
+static size_t parse_identifier(parser *const prs)
 {
 	const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
 	if (id == ITEM_MAX)
@@ -629,7 +629,7 @@ size_t parse_identifier(parser *const prs)
  *
  *	@param	prs			Parser structure
  */
-void parse_constant(parser *const prs)
+static void parse_constant(parser *const prs)
 {
 	item_t mode = mode_undefined;
 	switch (prs->token)
@@ -678,7 +678,7 @@ void parse_constant(parser *const prs)
  *
  *	@param	prs			Parser structure
  */
-void parse_primary_expression(parser *const prs)
+static void parse_primary_expression(parser *const prs)
 {
 	switch (prs->token)
 	{
@@ -745,7 +745,7 @@ void parse_primary_expression(parser *const prs)
 }
 
 /** Кушает токены, относящиеся к вырезкам, берет тип структуры со стека и кладет тип поля на стек */
-item_t find_field(parser *const prs)
+static item_t find_field(parser *const prs)
 {
 	token_consume(prs);
 	token_expect_and_consume(prs, TK_IDENTIFIER, after_dot_must_be_ident);
@@ -791,7 +791,7 @@ item_t find_field(parser *const prs)
  *	@param	prs			Parser structure
  *	@param	function_id	Index of function identifier in identifiers table
  */
-void parse_function_call(parser *const prs, const size_t function_id)
+static void parse_function_call(parser *const prs, const size_t function_id)
 {
 	const int old_in_assignment = prs->flag_in_assignment;
 	const size_t function_mode = (size_t)stack_pop(&prs->anonymous);
@@ -901,7 +901,7 @@ void parse_function_call(parser *const prs, const size_t function_id)
  *
  *	@param	prs			Parser structure
  */
-void parse_postfix_expression(parser *const prs)
+static void parse_postfix_expression(parser *const prs)
 {
 	const size_t last_id = prs->last_id;
 	int was_func = 0;
@@ -1080,7 +1080,7 @@ void parse_postfix_expression(parser *const prs)
 	}
 }
 
-void parse_unary_expression(parser *const prs)
+static void parse_unary_expression(parser *const prs)
 {
 	token_t token = prs->token;
 	switch (token)
@@ -1215,7 +1215,7 @@ void parse_unary_expression(parser *const prs)
 	parse_postfix_expression(prs);
 }
 
-uint8_t operator_priority(const token_t operator)
+static inline uint8_t operator_priority(const token_t operator)
 {
 	switch (operator)
 	{
@@ -1262,7 +1262,7 @@ uint8_t operator_priority(const token_t operator)
 	}
 }
 
-int is_int_assignment_operator(const token_t operator)
+static inline int is_int_assignment_operator(const token_t operator)
 {
 	switch (operator)
 	{
@@ -1280,7 +1280,7 @@ int is_int_assignment_operator(const token_t operator)
 }
 
 
-int is_assignment_operator(const token_t operator)
+static inline int is_assignment_operator(const token_t operator)
 {
 	switch (operator)
 	{
@@ -1296,7 +1296,7 @@ int is_assignment_operator(const token_t operator)
 	}
 }
 
-void parse_subexpression(parser *const prs)
+static void parse_subexpression(parser *const prs)
 {
 	size_t old_operators_size = operators_size(prs);
 	int was_operator = 0;
@@ -1335,7 +1335,7 @@ void parse_subexpression(parser *const prs)
 	}
 }
 
-void parse_conditional_expression(parser *const prs)
+static void parse_conditional_expression(parser *const prs)
 {
 	parse_subexpression(prs); // logORexpr();
 
@@ -1425,12 +1425,12 @@ void parse_conditional_expression(parser *const prs)
 	}
 }
 
-void assignment_to_void(parser *const prs)
+static inline void assignment_to_void(parser *const prs)
 {
 	node_set_type(&prs->nd, operation_to_void_ver(node_get_type(&prs->nd)));
 }
 
-void parse_assignment_expression_internal(parser *const prs)
+static void parse_assignment_expression_internal(parser *const prs)
 {
 	if (prs->token == TK_L_BRACE)
 	{
@@ -1574,7 +1574,7 @@ void parse_assignment_expression_internal(parser *const prs)
 	}
 }
 
-void parse_expression_internal(parser *const prs)
+static void parse_expression_internal(parser *const prs)
 {
 	parse_assignment_expression_internal(prs);
 	while (token_try_consume(prs, TK_COMMA))

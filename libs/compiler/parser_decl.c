@@ -18,8 +18,8 @@
 #include <stdlib.h>
 
 
-item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
-item_t parse_struct_declaration_list(parser *const prs, node *const parent);
+static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
+static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
 
 
 /**
@@ -42,7 +42,7 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent);
  *
  *	@return	Standard type or index of the modes table
  */
-item_t parse_type_specifier(parser *const prs, node *const parent)
+static item_t parse_type_specifier(parser *const prs, node *const parent)
 {
 	prs->flag_array_in_struct = 0;
 	switch (prs->token)
@@ -106,7 +106,7 @@ item_t parse_type_specifier(parser *const prs, node *const parent)
  *
  *	@return	Index of modes table, @c mode_undefined on failure
  */
-item_t parse_struct_or_union_specifier(parser *const prs, node *const parent)
+static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent)
 {
 	switch (prs->token)
 	{
@@ -161,7 +161,7 @@ item_t parse_struct_or_union_specifier(parser *const prs, node *const parent)
  *
  *	@return	Index of the modes table
  */
-item_t parse_array_definition(parser *const prs, node *const parent, item_t type)
+static item_t parse_array_definition(parser *const prs, node *const parent, item_t type)
 {
 	prs->array_dimensions = 0;
 	prs->flag_empty_bounds = 1;
@@ -222,7 +222,7 @@ item_t parse_array_definition(parser *const prs, node *const parent, item_t type
  *
  *	@return	Index of modes table, @c mode_undefined on failure
  */
-item_t parse_struct_declaration_list(parser *const prs, node *const parent)
+static item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 {
 	token_consume(prs);
 	if (token_try_consume(prs, TK_R_BRACE))
@@ -334,7 +334,7 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent)
  *	@param	parent		Parent node in AST
  *	@param	type		Index of the modes table
  */
-void parse_struct_initializer(parser *const prs, node *const parent, const item_t type)
+static void parse_struct_initializer(parser *const prs, node *const parent, const item_t type)
 {
 	if (!token_try_consume(prs, TK_L_BRACE))
 	{
@@ -381,7 +381,7 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
  *	@param	parent		Parent node in AST
  *	@param	type		Index of the modes table
  */
-void parse_array_initializer(parser *const prs, node *const parent, const item_t type)
+static void parse_array_initializer(parser *const prs, node *const parent, const item_t type)
 {
 	if (prs->token == TK_STRING)
 	{
@@ -447,7 +447,7 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
  *	@param	parent		Parent node in AST
  *	@param	type		Type of variable in declaration
  */
-void parse_init_declarator(parser *const prs, node *const parent, item_t type)
+static void parse_init_declarator(parser *const prs, node *const parent, item_t type)
 {
 	const size_t old_id = to_identab(prs, prs->lxr->repr, 0, type);
 
@@ -520,7 +520,7 @@ void parse_init_declarator(parser *const prs, node *const parent, item_t type)
  *
  *	@return	Index of modes table, @c mode_undefined on failure
  */
-item_t parse_function_declarator(parser *const prs, const int level, int func_def, const item_t return_type)
+static item_t parse_function_declarator(parser *const prs, const int level, int func_def, const item_t return_type)
 {
 	item_t local_modetab[100];
 	size_t local_md = 3;
@@ -682,7 +682,7 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_de
  *	@param	parent		Parent node in AST
  *	@param	function_id	Function number
  */
-void parse_function_body(parser *const prs, node *const parent, const size_t function_id)
+static void parse_function_body(parser *const prs, node *const parent, const size_t function_id)
 {
 	prs->function_mode = (size_t)ident_get_mode(prs->sx, function_id);
 	const size_t function_number = (size_t)ident_get_displ(prs->sx, function_id);
@@ -750,7 +750,7 @@ void parse_function_body(parser *const prs, node *const parent, const size_t fun
  *	@param	parent		Parent node in AST
  *	@param	type		Return type of a function
  */
-void parse_function_definition(parser *const prs, node *const parent, const item_t type)
+static void parse_function_definition(parser *const prs, node *const parent, const item_t type)
 {
 	const size_t function_num = func_reserve(prs->sx);
 	const size_t function_repr = prs->lxr->repr;

@@ -58,7 +58,7 @@ static void make_executable(const char *const path)
 }
 
 
-int compile_from_io(const workspace *const ws, universal_io *const io, const encoder enc)
+static int compile_from_io(const workspace *const ws, universal_io *const io, const encoder enc)
 {
 	if (!in_is_correct(io) || !out_is_correct(io))
 	{
@@ -80,7 +80,7 @@ int compile_from_io(const workspace *const ws, universal_io *const io, const enc
 	return ret;
 }
 
-int compile_from_ws(workspace *const ws, const encoder enc)
+static int compile_from_ws(workspace *const ws, const encoder enc)
 {
 	if (!ws_is_correct(ws) || ws_get_files_num(ws) == 0)
 	{
