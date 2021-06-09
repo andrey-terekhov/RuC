@@ -13,6 +13,8 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Run test script
+        env:
+          FASTLANE_EXPLICIT_OPEN_SIMULATOR : "2"
         run: ./scripts/test.sh
         shell: bash
   Testing-on-Ubuntu:
