@@ -12,6 +12,9 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v1
+      - name: Before script
+        run: git config --global advice.detachedHead false
+      - uses: actions/checkout@v1
       - name: Run test script
         run: ./scripts/test.sh
         shell: bash
