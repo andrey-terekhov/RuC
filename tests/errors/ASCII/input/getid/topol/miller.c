@@ -6,7 +6,7 @@ char c;
 int push(char chto)
 {
 	if (++p>=size)
-		{print("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ"); return(-1);}
+		{print("Переполнен"); return(-1);}
 		stack[p]=chto;
 		return 0;
 }
@@ -14,7 +14,7 @@ int push(char chto)
 
 int pop()
 	{
-	if (p<0) {print("пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ");return(-4);}
+	if (p<0) {print("Больше нет");return(-4);}
 	switch(stack[p])
 	{
 	case -2: print('-'); break;
@@ -22,10 +22,10 @@ int pop()
 	case -3: print('/'); break;
 	case  3: print('*'); break;
 	default: break;
-	}		
+	}			
 		p--;
 		return 0;
-	
+		
 	}
 void main()
 {
@@ -50,8 +50,8 @@ while (c!='!')
 			 if (p==-1) t=1;
 			 }
 		push(prio);
-		}
+		}	
 	getid(c);
 }
-if (p!=-1) while(p!=-1) pop();
-}
+if (p!=-1) while(p!=-1) pop();	
+}	
