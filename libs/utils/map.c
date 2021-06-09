@@ -21,8 +21,8 @@
 #include "utf8.h"
 
 
-const size_t MAP_HASH_MAX = 256;
-const size_t MAP_KEY_SIZE = 8;
+static const size_t MAP_HASH_MAX = 256;
+static const size_t MAP_KEY_SIZE = 8;
 
 
 struct map_hash

@@ -19,8 +19,8 @@
 #include "vector.h"
 
 
-#define MAX_HASH 256
-#define VALUE_SIZE 4
+static const int MAX_HASH = 256;
+static const int VALUE_SIZE = 4;
 
 
 #ifdef __cplusplus
