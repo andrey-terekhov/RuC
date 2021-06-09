@@ -21,8 +21,8 @@
 
 const char *const DEFAULT_TREE = "tree.txt";
 
-const size_t MAX_LABELS = 10000;
-const size_t MAX_STACK = 100;
+static const size_t MAX_LABELS = 10000;
+static const size_t MAX_STACK = 100;
 
 
 /** Check if the set of tokens has token in it */

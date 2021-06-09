@@ -20,11 +20,11 @@
 #include "old_tree.h"
 
 
-const size_t REPRESENTATIONS_SIZE = 10000;
-const size_t IDENTIFIERS_SIZE = 10000;
-const size_t FUNCTIONS_SIZE = 100;
-const size_t MODES_SIZE = 1000;
-const size_t TREE_SIZE = 10000;
+static const size_t REPRESENTATIONS_SIZE = 10000;
+static const size_t IDENTIFIERS_SIZE = 10000;
+static const size_t FUNCTIONS_SIZE = 100;
+static const size_t MODES_SIZE = 1000;
+static const size_t TREE_SIZE = 10000;
 
 
 static void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
