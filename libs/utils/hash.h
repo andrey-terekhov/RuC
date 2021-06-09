@@ -42,6 +42,16 @@ EXPORTED hash hash_create(const size_t alloc);
 
 
 /**
+ *	Get index of record by key
+ *
+ *	@param	hs				Hash table
+ *	@param	key				Unique key
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t hash_get_index(const hash *const hs, const item_t key);
+
+/**
  *	Add new key
  *
  *	@param	hs				Hash table
