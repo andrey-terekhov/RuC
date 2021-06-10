@@ -16,7 +16,7 @@ jobs:
 #           xcode-version: '12.0.1'
       - uses: actions/checkout@v1
       - name: Run test script
-        run: ./scripts/test.sh
+        run: ./scripts/test.sh -d
         shell: bash
   Testing-on-Ubuntu:
     runs-on: ubuntu-latest
