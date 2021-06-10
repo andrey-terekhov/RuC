@@ -49,7 +49,7 @@ typedef struct information
 
 	node_info stack[MAX_STACK_SIZE];					/**< Стек для преобразования выражений */
 	size_t stack_size;									/**< Размер стека */
-	size_t last_depth;									/**< Глубина верхнего узла в стеке */
+	size_t skip_counter;								/**< Счётчик для пропуска нод после перестановки */
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
 	size_t slice_depth;									/**< Количество узлов после TSliceident */
 	size_t slice_stack_size;							/**< Размер стека в начале вырезки */
@@ -285,7 +285,7 @@ static int node_recursive(information *const info, node *const nd)
 {
 	int has_error = 0;
 
-	if (info->slice_depth != 0 && info->last_depth <= 1)
+	if (info->slice_depth != 0 && info->skip_counter <= 1)
 	{
 		info->slice_depth++;
 	}
@@ -349,12 +349,12 @@ static int node_recursive(information *const info, node *const nd)
 				if (info->slice_depth == 0)
 				{
 					// При обходе после перестановки нужно учитывать и TExprend
-					if (info->last_depth > 1)
+					if (info->skip_counter > 1)
 					{
-						info->last_depth--;
+						info->skip_counter--;
 					}
 				}
-				else if (info->last_depth <= 1)
+				else if (info->skip_counter <= 1)
 				{
 					// если вырезка не переставлена, то надо частично очистить стек и изменить глубину TSliceident
 					node nd_expr_end = node_get_child(&child, 0);
@@ -377,9 +377,9 @@ static int node_recursive(information *const info, node *const nd)
 			default:
 			{
 				// если узел в переставленном выражении, то ничего делать не надо
-				if (info->last_depth > 1)
+				if (info->skip_counter > 1)
 				{
-					info->last_depth--;
+					info->skip_counter--;
 					break;
 				}
 
@@ -415,7 +415,7 @@ static int node_recursive(information *const info, node *const nd)
 						// добавляем в стек переставленное выражение
 						has_error |=  stack_push(info, operand);
 
-						info->last_depth = stack_peek_depth(info);
+						info->skip_counter = stack_peek_depth(info);
 					}
 					break;
 					case BINARY_OPERATION:
@@ -446,7 +446,7 @@ static int node_recursive(information *const info, node *const nd)
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(info, first);
 
-						info->last_depth = stack_peek_depth(info);
+						info->skip_counter = stack_peek_depth(info);
 					}
 					break;
 					case NOT_EXPRESSION:
@@ -458,7 +458,7 @@ static int node_recursive(information *const info, node *const nd)
 
 		// если встретили вырезку, надо запомнить состояние стека для дальнейшего восстановления
 		// и установить начальную глубину вырезки
-		if (node_get_type(&child) == TSliceident && info->last_depth <= 1)
+		if (node_get_type(&child) == TSliceident && info->skip_counter <= 1)
 		{
 			info->slice_depth = 1;
 			info->slice_stack_size = info->stack_size;
@@ -480,7 +480,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	info.string_num = 1;
 	info.was_printf = 0;
 	info.stack_size = 0;
-	info.last_depth = 1;
+	info.skip_counter = 1;
 	info.slice_depth = 0;
 	info.slice_stack_size = 0;
 
