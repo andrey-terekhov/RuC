@@ -11,15 +11,12 @@ jobs:
   Testing-on-MacOS:
     runs-on: macos-latest
     steps:
-#       - uses: maxim-lobanov/setup-xcode@v1
-#         with:
-#           xcode-version: '12.0.1'
       - name: Install coreutils
         run: brew install coreutils
         shell: bash
       - uses: actions/checkout@v1
       - name: Run test script
-        run: ./scripts/test.sh -d
+        run: ./scripts/test.sh
         shell: bash
   Testing-on-Ubuntu:
     runs-on: ubuntu-latest
