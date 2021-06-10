@@ -56,6 +56,11 @@ typedef struct information
 } information;
 
 
+static inline size_t stack_peek_depth(information *const info)
+{
+	return info->stack[info->stack_size - 1].depth;
+}
+
 static inline int stack_push(information *const info, node_info *const nd)
 {
 	if (info->stack_size == MAX_STACK_SIZE)
@@ -352,8 +357,8 @@ static int node_recursive(information *const info, node *const nd)
 				else if (info->last_depth <= 1)
 				{
 					// если вырезка не переставлена, то надо частично очистить стек и изменить глубину TSliceident
-					node TExprend_child = node_get_child(&child, 0);
-					if (node_get_type(&TExprend_child) == TSlice)
+					node nd_expr_end = node_get_child(&child, 0);
+					if (node_get_type(&nd_expr_end) == TSlice)
 					{
 						break;
 					}
@@ -410,7 +415,7 @@ static int node_recursive(information *const info, node *const nd)
 						// добавляем в стек переставленное выражение
 						has_error |=  stack_push(info, operand);
 
-						info->last_depth = operand->depth;
+						info->last_depth = stack_peek_depth(info);
 					}
 					break;
 					case BINARY_OPERATION:
@@ -441,7 +446,7 @@ static int node_recursive(information *const info, node *const nd)
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(info, first);
 
-						info->last_depth = first->depth;
+						info->last_depth = stack_peek_depth(info);
 					}
 					break;
 					case NOT_EXPRESSION:
