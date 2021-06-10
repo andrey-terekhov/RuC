@@ -235,10 +235,10 @@ static inline void to_code_unconditional_branch(information *const info, const i
 	uni_printf(info->io, " br label %%label%" PRIitem "\n", label_num);
 }
 
-static inline void to_code_conditional_branch(information *const info, const item_t reg, const item_t label_true, const item_t label_false)
+static inline void to_code_conditional_branch(information *const info)
 {
 	uni_printf(info->io, " br i1 %%.%" PRIitem ", label %%label%" PRIitem ", label %%label%" PRIitem "\n"
-		, reg, label_true, label_false);
+		, info->answer_reg, info->label_true, info->label_false);
 }
 
 static void to_code_alloc_array_static(information *const info, const size_t index)
@@ -298,30 +298,30 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 
 	if (hash_get(&info->arrays, displ, IS_STATIC))
 	{
-		for (item_t i = 1 + dimentions - cur_dimention; i <= dimentions; i++)
+		for (item_t i = dimentions - cur_dimention; i <= dimentions; i++)
 		{
 			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
 		}
 		uni_printf(info->io, "i32");
 
-		for (item_t i = 1 + dimentions - cur_dimention; i <= dimentions; i++)
+		for (item_t i = dimentions - cur_dimention; i <= dimentions; i++)
 		{
 			uni_printf(info->io, "]");
 		}
 		uni_printf(info->io, ", ");
 
-		for (item_t i = 1 + dimentions - cur_dimention; i <= dimentions; i++)
+		for (item_t i = dimentions - cur_dimention; i <= dimentions; i++)
 		{
 			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
 		}
 		uni_printf(info->io, "i32");
 
-		for (item_t i = 1 + dimentions - cur_dimention; i <= dimentions; i++)
+		for (item_t i = dimentions - cur_dimention; i <= dimentions; i++)
 		{
 			uni_printf(info->io, "]");
 		}
 
-		if (dimentions == cur_dimention)
+		if (cur_dimention == dimentions - 1)
 		{
 			uni_printf(info->io, "* %%arr.%" PRIitem ", i32 0", displ);
 		}
@@ -330,23 +330,22 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 			uni_printf(info->io, "* %%.%" PRIitem ", i32 0", prev_slice);
 		}
 	}
-	else if (dimentions == cur_dimention)
+	else if (cur_dimention == dimentions - 1)
 	{
 		uni_printf(info->io, "i32, i32* %%dynarr.%" PRIitem, displ);
 	}
 	else
 	{
-			uni_printf(info->io, "i32, i32* %%.%" PRIitem, prev_slice);
+		uni_printf(info->io, "i32, i32* %%.%" PRIitem, prev_slice);
 	}
 
-	uni_printf(info->io, ", i32 ");
 	if (info->answer_type == AREG)
 	{
-		uni_printf(info->io, "%%.%" PRIitem "\n", info->answer_reg);
+		uni_printf(info->io, ", i32 %%.%" PRIitem "\n", info->answer_reg);
 	}
 	else // if (info->answer_type == ACONST)
 	{
-		uni_printf(info->io, "%" PRIitem "\n", info->answer_const);
+		uni_printf(info->io, ", i32 %" PRIitem "\n", info->answer_const);
 	}
 
 	info->register_num++;
@@ -366,7 +365,7 @@ static void check_type_and_branch(information *const info)
 			info->answer_reg = info->register_num++;
 		}
 		case ALOGIC:
-			to_code_conditional_branch(info, info->answer_reg, info->label_true, info->label_false);
+			to_code_conditional_branch(info);
 			break;
 	}
 }
@@ -422,7 +421,7 @@ static void operand(information *const info, node *const nd)
 		case TSliceident:
 		{
 			const item_t displ = node_get_arg(nd, 0);
-			item_t cur_dimention = hash_get_amount(&info->arrays, displ) - 1;
+			item_t cur_dimention = hash_get_amount(&info->arrays, displ) - 2;
 			const location_t location = info->variable_location;
 			node_set_next(nd);
 
@@ -430,7 +429,7 @@ static void operand(information *const info, node *const nd)
 			expression(info, nd);
 
 			// TODO: пока только для динамических массивов размерности 2
-			if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimention == 2)
+			if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimention == 1)
 			{
 				if (info->answer_type == ACONST)
 				{
@@ -456,7 +455,6 @@ static void operand(information *const info, node *const nd)
 				cur_dimention--;
 
 				to_code_slice(info, displ, cur_dimention, prev_slice);
-
 				prev_slice = info->register_num - 1;
 			}
 
@@ -893,7 +891,7 @@ static void binary_operation(information *const info, node *const nd)
 			// постараться использовать функцию check_type_and_branch
 			if (info->answer_type == ALOGIC)
 			{
-				to_code_conditional_branch(info, info->answer_reg, info->label_true, info->label_false);
+				to_code_conditional_branch(info);
 			}
 
 			to_code_label(info, label_next);
