@@ -92,6 +92,19 @@ static double to_double(const int64_t fst, const int64_t snd)
 	return numdouble;
 }
 
+static void type_to_io(universal_io *const io, const type_t type)
+{
+	switch (type)
+	{
+		case I32:
+			uni_printf(io, "i32");
+			break;
+		case DOUBLE:
+			uni_printf(io, "double");
+			break;
+	}
+}
+
 static void operation_to_io(universal_io *const io, const item_t type)
 {
 	switch (type)
@@ -214,10 +227,13 @@ static void to_code_operation_const_reg(information *const info, const item_t ty
 	uni_printf(info->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static inline void to_code_load(information *const info, const item_t result, const item_t displ, const int is_array)
+static void to_code_load(information *const info, const item_t result, const item_t displ, type_t type, const int is_array)
 {
-	uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%%s.%" PRIitem ", align 4\n"
-		, result, is_array ? "" : "var", displ);
+	uni_printf(info->io, " %%.%" PRIitem " = load ", result);
+	type_to_io(info->io, type);
+	uni_printf(info->io, ", ");
+	type_to_io(info->io, type);
+	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const int is_array)
@@ -406,7 +422,6 @@ static void operand(information *const info, node *const nd)
 	{
 		case TIdent:
 		case TSelect:
-		case TIdenttovald:
 		case TIdenttoaddr:
 			node_set_next(nd);
 			break;
@@ -414,9 +429,21 @@ static void operand(information *const info, node *const nd)
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
-			to_code_load(info, info->register_num, displ, 0);
+			to_code_load(info, info->register_num, displ, I32, 0);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
+			info->answer_value_type = I32;
+			node_set_next(nd);
+		}
+		break;
+		case TIdenttovald:
+		{
+			const item_t displ = node_get_arg(nd, 0);
+
+			to_code_load(info, info->register_num, displ, DOUBLE, 0);
+			info->answer_reg = info->register_num++;
+			info->answer_type = AREG;
+			info->answer_value_type = DOUBLE;
 			node_set_next(nd);
 		}
 		break;
@@ -509,7 +536,7 @@ static void operand(information *const info, node *const nd)
 
 			if (location != LMEM)
 			{
-				to_code_load(info, info->register_num, info->register_num - 1, 1);
+				to_code_load(info, info->register_num, info->register_num - 1, I32, 1);
 				info->register_num++;
 			}
 
@@ -593,7 +620,7 @@ static void assignment_array_expression(information *const info, node *const nd)
 
 	if (assignment_type != ASSAT && assignment_type != ASSATV)
 	{
-		to_code_load(info, info->register_num, memory_reg, 1);
+		to_code_load(info, info->register_num, memory_reg, I32, 1);
 		info->register_num++;
 
 		if (info->answer_type == AREG)
@@ -636,7 +663,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (assignment_type != ASS && assignment_type != ASSV)
 	{
-		to_code_load(info, info->register_num, displ, 0);
+		to_code_load(info, info->register_num, displ, I32, 0);
 		info->register_num++;
 
 		if (info->answer_type == AREG)
@@ -768,7 +795,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 	node_set_next(nd);
 	node_set_next(nd); // TIdent
 
-	to_code_load(info, info->register_num, displ, 0);
+	to_code_load(info, info->register_num, displ, I32, 0);
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 	
@@ -1340,6 +1367,7 @@ static void statement(information *const info, node *const nd)
 		{
 			const item_t N = node_get_arg(nd, 0);
 			item_t args[128];
+			type_t args_type[128];
 
 			node_set_next(nd);
 			const item_t string_length = node_get_arg(nd, 0);
@@ -1350,6 +1378,7 @@ static void statement(information *const info, node *const nd)
 				info->variable_location = LREG;
 				expression(info, nd);
 				args[i] = info->answer_reg;
+				args_type[i] = info->answer_value_type;
 			}
 
 			uni_printf(info->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
@@ -1364,7 +1393,9 @@ static void statement(information *const info, node *const nd)
 
 			for (item_t i = 0; i < N; i++)
 			{
-				uni_printf(info->io, ", i32 signext %%.%" PRIitem, args[i]);
+				uni_printf(info->io, ", ");
+				type_to_io(info->io, args_type[i]);
+				uni_printf(info->io, " signext %%.%" PRIitem, args[i]);
 			}
 
 			uni_printf(info->io, ")\n");
