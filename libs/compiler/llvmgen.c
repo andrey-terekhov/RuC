@@ -726,7 +726,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 	item_t result = info->answer_reg;
 
-	if (assignment_type != ASS && assignment_type != ASSV)
+	if (assignment_type != ASS && assignment_type != ASSV && assignment_type != ASSR && assignment_type != ASSRV)
 	{
 		to_code_load(info, info->register_num, displ, I32, 0);
 		info->register_num++;
@@ -743,13 +743,18 @@ static void assignment_expression(information *const info, node *const nd)
 		result = info->register_num++;
 	}
 
-	if (info->answer_type == AREG || (assignment_type != ASS && assignment_type != ASSV))
+	if (info->answer_type == AREG || (assignment_type != ASS && assignment_type != ASSV && assignment_type != ASSR && assignment_type != ASSRV))
 	{
 		to_code_store_reg(info, result, displ, 0);
 	}
-	else // ACONST && =
+	// ACONST && =
+	else if (info->answer_value_type == I32)
 	{
 		to_code_store_const_i32(info, info->answer_const, displ, 0);
+	}
+	else // if (info->answer_value_type == DOUBLE)
+	{
+		to_code_store_const_double(info, info->answer_const_double, displ);
 	}
 }
 
@@ -995,6 +1000,18 @@ static void binary_operation(information *const info, node *const nd)
 		case EXORASSV:
 		case ORASS:
 		case ORASSV:
+
+		case ASSR:
+		case ASSRV:
+
+		case PLUSASSR:
+		case PLUSASSRV:
+		case MINUSASSR:
+		case MINUSASSRV:
+		case MULTASSR:
+		case MULTASSRV:
+		case DIVASSR:
+		case DIVASSRV:
 			assignment_expression(info, nd);
 			break;
 
