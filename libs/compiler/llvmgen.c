@@ -22,6 +22,7 @@
 #include "llvmopt.h"
 #include "tree.h"
 #include "uniprinter.h"
+#include <string.h>
 
 
 const size_t HASH_TABLE_SIZE = 1024;
@@ -43,6 +44,12 @@ typedef enum LOCATION
 	LFREE,								/**< Свободный запрос значения */
 } location_t;
 
+typedef enum TYPES
+{
+	I32,								/**< int */
+	DOUBLE,								/**< double */
+} type_t;
+
 typedef struct information
 {
 	universal_io *io;					/**< Вывод */
@@ -57,7 +64,9 @@ typedef struct information
 
 	item_t answer_reg;					/**< Регистр с ответом */
 	item_t answer_const;				/**< Константа с ответом */
+	double answer_const_double;			/**< Константа с ответом типа double */
 	answer_t answer_type;				/**< Тип ответа */
+	type_t answer_value_type;			/**< Тип значения */
 
 	item_t label_true;					/**< Метка перехода при true */
 	item_t label_false;					/**< Метка перехода при false */
@@ -73,6 +82,15 @@ typedef struct information
 static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
+
+static double to_double(const int64_t fst, const int64_t snd)
+{
+	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
+	double numdouble;
+	memcpy(&numdouble, &num, sizeof(double));
+	
+	return numdouble;
+}
 
 static void operation_to_io(universal_io *const io, const item_t type)
 {
@@ -208,10 +226,15 @@ static inline void to_code_store_reg(information *const info, const item_t reg, 
 		, reg, is_array ? "" : "var", displ);
 }
 
-static inline void to_code_store_const(information *const info, const item_t arg, const item_t displ, const int is_array)
+static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ, const int is_array)
 {
 	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%%s.%" PRIitem ", align 4\n"
 		, arg, is_array ? "" : "var", displ);
+}
+
+static inline void to_code_store_const_double(information *const info, double arg, const item_t displ)
+{
+	uni_printf(info->io, " store double %f, double* %%var.%" PRIitem ", align 4\n", arg, displ);
 }
 
 static void to_code_try_zext_to(information *const info)
@@ -385,7 +408,6 @@ static void operand(information *const info, node *const nd)
 		case TSelect:
 		case TIdenttovald:
 		case TIdenttoaddr:
-		case TConstd:
 			node_set_next(nd);
 			break;
 		case TIdenttoval:
@@ -404,13 +426,33 @@ static void operand(information *const info, node *const nd)
 
 			if (info->variable_location == LMEM)
 			{
-				to_code_store_const(info, num, info->request_reg, 0);
+				to_code_store_const_i32(info, num, info->request_reg, 0);
 				info->answer_type = AREG;
 			}
 			else
 			{
 				info->answer_type = ACONST;
 				info->answer_const = num;
+				info->answer_value_type = I32;
+			}
+
+			node_set_next(nd);
+		}
+		break;
+		case TConstd:
+		{
+			const double num = to_double(node_get_arg(nd, 0), node_get_arg(nd, 1));
+
+			if (info->variable_location == LMEM)
+			{
+				to_code_store_const_double(info, num, info->request_reg);
+				info->answer_type = AREG;
+			}
+			else
+			{
+				info->answer_type = ACONST;
+				info->answer_const_double = num;
+				info->answer_value_type = DOUBLE;
 			}
 
 			node_set_next(nd);
@@ -573,7 +615,7 @@ static void assignment_array_expression(information *const info, node *const nd)
 	}
 	else // ACONST && =
 	{
-		to_code_store_const(info, info->answer_const, memory_reg, 1);
+		to_code_store_const_i32(info, info->answer_const, memory_reg, 1);
 	}
 }
 
@@ -615,7 +657,7 @@ static void assignment_expression(information *const info, node *const nd)
 	}
 	else // ACONST && =
 	{
-		to_code_store_const(info, info->answer_const, displ, 0);
+		to_code_store_const_i32(info, info->answer_const, displ, 0);
 	}
 }
 
