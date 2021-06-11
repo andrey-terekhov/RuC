@@ -92,6 +92,71 @@ static double to_double(const int64_t fst, const int64_t snd)
 	return numdouble;
 }
 
+// TODO: помню, такое планировалось делать вне кодогенератора...
+static int is_double(const item_t operation)
+{
+	switch (operation)
+	{
+		case ASSR:
+		case PLUSASSR:
+		case MINUSASSR:
+		case MULTASSR:
+		case DIVASSR:
+
+		case ASSATR:
+		case PLUSASSATR:
+		case MINUSASSATR:
+		case MULTASSATR:
+		case DIVASSATR:
+
+		case ASSRV:
+		case PLUSASSRV:
+		case MINUSASSRV:
+		case MULTASSRV:
+		case DIVASSRV:
+
+		case ASSATRV:
+		case PLUSASSATRV:
+		case MINUSASSATRV:
+		case MULTASSATRV:
+		case DIVASSATRV:
+
+		case EQEQR:
+		case NOTEQR:
+		case LLTR:
+		case LGTR:
+		case LLER:
+		case LGER:
+		case LPLUSR:
+		case LMINUSR:
+		case LMULTR:
+		case LDIVR:
+
+		case POSTINCR:
+		case POSTDECR:
+		case INCR:
+		case DECR:
+		case POSTINCATR:
+		case POSTDECATR:
+		case INCATR:
+		case DECATR:
+		case POSTINCRV:
+		case POSTDECRV:
+		case INCRV:
+		case DECRV:
+		case POSTINCATRV:
+		case POSTDECATRV:
+		case INCATRV:
+		case DECATRV:
+
+		case UNMINUSR:
+			return 1;
+	
+		default:
+			return 0;
+	}
+}
+
 static void type_to_io(universal_io *const io, const type_t type)
 {
 	switch (type)
@@ -701,6 +766,7 @@ static void integral_expression(information *const info, node *const nd, const a
 	const answer_t left_type = info->answer_type;
 	const item_t left_reg = info->answer_reg;
 	const item_t left_const = info->answer_const;
+	const double left_const_double = info->answer_const_double;
 
 	info->variable_location = LFREE;
 	expression(info, nd);
@@ -710,6 +776,9 @@ static void integral_expression(information *const info, node *const nd, const a
 	const answer_t right_type = info->answer_type;
 	const item_t right_reg = info->answer_reg;
 	const item_t right_const = info->answer_const;
+	const double right_const_double = info->answer_const_double;
+
+	info->answer_value_type = is_double(operation_type) && type != ALOGIC ? DOUBLE : I32;
 
 	if (left_type == AREG && right_type == AREG)
 	{
@@ -777,6 +846,38 @@ static void integral_expression(information *const info, node *const nd, const a
 				break;
 			case LGE:
 				info->answer_const = left_const >= right_const;
+				break;
+
+			case LPLUSR:
+				info->answer_const_double = left_const_double + right_const_double;
+				break;
+			case LMINUSR:
+				info->answer_const_double = left_const_double - right_const_double;
+				break;
+			case LMULTR:
+				info->answer_const_double = left_const_double * right_const_double;
+				break;
+			case LDIVR:
+				info->answer_const_double = left_const_double / right_const_double;
+				break;
+
+			case EQEQR:
+				info->answer_const = left_const_double == right_const_double;
+				break;
+			case NOTEQR:
+				info->answer_const = left_const_double != right_const_double;
+				break;
+			case LLTR:
+				info->answer_const = left_const_double < right_const_double;
+				break;
+			case LGTR:
+				info->answer_const = left_const_double > right_const_double;
+				break;
+			case LLER:
+				info->answer_const = left_const_double <= right_const_double;
+				break;
+			case LGER:
+				info->answer_const = left_const_double >= right_const_double;
 				break;
 		}
 		return;
@@ -924,6 +1025,11 @@ static void binary_operation(information *const info, node *const nd)
 		case LAND:
 		case LEXOR:
 		case LOR:
+
+		case LPLUSR:
+		case LMINUSR:
+		case LMULTR:
+		case LDIVR:
 			integral_expression(info, nd, AREG);
 			break;
 
@@ -934,6 +1040,13 @@ static void binary_operation(information *const info, node *const nd)
 		case LGT:
 		case LLE:
 		case LGE:
+
+		case EQEQR:
+		case NOTEQR:
+		case LLTR:
+		case LGTR:
+		case LLER:
+		case LGER:
 			integral_expression(info, nd, ALOGIC);
 			break;
 
