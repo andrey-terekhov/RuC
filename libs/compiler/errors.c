@@ -31,8 +31,6 @@
 #define MAX_MSG_SIZE MAX_TAG_SIZE * 4
 #define MAX_LINE_SIZE MAX_TAG_SIZE * 4
 
-#define MAX_INT_LENGTH 12
-
 
 static void get_error(const error_t num, char *const msg, va_list args)
 {

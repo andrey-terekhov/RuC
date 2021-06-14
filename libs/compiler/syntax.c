@@ -48,7 +48,7 @@ static void repr_add_keyword(map *const reprtab, const char32_t *const eng, cons
 	map_add_by_utf8(reprtab, buffer, token);
 }
 
-static void repr_init(map *const reprtab)
+static inline void repr_init(map *const reprtab)
 {
 	repr_add_keyword(reprtab, U"main", U"главная", TK_MAIN);
 	repr_add_keyword(reprtab, U"char", U"литера", TK_CHAR);
@@ -123,7 +123,7 @@ static void repr_init(map *const reprtab)
 }
 
 
-static void mode_init(syntax *const sx)
+static inline void mode_init(syntax *const sx)
 {
 	vector_increase(&sx->modes, 1);
 	// занесение в modetab описателя struct {int numTh; int inf; }
@@ -153,7 +153,7 @@ static void mode_init(syntax *const sx)
 	sx->start_mode = 14;
 }
 
-static item_t get_static(syntax *const sx, const item_t type)
+static inline item_t get_static(syntax *const sx, const item_t type)
 {
 	const item_t old_displ = sx->displ;
 	sx->displ += sx->lg * size_of(sx, type);
@@ -171,7 +171,7 @@ static item_t get_static(syntax *const sx, const item_t type)
 }
 
 /**	Check if modes are equal */
-static int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
+static inline int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
 {
 	if (vector_get(&sx->modes, first) != vector_get(&sx->modes, second))
 	{

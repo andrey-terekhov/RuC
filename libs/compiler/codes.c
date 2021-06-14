@@ -1308,7 +1308,7 @@ static size_t elem_to_io(universal_io *const io, const vector *const table, size
 }
 
 
-size_t tree_print_recursive(universal_io *const io, node *const nd, size_t index, size_t tabs)
+static size_t tree_print_recursive(universal_io *const io, node *const nd, size_t index, size_t tabs)
 {
 	for (size_t i = 0; i < tabs; i++)
 	{
