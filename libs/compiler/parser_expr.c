@@ -41,7 +41,7 @@ static inline int operators_push(parser *const prs, const uint8_t priority, cons
 		|| stack_push(&prs->stk.nodes, node_save(nd));
 }
 
-static operator operators_pop(parser *const prs)
+static inline operator operators_pop(parser *const prs)
 {
 	operator op;
 
@@ -52,7 +52,7 @@ static operator operators_pop(parser *const prs)
 	return op;
 }
 
-static operator operators_peek(parser *const prs)
+static inline operator operators_peek(parser *const prs)
 {
 	operator op;
 

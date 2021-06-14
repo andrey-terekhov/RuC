@@ -85,7 +85,7 @@ static inline char32_t scan(lexer *const lxr)
  *
  *	@return	Peeked character
  */
-static char32_t lookahead(lexer *const lxr)
+static inline char32_t lookahead(lexer *const lxr)
 {
 	const size_t position = in_get_position(lxr->io);
 	const char32_t result = uni_scan_char(lxr->io);

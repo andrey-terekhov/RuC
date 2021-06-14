@@ -158,7 +158,7 @@ static void parse_default_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-static inline void parse_expression_statement(parser *const prs, node *const parent)
+static void parse_expression_statement(parser *const prs, node *const parent)
 {
 	parse_expression(prs, parent);
 	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
@@ -473,7 +473,7 @@ static void parse_return_statement(parser *const prs, node *const parent)
 }
 
 /**	Parse t_create_direct statement [RuC] */
-static inline void parse_create_direct_statement(parser *const prs, node *const parent)
+static void parse_create_direct_statement(parser *const prs, node *const parent)
 {
 	node nd = node_add_child(parent, OP_CREATE_DIRECT);
 	parse_statement_compound(prs, &nd, THREAD);
@@ -622,7 +622,7 @@ static size_t evaluate_args(parser *const prs, const size_t length, const char32
 }
 
 /**	Parse scanf statement [RuC] */
-void parse_scanf_statement(parser *const prs, node *const parent);
+static void parse_scanf_statement(parser *const prs, node *const parent);
 
 /**	Parse printf statement [RuC] */
 static void parse_printf_statement(parser *const prs, node *const parent)
