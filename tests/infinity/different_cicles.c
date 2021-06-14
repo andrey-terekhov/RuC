@@ -20,7 +20,7 @@ void main()
         break;
     }
     while (a + b > 0);
-   
+    
     while (!a)
     {
         continue;
@@ -29,7 +29,7 @@ void main()
         continue;
         a &= b;
     }
-
+ 
     for (i = 0; i < 5; ++i)
     {
         a = b;

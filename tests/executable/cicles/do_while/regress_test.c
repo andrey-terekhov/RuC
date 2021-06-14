@@ -1,7 +1,7 @@
 int main()
 {
    int i = 0, j = 9;
-   do
+   do 
    {
       i++;
    } while (i!=10);
@@ -15,7 +15,7 @@ int main()
    printid(j);
 
    i = 8; j = 0;
-   do
+   do 
    {
       j++;
       i--;

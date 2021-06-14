@@ -5,7 +5,7 @@ void main()
     struct somestr  str = {2, 2};
 
     pointstr = &str;
-   
+    
     print("2 2");
-    print(*pointstr);       
+    print(*pointstr);        
 }

@@ -2,9 +2,9 @@ int  b[3], c, d;
 
 void main()
 {
-    b[1]++;
+    b[1]++; 
     d++;
-    d = b[1]++;
+    d = b[1]++; 
     c = d++;
     print("b 0 2 0");
     printid(b);

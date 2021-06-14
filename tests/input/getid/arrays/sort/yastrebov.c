@@ -9,7 +9,7 @@ void main()
 	{
 		for(j=0;j<9-i;j++)
 		{
-			if (a[j]>a[j+1])
+			if (a[j]>a[j+1]) 
 			{
 				m=a[j];
 				a[j]=a[j+1];

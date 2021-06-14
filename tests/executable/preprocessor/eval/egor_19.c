@@ -1,4 +1,4 @@
-#define s #eval(10 / 3.0)
+#define s #eval(10 / 3.0) 
 
 void main()
 {

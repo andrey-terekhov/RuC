@@ -24,7 +24,7 @@ void* philosopher(void* n)
         printf("%s eats pasta\n", names[num]);
 		t_sem_post((num + 1) % COUNT_PHILOSOPHERS);
 		t_sem_post(num);
-	}
+	}	
     printf("%s ate %i times and was satisfied\n", names[num], count-1);
 	return 0;
 }
@@ -32,8 +32,8 @@ void* philosopher(void* n)
 int main()
 {
     int i, numthread, numsem;
-
-	for (i = 0; i < COUNT_PHILOSOPHERS; ++i)
+	
+	for (i = 0; i < COUNT_PHILOSOPHERS; ++i) 
 		numsem = t_sem_create(1);
 
 	for (i = 0; i < COUNT_PHILOSOPHERS ; ++i)

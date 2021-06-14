@@ -1,4 +1,4 @@
-int main()
+int main() 
 {
     float a = 2.304692654015389;
     int b;
@@ -15,6 +15,6 @@ int main()
     b = round(a);
     print("b -2");
     printid(b);
-   
+    
     return 0;
 }

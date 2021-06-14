@@ -3,7 +3,7 @@ int i, j;
 void main()
 {
    i = 8; j = 0;
-   do
+   do 
    {
       j++;
       i--;

@@ -1,5 +1,5 @@
 float f (int q)
-{    
+{     
             	float s=0;
 	int i;
 	for (i=0;i<q;i++)
@@ -27,14 +27,14 @@ void main ()
     getid(q);
     getid(n);
     for ( i=0;i<50;i++)
-     {        
+     {         
       	  N[i]=0;
       	  for (j=0;j<50;j++)
     	             E[i][j]='-';
-      } 
-    
+      }  
+     
 
-           
+            
      for ( j=0; j<1000; j++)
       {
             a=f(q) * 50;
@@ -47,14 +47,14 @@ void main ()
     {
     N[i]=49-N[i];
     E[i][N[i]]='a';
-    }    
+    }     
     for ( i=0;i<50;i++)
     {
         for ( j=0;j<50;j++)
             A[j]=E[j][i];
        print(A);
        print("\n");
-      
+       
     }
 }
 

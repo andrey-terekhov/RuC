@@ -12,5 +12,5 @@ void main()
     a = .2e2;
     printid(a);
     a = 12e-2;
-    printid(a);   
+    printid(a);    
 }

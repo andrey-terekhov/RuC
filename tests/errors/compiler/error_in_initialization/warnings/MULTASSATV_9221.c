@@ -1,4 +1,4 @@
-int main()
+int main() 
 {
 	char a[2] = {2, 3};
 	a[1] *= a[0];

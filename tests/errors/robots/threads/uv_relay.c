@@ -17,15 +17,15 @@ void * thread_1(void *);
 void * thread_1(void * thread_var)
 {
 	setsignal(RGB, { D22, D21 }, { 0, 0, 0, 0, 0, 255, 255 });
-
+	
 	while (1) {
 		uva = getdigsensor(UVA_ULTRAVIOLET, { D22, D21 });
 		uvb = getdigsensor(UVB_ULTRAVIOLET, { D22, D21 });
-	
+		
 		draw_number({ D22, D21 }, 0, 0, uva);
 		draw_number({ D22, D21 }, 0, 16, uvb);
 		t_sleep(500);
-	
+		
 		clear({ D22, D21 });
 	}
 	return 0;
@@ -34,25 +34,25 @@ void * thread_1(void * thread_var)
 
 int main()
 {
-
+	
 	t_create(thread_1);
 	while (1) {
 		setsignal(RELAY, { D22, D21 }, { 1, 0, 0, 0 });
-	
+		
 		t_sleep(1000);
-	
+		
 		setsignal(RELAY, { D22, D21 }, { 0, 0, 0, 1 });
-	
+		
 		t_sleep(1000);
-	
+		
 		setsignal(RELAY, { D22, D21 }, { 0, 1, 0, 0 });
-	
+		
 		t_sleep(1000);
-	
+		
 		setsignal(RELAY, { D22, D21 }, { 0, 0, 1, 0 });
-	
+		
 		t_sleep(1000);
-	
+		
 	}
 	return 0;
 

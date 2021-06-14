@@ -19,7 +19,7 @@ int main()
    b = d[0];
    print ("b 2");
    printid(b);
-   
+    
    m[0] /= d[1];
    k = m[0];
    print ("k 1.300000");

@@ -1,4 +1,4 @@
-
+ 
 using bincompl;
 process Neuronet =
 begin
@@ -8,7 +8,7 @@ out ans(int(15));
 
 data JT, JK, JD, J, II: uint(10),
 irot, layer: uint(4),
-tab: [0..15:uint(4)]int(15),
+tab: [0..15:uint(4)]int(15), 
 bram: [0..830: uint(10)][0..1023: uint(10)]int(15)
 
 
@@ -29,7 +29,7 @@ bram: [0..830: uint(10)][0..1023: uint(10)]int(15)
 ,s3
 
 
-
+ 
 , r0x0
 , r0x1
 , r0x2
@@ -60,10 +60,10 @@ tab[JT]:=a | tab[JT+1]:=b | tab[JT+2]:=c | tab[JT+3]:=d | JT:=JT + 4
 
 elif JK < 12 then
 bram[II][JK]:=a | bram[II+1][JK]:=b | bram[II+2][JK]:=c | bram[II+3][JK]:=d | II:=II+4 |
-if II == 8 then II:=0 | JK:=JK + 1 else II:=II+4 fi
+if II == 8 then II:=0 | JK:=JK + 1 else II:=II+4 fi 
 
 elif JD < 8
-in0 := in4 | in1 := in5 |
+in0 := in4 | in1 := in5 | 
 in2 := in6 | in3 := in7 |
 in4 := a | in5 := b | in6 := c | in7 := d | JD:=JD+4
 
@@ -72,7 +72,7 @@ while layer < 3
 do
 while irot < 3
 do
-
+ 
 r0x0:=in0 |
 r1x0:=in0 |
 r2x0:=in0 |
@@ -99,7 +99,7 @@ in5:=in8 |
 
 
 
-
+ 
 a0x0 = bram[0][J] |
 a1x0 = bram[1][J] |
 a2x0 = bram[2][J] |
@@ -114,7 +114,7 @@ a2x2 = bram[10][J] |
 a3x2 = bram[11][J] |
 
 skip;
-
+ 
 r0x0 := let x = sext(r0x0,30) * sext(a0x0,30) in x{29} || x{4:17} |
 r1x0 := let x = sext(r1x0,30) * sext(a1x0,30) in x{29} || x{4:17} |
 r2x0 := let x = sext(r2x0,30) * sext(a2x0,30) in x{29} || x{4:17} |
@@ -130,7 +130,7 @@ r3x2 := let x = sext(r3x2,30) * sext(a3x2,30) in x{29} || x{4:17} |
 
 first:=0 | irot:= irot + 1 | J:=J + 1;
 
-
+ 
 
  r0x0:=r0x0 + r0x1 |
 
@@ -173,26 +173,26 @@ s3:= s3 + r3x0 |
 skip
 done;
 irot:=0 |
-
-let s =
+ 
+let s = 
 if s0 < ({-4}:int(15)) then tab[0]
 elif s0 > ({4}: int(15)) then tab[15]
 else tab[s0{3:6}]
 fi in
 in0:=s |
-let s =
+let s = 
 if s1 < ({-4}:int(15)) then tab[0]
 elif s1 > ({4}: int(15)) then tab[15]
 else tab[s1{3:6}]
 fi in
 in1:=s |
-let s =
+let s = 
 if s2 < ({-4}:int(15)) then tab[0]
 elif s2 > ({4}: int(15)) then tab[15]
 else tab[s2{3:6}]
 fi in
 in2:=s |
-let s =
+let s = 
 if s3 < ({-4}:int(15)) then tab[0]
 elif s3 > ({4}: int(15)) then tab[15]
 else tab[s3{3:6}]

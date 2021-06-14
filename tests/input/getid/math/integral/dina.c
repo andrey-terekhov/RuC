@@ -5,22 +5,22 @@ void main()
     getid(a);
     getid(b);
     n = 10;
-    s = 0;
+    s = 0; 
     s1 = 0;
-   
-    do
+    
+    do 
     {
         d = (b-a)/n;
-            for (i = 0; i < n; i++)
+            for (i = 0; i < n; i++) 
             {
                 s = s+((sin(a+i*d)+sin(a+(i+1)*d))/2)*d;
             }
-         if (abs(s-s1) > e)
-         {
+         if (abs(s-s1) > e) 
+         { 
          s1 = s;
          s = 0;
          n = n*2;
-         } 
+         }  
      }
     while (abs(s-s1)>e);
     printid(s);

@@ -1,6 +1,6 @@
 int main()
 {
-	float a;
+	float a; 
 	int b;
 	a = 6.1;
 	b = a >> 1;

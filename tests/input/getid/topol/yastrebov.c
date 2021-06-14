@@ -32,17 +32,17 @@ void main ()
 	getid (formula);
 	printid (formula);
 	for (i=0; i < 20; i++)
-	{
+	{ 
 		c=formula[i];
 		while (c== ' ' && i<19)
 		{
 			i++;
-			c=formula[i];
+			c=formula[i]; 
 		}
-		if ( letter (c) || digit (c) || c==' ' )
+		if ( letter (c) || digit (c) || c==' ' ) 
 		{
 			res[++rp]=c;
-		}
+		} 
 		else if ((p = opnum (c))< 0)
 		{
 			print ("bad symbol");
@@ -52,9 +52,9 @@ void main ()
 		{
 			while(stack[sp].code != '(' )
 			{
-				res[++rp]=stack [sp--].code ;
+				res[++rp]=stack [sp--].code ; 
 			}
-		sp--;
+		sp--; 
 		}
 		else if (c=='(')
 		{
@@ -64,18 +64,18 @@ void main ()
 		}
 		else
 		{
-			int prio = operations [p].prio, j;
+			int prio = operations [p].prio, j; 
 			while (sp>=0 && stack [sp].prio >=prio)
 				res[++rp]=stack [sp--].code ;
 			stack[++sp].prio = prio ;
 			stack [sp].code = operations [p].code;
 			print (stack);
-			printid (res);
+			printid (res); 
 		}
 
 	}
 	while (sp>=0 )
-		res[++rp]=stack [sp--].code ;
-	print (res);
+		res[++rp]=stack [sp--].code ; 
+	print (res); 
 	badend : ;
 }

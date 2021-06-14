@@ -12,7 +12,7 @@ void main()
 	for (i = 0; i < 50; i++)
 	{
 		j = i * 0.3;
-		c = 15 * sin(j); 
+		c = 15 * sin(j); 	
 		k = round(c);
 		a[i][k + 15] = 'X';
 	}
@@ -24,7 +24,7 @@ void main()
 			b[k] = a[i][k];
 		}
 		printid(b);
-	}
+	}	
 }
-	
+		
 	

@@ -32,7 +32,7 @@ int main()
    }
    print ("i  5");
    printid(i);
-  
+   
    for (i = 0; i < 6; )
 	   i++;
    print ("i  6");

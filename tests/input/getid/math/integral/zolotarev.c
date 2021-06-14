@@ -10,26 +10,26 @@ void main()
 	int i, n;
 
 	getid(a);
-
+	
 	getid(b);
-
+	
 	n = 10;
 	s = 0; s1 = 0;
-
+	
 	printid(a);
 	printid(b);
-
-	do
+	
+	do 
 	{
 		l = (b - a) / n;
-	
+		
 		for (i = 0; i < n; i++)
 		{
 			s += ((f(a + i * l) + f(a + (i + 1) * l)) / 2) * l;
 		}
 
-		if (abs(s - s1) > l)
-		{
+		if (abs(s - s1) > l) 
+		{ 
 			s1 = s;
 			s = 0;
 			n = n * 2;

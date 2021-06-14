@@ -15,5 +15,5 @@ void main()
 	assert(c == 34, "Must be 34");
 
 	c = s(a, b, c);
-	assert(c == -21, "Must be -21");
+	assert(c == -21, "Must be -21"); 
 } 

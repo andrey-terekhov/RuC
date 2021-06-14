@@ -13,19 +13,19 @@ void main ()
             case 'a':
                 B[0]++;
             break;
-           
+            
             case 'b':
                 B[1]++;
             break;
-           
+            
             case 'c':
                 B[2]++;
             break;
-           
+            
             case 'd':
                 B[3]++;
             break;
-           
+            
             case 'e':
                 B[4]++;
             break;

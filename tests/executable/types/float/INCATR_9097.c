@@ -4,7 +4,7 @@ void main()
 {
   d = ++b[1];
   printid(d);
- 
+  
   d = ++c;
   printid(d);
 }

@@ -1,4 +1,4 @@
-void main()
+void main() 
 {
     int x = 12;
     printf("x=%i\n", x);

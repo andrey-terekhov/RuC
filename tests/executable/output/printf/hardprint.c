@@ -1,4 +1,4 @@
-void main()
+void main() 
 {
     int x = 12;
     double y = 0.123;

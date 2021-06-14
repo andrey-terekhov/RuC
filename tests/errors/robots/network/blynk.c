@@ -1,7 +1,7 @@
 void main()
 {
     int message;
-   
+    
     wifi_connect("str1", "str2");
     blynk_terminal(11, "str3");
     blynk_authorization("str4");

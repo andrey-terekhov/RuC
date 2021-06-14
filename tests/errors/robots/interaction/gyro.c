@@ -18,33 +18,33 @@ float z;
 
 int main()
 {
-
+	
 	while (1) {
 		laser = getdigsensor(LASER, { D22, D21 });
-	
+		
 		if (laser > 100) {
 			setmotor(MA, 50);
 			setmotor(MB, 50);
-		
+			
 		} else {
 			angle = 90;
 			do {
 				setmotor(MA, 50);
-			
+				
 				setmotor(MB, -(50));
-			
+				
 				t_sleep(100);
-			
+				
 				x = getdigsensor(X_GYROSCOPE, { D17, D16 }) / 100;
-			
+				
 				angle = angle - abs(x) / 10;
 			} while (angle > 0);
 			setmotor(MA, 50);
 			setmotor(MB, 50);
-		
+			
 		}
 		t_sleep(1000);
-	
+		
 	}
 	return 0;
 

@@ -11,7 +11,7 @@ int main() {
     for (i = 0; i < 2; ++i)
         for (j = 0; j < 3; ++j)
             w.a[i][j] = i + j;
-   
+    
     print(wp->a[1]);
 	return 0;
 }

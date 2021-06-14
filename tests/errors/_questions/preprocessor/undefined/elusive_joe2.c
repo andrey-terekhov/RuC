@@ -1,4 +1,4 @@
-#inc
+#inc 
 
 int main ()
 {

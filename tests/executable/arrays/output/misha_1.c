@@ -1,4 +1,4 @@
-void main()
+void main() 
 {
 	char s[] = "asdf";
     char s2[2][] = {"ad", "qwer"};

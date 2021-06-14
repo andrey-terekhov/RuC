@@ -8,7 +8,7 @@ void main()
     print(*b); // 10
     ++*b;
     print(*b); // 11
-   
+    
     d = &c;
     print(*d); // 3.14
     (*d)++;
@@ -19,7 +19,7 @@ void main()
     a = ++e + ++e;
     printid(a);
     printid(e); // 3
-   
+    
     a = e++ + ++e;
     printid(a); // 8
     printid(e); // 5

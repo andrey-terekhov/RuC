@@ -5,6 +5,6 @@ int main()
 	//float a = 1.0;
 	int b = 1;
 	arr(b);
-	//printf("%i", not_arr[b]);
+	//printf("%i", not_arr[b]);	
 	return 0;
 }

@@ -1,5 +1,5 @@
 float b = 3.14;
-int a = 3;
+int a = 3; 
 
 void MAIN()
 {

@@ -28,9 +28,9 @@ void main()
             b = 50 - 1 - C(a);
             // print(b);
             E[i][b] = '@';
-           
+            
         }
-       
+        
     }
     for (i = 0; i < 50; i++)
     {

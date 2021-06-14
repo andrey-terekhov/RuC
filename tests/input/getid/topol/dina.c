@@ -1,13 +1,13 @@
 struct oper { char code; int prio;};
 struct oper operations [4] = {{ '*', 8 }, { '/', 8 }, {'+', 7 }, {'-', 7}};
-int digit (char c)
+int digit (char c) 
 {
 	return '0'<=c && c<='9';
 }
 int letter( char c)
 {
 	return 'a'<=c && c<='z';
-}
+} 
 int opnum( char c)
 {
 	return c == '*' ? 0 : c == '/' ? 1 : c == '+' ? 2 : c == '-' ? 3 : -1;
@@ -29,7 +29,7 @@ void main ()
 			print ( "bad symbol\n");
 			goto badend;
 		}
-		else
+		else 
 		{
 			int prio = operations [p].prio, j;
 			while ( sp>=0 && stack[sp].prio >= prio)

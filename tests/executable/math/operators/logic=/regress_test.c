@@ -1,7 +1,7 @@
 int main()
 {
    int a = 1, b = 0, c = 1, d = 0;
-  
+   
    a &= b;
    print ("a  0");
    printid(a);

@@ -6,10 +6,10 @@ void main()
 		case 10
 			b++;
 		break;
-
+	
 		default:
 		break;
 	}
-
+	
 	printid(b);
 }

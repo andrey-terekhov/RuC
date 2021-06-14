@@ -12,7 +12,7 @@ int main()
             return a;
         case 3:
             a = 3;
-            break;           
+            break;            
         default:
             b = a;
     }

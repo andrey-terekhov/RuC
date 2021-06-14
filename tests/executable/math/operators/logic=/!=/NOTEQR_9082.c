@@ -1,4 +1,4 @@
-int main()
+int main() 
 {
 	float a = 1, b = 2;
 	if (a != b)

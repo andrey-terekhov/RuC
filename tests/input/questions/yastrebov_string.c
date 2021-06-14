@@ -24,11 +24,11 @@ void main ()
 		{
 			print ("int nimber: ");
 			if (x==-1)
-				n*=-1;
+				n*=-1; 
 			printid(n);
 		}
 	else if((c=='.')||(c==','))
-	{
+	{ 
 		c = a[++j];
 		while (c <= '9' && c>='0' && j < 5)
 		{
@@ -39,6 +39,6 @@ void main ()
         y += n;
                   print("real number :");
                   printid(y);
-                 
+                  
 	}
 }

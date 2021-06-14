@@ -62,7 +62,7 @@ void* consumer_thread(void *arg )
 int main(int argc, char **argv)
 {
 	t_init();
-
+	
 	accessNum = t_sem_create(1);
 	emptyNum = t_sem_create (0);
 	fullNum = t_sem_create(BUF_SIZE);
