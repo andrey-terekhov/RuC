@@ -39,8 +39,8 @@ typedef struct lexer
 	double num_double;						/**< Value of the read double number */
 	char32_t lexstr[MAX_STRING_LENGTH + 1];	/**< Representation of the read string literal */
 
-	bool disable_recovery;					/**< Disable error recovery & multiple output */
-	bool was_error;							/**< Error flag */
+	bool is_recovery_disabled;				/**< Set, if error recovery & multiple output disabled */
+	bool was_error;							/**< Set, if was error */
 } lexer;
 
 /**

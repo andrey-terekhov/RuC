@@ -27,7 +27,7 @@
  *
  *	@return	Recovery status
  */
-static inline bool is_recovery_disabled(const workspace *const ws)
+static inline bool recovery_status(const workspace *const ws)
 {
 	for (size_t i = 0; ; i++)
 	{
@@ -51,7 +51,7 @@ static inline bool is_recovery_disabled(const workspace *const ws)
  */
 static void lexer_error(lexer *const lxr, error_t num, ...)
 {
-	if (lxr->disable_recovery && lxr->was_error)
+	if (lxr->is_recovery_disabled && lxr->was_error)
 	{
 		return;
 	}
@@ -182,8 +182,8 @@ static token_t lex_numeric_constant(lexer *const lxr)
 {
 	int num_int = 0;
 	double num_double = 0.0;
-	bool flag_int = true;
-	bool flag_too_long = false;
+	bool is_integer = true;
+	bool is_out_of_range = false;
 
 	while (utf8_is_digit(lxr->character))
 	{
@@ -194,13 +194,13 @@ static token_t lex_numeric_constant(lexer *const lxr)
 
 	if (num_double > (double)INT_MAX)
 	{
-		flag_too_long = true;
-		flag_int = false;
+		is_out_of_range = true;
+		is_integer = false;
 	}
 
 	if (lxr->character == '.')
 	{
-		flag_int = false;
+		is_integer = false;
 		double position_mult = 0.1;
 		while (utf8_is_digit(scan(lxr)))
 		{
@@ -217,7 +217,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 
 		if (lxr->character == '-')
 		{
-			flag_int = false;
+			is_integer = false;
 			scan(lxr);
 			sign = -1;
 		}
@@ -238,7 +238,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 			scan(lxr);
 		}
 
-		if (flag_int)
+		if (is_integer)
 		{
 			for (int i = 1; i <= power; i++)
 			{
@@ -248,7 +248,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 		num_double *= pow(10.0, sign * power);
 	}
 
-	if (flag_int)
+	if (is_integer)
 	{
 		lxr->num = num_int;
 		return TK_INT_CONST;
@@ -256,7 +256,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 	else
 	{
 		lxr->num_double = num_double;
-		if (flag_too_long)
+		if (is_out_of_range)
 		{
 			warning(lxr->io, too_long_int);
 		}
@@ -339,13 +339,13 @@ static token_t lex_char_constant(lexer *const lxr)
 static token_t lex_string_literal(lexer *const lxr)
 {
 	size_t length = 0;
-	bool flag_too_long_string = false;
+	bool is_string_too_long = false;
 	while (lxr->character == '\"')
 	{
 		scan(lxr);
 		while (lxr->character != '"' && lxr->character != '\n' && length < MAX_STRING_LENGTH)
 		{
-			if (!flag_too_long_string)
+			if (!is_string_too_long)
 			{
 				lxr->lexstr[length++] = get_next_string_elem(lxr);
 			}
@@ -354,7 +354,7 @@ static token_t lex_string_literal(lexer *const lxr)
 		if (length == MAX_STRING_LENGTH)
 		{
 			lexer_error(lxr, string_too_long);
-			flag_too_long_string = true;
+			is_string_too_long = true;
 			while (lxr->character != '"' && lxr->character != '\n')
 			{
 				scan(lxr);
@@ -391,7 +391,7 @@ lexer create_lexer(const workspace *const ws, universal_io *const io, syntax *co
 	lxr.sx = sx;
 	lxr.repr = 0;
 
-	lxr.disable_recovery = is_recovery_disabled(ws);
+	lxr.is_recovery_disabled = recovery_status(ws);
 	lxr.was_error = false;
 
 	scan(&lxr);
