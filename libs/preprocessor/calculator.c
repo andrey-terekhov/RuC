@@ -359,7 +359,7 @@ int calc_close(double *const stack, int *const is_int, const char *operation, in
 	while ((scope_flag && operation[*op_size - 1] != '(' && operation[*op_size - 1] != '[') || (!scope_flag && *op_size > 0))
 	{
 		if (*stk_size < 2 || *op_size == 0)
-		{
+		{	
 			return -1;
 		}
 
@@ -459,7 +459,7 @@ int calculate(environment *const env, const int type)
 		if(rez == -1 || rez == 0)
 		{
 			return rez;
-		}
+		} 
 		else if (rez == 1)
 		{
 			continue;

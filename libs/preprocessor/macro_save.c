@@ -116,7 +116,7 @@ int func_add_ident(environment *const env)
 			return -1;
 		}
 	}
-
+	
 	m_nextch(env);
 	return num;
 }
@@ -126,7 +126,7 @@ int macro_tab_add_func(environment *const env)
 	const int flag_macro_directive = env->cur == SH_MACRO;
 
 	env->macro_tab[env->macro_tab_size++] = MACROFUNCTION;
-
+	
 	int empty = 0;
 	if (env->curchar == ')')
 	{
@@ -221,7 +221,7 @@ int define_add_to_reprtab(environment *const env)
 		return -1;
 	}
 
-
+	
 	int oldrepr = env->rp;
 	int hash = 0;
 	env->rp += 2;
@@ -393,7 +393,7 @@ int macro_set(environment *const env)
 		return -1;
 	}
 
-	const int macro_ptr = collect_mident(env);
+	const int macro_ptr = collect_mident(env);	
 	if (env->macro_tab[env->reprtab[macro_ptr + 1]] == MACROFUNCTION)
 	{
 		env_error(env, functions_cannot_be_changed);

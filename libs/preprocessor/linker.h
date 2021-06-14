@@ -40,7 +40,7 @@ typedef struct linker
 /**
  *	Create linker structure
  *
- *	@param	ws		Workspace structure
+ *	@param	ws		Workspace structure	 
  *
  *	@return	Linker structure
  */
