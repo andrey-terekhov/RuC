@@ -28,12 +28,12 @@
 #endif
 
 
-const item_t REF_MASK = (item_t)0b11111111 << (8 * min(sizeof(item_t), sizeof(size_t)) - 8);
-const item_t REF_LABEL = (item_t)0b10010010 << (8 * min(sizeof(item_t), sizeof(size_t)) - 8);
+static const item_t REF_MASK = (item_t)0b11111111 << (8 * min(sizeof(item_t), sizeof(size_t)) - 8);
+static const item_t REF_LABEL = (item_t)0b10010010 << (8 * min(sizeof(item_t), sizeof(size_t)) - 8);
 
 
-node node_expression(vector *const tree, const size_t index);
-node node_operator(vector *const tree, const size_t index);
+static node node_expression(vector *const tree, const size_t index);
+static node node_operator(vector *const tree, const size_t index);
 
 
 static inline int is_ref(const item_t value)
@@ -54,7 +54,7 @@ static inline item_t from_ref(const item_t value)
 }
 
 
-int vector_swap(vector *const vec, size_t fst_index, size_t fst_size, size_t snd_index, size_t snd_size)
+static int vector_swap(vector *const vec, size_t fst_index, size_t fst_size, size_t snd_index, size_t snd_size)
 {
 	if (fst_index > snd_index)
 	{
@@ -99,7 +99,7 @@ int vector_swap(vector *const vec, size_t fst_index, size_t fst_size, size_t snd
 }
 
 
-int is_operator(const item_t value)
+static inline int is_operator(const item_t value)
 {
 	return value == OP_FUNC_DEF		// Declarations
 		|| value == OP_DECL_ID
@@ -130,7 +130,7 @@ int is_operator(const item_t value)
 		|| value == OP_EXIT_DIRECT;
 }
 
-int is_expression(const item_t value)
+static inline int is_expression(const item_t value)
 {
 	return value == OP_ARRAY_INIT		// Declarations
 		|| value == OP_STRUCT_INIT
@@ -156,13 +156,13 @@ int is_expression(const item_t value)
 		|| value == OP_EXPR_END;
 }
 
-int is_lexeme(const item_t value)
+static inline int is_lexeme(const item_t value)
 {
 	return (value > BEGIN_OP_FINAL && value < END_OP_FINAL) || is_ref(value);
 }
 
 
-node node_broken()
+static inline node node_broken()
 {
 	node nd;
 	nd.tree = NULL;
@@ -170,7 +170,7 @@ node node_broken()
 }
 
 
-size_t skip_expression(vector *const tree, size_t i)
+static size_t skip_expression(vector *const tree, size_t i)
 {
 	node nd = node_expression(tree, i);
 	if (!node_is_correct(&nd))
@@ -187,7 +187,7 @@ size_t skip_expression(vector *const tree, size_t i)
 	return i;
 }
 
-node node_expression(vector *const tree, const size_t index)
+static node node_expression(vector *const tree, const size_t index)
 {
 	if (index == SIZE_MAX)
 	{
@@ -325,7 +325,7 @@ node node_expression(vector *const tree, const size_t index)
 }
 
 
-size_t skip_operator(vector *const tree, size_t i)
+static size_t skip_operator(vector *const tree, size_t i)
 {
 	if (!is_operator(vector_get(tree, i)) && vector_get(tree, i) != OP_NOP)
 	{
@@ -347,7 +347,7 @@ size_t skip_operator(vector *const tree, size_t i)
 	return i;
 }
 
-node node_operator(vector *const tree, const size_t index)
+static node node_operator(vector *const tree, const size_t index)
 {
 	if (index == SIZE_MAX)
 	{
@@ -524,7 +524,7 @@ node node_operator(vector *const tree, const size_t index)
 }
 
 
-size_t node_test_recursive(node *const nd, size_t i)
+static size_t node_test_recursive(node *const nd, size_t i)
 {
 	if (i == SIZE_MAX)
 	{
@@ -554,7 +554,7 @@ size_t node_test_recursive(node *const nd, size_t i)
 	return i;
 }
 
-int node_test_copy(node *const dest, node *const nd)
+static int node_test_copy(node *const dest, node *const nd)
 {
 	node child_dest = node_add_child(dest, node_get_type(nd));
 	if (!node_is_correct(&child_dest))

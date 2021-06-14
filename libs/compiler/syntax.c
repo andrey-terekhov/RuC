@@ -20,14 +20,14 @@
 #include "old_tree.h"
 
 
-const size_t REPRESENTATIONS_SIZE = 10000;
-const size_t IDENTIFIERS_SIZE = 10000;
-const size_t FUNCTIONS_SIZE = 100;
-const size_t MODES_SIZE = 1000;
-const size_t TREE_SIZE = 10000;
+static const size_t REPRESENTATIONS_SIZE = 10000;
+static const size_t IDENTIFIERS_SIZE = 10000;
+static const size_t FUNCTIONS_SIZE = 100;
+static const size_t MODES_SIZE = 1000;
+static const size_t TREE_SIZE = 10000;
 
 
-void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
+static void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
 {
 	char32_t buffer[MAX_STRING_LENGTH];
 
@@ -48,7 +48,7 @@ void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char3
 	map_add_by_utf8(reprtab, buffer, token);
 }
 
-void repr_init(map *const reprtab)
+static inline void repr_init(map *const reprtab)
 {
 	repr_add_keyword(reprtab, U"main", U"главная", TK_MAIN);
 	repr_add_keyword(reprtab, U"char", U"литера", TK_CHAR);
@@ -123,7 +123,7 @@ void repr_init(map *const reprtab)
 }
 
 
-void mode_init(syntax *const sx)
+static inline void mode_init(syntax *const sx)
 {
 	vector_increase(&sx->modes, 1);
 	// занесение в modetab описателя struct {int numTh; int inf; }
@@ -153,7 +153,7 @@ void mode_init(syntax *const sx)
 	sx->start_mode = 14;
 }
 
-item_t get_static(syntax *const sx, const item_t type)
+static inline item_t get_static(syntax *const sx, const item_t type)
 {
 	const item_t old_displ = sx->displ;
 	sx->displ += sx->lg * size_of(sx, type);
@@ -171,7 +171,7 @@ item_t get_static(syntax *const sx, const item_t type)
 }
 
 /**	Check if modes are equal */
-int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
+static inline int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
 {
 	if (vector_get(&sx->modes, first) != vector_get(&sx->modes, second))
 	{

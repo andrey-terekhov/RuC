@@ -27,10 +27,10 @@
 #include "utf8.h"
 
 
-const char *const DEFAULT_CODES = "codes.txt";
+static const char *const DEFAULT_CODES = "codes.txt";
 
-const size_t MAX_MEM_SIZE = 100000;
-const size_t MAX_STACK_SIZE = 256;
+static const size_t MAX_MEM_SIZE = 100000;
+static const size_t MAX_STACK_SIZE = 256;
 
 
 /** Virtual machine environment */

@@ -27,7 +27,7 @@
 #define INDENT			"  "
 
 
-size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
+static size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 {
 	if (buffer == NULL)
 	{
@@ -1251,7 +1251,7 @@ size_t elem_get_name(const item_t elem, const size_t num, char *const buffer)
 }
 
 
-void double_to_io(universal_io *const io, const int64_t fst, const int64_t snd)
+static void double_to_io(universal_io *const io, const int64_t fst, const int64_t snd)
 {
 	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
 	double numdouble;
@@ -1259,7 +1259,7 @@ void double_to_io(universal_io *const io, const int64_t fst, const int64_t snd)
 	uni_printf(io, " %f\n", numdouble);
 }
 
-size_t elem_to_io(universal_io *const io, const vector *const table, size_t i)
+static size_t elem_to_io(universal_io *const io, const vector *const table, size_t i)
 {
 	const item_t type = vector_get(table, i++);
 
@@ -1308,7 +1308,7 @@ size_t elem_to_io(universal_io *const io, const vector *const table, size_t i)
 }
 
 
-size_t tree_print_recursive(universal_io *const io, node *const nd, size_t index, size_t tabs)
+static size_t tree_print_recursive(universal_io *const io, node *const nd, size_t index, size_t tabs)
 {
 	for (size_t i = 0; i < tabs; i++)
 	{
