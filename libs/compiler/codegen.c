@@ -917,7 +917,7 @@ static int output_export(universal_io *const io, const virtual *const vm)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n"
+	uni_printf(io, "%zu %zu %zu %zu %zu %" PRIitem " %zu\n"
 		, vector_size(&vm->memory)
 		, vector_size(&vm->sx->functions)
 		, vector_size(&vm->identifiers)
