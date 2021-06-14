@@ -49,8 +49,17 @@ typedef struct information
 
 	node_info stack[MAX_STACK_SIZE];					/**< Стек для преобразования выражений */
 	size_t stack_size;									/**< Размер стека */
+	size_t skip_counter;								/**< Счётчик для пропуска нод после перестановки */
+	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
+	size_t slice_depth;									/**< Количество узлов после TSliceident */
+	size_t slice_stack_size;							/**< Размер стека в начале вырезки */
 } information;
 
+
+static inline size_t stack_peek_depth(information *const info)
+{
+	return info->stack[info->stack_size - 1].depth;
+}
 
 static inline int stack_push(information *const info, node_info *const nd)
 {
@@ -73,9 +82,9 @@ static inline node_info *stack_pop(information *const info)
 	return &info->stack[--info->stack_size];
 }
 
-static inline void stack_clear(information *const info)
+static inline void stack_resize(information *const info, const int size)
 {
-	info->stack_size = 0;
+	info->stack_size = size;
 }
 
 
@@ -111,6 +120,7 @@ static expression_t expression_type(node *const nd)
 		case TConstd:
 		case TIdenttovald:
 		case TCall1:
+		case TSliceident:
 			return OPERAND;
 
 
@@ -275,9 +285,20 @@ static int node_recursive(information *const info, node *const nd)
 {
 	int has_error = 0;
 
+	if (info->slice_depth != 0 && info->skip_counter <= 1)
+	{
+		info->slice_depth++;
+	}
+
 	for (size_t i = 0; i < node_get_amount(nd); i++)
 	{
 		node child = node_get_child(nd, i);
+
+		// Очищаем полностью стек, если родитель -- блок
+		if (node_get_type(nd) == TBegin)
+		{
+			stack_resize(info, 0);
+		}
 
 		switch (node_get_type(&child))
 		{
@@ -324,12 +345,44 @@ static int node_recursive(information *const info, node *const nd)
 			break;
 
 			case TExprend:
-				// если конец выражения, то очищаем стек
-				stack_clear(info);
-				break;
+			{
+				if (info->slice_depth == 0)
+				{
+					// При обходе после перестановки нужно учитывать и TExprend
+					if (info->skip_counter > 1)
+					{
+						info->skip_counter--;
+					}
+				}
+				else if (info->skip_counter <= 1)
+				{
+					// если вырезка не переставлена, то надо частично очистить стек и изменить глубину TSliceident
+					node nd_expr_end = node_get_child(&child, 0);
+					if (node_get_type(&nd_expr_end) == TSlice)
+					{
+						break;
+					}
+
+					stack_resize(info, info->slice_stack_size);
+
+					node_info *slice_info = stack_pop(info);
+
+					slice_info->depth = info->slice_depth;
+					stack_push(info, slice_info);
+					info->slice_depth = 0;
+				}
+			}
+			break;
 
 			default:
 			{
+				// если узел в переставленном выражении, то ничего делать не надо
+				if (info->skip_counter > 1)
+				{
+					info->skip_counter--;
+					break;
+				}
+
 				node_info nd_info = { nd, i, 1 };
 
 				// перестановка узлов выражений
@@ -350,11 +403,19 @@ static int node_recursive(information *const info, node *const nd)
 					{
 						node_info *operand = stack_pop(info);
 
+						if (node_get_type(nd_info.parent) == TAddrtoval)
+						{
+							node_info log_info = { nd_info.parent, 1, 1 };
+							has_error |= transposition(&nd_info, &log_info);
+						}
+
 						// перестановка с операндом
 						has_error |= transposition(operand, &nd_info);
 
 						// добавляем в стек переставленное выражение
 						has_error |=  stack_push(info, operand);
+
+						info->skip_counter = stack_peek_depth(info);
 					}
 					break;
 					case BINARY_OPERATION:
@@ -362,11 +423,18 @@ static int node_recursive(information *const info, node *const nd)
 						node_info *second = stack_pop(info);
 						node_info *first = stack_pop(info);
 
+						if (node_get_type(nd_info.parent) == TAddrtoval)
+						{
+							node_info log_info = { nd_info.parent, 1, 1 };
+							has_error |= transposition(&nd_info, &log_info);
+						}
+
 						// перестановка со вторым операндом
 						has_error |= transposition(second, &nd_info);
 
 						// надо переставить second с родителем
-						if (node_get_type(second->parent) == ADLOGOR || node_get_type(second->parent) == ADLOGAND)
+						if (node_get_type(second->parent) == ADLOGOR || node_get_type(second->parent) == ADLOGAND
+							|| node_get_type(second->parent) == TAddrtoval)
 						{
 							node_info log_info = { second->parent, 1, 1 };
 							has_error |= transposition(second, &log_info);
@@ -377,6 +445,8 @@ static int node_recursive(information *const info, node *const nd)
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(info, first);
+
+						info->skip_counter = stack_peek_depth(info);
 					}
 					break;
 					case NOT_EXPRESSION:
@@ -384,6 +454,14 @@ static int node_recursive(information *const info, node *const nd)
 				}
 			}
 			break;
+		}
+
+		// если встретили вырезку, надо запомнить состояние стека для дальнейшего восстановления
+		// и установить начальную глубину вырезки
+		if (node_get_type(&child) == TSliceident && info->skip_counter <= 1)
+		{
+			info->slice_depth = 1;
+			info->slice_stack_size = info->stack_size;
 		}
 
 		if (has_error || node_recursive(info, &child))
@@ -402,6 +480,9 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	info.string_num = 1;
 	info.was_printf = 0;
 	info.stack_size = 0;
+	info.skip_counter = 1;
+	info.slice_depth = 0;
+	info.slice_stack_size = 0;
 
 	node nd = node_get_root(&sx->tree);
 	for (size_t i = 0; i < node_get_amount(&nd); i++)

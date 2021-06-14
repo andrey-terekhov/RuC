@@ -84,6 +84,8 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case PLUSASS:
 		case PLUSASSV:
 		case LPLUS:
+		case PLUSASSAT:
+		case PLUSASSATV:
 			uni_printf(io, "add nsw");
 			break;
 
@@ -95,18 +97,24 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case MINUSASSV:
 		case LMINUS:
 		case UNMINUS:
+		case MINUSASSAT:
+		case MINUSASSATV:
 			uni_printf(io, "sub nsw");
 			break;
 
 		case MULTASS:
 		case MULTASSV:
 		case LMULT:
+		case MULTASSAT:
+		case MULTASSATV:
 			uni_printf(io, "mul nsw");
 			break;
 
 		case DIVASS:
 		case DIVASSV:
 		case LDIV:
+		case DIVASSAT:
+		case DIVASSATV:
 			uni_printf(io, "sdiv");
 			break;
 
@@ -166,40 +174,43 @@ static void operation_to_io(universal_io *const io, const item_t type)
 	}
 }
 
-static void to_code_operation_reg_reg(information *const info, item_t type, item_t fst, item_t snd)
+static void to_code_operation_reg_reg(information *const info, const item_t type, const item_t fst, const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, type);
 	uni_printf(info->io, " i32 %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_operation_reg_const(information *const info, item_t type, item_t fst, item_t snd)
+static void to_code_operation_reg_const(information *const info, const item_t type, const item_t fst, const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, type);
 	uni_printf(info->io, " i32 %%.%" PRIitem ", %" PRIitem "\n", fst, snd);
 }
 
-static void to_code_operation_const_reg(information *const info, item_t type, item_t fst, item_t snd)
+static void to_code_operation_const_reg(information *const info, const item_t type, const item_t fst, const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, type);
 	uni_printf(info->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static inline void to_code_load(information *const info, item_t result, item_t displ)
+static inline void to_code_load(information *const info, const item_t result, const item_t displ, const int is_array)
 {
-	uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%var.%" PRIitem ", align 4\n", result, displ);
+	uni_printf(info->io, " %%.%" PRIitem " = load i32, i32* %%%s.%" PRIitem ", align 4\n"
+		, result, is_array ? "" : "var", displ);
 }
 
-static inline void to_code_store_reg(information *const info, item_t reg, item_t displ)
+static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const int is_array)
 {
-	uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", reg, displ);
+	uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%%s.%" PRIitem ", align 4\n"
+		, reg, is_array ? "" : "var", displ);
 }
 
-static inline void to_code_store_const(information *const info, item_t arg, item_t displ)
+static inline void to_code_store_const(information *const info, const item_t arg, const item_t displ, const int is_array)
 {
-	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%var.%" PRIitem ", align 4\n", arg, displ);
+	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%%s.%" PRIitem ", align 4\n"
+		, arg, is_array ? "" : "var", displ);
 }
 
 static void to_code_try_zext_to(information *const info)
@@ -214,20 +225,20 @@ static void to_code_try_zext_to(information *const info)
 	info->answer_reg = info->register_num++;
 }
 
-static inline void to_code_label(information *const info, item_t label_num)
+static inline void to_code_label(information *const info, const item_t label_num)
 {
 	uni_printf(info->io, " label%" PRIitem ":\n", label_num);
 }
 
-static inline void to_code_unconditional_branch(information *const info, item_t label_num)
+static inline void to_code_unconditional_branch(information *const info, const item_t label_num)
 {
 	uni_printf(info->io, " br label %%label%" PRIitem "\n", label_num);
 }
 
-static inline void to_code_conditional_branch(information *const info, item_t reg, item_t label_true, item_t label_false)
+static inline void to_code_conditional_branch(information *const info)
 {
-	uni_printf(info->io, " br i1 %%.%" PRIitem ", label %%label%" PRIitem ", label %%label%" PRIitem "\n", 
-		reg, label_true, label_false);
+	uni_printf(info->io, " br i1 %%.%" PRIitem ", label %%label%" PRIitem ", label %%label%" PRIitem "\n"
+		, info->answer_reg, info->label_true, info->label_false);
 }
 
 static void to_code_alloc_array_static(information *const info, const size_t index)
@@ -256,8 +267,8 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
 	for (size_t i = 2; i <= dim; i++)
 	{
-		uni_printf(info->io, " %%.%" PRIitem " = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n",
-			info->register_num, to_alloc, hash_get_by_index(&info->arrays, index, i));
+		uni_printf(info->io, " %%.%" PRIitem " = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
+			, info->register_num, to_alloc, hash_get_by_index(&info->arrays, index, i));
 		to_alloc = info->register_num++;
 	}
 	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca i32, i32 %%.%" PRIitem ", align 4\n", hash_get_key(&info->arrays, index), to_alloc);	
@@ -280,6 +291,66 @@ static void to_code_stack_load(information *const info)
 	info->register_num++;
 }
 
+static void to_code_slice(information *const info, const item_t displ, const item_t cur_dimention, const item_t prev_slice)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
+	const item_t dimentions = hash_get_amount(&info->arrays, displ) - 1;
+
+	if (hash_get(&info->arrays, displ, IS_STATIC))
+	{
+		for (item_t i = dimentions - cur_dimention; i <= dimentions; i++)
+		{
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
+		}
+		uni_printf(info->io, "i32");
+
+		for (item_t i = dimentions - cur_dimention; i <= dimentions; i++)
+		{
+			uni_printf(info->io, "]");
+		}
+		uni_printf(info->io, ", ");
+
+		for (item_t i = dimentions - cur_dimention; i <= dimentions; i++)
+		{
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
+		}
+		uni_printf(info->io, "i32");
+
+		for (item_t i = dimentions - cur_dimention; i <= dimentions; i++)
+		{
+			uni_printf(info->io, "]");
+		}
+
+		if (cur_dimention == dimentions - 1)
+		{
+			uni_printf(info->io, "* %%arr.%" PRIitem ", i32 0", displ);
+		}
+		else
+		{
+			uni_printf(info->io, "* %%.%" PRIitem ", i32 0", prev_slice);
+		}
+	}
+	else if (cur_dimention == dimentions - 1)
+	{
+		uni_printf(info->io, "i32, i32* %%dynarr.%" PRIitem, displ);
+	}
+	else
+	{
+		uni_printf(info->io, "i32, i32* %%.%" PRIitem, prev_slice);
+	}
+
+	if (info->answer_type == AREG)
+	{
+		uni_printf(info->io, ", i32 %%.%" PRIitem "\n", info->answer_reg);
+	}
+	else // if (info->answer_type == ACONST)
+	{
+		uni_printf(info->io, ", i32 %" PRIitem "\n", info->answer_const);
+	}
+
+	info->register_num++;
+}
+
 
 static void check_type_and_branch(information *const info)
 {
@@ -294,7 +365,7 @@ static void check_type_and_branch(information *const info)
 			info->answer_reg = info->register_num++;
 		}
 		case ALOGIC:
-			to_code_conditional_branch(info, info->answer_reg, info->label_true, info->label_false);
+			to_code_conditional_branch(info);
 			break;
 	}
 }
@@ -320,7 +391,7 @@ static void operand(information *const info, node *const nd)
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
-			to_code_load(info, info->register_num, displ);
+			to_code_load(info, info->register_num, displ, 0);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
 			node_set_next(nd);
@@ -332,7 +403,7 @@ static void operand(information *const info, node *const nd)
 
 			if (info->variable_location == LMEM)
 			{
-				to_code_store_const(info, num, info->request_reg);
+				to_code_store_const(info, num, info->request_reg, 0);
 				info->answer_type = AREG;
 			}
 			else
@@ -349,14 +420,58 @@ static void operand(information *const info, node *const nd)
 			break;
 		case TSliceident:
 		{
+			const item_t displ = node_get_arg(nd, 0);
+			item_t cur_dimention = hash_get_amount(&info->arrays, displ) - 2;
+			const location_t location = info->variable_location;
 			node_set_next(nd);
+
+			info->variable_location = LFREE;
 			expression(info, nd);
 
+			// TODO: пока только для динамических массивов размерности 2
+			if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimention == 1)
+			{
+				if (info->answer_type == ACONST)
+				{
+					to_code_operation_const_reg(info, LMULT, info->answer_const, hash_get(&info->arrays, displ, 2));
+				}
+				else // if (info->answer_type == AREG)
+				{
+					to_code_operation_reg_reg(info, LMULT, info->answer_reg, hash_get(&info->arrays, displ, 2));
+				}
+
+				info->answer_type = AREG;
+				info->answer_reg = info->register_num++;
+			}
+
+			to_code_slice(info, displ, cur_dimention, 0);
+
+			item_t prev_slice = info->register_num - 1;
 			while (node_get_type(nd) == TSlice)
 			{
 				node_set_next(nd);
+				info->variable_location = LFREE;
 				expression(info, nd);
+				cur_dimention--;
+
+				to_code_slice(info, displ, cur_dimention, prev_slice);
+				prev_slice = info->register_num - 1;
 			}
+
+			// TODO: может это замена LMEM? Подумать, когда будут реализовываться указатели
+			if (node_get_type(nd) == TAddrtoval)
+			{
+				node_set_next(nd);
+			}
+
+			if (location != LMEM)
+			{
+				to_code_load(info, info->register_num, info->register_num - 1, 1);
+				info->register_num++;
+			}
+
+			info->answer_reg = info->register_num - 1;
+			info->answer_type = AREG;
 		}
 		break;
 		case TCall1:
@@ -417,6 +532,50 @@ static void operand(information *const info, node *const nd)
 	}
 }
 
+// TODO: попробовать объединить с assignment_expression
+static void assignment_array_expression(information *const info, node *const nd)
+{
+	const item_t assignment_type = node_get_type(nd);
+	node_set_next(nd);
+
+	info->variable_location = LMEM;
+	operand(info, nd); // TSliceident
+	const item_t memory_reg = info->answer_reg;
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+
+	to_code_try_zext_to(info);
+	item_t result = info->answer_reg;
+
+	if (assignment_type != ASSAT && assignment_type != ASSATV)
+	{
+		to_code_load(info, info->register_num, memory_reg, 1);
+		info->register_num++;
+
+		if (info->answer_type == AREG)
+		{
+			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg);
+		}
+		else // ACONST
+		{
+			to_code_operation_reg_const(info, assignment_type, info->register_num - 1, info->answer_const);
+		}
+
+		result = info->register_num++;
+		info->answer_type = AREG;
+	}
+
+	if (info->answer_type == AREG)
+	{
+		to_code_store_reg(info, result, memory_reg, 1);
+	}
+	else // ACONST && =
+	{
+		to_code_store_const(info, info->answer_const, memory_reg, 1);
+	}
+}
+
 static void assignment_expression(information *const info, node *const nd)
 {
 	const item_t displ = node_get_arg(nd, 0);
@@ -434,7 +593,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (assignment_type != ASS && assignment_type != ASSV)
 	{
-		to_code_load(info, info->register_num, displ);
+		to_code_load(info, info->register_num, displ, 0);
 		info->register_num++;
 
 		if (info->answer_type == AREG)
@@ -451,11 +610,11 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (info->answer_type == AREG || (assignment_type != ASS && assignment_type != ASSV))
 	{
-		to_code_store_reg(info, result, displ);
+		to_code_store_reg(info, result, displ, 0);
 	}
 	else // ACONST && =
 	{
-		to_code_store_const(info, info->answer_const, displ);
+		to_code_store_const(info, info->answer_const, displ, 0);
 	}
 }
 
@@ -566,7 +725,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 	node_set_next(nd);
 	node_set_next(nd); // TIdent
 
-	to_code_load(info, info->register_num, displ);
+	to_code_load(info, info->register_num, displ, 0);
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 	
@@ -585,7 +744,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, displ);
+	to_code_store_reg(info, info->register_num, displ, 0);
 	info->register_num++;
 }
 
@@ -669,6 +828,21 @@ static void binary_operation(information *const info, node *const nd)
 			break;
 
 
+		case ASSAT:
+		case PLUSASSAT:
+		case MINUSASSAT:
+		case MULTASSAT:
+		case DIVASSAT:
+
+		case ASSATV:
+		case PLUSASSATV:
+		case MINUSASSATV:
+		case MULTASSATV:
+		case DIVASSATV:
+			assignment_array_expression(info, nd);
+			break;
+
+
 		case LPLUS:
 		case LMINUS:
 		case LMULT:
@@ -717,7 +891,7 @@ static void binary_operation(information *const info, node *const nd)
 			// постараться использовать функцию check_type_and_branch
 			if (info->answer_type == ALOGIC)
 			{
-				to_code_conditional_branch(info, info->answer_reg, info->label_true, info->label_false);
+				to_code_conditional_branch(info);
 			}
 
 			to_code_label(info, label_next);
@@ -1365,7 +1539,7 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	info.answer_reg = 0;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
-	
+
 	const int ret = codegen(&info);
 
 	hash_clear(&info.arrays);
