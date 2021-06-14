@@ -21,11 +21,11 @@
 #include "utf8.h"
 
 
-const char *const PREFIX = "// #";
-const char SEPARATOR = ' ';
+static const char *const PREFIX = "// #";
+static const char SEPARATOR = ' ';
 
 
-static void cmt_parse(comment *const cmt)
+static inline void cmt_parse(comment *const cmt)
 {
 	size_t i = 0;
 	while (cmt->path[i] != '\0' && cmt->path[i] != '\n' && cmt->path[i] != SEPARATOR)
@@ -63,7 +63,7 @@ static void cmt_parse(comment *const cmt)
 	}
 }
 
-static void cmt_reverse(comment *const cmt, const char *const code, const size_t position)
+static inline void cmt_reverse(comment *const cmt, const char *const code, const size_t position)
 {
 	const size_t size = strlen(PREFIX);
 
