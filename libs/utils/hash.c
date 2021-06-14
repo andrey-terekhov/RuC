@@ -50,6 +50,23 @@ hash hash_create(const size_t alloc)
 }
 
 
+size_t hash_add(hash *const hs, const item_t key, const size_t amount)
+{
+	const size_t index = hash_get_index(hs, key);
+	if (vector_get(hs, index) != 0)
+	{
+		return SIZE_MAX;
+	}
+
+	const size_t size = vector_size(hs);
+	vector_set(hs, index, size);
+	vector_resize(hs, size + 3 + amount);	// New elements set by zero
+
+	vector_set(hs, size + 1, key);
+	vector_set(hs, size + 2, amount);
+	return size;
+}
+
 size_t hash_get_index(const hash *const hs, const item_t key)
 {
 	if (!hash_is_correct(hs))
@@ -76,23 +93,6 @@ size_t hash_get_index(const hash *const hs, const item_t key)
 	}
 
 	return next != ITEM_MAX ? index : SIZE_MAX;
-}
-
-size_t hash_add(hash *const hs, const item_t key, const size_t amount)
-{
-	const size_t index = hash_get_index(hs, key);
-	if (vector_get(hs, index) != 0)
-	{
-		return SIZE_MAX;
-	}
-
-	const size_t size = vector_size(hs);
-	vector_set(hs, index, size);
-	vector_resize(hs, size + 3 + amount);	// New elements set by zero
-
-	vector_set(hs, size + 1, key);
-	vector_set(hs, size + 2, amount);
-	return size;
 }
 
 size_t hash_get_amount(const hash *const hs, const item_t key)
