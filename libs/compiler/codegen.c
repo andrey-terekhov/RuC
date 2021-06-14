@@ -199,7 +199,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 	while (node_get_type(nd) != OP_EXPR_END)
 	{
 		const operation_t operation = node_get_type(nd);
-		int was_operation = 1;
+		bool was_operation = true;
 
 		switch (operation)
 		{
@@ -339,7 +339,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 			}
 			break;
 			default:
-				was_operation = 0;
+				was_operation = false;
 				break;
 		}
 
