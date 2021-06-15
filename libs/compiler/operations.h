@@ -253,7 +253,7 @@ typedef enum OPERATION
 
 	OP_AD_LOG_AND			= MAX_INSTRUCTION_CODE,		/**< 'ADLOGAND' node */
 	OP_AD_LOG_OR,										/**< 'ADLOGOR' node */
-	
+
 	END_OP_FINAL,
 
 	// Statement

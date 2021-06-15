@@ -250,7 +250,7 @@ typedef enum INSTURCTION
 	IC_ROBOT_RECEIVE_STRING,	/**< 'RECEIVE_STRING' instruction code */
 	IC_ASSERT,					/**< 'ASSERT' instruction code */
 	IC_ABSI	= 9651,				/**< 'ABSI' instruction code */
-	
+
 	MAX_INSTRUCTION_CODE,
 } instruction_t;
 

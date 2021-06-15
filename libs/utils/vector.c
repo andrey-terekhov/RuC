@@ -19,7 +19,7 @@
 #include <string.h>
 
 
-int change_size(vector *const vec, const size_t size)
+static int change_size(vector *const vec, const size_t size)
 {
 	if (size > vec->size_alloc)
 	{
