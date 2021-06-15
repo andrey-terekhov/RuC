@@ -130,7 +130,7 @@ EXPORTED int node_set_next(node *const nd);
  *
  *	@return	Child node
  */
-EXPORTED node node_add_child(node *const nd, const item_t type);
+EXPORTED node node_add_child(const node *const nd, const item_t type);
 
 /**
  *	Set node type
@@ -142,7 +142,7 @@ EXPORTED node node_add_child(node *const nd, const item_t type);
  *			@c -1 on failure,
  *			@c -2 on trying to reset the root node
  */
-EXPORTED int node_set_type(node *const nd, const item_t type);
+EXPORTED int node_set_type(const node *const nd, const item_t type);
 
 /**
  *	Add new node argument
@@ -154,7 +154,7 @@ EXPORTED int node_set_type(node *const nd, const item_t type);
  *			@c -1 on failure,
  *			@c -2 on node with children
  */
-EXPORTED int node_add_arg(node *const nd, const item_t arg);
+EXPORTED int node_add_arg(const node *const nd, const item_t arg);
 
 /**
  *	Set node argument by index
@@ -165,7 +165,7 @@ EXPORTED int node_add_arg(node *const nd, const item_t arg);
  *
  *	@return	@c  0 on success, @c -1 on failure
  */
-EXPORTED int node_set_arg(node *const nd, const size_t index, const item_t arg);
+EXPORTED int node_set_arg(const node *const nd, const size_t index, const item_t arg);
 
 
 /**
@@ -207,7 +207,7 @@ EXPORTED node node_load(vector *const tree, const size_t index);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int node_order(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index);
+EXPORTED int node_order(const node *const fst, const size_t fst_index, const node *const snd, const size_t snd_index);
 
 /**
  *	Swap two nodes with children
@@ -219,7 +219,7 @@ EXPORTED int node_order(node *const fst, const size_t fst_index, node *const snd
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int node_swap(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index);
+EXPORTED int node_swap(const node *const fst, const size_t fst_index, const node *const snd, const size_t snd_index);
 
 /**
  *	Remove child node by index
@@ -229,7 +229,7 @@ EXPORTED int node_swap(node *const fst, const size_t fst_index, node *const snd,
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int node_remove(node *const nd, const size_t index);
+EXPORTED int node_remove(const node *const nd, const size_t index);
 
 /**
  *	Check that node is correct
