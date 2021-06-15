@@ -123,7 +123,7 @@ size_t vector_size(const vector *const vec)
 	return vector_is_correct(vec) ? vec->size : SIZE_MAX;
 }
 
-int vector_is_correct(const vector *const vec)
+bool vector_is_correct(const vector *const vec)
 {
 	return vec != NULL && vec->array != NULL;
 }

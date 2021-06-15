@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include "tokens.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include "instructions.h"
+#include "tokens.h"
 
 
 #ifdef __cplusplus
@@ -372,7 +373,7 @@ operation_t operation_to_float_ver(const operation_t operation);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int operation_is_assignment(const operation_t operation);
+bool operation_is_assignment(const operation_t operation);
 
 #ifdef __cplusplus
 } /* extern "C" */

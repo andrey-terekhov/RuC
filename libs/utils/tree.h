@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <limits.h>
-#include <stddef.h>
 #include "vector.h"
 
 
@@ -238,7 +236,7 @@ EXPORTED int node_remove(node *const nd, const size_t index);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int node_is_correct(const node *const nd);
+EXPORTED bool node_is_correct(const node *const nd);
 
 #ifdef __cplusplus
 } /* extern "C" */

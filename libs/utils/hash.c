@@ -23,7 +23,7 @@ extern item_t hash_get_by_index(const hash *const hs, const size_t index, const 
 
 extern int hash_set_by_index(hash *const hs, const size_t index, const size_t num, const item_t value);
 
-extern int hash_is_correct(const hash *const hs);
+extern bool hash_is_correct(const hash *const hs);
 extern int hash_clear(hash *const hs);
 
 

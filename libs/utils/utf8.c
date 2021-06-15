@@ -496,7 +496,7 @@ char32_t utf8_to_upper(const char32_t symbol)
 	return symbol;
 }
 
-int utf8_is_russian(const char32_t symbol)
+bool utf8_is_russian(const char32_t symbol)
 {
 	return  symbol == U'Ё' || symbol == U'ё'
 		|| (symbol >= U'А' && symbol <= U'Я')
@@ -504,19 +504,19 @@ int utf8_is_russian(const char32_t symbol)
 		|| (symbol >= U'р' && symbol <= U'я');
 }
 
-int utf8_is_letter(const char32_t symbol)
+bool utf8_is_letter(const char32_t symbol)
 {
 	return  utf8_is_russian(symbol) || symbol == '_'
 		|| (symbol >= 'A' && symbol <= 'Z')
 		|| (symbol >= 'a' && symbol <= 'z');
 }
 
-int utf8_is_digit(const char32_t symbol)
+bool utf8_is_digit(const char32_t symbol)
 {
 	return symbol >= '0' && symbol <= '9';
 }
 
-int utf8_is_power(const char32_t symbol)
+bool utf8_is_power(const char32_t symbol)
 {
 	return symbol == 'e' || symbol == 'E' || symbol == U'е' || symbol == U'Е';
 }

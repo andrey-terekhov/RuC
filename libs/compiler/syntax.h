@@ -17,6 +17,7 @@
 #pragma once
 
 #include <limits.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include "errors.h"
@@ -92,7 +93,7 @@ syntax sx_create();
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int sx_is_correct(syntax *const sx);
+bool sx_is_correct(syntax *const sx);
 
 /**
  *	Free allocated memory

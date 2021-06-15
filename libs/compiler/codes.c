@@ -35,13 +35,13 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 	}
 
 	size_t argc = 0;
-	int was_switch = 0;
+	bool was_switch = false;
 
 	switch (elem)
 	{
 		case OP_FUNC_DEF:
 			argc = 2;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -57,7 +57,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_DECL_ARR:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -70,7 +70,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_DECL_ID:
 			argc = 7;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -101,7 +101,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_STRING:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -114,7 +114,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_STRING_D:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -136,7 +136,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_ARRAY_INIT:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -149,7 +149,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_STRUCT_INIT:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -235,7 +235,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 		break;
 		case OP_SLICE_IDENT:
 			argc = 2;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -251,7 +251,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_SLICE:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -264,7 +264,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_SELECT:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -280,7 +280,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_AD_LOG_AND:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -293,7 +293,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_AD_LOG_OR:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -306,7 +306,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_COPY00:
 			argc = 3;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -325,7 +325,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_COPY01:
 			argc = 2;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -341,7 +341,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_COPY10:
 			argc = 2;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -357,7 +357,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_COPY11:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -370,7 +370,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_COPY0ST:
 			argc = 2;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -386,7 +386,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_COPY1ST:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -399,7 +399,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_COPY0ST_ASSIGN:
 			argc = 2;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -415,7 +415,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_COPY1ST_ASSIGN:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -428,7 +428,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_COPYST:
 			argc = 3;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -603,7 +603,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 
 		case IC_BEG_INIT:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -616,7 +616,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case IC_STRUCT_WITH_ARR:
 			argc = 2;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -632,7 +632,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case IC_DEFARR:
 			argc = 7;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -663,7 +663,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case IC_ARR_INIT:
 			argc = 4;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -1062,7 +1062,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case IC_SLICE:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -1075,7 +1075,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case IC_SELECT:
 			argc = 1;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:
@@ -1223,7 +1223,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 
 		case IC_FUNC_BEG:
 			argc = 2;
-			was_switch = 1;
+			was_switch = true;
 			switch (num)
 			{
 				case 0:

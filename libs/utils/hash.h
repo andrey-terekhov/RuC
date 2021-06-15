@@ -160,7 +160,7 @@ inline int hash_set_by_index(hash *const hs, const size_t index, const size_t nu
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-inline int hash_is_correct(const hash *const hs)
+inline bool hash_is_correct(const hash *const hs)
 {
 	return vector_is_correct(hs) && vector_size(hs) >= MAX_HASH;
 }

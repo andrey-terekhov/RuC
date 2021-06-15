@@ -21,7 +21,7 @@
 
 
 /** Check if current token is part of a declaration specifier */
-static int is_declaration_specifier(parser *const prs)
+static bool is_declaration_specifier(parser *const prs)
 {
 	switch (prs->token)
 	{
@@ -110,7 +110,7 @@ static void parse_labeled_statement(parser *const prs, node *const parent)
  */
 static void parse_case_statement(parser *const prs, node *const parent)
 {
-	if (!prs->flag_in_switch)
+	if (!prs->is_in_switch)
 	{
 		parser_error(prs, case_not_in_switch);
 	}
@@ -138,7 +138,7 @@ static void parse_case_statement(parser *const prs, node *const parent)
  */
 static void parse_default_statement(parser *const prs, node *const parent)
 {
-	if (!prs->flag_in_switch)
+	if (!prs->is_in_switch)
 	{
 		parser_error(prs, default_not_in_switch);
 	}
@@ -210,10 +210,10 @@ static void parse_switch_statement(parser *const prs, node *const parent)
 		parser_error(prs, float_in_switch);
 	}
 
-	const int old_in_switch = prs->flag_in_switch;
-	prs->flag_in_switch = 1;
+	const bool old_in_switch = prs->is_in_switch;
+	prs->is_in_switch = true;
 	parse_statement(prs, &nd);
-	prs->flag_in_switch = old_in_switch;
+	prs->is_in_switch = old_in_switch;
 }
 
 /**
@@ -232,10 +232,10 @@ static void parse_while_statement(parser *const prs, node *const parent)
 
 	parse_parenthesized_expression(prs, &nd);
 
-	const int old_in_loop = prs->flag_in_loop;
-	prs->flag_in_loop = 1;
+	const bool old_in_loop = prs->is_in_loop;
+	prs->is_in_loop = true;
 	parse_statement(prs, &nd);
-	prs->flag_in_loop = old_in_loop;
+	prs->is_in_loop = old_in_loop;
 }
 
 /**
@@ -252,10 +252,10 @@ static void parse_do_statement(parser *const prs, node *const parent)
 	token_consume(prs); // kw_do
 	node nd = node_add_child(parent, OP_DO);
 
-	const int old_in_loop = prs->flag_in_loop;
-	prs->flag_in_loop = 1;
+	const bool old_in_loop = prs->is_in_loop;
+	prs->is_in_loop = true;
 	parse_statement(prs, &nd);
-	prs->flag_in_loop = old_in_loop;
+	prs->is_in_loop = old_in_loop;
 
 	if (token_try_consume(prs, TK_WHILE))
 	{
@@ -322,8 +322,8 @@ static void parse_for_statement(parser *const prs, node *const parent)
 		token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_for);
 	}
 
-	const int old_in_loop = prs->flag_in_loop;
-	prs->flag_in_loop = 1;
+	const bool old_in_loop = prs->is_in_loop;
+	prs->is_in_loop = true;
 	if (prs->token == TK_L_BRACE)
 	{
 		parse_statement_compound(prs, &nd, FORBLOCK);
@@ -333,7 +333,7 @@ static void parse_for_statement(parser *const prs, node *const parent)
 		parse_statement(prs, &nd);
 	}
 
-	prs->flag_in_loop = old_in_loop;
+	prs->is_in_loop = old_in_loop;
 	scope_block_exit(prs->sx, old_displ, old_lg);
 }
 
@@ -391,7 +391,7 @@ static void parse_goto_statement(parser *const prs, node *const parent)
  */
 static void parse_continue_statement(parser *const prs, node *const parent)
 {
-	if (!prs->flag_in_loop)
+	if (!prs->is_in_loop)
 	{
 		parser_error(prs, continue_not_in_loop);
 	}
@@ -412,7 +412,7 @@ static void parse_continue_statement(parser *const prs, node *const parent)
  */
 static void parse_break_statement(parser *const prs, node *const parent)
 {
-	if (!(prs->flag_in_loop || prs->flag_in_switch))
+	if (!(prs->is_in_loop || prs->is_in_switch))
 	{
 		parser_error(prs, break_not_in_loop_or_switch);
 	}
@@ -435,7 +435,7 @@ static void parse_return_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_return
 	const item_t return_type = mode_get(prs->sx, prs->function_mode + 1);
-	prs->flag_was_return = 1;
+	prs->was_return = true;
 
 	if (token_try_consume(prs, TK_SEMICOLON))
 	{

@@ -22,6 +22,7 @@
 	#include "tree.h"
 #else
 	#include <limits.h>
+	#include <stdbool.h>
 	#include <stddef.h>
 	#include "vector.h"
 
@@ -231,7 +232,7 @@ int node_remove(node *const nd, const size_t index);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-int node_is_correct(const node *const nd);
+bool node_is_correct(const node *const nd);
 
 
 /**

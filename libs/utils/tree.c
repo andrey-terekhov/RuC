@@ -17,7 +17,7 @@
 #include "tree.h"
 
 
-static inline int is_negative(const item_t value)
+static inline bool is_negative(const item_t value)
 {
 	return value >> (8 * sizeof(item_t) - 1);
 }
@@ -466,7 +466,7 @@ int node_remove(node *const nd, const size_t index)
 	return 0;
 }
 
-int node_is_correct(const node *const nd)
+bool node_is_correct(const node *const nd)
 {
 	return nd != NULL && vector_is_correct(nd->tree);
 }

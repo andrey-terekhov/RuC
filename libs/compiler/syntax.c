@@ -171,11 +171,11 @@ static inline item_t get_static(syntax *const sx, const item_t type)
 }
 
 /**	Check if modes are equal */
-static inline int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
+static inline bool mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
 {
 	if (vector_get(&sx->modes, first) != vector_get(&sx->modes, second))
 	{
-		return 0;
+		return false;
 	}
 
 	size_t length = 1;
@@ -191,11 +191,11 @@ static inline int mode_is_equal(const syntax *const sx, const size_t first, cons
 	{
 		if (vector_get(&sx->modes, first + i) != vector_get(&sx->modes, second + i))
 		{
-			return 0;
+			return false;
 		}
 	}
 
-	return 1;
+	return true;
 }
 
 
@@ -239,13 +239,13 @@ syntax sx_create()
 	return sx;
 }
 
-int sx_is_correct(syntax *const sx)
+bool sx_is_correct(syntax *const sx)
 {
-	int is_correct = 1;
+	bool is_correct = true;
 	if (sx->ref_main == 0)
 	{
 		system_error(no_main_in_program);
-		is_correct = 0;
+		is_correct = false;
 	}
 
 	for (size_t i = 0; i < vector_size(&sx->predef); i++)
@@ -253,7 +253,7 @@ int sx_is_correct(syntax *const sx)
 		if (vector_get(&sx->predef, i))
 		{
 			system_error(predef_but_notdef, repr_get_name(sx, (size_t)vector_get(&sx->predef, i)));
-			is_correct = 0;
+			is_correct = false;
 		}
 	}
 

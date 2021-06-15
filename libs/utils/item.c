@@ -154,7 +154,7 @@ item_t item_get_max(const item_status status)
 	}
 }
 
-int item_check_var(const item_status status, const item_t var)
+bool item_check_var(const item_status status, const item_t var)
 {
 	return var >= item_get_min(status) && var <= item_get_max(status);
 }

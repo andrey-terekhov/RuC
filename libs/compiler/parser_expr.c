@@ -116,7 +116,7 @@ static inline void float_operation(parser *const prs, const item_t type, const o
 	to_tree(prs, mode_is_float(type) ? operation_to_float_ver(operation) : operation);
 }
 
-static inline int is_integer_operator(const token_t operator)
+static inline bool is_integer_operator(const token_t operator)
 {
 	switch (operator)
 	{
@@ -126,10 +126,10 @@ static inline int is_integer_operator(const token_t operator)
 		case TK_LESS_EQUAL:
 		case TK_GREATER:
 		case TK_GREATER_EQUAL:
-			return 1;
+			return true;
 
 		default:
-			return 0;
+			return false;
 	}
 }
 
@@ -194,7 +194,7 @@ static void to_value(parser *const prs)
 		case VARIABLE:
 		{
 			const item_t type = stack_pop(&prs->anonymous);
-			if (mode_is_struct(prs->sx, type) && !prs->flag_in_assignment)
+			if (mode_is_struct(prs->sx, type) && !prs->is_in_assignment)
 			{
 				node_set_type(&prs->nd, OP_COPY0ST);
 				node_set_arg(&prs->nd, 0, prs->operand_displ);
@@ -212,7 +212,7 @@ static void to_value(parser *const prs)
 		case ADDRESS:
 		{
 			const item_t type = stack_pop(&prs->anonymous);
-			if (mode_is_struct(prs->sx, type) && !prs->flag_in_assignment)
+			if (mode_is_struct(prs->sx, type) && !prs->is_in_assignment)
 			{
 				to_tree(prs, OP_COPY1ST);
 				node_add_arg(&prs->nd, mode_get(prs->sx, (size_t)type + 1));
@@ -793,7 +793,7 @@ static item_t find_field(parser *const prs)
  */
 static void parse_function_call(parser *const prs, const size_t function_id)
 {
-	const int old_in_assignment = prs->flag_in_assignment;
+	const bool old_in_assignment = prs->is_in_assignment;
 	const size_t function_mode = (size_t)stack_pop(&prs->anonymous);
 
 	if (!mode_is_function(prs->sx, function_mode))
@@ -848,7 +848,7 @@ static void parse_function_call(parser *const prs, const size_t function_id)
 			}
 			else
 			{
-				prs->flag_in_assignment = 0;
+				prs->is_in_assignment = false;
 				const item_t actual_arg_mode = parse_assignment_expression(prs, &prs->nd);
 
 				if (!mode_is_undefined(expected_arg_mode) && !mode_is_undefined(actual_arg_mode))
@@ -880,7 +880,7 @@ static void parse_function_call(parser *const prs, const size_t function_id)
 		parser_error(prs, wrong_number_of_params);
 	}
 
-	prs->flag_in_assignment = old_in_assignment;
+	prs->is_in_assignment = old_in_assignment;
 	node nd_call2 = node_add_child(&nd_call1, OP_CALL2);
 	node_add_arg(&nd_call2, (item_t)function_id);
 	node_copy(&prs->nd, &nd_call2);
@@ -904,11 +904,11 @@ static void parse_function_call(parser *const prs, const size_t function_id)
 static void parse_postfix_expression(parser *const prs)
 {
 	const size_t last_id = prs->last_id;
-	int was_func = 0;
+	bool was_func = false;
 
 	if (token_try_consume(prs, TK_L_PAREN))
 	{
-		was_func = 1;
+		was_func = true;
 		parse_function_call(prs, last_id);
 	}
 
@@ -1050,14 +1050,14 @@ static void parse_postfix_expression(parser *const prs)
 		operation_t operator = prs->token == TK_PLUS_PLUS ? OP_POST_INC : OP_POST_DEC;
 		token_consume(prs);
 
-		int is_variable = 0;
+		bool is_variable = false;
 		if (prs->last_type == ADDRESS)
 		{
 			operator = operation_to_address_ver(operator);
 		}
 		else if (prs->last_type == VARIABLE)
 		{
-			is_variable = 1;
+			is_variable = true;
 		}
 		else
 		{
@@ -1092,14 +1092,14 @@ static void parse_unary_expression(parser *const prs)
 			parse_unary_expression(prs);
 			operation_t operator = token_to_unary(token);
 
-			int is_variable = 0;
+			bool is_variable = false;
 			if (prs->last_type == ADDRESS)
 			{
 				operator = operation_to_address_ver(operator);
 			}
 			else if (prs->last_type == VARIABLE)
 			{
-				is_variable = 1;
+				is_variable = true;
 			}
 			else
 			{
@@ -1262,7 +1262,7 @@ static inline uint8_t operator_priority(const token_t operator)
 	}
 }
 
-static inline int is_int_assignment_operator(const token_t operator)
+static inline bool is_int_assignment_operator(const token_t operator)
 {
 	switch (operator)
 	{
@@ -1272,15 +1272,15 @@ static inline int is_int_assignment_operator(const token_t operator)
 		case TK_AMP_EQUAL:				// '&='
 		case TK_PIPE_EQUAL:				// '|='
 		case TK_CARET_EQUAL:			// '^='
-			return 1;
+			return true;
 
 		default:
-			return 0;
+			return false;
 	}
 }
 
 
-static inline int is_assignment_operator(const token_t operator)
+static inline bool is_assignment_operator(const token_t operator)
 {
 	switch (operator)
 	{
@@ -1289,7 +1289,7 @@ static inline int is_assignment_operator(const token_t operator)
 		case TK_SLASH_EQUAL:			// '/='
 		case TK_PLUS_EQUAL:				// '+='
 		case TK_MINUS_EQUAL:			// '-='
-			return 1;
+			return true;
 
 		default:
 			return is_int_assignment_operator(operator);
@@ -1299,12 +1299,12 @@ static inline int is_assignment_operator(const token_t operator)
 static void parse_subexpression(parser *const prs)
 {
 	size_t old_operators_size = operators_size(prs);
-	int was_operator = 0;
+	bool was_operator = false;
 
 	uint8_t priority = operator_priority(prs->token);
 	while (priority)
 	{
-		was_operator = 1;
+		was_operator = true;
 		to_value(prs);
 		while (old_operators_size < operators_size(prs) && priority <= operators_peek(prs).priority)
 		{
@@ -1467,9 +1467,9 @@ static void parse_assignment_expression_internal(parser *const prs)
 		operation_t operator = token_to_binary(token);
 		token_consume(prs);
 
-		prs->flag_in_assignment = 1;
+		prs->is_in_assignment = true;
 		parse_assignment_expression_internal(prs);
-		prs->flag_in_assignment = 0;
+		prs->is_in_assignment = false;
 
 		// Снимаем типы операндов со стека
 		const operand_t right_type = prs->last_type;

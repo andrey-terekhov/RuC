@@ -36,7 +36,7 @@ static node node_expression(vector *const tree, const size_t index);
 static node node_operator(vector *const tree, const size_t index);
 
 
-static inline int is_ref(const item_t value)
+static inline bool is_ref(const item_t value)
 {
 	return (REF_MASK & value) == REF_LABEL;
 }
@@ -99,7 +99,7 @@ static int vector_swap(vector *const vec, size_t fst_index, size_t fst_size, siz
 }
 
 
-static inline int is_operator(const item_t value)
+static inline bool is_operator(const item_t value)
 {
 	return value == OP_FUNC_DEF		// Declarations
 		|| value == OP_DECL_ID
@@ -130,7 +130,7 @@ static inline int is_operator(const item_t value)
 		|| value == OP_EXIT_DIRECT;
 }
 
-static inline int is_expression(const item_t value)
+static inline bool is_expression(const item_t value)
 {
 	return value == OP_ARRAY_INIT		// Declarations
 		|| value == OP_STRUCT_INIT
@@ -156,7 +156,7 @@ static inline int is_expression(const item_t value)
 		|| value == OP_EXPR_END;
 }
 
-static inline int is_lexeme(const item_t value)
+static inline bool is_lexeme(const item_t value)
 {
 	return (value > BEGIN_OP_FINAL && value < END_OP_FINAL) || is_ref(value);
 }
@@ -914,7 +914,7 @@ int node_remove(node *const nd, const size_t index)
 	return vector_resize(nd->tree, vector_size(nd->tree) - to + from);
 }
 
-int node_is_correct(const node *const nd)
+bool node_is_correct(const node *const nd)
 {
 	return nd != NULL && vector_is_correct(nd->tree);
 }

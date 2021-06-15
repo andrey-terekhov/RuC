@@ -177,7 +177,7 @@ comment cmt_search(const char *const code, const size_t position)
 }
 
 
-int cmt_is_correct(const comment *const cmt)
+bool cmt_is_correct(const comment *const cmt)
 {
 	return cmt != NULL && cmt->path != NULL;
 }

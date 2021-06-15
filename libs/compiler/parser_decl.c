@@ -123,7 +123,7 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 				const item_t mode = parse_struct_declaration_list(prs, parent);
 				const size_t id = to_identab(prs, repr, 1000, mode);
 				ident_set_displ(prs->sx, id, 1000 + prs->flag_array_in_struct);
-				prs->flag_was_type_def = 1;
+				prs->was_type_def = true;
 
 				return ident_get_mode(prs->sx, id);
 			}
@@ -237,7 +237,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	size_t displ = 0;
 
 	node nd;
-	int was_array = 0;
+	bool was_array = false;
 
 	do
 	{
@@ -263,7 +263,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 				{
 					nd = node_add_child(parent, OP_DECL_STRUCT);
 					node_add_arg(&nd, 0); // Тут будет номер инициализирующей процедуры
-					was_array = 1;
+					was_array = true;
 				}
 
 				node nd_decl_arr = node_add_child(&nd, OP_DECL_ARR);
@@ -456,13 +456,13 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 	const item_t element_type = type;
 
 	node nd_decl_arr;
-	int is_array = 0;
+	bool is_array = false;
 
 	if (prs->token == TK_L_SQUARE)
 	{
 		nd_decl_arr = node_add_child(parent, OP_DECL_ARR);
 		node_add_arg(&nd_decl_arr, 0); // Здесь будет размерность
-		is_array = 1;
+		is_array = true;
 
 		// Меняем тип (увеличиваем размерность массива)
 		type = parse_array_definition(prs, &nd_decl_arr, type);
@@ -555,12 +555,12 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 
 			// На 1 уровне это может быть определением функции или предописанием;
 			// На остальных уровнях - только декларатором (без идентов)
-			int flag_was_ident = 0;
+			bool was_ident = false;
 			if (level)
 			{
 				if (token_try_consume(prs, TK_IDENTIFIER))
 				{
-					flag_was_ident = 1;
+					was_ident = true;
 					func_add(prs->sx, (item_t)prs->lxr->repr);
 				}
 			}
@@ -579,7 +579,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			if (prs->token == TK_L_SQUARE)
 			{
 				arg_func = 2;
-				if (mode_is_pointer(prs->sx, type) && flag_was_ident == 0)
+				if (mode_is_pointer(prs->sx, type) && !was_ident)
 				{
 					parser_error(prs, aster_with_row);
 				}
@@ -603,9 +603,9 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 					if (level)
 					{
 						token_consume(prs);
-						if (flag_was_ident == 0)
+						if (!was_ident)
 						{
-							flag_was_ident = 2;
+							was_ident = true;
 						}
 						else
 						{
@@ -640,9 +640,9 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			}
 			if (func_def == 3)
 			{
-				func_def = flag_was_ident > 0 ? 1 : 2;
+				func_def = was_ident ? 1 : 2;
 			}
-			else if (func_def == 2 && flag_was_ident > 0)
+			else if (func_def == 2 && was_ident)
 			{
 				parser_error(prs, wait_declarator);
 				token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
@@ -653,7 +653,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				}
 				return mode_undefined;
 			}
-			else if (func_def == 1 && flag_was_ident == 0)
+			else if (func_def == 1 && !was_ident)
 			{
 				parser_error(prs, wait_definition);
 				token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
@@ -689,7 +689,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 	const size_t param_number = (size_t)mode_get(prs->sx, prs->function_mode + 2);
 
 	vector_resize(&prs->labels, 0);
-	prs->flag_was_return = 0;
+	prs->was_return = 0;
 
 	const item_t prev = ident_get_prev(prs->sx, function_id);
 	if (prev > 1 && prev != ITEM_MAX - 1) // Был прототип
@@ -721,7 +721,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 
 	parse_statement_compound(prs, &nd, FUNCBODY);
 
-	if (mode_get(prs->sx, prs->function_mode + 1) != mode_void && !prs->flag_was_return)
+	if (mode_get(prs->sx, prs->function_mode + 1) != mode_void && !prs->was_return)
 	{
 		parser_error(prs, no_ret_in_func);
 	}
@@ -801,7 +801,7 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 
 void parse_declaration_inner(parser *const prs, node *const parent)
 {
-	prs->flag_was_type_def = 0;
+	prs->was_type_def = 0;
 	item_t group_type = parse_type_specifier(prs, parent);
 
 	if (group_type == mode_void)
@@ -809,7 +809,7 @@ void parse_declaration_inner(parser *const prs, node *const parent)
 		parser_error(prs, only_functions_may_have_type_VOID);
 		group_type = mode_undefined;
 	}
-	else if (prs->flag_was_type_def && token_try_consume(prs, TK_SEMICOLON))
+	else if (prs->was_type_def && token_try_consume(prs, TK_SEMICOLON))
 	{
 		return;
 	}
@@ -838,11 +838,11 @@ void parse_declaration_inner(parser *const prs, node *const parent)
 
 void parse_declaration_external(parser *const prs, node *const root)
 {
-	prs->flag_was_type_def = 0;
+	prs->was_type_def = 0;
 	prs->func_def = 3;
 	const item_t group_type = parse_type_specifier(prs, root);
 
-	if (prs->flag_was_type_def && token_try_consume(prs, TK_SEMICOLON))
+	if (prs->was_type_def && token_try_consume(prs, TK_SEMICOLON))
 	{
 		return;
 	}

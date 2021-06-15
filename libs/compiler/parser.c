@@ -48,8 +48,8 @@ static inline parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.left_mode = -1;
 	prs.operand_displ = 0;
 
-	prs.flag_in_assignment = 0;
-	prs.was_error = 0;
+	prs.is_in_assignment = false;
+	prs.was_error = false;
 
 	prs.labels = vector_create(MAX_LABELS);
 	prs.stk.priorities = stack_create(MAX_STACK);
@@ -118,7 +118,7 @@ int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
 
 void parser_error(parser *const prs, error_t num, ...)
 {
-	if (prs->lxr->disable_recovery && (prs->lxr->was_error || prs->was_error))
+	if (prs->lxr->is_recovery_disabled && (prs->lxr->was_error || prs->was_error))
 	{
 		return;
 	}
@@ -127,7 +127,7 @@ void parser_error(parser *const prs, error_t num, ...)
 	va_start(args, num);
 
 	verror(prs->lxr->io, num, args);
-	prs->was_error = 1;
+	prs->was_error = true;
 
 	va_end(args);
 }
@@ -205,47 +205,47 @@ void token_skip_until(parser *const prs, const uint8_t tokens)
 }
 
 
-int mode_is_function(syntax *const sx, const item_t mode)
+bool mode_is_function(syntax *const sx, const item_t mode)
 {
 	return mode > 0 && mode_get(sx, (size_t)mode) == mode_function;
 }
 
-int mode_is_array(syntax *const sx, const item_t mode)
+bool mode_is_array(syntax *const sx, const item_t mode)
 {
 	return mode > 0 && mode_get(sx, (size_t)mode) == mode_array;
 }
 
-int mode_is_string(syntax *const sx, const item_t mode)
+bool mode_is_string(syntax *const sx, const item_t mode)
 {
 	return mode_is_array(sx, mode) && mode_get(sx, (size_t)mode + 1) == mode_character;
 }
 
-int mode_is_pointer(syntax *const sx, const item_t mode)
+bool mode_is_pointer(syntax *const sx, const item_t mode)
 {
 	return mode > 0 && mode_get(sx, (size_t)mode) == mode_pointer;
 }
 
-int mode_is_struct(syntax *const sx, const item_t mode)
+bool mode_is_struct(syntax *const sx, const item_t mode)
 {
 	return mode > 0 && mode_get(sx, (size_t)mode) == mode_struct;
 }
 
-int mode_is_float(const item_t mode)
+bool mode_is_float(const item_t mode)
 {
 	return mode == mode_float;
 }
 
-int mode_is_int(const item_t mode)
+bool mode_is_int(const item_t mode)
 {
 	return mode == mode_integer || mode == mode_character;
 }
 
-int mode_is_void(const item_t mode)
+bool mode_is_void(const item_t mode)
 {
 	return mode == mode_void;
 }
 
-int mode_is_undefined(const item_t mode)
+bool mode_is_undefined(const item_t mode)
 {
 	return mode == mode_undefined;
 }
