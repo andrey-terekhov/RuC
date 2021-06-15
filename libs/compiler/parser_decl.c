@@ -18,8 +18,8 @@
 #include <stdlib.h>
 
 
-item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
-item_t parse_struct_declaration_list(parser *const prs, node *const parent);
+static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
+static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
 
 
 /**
@@ -42,7 +42,7 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent);
  *
  *	@return	Standard type or index of the modes table
  */
-item_t parse_type_specifier(parser *const prs, node *const parent)
+static item_t parse_type_specifier(parser *const prs, node *const parent)
 {
 	prs->flag_array_in_struct = 0;
 	switch (prs->token)
@@ -106,7 +106,7 @@ item_t parse_type_specifier(parser *const prs, node *const parent)
  *
  *	@return	Index of modes table, @c mode_undefined on failure
  */
-item_t parse_struct_or_union_specifier(parser *const prs, node *const parent)
+static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent)
 {
 	switch (prs->token)
 	{
@@ -161,7 +161,7 @@ item_t parse_struct_or_union_specifier(parser *const prs, node *const parent)
  *
  *	@return	Index of the modes table
  */
-item_t parse_array_definition(parser *const prs, node *const parent, item_t type)
+static item_t parse_array_definition(parser *const prs, node *const parent, item_t type)
 {
 	prs->array_dimensions = 0;
 	prs->flag_empty_bounds = 1;
@@ -222,7 +222,7 @@ item_t parse_array_definition(parser *const prs, node *const parent, item_t type
  *
  *	@return	Index of modes table, @c mode_undefined on failure
  */
-item_t parse_struct_declaration_list(parser *const prs, node *const parent)
+static item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 {
 	token_consume(prs);
 	if (token_try_consume(prs, TK_R_BRACE))
@@ -314,7 +314,7 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 
 	if (was_array)
 	{
-		node nd_struct_end = node_add_child(parent, OP_DECL_STRUCT_END);
+		node nd_struct_end = node_add_child(&nd, OP_DECL_STRUCT_END);
 		node_add_arg(&nd_struct_end, (item_t)prs->sx->procd);
 		node_set_arg(&nd, 0, (item_t)prs->sx->procd);
 		prs->flag_array_in_struct = (int)prs->sx->procd++;
@@ -334,7 +334,7 @@ item_t parse_struct_declaration_list(parser *const prs, node *const parent)
  *	@param	parent		Parent node in AST
  *	@param	type		Index of the modes table
  */
-void parse_struct_initializer(parser *const prs, node *const parent, const item_t type)
+static void parse_struct_initializer(parser *const prs, node *const parent, const item_t type)
 {
 	if (!token_try_consume(prs, TK_L_BRACE))
 	{
@@ -343,17 +343,16 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
 		return;
 	}
 
-	node_copy(&prs->nd, parent);
 	const size_t expected_fields = (size_t)(mode_get(prs->sx, (size_t)type + 2) / 2);
 	size_t actual_fields = 0;
 	size_t ref_next_field = (size_t)type + 3;
 
-	to_tree(prs, OP_STRUCT_INIT);
-	node_add_arg(&prs->nd, (item_t)expected_fields);
+	node nd_struct_init = node_add_child(parent, OP_STRUCT_INIT);
+	node_add_arg(&nd_struct_init, (item_t)expected_fields);
 
 	do
 	{
-		parse_initializer(prs, &prs->nd, mode_get(prs->sx, ref_next_field));
+		parse_initializer(prs, &nd_struct_init, mode_get(prs->sx, ref_next_field));
 		ref_next_field += 2;
 		actual_fields++;
 
@@ -369,7 +368,10 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
 	} while (actual_fields != expected_fields && prs->token != TK_SEMICOLON);
 
 	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
-	to_tree(prs, OP_EXPR_END);
+	node_add_child(&nd_struct_init, OP_EXPR_END);
+
+	// Это для продолжения выражений, если инициализатор был вызван не для объявления
+	node_copy(&prs->nd, &nd_struct_init);
 }
 
 /**
@@ -379,9 +381,8 @@ void parse_struct_initializer(parser *const prs, node *const parent, const item_
  *	@param	parent		Parent node in AST
  *	@param	type		Index of the modes table
  */
-void parse_array_initializer(parser *const prs, node *const parent, const item_t type)
+static void parse_array_initializer(parser *const prs, node *const parent, const item_t type)
 {
-	node_copy(&prs->nd, parent);
 	if (prs->token == TK_STRING)
 	{
 		if (prs->flag_strings_only == 0)
@@ -404,17 +405,15 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 		return;
 	}
 
-	to_tree(prs, OP_ARRAY_INIT);
-	node_add_arg(&prs->nd, 0);
 	size_t list_length = 0;
 
-	node beginit;
-	node_copy(&beginit, &prs->nd);
+	node nd_arr_init = node_add_child(parent, OP_ARRAY_INIT);
+	node_add_arg(&nd_arr_init, 0);
 
 	do
 	{
 		list_length++;
-		parse_initializer(prs, &prs->nd, mode_get(prs->sx, (size_t)type + 1));
+		parse_initializer(prs, &nd_arr_init, mode_get(prs->sx, (size_t)type + 1));
 
 		if (prs->token == TK_R_BRACE)
 		{
@@ -428,8 +427,11 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
 	} while (prs->token != TK_SEMICOLON);
 
 	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
-	node_set_arg(&beginit, 0, (item_t)list_length);
-	to_tree(prs, OP_EXPR_END);
+	node_set_arg(&nd_arr_init, 0, (item_t)list_length);
+	node_add_child(&nd_arr_init, OP_EXPR_END);
+
+	// Это для продолжения выражений, если инициализатор был вызван не для объявления
+	node_copy(&prs->nd, &nd_arr_init);
 }
 
 /**
@@ -445,14 +447,14 @@ void parse_array_initializer(parser *const prs, node *const parent, const item_t
  *	@param	parent		Parent node in AST
  *	@param	type		Type of variable in declaration
  */
-void parse_init_declarator(parser *const prs, node *const parent, item_t type)
+static void parse_init_declarator(parser *const prs, node *const parent, item_t type)
 {
 	const size_t old_id = to_identab(prs, prs->lxr->repr, 0, type);
 
 	prs->flag_empty_bounds = 1;
 	prs->array_dimensions = 0;
 	const item_t element_type = type;
-	
+
 	node nd_decl_arr;
 	bool is_array = false;
 
@@ -518,7 +520,7 @@ void parse_init_declarator(parser *const prs, node *const parent, item_t type)
  *
  *	@return	Index of modes table, @c mode_undefined on failure
  */
-item_t parse_function_declarator(parser *const prs, const int level, int func_def, const item_t return_type)
+static item_t parse_function_declarator(parser *const prs, const int level, int func_def, const item_t return_type)
 {
 	item_t local_modetab[100];
 	size_t local_md = 3;
@@ -680,7 +682,7 @@ item_t parse_function_declarator(parser *const prs, const int level, int func_de
  *	@param	parent		Parent node in AST
  *	@param	function_id	Function number
  */
-void parse_function_body(parser *const prs, node *const parent, const size_t function_id)
+static void parse_function_body(parser *const prs, node *const parent, const size_t function_id)
 {
 	prs->function_mode = (size_t)ident_get_mode(prs->sx, function_id);
 	const size_t function_number = (size_t)ident_get_displ(prs->sx, function_id);
@@ -748,7 +750,7 @@ void parse_function_body(parser *const prs, node *const parent, const size_t fun
  *	@param	parent		Parent node in AST
  *	@param	type		Return type of a function
  */
-void parse_function_definition(parser *const prs, node *const parent, const item_t type)
+static void parse_function_definition(parser *const prs, node *const parent, const item_t type)
 {
 	const size_t function_num = func_reserve(prs->sx);
 	const size_t function_repr = prs->lxr->repr;

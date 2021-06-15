@@ -22,7 +22,7 @@ static inline bool is_negative(const item_t value)
 	return value >> (8 * sizeof(item_t) - 1);
 }
 
-void vector_swap(vector *const vec, size_t fst, size_t snd)
+static inline void vector_swap(vector *const vec, size_t fst, size_t snd)
 {
 	const item_t temp = vector_get(vec, fst);
 	vector_set(vec, fst, vector_get(vec, snd));
@@ -65,7 +65,7 @@ static inline node node_broken()
 	return nd;
 }
 
-void node_update(node *const nd)
+static void node_update(node *const nd)
 {
 	node last = *nd;
 	while (node_get_amount(&last) != 0)
@@ -83,7 +83,7 @@ void node_update(node *const nd)
 	ref_set_children(&last, index);
 }
 
-int node_displ(node *fst, const size_t fst_index, node *snd, const size_t snd_index)
+static int node_displ(node *fst, const size_t fst_index, node *snd, const size_t snd_index)
 {
 	if (!node_is_correct(fst) || !node_is_correct(snd) || fst->tree != snd->tree
 		|| fst_index >= node_get_amount(fst) || snd_index >= node_get_amount(snd))
@@ -404,7 +404,7 @@ int node_order(node *const fst, const size_t fst_index, node *const snd, const s
 
 int node_swap(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index)
 {
-	node fst_child = *fst;	
+	node fst_child = *fst;
 	node snd_child = *snd;
 
 	if (node_displ(&fst_child, fst_index, &snd_child, snd_index))
@@ -457,7 +457,7 @@ int node_remove(node *const nd, const size_t index)
 		child.index = reference;
 		ref_set_amount(nd, (item_t)node_get_amount(nd) - 1);
 	}
-	
+
 	if (node_get_amount(&child) == 0 && ref_get_children(&child) == vector_size(nd->tree) - 1)
 	{
 		vector_resize(nd->tree, ref_get_next(&child));

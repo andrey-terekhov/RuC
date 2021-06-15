@@ -19,13 +19,13 @@
 #include "vector.h"
 
 
-#define MAX_HASH 256
-#define VALUE_SIZE 4
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+static const size_t MAX_HASH = 256;
+static const size_t VALUE_SIZE = 4;
+
 
 /** Hash table */
 typedef vector hash;
@@ -51,6 +51,16 @@ EXPORTED hash hash_create(const size_t alloc);
  *	@return	Index of record, @c SIZE_MAX on failure
  */
 EXPORTED size_t hash_add(hash *const hs, const item_t key, const size_t amount);
+
+/**
+ *	Get index of record by key
+ *
+ *	@param	hs				Hash table
+ *	@param	key				Unique key
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t hash_get_index(const hash *const hs, const item_t key);
 
 /**
  *	Get values amount by key

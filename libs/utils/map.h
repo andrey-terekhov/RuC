@@ -27,6 +27,10 @@
 extern "C" {
 #endif
 
+static const size_t MAP_HASH_MAX = 256;
+static const size_t MAP_KEY_SIZE = 8;
+
+
 /** Hash table */
 typedef struct map_hash map_hash;
 

@@ -21,7 +21,7 @@
 
 
 /** Check if current token is part of a declaration specifier */
-bool is_declaration_specifier(parser *const prs)
+static bool is_declaration_specifier(parser *const prs)
 {
 	switch (prs->token)
 	{
@@ -60,7 +60,7 @@ bool is_declaration_specifier(parser *const prs)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-void parse_labeled_statement(parser *const prs, node *const parent)
+static void parse_labeled_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // identifier
 	node nd = node_add_child(parent, OP_LABEL);
@@ -108,7 +108,7 @@ void parse_labeled_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-void parse_case_statement(parser *const prs, node *const parent)
+static void parse_case_statement(parser *const prs, node *const parent)
 {
 	if (!prs->flag_in_switch)
 	{
@@ -136,7 +136,7 @@ void parse_case_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-void parse_default_statement(parser *const prs, node *const parent)
+static void parse_default_statement(parser *const prs, node *const parent)
 {
 	if (!prs->flag_in_switch)
 	{
@@ -158,7 +158,7 @@ void parse_default_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-void parse_expression_statement(parser *const prs, node *const parent)
+static void parse_expression_statement(parser *const prs, node *const parent)
 {
 	parse_expression(prs, parent);
 	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
@@ -174,7 +174,7 @@ void parse_expression_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-void parse_if_statement(parser *const prs, node *const parent)
+static void parse_if_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_if
 	node nd = node_add_child(parent, OP_IF);
@@ -199,7 +199,7 @@ void parse_if_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-void parse_switch_statement(parser *const prs, node *const parent)
+static void parse_switch_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_switch
 	node nd = node_add_child(parent, OP_SWITCH);
@@ -225,7 +225,7 @@ void parse_switch_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-void parse_while_statement(parser *const prs, node *const parent)
+static void parse_while_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_while
 	node nd = node_add_child(parent, OP_WHILE);
@@ -247,7 +247,7 @@ void parse_while_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-void parse_do_statement(parser *const prs, node *const parent)
+static void parse_do_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_do
 	node nd = node_add_child(parent, OP_DO);
@@ -280,7 +280,7 @@ void parse_do_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-void parse_for_statement(parser *const prs, node *const parent)
+static void parse_for_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_for
 	node nd = node_add_child(parent, OP_FOR);
@@ -346,7 +346,7 @@ void parse_for_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-void parse_goto_statement(parser *const prs, node *const parent)
+static void parse_goto_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_goto
 	node nd = node_add_child(parent, OP_GOTO);
@@ -389,7 +389,7 @@ void parse_goto_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-void parse_continue_statement(parser *const prs, node *const parent)
+static void parse_continue_statement(parser *const prs, node *const parent)
 {
 	if (!prs->flag_in_loop)
 	{
@@ -410,7 +410,7 @@ void parse_continue_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-void parse_break_statement(parser *const prs, node *const parent)
+static void parse_break_statement(parser *const prs, node *const parent)
 {
 	if (!(prs->flag_in_loop || prs->flag_in_switch))
 	{
@@ -431,7 +431,7 @@ void parse_break_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  */
-void parse_return_statement(parser *const prs, node *const parent)
+static void parse_return_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_return
 	const item_t return_type = mode_get(prs->sx, prs->function_mode + 1);
@@ -473,15 +473,15 @@ void parse_return_statement(parser *const prs, node *const parent)
 }
 
 /**	Parse t_create_direct statement [RuC] */
-void parse_create_direct_statement(parser *const prs, node *const parent)
+static void parse_create_direct_statement(parser *const prs, node *const parent)
 {
-	node nd_create = node_add_child(parent, OP_CREATE_DIRECT);
-	parse_statement_compound(prs, &nd_create, THREAD);
-	node_add_child(&nd_create, OP_EXIT_DIRECT);
+	node nd = node_add_child(parent, OP_CREATE_DIRECT);
+	parse_statement_compound(prs, &nd, THREAD);
+	node_add_child(&nd, OP_EXIT_DIRECT);
 }
 
 /**	Parse printid statement [RuC] */
-void parse_printid_statement(parser *const prs, node *const parent)
+static void parse_printid_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_printid
 	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_printid);
@@ -512,7 +512,7 @@ void parse_printid_statement(parser *const prs, node *const parent)
 }
 
 /**	Parse print statement [RuC] */
-void parse_print_statement(parser *const prs, node *const parent)
+static void parse_print_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_print
 	token_expect_and_consume(prs, TK_L_PAREN, print_without_br);
@@ -533,7 +533,7 @@ void parse_print_statement(parser *const prs, node *const parent)
 }
 
 /**	Parse getid statement [RuC] */
-void parse_getid_statement(parser *const prs, node *const parent)
+static void parse_getid_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_getid
 	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_getid);
@@ -563,7 +563,7 @@ void parse_getid_statement(parser *const prs, node *const parent)
 	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
-size_t evaluate_args(parser *const prs, const size_t length, const char32_t *const format_str
+static size_t evaluate_args(parser *const prs, const size_t length, const char32_t *const format_str
 	, item_t *const format_types, char32_t *const placeholders)
 {
 	size_t args = 0;
@@ -622,10 +622,10 @@ size_t evaluate_args(parser *const prs, const size_t length, const char32_t *con
 }
 
 /**	Parse scanf statement [RuC] */
-void parse_scanf_statement(parser *const prs, node *const parent);
+static void parse_scanf_statement(parser *const prs, node *const parent);
 
 /**	Parse printf statement [RuC] */
-void parse_printf_statement(parser *const prs, node *const parent)
+static void parse_printf_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_printf
 	char32_t placeholders[MAX_PRINTF_ARGS];

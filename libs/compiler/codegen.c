@@ -27,10 +27,10 @@
 #include "utf8.h"
 
 
-const char *const DEFAULT_CODES = "codes.txt";
+static const char *const DEFAULT_CODES = "codes.txt";
 
-const size_t MAX_MEM_SIZE = 100000;
-const size_t MAX_STACK_SIZE = 256;
+static const size_t MAX_MEM_SIZE = 100000;
+static const size_t MAX_STACK_SIZE = 256;
 
 
 /** Virtual machine environment */
@@ -917,7 +917,7 @@ static int output_export(universal_io *const io, const virtual *const vm)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n"
+	uni_printf(io, "%zu %zu %zu %zu %zu %" PRIitem " %zu\n"
 		, vector_size(&vm->memory)
 		, vector_size(&vm->sx->functions)
 		, vector_size(&vm->identifiers)

@@ -17,7 +17,7 @@
 #include "utf8.h"
 
 
-char char_to_cp866(const char32_t symbol)
+static char char_to_cp866(const char32_t symbol)
 {
 	if (symbol >= U'А' && symbol <= U'Я')
 	{
@@ -172,7 +172,7 @@ char char_to_cp866(const char32_t symbol)
 	}
 }
 
-char char_to_cp1251(const char32_t symbol)
+static char char_to_cp1251(const char32_t symbol)
 {
 	if (symbol >= U'А' && symbol <= U'Я')
 	{
@@ -319,7 +319,7 @@ char char_to_cp1251(const char32_t symbol)
 	}
 }
 
-size_t utf8_to_codepage(const char *const src, char *const dest, char (*char_to_codepage)(const char32_t))
+static inline size_t utf8_to_codepage(const char *const src, char *const dest, char (*char_to_codepage)(const char32_t))
 {
 	if (src == NULL || dest == NULL)
 	{

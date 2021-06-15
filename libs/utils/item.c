@@ -19,7 +19,7 @@
 #include <string.h>
 
 
-const item_status DEFAULT_STATUS = item_int32;
+static const item_status DEFAULT_STATUS = item_int32;
 
 
 item_status item_get_status(const workspace *const ws)
