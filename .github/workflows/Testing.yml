@@ -18,13 +18,11 @@ jobs:
   macOS-Catalina-10-15:
     runs-on: macos-10.15
     steps:
-      - name: Set up environment
-        shell: bash
-        run: brew install coreutils
-      - uses: actions/checkout@v2
       - name: Run script
+      - uses: actions/checkout@v2
+      - run: brew install coreutils
         shell: bash
-        run: ./scripts/test.sh
+      - run: ./scripts/test.sh
   Ubuntu-20-04:
     runs-on: ubuntu-20.04
     steps:
