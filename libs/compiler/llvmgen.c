@@ -983,13 +983,15 @@ static void inc_dec_expression(information *const info, node *const nd)
 {
 	const item_t displ = node_get_arg(nd, 0);
 	const item_t operation = node_get_type(nd);
+	const type_t operation_type = is_double(operation) ? DOUBLE : I32;
 
 	node_set_next(nd);
 	node_set_next(nd); // TIdent
 
-	to_code_load(info, info->register_num, displ, I32, 0);
+	to_code_load(info, info->register_num, displ, operation_type, 0);
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
+	info->answer_value_type = operation_type;
 	
 	switch (operation)
 	{
@@ -1004,9 +1006,21 @@ static void inc_dec_expression(information *const info, node *const nd)
 		case POSTDECV:
 			to_code_operation_reg_const_i32(info, operation, info->register_num - 1, 1);
 			break;
+
+		case INCR:
+		case INCRV:
+		case DECR:
+		case DECRV:
+			info->answer_reg = info->register_num;
+		case POSTINCR:
+		case POSTINCRV:
+		case POSTDECR:
+		case POSTDECRV:
+			to_code_operation_reg_const_double(info, operation, info->register_num - 1, 1.0);
+			break;
 	}
 
-	to_code_store_reg(info, info->register_num, displ, I32, 0);
+	to_code_store_reg(info, info->register_num, displ, operation_type, 0);
 	info->register_num++;
 }
 
@@ -1022,6 +1036,15 @@ static void unary_operation(information *const info, node *const nd)
 		case INCV:
 		case DEC:
 		case DECV:
+
+		case POSTINCR:
+		case POSTINCRV:
+		case POSTDECR:
+		case POSTDECRV:
+		case INCR:
+		case INCRV:
+		case DECR:
+		case DECRV:
 			inc_dec_expression(info, nd);
 			break;
 		case UNMINUS:
