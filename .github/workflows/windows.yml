@@ -1,8 +1,17 @@
-name: Testing
+name: Testing on Windows
 on: [push, pull_request]
-runs-on: windows-2016
-steps:
-  - uses: actions/checkout@v2
-  - name: Run script
-    shell: bash
-    run: ./scripts/test.sh
+jobs:
+  Windows-Server-2016:
+    runs-on: windows-2016
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run script
+        shell: bash
+        run: ./scripts/test.sh
+  Windows-Server-2019:
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run script
+        shell: bash
+        run: ./scripts/test.sh
