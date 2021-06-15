@@ -16,18 +16,17 @@
 
 #include "parser.h"
 #include "codes.h"
-#include "tree.h"
+#include "old_tree.h"
 
 
-const char *const DEFAULT_TREE = "tree.txt";
-const char *const DEFAULT_NEW = "new.txt";
+static const char *const DEFAULT_TREE = "tree.txt";
 
-const size_t MAX_LABELS = 10000;
-const size_t MAX_STACK = 100;
+static const size_t MAX_LABELS = 10000;
+static const size_t MAX_STACK = 100;
 
 
 /** Check if the set of tokens has token in it */
-int token_check(const uint8_t tokens, const token_t token)
+static inline int token_check(const uint8_t tokens, const token_t token)
 {
 	return (tokens & token) != 0;
 }
@@ -40,7 +39,7 @@ int token_check(const uint8_t tokens, const token_t token)
  *
  *	@return	Parser structure
  */
-parser parser_create(syntax *const sx, lexer *const lxr)
+static inline parser parser_create(syntax *const sx, lexer *const lxr)
 {
 	parser prs;
 	prs.sx = sx;
@@ -49,8 +48,8 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.left_mode = -1;
 	prs.operand_displ = 0;
 
-	prs.flag_in_assignment = 0;
-	prs.was_error = 0;
+	prs.is_in_assignment = false;
+	prs.was_error = false;
 
 	prs.labels = vector_create(MAX_LABELS);
 	prs.stk.priorities = stack_create(MAX_STACK);
@@ -62,7 +61,7 @@ parser parser_create(syntax *const sx, lexer *const lxr)
 	return prs;
 }
 
-void parser_clear(parser *const prs)
+static inline void parser_clear(parser *const prs)
 {
 	vector_clear(&prs->labels);
 	stack_clear(&prs->anonymous);
@@ -96,35 +95,30 @@ int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
 	do
 	{
 		parse_declaration_external(&prs, &root);
-	} while (prs.token != eof);
+	} while (prs.token != TK_EOF);
 
-	node_add_child(&root, TEnd);
-
+	node_add_child(&root, OP_BLOCK_END);
 	parser_clear(&prs);
 
-#ifdef NDEBUG
-	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
-#else
-	const int ret = prs.was_error || prs.lxr->was_error || !sx_is_correct(sx)
+#ifndef NDEBUG
+	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
+#endif
+
+#if !defined(NDEBUG) && defined(OLD_TREE)
+	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx)
 		|| tree_test(&sx->tree)
 		|| tree_test_next(&sx->tree)
 		|| tree_test_recursive(&sx->tree)
 		|| tree_test_copy(&sx->tree);
-
-	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
-
-	if (!ret)
-	{
-		tree_print(DEFAULT_NEW, &sx->tree);
-	}
-	return ret;
+#else
+	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
 #endif
 }
 
 
 void parser_error(parser *const prs, error_t num, ...)
 {
-	if (prs->lxr->disable_recovery && (prs->lxr->was_error || prs->was_error))
+	if (prs->lxr->is_recovery_disabled && (prs->lxr->was_error || prs->was_error))
 	{
 		return;
 	}
@@ -133,7 +127,7 @@ void parser_error(parser *const prs, error_t num, ...)
 	va_start(args, num);
 
 	verror(prs->lxr->io, num, args);
-	prs->was_error = 1;
+	prs->was_error = true;
 
 	va_end(args);
 }
@@ -164,35 +158,35 @@ void token_expect_and_consume(parser *const prs, const token_t expected, const e
 
 void token_skip_until(parser *const prs, const uint8_t tokens)
 {
-	while (prs->token != eof)
+	while (prs->token != TK_EOF)
 	{
 		switch (prs->token)
 		{
-			case l_paren:
+			case TK_L_PAREN:
 				token_consume(prs);
-				token_skip_until(prs, r_paren);
+				token_skip_until(prs, TK_R_PAREN);
 				break;
 
-			case l_square:
+			case TK_L_SQUARE:
 				token_consume(prs);
-				token_skip_until(prs, r_square);
+				token_skip_until(prs, TK_R_SQUARE);
 				break;
 
-			case l_brace:
+			case TK_L_BRACE:
 				token_consume(prs);
-				token_skip_until(prs, r_brace);
+				token_skip_until(prs, TK_R_BRACE);
 				break;
 
-			case question:
+			case TK_QUESTION:
 				token_consume(prs);
-				token_skip_until(prs, colon);
+				token_skip_until(prs, TK_COLON);
 				break;
 
-			case r_paren:
-			case r_square:
-			case r_brace:
-			case colon:
-			case semicolon:
+			case TK_R_PAREN:
+			case TK_R_SQUARE:
+			case TK_R_BRACE:
+			case TK_COLON:
+			case TK_SEMICOLON:
 				if (token_check(tokens, prs->token))
 				{
 					return;
@@ -211,47 +205,47 @@ void token_skip_until(parser *const prs, const uint8_t tokens)
 }
 
 
-int mode_is_function(syntax *const sx, const item_t mode)
+bool mode_is_function(syntax *const sx, const item_t mode)
 {
 	return mode > 0 && mode_get(sx, (size_t)mode) == mode_function;
 }
 
-int mode_is_array(syntax *const sx, const item_t mode)
+bool mode_is_array(syntax *const sx, const item_t mode)
 {
 	return mode > 0 && mode_get(sx, (size_t)mode) == mode_array;
 }
 
-int mode_is_string(syntax *const sx, const item_t mode)
+bool mode_is_string(syntax *const sx, const item_t mode)
 {
 	return mode_is_array(sx, mode) && mode_get(sx, (size_t)mode + 1) == mode_character;
 }
 
-int mode_is_pointer(syntax *const sx, const item_t mode)
+bool mode_is_pointer(syntax *const sx, const item_t mode)
 {
 	return mode > 0 && mode_get(sx, (size_t)mode) == mode_pointer;
 }
 
-int mode_is_struct(syntax *const sx, const item_t mode)
+bool mode_is_struct(syntax *const sx, const item_t mode)
 {
 	return mode > 0 && mode_get(sx, (size_t)mode) == mode_struct;
 }
 
-int mode_is_float(const item_t mode)
+bool mode_is_float(const item_t mode)
 {
 	return mode == mode_float;
 }
 
-int mode_is_int(const item_t mode)
+bool mode_is_int(const item_t mode)
 {
 	return mode == mode_integer || mode == mode_character;
 }
 
-int mode_is_void(const item_t mode)
+bool mode_is_void(const item_t mode)
 {
 	return mode == mode_void;
 }
 
-int mode_is_undefined(const item_t mode)
+bool mode_is_undefined(const item_t mode)
 {
 	return mode == mode_undefined;
 }

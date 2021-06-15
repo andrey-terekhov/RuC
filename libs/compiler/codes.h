@@ -25,15 +25,6 @@ extern "C" {
 #endif
 
 /**
- *	Output new tree
- *
- *	@param	path			File path
- *	@param	tree			Tree table
- */
-void tree_print(const char *const path, vector *const tree);
-
-
-/**
  *	Output tables and tree
  *
  *	@param	path			File path
@@ -44,7 +35,7 @@ void tree_print(const char *const path, vector *const tree);
 void tables_and_tree(const char *const path
 	, const vector *const identifiers
 	, const vector *const modes
-	, const vector *const tree);
+	, vector *const tree);
 
 /**
  *	Output tables and codes
