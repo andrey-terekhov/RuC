@@ -417,7 +417,7 @@ static inline void to_code_conditional_branch(information *const info)
 		, info->answer_reg, info->label_true, info->label_false);
 }
 
-static void to_code_alloc_array_static(information *const info, const size_t index)
+static void to_code_alloc_array_static(information *const info, const size_t index, type_t type)
 {
 	uni_printf(info->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
 
@@ -426,7 +426,7 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	{
 		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
 	}
-	uni_printf(info->io, "i32");
+	type_to_io(info->io, type);
 
 	for (size_t i = 1; i <= dim; i++)
 	{
@@ -1697,6 +1697,7 @@ static void block(information *const info, node *const nd)
 				}
 
 				const item_t displ = node_get_arg(&id, 0);
+				const item_t elem_type = node_get_arg(&id, 1);
 				const size_t N = (size_t)node_get_arg(&id, 2);
 				const size_t index = hash_add(&info->arrays, displ, 1 + N);
 				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
@@ -1730,7 +1731,7 @@ static void block(information *const info, node *const nd)
 
 				if (hash_get_by_index(&info->arrays, index, IS_STATIC))
 				{
-					to_code_alloc_array_static(info, index);
+					to_code_alloc_array_static(info, index, elem_type == mode_integer ? I32 : DOUBLE);
 				}
 				else
 				{
