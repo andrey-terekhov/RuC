@@ -48,7 +48,7 @@ static inline parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.left_mode = -1;
 	prs.operand_displ = 0;
 
-	prs.flag_in_assignment = 0;
+	prs.is_in_assignment = false;
 	prs.was_error = false;
 
 	prs.labels = vector_create(MAX_LABELS);

@@ -89,9 +89,10 @@ typedef struct parser
 
 	int flag_array_in_struct;			/**< Set, if parsed struct declaration has an array */
 	int flag_empty_bounds;				/**< Set, if array declaration has empty bounds */
-	int flag_in_switch;					/**< Set, if parser is in switch body */
-	int flag_in_assignment;				/**< Set, if parser is in assignment */
-	int flag_in_loop;					/**< Set, if parser is in loop body */
+
+	bool is_in_switch;					/**< Set, if parser is in switch body */
+	bool is_in_assignment;				/**< Set, if parser is in assignment */
+	bool is_in_loop;					/**< Set, if parser is in loop body */
 
 	bool was_return;					/**< Set, if was return in parsed function */
 	bool was_type_def;					/**< Set, if was type definition */

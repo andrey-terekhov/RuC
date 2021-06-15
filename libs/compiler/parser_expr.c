@@ -194,7 +194,7 @@ static void to_value(parser *const prs)
 		case VARIABLE:
 		{
 			const item_t type = stack_pop(&prs->anonymous);
-			if (mode_is_struct(prs->sx, type) && !prs->flag_in_assignment)
+			if (mode_is_struct(prs->sx, type) && !prs->is_in_assignment)
 			{
 				node_set_type(&prs->nd, OP_COPY0ST);
 				node_set_arg(&prs->nd, 0, prs->operand_displ);
@@ -212,7 +212,7 @@ static void to_value(parser *const prs)
 		case ADDRESS:
 		{
 			const item_t type = stack_pop(&prs->anonymous);
-			if (mode_is_struct(prs->sx, type) && !prs->flag_in_assignment)
+			if (mode_is_struct(prs->sx, type) && !prs->is_in_assignment)
 			{
 				to_tree(prs, OP_COPY1ST);
 				node_add_arg(&prs->nd, mode_get(prs->sx, (size_t)type + 1));
@@ -793,7 +793,7 @@ static item_t find_field(parser *const prs)
  */
 static void parse_function_call(parser *const prs, const size_t function_id)
 {
-	const int old_in_assignment = prs->flag_in_assignment;
+	const bool old_in_assignment = prs->is_in_assignment;
 	const size_t function_mode = (size_t)stack_pop(&prs->anonymous);
 
 	if (!mode_is_function(prs->sx, function_mode))
@@ -848,7 +848,7 @@ static void parse_function_call(parser *const prs, const size_t function_id)
 			}
 			else
 			{
-				prs->flag_in_assignment = 0;
+				prs->is_in_assignment = false;
 				const item_t actual_arg_mode = parse_assignment_expression(prs, &prs->nd);
 
 				if (!mode_is_undefined(expected_arg_mode) && !mode_is_undefined(actual_arg_mode))
@@ -880,7 +880,7 @@ static void parse_function_call(parser *const prs, const size_t function_id)
 		parser_error(prs, wrong_number_of_params);
 	}
 
-	prs->flag_in_assignment = old_in_assignment;
+	prs->is_in_assignment = old_in_assignment;
 	node nd_call2 = node_add_child(&nd_call1, OP_CALL2);
 	node_add_arg(&nd_call2, (item_t)function_id);
 	node_copy(&prs->nd, &nd_call2);
@@ -1467,9 +1467,9 @@ static void parse_assignment_expression_internal(parser *const prs)
 		operation_t operator = token_to_binary(token);
 		token_consume(prs);
 
-		prs->flag_in_assignment = 1;
+		prs->is_in_assignment = true;
 		parse_assignment_expression_internal(prs);
-		prs->flag_in_assignment = 0;
+		prs->is_in_assignment = false;
 
 		// Снимаем типы операндов со стека
 		const operand_t right_type = prs->last_type;
