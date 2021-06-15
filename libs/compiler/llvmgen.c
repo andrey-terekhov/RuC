@@ -704,6 +704,13 @@ static void operand(information *const info, node *const nd)
 				info->answer_type = AREG;
 				info->answer_reg = info->register_num++;
 			}
+			else if (func_type == mode_float)
+			{
+				uni_printf(info->io, " %%.%" PRIitem " = call double @func%zi(", info->register_num, ref_ident);
+				info->answer_type = AREG;
+				info->answer_value_type = DOUBLE;
+				info->answer_reg = info->register_num++;
+			}
 			// тут будет ещё перечисление аргументов
 			uni_printf(info->io, ")\n");
 		}
@@ -1583,13 +1590,19 @@ static void statement(information *const info, node *const nd)
 			expression(info, nd);
 
 			// TODO: добавить обработку других ответов (ALOGIC)
-			if (info->answer_type == ACONST)
+			if (info->answer_type == ACONST && info->answer_value_type == I32)
 			{
 				uni_printf(info->io, " ret i32 %" PRIitem "\n", info->answer_const);
 			}
+			else if (info->answer_type == ACONST && info->answer_value_type == DOUBLE)
+			{
+				uni_printf(info->io, " ret double %f\n", info->answer_const_double);
+			}
 			else if (info->answer_type == AREG)
 			{
-				uni_printf(info->io, " ret i32 %%.%" PRIitem "\n", info->answer_reg);
+				uni_printf(info->io, " ret ");
+				type_to_io(info->io, info->answer_value_type);
+				uni_printf(info->io, " %%.%" PRIitem "\n", info->answer_reg);
 			}
 			node_set_next(nd); // TReturnvoid
 		}
@@ -1797,6 +1810,10 @@ static int codegen(information *const info)
 				else if (func_type == mode_integer)
 				{
 					uni_printf(info->io, "define i32 @func%zi(", ref_ident);
+				}
+				else if (func_type == mode_float)
+				{
+					uni_printf(info->io, "define double @func%zi(", ref_ident);
 				}
 				uni_printf(info->io, ") {\n");
 
