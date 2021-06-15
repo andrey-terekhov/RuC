@@ -268,21 +268,82 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case LGE:
 			uni_printf(io, "icmp sge");
 			break;
+
+		case INCR:
+		case INCRV:
+		case POSTINCR:
+		case POSTINCRV:
+		case PLUSASSR:
+		case PLUSASSRV:
+		case LPLUSR:
+			uni_printf(io, "fadd");
+			break;
+
+		case DECR:
+		case DECRV:
+		case POSTDECR:
+		case POSTDECRV:
+		case MINUSASSR:
+		case MINUSASSRV:
+		case LMINUSR:
+		case UNMINUSR:
+			uni_printf(io, "fsub");
+			break;
+
+		case MULTASSR:
+		case MULTASSRV:
+		case LMULTR:
+			uni_printf(io, "fmul");
+			break;
+		
+		case DIVASSR:
+		case DIVASSRV:
+		case LDIVR:
+			uni_printf(io, "fdiv");
+			break;
+
+		case EQEQR:
+			uni_printf(io, "fcmp oeq");
+			break;
+		case NOTEQR:
+			uni_printf(io, "fcmp one");
+			break;
+		case LLTR:
+			uni_printf(io, "fcmp olt");
+			break;
+		case LGTR:
+			uni_printf(io, "fcmp ogt");
+			break;
+		case LLER:
+			uni_printf(io, "fcmp ole");
+			break;
+		case LGER:
+			uni_printf(io, "fcmp oge");
+			break;
 	}
 }
 
-static void to_code_operation_reg_reg(information *const info, const item_t type, const item_t fst, const item_t snd)
+static void to_code_operation_reg_reg(information *const info, const item_t operation_type, const item_t fst, const item_t snd, type_t type)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->io, type);
-	uni_printf(info->io, " i32 %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
+	operation_to_io(info->io, operation_type);
+	uni_printf(info->io, " ");
+	type_to_io(info->io, type);
+	uni_printf(info->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_operation_reg_const(information *const info, const item_t type, const item_t fst, const item_t snd)
+static void to_code_operation_reg_const_i32(information *const info, const item_t type, const item_t fst, const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, type);
 	uni_printf(info->io, " i32 %%.%" PRIitem ", %" PRIitem "\n", fst, snd);
+}
+
+static void to_code_operation_reg_const_double(information *const info, item_t type, item_t fst, double snd)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->io, type);
+	uni_printf(info->io, " double %%.%" PRIitem ", %f\n", fst, snd);
 }
 
 static void to_code_operation_const_reg(information *const info, const item_t type, const item_t fst, const item_t snd)
@@ -301,10 +362,13 @@ static void to_code_load(information *const info, const item_t result, const ite
 	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
-static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const int is_array)
+static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, type_t type, const int is_array)
 {
-	uni_printf(info->io, " store i32 %%.%" PRIitem ", i32* %%%s.%" PRIitem ", align 4\n"
-		, reg, is_array ? "" : "var", displ);
+	uni_printf(info->io, " store ");
+	type_to_io(info->io, type);
+	uni_printf(info->io, " %%.%" PRIitem ", ", reg);
+	type_to_io(info->io, type);
+	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ, const int is_array)
@@ -466,7 +530,7 @@ static void check_type_and_branch(information *const info)
 			break;
 		case AREG:
 		{
-			to_code_operation_reg_const(info, NOTEQ, info->answer_reg, 0);
+			to_code_operation_reg_const_i32(info, NOTEQ, info->answer_reg, 0);
 			info->answer_reg = info->register_num++;
 		}
 		case ALOGIC:
@@ -572,7 +636,7 @@ static void operand(information *const info, node *const nd)
 				}
 				else // if (info->answer_type == AREG)
 				{
-					to_code_operation_reg_reg(info, LMULT, info->answer_reg, hash_get(&info->arrays, displ, 2));
+					to_code_operation_reg_reg(info, LMULT, info->answer_reg, hash_get(&info->arrays, displ, 2), I32);
 				}
 
 				info->answer_type = AREG;
@@ -690,11 +754,11 @@ static void assignment_array_expression(information *const info, node *const nd)
 
 		if (info->answer_type == AREG)
 		{
-			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg);
+			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg, I32);
 		}
 		else // ACONST
 		{
-			to_code_operation_reg_const(info, assignment_type, info->register_num - 1, info->answer_const);
+			to_code_operation_reg_const_i32(info, assignment_type, info->register_num - 1, info->answer_const);
 		}
 
 		result = info->register_num++;
@@ -703,7 +767,7 @@ static void assignment_array_expression(information *const info, node *const nd)
 
 	if (info->answer_type == AREG)
 	{
-		to_code_store_reg(info, result, memory_reg, 1);
+		to_code_store_reg(info, result, memory_reg, I32, 1);
 	}
 	else // ACONST && =
 	{
@@ -715,6 +779,7 @@ static void assignment_expression(information *const info, node *const nd)
 {
 	const item_t displ = node_get_arg(nd, 0);
 	const item_t assignment_type = node_get_type(nd);
+	const type_t operation_type = is_double(assignment_type) ? DOUBLE : I32;
 
 	node_set_next(nd);
 	node_set_next(nd); // TIdent
@@ -728,16 +793,21 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (assignment_type != ASS && assignment_type != ASSV && assignment_type != ASSR && assignment_type != ASSRV)
 	{
-		to_code_load(info, info->register_num, displ, I32, 0);
+		to_code_load(info, info->register_num, displ, operation_type, 0);
 		info->register_num++;
 
 		if (info->answer_type == AREG)
 		{
-			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg);
+			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg, operation_type);
 		}
-		else // ACONST
+		// ACONST
+		else if (!is_double(assignment_type))
 		{
-			to_code_operation_reg_const(info, assignment_type, info->register_num - 1, info->answer_const);
+			to_code_operation_reg_const_i32(info, assignment_type, info->register_num - 1, info->answer_const);
+		}
+		else
+		{
+			to_code_operation_reg_const_double(info, assignment_type, info->register_num - 1, info->answer_const_double);
 		}
 			
 		result = info->register_num++;
@@ -745,10 +815,10 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (info->answer_type == AREG || (assignment_type != ASS && assignment_type != ASSV && assignment_type != ASSR && assignment_type != ASSRV))
 	{
-		to_code_store_reg(info, result, displ, 0);
+		to_code_store_reg(info, result, displ, operation_type, 0);
 	}
 	// ACONST && =
-	else if (info->answer_value_type == I32)
+	else if (!is_double(assignment_type))
 	{
 		to_code_store_const_i32(info, info->answer_const, displ, 0);
 	}
@@ -787,11 +857,11 @@ static void integral_expression(information *const info, node *const nd, const a
 
 	if (left_type == AREG && right_type == AREG)
 	{
-		to_code_operation_reg_reg(info, operation_type, left_reg, right_reg);
+		to_code_operation_reg_reg(info, operation_type, left_reg, right_reg, I32);
 	}
 	else if (left_type == AREG && right_type == ACONST)
 	{
-		to_code_operation_reg_const(info, operation_type, left_reg, right_const);
+		to_code_operation_reg_const_i32(info, operation_type, left_reg, right_const);
 	}
 	else if (left_type == ACONST && right_type == AREG)
 	{
@@ -916,11 +986,11 @@ static void inc_dec_expression(information *const info, node *const nd)
 		case POSTINCV:
 		case POSTDEC:
 		case POSTDECV:
-			to_code_operation_reg_const(info, operation_type, info->register_num - 1, 1);
+			to_code_operation_reg_const_i32(info, operation_type, info->register_num - 1, 1);
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, displ, 0);
+	to_code_store_reg(info, info->register_num, displ, I32, 0);
 	info->register_num++;
 }
 
