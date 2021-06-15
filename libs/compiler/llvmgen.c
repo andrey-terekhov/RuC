@@ -323,34 +323,41 @@ static void operation_to_io(universal_io *const io, const item_t type)
 	}
 }
 
-static void to_code_operation_reg_reg(information *const info, const item_t operation_type, const item_t fst, const item_t snd, type_t type)
+static void to_code_operation_reg_reg(information *const info, const item_t operation, const item_t fst, const item_t snd, type_t type)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->io, operation_type);
+	operation_to_io(info->io, operation);
 	uni_printf(info->io, " ");
 	type_to_io(info->io, type);
 	uni_printf(info->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_operation_reg_const_i32(information *const info, const item_t type, const item_t fst, const item_t snd)
+static void to_code_operation_reg_const_i32(information *const info, const item_t operation, const item_t fst, const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->io, type);
+	operation_to_io(info->io, operation);
 	uni_printf(info->io, " i32 %%.%" PRIitem ", %" PRIitem "\n", fst, snd);
 }
 
-static void to_code_operation_reg_const_double(information *const info, item_t type, item_t fst, double snd)
+static void to_code_operation_reg_const_double(information *const info, item_t operation, item_t fst, double snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->io, type);
+	operation_to_io(info->io, operation);
 	uni_printf(info->io, " double %%.%" PRIitem ", %f\n", fst, snd);
 }
 
-static void to_code_operation_const_reg(information *const info, const item_t type, const item_t fst, const item_t snd)
+static void to_code_operation_const_reg_i32(information *const info, const item_t operation, const item_t fst, const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->io, type);
+	operation_to_io(info->io, operation);
 	uni_printf(info->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
+}
+
+static void to_code_operation_const_reg_double(information *const info, item_t operation, double fst, item_t snd)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->io, operation);
+	uni_printf(info->io, " double %f, %%.%" PRIitem "\n", fst, snd);
 }
 
 static void to_code_load(information *const info, const item_t result, const item_t displ, type_t type, const int is_array)
@@ -632,7 +639,7 @@ static void operand(information *const info, node *const nd)
 			{
 				if (info->answer_type == ACONST)
 				{
-					to_code_operation_const_reg(info, LMULT, info->answer_const, hash_get(&info->arrays, displ, 2));
+					to_code_operation_const_reg_i32(info, LMULT, info->answer_const, hash_get(&info->arrays, displ, 2));
 				}
 				else // if (info->answer_type == AREG)
 				{
@@ -830,7 +837,8 @@ static void assignment_expression(information *const info, node *const nd)
 
 static void integral_expression(information *const info, node *const nd, const answer_t type)
 {
-	const item_t operation_type = node_get_type(nd);
+	const item_t operation = node_get_type(nd);
+	const type_t operation_type = is_double(operation) ? DOUBLE : I32;
 	node_set_next(nd);
 
 	info->variable_location = LFREE;
@@ -853,25 +861,33 @@ static void integral_expression(information *const info, node *const nd, const a
 	const item_t right_const = info->answer_const;
 	const double right_const_double = info->answer_const_double;
 
-	info->answer_value_type = is_double(operation_type) && type != ALOGIC ? DOUBLE : I32;
+	info->answer_value_type = type != ALOGIC ? operation_type : I32;
 
 	if (left_type == AREG && right_type == AREG)
 	{
-		to_code_operation_reg_reg(info, operation_type, left_reg, right_reg, I32);
+		to_code_operation_reg_reg(info, operation, left_reg, right_reg, operation_type);
 	}
-	else if (left_type == AREG && right_type == ACONST)
+	else if (left_type == AREG && right_type == ACONST && !is_double(operation))
 	{
-		to_code_operation_reg_const_i32(info, operation_type, left_reg, right_const);
+		to_code_operation_reg_const_i32(info, operation, left_reg, right_const);
 	}
-	else if (left_type == ACONST && right_type == AREG)
+	else if (left_type == AREG && right_type == ACONST) // double
 	{
-		to_code_operation_const_reg(info, operation_type, left_const, right_reg);
+		to_code_operation_reg_const_double(info, operation, left_reg, right_const_double);
+	}
+	else if (left_type == ACONST && right_type == AREG && !is_double(operation))
+	{
+		to_code_operation_const_reg_i32(info, operation, left_const, right_reg);
+	}
+		else if (left_type == ACONST && right_type == AREG) // double
+	{
+		to_code_operation_const_reg_double(info, operation, left_const_double, right_reg);
 	}
 	else // if (left_type == ACONST && right_type == ACONST)
 	{
 		info->answer_type = ACONST;
 
-		switch (operation_type)
+		switch (operation)
 		{
 			case LPLUS:
 				info->answer_const = left_const + right_const;
@@ -966,7 +982,7 @@ static void integral_expression(information *const info, node *const nd, const a
 static void inc_dec_expression(information *const info, node *const nd)
 {
 	const item_t displ = node_get_arg(nd, 0);
-	const item_t operation_type = node_get_type(nd);
+	const item_t operation = node_get_type(nd);
 
 	node_set_next(nd);
 	node_set_next(nd); // TIdent
@@ -975,7 +991,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 	
-	switch (operation_type)
+	switch (operation)
 	{
 		case INC:
 		case INCV:
@@ -986,7 +1002,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 		case POSTINCV:
 		case POSTDEC:
 		case POSTDECV:
-			to_code_operation_reg_const_i32(info, operation_type, info->register_num - 1, 1);
+			to_code_operation_reg_const_i32(info, operation, info->register_num - 1, 1);
 			break;
 	}
 
@@ -1017,7 +1033,7 @@ static void unary_operation(information *const info, node *const nd)
 
 			to_code_try_zext_to(info);
 
-			to_code_operation_const_reg(info, UNMINUS, 0, info->answer_reg);
+			to_code_operation_const_reg_i32(info, UNMINUS, 0, info->answer_reg);
 			info->answer_type = AREG;
 			info->answer_reg = info->register_num++;
 		}
