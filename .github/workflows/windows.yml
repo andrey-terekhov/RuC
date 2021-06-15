@@ -1,4 +1,4 @@
-name: Testing
+name: Testing on Windows
 on: [push, pull_request]
 jobs:
   Windows-Server-2016:
