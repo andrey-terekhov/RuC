@@ -1,0 +1,34 @@
+name: Testing
+on: [push, pull_request]
+jobs:
+  Windows-Server-2016:
+    runs-on: windows-2016
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run script
+        shell: bash
+        run: ./scripts/test.sh
+  Windows-Server-2019:
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run script
+        shell: bash
+        run: ./scripts/test.sh
+  macOS-Catalina-10-15:
+    runs-on: macos-10.15
+    steps:
+      - name: Set up environment
+        shell: bash
+        run: brew install coreutils
+      - uses: actions/checkout@v2
+      - name: Run script
+        shell: bash
+        run: ./scripts/test.sh
+  Ubuntu-20-04:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run script
+        shell: bash
+        run: ./scripts/test.sh
