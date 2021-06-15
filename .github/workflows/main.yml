@@ -1,15 +1,15 @@
 name: Testing
 on: [push, pull_request]
 jobs:
-  Testing-on-Windows:
-    runs-on: windows-latest
+  Windows-Server-2019:
+    runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
       - name: Run test script
         run: ./scripts/test.sh
         shell: bash
-  Testing-on-MacOS:
-    runs-on: macos-latest
+  macOS-Catalina-10.15:
+    runs-on: macos-10.15
     steps:
       - name: Install coreutils
         run: brew install coreutils
@@ -18,8 +18,8 @@ jobs:
       - name: Run test script
         run: ./scripts/test.sh
         shell: bash
-  Testing-on-Ubuntu:
-    runs-on: ubuntu-latest
+  Ubuntu-20.04:
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - name: Run test script
