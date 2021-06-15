@@ -4,7 +4,7 @@ jobs:
   Testing-on-Windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Run test script
         run: ./scripts/test.sh
         shell: bash
@@ -14,14 +14,14 @@ jobs:
       - name: Install coreutils
         run: brew install coreutils
         shell: bash
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Run test script
         run: ./scripts/test.sh
         shell: bash
   Testing-on-Ubuntu:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Run test script
         run: ./scripts/test.sh
         shell: bash
