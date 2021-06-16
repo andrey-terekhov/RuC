@@ -157,6 +157,72 @@ static int is_double(const item_t operation)
 	}
 }
 
+static int is_array_operation(const item_t operation)
+{
+	switch (operation)
+	{
+		case POSTINCAT:
+		case POSTDECAT:
+		case INCAT:
+		case DECAT:
+		case POSTINCATV:
+		case POSTDECATV:
+		case INCATV:
+		case DECATV:
+
+		case POSTINCATR:
+		case POSTDECATR:
+		case INCATR:
+		case DECATR:
+		case POSTINCATRV:
+		case POSTDECATRV:
+		case INCATRV:
+		case DECATRV:
+
+		case REMASSAT:
+		case SHLASSAT:
+		case SHRASSAT:
+		case ANDASSAT:
+		case EXORASSAT:
+		case ORASSAT:
+
+		case ASSAT:
+		case PLUSASSAT:
+		case MINUSASSAT:
+		case MULTASSAT:
+		case DIVASSAT:
+
+		case REMASSATV:
+		case SHLASSATV:
+		case SHRASSATV:
+		case ANDASSATV:
+		case EXORASSATV:
+		case ORASSATV:
+
+		case ASSATV:
+		case PLUSASSATV:
+		case MINUSASSATV:
+		case MULTASSATV:
+		case DIVASSATV:
+
+		case ASSATR:
+		case PLUSASSATR:
+		case MINUSASSATR:
+		case MULTASSATR:
+		case DIVASSATR:
+
+		case ASSATRV:
+		case PLUSASSATRV:
+		case MINUSASSATRV:
+		case MULTASSATRV:
+		case DIVASSATRV:
+		return 1;
+
+		default:
+			return 0;
+	}
+}
+
 static void type_to_io(universal_io *const io, const type_t type)
 {
 	switch (type)
@@ -183,6 +249,10 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case LPLUS:
 		case PLUSASSAT:
 		case PLUSASSATV:
+		case INCAT:
+		case INCATV:
+		case POSTINCAT:
+		case POSTINCATV:
 			uni_printf(io, "add nsw");
 			break;
 
@@ -196,6 +266,10 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case UNMINUS:
 		case MINUSASSAT:
 		case MINUSASSATV:
+		case DECAT:
+		case DECATV:
+		case POSTDECAT:
+		case POSTDECATV:
 			uni_printf(io, "sub nsw");
 			break;
 
@@ -278,6 +352,10 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case LPLUSR:
 		case PLUSASSATR:
 		case PLUSASSATRV:
+		case INCATR:
+		case INCATRV:
+		case POSTINCATR:
+		case POSTINCATRV:
 			uni_printf(io, "fadd");
 			break;
 
@@ -291,6 +369,10 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case UNMINUSR:
 		case MINUSASSATR:
 		case MINUSASSATRV:
+		case DECATR:
+		case DECATRV:
+		case POSTDECATR:
+		case POSTDECATRV:
 			uni_printf(io, "fsub");
 			break;
 
@@ -1023,9 +1105,11 @@ static void inc_dec_expression(information *const info, node *const nd)
 	const type_t operation_type = is_double(operation) ? DOUBLE : I32;
 
 	node_set_next(nd);
-	node_set_next(nd); // TIdent
+	info->variable_location = LMEM;
+	operand(info, nd); // Tident or TSliceident
+	const item_t memory_reg = info->answer_reg;
 
-	to_code_load(info, info->register_num, displ, operation_type, 0);
+	to_code_load(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type, is_array_operation(operation));
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 	info->answer_value_type = operation_type;
@@ -1036,11 +1120,21 @@ static void inc_dec_expression(information *const info, node *const nd)
 		case INCV:
 		case DEC:
 		case DECV:
+
+		case INCAT:
+		case INCATV:
+		case DECAT:
+		case DECATV:
 			info->answer_reg = info->register_num;
 		case POSTINC:
 		case POSTINCV:
 		case POSTDEC:
 		case POSTDECV:
+
+		case POSTINCAT:
+		case POSTINCATV:
+		case POSTDECAT:
+		case POSTDECATV:
 			to_code_operation_reg_const_i32(info, operation, info->register_num - 1, 1);
 			break;
 
@@ -1048,16 +1142,26 @@ static void inc_dec_expression(information *const info, node *const nd)
 		case INCRV:
 		case DECR:
 		case DECRV:
+
+		case INCATR:
+		case INCATRV:
+		case DECATR:
+		case DECATRV:
 			info->answer_reg = info->register_num;
 		case POSTINCR:
 		case POSTINCRV:
 		case POSTDECR:
 		case POSTDECRV:
+
+		case POSTINCATR:
+		case POSTINCATRV:
+		case POSTDECATR:
+		case POSTDECATRV:
 			to_code_operation_reg_const_double(info, operation, info->register_num - 1, 1.0);
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, displ, operation_type, 0);
+	to_code_store_reg(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type, is_array_operation(operation));
 	info->register_num++;
 }
 
@@ -1074,6 +1178,15 @@ static void unary_operation(information *const info, node *const nd)
 		case DEC:
 		case DECV:
 
+		case POSTINCAT:
+		case POSTINCATV:
+		case POSTDECAT:
+		case POSTDECATV:
+		case INCAT:
+		case INCATV:
+		case DECAT:
+		case DECATV:
+
 		case POSTINCR:
 		case POSTINCRV:
 		case POSTDECR:
@@ -1082,6 +1195,15 @@ static void unary_operation(information *const info, node *const nd)
 		case INCRV:
 		case DECR:
 		case DECRV:
+
+		case POSTINCATR:
+		case POSTINCATRV:
+		case POSTDECATR:
+		case POSTDECATRV:
+		case INCATR:
+		case INCATRV:
+		case DECATR:
+		case DECATRV:
 			inc_dec_expression(info, nd);
 			break;
 		case UNMINUS:
