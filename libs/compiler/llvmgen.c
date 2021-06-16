@@ -292,38 +292,52 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case REMASS:
 		case REMASSV:
 		case LREM:
+		case REMASSAT:
+		case REMASSATV:
 			uni_printf(io, "srem");
 			break;
 
 		case SHLASS:
 		case SHLASSV:
 		case LSHL:
+		case SHLASSAT:
+		case SHLASSATV:
 			uni_printf(io, "shl");
 			break;
 
 		case SHRASS:
 		case SHRASSV:
 		case LSHR:
+		case SHRASSAT:
+		case SHRASSATV:
 			uni_printf(io, "ashr");
 			break;
 
 		case ANDASS:
 		case ANDASSV:
 		case LAND:
+		case ANDASSAT:
+		case ANDASSATV:
 			uni_printf(io, "and");
 			break;
 
 		case EXORASS:
 		case EXORASSV:
 		case LEXOR:
+		case LNOT:
+		case EXORASSAT:
+		case EXORASSATV:
 			uni_printf(io, "xor");
 			break;
 
 		case ORASS:
 		case ORASSV:
 		case LOR:
+		case ORASSAT:
+		case ORASSATV:
 			uni_printf(io, "or");
 			break;
+			
 		case EQEQ:
 			uni_printf(io, "icmp eq");
 			break;
@@ -1207,7 +1221,10 @@ static void unary_operation(information *const info, node *const nd)
 			inc_dec_expression(info, nd);
 			break;
 		case UNMINUS:
+		case LNOT:
+		case UNMINUSR:
 		{
+			const item_t operation_type = node_get_type(nd);
 			node_set_next(nd);
 
 			info->variable_location = LREG;
@@ -1215,7 +1232,21 @@ static void unary_operation(information *const info, node *const nd)
 
 			to_code_try_zext_to(info);
 
-			to_code_operation_const_reg_i32(info, UNMINUS, 0, info->answer_reg);
+			info->answer_value_type = I32;
+			if (operation_type == UNMINUS)
+			{
+				to_code_operation_const_reg_i32(info, UNMINUS, 0, info->answer_reg);
+			}
+			else if (operation_type == LNOT) 
+			{
+				to_code_operation_reg_const_i32(info, LNOT, info->answer_reg, -1);
+			}
+			else // UNMINUSR
+			{
+				to_code_operation_const_reg_double(info, UNMINUSR, 0, info->answer_reg);
+				info->answer_value_type = DOUBLE;
+			}
+
 			info->answer_type = AREG;
 			info->answer_reg = info->register_num++;
 		}
@@ -1230,7 +1261,6 @@ static void unary_operation(information *const info, node *const nd)
 			expression(info, nd);
 		}
 		break;
-		// TODO: забыл сделать битовое отрицание, нужно доделать
 		default:
 		{
 			node_set_next(nd);
