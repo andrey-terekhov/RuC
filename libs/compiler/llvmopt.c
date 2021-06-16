@@ -43,6 +43,7 @@ typedef struct node_info
 typedef struct information
 {
 	universal_io *io;									/**< Вывод */
+	syntax *sx;											/**< Структура syntax с таблицами */
 
 	item_t string_num;									/**< Номер строки */
 	item_t was_printf;									/**< Флаг наличия printf в исходном коде */
@@ -332,7 +333,10 @@ static int node_recursive(information *const info, node *const nd)
 					node_swap(nd, i - j, nd, i - j - 1);
 
 					node child_to_swap = node_get_child(nd, i - j);
-					if (node_get_type(&child_to_swap) == TIdenttovald)
+					// TODO: пока только для двумерных вырезок, потом надо подумать
+					if (node_get_type(&child_to_swap) == TIdenttovald || 
+						(node_get_type(&child_to_swap) == TSliceident && (node_get_arg(&child_to_swap, 1) == mode_float || 
+						mode_get(info->sx, node_get_arg(&child_to_swap, 1) + 1) == mode_float)))
 					{
 						N--;
 					}
@@ -484,6 +488,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 {
 	information info;
 	info.io = io;
+	info.sx = sx;
 	info.string_num = 1;
 	info.was_printf = 0;
 	info.stack_size = 0;
