@@ -443,7 +443,7 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	uni_printf(info->io, ", align 4\n");
 }
 
-static void to_code_alloc_array_dynamic(information *const info, const size_t index)
+static void to_code_alloc_array_dynamic(information *const info, const size_t index, type_t type)
 {
 	// выделение памяти на стеке
 	item_t to_alloc = hash_get_by_index(&info->arrays, index, 1);
@@ -455,7 +455,9 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 			, info->register_num, to_alloc, hash_get_by_index(&info->arrays, index, i));
 		to_alloc = info->register_num++;
 	}
-	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca i32, i32 %%.%" PRIitem ", align 4\n", hash_get_key(&info->arrays, index), to_alloc);	
+	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
+	type_to_io(info->io, type);
+	uni_printf(info->io, ", i32 %%.%" PRIitem ", align 4\n", to_alloc);
 }
 
 static void to_code_stack_save(information *const info)
@@ -516,11 +518,17 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 	}
 	else if (cur_dimention == dimentions - 1)
 	{
-		uni_printf(info->io, "i32, i32* %%dynarr.%" PRIitem, displ);
+		type_to_io(info->io, type);
+		uni_printf(info->io, ", ");
+		type_to_io(info->io, type);
+		uni_printf(info->io, "* %%dynarr.%" PRIitem, displ);
 	}
 	else
 	{
-		uni_printf(info->io, "i32, i32* %%.%" PRIitem, prev_slice);
+		type_to_io(info->io, type);
+		uni_printf(info->io, ", ");
+		type_to_io(info->io, type);
+		uni_printf(info->io, "* %%.%" PRIitem, prev_slice);
 	}
 
 	if (info->answer_type == AREG)
@@ -1773,7 +1781,7 @@ static void block(information *const info, node *const nd)
 					{
 						to_code_stack_save(info);
 					}
-					to_code_alloc_array_dynamic(info, index);
+					to_code_alloc_array_dynamic(info, index, elem_type == mode_integer ? I32 : DOUBLE);
 					info->was_dynamic = 1;
 				}
 			}
