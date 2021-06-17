@@ -622,7 +622,7 @@ static size_t evaluate_args(parser *const prs, const size_t length, const char32
 }
 
 /**	Parse scanf statement [RuC] */
-static void parse_scanf_statement(parser *const prs, node *const parent);
+//static void parse_scanf_statement(parser *const prs, node *const parent);
 
 /**	Parse printf statement [RuC] */
 static void parse_printf_statement(parser *const prs, node *const parent)
