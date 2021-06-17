@@ -899,7 +899,7 @@ static void assignment_expression(information *const info, node *const nd)
 		{
 			to_code_operation_reg_const_double(info, assignment_type, info->register_num - 1, info->answer_const_double);
 		}
-			
+	
 		result = info->register_num++;
 		info->answer_type = AREG;
 	}
@@ -1341,7 +1341,7 @@ static void binary_operation(information *const info, node *const nd)
 			{
 				info->label_true = label_next;
 			}
-			
+
 			node_set_next(nd);
 			expression(info, nd);
 
@@ -1567,7 +1567,7 @@ static void statement(information *const info, node *const nd)
 			expression(info, nd);
 
 			check_type_and_branch(info);
-			
+
 			to_code_label(info, label_if);
 			statement(info, nd);
 			to_code_unconditional_branch(info, label_end);
@@ -1781,7 +1781,7 @@ static void statement(information *const info, node *const nd)
 				, string_length + 1
 				, string_length + 1
 				, info->string_num);
-			
+
 			info->register_num++;
 			info->string_num++;
 
@@ -1868,7 +1868,7 @@ static void block(information *const info, node *const nd)
 
 						hash_set_by_index(&info->arrays, index, i, info->answer_reg);
 						hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
-					}			
+					}
 				}
 
 				if (hash_get_by_index(&info->arrays, index, IS_STATIC))
@@ -1974,7 +1974,7 @@ static int codegen(information *const info)
 		uni_printf(info->io, "declare i8* @llvm.stacksave()\n");
 		uni_printf(info->io, "declare void @llvm.stackrestore(i8*)\n");
 	}
-	
+
 	return 0;
 }
 
