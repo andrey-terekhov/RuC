@@ -15,6 +15,7 @@
  */
 
 #include "llvmgen.h"
+#include "codes.h"
 #include "defs.h"
 #include "errors.h"
 #include "hash.h"
@@ -72,7 +73,7 @@ typedef struct information
 	hash arrays;						/**< Хеш таблица с информацией о массивах:
 												@с key		 - смещение массива
 												@c value[0]	 - флаг статичности
-												@c value[1..MAX] - границы массива */									
+												@c value[1..MAX] - границы массива */
 	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
 } information;
 
@@ -1991,10 +1992,12 @@ static int codegen(information *const info)
 
 int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
+	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->modes), &(sx->tree));
 	if (optimize_for_llvm(ws, io, sx))
 	{
 		return -1;
 	}
+	tables_and_tree("tree1.txt", &(sx->identifiers), &(sx->modes), &(sx->tree));
 
 	information info;
 	info.io = io;
