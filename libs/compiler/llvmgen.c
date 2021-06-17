@@ -28,7 +28,6 @@ const size_t HASH_TABLE_SIZE = 1024;
 const size_t IS_STATIC = 0;
 
 
-// TODO: нужно создать enum для типов и передавать его в функции to_code
 typedef enum ANSWER
 {
 	AREG,								/**< Ответ находится в регистре */
