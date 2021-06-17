@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
 #include "dll.h"
 
@@ -50,7 +51,7 @@ EXPORTED comment cmt_create(const char *const path, const size_t line);
  *
  *	@param	path		File path
  *	@param	line		Line number
-  *	@param	symbol		Position in line
+ *	@param	symbol		Position in line
  *
  *	@return	Macro comment structure
  */
@@ -86,14 +87,14 @@ EXPORTED comment cmt_search(const char *const code, const size_t position);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int cmt_is_correct(const comment *const cmt);
+EXPORTED bool cmt_is_correct(const comment *const cmt);
 
 
 /**
  *	Get tag from comment
  *
  *	@param	cmt			Comment
- *	@param	buffer		Tag entry location	
+ *	@param	buffer		Tag entry location
  *
  *	@return Size of tag
  */
@@ -103,7 +104,7 @@ EXPORTED size_t cmt_get_tag(const comment *const cmt, char *const buffer);
  *	Get current code line
  *
  *	@param	cmt			Comment
- *	@param	buffer		Code line entry location	
+ *	@param	buffer		Code line entry location
  *
  *	@return Size of code line
  */
@@ -113,7 +114,7 @@ EXPORTED size_t cmt_get_code_line(const comment *const cmt, char *const buffer);
  *	Get current filename path
  *
  *	@param	cmt			Comment
- *	@param	buffer		Path entry location	
+ *	@param	buffer		Path entry location
  *
  *	@return Size of path
  */

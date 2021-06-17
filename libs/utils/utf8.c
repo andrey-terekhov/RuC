@@ -17,7 +17,7 @@
 #include "utf8.h"
 
 
-char char_to_cp866(const char32_t symbol)
+static char char_to_cp866(const char32_t symbol)
 {
 	if (symbol >= U'А' && symbol <= U'Я')
 	{
@@ -172,7 +172,7 @@ char char_to_cp866(const char32_t symbol)
 	}
 }
 
-char char_to_cp1251(const char32_t symbol)
+static char char_to_cp1251(const char32_t symbol)
 {
 	if (symbol >= U'А' && symbol <= U'Я')
 	{
@@ -319,7 +319,7 @@ char char_to_cp1251(const char32_t symbol)
 	}
 }
 
-size_t utf8_to_codepage(const char *const src, char *const dest, char (*char_to_codepage)(const char32_t))
+static inline size_t utf8_to_codepage(const char *const src, char *const dest, char (*char_to_codepage)(const char32_t))
 {
 	if (src == NULL || dest == NULL)
 	{
@@ -373,7 +373,7 @@ size_t utf8_symbol_size(const char symbol)
 	{
 		return 3;
 	}
-	
+
 	if ((symbol & 0b11111000) == 0b11110000)
 	{
 		return 4;
@@ -420,7 +420,7 @@ char32_t utf8_convert(const char *const symbol)
 		result |= 0x0000003F /* 0b00111111 */ & symbol[i];
 	}
 
-	return result;	
+	return result;
 }
 
 size_t utf8_to_string(char *const buffer, const char32_t symbol)
@@ -429,7 +429,7 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 	{
 		return 0;
 	}
-	
+
 	if ((symbol & 0xFFFFFF80) == 0x00000000)
 	{
 		buffer[0] = (char)symbol;
@@ -481,7 +481,22 @@ size_t utf8_to_cp1251(const char *const src, char *const dest)
 	return utf8_to_codepage(src, dest, &char_to_cp1251);
 }
 
-int utf8_is_russian(const char32_t symbol)
+char32_t utf8_to_upper(const char32_t symbol)
+{
+	if (symbol >= 'a' && symbol <= 'z')
+	{
+		return symbol + ('A' - 'a');
+	}
+
+	if (symbol >= U'а' && symbol <= U'я')
+	{
+		return symbol + (U'А' - U'а');
+	}
+
+	return symbol;
+}
+
+bool utf8_is_russian(const char32_t symbol)
 {
 	return  symbol == U'Ё' || symbol == U'ё'
 		|| (symbol >= U'А' && symbol <= U'Я')
@@ -489,19 +504,19 @@ int utf8_is_russian(const char32_t symbol)
 		|| (symbol >= U'р' && symbol <= U'я');
 }
 
-int utf8_is_letter(const char32_t symbol)
+bool utf8_is_letter(const char32_t symbol)
 {
 	return  utf8_is_russian(symbol) || symbol == '_'
 		|| (symbol >= 'A' && symbol <= 'Z')
 		|| (symbol >= 'a' && symbol <= 'z');
 }
 
-int utf8_is_digit(const char32_t symbol)
+bool utf8_is_digit(const char32_t symbol)
 {
 	return symbol >= '0' && symbol <= '9';
 }
 
-int utf8_is_power(const char32_t symbol)
+bool utf8_is_power(const char32_t symbol)
 {
 	return symbol == 'e' || symbol == 'E' || symbol == U'е' || symbol == U'Е';
 }

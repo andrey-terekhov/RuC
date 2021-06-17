@@ -16,853 +16,920 @@
 
 #include "codegen.h"
 #include <stdlib.h>
-#include "defs.h"
+#include "codes.h"
 #include "errors.h"
-#include "tree.h"
+#include "item.h"
+#include "instructions.h"
+#include "operations.h"
+#include "stack.h"
+#include "old_tree.h"
 #include "uniprinter.h"
+#include "utf8.h"
 
 
-typedef struct ad
+static const char *const DEFAULT_CODES = "codes.txt";
+
+static const size_t MAX_MEM_SIZE = 100000;
+static const size_t MAX_STACK_SIZE = 256;
+
+
+/** Virtual machine environment */
+typedef struct virtual
 {
-	size_t adcont;
-	size_t adbreak;
-	size_t adcase;
-} ad;
+	syntax *sx;						/**< Syntax structure */
+
+	vector memory;					/**< Memory table */
+	vector processes;				/**< Init processes table */
+	stack stk;						/**< Stack for logic operations */
+
+	vector identifiers;				/**< Local identifiers table */
+	vector representations;			/**< Local representations table */
+
+	size_t max_threads;				/**< Max threads count */
+
+	size_t addr_cond;				/**< Condition address */
+	size_t addr_case;				/**< Case operator address */
+	size_t addr_break;				/**< Break operator address */
+
+	item_status target;				/**< Target tables item type */
+} virtual;
 
 
-void Declid_gen(syntax *const sx);
-void compstmt_gen(syntax *const sx, ad *const context);
+static void block(virtual *const vm, node *const nd);
 
 
-void tocode(syntax *const sx, int c)
+static inline void mem_increase(virtual *const vm, const size_t size)
 {
-	// printf("tocode sx->tc=%zi sx->pc %zi) %i\n", sx->tc,
-	// mem_get_size(sx), c);
-	mem_add(sx, c);
+	vector_increase(&vm->memory, size);
 }
 
-void adbreakend(syntax *const sx, ad *const context)
+static inline void mem_add(virtual *const vm, const item_t value)
 {
-	while (context->adbreak)
+	vector_add(&vm->memory, value);
+}
+
+static inline void mem_set(virtual *const vm, const size_t index, const item_t value)
+{
+	vector_set(&vm->memory, index, value);
+}
+
+static inline item_t mem_get(const virtual *const vm, const size_t index)
+{
+	return vector_get(&vm->memory, index);
+}
+
+static inline size_t mem_size(const virtual *const vm)
+{
+	return vector_size(&vm->memory);
+}
+
+
+static inline void proc_set(virtual *const vm, const size_t index, const item_t value)
+{
+	vector_set(&vm->processes, index, value);
+}
+
+static inline item_t proc_get(const virtual *const vm, const size_t index)
+{
+	return vector_get(&vm->processes, index);
+}
+
+
+static void addr_begin_condition(virtual *const vm, const size_t addr)
+{
+	while (vm->addr_cond != addr)
 	{
-		const size_t r = mem_get(sx, context->adbreak);
-		mem_set(sx, context->adbreak, (int)mem_get_size(sx));
-		context->adbreak = r;
+		const size_t ref = (size_t)mem_get(vm, vm->addr_cond);
+		mem_set(vm, vm->addr_cond, (item_t)addr);
+		vm->addr_cond = ref;
 	}
 }
 
-void adcontbeg(syntax *const sx, ad *const context, size_t ad)
+static void addr_end_condition(virtual *const vm)
 {
-	while (context->adcont != ad)
+	while (vm->addr_cond)
 	{
-		const size_t r = mem_get(sx, context->adcont);
-		mem_set(sx, context->adcont, (int)ad);
-		context->adcont = r;
+		const size_t ref = (size_t)mem_get(vm, vm->addr_cond);
+		mem_set(vm, vm->addr_cond, (item_t)mem_size(vm));
+		vm->addr_cond = ref;
 	}
 }
 
-void adcontend(syntax *const sx, ad *const context)
+static void addr_end_break(virtual *const vm)
 {
-	while (context->adcont != 0)
+	while (vm->addr_break)
 	{
-		const size_t r = mem_get(sx, context->adcont);
-		mem_set(sx, context->adcont, (int)mem_get_size(sx));
-		context->adcont = r;
+		const size_t ref = (size_t)mem_get(vm, vm->addr_break);
+		mem_set(vm, vm->addr_break, (item_t)mem_size(vm));
+		vm->addr_break = ref;
 	}
 }
 
-void finalop(syntax *const sx)
-{
-	int c;
 
-	while ((c = sx->tree[sx->tc]) > 9000)
+static void final_operation(virtual *const vm, node *const nd)
+{
+	operation_t op = node_get_type(nd);
+	while (op > BEGIN_OP_FINAL && op < END_OP_FINAL)
 	{
-		sx->tc++;
-		if (c != NOP)
+		if (op != OP_NOP)
 		{
-			if (c == ADLOGOR)
+			if (op == OP_AD_LOG_OR)
 			{
-				tocode(sx, _DOUBLE);
-				tocode(sx, BNE0);
-				sx->tree[sx->tree[sx->tc++]] = (int)mem_get_size(sx);
-				mem_increase(sx, 1);
+				mem_add(vm, IC_DUPLICATE);
+				mem_add(vm, IC_BNE0);
+				stack_push(&vm->stk, (item_t)mem_size(vm));
+				mem_increase(vm, 1);
 			}
-			else if (c == ADLOGAND)
+			else if (op == OP_AD_LOG_AND)
 			{
-				tocode(sx, _DOUBLE);
-				tocode(sx, BE0);
-				sx->tree[sx->tree[sx->tc++]] = (int)mem_get_size(sx);
-				mem_increase(sx, 1);
+				mem_add(vm, IC_DUPLICATE);
+				mem_add(vm, IC_BE0);
+				stack_push(&vm->stk, (item_t)mem_size(vm));
+				mem_increase(vm, 1);
 			}
 			else
 			{
-				tocode(sx, c);
-				if (c == LOGOR || c == LOGAND)
+				mem_add(vm, (instruction_t)op);
+				if (op == OP_LOG_OR || op == OP_LOG_AND)
 				{
-					mem_set(sx, sx->tree[sx->tc++], (int)mem_get_size(sx));
+					mem_set(vm, (size_t)stack_pop(&vm->stk), (item_t)mem_size(vm));
 				}
-				else if (c == COPY00 || c == COPYST)
+				else if (op == OP_COPY00 || op == OP_COPYST)
 				{
-					tocode(sx, sx->tree[sx->tc++]); // d1
-					tocode(sx, sx->tree[sx->tc++]); // d2
-					tocode(sx, sx->tree[sx->tc++]); // длина
+					mem_add(vm, node_get_arg(nd, 0)); // d1
+					mem_add(vm, node_get_arg(nd, 1)); // d2
+					mem_add(vm, node_get_arg(nd, 2)); // длина
 				}
-				else if (c == COPY01 || c == COPY10 || c == COPY0ST || c == COPY0STASS)
+				else if (op == OP_COPY01 || op == OP_COPY10 || op == OP_COPY0ST || op == OP_COPY0ST_ASSIGN)
 				{
-					tocode(sx, sx->tree[sx->tc++]); // d1
-					tocode(sx, sx->tree[sx->tc++]); // длина
+					mem_add(vm, node_get_arg(nd, 0)); // d1
+					mem_add(vm, node_get_arg(nd, 1)); // длина
 				}
-				else if (c == COPY11 || c == COPY1ST || c == COPY1STASS)
+				else if (op == OP_COPY11 || op == OP_COPY1ST || op == OP_COPY1ST_ASSIGN)
 				{
-					tocode(sx, sx->tree[sx->tc++]); // длина
+					mem_add(vm, node_get_arg(nd, 0)); // длина
 				}
-				else if ((c >= REMASS && c <= DIVASS) || (c >= REMASSV && c <= DIVASSV) ||
-						 (c >= ASSR && c <= DIVASSR) || (c >= ASSRV && c <= DIVASSRV) || (c >= POSTINC && c <= DEC) ||
-						 (c >= POSTINCV && c <= DECV) || (c >= POSTINCR && c <= DECR) || (c >= POSTINCRV && c <= DECRV))
+				else if (operation_is_assignment(op))
 				{
-					tocode(sx, sx->tree[sx->tc++]);
+					mem_add(vm, node_get_arg(nd, 0));
 				}
 			}
 		}
+
+		node_set_next(nd);
+		op = node_get_type(nd);
 	}
 }
 
-int Expr_gen(syntax *const sx, int incond)
+/**
+ *	Expression generation
+ *
+ *	@param	vm		Virtual machine environment
+ *	@param	mode	@c -1 for expression on the same node,
+ *					@c  0 for usual expression,
+ *					@c  1 for expression in condition
+ */
+static void expression(virtual *const vm, node *const nd, int mode)
 {
-	int flagprim = 1;
-	int eltype;
-	int wasstring = 0;
-	int op;
-
-	while (flagprim)
+	if (mode != -1)
 	{
-		switch (op = sx->tree[sx->tc++])
-		{
-			case TIdent:
-			{
-				sx->tc++;
-				break;
-			}
-			case TIdenttoaddr:
-			{
-				tocode(sx, LA);
-				tocode(sx, sx->tree[sx->tc++]);
-				break;
-			}
-			case TIdenttoval:
-			{
-				tocode(sx, LOAD);
-				tocode(sx, sx->tree[sx->tc++]);
-				break;
-			}
-			case TIdenttovald:
-			{
-				tocode(sx, LOADD);
-				tocode(sx, sx->tree[sx->tc++]);
-				break;
-			}
-			case TAddrtoval:
-			{
-				tocode(sx, LAT);
-				break;
-			}
-			case TAddrtovald:
-			{
-				tocode(sx, LATD);
-				break;
-			}
-			case TConst:
-			{
-				tocode(sx, LI);
-				tocode(sx, sx->tree[sx->tc++]);
-				break;
-			}
-			case TConstd:
-			{
-				tocode(sx, LID);
-				tocode(sx, sx->tree[sx->tc++]);
-				tocode(sx, sx->tree[sx->tc++]);
-				break;
-			}
-			case TString:
-			case TStringd:
-			{
-				int n = sx->tree[sx->tc++];
+		node_set_next(nd);
+	}
 
-				tocode(sx, LI);
-				size_t res = mem_get_size(sx) + 4;
-				tocode(sx, (int)res);
-				tocode(sx, B);
-				mem_increase(sx, 2);
-				for (int i = 0; i < n; i++)
+	while (node_get_type(nd) != OP_EXPR_END)
+	{
+		const operation_t operation = node_get_type(nd);
+		bool was_operation = true;
+
+		switch (operation)
+		{
+			case OP_IDENT:
+				break;
+			case OP_IDENT_TO_ADDR:
+			{
+				mem_add(vm, IC_LA);
+				mem_add(vm, node_get_arg(nd, 0));
+			}
+			break;
+			case OP_IDENT_TO_VAL:
+			{
+				mem_add(vm, IC_LOAD);
+				mem_add(vm, node_get_arg(nd, 0));
+			}
+			break;
+			case OP_IDENT_TO_VAL_D:
+			{
+				mem_add(vm, IC_LOADD);
+				mem_add(vm, node_get_arg(nd, 0));
+			}
+			break;
+			case OP_ADDR_TO_VAL:
+				mem_add(vm, IC_LAT);
+				break;
+			case OP_ADDR_TO_VAL_D:
+				mem_add(vm, IC_LATD);
+				break;
+			case OP_CONST:
+			{
+				mem_add(vm, IC_LI);
+				mem_add(vm, node_get_arg(nd, 0));
+			}
+			break;
+			case OP_CONST_D:
+			{
+				mem_add(vm, IC_LID);
+				mem_add(vm, node_get_arg(nd, 0));
+				mem_add(vm, node_get_arg(nd, 1));
+			}
+			break;
+			case OP_STRING:
+			case OP_STRING_D:
+			{
+				mem_add(vm, IC_LI);
+				const size_t reserved = mem_size(vm) + 4;
+				mem_add(vm, (item_t)reserved);
+				mem_add(vm, IC_B);
+				mem_increase(vm, 2);
+
+				const item_t N = node_get_arg(nd, 0);
+				for (item_t i = 0; i < N; i++)
 				{
-					if (op == TString)
+					if (operation == OP_STRING)
 					{
-						tocode(sx, sx->tree[sx->tc++]);
+						mem_add(vm, node_get_arg(nd, (size_t)i + 1));
 					}
 					else
 					{
-						tocode(sx, sx->tree[sx->tc++]);
-						tocode(sx, sx->tree[sx->tc++]);
+						mem_add(vm, node_get_arg(nd, 2 * (size_t)i + 1));
+						mem_add(vm, node_get_arg(nd, 2 * (size_t)i + 2));
 					}
 				}
-				mem_set(sx, res - 1, n);
-				mem_set(sx, res - 2, (int)mem_get_size(sx));
-				wasstring = 1;
-				break;
-			}
-			case TDeclid:
-			{
-				Declid_gen(sx);
-				break;
-			}
-			case TBeginit:
-			{
-				int n = sx->tree[sx->tc++];
-				int i;
 
-				tocode(sx, BEGINIT);
-				tocode(sx, n);
-				for (i = 0; i < n; i++)
-				{
-					Expr_gen(sx, 0);
-				}
-				break;
+				mem_set(vm, reserved - 1, N);
+				mem_set(vm, reserved - 2, (item_t)mem_size(vm));
 			}
-			case TStructinit:
+			break;
+			case OP_ARRAY_INIT:
 			{
-				int n = sx->tree[sx->tc++];
-				int i;
+				const item_t N = node_get_arg(nd, 0);
 
-				for (i = 0; i < n; i++)
-				{
-					Expr_gen(sx, 0);
-				}
-				break;
-			}
-			case TSliceident:
-			{
-				tocode(sx,
-					   LOAD); // параметры - смещение идента и тип элемента
-				tocode(sx,
-					   sx->tree[sx->tc++]); // продолжение в след case
-			}
-			case TSlice: // параметр - тип элемента
-			{
-				eltype = sx->tree[sx->tc++];
-				Expr_gen(sx, 0);
-				tocode(sx, SLICE);
-				tocode(sx, size_of(sx, eltype));
-				if (eltype > 0 && mode_get(sx, eltype) == MARRAY)
-				{
-					tocode(sx, LAT);
-				}
-				break;
-			}
-			case TSelect:
-			{
-				tocode(sx, SELECT); // SELECT field_displ
-				tocode(sx, sx->tree[sx->tc++]);
-				break;
-			}
-			case TPrint:
-			{
-				tocode(sx, PRINT);
-				tocode(sx, sx->tree[sx->tc++]); // type
-				break;
-			}
-			case TCall1:
-			{
-				int i;
-				int n = sx->tree[sx->tc++];
+				mem_add(vm, IC_BEG_INIT);
+				mem_add(vm, N);
 
-				tocode(sx, CALL1);
-				for (i = 0; i < n; i++)
+				for (item_t i = 0; i < N; i++)
 				{
-					Expr_gen(sx, 0);
+					expression(vm, nd, 0);
 				}
-				break;
 			}
-			case TCall2:
+			break;
+			case OP_STRUCT_INIT:
 			{
-				tocode(sx, CALL2);
-				tocode(sx, sx->identab[sx->tree[sx->tc++] + 3]);
-				break;
+				const item_t N = node_get_arg(nd, 0);
+				for (item_t i = 0; i < N; i++)
+				{
+					expression(vm, nd, 0);
+				}
 			}
+			break;
+			case OP_SLICE_IDENT:
+			{
+				mem_add(vm, IC_LOAD); // параметры - смещение идента и тип элемента
+				mem_add(vm, node_get_arg(nd, 0)); // продолжение в след case
+			}
+			case OP_SLICE: // параметр - тип элемента
+			{
+				item_t type = node_get_arg(nd, operation == OP_SLICE ? 0 : 1);
+
+				expression(vm, nd, 0);
+				mem_add(vm, IC_SLICE);
+				mem_add(vm, (item_t)size_of(vm->sx, type));
+				if (type > 0 && mode_get(vm->sx, (size_t)type) == mode_array)
+				{
+					mem_add(vm, IC_LAT);
+				}
+			}
+			break;
+			case OP_SELECT:
+			{
+				mem_add(vm, IC_SELECT); // SELECT field_displ
+				mem_add(vm, node_get_arg(nd, 0));
+			}
+			break;
+			case OP_PRINT:
+			{
+				mem_add(vm, IC_PRINT);
+				mem_add(vm, node_get_arg(nd, 0)); // type
+			}
+			break;
+			case OP_CALL1:
+			{
+				mem_add(vm, IC_CALL1);
+
+				const item_t N = node_get_arg(nd, 0);
+				for (item_t i = 0; i < N; i++)
+				{
+					expression(vm, nd, 0);
+				}
+			}
+			break;
+			case OP_CALL2:
+			{
+				mem_add(vm, IC_CALL2);
+				mem_add(vm, ident_get_displ(vm->sx, (size_t)node_get_arg(nd, 0)));
+			}
+			break;
 			default:
-			{
-				sx->tc--;
+				was_operation = false;
 				break;
-			}
 		}
 
-		finalop(sx);
-
-		if (sx->tree[sx->tc] == TCondexpr)
+		if (was_operation)
 		{
-			if (incond)
+			node_set_next(nd);
+		}
+
+		final_operation(vm, nd);
+
+		if (node_get_type(nd) == OP_CONDITIONAL)
+		{
+			if (mode == 1)
 			{
-				return wasstring;
+				return;
 			}
-			else
+
+			size_t addr = 0;
+			do
 			{
-				size_t ad = 0;
-				do
-				{
-					sx->tc++;
-					tocode(sx, BE0);
-					size_t adelse = mem_get_size(sx);
-					mem_increase(sx, 1);
-					Expr_gen(sx, 0); // then
-					tocode(sx, B);
-					mem_add(sx, (int)ad);
-					ad = mem_get_size(sx) - 1;
-					mem_set(sx, adelse, (int)mem_get_size(sx));
-					Expr_gen(sx, 1); // else или cond
-				} while (sx->tree[sx->tc] == TCondexpr);
+				mem_add(vm, IC_BE0);
+				const size_t addr_else = mem_size(vm);
+				mem_increase(vm, 1);
 
-				while (ad)
-				{
-					int r = mem_get(sx, ad);
-					mem_set(sx, ad, (int)mem_get_size(sx));
-					ad = r;
-				}
-			}
+				expression(vm, nd, 0); // then
+				mem_add(vm, IC_B);
+				mem_add(vm, (item_t)addr);
+				addr = mem_size(vm) - 1;
+				mem_set(vm, addr_else, (item_t)mem_size(vm));
 
-			finalop(sx);
-		}
-		if (sx->tree[sx->tc] == TExprend)
-		{
-			sx->tc++;
-			flagprim = 0;
-		}
-	}
-	return wasstring;
-}
+				expression(vm, nd, 1); // else или cond
+			} while (node_get_type(nd) == OP_CONDITIONAL);
 
-void Stmt_gen(syntax *const sx, ad *const context)
-{
-	switch (sx->tree[sx->tc++])
-	{
-		case NOP:
-		{
-			break;
-		}
-		case CREATEDIRECTC:
-		{
-			tocode(sx, CREATEDIRECTC);
-			break;
-		}
-		case EXITDIRECTC:
-		case EXITC:
-		{
-			tocode(sx, EXITC);
-			break;
-		}
-		case TStructbeg:
-		{
-			tocode(sx, B);
-			tocode(sx, 0);
-			proc_set(sx, sx->tree[sx->tc++], (int)mem_get_size(sx));
-			break;
-		}
-		case TStructend:
-		{
-			int numproc = sx->tree[sx->tree[sx->tc++] + 1];
-
-			tocode(sx, STOP);
-			mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
-			break;
-		}
-		case TBegin:
-			compstmt_gen(sx, context);
-			break;
-
-		case TIf:
-		{
-			int elseref = sx->tree[sx->tc++];
-
-			Expr_gen(sx, 0);
-			tocode(sx, BE0);
-			size_t ad = mem_get_size(sx);
-			mem_increase(sx, 1);
-			Stmt_gen(sx, context);
-			if (elseref)
+			while (addr)
 			{
-				mem_set(sx, ad, (int)mem_get_size(sx) + 2);
-				tocode(sx, B);
-				ad = mem_get_size(sx);
-				mem_increase(sx, 1);
-				Stmt_gen(sx, context);
-			}
-			mem_set(sx, ad, (int)mem_get_size(sx));
-			break;
-		}
-		case TWhile:
-		{
-			size_t oldbreak = context->adbreak;
-			size_t oldcont = context->adcont;
-			size_t ad = mem_get_size(sx);
-
-			context->adcont = ad;
-			Expr_gen(sx, 0);
-			tocode(sx, BE0);
-			context->adbreak = mem_get_size(sx);
-			mem_add(sx, 0);	
-			Stmt_gen(sx, context);
-			adcontbeg(sx, context, ad);
-			tocode(sx, B);
-			tocode(sx, (int)ad);
-			adbreakend(sx, context);
-			context->adbreak = oldbreak;
-			context->adcont = oldcont;
-			break;
-		}
-		case TDo:
-		{
-			size_t oldbreak = context->adbreak;
-			size_t oldcont = context->adcont;
-			size_t ad = mem_get_size(sx);
-
-			context->adcont = context->adbreak = 0;
-			Stmt_gen(sx, context);
-			adcontend(sx, context);
-			Expr_gen(sx, 0);
-			tocode(sx, BNE0);
-			tocode(sx, (int)ad);
-			adbreakend(sx, context);
-			context->adbreak = oldbreak;
-			context->adcont = oldcont;
-			break;
-		}
-		case TFor:
-		{
-			int fromref = sx->tree[sx->tc++];
-			int condref = sx->tree[sx->tc++];
-			int incrref = sx->tree[sx->tc++];
-			int stmtref = sx->tree[sx->tc++];
-			size_t oldbreak = context->adbreak;
-			size_t oldcont = context->adcont;
-
-			if (fromref)
-			{
-				Expr_gen(sx, 0); // init
+				const size_t ref = (size_t)mem_get(vm, addr);
+				mem_set(vm, addr, (item_t)mem_size(vm));
+				addr = ref;
 			}
 
-			size_t initad = mem_get_size(sx);
-			context->adcont = context->adbreak = 0;
-
-			if (condref)
-			{
-				Expr_gen(sx, 0); // cond
-				tocode(sx, BE0);
-				context->adbreak = mem_get_size(sx);
-				mem_add(sx, 0);	
-			}
-			size_t incrtc = sx->tc;
-			sx->tc = stmtref;
-			Stmt_gen(sx, context); // ???? был 0
-			adcontend(sx, context);
-
-			if (incrref)
-			{
-				size_t endtc = sx->tc;
-				sx->tc = incrtc;
-				Expr_gen(sx, 0); // incr
-				sx->tc = endtc;
-			}
-
-			tocode(sx, B);
-			tocode(sx, (int)initad);
-			adbreakend(sx, context);
-			context->adbreak = oldbreak;
-			context->adcont = oldcont;
-			break;
-		}
-		case TGoto:
-		{
-			int id1 = sx->tree[sx->tc++];
-			int a;
-			int id = id1 > 0 ? id1 : -id1;
-
-			tocode(sx, B);
-			if ((a = sx->identab[id + 3]) > 0) // метка уже описана
-			{
-				tocode(sx, a);
-			}
-			else // метка еще не описана
-			{
-				sx->identab[id + 3] = -(int)mem_get_size(sx);
-				tocode(sx,
-					   id1 < 0 ? 0 : a); // первый раз встретился переход на еще
-										 // не описанную метку или нет
-			}
-			break;
-		}
-		case TLabel:
-		{
-			int id = sx->tree[sx->tc++];
-			int a;
-
-			if ((a = sx->identab[id + 3]) < 0) // были переходы на метку
-			{
-				while (a) // проставить ссылку на метку во всех ранних переходах
-				{
-					int r = mem_get(sx, -a);
-					mem_set(sx, -a, (int)mem_get_size(sx));
-					a = r;
-				}
-			}
-			sx->identab[id + 3] = (int)mem_get_size(sx);
-			break;
-		}
-		case TSwitch:
-		{
-			size_t oldbreak = context->adbreak;
-			size_t oldcase = context->adcase;
-
-			context->adbreak = 0;
-			context->adcase = 0;
-			Expr_gen(sx, 0);
-			Stmt_gen(sx, context);
-			if (context->adcase > 0)
-			{
-				mem_set(sx, context->adcase, (int)mem_get_size(sx));
-			}
-			context->adcase = oldcase;
-			adbreakend(sx, context);
-			context->adbreak = oldbreak;
-			break;
-		}
-		case TCase:
-		{
-			if (context->adcase)
-			{
-				mem_set(sx, context->adcase, (int)mem_get_size(sx));
-			}
-			tocode(sx, _DOUBLE);
-			Expr_gen(sx, 0);
-			tocode(sx, EQEQ);
-			tocode(sx, BE0);
-			context->adcase = mem_get_size(sx);
-			mem_increase(sx, 1);
-			Stmt_gen(sx, context);
-			break;
-		}
-		case TDefault:
-		{
-			if (context->adcase)
-			{
-				mem_set(sx, context->adcase, (int)mem_get_size(sx));
-			}
-			context->adcase = 0;
-			Stmt_gen(sx, context);
-			break;
-		}
-		case TBreak:
-		{
-			tocode(sx, B);
-			mem_add(sx, (int)context->adbreak);
-			context->adbreak = mem_get_size(sx) - 1;
-			break;
-		}
-		case TContinue:
-		{
-			tocode(sx, B);
-			mem_add(sx, (int)context->adcont);
-			context->adcont = mem_get_size(sx) - 1;
-			break;
-		}
-		case TReturnvoid:
-		{
-			tocode(sx, RETURNVOID);
-			break;
-		}
-		case TReturnval:
-		{
-			int d = sx->tree[sx->tc++];
-
-			Expr_gen(sx, 0);
-			tocode(sx, RETURNVAL);
-			tocode(sx, d);
-			break;
-		}
-		case TPrintid:
-		{
-			tocode(sx, PRINTID);
-			tocode(sx, sx->tree[sx->tc++]); // ссылка в identtab
-			break;
-		}
-		case TPrintf:
-		{
-			tocode(sx, PRINTF);
-			tocode(sx, sx->tree[sx->tc++]); // общий размер того,
-														   // что надо вывести
-			break;
-		}
-		case TGetid:
-		{
-			tocode(sx, GETID);
-			tocode(sx, sx->tree[sx->tc++]); // ссылка в identtab
-			break;
-		}
-		case SETMOTOR:
-		{
-			Expr_gen(sx, 0);
-			Expr_gen(sx, 0);
-			tocode(sx, SETMOTORC);
-			break;
-		}
-		default:
-		{
-			sx->tc--;
-			Expr_gen(sx, 0);
-			break;
+			final_operation(vm, nd);
 		}
 	}
 }
 
-void Struct_init_gen(syntax *const sx)
+static void structure(virtual *const vm, node *const nd)
 {
-	int i;
-	int n;
-
-	if (sx->tree[sx->tc] == TStructinit)
+	if (node_get_type(nd) == OP_STRUCT_INIT)
 	{
-		sx->tc++;
-		n = sx->tree[sx->tc++];
-		for (i = 0; i < n; i++)
+		const item_t N = node_get_arg(nd, 0);
+		node_set_next(nd);
+
+		for (item_t i = 0; i < N; i++)
 		{
-			Struct_init_gen(sx);
+			structure(vm, nd);
+			node_set_next(nd); // TExprend
 		}
-		sx->tc++; // TExprend
 	}
 	else
 	{
-		Expr_gen(sx, 0);
+		expression(vm, nd, -1);
 	}
 }
 
-void Declid_gen(syntax *const sx)
+static void identifier(virtual *const vm, node *const nd)
 {
-	int olddispl = sx->tree[sx->tc++];
-	int telem = sx->tree[sx->tc++];
-	int N = sx->tree[sx->tc++];
-	int element_len;
-	int all = sx->tree[sx->tc++];
-	int iniproc = sx->tree[sx->tc++];
-	int usual = sx->tree[sx->tc++];
-	int instruct = sx->tree[sx->tc++];
-	// all - общее кол-во слов в структуре
-	// для массивов есть еще usual // == 0 с пустыми границами,
-	// == 1 без пустых границ,
-	// all == 0 нет инициализатора,
-	// all == 1 есть инициализатор
-	// all == 2 есть инициализатор только из строк
-	element_len = size_of(sx, telem);
+	const item_t old_displ = node_get_arg(nd, 0);
+	const item_t type = node_get_arg(nd, 1);
+	const item_t N = node_get_arg(nd, 2);
 
-	if (N == 0) // обычная переменная int a; или struct point p;
+	/*
+	 *	@param	all		Общее кол-во слов в структуре:
+	 *						@c 0 нет инициализатора,
+	 *						@c 1 есть инициализатор,
+	 *						@c 2 есть инициализатор только из строк
+	 */
+	const item_t all = node_get_arg(nd, 3);
+	const item_t process = node_get_arg(nd, 4);
+
+	/*
+	 *	@param	usual	Для массивов:
+	 *						@c 0 с пустыми границами,
+	 *						@c 1 без пустых границ
+	 */
+	const item_t usual = node_get_arg(nd, 5);
+	const item_t instruction = node_get_arg(nd, 6);
+
+
+	if (N == 0) // Обычная переменная int a; или struct point p;
 	{
-		if (iniproc)
+		if (process)
 		{
-			tocode(sx, STRUCTWITHARR);
-			tocode(sx, olddispl);
-			tocode(sx, proc_get(sx, iniproc));
+			mem_add(vm, IC_STRUCT_WITH_ARR);
+			mem_add(vm, old_displ);
+			mem_add(vm, proc_get(vm, (size_t)process));
 		}
 		if (all) // int a = или struct{} a =
 		{
-			if (telem > 0 && mode_get(sx, telem) == MSTRUCT)
+			if (type > 0 && mode_get(vm->sx, (size_t)type) == mode_struct)
 			{
-				Struct_init_gen(sx);
-				tocode(sx, COPY0STASS);
-				tocode(sx, olddispl);
-				tocode(sx, all); // общее кол-во слов
+				node_set_next(nd);
+				structure(vm, nd);
+
+				mem_add(vm, IC_COPY0ST_ASSIGN);
+				mem_add(vm, old_displ);
+				mem_add(vm, all); // Общее количество слов
 			}
 			else
 			{
-				Expr_gen(sx, 0);
-				tocode(sx, telem == LFLOAT ? ASSRV : ASSV);
-				tocode(sx, olddispl);
+				expression(vm, nd, 0);
+
+				mem_add(vm, type == mode_float ? IC_ASSIGN_R_V : IC_ASSIGN_V);
+				mem_add(vm, old_displ);
 			}
 		}
 	}
 	else // Обработка массива int a[N1]...[NN] =
 	{
-		tocode(sx, DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN
-								 // уже лежат на стеке
-		tocode(sx, all == 0 ? N : abs(N) - 1);
-		tocode(sx, element_len);
-		tocode(sx, olddispl);
-		tocode(sx, proc_get(sx, iniproc));
-		tocode(sx, usual);
-		tocode(sx, all);
-		tocode(sx, instruct);
+		const item_t length = (item_t)size_of(vm->sx, type);
+
+		mem_add(vm, IC_DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
+		mem_add(vm, all == 0 ? N : abs((int)N) - 1);
+		mem_add(vm, length);
+		mem_add(vm, old_displ);
+		mem_add(vm, proc_get(vm, (size_t)process));
+		mem_add(vm, usual);
+		mem_add(vm, all);
+		mem_add(vm, instruction);
 
 		if (all) // all == 1, если есть инициализация массива
 		{
-			Expr_gen(sx, 0);
-			tocode(sx, ARRINIT); // ARRINIT N d all displ usual
-			tocode(sx, abs(N));
-			tocode(sx, element_len);
-			tocode(sx, olddispl);
-			tocode(sx, usual); // == 0 с пустыми границами
-									// == 1 без пустых границ и без иниц
+			expression(vm, nd, 0);
+
+			mem_add(vm, IC_ARR_INIT); // ARRINIT N d all displ usual
+			mem_add(vm, abs((int)N));
+			mem_add(vm, length);
+			mem_add(vm, old_displ);
+			mem_add(vm, usual);	// == 0 с пустыми границами
+								// == 1 без пустых границ и без инициализации
 		}
 	}
 }
 
-void compstmt_gen(syntax *const sx, ad *const context)
+static int declaration(virtual *const vm, node *const nd)
 {
-	while (sx->tree[sx->tc] != TEnd)
+	switch (node_get_type(nd))
 	{
-		switch (sx->tree[sx->tc])
+		case OP_DECL_ARR:
 		{
-			case TDeclarr:
+			const item_t N = node_get_arg(nd, 0);
+			for (item_t i = 0; i < N; i++)
 			{
-				int i;
-				int N;
-
-				sx->tc++;
-				N = sx->tree[sx->tc++];
-				for (i = 0; i < N; i++)
-				{
-					Expr_gen(sx, 0);
-				}
-				break;
-			}
-			case TDeclid:
-			{
-				sx->tc++;
-				Declid_gen(sx);
-				break;
-			}
-			default:
-			{
-				Stmt_gen(sx, context);
-				break;
+				expression(vm, nd, 0);
 			}
 		}
-	}
-	sx->tc++;
-}
+		break;
+		case OP_DECL_ID:
+			identifier(vm, nd);
+			break;
 
-/** Генерация кодов */
-int codegen(syntax *const sx)
-{
-	ad context;
-
-	size_t treesize = sx->tc;
-	sx->tc = 0;
-
-	while (sx->tc < treesize)
-	{
-		switch (sx->tree[sx->tc++])
+		case OP_DECL_STRUCT:
 		{
-			case TEnd:
-				break;
-			case TFuncdef:
-			{
-				int identref = sx->tree[sx->tc++];
-				int maxdispl = sx->tree[sx->tc++];
-				int fn = sx->identab[identref + 3];
-
-				func_set(sx, fn, mem_get_size(sx));
-				tocode(sx, FUNCBEG);
-				tocode(sx, maxdispl);
-				size_t old_pc = mem_get_size(sx);
-				mem_increase(sx, 1);
-				sx->tc++; // TBegin
-				compstmt_gen(sx, &context);
-				mem_set(sx, old_pc, (int)mem_get_size(sx));
-				break;
-			}
-			case TDeclarr:
-			{
-				int i;
-				int N = sx->tree[sx->tc++];
-
-				for (i = 0; i < N; i++)
-				{
-					Expr_gen(sx, 0);
-				}
-				break;
-			}
-			case TDeclid:
-			{
-				Declid_gen(sx);
-				break;
-			}
-			case NOP:
-			{
-				break;
-			}
-			case TStructbeg:
-			{
-				tocode(sx, B);
-				tocode(sx, 0);
-				proc_set(sx, sx->tree[sx->tc++], (int)mem_get_size(sx));
-				break;
-			}
-			case TStructend:
-			{
-				int numproc = sx->tree[sx->tree[sx->tc++] + 1];
-
-				tocode(sx, STOP);
-				mem_set(sx, proc_get(sx, numproc) - 1, (int)mem_get_size(sx));
-				break;
-			}
-			default:
-			{
-				printf("tc=%zi tree[tc-2]=%i tree[tc-1]=%i\n", sx->tc, sx->tree[sx->tc - 2],
-					   sx->tree[sx->tc - 1]);
-				break;
-			}
+			mem_add(vm, IC_B);
+			mem_add(vm, 0);
+			proc_set(vm, (size_t)node_get_arg(nd, 0), (item_t)mem_size(vm));
 		}
+		break;
+		case OP_DECL_STRUCT_END:
+		{
+			const size_t num_proc = (size_t)node_get_arg(nd, 0);
+
+			mem_add(vm, IC_STOP);
+			mem_set(vm, (size_t)proc_get(vm, num_proc) - 1, (item_t)mem_size(vm));
+		}
+		break;
+
+		default:
+			return -1;
 	}
-	tocode(sx, CALL1);
-	tocode(sx, CALL2);
-	tocode(sx, sx->identab[sx->main_ref + 3]);
-	tocode(sx, STOP);
 
 	return 0;
 }
 
+static void compress_ident(virtual *const vm, const size_t ref)
+{
+	if (vector_get(&vm->sx->identifiers, ref) == ITEM_MAX)
+	{
+		mem_add(vm, ident_get_repr(vm->sx, ref));
+		return;
+	}
+
+	const item_t new_ref = (item_t)vector_size(&vm->identifiers) - 1;
+	vector_add(&vm->identifiers, (item_t)vector_size(&vm->representations) - 2);
+	vector_add(&vm->identifiers, ident_get_mode(vm->sx, ref));
+	vector_add(&vm->identifiers, ident_get_displ(vm->sx, ref));
+
+	const char *buffer = repr_get_name(vm->sx, (size_t)ident_get_repr(vm->sx, ref));
+	for (size_t i = 0; buffer[i] != '\0'; i += utf8_symbol_size(buffer[i]))
+	{
+		vector_add(&vm->representations, (item_t)utf8_convert(&buffer[i]));
+	}
+	vector_add(&vm->representations, '\0');
+
+	vector_set(&vm->sx->identifiers, ref, ITEM_MAX);
+	ident_set_repr(vm->sx, ref, new_ref);
+	mem_add(vm, new_ref);
+}
+
+static void statement(virtual *const vm, node *const nd)
+{
+	switch (node_get_type(nd))
+	{
+		case OP_NOP:
+			break;
+		case OP_CREATE_DIRECT:
+			mem_add(vm, IC_CREATE_DIRECT);
+			vm->max_threads++;
+			break;
+		case OP_EXIT_DIRECT:
+			mem_add(vm, IC_EXIT_DIRECT);
+			break;
+		case OP_BLOCK:
+			block(vm, nd);
+			break;
+		case OP_IF:
+		{
+			const item_t ref_else = node_get_arg(nd, 0);
+
+			expression(vm, nd, 0);
+			node_set_next(nd); // TExprend
+
+			mem_add(vm, IC_BE0);
+			size_t addr = mem_size(vm);
+			mem_increase(vm, 1);
+			statement(vm, nd);
+
+			if (ref_else)
+			{
+				node_set_next(nd);
+				mem_set(vm, addr, (item_t)mem_size(vm) + 2);
+				mem_add(vm, IC_B);
+				addr = mem_size(vm);
+				mem_increase(vm, 1);
+				statement(vm, nd);
+			}
+			mem_set(vm, addr, (item_t)mem_size(vm));
+		}
+		break;
+		case OP_WHILE:
+		{
+			const size_t old_break = vm->addr_break;
+			const size_t old_cond = vm->addr_cond;
+			const size_t addr = mem_size(vm);
+
+			vm->addr_cond = addr;
+			expression(vm, nd, 0);
+			node_set_next(nd); // TExprend
+
+			mem_add(vm, IC_BE0);
+			vm->addr_break = mem_size(vm);
+			mem_add(vm, 0);
+			statement(vm, nd);
+
+			addr_begin_condition(vm, addr);
+			mem_add(vm, IC_B);
+			mem_add(vm, (item_t)addr);
+			addr_end_break(vm);
+
+			vm->addr_break = old_break;
+			vm->addr_cond = old_cond;
+		}
+		break;
+		case OP_DO:
+		{
+			const size_t old_break = vm->addr_break;
+			const size_t old_cond = vm->addr_cond;
+			const item_t addr = (item_t)mem_size(vm);
+
+			vm->addr_cond = 0;
+			vm->addr_break = 0;
+
+			node_set_next(nd);
+			statement(vm, nd);
+			addr_end_condition(vm);
+
+			expression(vm, nd, 0);
+			mem_add(vm, IC_BNE0);
+			mem_add(vm, addr);
+			addr_end_break(vm);
+
+			vm->addr_break = old_break;
+			vm->addr_cond = old_cond;
+		}
+		break;
+		case OP_FOR:
+		{
+			const item_t ref_from = node_get_arg(nd, 0);
+			const item_t ref_cond = node_get_arg(nd, 1);
+			const item_t ref_incr = node_get_arg(nd, 2);
+
+			node incr;
+			node_copy(&incr, nd);
+			size_t child_stmt = 0;
+
+			if (ref_from)
+			{
+				node_set_next(&incr);
+				if (declaration(vm, &incr))
+				{
+					expression(vm, &incr, -1);
+				}
+				child_stmt++;
+			}
+
+			const size_t old_break = vm->addr_break;
+			const size_t old_cond = vm->addr_cond;
+			vm->addr_cond = 0;
+			vm->addr_break = 0;
+
+			size_t initad = mem_size(vm);
+			if (ref_cond)
+			{
+				expression(vm, &incr, 0); // condition
+				mem_add(vm, IC_BE0);
+				vm->addr_break = mem_size(vm);
+				mem_add(vm, 0);
+				child_stmt++;
+			}
+
+			if (ref_incr)
+			{
+				child_stmt++;
+			}
+
+			node stmt = node_get_child(nd, child_stmt);
+			statement(vm, &stmt);
+			addr_end_condition(vm);
+
+			if (ref_incr)
+			{
+				expression(vm, &incr, 0); // increment
+			}
+			node_copy(nd, &stmt);
+
+			mem_add(vm, IC_B);
+			mem_add(vm, (item_t)initad);
+			addr_end_break(vm);
+
+			vm->addr_break = old_break;
+			vm->addr_cond = old_cond;
+		}
+		break;
+		case OP_GOTO:
+		{
+			mem_add(vm, IC_B);
+
+			const item_t id_sign = node_get_arg(nd, 0);
+			const size_t id = abs((int)id_sign);
+			const item_t addr = ident_get_displ(vm->sx, id);
+
+			if (addr > 0) // метка уже описана
+			{
+				mem_add(vm, addr);
+			}
+			else // метка еще не описана
+			{
+				ident_set_displ(vm->sx, id, -(item_t)mem_size(vm));
+
+				// первый раз встретился переход на еще не описанную метку или нет
+				mem_add(vm, id_sign < 0 ? 0 : addr);
+			}
+		}
+		break;
+		case OP_LABEL:
+		{
+			const item_t id = node_get_arg(nd, 0);
+			item_t addr = ident_get_displ(vm->sx, (size_t)id);
+
+			if (addr < 0) // были переходы на метку
+			{
+				while (addr) // проставить ссылку на метку во всех ранних переходах
+				{
+					item_t ref = mem_get(vm, (size_t)(-addr));
+					mem_set(vm, (size_t)(-addr), (item_t)mem_size(vm));
+					addr = ref;
+				}
+			}
+			ident_set_displ(vm->sx, (size_t)id, (item_t)mem_size(vm));
+		}
+		break;
+		case OP_SWITCH:
+		{
+			const size_t old_break = vm->addr_break;
+			const size_t old_case = vm->addr_case;
+			vm->addr_break = 0;
+			vm->addr_case = 0;
+
+			expression(vm, nd, 0);
+			node_set_next(nd); // TExprend
+
+			statement(vm, nd);
+			if (vm->addr_case > 0)
+			{
+				mem_set(vm, vm->addr_case, (item_t)mem_size(vm));
+			}
+			addr_end_break(vm);
+
+			vm->addr_case = old_case;
+			vm->addr_break = old_break;
+		}
+		break;
+		case OP_CASE:
+		{
+			if (vm->addr_case)
+			{
+				mem_set(vm, vm->addr_case, (item_t)mem_size(vm));
+			}
+			mem_add(vm, IC_DUPLICATE);
+			expression(vm, nd, 0);
+			node_set_next(nd); // TExprend
+
+			mem_add(vm, IC_EQ);
+			mem_add(vm, IC_BE0);
+			vm->addr_case = mem_size(vm);
+			mem_increase(vm, 1);
+			statement(vm, nd);
+		}
+		break;
+		case OP_DEFAULT:
+		{
+			if (vm->addr_case)
+			{
+				mem_set(vm, vm->addr_case, (item_t)mem_size(vm));
+			}
+			vm->addr_case = 0;
+
+			node_set_next(nd);
+			statement(vm, nd);
+		}
+		break;
+		case OP_BREAK:
+		{
+			mem_add(vm, IC_B);
+			mem_add(vm, (item_t)vm->addr_break);
+			vm->addr_break = mem_size(vm) - 1;
+		}
+		break;
+		case OP_CONTINUE:
+		{
+			mem_add(vm, IC_B);
+			mem_add(vm, (item_t)vm->addr_cond);
+			vm->addr_cond = mem_size(vm) - 1;
+		}
+		break;
+		case OP_RETURN_VOID:
+			mem_add(vm, IC_RETURN_VOID);
+			break;
+		case OP_RETURN_VAL:
+		{
+			const item_t value = node_get_arg(nd, 0);
+			expression(vm, nd, 0);
+
+			mem_add(vm, IC_RETURN_VAL);
+			mem_add(vm, value);
+		}
+		break;
+		case OP_PRINTID:
+		{
+			mem_add(vm, IC_PRINTID);
+			compress_ident(vm, (size_t)node_get_arg(nd, 0)); // ссылка в identtab
+		}
+		break;
+		case OP_PRINTF:
+		{
+			mem_add(vm, IC_PRINTF);
+			mem_add(vm, node_get_arg(nd, 0)); // общий размер того, что надо вывести
+		}
+		break;
+		case OP_GETID:
+		{
+			mem_add(vm, IC_GETID);
+			compress_ident(vm, (size_t)node_get_arg(nd, 0)); // ссылка в identtab
+		}
+		break;
+		default:
+			if (declaration(vm, nd))
+			{
+				expression(vm, nd, -1);
+			}
+			break;
+	}
+}
+
+static void block(virtual *const vm, node *const nd)
+{
+	node_set_next(nd); // TBegin
+	while (node_get_type(nd) != OP_BLOCK_END)
+	{
+		statement(vm, nd);
+		node_set_next(nd);
+	}
+}
+
+/** Генерация кодов */
+static int codegen(virtual *const vm)
+{
+	node root = node_get_root(&vm->sx->tree);
+	while (node_set_next(&root) == 0)
+	{
+		switch (node_get_type(&root))
+		{
+			case OP_FUNC_DEF:
+			{
+				const item_t ref_ident = node_get_arg(&root, 0);
+				const item_t max_displ = node_get_arg(&root, 1);
+				const size_t func = (size_t)ident_get_displ(vm->sx, (size_t)ref_ident);
+
+				func_set(vm->sx, func, (item_t)mem_size(vm));
+				mem_add(vm, IC_FUNC_BEG);
+				mem_add(vm, max_displ);
+
+				const size_t old_pc = mem_size(vm);
+				mem_increase(vm, 1);
+
+				node_set_next(&root);
+				block(vm, &root);
+
+				mem_set(vm, old_pc, (item_t)mem_size(vm));
+			}
+			break;
+
+			case OP_NOP:
+			case OP_BLOCK_END:
+				break;
+
+			default:
+				if (declaration(vm, &root))
+				{
+					system_error(node_unexpected, node_get_type(&root));
+					return -1;
+				}
+				break;
+		}
+	}
+
+	mem_add(vm, IC_CALL1);
+	mem_add(vm, IC_CALL2);
+	mem_add(vm, ident_get_displ(vm->sx, vm->sx->ref_main));
+	mem_add(vm, IC_STOP);
+	return 0;
+}
+
+
+static int output_table(universal_io *const io, const item_status target, const vector *const table)
+{
+	const size_t size = vector_size(table);
+	for (size_t i = 0; i < size; i++)
+	{
+		const item_t item = vector_get(table, i);
+		if (!item_check_var(target, item))
+		{
+			system_error(tables_cannot_be_compressed);
+			return -1;
+		}
+
+		uni_printf(io, "%" PRIitem " ", item);
+	}
+
+	uni_printf(io, "\n");
+	return 0;
+}
+
 /** Вывод таблиц в файл */
-void output_export(universal_io *const io, const syntax *const sx)
+static int output_export(universal_io *const io, const virtual *const vm)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(io, "%zi %zi %zi %zi %zi %i %zi\n", mem_get_size(sx), sx->funcnum, sx->id,
-				   sx->rp, sx->md, sx->maxdisplg, sx->main_ref);
+	uni_printf(io, "%zu %zu %zu %zu %zu %" PRIitem " %zu\n"
+		, vector_size(&vm->memory)
+		, vector_size(&vm->sx->functions)
+		, vector_size(&vm->identifiers)
+		, vector_size(&vm->representations)
+		, vector_size(&vm->sx->modes)
+		, vm->sx->max_displg, vm->max_threads);
 
-	for (size_t i = 0; i < mem_get_size(sx); i++)
-	{
-		uni_printf(io, "%i ", mem_get(sx, i));
-	}
-	uni_printf(io, "\n");
-
-	for (size_t i = 0; i < sx->funcnum; i++)
-	{
-		uni_printf(io, "%zi ", func_get(sx, i));
-	}
-	uni_printf(io, "\n");
-
-	for (size_t i = 0; i < sx->id; i++)
-	{
-		uni_printf(io, "%i ", sx->identab[i]);
-	}
-	uni_printf(io, "\n");
-
-	for (size_t i = 0; i < sx->rp; i++)
-	{
-		uni_printf(io, "%i ", sx->reprtab[i]);
-	}
-
-	for (size_t i = 0; i < sx->md; i++)
-	{
-		uni_printf(io, "%i ", mode_get(sx, i));
-	}
-	uni_printf(io, "\n");
+	return output_table(io, vm->target, &vm->memory)
+		|| output_table(io, vm->target, &vm->sx->functions)
+		|| output_table(io, vm->target, &vm->identifiers)
+		|| output_table(io, vm->target, &vm->representations)
+		|| output_table(io, vm->target, &vm->sx->modes);
 }
 
 
@@ -875,18 +942,47 @@ void output_export(universal_io *const io, const syntax *const sx)
  */
 
 
-int encode_to_vm(universal_io *const io, syntax *const sx)
+int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
-	if (!out_is_correct(io) || sx == NULL)
+	if (!ws_is_correct(ws) || !out_is_correct(io) || sx == NULL)
 	{
 		return -1;
 	}
 
-	int ret = codegen(sx);
+	virtual vm;
+	vm.sx = sx;
+
+	vm.memory = vector_create(MAX_MEM_SIZE);
+	vm.processes = vector_create(sx->procd);
+	vm.stk = stack_create(MAX_STACK_SIZE);
+
+	const size_t records = vector_size(&sx->identifiers) / 4;
+	vm.identifiers = vector_create(records * 3);
+	vm.representations = vector_create(records * 8);
+
+	vector_increase(&vm.memory, 4);
+	vector_increase(&vm.processes, sx->procd);
+	vm.max_threads = 0;
+
+	vm.target = item_get_status(ws);
+
+
+	int ret = codegen(&vm);
 	if (!ret)
 	{
-		output_export(io, sx);
+		ret = output_export(io, &vm);
 	}
 
+#ifndef NDEBUG
+	tables_and_codes(DEFAULT_CODES, &sx->functions, &vm.processes, &vm.memory);
+#endif
+
+
+	vector_clear(&vm.memory);
+	vector_clear(&vm.processes);
+	stack_clear(&vm.stk);
+
+	vector_clear(&vm.identifiers);
+	vector_clear(&vm.representations);
 	return ret;
 }

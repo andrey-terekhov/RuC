@@ -16,12 +16,13 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
 #include "dll.h"
 
 #ifdef __APPLE__
 	#include <stdint.h>
-	
+
 	typedef uint32_t char32_t;
 #else
 	#include <uchar.h>
@@ -91,13 +92,22 @@ EXPORTED size_t utf8_to_cp866(const char *const src, char *const dest);
 EXPORTED size_t utf8_to_cp1251(const char *const src, char *const dest);
 
 /**
+ *	Convert UTF-8 symbol to upper case
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	Upper case character
+ */
+EXPORTED char32_t utf8_to_upper(const char32_t symbol);
+
+/**
  *	Checks if сharacter is russian letter
  *
  *	@param	symbol	UTF-8 сharacter
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int utf8_is_russian(const char32_t symbol);
+EXPORTED bool utf8_is_russian(const char32_t symbol);
 
 /**
  *	Checks if сharacter is english or russian letter
@@ -106,7 +116,7 @@ EXPORTED int utf8_is_russian(const char32_t symbol);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int utf8_is_letter(const char32_t symbol);
+EXPORTED bool utf8_is_letter(const char32_t symbol);
 
 /**
  *	Checks if сharacter is digit
@@ -115,7 +125,7 @@ EXPORTED int utf8_is_letter(const char32_t symbol);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int utf8_is_digit(const char32_t symbol);
+EXPORTED bool utf8_is_digit(const char32_t symbol);
 
 /**
  *	Checks if сharacter is 'E', 'e', 'Е' or 'е'
@@ -124,7 +134,7 @@ EXPORTED int utf8_is_digit(const char32_t symbol);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int utf8_is_power(const char32_t symbol);
+EXPORTED bool utf8_is_power(const char32_t symbol);
 
 #ifdef __cplusplus
 } /* extern "C" */
