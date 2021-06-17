@@ -302,6 +302,38 @@ node node_load(vector *const tree, const size_t index)
 	return nd;
 }
 
+node node_insert(const node *const nd, const item_t type, const size_t argc)
+{
+	size_t index;
+	node parent = node_search_parent(nd, &index);
+	if (!node_is_correct(&parent))
+	{
+		return node_broken();
+	}
+
+	size_t reference;
+	if (index == 0)
+	{
+		reference = ref_get_children(&parent);
+	}
+	else
+	{
+		const node prev = node_get_child(&parent, index - 1);
+		reference = ref_get_next(&prev);
+	}
+
+	vector_add(nd->tree, vector_get(nd->tree, ref_get_next(nd)));
+	vector_add(nd->tree, type);
+	node child = { nd->tree, vector_add(nd->tree, argc) };
+	vector_resize(nd->tree, vector_size(nd->tree) + argc);
+	vector_add(nd->tree, 1);
+	vector_add(nd->tree, nd->index);
+
+	vector_set(nd->tree, reference, (item_t)child.index);
+	ref_set_next(nd, ~(item_t)child.index + 1);
+	return child;
+}
+
 int node_order(const node *const fst, const node *const snd)
 {
 	if (node_swap(fst, snd))

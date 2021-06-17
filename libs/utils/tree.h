@@ -193,6 +193,17 @@ EXPORTED size_t node_save(const node *const nd);
 EXPORTED node node_load(vector *const tree, const size_t index);
 
 /**
+ *	Insert new node before existing
+ *
+ *	@param	nd			Current node
+ *	@param	type		New node type
+ *	@param	argc		Amount of new node arguments
+ *
+ *	@return	Inserted node
+ */ 
+EXPORTED node node_insert(const node *const nd, const item_t type, const size_t argc);
+
+/**
  *	Change only node order
  *
  *	@param	fst			First node
