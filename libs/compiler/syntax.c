@@ -17,7 +17,7 @@
 #include "syntax.h"
 #include <stdlib.h>
 #include "tokens.h"
-#include "old_tree.h"
+#include "tree.h"
 
 
 static const size_t REPRESENTATIONS_SIZE = 10000;

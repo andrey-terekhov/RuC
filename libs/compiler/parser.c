@@ -16,7 +16,7 @@
 
 #include "parser.h"
 #include "codes.h"
-#include "old_tree.h"
+#include "tree.h"
 
 
 static const char *const DEFAULT_TREE = "tree.txt";
@@ -104,15 +104,7 @@ int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
 	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
 #endif
 
-#if !defined(NDEBUG) && defined(OLD_TREE)
-	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx)
-		|| tree_test(&sx->tree)
-		|| tree_test_next(&sx->tree)
-		|| tree_test_recursive(&sx->tree)
-		|| tree_test_copy(&sx->tree);
-#else
 	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
-#endif
 }
 
 
