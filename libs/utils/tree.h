@@ -195,26 +195,22 @@ EXPORTED node node_load(vector *const tree, const size_t index);
 /**
  *	Change only node order
  *
- *	@param	fst			First parent node
- *	@param	fst_index	First child number
- *	@param	snd			Second parent node
- *	@param	snd_index	Second child number
+ *	@param	fst			First node
+ *	@param	snd			Second node
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int node_order(const node *const fst, const size_t fst_index, const node *const snd, const size_t snd_index);
+EXPORTED int node_order(const node *const fst, const node *const snd);
 
 /**
  *	Swap two nodes with children
  *
- *	@param	fst			First parent node
- *	@param	fst_index	First child number
- *	@param	snd			Second parent node
- *	@param	snd_index	Second child number
+ *	@param	fst			First node
+ *	@param	snd			Second node
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int node_swap(const node *const fst, const size_t fst_index, const node *const snd, const size_t snd_index);
+EXPORTED int node_swap(const node *const fst, const node *const snd);
 
 /**
  *	Remove child node by index
