@@ -859,15 +859,16 @@ static void operand(information *const info, node *const nd)
 	}
 }
 
-// TODO: попробовать объединить с assignment_expression
-static void assignment_array_expression(information *const info, node *const nd)
+static void assignment_expression(information *const info, node *const nd)
 {
+	const item_t displ = node_get_arg(nd, 0);
 	const item_t assignment_type = node_get_type(nd);
 	const type_t operation_type = is_double(assignment_type) ? DOUBLE : I32;
-	node_set_next(nd);
+	const int is_array = is_array_operation(assignment_type);
 
+	node_set_next(nd);
 	info->variable_location = LMEM;
-	operand(info, nd); // TSliceident
+	operand(info, nd); // Tident or TSliceident
 	const item_t memory_reg = info->answer_reg;
 
 	info->variable_location = LFREE;
@@ -876,63 +877,10 @@ static void assignment_array_expression(information *const info, node *const nd)
 	to_code_try_zext_to(info);
 	item_t result = info->answer_reg;
 
-	if (assignment_type != ASSAT && assignment_type != ASSATV && assignment_type != ASSATR && assignment_type != ASSATRV)
+	if (assignment_type != ASS && assignment_type != ASSV && assignment_type != ASSR && assignment_type != ASSRV
+		&& assignment_type != ASSAT && assignment_type != ASSATV && assignment_type != ASSATR && assignment_type != ASSATRV)
 	{
-		to_code_load(info, info->register_num, memory_reg, operation_type, 1);
-		info->register_num++;
-
-		if (info->answer_type == AREG)
-		{
-			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg, operation_type);
-		}
-		// ACONST
-		else if (!is_double(assignment_type))
-		{
-			to_code_operation_reg_const_i32(info, assignment_type, info->register_num - 1, info->answer_const);
-		}
-		else
-		{
-			to_code_operation_reg_const_double(info, assignment_type, info->register_num - 1, info->answer_const_double);
-		}
-
-		result = info->register_num++;
-		info->answer_type = AREG;
-	}
-
-	if (info->answer_type == AREG)
-	{
-		to_code_store_reg(info, result, memory_reg, operation_type, 1);
-	}
-	// ACONST && =
-	else if (!is_double(assignment_type))
-	{
-		to_code_store_const_i32(info, info->answer_const, memory_reg, 1);
-	}
-	else
-	{
-		to_code_store_const_double(info, info->answer_const_double, memory_reg, 1);
-	}
-}
-
-static void assignment_expression(information *const info, node *const nd)
-{
-	const item_t displ = node_get_arg(nd, 0);
-	const item_t assignment_type = node_get_type(nd);
-	const type_t operation_type = is_double(assignment_type) ? DOUBLE : I32;
-
-	node_set_next(nd);
-	node_set_next(nd); // TIdent
-
-	info->variable_location = LFREE;
-	expression(info, nd);
-
-	to_code_try_zext_to(info);
-
-	item_t result = info->answer_reg;
-
-	if (assignment_type != ASS && assignment_type != ASSV && assignment_type != ASSR && assignment_type != ASSRV)
-	{
-		to_code_load(info, info->register_num, displ, operation_type, 0);
+		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
 		info->register_num++;
 
 		if (info->answer_type == AREG)
@@ -955,16 +903,16 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (info->answer_type == AREG)
 	{
-		to_code_store_reg(info, result, displ, operation_type, 0);
+		to_code_store_reg(info, result, is_array ? memory_reg : displ, operation_type, is_array);
 	}
 	// ACONST && =
 	else if (!is_double(assignment_type))
 	{
-		to_code_store_const_i32(info, info->answer_const, displ, 0);
+		to_code_store_const_i32(info, info->answer_const, is_array ? memory_reg : displ, is_array);
 	}
 	else
 	{
-		to_code_store_const_double(info, info->answer_const_double, displ, 0);
+		to_code_store_const_double(info, info->answer_const_double, is_array ? memory_reg : displ, is_array);
 	}
 }
 
@@ -1310,9 +1258,6 @@ static void binary_operation(information *const info, node *const nd)
 		case MULTASSRV:
 		case DIVASSR:
 		case DIVASSRV:
-			assignment_expression(info, nd);
-			break;
-
 
 		case ASSAT:
 		case PLUSASSAT:
@@ -1337,7 +1282,7 @@ static void binary_operation(information *const info, node *const nd)
 		case MINUSASSATRV:
 		case MULTASSATRV:
 		case DIVASSATRV:
-			assignment_array_expression(info, nd);
+			assignment_expression(info, nd);
 			break;
 
 
