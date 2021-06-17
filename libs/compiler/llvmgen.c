@@ -72,7 +72,7 @@ typedef struct information
 	hash arrays;						/**< Хеш таблица с информацией о массивах:
 												@с key		 - смещение массива
 												@c value[0]	 - флаг статичности
-												@c value[1..MAX] - границы массива */									
+												@c value[1..MAX] - границы массива */
 	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
 } information;
 
@@ -86,7 +86,7 @@ static double to_double(const int64_t fst, const int64_t snd)
 	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
 	double numdouble;
 	memcpy(&numdouble, &num, sizeof(double));
-	
+
 	return numdouble;
 }
 
@@ -149,7 +149,7 @@ static int is_double(const item_t operation)
 
 		case UNMINUSR:
 			return 1;
-	
+
 		default:
 			return 0;
 	}
@@ -335,7 +335,7 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case ORASSATV:
 			uni_printf(io, "or");
 			break;
-			
+
 		case EQEQ:
 			uni_printf(io, "icmp eq");
 			break;
@@ -395,7 +395,7 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case MULTASSATRV:
 			uni_printf(io, "fmul");
 			break;
-		
+
 		case DIVASSR:
 		case DIVASSRV:
 		case LDIVR:
@@ -425,7 +425,8 @@ static void operation_to_io(universal_io *const io, const item_t type)
 	}
 }
 
-static void to_code_operation_reg_reg(information *const info, const item_t operation, const item_t fst, const item_t snd, type_t type)
+static void to_code_operation_reg_reg(information *const info, const item_t operation, const item_t fst,
+	const item_t snd, const type_t type)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
@@ -434,7 +435,8 @@ static void to_code_operation_reg_reg(information *const info, const item_t oper
 	uni_printf(info->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_operation_reg_const_i32(information *const info, const item_t operation, const item_t fst, const item_t snd)
+static void to_code_operation_reg_const_i32(information *const info, const item_t operation, const item_t fst,
+	const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
@@ -448,21 +450,24 @@ static void to_code_operation_reg_const_double(information *const info, item_t o
 	uni_printf(info->io, " double %%.%" PRIitem ", %f\n", fst, snd);
 }
 
-static void to_code_operation_const_reg_i32(information *const info, const item_t operation, const item_t fst, const item_t snd)
+static void to_code_operation_const_reg_i32(information *const info, const item_t operation, const item_t fst,
+	const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
 	uni_printf(info->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_operation_const_reg_double(information *const info, item_t operation, double fst, item_t snd)
+static void to_code_operation_const_reg_double(information *const info, item_t operation, const double fst,
+	const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
 	uni_printf(info->io, " double %f, %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_load(information *const info, const item_t result, const item_t displ, type_t type, const int is_array)
+static void to_code_load(information *const info, const item_t result, const item_t displ, const type_t type,
+	const int is_array)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = load ", result);
 	type_to_io(info->io, type);
@@ -471,7 +476,8 @@ static void to_code_load(information *const info, const item_t result, const ite
 	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
-static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, type_t type, const int is_array)
+static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const type_t type,
+	const int is_array)
 {
 	uni_printf(info->io, " store ");
 	type_to_io(info->io, type);
@@ -480,13 +486,15 @@ static inline void to_code_store_reg(information *const info, const item_t reg, 
 	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
-static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ, const int is_array)
+static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ,
+	const int is_array)
 {
 	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%%s.%" PRIitem ", align 4\n"
 		, arg, is_array ? "" : "var", displ);
 }
 
-static inline void to_code_store_const_double(information *const info, double arg, const item_t displ, const int is_array)
+static inline void to_code_store_const_double(information *const info, const double arg, const item_t displ,
+	const int is_array)
 {
 	uni_printf(info->io, " store double %f, double* %%%s.%" PRIitem ", align 4\n", arg, is_array ? "" : "var", displ);
 }
@@ -519,7 +527,7 @@ static inline void to_code_conditional_branch(information *const info)
 		, info->answer_reg, info->label_true, info->label_false);
 }
 
-static void to_code_alloc_array_static(information *const info, const size_t index, type_t type)
+static void to_code_alloc_array_static(information *const info, const size_t index, const type_t type)
 {
 	uni_printf(info->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
 
@@ -537,7 +545,7 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	uni_printf(info->io, ", align 4\n");
 }
 
-static void to_code_alloc_array_dynamic(information *const info, const size_t index, type_t type)
+static void to_code_alloc_array_dynamic(information *const info, const size_t index, const type_t type)
 {
 	// выделение памяти на стеке
 	item_t to_alloc = hash_get_by_index(&info->arrays, index, 1);
@@ -571,7 +579,8 @@ static void to_code_stack_load(information *const info)
 	info->register_num++;
 }
 
-static void to_code_slice(information *const info, const item_t displ, const item_t cur_dimention, const item_t prev_slice, type_t type)
+static void to_code_slice(information *const info, const item_t displ, const item_t cur_dimention,
+	const item_t prev_slice, const type_t type)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
 	const item_t dimentions = hash_get_amount(&info->arrays, displ) - 1;
@@ -1073,7 +1082,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 	info->answer_value_type = operation_type;
-	
+
 	switch (operation)
 	{
 		case INC:
@@ -1183,7 +1192,7 @@ static void unary_operation(information *const info, node *const nd)
 			{
 				to_code_operation_const_reg_i32(info, UNMINUS, 0, info->answer_reg);
 			}
-			else if (operation_type == LNOT) 
+			else if (operation_type == LNOT)
 			{
 				to_code_operation_reg_const_i32(info, LNOT, info->answer_reg, -1);
 			}
