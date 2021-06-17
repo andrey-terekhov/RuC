@@ -814,7 +814,7 @@ static void operand(information *const info, node *const nd)
 			}
 
 			const size_t ref_ident = (size_t)node_get_arg(nd, 0);
-			const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
+			const type_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
 
 			node_set_next(nd); // TCall2
 
@@ -1844,7 +1844,7 @@ static void block(information *const info, node *const nd)
 				}
 
 				const item_t displ = node_get_arg(&id, 0);
-				const item_t elem_type = node_get_arg(&id, 1);
+				const type_t elem_type = node_get_arg(&id, 1);
 				const size_t N = (size_t)node_get_arg(&id, 2);
 				const size_t index = hash_add(&info->arrays, displ, 1 + N);
 				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
@@ -1894,7 +1894,7 @@ static void block(information *const info, node *const nd)
 			case TDeclid:
 			{
 				const item_t displ = node_get_arg(nd, 0);
-				const item_t elem_type = node_get_arg(nd, 1);
+				const type_t elem_type = node_get_arg(nd, 1);
 				const item_t N = node_get_arg(nd, 2);
 				const item_t all = node_get_arg(nd, 3);
 
@@ -1944,7 +1944,7 @@ static int codegen(information *const info)
 			case TFuncdef:
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
-				const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
+				const type_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
 				info->was_dynamic = 0;
 
 				if (ident_get_prev(info->sx, ref_ident) == LMAIN)
