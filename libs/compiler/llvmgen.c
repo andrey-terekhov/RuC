@@ -426,8 +426,8 @@ static void operation_to_io(universal_io *const io, const item_t type)
 	}
 }
 
-static void to_code_operation_reg_reg(information *const info, const item_t operation, const item_t fst,
-	const item_t snd, const type_t type)
+static void to_code_operation_reg_reg(information *const info, const item_t operation, const item_t fst
+	, const item_t snd, const type_t type)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
@@ -436,8 +436,8 @@ static void to_code_operation_reg_reg(information *const info, const item_t oper
 	uni_printf(info->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_operation_reg_const_i32(information *const info, const item_t operation, const item_t fst,
-	const item_t snd)
+static void to_code_operation_reg_const_i32(information *const info, const item_t operation, const item_t fst
+	, const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
@@ -451,24 +451,24 @@ static void to_code_operation_reg_const_double(information *const info, item_t o
 	uni_printf(info->io, " double %%.%" PRIitem ", %f\n", fst, snd);
 }
 
-static void to_code_operation_const_reg_i32(information *const info, const item_t operation, const item_t fst,
-	const item_t snd)
+static void to_code_operation_const_reg_i32(information *const info, const item_t operation, const item_t fst
+	, const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
 	uni_printf(info->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_operation_const_reg_double(information *const info, item_t operation, const double fst,
-	const item_t snd)
+static void to_code_operation_const_reg_double(information *const info, item_t operation, const double fst
+	, const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
 	uni_printf(info->io, " double %f, %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_load(information *const info, const item_t result, const item_t displ, const type_t type,
-	const int is_array)
+static void to_code_load(information *const info, const item_t result, const item_t displ, const type_t type
+	, const int is_array)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = load ", result);
 	type_to_io(info->io, type);
@@ -477,8 +477,8 @@ static void to_code_load(information *const info, const item_t result, const ite
 	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
-static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const type_t type,
-	const int is_array)
+static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const type_t type
+	, const int is_array)
 {
 	uni_printf(info->io, " store ");
 	type_to_io(info->io, type);
@@ -487,15 +487,15 @@ static inline void to_code_store_reg(information *const info, const item_t reg, 
 	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
-static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ,
-	const int is_array)
+static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ
+	, const int is_array)
 {
 	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%%s.%" PRIitem ", align 4\n"
 		, arg, is_array ? "" : "var", displ);
 }
 
-static inline void to_code_store_const_double(information *const info, const double arg, const item_t displ,
-	const int is_array)
+static inline void to_code_store_const_double(information *const info, const double arg, const item_t displ
+	, const int is_array)
 {
 	uni_printf(info->io, " store double %f, double* %%%s.%" PRIitem ", align 4\n", arg, is_array ? "" : "var", displ);
 }
@@ -882,7 +882,8 @@ static void assignment_expression(information *const info, node *const nd)
 	item_t result = info->answer_reg;
 
 	if (assignment_type != ASS && assignment_type != ASSV && assignment_type != ASSR && assignment_type != ASSRV
-		&& assignment_type != ASSAT && assignment_type != ASSATV && assignment_type != ASSATR && assignment_type != ASSATRV)
+		&& assignment_type != ASSAT && assignment_type != ASSATV &&
+		assignment_type != ASSATR && assignment_type != ASSATRV)
 	{
 		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
 		info->register_num++;
@@ -898,8 +899,8 @@ static void assignment_expression(information *const info, node *const nd)
 		}
 		else
 		{
-			to_code_operation_reg_const_double(info, assignment_type, info->register_num - 1,
-				info->answer_const_double);
+			to_code_operation_reg_const_double(info, assignment_type, info->register_num - 1
+				, info->answer_const_double);
 		}
 
 		result = info->register_num++;
@@ -1076,7 +1077,8 @@ static void inc_dec_expression(information *const info, node *const nd)
 	operand(info, nd); // Tident or TSliceident
 	const item_t memory_reg = info->answer_reg;
 
-	to_code_load(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type, is_array_operation(operation));
+	to_code_load(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type
+		, is_array_operation(operation));
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 	info->answer_value_type = operation_type;
@@ -1128,7 +1130,8 @@ static void inc_dec_expression(information *const info, node *const nd)
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type, is_array_operation(operation));
+	to_code_store_reg(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type
+		, is_array_operation(operation));
 	info->register_num++;
 }
 
