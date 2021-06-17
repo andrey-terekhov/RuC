@@ -73,16 +73,20 @@ static node node_search_parent(const node *const nd, size_t *const number)
 		return node_broken();
 	}
 
-	*number = 1;
+	size_t child_number = 1;
 	item_t index = vector_get(nd->tree, ref_get_next(nd));
 	while (!is_negative(index) && index != 0)
 	{
 		index = vector_get(nd->tree, (size_t)index - 2);
-		(*number)++;
+		child_number++;
 	}
 
 	node parent = { nd->tree, (size_t)(~index + 1) };
-	*number = node_get_amount(&parent) - *number;
+	if (number != NULL)
+	{
+		*number = node_get_amount(&parent) - child_number;
+	}
+
 	return parent;
 }
 
@@ -314,37 +318,36 @@ int node_order(const node *const fst, const node *const snd)
 int node_swap(const node *const fst, const node *const snd)
 {
 	size_t fst_index = 0;
-	node fst_prev = node_search_parent(fst, &fst_index);
+	const node fst_parent = node_search_parent(fst, &fst_index);
 
 	size_t snd_index = 0;
-	node snd_prev = node_search_parent(snd, &snd_index);
+	const node snd_parent = node_search_parent(snd, &snd_index);
 
-	if (!node_is_correct(&fst_prev) || !node_is_correct(&snd_prev) || fst->tree != snd->tree)
+	if (!node_is_correct(&fst_parent) || !node_is_correct(&snd_parent) || fst->tree != snd->tree)
 	{
 		return -1;
 	}
 
 	vector *const tree = fst->tree;
-	size_t reference;
-
-	if (fst_index == 0)
+	if (fst_index == 0 && snd_index == 0)
 	{
-		reference = ref_get_children(&fst_prev);
+		vector_swap(tree, ref_get_children(&fst_parent), ref_get_children(&snd_parent));
 	}
-	else
+	else if (fst_index == 0)	// && snd_index != 0
 	{
-		fst_prev = node_get_child(&fst_prev, fst_index - 1);
-		reference = ref_get_next(&fst_prev);
+		const node snd_prev = node_get_child(&snd_parent, snd_index - 1);
+		vector_swap(tree, ref_get_children(&fst_parent), ref_get_next(&snd_prev));
 	}
-
-	if (snd_index == 0)
+	else if (snd_index == 0)	// && fst_index != 0
 	{
-		vector_swap(tree, reference, ref_get_children(&snd_prev));
+		const node fst_prev = node_get_child(&fst_parent, fst_index - 1);
+		vector_swap(tree, ref_get_next(&fst_prev), ref_get_children(&snd_parent));
 	}
-	else
+	else						// fst_index != 0 && snd_index != 0
 	{
-		snd_prev = node_get_child(&snd_prev, snd_index - 1);
-		vector_swap(tree, reference, ref_get_next(&snd_prev));
+		const node fst_prev = node_get_child(&fst_parent, fst_index - 1);
+		const node snd_prev = node_get_child(&snd_parent, snd_index - 1);
+		vector_swap(tree, ref_get_next(&fst_prev), ref_get_next(&snd_prev));
 	}
 
 	vector_swap(tree, ref_get_next(fst), ref_get_next(snd));
