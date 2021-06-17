@@ -19,9 +19,6 @@
 #include "vector.h"
 
 
-//#define BUFFERING
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif

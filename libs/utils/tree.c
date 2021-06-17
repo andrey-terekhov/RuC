@@ -65,23 +65,6 @@ static inline node node_broken()
 	return nd;
 }
 
-static void node_update(const node *const nd)
-{
-	node last = *nd;
-	while (node_get_amount(&last) != 0)
-	{
-		last = node_get_child(&last, node_get_amount(&last) - 1);
-	}
-
-	item_t index = vector_get(nd->tree, ref_get_next(nd));
-	while (is_negative(index))
-	{
-		// Get next reference from parent
-		index = vector_get(nd->tree, (size_t)(~index + 1) - 2);
-	}
-
-	ref_set_children(&last, index);
-}
 
 static int node_displ(node *fst, const size_t fst_index, node *snd, const size_t snd_index)
 {
@@ -90,11 +73,6 @@ static int node_displ(node *fst, const size_t fst_index, node *snd, const size_t
 	{
 		return -1;
 	}
-
-#ifdef BUFFERING
-	node fst_child = node_get_child(fst, fst_index - 1);
-	node snd_child = node_get_child(snd, snd_index - 1);
-#endif
 
 	vector *const tree = fst->tree;
 	size_t reference;
@@ -125,19 +103,6 @@ static int node_displ(node *fst, const size_t fst_index, node *snd, const size_t
 	}
 
 	vector_swap(tree, ref_get_next(fst), ref_get_next(snd));
-
-#ifdef BUFFERING
-	if (fst_index != 0)
-	{
-		node_update(&fst_child);
-	}
-
-	if (snd_index != 0)
-	{
-		node_update(&snd_child);
-	}
-#endif
-
 	return 0;
 }
 
@@ -234,7 +199,6 @@ node node_get_next(const node *const nd)
 
 	node next = { nd->tree, (size_t)vector_get(nd->tree, ref_get_children(nd)) };
 
-#ifndef BUFFERING
 	if (node_get_amount(nd) == 0)
 	{
 		item_t index = vector_get(nd->tree, ref_get_next(nd));
@@ -246,7 +210,6 @@ node node_get_next(const node *const nd)
 
 		next.index = (size_t)index;
 	}
-#endif
 
 	return next.index != 0 ? next : node_broken();
 }
@@ -288,15 +251,7 @@ node node_add_child(const node *const nd, const item_t type)
 	{
 		node prev = node_get_child(nd, amount - 1);
 		ref_set_next(&prev, child.index);
-
-#ifdef BUFFERING
-		node_update(&prev);
-#endif
 	}
-
-#ifdef BUFFERING
-	node_update(&child);
-#endif
 
 	return child;
 }
@@ -330,13 +285,7 @@ int node_add_arg(const node *const nd, const item_t arg)
 
 	ref_set_amount(nd, arg);
 
-#ifdef BUFFERING
-	vector_add(nd->tree, vector_get(nd->tree, ref_get_children(nd)));
-	ref_set_children(nd, 0);
-#else
 	vector_add(nd->tree, 0);
-#endif
-
 	vector_set(nd->tree, nd->index, vector_get(nd->tree, nd->index) + 1);
 	return 0;
 }
@@ -394,11 +343,6 @@ int node_order(const node *const fst, const size_t fst_index, const node *const 
 	vector_swap(fst->tree, ref_get_amount(&fst_child), ref_get_amount(&snd_child));
 	vector_swap(fst->tree, ref_get_children(&fst_child), ref_get_children(&snd_child));
 
-#ifdef BUFFERING
-	node_update(&fst_child);
-	node_update(&snd_child);
-#endif
-
 	return 0;
 }
 
@@ -407,17 +351,7 @@ int node_swap(const node *const fst, const size_t fst_index, const node *const s
 	node fst_child = *fst;
 	node snd_child = *snd;
 
-	if (node_displ(&fst_child, fst_index, &snd_child, snd_index))
-	{
-		return -1;
-	}
-
-#ifdef BUFFERING
-	node_update(&fst_child);
-	node_update(&snd_child);
-#endif
-
-	return 0;
+	return node_displ(&fst_child, fst_index, &snd_child, snd_index);
 }
 
 int node_remove(const node *const nd, const size_t index)
@@ -437,22 +371,12 @@ int node_remove(const node *const nd, const size_t index)
 		{
 			ref_set_children(nd, vector_get(nd->tree, ref_get_next(&child)));
 		}
-#ifdef BUFFERING
-		else
-		{
-			node_update(nd);
-		}
-#endif
 	}
 	else
 	{
 		child = node_get_child(nd, index - 1);
 		const size_t reference = (size_t)vector_get(nd->tree, ref_get_next(&child));
 		ref_set_next(&child, vector_get(nd->tree, reference - 2));
-
-#ifdef BUFFERING
-		node_update(&child);
-#endif
 
 		child.index = reference;
 		ref_set_amount(nd, (item_t)node_get_amount(nd) - 1);
