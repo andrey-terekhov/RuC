@@ -764,7 +764,8 @@ static void operand(information *const info, node *const nd)
 				}
 				else // if (info->answer_type == AREG)
 				{
-					to_code_operation_reg_reg(info, LMULT, info->answer_reg, hash_get(&info->arrays, displ, 2), mode_integer);
+					to_code_operation_reg_reg(info, LMULT, info->answer_reg, hash_get(&info->arrays, displ, 2),
+						mode_integer);
 				}
 
 				info->answer_type = AREG;
@@ -897,9 +898,10 @@ static void assignment_expression(information *const info, node *const nd)
 		}
 		else
 		{
-			to_code_operation_reg_const_double(info, assignment_type, info->register_num - 1, info->answer_const_double);
+			to_code_operation_reg_const_double(info, assignment_type, info->register_num - 1,
+				info->answer_const_double);
 		}
-	
+
 		result = info->register_num++;
 		info->answer_type = AREG;
 	}
