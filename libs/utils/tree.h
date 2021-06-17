@@ -213,14 +213,13 @@ EXPORTED int node_order(const node *const fst, const node *const snd);
 EXPORTED int node_swap(const node *const fst, const node *const snd);
 
 /**
- *	Remove child node by index
+ *	Remove node from tree
  *
- *	@param	nd			Parrent node
- *	@param	index		Child number
+ *	@param	nd			Node structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int node_remove(const node *const nd, const size_t index);
+EXPORTED int node_remove(node *const nd);
 
 /**
  *	Check that node is correct
