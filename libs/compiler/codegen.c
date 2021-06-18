@@ -185,7 +185,7 @@ static void final_operation(virtual *const vm, node *const nd)
  *	Expression generation
  *
  *	@param	vm		Virtual machine environment
- *	@param	kind	@c -1 for expression on the same node,
+ *	@param	mode	@c -1 for expression on the same node,
  *					@c  0 for usual expression,
  *					@c  1 for expression in condition
  */
