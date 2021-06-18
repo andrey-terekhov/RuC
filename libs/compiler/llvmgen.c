@@ -96,25 +96,25 @@ static int is_double(const item_t operation)
 	{
 		case OP_ASSIGN_R:
 		case OP_ADD_ASSIGN_R:
-		case MINUSASSR:
+		case OP_SUB_ASSIGN_R:
 		case OP_MUL_ASSIGN_R:
 		case OP_DIV_ASSIGN_R:
 
 		case OP_ASSIGN_AT_R:
 		case OP_ADD_ASSIGN_AT_R:
-		case MINUSASSATR:
+		case OP_SUB_ASSIGN_AT_R:
 		case OP_MUL_ASSIGN_AT_R:
 		case OP_DIV_ASSIGN_AT_R:
 
 		case OP_ASSIGN_R_V:
 		case OP_ADD_ASSIGN_R_V:
-		case MINUSASSRV:
+		case OP_SUB_ASSIGN_R_V:
 		case OP_MUL_ASSIGN_R_V:
 		case OP_DIV_ASSIGN_R_V:
 
 		case OP_ASSIGN_AT_R_V:
 		case OP_ADD_ASSIGN_AT_R_V:
-		case MINUSASSATRV:
+		case OP_SUB_ASSIGN_AT_R_V:
 		case OP_MUL_ASSIGN_AT_R_V:
 		case OP_DIV_ASSIGN_AT_R_V:
 
@@ -176,41 +176,41 @@ static int is_array_operation(const item_t operation)
 		case OP_PRE_INC_AT_R_V:
 		case OP_PRE_DEC_AT_R_V:
 
-		case REMASSAT:
-		case SHLASSAT:
-		case SHRASSAT:
-		case ANDASSAT:
-		case EXORASSAT:
-		case ORASSAT:
+		case OP_REM_ASSIGN_AT:
+		case OP_SHL_ASSIGN_AT:
+		case OP_SHR_ASSIGN_AT:
+		case OP_AND_ASSIGN_AT:
+		case OP_XOR_ASSIGN_AT:
+		case OP_OR_ASSIGN_AT:
 
 		case OP_ASSIGN_AT:
 		case OP_ADD_ASSIGN_AT:
-		case MINUSASSAT:
+		case OP_SUB_ASSIGN_AT:
 		case OP_MUL_ASSIGN_AT:
 		case OP_DIV_ASSIGN_AT:
 
-		case REMASSATV:
-		case SHLASSATV:
-		case SHRASSATV:
-		case ANDASSATV:
-		case EXORASSATV:
-		case ORASSATV:
+		case OP_REM_ASSIGN_AT_V:
+		case OP_SHL_ASSIGN_AT_V:
+		case OP_SHR_ASSIGN_AT_V:
+		case OP_AND_ASSIGN_AT_V:
+		case OP_XOR_ASSIGN_AT_V:
+		case OP_OR_ASSIGN_AT_V:
 
 		case OP_ASSIGN_AT_V:
 		case OP_ADD_ASSIGN_AT_V:
-		case MINUSASSATV:
+		case OP_SUB_ASSIGN_AT_V:
 		case OP_MUL_ASSIGN_AT_V:
 		case OP_DIV_ASSIGN_AT_V:
 
 		case OP_ASSIGN_AT_R:
 		case OP_ADD_ASSIGN_AT_R:
-		case MINUSASSATR:
+		case OP_SUB_ASSIGN_AT_R:
 		case OP_MUL_ASSIGN_AT_R:
 		case OP_DIV_ASSIGN_AT_R:
 
 		case OP_ASSIGN_AT_R_V:
 		case OP_ADD_ASSIGN_AT_R_V:
-		case MINUSASSATRV:
+		case OP_SUB_ASSIGN_AT_R_V:
 		case OP_MUL_ASSIGN_AT_R_V:
 		case OP_DIV_ASSIGN_AT_R_V:
 		return 1;
@@ -260,12 +260,12 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case OP_PRE_DEC_V:
 		case OP_POST_DEC:
 		case OP_POST_DEC_V:
-		case MINUSASS:
-		case MINUSASSV:
+		case OP_SUB_ASSIGN:
+		case OP_SUB_ASSIGN_V:
 		case OP_SUB:
 		case OP_UNMINUS:
-		case MINUSASSAT:
-		case MINUSASSATV:
+		case OP_SUB_ASSIGN_AT:
+		case OP_SUB_ASSIGN_AT_V:
 		case OP_PRE_DEC_AT:
 		case OP_PRE_DEC_AT_V:
 		case OP_POST_DEC_AT:
@@ -289,52 +289,52 @@ static void operation_to_io(universal_io *const io, const item_t type)
 			uni_printf(io, "sdiv");
 			break;
 
-		case REMASS:
-		case REMASSV:
+		case OP_REM_ASSIGN:
+		case OP_REM_ASSIGN_V:
 		case OP_REM:
-		case REMASSAT:
-		case REMASSATV:
+		case OP_REM_ASSIGN_AT:
+		case OP_REM_ASSIGN_AT_V:
 			uni_printf(io, "srem");
 			break;
 
-		case SHLASS:
-		case SHLASSV:
+		case OP_SHL_ASSIGN:
+		case OP_SHL_ASSIGN_V:
 		case OP_SHL:
-		case SHLASSAT:
-		case SHLASSATV:
+		case OP_SHL_ASSIGN_AT:
+		case OP_SHL_ASSIGN_AT_V:
 			uni_printf(io, "shl");
 			break;
 
-		case SHRASS:
-		case SHRASSV:
+		case OP_SHR_ASSIGN:
+		case OP_SHR_ASSIGN_V:
 		case OP_SHR:
-		case SHRASSAT:
-		case SHRASSATV:
+		case OP_SHR_ASSIGN_AT:
+		case OP_SHR_ASSIGN_AT_V:
 			uni_printf(io, "ashr");
 			break;
 
-		case ANDASS:
-		case ANDASSV:
+		case OP_AND_ASSIGN:
+		case OP_AND_ASSIGN_V:
 		case OP_AND:
-		case ANDASSAT:
-		case ANDASSATV:
+		case OP_AND_ASSIGN_AT:
+		case OP_AND_ASSIGN_AT_V:
 			uni_printf(io, "and");
 			break;
 
-		case EXORASS:
-		case EXORASSV:
+		case OP_XOR_ASSIGN:
+		case OP_XOR_ASSIGN_V:
 		case OP_XOR:
 		case OP_NOT:
-		case EXORASSAT:
-		case EXORASSATV:
+		case OP_XOR_ASSIGN_AT:
+		case OP_XOR_ASSIGN_AT_V:
 			uni_printf(io, "xor");
 			break;
 
-		case ORASS:
-		case ORASSV:
+		case OP_OR_ASSIGN:
+		case OP_OR_ASSIGN_V:
 		case OP_OR:
-		case ORASSAT:
-		case ORASSATV:
+		case OP_OR_ASSIGN_AT:
+		case OP_OR_ASSIGN_AT_V:
 			uni_printf(io, "or");
 			break;
 
@@ -377,12 +377,12 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case OP_PRE_DEC_R_V:
 		case OP_POST_DEC_R:
 		case OP_POST_DEC_R_V:
-		case MINUSASSR:
-		case MINUSASSRV:
+		case OP_SUB_ASSIGN_R:
+		case OP_SUB_ASSIGN_R_V:
 		case OP_SUB_R:
 		case OP_UNMINUS_R:
-		case MINUSASSATR:
-		case MINUSASSATRV:
+		case OP_SUB_ASSIGN_AT_R:
+		case OP_SUB_ASSIGN_AT_R_V:
 		case OP_PRE_DEC_AT_R:
 		case OP_PRE_DEC_AT_R_V:
 		case OP_POST_DEC_AT_R:
@@ -670,7 +670,7 @@ static void check_type_and_branch(information *const info)
 
 static void operand(information *const info, node *const nd)
 {
-	if (node_get_type(nd) == OP_NOP || node_get_type(nd) == ADLOGOR || node_get_type(nd) == ADLOGAND)
+	if (node_get_type(nd) == OP_NOP || node_get_type(nd) == OP_AD_LOG_OR || node_get_type(nd) == OP_AD_LOG_AND)
 	{
 		node_set_next(nd);
 	}
@@ -1236,33 +1236,33 @@ static void binary_operation(information *const info, node *const nd)
 
 		case OP_ADD_ASSIGN:
 		case OP_ADD_ASSIGN_V:
-		case MINUSASS:
-		case MINUSASSV:
+		case OP_SUB_ASSIGN:
+		case OP_SUB_ASSIGN_V:
 		case OP_MUL_ASSIGN:
 		case OP_MUL_ASSIGN_V:
 		case OP_DIV_ASSIGN:
 		case OP_DIV_ASSIGN_V:
 
-		case REMASS:
-		case REMASSV:
-		case SHLASS:
-		case SHLASSV:
-		case SHRASS:
-		case SHRASSV:
-		case ANDASS:
-		case ANDASSV:
-		case EXORASS:
-		case EXORASSV:
-		case ORASS:
-		case ORASSV:
+		case OP_REM_ASSIGN:
+		case OP_REM_ASSIGN_V:
+		case OP_SHL_ASSIGN:
+		case OP_SHL_ASSIGN_V:
+		case OP_SHR_ASSIGN:
+		case OP_SHR_ASSIGN_V:
+		case OP_AND_ASSIGN:
+		case OP_AND_ASSIGN_V:
+		case OP_XOR_ASSIGN:
+		case OP_XOR_ASSIGN_V:
+		case OP_OR_ASSIGN:
+		case OP_OR_ASSIGN_V:
 
 		case OP_ASSIGN_R:
 		case OP_ASSIGN_R_V:
 
 		case OP_ADD_ASSIGN_R:
 		case OP_ADD_ASSIGN_R_V:
-		case MINUSASSR:
-		case MINUSASSRV:
+		case OP_SUB_ASSIGN_R:
+		case OP_SUB_ASSIGN_R_V:
 		case OP_MUL_ASSIGN_R:
 		case OP_MUL_ASSIGN_R_V:
 		case OP_DIV_ASSIGN_R:
@@ -1270,25 +1270,25 @@ static void binary_operation(information *const info, node *const nd)
 
 		case OP_ASSIGN_AT:
 		case OP_ADD_ASSIGN_AT:
-		case MINUSASSAT:
+		case OP_SUB_ASSIGN_AT:
 		case OP_MUL_ASSIGN_AT:
 		case OP_DIV_ASSIGN_AT:
 
 		case OP_ASSIGN_AT_V:
 		case OP_ADD_ASSIGN_AT_V:
-		case MINUSASSATV:
+		case OP_SUB_ASSIGN_AT_V:
 		case OP_MUL_ASSIGN_AT_V:
 		case OP_DIV_ASSIGN_AT_V:
 
 		case OP_ASSIGN_AT_R:
 		case OP_ADD_ASSIGN_AT_R:
-		case MINUSASSATR:
+		case OP_SUB_ASSIGN_AT_R:
 		case OP_MUL_ASSIGN_AT_R:
 		case OP_DIV_ASSIGN_AT_R:
 
 		case OP_ASSIGN_AT_R_V:
 		case OP_ADD_ASSIGN_AT_R_V:
-		case MINUSASSATRV:
+		case OP_SUB_ASSIGN_AT_R_V:
 		case OP_MUL_ASSIGN_AT_R_V:
 		case OP_DIV_ASSIGN_AT_R_V:
 			assignment_expression(info, nd);
@@ -1425,55 +1425,55 @@ static void expression(information *const info, node *const nd)
 			break;
 
 
-		case REMASS:
-		case SHLASS:
-		case SHRASS:
-		case ANDASS:
-		case EXORASS:
-		case ORASS:
+		case OP_REM_ASSIGN:
+		case OP_SHL_ASSIGN:
+		case OP_SHR_ASSIGN:
+		case OP_AND_ASSIGN:
+		case OP_XOR_ASSIGN:
+		case OP_OR_ASSIGN:
 
 		case OP_ASSIGN:
 		case OP_ADD_ASSIGN:
-		case MINUSASS:
+		case OP_SUB_ASSIGN:
 		case OP_MUL_ASSIGN:
 		case OP_DIV_ASSIGN:
 
-		case REMASSAT:
-		case SHLASSAT:
-		case SHRASSAT:
-		case ANDASSAT:
-		case EXORASSAT:
-		case ORASSAT:
+		case OP_REM_ASSIGN_AT:
+		case OP_SHL_ASSIGN_AT:
+		case OP_SHR_ASSIGN_AT:
+		case OP_AND_ASSIGN_AT:
+		case OP_XOR_ASSIGN_AT:
+		case OP_OR_ASSIGN_AT:
 
 		case OP_ASSIGN_AT:
 		case OP_ADD_ASSIGN_AT:
-		case MINUSASSAT:
+		case OP_SUB_ASSIGN_AT:
 		case OP_MUL_ASSIGN_AT:
 		case OP_DIV_ASSIGN_AT:
 
-		case REMASSV:
-		case SHLASSV:
-		case SHRASSV:
-		case ANDASSV:
-		case EXORASSV:
-		case ORASSV:
+		case OP_REM_ASSIGN_V:
+		case OP_SHL_ASSIGN_V:
+		case OP_SHR_ASSIGN_V:
+		case OP_AND_ASSIGN_V:
+		case OP_XOR_ASSIGN_V:
+		case OP_OR_ASSIGN_V:
 
 		case OP_ASSIGN_V:
 		case OP_ADD_ASSIGN_V:
-		case MINUSASSV:
+		case OP_SUB_ASSIGN_V:
 		case OP_MUL_ASSIGN_V:
 		case OP_DIV_ASSIGN_V:
 
-		case REMASSATV:
-		case SHLASSATV:
-		case SHRASSATV:
-		case ANDASSATV:
-		case EXORASSATV:
-		case ORASSATV:
+		case OP_REM_ASSIGN_AT_V:
+		case OP_SHL_ASSIGN_AT_V:
+		case OP_SHR_ASSIGN_AT_V:
+		case OP_AND_ASSIGN_AT_V:
+		case OP_XOR_ASSIGN_AT_V:
+		case OP_OR_ASSIGN_AT_V:
 
 		case OP_ASSIGN_AT_V:
 		case OP_ADD_ASSIGN_AT_V:
-		case MINUSASSATV:
+		case OP_SUB_ASSIGN_AT_V:
 		case OP_MUL_ASSIGN_AT_V:
 		case OP_DIV_ASSIGN_AT_V:
 
@@ -1499,25 +1499,25 @@ static void expression(information *const info, node *const nd)
 
 		case OP_ASSIGN_R:
 		case OP_ADD_ASSIGN_R:
-		case MINUSASSR:
+		case OP_SUB_ASSIGN_R:
 		case OP_MUL_ASSIGN_R:
 		case OP_DIV_ASSIGN_R:
 
 		case OP_ASSIGN_AT_R:
 		case OP_ADD_ASSIGN_AT_R:
-		case MINUSASSATR:
+		case OP_SUB_ASSIGN_AT_R:
 		case OP_MUL_ASSIGN_AT_R:
 		case OP_DIV_ASSIGN_AT_R:
 
 		case OP_ASSIGN_R_V:
 		case OP_ADD_ASSIGN_R_V:
-		case MINUSASSRV:
+		case OP_SUB_ASSIGN_R_V:
 		case OP_MUL_ASSIGN_R_V:
 		case OP_DIV_ASSIGN_R_V:
 
 		case OP_ASSIGN_AT_R_V:
 		case OP_ADD_ASSIGN_AT_R_V:
-		case MINUSASSATRV:
+		case OP_SUB_ASSIGN_AT_R_V:
 		case OP_MUL_ASSIGN_AT_R_V:
 		case OP_DIV_ASSIGN_AT_R_V:
 

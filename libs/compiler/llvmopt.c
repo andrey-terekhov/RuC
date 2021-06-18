@@ -168,55 +168,55 @@ static expression_t expression_type(node *const nd)
 			return UNARY_OPERATION;
 
 
-		case REMASS:
-		case SHLASS:
-		case SHRASS:
-		case ANDASS:
-		case EXORASS:
-		case ORASS:
+		case OP_REM_ASSIGN:
+		case OP_SHL_ASSIGN:
+		case OP_SHR_ASSIGN:
+		case OP_AND_ASSIGN:
+		case OP_XOR_ASSIGN:
+		case OP_OR_ASSIGN:
 
 		case OP_ASSIGN:
 		case OP_ADD_ASSIGN:
-		case MINUSASS:
+		case OP_SUB_ASSIGN:
 		case OP_MUL_ASSIGN:
 		case OP_DIV_ASSIGN:
 
-		case REMASSAT:
-		case SHLASSAT:
-		case SHRASSAT:
-		case ANDASSAT:
-		case EXORASSAT:
-		case ORASSAT:
+		case OP_REM_ASSIGN_AT:
+		case OP_SHL_ASSIGN_AT:
+		case OP_SHR_ASSIGN_AT:
+		case OP_AND_ASSIGN_AT:
+		case OP_XOR_ASSIGN_AT:
+		case OP_OR_ASSIGN_AT:
 
 		case OP_ASSIGN_AT:
 		case OP_ADD_ASSIGN_AT:
-		case MINUSASSAT:
+		case OP_SUB_ASSIGN_AT:
 		case OP_MUL_ASSIGN_AT:
 		case OP_DIV_ASSIGN_AT:
 
-		case REMASSV:
-		case SHLASSV:
-		case SHRASSV:
-		case ANDASSV:
-		case EXORASSV:
-		case ORASSV:
+		case OP_REM_ASSIGN_V:
+		case OP_SHL_ASSIGN_V:
+		case OP_SHR_ASSIGN_V:
+		case OP_AND_ASSIGN_V:
+		case OP_XOR_ASSIGN_V:
+		case OP_OR_ASSIGN_V:
 
 		case OP_ASSIGN_V:
 		case OP_ADD_ASSIGN_V:
-		case MINUSASSV:
+		case OP_SUB_ASSIGN_V:
 		case OP_MUL_ASSIGN_V:
 		case OP_DIV_ASSIGN_V:
 
-		case REMASSATV:
-		case SHLASSATV:
-		case SHRASSATV:
-		case ANDASSATV:
-		case EXORASSATV:
-		case ORASSATV:
+		case OP_REM_ASSIGN_AT_V:
+		case OP_SHL_ASSIGN_AT_V:
+		case OP_SHR_ASSIGN_AT_V:
+		case OP_AND_ASSIGN_AT_V:
+		case OP_XOR_ASSIGN_AT_V:
+		case OP_OR_ASSIGN_AT_V:
 
 		case OP_ASSIGN_AT_V:
 		case OP_ADD_ASSIGN_AT_V:
-		case MINUSASSATV:
+		case OP_SUB_ASSIGN_AT_V:
 		case OP_MUL_ASSIGN_AT_V:
 		case OP_DIV_ASSIGN_AT_V:
 
@@ -242,25 +242,25 @@ static expression_t expression_type(node *const nd)
 
 		case OP_ASSIGN_R:
 		case OP_ADD_ASSIGN_R:
-		case MINUSASSR:
+		case OP_SUB_ASSIGN_R:
 		case OP_MUL_ASSIGN_R:
 		case OP_DIV_ASSIGN_R:
 
 		case OP_ASSIGN_AT_R:
 		case OP_ADD_ASSIGN_AT_R:
-		case MINUSASSATR:
+		case OP_SUB_ASSIGN_AT_R:
 		case OP_MUL_ASSIGN_AT_R:
 		case OP_DIV_ASSIGN_AT_R:
 
 		case OP_ASSIGN_R_V:
 		case OP_ADD_ASSIGN_R_V:
-		case MINUSASSRV:
+		case OP_SUB_ASSIGN_R_V:
 		case OP_MUL_ASSIGN_R_V:
 		case OP_DIV_ASSIGN_R_V:
 
 		case OP_ASSIGN_AT_R_V:
 		case OP_ADD_ASSIGN_AT_R_V:
-		case MINUSASSATRV:
+		case OP_SUB_ASSIGN_AT_R_V:
 		case OP_MUL_ASSIGN_AT_R_V:
 		case OP_DIV_ASSIGN_AT_R_V:
 
@@ -445,7 +445,7 @@ static int node_recursive(information *const info, node *const nd)
 						has_error |= transposition(second, &nd_info);
 
 						// надо переставить second с родителем
-						if (node_get_type(second->parent) == ADLOGOR || node_get_type(second->parent) == ADLOGAND
+						if (node_get_type(second->parent) == OP_AD_LOG_OR || node_get_type(second->parent) == OP_AD_LOG_AND
 							|| node_get_type(second->parent) == TAddrtoval)
 						{
 							node_info log_info = { second->parent, 1, 1 };
