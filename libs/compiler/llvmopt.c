@@ -35,7 +35,7 @@ typedef enum EXPRESSION
 
 typedef struct node_info
 {
-	node *parent;										/**< Родитель узла */ 
+	node *parent;										/**< Родитель узла */
 	size_t child;										/**< Номер ребёнка, которым является узел */
 	size_t depth;										/**< Количество узлов после данного узла при перестановке */
 } node_info;
@@ -309,7 +309,7 @@ static int node_recursive(information *const info, node *const nd)
 				uni_printf(info->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
 					, info->string_num++, N + 1);
 
-				for (size_t j = 0; j < N; j++) 
+				for (size_t j = 0; j < N; j++)
 				{
 					const char ch = (char)node_get_arg(&child, j + 1);
 					if (ch == '\n')
@@ -334,8 +334,9 @@ static int node_recursive(information *const info, node *const nd)
 
 					node child_to_swap = node_get_child(nd, i - j);
 					// TODO: пока только для двумерных вырезок, потом надо подумать
-					if (node_get_type(&child_to_swap) == TIdenttovald || 
-						(node_get_type(&child_to_swap) == TSliceident && (node_get_arg(&child_to_swap, 1) == mode_float || 
+					if (node_get_type(&child_to_swap) == TIdenttovald ||
+						(node_get_type(&child_to_swap) == TSliceident &&
+						(node_get_arg(&child_to_swap, 1) == mode_float ||
 						mode_get(info->sx, node_get_arg(&child_to_swap, 1) + 1) == mode_float)))
 					{
 						N--;
