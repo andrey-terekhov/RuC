@@ -23,7 +23,7 @@
 static const size_t REPRESENTATIONS_SIZE = 10000;
 static const size_t IDENTIFIERS_SIZE = 10000;
 static const size_t FUNCTIONS_SIZE = 100;
-static const size_t MODES_SIZE = 1000;
+static const size_t TYPES_SIZE = 1000;
 static const size_t TREE_SIZE = 10000;
 
 
@@ -123,37 +123,37 @@ static inline void repr_init(map *const reprtab)
 }
 
 
-static inline void mode_init(syntax *const sx)
+static inline void type_init(syntax *const sx)
 {
-	vector_increase(&sx->modes, 1);
-	// занесение в modetab описателя struct {int numTh; int inf; }
-	vector_add(&sx->modes, 0);
-	vector_add(&sx->modes, mode_struct);
-	vector_add(&sx->modes, 2);
-	vector_add(&sx->modes, 4);
-	vector_add(&sx->modes, mode_integer);
-	vector_add(&sx->modes, (item_t)map_reserve(&sx->representations, "numTh"));
-	vector_add(&sx->modes, mode_integer);
-	vector_add(&sx->modes, (item_t)map_reserve(&sx->representations, "data"));
+	vector_increase(&sx->types, 1);
+	// занесение в types описателя struct {int numTh; int inf; }
+	vector_add(&sx->types, 0);
+	vector_add(&sx->types, type_struct);
+	vector_add(&sx->types, 2);
+	vector_add(&sx->types, 4);
+	vector_add(&sx->types, type_integer);
+	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "numTh"));
+	vector_add(&sx->types, type_integer);
+	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "data"));
 
-	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
-	vector_add(&sx->modes, 1);
-	vector_add(&sx->modes, mode_function);
-	vector_add(&sx->modes, mode_void);
-	vector_add(&sx->modes, 1);
-	vector_add(&sx->modes, 2);
+	// занесение в types описателя функции void t_msg_send(struct msg_info m)
+	vector_add(&sx->types, 1);
+	vector_add(&sx->types, type_function);
+	vector_add(&sx->types, type_void);
+	vector_add(&sx->types, 1);
+	vector_add(&sx->types, 2);
 
-	// занесение в modetab описателя функции void* interpreter(void* n)
-	vector_add(&sx->modes, 9);
-	vector_add(&sx->modes, mode_function);
-	vector_add(&sx->modes, mode_void_pointer);
-	vector_add(&sx->modes, 1);
-	vector_add(&sx->modes, mode_void_pointer);
+	// занесение в types описателя функции void* interpreter(void* n)
+	vector_add(&sx->types, 9);
+	vector_add(&sx->types, type_function);
+	vector_add(&sx->types, type_void_pointer);
+	vector_add(&sx->types, 1);
+	vector_add(&sx->types, type_void_pointer);
 
-	sx->start_mode = 14;
+	sx->start_type = 14;
 }
 
-static inline item_t get_static(syntax *const sx, const item_t type)
+static inline item_t get_static(syntax *const sx, const type_t type)
 {
 	const item_t old_displ = sx->displ;
 	sx->displ += sx->lg * size_of(sx, type);
@@ -170,26 +170,26 @@ static inline item_t get_static(syntax *const sx, const item_t type)
 	return old_displ;
 }
 
-/**	Check if modes are equal */
-static inline bool mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
+/**	Check if types are equal */
+static inline bool type_is_equal(const syntax *const sx, const size_t first, const size_t second)
 {
-	if (vector_get(&sx->modes, first) != vector_get(&sx->modes, second))
+	if (vector_get(&sx->types, first) != vector_get(&sx->types, second))
 	{
 		return false;
 	}
 
 	size_t length = 1;
-	const item_t mode = vector_get(&sx->modes, first);
+	const type_t type = vector_get(&sx->types, first);
 
 	// Определяем, сколько полей надо сравнивать для различных типов записей
-	if (mode == mode_struct || mode == mode_function)
+	if (type == type_struct || type == type_function)
 	{
-		length = 2 + (size_t)vector_get(&sx->modes, first + 2);
+		length = 2 + (size_t)vector_get(&sx->types, first + 2);
 	}
 
 	for (size_t i = 1; i <= length; i++)
 	{
-		if (vector_get(&sx->modes, first + i) != vector_get(&sx->modes, second + i))
+		if (vector_get(&sx->types, first + i) != vector_get(&sx->types, second + i))
 		{
 			return false;
 		}
@@ -226,8 +226,8 @@ syntax sx_create()
 	sx.representations = map_create(REPRESENTATIONS_SIZE);
 	repr_init(&sx.representations);
 
-	sx.modes = vector_create(MODES_SIZE);
-	mode_init(&sx);
+	sx.types = vector_create(TYPES_SIZE);
+	type_init(&sx);
 
 	sx.max_displg = 3;
 	sx.ref_main = 0;
@@ -273,7 +273,7 @@ int sx_clear(syntax *const sx)
 	vector_clear(&sx->tree);
 
 	vector_clear(&sx->identifiers);
-	vector_clear(&sx->modes);
+	vector_clear(&sx->types);
 	map_clear(&sx->representations);
 
 	return 0;
@@ -307,7 +307,7 @@ size_t func_reserve(syntax *const sx)
 }
 
 
-size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const item_t mode, const int func_def)
+size_t ident_add(syntax *const sx, const size_t repr, const item_t kind, const type_t type, const int func_def)
 {
 	const size_t last_id = vector_size(&sx->identifiers);
 	const item_t ref = repr_get_reference(sx, repr);
@@ -333,7 +333,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const i
 	}
 
 	// Один и тот же идентификатор м.б. переменной и меткой
-	if (type != 1 && ident_get_prev(sx, last_id) != ITEM_MAX - 1
+	if (kind != 1 && ident_get_prev(sx, last_id) != ITEM_MAX - 1
 		&& prev >= sx->cur_id && (func_def != 1 || ident_get_repr(sx, prev) > 0))
 	{
 		// Только определение функции может иметь 2 описания, то есть иметь предописание
@@ -341,35 +341,35 @@ size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const i
 	}
 
 	ident_set_repr(sx, last_id, (item_t)repr);
-	ident_set_mode(sx, last_id, mode);
+	ident_set_type(sx, last_id, type);
 
-	if (type < 0)
+	if (kind < 0)
 	{
 		// Так как < 0, это функция-параметр
 		ident_set_displ(sx, last_id, -(sx->displ++));
 		sx->max_displ = sx->displ;
 	}
-	else if (type == 0)
+	else if (kind == 0)
 	{
-		ident_set_displ(sx, last_id, get_static(sx, mode));
+		ident_set_displ(sx, last_id, get_static(sx, type));
 	}
-	else if (type == 1)
+	else if (kind == 1)
 	{
 		// Это метка
 		// В поле mode: 0, если первым встретился goto; когда встретим метку, поставим 1
 		// В поле displ: при генерации кода, когда встретим метку, поставим pc
-		ident_set_mode(sx, last_id, 0);
+		ident_set_type(sx, last_id, 0);
 		ident_set_displ(sx, last_id, 0);
 	}
-	else if (type >= 1000)
+	else if (kind >= 1000)
 	{
 		// Это описание типа, а (type-1000) – это номер инициирующей процедуры
-		ident_set_displ(sx, last_id, type);
+		ident_set_displ(sx, last_id, kind);
 	}
-	else if (type > 1 && type < 1000)
+	else if (kind > 1 && type < 1000)
 	{
 		// Это функция, и в поле displ находится её номер
-		ident_set_displ(sx, last_id, type);
+		ident_set_displ(sx, last_id, kind);
 
 		if (func_def == 2)
 		{
@@ -402,7 +402,7 @@ item_t ident_get_repr(const syntax *const sx, const size_t index)
 	return sx != NULL ? vector_get(&sx->identifiers, index + 1) : ITEM_MAX;
 }
 
-item_t ident_get_mode(const syntax *const sx, const size_t index)
+type_t ident_get_type(const syntax *const sx, const size_t index)
 {
 	return sx != NULL ? vector_get(&sx->identifiers, index + 2) : ITEM_MAX;
 }
@@ -417,9 +417,9 @@ int ident_set_repr(syntax *const sx, const size_t index, const item_t repr)
 	return sx != NULL ? vector_set(&sx->identifiers, index + 1, repr) : -1;
 }
 
-int ident_set_mode(syntax *const sx, const size_t index, const item_t mode)
+int ident_set_type(syntax *const sx, const size_t index, const type_t type)
 {
-	return sx != NULL ? vector_set(&sx->identifiers, index + 2, mode) : -1;
+	return sx != NULL ? vector_set(&sx->identifiers, index + 2, type) : -1;
 }
 
 int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
@@ -428,51 +428,96 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 }
 
 
-size_t size_of(const syntax *const sx, const item_t mode)
+size_t size_of(const syntax *const sx, const type_t type)
 {
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_struct
-		? (size_t)mode_get(sx, (size_t)mode + 1)
-		: mode == mode_float
+	return type > 0 && type_get(sx, (size_t)type) == type_struct
+		? (size_t)type_get(sx, (size_t)type + 1)
+		: type_is_float(type)
 			? 2
 			: 1;
 }
 
-size_t mode_add(syntax *const sx, const item_t *const record, const size_t size)
+size_t type_add(syntax *const sx, const type_t *const record, const size_t size)
 {
 	if (sx == NULL || record == NULL)
 	{
 		return SIZE_MAX;
 	}
 
-	vector_add(&sx->modes, (item_t)sx->start_mode);
-	sx->start_mode = vector_size(&sx->modes) - 1;
+	vector_add(&sx->types, (item_t)sx->start_type);
+	sx->start_type = vector_size(&sx->types) - 1;
 	for (size_t i = 0; i < size; i++)
 	{
-		vector_add(&sx->modes, record[i]);
+		vector_add(&sx->types, record[i]);
 	}
 
 	// Checking mode duplicates
-	size_t old = (size_t)vector_get(&sx->modes, sx->start_mode);
+	size_t old = (size_t)vector_get(&sx->types, sx->start_type);
 	while (old)
 	{
-		if (mode_is_equal(sx, sx->start_mode + 1, old + 1))
+		if (type_is_equal(sx, sx->start_type + 1, old + 1))
 		{
-			vector_resize(&sx->modes, sx->start_mode + 1);
-			sx->start_mode = (size_t)vector_get(&sx->modes, sx->start_mode);
+			vector_resize(&sx->types, sx->start_type + 1);
+			sx->start_type = (size_t)vector_get(&sx->types, sx->start_type);
 			return old + 1;
 		}
 		else
 		{
-			old = (size_t)vector_get(&sx->modes, old);
+			old = (size_t)vector_get(&sx->types, old);
 		}
 	}
 
-	return sx->start_mode + 1;
+	return sx->start_type + 1;
 }
 
-item_t mode_get(const syntax *const sx, const size_t index)
+type_t type_get(const syntax *const sx, const size_t index)
 {
-	return sx != NULL ? vector_get(&sx->modes, index) : ITEM_MAX;
+	return sx != NULL ? vector_get(&sx->types, index) : ITEM_MAX;
+}
+
+bool type_is_function(syntax *const sx, const type_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == type_function;
+}
+
+bool type_is_array(syntax *const sx, const type_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == type_array;
+}
+
+bool type_is_string(syntax *const sx, const type_t type)
+{
+	return type_is_array(sx, type) && type_get(sx, (size_t)type + 1) == type_character;
+}
+
+bool type_is_pointer(syntax *const sx, const type_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == type_pointer;
+}
+
+bool type_is_struct(syntax *const sx, const type_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == type_struct;
+}
+
+bool type_is_float(const type_t type)
+{
+	return type == type_float;
+}
+
+bool type_is_integer(const type_t type)
+{
+	return type == type_integer || type == type_character;
+}
+
+bool type_is_void(const type_t type)
+{
+	return type == type_void;
+}
+
+bool type_is_undefined(const type_t type)
+{
+	return type == type_undefined;
 }
 
 

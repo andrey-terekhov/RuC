@@ -33,22 +33,23 @@ extern "C" {
 #endif
 
 typedef struct node node;
+typedef item_t type_t;
 
-/** Modes */
-enum MODE
+/** Type qualifiers */
+enum TYPE
 {
-	mode_void			= -6,
-	mode_float			= -3,
-	mode_character,
-	mode_integer,
-	mode_undefined,
+	type_void			= -6,
+	type_float			= -3,
+	type_character,
+	type_integer,
+	type_undefined,
 
-	mode_msg_info 		= 2,
-	mode_void_pointer	= 15,
-	mode_function		= 1001,
-	mode_struct,
-	mode_array,
-	mode_pointer,
+	type_msg_info 		= 2,
+	type_void_pointer	= 15,
+	type_function		= 1001,
+	type_struct,
+	type_array,
+	type_pointer,
 };
 
 
@@ -63,8 +64,8 @@ typedef struct syntax
 	vector identifiers;			/**< Identifiers table */
 	size_t cur_id;				/**< Start of current scope in identifiers table */
 
-	vector modes;				/**< Modes table */
-	size_t start_mode;			/**< Start of last record in modetab */
+	vector types;				/**< Types table */
+	size_t start_type;			/**< Start of last record in types table */
 
 	map representations;		/**< Representations table */
 
@@ -151,12 +152,12 @@ size_t func_reserve(syntax *const sx);
  *
  *	@param	sx			Syntax structure
  *	@param	repr		New identifier index in representations table
- *	@param	type		@c -1 for function as parameter,
+ *	@param	kind		@c -1 for function as parameter,
  *						@c  0 for variable,
  *						@c  1 for label,
  *						@c  funcnum for function,
  *						@c  >= @c 100 for type specifier
- *	@param	mode		New identifier mode
+ *	@param	type		New identifier type
  *	@param	func_def	@c 0 for function without args,
  *						@c 1 for function definition,
  *						@c 2 for function declaration,
@@ -166,7 +167,7 @@ size_t func_reserve(syntax *const sx);
  *			@c SIZE_MAX @c - @c 1 on redeclaration
  *			@c SIZE_MAX on redefinition of main
  */
-size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const item_t mode, const int func_def);
+size_t ident_add(syntax *const sx, const size_t repr, const item_t kind, const type_t type, const int func_def);
 
 /**
  *	Get index of previous declaration from identifiers table by index
@@ -189,14 +190,14 @@ item_t ident_get_prev(const syntax *const sx, const size_t index);
 item_t ident_get_repr(const syntax *const sx, const size_t index);
 
 /**
- *	Get item mode from identifiers table by index
+ *	Get item type from identifiers table by index
  *
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in identifiers table
  *
- *	@return	Identifier mode, @c ITEM_MAX on failure
+ *	@return	Identifier type, @c ITEM_MAX on failure
  */
-item_t ident_get_mode(const syntax *const sx, const size_t index);
+item_t ident_get_type(const syntax *const sx, const size_t index);
 
 /**
  *	Get item displacement from identifiers table by index
@@ -220,15 +221,15 @@ item_t ident_get_displ(const syntax *const sx, const size_t index);
 int ident_set_repr(syntax *const sx, const size_t index, const item_t repr);
 
 /**
- *	Set identifier mode by index in identifiers table
+ *	Set identifier type by index in identifiers table
  *
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in identifiers table
- *	@param	mode		Identifier mode
+ *	@param	type		Identifier type
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int ident_set_mode(syntax *const sx, const size_t index, const item_t mode);
+int ident_set_type(syntax *const sx, const size_t index, const item_t type);
 
 /**
  *	Set identifier displacement by index in identifiers table
@@ -243,36 +244,121 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
 
 
 /**
- *	Get mode size
- *	@note	Also used in codegen
+ *	Get type size
  *
  *	@param	sx			Syntax structure
- *	@param	mode		Standard type or index of the modes table
+ *	@param	type		Standard type or index of the types table
  *
- *	@return	Mode size
+ *	@return	Type size
  */
-size_t size_of(const syntax *const sx, const item_t mode);
+size_t size_of(const syntax *const sx, const item_t type);
 
 /**
- *	Add a new record to modes table
+ *	Add a new record to types table
  *
  *	@param	sx			Syntax structure
  *	@param	record		Pointer to the new record
  *	@param	size		Size of the new record
  *
- *	@return	Index of the new record in modes table, @c SIZE_MAX on failure
+ *	@return	Index of the new record in types table, @c SIZE_MAX on failure
  */
-size_t mode_add(syntax *const sx, const item_t *const record, const size_t size);
+size_t type_add(syntax *const sx, const item_t *const record, const size_t size);
 
 /**
- *	Get an item from modes table by index
+ *	Get an item from types table by index
  *
  *	@param	sx			Syntax structure
- *	@param	index		Index of record in modes table
+ *	@param	index		Index of record in types table
  *
- *	@return	Item by index from modes table, @c ITEM_MAX on failure
+ *	@return	Item by index from types table, @c ITEM_MAX on failure
  */
-item_t mode_get(const syntax *const sx, const size_t index);
+type_t type_get(const syntax *const sx, const size_t index);
+
+/**
+ *	Check if type is function
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_function(syntax *const sx, const type_t type);
+
+/**
+ *	Check if type is array
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_array(syntax *const sx, const type_t type);
+
+/**
+ *	Check if type is string
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_string(syntax *const sx, const type_t type);
+
+/**
+ *	Check if type is pointer
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_pointer(syntax *const sx, const type_t type);
+
+/**
+ *	Check if type is struct
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_struct(syntax *const sx, const type_t type);
+
+/**
+ *	Check if type is floating point
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_float(const type_t type);
+
+/**
+ *	Check if type is integer
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_integer(const type_t type);
+
+/**
+ *	Check if type is void
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_void(const type_t type);
+
+/**
+ *	Check if type is undefined
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_undefined(const type_t type);
 
 
 /**
