@@ -185,13 +185,13 @@ static void final_operation(virtual *const vm, node *const nd)
  *	Expression generation
  *
  *	@param	vm		Virtual machine environment
- *	@param	type	@c -1 for expression on the same node,
+ *	@param	kind	@c -1 for expression on the same node,
  *					@c  0 for usual expression,
  *					@c  1 for expression in condition
  */
-static void expression(virtual *const vm, node *const nd, int type)
+static void expression(virtual *const vm, node *const nd, int kind)
 {
-	if (type != -1)
+	if (kind != -1)
 	{
 		node_set_next(nd);
 	}
@@ -303,7 +303,7 @@ static void expression(virtual *const vm, node *const nd, int type)
 				expression(vm, nd, 0);
 				mem_add(vm, IC_SLICE);
 				mem_add(vm, (item_t)size_of(vm->sx, type));
-				if (type > 0 && type_get(vm->sx, (size_t)type) == type_array)
+				if (type_is_array(vm->sx, type))
 				{
 					mem_add(vm, IC_LAT);
 				}
@@ -352,7 +352,7 @@ static void expression(virtual *const vm, node *const nd, int type)
 
 		if (node_get_type(nd) == OP_CONDITIONAL)
 		{
-			if (type == 1)
+			if (kind == 1)
 			{
 				return;
 			}
