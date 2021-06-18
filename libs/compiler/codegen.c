@@ -22,7 +22,7 @@
 #include "instructions.h"
 #include "operations.h"
 #include "stack.h"
-#include "old_tree.h"
+#include "tree.h"
 #include "uniprinter.h"
 #include "utf8.h"
 

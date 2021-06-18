@@ -19,9 +19,6 @@
 #include "vector.h"
 
 
-//#define BUFFERING
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -196,38 +193,44 @@ EXPORTED size_t node_save(const node *const nd);
 EXPORTED node node_load(vector *const tree, const size_t index);
 
 /**
+ *	Insert new node before existing
+ *
+ *	@param	nd			Current node
+ *	@param	type		New node type
+ *	@param	argc		Amount of new node arguments
+ *
+ *	@return	Inserted node
+ */ 
+EXPORTED node node_insert(const node *const nd, const item_t type, const size_t argc);
+
+/**
  *	Change only node order
  *
- *	@param	fst			First parent node
- *	@param	fst_index	First child number
- *	@param	snd			Second parent node
- *	@param	snd_index	Second child number
+ *	@param	fst			First node
+ *	@param	snd			Second node
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int node_order(const node *const fst, const size_t fst_index, const node *const snd, const size_t snd_index);
+EXPORTED int node_order(const node *const fst, const node *const snd);
 
 /**
  *	Swap two nodes with children
  *
- *	@param	fst			First parent node
- *	@param	fst_index	First child number
- *	@param	snd			Second parent node
- *	@param	snd_index	Second child number
+ *	@param	fst			First node
+ *	@param	snd			Second node
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int node_swap(const node *const fst, const size_t fst_index, const node *const snd, const size_t snd_index);
+EXPORTED int node_swap(const node *const fst, const node *const snd);
 
 /**
- *	Remove child node by index
+ *	Remove node from tree
  *
- *	@param	nd			Parrent node
- *	@param	index		Child number
+ *	@param	nd			Node structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int node_remove(const node *const nd, const size_t index);
+EXPORTED int node_remove(node *const nd);
 
 /**
  *	Check that node is correct
