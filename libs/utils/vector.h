@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
 #include "dll.h"
 #include "item.h"
@@ -121,7 +122,7 @@ EXPORTED size_t vector_size(const vector *const vec);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int vector_is_correct(const vector *const vec);
+EXPORTED bool vector_is_correct(const vector *const vec);
 
 
 /**
