@@ -189,9 +189,9 @@ static void final_operation(virtual *const vm, node *const nd)
  *					@c  0 for usual expression,
  *					@c  1 for expression in condition
  */
-static void expression(virtual *const vm, node *const nd, int kind)
+static void expression(virtual *const vm, node *const nd, int mode)
 {
-	if (kind != -1)
+	if (mode != -1)
 	{
 		node_set_next(nd);
 	}
@@ -352,7 +352,7 @@ static void expression(virtual *const vm, node *const nd, int kind)
 
 		if (node_get_type(nd) == OP_CONDITIONAL)
 		{
-			if (kind == 1)
+			if (mode == 1)
 			{
 				return;
 			}
