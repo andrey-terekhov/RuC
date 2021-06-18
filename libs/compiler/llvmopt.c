@@ -15,11 +15,11 @@
  */
 
 #include "llvmopt.h"
-#include <string.h>
-#include "defs.h"
 #include "errors.h"
+#include "operations.h"
 #include "tree.h"
 #include "uniprinter.h"
+#include <string.h>
 
 
 #define MAX_STACK_SIZE	512
@@ -125,46 +125,46 @@ static expression_t expression_type(node *const nd)
 			return OPERAND;
 
 
-		case POSTINC:
-		case POSTDEC:
-		case INC:
-		case DEC:
-		case POSTINCAT:
-		case POSTDECAT:
-		case INCAT:
-		case DECAT:
-		case POSTINCV:
-		case POSTDECV:
-		case INCV:
-		case DECV:
-		case POSTINCATV:
-		case POSTDECATV:
-		case INCATV:
-		case DECATV:
+		case OP_POST_INC:
+		case OP_POST_DEC:
+		case OP_PRE_INC:
+		case OP_PRE_DEC:
+		case OP_POST_INC_AT:
+		case OP_POST_DEC_AT:
+		case OP_PRE_INC_AT:
+		case OP_PRE_DEC_AT:
+		case OP_POST_INC_V:
+		case OP_POST_DEC_V:
+		case OP_PRE_INC_V:
+		case OP_PRE_DEC_V:
+		case OP_POST_INC_AT_V:
+		case OP_POST_DEC_AT_V:
+		case OP_PRE_INC_AT_V:
+		case OP_PRE_DEC_AT_V:
 
-		case UNMINUS:
+		case OP_UNMINUS:
 
-		case LNOT:
-		case LOGNOT:
+		case OP_NOT:
+		case OP_LOG_NOT:
 
-		case POSTINCR:
-		case POSTDECR:
-		case INCR:
-		case DECR:
-		case POSTINCATR:
-		case POSTDECATR:
-		case INCATR:
-		case DECATR:
-		case POSTINCRV:
-		case POSTDECRV:
-		case INCRV:
-		case DECRV:
-		case POSTINCATRV:
-		case POSTDECATRV:
-		case INCATRV:
-		case DECATRV:
+		case OP_POST_INC_R:
+		case OP_POST_DEC_R:
+		case OP_PRE_INC_R:
+		case OP_PRE_DEC_R:
+		case OP_POST_INC_AT_R:
+		case OP_POST_DEC_AT_R:
+		case OP_PRE_INC_AT_R:
+		case OP_PRE_DEC_AT_R:
+		case OP_POST_INC_R_V:
+		case OP_POST_DEC_R_V:
+		case OP_PRE_INC_R_V:
+		case OP_PRE_DEC_R_V:
+		case OP_POST_INC_AT_R_V:
+		case OP_POST_DEC_AT_R_V:
+		case OP_PRE_INC_AT_R_V:
+		case OP_PRE_DEC_AT_R_V:
 
-		case UNMINUSR:
+		case OP_UNMINUS_R:
 			return UNARY_OPERATION;
 
 
@@ -175,11 +175,11 @@ static expression_t expression_type(node *const nd)
 		case EXORASS:
 		case ORASS:
 
-		case ASS:
-		case PLUSASS:
+		case OP_ASSIGN:
+		case OP_ADD_ASSIGN:
 		case MINUSASS:
-		case MULTASS:
-		case DIVASS:
+		case OP_MUL_ASSIGN:
+		case OP_DIV_ASSIGN:
 
 		case REMASSAT:
 		case SHLASSAT:
@@ -188,11 +188,11 @@ static expression_t expression_type(node *const nd)
 		case EXORASSAT:
 		case ORASSAT:
 
-		case ASSAT:
-		case PLUSASSAT:
+		case OP_ASSIGN_AT:
+		case OP_ADD_ASSIGN_AT:
 		case MINUSASSAT:
-		case MULTASSAT:
-		case DIVASSAT:
+		case OP_MUL_ASSIGN_AT:
+		case OP_DIV_ASSIGN_AT:
 
 		case REMASSV:
 		case SHLASSV:
@@ -201,11 +201,11 @@ static expression_t expression_type(node *const nd)
 		case EXORASSV:
 		case ORASSV:
 
-		case ASSV:
-		case PLUSASSV:
+		case OP_ASSIGN_V:
+		case OP_ADD_ASSIGN_V:
 		case MINUSASSV:
-		case MULTASSV:
-		case DIVASSV:
+		case OP_MUL_ASSIGN_V:
+		case OP_DIV_ASSIGN_V:
 
 		case REMASSATV:
 		case SHLASSATV:
@@ -214,66 +214,66 @@ static expression_t expression_type(node *const nd)
 		case EXORASSATV:
 		case ORASSATV:
 
-		case ASSATV:
-		case PLUSASSATV:
+		case OP_ASSIGN_AT_V:
+		case OP_ADD_ASSIGN_AT_V:
 		case MINUSASSATV:
-		case MULTASSATV:
-		case DIVASSATV:
+		case OP_MUL_ASSIGN_AT_V:
+		case OP_DIV_ASSIGN_AT_V:
 
-		case LREM:
-		case LSHL:
-		case LSHR:
-		case LAND:
-		case LEXOR:
-		case LOR:
-		case LOGAND:
-		case LOGOR:
+		case OP_REM:
+		case OP_SHL:
+		case OP_SHR:
+		case OP_AND:
+		case OP_XOR:
+		case OP_OR:
+		case OP_LOG_AND:
+		case OP_LOG_OR:
 
-		case EQEQ:
-		case NOTEQ:
-		case LLT:
-		case LGT:
-		case LLE:
-		case LGE:
-		case LPLUS:
-		case LMINUS:
-		case LMULT:
-		case LDIV:
+		case OP_EQ:
+		case OP_NE:
+		case OP_LT:
+		case OP_GT:
+		case OP_LE:
+		case OP_GE:
+		case OP_ADD:
+		case OP_SUB:
+		case OP_MUL:
+		case OP_DIV:
 
-		case ASSR:
-		case PLUSASSR:
+		case OP_ASSIGN_R:
+		case OP_ADD_ASSIGN_R:
 		case MINUSASSR:
-		case MULTASSR:
-		case DIVASSR:
+		case OP_MUL_ASSIGN_R:
+		case OP_DIV_ASSIGN_R:
 
-		case ASSATR:
-		case PLUSASSATR:
+		case OP_ASSIGN_AT_R:
+		case OP_ADD_ASSIGN_AT_R:
 		case MINUSASSATR:
-		case MULTASSATR:
-		case DIVASSATR:
+		case OP_MUL_ASSIGN_AT_R:
+		case OP_DIV_ASSIGN_AT_R:
 
-		case ASSRV:
-		case PLUSASSRV:
+		case OP_ASSIGN_R_V:
+		case OP_ADD_ASSIGN_R_V:
 		case MINUSASSRV:
-		case MULTASSRV:
-		case DIVASSRV:
+		case OP_MUL_ASSIGN_R_V:
+		case OP_DIV_ASSIGN_R_V:
 
-		case ASSATRV:
-		case PLUSASSATRV:
+		case OP_ASSIGN_AT_R_V:
+		case OP_ADD_ASSIGN_AT_R_V:
 		case MINUSASSATRV:
-		case MULTASSATRV:
-		case DIVASSATRV:
+		case OP_MUL_ASSIGN_AT_R_V:
+		case OP_DIV_ASSIGN_AT_R_V:
 
-		case EQEQR:
-		case NOTEQR:
-		case LLTR:
-		case LGTR:
-		case LLER:
-		case LGER:
-		case LPLUSR:
-		case LMINUSR:
-		case LMULTR:
-		case LDIVR:
+		case OP_EQ_R:
+		case OP_NE_R:
+		case OP_LT_R:
+		case OP_GT_R:
+		case OP_LE_R:
+		case OP_GE_R:
+		case OP_ADD_R:
+		case OP_SUB_R:
+		case OP_MUL_R:
+		case OP_DIV_R:
 			return BINARY_OPERATION;
 
 
