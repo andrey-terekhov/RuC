@@ -26,27 +26,27 @@
 #endif
 
 
-void ws_init(workspace *const ws)
+static inline void ws_init(workspace *const ws)
 {
 	ws->files_num = 0;
 	ws->dirs_num = 0;
 	ws->flags_num = 0;
 
 	ws->output[0] = '\0';
-	ws->was_error = 0;
+	ws->was_error = false;
 }
 
-void ws_add_error(workspace *const ws)
+static inline void ws_add_error(workspace *const ws)
 {
 	if (ws == NULL)
 	{
 		return;
 	}
 
-	ws->was_error = 1;
+	ws->was_error = true;
 }
 
-void ws_unix_path(const char *const path, char *const buffer)
+static void ws_unix_path(const char *const path, char *const buffer)
 {
 	size_t i = 0;
 	size_t j = 0;
@@ -82,7 +82,7 @@ void ws_unix_path(const char *const path, char *const buffer)
 	buffer[buffer[j - 1] == '/' ? j - 1 : j] = '\0';
 }
 
-size_t ws_exists(const char *const element, const char array[][MAX_ARG_SIZE], const size_t size)
+static size_t ws_exists(const char *const element, const char array[][MAX_ARG_SIZE], const size_t size)
 {
 	for (size_t i = 0; i < size; i++)
 	{
@@ -95,7 +95,7 @@ size_t ws_exists(const char *const element, const char array[][MAX_ARG_SIZE], co
 	return SIZE_MAX;
 }
 
-int ws_is_dir_flag(const char *const flag)
+static inline bool ws_is_dir_flag(const char *const flag)
 {
 	return flag[0] == '-' && flag[1] == 'I';
 }
@@ -309,7 +309,7 @@ int ws_set_output(workspace *const ws, const char *const path)
 }
 
 
-int ws_is_correct(const workspace *const ws)
+bool ws_is_correct(const workspace *const ws)
 {
 	return ws != NULL && !ws->was_error;
 }
@@ -364,7 +364,7 @@ int ws_clear(workspace *const ws)
 	ws->flags_num = 0;
 
 	ws->output[0] = '\0';
-	ws->was_error = 0;
+	ws->was_error = false;
 
 	return 0;
 }

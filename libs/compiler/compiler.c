@@ -31,18 +31,18 @@
 #endif
 
 
-const char *const DEFAULT_MACRO = "macro.txt";
+static const char *const DEFAULT_MACRO = "macro.txt";
 
-const char *const DEFAULT_VM = "out.ruc";
-const char *const DEFAULT_LLVM = "out.ll";
-const char *const DEFAULT_MIPS = "out.s";
+static const char *const DEFAULT_VM = "out.ruc";
+static const char *const DEFAULT_LLVM = "out.ll";
+static const char *const DEFAULT_MIPS = "out.s";
 
 
 typedef int (*encoder)(const workspace *const ws, universal_io *const io, syntax *const sx);
 
 
 /** Make executable actually executable on best-effort basis (if possible) */
-static void make_executable(const char *const path)
+static inline void make_executable(const char *const path)
 {
 #ifndef _MSC_VER
 	struct stat stat_buf;
@@ -59,7 +59,7 @@ static void make_executable(const char *const path)
 }
 
 
-int compile_from_io(const workspace *const ws, universal_io *const io, const encoder enc)
+static int compile_from_io(const workspace *const ws, universal_io *const io, const encoder enc)
 {
 	if (!in_is_correct(io) || !out_is_correct(io))
 	{
@@ -81,7 +81,7 @@ int compile_from_io(const workspace *const ws, universal_io *const io, const enc
 	return ret;
 }
 
-int compile_from_ws(workspace *const ws, const encoder enc)
+static int compile_from_ws(workspace *const ws, const encoder enc)
 {
 	if (!ws_is_correct(ws) || ws_get_files_num(ws) == 0)
 	{
