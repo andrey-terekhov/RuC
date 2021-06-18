@@ -455,12 +455,6 @@ static int node_recursive(information *const info, node *const nd)
 						// перестановка с первым операндом
 						has_error |= transposition(first, second);
 
-						// if (node_get_type(nd_info.parent) == WIDEN)
-						// {
-						// 	printf("here\n");
-						// 	printf("%i\n", node_get_type(&child));
-						// }
-
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(info, first);
 
