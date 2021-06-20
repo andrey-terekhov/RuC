@@ -55,6 +55,9 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 		cur = uni_scan_char(prs->in);
 	}
 
+	uni_print_char(prs->out, '\n');
+	uni_print_char(prs->out, '\n');
+
 	return 0;
 }
 
