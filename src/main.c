@@ -22,20 +22,24 @@
 #include "workspace.h"
 
 
-const char *name = "../tests/executable/floatsign.c";
+const char *name = "../tests/executable/structures/SELECT_9459.c";
 // "../tests/mips/0test.c";
 
 
 int main(int argc, const char *argv[])
 {
-	//printf(""); // Not working without using printf
-
 	workspace ws = ws_parse_args(argc, argv);
 
 	if (argc < 2)
 	{
 		ws_add_file(&ws, name);
+		ws_add_flag(&ws, "-Wno");
+		ws_set_output(&ws, "export.txt");
 	}
-	
-	return compile_to_vm(&ws);
+
+#ifdef TESTING_EXIT_CODE
+	return compile(&ws) ? TESTING_EXIT_CODE : 0;
+#else
+	return compile(&ws);
+#endif
 }

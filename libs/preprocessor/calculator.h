@@ -16,14 +16,26 @@
 
 #pragma once
 
-#include "context_var.h"
+#include "environment.h"
+
+
+#define LOGIC 		0
+#define ARITHMETIC	1
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void calculator(int if_flag, preprocess_context *context);
+/**
+ *	Calculate an arithmetic or logical expression
+ *
+ *	@param	env				Preprocessor environment
+ *	@param	type			Type expression
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int calculate(environment *const env, const int type);
 
 #ifdef __cplusplus
 } /* extern "C" */
