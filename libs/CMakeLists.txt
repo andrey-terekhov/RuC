@@ -7,5 +7,8 @@ add_subdirectory(utils)
 # Add preprocessor library
 add_subdirectory(preprocessor)
 
+# Add macro library
+add_subdirectory(macro)
+
 # Add compiler library
 add_subdirectory(compiler)
