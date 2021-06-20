@@ -20,7 +20,7 @@
 #include "codegen.h"
 #include "errors.h"
 #include "parser.h"
-#include "preprocessor.h"
+#include "macrogenerator.h"
 #include "syntax.h"
 #include "uniio.h"
 
