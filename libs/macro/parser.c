@@ -48,10 +48,10 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 	prs->in = in;
 	char32_t cur = uni_scan_char(prs->in);// хранить в парсере ?
-	while (cur != EOF)
+	while (cur != (char32_t)EOF)
 	{
 		uni_print_char(prs->out, cur);
-		char32_t cur = uni_scan_char(prs->in);
+		cur = uni_scan_char(prs->in);
 	}
 	return 0;
 }
@@ -65,6 +65,8 @@ int parser_disable_recovery(parser *const prs)
 	}
 
 	prs->is_recovery_disabled = true;
+
+	return 0;
 }
 
 

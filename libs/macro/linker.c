@@ -16,8 +16,15 @@
 
 #include "linker.h"
 #include <string.h>
-#include <io.h>
 #include "error.h"
+
+#ifndef _MSC_VER
+	#include <unistd.h>
+#else
+	#define F_OK 0
+
+	extern int access(const char *path, int mode);
+#endif
 
 
 void lk_make_path(char *const output, const char *const source, const char *const header, const int is_slash)
@@ -49,7 +56,7 @@ void lk_make_path(char *const output, const char *const source, const char *cons
  *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
  */
 
-linker lk_create(workspace *const ws)
+linker linker_create(workspace *const ws)
 {
 	linker lk;
 
@@ -123,7 +130,7 @@ size_t linker_search_internal(linker *const lk, const char *const file)
 
 	lk_make_path(full_path, ws_get_file(lk->ws, lk->current), file, 1);
 
-	if (!access(full_path, 0))
+	if (access(full_path, F_OK) == -1)
 	{
 		size_t i = 0;
 		const char *dir;
@@ -131,10 +138,10 @@ size_t linker_search_internal(linker *const lk, const char *const file)
 		{
 			dir = ws_get_dir(lk->ws, i++);
 			lk_make_path(full_path, dir, file, 0);
-		} while (dir != NULL && !access(full_path, 0));
+		} while (dir != NULL && access(full_path, F_OK) == -1);
 	}
 
-	if (!access(full_path, 0))
+	if (access(full_path, F_OK) == -1)
 	{
 		macro_system_error(full_path, include_file_not_found);
 		return SIZE_MAX;
@@ -158,14 +165,14 @@ size_t linker_search_external(linker *const lk, const char *const file)
 	{
 		dir = ws_get_dir(lk->ws, i++);
 		lk_make_path(full_path, dir, file, 0);
-	} while (dir != NULL && !access(full_path, 0));
+	} while (dir != NULL && access(full_path, F_OK) == -1);
 
-	if (!access(full_path, 0))
+	if (access(full_path, F_OK) == -1)
 	{
 		lk_make_path(full_path, ws_get_file(lk->ws, lk->current), file, 1);
 	}
 
-	if (!access(full_path, 0))
+	if (access(full_path, F_OK) == -1)
 	{
 		macro_system_error(full_path, include_file_not_found);
 		return SIZE_MAX;
