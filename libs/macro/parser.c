@@ -41,18 +41,20 @@ parser parser_create(linker *const lk, /*storage *const stg,*/ universal_io *con
 
 int parser_preprocess(parser *const prs, universal_io *const in)
 {
-	if (!parser_is_correct(prs)|| in_is_correct(in))
+	if (!parser_is_correct(prs)|| !in_is_correct(in))
 	{
 		return -1;
 	}
 
 	prs->in = in;
 	char32_t cur = uni_scan_char(prs->in);// хранить в парсере ?
+
 	while (cur != (char32_t)EOF)
 	{
 		uni_print_char(prs->out, cur);
 		cur = uni_scan_char(prs->in);
 	}
+
 	return 0;
 }
 
@@ -72,6 +74,5 @@ int parser_disable_recovery(parser *const prs)
 
 bool parser_is_correct(const parser *const prs)
 {
-	return prs != NULL && linker_is_correct(prs->lk) && in_is_correct(prs->in)
-		&& out_is_correct(prs->out);// && storage_is_correct(prs->stg);
+	return prs != NULL && linker_is_correct(prs->lk) && out_is_correct(prs->out);// && storage_is_correct(prs->stg);
 }

@@ -16,6 +16,7 @@
 
 #include "linker.h"
 #include <string.h>
+#include "item.h"
 #include "error.h"
 
 #ifndef _MSC_VER
@@ -27,7 +28,7 @@
 #endif
 
 
-void lk_make_path(char *const output, const char *const source, const char *const header, const int is_slash)
+static void lk_make_path(char *const output, const char *const source, const char *const header, const int is_slash)
 {
 	size_t index = 0;
 
@@ -69,11 +70,11 @@ linker linker_create(workspace *const ws)
 	lk.ws = ws;
 	lk.sources = ws_get_files_num(ws);
 
-	lk.included = vector_create(MAX_PATHS); 
+	lk.included = vector_create(MAX_PATHS);
 
 	for (size_t i = 0; i < MAX_PATHS; i++)
 	{
-		vector_set(&lk.included, i, 0);
+		vector_add(&lk.included, 0);
 	}
 
 	lk.current = SIZE_MAX;
