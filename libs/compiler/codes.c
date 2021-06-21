@@ -17,7 +17,7 @@
 #include "codes.h"
 #include <string.h>
 #include "errors.h"
-#include "old_tree.h"
+#include "tree.h"
 #include "operations.h"
 #include "uniio.h"
 #include "uniprinter.h"
@@ -1401,20 +1401,12 @@ void tables_and_tree(const char *const path
 
 	uni_printf(&io, "\n\ntree\n");
 	size_t i = 0;
-#ifdef OLD_TREE
-	while (i < vector_size(tree))
-	{
-		uni_printf(&io, "tc %zu) ", i);
-		i = elem_to_io(&io, tree, i);
-	}
-#else
 	node nd = node_get_root(tree);
 	for (size_t j = 0; j < node_get_amount(&nd); j++)
 	{
 		node child = node_get_child(&nd, j);
 		i = tree_print_recursive(&io, &child, i, 0);
 	}
-#endif
 
 	io_erase(&io);
 }
