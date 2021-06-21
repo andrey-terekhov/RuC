@@ -98,14 +98,19 @@ static int transposition(node_info *const expr, node_info *const cur)
 	}
 
 	node child_to_order1 = node_get_child(expr->parent, expr->child);
+	printf("child_to_order1 type = %i\n", node_get_type(&child_to_order1));
 	node child_to_order2 = node_get_child(cur->parent, cur->child);
+	printf("child_to_order2 type = %i\n", node_get_type(&child_to_order2));
 	node_order(&child_to_order1, &child_to_order2);
 
 	node temp = node_get_child(expr->parent, expr->child);
+	printf("temp type = %i\n\n", node_get_type(&temp));
 	for (size_t i = 1; i < expr->depth; i++)
 	{
-		node child_to_order11 = node_get_child(expr->parent, expr->child);
+		node child_to_order11 = node_get_child(cur->parent, cur->child);
+		printf("child_to_order11 type = %i\n", node_get_type(&child_to_order11));
 		node child_to_order21 = node_get_child(&temp, 0);
+		printf("child_to_order21 type = %i\n\n", node_get_type(&child_to_order21));
 		node_order(&child_to_order11, &child_to_order21);
 		temp = node_get_child(&temp, 0);
 	}
@@ -340,10 +345,10 @@ static int node_recursive(information *const info, node *const nd)
 					node_swap(&child_to_swap1, &child_to_swap2);
 
 					// TODO: пока только для двумерных вырезок, потом надо подумать
-					if (node_get_type(&child_to_swap1) == OP_IDENT_TO_VAL_D
-						|| (node_get_type(&child_to_swap1) == OP_SLICE_IDENT
-						&& (node_get_arg(&child_to_swap1, 1) == mode_float
-						|| mode_get(info->sx, node_get_arg(&child_to_swap1, 1) + 1) == mode_float)))
+					if (node_get_type(&child_to_swap2) == OP_IDENT_TO_VAL_D
+						|| (node_get_type(&child_to_swap2) == OP_SLICE_IDENT
+						&& (node_get_arg(&child_to_swap2, 1) == mode_float
+						|| mode_get(info->sx, node_get_arg(&child_to_swap2, 1) + 1) == mode_float)))
 					{
 						N--;
 					}
@@ -443,6 +448,8 @@ static int node_recursive(information *const info, node *const nd)
 						node_info *second = stack_pop(info);
 						node_info *first = stack_pop(info);
 
+						printf("\nbinary operation type = %i\n\n", node_get_type(&child));
+
 						if (node_get_type(nd_info.parent) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { nd_info.parent, 1, 1 };
@@ -450,7 +457,9 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка со вторым операндом
+						printf("transposition with second operand:\n");
 						has_error |= transposition(second, &nd_info);
+						printf("----------------------------------\n");
 
 						// надо переставить second с родителем
 						if (node_get_type(second->parent) == OP_AD_LOG_OR || node_get_type(second->parent) == OP_AD_LOG_AND
@@ -461,7 +470,9 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка с первым операндом
+						printf("transposition with first operand:\n");
 						has_error |= transposition(first, second);
+						printf("----------------------------------\n");
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(info, first);
