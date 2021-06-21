@@ -153,7 +153,7 @@ static inline void type_init(syntax *const sx)
 	sx->start_type = 14;
 }
 
-static inline item_t get_static(syntax *const sx, const type_t type)
+static inline item_t get_static(syntax *const sx, const item_t type)
 {
 	const item_t old_displ = sx->displ;
 	sx->displ += sx->lg * size_of(sx, type);
@@ -179,7 +179,7 @@ static inline bool type_is_equal(const syntax *const sx, const size_t first, con
 	}
 
 	size_t length = 1;
-	const type_t type = vector_get(&sx->types, first);
+	const item_t type = vector_get(&sx->types, first);
 
 	// Определяем, сколько полей надо сравнивать для различных типов записей
 	if (type == type_struct || type == type_function)
@@ -307,7 +307,7 @@ size_t func_reserve(syntax *const sx)
 }
 
 
-size_t ident_add(syntax *const sx, const size_t repr, const item_t kind, const type_t type, const int func_def)
+size_t ident_add(syntax *const sx, const size_t repr, const item_t kind, const item_t type, const int func_def)
 {
 	const size_t last_id = vector_size(&sx->identifiers);
 	const item_t ref = repr_get_reference(sx, repr);
@@ -402,7 +402,7 @@ item_t ident_get_repr(const syntax *const sx, const size_t index)
 	return sx != NULL ? vector_get(&sx->identifiers, index + 1) : ITEM_MAX;
 }
 
-type_t ident_get_type(const syntax *const sx, const size_t index)
+item_t ident_get_type(const syntax *const sx, const size_t index)
 {
 	return sx != NULL ? vector_get(&sx->identifiers, index + 2) : ITEM_MAX;
 }
@@ -417,7 +417,7 @@ int ident_set_repr(syntax *const sx, const size_t index, const item_t repr)
 	return sx != NULL ? vector_set(&sx->identifiers, index + 1, repr) : -1;
 }
 
-int ident_set_type(syntax *const sx, const size_t index, const type_t type)
+int ident_set_type(syntax *const sx, const size_t index, const item_t type)
 {
 	return sx != NULL ? vector_set(&sx->identifiers, index + 2, type) : -1;
 }
@@ -428,7 +428,7 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 }
 
 
-size_t size_of(const syntax *const sx, const type_t type)
+size_t size_of(const syntax *const sx, const item_t type)
 {
 	return type > 0 && type_get(sx, (size_t)type) == type_struct
 		? (size_t)type_get(sx, (size_t)type + 1)
@@ -437,7 +437,7 @@ size_t size_of(const syntax *const sx, const type_t type)
 			: 1;
 }
 
-size_t type_add(syntax *const sx, const type_t *const record, const size_t size)
+size_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 {
 	if (sx == NULL || record == NULL)
 	{
@@ -470,52 +470,52 @@ size_t type_add(syntax *const sx, const type_t *const record, const size_t size)
 	return sx->start_type + 1;
 }
 
-type_t type_get(const syntax *const sx, const size_t index)
+item_t type_get(const syntax *const sx, const size_t index)
 {
 	return sx != NULL ? vector_get(&sx->types, index) : ITEM_MAX;
 }
 
-bool type_is_function(syntax *const sx, const type_t type)
+bool type_is_function(syntax *const sx, const item_t type)
 {
 	return type > 0 && type_get(sx, (size_t)type) == type_function;
 }
 
-bool type_is_array(syntax *const sx, const type_t type)
+bool type_is_array(syntax *const sx, const item_t type)
 {
 	return type > 0 && type_get(sx, (size_t)type) == type_array;
 }
 
-bool type_is_string(syntax *const sx, const type_t type)
+bool type_is_string(syntax *const sx, const item_t type)
 {
 	return type_is_array(sx, type) && type_get(sx, (size_t)type + 1) == type_character;
 }
 
-bool type_is_pointer(syntax *const sx, const type_t type)
+bool type_is_pointer(syntax *const sx, const item_t type)
 {
 	return type > 0 && type_get(sx, (size_t)type) == type_pointer;
 }
 
-bool type_is_struct(syntax *const sx, const type_t type)
+bool type_is_struct(syntax *const sx, const item_t type)
 {
 	return type > 0 && type_get(sx, (size_t)type) == type_struct;
 }
 
-bool type_is_float(const type_t type)
+bool type_is_float(const item_t type)
 {
 	return type == type_float;
 }
 
-bool type_is_integer(const type_t type)
+bool type_is_integer(const item_t type)
 {
 	return type == type_integer || type == type_character;
 }
 
-bool type_is_void(const type_t type)
+bool type_is_void(const item_t type)
 {
 	return type == type_void;
 }
 
-bool type_is_undefined(const type_t type)
+bool type_is_undefined(const item_t type)
 {
 	return type == type_undefined;
 }

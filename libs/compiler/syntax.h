@@ -33,7 +33,6 @@ extern "C" {
 #endif
 
 typedef struct node node;
-typedef item_t type_t;
 
 /** Type qualifiers */
 enum TYPE
@@ -167,7 +166,7 @@ size_t func_reserve(syntax *const sx);
  *			@c SIZE_MAX @c - @c 1 on redeclaration
  *			@c SIZE_MAX on redefinition of main
  */
-size_t ident_add(syntax *const sx, const size_t repr, const item_t kind, const type_t type, const int func_def);
+size_t ident_add(syntax *const sx, const size_t repr, const item_t kind, const item_t type, const int func_def);
 
 /**
  *	Get index of previous declaration from identifiers table by index
@@ -272,7 +271,7 @@ size_t type_add(syntax *const sx, const item_t *const record, const size_t size)
  *
  *	@return	Item by index from types table, @c ITEM_MAX on failure
  */
-type_t type_get(const syntax *const sx, const size_t index);
+item_t type_get(const syntax *const sx, const size_t index);
 
 /**
  *	Check if type is function
@@ -282,7 +281,7 @@ type_t type_get(const syntax *const sx, const size_t index);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_function(syntax *const sx, const type_t type);
+bool type_is_function(syntax *const sx, const item_t type);
 
 /**
  *	Check if type is array
@@ -292,7 +291,7 @@ bool type_is_function(syntax *const sx, const type_t type);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_array(syntax *const sx, const type_t type);
+bool type_is_array(syntax *const sx, const item_t type);
 
 /**
  *	Check if type is string
@@ -302,7 +301,7 @@ bool type_is_array(syntax *const sx, const type_t type);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_string(syntax *const sx, const type_t type);
+bool type_is_string(syntax *const sx, const item_t type);
 
 /**
  *	Check if type is pointer
@@ -312,7 +311,7 @@ bool type_is_string(syntax *const sx, const type_t type);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_pointer(syntax *const sx, const type_t type);
+bool type_is_pointer(syntax *const sx, const item_t type);
 
 /**
  *	Check if type is struct
@@ -322,7 +321,7 @@ bool type_is_pointer(syntax *const sx, const type_t type);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_struct(syntax *const sx, const type_t type);
+bool type_is_struct(syntax *const sx, const item_t type);
 
 /**
  *	Check if type is floating point
@@ -331,7 +330,7 @@ bool type_is_struct(syntax *const sx, const type_t type);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_float(const type_t type);
+bool type_is_float(const item_t type);
 
 /**
  *	Check if type is integer
@@ -340,7 +339,7 @@ bool type_is_float(const type_t type);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_integer(const type_t type);
+bool type_is_integer(const item_t type);
 
 /**
  *	Check if type is void
@@ -349,7 +348,7 @@ bool type_is_integer(const type_t type);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_void(const type_t type);
+bool type_is_void(const item_t type);
 
 /**
  *	Check if type is undefined
@@ -358,7 +357,7 @@ bool type_is_void(const type_t type);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_undefined(const type_t type);
+bool type_is_undefined(const item_t type);
 
 
 /**
