@@ -101,18 +101,26 @@ static int transposition(node_info *const expr, node_info *const cur, informatio
 
 	if (counter == 3)
 	{
-		tables_and_tree("tree001.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
+		tables_and_tree("before.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
 	}
 
 	node child_to_order1 = node_get_child(expr->parent, expr->child);
 	printf("child_to_order1 type = %i\n", node_get_type(&child_to_order1));
 	node child_to_order2 = node_get_child(cur->parent, cur->child);
 	printf("child_to_order2 type = %i\n", node_get_type(&child_to_order2));
+
+	if (counter == 3)
+	{
+		printf("\nMistake here!\n");
+		printf("first node type = %i\n", node_get_type(&child_to_order1));
+		printf("second node type = %i\n\n", node_get_type(&child_to_order2));
+	}
+
 	node_order(&child_to_order1, &child_to_order2);
 
 	if (counter == 3)
 	{
-		tables_and_tree("tree01.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
+		tables_and_tree("after.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
 	}
 
 	node temp = node_get_child(expr->parent, expr->child);
