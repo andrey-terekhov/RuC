@@ -23,6 +23,7 @@
 
 
 #define MAX_STACK_SIZE	512
+int counter = 0;
 
 
 typedef enum EXPRESSION
@@ -89,12 +90,18 @@ static inline void stack_resize(information *const info, const int size)
 }
 
 
-static int transposition(node_info *const expr, node_info *const cur)
+static int transposition(node_info *const expr, node_info *const cur, information *const info)
 {
 	if (expr == NULL || cur == NULL)
 	{
 		system_error(transposition_not_possible);
 		return -1;
+	}
+	counter++;
+
+	if (counter == 3)
+	{
+		tables_and_tree("tree001.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
 	}
 
 	node child_to_order1 = node_get_child(expr->parent, expr->child);
@@ -102,6 +109,11 @@ static int transposition(node_info *const expr, node_info *const cur)
 	node child_to_order2 = node_get_child(cur->parent, cur->child);
 	printf("child_to_order2 type = %i\n", node_get_type(&child_to_order2));
 	node_order(&child_to_order1, &child_to_order2);
+
+	if (counter == 3)
+	{
+		tables_and_tree("tree01.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
+	}
 
 	node temp = node_get_child(expr->parent, expr->child);
 	printf("temp type = %i\n\n", node_get_type(&temp));
@@ -431,11 +443,11 @@ static int node_recursive(information *const info, node *const nd)
 						if (node_get_type(nd_info.parent) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { nd_info.parent, 1, 1 };
-							has_error |= transposition(&nd_info, &log_info);
+							has_error |= transposition(&nd_info, &log_info, info);
 						}
 
 						// перестановка с операндом
-						has_error |= transposition(operand, &nd_info);
+						has_error |= transposition(operand, &nd_info, info);
 
 						// добавляем в стек переставленное выражение
 						has_error |=  stack_push(info, operand);
@@ -453,12 +465,12 @@ static int node_recursive(information *const info, node *const nd)
 						if (node_get_type(nd_info.parent) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { nd_info.parent, 1, 1 };
-							has_error |= transposition(&nd_info, &log_info);
+							has_error |= transposition(&nd_info, &log_info, info);
 						}
 
 						// перестановка со вторым операндом
 						printf("transposition with second operand:\n");
-						has_error |= transposition(second, &nd_info);
+						has_error |= transposition(second, &nd_info, info);
 						printf("----------------------------------\n");
 
 						// надо переставить second с родителем
@@ -466,12 +478,12 @@ static int node_recursive(information *const info, node *const nd)
 							|| node_get_type(second->parent) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { second->parent, 1, 1 };
-							has_error |= transposition(second, &log_info);
+							has_error |= transposition(second, &log_info, info);
 						}
 
 						// перестановка с первым операндом
 						printf("transposition with first operand:\n");
-						has_error |= transposition(first, second);
+						has_error |= transposition(first, second, info);
 						printf("----------------------------------\n");
 
 						// добавляем в стек переставленное выражение
