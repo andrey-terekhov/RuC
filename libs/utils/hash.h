@@ -19,13 +19,13 @@
 #include "vector.h"
 
 
+#define MAX_HASH 256
+#define VALUE_SIZE 4
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-static const size_t MAX_HASH = 256;
-static const size_t VALUE_SIZE = 4;
-
 
 /** Hash table */
 typedef vector hash;
