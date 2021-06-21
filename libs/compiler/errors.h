@@ -154,7 +154,7 @@ typedef enum ERROR
 	wrong_printf_param_number,
 	printf_no_format_placeholder,
 	printf_unknown_format_placeholder,
-	too_many_printf_params,
+	too_many_printf_args,
 
 	no_mult_in_cast,
 	no_rightbr_in_cast,
