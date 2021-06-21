@@ -52,7 +52,7 @@ typedef struct information
 	size_t stack_size;									/**< Размер стека */
 	size_t skip_counter;								/**< Счётчик для пропуска нод после перестановки */
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
-	size_t slice_depth;									/**< Количество узлов после TSliceident */
+	size_t slice_depth;									/**< Количество узлов после OP_SLICE_IDENT */
 	size_t slice_stack_size;							/**< Размер стека в начале вырезки */
 } information;
 
@@ -114,14 +114,14 @@ static expression_t expression_type(node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case TIdent:
-		case TIdenttoval:
-		case TConst:
-		case TIdenttoaddr:
-		case TConstd:
-		case TIdenttovald:
-		case TCall1:
-		case TSliceident:
+		case OP_IDENT:
+		case OP_IDENT_TO_VAL:
+		case OP_CONST:
+		case OP_IDENT_TO_ADDR:
+		case OP_CONST_D:
+		case OP_IDENT_TO_VAL_D:
+		case OP_CALL1:
+		case OP_SLICE_IDENT:
 			return OPERAND;
 
 
@@ -296,14 +296,14 @@ static int node_recursive(information *const info, node *const nd)
 		node child = node_get_child(nd, i);
 
 		// Очищаем полностью стек, если родитель -- блок
-		if (node_get_type(nd) == TBegin)
+		if (node_get_type(nd) == OP_BLOCK)
 		{
 			stack_resize(info, 0);
 		}
 
 		switch (node_get_type(&child))
 		{
-			case TString:
+			case OP_STRING:
 			{
 				const size_t N = (size_t)node_get_arg(&child, 0);
 				uni_printf(info->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
@@ -324,18 +324,18 @@ static int node_recursive(information *const info, node *const nd)
 				uni_printf(info->io, "\\00\", align 1\n");
 			}
 			break;
-			case TPrintf:
+			case OP_PRINTF:
 			{
 				size_t N = (size_t)node_get_arg(&child, 0);
-				// перестановка TPrintf
+				// перестановка OP_PRINTF
 				for (size_t j = 0; j < N + 1; j++)
 				{
 					node_swap(nd, i - j, nd, i - j - 1);
 
 					node child_to_swap = node_get_child(nd, i - j);
 					// TODO: пока только для двумерных вырезок, потом надо подумать
-					if (node_get_type(&child_to_swap) == TIdenttovald
-						|| (node_get_type(&child_to_swap) == TSliceident
+					if (node_get_type(&child_to_swap) == OP_IDENT_TO_VAL_D
+						|| (node_get_type(&child_to_swap) == OP_SLICE_IDENT
 						&& (node_get_arg(&child_to_swap, 1) == mode_float
 						|| mode_get(info->sx, node_get_arg(&child_to_swap, 1) + 1) == mode_float)))
 					{
@@ -343,7 +343,7 @@ static int node_recursive(information *const info, node *const nd)
 					}
 				}
 
-				// перестановка TString
+				// перестановка OP_STRING
 				for (size_t j = 0; j < N; j++)
 				{
 					node_swap(nd, i - j, nd, i - j - 1);
@@ -356,11 +356,11 @@ static int node_recursive(information *const info, node *const nd)
 			}
 			break;
 
-			case TExprend:
+			case OP_EXPR_END:
 			{
 				if (info->slice_depth == 0)
 				{
-					// При обходе после перестановки нужно учитывать и TExprend
+					// При обходе после перестановки нужно учитывать и OP_EXPR_END
 					if (info->skip_counter > 1)
 					{
 						info->skip_counter--;
@@ -368,9 +368,9 @@ static int node_recursive(information *const info, node *const nd)
 				}
 				else if (info->skip_counter <= 1)
 				{
-					// если вырезка не переставлена, то надо частично очистить стек и изменить глубину TSliceident
+					// если вырезка не переставлена, то надо частично очистить стек и изменить глубину OP_SLICE_IDENT
 					node nd_expr_end = node_get_child(&child, 0);
-					if (node_get_type(&nd_expr_end) == TSlice)
+					if (node_get_type(&nd_expr_end) == OP_SLICE)
 					{
 						break;
 					}
@@ -404,7 +404,7 @@ static int node_recursive(information *const info, node *const nd)
 					{
 						// TODO: а какая depth, если у вызова есть аргументы?
 						// это пока временное решение, с наличием агрументов будет другая реализация
-						if (node_get_type(&child) == TCall1)
+						if (node_get_type(&child) == OP_CALL1)
 						{
 							nd_info.depth = 2;
 						}
@@ -415,7 +415,7 @@ static int node_recursive(information *const info, node *const nd)
 					{
 						node_info *operand = stack_pop(info);
 
-						if (node_get_type(nd_info.parent) == TAddrtoval)
+						if (node_get_type(nd_info.parent) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { nd_info.parent, 1, 1 };
 							has_error |= transposition(&nd_info, &log_info);
@@ -435,7 +435,7 @@ static int node_recursive(information *const info, node *const nd)
 						node_info *second = stack_pop(info);
 						node_info *first = stack_pop(info);
 
-						if (node_get_type(nd_info.parent) == TAddrtoval)
+						if (node_get_type(nd_info.parent) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { nd_info.parent, 1, 1 };
 							has_error |= transposition(&nd_info, &log_info);
@@ -446,7 +446,7 @@ static int node_recursive(information *const info, node *const nd)
 
 						// надо переставить second с родителем
 						if (node_get_type(second->parent) == OP_AD_LOG_OR || node_get_type(second->parent) == OP_AD_LOG_AND
-							|| node_get_type(second->parent) == TAddrtoval)
+							|| node_get_type(second->parent) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { second->parent, 1, 1 };
 							has_error |= transposition(second, &log_info);
@@ -470,7 +470,7 @@ static int node_recursive(information *const info, node *const nd)
 
 		// если встретили вырезку, надо запомнить состояние стека для дальнейшего восстановления
 		// и установить начальную глубину вырезки
-		if (node_get_type(&child) == TSliceident && info->skip_counter <= 1)
+		if (node_get_type(&child) == OP_SLICE_IDENT && info->skip_counter <= 1)
 		{
 			info->slice_depth = 1;
 			info->slice_stack_size = info->stack_size;

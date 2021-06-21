@@ -677,12 +677,12 @@ static void operand(information *const info, node *const nd)
 
 	switch (node_get_type(nd))
 	{
-		case TIdent:
-		case TSelect:
-		case TIdenttoaddr:
+		case OP_IDENT:
+		case OP_SELECT:
+		case OP_IDENT_TO_ADDR:
 			node_set_next(nd);
 			break;
-		case TIdenttoval:
+		case OP_IDENT_TO_VAL:
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
@@ -693,7 +693,7 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 		}
 		break;
-		case TIdenttovald:
+		case OP_IDENT_TO_VAL_D:
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
@@ -704,7 +704,7 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 		}
 		break;
-		case TConst:
+		case OP_CONST:
 		{
 			const item_t num = node_get_arg(nd, 0);
 
@@ -723,7 +723,7 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 		}
 		break;
-		case TConstd:
+		case OP_CONST_D:
 		{
 			const double num = to_double(node_get_arg(nd, 0), node_get_arg(nd, 1));
 
@@ -742,10 +742,10 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 		}
 		break;
-		case TString:
+		case OP_STRING:
 			node_set_next(nd);
 			break;
-		case TSliceident:
+		case OP_SLICE_IDENT:
 		{
 			const item_t displ = node_get_arg(nd, 0);
 			const type_t type = node_get_arg(nd, 1);
@@ -776,7 +776,7 @@ static void operand(information *const info, node *const nd)
 			to_code_slice(info, displ, cur_dimention, 0, type);
 
 			item_t prev_slice = info->register_num - 1;
-			while (node_get_type(nd) == TSlice)
+			while (node_get_type(nd) == OP_SLICE)
 			{
 				node_set_next(nd);
 				info->variable_location = LFREE;
@@ -788,7 +788,7 @@ static void operand(information *const info, node *const nd)
 			}
 
 			// TODO: может это замена LMEM? Подумать, когда будут реализовываться указатели
-			if (node_get_type(nd) == TAddrtoval)
+			if (node_get_type(nd) == OP_ADDR_TO_VAL)
 			{
 				node_set_next(nd);
 			}
@@ -804,7 +804,7 @@ static void operand(information *const info, node *const nd)
 			info->answer_value_type = type;
 		}
 		break;
-		case TCall1:
+		case OP_CALL1:
 		{
 			const item_t args = node_get_arg(nd, 0);
 
@@ -817,7 +817,7 @@ static void operand(information *const info, node *const nd)
 			const size_t ref_ident = (size_t)node_get_arg(nd, 0);
 			const type_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
 
-			node_set_next(nd); // TCall2
+			node_set_next(nd); // OP_CALL2
 
 			if (func_type != mode_void)
 			{
@@ -834,7 +834,7 @@ static void operand(information *const info, node *const nd)
 			uni_printf(info->io, ")\n");
 		}
 		break;
-		case TBeginit:
+		case OP_ARRAY_INIT:
 		{
 			// здесь будет печать llvm с инициализацией массивов
 			const item_t N = node_get_arg(nd, 0);
@@ -846,7 +846,7 @@ static void operand(information *const info, node *const nd)
 			}
 		}
 		break;
-		case TStructinit:
+		case OP_STRUCT_INIT:
 		{
 			// здесь будет печать llvm с инициализацией структур
 			const item_t N = node_get_arg(nd, 0);
@@ -873,7 +873,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 	node_set_next(nd);
 	info->variable_location = LMEM;
-	operand(info, nd); // Tident or TSliceident
+	operand(info, nd); // Tident or OP_SLICE_IDENT
 	const item_t memory_reg = info->answer_reg;
 
 	info->variable_location = LFREE;
@@ -1075,7 +1075,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 
 	node_set_next(nd);
 	info->variable_location = LMEM;
-	operand(info, nd); // Tident or TSliceident
+	operand(info, nd); // Tident or OP_SLICE_IDENT
 	const item_t memory_reg = info->answer_reg;
 
 	to_code_load(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type
@@ -1540,7 +1540,7 @@ static void expression(information *const info, node *const nd)
 			break;
 	}
 
-	if (node_get_type(nd) == TExprend)
+	if (node_get_type(nd) == OP_EXPR_END)
 	{
 		node_set_next(nd);
 	}
@@ -1550,13 +1550,13 @@ static void statement(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case TBegin:
+		case OP_BLOCK:
 		{
 			block(info, nd);
-			node_set_next(nd); // TEnd
+			node_set_next(nd); // OP_BLOCK_END
 		}
 		break;
-		case TIf:
+		case OP_IF:
 		{
 			const item_t ref_else = node_get_arg(nd, 0);
 			const item_t old_label_true = info->label_true;
@@ -1591,16 +1591,16 @@ static void statement(information *const info, node *const nd)
 			info->label_false = old_label_false;
 		}
 		break;
-		case TSwitch:
-		case TCase:
-		case TDefault:
+		case OP_SWITCH:
+		case OP_CASE:
+		case OP_DEFAULT:
 		{
 			node_set_next(nd);
 			expression(info, nd);
 			statement(info, nd);
 		}
 		break;
-		case TWhile:
+		case OP_WHILE:
 		{
 			const item_t old_label_true = info->label_true;
 			const item_t old_label_false = info->label_false;
@@ -1628,7 +1628,7 @@ static void statement(information *const info, node *const nd)
 			info->label_false = old_label_false;
 		}
 		break;
-		case TDo:
+		case OP_DO:
 		{
 			const item_t old_label_true = info->label_true;
 			const item_t old_label_false = info->label_false;
@@ -1656,7 +1656,7 @@ static void statement(information *const info, node *const nd)
 		break;
 		// TODO: проверялось, только если в for присутствуют все блоки: инициализация, условие, модификация
 		// нужно проверить и реализовать случаи, когда какие-нибудь из этих блоков отсутсвуют
-		case TFor:
+		case OP_FOR:
 		{
 			const item_t ref_from = node_get_arg(nd, 0);
 			const item_t ref_cond = node_get_arg(nd, 1);
@@ -1704,18 +1704,18 @@ static void statement(information *const info, node *const nd)
 			info->label_false = old_label_false;
 		}
 		break;
-		case TLabel:
+		case OP_LABEL:
 		{
 			node_set_next(nd);
 			statement(info, nd);
 		}
 		break;
-		case TBreak:
-		case TContinue:
-		case TGoto:
+		case OP_BREAK:
+		case OP_CONTINUE:
+		case OP_GOTO:
 			node_set_next(nd);
 			break;
-		case TReturnvoid:
+		case OP_RETURN_VOID:
 		{
 			if (info->was_dynamic)
 			{
@@ -1726,7 +1726,7 @@ static void statement(information *const info, node *const nd)
 			uni_printf(info->io, " ret void\n");
 		}
 		break;
-		case TReturnval:
+		case OP_RETURN_VAL:
 		{
 			if (info->was_dynamic)
 			{
@@ -1752,18 +1752,18 @@ static void statement(information *const info, node *const nd)
 				type_to_io(info->io, info->answer_value_type);
 				uni_printf(info->io, " %%.%" PRIitem "\n", info->answer_reg);
 			}
-			node_set_next(nd); // TReturnvoid
+			node_set_next(nd); // OP_RETURN_VOID
 		}
 		break;
-		case TGetid:
+		case OP_GETID:
 			// здесь будет печать llvm для ввода
 			node_set_next(nd);
 			break;
-		case TPrintid:
+		case OP_PRINTID:
 			// здесь будет печать llvm для вывода
 			node_set_next(nd);
 			break;
-		case TPrintf:
+		case OP_PRINTF:
 		{
 			const item_t N = node_get_arg(nd, 0);
 			item_t args[128];
@@ -1771,8 +1771,8 @@ static void statement(information *const info, node *const nd)
 
 			node_set_next(nd);
 			const item_t string_length = node_get_arg(nd, 0);
-			node_set_next(nd); // TString
-			node_set_next(nd); // TExprend
+			node_set_next(nd); // OP_STRING
+			node_set_next(nd); // OP_EXPR_END
 			for (item_t i = 0; i < N; i++)
 			{
 				info->variable_location = LREG;
@@ -1811,8 +1811,8 @@ static void init(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case TBeginit:
-		case TStructinit:
+		case OP_ARRAY_INIT:
+		case OP_STRUCT_INIT:
 		{
 			const item_t N = node_get_arg(nd, 0);
 
@@ -1831,15 +1831,15 @@ static void init(information *const info, node *const nd)
 
 static void block(information *const info, node *const nd)
 {
-	node_set_next(nd); // TBegin
-	while (node_get_type(nd) != TEnd)
+	node_set_next(nd); // OP_BLOCK
+	while (node_get_type(nd) != OP_BLOCK_END)
 	{
 		switch (node_get_type(nd))
 		{
-			case TDeclarr:
+			case OP_DECL_ARR:
 			{
 				node id = node_get_child(nd, node_get_amount(nd) - 1);
-				if (node_get_type(&id) != TDeclid)
+				if (node_get_type(&id) != OP_DECL_ID)
 				{
 					id = node_get_child(nd, node_get_amount(nd) - 2);
 				}
@@ -1892,7 +1892,7 @@ static void block(information *const info, node *const nd)
 				}
 			}
 			break;
-			case TDeclid:
+			case OP_DECL_ID:
 			{
 				const item_t displ = node_get_arg(nd, 0);
 				const type_t elem_type = node_get_arg(nd, 1);
@@ -1922,8 +1922,8 @@ static void block(information *const info, node *const nd)
 			}
 			break;
 			case OP_NOP:
-			case TStructbeg:
-			case TStructend:
+			case OP_DECL_STRUCT:
+			case OP_DECL_STRUCT_END:
 				node_set_next(nd);
 				break;
 			default:
@@ -1942,13 +1942,13 @@ static int codegen(information *const info)
 	{
 		switch (node_get_type(&root))
 		{
-			case TFuncdef:
+			case OP_FUNC_DEF:
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
 				const type_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
 				info->was_dynamic = 0;
 
-				if (ident_get_prev(info->sx, ref_ident) == LMAIN)
+				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
 				{
 					uni_printf(info->io, "define i32 @main(");
 				}
@@ -1967,7 +1967,7 @@ static int codegen(information *const info)
 				was_stack_functions |= info->was_dynamic;
 			}
 			break;
-			case TEnd:
+			case OP_BLOCK_END:
 				break;
 			default:
 				system_error(node_unexpected, node_get_type(&root));
