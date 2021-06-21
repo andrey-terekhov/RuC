@@ -15,6 +15,7 @@
  */
 
 #include "llvmgen.h"
+#include <string.h>
 #include "codes.h"
 #include "errors.h"
 #include "hash.h"
@@ -23,7 +24,6 @@
 #include "parser.h"
 #include "tree.h"
 #include "uniprinter.h"
-#include <string.h>
 
 
 const size_t HASH_TABLE_SIZE = 1024;
@@ -883,8 +883,8 @@ static void assignment_expression(information *const info, node *const nd)
 	item_t result = info->answer_reg;
 
 	if (assignment_type != OP_ASSIGN && assignment_type != OP_ASSIGN_V && assignment_type != OP_ASSIGN_R && assignment_type != OP_ASSIGN_R_V
-		&& assignment_type != OP_ASSIGN_AT && assignment_type != OP_ASSIGN_AT_V &&
-		assignment_type != OP_ASSIGN_AT_R && assignment_type != OP_ASSIGN_AT_R_V)
+		&& assignment_type != OP_ASSIGN_AT && assignment_type != OP_ASSIGN_AT_V
+    && assignment_type != OP_ASSIGN_AT_R && assignment_type != OP_ASSIGN_AT_R_V)
 	{
 		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
 		info->register_num++;
