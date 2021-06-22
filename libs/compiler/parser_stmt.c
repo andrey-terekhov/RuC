@@ -83,7 +83,7 @@ static void parse_labeled_statement(parser *const prs, node *const parent)
 				vector_set(&prs->labels, i + 1, -1);	// TODO: здесь должен быть номер строки
 			}
 
-			ident_set_mode(prs->sx, (size_t)id, 1);
+			ident_set_type(prs->sx, (size_t)id, 1);
 			parse_statement(prs, &nd);
 			return;
 		}
@@ -95,7 +95,7 @@ static void parse_labeled_statement(parser *const prs, node *const parent)
 	vector_add(&prs->labels, id);
 	vector_add(&prs->labels, -1);	// TODO: здесь должен быть номер строки
 
-	ident_set_mode(prs->sx, (size_t)id, 1);
+	ident_set_type(prs->sx, (size_t)id, 1);
 	parse_statement(prs, &nd);
 }
 
@@ -118,7 +118,7 @@ static void parse_case_statement(parser *const prs, node *const parent)
 	token_consume(prs); // kw_case
 	node nd = node_add_child(parent, OP_CASE);
 	const item_t condition_type = parse_constant_expression(prs, &nd);
-	if (!mode_is_int(condition_type) && !mode_is_undefined(condition_type))
+	if (!type_is_integer(condition_type) && !type_is_undefined(condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
@@ -205,7 +205,7 @@ static void parse_switch_statement(parser *const prs, node *const parent)
 	node nd = node_add_child(parent, OP_SWITCH);
 
 	const item_t condition_type = parse_parenthesized_expression(prs, &nd);
-	if (!mode_is_int(condition_type) && !mode_is_undefined(condition_type))
+	if (!type_is_integer(condition_type) && !type_is_undefined(condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
@@ -434,20 +434,20 @@ static void parse_break_statement(parser *const prs, node *const parent)
 static void parse_return_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_return
-	const item_t return_type = mode_get(prs->sx, prs->function_mode + 1);
+	const item_t return_type = type_get(prs->sx, prs->function_mode + 1);
 	prs->was_return = true;
 
 	if (token_try_consume(prs, TK_SEMICOLON))
 	{
 		node_add_child(parent, OP_RETURN_VOID);
-		if (!mode_is_void(return_type))
+		if (!type_is_void(return_type))
 		{
 			parser_error(prs, no_ret_in_func);
 		}
 	}
-	else if (return_type != mode_void_pointer)
+	else if (return_type != type_void_pointer)
 	{
-		if (mode_is_void(return_type))
+		if (type_is_void(return_type))
 		{
 			parser_error(prs, notvoidret_in_void_func);
 		}
@@ -456,9 +456,9 @@ static void parse_return_statement(parser *const prs, node *const parent)
 		node_add_arg(&nd, (item_t)size_of(prs->sx, return_type));
 
 		const item_t expr_type = parse_assignment_expression(prs, &nd);
-		if (!mode_is_undefined(expr_type) && !mode_is_undefined(return_type))
+		if (!type_is_undefined(expr_type) && !type_is_undefined(return_type))
 		{
-			if (mode_is_float(return_type) && mode_is_int(expr_type))
+			if (type_is_float(return_type) && type_is_integer(expr_type))
 			{
 				parse_insert_widen(prs);
 			}
@@ -518,7 +518,7 @@ static void parse_print_statement(parser *const prs, node *const parent)
 	token_expect_and_consume(prs, TK_L_PAREN, print_without_br);
 
 	const item_t type = parse_assignment_expression(prs, parent);
-	if (mode_is_pointer(prs->sx, type))
+	if (type_is_pointer(prs->sx, type))
 	{
 		parser_error(prs, pointer_in_print);
 	}
@@ -586,22 +586,22 @@ static size_t evaluate_args(parser *const prs, const size_t length, const char32
 			{
 				case 'i':
 				case U'ц':
-					format_types[args++] = mode_integer;
+					format_types[args++] = type_integer;
 					break;
 
 				case 'c':
 				case U'л':
-					format_types[args++] = mode_character;
+					format_types[args++] = type_character;
 					break;
 
 				case 'f':
 				case U'в':
-					format_types[args++] = mode_float;
+					format_types[args++] = type_float;
 					break;
 
 				case 's':
 				case U'с':
-					format_types[args++] = to_modetab(prs, mode_array, mode_character);
+					format_types[args++] = to_modetab(prs, type_array, type_character);
 					break;
 
 				case '%':
@@ -655,7 +655,7 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 	while (token_try_consume(prs, TK_COMMA) && actual_args != expected_args)
 	{
 		const item_t type = parse_assignment_expression(prs, parent);
-		if (mode_is_float(format_types[actual_args]) && mode_is_int(type))
+		if (type_is_float(format_types[actual_args]) && type_is_integer(type))
 		{
 			parse_insert_widen(prs);
 		}
