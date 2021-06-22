@@ -1910,6 +1910,11 @@ static void block(information *const info, node *const nd)
 					{
 						uni_printf(info->io, " %%var.%" PRIitem " = alloca double, align 4\n", displ);
 					}
+					else if (mode_is_struct(info->sx, elem_type))
+					{
+						uni_printf(info->io, " %%struct.%" PRIitem " = alloca %%struct_opt.%" PRIitem ", align 4\n"
+							, elem_type, elem_type);
+					}
 					info->variable_location = LMEM;
 					info->request_reg = displ;
 				}

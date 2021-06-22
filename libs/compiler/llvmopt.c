@@ -58,6 +58,28 @@ typedef struct information
 } information;
 
 
+static inline void struct_declaration(information *const info, size_t mode_ref)
+{
+	uni_printf(info->io, "%%struct_opt.%zi = type { ", mode_ref);
+
+	const item_t n = mode_get(info->sx, mode_ref + 2);
+	for (item_t i = 0; i < n; i += 2)
+	{
+		switch (mode_get(info->sx, mode_ref + 3 + i))
+		{
+			case mode_integer:
+				uni_printf(info->io, "%si32", i == 0 ? "" : ", ");
+				break;
+
+			default:
+			break;
+		}
+	}
+
+	uni_printf(info->io, " }\n");
+}
+
+
 static inline size_t stack_peek_depth(information *const info)
 {
 	return info->stack[info->stack_size - 1].depth;
@@ -127,27 +149,27 @@ static int transposition(node_info *const expr, node_info *const cur, informatio
 	// printf("temp type = %i\n\n", node_get_type(&temp));
 	for (size_t i = 1; i < expr->depth; i++)
 	{
-		if (counter == 2 && i == 1)
-		{
-			tables_and_tree("before.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-		}
+		// if (counter == 2 && i == 1)
+		// {
+		// 	tables_and_tree("before.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
+		// }
 		node child_to_order11 = node_get_child(cur->parent, cur->child);
 		// printf("child_to_order11 type = %i\n", node_get_type(&child_to_order11));
 		node child_to_order21 = node_get_child(&temp, 0);
 		// printf("child_to_order21 type = %i\n\n", node_get_type(&child_to_order21));
 
-		if (counter == 2 && i == 1)
-		{
-			printf("child_to_order11 type = %i\n", node_get_type(&child_to_order11));
-			printf("child_to_order21 type = %i\n\n", node_get_type(&child_to_order21));
-		}
+		// if (counter == 2 && i == 1)
+		// {
+		// 	printf("child_to_order11 type = %i\n", node_get_type(&child_to_order11));
+		// 	printf("child_to_order21 type = %i\n\n", node_get_type(&child_to_order21));
+		// }
 
 		node_order(&child_to_order11, &child_to_order21);
 
-		if (counter == 2 && i == 1)
-		{
-			tables_and_tree("after.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-		}
+		// if (counter == 2 && i == 1)
+		// {
+		// 	tables_and_tree("after.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
+		// }
 
 		temp = node_get_child(&temp, 0);
 	}
@@ -433,6 +455,17 @@ static int node_recursive(information *const info, node *const nd)
 					slice_info->depth = info->slice_depth;
 					stack_push(info, slice_info);
 					info->slice_depth = 0;
+				}
+			}
+			break;
+
+			case OP_DECL_ID:
+			{
+				const size_t elem_type = (size_t)node_get_arg(&child, 1);
+
+				if (mode_get(info->sx, elem_type) == mode_struct)
+				{
+					struct_declaration(info, elem_type);
 				}
 			}
 			break;
