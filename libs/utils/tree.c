@@ -22,6 +22,17 @@ static inline bool is_negative(const item_t value)
 	return value >> (8 * sizeof(item_t) - 1);
 }
 
+static inline item_t to_negative(const size_t value)
+{
+	return ~(item_t)value + 1;
+}
+
+static inline size_t from_negative(const item_t value)
+{
+	return (size_t)(~value + 1);
+}
+
+
 static inline void vector_swap(vector *const vec, size_t fst, size_t snd)
 {
 	const item_t temp = vector_get(vec, fst);
@@ -81,7 +92,7 @@ static node node_search_parent(const node *const nd, size_t *const number)
 		child_number++;
 	}
 
-	node parent = { nd->tree, (size_t)(~index + 1) };
+	node parent = { nd->tree, from_negative(index) };
 	if (number != NULL)
 	{
 		*number = node_get_amount(&parent) - child_number;
@@ -177,7 +188,7 @@ node node_get_next(const node *const nd)
 		while (is_negative(index))
 		{
 			// Get next reference from parent
-			index = vector_get(nd->tree, (size_t)(~index + 1) - 2);
+			index = vector_get(nd->tree, from_negative(index) - 2);
 		}
 
 		next.index = (size_t)index;
@@ -206,7 +217,7 @@ node node_add_child(const node *const nd, const item_t type)
 		return node_broken();
 	}
 
-	vector_add(nd->tree, ~(item_t)nd->index + 1);
+	vector_add(nd->tree, to_negative(nd->index));
 	vector_add(nd->tree, type);
 	node child = { nd->tree, vector_add(nd->tree, 0) };
 	vector_add(nd->tree, 0);
@@ -330,7 +341,7 @@ node node_insert(const node *const nd, const item_t type, const size_t argc)
 	vector_add(nd->tree, nd->index);
 
 	vector_set(nd->tree, reference, (item_t)child.index);
-	ref_set_next(nd, ~(item_t)child.index + 1);
+	ref_set_next(nd, to_negative(child.index));
 	return child;
 }
 
