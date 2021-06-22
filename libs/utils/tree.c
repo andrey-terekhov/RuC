@@ -355,6 +355,20 @@ int node_order(const node *const fst, const node *const snd)
 	vector_swap(fst->tree, ref_get_amount(fst), ref_get_amount(snd));
 	vector_swap(fst->tree, ref_get_children(fst), ref_get_children(snd));
 
+	const size_t fst_amount = node_get_amount(fst);
+	if (fst_amount != 0)
+	{
+		const node child = node_get_child(fst, fst_amount - 1);
+		ref_set_next(&child, to_negative(fst->index));
+	}
+
+	const size_t snd_amount = node_get_amount(snd);
+	if (snd_amount != 0)
+	{
+		const node child = node_get_child(snd, snd_amount - 1);
+		ref_set_next(&child, to_negative(snd->index));
+	}
+
 	return 0;
 }
 
