@@ -33,7 +33,7 @@ static const size_t MAX_STACK_SIZE = 256;
 
 
 /** Virtual machine codes emitter */
-typedef struct codegenerator
+typedef struct encoder
 {
 	syntax *sx;						/**< Syntax structure */
 
@@ -52,7 +52,7 @@ typedef struct codegenerator
 
 	item_status target;				/**< Target tables item type */
 	int was_error;					/**< Error flag */
-} codegenerator;
+} encoder;
 
 /**
  *	Create code generator
@@ -62,28 +62,28 @@ typedef struct codegenerator
  *
  *	@return	Code generator
  */
-static codegenerator cg_create(const workspace *const ws, syntax *const sx)
+static encoder enc_create(const workspace *const ws, syntax *const sx)
 {
-	codegenerator cg;
-	cg.sx = sx;
+	encoder enc;
+	enc.sx = sx;
 
-	cg.memory = vector_create(MAX_MEM_SIZE);
-	cg.processes = vector_create(sx->procd);
-	cg.stk = stack_create(MAX_STACK_SIZE);
+	enc.memory = vector_create(MAX_MEM_SIZE);
+	enc.processes = vector_create(sx->procd);
+	enc.stk = stack_create(MAX_STACK_SIZE);
 
 	const size_t records = vector_size(&sx->identifiers) / 4;
-	cg.identifiers = vector_create(records * 3);
-	cg.representations = vector_create(records * 8);
+	enc.identifiers = vector_create(records * 3);
+	enc.representations = vector_create(records * 8);
 
-	vector_increase(&cg.memory, 4);
-	vector_increase(&cg.processes, sx->procd);
-	cg.max_threads = 0;
+	vector_increase(&enc.memory, 4);
+	vector_increase(&enc.processes, sx->procd);
+	enc.max_threads = 0;
 
-	cg.target = item_get_status(ws);
+	enc.target = item_get_status(ws);
 
-	cg.was_error = 0;
+	enc.was_error = 0;
 
-	return cg;
+	return enc;
 }
 
 /** Print table */
@@ -110,148 +110,150 @@ static int print_table(universal_io *const io, const item_status target, const v
  *	Export codes for virtual machine
  *
  *	@param	io		Universal io structure
- *	@param	cg		Code generator
+ *	@param	enc		Code generator
+ *
+ *	@return	@c 0 on success, @c -1 on error
  */
-static int cg_export(universal_io *const io, const codegenerator *const cg)
+static int enc_export(universal_io *const io, const encoder *const enc)
 {
 	uni_printf(io, "#!/usr/bin/ruc-vm\n");
 
 	uni_printf(io, "%zi %zi %zi %zi %zi %" PRIitem " %zi\n"
-		, vector_size(&cg->memory)
-		, vector_size(&cg->sx->functions)
-		, vector_size(&cg->identifiers)
-		, vector_size(&cg->representations)
-		, vector_size(&cg->sx->types)
-		, cg->sx->max_displg, cg->max_threads);
+		, vector_size(&enc->memory)
+		, vector_size(&enc->sx->functions)
+		, vector_size(&enc->identifiers)
+		, vector_size(&enc->representations)
+		, vector_size(&enc->sx->types)
+		, enc->sx->max_displg, enc->max_threads);
 
-	return print_table(io, cg->target, &cg->memory)
-		|| print_table(io, cg->target, &cg->sx->functions)
-		|| print_table(io, cg->target, &cg->identifiers)
-		|| print_table(io, cg->target, &cg->representations)
-		|| print_table(io, cg->target, &cg->sx->types);
+	return print_table(io, enc->target, &enc->memory)
+		|| print_table(io, enc->target, &enc->sx->functions)
+		|| print_table(io, enc->target, &enc->identifiers)
+		|| print_table(io, enc->target, &enc->representations)
+		|| print_table(io, enc->target, &enc->sx->types);
 }
 
 /**
  *	Clear Code generator structure
  *
- *	@param	cg		Code generator
+ *	@param	enc		Code generator
  */
-static void cg_clear(codegenerator *const cg)
+static void enc_clear(encoder *const enc)
 {
-	vector_clear(&cg->memory);
-	vector_clear(&cg->processes);
-	stack_clear(&cg->stk);
+	vector_clear(&enc->memory);
+	vector_clear(&enc->processes);
+	stack_clear(&enc->stk);
 
-	vector_clear(&cg->identifiers);
-	vector_clear(&cg->representations);
+	vector_clear(&enc->identifiers);
+	vector_clear(&enc->representations);
 }
 
 
-static void emit_statement(codegenerator *const cg, const node *const nd);
-static void emit_block(codegenerator *const cg, const node *const nd);
+static void emit_statement(encoder *const enc, const node *const nd);
+static void emit_block(encoder *const enc, const node *const nd);
 
 
-static inline void mem_increase(codegenerator *const cg, const size_t size)
+static inline void mem_increase(encoder *const enc, const size_t size)
 {
-	vector_increase(&cg->memory, size);
+	vector_increase(&enc->memory, size);
 }
 
-static inline void mem_add(codegenerator *const cg, const item_t value)
+static inline void mem_add(encoder *const enc, const item_t value)
 {
-	vector_add(&cg->memory, value);
+	vector_add(&enc->memory, value);
 }
 
-static inline void mem_set(codegenerator *const cg, const size_t index, const item_t value)
+static inline void mem_set(encoder *const enc, const size_t index, const item_t value)
 {
-	vector_set(&cg->memory, index, value);
+	vector_set(&enc->memory, index, value);
 }
 
-static inline item_t mem_get(const codegenerator *const cg, const size_t index)
+static inline item_t mem_get(const encoder *const enc, const size_t index)
 {
-	return vector_get(&cg->memory, index);
+	return vector_get(&enc->memory, index);
 }
 
-static inline size_t mem_size(const codegenerator *const cg)
+static inline size_t mem_size(const encoder *const enc)
 {
-	return vector_size(&cg->memory);
+	return vector_size(&enc->memory);
 }
 
-static inline size_t mem_reserve(codegenerator *const cg)
+static inline size_t mem_reserve(encoder *const enc)
 {
-	vector_increase(&cg->memory, 1);
-	return mem_size(cg) - 1;
-}
-
-
-static inline void proc_set(codegenerator *const cg, const size_t index, const item_t value)
-{
-	vector_set(&cg->processes, index, value);
-}
-
-static inline item_t proc_get(const codegenerator *const cg, const size_t index)
-{
-	return vector_get(&cg->processes, index);
+	vector_increase(&enc->memory, 1);
+	return mem_size(enc) - 1;
 }
 
 
-static void addr_begin_condition(codegenerator *const cg, const size_t addr)
+static inline void proc_set(encoder *const enc, const size_t index, const item_t value)
 {
-	while (cg->addr_cond != addr)
+	vector_set(&enc->processes, index, value);
+}
+
+static inline item_t proc_get(const encoder *const enc, const size_t index)
+{
+	return vector_get(&enc->processes, index);
+}
+
+
+static void addr_begin_condition(encoder *const enc, const size_t addr)
+{
+	while (enc->addr_cond != addr)
 	{
-		const size_t ref = (size_t)mem_get(cg, cg->addr_cond);
-		mem_set(cg, cg->addr_cond, (item_t)addr);
-		cg->addr_cond = ref;
+		const size_t ref = (size_t)mem_get(enc, enc->addr_cond);
+		mem_set(enc, enc->addr_cond, (item_t)addr);
+		enc->addr_cond = ref;
 	}
 }
 
-static void addr_end_condition(codegenerator *const cg)
+static void addr_end_condition(encoder *const enc)
 {
-	while (cg->addr_cond)
+	while (enc->addr_cond)
 	{
-		const size_t ref = (size_t)mem_get(cg, cg->addr_cond);
-		mem_set(cg, cg->addr_cond, (item_t)mem_size(cg));
-		cg->addr_cond = ref;
+		const size_t ref = (size_t)mem_get(enc, enc->addr_cond);
+		mem_set(enc, enc->addr_cond, (item_t)mem_size(enc));
+		enc->addr_cond = ref;
 	}
 }
 
-static void addr_end_break(codegenerator *const cg)
+static void addr_end_break(encoder *const enc)
 {
-	while (cg->addr_break)
+	while (enc->addr_break)
 	{
-		const size_t ref = (size_t)mem_get(cg, cg->addr_break);
-		mem_set(cg, cg->addr_break, (item_t)mem_size(cg));
-		cg->addr_break = ref;
+		const size_t ref = (size_t)mem_get(enc, enc->addr_break);
+		mem_set(enc, enc->addr_break, (item_t)mem_size(enc));
+		enc->addr_break = ref;
 	}
 }
 
 
-static void compress_ident(codegenerator *const cg, const size_t ref)
+static void compress_ident(encoder *const enc, const size_t ref)
 {
-	if (vector_get(&cg->sx->identifiers, ref) == ITEM_MAX)
+	if (vector_get(&enc->sx->identifiers, ref) == ITEM_MAX)
 	{
-		mem_add(cg, ident_get_repr(cg->sx, ref));
+		mem_add(enc, ident_get_repr(enc->sx, ref));
 		return;
 	}
 
-	const item_t new_ref = (item_t)vector_size(&cg->identifiers) - 1;
-	vector_add(&cg->identifiers, (item_t)vector_size(&cg->representations) - 2);
-	vector_add(&cg->identifiers, ident_get_type(cg->sx, ref));
-	vector_add(&cg->identifiers, ident_get_displ(cg->sx, ref));
+	const item_t new_ref = (item_t)vector_size(&enc->identifiers) - 1;
+	vector_add(&enc->identifiers, (item_t)vector_size(&enc->representations) - 2);
+	vector_add(&enc->identifiers, ident_get_type(enc->sx, ref));
+	vector_add(&enc->identifiers, ident_get_displ(enc->sx, ref));
 
-	const char *buffer = repr_get_name(cg->sx, (size_t)ident_get_repr(cg->sx, ref));
+	const char *buffer = repr_get_name(enc->sx, (size_t)ident_get_repr(enc->sx, ref));
 	for (size_t i = 0; buffer[i] != '\0'; i += utf8_symbol_size(buffer[i]))
 	{
-		vector_add(&cg->representations, (item_t)utf8_convert(&buffer[i]));
+		vector_add(&enc->representations, (item_t)utf8_convert(&buffer[i]));
 	}
-	vector_add(&cg->representations, '\0');
+	vector_add(&enc->representations, '\0');
 
-	vector_set(&cg->sx->identifiers, ref, ITEM_MAX);
-	ident_set_repr(cg->sx, ref, new_ref);
-	mem_add(cg, new_ref);
+	vector_set(&enc->sx->identifiers, ref, ITEM_MAX);
+	ident_set_repr(enc->sx, ref, new_ref);
+	mem_add(enc, new_ref);
 }
 
 
-static void final_operation(codegenerator *const cg, node *const nd)
+static void final_operation(encoder *const enc, node *const nd)
 {
 	operation_t op = (operation_t)node_get_type(nd);
 	while (op > BEGIN_OP_FINAL && op < END_OP_FINAL)
@@ -260,43 +262,43 @@ static void final_operation(codegenerator *const cg, node *const nd)
 		{
 			if (op == OP_AD_LOG_OR)
 			{
-				mem_add(cg, IC_DUPLICATE);
-				mem_add(cg, IC_BNE0);
-				stack_push(&cg->stk, (item_t)mem_size(cg));
-				mem_increase(cg, 1);
+				mem_add(enc, IC_DUPLICATE);
+				mem_add(enc, IC_BNE0);
+				stack_push(&enc->stk, (item_t)mem_size(enc));
+				mem_increase(enc, 1);
 			}
 			else if (op == OP_AD_LOG_AND)
 			{
-				mem_add(cg, IC_DUPLICATE);
-				mem_add(cg, IC_BE0);
-				stack_push(&cg->stk, (item_t)mem_size(cg));
-				mem_increase(cg, 1);
+				mem_add(enc, IC_DUPLICATE);
+				mem_add(enc, IC_BE0);
+				stack_push(&enc->stk, (item_t)mem_size(enc));
+				mem_increase(enc, 1);
 			}
 			else
 			{
-				mem_add(cg, (instruction_t)op);
+				mem_add(enc, (instruction_t)op);
 				if (op == OP_LOG_OR || op == OP_LOG_AND)
 				{
-					mem_set(cg, (size_t)stack_pop(&cg->stk), (item_t)mem_size(cg));
+					mem_set(enc, (size_t)stack_pop(&enc->stk), (item_t)mem_size(enc));
 				}
 				else if (op == OP_COPY00 || op == OP_COPYST)
 				{
-					mem_add(cg, node_get_arg(nd, 0)); // d1
-					mem_add(cg, node_get_arg(nd, 1)); // d2
-					mem_add(cg, node_get_arg(nd, 2)); // длина
+					mem_add(enc, node_get_arg(nd, 0)); // d1
+					mem_add(enc, node_get_arg(nd, 1)); // d2
+					mem_add(enc, node_get_arg(nd, 2)); // длина
 				}
 				else if (op == OP_COPY01 || op == OP_COPY10 || op == OP_COPY0ST || op == OP_COPY0ST_ASSIGN)
 				{
-					mem_add(cg, node_get_arg(nd, 0)); // d1
-					mem_add(cg, node_get_arg(nd, 1)); // длина
+					mem_add(enc, node_get_arg(nd, 0)); // d1
+					mem_add(enc, node_get_arg(nd, 1)); // длина
 				}
 				else if (op == OP_COPY11 || op == OP_COPY1ST || op == OP_COPY1ST_ASSIGN)
 				{
-					mem_add(cg, node_get_arg(nd, 0)); // длина
+					mem_add(enc, node_get_arg(nd, 0)); // длина
 				}
 				else if (operation_is_assignment(op))
 				{
-					mem_add(cg, node_get_arg(nd, 0));
+					mem_add(enc, node_get_arg(nd, 0));
 				}
 			}
 		}
@@ -309,10 +311,10 @@ static void final_operation(codegenerator *const cg, node *const nd)
 /**
  *	Expression generation
  *
- *	@param	cg				Code generator
+ *	@param	enc				Code generator
  *	@param	is_in_condition	@c true for expression in condition
  */
-static void expression(codegenerator *const cg, node *const nd, const bool is_in_condition)
+static void expression(encoder *const enc, node *const nd, const bool is_in_condition)
 {
 	while (node_get_type(nd) != OP_EXPR_END)
 	{
@@ -325,79 +327,79 @@ static void expression(codegenerator *const cg, node *const nd, const bool is_in
 				break;
 			case OP_IDENT_TO_ADDR:
 			{
-				mem_add(cg, IC_LA);
-				mem_add(cg, node_get_arg(nd, 0));
+				mem_add(enc, IC_LA);
+				mem_add(enc, node_get_arg(nd, 0));
 			}
 			break;
 			case OP_IDENT_TO_VAL:
 			{
-				mem_add(cg, IC_LOAD);
-				mem_add(cg, node_get_arg(nd, 0));
+				mem_add(enc, IC_LOAD);
+				mem_add(enc, node_get_arg(nd, 0));
 			}
 			break;
 			case OP_IDENT_TO_VAL_D:
 			{
-				mem_add(cg, IC_LOADD);
-				mem_add(cg, node_get_arg(nd, 0));
+				mem_add(enc, IC_LOADD);
+				mem_add(enc, node_get_arg(nd, 0));
 			}
 			break;
 			case OP_ADDR_TO_VAL:
-				mem_add(cg, IC_LAT);
+				mem_add(enc, IC_LAT);
 				break;
 			case OP_ADDR_TO_VAL_D:
-				mem_add(cg, IC_LATD);
+				mem_add(enc, IC_LATD);
 				break;
 			case OP_CONST:
 			{
-				mem_add(cg, IC_LI);
-				mem_add(cg, node_get_arg(nd, 0));
+				mem_add(enc, IC_LI);
+				mem_add(enc, node_get_arg(nd, 0));
 			}
 			break;
 			case OP_CONST_D:
 			{
-				mem_add(cg, IC_LID);
-				mem_add(cg, node_get_arg(nd, 0));
-				mem_add(cg, node_get_arg(nd, 1));
+				mem_add(enc, IC_LID);
+				mem_add(enc, node_get_arg(nd, 0));
+				mem_add(enc, node_get_arg(nd, 1));
 			}
 			break;
 			case OP_STRING:
 			case OP_STRING_D:
 			{
-				mem_add(cg, IC_LI);
-				const size_t reserved = mem_size(cg) + 4;
-				mem_add(cg, (item_t)reserved);
-				mem_add(cg, IC_B);
-				mem_increase(cg, 2);
+				mem_add(enc, IC_LI);
+				const size_t reserved = mem_size(enc) + 4;
+				mem_add(enc, (item_t)reserved);
+				mem_add(enc, IC_B);
+				mem_increase(enc, 2);
 
 				const item_t N = node_get_arg(nd, 0);
 				for (item_t i = 0; i < N; i++)
 				{
 					if (operation == OP_STRING)
 					{
-						mem_add(cg, node_get_arg(nd, (size_t)i + 1));
+						mem_add(enc, node_get_arg(nd, (size_t)i + 1));
 					}
 					else
 					{
-						mem_add(cg, node_get_arg(nd, 2 * (size_t)i + 1));
-						mem_add(cg, node_get_arg(nd, 2 * (size_t)i + 2));
+						mem_add(enc, node_get_arg(nd, 2 * (size_t)i + 1));
+						mem_add(enc, node_get_arg(nd, 2 * (size_t)i + 2));
 					}
 				}
 
-				mem_set(cg, reserved - 1, N);
-				mem_set(cg, reserved - 2, (item_t)mem_size(cg));
+				mem_set(enc, reserved - 1, N);
+				mem_set(enc, reserved - 2, (item_t)mem_size(enc));
 			}
 			break;
 			case OP_ARRAY_INIT:
 			{
 				const item_t N = node_get_arg(nd, 0);
 
-				mem_add(cg, IC_BEG_INIT);
-				mem_add(cg, N);
+				mem_add(enc, IC_BEG_INIT);
+				mem_add(enc, N);
 
 				for (item_t i = 0; i < N; i++)
 				{
 					node_set_next(nd);
-					expression(cg, nd, false);
+					expression(enc, nd, false);
 				}
 			}
 			break;
@@ -407,57 +409,57 @@ static void expression(codegenerator *const cg, node *const nd, const bool is_in
 				for (item_t i = 0; i < N; i++)
 				{
 					node_set_next(nd);
-					expression(cg, nd, false);
+					expression(enc, nd, false);
 				}
 			}
 			break;
 			case OP_SLICE_IDENT:
 			{
-				mem_add(cg, IC_LOAD); // параметры - смещение идента и тип элемента
-				mem_add(cg, node_get_arg(nd, 0)); // продолжение в след case
+				mem_add(enc, IC_LOAD); // параметры - смещение идента и тип элемента
+				mem_add(enc, node_get_arg(nd, 0)); // продолжение в след case
 			}
 			case OP_SLICE: // параметр - тип элемента
 			{
 				item_t type = node_get_arg(nd, operation == OP_SLICE ? 0 : 1);
 
 				node_set_next(nd);
-				expression(cg, nd, false);
-				mem_add(cg, IC_SLICE);
-				mem_add(cg, (item_t)size_of(cg->sx, type));
-				if (type_is_array(cg->sx, type))
+				expression(enc, nd, false);
+				mem_add(enc, IC_SLICE);
+				mem_add(enc, (item_t)size_of(enc->sx, type));
+				if (type_is_array(enc->sx, type))
 				{
-					mem_add(cg, IC_LAT);
+					mem_add(enc, IC_LAT);
 				}
 			}
 			break;
 			case OP_SELECT:
 			{
-				mem_add(cg, IC_SELECT); // SELECT field_displ
-				mem_add(cg, node_get_arg(nd, 0));
+				mem_add(enc, IC_SELECT); // SELECT field_displ
+				mem_add(enc, node_get_arg(nd, 0));
 			}
 			break;
 			case OP_PRINT:
 			{
-				mem_add(cg, IC_PRINT);
-				mem_add(cg, node_get_arg(nd, 0)); // type
+				mem_add(enc, IC_PRINT);
+				mem_add(enc, node_get_arg(nd, 0)); // type
 			}
 			break;
 			case OP_CALL1:
 			{
-				mem_add(cg, IC_CALL1);
+				mem_add(enc, IC_CALL1);
 
 				const item_t N = node_get_arg(nd, 0);
 				for (item_t i = 0; i < N; i++)
 				{
 					node_set_next(nd);
-					expression(cg, nd, 0);
+					expression(enc, nd, 0);
 				}
 			}
 			break;
 			case OP_CALL2:
 			{
-				mem_add(cg, IC_CALL2);
-				mem_add(cg, ident_get_displ(cg->sx, (size_t)node_get_arg(nd, 0)));
+				mem_add(enc, IC_CALL2);
+				mem_add(enc, ident_get_displ(enc->sx, (size_t)node_get_arg(nd, 0)));
 			}
 			break;
 			default:
@@ -470,7 +472,7 @@ static void expression(codegenerator *const cg, node *const nd, const bool is_in
 			node_set_next(nd);
 		}
 
-		final_operation(cg, nd);
+		final_operation(enc, nd);
 
 		if (node_get_type(nd) == OP_CONDITIONAL)
 		{
@@ -482,29 +484,29 @@ static void expression(codegenerator *const cg, node *const nd, const bool is_in
 			size_t addr = 0;
 			do
 			{
-				mem_add(cg, IC_BE0);
-				const size_t addr_else = mem_size(cg);
-				mem_increase(cg, 1);
+				mem_add(enc, IC_BE0);
+				const size_t addr_else = mem_size(enc);
+				mem_increase(enc, 1);
 
 				node_set_next(nd);
-				expression(cg, nd, false); // then
-				mem_add(cg, IC_B);
-				mem_add(cg, (item_t)addr);
-				addr = mem_size(cg) - 1;
-				mem_set(cg, addr_else, (item_t)mem_size(cg));
+				expression(enc, nd, false); // then
+				mem_add(enc, IC_B);
+				mem_add(enc, (item_t)addr);
+				addr = mem_size(enc) - 1;
+				mem_set(enc, addr_else, (item_t)mem_size(enc));
 
 				node_set_next(nd);
-				expression(cg, nd, true); // else или cond
+				expression(enc, nd, true); // else или cond
 			} while (node_get_type(nd) == OP_CONDITIONAL);
 
 			while (addr)
 			{
-				const size_t ref = (size_t)mem_get(cg, addr);
-				mem_set(cg, addr, (item_t)mem_size(cg));
+				const size_t ref = (size_t)mem_get(enc, addr);
+				mem_set(enc, addr, (item_t)mem_size(enc));
 				addr = ref;
 			}
 
-			final_operation(cg, nd);
+			final_operation(enc, nd);
 		}
 	}
 }
@@ -515,40 +517,40 @@ static void expression(codegenerator *const cg, node *const nd, const bool is_in
  *	@note	Это переходник под старый expression(), который использует node_set_next()
  *	TODO:	переписать генерацию выражений
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_expression(codegenerator *const cg, const node *const nd)
+static void emit_expression(encoder *const enc, const node *const nd)
 {
 	node internal_node;
 	node_copy(&internal_node, nd);
-	expression(cg, &internal_node, false);
+	expression(enc, &internal_node, false);
 }
 
 /**
  *	Emit declaration [C99 6.7]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_declaration(codegenerator *const cg, const node *const nd)
+static void emit_declaration(encoder *const enc, const node *const nd)
 {
 	switch (node_get_type(nd))
 	{
 		case OP_FUNC_DEF:
 		{
-			const size_t ref_func = (size_t)ident_get_displ(cg->sx, (size_t)node_get_arg(nd, 0));
-			func_set(cg->sx, ref_func, (item_t)mem_size(cg));
+			const size_t ref_func = (size_t)ident_get_displ(enc->sx, (size_t)node_get_arg(nd, 0));
+			func_set(enc->sx, ref_func, (item_t)mem_size(enc));
 
-			mem_add(cg, IC_FUNC_BEG);
-			mem_add(cg, node_get_arg(nd, 1));
+			mem_add(enc, IC_FUNC_BEG);
+			mem_add(enc, node_get_arg(nd, 1));
 
-			const size_t old_pc = mem_reserve(cg);
+			const size_t old_pc = mem_reserve(enc);
 
 			const node func_body = node_get_child(nd, 0);
-			emit_block(cg, &func_body);
+			emit_block(enc, &func_body);
 
-			mem_set(cg, old_pc, (item_t)mem_size(cg));
+			mem_set(enc, old_pc, (item_t)mem_size(enc));
 			return;
 		}
 
@@ -560,26 +562,26 @@ static void emit_declaration(codegenerator *const cg, const node *const nd)
 
 			if (process)
 			{
-				mem_add(cg, IC_STRUCT_WITH_ARR);
-				mem_add(cg, old_displ);
-				mem_add(cg, proc_get(cg, (size_t)process));
+				mem_add(enc, IC_STRUCT_WITH_ARR);
+				mem_add(enc, old_displ);
+				mem_add(enc, proc_get(enc, (size_t)process));
 			}
 
 			const node initializer = node_get_child(nd, 0);
 			if (node_is_correct(&initializer)) // int a = или struct{} a =
 			{
-				emit_expression(cg, &initializer);
+				emit_expression(enc, &initializer);
 
-				if (type_is_struct(cg->sx, type))
+				if (type_is_struct(enc->sx, type))
 				{
-					mem_add(cg, IC_COPY0ST_ASSIGN);
-					mem_add(cg, old_displ);
-					mem_add(cg, node_get_arg(nd, 3)); // Общее количество слов
+					mem_add(enc, IC_COPY0ST_ASSIGN);
+					mem_add(enc, old_displ);
+					mem_add(enc, node_get_arg(nd, 3)); // Общее количество слов
 				}
 				else
 				{
-					mem_add(cg, type_is_float(type) ? IC_ASSIGN_R_V : IC_ASSIGN_V);
-					mem_add(cg, old_displ);
+					mem_add(enc, type_is_float(type) ? IC_ASSIGN_R_V : IC_ASSIGN_V);
+					mem_add(enc, old_displ);
 				}
 			}
 
@@ -592,7 +594,7 @@ static void emit_declaration(codegenerator *const cg, const node *const nd)
 			for (size_t i = 0; i < bounds; i++)
 			{
 				const node expression = node_get_child(nd, i);
-				emit_expression(cg, &expression);
+				emit_expression(enc, &expression);
 			}
 
 			const node decl_id = node_get_child(nd, bounds);
@@ -604,17 +606,17 @@ static void emit_declaration(codegenerator *const cg, const node *const nd)
 				has_initializer = 1;
 			}
 
-			mem_add(cg, IC_DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
+			mem_add(enc, IC_DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
 
 			const item_t dimensions = node_get_arg(&decl_id, 2);
-			mem_add(cg, has_initializer ? dimensions - 1 : dimensions);
+			mem_add(enc, has_initializer ? dimensions - 1 : dimensions);
 
-			const item_t length = (item_t)size_of(cg->sx, node_get_arg(&decl_id, 1));
-			mem_add(cg, length);
+			const item_t length = (item_t)size_of(enc->sx, node_get_arg(&decl_id, 1));
+			mem_add(enc, length);
 
 			const item_t old_displ = node_get_arg(&decl_id, 0);
-			mem_add(cg, old_displ);
-			mem_add(cg, proc_get(cg, (size_t)node_get_arg(&decl_id, 4)));
+			mem_add(enc, old_displ);
+			mem_add(enc, proc_get(enc, (size_t)node_get_arg(&decl_id, 4)));
 
 			/*
 			 *	@param	usual	Для массивов:
@@ -622,19 +624,19 @@ static void emit_declaration(codegenerator *const cg, const node *const nd)
 			 *						@c 1 без пустых границ
 			 */
 			const item_t usual = node_get_arg(&decl_id, 5);
-			mem_add(cg, usual);
-			mem_add(cg, node_get_arg(&decl_id, 3));
-			mem_add(cg, node_get_arg(&decl_id, 6));
+			mem_add(enc, usual);
+			mem_add(enc, node_get_arg(&decl_id, 3));
+			mem_add(enc, node_get_arg(&decl_id, 6));
 
 			if (has_initializer)
 			{
-				emit_expression(cg, &initializer);
+				emit_expression(enc, &initializer);
 
-				mem_add(cg, IC_ARR_INIT);
-				mem_add(cg, dimensions);
-				mem_add(cg, length);
-				mem_add(cg, old_displ);
-				mem_add(cg, usual);
+				mem_add(enc, IC_ARR_INIT);
+				mem_add(enc, dimensions);
+				mem_add(enc, length);
+				mem_add(enc, old_displ);
+				mem_add(enc, usual);
 			}
 
 			return;
@@ -642,22 +644,22 @@ static void emit_declaration(codegenerator *const cg, const node *const nd)
 
 		case OP_DECL_STRUCT:
 		{
-			mem_add(cg, IC_B);
-			mem_add(cg, 0);
-			proc_set(cg, (size_t)node_get_arg(nd, 0), (item_t)mem_size(cg));
+			mem_add(enc, IC_B);
+			mem_add(enc, 0);
+			proc_set(enc, (size_t)node_get_arg(nd, 0), (item_t)mem_size(enc));
 
 			const size_t children = node_get_amount(nd);
 			for (size_t i = 0; i < children - 1; i++)
 			{
 				const node child = node_get_child(nd, i);
-				emit_declaration(cg, &child);
+				emit_declaration(enc, &child);
 			}
 
 			const node decl_end = node_get_child(nd, children - 1);
 			const size_t num_proc = (size_t)node_get_arg(&decl_end, 0);
 
-			mem_add(cg, IC_STOP);
-			mem_set(cg, (size_t)proc_get(cg, num_proc) - 1, (item_t)mem_size(cg));
+			mem_add(enc, IC_STOP);
+			mem_set(enc, (size_t)proc_get(enc, num_proc) - 1, (item_t)mem_size(enc));
 			return;
 		}
 
@@ -668,7 +670,7 @@ static void emit_declaration(codegenerator *const cg, const node *const nd)
 
 		default:
 			system_error(node_unexpected, node_get_type(nd));
-			cg->was_error = 1;
+			enc->was_error = 1;
 			return;
 	}
 }
@@ -676,13 +678,13 @@ static void emit_declaration(codegenerator *const cg, const node *const nd)
 /**
  *	Emit labeled statement [C99 6.8.1]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_labeled_statement(codegenerator *const cg, const node *const nd)
+static void emit_labeled_statement(encoder *const enc, const node *const nd)
 {
 	const item_t label_id = node_get_arg(nd, 0);
-	item_t addr = ident_get_displ(cg->sx, (size_t)label_id);
+	item_t addr = ident_get_displ(enc->sx, (size_t)label_id);
 
 	if (addr < 0)
 	{
@@ -690,201 +692,201 @@ static void emit_labeled_statement(codegenerator *const cg, const node *const nd
 		while (addr)
 		{
 			// Проставить ссылку на метку во всех ранних переходах
-			const item_t ref = mem_get(cg, (size_t)(-addr));
-			mem_set(cg, (size_t)(-addr), (item_t)mem_size(cg));
+			const item_t ref = mem_get(enc, (size_t)(-addr));
+			mem_set(enc, (size_t)(-addr), (item_t)mem_size(enc));
 			addr = ref;
 		}
 	}
 
-	ident_set_displ(cg->sx, (size_t)label_id, (item_t)mem_size(cg));
+	ident_set_displ(enc->sx, (size_t)label_id, (item_t)mem_size(enc));
 }
 
 /**
  *	Emit case statement [C99 6.8.1]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_case_statement(codegenerator *const cg, const node *const nd)
+static void emit_case_statement(encoder *const enc, const node *const nd)
 {
-	if (cg->addr_case)
+	if (enc->addr_case)
 	{
-		mem_set(cg, cg->addr_case, (item_t)mem_size(cg));
+		mem_set(enc, enc->addr_case, (item_t)mem_size(enc));
 	}
 
-	mem_add(cg, IC_DUPLICATE);
+	mem_add(enc, IC_DUPLICATE);
 
 	const node expression = node_get_child(nd, 0);
-	emit_expression(cg, &expression);
+	emit_expression(enc, &expression);
 
-	mem_add(cg, IC_EQ);
-	mem_add(cg, IC_BE0);
-	cg->addr_case = mem_reserve(cg);
+	mem_add(enc, IC_EQ);
+	mem_add(enc, IC_BE0);
+	enc->addr_case = mem_reserve(enc);
 
 	const node statement = node_get_child(nd, 1);
-	emit_statement(cg, &statement);
+	emit_statement(enc, &statement);
 }
 
 /**
  *	Emit default statement [C99 6.8.1]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_default_statement(codegenerator *const cg, const node *const nd)
+static void emit_default_statement(encoder *const enc, const node *const nd)
 {
-	if (cg->addr_case)
+	if (enc->addr_case)
 	{
-		mem_set(cg, cg->addr_case, (item_t)mem_size(cg));
+		mem_set(enc, enc->addr_case, (item_t)mem_size(enc));
 	}
-	cg->addr_case = 0;
+	enc->addr_case = 0;
 
 	const node statement = node_get_child(nd, 0);
-	emit_statement(cg, &statement);
+	emit_statement(enc, &statement);
 }
 
 /**
  *	Emit compound statement [C99 6.8.2]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_block(codegenerator *const cg, const node *const nd)
+static void emit_block(encoder *const enc, const node *const nd)
 {
 	const size_t block_items = node_get_amount(nd);
 	for (size_t i = 0; i < block_items; i++)
 	{
 		const node block_item = node_get_child(nd, i);
-		emit_statement(cg, &block_item);
+		emit_statement(enc, &block_item);
 	}
 }
 
 /**
  *	Emit if statement [C99 6.8.4.1]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_if_statement(codegenerator *const cg, const node *const nd)
+static void emit_if_statement(encoder *const enc, const node *const nd)
 {
 	const node condition = node_get_child(nd, 0);
-	emit_expression(cg, &condition);
-	mem_add(cg, IC_BE0);
-	size_t addr = mem_reserve(cg);
+	emit_expression(enc, &condition);
+	mem_add(enc, IC_BE0);
+	size_t addr = mem_reserve(enc);
 
 	const node then_stmt = node_get_child(nd, 1);
-	emit_statement(cg, &then_stmt);
+	emit_statement(enc, &then_stmt);
 
 	const node else_stmt = node_get_child(nd, 2);
 	if (node_is_correct(&else_stmt))
 	{
-		mem_set(cg, addr, (item_t)mem_size(cg) + 2);
-		mem_add(cg, IC_B);
-		addr = mem_reserve(cg);
+		mem_set(enc, addr, (item_t)mem_size(enc) + 2);
+		mem_add(enc, IC_B);
+		addr = mem_reserve(enc);
 
-		emit_statement(cg, &else_stmt);
+		emit_statement(enc, &else_stmt);
 	}
 
-	mem_set(cg, addr, (item_t)mem_size(cg));
+	mem_set(enc, addr, (item_t)mem_size(enc));
 }
 
 /**
  *	Emit switch statement [C99 6.8.4.2]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_switch_statement(codegenerator *const cg, const node *const nd)
+static void emit_switch_statement(encoder *const enc, const node *const nd)
 {
-	const size_t old_addr_break = cg->addr_break;
-	const size_t old_addr_case = cg->addr_case;
-	cg->addr_break = 0;
-	cg->addr_case = 0;
+	const size_t old_addr_break = enc->addr_break;
+	const size_t old_addr_case = enc->addr_case;
+	enc->addr_break = 0;
+	enc->addr_case = 0;
 
 	const node condition = node_get_child(nd, 0);
-	emit_expression(cg, &condition);
+	emit_expression(enc, &condition);
 
 	const node statement = node_get_child(nd, 1);
-	emit_statement(cg, &statement);
+	emit_statement(enc, &statement);
 
-	if (cg->addr_case > 0)
+	if (enc->addr_case > 0)
 	{
-		mem_set(cg, cg->addr_case, (item_t)mem_size(cg));
+		mem_set(enc, enc->addr_case, (item_t)mem_size(enc));
 	}
-	addr_end_break(cg);
+	addr_end_break(enc);
 
-	cg->addr_case = old_addr_case;
-	cg->addr_break = old_addr_break;
+	enc->addr_case = old_addr_case;
+	enc->addr_break = old_addr_break;
 }
 
 /**
  *	Emit while statement [C99 6.8.5.1]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_while_statement(codegenerator *const cg, const node *const nd)
+static void emit_while_statement(encoder *const enc, const node *const nd)
 {
-	const size_t old_addr_break = cg->addr_break;
-	const size_t old_addr_cond = cg->addr_cond;
-	const size_t addr = mem_size(cg);
-	cg->addr_cond = addr;
+	const size_t old_addr_break = enc->addr_break;
+	const size_t old_addr_cond = enc->addr_cond;
+	const size_t addr = mem_size(enc);
+	enc->addr_cond = addr;
 
 	const node condition = node_get_child(nd, 0);
-	emit_expression(cg, &condition);
+	emit_expression(enc, &condition);
 
-	mem_add(cg, IC_BE0);
-	cg->addr_break = mem_size(cg);
-	mem_add(cg, 0);
+	mem_add(enc, IC_BE0);
+	enc->addr_break = mem_size(enc);
+	mem_add(enc, 0);
 
 	const node statement = node_get_child(nd, 1);
-	emit_statement(cg, &statement);
+	emit_statement(enc, &statement);
 
-	addr_begin_condition(cg, addr);
-	mem_add(cg, IC_B);
-	mem_add(cg, (item_t)addr);
-	addr_end_break(cg);
+	addr_begin_condition(enc, addr);
+	mem_add(enc, IC_B);
+	mem_add(enc, (item_t)addr);
+	addr_end_break(enc);
 
-	cg->addr_break = old_addr_break;
-	cg->addr_cond = old_addr_cond;
+	enc->addr_break = old_addr_break;
+	enc->addr_cond = old_addr_cond;
 }
 
 /**
  *	Emit do statement [C99 6.8.5.2]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_do_statement(codegenerator *const cg, const node *const nd)
+static void emit_do_statement(encoder *const enc, const node *const nd)
 {
-	const size_t old_addr_break = cg->addr_break;
-	const size_t old_addr_cond = cg->addr_cond;
-	const item_t addr = (item_t)mem_size(cg);
+	const size_t old_addr_break = enc->addr_break;
+	const size_t old_addr_cond = enc->addr_cond;
+	const item_t addr = (item_t)mem_size(enc);
 
-	cg->addr_cond = 0;
-	cg->addr_break = 0;
+	enc->addr_cond = 0;
+	enc->addr_break = 0;
 
 	const node statement = node_get_child(nd, 0);
-	emit_statement(cg, &statement);
-	addr_end_condition(cg);
+	emit_statement(enc, &statement);
+	addr_end_condition(enc);
 
 	const node expression = node_get_child(nd, 1);
-	emit_expression(cg, &expression);
-	mem_add(cg, IC_BNE0);
-	mem_add(cg, addr);
-	addr_end_break(cg);
+	emit_expression(enc, &expression);
+	mem_add(enc, IC_BNE0);
+	mem_add(enc, addr);
+	addr_end_break(enc);
 
-	cg->addr_break = old_addr_break;
-	cg->addr_cond = old_addr_cond;
+	enc->addr_break = old_addr_break;
+	enc->addr_cond = old_addr_cond;
 }
 
 /**
  *	Emit for statement [C99 6.8.5.3]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_for_statement(codegenerator *const cg, const node *const nd)
+static void emit_for_statement(encoder *const enc, const node *const nd)
 {
 	size_t child_index = 0;
 
@@ -893,261 +895,261 @@ static void emit_for_statement(codegenerator *const cg, const node *const nd)
 	{
 		// Предполагая, что дерево правильно построено
 		const node inition = node_get_child(nd, child_index++);
-		emit_statement(cg, &inition);
+		emit_statement(enc, &inition);
 	}
 
-	const size_t old_addr_break = cg->addr_break;
-	const size_t old_addr_cond = cg->addr_cond;
-	cg->addr_cond = 0;
-	cg->addr_break = 0;
+	const size_t old_addr_break = enc->addr_break;
+	const size_t old_addr_cond = enc->addr_cond;
+	enc->addr_cond = 0;
+	enc->addr_break = 0;
 
-	const size_t addr_inition = mem_size(cg);
+	const size_t addr_inition = mem_size(enc);
 	const bool has_condition = (bool)node_get_arg(nd, 1);
 	if (has_condition)
 	{
 		const node condition = node_get_child(nd, child_index++);
-		emit_expression(cg, &condition);
-		mem_add(cg, IC_BE0);
-		cg->addr_break = mem_size(cg);
-		mem_add(cg, 0);
+		emit_expression(enc, &condition);
+		mem_add(enc, IC_BE0);
+		enc->addr_break = mem_size(enc);
+		mem_add(enc, 0);
 	}
 
 	const bool has_increment = (bool)node_get_arg(nd, 2);
 
 	const node statement = node_get_child(nd, child_index + has_increment);
-	emit_statement(cg, &statement);
-	addr_end_condition(cg);
+	emit_statement(enc, &statement);
+	addr_end_condition(enc);
 
 	if (has_increment)
 	{
 		const node increment = node_get_child(nd, child_index);
-		emit_expression(cg, &increment);
+		emit_expression(enc, &increment);
 	}
 
-	mem_add(cg, IC_B);
-	mem_add(cg, (item_t)addr_inition);
-	addr_end_break(cg);
+	mem_add(enc, IC_B);
+	mem_add(enc, (item_t)addr_inition);
+	addr_end_break(enc);
 
-	cg->addr_break = old_addr_break;
-	cg->addr_cond = old_addr_cond;
+	enc->addr_break = old_addr_break;
+	enc->addr_cond = old_addr_cond;
 }
 
 /**
  *	Emit goto statement [C99 6.8.6.1]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_goto_statement(codegenerator *const cg, const node *const nd)
+static void emit_goto_statement(encoder *const enc, const node *const nd)
 {
-	mem_add(cg, IC_B);
+	mem_add(enc, IC_B);
 
 	const item_t label_id = node_get_arg(nd, 0);
 	const size_t id = (size_t)llabs(label_id);
-	const item_t addr = ident_get_displ(cg->sx, id);
+	const item_t addr = ident_get_displ(enc->sx, id);
 
 	if (addr > 0)
 	{
 		// Метка уже описана
-		mem_add(cg, addr);
+		mem_add(enc, addr);
 	}
 	else
 	{
 		// Метка еще не описана
-		ident_set_displ(cg->sx, id, -(item_t)mem_size(cg));
+		ident_set_displ(enc->sx, id, -(item_t)mem_size(enc));
 
 		// Первый раз встретился переход на еще не описанную метку или нет
-		mem_add(cg, label_id < 0 ? 0 : addr);
+		mem_add(enc, label_id < 0 ? 0 : addr);
 	}
 }
 
 /**
  *	Emit continue statement [C99 6.8.6.2]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_continue_statement(codegenerator *const cg, const node *const nd)
+static void emit_continue_statement(encoder *const enc, const node *const nd)
 {
 	(void)nd;
-	mem_add(cg, IC_B);
-	mem_add(cg, (item_t)cg->addr_cond);
-	cg->addr_cond = mem_size(cg) - 1;
+	mem_add(enc, IC_B);
+	mem_add(enc, (item_t)enc->addr_cond);
+	enc->addr_cond = mem_size(enc) - 1;
 }
 
 /**
  *	Emit break statement [C99 6.8.6.3]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_break_statement(codegenerator *const cg, const node *const nd)
+static void emit_break_statement(encoder *const enc, const node *const nd)
 {
 	(void)nd;
-	mem_add(cg, IC_B);
-	mem_add(cg, (item_t)cg->addr_break);
-	cg->addr_break = mem_size(cg) - 1;
+	mem_add(enc, IC_B);
+	mem_add(enc, (item_t)enc->addr_break);
+	enc->addr_break = mem_size(enc) - 1;
 }
 
 /**
  *	Emit return statement [C99 6.8.6.4]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_return_statement(codegenerator *const cg, const node *const nd)
+static void emit_return_statement(encoder *const enc, const node *const nd)
 {
 	if (node_get_amount(nd))
 	{
 		const node expression = node_get_child(nd, 0);
-		emit_expression(cg, &expression);
+		emit_expression(enc, &expression);
 
-		mem_add(cg, IC_RETURN_VAL);
-		mem_add(cg, node_get_arg(nd, 0));
+		mem_add(enc, IC_RETURN_VAL);
+		mem_add(enc, node_get_arg(nd, 0));
 	}
 	else
 	{
-		mem_add(cg, IC_RETURN_VOID);
+		mem_add(enc, IC_RETURN_VOID);
 	}
 }
 
 /**
  *	Emit t_create_direct statement [RuC]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_thread(codegenerator *const cg, const node *const nd)
+static void emit_thread(encoder *const enc, const node *const nd)
 {
-	mem_add(cg, IC_CREATE_DIRECT);
+	mem_add(enc, IC_CREATE_DIRECT);
 
 	const size_t thread_items = node_get_amount(nd);
 	for (size_t i = 0; i < thread_items; i++)
 	{
 		const node thread_item = node_get_child(nd, i);
-		emit_statement(cg, &thread_item);
+		emit_statement(enc, &thread_item);
 	}
 
-	mem_add(cg, IC_EXIT_DIRECT);
+	mem_add(enc, IC_EXIT_DIRECT);
 }
 
 /**
  *	Emit printid statement [RuC]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_printid_statement(codegenerator *const cg, const node *const nd)
+static void emit_printid_statement(encoder *const enc, const node *const nd)
 {
-	mem_add(cg, IC_PRINTID);
-	compress_ident(cg, (size_t)node_get_arg(nd, 0)); // Ссылка в identtab
+	mem_add(enc, IC_PRINTID);
+	compress_ident(enc, (size_t)node_get_arg(nd, 0)); // Ссылка в identtab
 }
 
 /**
  *	Emit getid statement [RuC]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_getid_statement(codegenerator *const cg, const node *const nd)
+static void emit_getid_statement(encoder *const enc, const node *const nd)
 {
-	mem_add(cg, IC_GETID);
-	compress_ident(cg, (size_t)node_get_arg(nd, 0)); //Сссылка в identtab
+	mem_add(enc, IC_GETID);
+	compress_ident(enc, (size_t)node_get_arg(nd, 0)); //Сссылка в identtab
 }
 
 /**
  *	Emit printf statement [RuC]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_printf_statement(codegenerator *const cg, const node *const nd)
+static void emit_printf_statement(encoder *const enc, const node *const nd)
 {
-	mem_add(cg, IC_PRINTF);
-	mem_add(cg, node_get_arg(nd, 0)); // Общий размер того, что надо вывести
+	mem_add(enc, IC_PRINTF);
+	mem_add(enc, node_get_arg(nd, 0)); // Общий размер того, что надо вывести
 }
 
 /**
  *	Emit statement [C99 6.8]
  *
- *	@param	cg			Code generator
+ *	@param	enc			Code generator
  *	@param	nd			Node in AST
  */
-static void emit_statement(codegenerator *const cg, const node *const nd)
+static void emit_statement(encoder *const enc, const node *const nd)
 {
 	switch (node_get_type(nd))
 	{
 		case OP_LABEL:
-			emit_labeled_statement(cg, nd);
+			emit_labeled_statement(enc, nd);
 			return;
 
 		case OP_CASE:
-			emit_case_statement(cg, nd);
+			emit_case_statement(enc, nd);
 			return;
 
 		case OP_DEFAULT:
-			emit_default_statement(cg, nd);
+			emit_default_statement(enc, nd);
 			return;
 
 		case OP_BLOCK:
-			emit_block(cg, nd);
+			emit_block(enc, nd);
 			return;
 
 		case OP_NOP:
 			return;
 
 		case OP_IF:
-			emit_if_statement(cg, nd);
+			emit_if_statement(enc, nd);
 			return;
 
 		case OP_SWITCH:
-			emit_switch_statement(cg, nd);
+			emit_switch_statement(enc, nd);
 			return;
 
 		case OP_WHILE:
-			emit_while_statement(cg, nd);
+			emit_while_statement(enc, nd);
 			return;
 
 		case OP_DO:
-			emit_do_statement(cg, nd);
+			emit_do_statement(enc, nd);
 			return;
 
 		case OP_FOR:
-			emit_for_statement(cg, nd);
+			emit_for_statement(enc, nd);
 			return;
 
 		case OP_GOTO:
-			emit_goto_statement(cg, nd);
+			emit_goto_statement(enc, nd);
 			return;
 
 		case OP_CONTINUE:
-			emit_continue_statement(cg, nd);
+			emit_continue_statement(enc, nd);
 			return;
 
 		case OP_BREAK:
-			emit_break_statement(cg, nd);
+			emit_break_statement(enc, nd);
 			return;
 
 		case OP_RETURN_VAL:
 		case OP_RETURN_VOID:
-			emit_return_statement(cg, nd);
+			emit_return_statement(enc, nd);
 			return;
 
 		case OP_CREATE_DIRECT:
 		case OP_CREATE:
-			emit_thread(cg, nd);
+			emit_thread(enc, nd);
 			return;
 
 		case OP_PRINTID:
-			emit_printid_statement(cg, nd);
+			emit_printid_statement(enc, nd);
 			return;
 
 		case OP_GETID:
-			emit_getid_statement(cg, nd);
+			emit_getid_statement(enc, nd);
 			return;
 
 		case OP_PRINTF:
-			emit_printf_statement(cg, nd);
+			emit_printf_statement(enc, nd);
 			return;
 
 		case OP_BLOCK_END:
@@ -1160,11 +1162,11 @@ static void emit_statement(codegenerator *const cg, const node *const nd)
 		case OP_DECL_ID:
 		case OP_DECL_ARR:
 		case OP_DECL_STRUCT:
-			emit_declaration(cg, nd);
+			emit_declaration(enc, nd);
 			return;
 
 		default:
-			emit_expression(cg, nd);
+			emit_expression(enc, nd);
 			return;
 	}
 }
@@ -1186,26 +1188,26 @@ int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *cons
 		return -1;
 	}
 
-	codegenerator cg = cg_create(ws, sx);
+	encoder enc = enc_create(ws, sx);
 	const node root = node_get_root(&sx->tree);
 	const size_t items = node_get_amount(&root);
-	for (size_t i = 0; i < items && !cg.was_error; i++)
+	for (size_t i = 0; i < items && !enc.was_error; i++)
 	{
 		const node item = node_get_child(&root, i);
-		emit_declaration(&cg, &item);
+		emit_declaration(&enc, &item);
 	}
 
-	mem_add(&cg, IC_CALL1);
-	mem_add(&cg, IC_CALL2);
-	mem_add(&cg, ident_get_displ(cg.sx, cg.sx->ref_main));
-	mem_add(&cg, IC_STOP);
+	mem_add(&enc, IC_CALL1);
+	mem_add(&enc, IC_CALL2);
+	mem_add(&enc, ident_get_displ(enc.sx, enc.sx->ref_main));
+	mem_add(&enc, IC_STOP);
 
-	int ret = cg.was_error || cg_export(io, &cg);
+	int ret = enc.was_error || enc_export(io, &enc);
 
 #ifndef NDEBUG
-	tables_and_codes(DEFAULT_CODES, &sx->functions, &cg.processes, &cg.memory);
+	tables_and_codes(DEFAULT_CODES, &sx->functions, &enc.processes, &enc.memory);
 #endif
 
-	cg_clear(&cg);
+	enc_clear(&enc);
 	return ret;
 }
