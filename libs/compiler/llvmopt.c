@@ -135,6 +135,7 @@ static int transposition(node_info *const expr, node_info *const cur, informatio
 	// }
 
 	node *temp = expr->ref_node;
+	node node_to_order;
 	for (size_t i = 1; i < expr->depth; i++)
 	{
 		if (counter2 == 3 && i == 2)
@@ -144,7 +145,7 @@ static int transposition(node_info *const expr, node_info *const cur, informatio
 			printf("temp type = %i\n\n", node_get_type(temp));
 		}
 
-		node node_to_order = node_get_child(temp, 0);
+		node_to_order = node_get_child(temp, 0);
 
 		if (counter2 == 3 && i == 2)
 		{
