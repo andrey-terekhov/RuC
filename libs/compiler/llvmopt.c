@@ -23,7 +23,6 @@
 
 
 #define MAX_STACK_SIZE	512
-int counter = 0;
 
 
 typedef enum EXPRESSION
@@ -112,64 +111,24 @@ static inline void stack_resize(information *const info, const int size)
 }
 
 
-static int transposition(node_info *const expr, node_info *const cur, information *const info)
+static int transposition(node_info *const expr, node_info *const cur)
 {
 	if (expr == NULL || cur == NULL)
 	{
 		system_error(transposition_not_possible);
 		return -1;
 	}
-	counter++;
-
-	// if (counter == 2)
-	// {
-	// 	tables_and_tree("before.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-	// }
 
 	node child_to_order1 = node_get_child(expr->parent, expr->child);
-	// printf("child_to_order1 type = %i\n", node_get_type(&child_to_order1));
 	node child_to_order2 = node_get_child(cur->parent, cur->child);
-	// printf("child_to_order2 type = %i\n", node_get_type(&child_to_order2));
-
-	// if (counter == 2)
-	// {
-	// 	printf("\nMistake here!\n");
-	// 	printf("first node type = %i\n", node_get_type(&child_to_order1));
-	// 	printf("second node type = %i\n\n", node_get_type(&child_to_order2));
-	// }
-
 	node_order(&child_to_order1, &child_to_order2);
 
-	// if (counter == 2)
-	// {
-	// 	tables_and_tree("after.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-	// }
-
 	node temp = node_get_child(expr->parent, expr->child);
-	// printf("temp type = %i\n\n", node_get_type(&temp));
 	for (size_t i = 1; i < expr->depth; i++)
 	{
-		// if (counter == 2 && i == 1)
-		// {
-		// 	tables_and_tree("before.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-		// }
 		node child_to_order11 = node_get_child(cur->parent, cur->child);
-		// printf("child_to_order11 type = %i\n", node_get_type(&child_to_order11));
 		node child_to_order21 = node_get_child(&temp, 0);
-		// printf("child_to_order21 type = %i\n\n", node_get_type(&child_to_order21));
-
-		// if (counter == 2 && i == 1)
-		// {
-		// 	printf("child_to_order11 type = %i\n", node_get_type(&child_to_order11));
-		// 	printf("child_to_order21 type = %i\n\n", node_get_type(&child_to_order21));
-		// }
-
 		node_order(&child_to_order11, &child_to_order21);
-
-		// if (counter == 2 && i == 1)
-		// {
-		// 	tables_and_tree("after.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-		// }
 
 		temp = node_get_child(&temp, 0);
 	}
@@ -494,13 +453,11 @@ static int node_recursive(information *const info, node *const nd)
 						if (node_get_type(nd_info.parent) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { nd_info.parent, 1, 1 };
-							has_error |= transposition(&nd_info, &log_info, info);
+							has_error |= transposition(&nd_info, &log_info);
 						}
 
-						// tables_and_tree("before.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
 						// перестановка с операндом
-						has_error |= transposition(operand, &nd_info, info);
-						// tables_and_tree("after.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
+						has_error |= transposition(operand, &nd_info);
 
 						// TODO: тут, по-моему, ужасный костыль (а может и нет, вроде нормально работает)
 						// TODO: проблемы, если вызов функции в выражении
@@ -526,33 +483,25 @@ static int node_recursive(information *const info, node *const nd)
 						node_info *second = stack_pop(info);
 						node_info *first = stack_pop(info);
 
-						// printf("\nbinary operation type = %i\n\n", node_get_type(&child));
-
 						if (node_get_type(nd_info.parent) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { nd_info.parent, 1, 1 };
-							has_error |= transposition(&nd_info, &log_info, info);
+							has_error |= transposition(&nd_info, &log_info);
 						}
 
 						// перестановка со вторым операндом
-						// printf("transposition with second operand:\n");
-						// tables_and_tree("before.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-						has_error |= transposition(second, &nd_info, info);
-						// tables_and_tree("after.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-						// printf("----------------------------------\n");
+						has_error |= transposition(second, &nd_info);
 
 						// надо переставить second с родителем
 						if (node_get_type(second->parent) == OP_AD_LOG_OR || node_get_type(second->parent) == OP_AD_LOG_AND
 							|| node_get_type(second->parent) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { second->parent, 1, 1 };
-							has_error |= transposition(second, &log_info, info);
+							has_error |= transposition(second, &log_info);
 						}
 
 						// перестановка с первым операндом
-						// printf("transposition with first operand:\n");
-						has_error |= transposition(first, second, info);
-						// printf("----------------------------------\n");
+						has_error |= transposition(first, second);
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(info, first);
