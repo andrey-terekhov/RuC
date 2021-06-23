@@ -55,12 +55,12 @@ typedef struct codegenerator
 } codegenerator;
 
 /**
- *	Create virtual machine codes emitter structure
+ *	Create code generator
  *
  *	@param	ws		Compiler workspace
  *	@param	sx		Syntax structure
  *
- *	@return	Virtual machine environment structure
+ *	@return	Code generator
  */
 static codegenerator cg_create(const workspace *const ws, syntax *const sx)
 {
@@ -110,7 +110,7 @@ static int print_table(universal_io *const io, const item_status target, const v
  *	Export codes for virtual machine
  *
  *	@param	io		Universal io structure
- *	@param	ws		Compiler workspace
+ *	@param	cg		Code generator
  */
 static int cg_export(universal_io *const io, const codegenerator *const cg)
 {
@@ -132,9 +132,9 @@ static int cg_export(universal_io *const io, const codegenerator *const cg)
 }
 
 /**
- *	Clear virtual machine environment structure
+ *	Clear Code generator structure
  *
- *	@param	ws		Compiler workspace
+ *	@param	cg		Code generator
  */
 static void cg_clear(codegenerator *const cg)
 {
@@ -148,6 +148,7 @@ static void cg_clear(codegenerator *const cg)
 
 
 static void emit_statement(codegenerator *const cg, const node *const nd);
+static void emit_block(codegenerator *const cg, const node *const nd);
 
 
 static inline void mem_increase(codegenerator *const cg, const size_t size)
@@ -252,7 +253,7 @@ static void compress_ident(codegenerator *const cg, const size_t ref)
 
 static void final_operation(codegenerator *const cg, node *const nd)
 {
-	operation_t op = node_get_type(nd);
+	operation_t op = (operation_t)node_get_type(nd);
 	while (op > BEGIN_OP_FINAL && op < END_OP_FINAL)
 	{
 		if (op != OP_NOP)
@@ -301,23 +302,21 @@ static void final_operation(codegenerator *const cg, node *const nd)
 		}
 
 		node_set_next(nd);
-		op = node_get_type(nd);
+		op = (operation_t)node_get_type(nd);
 	}
 }
 
 /**
  *	Expression generation
  *
- *	@param	cg		Virtual machine environment
- *	@param	mode	@c -1 for expression on the same node,
- *					@c  0 for usual expression,
- *					@c  1 for expression in condition
+ *	@param	cg				Code generator
+ *	@param	is_in_condition	@c true for expression in condition
  */
-static void expression(codegenerator *const cg, node *const nd, int mode)
+static void expression(codegenerator *const cg, node *const nd, const bool is_in_condition)
 {
 	while (node_get_type(nd) != OP_EXPR_END)
 	{
-		const operation_t operation = node_get_type(nd);
+		const operation_t operation = (operation_t)node_get_type(nd);
 		int was_operation = 1;
 
 		switch (operation)
@@ -398,7 +397,7 @@ static void expression(codegenerator *const cg, node *const nd, int mode)
 				for (item_t i = 0; i < N; i++)
 				{
 					node_set_next(nd);
-					expression(cg, nd, 0);
+					expression(cg, nd, false);
 				}
 			}
 			break;
@@ -408,7 +407,7 @@ static void expression(codegenerator *const cg, node *const nd, int mode)
 				for (item_t i = 0; i < N; i++)
 				{
 					node_set_next(nd);
-					expression(cg, nd, 0);
+					expression(cg, nd, false);
 				}
 			}
 			break;
@@ -422,7 +421,7 @@ static void expression(codegenerator *const cg, node *const nd, int mode)
 				item_t type = node_get_arg(nd, operation == OP_SLICE ? 0 : 1);
 
 				node_set_next(nd);
-				expression(cg, nd, 0);
+				expression(cg, nd, false);
 				mem_add(cg, IC_SLICE);
 				mem_add(cg, (item_t)size_of(cg->sx, type));
 				if (type_is_array(cg->sx, type))
@@ -475,7 +474,7 @@ static void expression(codegenerator *const cg, node *const nd, int mode)
 
 		if (node_get_type(nd) == OP_CONDITIONAL)
 		{
-			if (mode == 1)
+			if (is_in_condition)
 			{
 				return;
 			}
@@ -488,14 +487,14 @@ static void expression(codegenerator *const cg, node *const nd, int mode)
 				mem_increase(cg, 1);
 
 				node_set_next(nd);
-				expression(cg, nd, 0); // then
+				expression(cg, nd, false); // then
 				mem_add(cg, IC_B);
 				mem_add(cg, (item_t)addr);
 				addr = mem_size(cg) - 1;
 				mem_set(cg, addr_else, (item_t)mem_size(cg));
 
 				node_set_next(nd);
-				expression(cg, nd, 1); // else или cond
+				expression(cg, nd, true); // else или cond
 			} while (node_get_type(nd) == OP_CONDITIONAL);
 
 			while (addr)
@@ -513,23 +512,23 @@ static void expression(codegenerator *const cg, node *const nd, int mode)
 /**
  *	Emit expression [C99 6.5]
  *
- *	@note	Это переходник под старый expression(), который использует set_next()
+ *	@note	Это переходник под старый expression(), который использует node_set_next()
  *	TODO:	переписать генерацию выражений
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_expression(codegenerator *const cg, const node *const nd)
 {
 	node internal_node;
 	node_copy(&internal_node, nd);
-	expression(cg, &internal_node, 0);
+	expression(cg, &internal_node, false);
 }
 
 /**
  *	Emit declaration [C99 6.7]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_declaration(codegenerator *const cg, const node *const nd)
@@ -547,11 +546,11 @@ static void emit_declaration(codegenerator *const cg, const node *const nd)
 			const size_t old_pc = mem_reserve(cg);
 
 			const node func_body = node_get_child(nd, 0);
-			emit_statement(cg, &func_body);
+			emit_block(cg, &func_body);
 
 			mem_set(cg, old_pc, (item_t)mem_size(cg));
+			return;
 		}
-		break;
 
 		case OP_DECL_ID:
 		{
@@ -583,8 +582,9 @@ static void emit_declaration(codegenerator *const cg, const node *const nd)
 					mem_add(cg, old_displ);
 				}
 			}
+
+			return;
 		}
-		break;
 
 		case OP_DECL_ARR:
 		{
@@ -636,8 +636,9 @@ static void emit_declaration(codegenerator *const cg, const node *const nd)
 				mem_add(cg, old_displ);
 				mem_add(cg, usual);
 			}
+
+			return;
 		}
-		break;
 
 		case OP_DECL_STRUCT:
 		{
@@ -657,25 +658,25 @@ static void emit_declaration(codegenerator *const cg, const node *const nd)
 
 			mem_add(cg, IC_STOP);
 			mem_set(cg, (size_t)proc_get(cg, num_proc) - 1, (item_t)mem_size(cg));
+			return;
 		}
-		break;
 
 		case OP_BLOCK_END:
 			// Это старый признак конца программы
 			// TODO: убрать, когда уберем OP_BLOCK_END
-			break;
+			return;
 
 		default:
 			system_error(node_unexpected, node_get_type(nd));
 			cg->was_error = 1;
-			break;
+			return;
 	}
 }
 
 /**
  *	Emit labeled statement [C99 6.8.1]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_labeled_statement(codegenerator *const cg, const node *const nd)
@@ -701,7 +702,7 @@ static void emit_labeled_statement(codegenerator *const cg, const node *const nd
 /**
  *	Emit case statement [C99 6.8.1]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_case_statement(codegenerator *const cg, const node *const nd)
@@ -727,7 +728,7 @@ static void emit_case_statement(codegenerator *const cg, const node *const nd)
 /**
  *	Emit default statement [C99 6.8.1]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_default_statement(codegenerator *const cg, const node *const nd)
@@ -745,7 +746,7 @@ static void emit_default_statement(codegenerator *const cg, const node *const nd
 /**
  *	Emit compound statement [C99 6.8.2]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_block(codegenerator *const cg, const node *const nd)
@@ -761,7 +762,7 @@ static void emit_block(codegenerator *const cg, const node *const nd)
 /**
  *	Emit if statement [C99 6.8.4.1]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_if_statement(codegenerator *const cg, const node *const nd)
@@ -790,7 +791,7 @@ static void emit_if_statement(codegenerator *const cg, const node *const nd)
 /**
  *	Emit switch statement [C99 6.8.4.2]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_switch_statement(codegenerator *const cg, const node *const nd)
@@ -819,7 +820,7 @@ static void emit_switch_statement(codegenerator *const cg, const node *const nd)
 /**
  *	Emit while statement [C99 6.8.5.1]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_while_statement(codegenerator *const cg, const node *const nd)
@@ -851,7 +852,7 @@ static void emit_while_statement(codegenerator *const cg, const node *const nd)
 /**
  *	Emit do statement [C99 6.8.5.2]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_do_statement(codegenerator *const cg, const node *const nd)
@@ -880,14 +881,14 @@ static void emit_do_statement(codegenerator *const cg, const node *const nd)
 /**
  *	Emit for statement [C99 6.8.5.3]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_for_statement(codegenerator *const cg, const node *const nd)
 {
 	size_t child_index = 0;
 
-	const int has_inition = (int)node_get_arg(nd, 0);
+	const bool has_inition = (bool)node_get_arg(nd, 0);
 	if (has_inition)
 	{
 		// Предполагая, что дерево правильно построено
@@ -901,7 +902,7 @@ static void emit_for_statement(codegenerator *const cg, const node *const nd)
 	cg->addr_break = 0;
 
 	const size_t addr_inition = mem_size(cg);
-	const int has_condition = (int)node_get_arg(nd, 1);
+	const bool has_condition = (bool)node_get_arg(nd, 1);
 	if (has_condition)
 	{
 		const node condition = node_get_child(nd, child_index++);
@@ -911,7 +912,7 @@ static void emit_for_statement(codegenerator *const cg, const node *const nd)
 		mem_add(cg, 0);
 	}
 
-	const int has_increment = (int)node_get_arg(nd, 2);
+	const bool has_increment = (bool)node_get_arg(nd, 2);
 
 	const node statement = node_get_child(nd, child_index + has_increment);
 	emit_statement(cg, &statement);
@@ -934,7 +935,7 @@ static void emit_for_statement(codegenerator *const cg, const node *const nd)
 /**
  *	Emit goto statement [C99 6.8.6.1]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_goto_statement(codegenerator *const cg, const node *const nd)
@@ -963,7 +964,7 @@ static void emit_goto_statement(codegenerator *const cg, const node *const nd)
 /**
  *	Emit continue statement [C99 6.8.6.2]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_continue_statement(codegenerator *const cg, const node *const nd)
@@ -977,7 +978,7 @@ static void emit_continue_statement(codegenerator *const cg, const node *const n
 /**
  *	Emit break statement [C99 6.8.6.3]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_break_statement(codegenerator *const cg, const node *const nd)
@@ -991,7 +992,7 @@ static void emit_break_statement(codegenerator *const cg, const node *const nd)
 /**
  *	Emit return statement [C99 6.8.6.4]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_return_statement(codegenerator *const cg, const node *const nd)
@@ -1013,7 +1014,7 @@ static void emit_return_statement(codegenerator *const cg, const node *const nd)
 /**
  *	Emit t_create_direct statement [RuC]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_thread(codegenerator *const cg, const node *const nd)
@@ -1033,7 +1034,7 @@ static void emit_thread(codegenerator *const cg, const node *const nd)
 /**
  *	Emit printid statement [RuC]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_printid_statement(codegenerator *const cg, const node *const nd)
@@ -1045,7 +1046,7 @@ static void emit_printid_statement(codegenerator *const cg, const node *const nd
 /**
  *	Emit getid statement [RuC]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_getid_statement(codegenerator *const cg, const node *const nd)
@@ -1057,7 +1058,7 @@ static void emit_getid_statement(codegenerator *const cg, const node *const nd)
 /**
  *	Emit printf statement [RuC]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_printf_statement(codegenerator *const cg, const node *const nd)
@@ -1069,7 +1070,7 @@ static void emit_printf_statement(codegenerator *const cg, const node *const nd)
 /**
  *	Emit statement [C99 6.8]
  *
- *	@param	cg			Virtual machine environment
+ *	@param	cg			Code generator
  *	@param	nd			Node in AST
  */
 static void emit_statement(codegenerator *const cg, const node *const nd)
@@ -1078,93 +1079,93 @@ static void emit_statement(codegenerator *const cg, const node *const nd)
 	{
 		case OP_LABEL:
 			emit_labeled_statement(cg, nd);
-			break;
+			return;
 
 		case OP_CASE:
 			emit_case_statement(cg, nd);
-			break;
+			return;
 
 		case OP_DEFAULT:
 			emit_default_statement(cg, nd);
-			break;
+			return;
 
 		case OP_BLOCK:
 			emit_block(cg, nd);
-			break;
+			return;
 
 		case OP_NOP:
-			break;
+			return;
 
 		case OP_IF:
 			emit_if_statement(cg, nd);
-			break;
+			return;
 
 		case OP_SWITCH:
 			emit_switch_statement(cg, nd);
-			break;
+			return;
 
 		case OP_WHILE:
 			emit_while_statement(cg, nd);
-			break;
+			return;
 
 		case OP_DO:
 			emit_do_statement(cg, nd);
-			break;
+			return;
 
 		case OP_FOR:
 			emit_for_statement(cg, nd);
-			break;
+			return;
 
 		case OP_GOTO:
 			emit_goto_statement(cg, nd);
-			break;
+			return;
 
 		case OP_CONTINUE:
 			emit_continue_statement(cg, nd);
-			break;
+			return;
 
 		case OP_BREAK:
 			emit_break_statement(cg, nd);
-			break;
+			return;
 
 		case OP_RETURN_VAL:
 		case OP_RETURN_VOID:
 			emit_return_statement(cg, nd);
-			break;
+			return;
 
 		case OP_CREATE_DIRECT:
 		case OP_CREATE:
 			emit_thread(cg, nd);
-			break;
+			return;
 
 		case OP_PRINTID:
 			emit_printid_statement(cg, nd);
-			break;
+			return;
 
 		case OP_GETID:
 			emit_getid_statement(cg, nd);
-			break;
+			return;
 
 		case OP_PRINTF:
 			emit_printf_statement(cg, nd);
-			break;
+			return;
 
 		case OP_BLOCK_END:
 		case OP_EXIT_DIRECT:
 		case OP_EXIT:
 			// Пока что это чтобы не менять дерево
 			// Но на самом деле такие узлы не нужны, так как реализация дерева знает количество потомков
-			break;
+			return;
 
 		case OP_DECL_ID:
 		case OP_DECL_ARR:
 		case OP_DECL_STRUCT:
 			emit_declaration(cg, nd);
-			break;
+			return;
 
 		default:
 			emit_expression(cg, nd);
-			break;
+			return;
 	}
 }
 
@@ -1186,7 +1187,7 @@ int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *cons
 	}
 
 	codegenerator cg = cg_create(ws, sx);
-	const node root = node_get_root(&cg.sx->tree);
+	const node root = node_get_root(&sx->tree);
 	const size_t items = node_get_amount(&root);
 	for (size_t i = 0; i < items && !cg.was_error; i++)
 	{
