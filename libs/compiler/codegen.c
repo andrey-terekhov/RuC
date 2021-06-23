@@ -606,11 +606,11 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 
 	const node decl_id = node_get_child(nd, bounds);
 
-	int has_initializer = 0;
+	bool has_initializer = false;
 	const node initializer = node_get_child(nd, bounds + 1);
 	if (node_is_correct(&initializer))
 	{
-		has_initializer = 1;
+		has_initializer = true;
 	}
 
 	mem_add(enc, IC_DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
