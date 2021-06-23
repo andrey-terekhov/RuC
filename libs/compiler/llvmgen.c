@@ -30,9 +30,6 @@ const size_t HASH_TABLE_SIZE = 1024;
 const size_t IS_STATIC = 0;
 
 
-typedef item_t type_t;
-
-
 typedef enum ANSWER
 {
 	AREG,								/**< Ответ находится в регистре */
@@ -63,7 +60,7 @@ typedef struct information
 	item_t answer_const;				/**< Константа с ответом */
 	double answer_const_double;			/**< Константа с ответом типа double */
 	answer_t answer_type;				/**< Тип ответа */
-	type_t answer_value_type;			/**< Тип значения */
+	item_t answer_value_type;			/**< Тип значения */
 
 	item_t label_true;					/**< Метка перехода при true */
 	item_t label_false;					/**< Метка перехода при false */
@@ -220,7 +217,7 @@ static int is_array_operation(const item_t operation)
 	}
 }
 
-static void type_to_io(universal_io *const io, const type_t type)
+static void type_to_io(universal_io *const io, const item_t type)
 {
 	if (mode_is_int(type))
 	{
@@ -428,7 +425,7 @@ static void operation_to_io(universal_io *const io, const item_t type)
 }
 
 static void to_code_operation_reg_reg(information *const info, const item_t operation, const item_t fst
-	, const item_t snd, const type_t type)
+	, const item_t snd, const item_t type)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
@@ -468,7 +465,7 @@ static void to_code_operation_const_reg_double(information *const info, item_t o
 	uni_printf(info->io, " double %f, %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_load(information *const info, const item_t result, const item_t displ, const type_t type
+static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
 	, const int is_array)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = load ", result);
@@ -478,7 +475,7 @@ static void to_code_load(information *const info, const item_t result, const ite
 	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
-static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const type_t type
+static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
 	, const int is_array)
 {
 	uni_printf(info->io, " store ");
@@ -529,7 +526,7 @@ static inline void to_code_conditional_branch(information *const info)
 		, info->answer_reg, info->label_true, info->label_false);
 }
 
-static void to_code_alloc_array_static(information *const info, const size_t index, const type_t type)
+static void to_code_alloc_array_static(information *const info, const size_t index, const item_t type)
 {
 	uni_printf(info->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
 
@@ -547,7 +544,7 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	uni_printf(info->io, ", align 4\n");
 }
 
-static void to_code_alloc_array_dynamic(information *const info, const size_t index, const type_t type)
+static void to_code_alloc_array_dynamic(information *const info, const size_t index, const item_t type)
 {
 	// выделение памяти на стеке
 	item_t to_alloc = hash_get_by_index(&info->arrays, index, 1);
@@ -582,7 +579,7 @@ static void to_code_stack_load(information *const info)
 }
 
 static void to_code_slice(information *const info, const item_t displ, const item_t cur_dimention,
-	const item_t prev_slice, const type_t type)
+	const item_t prev_slice, const item_t type)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
 	const item_t dimentions = hash_get_amount(&info->arrays, displ) - 1;
@@ -748,7 +745,7 @@ static void operand(information *const info, node *const nd)
 		case OP_SLICE_IDENT:
 		{
 			const item_t displ = node_get_arg(nd, 0);
-			const type_t type = node_get_arg(nd, 1);
+			const item_t type = node_get_arg(nd, 1);
 			item_t cur_dimention = hash_get_amount(&info->arrays, displ) - 2;
 			const location_t location = info->variable_location;
 			node_set_next(nd);
@@ -815,7 +812,7 @@ static void operand(information *const info, node *const nd)
 			}
 
 			const size_t ref_ident = (size_t)node_get_arg(nd, 0);
-			const type_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
+			const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
 
 			node_set_next(nd); // OP_CALL2
 
@@ -868,7 +865,7 @@ static void assignment_expression(information *const info, node *const nd)
 {
 	const item_t displ = node_get_arg(nd, 0);
 	const item_t assignment_type = node_get_type(nd);
-	const type_t operation_type = is_double(assignment_type) ? mode_float : mode_integer;
+	const item_t operation_type = is_double(assignment_type) ? mode_float : mode_integer;
 	const int is_array = is_array_operation(assignment_type);
 
 	node_set_next(nd);
@@ -926,7 +923,7 @@ static void assignment_expression(information *const info, node *const nd)
 static void integral_expression(information *const info, node *const nd, const answer_t type)
 {
 	const item_t operation = node_get_type(nd);
-	const type_t operation_type = is_double(operation) ? mode_float : mode_integer;
+	const item_t operation_type = is_double(operation) ? mode_float : mode_integer;
 	node_set_next(nd);
 
 	info->variable_location = LFREE;
@@ -1071,7 +1068,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 {
 	const item_t displ = node_get_arg(nd, 0);
 	const item_t operation = node_get_type(nd);
-	const type_t operation_type = is_double(operation) ? mode_float : mode_integer;
+	const item_t operation_type = is_double(operation) ? mode_float : mode_integer;
 
 	node_set_next(nd);
 	info->variable_location = LMEM;
@@ -1767,7 +1764,7 @@ static void statement(information *const info, node *const nd)
 		{
 			const item_t N = node_get_arg(nd, 0);
 			item_t args[128];
-			type_t args_type[128];
+			item_t args_type[128];
 
 			node_set_next(nd);
 			const item_t string_length = node_get_arg(nd, 0);
@@ -1845,7 +1842,7 @@ static void block(information *const info, node *const nd)
 				}
 
 				const item_t displ = node_get_arg(&id, 0);
-				const type_t elem_type = node_get_arg(&id, 1);
+				const item_t elem_type = node_get_arg(&id, 1);
 				const size_t N = (size_t)node_get_arg(&id, 2);
 				const size_t index = hash_add(&info->arrays, displ, 1 + N);
 				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
@@ -1895,7 +1892,7 @@ static void block(information *const info, node *const nd)
 			case OP_DECL_ID:
 			{
 				const item_t displ = node_get_arg(nd, 0);
-				const type_t elem_type = node_get_arg(nd, 1);
+				const item_t elem_type = node_get_arg(nd, 1);
 				const item_t N = node_get_arg(nd, 2);
 				const item_t all = node_get_arg(nd, 3);
 
@@ -1950,7 +1947,7 @@ static int codegen(information *const info)
 			case OP_FUNC_DEF:
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
-				const type_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
+				const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
 				info->was_dynamic = 0;
 
 				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
