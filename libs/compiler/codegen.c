@@ -149,6 +149,7 @@ static void enc_clear(encoder *const enc)
 }
 
 
+static void emit_declaration(encoder *const enc, const node *const nd);
 static void emit_statement(encoder *const enc, const node *const nd);
 static void emit_block(encoder *const enc, const node *const nd);
 
@@ -512,7 +513,7 @@ static void expression(encoder *const enc, node *const nd, const bool is_in_cond
 }
 
 /**
- *	Emit expression [C99 6.5]
+ *	Emit expression
  *
  *	@note	Это переходник под старый expression(), который использует node_set_next()
  *	TODO:	переписать генерацию выражений
@@ -527,8 +528,153 @@ static void emit_expression(encoder *const enc, const node *const nd)
 	expression(enc, &internal_node, false);
 }
 
+
 /**
- *	Emit declaration [C99 6.7]
+ *	Emit function definition
+ *
+ *	@param	enc			Code generator
+ *	@param	nd			Node in AST
+ */
+static void emit_function_definition(encoder *const enc, const node *const nd)
+{
+	const size_t ref_func = (size_t)ident_get_displ(enc->sx, (size_t)node_get_arg(nd, 0));
+	func_set(enc->sx, ref_func, (item_t)mem_size(enc));
+
+	mem_add(enc, IC_FUNC_BEG);
+	mem_add(enc, node_get_arg(nd, 1));
+
+	const size_t old_pc = mem_reserve(enc);
+
+	const node func_body = node_get_child(nd, 0);
+	emit_block(enc, &func_body);
+
+	mem_set(enc, old_pc, (item_t)mem_size(enc));
+}
+
+/**
+ *	Emit variable declaration
+ *
+ *	@param	enc			Code generator
+ *	@param	nd			Node in AST
+ */
+static void emit_variable_declaration(encoder *const enc, const node *const nd)
+{
+	const item_t old_displ = node_get_arg(nd, 0);
+	const item_t type = node_get_arg(nd, 1);
+	const item_t process = node_get_arg(nd, 4);
+
+	if (process)
+	{
+		mem_add(enc, IC_STRUCT_WITH_ARR);
+		mem_add(enc, old_displ);
+		mem_add(enc, proc_get(enc, (size_t)process));
+	}
+
+	const node initializer = node_get_child(nd, 0);
+	if (node_is_correct(&initializer)) // int a = или struct{} a =
+	{
+		emit_expression(enc, &initializer);
+
+		if (type_is_struct(enc->sx, type))
+		{
+			mem_add(enc, IC_COPY0ST_ASSIGN);
+			mem_add(enc, old_displ);
+			mem_add(enc, node_get_arg(nd, 3)); // Общее количество слов
+		}
+		else
+		{
+			mem_add(enc, type_is_float(type) ? IC_ASSIGN_R_V : IC_ASSIGN_V);
+			mem_add(enc, old_displ);
+		}
+	}
+}
+
+/**
+ *	Emit array declaration
+ *
+ *	@param	enc			Code generator
+ *	@param	nd			Node in AST
+ */
+static void emit_array_declaration(encoder *const enc, const node *const nd)
+{
+	const size_t bounds = (size_t)node_get_arg(nd, 0);
+	for (size_t i = 0; i < bounds; i++)
+	{
+		const node expression = node_get_child(nd, i);
+		emit_expression(enc, &expression);
+	}
+
+	const node decl_id = node_get_child(nd, bounds);
+
+	int has_initializer = 0;
+	const node initializer = node_get_child(nd, bounds + 1);
+	if (node_is_correct(&initializer))
+	{
+		has_initializer = 1;
+	}
+
+	mem_add(enc, IC_DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
+
+	const item_t dimensions = node_get_arg(&decl_id, 2);
+	mem_add(enc, has_initializer ? dimensions - 1 : dimensions);
+
+	const item_t length = (item_t)size_of(enc->sx, node_get_arg(&decl_id, 1));
+	mem_add(enc, length);
+
+	const item_t old_displ = node_get_arg(&decl_id, 0);
+	mem_add(enc, old_displ);
+	mem_add(enc, proc_get(enc, (size_t)node_get_arg(&decl_id, 4)));
+
+	/*
+	 *	@param	usual	Для массивов:
+	 *						@c 0 с пустыми границами,
+	 *						@c 1 без пустых границ
+	 */
+	const item_t usual = node_get_arg(&decl_id, 5);
+	mem_add(enc, usual);
+	mem_add(enc, node_get_arg(&decl_id, 3));
+	mem_add(enc, node_get_arg(&decl_id, 6));
+
+	if (has_initializer)
+	{
+		emit_expression(enc, &initializer);
+
+		mem_add(enc, IC_ARR_INIT);
+		mem_add(enc, dimensions);
+		mem_add(enc, length);
+		mem_add(enc, old_displ);
+		mem_add(enc, usual);
+	}
+}
+
+/**
+ *	Emit struct declaration
+ *
+ *	@param	enc			Code generator
+ *	@param	nd			Node in AST
+ */
+static void emit_struct_declaration(encoder *const enc, const node *const nd)
+{
+	mem_add(enc, IC_B);
+	mem_add(enc, 0);
+	proc_set(enc, (size_t)node_get_arg(nd, 0), (item_t)mem_size(enc));
+
+	const size_t children = node_get_amount(nd);
+	for (size_t i = 0; i < children - 1; i++)
+	{
+		const node child = node_get_child(nd, i);
+		emit_declaration(enc, &child);
+	}
+
+	const node decl_end = node_get_child(nd, children - 1);
+	const size_t num_proc = (size_t)node_get_arg(&decl_end, 0);
+
+	mem_add(enc, IC_STOP);
+	mem_set(enc, (size_t)proc_get(enc, num_proc) - 1, (item_t)mem_size(enc));
+}
+
+/**
+ *	Emit declaration
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -538,145 +684,36 @@ static void emit_declaration(encoder *const enc, const node *const nd)
 	switch (node_get_type(nd))
 	{
 		case OP_FUNC_DEF:
-		{
-			const size_t ref_func = (size_t)ident_get_displ(enc->sx, (size_t)node_get_arg(nd, 0));
-			func_set(enc->sx, ref_func, (item_t)mem_size(enc));
-
-			mem_add(enc, IC_FUNC_BEG);
-			mem_add(enc, node_get_arg(nd, 1));
-
-			const size_t old_pc = mem_reserve(enc);
-
-			const node func_body = node_get_child(nd, 0);
-			emit_block(enc, &func_body);
-
-			mem_set(enc, old_pc, (item_t)mem_size(enc));
-			return;
-		}
+			emit_function_definition(enc, nd);
+			break;
 
 		case OP_DECL_ID:
-		{
-			const item_t old_displ = node_get_arg(nd, 0);
-			const item_t type = node_get_arg(nd, 1);
-			const item_t process = node_get_arg(nd, 4);
-
-			if (process)
-			{
-				mem_add(enc, IC_STRUCT_WITH_ARR);
-				mem_add(enc, old_displ);
-				mem_add(enc, proc_get(enc, (size_t)process));
-			}
-
-			const node initializer = node_get_child(nd, 0);
-			if (node_is_correct(&initializer)) // int a = или struct{} a =
-			{
-				emit_expression(enc, &initializer);
-
-				if (type_is_struct(enc->sx, type))
-				{
-					mem_add(enc, IC_COPY0ST_ASSIGN);
-					mem_add(enc, old_displ);
-					mem_add(enc, node_get_arg(nd, 3)); // Общее количество слов
-				}
-				else
-				{
-					mem_add(enc, type_is_float(type) ? IC_ASSIGN_R_V : IC_ASSIGN_V);
-					mem_add(enc, old_displ);
-				}
-			}
-
-			return;
-		}
+			emit_variable_declaration(enc, nd);
+			break;
 
 		case OP_DECL_ARR:
-		{
-			const size_t bounds = (size_t)node_get_arg(nd, 0);
-			for (size_t i = 0; i < bounds; i++)
-			{
-				const node expression = node_get_child(nd, i);
-				emit_expression(enc, &expression);
-			}
-
-			const node decl_id = node_get_child(nd, bounds);
-
-			int has_initializer = 0;
-			const node initializer = node_get_child(nd, bounds + 1);
-			if (node_is_correct(&initializer))
-			{
-				has_initializer = 1;
-			}
-
-			mem_add(enc, IC_DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
-
-			const item_t dimensions = node_get_arg(&decl_id, 2);
-			mem_add(enc, has_initializer ? dimensions - 1 : dimensions);
-
-			const item_t length = (item_t)size_of(enc->sx, node_get_arg(&decl_id, 1));
-			mem_add(enc, length);
-
-			const item_t old_displ = node_get_arg(&decl_id, 0);
-			mem_add(enc, old_displ);
-			mem_add(enc, proc_get(enc, (size_t)node_get_arg(&decl_id, 4)));
-
-			/*
-			 *	@param	usual	Для массивов:
-			 *						@c 0 с пустыми границами,
-			 *						@c 1 без пустых границ
-			 */
-			const item_t usual = node_get_arg(&decl_id, 5);
-			mem_add(enc, usual);
-			mem_add(enc, node_get_arg(&decl_id, 3));
-			mem_add(enc, node_get_arg(&decl_id, 6));
-
-			if (has_initializer)
-			{
-				emit_expression(enc, &initializer);
-
-				mem_add(enc, IC_ARR_INIT);
-				mem_add(enc, dimensions);
-				mem_add(enc, length);
-				mem_add(enc, old_displ);
-				mem_add(enc, usual);
-			}
-
-			return;
-		}
+			emit_array_declaration(enc, nd);
+			break;
 
 		case OP_DECL_STRUCT:
-		{
-			mem_add(enc, IC_B);
-			mem_add(enc, 0);
-			proc_set(enc, (size_t)node_get_arg(nd, 0), (item_t)mem_size(enc));
-
-			const size_t children = node_get_amount(nd);
-			for (size_t i = 0; i < children - 1; i++)
-			{
-				const node child = node_get_child(nd, i);
-				emit_declaration(enc, &child);
-			}
-
-			const node decl_end = node_get_child(nd, children - 1);
-			const size_t num_proc = (size_t)node_get_arg(&decl_end, 0);
-
-			mem_add(enc, IC_STOP);
-			mem_set(enc, (size_t)proc_get(enc, num_proc) - 1, (item_t)mem_size(enc));
-			return;
-		}
+			emit_struct_declaration(enc, nd);
+			break;
 
 		case OP_BLOCK_END:
 			// Это старый признак конца программы
 			// TODO: убрать, когда уберем OP_BLOCK_END
-			return;
+			break;
 
 		default:
 			system_error(node_unexpected, node_get_type(nd));
 			enc->was_error = 1;
-			return;
+			break;
 	}
 }
 
+
 /**
- *	Emit labeled statement [C99 6.8.1]
+ *	Emit labeled statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -702,7 +739,7 @@ static void emit_labeled_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit case statement [C99 6.8.1]
+ *	Emit case statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -728,7 +765,7 @@ static void emit_case_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit default statement [C99 6.8.1]
+ *	Emit default statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -746,7 +783,7 @@ static void emit_default_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit compound statement [C99 6.8.2]
+ *	Emit compound statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -762,7 +799,7 @@ static void emit_block(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit if statement [C99 6.8.4.1]
+ *	Emit if statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -791,7 +828,7 @@ static void emit_if_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit switch statement [C99 6.8.4.2]
+ *	Emit switch statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -820,7 +857,7 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit while statement [C99 6.8.5.1]
+ *	Emit while statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -852,7 +889,7 @@ static void emit_while_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit do statement [C99 6.8.5.2]
+ *	Emit do statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -881,7 +918,7 @@ static void emit_do_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit for statement [C99 6.8.5.3]
+ *	Emit for statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -935,7 +972,7 @@ static void emit_for_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit goto statement [C99 6.8.6.1]
+ *	Emit goto statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -964,7 +1001,7 @@ static void emit_goto_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit continue statement [C99 6.8.6.2]
+ *	Emit continue statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -978,7 +1015,7 @@ static void emit_continue_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit break statement [C99 6.8.6.3]
+ *	Emit break statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -992,7 +1029,7 @@ static void emit_break_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit return statement [C99 6.8.6.4]
+ *	Emit return statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -1014,7 +1051,7 @@ static void emit_return_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit t_create_direct statement [RuC]
+ *	Emit t_create_direct statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -1034,7 +1071,7 @@ static void emit_thread(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit printid statement [RuC]
+ *	Emit printid statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -1046,7 +1083,7 @@ static void emit_printid_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit getid statement [RuC]
+ *	Emit getid statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -1058,7 +1095,7 @@ static void emit_getid_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit printf statement [RuC]
+ *	Emit printf statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -1070,7 +1107,7 @@ static void emit_printf_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit statement [C99 6.8]
+ *	Emit statement
  *
  *	@param	enc			Code generator
  *	@param	nd			Node in AST
@@ -1081,93 +1118,93 @@ static void emit_statement(encoder *const enc, const node *const nd)
 	{
 		case OP_LABEL:
 			emit_labeled_statement(enc, nd);
-			return;
+			break;
 
 		case OP_CASE:
 			emit_case_statement(enc, nd);
-			return;
+			break;
 
 		case OP_DEFAULT:
 			emit_default_statement(enc, nd);
-			return;
+			break;
 
 		case OP_BLOCK:
 			emit_block(enc, nd);
-			return;
+			break;
 
 		case OP_NOP:
-			return;
+			break;
 
 		case OP_IF:
 			emit_if_statement(enc, nd);
-			return;
+			break;
 
 		case OP_SWITCH:
 			emit_switch_statement(enc, nd);
-			return;
+			break;
 
 		case OP_WHILE:
 			emit_while_statement(enc, nd);
-			return;
+			break;
 
 		case OP_DO:
 			emit_do_statement(enc, nd);
-			return;
+			break;
 
 		case OP_FOR:
 			emit_for_statement(enc, nd);
-			return;
+			break;
 
 		case OP_GOTO:
 			emit_goto_statement(enc, nd);
-			return;
+			break;
 
 		case OP_CONTINUE:
 			emit_continue_statement(enc, nd);
-			return;
+			break;
 
 		case OP_BREAK:
 			emit_break_statement(enc, nd);
-			return;
+			break;
 
 		case OP_RETURN_VAL:
 		case OP_RETURN_VOID:
 			emit_return_statement(enc, nd);
-			return;
+			break;
 
 		case OP_CREATE_DIRECT:
 		case OP_CREATE:
 			emit_thread(enc, nd);
-			return;
+			break;
 
 		case OP_PRINTID:
 			emit_printid_statement(enc, nd);
-			return;
+			break;
 
 		case OP_GETID:
 			emit_getid_statement(enc, nd);
-			return;
+			break;
 
 		case OP_PRINTF:
 			emit_printf_statement(enc, nd);
-			return;
+			break;
 
 		case OP_BLOCK_END:
 		case OP_EXIT_DIRECT:
 		case OP_EXIT:
 			// Пока что это чтобы не менять дерево
 			// Но на самом деле такие узлы не нужны, так как реализация дерева знает количество потомков
-			return;
+			break;
 
 		case OP_DECL_ID:
 		case OP_DECL_ARR:
 		case OP_DECL_STRUCT:
 			emit_declaration(enc, nd);
-			return;
+			break;
 
 		default:
 			emit_expression(enc, nd);
-			return;
+			break;
 	}
 }
 
