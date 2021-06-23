@@ -139,26 +139,40 @@ static int transposition(node_info *const expr, node_info *const cur, informatio
 	{
 		if (counter2 == 3 && i == 2)
 		{
-			printf("here\n");
-			printf("cur->ref_node type %i\n", node_get_type(cur->ref_node));
-			printf("temp type %i\n\n", node_get_type(temp));
+			printf("before node_get_child:\n");
+			printf("cur->ref_node type =  %i\n", node_get_type(cur->ref_node));
+			printf("temp type = %i\n\n", node_get_type(temp));
 		}
+
 		node node_to_order = node_get_child(temp, 0);
+
 		if (counter2 == 3 && i == 2)
 		{
-			printf("here2\n");
-			printf("cur->ref_node type %i\n", node_get_type(cur->ref_node));
-			printf("temp type %i\n\n", node_get_type(temp));
+			printf("after node_get_child:\n");
+			printf("cur->ref_node type = %i\n", node_get_type(cur->ref_node));
+			printf("temp type = %i\n\n", node_get_type(temp));
 		}
 		temp = &node_to_order;
 		if (counter2 == 3 && i == 1)
 		{
-			tables_and_tree("before4.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-			printf("i = %i\n", i);
-			printf("cur->ref_node type %i\n", node_get_type(cur->ref_node));
-			printf("temp type %i\n\n", node_get_type(temp));
+			tables_and_tree("before.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
+			printf("before node_order:\n");
+			printf("print tree in before.txt\n");
+			printf("cur->ref_node type = %i\n", node_get_type(cur->ref_node));
+			printf("temp type = %i\n\n", node_get_type(temp));
 		}
+
 		node_order(cur->ref_node, temp);
+
+		if (counter2 == 3 && i == 1)
+		{
+			tables_and_tree("after.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
+			printf("after node_order:\n");
+			printf("print tree in after.txt\n");
+			printf("cur->ref_node type = %i\n", node_get_type(cur->ref_node));
+			printf("temp type = %i\n\n", node_get_type(temp));
+		}
+
 		tmp = temp;
 		temp = cur->ref_node;
 		cur->ref_node = tmp;
@@ -166,9 +180,9 @@ static int transposition(node_info *const expr, node_info *const cur, informatio
 		if (counter2 == 3 && i == 1)
 		{
 			tables_and_tree("after4.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-			printf("i = %i\n", i);
-			printf("cur->ref_node type %i\n", node_get_type(cur->ref_node));
-			printf("temp type %i\n\n", node_get_type(temp));
+			printf("after pointers permutation:\n");
+			printf("cur->ref_node type = %i\n", node_get_type(cur->ref_node));
+			printf("temp type = %i\n\n", node_get_type(temp));
 		}
 
 		// temp = node_get_child(&temp, 0);
