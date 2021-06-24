@@ -35,23 +35,23 @@ typedef enum EXPRESSION
 
 typedef struct node_info
 {
-	node *ref_node;										/**< Ссылка на узел */
-	size_t depth;										/**< Количество узлов после данного узла при перестановке */
+	node *ref_node;									/**< Ссылка на узел */
+	size_t depth;									/**< Количество узлов после данного узла при перестановке */
 } node_info;
 
 typedef struct information
 {
-	universal_io *io;									/**< Вывод */
-	syntax *sx;											/**< Структура syntax с таблицами */
+	universal_io *io;								/**< Вывод */
+	syntax *sx;										/**< Структура syntax с таблицами */
 
-	item_t string_num;									/**< Номер строки */
-	item_t was_printf;									/**< Флаг наличия printf в исходном коде */
+	item_t string_num;								/**< Номер строки */
+	item_t was_printf;								/**< Флаг наличия printf в исходном коде */
 
-	node_info stack[MAX_STACK_SIZE];					/**< Стек для преобразования выражений */
-	size_t stack_size;									/**< Размер стека */
+	node_info stack[MAX_STACK_SIZE];				/**< Стек для преобразования выражений */
+	size_t stack_size;								/**< Размер стека */
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
-	size_t slice_depth;									/**< Количество узлов после OP_SLICE_IDENT */
-	size_t slice_stack_size;							/**< Размер стека в начале вырезки */
+	size_t slice_depth;								/**< Количество узлов после OP_SLICE_IDENT */
+	size_t slice_stack_size;						/**< Размер стека в начале вырезки */
 } information;
 
 
@@ -475,7 +475,8 @@ static int node_recursive(information *const info, node *const nd)
 						has_error |= transposition(second, &nd_info);
 
 						// надо переставить second с родителем
-						if (node_get_type(second->ref_node) == OP_AD_LOG_OR || node_get_type(second->ref_node) == OP_AD_LOG_AND
+						if (node_get_type(second->ref_node) == OP_AD_LOG_OR
+							|| node_get_type(second->ref_node) == OP_AD_LOG_AND
 							|| node_get_type(second->ref_node) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { second->ref_node, 1 };
