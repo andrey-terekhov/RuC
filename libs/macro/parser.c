@@ -18,10 +18,22 @@
 #include "uniprinter.h"
 #include "uniscanner.h"
 
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+
 parser parser_create(linker *const lk, /*storage *const stg,*/ universal_io *const out)
 {
 	parser prs; 
-	if(!linker_is_correct(lk) || !out_is_correct(out))// || !storage_is_correct(stg))
+	if (!linker_is_correct(lk) || !out_is_correct(out))// || !storage_is_correct(stg))
 	{
 		prs.lk = NULL;
 		return prs;
