@@ -23,7 +23,6 @@
 
 
 #define MAX_STACK_SIZE	512
-int counter = 0, counter2 = 0;
 
 
 typedef enum EXPRESSION
@@ -111,92 +110,35 @@ static inline void stack_resize(information *const info, const int size)
 }
 
 
-static int transposition(node_info *const expr, node_info *const cur, information *const info)
+static int transposition(node_info *const expr, node_info *const cur)
 {
 	if (expr == NULL || cur == NULL)
 	{
 		system_error(transposition_not_possible);
 		return -1;
 	}
-	counter2++;
-	// if (counter2 == 3)
-	// {
-	// 	tables_and_tree("before3.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-	// }
 
 	node_order(expr->ref_node, cur->ref_node);
+	
 	node tmp;
 	node_copy(&tmp, expr->ref_node);
 	node_copy(expr->ref_node, cur->ref_node);
 	node_copy(cur->ref_node, &tmp);
 
-	// if (counter2 == 3)
-	// {
-	// 	tables_and_tree("after3.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-	// }
-
-	// node *temp = expr->ref_node;
 	node node_to_order;
 	node_copy(&node_to_order, expr->ref_node);
 	for (size_t i = 1; i < expr->depth; i++)
 	{
-		// if (counter2 == 3 && i == 2)
-		// {
-		// 	printf("before node_get_child:\n");
-		// 	printf("cur->ref_node type =  %i\n", node_get_type(cur->ref_node));
-		// 	printf("temp type = %i\n\n", node_get_type(temp));
-		// }
-
 		node_to_order = node_get_child(&node_to_order, 0);
-
-		// if (counter2 == 3 && i == 2)
-		// {
-		// 	printf("after node_get_child:\n");
-		// 	printf("cur->ref_node type = %i\n", node_get_type(cur->ref_node));
-		// 	printf("temp type = %i\n\n", node_get_type(temp));
-		// }
-		// temp = &node_to_order;
-		// node_copy(temp, &node_to_order);
-		// if (counter2 == 3 && i == 1)
-		// {
-		// 	tables_and_tree("before.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-		// 	printf("before node_order:\n");
-		// 	printf("print tree in before.txt\n");
-		// 	printf("cur->ref_node type = %i\n", node_get_type(cur->ref_node));
-		// 	printf("temp type = %i\n\n", node_get_type(temp));
-		// }
 
 		node_order(cur->ref_node, &node_to_order);
 
-		// if (counter2 == 3 && i == 1)
-		// {
-		// 	tables_and_tree("after.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-		// 	printf("after node_order:\n");
-		// 	printf("print tree in after.txt\n");
-		// 	printf("cur->ref_node type = %i\n", node_get_type(cur->ref_node));
-		// 	printf("temp type = %i\n\n", node_get_type(temp));
-		// }
-
-		// tmp = temp;
 		node_copy(&tmp, &node_to_order);
 		node_copy(&node_to_order, cur->ref_node);
 		node_copy(cur->ref_node, &tmp);
-		// temp = cur->ref_node;
-		// cur->ref_node = tmp;
-
-		// if (counter2 == 3 && i == 1)
-		// {
-		// 	tables_and_tree("after4.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-		// 	printf("after pointers permutation:\n");
-		// 	printf("cur->ref_node type = %i\n", node_get_type(cur->ref_node));
-		// 	printf("temp type = %i\n\n", node_get_type(temp));
-		// }
-
-		// temp = node_get_child(&temp, 0);
 	}
 
 	expr->depth += cur->depth;
-	// cur->depth += expr->depth;
 	return 0;
 }
 
@@ -517,11 +459,11 @@ static int node_recursive(information *const info, node *const nd)
 						if (node_get_type(nd_info.ref_node) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { nd_info.ref_node, 1 };
-							has_error |= transposition(&nd_info, &log_info, info);
+							has_error |= transposition(&nd_info, &log_info);
 						}
 
 						// перестановка с операндом
-						has_error |= transposition(operand, &nd_info, info);
+						has_error |= transposition(operand, &nd_info);
 
 						// TODO: тут, по-моему, ужасный костыль (а может и нет, вроде нормально работает)
 						// TODO: проблемы, если вызов функции в выражении
@@ -546,53 +488,31 @@ static int node_recursive(information *const info, node *const nd)
 					{
 						node_info *second = stack_pop(info);
 						node_info *first = stack_pop(info);
-						counter++;
 
 						if (node_get_type(nd_info.ref_node) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { nd_info.ref_node, 1 };
-							has_error |= transposition(&nd_info, &log_info, info);
+							has_error |= transposition(&nd_info, &log_info);
 						}
 
-						// if (counter == 2)
-						// {
-						// 	tables_and_tree("before2.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-						// }
 						// перестановка со вторым операндом
-						has_error |= transposition(second, &nd_info, info);
-						// if (counter == 2)
-						// {
-						// 	tables_and_tree("after2.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-						// }
-
+						has_error |= transposition(second, &nd_info);
 
 						// надо переставить second с родителем
 						if (node_get_type(second->ref_node) == OP_AD_LOG_OR || node_get_type(second->ref_node) == OP_AD_LOG_AND
 							|| node_get_type(second->ref_node) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { second->ref_node, 1 };
-							has_error |= transposition(second, &log_info, info);
+							has_error |= transposition(second, &log_info);
 						}
 
-						// if (counter == 1)
-						// {
-						// 	tables_and_tree("before1.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-						// }
 						// перестановка с первым операндом
-						has_error |= transposition(first, second, info);
-
-						// if (counter == 1)
-						// {
-						// 	tables_and_tree("after1.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-						// 	printf("first->depth = %i\n", first->depth);
-						// }
-
+						has_error |= transposition(first, second);
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(info, first);
 
 						info->skip_counter = stack_peek_depth(info);
-						// printf("info->skip_counter = %i\n", info->skip_counter);
 					}
 					break;
 					case NOT_EXPRESSION:
