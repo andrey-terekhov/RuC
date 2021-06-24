@@ -424,8 +424,8 @@ static void operation_to_io(universal_io *const io, const item_t type)
 	}
 }
 
-static void to_code_operation_reg_reg(information *const info, const item_t operation, const item_t fst
-	, const item_t snd, const item_t type)
+static void to_code_operation_reg_reg(information *const info, const item_t operation
+	, const item_t fst, const item_t snd, const item_t type)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
@@ -434,31 +434,32 @@ static void to_code_operation_reg_reg(information *const info, const item_t oper
 	uni_printf(info->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_operation_reg_const_i32(information *const info, const item_t operation, const item_t fst
-	, const item_t snd)
+static void to_code_operation_reg_const_i32(information *const info, const item_t operation
+	, const item_t fst, const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
 	uni_printf(info->io, " i32 %%.%" PRIitem ", %" PRIitem "\n", fst, snd);
 }
 
-static void to_code_operation_reg_const_double(information *const info, item_t operation, item_t fst, double snd)
+static void to_code_operation_reg_const_double(information *const info, const item_t operation
+	, const item_t fst, double snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
 	uni_printf(info->io, " double %%.%" PRIitem ", %f\n", fst, snd);
 }
 
-static void to_code_operation_const_reg_i32(information *const info, const item_t operation, const item_t fst
-	, const item_t snd)
+static void to_code_operation_const_reg_i32(information *const info, const item_t operation
+	, const item_t fst, const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
 	uni_printf(info->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
-static void to_code_operation_const_reg_double(information *const info, item_t operation, const double fst
-	, const item_t snd)
+static void to_code_operation_const_reg_double(information *const info, const item_t operation
+	, const double fst, const item_t snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
@@ -578,8 +579,8 @@ static void to_code_stack_load(information *const info)
 	info->register_num++;
 }
 
-static void to_code_slice(information *const info, const item_t displ, const item_t cur_dimention,
-	const item_t prev_slice, const item_t type)
+static void to_code_slice(information *const info, const item_t displ, const item_t cur_dimention
+	, const item_t prev_slice, const item_t type)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
 	const item_t dimentions = hash_get_amount(&info->arrays, displ) - 1;
