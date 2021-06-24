@@ -28,7 +28,7 @@ static int macro_form_io(workspace *const ws, universal_io *const output)
 	linker lk = linker_create(ws);
 	parser prs = parser_create(&lk, output);
 	size_t file_size = linker_size(&lk);
-	
+
 	for (size_t i = 0; i < file_size; i++)
 	{
 		universal_io in = linker_add_source(&lk, i);
@@ -43,6 +43,7 @@ static int macro_form_io(workspace *const ws, universal_io *const output)
 			linker_clear(&lk);
 			return -1;
 		}
+
 		in_clear(&in);
 	}
 

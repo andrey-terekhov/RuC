@@ -76,7 +76,7 @@ linker linker_create(workspace *const ws)
 
 	for (size_t i = 0; i < MAX_PATHS; i++)
 	{
-		vector_increase (&lk.included, 0);
+		vector_add(&lk.included, 0);
 	}
 
 	lk.current = SIZE_MAX;
