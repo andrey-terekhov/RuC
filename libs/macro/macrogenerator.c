@@ -23,7 +23,7 @@
 
 const size_t SIZE_OUT_BUFFER = 1024;
 
-int macro_form_io(workspace *const ws, universal_io *const output)
+static int macro_form_io(workspace *const ws, universal_io *const output)
 {
 	linker lk = linker_create(ws);
 	parser prs = parser_create(&lk, output);
@@ -38,7 +38,7 @@ int macro_form_io(workspace *const ws, universal_io *const output)
 			return -1;
 		}
 
-		if(parser_preprocess(&prs, &in))
+		if (parser_preprocess(&prs, &in))
 		{
 			linker_clear(&lk);
 			return -1;
@@ -49,6 +49,7 @@ int macro_form_io(workspace *const ws, universal_io *const output)
 	linker_clear(&lk);
 	return 0;
 }
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______

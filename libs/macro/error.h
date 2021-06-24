@@ -24,55 +24,12 @@ extern "C" {
 #endif
 
 /** Errors codes */
-enum ERROR
+typedef enum ERROR
 {
-	after_ident_must_be_space = 365,
-	must_be_endif,
-	dont_elif,
-	preproces_words_not_exist,
-	not_enough_param,
-	functionid_begins_with_letters,
-	after_functionid_must_be_comma,
-	stalpe,
-	before_endif,
-	repeat_ident,
-	not_end_fail_define,
-	scope_not_close,
-	after_preproces_words_must_be_space,
-	ident_begins_with_letters,
-	ident_not_exist,
-	functions_cannot_be_changed,
-	after_eval_must_be_ckob,
-	too_many_nuber,
-	not_arithmetic_operations,
-	not_logical_operations,
-	comm_not_ended,
-	not_enough_param2,
-	must_be_digit_after_exp1,
-	not_macro,
-	incorrect_arithmetic_expression,
-	third_party_symbol,
-	in_eval_must_end_parenthesis,
-	must_end_quote,
-	must_start_quote,
-	macro_does_not_exist,
-	must_end_endw,
-	include_file_not_found,
+	include_file_not_found = 365,
 	source_file_not_found,
-	no_string_ending, 
-};
+} error_t;
 
-
-/**
- *	Emit an error for some problem
- *
- *	@param	num			Error code
- *	@param	path		Current file path
- *	@param	code		Error line in current file
- *	@param	line		Error line number
- *	@param	position	Error position in line
- */
-void macro_error(const int num, const char *const path, const char *const code, const size_t line, size_t position);
 
 /**
  *	Emit an error for some problem
@@ -80,7 +37,7 @@ void macro_error(const int num, const char *const path, const char *const code, 
  *	@param	tag		Message location
  *	@param	num		Error code
  */
-void macro_system_error(const char *const tag, const int num);
+void macro_system_error(const char *const tag, error_t num);
 
 #ifdef __cplusplus
 } /* extern "C" */

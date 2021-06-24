@@ -49,6 +49,7 @@ static void lk_make_path(char *const output, const char *const source, const cha
 	strcpy(&output[index], header);
 }
 
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -56,6 +57,7 @@ static void lk_make_path(char *const output, const char *const source, const cha
  *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
  *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
  */
+
 
 linker linker_create(workspace *const ws)
 {
@@ -74,7 +76,7 @@ linker linker_create(workspace *const ws)
 
 	for (size_t i = 0; i < MAX_PATHS; i++)
 	{
-		vector_add(&lk.included, 0);
+		vector_increase (&lk.included, 0);
 	}
 
 	lk.current = SIZE_MAX;
@@ -82,20 +84,22 @@ linker linker_create(workspace *const ws)
 	return lk;
 }
 
+
 universal_io linker_add_source(linker *const lk, const size_t index)
 {
 	universal_io input = io_create();
 
-	if(linker_is_correct(lk) && index < lk->sources && vector_get(&lk->included, index) == 0)
+	if (linker_is_correct(lk) && index < lk->sources && vector_get(&lk->included, index) == 0)
 	{
 		if (in_set_file(&input, ws_get_file(lk->ws, index)))
 		{
 			macro_system_error(ws_get_file(lk->ws, index), source_file_not_found);
-			return input;
 		}
-
-		vector_set(&lk->included, index, 1);
-		lk->current = index;
+		else
+		{
+			vector_set(&lk->included, index, 1);
+			lk->current = index;
+		}	
 	}
 
 	return input;
@@ -109,16 +113,18 @@ universal_io linker_add_header(linker *const lk, const size_t index)
 	{
 		if (in_set_file(&input, ws_get_file(lk->ws, index)))
 		{
-			macro_system_error(ws_get_file(lk->ws, index), source_file_not_found);
-			return input;
+			macro_system_error(ws_get_file(lk->ws, index), include_file_not_found);
 		}
-
-		vector_set(&lk->included, index, 1);
-		lk->current = index;
+		else
+		{
+			vector_set(&lk->included, index, 1);
+			lk->current = index;
+		}
 	}
 
 	return input;
 }
+
 
 size_t linker_search_internal(linker *const lk, const char *const file)
 {
@@ -182,10 +188,12 @@ size_t linker_search_external(linker *const lk, const char *const file)
 	return ws_add_file(lk->ws, full_path);
 }
 
+
 const char* linker_current_path(const linker *const lk)
 {
 	return linker_is_correct(lk) ? ws_get_file(lk->ws, lk->current) : NULL;
 }
+
 
 size_t linker_size(const linker *const lk)
 {
