@@ -98,7 +98,7 @@ static inline node_info *stack_pop(information *const info)
 	return &info->stack[--info->stack_size];
 }
 
-static inline void stack_resize(information *const info, const int size)
+static inline void stack_resize(information *const info, const size_t size)
 {
 	info->stack_size = size;
 }
