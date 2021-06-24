@@ -422,7 +422,9 @@ static int node_recursive(information *const info, node *const nd)
 
 			default:
 			{
-				node_info nd_info = { &child, 1 };
+				node_info nd_info;
+				nd_info.ref_node = &child;
+				nd_info.depth = 1;
 
 				// перестановка узлов выражений
 				switch (expression_type(&child))
