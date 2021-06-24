@@ -18,8 +18,8 @@
 #include <stdlib.h>
 #include "codes.h"
 #include "errors.h"
-#include "item.h"
 #include "instructions.h"
+#include "item.h"
 #include "operations.h"
 #include "stack.h"
 #include "tree.h"
@@ -303,7 +303,7 @@ static void expression(virtual *const vm, node *const nd, int mode)
 				expression(vm, nd, 0);
 				mem_add(vm, IC_SLICE);
 				mem_add(vm, (item_t)size_of(vm->sx, type));
-				if (type > 0 && mode_get(vm->sx, (size_t)type) == mode_array)
+				if (type_is_array(vm->sx, type))
 				{
 					mem_add(vm, IC_LAT);
 				}
@@ -438,7 +438,7 @@ static void identifier(virtual *const vm, node *const nd)
 		}
 		if (all) // int a = или struct{} a =
 		{
-			if (type > 0 && mode_get(vm->sx, (size_t)type) == mode_struct)
+			if (type > 0 && type_get(vm->sx, (size_t)type) == type_struct)
 			{
 				node_set_next(nd);
 				structure(vm, nd);
@@ -451,7 +451,7 @@ static void identifier(virtual *const vm, node *const nd)
 			{
 				expression(vm, nd, 0);
 
-				mem_add(vm, type == mode_float ? IC_ASSIGN_R_V : IC_ASSIGN_V);
+				mem_add(vm, type == type_float ? IC_ASSIGN_R_V : IC_ASSIGN_V);
 				mem_add(vm, old_displ);
 			}
 		}
@@ -533,7 +533,7 @@ static void compress_ident(virtual *const vm, const size_t ref)
 
 	const item_t new_ref = (item_t)vector_size(&vm->identifiers) - 1;
 	vector_add(&vm->identifiers, (item_t)vector_size(&vm->representations) - 2);
-	vector_add(&vm->identifiers, ident_get_mode(vm->sx, ref));
+	vector_add(&vm->identifiers, ident_get_type(vm->sx, ref));
 	vector_add(&vm->identifiers, ident_get_displ(vm->sx, ref));
 
 	const char *buffer = repr_get_name(vm->sx, (size_t)ident_get_repr(vm->sx, ref));
@@ -922,14 +922,14 @@ static int output_export(universal_io *const io, const virtual *const vm)
 		, vector_size(&vm->sx->functions)
 		, vector_size(&vm->identifiers)
 		, vector_size(&vm->representations)
-		, vector_size(&vm->sx->modes)
+		, vector_size(&vm->sx->types)
 		, vm->sx->max_displg, vm->max_threads);
 
 	return output_table(io, vm->target, &vm->memory)
 		|| output_table(io, vm->target, &vm->sx->functions)
 		|| output_table(io, vm->target, &vm->identifiers)
 		|| output_table(io, vm->target, &vm->representations)
-		|| output_table(io, vm->target, &vm->sx->modes);
+		|| output_table(io, vm->target, &vm->sx->types);
 }
 
 
