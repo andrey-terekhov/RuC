@@ -87,7 +87,7 @@ static double to_double(const int64_t fst, const int64_t snd)
 }
 
 // TODO: помню, такое планировалось делать вне кодогенератора...
-static int is_double(const item_t operation)
+static bool is_double(const item_t operation)
 {
 	switch (operation)
 	{
@@ -151,7 +151,7 @@ static int is_double(const item_t operation)
 	}
 }
 
-static int is_array_operation(const item_t operation)
+static bool is_array_operation(const item_t operation)
 {
 	switch (operation)
 	{
@@ -746,7 +746,8 @@ static void operand(information *const info, node *const nd)
 		case OP_SLICE_IDENT:
 		{
 			const item_t displ = node_get_arg(nd, 0);
-			const item_t type = node_get_arg(nd, 1);
+			// TODO: как и в llvmopt, это работает только для двумерных массивов, надо подумать над этим потом (может общую функцию сделать?)
+			const item_t type = node_get_arg(nd, 1) > 0 ? mode_get(info->sx, node_get_arg(nd, 1) + 1) : node_get_arg(nd, 1);
 			item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 			const location_t location = info->variable_location;
 			node_set_next(nd);

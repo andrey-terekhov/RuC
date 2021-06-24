@@ -443,9 +443,8 @@ static int node_recursive(information *const info, node *const nd)
 						// перестановка с операндом
 						has_error |= transposition(operand, &nd_info);
 
-						// TODO: тут, по-моему, ужасный костыль (а может и нет, вроде нормально работает)
-						// TODO: проблемы, если вызов функции в выражении
-						if (node_get_type(&child) == OP_CALL1)
+						// TODO: раньше не всегда, но работало, сейчас нет, надо разобраться
+						if (node_get_type(operand->ref_node) == OP_CALL1)
 						{
 							node tmp = child;
 							while (node_get_type(&tmp) != OP_CALL2)
@@ -453,11 +452,10 @@ static int node_recursive(information *const info, node *const nd)
 								node_set_next(&tmp);
 								operand->depth++;
 							}
-							operand->depth--;
 						}
 
 						// добавляем в стек переставленное выражение
-						has_error |=  stack_push(info, operand);
+						has_error |= stack_push(info, operand);
 					}
 					break;
 					case BINARY_OPERATION:
