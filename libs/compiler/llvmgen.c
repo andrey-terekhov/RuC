@@ -578,38 +578,38 @@ static void to_code_stack_load(information *const info)
 	info->register_num++;
 }
 
-static void to_code_slice(information *const info, const item_t displ, const item_t cur_dimention
+static void to_code_slice(information *const info, const item_t displ, const item_t cur_dimension
 	, const item_t prev_slice, const item_t type)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
-	const item_t dimentions = hash_get_amount(&info->arrays, displ) - 1;
+	const item_t dimensions = hash_get_amount(&info->arrays, displ) - 1;
 
 	if (hash_get(&info->arrays, displ, IS_STATIC))
 	{
-		for (item_t i = dimentions - cur_dimention; i <= dimentions; i++)
+		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
 			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
 		}
 		type_to_io(info->io, type);
 
-		for (item_t i = dimentions - cur_dimention; i <= dimentions; i++)
+		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
 			uni_printf(info->io, "]");
 		}
 		uni_printf(info->io, ", ");
 
-		for (item_t i = dimentions - cur_dimention; i <= dimentions; i++)
+		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
 			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
 		}
 		type_to_io(info->io, type);
 
-		for (item_t i = dimentions - cur_dimention; i <= dimentions; i++)
+		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
 			uni_printf(info->io, "]");
 		}
 
-		if (cur_dimention == dimentions - 1)
+		if (cur_dimension == dimensions - 1)
 		{
 			uni_printf(info->io, "* %%arr.%" PRIitem ", i32 0", displ);
 		}
@@ -618,7 +618,7 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 			uni_printf(info->io, "* %%.%" PRIitem ", i32 0", prev_slice);
 		}
 	}
-	else if (cur_dimention == dimentions - 1)
+	else if (cur_dimension == dimensions - 1)
 	{
 		type_to_io(info->io, type);
 		uni_printf(info->io, ", ");
@@ -746,7 +746,7 @@ static void operand(information *const info, node *const nd)
 		{
 			const item_t displ = node_get_arg(nd, 0);
 			const item_t type = node_get_arg(nd, 1);
-			item_t cur_dimention = hash_get_amount(&info->arrays, displ) - 2;
+			item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 			const location_t location = info->variable_location;
 			node_set_next(nd);
 
@@ -754,7 +754,7 @@ static void operand(information *const info, node *const nd)
 			expression(info, nd);
 
 			// TODO: пока только для динамических массивов размерности 2
-			if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimention == 1)
+			if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimension == 1)
 			{
 				if (info->answer_type == ACONST)
 				{
@@ -770,7 +770,7 @@ static void operand(information *const info, node *const nd)
 				info->answer_reg = info->register_num++;
 			}
 
-			to_code_slice(info, displ, cur_dimention, 0, type);
+			to_code_slice(info, displ, cur_dimension, 0, type);
 
 			item_t prev_slice = info->register_num - 1;
 			while (node_get_type(nd) == TSlice)
@@ -778,9 +778,9 @@ static void operand(information *const info, node *const nd)
 				node_set_next(nd);
 				info->variable_location = LFREE;
 				expression(info, nd);
-				cur_dimention--;
+				cur_dimension--;
 
-				to_code_slice(info, displ, cur_dimention, prev_slice, type);
+				to_code_slice(info, displ, cur_dimension, prev_slice, type);
 				prev_slice = info->register_num - 1;
 			}
 
