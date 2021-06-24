@@ -54,6 +54,86 @@ typedef struct encoder
 	int was_error;					/**< Error flag */
 } encoder;
 
+
+static void emit_declaration(encoder *const enc, const node *const nd);
+static void emit_statement(encoder *const enc, const node *const nd);
+static void emit_block(encoder *const enc, const node *const nd);
+
+
+static inline void mem_increase(encoder *const enc, const size_t size)
+{
+	vector_increase(&enc->memory, size);
+}
+
+static inline void mem_add(encoder *const enc, const item_t value)
+{
+	vector_add(&enc->memory, value);
+}
+
+static inline void mem_set(encoder *const enc, const size_t index, const item_t value)
+{
+	vector_set(&enc->memory, index, value);
+}
+
+static inline item_t mem_get(const encoder *const enc, const size_t index)
+{
+	return vector_get(&enc->memory, index);
+}
+
+static inline size_t mem_size(const encoder *const enc)
+{
+	return vector_size(&enc->memory);
+}
+
+static inline size_t mem_reserve(encoder *const enc)
+{
+	vector_increase(&enc->memory, 1);
+	return mem_size(enc) - 1;
+}
+
+
+static inline void proc_set(encoder *const enc, const size_t index, const item_t value)
+{
+	vector_set(&enc->processes, index, value);
+}
+
+static inline item_t proc_get(const encoder *const enc, const size_t index)
+{
+	return vector_get(&enc->processes, index);
+}
+
+
+static void addr_begin_condition(encoder *const enc, const size_t addr)
+{
+	while (enc->addr_cond != addr)
+	{
+		const size_t ref = (size_t)mem_get(enc, enc->addr_cond);
+		mem_set(enc, enc->addr_cond, (item_t)addr);
+		enc->addr_cond = ref;
+	}
+}
+
+static void addr_end_condition(encoder *const enc)
+{
+	while (enc->addr_cond)
+	{
+		const size_t ref = (size_t)mem_get(enc, enc->addr_cond);
+		mem_set(enc, enc->addr_cond, (item_t)mem_size(enc));
+		enc->addr_cond = ref;
+	}
+}
+
+static void addr_end_break(encoder *const enc)
+{
+	while (enc->addr_break)
+	{
+		const size_t ref = (size_t)mem_get(enc, enc->addr_break);
+		mem_set(enc, enc->addr_break, (item_t)mem_size(enc));
+		enc->addr_break = ref;
+	}
+}
+
+
 /**
  *	Create code generator
  *
@@ -146,111 +226,6 @@ static void enc_clear(encoder *const enc)
 
 	vector_clear(&enc->identifiers);
 	vector_clear(&enc->representations);
-}
-
-
-static void emit_declaration(encoder *const enc, const node *const nd);
-static void emit_statement(encoder *const enc, const node *const nd);
-static void emit_block(encoder *const enc, const node *const nd);
-
-
-static inline void mem_increase(encoder *const enc, const size_t size)
-{
-	vector_increase(&enc->memory, size);
-}
-
-static inline void mem_add(encoder *const enc, const item_t value)
-{
-	vector_add(&enc->memory, value);
-}
-
-static inline void mem_set(encoder *const enc, const size_t index, const item_t value)
-{
-	vector_set(&enc->memory, index, value);
-}
-
-static inline item_t mem_get(const encoder *const enc, const size_t index)
-{
-	return vector_get(&enc->memory, index);
-}
-
-static inline size_t mem_size(const encoder *const enc)
-{
-	return vector_size(&enc->memory);
-}
-
-static inline size_t mem_reserve(encoder *const enc)
-{
-	vector_increase(&enc->memory, 1);
-	return mem_size(enc) - 1;
-}
-
-
-static inline void proc_set(encoder *const enc, const size_t index, const item_t value)
-{
-	vector_set(&enc->processes, index, value);
-}
-
-static inline item_t proc_get(const encoder *const enc, const size_t index)
-{
-	return vector_get(&enc->processes, index);
-}
-
-
-static void addr_begin_condition(encoder *const enc, const size_t addr)
-{
-	while (enc->addr_cond != addr)
-	{
-		const size_t ref = (size_t)mem_get(enc, enc->addr_cond);
-		mem_set(enc, enc->addr_cond, (item_t)addr);
-		enc->addr_cond = ref;
-	}
-}
-
-static void addr_end_condition(encoder *const enc)
-{
-	while (enc->addr_cond)
-	{
-		const size_t ref = (size_t)mem_get(enc, enc->addr_cond);
-		mem_set(enc, enc->addr_cond, (item_t)mem_size(enc));
-		enc->addr_cond = ref;
-	}
-}
-
-static void addr_end_break(encoder *const enc)
-{
-	while (enc->addr_break)
-	{
-		const size_t ref = (size_t)mem_get(enc, enc->addr_break);
-		mem_set(enc, enc->addr_break, (item_t)mem_size(enc));
-		enc->addr_break = ref;
-	}
-}
-
-
-static void compress_ident(encoder *const enc, const size_t ref)
-{
-	if (vector_get(&enc->sx->identifiers, ref) == ITEM_MAX)
-	{
-		mem_add(enc, ident_get_repr(enc->sx, ref));
-		return;
-	}
-
-	const item_t new_ref = (item_t)vector_size(&enc->identifiers) - 1;
-	vector_add(&enc->identifiers, (item_t)vector_size(&enc->representations) - 2);
-	vector_add(&enc->identifiers, ident_get_type(enc->sx, ref));
-	vector_add(&enc->identifiers, ident_get_displ(enc->sx, ref));
-
-	const char *buffer = repr_get_name(enc->sx, (size_t)ident_get_repr(enc->sx, ref));
-	for (size_t i = 0; buffer[i] != '\0'; i += utf8_symbol_size(buffer[i]))
-	{
-		vector_add(&enc->representations, (item_t)utf8_convert(&buffer[i]));
-	}
-	vector_add(&enc->representations, '\0');
-
-	vector_set(&enc->sx->identifiers, ref, ITEM_MAX);
-	ident_set_repr(enc->sx, ref, new_ref);
-	mem_add(enc, new_ref);
 }
 
 
@@ -1068,6 +1043,31 @@ static void emit_thread(encoder *const enc, const node *const nd)
 	}
 
 	mem_add(enc, IC_EXIT_DIRECT);
+}
+
+static void compress_ident(encoder *const enc, const size_t ref)
+{
+	if (vector_get(&enc->sx->identifiers, ref) == ITEM_MAX)
+	{
+		mem_add(enc, ident_get_repr(enc->sx, ref));
+		return;
+	}
+
+	const item_t new_ref = (item_t)vector_size(&enc->identifiers) - 1;
+	vector_add(&enc->identifiers, (item_t)vector_size(&enc->representations) - 2);
+	vector_add(&enc->identifiers, ident_get_type(enc->sx, ref));
+	vector_add(&enc->identifiers, ident_get_displ(enc->sx, ref));
+
+	const char *buffer = repr_get_name(enc->sx, (size_t)ident_get_repr(enc->sx, ref));
+	for (size_t i = 0; buffer[i] != '\0'; i += utf8_symbol_size(buffer[i]))
+	{
+		vector_add(&enc->representations, (item_t)utf8_convert(&buffer[i]));
+	}
+	vector_add(&enc->representations, '\0');
+
+	vector_set(&enc->sx->identifiers, ref, ITEM_MAX);
+	ident_set_repr(enc->sx, ref, new_ref);
+	mem_add(enc, new_ref);
 }
 
 /**
