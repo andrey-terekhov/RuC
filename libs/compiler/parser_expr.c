@@ -19,651 +19,312 @@
 #include <string.h>
 
 
-/** Operator stack member */
-typedef struct operator
+typedef enum VALUE
 {
-	uint8_t priority;	/**< Operator priority */
-	token_t token;		/**< Operator token */
-	node nd;			/**< Operator node in AST */
-} operator;
+	LVALUE,		/**< An expression that potentially designates an object */
+	RVALUE,		/**< An expression that detached from any specific storage */
+} value_t;
 
-
-static void parse_unary_expression(parser *const prs);
-static void parse_assignment_expression_internal(parser *const prs);
-static void parse_expression_internal(parser *const prs);
-static void parse_constant(parser *const prs);
-
-
-static inline int operators_push(parser *const prs, const uint8_t priority, const token_t token, const node *const nd)
+static node create_node(parser *const prs, operation_t type)
 {
-	return stack_push(&prs->stk.priorities, priority)
-		|| stack_push(&prs->stk.tokens, token)
-		|| stack_push(&prs->stk.nodes, node_save(nd));
+	return node_add_child(&prs->nd, type);
 }
 
-static inline operator operators_pop(parser *const prs)
+static void node_set_child(node *const parent, node *const child)
 {
-	operator op;
-
-	op.priority = (uint8_t)stack_pop(&prs->stk.priorities);
-	op.token = stack_pop(&prs->stk.tokens);
-	op.nd = node_load(&prs->sx->tree, (size_t)stack_pop(&prs->stk.nodes));
-
-	return op;
+	node temp = node_add_child(parent, OP_NOP);
+	node_swap(child, &temp);
+	node_remove(&temp);
 }
 
-static inline operator operators_peek(parser *const prs)
+/** Binary/ternary operator precedence levels */
+typedef enum PRECEDENCE
 {
-	operator op;
+	PREC_UNKWOWN,			/**< Not binary operator */
+	PREC_COMMA,				/**< Comma operator precedence */
+	PREC_ASSIGNMENT,		/**< Assignment operator precedence */
+	PREC_CONDITIONAL,		/**< Conditional operator precedence */
+	PREC_LOGICAL_OR,		/**< Logical OR operator precedence */
+	PREC_LOGICAL_AND,		/**< Logical AND operator precedence */
+	PREC_OR,				/**< Bitwise OR operator precedence */
+	PREC_XOR,				/**< Bitwise XOR operator precedence */
+	PREC_AND,				/**< Bitwise AND operator precedence */
+	PREC_EQUALITY,			/**< Equality operators precedence */
+	PREC_RELATIONAL,		/**< Relational operators precedence */
+	PREC_SHIFT,				/**< Shift operators precedence */
+	PREC_ADDITIVE,			/**< Additive operators precedence */
+	PREC_MULTIPLICATIVE,	/**< Multiplicative operators precedence */
+} precedence_t;
 
-	op.priority = (uint8_t)stack_peek(&prs->stk.priorities);
-	op.token = stack_peek(&prs->stk.tokens);
-	op.nd = node_load(&prs->sx->tree, (size_t)stack_peek(&prs->stk.nodes));
-
-	return op;
-}
-
-static inline size_t operators_size(const parser *const prs)
+/** Return the precedence of the specified binary/ternary operator token */
+static precedence_t get_operator_precedence(const token_t token)
 {
-	return stack_size(&prs->stk.tokens);
-}
-
-static inline int operands_push(parser *const prs, const operand_t kind, const item_t type)
-{
-	prs->last_type = kind;
-	return stack_push(&prs->anonymous, type);
-}
-
-
-static void node_add_double(node *const nd, const double value)
-{
-	int64_t num64;
-	memcpy(&num64, &value, sizeof(int64_t));
-
-	const int32_t fst = num64 & 0x00000000ffffffff;
-	const int32_t snd = (num64 & 0xffffffff00000000) >> 32;
-
-	node_add_arg(nd, fst);
-	node_add_arg(nd, snd);
-}
-
-static void node_set_double(node *const nd, const size_t index, const double value)
-{
-	int64_t num64;
-	memcpy(&num64, &value, sizeof(int64_t));
-
-	const int32_t fst = num64 & 0x00000000ffffffff;
-	const int32_t snd = (num64 & 0xffffffff00000000) >> 32;
-
-	node_set_arg(nd, index, fst);
-	node_set_arg(nd, index + 1, snd);
-}
-
-static double node_get_double(const node *const nd, const size_t index)
-{
-	const int64_t fst = (int64_t)node_get_arg(nd, index) & 0x00000000ffffffff;
-	const int64_t snd = (int64_t)node_get_arg(nd, index + 1) & 0x00000000ffffffff;
-	const int64_t num64 = (snd << 32) | fst;
-
-	double num;
-	memcpy(&num, &num64, sizeof(double));
-	return num;
-}
-
-
-static inline void float_operation(parser *const prs, const item_t type, const operation_t operation)
-{
-	to_tree(prs, type_is_float(type) ? operation_to_float_ver(operation) : operation);
-}
-
-static inline bool is_integer_operator(const token_t operator)
-{
-	switch (operator)
+	switch (token)
 	{
+		case TK_COMMA:
+			return PREC_COMMA;
+
+		case TK_EQUAL:
+		case TK_STAR_EQUAL:
+		case TK_SLASH_EQUAL:
+		case TK_PERCENT_EQUAL:
+		case TK_PLUS_EQUAL:
+		case TK_MINUS_EQUAL:
+		case TK_LESS_LESS_EQUAL:
+		case TK_GREATER_GREATER_EQUAL:
+		case TK_AMP_EQUAL:
+		case TK_CARET_EQUAL:
+		case TK_PIPE_EQUAL:
+			return PREC_ASSIGNMENT;
+
+		case TK_QUESTION:
+			return PREC_CONDITIONAL;
+
+		case TK_PIPE_PIPE:
+			return PREC_LOGICAL_OR;
+
+		case TK_AMP_AMP:
+			return PREC_LOGICAL_AND;
+
+		case TK_PIPE:
+			return PREC_OR;
+
+		case TK_CARET:
+			return PREC_XOR;
+
+		case TK_AMP:
+			return PREC_AND;
+
 		case TK_EQUAL_EQUAL:
 		case TK_EXCLAIM_EQUAL:
-		case TK_LESS:
+			return PREC_EQUALITY;
+
+		case TK_GREATER_EQUAL:
 		case TK_LESS_EQUAL:
 		case TK_GREATER:
-		case TK_GREATER_EQUAL:
-			return true;
+		case TK_LESS:
+			return PREC_RELATIONAL;
+
+		case TK_LESS_LESS:
+		case TK_GREATER_GREATER:
+			return PREC_SHIFT;
+
+		case TK_PLUS:
+		case TK_MINUS:
+			return PREC_ADDITIVE;
+
+		case TK_STAR:
+		case TK_SLASH:
+		case TK_PERCENT:
+			return PREC_MULTIPLICATIVE;
 
 		default:
-			return false;
+			return PREC_UNKWOWN;
 	}
 }
 
-static void binary_operation(parser *const prs, operator operator)
+/** Return valid expression from AST node */
+static expression expr(const node expr_node, const location_t location)
 {
-	const token_t token = operator.token;
-	const item_t right_type = stack_pop(&prs->anonymous);
-	const item_t left_type = stack_pop(&prs->anonymous);
-	item_t result_type = right_type;
-
-	if (type_is_pointer(prs->sx, left_type) || type_is_pointer(prs->sx, right_type))
-	{
-		parser_error(prs, operand_is_pointer);
-	}
-
-	if (type_is_float(left_type) || type_is_float(right_type))
-	{
-		if (token == TK_PIPE_PIPE || token == TK_AMP_AMP || token == TK_PIPE || token == TK_CARET
-			|| token == TK_AMP || token == TK_GREATER_GREATER || token == TK_LESS_LESS || token == TK_PERCENT)
-		{
-			parser_error(prs, int_op_for_float);
-		}
-
-		if (type_is_integer(left_type))
-		{
-			to_tree(prs, OP_WIDEN1);
-		}
-		else if (type_is_integer(right_type))
-		{
-			to_tree(prs, OP_WIDEN);
-		}
-
-		result_type = type_float;
-	}
-
-	if (token == TK_PIPE_PIPE || token == TK_AMP_AMP)
-	{
-		to_tree(prs, token_to_binary(token));
-		node_add_arg(&prs->nd, 0); // FIXME: useless
-
-		// FIXME: just remove it after MIPS integration
-		node_set_arg(&operator.nd, 0, node_save(&prs->nd));
-		node_set_arg(&operator.nd, 0, node_get_arg(&operator.nd, 0) + 1);
-	}
-	else
-	{
-		float_operation(prs, result_type, token_to_binary(token));
-	}
-
-	if (is_integer_operator(token))
-	{
-		result_type = type_integer;
-	}
-
-	operands_push(prs, VALUE, result_type);
+	return (expression){ /*is_valid*/true, location, expr_node };
 }
 
-static void to_value(parser *const prs)
+/** Return invalid expression */
+static expression expr_broken(void)
 {
-	switch (prs->last_type)
-	{
-		case VARIABLE:
-		{
-			const item_t type = stack_pop(&prs->anonymous);
-			if (type_is_struct(prs->sx, type) && !prs->is_in_assignment)
-			{
-				node_set_type(&prs->nd, OP_COPY0ST);
-				node_set_arg(&prs->nd, 0, prs->operand_displ);
-				node_add_arg(&prs->nd, type_get(prs->sx, (size_t)type + 1));
-			}
-			else
-			{
-				node_set_type(&prs->nd, type_is_float(type) ? operation_to_float_ver(OP_IDENT_TO_VAL) : OP_IDENT_TO_VAL);
-			}
-
-			operands_push(prs, VALUE, type);
-		}
-		break;
-
-		case ADDRESS:
-		{
-			const item_t type = stack_pop(&prs->anonymous);
-			if (type_is_struct(prs->sx, type) && !prs->is_in_assignment)
-			{
-				to_tree(prs, OP_COPY1ST);
-				node_add_arg(&prs->nd, type_get(prs->sx, (size_t)type + 1));
-			}
-			else if (!type_is_array(prs->sx, type) && !type_is_pointer(prs->sx, type))
-			{
-				float_operation(prs, type, OP_ADDR_TO_VAL);
-			}
-
-			operands_push(prs, VALUE, type);
-		}
-		break;
-
-		case VALUE:
-		case NUMBER:
-			break;
-	}
-}
-
-static item_t parse_braced_init_list(parser *const prs, const item_t type)
-{
-	token_consume(prs);
-	float_operation(prs, type, OP_STRING);
-	node_add_arg(&prs->nd, 0);
-
-	node nd_init_list;
-	node_copy(&nd_init_list, &prs->nd);
-
-	size_t length = 0;
-	do
-	{
-		const int sign = token_try_consume(prs, TK_MINUS) ? -1 : 1;
-
-		if (prs->token == TK_INT_CONST || prs->token == TK_CHAR_CONST)
-		{
-			if (type_is_float(type))
-			{
-				node_add_double(&nd_init_list, sign * prs->lxr->num);
-			}
-			else
-			{
-				node_add_arg(&nd_init_list, sign * prs->lxr->num);
-			}
-			token_consume(prs);
-		}
-		else if (prs->token == TK_FLOAT_CONST)
-		{
-			if (type_is_float(type))
-			{
-				node_add_double(&nd_init_list, sign * prs->lxr->num_double);
-			}
-			else
-			{
-				parser_error(prs, init_int_by_float);
-			}
-			token_consume(prs);
-		}
-		else
-		{
-			parser_error(prs, wrong_init_in_actparam);
-			token_skip_until(prs, TK_COMMA | TK_R_BRACE | TK_SEMICOLON);
-		}
-		length++;
-	} while (token_try_consume(prs, TK_COMMA));
-
-	node_set_arg(&nd_init_list, 0, length);
-	to_tree(prs, OP_EXPR_END);
-	if (!token_try_consume(prs, TK_R_BRACE))
-	{
-		parser_error(prs, no_comma_or_end);
-		token_skip_until(prs, TK_R_BRACE | TK_SEMICOLON);
-	}
-
-	return to_modetab(prs, type_array, type);
-}
-
-static void must_be_string(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	if (!type_is_string(prs->sx, stack_pop(&prs->anonymous)))
-	{
-		parser_error(prs, not_string_in_stanfunc);
-	}
-}
-
-static void must_be_point_string(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	const item_t type = stack_pop(&prs->anonymous);
-	if (!(type_is_pointer(prs->sx, type) && type_is_string(prs->sx, type_get(prs->sx, (size_t)type + 1))))
-	{
-		parser_error(prs, not_point_string_in_stanfunc);
-	}
-}
-
-static void must_be_row(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	if (!type_is_array(prs->sx, stack_pop(&prs->anonymous)))
-	{
-		parser_error(prs, not_array_in_stanfunc);
-	}
-}
-
-static void must_be_int(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	if (!type_is_integer(stack_pop(&prs->anonymous)))
-	{
-		parser_error(prs, not_int_in_stanfunc);
-	}
-}
-
-static void must_be_float(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	const item_t type = stack_pop(&prs->anonymous);
-	if (type_is_integer(type))
-	{
-		to_tree(prs, OP_WIDEN);
-	}
-	else if (!type_is_float(type))
-	{
-		parser_error(prs, bad_param_in_stand_func);
-	}
-}
-
-static void must_be_row_of_int(parser *const prs)
-{
-	item_t type;
-	if (prs->token == TK_L_BRACE)
-	{
-		type = parse_braced_init_list(prs, type_integer);
-	}
-	else
-	{
-		parse_assignment_expression_internal(prs);
-		to_value(prs);
-
-		type = stack_pop(&prs->anonymous);
-		if (type_is_integer(type))
-		{
-			to_tree(prs, OP_ROWING);
-			type = to_modetab(prs, type_array, type_integer);
-		}
-	}
-
-	if (!(type_is_array(prs->sx, type) && type_is_integer(type_get(prs->sx, (size_t)type + 1))))
-	{
-		parser_error(prs, not_rowofint_in_stanfunc);
-	}
-}
-
-static void must_be_row_of_float(parser *const prs)
-{
-	item_t type;
-	if (prs->token == TK_L_BRACE)
-	{
-		type = parse_braced_init_list(prs, type_float);
-	}
-	else
-	{
-		parse_assignment_expression_internal(prs);
-		to_value(prs);
-
-		type = stack_pop(&prs->anonymous);
-		if (type_is_float(type))
-		{
-			to_tree(prs, OP_ROWING_D);
-			type = to_modetab(prs, type_array, type_float);
-		}
-	}
-
-	if (!(type_is_array(prs->sx, type) && type_get(prs->sx, (size_t)type + 1) == type_float))
-	{
-		parser_error(prs, not_rowoffloat_in_stanfunc);
-	}
-}
-
-static void parse_standard_function_call(parser *const prs)
-{
-	const token_t func = prs->token;
-	token_consume(prs);
-
-	if (!token_try_consume(prs, TK_L_PAREN))
-	{
-		parser_error(prs, no_leftbr_in_stand_func);
-		token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-		return;
-	}
-
-	if (func == TK_ASSERT)
-	{
-		must_be_int(prs);
-		token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-		must_be_string(prs);
-		operands_push(prs, VALUE, type_void);
-	}
-	else if (func > BEGIN_TK_STR && func < END_TK_STR)
-	{
-		if (func == TK_STRCPY || func == TK_STRNCPY || func == TK_STRCAT || func == TK_STRNCAT)
-		{
-			must_be_point_string(prs);
-		}
-		else
-		{
-			must_be_string(prs);
-		}
-
-		if (func != TK_STRLEN)
-		{
-			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-			must_be_string(prs);
-			if (func == TK_STRNCPY || func == TK_STRNCAT || func == TK_STRNCMP)
-			{
-				token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-				must_be_int(prs);
-			}
-		}
-
-		if (func == TK_STRCMP || func == TK_STRNCMP || func == TK_STRSTR || func == TK_STRLEN)
-		{
-			operands_push(prs, VALUE, type_integer);
-		}
-		else
-		{
-			operands_push(prs, VALUE, type_void);
-		}
-	}
-	else if (func > BEGIN_TK_ROBOT && func < END_TK_ROBOT)
-	{
-		// новые функции Фадеева
-		must_be_int(prs);
-		if (func == TK_ROBOT_SEND_INT || func == TK_ROBOT_SEND_STRING)
-		{
-			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-			must_be_row_of_int(prs);
-			operands_push(prs, VALUE, type_void);
-		}
-		else if (func == TK_ROBOT_SEND_FLOAT)
-		{
-			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-			must_be_row_of_float(prs);
-			operands_push(prs, VALUE, type_void);
-		}
-		else
-		{
-			operands_push(prs, VALUE, func == TK_ROBOT_RECEIVE_INT
-											? type_integer
-											: func == TK_ROBOT_RECEIVE_FLOAT
-												? type_float
-												: to_modetab(prs, type_array, type_character));
-
-		}
-	}
-	else if (func > BEGIN_TK_THREAD && func < END_TK_THREAD)
-	{
-		if (func == TK_INIT || func == TK_DESTROY || func == TK_EXIT)
-		{
-			operands_push(prs, VALUE, type_void);
-		}
-		else if (func == TK_MSG_RECEIVE || func == TK_GETNUM) // getnum int(), msgreceive msg_info()
-		{
-			operands_push(prs, VALUE, func == TK_GETNUM ? type_integer : type_msg_info);
-		}
-		else
-		{
-			// MSGSEND void(msg_info)  CREATE int(void*(*func)(void*))
-			// SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
-			// у этих процедур 1 параметр
-
-			if (func == TK_CREATE)
-			{
-				if (!token_try_consume(prs, TK_IDENTIFIER))
-				{
-					parser_error(prs, act_param_not_ident);
-				}
-
-				const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
-				if (id == ITEM_MAX)
-				{
-					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, prs->lxr->repr));
-				}
-
-				prs->last_id = (size_t)id;
-				if (ident_get_type(prs->sx, prs->last_id) != type_void_pointer)
-				{
-					parser_error(prs, wrong_arg_in_create);
-				}
-
-				const item_t displ = ident_get_displ(prs->sx, prs->last_id);
-				if (displ < 0)
-				{
-					to_tree(prs, OP_IDENT_TO_VAL);
-					node_add_arg(&prs->nd, -displ);
-				}
-				else
-				{
-					to_tree(prs, OP_CONST);
-					node_add_arg(&prs->nd, displ);
-				}
-
-				operands_push(prs, VALUE, type_integer);
-			}
-			else
-			{
-				if (func == TK_MSG_SEND)
-				{
-					parse_initializer(prs, &prs->nd, type_msg_info);
-					operands_push(prs, VALUE, type_void);
-				}
-				else
-				{
-					must_be_int(prs);
-
-					if (func == TK_SEM_CREATE)
-					{
-						operands_push(prs, VALUE, type_integer);
-					}
-					else
-					{
-						operands_push(prs, VALUE, type_void);
-					}
-				}
-			}
-		}
-	}
-	else if (func == TK_UPB)
-	{
-		must_be_int(prs);
-		token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-		must_be_row(prs);
-		operands_push(prs, VALUE, type_integer);
-	}
-	else if (func == TK_RAND)
-	{
-			operands_push(prs, VALUE, type_float);
-	}
-	else if (func == TK_ROUND)
-	{
-		must_be_float(prs);
-		operands_push(prs, VALUE, type_integer);
-	}
-	else if (func == TK_ABS)
-	{
-		parse_assignment_expression_internal(prs);
-		to_value(prs);
-
-		if (stack_pop(&prs->anonymous) == type_integer)
-		{
-			operands_push(prs, VALUE, type_integer);
-			to_tree(prs, OP_ABSI);
-			token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
-			return;
-		}
-		else
-		{
-			operands_push(prs, VALUE, type_float);
-		}
-	}
-	else
-	{
-		must_be_float(prs);
-		operands_push(prs, VALUE, type_float);
-	}
-
-	to_tree(prs, token_to_function(func));
-	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
+	return (expression){ /*is_valid*/false, (location_t){ 0, 0 }, (node){ NULL, 0 } };
 }
 
 /**
- *	Parse identifier [C99 6.5.1p1]
+ *	Make unary expression
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
+ *	@param	operand		Operand of unary operator
+ *	@param	op_kind		Operator kind
+ *	@param	loc			Operator location
  *
- *	@return	Index of parsed identifier in identifiers table
+ *	@return	Unary expression
  */
-static size_t parse_identifier(parser *const prs)
+static expression make_unary_expression(parser *const prs, expression operand, unary_t op_kind, location_t loc)
 {
-	const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
-	if (id == ITEM_MAX)
+	if (!operand.is_valid)
 	{
-		parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, prs->lxr->repr));
-	}
+	   return expr_broken();
+   }
 
-	to_tree(prs, OP_IDENT);
+	const item_t operand_type = node_get_arg(&operand.nd, 0);
 
-	prs->operand_displ = ident_get_displ(prs->sx, (size_t)id);
-	node_add_arg(&prs->nd, prs->operand_displ);
+	item_t result_type;
+	value_t value = RVALUE;
+	bool is_prefix = true;
 
-	prs->last_id = (size_t)id;
-	token_consume(prs);
-	operands_push(prs, VARIABLE, ident_get_type(prs->sx, (size_t)id));
-	return (size_t)id;
-}
-
-/**
- *	Parse constant [C99 6.5.1p2]
- *
- *	constant:
- *		character-constant
- *		integer-constant
- *		floating-constant
- *
- *	@param	prs			Parser structure
- */
-static void parse_constant(parser *const prs)
-{
-	item_t type = type_undefined;
-	switch (prs->token)
+	switch (op_kind)
 	{
-		case TK_CHAR_CONST:
+		case UN_POSTINC:
+		case UN_POSTDEC:
+			is_prefix = false;
+			// fallthrough;
+		case UN_PREINC:
+		case UN_PREDEC:
 		{
-			to_tree(prs, OP_CONST);
-			node_add_arg(&prs->nd, prs->lxr->num);
-			type = type_character;
-		}
-		break;
+			if (!type_is_arithmetical(operand_type))
+			{
+				semantics_error(prs, loc, typecheck_illegal_increment, op_kind);
+				return expr_broken();
+			}
 
-		case TK_INT_CONST:
-		{
-			to_tree(prs, OP_CONST);
-			node_add_arg(&prs->nd, prs->lxr->num);
-			type = type_integer;
-		}
-		break;
+			if (node_get_arg(&operand.nd, 1) != LVALUE)
+			{
+				semantics_error(prs, loc, typecheck_expression_not_lvalue);
+				return expr_broken();
+			}
 
-		case TK_FLOAT_CONST:
-		{
-			to_tree(prs, OP_CONST_D);
-			node_add_double(&prs->nd, prs->lxr->num_double);
-			type = type_float;
+			result_type = operand_type;
+			break;
 		}
-		break;
+
+		case UN_ADDRESS:
+		{
+			if (node_get_arg(&operand.nd, 1) != LVALUE)
+			{
+				semantics_error(prs, loc, typecheck_invalid_lvalue_addrof);
+				return expr_broken();
+			}
+
+			result_type = (item_t)type_add(prs->sx, (item_t[]){ type_pointer, operand_type }, 2);
+			break;
+		}
+
+		case UN_INDIRECTION:
+		{
+			if (!type_is_pointer(prs->sx, operand_type))
+			{
+				semantics_error(prs, loc, typecheck_indirection_requires_pointer);
+				return expr_broken();
+			}
+
+			result_type = type_get(prs->sx, (size_t)operand_type + 1);
+			value = LVALUE;
+			break;
+		}
+
+		case UN_PLUS:
+		case UN_MINUS:
+		{
+			if (!type_is_arithmetical(operand_type))
+			{
+				semantics_error(prs, loc, typecheck_unary_expr, operand_type);
+				return expr_broken();
+			}
+
+			result_type = operand_type;
+			break;
+		}
+
+		case UN_NOT:
+		{
+			if (!type_is_integer(operand_type))
+			{
+				semantics_error(prs, loc, typecheck_unary_expr, operand_type);
+				return expr_broken();
+			}
+
+			result_type = type_integer;
+			break;
+		}
+
+		case UN_LOGNOT:
+		{
+			if (!type_is_scalar(operand_type))
+			{
+				semantics_error(prs, loc, typecheck_unary_expr, operand_type);
+				return expr_broken();
+			}
+
+			result_type = type_integer;
+			break;
+		}
 
 		default:
+			// Unreachable
 			break;
 	}
 
-	token_consume(prs);
-	operands_push(prs, NUMBER, type);
+	node unary_node = create_node(prs, OP_UNARY);
+	node_add_arg(&unary_node, result_type);		// Тип значения унарного оператора
+	node_add_arg(&unary_node, value);			// Вид значения унарного оператора
+	node_add_arg(&unary_node, op_kind);			// Тип унарного оператора
+	node_set_child(&unary_node, &operand.nd);	// Выражение-операнд
+
+	location_t location = is_prefix
+						? (location_t){ loc.begin, operand.location.end }
+						: (location_t){ operand.location.begin, loc.end };
+
+	return expr(unary_node, location);
+}
+
+/**
+ *	Make binary expression
+ *
+ *	@param	prs			Parser
+ *	@param	fst			First operand
+ *	@param	snd			Second operand
+ *	@param	op_kind		Operator kind
+ *	@param	loc			Operator location
+ *
+ *	@return	Binary expression
+ */
+static expression make_binary_expression(parser *const prs, expression fst, expression snd, binary_t op_kind, location_t loc)
+{
+	if (!fst.is_valid || !snd.is_valid)
+	{
+		return expr_broken();
+	}
+
+	const item_t fst_type = node_get_arg(&fst.nd, 0);
+	const item_t snd_type = node_get_arg(&snd.nd, 0);
+
+	node binary_node = create_node(prs, OP_BINARY);
+	node_add_arg(&binary_node, type);			// Тип значения
+	node_add_arg(&binary_node, RVALUE);			// Вид значения
+	node_add_arg(&binary_node, op_kind);		// Вид оператора
+	node_set_child(&binary_node, &fst.nd);		// Второй операнд
+	node_set_child(&binary_node, &snd.nd);		// Третий операнд
+
+	return expr(binary_node, (location_t){ fst.location.begin, snd.location.end });
+}
+
+/**
+ *	Make ternary expression
+ *
+ *	@param	prs			Parser
+ *	@param	fst			First operand
+ *	@param	snd			Second operand
+ *	@param	trd			Third operand
+ *	@param	loc			Operator location
+ *
+ *	@return	Ternary expression
+ */
+static expression make_ternary_expression(parser *const prs, expression fst, expression snd, expression trd, location_t loc)
+{
+	if (!fst.is_valid || !snd.is_valid || !trd.is_valid)
+	{
+		return expr_broken();
+	}
+
+	const item_t fst_type = node_get_arg(&fst.nd, 0);
+	const item_t snd_type = node_get_arg(&snd.nd, 0);
+	const item_t trd_type = node_get_arg(&trd.nd, 0);
+
+
+	node ternary_node = create_node(prs, OP_TERNARY);
+	node_add_arg(&ternary_node, type);				// Тип значения
+	node_add_arg(&ternary_node, RVALUE);			// Вид значения
+	node_set_child(&ternary_node, &fst.nd);			// Первый операнд
+	node_set_child(&ternary_node, &snd.nd);			// Второй операнд
+	node_set_child(&ternary_node, &trd.nd);			// Третий операнд
+
+	return expr(ternary_node, (location_t){ fst.location.begin, trd.location.end });
 }
 
 /**
@@ -674,915 +335,463 @@ static void parse_constant(parser *const prs)
  *		constant
  *		string-literal
  *		'(' expression ')'
- *		standard-function-call [RuC]
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
+ *
+ *	@return	Primary expression
  */
-static void parse_primary_expression(parser *const prs)
+static expression parse_primary_expression(parser *const prs)
 {
 	switch (prs->token)
 	{
 		case TK_IDENTIFIER:
-			parse_identifier(prs);
-			break;
+		{
+			const size_t representation = prs->lxr->repr;
+			const item_t identifier = repr_get_reference(prs->sx, representation);
+			const location_t location = token_consume(prs);
+
+			if (identifier == ITEM_MAX)
+			{
+				semantics_error(prs, location, undeclared_var_use, repr_get_name(prs->sx, representation));
+				return expr_broken();
+			}
+
+			const item_t type = ident_get_type(prs->sx, (size_t)identifier);
+			const value_t designation = type_is_function(prs->sx, type) ? RVALUE : LVALUE;
+
+			node identifier_node = create_node(prs, OP_IDENTIFIER);
+			node_add_arg(&identifier_node, type);			// Тип значения идентификатора
+			node_add_arg(&identifier_node, designation);	// Вид значения идентификатора
+			node_add_arg(&identifier_node, identifier);		// Индекс в таблице идентификаторов
+
+			return expr(identifier_node, location);
+		}
 
 		case TK_CHAR_CONST:
 		case TK_INT_CONST:
+		{
+			const item_t value = prs->lxr->num;
+			const location_t location = token_consume(prs);
+
+			node constant_node = create_node(prs, OP_CONSTANT);
+			node_add_arg(&constant_node, type_integer);		// Тип значения константы
+			node_add_arg(&constant_node, RVALUE);			// Вид значения константы
+			node_add_arg(&constant_node, value);			// Значение константы
+
+			return expr(constant_node, location);
+		}
+
 		case TK_FLOAT_CONST:
-			parse_constant(prs);
-			break;
+		{
+			item_t value;
+			memcpy(&value, &prs->lxr->num_double, sizeof double);
+			const location_t location = token_consume(prs);
+
+			node constant_node = create_node(prs, OP_CONSTANT);
+			node_add_arg(&constant_node, type_float);		// Тип значения константы
+			node_add_arg(&constant_node, RVALUE);			// Вид значения константы
+			node_add_arg(&constant_node, value);			// Значение константы
+
+			return expr(constant_node, location);
+		}
 
 		case TK_STRING:
-			parse_string_literal(prs, &prs->nd);
-			break;
+		{
+			const char32_t* string = prs->lxr->lexstr;
+			const size_t length = (size_t)prs->lxr->num;
+			const item_t type = (item_t)type_add(prs->sx, (item_t[]){ type_array, type_character }, 2);
+			const location_t location = token_consume(prs);
+
+			node string_node = create_node(prs, OP_STRING);
+			node_add_arg(&string_node, type);				// Тип строки
+			node_add_arg(&string_node, LVALUE);				// Вид значения строки
+			for (size_t i = 0; i < length; i++)
+			{
+				node_add_arg(&string_node, string[i]);		// i-ый символ строки
+			}
+
+			return expr(string_node, location);
+		}
 
 		case TK_L_PAREN:
 		{
-			token_consume(prs);
-			if (token_try_consume(prs, TK_VOID))
+			const location_t l_paren_location = token_consume(prs);
+			expression result = parse_expression(prs);
+			if (!token_try_consume(prs, TK_R_PAREN))
 			{
-				token_expect_and_consume(prs, TK_STAR, no_mult_in_cast);
-
-				parse_unary_expression(prs);
-				const operand_t type = prs->last_type;
-				const item_t mode = stack_pop(&prs->anonymous);
-				if (!type_is_pointer(prs->sx, mode))
-				{
-					parser_error(prs, not_pointer_in_cast);
-				}
-
-				token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_cast);
-				operands_push(prs, type, mode);
-				to_value(prs);
-				to_tree(prs, OP_EXPR_END);
+				parser_error(prs, expected_r_paren, l_paren_location);
+				return expr_broken();
 			}
-			else
-			{
-				const size_t old_operators_size = operators_size(prs);
-				parse_expression_internal(prs);
-				token_expect_and_consume(prs, TK_R_PAREN, wait_rightbr_in_primary);
-				while (old_operators_size < operators_size(prs))
-				{
-					binary_operation(prs, operators_pop(prs));
-				}
-			}
+
+			return result;
 		}
-		break;
 
 		default:
-			if (prs->token > BEGIN_TK_FUNC && prs->token < END_TK_FUNC)
-			{
-				parse_standard_function_call(prs);
-			}
-			else
-			{
-				parser_error(prs, expected_expression, prs->token);
-				operands_push(prs, NUMBER, type_undefined);
-				token_consume(prs);
-			}
-			break;
+			parser_error(prs, expected_expression);
+			return expr_broken();
 	}
-}
-
-/** Кушает токены, относящиеся к вырезкам, берет тип структуры со стека и кладет тип поля на стек */
-static item_t find_field(parser *const prs)
-{
-	token_consume(prs);
-	token_expect_and_consume(prs, TK_IDENTIFIER, after_dot_must_be_ident);
-
-	const operand_t peek = prs->last_type;
-	const size_t type = (size_t)stack_pop(&prs->anonymous);
-	const size_t record_length = (size_t)type_get(prs->sx, type + 2);
-	if (record_length == ITEM_MAX)
-	{
-		return 0;
-	}
-
-	item_t select_displ = 0;
-	for (size_t i = 0; i < record_length; i += 2)
-	{
-		const item_t field_type = type_get(prs->sx, type + 3 + i);
-
-		if ((size_t)type_get(prs->sx, type + 4 + i) == prs->lxr->repr)
-		{
-			operands_push(prs, peek, field_type);
-			return select_displ;
-		}
-		else
-		{
-			// Прибавляем к суммарному смещению длину поля
-			select_displ += (item_t)size_of(prs->sx, field_type);
-		}
-	}
-
-	parser_error(prs, no_field, repr_get_name(prs->sx, prs->lxr->repr));
-	return 0;
 }
 
 /**
- *	Parse function call [C99 6.5.2]
+ *	Parse subscripting expression suffix [C99 6.5.2.1]
  *
- *	postfix-expression '(' argument-expression-listopt ')'
+ *	postfix-expression:
+ *		postfix-expression '[' expression ']'
+ *
+ *	@param	prs			Parser
+ *	@param	operand		Expression for subscripting
+ *
+ *	@return	Subscripting expression
+ */
+static expression parse_subscripting_expression_suffix(parser *const prs, expression operand)
+{
+	const location_t l_square_location = token_consume(prs);
+	expression index = parse_expression(prs);
+
+	if (prs->token != TK_R_SQUARE)
+	{
+		parser_error(prs, expected_r_square, l_square_location);
+		return expr_broken();
+	}
+
+	const location_t r_square_location = token_consume(prs);
+
+	if (!operand.is_valid)
+	{
+		return expr_broken();
+	}
+
+	const item_t operand_type = node_get_arg(&operand.nd, 0);
+	if (!type_is_array(prs->sx, operand_type))
+	{
+		semantics_error(prs, l_square_location, typecheck_subscript_value);
+		return expr_broken();
+	}
+
+	if (!type_is_integer(node_get_arg(&index.nd, 0)))
+	{
+		semantics_error(prs, index.location, typecheck_subscript_not_integer);
+		return expr_broken();
+	}
+
+	const item_t element_type = type_get(prs->sx, (size_t)operand_type + 1);
+
+	node slice_node = create_node(prs, OP_SLICE);
+	node_add_arg(&slice_node, element_type);				// Тип элемента массива
+	node_add_arg(&slice_node, LVALUE);						// Вид значения вырезки
+	node_set_child(&slice_node, &operand.nd);				// Выражение-операнд
+	node_set_child(&slice_node, &index.nd);					// Выражение-индекс
+
+	return expr(slice_node, (location_t){ operand.location.begin, r_square_location.end });
+}
+
+/**
+ *	Parse call expression suffix [C99 6.5.2.2]
+ *
+ *	postfix-expression:
+ *		postfix-expression '(' argument-expression-list[opt] ')'
  *
  *	argument-expression-list:
  *		assignment-expression
  *		argument-expression-list ',' assignment-expression
  *
- *	@param	prs			Parser structure
- *	@param	function_id	Index of function identifier in identifiers table
+ *	@param	prs			Parser
+ *	@param	operand		Expression for call
+ *
+ *	@return	Call expression
  */
-static void parse_function_call(parser *const prs, const size_t function_id)
+static expression parse_call_expression_suffix(parser *const prs, expression operand)
 {
-	const bool old_in_assignment = prs->is_in_assignment;
-	const size_t function_type = (size_t)stack_pop(&prs->anonymous);
+	const location_t l_paren_location = token_consume(prs);
 
-	if (!type_is_function(prs->sx, function_type))
+	const item_t operand_type = node_get_arg(&operand.nd, 0);
+	if (!type_is_function(prs->sx, operand_type))
 	{
-		parser_error(prs, call_not_from_function);
-		token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-		return;
+		semantics_error(prs, l_paren_location, typecheck_call_not_function);
+		return expr_broken();
 	}
 
-	const size_t expected_args = (size_t)type_get(prs->sx, function_type + 2);
-	size_t ref_arg_type = function_type + 3;
+	const item_t return_type = type_get(prs->sx, (size_t)operand_type + 1);
+
+	node call_node = create_node(prs, OP_CALL);
+	node_add_arg(&call_node, return_type);					// Тип возвращамого значения
+	node_add_arg(&call_node, RVALUE);						// Вид значения вызова
+	node_add_arg(&call_node, node_get_arg(&operand.nd, 3));	// Индекс функции в таблице идентификаторов
+
+	const size_t expected_args = (size_t)type_get(prs->sx, (size_t)operand_type + 2);
+	size_t ref_arg_type = (size_t)operand_type + 3;
 	size_t actual_args = 0;
-
-	to_tree(prs, OP_CALL1);
-	node_add_arg(&prs->nd, expected_args);
-
-	node nd_call1;
-	node_copy(&nd_call1, &prs->nd);
 
 	if (!token_try_consume(prs, TK_R_PAREN))
 	{
 		do
 		{
-			node_copy(&prs->nd, &nd_call1);
-			const item_t expected_arg_type = type_get(prs->sx, ref_arg_type);
-
-			if (type_is_function(prs->sx, expected_arg_type))
+			expression argument = parse_assignment_expression(prs);
+			if (!argument.is_valid)
 			{
-				if (prs->token != TK_IDENTIFIER)
-				{
-					parser_error(prs, act_param_not_ident);
-					token_skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
-					continue;
-				}
-
-				const size_t id = parse_identifier(prs);
-				if (ident_get_type(prs->sx, id) != expected_arg_type)
-				{
-					parser_error(prs, diff_formal_param_type_and_actual);
-					token_skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
-					continue;
-				}
-
-				const item_t displ = ident_get_displ(prs->sx, id);
-				node_set_type(&prs->nd, displ < 0 ? OP_IDENT_TO_VAL : OP_CONST);
-				node_set_arg(&prs->nd, 0, llabs(displ));
-				to_tree(prs, OP_EXPR_END);
-			}
-			else if (type_is_array(prs->sx, expected_arg_type) && prs->token == TK_L_BRACE)
-			{
-				parse_braced_init_list(prs, type_get(prs->sx, (size_t)expected_arg_type + 1));
-			}
-			else
-			{
-				prs->is_in_assignment = false;
-				const item_t actual_arg_type = parse_assignment_expression(prs, &prs->nd);
-
-				if (!type_is_undefined(expected_arg_type) && !type_is_undefined(actual_arg_type))
-				{
-					if (type_is_integer(expected_arg_type) && type_is_float(actual_arg_type))
-					{
-						parser_error(prs, float_instead_int);
-					}
-					else if (type_is_float(expected_arg_type) && type_is_integer(actual_arg_type))
-					{
-						parse_insert_widen(prs);
-					}
-					else if (expected_arg_type != actual_arg_type)
-					{
-						parser_error(prs, diff_formal_param_type_and_actual);
-					}
-				}
+				return expr_broken();
 			}
 
+			const item_t expected_type = type_get(prs->sx, ref_arg_type);
+			const item_t actual_type = node_get_arg(&argument.nd, 0);
+
+			// Несовпадение типов может быть только в случае, когда параметр - double, а аргумент - целочисленный
+			if (expected_type != actual_type && !(type_is_float(expected_type) && type_is_integer(actual_type)))
+			{
+				semantics_error(prs, argument.location, typecheck_convert_incompatible);
+			}
+
+			node_set_child(&call_node, &argument.nd);		// i-ый аргумент вызова
 			actual_args++;
 			ref_arg_type++;
-		} while (token_try_consume(prs, TK_COMMA));
-
-		token_expect_and_consume(prs, TK_R_PAREN, wrong_number_of_params);
+		} while (token_try_consume(prs, TK_COMMA) && expected_args != actual_args);
 	}
+
+	if (prs->token != TK_R_PAREN)
+	{
+		parser_error(prs, expected_r_paren, l_paren_location);
+		return expr_broken();
+	}
+
+	const location_t r_paren_location = token_consume(prs);
 
 	if (expected_args != actual_args)
 	{
-		parser_error(prs, wrong_number_of_params);
+		semantics_error(prs, r_paren_location, wrong_number_of_params, expected_args, actual_args);
+		return expr_broken();
 	}
 
-	prs->is_in_assignment = old_in_assignment;
-	node nd_call2 = node_add_child(&nd_call1, OP_CALL2);
-	node_add_arg(&nd_call2, (item_t)function_id);
-	node_copy(&prs->nd, &nd_call2);
-	operands_push(prs, VALUE, type_get(prs->sx, function_type + 1));
+	return expr(call_node, (location_t){ operand.location.begin, r_paren_location.end });
 }
 
 /**
- *	Parse postfix expression [C99 6.5.2]
+ *	Parse member expression suffix [C99 6.5.2.3]
+ *
+ *	postfix-expression:
+ *		postfix-expression '.' identifier
+ *		postfix-expression '->' identifier
+ *
+ *	@param	prs			Parser
+ *	@param	operand		Expression for accessing a member
+ *
+ *	@return	Member expression
+ */
+static expression parse_member_expression_suffix(parser *const prs, expression operand)
+{
+	const token_t operator_token = prs->token;
+	const location_t operator_location = token_consume(prs);
+
+	if (prs->token != TK_IDENTIFIER)
+	{
+		parser_error(prs, expected_identifier);
+		return expr_broken();
+	}
+
+	const size_t member_name = prs->lxr->repr;
+	const location_t member_location = token_consume(prs);
+
+	if (!operand.is_valid)
+	{
+		return expr_broken();
+	}
+
+	const item_t operand_type = node_get_arg(&operand.nd, 0);
+	item_t struct_type;
+	value_t designation;
+
+	if (operator_token == TK_PERIOD)
+	{
+		if (!type_is_struct(prs->sx, operand_type))
+		{
+			semantics_error(prs, operator_location, typecheck_member_reference_struct);
+			return expr_broken();
+		}
+
+		struct_type = operand_type;
+		designation = (value_t)node_get_arg(&operand.nd, 1);
+	}
+	else // if (operator_token == TK_ARROW)
+	{
+		if (!type_is_struct_pointer(prs->sx, operand_type))
+		{
+			semantics_error(prs, operator_location, typecheck_member_reference_arrow);
+			return expr_broken();
+		}
+
+		struct_type = type_get(prs->sx, (size_t)operand_type + 1);
+		designation = LVALUE;
+	}
+
+	size_t member_displ = 0;
+	const size_t record_length = (size_t)type_get(prs->sx, (size_t)struct_type + 2);
+	for (size_t i = 0; i < record_length; i += 2)
+	{
+		const item_t member_type = type_get(prs->sx, (size_t)struct_type + 3 + i);
+		if (member_name == (size_t)type_get(prs->sx, (size_t)struct_type + 4 + i))
+		{
+			node select_node = create_node(prs, OP_SELECT);
+			node_add_arg(&select_node, member_type);	// Тип значения поля
+			node_add_arg(&select_node, designation);	// Вид значения поля
+			node_add_arg(&select_node, member_displ);	// Смещение поля структуры
+			node_set_child(&select_node, &operand.nd);	// Выражение-операнд
+
+			return expr(select_node, (location_t){ operand.location.begin, member_location.end });
+		}
+
+		member_displ += size_of(prs->sx, member_type);
+	}
+
+	semantics_error(prs, member_location, no_member, repr_get_name(prs->sx, member_name));
+	return expr_broken();
+}
+
+/**
+ *	Parse postfix expression suffix [C99 6.5.2]
  *
  *	postfix-expression:
  *		primary-expression
  *		postfix-expression '[' expression ']'
- *		postfix-expression '(' argument-expression-listopt ')'
+ *		postfix-expression '(' argument-expression-list[opt] ')'
  *		postfix-expression '.' identifier
  *		postfix-expression '->' identifier
  *		postfix-expression '++'
  *		postfix-expression '--'
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
+ *	@param	operand		Operand of postfix expression
+ *
+ *	@return	Postfix expression
  */
-static void parse_postfix_expression(parser *const prs)
+static expression parse_postfix_expression_suffix(parser *const prs, expression operand)
 {
-	const size_t last_id = prs->last_id;
-	bool was_func = false;
-
-	if (token_try_consume(prs, TK_L_PAREN))
+	while (true)
 	{
-		was_func = true;
-		parse_function_call(prs, last_id);
-	}
-
-	while (prs->token == TK_L_SQUARE || prs->token == TK_ARROW || prs->token == TK_PERIOD)
-	{
-		while (token_try_consume(prs, TK_L_SQUARE))
+		switch (prs->token)
 		{
-			if (was_func)
-			{
-				parser_error(prs, slice_from_func);
-			}
+			default:
+				return operand;
 
-			if (prs->last_type == VARIABLE)
-			{
-				node_set_type(&prs->nd, OP_SLICE_IDENT);
-				node_set_arg(&prs->nd, 0, prs->operand_displ);
-			}
-			else
-			{
-				to_tree(prs, OP_SLICE);
-			}
+			case TK_L_SQUARE:
+				operand = parse_subscripting_expression_suffix(prs, operand);
+				break;
 
-			const item_t type = stack_pop(&prs->anonymous);
-			if (!type_is_array(prs->sx, type))
-			{
-				parser_error(prs, slice_not_from_array);
-			}
+			case TK_L_PAREN:
+				operand = parse_call_expression_suffix(prs, operand);
+				break;
 
-			const item_t elem_type = type_get(prs->sx, (size_t)type + 1);
-			node_add_arg(&prs->nd, elem_type);
+			case TK_PERIOD:
+			case TK_ARROW:
+				operand = parse_member_expression_suffix(prs, operand);
+				break;
 
-			const item_t index_type = parse_condition(prs, &prs->nd);
-			if (!type_is_integer(index_type))
-			{
-				parser_error(prs, index_must_be_int);
-			}
+			case TK_PLUS_PLUS:
+				operand = make_unary_expression(prs, operand, UN_POSTINC, token_consume(prs));
+				break;
 
-			token_expect_and_consume(prs, TK_R_SQUARE, no_rightsqbr_in_slice);
-			operands_push(prs, ADDRESS, elem_type);
-		}
-
-		while (prs->token == TK_ARROW)
-		{
-			if (prs->last_type == VARIABLE)
-			{
-				node_set_type(&prs->nd, OP_IDENT_TO_VAL);
-			}
-
-			to_tree(prs, OP_SELECT);
-
-			// Здесь мы ожидаем указатель, снимаем указатель со стека и кладем саму структуру
-			const item_t type = stack_pop(&prs->anonymous);
-			if (!(type_is_pointer(prs->sx, type) && type_is_struct(prs->sx, type_get(prs->sx, (size_t)type + 1))))
-			{
-				parser_error(prs, get_field_not_from_struct_pointer);
-			}
-
-			operands_push(prs, ADDRESS, type_get(prs->sx, (size_t)type + 1));
-			prs->operand_displ = find_field(prs);
-			while (prs->token == TK_PERIOD)
-			{
-				prs->operand_displ += find_field(prs);
-			}
-
-			node_add_arg(&prs->nd, prs->operand_displ);
-
-			// find_field вернула тип результата через стек, проверим его и вернем обратно
-			const item_t field_type = stack_pop(&prs->anonymous);
-			if (type_is_array(prs->sx, field_type) || type_is_pointer(prs->sx, field_type))
-			{
-				to_tree(prs, OP_ADDR_TO_VAL);
-			}
-
-			operands_push(prs, ADDRESS, field_type);
-		}
-
-		if (prs->token == TK_PERIOD)
-		{
-			const operand_t peek = prs->last_type;
-			const item_t type = stack_pop(&prs->anonymous);
-			if (!type_is_struct(prs->sx, type))
-			{
-				parser_error(prs, select_not_from_struct);
-			}
-
-			if (peek == VALUE)
-			{
-				const size_t length = size_of(prs->sx, type);
-				operands_push(prs, VALUE, type);
-				prs->operand_displ = 0;
-				while (prs->token == TK_PERIOD)
-				{
-					prs->operand_displ += find_field(prs);
-				}
-
-				const item_t field_type = stack_pop(&prs->anonymous);
-				to_tree(prs, OP_COPYST);
-				node_add_arg(&prs->nd, prs->operand_displ);
-				node_add_arg(&prs->nd, (item_t)size_of(prs->sx, field_type));
-				node_add_arg(&prs->nd, (item_t)length);
-				operands_push(prs, VALUE, field_type);
-			}
-			else if (peek == VARIABLE)
-			{
-				const item_t sign = prs->operand_displ < 0 ? -1 : 1;
-				operands_push(prs, VARIABLE, type);
-				while (prs->token == TK_PERIOD)
-				{
-					prs->operand_displ += sign * find_field(prs);
-				}
-
-				node_set_arg(&prs->nd, 0, prs->operand_displ);
-			}
-			else //if (peek == address)
-			{
-				to_tree(prs, OP_SELECT);
-				operands_push(prs, VARIABLE, type);
-				prs->operand_displ = 0;
-				while (prs->token == TK_PERIOD)
-				{
-					prs->operand_displ += find_field(prs);
-				}
-
-				node_add_arg(&prs->nd, prs->operand_displ);
-				// find_field вернула тип результата через стек, проверим его и вернем обратно
-				const item_t field_type = stack_pop(&prs->anonymous);
-				if (type_is_array(prs->sx, field_type) || type_is_pointer(prs->sx, field_type))
-				{
-					to_tree(prs, OP_ADDR_TO_VAL);
-				}
-
-				operands_push(prs, ADDRESS, field_type);
-			}
-		}
-	}
-
-	if (prs->token == TK_PLUS_PLUS || prs->token == TK_MINUS_MINUS)
-	{
-		operation_t operator = prs->token == TK_PLUS_PLUS ? OP_POST_INC : OP_POST_DEC;
-		token_consume(prs);
-
-		bool is_variable = false;
-		if (prs->last_type == ADDRESS)
-		{
-			operator = operation_to_address_ver(operator);
-		}
-		else if (prs->last_type == VARIABLE)
-		{
-			is_variable = true;
-		}
-		else
-		{
-			parser_error(prs, unassignable_inc);
-		}
-
-		const item_t type = stack_pop(&prs->anonymous);
-		if (!type_is_integer(type) && !type_is_float(type))
-		{
-			parser_error(prs, wrong_operand);
-		}
-
-		operands_push(prs, VALUE, type);
-		float_operation(prs, type, operator);
-
-		if (is_variable)
-		{
-			node_add_arg(&prs->nd, ident_get_displ(prs->sx, last_id));
+			case TK_MINUS_MINUS:
+				operand = make_unary_expression(prs, operand, UN_POSTDEC, token_consume(prs));
+				break;
 		}
 	}
 }
 
-static void parse_unary_expression(parser *const prs)
+/**
+ *	Parse unary expression [C99 6.5.3]
+ *
+ *	unary-expression:
+ *		postfix-expression
+ *		'++' unary-expression
+ *		'--' unary-expression
+ *		unary-operator unary-expression
+ *
+ *	unary-operator: one of
+ *		'&' '*' '+' '-' '~' '!'
+ *
+ *	@param	prs			Parser
+ *
+ *	@return	Unary expression
+ */
+static expression parse_unary_expression(parser *const prs)
 {
-	token_t token = prs->token;
-	switch (token)
+	switch (prs->token)
 	{
+		default:
+		{
+			const expression operand = parse_primary_expression(prs);
+			return parse_postfix_expression_suffix(prs, operand);
+		}
+
 		case TK_PLUS_PLUS:
 		case TK_MINUS_MINUS:
-		{
-			token_consume(prs);
-			parse_unary_expression(prs);
-			operation_t operator = token_to_unary(token);
-
-			bool is_variable = false;
-			if (prs->last_type == ADDRESS)
-			{
-				operator = operation_to_address_ver(operator);
-			}
-			else if (prs->last_type == VARIABLE)
-			{
-				is_variable = true;
-			}
-			else
-			{
-				parser_error(prs, unassignable_inc);
-			}
-
-			const item_t type = stack_pop(&prs->anonymous);
-			if (!type_is_integer(type) && !type_is_float(type))
-			{
-				parser_error(prs, wrong_operand);
-			}
-
-			operands_push(prs, VALUE, type);
-			float_operation(prs, type, operator);
-
-			if (is_variable)
-			{
-				node_add_arg(&prs->nd, ident_get_displ(prs->sx, prs->last_id));
-			}
-		}
-		break;
-
-		case TK_EXCLAIM:
-		case TK_TILDE:
-		case TK_PLUS:
-		case TK_MINUS:
 		case TK_AMP:
 		case TK_STAR:
+		case TK_PLUS:
+		case TK_MINUS:
+		case TK_TILDE:
+		case TK_EXCLAIM:
 		{
-			token_consume(prs);
-			parse_unary_expression(prs);
-			switch (token)
+			const unary_t operator = token_to_unary(prs->token);
+			const location_t operator_location = token_consume(prs);
+			const expression operand = parse_unary_expression(prs);
+
+			return make_unary_expression(prs, operand, operator, operator_location);
+		}
+	}
+}
+
+/**
+ *	Parse right hand side of binary expression
+ *
+ *	@param	prs			Parser
+ *	@param	LHS			Start of a binary expression
+ *	@param	min_prec	Minimal precedence level
+ *
+ *	@return Binary expression
+ */
+static expression parse_RHS_of_binary_expression(parser *const prs, expression LHS, const precedence_t min_prec)
+{
+	precedence_t next_token_prec = get_operator_precedence(prs->token);
+	while (next_token_prec < min_prec)
+	{
+		const binary_t operator = token_to_binary(prs->token);
+		const location_t operator_location = token_consume(prs);
+
+		bool is_binary = true;
+		expression middle = expr_broken();
+		if (next_token_prec == PREC_CONDITIONAL)
+		{
+			is_binary = false;
+			middle = parse_expression(prs);
+
+			if (prs->token != TK_COLON)
 			{
-				case TK_AMP:
-				{
-					if (prs->last_type == VALUE)
-					{
-						parser_error(prs, wrong_addr);
-					}
-
-					if (prs->last_type == VARIABLE)
-					{
-						node_set_type(&prs->nd, OP_IDENT_TO_ADDR);
-					}
-
-					operands_push(prs, VALUE, to_modetab(prs, type_pointer, stack_pop(&prs->anonymous)));
-				}
-				break;
-
-				case TK_STAR:
-				{
-					if (prs->last_type == VARIABLE)
-					{
-						node_set_type(&prs->nd, OP_IDENT_TO_VAL);
-					}
-
-					const item_t type = stack_pop(&prs->anonymous);
-					if (!type_is_pointer(prs->sx, type))
-					{
-						parser_error(prs, aster_not_for_pointer);
-					}
-
-					operands_push(prs, ADDRESS, type_get(prs->sx, (size_t)type + 1));
-				}
-				break;
-
-				default:
-				{
-					to_value(prs);
-					if (token == TK_MINUS)
-					{
-						if (node_get_type(&prs->nd) == OP_CONST)
-						{
-							node_set_arg(&prs->nd, 0, -node_get_arg(&prs->nd, 0));
-						}
-						else if (node_get_type(&prs->nd) == OP_CONST_D)
-						{
-							node_set_double(&prs->nd, 0, -node_get_double(&prs->nd, 0));
-						}
-						else
-						{
-							const item_t type = stack_pop(&prs->anonymous);
-							float_operation(prs, type, OP_UNMINUS);
-							operands_push(prs, VALUE, type);
-						}
-					}
-					else
-					{
-						if (token != TK_PLUS)
-						{
-							to_tree(prs, token_to_unary(token));
-						}
-
-						const item_t type = stack_pop(&prs->anonymous);
-						if ((token == TK_TILDE || token == TK_EXCLAIM) && type_is_float(type))
-						{
-							parser_error(prs, int_op_for_float);
-						}
-
-						operands_push(prs, VALUE, type);
-					}
-				}
-				break;
+				parser_error(prs, expected_colon_in_conditional, operator_location);
 			}
 		}
-		break;
 
-		default:
-			parse_primary_expression(prs);
-			break;
-	}
+		expression RHS = parse_unary_expression(prs);
 
-	parse_postfix_expression(prs);
-}
+		const precedence_t this_prec = next_token_prec;
+		next_token_prec = get_operator_precedence(prs->token);
 
-static inline uint8_t operator_priority(const token_t operator)
-{
-	switch (operator)
-	{
-		case TK_PIPE_PIPE:			// '||'
-			return 1;
-
-		case TK_AMP_AMP:			// '&&'
-			return 2;
-
-		case TK_PIPE:				// '|'
-			return 3;
-
-		case TK_CARET:				// '^'
-			return 4;
-
-		case TK_AMP:				// '&'
-			return 5;
-
-		case TK_EQUAL_EQUAL:		// '=='
-		case TK_EXCLAIM_EQUAL:		// '!='
-			return 6;
-
-		case TK_LESS:				// '<'
-		case TK_GREATER:			// '<'
-		case TK_LESS_EQUAL:			// '<='
-		case TK_GREATER_EQUAL:		// '>='
-			return 7;
-
-		case TK_LESS_LESS:			// '<<'
-		case TK_GREATER_GREATER:	// '>>'
-			return 8;
-
-		case TK_PLUS:				// '+'
-		case TK_MINUS:				// '-'
-			return 9;
-
-		case TK_STAR:				// '*'
-		case TK_SLASH:				// '/'
-		case TK_PERCENT:			// '%'
-			return 10;
-
-		default:
-			return 0;
-	}
-}
-
-static inline bool is_int_assignment_operator(const token_t operator)
-{
-	switch (operator)
-	{
-		case TK_PERCENT_EQUAL:			// '%='
-		case TK_LESS_LESS_EQUAL:		// '<<='
-		case TK_GREATER_GREATER_EQUAL:	// '>>='
-		case TK_AMP_EQUAL:				// '&='
-		case TK_PIPE_EQUAL:				// '|='
-		case TK_CARET_EQUAL:			// '^='
-			return true;
-
-		default:
-			return false;
-	}
-}
-
-
-static inline bool is_assignment_operator(const token_t operator)
-{
-	switch (operator)
-	{
-		case TK_EQUAL:					// '='
-		case TK_STAR_EQUAL:				// '*='
-		case TK_SLASH_EQUAL:			// '/='
-		case TK_PLUS_EQUAL:				// '+='
-		case TK_MINUS_EQUAL:			// '-='
-			return true;
-
-		default:
-			return is_int_assignment_operator(operator);
-	}
-}
-
-static void parse_subexpression(parser *const prs)
-{
-	size_t old_operators_size = operators_size(prs);
-	bool was_operator = false;
-
-	uint8_t priority = operator_priority(prs->token);
-	while (priority)
-	{
-		was_operator = true;
-		to_value(prs);
-		while (old_operators_size < operators_size(prs) && priority <= operators_peek(prs).priority)
+		const bool is_right_associative = this_prec == PREC_CONDITIONAL || this_prec == PREC_ASSIGNMENT;
+		if (this_prec < next_token_prec || (this_prec == next_token_prec && is_right_associative))
 		{
-			binary_operation(prs, operators_pop(prs));
+			RHS = parse_RHS_of_binary_expression(prs, RHS, (this_prec + !is_right_associative));
+			next_token_prec = get_operator_precedence(prs->token);
 		}
 
-		if (priority <= 2)
+		if (is_binary)
 		{
-			to_tree(prs, priority == 1 ? OP_AD_LOG_OR : OP_AD_LOG_AND);
-			node_add_arg(&prs->nd, 0); // FIXME: useless
-		}
-
-		operators_push(prs, priority, prs->token, &prs->nd);
-
-		token_consume(prs);
-		parse_unary_expression(prs);
-		priority = operator_priority(prs->token);
-	}
-
-	if (was_operator)
-	{
-		to_value(prs);
-	}
-
-	while (old_operators_size < operators_size(prs))
-	{
-		binary_operation(prs, operators_pop(prs));
-	}
-}
-
-static void parse_conditional_expression(parser *const prs)
-{
-	parse_subexpression(prs); // logORexpr();
-
-	if (prs->token == TK_QUESTION)
-	{
-		item_t global_type = 0;
-		item_t addr_if = OP_EXPR_END;
-
-		while (token_try_consume(prs, TK_QUESTION))
-		{
-			to_value(prs);
-			if (!type_is_integer(stack_pop(&prs->anonymous)))
-			{
-				parser_error(prs, float_in_condition);
-			}
-
-			to_tree(prs, OP_CONDITIONAL);
-			node nd_conditional;
-			node_copy(&nd_conditional, &prs->nd);
-			const item_t expr_type = parse_condition(prs, &nd_conditional); // then
-
-			if (!global_type)
-			{
-				global_type = expr_type;
-			}
-
-			if (type_is_float(expr_type))
-			{
-				global_type = type_float;
-			}
-			else
-			{
-				if (addr_if == OP_EXPR_END)
-				{
-					node_set_type(&prs->nd, OP_NOP);
-				}
-
-				const item_t old_addr_if = addr_if;
-				addr_if = (item_t)node_save(&prs->nd);
-				to_tree(prs, old_addr_if);
-			}
-
-			token_expect_and_consume(prs, TK_COLON, no_colon_in_cond_expr);
-			node_copy(&prs->nd, &nd_conditional);
-			parse_unary_expression(prs);
-			parse_subexpression(prs); // logORexpr();	else or elif
-		}
-
-		to_value(prs);
-		// Это особый случай, когда после OP_EXPR_END мы храним дополнительную информацию
-		prs->nd = node_add_child(&prs->nd, OP_EXPR_END);
-
-		if (type_is_float(stack_pop(&prs->anonymous)))
-		{
-			global_type = type_float;
+			LHS = make_binary_expression(prs, LHS, RHS, operator, operator_location);
 		}
 		else
 		{
-			if (addr_if == OP_EXPR_END)
-			{
-				node_set_type(&prs->nd, OP_NOP);
-			}
-
-			const item_t old_addr_if = addr_if;
-			addr_if = (item_t)node_save(&prs->nd);
-			to_tree(prs, old_addr_if);
-		}
-
-		operands_push(prs, VALUE, global_type);
-
-		if (prs->was_error)
-		{
-			// Если были ошибки, то нет смысла ставить в дереве нужные адреса
-			// Кроме того, никто не гарантирует правильных адресов, можем уйти в бесконечный цикл
-			return;
-		}
-
-		while (addr_if != OP_EXPR_END)
-		{
-			node node_addr = node_load(&prs->sx->tree, (size_t)addr_if);
-			node_set_type(&node_addr, type_is_float(global_type) ? OP_WIDEN : OP_NOP);
-
-			node_addr = node_get_child(&node_addr, 0);
-			addr_if = node_get_type(&node_addr);
-			node_set_type(&node_addr, OP_EXPR_END);
+			LHS = make_ternary_expression(prs, LHS, middle, RHS, operator_location);
 		}
 	}
-}
 
-static inline void assignment_to_void(parser *const prs)
-{
-	node_set_type(&prs->nd, operation_to_void_ver(node_get_type(&prs->nd)));
-}
-
-static void parse_assignment_expression_internal(parser *const prs)
-{
-	if (prs->token == TK_L_BRACE)
-	{
-		const item_t type = prs->left_mode;
-		if (type_is_struct(prs->sx, type) || type_is_array(prs->sx, type))
-		{
-			parse_initializer(prs, &prs->nd, type);
-			prs->left_mode = type;
-		}
-		else
-		{
-			parser_error(prs, init_not_struct);
-		}
-
-		operands_push(prs, VALUE, type);
-		return;
-	}
-
-	parse_unary_expression(prs);
-	const operand_t type = prs->last_type;
-	prs->left_mode = stack_pop(&prs->anonymous);
-	operands_push(prs, type, prs->left_mode);
-
-	if (is_assignment_operator(prs->token))
-	{
-		const item_t target_displ = prs->operand_displ;
-		const operand_t left_type = prs->last_type;
-		if (left_type == VALUE)
-		{
-			parser_error(prs, unassignable);
-		}
-
-		token_t token = prs->token;
-		operation_t operator = token_to_binary(token);
-		token_consume(prs);
-
-		prs->is_in_assignment = true;
-		parse_assignment_expression_internal(prs);
-		prs->is_in_assignment = false;
-
-		// Снимаем типы операндов со стека
-		const operand_t right_type = prs->last_type;
-		const item_t right_mode = stack_pop(&prs->anonymous);
-		const item_t left_mode = stack_pop(&prs->anonymous);
-		item_t result_mode = right_mode;
-
-		if (is_int_assignment_operator(token) && (type_is_float(left_mode) || type_is_float(right_mode)))
-		{
-			parser_error(prs, int_op_for_float);
-		}
-		else if (type_is_array(prs->sx, left_mode))
-		{
-			parser_error(prs, array_assigment);
-		}
-		else if (type_is_struct(prs->sx, left_mode))
-		{
-			if (left_mode != right_mode) // типы должны быть равны
-			{
-				parser_error(prs, type_missmatch);
-			}
-
-			if (token != TK_EQUAL) // в структуру можно присваивать только с помощью =
-			{
-				parser_error(prs, wrong_struct_ass);
-			}
-
-			if (right_type == VALUE)
-			{
-				operator = left_type == VARIABLE ? OP_COPY0ST_ASSIGN : OP_COPY1ST_ASSIGN;
-			}
-			else
-			{
-				operator = left_type == VARIABLE
-					? right_type == VARIABLE
-						? OP_COPY00 : OP_COPY01
-					: right_type == VARIABLE
-						? OP_COPY10 : OP_COPY11;
-			}
-
-			to_tree(prs, operator);
-			if (left_type == VARIABLE)
-			{
-				node_add_arg(&prs->nd, target_displ);
-			}
-			if (right_type == VARIABLE)
-			{
-				node_add_arg(&prs->nd, prs->operand_displ);
-			}
-			node_add_arg(&prs->nd, type_get(prs->sx, (size_t)left_mode + 1));
-			prs->operand_displ = target_displ;
-			operands_push(prs, left_type, left_mode);
-		}
-		else // оба операнда базового типа или указатели
-		{
-			// В указатель можно присваивать только с помощью '='
-			if (type_is_pointer(prs->sx, left_mode) && token != TK_EQUAL)
-			{
-				parser_error(prs, wrong_struct_ass);
-			}
-
-			if (type_is_integer(left_mode) && type_is_float(right_mode))
-			{
-				parser_error(prs, assmnt_float_to_int);
-			}
-
-			// Здесь мы используем стек, чтобы передать в to_value тип и вид значения
-			// Это не очень красивый вариант, но рабочий: мы точно знаем, где эти тип и вид взять
-			// TODO: придумать вариант красивее
-			operands_push(prs, right_type, right_mode);
-			to_value(prs);
-			stack_pop(&prs->anonymous);
-
-			if (type_is_float(left_mode) && type_is_integer(right_mode))
-			{
-				to_tree(prs, OP_WIDEN);
-				result_mode = type_float;
-			}
-			if (type_is_pointer(prs->sx, left_mode) && type_is_pointer(prs->sx, right_mode) && left_mode != right_mode)
-			{
-				// проверка нужна только для указателей
-				parser_error(prs, type_missmatch);
-			}
-
-			if (left_type == ADDRESS)
-			{
-				operator = operation_to_address_ver(operator);
-			}
-			float_operation(prs, result_mode, operator);
-			if (left_type == VARIABLE)
-			{
-				prs->operand_displ = target_displ;
-				node_add_arg(&prs->nd, target_displ);
-			}
-			operands_push(prs, VALUE, left_mode);
-		}
-	}
-	else
-	{
-		// Эта функция учитывает, что начало в виде унарного выражения уже выкушано
-		parse_conditional_expression(prs);
-	}
-}
-
-static void parse_expression_internal(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	while (token_try_consume(prs, TK_COMMA))
-	{
-		assignment_to_void(prs);
-		stack_pop(&prs->anonymous);
-		parse_assignment_expression_internal(prs);
-	}
+	return LHS;
 }
 
 
@@ -1595,69 +804,22 @@ static void parse_expression_internal(parser *const prs)
  */
 
 
-item_t parse_expression(parser *const prs, node *const parent)
+expression parse_assignment_expression(parser *const prs)
 {
-	node_copy(&prs->nd, parent);
-	parse_expression_internal(prs);
-	assignment_to_void(prs);
-	to_tree(prs, OP_EXPR_END);
-	return stack_pop(&prs->anonymous);
+	const expression LHS = parse_unary_expression(prs);
+	return parse_RHS_of_binary_expression(prs, LHS, PREC_ASSIGNMENT);
 }
 
-item_t parse_assignment_expression(parser *const prs, node *const parent)
+expression parse_expression(parser *const prs)
 {
-	node_copy(&prs->nd, parent);
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-	to_tree(prs, OP_EXPR_END);
-	return stack_pop(&prs->anonymous);
+	const expression LHS = parse_assignment_expression(prs);
+	return parse_RHS_of_binary_expression(prs, LHS, PREC_COMMA);
 }
 
-item_t parse_parenthesized_expression(parser *const prs, node *const parent)
+expression parse_constant_expression(parser *const prs)
 {
-	token_expect_and_consume(prs, TK_L_PAREN, cond_must_be_in_brkts);
-	const item_t condition_type = parse_condition(prs, parent);
-	token_expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
-	return condition_type;
-}
-
-item_t parse_constant_expression(parser *const prs, node *const parent)
-{
-	node_copy(&prs->nd, parent);
-	parse_unary_expression(prs);
-	parse_conditional_expression(prs);
-	to_value(prs);
-	to_tree(prs, OP_EXPR_END);
-	return stack_pop(&prs->anonymous);
-}
-
-item_t parse_condition(parser *const prs, node *const parent)
-{
-	node_copy(&prs->nd, parent);
-	parse_expression_internal(prs);
-	to_value(prs);
-	to_tree(prs, OP_EXPR_END);
-	return stack_pop(&prs->anonymous);
-}
-
-void parse_string_literal(parser *const prs, node *const parent)
-{
-	node_copy(&prs->nd, parent);
-	to_tree(prs, OP_STRING);
-	node_add_arg(&prs->nd, prs->lxr->num);
-
-	for (int i = 0; i < prs->lxr->num; i++)
-	{
-		node_add_arg(&prs->nd, prs->lxr->lexstr[i]);
-	}
-
-	token_consume(prs);
-	operands_push(prs, VALUE, to_modetab(prs, type_array, type_character));
-}
-
-void parse_insert_widen(parser *const prs)
-{
-	// Сейчас последней нодой в поддереве выражения является OP_EXPR_END, просто меняем ее тип
-	node_set_type(&prs->nd, OP_WIDEN);
-	to_tree(prs, OP_EXPR_END);
+	// Тут никогда не было проверок, что это на самом деле константное выражение
+	// TODO: Проверять, что это константное выражение
+	const expression LHS = parse_unary_expression(prs);
+	return parse_RHS_of_binary_expression(prs, LHS, PREC_CONDITIONAL);
 }

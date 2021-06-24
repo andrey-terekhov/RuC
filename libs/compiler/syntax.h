@@ -359,6 +359,10 @@ bool type_is_void(const item_t type);
  */
 bool type_is_undefined(const item_t type);
 
+bool type_is_arithmetical(const item_t type);
+bool type_is_scalar(const item_t type);
+bool type_is_struct_pointer(const syntax *const sx, const item_t type);
+
 
 /**
  *	Add a new record to representations table or return existing
