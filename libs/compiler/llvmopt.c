@@ -59,8 +59,8 @@ static inline void struct_declaration(information *const info, size_t mode_ref)
 {
 	uni_printf(info->io, "%%struct_opt.%zi = type { ", mode_ref);
 
-	const item_t n = mode_get(info->sx, mode_ref + 2);
-	for (item_t i = 0; i < n; i += 2)
+	const size_t n = (size_t)mode_get(info->sx, mode_ref + 2);
+	for (size_t i = 0; i < n; i += 2)
 	{
 		switch (mode_get(info->sx, mode_ref + 3 + i))
 		{
@@ -366,7 +366,7 @@ static int node_recursive(information *const info, node *const nd)
 					if (node_get_type(&child_to_swap2) == OP_IDENT_TO_VAL_D
 						|| (node_get_type(&child_to_swap2) == OP_SLICE_IDENT
 						&& (node_get_arg(&child_to_swap2, 1) == mode_float
-						|| mode_get(info->sx, node_get_arg(&child_to_swap2, 1) + 1) == mode_float)))
+						|| mode_get(info->sx, (size_t)node_get_arg(&child_to_swap2, 1) + 1) == mode_float)))
 					{
 						N--;
 					}

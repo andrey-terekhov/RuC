@@ -16,6 +16,7 @@
 
 #include "llvmgen.h"
 #include <string.h>
+#include "codes.h"
 #include "errors.h"
 #include "hash.h"
 #include "llvmopt.h"
@@ -745,8 +746,9 @@ static void operand(information *const info, node *const nd)
 		case OP_SLICE_IDENT:
 		{
 			const item_t displ = node_get_arg(nd, 0);
-			// TODO: как и в llvmopt, это работает только для двумерных массивов, надо подумать над этим потом (может общую функцию сделать?)
-			const item_t type = node_get_arg(nd, 1) > 0 ? mode_get(info->sx, node_get_arg(nd, 1) + 1) : node_get_arg(nd, 1);
+			// TODO: как и в llvmopt, это работает только для двумерных массивов
+			//	, надо подумать над этим потом (может общую функцию сделать?)
+			const item_t type = node_get_arg(nd, 1) > 0 ? mode_get(info->sx, (size_t)node_get_arg(nd, 1) + 1) : node_get_arg(nd, 1);
 			item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 			const location_t location = info->variable_location;
 			node_set_next(nd);
@@ -1999,10 +2001,12 @@ static int codegen(information *const info)
 
 int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
+	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->modes), &(sx->tree));
 	if (optimize_for_llvm(ws, io, sx))
 	{
 		return -1;
 	}
+	tables_and_tree("tree1.txt", &(sx->identifiers), &(sx->modes), &(sx->tree));
 
 	information info;
 	info.io = io;
