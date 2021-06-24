@@ -21,10 +21,6 @@
 #include "utf8.h"
 
 
-const size_t MAP_HASH_MAX = 256;
-const size_t MAP_KEY_SIZE = 8;
-
-
 struct map_hash
 {
 	size_t next;
@@ -33,7 +29,7 @@ struct map_hash
 };
 
 
-int map_add_key_symbol(map *const as, const char32_t ch)
+static int map_add_key_symbol(map *const as, const char32_t ch)
 {
 	if (MAX_SYMBOL_SIZE <= as->keys_alloc - as->keys_next)
 	{
@@ -52,7 +48,7 @@ int map_add_key_symbol(map *const as, const char32_t ch)
 	return map_add_key_symbol(as, ch);
 }
 
-size_t map_get_hash(map *const as, const char *const key)
+static size_t map_get_hash(map *const as, const char *const key)
 {
 	char32_t ch = utf8_convert(key);
 	if (!utf8_is_letter(ch) && ch != '#')
@@ -86,7 +82,7 @@ size_t map_get_hash(map *const as, const char *const key)
 	return hash % MAP_HASH_MAX;
 }
 
-size_t map_get_hash_by_utf8(map *const as, const char32_t *const key)
+static size_t map_get_hash_by_utf8(map *const as, const char32_t *const key)
 {
 	if (!utf8_is_letter(key[0]) && key[0] != '#')
 	{
@@ -120,7 +116,7 @@ size_t map_get_hash_by_utf8(map *const as, const char32_t *const key)
 	return hash % MAP_HASH_MAX;
 }
 
-size_t map_get_hash_by_io(map *const as, universal_io *const io, char32_t *const last)
+static size_t map_get_hash_by_io(map *const as, universal_io *const io, char32_t *const last)
 {
 	*last = uni_scan_char(io);
 	if (!utf8_is_letter(*last) && *last != '#')
@@ -151,12 +147,12 @@ size_t map_get_hash_by_io(map *const as, universal_io *const io, char32_t *const
 }
 
 
-int map_cmp_key(const map *const as, const size_t index)
+static inline int map_cmp_key(const map *const as, const size_t index)
 {
 	return strcmp(&as->keys[as->values[index].ref], &as->keys[as->keys_size]);
 }
 
-size_t map_add_by_hash(map *const as, const size_t hash, const item_t value)
+static size_t map_add_by_hash(map *const as, const size_t hash, const item_t value)
 {
 	if (hash == SIZE_MAX)
 	{
@@ -207,7 +203,7 @@ size_t map_add_by_hash(map *const as, const size_t hash, const item_t value)
 	return index;
 }
 
-size_t map_set_by_hash(map *const as, const size_t hash, const item_t value)
+static size_t map_set_by_hash(map *const as, const size_t hash, const item_t value)
 {
 	if (hash == SIZE_MAX)
 	{
@@ -234,7 +230,7 @@ size_t map_set_by_hash(map *const as, const size_t hash, const item_t value)
 	return index;
 }
 
-item_t map_get_by_hash(const map *const as, const size_t hash)
+static item_t map_get_by_hash(const map *const as, const size_t hash)
 {
 	if (hash == SIZE_MAX)
 	{
@@ -260,7 +256,7 @@ item_t map_get_by_hash(const map *const as, const size_t hash)
 }
 
 
-map map_broken()
+static inline map map_broken()
 {
 	map as;
 	as.values = NULL;
@@ -467,7 +463,7 @@ const char *map_to_string(const map *const as, const size_t index)
 	return &as->keys[as->values[index].ref];
 }
 
-int map_is_correct(const map *const as)
+bool map_is_correct(const map *const as)
 {
 	return as != NULL && as->values != NULL && as->keys != NULL;
 }

@@ -109,7 +109,7 @@ inline size_t stack_size(const stack *const stk)
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-inline int stack_is_correct(const stack *const stk)
+inline bool stack_is_correct(const stack *const stk)
 {
 	return vector_is_correct(stk);
 }

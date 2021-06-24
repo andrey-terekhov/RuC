@@ -16,15 +16,20 @@
 
 #include "syntax.h"
 #include <stdlib.h>
-#include "defs.h"
-#include "errors.h"
 #include "tokens.h"
-#include "old_tree.h"
+#include "tree.h"
 
 
-void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
+static const size_t REPRESENTATIONS_SIZE = 10000;
+static const size_t IDENTIFIERS_SIZE = 10000;
+static const size_t FUNCTIONS_SIZE = 100;
+static const size_t MODES_SIZE = 1000;
+static const size_t TREE_SIZE = 10000;
+
+
+static void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
 {
-	char32_t buffer[MAXSTRINGL];
+	char32_t buffer[MAX_STRING_LENGTH];
 
 	buffer[0] = utf8_to_upper(eng[0]);
 	for (size_t i = 1; eng[i - 1] != '\0'; i++)
@@ -43,116 +48,82 @@ void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char3
 	map_add_by_utf8(reprtab, buffer, token);
 }
 
-void repr_init(map *const reprtab)
+static inline void repr_init(map *const reprtab)
 {
-	repr_add_keyword(reprtab, U"main", U"главная", kw_main);
-	// repr_add_keyword(reprtab, U"auto", U"авто", kw_auto);
-	// repr_add_keyword(reprtab, U"bool", U"булево", kw_bool);
-	repr_add_keyword(reprtab, U"char", U"литера", kw_char);
-	repr_add_keyword(reprtab, U"double", U"двойной", kw_double);
-	// repr_add_keyword(reprtab, U"enum", U"перечень", kw_enum);
-	repr_add_keyword(reprtab, U"float", U"вещ", kw_float);
-	repr_add_keyword(reprtab, U"int", U"цел", kw_int);
-	repr_add_keyword(reprtab, U"long", U"длин", kw_long);
-	// repr_add_keyword(reprtab, U"short", U"корот", kw_short);
-	repr_add_keyword(reprtab, U"struct", U"структура", kw_struct);
-	// repr_add_keyword(reprtab, U"union", U"объединение", kw_union);
-	repr_add_keyword(reprtab, U"void", U"пусто", kw_void);
-	// repr_add_keyword(reprtab, U"signed", U"знаковый", kw_signed);
-	// repr_add_keyword(reprtab, U"unsigned", U"беззнаковый", kw_unsigned);
-	repr_add_keyword(reprtab, U"if", U"если", kw_if);
-	repr_add_keyword(reprtab, U"else", U"иначе", kw_else);
-	repr_add_keyword(reprtab, U"do", U"цикл", kw_do);
-	repr_add_keyword(reprtab, U"while", U"пока", kw_while);
-	repr_add_keyword(reprtab, U"for", U"для", kw_for);
-	repr_add_keyword(reprtab, U"switch", U"выбор", kw_switch);
-	repr_add_keyword(reprtab, U"case", U"случай", kw_case);
-	repr_add_keyword(reprtab, U"default", U"умолчание", kw_default);
-	repr_add_keyword(reprtab, U"break", U"выход", kw_break);
-	repr_add_keyword(reprtab, U"continue", U"продолжить", kw_continue);
-	// repr_add_keyword(reprtab, U"const", U"конст", kw_const);
-	repr_add_keyword(reprtab, U"goto", U"переход", kw_goto);
-	// repr_add_keyword(reprtab, U"sizeof", U"размер", kw_sizeof);
-	// repr_add_keyword(reprtab, U"typedef", U"опртипа", kw_typedef);
-	repr_add_keyword(reprtab, U"return", U"возврат", kw_return);
-	// repr_add_keyword(reprtab, U"extern", U"внешн", kw_extern);
-	// repr_add_keyword(reprtab, U"inline", U"встр", kw_inline);
-	// repr_add_keyword(reprtab, U"register", U"регистровый", kw_register);
+	repr_add_keyword(reprtab, U"main", U"главная", TK_MAIN);
+	repr_add_keyword(reprtab, U"char", U"литера", TK_CHAR);
+	repr_add_keyword(reprtab, U"double", U"двойной", TK_DOUBLE);
+	repr_add_keyword(reprtab, U"float", U"вещ", TK_FLOAT);
+	repr_add_keyword(reprtab, U"int", U"цел", TK_INT);
+	repr_add_keyword(reprtab, U"long", U"длин", TK_LONG);
+	repr_add_keyword(reprtab, U"struct", U"структура", TK_STRUCT);
+	repr_add_keyword(reprtab, U"void", U"пусто", TK_VOID);
+	repr_add_keyword(reprtab, U"if", U"если", TK_IF);
+	repr_add_keyword(reprtab, U"else", U"иначе", TK_ELSE);
+	repr_add_keyword(reprtab, U"do", U"цикл", TK_DO);
+	repr_add_keyword(reprtab, U"while", U"пока", TK_WHILE);
+	repr_add_keyword(reprtab, U"for", U"для", TK_FOR);
+	repr_add_keyword(reprtab, U"switch", U"выбор", TK_SWITCH);
+	repr_add_keyword(reprtab, U"case", U"случай", TK_CASE);
+	repr_add_keyword(reprtab, U"default", U"умолчание", TK_DEFAULT);
+	repr_add_keyword(reprtab, U"break", U"выход", TK_BREAK);
+	repr_add_keyword(reprtab, U"continue", U"продолжить", TK_CONTINUE);
+	repr_add_keyword(reprtab, U"goto", U"переход", TK_GOTO);
+	repr_add_keyword(reprtab, U"return", U"возврат", TK_RETURN);
 
-	repr_add_keyword(reprtab, U"print", U"печать", kw_print);
-	repr_add_keyword(reprtab, U"printf", U"печатьф", kw_printf);
-	repr_add_keyword(reprtab, U"printid", U"печатьид", kw_printid);
-	repr_add_keyword(reprtab, U"scanf", U"читатьф", kw_scanf);
-	repr_add_keyword(reprtab, U"getid", U"читатьид", kw_getid);
-	repr_add_keyword(reprtab, U"abs", U"абс", kw_abs);
-	repr_add_keyword(reprtab, U"sqrt", U"квкор", kw_sqrt);
-	repr_add_keyword(reprtab, U"exp", U"эксп", kw_exp);
-	repr_add_keyword(reprtab, U"sin", U"син", kw_sin);
-	repr_add_keyword(reprtab, U"cos", U"кос", kw_cos);
-	repr_add_keyword(reprtab, U"log", U"лог", kw_log);
-	repr_add_keyword(reprtab, U"log10", U"лог10", kw_log10);
-	repr_add_keyword(reprtab, U"asin", U"асин", kw_asin);
-	repr_add_keyword(reprtab, U"rand", U"случ", kw_rand);
-	repr_add_keyword(reprtab, U"round", U"округл", kw_round);
-	repr_add_keyword(reprtab, U"strcpy", U"копир_строку", kw_strcpy);
-	repr_add_keyword(reprtab, U"strncpy", U"копир_н_симв", kw_strncpy);
-	repr_add_keyword(reprtab, U"strcat", U"конкат_строки", kw_strcat);
-	repr_add_keyword(reprtab, U"strncat", U"конкат_н_симв", kw_strncat);
-	repr_add_keyword(reprtab, U"strcmp", U"сравн_строк", kw_strcmp);
-	repr_add_keyword(reprtab, U"strncmp", U"сравн_н_симв", kw_strncmp);
-	repr_add_keyword(reprtab, U"strstr", U"нач_подстрок", kw_strstr);
-	repr_add_keyword(reprtab, U"strlen", U"длина", kw_strlen);
+	repr_add_keyword(reprtab, U"print", U"печать", TK_PRINT);
+	repr_add_keyword(reprtab, U"printf", U"печатьф", TK_PRINTF);
+	repr_add_keyword(reprtab, U"printid", U"печатьид", TK_PRINTID);
+	repr_add_keyword(reprtab, U"scanf", U"читатьф", TK_SCANF);
+	repr_add_keyword(reprtab, U"getid", U"читатьид", TK_GETID);
+	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
+	repr_add_keyword(reprtab, U"sqrt", U"квкор", TK_SQRT);
+	repr_add_keyword(reprtab, U"exp", U"эксп", TK_EXP);
+	repr_add_keyword(reprtab, U"sin", U"син", TK_SIN);
+	repr_add_keyword(reprtab, U"cos", U"кос", TK_COS);
+	repr_add_keyword(reprtab, U"log", U"лог", TK_LOG);
+	repr_add_keyword(reprtab, U"log10", U"лог10", TK_LOG10);
+	repr_add_keyword(reprtab, U"asin", U"асин", TK_ASIN);
+	repr_add_keyword(reprtab, U"rand", U"случ", TK_RAND);
+	repr_add_keyword(reprtab, U"round", U"округл", TK_ROUND);
+	repr_add_keyword(reprtab, U"strcpy", U"копир_строку", TK_STRCPY);
+	repr_add_keyword(reprtab, U"strncpy", U"копир_н_симв", TK_STRNCPY);
+	repr_add_keyword(reprtab, U"strcat", U"конкат_строки", TK_STRCAT);
+	repr_add_keyword(reprtab, U"strncat", U"конкат_н_симв", TK_STRNCAT);
+	repr_add_keyword(reprtab, U"strcmp", U"сравн_строк", TK_STRCMP);
+	repr_add_keyword(reprtab, U"strncmp", U"сравн_н_симв", TK_STRNCMP);
+	repr_add_keyword(reprtab, U"strstr", U"нач_подстрок", TK_STRSTR);
+	repr_add_keyword(reprtab, U"strlen", U"длина", TK_STRLEN);
 
-	repr_add_keyword(reprtab, U"t_create_direct", U"н_создать_непоср", kw_t_create_direct);
-	repr_add_keyword(reprtab, U"t_exit_direct", U"н_конец_непоср", kw_t_exit_direct);
+	repr_add_keyword(reprtab, U"t_create_direct", U"н_создать_непоср", TK_CREATE_DIRECT);
+	repr_add_keyword(reprtab, U"t_exit_direct", U"н_конец_непоср", TK_EXIT_DIRECT);
 
-	repr_add_keyword(reprtab, U"t_msg_send", U"н_послать", kw_msg_send);
-	repr_add_keyword(reprtab, U"t_msg_receive", U"н_получить", kw_msg_receive);
-	repr_add_keyword(reprtab, U"t_join", U"н_присоед", kw_join);
-	repr_add_keyword(reprtab, U"t_sleep", U"н_спать", kw_sleep);
-	repr_add_keyword(reprtab, U"t_sem_create", U"н_создать_сем", kw_sem_create);
-	repr_add_keyword(reprtab, U"t_sem_wait", U"н_вниз_сем", kw_sem_wait);
-	repr_add_keyword(reprtab, U"t_sem_post", U"н_вверх_сем", kw_sem_post);
-	repr_add_keyword(reprtab, U"t_create", U"н_создать", kw_create);
-	repr_add_keyword(reprtab, U"t_init", U"н_начать", kw_init);
-	repr_add_keyword(reprtab, U"t_destroy", U"н_закончить", kw_destroy);
-	repr_add_keyword(reprtab, U"t_exit", U"н_конец", kw_exit);
-	repr_add_keyword(reprtab, U"t_getnum", U"н_номер_нити", kw_getnum);
+	repr_add_keyword(reprtab, U"t_msg_send", U"н_послать", TK_MSG_SEND);
+	repr_add_keyword(reprtab, U"t_msg_receive", U"н_получить", TK_MSG_RECEIVE);
+	repr_add_keyword(reprtab, U"t_join", U"н_присоед", TK_JOIN);
+	repr_add_keyword(reprtab, U"t_sleep", U"н_спать", TK_SLEEP);
+	repr_add_keyword(reprtab, U"t_sem_create", U"н_создать_сем", TK_SEM_CREATE);
+	repr_add_keyword(reprtab, U"t_sem_wait", U"н_вниз_сем", TK_SEM_WAIT);
+	repr_add_keyword(reprtab, U"t_sem_post", U"н_вверх_сем", TK_SEM_POST);
+	repr_add_keyword(reprtab, U"t_create", U"н_создать", TK_CREATE);
+	repr_add_keyword(reprtab, U"t_init", U"н_начать", TK_INIT);
+	repr_add_keyword(reprtab, U"t_destroy", U"н_закончить", TK_DESTROY);
+	repr_add_keyword(reprtab, U"t_exit", U"н_конец", TK_EXIT);
+	repr_add_keyword(reprtab, U"t_getnum", U"н_номер_нити", TK_GETNUM);
 
-	repr_add_keyword(reprtab, U"assert", U"проверить", kw_assert);
-	repr_add_keyword(reprtab, U"pixel", U"пиксель", kw_pixel);
-	repr_add_keyword(reprtab, U"line", U"линия", kw_line);
-	repr_add_keyword(reprtab, U"rectangle", U"прямоугольник", kw_rectangle);
-	repr_add_keyword(reprtab, U"ellipse", U"эллипс", kw_ellipse);
-	repr_add_keyword(reprtab, U"clear", U"очистить", kw_clear);
-	repr_add_keyword(reprtab, U"draw_string", U"нарисовать_строку", kw_draw_string);
-	repr_add_keyword(reprtab, U"draw_number", U"нарисовать_число", kw_draw_number);
-	repr_add_keyword(reprtab, U"icon", U"иконка", kw_icon);
-	repr_add_keyword(reprtab, U"upb", U"кол_во", kw_upb);
-	repr_add_keyword(reprtab, U"setsignal", U"сигнал", kw_setsignal);
-	repr_add_keyword(reprtab, U"setmotor", U"мотор", kw_setmotor);
-	repr_add_keyword(reprtab, U"setvoltage", U"устнапряжение", kw_setvoltage);
-	repr_add_keyword(reprtab, U"getdigsensor", U"цифрдатчик", kw_getdigsensor);
-	repr_add_keyword(reprtab, U"getansensor", U"аналогдатчик", kw_getansensor);
+	repr_add_keyword(reprtab, U"assert", U"проверить", TK_ASSERT);
+	repr_add_keyword(reprtab, U"upb", U"кол_во", TK_UPB);
 
-	repr_add_keyword(reprtab, U"wifi_connect", U"wifi_подключить", kw_wifi_connect);
-	repr_add_keyword(reprtab, U"blynk_authorization", U"blynk_авторизация", kw_blynk_authorization);
-	repr_add_keyword(reprtab, U"blynk_send", U"blynk_послать", kw_blynk_send);
-	repr_add_keyword(reprtab, U"blynk_receive", U"blynk_получить", kw_blynk_receive);
-	repr_add_keyword(reprtab, U"blynk_notification", U"blynk_уведомление", kw_blynk_notification);
-	repr_add_keyword(reprtab, U"blynk_property", U"blynk_свойство", kw_blynk_property);
-	repr_add_keyword(reprtab, U"blynk_lcd", U"blynk_дисплей", kw_blynk_lcd);
-	repr_add_keyword(reprtab, U"blynk_terminal", U"blynk_терминал", kw_blynk_terminal);
-	repr_add_keyword(reprtab, U"send_int_to_robot", U"послать_цел_на_робот", kw_send_int);
-	repr_add_keyword(reprtab, U"send_float_to_robot", U"послать_вещ_на_робот", kw_send_float);
-	repr_add_keyword(reprtab, U"send_string_to_robot", U"послать_строку_на_робот", kw_send_string);
-	repr_add_keyword(reprtab, U"receive_int_from_robot", U"получить_цел_от_робота", kw_receive_int);
-	repr_add_keyword(reprtab, U"receive_float_from_robot", U"получить_вещ_от_робота", kw_receive_float);
-	repr_add_keyword(reprtab, U"receive_string_from_robot", U"получить_строку_от_робота", kw_receive_string);
+	repr_add_keyword(reprtab, U"send_int_to_robot", U"послать_цел_на_робот", TK_ROBOT_SEND_INT);
+	repr_add_keyword(reprtab, U"send_float_to_robot", U"послать_вещ_на_робот", TK_ROBOT_SEND_FLOAT);
+	repr_add_keyword(reprtab, U"send_string_to_robot", U"послать_строку_на_робот", TK_ROBOT_SEND_STRING);
+	repr_add_keyword(reprtab, U"receive_int_from_robot", U"получить_цел_от_робота", TK_ROBOT_RECEIVE_INT);
+	repr_add_keyword(reprtab, U"receive_float_from_robot", U"получить_вещ_от_робота", TK_ROBOT_RECEIVE_FLOAT);
+	repr_add_keyword(reprtab, U"receive_string_from_robot", U"получить_строку_от_робота", TK_ROBOT_RECEIVE_STRING);
 }
 
 
-void mode_init(syntax *const sx)
+static inline void mode_init(syntax *const sx)
 {
 	vector_increase(&sx->modes, 1);
 	// занесение в modetab описателя struct {int numTh; int inf; }
@@ -182,7 +153,7 @@ void mode_init(syntax *const sx)
 	sx->start_mode = 14;
 }
 
-item_t get_static(syntax *const sx, const item_t type)
+static inline item_t get_static(syntax *const sx, const item_t type)
 {
 	const item_t old_displ = sx->displ;
 	sx->displ += sx->lg * size_of(sx, type);
@@ -200,11 +171,11 @@ item_t get_static(syntax *const sx, const item_t type)
 }
 
 /**	Check if modes are equal */
-int mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
+static inline bool mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
 {
 	if (vector_get(&sx->modes, first) != vector_get(&sx->modes, second))
 	{
-		return 0;
+		return false;
 	}
 
 	size_t length = 1;
@@ -220,11 +191,11 @@ int mode_is_equal(const syntax *const sx, const size_t first, const size_t secon
 	{
 		if (vector_get(&sx->modes, first + i) != vector_get(&sx->modes, second + i))
 		{
-			return 0;
+			return false;
 		}
 	}
 
-	return 1;
+	return true;
 }
 
 
@@ -242,20 +213,20 @@ syntax sx_create()
 	syntax sx;
 	sx.procd = 1;
 
-	sx.predef = vector_create(FUNCSIZE);
-	sx.functions = vector_create(FUNCSIZE);
+	sx.predef = vector_create(FUNCTIONS_SIZE);
+	sx.functions = vector_create(FUNCTIONS_SIZE);
 	vector_increase(&sx.functions, 2);
 
-	sx.tree = vector_create(MAXTREESIZE);
+	sx.tree = vector_create(TREE_SIZE);
 
-	sx.identifiers = vector_create(MAXIDENTAB);
+	sx.identifiers = vector_create(IDENTIFIERS_SIZE);
 	vector_increase(&sx.identifiers, 2);
 	sx.cur_id = 2;
 
-	sx.representations = map_create(MAXREPRTAB);
+	sx.representations = map_create(REPRESENTATIONS_SIZE);
 	repr_init(&sx.representations);
 
-	sx.modes = vector_create(MAXMODETAB);
+	sx.modes = vector_create(MODES_SIZE);
 	mode_init(&sx);
 
 	sx.max_displg = 3;
@@ -268,13 +239,13 @@ syntax sx_create()
 	return sx;
 }
 
-int sx_is_correct(syntax *const sx)
+bool sx_is_correct(syntax *const sx)
 {
-	int is_correct = 1;
+	bool is_correct = true;
 	if (sx->ref_main == 0)
 	{
 		system_error(no_main_in_program);
-		is_correct = 0;
+		is_correct = false;
 	}
 
 	for (size_t i = 0; i < vector_size(&sx->predef); i++)
@@ -282,7 +253,7 @@ int sx_is_correct(syntax *const sx)
 		if (vector_get(&sx->predef, i))
 		{
 			system_error(predef_but_notdef, repr_get_name(sx, (size_t)vector_get(&sx->predef, i)));
-			is_correct = 0;
+			is_correct = false;
 		}
 	}
 
