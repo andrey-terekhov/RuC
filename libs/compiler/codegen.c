@@ -995,7 +995,7 @@ static void emit_goto_statement(encoder *const enc, const node *const nd)
 		// Метка еще не описана
 		ident_set_displ(enc->sx, id, -(item_t)mem_size(enc));
 
-		// Первый раз встретился переход на еще не описанную метку или нет
+		// Если эта метка уже встречалась, ставим адрес предыдущего перехода сюда
 		mem_add(enc, label_id < 0 ? 0 : addr);
 	}
 }
