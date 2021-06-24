@@ -1,4 +1,3 @@
-#include "lib1.h"
 
 int h1()
 {
