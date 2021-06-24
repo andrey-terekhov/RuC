@@ -49,7 +49,6 @@ typedef struct information
 
 	node_info stack[MAX_STACK_SIZE];					/**< Стек для преобразования выражений */
 	size_t stack_size;									/**< Размер стека */
-	size_t skip_counter;								/**< Счётчик для пропуска нод после перестановки */
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
 	size_t slice_depth;									/**< Количество узлов после OP_SLICE_IDENT */
 	size_t slice_stack_size;							/**< Размер стека в начале вырезки */
@@ -77,11 +76,6 @@ static inline void struct_declaration(information *const info, size_t mode_ref)
 	uni_printf(info->io, " }\n");
 }
 
-
-static inline size_t stack_peek_depth(information *const info)
-{
-	return info->stack[info->stack_size - 1].depth;
-}
 
 static inline int stack_push(information *const info, node_info *const nd)
 {
@@ -320,7 +314,7 @@ static int node_recursive(information *const info, node *const nd)
 {
 	int has_error = 0;
 
-	if (info->slice_depth != 0 && info->skip_counter <= 1)
+	if (info->slice_depth != 0)
 	{
 		info->slice_depth++;
 	}
@@ -395,15 +389,7 @@ static int node_recursive(information *const info, node *const nd)
 
 			case OP_EXPR_END:
 			{
-				if (info->slice_depth == 0)
-				{
-					// При обходе после перестановки нужно учитывать и OP_EXPR_END
-					// if (info->skip_counter > 1)
-					// {
-					// 	info->skip_counter--;
-					// }
-				}
-				else if (info->skip_counter <= 1)
+				if (info->slice_depth != 0)
 				{
 					// если вырезка не переставлена, то надо частично очистить стек и изменить глубину OP_SLICE_IDENT
 					node nd_expr_end = node_get_child(&child, 0);
@@ -436,14 +422,6 @@ static int node_recursive(information *const info, node *const nd)
 
 			default:
 			{
-				// если узел в переставленном выражении, то ничего делать не надо
-				// if (info->skip_counter > 1)
-				// {
-				// 	printf("here %i\n", node_get_type(&child));
-				// 	info->skip_counter--;
-				// 	break;
-				// }
-
 				node_info nd_info = { &child, 1 };
 
 				// перестановка узлов выражений
@@ -480,8 +458,6 @@ static int node_recursive(information *const info, node *const nd)
 
 						// добавляем в стек переставленное выражение
 						has_error |=  stack_push(info, operand);
-
-						info->skip_counter = stack_peek_depth(info);
 					}
 					break;
 					case BINARY_OPERATION:
@@ -511,8 +487,6 @@ static int node_recursive(information *const info, node *const nd)
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(info, first);
-
-						info->skip_counter = stack_peek_depth(info);
 					}
 					break;
 					case NOT_EXPRESSION:
@@ -524,7 +498,7 @@ static int node_recursive(information *const info, node *const nd)
 
 		// если встретили вырезку, надо запомнить состояние стека для дальнейшего восстановления
 		// и установить начальную глубину вырезки
-		if (node_get_type(&child) == OP_SLICE_IDENT && info->skip_counter <= 1)
+		if (node_get_type(&child) == OP_SLICE_IDENT)
 		{
 			info->slice_depth = 1;
 			info->slice_stack_size = info->stack_size;
@@ -547,7 +521,6 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	info.string_num = 1;
 	info.was_printf = 0;
 	info.stack_size = 0;
-	info.skip_counter = 1;
 	info.slice_depth = 0;
 	info.slice_stack_size = 0;
 
