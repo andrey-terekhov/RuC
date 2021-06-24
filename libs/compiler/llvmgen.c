@@ -442,7 +442,7 @@ static void to_code_operation_reg_const_i32(information *const info, const item_
 }
 
 static void to_code_operation_reg_const_double(information *const info, const item_t operation
-	, const item_t fst, double snd)
+	, const item_t fst, const double snd)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
