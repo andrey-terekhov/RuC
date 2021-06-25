@@ -209,7 +209,7 @@ static bool is_array_operation(const item_t operation)
 		case OP_SUB_ASSIGN_AT_R_V:
 		case OP_MUL_ASSIGN_AT_R_V:
 		case OP_DIV_ASSIGN_AT_R_V:
-		return 1;
+			return 1;
 
 		default:
 			return 0;
@@ -885,7 +885,7 @@ static void assignment_expression(information *const info, node *const nd)
 	if (assignment_type != OP_ASSIGN && assignment_type != OP_ASSIGN_V
 		&& assignment_type != OP_ASSIGN_R && assignment_type != OP_ASSIGN_R_V
 		&& assignment_type != OP_ASSIGN_AT && assignment_type != OP_ASSIGN_AT_V
-    	&& assignment_type != OP_ASSIGN_AT_R && assignment_type != OP_ASSIGN_AT_R_V)
+		&& assignment_type != OP_ASSIGN_AT_R && assignment_type != OP_ASSIGN_AT_R_V)
 	{
 		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
 		info->register_num++;
@@ -1902,19 +1902,16 @@ static void block(information *const info, node *const nd)
 
 				if (N == 0) // обычная переменная int a; или struct point p;
 				{
-					// TODO: может switch сделать, когда больше типов добавляться будет
-					if (elem_type == mode_integer)
+					if (elem_type == mode_integer || elem_type == mode_float)
 					{
-						uni_printf(info->io, " %%var.%" PRIitem " = alloca i32, align 4\n", displ);
-					}
-					else if (elem_type == mode_float)
-					{
-						uni_printf(info->io, " %%var.%" PRIitem " = alloca double, align 4\n", displ);
+						uni_printf(info->io, " %%var.%" PRIitem " = alloca ", displ);
+						type_to_io(info->io, elem_type);
+						uni_printf(info->io, ", align 4\n");
 					}
 					else if (mode_is_struct(info->sx, elem_type))
 					{
 						uni_printf(info->io, " %%struct.%" PRIitem " = alloca %%struct_opt.%" PRIitem ", align 4\n"
-							, elem_type, elem_type);
+							, displ, displ);
 					}
 					info->variable_location = LMEM;
 					info->request_reg = displ;

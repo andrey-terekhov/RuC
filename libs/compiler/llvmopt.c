@@ -15,11 +15,11 @@
  */
 
 #include "llvmopt.h"
+#include <string.h>
 #include "errors.h"
 #include "operations.h"
 #include "tree.h"
 #include "uniprinter.h"
-#include <string.h>
 
 
 #define MAX_STACK_SIZE	512
@@ -55,12 +55,12 @@ typedef struct information
 } information;
 
 
-static inline void struct_declaration(information *const info, size_t mode_ref)
+static inline void struct_declaration(information *const info, size_t displ, size_t mode_ref)
 {
-	uni_printf(info->io, "%%struct_opt.%zi = type { ", mode_ref);
+	uni_printf(info->io, "%%struct_opt.%zi = type { ", displ);
 
-	const size_t n = (size_t)mode_get(info->sx, mode_ref + 2);
-	for (size_t i = 0; i < n; i += 2)
+	const size_t fields_number = (size_t)mode_get(info->sx, mode_ref + 2);
+	for (size_t i = 0; i < fields_number; i += 2)
 	{
 		switch (mode_get(info->sx, mode_ref + 3 + i))
 		{
@@ -113,7 +113,7 @@ static int transposition(node_info *const expr, node_info *const cur)
 	}
 
 	node_order(expr->ref_node, cur->ref_node);
-	
+
 	node tmp;
 	node_copy(&tmp, expr->ref_node);
 	node_copy(expr->ref_node, cur->ref_node);
@@ -411,11 +411,12 @@ static int node_recursive(information *const info, node *const nd)
 
 			case OP_DECL_ID:
 			{
+				const size_t displ = (size_t)node_get_arg(&child, 0);
 				const size_t elem_type = (size_t)node_get_arg(&child, 1);
 
 				if (mode_get(info->sx, elem_type) == mode_struct)
 				{
-					struct_declaration(info, elem_type);
+					struct_declaration(info, displ, elem_type);
 				}
 			}
 			break;
