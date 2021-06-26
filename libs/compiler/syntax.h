@@ -274,6 +274,16 @@ size_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 item_t type_get(const syntax *const sx, const size_t index);
 
 /**
+ *	Check if type is scalar
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_scalar(syntax *const sx, const item_t type);
+
+/**
  *	Check if type is function
  *
  *	@param	sx			Syntax structure

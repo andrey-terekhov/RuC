@@ -475,6 +475,11 @@ item_t type_get(const syntax *const sx, const size_t index)
 	return sx != NULL ? vector_get(&sx->types, index) : ITEM_MAX;
 }
 
+bool type_is_scalar(syntax *const sx, const item_t type)
+{
+	return type < 0 ? type != type_void : type_is_pointer(sx, type);
+}
+
 bool type_is_function(syntax *const sx, const item_t type)
 {
 	return type > 0 && type_get(sx, (size_t)type) == type_function;
