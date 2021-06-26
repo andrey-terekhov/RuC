@@ -40,7 +40,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  *
- *	@return	Standard type or index of the modes table
+ *	@return	Standard type or index of the types table
  */
 static item_t parse_type_specifier(parser *const prs, node *const parent)
 {
@@ -49,21 +49,21 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 	{
 		case TK_VOID:
 			token_consume(prs);
-			return mode_void;
+			return type_void;
 
 		case TK_CHAR:
 			token_consume(prs);
-			return mode_character;
+			return type_character;
 
 		case TK_INT:
 		case TK_LONG:
 			token_consume(prs);
-			return mode_integer;
+			return type_integer;
 
 		case TK_FLOAT:
 		case TK_DOUBLE:
 			token_consume(prs);
-			return mode_float;
+			return type_float;
 
 		case TK_IDENTIFIER:
 		{
@@ -73,11 +73,11 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 			if (id == ITEM_MAX || ident_get_displ(prs->sx, (size_t)id) < 1000)
 			{
 				parser_error(prs, ident_not_type);
-				return mode_undefined;
+				return type_undefined;
 			}
 
 			prs->flag_array_in_struct = (int)ident_get_displ(prs->sx, (size_t)id) - 1000;
-			return ident_get_mode(prs->sx, (size_t)id);
+			return ident_get_type(prs->sx, (size_t)id);
 		}
 
 		case TK_STRUCT:
@@ -86,7 +86,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 
 		default:
 			parser_error(prs, not_decl);
-			return mode_undefined;
+			return type_undefined;
 	}
 }
 
@@ -104,7 +104,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  *
- *	@return	Index of modes table, @c mode_undefined on failure
+ *	@return	Index of types table, @c type_undefined on failure
  */
 static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent)
 {
@@ -120,12 +120,12 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 
 			if (prs->token == TK_L_BRACE)
 			{
-				const item_t mode = parse_struct_declaration_list(prs, parent);
-				const size_t id = to_identab(prs, repr, 1000, mode);
+				const item_t type = parse_struct_declaration_list(prs, parent);
+				const size_t id = to_identab(prs, repr, 1000, type);
 				ident_set_displ(prs->sx, id, 1000 + prs->flag_array_in_struct);
 				prs->was_type_def = true;
 
-				return ident_get_mode(prs->sx, id);
+				return ident_get_type(prs->sx, id);
 			}
 			else // if (parser->next_token != l_brace)
 			{
@@ -134,18 +134,18 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 				if (id == ITEM_MAX)
 				{
 					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
-					return mode_undefined;
+					return type_undefined;
 				}
 
 				// TODO: what if it was not a struct name?
 				prs->flag_array_in_struct = (int)ident_get_displ(prs->sx, (size_t)id) - 1000;
-				return ident_get_mode(prs->sx, (size_t)id);
+				return ident_get_type(prs->sx, (size_t)id);
 			}
 		}
 
 		default:
 			parser_error(prs, wrong_struct);
-			return mode_undefined;
+			return type_undefined;
 	}
 }
 
@@ -159,14 +159,14 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
  *	@param	parent		Parent node in AST
  *	@param	type		Type of variable in declaration
  *
- *	@return	Index of the modes table
+ *	@return	Index of the types table
  */
 static item_t parse_array_definition(parser *const prs, node *const parent, item_t type)
 {
 	prs->array_dimensions = 0;
 	prs->flag_empty_bounds = 1;
 
-	if (mode_is_pointer(prs->sx, type))
+	if (type_is_pointer(prs->sx, type))
 	{
 		parser_error(prs, pnt_before_array);
 	}
@@ -186,7 +186,7 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
 		else
 		{
 			const item_t size_type = parse_constant_expression(prs, parent);
-			if (!mode_is_int(size_type))
+			if (!type_is_integer(size_type))
 			{
 				parser_error(prs, array_size_must_be_int);
 			}
@@ -197,7 +197,7 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
 				token_skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_SEMICOLON);
 			}
 		}
-		type = to_modetab(prs, mode_array, type);
+		type = to_modetab(prs, type_array, type);
 	}
 
 	return type;
@@ -220,7 +220,7 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  *
- *	@return	Index of modes table, @c mode_undefined on failure
+ *	@return	Index of types table, @c type_undefined on failure
  */
 static item_t parse_struct_declaration_list(parser *const prs, node *const parent)
 {
@@ -228,7 +228,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	if (token_try_consume(prs, TK_R_BRACE))
 	{
 		parser_error(prs, empty_struct);
-		return mode_undefined;
+		return type_undefined;
 	}
 
 	item_t local_modetab[100];
@@ -242,16 +242,16 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	do
 	{
 		item_t element_type = parse_type_specifier(prs, parent);
-		if (element_type == mode_void)
+		if (element_type == type_void)
 		{
 			parser_error(prs, only_functions_may_have_type_VOID);
-			element_type = mode_undefined;
+			element_type = type_undefined;
 		}
 
 		item_t type = element_type;
 		if (token_try_consume(prs, TK_STAR))
 		{
-			type = to_modetab(prs, mode_pointer, element_type);
+			type = to_modetab(prs, type_pointer, element_type);
 		}
 
 		const size_t repr = prs->lxr->repr;
@@ -284,7 +284,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 
 				if (token_try_consume(prs, TK_EQUAL))
 				{
-					if (mode_is_array(prs->sx, type))
+					if (type_is_array(prs->sx, type))
 					{
 						prs->flag_strings_only = 2;
 						node_set_arg(&nd_decl_id, 3, 1);
@@ -320,11 +320,11 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		prs->flag_array_in_struct = (int)prs->sx->procd++;
 	}
 
-	local_modetab[0] = mode_struct;
+	local_modetab[0] = type_struct;
 	local_modetab[1] = (item_t)displ;
 	local_modetab[2] = (item_t)fields * 2;
 
-	return (item_t)mode_add(prs->sx, local_modetab, local_md);
+	return (item_t)type_add(prs->sx, local_modetab, local_md);
 }
 
 /**
@@ -332,7 +332,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
- *	@param	type		Index of the modes table
+ *	@param	type		Index of the types table
  */
 static void parse_struct_initializer(parser *const prs, node *const parent, const item_t type)
 {
@@ -343,7 +343,7 @@ static void parse_struct_initializer(parser *const prs, node *const parent, cons
 		return;
 	}
 
-	const size_t expected_fields = (size_t)(mode_get(prs->sx, (size_t)type + 2) / 2);
+	const size_t expected_fields = (size_t)(type_get(prs->sx, (size_t)type + 2) / 2);
 	size_t actual_fields = 0;
 	size_t ref_next_field = (size_t)type + 3;
 
@@ -352,7 +352,7 @@ static void parse_struct_initializer(parser *const prs, node *const parent, cons
 
 	do
 	{
-		parse_initializer(prs, &nd_struct_init, mode_get(prs->sx, ref_next_field));
+		parse_initializer(prs, &nd_struct_init, type_get(prs->sx, ref_next_field));
 		ref_next_field += 2;
 		actual_fields++;
 
@@ -379,7 +379,7 @@ static void parse_struct_initializer(parser *const prs, node *const parent, cons
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
- *	@param	type		Index of the modes table
+ *	@param	type		Index of the types table
  */
 static void parse_array_initializer(parser *const prs, node *const parent, const item_t type)
 {
@@ -413,7 +413,7 @@ static void parse_array_initializer(parser *const prs, node *const parent, const
 	do
 	{
 		list_length++;
-		parse_initializer(prs, &nd_arr_init, mode_get(prs->sx, (size_t)type + 1));
+		parse_initializer(prs, &nd_arr_init, type_get(prs->sx, (size_t)type + 1));
 
 		if (prs->token == TK_R_BRACE)
 		{
@@ -466,7 +466,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 
 		// Меняем тип (увеличиваем размерность массива)
 		type = parse_array_definition(prs, &nd_decl_arr, type);
-		ident_set_mode(prs->sx, old_id, type);
+		ident_set_type(prs->sx, old_id, type);
 		node_set_arg(&nd_decl_arr, 0, (item_t)prs->array_dimensions);
 		if (!prs->flag_empty_bounds && prs->token != TK_EQUAL)
 		{
@@ -479,14 +479,14 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 	node_add_arg(&nd, element_type);
 	node_add_arg(&nd, (item_t)prs->array_dimensions);
 	node_add_arg(&nd, 0);
-	node_add_arg(&nd, mode_is_pointer(prs->sx, type) ? 0 : prs->flag_array_in_struct);
+	node_add_arg(&nd, type_is_pointer(prs->sx, type) ? 0 : prs->flag_array_in_struct);
 	node_add_arg(&nd, prs->flag_empty_bounds);
 	node_add_arg(&nd, 0);	// Признак того, что массив не в структуре
 
 	if (token_try_consume(prs, TK_EQUAL))
 	{
 		node_set_arg(&nd, 3, (item_t)size_of(prs->sx, type));
-		if (mode_is_array(prs->sx, type))
+		if (type_is_array(prs->sx, type))
 		{
 			if (!prs->flag_empty_bounds)
 			{
@@ -518,7 +518,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
  *						@c 3 for others
  *	@param	return_type	Return type of declarated function
  *
- *	@return	Index of modes table, @c mode_undefined on failure
+ *	@return	Index of types table, @c type_undefined on failure
  */
 static item_t parse_function_declarator(parser *const prs, const int level, int func_def, const item_t return_type)
 {
@@ -543,13 +543,13 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			if (token_try_consume(prs, TK_STAR))
 			{
 				arg_func = 1;
-				if (type == mode_void)
+				if (type == type_void)
 				{
-					type = mode_void_pointer;
+					type = type_void_pointer;
 				}
 				else
 				{
-					type = to_modetab(prs, mode_pointer, type);
+					type = to_modetab(prs, type_pointer, type);
 				}
 			}
 
@@ -568,10 +568,10 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			{
 				parser_error(prs, ident_in_declarator);
 				token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-				return mode_undefined;
+				return type_undefined;
 			}
 
-			if (type == mode_void && prs->token != TK_L_PAREN)
+			if (type == type_void && prs->token != TK_L_PAREN)
 			{
 				parser_error(prs, par_type_void_with_nofun);
 			}
@@ -579,14 +579,14 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			if (prs->token == TK_L_SQUARE)
 			{
 				arg_func = 2;
-				if (mode_is_pointer(prs->sx, type) && !was_ident)
+				if (type_is_pointer(prs->sx, type) && !was_ident)
 				{
 					parser_error(prs, aster_with_row);
 				}
 
 				while (token_try_consume(prs, TK_L_SQUARE))
 				{
-					type = to_modetab(prs, mode_array, type);
+					type = to_modetab(prs, type_array, type);
 					if (!token_try_consume(prs, TK_R_SQUARE))
 					{
 						parser_error(prs, wait_right_sq_br);
@@ -610,14 +610,14 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 						else
 						{
 							parser_error(prs, two_idents_for_1_declarer);
-							return mode_undefined;
+							return type_undefined;
 						}
 						func_add(prs->sx, -((item_t)prs->lxr->repr));
 					}
 					else
 					{
 						parser_error(prs, ident_in_declarator);
-						return mode_undefined;
+						return type_undefined;
 					}
 				}
 
@@ -651,13 +651,13 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				{
 					token_skip_until(prs, TK_R_BRACE);
 				}
-				return mode_undefined;
+				return type_undefined;
 			}
 			else if (func_def == 1 && !was_ident)
 			{
 				parser_error(prs, wait_definition);
 				token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-				return mode_undefined;
+				return type_undefined;
 			}
 
 			args++;
@@ -668,11 +668,11 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 		prs->func_def = func_def;
 	}
 
-	local_modetab[0] = mode_function;
+	local_modetab[0] = type_function;
 	local_modetab[1] = return_type;
 	local_modetab[2] = (item_t)args;
 
-	return (item_t)mode_add(prs->sx, local_modetab, local_md);
+	return (item_t)type_add(prs->sx, local_modetab, local_md);
 }
 
 /**
@@ -684,9 +684,9 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
  */
 static void parse_function_body(parser *const prs, node *const parent, const size_t function_id)
 {
-	prs->function_mode = (size_t)ident_get_mode(prs->sx, function_id);
+	prs->function_mode = (size_t)ident_get_type(prs->sx, function_id);
 	const size_t function_number = (size_t)ident_get_displ(prs->sx, function_id);
-	const size_t param_number = (size_t)mode_get(prs->sx, prs->function_mode + 2);
+	const size_t param_number = (size_t)type_get(prs->sx, prs->function_mode + 2);
 
 	vector_resize(&prs->labels, 0);
 	prs->was_return = 0;
@@ -694,7 +694,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 	const item_t prev = ident_get_prev(prs->sx, function_id);
 	if (prev > 1 && prev != ITEM_MAX - 1) // Был прототип
 	{
-		if (prs->function_mode != (size_t)ident_get_mode(prs->sx, (size_t)prev))
+		if (prs->function_mode != (size_t)ident_get_type(prs->sx, (size_t)prev))
 		{
 			parser_error(prs, decl_and_def_have_diff_type);
 			token_skip_until(prs, TK_R_BRACE);
@@ -707,7 +707,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 
 	for (size_t i = 0; i < param_number; i++)
 	{
-		const item_t type = mode_get(prs->sx, prs->function_mode + i + 3);
+		const item_t type = type_get(prs->sx, prs->function_mode + i + 3);
 		const item_t repr = func_get(prs->sx, function_number + i + 1);
 
 		to_identab(prs, (size_t)llabs(repr), repr > 0 ? 0 : -1, type);
@@ -721,7 +721,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 
 	parse_statement_compound(prs, &nd, FUNCBODY);
 
-	if (mode_get(prs->sx, prs->function_mode + 1) != mode_void && !prs->was_return)
+	if (type_get(prs->sx, prs->function_mode + 1) != type_void && !prs->was_return)
 	{
 		parser_error(prs, no_ret_in_func);
 	}
@@ -733,7 +733,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 	{
 		const size_t repr = (size_t)ident_get_repr(prs->sx, (size_t)vector_get(&prs->labels, i));
 		const size_t line_number = (size_t)llabs(vector_get(&prs->labels, i + 1));
-		if (!ident_get_mode(prs->sx, (size_t)vector_get(&prs->labels, i)))
+		if (!ident_get_type(prs->sx, (size_t)vector_get(&prs->labels, i)))
 		{
 			parser_error(prs, label_not_declared, line_number, repr_get_name(prs->sx, repr));
 		}
@@ -804,10 +804,10 @@ void parse_declaration_inner(parser *const prs, node *const parent)
 	prs->was_type_def = 0;
 	item_t group_type = parse_type_specifier(prs, parent);
 
-	if (group_type == mode_void)
+	if (group_type == type_void)
 	{
 		parser_error(prs, only_functions_may_have_type_VOID);
-		group_type = mode_undefined;
+		group_type = type_undefined;
 	}
 	else if (prs->was_type_def && token_try_consume(prs, TK_SEMICOLON))
 	{
@@ -819,7 +819,7 @@ void parse_declaration_inner(parser *const prs, node *const parent)
 		item_t type = group_type;
 		if (token_try_consume(prs, TK_STAR))
 		{
-			type = to_modetab(prs, mode_pointer, group_type);
+			type = to_modetab(prs, type_pointer, group_type);
 		}
 
 		if (token_try_consume(prs, TK_IDENTIFIER))
@@ -853,13 +853,13 @@ void parse_declaration_external(parser *const prs, node *const root)
 		if (prs->token == TK_STAR)
 		{
 			token_consume(prs);
-			if (group_type == mode_void)
+			if (group_type == type_void)
 			{
-				type = mode_void_pointer;
+				type = type_void_pointer;
 			}
 			else
 			{
-				type = to_modetab(prs, mode_pointer, group_type);
+				type = to_modetab(prs, type_pointer, group_type);
 			}
 		}
 
@@ -869,7 +869,7 @@ void parse_declaration_external(parser *const prs, node *const root)
 			{
 				parse_function_definition(prs, root, type);
 			}
-			else if (group_type == mode_void)
+			else if (group_type == type_void)
 			{
 				parser_error(prs, only_functions_may_have_type_VOID);
 			}
@@ -896,13 +896,13 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 	if (prs->token != TK_L_BRACE)
 	{
 		const item_t expr_type = parse_assignment_expression(prs, parent);
-		if (!mode_is_undefined(expr_type) && !mode_is_undefined(type))
+		if (!type_is_undefined(expr_type) && !type_is_undefined(type))
 		{
-			if (mode_is_int(type) && mode_is_float(expr_type))
+			if (type_is_integer(type) && type_is_float(expr_type))
 			{
 				parser_error(prs, init_int_by_float);
 			}
-			else if (mode_is_float(type) && mode_is_int(expr_type))
+			else if (type_is_float(type) && type_is_integer(expr_type))
 			{
 				parse_insert_widen(prs);
 			}
@@ -912,11 +912,11 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 			}
 		}
 	}
-	else if (mode_is_struct(prs->sx, type))
+	else if (type_is_struct(prs->sx, type))
 	{
 		parse_struct_initializer(prs, parent, type);
 	}
-	else if (mode_is_array(prs->sx, type))
+	else if (type_is_array(prs->sx, type))
 	{
 		parse_array_initializer(prs, parent, type);
 	}
