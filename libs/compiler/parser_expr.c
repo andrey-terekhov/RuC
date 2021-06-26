@@ -19,23 +19,12 @@
 #include <string.h>
 
 
+/** Value designation */
 typedef enum VALUE
 {
 	LVALUE,		/**< An expression that potentially designates an object */
 	RVALUE,		/**< An expression that detached from any specific storage */
 } value_t;
-
-static node create_node(parser *const prs, operation_t type)
-{
-	return node_add_child(&prs->nd, type);
-}
-
-static void node_set_child(node *const parent, node *const child)
-{
-	node temp = node_add_child(parent, OP_NOP);
-	node_swap(child, &temp);
-	node_remove(&temp);
-}
 
 /** Binary/ternary operator precedence levels */
 typedef enum PRECEDENCE
@@ -121,6 +110,18 @@ static precedence_t get_operator_precedence(const token_t token)
 		default:
 			return PREC_UNKWOWN;
 	}
+}
+
+static node create_node(parser *const prs, operation_t type)
+{
+	return node_add_child(&prs->nd, type);
+}
+
+static void node_set_child(node *const parent, node *const child)
+{
+	node temp = node_add_child(parent, OP_NOP);
+	node_swap(child, &temp);
+	node_remove(&temp);
 }
 
 /** Return valid expression from AST node */
@@ -266,65 +267,71 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 /**
  *	Make binary expression
  *
- *	@param	prs			Parser
- *	@param	fst			First operand
- *	@param	snd			Second operand
- *	@param	op_kind		Operator kind
- *	@param	loc			Operator location
+ *	@param	prs					Parser
+ *	@param	left				Left operand
+ *	@param	right				Right operand
+ *	@param	operator_kind		Operator kind
+ *	@param	operator_location	Operator location
  *
  *	@return	Binary expression
  */
-static expression make_binary_expression(parser *const prs, expression fst, expression snd, binary_t op_kind, location_t loc)
+static expression make_binary_expression(parser *const prs, expression left, expression right
+	, const binary_t operator_kind, const location_t operator_location)
 {
-	if (!fst.is_valid || !snd.is_valid)
+	if (!left.is_valid || !right.is_valid)
 	{
 		return expr_broken();
 	}
 
-	const item_t fst_type = node_get_arg(&fst.nd, 0);
-	const item_t snd_type = node_get_arg(&snd.nd, 0);
+	const item_t fst_type = node_get_arg(&left.nd, 0);
+	const item_t snd_type = node_get_arg(&right.nd, 0);
+
+	const item_t type = type_undefined;
 
 	node binary_node = create_node(prs, OP_BINARY);
-	node_add_arg(&binary_node, type);			// Тип значения
-	node_add_arg(&binary_node, RVALUE);			// Вид значения
-	node_add_arg(&binary_node, op_kind);		// Вид оператора
-	node_set_child(&binary_node, &fst.nd);		// Второй операнд
-	node_set_child(&binary_node, &snd.nd);		// Третий операнд
+	node_add_arg(&binary_node, type);				// Тип значения
+	node_add_arg(&binary_node, RVALUE);				// Вид значения
+	node_add_arg(&binary_node, operator_kind);		// Вид оператора
+	node_set_child(&binary_node, &left.nd);			// Второй операнд
+	node_set_child(&binary_node, &right.nd);		// Третий операнд
 
-	return expr(binary_node, (location_t){ fst.location.begin, snd.location.end });
+	return expr(binary_node, (location_t){ left.location.begin, right.location.end });
 }
 
 /**
  *	Make ternary expression
  *
- *	@param	prs			Parser
- *	@param	fst			First operand
- *	@param	snd			Second operand
- *	@param	trd			Third operand
- *	@param	loc			Operator location
+ *	@param	prs					Parser
+ *	@param	left				First operand
+ *	@param	middle				Second operand
+ *	@param	right				Third operand
+ *	@param	colon_location		Operator location
  *
  *	@return	Ternary expression
  */
-static expression make_ternary_expression(parser *const prs, expression fst, expression snd, expression trd, location_t loc)
+static expression make_ternary_expression(parser *const prs, expression left, expression middle, expression right
+	, location_t colon_location)
 {
-	if (!fst.is_valid || !snd.is_valid || !trd.is_valid)
+	if (!left.is_valid || !middle.is_valid || !right.is_valid)
 	{
 		return expr_broken();
 	}
 
-	const item_t fst_type = node_get_arg(&fst.nd, 0);
-	const item_t snd_type = node_get_arg(&snd.nd, 0);
-	const item_t trd_type = node_get_arg(&trd.nd, 0);
+	const item_t fst_type = node_get_arg(&left.nd, 0);
+	const item_t snd_type = node_get_arg(&middle.nd, 0);
+	const item_t trd_type = node_get_arg(&right.nd, 0);
+
+	const item_t type = type_undefined;
 
 
 	node ternary_node = create_node(prs, OP_TERNARY);
 	node_add_arg(&ternary_node, type);				// Тип значения
 	node_add_arg(&ternary_node, RVALUE);			// Вид значения
-	node_set_child(&ternary_node, &fst.nd);			// Первый операнд
-	node_set_child(&ternary_node, &snd.nd);			// Второй операнд
-	node_set_child(&ternary_node, &trd.nd);			// Третий операнд
+	node_set_child(&ternary_node, &left.nd);		// Первый операнд
+	node_set_child(&ternary_node, &middle.nd);		// Второй операнд
+	node_set_child(&ternary_node, &right.nd);		// Третий операнд
 
-	return expr(ternary_node, (location_t){ fst.location.begin, trd.location.end });
+	return expr(ternary_node, (location_t){ left.location.begin, right.location.end });
 }
 
 /**
@@ -622,7 +629,7 @@ static expression parse_member_expression_suffix(parser *const prs, expression o
 		designation = LVALUE;
 	}
 
-	size_t member_displ = 0;
+	item_t member_displ = 0;
 	const size_t record_length = (size_t)type_get(prs->sx, (size_t)struct_type + 2);
 	for (size_t i = 0; i < record_length; i += 2)
 	{
@@ -638,7 +645,7 @@ static expression parse_member_expression_suffix(parser *const prs, expression o
 			return expr(select_node, (location_t){ operand.location.begin, member_location.end });
 		}
 
-		member_displ += size_of(prs->sx, member_type);
+		member_displ += (item_t)size_of(prs->sx, member_type);
 	}
 
 	semantics_error(prs, member_location, no_member, repr_get_name(prs->sx, member_name));

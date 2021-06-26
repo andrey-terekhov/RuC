@@ -408,6 +408,8 @@ token_t lex(lexer *const lxr)
 	}
 
 	skip_whitespace(lxr);
+	lxr->location = in_get_position(lxr->io);
+
 	switch (lxr->character)
 	{
 		case (char32_t)EOF:

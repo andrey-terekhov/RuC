@@ -45,17 +45,9 @@ static inline parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.sx = sx;
 	prs.lxr = lxr;
 
-	prs.left_mode = -1;
-	prs.operand_displ = 0;
-
-	prs.is_in_assignment = false;
 	prs.was_error = false;
 
 	prs.labels = vector_create(MAX_LABELS);
-	prs.stk.priorities = stack_create(MAX_STACK);
-	prs.stk.tokens = stack_create(MAX_STACK);
-	prs.stk.nodes = stack_create(MAX_STACK);
-	prs.anonymous = stack_create(MAX_STACK);
 	token_consume(&prs);
 
 	return prs;
@@ -64,11 +56,6 @@ static inline parser parser_create(syntax *const sx, lexer *const lxr)
 static inline void parser_clear(parser *const prs)
 {
 	vector_clear(&prs->labels);
-	stack_clear(&prs->anonymous);
-
-	stack_clear(&prs->stk.priorities);
-	stack_clear(&prs->stk.tokens);
-	stack_clear(&prs->stk.nodes);
 }
 
 
@@ -124,9 +111,11 @@ void parser_error(parser *const prs, error_t num, ...)
 	va_end(args);
 }
 
-void token_consume(parser *const prs)
+location_t token_consume(parser *const prs)
 {
+	const size_t token_start = prs->lxr->location;
 	prs->token = lex(prs->lxr);
+	return (location_t){ token_start, in_get_position(prs->lxr->io) };
 }
 
 int token_try_consume(parser *const prs, const token_t expected)

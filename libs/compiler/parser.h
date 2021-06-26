@@ -74,7 +74,6 @@ typedef struct parser
 	int flag_empty_bounds;				/**< Set, if array declaration has empty bounds */
 
 	bool is_in_switch;					/**< Set, if parser is in switch body */
-	bool is_in_assignment;				/**< Set, if parser is in assignment */
 	bool is_in_loop;					/**< Set, if parser is in loop body */
 
 	bool was_return;					/**< Set, if was return in parsed function */
@@ -158,20 +157,6 @@ void token_skip_until(parser *const prs, const uint8_t tokens);
 
 
 /**
- *	Parse expression [C99 6.5.17]
- *
- *	expression:
- *		assignment-expression
- *		expression ',' assignment-expression
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *
- *	@return	Type of parsed expression
- */
-item_t parse_expression(parser *const prs, node *const parent);
-
-/**
  *	Parse assignment expression [C99 6.5.16]
  *
  *	assignment-expression:
@@ -179,27 +164,26 @@ item_t parse_expression(parser *const prs, node *const parent);
  *		unary-expression assignment-operator assignment-expression
  *
  *	assignment-operator: one of
- *		=  *=  /=  %=  +=  -=  <<=  >>=  &=  ˆ=  |=
+ *		'=' '*=' '/=' '%=' '+=' '-=' '<<=' '>>=' '&=' 'ˆ=' '|='
  *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
+ *	@param	prs			Parser
  *
- *	@return	Type of parsed expression
+ *	@return	Assignment expression
  */
-item_t parse_assignment_expression(parser *const prs, node *const parent);
+expression parse_assignment_expression(parser *const prs);
 
 /**
- *	Parse expression in parentheses
+ *	Parse expression [C99 6.5.17]
  *
- *	parenthesized-expression:
- *		'(' expression ')'
+ *	expression:
+ *		assignment-expression
+ *		expression ',' assignment-expression
  *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
+ *	@param	prs			Parser
  *
- *	@return	Type of parsed expression
+ *	@return Expression
  */
-item_t parse_parenthesized_expression(parser *const prs, node *const parent);
+expression parse_expression(parser *const prs);
 
 /**
  *	Parse constant expression [C99 6.6]
@@ -207,41 +191,11 @@ item_t parse_parenthesized_expression(parser *const prs, node *const parent);
  *	constant-expression:
  *		conditional-expression
  *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
+ *	@param	prs			Parser
  *
- *	@return	Type of parsed expression
+ *	@return	Constant expression
  */
-item_t parse_constant_expression(parser *const prs, node *const parent);
-
-/**
- *	Parse condition
- *	@note	must be evaluated to a simple value
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *
- *	@return	Type of parsed expression
- */
-item_t parse_condition(parser *const prs, node *const parent);
-
-/**
- *	Parse string literal [C99 6.5.1]
- *
- *	primary-expression:
- *		string-literal
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- */
-void parse_string_literal(parser *const prs, node *const parent);
-
-/**
- *	Insert @c WIDEN node
- *
- *	@param	prs			Parser structure
- */
-void parse_insert_widen(parser *const prs);
+expression parse_constant_expression(parser *const prs);
 
 
 /**
@@ -340,14 +294,6 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
  *	@return	Index of the new record in modes table, @c SIZE_MAX on failure
  */
 item_t to_modetab(parser *const prs, const item_t mode, const item_t element);
-
-/**
- *	Add a new node to expression subtree
- *
- *	@param	prs			Parser structure
- *	@param	op			New node type
- */
-void to_tree(parser *const prs, const item_t op);
 
 #ifdef __cplusplus
 } /* extern "C" */

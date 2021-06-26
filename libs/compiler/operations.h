@@ -108,14 +108,8 @@ typedef enum OPERATION
 	OP_GOTO,				/**< Goto statement node */
 	OP_CONTINUE,			/**< Continue statement node */
 	OP_BREAK,				/**< Break statement node */
-	OP_RETURN_VOID,			/**< Void return statement node */
-	OP_RETURN_VAL,			/**< Valued return statement node */
-	OP_CREATE_DIRECT,		/**< Create direct thread node */
-	OP_EXIT_DIRECT,			/**< Exit direct thread node */
-	OP_PRINTID,				/**< Printid statement node */
-	OP_PRINT,				/**< Print statement node */
-	OP_GETID,				/**< Getid statement node */
-	OP_PRINTF,				/**< Printf statement node */
+	OP_RETURN,				/**< Return statement node */
+	OP_THREAD,				/**< Create direct thread node */
 
 	// Declarations
 	OP_DECL_ID,				/**< Identifier declaration node */
@@ -126,7 +120,6 @@ typedef enum OPERATION
 	OP_STRUCT_INIT,			/**< Struct inition node */
 
 	// End nodes
-	OP_BLOCK_END,			/**< End of block node */
 	OP_DECL_STRUCT_END,		/**< End of struct declaration node */
 
 	// Expressions
