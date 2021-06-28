@@ -814,6 +814,7 @@ static void operand(information *const info, node *const nd)
 			const item_t args = node_get_arg(nd, 0);
 			item_t parameters[128];
 			answer_t parameters_type[128];
+			item_t parameters_value_type[128];
 
 			node_set_next(nd);
 			node_set_next(nd); // OP_IDENT
@@ -823,6 +824,7 @@ static void operand(information *const info, node *const nd)
 				expression(info, nd);
 				// TODO: сделать параметры других типов (логическое)
 				parameters_type[i] = info->answer_type;
+				parameters_value_type[i] = info->answer_value_type;
 				if (info->answer_type == AREG)
 				{
 					parameters[i] = info->answer_reg;
@@ -857,7 +859,8 @@ static void operand(information *const info, node *const nd)
 					uni_printf(info->io, ", ");
 				}
 
-				uni_printf(info->io, "i32 signext ");
+				type_to_io(info, parameters_value_type[i]);
+				uni_printf(info->io, " signext ");
 				if (parameters_type[i] == AREG)
 				{
 					uni_printf(info->io, "%%.");
@@ -1993,16 +1996,22 @@ static int codegen(information *const info)
 				for (item_t i = 0; i < parameters; i++)
 				{
 					uni_printf(info->io, i == 0 ? "" : ", ");
-					type_to_io(info, mode_integer);
+					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
 				}
 				uni_printf(info->io, ") {\n");
 
 				for (item_t i = 0; i < parameters; i++)
 				{
-					uni_printf(info->io, " %%var.%" PRIitem " = alloca i32, align 4\n"
+					uni_printf(info->io, " %%var.%" PRIitem " = alloca "
 						, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
-					uni_printf(info->io, " store i32 %%%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
-						, i, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
+					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->io, ", align 4\n");
+
+					uni_printf(info->io, " store ");
+					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->io, " %%%" PRIitem ", ", i);
+					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->io, "* %%var.%" PRIitem ", align 4\n", ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
 				}
 
 				node_set_next(&root);
