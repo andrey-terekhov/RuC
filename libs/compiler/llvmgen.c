@@ -1986,7 +1986,9 @@ static int codegen(information *const info)
 
 static void structs_declaration(information *const info)
 {
-	for (size_t i = 0; i < vector_size(&info->sx->modes); i++)
+	const size_t modes_size = vector_size(&info->sx->modes);
+
+	for (size_t i = 0; i < modes_size; i++)
 	{
 		if (mode_is_struct(info->sx, i) && i != 2)
 		{
