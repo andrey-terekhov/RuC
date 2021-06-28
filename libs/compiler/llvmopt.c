@@ -55,28 +55,6 @@ typedef struct information
 } information;
 
 
-static inline void struct_declaration(information *const info, size_t displ, size_t mode_ref)
-{
-	uni_printf(info->io, "%%struct_opt.%zi = type { ", displ);
-
-	const size_t fields_number = (size_t)mode_get(info->sx, mode_ref + 2);
-	for (size_t i = 0; i < fields_number; i += 2)
-	{
-		switch (mode_get(info->sx, mode_ref + 3 + i))
-		{
-			case mode_integer:
-				uni_printf(info->io, "%si32", i == 0 ? "" : ", ");
-				break;
-
-			default:
-			break;
-		}
-	}
-
-	uni_printf(info->io, " }\n");
-}
-
-
 static inline int stack_push(information *const info, node_info *const nd)
 {
 	if (info->stack_size == MAX_STACK_SIZE)
@@ -386,7 +364,6 @@ static int node_recursive(information *const info, node *const nd)
 				info->was_printf = 1;
 			}
 			break;
-
 			case OP_EXPR_END:
 			{
 				if (info->slice_depth != 0)
@@ -405,18 +382,6 @@ static int node_recursive(information *const info, node *const nd)
 					slice_info->depth = info->slice_depth;
 					stack_push(info, slice_info);
 					info->slice_depth = 0;
-				}
-			}
-			break;
-
-			case OP_DECL_ID:
-			{
-				const size_t displ = (size_t)node_get_arg(&child, 0);
-				const size_t elem_type = (size_t)node_get_arg(&child, 1);
-
-				if (mode_get(info->sx, elem_type) == mode_struct)
-				{
-					struct_declaration(info, displ, elem_type);
 				}
 			}
 			break;
