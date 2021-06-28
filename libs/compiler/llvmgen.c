@@ -812,17 +812,30 @@ static void operand(information *const info, node *const nd)
 		case OP_CALL1:
 		{
 			const item_t args = node_get_arg(nd, 0);
+			item_t parameters[128];
+			answer_t parameters_type[128];
 
 			node_set_next(nd);
+			node_set_next(nd); // OP_IDENT
 			for (item_t i = 0; i < args; i++)
 			{
+				info->variable_location = LFREE;
 				expression(info, nd);
+				// TODO: сделать параметры других типов (логическое)
+				parameters_type[i] = info->answer_type;
+				if (info->answer_type == AREG)
+				{
+					parameters[i] = info->answer_reg;
+				}
+				else // ACONST
+				{
+					parameters[i] = info->answer_const;
+				}
 			}
 
 			const size_t ref_ident = (size_t)node_get_arg(nd, 0);
 			const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
 
-			node_set_next(nd); // OP_IDENT
 			node_set_next(nd); // OP_CALL2
 
 			if (func_type != mode_void)
@@ -836,7 +849,21 @@ static void operand(information *const info, node *const nd)
 			type_to_io(info, func_type);
 			uni_printf(info->io, " @func%zi(", ref_ident);
 
-			// тут будет ещё перечисление аргументов
+			// перечисление аргументов TODO: ввести другие типы
+			for (item_t i = 0; i < args; i++)
+			{
+				if (i != 0)
+				{
+					uni_printf(info->io, ", ");
+				}
+
+				uni_printf(info->io, "i32 signext ");
+				if (parameters_type[i] == AREG)
+				{
+					uni_printf(info->io, "%%.");
+				}
+				uni_printf(info->io, "%" PRIitem, parameters[i]);
+			}
 			uni_printf(info->io, ")\n");
 		}
 		break;
@@ -1948,6 +1975,7 @@ static int codegen(information *const info)
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
 				const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
+				const item_t parameters = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 2);
 				info->was_dynamic = 0;
 
 				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
@@ -1960,7 +1988,22 @@ static int codegen(information *const info)
 					type_to_io(info, func_type);
 					uni_printf(info->io, " @func%zi(", ref_ident);
 				}
+
+				// TODO: пока параметры только типа int, потом надо сделать поодержку других типов
+				for (item_t i = 0; i < parameters; i++)
+				{
+					uni_printf(info->io, i == 0 ? "" : ", ");
+					type_to_io(info, mode_integer);
+				}
 				uni_printf(info->io, ") {\n");
+
+				for (item_t i = 0; i < parameters; i++)
+				{
+					uni_printf(info->io, " %%var.%" PRIitem " = alloca i32, align 4\n"
+						, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->io, " store i32 %%%" PRIitem ", i32* %%var.%" PRIitem ", align 4\n"
+						, i, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
+				}
 
 				node_set_next(&root);
 				block(info, &root);
