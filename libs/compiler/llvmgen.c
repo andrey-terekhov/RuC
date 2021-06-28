@@ -217,19 +217,23 @@ static bool is_array_operation(const item_t operation)
 	}
 }
 
-static void type_to_io(universal_io *const io, const item_t type)
+static void type_to_io(information *const info, const item_t type)
 {
 	if (mode_is_int(type))
 	{
-		uni_printf(io, "i32");
+		uni_printf(info->io, "i32");
 	}
 	else if (mode_is_float(type))
 	{
-		uni_printf(io, "double");
+		uni_printf(info->io, "double");
 	}
 	else if (mode_is_void(type))
 	{
-		uni_printf(io, "void");
+		uni_printf(info->io, "void");
+	}
+	else if (mode_is_struct(info->sx, type))
+	{
+		uni_printf(info->io, "%%struct_opt.%" PRIitem, type);
 	}
 }
 
@@ -430,7 +434,7 @@ static void to_code_operation_reg_reg(information *const info, const item_t oper
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
 	uni_printf(info->io, " ");
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 	uni_printf(info->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
@@ -470,9 +474,9 @@ static void to_code_load(information *const info, const item_t result, const ite
 	, const int is_array)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = load ", result);
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 	uni_printf(info->io, ", ");
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
@@ -480,9 +484,9 @@ static inline void to_code_store_reg(information *const info, const item_t reg, 
 	, const int is_array)
 {
 	uni_printf(info->io, " store ");
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 	uni_printf(info->io, " %%.%" PRIitem ", ", reg);
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
@@ -536,7 +540,7 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	{
 		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
 	}
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 
 	for (size_t i = 1; i <= dim; i++)
 	{
@@ -558,7 +562,7 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 		to_alloc = info->register_num++;
 	}
 	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 	uni_printf(info->io, ", i32 %%.%" PRIitem ", align 4\n", to_alloc);
 }
 
@@ -591,7 +595,7 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 		{
 			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
 		}
-		type_to_io(info->io, type);
+		type_to_io(info, type);
 
 		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
@@ -603,7 +607,7 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 		{
 			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
 		}
-		type_to_io(info->io, type);
+		type_to_io(info, type);
 
 		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
@@ -621,16 +625,16 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 	}
 	else if (cur_dimension == dimensions - 1)
 	{
-		type_to_io(info->io, type);
+		type_to_io(info, type);
 		uni_printf(info->io, ", ");
-		type_to_io(info->io, type);
+		type_to_io(info, type);
 		uni_printf(info->io, "* %%dynarr.%" PRIitem, displ);
 	}
 	else
 	{
-		type_to_io(info->io, type);
+		type_to_io(info, type);
 		uni_printf(info->io, ", ");
-		type_to_io(info->io, type);
+		type_to_io(info, type);
 		uni_printf(info->io, "* %%.%" PRIitem, prev_slice);
 	}
 
@@ -828,7 +832,7 @@ static void operand(information *const info, node *const nd)
 				info->answer_reg = info->register_num++;
 			}
 			uni_printf(info->io, " call ");
-			type_to_io(info->io, func_type);
+			type_to_io(info, func_type);
 			uni_printf(info->io, " @func%zi(", ref_ident);
 
 			// тут будет ещё перечисление аргументов
@@ -1751,7 +1755,7 @@ static void statement(information *const info, node *const nd)
 			else if (info->answer_type == AREG)
 			{
 				uni_printf(info->io, " ret ");
-				type_to_io(info->io, info->answer_value_type);
+				type_to_io(info, info->answer_value_type);
 				uni_printf(info->io, " %%.%" PRIitem "\n", info->answer_reg);
 			}
 			node_set_next(nd); // OP_RETURN_VOID
@@ -1796,7 +1800,7 @@ static void statement(information *const info, node *const nd)
 			for (item_t i = 0; i < N; i++)
 			{
 				uni_printf(info->io, ", ");
-				type_to_io(info->io, args_type[i]);
+				type_to_io(info, args_type[i]);
 				uni_printf(info->io, " signext %%.%" PRIitem, args[i]);
 			}
 
@@ -1903,17 +1907,10 @@ static void block(information *const info, node *const nd)
 
 				if (N == 0) // обычная переменная int a; или struct point p;
 				{
-					if (elem_type == mode_integer || elem_type == mode_float)
-					{
-						uni_printf(info->io, " %%var.%" PRIitem " = alloca ", displ);
-						type_to_io(info->io, elem_type);
-						uni_printf(info->io, ", align 4\n");
-					}
-					else if (mode_is_struct(info->sx, elem_type))
-					{
-						uni_printf(info->io, " %%struct.%" PRIitem " = alloca %%struct_opt.%" PRIitem ", align 4\n"
-							, displ, displ);
-					}
+					uni_printf(info->io, " %%var.%" PRIitem " = alloca ", displ);
+					type_to_io(info, elem_type);
+					uni_printf(info->io, ", align 4\n");
+
 					info->variable_location = LMEM;
 					info->request_reg = displ;
 				}
@@ -1959,7 +1956,7 @@ static int codegen(information *const info)
 				else
 				{
 					uni_printf(info->io, "define ");
-					type_to_io(info->io, func_type);
+					type_to_io(info, func_type);
 					uni_printf(info->io, " @func%zi(", ref_ident);
 				}
 				uni_printf(info->io, ") {\n");
@@ -1986,6 +1983,27 @@ static int codegen(information *const info)
 	}
 
 	return 0;
+}
+
+static void structs_declaration(information *const info)
+{
+	for (size_t i = 0; i < vector_size(&info->sx->modes); i++)
+	{
+		if (mode_is_struct(info->sx, i) && i != 2)
+		{
+			uni_printf(info->io, "%%struct_opt.%zi = type { ", i);
+
+			const size_t fields_number = (size_t)mode_get(info->sx, i + 2);
+			for (size_t j = 0; j < fields_number; j += 2)
+			{
+				uni_printf(info->io, j == 0 ? "" : ", ");
+				type_to_io(info, mode_get(info->sx, i + 3 + j));
+			}
+
+			uni_printf(info->io, " }\n");
+		}
+	}
+	uni_printf(info->io, " \n");
 }
 
 
@@ -2018,6 +2036,8 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	info.answer_reg = 0;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
+
+	structs_declaration(&info);
 
 	const int ret = codegen(&info);
 
