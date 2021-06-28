@@ -822,6 +822,7 @@ static void operand(information *const info, node *const nd)
 			const size_t ref_ident = (size_t)node_get_arg(nd, 0);
 			const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
 
+			node_set_next(nd); // OP_IDENT
 			node_set_next(nd); // OP_CALL2
 
 			if (func_type != mode_void)

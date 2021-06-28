@@ -63,6 +63,7 @@ static inline int stack_push(information *const info, node_info *const nd)
 	}
 
 	info->stack[info->stack_size++] = *nd;
+	printf("%i %i\n", node_get_type(nd->ref_node), nd->depth);
 	return 0;
 }
 
@@ -437,8 +438,12 @@ static int node_recursive(information *const info, node *const nd)
 							has_error |= transposition(&nd_info, &log_info);
 						}
 
+						tables_and_tree("tree00.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
+						printf("here2 %i %i\n", node_get_type(second->ref_node), second->depth);
+						printf("here1 %i %i\n", node_get_type(first->ref_node), first->depth);
 						// перестановка со вторым операндом
 						has_error |= transposition(second, &nd_info);
+						tables_and_tree("tree01.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
 
 						// надо переставить second с родителем
 						if (node_get_type(second->ref_node) == OP_AD_LOG_OR
