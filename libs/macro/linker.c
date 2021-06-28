@@ -73,11 +73,7 @@ linker linker_create(workspace *const ws)
 	lk.sources = ws_get_files_num(ws);
 
 	lk.included = vector_create(MAX_PATHS);
-
-	for (size_t i = 0; i < MAX_PATHS; i++)
-	{
-		vector_add(&lk.included, 0);
-	}
+	vector_increase(&lk.included, MAX_PATHS);
 
 	lk.current = SIZE_MAX;
 
