@@ -63,7 +63,6 @@ static inline int stack_push(information *const info, node_info *const nd)
 	}
 
 	info->stack[info->stack_size++] = *nd;
-	printf("%i %i\n", node_get_type(nd->ref_node), nd->depth);
 	return 0;
 }
 
@@ -102,7 +101,7 @@ static int transposition(node_info *const expr, node_info *const cur)
 	node_copy(&node_to_order, expr->ref_node);
 	for (size_t i = 1; i < expr->depth; i++)
 	{
-		node_to_order = node_get_child(&node_to_order, 0);
+		node_to_order = node_get_next(&node_to_order);
 
 		node_order(cur->ref_node, &node_to_order);
 
@@ -386,6 +385,18 @@ static int node_recursive(information *const info, node *const nd)
 				}
 			}
 			break;
+			case OP_CALL2:
+			{
+				const item_t ref_ident = node_get_arg(&child, 0);
+				const item_t ref_mode = ident_get_mode(info->sx, (size_t)ref_ident);
+				const item_t parameters = mode_get(info->sx, ref_mode + 2);
+
+				for (item_t i = 0; i < parameters; i++)
+				{
+					stack_pop(info);
+				}
+			}
+			break;
 
 			default:
 			{
@@ -412,7 +423,6 @@ static int node_recursive(information *const info, node *const nd)
 						// перестановка с операндом
 						has_error |= transposition(operand, &nd_info);
 
-						// TODO: раньше не всегда, но работало, сейчас нет, надо разобраться
 						if (node_get_type(operand->ref_node) == OP_CALL1)
 						{
 							node tmp = child;
@@ -438,12 +448,8 @@ static int node_recursive(information *const info, node *const nd)
 							has_error |= transposition(&nd_info, &log_info);
 						}
 
-						tables_and_tree("tree00.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
-						printf("here2 %i %i\n", node_get_type(second->ref_node), second->depth);
-						printf("here1 %i %i\n", node_get_type(first->ref_node), first->depth);
 						// перестановка со вторым операндом
 						has_error |= transposition(second, &nd_info);
-						tables_and_tree("tree01.txt", &(info->sx->identifiers), &(info->sx->modes), &(info->sx->tree));
 
 						// надо переставить second с родителем
 						if (node_get_type(second->ref_node) == OP_AD_LOG_OR
