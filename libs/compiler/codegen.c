@@ -438,7 +438,7 @@ static void identifier(virtual *const vm, node *const nd)
 		}
 		if (all) // int a = или struct{} a =
 		{
-			if (type > 0 && type_get(vm->sx, (size_t)type) == type_struct)
+			if (type > 0 && type_get(vm->sx, (size_t)type) == TYPE_STRUCTURE)
 			{
 				node_set_next(nd);
 				structure(vm, nd);
@@ -451,7 +451,7 @@ static void identifier(virtual *const vm, node *const nd)
 			{
 				expression(vm, nd, 0);
 
-				mem_add(vm, type == type_float ? IC_ASSIGN_R_V : IC_ASSIGN_V);
+				mem_add(vm, type == TYPE_FLOATING ? IC_ASSIGN_R_V : IC_ASSIGN_V);
 				mem_add(vm, old_displ);
 			}
 		}

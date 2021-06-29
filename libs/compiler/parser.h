@@ -284,17 +284,6 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
  */
 size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode);
 
-/**
- *	Add a new record to modes table
- *
- *	@param	prs			Parser structure
- *	@param	mode		@c mode_pointer or @c mode_array
- *	@param	element		Type of element
- *
- *	@return	Index of the new record in modes table, @c SIZE_MAX on failure
- */
-item_t to_modetab(parser *const prs, const item_t mode, const item_t element);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -107,21 +107,32 @@ static void parse_labeled_statement(parser *const prs, node *const parent)
  */
 static void parse_case_statement(parser *const prs, node *const parent)
 {
-	if (!prs->is_in_switch)
-	{
-		parser_error(prs, case_not_in_switch);
-	}
+	const location_t case_location = token_consume(prs);
+	node case_node = node_add_child(parent, OP_CASE);
 
-	token_consume(prs); // kw_case
-	node nd = node_add_child(parent, OP_CASE);
-	const item_t condition_type = parse_constant_expression(prs, &nd);
-	if (!type_is_integer(condition_type) && !type_is_undefined(condition_type))
+	node_copy(&prs->nd, &case_node);
+	const expression condition = parse_constant_expression(prs);
+	if (!condition.is_valid)
 	{
-		parser_error(prs, float_in_switch);
+		token_skip_until(prs, TK_COLON | TK_R_BRACE);
+		return;
 	}
 
 	token_expect_and_consume(prs, TK_COLON, expected_colon_after_case);
-	parse_statement(prs, &nd);
+	parse_statement(prs, &case_node);
+
+	if (!prs->is_in_switch)
+	{
+		semantics_error(prs, case_location, case_not_in_switch);
+		return;
+	}
+
+	const item_t condition_type = node_get_arg(&condition.nd, 0);
+	if (!type_is_integer(condition_type))
+	{
+		semantics_error(prs, condition.location, typecheck_switch_requires_integer);
+	}
+
 }
 
 /**
@@ -135,15 +146,16 @@ static void parse_case_statement(parser *const prs, node *const parent)
  */
 static void parse_default_statement(parser *const prs, node *const parent)
 {
+	const location_t default_location = token_consume(prs);
+	token_expect_and_consume(prs, TK_COLON, expected_colon_after_default);
+
+	node default_node = node_add_child(parent, OP_DEFAULT);
+	parse_statement(prs, &default_node);
+
 	if (!prs->is_in_switch)
 	{
-		parser_error(prs, default_not_in_switch);
+		semantics_error(prs, default_location, default_not_in_switch);
 	}
-
-	token_consume(prs); // kw_default
-	node nd = node_add_child(parent, OP_DEFAULT);
-	token_expect_and_consume(prs, TK_COLON, expected_colon_after_default);
-	parse_statement(prs, &nd);
 }
 
 /**
@@ -181,13 +193,13 @@ static void parse_expression_statement(parser *const prs, node *const parent)
  */
 static void parse_if_statement(parser *const prs, node *const parent)
 {
-	const location_t if_location = token_consume(prs);
+	token_consume(prs);
 	node if_node = node_add_child(parent, OP_IF);
 	node_add_arg(&if_node, false); // has_else
 
 	if (prs->token != TK_L_PAREN)
 	{
-		parser_error(prs, expected_l_paren, TK_IF);
+		parser_error(prs, expected_l_paren_after_if);
 		token_skip_until(prs, TK_SEMICOLON);
 		return;
 	}
@@ -213,9 +225,9 @@ static void parse_if_statement(parser *const prs, node *const parent)
 	parse_statement(prs, &if_node);
 
 	const item_t condition_type = node_get_arg(&condition.nd, 0);
-	if (!type_is_scalar(condition_type))
+	if (!type_is_scalar(prs->sx, condition_type))
 	{
-		parser_error(prs, typecheck_statement_requires_scalar);
+		semantics_error(prs, condition.location, typecheck_statement_requires_scalar);
 	}
 
 	if (token_try_consume(prs, TK_ELSE))
@@ -236,12 +248,12 @@ static void parse_if_statement(parser *const prs, node *const parent)
  */
 static void parse_switch_statement(parser *const prs, node *const parent)
 {
-	const location_t switch_location = token_consume(prs);
+	token_consume(prs);
 	node switch_node = node_add_child(parent, OP_SWITCH);
 
 	if (prs->token != TK_L_PAREN)
 	{
-		parser_error(prs, expected_l_paren, TK_SWITCH);
+		parser_error(prs, expected_l_paren_after_switch);
 		token_skip_until(prs, TK_SEMICOLON);
 		return;
 	}
@@ -272,7 +284,7 @@ static void parse_switch_statement(parser *const prs, node *const parent)
 	const item_t condition_type = node_get_arg(&condition.nd, 0);
 	if (!type_is_integer(condition_type))
 	{
-		parser_error(prs, float_in_switch);
+		semantics_error(prs, condition.location, typecheck_switch_requires_integer);
 	}
 }
 
@@ -287,12 +299,12 @@ static void parse_switch_statement(parser *const prs, node *const parent)
  */
 static void parse_while_statement(parser *const prs, node *const parent)
 {
-	const location_t while_location = token_consume(prs);
+	token_consume(prs);
 	node while_node = node_add_child(parent, OP_WHILE);
 
 	if (prs->token != TK_L_PAREN)
 	{
-		parser_error(prs, expected_l_paren, TK_WHILE);
+		parser_error(prs, expected_l_paren_after_while);
 		token_skip_until(prs, TK_SEMICOLON);
 		return;
 	}
@@ -321,9 +333,9 @@ static void parse_while_statement(parser *const prs, node *const parent)
 	prs->is_in_loop = old_in_loop;
 
 	const item_t condition_type = node_get_arg(&condition.nd, 0);
-	if (!type_is_scalar(condition_type))
+	if (!type_is_scalar(prs->sx, condition_type))
 	{
-		parser_error(prs, typecheck_statement_requires_scalar);
+		semantics_error(prs, condition.location, typecheck_statement_requires_scalar);
 	}
 }
 
@@ -355,7 +367,7 @@ static void parse_do_statement(parser *const prs, node *const parent)
 
 	if (prs->token != TK_L_PAREN)
 	{
-		parser_error(prs, expected_l_paren, TK_WHILE);
+		parser_error(prs, expected_l_paren_after_while);
 		token_skip_until(prs, TK_SEMICOLON);
 		return;
 	}
@@ -380,9 +392,9 @@ static void parse_do_statement(parser *const prs, node *const parent)
 	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 
 	const item_t condition_type = node_get_arg(&condition.nd, 0);
-	if (!type_is_scalar(condition_type))
+	if (!type_is_scalar(prs->sx, condition_type))
 	{
-		parser_error(prs, typecheck_statement_requires_scalar);
+		semantics_error(prs, condition.location, typecheck_statement_requires_scalar);
 	}
 }
 
@@ -398,55 +410,99 @@ static void parse_do_statement(parser *const prs, node *const parent)
  */
 static void parse_for_statement(parser *const prs, node *const parent)
 {
-	token_consume(prs); // kw_for
-	node nd = node_add_child(parent, OP_FOR);
+	token_consume(prs);
+	node for_node = node_add_child(parent, OP_FOR);
 
-	node_add_arg(&nd, 0); // ref_inition
-	node_add_arg(&nd, 0); // ref_condition
-	node_add_arg(&nd, 0); // ref_increment
-	node_add_arg(&nd, 1); // ref_statement
-	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_for);
+	if (!token_try_consume(prs, TK_L_PAREN))
+	{
+		parser_error(prs, expected_l_paren_after_for);
+		token_skip_until(prs, TK_SEMICOLON);
+		return;
+	}
 
 	item_t old_displ;
 	item_t old_lg;
 	scope_block_enter(prs->sx, &old_displ, &old_lg);
-	if (!token_try_consume(prs, TK_SEMICOLON))
+
+	if (token_try_consume(prs, TK_SEMICOLON))
 	{
-		node_set_arg(&nd, 0, 1); // ref_inition
-		if (is_declaration_specifier(prs))
+		node_add_child(&for_node, OP_NOP);
+	}
+	else if (is_declaration_specifier(prs))
+	{
+		parse_declaration_inner(prs, &for_node);
+	}
+	else
+	{
+		node_copy(&prs->nd, &for_node);
+		expression inition = parse_expression(prs);
+
+		if (!inition.is_valid)
 		{
-			parse_declaration_inner(prs, &nd);
+			token_skip_until(prs, TK_SEMICOLON);
+			return;
 		}
-		else
-		{
-			parse_expression(prs, &nd);
-			token_expect_and_consume(prs, TK_SEMICOLON, no_semicolon_in_for);
-		}
+
+		token_expect_and_consume(prs, TK_SEMICOLON, expected_semicolon_in_for);
 	}
 
-	if (!token_try_consume(prs, TK_SEMICOLON))
+	if (token_try_consume(prs, TK_SEMICOLON))
 	{
-		node_set_arg(&nd, 1, 1); // ref_condition
-		parse_condition(prs, &nd);
-		token_expect_and_consume(prs, TK_SEMICOLON, no_semicolon_in_for);
+		node_add_child(&for_node, OP_NOP);
+	}
+	else
+	{
+		node_copy(&prs->nd, &for_node);
+		expression condition = parse_expression(prs);
+
+		if (!condition.is_valid)
+		{
+			token_skip_until(prs, TK_SEMICOLON);
+			return;
+		}
+
+		const item_t condition_type = node_get_arg(&condition.nd, 0);
+		if (!type_is_scalar(prs->sx, condition_type))
+		{
+			semantics_error(prs, condition.location, typecheck_statement_requires_scalar);
+			token_skip_until(prs, TK_SEMICOLON);
+			return;
+		}
+
+		token_expect_and_consume(prs, TK_SEMICOLON, expected_semicolon_in_for);
 	}
 
-	if (!token_try_consume(prs, TK_R_PAREN))
+	if (token_try_consume(prs, TK_R_PAREN))
 	{
-		node_set_arg(&nd, 2, 1); // ref_increment
-		parse_expression(prs, &nd);
-		token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_for);
+		node_add_child(&for_node, OP_NOP);
+	}
+	else
+	{
+		node_copy(&prs->nd, &for_node);
+		expression increment = parse_expression(prs);
+
+		if (!increment.is_valid)
+		{
+			token_skip_until(prs, TK_SEMICOLON);
+			return;
+		}
+
+		if (!token_try_consume(prs, TK_R_PAREN))
+		{
+			parser_error(prs, expected_r_paren);
+			return;
+		}
 	}
 
 	const bool old_in_loop = prs->is_in_loop;
 	prs->is_in_loop = true;
 	if (prs->token == TK_L_BRACE)
 	{
-		parse_statement_compound(prs, &nd, FORBLOCK);
+		parse_statement_compound(prs, &for_node, FORBLOCK);
 	}
 	else
 	{
-		parse_statement(prs, &nd);
+		parse_statement(prs, &for_node);
 	}
 
 	prs->is_in_loop = old_in_loop;
@@ -466,7 +522,7 @@ static void parse_goto_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_goto
 	node nd = node_add_child(parent, OP_GOTO);
-	token_expect_and_consume(prs, TK_IDENTIFIER, no_ident_after_goto);
+	token_expect_and_consume(prs, TK_IDENTIFIER, expected_ident_after_goto);
 	const size_t repr = prs->lxr->repr;
 
 	for (size_t i = 0; i < vector_size(&prs->labels); i += 2)
@@ -579,7 +635,7 @@ static void parse_return_statement(parser *const prs, node *const parent)
 	{
 		parser_error(prs, notvoidret_in_void_func);
 	}
-	else if (return_type != expr_type && !(type_is_float(return_type) && type_is_integer(expr_type)))
+	else if (return_type != expr_type && !(type_is_floating(return_type) && type_is_integer(expr_type)))
 	{
 		parser_error(prs, bad_type_in_ret);
 	}

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "tokens.h"
+#include <stdbool.h>
 #include <stdio.h>
 
 
@@ -136,6 +137,7 @@ typedef enum OPERATION
 
 unary_t token_to_unary(const token_t token);
 binary_t token_to_binary(const token_t token);
+bool operation_is_assignment(const binary_t operator);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -168,7 +168,7 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 		case UN_PREINC:
 		case UN_PREDEC:
 		{
-			if (!type_is_arithmetical(operand_type))
+			if (!type_is_arithmetic(operand_type))
 			{
 				semantics_error(prs, loc, typecheck_illegal_increment, op_kind);
 				return expr_broken();
@@ -192,7 +192,7 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 				return expr_broken();
 			}
 
-			result_type = (item_t)type_add(prs->sx, (item_t[]){ type_pointer, operand_type }, 2);
+			result_type = (item_t)type_add(prs->sx, (item_t[]){ TYPE_POINTER, operand_type }, 2);
 			break;
 		}
 
@@ -212,7 +212,7 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 		case UN_PLUS:
 		case UN_MINUS:
 		{
-			if (!type_is_arithmetical(operand_type))
+			if (!type_is_arithmetic(operand_type))
 			{
 				semantics_error(prs, loc, typecheck_unary_expr, operand_type);
 				return expr_broken();
@@ -230,25 +230,21 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 				return expr_broken();
 			}
 
-			result_type = type_integer;
+			result_type = TYPE_INTEGER;
 			break;
 		}
 
 		case UN_LOGNOT:
 		{
-			if (!type_is_scalar(operand_type))
+			if (!type_is_scalar(prs->sx, operand_type))
 			{
 				semantics_error(prs, loc, typecheck_unary_expr, operand_type);
 				return expr_broken();
 			}
 
-			result_type = type_integer;
+			result_type = TYPE_INTEGER;
 			break;
 		}
-
-		default:
-			// Unreachable
-			break;
 	}
 
 	node unary_node = create_node(prs, OP_UNARY);
@@ -283,13 +279,54 @@ static expression make_binary_expression(parser *const prs, expression left, exp
 		return expr_broken();
 	}
 
-	const item_t fst_type = node_get_arg(&left.nd, 0);
-	const item_t snd_type = node_get_arg(&right.nd, 0);
+	const item_t left_type = node_get_arg(&left.nd, 0);
+	const item_t right_type = node_get_arg(&right.nd, 0);
 
-	const item_t type = type_undefined;
+	if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
+	{
+		semantics_error(prs, operator_location, typecheck_binary_expr);
+		return expr_broken();
+	}
+
+	item_t result_type;
+	switch (operator_kind)
+	{
+		case BIN_REM:
+		case BIN_LOG_OR:
+		case BIN_LOG_AND:
+		case BIN_OR:
+		case BIN_AND:
+		case BIN_SHL:
+		case BIN_SHR:
+		case BIN_REM_ASSIGN:
+		case BIN_OR_ASSIGN:
+		case BIN_AND_ASSIGN:
+		case BIN_SHL_ASSIGN:
+		case BIN_SHR_ASSIGN:
+		{
+			if (!type_is_integer(left_type) || !type_is_integer(right_type))
+			{
+				semantics_error(prs, operator_location, int_op_for_float);
+				return expr_broken();
+			}
+
+			result_type = TYPE_INTEGER;
+			break;
+		}
+
+		default:
+			result_type = type_is_floating(left_type) ? TYPE_FLOATING : right_type;
+			break;
+	}
+
+	if (operation_is_assignment(operator_kind) && (node_get_arg(&left.nd, 1) != LVALUE))
+	{
+		semantics_error(prs, operator_location, unassignable);
+		return expr_broken();
+	}
 
 	node binary_node = create_node(prs, OP_BINARY);
-	node_add_arg(&binary_node, type);				// Тип значения
+	node_add_arg(&binary_node, result_type);		// Тип значения
 	node_add_arg(&binary_node, RVALUE);				// Вид значения
 	node_add_arg(&binary_node, operator_kind);		// Вид оператора
 	node_set_child(&binary_node, &left.nd);			// Второй операнд
@@ -317,15 +354,31 @@ static expression make_ternary_expression(parser *const prs, expression left, ex
 		return expr_broken();
 	}
 
-	const item_t fst_type = node_get_arg(&left.nd, 0);
-	const item_t snd_type = node_get_arg(&middle.nd, 0);
-	const item_t trd_type = node_get_arg(&right.nd, 0);
+	const item_t left_type = node_get_arg(&left.nd, 0);
+	const item_t middle_type = node_get_arg(&middle.nd, 0);
+	const item_t right_type = node_get_arg(&right.nd, 0);
 
-	const item_t type = type_undefined;
+	if (!type_is_scalar(prs->sx, left_type))
+	{
+		semantics_error(prs, left.location, typecheck_statement_requires_scalar);
+		return expr_broken();
+	}
 
+	item_t result_type = middle_type;
+
+	if ((type_is_floating(middle_type) && type_is_integer(right_type))
+		|| (type_is_integer(middle_type) && type_is_floating(right_type)))
+	{
+		result_type = TYPE_FLOATING;
+	}
+	else if (middle_type != right_type)
+	{
+		semantics_error(prs, colon_location, typecheck_cond_incompatible_operands);
+		return expr_broken();
+	}
 
 	node ternary_node = create_node(prs, OP_TERNARY);
-	node_add_arg(&ternary_node, type);				// Тип значения
+	node_add_arg(&ternary_node, result_type);		// Тип значения
 	node_add_arg(&ternary_node, RVALUE);			// Вид значения
 	node_set_child(&ternary_node, &left.nd);		// Первый операнд
 	node_set_child(&ternary_node, &middle.nd);		// Второй операнд
@@ -381,7 +434,7 @@ static expression parse_primary_expression(parser *const prs)
 			const location_t location = token_consume(prs);
 
 			node constant_node = create_node(prs, OP_CONSTANT);
-			node_add_arg(&constant_node, type_integer);		// Тип значения константы
+			node_add_arg(&constant_node, TYPE_INTEGER);		// Тип значения константы
 			node_add_arg(&constant_node, RVALUE);			// Вид значения константы
 			node_add_arg(&constant_node, value);			// Значение константы
 
@@ -395,7 +448,7 @@ static expression parse_primary_expression(parser *const prs)
 			const location_t location = token_consume(prs);
 
 			node constant_node = create_node(prs, OP_CONSTANT);
-			node_add_arg(&constant_node, type_float);		// Тип значения константы
+			node_add_arg(&constant_node, TYPE_FLOATING);		// Тип значения константы
 			node_add_arg(&constant_node, RVALUE);			// Вид значения константы
 			node_add_arg(&constant_node, value);			// Значение константы
 
@@ -406,7 +459,7 @@ static expression parse_primary_expression(parser *const prs)
 		{
 			const char32_t* string = prs->lxr->lexstr;
 			const size_t length = (size_t)prs->lxr->num;
-			const item_t type = (item_t)type_add(prs->sx, (item_t[]){ type_array, type_character }, 2);
+			const item_t type = type_array(prs->sx, TYPE_CHARACTER);
 			const location_t location = token_consume(prs);
 
 			node string_node = create_node(prs, OP_STRING);
@@ -543,7 +596,7 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 			const item_t actual_type = node_get_arg(&argument.nd, 0);
 
 			// Несовпадение типов может быть только в случае, когда параметр - double, а аргумент - целочисленный
-			if (expected_type != actual_type && !(type_is_float(expected_type) && type_is_integer(actual_type)))
+			if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
 			{
 				semantics_error(prs, argument.location, typecheck_convert_incompatible);
 			}
@@ -608,7 +661,7 @@ static expression parse_member_expression_suffix(parser *const prs, expression o
 
 	if (operator_token == TK_PERIOD)
 	{
-		if (!type_is_struct(prs->sx, operand_type))
+		if (!type_is_structure(prs->sx, operand_type))
 		{
 			semantics_error(prs, operator_location, typecheck_member_reference_struct);
 			return expr_broken();
@@ -645,7 +698,7 @@ static expression parse_member_expression_suffix(parser *const prs, expression o
 			return expr(select_node, (location_t){ operand.location.begin, member_location.end });
 		}
 
-		member_displ += (item_t)size_of(prs->sx, member_type);
+		member_displ += (item_t)type_size(prs->sx, member_type);
 	}
 
 	semantics_error(prs, member_location, no_member, repr_get_name(prs->sx, member_name));

@@ -128,24 +128,24 @@ static inline void type_init(syntax *const sx)
 	vector_increase(&sx->types, 1);
 	// занесение в types описателя struct {int numTh; int inf; }
 	vector_add(&sx->types, 0);
-	vector_add(&sx->types, type_struct);
+	vector_add(&sx->types, TYPE_STRUCTURE);
 	vector_add(&sx->types, 2);
 	vector_add(&sx->types, 4);
-	vector_add(&sx->types, type_integer);
+	vector_add(&sx->types, TYPE_INTEGER);
 	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "numTh"));
-	vector_add(&sx->types, type_integer);
+	vector_add(&sx->types, TYPE_INTEGER);
 	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "data"));
 
 	// занесение в types описателя функции void t_msg_send(struct msg_info m)
 	vector_add(&sx->types, 1);
-	vector_add(&sx->types, type_function);
-	vector_add(&sx->types, type_void);
+	vector_add(&sx->types, TYPE_FUNCTION);
+	vector_add(&sx->types, TYPE_VOID);
 	vector_add(&sx->types, 1);
 	vector_add(&sx->types, 2);
 
 	// занесение в types описателя функции void* interpreter(void* n)
 	vector_add(&sx->types, 9);
-	vector_add(&sx->types, type_function);
+	vector_add(&sx->types, TYPE_FUNCTION);
 	vector_add(&sx->types, type_void_pointer);
 	vector_add(&sx->types, 1);
 	vector_add(&sx->types, type_void_pointer);
@@ -156,7 +156,7 @@ static inline void type_init(syntax *const sx)
 static inline item_t get_static(syntax *const sx, const item_t type)
 {
 	const item_t old_displ = sx->displ;
-	sx->displ += sx->lg * size_of(sx, type);
+	sx->displ += sx->lg * type_size(sx, type);
 
 	if (sx->lg > 0)
 	{
@@ -182,7 +182,7 @@ static inline bool type_is_equal(const syntax *const sx, const size_t first, con
 	const item_t type = vector_get(&sx->types, first);
 
 	// Определяем, сколько полей надо сравнивать для различных типов записей
-	if (type == type_struct || type == type_function)
+	if (type == TYPE_STRUCTURE || type == TYPE_FUNCTION)
 	{
 		length = 2 + (size_t)vector_get(&sx->types, first + 2);
 	}
@@ -428,15 +428,6 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 }
 
 
-size_t size_of(const syntax *const sx, const item_t type)
-{
-	return type > 0 && type_get(sx, (size_t)type) == type_struct
-		? (size_t)type_get(sx, (size_t)type + 1)
-		: type_is_float(type)
-			? 2
-			: 1;
-}
-
 size_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 {
 	if (sx == NULL || record == NULL)
@@ -475,50 +466,92 @@ item_t type_get(const syntax *const sx, const size_t index)
 	return sx != NULL ? vector_get(&sx->types, index) : ITEM_MAX;
 }
 
-bool type_is_function(syntax *const sx, const item_t type)
+size_t type_size(const syntax *const sx, const item_t type)
 {
-	return type > 0 && type_get(sx, (size_t)type) == type_function;
-}
-
-bool type_is_array(syntax *const sx, const item_t type)
-{
-	return type > 0 && type_get(sx, (size_t)type) == type_array;
-}
-
-bool type_is_string(syntax *const sx, const item_t type)
-{
-	return type_is_array(sx, type) && type_get(sx, (size_t)type + 1) == type_character;
-}
-
-bool type_is_pointer(syntax *const sx, const item_t type)
-{
-	return type > 0 && type_get(sx, (size_t)type) == type_pointer;
-}
-
-bool type_is_struct(syntax *const sx, const item_t type)
-{
-	return type > 0 && type_get(sx, (size_t)type) == type_struct;
-}
-
-bool type_is_float(const item_t type)
-{
-	return type == type_float;
+	if (type_is_structure(sx, type))
+	{
+		return (size_t)type_get(sx, (size_t)type + 1);
+	}
+	else if (type_is_floating(type))
+	{
+		return 2;
+	}
+	else
+	{
+		return 1;
+	}
 }
 
 bool type_is_integer(const item_t type)
 {
-	return type == type_integer || type == type_character;
+	return type == TYPE_INTEGER || type == TYPE_CHARACTER;
+}
+
+bool type_is_floating(const item_t type)
+{
+	return type == TYPE_FLOATING;
+}
+
+bool type_is_arithmetic(const item_t type)
+{
+	return type_is_integer(type) || type_is_floating(type);
 }
 
 bool type_is_void(const item_t type)
 {
-	return type == type_void;
+	return type == TYPE_VOID;
 }
 
-bool type_is_undefined(const item_t type)
+bool type_is_array(const syntax *const sx, const item_t type)
 {
-	return type == type_undefined;
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_ARRAY;
 }
+
+bool type_is_structure(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_STRUCTURE;
+}
+
+bool type_is_function(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_FUNCTION;
+}
+
+bool type_is_pointer(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_POINTER;
+}
+
+bool type_is_scalar(const syntax *const sx, const item_t type)
+{
+	return type_is_arithmetic(type) || type_is_pointer(sx, type);
+}
+
+bool type_is_aggregate(const syntax *const sx, const item_t type)
+{
+	return type_is_array(sx, type) || type_is_structure(sx, type);
+}
+
+bool type_is_string(const syntax *const sx, const item_t type)
+{
+	return type_is_array(sx, type) && type_is_integer(type_get(sx, (size_t)type + 1));
+}
+
+bool type_is_struct_pointer(const syntax *const sx, const item_t type)
+{
+	return type_is_pointer(sx, type) && type_is_structure(sx, type_get(sx, (size_t)type + 1));
+}
+
+item_t type_array(syntax *const sx, const item_t type)
+{
+	return (item_t)type_add(sx, (item_t[]){ TYPE_ARRAY, type }, 2);
+}
+
+item_t type_pointer(syntax *const sx, const item_t type)
+{
+	return (item_t)type_add(sx, (item_t[]){ TYPE_POINTER, type }, 2);
+}
+
 
 
 size_t repr_reserve(syntax *const sx, const char32_t *const spelling)
