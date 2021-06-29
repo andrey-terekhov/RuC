@@ -1978,7 +1978,7 @@ static int codegen(information *const info)
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
 				const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
-				const item_t parameters = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 2);
+				const size_t parameters = (size_t)mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 2);
 				info->was_dynamic = 0;
 
 				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
@@ -1993,14 +1993,14 @@ static int codegen(information *const info)
 				}
 
 				// TODO: пока параметры только типа int, потом надо сделать поодержку других типов
-				for (item_t i = 0; i < parameters; i++)
+				for (size_t i = 0; i < parameters; i++)
 				{
 					uni_printf(info->io, i == 0 ? "" : ", ");
 					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
 				}
 				uni_printf(info->io, ") {\n");
 
-				for (item_t i = 0; i < parameters; i++)
+				for (size_t i = 0; i < parameters; i++)
 				{
 					uni_printf(info->io, " %%var.%" PRIitem " = alloca "
 						, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
