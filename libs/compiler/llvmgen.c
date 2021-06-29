@@ -1828,11 +1828,9 @@ static void statement(information *const info, node *const nd)
 		}
 		break;
 		case OP_GETID:
-			// здесь будет печать llvm для ввода
-			node_set_next(nd);
-			break;
+		// они будут сделаны в парсере через printf
 		case OP_PRINTID:
-			// здесь будет печать llvm для вывода
+		case OP_PRINT:
 			node_set_next(nd);
 			break;
 		case OP_PRINTF:
