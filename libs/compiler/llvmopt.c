@@ -391,7 +391,7 @@ static int node_recursive(information *const info, node *const nd)
 				const size_t ref_mode = (size_t)ident_get_mode(info->sx, (size_t)ref_ident);
 				const size_t parameters = (size_t)mode_get(info->sx, ref_mode + 2);
 
-				for (size_t i = 0; i < parameters; i++)
+				for (size_t j = 0; j < parameters; j++)
 				{
 					stack_pop(info);
 				}
