@@ -1762,8 +1762,10 @@ static void statement(information *const info, node *const nd)
 		break;
 		case OP_LABEL:
 		{
+			const item_t label = node_get_arg(nd, 0) < 0 ? node_get_arg(nd, 0) : -node_get_arg(nd, 0);
 			node_set_next(nd);
-			statement(info, nd);
+			to_code_unconditional_branch(info, label);
+			to_code_label(info, label);
 		}
 		break;
 		case OP_BREAK:
@@ -1779,8 +1781,12 @@ static void statement(information *const info, node *const nd)
 		}
 		break;
 		case OP_GOTO:
+		{
+			const item_t label = node_get_arg(nd, 0) < 0 ? node_get_arg(nd, 0) : -node_get_arg(nd, 0);
 			node_set_next(nd);
-			break;
+			to_code_unconditional_branch(info, label);
+		}
+		break;
 		case OP_RETURN_VOID:
 		{
 			if (info->was_dynamic)
