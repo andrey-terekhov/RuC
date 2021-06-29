@@ -851,7 +851,6 @@ static void operand(information *const info, node *const nd)
 			type_to_io(info, func_type);
 			uni_printf(info->io, " @func%zi(", ref_ident);
 
-			// перечисление аргументов TODO: ввести другие типы
 			for (item_t i = 0; i < args; i++)
 			{
 				if (i != 0)
@@ -1992,7 +1991,6 @@ static int codegen(information *const info)
 					uni_printf(info->io, " @func%zi(", ref_ident);
 				}
 
-				// TODO: пока параметры только типа int, потом надо сделать поодержку других типов
 				for (size_t i = 0; i < parameters; i++)
 				{
 					uni_printf(info->io, i == 0 ? "" : ", ");
