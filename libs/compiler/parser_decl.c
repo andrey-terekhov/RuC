@@ -185,7 +185,9 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
 		}
 		else
 		{
-			const item_t size_type = parse_constant_expression(prs, parent);
+			node_copy(&prs->nd, parent);
+			expression size = parse_constant_expression(prs);
+			const item_t size_type = node_get_arg(&size.nd, 0);
 			if (!type_is_integer(size_type))
 			{
 				parser_error(prs, array_size_must_be_int);
@@ -197,7 +199,7 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
 				token_skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_SEMICOLON);
 			}
 		}
-		type = to_modetab(prs, TYPE_ARRAY, type);
+		type = type_array(prs->sx, type);
 	}
 
 	return type;
@@ -251,7 +253,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		item_t type = element_type;
 		if (token_try_consume(prs, TK_STAR))
 		{
-			type = to_modetab(prs, TYPE_POINTER, element_type);
+			type = type_pointer(prs->sx, element_type);
 		}
 
 		const size_t repr = prs->lxr->repr;
@@ -307,7 +309,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		local_modetab[local_md++] = type;
 		local_modetab[local_md++] = (item_t)repr;
 		fields++;
-		displ += size_of(prs->sx, type);
+		displ += type_size(prs->sx, type);
 
 		token_expect_and_consume(prs, TK_SEMICOLON, no_semicolon_in_struct);
 	} while (!token_try_consume(prs, TK_R_BRACE));
@@ -549,7 +551,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				}
 				else
 				{
-					type = to_modetab(prs, TYPE_POINTER, type);
+					type = type_pointer(prs->sx, type);
 				}
 			}
 
@@ -586,7 +588,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 
 				while (token_try_consume(prs, TK_L_SQUARE))
 				{
-					type = to_modetab(prs, TYPE_ARRAY, type);
+					type = type_array(prs->sx, type);
 					if (!token_try_consume(prs, TK_R_SQUARE))
 					{
 						parser_error(prs, wait_right_sq_br);
@@ -819,7 +821,7 @@ void parse_declaration_inner(parser *const prs, node *const parent)
 		item_t type = group_type;
 		if (token_try_consume(prs, TK_STAR))
 		{
-			type = to_modetab(prs, TYPE_POINTER, group_type);
+			type = type_pointer(prs->sx, group_type);
 		}
 
 		if (token_try_consume(prs, TK_IDENTIFIER))
@@ -859,7 +861,7 @@ void parse_declaration_external(parser *const prs, node *const root)
 			}
 			else
 			{
-				type = to_modetab(prs, TYPE_POINTER, group_type);
+				type = type_pointer(prs->sx, group_type);
 			}
 		}
 
