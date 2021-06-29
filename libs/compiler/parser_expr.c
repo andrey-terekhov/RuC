@@ -282,47 +282,75 @@ static expression make_binary_expression(parser *const prs, expression left, exp
 	const item_t left_type = node_get_arg(&left.nd, 0);
 	const item_t right_type = node_get_arg(&right.nd, 0);
 
-	if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
+	if (operation_is_assignment(operator_kind)
+		&& ((node_get_arg(&left.nd, 1) != LVALUE)
+			|| (type_is_floating(right_type) && type_is_integer(left_type))))
 	{
-		semantics_error(prs, operator_location, typecheck_binary_expr);
+		semantics_error(prs, operator_location, unassignable);
 		return expr_broken();
 	}
 
 	item_t result_type;
-	switch (operator_kind)
+	if (operator_kind == BIN_COMMA)
 	{
-		case BIN_REM:
-		case BIN_LOG_OR:
-		case BIN_LOG_AND:
-		case BIN_OR:
-		case BIN_AND:
-		case BIN_SHL:
-		case BIN_SHR:
-		case BIN_REM_ASSIGN:
-		case BIN_OR_ASSIGN:
-		case BIN_AND_ASSIGN:
-		case BIN_SHL_ASSIGN:
-		case BIN_SHR_ASSIGN:
-		{
-			if (!type_is_integer(left_type) || !type_is_integer(right_type))
-			{
-				semantics_error(prs, operator_location, int_op_for_float);
-				return expr_broken();
-			}
+		result_type = right_type;
+	}
+	else if (operator_kind == BIN_ASSIGN)
+	{
+		// Особый случай, так как тут могут быть операции с агрегатными типами
 
-			result_type = TYPE_INTEGER;
-			break;
+		// Несовпадение типов может быть только в случае, когда слева floating, а справа integer
+		if (left_type != right_type && !(type_is_floating(left_type) && type_is_integer(right_type)))
+		{
+			semantics_error(prs, operator_location, typecheck_convert_incompatible);
+			return expr_broken();
 		}
 
-		default:
-			result_type = type_is_floating(left_type) ? TYPE_FLOATING : right_type;
-			break;
+		result_type = left_type;
 	}
-
-	if (operation_is_assignment(operator_kind) && (node_get_arg(&left.nd, 1) != LVALUE))
+	else
 	{
-		semantics_error(prs, operator_location, unassignable);
-		return expr_broken();
+		if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
+		{
+			semantics_error(prs, operator_location, typecheck_binary_expr);
+			return expr_broken();
+		}
+
+		if (operation_is_assignment(operator_kind) && (node_get_arg(&left.nd, 1) != LVALUE))
+		{
+			semantics_error(prs, operator_location, unassignable);
+			return expr_broken();
+		}
+
+		switch (operator_kind)
+		{
+			case BIN_REM:
+			case BIN_LOG_OR:
+			case BIN_LOG_AND:
+			case BIN_OR:
+			case BIN_AND:
+			case BIN_SHL:
+			case BIN_SHR:
+			case BIN_REM_ASSIGN:
+			case BIN_OR_ASSIGN:
+			case BIN_AND_ASSIGN:
+			case BIN_SHL_ASSIGN:
+			case BIN_SHR_ASSIGN:
+			{
+				if (!type_is_integer(left_type) || !type_is_integer(right_type))
+				{
+					semantics_error(prs, operator_location, int_op_for_float);
+					return expr_broken();
+				}
+
+				result_type = TYPE_INTEGER;
+				break;
+			}
+
+			default:
+				result_type = type_is_floating(left_type) ? TYPE_FLOATING : right_type;
+				break;
+		}
 	}
 
 	node binary_node = create_node(prs, OP_BINARY);
