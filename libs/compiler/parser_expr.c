@@ -472,7 +472,7 @@ static expression parse_primary_expression(parser *const prs)
 		case TK_FLOAT_CONST:
 		{
 			item_t value;
-			memcpy(&value, &prs->lxr->num_double, sizeof double);
+			memcpy(&value, &prs->lxr->num_double, sizeof(double));
 			const location_t location = token_consume(prs);
 
 			node constant_node = create_node(prs, OP_CONSTANT);

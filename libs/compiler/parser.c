@@ -84,7 +84,6 @@ int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
 		parse_declaration_external(&prs, &root);
 	} while (prs.token != TK_EOF);
 
-	node_add_child(&root, OP_BLOCK_END);
 	parser_clear(&prs);
 
 #ifndef NDEBUG
@@ -189,7 +188,6 @@ void token_skip_until(parser *const prs, const uint8_t tokens)
 size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode)
 {
 	const size_t ret = ident_add(prs->sx, repr, type, mode, prs->func_def);
-	prs->last_id = 0;
 
 	if (ret == SIZE_MAX)
 	{
@@ -198,10 +196,6 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
 	else if (ret == SIZE_MAX - 1)
 	{
 		parser_error(prs, repeated_decl, repr_get_name(prs->sx, repr));
-	}
-	else
-	{
-		prs->last_id = ret;
 	}
 
 	return ret;

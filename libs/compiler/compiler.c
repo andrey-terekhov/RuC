@@ -17,7 +17,6 @@
 #include "compiler.h"
 #include <stdlib.h>
 #include <string.h>
-#include "codegen.h"
 #include "errors.h"
 #include "parser.h"
 #include "preprocessor.h"
@@ -148,7 +147,7 @@ int compile_to_vm(workspace *const ws)
 		ws_set_output(ws, DEFAULT_VM);
 	}
 
-	const int ret = compile_from_ws(ws, &encode_to_vm);
+	const int ret = 0;// = compile_from_ws(ws, &encode_to_vm);
 	if (!ret)
 	{
 		make_executable(ws_get_output(ws));
@@ -181,7 +180,7 @@ int no_macro_compile_to_vm(const char *const path)
 	ws_set_output(&ws, DEFAULT_VM);
 	out_set_file(&io, ws_get_output(&ws));
 
-	const int ret = compile_from_io(&ws, &io, &encode_to_vm);
+	const int ret = 0;//compile_from_io(&ws, &io, &encode_to_vm);
 	if (!ret)
 	{
 		make_executable(ws_get_output(&ws));

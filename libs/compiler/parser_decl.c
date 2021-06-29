@@ -370,7 +370,6 @@ static void parse_struct_initializer(parser *const prs, node *const parent, cons
 	} while (actual_fields != expected_fields && prs->token != TK_SEMICOLON);
 
 	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
-	node_add_child(&nd_struct_init, OP_EXPR_END);
 
 	// Это для продолжения выражений, если инициализатор был вызван не для объявления
 	node_copy(&prs->nd, &nd_struct_init);
@@ -395,8 +394,8 @@ static void parse_array_initializer(parser *const prs, node *const parent, const
 		{
 			prs->flag_strings_only = 1;
 		}
-		parse_string_literal(prs, parent);
-		to_tree(prs, OP_EXPR_END);
+		node_copy(&prs->nd, parent);
+		parse_expression(prs);
 		return;
 	}
 
@@ -430,7 +429,6 @@ static void parse_array_initializer(parser *const prs, node *const parent, const
 
 	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
 	node_set_arg(&nd_arr_init, 0, (item_t)list_length);
-	node_add_child(&nd_arr_init, OP_EXPR_END);
 
 	// Это для продолжения выражений, если инициализатор был вызван не для объявления
 	node_copy(&prs->nd, &nd_arr_init);
@@ -897,24 +895,24 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 {
 	if (prs->token != TK_L_BRACE)
 	{
-		const item_t expr_type = parse_assignment_expression(prs, parent);
-		if (!type_is_undefined(expr_type) && !type_is_undefined(type))
+		node_copy(&prs->nd, parent);
+		expression init = parse_assignment_expression(prs);
+		const item_t expr_type = node_get_arg(&init.nd, 0);
+		if (type_is_integer(type) && type_is_floating(expr_type))
 		{
-			if (type_is_integer(type) && type_is_float(expr_type))
-			{
-				parser_error(prs, init_int_by_float);
-			}
-			else if (type_is_float(type) && type_is_integer(expr_type))
-			{
-				parse_insert_widen(prs);
-			}
-			else if (type != expr_type)
-			{
-				parser_error(prs, error_in_initialization);
-			}
+			parser_error(prs, init_int_by_float);
 		}
+		else if (type_is_floating(type) && type_is_integer(expr_type))
+		{
+			;
+		}
+		else if (type != expr_type)
+		{
+			parser_error(prs, error_in_initialization);
+		}
+
 	}
-	else if (type_is_struct(prs->sx, type))
+	else if (type_is_structure(prs->sx, type))
 	{
 		parse_struct_initializer(prs, parent, type);
 	}
