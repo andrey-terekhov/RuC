@@ -480,13 +480,13 @@ static void to_code_operation_const_reg_double(information *const info, const it
 }
 
 static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
-	, const int is_array)
+	, const int is_array, const int is_pointer)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = load ", result);
 	type_to_io(info, type);
-	uni_printf(info->io, ", ");
+	uni_printf(info->io, "%s, ", is_pointer ? "*" : "");
 	type_to_io(info, type);
-	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
+	uni_printf(info->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
@@ -705,7 +705,7 @@ static void operand(information *const info, node *const nd)
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
-			to_code_load(info, info->register_num, displ, mode_integer, 0);
+			to_code_load(info, info->register_num, displ, mode_integer, 0, info->variable_location == LMEM ? 1 : 0);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
 			info->answer_value_type = mode_integer;
@@ -716,7 +716,7 @@ static void operand(information *const info, node *const nd)
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
-			to_code_load(info, info->register_num, displ, mode_float, 0);
+			to_code_load(info, info->register_num, displ, mode_float, 0, 0);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
 			info->answer_value_type = mode_float;
@@ -817,7 +817,7 @@ static void operand(information *const info, node *const nd)
 
 			if (location != LMEM)
 			{
-				to_code_load(info, info->register_num, info->register_num - 1, type, 1);
+				to_code_load(info, info->register_num, info->register_num - 1, type, 1, 0);
 				info->register_num++;
 			}
 
@@ -939,7 +939,7 @@ static void assignment_expression(information *const info, node *const nd)
 		&& assignment_type != OP_ASSIGN_AT && assignment_type != OP_ASSIGN_AT_V
 		&& assignment_type != OP_ASSIGN_AT_R && assignment_type != OP_ASSIGN_AT_R_V)
 	{
-		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
+		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array, 0);
 		info->register_num++;
 
 		if (info->answer_type == AREG)
@@ -1133,7 +1133,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 	const item_t memory_reg = info->answer_reg;
 
 	to_code_load(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type
-		, is_array_operation(operation));
+		, is_array_operation(operation), 0);
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 	info->answer_value_type = operation_type;
