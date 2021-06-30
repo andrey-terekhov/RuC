@@ -517,7 +517,7 @@ static void emit_expression(virtual *const vm, const node *const nd_expr)
  */
 static void emit_function_definition(virtual *const vm, const node *const nd_function)
 {
-	const size_t ref_func = (size_t)ident_get_displ(vm->sx, (size_t)node_get_arg(nd_func_def, 0));
+	const size_t ref_func = (size_t)ident_get_displ(vm->sx, (size_t)node_get_arg(nd_function, 0));
 	func_set(vm->sx, ref_func, (item_t)mem_size(vm));
 
 	mem_add(vm, IC_FUNC_BEG);
