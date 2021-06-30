@@ -839,9 +839,9 @@ static expression parse_unary_expression(parser *const prs)
 static expression parse_RHS_of_binary_expression(parser *const prs, expression LHS, const precedence_t min_prec)
 {
 	precedence_t next_token_prec = get_operator_precedence(prs->token);
-	while (next_token_prec < min_prec)
+	while (next_token_prec >= min_prec)
 	{
-		const binary_t operator = token_to_binary(prs->token);
+		const token_t operator_token = prs->token;
 		const location_t operator_location = token_consume(prs);
 
 		bool is_binary = true;
@@ -871,6 +871,7 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 
 		if (is_binary)
 		{
+			const binary_t operator = token_to_binary(operator_token);
 			LHS = make_binary_expression(prs, LHS, RHS, operator, operator_location);
 		}
 		else

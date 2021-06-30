@@ -22,7 +22,6 @@
 static const char *const DEFAULT_TREE = "tree.txt";
 
 static const size_t MAX_LABELS = 10000;
-static const size_t MAX_STACK = 100;
 
 
 /** Check if the set of tokens has token in it */
@@ -108,6 +107,27 @@ void parser_error(parser *const prs, error_t num, ...)
 	prs->was_error = true;
 
 	va_end(args);
+}
+
+void semantics_error(parser *const prs, const location_t loc, error_t num, ...)
+{
+	if (prs->lxr->is_recovery_disabled && (prs->lxr->was_error || prs->was_error))
+	{
+		return;
+	}
+
+	va_list args;
+	va_start(args, num);
+
+	const size_t prev_loc = in_get_position(prs->lxr->io);
+	in_set_position(prs->lxr->io, loc.begin);
+
+	verror(prs->lxr->io, num, args);
+	prs->was_error = true;
+
+	va_end(args);
+
+	in_set_position(prs->lxr->io, prev_loc);
 }
 
 location_t token_consume(parser *const prs)
@@ -199,17 +219,4 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
 	}
 
 	return ret;
-}
-
-item_t to_modetab(parser *const prs, const item_t mode, const item_t element)
-{
-	item_t temp[2];
-	temp[0] = mode;
-	temp[1] = element;
-	return (item_t)type_add(prs->sx, temp, 2);
-}
-
-void to_tree(parser *const prs, const item_t operation)
-{
-	prs->nd = node_add_child(&prs->nd, operation);
 }

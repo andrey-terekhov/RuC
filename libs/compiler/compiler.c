@@ -17,6 +17,7 @@
 #include "compiler.h"
 #include <stdlib.h>
 #include <string.h>
+#include "codegen.h"
 #include "errors.h"
 #include "parser.h"
 #include "preprocessor.h"
@@ -147,7 +148,7 @@ int compile_to_vm(workspace *const ws)
 		ws_set_output(ws, DEFAULT_VM);
 	}
 
-	const int ret = 0;// = compile_from_ws(ws, &encode_to_vm);
+	const int ret = compile_from_ws(ws, &encode_to_vm);
 	if (!ret)
 	{
 		make_executable(ws_get_output(ws));

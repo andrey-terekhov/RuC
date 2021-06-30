@@ -71,55 +71,10 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"goto", U"переход", TK_GOTO);
 	repr_add_keyword(reprtab, U"return", U"возврат", TK_RETURN);
 
-	repr_add_keyword(reprtab, U"print", U"печать", TK_PRINT);
-	repr_add_keyword(reprtab, U"printf", U"печатьф", TK_PRINTF);
-	repr_add_keyword(reprtab, U"printid", U"печатьид", TK_PRINTID);
-	repr_add_keyword(reprtab, U"scanf", U"читатьф", TK_SCANF);
-	repr_add_keyword(reprtab, U"getid", U"читатьид", TK_GETID);
-	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
-	repr_add_keyword(reprtab, U"sqrt", U"квкор", TK_SQRT);
-	repr_add_keyword(reprtab, U"exp", U"эксп", TK_EXP);
-	repr_add_keyword(reprtab, U"sin", U"син", TK_SIN);
-	repr_add_keyword(reprtab, U"cos", U"кос", TK_COS);
-	repr_add_keyword(reprtab, U"log", U"лог", TK_LOG);
-	repr_add_keyword(reprtab, U"log10", U"лог10", TK_LOG10);
-	repr_add_keyword(reprtab, U"asin", U"асин", TK_ASIN);
-	repr_add_keyword(reprtab, U"rand", U"случ", TK_RAND);
-	repr_add_keyword(reprtab, U"round", U"округл", TK_ROUND);
-	repr_add_keyword(reprtab, U"strcpy", U"копир_строку", TK_STRCPY);
-	repr_add_keyword(reprtab, U"strncpy", U"копир_н_симв", TK_STRNCPY);
-	repr_add_keyword(reprtab, U"strcat", U"конкат_строки", TK_STRCAT);
-	repr_add_keyword(reprtab, U"strncat", U"конкат_н_симв", TK_STRNCAT);
-	repr_add_keyword(reprtab, U"strcmp", U"сравн_строк", TK_STRCMP);
-	repr_add_keyword(reprtab, U"strncmp", U"сравн_н_симв", TK_STRNCMP);
-	repr_add_keyword(reprtab, U"strstr", U"нач_подстрок", TK_STRSTR);
-	repr_add_keyword(reprtab, U"strlen", U"длина", TK_STRLEN);
 
 	repr_add_keyword(reprtab, U"t_create_direct", U"н_создать_непоср", TK_CREATE_DIRECT);
 	repr_add_keyword(reprtab, U"t_exit_direct", U"н_конец_непоср", TK_EXIT_DIRECT);
 
-	repr_add_keyword(reprtab, U"t_msg_send", U"н_послать", TK_MSG_SEND);
-	repr_add_keyword(reprtab, U"t_msg_receive", U"н_получить", TK_MSG_RECEIVE);
-	repr_add_keyword(reprtab, U"t_join", U"н_присоед", TK_JOIN);
-	repr_add_keyword(reprtab, U"t_sleep", U"н_спать", TK_SLEEP);
-	repr_add_keyword(reprtab, U"t_sem_create", U"н_создать_сем", TK_SEM_CREATE);
-	repr_add_keyword(reprtab, U"t_sem_wait", U"н_вниз_сем", TK_SEM_WAIT);
-	repr_add_keyword(reprtab, U"t_sem_post", U"н_вверх_сем", TK_SEM_POST);
-	repr_add_keyword(reprtab, U"t_create", U"н_создать", TK_CREATE);
-	repr_add_keyword(reprtab, U"t_init", U"н_начать", TK_INIT);
-	repr_add_keyword(reprtab, U"t_destroy", U"н_закончить", TK_DESTROY);
-	repr_add_keyword(reprtab, U"t_exit", U"н_конец", TK_EXIT);
-	repr_add_keyword(reprtab, U"t_getnum", U"н_номер_нити", TK_GETNUM);
-
-	repr_add_keyword(reprtab, U"assert", U"проверить", TK_ASSERT);
-	repr_add_keyword(reprtab, U"upb", U"кол_во", TK_UPB);
-
-	repr_add_keyword(reprtab, U"send_int_to_robot", U"послать_цел_на_робот", TK_ROBOT_SEND_INT);
-	repr_add_keyword(reprtab, U"send_float_to_robot", U"послать_вещ_на_робот", TK_ROBOT_SEND_FLOAT);
-	repr_add_keyword(reprtab, U"send_string_to_robot", U"послать_строку_на_робот", TK_ROBOT_SEND_STRING);
-	repr_add_keyword(reprtab, U"receive_int_from_robot", U"получить_цел_от_робота", TK_ROBOT_RECEIVE_INT);
-	repr_add_keyword(reprtab, U"receive_float_from_robot", U"получить_вещ_от_робота", TK_ROBOT_RECEIVE_FLOAT);
-	repr_add_keyword(reprtab, U"receive_string_from_robot", U"получить_строку_от_робота", TK_ROBOT_RECEIVE_STRING);
 }
 
 

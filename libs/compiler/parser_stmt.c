@@ -740,7 +740,7 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 		scope_block_enter(prs->sx, &old_displ, &old_lg);
 	}
 
-	const token_t end_token = (type == THREAD) ? TK_EXIT : TK_R_BRACE;
+	const token_t end_token = (type == THREAD) ? TK_EXIT_DIRECT : TK_R_BRACE;
 	if (!token_try_consume(prs, end_token))
 	{
 		while (prs->token != TK_EOF && prs->token != end_token)

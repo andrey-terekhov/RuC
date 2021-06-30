@@ -18,10 +18,6 @@
 #include "errors.h"
 
 
-static const size_t DISPL_TO_FLOAT = 50;
-static const size_t DISPL_TO_VOID = 200;
-
-
 binary_t token_to_binary(const token_t token)
 {
 	switch (token)
@@ -58,7 +54,7 @@ binary_t token_to_binary(const token_t token)
 		case TK_COMMA:					return BIN_COMMA;
 
 		default:
-			system_error(node_unexpected);
+			// Unreachable
 			return 0;
 	}
 }
@@ -67,13 +63,17 @@ unary_t token_to_unary(const token_t token)
 {
 	switch (token)
 	{
-		case TK_TILDE:					return UN_NOT;
-		case TK_EXCLAIM:				return UN_LOGNOT;
-		case TK_PLUS_PLUS:				return UN_PREINC;
-		case TK_MINUS_MINUS:			return UN_PREDEC;
+		case TK_PLUS_PLUS:		return UN_PREINC;
+		case TK_MINUS_MINUS:	return UN_PREDEC;
+		case TK_AMP:			return UN_ADDRESS;
+		case TK_STAR:			return UN_INDIRECTION;
+		case TK_PLUS:			return UN_PLUS;
+		case TK_MINUS:			return UN_MINUS;
+		case TK_TILDE:			return UN_NOT;
+		case TK_EXCLAIM:		return UN_LOGNOT;
 
 		default:
-			system_error(node_unexpected);
+			// Unreachable
 			return 0;
 	}
 }
