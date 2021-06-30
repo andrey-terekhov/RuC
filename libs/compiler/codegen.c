@@ -513,19 +513,19 @@ static void emit_expression(virtual *const vm, const node *const nd_expr)
  *	Emit function definition
  *
  *	@param	vm			Code generator
- *	@param	nd_func_def	Node in AST
+ *	@param	nd_function	Node in AST
  */
-static void emit_function_definition(virtual *const vm, const node *const nd_func_def)
+static void emit_function_definition(virtual *const vm, const node *const nd_function)
 {
 	const size_t ref_func = (size_t)ident_get_displ(vm->sx, (size_t)node_get_arg(nd_func_def, 0));
 	func_set(vm->sx, ref_func, (item_t)mem_size(vm));
 
 	mem_add(vm, IC_FUNC_BEG);
-	mem_add(vm, node_get_arg(nd_func_def, 1));
+	mem_add(vm, node_get_arg(nd_function, 1));
 
 	const size_t old_pc = mem_reserve(vm);
 
-	const node func_body = node_get_child(nd_func_def, 0);
+	const node func_body = node_get_child(nd_function, 0);
 	emit_statement(vm, &func_body);
 
 	mem_set(vm, old_pc, (item_t)mem_size(vm));
@@ -535,13 +535,13 @@ static void emit_function_definition(virtual *const vm, const node *const nd_fun
  *	Emit variable declaration
  *
  *	@param	vm			Code generator
- *	@param	nd_var_decl	Node in AST
+ *	@param	nd_var		Node in AST
  */
-static void emit_variable_declaration(virtual *const vm, const node *const nd_var_decl)
+static void emit_variable_declaration(virtual *const vm, const node *const nd_var)
 {
-	const item_t old_displ = node_get_arg(nd_var_decl, 0);
-	const item_t type = node_get_arg(nd_var_decl, 1);
-	const item_t process = node_get_arg(nd_var_decl, 4);
+	const item_t old_displ = node_get_arg(nd_var, 0);
+	const item_t type = node_get_arg(nd_var, 1);
+	const item_t process = node_get_arg(nd_var, 4);
 
 	if (process)
 	{
@@ -550,7 +550,7 @@ static void emit_variable_declaration(virtual *const vm, const node *const nd_va
 		mem_add(vm, proc_get(vm, (size_t)process));
 	}
 
-	const node initializer = node_get_child(nd_var_decl, 0);
+	const node initializer = node_get_child(nd_var, 0);
 	if (node_is_correct(&initializer)) // int a = или struct{} a =
 	{
 		emit_expression(vm, &initializer);
@@ -559,7 +559,7 @@ static void emit_variable_declaration(virtual *const vm, const node *const nd_va
 		{
 			mem_add(vm, IC_COPY0ST_ASSIGN);
 			mem_add(vm, old_displ);
-			mem_add(vm, node_get_arg(nd_var_decl, 3)); // Общее количество слов
+			mem_add(vm, node_get_arg(nd_var, 3)); // Общее количество слов
 		}
 		else
 		{
@@ -573,21 +573,21 @@ static void emit_variable_declaration(virtual *const vm, const node *const nd_va
  *	Emit array declaration
  *
  *	@param	vm			Code generator
- *	@param	nd_arr_decl	Node in AST
+ *	@param	nd_array	Node in AST
  */
-static void emit_array_declaration(virtual *const vm, const node *const nd_arr_decl)
+static void emit_array_declaration(virtual *const vm, const node *const nd_array)
 {
-	const size_t bounds = (size_t)node_get_arg(nd_arr_decl, 0);
+	const size_t bounds = (size_t)node_get_arg(nd_array, 0);
 	for (size_t i = 0; i < bounds; i++)
 	{
-		const node expression = node_get_child(nd_arr_decl, i);
+		const node expression = node_get_child(nd_array, i);
 		emit_expression(vm, &expression);
 	}
 
-	const node decl_id = node_get_child(nd_arr_decl, bounds);
+	const node decl_id = node_get_child(nd_array, bounds);
 
 	bool has_initializer = false;
-	const node initializer = node_get_child(nd_arr_decl, bounds + 1);
+	const node initializer = node_get_child(nd_array, bounds + 1);
 	if (node_is_correct(&initializer))
 	{
 		has_initializer = true;
