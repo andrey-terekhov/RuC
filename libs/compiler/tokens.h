@@ -105,9 +105,13 @@ typedef enum TOKEN
 	TK_LESS_LESS_EQUAL,				/**< '<<='	punctuator */
 	TK_GREATER_GREATER_EQUAL,		/**< '>>='	punctuator */
 
+	TK_PRINT,						/**< 'print'	keyword	*/
+	TK_PRINTF,						/**< 'printf'	keyword */
+	TK_PRINTID,						/**< 'printid'	keyword */
+	TK_SCANF,						/**< 'scanf'	keyword */
+	TK_GETID,						/**< 'getid'	keyword */
 	TK_CREATE_DIRECT,				/**< 't_create_direct'	keyword */
 	TK_EXIT_DIRECT,					/**< 't_exit_direct'	keyword */
-
 } token_t;
 
 #ifdef __cplusplus

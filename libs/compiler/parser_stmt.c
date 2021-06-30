@@ -17,6 +17,9 @@
 #include "parser.h"
 
 
+#define MAX_PRINTF_ARGS 20
+
+
 /** Check if current token is part of a declaration specifier */
 static bool is_declaration_specifier(parser *const prs)
 {
@@ -650,6 +653,208 @@ static void parse_create_direct_statement(parser *const prs, node *const parent)
 	parse_statement_compound(prs, &nd, THREAD);
 }
 
+/**	Parse printid statement [RuC] */
+static void parse_printid_statement(parser *const prs, node *const parent)
+{
+	token_consume(prs); // kw_printid
+	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_printid);
+
+	do
+	{
+		if (token_try_consume(prs, TK_IDENTIFIER))
+		{
+			const size_t repr = prs->lxr->repr;
+			const item_t id = repr_get_reference(prs->sx, repr);
+			if (id == ITEM_MAX)
+			{
+				parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
+			}
+
+			node nd = node_add_child(parent, OP_PRINTID);
+			node_add_arg(&nd, id);
+		}
+		else
+		{
+			parser_error(prs, no_ident_in_printid);
+			token_skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+		}
+	} while (token_try_consume(prs, TK_COMMA));
+
+	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_printid);
+	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+}
+
+/**	Parse print statement [RuC] */
+static void parse_print_statement(parser *const prs, node *const parent)
+{
+	token_consume(prs); // kw_print
+	token_expect_and_consume(prs, TK_L_PAREN, print_without_br);
+
+	node node_print = node_add_child(parent, OP_PRINT);
+
+	node_copy(&prs->nd, &node_print);
+	const expression expr = parse_assignment_expression(prs);
+	if (!expr.is_valid)
+	{
+		token_skip_until(prs, TK_SEMICOLON);
+		return;
+	}
+
+	token_expect_and_consume(prs, TK_R_PAREN, print_without_br);
+	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+
+	if (type_is_pointer(prs->sx, node_get_arg(&expr.nd, 0)))
+	{
+		semantics_error(prs, expr.location, pointer_in_print);
+	}
+}
+
+/**	Parse getid statement [RuC] */
+static void parse_getid_statement(parser *const prs, node *const parent)
+{
+	token_consume(prs); // kw_getid
+	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_getid);
+
+	do
+	{
+		if (token_try_consume(prs, TK_IDENTIFIER))
+		{
+			const size_t repr = prs->lxr->repr;
+			const item_t id = repr_get_reference(prs->sx, repr);
+			if (id == ITEM_MAX)
+			{
+				parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
+			}
+
+			node nd = node_add_child(parent, OP_GETID);
+			node_add_arg(&nd, id);
+		}
+		else
+		{
+			parser_error(prs, no_ident_in_getid);
+			token_skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+		}
+	} while (token_try_consume(prs, TK_COMMA));
+
+	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_getid);
+	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+}
+
+static size_t evaluate_args(parser *const prs, const size_t length, const char32_t *const format_str
+	, item_t *const format_types, char32_t *const placeholders)
+{
+	size_t args = 0;
+	for (size_t i = 0; i < length; i++)
+	{
+		if (format_str[i] == '%')
+		{
+			const char32_t placeholder = format_str[++i];
+			if (placeholder != '%')
+			{
+				if (args == MAX_PRINTF_ARGS)
+				{
+					parser_error(prs, too_many_printf_args, (size_t)MAX_PRINTF_ARGS);
+					return 0;
+				}
+
+				placeholders[args] = placeholder;
+			}
+			switch (placeholder)
+			{
+				case 'i':
+				case U'ц':
+					format_types[args++] = TYPE_INTEGER;
+					break;
+
+				case 'c':
+				case U'л':
+					format_types[args++] = TYPE_CHARACTER;
+					break;
+
+				case 'f':
+				case U'в':
+					format_types[args++] = TYPE_FLOATING;
+					break;
+
+				case 's':
+				case U'с':
+					format_types[args++] = type_array(prs->sx, TYPE_CHARACTER);
+					break;
+
+				case '%':
+					break;
+
+				case '\0':
+					parser_error(prs, printf_no_format_placeholder);
+					return 0;
+
+				default:
+					parser_error(prs, printf_unknown_format_placeholder, placeholder);
+					return 0;
+			}
+		}
+	}
+
+	return args;
+}
+
+/**	Parse scanf statement [RuC] */
+//static void parse_scanf_statement(parser *const prs, node *const parent);
+
+/**	Parse printf statement [RuC] */
+static void parse_printf_statement(parser *const prs, node *const parent)
+{
+	token_consume(prs); // kw_printf
+	char32_t placeholders[MAX_PRINTF_ARGS];
+	char32_t format_str[MAX_STRING_LENGTH + 1];
+	item_t format_types[MAX_PRINTF_ARGS];
+
+	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_printf);
+	node printf_node = node_add_child(parent, OP_PRINTF);
+
+	if (prs->token != TK_STRING)
+	{
+		parser_error(prs, wrong_first_printf_param);
+		token_skip_until(prs, TK_SEMICOLON);
+		return;
+	}
+
+	const size_t format_length = (size_t)prs->lxr->num;
+	for (size_t i = 0; i < format_length; i++)
+	{
+		format_str[i] = prs->lxr->lexstr[i];
+	}
+	format_str[format_length] = '\0';
+
+	node_copy(&prs->nd, &printf_node);
+	parse_assignment_expression(prs);
+
+	size_t actual_args = 0;
+	const size_t expected_args = evaluate_args(prs, format_length, format_str, format_types, placeholders);
+	while (token_try_consume(prs, TK_COMMA) && actual_args != expected_args)
+	{
+		node_copy(&prs->nd, &printf_node);
+		const expression expr = parse_assignment_expression(prs);
+		const item_t type = node_get_arg(&expr.nd, 0);
+		if (format_types[actual_args] != type && !(type_is_floating(format_types[actual_args]) && type_is_integer(type)))
+		{
+			parser_error(prs, wrong_printf_param_type, placeholders[actual_args]);
+		}
+
+		actual_args++;
+	}
+
+	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_printf);
+	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+
+	if (actual_args != expected_args)
+	{
+		parser_error(prs, wrong_printf_param_number);
+	}
+}
+
+
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -712,6 +917,19 @@ void parse_statement(parser *const prs, node *const parent)
 
 		case TK_CREATE_DIRECT:
 			parse_create_direct_statement(prs, parent);
+			break;
+
+		case TK_PRINTID:
+			parse_printid_statement(prs, parent);
+			break;
+		case TK_PRINTF:
+			parse_printf_statement(prs, parent);
+			break;
+		case TK_PRINT:
+			parse_print_statement(prs, parent);
+			break;
+		case TK_GETID:
+			parse_getid_statement(prs, parent);
 			break;
 
 		case TK_IDENTIFIER:

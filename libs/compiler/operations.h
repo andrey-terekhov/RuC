@@ -133,6 +133,12 @@ typedef enum OPERATION
 	OP_UNARY,				/**< Unary operator node */
 	OP_BINARY,				/**< Binary operator node */
 	OP_TERNARY,				/**< Ternary operator node */
+
+	// Built-in functions
+	OP_PRINTID,
+	OP_PRINT,
+	OP_GETID,
+	OP_PRINTF,
 } operation_t;
 
 unary_t token_to_unary(const token_t token);

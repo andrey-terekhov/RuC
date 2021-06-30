@@ -202,6 +202,24 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			}
 			break;
 
+		case OP_PRINT:
+			sprintf(buffer, "TPrint");
+			break;
+		case OP_PRINTID:
+			argc = 1;
+			sprintf(buffer, "TPrintid");
+			break;
+		case OP_PRINTF:
+			sprintf(buffer, "TPrintf");
+			break;
+		case OP_GETID:
+			argc = 1;
+			sprintf(buffer, "TGetid");
+			break;
+		case OP_THREAD:
+			sprintf(buffer, "TCREATEDIRECT");
+			break;
+
 		case OP_FUNC_DEF:
 			argc = 2;
 			was_switch = true;

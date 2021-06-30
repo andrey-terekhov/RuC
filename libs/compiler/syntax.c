@@ -71,10 +71,14 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"goto", U"переход", TK_GOTO);
 	repr_add_keyword(reprtab, U"return", U"возврат", TK_RETURN);
 
+	repr_add_keyword(reprtab, U"print", U"печать", TK_PRINT);
+	repr_add_keyword(reprtab, U"printf", U"печатьф", TK_PRINTF);
+	repr_add_keyword(reprtab, U"printid", U"печатьид", TK_PRINTID);
+	repr_add_keyword(reprtab, U"scanf", U"читатьф", TK_SCANF);
+	repr_add_keyword(reprtab, U"getid", U"читатьид", TK_GETID);
 
 	repr_add_keyword(reprtab, U"t_create_direct", U"н_создать_непоср", TK_CREATE_DIRECT);
 	repr_add_keyword(reprtab, U"t_exit_direct", U"н_конец_непоср", TK_EXIT_DIRECT);
-
 }
 
 
