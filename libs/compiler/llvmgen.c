@@ -704,12 +704,22 @@ static void operand(information *const info, node *const nd)
 		case OP_IDENT_TO_VAL:
 		{
 			const item_t displ = node_get_arg(nd, 0);
+			int is_addr_to_val = 0;
 
-			to_code_load(info, info->register_num, displ, mode_integer, 0, info->variable_location == LMEM ? 1 : 0);
+			node_set_next(nd);
+			if (node_get_type(nd) == OP_ADDR_TO_VAL)
+			{
+				to_code_load(info, info->register_num, displ, mode_integer, 0, 1);
+				info->register_num++;
+				info->variable_location = LREG;
+				node_set_next(nd);
+				is_addr_to_val = 1;
+			}
+			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, mode_integer
+				, is_addr_to_val, info->variable_location == LMEM ? 1 : 0);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
 			info->answer_value_type = mode_integer;
-			node_set_next(nd);
 		}
 		break;
 		case OP_IDENT_TO_VAL_D:
