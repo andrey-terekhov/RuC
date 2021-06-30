@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
 #include "dll.h"
 #include "item.h"
@@ -25,6 +26,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+static const size_t MAP_HASH_MAX = 256;
+static const size_t MAP_KEY_SIZE = 8;
+
 
 /** Hash table */
 typedef struct map_hash map_hash;
@@ -225,7 +230,7 @@ EXPORTED const char *map_to_string(const map *const as, const size_t index);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int map_is_correct(const map *const as);
+EXPORTED bool map_is_correct(const map *const as);
 
 
 /**

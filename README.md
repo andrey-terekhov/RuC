@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/andrey-terekhov/RuC.svg?branch=master)](https://travis-ci.org/andrey-terekhov/RuC)
+[![Tests](https://github.com/andrey-terekhov/RuC/actions/workflows/tests.yml/badge.svg)](https://github.com/andrey-terekhov/RuC/actions/workflows/tests.yml)
 # ![Logo](https://raw.githubusercontent.com/Victor-Y-Fadeev/RuC-WPF/master/RuC.WPF/Images/Repository.png) Russian C
 
 Этот репозиторий содержит компилятор языка RuC.
