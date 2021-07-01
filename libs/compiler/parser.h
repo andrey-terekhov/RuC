@@ -252,7 +252,7 @@ void parse_statement(parser *const prs, node *const parent);
  *	Parse '{}' block [C99 6.8.2]
  *
  *	compound-statement:
- *  	{ block-item-list[opt] }
+ *  	'{' block-item-list[opt] '}'
  *
  *	block-item-list:
  *		block-item
