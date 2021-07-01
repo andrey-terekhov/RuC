@@ -434,7 +434,7 @@ static void expression(virtual *const vm, node *const nd, const bool is_in_condi
 				for (item_t i = 0; i < N; i++)
 				{
 					node_set_next(nd);
-					expression(vm, nd, 0);
+					expression(vm, nd, false);
 				}
 			}
 			break;
@@ -500,12 +500,12 @@ static void expression(virtual *const vm, node *const nd, const bool is_in_condi
  *	TODO:	переписать генерацию выражений
  *
  *	@param	vm			Code generator
- *	@param	nd_expr		Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_expression(virtual *const vm, const node *const nd_expr)
+static void emit_expression(virtual *const vm, const node *const nd)
 {
 	node internal_node;
-	node_copy(&internal_node, nd_expr);
+	node_copy(&internal_node, nd);
 	expression(vm, &internal_node, false);
 }
 
@@ -514,19 +514,19 @@ static void emit_expression(virtual *const vm, const node *const nd_expr)
  *	Emit function definition
  *
  *	@param	vm			Code generator
- *	@param	nd_function	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_function_definition(virtual *const vm, const node *const nd_function)
+static void emit_function_definition(virtual *const vm, const node *const nd)
 {
-	const size_t ref_func = (size_t)ident_get_displ(vm->sx, (size_t)node_get_arg(nd_function, 0));
+	const size_t ref_func = (size_t)ident_get_displ(vm->sx, (size_t)node_get_arg(nd, 0));
 	func_set(vm->sx, ref_func, (item_t)mem_size(vm));
 
 	mem_add(vm, IC_FUNC_BEG);
-	mem_add(vm, node_get_arg(nd_function, 1));
+	mem_add(vm, node_get_arg(nd, 1));
 
 	const size_t old_pc = mem_reserve(vm);
 
-	const node nd_func_body = node_get_child(nd_function, 0);
+	const node nd_func_body = node_get_child(nd, 0);
 	emit_statement(vm, &nd_func_body);
 
 	mem_set(vm, old_pc, (item_t)mem_size(vm));
@@ -536,13 +536,13 @@ static void emit_function_definition(virtual *const vm, const node *const nd_fun
  *	Emit variable declaration
  *
  *	@param	vm			Code generator
- *	@param	nd_var		Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_variable_declaration(virtual *const vm, const node *const nd_var)
+static void emit_variable_declaration(virtual *const vm, const node *const nd)
 {
-	const item_t old_displ = node_get_arg(nd_var, 0);
-	const item_t type = node_get_arg(nd_var, 1);
-	const item_t process = node_get_arg(nd_var, 4);
+	const item_t old_displ = node_get_arg(nd, 0);
+	const item_t type = node_get_arg(nd, 1);
+	const item_t process = node_get_arg(nd, 4);
 
 	if (process)
 	{
@@ -551,7 +551,7 @@ static void emit_variable_declaration(virtual *const vm, const node *const nd_va
 		mem_add(vm, proc_get(vm, (size_t)process));
 	}
 
-	const node nd_initializer = node_get_child(nd_var, 0);
+	const node nd_initializer = node_get_child(nd, 0);
 	if (node_is_correct(&nd_initializer)) // int a = или struct{} a =
 	{
 		emit_expression(vm, &nd_initializer);
@@ -560,7 +560,7 @@ static void emit_variable_declaration(virtual *const vm, const node *const nd_va
 		{
 			mem_add(vm, IC_COPY0ST_ASSIGN);
 			mem_add(vm, old_displ);
-			mem_add(vm, node_get_arg(nd_var, 3)); // Общее количество слов
+			mem_add(vm, node_get_arg(nd, 3)); // Общее количество слов
 		}
 		else
 		{
@@ -574,21 +574,21 @@ static void emit_variable_declaration(virtual *const vm, const node *const nd_va
  *	Emit array declaration
  *
  *	@param	vm			Code generator
- *	@param	nd_array	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_array_declaration(virtual *const vm, const node *const nd_array)
+static void emit_array_declaration(virtual *const vm, const node *const nd)
 {
-	const size_t bounds = (size_t)node_get_arg(nd_array, 0);
+	const size_t bounds = (size_t)node_get_arg(nd, 0);
 	for (size_t i = 0; i < bounds; i++)
 	{
-		const node nd = node_get_child(nd_array, i);
-		emit_expression(vm, &nd);
+		const node nd_expression = node_get_child(nd, i);
+		emit_expression(vm, &nd_expression);
 	}
 
-	const node nd_decl_id = node_get_child(nd_array, bounds);
+	const node nd_decl_id = node_get_child(nd, bounds);
 
 	bool has_initializer = false;
-	const node nd_initializer = node_get_child(nd_array, bounds + 1);
+	const node nd_initializer = node_get_child(nd, bounds + 1);
 	if (node_is_correct(&nd_initializer))
 	{
 		has_initializer = true;
@@ -632,22 +632,22 @@ static void emit_array_declaration(virtual *const vm, const node *const nd_array
  *	Emit struct declaration
  *
  *	@param	vm			Code generator
- *	@param	nd_struct	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_struct_declaration(virtual *const vm, const node *const nd_struct)
+static void emit_struct_declaration(virtual *const vm, const node *const nd)
 {
 	mem_add(vm, IC_B);
 	mem_add(vm, 0);
-	proc_set(vm, (size_t)node_get_arg(nd_struct, 0), (item_t)mem_size(vm));
+	proc_set(vm, (size_t)node_get_arg(nd, 0), (item_t)mem_size(vm));
 
-	const size_t amount = node_get_amount(nd_struct);
+	const size_t amount = node_get_amount(nd);
 	for (size_t i = 0; i < amount - 1; i++)
 	{
-		const node nd = node_get_child(nd_struct, i);
-		emit_declaration(vm, &nd);
+		const node nd_decl = node_get_child(nd, i);
+		emit_declaration(vm, &nd_decl);
 	}
 
-	const node nd_decl_end = node_get_child(nd_struct, amount - 1);
+	const node nd_decl_end = node_get_child(nd, amount - 1);
 	const size_t num_proc = (size_t)node_get_arg(&nd_decl_end, 0);
 
 	mem_add(vm, IC_STOP);
@@ -658,26 +658,26 @@ static void emit_struct_declaration(virtual *const vm, const node *const nd_stru
  *	Emit declaration
  *
  *	@param	vm			Code generator
- *	@param	nd_decl		Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_declaration(virtual *const vm, const node *const nd_decl)
+static void emit_declaration(virtual *const vm, const node *const nd)
 {
-	switch (node_get_type(nd_decl))
+	switch (node_get_type(nd))
 	{
 		case OP_FUNC_DEF:
-			emit_function_definition(vm, nd_decl);
+			emit_function_definition(vm, nd);
 			break;
 
 		case OP_DECL_ID:
-			emit_variable_declaration(vm, nd_decl);
+			emit_variable_declaration(vm, nd);
 			break;
 
 		case OP_DECL_ARR:
-			emit_array_declaration(vm, nd_decl);
+			emit_array_declaration(vm, nd);
 			break;
 
 		case OP_DECL_STRUCT:
-			emit_struct_declaration(vm, nd_decl);
+			emit_struct_declaration(vm, nd);
 			break;
 
 		case OP_BLOCK_END:
@@ -686,7 +686,7 @@ static void emit_declaration(virtual *const vm, const node *const nd_decl)
 			break;
 
 		default:
-			system_error(node_unexpected, node_get_type(nd_decl));
+			system_error(node_unexpected, node_get_type(nd));
 			vm->was_error = 1;
 			break;
 	}
@@ -697,11 +697,11 @@ static void emit_declaration(virtual *const vm, const node *const nd_decl)
  *	Emit labeled statement
  *
  *	@param	vm			Code generator
- *	@param	nd_label	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_labeled_statement(virtual *const vm, const node *const nd_label)
+static void emit_labeled_statement(virtual *const vm, const node *const nd)
 {
-	const item_t label_id = node_get_arg(nd_label, 0);
+	const item_t label_id = node_get_arg(nd, 0);
 	item_t addr = ident_get_displ(vm->sx, (size_t)label_id);
 
 	if (addr < 0)
@@ -723,9 +723,9 @@ static void emit_labeled_statement(virtual *const vm, const node *const nd_label
  *	Emit case statement
  *
  *	@param	vm			Code generator
- *	@param	nd_case		Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_case_statement(virtual *const vm, const node *const nd_case)
+static void emit_case_statement(virtual *const vm, const node *const nd)
 {
 	if (vm->addr_case)
 	{
@@ -734,14 +734,14 @@ static void emit_case_statement(virtual *const vm, const node *const nd_case)
 
 	mem_add(vm, IC_DUPLICATE);
 
-	const node nd_expression = node_get_child(nd_case, 0);
+	const node nd_expression = node_get_child(nd, 0);
 	emit_expression(vm, &nd_expression);
 
 	mem_add(vm, IC_EQ);
 	mem_add(vm, IC_BE0);
 	vm->addr_case = mem_reserve(vm);
 
-	const node nd_statement = node_get_child(nd_case, 1);
+	const node nd_statement = node_get_child(nd, 1);
 	emit_statement(vm, &nd_statement);
 }
 
@@ -749,9 +749,9 @@ static void emit_case_statement(virtual *const vm, const node *const nd_case)
  *	Emit default statement
  *
  *	@param	vm			Code generator
- *	@param	nd_default	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_default_statement(virtual *const vm, const node *const nd_default)
+static void emit_default_statement(virtual *const vm, const node *const nd)
 {
 	if (vm->addr_case)
 	{
@@ -759,7 +759,7 @@ static void emit_default_statement(virtual *const vm, const node *const nd_defau
 	}
 	vm->addr_case = 0;
 
-	const node nd_statement = node_get_child(nd_default, 0);
+	const node nd_statement = node_get_child(nd, 0);
 	emit_statement(vm, &nd_statement);
 }
 
@@ -767,15 +767,15 @@ static void emit_default_statement(virtual *const vm, const node *const nd_defau
  *	Emit compound statement
  *
  *	@param	vm			Code generator
- *	@param	nd_block	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_block(virtual *const vm, const node *const nd_block)
+static void emit_block(virtual *const vm, const node *const nd)
 {
-	const size_t amount = node_get_amount(nd_block);
+	const size_t amount = node_get_amount(nd);
 	for (size_t i = 0; i < amount; i++)
 	{
-		const node nd = node_get_child(nd_block, i);
-		emit_statement(vm, &nd);
+		const node nd_block_item = node_get_child(nd, i);
+		emit_statement(vm, &nd_block_item);
 	}
 }
 
@@ -783,19 +783,19 @@ static void emit_block(virtual *const vm, const node *const nd_block)
  *	Emit if statement
  *
  *	@param	vm			Code generator
- *	@param	nd_if		Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_if_statement(virtual *const vm, const node *const nd_if)
+static void emit_if_statement(virtual *const vm, const node *const nd)
 {
-	const node nd_condition = node_get_child(nd_if, 0);
+	const node nd_condition = node_get_child(nd, 0);
 	emit_expression(vm, &nd_condition);
 	mem_add(vm, IC_BE0);
 	size_t addr = mem_reserve(vm);
 
-	const node nd_then_stmt = node_get_child(nd_if, 1);
+	const node nd_then_stmt = node_get_child(nd, 1);
 	emit_statement(vm, &nd_then_stmt);
 
-	const node nd_else_stmt = node_get_child(nd_if, 2);
+	const node nd_else_stmt = node_get_child(nd, 2);
 	if (node_is_correct(&nd_else_stmt))
 	{
 		mem_set(vm, addr, (item_t)mem_size(vm) + 2);
@@ -812,19 +812,19 @@ static void emit_if_statement(virtual *const vm, const node *const nd_if)
  *	Emit switch statement
  *
  *	@param	vm			Code generator
- *	@param	nd_switch	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_switch_statement(virtual *const vm, const node *const nd_switch)
+static void emit_switch_statement(virtual *const vm, const node *const nd)
 {
 	const size_t old_addr_break = vm->addr_break;
 	const size_t old_addr_case = vm->addr_case;
 	vm->addr_break = 0;
 	vm->addr_case = 0;
 
-	const node nd_condition = node_get_child(nd_switch, 0);
+	const node nd_condition = node_get_child(nd, 0);
 	emit_expression(vm, &nd_condition);
 
-	const node nd_statement = node_get_child(nd_switch, 1);
+	const node nd_statement = node_get_child(nd, 1);
 	emit_statement(vm, &nd_statement);
 
 	if (vm->addr_case > 0)
@@ -841,23 +841,23 @@ static void emit_switch_statement(virtual *const vm, const node *const nd_switch
  *	Emit while statement
  *
  *	@param	vm			Code generator
- *	@param	nd_while	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_while_statement(virtual *const vm, const node *const nd_while)
+static void emit_while_statement(virtual *const vm, const node *const nd)
 {
 	const size_t old_addr_break = vm->addr_break;
 	const size_t old_addr_cond = vm->addr_cond;
 	const size_t addr = mem_size(vm);
 	vm->addr_cond = addr;
 
-	const node nd_condition = node_get_child(nd_while, 0);
+	const node nd_condition = node_get_child(nd, 0);
 	emit_expression(vm, &nd_condition);
 
 	mem_add(vm, IC_BE0);
 	vm->addr_break = mem_size(vm);
 	mem_add(vm, 0);
 
-	const node nd_statement = node_get_child(nd_while, 1);
+	const node nd_statement = node_get_child(nd, 1);
 	emit_statement(vm, &nd_statement);
 
 	addr_begin_condition(vm, addr);
@@ -873,9 +873,9 @@ static void emit_while_statement(virtual *const vm, const node *const nd_while)
  *	Emit do statement
  *
  *	@param	vm			Code generator
- *	@param	nd_do		Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_do_statement(virtual *const vm, const node *const nd_do)
+static void emit_do_statement(virtual *const vm, const node *const nd)
 {
 	const size_t old_addr_break = vm->addr_break;
 	const size_t old_addr_cond = vm->addr_cond;
@@ -884,11 +884,11 @@ static void emit_do_statement(virtual *const vm, const node *const nd_do)
 	vm->addr_cond = 0;
 	vm->addr_break = 0;
 
-	const node nd_statement = node_get_child(nd_do, 0);
+	const node nd_statement = node_get_child(nd, 0);
 	emit_statement(vm, &nd_statement);
 	addr_end_condition(vm);
 
-	const node nd_expression = node_get_child(nd_do, 1);
+	const node nd_expression = node_get_child(nd, 1);
 	emit_expression(vm, &nd_expression);
 	mem_add(vm, IC_BNE0);
 	mem_add(vm, addr);
@@ -902,17 +902,17 @@ static void emit_do_statement(virtual *const vm, const node *const nd_do)
  *	Emit for statement
  *
  *	@param	vm			Code generator
- *	@param	nd_for		Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_for_statement(virtual *const vm, const node *const nd_for)
+static void emit_for_statement(virtual *const vm, const node *const nd)
 {
 	size_t child_index = 0;
 
-	const bool has_inition = (bool)node_get_arg(nd_for, 0);
+	const bool has_inition = (bool)node_get_arg(nd, 0);
 	if (has_inition)
 	{
 		// Предполагая, что дерево правильно построено
-		const node nd_inition = node_get_child(nd_for, child_index++);
+		const node nd_inition = node_get_child(nd, child_index++);
 		emit_statement(vm, &nd_inition);
 	}
 
@@ -922,25 +922,25 @@ static void emit_for_statement(virtual *const vm, const node *const nd_for)
 	vm->addr_break = 0;
 
 	const size_t addr_inition = mem_size(vm);
-	const bool has_condition = (bool)node_get_arg(nd_for, 1);
+	const bool has_condition = (bool)node_get_arg(nd, 1);
 	if (has_condition)
 	{
-		const node nd_condition = node_get_child(nd_for, child_index++);
+		const node nd_condition = node_get_child(nd, child_index++);
 		emit_expression(vm, &nd_condition);
 		mem_add(vm, IC_BE0);
 		vm->addr_break = mem_size(vm);
 		mem_add(vm, 0);
 	}
 
-	const bool has_increment = (bool)node_get_arg(nd_for, 2);
+	const bool has_increment = (bool)node_get_arg(nd, 2);
 
-	const node nd_statement = node_get_child(nd_for, child_index + has_increment);
+	const node nd_statement = node_get_child(nd, child_index + has_increment);
 	emit_statement(vm, &nd_statement);
 	addr_end_condition(vm);
 
 	if (has_increment)
 	{
-		const node nd_increment = node_get_child(nd_for, child_index);
+		const node nd_increment = node_get_child(nd, child_index);
 		emit_expression(vm, &nd_increment);
 	}
 
@@ -956,13 +956,13 @@ static void emit_for_statement(virtual *const vm, const node *const nd_for)
  *	Emit goto statement
  *
  *	@param	vm			Code generator
- *	@param	nd_goto		Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_goto_statement(virtual *const vm, const node *const nd_goto)
+static void emit_goto_statement(virtual *const vm, const node *const nd)
 {
 	mem_add(vm, IC_B);
 
-	const item_t label_id = node_get_arg(nd_goto, 0);
+	const item_t label_id = node_get_arg(nd, 0);
 	const size_t id = (size_t)llabs(label_id);
 	const item_t addr = ident_get_displ(vm->sx, id);
 
@@ -985,11 +985,11 @@ static void emit_goto_statement(virtual *const vm, const node *const nd_goto)
  *	Emit continue statement
  *
  *	@param	vm			Code generator
- *	@param	nd_continue	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_continue_statement(virtual *const vm, const node *const nd_continue)
+static void emit_continue_statement(virtual *const vm, const node *const nd)
 {
-	(void)nd_continue;
+	(void)nd;
 	mem_add(vm, IC_B);
 	mem_add(vm, (item_t)vm->addr_cond);
 	vm->addr_cond = mem_size(vm) - 1;
@@ -999,11 +999,11 @@ static void emit_continue_statement(virtual *const vm, const node *const nd_cont
  *	Emit break statement
  *
  *	@param	vm			Code generator
- *	@param	nd_break	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_break_statement(virtual *const vm, const node *const nd_break)
+static void emit_break_statement(virtual *const vm, const node *const nd)
 {
-	(void)nd_break;
+	(void)nd;
 	mem_add(vm, IC_B);
 	mem_add(vm, (item_t)vm->addr_break);
 	vm->addr_break = mem_size(vm) - 1;
@@ -1013,17 +1013,17 @@ static void emit_break_statement(virtual *const vm, const node *const nd_break)
  *	Emit return statement
  *
  *	@param	vm			Code generator
- *	@param	nd_return	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_return_statement(virtual *const vm, const node *const nd_return)
+static void emit_return_statement(virtual *const vm, const node *const nd)
 {
-	if (node_get_amount(nd_return))
+	if (node_get_amount(nd))
 	{
-		const node nd_expr = node_get_child(nd_return, 0);
+		const node nd_expr = node_get_child(nd, 0);
 		emit_expression(vm, &nd_expr);
 
 		mem_add(vm, IC_RETURN_VAL);
-		mem_add(vm, node_get_arg(nd_return, 0));
+		mem_add(vm, node_get_arg(nd, 0));
 	}
 	else
 	{
@@ -1035,17 +1035,17 @@ static void emit_return_statement(virtual *const vm, const node *const nd_return
  *	Emit t_create_direct statement
  *
  *	@param	vm			Code generator
- *	@param	nd_thread	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_thread(virtual *const vm, const node *const nd_thread)
+static void emit_thread(virtual *const vm, const node *const nd)
 {
 	mem_add(vm, IC_CREATE_DIRECT);
 
-	const size_t amount = node_get_amount(nd_thread);
+	const size_t amount = node_get_amount(nd);
 	for (size_t i = 0; i < amount; i++)
 	{
-		const node nd = node_get_child(nd_thread, i);
-		emit_statement(vm, &nd);
+		const node nd_thread_item = node_get_child(nd, i);
+		emit_statement(vm, &nd_thread_item);
 	}
 
 	mem_add(vm, IC_EXIT_DIRECT);
@@ -1080,119 +1080,119 @@ static void compress_ident(virtual *const vm, const size_t ref)
  *	Emit printid statement
  *
  *	@param	vm			Code generator
- *	@param	nd_printid	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_printid_statement(virtual *const vm, const node *const nd_printid)
+static void emit_printid_statement(virtual *const vm, const node *const nd)
 {
 	mem_add(vm, IC_PRINTID);
-	compress_ident(vm, (size_t)node_get_arg(nd_printid, 0)); // Ссылка в identtab
+	compress_ident(vm, (size_t)node_get_arg(nd, 0)); // Ссылка в identtab
 }
 
 /**
  *	Emit getid statement
  *
  *	@param	vm			Code generator
- *	@param	nd_getid	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_getid_statement(virtual *const vm, const node *const nd_getid)
+static void emit_getid_statement(virtual *const vm, const node *const nd)
 {
 	mem_add(vm, IC_GETID);
-	compress_ident(vm, (size_t)node_get_arg(nd_getid, 0)); //Сссылка в identtab
+	compress_ident(vm, (size_t)node_get_arg(nd, 0)); //Сссылка в identtab
 }
 
 /**
  *	Emit printf statement
  *
  *	@param	vm			Code generator
- *	@param	nd_printf	Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_printf_statement(virtual *const vm, const node *const nd_printf)
+static void emit_printf_statement(virtual *const vm, const node *const nd)
 {
 	mem_add(vm, IC_PRINTF);
-	mem_add(vm, node_get_arg(nd_printf, 0)); // Общий размер того, что надо вывести
+	mem_add(vm, node_get_arg(nd, 0)); // Общий размер того, что надо вывести
 }
 
 /**
  *	Emit statement
  *
  *	@param	vm			Code generator
- *	@param	nd_stmt		Node in AST
+ *	@param	nd			Node in AST
  */
-static void emit_statement(virtual *const vm, const node *const nd_stmt)
+static void emit_statement(virtual *const vm, const node *const nd)
 {
-	switch (node_get_type(nd_stmt))
+	switch (node_get_type(nd))
 	{
 		case OP_LABEL:
-			emit_labeled_statement(vm, nd_stmt);
+			emit_labeled_statement(vm, nd);
 			break;
 
 		case OP_CASE:
-			emit_case_statement(vm, nd_stmt);
+			emit_case_statement(vm, nd);
 			break;
 
 		case OP_DEFAULT:
-			emit_default_statement(vm, nd_stmt);
+			emit_default_statement(vm, nd);
 			break;
 
 		case OP_BLOCK:
-			emit_block(vm, nd_stmt);
+			emit_block(vm, nd);
 			break;
 
 		case OP_NOP:
 			break;
 
 		case OP_IF:
-			emit_if_statement(vm, nd_stmt);
+			emit_if_statement(vm, nd);
 			break;
 
 		case OP_SWITCH:
-			emit_switch_statement(vm, nd_stmt);
+			emit_switch_statement(vm, nd);
 			break;
 
 		case OP_WHILE:
-			emit_while_statement(vm, nd_stmt);
+			emit_while_statement(vm, nd);
 			break;
 
 		case OP_DO:
-			emit_do_statement(vm, nd_stmt);
+			emit_do_statement(vm, nd);
 			break;
 
 		case OP_FOR:
-			emit_for_statement(vm, nd_stmt);
+			emit_for_statement(vm, nd);
 			break;
 
 		case OP_GOTO:
-			emit_goto_statement(vm, nd_stmt);
+			emit_goto_statement(vm, nd);
 			break;
 
 		case OP_CONTINUE:
-			emit_continue_statement(vm, nd_stmt);
+			emit_continue_statement(vm, nd);
 			break;
 
 		case OP_BREAK:
-			emit_break_statement(vm, nd_stmt);
+			emit_break_statement(vm, nd);
 			break;
 
 		case OP_RETURN_VAL:
 		case OP_RETURN_VOID:
-			emit_return_statement(vm, nd_stmt);
+			emit_return_statement(vm, nd);
 			break;
 
 		case OP_CREATE_DIRECT:
 		case OP_CREATE:
-			emit_thread(vm, nd_stmt);
+			emit_thread(vm, nd);
 			break;
 
 		case OP_PRINTID:
-			emit_printid_statement(vm, nd_stmt);
+			emit_printid_statement(vm, nd);
 			break;
 
 		case OP_GETID:
-			emit_getid_statement(vm, nd_stmt);
+			emit_getid_statement(vm, nd);
 			break;
 
 		case OP_PRINTF:
-			emit_printf_statement(vm, nd_stmt);
+			emit_printf_statement(vm, nd);
 			break;
 
 		case OP_BLOCK_END:
@@ -1205,11 +1205,11 @@ static void emit_statement(virtual *const vm, const node *const nd_stmt)
 		case OP_DECL_ID:
 		case OP_DECL_ARR:
 		case OP_DECL_STRUCT:
-			emit_declaration(vm, nd_stmt);
+			emit_declaration(vm, nd);
 			break;
 
 		default:
-			emit_expression(vm, nd_stmt);
+			emit_expression(vm, nd);
 			break;
 	}
 }
