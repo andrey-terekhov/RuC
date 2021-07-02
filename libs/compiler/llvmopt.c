@@ -45,6 +45,7 @@ typedef struct information
 	syntax *sx;										/**< Структура syntax с таблицами */
 
 	item_t string_num;								/**< Номер строки */
+	item_t init_num;								/**< Счётчик для инициализации */
 	item_t was_printf;								/**< Флаг наличия printf в исходном коде */
 
 	node_info stack[MAX_STACK_SIZE];				/**< Стек для преобразования выражений */
@@ -297,6 +298,14 @@ static int node_recursive(information *const info, node *const nd)
 		info->slice_depth++;
 	}
 
+	if (node_get_type(nd) == OP_ARRAY_INIT)
+	{
+		uni_printf(info->io, "@arr_init.%" PRIitem " = private unnamed_addr constant ", info->init_num);
+		info->init_num++;
+		// TODO: а для многомерных как?
+		uni_printf(info->io, "[%" PRIitem " x i32] [", node_get_arg(nd, 0));
+	}
+
 	for (size_t i = 0; i < node_get_amount(nd); i++)
 	{
 		node child = node_get_child(nd, i);
@@ -394,6 +403,15 @@ static int node_recursive(information *const info, node *const nd)
 				for (size_t j = 0; j < parameters; j++)
 				{
 					stack_pop(info);
+				}
+			}
+			break;
+			case OP_CONST:
+			{
+				if (node_get_type(nd) == OP_ARRAY_INIT)
+				{
+					uni_printf(info->io, "i32 %" PRIitem "%s", node_get_arg(&child, 0)
+						, i < node_get_amount(nd) - 2 ? ", " : "], align 4\n");
 				}
 			}
 			break;
@@ -505,6 +523,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	info.io = io;
 	info.sx = sx;
 	info.string_num = 1;
+	info.init_num = 1;
 	info.was_printf = 0;
 	info.stack_size = 0;
 	info.slice_depth = 0;
