@@ -18,42 +18,76 @@
 
 #include "linker.h"
 #include "uniio.h"
+#include "error.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-
+/** Parser structure */
 typedef struct parser
 {
-	linker *lk; 
-	//storage *stg; 
+	linker *lk;						/**< Linker structure */
+	//storage *stg;					/**< Storage structure */
 
-	universal_io *in; 
-	universal_io *out; 
+	universal_io *in;				/**< Input io structure */ 
+	universal_io *out;				/**< Ourput io structure */ 
 
-	size_t error_line; 
+	size_t error_line;				/**< Сurrent line number in input */ 
 
-	bool is_recovery_disabled; 
+	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */
 } parser;
 
+/**
+ *	Create parser structure
+ *
+ *	@param	lk		Linker structure
+ *	@param	stg		Storage structure
+ *	@param	out		Output
+ *
+ *	@return	Parser structure
+ */
 parser parser_create(linker *const lk, /*storage *const stg,*/ universal_io *const out); 
 
 
+/**
+ *	Preprocess input data
+ *
+ *	@param	prs		Parser structure
+ *	@param	in		Input data
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
 int parser_preprocess(parser *const prs, universal_io *const in); 
 
 
+/**
+ *	Disable error recovery
+ *
+ *	@param	prs		Parser structure
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
 int parser_disable_recovery(parser *const prs);
 
-//void parser_error(parser *const prs, const error_t num); 
+/**
+ *	Emit an error from parser
+ *
+ *	@param	prs			Parser structure
+ *	@param	num			Error code
+ */
+void parser_error(parser *const prs, const error_t num); 
 
 
+/**
+ *	Check that linker structure is correct
+ *
+ *	@param	prs		Parser structure
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
 bool parser_is_correct(const parser *const prs); 
-
-
-//int parser_clear(parser *const prs); 
 
 #ifdef __cplusplus
 } /* extern "C" */

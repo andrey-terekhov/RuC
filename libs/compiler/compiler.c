@@ -19,7 +19,7 @@
 #include <string.h>
 #include "codegen.h"
 #include "errors.h"
-#include "macrogenerator.h"
+#include "macro.h"
 #include "parser.h"
 #include "syntax.h"
 #include "uniio.h"
