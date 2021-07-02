@@ -14,7 +14,7 @@
  *	limitations under the License.
  */
 
-#include "macrogenerator.h"
+#include "macro.h"
 #include "linker.h"
 #include "parser.h"
 #include "uniio.h"
