@@ -17,6 +17,7 @@
 #pragma once
 
 #include <stddef.h>
+#include "uniio.h"
 
 
 #ifdef __cplusplus
@@ -34,10 +35,52 @@ typedef enum ERROR
 /**
  *	Emit an error for some problem
  *
+ *	@param	io			Universal io
+ *	@param	num			Error code
+ */
+void macro_error(const universal_io *const io, const int num);
+
+/**
+ *	Emit a warning for some problem
+ *
+ *	@param	io			Universal io
+ *	@param	num			Warning code
+ */
+void macro_warning(const universal_io *const io, const int num);
+
+
+/**
+ *	Emit an error message
+ *
+ *	@param	io			Universal io
+ *	@param	msg			Error message
+ */
+void macro_error_msg(const universal_io *const io, const char *const msg);
+
+/**
+ *	Emit a warning message
+ *
+ *	@param	io			Universal io
+ *	@param	msg			Warning message
+ */
+void macro_warning_msg(const universal_io *const io, const char *const msg);
+
+
+/**
+ *	Emit a system error
+ *
  *	@param	tag		Message location
  *	@param	num		Error code
  */
 void macro_system_error(const char *const tag, error_t num);
+
+/**
+ *	Emit a system warning
+ *
+ *	@param	tag		Message location
+ *	@param	num		Warning code
+ */
+void macro_system_warning(const char *const tag, error_t num);
 
 #ifdef __cplusplus
 } /* extern "C" */

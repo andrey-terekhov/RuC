@@ -27,7 +27,7 @@
 #define ERROR_MSG_SIZE	256
 
 
-void get_message_error(const int num, char *const msg)
+static void get_message_error(const int num, char *const msg)
 {
 	switch (num)
 	{
@@ -43,6 +43,26 @@ void get_message_error(const int num, char *const msg)
 	}
 }
 
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+void macro_error(const universal_io *const io, const int num);
+
+void macro_warning(const universal_io *const io, const int num);
+
+
+void macro_error_msg(const universal_io *const io, const char *const msg);
+
+void macro_warning_msg(const universal_io *const io, const char *const msg);
+
+
 void macro_system_error(const char *const tag, error_t num)
 {
 	char msg[ERROR_MSG_SIZE];
@@ -57,3 +77,5 @@ void macro_system_error(const char *const tag, error_t num)
 		log_system_error(TAG_MACRO, msg);
 	}
 }
+
+void macro_system_warning(const char *const tag, error_t num);

@@ -41,10 +41,12 @@ parser parser_create(linker *const lk, /*storage *const stg,*/ universal_io *con
 
 	prs.lk = lk;
 	//prs.stg = stg;
+	
+	prs.in = NULL;
 	prs.out = out;
 
-	prs.in = NULL;
 	prs.error_line = 0;
+
 	prs.is_recovery_disabled = false;
 
 	return prs;
@@ -86,8 +88,13 @@ int parser_disable_recovery(parser *const prs)
 	return 0;
 }
 
+void parser_error(parser *const prs, const error_t num); 
+
 
 bool parser_is_correct(const parser *const prs)
 {
 	return prs != NULL && linker_is_correct(prs->lk) && out_is_correct(prs->out);// && storage_is_correct(prs->stg);
 }
+
+
+int parser_clear(parser *const prs);

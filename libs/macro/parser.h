@@ -32,7 +32,7 @@ typedef struct parser
 	//storage *stg;					/**< Storage structure */
 
 	universal_io *in;				/**< Input io structure */ 
-	universal_io *out;				/**< Ourput io structure */ 
+	universal_io *out;				/**< Output io structure */ 
 
 	size_t error_line;				/**< Сurrent line number in input */ 
 
@@ -81,13 +81,23 @@ void parser_error(parser *const prs, const error_t num);
 
 
 /**
- *	Check that linker structure is correct
+ *	Check that parser structure is correct
  *
  *	@param	prs		Parser structure
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool parser_is_correct(const parser *const prs); 
+bool parser_is_correct(const parser *const prs);
+
+
+/**
+ *	Clear parser structure
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int parser_clear(parser *const prs);
 
 #ifdef __cplusplus
 } /* extern "C" */
