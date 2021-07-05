@@ -659,6 +659,24 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 	info->register_num++;
 }
 
+static void to_code_init_array(information *const info, const size_t index, const item_t type)
+{
+	uni_printf(info->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
+
+	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+	}
+	type_to_io(info, type);
+
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->io, "]");
+	}
+	uni_printf(info->io, ", align 4\n");
+}
+
 
 static void check_type_and_branch(information *const info)
 {
@@ -1912,13 +1930,12 @@ static void init(information *const info, node *const nd, const item_t displ, co
 		{
 			const item_t N = node_get_arg(nd, 0);
 
-			const size_t index = hash_get_index(&info->arrays, displ);
-			printf("displ = %i\n", displ);
-			printf("index = %i\n", index);
+			// const size_t index = hash_get_index(&info->arrays, displ);
+			// printf("displ = %i\n", displ);
+			// printf("index = %i\n", index);
+			const size_t index = 256;
 			hash_set_by_index(&info->arrays, index, 1, N);
-			const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-			// printf("here dim = %i\n", dim);
-			// to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+			to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
 
 			node_set_next(nd);
 			for (item_t i = 0; i < N; i++)
@@ -1964,8 +1981,8 @@ static void block(information *const info, node *const nd)
 				const size_t N = (size_t)node_get_arg(&id, 2);
 				const item_t all = node_get_arg(&id, 3);	// 0 если нет инициализации
 				const size_t index = hash_add(&info->arrays, displ, 1 + N);
-				printf("displ = %i\n", displ);
-				printf("index = %i\n\n", index);
+				// printf("displ = %i\n", displ);
+				// printf("index = %i\n\n", index);
 				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
 				node_set_next(nd);
