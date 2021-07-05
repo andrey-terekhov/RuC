@@ -265,7 +265,7 @@ void parse_declaration_inner(parser *const prs, node *const parent);
 void parse_declaration_external(parser *const prs, node *const root);
 
 /**
- *	Parse initializer [C99 6.7.8]
+ *	Parse initializer [C99 6.7.8p1]
  *
  *	initializer:
  *		assignment-expression
@@ -278,7 +278,10 @@ void parse_declaration_external(parser *const prs, node *const root);
 void parse_initializer(parser *const prs, node *const parent, const item_t type);
 
 /**
- *	Parse braced initializer
+ *	Parse braced initializer list [C99 6.7.8p2]
+ *
+ *	initializer-list:
+ *		initializer-list ',' initializer
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
