@@ -109,7 +109,7 @@ universal_io linker_add_header(linker *const lk, const size_t index)
 	{
 		if (in_set_file(&input, ws_get_file(lk->ws, index)))
 		{
-			macro_system_error(ws_get_file(lk->ws, index), include_file_not_found);
+			macro_system_error(ws_get_file(lk->ws, index), header_file_not_found);
 		}
 		else
 		{
@@ -146,7 +146,7 @@ size_t linker_search_internal(linker *const lk, const char *const file)
 
 	if (access(full_path, F_OK) == -1)
 	{
-		macro_system_error(full_path, include_file_not_found);
+		macro_system_error(full_path, header_file_not_found);
 		return SIZE_MAX;
 	}
 
@@ -177,7 +177,7 @@ size_t linker_search_external(linker *const lk, const char *const file)
 
 	if (access(full_path, F_OK) == -1)
 	{
-		macro_system_error(full_path, include_file_not_found);
+		macro_system_error(full_path, header_file_not_found);
 		return SIZE_MAX;
 	}
 
@@ -210,6 +210,4 @@ int linker_clear(linker *const lk)
 	}
 
 	return vector_clear(&lk->included);
-
-	return 0;
 }

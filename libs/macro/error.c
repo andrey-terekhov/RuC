@@ -34,7 +34,7 @@ static void get_message_error(const int num, char *const msg)
 		case source_file_not_found:
 			sprintf(msg, "исходный файл не найден");
 			break;
-		case include_file_not_found:
+		case header_file_not_found:
 			sprintf(msg, "заголовочный файл не найден");
 			break;
 		default:
