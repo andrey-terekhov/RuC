@@ -290,8 +290,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 						prs->flag_strings_only = 2;
 						node_set_arg(&nd_decl_id, 3, 1);
 
-						parse_array_initializer(prs, &nd_decl_arr, type);
-						node_add_child(&prs->nd, OP_EXPR_END);
+						parse_initializer(prs, &nd_decl_arr, type);
 						if (prs->flag_strings_only == 1)
 						{
 							node_set_arg(&nd_decl_id, 5, prs->flag_empty_bounds + 2);
@@ -396,6 +395,7 @@ static void parse_array_initializer(parser *const prs, node *const parent, const
 		}
 		parse_string_literal(prs, parent);
 		to_tree(prs, OP_EXPR_END);
+		node_copy(&prs->nd, parent);
 		return;
 	}
 
@@ -403,6 +403,9 @@ static void parse_array_initializer(parser *const prs, node *const parent, const
 	{
 		parser_error(prs, arr_init_must_start_from_BEGIN);
 		token_skip_until(prs, TK_COMMA | TK_SEMICOLON);
+
+		// Это для продолжения парсинга
+		node_copy(&prs->nd, parent);
 		return;
 	}
 
@@ -933,6 +936,7 @@ void parse_braced_initializer(parser *const prs, node *const parent, const item_
 	}
 	else
 	{
+		node_copy(&prs->nd, parent);
 		parser_error(prs, wrong_init);
 		token_skip_until(prs, TK_COMMA | TK_SEMICOLON);
 	}
