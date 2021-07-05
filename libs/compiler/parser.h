@@ -277,6 +277,15 @@ void parse_declaration_external(parser *const prs, node *const root);
  */
 void parse_initializer(parser *const prs, node *const parent, const item_t type);
 
+/**
+ *	Parse braced initializer
+ *
+ *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
+ *	@param	type		Type of variable in declaration
+ */
+void parse_braced_initializer(parser *const prs, node *const parent, const item_t type);
+
 
 /**
  *	Parse statement [C99 6.8]
