@@ -40,7 +40,7 @@ typedef struct linker
 /**
  *	Create linker structure
  *
- *	@param	ws		Workspace structure	 
+ *	@param	ws		Workspace structure
  *
  *	@return	Linker structure
  */
@@ -58,7 +58,7 @@ linker linker_create(workspace *const ws);
 universal_io linker_add_source(linker *const lk, const size_t index);
 
 /**
- *	Open new incude file
+ *	Open new header file
  *
  *	@param	lk		Linker structure
  *	@param	index	File index in workspace
@@ -79,7 +79,7 @@ universal_io linker_add_header(linker *const lk, const size_t index);
 size_t linker_search_internal(linker *const lk, const char *const file);
 
 /**
- *	Find file through dirs in workspace
+ *	Find file through directories  in workspace
  *
  *	@param	lk		Linker structure
  *	@param	file	File name

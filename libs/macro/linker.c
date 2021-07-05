@@ -95,7 +95,7 @@ universal_io linker_add_source(linker *const lk, const size_t index)
 		{
 			vector_set(&lk->included, index, 1);
 			lk->current = index;
-		}	
+		}
 	}
 
 	return input;
@@ -209,7 +209,7 @@ int linker_clear(linker *const lk)
 		return -1;
 	}
 
-	vector_clear(&lk->included);
+	return vector_clear(&lk->included);
 
 	return 0;
 }

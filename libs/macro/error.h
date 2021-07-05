@@ -27,7 +27,7 @@ extern "C" {
 /** Errors codes */
 typedef enum ERROR
 {
-	include_file_not_found = 365,
+	header_file_not_found,
 	source_file_not_found,
 } error_t;
 
