@@ -1437,7 +1437,7 @@ static void parse_assignment_expression_internal(parser *const prs)
 		const item_t type = prs->left_mode;
 		if (mode_is_struct(prs->sx, type) || mode_is_array(prs->sx, type))
 		{
-			parse_initializer(prs, &prs->nd, type);
+			parse_braced_initializer(prs, &prs->nd, type);
 			prs->left_mode = type;
 		}
 		else
