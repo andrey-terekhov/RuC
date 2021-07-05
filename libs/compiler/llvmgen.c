@@ -1903,11 +1903,30 @@ static void statement(information *const info, node *const nd)
 	}
 }
 
-static void init(information *const info, node *const nd)
+static void init(information *const info, node *const nd, const item_t displ, const item_t elem_type)
 {
 	switch (node_get_type(nd))
 	{
-		case OP_ARRAY_INIT:
+		// TODO: пока реализовано только для одномерных массивов
+		case OP_ARRAY_INIT: 
+		{
+			const item_t N = node_get_arg(nd, 0);
+
+			const size_t index = hash_get_index(&info->arrays, displ);
+			printf("displ = %i\n", displ);
+			printf("index = %i\n", index);
+			hash_set_by_index(&info->arrays, index, 1, N);
+			const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+			// printf("here dim = %i\n", dim);
+			// to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+
+			node_set_next(nd);
+			for (item_t i = 0; i < N; i++)
+			{
+				expression(info, nd);
+			}
+		}
+		break;
 		case OP_STRUCT_INIT:
 		{
 			const item_t N = node_get_arg(nd, 0);
@@ -1943,11 +1962,15 @@ static void block(information *const info, node *const nd)
 				const item_t displ = node_get_arg(&id, 0);
 				const item_t elem_type = node_get_arg(&id, 1);
 				const size_t N = (size_t)node_get_arg(&id, 2);
+				const item_t all = node_get_arg(&id, 3);	// 0 если нет инициализации
 				const size_t index = hash_add(&info->arrays, displ, 1 + N);
+				printf("displ = %i\n", displ);
+				printf("index = %i\n\n", index);
 				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
 				node_set_next(nd);
-				for (size_t i = 1; i <= N; i++)
+				// получение и сохранение границ
+				for (size_t i = 1; i <= N && !all; i++)
 				{
 					info->variable_location = LFREE;
 					expression(info, nd);
@@ -1972,12 +1995,15 @@ static void block(information *const info, node *const nd)
 						hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
 					}
 				}
+				node_set_next(nd);	// OP_DECL_ID
 
-				if (hash_get_by_index(&info->arrays, index, IS_STATIC))
+				// объявление массива без инициализации, с инициализацией объявление происходит в init
+				// объявление массива, если он статический
+				if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
 				{
 					to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
 				}
-				else
+				else if (!all)// объявление массива, если он динамический
 				{
 					if (!info->was_dynamic)
 					{
@@ -1985,6 +2011,11 @@ static void block(information *const info, node *const nd)
 					}
 					to_code_alloc_array_dynamic(info, index, elem_type == mode_integer ? mode_integer : mode_float);
 					info->was_dynamic = 1;
+				}
+
+				if (all)
+				{
+					init(info, nd, displ, elem_type);
 				}
 			}
 			break;
@@ -2008,7 +2039,7 @@ static void block(information *const info, node *const nd)
 				node_set_next(nd);
 				if (all)
 				{
-					init(info, nd);
+					init(info, nd, displ, elem_type);
 				}
 			}
 			break;
