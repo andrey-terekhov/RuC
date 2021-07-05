@@ -490,6 +490,7 @@ static void expression(virtual *const vm, node *const nd, const bool is_in_condi
 
 			node_set_next(nd); // TExprend
 			final_operation(vm, nd);
+			node_set_next(nd); // TExprend
 		}
 	}
 }
