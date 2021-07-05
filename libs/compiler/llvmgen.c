@@ -74,6 +74,7 @@ typedef struct information
 												@c value[0]	 - флаг статичности
 												@c value[1..MAX] - границы массива */
 	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
+	int was_memcpy;						/**< Истина, если memcpy использовалась для инициализации */
 } information;
 
 
@@ -660,7 +661,7 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 	info->register_num++;
 }
 
-static void to_code_init_array(information *const info, const size_t index, const item_t type)
+static void to_code_init_array(information *const info, const size_t index, const item_t type, const int is_string)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = bitcast ", info->register_num);
 	info->register_num++;
@@ -678,8 +679,8 @@ static void to_code_init_array(information *const info, const size_t index, cons
 	}
 	uni_printf(info->io, "* %%arr.%" PRIitem " to i8*\n", hash_get_key(&info->arrays, index));
 
-
-	uni_printf(info->io, "call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* bitcast (", info->register_num - 1);
+	// TODO: вызов memcpy необходимо доработать
+	uni_printf(info->io, " call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* bitcast (", info->register_num - 1);
 	for (size_t i = 1; i <= dim; i++)
 	{
 		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
@@ -690,8 +691,11 @@ static void to_code_init_array(information *const info, const size_t index, cons
 	{
 		uni_printf(info->io, "]");
 	}
-	uni_printf(info->io, "* @arr_init.%" PRIitem " to i8*), i32 12, i32 4, i1 false)\n", info->init_num);
-	info->init_num++;
+
+	uni_printf(info->io, "* @%s%" PRIitem " to i8*), i32 12, i32 4, i1 false)\n", is_string ? ".str" : "arr_init."
+		, is_string ? info->string_num : info->init_num);
+	is_string ? info->string_num++ : info->init_num++;
+	info->was_memcpy = 1;
 }
 
 
@@ -1950,7 +1954,7 @@ static void init(information *const info, node *const nd, const item_t displ, co
 			const size_t index = hash_get_index(&info->arrays, displ);
 			hash_set_by_index(&info->arrays, index, 1, N);
 			to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
-			to_code_init_array(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+			to_code_init_array(info, index, elem_type == mode_integer ? mode_integer : mode_float, 0);
 
 			node_set_next(nd);
 			for (item_t i = 0; i < N; i++)
@@ -1958,6 +1962,19 @@ static void init(information *const info, node *const nd, const item_t displ, co
 				info->variable_location = LFREE;
 				expression(info, nd);
 			}
+		}
+		break;
+		// массивы char могут инициализироваться строками
+		case OP_STRING:
+		{
+			const item_t N = node_get_arg(nd, 0);
+
+			const size_t index = hash_get_index(&info->arrays, displ);
+			hash_set_by_index(&info->arrays, index, 1, N + 1);
+			to_code_alloc_array_static(info, index, mode_integer);
+			to_code_init_array(info, index, mode_integer, 1);
+
+			node_set_next(nd);
 		}
 		break;
 		case OP_STRUCT_INIT:
@@ -2154,7 +2171,7 @@ static int codegen(information *const info)
 		uni_printf(info->io, "declare i8* @llvm.stacksave()\n");
 		uni_printf(info->io, "declare void @llvm.stackrestore(i8*)\n");
 	}
-	if (info->init_num > 1)
+	if (info->was_memcpy)
 	{
 		uni_printf(info->io, "declare void @llvm.memcpy.p0i8.p0i8.i32(i8* nocapture writeonly, i8* nocapture readonly, i32, i32, i1)\n");
 	}
@@ -2214,6 +2231,7 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
+	info.was_memcpy = 0;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
