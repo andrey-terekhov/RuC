@@ -488,7 +488,6 @@ static void expression(virtual *const vm, node *const nd, const bool is_in_condi
 				addr = ref;
 			}
 
-			node_set_next(nd); // TExprend
 			final_operation(vm, nd);
 			node_set_next(nd); // TExprend
 		}
@@ -1201,7 +1200,6 @@ static void emit_statement(virtual *const vm, const node *const nd)
 
 		case OP_BLOCK_END:
 		case OP_EXIT_DIRECT:
-		case OP_EXIT:
 			// Пока что это чтобы не менять дерево
 			// Но на самом деле такие узлы не нужны, так как реализация дерева знает количество потомков
 			break;
