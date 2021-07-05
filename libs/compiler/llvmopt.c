@@ -53,7 +53,21 @@ typedef struct information
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
 	size_t slice_depth;								/**< Количество узлов после OP_SLICE_IDENT */
 	size_t slice_stack_size;						/**< Размер стека в начале вырезки */
+
+	// TODO: может стоит и тут сделать функцию печать типа?
+	item_t arr_init_type;							/**< Тип массива при инициализации */
 } information;
+
+
+// TODO: это уже есть в llvmgen, объединить бы
+static double to_double(const int64_t fst, const int64_t snd)
+{
+	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
+	double numdouble;
+	memcpy(&numdouble, &num, sizeof(double));
+
+	return numdouble;
+}
 
 
 static inline int stack_push(information *const info, node_info *const nd)
@@ -303,7 +317,8 @@ static int node_recursive(information *const info, node *const nd)
 		uni_printf(info->io, "@arr_init.%" PRIitem " = private unnamed_addr constant ", info->init_num);
 		info->init_num++;
 		// TODO: а для многомерных как?
-		uni_printf(info->io, "[%" PRIitem " x i32] [", node_get_arg(nd, 0));
+		uni_printf(info->io, "[%" PRIitem " x %s] [", node_get_arg(nd, 0)
+			, info->arr_init_type == mode_integer ? "i32" : "double");
 	}
 
 	for (size_t i = 0; i < node_get_amount(nd); i++)
@@ -414,6 +429,18 @@ static int node_recursive(information *const info, node *const nd)
 						, i < node_get_amount(nd) - 2 ? ", " : "], align 4\n");
 				}
 			}
+			break;
+			case OP_CONST_D:
+			{
+				if (node_get_type(nd) == OP_ARRAY_INIT)
+				{
+					uni_printf(info->io, "double %f%s", to_double(node_get_arg(&child, 0), node_get_arg(&child, 1))
+						, i < node_get_amount(nd) - 2 ? ", " : "], align 8\n");
+				}
+			}
+			break;
+			case OP_DECL_ID:
+				info->arr_init_type = node_get_arg(&child, 1);
 			break;
 
 			default:
