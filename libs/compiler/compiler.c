@@ -19,8 +19,8 @@
 #include <string.h>
 #include "codegen.h"
 #include "errors.h"
+#include "macro.h"
 #include "parser.h"
-#include "preprocessor.h"
 #include "syntax.h"
 #include "uniio.h"
 
