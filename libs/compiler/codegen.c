@@ -54,7 +54,7 @@ typedef struct virtual
 	int was_error;					/**< Error flag */
 } virtual;
 
-
+static void emit_expression(virtual *const vm, const node *const nd);
 static void emit_declaration(virtual *const vm, const node *const nd);
 static void emit_statement(virtual *const vm, const node *const nd);
 
@@ -488,6 +488,7 @@ static void expression(virtual *const vm, node *const nd, const bool is_in_condi
 				addr = ref;
 			}
 
+			node_set_next(nd); // TExprend
 			final_operation(vm, nd);
 		}
 	}
@@ -715,6 +716,9 @@ static void emit_labeled_statement(virtual *const vm, const node *const nd)
 	}
 
 	ident_set_displ(vm->sx, (size_t)label_id, (item_t)mem_size(vm));
+
+	const node nd_statement = node_get_child(nd, 0);
+	emit_statement(vm, &nd_statement);
 }
 
 /**
@@ -919,7 +923,7 @@ static void emit_for_statement(virtual *const vm, const node *const nd)
 	vm->addr_cond = 0;
 	vm->addr_break = 0;
 
-	const size_t addr_inition = mem_size(vm);
+	const size_t addr_init = mem_size(vm);
 	const bool has_condition = node_get_arg(nd, 1) != 0;
 	if (has_condition)
 	{
@@ -943,7 +947,7 @@ static void emit_for_statement(virtual *const vm, const node *const nd)
 	}
 
 	mem_add(vm, IC_B);
-	mem_add(vm, (item_t)addr_inition);
+	mem_add(vm, (item_t)addr_init);
 	addr_end_break(vm);
 
 	vm->addr_break = old_addr_break;
