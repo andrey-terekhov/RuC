@@ -53,6 +53,7 @@ typedef struct information
 	item_t string_num;					/**< Номер строки */
 	item_t register_num;				/**< Номер регистра */
 	item_t label_num;					/**< Номер метки */
+	item_t init_num;					/**< Счётчик для инициализации */
 
 	item_t request_reg;					/**< Регистр на запрос */
 	location_t variable_location;		/**< Расположение переменной */
@@ -661,7 +662,8 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 
 static void to_code_init_array(information *const info, const size_t index, const item_t type)
 {
-	uni_printf(info->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
+	uni_printf(info->io, " %%.%" PRIitem " = bitcast ", info->register_num);
+	info->register_num++;
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
 	for (size_t i = 1; i <= dim; i++)
@@ -674,7 +676,22 @@ static void to_code_init_array(information *const info, const size_t index, cons
 	{
 		uni_printf(info->io, "]");
 	}
-	uni_printf(info->io, ", align 4\n");
+	uni_printf(info->io, "* %%arr.%" PRIitem " to i8*\n", hash_get_key(&info->arrays, index));
+
+
+	uni_printf(info->io, "call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* bitcast (", info->register_num - 1);
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+	}
+	type_to_io(info, type);
+
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->io, "]");
+	}
+	uni_printf(info->io, "* @arr_init.%" PRIitem " to i8*), i32 12, i32 4, i1 false)\n", info->init_num);
+	info->init_num++;
 }
 
 
@@ -1930,16 +1947,15 @@ static void init(information *const info, node *const nd, const item_t displ, co
 		{
 			const item_t N = node_get_arg(nd, 0);
 
-			// const size_t index = hash_get_index(&info->arrays, displ);
-			// printf("displ = %i\n", displ);
-			// printf("index = %i\n", index);
-			const size_t index = 256;
+			const size_t index = hash_get_index(&info->arrays, displ);
 			hash_set_by_index(&info->arrays, index, 1, N);
 			to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+			to_code_init_array(info, index, elem_type == mode_integer ? mode_integer : mode_float);
 
 			node_set_next(nd);
 			for (item_t i = 0; i < N; i++)
 			{
+				info->variable_location = LFREE;
 				expression(info, nd);
 			}
 		}
@@ -1981,8 +1997,6 @@ static void block(information *const info, node *const nd)
 				const size_t N = (size_t)node_get_arg(&id, 2);
 				const item_t all = node_get_arg(&id, 3);	// 0 если нет инициализации
 				const size_t index = hash_add(&info->arrays, displ, 1 + N);
-				// printf("displ = %i\n", displ);
-				// printf("index = %i\n\n", index);
 				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
 				node_set_next(nd);
@@ -2140,6 +2154,10 @@ static int codegen(information *const info)
 		uni_printf(info->io, "declare i8* @llvm.stacksave()\n");
 		uni_printf(info->io, "declare void @llvm.stackrestore(i8*)\n");
 	}
+	if (info->init_num > 1)
+	{
+		uni_printf(info->io, "declare void @llvm.memcpy.p0i8.p0i8.i32(i8* nocapture writeonly, i8* nocapture readonly, i32, i32, i1)\n");
+	}
 
 	return 0;
 }
@@ -2192,6 +2210,7 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	info.string_num = 1;
 	info.register_num = 1;
 	info.label_num = 1;
+	info.init_num = 1;
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
