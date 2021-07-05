@@ -586,17 +586,11 @@ static void emit_array_declaration(virtual *const vm, const node *const nd)
 		emit_expression(vm, &nd_expression);
 	}
 
-	bool has_initializer = false;
-	const node nd_initializer = node_get_child(nd, bounds + 1);
-	if (node_is_correct(&nd_initializer))
-	{
-		has_initializer = true;
-	}
-
 	mem_add(vm, IC_DEFARR); // DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
 
 	const node nd_decl_id = node_get_child(nd, bounds);
 	const item_t dimensions = node_get_arg(&nd_decl_id, 2);
+	const bool has_initializer = bounds + 1 < node_get_amount(nd);
 	mem_add(vm, has_initializer ? dimensions - 1 : dimensions);
 
 	const item_t length = (item_t)size_of(vm->sx, node_get_arg(&nd_decl_id, 1));
@@ -618,6 +612,7 @@ static void emit_array_declaration(virtual *const vm, const node *const nd)
 
 	if (has_initializer)
 	{
+		const node nd_initializer = node_get_child(nd, bounds + 1);
 		emit_expression(vm, &nd_initializer);
 
 		mem_add(vm, IC_ARR_INIT);
