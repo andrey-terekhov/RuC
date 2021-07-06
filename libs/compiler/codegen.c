@@ -1032,7 +1032,6 @@ static void emit_return_statement(virtual *const vm, const node *const nd)
  */
 static void emit_thread(virtual *const vm, const node *const nd)
 {
-	vm->max_threads++;
 	mem_add(vm, IC_CREATE_DIRECT);
 
 	const size_t amount = node_get_amount(nd);
@@ -1043,6 +1042,7 @@ static void emit_thread(virtual *const vm, const node *const nd)
 	}
 
 	mem_add(vm, IC_EXIT_DIRECT);
+	vm->max_threads++;
 }
 
 static void compress_ident(virtual *const vm, const size_t ref)
