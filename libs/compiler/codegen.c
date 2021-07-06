@@ -598,12 +598,12 @@ static void emit_array_declaration(virtual *const vm, const node *const nd)
 
 	const item_t old_displ = node_get_arg(&nd_decl_id, 0);
 	mem_add(vm, old_displ);
-	mem_add(vm, proc_get(vm, (size_t)node_get_arg(&nd_decl_id, 4)));
+	mem_add(vm, proc_get(vm, (size_t)node_get_arg(&nd_decl_id, 4)));	// process
 
 	const item_t usual = node_get_arg(&nd_decl_id, 5);
-	mem_add(vm, usual);							// has empty bounds
-	mem_add(vm, node_get_arg(&nd_decl_id, 3));	// has initializer
-	mem_add(vm, node_get_arg(&nd_decl_id, 6));	// is in structure
+	mem_add(vm, usual);													// has empty bounds
+	mem_add(vm, node_get_arg(&nd_decl_id, 3));							// has initializer
+	mem_add(vm, node_get_arg(&nd_decl_id, 6));							// is in structure
 
 	if (has_initializer)
 	{
