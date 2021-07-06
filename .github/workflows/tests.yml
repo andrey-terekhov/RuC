@@ -9,7 +9,7 @@ jobs:
         uses: actions/checkout@v1
       - name: Run script
         shell: bash
-        run: ./scripts/test.sh -i 0.25
+        run: ./scripts/test.sh
   Windows-Server-2019:
     name: Windows Server 2019
     runs-on: windows-2019
