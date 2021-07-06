@@ -679,7 +679,7 @@ static void to_code_init_array(information *const info, const size_t index, cons
 	}
 	uni_printf(info->io, "* %%arr.%" PRIitem " to i8*\n", hash_get_key(&info->arrays, index));
 
-	// TODO: вызов memcpy необходимо доработать
+	// TODO: со строками и char работает неправильно, надо исправить
 	uni_printf(info->io, " call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* ", info->register_num - 1);
 	if (!is_string)
 	{
