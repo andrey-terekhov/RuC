@@ -982,11 +982,9 @@ static void emit_goto_statement(virtual *const vm, const node *const nd)
  *	Emit continue statement
  *
  *	@param	vm			Code generator
- *	@param	nd			Node in AST
  */
-static void emit_continue_statement(virtual *const vm, const node *const nd)
+static void emit_continue_statement(virtual *const vm)
 {
-	(void)nd;
 	mem_add(vm, IC_B);
 	mem_add(vm, (item_t)vm->addr_cond);
 	vm->addr_cond = mem_size(vm) - 1;
@@ -996,11 +994,9 @@ static void emit_continue_statement(virtual *const vm, const node *const nd)
  *	Emit break statement
  *
  *	@param	vm			Code generator
- *	@param	nd			Node in AST
  */
-static void emit_break_statement(virtual *const vm, const node *const nd)
+static void emit_break_statement(virtual *const vm)
 {
-	(void)nd;
 	mem_add(vm, IC_B);
 	mem_add(vm, (item_t)vm->addr_break);
 	vm->addr_break = mem_size(vm) - 1;
@@ -1164,11 +1160,11 @@ static void emit_statement(virtual *const vm, const node *const nd)
 			break;
 
 		case OP_CONTINUE:
-			emit_continue_statement(vm, nd);
+			emit_continue_statement(vm);
 			break;
 
 		case OP_BREAK:
-			emit_break_statement(vm, nd);
+			emit_break_statement(vm);
 			break;
 
 		case OP_RETURN_VAL:
