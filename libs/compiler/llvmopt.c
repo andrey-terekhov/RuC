@@ -421,24 +421,6 @@ static int node_recursive(information *const info, node *const nd)
 				}
 			}
 			break;
-			case OP_CONST:
-			{
-				if (node_get_type(nd) == OP_ARRAY_INIT)
-				{
-					uni_printf(info->io, "i32 %" PRIitem "%s", node_get_arg(&child, 0)
-						, i < node_get_amount(nd) - 2 ? ", " : "], align 4\n");
-				}
-			}
-			break;
-			case OP_CONST_D:
-			{
-				if (node_get_type(nd) == OP_ARRAY_INIT)
-				{
-					uni_printf(info->io, "double %f%s", to_double(node_get_arg(&child, 0), node_get_arg(&child, 1))
-						, i < node_get_amount(nd) - 2 ? ", " : "], align 8\n");
-				}
-			}
-			break;
 			case OP_DECL_ID:
 				info->arr_init_type = node_get_arg(&child, 1);
 			break;
@@ -453,7 +435,31 @@ static int node_recursive(information *const info, node *const nd)
 				switch (expression_type(&child))
 				{
 					case OPERAND:
+					{
+						switch (node_get_type(&child))
+						{
+							case OP_CONST:
+							{
+								if (node_get_type(nd) == OP_ARRAY_INIT)
+								{
+									uni_printf(info->io, "i32 %" PRIitem "%s", node_get_arg(&child, 0)
+										, i < node_get_amount(nd) - 2 ? ", " : "], align 4\n");
+								}
+							}
+							break;
+							case OP_CONST_D:
+							{
+								if (node_get_type(nd) == OP_ARRAY_INIT)
+								{
+									uni_printf(info->io, "double %f%s", to_double(node_get_arg(&child, 0), node_get_arg(&child, 1))
+										, i < node_get_amount(nd) - 2 ? ", " : "], align 8\n");
+								}
+							}
+							break;
+						}
+
 						stack_push(info, &nd_info);
+					}
 						break;
 					case UNARY_OPERATION:
 					{
