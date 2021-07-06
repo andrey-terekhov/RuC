@@ -101,7 +101,7 @@ static int transposition(node_info *const expr, node_info *const cur)
 	node_copy(&node_to_order, expr->ref_node);
 	for (size_t i = 1; i < expr->depth; i++)
 	{
-		node_to_order = node_get_child(&node_to_order, 0);
+		node_to_order = node_get_next(&node_to_order);
 
 		node_order(cur->ref_node, &node_to_order);
 
@@ -411,7 +411,6 @@ static int node_recursive(information *const info, node *const nd)
 						// перестановка с операндом
 						has_error |= transposition(operand, &nd_info);
 
-						// TODO: раньше не всегда, но работало, сейчас нет, надо разобраться
 						if (node_get_type(operand->ref_node) == OP_CALL1)
 						{
 							node tmp = child;
@@ -431,26 +430,34 @@ static int node_recursive(information *const info, node *const nd)
 						node_info *second = stack_pop(info);
 						node_info *first = stack_pop(info);
 
-						if (node_get_type(nd_info.ref_node) == OP_ADDR_TO_VAL)
+						node parent1 = node_get_parent(nd_info.ref_node);
+						node_info log_info1 = nd_info;
+
+						if (node_get_type(&parent1) == OP_ADDR_TO_VAL)
 						{
-							node_info log_info = { nd_info.ref_node, 1 };
-							has_error |= transposition(&nd_info, &log_info);
+							log_info1.ref_node = &parent1;
+							log_info1.depth = 1;
+							has_error |= transposition(&nd_info, &log_info1);
 						}
 
 						// перестановка со вторым операндом
-						has_error |= transposition(second, &nd_info);
+						has_error |= transposition(second, &log_info1);
+
+						node parent2 = node_get_parent(second->ref_node);
+						node_info log_info2 = *second;
 
 						// надо переставить second с родителем
-						if (node_get_type(second->ref_node) == OP_AD_LOG_OR
-							|| node_get_type(second->ref_node) == OP_AD_LOG_AND
-							|| node_get_type(second->ref_node) == OP_ADDR_TO_VAL)
+						if (node_get_type(&parent2) == OP_AD_LOG_OR
+							|| node_get_type(&parent2) == OP_AD_LOG_AND
+							|| node_get_type(&parent2) == OP_ADDR_TO_VAL)
 						{
-							node_info log_info = { second->ref_node, 1 };
-							has_error |= transposition(second, &log_info);
+							log_info2.ref_node = &parent2;
+							log_info2.depth = 1;
+							has_error |= transposition(second, &log_info2);
 						}
 
 						// перестановка с первым операндом
-						has_error |= transposition(first, second);
+						has_error |= transposition(first, &log_info2);
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(info, first);
