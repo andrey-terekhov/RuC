@@ -388,7 +388,9 @@ static int node_recursive(information *const info, node *const nd)
 
 			default:
 			{
-				node_info nd_info = (node_info){ &child, 1 };
+				node_info nd_info;
+				nd_info.ref_node = &child;
+				nd_info.depth = 1;
 
 				// перестановка узлов выражений
 				switch (expression_type(&child))
@@ -411,7 +413,8 @@ static int node_recursive(information *const info, node *const nd)
 
 						if (node_get_type(operand->ref_node) == OP_CALL1)
 						{
-							node tmp = child;
+							node tmp;
+							node_copy(&tmp, &child);
 							while (node_get_type(&tmp) != OP_CALL2)
 							{
 								node_set_next(&tmp);
