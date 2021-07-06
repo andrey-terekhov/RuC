@@ -44,7 +44,7 @@ enum TYPE
 	type_undefined,
 
 	type_msg_info 		= 2,
-	type_void_pointer	= 15,
+	type_void_pointer	= 10,
 	type_function		= 1001,
 	type_struct,
 	type_array,

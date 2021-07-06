@@ -136,21 +136,14 @@ static inline void type_init(syntax *const sx)
 	vector_add(&sx->types, type_integer);
 	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "data"));
 
-	// занесение в types описателя функции void t_msg_send(struct msg_info m)
-	vector_add(&sx->types, 1);
-	vector_add(&sx->types, type_function);
-	vector_add(&sx->types, type_void);
-	vector_add(&sx->types, 1);
-	vector_add(&sx->types, 2);
-
 	// занесение в types описателя функции void* interpreter(void* n)
-	vector_add(&sx->types, 9);
+	vector_add(&sx->types, 1);
 	vector_add(&sx->types, type_function);
 	vector_add(&sx->types, type_void_pointer);
 	vector_add(&sx->types, 1);
 	vector_add(&sx->types, type_void_pointer);
 
-	sx->start_type = 14;
+	sx->start_type = 9;
 }
 
 static inline item_t get_static(syntax *const sx, const item_t type)
