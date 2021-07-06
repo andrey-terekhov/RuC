@@ -336,15 +336,15 @@ static int node_recursive(information *const info, node *const nd)
 				// перестановка OP_PRINTF
 				for (size_t j = 0; j < N + 1; j++)
 				{
-					node child_to_swap1 = node_get_child(nd, i - j);
-					node child_to_swap2 = node_get_child(nd, i - j - 1);
-					node_swap(&child_to_swap1, &child_to_swap2);
+					const node fst = node_get_child(nd, i - j);
+					const node snd = node_get_child(nd, i - j - 1);
+					node_swap(&fst, &snd);
 
 					// TODO: пока только для двумерных вырезок, потом надо подумать
-					if (node_get_type(&child_to_swap2) == OP_IDENT_TO_VAL_D
-						|| (node_get_type(&child_to_swap2) == OP_SLICE_IDENT
-						&& (node_get_arg(&child_to_swap2, 1) == mode_float
-						|| mode_get(info->sx, (size_t)node_get_arg(&child_to_swap2, 1) + 1) == mode_float)))
+					if (node_get_type(&snd) == OP_IDENT_TO_VAL_D
+						|| (node_get_type(&snd) == OP_SLICE_IDENT
+						&& (node_get_arg(&snd, 1) == mode_float
+						|| mode_get(info->sx, (size_t)node_get_arg(&snd, 1) + 1) == mode_float)))
 					{
 						N--;
 					}
@@ -353,9 +353,9 @@ static int node_recursive(information *const info, node *const nd)
 				// перестановка OP_STRING
 				for (size_t j = 0; j < N; j++)
 				{
-					node child_to_swap1 = node_get_child(nd, i - j);
-					node child_to_swap2 = node_get_child(nd, i - j - 1);
-					node_swap(&child_to_swap1, &child_to_swap2);
+					const node fst = node_get_child(nd, i - j);
+					const node snd = node_get_child(nd, i - j - 1);
+					node_swap(&fst, &snd);
 				}
 
 				node nd_printf = node_get_child(nd, i - N - 1);
