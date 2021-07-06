@@ -2273,5 +2273,5 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	// const int ret = codegen(&info);
 
 	hash_clear(&info.arrays);
-	return 1;
+	return 0;
 }
