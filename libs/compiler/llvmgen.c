@@ -680,20 +680,53 @@ static void to_code_init_array(information *const info, const size_t index, cons
 	uni_printf(info->io, "* %%arr.%" PRIitem " to i8*\n", hash_get_key(&info->arrays, index));
 
 	// TODO: вызов memcpy необходимо доработать
-	uni_printf(info->io, " call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* bitcast (", info->register_num - 1);
-	for (size_t i = 1; i <= dim; i++)
+	uni_printf(info->io, " call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* ", info->register_num - 1);
+	if (!is_string)
 	{
-		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
-	}
-	type_to_io(info, type);
+		uni_printf(info->io, "bitcast (");
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+		}
+		type_to_io(info, type);
 
-	for (size_t i = 1; i <= dim; i++)
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "]");
+		}
+		uni_printf(info->io, "* @arr_init.%" PRIitem " to i8*)", info->init_num);
+	}
+	else
 	{
-		uni_printf(info->io, "]");
-	}
+		uni_printf(info->io, "getelementptr inbounds (");
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+		}
+		uni_printf(info->io, "i8");
 
-	uni_printf(info->io, "* @%s%" PRIitem " to i8*), i32 12, i32 4, i1 false)\n", is_string ? ".str" : "arr_init."
-		, is_string ? info->string_num : info->init_num);
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "]");
+		}
+
+		uni_printf(info->io, ", ");
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+		}
+		uni_printf(info->io, "i8");
+
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "]");
+		}
+		uni_printf(info->io, "* @.str%" PRIitem ", i32 0, i32 0)", info->string_num);
+	}
+	
+	uni_printf(info->io, ", i32 %" PRIitem ", i32 %i, i1 false)\n"
+		, (mode_is_float(type) ? 8 : 4) * hash_get_by_index(&info->arrays, index, 1), mode_is_float(type) ? 8 : 4);
+
 	is_string ? info->string_num++ : info->init_num++;
 	info->was_memcpy = 1;
 }
