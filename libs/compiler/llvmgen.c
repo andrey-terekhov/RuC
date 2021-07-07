@@ -878,7 +878,10 @@ static void operand(information *const info, node *const nd)
 				info->answer_reg = info->register_num++;
 			}
 
-			if (-1 < cur_dimension && cur_dimension < 4) // значит что-то не так
+			// Проверка, что значение cur_dimension корректное и в пределах допустимого
+			// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
+			// if (-1 < cur_dimension && cur_dimension < 5)
+			if (cur_dimension == -2)
 			{
 				to_code_slice(info, displ, cur_dimension, 0, type);
 			}
@@ -891,7 +894,10 @@ static void operand(information *const info, node *const nd)
 				expression(info, nd);
 				cur_dimension--;
 
-				if (-1 < cur_dimension && cur_dimension < 4) // значит что-то не так
+				// Проверка, что значение cur_dimension корректное и в пределах допустимого
+				// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
+				// if (-1 < cur_dimension && cur_dimension < 5)
+				if (cur_dimension == -2)
 				{
 					to_code_slice(info, displ, cur_dimension, prev_slice, type);
 				}
