@@ -360,15 +360,15 @@ static int node_recursive(information *const info, node *const nd)
 				// перестановка OP_PRINTF
 				for (size_t j = 0; j < N + 1; j++)
 				{
-					node child_to_swap1 = node_get_child(nd, i - j);
-					node child_to_swap2 = node_get_child(nd, i - j - 1);
-					node_swap(&child_to_swap1, &child_to_swap2);
+					const node fst = node_get_child(nd, i - j);
+					const node snd = node_get_child(nd, i - j - 1);
+					node_swap(&fst, &snd);
 
 					// TODO: пока только для двумерных вырезок, потом надо подумать
-					if (node_get_type(&child_to_swap2) == OP_IDENT_TO_VAL_D
-						|| (node_get_type(&child_to_swap2) == OP_SLICE_IDENT
-						&& (node_get_arg(&child_to_swap2, 1) == mode_float
-						|| mode_get(info->sx, (size_t)node_get_arg(&child_to_swap2, 1) + 1) == mode_float)))
+					if (node_get_type(&snd) == OP_IDENT_TO_VAL_D
+						|| (node_get_type(&snd) == OP_SLICE_IDENT
+						&& (node_get_arg(&snd, 1) == mode_float
+						|| mode_get(info->sx, (size_t)node_get_arg(&snd, 1) + 1) == mode_float)))
 					{
 						N--;
 					}
@@ -377,9 +377,9 @@ static int node_recursive(information *const info, node *const nd)
 				// перестановка OP_STRING
 				for (size_t j = 0; j < N; j++)
 				{
-					node child_to_swap1 = node_get_child(nd, i - j);
-					node child_to_swap2 = node_get_child(nd, i - j - 1);
-					node_swap(&child_to_swap1, &child_to_swap2);
+					const node fst = node_get_child(nd, i - j);
+					const node snd = node_get_child(nd, i - j - 1);
+					node_swap(&fst, &snd);
 				}
 
 				node nd_printf = node_get_child(nd, i - N - 1);
@@ -476,7 +476,8 @@ static int node_recursive(information *const info, node *const nd)
 
 						if (node_get_type(operand->ref_node) == OP_CALL1)
 						{
-							node tmp = child;
+							node tmp;
+							node_copy(&tmp, &child);
 							while (node_get_type(&tmp) != OP_CALL2)
 							{
 								node_set_next(&tmp);
@@ -493,34 +494,34 @@ static int node_recursive(information *const info, node *const nd)
 						node_info *second = stack_pop(info);
 						node_info *first = stack_pop(info);
 
-						node parent1 = node_get_parent(nd_info.ref_node);
-						node_info log_info1 = nd_info;
+						node parent = node_get_parent(nd_info.ref_node);
+						node_info log_info_fst = nd_info;
 
-						if (node_get_type(&parent1) == OP_ADDR_TO_VAL)
+						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							log_info1.ref_node = &parent1;
-							log_info1.depth = 1;
-							has_error |= transposition(&nd_info, &log_info1);
+							log_info_fst.ref_node = &parent;
+							log_info_fst.depth = 1;
+							has_error |= transposition(&nd_info, &log_info_fst);
 						}
 
 						// перестановка со вторым операндом
-						has_error |= transposition(second, &log_info1);
+						has_error |= transposition(second, &log_info_fst);
 
-						node parent2 = node_get_parent(second->ref_node);
-						node_info log_info2 = *second;
+						parent = node_get_parent(second->ref_node);
+						node_info log_info_snd = *second;
 
 						// надо переставить second с родителем
-						if (node_get_type(&parent2) == OP_AD_LOG_OR
-							|| node_get_type(&parent2) == OP_AD_LOG_AND
-							|| node_get_type(&parent2) == OP_ADDR_TO_VAL)
+						if (node_get_type(&parent) == OP_AD_LOG_OR
+							|| node_get_type(&parent) == OP_AD_LOG_AND
+							|| node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							log_info2.ref_node = &parent2;
-							log_info2.depth = 1;
-							has_error |= transposition(second, &log_info2);
+							log_info_snd.ref_node = &parent;
+							log_info_snd.depth = 1;
+							has_error |= transposition(second, &log_info_snd);
 						}
 
 						// перестановка с первым операндом
-						has_error |= transposition(first, &log_info2);
+						has_error |= transposition(first, &log_info_snd);
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(info, first);
