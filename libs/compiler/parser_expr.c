@@ -288,119 +288,6 @@ static item_t parse_braced_init_list(parser *const prs, const item_t type)
 	return to_modetab(prs, type_array, type);
 }
 
-static void must_be_string(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	if (!type_is_string(prs->sx, stack_pop(&prs->anonymous)))
-	{
-		parser_error(prs, not_string_in_stanfunc);
-	}
-}
-
-static void must_be_point_string(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	const item_t type = stack_pop(&prs->anonymous);
-	if (!(type_is_pointer(prs->sx, type) && type_is_string(prs->sx, type_get(prs->sx, (size_t)type + 1))))
-	{
-		parser_error(prs, not_point_string_in_stanfunc);
-	}
-}
-
-static void must_be_row(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	if (!type_is_array(prs->sx, stack_pop(&prs->anonymous)))
-	{
-		parser_error(prs, not_array_in_stanfunc);
-	}
-}
-
-static void must_be_int(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	if (!type_is_integer(stack_pop(&prs->anonymous)))
-	{
-		parser_error(prs, not_int_in_stanfunc);
-	}
-}
-
-static void must_be_float(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	const item_t type = stack_pop(&prs->anonymous);
-	if (type_is_integer(type))
-	{
-		to_tree(prs, OP_WIDEN);
-	}
-	else if (!type_is_float(type))
-	{
-		parser_error(prs, bad_param_in_stand_func);
-	}
-}
-
-static void must_be_row_of_int(parser *const prs)
-{
-	item_t type;
-	if (prs->token == TK_L_BRACE)
-	{
-		type = parse_braced_init_list(prs, type_integer);
-	}
-	else
-	{
-		parse_assignment_expression_internal(prs);
-		to_value(prs);
-
-		type = stack_pop(&prs->anonymous);
-		if (type_is_integer(type))
-		{
-			to_tree(prs, OP_ROWING);
-			type = to_modetab(prs, type_array, type_integer);
-		}
-	}
-
-	if (!(type_is_array(prs->sx, type) && type_is_integer(type_get(prs->sx, (size_t)type + 1))))
-	{
-		parser_error(prs, not_rowofint_in_stanfunc);
-	}
-}
-
-static void must_be_row_of_float(parser *const prs)
-{
-	item_t type;
-	if (prs->token == TK_L_BRACE)
-	{
-		type = parse_braced_init_list(prs, type_float);
-	}
-	else
-	{
-		parse_assignment_expression_internal(prs);
-		to_value(prs);
-
-		type = stack_pop(&prs->anonymous);
-		if (type_is_float(type))
-		{
-			to_tree(prs, OP_ROWING_D);
-			type = to_modetab(prs, type_array, type_float);
-		}
-	}
-
-	if (!(type_is_array(prs->sx, type) && type_get(prs->sx, (size_t)type + 1) == type_float))
-	{
-		parser_error(prs, not_rowoffloat_in_stanfunc);
-	}
-}
-
 static void parse_standard_function_call(parser *const prs)
 {
 	const token_t func = prs->token;
@@ -415,9 +302,24 @@ static void parse_standard_function_call(parser *const prs)
 
 	if (func == TK_UPB)
 	{
-		must_be_int(prs);
+		parse_assignment_expression_internal(prs);
+		to_value(prs);
+
+		if (!type_is_integer(stack_pop(&prs->anonymous)))
+		{
+			parser_error(prs, not_int_in_stanfunc);
+		}
+
 		token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-		must_be_row(prs);
+
+		parse_assignment_expression_internal(prs);
+		to_value(prs);
+
+		if (!type_is_array(prs->sx, stack_pop(&prs->anonymous)))
+		{
+			parser_error(prs, not_array_in_stanfunc);
+		}
+
 		operands_push(prs, VALUE, type_integer);
 		to_tree(prs, OP_UPB);
 	}
