@@ -599,6 +599,11 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 {
 	uni_printf(info->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
 	const item_t dimensions = hash_get_amount(&info->arrays, displ) - 1;
+	
+	if (dimensions < 1) // значит что-то не так
+	{
+		return;
+	}
 
 	if (hash_get(&info->arrays, displ, IS_STATIC))
 	{
