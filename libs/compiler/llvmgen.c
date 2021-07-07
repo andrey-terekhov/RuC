@@ -750,9 +750,10 @@ static void operand(information *const info, node *const nd)
 		{
 			const item_t displ = node_get_arg(nd, 0);
 			// TODO: как и в llvmopt, это работает только для двумерных массивов
-			//	, надо подумать над этим потом (может общую функцию сделать?)
-			const item_t type = node_get_arg(nd, 1) > 0 ? mode_get(info->sx, (size_t)node_get_arg(nd, 1) + 1)
-				: node_get_arg(nd, 1);
+			// надо подумать над этим потом (может общую функцию сделать?)
+			const item_t type = node_get_arg(nd, 1) > 0
+									? mode_get(info->sx, (size_t)node_get_arg(nd, 1) + 1)
+									: node_get_arg(nd, 1);
 			item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 			const location_t location = info->variable_location;
 			node_set_next(nd);
@@ -1987,15 +1988,14 @@ static int codegen(information *const info)
 static void structs_declaration(information *const info)
 {
 	const size_t modes_size = vector_size(&info->sx->modes);
-
 	for (size_t i = 0; i < modes_size; i++)
 	{
 		if (mode_is_struct(info->sx, i) && i != 2)
 		{
 			uni_printf(info->io, "%%struct_opt.%zi = type { ", i);
 
-			const size_t fields_number = (size_t)mode_get(info->sx, i + 2);
-			for (size_t j = 0; j < fields_number; j += 2)
+			const size_t fields = (size_t)mode_get(info->sx, i + 2);
+			for (size_t j = 0; j < fields; j += 2)
 			{
 				uni_printf(info->io, j == 0 ? "" : ", ");
 				type_to_io(info, mode_get(info->sx, i + 3 + j));
