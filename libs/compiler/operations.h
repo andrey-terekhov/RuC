@@ -343,7 +343,7 @@ operation_t token_to_binary(const token_t token);
 operation_t token_to_unary(const token_t token);
 
 /**
- *	Convert standart function id to corresponding function instruction
+ *	Convert standard function id to corresponding function instruction
  *
  *	@param	builtin	Function id
  *
