@@ -77,49 +77,10 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"scanf", U"читатьф", TK_SCANF);
 	repr_add_keyword(reprtab, U"getid", U"читатьид", TK_GETID);
 	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
-	repr_add_keyword(reprtab, U"sqrt", U"квкор", TK_SQRT);
-	repr_add_keyword(reprtab, U"exp", U"эксп", TK_EXP);
-	repr_add_keyword(reprtab, U"sin", U"син", TK_SIN);
-	repr_add_keyword(reprtab, U"cos", U"кос", TK_COS);
-	repr_add_keyword(reprtab, U"log", U"лог", TK_LOG);
-	repr_add_keyword(reprtab, U"log10", U"лог10", TK_LOG10);
-	repr_add_keyword(reprtab, U"asin", U"асин", TK_ASIN);
-	repr_add_keyword(reprtab, U"rand", U"случ", TK_RAND);
-	repr_add_keyword(reprtab, U"round", U"округл", TK_ROUND);
-	repr_add_keyword(reprtab, U"strcpy", U"копир_строку", TK_STRCPY);
-	repr_add_keyword(reprtab, U"strncpy", U"копир_н_симв", TK_STRNCPY);
-	repr_add_keyword(reprtab, U"strcat", U"конкат_строки", TK_STRCAT);
-	repr_add_keyword(reprtab, U"strncat", U"конкат_н_симв", TK_STRNCAT);
-	repr_add_keyword(reprtab, U"strcmp", U"сравн_строк", TK_STRCMP);
-	repr_add_keyword(reprtab, U"strncmp", U"сравн_н_симв", TK_STRNCMP);
-	repr_add_keyword(reprtab, U"strstr", U"нач_подстрок", TK_STRSTR);
-	repr_add_keyword(reprtab, U"strlen", U"длина", TK_STRLEN);
+	repr_add_keyword(reprtab, U"upb", U"кол_во", TK_UPB);
 
 	repr_add_keyword(reprtab, U"t_create_direct", U"н_создать_непоср", TK_CREATE_DIRECT);
 	repr_add_keyword(reprtab, U"t_exit_direct", U"н_конец_непоср", TK_EXIT_DIRECT);
-
-	repr_add_keyword(reprtab, U"t_msg_send", U"н_послать", TK_MSG_SEND);
-	repr_add_keyword(reprtab, U"t_msg_receive", U"н_получить", TK_MSG_RECEIVE);
-	repr_add_keyword(reprtab, U"t_join", U"н_присоед", TK_JOIN);
-	repr_add_keyword(reprtab, U"t_sleep", U"н_спать", TK_SLEEP);
-	repr_add_keyword(reprtab, U"t_sem_create", U"н_создать_сем", TK_SEM_CREATE);
-	repr_add_keyword(reprtab, U"t_sem_wait", U"н_вниз_сем", TK_SEM_WAIT);
-	repr_add_keyword(reprtab, U"t_sem_post", U"н_вверх_сем", TK_SEM_POST);
-	repr_add_keyword(reprtab, U"t_create", U"н_создать", TK_CREATE);
-	repr_add_keyword(reprtab, U"t_init", U"н_начать", TK_INIT);
-	repr_add_keyword(reprtab, U"t_destroy", U"н_закончить", TK_DESTROY);
-	repr_add_keyword(reprtab, U"t_exit", U"н_конец", TK_EXIT);
-	repr_add_keyword(reprtab, U"t_getnum", U"н_номер_нити", TK_GETNUM);
-
-	repr_add_keyword(reprtab, U"assert", U"проверить", TK_ASSERT);
-	repr_add_keyword(reprtab, U"upb", U"кол_во", TK_UPB);
-
-	repr_add_keyword(reprtab, U"send_int_to_robot", U"послать_цел_на_робот", TK_ROBOT_SEND_INT);
-	repr_add_keyword(reprtab, U"send_float_to_robot", U"послать_вещ_на_робот", TK_ROBOT_SEND_FLOAT);
-	repr_add_keyword(reprtab, U"send_string_to_robot", U"послать_строку_на_робот", TK_ROBOT_SEND_STRING);
-	repr_add_keyword(reprtab, U"receive_int_from_robot", U"получить_цел_от_робота", TK_ROBOT_RECEIVE_INT);
-	repr_add_keyword(reprtab, U"receive_float_from_robot", U"получить_вещ_от_робота", TK_ROBOT_RECEIVE_FLOAT);
-	repr_add_keyword(reprtab, U"receive_string_from_robot", U"получить_строку_от_робота", TK_ROBOT_RECEIVE_STRING);
 }
 
 
@@ -191,6 +152,152 @@ static inline bool type_is_equal(const syntax *const sx, const size_t first, con
 	return true;
 }
 
+/**
+ *	args = list of characters each for one argument
+ *		v -> void
+ *		i -> int
+ *		f -> float
+ *		s -> char[]
+ *		S -> char[]*
+ *		I -> int[]
+ *		F -> float[]
+ *		V -> void*
+ *		m -> msg_info
+ */
+static item_t type_new_function(syntax *const sx, const item_t return_type, const char *const args)
+{
+	item_t local_modetab[6];
+	size_t i = 0;
+
+	local_modetab[0] = type_function;
+	local_modetab[1] = return_type;
+
+	while (args[i] != '\0')
+	{
+		switch (args[i])
+		{
+			case 'v':
+				local_modetab[3 + i] = type_void;
+				break;
+
+			case 'i':
+				local_modetab[3 + i] = type_integer;
+				break;
+
+			case 'f':
+				local_modetab[3 + i] = type_float;
+				break;
+
+			case 's':
+				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_array, type_character }, 2);
+				break;
+
+			case 'S':
+			{
+				const size_t ref = type_add(sx, (item_t[]){ type_array, type_character }, 2);
+				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_pointer, (item_t)ref }, 2);
+			}
+			break;
+
+			case 'I':
+				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_array, type_integer }, 2);
+				break;
+
+			case 'F':
+				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_array, type_float }, 2);
+				break;
+
+			case 'V':
+				local_modetab[3 + i] = type_void_pointer;
+				break;
+
+			case 'm':
+				local_modetab[3 + i] = type_msg_info;
+				break;
+		}
+
+		i++;
+	}
+
+	local_modetab[2] = (item_t)i;
+
+	return (item_t)type_add(sx, local_modetab, i + 3);
+}
+
+static void builtin_add(syntax *const sx, const char32_t *const eng, const char32_t *const rus, const item_t type)
+{
+	// Добавляем одно из написаний в таблицу representations
+	const size_t repr = map_add_by_utf8(&sx->representations, eng, ITEM_MAX);
+
+	// Добавляем идентификатор в identifiers
+	const item_t id = (item_t)ident_add(sx, repr, 2, type, 1);
+
+	// Добавляем остальные варианты написания, все будут ссылаться на id
+	char32_t buffer[MAX_STRING_LENGTH];
+
+	buffer[0] = utf8_to_upper(eng[0]);
+	for (size_t i = 1; eng[i - 1] != '\0'; i++)
+	{
+		buffer[i] = utf8_to_upper(eng[i]);
+	}
+	map_add_by_utf8(&sx->representations, buffer, id);
+
+	buffer[0] = utf8_to_upper(rus[0]);
+	for (size_t i = 1; rus[i - 1] != '\0'; i++)
+	{
+		buffer[i] = utf8_to_upper(rus[i]);
+	}
+	map_add_by_utf8(&sx->representations, rus, id);
+	map_add_by_utf8(&sx->representations, buffer, id);
+}
+
+
+static void ident_init(syntax *const sx)
+{
+	builtin_add(sx, U"assert", U"проверить", type_new_function(sx, type_void, "is"));
+
+	builtin_add(sx, U"asin", U"асин", type_new_function(sx, type_float, "f"));
+	builtin_add(sx, U"cos", U"кос", type_new_function(sx, type_float, "f"));
+	builtin_add(sx, U"sin", U"син", type_new_function(sx, type_float, "f"));
+	builtin_add(sx, U"exp", U"эксп", type_new_function(sx, type_float, "f"));
+	builtin_add(sx, U"log", U"лог", type_new_function(sx, type_float, "f"));
+	builtin_add(sx, U"log10", U"лог10", type_new_function(sx, type_float, "f"));
+	builtin_add(sx, U"sqrt", U"квкор", type_new_function(sx, type_float, "f"));
+	builtin_add(sx, U"rand", U"случ", type_new_function(sx, type_float, ""));
+	builtin_add(sx, U"round", U"округл", type_new_function(sx, type_integer, "f"));
+
+	builtin_add(sx, U"strcpy", U"копир_строку", type_new_function(sx, type_void, "Ss"));
+	builtin_add(sx, U"strncpy", U"копир_н_симв", type_new_function(sx, type_void, "Ssi"));
+	builtin_add(sx, U"strcat", U"конкат_строки", type_new_function(sx, type_void, "Ss"));
+	builtin_add(sx, U"strncat", U"конкат_н_симв", type_new_function(sx, type_void, "Ssi"));
+	builtin_add(sx, U"strcmp", U"сравн_строк", type_new_function(sx, type_integer, "ss"));
+	builtin_add(sx, U"strncmp", U"сравн_н_симв", type_new_function(sx, type_integer, "ssi"));
+	builtin_add(sx, U"strstr", U"нач_подстрок", type_new_function(sx, type_integer, "ss"));
+	builtin_add(sx, U"strlen", U"длина", type_new_function(sx, type_integer, "s"));
+
+	builtin_add(sx, U"send_int_to_robot", U"послать_цел_на_робот", type_new_function(sx, type_void, "iI"));
+	builtin_add(sx, U"send_float_to_robot", U"послать_вещ_на_робот", type_new_function(sx, type_void, "iF"));
+	builtin_add(sx, U"send_string_to_robot", U"послать_строку_на_робот", type_new_function(sx, type_void, "is"));
+	builtin_add(sx, U"receive_int_from_robot", U"получить_цел_от_робота", type_new_function(sx, type_integer, "i"));
+	builtin_add(sx, U"receive_float_from_robot", U"получить_вещ_от_робота", type_new_function(sx, type_float, "i"));
+	builtin_add(sx, U"receive_string_from_robot", U"получить_строку_от_робота", type_new_function(sx, type_void, "i"));
+
+	builtin_add(sx, U"t_create", U"н_создать", type_new_function(sx, type_integer, "V"));
+	builtin_add(sx, U"t_getnum", U"н_номер_нити", type_new_function(sx, type_integer, ""));
+	builtin_add(sx, U"t_sleep", U"н_спать", type_new_function(sx, type_void, "i"));
+	builtin_add(sx, U"t_join", U"н_присоед", type_new_function(sx, type_void, "i"));
+	builtin_add(sx, U"t_exit", U"н_конец", type_new_function(sx, type_void, ""));
+	builtin_add(sx, U"t_init", U"н_начать", type_new_function(sx, type_void, ""));
+	builtin_add(sx, U"t_destroy", U"н_закончить", type_new_function(sx, type_void, ""));
+
+	builtin_add(sx, U"t_sem_create", U"н_создать_сем", type_new_function(sx, type_integer, "i"));
+	builtin_add(sx, U"t_sem_wait", U"н_вниз_сем", type_new_function(sx, type_void, "i"));
+	builtin_add(sx, U"t_sem_post", U"н_вверх_сем", type_new_function(sx, type_void, "i"));
+
+	builtin_add(sx, U"t_msg_send", U"н_послать", type_new_function(sx, type_void, "m"));
+	builtin_add(sx, U"t_msg_receive", U"н_получить", type_new_function(sx, type_msg_info, ""));
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -221,6 +328,8 @@ syntax sx_create()
 
 	sx.types = vector_create(TYPES_SIZE);
 	type_init(&sx);
+
+	ident_init(&sx);
 
 	sx.max_displg = 3;
 	sx.ref_main = 0;
