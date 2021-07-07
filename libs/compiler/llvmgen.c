@@ -778,7 +778,12 @@ static void operand(information *const info, node *const nd)
 				info->answer_reg = info->register_num++;
 			}
 
-			to_code_slice(info, displ, cur_dimension, 0, type);
+			// Проверка, что значение cur_dimension корректное и в пределах допустимого
+			// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
+			if (-1 < cur_dimension && cur_dimension < 5)
+			{
+				to_code_slice(info, displ, cur_dimension, 0, type);
+			}
 
 			item_t prev_slice = info->register_num - 1;
 			while (node_get_type(nd) == OP_SLICE)
@@ -788,7 +793,12 @@ static void operand(information *const info, node *const nd)
 				expression(info, nd);
 				cur_dimension--;
 
-				to_code_slice(info, displ, cur_dimension, prev_slice, type);
+				// Проверка, что значение cur_dimension корректное и в пределах допустимого
+				// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
+				if (-1 < cur_dimension && cur_dimension < 5)
+				{
+					to_code_slice(info, displ, cur_dimension, prev_slice, type);
+				}
 				prev_slice = info->register_num - 1;
 			}
 
