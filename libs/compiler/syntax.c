@@ -155,13 +155,13 @@ static inline bool type_is_equal(const syntax *const sx, const size_t first, con
 /**
  *	args = list of characters each for one argument
  *		v -> void
- *		i -> int
- *		f -> float
+ *		V -> void*
  *		s -> char[]
  *		S -> char[]*
+ *		i -> int
  *		I -> int[]
+ *		f -> float
  *		F -> float[]
- *		V -> void*
  *		m -> msg_info
  */
 static item_t type_new_function(syntax *const sx, const item_t return_type, const char *const args)
@@ -179,38 +179,30 @@ static item_t type_new_function(syntax *const sx, const item_t return_type, cons
 			case 'v':
 				local_modetab[3 + i] = type_void;
 				break;
-
-			case 'i':
-				local_modetab[3 + i] = type_integer;
+			case 'V':
+				local_modetab[3 + i] = type_void_pointer;
 				break;
-
-			case 'f':
-				local_modetab[3 + i] = type_float;
-				break;
-
 			case 's':
 				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_array, type_character }, 2);
 				break;
-
 			case 'S':
 			{
 				const size_t ref = type_add(sx, (item_t[]){ type_array, type_character }, 2);
 				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_pointer, (item_t)ref }, 2);
 			}
 			break;
-
+			case 'i':
+				local_modetab[3 + i] = type_integer;
+				break;
 			case 'I':
 				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_array, type_integer }, 2);
 				break;
-
+			case 'f':
+				local_modetab[3 + i] = type_float;
+				break;
 			case 'F':
 				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_array, type_float }, 2);
 				break;
-
-			case 'V':
-				local_modetab[3 + i] = type_void_pointer;
-				break;
-
 			case 'm':
 				local_modetab[3 + i] = type_msg_info;
 				break;

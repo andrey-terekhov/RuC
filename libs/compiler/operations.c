@@ -77,9 +77,9 @@ operation_t token_to_unary(const token_t token)
 	}
 }
 
-instruction_t builtin_to_instruction(const builtin_t builtin)
+instruction_t builtin_to_instruction(const builtin_t func)
 {
-	switch (builtin)
+	switch (func)
 	{
 		case BI_SQRT:					return IC_SQRT;
 		case BI_EXP:					return IC_EXP;

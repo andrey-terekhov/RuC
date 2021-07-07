@@ -327,7 +327,7 @@ typedef enum builtin
 /**
  *	Convert token to corresponding binary operation
  *
- *	@param	token	Token
+ *	@param	token		Token
  *
  *	@return	Binary operation
  */
@@ -336,7 +336,7 @@ operation_t token_to_binary(const token_t token);
 /**
  *	Convert token to corresponding unary operation
  *
- *	@param	token	Token
+ *	@param	token		Token
  *
  *	@return	Unary operation
  */
@@ -345,11 +345,11 @@ operation_t token_to_unary(const token_t token);
 /**
  *	Convert standard function id to corresponding function instruction
  *
- *	@param	builtin	Function id
+ *	@param	func		Function id
  *
  *	@return	Function instruction
  */
-instruction_t builtin_to_instruction(const builtin_t builtin);
+instruction_t builtin_to_instruction(const builtin_t func);
 
 /**
  *	Convert to corresponding address version of operation
