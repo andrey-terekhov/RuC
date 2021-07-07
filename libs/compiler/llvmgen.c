@@ -599,11 +599,6 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 {
 	uni_printf(info->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
 	const item_t dimensions = hash_get_amount(&info->arrays, displ) - 1;
-	
-	if (!(0 < dimensions && dimensions < 5)) // значит что-то не так
-	{
-		return;
-	}
 
 	if (hash_get(&info->arrays, displ, IS_STATIC))
 	{
@@ -883,7 +878,10 @@ static void operand(information *const info, node *const nd)
 				info->answer_reg = info->register_num++;
 			}
 
-			to_code_slice(info, displ, cur_dimension, 0, type);
+			if (-1 < cur_dimension && cur_dimension < 4) // значит что-то не так
+			{
+				to_code_slice(info, displ, cur_dimension, 0, type);
+			}
 
 			item_t prev_slice = info->register_num - 1;
 			while (node_get_type(nd) == OP_SLICE)
@@ -893,7 +891,10 @@ static void operand(information *const info, node *const nd)
 				expression(info, nd);
 				cur_dimension--;
 
-				to_code_slice(info, displ, cur_dimension, prev_slice, type);
+				if (-1 < cur_dimension && cur_dimension < 4) // значит что-то не так
+				{
+					to_code_slice(info, displ, cur_dimension, prev_slice, type);
+				}
 				prev_slice = info->register_num - 1;
 			}
 
