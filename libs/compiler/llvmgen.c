@@ -1027,6 +1027,16 @@ static void assignment_expression(information *const info, node *const nd)
 	to_code_try_zext_to(info);
 	item_t result = info->answer_reg;
 
+	if (node_get_type(nd) == OP_WIDEN)
+	{
+		uni_printf(info->io, " %%.%" PRIitem " = sitofp ", info->register_num);
+		type_to_io(info, info->answer_value_type);
+		uni_printf(info->io, " %%.%" PRIitem " to ", result);
+		type_to_io(info, operation_type);
+		uni_printf(info->io, "\n");
+		result = info->register_num++;
+	}
+
 	if (assignment_type != OP_ASSIGN && assignment_type != OP_ASSIGN_V
 		&& assignment_type != OP_ASSIGN_R && assignment_type != OP_ASSIGN_R_V
 		&& assignment_type != OP_ASSIGN_AT && assignment_type != OP_ASSIGN_AT_V

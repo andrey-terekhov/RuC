@@ -497,7 +497,8 @@ static int node_recursive(information *const info, node *const nd)
 						node parent = node_get_parent(nd_info.ref_node);
 						node_info log_info_fst = nd_info;
 
-						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
+						if (node_get_type(&parent) == OP_ADDR_TO_VAL
+							|| node_get_type(&parent) == OP_WIDEN)
 						{
 							log_info_fst.ref_node = &parent;
 							log_info_fst.depth = 1;
