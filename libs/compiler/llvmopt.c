@@ -524,6 +524,16 @@ static int node_recursive(information *const info, node *const nd)
 						// перестановка с первым операндом
 						has_error |= transposition(first, &log_info_snd);
 
+						if (node_get_type(nd_info.ref_node) == OP_WIDEN)
+						{
+							node_info widen_info = {nd_info.ref_node, 1};
+
+							node op_child = node_get_child(first->ref_node, 0);
+							node_info op_info = {&op_child, first->depth -1};
+
+							has_error |= transposition(&op_info, &widen_info);
+						}
+
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(info, first);
 					}

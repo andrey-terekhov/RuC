@@ -1015,8 +1015,15 @@ static void assignment_expression(information *const info, node *const nd)
 	const item_t assignment_type = node_get_type(nd);
 	const item_t operation_type = is_double(assignment_type) ? mode_float : mode_integer;
 	const int is_array = is_array_operation(assignment_type);
+	int is_widen = 0;
 
 	node_set_next(nd);
+	if (node_get_type(nd) == OP_WIDEN)
+	{
+		is_widen = 1;
+		node_set_next(nd);
+	}
+
 	info->variable_location = LMEM;
 	operand(info, nd); // Tident or OP_SLICE_IDENT
 	const item_t memory_reg = info->answer_reg;
@@ -1027,7 +1034,7 @@ static void assignment_expression(information *const info, node *const nd)
 	to_code_try_zext_to(info);
 	item_t result = info->answer_reg;
 
-	if (node_get_type(nd) == OP_WIDEN)
+	if (is_widen)
 	{
 		uni_printf(info->io, " %%.%" PRIitem " = sitofp ", info->register_num);
 		type_to_io(info, info->answer_value_type);
