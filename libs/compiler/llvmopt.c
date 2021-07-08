@@ -498,7 +498,8 @@ static int node_recursive(information *const info, node *const nd)
 						node_info log_info_fst = nd_info;
 
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL
-							|| node_get_type(&parent) == OP_WIDEN)
+							|| node_get_type(&parent) == OP_WIDEN
+							|| node_get_type(&parent) == OP_WIDEN1)
 						{
 							log_info_fst.ref_node = &parent;
 							log_info_fst.depth = 1;
@@ -524,7 +525,7 @@ static int node_recursive(information *const info, node *const nd)
 						// перестановка с первым операндом
 						has_error |= transposition(first, &log_info_snd);
 
-						if (node_get_type(nd_info.ref_node) == OP_WIDEN)
+						if (node_get_type(nd_info.ref_node) == OP_WIDEN || node_get_type(nd_info.ref_node) == OP_WIDEN1)
 						{
 							node_info widen_info = {nd_info.ref_node, 1};
 
@@ -532,6 +533,7 @@ static int node_recursive(information *const info, node *const nd)
 							node_info op_info = {&op_child, first->depth -1};
 
 							has_error |= transposition(&op_info, &widen_info);
+							first->depth++;
 						}
 
 						// добавляем в стек переставленное выражение
