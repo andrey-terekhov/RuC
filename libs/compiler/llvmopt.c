@@ -465,14 +465,18 @@ static int node_recursive(information *const info, node *const nd)
 					{
 						node_info *operand = stack_pop(info);
 
-						if (node_get_type(nd_info.ref_node) == OP_ADDR_TO_VAL)
+						node parent = node_get_parent(nd_info.ref_node);
+						node_info log_info = nd_info;
+
+						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							node_info log_info = { nd_info.ref_node, 1 };
+							log_info.ref_node = &parent;
+							log_info.depth = 1;
 							has_error |= transposition(&nd_info, &log_info);
 						}
 
 						// перестановка с операндом
-						has_error |= transposition(operand, &nd_info);
+						has_error |= transposition(operand, &log_info);
 
 						if (node_get_type(operand->ref_node) == OP_CALL1)
 						{
