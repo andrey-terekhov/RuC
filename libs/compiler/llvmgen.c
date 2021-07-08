@@ -731,6 +731,25 @@ static void to_code_init_array(information *const info, const size_t index, cons
 	info->was_memcpy = 1;
 }
 
+static void to_code_widen(information *const info, const item_t operation_type)
+{
+	if (info->answer_type == ACONST)
+	{
+		info->answer_const_double = (double)info->answer_const;
+	}
+	else
+	{
+		uni_printf(info->io, " %%.%" PRIitem " = sitofp ", info->register_num);
+		type_to_io(info, info->answer_value_type);
+		uni_printf(info->io, " %%.%" PRIitem " to ", info->answer_reg);
+		type_to_io(info, operation_type);
+		uni_printf(info->io, "\n");
+
+		info->answer_value_type = operation_type;
+		info->answer_reg = info->register_num++;
+	}
+}
+
 
 static void check_type_and_branch(information *const info)
 {
@@ -1032,17 +1051,11 @@ static void assignment_expression(information *const info, node *const nd)
 	expression(info, nd);
 
 	to_code_try_zext_to(info);
-	item_t result = info->answer_reg;
-
 	if (is_widen)
 	{
-		uni_printf(info->io, " %%.%" PRIitem " = sitofp ", info->register_num);
-		type_to_io(info, info->answer_value_type);
-		uni_printf(info->io, " %%.%" PRIitem " to ", result);
-		type_to_io(info, operation_type);
-		uni_printf(info->io, "\n");
-		result = info->register_num++;
+		to_code_widen(info, operation_type);
 	}
+	item_t result = info->answer_reg;
 
 	if (assignment_type != OP_ASSIGN && assignment_type != OP_ASSIGN_V
 		&& assignment_type != OP_ASSIGN_R && assignment_type != OP_ASSIGN_R_V
@@ -1091,12 +1104,28 @@ static void integral_expression(information *const info, node *const nd, const a
 {
 	const item_t operation = node_get_type(nd);
 	const item_t operation_type = is_double(operation) ? mode_float : mode_integer;
+	int is_widen = 0, is_widen1 = 0;
+
 	node_set_next(nd);
+	if (node_get_type(nd) == OP_WIDEN)
+	{
+		is_widen = 1;
+		node_set_next(nd);
+	}
+	else if (node_get_type(nd) == OP_WIDEN1)
+	{
+		is_widen1 = 1;
+		node_set_next(nd);
+	}
 
 	info->variable_location = LFREE;
 	expression(info, nd);
 
 	to_code_try_zext_to(info);
+	if (is_widen1)
+	{
+		to_code_widen(info, operation_type);
+	}
 
 	const answer_t left_type = info->answer_type;
 	const item_t left_reg = info->answer_reg;
@@ -1107,6 +1136,10 @@ static void integral_expression(information *const info, node *const nd, const a
 	expression(info, nd);
 
 	to_code_try_zext_to(info);
+	if (is_widen)
+	{
+		to_code_widen(info, operation_type);
+	}
 
 	const answer_t right_type = info->answer_type;
 	const item_t right_reg = info->answer_reg;
