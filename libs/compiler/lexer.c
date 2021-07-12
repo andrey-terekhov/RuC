@@ -127,7 +127,7 @@ static inline void skip_line_comment(lexer *const lxr)
  */
 static inline void skip_block_comment(lexer *const lxr)
 {
-	while (lxr->character != '*' || scan(lxr) != '/')
+	while (lxr->character != '*' && scan(lxr) != '/')
 	{
 		if (lxr->character == (char32_t)EOF)
 		{
