@@ -89,20 +89,20 @@ static inline void type_init(syntax *const sx)
 	vector_increase(&sx->types, 1);
 	// занесение в types описателя struct {int numTh; int inf; }
 	vector_add(&sx->types, 0);
-	vector_add(&sx->types, type_struct);
+	vector_add(&sx->types, TYPE_STRUCTURE);
 	vector_add(&sx->types, 2);
 	vector_add(&sx->types, 4);
-	vector_add(&sx->types, type_integer);
+	vector_add(&sx->types, TYPE_INTEGER);
 	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "numTh"));
-	vector_add(&sx->types, type_integer);
+	vector_add(&sx->types, TYPE_INTEGER);
 	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "data"));
 
 	// занесение в types описателя функции void* interpreter(void* n)
 	vector_add(&sx->types, 1);
-	vector_add(&sx->types, type_function);
-	vector_add(&sx->types, type_void_pointer);
+	vector_add(&sx->types, TYPE_FUNCTION);
+	vector_add(&sx->types, TYPE_VOID_POINTER);
 	vector_add(&sx->types, 1);
-	vector_add(&sx->types, type_void_pointer);
+	vector_add(&sx->types, TYPE_VOID_POINTER);
 
 	sx->start_type = 9;
 }
@@ -110,7 +110,7 @@ static inline void type_init(syntax *const sx)
 static inline item_t get_static(syntax *const sx, const item_t type)
 {
 	const item_t old_displ = sx->displ;
-	sx->displ += sx->lg * size_of(sx, type);
+	sx->displ += sx->lg * type_size(sx, type);
 
 	if (sx->lg > 0)
 	{
@@ -136,7 +136,7 @@ static inline bool type_is_equal(const syntax *const sx, const size_t first, con
 	const item_t type = vector_get(&sx->types, first);
 
 	// Определяем, сколько полей надо сравнивать для различных типов записей
-	if (type == type_struct || type == type_function)
+	if (type == TYPE_STRUCTURE || type == TYPE_FUNCTION)
 	{
 		length = 2 + (size_t)vector_get(&sx->types, first + 2);
 	}
@@ -150,70 +150,6 @@ static inline bool type_is_equal(const syntax *const sx, const size_t first, con
 	}
 
 	return true;
-}
-
-/**
- *	args = list of characters each for one argument
- *		v -> void
- *		V -> void*
- *		s -> char[]
- *		S -> char[]*
- *		i -> int
- *		I -> int[]
- *		f -> float
- *		F -> float[]
- *		m -> msg_info
- */
-static item_t type_new_function(syntax *const sx, const item_t return_type, const char *const args)
-{
-	item_t local_modetab[6];
-	size_t i = 0;
-
-	local_modetab[0] = type_function;
-	local_modetab[1] = return_type;
-
-	while (args[i] != '\0')
-	{
-		switch (args[i])
-		{
-			case 'v':
-				local_modetab[3 + i] = type_void;
-				break;
-			case 'V':
-				local_modetab[3 + i] = type_void_pointer;
-				break;
-			case 's':
-				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_array, type_character }, 2);
-				break;
-			case 'S':
-			{
-				const size_t ref = type_add(sx, (item_t[]){ type_array, type_character }, 2);
-				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_pointer, (item_t)ref }, 2);
-			}
-			break;
-			case 'i':
-				local_modetab[3 + i] = type_integer;
-				break;
-			case 'I':
-				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_array, type_integer }, 2);
-				break;
-			case 'f':
-				local_modetab[3 + i] = type_float;
-				break;
-			case 'F':
-				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_array, type_float }, 2);
-				break;
-			case 'm':
-				local_modetab[3 + i] = type_msg_info;
-				break;
-		}
-
-		i++;
-	}
-
-	local_modetab[2] = (item_t)i;
-
-	return (item_t)type_add(sx, local_modetab, i + 3);
 }
 
 static void builtin_add(syntax *const sx, const char32_t *const eng, const char32_t *const rus, const item_t type)
@@ -246,48 +182,48 @@ static void builtin_add(syntax *const sx, const char32_t *const eng, const char3
 
 static void ident_init(syntax *const sx)
 {
-	builtin_add(sx, U"assert", U"проверить", type_new_function(sx, type_void, "is"));
+	builtin_add(sx, U"assert", U"проверить", type_function(sx, TYPE_VOID, "is"));
 
-	builtin_add(sx, U"asin", U"асин", type_new_function(sx, type_float, "f"));
-	builtin_add(sx, U"cos", U"кос", type_new_function(sx, type_float, "f"));
-	builtin_add(sx, U"sin", U"син", type_new_function(sx, type_float, "f"));
-	builtin_add(sx, U"exp", U"эксп", type_new_function(sx, type_float, "f"));
-	builtin_add(sx, U"log", U"лог", type_new_function(sx, type_float, "f"));
-	builtin_add(sx, U"log10", U"лог10", type_new_function(sx, type_float, "f"));
-	builtin_add(sx, U"sqrt", U"квкор", type_new_function(sx, type_float, "f"));
-	builtin_add(sx, U"rand", U"случ", type_new_function(sx, type_float, ""));
-	builtin_add(sx, U"round", U"округл", type_new_function(sx, type_integer, "f"));
+	builtin_add(sx, U"asin", U"асин", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"cos", U"кос", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"sin", U"син", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"exp", U"эксп", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"log", U"лог", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"log10", U"лог10", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"sqrt", U"квкор", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"rand", U"случ", type_function(sx, TYPE_FLOATING, ""));
+	builtin_add(sx, U"round", U"округл", type_function(sx, TYPE_INTEGER, "f"));
 
-	builtin_add(sx, U"strcpy", U"копир_строку", type_new_function(sx, type_void, "Ss"));
-	builtin_add(sx, U"strncpy", U"копир_н_симв", type_new_function(sx, type_void, "Ssi"));
-	builtin_add(sx, U"strcat", U"конкат_строки", type_new_function(sx, type_void, "Ss"));
-	builtin_add(sx, U"strncat", U"конкат_н_симв", type_new_function(sx, type_void, "Ssi"));
-	builtin_add(sx, U"strcmp", U"сравн_строк", type_new_function(sx, type_integer, "ss"));
-	builtin_add(sx, U"strncmp", U"сравн_н_симв", type_new_function(sx, type_integer, "ssi"));
-	builtin_add(sx, U"strstr", U"нач_подстрок", type_new_function(sx, type_integer, "ss"));
-	builtin_add(sx, U"strlen", U"длина", type_new_function(sx, type_integer, "s"));
+	builtin_add(sx, U"strcpy", U"копир_строку", type_function(sx, TYPE_VOID, "Ss"));
+	builtin_add(sx, U"strncpy", U"копир_н_симв", type_function(sx, TYPE_VOID, "Ssi"));
+	builtin_add(sx, U"strcat", U"конкат_строки", type_function(sx, TYPE_VOID, "Ss"));
+	builtin_add(sx, U"strncat", U"конкат_н_симв", type_function(sx, TYPE_VOID, "Ssi"));
+	builtin_add(sx, U"strcmp", U"сравн_строк", type_function(sx, TYPE_INTEGER, "ss"));
+	builtin_add(sx, U"strncmp", U"сравн_н_симв", type_function(sx, TYPE_INTEGER, "ssi"));
+	builtin_add(sx, U"strstr", U"нач_подстрок", type_function(sx, TYPE_INTEGER, "ss"));
+	builtin_add(sx, U"strlen", U"длина", type_function(sx, TYPE_INTEGER, "s"));
 
-	builtin_add(sx, U"send_int_to_robot", U"послать_цел_на_робот", type_new_function(sx, type_void, "iI"));
-	builtin_add(sx, U"send_float_to_robot", U"послать_вещ_на_робот", type_new_function(sx, type_void, "iF"));
-	builtin_add(sx, U"send_string_to_robot", U"послать_строку_на_робот", type_new_function(sx, type_void, "is"));
-	builtin_add(sx, U"receive_int_from_robot", U"получить_цел_от_робота", type_new_function(sx, type_integer, "i"));
-	builtin_add(sx, U"receive_float_from_robot", U"получить_вещ_от_робота", type_new_function(sx, type_float, "i"));
-	builtin_add(sx, U"receive_string_from_robot", U"получить_строку_от_робота", type_new_function(sx, type_void, "i"));
+	builtin_add(sx, U"send_int_to_robot", U"послать_цел_на_робот", type_function(sx, TYPE_VOID, "iI"));
+	builtin_add(sx, U"send_float_to_robot", U"послать_вещ_на_робот", type_function(sx, TYPE_VOID, "iF"));
+	builtin_add(sx, U"send_string_to_robot", U"послать_строку_на_робот", type_function(sx, TYPE_VOID, "is"));
+	builtin_add(sx, U"receive_int_from_robot", U"получить_цел_от_робота", type_function(sx, TYPE_INTEGER, "i"));
+	builtin_add(sx, U"receive_float_from_robot", U"получить_вещ_от_робота", type_function(sx, TYPE_FLOATING, "i"));
+	builtin_add(sx, U"receive_string_from_robot", U"получить_строку_от_робота", type_function(sx, TYPE_VOID, "i"));
 
-	builtin_add(sx, U"t_create", U"н_создать", type_new_function(sx, type_integer, "V"));
-	builtin_add(sx, U"t_getnum", U"н_номер_нити", type_new_function(sx, type_integer, ""));
-	builtin_add(sx, U"t_sleep", U"н_спать", type_new_function(sx, type_void, "i"));
-	builtin_add(sx, U"t_join", U"н_присоед", type_new_function(sx, type_void, "i"));
-	builtin_add(sx, U"t_exit", U"н_конец", type_new_function(sx, type_void, ""));
-	builtin_add(sx, U"t_init", U"н_начать", type_new_function(sx, type_void, ""));
-	builtin_add(sx, U"t_destroy", U"н_закончить", type_new_function(sx, type_void, ""));
+	builtin_add(sx, U"t_create", U"н_создать", type_function(sx, TYPE_INTEGER, "V"));
+	builtin_add(sx, U"t_getnum", U"н_номер_нити", type_function(sx, TYPE_INTEGER, ""));
+	builtin_add(sx, U"t_sleep", U"н_спать", type_function(sx, TYPE_VOID, "i"));
+	builtin_add(sx, U"t_join", U"н_присоед", type_function(sx, TYPE_VOID, "i"));
+	builtin_add(sx, U"t_exit", U"н_конец", type_function(sx, TYPE_VOID, ""));
+	builtin_add(sx, U"t_init", U"н_начать", type_function(sx, TYPE_VOID, ""));
+	builtin_add(sx, U"t_destroy", U"н_закончить", type_function(sx, TYPE_VOID, ""));
 
-	builtin_add(sx, U"t_sem_create", U"н_создать_сем", type_new_function(sx, type_integer, "i"));
-	builtin_add(sx, U"t_sem_wait", U"н_вниз_сем", type_new_function(sx, type_void, "i"));
-	builtin_add(sx, U"t_sem_post", U"н_вверх_сем", type_new_function(sx, type_void, "i"));
+	builtin_add(sx, U"t_sem_create", U"н_создать_сем", type_function(sx, TYPE_INTEGER, "i"));
+	builtin_add(sx, U"t_sem_wait", U"н_вниз_сем", type_function(sx, TYPE_VOID, "i"));
+	builtin_add(sx, U"t_sem_post", U"н_вверх_сем", type_function(sx, TYPE_VOID, "i"));
 
-	builtin_add(sx, U"t_msg_send", U"н_послать", type_new_function(sx, type_void, "m"));
-	builtin_add(sx, U"t_msg_receive", U"н_получить", type_new_function(sx, type_msg_info, ""));
+	builtin_add(sx, U"t_msg_send", U"н_послать", type_function(sx, TYPE_VOID, "m"));
+	builtin_add(sx, U"t_msg_receive", U"н_получить", type_function(sx, TYPE_MSG_INFO, ""));
 }
 
 
@@ -522,15 +458,6 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 }
 
 
-size_t size_of(const syntax *const sx, const item_t type)
-{
-	return type > 0 && type_get(sx, (size_t)type) == type_struct
-		? (size_t)type_get(sx, (size_t)type + 1)
-		: type_is_float(type)
-			? 2
-			: 1;
-}
-
 size_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 {
 	if (sx == NULL || record == NULL)
@@ -569,49 +496,156 @@ item_t type_get(const syntax *const sx, const size_t index)
 	return sx != NULL ? vector_get(&sx->types, index) : ITEM_MAX;
 }
 
-bool type_is_function(syntax *const sx, const item_t type)
+size_t type_size(const syntax *const sx, const item_t type)
 {
-	return type > 0 && type_get(sx, (size_t)type) == type_function;
-}
-
-bool type_is_array(syntax *const sx, const item_t type)
-{
-	return type > 0 && type_get(sx, (size_t)type) == type_array;
-}
-
-bool type_is_string(syntax *const sx, const item_t type)
-{
-	return type_is_array(sx, type) && type_get(sx, (size_t)type + 1) == type_character;
-}
-
-bool type_is_pointer(syntax *const sx, const item_t type)
-{
-	return type > 0 && type_get(sx, (size_t)type) == type_pointer;
-}
-
-bool type_is_struct(syntax *const sx, const item_t type)
-{
-	return type > 0 && type_get(sx, (size_t)type) == type_struct;
-}
-
-bool type_is_float(const item_t type)
-{
-	return type == type_float;
+	if (type_is_structure(sx, type))
+	{
+		return (size_t)type_get(sx, (size_t)type + 1);
+	}
+	else if (type_is_floating(type))
+	{
+		return 2;
+	}
+	else
+	{
+		return 1;
+	}
 }
 
 bool type_is_integer(const item_t type)
 {
-	return type == type_integer || type == type_character;
+	return type == TYPE_INTEGER || type == TYPE_CHARACTER;
+}
+
+bool type_is_floating(const item_t type)
+{
+	return type == TYPE_FLOATING;
+}
+
+bool type_is_arithmetic(const item_t type)
+{
+	return type_is_integer(type) || type_is_floating(type);
 }
 
 bool type_is_void(const item_t type)
 {
-	return type == type_void;
+	return type == TYPE_VOID;
+}
+
+bool type_is_array(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_ARRAY;
+}
+
+bool type_is_structure(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_STRUCTURE;
+}
+
+bool type_is_function(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_FUNCTION;
+}
+
+bool type_is_pointer(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_POINTER;
+}
+
+bool type_is_scalar(const syntax *const sx, const item_t type)
+{
+	return type_is_arithmetic(type) || type_is_pointer(sx, type);
+}
+
+bool type_is_aggregate(const syntax *const sx, const item_t type)
+{
+	return type_is_array(sx, type) || type_is_structure(sx, type);
+}
+
+bool type_is_string(const syntax *const sx, const item_t type)
+{
+	return type_is_array(sx, type) && type_is_integer(type_get(sx, (size_t)type + 1));
+}
+
+bool type_is_struct_pointer(const syntax *const sx, const item_t type)
+{
+	return type_is_pointer(sx, type) && type_is_structure(sx, type_get(sx, (size_t)type + 1));
+}
+
+item_t type_array(syntax *const sx, const item_t type)
+{
+	return (item_t)type_add(sx, (item_t[]){ TYPE_ARRAY, type }, 2);
+}
+
+/*
+ *	args = list of characters each for one argument
+ *		v -> void
+ *		V -> void*
+ *		s -> char[]
+ *		S -> char[]*
+ *		i -> int
+ *		I -> int[]
+ *		f -> float
+ *		F -> float[]
+ *		m -> msg_info
+ */
+item_t type_function(syntax *const sx, const item_t return_type, const char *const args)
+{
+	item_t local_modetab[6];
+	size_t i = 0;
+
+	local_modetab[0] = TYPE_FUNCTION;
+	local_modetab[1] = return_type;
+
+	while (args[i] != '\0')
+	{
+		switch (args[i])
+		{
+			case 'v':
+				local_modetab[3 + i] = TYPE_VOID;
+				break;
+			case 'V':
+				local_modetab[3 + i] = TYPE_VOID_POINTER;
+				break;
+			case 's':
+				local_modetab[3 + i] = type_array(sx, TYPE_CHARACTER);
+				break;
+			case 'S':
+				local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_CHARACTER));
+				break;
+			case 'i':
+				local_modetab[3 + i] = TYPE_INTEGER;
+				break;
+			case 'I':
+				local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
+				break;
+			case 'f':
+				local_modetab[3 + i] = TYPE_FLOATING;
+				break;
+			case 'F':
+				local_modetab[3 + i] = type_array(sx, TYPE_FLOATING);
+				break;
+			case 'm':
+				local_modetab[3 + i] = TYPE_MSG_INFO;
+				break;
+		}
+
+		i++;
+	}
+
+	local_modetab[2] = (item_t)i;
+
+	return (item_t)type_add(sx, local_modetab, i + 3);
+}
+
+item_t type_pointer(syntax *const sx, const item_t type)
+{
+	return (item_t)type_add(sx, (item_t[]){ TYPE_POINTER, type }, 2);
 }
 
 bool type_is_undefined(const item_t type)
 {
-	return type == type_undefined;
+	return type == TYPE_UNDEFINED;
 }
 
 

@@ -455,7 +455,7 @@ static void expression(virtual *const vm, node *const nd, const bool is_in_condi
 				node_set_next(nd);
 				expression(vm, nd, false);
 				mem_add(vm, IC_SLICE);
-				mem_add(vm, (item_t)size_of(vm->sx, type));
+				mem_add(vm, (item_t)type_size(vm->sx, type));
 				if (type_is_array(vm->sx, type))
 				{
 					mem_add(vm, IC_LAT);
@@ -590,7 +590,7 @@ static void emit_variable_declaration(virtual *const vm, const node *const nd)
 		const node nd_initializer = node_get_child(nd, 0);
 		emit_expression(vm, &nd_initializer);
 
-		if (type_is_struct(vm->sx, type))
+		if (type_is_structure(vm->sx, type))
 		{
 			mem_add(vm, IC_COPY0ST_ASSIGN);
 			mem_add(vm, old_displ);
@@ -598,7 +598,7 @@ static void emit_variable_declaration(virtual *const vm, const node *const nd)
 		}
 		else
 		{
-			mem_add(vm, type_is_float(type) ? IC_ASSIGN_R_V : IC_ASSIGN_V);
+			mem_add(vm, type_is_floating(type) ? IC_ASSIGN_R_V : IC_ASSIGN_V);
 			mem_add(vm, old_displ);
 		}
 	}
@@ -626,7 +626,7 @@ static void emit_array_declaration(virtual *const vm, const node *const nd)
 	const bool has_initializer = bounds + 1 < node_get_amount(nd);
 	mem_add(vm, has_initializer ? dimensions - 1 : dimensions);
 
-	const item_t length = (item_t)size_of(vm->sx, node_get_arg(&nd_decl_id, 1));
+	const item_t length = (item_t)type_size(vm->sx, node_get_arg(&nd_decl_id, 1));
 	mem_add(vm, length);
 
 	const item_t old_displ = node_get_arg(&nd_decl_id, 0);
