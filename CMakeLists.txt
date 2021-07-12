@@ -25,7 +25,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 else()
 	# Add POSIX flag to declare ‘fileno’ function
 	# Enable -s flag for Release build to remove code info from exec
-	add_compile_options(-Werror=return-type -Wall -Wextra -Wno-implicit-fallthrough -std=c11
+	add_compile_options(-Werror=return-type -Wall -Wextra -Wno-implicit-fallthrough -Wno-unused-const-variable -std=c11
 						"$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:-posix>"
 						"$<$<NOT:$<OR:$<CXX_COMPILER_ID:AppleClang,Clang>,$<CONFIG:Debug>>>:-s>"
 						"$<$<NOT:$<CONFIG:Debug>>:-O2>"
