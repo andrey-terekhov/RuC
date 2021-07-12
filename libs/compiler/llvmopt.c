@@ -45,6 +45,7 @@ typedef struct information
 	syntax *sx;										/**< Структура syntax с таблицами */
 
 	item_t string_num;								/**< Номер строки */
+	item_t init_num;								/**< Счётчик для инициализации */
 	item_t was_printf;								/**< Флаг наличия printf в исходном коде */
 
 	node_info stack[MAX_STACK_SIZE];				/**< Стек для преобразования выражений */
@@ -52,7 +53,21 @@ typedef struct information
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
 	size_t slice_depth;								/**< Количество узлов после OP_SLICE_IDENT */
 	size_t slice_stack_size;						/**< Размер стека в начале вырезки */
+
+	// TODO: может стоит и тут сделать функцию печать типа?
+	item_t arr_init_type;							/**< Тип массива при инициализации */
 } information;
+
+
+// TODO: это уже есть в llvmgen, объединить бы
+static double to_double(const int64_t fst, const int64_t snd)
+{
+	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
+	double numdouble;
+	memcpy(&numdouble, &num, sizeof(double));
+
+	return numdouble;
+}
 
 
 static inline int stack_push(information *const info, node_info *const nd)
@@ -297,6 +312,15 @@ static int node_recursive(information *const info, node *const nd)
 		info->slice_depth++;
 	}
 
+	if (node_get_type(nd) == OP_ARRAY_INIT)
+	{
+		uni_printf(info->io, "@arr_init.%" PRIitem " = private unnamed_addr constant ", info->init_num);
+		info->init_num++;
+		// TODO: а для многомерных как?
+		uni_printf(info->io, "[%" PRIitem " x %s] [", node_get_arg(nd, 0)
+			, info->arr_init_type == mode_integer ? "i32" : "double");
+	}
+
 	for (size_t i = 0; i < node_get_amount(nd); i++)
 	{
 		node child = node_get_child(nd, i);
@@ -385,6 +409,21 @@ static int node_recursive(information *const info, node *const nd)
 				}
 			}
 			break;
+			case OP_CALL2:
+			{
+				const size_t ref_ident = (size_t)node_get_arg(&child, 0);
+				const size_t ref_mode = (size_t)ident_get_mode(info->sx, (size_t)ref_ident);
+				const size_t parameters = (size_t)mode_get(info->sx, ref_mode + 2);
+
+				for (size_t j = 0; j < parameters; j++)
+				{
+					stack_pop(info);
+				}
+			}
+			break;
+			case OP_DECL_ID:
+				info->arr_init_type = node_get_arg(&child, 1);
+			break;
 
 			default:
 			{
@@ -394,20 +433,48 @@ static int node_recursive(information *const info, node *const nd)
 				switch (expression_type(&child))
 				{
 					case OPERAND:
+					{
+						switch (node_get_type(&child))
+						{
+							case OP_CONST:
+							{
+								if (node_get_type(nd) == OP_ARRAY_INIT)
+								{
+									uni_printf(info->io, "i32 %" PRIitem "%s", node_get_arg(&child, 0)
+										, i < node_get_amount(nd) - 2 ? ", " : "], align 4\n");
+								}
+							}
+							break;
+							case OP_CONST_D:
+							{
+								if (node_get_type(nd) == OP_ARRAY_INIT)
+								{
+									uni_printf(info->io, "double %f%s", to_double(node_get_arg(&child, 0), node_get_arg(&child, 1))
+										, i < node_get_amount(nd) - 2 ? ", " : "], align 8\n");
+								}
+							}
+							break;
+						}
+
 						stack_push(info, &nd_info);
+					}
 						break;
 					case UNARY_OPERATION:
 					{
 						node_info *operand = stack_pop(info);
 
-						if (node_get_type(nd_info.ref_node) == OP_ADDR_TO_VAL)
+						node parent = node_get_parent(nd_info.ref_node);
+						node_info log_info = nd_info;
+
+						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							node_info log_info = { nd_info.ref_node, 1 };
+							log_info.ref_node = &parent;
+							log_info.depth = 1;
 							has_error |= transposition(&nd_info, &log_info);
 						}
 
 						// перестановка с операндом
-						has_error |= transposition(operand, &nd_info);
+						has_error |= transposition(operand, &log_info);
 
 						if (node_get_type(operand->ref_node) == OP_CALL1)
 						{
@@ -430,7 +497,9 @@ static int node_recursive(information *const info, node *const nd)
 						node_info *first = stack_pop(info);
 
 						node parent = node_get_parent(nd_info.ref_node);
-						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
+						if (node_get_type(&parent) == OP_ADDR_TO_VAL
+							|| node_get_type(&parent) == OP_WIDEN
+							|| node_get_type(&parent) == OP_WIDEN1)
 						{
 							node_info log_info = { &parent, 1 };
 							has_error |= transposition(&nd_info, &log_info);
@@ -452,6 +521,17 @@ static int node_recursive(information *const info, node *const nd)
 
 						// перестановка с первым операндом
 						has_error |= transposition(first, second);
+
+						if (node_get_type(nd_info.ref_node) == OP_WIDEN || node_get_type(nd_info.ref_node) == OP_WIDEN1)
+						{
+							node_info widen_info = {nd_info.ref_node, 1};
+
+							node op_child = node_get_child(first->ref_node, 0);
+							node_info op_info = {&op_child, first->depth -1};
+
+							has_error |= transposition(&op_info, &widen_info);
+							first->depth++;
+						}
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(info, first);
@@ -487,6 +567,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	info.io = io;
 	info.sx = sx;
 	info.string_num = 1;
+	info.init_num = 1;
 	info.was_printf = 0;
 	info.stack_size = 0;
 	info.slice_depth = 0;
