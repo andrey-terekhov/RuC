@@ -24,7 +24,7 @@ typedef enum VALUE
 {
 	LVALUE,		/**< An expression that potentially designates an object */
 	RVALUE,		/**< An expression that detached from any specific storage */
-} value_t;
+} category_t;
 
 /** Binary/ternary operator precedence levels */
 typedef enum PRECEDENCE
@@ -156,7 +156,7 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 	const item_t operand_type = node_get_arg(&operand.nd, 0);
 
 	item_t result_type;
-	value_t value = RVALUE;
+	category_t category = RVALUE;
 	bool is_prefix = true;
 
 	switch (op_kind)
@@ -205,7 +205,7 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 			}
 
 			result_type = type_get(prs->sx, (size_t)operand_type + 1);
-			value = LVALUE;
+			category = LVALUE;
 			break;
 		}
 
@@ -248,8 +248,8 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 	}
 
 	node unary_node = create_node(prs, OP_UNARY);
-	node_add_arg(&unary_node, result_type);		// Тип значения унарного оператора
-	node_add_arg(&unary_node, value);			// Вид значения унарного оператора
+	node_add_arg(&unary_node, result_type);		// Тип значения
+	node_add_arg(&unary_node, category);		// Категория значения
 	node_add_arg(&unary_node, op_kind);			// Тип унарного оператора
 	node_set_child(&unary_node, &operand.nd);	// Выражение-операнд
 
@@ -355,7 +355,7 @@ static expression make_binary_expression(parser *const prs, expression left, exp
 
 	node binary_node = create_node(prs, OP_BINARY);
 	node_add_arg(&binary_node, result_type);		// Тип значения
-	node_add_arg(&binary_node, RVALUE);				// Вид значения
+	node_add_arg(&binary_node, RVALUE);				// Категория значения
 	node_add_arg(&binary_node, operator_kind);		// Вид оператора
 	node_set_child(&binary_node, &left.nd);			// Второй операнд
 	node_set_child(&binary_node, &right.nd);		// Третий операнд
@@ -407,7 +407,7 @@ static expression make_ternary_expression(parser *const prs, expression left, ex
 
 	node ternary_node = create_node(prs, OP_TERNARY);
 	node_add_arg(&ternary_node, result_type);		// Тип значения
-	node_add_arg(&ternary_node, RVALUE);			// Вид значения
+	node_add_arg(&ternary_node, RVALUE);			// Категория значения
 	node_set_child(&ternary_node, &left.nd);		// Первый операнд
 	node_set_child(&ternary_node, &middle.nd);		// Второй операнд
 	node_set_child(&ternary_node, &right.nd);		// Третий операнд
@@ -445,11 +445,11 @@ static expression parse_primary_expression(parser *const prs)
 			}
 
 			const item_t type = ident_get_type(prs->sx, (size_t)identifier);
-			const value_t designation = type_is_function(prs->sx, type) ? RVALUE : LVALUE;
+			const category_t category = type_is_function(prs->sx, type) ? RVALUE : LVALUE;
 
 			node identifier_node = create_node(prs, OP_IDENTIFIER);
 			node_add_arg(&identifier_node, type);			// Тип значения идентификатора
-			node_add_arg(&identifier_node, designation);	// Вид значения идентификатора
+			node_add_arg(&identifier_node, category);		// Категория значения идентификатора
 			node_add_arg(&identifier_node, identifier);		// Индекс в таблице идентификаторов
 
 			return expr(identifier_node, location);
@@ -463,7 +463,7 @@ static expression parse_primary_expression(parser *const prs)
 
 			node constant_node = create_node(prs, OP_CONSTANT);
 			node_add_arg(&constant_node, TYPE_INTEGER);		// Тип значения константы
-			node_add_arg(&constant_node, RVALUE);			// Вид значения константы
+			node_add_arg(&constant_node, RVALUE);			// Категория значения константы
 			node_add_arg(&constant_node, value);			// Значение константы
 
 			return expr(constant_node, location);
@@ -476,8 +476,8 @@ static expression parse_primary_expression(parser *const prs)
 			const location_t location = token_consume(prs);
 
 			node constant_node = create_node(prs, OP_CONSTANT);
-			node_add_arg(&constant_node, TYPE_FLOATING);		// Тип значения константы
-			node_add_arg(&constant_node, RVALUE);			// Вид значения константы
+			node_add_arg(&constant_node, TYPE_FLOATING);	// Тип значения константы
+			node_add_arg(&constant_node, RVALUE);			// Категория значения константы
 			node_add_arg(&constant_node, value);			// Значение константы
 
 			return expr(constant_node, location);
@@ -492,7 +492,7 @@ static expression parse_primary_expression(parser *const prs)
 
 			node string_node = create_node(prs, OP_STRING);
 			node_add_arg(&string_node, type);				// Тип строки
-			node_add_arg(&string_node, LVALUE);				// Вид значения строки
+			node_add_arg(&string_node, LVALUE);				// Категория значения строки
 			for (size_t i = 0; i < length; i++)
 			{
 				node_add_arg(&string_node, string[i]);		// i-ый символ строки
@@ -566,7 +566,7 @@ static expression parse_subscripting_expression_suffix(parser *const prs, expres
 
 	node slice_node = create_node(prs, OP_SLICE);
 	node_add_arg(&slice_node, element_type);				// Тип элемента массива
-	node_add_arg(&slice_node, LVALUE);						// Вид значения вырезки
+	node_add_arg(&slice_node, LVALUE);						// Категория значения вырезки
 	node_set_child(&slice_node, &operand.nd);				// Выражение-операнд
 	node_set_child(&slice_node, &index.nd);					// Выражение-индекс
 
@@ -603,7 +603,7 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 
 	node call_node = create_node(prs, OP_CALL);
 	node_add_arg(&call_node, return_type);					// Тип возвращамого значения
-	node_add_arg(&call_node, RVALUE);						// Вид значения вызова
+	node_add_arg(&call_node, RVALUE);						// Категория значения вызова
 	node_add_arg(&call_node, node_get_arg(&operand.nd, 3));	// Индекс функции в таблице идентификаторов
 
 	const size_t expected_args = (size_t)type_get(prs->sx, (size_t)operand_type + 2);
@@ -685,7 +685,7 @@ static expression parse_member_expression_suffix(parser *const prs, expression o
 
 	const item_t operand_type = node_get_arg(&operand.nd, 0);
 	item_t struct_type;
-	value_t designation;
+	category_t category;
 
 	if (operator_token == TK_PERIOD)
 	{
@@ -696,7 +696,7 @@ static expression parse_member_expression_suffix(parser *const prs, expression o
 		}
 
 		struct_type = operand_type;
-		designation = (value_t)node_get_arg(&operand.nd, 1);
+		category = (category_t)node_get_arg(&operand.nd, 1);
 	}
 	else // if (operator_token == TK_ARROW)
 	{
@@ -707,7 +707,7 @@ static expression parse_member_expression_suffix(parser *const prs, expression o
 		}
 
 		struct_type = type_get(prs->sx, (size_t)operand_type + 1);
-		designation = LVALUE;
+		category = LVALUE;
 	}
 
 	item_t member_displ = 0;
@@ -719,7 +719,7 @@ static expression parse_member_expression_suffix(parser *const prs, expression o
 		{
 			node select_node = create_node(prs, OP_SELECT);
 			node_add_arg(&select_node, member_type);	// Тип значения поля
-			node_add_arg(&select_node, designation);	// Вид значения поля
+			node_add_arg(&select_node, category);		// Категория значения поля
 			node_add_arg(&select_node, member_displ);	// Смещение поля структуры
 			node_set_child(&select_node, &operand.nd);	// Выражение-операнд
 
