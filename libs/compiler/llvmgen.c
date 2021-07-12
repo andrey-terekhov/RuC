@@ -868,8 +868,8 @@ static void operand(information *const info, node *const nd)
 		case OP_SLICE_IDENT:
 		{
 			const item_t displ = node_get_arg(nd, 0);
-			// TODO: как и в llvmopt, это работает только для двумерных массивов
-			// надо подумать над этим потом (может общую функцию сделать?)
+			// TODO: как и в llvmopt, это работает только для двумерных массивов,
+			// 	надо подумать над этим потом (может общую функцию сделать?)
 			const item_t type = node_get_arg(nd, 1) > 0
 									? mode_get(info->sx, (size_t)node_get_arg(nd, 1) + 1)
 									: node_get_arg(nd, 1);
