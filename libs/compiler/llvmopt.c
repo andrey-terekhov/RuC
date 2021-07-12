@@ -430,33 +430,28 @@ static int node_recursive(information *const info, node *const nd)
 						node_info *first = stack_pop(info);
 
 						node parent = node_get_parent(nd_info.ref_node);
-						node_info log_info_fst = nd_info;
-
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							log_info_fst.ref_node = &parent;
-							log_info_fst.depth = 1;
-							has_error |= transposition(&nd_info, &log_info_fst);
+							node_info log_info = { &parent, 1 };
+							has_error |= transposition(&nd_info, &log_info);
+							node_copy(nd_info.ref_node, log_info.ref_node);
 						}
 
 						// перестановка со вторым операндом
-						has_error |= transposition(second, &log_info_fst);
+						has_error |= transposition(second, &nd_info);
 
 						parent = node_get_parent(second->ref_node);
-						node_info log_info_snd = *second;
-
-						// надо переставить second с родителем
 						if (node_get_type(&parent) == OP_AD_LOG_OR
 							|| node_get_type(&parent) == OP_AD_LOG_AND
 							|| node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							log_info_snd.ref_node = &parent;
-							log_info_snd.depth = 1;
-							has_error |= transposition(second, &log_info_snd);
+							node_info log_info = { &parent, 1 };
+							has_error |= transposition(second, &log_info);
+							node_copy(second->ref_node, log_info.ref_node);
 						}
 
 						// перестановка с первым операндом
-						has_error |= transposition(first, &log_info_snd);
+						has_error |= transposition(first, second);
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(info, first);
