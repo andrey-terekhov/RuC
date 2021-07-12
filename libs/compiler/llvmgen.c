@@ -16,10 +16,10 @@
 
 #include "llvmgen.h"
 #include <string.h>
-#include "defs.h"
 #include "errors.h"
 #include "hash.h"
 #include "llvmopt.h"
+#include "operations.h"
 #include "parser.h"
 #include "tree.h"
 #include "uniprinter.h"
@@ -86,63 +86,63 @@ static double to_double(const int64_t fst, const int64_t snd)
 }
 
 // TODO: помню, такое планировалось делать вне кодогенератора...
-static int is_double(const item_t operation)
+static bool is_double(const item_t operation)
 {
 	switch (operation)
 	{
-		case ASSR:
-		case PLUSASSR:
-		case MINUSASSR:
-		case MULTASSR:
-		case DIVASSR:
+		case OP_ASSIGN_R:
+		case OP_ADD_ASSIGN_R:
+		case OP_SUB_ASSIGN_R:
+		case OP_MUL_ASSIGN_R:
+		case OP_DIV_ASSIGN_R:
 
-		case ASSATR:
-		case PLUSASSATR:
-		case MINUSASSATR:
-		case MULTASSATR:
-		case DIVASSATR:
+		case OP_ASSIGN_AT_R:
+		case OP_ADD_ASSIGN_AT_R:
+		case OP_SUB_ASSIGN_AT_R:
+		case OP_MUL_ASSIGN_AT_R:
+		case OP_DIV_ASSIGN_AT_R:
 
-		case ASSRV:
-		case PLUSASSRV:
-		case MINUSASSRV:
-		case MULTASSRV:
-		case DIVASSRV:
+		case OP_ASSIGN_R_V:
+		case OP_ADD_ASSIGN_R_V:
+		case OP_SUB_ASSIGN_R_V:
+		case OP_MUL_ASSIGN_R_V:
+		case OP_DIV_ASSIGN_R_V:
 
-		case ASSATRV:
-		case PLUSASSATRV:
-		case MINUSASSATRV:
-		case MULTASSATRV:
-		case DIVASSATRV:
+		case OP_ASSIGN_AT_R_V:
+		case OP_ADD_ASSIGN_AT_R_V:
+		case OP_SUB_ASSIGN_AT_R_V:
+		case OP_MUL_ASSIGN_AT_R_V:
+		case OP_DIV_ASSIGN_AT_R_V:
 
-		case EQEQR:
-		case NOTEQR:
-		case LLTR:
-		case LGTR:
-		case LLER:
-		case LGER:
-		case LPLUSR:
-		case LMINUSR:
-		case LMULTR:
-		case LDIVR:
+		case OP_EQ_R:
+		case OP_NE_R:
+		case OP_LT_R:
+		case OP_GT_R:
+		case OP_LE_R:
+		case OP_GE_R:
+		case OP_ADD_R:
+		case OP_SUB_R:
+		case OP_MUL_R:
+		case OP_DIV_R:
 
-		case POSTINCR:
-		case POSTDECR:
-		case INCR:
-		case DECR:
-		case POSTINCATR:
-		case POSTDECATR:
-		case INCATR:
-		case DECATR:
-		case POSTINCRV:
-		case POSTDECRV:
-		case INCRV:
-		case DECRV:
-		case POSTINCATRV:
-		case POSTDECATRV:
-		case INCATRV:
-		case DECATRV:
+		case OP_POST_INC_R:
+		case OP_POST_DEC_R:
+		case OP_PRE_INC_R:
+		case OP_PRE_DEC_R:
+		case OP_POST_INC_AT_R:
+		case OP_POST_DEC_AT_R:
+		case OP_PRE_INC_AT_R:
+		case OP_PRE_DEC_AT_R:
+		case OP_POST_INC_R_V:
+		case OP_POST_DEC_R_V:
+		case OP_PRE_INC_R_V:
+		case OP_PRE_DEC_R_V:
+		case OP_POST_INC_AT_R_V:
+		case OP_POST_DEC_AT_R_V:
+		case OP_PRE_INC_AT_R_V:
+		case OP_PRE_DEC_AT_R_V:
 
-		case UNMINUSR:
+		case OP_UNMINUS_R:
 			return 1;
 
 		default:
@@ -150,85 +150,89 @@ static int is_double(const item_t operation)
 	}
 }
 
-static int is_array_operation(const item_t operation)
+static bool is_array_operation(const item_t operation)
 {
 	switch (operation)
 	{
-		case POSTINCAT:
-		case POSTDECAT:
-		case INCAT:
-		case DECAT:
-		case POSTINCATV:
-		case POSTDECATV:
-		case INCATV:
-		case DECATV:
+		case OP_POST_INC_AT:
+		case OP_POST_DEC_AT:
+		case OP_PRE_INC_AT:
+		case OP_PRE_DEC_AT:
+		case OP_POST_INC_AT_V:
+		case OP_POST_DEC_AT_V:
+		case OP_PRE_INC_AT_V:
+		case OP_PRE_DEC_AT_V:
 
-		case POSTINCATR:
-		case POSTDECATR:
-		case INCATR:
-		case DECATR:
-		case POSTINCATRV:
-		case POSTDECATRV:
-		case INCATRV:
-		case DECATRV:
+		case OP_POST_INC_AT_R:
+		case OP_POST_DEC_AT_R:
+		case OP_PRE_INC_AT_R:
+		case OP_PRE_DEC_AT_R:
+		case OP_POST_INC_AT_R_V:
+		case OP_POST_DEC_AT_R_V:
+		case OP_PRE_INC_AT_R_V:
+		case OP_PRE_DEC_AT_R_V:
 
-		case REMASSAT:
-		case SHLASSAT:
-		case SHRASSAT:
-		case ANDASSAT:
-		case EXORASSAT:
-		case ORASSAT:
+		case OP_REM_ASSIGN_AT:
+		case OP_SHL_ASSIGN_AT:
+		case OP_SHR_ASSIGN_AT:
+		case OP_AND_ASSIGN_AT:
+		case OP_XOR_ASSIGN_AT:
+		case OP_OR_ASSIGN_AT:
 
-		case ASSAT:
-		case PLUSASSAT:
-		case MINUSASSAT:
-		case MULTASSAT:
-		case DIVASSAT:
+		case OP_ASSIGN_AT:
+		case OP_ADD_ASSIGN_AT:
+		case OP_SUB_ASSIGN_AT:
+		case OP_MUL_ASSIGN_AT:
+		case OP_DIV_ASSIGN_AT:
 
-		case REMASSATV:
-		case SHLASSATV:
-		case SHRASSATV:
-		case ANDASSATV:
-		case EXORASSATV:
-		case ORASSATV:
+		case OP_REM_ASSIGN_AT_V:
+		case OP_SHL_ASSIGN_AT_V:
+		case OP_SHR_ASSIGN_AT_V:
+		case OP_AND_ASSIGN_AT_V:
+		case OP_XOR_ASSIGN_AT_V:
+		case OP_OR_ASSIGN_AT_V:
 
-		case ASSATV:
-		case PLUSASSATV:
-		case MINUSASSATV:
-		case MULTASSATV:
-		case DIVASSATV:
+		case OP_ASSIGN_AT_V:
+		case OP_ADD_ASSIGN_AT_V:
+		case OP_SUB_ASSIGN_AT_V:
+		case OP_MUL_ASSIGN_AT_V:
+		case OP_DIV_ASSIGN_AT_V:
 
-		case ASSATR:
-		case PLUSASSATR:
-		case MINUSASSATR:
-		case MULTASSATR:
-		case DIVASSATR:
+		case OP_ASSIGN_AT_R:
+		case OP_ADD_ASSIGN_AT_R:
+		case OP_SUB_ASSIGN_AT_R:
+		case OP_MUL_ASSIGN_AT_R:
+		case OP_DIV_ASSIGN_AT_R:
 
-		case ASSATRV:
-		case PLUSASSATRV:
-		case MINUSASSATRV:
-		case MULTASSATRV:
-		case DIVASSATRV:
-		return 1;
+		case OP_ASSIGN_AT_R_V:
+		case OP_ADD_ASSIGN_AT_R_V:
+		case OP_SUB_ASSIGN_AT_R_V:
+		case OP_MUL_ASSIGN_AT_R_V:
+		case OP_DIV_ASSIGN_AT_R_V:
+			return 1;
 
 		default:
 			return 0;
 	}
 }
 
-static void type_to_io(universal_io *const io, const item_t type)
+static void type_to_io(information *const info, const item_t type)
 {
 	if (mode_is_int(type))
 	{
-		uni_printf(io, "i32");
+		uni_printf(info->io, "i32");
 	}
 	else if (mode_is_float(type))
 	{
-		uni_printf(io, "double");
+		uni_printf(info->io, "double");
 	}
 	else if (mode_is_void(type))
 	{
-		uni_printf(io, "void");
+		uni_printf(info->io, "void");
+	}
+	else if (mode_is_struct(info->sx, type))
+	{
+		uni_printf(info->io, "%%struct_opt.%" PRIitem, type);
 	}
 }
 
@@ -236,188 +240,188 @@ static void operation_to_io(universal_io *const io, const item_t type)
 {
 	switch (type)
 	{
-		case INC:
-		case INCV:
-		case POSTINC:
-		case POSTINCV:
-		case PLUSASS:
-		case PLUSASSV:
-		case LPLUS:
-		case PLUSASSAT:
-		case PLUSASSATV:
-		case INCAT:
-		case INCATV:
-		case POSTINCAT:
-		case POSTINCATV:
+		case OP_PRE_INC:
+		case OP_PRE_INC_V:
+		case OP_POST_INC:
+		case OP_POST_INC_V:
+		case OP_ADD_ASSIGN:
+		case OP_ADD_ASSIGN_V:
+		case OP_ADD:
+		case OP_ADD_ASSIGN_AT:
+		case OP_ADD_ASSIGN_AT_V:
+		case OP_PRE_INC_AT:
+		case OP_PRE_INC_AT_V:
+		case OP_POST_INC_AT:
+		case OP_POST_INC_AT_V:
 			uni_printf(io, "add nsw");
 			break;
 
-		case DEC:
-		case DECV:
-		case POSTDEC:
-		case POSTDECV:
-		case MINUSASS:
-		case MINUSASSV:
-		case LMINUS:
-		case UNMINUS:
-		case MINUSASSAT:
-		case MINUSASSATV:
-		case DECAT:
-		case DECATV:
-		case POSTDECAT:
-		case POSTDECATV:
+		case OP_PRE_DEC:
+		case OP_PRE_DEC_V:
+		case OP_POST_DEC:
+		case OP_POST_DEC_V:
+		case OP_SUB_ASSIGN:
+		case OP_SUB_ASSIGN_V:
+		case OP_SUB:
+		case OP_UNMINUS:
+		case OP_SUB_ASSIGN_AT:
+		case OP_SUB_ASSIGN_AT_V:
+		case OP_PRE_DEC_AT:
+		case OP_PRE_DEC_AT_V:
+		case OP_POST_DEC_AT:
+		case OP_POST_DEC_AT_V:
 			uni_printf(io, "sub nsw");
 			break;
 
-		case MULTASS:
-		case MULTASSV:
-		case LMULT:
-		case MULTASSAT:
-		case MULTASSATV:
+		case OP_MUL_ASSIGN:
+		case OP_MUL_ASSIGN_V:
+		case OP_MUL:
+		case OP_MUL_ASSIGN_AT:
+		case OP_MUL_ASSIGN_AT_V:
 			uni_printf(io, "mul nsw");
 			break;
 
-		case DIVASS:
-		case DIVASSV:
-		case LDIV:
-		case DIVASSAT:
-		case DIVASSATV:
+		case OP_DIV_ASSIGN:
+		case OP_DIV_ASSIGN_V:
+		case OP_DIV:
+		case OP_DIV_ASSIGN_AT:
+		case OP_DIV_ASSIGN_AT_V:
 			uni_printf(io, "sdiv");
 			break;
 
-		case REMASS:
-		case REMASSV:
-		case LREM:
-		case REMASSAT:
-		case REMASSATV:
+		case OP_REM_ASSIGN:
+		case OP_REM_ASSIGN_V:
+		case OP_REM:
+		case OP_REM_ASSIGN_AT:
+		case OP_REM_ASSIGN_AT_V:
 			uni_printf(io, "srem");
 			break;
 
-		case SHLASS:
-		case SHLASSV:
-		case LSHL:
-		case SHLASSAT:
-		case SHLASSATV:
+		case OP_SHL_ASSIGN:
+		case OP_SHL_ASSIGN_V:
+		case OP_SHL:
+		case OP_SHL_ASSIGN_AT:
+		case OP_SHL_ASSIGN_AT_V:
 			uni_printf(io, "shl");
 			break;
 
-		case SHRASS:
-		case SHRASSV:
-		case LSHR:
-		case SHRASSAT:
-		case SHRASSATV:
+		case OP_SHR_ASSIGN:
+		case OP_SHR_ASSIGN_V:
+		case OP_SHR:
+		case OP_SHR_ASSIGN_AT:
+		case OP_SHR_ASSIGN_AT_V:
 			uni_printf(io, "ashr");
 			break;
 
-		case ANDASS:
-		case ANDASSV:
-		case LAND:
-		case ANDASSAT:
-		case ANDASSATV:
+		case OP_AND_ASSIGN:
+		case OP_AND_ASSIGN_V:
+		case OP_AND:
+		case OP_AND_ASSIGN_AT:
+		case OP_AND_ASSIGN_AT_V:
 			uni_printf(io, "and");
 			break;
 
-		case EXORASS:
-		case EXORASSV:
-		case LEXOR:
-		case LNOT:
-		case EXORASSAT:
-		case EXORASSATV:
+		case OP_XOR_ASSIGN:
+		case OP_XOR_ASSIGN_V:
+		case OP_XOR:
+		case OP_NOT:
+		case OP_XOR_ASSIGN_AT:
+		case OP_XOR_ASSIGN_AT_V:
 			uni_printf(io, "xor");
 			break;
 
-		case ORASS:
-		case ORASSV:
-		case LOR:
-		case ORASSAT:
-		case ORASSATV:
+		case OP_OR_ASSIGN:
+		case OP_OR_ASSIGN_V:
+		case OP_OR:
+		case OP_OR_ASSIGN_AT:
+		case OP_OR_ASSIGN_AT_V:
 			uni_printf(io, "or");
 			break;
 
-		case EQEQ:
+		case OP_EQ:
 			uni_printf(io, "icmp eq");
 			break;
-		case NOTEQ:
+		case OP_NE:
 			uni_printf(io, "icmp ne");
 			break;
-		case LLT:
+		case OP_LT:
 			uni_printf(io, "icmp slt");
 			break;
-		case LGT:
+		case OP_GT:
 			uni_printf(io, "icmp sgt");
 			break;
-		case LLE:
+		case OP_LE:
 			uni_printf(io, "icmp sle");
 			break;
-		case LGE:
+		case OP_GE:
 			uni_printf(io, "icmp sge");
 			break;
 
-		case INCR:
-		case INCRV:
-		case POSTINCR:
-		case POSTINCRV:
-		case PLUSASSR:
-		case PLUSASSRV:
-		case LPLUSR:
-		case PLUSASSATR:
-		case PLUSASSATRV:
-		case INCATR:
-		case INCATRV:
-		case POSTINCATR:
-		case POSTINCATRV:
+		case OP_PRE_INC_R:
+		case OP_PRE_INC_R_V:
+		case OP_POST_INC_R:
+		case OP_POST_INC_R_V:
+		case OP_ADD_ASSIGN_R:
+		case OP_ADD_ASSIGN_R_V:
+		case OP_ADD_R:
+		case OP_ADD_ASSIGN_AT_R:
+		case OP_ADD_ASSIGN_AT_R_V:
+		case OP_PRE_INC_AT_R:
+		case OP_PRE_INC_AT_R_V:
+		case OP_POST_INC_AT_R:
+		case OP_POST_INC_AT_R_V:
 			uni_printf(io, "fadd");
 			break;
 
-		case DECR:
-		case DECRV:
-		case POSTDECR:
-		case POSTDECRV:
-		case MINUSASSR:
-		case MINUSASSRV:
-		case LMINUSR:
-		case UNMINUSR:
-		case MINUSASSATR:
-		case MINUSASSATRV:
-		case DECATR:
-		case DECATRV:
-		case POSTDECATR:
-		case POSTDECATRV:
+		case OP_PRE_DEC_R:
+		case OP_PRE_DEC_R_V:
+		case OP_POST_DEC_R:
+		case OP_POST_DEC_R_V:
+		case OP_SUB_ASSIGN_R:
+		case OP_SUB_ASSIGN_R_V:
+		case OP_SUB_R:
+		case OP_UNMINUS_R:
+		case OP_SUB_ASSIGN_AT_R:
+		case OP_SUB_ASSIGN_AT_R_V:
+		case OP_PRE_DEC_AT_R:
+		case OP_PRE_DEC_AT_R_V:
+		case OP_POST_DEC_AT_R:
+		case OP_POST_DEC_AT_R_V:
 			uni_printf(io, "fsub");
 			break;
 
-		case MULTASSR:
-		case MULTASSRV:
-		case LMULTR:
-		case MULTASSATR:
-		case MULTASSATRV:
+		case OP_MUL_ASSIGN_R:
+		case OP_MUL_ASSIGN_R_V:
+		case OP_MUL_R:
+		case OP_MUL_ASSIGN_AT_R:
+		case OP_MUL_ASSIGN_AT_R_V:
 			uni_printf(io, "fmul");
 			break;
 
-		case DIVASSR:
-		case DIVASSRV:
-		case LDIVR:
-		case DIVASSATR:
-		case DIVASSATRV:
+		case OP_DIV_ASSIGN_R:
+		case OP_DIV_ASSIGN_R_V:
+		case OP_DIV_R:
+		case OP_DIV_ASSIGN_AT_R:
+		case OP_DIV_ASSIGN_AT_R_V:
 			uni_printf(io, "fdiv");
 			break;
 
-		case EQEQR:
+		case OP_EQ_R:
 			uni_printf(io, "fcmp oeq");
 			break;
-		case NOTEQR:
+		case OP_NE_R:
 			uni_printf(io, "fcmp one");
 			break;
-		case LLTR:
+		case OP_LT_R:
 			uni_printf(io, "fcmp olt");
 			break;
-		case LGTR:
+		case OP_GT_R:
 			uni_printf(io, "fcmp ogt");
 			break;
-		case LLER:
+		case OP_LE_R:
 			uni_printf(io, "fcmp ole");
 			break;
-		case LGER:
+		case OP_GE_R:
 			uni_printf(io, "fcmp oge");
 			break;
 	}
@@ -429,7 +433,7 @@ static void to_code_operation_reg_reg(information *const info, const item_t oper
 	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
 	operation_to_io(info->io, operation);
 	uni_printf(info->io, " ");
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 	uni_printf(info->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
@@ -469,9 +473,9 @@ static void to_code_load(information *const info, const item_t result, const ite
 	, const int is_array)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = load ", result);
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 	uni_printf(info->io, ", ");
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
@@ -479,9 +483,9 @@ static inline void to_code_store_reg(information *const info, const item_t reg, 
 	, const int is_array)
 {
 	uni_printf(info->io, " store ");
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 	uni_printf(info->io, " %%.%" PRIitem ", ", reg);
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
@@ -535,7 +539,7 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	{
 		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
 	}
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 
 	for (size_t i = 1; i <= dim; i++)
 	{
@@ -557,7 +561,7 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 		to_alloc = info->register_num++;
 	}
 	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
-	type_to_io(info->io, type);
+	type_to_io(info, type);
 	uni_printf(info->io, ", i32 %%.%" PRIitem ", align 4\n", to_alloc);
 }
 
@@ -590,7 +594,7 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 		{
 			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
 		}
-		type_to_io(info->io, type);
+		type_to_io(info, type);
 
 		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
@@ -602,7 +606,7 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 		{
 			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
 		}
-		type_to_io(info->io, type);
+		type_to_io(info, type);
 
 		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
@@ -620,16 +624,16 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 	}
 	else if (cur_dimension == dimensions - 1)
 	{
-		type_to_io(info->io, type);
+		type_to_io(info, type);
 		uni_printf(info->io, ", ");
-		type_to_io(info->io, type);
+		type_to_io(info, type);
 		uni_printf(info->io, "* %%dynarr.%" PRIitem, displ);
 	}
 	else
 	{
-		type_to_io(info->io, type);
+		type_to_io(info, type);
 		uni_printf(info->io, ", ");
-		type_to_io(info->io, type);
+		type_to_io(info, type);
 		uni_printf(info->io, "* %%.%" PRIitem, prev_slice);
 	}
 
@@ -655,7 +659,7 @@ static void check_type_and_branch(information *const info)
 			break;
 		case AREG:
 		{
-			to_code_operation_reg_const_i32(info, NOTEQ, info->answer_reg, 0);
+			to_code_operation_reg_const_i32(info, OP_NE, info->answer_reg, 0);
 			info->answer_reg = info->register_num++;
 		}
 		case ALOGIC:
@@ -667,19 +671,19 @@ static void check_type_and_branch(information *const info)
 
 static void operand(information *const info, node *const nd)
 {
-	if (node_get_type(nd) == NOP || node_get_type(nd) == ADLOGOR || node_get_type(nd) == ADLOGAND)
+	if (node_get_type(nd) == OP_NOP || node_get_type(nd) == OP_AD_LOG_OR || node_get_type(nd) == OP_AD_LOG_AND)
 	{
 		node_set_next(nd);
 	}
 
 	switch (node_get_type(nd))
 	{
-		case TIdent:
-		case TSelect:
-		case TIdenttoaddr:
+		case OP_IDENT:
+		case OP_SELECT:
+		case OP_IDENT_TO_ADDR:
 			node_set_next(nd);
 			break;
-		case TIdenttoval:
+		case OP_IDENT_TO_VAL:
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
@@ -690,7 +694,7 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 		}
 		break;
-		case TIdenttovald:
+		case OP_IDENT_TO_VAL_D:
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
@@ -701,7 +705,7 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 		}
 		break;
-		case TConst:
+		case OP_CONST:
 		{
 			const item_t num = node_get_arg(nd, 0);
 
@@ -720,7 +724,7 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 		}
 		break;
-		case TConstd:
+		case OP_CONST_D:
 		{
 			const double num = to_double(node_get_arg(nd, 0), node_get_arg(nd, 1));
 
@@ -739,13 +743,17 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 		}
 		break;
-		case TString:
+		case OP_STRING:
 			node_set_next(nd);
 			break;
-		case TSliceident:
+		case OP_SLICE_IDENT:
 		{
 			const item_t displ = node_get_arg(nd, 0);
-			const item_t type = node_get_arg(nd, 1);
+			// TODO: как и в llvmopt, это работает только для двумерных массивов,
+			// 	надо подумать над этим потом (может общую функцию сделать?)
+			const item_t type = node_get_arg(nd, 1) > 0
+									? mode_get(info->sx, (size_t)node_get_arg(nd, 1) + 1)
+									: node_get_arg(nd, 1);
 			item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 			const location_t location = info->variable_location;
 			node_set_next(nd);
@@ -758,11 +766,11 @@ static void operand(information *const info, node *const nd)
 			{
 				if (info->answer_type == ACONST)
 				{
-					to_code_operation_const_reg_i32(info, LMULT, info->answer_const, hash_get(&info->arrays, displ, 2));
+					to_code_operation_const_reg_i32(info, OP_MUL, info->answer_const, hash_get(&info->arrays, displ, 2));
 				}
 				else // if (info->answer_type == AREG)
 				{
-					to_code_operation_reg_reg(info, LMULT, info->answer_reg, hash_get(&info->arrays, displ, 2),
+					to_code_operation_reg_reg(info, OP_MUL, info->answer_reg, hash_get(&info->arrays, displ, 2),
 						mode_integer);
 				}
 
@@ -770,22 +778,32 @@ static void operand(information *const info, node *const nd)
 				info->answer_reg = info->register_num++;
 			}
 
-			to_code_slice(info, displ, cur_dimension, 0, type);
+			// Проверка, что значение cur_dimension корректное и в пределах допустимого
+			// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
+			if (-1 < cur_dimension && cur_dimension < 5)
+			{
+				to_code_slice(info, displ, cur_dimension, 0, type);
+			}
 
 			item_t prev_slice = info->register_num - 1;
-			while (node_get_type(nd) == TSlice)
+			while (node_get_type(nd) == OP_SLICE)
 			{
 				node_set_next(nd);
 				info->variable_location = LFREE;
 				expression(info, nd);
 				cur_dimension--;
 
-				to_code_slice(info, displ, cur_dimension, prev_slice, type);
+				// Проверка, что значение cur_dimension корректное и в пределах допустимого
+				// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
+				if (-1 < cur_dimension && cur_dimension < 5)
+				{
+					to_code_slice(info, displ, cur_dimension, prev_slice, type);
+				}
 				prev_slice = info->register_num - 1;
 			}
 
 			// TODO: может это замена LMEM? Подумать, когда будут реализовываться указатели
-			if (node_get_type(nd) == TAddrtoval)
+			if (node_get_type(nd) == OP_ADDR_TO_VAL)
 			{
 				node_set_next(nd);
 			}
@@ -801,7 +819,7 @@ static void operand(information *const info, node *const nd)
 			info->answer_value_type = type;
 		}
 		break;
-		case TCall1:
+		case OP_CALL1:
 		{
 			const item_t args = node_get_arg(nd, 0);
 
@@ -814,7 +832,7 @@ static void operand(information *const info, node *const nd)
 			const size_t ref_ident = (size_t)node_get_arg(nd, 0);
 			const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
 
-			node_set_next(nd); // TCall2
+			node_set_next(nd); // OP_CALL2
 
 			if (func_type != mode_void)
 			{
@@ -824,14 +842,14 @@ static void operand(information *const info, node *const nd)
 				info->answer_reg = info->register_num++;
 			}
 			uni_printf(info->io, " call ");
-			type_to_io(info->io, func_type);
+			type_to_io(info, func_type);
 			uni_printf(info->io, " @func%zi(", ref_ident);
 
 			// тут будет ещё перечисление аргументов
 			uni_printf(info->io, ")\n");
 		}
 		break;
-		case TBeginit:
+		case OP_ARRAY_INIT:
 		{
 			// здесь будет печать llvm с инициализацией массивов
 			const item_t N = node_get_arg(nd, 0);
@@ -843,7 +861,7 @@ static void operand(information *const info, node *const nd)
 			}
 		}
 		break;
-		case TStructinit:
+		case OP_STRUCT_INIT:
 		{
 			// здесь будет печать llvm с инициализацией структур
 			const item_t N = node_get_arg(nd, 0);
@@ -870,7 +888,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 	node_set_next(nd);
 	info->variable_location = LMEM;
-	operand(info, nd); // Tident or TSliceident
+	operand(info, nd); // Tident or OP_SLICE_IDENT
 	const item_t memory_reg = info->answer_reg;
 
 	info->variable_location = LFREE;
@@ -879,9 +897,10 @@ static void assignment_expression(information *const info, node *const nd)
 	to_code_try_zext_to(info);
 	item_t result = info->answer_reg;
 
-	if (assignment_type != ASS && assignment_type != ASSV && assignment_type != ASSR && assignment_type != ASSRV
-		&& assignment_type != ASSAT && assignment_type != ASSATV
-		&& assignment_type != ASSATR && assignment_type != ASSATRV)
+	if (assignment_type != OP_ASSIGN && assignment_type != OP_ASSIGN_V
+		&& assignment_type != OP_ASSIGN_R && assignment_type != OP_ASSIGN_R_V
+		&& assignment_type != OP_ASSIGN_AT && assignment_type != OP_ASSIGN_AT_V
+		&& assignment_type != OP_ASSIGN_AT_R && assignment_type != OP_ASSIGN_AT_R_V)
 	{
 		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
 		info->register_num++;
@@ -974,85 +993,85 @@ static void integral_expression(information *const info, node *const nd, const a
 
 		switch (operation)
 		{
-			case LPLUS:
+			case OP_ADD:
 				info->answer_const = left_const + right_const;
 				break;
-			case LMINUS:
+			case OP_SUB:
 				info->answer_const = left_const - right_const;
 				break;
-			case LMULT:
+			case OP_MUL:
 				info->answer_const = left_const * right_const;
 				break;
-			case LDIV:
+			case OP_DIV:
 				info->answer_const = left_const / right_const;
 				break;
-			case LREM:
+			case OP_REM:
 				info->answer_const = left_const % right_const;
 				break;
-			case LSHL:
+			case OP_SHL:
 				info->answer_const = left_const << right_const;
 				break;
-			case LSHR:
+			case OP_SHR:
 				info->answer_const = left_const >> right_const;
 				break;
-			case LAND:
+			case OP_AND:
 				info->answer_const = left_const & right_const;
 				break;
-			case LEXOR:
+			case OP_XOR:
 				info->answer_const = left_const ^ right_const;
 				break;
-			case LOR:
+			case OP_OR:
 				info->answer_const = left_const | right_const;
 				break;
 
-			case EQEQ:
+			case OP_EQ:
 				info->answer_const = left_const == right_const;
 				break;
-			case NOTEQ:
+			case OP_NE:
 				info->answer_const = left_const != right_const;
 				break;
-			case LLT:
+			case OP_LT:
 				info->answer_const = left_const < right_const;
 				break;
-			case LGT:
+			case OP_GT:
 				info->answer_const = left_const > right_const;
 				break;
-			case LLE:
+			case OP_LE:
 				info->answer_const = left_const <= right_const;
 				break;
-			case LGE:
+			case OP_GE:
 				info->answer_const = left_const >= right_const;
 				break;
 
-			case LPLUSR:
+			case OP_ADD_R:
 				info->answer_const_double = left_const_double + right_const_double;
 				break;
-			case LMINUSR:
+			case OP_SUB_R:
 				info->answer_const_double = left_const_double - right_const_double;
 				break;
-			case LMULTR:
+			case OP_MUL_R:
 				info->answer_const_double = left_const_double * right_const_double;
 				break;
-			case LDIVR:
+			case OP_DIV_R:
 				info->answer_const_double = left_const_double / right_const_double;
 				break;
 
-			case EQEQR:
+			case OP_EQ_R:
 				info->answer_const = left_const_double == right_const_double;
 				break;
-			case NOTEQR:
+			case OP_NE_R:
 				info->answer_const = left_const_double != right_const_double;
 				break;
-			case LLTR:
+			case OP_LT_R:
 				info->answer_const = left_const_double < right_const_double;
 				break;
-			case LGTR:
+			case OP_GT_R:
 				info->answer_const = left_const_double > right_const_double;
 				break;
-			case LLER:
+			case OP_LE_R:
 				info->answer_const = left_const_double <= right_const_double;
 				break;
-			case LGER:
+			case OP_GE_R:
 				info->answer_const = left_const_double >= right_const_double;
 				break;
 		}
@@ -1072,7 +1091,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 
 	node_set_next(nd);
 	info->variable_location = LMEM;
-	operand(info, nd); // Tident or TSliceident
+	operand(info, nd); // Tident or OP_SLICE_IDENT
 	const item_t memory_reg = info->answer_reg;
 
 	to_code_load(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type
@@ -1083,47 +1102,47 @@ static void inc_dec_expression(information *const info, node *const nd)
 
 	switch (operation)
 	{
-		case INC:
-		case INCV:
-		case DEC:
-		case DECV:
+		case OP_PRE_INC:
+		case OP_PRE_INC_V:
+		case OP_PRE_DEC:
+		case OP_PRE_DEC_V:
 
-		case INCAT:
-		case INCATV:
-		case DECAT:
-		case DECATV:
+		case OP_PRE_INC_AT:
+		case OP_PRE_INC_AT_V:
+		case OP_PRE_DEC_AT:
+		case OP_PRE_DEC_AT_V:
 			info->answer_reg = info->register_num;
-		case POSTINC:
-		case POSTINCV:
-		case POSTDEC:
-		case POSTDECV:
+		case OP_POST_INC:
+		case OP_POST_INC_V:
+		case OP_POST_DEC:
+		case OP_POST_DEC_V:
 
-		case POSTINCAT:
-		case POSTINCATV:
-		case POSTDECAT:
-		case POSTDECATV:
+		case OP_POST_INC_AT:
+		case OP_POST_INC_AT_V:
+		case OP_POST_DEC_AT:
+		case OP_POST_DEC_AT_V:
 			to_code_operation_reg_const_i32(info, operation, info->register_num - 1, 1);
 			break;
 
-		case INCR:
-		case INCRV:
-		case DECR:
-		case DECRV:
+		case OP_PRE_INC_R:
+		case OP_PRE_INC_R_V:
+		case OP_PRE_DEC_R:
+		case OP_PRE_DEC_R_V:
 
-		case INCATR:
-		case INCATRV:
-		case DECATR:
-		case DECATRV:
+		case OP_PRE_INC_AT_R:
+		case OP_PRE_INC_AT_R_V:
+		case OP_PRE_DEC_AT_R:
+		case OP_PRE_DEC_AT_R_V:
 			info->answer_reg = info->register_num;
-		case POSTINCR:
-		case POSTINCRV:
-		case POSTDECR:
-		case POSTDECRV:
+		case OP_POST_INC_R:
+		case OP_POST_INC_R_V:
+		case OP_POST_DEC_R:
+		case OP_POST_DEC_R_V:
 
-		case POSTINCATR:
-		case POSTINCATRV:
-		case POSTDECATR:
-		case POSTDECATRV:
+		case OP_POST_INC_AT_R:
+		case OP_POST_INC_AT_R_V:
+		case OP_POST_DEC_AT_R:
+		case OP_POST_DEC_AT_R_V:
 			to_code_operation_reg_const_double(info, operation, info->register_num - 1, 1.0);
 			break;
 	}
@@ -1137,46 +1156,46 @@ static void unary_operation(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case POSTINC:
-		case POSTINCV:
-		case POSTDEC:
-		case POSTDECV:
-		case INC:
-		case INCV:
-		case DEC:
-		case DECV:
+		case OP_POST_INC:
+		case OP_POST_INC_V:
+		case OP_POST_DEC:
+		case OP_POST_DEC_V:
+		case OP_PRE_INC:
+		case OP_PRE_INC_V:
+		case OP_PRE_DEC:
+		case OP_PRE_DEC_V:
 
-		case POSTINCAT:
-		case POSTINCATV:
-		case POSTDECAT:
-		case POSTDECATV:
-		case INCAT:
-		case INCATV:
-		case DECAT:
-		case DECATV:
+		case OP_POST_INC_AT:
+		case OP_POST_INC_AT_V:
+		case OP_POST_DEC_AT:
+		case OP_POST_DEC_AT_V:
+		case OP_PRE_INC_AT:
+		case OP_PRE_INC_AT_V:
+		case OP_PRE_DEC_AT:
+		case OP_PRE_DEC_AT_V:
 
-		case POSTINCR:
-		case POSTINCRV:
-		case POSTDECR:
-		case POSTDECRV:
-		case INCR:
-		case INCRV:
-		case DECR:
-		case DECRV:
+		case OP_POST_INC_R:
+		case OP_POST_INC_R_V:
+		case OP_POST_DEC_R:
+		case OP_POST_DEC_R_V:
+		case OP_PRE_INC_R:
+		case OP_PRE_INC_R_V:
+		case OP_PRE_DEC_R:
+		case OP_PRE_DEC_R_V:
 
-		case POSTINCATR:
-		case POSTINCATRV:
-		case POSTDECATR:
-		case POSTDECATRV:
-		case INCATR:
-		case INCATRV:
-		case DECATR:
-		case DECATRV:
+		case OP_POST_INC_AT_R:
+		case OP_POST_INC_AT_R_V:
+		case OP_POST_DEC_AT_R:
+		case OP_POST_DEC_AT_R_V:
+		case OP_PRE_INC_AT_R:
+		case OP_PRE_INC_AT_R_V:
+		case OP_PRE_DEC_AT_R:
+		case OP_PRE_DEC_AT_R_V:
 			inc_dec_expression(info, nd);
 			break;
-		case UNMINUS:
-		case LNOT:
-		case UNMINUSR:
+		case OP_UNMINUS:
+		case OP_NOT:
+		case OP_UNMINUS_R:
 		{
 			const item_t operation_type = node_get_type(nd);
 			node_set_next(nd);
@@ -1187,17 +1206,17 @@ static void unary_operation(information *const info, node *const nd)
 			to_code_try_zext_to(info);
 
 			info->answer_value_type = mode_integer;
-			if (operation_type == UNMINUS)
+			if (operation_type == OP_UNMINUS)
 			{
-				to_code_operation_const_reg_i32(info, UNMINUS, 0, info->answer_reg);
+				to_code_operation_const_reg_i32(info, OP_UNMINUS, 0, info->answer_reg);
 			}
-			else if (operation_type == LNOT)
+			else if (operation_type == OP_NOT)
 			{
-				to_code_operation_reg_const_i32(info, LNOT, info->answer_reg, -1);
+				to_code_operation_reg_const_i32(info, OP_NOT, info->answer_reg, -1);
 			}
-			else // UNMINUSR
+			else // OP_UNMINUS_R
 			{
-				to_code_operation_const_reg_double(info, UNMINUSR, 0, info->answer_reg);
+				to_code_operation_const_reg_double(info, OP_UNMINUS_R, 0, info->answer_reg);
 				info->answer_value_type = mode_float;
 			}
 
@@ -1205,7 +1224,7 @@ static void unary_operation(information *const info, node *const nd)
 			info->answer_reg = info->register_num++;
 		}
 		break;
-		case LOGNOT:
+		case OP_LOG_NOT:
 		{
 			const item_t temp = info->label_true;
 			info->label_true =  info->label_false;
@@ -1228,119 +1247,119 @@ static void binary_operation(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case ASS:
-		case ASSV:
+		case OP_ASSIGN:
+		case OP_ASSIGN_V:
 
-		case PLUSASS:
-		case PLUSASSV:
-		case MINUSASS:
-		case MINUSASSV:
-		case MULTASS:
-		case MULTASSV:
-		case DIVASS:
-		case DIVASSV:
+		case OP_ADD_ASSIGN:
+		case OP_ADD_ASSIGN_V:
+		case OP_SUB_ASSIGN:
+		case OP_SUB_ASSIGN_V:
+		case OP_MUL_ASSIGN:
+		case OP_MUL_ASSIGN_V:
+		case OP_DIV_ASSIGN:
+		case OP_DIV_ASSIGN_V:
 
-		case REMASS:
-		case REMASSV:
-		case SHLASS:
-		case SHLASSV:
-		case SHRASS:
-		case SHRASSV:
-		case ANDASS:
-		case ANDASSV:
-		case EXORASS:
-		case EXORASSV:
-		case ORASS:
-		case ORASSV:
+		case OP_REM_ASSIGN:
+		case OP_REM_ASSIGN_V:
+		case OP_SHL_ASSIGN:
+		case OP_SHL_ASSIGN_V:
+		case OP_SHR_ASSIGN:
+		case OP_SHR_ASSIGN_V:
+		case OP_AND_ASSIGN:
+		case OP_AND_ASSIGN_V:
+		case OP_XOR_ASSIGN:
+		case OP_XOR_ASSIGN_V:
+		case OP_OR_ASSIGN:
+		case OP_OR_ASSIGN_V:
 
-		case ASSR:
-		case ASSRV:
+		case OP_ASSIGN_R:
+		case OP_ASSIGN_R_V:
 
-		case PLUSASSR:
-		case PLUSASSRV:
-		case MINUSASSR:
-		case MINUSASSRV:
-		case MULTASSR:
-		case MULTASSRV:
-		case DIVASSR:
-		case DIVASSRV:
+		case OP_ADD_ASSIGN_R:
+		case OP_ADD_ASSIGN_R_V:
+		case OP_SUB_ASSIGN_R:
+		case OP_SUB_ASSIGN_R_V:
+		case OP_MUL_ASSIGN_R:
+		case OP_MUL_ASSIGN_R_V:
+		case OP_DIV_ASSIGN_R:
+		case OP_DIV_ASSIGN_R_V:
 
-		case ASSAT:
-		case PLUSASSAT:
-		case MINUSASSAT:
-		case MULTASSAT:
-		case DIVASSAT:
+		case OP_ASSIGN_AT:
+		case OP_ADD_ASSIGN_AT:
+		case OP_SUB_ASSIGN_AT:
+		case OP_MUL_ASSIGN_AT:
+		case OP_DIV_ASSIGN_AT:
 
-		case ASSATV:
-		case PLUSASSATV:
-		case MINUSASSATV:
-		case MULTASSATV:
-		case DIVASSATV:
+		case OP_ASSIGN_AT_V:
+		case OP_ADD_ASSIGN_AT_V:
+		case OP_SUB_ASSIGN_AT_V:
+		case OP_MUL_ASSIGN_AT_V:
+		case OP_DIV_ASSIGN_AT_V:
 
-		case ASSATR:
-		case PLUSASSATR:
-		case MINUSASSATR:
-		case MULTASSATR:
-		case DIVASSATR:
+		case OP_ASSIGN_AT_R:
+		case OP_ADD_ASSIGN_AT_R:
+		case OP_SUB_ASSIGN_AT_R:
+		case OP_MUL_ASSIGN_AT_R:
+		case OP_DIV_ASSIGN_AT_R:
 
-		case ASSATRV:
-		case PLUSASSATRV:
-		case MINUSASSATRV:
-		case MULTASSATRV:
-		case DIVASSATRV:
+		case OP_ASSIGN_AT_R_V:
+		case OP_ADD_ASSIGN_AT_R_V:
+		case OP_SUB_ASSIGN_AT_R_V:
+		case OP_MUL_ASSIGN_AT_R_V:
+		case OP_DIV_ASSIGN_AT_R_V:
 			assignment_expression(info, nd);
 			break;
 
 
-		case LPLUS:
-		case LMINUS:
-		case LMULT:
-		case LDIV:
+		case OP_ADD:
+		case OP_SUB:
+		case OP_MUL:
+		case OP_DIV:
 
-		case LREM:
-		case LSHL:
-		case LSHR:
-		case LAND:
-		case LEXOR:
-		case LOR:
+		case OP_REM:
+		case OP_SHL:
+		case OP_SHR:
+		case OP_AND:
+		case OP_XOR:
+		case OP_OR:
 
-		case LPLUSR:
-		case LMINUSR:
-		case LMULTR:
-		case LDIVR:
+		case OP_ADD_R:
+		case OP_SUB_R:
+		case OP_MUL_R:
+		case OP_DIV_R:
 			integral_expression(info, nd, AREG);
 			break;
 
 
-		case EQEQ:
-		case NOTEQ:
-		case LLT:
-		case LGT:
-		case LLE:
-		case LGE:
+		case OP_EQ:
+		case OP_NE:
+		case OP_LT:
+		case OP_GT:
+		case OP_LE:
+		case OP_GE:
 
-		case EQEQR:
-		case NOTEQR:
-		case LLTR:
-		case LGTR:
-		case LLER:
-		case LGER:
+		case OP_EQ_R:
+		case OP_NE_R:
+		case OP_LT_R:
+		case OP_GT_R:
+		case OP_LE_R:
+		case OP_GE_R:
 			integral_expression(info, nd, ALOGIC);
 			break;
 
 		// TODO: протестировать и при необходимости реализовать случай, когда && и || есть в арифметических выражениях
-		case LOGOR:
-		case LOGAND:
+		case OP_LOG_OR:
+		case OP_LOG_AND:
 		{
 			const item_t label_next = info->label_num++;
 			const item_t old_label_true = info->label_true;
 			const item_t old_label_false = info->label_false;
 
-			if (node_get_type(nd) == LOGOR)
+			if (node_get_type(nd) == OP_LOG_OR)
 			{
 				info->label_false = label_next;
 			}
-			else // (node_get_type(nd) == LOGAND)
+			else // (node_get_type(nd) == OP_LOG_AND)
 			{
 				info->label_true = label_next;
 			}
@@ -1378,156 +1397,156 @@ static void expression(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case POSTINC:
-		case POSTDEC:
-		case INC:
-		case DEC:
-		case POSTINCAT:
-		case POSTDECAT:
-		case INCAT:
-		case DECAT:
-		case POSTINCV:
-		case POSTDECV:
-		case INCV:
-		case DECV:
-		case POSTINCATV:
-		case POSTDECATV:
-		case INCATV:
-		case DECATV:
+		case OP_POST_INC:
+		case OP_POST_DEC:
+		case OP_PRE_INC:
+		case OP_PRE_DEC:
+		case OP_POST_INC_AT:
+		case OP_POST_DEC_AT:
+		case OP_PRE_INC_AT:
+		case OP_PRE_DEC_AT:
+		case OP_POST_INC_V:
+		case OP_POST_DEC_V:
+		case OP_PRE_INC_V:
+		case OP_PRE_DEC_V:
+		case OP_POST_INC_AT_V:
+		case OP_POST_DEC_AT_V:
+		case OP_PRE_INC_AT_V:
+		case OP_PRE_DEC_AT_V:
 
-		case UNMINUS:
+		case OP_UNMINUS:
 
-		case LNOT:
-		case LOGNOT:
+		case OP_NOT:
+		case OP_LOG_NOT:
 
-		case POSTINCR:
-		case POSTDECR:
-		case INCR:
-		case DECR:
-		case POSTINCATR:
-		case POSTDECATR:
-		case INCATR:
-		case DECATR:
-		case POSTINCRV:
-		case POSTDECRV:
-		case INCRV:
-		case DECRV:
-		case POSTINCATRV:
-		case POSTDECATRV:
-		case INCATRV:
-		case DECATRV:
+		case OP_POST_INC_R:
+		case OP_POST_DEC_R:
+		case OP_PRE_INC_R:
+		case OP_PRE_DEC_R:
+		case OP_POST_INC_AT_R:
+		case OP_POST_DEC_AT_R:
+		case OP_PRE_INC_AT_R:
+		case OP_PRE_DEC_AT_R:
+		case OP_POST_INC_R_V:
+		case OP_POST_DEC_R_V:
+		case OP_PRE_INC_R_V:
+		case OP_PRE_DEC_R_V:
+		case OP_POST_INC_AT_R_V:
+		case OP_POST_DEC_AT_R_V:
+		case OP_PRE_INC_AT_R_V:
+		case OP_PRE_DEC_AT_R_V:
 
-		case UNMINUSR:
+		case OP_UNMINUS_R:
 			unary_operation(info, nd);
 			break;
 
 
-		case REMASS:
-		case SHLASS:
-		case SHRASS:
-		case ANDASS:
-		case EXORASS:
-		case ORASS:
+		case OP_REM_ASSIGN:
+		case OP_SHL_ASSIGN:
+		case OP_SHR_ASSIGN:
+		case OP_AND_ASSIGN:
+		case OP_XOR_ASSIGN:
+		case OP_OR_ASSIGN:
 
-		case ASS:
-		case PLUSASS:
-		case MINUSASS:
-		case MULTASS:
-		case DIVASS:
+		case OP_ASSIGN:
+		case OP_ADD_ASSIGN:
+		case OP_SUB_ASSIGN:
+		case OP_MUL_ASSIGN:
+		case OP_DIV_ASSIGN:
 
-		case REMASSAT:
-		case SHLASSAT:
-		case SHRASSAT:
-		case ANDASSAT:
-		case EXORASSAT:
-		case ORASSAT:
+		case OP_REM_ASSIGN_AT:
+		case OP_SHL_ASSIGN_AT:
+		case OP_SHR_ASSIGN_AT:
+		case OP_AND_ASSIGN_AT:
+		case OP_XOR_ASSIGN_AT:
+		case OP_OR_ASSIGN_AT:
 
-		case ASSAT:
-		case PLUSASSAT:
-		case MINUSASSAT:
-		case MULTASSAT:
-		case DIVASSAT:
+		case OP_ASSIGN_AT:
+		case OP_ADD_ASSIGN_AT:
+		case OP_SUB_ASSIGN_AT:
+		case OP_MUL_ASSIGN_AT:
+		case OP_DIV_ASSIGN_AT:
 
-		case REMASSV:
-		case SHLASSV:
-		case SHRASSV:
-		case ANDASSV:
-		case EXORASSV:
-		case ORASSV:
+		case OP_REM_ASSIGN_V:
+		case OP_SHL_ASSIGN_V:
+		case OP_SHR_ASSIGN_V:
+		case OP_AND_ASSIGN_V:
+		case OP_XOR_ASSIGN_V:
+		case OP_OR_ASSIGN_V:
 
-		case ASSV:
-		case PLUSASSV:
-		case MINUSASSV:
-		case MULTASSV:
-		case DIVASSV:
+		case OP_ASSIGN_V:
+		case OP_ADD_ASSIGN_V:
+		case OP_SUB_ASSIGN_V:
+		case OP_MUL_ASSIGN_V:
+		case OP_DIV_ASSIGN_V:
 
-		case REMASSATV:
-		case SHLASSATV:
-		case SHRASSATV:
-		case ANDASSATV:
-		case EXORASSATV:
-		case ORASSATV:
+		case OP_REM_ASSIGN_AT_V:
+		case OP_SHL_ASSIGN_AT_V:
+		case OP_SHR_ASSIGN_AT_V:
+		case OP_AND_ASSIGN_AT_V:
+		case OP_XOR_ASSIGN_AT_V:
+		case OP_OR_ASSIGN_AT_V:
 
-		case ASSATV:
-		case PLUSASSATV:
-		case MINUSASSATV:
-		case MULTASSATV:
-		case DIVASSATV:
+		case OP_ASSIGN_AT_V:
+		case OP_ADD_ASSIGN_AT_V:
+		case OP_SUB_ASSIGN_AT_V:
+		case OP_MUL_ASSIGN_AT_V:
+		case OP_DIV_ASSIGN_AT_V:
 
-		case LREM:
-		case LSHL:
-		case LSHR:
-		case LAND:
-		case LEXOR:
-		case LOR:
-		case LOGAND:
-		case LOGOR:
+		case OP_REM:
+		case OP_SHL:
+		case OP_SHR:
+		case OP_AND:
+		case OP_XOR:
+		case OP_OR:
+		case OP_LOG_AND:
+		case OP_LOG_OR:
 
-		case EQEQ:
-		case NOTEQ:
-		case LLT:
-		case LGT:
-		case LLE:
-		case LGE:
-		case LPLUS:
-		case LMINUS:
-		case LMULT:
-		case LDIV:
+		case OP_EQ:
+		case OP_NE:
+		case OP_LT:
+		case OP_GT:
+		case OP_LE:
+		case OP_GE:
+		case OP_ADD:
+		case OP_SUB:
+		case OP_MUL:
+		case OP_DIV:
 
-		case ASSR:
-		case PLUSASSR:
-		case MINUSASSR:
-		case MULTASSR:
-		case DIVASSR:
+		case OP_ASSIGN_R:
+		case OP_ADD_ASSIGN_R:
+		case OP_SUB_ASSIGN_R:
+		case OP_MUL_ASSIGN_R:
+		case OP_DIV_ASSIGN_R:
 
-		case ASSATR:
-		case PLUSASSATR:
-		case MINUSASSATR:
-		case MULTASSATR:
-		case DIVASSATR:
+		case OP_ASSIGN_AT_R:
+		case OP_ADD_ASSIGN_AT_R:
+		case OP_SUB_ASSIGN_AT_R:
+		case OP_MUL_ASSIGN_AT_R:
+		case OP_DIV_ASSIGN_AT_R:
 
-		case ASSRV:
-		case PLUSASSRV:
-		case MINUSASSRV:
-		case MULTASSRV:
-		case DIVASSRV:
+		case OP_ASSIGN_R_V:
+		case OP_ADD_ASSIGN_R_V:
+		case OP_SUB_ASSIGN_R_V:
+		case OP_MUL_ASSIGN_R_V:
+		case OP_DIV_ASSIGN_R_V:
 
-		case ASSATRV:
-		case PLUSASSATRV:
-		case MINUSASSATRV:
-		case MULTASSATRV:
-		case DIVASSATRV:
+		case OP_ASSIGN_AT_R_V:
+		case OP_ADD_ASSIGN_AT_R_V:
+		case OP_SUB_ASSIGN_AT_R_V:
+		case OP_MUL_ASSIGN_AT_R_V:
+		case OP_DIV_ASSIGN_AT_R_V:
 
-		case EQEQR:
-		case NOTEQR:
-		case LLTR:
-		case LGTR:
-		case LLER:
-		case LGER:
-		case LPLUSR:
-		case LMINUSR:
-		case LMULTR:
-		case LDIVR:
+		case OP_EQ_R:
+		case OP_NE_R:
+		case OP_LT_R:
+		case OP_GT_R:
+		case OP_LE_R:
+		case OP_GE_R:
+		case OP_ADD_R:
+		case OP_SUB_R:
+		case OP_MUL_R:
+		case OP_DIV_R:
 			binary_operation(info, nd);
 			break;
 
@@ -1537,7 +1556,7 @@ static void expression(information *const info, node *const nd)
 			break;
 	}
 
-	if (node_get_type(nd) == TExprend)
+	if (node_get_type(nd) == OP_EXPR_END)
 	{
 		node_set_next(nd);
 	}
@@ -1547,13 +1566,13 @@ static void statement(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case TBegin:
+		case OP_BLOCK:
 		{
 			block(info, nd);
-			node_set_next(nd); // TEnd
+			node_set_next(nd); // OP_BLOCK_END
 		}
 		break;
-		case TIf:
+		case OP_IF:
 		{
 			const item_t ref_else = node_get_arg(nd, 0);
 			const item_t old_label_true = info->label_true;
@@ -1588,16 +1607,16 @@ static void statement(information *const info, node *const nd)
 			info->label_false = old_label_false;
 		}
 		break;
-		case TSwitch:
-		case TCase:
-		case TDefault:
+		case OP_SWITCH:
+		case OP_CASE:
+		case OP_DEFAULT:
 		{
 			node_set_next(nd);
 			expression(info, nd);
 			statement(info, nd);
 		}
 		break;
-		case TWhile:
+		case OP_WHILE:
 		{
 			const item_t old_label_true = info->label_true;
 			const item_t old_label_false = info->label_false;
@@ -1625,7 +1644,7 @@ static void statement(information *const info, node *const nd)
 			info->label_false = old_label_false;
 		}
 		break;
-		case TDo:
+		case OP_DO:
 		{
 			const item_t old_label_true = info->label_true;
 			const item_t old_label_false = info->label_false;
@@ -1653,7 +1672,7 @@ static void statement(information *const info, node *const nd)
 		break;
 		// TODO: проверялось, только если в for присутствуют все блоки: инициализация, условие, модификация
 		// нужно проверить и реализовать случаи, когда какие-нибудь из этих блоков отсутсвуют
-		case TFor:
+		case OP_FOR:
 		{
 			const item_t ref_from = node_get_arg(nd, 0);
 			const item_t ref_cond = node_get_arg(nd, 1);
@@ -1701,18 +1720,18 @@ static void statement(information *const info, node *const nd)
 			info->label_false = old_label_false;
 		}
 		break;
-		case TLabel:
+		case OP_LABEL:
 		{
 			node_set_next(nd);
 			statement(info, nd);
 		}
 		break;
-		case TBreak:
-		case TContinue:
-		case TGoto:
+		case OP_BREAK:
+		case OP_CONTINUE:
+		case OP_GOTO:
 			node_set_next(nd);
 			break;
-		case TReturnvoid:
+		case OP_RETURN_VOID:
 		{
 			if (info->was_dynamic)
 			{
@@ -1723,7 +1742,7 @@ static void statement(information *const info, node *const nd)
 			uni_printf(info->io, " ret void\n");
 		}
 		break;
-		case TReturnval:
+		case OP_RETURN_VAL:
 		{
 			if (info->was_dynamic)
 			{
@@ -1746,21 +1765,21 @@ static void statement(information *const info, node *const nd)
 			else if (info->answer_type == AREG)
 			{
 				uni_printf(info->io, " ret ");
-				type_to_io(info->io, info->answer_value_type);
+				type_to_io(info, info->answer_value_type);
 				uni_printf(info->io, " %%.%" PRIitem "\n", info->answer_reg);
 			}
-			node_set_next(nd); // TReturnvoid
+			node_set_next(nd); // OP_RETURN_VOID
 		}
 		break;
-		case TGetid:
+		case OP_GETID:
 			// здесь будет печать llvm для ввода
 			node_set_next(nd);
 			break;
-		case TPrintid:
+		case OP_PRINTID:
 			// здесь будет печать llvm для вывода
 			node_set_next(nd);
 			break;
-		case TPrintf:
+		case OP_PRINTF:
 		{
 			const item_t N = node_get_arg(nd, 0);
 			item_t args[128];
@@ -1768,8 +1787,8 @@ static void statement(information *const info, node *const nd)
 
 			node_set_next(nd);
 			const item_t string_length = node_get_arg(nd, 0);
-			node_set_next(nd); // TString
-			node_set_next(nd); // TExprend
+			node_set_next(nd); // OP_STRING
+			node_set_next(nd); // OP_EXPR_END
 			for (item_t i = 0; i < N; i++)
 			{
 				info->variable_location = LREG;
@@ -1791,7 +1810,7 @@ static void statement(information *const info, node *const nd)
 			for (item_t i = 0; i < N; i++)
 			{
 				uni_printf(info->io, ", ");
-				type_to_io(info->io, args_type[i]);
+				type_to_io(info, args_type[i]);
 				uni_printf(info->io, " signext %%.%" PRIitem, args[i]);
 			}
 
@@ -1808,8 +1827,8 @@ static void init(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case TBeginit:
-		case TStructinit:
+		case OP_ARRAY_INIT:
+		case OP_STRUCT_INIT:
 		{
 			const item_t N = node_get_arg(nd, 0);
 
@@ -1828,15 +1847,15 @@ static void init(information *const info, node *const nd)
 
 static void block(information *const info, node *const nd)
 {
-	node_set_next(nd); // TBegin
-	while (node_get_type(nd) != TEnd)
+	node_set_next(nd); // OP_BLOCK
+	while (node_get_type(nd) != OP_BLOCK_END)
 	{
 		switch (node_get_type(nd))
 		{
-			case TDeclarr:
+			case OP_DECL_ARR:
 			{
 				node id = node_get_child(nd, node_get_amount(nd) - 1);
-				if (node_get_type(&id) != TDeclid)
+				if (node_get_type(&id) != OP_DECL_ID)
 				{
 					id = node_get_child(nd, node_get_amount(nd) - 2);
 				}
@@ -1889,7 +1908,7 @@ static void block(information *const info, node *const nd)
 				}
 			}
 			break;
-			case TDeclid:
+			case OP_DECL_ID:
 			{
 				const item_t displ = node_get_arg(nd, 0);
 				const item_t elem_type = node_get_arg(nd, 1);
@@ -1898,15 +1917,10 @@ static void block(information *const info, node *const nd)
 
 				if (N == 0) // обычная переменная int a; или struct point p;
 				{
-					// TODO: может switch сделать, когда больше типов добавляться будет
-					if (elem_type == mode_integer)
-					{
-						uni_printf(info->io, " %%var.%" PRIitem " = alloca i32, align 4\n", displ);
-					}
-					else if (elem_type == mode_float)
-					{
-						uni_printf(info->io, " %%var.%" PRIitem " = alloca double, align 4\n", displ);
-					}
+					uni_printf(info->io, " %%var.%" PRIitem " = alloca ", displ);
+					type_to_io(info, elem_type);
+					uni_printf(info->io, ", align 4\n");
+
 					info->variable_location = LMEM;
 					info->request_reg = displ;
 				}
@@ -1918,9 +1932,9 @@ static void block(information *const info, node *const nd)
 				}
 			}
 			break;
-			case NOP:
-			case TStructbeg:
-			case TStructend:
+			case OP_NOP:
+			case OP_DECL_STRUCT:
+			case OP_DECL_STRUCT_END:
 				node_set_next(nd);
 				break;
 			default:
@@ -1939,20 +1953,20 @@ static int codegen(information *const info)
 	{
 		switch (node_get_type(&root))
 		{
-			case TFuncdef:
+			case OP_FUNC_DEF:
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
 				const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
 				info->was_dynamic = 0;
 
-				if (ident_get_prev(info->sx, ref_ident) == LMAIN)
+				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
 				{
 					uni_printf(info->io, "define i32 @main(");
 				}
 				else
 				{
 					uni_printf(info->io, "define ");
-					type_to_io(info->io, func_type);
+					type_to_io(info, func_type);
 					uni_printf(info->io, " @func%zi(", ref_ident);
 				}
 				uni_printf(info->io, ") {\n");
@@ -1964,7 +1978,7 @@ static int codegen(information *const info)
 				was_stack_functions |= info->was_dynamic;
 			}
 			break;
-			case TEnd:
+			case OP_BLOCK_END:
 				break;
 			default:
 				system_error(node_unexpected, node_get_type(&root));
@@ -1979,6 +1993,28 @@ static int codegen(information *const info)
 	}
 
 	return 0;
+}
+
+static void structs_declaration(information *const info)
+{
+	const size_t modes_size = vector_size(&info->sx->modes);
+	for (size_t i = 0; i < modes_size; i++)
+	{
+		if (mode_is_struct(info->sx, i) && i != 2)
+		{
+			uni_printf(info->io, "%%struct_opt.%zi = type { ", i);
+
+			const size_t fields = (size_t)mode_get(info->sx, i + 2);
+			for (size_t j = 0; j < fields; j += 2)
+			{
+				uni_printf(info->io, j == 0 ? "" : ", ");
+				type_to_io(info, mode_get(info->sx, i + 3 + j));
+			}
+
+			uni_printf(info->io, " }\n");
+		}
+	}
+	uni_printf(info->io, " \n");
 }
 
 
@@ -2009,6 +2045,8 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	info.answer_reg = 0;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
+
+	structs_declaration(&info);
 
 	const int ret = codegen(&info);
 

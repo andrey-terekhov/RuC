@@ -16,12 +16,7 @@
 
 #pragma once
 
-#include <limits.h>
-#include <stddef.h>
 #include "vector.h"
-
-
-//#define BUFFERING
 
 
 #ifdef __cplusplus
@@ -53,16 +48,16 @@ EXPORTED node node_get_root(vector *const tree);
  *
  *	@return	Child node
  */
-EXPORTED node node_get_child(node *const nd, const size_t index);
+EXPORTED node node_get_child(const node *const nd, const size_t index);
 
 /**
  *	Get parent of node
  *
- *	@param	nd			Parent node
+ *	@param	nd			Current node
  *
  *	@return	Parent node
  */
-EXPORTED node node_get_parent(node *const nd);
+EXPORTED node node_get_parent(const node *const nd);
 
 
 /**
@@ -110,7 +105,7 @@ EXPORTED size_t node_get_amount(const node *const nd);
  *
  *	@return	Next node
  */
-EXPORTED node node_get_next(node *const nd);
+EXPORTED node node_get_next(const node *const nd);
 
 /**
  *	Set next node to the same one from tree traversal in pre-order (NLR)
@@ -125,12 +120,12 @@ EXPORTED int node_set_next(node *const nd);
 /**
  *	Add child node
  *
- *	@param	nd			Current node
+ *	@param	nd			Parent node
  *	@param	type		Child node type
  *
  *	@return	Child node
  */
-EXPORTED node node_add_child(node *const nd, const item_t type);
+EXPORTED node node_add_child(const node *const nd, const item_t type);
 
 /**
  *	Set node type
@@ -142,7 +137,7 @@ EXPORTED node node_add_child(node *const nd, const item_t type);
  *			@c -1 on failure,
  *			@c -2 on trying to reset the root node
  */
-EXPORTED int node_set_type(node *const nd, const item_t type);
+EXPORTED int node_set_type(const node *const nd, const item_t type);
 
 /**
  *	Add new node argument
@@ -154,7 +149,7 @@ EXPORTED int node_set_type(node *const nd, const item_t type);
  *			@c -1 on failure,
  *			@c -2 on node with children
  */
-EXPORTED int node_add_arg(node *const nd, const item_t arg);
+EXPORTED int node_add_arg(const node *const nd, const item_t arg);
 
 /**
  *	Set node argument by index
@@ -165,7 +160,7 @@ EXPORTED int node_add_arg(node *const nd, const item_t arg);
  *
  *	@return	@c  0 on success, @c -1 on failure
  */
-EXPORTED int node_set_arg(node *const nd, const size_t index, const item_t arg);
+EXPORTED int node_set_arg(const node *const nd, const size_t index, const item_t arg);
 
 
 /**
@@ -198,38 +193,44 @@ EXPORTED size_t node_save(const node *const nd);
 EXPORTED node node_load(vector *const tree, const size_t index);
 
 /**
+ *	Insert new node before existing
+ *
+ *	@param	nd			Current node
+ *	@param	type		New node type
+ *	@param	argc		Amount of new node arguments
+ *
+ *	@return	Inserted node
+ */ 
+EXPORTED node node_insert(const node *const nd, const item_t type, const size_t argc);
+
+/**
  *	Change only node order
  *
- *	@param	fst			First parent node
- *	@param	fst_index	First child number
- *	@param	snd			Second parent node
- *	@param	snd_index	Second child number
+ *	@param	fst			First node
+ *	@param	snd			Second node
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int node_order(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index);
+EXPORTED int node_order(const node *const fst, const node *const snd);
 
 /**
  *	Swap two nodes with children
  *
- *	@param	fst			First parent node
- *	@param	fst_index	First child number
- *	@param	snd			Second parent node
- *	@param	snd_index	Second child number
+ *	@param	fst			First node
+ *	@param	snd			Second node
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int node_swap(node *const fst, const size_t fst_index, node *const snd, const size_t snd_index);
+EXPORTED int node_swap(const node *const fst, const node *const snd);
 
 /**
- *	Remove child node by index
+ *	Remove node from tree
  *
- *	@param	nd			Parrent node
- *	@param	index		Child number
+ *	@param	nd			Node structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int node_remove(node *const nd, const size_t index);
+EXPORTED int node_remove(node *const nd);
 
 /**
  *	Check that node is correct
@@ -238,7 +239,7 @@ EXPORTED int node_remove(node *const nd, const size_t index);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int node_is_correct(const node *const nd);
+EXPORTED bool node_is_correct(const node *const nd);
 
 #ifdef __cplusplus
 } /* extern "C" */
