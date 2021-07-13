@@ -499,7 +499,7 @@ static int node_recursive(information *const info, node *const nd)
 		if (node_get_type(&child) == OP_SLICE_IDENT)
 		{
 			info->slice_depth = 1;
-			info->slice_stack_size = info->stack_size;
+			info->slice_stack_size = stack_size_info(info);
 		}
 
 		if (has_error || node_recursive(info, &child))
