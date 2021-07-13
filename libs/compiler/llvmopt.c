@@ -80,11 +80,11 @@ static inline node_info stack_pop_info(information *const info, node *const memo
 	*(memory) = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
 	size_t operand_depth = (size_t)stack_pop(&info->depths);
 	node_info operand = {memory, operand_depth};
-	// node_copy(operand.ref_node, memory);
+	node_copy(operand.ref_node, memory);
 
-	// return info->stack[--info->stack_size];
-	--info->stack_size;
-	return operand;
+	return info->stack[--info->stack_size];
+	// --info->stack_size;
+	// return operand;
 }
 
 static inline size_t stack_size_info(information *const info)
