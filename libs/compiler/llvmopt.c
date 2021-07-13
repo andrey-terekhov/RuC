@@ -82,9 +82,9 @@ static inline node_info stack_pop_info(information *const info, node *const memo
 	node_info operand = {memory, operand_depth};
 	node_copy(operand.ref_node, memory);
 
-	// return info->stack[--info->stack_size];
-	--info->stack_size;
-	return operand;
+	return info->stack[--info->stack_size];
+	// --info->stack_size;
+	// return operand;
 }
 
 static inline size_t stack_size_info(information *const info)
