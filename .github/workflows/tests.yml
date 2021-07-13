@@ -36,4 +36,4 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v1
       - name: Run script
-        run: ./scripts/test.sh -d
+        run: ./scripts/test.sh
