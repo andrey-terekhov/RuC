@@ -522,8 +522,8 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	info.slice_stack_size = 0;
 
 	info.stack_size = 0;
-	info.nodes = stack_create(MAX_STACK_SIZE);
-	info.depths = stack_create(MAX_STACK_SIZE);
+	// info.nodes = stack_create(MAX_STACK_SIZE);
+	// info.depths = stack_create(MAX_STACK_SIZE);
 
 	node nd = node_get_root(&sx->tree);
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
@@ -542,8 +542,8 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	}
 	uni_printf(io, "\n");
 
-	stack_clear(&info.nodes);
-	stack_clear(&info.depths);
+	// stack_clear(&info.nodes);
+	// stack_clear(&info.depths);
 
 	return 0;
 }
