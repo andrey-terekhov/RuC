@@ -156,7 +156,9 @@ static expression_t expression_type(node *const nd)
 		case OP_CONST_D:
 		case OP_IDENT_TO_VAL_D:
 		case OP_SLICE_IDENT:
+
 		case OP_RAND:
+		case OP_MSG_RECEIVE:
 			return OPERAND;
 
 
