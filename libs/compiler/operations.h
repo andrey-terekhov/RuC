@@ -117,6 +117,7 @@ typedef enum OPERATION
 	OP_UNARY,				/**< Unary operator node */
 	OP_BINARY,				/**< Binary operator node */
 	OP_TERNARY,				/**< Ternary operator node */
+	OP_LIST,
 
 	// Statements
 	OP_LABEL,				/**< Label statement node */

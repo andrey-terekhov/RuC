@@ -608,7 +608,7 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 	{
 		do
 		{
-			expression argument = parse_assignment_expression(prs);
+			expression argument = parse_initializer(prs, type_get(prs->sx, ref_arg_type));
 			if (!argument.is_valid)
 			{
 				return expr_broken();
@@ -877,6 +877,132 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 	return LHS;
 }
 
+/**
+ *	Parse structure initializer
+ *
+ *	@param	prs			Parser
+ *	@param	type		Expected type
+ *
+ *	@return	Structure initializer
+ */
+static expression parse_struct_initializer(parser *const prs, const item_t type)
+{
+	const location_t l_brace_location = token_consume(prs);
+
+	const size_t expected_fields = (size_t)(type_get(prs->sx, (size_t)type + 2) / 2);
+	size_t actual_fields = 0;
+	size_t ref_next_field = (size_t)type + 3;
+
+	node list_node = create_node(prs, OP_LIST);
+	node_add_arg(&list_node, type);					// Тип возвращамого значения
+	node_add_arg(&list_node, RVALUE);				// Категория значения вызова
+
+	do
+	{
+		expression initializer = parse_initializer(prs, type_get(prs->sx, ref_next_field));
+		if (!initializer.is_valid)
+		{
+			return expr_broken();
+		}
+
+		const item_t expected_type = type_get(prs->sx, ref_next_field);
+		const item_t actual_type = node_get_arg(&initializer.nd, 0);
+
+		// Несовпадение типов может быть только в случае, когда параметр - double, а аргумент - целочисленный
+		if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
+		{
+			semantics_error(prs, initializer.location, typecheck_convert_incompatible);
+		}
+
+		node_set_child(&list_node, &initializer.nd);		// i-ый инициализатор списка
+		ref_next_field += 2;
+		actual_fields++;
+	} while (token_try_consume(prs, TK_COMMA) && expected_fields != actual_fields);
+
+	if (prs->token != TK_R_BRACE)
+	{
+		parser_error(prs, expected_r_brace, l_brace_location);
+		return expr_broken();
+	}
+
+	const location_t r_brace_location = token_consume(prs);
+
+	if (expected_fields != actual_fields)
+	{
+		//semantics_error(prs, r_paren_location, wrong_number_of_params, expected_args, actual_args);
+		return expr_broken();
+	}
+
+	return expr(list_node, (location_t){ l_brace_location.begin, r_brace_location.end });
+}
+
+/**
+ *	Parse array initializer
+ *
+ *	@param	prs			Parser
+ *	@param	type		Expected type
+ *
+ *	@return Array initializer
+ */
+static expression parse_array_initializer(parser *const prs, const item_t type)
+{
+	const location_t l_brace_location = token_consume(prs);
+
+	size_t list_length = 0;
+
+	node list_node = create_node(prs, OP_LIST);
+	node_add_arg(&list_node, type);					// Тип возвращамого значения
+	node_add_arg(&list_node, RVALUE);				// Категория значения вызова
+
+	do
+	{
+		expression initializer = parse_initializer(prs, type_get(prs->sx, (size_t)type + 1));
+		if (!initializer.is_valid)
+		{
+			return expr_broken();
+		}
+
+		const item_t expected_type = type_get(prs->sx, (size_t)type + 1);
+		const item_t actual_type = node_get_arg(&initializer.nd, 0);
+
+		// Несовпадение типов может быть только в случае, когда параметр - double, а аргумент - целочисленный
+		if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
+		{
+			semantics_error(prs, initializer.location, typecheck_convert_incompatible);
+		}
+
+		node_set_child(&list_node, &initializer.nd);	// i-ый инициализатор списка
+		list_length++;
+	} while (token_try_consume(prs, TK_COMMA));
+
+	if (prs->token != TK_R_BRACE)
+	{
+		parser_error(prs, expected_r_brace, l_brace_location);
+		return expr_broken();
+	}
+
+	const location_t r_brace_location = token_consume(prs);
+
+	return expr(list_node, (location_t){ l_brace_location.begin, r_brace_location.end });
+}
+
+static expression parse_braced_initializer(parser *const prs, const item_t expected_type)
+{
+	if (type_is_array(prs->sx, expected_type))
+	{
+		return parse_array_initializer(prs, expected_type);
+	}
+	else if (type_is_structure(prs->sx, expected_type))
+	{
+		return parse_struct_initializer(prs, expected_type);
+	}
+	else
+	{
+		parser_error(prs, wrong_init);
+		return expr_broken();
+	}
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -903,4 +1029,14 @@ expression parse_constant_expression(parser *const prs)
 {
 	const expression LHS = parse_unary_expression(prs);
 	return parse_RHS_of_binary_expression(prs, LHS, PREC_CONDITIONAL);
+}
+
+expression parse_initializer(parser *const prs, const item_t expected_type)
+{
+	if (prs->token == TK_L_BRACE)
+	{
+		return parse_braced_initializer(prs, expected_type);
+	}
+
+	return parse_assignment_expression(prs);
 }

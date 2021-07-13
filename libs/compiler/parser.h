@@ -197,6 +197,23 @@ expression parse_expression(parser *const prs);
  */
 expression parse_constant_expression(parser *const prs);
 
+/**
+ *	Parse initializer [C99 6.7.8p1]
+ *
+ *	initializer:
+ *		assignment-expression
+ *		'{' initializer-list '}'
+ *
+ *	initializer-list:
+ *		initializer-list ',' initializer
+ *
+ *	@param	prs			Parser structure
+ *	@param	expected_type		Type of variable in declaration
+ *
+ *	@return Initializer
+ */
+expression parse_initializer(parser *const prs, const item_t expected_type);
+
 
 /**
  *	Parse a declaration [C99 6.7]
@@ -217,31 +234,6 @@ void parse_declaration_inner(parser *const prs, node *const parent);
  *	@param	root		Root node in AST
  */
 void parse_declaration_external(parser *const prs, node *const root);
-
-/**
- *	Parse initializer [C99 6.7.8p1]
- *
- *	initializer:
- *		assignment-expression
- *		'{' initializer-list '}'
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *	@param	type		Type of variable in declaration
- */
-void parse_initializer(parser *const prs, node *const parent, const item_t type);
-
-/**
- *	Parse braced initializer list [C99 6.7.8p2]
- *
- *	initializer-list:
- *		initializer-list ',' initializer
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *	@param	type		Type of variable in declaration
- */
-void parse_braced_initializer(parser *const prs, node *const parent, const item_t type);
 
 
 /**

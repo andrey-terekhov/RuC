@@ -292,7 +292,12 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 						prs->flag_strings_only = 2;
 						node_set_arg(&nd_decl_id, 3, 1);
 
-						parse_initializer(prs, &nd_decl_arr, type);
+						node_copy(&prs->nd, &nd_decl_arr);
+						expression initializer = parse_initializer(prs, type);
+						if (type != node_get_arg(&initializer.nd, 0))
+						{
+							parser_error(prs, wrong_init);
+						}
 						if (prs->flag_strings_only == 1)
 						{
 							node_set_arg(&nd_decl_id, 5, prs->flag_empty_bounds + 2);
@@ -328,114 +333,6 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	local_modetab[2] = (item_t)fields * 2;
 
 	return (item_t)type_add(prs->sx, local_modetab, local_md);
-}
-
-/**
- *	Parse struct initializer
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *	@param	type		Index of the types table
- */
-static void parse_struct_initializer(parser *const prs, node *const parent, const item_t type)
-{
-	if (!token_try_consume(prs, TK_L_BRACE))
-	{
-		parser_error(prs, struct_init_must_start_from_BEGIN);
-		token_skip_until(prs, TK_COMMA | TK_SEMICOLON);
-		return;
-	}
-
-	const size_t expected_fields = (size_t)(type_get(prs->sx, (size_t)type + 2) / 2);
-	size_t actual_fields = 0;
-	size_t ref_next_field = (size_t)type + 3;
-
-	node nd_struct_init = node_add_child(parent, OP_STRUCT_INIT);
-	node_add_arg(&nd_struct_init, (item_t)expected_fields);
-
-	do
-	{
-		parse_initializer(prs, &nd_struct_init, type_get(prs->sx, ref_next_field));
-		ref_next_field += 2;
-		actual_fields++;
-
-		if (prs->token == TK_R_BRACE)
-		{
-			break;
-		}
-		else if (!token_try_consume(prs, TK_COMMA))
-		{
-			parser_error(prs, no_comma_in_init_list);
-			token_skip_until(prs, TK_COMMA | TK_R_BRACE | TK_SEMICOLON);
-		}
-	} while (actual_fields != expected_fields && prs->token != TK_SEMICOLON);
-
-	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
-
-	// Это для продолжения выражений, если инициализатор был вызван не для объявления
-	node_copy(&prs->nd, &nd_struct_init);
-}
-
-/**
- *	Parse array initializer
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *	@param	type		Index of the types table
- */
-static void parse_array_initializer(parser *const prs, node *const parent, const item_t type)
-{
-	if (prs->token == TK_STRING)
-	{
-		if (prs->flag_strings_only == 0)
-		{
-			parser_error(prs, string_and_notstring);
-		}
-		else if (prs->flag_strings_only == 2)
-		{
-			prs->flag_strings_only = 1;
-		}
-		node_copy(&prs->nd, parent);
-		parse_expression(prs);
-		return;
-	}
-
-	if (!token_try_consume(prs, TK_L_BRACE))
-	{
-		parser_error(prs, arr_init_must_start_from_BEGIN);
-		token_skip_until(prs, TK_COMMA | TK_SEMICOLON);
-
-		// Это для продолжения парсинга
-		node_copy(&prs->nd, parent);
-		return;
-	}
-
-	size_t list_length = 0;
-
-	node nd_arr_init = node_add_child(parent, OP_ARRAY_INIT);
-	node_add_arg(&nd_arr_init, 0);
-
-	do
-	{
-		list_length++;
-		parse_initializer(prs, &nd_arr_init, type_get(prs->sx, (size_t)type + 1));
-
-		if (prs->token == TK_R_BRACE)
-		{
-			break;
-		}
-		else if (!token_try_consume(prs, TK_COMMA))
-		{
-			parser_error(prs, no_comma_in_init_list);
-			token_skip_until(prs, TK_COMMA | TK_R_BRACE | TK_SEMICOLON);
-		}
-	} while (prs->token != TK_SEMICOLON);
-
-	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
-	node_set_arg(&nd_arr_init, 0, (item_t)list_length);
-
-	// Это для продолжения выражений, если инициализатор был вызван не для объявления
-	node_copy(&prs->nd, &nd_arr_init);
 }
 
 /**
@@ -498,7 +395,12 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 			}
 
 			prs->flag_strings_only = 2;
-			parse_array_initializer(prs, &nd_decl_arr, type);
+			node_copy(&prs->nd, &nd_decl_arr);
+			expression initializer = parse_initializer(prs, type);
+			if (type != node_get_arg(&initializer.nd, 0))
+			{
+				 parser_error(prs, wrong_init);
+			}
 			if (prs->flag_strings_only == 1)
 			{
 				node_set_arg(&nd, 5, prs->flag_empty_bounds + 2);
@@ -506,7 +408,13 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 		}
 		else
 		{
-			parse_initializer(prs, &nd, type);
+			node_copy(&prs->nd, &nd);
+			expression initializer = parse_initializer(prs, type);
+			const item_t actual_type = node_get_arg(&initializer.nd, 0);
+			if (type != actual_type && !(type_is_floating(type) && type_is_integer(actual_type)))
+			{
+				semantics_error(prs, initializer.location, typecheck_convert_incompatible);
+			}
 		}
 	}
 }
@@ -892,42 +800,5 @@ void parse_declaration_external(parser *const prs, node *const root)
 	if (prs->func_def != 1)
 	{
 		token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
-	}
-}
-
-void parse_initializer(parser *const prs, node *const parent, const item_t type)
-{
-	if (prs->token != TK_L_BRACE)
-	{
-		node_copy(&prs->nd, parent);
-		expression init = parse_assignment_expression(prs);
-		const item_t expr_type = node_get_arg(&init.nd, 0);
-		if (type_is_integer(type) && type_is_floating(expr_type))
-		{
-			parser_error(prs, init_int_by_float);
-		}
-		else if (type_is_floating(type) && type_is_integer(expr_type))
-		{
-			;
-		}
-		else if (type != expr_type)
-		{
-			parser_error(prs, error_in_initialization);
-		}
-
-	}
-	else if (type_is_structure(prs->sx, type))
-	{
-		parse_struct_initializer(prs, parent, type);
-	}
-	else if (type_is_array(prs->sx, type))
-	{
-		parse_array_initializer(prs, parent, type);
-	}
-	else
-	{
-		node_copy(&prs->nd, parent);
-		parser_error(prs, wrong_init);
-		token_skip_until(prs, TK_COMMA | TK_SEMICOLON);
 	}
 }

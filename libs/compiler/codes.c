@@ -198,6 +198,22 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 			}
 			break;
+		case OP_LIST:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TERNARY");
+					break;
+				case 1:
+					sprintf(buffer, "type=");
+					break;
+				case 2:
+					sprintf(buffer, "designation=");
+					break;
+			}
+			break;
 
 		case OP_PRINT:
 			sprintf(buffer, "TPrint");
