@@ -18,6 +18,7 @@
 #include <string.h>
 #include "errors.h"
 #include "operations.h"
+#include "stack.h"
 #include "tree.h"
 #include "uniprinter.h"
 
@@ -49,13 +50,17 @@ typedef struct information
 
 	node_info stack[MAX_STACK_SIZE];				/**< Стек для преобразования выражений */
 	size_t stack_size;								/**< Размер стека */
+
+	stack nodes;									/**< Стек нод для преобразования выражений */
+	stack depths;									/**< Стек глубин нод для преобразования выражений */
+
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
 	size_t slice_depth;								/**< Количество узлов после OP_SLICE_IDENT */
 	size_t slice_stack_size;						/**< Размер стека в начале вырезки */
 } information;
 
 
-static inline int stack_push(information *const info, node_info *const nd)
+static inline int stack_push_info(information *const info, node_info *const nd)
 {
 	if (info->stack_size == MAX_STACK_SIZE)
 	{
@@ -66,12 +71,12 @@ static inline int stack_push(information *const info, node_info *const nd)
 	return 0;
 }
 
-static inline node_info stack_pop(information *const info)
+static inline node_info stack_pop_info(information *const info)
 {
 	return info->stack[--info->stack_size];
 }
 
-static inline void stack_resize(information *const info, const size_t size)
+static inline void stack_resize_info(information *const info, const size_t size)
 {
 	info->stack_size = size;
 }
@@ -299,7 +304,7 @@ static int node_recursive(information *const info, node *const nd)
 		// Очищаем полностью стек, если родитель -- блок
 		if (node_get_type(nd) == OP_BLOCK)
 		{
-			stack_resize(info, 0);
+			stack_resize_info(info, 0);
 		}
 
 		switch (node_get_type(&child))
@@ -370,12 +375,12 @@ static int node_recursive(information *const info, node *const nd)
 						break;
 					}
 
-					stack_resize(info, info->slice_stack_size);
+					stack_resize_info(info, info->slice_stack_size);
 
-					node_info slice_info = stack_pop(info);
+					node_info slice_info = stack_pop_info(info);
 
 					slice_info.depth = info->slice_depth;
-					stack_push(info, &slice_info);
+					stack_push_info(info, &slice_info);
 					info->slice_depth = 0;
 				}
 			}
@@ -389,11 +394,11 @@ static int node_recursive(information *const info, node *const nd)
 				switch (expression_type(&child))
 				{
 					case OPERAND:
-						stack_push(info, &nd_info);
+						stack_push_info(info, &nd_info);
 						break;
 					case UNARY_OPERATION:
 					{
-						node_info operand = stack_pop(info);
+						node_info operand = stack_pop_info(info);
 
 						if (node_get_type(nd_info.ref_node) == OP_ADDR_TO_VAL)
 						{
@@ -416,13 +421,13 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// добавляем в стек переставленное выражение
-						has_error |= stack_push(info, &operand);
+						has_error |= stack_push_info(info, &operand);
 					}
 					break;
 					case BINARY_OPERATION:
 					{
-						node_info second = stack_pop(info);
-						node_info first = stack_pop(info);
+						node_info second = stack_pop_info(info);
+						node_info first = stack_pop_info(info);
 
 						node parent = node_get_parent(nd_info.ref_node);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
@@ -449,7 +454,7 @@ static int node_recursive(information *const info, node *const nd)
 						has_error |= transposition(&first, &second);
 
 						// добавляем в стек переставленное выражение
-						has_error |= stack_push(info, &first);
+						has_error |= stack_push_info(info, &first);
 					}
 					break;
 					case NOT_EXPRESSION:
@@ -487,6 +492,9 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	info.slice_depth = 0;
 	info.slice_stack_size = 0;
 
+	info.nodes = stack_create(MAX_STACK_SIZE);
+	info.depths = stack_create(MAX_STACK_SIZE);
+
 	node nd = node_get_root(&sx->tree);
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
 	{
@@ -503,6 +511,9 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 		uni_printf(io, "declare i32 @printf(i8*, ...)\n");
 	}
 	uni_printf(io, "\n");
+
+	stack_clear(&info.nodes);
+	stack_clear(&info.depths);
 
 	return 0;
 }
