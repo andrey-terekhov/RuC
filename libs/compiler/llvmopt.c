@@ -82,9 +82,9 @@ static inline node_info stack_pop_info(information *const info, node *const memo
 	node_info operand = {memory, operand_depth};
 	node_copy(operand.ref_node, memory);
 
-	return info->stack[--info->stack_size];
-	// --info->stack_size;
-	// return operand;
+	// return info->stack[--info->stack_size];
+	--info->stack_size;
+	return operand;
 }
 
 static inline size_t stack_size_info(information *const info)
@@ -462,6 +462,7 @@ static int node_recursive(information *const info, node *const nd)
 						node_info second = stack_pop_info(info, &second_memory);
 						node first_memory;
 						node_info first = stack_pop_info(info, &first_memory);
+						printf("%i\n", node_get_type(second.ref_node));
 
 						node parent = node_get_parent(nd_info.ref_node);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
