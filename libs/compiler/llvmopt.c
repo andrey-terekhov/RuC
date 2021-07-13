@@ -77,14 +77,15 @@ static inline int stack_push_info(information *const info, node_info *const nd)
 
 static inline node_info stack_pop_info(information *const info)
 {
-	stack_pop(&info->nodes);
-	stack_pop(&info->depths);
-	// node operand_node = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
-	// size_t operand_depth = (size_t)stack_pop(&info->depths);
-	// node_info operand = {&operand_node, operand_depth};
+	// stack_pop(&info->nodes);
+	// stack_pop(&info->depths);
+	node operand_node = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
+	size_t operand_depth = (size_t)stack_pop(&info->depths);
+	node_info operand = {&operand_node, operand_depth};
 
-	return info->stack[--info->stack_size];
-	// return operand;
+	--info->stack_size;
+	// return info->stack[--info->stack_size];
+	return operand;
 }
 
 static inline size_t stack_size_info(information *const info)
