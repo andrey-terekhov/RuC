@@ -24,6 +24,7 @@
 
 
 #define MAX_STACK_SIZE	512
+#define BUFFER_SIZE		1024
 
 
 typedef enum EXPRESSION
@@ -53,6 +54,8 @@ typedef struct information
 
 	stack nodes;									/**< Стек нод для преобразования выражений */
 	stack depths;									/**< Стек глубин нод для преобразования выражений */
+	node buffer[BUFFER_SIZE];						/**< Буфер для хранения нод при извлечении из стека */
+	size_t buffer_size;								/**< Размер буфера */
 
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
 	size_t slice_depth;								/**< Количество узлов после OP_SLICE_IDENT */
@@ -77,14 +80,14 @@ static inline int stack_push_info(information *const info, node_info *const nd)
 
 static inline node_info stack_pop_info(information *const info, node *const memory)
 {
-	*(memory) = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
+	info->buffer[info->buffer_size] = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
 	size_t operand_depth = (size_t)stack_pop(&info->depths);
-	node_info operand = {memory, operand_depth};
-	node_copy(operand.ref_node, memory);
+	node_info operand = {&info->buffer[info->buffer_size++], operand_depth};
+	// node_copy(operand.ref_node, memory);
 
-	return info->stack[--info->stack_size];
-	// --info->stack_size;
-	// return operand;
+	// return info->stack[--info->stack_size];
+	--info->stack_size;
+	return operand;
 }
 
 static inline size_t stack_size_info(information *const info)
@@ -98,6 +101,7 @@ static inline void stack_resize_info(information *const info, const size_t size)
 	{
 		stack_reset(&info->nodes);
 		stack_reset(&info->depths);
+		info->buffer_size = 0;
 	}
 	else
 	{
@@ -529,6 +533,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 
 	info.nodes = stack_create(MAX_STACK_SIZE);
 	info.depths = stack_create(MAX_STACK_SIZE);
+	info.buffer_size = 0;
 
 	node nd = node_get_root(&sx->tree);
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
