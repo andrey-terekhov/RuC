@@ -75,18 +75,16 @@ static inline int stack_push_info(information *const info, node_info *const nd)
 	// return 0;
 }
 
-static inline node_info stack_pop_info(information *const info)
+static inline node_info stack_pop_info(information *const info, node *const memory)
 {
-	// stack_pop(&info->nodes);
-	// stack_pop(&info->depths);
-	node operand_node = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
+	*(memory) = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
 	size_t operand_depth = (size_t)stack_pop(&info->depths);
-	node_info operand = {NULL, operand_depth};
-	node_copy(operand.ref_node, &operand_node);
+	node_info operand = {memory, operand_depth};
+	// node_copy(operand.ref_node, memory);
 
-	return info->stack[--info->stack_size];
-	// --info->stack_size;
-	// return operand;
+	// return info->stack[--info->stack_size];
+	--info->stack_size;
+	return operand;
 }
 
 static inline size_t stack_size_info(information *const info)
@@ -409,7 +407,8 @@ static int node_recursive(information *const info, node *const nd)
 
 					stack_resize_info(info, info->slice_stack_size);
 
-					node_info slice_info = stack_pop_info(info);
+					node slice_info_memory;
+					node_info slice_info = stack_pop_info(info, &slice_info_memory);
 
 					slice_info.depth = info->slice_depth;
 					stack_push_info(info, &slice_info);
@@ -430,7 +429,8 @@ static int node_recursive(information *const info, node *const nd)
 						break;
 					case UNARY_OPERATION:
 					{
-						node_info operand = stack_pop_info(info);
+						node operand_memory;
+						node_info operand = stack_pop_info(info, &operand_memory);
 
 						if (node_get_type(nd_info.ref_node) == OP_ADDR_TO_VAL)
 						{
@@ -458,8 +458,10 @@ static int node_recursive(information *const info, node *const nd)
 					break;
 					case BINARY_OPERATION:
 					{
-						node_info second = stack_pop_info(info);
-						node_info first = stack_pop_info(info);
+						node second_memory;
+						node_info second = stack_pop_info(info, &second_memory);
+						node first_memory;
+						node_info first = stack_pop_info(info, &first_memory);
 
 						node parent = node_get_parent(nd_info.ref_node);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
