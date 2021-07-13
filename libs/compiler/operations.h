@@ -26,6 +26,13 @@ extern "C" {
 #endif
 
 
+/** Value category */
+typedef enum VALUE
+{
+	LVALUE,		/**< An expression that designates an object */
+	RVALUE,		/**< An expression detached from any specific storage */
+} category_t;
+
 /** Unary operator kinds */
 typedef enum UNARY
 {

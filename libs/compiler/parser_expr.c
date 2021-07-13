@@ -19,13 +19,6 @@
 #include <string.h>
 
 
-/** Value designation */
-typedef enum VALUE
-{
-	LVALUE,		/**< An expression that potentially designates an object */
-	RVALUE,		/**< An expression that detached from any specific storage */
-} category_t;
-
 /** Binary/ternary operator precedence levels */
 typedef enum PRECEDENCE
 {
@@ -127,13 +120,13 @@ static void node_set_child(node *const parent, node *const child)
 /** Return valid expression from AST node */
 static expression expr(const node expr_node, const location_t location)
 {
-	return (expression){ /*is_valid*/true, location, expr_node };
+	return (expression){ .is_valid = true, .location = location, .nd = expr_node };
 }
 
 /** Return invalid expression */
 static expression expr_broken(void)
 {
-	return (expression){ /*is_valid*/false, (location_t){ 0, 0 }, (node){ NULL, 0 } };
+	return (expression){ .is_valid = false };
 }
 
 /**
