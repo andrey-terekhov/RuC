@@ -18,6 +18,8 @@
 
 #include "uniio.h"
 
+#define MAX_STRING_LENGTH	128
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,35 +29,62 @@ extern "C" {
 typedef enum ERROR
 {
 	// Lexer errors
-	bad_character,						/**< Bad character in source */
-	empty_character,					/**< Empty character constant */
-	unknown_escape_sequence,			/**< Unknown escape sequence */
-	expected_apost_after_char_const,	/**< Missing terminating ' character */
-	missing_terminating_quote_char,		/**< Missing terminating '"' character */
-	string_too_long,					/**< String literal exceeds maximum length */
-	unterminated_block_comment,			/**< Unterminated block comment */
+	bad_character,							/**< Bad character in source */
+	empty_character,						/**< Empty character constant */
+	unknown_escape_sequence,				/**< Unknown escape sequence */
+	expected_apost_after_char_const,		/**< Missing terminating ' character */
+	missing_terminating_quote_char,			/**< Missing terminating '"' character */
+	string_too_long,						/**< String literal exceeds maximum length */
+	unterminated_block_comment,				/**< Unterminated block comment */
+
+	// Expression errors
+	undeclared_var_use,						/**< Use of undeclared identifier */
+	expected_r_paren,						/**< Expected ')' */
+	typecheck_subscript_value,				/**< Subscripted value is not an array */
+	typecheck_subscript_not_integer,		/**< Array subscript is not an integer */
+	expected_r_square,						/**< Expected ']' */
+	expected_identifier,					/**< Expected identifier */
+	typecheck_call_not_function,			/**< Called object type is not a function */
+	typecheck_convert_incompatible,			/**< Passing type to parameter of incompatible type */
+	typecheck_member_reference_struct,		/**< Member reference base type is not a structure */
+	typecheck_member_reference_arrow,		/**< Member reference type is not a pointer */
+	typecheck_member_reference_ivar,		/**< Struct does not have a member named that */
+	no_member,								/**< No member named that */
+	typecheck_illegal_increment,			/**< Cannot increment/decrement value of that type */
+	typecheck_expression_not_lvalue,		/**< Expression is not assignable */
+	typecheck_invalid_lvalue_addrof,		/**< Cannot take the address of an rvalue */
+	typecheck_indirection_requires_pointer,	/**< Indirection requires pointer operand */
+	typecheck_unary_expr,					/**< Invalid argument type to unary expression */
+	typecheck_binary_expr,					/**< Invalid argument type to binary expression */
+	expected_colon_in_conditional,			/**< Expected ':' in condtional expression */
+	typecheck_cond_incompatible_operands,	/**< Incompatible operand types */
 
 	// Statement errors
-	expected_semi_after_stmt,			/**< Expected ';' after statement */
-	case_not_in_switch,					/**< 'case' statement not in switch statement */
-	float_in_switch,
-	expected_colon_after_case,			/**< Expected ':' after 'case' */
-	default_not_in_switch,				/**< 'default' statement not in switch statement */
-	expected_colon_after_default,		/**< Expected ':' after 'default' */
-	expected_while,						/**< Expected 'while' in do/while loop */
-	no_leftbr_in_for,
-	no_semicolon_in_for,
-	no_rightbr_in_for,
-	no_ident_after_goto,
-	continue_not_in_loop,				/**< 'continue' statement not in loop statement */
-	break_not_in_loop_or_switch,		/**< 'break' statement not in loop or switch statement */
+	expected_colon_after_case,				/**< Expected ':' after 'case' */
+	case_not_in_switch,						/**< 'case' statement not in switch statement */
+	expected_colon_after_default,			/**< Expected ':' after 'default' */
+	default_not_in_switch,					/**< 'default' statement not in switch statement */
+	expected_semi_after_expr,				/**< Expected ';' after expression */
+	expected_l_paren_after_if,				/**< Expected '(' after 'if' */
+	expected_l_paren_after_switch,			/**< Expected '(' after 'switch' */
+	expected_l_paren_after_while,			/**< Expected '(' after 'while' */
+	expected_l_paren_after_for,				/**< Expected '(' after 'for' */
+	expected_while,							/**< Expected 'while' in do/while loop */
+	expected_semicolon_in_for,				/**< Expected ';' in for statement */
+	expected_ident_after_goto,
+	expected_semi_after_stmt,				/**< Expected ';' after statement */
+	continue_not_in_loop,					/**< 'continue' statement not in loop statement */
+	break_not_in_loop_or_switch,			/**< 'break' statement not in loop or switch statement */
 	no_ret_in_func,
 	bad_type_in_ret,
 	notvoidret_in_void_func,
 
+	typecheck_switch_requires_integer,
+	typecheck_statement_requires_scalar,
+
 	// Environment errors
-	no_main_in_program,					/**< Undefined main */
-	predef_but_notdef,					/**< Undefined function */
+	no_main_in_program,						/**< Undefined main */
+	predef_but_notdef,						/**< Undefined function */
 
 	// Other errors
 	after_type_must_be_ident = 201,

@@ -22,7 +22,6 @@
 static const char *const DEFAULT_TREE = "tree.txt";
 
 static const size_t MAX_LABELS = 10000;
-static const size_t MAX_STACK = 100;
 
 
 /** Check if the set of tokens has token in it */
@@ -45,17 +44,9 @@ static inline parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.sx = sx;
 	prs.lxr = lxr;
 
-	prs.left_mode = -1;
-	prs.operand_displ = 0;
-
-	prs.is_in_assignment = false;
 	prs.was_error = false;
 
 	prs.labels = vector_create(MAX_LABELS);
-	prs.stk.priorities = stack_create(MAX_STACK);
-	prs.stk.tokens = stack_create(MAX_STACK);
-	prs.stk.nodes = stack_create(MAX_STACK);
-	prs.anonymous = stack_create(MAX_STACK);
 	token_consume(&prs);
 
 	return prs;
@@ -64,11 +55,6 @@ static inline parser parser_create(syntax *const sx, lexer *const lxr)
 static inline void parser_clear(parser *const prs)
 {
 	vector_clear(&prs->labels);
-	stack_clear(&prs->anonymous);
-
-	stack_clear(&prs->stk.priorities);
-	stack_clear(&prs->stk.tokens);
-	stack_clear(&prs->stk.nodes);
 }
 
 
@@ -97,7 +83,6 @@ int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
 		parse_declaration_external(&prs, &root);
 	} while (prs.token != TK_EOF);
 
-	node_add_child(&root, OP_BLOCK_END);
 	parser_clear(&prs);
 
 #ifndef NDEBUG
@@ -124,9 +109,32 @@ void parser_error(parser *const prs, error_t num, ...)
 	va_end(args);
 }
 
-void token_consume(parser *const prs)
+void semantics_error(parser *const prs, const location_t loc, error_t num, ...)
 {
+	if (prs->lxr->is_recovery_disabled && (prs->lxr->was_error || prs->was_error))
+	{
+		return;
+	}
+
+	va_list args;
+	va_start(args, num);
+
+	const size_t prev_loc = in_get_position(prs->lxr->io);
+	in_set_position(prs->lxr->io, loc.begin);
+
+	verror(prs->lxr->io, num, args);
+	prs->was_error = true;
+
+	va_end(args);
+
+	in_set_position(prs->lxr->io, prev_loc);
+}
+
+location_t token_consume(parser *const prs)
+{
+	const size_t token_start = prs->lxr->location;
 	prs->token = lex(prs->lxr);
+	return (location_t){ token_start, in_get_position(prs->lxr->io) };
 }
 
 int token_try_consume(parser *const prs, const token_t expected)
@@ -200,7 +208,6 @@ void token_skip_until(parser *const prs, const uint8_t tokens)
 size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode)
 {
 	const size_t ret = ident_add(prs->sx, repr, type, mode, prs->func_def);
-	prs->last_id = 0;
 
 	if (ret == SIZE_MAX)
 	{
@@ -210,15 +217,6 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
 	{
 		parser_error(prs, repeated_decl, repr_get_name(prs->sx, repr));
 	}
-	else
-	{
-		prs->last_id = ret;
-	}
 
 	return ret;
-}
-
-void to_tree(parser *const prs, const item_t operation)
-{
-	prs->nd = node_add_child(&prs->nd, operation);
 }

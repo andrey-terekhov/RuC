@@ -186,7 +186,9 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
 		}
 		else
 		{
-			const item_t size_type = parse_constant_expression(prs, parent);
+			node_copy(&prs->nd, parent);
+			expression size = parse_constant_expression(prs);
+			const item_t size_type = node_get_arg(&size.nd, 0);
 			if (!type_is_integer(size_type))
 			{
 				parser_error(prs, array_size_must_be_int);
@@ -393,9 +395,8 @@ static void parse_array_initializer(parser *const prs, node *const parent, const
 		{
 			prs->flag_strings_only = 1;
 		}
-		parse_string_literal(prs, parent);
-		to_tree(prs, OP_EXPR_END);
 		node_copy(&prs->nd, parent);
+		parse_expression(prs);
 		return;
 	}
 
@@ -498,7 +499,6 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 
 			prs->flag_strings_only = 2;
 			parse_array_initializer(prs, &nd_decl_arr, type);
-			node_add_child(&prs->nd, OP_EXPR_END);
 			if (prs->flag_strings_only == 1)
 			{
 				node_set_arg(&nd, 5, prs->flag_empty_bounds + 2);
@@ -899,34 +899,24 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 {
 	if (prs->token != TK_L_BRACE)
 	{
-		const item_t expr_type = parse_assignment_expression(prs, parent);
-		if (!type_is_undefined(expr_type) && !type_is_undefined(type))
+		node_copy(&prs->nd, parent);
+		expression init = parse_assignment_expression(prs);
+		const item_t expr_type = node_get_arg(&init.nd, 0);
+		if (type_is_integer(type) && type_is_floating(expr_type))
 		{
-			if (type_is_integer(type) && type_is_floating(expr_type))
-			{
-				parser_error(prs, init_int_by_float);
-			}
-			else if (type_is_floating(type) && type_is_integer(expr_type))
-			{
-				parse_insert_widen(prs);
-			}
-			else if (type != expr_type)
-			{
-				parser_error(prs, error_in_initialization);
-			}
+			parser_error(prs, init_int_by_float);
 		}
-	}
-	else
-	{
-		parse_braced_initializer(prs, parent, type);
-		// Инициализатор вызывается только для деклараций и аргументов, всегда нужен expr_end
-		node_add_child(&prs->nd, OP_EXPR_END);
-	}
-}
+		else if (type_is_floating(type) && type_is_integer(expr_type))
+		{
+			;
+		}
+		else if (type != expr_type)
+		{
+			parser_error(prs, error_in_initialization);
+		}
 
-void parse_braced_initializer(parser *const prs, node *const parent, const item_t type)
-{
-	if (type_is_structure(prs->sx, type))
+	}
+	else if (type_is_structure(prs->sx, type))
 	{
 		parse_struct_initializer(prs, parent, type);
 	}

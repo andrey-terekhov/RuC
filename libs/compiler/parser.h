@@ -31,15 +31,6 @@
 extern "C" {
 #endif
 
-/** Type of operands on the anonymous stack */
-typedef enum OPERAND
-{
-	VARIABLE,		/**< Variable operand */
-	VALUE,			/**< Value operand */
-	NUMBER,			/**< Number operand */
-	ADDRESS,		/**< Address operand */
-} operand_t;
-
 /**	The kind of block to parse */
 typedef enum BLOCK
 {
@@ -50,13 +41,11 @@ typedef enum BLOCK
 } block_t;
 
 
-/** Operators stack */
-typedef struct operators
+typedef struct location
 {
-	stack priorities;	/**< Operator priority stack */
-	stack tokens;		/**< Operator token stack */
-	stack nodes;		/**< Operator node stack */
-} operators;
+	size_t begin;
+	size_t end;
+} location_t;
 
 /** Parser structure */
 typedef struct parser
@@ -64,18 +53,12 @@ typedef struct parser
 	syntax *sx;							/**< Syntax structure */
 	lexer *lxr;							/**< Lexer structure */
 
-	operators stk;						/**< Operators stack */
-	stack anonymous;					/**< Operands stack */
 	vector labels;						/**< Labels table */
 
 	node nd;							/**< Node for expression subtree */
 
 	token_t token;						/**< Current token */
-	operand_t last_type;				/**< Type of last added operand to the operands stack */
-	item_t left_mode;					/**< Mode of the left part of assignment expression */
-	size_t last_id;						/**< Index of the last read identifier */
 	size_t function_mode;				/**< Mode of current parsed function */
-	item_t operand_displ;				/**< Displacement of the operand */
 	size_t array_dimensions;			/**< Array dimensions counter */
 
 	int func_def;						/**< @c 0 for function without arguments,
@@ -91,13 +74,20 @@ typedef struct parser
 	int flag_empty_bounds;				/**< Set, if array declaration has empty bounds */
 
 	bool is_in_switch;					/**< Set, if parser is in switch body */
-	bool is_in_assignment;				/**< Set, if parser is in assignment */
 	bool is_in_loop;					/**< Set, if parser is in loop body */
 
 	bool was_return;					/**< Set, if was return in parsed function */
 	bool was_type_def;					/**< Set, if was type definition */
 	bool was_error;						/**< Set, if was error */
 } parser;
+
+/** Expression structure */
+typedef struct expression
+{
+	bool is_valid;			/**< Set if is valid */
+	location_t location;	/**< Source location */
+	node nd;				/**< Node in AST */
+} expression;
 
 
 /**
@@ -113,12 +103,21 @@ int parse(const workspace *const ws, universal_io *const io, syntax *const sx);
 
 
 /**
- *	Emit an error from parser
+ *	Emit a syntax error from parser
  *
  *	@param	prs			Parser structure
  *	@param	num			Error code
  */
 void parser_error(parser *const prs, error_t num, ...);
+
+/**
+ *	Emit a semantics error from parser
+ *
+ *	@param	prs			Parser structure
+ *	@param	loc			Error location
+ *	@param	num			Error code
+ */
+void semantics_error(parser *const prs, const location_t loc, error_t num, ...);
 
 
 /**
@@ -126,7 +125,7 @@ void parser_error(parser *const prs, error_t num, ...);
  *
  *	@param	prs			Parser structure
  */
-void token_consume(parser *const prs);
+location_t token_consume(parser *const prs);
 
 /**
  *	Try to consume the current 'peek token' and lex the next one
@@ -158,20 +157,6 @@ void token_skip_until(parser *const prs, const uint8_t tokens);
 
 
 /**
- *	Parse expression [C99 6.5.17]
- *
- *	expression:
- *		assignment-expression
- *		expression ',' assignment-expression
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *
- *	@return	Type of parsed expression
- */
-item_t parse_expression(parser *const prs, node *const parent);
-
-/**
  *	Parse assignment expression [C99 6.5.16]
  *
  *	assignment-expression:
@@ -179,27 +164,26 @@ item_t parse_expression(parser *const prs, node *const parent);
  *		unary-expression assignment-operator assignment-expression
  *
  *	assignment-operator: one of
- *		=  *=  /=  %=  +=  -=  <<=  >>=  &=  ˆ=  |=
+ *		'=' '*=' '/=' '%=' '+=' '-=' '<<=' '>>=' '&=' 'ˆ=' '|='
  *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
+ *	@param	prs			Parser
  *
- *	@return	Type of parsed expression
+ *	@return	Assignment expression
  */
-item_t parse_assignment_expression(parser *const prs, node *const parent);
+expression parse_assignment_expression(parser *const prs);
 
 /**
- *	Parse expression in parentheses
+ *	Parse expression [C99 6.5.17]
  *
- *	parenthesized-expression:
- *		'(' expression ')'
+ *	expression:
+ *		assignment-expression
+ *		expression ',' assignment-expression
  *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
+ *	@param	prs			Parser
  *
- *	@return	Type of parsed expression
+ *	@return Expression
  */
-item_t parse_parenthesized_expression(parser *const prs, node *const parent);
+expression parse_expression(parser *const prs);
 
 /**
  *	Parse constant expression [C99 6.6]
@@ -207,41 +191,11 @@ item_t parse_parenthesized_expression(parser *const prs, node *const parent);
  *	constant-expression:
  *		conditional-expression
  *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
+ *	@param	prs			Parser
  *
- *	@return	Type of parsed expression
+ *	@return	Constant expression
  */
-item_t parse_constant_expression(parser *const prs, node *const parent);
-
-/**
- *	Parse condition
- *	@note	must be evaluated to a simple value
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *
- *	@return	Type of parsed expression
- */
-item_t parse_condition(parser *const prs, node *const parent);
-
-/**
- *	Parse string literal [C99 6.5.1]
- *
- *	primary-expression:
- *		string-literal
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- */
-void parse_string_literal(parser *const prs, node *const parent);
-
-/**
- *	Insert @c WIDEN node
- *
- *	@param	prs			Parser structure
- */
-void parse_insert_widen(parser *const prs);
+expression parse_constant_expression(parser *const prs);
 
 
 /**
@@ -310,7 +264,7 @@ void parse_statement(parser *const prs, node *const parent);
  *	Parse '{}' block [C99 6.8.2]
  *
  *	compound-statement:
- *  	{ block-item-list[opt] }
+ *  	'{' block-item-list[opt] '}'
  *
  *	block-item-list:
  *		block-item
@@ -341,14 +295,6 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
  *	@return	Index of the last item in identifiers table
  */
 size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode);
-
-/**
- *	Add a new node to expression subtree
- *
- *	@param	prs			Parser structure
- *	@param	op			New node type
- */
-void to_tree(parser *const prs, const item_t op);
 
 #ifdef __cplusplus
 } /* extern "C" */

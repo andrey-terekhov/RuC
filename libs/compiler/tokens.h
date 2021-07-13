@@ -105,9 +105,6 @@ typedef enum TOKEN
 	TK_LESS_LESS_EQUAL,				/**< '<<='	punctuator */
 	TK_GREATER_GREATER_EQUAL,		/**< '>>='	punctuator */
 
-	// Standard Functions [RuC]
-	BEGIN_TK_FUNC,
-
 	TK_PRINT,						/**< 'print'	keyword	*/
 	TK_PRINTF,						/**< 'printf'	keyword */
 	TK_PRINTID,						/**< 'printid'	keyword */
