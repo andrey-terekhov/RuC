@@ -16,7 +16,7 @@
 
 #include "codes.h"
 #include <string.h>
-#include "instructions.h"
+#include "errors.h"
 #include "tree.h"
 #include "operations.h"
 #include "uniio.h"
@@ -348,6 +348,137 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 		case OP_NOP:
 			sprintf(buffer, "NOP");
 			break;
+		case IC_COPY01:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY01");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPY10:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY10");
+					break;
+				case 1:
+					sprintf(buffer, "displright");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPY11:
+			argc = 1;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY11");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPY0ST:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY0ST");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPY1ST:
+			argc = 1;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY1ST");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPY0ST_ASSIGN:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY0STASS");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPY1ST_ASSIGN:
+			argc = 1;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY1STASS");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPYST:
+			argc = 3;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPYST");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+				case 3:
+					sprintf(buffer, "length1");
+					break;
+			}
+			break;
+
+		case IC_CALL1:
+			argc = 1;
+			sprintf(buffer, "TCall1");
+			break;
+		case IC_CALL2:
+			argc = 1;
+			sprintf(buffer, "TCall2");
+			break;
 		case OP_LABEL:
 			argc = 1;
 			sprintf(buffer, "TLabel");
@@ -359,6 +490,48 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 		case OP_DECL_STRUCT_END:
 			argc = 1;
 			sprintf(buffer, "TStructend");
+			break;
+		case IC_CREATE:
+			sprintf(buffer, "TCREATE");
+			break;
+		case IC_CREATE_DIRECT:
+			sprintf(buffer, "TCREATEDIRECT");
+			break;
+		case IC_EXIT:
+			sprintf(buffer, "TEXIT");
+			break;
+		case IC_EXIT_DIRECT:
+			sprintf(buffer, "TEXITDIRECT");
+			break;
+		case IC_MSG_SEND:
+			sprintf(buffer, "TMSGSEND");
+			break;
+		case IC_MSG_RECEIVE:
+			sprintf(buffer, "TMSGRECEIVE");
+			break;
+		case IC_JOIN:
+			sprintf(buffer, "TJOIN");
+			break;
+		case IC_SLEEP:
+			sprintf(buffer, "TSLEEP");
+			break;
+		case IC_SEM_CREATE:
+			sprintf(buffer, "TSEMCREATE");
+			break;
+		case IC_SEM_WAIT:
+			sprintf(buffer, "TSEMWAIT");
+			break;
+		case IC_SEM_POST:
+			sprintf(buffer, "TSEMPOST");
+			break;
+		case IC_INIT:
+			sprintf(buffer, "INITC");
+			break;
+		case IC_DESTROY:
+			sprintf(buffer, "DESTROYC");
+			break;
+		case IC_GETNUM:
+			sprintf(buffer, "GETNUMC");
 			break;
 
 		case IC_PRINT:
@@ -376,6 +549,65 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 		case IC_GETID:
 			argc = 1;
 			sprintf(buffer, "GETID");
+			break;
+
+		case IC_ABS:
+			sprintf(buffer, "ABS");
+			break;
+		case IC_ABSI:
+			sprintf(buffer, "ABSI");
+			break;
+		case IC_SQRT:
+			sprintf(buffer, "SQRT");
+			break;
+		case IC_EXP:
+			sprintf(buffer, "EXP");
+			break;
+		case IC_SIN:
+			sprintf(buffer, "SIN");
+			break;
+		case IC_COS:
+			sprintf(buffer, "COS");
+			break;
+		case IC_LOG:
+			sprintf(buffer, "LOG");
+			break;
+		case IC_LOG10:
+			sprintf(buffer, "LOG10");
+			break;
+		case IC_ASIN:
+			sprintf(buffer, "ASIN");
+			break;
+		case IC_RAND:
+			sprintf(buffer, "RAND");
+			break;
+		case IC_ROUND:
+			sprintf(buffer, "ROUND");
+			break;
+
+		case IC_STRCPY:
+			sprintf(buffer, "STRCPY");
+			break;
+		case IC_STRNCPY:
+			sprintf(buffer, "STRNCPY");
+			break;
+		case IC_STRCAT:
+			sprintf(buffer, "STRCAT");
+			break;
+		case IC_STRNCAT:
+			sprintf(buffer, "STRNCAT");
+			break;
+		case IC_STRCMP:
+			sprintf(buffer, "STRCMP");
+			break;
+		case IC_STRNCMP:
+			sprintf(buffer, "STRNCMP");
+			break;
+		case IC_STRSTR:
+			sprintf(buffer, "STRSTR");
+			break;
+		case IC_STRLEN:
+			sprintf(buffer, "STRLENC");
 			break;
 
 		case IC_BEG_INIT:
@@ -487,13 +719,6 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			sprintf(buffer, "LA");
 			break;
 
-		case IC_CALL1:
-			sprintf(buffer, "CALL1");
-			break;
-		case IC_CALL2:
-			argc = 1;
-			sprintf(buffer, "CALL2");
-			break;
 		case IC_STOP:
 			sprintf(buffer, "STOP");
 			break;

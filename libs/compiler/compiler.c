@@ -181,7 +181,7 @@ int no_macro_compile_to_vm(const char *const path)
 	ws_set_output(&ws, DEFAULT_VM);
 	out_set_file(&io, ws_get_output(&ws));
 
-	const int ret = 0;//compile_from_io(&ws, &io, &encode_to_vm);
+	const int ret = compile_from_io(&ws, &io, &encode_to_vm);
 	if (!ret)
 	{
 		make_executable(ws_get_output(&ws));

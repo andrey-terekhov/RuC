@@ -76,6 +76,8 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"printid", U"печатьид", TK_PRINTID);
 	repr_add_keyword(reprtab, U"scanf", U"читатьф", TK_SCANF);
 	repr_add_keyword(reprtab, U"getid", U"читатьид", TK_GETID);
+	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
+	repr_add_keyword(reprtab, U"upb", U"кол_во", TK_UPB);
 
 	repr_add_keyword(reprtab, U"t_create_direct", U"н_создать_непоср", TK_CREATE_DIRECT);
 	repr_add_keyword(reprtab, U"t_exit_direct", U"н_конец_непоср", TK_EXIT_DIRECT);
@@ -95,21 +97,14 @@ static inline void type_init(syntax *const sx)
 	vector_add(&sx->types, TYPE_INTEGER);
 	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "data"));
 
-	// занесение в types описателя функции void t_msg_send(struct msg_info m)
-	vector_add(&sx->types, 1);
-	vector_add(&sx->types, TYPE_FUNCTION);
-	vector_add(&sx->types, TYPE_VOID);
-	vector_add(&sx->types, 1);
-	vector_add(&sx->types, 2);
-
 	// занесение в types описателя функции void* interpreter(void* n)
-	vector_add(&sx->types, 9);
-	vector_add(&sx->types, TYPE_FUNCTION);
-	vector_add(&sx->types, type_void_pointer);
 	vector_add(&sx->types, 1);
-	vector_add(&sx->types, type_void_pointer);
+	vector_add(&sx->types, TYPE_FUNCTION);
+	vector_add(&sx->types, TYPE_VOID_POINTER);
+	vector_add(&sx->types, 1);
+	vector_add(&sx->types, TYPE_VOID_POINTER);
 
-	sx->start_type = 14;
+	sx->start_type = 9;
 }
 
 static inline item_t get_static(syntax *const sx, const item_t type)
@@ -157,6 +152,80 @@ static inline bool type_is_equal(const syntax *const sx, const size_t first, con
 	return true;
 }
 
+static void builtin_add(syntax *const sx, const char32_t *const eng, const char32_t *const rus, const item_t type)
+{
+	// Добавляем одно из написаний в таблицу representations
+	const size_t repr = map_add_by_utf8(&sx->representations, eng, ITEM_MAX);
+
+	// Добавляем идентификатор в identifiers
+	const item_t id = (item_t)ident_add(sx, repr, 2, type, 1);
+
+	// Добавляем остальные варианты написания, все будут ссылаться на id
+	char32_t buffer[MAX_STRING_LENGTH];
+
+	buffer[0] = utf8_to_upper(eng[0]);
+	for (size_t i = 1; eng[i - 1] != '\0'; i++)
+	{
+		buffer[i] = utf8_to_upper(eng[i]);
+	}
+	map_add_by_utf8(&sx->representations, buffer, id);
+
+	buffer[0] = utf8_to_upper(rus[0]);
+	for (size_t i = 1; rus[i - 1] != '\0'; i++)
+	{
+		buffer[i] = utf8_to_upper(rus[i]);
+	}
+	map_add_by_utf8(&sx->representations, rus, id);
+	map_add_by_utf8(&sx->representations, buffer, id);
+}
+
+
+static void ident_init(syntax *const sx)
+{
+	builtin_add(sx, U"assert", U"проверить", type_function(sx, TYPE_VOID, "is"));
+
+	builtin_add(sx, U"asin", U"асин", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"cos", U"кос", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"sin", U"син", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"exp", U"эксп", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"log", U"лог", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"log10", U"лог10", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"sqrt", U"квкор", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"rand", U"случ", type_function(sx, TYPE_FLOATING, ""));
+	builtin_add(sx, U"round", U"округл", type_function(sx, TYPE_INTEGER, "f"));
+
+	builtin_add(sx, U"strcpy", U"копир_строку", type_function(sx, TYPE_VOID, "Ss"));
+	builtin_add(sx, U"strncpy", U"копир_н_симв", type_function(sx, TYPE_VOID, "Ssi"));
+	builtin_add(sx, U"strcat", U"конкат_строки", type_function(sx, TYPE_VOID, "Ss"));
+	builtin_add(sx, U"strncat", U"конкат_н_симв", type_function(sx, TYPE_VOID, "Ssi"));
+	builtin_add(sx, U"strcmp", U"сравн_строк", type_function(sx, TYPE_INTEGER, "ss"));
+	builtin_add(sx, U"strncmp", U"сравн_н_симв", type_function(sx, TYPE_INTEGER, "ssi"));
+	builtin_add(sx, U"strstr", U"нач_подстрок", type_function(sx, TYPE_INTEGER, "ss"));
+	builtin_add(sx, U"strlen", U"длина", type_function(sx, TYPE_INTEGER, "s"));
+
+	builtin_add(sx, U"send_int_to_robot", U"послать_цел_на_робот", type_function(sx, TYPE_VOID, "iI"));
+	builtin_add(sx, U"send_float_to_robot", U"послать_вещ_на_робот", type_function(sx, TYPE_VOID, "iF"));
+	builtin_add(sx, U"send_string_to_robot", U"послать_строку_на_робот", type_function(sx, TYPE_VOID, "is"));
+	builtin_add(sx, U"receive_int_from_robot", U"получить_цел_от_робота", type_function(sx, TYPE_INTEGER, "i"));
+	builtin_add(sx, U"receive_float_from_robot", U"получить_вещ_от_робота", type_function(sx, TYPE_FLOATING, "i"));
+	builtin_add(sx, U"receive_string_from_robot", U"получить_строку_от_робота", type_function(sx, TYPE_VOID, "i"));
+
+	builtin_add(sx, U"t_create", U"н_создать", type_function(sx, TYPE_INTEGER, "V"));
+	builtin_add(sx, U"t_getnum", U"н_номер_нити", type_function(sx, TYPE_INTEGER, ""));
+	builtin_add(sx, U"t_sleep", U"н_спать", type_function(sx, TYPE_VOID, "i"));
+	builtin_add(sx, U"t_join", U"н_присоед", type_function(sx, TYPE_VOID, "i"));
+	builtin_add(sx, U"t_exit", U"н_конец", type_function(sx, TYPE_VOID, ""));
+	builtin_add(sx, U"t_init", U"н_начать", type_function(sx, TYPE_VOID, ""));
+	builtin_add(sx, U"t_destroy", U"н_закончить", type_function(sx, TYPE_VOID, ""));
+
+	builtin_add(sx, U"t_sem_create", U"н_создать_сем", type_function(sx, TYPE_INTEGER, "i"));
+	builtin_add(sx, U"t_sem_wait", U"н_вниз_сем", type_function(sx, TYPE_VOID, "i"));
+	builtin_add(sx, U"t_sem_post", U"н_вверх_сем", type_function(sx, TYPE_VOID, "i"));
+
+	builtin_add(sx, U"t_msg_send", U"н_послать", type_function(sx, TYPE_VOID, "m"));
+	builtin_add(sx, U"t_msg_receive", U"н_получить", type_function(sx, TYPE_MSG_INFO, ""));
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -187,6 +256,8 @@ syntax sx_create()
 
 	sx.types = vector_create(TYPES_SIZE);
 	type_init(&sx);
+
+	ident_init(&sx);
 
 	sx.max_displg = 3;
 	sx.ref_main = 0;
@@ -506,11 +577,76 @@ item_t type_array(syntax *const sx, const item_t type)
 	return (item_t)type_add(sx, (item_t[]){ TYPE_ARRAY, type }, 2);
 }
 
+/*
+ *	args = list of characters each for one argument
+ *		v -> void
+ *		V -> void*
+ *		s -> char[]
+ *		S -> char[]*
+ *		i -> int
+ *		I -> int[]
+ *		f -> float
+ *		F -> float[]
+ *		m -> msg_info
+ */
+item_t type_function(syntax *const sx, const item_t return_type, const char *const args)
+{
+	item_t local_modetab[6];
+	size_t i = 0;
+
+	local_modetab[0] = TYPE_FUNCTION;
+	local_modetab[1] = return_type;
+
+	while (args[i] != '\0')
+	{
+		switch (args[i])
+		{
+			case 'v':
+				local_modetab[3 + i] = TYPE_VOID;
+				break;
+			case 'V':
+				local_modetab[3 + i] = TYPE_VOID_POINTER;
+				break;
+			case 's':
+				local_modetab[3 + i] = type_array(sx, TYPE_CHARACTER);
+				break;
+			case 'S':
+				local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_CHARACTER));
+				break;
+			case 'i':
+				local_modetab[3 + i] = TYPE_INTEGER;
+				break;
+			case 'I':
+				local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
+				break;
+			case 'f':
+				local_modetab[3 + i] = TYPE_FLOATING;
+				break;
+			case 'F':
+				local_modetab[3 + i] = type_array(sx, TYPE_FLOATING);
+				break;
+			case 'm':
+				local_modetab[3 + i] = TYPE_MSG_INFO;
+				break;
+		}
+
+		i++;
+	}
+
+	local_modetab[2] = (item_t)i;
+
+	return (item_t)type_add(sx, local_modetab, i + 3);
+}
+
 item_t type_pointer(syntax *const sx, const item_t type)
 {
 	return (item_t)type_add(sx, (item_t[]){ TYPE_POINTER, type }, 2);
 }
 
+bool type_is_undefined(const item_t type)
+{
+	return type == TYPE_UNDEFINED;
+}
 
 
 size_t repr_reserve(syntax *const sx, const char32_t *const spelling)

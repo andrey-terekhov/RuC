@@ -18,6 +18,25 @@
 #include "errors.h"
 
 
+unary_t token_to_unary(const token_t token)
+{
+	switch (token)
+	{
+		case TK_PLUS_PLUS:		return UN_PREINC;
+		case TK_MINUS_MINUS:	return UN_PREDEC;
+		case TK_AMP:			return UN_ADDRESS;
+		case TK_STAR:			return UN_INDIRECTION;
+		case TK_PLUS:			return UN_PLUS;
+		case TK_MINUS:			return UN_MINUS;
+		case TK_TILDE:			return UN_NOT;
+		case TK_EXCLAIM:		return UN_LOGNOT;
+
+		default:
+			// Unreachable
+			return 0;
+	}
+}
+
 binary_t token_to_binary(const token_t token)
 {
 	switch (token)
@@ -59,18 +78,46 @@ binary_t token_to_binary(const token_t token)
 	}
 }
 
-unary_t token_to_unary(const token_t token)
+instruction_t builtin_to_instruction(const builtin_t func)
 {
-	switch (token)
+	switch (func)
 	{
-		case TK_PLUS_PLUS:		return UN_PREINC;
-		case TK_MINUS_MINUS:	return UN_PREDEC;
-		case TK_AMP:			return UN_ADDRESS;
-		case TK_STAR:			return UN_INDIRECTION;
-		case TK_PLUS:			return UN_PLUS;
-		case TK_MINUS:			return UN_MINUS;
-		case TK_TILDE:			return UN_NOT;
-		case TK_EXCLAIM:		return UN_LOGNOT;
+		case BI_SQRT:					return IC_SQRT;
+		case BI_EXP:					return IC_EXP;
+		case BI_SIN:					return IC_SIN;
+		case BI_COS:					return IC_COS;
+		case BI_LOG:					return IC_LOG;
+		case BI_LOG10:					return IC_LOG10;
+		case BI_ASIN:					return IC_ASIN;
+		case BI_RAND:					return IC_RAND;
+		case BI_ROUND:					return IC_ROUND;
+		case BI_STRCPY:					return IC_STRCPY;
+		case BI_STRNCPY:				return IC_STRNCPY;
+		case BI_STRCAT:					return IC_STRCAT;
+		case BI_STRNCAT:				return IC_STRNCAT;
+		case BI_STRCMP:					return IC_STRCMP;
+		case BI_STRNCMP:				return IC_STRNCMP;
+		case BI_STRSTR:					return IC_STRSTR;
+		case BI_STRLEN:					return IC_STRLEN;
+		case BI_ASSERT:					return IC_ASSERT;
+		case BI_MSG_SEND:				return IC_MSG_SEND;
+		case BI_MSG_RECEIVE:			return IC_MSG_RECEIVE;
+		case BI_JOIN:					return IC_JOIN;
+		case BI_SLEEP:					return IC_SLEEP;
+		case BI_SEM_CREATE:				return IC_SEM_CREATE;
+		case BI_SEM_WAIT:				return IC_SEM_WAIT;
+		case BI_SEM_POST:				return IC_SEM_POST;
+		case BI_CREATE:					return IC_CREATE;
+		case BI_INIT:					return IC_INIT;
+		case BI_DESTROY:				return IC_DESTROY;
+		case BI_EXIT:					return IC_EXIT;
+		case BI_GETNUM:					return IC_GETNUM;
+		case BI_ROBOT_SEND_INT:			return IC_ROBOT_SEND_INT;
+		case BI_ROBOT_SEND_FLOAT:		return IC_ROBOT_SEND_FLOAT;
+		case BI_ROBOT_SEND_STRING:		return IC_ROBOT_SEND_STRING;
+		case BI_ROBOT_RECEIVE_INT:		return IC_ROBOT_RECEIVE_INT;
+		case BI_ROBOT_RECEIVE_FLOAT:	return IC_ROBOT_RECEIVE_FLOAT;
+		case BI_ROBOT_RECEIVE_STRING:	return IC_ROBOT_RECEIVE_STRING;
 
 		default:
 			// Unreachable

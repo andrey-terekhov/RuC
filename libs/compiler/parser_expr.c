@@ -144,7 +144,7 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 	if (!operand.is_valid)
 	{
 	   return expr_broken();
-   }
+	}
 
 	const item_t operand_type = node_get_arg(&operand.nd, 0);
 
@@ -900,8 +900,6 @@ expression parse_expression(parser *const prs)
 
 expression parse_constant_expression(parser *const prs)
 {
-	// Тут никогда не было проверок, что это на самом деле константное выражение
-	// TODO: Проверять, что это константное выражение
 	const expression LHS = parse_unary_expression(prs);
 	return parse_RHS_of_binary_expression(prs, LHS, PREC_CONDITIONAL);
 }

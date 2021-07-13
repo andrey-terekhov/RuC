@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include "tokens.h"
 #include <stdbool.h>
-#include <stdio.h>
+#include <stddef.h>
+#include "instructions.h"
+#include "tokens.h"
 
 
 #ifdef __cplusplus
@@ -103,7 +104,19 @@ typedef enum BINARY
 typedef enum OPERATION
 {
 	OP_NOP,
-	// Statement
+	
+	// Expressions
+	OP_IDENTIFIER,			/**< Identifier node */
+	OP_CONSTANT,			/**< Constant node */
+	OP_STRING,				/**< String litaral node */
+	OP_CALL,				/**< Call node */
+	OP_SELECT,				/**< Select operator node */
+	OP_SLICE,				/**< Slice operator node */
+	OP_UNARY,				/**< Unary operator node */
+	OP_BINARY,				/**< Binary operator node */
+	OP_TERNARY,				/**< Ternary operator node */
+
+	// Statements
 	OP_LABEL,				/**< Label statement node */
 	OP_CASE,				/**< Case statement node */
 	OP_DEFAULT,				/**< Default statement node */
@@ -130,17 +143,6 @@ typedef enum OPERATION
 	// End nodes
 	OP_DECL_STRUCT_END,		/**< End of struct declaration node */
 
-	// Expressions
-	OP_IDENTIFIER,			/**< Identifier node */
-	OP_CONSTANT,			/**< Constant node */
-	OP_STRING,				/**< String litaral node */
-	OP_CALL,				/**< Call node */
-	OP_SELECT,				/**< Select operator node */
-	OP_SLICE,				/**< Slice operator node */
-	OP_UNARY,				/**< Unary operator node */
-	OP_BINARY,				/**< Binary operator node */
-	OP_TERNARY,				/**< Ternary operator node */
-
 	// Built-in functions
 	OP_PRINTID,
 	OP_PRINT,
@@ -148,8 +150,121 @@ typedef enum OPERATION
 	OP_PRINTF,
 } operation_t;
 
+typedef enum builtin
+{
+	// Diagnostics functions
+	BI_ASSERT				= 2,
+
+	// Math functions
+	BI_ASIN					= 6,
+	BI_COS					= 10,
+	BI_SIN					= 14,
+	BI_EXP					= 18,
+	BI_LOG					= 22,
+	BI_LOG10				= 26,
+	BI_SQRT					= 30,
+	BI_RAND					= 34,
+	BI_ROUND				= 38,
+
+	// String functions
+	BI_STRCPY				= 42,
+	BI_STRNCPY				= 46,
+	BI_STRCAT				= 50,
+	BI_STRNCAT				= 54,
+	BI_STRCMP				= 58,
+	BI_STRNCMP				= 62,
+	BI_STRSTR				= 66,
+	BI_STRLEN				= 70,
+
+	// Robot functions
+	BI_ROBOT_SEND_INT		= 74,
+	BI_ROBOT_SEND_FLOAT		= 78,
+	BI_ROBOT_SEND_STRING	= 82,
+	BI_ROBOT_RECEIVE_INT	= 86,
+	BI_ROBOT_RECEIVE_FLOAT	= 90,
+	BI_ROBOT_RECEIVE_STRING	= 94,
+
+	// Thread functions
+	BI_CREATE				= 98,
+	BI_GETNUM				= 102,
+	BI_SLEEP				= 106,
+	BI_JOIN					= 110,
+	BI_EXIT					= 114,
+	BI_INIT					= 118,
+	BI_DESTROY				= 122,
+
+	BI_SEM_CREATE			= 126,
+	BI_SEM_WAIT				= 130,
+	BI_SEM_POST				= 134,
+
+	BI_MSG_SEND				= 138,
+	BI_MSG_RECEIVE			= 142,
+
+	USER_FUNC_START			= 144,
+} builtin_t;
+
+
+/**
+ *	Convert token to corresponding unary operator
+ *
+ *	@param	token		Token
+ *
+ *	@return	Unary operator
+ */
 unary_t token_to_unary(const token_t token);
+
+/**
+ *	Convert token to corresponding binary operator
+ *
+ *	@param	token		Token
+ *
+ *	@return	Binary operator
+ */
 binary_t token_to_binary(const token_t token);
+
+/**
+ *	Convert standard function id to corresponding function instruction
+ *
+ *	@param	func		Function id
+ *
+ *	@return	Function instruction
+ */
+instruction_t builtin_to_instruction(const builtin_t func);
+
+/**
+ *	Convert to corresponding address version of operation
+ *
+ *	@param	operation	Operation
+ *
+ *	@return	Address version of operation
+ */
+operation_t operation_to_address_ver(const operation_t operation);
+
+/**
+ *	Convert to corresponding void version of operation
+ *
+ *	@param	operation	Operation
+ *
+ *	@return	Void version of operation
+ */
+operation_t operation_to_void_ver(const operation_t operation);
+
+/**
+ *	Convert to corresponding float version of operation
+ *
+ *	@param	operation	Operation
+ *
+ *	@return	Float version of operation
+ */
+operation_t operation_to_float_ver(const operation_t operation);
+
+/**
+ *	Check if operator is assignment
+ *
+ *	@param	operator	Operator
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
 bool operation_is_assignment(const binary_t operator);
 
 #ifdef __cplusplus

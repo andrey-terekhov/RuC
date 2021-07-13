@@ -1,5 +1,5 @@
 /*
- *	Copyright 2015 Andrey Terekhov
+ *	Copyright 2015 Andrey Terekhov, Victor Y. Fadeev, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@
 #include "stack.h"
 #include "tree.h"
 #include "uniprinter.h"
-#include "utf8.h"
 
 
 /*

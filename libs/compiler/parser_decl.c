@@ -20,6 +20,7 @@
 
 static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
 static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
+static void parse_array_initializer(parser *const prs, node *const parent, const item_t type);
 
 
 /**
@@ -244,7 +245,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	do
 	{
 		item_t element_type = parse_type_specifier(prs, parent);
-		if (element_type == TYPE_VOID)
+		if (type_is_void(element_type))
 		{
 			parser_error(prs, only_functions_may_have_type_VOID);
 			element_type = TYPE_UNDEFINED;
@@ -403,6 +404,9 @@ static void parse_array_initializer(parser *const prs, node *const parent, const
 	{
 		parser_error(prs, arr_init_must_start_from_BEGIN);
 		token_skip_until(prs, TK_COMMA | TK_SEMICOLON);
+
+		// Это для продолжения парсинга
+		node_copy(&prs->nd, parent);
 		return;
 	}
 
@@ -543,9 +547,9 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			if (token_try_consume(prs, TK_STAR))
 			{
 				arg_func = 1;
-				if (type == TYPE_VOID)
+				if (type_is_void(type))
 				{
-					type = type_void_pointer;
+					type = TYPE_VOID_POINTER;
 				}
 				else
 				{
@@ -571,7 +575,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				return TYPE_UNDEFINED;
 			}
 
-			if (type == TYPE_VOID && prs->token != TK_L_PAREN)
+			if (type_is_void(type) && prs->token != TK_L_PAREN)
 			{
 				parser_error(prs, par_type_void_with_nofun);
 			}
@@ -804,7 +808,7 @@ void parse_declaration_inner(parser *const prs, node *const parent)
 	prs->was_type_def = 0;
 	item_t group_type = parse_type_specifier(prs, parent);
 
-	if (group_type == TYPE_VOID)
+	if (type_is_void(group_type))
 	{
 		parser_error(prs, only_functions_may_have_type_VOID);
 		group_type = TYPE_UNDEFINED;
@@ -853,9 +857,9 @@ void parse_declaration_external(parser *const prs, node *const root)
 		if (prs->token == TK_STAR)
 		{
 			token_consume(prs);
-			if (group_type == TYPE_VOID)
+			if (type_is_void(group_type))
 			{
-				type = type_void_pointer;
+				type = TYPE_VOID_POINTER;
 			}
 			else
 			{
@@ -869,7 +873,7 @@ void parse_declaration_external(parser *const prs, node *const root)
 			{
 				parse_function_definition(prs, root, type);
 			}
-			else if (group_type == TYPE_VOID)
+			else if (type_is_void(group_type))
 			{
 				parser_error(prs, only_functions_may_have_type_VOID);
 			}
@@ -922,6 +926,7 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 	}
 	else
 	{
+		node_copy(&prs->nd, parent);
 		parser_error(prs, wrong_init);
 		token_skip_until(prs, TK_COMMA | TK_SEMICOLON);
 	}

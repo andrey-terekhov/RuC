@@ -43,8 +43,8 @@ enum TYPE
 	TYPE_INTEGER,
 	TYPE_UNDEFINED,
 
-	type_msg_info 		= 2,
-	type_void_pointer	= 15,
+	TYPE_MSG_INFO 		= 2,
+	TYPE_VOID_POINTER	= 10,
 	TYPE_FUNCTION		= 1001,
 	TYPE_STRUCTURE,
 	TYPE_ARRAY,
@@ -274,7 +274,7 @@ item_t type_get(const syntax *const sx, const size_t index);
 size_t type_size(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is integer [C99 6.2.5.7]
+ *	Check if type is integer
  *
  *	@param	type		Type for check
  *
@@ -283,7 +283,7 @@ size_t type_size(const syntax *const sx, const item_t type);
 bool type_is_integer(const item_t type);
 
 /**
- *	Check if type is floating [C99 6.2.5.11]
+ *	Check if type is floating
  *
  *	@param	type		Type for check
  *
@@ -292,7 +292,7 @@ bool type_is_integer(const item_t type);
 bool type_is_floating(const item_t type);
 
 /**
- *	Check if type is arithmetic [C99 6.2.5.18]
+ *	Check if type is arithmetic
  *
  *	@param	type		Type for check
  *
@@ -301,7 +301,7 @@ bool type_is_floating(const item_t type);
 bool type_is_arithmetic(const item_t type);
 
 /**
- *	Check if type is void [C99 6.2.5.19]
+ *	Check if type is void
  *
  *	@param	type		Type for check
  *
@@ -310,7 +310,7 @@ bool type_is_arithmetic(const item_t type);
 bool type_is_void(const item_t type);
 
 /**
- *	Check if type is array [C99 6.2.5.20p1]
+ *	Check if type is array
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -320,7 +320,7 @@ bool type_is_void(const item_t type);
 bool type_is_array(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is structure [C99 6.2.5.20p2]
+ *	Check if type is structure
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -330,7 +330,7 @@ bool type_is_array(const syntax *const sx, const item_t type);
 bool type_is_structure(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is function [C99 6.2.5.20p4]
+ *	Check if type is function
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -340,7 +340,7 @@ bool type_is_structure(const syntax *const sx, const item_t type);
 bool type_is_function(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is pointer [C99 6.2.5.20p5]
+ *	Check if type is pointer
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -350,7 +350,7 @@ bool type_is_function(const syntax *const sx, const item_t type);
 bool type_is_pointer(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is scalar [C99 6.2.5.21p1]
+ *	Check if type is scalar
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -360,7 +360,7 @@ bool type_is_pointer(const syntax *const sx, const item_t type);
 bool type_is_scalar(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is aggregate [C99 6.2.5.21p2]
+ *	Check if type is aggregate
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -390,7 +390,16 @@ bool type_is_string(const syntax *const sx, const item_t type);
 bool type_is_struct_pointer(const syntax *const sx, const item_t type);
 
 /**
- * Create array type
+ *	Check if type is undefined
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_undefined(const item_t type);
+
+/**
+ *	Create array type
  *
  *	@param	sx			Syntax structure
  *	@param	type		Element type
@@ -398,6 +407,17 @@ bool type_is_struct_pointer(const syntax *const sx, const item_t type);
  *	@return	Array type
  */
 item_t type_array(syntax *const sx, const item_t type);
+
+/**
+ *	Create function type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	return_type	Return type
+ *	@param	args		List of argument types
+ *
+ *	@return	Array type
+ */
+item_t type_function(syntax *const sx, const item_t return_type, const char *const args);
 
 /**
  *	Create pointer type
