@@ -66,14 +66,9 @@ static inline int stack_push(information *const info, node_info *const nd)
 	return 0;
 }
 
-static inline node_info *stack_pop(information *const info)
+static inline node_info stack_pop(information *const info)
 {
-	if (info->stack_size == 0)
-	{
-		return NULL;
-	}
-
-	return &info->stack[--info->stack_size];
+	return info->stack[--info->stack_size];
 }
 
 static inline void stack_resize(information *const info, const size_t size)
@@ -377,10 +372,10 @@ static int node_recursive(information *const info, node *const nd)
 
 					stack_resize(info, info->slice_stack_size);
 
-					node_info *slice_info = stack_pop(info);
+					node_info slice_info = stack_pop(info);
 
-					slice_info->depth = info->slice_depth;
-					stack_push(info, slice_info);
+					slice_info.depth = info->slice_depth;
+					stack_push(info, &slice_info);
 					info->slice_depth = 0;
 				}
 			}
@@ -398,7 +393,7 @@ static int node_recursive(information *const info, node *const nd)
 						break;
 					case UNARY_OPERATION:
 					{
-						node_info *operand = stack_pop(info);
+						node_info operand = stack_pop(info);
 
 						if (node_get_type(nd_info.ref_node) == OP_ADDR_TO_VAL)
 						{
@@ -407,27 +402,27 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка с операндом
-						has_error |= transposition(operand, &nd_info);
+						has_error |= transposition(&operand, &nd_info);
 
-						if (node_get_type(operand->ref_node) == OP_CALL1)
+						if (node_get_type(operand.ref_node) == OP_CALL1)
 						{
 							node tmp;
 							node_copy(&tmp, &child);
 							while (node_get_type(&tmp) != OP_CALL2)
 							{
 								node_set_next(&tmp);
-								operand->depth++;
+								operand.depth++;
 							}
 						}
 
 						// добавляем в стек переставленное выражение
-						has_error |= stack_push(info, operand);
+						has_error |= stack_push(info, &operand);
 					}
 					break;
 					case BINARY_OPERATION:
 					{
-						node_info *second = stack_pop(info);
-						node_info *first = stack_pop(info);
+						node_info second = stack_pop(info);
+						node_info first = stack_pop(info);
 
 						node parent = node_get_parent(nd_info.ref_node);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
@@ -438,23 +433,23 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка со вторым операндом
-						has_error |= transposition(second, &nd_info);
+						has_error |= transposition(&second, &nd_info);
 
-						parent = node_get_parent(second->ref_node);
+						parent = node_get_parent(second.ref_node);
 						if (node_get_type(&parent) == OP_AD_LOG_OR
 							|| node_get_type(&parent) == OP_AD_LOG_AND
 							|| node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { &parent, 1 };
-							has_error |= transposition(second, &log_info);
-							node_copy(second->ref_node, log_info.ref_node);
+							has_error |= transposition(&second, &log_info);
+							node_copy(second.ref_node, log_info.ref_node);
 						}
 
 						// перестановка с первым операндом
-						has_error |= transposition(first, second);
+						has_error |= transposition(&first, &second);
 
 						// добавляем в стек переставленное выражение
-						has_error |= stack_push(info, first);
+						has_error |= stack_push(info, &first);
 					}
 					break;
 					case NOT_EXPRESSION:
