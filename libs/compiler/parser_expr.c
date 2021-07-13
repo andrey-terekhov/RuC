@@ -148,7 +148,7 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 
 	const item_t operand_type = node_get_arg(&operand.nd, 0);
 
-	item_t result_type;
+	item_t result_type = 0;
 	category_t category = RVALUE;
 	bool is_prefix = true;
 
