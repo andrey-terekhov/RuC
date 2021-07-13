@@ -202,6 +202,7 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 			break;
 		}
 
+		case UN_ABS:
 		case UN_PLUS:
 		case UN_MINUS:
 		{
@@ -409,7 +410,7 @@ static expression make_ternary_expression(parser *const prs, expression left, ex
 }
 
 /**
- *	Parse primary expression [C99 6.5.1]
+ *	Parse primary expression
  *
  *	primary-expression:
  *		identifier
@@ -514,7 +515,7 @@ static expression parse_primary_expression(parser *const prs)
 }
 
 /**
- *	Parse subscripting expression suffix [C99 6.5.2.1]
+ *	Parse subscripting expression suffix
  *
  *	postfix-expression:
  *		postfix-expression '[' expression ']'
@@ -567,7 +568,7 @@ static expression parse_subscripting_expression_suffix(parser *const prs, expres
 }
 
 /**
- *	Parse call expression suffix [C99 6.5.2.2]
+ *	Parse call expression suffix
  *
  *	postfix-expression:
  *		postfix-expression '(' argument-expression-list[opt] ')'
@@ -646,7 +647,7 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 }
 
 /**
- *	Parse member expression suffix [C99 6.5.2.3]
+ *	Parse member expression suffix
  *
  *	postfix-expression:
  *		postfix-expression '.' identifier
@@ -727,7 +728,7 @@ static expression parse_member_expression_suffix(parser *const prs, expression o
 }
 
 /**
- *	Parse postfix expression suffix [C99 6.5.2]
+ *	Parse postfix expression suffix
  *
  *	postfix-expression:
  *		primary-expression
@@ -777,7 +778,7 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
 }
 
 /**
- *	Parse unary expression [C99 6.5.3]
+ *	Parse unary expression
  *
  *	unary-expression:
  *		postfix-expression
@@ -786,7 +787,7 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
  *		unary-operator unary-expression
  *
  *	unary-operator: one of
- *		'&' '*' '+' '-' '~' '!'
+ *		'&' '*' '+' '-' '~' '!' 'abs'
  *
  *	@param	prs			Parser
  *

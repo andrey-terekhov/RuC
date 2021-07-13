@@ -37,54 +37,56 @@ typedef enum VALUE
 /** Unary operator kinds */
 typedef enum UNARY
 {
-	// [C99 6.5.2.4] Postfix increment and decrement
+	// Postfix increment and decrement
 	UN_POSTINC,			/**< Postfix increment operator */
 	UN_POSTDEC,			/**< Postfix decrement operator */
-	// [C99 6.5.3.1] Prefix increment and decrement
+	// Prefix increment and decrement
 	UN_PREINC,			/**< Pretfix increment operator */
 	UN_PREDEC,			/**< Pretfix decrement operator */
-	// [C99 6.5.3.2] Address and indirection
-	UN_ADDRESS,			/**< "&" operator */
-	UN_INDIRECTION,		/**< "*" operator */
-	// [C99 6.5.3.3] Unary arithmetic
-	UN_PLUS,			/**< "+" operator */
-	UN_MINUS,			/**< "-" operator */
-	UN_NOT,				/**< "~" operator */
-	UN_LOGNOT,			/**< "!" operator */
+	// Address and indirection
+	UN_ADDRESS,			/**< '&' operator */
+	UN_INDIRECTION,		/**< '*' operator */
+	// Unary arithmetic
+	UN_PLUS,			/**< '+' operator */
+	UN_MINUS,			/**< '-' operator */
+	UN_NOT,				/**< '~' operator */
+	UN_LOGNOT,			/**< '!' operator */
+	// Abs operator
+	UN_ABS,				/**< 'abs' operator */
 } unary_t;
 
 /** Binary operator kinds */
 typedef enum BINARY
 {
-	// [C99 6.5.5] Multiplicative operators
+	// Multiplicative operators
 	BIN_MUL,			/**< Multiplication */
 	BIN_DIV,			/**< Division */
 	BIN_REM,			/**< Remainder */
-	// [C99 6.5.6] Additive operators
+	// Additive operators
 	BIN_ADD,			/**< Addition */
 	BIN_SUB,			/**< Subtraction */
-	// [C99 6.5.7] Bitwise shift operators
+	// Bitwise shift operators
 	BIN_SHL,			/**< Left shift */
 	BIN_SHR,			/**< Right shift */
-	// [C99 6.5.8] Relational operators
+	// Relational operators
 	BIN_LT,				/**< Less than */
 	BIN_GT,				/**< Greater than */
 	BIN_LE,				/**< Less than or equal to */
 	BIN_GE,				/**< Greater than or equal to */
-	// [C99 6.5.9] Equality operators
+	// Equality operators
 	BIN_EQ,				/**< Equal to */
 	BIN_NE,				/**< Not equal to */
-	// [C99 6.5.10] Bitwise AND operator
+	// Bitwise AND operator
 	BIN_AND,			/**< Bitwise AND */
-	// [C99 6.5.11] Bitwise XOR operator
+	// Bitwise XOR operator
 	BIN_XOR,			/**< Bitwise exclusive OR */
-	// [C99 6.5.12] Bitwise OR operator
+	// Bitwise OR operator
 	BIN_OR,				/**< Bitwise inclusive OR */
-	// [C99 6.5.13] Logical AND operator
+	// Logical AND operator
 	BIN_LOG_AND,		/**< Logical AND */
-	// [C99 6.5.14] Logical OR operator
+	// Logical OR operator
 	BIN_LOG_OR,			/**< Logical OR */
-	// [C99 6.5.16] Assignment operators
+	// Assignment operators
 	BIN_ASSIGN,			/**< Simple assignment */
 	BIN_MUL_ASSIGN,		/**< Multiplication assignment */
 	BIN_DIV_ASSIGN,		/**< Division assignment */
@@ -96,7 +98,7 @@ typedef enum BINARY
 	BIN_AND_ASSIGN,		/**< Bitwise AND assignment */
 	BIN_XOR_ASSIGN,		/**< Bitwise exclusive OR assignment */
 	BIN_OR_ASSIGN,		/**< Bitwise inclusive OR assignment */
-	// [C99 6.5.17] Comma operator
+	// Comma operator
 	BIN_COMMA, 			/**< Comma */
 } binary_t;
 
