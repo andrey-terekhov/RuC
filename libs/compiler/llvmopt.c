@@ -24,7 +24,6 @@
 
 
 #define MAX_STACK_SIZE	512
-#define BUFFER_SIZE		1024
 
 
 typedef enum EXPRESSION
@@ -54,8 +53,6 @@ typedef struct information
 
 	stack nodes;									/**< Стек нод для преобразования выражений */
 	stack depths;									/**< Стек глубин нод для преобразования выражений */
-	node buffer[BUFFER_SIZE];						/**< Буфер для хранения нод при извлечении из стека */
-	size_t buffer_size;								/**< Размер буфера */
 
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
 	size_t slice_depth;								/**< Количество узлов после OP_SLICE_IDENT */
@@ -80,9 +77,9 @@ static inline int stack_push_info(information *const info, node_info *const nd)
 
 static inline node_info stack_pop_info(information *const info, node *const memory)
 {
-	info->buffer[info->buffer_size] = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
+	*(memory) = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
 	size_t operand_depth = (size_t)stack_pop(&info->depths);
-	node_info operand = {&info->buffer[info->buffer_size++], operand_depth};
+	node_info operand = {memory, operand_depth};
 	// node_copy(operand.ref_node, memory);
 
 	// return info->stack[--info->stack_size];
@@ -101,7 +98,6 @@ static inline void stack_resize_info(information *const info, const size_t size)
 	{
 		stack_reset(&info->nodes);
 		stack_reset(&info->depths);
-		info->buffer_size = 0;
 	}
 	else
 	{
@@ -160,6 +156,7 @@ static expression_t expression_type(node *const nd)
 		case OP_CONST_D:
 		case OP_IDENT_TO_VAL_D:
 		case OP_SLICE_IDENT:
+		case OP_RAND:
 			return OPERAND;
 
 
@@ -466,7 +463,7 @@ static int node_recursive(information *const info, node *const nd)
 						node_info second = stack_pop_info(info, &second_memory);
 						node first_memory;
 						node_info first = stack_pop_info(info, &first_memory);
-						printf("%i\n", node_get_type(second.ref_node));
+						printf("%i\n", node_get_type(&child));
 
 						node parent = node_get_parent(nd_info.ref_node);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
@@ -533,7 +530,6 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 
 	info.nodes = stack_create(MAX_STACK_SIZE);
 	info.depths = stack_create(MAX_STACK_SIZE);
-	info.buffer_size = 0;
 
 	node nd = node_get_root(&sx->tree);
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
