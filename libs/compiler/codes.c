@@ -94,7 +94,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			}
 			break;
 		case OP_CALL:
-			argc = 3;
+			argc = 2;
 			was_switch = true;
 			switch (num)
 			{
@@ -106,9 +106,6 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 				case 2:
 					sprintf(buffer, "designation=");
-					break;
-				case 3:
-					sprintf(buffer, "func_id=");
 					break;
 			}
 			break;
@@ -310,7 +307,6 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			}
 			break;
 		case OP_IF:
-			argc = 1;
 			sprintf(buffer, "TIf");
 			break;
 		case OP_WHILE:
@@ -320,7 +316,6 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			sprintf(buffer, "TDo");
 			break;
 		case OP_FOR:
-			argc = 4;
 			sprintf(buffer, "TFor");
 			break;
 		case OP_SWITCH:

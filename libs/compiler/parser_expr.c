@@ -598,13 +598,13 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 	node call_node = create_node(prs, OP_CALL);
 	node_add_arg(&call_node, return_type);					// Тип возвращамого значения
 	node_add_arg(&call_node, RVALUE);						// Категория значения вызова
-	node_add_arg(&call_node, node_get_arg(&operand.nd, 3));	// Индекс функции в таблице идентификаторов
+	node_set_child(&call_node, &operand.nd);				// Операнд вызова
 
 	const size_t expected_args = (size_t)type_get(prs->sx, (size_t)operand_type + 2);
 	size_t ref_arg_type = (size_t)operand_type + 3;
 	size_t actual_args = 0;
 
-	if (!token_try_consume(prs, TK_R_PAREN))
+	if (prs->token != TK_R_PAREN)
 	{
 		do
 		{
@@ -627,12 +627,12 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 			actual_args++;
 			ref_arg_type++;
 		} while (token_try_consume(prs, TK_COMMA) && expected_args != actual_args);
-	}
 
-	if (prs->token != TK_R_PAREN)
-	{
-		parser_error(prs, expected_r_paren, l_paren_location);
-		return expr_broken();
+		if (prs->token != TK_R_PAREN)
+		{
+			parser_error(prs, expected_r_paren, l_paren_location);
+			return expr_broken();
+		}
 	}
 
 	const location_t r_paren_location = token_consume(prs);

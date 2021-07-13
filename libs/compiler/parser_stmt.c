@@ -638,7 +638,9 @@ static void parse_return_statement(parser *const prs, node *const parent)
 	{
 		parser_error(prs, notvoidret_in_void_func);
 	}
-	else if (return_type != expr_type && !(type_is_floating(return_type) && type_is_integer(expr_type)))
+	else if (return_type != expr_type
+			 && !(type_is_floating(return_type) && type_is_integer(expr_type))
+			 && return_type != TYPE_VOID_POINTER) // TODO: тут что-то не то
 	{
 		parser_error(prs, bad_type_in_ret);
 	}
