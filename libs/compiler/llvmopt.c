@@ -48,6 +48,9 @@ typedef struct information
 	item_t string_num;								/**< Номер строки */
 	item_t was_printf;								/**< Флаг наличия printf в исходном коде */
 
+	node_info stack[MAX_STACK_SIZE];				/**< Стек для преобразования выражений */
+	size_t stack_size;								/**< Размер стека */
+
 	stack nodes;									/**< Стек нод для преобразования выражений */
 	stack depths;									/**< Стек глубин нод для преобразования выражений */
 
@@ -62,38 +65,50 @@ static inline int stack_push_info(information *const info, node_info *const nd)
 	int has_error = stack_push(&info->nodes, node_save(nd->ref_node));
 	has_error |= stack_push(&info->depths, nd->depth);
 
-	return has_error;
+	// if (info->stack_size == MAX_STACK_SIZE)
+	// {
+	// 	return -1;
+	// }
+	// info->stack[info->stack_size++] = *nd;
+
+	return 0;
+	// return has_error;
 }
 
 static inline node_info stack_pop_info(information *const info)
 {
-	node operand_node = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
-	size_t operand_depth = (size_t)stack_pop(&info->depths);
-	node_info operand = {&operand_node, operand_depth};
+	// node operand_node = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
+	// size_t operand_depth = (size_t)stack_pop(&info->depths);
+	// node_info operand = {&operand_node, operand_depth};
 
-	return operand;
+	return info->stack[--info->stack_size];
+
+	// return operand;
 }
 
 static inline size_t stack_size_info(information *const info)
 {
-	return stack_size(&info->nodes);
+	return info->stack_size;
+	// return stack_size(&info->nodes);
 }
 
 static inline void stack_resize_info(information *const info, const size_t size)
 {
-	if (size == 0)
-	{
-		stack_reset(&info->nodes);
-		stack_reset(&info->depths);
-	}
-	else
-	{
-		while (stack_size_info(info) != size)
-		{
-			stack_pop(&info->nodes);
-			stack_pop(&info->depths);
-		}
-	}
+	// if (size == 0)
+	// {
+	// 	stack_reset(&info->nodes);
+	// 	stack_reset(&info->depths);
+	// }
+	// else
+	// {
+	// 	while (stack_size_info(info) != size)
+	// 	{
+	// 		stack_pop(&info->nodes);
+	// 		stack_pop(&info->depths);
+	// 	}
+	// }
+
+	info->stack_size = size;
 }
 
 
@@ -506,6 +521,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	info.slice_depth = 0;
 	info.slice_stack_size = 0;
 
+	info.stack_size = 0;
 	info.nodes = stack_create(MAX_STACK_SIZE);
 	info.depths = stack_create(MAX_STACK_SIZE);
 
