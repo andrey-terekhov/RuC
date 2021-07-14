@@ -2030,13 +2030,10 @@ static void structs_declaration(information *const info)
 
 int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
-	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->modes), &(sx->tree));
 	if (optimize_for_llvm(ws, io, sx))
 	{
-		printf("here4\n");
 		return -1;
 	}
-	tables_and_tree("tree1.txt", &(sx->identifiers), &(sx->modes), &(sx->tree));
 
 	information info;
 	info.io = io;

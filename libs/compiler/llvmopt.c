@@ -82,7 +82,6 @@ static inline node_info stack_pop_info(information *const info, node *const memo
 
 	if (index == ITEM_MAX || operand_depth == ITEM_MAX)
 	{
-		printf("here\n");
 		node_info operand = {NULL, (size_t)-1};
 		return operand;
 	}
@@ -542,7 +541,6 @@ static int node_recursive(information *const info, node *const nd)
 
 		if (has_error || node_recursive(info, &child))
 		{
-			printf("here2\n");
 			has_error |= -1;
 			return has_error;
 		}
@@ -573,7 +571,6 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 		{
 			stack_clear(&info.nodes);
 			stack_clear(&info.depths);
-			printf("here3\n");
 
 			return -1;
 		}
