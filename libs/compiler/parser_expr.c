@@ -790,7 +790,7 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 
 
 /**
- *	Parse postfix expression suffix
+ *	Parse postfix expression
  *
  *	postfix-expression:
  *		primary-expression
@@ -802,12 +802,13 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
  *		postfix-expression '--'
  *
  *	@param	prs			Parser
- *	@param	operand		Operand of postfix expression
  *
  *	@return	Postfix expression
  */
-static expression parse_postfix_expression_suffix(parser *const prs, expression operand)
+static expression parse_postfix_expression(parser *const prs)
 {
+	expression operand = parse_primary_expression(prs);
+	
 	while (true)
 	{
 		switch (prs->token)
@@ -917,10 +918,7 @@ static expression parse_unary_expression(parser *const prs)
 		}
 
 		default:
-		{
-			const expression operand = parse_primary_expression(prs);
-			return parse_postfix_expression_suffix(prs, operand);
-		}
+			return parse_postfix_expression(prs);
 	}
 }
 
