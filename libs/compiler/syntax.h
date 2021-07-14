@@ -62,7 +62,6 @@ enum TYPE
 /** Global vars definition */
 typedef struct syntax
 {
-	node nd;
 	vector predef;				/**< Predefined functions table */
 	vector functions;			/**< Functions table */
 
