@@ -820,7 +820,7 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
 				const location_t l_loc = token_consume(prs);
 				const expression index = parse_expression(prs);
 
-				if (prs->token == TK_R_BRACE)
+				if (prs->token == TK_R_SQUARE)
 				{
 					const location_t r_loc = prs->location;
 					operand = subscript_expression(prs, operand, index, l_loc, r_loc);
