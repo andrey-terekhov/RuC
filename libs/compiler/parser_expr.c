@@ -822,18 +822,15 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
 
 				if (prs->token == TK_R_SQUARE)
 				{
-					const location_t r_loc = prs->location;
+					const location_t r_loc = token_consume(prs);
 					operand = subscript_expression(prs, operand, index, l_loc, r_loc);
+					break;
 				}
 
-				if (!token_try_consume(prs, TK_R_SQUARE))
-				{
-					operand = invalid_expression();
-					parser_error(prs, expected_r_square, l_loc);
-					token_skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
-					token_try_consume(prs, TK_R_SQUARE);
-				}
-
+				parser_error(prs, expected_r_square, l_loc);
+				token_skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
+				token_try_consume(prs, TK_R_SQUARE);
+				operand = invalid_expression();
 				break;
 			}
 
@@ -937,8 +934,8 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 	precedence_t next_token_prec = get_operator_precedence(prs->token);
 	while (next_token_prec >= min_prec)
 	{
-		const token_t operator_token = prs->token;
-		location_t operator_location = token_consume(prs);
+		const token_t op_token = prs->token;
+		location_t op_loc = token_consume(prs);
 
 		bool is_binary = true;
 		expression middle = invalid_expression();
@@ -949,10 +946,10 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 
 			if (prs->token != TK_COLON)
 			{
-				parser_error(prs, expected_colon_in_conditional, operator_location);
+				parser_error(prs, expected_colon_in_conditional, op_loc);
 			}
 
-			operator_location = token_consume(prs);
+			op_loc = token_consume(prs);
 		}
 
 		expression RHS = (prs->token == TK_L_BRACE)
@@ -971,12 +968,12 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 
 		if (is_binary)
 		{
-			const binary_t operator = token_to_binary(operator_token);
-			LHS = binary_expression(prs, LHS, RHS, operator, operator_location);
+			const binary_t op_kind = token_to_binary(op_token);
+			LHS = binary_expression(prs, LHS, RHS, op_kind, op_loc);
 		}
 		else
 		{
-			LHS = ternary_expression(prs, LHS, middle, RHS, operator_location);
+			LHS = ternary_expression(prs, LHS, middle, RHS, op_loc);
 		}
 	}
 
