@@ -2051,8 +2051,8 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 
 	structs_declaration(&info);
 
-	// const int ret = codegen(&info);
+	const int ret = codegen(&info);
 
 	hash_clear(&info.arrays);
-	return 0;
+	return ret;
 }

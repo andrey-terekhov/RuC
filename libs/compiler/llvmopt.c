@@ -82,6 +82,7 @@ static inline node_info stack_pop_info(information *const info, node *const memo
 
 	if (index == ITEM_MAX || operand_depth == ITEM_MAX)
 	{
+		printf("here\n");
 		node_info operand = {NULL, (size_t)-1};
 		return operand;
 	}
@@ -420,6 +421,11 @@ static int node_recursive(information *const info, node *const nd)
 
 					node slice_info_memory;
 					node_info slice_info = stack_pop_info(info, &slice_info_memory);
+					has_error |= operand.ref_node == NULL ? -1 : 0;
+					if (has_error)
+					{
+						return has_error;
+					}
 
 					slice_info.depth = info->slice_depth;
 					stack_push_info(info, &slice_info);
