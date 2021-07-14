@@ -836,7 +836,7 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 	while (next_token_prec >= min_prec)
 	{
 		const token_t operator_token = prs->token;
-		const location_t operator_location = token_consume(prs);
+		location_t operator_location = token_consume(prs);
 
 		bool is_binary = true;
 		expression middle = expr_broken();
@@ -849,6 +849,8 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 			{
 				parser_error(prs, expected_colon_in_conditional, operator_location);
 			}
+
+			operator_location = token_consume(prs);
 		}
 
 		expression RHS = parse_unary_expression(prs);
