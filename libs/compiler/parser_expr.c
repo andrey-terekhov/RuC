@@ -812,9 +812,6 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
 	{
 		switch (prs->token)
 		{
-			default:
-				return operand;
-
 			case TK_L_SQUARE:
 			{
 				const location_t l_loc = token_consume(prs);
@@ -824,13 +821,15 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
 				{
 					const location_t r_loc = token_consume(prs);
 					operand = subscript_expression(prs, operand, index, l_loc, r_loc);
-					break;
+				}
+				else
+				{
+					parser_error(prs, expected_r_square, l_loc);
+					token_skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
+					token_try_consume(prs, TK_R_SQUARE);
+					operand = invalid_expression();
 				}
 
-				parser_error(prs, expected_r_square, l_loc);
-				token_skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
-				token_try_consume(prs, TK_R_SQUARE);
-				operand = invalid_expression();
 				break;
 			}
 
@@ -850,11 +849,13 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
 					const location_t id_loc = token_consume(prs);
 
 					operand = member_expression(prs, operand, is_arrow, name, op_loc, id_loc);
-					break;
+				}
+				else
+				{
+					parser_error(prs, expected_identifier);
+					operand = invalid_expression();
 				}
 
-				parser_error(prs, expected_identifier);
-				operand = invalid_expression();
 				break;
 			}
 
@@ -871,6 +872,9 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
 				operand = unary_expression(prs, operand, UN_POSTDEC, op_loc);
 				break;
 			}
+
+			default:
+				return operand;
 		}
 	}
 }
@@ -895,12 +899,6 @@ static expression parse_unary_expression(parser *const prs)
 {
 	switch (prs->token)
 	{
-		default:
-		{
-			const expression operand = parse_primary_expression(prs);
-			return parse_postfix_expression_suffix(prs, operand);
-		}
-
 		case TK_PLUS_PLUS:
 		case TK_MINUS_MINUS:
 		case TK_AMP:
@@ -916,6 +914,12 @@ static expression parse_unary_expression(parser *const prs)
 			const expression operand = parse_unary_expression(prs);
 
 			return unary_expression(prs, operand, operator, op_loc);
+		}
+
+		default:
+		{
+			const expression operand = parse_primary_expression(prs);
+			return parse_postfix_expression_suffix(prs, operand);
 		}
 	}
 }
