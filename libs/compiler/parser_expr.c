@@ -811,6 +811,7 @@ static expression parse_unary_expression(parser *const prs)
 		case TK_MINUS:
 		case TK_TILDE:
 		case TK_EXCLAIM:
+		case TK_ABS:
 		{
 			const unary_t operator = token_to_unary(prs->token);
 			const location_t operator_location = token_consume(prs);
