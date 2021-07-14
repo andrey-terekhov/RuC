@@ -105,17 +105,19 @@ static precedence_t get_operator_precedence(const token_t token)
 	}
 }
 
+
 static node create_node(parser *const prs, operation_t type)
 {
 	return node_add_child(&prs->nd, type);
 }
 
-static void node_set_child(node *const parent, node *const child)
+static void node_set_child(const node *const parent, const node *const child)
 {
 	node temp = node_add_child(parent, OP_NOP);
 	node_swap(child, &temp);
 	node_remove(&temp);
 }
+
 
 /** Return valid expression from AST node */
 static expression expr(const node expr_node, const location_t location)
@@ -124,26 +126,238 @@ static expression expr(const node expr_node, const location_t location)
 }
 
 /** Return invalid expression */
-static expression expr_broken(void)
+static expression invalid_expression()
 {
 	return (expression){ .is_valid = false };
 }
 
 /**
- *	Make unary expression
+ *	Build an identifier expression
  *
- *	@param	prs			Parser
- *	@param	operand		Operand of unary operator
- *	@param	op_kind		Operator kind
- *	@param	loc			Operator location
+ *	@param	prs				Parser
+ *	@param	name			Identifier name
+ *	@param	loc				Source location
+ *
+ *	@return	Identifier expression
+ */
+static expression identifier_expression(parser *const prs, const size_t name, const location_t loc)
+{
+	const item_t identifier = repr_get_reference(prs->sx, name);
+
+	if (identifier == ITEM_MAX)
+	{
+		semantics_error(prs, loc, undeclared_var_use, repr_get_name(prs->sx, name));
+		return invalid_expression();
+	}
+
+	const item_t type = ident_get_type(prs->sx, (size_t)identifier);
+	const category_t category = type_is_function(prs->sx, type) ? RVALUE : LVALUE;
+
+	node identifier_node = create_node(prs, OP_IDENTIFIER);
+	node_add_arg(&identifier_node, type);					// Тип значения идентификатора
+	node_add_arg(&identifier_node, category);				// Категория значения идентификатора
+	node_add_arg(&identifier_node, identifier);				// Индекс в таблице идентификаторов
+
+	return expr(identifier_node, loc);
+}
+
+/**
+ *	Build an integer literal expression
+ *
+ *	@param	prs				Parser
+ *	@param	value			Literal value
+ *	@param	loc				Source location
+ *
+ *	@return	Integer literal expression
+ */
+static expression integer_literal_expression(parser *const prs, const int value, const location_t loc)
+{
+	node constant_node = create_node(prs, OP_CONSTANT);
+	node_add_arg(&constant_node, TYPE_INTEGER);				// Тип значения константы
+	node_add_arg(&constant_node, RVALUE);					// Категория значения константы
+	node_add_arg(&constant_node, value);					// Значение константы
+
+	return expr(constant_node, loc);
+}
+
+/**
+ *	Build a floating literal expression
+ *
+ *	@param	prs				Parser
+ *	@param	value			Literal value
+ *	@param	loc				Source location
+ *
+ *	@return	Floating literal expression
+ */
+static expression floating_literal_expression(parser *const prs, const double value, const location_t loc)
+{
+	item_t temp;
+	memcpy(&temp, &value, sizeof(double));
+
+	node constant_node = create_node(prs, OP_CONSTANT);
+	node_add_arg(&constant_node, TYPE_FLOATING);			// Тип значения константы
+	node_add_arg(&constant_node, RVALUE);					// Категория значения константы
+	node_add_arg(&constant_node, temp);						// Значение константы
+
+	return expr(constant_node, loc);
+}
+
+/**
+ *	Build a string literal expression
+ *
+ *	@param	prs				Parser
+ *	@param	value			Literal value
+ *	@param	length			Literal length
+ *	@param	loc				Source location
+ *
+ *	@return	String literal expression
+ */
+static expression string_literal_expression(parser *const prs, const char32_t *value
+											, const size_t length, const location_t loc)
+{
+	const item_t type = type_array(prs->sx, TYPE_INTEGER);
+
+	node string_node = create_node(prs, OP_STRING);
+	node_add_arg(&string_node, type);						// Тип строки
+	node_add_arg(&string_node, LVALUE);						// Категория значения строки
+	for (size_t i = 0; i < length; i++)
+	{
+		node_add_arg(&string_node, value[i]);				// i-ый символ строки
+	}
+
+	return expr(string_node, loc);
+}
+
+/**
+ *	Build a subscript expression
+ *
+ *	@param	prs				Parser
+ *	@param	base			First operand of subscripting expression
+ *	@param	index			Second operand of subscripting expression
+ *	@param	l_loc			Left square bracket location
+ *	@param	r_loc			Right square bracket location
+ *
+ *	@return	Subscript expression
+ */
+static expression subscript_expression(parser *const prs, const expression base, const expression index
+									   , const location_t l_loc, const location_t r_loc)
+{
+	if (!base.is_valid || !index.is_valid)
+	{
+		return invalid_expression();
+	}
+
+	const item_t operand_type = node_get_arg(&base.nd, 0);
+	if (!type_is_array(prs->sx, operand_type))
+	{
+		semantics_error(prs, l_loc, typecheck_subscript_value);
+		return invalid_expression();
+	}
+
+	if (!type_is_integer(node_get_arg(&index.nd, 0)))
+	{
+		semantics_error(prs, index.location, typecheck_subscript_not_integer);
+		return invalid_expression();
+	}
+
+	const item_t element_type = type_get(prs->sx, (size_t)operand_type + 1);
+
+	node slice_node = create_node(prs, OP_SLICE);
+	node_add_arg(&slice_node, element_type);				// Тип элемента массива
+	node_add_arg(&slice_node, LVALUE);						// Категория значения вырезки
+	node_set_child(&slice_node, &base.nd);					// Выражение-операнд
+	node_set_child(&slice_node, &index.nd);					// Выражение-индекс
+
+	return expr(slice_node, (location_t){ base.location.begin, r_loc.end });
+}
+
+/**
+ *	Build a member expression
+ *
+ *	@param	prs				Parser
+ *	@param	base			First operand of member expression
+ *	@param	is_arrow		Set if operator is arrow
+ *	@param	op_loc			Operator source location
+ *	@param	name			Second operand of member expression
+ *	@param	id_loc			Identifier source location
+ *
+ *	@return	Member expression
+ */
+static expression member_expression(parser *const prs, const expression base, const bool is_arrow, const size_t name
+									, const location_t op_loc, const location_t id_loc)
+{
+	if (!base.is_valid)
+	{
+		return invalid_expression();
+	}
+
+	const item_t operand_type = node_get_arg(&base.nd, 0);
+	item_t struct_type;
+	category_t category;
+
+	if (!is_arrow)
+	{
+		if (!type_is_structure(prs->sx, operand_type))
+		{
+			semantics_error(prs, op_loc, typecheck_member_reference_struct);
+			return invalid_expression();
+		}
+
+		struct_type = operand_type;
+		category = (category_t)node_get_arg(&base.nd, 1);
+	}
+	else
+	{
+		if (!type_is_struct_pointer(prs->sx, operand_type))
+		{
+			semantics_error(prs, op_loc, typecheck_member_reference_arrow);
+			return invalid_expression();
+		}
+
+		struct_type = type_get(prs->sx, (size_t)operand_type + 1);
+		category = LVALUE;
+	}
+
+	item_t member_displ = 0;
+	const size_t record_length = (size_t)type_get(prs->sx, (size_t)struct_type + 2);
+	for (size_t i = 0; i < record_length; i += 2)
+	{
+		const item_t member_type = type_get(prs->sx, (size_t)struct_type + 3 + i);
+		if (name == (size_t)type_get(prs->sx, (size_t)struct_type + 4 + i))
+		{
+			node select_node = create_node(prs, OP_SELECT);
+			node_add_arg(&select_node, member_type);	// Тип значения поля
+			node_add_arg(&select_node, category);		// Категория значения поля
+			node_add_arg(&select_node, member_displ);	// Смещение поля структуры
+			node_set_child(&select_node, &base.nd);		// Выражение-операнд
+
+			return expr(select_node, (location_t){ base.location.begin, id_loc.end });
+		}
+
+		member_displ += (item_t)type_size(prs->sx, member_type);
+	}
+
+	semantics_error(prs, id_loc, no_member, repr_get_name(prs->sx, name));
+	return invalid_expression();
+}
+
+
+/**
+ *	Build an unary expression
+ *
+ *	@param	prs				Parser
+ *	@param	operand			Operand of unary operator
+ *	@param	op_kind			Operator kind
+ *	@param	op_loc			Operator location
  *
  *	@return	Unary expression
  */
-static expression make_unary_expression(parser *const prs, expression operand, unary_t op_kind, location_t loc)
+static expression unary_expression(parser *const prs, const expression operand
+								   , const unary_t op_kind, const location_t op_loc)
 {
 	if (!operand.is_valid)
 	{
-	   return expr_broken();
+		return invalid_expression();
 	}
 
 	const item_t operand_type = node_get_arg(&operand.nd, 0);
@@ -163,14 +377,14 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 		{
 			if (!type_is_arithmetic(operand_type))
 			{
-				semantics_error(prs, loc, typecheck_illegal_increment, op_kind);
-				return expr_broken();
+				semantics_error(prs, op_loc, typecheck_illegal_increment, op_kind);
+				return invalid_expression();
 			}
 
 			if (node_get_arg(&operand.nd, 1) != LVALUE)
 			{
-				semantics_error(prs, loc, typecheck_expression_not_lvalue);
-				return expr_broken();
+				semantics_error(prs, op_loc, typecheck_expression_not_lvalue);
+				return invalid_expression();
 			}
 
 			result_type = operand_type;
@@ -181,8 +395,8 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 		{
 			if (node_get_arg(&operand.nd, 1) != LVALUE)
 			{
-				semantics_error(prs, loc, typecheck_invalid_lvalue_addrof);
-				return expr_broken();
+				semantics_error(prs, op_loc, typecheck_invalid_lvalue_addrof);
+				return invalid_expression();
 			}
 
 			result_type = (item_t)type_add(prs->sx, (item_t[]){ TYPE_POINTER, operand_type }, 2);
@@ -193,8 +407,8 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 		{
 			if (!type_is_pointer(prs->sx, operand_type))
 			{
-				semantics_error(prs, loc, typecheck_indirection_requires_pointer);
-				return expr_broken();
+				semantics_error(prs, op_loc, typecheck_indirection_requires_pointer);
+				return invalid_expression();
 			}
 
 			result_type = type_get(prs->sx, (size_t)operand_type + 1);
@@ -208,8 +422,8 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 		{
 			if (!type_is_arithmetic(operand_type))
 			{
-				semantics_error(prs, loc, typecheck_unary_expr, operand_type);
-				return expr_broken();
+				semantics_error(prs, op_loc, typecheck_unary_expr, operand_type);
+				return invalid_expression();
 			}
 
 			result_type = operand_type;
@@ -220,8 +434,8 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 		{
 			if (!type_is_integer(operand_type))
 			{
-				semantics_error(prs, loc, typecheck_unary_expr, operand_type);
-				return expr_broken();
+				semantics_error(prs, op_loc, typecheck_unary_expr, operand_type);
+				return invalid_expression();
 			}
 
 			result_type = TYPE_INTEGER;
@@ -232,8 +446,8 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 		{
 			if (!type_is_scalar(prs->sx, operand_type))
 			{
-				semantics_error(prs, loc, typecheck_unary_expr, operand_type);
-				return expr_broken();
+				semantics_error(prs, op_loc, typecheck_unary_expr, operand_type);
+				return invalid_expression();
 			}
 
 			result_type = TYPE_INTEGER;
@@ -248,56 +462,56 @@ static expression make_unary_expression(parser *const prs, expression operand, u
 	node_set_child(&unary_node, &operand.nd);	// Выражение-операнд
 
 	location_t location = is_prefix
-						? (location_t){ loc.begin, operand.location.end }
-						: (location_t){ operand.location.begin, loc.end };
+						? (location_t){ op_loc.begin, operand.location.end }
+						: (location_t){ operand.location.begin, op_loc.end };
 
 	return expr(unary_node, location);
 }
 
 /**
- *	Make binary expression
+ *	Build a binary expression
  *
- *	@param	prs					Parser
- *	@param	left				Left operand
- *	@param	right				Right operand
- *	@param	operator_kind		Operator kind
- *	@param	operator_location	Operator location
+ *	@param	prs				Parser
+ *	@param	left			Left operand
+ *	@param	right			Right operand
+ *	@param	op_kind			Operator kind
+ *	@param	op_loc			Operator location
  *
  *	@return	Binary expression
  */
-static expression make_binary_expression(parser *const prs, expression left, expression right
-	, const binary_t operator_kind, const location_t operator_location)
+static expression binary_expression(parser *const prs, const expression left, const expression right
+									, const binary_t op_kind, const location_t op_loc)
 {
 	if (!left.is_valid || !right.is_valid)
 	{
-		return expr_broken();
+		return invalid_expression();
 	}
 
 	const item_t left_type = node_get_arg(&left.nd, 0);
 	const item_t right_type = node_get_arg(&right.nd, 0);
 
-	if (operation_is_assignment(operator_kind)
+	if (operation_is_assignment(op_kind)
 		&& ((node_get_arg(&left.nd, 1) != LVALUE)
 			|| (type_is_floating(right_type) && type_is_integer(left_type))))
 	{
-		semantics_error(prs, operator_location, unassignable);
-		return expr_broken();
+		semantics_error(prs, op_loc, unassignable);
+		return invalid_expression();
 	}
 
 	item_t result_type;
-	if (operator_kind == BIN_COMMA)
+	if (op_kind == BIN_COMMA)
 	{
 		result_type = right_type;
 	}
-	else if (operator_kind == BIN_ASSIGN)
+	else if (op_kind == BIN_ASSIGN)
 	{
 		// Особый случай, так как тут могут быть операции с агрегатными типами
 
 		// Несовпадение типов может быть только в случае, когда слева floating, а справа integer
 		if (left_type != right_type && !(type_is_floating(left_type) && type_is_integer(right_type)))
 		{
-			semantics_error(prs, operator_location, typecheck_convert_incompatible);
-			return expr_broken();
+			semantics_error(prs, op_loc, typecheck_convert_incompatible);
+			return invalid_expression();
 		}
 
 		result_type = left_type;
@@ -306,17 +520,17 @@ static expression make_binary_expression(parser *const prs, expression left, exp
 	{
 		if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
 		{
-			semantics_error(prs, operator_location, typecheck_binary_expr);
-			return expr_broken();
+			semantics_error(prs, op_loc, typecheck_binary_expr);
+			return invalid_expression();
 		}
 
-		if (operation_is_assignment(operator_kind) && (node_get_arg(&left.nd, 1) != LVALUE))
+		if (operation_is_assignment(op_kind) && (node_get_arg(&left.nd, 1) != LVALUE))
 		{
-			semantics_error(prs, operator_location, unassignable);
-			return expr_broken();
+			semantics_error(prs, op_loc, unassignable);
+			return invalid_expression();
 		}
 
-		switch (operator_kind)
+		switch (op_kind)
 		{
 			case BIN_REM:
 			case BIN_LOG_OR:
@@ -333,8 +547,8 @@ static expression make_binary_expression(parser *const prs, expression left, exp
 			{
 				if (!type_is_integer(left_type) || !type_is_integer(right_type))
 				{
-					semantics_error(prs, operator_location, int_op_for_float);
-					return expr_broken();
+					semantics_error(prs, op_loc, int_op_for_float);
+					return invalid_expression();
 				}
 
 				result_type = TYPE_INTEGER;
@@ -358,7 +572,7 @@ static expression make_binary_expression(parser *const prs, expression left, exp
 	node binary_node = create_node(prs, OP_BINARY);
 	node_add_arg(&binary_node, result_type);		// Тип значения
 	node_add_arg(&binary_node, RVALUE);				// Категория значения
-	node_add_arg(&binary_node, operator_kind);		// Вид оператора
+	node_add_arg(&binary_node, op_kind);		// Вид оператора
 	node_set_child(&binary_node, &left.nd);			// Второй операнд
 	node_set_child(&binary_node, &right.nd);		// Третий операнд
 
@@ -366,22 +580,22 @@ static expression make_binary_expression(parser *const prs, expression left, exp
 }
 
 /**
- *	Make ternary expression
+ *	Build a ternary expression
  *
- *	@param	prs					Parser
- *	@param	left				First operand
- *	@param	middle				Second operand
- *	@param	right				Third operand
- *	@param	colon_location		Operator location
+ *	@param	prs				Parser
+ *	@param	left			First operand
+ *	@param	middle			Second operand
+ *	@param	right			Third operand
+ *	@param	op_loc			Operator location
  *
  *	@return	Ternary expression
  */
-static expression make_ternary_expression(parser *const prs, expression left, expression middle, expression right
-	, location_t colon_location)
+static expression ternary_expression(parser *const prs, const expression left, const expression middle
+									 , const expression right, const location_t op_loc)
 {
 	if (!left.is_valid || !middle.is_valid || !right.is_valid)
 	{
-		return expr_broken();
+		return invalid_expression();
 	}
 
 	const item_t left_type = node_get_arg(&left.nd, 0);
@@ -391,7 +605,7 @@ static expression make_ternary_expression(parser *const prs, expression left, ex
 	if (!type_is_scalar(prs->sx, left_type))
 	{
 		semantics_error(prs, left.location, typecheck_statement_requires_scalar);
-		return expr_broken();
+		return invalid_expression();
 	}
 
 	item_t result_type = middle_type;
@@ -403,8 +617,8 @@ static expression make_ternary_expression(parser *const prs, expression left, ex
 	}
 	else if (middle_type != right_type)
 	{
-		semantics_error(prs, colon_location, typecheck_cond_incompatible_operands);
-		return expr_broken();
+		semantics_error(prs, op_loc, typecheck_cond_incompatible_operands);
+		return invalid_expression();
 	}
 
 	node ternary_node = create_node(prs, OP_TERNARY);
@@ -416,6 +630,7 @@ static expression make_ternary_expression(parser *const prs, expression left, ex
 
 	return expr(ternary_node, (location_t){ left.location.begin, right.location.end });
 }
+
 
 /**
  *	Parse primary expression
@@ -436,81 +651,47 @@ static expression parse_primary_expression(parser *const prs)
 	{
 		case TK_IDENTIFIER:
 		{
-			const size_t representation = prs->lxr->repr;
-			const item_t identifier = repr_get_reference(prs->sx, representation);
-			const location_t location = token_consume(prs);
+			const size_t name = prs->lxr->repr;
+			const location_t loc = token_consume(prs);
 
-			if (identifier == ITEM_MAX)
-			{
-				semantics_error(prs, location, undeclared_var_use, repr_get_name(prs->sx, representation));
-				return expr_broken();
-			}
-
-			const item_t type = ident_get_type(prs->sx, (size_t)identifier);
-			const category_t category = type_is_function(prs->sx, type) ? RVALUE : LVALUE;
-
-			node identifier_node = create_node(prs, OP_IDENTIFIER);
-			node_add_arg(&identifier_node, type);			// Тип значения идентификатора
-			node_add_arg(&identifier_node, category);		// Категория значения идентификатора
-			node_add_arg(&identifier_node, identifier);		// Индекс в таблице идентификаторов
-
-			return expr(identifier_node, location);
+			return identifier_expression(prs, name, loc);
 		}
 
 		case TK_CHAR_CONST:
 		case TK_INT_CONST:
 		{
-			const item_t value = prs->lxr->num;
-			const location_t location = token_consume(prs);
+			const int value = prs->lxr->num;
+			const location_t loc = token_consume(prs);
 
-			node constant_node = create_node(prs, OP_CONSTANT);
-			node_add_arg(&constant_node, TYPE_INTEGER);		// Тип значения константы
-			node_add_arg(&constant_node, RVALUE);			// Категория значения константы
-			node_add_arg(&constant_node, value);			// Значение константы
-
-			return expr(constant_node, location);
+			return integer_literal_expression(prs, value, loc);
 		}
 
 		case TK_FLOAT_CONST:
 		{
-			item_t value;
-			memcpy(&value, &prs->lxr->num_double, sizeof(double));
-			const location_t location = token_consume(prs);
+			const double value = prs->lxr->num_double;
+			const location_t loc = token_consume(prs);
 
-			node constant_node = create_node(prs, OP_CONSTANT);
-			node_add_arg(&constant_node, TYPE_FLOATING);	// Тип значения константы
-			node_add_arg(&constant_node, RVALUE);			// Категория значения константы
-			node_add_arg(&constant_node, value);			// Значение константы
-
-			return expr(constant_node, location);
+			return floating_literal_expression(prs, value, loc);
 		}
 
 		case TK_STRING:
 		{
-			const char32_t* string = prs->lxr->lexstr;
+			const char32_t* value = prs->lxr->lexstr;
 			const size_t length = (size_t)prs->lxr->num;
-			const item_t type = type_array(prs->sx, TYPE_INTEGER);
-			const location_t location = token_consume(prs);
+			const location_t loc = token_consume(prs);
 
-			node string_node = create_node(prs, OP_STRING);
-			node_add_arg(&string_node, type);				// Тип строки
-			node_add_arg(&string_node, LVALUE);				// Категория значения строки
-			for (size_t i = 0; i < length; i++)
-			{
-				node_add_arg(&string_node, string[i]);		// i-ый символ строки
-			}
-
-			return expr(string_node, location);
+			return string_literal_expression(prs, value, length, loc);
 		}
 
 		case TK_L_PAREN:
 		{
-			const location_t l_paren_location = token_consume(prs);
-			expression result = parse_expression(prs);
+			const location_t l_loc = token_consume(prs);
+			const expression result = parse_expression(prs);
+
 			if (!token_try_consume(prs, TK_R_PAREN))
 			{
-				parser_error(prs, expected_r_paren, l_paren_location);
-				return expr_broken();
+				parser_error(prs, expected_r_paren, l_loc);
+				return invalid_expression();
 			}
 
 			return result;
@@ -518,61 +699,8 @@ static expression parse_primary_expression(parser *const prs)
 
 		default:
 			parser_error(prs, expected_expression);
-			return expr_broken();
+			return invalid_expression();
 	}
-}
-
-/**
- *	Parse subscripting expression suffix
- *
- *	postfix-expression:
- *		postfix-expression '[' expression ']'
- *
- *	@param	prs			Parser
- *	@param	operand		Expression for subscripting
- *
- *	@return	Subscripting expression
- */
-static expression parse_subscripting_expression_suffix(parser *const prs, expression operand)
-{
-	const location_t l_square_location = token_consume(prs);
-	expression index = parse_expression(prs);
-
-	if (prs->token != TK_R_SQUARE)
-	{
-		parser_error(prs, expected_r_square, l_square_location);
-		return expr_broken();
-	}
-
-	const location_t r_square_location = token_consume(prs);
-
-	if (!operand.is_valid)
-	{
-		return expr_broken();
-	}
-
-	const item_t operand_type = node_get_arg(&operand.nd, 0);
-	if (!type_is_array(prs->sx, operand_type))
-	{
-		semantics_error(prs, l_square_location, typecheck_subscript_value);
-		return expr_broken();
-	}
-
-	if (!type_is_integer(node_get_arg(&index.nd, 0)))
-	{
-		semantics_error(prs, index.location, typecheck_subscript_not_integer);
-		return expr_broken();
-	}
-
-	const item_t element_type = type_get(prs->sx, (size_t)operand_type + 1);
-
-	node slice_node = create_node(prs, OP_SLICE);
-	node_add_arg(&slice_node, element_type);				// Тип элемента массива
-	node_add_arg(&slice_node, LVALUE);						// Категория значения вырезки
-	node_set_child(&slice_node, &operand.nd);				// Выражение-операнд
-	node_set_child(&slice_node, &index.nd);					// Выражение-индекс
-
-	return expr(slice_node, (location_t){ operand.location.begin, r_square_location.end });
 }
 
 /**
@@ -594,11 +722,17 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 {
 	const location_t l_paren_location = token_consume(prs);
 
+	if (!operand.is_valid)
+	{
+		token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+		return invalid_expression();
+	}
+
 	const item_t operand_type = node_get_arg(&operand.nd, 0);
 	if (!type_is_function(prs->sx, operand_type))
 	{
 		semantics_error(prs, l_paren_location, typecheck_call_not_function);
-		return expr_broken();
+		return invalid_expression();
 	}
 
 	const item_t return_type = type_get(prs->sx, (size_t)operand_type + 1);
@@ -619,7 +753,7 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 			expression argument = parse_initializer(prs, type_get(prs->sx, ref_arg_type));
 			if (!argument.is_valid)
 			{
-				return expr_broken();
+				return invalid_expression();
 			}
 
 			const item_t expected_type = type_get(prs->sx, ref_arg_type);
@@ -639,7 +773,7 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 		if (prs->token != TK_R_PAREN)
 		{
 			parser_error(prs, expected_r_paren, l_paren_location);
-			return expr_broken();
+			return invalid_expression();
 		}
 	}
 
@@ -648,92 +782,12 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 	if (expected_args != actual_args)
 	{
 		semantics_error(prs, r_paren_location, wrong_number_of_params, expected_args, actual_args);
-		return expr_broken();
+		return invalid_expression();
 	}
 
 	return expr(call_node, (location_t){ operand.location.begin, r_paren_location.end });
 }
 
-/**
- *	Parse member expression suffix
- *
- *	postfix-expression:
- *		postfix-expression '.' identifier
- *		postfix-expression '->' identifier
- *
- *	@param	prs			Parser
- *	@param	operand		Expression for accessing a member
- *
- *	@return	Member expression
- */
-static expression parse_member_expression_suffix(parser *const prs, expression operand)
-{
-	const token_t operator_token = prs->token;
-	const location_t operator_location = token_consume(prs);
-
-	if (prs->token != TK_IDENTIFIER)
-	{
-		parser_error(prs, expected_identifier);
-		return expr_broken();
-	}
-
-	const size_t member_name = prs->lxr->repr;
-	const location_t member_location = token_consume(prs);
-
-	if (!operand.is_valid)
-	{
-		return expr_broken();
-	}
-
-	const item_t operand_type = node_get_arg(&operand.nd, 0);
-	item_t struct_type;
-	category_t category;
-
-	if (operator_token == TK_PERIOD)
-	{
-		if (!type_is_structure(prs->sx, operand_type))
-		{
-			semantics_error(prs, operator_location, typecheck_member_reference_struct);
-			return expr_broken();
-		}
-
-		struct_type = operand_type;
-		category = (category_t)node_get_arg(&operand.nd, 1);
-	}
-	else // if (operator_token == TK_ARROW)
-	{
-		if (!type_is_struct_pointer(prs->sx, operand_type))
-		{
-			semantics_error(prs, operator_location, typecheck_member_reference_arrow);
-			return expr_broken();
-		}
-
-		struct_type = type_get(prs->sx, (size_t)operand_type + 1);
-		category = LVALUE;
-	}
-
-	item_t member_displ = 0;
-	const size_t record_length = (size_t)type_get(prs->sx, (size_t)struct_type + 2);
-	for (size_t i = 0; i < record_length; i += 2)
-	{
-		const item_t member_type = type_get(prs->sx, (size_t)struct_type + 3 + i);
-		if (member_name == (size_t)type_get(prs->sx, (size_t)struct_type + 4 + i))
-		{
-			node select_node = create_node(prs, OP_SELECT);
-			node_add_arg(&select_node, member_type);	// Тип значения поля
-			node_add_arg(&select_node, category);		// Категория значения поля
-			node_add_arg(&select_node, member_displ);	// Смещение поля структуры
-			node_set_child(&select_node, &operand.nd);	// Выражение-операнд
-
-			return expr(select_node, (location_t){ operand.location.begin, member_location.end });
-		}
-
-		member_displ += (item_t)type_size(prs->sx, member_type);
-	}
-
-	semantics_error(prs, member_location, no_member, repr_get_name(prs->sx, member_name));
-	return expr_broken();
-}
 
 /**
  *	Parse postfix expression suffix
@@ -741,7 +795,7 @@ static expression parse_member_expression_suffix(parser *const prs, expression o
  *	postfix-expression:
  *		primary-expression
  *		postfix-expression '[' expression ']'
- *		postfix-expression '(' argument-expression-list[opt] ')'
+ *		postfix-expression '(' expression-list[opt] ')'
  *		postfix-expression '.' identifier
  *		postfix-expression '->' identifier
  *		postfix-expression '++'
@@ -762,8 +816,23 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
 				return operand;
 
 			case TK_L_SQUARE:
-				operand = parse_subscripting_expression_suffix(prs, operand);
+			{
+				const location_t l_loc = token_consume(prs);
+				const expression index = parse_expression(prs);
+
+				if (prs->token == TK_R_SQUARE)
+				{
+					const location_t r_loc = token_consume(prs);
+					operand = subscript_expression(prs, operand, index, l_loc, r_loc);
+					break;
+				}
+
+				parser_error(prs, expected_r_square, l_loc);
+				token_skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
+				token_try_consume(prs, TK_R_SQUARE);
+				operand = invalid_expression();
 				break;
+			}
 
 			case TK_L_PAREN:
 				operand = parse_call_expression_suffix(prs, operand);
@@ -771,16 +840,37 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
 
 			case TK_PERIOD:
 			case TK_ARROW:
-				operand = parse_member_expression_suffix(prs, operand);
+			{
+				const bool is_arrow = prs->token == TK_ARROW;
+				const location_t op_loc = token_consume(prs);
+
+				if (prs->token == TK_IDENTIFIER)
+				{
+					const size_t name = prs->lxr->repr;
+					const location_t id_loc = token_consume(prs);
+
+					operand = member_expression(prs, operand, is_arrow, name, op_loc, id_loc);
+					break;
+				}
+
+				parser_error(prs, expected_identifier);
+				operand = invalid_expression();
 				break;
+			}
 
 			case TK_PLUS_PLUS:
-				operand = make_unary_expression(prs, operand, UN_POSTINC, token_consume(prs));
+			{
+				const location_t op_loc = token_consume(prs);
+				operand = unary_expression(prs, operand, UN_POSTINC, op_loc);
 				break;
+			}
 
 			case TK_MINUS_MINUS:
-				operand = make_unary_expression(prs, operand, UN_POSTDEC, token_consume(prs));
+			{
+				const location_t op_loc = token_consume(prs);
+				operand = unary_expression(prs, operand, UN_POSTDEC, op_loc);
 				break;
+			}
 		}
 	}
 }
@@ -822,10 +912,10 @@ static expression parse_unary_expression(parser *const prs)
 		case TK_ABS:
 		{
 			const unary_t operator = token_to_unary(prs->token);
-			const location_t operator_location = token_consume(prs);
+			const location_t op_loc = token_consume(prs);
 			const expression operand = parse_unary_expression(prs);
 
-			return make_unary_expression(prs, operand, operator, operator_location);
+			return unary_expression(prs, operand, operator, op_loc);
 		}
 	}
 }
@@ -844,11 +934,11 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 	precedence_t next_token_prec = get_operator_precedence(prs->token);
 	while (next_token_prec >= min_prec)
 	{
-		const token_t operator_token = prs->token;
-		location_t operator_location = token_consume(prs);
+		const token_t op_token = prs->token;
+		location_t op_loc = token_consume(prs);
 
 		bool is_binary = true;
-		expression middle = expr_broken();
+		expression middle = invalid_expression();
 		if (next_token_prec == PREC_CONDITIONAL)
 		{
 			is_binary = false;
@@ -856,10 +946,10 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 
 			if (prs->token != TK_COLON)
 			{
-				parser_error(prs, expected_colon_in_conditional, operator_location);
+				parser_error(prs, expected_colon_in_conditional, op_loc);
 			}
 
-			operator_location = token_consume(prs);
+			op_loc = token_consume(prs);
 		}
 
 		expression RHS = (prs->token == TK_L_BRACE)
@@ -878,12 +968,12 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 
 		if (is_binary)
 		{
-			const binary_t operator = token_to_binary(operator_token);
-			LHS = make_binary_expression(prs, LHS, RHS, operator, operator_location);
+			const binary_t op_kind = token_to_binary(op_token);
+			LHS = binary_expression(prs, LHS, RHS, op_kind, op_loc);
 		}
 		else
 		{
-			LHS = make_ternary_expression(prs, LHS, middle, RHS, operator_location);
+			LHS = ternary_expression(prs, LHS, middle, RHS, op_loc);
 		}
 	}
 
@@ -915,7 +1005,7 @@ static expression parse_struct_initializer(parser *const prs, const item_t type)
 		expression initializer = parse_initializer(prs, type_get(prs->sx, ref_next_field));
 		if (!initializer.is_valid)
 		{
-			return expr_broken();
+			return invalid_expression();
 		}
 
 		const item_t expected_type = type_get(prs->sx, ref_next_field);
@@ -935,7 +1025,7 @@ static expression parse_struct_initializer(parser *const prs, const item_t type)
 	if (prs->token != TK_R_BRACE)
 	{
 		parser_error(prs, expected_r_brace, l_brace_location);
-		return expr_broken();
+		return invalid_expression();
 	}
 
 	const location_t r_brace_location = token_consume(prs);
@@ -943,7 +1033,7 @@ static expression parse_struct_initializer(parser *const prs, const item_t type)
 	if (expected_fields != actual_fields)
 	{
 		//semantics_error(prs, r_paren_location, wrong_number_of_params, expected_args, actual_args);
-		return expr_broken();
+		return invalid_expression();
 	}
 
 	return expr(list_node, (location_t){ l_brace_location.begin, r_brace_location.end });
@@ -972,7 +1062,7 @@ static expression parse_array_initializer(parser *const prs, const item_t type)
 		expression initializer = parse_initializer(prs, type_get(prs->sx, (size_t)type + 1));
 		if (!initializer.is_valid)
 		{
-			return expr_broken();
+			return invalid_expression();
 		}
 
 		const item_t expected_type = type_get(prs->sx, (size_t)type + 1);
@@ -991,7 +1081,7 @@ static expression parse_array_initializer(parser *const prs, const item_t type)
 	if (prs->token != TK_R_BRACE)
 	{
 		parser_error(prs, expected_r_brace, l_brace_location);
-		return expr_broken();
+		return invalid_expression();
 	}
 
 	const location_t r_brace_location = token_consume(prs);
@@ -1012,7 +1102,7 @@ static expression parse_braced_initializer(parser *const prs, const item_t expec
 	else
 	{
 		parser_error(prs, wrong_init);
-		return expr_broken();
+		return invalid_expression();
 	}
 }
 
