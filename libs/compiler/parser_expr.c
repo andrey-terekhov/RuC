@@ -105,11 +105,6 @@ static precedence_t get_operator_precedence(const token_t token)
 	}
 }
 
-/** Return valid expression from AST node */
-static expression expr(const node expr_node, const location_t location)
-{
-	return (expression){ .is_valid = true, .location = location, .nd = expr_node };
-}
 
 static node create_node(parser *const prs, operation_t type)
 {
@@ -121,6 +116,13 @@ static void node_set_child(const node *const parent, const node *const child)
 	node temp = node_add_child(parent, OP_NOP);
 	node_swap(child, &temp);
 	node_remove(&temp);
+}
+
+
+/** Return valid expression from AST node */
+static expression expr(const node expr_node, const location_t location)
+{
+	return (expression){ .is_valid = true, .location = location, .nd = expr_node };
 }
 
 /** Return invalid expression */
@@ -650,45 +652,45 @@ static expression parse_primary_expression(parser *const prs)
 		case TK_IDENTIFIER:
 		{
 			const size_t name = prs->lxr->repr;
-			const location_t location = token_consume(prs);
+			const location_t loc = token_consume(prs);
 
-			return identifier_expression(prs, name, location);
+			return identifier_expression(prs, name, loc);
 		}
 
 		case TK_CHAR_CONST:
 		case TK_INT_CONST:
 		{
 			const int32_t value = prs->lxr->num;
-			const location_t location = token_consume(prs);
+			const location_t loc = token_consume(prs);
 
-			return integer_literal_expression(prs, value, location);
+			return integer_literal_expression(prs, value, loc);
 		}
 
 		case TK_FLOAT_CONST:
 		{
 			const double value = prs->lxr->num_double;
-			const location_t location = token_consume(prs);
+			const location_t loc = token_consume(prs);
 
-			return floating_literal_expression(prs, value, location);
+			return floating_literal_expression(prs, value, loc);
 		}
 
 		case TK_STRING:
 		{
 			const char32_t* value = prs->lxr->lexstr;
 			const size_t length = (size_t)prs->lxr->num;
-			const location_t location = token_consume(prs);
+			const location_t loc = token_consume(prs);
 
-			return string_literal_expression(prs, value, length, location);
+			return string_literal_expression(prs, value, length, loc);
 		}
 
 		case TK_L_PAREN:
 		{
-			const location_t l_paren_location = token_consume(prs);
+			const location_t l_loc = token_consume(prs);
 			const expression result = parse_expression(prs);
 
 			if (!token_try_consume(prs, TK_R_PAREN))
 			{
-				parser_error(prs, expected_r_paren, l_paren_location);
+				parser_error(prs, expected_r_paren, l_loc);
 				return invalid_expression();
 			}
 
