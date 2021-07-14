@@ -569,6 +569,9 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 		node child = node_get_child(&nd, i);
 		if (node_recursive(&info, &child))
 		{
+			stack_clear(&info.nodes);
+			stack_clear(&info.depths);
+			
 			return -1;
 		}
 	}
