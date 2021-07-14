@@ -510,7 +510,6 @@ static int node_recursive(information *const info, node *const nd)
 							node_info log_info = { &parent, 1 };
 							has_error |= transposition(&second, &log_info);
 							node_copy(second.ref_node, log_info.ref_node);
-							printf("here\n");
 						}
 
 						// перестановка с первым операндом
