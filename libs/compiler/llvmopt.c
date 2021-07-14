@@ -77,8 +77,8 @@ static inline int stack_push_info(information *const info, node_info *const nd)
 
 static inline node_info stack_pop_info(information *const info, node *const memory)
 {
-	const size_t index = (size_t)stack_pop(&info->nodes);
-	const size_t operand_depth = (size_t)stack_pop(&info->depths);
+	const item_t index = stack_pop(&info->nodes);
+	const item_t operand_depth = stack_pop(&info->depths);
 
 	if (index == ITEM_MAX || operand_depth == ITEM_MAX)
 	{
@@ -87,8 +87,8 @@ static inline node_info stack_pop_info(information *const info, node *const memo
 		return operand;
 	}
 
-	*(memory) = node_load(&info->sx->tree, index);
-	node_info operand = {memory, operand_depth};
+	*(memory) = node_load(&info->sx->tree, (size_t)index);
+	node_info operand = {memory, (size_t)operand_depth};
 	// node_copy(operand.ref_node, memory);
 
 	// return info->stack[--info->stack_size];
