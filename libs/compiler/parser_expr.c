@@ -340,6 +340,14 @@ static expression make_binary_expression(parser *const prs, expression left, exp
 				result_type = TYPE_INTEGER;
 				break;
 			}
+			case BIN_EQ:
+			case BIN_NE:
+			case BIN_LE:
+			case BIN_GE:
+			case BIN_LT:
+			case BIN_GT:
+				result_type = TYPE_INTEGER;
+				break;
 
 			default:
 				result_type = type_is_floating(left_type) ? TYPE_FLOATING : right_type;
