@@ -16,7 +16,6 @@
 
 #include "parser.h"
 #include <stdlib.h>
-#include <string.h>
 
 
 /** Binary/ternary operator precedence levels */
@@ -105,29 +104,6 @@ static precedence_t get_operator_precedence(const token_t token)
 	}
 }
 
-static node create_node(parser *const prs, operation_t type)
-{
-	return node_add_child(&prs->nd, type);
-}
-
-static void node_set_child(node *const parent, node *const child)
-{
-	node temp = node_add_child(parent, OP_NOP);
-	node_swap(child, &temp);
-	node_remove(&temp);
-}
-
-/** Return valid expression from AST node */
-static expression expr(const node expr_node, const location_t location)
-{
-	return (expression){ .is_valid = true, .location = location, .nd = expr_node };
-}
-
-/** Return invalid expression */
-static expression expr_broken(void)
-{
-	return (expression){ .is_valid = false };
-}
 
 /**
  *	Make unary expression
@@ -440,67 +416,33 @@ static expression parse_primary_expression(parser *const prs)
 			const item_t identifier = repr_get_reference(prs->sx, representation);
 			const location_t location = token_consume(prs);
 
-			if (identifier == ITEM_MAX)
-			{
-				semantics_error(prs, location, undeclared_var_use, repr_get_name(prs->sx, representation));
-				return expr_broken();
-			}
-
-			const item_t type = ident_get_type(prs->sx, (size_t)identifier);
-			const category_t category = type_is_function(prs->sx, type) ? RVALUE : LVALUE;
-
-			node identifier_node = create_node(prs, OP_IDENTIFIER);
-			node_add_arg(&identifier_node, type);			// Тип значения идентификатора
-			node_add_arg(&identifier_node, category);		// Категория значения идентификатора
-			node_add_arg(&identifier_node, identifier);		// Индекс в таблице идентификаторов
-
-			return expr(identifier_node, location);
+			return identifier_expression(prs->sx, identifier, location);
 		}
 
 		case TK_CHAR_CONST:
 		case TK_INT_CONST:
 		{
-			const item_t value = prs->lxr->num;
+			const int32_t value = prs->lxr->num;
 			const location_t location = token_consume(prs);
 
-			node constant_node = create_node(prs, OP_CONSTANT);
-			node_add_arg(&constant_node, TYPE_INTEGER);		// Тип значения константы
-			node_add_arg(&constant_node, RVALUE);			// Категория значения константы
-			node_add_arg(&constant_node, value);			// Значение константы
-
-			return expr(constant_node, location);
+			return integer_literal_expression(prs->sx, value, location);
 		}
 
 		case TK_FLOAT_CONST:
 		{
-			item_t value;
-			memcpy(&value, &prs->lxr->num_double, sizeof(double));
+			const double value = prs->lxr->num_double;
 			const location_t location = token_consume(prs);
 
-			node constant_node = create_node(prs, OP_CONSTANT);
-			node_add_arg(&constant_node, TYPE_FLOATING);	// Тип значения константы
-			node_add_arg(&constant_node, RVALUE);			// Категория значения константы
-			node_add_arg(&constant_node, value);			// Значение константы
-
-			return expr(constant_node, location);
+			return floating_literal_expression(prs->sx, value, location);
 		}
 
 		case TK_STRING:
 		{
 			const char32_t* string = prs->lxr->lexstr;
 			const size_t length = (size_t)prs->lxr->num;
-			const item_t type = type_array(prs->sx, TYPE_INTEGER);
 			const location_t location = token_consume(prs);
 
-			node string_node = create_node(prs, OP_STRING);
-			node_add_arg(&string_node, type);				// Тип строки
-			node_add_arg(&string_node, LVALUE);				// Категория значения строки
-			for (size_t i = 0; i < length; i++)
-			{
-				node_add_arg(&string_node, string[i]);		// i-ый символ строки
-			}
-
-			return expr(string_node, location);
+			return string_literal_expression(prs->sx, string, length, location);
 		}
 
 		case TK_L_PAREN:

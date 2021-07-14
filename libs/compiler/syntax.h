@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include "errors.h"
 #include "map.h"
+#include "tree.h"
 #include "vector.h"
 
 
@@ -33,6 +34,12 @@ extern "C" {
 #endif
 
 typedef struct node node;
+
+typedef struct location
+{
+	size_t begin;
+	size_t end;
+} location_t;
 
 /** Type qualifiers */
 enum TYPE
@@ -55,6 +62,7 @@ enum TYPE
 /** Global vars definition */
 typedef struct syntax
 {
+	node nd;
 	vector predef;				/**< Predefined functions table */
 	vector functions;			/**< Functions table */
 

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include "ast.h"
 #include "errors.h"
 #include "lexer.h"
 #include "stack.h"
@@ -40,12 +41,6 @@ typedef enum BLOCK
 	FORBLOCK,
 } block_t;
 
-
-typedef struct location
-{
-	size_t begin;
-	size_t end;
-} location_t;
 
 /** Parser structure */
 typedef struct parser
@@ -80,14 +75,6 @@ typedef struct parser
 	bool was_type_def;					/**< Set, if was type definition */
 	bool was_error;						/**< Set, if was error */
 } parser;
-
-/** Expression structure */
-typedef struct expression
-{
-	bool is_valid;			/**< Set if is valid */
-	location_t location;	/**< Source location */
-	node nd;				/**< Node in AST */
-} expression;
 
 
 /**
