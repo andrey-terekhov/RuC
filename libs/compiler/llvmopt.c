@@ -48,9 +48,6 @@ typedef struct information
 	item_t string_num;								/**< Номер строки */
 	item_t was_printf;								/**< Флаг наличия printf в исходном коде */
 
-	node_info stack[MAX_STACK_SIZE];				/**< Стек для преобразования выражений */
-	size_t stack_size;								/**< Размер стека */
-
 	stack nodes;									/**< Стек нод для преобразования выражений */
 	stack depths;									/**< Стек глубин нод для преобразования выражений */
 
@@ -65,14 +62,7 @@ static inline int stack_push_info(information *const info, node_info *const nd)
 	int has_error = stack_push(&info->nodes, node_save(nd->ref_node));
 	has_error |= stack_push(&info->depths, nd->depth);
 
-	if (info->stack_size == MAX_STACK_SIZE)
-	{
-		return -1;
-	}
-
-	info->stack[info->stack_size++] = *nd;
 	return has_error;
-	// return 0;
 }
 
 static inline node_info stack_pop_info(information *const info, node *const memory)
@@ -88,10 +78,7 @@ static inline node_info stack_pop_info(information *const info, node *const memo
 
 	*(memory) = node_load(&info->sx->tree, (size_t)index);
 	node_info operand = {memory, (size_t)operand_depth};
-	// node_copy(operand.ref_node, memory);
 
-	// return info->stack[--info->stack_size];
-	--info->stack_size;
 	return operand;
 }
 
@@ -116,7 +103,6 @@ static inline void stack_resize_info(information *const info, const size_t size)
 		}
 	}
 
-	info->stack_size = size;
 }
 
 
@@ -556,7 +542,6 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	info.sx = sx;
 	info.string_num = 1;
 	info.was_printf = 0;
-	info.stack_size = 0;
 	info.slice_depth = 0;
 	info.slice_stack_size = 0;
 
