@@ -722,6 +722,12 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 {
 	const location_t l_paren_location = token_consume(prs);
 
+	if (!operand.is_valid)
+	{
+		token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+		return invalid_expression();
+	}
+
 	const item_t operand_type = node_get_arg(&operand.nd, 0);
 	if (!type_is_function(prs->sx, operand_type))
 	{
@@ -844,9 +850,9 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
 				if (prs->token == TK_IDENTIFIER)
 				{
 					const size_t name = prs->lxr->repr;
-					const location_t loc = token_consume(prs);
+					const location_t id_loc = token_consume(prs);
 
-					operand = member_expression(prs, operand, is_arrow, name, op_loc, loc);
+					operand = member_expression(prs, operand, is_arrow, name, op_loc, id_loc);
 					break;
 				}
 
@@ -857,17 +863,15 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
 
 			case TK_PLUS_PLUS:
 			{
-				const location_t op_loc = prs->location;
+				const location_t op_loc = token_consume(prs);
 				operand = unary_expression(prs, operand, UN_POSTINC, op_loc);
-				token_consume(prs);
 				break;
 			}
 
 			case TK_MINUS_MINUS:
 			{
-				const location_t op_loc = prs->location;
+				const location_t op_loc = token_consume(prs);
 				operand = unary_expression(prs, operand, UN_POSTDEC, op_loc);
-				token_consume(prs);
 				break;
 			}
 		}
