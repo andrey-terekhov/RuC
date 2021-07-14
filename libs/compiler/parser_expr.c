@@ -853,7 +853,9 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 			operator_location = token_consume(prs);
 		}
 
-		expression RHS = parse_unary_expression(prs);
+		expression RHS = (prs->token == TK_L_BRACE)
+			? parse_initializer(prs, node_get_arg(&LHS.nd, 0))
+			: parse_unary_expression(prs);
 
 		const precedence_t this_prec = next_token_prec;
 		next_token_prec = get_operator_precedence(prs->token);
