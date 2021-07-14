@@ -16,7 +16,6 @@
 
 #include "llvmgen.h"
 #include <string.h>
-#include "codes.h"
 #include "errors.h"
 #include "hash.h"
 #include "llvmopt.h"
