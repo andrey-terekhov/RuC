@@ -77,8 +77,16 @@ static inline int stack_push_info(information *const info, node_info *const nd)
 
 static inline node_info stack_pop_info(information *const info, node *const memory)
 {
-	*(memory) = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
-	size_t operand_depth = (size_t)stack_pop(&info->depths);
+	const size_t index = (size_t)stack_pop(&info->nodes);
+	const size_t operand_depth = (size_t)stack_pop(&info->depths);
+
+	if (index == ITEM_MAX || operand_depth == ITEM_MAX)
+	{
+		node_info operand = {NULL, -1};
+		return operand;
+	}
+
+	*(memory) = node_load(&info->sx->tree, index);
 	node_info operand = {memory, operand_depth};
 	// node_copy(operand.ref_node, memory);
 
@@ -157,8 +165,8 @@ static expression_t expression_type(node *const nd)
 		case OP_IDENT_TO_VAL_D:
 		case OP_SLICE_IDENT:
 
-		case OP_RAND:
-		case OP_MSG_RECEIVE:
+		// case OP_RAND:
+		// case OP_MSG_RECEIVE:
 			return OPERAND;
 
 
@@ -434,6 +442,11 @@ static int node_recursive(information *const info, node *const nd)
 					{
 						node operand_memory;
 						node_info operand = stack_pop_info(info, &operand_memory);
+						has_error |= operand.ref_node == NULL ? -1 : 0;
+						if (has_error)
+						{
+							return has_error;
+						}
 
 						if (node_get_type(nd_info.ref_node) == OP_ADDR_TO_VAL)
 						{
@@ -463,9 +476,20 @@ static int node_recursive(information *const info, node *const nd)
 					{
 						node second_memory;
 						node_info second = stack_pop_info(info, &second_memory);
+						has_error |= second.ref_node == NULL ? -1 : 0;
+						if (has_error)
+						{
+							return has_error;
+						}
+
 						node first_memory;
 						node_info first = stack_pop_info(info, &first_memory);
-						printf("%i\n", node_get_type(&child));
+						has_error |= first.ref_node == NULL ? -1 : 0;
+						if (has_error)
+						{
+							return has_error;
+						}
+						// printf("%i\n", node_get_type(&child));
 
 						node parent = node_get_parent(nd_info.ref_node);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
@@ -486,6 +510,7 @@ static int node_recursive(information *const info, node *const nd)
 							node_info log_info = { &parent, 1 };
 							has_error |= transposition(&second, &log_info);
 							node_copy(second.ref_node, log_info.ref_node);
+							printf("here\n");
 						}
 
 						// перестановка с первым операндом
