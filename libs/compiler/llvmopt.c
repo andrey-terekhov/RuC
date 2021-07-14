@@ -82,7 +82,7 @@ static inline node_info stack_pop_info(information *const info, node *const memo
 
 	if (index == ITEM_MAX || operand_depth == ITEM_MAX)
 	{
-		node_info operand = {NULL, -1};
+		node_info operand = {NULL, (size_t)-1};
 		return operand;
 	}
 
