@@ -28,7 +28,7 @@ static node create_node(syntax *const sx, operation_t type)
 	return node_add_child(&sx->nd, type);
 }
 
-static void node_set_child(node *const parent, node *const child)
+static void node_set_child(const node *const parent, const node *const child)
 {
 	node temp = node_add_child(parent, OP_NOP);
 	node_swap(child, &temp);
@@ -45,7 +45,7 @@ static void node_set_child(node *const parent, node *const child)
  */
 
 
-expression expr_broken()
+expression invalid_expression()
 {
 	return (expression){ .is_valid = false };
 }
@@ -56,7 +56,7 @@ expression identifier_expression(syntax *const sx, const item_t identifier, cons
 	{
 		const size_t representation = (size_t)ident_get_repr(sx, (size_t)identifier);
 		semantics_error(sx, location, undeclared_var_use, repr_get_name(sx, representation));
-		return expr_broken();
+		return invalid_expression();
 	}
 
 	const item_t type = ident_get_type(sx, (size_t)identifier);
@@ -106,4 +106,95 @@ expression string_literal_expression(syntax *const sx, const vector value, const
 	}
 
 	return expr(string_node, location);
+}
+
+expression subscripting_expression(syntax *const sx, const expression base, const expression index
+								  , const location_t l_square_location, const location_t r_square_location)
+{
+	if (!base.is_valid || !index.is_valid)
+	{
+		return invalid_expression();
+	}
+
+	const item_t operand_type = node_get_arg(&base.nd, 0);
+	if (!type_is_array(sx, operand_type))
+	{
+		semantics_error(sx, l_square_location, typecheck_subscript_value);
+		return invalid_expression();
+	}
+
+	if (!type_is_integer(node_get_arg(&index.nd, 0)))
+	{
+		semantics_error(sx, index.location, typecheck_subscript_not_integer);
+		return invalid_expression();
+	}
+
+	const item_t element_type = type_get(sx, (size_t)operand_type + 1);
+
+	node slice_node = create_node(sx, OP_SLICE);
+	node_add_arg(&slice_node, element_type);				// Тип элемента массива
+	node_add_arg(&slice_node, LVALUE);						// Категория значения вырезки
+	node_set_child(&slice_node, &base.nd);					// Выражение-операнд
+	node_set_child(&slice_node, &index.nd);					// Выражение-индекс
+
+	return expr(slice_node, (location_t){ base.loc.begin, r_square_location.end });
+}
+
+
+expression member_expression(syntax *const sx, const expression base, const bool is_arrow, const size_t identifier
+							, const location_t operator_loc, const location_t identifier_loc)
+{
+	if (!base.is_valid)
+	{
+		return invalid_expression();
+	}
+
+	const item_t operand_type = node_get_arg(&operand.nd, 0);
+	item_t struct_type;
+	category_t category;
+
+	if (!is_arrow)
+	{
+		if (!type_is_structure(sx, operand_type))
+		{
+			semantics_error(sx, operator_location, typecheck_member_reference_struct);
+			return invalid_expression();
+		}
+
+		struct_type = operand_type;
+		category = (category_t)node_get_arg(&base.nd, 1);
+	}
+	else
+	{
+		if (!type_is_struct_pointer(sx, operand_type))
+		{
+			semantics_error(sx, operator_location, typecheck_member_reference_arrow);
+			return invalid_expression();
+		}
+
+		struct_type = type_get(sx, (size_t)operand_type + 1);
+		category = LVALUE;
+	}
+
+	item_t member_displ = 0;
+	const size_t record_length = (size_t)type_get(sx, (size_t)struct_type + 2);
+	for (size_t i = 0; i < record_length; i += 2)
+	{
+		const item_t member_type = type_get(sx, (size_t)struct_type + 3 + i);
+		if (member_name == (size_t)type_get(sx, (size_t)struct_type + 4 + i))
+		{
+			node select_node = create_node(sx, OP_SELECT);
+			node_add_arg(&select_node, member_type);	// Тип значения поля
+			node_add_arg(&select_node, category);		// Категория значения поля
+			node_add_arg(&select_node, member_displ);	// Смещение поля структуры
+			node_set_child(&select_node, &operand.nd);	// Выражение-операнд
+
+			return expr(select_node, (location_t){ base.location.begin, member_location.end });
+		}
+
+		member_displ += (item_t)type_size(sx, member_type);
+	}
+
+	semantics_error(sx, member_location, no_member, repr_get_name(sx, member_name));
+	return invalid_expression();
 }

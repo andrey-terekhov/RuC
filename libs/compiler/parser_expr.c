@@ -438,21 +438,21 @@ static expression parse_primary_expression(parser *const prs)
 
 		case TK_STRING:
 		{
-			const char32_t* string = prs->lxr->lexstr;
-			const size_t length = (size_t)prs->lxr->num;
+			const vector value = prs->lxr->lexstr;
 			const location_t location = token_consume(prs);
 
-			return string_literal_expression(prs->sx, string, length, location);
+			return string_literal_expression(prs->sx, value, location);
 		}
 
 		case TK_L_PAREN:
 		{
 			const location_t l_paren_location = token_consume(prs);
-			expression result = parse_expression(prs);
+			const expression result = parse_expression(prs);
+
 			if (!token_try_consume(prs, TK_R_PAREN))
 			{
 				parser_error(prs, expected_r_paren, l_paren_location);
-				return expr_broken();
+				return invalid_expression();
 			}
 
 			return result;
@@ -460,61 +460,8 @@ static expression parse_primary_expression(parser *const prs)
 
 		default:
 			parser_error(prs, expected_expression);
-			return expr_broken();
+			return invalid_expression();
 	}
-}
-
-/**
- *	Parse subscripting expression suffix
- *
- *	postfix-expression:
- *		postfix-expression '[' expression ']'
- *
- *	@param	prs			Parser
- *	@param	operand		Expression for subscripting
- *
- *	@return	Subscripting expression
- */
-static expression parse_subscripting_expression_suffix(parser *const prs, expression operand)
-{
-	const location_t l_square_location = token_consume(prs);
-	expression index = parse_expression(prs);
-
-	if (prs->token != TK_R_SQUARE)
-	{
-		parser_error(prs, expected_r_square, l_square_location);
-		return expr_broken();
-	}
-
-	const location_t r_square_location = token_consume(prs);
-
-	if (!operand.is_valid)
-	{
-		return expr_broken();
-	}
-
-	const item_t operand_type = node_get_arg(&operand.nd, 0);
-	if (!type_is_array(prs->sx, operand_type))
-	{
-		semantics_error(prs, l_square_location, typecheck_subscript_value);
-		return expr_broken();
-	}
-
-	if (!type_is_integer(node_get_arg(&index.nd, 0)))
-	{
-		semantics_error(prs, index.location, typecheck_subscript_not_integer);
-		return expr_broken();
-	}
-
-	const item_t element_type = type_get(prs->sx, (size_t)operand_type + 1);
-
-	node slice_node = create_node(prs, OP_SLICE);
-	node_add_arg(&slice_node, element_type);				// Тип элемента массива
-	node_add_arg(&slice_node, LVALUE);						// Категория значения вырезки
-	node_set_child(&slice_node, &operand.nd);				// Выражение-операнд
-	node_set_child(&slice_node, &index.nd);					// Выражение-индекс
-
-	return expr(slice_node, (location_t){ operand.location.begin, r_square_location.end });
 }
 
 /**
@@ -597,87 +544,6 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 }
 
 /**
- *	Parse member expression suffix
- *
- *	postfix-expression:
- *		postfix-expression '.' identifier
- *		postfix-expression '->' identifier
- *
- *	@param	prs			Parser
- *	@param	operand		Expression for accessing a member
- *
- *	@return	Member expression
- */
-static expression parse_member_expression_suffix(parser *const prs, expression operand)
-{
-	const token_t operator_token = prs->token;
-	const location_t operator_location = token_consume(prs);
-
-	if (prs->token != TK_IDENTIFIER)
-	{
-		parser_error(prs, expected_identifier);
-		return expr_broken();
-	}
-
-	const size_t member_name = prs->lxr->repr;
-	const location_t member_location = token_consume(prs);
-
-	if (!operand.is_valid)
-	{
-		return expr_broken();
-	}
-
-	const item_t operand_type = node_get_arg(&operand.nd, 0);
-	item_t struct_type;
-	category_t category;
-
-	if (operator_token == TK_PERIOD)
-	{
-		if (!type_is_structure(prs->sx, operand_type))
-		{
-			semantics_error(prs, operator_location, typecheck_member_reference_struct);
-			return expr_broken();
-		}
-
-		struct_type = operand_type;
-		category = (category_t)node_get_arg(&operand.nd, 1);
-	}
-	else // if (operator_token == TK_ARROW)
-	{
-		if (!type_is_struct_pointer(prs->sx, operand_type))
-		{
-			semantics_error(prs, operator_location, typecheck_member_reference_arrow);
-			return expr_broken();
-		}
-
-		struct_type = type_get(prs->sx, (size_t)operand_type + 1);
-		category = LVALUE;
-	}
-
-	item_t member_displ = 0;
-	const size_t record_length = (size_t)type_get(prs->sx, (size_t)struct_type + 2);
-	for (size_t i = 0; i < record_length; i += 2)
-	{
-		const item_t member_type = type_get(prs->sx, (size_t)struct_type + 3 + i);
-		if (member_name == (size_t)type_get(prs->sx, (size_t)struct_type + 4 + i))
-		{
-			node select_node = create_node(prs, OP_SELECT);
-			node_add_arg(&select_node, member_type);	// Тип значения поля
-			node_add_arg(&select_node, category);		// Категория значения поля
-			node_add_arg(&select_node, member_displ);	// Смещение поля структуры
-			node_set_child(&select_node, &operand.nd);	// Выражение-операнд
-
-			return expr(select_node, (location_t){ operand.location.begin, member_location.end });
-		}
-
-		member_displ += (item_t)type_size(prs->sx, member_type);
-	}
-
-	semantics_error(prs, member_location, no_member, repr_get_name(prs->sx, member_name));
-	return expr_broken();
-}
-
-/**
  *	Parse postfix expression suffix
  *
  *	postfix-expression:
@@ -704,8 +570,29 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
 				return operand;
 
 			case TK_L_SQUARE:
-				operand = parse_subscripting_expression_suffix(prs, operand);
+			{
+				const location_t l_square_loc = token_consume(prs);
+				const expression index = parse_expression(prs);
+
+				if (index.is_valid && prs->token == TK_R_BRACE)
+				{
+					const location_t r_square_loc = prs->location;
+					operand = subscripting_expression(prs->sx, operand, index, l_square_loc, r_square_loc);
+				}
+				else
+				{
+					operand = invalid_expression();
+				}
+
+				if (!token_try_consume(prs, TK_R_SQUARE))
+				{
+					parser_error(prs, expected_r_square, l_square_loc);
+					token_skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
+					token_try_consume(prs, TK_R_SQUARE);
+				}
+
 				break;
+			}
 
 			case TK_L_PAREN:
 				operand = parse_call_expression_suffix(prs, operand);
@@ -713,8 +600,22 @@ static expression parse_postfix_expression_suffix(parser *const prs, expression 
 
 			case TK_PERIOD:
 			case TK_ARROW:
-				operand = parse_member_expression_suffix(prs, operand);
+			{
+				const bool is_arrow = prs->token == TK_ARROW;
+				const location_t operator_loc = token_consume(prs);
+
+				if (prs->token != TK_IDENTIFIER)
+				{
+					parser_error(prs, expected_identifier);
+					return expr_broken();
+				}
+
+				const size_t identifier = prs->lxr->repr;
+				const location_t identifier_loc = token_consume(prs);
+
+				operand = member_expression(sx, operand, is_arrow, identifier, operator_loc, identifier_loc);
 				break;
+			}
 
 			case TK_PLUS_PLUS:
 				operand = make_unary_expression(prs, operand, UN_POSTINC, token_consume(prs));
