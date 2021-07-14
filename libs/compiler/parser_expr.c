@@ -399,7 +399,7 @@ static expression unary_expression(parser *const prs, const expression operand
 				return invalid_expression();
 			}
 
-			result_type = (item_t)type_add(prs->sx, (item_t[]){ TYPE_POINTER, operand_type }, 2);
+			result_type = type_pointer(prs->sx, operand_type);
 			break;
 		}
 
