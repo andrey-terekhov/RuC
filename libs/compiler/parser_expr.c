@@ -170,7 +170,7 @@ static expression identifier_expression(parser *const prs, const size_t name, co
  *
  *	@return	Integer literal expression
  */
-static expression integer_literal_expression(parser *const prs, const int32_t value, const location_t loc)
+static expression integer_literal_expression(parser *const prs, const int value, const location_t loc)
 {
 	node constant_node = create_node(prs, OP_CONSTANT);
 	node_add_arg(&constant_node, TYPE_INTEGER);				// Тип значения константы
@@ -660,7 +660,7 @@ static expression parse_primary_expression(parser *const prs)
 		case TK_CHAR_CONST:
 		case TK_INT_CONST:
 		{
-			const int32_t value = prs->lxr->num;
+			const int value = prs->lxr->num;
 			const location_t loc = token_consume(prs);
 
 			return integer_literal_expression(prs, value, loc);
