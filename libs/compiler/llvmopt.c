@@ -421,7 +421,7 @@ static int node_recursive(information *const info, node *const nd)
 
 					node slice_info_memory;
 					node_info slice_info = stack_pop_info(info, &slice_info_memory);
-					has_error |= operand.ref_node == NULL ? -1 : 0;
+					has_error |= slice_info.ref_node == NULL ? -1 : 0;
 					if (has_error)
 					{
 						return has_error;
