@@ -198,7 +198,6 @@ static void parse_if_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs);
 	node if_node = node_add_child(parent, OP_IF);
-	node_add_arg(&if_node, false); // has_else
 
 	if (prs->token != TK_L_PAREN)
 	{
@@ -235,7 +234,6 @@ static void parse_if_statement(parser *const prs, node *const parent)
 
 	if (token_try_consume(prs, TK_ELSE))
 	{
-		node_set_arg(&if_node, 0, true);
 		parse_statement(prs, &if_node);
 	}
 }
@@ -765,12 +763,9 @@ static size_t evaluate_args(parser *const prs, const size_t length, const char32
 			{
 				case 'i':
 				case U'ц':
-					format_types[args++] = TYPE_INTEGER;
-					break;
-
 				case 'c':
 				case U'л':
-					format_types[args++] = TYPE_CHARACTER;
+					format_types[args++] = TYPE_INTEGER;
 					break;
 
 				case 'f':
@@ -780,7 +775,7 @@ static size_t evaluate_args(parser *const prs, const size_t length, const char32
 
 				case 's':
 				case U'с':
-					format_types[args++] = type_array(prs->sx, TYPE_CHARACTER);
+					format_types[args++] = type_array(prs->sx, TYPE_INTEGER);
 					break;
 
 				case '%':

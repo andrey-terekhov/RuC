@@ -481,7 +481,7 @@ static expression parse_primary_expression(parser *const prs)
 		{
 			const char32_t* string = prs->lxr->lexstr;
 			const size_t length = (size_t)prs->lxr->num;
-			const item_t type = type_array(prs->sx, TYPE_CHARACTER);
+			const item_t type = type_array(prs->sx, TYPE_INTEGER);
 			const location_t location = token_consume(prs);
 
 			node string_node = create_node(prs, OP_STRING);

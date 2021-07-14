@@ -514,7 +514,7 @@ size_t type_size(const syntax *const sx, const item_t type)
 
 bool type_is_integer(const item_t type)
 {
-	return type == TYPE_INTEGER || type == TYPE_CHARACTER;
+	return type == TYPE_INTEGER;
 }
 
 bool type_is_floating(const item_t type)
@@ -608,10 +608,10 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 				local_modetab[3 + i] = TYPE_VOID_POINTER;
 				break;
 			case 's':
-				local_modetab[3 + i] = type_array(sx, TYPE_CHARACTER);
+				local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
 				break;
 			case 'S':
-				local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_CHARACTER));
+				local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_INTEGER));
 				break;
 			case 'i':
 				local_modetab[3 + i] = TYPE_INTEGER;

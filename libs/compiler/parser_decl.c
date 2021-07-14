@@ -20,7 +20,6 @@
 
 static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
 static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
-static void parse_array_initializer(parser *const prs, node *const parent, const item_t type);
 
 
 /**
@@ -53,9 +52,6 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 			return TYPE_VOID;
 
 		case TK_CHAR:
-			token_consume(prs);
-			return TYPE_CHARACTER;
-
 		case TK_INT:
 		case TK_LONG:
 			token_consume(prs);
