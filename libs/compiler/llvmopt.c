@@ -542,6 +542,8 @@ static int node_recursive(information *const info, node *const nd)
 
 		if (has_error || node_recursive(info, &child))
 		{
+			printf("here2\n");
+			has_error |= -1;
 			return has_error;
 		}
 	}
@@ -571,7 +573,8 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 		{
 			stack_clear(&info.nodes);
 			stack_clear(&info.depths);
-			
+			printf("here3\n");
+
 			return -1;
 		}
 	}
