@@ -59,10 +59,8 @@ typedef struct information
 
 static inline int stack_push_info(information *const info, node_info *const nd)
 {
-	int has_error = stack_push(&info->nodes, node_save(nd->ref_node));
-	has_error |= stack_push(&info->depths, nd->depth);
-
-	return has_error;
+	return stack_push(&info->nodes, node_save(nd->ref_node))
+		|| stack_push(&info->depths, nd->depth);
 }
 
 static inline node_info stack_pop_info(information *const info, node *const memory)
@@ -72,12 +70,12 @@ static inline node_info stack_pop_info(information *const info, node *const memo
 
 	if (index == ITEM_MAX || operand_depth == ITEM_MAX)
 	{
-		node_info operand = {NULL, (size_t)-1};
+		node_info operand = { NULL, SIZE_MAX };
 		return operand;
 	}
 
 	*(memory) = node_load(&info->sx->tree, (size_t)index);
-	node_info operand = {memory, (size_t)operand_depth};
+	node_info operand = { memory, (size_t)operand_depth };
 
 	return operand;
 }
