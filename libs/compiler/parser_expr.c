@@ -834,12 +834,12 @@ static expression parse_postfix_expression(parser *const prs)
 					operand = invalid_expression();
 				}
 
-				break;
+				continue;
 			}
 
 			case TK_L_PAREN:
 				operand = parse_call_expression_suffix(prs, operand);
-				break;
+				continue;
 
 			case TK_PERIOD:
 			case TK_ARROW:
@@ -860,21 +860,21 @@ static expression parse_postfix_expression(parser *const prs)
 					operand = invalid_expression();
 				}
 
-				break;
+				continue;
 			}
 
 			case TK_PLUS_PLUS:
 			{
 				const location_t op_loc = token_consume(prs);
 				operand = unary_expression(prs, operand, UN_POSTINC, op_loc);
-				break;
+				continue;
 			}
 
 			case TK_MINUS_MINUS:
 			{
 				const location_t op_loc = token_consume(prs);
 				operand = unary_expression(prs, operand, UN_POSTDEC, op_loc);
-				break;
+				continue;
 			}
 		}
 	}
