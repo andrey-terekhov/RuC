@@ -87,14 +87,12 @@ static inline node_info stack_info_pop(information *const info, node *const memo
 
 	if (index == ITEM_MAX || operand_depth == ITEM_MAX)
 	{
-		node_info operand = { NULL, SIZE_MAX };
-		return operand;
+		return (node_info){ NULL, SIZE_MAX };
 	}
 
 	*(memory) = node_load(&info->sx->tree, (size_t)index);
-	node_info operand = { memory, (size_t)operand_depth };
 
-	return operand;
+	return (node_info){ memory, (size_t)operand_depth };
 }
 
 static inline size_t stack_info_size(information *const info)
