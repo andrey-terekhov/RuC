@@ -106,7 +106,7 @@ static precedence_t get_operator_precedence(const token_t token)
 }
 
 
-static node create_node(parser *const prs, operation_t type)
+static node node_create(parser *const prs, operation_t type)
 {
 	return node_add_child(&prs->nd, type);
 }
@@ -153,7 +153,7 @@ static expression identifier_expression(parser *const prs, const size_t name, co
 	const item_t type = ident_get_type(prs->sx, (size_t)identifier);
 	const category_t category = type_is_function(prs->sx, type) ? RVALUE : LVALUE;
 
-	node identifier_node = create_node(prs, OP_IDENTIFIER);
+	node identifier_node = node_create(prs, OP_IDENTIFIER);
 	node_add_arg(&identifier_node, type);					// Тип значения идентификатора
 	node_add_arg(&identifier_node, category);				// Категория значения идентификатора
 	node_add_arg(&identifier_node, identifier);				// Индекс в таблице идентификаторов
@@ -172,7 +172,7 @@ static expression identifier_expression(parser *const prs, const size_t name, co
  */
 static expression integer_literal_expression(parser *const prs, const int value, const location_t loc)
 {
-	node constant_node = create_node(prs, OP_CONSTANT);
+	node constant_node = node_create(prs, OP_CONSTANT);
 	node_add_arg(&constant_node, TYPE_INTEGER);				// Тип значения константы
 	node_add_arg(&constant_node, RVALUE);					// Категория значения константы
 	node_add_arg(&constant_node, value);					// Значение константы
@@ -194,7 +194,7 @@ static expression floating_literal_expression(parser *const prs, const double va
 	item_t temp;
 	memcpy(&temp, &value, sizeof(double));
 
-	node constant_node = create_node(prs, OP_CONSTANT);
+	node constant_node = node_create(prs, OP_CONSTANT);
 	node_add_arg(&constant_node, TYPE_FLOATING);			// Тип значения константы
 	node_add_arg(&constant_node, RVALUE);					// Категория значения константы
 	node_add_arg(&constant_node, temp);						// Значение константы
@@ -217,7 +217,7 @@ static expression string_literal_expression(parser *const prs, const char32_t *v
 {
 	const item_t type = type_array(prs->sx, TYPE_INTEGER);
 
-	node string_node = create_node(prs, OP_STRING);
+	node string_node = node_create(prs, OP_STRING);
 	node_add_arg(&string_node, type);						// Тип строки
 	node_add_arg(&string_node, LVALUE);						// Категория значения строки
 	for (size_t i = 0; i < length; i++)
@@ -262,7 +262,7 @@ static expression subscript_expression(parser *const prs, const expression base,
 
 	const item_t element_type = type_get(prs->sx, (size_t)operand_type + 1);
 
-	node slice_node = create_node(prs, OP_SLICE);
+	node slice_node = node_create(prs, OP_SLICE);
 	node_add_arg(&slice_node, element_type);				// Тип элемента массива
 	node_add_arg(&slice_node, LVALUE);						// Категория значения вырезки
 	node_set_child(&slice_node, &base.nd);					// Выражение-операнд
@@ -325,7 +325,7 @@ static expression member_expression(parser *const prs, const expression base, co
 		const item_t member_type = type_get(prs->sx, (size_t)struct_type + 3 + i);
 		if (name == (size_t)type_get(prs->sx, (size_t)struct_type + 4 + i))
 		{
-			node select_node = create_node(prs, OP_SELECT);
+			node select_node = node_create(prs, OP_SELECT);
 			node_add_arg(&select_node, member_type);	// Тип значения поля
 			node_add_arg(&select_node, category);		// Категория значения поля
 			node_add_arg(&select_node, member_displ);	// Смещение поля структуры
@@ -455,7 +455,7 @@ static expression unary_expression(parser *const prs, const expression operand
 		}
 	}
 
-	node unary_node = create_node(prs, OP_UNARY);
+	node unary_node = node_create(prs, OP_UNARY);
 	node_add_arg(&unary_node, result_type);		// Тип значения
 	node_add_arg(&unary_node, category);		// Категория значения
 	node_add_arg(&unary_node, op_kind);			// Тип унарного оператора
@@ -569,7 +569,7 @@ static expression binary_expression(parser *const prs, const expression left, co
 		}
 	}
 
-	node binary_node = create_node(prs, OP_BINARY);
+	node binary_node = node_create(prs, OP_BINARY);
 	node_add_arg(&binary_node, result_type);		// Тип значения
 	node_add_arg(&binary_node, RVALUE);				// Категория значения
 	node_add_arg(&binary_node, op_kind);		// Вид оператора
@@ -621,7 +621,7 @@ static expression ternary_expression(parser *const prs, const expression left, c
 		return invalid_expression();
 	}
 
-	node ternary_node = create_node(prs, OP_TERNARY);
+	node ternary_node = node_create(prs, OP_TERNARY);
 	node_add_arg(&ternary_node, result_type);		// Тип значения
 	node_add_arg(&ternary_node, RVALUE);			// Категория значения
 	node_set_child(&ternary_node, &left.nd);		// Первый операнд
@@ -714,21 +714,21 @@ static expression parse_primary_expression(parser *const prs)
  *		argument-expression-list ',' assignment-expression
  *
  *	@param	prs			Parser
- *	@param	operand		Expression for call
+ *	@param	callee		Expression for call
  *
  *	@return	Call expression
  */
-static expression parse_call_expression_suffix(parser *const prs, expression operand)
+static expression parse_call_expression_suffix(parser *const prs, const expression callee)
 {
 	const location_t l_paren_location = token_consume(prs);
 
-	if (!operand.is_valid)
+	if (!callee.is_valid)
 	{
 		token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
 		return invalid_expression();
 	}
 
-	const item_t operand_type = node_get_arg(&operand.nd, 0);
+	const item_t operand_type = node_get_arg(&callee.nd, 0);
 	if (!type_is_function(prs->sx, operand_type))
 	{
 		semantics_error(prs, l_paren_location, typecheck_call_not_function);
@@ -737,10 +737,10 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 
 	const item_t return_type = type_get(prs->sx, (size_t)operand_type + 1);
 
-	node call_node = create_node(prs, OP_CALL);
+	node call_node = node_create(prs, OP_CALL);
 	node_add_arg(&call_node, return_type);					// Тип возвращамого значения
 	node_add_arg(&call_node, RVALUE);						// Категория значения вызова
-	node_set_child(&call_node, &operand.nd);				// Операнд вызова
+	node_set_child(&call_node, &callee.nd);				// Операнд вызова
 
 	const size_t expected_args = (size_t)type_get(prs->sx, (size_t)operand_type + 2);
 	size_t ref_arg_type = (size_t)operand_type + 3;
@@ -785,7 +785,7 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 		return invalid_expression();
 	}
 
-	return expr(call_node, (location_t){ operand.location.begin, r_paren_location.end });
+	return expr(call_node, (location_t){ callee.location.begin, r_paren_location.end });
 }
 
 
@@ -998,7 +998,7 @@ static expression parse_struct_initializer(parser *const prs, const item_t type)
 	size_t actual_fields = 0;
 	size_t ref_next_field = (size_t)type + 3;
 
-	node list_node = create_node(prs, OP_LIST);
+	node list_node = node_create(prs, OP_LIST);
 	node_add_arg(&list_node, type);					// Тип возвращамого значения
 	node_add_arg(&list_node, RVALUE);				// Категория значения вызова
 
@@ -1055,7 +1055,7 @@ static expression parse_array_initializer(parser *const prs, const item_t type)
 
 	size_t list_length = 0;
 
-	node list_node = create_node(prs, OP_LIST);
+	node list_node = node_create(prs, OP_LIST);
 	node_add_arg(&list_node, type);					// Тип возвращамого значения
 	node_add_arg(&list_node, RVALUE);				// Категория значения вызова
 
