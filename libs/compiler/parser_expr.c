@@ -753,6 +753,7 @@ static expression parse_call_expression_suffix(parser *const prs, const expressi
 			expression argument = parse_initializer(prs, type_get(prs->sx, ref_arg_type));
 			if (!argument.is_valid)
 			{
+				token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
 				return invalid_expression();
 			}
 
@@ -1007,6 +1008,7 @@ static expression parse_struct_initializer(parser *const prs, const item_t type)
 		expression initializer = parse_initializer(prs, type_get(prs->sx, ref_next_field));
 		if (!initializer.is_valid)
 		{
+			token_skip_until(prs, TK_R_BRACE | TK_SEMICOLON);
 			return invalid_expression();
 		}
 
@@ -1064,6 +1066,7 @@ static expression parse_array_initializer(parser *const prs, const item_t type)
 		expression initializer = parse_initializer(prs, type_get(prs->sx, (size_t)type + 1));
 		if (!initializer.is_valid)
 		{
+			token_skip_until(prs, TK_R_BRACE | TK_SEMICOLON);
 			return invalid_expression();
 		}
 

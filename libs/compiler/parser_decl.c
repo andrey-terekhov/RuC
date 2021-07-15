@@ -290,6 +290,11 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 
 						node_copy(&prs->nd, &nd_decl_arr);
 						expression initializer = parse_initializer(prs, type);
+						if (!initializer.is_valid)
+						{
+							continue;
+						}
+
 						if (type != node_get_arg(&initializer.nd, 0))
 						{
 							parser_error(prs, wrong_init);
@@ -393,6 +398,11 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 			prs->flag_strings_only = 2;
 			node_copy(&prs->nd, &nd_decl_arr);
 			expression initializer = parse_initializer(prs, type);
+			if (!initializer.is_valid)
+			{
+				return;
+			}
+
 			if (type != node_get_arg(&initializer.nd, 0))
 			{
 				 parser_error(prs, wrong_init);
@@ -406,6 +416,11 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 		{
 			node_copy(&prs->nd, &nd);
 			expression initializer = parse_initializer(prs, type);
+			if (!initializer.is_valid)
+			{
+				return;
+			}
+
 			const item_t actual_type = node_get_arg(&initializer.nd, 0);
 			if (type != actual_type && !(type_is_floating(type) && type_is_integer(actual_type)))
 			{
