@@ -456,11 +456,11 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 }
 
 
-size_t type_add(syntax *const sx, const item_t *const record, const size_t size)
+item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 {
 	if (sx == NULL || record == NULL)
 	{
-		return SIZE_MAX;
+		return ITEM_MAX;
 	}
 
 	vector_add(&sx->types, (item_t)sx->start_type);
@@ -478,7 +478,7 @@ size_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 		{
 			vector_resize(&sx->types, sx->start_type + 1);
 			sx->start_type = (size_t)vector_get(&sx->types, sx->start_type);
-			return old + 1;
+			return (item_t)old + 1;
 		}
 		else
 		{
@@ -486,7 +486,7 @@ size_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 		}
 	}
 
-	return sx->start_type + 1;
+	return (item_t)sx->start_type + 1;
 }
 
 item_t type_get(const syntax *const sx, const size_t index)
@@ -572,7 +572,7 @@ bool type_is_struct_pointer(const syntax *const sx, const item_t type)
 
 item_t type_array(syntax *const sx, const item_t type)
 {
-	return (item_t)type_add(sx, (item_t[]){ TYPE_ARRAY, type }, 2);
+	return type_add(sx, (item_t[]){ TYPE_ARRAY, type }, 2);
 }
 
 /*
@@ -633,12 +633,12 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 
 	local_modetab[2] = (item_t)i;
 
-	return (item_t)type_add(sx, local_modetab, i + 3);
+	return type_add(sx, local_modetab, i + 3);
 }
 
 item_t type_pointer(syntax *const sx, const item_t type)
 {
-	return (item_t)type_add(sx, (item_t[]){ TYPE_POINTER, type }, 2);
+	return type_add(sx, (item_t[]){ TYPE_POINTER, type }, 2);
 }
 
 bool type_is_undefined(const item_t type)
