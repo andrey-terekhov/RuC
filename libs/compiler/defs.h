@@ -35,10 +35,13 @@
 
 // modetab
 
-#define MFUNCTION 1001
-#define MSTRUCT	  1002
-#define MARRAY	  1003
-#define MPOINT	  1004
+#define MFUNCTION 	1001
+#define MSTRUCT	  	1002
+#define MARRAY	  	1003
+#define MPOINT	  	1004
+#define MENUMCLASS	1005
+#define MNPOINT   	1006
+#define MENUM		1007
 
 
 // Лексемы операций языка С
@@ -133,10 +136,13 @@
 #define DECATV	   9248
 
 
-#define UNMINUS 9049
+#define UNMINUS    9049
 
-#define LNOT   9052
-#define LOGNOT 9053
+#define AT         9050 // @
+#define CLNCLN	   9051 // ::
+
+#define LNOT       9052
+#define LOGNOT     9053
 
 
 #define ASSR	  9057
@@ -450,6 +456,7 @@
 #define RECEIVE_STRING -94
 
 #define ASSERT -95
+#define LCLASS -96
 
 
 #define LVOIDASTER -150
@@ -502,6 +509,8 @@
 #define TAddrtovald	 -341
 #define TBeginit	 -342
 #define TStructinit	 -343
+#define TEnumbeg     -344
+
 
 
 // коды команд MIPS

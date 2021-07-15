@@ -168,6 +168,14 @@ enum ERROR
 	tree_expression_operator,
 	tree_expression_no_texprend,
 	tree_no_tend,
+
+	semicomma_in_enum,
+	not_comma_in_enum,
+	def_in_enum,
+	not_init_not_null_pointer,
+	ban_on_the_change_enum_field,
+	type_in_enum,
+	select_not_from_enum,
 };
 
 /** Warnings codes */

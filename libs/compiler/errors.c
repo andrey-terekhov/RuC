@@ -599,6 +599,27 @@ void get_error(const int num, char *const msg, va_list args)
 		case tree_no_tend:
 			sprintf(msg, "отсутствует внешний TEnd дерева");
 			break;
+		case semicomma_in_enum:
+			printf("описание поля перечень не должно заканчиваться ;\n");
+			break;
+		case not_comma_in_enum:
+			printf("В описании поля перечень не хватает ,\n");
+			break;
+		case def_in_enum:
+			printf("Должно быть определение поля в перечень\n");
+			break;
+		case not_init_not_null_pointer:
+			printf("NEVER NULL POINTER, не может рявняться NULL\n");
+			break;
+		case ban_on_the_change_enum_field:
+			printf("Нельзя изменять поле перечень\n");
+			break;
+		case type_in_enum:
+			printf("Несоответствие типу поля перечень\n");
+			break;
+		case select_not_from_enum:
+			printf("выборка поля :: не из перечень клсса\n");
+			break;
 
 		default:
 			sprintf(msg, "этот код ошибки я прозевал");
