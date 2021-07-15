@@ -225,8 +225,7 @@ static void builtin_add(syntax *const sx, const char32_t *const eng, const char3
 	// Добавляем остальные варианты написания, все будут ссылаться на id
 	char32_t buffer[MAX_STRING_LENGTH];
 
-	buffer[0] = utf8_to_upper(eng[0]);
-	for (size_t i = 1; eng[i - 1] != '\0'; i++)
+	for (size_t i = 0; eng[i - 1] != '\0'; i++)
 	{
 		buffer[i] = utf8_to_upper(eng[i]);
 	}
