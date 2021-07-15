@@ -297,16 +297,11 @@ static void final_operation(virtual *const vm, node *const nd)
  */
 static void emit_call_expression(virtual *const vm, node *const nd)
 {
-	// Если n - количество параметров функции,
-	// то OP_CALL1 имеет n+1 потомков: n аргументов и OP_CALL2
-	// OP_CALL2 имеет единственным потомком продолжение выражения в польской записи
-
 	const size_t args = (size_t)node_get_arg(nd, 0);
-	// Проверяем id функции
 	node nd_call2 = node_get_child(nd, args);
 	const size_t func_id = (size_t)node_get_arg(&nd_call2, 0);
 
-	if (func_id >= USER_FUNC_START)
+	if (func_id >= BEGIN_USER_FUNC)
 	{
 		// Это вызов пользовательской функции
 		mem_add(vm, IC_CALL1);
@@ -331,9 +326,6 @@ static void emit_call_expression(virtual *const vm, node *const nd)
 		mem_add(vm, builtin_to_instruction((builtin_t)func_id));
 	}
 
-	// Для продолжения генерации копируем в nd продолжение выражения
-	//node nd_next = node_get_child(&nd_call2, 0);
-	//node_copy(nd, &nd_next);
 	node_copy(nd, &nd_call2);
 }
 

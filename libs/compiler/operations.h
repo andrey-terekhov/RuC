@@ -320,7 +320,7 @@ typedef enum builtin
 	BI_MSG_SEND				= 138,
 	BI_MSG_RECEIVE			= 142,
 
-	USER_FUNC_START			= 144,
+	BEGIN_USER_FUNC			= 144,
 } builtin_t;
 
 

@@ -87,8 +87,8 @@ static inline void repr_init(map *const reprtab)
 static inline void type_init(syntax *const sx)
 {
 	vector_increase(&sx->types, 1);
-	// занесение в types описателя struct {int numTh; int inf; }
-	vector_add(&sx->types, 0);
+	// занесение в types описателя struct { int numTh; int inf; }
+	sx->start_type = vector_add(&sx->types, 0);
 	vector_add(&sx->types, type_struct);
 	vector_add(&sx->types, 2);
 	vector_add(&sx->types, 4);
@@ -97,14 +97,12 @@ static inline void type_init(syntax *const sx)
 	vector_add(&sx->types, type_integer);
 	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "data"));
 
-	// занесение в types описателя функции void* interpreter(void* n)
-	vector_add(&sx->types, 1);
+	// занесение в modetab описателя функции void* interpreter(void* n)
+	sx->start_type = vector_add(&sx->types, sx->start_type);
 	vector_add(&sx->types, type_function);
 	vector_add(&sx->types, type_void_pointer);
 	vector_add(&sx->types, 1);
 	vector_add(&sx->types, type_void_pointer);
-
-	sx->start_type = 9;
 }
 
 static inline item_t get_static(syntax *const sx, const item_t type)
@@ -152,7 +150,7 @@ static inline bool type_is_equal(const syntax *const sx, const size_t first, con
 	return true;
 }
 
-/**
+/*
  *	args = list of characters each for one argument
  *		v -> void
  *		V -> void*
@@ -167,7 +165,7 @@ static inline bool type_is_equal(const syntax *const sx, const size_t first, con
 static item_t type_new_function(syntax *const sx, const item_t return_type, const char *const args)
 {
 	item_t local_modetab[6];
-	size_t i = 0;
+	item_t i = 0;
 
 	local_modetab[0] = type_function;
 	local_modetab[1] = return_type;
@@ -187,8 +185,8 @@ static item_t type_new_function(syntax *const sx, const item_t return_type, cons
 				break;
 			case 'S':
 			{
-				const size_t ref = type_add(sx, (item_t[]){ type_array, type_character }, 2);
-				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_pointer, (item_t)ref }, 2);
+				const item_t ref = (item_t)type_add(sx, (item_t[]){ type_array, type_character }, 2);
+				local_modetab[3 + i] = (item_t)type_add(sx, (item_t[]){ type_pointer, ref }, 2);
 			}
 			break;
 			case 'i':
@@ -211,9 +209,9 @@ static item_t type_new_function(syntax *const sx, const item_t return_type, cons
 		i++;
 	}
 
-	local_modetab[2] = (item_t)i;
+	local_modetab[2] = i;
 
-	return (item_t)type_add(sx, local_modetab, i + 3);
+	return (item_t)type_add(sx, local_modetab, (size_t)i + 3);
 }
 
 static void builtin_add(syntax *const sx, const char32_t *const eng, const char32_t *const rus, const item_t type)
