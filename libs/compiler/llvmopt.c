@@ -415,7 +415,7 @@ static int node_recursive(information *const info, node *const nd)
 
 					node slice_info_memory;
 					node_info slice_info = stack_info_pop(info, &slice_info_memory);
-					has_error |= slice_info.ref_node == NULL ? -1 : 0;
+					has_error |= slice_info.depth == SIZE_MAX ? -1 : 0;
 					if (has_error)
 					{
 						return has_error;
@@ -442,7 +442,7 @@ static int node_recursive(information *const info, node *const nd)
 					{
 						node operand_memory;
 						node_info operand = stack_info_pop(info, &operand_memory);
-						has_error |= operand.ref_node == NULL ? -1 : 0;
+						has_error |= operand.depth == SIZE_MAX ? -1 : 0;
 						if (has_error)
 						{
 							return has_error;
@@ -476,7 +476,7 @@ static int node_recursive(information *const info, node *const nd)
 					{
 						node second_memory;
 						node_info second = stack_info_pop(info, &second_memory);
-						has_error |= second.ref_node == NULL ? -1 : 0;
+						has_error |= second.depth == SIZE_MAX ? -1 : 0;
 						if (has_error)
 						{
 							return has_error;
@@ -484,7 +484,7 @@ static int node_recursive(information *const info, node *const nd)
 
 						node first_memory;
 						node_info first = stack_info_pop(info, &first_memory);
-						has_error |= first.ref_node == NULL ? -1 : 0;
+						has_error |= first.depth == SIZE_MAX ? -1 : 0;
 						if (has_error)
 						{
 							return has_error;
