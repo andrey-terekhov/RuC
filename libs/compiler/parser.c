@@ -218,14 +218,6 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
 	return ret;
 }
 
-item_t to_modetab(parser *const prs, const item_t mode, const item_t element)
-{
-	item_t temp[2];
-	temp[0] = mode;
-	temp[1] = element;
-	return (item_t)type_add(prs->sx, temp, 2);
-}
-
 void to_tree(parser *const prs, const item_t operation)
 {
 	prs->nd = node_add_child(&prs->nd, operation);
