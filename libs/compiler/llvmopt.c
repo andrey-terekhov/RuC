@@ -40,6 +40,12 @@ typedef struct node_info
 	size_t depth;									/**< Количество узлов после данного узла при перестановке */
 } node_info;
 
+typedef struct stack_info
+{
+	stack nodes;									/**< Стек нод для преобразования выражений */
+	stack depths;									/**< Стек глубин нод для преобразования выражений */
+} stack_info;
+
 typedef struct information
 {
 	universal_io *io;								/**< Вывод */
@@ -48,8 +54,7 @@ typedef struct information
 	item_t string_num;								/**< Номер строки */
 	item_t was_printf;								/**< Флаг наличия printf в исходном коде */
 
-	stack nodes;									/**< Стек нод для преобразования выражений */
-	stack depths;									/**< Стек глубин нод для преобразования выражений */
+	stack_info nodes_info;							/**< Стек информации о нодах для преобразования выражений */
 
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
 	size_t slice_depth;								/**< Количество узлов после OP_SLICE_IDENT */
@@ -57,16 +62,28 @@ typedef struct information
 } information;
 
 
-static inline int stack_push_info(information *const info, node_info *const nd)
+static inline void stack_info_create(information *const info)
 {
-	return stack_push(&info->nodes, node_save(nd->ref_node))
-		|| stack_push(&info->depths, nd->depth);
+	info->nodes_info.nodes = stack_create(MAX_STACK_SIZE);
+	info->nodes_info.depths = stack_create(MAX_STACK_SIZE);
 }
 
-static inline node_info stack_pop_info(information *const info, node *const memory)
+static inline int stack_info_clear(information *const info)
 {
-	const item_t index = stack_pop(&info->nodes);
-	const item_t operand_depth = stack_pop(&info->depths);
+	return stack_clear(&info->nodes_info.nodes)
+		|| stack_clear(&info->nodes_info.depths);
+}
+
+static inline int stack_info_push(information *const info, node_info *const nd)
+{
+	return stack_push(&info->nodes_info.nodes, node_save(nd->ref_node))
+		|| stack_push(&info->nodes_info.depths, nd->depth);
+}
+
+static inline node_info stack_info_pop(information *const info, node *const memory)
+{
+	const item_t index = stack_pop(&info->nodes_info.nodes);
+	const item_t operand_depth = stack_pop(&info->nodes_info.depths);
 
 	if (index == ITEM_MAX || operand_depth == ITEM_MAX)
 	{
@@ -80,24 +97,24 @@ static inline node_info stack_pop_info(information *const info, node *const memo
 	return operand;
 }
 
-static inline size_t stack_size_info(information *const info)
+static inline size_t stack_info_size(information *const info)
 {
-	return stack_size(&info->nodes);
+	return stack_size(&info->nodes_info.nodes);
 }
 
-static inline void stack_resize_info(information *const info, const size_t size)
+static inline void stack_info_resize(information *const info, const size_t size)
 {
 	if (size == 0)
 	{
-		stack_reset(&info->nodes);
-		stack_reset(&info->depths);
+		stack_reset(&info->nodes_info.nodes);
+		stack_reset(&info->nodes_info.depths);
 	}
 	else
 	{
-		while (stack_size_info(info) != size)
+		while (stack_info_size(info) != size)
 		{
-			stack_pop(&info->nodes);
-			stack_pop(&info->depths);
+			stack_pop(&info->nodes_info.nodes);
+			stack_pop(&info->nodes_info.depths);
 		}
 	}
 }
@@ -325,7 +342,7 @@ static int node_recursive(information *const info, node *const nd)
 		// Очищаем полностью стек, если родитель -- блок
 		if (node_get_type(nd) == OP_BLOCK)
 		{
-			stack_resize_info(info, 0);
+			stack_info_resize(info, 0);
 		}
 
 		switch (node_get_type(&child))
@@ -396,10 +413,10 @@ static int node_recursive(information *const info, node *const nd)
 						break;
 					}
 
-					stack_resize_info(info, info->slice_stack_size);
+					stack_info_resize(info, info->slice_stack_size);
 
 					node slice_info_memory;
-					node_info slice_info = stack_pop_info(info, &slice_info_memory);
+					node_info slice_info = stack_info_pop(info, &slice_info_memory);
 					has_error |= slice_info.ref_node == NULL ? -1 : 0;
 					if (has_error)
 					{
@@ -407,7 +424,7 @@ static int node_recursive(information *const info, node *const nd)
 					}
 
 					slice_info.depth = info->slice_depth;
-					stack_push_info(info, &slice_info);
+					stack_info_push(info, &slice_info);
 					info->slice_depth = 0;
 				}
 			}
@@ -421,12 +438,12 @@ static int node_recursive(information *const info, node *const nd)
 				switch (expression_type(&child))
 				{
 					case OPERAND:
-						stack_push_info(info, &nd_info);
+						stack_info_push(info, &nd_info);
 						break;
 					case UNARY_OPERATION:
 					{
 						node operand_memory;
-						node_info operand = stack_pop_info(info, &operand_memory);
+						node_info operand = stack_info_pop(info, &operand_memory);
 						has_error |= operand.ref_node == NULL ? -1 : 0;
 						if (has_error)
 						{
@@ -454,13 +471,13 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// добавляем в стек переставленное выражение
-						has_error |= stack_push_info(info, &operand);
+						has_error |= stack_info_push(info, &operand);
 					}
 					break;
 					case BINARY_OPERATION:
 					{
 						node second_memory;
-						node_info second = stack_pop_info(info, &second_memory);
+						node_info second = stack_info_pop(info, &second_memory);
 						has_error |= second.ref_node == NULL ? -1 : 0;
 						if (has_error)
 						{
@@ -468,7 +485,7 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						node first_memory;
-						node_info first = stack_pop_info(info, &first_memory);
+						node_info first = stack_info_pop(info, &first_memory);
 						has_error |= first.ref_node == NULL ? -1 : 0;
 						if (has_error)
 						{
@@ -501,7 +518,7 @@ static int node_recursive(information *const info, node *const nd)
 						has_error |= transposition(&first, &second);
 
 						// добавляем в стек переставленное выражение
-						has_error |= stack_push_info(info, &first);
+						has_error |= stack_info_push(info, &first);
 					}
 					break;
 					case NOT_EXPRESSION:
@@ -516,7 +533,7 @@ static int node_recursive(information *const info, node *const nd)
 		if (node_get_type(&child) == OP_SLICE_IDENT)
 		{
 			info->slice_depth = 1;
-			info->slice_stack_size = stack_size_info(info);
+			info->slice_stack_size = stack_info_size(info);
 		}
 
 		if (has_error || node_recursive(info, &child))
@@ -539,8 +556,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	info.slice_depth = 0;
 	info.slice_stack_size = 0;
 
-	info.nodes = stack_create(MAX_STACK_SIZE);
-	info.depths = stack_create(MAX_STACK_SIZE);
+	stack_info_create(&info);
 
 	node nd = node_get_root(&sx->tree);
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
@@ -548,8 +564,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 		node child = node_get_child(&nd, i);
 		if (node_recursive(&info, &child))
 		{
-			stack_clear(&info.nodes);
-			stack_clear(&info.depths);
+			stack_info_clear(&info);
 
 			return -1;
 		}
@@ -562,8 +577,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	}
 	uni_printf(io, "\n");
 
-	stack_clear(&info.nodes);
-	stack_clear(&info.depths);
+	stack_info_clear(&info);
 
 	return 0;
 }
