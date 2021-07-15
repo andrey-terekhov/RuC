@@ -808,11 +808,14 @@ static expression parse_call_expression_suffix(parser *const prs, expression ope
 static expression parse_postfix_expression(parser *const prs)
 {
 	expression operand = parse_primary_expression(prs);
-	
+
 	while (true)
 	{
 		switch (prs->token)
 		{
+			default:
+				return operand;
+
 			case TK_L_SQUARE:
 			{
 				const location_t l_loc = token_consume(prs);
@@ -873,9 +876,6 @@ static expression parse_postfix_expression(parser *const prs)
 				operand = unary_expression(prs, operand, UN_POSTDEC, op_loc);
 				break;
 			}
-
-			default:
-				return operand;
 		}
 	}
 }
@@ -900,6 +900,9 @@ static expression parse_unary_expression(parser *const prs)
 {
 	switch (prs->token)
 	{
+		default:
+			return parse_postfix_expression(prs);
+
 		case TK_PLUS_PLUS:
 		case TK_MINUS_MINUS:
 		case TK_AMP:
@@ -916,9 +919,6 @@ static expression parse_unary_expression(parser *const prs)
 
 			return unary_expression(prs, operand, operator, op_loc);
 		}
-
-		default:
-			return parse_postfix_expression(prs);
 	}
 }
 
