@@ -36,7 +36,7 @@ typedef enum EXPRESSION
 
 typedef struct node_info
 {
-	node *ref_node;									/**< Ссылка на узел */
+	node ref_node;									/**< Ссылка на узел */
 	size_t depth;									/**< Количество узлов после данного узла при перестановке */
 } node_info;
 
@@ -76,7 +76,8 @@ static inline int stack_info_clear(information *const info)
 
 static inline int stack_info_push(information *const info, node_info *const nd)
 {
-	return stack_push(&info->nodes_info.nodes, node_save(nd->ref_node))
+	printf("here\n");
+	return stack_push(&info->nodes_info.nodes, node_save(&nd->ref_node))
 		|| stack_push(&info->nodes_info.depths, nd->depth);
 }
 
@@ -87,12 +88,12 @@ static inline node_info stack_info_pop(information *const info, node *const memo
 
 	if (index == ITEM_MAX || operand_depth == ITEM_MAX)
 	{
-		return (node_info){ NULL, SIZE_MAX };
+		return (node_info){ .depth = SIZE_MAX };
 	}
 
-	*(memory) = node_load(&info->sx->tree, (size_t)index);
+	// *(memory) = node_load(&info->sx->tree, (size_t)index);
 
-	return (node_info){ memory, (size_t)operand_depth };
+	return (node_info){ node_load(&info->sx->tree, (size_t)index), (size_t)operand_depth };
 }
 
 static inline size_t stack_info_size(information *const info)
@@ -126,24 +127,24 @@ static int transposition(node_info *const expr, node_info *const cur)
 		return -1;
 	}
 
-	node_order(expr->ref_node, cur->ref_node);
+	node_order(&expr->ref_node, &cur->ref_node);
 
 	node tmp;
-	node_copy(&tmp, expr->ref_node);
-	node_copy(expr->ref_node, cur->ref_node);
-	node_copy(cur->ref_node, &tmp);
+	node_copy(&tmp, &expr->ref_node);
+	node_copy(&expr->ref_node, &cur->ref_node);
+	node_copy(&cur->ref_node, &tmp);
 
 	node node_to_order;
-	node_copy(&node_to_order, expr->ref_node);
+	node_copy(&node_to_order, &expr->ref_node);
 	for (size_t i = 1; i < expr->depth; i++)
 	{
 		node_to_order = node_get_next(&node_to_order);
 
-		node_order(cur->ref_node, &node_to_order);
+		node_order(&cur->ref_node, &node_to_order);
 
 		node_copy(&tmp, &node_to_order);
-		node_copy(&node_to_order, cur->ref_node);
-		node_copy(cur->ref_node, &tmp);
+		node_copy(&node_to_order, &cur->ref_node);
+		node_copy(&cur->ref_node, &tmp);
 	}
 
 	expr->depth += cur->depth;
@@ -430,7 +431,7 @@ static int node_recursive(information *const info, node *const nd)
 
 			default:
 			{
-				node_info nd_info =  {&child, 1};
+				node_info nd_info =  {child, 1};
 
 				// перестановка узлов выражений
 				switch (expression_type(&child))
@@ -448,7 +449,7 @@ static int node_recursive(information *const info, node *const nd)
 							return has_error;
 						}
 
-						if (node_get_type(nd_info.ref_node) == OP_ADDR_TO_VAL)
+						if (node_get_type(&nd_info.ref_node) == OP_ADDR_TO_VAL)
 						{
 							node_info log_info = { nd_info.ref_node, 1 };
 							has_error |= transposition(&nd_info, &log_info);
@@ -457,7 +458,7 @@ static int node_recursive(information *const info, node *const nd)
 						// перестановка с операндом
 						has_error |= transposition(&operand, &nd_info);
 
-						if (node_get_type(operand.ref_node) == OP_CALL1)
+						if (node_get_type(&operand.ref_node) == OP_CALL1)
 						{
 							node tmp;
 							node_copy(&tmp, &child);
@@ -489,31 +490,42 @@ static int node_recursive(information *const info, node *const nd)
 						{
 							return has_error;
 						}
-						// printf("%i\n", node_get_type(&child));
+						printf("op %i\n", node_get_type(&nd_info.ref_node));
+						printf("second %i\n", node_get_type(&second.ref_node));
+						printf("first %i\n\n", node_get_type(&first.ref_node));
 
-						node parent = node_get_parent(nd_info.ref_node);
+						node parent = node_get_parent(&nd_info.ref_node);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							node_info log_info = { &parent, 1 };
+							node_info log_info = { parent, 1 };
 							has_error |= transposition(&nd_info, &log_info);
-							node_copy(nd_info.ref_node, log_info.ref_node);
+							node_copy(&nd_info.ref_node, &log_info.ref_node);
 						}
 
 						// перестановка со вторым операндом
 						has_error |= transposition(&second, &nd_info);
 
-						parent = node_get_parent(second.ref_node);
+						printf("op %i\n", node_get_type(&nd_info.ref_node));
+						printf("second %i\n", node_get_type(&second.ref_node));
+						printf("first %i\n\n", node_get_type(&first.ref_node));
+
+						parent = node_get_parent(&second.ref_node);
 						if (node_get_type(&parent) == OP_AD_LOG_OR
 							|| node_get_type(&parent) == OP_AD_LOG_AND
 							|| node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							node_info log_info = { &parent, 1 };
+							node_info log_info = { parent, 1 };
 							has_error |= transposition(&second, &log_info);
-							node_copy(second.ref_node, log_info.ref_node);
+							node_copy(&second.ref_node, &log_info.ref_node);
 						}
 
 						// перестановка с первым операндом
 						has_error |= transposition(&first, &second);
+
+						printf("op %i\n", node_get_type(&nd_info.ref_node));
+						printf("second %i\n", node_get_type(&second.ref_node));
+						printf("first %i\n\n", node_get_type(&first.ref_node));
+						printf("first depth %i\n\n", first.depth);
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_info_push(info, &first);
