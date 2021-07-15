@@ -290,6 +290,46 @@ static void final_operation(virtual *const vm, node *const nd)
 }
 
 /**
+ *	Emit call expression
+ *
+ *	@param	vm				Code generator
+ *	@param	nd				Node in AST
+ */
+static void emit_call_expression(virtual *const vm, node *const nd)
+{
+	const size_t args = (size_t)node_get_arg(nd, 0);
+	node nd_call2 = node_get_child(nd, args);
+	const size_t func_id = (size_t)node_get_arg(&nd_call2, 0);
+
+	if (func_id >= BEGIN_USER_FUNC)
+	{
+		// Это вызов пользовательской функции
+		mem_add(vm, IC_CALL1);
+		for (size_t i = 0; i < args; i++)
+		{
+			node nd_argument = node_get_child(nd, i);
+			emit_expression(vm, &nd_argument);
+		}
+
+		mem_add(vm, IC_CALL2);
+		mem_add(vm, ident_get_displ(vm->sx, func_id));
+	}
+	else
+	{
+		// Это вызов библиотечной функции
+		for (size_t i = 0; i < args; i++)
+		{
+			node nd_argument = node_get_child(nd, i);
+			emit_expression(vm, &nd_argument);
+		}
+
+		mem_add(vm, builtin_to_instruction((builtin_t)func_id));
+	}
+
+	node_copy(nd, &nd_call2);
+}
+
+/**
  *	Emit expression
  *
  *	@param	vm				Code generator
@@ -427,23 +467,8 @@ static void expression(virtual *const vm, node *const nd, const bool is_in_condi
 			}
 			break;
 			case OP_CALL1:
-			{
-				mem_add(vm, IC_CALL1);
-
-				const item_t N = node_get_arg(nd, 0);
-				for (item_t i = 0; i < N; i++)
-				{
-					node_set_next(nd);
-					expression(vm, nd, false);
-				}
-			}
-			break;
-			case OP_CALL2:
-			{
-				mem_add(vm, IC_CALL2);
-				mem_add(vm, ident_get_displ(vm->sx, (size_t)node_get_arg(nd, 0)));
-			}
-			break;
+				emit_call_expression(vm, nd);
+				break;
 			default:
 				was_operation = false;
 				break;
@@ -1168,7 +1193,6 @@ static void emit_statement(virtual *const vm, const node *const nd)
 			break;
 
 		case OP_CREATE_DIRECT:
-		case OP_CREATE:
 			emit_thread(vm, nd);
 			break;
 

@@ -288,119 +288,6 @@ static item_t parse_braced_init_list(parser *const prs, const item_t type)
 	return to_modetab(prs, type_array, type);
 }
 
-static void must_be_string(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	if (!type_is_string(prs->sx, stack_pop(&prs->anonymous)))
-	{
-		parser_error(prs, not_string_in_stanfunc);
-	}
-}
-
-static void must_be_point_string(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	const item_t type = stack_pop(&prs->anonymous);
-	if (!(type_is_pointer(prs->sx, type) && type_is_string(prs->sx, type_get(prs->sx, (size_t)type + 1))))
-	{
-		parser_error(prs, not_point_string_in_stanfunc);
-	}
-}
-
-static void must_be_row(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	if (!type_is_array(prs->sx, stack_pop(&prs->anonymous)))
-	{
-		parser_error(prs, not_array_in_stanfunc);
-	}
-}
-
-static void must_be_int(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	if (!type_is_integer(stack_pop(&prs->anonymous)))
-	{
-		parser_error(prs, not_int_in_stanfunc);
-	}
-}
-
-static void must_be_float(parser *const prs)
-{
-	parse_assignment_expression_internal(prs);
-	to_value(prs);
-
-	const item_t type = stack_pop(&prs->anonymous);
-	if (type_is_integer(type))
-	{
-		to_tree(prs, OP_WIDEN);
-	}
-	else if (!type_is_float(type))
-	{
-		parser_error(prs, bad_param_in_stand_func);
-	}
-}
-
-static void must_be_row_of_int(parser *const prs)
-{
-	item_t type;
-	if (prs->token == TK_L_BRACE)
-	{
-		type = parse_braced_init_list(prs, type_integer);
-	}
-	else
-	{
-		parse_assignment_expression_internal(prs);
-		to_value(prs);
-
-		type = stack_pop(&prs->anonymous);
-		if (type_is_integer(type))
-		{
-			to_tree(prs, OP_ROWING);
-			type = to_modetab(prs, type_array, type_integer);
-		}
-	}
-
-	if (!(type_is_array(prs->sx, type) && type_is_integer(type_get(prs->sx, (size_t)type + 1))))
-	{
-		parser_error(prs, not_rowofint_in_stanfunc);
-	}
-}
-
-static void must_be_row_of_float(parser *const prs)
-{
-	item_t type;
-	if (prs->token == TK_L_BRACE)
-	{
-		type = parse_braced_init_list(prs, type_float);
-	}
-	else
-	{
-		parse_assignment_expression_internal(prs);
-		to_value(prs);
-
-		type = stack_pop(&prs->anonymous);
-		if (type_is_float(type))
-		{
-			to_tree(prs, OP_ROWING_D);
-			type = to_modetab(prs, type_array, type_float);
-		}
-	}
-
-	if (!(type_is_array(prs->sx, type) && type_get(prs->sx, (size_t)type + 1) == type_float))
-	{
-		parser_error(prs, not_rowoffloat_in_stanfunc);
-	}
-}
-
 static void parse_standard_function_call(parser *const prs)
 {
 	const token_t func = prs->token;
@@ -413,157 +300,28 @@ static void parse_standard_function_call(parser *const prs)
 		return;
 	}
 
-	if (func == TK_ASSERT)
+	if (func == TK_UPB)
 	{
-		must_be_int(prs);
+		parse_assignment_expression_internal(prs);
+		to_value(prs);
+
+		if (!type_is_integer(stack_pop(&prs->anonymous)))
+		{
+			parser_error(prs, not_int_in_stanfunc);
+		}
+
 		token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-		must_be_string(prs);
-		operands_push(prs, VALUE, type_void);
-	}
-	else if (func > BEGIN_TK_STR && func < END_TK_STR)
-	{
-		if (func == TK_STRCPY || func == TK_STRNCPY || func == TK_STRCAT || func == TK_STRNCAT)
+
+		parse_assignment_expression_internal(prs);
+		to_value(prs);
+
+		if (!type_is_array(prs->sx, stack_pop(&prs->anonymous)))
 		{
-			must_be_point_string(prs);
-		}
-		else
-		{
-			must_be_string(prs);
+			parser_error(prs, not_array_in_stanfunc);
 		}
 
-		if (func != TK_STRLEN)
-		{
-			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-			must_be_string(prs);
-			if (func == TK_STRNCPY || func == TK_STRNCAT || func == TK_STRNCMP)
-			{
-				token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-				must_be_int(prs);
-			}
-		}
-
-		if (func == TK_STRCMP || func == TK_STRNCMP || func == TK_STRSTR || func == TK_STRLEN)
-		{
-			operands_push(prs, VALUE, type_integer);
-		}
-		else
-		{
-			operands_push(prs, VALUE, type_void);
-		}
-	}
-	else if (func > BEGIN_TK_ROBOT && func < END_TK_ROBOT)
-	{
-		// новые функции Фадеева
-		must_be_int(prs);
-		if (func == TK_ROBOT_SEND_INT || func == TK_ROBOT_SEND_STRING)
-		{
-			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-			must_be_row_of_int(prs);
-			operands_push(prs, VALUE, type_void);
-		}
-		else if (func == TK_ROBOT_SEND_FLOAT)
-		{
-			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-			must_be_row_of_float(prs);
-			operands_push(prs, VALUE, type_void);
-		}
-		else
-		{
-			operands_push(prs, VALUE, func == TK_ROBOT_RECEIVE_INT
-											? type_integer
-											: func == TK_ROBOT_RECEIVE_FLOAT
-												? type_float
-												: to_modetab(prs, type_array, type_character));
-
-		}
-	}
-	else if (func > BEGIN_TK_THREAD && func < END_TK_THREAD)
-	{
-		if (func == TK_INIT || func == TK_DESTROY || func == TK_EXIT)
-		{
-			operands_push(prs, VALUE, type_void);
-		}
-		else if (func == TK_MSG_RECEIVE || func == TK_GETNUM) // getnum int(), msgreceive msg_info()
-		{
-			operands_push(prs, VALUE, func == TK_GETNUM ? type_integer : type_msg_info);
-		}
-		else
-		{
-			// MSGSEND void(msg_info)  CREATE int(void*(*func)(void*))
-			// SEMCREATE int(int)  JOIN,  SLEEP,  SEMWAIT,  SEMPOST void(int)
-			// у этих процедур 1 параметр
-
-			if (func == TK_CREATE)
-			{
-				if (!token_try_consume(prs, TK_IDENTIFIER))
-				{
-					parser_error(prs, act_param_not_ident);
-				}
-
-				const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
-				if (id == ITEM_MAX)
-				{
-					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, prs->lxr->repr));
-				}
-
-				prs->last_id = (size_t)id;
-				if (ident_get_type(prs->sx, prs->last_id) != type_void_pointer)
-				{
-					parser_error(prs, wrong_arg_in_create);
-				}
-
-				const item_t displ = ident_get_displ(prs->sx, prs->last_id);
-				if (displ < 0)
-				{
-					to_tree(prs, OP_IDENT_TO_VAL);
-					node_add_arg(&prs->nd, -displ);
-				}
-				else
-				{
-					to_tree(prs, OP_CONST);
-					node_add_arg(&prs->nd, displ);
-				}
-
-				operands_push(prs, VALUE, type_integer);
-			}
-			else
-			{
-				if (func == TK_MSG_SEND)
-				{
-					parse_initializer(prs, &prs->nd, type_msg_info);
-					operands_push(prs, VALUE, type_void);
-				}
-				else
-				{
-					must_be_int(prs);
-
-					if (func == TK_SEM_CREATE)
-					{
-						operands_push(prs, VALUE, type_integer);
-					}
-					else
-					{
-						operands_push(prs, VALUE, type_void);
-					}
-				}
-			}
-		}
-	}
-	else if (func == TK_UPB)
-	{
-		must_be_int(prs);
-		token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-		must_be_row(prs);
 		operands_push(prs, VALUE, type_integer);
-	}
-	else if (func == TK_RAND)
-	{
-			operands_push(prs, VALUE, type_float);
-	}
-	else if (func == TK_ROUND)
-	{
-		must_be_float(prs);
-		operands_push(prs, VALUE, type_integer);
+		to_tree(prs, OP_UPB);
 	}
 	else if (func == TK_ABS)
 	{
@@ -574,21 +332,14 @@ static void parse_standard_function_call(parser *const prs)
 		{
 			operands_push(prs, VALUE, type_integer);
 			to_tree(prs, OP_ABSI);
-			token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
-			return;
 		}
 		else
 		{
 			operands_push(prs, VALUE, type_float);
+			to_tree(prs, OP_ABS);
 		}
 	}
-	else
-	{
-		must_be_float(prs);
-		operands_push(prs, VALUE, type_float);
-	}
 
-	to_tree(prs, token_to_function(func));
 	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
 }
 
@@ -848,6 +599,7 @@ static void parse_function_call(parser *const prs, const size_t function_id)
 			}
 			else
 			{
+				prs->left_mode = expected_arg_type;
 				prs->is_in_assignment = false;
 				const item_t actual_arg_type = parse_assignment_expression(prs, &prs->nd);
 

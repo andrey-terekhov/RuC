@@ -35,7 +35,6 @@ typedef enum OPERATION
 	OP_WIDEN				= IC_WIDEN,					/**< 'WIDEN' node */
 	OP_ROWING				= IC_ROWING,				/**< 'ROWING' node */
 	OP_ROWING_D				= IC_ROWING_D,				/**< 'ROWINGD' node */
-	OP_ASSERT				= IC_ASSERT,				/**< 'ASSERT' node */
 	OP_UPB					= IC_UPB,					/**< 'UPB' node */
 
 	// Struct copying functions
@@ -52,47 +51,6 @@ typedef enum OPERATION
 	// Math functions
 	OP_ABSI					= IC_ABSI,					/**< 'ABSI' node */
 	OP_ABS					= IC_ABS,					/**< 'ABS' node */
-	OP_SQRT					= IC_SQRT,					/**< 'SQRT' node */
-	OP_EXP					= IC_EXP,					/**< 'EXP' node */
-	OP_SIN					= IC_SIN,					/**< 'SIN' node */
-	OP_COS					= IC_COS,					/**< 'COS' node */
-	OP_LOG					= IC_LOG,					/**< 'LOG' node */
-	OP_LOG10				= IC_LOG10,					/**< 'LOG10' node */
-	OP_ASIN					= IC_ASIN,					/**< 'ASIN' node */
-	OP_RAND					= IC_RAND,					/**< 'RAND' node */
-	OP_ROUND				= IC_ROUND,					/**< 'ROUND' node */
-
-	// String functions
-	OP_STRCPY				= IC_STRCPY,				/**< 'STRCPY' node */
-	OP_STRNCPY				= IC_STRNCPY,				/**< 'STRNCPY' node */
-	OP_STRCAT				= IC_STRCAT,				/**< 'STRCAT' node */
-	OP_STRNCAT				= IC_STRNCAT,				/**< 'STRNCAT' node */
-	OP_STRCMP				= IC_STRCMP,				/**< 'STRCMP' node */
-	OP_STRNCMP				= IC_STRNCMP,				/**< 'STRNCMP' node */
-	OP_STRSTR				= IC_STRSTR,				/**< 'STRSTR' node */
-	OP_STRLEN				= IC_STRLEN,				/**< 'STRLEN' node */
-
-	// Thread functions
-	OP_MSG_SEND				= IC_MSG_SEND,				/**< 'MSG_SEND' node */
-	OP_MSG_RECEIVE			= IC_MSG_RECEIVE,			/**< 'MSG_RECEIVE' node */
-	OP_JOIN					= IC_JOIN,					/**< 'JOIN' node */
-	OP_SLEEP				= IC_SLEEP,					/**< 'SLEEP' node */
-	OP_SEM_CREATE			= IC_SEM_CREATE,			/**< 'SEM_CREATE' node */
-	OP_SEM_WAIT				= IC_SEM_WAIT,				/**< 'SEM_WAIT' node */
-	OP_SEM_POST				= IC_SEM_POST,				/**< 'SEM_POST' node */
-	OP_CREATE				= IC_CREATE,				/**< 'CREATE' node */
-	OP_INIT					= IC_INIT,					/**< 'INIT' node */
-	OP_DESTROY				= IC_DESTROY,				/**< 'DESTROY' node */
-	OP_EXIT					= IC_EXIT,					/**< 'EXIT' node */
-	OP_GETNUM				= IC_GETNUM,				/**< 'GETNUM' node */
-
-	// Robot functions
-	OP_ROBOT_SEND_INT		= IC_ROBOT_SEND_INT,		/**< 'SEND_INT' node */
-	OP_ROBOT_SEND_FLOAT		= IC_ROBOT_SEND_FLOAT,		/**< 'SEND_FLOAT' node */
-	OP_ROBOT_SEND_STRING	= IC_ROBOT_SEND_STRING,		/**< 'SEND_STRING' node */
-	OP_ROBOT_RECEIVE_INT	= IC_ROBOT_RECEIVE_INT,		/**< 'RECEIVE_INT' node */
-	OP_ROBOT_RECEIVE_FLOAT	= IC_ROBOT_RECEIVE_FLOAT,	/**< 'RECEIVE_FLOAT' node */
-	OP_ROBOT_RECEIVE_STRING	= IC_ROBOT_RECEIVE_STRING,	/**< 'RECEIVE_STRING' node */
 
 	// Unary operators
 	OP_NOT					= IC_NOT,					/**< 'BITNOT' node */
@@ -312,10 +270,64 @@ typedef enum OPERATION
 } operation_t;
 
 
+typedef enum builtin
+{
+	// Diagnostics functions
+	BI_ASSERT				= 2,
+
+	// Math functions
+	BI_ASIN					= 6,
+	BI_COS					= 10,
+	BI_SIN					= 14,
+	BI_EXP					= 18,
+	BI_LOG					= 22,
+	BI_LOG10				= 26,
+	BI_SQRT					= 30,
+	BI_RAND					= 34,
+	BI_ROUND				= 38,
+
+	// String functions
+	BI_STRCPY				= 42,
+	BI_STRNCPY				= 46,
+	BI_STRCAT				= 50,
+	BI_STRNCAT				= 54,
+	BI_STRCMP				= 58,
+	BI_STRNCMP				= 62,
+	BI_STRSTR				= 66,
+	BI_STRLEN				= 70,
+
+	// Robot functions
+	BI_ROBOT_SEND_INT		= 74,
+	BI_ROBOT_SEND_FLOAT		= 78,
+	BI_ROBOT_SEND_STRING	= 82,
+	BI_ROBOT_RECEIVE_INT	= 86,
+	BI_ROBOT_RECEIVE_FLOAT	= 90,
+	BI_ROBOT_RECEIVE_STRING	= 94,
+
+	// Thread functions
+	BI_CREATE				= 98,
+	BI_GETNUM				= 102,
+	BI_SLEEP				= 106,
+	BI_JOIN					= 110,
+	BI_EXIT					= 114,
+	BI_INIT					= 118,
+	BI_DESTROY				= 122,
+
+	BI_SEM_CREATE			= 126,
+	BI_SEM_WAIT				= 130,
+	BI_SEM_POST				= 134,
+
+	BI_MSG_SEND				= 138,
+	BI_MSG_RECEIVE			= 142,
+
+	BEGIN_USER_FUNC			= 144,
+} builtin_t;
+
+
 /**
  *	Convert token to corresponding binary operation
  *
- *	@param	token	Token
+ *	@param	token		Token
  *
  *	@return	Binary operation
  */
@@ -324,20 +336,20 @@ operation_t token_to_binary(const token_t token);
 /**
  *	Convert token to corresponding unary operation
  *
- *	@param	token	Token
+ *	@param	token		Token
  *
  *	@return	Unary operation
  */
 operation_t token_to_unary(const token_t token);
 
 /**
- *	Convert token to corresponding function operation
+ *	Convert standard function id to corresponding function instruction
  *
- *	@param	token	Token
+ *	@param	func		Function id
  *
- *	@return	Function operation
+ *	@return	Function instruction
  */
-operation_t token_to_function(const token_t token);
+instruction_t builtin_to_instruction(const builtin_t func);
 
 /**
  *	Convert to corresponding address version of operation
