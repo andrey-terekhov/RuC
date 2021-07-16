@@ -407,15 +407,9 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 			op_loc = token_consume(prs);
 		}
 
-		expression RHS;
-		if (prs->token == TK_L_BRACE)
-		{
-			RHS = parse_initializer(prs, expression_get_type(LHS));
-		}
-		else
-		{
-			RHS = parse_unary_expression(prs);
-		}
+		expression RHS = (prs->token == TK_L_BRACE)
+			? parse_initializer(prs, expression_get_type(LHS))
+			: parse_unary_expression(prs);
 
 		const precedence_t this_prec = next_token_prec;
 		next_token_prec = get_operator_precedence(prs->token);

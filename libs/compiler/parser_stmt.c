@@ -119,7 +119,7 @@ static void parse_case_statement(parser *const prs, node *const parent)
 	node nd = node_add_child(parent, OP_CASE);
 	node_copy(&prs->sx->nd, &nd);
 	const expression condition = parse_constant_expression(prs);
-	const item_t condition_type = expression_get_type(expr);
+	const item_t condition_type = expression_get_type(condition);
 	if (condition.is_valid && !type_is_integer(condition_type))
 	{
 		parser_error(prs, float_in_switch);
