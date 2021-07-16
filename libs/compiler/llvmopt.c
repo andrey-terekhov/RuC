@@ -82,7 +82,7 @@ static inline int stack_info_push(information *const info, node_info *const nd)
 		|| stack_push(&info->nodes_info.depths, nd->depth);
 }
 
-static inline node_info stack_info_pop(information *const info, node *const memory)
+static inline node_info stack_info_pop(information *const info)
 {
 	const item_t index = stack_pop(&info->nodes_info.nodes);
 	const item_t operand_depth = stack_pop(&info->nodes_info.depths);
@@ -415,8 +415,7 @@ static int node_recursive(information *const info, node *const nd)
 
 					stack_info_resize(info, info->slice_stack_size);
 
-					node slice_info_memory;
-					node_info slice_info = stack_info_pop(info, &slice_info_memory);
+					node_info slice_info = stack_info_pop(info);
 					has_error |= slice_info.depth == SIZE_MAX ? -1 : 0;
 					if (has_error)
 					{
@@ -456,8 +455,7 @@ static int node_recursive(information *const info, node *const nd)
 						break;
 					case UNARY_OPERATION:
 					{
-						node operand_memory;
-						node_info operand = stack_info_pop(info, &operand_memory);
+						node_info operand = stack_info_pop(info);
 						has_error |= operand.depth == SIZE_MAX ? -1 : 0;
 						if (has_error)
 						{
@@ -494,16 +492,14 @@ static int node_recursive(information *const info, node *const nd)
 					break;
 					case BINARY_OPERATION:
 					{
-						node second_memory;
-						node_info second = stack_info_pop(info, &second_memory);
+						node_info second = stack_info_pop(info);
 						has_error |= second.depth == SIZE_MAX ? -1 : 0;
 						if (has_error)
 						{
 							return has_error;
 						}
 
-						node first_memory;
-						node_info first = stack_info_pop(info, &first_memory);
+						node_info first = stack_info_pop(info);
 						has_error |= first.depth == SIZE_MAX ? -1 : 0;
 						if (has_error)
 						{
