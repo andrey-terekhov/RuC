@@ -292,6 +292,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 						expression initializer = parse_initializer(prs, type);
 						if (!initializer.is_valid)
 						{
+							token_skip_until(prs, TK_SEMICOLON);
 							continue;
 						}
 
@@ -400,6 +401,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 			expression initializer = parse_initializer(prs, type);
 			if (!initializer.is_valid)
 			{
+				token_skip_until(prs, TK_SEMICOLON);
 				return;
 			}
 
@@ -418,6 +420,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 			expression initializer = parse_initializer(prs, type);
 			if (!initializer.is_valid)
 			{
+				token_skip_until(prs, TK_SEMICOLON);
 				return;
 			}
 

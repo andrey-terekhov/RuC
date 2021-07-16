@@ -536,11 +536,13 @@ static expression binary_expression(parser *const prs, const expression left, co
 			case BIN_LOG_OR:
 			case BIN_LOG_AND:
 			case BIN_OR:
+			case BIN_XOR:
 			case BIN_AND:
 			case BIN_SHL:
 			case BIN_SHR:
 			case BIN_REM_ASSIGN:
 			case BIN_OR_ASSIGN:
+			case BIN_XOR_ASSIGN:
 			case BIN_AND_ASSIGN:
 			case BIN_SHL_ASSIGN:
 			case BIN_SHR_ASSIGN:

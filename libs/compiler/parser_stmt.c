@@ -936,6 +936,12 @@ void parse_statement(parser *const prs, node *const parent)
 				break;
 			}
 
+		case TK_R_BRACE:
+		case TK_EXIT_DIRECT:
+			// Временный фикс
+			token_consume(prs);
+			break;
+
 		default:
 			parse_expression_statement(prs, parent);
 			break;
