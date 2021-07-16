@@ -55,6 +55,7 @@ typedef struct information
 	item_t was_printf;								/**< Флаг наличия printf в исходном коде */
 
 	stack_info nodes_info;							/**< Стек информации о нодах для преобразования выражений */
+	size_t last_depth;								/**< Глубина верхнего узла в стеке */
 
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
 	size_t slice_depth;								/**< Количество узлов после OP_SLICE_IDENT */
@@ -76,7 +77,7 @@ static inline int stack_info_clear(information *const info)
 
 static inline int stack_info_push(information *const info, node_info *const nd)
 {
-	printf("here\n");
+	// printf("here\n");
 	return stack_push(&info->nodes_info.nodes, node_save(&nd->ref_node))
 		|| stack_push(&info->nodes_info.depths, nd->depth);
 }
@@ -403,7 +404,7 @@ static int node_recursive(information *const info, node *const nd)
 			break;
 			case OP_EXPR_END:
 			{
-				if (info->slice_depth != 0)
+				if (info->slice_depth != 0 /*&& info->last_depth <= 1*/)
 				{
 					// если вырезка не переставлена, то надо частично очистить стек и изменить глубину OP_SLICE_IDENT
 					node nd_expr_end = node_get_child(&child, 0);
@@ -425,12 +426,26 @@ static int node_recursive(information *const info, node *const nd)
 					slice_info.depth = info->slice_depth;
 					stack_info_push(info, &slice_info);
 					info->slice_depth = 0;
+					// info->last_depth = slice_info.depth;
+					// printf("slice push\n");
+				}
+				else if (info->slice_depth == 0 && info->last_depth > 1)
+				{
+					info->last_depth--;
 				}
 			}
 			break;
 
 			default:
 			{
+				// если уже в переставленных, то с ними ничего делать не надо
+				if (info->last_depth > 1)
+				{
+					// printf("here1\n");
+					info->last_depth--;
+					break;
+				}
+
 				node_info nd_info =  {child, 1};
 
 				// перестановка узлов выражений
@@ -449,10 +464,13 @@ static int node_recursive(information *const info, node *const nd)
 							return has_error;
 						}
 
-						if (node_get_type(&nd_info.ref_node) == OP_ADDR_TO_VAL)
+						node parent = node_get_parent(&nd_info.ref_node);
+						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							node_info log_info = { nd_info.ref_node, 1 };
-							has_error |= transposition(&nd_info, &log_info);
+							operand.depth++;
+							// node_info log_info = { parent, 1 };
+							// has_error |= transposition(&nd_info, &log_info);
+							// node_copy(&nd_info.ref_node, &log_info.ref_node);
 						}
 
 						// перестановка с операндом
@@ -468,6 +486,7 @@ static int node_recursive(information *const info, node *const nd)
 								operand.depth++;
 							}
 						}
+						info->last_depth = operand.depth;
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_info_push(info, &operand);
@@ -490,42 +509,46 @@ static int node_recursive(information *const info, node *const nd)
 						{
 							return has_error;
 						}
-						printf("op %i\n", node_get_type(&nd_info.ref_node));
-						printf("second %i\n", node_get_type(&second.ref_node));
-						printf("first %i\n\n", node_get_type(&first.ref_node));
+						// printf("op %i\n", node_get_type(&nd_info.ref_node));
+						// printf("second %i\n", node_get_type(&second.ref_node));
+						// printf("first %i\n\n", node_get_type(&first.ref_node));
 
 						node parent = node_get_parent(&nd_info.ref_node);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							node_info log_info = { parent, 1 };
-							has_error |= transposition(&nd_info, &log_info);
-							node_copy(&nd_info.ref_node, &log_info.ref_node);
+							second.depth++;
+							// node_info log_info = { parent, 1 };
+							// has_error |= transposition(&nd_info, &log_info);
+							// node_copy(&nd_info.ref_node, &log_info.ref_node);
 						}
 
 						// перестановка со вторым операндом
 						has_error |= transposition(&second, &nd_info);
 
-						printf("op %i\n", node_get_type(&nd_info.ref_node));
-						printf("second %i\n", node_get_type(&second.ref_node));
-						printf("first %i\n\n", node_get_type(&first.ref_node));
+						// printf("op %i\n", node_get_type(&nd_info.ref_node));
+						// printf("second %i\n", node_get_type(&second.ref_node));
+						// printf("first %i\n\n", node_get_type(&first.ref_node));
 
 						parent = node_get_parent(&second.ref_node);
 						if (node_get_type(&parent) == OP_AD_LOG_OR
 							|| node_get_type(&parent) == OP_AD_LOG_AND
 							|| node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							node_info log_info = { parent, 1 };
-							has_error |= transposition(&second, &log_info);
-							node_copy(&second.ref_node, &log_info.ref_node);
+							// printf("OP_ADDR_TO_VAL\n");
+							first.depth++;
+							// node_info log_info = { parent, 1 };
+							// has_error |= transposition(&second, &log_info);
+							// node_copy(&second.ref_node, &log_info.ref_node);
 						}
 
 						// перестановка с первым операндом
 						has_error |= transposition(&first, &second);
+						info->last_depth = first.depth;
 
-						printf("op %i\n", node_get_type(&nd_info.ref_node));
-						printf("second %i\n", node_get_type(&second.ref_node));
-						printf("first %i\n\n", node_get_type(&first.ref_node));
-						printf("first depth %i\n\n", first.depth);
+						// printf("op %i\n", node_get_type(&nd_info.ref_node));
+						// printf("second %i\n", node_get_type(&second.ref_node));
+						// printf("first %i\n\n", node_get_type(&first.ref_node));
+						// printf("first depth %i\n\n", first.depth);
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_info_push(info, &first);
@@ -540,7 +563,7 @@ static int node_recursive(information *const info, node *const nd)
 
 		// если встретили вырезку, надо запомнить состояние стека для дальнейшего восстановления
 		// и установить начальную глубину вырезки
-		if (node_get_type(&child) == OP_SLICE_IDENT)
+		if (node_get_type(&child) == OP_SLICE_IDENT && info->last_depth <= 1)
 		{
 			info->slice_depth = 1;
 			info->slice_stack_size = stack_info_size(info);
@@ -563,6 +586,7 @@ static int optimize_pass(universal_io *const io, syntax *const sx)
 	info.sx = sx;
 	info.string_num = 1;
 	info.was_printf = 0;
+	info.last_depth = 1;
 	info.slice_depth = 0;
 	info.slice_stack_size = 0;
 
