@@ -44,8 +44,6 @@ static inline parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.sx = sx;
 	prs.lxr = lxr;
 
-	prs.was_error = false;
-
 	prs.labels = vector_create(MAX_LABELS);
 	token_consume(&prs);
 
@@ -68,14 +66,14 @@ static inline void parser_clear(parser *const prs)
  */
 
 
-int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
+int parse(const workspace *const ws, syntax *const sx)
 {
-	if (!ws_is_correct(ws) || !in_is_correct(io) || sx == NULL)
+	if (!ws_is_correct(ws) || sx == NULL)
 	{
 		return -1;
 	}
 
-	lexer lxr = lexer_create(ws, io, sx);
+	lexer lxr = lexer_create(ws, sx);
 	parser prs = parser_create(sx, &lxr);
 	node root = node_get_root(&sx->tree);
 
@@ -90,13 +88,13 @@ int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
 	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->types, &sx->tree);
 #endif
 
-	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
+	return !sx_is_correct(sx);
 }
 
 
 void parser_error(parser *const prs, error_t num, ...)
 {
-	if (prs->lxr->is_recovery_disabled && (prs->lxr->was_error || prs->was_error))
+	if (prs->lxr->is_recovery_disabled && (prs->sx->was_error))
 	{
 		return;
 	}
@@ -104,15 +102,15 @@ void parser_error(parser *const prs, error_t num, ...)
 	va_list args;
 	va_start(args, num);
 
-	verror(prs->lxr->io, num, args);
-	prs->was_error = true;
+	verror(prs->sx->io, num, args);
+	prs->sx->was_error = true;
 
 	va_end(args);
 }
 
 void semantics_error(parser *const prs, const location_t loc, error_t num, ...)
 {
-	if (prs->lxr->is_recovery_disabled && (prs->lxr->was_error || prs->was_error))
+	if (prs->lxr->is_recovery_disabled && (prs->sx->was_error))
 	{
 		return;
 	}
@@ -120,22 +118,22 @@ void semantics_error(parser *const prs, const location_t loc, error_t num, ...)
 	va_list args;
 	va_start(args, num);
 
-	const size_t prev_loc = in_get_position(prs->lxr->io);
-	in_set_position(prs->lxr->io, loc.begin);
+	const size_t prev_loc = in_get_position(prs->sx->io);
+	in_set_position(prs->sx->io, loc.begin);
 
-	verror(prs->lxr->io, num, args);
-	prs->was_error = true;
+	verror(prs->sx->io, num, args);
+	prs->sx->was_error = true;
 
 	va_end(args);
 
-	in_set_position(prs->lxr->io, prev_loc);
+	in_set_position(prs->sx->io, prev_loc);
 }
 
 location_t token_consume(parser *const prs)
 {
 	const size_t token_start = prs->lxr->location;
 	prs->token = lex(prs->lxr);
-	return (location_t){ token_start, in_get_position(prs->lxr->io) };
+	return (location_t){ token_start, in_get_position(prs->sx->io) };
 }
 
 int token_try_consume(parser *const prs, const token_t expected)

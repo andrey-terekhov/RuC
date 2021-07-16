@@ -62,6 +62,7 @@ enum TYPE
 /** Global vars definition */
 typedef struct syntax
 {
+	universal_io *io;						/**< Universal io structure */
 	vector predef;				/**< Predefined functions table */
 	vector functions;			/**< Functions table */
 
@@ -83,15 +84,19 @@ typedef struct syntax
 
 	size_t procd;				/**< Process management daemon */
 	size_t ref_main;			/**< Main function reference */
+	
+	bool was_error;						/**< Set, if was error */
 } syntax;
 
 
 /**
  *	Create Syntax structure
  *
+ *	@param	io			Universal io structure
+ *
  *	@return	Syntax structure
  */
-syntax sx_create();
+syntax sx_create(universal_io *const io);
 
 /**
  *	Check if syntax structure is correct

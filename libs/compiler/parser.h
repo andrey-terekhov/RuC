@@ -72,7 +72,6 @@ typedef struct parser
 
 	bool was_return;					/**< Set, if was return in parsed function */
 	bool was_type_def;					/**< Set, if was type definition */
-	bool was_error;						/**< Set, if was error */
 } parser;
 
 /** Expression structure */
@@ -88,12 +87,11 @@ typedef struct expression
  *	Parse source code to generate syntax structure
  *
  *	@param	ws			Compiler workspace
- *	@param	io			Universal io structure
  *	@param	sx			Syntax structure
  *
  *	@return	@c 0 on success, @c 1 on failure
  */
-int parse(const workspace *const ws, universal_io *const io, syntax *const sx);
+int parse(const workspace *const ws, syntax *const sx);
 
 
 /**

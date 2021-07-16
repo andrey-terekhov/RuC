@@ -30,7 +30,6 @@ extern "C" {
 /** Lexer structure */
 typedef struct lexer
 {
-	universal_io *io;						/**< Universal io structure */
 	syntax *sx;								/**< Syntax structure */
 
 	char32_t character;						/**< Current character */
@@ -41,19 +40,17 @@ typedef struct lexer
 	vector lexstr;							/**< Representation of the read string literal */
 
 	bool is_recovery_disabled;				/**< Set, if error recovery & multiple output disabled */
-	bool was_error;							/**< Set, if was error */
 } lexer;
 
 /**
  *	Create lexer
  *
  *	@param	ws		Compiler workspace
- *	@param	io		Universal io structure
  *	@param	sx		Syntax structure
  *
  *	@return	Lexer
  */
-lexer lexer_create(const workspace *const ws, universal_io *const io, syntax *const sx);
+lexer lexer_create(const workspace *const ws, syntax *const sx);
 
 /**
  *	Free allocated memory

@@ -35,9 +35,9 @@
  */
 
 
-int encode_to_vm(const workspace *const ws, universal_io *const io, syntax *const sx)
+int encode_to_vm(const workspace *const ws, syntax *const sx)
 {
-	if (!ws_is_correct(ws) || !out_is_correct(io) || sx == NULL)
+	if (!ws_is_correct(ws) || sx == NULL)
 	{
 		return -1;
 	}

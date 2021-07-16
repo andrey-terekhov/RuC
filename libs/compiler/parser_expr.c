@@ -19,6 +19,13 @@
 #include <string.h>
 
 
+typedef struct expression_list
+{
+	unsigned length;
+	expression expressions[128];
+} expression_list;
+
+
 /** Binary/ternary operator precedence levels */
 typedef enum PRECEDENCE
 {
@@ -267,6 +274,74 @@ static expression subscript_expression(parser *const prs, const expression base,
 	node_set_child(&slice_node, &index.nd);					// Выражение-индекс
 
 	return expr(slice_node, (location_t){ base.location.begin, r_loc.end });
+}
+
+/**
+ *	Build a call expression
+ *
+ *	@param	prs				Parser
+ *	@param	callee			Callee
+ *	@param	args			Argument list
+ *	@param	l_loc			Left paren location
+ *	@param	r_loc			Right paren location
+ *
+ *	@return	Call expression
+ */
+static expression call_expression(parser *const prs, const expression callee, const expression_list *args
+									, const location_t l_loc, const location_t r_loc)
+{
+	if (!callee.is_valid)
+	{
+		return invalid_expression();
+	}
+
+	const item_t operand_type = node_get_arg(&callee.nd, 0);
+	if (!type_is_function(prs->sx, operand_type))
+	{
+		semantics_error(prs, l_loc, typecheck_call_not_function);
+		return invalid_expression();
+	}
+
+	const item_t return_type = type_get(prs->sx, (size_t)operand_type + 1);
+	const size_t expected_args = (size_t)type_get(prs->sx, (size_t)operand_type + 2);
+	const size_t actual_args = args->length;
+
+	if (expected_args != actual_args)
+	{
+		semantics_error(prs, r_loc, wrong_number_of_params, expected_args, actual_args);
+		return invalid_expression();
+	}
+
+	size_t ref_arg_type = (size_t)operand_type + 3;
+
+	for (unsigned i = 0; i < actual_args; i++)
+	{
+		if (!args->expressions[i].is_valid)
+		{
+			return invalid_expression();
+		}
+
+		const item_t expected_type = type_get(prs->sx, ref_arg_type + i);
+		const item_t actual_type = node_get_arg(&args->expressions[i].nd, 0);
+
+		// Несовпадение типов может быть только в случае, когда параметр - double, а аргумент - целочисленный
+		if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
+		{
+			semantics_error(prs, args->expressions[i].location, typecheck_convert_incompatible);
+			return invalid_expression();
+		}
+	}
+
+	node call_node = node_create(prs, OP_CALL);
+	node_add_arg(&call_node, return_type);						// Тип возвращамого значения
+	node_add_arg(&call_node, RVALUE);							// Категория значения вызова
+	node_set_child(&call_node, &callee.nd);						// Операнд вызова
+	for (unsigned i = 0; i < actual_args; i++)
+	{
+		node_set_child(&call_node, &args->expressions[i].nd);	// i-ый аргумент вызова
+	}
+
+	return expr(call_node, (location_t){ callee.location.begin, r_loc.end });
 }
 
 /**
@@ -703,91 +778,29 @@ static expression parse_primary_expression(parser *const prs)
 }
 
 /**
- *	Parse call expression suffix
- *
- *	postfix-expression:
- *		postfix-expression '(' argument-expression-list[opt] ')'
+ *	Parse expression list
  *
  *	argument-expression-list:
  *		assignment-expression
  *		argument-expression-list ',' assignment-expression
  *
  *	@param	prs			Parser
- *	@param	callee		Expression for call
  *
- *	@return	Call expression
+ *	@return	Postfix expression
  */
-static expression parse_call_expression_suffix(parser *const prs, const expression callee)
+static expression_list parse_expression_list(parser *const prs)
 {
-	const location_t l_paren_location = token_consume(prs);
+	unsigned i = 0;
+	expression_list result;
 
-	if (!callee.is_valid)
+	do
 	{
-		token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-		return invalid_expression();
-	}
+		result.expressions[i++] = parse_assignment_expression(prs);
+	} while (token_try_consume(prs, TK_COMMA));
 
-	const item_t operand_type = node_get_arg(&callee.nd, 0);
-	if (!type_is_function(prs->sx, operand_type))
-	{
-		semantics_error(prs, l_paren_location, typecheck_call_not_function);
-		return invalid_expression();
-	}
-
-	const item_t return_type = type_get(prs->sx, (size_t)operand_type + 1);
-
-	node call_node = node_create(prs, OP_CALL);
-	node_add_arg(&call_node, return_type);					// Тип возвращамого значения
-	node_add_arg(&call_node, RVALUE);						// Категория значения вызова
-	node_set_child(&call_node, &callee.nd);				// Операнд вызова
-
-	const size_t expected_args = (size_t)type_get(prs->sx, (size_t)operand_type + 2);
-	size_t ref_arg_type = (size_t)operand_type + 3;
-	size_t actual_args = 0;
-
-	if (prs->token != TK_R_PAREN)
-	{
-		do
-		{
-			expression argument = parse_initializer(prs, type_get(prs->sx, ref_arg_type));
-			if (!argument.is_valid)
-			{
-				token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-				return invalid_expression();
-			}
-
-			const item_t expected_type = type_get(prs->sx, ref_arg_type);
-			const item_t actual_type = node_get_arg(&argument.nd, 0);
-
-			// Несовпадение типов может быть только в случае, когда параметр - double, а аргумент - целочисленный
-			if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
-			{
-				semantics_error(prs, argument.location, typecheck_convert_incompatible);
-			}
-
-			node_set_child(&call_node, &argument.nd);		// i-ый аргумент вызова
-			actual_args++;
-			ref_arg_type++;
-		} while (token_try_consume(prs, TK_COMMA) && expected_args != actual_args);
-
-		if (prs->token != TK_R_PAREN)
-		{
-			parser_error(prs, expected_r_paren, l_paren_location);
-			return invalid_expression();
-		}
-	}
-
-	const location_t r_paren_location = token_consume(prs);
-
-	if (expected_args != actual_args)
-	{
-		semantics_error(prs, r_paren_location, wrong_number_of_params, expected_args, actual_args);
-		return invalid_expression();
-	}
-
-	return expr(call_node, (location_t){ callee.location.begin, r_paren_location.end });
+	result.length = i;
+	return result;
 }
-
 
 /**
  *	Parse postfix expression
@@ -838,8 +851,35 @@ static expression parse_postfix_expression(parser *const prs)
 			}
 
 			case TK_L_PAREN:
-				operand = parse_call_expression_suffix(prs, operand);
+			{
+				const location_t l_loc = token_consume(prs);
+				expression_list args;
+
+				if (prs->token == TK_R_PAREN)
+				{
+					const location_t r_loc = token_consume(prs);
+					args = (expression_list){ .length = 0 };
+					operand = call_expression(prs, operand, &args, l_loc, r_loc);
+
+					continue;
+				}
+
+				args = parse_expression_list(prs);
+				if (prs->token == TK_R_PAREN)
+				{
+					const location_t r_loc = token_consume(prs);
+					operand = call_expression(prs, operand, &args, l_loc, r_loc);
+				}
+				else
+				{
+					parser_error(prs, expected_r_paren, l_loc);
+					token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+					token_try_consume(prs, TK_R_PAREN);
+					operand = invalid_expression();
+				}
+
 				continue;
+			}
 
 			case TK_PERIOD:
 			case TK_ARROW:

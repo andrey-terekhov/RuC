@@ -236,9 +236,10 @@ static void ident_init(syntax *const sx)
  */
 
 
-syntax sx_create()
+syntax sx_create(universal_io *const io)
 {
 	syntax sx;
+	sx.io = io;
 	sx.procd = 1;
 
 	sx.predef = vector_create(FUNCTIONS_SIZE);
@@ -266,12 +267,14 @@ syntax sx_create()
 	sx.displ = -3;
 	sx.lg = -1;
 
+	sx.was_error = false;
+
 	return sx;
 }
 
 bool sx_is_correct(syntax *const sx)
 {
-	bool is_correct = true;
+	bool is_correct = !sx->was_error;
 	if (sx->ref_main == 0)
 	{
 		system_error(no_main_in_program);
