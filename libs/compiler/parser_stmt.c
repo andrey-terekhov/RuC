@@ -607,7 +607,7 @@ static size_t evaluate_args(parser *const prs, const vector format_str
 		if (vector_get(&format_str, i) == '%')
 		{
 			i++;
-			const char32_t placeholder = vector_get(&format_str, i);
+			const char32_t placeholder = (char32_t)vector_get(&format_str, i);
 			if (placeholder != '%')
 			{
 				if (args == MAX_PRINTF_ARGS)
