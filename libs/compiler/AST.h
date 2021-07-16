@@ -137,6 +137,17 @@ expression member_expression(syntax *const sx, const expression base, const bool
 							, const location_t op_loc, const location_t id_loc);
 
 /**
+ *	Build a upb expression
+ *
+ *	@param	sx				Syntax structure
+ *	@param	dimension		First operand of upb expression
+ *	@param	array			Second operand of upb expression
+ *
+ *	@return	Upb expression
+ */
+expression upb_expression(syntax *const sx, const expression dimension, const expression array);
+
+/**
  *	Build an unary expression
  *
  *	@param	sx				Syntax structure

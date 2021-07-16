@@ -78,7 +78,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			}
 			break;
 		case OP_STRING:
-			argc = 3;
+			argc = 2;
 			was_switch = true;
 			switch (num)
 			{
@@ -231,6 +231,22 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			break;
 		case OP_THREAD:
 			sprintf(buffer, "TCREATEDIRECT");
+			break;
+		case OP_UPB:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "UPB");
+					break;
+				case 1:
+					sprintf(buffer, "type=");
+					break;
+				case 2:
+					sprintf(buffer, "designation=");
+					break;
+			}
 			break;
 
 		case OP_FUNC_DEF:

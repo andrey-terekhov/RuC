@@ -152,6 +152,7 @@ typedef enum OPERATION
 	OP_PRINT,
 	OP_GETID,
 	OP_PRINTF,
+	OP_UPB,
 } operation_t;
 
 typedef enum builtin

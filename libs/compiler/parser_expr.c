@@ -372,6 +372,17 @@ static expression parse_unary_expression(parser *const prs)
 
 			return unary_expression(prs->sx, operand, operator, op_loc);
 		}
+
+		case TK_UPB:
+		{
+			token_consume(prs);
+			token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_stand_func);
+			const expression dimension = parse_assignment_expression(prs);
+			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
+			const expression array = parse_assignment_expression(prs);
+			token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
+			return upb_expression(prs->sx, dimension, array);
+		}
 	}
 }
 

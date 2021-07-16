@@ -284,6 +284,34 @@ expression member_expression(syntax *const sx, const expression base, const bool
 	return invalid_expression();
 }
 
+expression upb_expression(syntax *const sx, const expression dimension, const expression array)
+{
+	if (!dimension.is_valid || !array.is_valid)
+	{
+		return invalid_expression();
+	}
+
+	if (!type_is_integer(node_get_arg(&dimension.nd, 0)))
+	{
+		semantics_error(sx, dimension.location, not_int_in_stanfunc);
+		return invalid_expression();
+	}
+
+	if (!type_is_array(sx, node_get_arg(&array.nd, 0)))
+	{
+		semantics_error(sx, dimension.location, not_array_in_stanfunc);
+		return invalid_expression();
+	}
+
+	node upb_node = node_create(sx, OP_UPB);
+	node_add_arg(&upb_node, TYPE_INTEGER);		// Тип значения поля
+	node_add_arg(&upb_node, RVALUE);			// Категория значения поля
+	node_set_child(&upb_node, &dimension.nd);	// Выражение-операнд
+	node_set_child(&upb_node, &array.nd);		// Выражение-операнд
+
+	return expr(upb_node, (location_t){ dimension.location.begin, array.location.end });
+}
+
 expression unary_expression(syntax *const sx, const expression operand, const unary_t op_kind, const location_t op_loc)
 {
 	if (!operand.is_valid)
