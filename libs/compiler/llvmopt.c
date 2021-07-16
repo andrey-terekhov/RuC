@@ -36,7 +36,7 @@ typedef enum EXPRESSION
 
 typedef struct node_info
 {
-	node ref_node;									/**< Узел */
+	node cur_node;									/**< Узел */
 	size_t depth;									/**< Количество узлов после данного узла при перестановке */
 } node_info;
 
@@ -77,7 +77,7 @@ static inline int stack_info_clear(information *const info)
 
 static inline int stack_info_push(information *const info, node_info *const nd)
 {
-	return stack_push(&info->nodes_info.nodes, node_save(&nd->ref_node))
+	return stack_push(&info->nodes_info.nodes, node_save(&nd->cur_node))
 		|| stack_push(&info->nodes_info.depths, nd->depth);
 }
 
@@ -125,24 +125,24 @@ static int transposition(node_info *const expr, node_info *const cur)
 		return -1;
 	}
 
-	node_order(&expr->ref_node, &cur->ref_node);
+	node_order(&expr->cur_node, &cur->cur_node);
 
 	node tmp;
-	node_copy(&tmp, &expr->ref_node);
-	node_copy(&expr->ref_node, &cur->ref_node);
-	node_copy(&cur->ref_node, &tmp);
+	node_copy(&tmp, &expr->cur_node);
+	node_copy(&expr->cur_node, &cur->cur_node);
+	node_copy(&cur->cur_node, &tmp);
 
 	node node_to_order;
-	node_copy(&node_to_order, &expr->ref_node);
+	node_copy(&node_to_order, &expr->cur_node);
 	for (size_t i = 1; i < expr->depth; i++)
 	{
 		node_to_order = node_get_next(&node_to_order);
 
-		node_order(&cur->ref_node, &node_to_order);
+		node_order(&cur->cur_node, &node_to_order);
 
 		node_copy(&tmp, &node_to_order);
-		node_copy(&node_to_order, &cur->ref_node);
-		node_copy(&cur->ref_node, &tmp);
+		node_copy(&node_to_order, &cur->cur_node);
+		node_copy(&cur->cur_node, &tmp);
 	}
 
 	expr->depth += cur->depth;
@@ -439,7 +439,7 @@ static int node_recursive(information *const info, node *const nd)
 					break;
 				}
 
-				node_info nd_info =  {child, 1};
+				node_info nd_info = { child, 1 };
 
 				// перестановка узлов выражений
 				switch (expression_type(&child))
@@ -456,7 +456,7 @@ static int node_recursive(information *const info, node *const nd)
 							return has_error;
 						}
 
-						node parent = node_get_parent(&nd_info.ref_node);
+						node parent = node_get_parent(&nd_info.cur_node);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
 							operand.depth++;
@@ -465,7 +465,7 @@ static int node_recursive(information *const info, node *const nd)
 						// перестановка с операндом
 						has_error |= transposition(&operand, &nd_info);
 
-						if (node_get_type(&operand.ref_node) == OP_CALL1)
+						if (node_get_type(&operand.cur_node) == OP_CALL1)
 						{
 							node tmp;
 							node_copy(&tmp, &child);
@@ -497,7 +497,7 @@ static int node_recursive(information *const info, node *const nd)
 							return has_error;
 						}
 
-						node parent = node_get_parent(&nd_info.ref_node);
+						node parent = node_get_parent(&nd_info.cur_node);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
 							second.depth++;
@@ -506,7 +506,7 @@ static int node_recursive(information *const info, node *const nd)
 						// перестановка со вторым операндом
 						has_error |= transposition(&second, &nd_info);
 
-						parent = node_get_parent(&second.ref_node);
+						parent = node_get_parent(&second.cur_node);
 						if (node_get_type(&parent) == OP_AD_LOG_OR
 							|| node_get_type(&parent) == OP_AD_LOG_AND
 							|| node_get_type(&parent) == OP_ADDR_TO_VAL)
