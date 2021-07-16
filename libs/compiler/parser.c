@@ -55,6 +55,7 @@ static inline parser parser_create(syntax *const sx, lexer *const lxr)
 static inline void parser_clear(parser *const prs)
 {
 	vector_clear(&prs->labels);
+	lexer_clear(prs->lxr);
 }
 
 
@@ -74,7 +75,7 @@ int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
 		return -1;
 	}
 
-	lexer lxr = create_lexer(ws, io, sx);
+	lexer lxr = lexer_create(ws, io, sx);
 	parser prs = parser_create(sx, &lxr);
 	node root = node_get_root(&sx->tree);
 

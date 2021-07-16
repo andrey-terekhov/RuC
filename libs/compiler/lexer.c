@@ -338,27 +338,14 @@ static token_t lex_char_constant(lexer *const lxr)
  */
 static token_t lex_string_literal(lexer *const lxr)
 {
-	size_t length = 0;
-	bool is_string_too_long = false;
+	vector_resize(&lxr->lexstr, 0);
 	while (lxr->character == '\"')
 	{
 		scan(lxr);
-		while (lxr->character != '"' && lxr->character != '\n' && length < MAX_STRING_LENGTH)
+		while (lxr->character != '"' && lxr->character != '\n')
 		{
-			if (!is_string_too_long)
-			{
-				lxr->lexstr[length++] = get_next_string_elem(lxr);
-			}
+			vector_add(&lxr->lexstr, get_next_string_elem(lxr));
 			scan(lxr);
-		}
-		if (length == MAX_STRING_LENGTH)
-		{
-			lexer_error(lxr, string_too_long);
-			is_string_too_long = true;
-			while (lxr->character != '"' && lxr->character != '\n')
-			{
-				scan(lxr);
-			}
 		}
 		if (lxr->character == '"')
 		{
@@ -370,7 +357,7 @@ static token_t lex_string_literal(lexer *const lxr)
 		}
 		skip_whitespace(lxr);
 	}
-	lxr->num = (int)length;
+
 	return TK_STRING;
 }
 
@@ -384,7 +371,7 @@ static token_t lex_string_literal(lexer *const lxr)
  */
 
 
-lexer create_lexer(const workspace *const ws, universal_io *const io, syntax *const sx)
+lexer lexer_create(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
 	lexer lxr;
 	lxr.io = io;
@@ -394,9 +381,16 @@ lexer create_lexer(const workspace *const ws, universal_io *const io, syntax *co
 	lxr.is_recovery_disabled = recovery_status(ws);
 	lxr.was_error = false;
 
+	lxr.lexstr = vector_create(MAX_STRING_LENGTH);
+
 	scan(&lxr);
 
 	return lxr;
+}
+
+int lexer_clear(lexer *const lxr)
+{
+	return vector_clear(&lxr->lexstr);
 }
 
 

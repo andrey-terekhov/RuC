@@ -207,22 +207,20 @@ static expression floating_literal_expression(parser *const prs, const double va
  *
  *	@param	prs				Parser
  *	@param	value			Literal value
- *	@param	length			Literal length
  *	@param	loc				Source location
  *
  *	@return	String literal expression
  */
-static expression string_literal_expression(parser *const prs, const char32_t *value
-											, const size_t length, const location_t loc)
+static expression string_literal_expression(parser *const prs, const vector value, const location_t loc)
 {
 	const item_t type = type_array(prs->sx, TYPE_INTEGER);
 
 	node string_node = node_create(prs, OP_STRING);
 	node_add_arg(&string_node, type);						// Тип строки
 	node_add_arg(&string_node, LVALUE);						// Категория значения строки
-	for (size_t i = 0; i < length; i++)
+	for (size_t i = 0, length = vector_size(&value); i < length; i++)
 	{
-		node_add_arg(&string_node, value[i]);				// i-ый символ строки
+		node_add_arg(&string_node, vector_get(&value, i));	// i-ый символ строки
 	}
 
 	return expr(string_node, loc);
@@ -678,11 +676,10 @@ static expression parse_primary_expression(parser *const prs)
 
 		case TK_STRING:
 		{
-			const char32_t* value = prs->lxr->lexstr;
-			const size_t length = (size_t)prs->lxr->num;
+			const vector value = prs->lxr->lexstr;
 			const location_t loc = token_consume(prs);
 
-			return string_literal_expression(prs, value, length, loc);
+			return string_literal_expression(prs, value, loc);
 		}
 
 		case TK_L_PAREN:

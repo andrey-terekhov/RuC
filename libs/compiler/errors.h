@@ -34,7 +34,6 @@ typedef enum ERROR
 	unknown_escape_sequence,				/**< Unknown escape sequence */
 	expected_apost_after_char_const,		/**< Missing terminating ' character */
 	missing_terminating_quote_char,			/**< Missing terminating '"' character */
-	string_too_long,						/**< String literal exceeds maximum length */
 	unterminated_block_comment,				/**< Unterminated block comment */
 
 	// Expression errors

@@ -59,10 +59,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "строка не заканчивается символом \"");
 			break;
 
-		case string_too_long:	// test_exist
-			sprintf(msg, "слишком длинная строка (больше, чем MAXSTRINGL)");
-			break;
-
 		case unterminated_block_comment:
 			sprintf(msg, "блочный комментарий не окончен");
 			break;
