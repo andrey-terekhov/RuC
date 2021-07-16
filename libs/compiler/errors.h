@@ -58,29 +58,25 @@ typedef enum ERROR
 	typecheck_binary_expr,					/**< Invalid argument type to binary expression */
 	expected_colon_in_conditional,			/**< Expected ':' in condtional expression */
 	typecheck_cond_incompatible_operands,	/**< Incompatible operand types */
+	typecheck_statement_requires_scalar,
 
 	// Statement errors
-	expected_colon_after_case,				/**< Expected ':' after 'case' */
-	case_not_in_switch,						/**< 'case' statement not in switch statement */
-	expected_colon_after_default,			/**< Expected ':' after 'default' */
-	default_not_in_switch,					/**< 'default' statement not in switch statement */
-	expected_semi_after_expr,				/**< Expected ';' after expression */
-	expected_l_paren_after_if,				/**< Expected '(' after 'if' */
-	expected_l_paren_after_switch,			/**< Expected '(' after 'switch' */
-	expected_l_paren_after_while,			/**< Expected '(' after 'while' */
-	expected_l_paren_after_for,				/**< Expected '(' after 'for' */
-	expected_while,							/**< Expected 'while' in do/while loop */
-	expected_semicolon_in_for,				/**< Expected ';' in for statement */
-	expected_ident_after_goto,
-	expected_semi_after_stmt,				/**< Expected ';' after statement */
-	continue_not_in_loop,					/**< 'continue' statement not in loop statement */
-	break_not_in_loop_or_switch,			/**< 'break' statement not in loop or switch statement */
+	expected_semi_after_stmt,			/**< Expected ';' after statement */
+	case_not_in_switch,					/**< 'case' statement not in switch statement */
+	float_in_switch,
+	expected_colon_after_case,			/**< Expected ':' after 'case' */
+	default_not_in_switch,				/**< 'default' statement not in switch statement */
+	expected_colon_after_default,		/**< Expected ':' after 'default' */
+	expected_while,						/**< Expected 'while' in do/while loop */
+	no_leftbr_in_for,
+	no_semicolon_in_for,
+	no_rightbr_in_for,
+	no_ident_after_goto,
+	continue_not_in_loop,				/**< 'continue' statement not in loop statement */
+	break_not_in_loop_or_switch,		/**< 'break' statement not in loop or switch statement */
 	no_ret_in_func,
 	bad_type_in_ret,
 	notvoidret_in_void_func,
-
-	typecheck_switch_requires_integer,
-	typecheck_statement_requires_scalar,
 
 	// Environment errors
 	no_main_in_program,						/**< Undefined main */

@@ -323,6 +323,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			}
 			break;
 		case OP_IF:
+			argc = 1;
 			sprintf(buffer, "TIf");
 			break;
 		case OP_WHILE:
@@ -332,6 +333,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			sprintf(buffer, "TDo");
 			break;
 		case OP_FOR:
+			argc = 4;
 			sprintf(buffer, "TFor");
 			break;
 		case OP_SWITCH:
@@ -349,8 +351,12 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 		case OP_CONTINUE:
 			sprintf(buffer, "TContinue");
 			break;
-		case OP_RETURN:
+		case OP_RETURN_VOID:
 			sprintf(buffer, "TReturn");
+			break;
+		case OP_RETURN_VAL:
+			argc = 1;
+			sprintf(buffer, "TReturnval");
 			break;
 		case OP_GOTO:
 			argc = 1;

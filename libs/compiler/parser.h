@@ -21,9 +21,7 @@
 #include "lexer.h"
 #include "stack.h"
 #include "syntax.h"
-#include "tree.h"
-#include "operations.h"
-#include "uniio.h"
+#include "AST.h"
 #include "workspace.h"
 
 
@@ -49,8 +47,6 @@ typedef struct parser
 
 	vector labels;						/**< Labels table */
 
-	node nd;							/**< Node for expression subtree */
-
 	token_t token;						/**< Current token */
 	size_t function_mode;				/**< Mode of current parsed function */
 	size_t array_dimensions;			/**< Array dimensions counter */
@@ -74,14 +70,6 @@ typedef struct parser
 	bool was_type_def;					/**< Set, if was type definition */
 } parser;
 
-/** Expression structure */
-typedef struct expression
-{
-	bool is_valid;			/**< Set if is valid */
-	location_t location;			/**< Source location */
-	node nd;				/**< Node in AST */
-} expression;
-
 
 /**
  *	Parse source code to generate syntax structure
@@ -101,15 +89,6 @@ int parse(const workspace *const ws, syntax *const sx);
  *	@param	num			Error code
  */
 void parser_error(parser *const prs, error_t num, ...);
-
-/**
- *	Emit a semantics error from parser
- *
- *	@param	prs			Parser structure
- *	@param	loc			Error location
- *	@param	num			Error code
- */
-void semantics_error(parser *const prs, const location_t loc, error_t num, ...);
 
 
 /**
@@ -190,21 +169,18 @@ expression parse_expression(parser *const prs);
 expression parse_constant_expression(parser *const prs);
 
 /**
- *	Parse initializer [C99 6.7.8p1]
+ *	Parse initializer [C99 6.7.8]
  *
  *	initializer:
  *		assignment-expression
- *		'{' initializer-list '}'
- *
- *	initializer-list:
- *		initializer-list ',' initializer
+ *		'{' expression-list[opt] '}'
  *
  *	@param	prs			Parser structure
- *	@param	expected_type		Type of variable in declaration
+ *	@param	type		Type of variable in declaration
  *
  *	@return Initializer
  */
-expression parse_initializer(parser *const prs, const item_t expected_type);
+expression parse_initializer(parser *const prs, const item_t type);
 
 
 /**

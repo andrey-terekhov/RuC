@@ -108,26 +108,6 @@ void parser_error(parser *const prs, error_t num, ...)
 	va_end(args);
 }
 
-void semantics_error(parser *const prs, const location_t loc, error_t num, ...)
-{
-	if (prs->lxr->is_recovery_disabled && (prs->sx->was_error))
-	{
-		return;
-	}
-
-	va_list args;
-	va_start(args, num);
-
-	const size_t prev_loc = in_get_position(prs->sx->io);
-	in_set_position(prs->sx->io, loc.begin);
-
-	verror(prs->sx->io, num, args);
-	prs->sx->was_error = true;
-
-	va_end(args);
-
-	in_set_position(prs->sx->io, prev_loc);
-}
 
 location_t token_consume(parser *const prs)
 {

@@ -182,9 +182,9 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
 		}
 		else
 		{
-			node_copy(&prs->nd, parent);
+			node_copy(&prs->sx->nd, parent);
 			expression size = parse_constant_expression(prs);
-			const item_t size_type = node_get_arg(&size.nd, 0);
+			const item_t size_type = expression_get_type(size);
 			if (!type_is_integer(size_type))
 			{
 				parser_error(prs, array_size_must_be_int);
@@ -288,7 +288,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 						prs->flag_strings_only = 2;
 						node_set_arg(&nd_decl_id, 3, 1);
 
-						node_copy(&prs->nd, &nd_decl_arr);
+						node_copy(&prs->sx->nd, &nd_decl_arr);
 						expression initializer = parse_initializer(prs, type);
 						if (!initializer.is_valid)
 						{
@@ -296,7 +296,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 							continue;
 						}
 
-						if (type != node_get_arg(&initializer.nd, 0))
+						if (type != expression_get_type(initializer))
 						{
 							parser_error(prs, wrong_init);
 						}
@@ -397,7 +397,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 			}
 
 			prs->flag_strings_only = 2;
-			node_copy(&prs->nd, &nd_decl_arr);
+			node_copy(&prs->sx->nd, &nd_decl_arr);
 			expression initializer = parse_initializer(prs, type);
 			if (!initializer.is_valid)
 			{
@@ -405,7 +405,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 				return;
 			}
 
-			if (type != node_get_arg(&initializer.nd, 0))
+			if (type != expression_get_type(initializer))
 			{
 				 parser_error(prs, wrong_init);
 			}
@@ -416,7 +416,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 		}
 		else
 		{
-			node_copy(&prs->nd, &nd);
+			node_copy(&prs->sx->nd, &nd);
 			expression initializer = parse_initializer(prs, type);
 			if (!initializer.is_valid)
 			{
@@ -427,7 +427,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 			const item_t actual_type = node_get_arg(&initializer.nd, 0);
 			if (type != actual_type && !(type_is_floating(type) && type_is_integer(actual_type)))
 			{
-				semantics_error(prs, initializer.location, typecheck_convert_incompatible);
+				parser_error(prs, wrong_init);
 			}
 		}
 	}

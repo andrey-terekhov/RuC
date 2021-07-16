@@ -62,7 +62,9 @@ enum TYPE
 /** Global vars definition */
 typedef struct syntax
 {
-	universal_io *io;						/**< Universal io structure */
+	universal_io *io;			/**< Universal io structure */
+	node nd;					/**< Node for expression subtree [temp] */
+
 	vector predef;				/**< Predefined functions table */
 	vector functions;			/**< Functions table */
 
@@ -85,7 +87,7 @@ typedef struct syntax
 	size_t procd;				/**< Process management daemon */
 	size_t ref_main;			/**< Main function reference */
 	
-	bool was_error;						/**< Set, if was error */
+	bool was_error;				/**< Set, if was error */
 } syntax;
 
 
