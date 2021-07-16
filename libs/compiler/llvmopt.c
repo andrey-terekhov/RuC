@@ -36,7 +36,7 @@ typedef enum EXPRESSION
 
 typedef struct node_info
 {
-	node ref_node;									/**< Ссылка на узел */
+	node ref_node;									/**< Узел */
 	size_t depth;									/**< Количество узлов после данного узла при перестановке */
 } node_info;
 
@@ -77,7 +77,6 @@ static inline int stack_info_clear(information *const info)
 
 static inline int stack_info_push(information *const info, node_info *const nd)
 {
-	// printf("here\n");
 	return stack_push(&info->nodes_info.nodes, node_save(&nd->ref_node))
 		|| stack_push(&info->nodes_info.depths, nd->depth);
 }
@@ -91,8 +90,6 @@ static inline node_info stack_info_pop(information *const info)
 	{
 		return (node_info){ .depth = SIZE_MAX };
 	}
-
-	// *(memory) = node_load(&info->sx->tree, (size_t)index);
 
 	return (node_info){ node_load(&info->sx->tree, (size_t)index), (size_t)operand_depth };
 }
@@ -404,7 +401,7 @@ static int node_recursive(information *const info, node *const nd)
 			break;
 			case OP_EXPR_END:
 			{
-				if (info->slice_depth != 0 /*&& info->last_depth <= 1*/)
+				if (info->slice_depth != 0)
 				{
 					// если вырезка не переставлена, то надо частично очистить стек и изменить глубину OP_SLICE_IDENT
 					node nd_expr_end = node_get_child(&child, 0);
@@ -425,8 +422,6 @@ static int node_recursive(information *const info, node *const nd)
 					slice_info.depth = info->slice_depth;
 					stack_info_push(info, &slice_info);
 					info->slice_depth = 0;
-					// info->last_depth = slice_info.depth;
-					// printf("slice push\n");
 				}
 				else if (info->slice_depth == 0 && info->last_depth > 1)
 				{
@@ -440,7 +435,6 @@ static int node_recursive(information *const info, node *const nd)
 				// если уже в переставленных, то с ними ничего делать не надо
 				if (info->last_depth > 1)
 				{
-					// printf("here1\n");
 					info->last_depth--;
 					break;
 				}
@@ -466,9 +460,6 @@ static int node_recursive(information *const info, node *const nd)
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
 							operand.depth++;
-							// node_info log_info = { parent, 1 };
-							// has_error |= transposition(&nd_info, &log_info);
-							// node_copy(&nd_info.ref_node, &log_info.ref_node);
 						}
 
 						// перестановка с операндом
@@ -505,46 +496,27 @@ static int node_recursive(information *const info, node *const nd)
 						{
 							return has_error;
 						}
-						// printf("op %i\n", node_get_type(&nd_info.ref_node));
-						// printf("second %i\n", node_get_type(&second.ref_node));
-						// printf("first %i\n\n", node_get_type(&first.ref_node));
 
 						node parent = node_get_parent(&nd_info.ref_node);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
 							second.depth++;
-							// node_info log_info = { parent, 1 };
-							// has_error |= transposition(&nd_info, &log_info);
-							// node_copy(&nd_info.ref_node, &log_info.ref_node);
 						}
 
 						// перестановка со вторым операндом
 						has_error |= transposition(&second, &nd_info);
-
-						// printf("op %i\n", node_get_type(&nd_info.ref_node));
-						// printf("second %i\n", node_get_type(&second.ref_node));
-						// printf("first %i\n\n", node_get_type(&first.ref_node));
 
 						parent = node_get_parent(&second.ref_node);
 						if (node_get_type(&parent) == OP_AD_LOG_OR
 							|| node_get_type(&parent) == OP_AD_LOG_AND
 							|| node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							// printf("OP_ADDR_TO_VAL\n");
 							first.depth++;
-							// node_info log_info = { parent, 1 };
-							// has_error |= transposition(&second, &log_info);
-							// node_copy(&second.ref_node, &log_info.ref_node);
 						}
 
 						// перестановка с первым операндом
 						has_error |= transposition(&first, &second);
 						info->last_depth = first.depth;
-
-						// printf("op %i\n", node_get_type(&nd_info.ref_node));
-						// printf("second %i\n", node_get_type(&second.ref_node));
-						// printf("first %i\n\n", node_get_type(&first.ref_node));
-						// printf("first depth %i\n\n", first.depth);
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_info_push(info, &first);
