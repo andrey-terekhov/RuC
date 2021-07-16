@@ -163,7 +163,12 @@ static void parse_default_statement(parser *const prs, node *const parent)
 static void parse_expression_statement(parser *const prs, node *const parent)
 {
 	node_copy(&prs->sx->nd, parent);
-	parse_expression(prs);
+	expression expr = parse_expression(prs);
+	if (!expr.is_valid)
+	{
+		token_skip_until(prs, TK_SEMICOLON);
+		return;
+	}
 	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
@@ -541,13 +546,24 @@ static void parse_print_statement(parser *const prs, node *const parent)
 
 	node_copy(&prs->sx->nd, &node_print);
 	const expression expr = parse_assignment_expression(prs);
+	if (!expr.is_valid)
+	{
+		token_skip_until(prs, TK_SEMICOLON);
+		token_try_consume(prs, TK_SEMICOLON);
+		return;
+	}
 	const item_t type = expression_get_type(expr);
 	if (type_is_pointer(prs->sx, type))
 	{
 		parser_error(prs, pointer_in_print);
 	}
 
-	token_expect_and_consume(prs, TK_R_PAREN, print_without_br);
+	if (!token_try_consume(prs, TK_R_PAREN))
+	{
+		parser_error(prs, print_without_br);
+		token_skip_until(prs, TK_SEMICOLON);
+	}
+	
 	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
