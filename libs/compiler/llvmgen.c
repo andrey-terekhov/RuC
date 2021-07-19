@@ -16,6 +16,7 @@
 
 #include "llvmgen.h"
 #include <string.h>
+#include "codes.h"
 #include "errors.h"
 #include "hash.h"
 #include "llvmopt.h"
@@ -34,6 +35,7 @@ typedef enum ANSWER
 	AREG,								/**< Ответ находится в регистре */
 	ACONST,								/**< Ответ является константой */
 	ALOGIC,								/**< Ответ является логическим значением */
+	AMEM,								/**< Ответ находится в памяти */
 } answer_t;
 
 typedef enum LOCATION
@@ -51,6 +53,7 @@ typedef struct information
 	item_t string_num;					/**< Номер строки */
 	item_t register_num;				/**< Номер регистра */
 	item_t label_num;					/**< Номер метки */
+	item_t init_num;					/**< Счётчик для инициализации */
 
 	item_t request_reg;					/**< Регистр на запрос */
 	location_t variable_location;		/**< Расположение переменной */
@@ -63,12 +66,15 @@ typedef struct information
 
 	item_t label_true;					/**< Метка перехода при true */
 	item_t label_false;					/**< Метка перехода при false */
+	item_t label_break;					/**< Метка перехода для break */
+	item_t label_continue;				/**< Метка перехода для continue */
 
 	hash arrays;						/**< Хеш таблица с информацией о массивах:
 												@с key		 - смещение массива
 												@c value[0]	 - флаг статичности
 												@c value[1..MAX] - границы массива */
 	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
+	int was_memcpy;						/**< Истина, если memcpy использовалась для инициализации */
 } information;
 
 
@@ -233,6 +239,12 @@ static void type_to_io(information *const info, const item_t type)
 	else if (mode_is_struct(info->sx, type))
 	{
 		uni_printf(info->io, "%%struct_opt.%" PRIitem, type);
+	}
+	else if (mode_is_pointer(info->sx, type))
+	{
+		// TODO: пока сделано для одномерного указателя
+		type_to_io(info, mode_get(info->sx, (size_t)type + 1));
+		uni_printf(info->io, "*");
 	}
 }
 
@@ -470,23 +482,23 @@ static void to_code_operation_const_reg_double(information *const info, const it
 }
 
 static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
-	, const int is_array)
+	, const int is_array, const int is_pointer)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = load ", result);
 	type_to_io(info, type);
-	uni_printf(info->io, ", ");
+	uni_printf(info->io, "%s, ", is_pointer ? "*" : "");
 	type_to_io(info, type);
-	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
+	uni_printf(info->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
-	, const int is_array)
+	, const int is_array, const int is_pointer)
 {
 	uni_printf(info->io, " store ");
 	type_to_io(info, type);
-	uni_printf(info->io, " %%.%" PRIitem ", ", reg);
+	uni_printf(info->io, "%s %%%s.%" PRIitem ", ", is_pointer ? "*" : "", is_pointer ? "var" : "", reg);
 	type_to_io(info, type);
-	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
+	uni_printf(info->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ
@@ -649,6 +661,95 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 	info->register_num++;
 }
 
+static void to_code_init_array(information *const info, const size_t index, const item_t type, const int is_string)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = bitcast ", info->register_num);
+	info->register_num++;
+
+	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+	}
+	type_to_io(info, type);
+
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->io, "]");
+	}
+	uni_printf(info->io, "* %%arr.%" PRIitem " to i8*\n", hash_get_key(&info->arrays, index));
+
+	// TODO: со строками и char работает неправильно, надо исправить
+	uni_printf(info->io, " call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* ", info->register_num - 1);
+	if (!is_string)
+	{
+		uni_printf(info->io, "bitcast (");
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+		}
+		type_to_io(info, type);
+
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "]");
+		}
+		uni_printf(info->io, "* @arr_init.%" PRIitem " to i8*)", info->init_num);
+	}
+	else
+	{
+		uni_printf(info->io, "getelementptr inbounds (");
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+		}
+		uni_printf(info->io, "i8");
+
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "]");
+		}
+
+		uni_printf(info->io, ", ");
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+		}
+		uni_printf(info->io, "i8");
+
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "]");
+		}
+		uni_printf(info->io, "* @.str%" PRIitem ", i32 0, i32 0)", info->string_num);
+	}
+	
+	uni_printf(info->io, ", i32 %" PRIitem ", i32 %i, i1 false)\n"
+		, (mode_is_float(type) ? 8 : 4) * hash_get_by_index(&info->arrays, index, 1), mode_is_float(type) ? 8 : 4);
+
+	is_string ? info->string_num++ : info->init_num++;
+	info->was_memcpy = 1;
+}
+
+static void to_code_widen(information *const info, const item_t operation_type)
+{
+	if (info->answer_type == ACONST)
+	{
+		info->answer_const_double = (double)info->answer_const;
+	}
+	else
+	{
+		uni_printf(info->io, " %%.%" PRIitem " = sitofp ", info->register_num);
+		type_to_io(info, info->answer_value_type);
+		uni_printf(info->io, " %%.%" PRIitem " to ", info->answer_reg);
+		type_to_io(info, operation_type);
+		uni_printf(info->io, "\n");
+
+		info->answer_value_type = operation_type;
+		info->answer_reg = info->register_num++;
+	}
+}
+
 
 static void check_type_and_branch(information *const info)
 {
@@ -665,6 +766,8 @@ static void check_type_and_branch(information *const info)
 		case ALOGIC:
 			to_code_conditional_branch(info);
 			break;
+		case AMEM:
+			break;
 	}
 }
 
@@ -680,25 +783,41 @@ static void operand(information *const info, node *const nd)
 	{
 		case OP_IDENT:
 		case OP_SELECT:
-		case OP_IDENT_TO_ADDR:
 			node_set_next(nd);
 			break;
+		case OP_IDENT_TO_ADDR:
+		{
+			info->answer_reg = node_get_arg(nd, 0);
+			info->answer_type = AMEM;
+			node_set_next(nd);
+		}
+		break;
 		case OP_IDENT_TO_VAL:
 		{
 			const item_t displ = node_get_arg(nd, 0);
+			int is_addr_to_val = 0;
 
-			to_code_load(info, info->register_num, displ, mode_integer, 0);
+			node_set_next(nd);
+			if (node_get_type(nd) == OP_ADDR_TO_VAL)
+			{
+				to_code_load(info, info->register_num, displ, mode_integer, 0, 1);
+				info->register_num++;
+				info->variable_location = LREG;
+				node_set_next(nd);
+				is_addr_to_val = 1;
+			}
+			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, mode_integer
+				, is_addr_to_val, info->variable_location == LMEM ? 1 : 0);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
 			info->answer_value_type = mode_integer;
-			node_set_next(nd);
 		}
 		break;
 		case OP_IDENT_TO_VAL_D:
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
-			to_code_load(info, info->register_num, displ, mode_float, 0);
+			to_code_load(info, info->register_num, displ, mode_float, 0, 0);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
 			info->answer_value_type = mode_float;
@@ -810,7 +929,7 @@ static void operand(information *const info, node *const nd)
 
 			if (location != LMEM)
 			{
-				to_code_load(info, info->register_num, info->register_num - 1, type, 1);
+				to_code_load(info, info->register_num, info->register_num - 1, type, 1, 0);
 				info->register_num++;
 			}
 
@@ -822,11 +941,27 @@ static void operand(information *const info, node *const nd)
 		case OP_CALL1:
 		{
 			const item_t args = node_get_arg(nd, 0);
+			item_t parameters[128];
+			answer_t parameters_type[128];
+			item_t parameters_value_type[128];
 
 			node_set_next(nd);
+			node_set_next(nd); // OP_IDENT
 			for (item_t i = 0; i < args; i++)
 			{
+				info->variable_location = LFREE;
 				expression(info, nd);
+				// TODO: сделать параметры других типов (логическое)
+				parameters_type[i] = info->answer_type;
+				parameters_value_type[i] = info->answer_value_type;
+				if (info->answer_type == AREG)
+				{
+					parameters[i] = info->answer_reg;
+				}
+				else // ACONST
+				{
+					parameters[i] = info->answer_const;
+				}
 			}
 
 			const size_t ref_ident = (size_t)node_get_arg(nd, 0);
@@ -845,7 +980,21 @@ static void operand(information *const info, node *const nd)
 			type_to_io(info, func_type);
 			uni_printf(info->io, " @func%zi(", ref_ident);
 
-			// тут будет ещё перечисление аргументов
+			for (item_t i = 0; i < args; i++)
+			{
+				if (i != 0)
+				{
+					uni_printf(info->io, ", ");
+				}
+
+				type_to_io(info, parameters_value_type[i]);
+				uni_printf(info->io, " signext ");
+				if (parameters_type[i] == AREG)
+				{
+					uni_printf(info->io, "%%.");
+				}
+				uni_printf(info->io, "%" PRIitem, parameters[i]);
+			}
 			uni_printf(info->io, ")\n");
 		}
 		break;
@@ -885,8 +1034,15 @@ static void assignment_expression(information *const info, node *const nd)
 	const item_t assignment_type = node_get_type(nd);
 	const item_t operation_type = is_double(assignment_type) ? mode_float : mode_integer;
 	const int is_array = is_array_operation(assignment_type);
+	int is_widen = 0;
 
 	node_set_next(nd);
+	if (node_get_type(nd) == OP_WIDEN)
+	{
+		is_widen = 1;
+		node_set_next(nd);
+	}
+
 	info->variable_location = LMEM;
 	operand(info, nd); // Tident or OP_SLICE_IDENT
 	const item_t memory_reg = info->answer_reg;
@@ -895,6 +1051,10 @@ static void assignment_expression(information *const info, node *const nd)
 	expression(info, nd);
 
 	to_code_try_zext_to(info);
+	if (is_widen)
+	{
+		to_code_widen(info, operation_type);
+	}
 	item_t result = info->answer_reg;
 
 	if (assignment_type != OP_ASSIGN && assignment_type != OP_ASSIGN_V
@@ -902,7 +1062,7 @@ static void assignment_expression(information *const info, node *const nd)
 		&& assignment_type != OP_ASSIGN_AT && assignment_type != OP_ASSIGN_AT_V
 		&& assignment_type != OP_ASSIGN_AT_R && assignment_type != OP_ASSIGN_AT_R_V)
 	{
-		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
+		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array, 0);
 		info->register_num++;
 
 		if (info->answer_type == AREG)
@@ -924,9 +1084,10 @@ static void assignment_expression(information *const info, node *const nd)
 		info->answer_type = AREG;
 	}
 
-	if (info->answer_type == AREG)
+	if (info->answer_type == AREG || info->answer_type == AMEM)
 	{
-		to_code_store_reg(info, result, is_array ? memory_reg : displ, operation_type, is_array);
+		to_code_store_reg(info, result, is_array ? memory_reg : displ, operation_type, is_array
+			, info->answer_type == AMEM ? 1 : 0);
 	}
 	// ACONST && =
 	else if (!is_double(assignment_type))
@@ -943,12 +1104,28 @@ static void integral_expression(information *const info, node *const nd, const a
 {
 	const item_t operation = node_get_type(nd);
 	const item_t operation_type = is_double(operation) ? mode_float : mode_integer;
+	int is_widen = 0, is_widen1 = 0;
+
 	node_set_next(nd);
+	if (node_get_type(nd) == OP_WIDEN)
+	{
+		is_widen = 1;
+		node_set_next(nd);
+	}
+	else if (node_get_type(nd) == OP_WIDEN1)
+	{
+		is_widen1 = 1;
+		node_set_next(nd);
+	}
 
 	info->variable_location = LFREE;
 	expression(info, nd);
 
 	to_code_try_zext_to(info);
+	if (is_widen1)
+	{
+		to_code_widen(info, operation_type);
+	}
 
 	const answer_t left_type = info->answer_type;
 	const item_t left_reg = info->answer_reg;
@@ -959,6 +1136,10 @@ static void integral_expression(information *const info, node *const nd, const a
 	expression(info, nd);
 
 	to_code_try_zext_to(info);
+	if (is_widen)
+	{
+		to_code_widen(info, operation_type);
+	}
 
 	const answer_t right_type = info->answer_type;
 	const item_t right_reg = info->answer_reg;
@@ -1095,7 +1276,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 	const item_t memory_reg = info->answer_reg;
 
 	to_code_load(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type
-		, is_array_operation(operation));
+		, is_array_operation(operation), 0);
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 	info->answer_value_type = operation_type;
@@ -1148,7 +1329,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 	}
 
 	to_code_store_reg(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type
-		, is_array_operation(operation));
+		, is_array_operation(operation), 0);
 	info->register_num++;
 }
 
@@ -1620,12 +1801,16 @@ static void statement(information *const info, node *const nd)
 		{
 			const item_t old_label_true = info->label_true;
 			const item_t old_label_false = info->label_false;
+			const item_t old_label_break = info->label_break;
+			const item_t old_label_continue = info->label_continue;
 			const item_t label_condition = info->label_num++;
 			const item_t label_body = info->label_num++;
 			const item_t label_end = info->label_num++;
 
 			info->label_true = label_body;
 			info->label_false = label_end;
+			info->label_break = label_end;
+			info->label_continue = label_body;
 
 			node_set_next(nd);
 			to_code_unconditional_branch(info, label_condition);
@@ -1642,17 +1827,23 @@ static void statement(information *const info, node *const nd)
 
 			info->label_true = old_label_true;
 			info->label_false = old_label_false;
+			info->label_break = old_label_break;
+			info->label_continue = old_label_continue;
 		}
 		break;
 		case OP_DO:
 		{
 			const item_t old_label_true = info->label_true;
 			const item_t old_label_false = info->label_false;
+			const item_t old_label_break = info->label_break;
+			const item_t old_label_continue = info->label_continue;
 			const item_t label_loop = info->label_num++;
 			const item_t label_end = info->label_num++;
 
 			info->label_true = label_loop;
 			info->label_false = label_end;
+			info->label_break = label_end;
+			info->label_continue = label_loop;
 
 			node_set_next(nd);
 			to_code_unconditional_branch(info, label_loop);
@@ -1668,6 +1859,8 @@ static void statement(information *const info, node *const nd)
 
 			info->label_true = old_label_true;
 			info->label_false = old_label_false;
+			info->label_break = old_label_break;
+			info->label_continue = old_label_continue;
 		}
 		break;
 		// TODO: проверялось, только если в for присутствуют все блоки: инициализация, условие, модификация
@@ -1679,6 +1872,8 @@ static void statement(information *const info, node *const nd)
 			const item_t ref_incr = node_get_arg(nd, 2);
 			const item_t old_label_true = info->label_true;
 			const item_t old_label_false = info->label_false;
+			const item_t old_label_break = info->label_break;
+			const item_t old_label_continue = info->label_continue;
 			const item_t label_condition = info->label_num++;
 			const item_t label_body = info->label_num++;
 			const item_t label_incr = info->label_num++;
@@ -1686,6 +1881,8 @@ static void statement(information *const info, node *const nd)
 
 			info->label_true = label_body;
 			info->label_false = label_end;
+			info->label_break = label_end;
+			info->label_continue = label_body;
 
 			node_set_next(nd);
 
@@ -1718,19 +1915,37 @@ static void statement(information *const info, node *const nd)
 
 			info->label_true = old_label_true;
 			info->label_false = old_label_false;
+			info->label_break = old_label_break;
+			info->label_continue = old_label_continue;
 		}
 		break;
 		case OP_LABEL:
 		{
+			const item_t label = -node_get_arg(nd, 0);
 			node_set_next(nd);
-			statement(info, nd);
+			to_code_unconditional_branch(info, label);
+			to_code_label(info, label);
 		}
 		break;
 		case OP_BREAK:
-		case OP_CONTINUE:
-		case OP_GOTO:
+		{
 			node_set_next(nd);
-			break;
+			to_code_unconditional_branch(info, info->label_break);
+		}
+		break;
+		case OP_CONTINUE:
+		{
+			node_set_next(nd);
+			to_code_unconditional_branch(info, info->label_continue);
+		}
+		break;
+		case OP_GOTO:
+		{
+			const item_t label = node_get_arg(nd, 0) < 0 ? node_get_arg(nd, 0) : -node_get_arg(nd, 0);
+			node_set_next(nd);
+			to_code_unconditional_branch(info, label);
+		}
+		break;
 		case OP_RETURN_VOID:
 		{
 			if (info->was_dynamic)
@@ -1772,11 +1987,9 @@ static void statement(information *const info, node *const nd)
 		}
 		break;
 		case OP_GETID:
-			// здесь будет печать llvm для ввода
-			node_set_next(nd);
-			break;
+		// они будут сделаны в парсере через printf
 		case OP_PRINTID:
-			// здесь будет печать llvm для вывода
+		case OP_PRINT:
 			node_set_next(nd);
 			break;
 		case OP_PRINTF:
@@ -1823,11 +2036,41 @@ static void statement(information *const info, node *const nd)
 	}
 }
 
-static void init(information *const info, node *const nd)
+static void init(information *const info, node *const nd, const item_t displ, const item_t elem_type)
 {
 	switch (node_get_type(nd))
 	{
-		case OP_ARRAY_INIT:
+		// TODO: пока реализовано только для одномерных массивов
+		case OP_ARRAY_INIT: 
+		{
+			const item_t N = node_get_arg(nd, 0);
+
+			const size_t index = hash_get_index(&info->arrays, displ);
+			hash_set_by_index(&info->arrays, index, 1, N);
+			to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+			to_code_init_array(info, index, elem_type == mode_integer ? mode_integer : mode_float, 0);
+
+			node_set_next(nd);
+			for (item_t i = 0; i < N; i++)
+			{
+				info->variable_location = LFREE;
+				expression(info, nd);
+			}
+		}
+		break;
+		// массивы char могут инициализироваться строками
+		case OP_STRING:
+		{
+			const item_t N = node_get_arg(nd, 0);
+
+			const size_t index = hash_get_index(&info->arrays, displ);
+			hash_set_by_index(&info->arrays, index, 1, N + 1);
+			to_code_alloc_array_static(info, index, mode_integer);
+			to_code_init_array(info, index, mode_integer, 1);
+
+			node_set_next(nd);
+		}
+		break;
 		case OP_STRUCT_INIT:
 		{
 			const item_t N = node_get_arg(nd, 0);
@@ -1863,11 +2106,13 @@ static void block(information *const info, node *const nd)
 				const item_t displ = node_get_arg(&id, 0);
 				const item_t elem_type = node_get_arg(&id, 1);
 				const size_t N = (size_t)node_get_arg(&id, 2);
+				const item_t all = node_get_arg(&id, 3);	// 0 если нет инициализации
 				const size_t index = hash_add(&info->arrays, displ, 1 + N);
 				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
 				node_set_next(nd);
-				for (size_t i = 1; i <= N; i++)
+				// получение и сохранение границ
+				for (size_t i = 1; i <= N && !all; i++)
 				{
 					info->variable_location = LFREE;
 					expression(info, nd);
@@ -1892,12 +2137,15 @@ static void block(information *const info, node *const nd)
 						hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
 					}
 				}
+				node_set_next(nd);	// OP_DECL_ID
 
-				if (hash_get_by_index(&info->arrays, index, IS_STATIC))
+				// объявление массива без инициализации, с инициализацией объявление происходит в init
+				// объявление массива, если он статический
+				if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
 				{
 					to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
 				}
-				else
+				else if (!all)// объявление массива, если он динамический
 				{
 					if (!info->was_dynamic)
 					{
@@ -1905,6 +2153,11 @@ static void block(information *const info, node *const nd)
 					}
 					to_code_alloc_array_dynamic(info, index, elem_type == mode_integer ? mode_integer : mode_float);
 					info->was_dynamic = 1;
+				}
+
+				if (all)
+				{
+					init(info, nd, displ, elem_type);
 				}
 			}
 			break;
@@ -1928,7 +2181,7 @@ static void block(information *const info, node *const nd)
 				node_set_next(nd);
 				if (all)
 				{
-					init(info, nd);
+					init(info, nd, displ, elem_type);
 				}
 			}
 			break;
@@ -1957,6 +2210,7 @@ static int codegen(information *const info)
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
 				const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
+				const size_t parameters = (size_t)mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 2);
 				info->was_dynamic = 0;
 
 				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
@@ -1969,7 +2223,27 @@ static int codegen(information *const info)
 					type_to_io(info, func_type);
 					uni_printf(info->io, " @func%zi(", ref_ident);
 				}
+
+				for (size_t i = 0; i < parameters; i++)
+				{
+					uni_printf(info->io, i == 0 ? "" : ", ");
+					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
+				}
 				uni_printf(info->io, ") {\n");
+
+				for (size_t i = 0; i < parameters; i++)
+				{
+					uni_printf(info->io, " %%var.%" PRIitem " = alloca "
+						, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
+					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->io, ", align 4\n");
+
+					uni_printf(info->io, " store ");
+					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->io, " %%%" PRIitem ", ", i);
+					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->io, "* %%var.%" PRIitem ", align 4\n", ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
+				}
 
 				node_set_next(&root);
 				block(info, &root);
@@ -1990,6 +2264,10 @@ static int codegen(information *const info)
 	{
 		uni_printf(info->io, "declare i8* @llvm.stacksave()\n");
 		uni_printf(info->io, "declare void @llvm.stackrestore(i8*)\n");
+	}
+	if (info->was_memcpy)
+	{
+		uni_printf(info->io, "declare void @llvm.memcpy.p0i8.p0i8.i32(i8* nocapture writeonly, i8* nocapture readonly, i32, i32, i1)\n");
 	}
 
 	return 0;
@@ -2029,10 +2307,12 @@ static void structs_declaration(information *const info)
 
 int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
+	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->modes), &(sx->tree));
 	if (optimize_for_llvm(ws, io, sx))
 	{
 		return -1;
 	}
+	tables_and_tree("tree1.txt", &(sx->identifiers), &(sx->modes), &(sx->tree));
 
 	information info;
 	info.io = io;
@@ -2040,9 +2320,11 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	info.string_num = 1;
 	info.register_num = 1;
 	info.label_num = 1;
+	info.init_num = 1;
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
+	info.was_memcpy = 0;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
