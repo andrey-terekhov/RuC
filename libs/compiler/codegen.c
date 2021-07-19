@@ -18,8 +18,8 @@
 #include <stdlib.h>
 #include "codes.h"
 #include "errors.h"
-#include "item.h"
 #include "instructions.h"
+#include "item.h"
 #include "operations.h"
 #include "stack.h"
 #include "tree.h"

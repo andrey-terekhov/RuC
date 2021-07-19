@@ -43,7 +43,7 @@ typedef struct lexer
 } lexer;
 
 /**
- *	Create lexer
+ *	Create lexer structure
  *
  *	@param	ws		Compiler workspace
  *	@param	sx		Syntax structure

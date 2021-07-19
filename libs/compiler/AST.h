@@ -18,9 +18,9 @@
 
 #include <stdbool.h>
 #include "errors.h"
+#include "operations.h"
 #include "syntax.h"
 #include "tree.h"
-#include "operations.h"
 
 
 #ifdef __cplusplus
@@ -43,10 +43,20 @@ typedef struct expression_list
 	expression expressions[128];
 } expression_list;
 
-/** Get expression type */
+/**
+ *	Get expression type
+ *
+ *	@param	expr	Expression
+ *
+ *	@return	Expression type
+ */
 item_t expression_get_type(const expression expr);
 
-/** Return invalid expression */
+/**
+ *	Return invalid expression
+ *
+ *	@return	Invalid expression
+ */
 expression invalid_expression(void);
 
 /**
@@ -187,5 +197,16 @@ expression binary_expression(syntax *const sx, const expression left, const expr
 expression ternary_expression(syntax *const sx, const expression left, const expression middle
 							  , const expression right, const location_t op_loc);
 
+/**
+ *	Build an initializer list
+ *
+ *	@param	sx				Syntax structure
+ *	@param	inits			List of initializers
+ *	@param	type			Target type for initializer list
+ *	@param	l_loc			Left brace location
+ *	@param	r_loc			Right brace location
+ *
+ *	@return	Initializer list expression
+ */
 expression init_list_expression(syntax *const sx, const expression_list *inits, const item_t type
 								, const location_t l_loc, const location_t r_loc);

@@ -31,7 +31,7 @@ static void node_set_child(const node *const parent, const node *const child)
 }
 
 /** Return valid expression from AST node */
-static expression expr(const node expr_node, const location_t location)
+inline static expression expr(const node expr_node, const location_t location)
 {
 	return (expression){ .is_valid = true, .location = location, .nd = expr_node };
 }
