@@ -50,21 +50,21 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 	{
 		case TK_VOID:
 			token_consume(prs);
-			return type_void;
+			return TYPE_VOID;
 
 		case TK_CHAR:
 			token_consume(prs);
-			return type_character;
+			return TYPE_CHARACTER;
 
 		case TK_INT:
 		case TK_LONG:
 			token_consume(prs);
-			return type_integer;
+			return TYPE_INTEGER;
 
 		case TK_FLOAT:
 		case TK_DOUBLE:
 			token_consume(prs);
-			return type_float;
+			return TYPE_FLOATING;
 
 		case TK_IDENTIFIER:
 		{
@@ -74,7 +74,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 			if (id == ITEM_MAX || ident_get_displ(prs->sx, (size_t)id) < 1000)
 			{
 				parser_error(prs, ident_not_type);
-				return type_undefined;
+				return TYPE_UNDEFINED;
 			}
 
 			prs->flag_array_in_struct = (int)ident_get_displ(prs->sx, (size_t)id) - 1000;
@@ -87,7 +87,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 
 		default:
 			parser_error(prs, not_decl);
-			return type_undefined;
+			return TYPE_UNDEFINED;
 	}
 }
 
@@ -135,7 +135,7 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 				if (id == ITEM_MAX)
 				{
 					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
-					return type_undefined;
+					return TYPE_UNDEFINED;
 				}
 
 				// TODO: what if it was not a struct name?
@@ -146,7 +146,7 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 
 		default:
 			parser_error(prs, wrong_struct);
-			return type_undefined;
+			return TYPE_UNDEFINED;
 	}
 }
 
@@ -198,7 +198,7 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
 				token_skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_SEMICOLON);
 			}
 		}
-		type = to_modetab(prs, type_array, type);
+		type = type_array(prs->sx, type);
 	}
 
 	return type;
@@ -229,7 +229,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	if (token_try_consume(prs, TK_R_BRACE))
 	{
 		parser_error(prs, empty_struct);
-		return type_undefined;
+		return TYPE_UNDEFINED;
 	}
 
 	item_t local_modetab[100];
@@ -243,16 +243,16 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	do
 	{
 		item_t element_type = parse_type_specifier(prs, parent);
-		if (element_type == type_void)
+		if (type_is_void(element_type))
 		{
 			parser_error(prs, only_functions_may_have_type_VOID);
-			element_type = type_undefined;
+			element_type = TYPE_UNDEFINED;
 		}
 
 		item_t type = element_type;
 		if (token_try_consume(prs, TK_STAR))
 		{
-			type = to_modetab(prs, type_pointer, element_type);
+			type = type_pointer(prs->sx, element_type);
 		}
 
 		const size_t repr = prs->lxr->repr;
@@ -308,7 +308,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		local_modetab[local_md++] = type;
 		local_modetab[local_md++] = (item_t)repr;
 		fields++;
-		displ += size_of(prs->sx, type);
+		displ += type_size(prs->sx, type);
 
 		token_expect_and_consume(prs, TK_SEMICOLON, no_semicolon_in_struct);
 	} while (!token_try_consume(prs, TK_R_BRACE));
@@ -321,11 +321,11 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		prs->flag_array_in_struct = (int)prs->sx->procd++;
 	}
 
-	local_modetab[0] = type_struct;
+	local_modetab[0] = TYPE_STRUCTURE;
 	local_modetab[1] = (item_t)displ;
 	local_modetab[2] = (item_t)fields * 2;
 
-	return (item_t)type_add(prs->sx, local_modetab, local_md);
+	return type_add(prs->sx, local_modetab, local_md);
 }
 
 /**
@@ -488,7 +488,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 
 	if (token_try_consume(prs, TK_EQUAL))
 	{
-		node_set_arg(&nd, 3, (item_t)size_of(prs->sx, type));
+		node_set_arg(&nd, 3, (item_t)type_size(prs->sx, type));
 		if (type_is_array(prs->sx, type))
 		{
 			if (!prs->flag_empty_bounds)
@@ -547,13 +547,13 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			if (token_try_consume(prs, TK_STAR))
 			{
 				arg_func = 1;
-				if (type == type_void)
+				if (type_is_void(type))
 				{
-					type = type_void_pointer;
+					type = TYPE_VOID_POINTER;
 				}
 				else
 				{
-					type = to_modetab(prs, type_pointer, type);
+					type = type_pointer(prs->sx, type);
 				}
 			}
 
@@ -572,10 +572,10 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			{
 				parser_error(prs, ident_in_declarator);
 				token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-				return type_undefined;
+				return TYPE_UNDEFINED;
 			}
 
-			if (type == type_void && prs->token != TK_L_PAREN)
+			if (type_is_void(type) && prs->token != TK_L_PAREN)
 			{
 				parser_error(prs, par_type_void_with_nofun);
 			}
@@ -590,7 +590,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 
 				while (token_try_consume(prs, TK_L_SQUARE))
 				{
-					type = to_modetab(prs, type_array, type);
+					type = type_array(prs->sx, type);
 					if (!token_try_consume(prs, TK_R_SQUARE))
 					{
 						parser_error(prs, wait_right_sq_br);
@@ -614,14 +614,14 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 						else
 						{
 							parser_error(prs, two_idents_for_1_declarer);
-							return type_undefined;
+							return TYPE_UNDEFINED;
 						}
 						func_add(prs->sx, -((item_t)prs->lxr->repr));
 					}
 					else
 					{
 						parser_error(prs, ident_in_declarator);
-						return type_undefined;
+						return TYPE_UNDEFINED;
 					}
 				}
 
@@ -655,13 +655,13 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				{
 					token_skip_until(prs, TK_R_BRACE);
 				}
-				return type_undefined;
+				return TYPE_UNDEFINED;
 			}
 			else if (func_def == 1 && !was_ident)
 			{
 				parser_error(prs, wait_definition);
 				token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-				return type_undefined;
+				return TYPE_UNDEFINED;
 			}
 
 			args++;
@@ -672,11 +672,11 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 		prs->func_def = func_def;
 	}
 
-	local_modetab[0] = type_function;
+	local_modetab[0] = TYPE_FUNCTION;
 	local_modetab[1] = return_type;
 	local_modetab[2] = (item_t)args;
 
-	return (item_t)type_add(prs->sx, local_modetab, local_md);
+	return type_add(prs->sx, local_modetab, local_md);
 }
 
 /**
@@ -725,7 +725,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 
 	parse_statement_compound(prs, &nd, FUNCBODY);
 
-	if (type_get(prs->sx, prs->function_mode + 1) != type_void && !prs->was_return)
+	if (type_get(prs->sx, prs->function_mode + 1) != TYPE_VOID && !prs->was_return)
 	{
 		parser_error(prs, no_ret_in_func);
 	}
@@ -808,10 +808,10 @@ void parse_declaration_inner(parser *const prs, node *const parent)
 	prs->was_type_def = 0;
 	item_t group_type = parse_type_specifier(prs, parent);
 
-	if (group_type == type_void)
+	if (type_is_void(group_type))
 	{
 		parser_error(prs, only_functions_may_have_type_VOID);
-		group_type = type_undefined;
+		group_type = TYPE_UNDEFINED;
 	}
 	else if (prs->was_type_def && token_try_consume(prs, TK_SEMICOLON))
 	{
@@ -823,7 +823,7 @@ void parse_declaration_inner(parser *const prs, node *const parent)
 		item_t type = group_type;
 		if (token_try_consume(prs, TK_STAR))
 		{
-			type = to_modetab(prs, type_pointer, group_type);
+			type = type_pointer(prs->sx, group_type);
 		}
 
 		if (token_try_consume(prs, TK_IDENTIFIER))
@@ -857,13 +857,13 @@ void parse_declaration_external(parser *const prs, node *const root)
 		if (prs->token == TK_STAR)
 		{
 			token_consume(prs);
-			if (group_type == type_void)
+			if (type_is_void(group_type))
 			{
-				type = type_void_pointer;
+				type = TYPE_VOID_POINTER;
 			}
 			else
 			{
-				type = to_modetab(prs, type_pointer, group_type);
+				type = type_pointer(prs->sx, group_type);
 			}
 		}
 
@@ -873,7 +873,7 @@ void parse_declaration_external(parser *const prs, node *const root)
 			{
 				parse_function_definition(prs, root, type);
 			}
-			else if (group_type == type_void)
+			else if (type_is_void(group_type))
 			{
 				parser_error(prs, only_functions_may_have_type_VOID);
 			}
@@ -902,11 +902,11 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 		const item_t expr_type = parse_assignment_expression(prs, parent);
 		if (!type_is_undefined(expr_type) && !type_is_undefined(type))
 		{
-			if (type_is_integer(type) && type_is_float(expr_type))
+			if (type_is_integer(type) && type_is_floating(expr_type))
 			{
 				parser_error(prs, init_int_by_float);
 			}
-			else if (type_is_float(type) && type_is_integer(expr_type))
+			else if (type_is_floating(type) && type_is_integer(expr_type))
 			{
 				parse_insert_widen(prs);
 			}
@@ -926,7 +926,7 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 
 void parse_braced_initializer(parser *const prs, node *const parent, const item_t type)
 {
-	if (type_is_struct(prs->sx, type))
+	if (type_is_structure(prs->sx, type))
 	{
 		parse_struct_initializer(prs, parent, type);
 	}

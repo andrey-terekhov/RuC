@@ -445,7 +445,7 @@ static void parse_return_statement(parser *const prs, node *const parent)
 			parser_error(prs, no_ret_in_func);
 		}
 	}
-	else if (return_type != type_void_pointer)
+	else if (return_type != TYPE_VOID_POINTER)
 	{
 		if (type_is_void(return_type))
 		{
@@ -453,12 +453,12 @@ static void parse_return_statement(parser *const prs, node *const parent)
 		}
 
 		node nd = node_add_child(parent, OP_RETURN_VAL);
-		node_add_arg(&nd, (item_t)size_of(prs->sx, return_type));
+		node_add_arg(&nd, (item_t)type_size(prs->sx, return_type));
 
 		const item_t expr_type = parse_assignment_expression(prs, &nd);
 		if (!type_is_undefined(expr_type) && !type_is_undefined(return_type))
 		{
-			if (type_is_float(return_type) && type_is_integer(expr_type))
+			if (type_is_floating(return_type) && type_is_integer(expr_type))
 			{
 				parse_insert_widen(prs);
 			}
@@ -586,22 +586,22 @@ static size_t evaluate_args(parser *const prs, const size_t length, const char32
 			{
 				case 'i':
 				case U'ц':
-					format_types[args++] = type_integer;
+					format_types[args++] = TYPE_INTEGER;
 					break;
 
 				case 'c':
 				case U'л':
-					format_types[args++] = type_character;
+					format_types[args++] = TYPE_CHARACTER;
 					break;
 
 				case 'f':
 				case U'в':
-					format_types[args++] = type_float;
+					format_types[args++] = TYPE_FLOATING;
 					break;
 
 				case 's':
 				case U'с':
-					format_types[args++] = to_modetab(prs, type_array, type_character);
+					format_types[args++] = type_array(prs->sx, TYPE_CHARACTER);
 					break;
 
 				case '%':
@@ -655,7 +655,7 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 	while (token_try_consume(prs, TK_COMMA) && actual_args != expected_args)
 	{
 		const item_t type = parse_assignment_expression(prs, parent);
-		if (type_is_float(format_types[actual_args]) && type_is_integer(type))
+		if (type_is_floating(format_types[actual_args]) && type_is_integer(type))
 		{
 			parse_insert_widen(prs);
 		}
@@ -664,7 +664,7 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 			parser_error(prs, wrong_printf_param_type, placeholders[actual_args]);
 		}
 
-		sum_size += size_of(prs->sx, type);
+		sum_size += type_size(prs->sx, type);
 		actual_args++;
 	}
 
