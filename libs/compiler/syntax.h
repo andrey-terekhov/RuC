@@ -263,9 +263,9 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
  *	@param	record		Pointer to the new record
  *	@param	size		Size of the new record
  *
- *	@return	Index of the new record in types table, @c SIZE_MAX on failure
+ *	@return	New type, @c ITEM_MAX on failure
  */
-size_t type_add(syntax *const sx, const item_t *const record, const size_t size);
+item_t type_add(syntax *const sx, const item_t *const record, const size_t size);
 
 /**
  *	Get an item from types table by index

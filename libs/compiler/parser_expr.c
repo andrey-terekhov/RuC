@@ -321,7 +321,7 @@ static expression parse_postfix_expression(parser *const prs)
 				const location_t op_loc = token_consume(prs);
 				operand = unary_expression(prs->sx, operand, UN_POSTINC, op_loc);
 				continue;
-			}
+      }
 
 			case TK_MINUS_MINUS:
 			{

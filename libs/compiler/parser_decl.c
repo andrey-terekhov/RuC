@@ -334,7 +334,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	local_modetab[1] = (item_t)displ;
 	local_modetab[2] = (item_t)fields * 2;
 
-	return (item_t)type_add(prs->sx, local_modetab, local_md);
+	return type_add(prs->sx, local_modetab, local_md);
 }
 
 /**
@@ -598,7 +598,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 	local_modetab[1] = return_type;
 	local_modetab[2] = (item_t)args;
 
-	return (item_t)type_add(prs->sx, local_modetab, local_md);
+	return type_add(prs->sx, local_modetab, local_md);
 }
 
 /**
