@@ -245,7 +245,7 @@ static void type_to_io(information *const info, const item_t type)
 	{
 		uni_printf(info->io, "%%struct_opt.%" PRIitem, type);
 	}
-	else if (mode_is_pointer(info->sx, type))
+	else if (mode_is_pointer(info->sx, type) || mode_is_array(info->sx, type))
 	{
 		// TODO: пока сделано для одномерного указателя
 		type_to_io(info, mode_get(info->sx, (size_t)type + 1));
@@ -2240,7 +2240,8 @@ static int codegen(information *const info)
 
 				for (size_t i = 0; i < parameters; i++)
 				{
-					uni_printf(info->io, " %%var.%" PRIitem " = alloca "
+					uni_printf(info->io, " %%%s.%" PRIitem " = alloca "
+						, mode_is_array(info->sx, ident_get_mode(info->sx, ref_ident + 4 * (i + 1))) ? "arr" : "var"
 						, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
 					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
 					uni_printf(info->io, ", align 4\n");
@@ -2249,7 +2250,19 @@ static int codegen(information *const info)
 					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
 					uni_printf(info->io, " %%%" PRIitem ", ", i);
 					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
-					uni_printf(info->io, "* %%var.%" PRIitem ", align 4\n", ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n"
+						, mode_is_array(info->sx, ident_get_mode(info->sx, ref_ident + 4 * (i + 1))) ? "arr" : "var"
+						, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
+
+					// занесение параметра-массива в хэш-таблицу
+					// TODO: сделать для многомерных массивов
+					if (mode_is_array(info->sx, ident_get_mode(info->sx, ref_ident + 4 * (i + 1))))
+					{
+						hash_add(&info->arrays, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)), 1 + 1);
+						uni_printf(info->io, " %%dynarr.%" PRIitem " = load i32*, i32** %%arr.%" PRIitem ", align 4\n"
+							, ident_get_displ(info->sx, ref_ident + 4 * (i + 1))
+							, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
+					}
 				}
 
 				node_set_next(&root);
