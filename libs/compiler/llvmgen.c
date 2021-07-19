@@ -224,7 +224,12 @@ static bool is_array_operation(const item_t operation)
 
 static void type_to_io(information *const info, const item_t type)
 {
-	if (mode_is_int(type))
+	// временное решение без русских символов
+	if (type == mode_character)
+	{
+		uni_printf(info->io, "i8");
+	}
+	else if (mode_is_int(type))
 	{
 		uni_printf(info->io, "i32");
 	}
@@ -695,6 +700,9 @@ static void to_code_init_array(information *const info, const size_t index, cons
 			uni_printf(info->io, "]");
 		}
 		uni_printf(info->io, "* @arr_init.%" PRIitem " to i8*)", info->init_num);
+
+		uni_printf(info->io, ", i32 %" PRIitem ", i32 %i, i1 false)\n"
+		, (mode_is_float(type) ? 8 : 4) * hash_get_by_index(&info->arrays, index, 1), mode_is_float(type) ? 8 : 4);
 	}
 	else
 	{
@@ -722,10 +730,9 @@ static void to_code_init_array(information *const info, const size_t index, cons
 			uni_printf(info->io, "]");
 		}
 		uni_printf(info->io, "* @.str%" PRIitem ", i32 0, i32 0)", info->string_num);
+
+		uni_printf(info->io, ", i32 %" PRIitem ", i32 1, i1 false)\n", hash_get_by_index(&info->arrays, index, 1));
 	}
-	
-	uni_printf(info->io, ", i32 %" PRIitem ", i32 %i, i1 false)\n"
-		, (mode_is_float(type) ? 8 : 4) * hash_get_by_index(&info->arrays, index, 1), mode_is_float(type) ? 8 : 4);
 
 	is_string ? info->string_num++ : info->init_num++;
 	info->was_memcpy = 1;
@@ -2065,8 +2072,8 @@ static void init(information *const info, node *const nd, const item_t displ, co
 
 			const size_t index = hash_get_index(&info->arrays, displ);
 			hash_set_by_index(&info->arrays, index, 1, N + 1);
-			to_code_alloc_array_static(info, index, mode_integer);
-			to_code_init_array(info, index, mode_integer, 1);
+			to_code_alloc_array_static(info, index, mode_character);
+			to_code_init_array(info, index, mode_character, 1);
 
 			node_set_next(nd);
 		}
