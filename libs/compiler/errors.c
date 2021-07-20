@@ -525,6 +525,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case empty_struct:
 			sprintf(msg, "структура должна иметь поля");
 			break;
+		case wrong_func_for_vm:
+			sprintf(msg, "эта функция не поддерживается в RuC-VM");
+			break;
 
 		case tree_expression_not_block:
 		{

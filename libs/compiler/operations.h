@@ -267,6 +267,8 @@ typedef enum OPERATION
 	OP_IDENT_TO_VAL_D,		/**< Value of double variable node */
 	OP_ADDR_TO_VAL_D,		/**< Address to double value node */
 	OP_CONST_D,				/**< Double constant node node */
+
+	OP_FREAD,				/**< 'fread' node */
 } operation_t;
 
 
@@ -320,7 +322,12 @@ typedef enum builtin
 	BI_MSG_SEND				= 138,
 	BI_MSG_RECEIVE			= 142,
 
-	BEGIN_USER_FUNC			= 144,
+	BI_FOPEN				= 146,
+	BI_FGETC				= 150,
+	BI_FPUTC				= 154,
+	BI_FCLOSE				= 158,
+
+	BEGIN_USER_FUNC			= 162,
 } builtin_t;
 
 

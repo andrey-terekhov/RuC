@@ -341,6 +341,55 @@ static void parse_standard_function_call(parser *const prs)
 			to_tree(prs, OP_ABS);
 		}
 	}
+	else if (func == TK_FREAD)
+	{
+		parse_assignment_expression_internal(prs);
+		to_value(prs);
+
+		if (!type_is_array(prs->sx, stack_pop(&prs->anonymous)))
+		{
+			parser_error(prs, not_array_in_stanfunc);
+		}
+
+		token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
+
+		parse_assignment_expression_internal(prs);
+		to_value(prs);
+
+		if (!type_is_integer(stack_pop(&prs->anonymous)))
+		{
+			parser_error(prs, not_int_in_stanfunc);
+		}
+
+		token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
+
+		parse_assignment_expression_internal(prs);
+		to_value(prs);
+
+		if (!type_is_integer(stack_pop(&prs->anonymous)))
+		{
+			parser_error(prs, not_int_in_stanfunc);
+		}
+
+		token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
+
+		parse_assignment_expression_internal(prs);
+		to_value(prs);
+
+		const item_t type = stack_pop(&prs->anonymous);
+		if (!type_is_pointer(prs->sx, type) || !type_is_file(type_get(prs->sx, (size_t)type + 1)))
+		{
+			parser_error(prs, not_int_in_stanfunc);
+		}
+
+		operands_push(prs, VALUE, TYPE_INTEGER);
+		to_tree(prs, OP_FREAD);
+
+		if (prs->is_for_vm)
+		{
+			parser_error(prs, wrong_func_for_vm);
+		}
+	}
 
 	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
 }

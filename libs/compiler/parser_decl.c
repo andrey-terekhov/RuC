@@ -66,6 +66,10 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 			token_consume(prs);
 			return TYPE_FLOATING;
 
+		case TK_FILE:
+			token_consume(prs);
+			return TYPE_FILE;
+
 		case TK_IDENTIFIER:
 		{
 			const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
