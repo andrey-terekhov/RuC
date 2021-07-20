@@ -55,7 +55,7 @@ typedef struct information
 	item_t was_printf;								/**< Флаг наличия printf в исходном коде */
 
 	stack_info nodes_info;							/**< Стек информации о нодах для преобразования выражений */
-	size_t last_depth;								/**< Глубина верхнего узла в стеке */
+	size_t last_depth;								/**< Глубина стека после перестановки для пропуска переставленных нод */
 
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
 	size_t slice_depth;								/**< Количество узлов после OP_SLICE_IDENT */
@@ -101,19 +101,8 @@ static inline size_t stack_info_size(information *const info)
 
 static inline void stack_info_resize(information *const info, const size_t size)
 {
-	if (size == 0)
-	{
-		stack_reset(&info->nodes_info.nodes);
-		stack_reset(&info->nodes_info.depths);
-	}
-	else
-	{
-		while (stack_info_size(info) != size)
-		{
-			stack_pop(&info->nodes_info.nodes);
-			stack_pop(&info->nodes_info.depths);
-		}
-	}
+	vector_resize(&info->nodes_info.nodes, size);
+	vector_resize(&info->nodes_info.depths, size);
 }
 
 
@@ -450,13 +439,12 @@ static int node_recursive(information *const info, node *const nd)
 					case UNARY_OPERATION:
 					{
 						node_info operand = stack_info_pop(info);
-						has_error |= operand.depth == SIZE_MAX ? -1 : 0;
-						if (has_error)
+						if (operand.depth == SIZE_MAX)
 						{
-							return has_error;
+							return -1;
 						}
 
-						node parent = node_get_parent(&nd_info.cur_node);
+						node parent = node_get_parent(&child);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
 							operand.depth++;
@@ -484,20 +472,18 @@ static int node_recursive(information *const info, node *const nd)
 					case BINARY_OPERATION:
 					{
 						node_info second = stack_info_pop(info);
-						has_error |= second.depth == SIZE_MAX ? -1 : 0;
-						if (has_error)
+						if (second.depth == SIZE_MAX)
 						{
-							return has_error;
+							return -1;
 						}
 
 						node_info first = stack_info_pop(info);
-						has_error |= first.depth == SIZE_MAX ? -1 : 0;
-						if (has_error)
+						if (first.depth == SIZE_MAX)
 						{
-							return has_error;
+							return -1;
 						}
 
-						node parent = node_get_parent(&nd_info.cur_node);
+						node parent = node_get_parent(&child);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
 							second.depth++;
@@ -539,8 +525,7 @@ static int node_recursive(information *const info, node *const nd)
 
 		if (has_error || node_recursive(info, &child))
 		{
-			has_error |= -1;
-			return has_error;
+			return -1;
 		}
 	}
 
