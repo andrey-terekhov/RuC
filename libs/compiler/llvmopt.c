@@ -108,7 +108,7 @@ static inline void stack_info_resize(information *const info, const size_t size)
 
 static int transposition(node_info *const expr, node_info *const cur)
 {
-	if (expr == NULL || cur == NULL)
+	if (expr == NULL || cur == NULL || !node_is_correct(&expr->cur_node) || !node_is_correct(&cur->cur_node))
 	{
 		system_error(transposition_not_possible);
 		return -1;
@@ -439,10 +439,6 @@ static int node_recursive(information *const info, node *const nd)
 					case UNARY_OPERATION:
 					{
 						node_info operand = stack_info_pop(info);
-						if (operand.depth == SIZE_MAX)
-						{
-							return -1;
-						}
 
 						node parent = node_get_parent(&child);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
@@ -472,16 +468,7 @@ static int node_recursive(information *const info, node *const nd)
 					case BINARY_OPERATION:
 					{
 						node_info second = stack_info_pop(info);
-						if (second.depth == SIZE_MAX)
-						{
-							return -1;
-						}
-
 						node_info first = stack_info_pop(info);
-						if (first.depth == SIZE_MAX)
-						{
-							return -1;
-						}
 
 						node parent = node_get_parent(&child);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
