@@ -63,18 +63,6 @@ typedef struct information
 } information;
 
 
-static inline void stack_info_create(information *const info)
-{
-	info->nodes_info.nodes = stack_create(MAX_STACK_SIZE);
-	info->nodes_info.depths = stack_create(MAX_STACK_SIZE);
-}
-
-static inline int stack_info_clear(information *const info)
-{
-	return stack_clear(&info->nodes_info.nodes)
-		|| stack_clear(&info->nodes_info.depths);
-}
-
 static inline int stack_info_push(information *const info, node_info *const nd)
 {
 	return stack_push(&info->nodes_info.nodes, node_save(&nd->cur_node))
@@ -94,12 +82,7 @@ static inline node_info stack_info_pop(information *const info)
 	return (node_info){ node_load(&info->sx->tree, (size_t)index), (size_t)operand_depth };
 }
 
-static inline size_t stack_info_size(information *const info)
-{
-	return stack_size(&info->nodes_info.nodes);
-}
-
-static inline void stack_info_resize(information *const info, const size_t size)
+static inline void stack_resize(information *const info, const size_t size)
 {
 	vector_resize(&info->nodes_info.nodes, size);
 	vector_resize(&info->nodes_info.depths, size);
@@ -328,7 +311,7 @@ static int node_recursive(information *const info, node *const nd)
 		// Очищаем полностью стек, если родитель -- блок
 		if (node_get_type(nd) == OP_BLOCK)
 		{
-			stack_info_resize(info, 0);
+			stack_resize(info, 0);
 		}
 
 		switch (node_get_type(&child))
@@ -399,7 +382,7 @@ static int node_recursive(information *const info, node *const nd)
 						break;
 					}
 
-					stack_info_resize(info, info->slice_stack_size);
+					stack_resize(info, info->slice_stack_size);
 
 					node_info slice_info = stack_info_pop(info);
 					has_error |= slice_info.depth == SIZE_MAX ? -1 : 0;
@@ -507,7 +490,7 @@ static int node_recursive(information *const info, node *const nd)
 		if (node_get_type(&child) == OP_SLICE_IDENT && info->last_depth <= 1)
 		{
 			info->slice_depth = 1;
-			info->slice_stack_size = stack_info_size(info);
+			info->slice_stack_size = stack_size(&info->nodes_info.nodes);
 		}
 
 		if (has_error || node_recursive(info, &child))
@@ -521,7 +504,6 @@ static int node_recursive(information *const info, node *const nd)
 
 static int optimize_pass(information *const info)
 {
-
 	node nd = node_get_root(&info->sx->tree);
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
 	{
@@ -589,12 +571,14 @@ int optimize_for_llvm(const workspace *const ws, universal_io *const io, syntax 
 	info.slice_depth = 0;
 	info.slice_stack_size = 0;
 
-	stack_info_create(&info);
+	info.nodes_info.nodes = stack_create(MAX_STACK_SIZE);
+	info.nodes_info.depths = stack_create(MAX_STACK_SIZE);
 
 	architecture(ws, io);
 
 	const int ret = optimize_pass(&info);
 
-	stack_info_clear(&info);
+	stack_clear(&info.nodes_info.nodes);
+	stack_clear(&info.nodes_info.depths);
 	return ret;
 }
