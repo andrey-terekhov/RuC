@@ -14,7 +14,7 @@
  *	limitations under the License.
  */
 
-#include "AST.h"
+#include "builder.h"
 #include <string.h>
 
 
@@ -73,19 +73,19 @@ item_t expression_get_type(const expression expr)
 	return expr.is_valid ? node_get_arg(&expr.nd, 0) : TYPE_UNDEFINED;
 }
 
-expression invalid_expression()
+expression build_invalid_expression()
 {
 	return (expression){ .is_valid = false };
 }
 
-expression identifier_expression(syntax *const sx, const size_t name, const location_t loc)
+expression build_identifier_expression(syntax *const sx, const size_t name, const location_t loc)
 {
 	const item_t identifier = repr_get_reference(sx, name);
 
 	if (identifier == ITEM_MAX)
 	{
 		semantics_error(sx, loc, undeclared_var_use, repr_get_name(sx, name));
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	const item_t type = ident_get_type(sx, (size_t)identifier);
@@ -99,7 +99,7 @@ expression identifier_expression(syntax *const sx, const size_t name, const loca
 	return expr(identifier_node, loc);
 }
 
-expression integer_literal_expression(syntax *const sx, const int value, const location_t loc)
+expression build_integer_literal_expression(syntax *const sx, const int value, const location_t loc)
 {
 	node constant_node = node_create(sx, OP_CONSTANT);
 	node_add_arg(&constant_node, TYPE_INTEGER);				// Тип значения константы
@@ -109,7 +109,7 @@ expression integer_literal_expression(syntax *const sx, const int value, const l
 	return expr(constant_node, loc);
 }
 
-expression floating_literal_expression(syntax *const sx, const double value, const location_t loc)
+expression build_floating_literal_expression(syntax *const sx, const double value, const location_t loc)
 {
 	item_t temp;
 	memcpy(&temp, &value, sizeof(double));
@@ -122,7 +122,7 @@ expression floating_literal_expression(syntax *const sx, const double value, con
 	return expr(constant_node, loc);
 }
 
-expression string_literal_expression(syntax *const sx, const vector value, const location_t loc)
+expression build_string_literal_expression(syntax *const sx, const vector value, const location_t loc)
 {
 	const item_t type = type_array(sx, TYPE_INTEGER);
 
@@ -137,25 +137,25 @@ expression string_literal_expression(syntax *const sx, const vector value, const
 	return expr(string_node, loc);
 }
 
-expression subscript_expression(syntax *const sx, const expression base, const expression index
+expression build_subscript_expression(syntax *const sx, const expression base, const expression index
 								, const location_t l_loc, const location_t r_loc)
 {
 	if (!base.is_valid || !index.is_valid)
 	{
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	const item_t operand_type = node_get_arg(&base.nd, 0);
 	if (!type_is_array(sx, operand_type))
 	{
 		semantics_error(sx, l_loc, typecheck_subscript_value);
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	if (!type_is_integer(node_get_arg(&index.nd, 0)))
 	{
 		semantics_error(sx, index.location, typecheck_subscript_not_integer);
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	const item_t element_type = type_get(sx, (size_t)operand_type + 1);
@@ -169,19 +169,19 @@ expression subscript_expression(syntax *const sx, const expression base, const e
 	return expr(slice_node, (location_t){ base.location.begin, r_loc.end });
 }
 
-expression call_expression(syntax *const sx, const expression callee, const expression_list *args
+expression build_call_expression(syntax *const sx, const expression callee, const expression_list *args
 						   , const location_t l_loc, const location_t r_loc)
 {
 	if (!callee.is_valid)
 	{
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	const item_t operand_type = node_get_arg(&callee.nd, 0);
 	if (!type_is_function(sx, operand_type))
 	{
 		semantics_error(sx, l_loc, typecheck_call_not_function);
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	const item_t return_type = type_get(sx, (size_t)operand_type + 1);
@@ -191,7 +191,7 @@ expression call_expression(syntax *const sx, const expression callee, const expr
 	if (expected_args != actual_args)
 	{
 		semantics_error(sx, r_loc, wrong_number_of_params, expected_args, actual_args);
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	size_t ref_arg_type = (size_t)operand_type + 3;
@@ -200,7 +200,7 @@ expression call_expression(syntax *const sx, const expression callee, const expr
 	{
 		if (!args->expressions[i].is_valid)
 		{
-			return invalid_expression();
+			return build_invalid_expression();
 		}
 
 		const item_t expected_type = type_get(sx, ref_arg_type + i);
@@ -210,7 +210,7 @@ expression call_expression(syntax *const sx, const expression callee, const expr
 		if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
 		{
 			semantics_error(sx, args->expressions[i].location, typecheck_convert_incompatible);
-			return invalid_expression();
+			return build_invalid_expression();
 		}
 	}
 
@@ -226,12 +226,12 @@ expression call_expression(syntax *const sx, const expression callee, const expr
 	return expr(call_node, (location_t){ callee.location.begin, r_loc.end });
 }
 
-expression member_expression(syntax *const sx, const expression base, const bool is_arrow, const size_t name
+expression build_member_expression(syntax *const sx, const expression base, const bool is_arrow, const size_t name
 							, const location_t op_loc, const location_t id_loc)
 {
 	if (!base.is_valid)
 	{
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	const item_t operand_type = node_get_arg(&base.nd, 0);
@@ -243,7 +243,7 @@ expression member_expression(syntax *const sx, const expression base, const bool
 		if (!type_is_structure(sx, operand_type))
 		{
 			semantics_error(sx, op_loc, typecheck_member_reference_struct);
-			return invalid_expression();
+			return build_invalid_expression();
 		}
 
 		struct_type = operand_type;
@@ -254,7 +254,7 @@ expression member_expression(syntax *const sx, const expression base, const bool
 		if (!type_is_struct_pointer(sx, operand_type))
 		{
 			semantics_error(sx, op_loc, typecheck_member_reference_arrow);
-			return invalid_expression();
+			return build_invalid_expression();
 		}
 
 		struct_type = type_get(sx, (size_t)operand_type + 1);
@@ -281,26 +281,26 @@ expression member_expression(syntax *const sx, const expression base, const bool
 	}
 
 	semantics_error(sx, id_loc, no_member, repr_get_name(sx, name));
-	return invalid_expression();
+	return build_invalid_expression();
 }
 
-expression upb_expression(syntax *const sx, const expression dimension, const expression array)
+expression build_upb_expression(syntax *const sx, const expression dimension, const expression array)
 {
 	if (!dimension.is_valid || !array.is_valid)
 	{
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	if (!type_is_integer(node_get_arg(&dimension.nd, 0)))
 	{
 		semantics_error(sx, dimension.location, not_int_in_stanfunc);
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	if (!type_is_array(sx, node_get_arg(&array.nd, 0)))
 	{
 		semantics_error(sx, dimension.location, not_array_in_stanfunc);
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	node upb_node = node_create(sx, OP_UPB);
@@ -312,11 +312,11 @@ expression upb_expression(syntax *const sx, const expression dimension, const ex
 	return expr(upb_node, (location_t){ dimension.location.begin, array.location.end });
 }
 
-expression unary_expression(syntax *const sx, const expression operand, const unary_t op_kind, const location_t op_loc)
+expression build_unary_expression(syntax *const sx, const expression operand, const unary_t op_kind, const location_t op_loc)
 {
 	if (!operand.is_valid)
 	{
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	const item_t operand_type = node_get_arg(&operand.nd, 0);
@@ -337,13 +337,13 @@ expression unary_expression(syntax *const sx, const expression operand, const un
 			if (!type_is_arithmetic(operand_type))
 			{
 				semantics_error(sx, op_loc, typecheck_illegal_increment, op_kind);
-				return invalid_expression();
+				return build_invalid_expression();
 			}
 
 			if (node_get_arg(&operand.nd, 1) != LVALUE)
 			{
 				semantics_error(sx, op_loc, typecheck_expression_not_lvalue);
-				return invalid_expression();
+				return build_invalid_expression();
 			}
 
 			result_type = operand_type;
@@ -355,7 +355,7 @@ expression unary_expression(syntax *const sx, const expression operand, const un
 			if (node_get_arg(&operand.nd, 1) != LVALUE)
 			{
 				semantics_error(sx, op_loc, typecheck_invalid_lvalue_addrof);
-				return invalid_expression();
+				return build_invalid_expression();
 			}
 
 			result_type = type_pointer(sx, operand_type);
@@ -367,7 +367,7 @@ expression unary_expression(syntax *const sx, const expression operand, const un
 			if (!type_is_pointer(sx, operand_type))
 			{
 				semantics_error(sx, op_loc, typecheck_indirection_requires_pointer);
-				return invalid_expression();
+				return build_invalid_expression();
 			}
 
 			result_type = type_get(sx, (size_t)operand_type + 1);
@@ -382,7 +382,7 @@ expression unary_expression(syntax *const sx, const expression operand, const un
 			if (!type_is_arithmetic(operand_type))
 			{
 				semantics_error(sx, op_loc, typecheck_unary_expr, operand_type);
-				return invalid_expression();
+				return build_invalid_expression();
 			}
 
 			result_type = operand_type;
@@ -394,7 +394,7 @@ expression unary_expression(syntax *const sx, const expression operand, const un
 			if (!type_is_integer(operand_type))
 			{
 				semantics_error(sx, op_loc, typecheck_unary_expr, operand_type);
-				return invalid_expression();
+				return build_invalid_expression();
 			}
 
 			result_type = TYPE_INTEGER;
@@ -406,7 +406,7 @@ expression unary_expression(syntax *const sx, const expression operand, const un
 			if (!type_is_scalar(sx, operand_type))
 			{
 				semantics_error(sx, op_loc, typecheck_unary_expr, operand_type);
-				return invalid_expression();
+				return build_invalid_expression();
 			}
 
 			result_type = TYPE_INTEGER;
@@ -427,12 +427,12 @@ expression unary_expression(syntax *const sx, const expression operand, const un
 	return expr(unary_node, location);
 }
 
-expression binary_expression(syntax *const sx, const expression left, const expression right
+expression build_binary_expression(syntax *const sx, const expression left, const expression right
 									, const binary_t op_kind, const location_t op_loc)
 {
 	if (!left.is_valid || !right.is_valid)
 	{
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	const item_t left_type = node_get_arg(&left.nd, 0);
@@ -443,7 +443,7 @@ expression binary_expression(syntax *const sx, const expression left, const expr
 			|| (type_is_floating(right_type) && type_is_integer(left_type))))
 	{
 		semantics_error(sx, op_loc, unassignable);
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	item_t result_type;
@@ -459,7 +459,7 @@ expression binary_expression(syntax *const sx, const expression left, const expr
 		if (left_type != right_type && !(type_is_floating(left_type) && type_is_integer(right_type)))
 		{
 			semantics_error(sx, op_loc, typecheck_convert_incompatible);
-			return invalid_expression();
+			return build_invalid_expression();
 		}
 
 		result_type = left_type;
@@ -469,13 +469,13 @@ expression binary_expression(syntax *const sx, const expression left, const expr
 		if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
 		{
 			semantics_error(sx, op_loc, typecheck_binary_expr);
-			return invalid_expression();
+			return build_invalid_expression();
 		}
 
 		if (operation_is_assignment(op_kind) && (node_get_arg(&left.nd, 1) != LVALUE))
 		{
 			semantics_error(sx, op_loc, unassignable);
-			return invalid_expression();
+			return build_invalid_expression();
 		}
 
 		switch (op_kind)
@@ -498,7 +498,7 @@ expression binary_expression(syntax *const sx, const expression left, const expr
 				if (!type_is_integer(left_type) || !type_is_integer(right_type))
 				{
 					semantics_error(sx, op_loc, int_op_for_float);
-					return invalid_expression();
+					return build_invalid_expression();
 				}
 
 				result_type = TYPE_INTEGER;
@@ -529,12 +529,12 @@ expression binary_expression(syntax *const sx, const expression left, const expr
 	return expr(binary_node, (location_t){ left.location.begin, right.location.end });
 }
 
-expression ternary_expression(syntax *const sx, const expression left, const expression middle
+expression build_ternary_expression(syntax *const sx, const expression left, const expression middle
 							, const expression right, const location_t op_loc)
 {
 	if (!left.is_valid || !middle.is_valid || !right.is_valid)
 	{
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	const item_t left_type = node_get_arg(&left.nd, 0);
@@ -544,7 +544,7 @@ expression ternary_expression(syntax *const sx, const expression left, const exp
 	if (!type_is_scalar(sx, left_type))
 	{
 		semantics_error(sx, left.location, typecheck_statement_requires_scalar);
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	item_t result_type = middle_type;
@@ -557,7 +557,7 @@ expression ternary_expression(syntax *const sx, const expression left, const exp
 	else if (middle_type != right_type)
 	{
 		semantics_error(sx, op_loc, typecheck_cond_incompatible_operands);
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	node ternary_node = node_create(sx, OP_TERNARY);
@@ -570,14 +570,14 @@ expression ternary_expression(syntax *const sx, const expression left, const exp
 	return expr(ternary_node, (location_t){ left.location.begin, right.location.end });
 }
 
-expression init_list_expression(syntax *const sx, const expression_list *inits, const item_t type
+expression build_init_list_expression(syntax *const sx, const expression_list *inits, const item_t type
 								, const location_t l_loc, const location_t r_loc)
 {
 	const size_t actual_inits = inits->length;
 	if (actual_inits == 0)
 	{
 		semantics_error(sx, l_loc, empty_init);
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	if (type_is_structure(sx, type))
@@ -587,7 +587,7 @@ expression init_list_expression(syntax *const sx, const expression_list *inits, 
 		if (expected_inits != actual_inits)
 		{
 			semantics_error(sx, r_loc, wrong_init_in_actparam, expected_inits, actual_inits);
-			return invalid_expression();
+			return build_invalid_expression();
 		}
 
 		size_t ref_next_field = (size_t)type + 3;
@@ -595,7 +595,7 @@ expression init_list_expression(syntax *const sx, const expression_list *inits, 
 		{
 			if (!inits->expressions[i].is_valid)
 			{
-				return invalid_expression();
+				return build_invalid_expression();
 			}
 
 			const item_t expected_type = type_get(sx, ref_next_field);
@@ -605,7 +605,7 @@ expression init_list_expression(syntax *const sx, const expression_list *inits, 
 			if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
 			{
 				semantics_error(sx, inits->expressions[i].location, typecheck_convert_incompatible);
-				return invalid_expression();
+				return build_invalid_expression();
 			}
 
 			ref_next_field += 2;
@@ -618,7 +618,7 @@ expression init_list_expression(syntax *const sx, const expression_list *inits, 
 		{
 			if (!inits->expressions[i].is_valid)
 			{
-				return invalid_expression();
+				return build_invalid_expression();
 			}
 
 			const item_t actual_type = node_get_arg(&inits->expressions[i].nd, 0);
@@ -627,14 +627,14 @@ expression init_list_expression(syntax *const sx, const expression_list *inits, 
 			if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
 			{
 				semantics_error(sx, inits->expressions[i].location, typecheck_convert_incompatible);
-				return invalid_expression();
+				return build_invalid_expression();
 			}
 		}
 	}
 	else
 	{
 		semantics_error(sx, l_loc, wrong_init);
-		return invalid_expression();
+		return build_invalid_expression();
 	}
 
 	node init_list_node = node_create(sx, OP_LIST);

@@ -57,7 +57,7 @@ item_t expression_get_type(const expression expr);
  *
  *	@return	Invalid expression
  */
-expression invalid_expression(void);
+expression build_invalid_expression(void);
 
 /**
  *	Build an identifier expression
@@ -68,7 +68,7 @@ expression invalid_expression(void);
  *
  *	@return	Identifier expression
  */
-expression identifier_expression(syntax *const sx, const size_t name, const location_t loc);
+expression build_identifier_expression(syntax *const sx, const size_t name, const location_t loc);
 
 /**
  *	Build an integer literal expression
@@ -79,7 +79,7 @@ expression identifier_expression(syntax *const sx, const size_t name, const loca
  *
  *	@return	Integer literal expression
  */
-expression integer_literal_expression(syntax *const sx, const int value, const location_t loc);
+expression build_integer_literal_expression(syntax *const sx, const int value, const location_t loc);
 
 /**
  *	Build a floating literal expression
@@ -90,7 +90,7 @@ expression integer_literal_expression(syntax *const sx, const int value, const l
  *
  *	@return	Floating literal expression
  */
-expression floating_literal_expression(syntax *const sx, const double value, const location_t loc);
+expression build_floating_literal_expression(syntax *const sx, const double value, const location_t loc);
 
 /**
  *	Build a string literal expression
@@ -101,7 +101,7 @@ expression floating_literal_expression(syntax *const sx, const double value, con
  *
  *	@return	String literal expression
  */
-expression string_literal_expression(syntax *const sx, const vector value, const location_t loc);
+expression build_string_literal_expression(syntax *const sx, const vector value, const location_t loc);
 
 /**
  *	Build a subscript expression
@@ -114,8 +114,8 @@ expression string_literal_expression(syntax *const sx, const vector value, const
  *
  *	@return	Subscript expression
  */
-expression subscript_expression(syntax *const sx, const expression base, const expression index
-								, const location_t l_loc, const location_t r_loc);
+expression build_subscript_expression(syntax *const sx, const expression base, const expression index
+									  , const location_t l_loc, const location_t r_loc);
 
 /**
  *	Build a call expression
@@ -128,8 +128,8 @@ expression subscript_expression(syntax *const sx, const expression base, const e
  *
  *	@return	Call expression
  */
-expression call_expression(syntax *const sx, const expression callee, const expression_list *args
-						   , const location_t l_loc, const location_t r_loc);
+expression build_call_expression(syntax *const sx, const expression callee, const expression_list *args
+								, const location_t l_loc, const location_t r_loc);
 
 /**
  *	Build a member expression
@@ -143,8 +143,8 @@ expression call_expression(syntax *const sx, const expression callee, const expr
  *
  *	@return	Member expression
  */
-expression member_expression(syntax *const sx, const expression base, const bool is_arrow, const size_t name
-							, const location_t op_loc, const location_t id_loc);
+expression build_member_expression(syntax *const sx, const expression base, const bool is_arrow, const size_t name
+								   , const location_t op_loc, const location_t id_loc);
 
 /**
  *	Build a upb expression
@@ -155,7 +155,7 @@ expression member_expression(syntax *const sx, const expression base, const bool
  *
  *	@return	Upb expression
  */
-expression upb_expression(syntax *const sx, const expression dimension, const expression array);
+expression build_upb_expression(syntax *const sx, const expression dimension, const expression array);
 
 /**
  *	Build an unary expression
@@ -167,7 +167,8 @@ expression upb_expression(syntax *const sx, const expression dimension, const ex
  *
  *	@return	Unary expression
  */
-expression unary_expression(syntax *const sx, const expression operand, const unary_t op_kind, const location_t op_loc);
+expression build_unary_expression(syntax *const sx, const expression operand
+								  , const unary_t op_kind, const location_t op_loc);
 
 /**
  *	Build a binary expression
@@ -180,8 +181,8 @@ expression unary_expression(syntax *const sx, const expression operand, const un
  *
  *	@return	Binary expression
  */
-expression binary_expression(syntax *const sx, const expression left, const expression right
-							 , const binary_t op_kind, const location_t op_loc);
+expression build_binary_expression(syntax *const sx, const expression left, const expression right
+								   , const binary_t op_kind, const location_t op_loc);
 
 /**
  *	Build a ternary expression
@@ -194,8 +195,8 @@ expression binary_expression(syntax *const sx, const expression left, const expr
  *
  *	@return	Ternary expression
  */
-expression ternary_expression(syntax *const sx, const expression left, const expression middle
-							  , const expression right, const location_t op_loc);
+expression build_ternary_expression(syntax *const sx, const expression left, const expression middle
+									, const expression right, const location_t op_loc);
 
 /**
  *	Build an initializer list
@@ -208,5 +209,5 @@ expression ternary_expression(syntax *const sx, const expression left, const exp
  *
  *	@return	Initializer list expression
  */
-expression init_list_expression(syntax *const sx, const expression_list *inits, const item_t type
-								, const location_t l_loc, const location_t r_loc);
+expression build_init_list_expression(syntax *const sx, const expression_list *inits, const item_t type
+									  , const location_t l_loc, const location_t r_loc);

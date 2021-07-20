@@ -17,11 +17,11 @@
 #pragma once
 
 #include <stdbool.h>
+#include "builder.h"
 #include "errors.h"
 #include "lexer.h"
 #include "stack.h"
 #include "syntax.h"
-#include "AST.h"
 #include "workspace.h"
 
 
