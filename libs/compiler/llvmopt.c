@@ -532,39 +532,25 @@ static int node_recursive(information *const info, node *const nd)
 	return 0;
 }
 
-static int optimize_pass(universal_io *const io, syntax *const sx)
+static int optimize_pass(information *const info)
 {
-	information info;
-	info.io = io;
-	info.sx = sx;
-	info.string_num = 1;
-	info.was_printf = 0;
-	info.last_depth = 1;
-	info.slice_depth = 0;
-	info.slice_stack_size = 0;
 
-	stack_info_create(&info);
-
-	node nd = node_get_root(&sx->tree);
+	node nd = node_get_root(&info->sx->tree);
 	for (size_t i = 0; i < node_get_amount(&nd); i++)
 	{
 		node child = node_get_child(&nd, i);
-		if (node_recursive(&info, &child))
+		if (node_recursive(info, &child))
 		{
-			stack_info_clear(&info);
-
 			return -1;
 		}
 	}
 
-	uni_printf(io, "\n");
-	if (info.was_printf)
+	uni_printf(info->io, "\n");
+	if (info->was_printf)
 	{
-		uni_printf(io, "declare i32 @printf(i8*, ...)\n");
+		uni_printf(info->io, "declare i32 @printf(i8*, ...)\n");
 	}
-	uni_printf(io, "\n");
-
-	stack_info_clear(&info);
+	uni_printf(info->io, "\n");
 
 	return 0;
 }
@@ -607,6 +593,21 @@ int optimize_for_llvm(const workspace *const ws, universal_io *const io, syntax 
 		return -1;
 	}
 
+	information info;
+	info.io = io;
+	info.sx = sx;
+	info.string_num = 1;
+	info.was_printf = 0;
+	info.last_depth = 1;
+	info.slice_depth = 0;
+	info.slice_stack_size = 0;
+
+	stack_info_create(&info);
+
 	architecture(ws, io);
-	return optimize_pass(io, sx);
+
+	const int ret = optimize_pass(&info);
+
+	stack_info_clear(&info);
+	return ret;
 }
