@@ -251,7 +251,7 @@ typedef enum INSTURCTION
 	IC_ASSERT,					/**< 'ASSERT' instruction code */
 	IC_ABSI	= 9651,				/**< 'ABSI' instruction code */
 
-	IC_FOPEN = 9596,			/**< 'FOPEN' instruction code */
+	IC_FOPEN,					/**< 'FOPEN' instruction code */
 	IC_FCLOSE,					/**< 'FCLOSE' instruction code */
 	IC_FGETC,					/**< 'FGETC' instruction code */
 	IC_FPUTC,					/**< 'FPUTC' instruction code */
