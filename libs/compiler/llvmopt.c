@@ -80,7 +80,8 @@ static inline void stack_resize(information *const info, const size_t size)
 
 static int transposition(node_info *const expr, node_info *const cur)
 {
-	if (expr == NULL || cur == NULL || !node_is_correct(&expr->cur_node) || !node_is_correct(&cur->cur_node))
+	if (expr == NULL || cur == NULL || !node_is_correct(&expr->cur_node) || !node_is_correct(&cur->cur_node)
+		|| expr->depth == SIZE_MAX || cur->depth == SIZE_MAX)
 	{
 		system_error(transposition_not_possible);
 		return -1;
