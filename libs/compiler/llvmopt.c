@@ -380,43 +380,44 @@ static int node_recursive(information *const info, node *const nd)
 					break;
 					case UNARY_OPERATION:
 					{
-						node_info operand;
 						const item_t index = stack_pop(&info->nodes);
-						const item_t operand_depth = stack_pop(&info->depths);
-						if (index == ITEM_MAX || operand_depth == ITEM_MAX)
+						const item_t depth = stack_pop(&info->depths);
+						node operand_node;
+						size_t operand_depth;
+						if (index == ITEM_MAX || depth == ITEM_MAX)
 						{
-							operand.depth = SIZE_MAX;
+							operand_depth = SIZE_MAX;
 						}
 						else
 						{
-							operand.cur_node = node_load(&info->sx->tree, (size_t)index);
-							operand.depth = (size_t)operand_depth;
+							operand_node = node_load(&info->sx->tree, (size_t)index);
+							operand_depth = (size_t)depth;
 						}
 
 						node parent = node_get_parent(&child);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							operand.depth++;
+							operand_depth++;
 						}
 
 						// перестановка с операндом
-						has_error |= transposition(&operand.cur_node, operand.depth, &child, 1);
-						operand.depth++;
+						has_error |= transposition(&operand_node, operand_depth, &child, 1);
+						operand_depth++;
 
-						if (node_get_type(&operand.cur_node) == OP_CALL1)
+						if (node_get_type(&operand_node) == OP_CALL1)
 						{
 							node tmp;
 							node_copy(&tmp, &child);
 							while (node_get_type(&tmp) != OP_CALL2)
 							{
 								node_set_next(&tmp);
-								operand.depth++;
+								operand_depth++;
 							}
 						}
 
 						// добавляем в стек переставленное выражение
-						has_error |= stack_push(&info->nodes, node_save(&operand.cur_node));
-						has_error |= stack_push(&info->depths, operand.depth);
+						has_error |= stack_push(&info->nodes, node_save(&operand_node));
+						has_error |= stack_push(&info->depths, operand_depth);
 					}
 					break;
 					case BINARY_OPERATION:
