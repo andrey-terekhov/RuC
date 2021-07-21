@@ -58,12 +58,6 @@ typedef struct information
 } information;
 
 
-static inline int stack_info_push(information *const info, node_info *const nd)
-{
-	return stack_push(&info->nodes, node_save(&nd->cur_node))
-		|| stack_push(&info->depths, nd->depth);
-}
-
 static inline node_info stack_info_pop(information *const info)
 {
 	const item_t index = stack_pop(&info->nodes);
@@ -387,7 +381,8 @@ static int node_recursive(information *const info, node *const nd)
 					}
 
 					slice_info.depth = info->slice_depth;
-					stack_info_push(info, &slice_info);
+					has_error |= stack_push(&info->nodes, node_save(&slice_info.cur_node));
+					has_error |= stack_push(&info->depths, slice_info.depth);
 					info->slice_depth = 0;
 				}
 				else if (info->slice_depth == 0 && info->last_depth > 1)
@@ -412,8 +407,11 @@ static int node_recursive(information *const info, node *const nd)
 				switch (expression_type(&child))
 				{
 					case OPERAND:
-						stack_info_push(info, &nd_info);
-						break;
+					{
+						has_error |= stack_push(&info->nodes, node_save(&child));
+						has_error |= stack_push(&info->depths, 1);
+					}
+					break;
 					case UNARY_OPERATION:
 					{
 						node_info operand = stack_info_pop(info);
@@ -440,7 +438,8 @@ static int node_recursive(information *const info, node *const nd)
 						info->last_depth = operand.depth;
 
 						// добавляем в стек переставленное выражение
-						has_error |= stack_info_push(info, &operand);
+						has_error |= stack_push(&info->nodes, node_save(&operand.cur_node));
+						has_error |= stack_push(&info->depths, operand.depth);
 					}
 					break;
 					case BINARY_OPERATION:
@@ -470,7 +469,8 @@ static int node_recursive(information *const info, node *const nd)
 						info->last_depth = first.depth;
 
 						// добавляем в стек переставленное выражение
-						has_error |= stack_info_push(info, &first);
+						has_error |= stack_push(&info->nodes, node_save(&first.cur_node));
+						has_error |= stack_push(&info->depths, first.depth);
 					}
 					break;
 					case NOT_EXPRESSION:
