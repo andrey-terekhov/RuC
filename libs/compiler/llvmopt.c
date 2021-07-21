@@ -40,12 +40,6 @@ typedef struct node_info
 	size_t depth;									/**< Количество узлов после данного узла при перестановке */
 } node_info;
 
-typedef struct stack_info
-{
-	stack nodes;									/**< Стек нод для преобразования выражений */
-	stack depths;									/**< Стек глубин нод для преобразования выражений */
-} stack_info;
-
 typedef struct information
 {
 	universal_io *io;								/**< Вывод */
@@ -54,7 +48,8 @@ typedef struct information
 	item_t string_num;								/**< Номер строки */
 	item_t was_printf;								/**< Флаг наличия printf в исходном коде */
 
-	stack_info nodes_info;							/**< Стек информации о нодах для преобразования выражений */
+	stack nodes;									/**< Стек нод для преобразования выражений */
+	stack depths;									/**< Стек глубин нод для преобразования выражений */
 	size_t last_depth;								/**< Глубина стека после перестановки для пропуска переставленных нод */
 
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
@@ -65,14 +60,14 @@ typedef struct information
 
 static inline int stack_info_push(information *const info, node_info *const nd)
 {
-	return stack_push(&info->nodes_info.nodes, node_save(&nd->cur_node))
-		|| stack_push(&info->nodes_info.depths, nd->depth);
+	return stack_push(&info->nodes, node_save(&nd->cur_node))
+		|| stack_push(&info->depths, nd->depth);
 }
 
 static inline node_info stack_info_pop(information *const info)
 {
-	const item_t index = stack_pop(&info->nodes_info.nodes);
-	const item_t operand_depth = stack_pop(&info->nodes_info.depths);
+	const item_t index = stack_pop(&info->nodes);
+	const item_t operand_depth = stack_pop(&info->depths);
 
 	if (index == ITEM_MAX || operand_depth == ITEM_MAX)
 	{
@@ -84,8 +79,8 @@ static inline node_info stack_info_pop(information *const info)
 
 static inline void stack_resize(information *const info, const size_t size)
 {
-	vector_resize(&info->nodes_info.nodes, size);
-	vector_resize(&info->nodes_info.depths, size);
+	vector_resize(&info->nodes, size);
+	vector_resize(&info->depths, size);
 }
 
 
@@ -490,7 +485,7 @@ static int node_recursive(information *const info, node *const nd)
 		if (node_get_type(&child) == OP_SLICE_IDENT && info->last_depth <= 1)
 		{
 			info->slice_depth = 1;
-			info->slice_stack_size = stack_size(&info->nodes_info.nodes);
+			info->slice_stack_size = stack_size(&info->nodes);
 		}
 
 		if (has_error || node_recursive(info, &child))
@@ -571,14 +566,14 @@ int optimize_for_llvm(const workspace *const ws, universal_io *const io, syntax 
 	info.slice_depth = 0;
 	info.slice_stack_size = 0;
 
-	info.nodes_info.nodes = stack_create(MAX_STACK_SIZE);
-	info.nodes_info.depths = stack_create(MAX_STACK_SIZE);
+	info.nodes = stack_create(MAX_STACK_SIZE);
+	info.depths = stack_create(MAX_STACK_SIZE);
 
 	architecture(ws, io);
 
 	const int ret = optimize_pass(&info);
 
-	stack_clear(&info.nodes_info.nodes);
-	stack_clear(&info.nodes_info.depths);
+	stack_clear(&info.nodes);
+	stack_clear(&info.depths);
 	return ret;
 }
