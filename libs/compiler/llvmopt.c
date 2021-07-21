@@ -58,19 +58,6 @@ typedef struct information
 } information;
 
 
-static inline node_info stack_info_pop(information *const info)
-{
-	const item_t index = stack_pop(&info->nodes);
-	const item_t operand_depth = stack_pop(&info->depths);
-
-	if (index == ITEM_MAX || operand_depth == ITEM_MAX)
-	{
-		return (node_info){ .depth = SIZE_MAX };
-	}
-
-	return (node_info){ node_load(&info->sx->tree, (size_t)index), (size_t)operand_depth };
-}
-
 static inline void stack_resize(information *const info, const size_t size)
 {
 	vector_resize(&info->nodes, size);
@@ -373,6 +360,7 @@ static int node_recursive(information *const info, node *const nd)
 
 					stack_resize(info, info->slice_stack_size);
 
+					// TODO: это место нужно будет переделать покомкатнее
 					node_info slice_info;
 					const item_t index = stack_pop(&info->nodes);
 					const item_t operand_depth = stack_pop(&info->depths);
@@ -421,7 +409,19 @@ static int node_recursive(information *const info, node *const nd)
 					break;
 					case UNARY_OPERATION:
 					{
-						node_info operand = stack_info_pop(info);
+						node_info operand;
+						const item_t index = stack_pop(&info->nodes);
+						const item_t operand_depth = stack_pop(&info->depths);
+
+						if (index == ITEM_MAX || operand_depth == ITEM_MAX)
+						{
+							operand.depth = SIZE_MAX;
+						}
+						else
+						{
+							operand.cur_node = node_load(&info->sx->tree, (size_t)index);
+							operand.depth = (size_t)operand_depth;
+						}
 
 						node parent = node_get_parent(&child);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
@@ -451,8 +451,33 @@ static int node_recursive(information *const info, node *const nd)
 					break;
 					case BINARY_OPERATION:
 					{
-						node_info second = stack_info_pop(info);
-						node_info first = stack_info_pop(info);
+						node_info second;
+						const item_t index_snd = stack_pop(&info->nodes);
+						const item_t operand_depth_snd = stack_pop(&info->depths);
+
+						if (index_snd == ITEM_MAX || operand_depth_snd == ITEM_MAX)
+						{
+							second.depth = SIZE_MAX;
+						}
+						else
+						{
+							second.cur_node = node_load(&info->sx->tree, (size_t)index_snd);
+							second.depth = (size_t)operand_depth_snd;
+						}
+
+						node_info first;
+						const item_t index_fst = stack_pop(&info->nodes);
+						const item_t operand_depth_fst = stack_pop(&info->depths);
+
+						if (index_fst == ITEM_MAX || operand_depth_fst == ITEM_MAX)
+						{
+							first.depth = SIZE_MAX;
+						}
+						else
+						{
+							first.cur_node = node_load(&info->sx->tree, (size_t)index_fst);
+							first.depth = (size_t)operand_depth_fst;
+						}
 
 						node parent = node_get_parent(&child);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
