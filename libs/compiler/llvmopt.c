@@ -422,43 +422,44 @@ static int node_recursive(information *const info, node *const nd)
 					break;
 					case BINARY_OPERATION:
 					{
-						node_info second;
 						item_t index = stack_pop(&info->nodes);
-						item_t operand_depth = stack_pop(&info->depths);
-						if (index == ITEM_MAX || operand_depth == ITEM_MAX)
+						item_t depth = stack_pop(&info->depths);
+						node second_node;
+						size_t second_depth;
+						if (index == ITEM_MAX || depth == ITEM_MAX)
 						{
-							second.depth = SIZE_MAX;
+							second_depth = SIZE_MAX;
 						}
 						else
 						{
-							second.cur_node = node_load(&info->sx->tree, (size_t)index);
-							second.depth = (size_t)operand_depth;
+							second_node = node_load(&info->sx->tree, (size_t)index);
+							second_depth = (size_t)depth;
 						}
 
 						node_info first;
 						index = stack_pop(&info->nodes);
-						operand_depth = stack_pop(&info->depths);
-						if (index == ITEM_MAX || operand_depth == ITEM_MAX)
+						depth = stack_pop(&info->depths);
+						if (index == ITEM_MAX || depth == ITEM_MAX)
 						{
 							first.depth = SIZE_MAX;
 						}
 						else
 						{
 							first.cur_node = node_load(&info->sx->tree, (size_t)index);
-							first.depth = (size_t)operand_depth;
+							first.depth = (size_t)depth;
 						}
 
 						node parent = node_get_parent(&child);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							second.depth++;
+							second_depth++;
 						}
 
 						// перестановка со вторым операндом
-						has_error |= transposition(&second.cur_node, second.depth, &child, 1);
-						second.depth++;
+						has_error |= transposition(&second_node, second_depth, &child, 1);
+						second_depth++;
 
-						parent = node_get_parent(&second.cur_node);
+						parent = node_get_parent(&second_node);
 						if (node_get_type(&parent) == OP_AD_LOG_OR
 							|| node_get_type(&parent) == OP_AD_LOG_AND
 							|| node_get_type(&parent) == OP_ADDR_TO_VAL)
@@ -467,8 +468,8 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка с первым операндом
-						has_error |= transposition(&first.cur_node, first.depth, &second.cur_node, second.depth);
-						first.depth += second.depth;
+						has_error |= transposition(&first.cur_node, first.depth, &second_node, second_depth);
+						first.depth += second_depth;
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(&info->nodes, node_save(&first.cur_node));
