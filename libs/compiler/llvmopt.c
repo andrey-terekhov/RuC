@@ -65,36 +65,36 @@ static inline void stack_resize(information *const info, const size_t size)
 }
 
 
-static int transposition(node_info *const expr, node_info *const cur)
+static int transposition(node *const expr_node, const size_t expr_depth, node *const cur_node, const size_t cur_depth)
 {
-	if (expr == NULL || cur == NULL || !node_is_correct(&expr->cur_node) || !node_is_correct(&cur->cur_node)
-		|| expr->depth == SIZE_MAX || cur->depth == SIZE_MAX)
+	if (!node_is_correct(expr_node) || !node_is_correct(cur_node)
+		|| expr_depth == SIZE_MAX || cur_depth == SIZE_MAX)
 	{
 		system_error(transposition_not_possible);
 		return -1;
 	}
 
-	node_order(&expr->cur_node, &cur->cur_node);
+	node_order(expr_node, cur_node);
 
 	node tmp;
-	node_copy(&tmp, &expr->cur_node);
-	node_copy(&expr->cur_node, &cur->cur_node);
-	node_copy(&cur->cur_node, &tmp);
+	node_copy(&tmp, expr_node);
+	node_copy(expr_node, cur_node);
+	node_copy(cur_node, &tmp);
 
 	node node_to_order;
-	node_copy(&node_to_order, &expr->cur_node);
-	for (size_t i = 1; i < expr->depth; i++)
+	node_copy(&node_to_order, expr_node);
+	for (size_t i = 1; i < expr_depth; i++)
 	{
 		node_to_order = node_get_next(&node_to_order);
 
-		node_order(&cur->cur_node, &node_to_order);
+		node_order(cur_node, &node_to_order);
 
 		node_copy(&tmp, &node_to_order);
-		node_copy(&node_to_order, &cur->cur_node);
-		node_copy(&cur->cur_node, &tmp);
+		node_copy(&node_to_order, cur_node);
+		node_copy(cur_node, &tmp);
 	}
 
-	expr->depth += cur->depth;
+	// expr->depth += cur->depth;
 	return 0;
 }
 
@@ -428,7 +428,8 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка с операндом
-						has_error |= transposition(&operand, &nd_info);
+						has_error |= transposition(&operand.cur_node, operand.depth, &nd_info.cur_node, nd_info.depth);
+						operand.depth += nd_info.depth;
 
 						if (node_get_type(&operand.cur_node) == OP_CALL1)
 						{
@@ -482,7 +483,8 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка со вторым операндом
-						has_error |= transposition(&second, &nd_info);
+						has_error |= transposition(&second.cur_node, second.depth, &nd_info.cur_node, nd_info.depth);
+						second.depth += nd_info.depth;
 
 						parent = node_get_parent(&second.cur_node);
 						if (node_get_type(&parent) == OP_AD_LOG_OR
@@ -493,7 +495,8 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка с первым операндом
-						has_error |= transposition(&first, &second);
+						has_error |= transposition(&first.cur_node, first.depth, &second.cur_node, second.depth);
+						first.depth += second.depth;
 						info->last_depth = first.depth;
 
 						// добавляем в стек переставленное выражение
