@@ -50,7 +50,6 @@ typedef struct information
 
 	stack nodes;									/**< Стек нод для преобразования выражений */
 	stack depths;									/**< Стек глубин нод для преобразования выражений */
-	size_t last_depth;								/**< Глубина стека после перестановки для пропуска переставленных нод */
 
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
 	size_t slice_depth;								/**< Количество узлов после OP_SLICE_IDENT */
@@ -365,24 +364,11 @@ static int node_recursive(information *const info, node *const nd)
 					has_error |= stack_push(&info->depths, operand_depth == ITEM_MAX ? SIZE_MAX : info->slice_depth);
 					info->slice_depth = 0;
 				}
-				else if (info->slice_depth == 0 && info->last_depth > 1)
-				{
-					info->last_depth--;
-				}
 			}
 			break;
 
 			default:
 			{
-				// если уже в переставленных, то с ними ничего делать не надо
-				if (info->last_depth > 1)
-				{
-					info->last_depth--;
-					break;
-				}
-
-				node_info nd_info = { child, 1 };
-
 				// перестановка узлов выражений
 				switch (expression_type(&child))
 				{
@@ -414,8 +400,8 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка с операндом
-						has_error |= transposition(&operand.cur_node, operand.depth, &nd_info.cur_node, nd_info.depth);
-						operand.depth += nd_info.depth;
+						has_error |= transposition(&operand.cur_node, operand.depth, &child, 1);
+						operand.depth++;
 
 						if (node_get_type(&operand.cur_node) == OP_CALL1)
 						{
@@ -427,7 +413,6 @@ static int node_recursive(information *const info, node *const nd)
 								operand.depth++;
 							}
 						}
-						info->last_depth = operand.depth;
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(&info->nodes, node_save(&operand.cur_node));
@@ -469,8 +454,8 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка со вторым операндом
-						has_error |= transposition(&second.cur_node, second.depth, &nd_info.cur_node, nd_info.depth);
-						second.depth += nd_info.depth;
+						has_error |= transposition(&second.cur_node, second.depth, &child, 1);
+						second.depth++;
 
 						parent = node_get_parent(&second.cur_node);
 						if (node_get_type(&parent) == OP_AD_LOG_OR
@@ -483,7 +468,6 @@ static int node_recursive(information *const info, node *const nd)
 						// перестановка с первым операндом
 						has_error |= transposition(&first.cur_node, first.depth, &second.cur_node, second.depth);
 						first.depth += second.depth;
-						info->last_depth = first.depth;
 
 						// добавляем в стек переставленное выражение
 						has_error |= stack_push(&info->nodes, node_save(&first.cur_node));
@@ -499,7 +483,7 @@ static int node_recursive(information *const info, node *const nd)
 
 		// если встретили вырезку, надо запомнить состояние стека для дальнейшего восстановления
 		// и установить начальную глубину вырезки
-		if (node_get_type(&child) == OP_SLICE_IDENT && info->last_depth <= 1)
+		if (node_get_type(&child) == OP_SLICE_IDENT)
 		{
 			info->slice_depth = 1;
 			info->slice_stack_size = stack_size(&info->nodes);
@@ -579,7 +563,6 @@ int optimize_for_llvm(const workspace *const ws, universal_io *const io, syntax 
 	info.sx = sx;
 	info.string_num = 1;
 	info.was_printf = 0;
-	info.last_depth = 1;
 	info.slice_depth = 0;
 	info.slice_stack_size = 0;
 
