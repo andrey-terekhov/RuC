@@ -34,12 +34,6 @@ typedef enum EXPRESSION
 	NOT_EXPRESSION,
 } expression_t;
 
-typedef struct node_info
-{
-	node cur_node;									/**< Узел */
-	size_t depth;									/**< Количество узлов после данного узла при перестановке */
-} node_info;
-
 typedef struct information
 {
 	universal_io *io;								/**< Вывод */
@@ -436,17 +430,18 @@ static int node_recursive(information *const info, node *const nd)
 							second_depth = (size_t)depth;
 						}
 
-						node_info first;
 						index = stack_pop(&info->nodes);
 						depth = stack_pop(&info->depths);
+						node first_node;
+						size_t first_depth;
 						if (index == ITEM_MAX || depth == ITEM_MAX)
 						{
-							first.depth = SIZE_MAX;
+							first_depth = SIZE_MAX;
 						}
 						else
 						{
-							first.cur_node = node_load(&info->sx->tree, (size_t)index);
-							first.depth = (size_t)depth;
+							first_node = node_load(&info->sx->tree, (size_t)index);
+							first_depth = (size_t)depth;
 						}
 
 						node parent = node_get_parent(&child);
@@ -464,16 +459,16 @@ static int node_recursive(information *const info, node *const nd)
 							|| node_get_type(&parent) == OP_AD_LOG_AND
 							|| node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							first.depth++;
+							first_depth++;
 						}
 
 						// перестановка с первым операндом
-						has_error |= transposition(&first.cur_node, first.depth, &second_node, second_depth);
-						first.depth += second_depth;
+						has_error |= transposition(&first_node, first_depth, &second_node, second_depth);
+						first_depth += second_depth;
 
 						// добавляем в стек переставленное выражение
-						has_error |= stack_push(&info->nodes, node_save(&first.cur_node));
-						has_error |= stack_push(&info->depths, first.depth);
+						has_error |= stack_push(&info->nodes, node_save(&first_node));
+						has_error |= stack_push(&info->depths, first_depth);
 					}
 					break;
 					case NOT_EXPRESSION:
