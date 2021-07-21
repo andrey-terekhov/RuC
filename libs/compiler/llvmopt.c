@@ -361,22 +361,8 @@ static int node_recursive(information *const info, node *const nd)
 
 					stack_resize(info, info->slice_stack_size);
 
-					node_info slice_info;
-					const item_t index = stack_pop(&info->nodes);
 					const item_t operand_depth = stack_pop(&info->depths);
-					if (index == ITEM_MAX || operand_depth == ITEM_MAX)
-					{
-						slice_info.depth = SIZE_MAX;
-					}
-					else
-					{
-						slice_info.cur_node = node_load(&info->sx->tree, (size_t)index);
-						slice_info.depth = (size_t)operand_depth;
-					}
-
-					slice_info.depth = info->slice_depth;
-					has_error |= stack_push(&info->nodes, node_save(&slice_info.cur_node));
-					has_error |= stack_push(&info->depths, slice_info.depth);
+					has_error |= stack_push(&info->depths, operand_depth == ITEM_MAX ? SIZE_MAX : info->slice_depth);
 					info->slice_depth = 0;
 				}
 				else if (info->slice_depth == 0 && info->last_depth > 1)
