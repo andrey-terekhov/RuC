@@ -18,50 +18,31 @@
 #include <stdlib.h>
 
 
-
-
-
-/*
- *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
- *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
- *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
- *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
- *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
- */
+static const size_t AVERAGE_STRING_SIZE = 256;
 
 
 strings strings_create(const size_t alloc)
 {
 	strings vec;
 
-	as.all_strings_size = MAP_HASH_MAX;
-	as.all_strings_alloc = as.all_strings_size + alloc;
-
-	as.all_strings = malloc(as.all_strings_alloc * sizeof(char));
-	if (as.all_strings == NULL)
-	{
-		return strings_broken();
-	}
-
-	for (size_t i = 0; i < as.all_strings_size; i++)
-	{
-		as.all_strings[i].next = SIZE_MAX;
-		as.all_strings[i].ref = SIZE_MAX;
-	}
-
-	as.keys_size = 0;
-	as.keys_alloc = as.all_strings_alloc * MAP_KEY_SIZE;
-
-	as.keys = malloc(as.keys_alloc * sizeof(char));
-	if (as.keys == NULL)
-	{
-		free(as.all_strings);
-		return map_broken();
-	}
-
 	vec.indexes_size = 0;
 	vec.indexes_alloc = alloc != 0 ? alloc : 1;
-	vec.indexes = malloc(vec.indexes_alloc * sizeof(size_t));
+
+	vec.indexes = malloc(vec.indexes_alloc * sizeof(size_t));	
+	if (vec.indexes == NULL)
+	{
+		return vec;
+	}
+
+	vec.all_strings_size = 0;
+	vec.all_strings_alloc = vec.indexes_alloc * AVERAGE_STRING_SIZE;
+
+	vec.all_strings = malloc(vec.all_strings_alloc * sizeof(char));
+	if (vec.all_strings == NULL)
+	{
+		free(vec.indexes);
+		return vec;
+	}
 
 	return vec;
 }
