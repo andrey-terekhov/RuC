@@ -42,7 +42,7 @@ typedef enum ERROR
 	typecheck_subscript_value,				/**< Subscripted value is not an array */
 	typecheck_subscript_not_integer,		/**< Array subscript is not an integer */
 	expected_r_square,						/**< Expected ']' */
-	expected_r_brace,
+	expected_r_brace,						/**< Expected '}' */
 	expected_identifier,					/**< Expected identifier */
 	typecheck_call_not_function,			/**< Called object type is not a function */
 	typecheck_convert_incompatible,			/**< Passing type to parameter of incompatible type */
@@ -58,7 +58,7 @@ typedef enum ERROR
 	typecheck_binary_expr,					/**< Invalid argument type to binary expression */
 	expected_colon_in_conditional,			/**< Expected ':' in condtional expression */
 	typecheck_cond_incompatible_operands,	/**< Incompatible operand types */
-	typecheck_statement_requires_scalar,
+	typecheck_statement_requires_scalar,	/**< Condition must be of scalar type */
 
 	// Statement errors
 	expected_semi_after_stmt,			/**< Expected ';' after statement */

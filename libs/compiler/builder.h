@@ -18,6 +18,8 @@
 
 #include <stdbool.h>
 #include "errors.h"
+#include "expression.h"
+#include "expression_list.h"
 #include "operations.h"
 #include "syntax.h"
 #include "tree.h"
@@ -27,63 +29,6 @@
 extern "C" {
 #endif
 
-
-/** Expression structure */
-typedef struct expression
-{
-	bool is_valid;			/**< Set if is valid */
-	node nd;				/**< Node in AST */
-} expression;
-
-/** Expression list structure */
-typedef struct expression_list
-{
-	unsigned length;
-	expression expressions[128];
-} expression_list;
-
-/**
- *	Check if expression is valid
- *
- *	@param	expr	Expression for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool expression_is_valid(const expression expr);
-
-/**
- *	Get expression type
- *
- *	@param	expr	Expression
- *
- *	@return	Expression type
- */
-item_t expression_get_type(const expression expr);
-
-/**
- *	Check if expression is lvalue
- *
- *	@param	expr	Expression for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool expression_is_lvalue(const expression expr);
-
-/**
- *	Get expression location
- *
- *	@param	expr	Expression
- *
- *	@return	Expression location
- */
-location expression_get_location(const expression expr);
-
-/**
- *	Return invalid expression
- *
- *	@return	Invalid expression
- */
-expression build_invalid_expression(void);
 
 /**
  *	Build an identifier expression
@@ -237,3 +182,7 @@ expression build_ternary_expression(syntax *const sx, const expression left, con
  */
 expression build_init_list_expression(syntax *const sx, const expression_list *inits, const item_t type
 									  , const location l_loc, const location r_loc);
+
+#ifdef __cplusplus
+extern "C" }
+#endif

@@ -163,7 +163,7 @@ static expression parse_primary_expression(parser *const prs)
 			if (!token_try_consume(prs, TK_R_PAREN))
 			{
 				parser_error(prs, expected_r_paren, l_loc);
-				return build_invalid_expression();
+				return expression_broken();
 			}
 
 			return result;
@@ -171,7 +171,7 @@ static expression parse_primary_expression(parser *const prs)
 
 		default:
 			parser_error(prs, expected_expression);
-			return build_invalid_expression();
+			return expression_broken();
 	}
 }
 
@@ -190,7 +190,7 @@ static expression parse_primary_expression(parser *const prs)
 static expression_list parse_expression_list(parser *const prs, const item_t type)
 {
 	unsigned i = 0;
-	expression_list result;
+	expression_list result = expression_list_create();
 
 	do
 	{
@@ -208,10 +208,9 @@ static expression_list parse_expression_list(parser *const prs, const item_t typ
 			item_type = type_get(prs->sx, (size_t)type + 1);
 		}
 
-		result.expressions[i++] = parse_initializer(prs, item_type);
+		expression_list_add(&result, parse_initializer(prs, item_type));
 	} while (token_try_consume(prs, TK_COMMA));
 
-	result.length = i;
 	return result;
 }
 
@@ -257,7 +256,7 @@ static expression parse_postfix_expression(parser *const prs)
 					parser_error(prs, expected_r_square, l_loc);
 					token_skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
 					token_try_consume(prs, TK_R_SQUARE);
-					operand = build_invalid_expression();
+					operand = expression_broken();
 				}
 
 				continue;
@@ -266,18 +265,16 @@ static expression parse_postfix_expression(parser *const prs)
 			case TK_L_PAREN:
 			{
 				const location l_loc = token_consume(prs);
-				expression_list args;
 
 				if (prs->token == TK_R_PAREN)
 				{
 					const location r_loc = token_consume(prs);
-					args = (expression_list){ .length = 0 };
-					operand = build_call_expression(prs->sx, operand, &args, l_loc, r_loc);
+					operand = build_call_expression(prs->sx, operand, NULL, l_loc, r_loc);
 
 					continue;
 				}
 
-				args = parse_expression_list(prs, expression_get_type(operand));
+				expression_list args = parse_expression_list(prs, expression_get_type(operand));
 				if (prs->token == TK_R_PAREN)
 				{
 					const location r_loc = token_consume(prs);
@@ -288,7 +285,7 @@ static expression parse_postfix_expression(parser *const prs)
 					parser_error(prs, expected_r_paren, l_loc);
 					token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
 					token_try_consume(prs, TK_R_PAREN);
-					operand = build_invalid_expression();
+					operand = expression_broken();
 				}
 
 				continue;
@@ -310,7 +307,7 @@ static expression parse_postfix_expression(parser *const prs)
 				else
 				{
 					parser_error(prs, expected_identifier);
-					operand = build_invalid_expression();
+					operand = expression_broken();
 				}
 
 				continue;
@@ -404,7 +401,7 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 		location op_loc = token_consume(prs);
 
 		bool is_binary = true;
-		expression middle = build_invalid_expression();
+		expression middle = expression_broken();
 		if (next_token_prec == PREC_CONDITIONAL)
 		{
 			is_binary = false;
@@ -485,7 +482,7 @@ expression parse_initializer(parser *const prs, const item_t type)
 		{
 			token_consume(prs);
 			parser_error(prs, empty_init);
-			return build_invalid_expression();
+			return expression_broken();
 		}
 
 		inits = parse_expression_list(prs, type);
@@ -499,7 +496,7 @@ expression parse_initializer(parser *const prs, const item_t type)
 			parser_error(prs, expected_r_brace, l_loc);
 			token_skip_until(prs, TK_R_BRACE | TK_SEMICOLON);
 			token_try_consume(prs, TK_R_BRACE);
-			return build_invalid_expression();
+			return expression_broken();
 		}
 	}
 
