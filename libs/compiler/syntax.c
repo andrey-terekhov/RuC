@@ -272,11 +272,10 @@ syntax sx_create(universal_io *const io)
 
 bool sx_is_correct(syntax *const sx)
 {
-	bool is_correct = !sx->was_error;
 	if (sx->ref_main == 0)
 	{
 		system_error(no_main_in_program);
-		is_correct = false;
+		sx->was_error = true;
 	}
 
 	for (size_t i = 0; i < vector_size(&sx->predef); i++)
@@ -284,11 +283,11 @@ bool sx_is_correct(syntax *const sx)
 		if (vector_get(&sx->predef, i))
 		{
 			system_error(predef_but_notdef, repr_get_name(sx, (size_t)vector_get(&sx->predef, i)));
-			is_correct = false;
+			sx->was_error = true;
 		}
 	}
 
-	return is_correct;
+	return !sx->was_error;
 }
 
 int sx_clear(syntax *const sx)
