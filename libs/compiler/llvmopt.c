@@ -354,8 +354,8 @@ static int node_recursive(information *const info, node *const nd)
 
 					stack_resize(info, info->slice_stack_size);
 
-					const item_t operand_depth = stack_pop(&info->depths);
-					has_error |= stack_push(&info->depths, operand_depth == ITEM_MAX ? SIZE_MAX : info->slice_depth);
+					has_error |= stack_pop(&info->depths) == ITEM_MAX;
+					stack_push(&info->depths, info->slice_depth);
 					info->slice_depth = 0;
 				}
 			}
@@ -368,8 +368,8 @@ static int node_recursive(information *const info, node *const nd)
 				{
 					case OPERAND:
 					{
-						has_error |= stack_push(&info->nodes, node_save(&child));
-						has_error |= stack_push(&info->depths, 1);
+						stack_push(&info->nodes, (item_t)node_save(&child));
+						stack_push(&info->depths, 1);
 					}
 					break;
 					case UNARY_OPERATION:
