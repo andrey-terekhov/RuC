@@ -358,6 +358,19 @@ static int node_recursive(information *const info, node *const nd)
 				}
 			}
 			break;
+			case OP_CALL2:
+			{
+				const size_t ref_ident = (size_t)node_get_arg(&child, 0);
+				const size_t ref_mode = (size_t)ident_get_mode(info->sx, (size_t)ref_ident);
+				const size_t parameters = (size_t)mode_get(info->sx, ref_mode + 2);
+
+				for (size_t j = 0; j < parameters; j++)
+				{
+					stack_pop(&info->nodes);
+					stack_pop(&info->depths);
+				}
+			}
+			break;
 
 			default:
 			{
