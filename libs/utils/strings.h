@@ -25,8 +25,7 @@
 extern "C" {
 #endif
 
-
-/** Strings structure */
+/** Strings vector */
 typedef struct strings
 {
 	char *all_strings;				/**< Strings storage */
@@ -34,17 +33,17 @@ typedef struct strings
 	size_t all_strings_alloc;		/**< Allocated size of strings storage */
 
 	size_t *indexes;				/**< Indexes array */
-	size_t indexes_size;			/**< Size of indexes */
-	size_t indexes_alloc;			/**< Allocated size of indexes */
+	size_t indexes_size;			/**< Size of indexes array */
+	size_t indexes_alloc;			/**< Allocated size of indexes array */
 } strings;
 
 
 /**
- *	Create new strings structure
+ *	Create new strings vector
  *
  *	@param	alloc			Initializer of allocated size
  *
- *	@return	Vector structure
+ *	@return	Strings vector
  */
 EXPORTED strings strings_create(const size_t alloc);
 
@@ -52,7 +51,7 @@ EXPORTED strings strings_create(const size_t alloc);
 /**
  *	Add new value
  *
- *	@param	vec				Strings structure
+ *	@param	vec				Strings vector
  *	@param	value			Value
  *
  *	@return	Index, @c SIZE_MAX on failure
@@ -62,7 +61,7 @@ EXPORTED size_t strings_add(strings *const vec, const char *const value);
 /**
  *	Get string
  *
- *	@param	vec				Strings structure
+ *	@param	vec				Strings vector
  *	@param	index			Index
  *
  *	@return	String, @c NULL on failure
@@ -72,26 +71,26 @@ EXPORTED const char *strings_get(const strings *const vec, const size_t index);
 /**
  *	Remove last string
  *
- *	@param	vec				Strings structure
+ *	@param	vec				Strings vector
  *
  *	@return	Deleted string, @c NULL on failure
  */
-EXPORTED strings strings_remove(strings *const vec);
+EXPORTED const char *strings_remove(strings *const vec);
 
 
 /**
- *	Get strings structure size
+ *	Get strings vector size
  *
- *	@param	vec				Strings structure
+ *	@param	vec				Strings vector
  *
- *	@return	Size of strings structure, @c SIZE_MAX on failure
+ *	@return	Size of strings vector, @c SIZE_MAX on failure
  */
 EXPORTED size_t strings_size(const strings *const vec);
 
 /**
- *	Check that strings structure is correct
+ *	Check that strings vector is correct
  *
- *	@param	vec				Strings structure
+ *	@param	vec				Strings vector
  *
  *	@return	@c 1 on true, @c 0 on false
  */
@@ -101,7 +100,7 @@ EXPORTED bool strings_is_correct(const strings *const vec);
 /**
  *	Free allocated memory
  *
- *	@param	vec				Strings structure
+ *	@param	vec				Strings vector
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
