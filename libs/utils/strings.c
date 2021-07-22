@@ -69,9 +69,25 @@ strings strings_create(const size_t alloc)
 
 size_t strings_add(strings *const vec, const char *const value);
 
-const char *strings_get(const strings *const vec, const size_t index);
+const char *strings_get(const strings *const vec, const size_t index)
+{
+	if (!strings_is_correct(vec) || index >= vec->indexes_size)
+	{
+		return NULL;
+	}
 
-const char *strings_remove(strings *const vec);
+	return &vec->all_strings[vec->indexes[index]];
+}
+
+const char *strings_remove(strings *const vec)
+{
+	if (!strings_is_correct(vec) || vec->indexes_size == 0)
+	{
+		return NULL;
+	}
+
+	return &vec->all_strings[vec->indexes[--vec->indexes_size]];
+}
 
 
 size_t strings_size(const strings *const vec)
