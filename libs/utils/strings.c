@@ -48,7 +48,47 @@ strings strings_create(const size_t alloc)
 }
 
 
-size_t strings_add(strings *const vec, const char *const value);
+size_t strings_add(strings *const vec, const char *const value)
+{
+	if (!strings_is_correct(vec) || value == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	if (vec->indexes_size == vec->indexes_alloc)
+	{
+		size_t *indexes_new = realloc(vec->indexes, 2 * vec->indexes_alloc * sizeof(size_t));
+		if (indexes_new == NULL)
+		{
+			return SIZE_MAX;
+		}
+
+		vec->indexes_alloc *= 2;
+		vec->indexes = indexes_new;
+	}
+
+	vec->indexes[vec->indexes_size] = vec->all_strings_size;
+	
+	size_t i = 0;
+	do
+	{
+		if (vec->all_strings_size == vec->all_strings_alloc)
+		{
+			char *all_strings_new = realloc(vec->all_strings, 2 * vec->all_strings_alloc * sizeof(char));
+			if (all_strings_new == NULL)
+			{
+				return SIZE_MAX;
+			}
+
+			vec->all_strings_alloc *= 2;
+			vec->all_strings = all_strings_new;
+		}
+
+		vec->all_strings[vec->all_strings_size++] = value[i];
+	} while (value[i++] != '\0');
+
+	return vec->indexes_size++;
+}
 
 const char *strings_get(const strings *const vec, const size_t index)
 {
