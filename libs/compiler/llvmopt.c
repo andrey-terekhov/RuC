@@ -58,7 +58,7 @@ static inline void stack_resize(information *const info, const size_t size)
 }
 
 
-static int transposition(node *const expr, const size_t expr_depth, node *const cur)
+static int transposition(node *const expr, node *const cur, const size_t expr_depth)
 {
 	if (!node_is_correct(expr) || !node_is_correct(cur))
 	{
@@ -372,7 +372,6 @@ static int node_recursive(information *const info, node *const nd)
 					break;
 					case UNARY_OPERATION:
 					{
-						const item_t index = stack_pop(&info->nodes);
 						item_t operand_depth = stack_pop(&info->depths);
 						has_error |= operand_depth == ITEM_MAX;
 
@@ -383,8 +382,8 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка с операндом
-						node operand = node_load(&info->sx->tree, (size_t)index);
-						has_error |= transposition(&operand, (size_t)operand_depth, &child);
+						node operand = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
+						has_error |= transposition(&operand, &child, (size_t)operand_depth);
 						operand_depth++;
 
 						if (node_get_type(&operand) == OP_CALL1)
@@ -405,13 +404,9 @@ static int node_recursive(information *const info, node *const nd)
 					break;
 					case BINARY_OPERATION:
 					{
-						const item_t second_index = stack_pop(&info->nodes);
 						item_t second_depth = stack_pop(&info->depths);
-						has_error |= second_depth == ITEM_MAX;
-
-						const item_t first_index = stack_pop(&info->nodes);
 						item_t first_depth = stack_pop(&info->depths);
-						has_error |= first_depth == ITEM_MAX;
+						has_error |= first_depth == ITEM_MAX || second_depth == ITEM_MAX;
 
 						node parent = node_get_parent(&child);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
@@ -420,11 +415,11 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка со вторым операндом
-						node second_node = node_load(&info->sx->tree, (size_t)second_index);
-						has_error |= transposition(&second_node, (size_t)second_depth, &child);
+						node second = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
+						has_error |= transposition(&second, &child, (size_t)second_depth);
 						second_depth++;
 
-						parent = node_get_parent(&second_node);
+						parent = node_get_parent(&second);
 						if (node_get_type(&parent) == OP_AD_LOG_OR
 							|| node_get_type(&parent) == OP_AD_LOG_AND
 							|| node_get_type(&parent) == OP_ADDR_TO_VAL)
@@ -433,12 +428,12 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка с первым операндом
-						node first_node = node_load(&info->sx->tree, (size_t)first_index);
-						has_error |= transposition(&first_node, (size_t)first_depth, &second_node);
+						node first = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
+						has_error |= transposition(&first, &second, (size_t)first_depth);
 						first_depth += second_depth;
 
 						// добавляем в стек переставленное выражение
-						stack_push(&info->nodes, (item_t)node_save(&first_node));
+						stack_push(&info->nodes, (item_t)node_save(&first));
 						stack_push(&info->depths, first_depth);
 					}
 					break;
