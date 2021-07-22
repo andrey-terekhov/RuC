@@ -451,7 +451,7 @@ expression build_unary_expression(syntax *const sx, const expression operand
 }
 
 expression build_binary_expression(syntax *const sx, const expression left, const expression right
-									, const binary_t op_kind, const location op_loc)
+								   , const binary_t op_kind, const location op_loc)
 {
 	if (!expression_is_valid(left) || !expression_is_valid(right))
 	{
@@ -557,7 +557,7 @@ expression build_binary_expression(syntax *const sx, const expression left, cons
 }
 
 expression build_ternary_expression(syntax *const sx, const expression left, const expression middle
-							, const expression right, const location op_loc)
+									, const expression right, const location op_loc)
 {
 	if (!expression_is_valid(left) || !expression_is_valid(middle) || !expression_is_valid(right))
 	{
@@ -604,7 +604,7 @@ expression build_ternary_expression(syntax *const sx, const expression left, con
 }
 
 expression build_init_list_expression(syntax *const sx, const expression_list *inits, const item_t type
-								, const location l_loc, const location r_loc)
+									  , const location l_loc, const location r_loc)
 {
 	const size_t actual_inits = expression_list_size(inits);
 	if (actual_inits == 0)

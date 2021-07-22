@@ -209,6 +209,7 @@ static expression_list parse_expression_list(parser *const prs, const item_t typ
 		}
 
 		expression_list_add(&result, parse_initializer(prs, item_type));
+		i++;
 	} while (token_try_consume(prs, TK_COMMA));
 
 	return result;
