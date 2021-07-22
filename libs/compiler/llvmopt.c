@@ -58,10 +58,9 @@ static inline void stack_resize(information *const info, const size_t size)
 }
 
 
-static int transposition(node *const expr, const size_t expr_depth, node *const cur, const size_t cur_depth)
+static int transposition(node *const expr, const size_t expr_depth, node *const cur)
 {
-	if (!node_is_correct(expr) || !node_is_correct(cur)
-		|| expr_depth == SIZE_MAX || cur_depth == SIZE_MAX)
+	if (!node_is_correct(expr) || !node_is_correct(cur))
 	{
 		system_error(transposition_not_possible);
 		return -1;
@@ -385,7 +384,7 @@ static int node_recursive(information *const info, node *const nd)
 
 						// перестановка с операндом
 						node operand = node_load(&info->sx->tree, (size_t)index);
-						has_error |= transposition(&operand, (size_t)operand_depth, &child, 1);
+						has_error |= transposition(&operand, (size_t)operand_depth, &child);
 						operand_depth++;
 
 						if (node_get_type(&operand) == OP_CALL1)
@@ -441,7 +440,7 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка со вторым операндом
-						has_error |= transposition(&second_node, second_depth, &child, 1);
+						has_error |= transposition(&second_node, second_depth, &child);
 						second_depth++;
 
 						parent = node_get_parent(&second_node);
@@ -453,7 +452,7 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка с первым операндом
-						has_error |= transposition(&first_node, first_depth, &second_node, second_depth);
+						has_error |= transposition(&first_node, first_depth, &second_node);
 						first_depth += second_depth;
 
 						// добавляем в стек переставленное выражение
@@ -557,7 +556,6 @@ int optimize_for_llvm(const workspace *const ws, universal_io *const io, syntax 
 	info.depths = stack_create(MAX_STACK_SIZE);
 
 	architecture(ws, io);
-
 	const int ret = optimize_pass(&info);
 
 	stack_clear(&info.nodes);
