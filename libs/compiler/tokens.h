@@ -36,6 +36,7 @@ typedef enum TOKEN
 	TK_LONG,						/**< 'long'		keyword */
 	TK_STRUCT,						/**< 'struct'	keyword */
 	TK_VOID,						/**< 'void'		keyword */
+	TK_TYPEDEF,						/**< 'typedef'	keyword */
 	TK_IF,							/**< 'if'		keyword */
 	TK_ELSE,						/**< 'else'		keyword */
 	TK_DO,							/**< 'do'		keyword */

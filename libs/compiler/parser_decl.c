@@ -85,6 +85,17 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 			token_consume(prs);
 			return parse_struct_or_union_specifier(prs, parent);
 
+		case TK_TYPEDEF:
+		{
+			token_consume(prs);
+			item_t type = parse_type_specifier(prs, parent);
+			const size_t repr = prs->lxr->repr;
+			token_consume(prs);
+			to_identab(prs, repr, 1000, type);
+			prs->was_type_def = true;
+			return type;
+		}
+
 		default:
 			parser_error(prs, not_decl);
 			return TYPE_UNDEFINED;
