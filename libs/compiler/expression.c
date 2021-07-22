@@ -17,37 +17,37 @@
 #include "expression.h"
 
 
-inline expression expression_create(const node expr)
+expression expression_create(const node expr)
 {
 	return (expression){ .is_valid = true, .nd = expr };
 }
 
-inline expression expression_broken(void)
+expression expression_broken(void)
 {
 	return (expression){ .is_valid = false };
 }
 
-inline bool expression_is_valid(const expression expr)
+bool expression_is_valid(const expression expr)
 {
    return expr.is_valid;
 }
 
-inline item_t expression_get_type(const expression expr)
+item_t expression_get_type(const expression expr)
 {
    return node_get_arg(&expr.nd, 0);
 }
 
-inline bool expression_is_lvalue(const expression expr)
+bool expression_is_lvalue(const expression expr)
 {
    return node_get_arg(&expr.nd, 1) == LVALUE;
 }
 
-inline location expression_get_location(const expression expr)
+location expression_get_location(const expression expr)
 {
    return (location){ (size_t)node_get_arg(&expr.nd, 2), (size_t)node_get_arg(&expr.nd, 3) };
 }
 
-inline node expression_get_node(const expression expr)
+node expression_get_node(const expression expr)
 {
 	return expr.nd;
 }
