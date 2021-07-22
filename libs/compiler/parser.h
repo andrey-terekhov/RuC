@@ -43,7 +43,8 @@ typedef enum BLOCK
 typedef struct parser
 {
 	syntax *sx;							/**< Syntax structure */
-	lexer *lxr;							/**< Lexer structure */
+
+	lexer lxr;							/**< Lexer */
 
 	vector labels;						/**< Labels table */
 

@@ -33,16 +33,16 @@ static inline int token_check(const uint8_t tokens, const token_t token)
 /**
  *	Create parser structure
  *
+ *	@param	ws		Workspace structure
  *	@param	sx		Syntax structure
- *	@param	lxr		Lexer structure
  *
  *	@return	Parser structure
  */
-static inline parser parser_create(syntax *const sx, lexer *const lxr)
+static inline parser parser_create(const workspace *const ws, syntax *const sx)
 {
 	parser prs;
 	prs.sx = sx;
-	prs.lxr = lxr;
+	prs.lxr = lexer_create(ws, sx);
 
 	prs.labels = vector_create(MAX_LABELS);
 	token_consume(&prs);
@@ -53,7 +53,7 @@ static inline parser parser_create(syntax *const sx, lexer *const lxr)
 static inline void parser_clear(parser *const prs)
 {
 	vector_clear(&prs->labels);
-	lexer_clear(prs->lxr);
+	lexer_clear(&prs->lxr);
 }
 
 
@@ -73,8 +73,7 @@ int parse(const workspace *const ws, syntax *const sx)
 		return -1;
 	}
 
-	lexer lxr = lexer_create(ws, sx);
-	parser prs = parser_create(sx, &lxr);
+	parser prs = parser_create(ws, sx);
 	node root = node_get_root(&sx->tree);
 
 	do
@@ -94,7 +93,7 @@ int parse(const workspace *const ws, syntax *const sx)
 
 void parser_error(parser *const prs, error_t num, ...)
 {
-	if (prs->lxr->is_recovery_disabled && (prs->sx->was_error))
+	if (prs->lxr.is_recovery_disabled && (prs->sx->was_error))
 	{
 		return;
 	}
@@ -111,8 +110,8 @@ void parser_error(parser *const prs, error_t num, ...)
 
 location token_consume(parser *const prs)
 {
-	const size_t token_start = prs->lxr->location;
-	prs->token = lex(prs->lxr);
+	const size_t token_start = prs->lxr.location;
+	prs->token = lex(&prs->lxr);
 	return (location){ token_start, in_get_position(prs->sx->io) };
 }
 

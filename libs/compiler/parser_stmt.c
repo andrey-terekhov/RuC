@@ -36,7 +36,7 @@ static bool is_declaration_specifier(parser *const prs)
 
 		case TK_IDENTIFIER:
 		{
-			const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+			const item_t id = repr_get_reference(prs->sx, prs->lxr.repr);
 			if (id == ITEM_MAX)
 			{
 				return false;
@@ -64,7 +64,7 @@ static void parse_labeled_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // identifier
 	node nd = node_add_child(parent, OP_LABEL);
-	const size_t repr = prs->lxr->repr;
+	const size_t repr = prs->lxr.repr;
 	// Не проверяем, что это ':', так как по нему узнали, что это labeled statement
 	token_consume(prs);
 	for (size_t i = 0; i < vector_size(&prs->labels); i += 2)
@@ -375,7 +375,7 @@ static void parse_goto_statement(parser *const prs, node *const parent)
 	token_consume(prs); // kw_goto
 	node nd = node_add_child(parent, OP_GOTO);
 	token_expect_and_consume(prs, TK_IDENTIFIER, no_ident_after_goto);
-	const size_t repr = prs->lxr->repr;
+	const size_t repr = prs->lxr.repr;
 
 	for (size_t i = 0; i < vector_size(&prs->labels); i += 2)
 	{
@@ -515,7 +515,7 @@ static void parse_printid_statement(parser *const prs, node *const parent)
 	{
 		if (token_try_consume(prs, TK_IDENTIFIER))
 		{
-			const size_t repr = prs->lxr->repr;
+			const size_t repr = prs->lxr.repr;
 			const item_t id = repr_get_reference(prs->sx, repr);
 			if (id == ITEM_MAX)
 			{
@@ -577,7 +577,7 @@ static void parse_getid_statement(parser *const prs, node *const parent)
 	{
 		if (token_try_consume(prs, TK_IDENTIFIER))
 		{
-			const size_t repr = prs->lxr->repr;
+			const size_t repr = prs->lxr.repr;
 			const item_t id = repr_get_reference(prs->sx, repr);
 			if (id == ITEM_MAX)
 			{
@@ -674,7 +674,7 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 		return;
 	}
 
-	const size_t expected_args = evaluate_args(prs, prs->lxr->lexstr, format_types, placeholders);
+	const size_t expected_args = evaluate_args(prs, prs->lxr.lexstr, format_types, placeholders);
 
 	node_copy(&prs->sx->nd, &printf_node);
 	parse_assignment_expression(prs);
@@ -782,7 +782,7 @@ void parse_statement(parser *const prs, node *const parent)
 			break;
 
 		case TK_IDENTIFIER:
-			if (peek(prs->lxr) == TK_COLON)
+			if (peek(&prs->lxr) == TK_COLON)
 			{
 				parse_labeled_statement(prs, parent);
 				break;

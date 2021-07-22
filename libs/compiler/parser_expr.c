@@ -124,7 +124,7 @@ static expression parse_primary_expression(parser *const prs)
 	{
 		case TK_IDENTIFIER:
 		{
-			const size_t name = prs->lxr->repr;
+			const size_t name = prs->lxr.repr;
 			const location loc = token_consume(prs);
 
 			return build_identifier_expression(prs->sx, name, loc);
@@ -133,7 +133,7 @@ static expression parse_primary_expression(parser *const prs)
 		case TK_CHAR_CONST:
 		case TK_INT_CONST:
 		{
-			const int value = prs->lxr->num;
+			const int value = prs->lxr.num;
 			const location loc = token_consume(prs);
 
 			return build_integer_literal_expression(prs->sx, value, loc);
@@ -141,7 +141,7 @@ static expression parse_primary_expression(parser *const prs)
 
 		case TK_FLOAT_CONST:
 		{
-			const double value = prs->lxr->num_double;
+			const double value = prs->lxr.num_double;
 			const location loc = token_consume(prs);
 
 			return build_floating_literal_expression(prs->sx, value, loc);
@@ -149,7 +149,7 @@ static expression parse_primary_expression(parser *const prs)
 
 		case TK_STRING:
 		{
-			const vector value = prs->lxr->lexstr;
+			const vector value = prs->lxr.lexstr;
 			const location loc = token_consume(prs);
 
 			return build_string_literal_expression(prs->sx, value, loc);
@@ -300,7 +300,7 @@ static expression parse_postfix_expression(parser *const prs)
 
 				if (prs->token == TK_IDENTIFIER)
 				{
-					const size_t name = prs->lxr->repr;
+					const size_t name = prs->lxr.repr;
 					const location id_loc = token_consume(prs);
 
 					operand = build_member_expression(prs->sx, operand, is_arrow, name, op_loc, id_loc);

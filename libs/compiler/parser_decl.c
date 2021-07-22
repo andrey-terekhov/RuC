@@ -64,7 +64,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 
 		case TK_IDENTIFIER:
 		{
-			const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+			const item_t id = repr_get_reference(prs->sx, prs->lxr.repr);
 			token_consume(prs);
 
 			if (id == ITEM_MAX || ident_get_displ(prs->sx, (size_t)id) < 1000)
@@ -112,7 +112,7 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 
 		case TK_IDENTIFIER:
 		{
-			const size_t repr = prs->lxr->repr;
+			const size_t repr = prs->lxr.repr;
 			token_consume(prs);
 
 			if (prs->token == TK_L_BRACE)
@@ -253,7 +253,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 			type = type_pointer(prs->sx, element_type);
 		}
 
-		const size_t repr = prs->lxr->repr;
+		const size_t repr = prs->lxr.repr;
 		if (token_try_consume(prs, TK_IDENTIFIER))
 		{
 			if (prs->token == TK_L_SQUARE)
@@ -352,7 +352,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
  */
 static void parse_init_declarator(parser *const prs, node *const parent, item_t type)
 {
-	const size_t old_id = to_identab(prs, prs->lxr->repr, 0, type);
+	const size_t old_id = to_identab(prs, prs->lxr.repr, 0, type);
 
 	prs->flag_empty_bounds = 1;
 	prs->array_dimensions = 0;
@@ -487,7 +487,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				if (token_try_consume(prs, TK_IDENTIFIER))
 				{
 					was_ident = true;
-					func_add(prs->sx, (item_t)prs->lxr->repr);
+					func_add(prs->sx, (item_t)prs->lxr.repr);
 				}
 			}
 			else if (prs->token == TK_IDENTIFIER)
@@ -538,7 +538,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 							parser_error(prs, two_idents_for_1_declarer);
 							return TYPE_UNDEFINED;
 						}
-						func_add(prs->sx, -((item_t)prs->lxr->repr));
+						func_add(prs->sx, -((item_t)prs->lxr.repr));
 					}
 					else
 					{
@@ -679,7 +679,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 static void parse_function_definition(parser *const prs, node *const parent, const item_t type)
 {
 	const size_t function_num = func_reserve(prs->sx);
-	const size_t function_repr = prs->lxr->repr;
+	const size_t function_repr = prs->lxr.repr;
 
 	token_consume(prs);
 	const item_t function_mode = parse_function_declarator(prs, 1, 3, type);
