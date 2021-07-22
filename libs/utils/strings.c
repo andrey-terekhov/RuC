@@ -15,6 +15,7 @@
  */
 
 #include "strings.h"
+#include <stdlib.h>
 
 
 
@@ -73,9 +74,29 @@ const char *strings_get(const strings *const vec, const size_t index);
 const char *strings_remove(strings *const vec);
 
 
-size_t strings_size(const strings *const vec);
+size_t strings_size(const strings *const vec)
+{
+	return strings_is_correct(vec) ? vec->indexes_size : SIZE_MAX;
+}
 
-bool strings_is_correct(const strings *const vec);
+bool strings_is_correct(const strings *const vec)
+{
+	return vec != NULL && vec->all_strings != NULL && vec->indexes != NULL;
+}
 
 
-int strings_clear(strings *const vec);
+int strings_clear(strings *const vec)
+{
+	if (!strings_is_correct(vec))
+	{
+		return -1;
+	}
+
+	free(vec->all_strings);
+	vec->all_strings = NULL;
+
+	free(vec->indexes);
+	vec->indexes = NULL;
+
+	return 0;
+}
