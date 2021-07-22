@@ -58,20 +58,20 @@ static inline void stack_resize(information *const info, const size_t size)
 }
 
 
-static int transposition(node *const expr, node *const cur, const size_t expr_depth)
+static int transposition(node *const current, node *const expr, const size_t expr_depth)
 {
-	if (!node_is_correct(expr) || !node_is_correct(cur))
+	if (!node_is_correct(expr) || !node_is_correct(current))
 	{
 		system_error(transposition_not_possible);
 		return -1;
 	}
 
-	node_order(expr, cur);
+	node_order(expr, current);
 
 	node tmp;
 	node_copy(&tmp, expr);
-	node_copy(expr, cur);
-	node_copy(cur, &tmp);
+	node_copy(expr, current);
+	node_copy(current, &tmp);
 
 	node node_to_order;
 	node_copy(&node_to_order, expr);
@@ -79,11 +79,11 @@ static int transposition(node *const expr, node *const cur, const size_t expr_de
 	{
 		node_to_order = node_get_next(&node_to_order);
 
-		node_order(cur, &node_to_order);
+		node_order(current, &node_to_order);
 
 		node_copy(&tmp, &node_to_order);
-		node_copy(&node_to_order, cur);
-		node_copy(cur, &tmp);
+		node_copy(&node_to_order, current);
+		node_copy(current, &tmp);
 	}
 
 	return 0;
@@ -383,7 +383,7 @@ static int node_recursive(information *const info, node *const nd)
 
 						// перестановка с операндом
 						node operand = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
-						has_error |= transposition(&operand, &child, (size_t)operand_depth);
+						has_error |= transposition(&child, &operand, (size_t)operand_depth);
 						operand_depth++;
 
 						if (node_get_type(&operand) == OP_CALL1)
@@ -416,7 +416,7 @@ static int node_recursive(information *const info, node *const nd)
 
 						// перестановка со вторым операндом
 						node second = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
-						has_error |= transposition(&second, &child, (size_t)second_depth);
+						has_error |= transposition(&child, &second, (size_t)second_depth);
 						second_depth++;
 
 						parent = node_get_parent(&second);
@@ -429,7 +429,7 @@ static int node_recursive(information *const info, node *const nd)
 
 						// перестановка с первым операндом
 						node first = node_load(&info->sx->tree, (size_t)stack_pop(&info->nodes));
-						has_error |= transposition(&first, &second, (size_t)first_depth);
+						has_error |= transposition(&second, &first, (size_t)first_depth);
 						first_depth += second_depth;
 
 						// добавляем в стек переставленное выражение
