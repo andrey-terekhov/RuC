@@ -31,7 +31,7 @@ static void node_set_child(const node *const parent, const node *const child)
 }
 
 /** Return valid expression from AST node */
-inline static expression expr(const node expr_node, const location_t location)
+inline static expression expr(const node expr_node, const location location)
 {
 	return (expression){ .is_valid = true, .location = location, .nd = expr_node };
 }
@@ -43,7 +43,7 @@ inline static expression expr(const node expr_node, const location_t location)
  *	@param	loc			Error location
  *	@param	num			Error code
  */
-static void semantics_error(syntax *const sx, const location_t loc, error_t num, ...)
+static void semantics_error(syntax *const sx, const location loc, error_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -78,7 +78,7 @@ expression build_invalid_expression()
 	return (expression){ .is_valid = false };
 }
 
-expression build_identifier_expression(syntax *const sx, const size_t name, const location_t loc)
+expression build_identifier_expression(syntax *const sx, const size_t name, const location loc)
 {
 	const item_t identifier = repr_get_reference(sx, name);
 
@@ -99,7 +99,7 @@ expression build_identifier_expression(syntax *const sx, const size_t name, cons
 	return expr(identifier_node, loc);
 }
 
-expression build_integer_literal_expression(syntax *const sx, const int value, const location_t loc)
+expression build_integer_literal_expression(syntax *const sx, const int value, const location loc)
 {
 	node constant_node = node_create(sx, OP_CONSTANT);
 	node_add_arg(&constant_node, TYPE_INTEGER);				// Тип значения константы
@@ -109,7 +109,7 @@ expression build_integer_literal_expression(syntax *const sx, const int value, c
 	return expr(constant_node, loc);
 }
 
-expression build_floating_literal_expression(syntax *const sx, const double value, const location_t loc)
+expression build_floating_literal_expression(syntax *const sx, const double value, const location loc)
 {
 	item_t temp;
 	memcpy(&temp, &value, sizeof(double));
@@ -122,7 +122,7 @@ expression build_floating_literal_expression(syntax *const sx, const double valu
 	return expr(constant_node, loc);
 }
 
-expression build_string_literal_expression(syntax *const sx, const vector value, const location_t loc)
+expression build_string_literal_expression(syntax *const sx, const vector value, const location loc)
 {
 	const item_t type = type_array(sx, TYPE_INTEGER);
 
@@ -138,7 +138,7 @@ expression build_string_literal_expression(syntax *const sx, const vector value,
 }
 
 expression build_subscript_expression(syntax *const sx, const expression base, const expression index
-								, const location_t l_loc, const location_t r_loc)
+								, const location l_loc, const location r_loc)
 {
 	if (!base.is_valid || !index.is_valid)
 	{
@@ -166,11 +166,11 @@ expression build_subscript_expression(syntax *const sx, const expression base, c
 	node_set_child(&slice_node, &base.nd);					// Выражение-операнд
 	node_set_child(&slice_node, &index.nd);					// Выражение-индекс
 
-	return expr(slice_node, (location_t){ base.location.begin, r_loc.end });
+	return expr(slice_node, (location){ base.location.begin, r_loc.end });
 }
 
 expression build_call_expression(syntax *const sx, const expression callee, const expression_list *args
-						   , const location_t l_loc, const location_t r_loc)
+						   , const location l_loc, const location r_loc)
 {
 	if (!callee.is_valid)
 	{
@@ -223,11 +223,11 @@ expression build_call_expression(syntax *const sx, const expression callee, cons
 		node_set_child(&call_node, &args->expressions[i].nd);	// i-ый аргумент вызова
 	}
 
-	return expr(call_node, (location_t){ callee.location.begin, r_loc.end });
+	return expr(call_node, (location){ callee.location.begin, r_loc.end });
 }
 
 expression build_member_expression(syntax *const sx, const expression base, const bool is_arrow, const size_t name
-							, const location_t op_loc, const location_t id_loc)
+							, const location op_loc, const location id_loc)
 {
 	if (!base.is_valid)
 	{
@@ -274,7 +274,7 @@ expression build_member_expression(syntax *const sx, const expression base, cons
 			node_add_arg(&select_node, member_displ);	// Смещение поля структуры
 			node_set_child(&select_node, &base.nd);		// Выражение-операнд
 
-			return expr(select_node, (location_t){ base.location.begin, id_loc.end });
+			return expr(select_node, (location){ base.location.begin, id_loc.end });
 		}
 
 		member_displ += (item_t)type_size(sx, member_type);
@@ -309,10 +309,10 @@ expression build_upb_expression(syntax *const sx, const expression dimension, co
 	node_set_child(&upb_node, &dimension.nd);	// Выражение-операнд
 	node_set_child(&upb_node, &array.nd);		// Выражение-операнд
 
-	return expr(upb_node, (location_t){ dimension.location.begin, array.location.end });
+	return expr(upb_node, (location){ dimension.location.begin, array.location.end });
 }
 
-expression build_unary_expression(syntax *const sx, const expression operand, const unary_t op_kind, const location_t op_loc)
+expression build_unary_expression(syntax *const sx, const expression operand, const unary_t op_kind, const location op_loc)
 {
 	if (!operand.is_valid)
 	{
@@ -420,15 +420,15 @@ expression build_unary_expression(syntax *const sx, const expression operand, co
 	node_add_arg(&unary_node, op_kind);			// Тип унарного оператора
 	node_set_child(&unary_node, &operand.nd);	// Выражение-операнд
 
-	location_t location = is_prefix
-						? (location_t){ op_loc.begin, operand.location.end }
-						: (location_t){ operand.location.begin, op_loc.end };
+	location loc = is_prefix
+		? (location){ op_loc.begin, operand.location.end }
+		: (location){ operand.location.begin, op_loc.end };
 
-	return expr(unary_node, location);
+	return expr(unary_node, loc);
 }
 
 expression build_binary_expression(syntax *const sx, const expression left, const expression right
-									, const binary_t op_kind, const location_t op_loc)
+									, const binary_t op_kind, const location op_loc)
 {
 	if (!left.is_valid || !right.is_valid)
 	{
@@ -526,11 +526,11 @@ expression build_binary_expression(syntax *const sx, const expression left, cons
 	node_set_child(&binary_node, &left.nd);			// Второй операнд
 	node_set_child(&binary_node, &right.nd);		// Третий операнд
 
-	return expr(binary_node, (location_t){ left.location.begin, right.location.end });
+	return expr(binary_node, (location){ left.location.begin, right.location.end });
 }
 
 expression build_ternary_expression(syntax *const sx, const expression left, const expression middle
-							, const expression right, const location_t op_loc)
+							, const expression right, const location op_loc)
 {
 	if (!left.is_valid || !middle.is_valid || !right.is_valid)
 	{
@@ -567,11 +567,11 @@ expression build_ternary_expression(syntax *const sx, const expression left, con
 	node_set_child(&ternary_node, &middle.nd);		// Второй операнд
 	node_set_child(&ternary_node, &right.nd);		// Третий операнд
 
-	return expr(ternary_node, (location_t){ left.location.begin, right.location.end });
+	return expr(ternary_node, (location){ left.location.begin, right.location.end });
 }
 
 expression build_init_list_expression(syntax *const sx, const expression_list *inits, const item_t type
-								, const location_t l_loc, const location_t r_loc)
+								, const location l_loc, const location r_loc)
 {
 	const size_t actual_inits = inits->length;
 	if (actual_inits == 0)
@@ -645,5 +645,5 @@ expression build_init_list_expression(syntax *const sx, const expression_list *i
 		node_set_child(&init_list_node, &inits->expressions[i].nd);	// i-ый аргумент вызова
 	}
 
-	return expr(init_list_node, (location_t){ l_loc.begin, r_loc.end });
+	return expr(init_list_node, (location){ l_loc.begin, r_loc.end });
 }

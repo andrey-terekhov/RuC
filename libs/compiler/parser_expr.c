@@ -125,7 +125,7 @@ static expression parse_primary_expression(parser *const prs)
 		case TK_IDENTIFIER:
 		{
 			const size_t name = prs->lxr->repr;
-			const location_t loc = token_consume(prs);
+			const location loc = token_consume(prs);
 
 			return build_identifier_expression(prs->sx, name, loc);
 		}
@@ -134,7 +134,7 @@ static expression parse_primary_expression(parser *const prs)
 		case TK_INT_CONST:
 		{
 			const int value = prs->lxr->num;
-			const location_t loc = token_consume(prs);
+			const location loc = token_consume(prs);
 
 			return build_integer_literal_expression(prs->sx, value, loc);
 		}
@@ -142,7 +142,7 @@ static expression parse_primary_expression(parser *const prs)
 		case TK_FLOAT_CONST:
 		{
 			const double value = prs->lxr->num_double;
-			const location_t loc = token_consume(prs);
+			const location loc = token_consume(prs);
 
 			return build_floating_literal_expression(prs->sx, value, loc);
 		}
@@ -150,14 +150,14 @@ static expression parse_primary_expression(parser *const prs)
 		case TK_STRING:
 		{
 			const vector value = prs->lxr->lexstr;
-			const location_t loc = token_consume(prs);
+			const location loc = token_consume(prs);
 
 			return build_string_literal_expression(prs->sx, value, loc);
 		}
 
 		case TK_L_PAREN:
 		{
-			const location_t l_loc = token_consume(prs);
+			const location l_loc = token_consume(prs);
 			const expression result = parse_expression(prs);
 
 			if (!token_try_consume(prs, TK_R_PAREN))
@@ -244,12 +244,12 @@ static expression parse_postfix_expression(parser *const prs)
 
 			case TK_L_SQUARE:
 			{
-				const location_t l_loc = token_consume(prs);
+				const location l_loc = token_consume(prs);
 				const expression index = parse_expression(prs);
 
 				if (prs->token == TK_R_SQUARE)
 				{
-					const location_t r_loc = token_consume(prs);
+					const location r_loc = token_consume(prs);
 					operand = build_subscript_expression(prs->sx, operand, index, l_loc, r_loc);
 				}
 				else
@@ -265,12 +265,12 @@ static expression parse_postfix_expression(parser *const prs)
 
 			case TK_L_PAREN:
 			{
-				const location_t l_loc = token_consume(prs);
+				const location l_loc = token_consume(prs);
 				expression_list args;
 
 				if (prs->token == TK_R_PAREN)
 				{
-					const location_t r_loc = token_consume(prs);
+					const location r_loc = token_consume(prs);
 					args = (expression_list){ .length = 0 };
 					operand = build_call_expression(prs->sx, operand, &args, l_loc, r_loc);
 
@@ -280,7 +280,7 @@ static expression parse_postfix_expression(parser *const prs)
 				args = parse_expression_list(prs, expression_get_type(operand));
 				if (prs->token == TK_R_PAREN)
 				{
-					const location_t r_loc = token_consume(prs);
+					const location r_loc = token_consume(prs);
 					operand = build_call_expression(prs->sx, operand, &args, l_loc, r_loc);
 				}
 				else
@@ -298,12 +298,12 @@ static expression parse_postfix_expression(parser *const prs)
 			case TK_ARROW:
 			{
 				const bool is_arrow = prs->token == TK_ARROW;
-				const location_t op_loc = token_consume(prs);
+				const location op_loc = token_consume(prs);
 
 				if (prs->token == TK_IDENTIFIER)
 				{
 					const size_t name = prs->lxr->repr;
-					const location_t id_loc = token_consume(prs);
+					const location id_loc = token_consume(prs);
 
 					operand = build_member_expression(prs->sx, operand, is_arrow, name, op_loc, id_loc);
 				}
@@ -318,14 +318,14 @@ static expression parse_postfix_expression(parser *const prs)
 
 			case TK_PLUS_PLUS:
 			{
-				const location_t op_loc = token_consume(prs);
+				const location op_loc = token_consume(prs);
 				operand = build_unary_expression(prs->sx, operand, UN_POSTINC, op_loc);
 				continue;
 			}
 
 			case TK_MINUS_MINUS:
 			{
-				const location_t op_loc = token_consume(prs);
+				const location op_loc = token_consume(prs);
 				operand = build_unary_expression(prs->sx, operand, UN_POSTDEC, op_loc);
 				continue;
 			}
@@ -367,7 +367,7 @@ static expression parse_unary_expression(parser *const prs)
 		case TK_ABS:
 		{
 			const unary_t operator = token_to_unary(prs->token);
-			const location_t op_loc = token_consume(prs);
+			const location op_loc = token_consume(prs);
 			const expression operand = parse_unary_expression(prs);
 
 			return build_unary_expression(prs->sx, operand, operator, op_loc);
@@ -401,7 +401,7 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 	while (next_token_prec >= min_prec)
 	{
 		const token_t op_token = prs->token;
-		location_t op_loc = token_consume(prs);
+		location op_loc = token_consume(prs);
 
 		bool is_binary = true;
 		expression middle = build_invalid_expression();
@@ -478,7 +478,7 @@ expression parse_initializer(parser *const prs, const item_t type)
 {
 	if (prs->token == TK_L_BRACE)
 	{
-		const location_t l_loc = token_consume(prs);
+		const location l_loc = token_consume(prs);
 		expression_list inits;
 
 		if (token_try_consume(prs, TK_R_BRACE))
@@ -491,7 +491,7 @@ expression parse_initializer(parser *const prs, const item_t type)
 		inits = parse_expression_list(prs, type);
 		if (prs->token == TK_R_BRACE)
 		{
-			const location_t r_loc = token_consume(prs);
+			const location r_loc = token_consume(prs);
 			return build_init_list_expression(prs->sx, &inits, type, l_loc, r_loc);
 		}
 		else

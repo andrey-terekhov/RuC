@@ -109,11 +109,11 @@ void parser_error(parser *const prs, error_t num, ...)
 }
 
 
-location_t token_consume(parser *const prs)
+location token_consume(parser *const prs)
 {
 	const size_t token_start = prs->lxr->location;
 	prs->token = lex(prs->lxr);
-	return (location_t){ token_start, in_get_position(prs->sx->io) };
+	return (location){ token_start, in_get_position(prs->sx->io) };
 }
 
 int token_try_consume(parser *const prs, const token_t expected)

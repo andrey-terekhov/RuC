@@ -39,7 +39,7 @@ typedef struct location
 {
 	size_t begin;
 	size_t end;
-} location_t;
+} location;
 
 /** Type qualifiers */
 enum TYPE

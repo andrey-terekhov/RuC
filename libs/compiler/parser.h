@@ -96,7 +96,7 @@ void parser_error(parser *const prs, error_t num, ...);
  *
  *	@param	prs			Parser structure
  */
-location_t token_consume(parser *const prs);
+location token_consume(parser *const prs);
 
 /**
  *	Try to consume the current 'peek token' and lex the next one
