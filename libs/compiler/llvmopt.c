@@ -435,7 +435,7 @@ static int node_recursive(information *const info, node *const nd)
 
 						// перестановка с первым операндом
 						node first_node = node_load(&info->sx->tree, (size_t)first_index);
-						has_error |= transposition(&first_node, (size_t)first_depth, &second_node, second_depth);
+						has_error |= transposition(&first_node, (size_t)first_depth, &second_node, (size_t)second_depth);
 						first_depth += second_depth;
 
 						// добавляем в стек переставленное выражение
