@@ -40,7 +40,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 	switch (elem)
 	{
 		case OP_IDENTIFIER:
-			argc = 3;
+			argc = 5;
 			was_switch = true;
 			switch (num)
 			{
@@ -48,18 +48,24 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "IDENTIFIER");
 					break;
 				case 1:
-					sprintf(buffer, "type=");
+					sprintf(buffer, "type");
 					break;
 				case 2:
-					sprintf(buffer, "designation=");
+					sprintf(buffer, "designation");
 					break;
 				case 3:
-					sprintf(buffer, "id=");
+					sprintf(buffer, "begin");
+					break;
+				case 4:
+					sprintf(buffer, "end");
+					break;
+				case 5:
+					sprintf(buffer, "id");
 					break;
 			}
 			break;
 		case OP_CONSTANT:
-			argc = 3;
+			argc = 5;
 			was_switch = true;
 			switch (num)
 			{
@@ -67,18 +73,24 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "CONSTANT");
 					break;
 				case 1:
-					sprintf(buffer, "type=");
+					sprintf(buffer, "type");
 					break;
 				case 2:
-					sprintf(buffer, "designation=");
+					sprintf(buffer, "designation");
 					break;
 				case 3:
-					sprintf(buffer, "value=");
+					sprintf(buffer, "begin");
+					break;
+				case 4:
+					sprintf(buffer, "end");
+					break;
+				case 5:
+					sprintf(buffer, "value");
 					break;
 			}
 			break;
 		case OP_STRING:
-			argc = 2;
+			argc = 4;
 			was_switch = true;
 			switch (num)
 			{
@@ -86,15 +98,21 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "STRING");
 					break;
 				case 1:
-					sprintf(buffer, "type=");
+					sprintf(buffer, "type");
 					break;
 				case 2:
-					sprintf(buffer, "designation=");
+					sprintf(buffer, "designation");
+					break;
+				case 3:
+					sprintf(buffer, "begin");
+					break;
+				case 4:
+					sprintf(buffer, "end");
 					break;
 			}
 			break;
 		case OP_CALL:
-			argc = 2;
+			argc = 4;
 			was_switch = true;
 			switch (num)
 			{
@@ -102,15 +120,21 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "CALL");
 					break;
 				case 1:
-					sprintf(buffer, "type=");
+					sprintf(buffer, "type");
 					break;
 				case 2:
-					sprintf(buffer, "designation=");
+					sprintf(buffer, "designation");
+					break;
+				case 3:
+					sprintf(buffer, "begin");
+					break;
+				case 4:
+					sprintf(buffer, "end");
 					break;
 			}
 			break;
 		case OP_SELECT:
-			argc = 3;
+			argc = 5;
 			was_switch = true;
 			switch (num)
 			{
@@ -118,18 +142,24 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "SELECT");
 					break;
 				case 1:
-					sprintf(buffer, "type=");
+					sprintf(buffer, "type");
 					break;
 				case 2:
-					sprintf(buffer, "designation=");
+					sprintf(buffer, "designation");
 					break;
 				case 3:
-					sprintf(buffer, "displ=");
+					sprintf(buffer, "begin");
+					break;
+				case 4:
+					sprintf(buffer, "end");
+					break;
+				case 5:
+					sprintf(buffer, "displ");
 					break;
 			}
 			break;
 		case OP_SLICE:
-			argc = 2;
+			argc = 4;
 			was_switch = true;
 			switch (num)
 			{
@@ -137,15 +167,21 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "SLICE");
 					break;
 				case 1:
-					sprintf(buffer, "type=");
+					sprintf(buffer, "type");
 					break;
 				case 2:
-					sprintf(buffer, "designation=");
+					sprintf(buffer, "designation");
+					break;
+				case 3:
+					sprintf(buffer, "begin");
+					break;
+				case 4:
+					sprintf(buffer, "end");
 					break;
 			}
 			break;
 		case OP_UNARY:
-			argc = 3;
+			argc = 5;
 			was_switch = true;
 			switch (num)
 			{
@@ -153,18 +189,24 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "UNARY");
 					break;
 				case 1:
-					sprintf(buffer, "type=");
+					sprintf(buffer, "type");
 					break;
 				case 2:
-					sprintf(buffer, "designation=");
+					sprintf(buffer, "designation");
 					break;
 				case 3:
-					sprintf(buffer, "operator=");
+					sprintf(buffer, "begin");
+					break;
+				case 4:
+					sprintf(buffer, "end");
+					break;
+				case 5:
+					sprintf(buffer, "operator");
 					break;
 			}
 			break;
 		case OP_BINARY:
-			argc = 3;
+			argc = 5;
 			was_switch = true;
 			switch (num)
 			{
@@ -172,18 +214,24 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "BINARY");
 					break;
 				case 1:
-					sprintf(buffer, "type=");
+					sprintf(buffer, "type");
 					break;
 				case 2:
-					sprintf(buffer, "designation=");
+					sprintf(buffer, "designation");
 					break;
 				case 3:
-					sprintf(buffer, "operator=");
+					sprintf(buffer, "begin");
+					break;
+				case 4:
+					sprintf(buffer, "end");
+					break;
+				case 5:
+					sprintf(buffer, "operator");
 					break;
 			}
 			break;
 		case OP_TERNARY:
-			argc = 2;
+			argc = 4;
 			was_switch = true;
 			switch (num)
 			{
@@ -191,26 +239,38 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "TERNARY");
 					break;
 				case 1:
-					sprintf(buffer, "type=");
+					sprintf(buffer, "type");
 					break;
 				case 2:
-					sprintf(buffer, "designation=");
+					sprintf(buffer, "designation");
+					break;
+				case 3:
+					sprintf(buffer, "begin");
+					break;
+				case 4:
+					sprintf(buffer, "end");
 					break;
 			}
 			break;
 		case OP_LIST:
-			argc = 2;
+			argc = 4;
 			was_switch = true;
 			switch (num)
 			{
 				case 0:
-					sprintf(buffer, "TERNARY");
+					sprintf(buffer, "LIST");
 					break;
 				case 1:
-					sprintf(buffer, "type=");
+					sprintf(buffer, "type");
 					break;
 				case 2:
-					sprintf(buffer, "designation=");
+					sprintf(buffer, "designation");
+					break;
+				case 3:
+					sprintf(buffer, "begin");
+					break;
+				case 4:
+					sprintf(buffer, "end");
 					break;
 			}
 			break;

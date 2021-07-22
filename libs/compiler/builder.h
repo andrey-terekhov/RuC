@@ -32,7 +32,6 @@ extern "C" {
 typedef struct expression
 {
 	bool is_valid;			/**< Set if is valid */
-	location location;		/**< Source location */
 	node nd;				/**< Node in AST */
 } expression;
 
@@ -44,6 +43,15 @@ typedef struct expression_list
 } expression_list;
 
 /**
+ *	Check if expression is valid
+ *
+ *	@param	expr	Expression for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool expression_is_valid(const expression expr);
+
+/**
  *	Get expression type
  *
  *	@param	expr	Expression
@@ -51,6 +59,24 @@ typedef struct expression_list
  *	@return	Expression type
  */
 item_t expression_get_type(const expression expr);
+
+/**
+ *	Check if expression is lvalue
+ *
+ *	@param	expr	Expression for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool expression_is_lvalue(const expression expr);
+
+/**
+ *	Get expression location
+ *
+ *	@param	expr	Expression
+ *
+ *	@return	Expression location
+ */
+location expression_get_location(const expression expr);
 
 /**
  *	Return invalid expression
