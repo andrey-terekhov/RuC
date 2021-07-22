@@ -375,18 +375,9 @@ static int node_recursive(information *const info, node *const nd)
 					case UNARY_OPERATION:
 					{
 						const item_t index = stack_pop(&info->nodes);
-						const item_t depth = stack_pop(&info->depths);
-						node operand_node;
-						size_t operand_depth;
-						if (index == ITEM_MAX || depth == ITEM_MAX)
-						{
-							operand_depth = SIZE_MAX;
-						}
-						else
-						{
-							operand_node = node_load(&info->sx->tree, (size_t)index);
-							operand_depth = (size_t)depth;
-						}
+						item_t operand_depth = stack_pop(&info->depths);
+						node operand_node = node_load(&info->sx->tree, (size_t)index);
+						has_error |= operand_depth == ITEM_MAX;
 
 						node parent = node_get_parent(&child);
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
@@ -395,7 +386,7 @@ static int node_recursive(information *const info, node *const nd)
 						}
 
 						// перестановка с операндом
-						has_error |= transposition(&operand_node, operand_depth, &child, 1);
+						has_error |= transposition(&operand_node, (size_t)operand_depth, &child, 1);
 						operand_depth++;
 
 						if (node_get_type(&operand_node) == OP_CALL1)
