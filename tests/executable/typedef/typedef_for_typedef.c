@@ -8,8 +8,8 @@ int main()
 	name2 tmp2 = tmp;
 	name3 tmp3 = tmp2;
 
-	assert(tmp == tmp2, "");
-	assert(tmp2 == tmp3, "");
-	assert(tmp3 == tmp, "");
+	assert(tmp == 1, "tmp != 1");
+	assert(tmp2 == 1, "tmp2 != 1");
+	assert(tmp3 == 1, "tmp3 != 1");
 	return 0;
 }

@@ -10,8 +10,7 @@ int main()
 	print ("b  3");
 	printid(b);
 
-	assert(a == 2, "");
-	assert(b == 3, "");
-
+	assert(a == 2, "a != 2");
+	assert(b == 3, "b != 3");
 	return 0;
 }
