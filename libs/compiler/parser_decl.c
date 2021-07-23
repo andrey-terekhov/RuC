@@ -88,7 +88,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 		case TK_TYPEDEF:
 		{
 			token_consume(prs);
-			item_t type = parse_type_specifier(prs, parent);
+			const item_t type = parse_type_specifier(prs, parent);
 			const size_t repr = prs->lxr->repr;
 			token_consume(prs);
 			to_identab(prs, repr, 1000, type);
