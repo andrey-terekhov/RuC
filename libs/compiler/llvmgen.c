@@ -840,8 +840,7 @@ static void operand(information *const info, node *const nd)
 				{
 					parameters[i] = info->answer_reg;
 				}
-				// ACONST
-				else if (mode_is_int(info->answer_value_type))
+				else if (mode_is_int(info->answer_value_type)) // ACONST
 				{
 					parameters[i] = info->answer_const;
 				}
@@ -880,8 +879,7 @@ static void operand(information *const info, node *const nd)
 				{
 					uni_printf(info->io, "%%.%" PRIitem, parameters[i]);
 				}
-				// ACONST
-				else if (mode_is_int(parameters_value_type[i]))
+				else if (mode_is_int(parameters_value_type[i])) // ACONST
 				{
 					uni_printf(info->io, "%" PRIitem, parameters[i]);
 				}
