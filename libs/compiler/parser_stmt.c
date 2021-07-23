@@ -120,7 +120,7 @@ static void parse_case_statement(parser *const prs, node *const parent)
 	node_copy(&prs->sx->nd, &nd);
 	const expression condition = parse_constant_expression(prs);
 	const item_t condition_type = expression_get_type(condition);
-	if (condition.is_valid && !type_is_integer(condition_type))
+	if (expression_is_valid(condition) && !type_is_integer(condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
@@ -164,7 +164,7 @@ static void parse_expression_statement(parser *const prs, node *const parent)
 {
 	node_copy(&prs->sx->nd, parent);
 	expression expr = parse_expression(prs);
-	if (!expr.is_valid)
+	if (!expression_is_valid(expr))
 	{
 		token_skip_until(prs, TK_SEMICOLON);
 		return;
@@ -220,7 +220,7 @@ static void parse_switch_statement(parser *const prs, node *const parent)
 	const expression condition = parse_expression(prs);
 	token_expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
 	const item_t condition_type = expression_get_type(condition);
-	if (condition.is_valid && !type_is_integer(condition_type))
+	if (expression_is_valid(condition) && !type_is_integer(condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
