@@ -146,6 +146,11 @@ size_t strings_add_by_vector(strings *const vec, const vector *const str)
 	for (size_t i = 0; i < vector_size(str); i++)
 	{
 		const char32_t ch = (char32_t)vector_get(str, i);
+		if (ch == '\0')
+		{
+			break;
+		}
+
 		if (strings_increase(vec, utf8_size(ch) + 1))
 		{
 			return SIZE_MAX;
