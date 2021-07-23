@@ -7,5 +7,9 @@ int main()
 	name tmp = 1;
 	name2 tmp2 = tmp;
 	name3 tmp3 = tmp2;
+
+	assert(tmp == tmp2, "");
+	assert(tmp2 == tmp3, "");
+	assert(tmp3 == tmp, "");
 	return 0;
 }
