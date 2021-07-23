@@ -16,10 +16,9 @@
 
 #pragma once
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 #include "dll.h"
+#include "utf8.h"
+#include "vector.h"
 
 
 #ifdef __cplusplus
@@ -50,14 +49,35 @@ EXPORTED strings strings_create(const size_t alloc);
 
 
 /**
- *	Add new value
+ *	Add new string
  *
  *	@param	vec				Strings vector
- *	@param	value			Value
+ *	@param	str				String
  *
  *	@return	Index, @c SIZE_MAX on failure
  */
-EXPORTED size_t strings_add(strings *const vec, const char *const value);
+EXPORTED size_t strings_add(strings *const vec, const char *const str);
+
+/**
+ *	Add new UTF-8 string
+ *
+ *	@param	vec				Strings vector
+ *	@param	str				UTF-8 string
+ *
+ *	@return	Index, @c SIZE_MAX on failure
+ */
+EXPORTED size_t strings_add_by_utf8(strings *const vec, const char32_t *const str);
+
+/**
+ *	Add new dynamic UTF-8 string
+ *
+ *	@param	vec				Strings vector
+ *	@param	str				Dynamic UTF-8 string
+ *
+ *	@return	Index, @c SIZE_MAX on failure
+ */
+EXPORTED size_t strings_add_by_vector(strings *const vec, const vector *const str);
+
 
 /**
  *	Get string

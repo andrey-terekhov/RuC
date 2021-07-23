@@ -48,9 +48,9 @@ strings strings_create(const size_t alloc)
 }
 
 
-size_t strings_add(strings *const vec, const char *const value)
+size_t strings_add(strings *const vec, const char *const str)
 {
-	if (!strings_is_correct(vec) || value == NULL)
+	if (!strings_is_correct(vec) || str == NULL)
 	{
 		return SIZE_MAX;
 	}
@@ -84,11 +84,16 @@ size_t strings_add(strings *const vec, const char *const value)
 			vec->all_strings = all_strings_new;
 		}
 
-		vec->all_strings[vec->all_strings_size++] = value[i];
-	} while (value[i++] != '\0');
+		vec->all_strings[vec->all_strings_size++] = str[i];
+	} while (str[i++] != '\0');
 
 	return vec->indexes_size++;
 }
+
+size_t strings_add_by_utf8(strings *const vec, const char32_t *const str);
+
+size_t strings_add_by_vector(strings *const vec, const vector *const str);
+
 
 const char *strings_get(const strings *const vec, const size_t index)
 {
@@ -118,7 +123,7 @@ size_t strings_size(const strings *const vec)
 
 bool strings_is_correct(const strings *const vec)
 {
-	return vec != NULL && vec->all_strings != NULL && vec->indexes != NULL;
+	return vec != NULL && vec->indexes != NULL && vec->all_strings != NULL;
 }
 
 
@@ -129,11 +134,11 @@ int strings_clear(strings *const vec)
 		return -1;
 	}
 
-	free(vec->all_strings);
-	vec->all_strings = NULL;
-
 	free(vec->indexes);
 	vec->indexes = NULL;
+
+	free(vec->all_strings);
+	vec->all_strings = NULL;
 
 	return 0;
 }
