@@ -822,10 +822,10 @@ static void operand(information *const info, node *const nd)
 		case OP_CALL1:
 		{
 			const item_t args = node_get_arg(nd, 0);
-			item_t parameters[128];
-			double parameters_double[128];
-			answer_t parameters_type[128];
-			item_t parameters_value_type[128];
+			item_t arguments[128];
+			double arguments_double[128];
+			answer_t arguments_type[128];
+			item_t arguments_value_type[128];
 
 			node_set_next(nd);
 			node_set_next(nd); // OP_IDENT
@@ -834,19 +834,19 @@ static void operand(information *const info, node *const nd)
 				info->variable_location = LFREE;
 				expression(info, nd);
 				// TODO: сделать параметры других типов (логическое)
-				parameters_type[i] = info->answer_type;
-				parameters_value_type[i] = info->answer_value_type;
+				arguments_type[i] = info->answer_type;
+				arguments_value_type[i] = info->answer_value_type;
 				if (info->answer_type == AREG)
 				{
-					parameters[i] = info->answer_reg;
+					arguments[i] = info->answer_reg;
 				}
 				else if (mode_is_int(info->answer_value_type)) // ACONST
 				{
-					parameters[i] = info->answer_const;
+					arguments[i] = info->answer_const;
 				}
 				else // double
 				{
-					parameters_double[i] = info->answer_const_double;
+					arguments_double[i] = info->answer_const_double;
 				}
 			}
 
@@ -873,19 +873,19 @@ static void operand(information *const info, node *const nd)
 					uni_printf(info->io, ", ");
 				}
 
-				type_to_io(info, parameters_value_type[i]);
+				type_to_io(info, arguments_value_type[i]);
 				uni_printf(info->io, " signext ");
-				if (parameters_type[i] == AREG)
+				if (arguments_type[i] == AREG)
 				{
-					uni_printf(info->io, "%%.%" PRIitem, parameters[i]);
+					uni_printf(info->io, "%%.%" PRIitem, arguments[i]);
 				}
-				else if (mode_is_int(parameters_value_type[i])) // ACONST
+				else if (mode_is_int(arguments_value_type[i])) // ACONST
 				{
-					uni_printf(info->io, "%" PRIitem, parameters[i]);
+					uni_printf(info->io, "%" PRIitem, arguments[i]);
 				}
 				else // double
 				{
-					uni_printf(info->io, "%f", parameters_double[i]);
+					uni_printf(info->io, "%f", arguments_double[i]);
 				}
 			}
 			uni_printf(info->io, ")\n");
