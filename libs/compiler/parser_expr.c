@@ -289,6 +289,7 @@ static expression parse_postfix_expression(parser *const prs)
 					operand = expression_broken();
 				}
 
+				expression_list_clear(&args);
 				continue;
 			}
 
@@ -477,7 +478,6 @@ expression parse_initializer(parser *const prs, const item_t type)
 	if (prs->token == TK_L_BRACE)
 	{
 		const location l_loc = token_consume(prs);
-		expression_list inits;
 
 		if (token_try_consume(prs, TK_R_BRACE))
 		{
@@ -486,19 +486,23 @@ expression parse_initializer(parser *const prs, const item_t type)
 			return expression_broken();
 		}
 
-		inits = parse_expression_list(prs, type);
+		expression_list inits = parse_expression_list(prs, type);
+		expression result;
 		if (prs->token == TK_R_BRACE)
 		{
 			const location r_loc = token_consume(prs);
-			return build_init_list_expression(prs->sx, &inits, type, l_loc, r_loc);
+			result = build_init_list_expression(prs->sx, &inits, type, l_loc, r_loc);
 		}
 		else
 		{
 			parser_error(prs, expected_r_brace, l_loc);
 			token_skip_until(prs, TK_R_BRACE | TK_SEMICOLON);
 			token_try_consume(prs, TK_R_BRACE);
-			return expression_broken();
+			result = expression_broken();
 		}
+
+		expression_list_clear(&inits);
+		return result;
 	}
 
 	return parse_assignment_expression(prs);
