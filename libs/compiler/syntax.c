@@ -227,7 +227,7 @@ static void ident_init(syntax *const sx)
 
 	builtin_add(sx, U"fopen", U"фоткрыть", type_function(sx, type_pointer(sx, TYPE_FILE), "ss"));
 	builtin_add(sx, U"fgetc", U"фсимвол", type_function(sx, TYPE_CHARACTER, "P"));
-	builtin_add(sx, U"fputc", U"фписать", type_function(sx, TYPE_CHARACTER, "cP"));
+	builtin_add(sx, U"fputc", U"фписать", type_function(sx, TYPE_CHARACTER, "iP"));
 	builtin_add(sx, U"fclose", U"фзакрыть", type_function(sx, TYPE_INTEGER, "P"));
 }
 
@@ -470,8 +470,7 @@ item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 		return ITEM_MAX;
 	}
 
-	vector_add(&sx->types, (item_t)sx->start_type);
-	sx->start_type = vector_size(&sx->types) - 1;
+	sx->start_type = vector_add(&sx->types, (item_t)sx->start_type);
 	for (size_t i = 0; i < size; i++)
 	{
 		vector_add(&sx->types, record[i]);
@@ -483,8 +482,9 @@ item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 	{
 		if (type_is_equal(sx, sx->start_type + 1, old + 1))
 		{
-			vector_resize(&sx->types, sx->start_type + 1);
+			const size_t start_type = sx->start_type;
 			sx->start_type = (size_t)vector_get(&sx->types, sx->start_type);
+			vector_resize(&sx->types, start_type);
 			return (item_t)old + 1;
 		}
 		else
