@@ -15,7 +15,6 @@
  */
 
 #include "parser.h"
-#include <stdlib.h>
 
 
 /** Binary/ternary operator precedence levels */
