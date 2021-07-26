@@ -472,9 +472,7 @@ static int node_recursive(information *const info, node *const nd)
 
 						if (node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							log_info.ref_node = &parent;
-							log_info.depth = 1;
-							has_error |= transposition(&nd_info, &log_info);
+							operand->depth++;
 						}
 
 						// перестановка с операндом
@@ -518,9 +516,7 @@ static int node_recursive(information *const info, node *const nd)
 							|| node_get_type(&parent) == OP_AD_LOG_AND
 							|| node_get_type(&parent) == OP_ADDR_TO_VAL)
 						{
-							node_info log_info = { &parent, 1 };
-							has_error |= transposition(second, &log_info);
-							node_copy(second->ref_node, log_info.ref_node);
+							second->depth++;
 						}
 
 						// перестановка с первым операндом
