@@ -186,6 +186,10 @@ static expression_t expression_type(node *const nd)
 		case OP_UNMINUS_R:
 
 		case OP_CALL1:
+		case OP_ABS:
+		case OP_SQRT:
+		case OP_SIN:
+		case OP_COS:
 			return UNARY_OPERATION;
 
 
